@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MessageStatusEnum, MsgEnum } from '@/enums'
+import { MessageStatusEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 
 const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef, groupUserRef } = vi.hoisted(() => ({
   globalStoreMock: {
@@ -24,6 +24,7 @@ const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef, grou
     getSessionList: vi.fn(() => []),
     updateSession: vi.fn(),
     updateSessionLastActiveTime: vi.fn(),
+    setUnreadCount: vi.fn(),
     markSessionRead: vi.fn(),
     updateTotalUnreadCount: vi.fn(),
     requestUnreadCountUpdate: vi.fn(),
@@ -809,6 +810,48 @@ describe('ChatMessageStore', () => {
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
       expect(lastSentOptions().body).toBe('outside the window')
+    })
+  })
+
+  /**
+   * 评审 Important #2 的前提守门：房间正开着时收到别人的消息不增加界面未读（消息已经在
+   * 视图里），后台会话才 +1。sessionUnread.apply 的「当前打开房间」特例直接依赖这个前提
+   * （角标层面由 chat/__tests__/sessionReadReceipts.test.ts 覆盖）。
+   */
+  describe('未读账本与当前打开的房间', () => {
+    const activeSession = { roomId: 'room-1', unreadCount: 0, activeTime: 100, type: RoomTypeEnum.SINGLE }
+
+    it('房间打开时收到别人的消息：不增加界面未读', async () => {
+      const store = useChatStore()
+      sessionStoreMock.getSession.mockReturnValueOnce(activeSession as never)
+      globalStoreMock.currentSessionRoomId = 'room-1'
+
+      await store.pushMsg(createMessage('10', 'room-1'), { isActiveChatView: true, activeRoomId: 'room-1' })
+
+      expect(sessionStoreMock.setUnreadCount).not.toHaveBeenCalled()
+    })
+
+    it('后台会话收到消息：仍走界面 +1 记账', async () => {
+      const store = useChatStore()
+      sessionStoreMock.getSession.mockReturnValueOnce({ ...activeSession, roomId: 'room-2' } as never)
+      globalStoreMock.currentSessionRoomId = 'room-1'
+
+      await store.pushMsg(createMessage('11', 'room-2'), { isActiveChatView: false, activeRoomId: 'room-1' })
+
+      expect(sessionStoreMock.setUnreadCount).toHaveBeenCalledWith('room-2', 1)
+    })
+
+    it('自己发的消息不增加未读', async () => {
+      const store = useChatStore()
+      sessionStoreMock.getSession.mockReturnValueOnce(activeSession as never)
+      globalStoreMock.currentSessionRoomId = 'room-1'
+
+      await store.pushMsg(
+        { ...createMessage('12', 'room-1'), fromUser: { uid: 'user-1', username: 'me' } },
+        { isActiveChatView: true, activeRoomId: 'room-1' }
+      )
+
+      expect(sessionStoreMock.setUnreadCount).not.toHaveBeenCalled()
     })
   })
 })

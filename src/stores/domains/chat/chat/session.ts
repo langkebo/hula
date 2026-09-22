@@ -111,7 +111,9 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
 
   const syncPersistedUnreadCounts = (targetSessions: SessionItem[] = sessionList.value) => {
     if (!targetSessions.length) return
-    const updates = sessionUnreadStore.apply(userStore.userInfo?.uid, targetSessions)
+    // 当前打开的会话要单独告知 apply：messageMutations 对它不增加界面未读（消息已经显示在
+    // 视图里），但服务端 unread_count 仍会 +1，照常折算会把已经看到的这条算成未读。
+    const updates = sessionUnreadStore.apply(userStore.userInfo?.uid, targetSessions, globalStore.currentSessionRoomId)
     for (const [roomId, unreadCount] of Object.entries(updates)) {
       updateSession(roomId, { unreadCount })
     }

@@ -8,20 +8,24 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { SessionItem } from '../chat'
 import { useSessionStore } from '../chat/session'
 
-const { sendReceiptByEventIdMock, fetchUnreadCountMock, getSessionListMock, clientMock } = vi.hoisted(() => {
-  const room = {
-    getLiveTimeline: () => ({ getEvents: () => [{ getId: () => '$e1' }] })
-  }
-  return {
-    sendReceiptByEventIdMock: vi.fn().mockResolvedValue(undefined),
-    fetchUnreadCountMock: vi.fn(),
-    getSessionListMock: vi.fn(async (): Promise<SessionItem[]> => []),
-    clientMock: {
-      getReadReceiptsManager: () => ({ sendReadReceiptByEventId: sendReceiptByEventIdMock }),
-      getRoom: () => room
+const { sendReceiptByEventIdMock, fetchUnreadCountMock, getSessionListMock, clientMock, globalStoreMock } = vi.hoisted(
+  () => {
+    const room = {
+      getLiveTimeline: () => ({ getEvents: () => [{ getId: () => '$e1' }] })
+    }
+    return {
+      sendReceiptByEventIdMock: vi.fn().mockResolvedValue(undefined),
+      fetchUnreadCountMock: vi.fn(),
+      getSessionListMock: vi.fn(async (): Promise<SessionItem[]> => []),
+      // 可变：当前打开的会话决定 apply 是否采信账本计数而不是服务端累计（评审 Important #2）
+      globalStoreMock: { unreadReady: false, currentSessionRoomId: '' },
+      clientMock: {
+        getReadReceiptsManager: () => ({ sendReadReceiptByEventId: sendReceiptByEventIdMock }),
+        getRoom: () => room
+      }
     }
   }
-})
+)
 
 vi.mock('@/services/offline/OfflineQueueService', () => ({
   offlineQueueService: { enqueue: vi.fn() }
@@ -53,7 +57,7 @@ vi.mock('@/stores/domains/user/user', () => ({
 }))
 
 vi.mock('@/stores/domains/widget/global', () => ({
-  useGlobalStore: () => ({ unreadReady: false, currentSessionRoomId: '' })
+  useGlobalStore: () => globalStoreMock
 }))
 
 vi.mock('../contacts', () => ({
@@ -83,6 +87,7 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
     setActivePinia(createPinia())
     vi.clearAllMocks()
     getSessionListMock.mockResolvedValue([])
+    globalStoreMock.currentSessionRoomId = ''
   })
 
   it('关闭偏好时不回读服务端未读数，本地角标保持清零', async () => {
@@ -204,6 +209,7 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
 
     // 第一次启动：服务端报 5，本客户端从未打开该房间（因此没有 lastRead 记录）
     bootPersistedPinia()
+    useSettingStore().setSendReadReceiptsEnabled(false)
     const first = useSessionStore()
     getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 5, activeTime: 100 })])
     await first.getSessionList()
@@ -214,6 +220,7 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
 
     // 重启：期间用户在别的设备读完了该房间，服务端 unread_count 归零且没有新消息
     bootPersistedPinia()
+    useSettingStore().setSendReadReceiptsEnabled(false)
     const restarted = useSessionStore()
     getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 0, activeTime: 100 })])
     await restarted.getSessionList()
@@ -374,6 +381,97 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
 
     await store.markSessionRead(ROOM_ID)
     store.setUnreadCount(ROOM_ID, 1)
+
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 4, activeTime: 200 })])
+    await store.getSessionList()
+
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(4)
+  })
+
+  /**
+   * 评审 Important #1：`settledServerCount` 在服务端计数跌破它时没有失效路径。
+   *
+   * 链路：本机读 3（水位 3、角标 0）→ 别的设备把该房间读完（服务端归零、水位失效）→
+   * 关闭期间来 1 条（服务端累计 1、activeTime 200）→ 冷启动。
+   * 旧实现做减法：max(0, 1 - 3) = 0，角标 0（真实未读 1）且把水位写坏成 1。
+   * 正确行为：服务端累计低于水位 = 服务端那一轮计数已被重置，整体重算 —— 角标 1、水位 0；
+   * 下一条消息（服务端累计 2）应该得到 2，证明水位重算后仍然自洽。
+   */
+  it('关闭已读回执 + 别的设备读完后关闭期间到达新消息：水位失效重算，角标 1 且下一条继续 +1', async () => {
+    localStorage.clear()
+
+    const bootPersistedPinia = () => {
+      const pinia = createPinia()
+      pinia.use(createPersistedState({ auto: false }))
+      createApp({}).use(pinia)
+      setActivePinia(pinia)
+    }
+
+    // 第一次启动：读 3 条
+    bootPersistedPinia()
+    useSettingStore().setSendReadReceiptsEnabled(false)
+    const first = useSessionStore()
+    first.addSession(makeSession({ unreadCount: 3, activeTime: 100 }))
+    await first.markSessionRead(ROOM_ID)
+    expect(first.getSession(ROOM_ID)?.unreadCount).toBe(0)
+    await nextTick()
+
+    // 关闭期间：别的设备读完了房间（服务端归零）后又来了 1 条新消息
+    bootPersistedPinia()
+    useSettingStore().setSendReadReceiptsEnabled(false)
+    const restarted = useSessionStore()
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 1, activeTime: 200 })])
+    await restarted.getSessionList()
+    expect(restarted.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(1)
+
+    // 下一条消息：水位已经重算，服务端累计 2 = 2 条真实未读
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 2, activeTime: 300 })])
+    await restarted.getSessionList()
+    expect(restarted.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(2)
+  })
+
+  /**
+   * 评审 Important #2：房间正开着时到达的消息被 case 2 重复计算。
+   *
+   * messageMutations 对当前打开的房间不增加界面未读（消息已经在视图里），但 activeTime 仍会
+   * 前进；于是「服务端累计 4 - 旧水位 3」把已经看到的这条重新算成未读，角标弹回 1。
+   * 修复：apply 对当前打开的会话采信账本计数（0），只把水位对齐到服务端快照。
+   */
+  it('关闭已读回执 + 消息到达当前打开的房间：会话列表重建后角标保持 0，后台消息仍 +1', async () => {
+    useSettingStore().setSendReadReceiptsEnabled(false)
+
+    const store = useSessionStore()
+    store.addSession(makeSession({ unreadCount: 3, activeTime: 100 }))
+    await store.markSessionRead(ROOM_ID)
+    expect(store.getSession(ROOM_ID)?.unreadCount).toBe(0)
+
+    // 房间保持打开（globalStore.currentSessionRoomId 仍是它）：消息到达只刷新 activeTime
+    globalStoreMock.currentSessionRoomId = ROOM_ID
+
+    // 服务端因为没有 m.read 累计到 4，activeTime 200 > lastRead 100
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 4, activeTime: 200 })])
+    await store.getSessionList()
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(0)
+
+    // 之后用户切到别的房间、后台再来 1 条：本地 +1，服务端累计 5 → 角标 1（水位已被对齐）
+    globalStoreMock.currentSessionRoomId = '!other:matrix.test'
+    store.setUnreadCount(ROOM_ID, 1)
+    getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 5, activeTime: 300 })])
+    await store.getSessionList()
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(1)
+  })
+
+  /**
+   * 回执开启时「当前打开房间收到消息」的既有行为：服务端即真源，角标等于服务端累计值。
+   * 当前打开房间的特例只在回执关时生效，因此这条行为完全不变。
+   */
+  it('回执开启 + 消息到达当前打开的房间：仍以服务端为准（行为不变）', async () => {
+    useSettingStore().setSendReadReceiptsEnabled(true)
+
+    const store = useSessionStore()
+    store.addSession(makeSession({ unreadCount: 3, activeTime: 100 }))
+    await store.markSessionRead(ROOM_ID)
+    globalStoreMock.currentSessionRoomId = ROOM_ID
 
     getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 4, activeTime: 200 })])
     await store.getSessionList()

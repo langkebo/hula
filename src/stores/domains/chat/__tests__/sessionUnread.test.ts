@@ -155,6 +155,7 @@ describe('useSessionUnreadStore', () => {
     })
 
     it('adopts the smaller server count when no lastReadTime and no newer message (another device read it)', () => {
+      useSettingStore().setSendReadReceiptsEnabled(false)
       const store = useSessionUnreadStore()
       store.set('uid-1', 'room-a', 10)
       // activeTime 早于账本写入时间：账本记完账之后没有新消息
@@ -162,6 +163,17 @@ describe('useSessionUnreadStore', () => {
       const updates = store.apply('uid-1', sessions)
       expect(updates).toEqual({})
       expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(3)
+    })
+
+    it('keeps Math.max(cached, server) with receipts enabled when the server reports fewer', () => {
+      // 回执开时服务端即真源，本用例钉住 case-3b 的既有行为：跨设备收敛只在回执关时启用。
+      useSettingStore().setSendReadReceiptsEnabled(true)
+      const store = useSessionUnreadStore()
+      store.set('uid-1', 'room-a', 10)
+      const sessions = [makeSession({ roomId: 'room-a', unreadCount: 3, activeTime: Date.now() - 60_000 })]
+      const updates = store.apply('uid-1', sessions)
+      expect(updates).toEqual({ 'room-a': 10 })
+      expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(10)
     })
 
     it('keeps the ledger count when no lastReadTime and the server reports fewer but a newer message exists', () => {
@@ -184,6 +196,62 @@ describe('useSessionUnreadStore', () => {
       const updates = store.apply('uid-1', [makeSession({ roomId: 'room-a', unreadCount: 4, activeTime: 200 })])
       expect(updates).toEqual({ 'room-a': 1 })
       expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(1)
+    })
+
+    it('re-bases the settled watermark when the server count falls below it (another device read the room)', () => {
+      useSettingStore().setSendReadReceiptsEnabled(false)
+      const store = useSessionUnreadStore()
+      store.setLastRead('uid-1', 'room-a', 100)
+      // 本机读完 3 条：水位 3、账本 0
+      store.markRead('uid-1', 'room-a', 3)
+
+      // 别的设备随后把房间读完（服务端归零），关闭期间只来了 1 条：服务端累计 1 < 水位 3。
+      // 旧水位已失效（服务端那一轮计数被重置），必须整体重算而不是做减法。
+      const first = store.apply('uid-1', [makeSession({ roomId: 'room-a', unreadCount: 1, activeTime: 200 })])
+      expect(first).toEqual({})
+      expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(1)
+      expect(store.cacheStore['uid-1']?.['room-a']?.settledServerCount).toBe(0)
+
+      // 下一条消息：水位已经重算，服务端累计 2 就是 2 条真实未读
+      const second = store.apply('uid-1', [makeSession({ roomId: 'room-a', unreadCount: 2, activeTime: 300 })])
+      expect(second).toEqual({})
+      expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(2)
+    })
+
+    it('trusts the ledger instead of the server delta for the currently open room', () => {
+      // 评审 Important #2：房间开着时到达的消息不增加界面未读，服务端累计却 +1。
+      useSettingStore().setSendReadReceiptsEnabled(false)
+      const store = useSessionUnreadStore()
+      store.setLastRead('uid-1', 'room-a', 100)
+      store.markRead('uid-1', 'room-a', 3)
+
+      // 服务端累计 4（已读的 3 + 刚看到的 1），但 room-a 正开着 → 角标必须保持账本值 0
+      const updates = store.apply(
+        'uid-1',
+        [makeSession({ roomId: 'room-a', unreadCount: 4, activeTime: 200 })],
+        'room-a'
+      )
+      expect(updates).toEqual({ 'room-a': 0 })
+      expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(0)
+      // 水位被对齐到服务端快照，房间关闭后的增量仍然算得对
+      expect(store.cacheStore['uid-1']?.['room-a']?.settledServerCount).toBe(4)
+
+      const afterClose = store.apply('uid-1', [makeSession({ roomId: 'room-a', unreadCount: 5, activeTime: 300 })], '')
+      expect(afterClose).toEqual({ 'room-a': 1 })
+    })
+
+    it('keeps receipts-on behaviour for the currently open room (server stays the source of truth)', () => {
+      useSettingStore().setSendReadReceiptsEnabled(true)
+      const store = useSessionUnreadStore()
+      store.setLastRead('uid-1', 'room-a', 100)
+
+      const updates = store.apply(
+        'uid-1',
+        [makeSession({ roomId: 'room-a', unreadCount: 4, activeTime: 200 })],
+        'room-a'
+      )
+      expect(updates).toEqual({ 'room-a': 4 })
+      expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(4)
     })
   })
 

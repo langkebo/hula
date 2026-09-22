@@ -8,9 +8,18 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
  * 单个会话的未读账本条目。
  *
  * - `count`：本机未读数（界面真值）。
- * - `updatedAt`：本条账本的写入时间（epoch ms）。用于判定「账本写入之后房间是否又来了新消息」：
- *   `activeTime > updatedAt` 说明服务端列表里的最后一条消息比账本还新。
- * - `settledServerCount`：服务端 `unread_count` 中已经被本机结算（读过）的部分。
+ * - `updatedAt`：本条账本的写入时间（**本机** `Date.now()`，epoch ms）。用于判定「账本写入之后
+ *   房间是否又来了新消息」：`activeTime > updatedAt` 说明服务端列表里的最后一条消息比账本还新。
+ *   注意 `activeTime` 来自服务端（事件时间），与 `updatedAt` 是不同时钟：这里假设两者同量级
+ *   （偏差远小于「有新消息」的间隔）。时钟大幅漂移时判定退化为保守分支（不误删未读，可能不收敛）。
+ * - `settledServerCount`：服务端 `unread_count` 中已经被本机结算（读过 / 已看到）的部分。
+ *
+ * **不变量**：同步状态下 `服务端 unread_count === settledServerCount + count`。
+ * 下面三条规则共同维护它，任何一处改动都要保持自洽：
+ * 1. 本机读掉未读（`markRead`）→ `settledServerCount += readCount` 且 `count = 0`；
+ * 2. 服务端快照对账（`apply` 的情况 1 / 3a）→ 用水位吸收服务端当前计数；
+ * 3. 有新消息的情况 2 → 按 `resolveOpenRoomLedger`（当前打开的会话）或 `resolveCase2Ledger`
+ *    （其余会话）重算两者；这是水位唯一的失效与重算点。
  *
  * 语义裁决：关闭「发送已读回执」的含义是「不让同房间成员看到我读到哪」，**不是**
  * 「每台设备各维护一套未读」。关闭回执时服务端 `unread_count` 不会因本机已读而减少
@@ -50,9 +59,10 @@ export const useSessionUnreadStore = defineStore(
     /**
      * 把水合进来的历史条目规整成账本条目。
      *
-     * 早期版本 cacheStore 的条目是裸数字（且当时不持久化）。若 localStorage 里还残留那种
-     * 结构，`updatedAt` 未知按 0 处理：`activeTime > 0` 会被判成「账本之后有新消息」，
-     * 于是退回保守的 Math.max 语义，不会误删未读。无法识别的条目直接丢弃。
+     * `291ce9c6`（`persist: true`）曾把整个 store 写进 localStorage，当时 cacheStore 的条目是
+     * 裸数字；`41e6b056` 才收窄成只持久化 lastReadActiveTimeStore，但升级用户的 localStorage 里
+     * 可能还残留那种结构。裸数字没有写入时间，`updatedAt` 按 0 处理：`activeTime > 0` 会被判成
+     * 「账本之后有新消息」，于是退回保守的 Math.max 语义，不会误删未读。无法识别的条目直接丢弃。
      */
     const normalizeEntry = (raw: unknown): UnreadLedgerEntry | undefined => {
       if (typeof raw === 'number') {
@@ -117,10 +127,59 @@ export const useSessionUnreadStore = defineStore(
     }
 
     /**
+     * `settledServerCount` 的失效与重算规则（不变量：同步状态下
+     * `服务端 unread_count === settledServerCount + count`）。
+     *
+     * case 2（有 lastRead、activeTime 前进 = 有新消息）在「回执关 + 有账本」时的折算，也是
+     * 水位唯一的失效点。返回值同时用于 UI 更新与账本写回，保证两者不会分叉。
+     *
+     * - **正常**：`count = max(entry.count, currentUnread - settled)`。减法项覆盖「关闭期间到达、
+     *   账本还没记」的服务端增量，`entry.count` 覆盖「本机已记账、服务端快照还没跟上」的增量，
+     *   取 max 避免重复计数。
+     * - **失效**：`currentUnread < settled` 说明服务端那一轮计数已经被别的设备读完归零后重新累计，
+     *   旧水位比服务端累计还大，做减法会把真实未读抹成 0（并写坏水位）。此时整体重算：
+     *   `count = max(entry.count, currentUnread)`，水位按新的 `count` 重新起算。
+     * - **无水位**（旧账本，`settled === undefined`）：退回账本计数，并用当前服务端快照起一个水位。
+     */
+    const resolveCase2Ledger = (
+      entry: UnreadLedgerEntry,
+      currentUnread: number
+    ): { count: number; settledServerCount: number } => {
+      const settled = entry.settledServerCount
+      const count =
+        settled === undefined
+          ? entry.count
+          : currentUnread < settled
+            ? Math.max(entry.count, currentUnread)
+            : Math.max(entry.count, currentUnread - settled)
+      return { count, settledServerCount: Math.max(0, currentUnread - count) }
+    }
+
+    /**
+     * 房间正开着时到达的消息已被本机看到：界面计数不变，但服务端累计值不能折算成未读。
+     *
+     * messageMutations 对当前打开的房间不增加界面未读（消息已经在视图里），关闭已读回执时
+     * 服务端 unread_count 却仍会 +1；如果照常做 `服务端累计 − 水位`，已经看到的这条会被
+     * 重新算成未读（角标凭空弹回）。此时账本计数才是该房间可见性的真值：直接采信 `entry.count`，
+     * 并把水位对齐到服务端快照，供房间关闭后的增量折算使用。
+     *
+     * 采用「对账时按当前打开房间判定」而不是「每条消息把水位 +1」，是因为冷启动 SDK 会重放
+     * 最近的 timeline 事件（messageMap 为空，pushMsg 的幂等检查挡不住），逐条推进水位会推过头；
+     * 而对账只采信真实服务端快照，水位永远有界。
+     */
+    const resolveOpenRoomLedger = (entry: UnreadLedgerEntry, currentUnread: number) => ({
+      count: entry.count,
+      settledServerCount: Math.max(0, currentUnread - entry.count)
+    })
+
+    /**
      * 将缓存中的未读数应用到会话列表，并补齐缺失的缓存
+     *
+     * @param openRoomId 当前打开的会话（`globalStore.currentSessionRoomId`）。该房间的消息已经
+     *   显示在视图里，服务端累计值不能折算成未读（见 resolveOpenRoomLedger）。
      * @returns 返回需要更新的会话映射 { roomId: newUnreadCount }
      */
-    const apply = (uid: string | undefined, sessions: SessionItem[]): Record<string, number> => {
+    const apply = (uid: string | undefined, sessions: SessionItem[], openRoomId?: string): Record<string, number> => {
       const updates: Record<string, number> = {}
 
       if (!uid || sessions.length === 0) {
@@ -131,6 +190,9 @@ export const useSessionUnreadStore = defineStore(
       if (!cache) {
         return updates
       }
+
+      // 偏好必须在 apply 内读取（不得挪到 store 创建期）：会话中途切换开关要对下一次 apply 立即生效。
+      const receiptsEnabled = useSettingStore().sendReadReceiptsEnabled
 
       sessions.forEach((session) => {
         const activeTime = session.activeTime || 0
@@ -152,20 +214,18 @@ export const useSessionUnreadStore = defineStore(
 
         // 情况2：有lastReadTime记录，且activeTime > lastReadTime（有新消息产生）
         if (lastReadTime > 0 && activeTime > lastReadTime) {
-          // 关闭「发送已读回执」时服务端收不到 m.read，unread_count 不会因本机已读而减少。
-          // 此时采信服务端会把已读过的消息重新算进角标：读 3 条 → 来 1 条新消息 → 角标 4。
-          // 本机账本才是可信计数；服务端快照只在账本缺失时兜底（冷启动 / 从未记过账）。
-          if (!useSettingStore().sendReadReceiptsEnabled && entry) {
-            // 有水位时用「服务端累计 - 已结算水位」把离线期间新增的消息一起算进来
-            // （读 3 → 关闭期间来 1 → 服务端累计 4 - 水位 3 = 1）；没有水位的老账本退回账本计数。
-            const localCount =
-              entry.settledServerCount === undefined
-                ? entry.count
-                : Math.max(entry.count, currentUnread - entry.settledServerCount)
-            if (currentUnread !== localCount) {
-              updates[session.roomId] = localCount
+          // 关闭「发送已读回执」时服务端收不到 m.read，unread_count 不会因本机已读而减少，
+          // 累计值 = 已读部分 + 真实未读。此时账本是唯一可信计数，服务端快照只通过
+          // settledServerCount 水位折算「关闭期间到达」的增量（规则与不变量见 resolveCase2Ledger）。
+          if (!receiptsEnabled && entry) {
+            const reconciled =
+              openRoomId === session.roomId
+                ? resolveOpenRoomLedger(entry, currentUnread)
+                : resolveCase2Ledger(entry, currentUnread)
+            if (currentUnread !== reconciled.count) {
+              updates[session.roomId] = reconciled.count
             }
-            writeReconciledEntry(cache, session.roomId, localCount, currentUnread - localCount)
+            writeReconciledEntry(cache, session.roomId, reconciled.count, reconciled.settledServerCount)
             return
           }
 
@@ -189,13 +249,13 @@ export const useSessionUnreadStore = defineStore(
         }
 
         // 情况3：没有lastReadTime记录（首次加载或从未标记已读）
-        // 服务端计数与本地账本取较大值兜底，防止未读数丢失；唯一的例外是
-        // 「服务端更小且账本之后没有新消息」——那是别的设备读过了，必须收敛。
+        // 回执开时服务端即真源，保持既有的 Math.max(账本, 服务端) 不变；回执关时多一条跨设备
+        // 收敛路径：服务端更小且账本之后没有新消息（activeTime 未前移）说明别的设备已读过。
         const serverCount = sanitizeCount(session.unreadCount)
         if (entry) {
           const noNewerMessage = activeTime <= entry.updatedAt
-          const finalCount =
-            serverCount < entry.count && noNewerMessage ? serverCount : Math.max(entry.count, serverCount)
+          const converged = !receiptsEnabled && serverCount < entry.count && noNewerMessage
+          const finalCount = converged ? serverCount : Math.max(entry.count, serverCount)
           if (session.unreadCount !== finalCount) {
             updates[session.roomId] = finalCount
           }
@@ -289,10 +349,11 @@ export const useSessionUnreadStore = defineStore(
     // - `cacheStore`：关闭「发送已读回执」时账本是唯一可信计数。不持久化的话，「读 3 条 →
     //   关闭期间来 1 条 → 重启」会在冷启动时退回服务端累计值，把已读的 3 条重新算进角标。
     //
-    // 跨设备收敛由 apply 的「情况 3」显式处理：服务端计数比账本更小、且账本之后没有新消息
-    // （activeTime 未前移）时判定为别的设备已读，采信服务端并写回账本；因此持久化账本不会像
-    // 早期那样把「别的设备已读完」的房间角标永久顶住。uid 已作为一级键做账号隔离，
-    // 登录态切换时的清除点是显式登出 / 账号重置（SessionLogoutService）。
+    // 跨设备收敛由 apply 的「情况 3」显式处理（**仅回执关**，回执开时服务端即真源、行为不变）：
+    // 服务端计数比账本更小、且账本之后没有新消息（activeTime 未前移）时判定为别的设备已读，
+    // 采信服务端并写回账本；因此持久化账本不会像早期那样把「别的设备已读完」的房间角标永久
+    // 顶住。uid 已作为一级键做账号隔离，登录态切换时的清除点是显式登出 / 账号重置
+    // （SessionLogoutService）。
     persist: {
       pick: ['cacheStore', 'lastReadActiveTimeStore']
     }
