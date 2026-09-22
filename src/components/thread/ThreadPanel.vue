@@ -51,7 +51,7 @@
             :placeholder="t('thread.reply_placeholder')"
             :autosize="{ minRows: 1, maxRows: 4 }"
             @keydown.enter.ctrl="handleSendReply" />
-          <n-button type="primary" :disabled="!replyContent.trim()" @click="handleSendReply">
+          <n-button type="primary" :disabled="!replyContent.trim()" :loading="sendingReply" @click="handleSendReply">
             <template #icon>
               <n-icon>
                 <svg><use href="#send" /></svg>
@@ -67,9 +67,14 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { createLogger } from '@/utils/Logger'
 
+const logger = createLogger('ThreadPanel')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 interface ThreadMessage {
   id: string
@@ -85,11 +90,11 @@ const visible = defineModel<boolean>('show', { default: false })
 const props = defineProps<{
   originalMessage?: ThreadMessage
   threadId?: string
+  roomId?: string
 }>()
 
-const emit = defineEmits<(e: 'sendReply', content: string) => void>()
-
 const replyContent = ref('')
+const sendingReply = ref(false)
 const threadReplies = ref<ThreadMessage[]>([])
 
 const formatTime = (timestamp?: number) => {
@@ -97,11 +102,25 @@ const formatTime = (timestamp?: number) => {
   return dayjs(timestamp).format('MM-DD HH:mm')
 }
 
-const handleSendReply = () => {
-  if (!replyContent.value.trim()) return
+const handleSendReply = async () => {
+  const body = replyContent.value.trim()
+  if (!body || sendingReply.value) return
+  if (!props.roomId || !props.threadId) {
+    showFeedback(t('thread.send_failed'), 'error')
+    return
+  }
 
-  emit('sendReply', replyContent.value.trim())
-  replyContent.value = ''
+  sendingReply.value = true
+  try {
+    await matrixThreadService.sendThreadReply(props.roomId, props.threadId, { body })
+    replyContent.value = ''
+    await loadThreadReplies()
+  } catch (err) {
+    logger.error(`发送线程回复失败: ${err}`)
+    showFeedback(t('thread.send_failed'), 'error')
+  } finally {
+    sendingReply.value = false
+  }
 }
 
 watch(visible, (val) => {
@@ -111,7 +130,20 @@ watch(visible, (val) => {
 })
 
 const loadThreadReplies = async () => {
-  threadReplies.value = []
+  if (!props.roomId || !props.threadId) return
+  try {
+    const replies = await matrixThreadService.getThreadRepliesViaApi(props.roomId, props.threadId)
+    threadReplies.value = replies.map((reply) => ({
+      id: reply.event_id,
+      senderId: reply.sender,
+      senderName: reply.sender,
+      content: typeof reply.content?.body === 'string' ? reply.content.body : '',
+      timestamp: reply.origin_server_ts
+    }))
+  } catch (err) {
+    logger.error(`加载线程回复失败: ${err}`)
+    showFeedback(t('thread.load_failed'), 'error')
+  }
 }
 </script>
 

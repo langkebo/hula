@@ -166,13 +166,6 @@ const ACCEPTED_PATTERNS = [
     component: 'src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue',
     event: 'upgraded',
     reason: '升级请求、成功提示与自关闭都由组件内 useRoomUpgradeFlow 完成，事件只是可选通知（父组件会保留旧版本号标签）'
-  },
-  /* --- 产品行为断线：功能真缺，登记为 follow-up 待办，不允许静默冻结 --- */
-  {
-    component: 'src/components/thread/ThreadPanel.vue',
-    event: 'sendReply',
-    reason: '发送会丢弃输入（无 store/service 调用），loadThreadReplies 是设空数组的 stub',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #6'
   }
 ]
 

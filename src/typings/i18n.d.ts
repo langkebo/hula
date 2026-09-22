@@ -6879,7 +6879,9 @@ export type I18nKeys = {
     "title": "消息线程",
     "replies": "回复",
     "no_replies": "暂无回复",
-    "reply_placeholder": "输入回复内容..."
+    "reply_placeholder": "输入回复内容...",
+    "send_failed": "发送回复失败",
+    "load_failed": "加载回复失败"
   },
   "trendradar": {
     "title": "TrendRadar 资讯助手",

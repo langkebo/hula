@@ -3,6 +3,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useRoomStore } from '@/stores/domains/chat/room'
 import { createLogger } from '@/utils/Logger'
 
 interface ThreadOriginalMessage {
@@ -21,6 +22,7 @@ export function useChatDialogs(getMessageSenderUid: (msg: MessageType) => string
   // Thread panel state
   const threadPanelVisible = ref(false)
   const activeThreadId = ref('')
+  const activeThreadRoomId = ref('')
   const threadOriginalMessage = ref<ThreadOriginalMessage | null>(null)
 
   // Event report state
@@ -31,8 +33,10 @@ export function useChatDialogs(getMessageSenderUid: (msg: MessageType) => string
     eventContent: ''
   })
 
-  const handleOpenThread = ({ eventId }: { eventId: string; roomId?: string }) => {
+  const handleOpenThread = ({ eventId, roomId }: { eventId: string; roomId?: string }) => {
     activeThreadId.value = eventId
+    // 线程读写需要 roomId：优先用消息自带的 roomId，回退到当前会话房间。
+    activeThreadRoomId.value = roomId ?? useRoomStore().currentRoomId ?? ''
     const msg = chatStore.chatMessageList.find((m) => m.message.id === eventId)
     if (msg) {
       const bodyContent =
@@ -66,6 +70,7 @@ export function useChatDialogs(getMessageSenderUid: (msg: MessageType) => string
   return {
     threadPanelVisible,
     activeThreadId,
+    activeThreadRoomId,
     threadOriginalMessage,
     eventReportVisible,
     eventReportData
