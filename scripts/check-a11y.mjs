@@ -2,25 +2,31 @@
 /**
  * a11y (axe-core) 自动化扫描脚本
  *
- * 启动 Storybook → 逐页扫描所有 stories → 注入 axe-core → 报告违规。
- * 严重违规（serious/critical）退出码 1，阻断 CI 合并。
+ * 前置条件：一个已就绪的 Storybook（默认 http://localhost:6006）。
+ * 本脚本只负责扫描，不负责启动 Storybook。
+ *
+ * 策略（Task 1 选定，方案 b：由 CI 真正启动 Storybook 后再扫描）：
+ *   - CI：`.github/workflows/quality-gate.yml` 的 "A11y Accessibility Scan" 步骤先启动
+ *     Storybook 并轮询就绪（未就绪则显式失败），再调用本脚本。
+ *   - 本地：先 `pnpm storybook`，就绪后另开终端跑 `pnpm check:a11y`。
+ *   - 离线：Storybook 不可达时默认 **显式失败（exit 2）**，绝不静默通过。
+ *     仅当显式传入 `--skip-if-unreachable` 时才打印 SKIP 并 exit 0（CI 不传该参数，
+ *     因此这条路径不会让流水线变绿）。
+ *
+ * 退出码：0 = 扫描通过（或显式 SKIP）；1 = 存在 serious/critical 违规；2 = Storybook 不可达；
+ *         3 = 扫描过程出错。
  */
-import { spawn } from 'child_process'
 import http from 'http'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const ROOT = join(__dirname, '..')
+const DEFAULT_URL = process.env.STORYBOOK_URL || 'http://localhost:6006'
 
 function parseArgs() {
-  const args = { url: 'http://localhost:6006', wait: 15000, start: false }
+  const args = { url: DEFAULT_URL, wait: 15000, skipIfUnreachable: false }
   for (let i = 2; i < process.argv.length; i++) {
     const a = process.argv[i]
     if (a === '--url' && process.argv[i + 1]) args.url = process.argv[++i]
     else if (a === '--wait' && process.argv[i + 1]) args.wait = parseInt(process.argv[++i], 10)
-    else if (a === '--start') args.start = true
+    else if (a === '--skip-if-unreachable') args.skipIfUnreachable = true
   }
   return args
 }
@@ -75,6 +81,23 @@ async function runAxe(url) {
   return results
 }
 
+function reportUnreachable(url, waitMs, skipIfUnreachable) {
+  if (skipIfUnreachable) {
+    console.log('[a11y] SKIP: axe-core 扫描未执行')
+    console.log('[a11y] SKIP REASON: Storybook 在 ' + waitMs + 'ms 内不可达 (' + url + ')')
+    console.log('[a11y] SKIP SCOPE: 本次运行没有产生任何可访问性结论，不能视为通过')
+    console.log('[a11y] 如需真实扫描: pnpm storybook & 等待就绪后执行 pnpm check:a11y')
+    process.exit(0)
+  }
+
+  console.error('[a11y] FATAL: Storybook not reachable at ' + url + ' within ' + waitMs + 'ms')
+  console.error('[a11y] 未执行扫描，不产出结论（exit 2，不静默通过）')
+  console.error('[a11y] 本地运行: pnpm storybook  （另开终端）pnpm check:a11y')
+  console.error('[a11y] CI 运行: .github/workflows/quality-gate.yml 先启动 Storybook 再调用本脚本')
+  console.error('[a11y] 仅离线环境: 加 --skip-if-unreachable 打印显式 SKIP（CI 不使用该参数）')
+  process.exit(2)
+}
+
 async function main() {
   const args = parseArgs()
   const storybookUrl = args.url
@@ -83,9 +106,7 @@ async function main() {
   console.log('[a11y] Wait timeout:', args.wait, 'ms')
 
   if (!(await waitForStorybook(storybookUrl, args.wait))) {
-    console.error('[a11y] ERROR: Storybook not ready at', storybookUrl)
-    console.error('[a11y] Run: pnpm storybook & 等待就绪')
-    process.exit(2)
+    reportUnreachable(storybookUrl, args.wait, args.skipIfUnreachable)
   }
 
   console.log('[a11y] Storybook ready, scanning...')
