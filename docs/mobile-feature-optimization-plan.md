@@ -1041,8 +1041,18 @@ init-iife 会替换 `window.Notification`，并把 `requestPermission` / `permis
   2026-09-22 review 后动态拼接前缀族（148 个 key / 23 个前缀，含 `room_preview.` 这类
   "模板赋给变量再由 `t?.(var)` 消费"的中转写法）单独成节排除，明确
   "Task 7 不得删除"，避免把动态可达的活文案当孤儿误删）。
-- `.photo-wall` 零使用：`@extend .bubble-oneself` 的选择器没有使用方，复活时需补选择器；
-  `render-message.scss`。
+- **i18n 删除的"类型安全网"并不存在（Task 7 实测）**：vue-i18n 11.4.10 的
+  `ComposerTranslation` 形如 `(key: Key | ResourceKeys | number, ...)`，其中 `Key` 含宽
+  `string`，因此 `src/typings/i18n.d.ts` 的 `DefineLocaleMessage` augmentation 虽然生效，
+  `npx vue-tsc --noEmit` 也不会对 `t('已删除的 key')` 报错——Task 7 删掉 1979 条孤儿后
+  vue-tsc 依旧 0 错误（已用探针文件实证）。后续任务**不得**再把 vue-tsc 当作"没删到活文案"
+  的证明；当前唯一的静态保障是 `scripts/check-i18n-refs.mjs` 的命名空间 ratchet（读真实语言包
+  解析 `t('字面量')`）加 `check-i18n-dead-keys.mjs` 的保守 token 集。若要恢复类型级防护，
+  需自定义 composer 包装，把 `t()` 的 key 参数收紧为生成的字面量联合类型。
+- `.photo-wall` 零使用（**Task 7 已解决**）：`@extend .bubble-oneself` 的选择器全仓零生产者
+  （最后一个生产者由 `36258286` 从 `src/components/rightBox/chatBox/ChatMain.vue` 删除），
+  已连同 `render-message.scss` 里的死样式块一并删除，也不再列入 `[data-bubble-style='square']`
+  与结构守卫；复活时应新增生产者与样式，而不是保留一条无生产者的"防御性"选择器制造已覆盖错觉。
 - 守门实现 nits（**Task 5 已修复**）：Windows 反斜杠路径会让白名单/基线失配（已统一 POSIX）；
   `skip` 会降低总数却不影响退出码（已改为新增 skip 即 FAIL）；白名单条目失配无人提示
   （已加活性告警）。
