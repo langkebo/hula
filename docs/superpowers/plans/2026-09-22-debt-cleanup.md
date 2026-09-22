@@ -478,9 +478,17 @@ npx vitest run src/services/matrix/notifications src/stores/domains/chat/chat/__
 - Generate: `src/typings/i18n.d.ts`（`node scripts/generate-i18n-types.mjs`）
 - Modify: `src/styles/scss/render-message.scss`（`.photo-wall` 纳入 `[data-bubble-style='square']` 选择器）
 
-**行为要求**
-- 删除 `check:i18n-dead-keys` 基线里的全部孤儿键（当前 75：`notification.*` 20、`push.title` 1、
-  `labs.*` 54），两语言文件同步；重新生成 i18n.d.ts；基线归零或只留明确白名单。
+**行为要求（用户裁决：全删）**
+- 守门（Task 5 修复后）报 **1979 条 dead key / 148 条 dynamic-family key**。**只删 dead 桶的 1979 条**；
+  dynamic 桶（模板字面量前缀族，脚本明确标注"Task 7 不得删除"）**一条都不许删**。
+- zh-CN 与 en 两份语言包同步删除并保持 parity（`check-i18n.mjs`）；删后跑
+  `node scripts/generate-i18n-types.mjs` 重新生成 `src/typings/i18n.d.ts`。
+- **安全网（必须用足）**：`i18n.d.ts` 对 key 做了静态类型，任何仍被字面量引用的 key 在
+  `npx vue-tsc --noEmit` 会直接报错——因此删完必须 vue-tsc 0 错误；再跑
+  `check-i18n.mjs` / `check-i18n-refs.mjs` / `check-i18n-dead-keys.mjs` 与全量
+  `npx vitest run`。若 vue-tsc 报出某个"dead" key 仍被引用，说明守门漏报，把该 key 加回并把
+  漏报场景记进报告（不要为了过而改类型）。
+- 删除后把 `scripts/i18n-dead-keys-baseline.json` 收紧到新实测值（dead 应为 0 或仅剩 dynamic 桶）。
 - `[data-bubble-style='square']` 规则覆盖 `.photo-wall`（与 `.bubble`/`.bubble-oneself` 同组），
   并加磁盘/结构守卫断言三个选择器都在。
 
