@@ -866,31 +866,38 @@ Task 2/3 发现的"开关存了、也读了，但发送路径上没有守卫"这
 
 ```
 node scripts/check-settings-wiring.mjs          # 校验（CI / pre-merge）
-node scripts/check-settings-wiring.mjs --update # 收紧基线，数量只减不增
+node scripts/check-settings-wiring.mjs --update # 收紧死配置基线（拒绝任何新增键名）
+node scripts/check-settings-wiring.mjs --list   # 打印发现的持久化 key 与归属
 ```
 
-判据：只统计 `src/views/settingsWindow` 下 `.vue` 写入的 key（字面量或同文件常量别名）；
-一个 key 只有在设置窗口之外、非 `__tests__`、非另一个设置界面的 `.ts`/`.vue` 里
-出现带引号字面量时才算有消费方。基线缺失、不可解析或缺少数值字段一律 FAIL。
+判据在 Task 5 重写为**清单契约 + 持久层发现**（旧口径"只扫设置窗口里的写入"已被证明无法
+覆盖搬进 store/util/service 的 key——Task 11/13 之后设置窗口只剩 1 个直接写入，数字绿着却
+不代表开关接线）：
 
-已知局限：
-
-- **只守引用，不守生效。** 判活是引用计数，"消费方是否真在运行时消费"它判断不了。
+- 从 `src/{stores,services,utils,composables}/**` 发现持久化 key：`*_STORAGE_KEY` 常量
+  （含 `private static readonly` 与 `X = StoresEnum.Y` 枚举写法）、`*STORAGE_KEYS` 映射的每个
+  字面量值、`defineStore(...)` 且有 `persist` 配置时的 store id、`localStorage.setItem` 的
+  字面量 / 同文件常量 / 对象成员，以及模板键族（`` `${PREFIX}${id}` `` → `<prefix>*`）。
+- 发现到的 key 必须登记在 `scripts/settings-wiring-manifest.json`（`key → owner + ≥1 真实
+  consumer 路径 + kind + note`），否则 FAIL；清单里 owner/consumers 路径必须存在
+  （删文件/改名即 FAIL）。当前 63 个可静态求值的 key 全部登记。
+- 保留死配置数量 ratchet，并**同时**校验键名集合：当前集合 ⊆ 基线集合；`--update` 也拒绝
+  任何新增键名（同数量换键同样不放行）。
+- 已知局限：只做静态语法发现。参数化写入（`setItem(storageKey)`）与纯变量模板键无法求值，
+  只打印"无法静态判定 N 处"（当前 9 处）而不伪造 key；组件内（`src/components`）定义的 key
+  不在发现范围。消费方只校验路径存在性，"键真的被读"属于评审责任，正则不假装证明。
+- **只守引用，不守生效。** 判活仍是引用/清单计数，"消费方是否真在运行时消费"它判断不了。
   Task 13 是实证：8 个音视频 key 并入 `mediaDevicePreferences` 后全部被记为"已消费"，
   但其中设备选择与音量在通话路径上仍无效果；最终修复波按用户裁决（M1）删掉了
   `audioOutputId` / `inputVolume` / `outputVolume` 三个**零消费方**控件与字段，
   只留能经 `applyConstraints` 真实生效的音质布尔，以及作用于测试/预览的设备选择。
   Task 2/3 的"存了不生效"同理是它的盲区，需要行为测试补位。
-- **写入面只覆盖设置窗口，写入一旦搬走就脱离视野。** 守门只扫
-  `src/views/settingsWindow/**/*.vue` 里的 `localStorage.setItem`。Task 11 把气泡样式
-  写入搬进共享 util、Task 13 把 8 个音视频 key 搬进 `mediaDevicePreferences` 之后，
-  这些 key 就不再被扫描——数字下降可能只是"写入离开了扫描面"，而不是"死配置被消除"。
-  更根本的修法是改成扫描持久层 / 建"key → owner → consumer"清单（设计工作，follow-up）。
-- **刻意保守带来假阳性。** 把设置界面排除出消费方，会把"仅被设置页消费"的 key
-  报成死配置——`tjg-mjolnir-ban-lists` 即为此列，故收尾值为 1。
+- **刻意保守带来假阳性。** 死配置判据仍把设置界面排除出消费方，会把"仅被设置页消费"的 key
+  报成死配置——`tjg-mjolnir-ban-lists` 即为此列，故该项收尾值为 1。
 - 平行实现、装饰组件、无实现这三类它**看不见**，那是下一节的守门与行为测试的职责。
-- **ratchet 口径**：`--update` 拒绝抬高基线，且校验"当前死配置键名集合 ⊆ 基线集合"，
-  因此"修掉一个又引入一个等价死配置"（总数不变）同样会 FAIL。
+
+历史局限（Task 5 已解决，保留作为记录）：写入面只覆盖设置窗口导致"写入搬走即脱离视野"，
+已由持久层发现 + 清单取代；`--update` 曾只拒绝抬高数量、允许同数量换键，已改为键名子集校验。
 
 #### `check:component-contracts`（`scripts/check-component-contracts.mjs`）
 
@@ -904,30 +911,37 @@ node scripts/check-component-contracts.mjs --update # 收紧基线
 产生大量误报）。组件被使用、但它声明的事件在所有使用处都没绑定，就记一条；
 `v-model` 归一为 `update:modelValue` / `update:arg`；事件名按 Vue 的连字符/驼峰双查找规则
 归一；`__tests__` 既不算声明方也不算使用方；从未被使用的组件不计入（那是死代码问题）。
+全局自动注册组件按 `src/typings/components.d.ts` 的**路径派生名**解析
+（`renderMessage/index.vue` → `<RenderMessage>`），basename 表仅作 d.ts 漂移兜底。
 `v-on="obj"` / `v-bind="obj"` / 动态参数 `@[name]` / `<component :is>` 一律判为不可判定并跳过
 （宁可漏报，不误报）。
 
-已知局限：
+Task 5 收紧后的口径：
 
-- **ratchet 只比条数。** 基线里同时保存 `unlistenedEventNames` 供人工 diff，
-  但脚本不校验集合，因此"修掉一条真实断线又引入一条等价断线"可以通过。
-- `<component :is>` 动态挂载不识别，按"从未使用"漏报；同名 basename 的全局组件
-  （约 10 组，如 `index`）不走标签兜底。
-- Windows 反斜杠路径会让白名单/基线失配；`skip` 降低总数却不影响退出码；
-  白名单条目失配无人提示。
-- **基线 32 条里 19 条是既有的真实断线**（触发过 emit 但无人接，属用户可见行为缺失，
-  如 GuestModeBanner 按钮、ThreepidManager 增删、RoomSessionList 批量、
-  UserMenuHeader 的 `avatar-click`）。本次**冻结为债务**，不在 `feat/settings-wiring`
-  范围内修复；逐条分类见 `task-14-report.md` 的 C-real。
+- **数量 + 键名双重 ratchet**：当前集合必须 ⊆ 基线集合，`--update` 也拒绝任何新增条目
+  （同数量换条目同样不放行）。
+- **新增"不可判定"即 FAIL**：解析失败 / 对象展开 / 动态参数会把组件从计数里剔除，等价于
+  凭空变绿；基线用 `skippedLocations` 冻结当前 0 处，新增一律 FAIL，`--update` 也拒绝。
+- **白名单活性告警**：`ACCEPTED_PATTERNS` 条目在组件被删除、事件不再声明、或已不再压制
+  任何事件时会在运行时告警，防止白名单腐化成"永久赦免"。
+- **Windows 反斜杠归一化**：`collectVueFiles` / `resolveImport` / `relative` 统一转 POSIX，
+  白名单与基线在 Windows 上不再整体失配。
+- 剩余局限：`<component :is>` 动态挂载仍不识别（按"从未使用"漏报）；事件判据是"所有使用处
+  的并集"，无法表达"一处监听、另一处断线"（`renderMessage/index::jump2Reply` 在历史窗口的
+  逐使用处缺口见 13.6 补充）。
+- **基线已从 32 降为 0。** 原先 32 条中：3 条接线、12 条删除死声明、1 条检测器误报消失、
+  5 条设计上可选进入 `ACCEPTED_PATTERNS`、11 条产品行为断线登记进 13.6 并在白名单里以
+  `followUp` 挂账（每次运行打印 `todo`）。历史分类见 `task-14-report.md` 的 C-real。
 
-### 13.5 收尾门禁（Task 15 实测）
+### 13.5 收尾门禁（Task 15 实测；守门相关行由 Task 5 更新）
 
 | 门禁 | 结果 | 说明 |
 | --- | --- | --- |
 | `npx vue-tsc --noEmit` | 0 错误，exit 0 | |
 | `npx vitest run` | 796/796 文件、9199/9199 用例通过；exit 1 | 唯一的非零来源是 3 个**既有** crypto unhandled rejection（`CryptoSDKAdapter` / `CryptoKeyBackupAdapter` 报 `CryptoApi 不可用`）。本分支未触碰 `src/services/matrix/crypto/`；单独跑这两个文件（74/74 用例通过）同样复现 exit 1 |
-| `check:settings-wiring` | OK 死配置 1（基线 1） | 仅剩 `tjg-mjolnir-ban-lists` |
-| `check:component-contracts` | OK 无人监听事件 32（基线 32） | 其中 19 条为既有真实断线，本次冻结为债务 |
+| `check:settings-wiring` | OK 持久化 key 清单 63/63、死配置 1（基线 1） | Task 5 改为"清单 + 持久层发现"；仅剩 `tjg-mjolnir-ban-lists` 为死配置 |
+| `check:component-contracts` | OK 无人监听事件 0（基线 0） | Task 5 由 32 收紧到 0；11 条产品断线移入 13.6 follow-up |
+| `check:i18n-dead-keys` | OK（基线冻结当前孤儿集合） | Task 5 新增：命名空间感知 + 跳过测试 + 键名子集 ratchet；Task 7 负责把基线降下来 |
 | `check:doc-coverage` | OK（1069 → 1054，基线 1064，无回归） | 补 15 处缺失 JSDoc 摘要，纯注释改动；这 15 处在基线提交 `e157675a` 上同样报错，属分支级既有漂移 |
 | `check:ratchet` | 6/6 OK | |
 | `check:sdk-boundary` | OK（205 / 基线 187，无回归） | |
@@ -936,12 +950,12 @@ node scripts/check-component-contracts.mjs --update # 收紧基线
 | `check:v-html` | FAIL（既有） | `ThemeSwitcher.vue` 的注释里出现 "v-html" 字样被 grep 命中；基线提交上同样 FAIL，本分支未改该文件 |
 | `check:file-size` | FAIL（既有） | 基线提交上同样 FAIL（同样点到 `Image.vue`）。本分支让 6 个基线文件继续变长，并使 `MatrixReceiptService.ts`（376 → 414 行）越过 400 行线。未做 `--update`：那会一次性赦免全部既有增长，把 ratchet 变成橡皮图章 |
 
-结论：在守门**可扫描的范围内**（仅 `src/views/settingsWindow/**/*.vue` 的直接写入），
-本次治理没有引入新的死配置（34 → 1 后保持不变）。**这个数字只能证明"扫描面内没有新增"，
-不能证明"开关真的生效"，也不能证明"没有死配置"**——写入搬进 store/util/service 后
-就脱离了扫描面（见 13.4 已知局限），有效性只能由各任务的行为测试提供证据。
-两个新守门的可证伪性在 Task 14 已验证（临时删真实监听/接线会 FAIL；
-见 `task-14-report.md`），并在最终修复波接入 CI、禁止 `--update` 抬高基线、校验键名集合。
+结论：Task 5 之后两个守门不再是"扫不到真实持久层 / 只剩冻结数字"的橡皮图章——
+settings-wiring 以清单覆盖 63 个持久层 key 并把 `--update` 收紧到键名子集，
+component-contracts 的冻结基线归零、新增跳过即 FAIL、白名单失效会告警；
+i18n 死 key 从 report-only 变成带基线的 ratchet。**但清单/引用判据仍只证明"有登记、有引用"，
+不证明"开关在运行时生效"**，有效性只能由各任务的行为测试提供证据。
+守门可证伪性在 Task 14 与 Task 5 均已实测（临时制造违规会 FAIL，恢复后 OK）。
 剩余两处 FAIL（`check:v-html`、`check:file-size`）在基线提交上就存在，属独立债务。
 
 音视频设置治理后的**剩余债务**（如实记录）：`audioInputId` / `videoInputId` 目前
@@ -988,13 +1002,12 @@ init-iife 会替换 `window.Notification`，并把 `requestPermission` / `permis
 - 损坏配置下的旧键迁移边界：`tjg-notification-config` 为损坏 JSON 时 `safeJsonParse`
   回落默认值并被当成"显式值"，旧通知展示 key 不被采纳且被删除；仅损坏 JSON 可达，
   故本次未修。`MatrixNotificationService.ts` 的 `migrateLegacyDisplayConfig()`。
-- `check:settings-wiring` 的扫描面：只覆盖 `src/views/settingsWindow/**/*.vue` 的直接
-  写入，写入搬进 store/util/service 后即脱离视野；根本修法是改扫持久层或建
-  key→owner→consumer 清单（设计工作）。`scripts/check-settings-wiring.mjs`。
-- 两个守门剩余的口径缺口：`--update` 只拒绝抬高数量，仍允许"同数量换键"（正常运行时的
-  键名子集校验挡不住 `--update`）；`check:component-contracts` 冻结基线 32 条，其中约
-  19 条是既有的真实断线（GuestModeBanner 按钮、ThreepidManager 增删、RoomSessionList
-  批量、UserMenuHeader 的 `avatar-click` 等），本次不修。`scripts/check-component-contracts.mjs`
+- `check:settings-wiring` 的扫描面（**Task 5 已解决**）：旧口径只覆盖
+  `src/views/settingsWindow/**/*.vue` 的直接写入，写入搬进 store/util/service 后即脱离视野；
+  Task 5 改为持久层发现 + `scripts/settings-wiring-manifest.json` 清单契约（见 13.4）。
+- 两个守门剩余的口径缺口（**Task 5 已解决**）：`--update` 现在也走键名子集校验
+  （同数量换键会被拒绝）；`check:component-contracts` 冻结基线已由 32 降为 0，新增
+  `skip` 即 FAIL、白名单失效会告警，11 条产品断线移入 13.6。`scripts/check-component-contracts.mjs`
   与两个 `*-baseline.json`。
 - `MatrixReceiptService.ts` 由 376 行增至 414 行，越过 400 行红线；`check:file-size`
   在基点即为红色（17 个既有超标），一次性 `--update` 会赦免全部既有增长，故本阶段不重构，
@@ -1011,11 +1024,13 @@ init-iife 会替换 `window.Notification`，并把 `requestPermission` / `permis
 - `sendNotification` 未 await、无 catch：发送失败没有隔离（既有行为，本次未改动）。
 - 每个开关双写：`v-model` 与 `@update:value` 同时触发 handler，绕过 `writeConfig` 去重；
   `NotificationSettings.vue`。
-- orphan locale key：已删除开关与控件的文案残留，未清理。
+- orphan locale key：已删除开关与控件的文案残留，未清理（**Task 5 已加守门**：
+  `check:i18n-dead-keys` 以基线冻结当前孤儿集合并在 CI 拦截新增，Task 7 负责把基线降下来）。
 - `.photo-wall` 零使用：`@extend .bubble-oneself` 的选择器没有使用方，复活时需补选择器；
   `render-message.scss`。
-- 守门实现 nits：Windows 反斜杠路径会让白名单/基线失配；`skip` 会降低总数却不影响退出码；
-  白名单条目失配无人提示；两个守门脚本。
+- 守门实现 nits（**Task 5 已修复**）：Windows 反斜杠路径会让白名单/基线失配（已统一 POSIX）；
+  `skip` 会降低总数却不影响退出码（已改为新增 skip 即 FAIL）；白名单条目失配无人提示
+  （已加活性告警）。
 
 **（3）移动端平行实现缺口**
 
@@ -1026,3 +1041,31 @@ init-iife 会替换 `window.Notification`，并把 `requestPermission` / `permis
 - mobile `LabsSettings.vue` 仍写桌面已删除的 labs 死 key（`tjg-lab-features` /
   `tjg-debug-mode` / `tjg-show-performance` 等），全仓无运行时消费方；属移动端新功能
   缺口，不是本分支引入的回归。
+
+### 13.6 组件事件断线 follow-up（Task 5 移出冻结基线）
+
+Task 5 把 `check:component-contracts` 的 32 条冻结基线收紧到 **0**：3 条能接线的一行接线、
+12 条死声明直接删除、1 条检测器误报（`renderMessage/index::jump2Reply`）随"全局组件名按
+`src/typings/components.d.ts` 的路径派生名解析"消失、5 条设计上可选的进入 `ACCEPTED_PATTERNS`
+并写明理由。剩下 **11 条产品行为断线**从基线移出，登记在本节；同时在
+`scripts/check-component-contracts.mjs` 的 `ACCEPTED_PATTERNS` 里以 `followUp` 字段挂账，
+守门每次运行都会打印 `todo` 提示——它们不再是被冻结的静默数字，而是可检索的待办。
+每条都带 file:line 与"缺什么"；补全需要产品决策或跨模块改动，故不属本次债务清理范围。
+
+| # | 断线 | 触发点（emit） | 挂载点 | 缺什么 |
+| --- | --- | --- | --- | --- |
+| 1 | `ThreepidManager` 邮箱/手机增删解绑 | `src/components/userMenu/ThreepidManager.vue:158`（add-email）/`:165`（add-phone）/`:152`（unbind）；按钮 `:33`/`:74`/`:19`、`:55` | `src/views/settingsWindow/tabs/AccountSettings.vue:122`（`<ThreepidManager />`，零 props 零监听） | 邮箱/手机管理 100% 不生效：输入框清空得像成功，请求从不发出。后端能力已在 `src/composables/user/useAccount.ts:46-64`（`getThreePids`/`addThreePid`/`bindThreePid`/`deleteThreePid`/`unbindThreePid`，`useAccount` 返回值 `:121` 起导出）但零生产消费方；需要接线 + 格式校验 + 错误反馈 |
+| 2 | `UserMenuHeader::avatar-click` | `src/components/userMenu/UserMenuHeader.vue:133`（`handleAvatarClick`，emit 在 `:134`；`.user-avatar @click` 在 `:4`，`cursor:pointer` 在 `:188`） | `src/components/userMenu/UserMenuDropdown.vue:7`、`UserMenuMobile.vue:9`（只绑 `@theme-toggle`） | 可点击头像无任何行为；需要产品决定：打开个人资料 / 打开设置 / 仅关闭菜单 |
+| 3 | `RoomInviteActions::error` | `src/components/room/RoomInviteActions.vue:42`（接受失败）、`:56`（拒绝失败） | `src/components/workbench/TjgRoomListItem.vue:79-83`（只绑 `@accepted`/`@rejected`） | 接受/拒绝失败只有 `logger.error`，用户完全无感知。注意成功链路同样惰性：`RoomSessionList.vue:47-48` 转发给可选 `onAcceptInvite?`/`onRejectInvite?`，唯一生产消费方 `src/views/homeWindow/message/index.vue:22-36` 两个都没传；诚实的修法是在 `RoomInviteActions`/facade 内部就地给出错误反馈 |
+| 4 | `GuestModeBanner::exit` / `::upgrade` | `src/components/common/GuestModeBanner.vue:30` / `:27`（声明 `:47-50`） | `src/layout/index.vue:8`（`<GuestModeBanner :visible="isGuestMode" :guest-user-id="guestUserId" />`，零监听） | 半成品：`isGuestMode`（`layout/index.vue:232`）与 `guestUserId`（`:233`）从未被置真，横幅永不渲染；`MatrixGuestService` 除测试外无引用。需要产品决定"实现游客态 + upgrade/exit"还是"删除横幅 + 挂载 + refs" |
+| 5 | `LoginBottomBar::guest-login` | `src/views/loginWindow/LoginBottomBar.vue:54`（声明 `:79`，`data-test="guest-login-btn"`） | `src/views/loginWindow/Login.vue:35-43`（7 个事件绑了 6 个，没有 `@guest-login`） | 用户可见的死入口；同时 i18n key `login.guest` 在 `locales/{zh-CN,en}/login.json` 缺失，行内渲染原始 key。需要实现游客登录或移除该行 |
+| 6 | `ThreadPanel::sendReply` | `src/components/thread/ThreadPanel.vue:103`（`handleSendReply`；声明 `:90`） | `src/components/rightBox/chatBox/ChatModals.vue:66-69`（唯一挂载：`v-model:show` + props，无监听） | 点发送直接丢弃输入（无 store/service 调用、无乐观追加），`loadThreadReplies()`（`:113-115`）是设 `[]` 的 stub。需接 `matrixThreadService.sendThreadReply`（`MatrixThreadService.ts:67`）/ `getThreadRepliesViaApi`（`:359`） |
+| 7 | `SpaceListItemCard::contextmenu` | `src/components/workbench/SpaceListItemCard.vue:12`（卡片 `@contextmenu`，原生 `MouseEvent`；声明 `:122`） | `src/components/workbench/SpaceListPane.vue:78-85`、`:98-107`、`:120-129`（绑了 click/pin/settings/leave/delete，没有 `@contextmenu`）；`SpaceListPane` 不转发，`src/views/homeWindow/SpaceList.vue:80` 也没监听 | 右键空间卡无任何反应（出生即死，无提交绑定过）。需要右键菜单设计：卡片内 `ContextMenu`（参照 `TjgRoomListItem.vue:14/245-248`）或逐层转发，否则删除 |
+| 8 | `RoomSessionList::batchToggle`（潜在，无用户可见破坏） | `src/components/workbench/RoomSessionList.vue:125`（`handleBatchToggle`；子组件 `@batch-toggle` 在 `:49`，声明 `:119`） | `src/views/homeWindow/message/index.vue:22-35`（不传批量 props、不监听） | 只有 `TjgRoomListItem` 在 `batchMode` 为真时才触发（`TjgRoomListItem.vue:16-21`/`:235-241`/`:266-268`），但没有任何生产调用方传 `batch-mode`/`batch-selected-ids`；桌面批量模式没有入口/owner（移动端有 `MobileBatchToolbar`）。需要产品决定接线还是删除 props + emit + 复选框分支 |
+
+补充（不计入上表，检测器口径说明）：`renderMessage/index::jump2Reply` 的"无人监听"是
+检测器误报，已随全局组件名解析修复；但历史窗口仍有**逐使用处**的真实缺口——
+`src/views/multiMsgWindow/index.vue:31-38` 与 `src/views/chatHistory/index.vue:81-90`
+在 `<RenderMessage>` 上不绑 `@jump2-reply`，回复气泡点击无响应。本守门的事件判据是"所有
+使用处的并集"，表达不了这种"一处监听、另一处断线"，故只能在此登记为人工复核项。
+
