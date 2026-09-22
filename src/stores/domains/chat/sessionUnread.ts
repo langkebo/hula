@@ -10,11 +10,18 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
  * - `count`：本机未读数（界面真值）。
  * - `updatedAt`：本条账本的写入时间（**本机** `Date.now()`，epoch ms）。用于判定「账本写入之后
  *   房间是否又来了新消息」：`activeTime > updatedAt` 说明服务端列表里的最后一条消息比账本还新。
- *   注意 `activeTime` 来自服务端（事件时间），与 `updatedAt` 是不同时钟：这里假设两者同量级
- *   （偏差远小于「有新消息」的间隔）。时钟大幅漂移时判定退化为保守分支（不误删未读，可能不收敛）。
+ *   注意 `activeTime` 来自服务端（事件时间），与 `updatedAt` 是不同时钟。本机时钟**超前**会让
+ *   `updatedAt` 偏大，`activeTime <= updatedAt` 更容易成立，判定因此更偏向收敛（更激进）：若确有
+ *   一条本机还没记账的新消息、而它的服务端事件时间仍低于被抬高的 `updatedAt`，更小的服务端计数
+ *   就可能把这条真实未读一起抹掉。本机时钟**滞后**则相反，判定偏保守（不误删未读，但可能不收敛）。
  * - `settledServerCount`：服务端 `unread_count` 中已经被本机结算（读过 / 已看到）的部分。
+ * - `observedServerCount`：最近一次与服务端快照对账时看到的服务端 `unread_count`。用来判定账本
+ *   里的 `count` 是否包含「服务端尚未确认的本机增量」（`count > observedServerCount`）：服务端
+ *   快照直接写出的账本（`count` 等于当时的服务端计数）在别的设备读完后可以立即收敛，不必依赖
+ *   `activeTime` / `updatedAt` 这种跨时钟比较（见 `apply` 情况 3b）。
  *
- * **不变量**：同步状态下 `服务端 unread_count === settledServerCount + count`。
+ * **不变量**：同步状态下 `服务端 unread_count === settledServerCount + count`（`observedServerCount`
+ * 就是对账那一刻等式左侧的服务端观测值）。
  * 下面三条规则共同维护它，任何一处改动都要保持自洽：
  * 1. 本机读掉未读（`markRead`）→ `settledServerCount += readCount` 且 `count = 0`；
  * 2. 服务端快照对账（`apply` 的情况 1 / 3a）→ 用水位吸收服务端当前计数；
@@ -31,6 +38,7 @@ export interface UnreadLedgerEntry {
   count: number
   updatedAt: number
   settledServerCount?: number
+  observedServerCount?: number
 }
 
 type UnreadCache = Record<string, UnreadLedgerEntry>
@@ -79,7 +87,9 @@ export const useSessionUnreadStore = defineStore(
         count: sanitizeCount(entry.count),
         updatedAt: typeof entry.updatedAt === 'number' ? entry.updatedAt : 0,
         settledServerCount:
-          typeof entry.settledServerCount === 'number' ? sanitizeCount(entry.settledServerCount) : undefined
+          typeof entry.settledServerCount === 'number' ? sanitizeCount(entry.settledServerCount) : undefined,
+        observedServerCount:
+          typeof entry.observedServerCount === 'number' ? sanitizeCount(entry.observedServerCount) : undefined
       }
     }
 
@@ -103,26 +113,35 @@ export const useSessionUnreadStore = defineStore(
       return lastReadActiveTimeStore.value[uid]
     }
 
-    /** 本机产生的未读变化写入账本：刷新时间戳，保留已结算水位 */
+    /** 本机产生的未读变化写入账本：刷新时间戳，保留已结算水位与服务端观测值 */
     const writeLocalEntry = (cache: UnreadCache, roomId: string, count: number) => {
       const existing = normalizeEntry(cache[roomId])
       cache[roomId] = {
         count: sanitizeCount(count),
         updatedAt: Date.now(),
-        settledServerCount: existing?.settledServerCount
+        settledServerCount: existing?.settledServerCount,
+        observedServerCount: existing?.observedServerCount
       }
     }
 
     /**
-     * 服务端快照对账后的账本写入：刷新计数与已结算水位，保留账本的写入时间。
+     * 服务端快照对账后的账本写入：刷新计数、已结算水位与服务端观测值，保留账本的写入时间。
      * 保留 `updatedAt` 是关键：它标记的是「本机最后一次记账」，对账本身不产生新消息。
      */
-    const writeReconciledEntry = (cache: UnreadCache, roomId: string, count: number, settledServerCount: number) => {
+    const writeReconciledEntry = (
+      cache: UnreadCache,
+      roomId: string,
+      count: number,
+      settledServerCount: number,
+      observedServerCount?: number
+    ) => {
       const existing = normalizeEntry(cache[roomId])
       cache[roomId] = {
         count: sanitizeCount(count),
         updatedAt: existing?.updatedAt || Date.now(),
-        settledServerCount: sanitizeCount(settledServerCount)
+        settledServerCount: sanitizeCount(settledServerCount),
+        observedServerCount:
+          observedServerCount === undefined ? existing?.observedServerCount : sanitizeCount(observedServerCount)
       }
     }
 
@@ -250,22 +269,32 @@ export const useSessionUnreadStore = defineStore(
 
         // 情况3：没有lastReadTime记录（首次加载或从未标记已读）
         // 回执开时服务端即真源，保持既有的 Math.max(账本, 服务端) 不变；回执关时多一条跨设备
-        // 收敛路径：服务端更小且账本之后没有新消息（activeTime 未前移）说明别的设备已读过。
+        // 收敛路径：服务端更小说明别的设备已读过，采信服务端并写回账本。
+        //
+        // 收敛不能只看 `activeTime`：别的设备读完之后到来的事件同样会推进 `activeTime`，把它当
+        // 唯一判据会把「服务端更小（别的设备已读）」误判成「有本机还没记的新消息」，于是把别的
+        // 设备已经读掉的条数重新挂回角标（整分支评审 I1）。判据拆成两条，取或：
+        // - `noNewerMessage`：账本写入之后没有服务端可见的新事件；
+        // - `!localBeyondServer`：账本 `count` 没有超过最近一次观察到的服务端计数，即账本里的
+        //   未读全部来自服务端快照，不存在「本机记了、服务端还不知道」的本地增量。
+        // 只有「本机确实记了服务端不知道的未读，且账本之后已有新事件」时才退回 Math.max，
+        // 保护真实未读不被更小的服务端值抹掉。
         const serverCount = sanitizeCount(session.unreadCount)
         if (entry) {
+          const localBeyondServer = entry.observedServerCount === undefined || entry.count > entry.observedServerCount
           const noNewerMessage = activeTime <= entry.updatedAt
-          const converged = !receiptsEnabled && serverCount < entry.count && noNewerMessage
+          const converged = !receiptsEnabled && serverCount < entry.count && (noNewerMessage || !localBeyondServer)
           const finalCount = converged ? serverCount : Math.max(entry.count, serverCount)
           if (session.unreadCount !== finalCount) {
             updates[session.roomId] = finalCount
           }
-          writeReconciledEntry(cache, session.roomId, finalCount, serverCount - finalCount)
+          writeReconciledEntry(cache, session.roomId, finalCount, serverCount - finalCount, serverCount)
         } else {
           const finalCount = serverCount
           if (session.unreadCount !== finalCount) {
             updates[session.roomId] = finalCount
           }
-          writeReconciledEntry(cache, session.roomId, finalCount, 0)
+          writeReconciledEntry(cache, session.roomId, finalCount, 0, serverCount)
         }
       })
 
@@ -342,7 +371,7 @@ export const useSessionUnreadStore = defineStore(
     }
   },
   {
-    // 未读账本整体持久化（本机计数 + 已读水位 + 结算水位）：
+    // 未读账本整体持久化（本机计数 + 已读水位 + 结算水位 + 服务端观测值）：
     //
     // - `lastReadActiveTimeStore`：apply 的「情况 1」（activeTime <= lastReadTime 时清零并纠正
     //   服务端脏未读数）依赖它，丢了它冷启动就退回兜底逻辑，把已读房间的角标写回来。
@@ -350,10 +379,10 @@ export const useSessionUnreadStore = defineStore(
     //   关闭期间来 1 条 → 重启」会在冷启动时退回服务端累计值，把已读的 3 条重新算进角标。
     //
     // 跨设备收敛由 apply 的「情况 3」显式处理（**仅回执关**，回执开时服务端即真源、行为不变）：
-    // 服务端计数比账本更小、且账本之后没有新消息（activeTime 未前移）时判定为别的设备已读，
-    // 采信服务端并写回账本；因此持久化账本不会像早期那样把「别的设备已读完」的房间角标永久
-    // 顶住。uid 已作为一级键做账号隔离，登录态切换时的清除点是显式登出 / 账号重置
-    // （SessionLogoutService）。
+    // 服务端计数比账本更小、且账本没有本机未对账增量（`observedServerCount`）时判定为别的设备
+    // 已读，采信服务端并写回账本；因此持久化账本不会像早期那样把「别的设备已读完」的房间角标
+    // 永久顶住，也不会因为别的设备读完后到来的事件推进了 `activeTime` 就卡住（I1）。
+    // uid 已作为一级键做账号隔离，登录态切换时的清除点是显式登出 / 账号重置（SessionLogoutService）。
     persist: {
       pick: ['cacheStore', 'lastReadActiveTimeStore']
     }

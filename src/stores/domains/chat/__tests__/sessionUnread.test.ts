@@ -285,5 +285,40 @@ describe('useSessionUnreadStore', () => {
       expect(updates).toEqual({ 'room-a': 1 })
       expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(1)
     })
+
+    /**
+     * 回归（整分支评审 I1）：跨设备收敛不能只靠 `activeTime <= updatedAt`。
+     *
+     * 账本条目来自服务端快照（从未打开过的房间，没有 lastRead）：第一次启动服务端报 3。
+     * 本机离线期间别的设备把房间读完（服务端归零），随后又来了一条新事件，`activeTime`
+     * 因此前移到账本写入之后。冷启动时服务端只剩 1 条，正确未读就是这 1 条；旧实现因为
+     * `noNewerMessage = false` 退回 `Math.max(3, 1) = 3`，把别的设备已读掉的 2 条重新挂回来。
+     */
+    it('冷启动收敛：账本来自服务端快照时，别的设备已读且 activeTime 前移仍采信服务端', async () => {
+      localStorage.clear()
+
+      // 第一次启动：服务端报 3 条未读，房间从未打开（无 lastRead 记录），账本整体持久化
+      bootPersistedPinia()
+      useSettingStore().setSendReadReceiptsEnabled(false)
+      const first = useSessionUnreadStore()
+      const ledgerAt = Date.now() - 60_000
+      first.apply('uid-1', [makeSession({ roomId: 'room-a', unreadCount: 3, activeTime: ledgerAt })])
+      expect(first.cacheStore['uid-1']?.['room-a']?.count).toBe(3)
+      expect(first.cacheStore['uid-1']?.['room-a']?.settledServerCount).toBe(0)
+      await nextTick()
+
+      // 冷启动：离线期间别的设备读完（服务端归零）后又来 1 条新事件，activeTime 前移
+      bootPersistedPinia()
+      useSettingStore().setSendReadReceiptsEnabled(false)
+      const restarted = useSessionUnreadStore()
+      expect(restarted.cacheStore['uid-1']?.['room-a']?.count).toBe(3)
+
+      const updates = restarted.apply('uid-1', [
+        makeSession({ roomId: 'room-a', unreadCount: 1, activeTime: ledgerAt + 120_000 })
+      ])
+
+      expect(updates).toEqual({})
+      expect(restarted.cacheStore['uid-1']?.['room-a']?.count).toBe(1)
+    })
   })
 })
