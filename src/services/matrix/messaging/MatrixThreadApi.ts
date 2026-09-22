@@ -255,6 +255,11 @@ export class MatrixThreadApi extends BaseMatrixService {
   /** 通过 API 获取话题回复列表
    *
    * SDK getThreadReplies 返回 ThreadReplyResponse[]（数组），Array.isArray 判定有效。
+   *
+   * 失败时向上抛出（与同族 addThreadReplyViaApi / subscribeToThreadViaApi 一致），
+   * 让调用方能把「加载失败」与「空回复列表」区分开——否则加载错误会伪装成
+   * “暂无回复”。仅当 threadingManager 不可用（客户端未暴露扩展）时，按同族
+   * 只读方法（getSubscribedThreads 等）的约定返回空数组。
    */
   async getThreadRepliesViaApi(roomId: string, threadId: string, limit?: number): Promise<ThreadReplyResponse[]> {
     const manager = getThreadingManager()
@@ -264,7 +269,7 @@ export class MatrixThreadApi extends BaseMatrixService {
       return Array.isArray(result) ? result : []
     } catch (err) {
       logger.error(`[MatrixThread] 获取线程回复失败: ${err}`)
-      return []
+      throw err
     }
   }
 

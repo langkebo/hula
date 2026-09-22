@@ -415,6 +415,13 @@ describe('MatrixThreadApi', () => {
       expect(await api.getThreadRepliesViaApi('!room', 't1')).toEqual([])
     })
 
+    it('should rethrow errors so callers can tell failure from empty', async () => {
+      enableManager()
+      mockManager.getThreadReplies.mockRejectedValue(new Error('boom'))
+
+      await expect(api.getThreadRepliesViaApi('!room', 't1')).rejects.toThrow('boom')
+    })
+
     it('should return empty when manager unavailable', async () => {
       disableManager()
       expect(await api.getThreadRepliesViaApi('!room', 't1')).toEqual([])
