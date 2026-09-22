@@ -3,7 +3,7 @@ import { RoomTypeEnum } from '@/enums'
 import type { RoomInfo } from '@/services/types'
 import matrixClientService from '../MatrixClientService'
 import matrixEventServiceLocal from '../MatrixEventService'
-import { matrixReceiptService } from '../messaging/MatrixReceiptService'
+import { matrixReadStateService } from '../messaging/MatrixReadStateService'
 import matrixSlidingSyncService from '../sync/MatrixSlidingSyncService'
 import { matrixRoomCreationService } from './CreationService'
 import { findDmCounterpart, isDirectMessageRoomFromRoom } from './roomTypeUtils'
@@ -58,7 +58,7 @@ export class MatrixRoomRealtimeService {
     const client = matrixClientService.getClient()
     const isDm = isDirectMessageRoomFromRoom(client, room)
     const type = isDm || room.getJoinedMemberCount() === 2 ? RoomTypeEnum.SINGLE : RoomTypeEnum.GROUP
-    const unreadCount = matrixReceiptService.getUnreadCount(room.roomId)
+    const unreadCount = matrixReadStateService.getUnreadCount(room.roomId)
     const lastEvent = room.getLiveTimeline().getEvents().slice(-1)[0]
     const activeTime = lastEvent?.getTs?.() || 0
 

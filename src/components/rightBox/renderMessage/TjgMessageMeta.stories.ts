@@ -3,7 +3,7 @@ import { defineComponent } from 'vue'
 import { MessageStatusEnum } from '@/enums'
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
-import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
+import { matrixReadStateService } from '@/services/matrix/messaging/MatrixReadStateService'
 import { matrixTypingService } from '@/services/matrix/messaging/MatrixTypingService'
 import { createSidebarFrameStyle } from '~/.storybook/harness'
 import TjgMessageMeta from './TjgMessageMeta.vue'
@@ -35,7 +35,7 @@ const fakeClient = {
   }
 ).isLocalEventId = () => false
 ;(
-  matrixReceiptService as unknown as {
+  matrixReadStateService as unknown as {
     getReadReceipts: (roomId: string, eventId: string) => unknown[]
   }
 ).getReadReceipts = () => [

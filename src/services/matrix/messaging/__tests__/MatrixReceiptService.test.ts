@@ -166,41 +166,6 @@ describe('MatrixReceiptService', () => {
     expect(mockReceiptManager.sendReadReceiptByEventId).toHaveBeenCalledTimes(2)
   })
 
-  it('使用 SDK 回执数据并补全成员展示信息', () => {
-    mockReceiptManager.getReceipt.mockReturnValue([
-      {
-        userId: '@user1:matrix.org',
-        eventId: '$event',
-        ts: 123456
-      }
-    ])
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
-
-    const receipts = matrixReceiptService.getReadReceipts('!room:id', '$event')
-
-    expect(receipts).toEqual([
-      {
-        userId: '@user1:matrix.org',
-        eventId: '$event',
-        timestamp: 123456,
-        avatarUrl: 'mxc://matrix.org/avatar/@user1:matrix.org',
-        displayName: 'user1'
-      }
-    ])
-  })
-
-  it('获取阅读者时排除自己', () => {
-    mockReceiptManager.getReceipt.mockReturnValue([
-      { userId: '@me:matrix.org', eventId: '$event', ts: 1 },
-      { userId: '@user1:matrix.org', eventId: '$event', ts: 2 }
-    ])
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
-
-    const readers = matrixReceiptService.getEventReaders('!room:id', '$event')
-
-    expect(readers).toEqual(['@user1:matrix.org'])
-  })
-
   it('离线时将阅读回执加入队列', async () => {
     // 模拟离线状态
     const originalOnLine = navigator.onLine
@@ -320,31 +285,14 @@ describe('MatrixReceiptService', () => {
     )
   })
 
-  it('未找到房间时未读数为 0', () => {
-    mockClient.getRoom.mockReturnValue(null)
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
-
-    expect(matrixReceiptService.getUnreadCount('!room:id')).toBe(0)
-  })
-
-  it('优先使用 SDK room.getUnreadNotificationCount', () => {
-    const room = {
-      getUnreadNotificationCount: vi.fn(() => 5)
-    }
-    mockClient.getRoom.mockReturnValue(room as unknown as Room)
-    vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
-
-    expect(matrixReceiptService.getUnreadCount('!room:id')).toBe(5)
-  })
-
   // FT-133: clearCache 应清理缓存的 client/manager 和 pending 任务
   describe('clearCache (FT-133: explicit cache cleanup)', () => {
-    it('清理已缓存的 client 和 manager 引用', () => {
-      mockReceiptManager.getReceipt.mockReturnValue([])
+    it('清理已缓存的 client 和 manager 引用', async () => {
+      mockReceiptManager.setReadMarker.mockResolvedValue(undefined)
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
 
-      // 触发缓存
-      matrixReceiptService.getReadReceipts('!room:id', '$event')
+      // 通过发送路径触发 manager 缓存
+      await matrixReceiptService.sendReadMarker('!room:id', '$event')
       expect((matrixReceiptService as any).cachedClient).toBeTruthy()
       expect((matrixReceiptService as any).cachedManager).toBeTruthy()
 
