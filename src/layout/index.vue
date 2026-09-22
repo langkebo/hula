@@ -287,8 +287,8 @@ const playMessageSound = async () => {
 
   try {
     const audio = new Audio('/sound/message.mp3')
-    const volume = settingStore.notification?.volume ?? 80
-    audio.volume = Math.min(1, Math.max(0, volume / 100))
+    // 音量滑块已删除，notification.volume 也不再持久化：提示音统一按 80% 播放
+    audio.volume = 0.8
     await audioManager.play(audio, 'message-notification')
   } catch (error) {
     logger.warn('播放消息音效失败:', error)

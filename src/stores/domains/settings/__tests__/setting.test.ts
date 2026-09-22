@@ -51,7 +51,6 @@ describe('SettingStore', () => {
     it('has default notification settings', () => {
       const store = useSettingStore()
       expect(store.messageSoundEnabled).toBe(true)
-      expect(store.notificationVolume).toBe(80)
     })
 
     it('has default preference settings', () => {
@@ -487,29 +486,17 @@ describe('SettingStore', () => {
       expect(store.messageSoundEnabled).toBe(false)
     })
 
-    it('setNotificationVolume clamps to 0-100', () => {
-      const store = useSettingStore()
-      store.setNotificationVolume(150)
-      expect(store.notificationVolume).toBe(100)
-      store.setNotificationVolume(-10)
-      expect(store.notificationVolume).toBe(0)
-      store.setNotificationVolume(50)
-      expect(store.notificationVolume).toBe(50)
-    })
-
     it('ensureNotificationSettings repairs missing or invalid notification state', () => {
       const store = useSettingStore()
-      store.notification = { messageSound: undefined as never, volume: 999 as never }
+      store.notification = { messageSound: undefined as never }
       store.ensureNotificationSettings()
       expect(store.messageSoundEnabled).toBe(true)
-      expect(store.notificationVolume).toBe(100)
     })
 
-    it('updateNotificationSettings applies partial updates through normalized values', () => {
+    it('updateNotificationSettings applies partial messageSound updates', () => {
       const store = useSettingStore()
-      store.updateNotificationSettings({ messageSound: false, volume: -20 })
+      store.updateNotificationSettings({ messageSound: false })
       expect(store.messageSoundEnabled).toBe(false)
-      expect(store.notificationVolume).toBe(0)
     })
   })
 

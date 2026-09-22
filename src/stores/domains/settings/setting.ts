@@ -10,7 +10,6 @@ import {
   LEGACY_PREFERENCE_STORAGE_KEYS,
   normalizeBurnDefaultDuration,
   normalizeEmojiSize,
-  normalizeNotificationVolume,
   normalizeSpaceDefaultNotification,
   normalizeTheme,
   normalizeThreadNotificationLevel,
@@ -64,8 +63,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       isConceal: false
     },
     notification: {
-      messageSound: true,
-      volume: 80
+      messageSound: true
     },
     secretChat: {
       enabled: false,
@@ -104,7 +102,6 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     globalShortcutEnabled: (state: STO.Setting) => state.shortcuts?.globalEnabled ?? false,
     screenshotConcealEnabled: (state: STO.Setting) => state.screenshot?.isConceal ?? false,
     messageSoundEnabled: (state: STO.Setting) => state.notification?.messageSound ?? true,
-    notificationVolume: (state: STO.Setting) => normalizeNotificationVolume(state.notification?.volume),
     messageConfirmEnabled: (state: STO.Setting) => state.preferences?.messageConfirm ?? false,
     linkPreviewEnabled: (state: STO.Setting) => state.preferences?.linkPreview ?? true,
     emojiConvertEnabled: (state: STO.Setting) => state.preferences?.emojiConvert ?? true,
@@ -510,24 +507,16 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
         return
       }
       this.notification.messageSound = this.notification.messageSound ?? defaults.messageSound
-      this.notification.volume = normalizeNotificationVolume(this.notification.volume)
     },
-    updateNotificationSettings(partial: Partial<{ messageSound: boolean; volume: number }>) {
+    updateNotificationSettings(partial: Partial<{ messageSound: boolean }>) {
       this.ensureNotificationSettings()
       if (typeof partial.messageSound === 'boolean') {
         this.notification.messageSound = partial.messageSound
-      }
-      if (typeof partial.volume === 'number') {
-        this.notification.volume = normalizeNotificationVolume(partial.volume)
       }
     },
     /** 设置消息提示音开关 */
     setMessageSoundEnabled(enabled: boolean) {
       this.updateNotificationSettings({ messageSound: enabled })
-    },
-    /** 设置消息提示音音量（0-100） */
-    setNotificationVolume(volume: number) {
-      this.updateNotificationSettings({ volume })
     },
     ensureSecretChatSettings() {
       if (!this.secretChat) {

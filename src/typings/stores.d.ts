@@ -119,8 +119,6 @@ declare namespace STO {
     notification: {
       /** 是否开启消息提示音 */
       messageSound: boolean
-      /** 提示音音量，范围 0-100 */
-      volume: number
     }
     /** 私密聊天设置 */
     secretChat: {

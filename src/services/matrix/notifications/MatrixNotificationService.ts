@@ -15,6 +15,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
+import { clearDndMirrorIfAccountChanged, DND_MIRROR_STORAGE_KEYS, markDndMirrorOwner } from './dndMirror'
 import { isWithinDndWindow as computeWithinDndWindow, type DndWindow, type DndWindowInput } from './dndWindow'
 import {
   type NotificationDecisionPreferences,
@@ -115,10 +116,6 @@ class MatrixNotificationService extends BaseMatrixService {
   private static readonly CONFIG_STORAGE_KEY = 'tjg-notification-config'
   private static readonly ACCOUNT_DATA_TYPE = 'io.hula.notification_settings'
   private static readonly DND_ACCOUNT_DATA_TYPE = 'io.hula.dnd_settings'
-  private static readonly DND_ENABLED_STORAGE_KEY = 'tjg-push-dnd'
-  private static readonly DND_START_STORAGE_KEY = 'tjg-push-dnd-start'
-  private static readonly DND_END_STORAGE_KEY = 'tjg-push-dnd-end'
-  private static readonly DND_UPDATED_AT_STORAGE_KEY = 'tjg-push-dnd-updated-at'
 
   constructor() {
     super()
@@ -378,19 +375,42 @@ class MatrixNotificationService extends BaseMatrixService {
   }
 
   /**
-   * 构造时从 localStorage 镜像同步水合。
+   * 解析当前账号 uid，用作 DND 镜像的归属。
    *
-   * 账号数据在启动时并不可用，因此必须在这里读本地镜像，否则不打开设置窗口就不会生效。
+   * 客户端未就绪 / 尚未登录时返回 null：此时不写无主镜像，也不做换号判定
+   * （没有身份就没有隔离维度），读取退回设备本地默认值。
+   */
+  private resolveMirrorUserId(): string | null {
+    try {
+      const client = matrixClientService.getClient() as { getUserId?: () => string | null } | null
+      return client?.getUserId?.() ?? null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * 从 localStorage 镜像同步水合。
+   *
+   * 读取前先做账号归属校验：镜像 owner 与当前账号不一致（换账号）时整份作废，
+   * 避免上一个账号较新的 `updatedAt` 挡住新账号的服务端值（见 `dndMirror`）。
+   * 读取成功后记录当前账号为 owner。
    */
   private loadDndFromMirror(): void {
     try {
-      this.dndSettings = {
-        enabled: localStorage.getItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY) === 'true',
-        startTime: parseStoredDndTimestamp(localStorage.getItem(MatrixNotificationService.DND_START_STORAGE_KEY)),
-        endTime: parseStoredDndTimestamp(localStorage.getItem(MatrixNotificationService.DND_END_STORAGE_KEY)),
-        updatedAt:
-          parseStoredDndTimestamp(localStorage.getItem(MatrixNotificationService.DND_UPDATED_AT_STORAGE_KEY)) ?? 0
+      const userId = this.resolveMirrorUserId()
+      if (clearDndMirrorIfAccountChanged(userId)) {
+        this.dndSettings = { enabled: false, startTime: null, endTime: null, updatedAt: 0 }
+        return
       }
+
+      this.dndSettings = {
+        enabled: localStorage.getItem(DND_MIRROR_STORAGE_KEYS.enabled) === 'true',
+        startTime: parseStoredDndTimestamp(localStorage.getItem(DND_MIRROR_STORAGE_KEYS.start)),
+        endTime: parseStoredDndTimestamp(localStorage.getItem(DND_MIRROR_STORAGE_KEYS.end)),
+        updatedAt: parseStoredDndTimestamp(localStorage.getItem(DND_MIRROR_STORAGE_KEYS.updatedAt)) ?? 0
+      }
+      markDndMirrorOwner(userId)
     } catch (err) {
       logger.warn('读取勿扰时段设置失败:', err)
     }
@@ -405,8 +425,8 @@ class MatrixNotificationService extends BaseMatrixService {
   private hasDndMirror(): boolean {
     try {
       return (
-        localStorage.getItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY) !== null ||
-        localStorage.getItem(MatrixNotificationService.DND_UPDATED_AT_STORAGE_KEY) !== null
+        localStorage.getItem(DND_MIRROR_STORAGE_KEYS.enabled) !== null ||
+        localStorage.getItem(DND_MIRROR_STORAGE_KEYS.updatedAt) !== null
       )
     } catch {
       return false
@@ -421,13 +441,18 @@ class MatrixNotificationService extends BaseMatrixService {
     localStorage.setItem(key, value.toString())
   }
 
-  /** 把勿扰时段（含 `updatedAt`）写入 localStorage 镜像，账号数据水合与 `setDndSettings` 共用。 */
+  /**
+   * 把勿扰时段（含 `updatedAt`）写入 localStorage 镜像，账号数据水合与 `setDndSettings` 共用。
+   *
+   * 同时记录 owner uid，供下次读取做换号判定。
+   */
   private writeDndMirror(settings: DndWindow): void {
     try {
-      localStorage.setItem(MatrixNotificationService.DND_ENABLED_STORAGE_KEY, settings.enabled.toString())
-      this.writeMirroredTimestamp(MatrixNotificationService.DND_START_STORAGE_KEY, settings.startTime)
-      this.writeMirroredTimestamp(MatrixNotificationService.DND_END_STORAGE_KEY, settings.endTime)
-      this.writeMirroredTimestamp(MatrixNotificationService.DND_UPDATED_AT_STORAGE_KEY, settings.updatedAt)
+      localStorage.setItem(DND_MIRROR_STORAGE_KEYS.enabled, settings.enabled.toString())
+      this.writeMirroredTimestamp(DND_MIRROR_STORAGE_KEYS.start, settings.startTime)
+      this.writeMirroredTimestamp(DND_MIRROR_STORAGE_KEYS.end, settings.endTime)
+      this.writeMirroredTimestamp(DND_MIRROR_STORAGE_KEYS.updatedAt, settings.updatedAt)
+      markDndMirrorOwner(this.resolveMirrorUserId())
     } catch (err) {
       logger.warn('写入勿扰时段设置失败:', err)
     }
@@ -625,30 +650,16 @@ class MatrixNotificationService extends BaseMatrixService {
     return shouldNotify(input, decisionPreferences)
   }
 
-  async requestNotificationPermission(): Promise<boolean> {
-    try {
-      if (typeof Notification === 'undefined') {
-        return false
-      }
-
-      if (Notification.permission === 'granted') {
-        return true
-      }
-
-      const permission = await Notification.requestPermission()
-      return permission === 'granted'
-    } catch (err) {
-      logger.error(`[MatrixNotification] 请求通知权限失败: ${err}`)
-      return false
-    }
-  }
-
   /**
    * 发送系统通知前的权限门。
    *
    * `@tauri-apps/plugin-notification` 的 `sendNotification` 返回 `void`（实现是
    * `new window.Notification(...)`），没有 Promise 可以 await，插件内部的 invoke 失败也接不住，
    * 因此调用点唯一能做的失败隔离就是「发之前先判权限」。
+   *
+   * **这里只检查、不申请**：系统权限的申请入口是设置页（`NotificationSettings.vue`
+   * 的 `requestPermission()` 路径）。后台消息到达时弹权限框既打断用户，又容易在
+   * 首条消息时被误拒，通知热路径不该承担这个交互。
    *
    * 非 Tauri 运行时 / 插件不可用时 `isPermissionGranted()` 会抛错：降级为「无权限」并记日志。
    */

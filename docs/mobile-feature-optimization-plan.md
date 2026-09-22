@@ -605,7 +605,7 @@
 | --- | --- | --- |
 | 5.1 存储管理 | 已实现 | 提交 `0bbf7890`。`MobileStorageSettings.vue`：`matrixWorkerHost.getStats()` + `navigator.storage.estimate()` + `clearStores()`。注意 `StoreStats` 没有 `size` 字段，实际字段是 `totalEntries` / `memoryUsageBytes` / `hits` / `misses` / `evictions` / `hitRate`。 |
 | 5.2 推送配置 | 已实现 | 提交 `c80be93d` + 后续入口提交。新增 `MobilePushSettings.vue`（总开关 / 按 kind 分组规则 / 推送设备列表）与 `pushSettingsPresentation` 纯逻辑模块。**pushkey 是推送凭证，界面必须在掩码后展示**，掩码边界由单测固定。 |
-| 5.3 通知详情控制 | 已实现 | 提交 `18c34e03`。新增 `notificationDisplayPreferences` 模块：内容摘要开关 + 关键词高亮 + 优先级。优先级不是被存起来的死值，而是可见度裁定——`high` 突破内容摘要开关、`low` 强制折叠、`medium` 遵循开关；正文隐藏时不参与关键词匹配，避免通过高亮标记泄漏内容。`MatrixNotificationService.buildNotificationDisplay()` 让 `showNotification()` 走同一条决策路径。 |
+| 5.3 通知详情控制 | 已实现 | 提交 `18c34e03`。新增 `notificationDisplayPreferences` 模块：内容摘要开关 + 关键词高亮 + 优先级。优先级不是被存起来的死值，而是可见度裁定——`high` 突破内容摘要开关、`low` 强制折叠、`medium` 遵循开关；正文隐藏时不参与关键词匹配，避免通过高亮标记泄漏内容。`MatrixNotificationService.buildNotificationDisplay()` 是桌面通知发送路径（`messageMutations`）消费的唯一展示决策入口；旧 `showNotification()` 二次发送路径已删除。 |
 
 ### 12.4 邀请权限的模型差异（重要）
 
@@ -1009,8 +1009,6 @@ init-iife 会替换 `window.Notification`，并把 `requestPermission` / `permis
   无法渲染为系统图标，且与"保留 icon"的简报要求冲突——需求级取舍未裁决；
   `MatrixNotificationService.ts`。
 - `sendNotification` 未 await、无 catch：发送失败没有隔离（既有行为，本次未改动）。
-- `showNotification()` 零生产调用方：潜在的第二条发送路径，待删除或正式接线；
-  `MatrixNotificationService.ts`。
 - 每个开关双写：`v-model` 与 `@update:value` 同时触发 handler，绕过 `writeConfig` 去重；
   `NotificationSettings.vue`。
 - orphan locale key：已删除开关与控件的文案残留，未清理。

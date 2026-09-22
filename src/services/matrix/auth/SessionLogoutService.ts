@@ -7,6 +7,7 @@ import { clearMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
 import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
+import { clearDndMirrorCache } from '@/services/matrix/notifications/dndMirror'
 import { clearInvitePolicyCache } from '@/services/matrix/user/invitePolicy'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { createLogger } from '@/utils/Logger'
@@ -54,6 +55,10 @@ export class SessionLogoutService {
       // 邀请策略缓存按 userId 隔离，登出必须回收当前账号那一条：
       // 否则同设备换账号后仍可能读到上一个账号的策略（与未读账本同理，主动回收）。
       clearInvitePolicyCache(port.matrix.getUserId())
+
+      // DND 镜像是设备级 key（跨会话存在）。登出必须整体回收：镜像里较新的 updatedAt
+      // 会在「本地新者胜」规则下，把下一个账号的服务端勿扰窗口永久挡住。
+      clearDndMirrorCache()
 
       if (!preserveTokens) {
         localStorage.removeItem('user')

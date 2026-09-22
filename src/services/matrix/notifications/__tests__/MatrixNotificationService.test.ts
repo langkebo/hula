@@ -616,14 +616,24 @@ describe('MatrixNotificationService', () => {
     const DND_ENABLED_KEY = 'tjg-push-dnd'
     const DND_UPDATED_AT_KEY = 'tjg-push-dnd-updated-at'
 
-    const stubAccountData = (content: Record<string, unknown> | null) => {
+    const stubAccountData = (content: Record<string, unknown> | null, userId = '@alice:test') => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getUserId: () => userId,
         getAccountData: vi.fn(() => (content ? { getContent: () => content } : undefined))
       } as unknown as MatrixClient)
     }
 
+    // setDndSettings 的账号数据同步是副作用（stub 客户端没有 setAccountData 时会打错误日志），
+    // 与 dnd settings 块一样只打桩同步，保证测试输出干净；需要验证真实写入的用例单独 mockRestore。
+    let dndSyncSpy: ReturnType<typeof vi.spyOn>
+
     beforeEach(() => {
       localStorage.clear()
+      dndSyncSpy = vi.spyOn(matrixNotificationService, 'syncDndToAccountData').mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+      dndSyncSpy.mockRestore()
     })
 
     it('applies a legacy server window at boot when the local mirror has no DND yet', async () => {
@@ -675,7 +685,29 @@ describe('MatrixNotificationService', () => {
       expect(matrixNotificationService.getDndSettings().enabled).toBe(false)
     })
 
+    it('does not let the previous account mirror block the next account server window', async () => {
+      // 账号 A 写下一份带未来 updatedAt 的镜像（本机最新）
+      stubAccountData(null, '@alice:test')
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: null, endTime: null })
+      localStorage.setItem(DND_UPDATED_AT_KEY, String(Date.now() + 60_000))
+
+      // 换到账号 B：服务端是更旧的 updatedAt。B 本地没有自己的镜像，
+      // A 的镜像必须被作废，否则「本地新者胜」会把 B 的服务端值永远挡住。
+      stubAccountData({ enabled: true, startTime: 5000, endTime: 6000, updatedAt: 1000 }, '@bob:test')
+
+      await matrixNotificationService.syncDndFromAccountData()
+
+      expect(matrixNotificationService.getDndSettings()).toMatchObject({
+        enabled: true,
+        startTime: 5000,
+        endTime: 6000
+      })
+      expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('true')
+    })
+
     it('stamps the account-data write with a monotonically fresh updatedAt', async () => {
+      // 该用例要验证真实写入，先恢复真实的 syncDndToAccountData
+      dndSyncSpy.mockRestore()
       const setAccountData = vi.fn().mockResolvedValue(undefined)
       vi.mocked(matrixClientService.getClient).mockReturnValue({ setAccountData } as unknown as MatrixClient)
 
@@ -760,24 +792,6 @@ describe('MatrixNotificationService', () => {
     })
   })
 
-  describe('requestNotificationPermission', () => {
-    it('should return false when Notification API is not available', async () => {
-      const originalNotification = window.Notification
-      Object.defineProperty(window, 'Notification', {
-        value: undefined,
-        writable: true
-      })
-
-      const result = await matrixNotificationService.requestNotificationPermission()
-      expect(result).toBe(false)
-
-      Object.defineProperty(window, 'Notification', {
-        value: originalNotification,
-        writable: true
-      })
-    })
-  })
-
   describe('canSendSystemNotification', () => {
     it('returns true when the OS reports the notification permission as granted', async () => {
       isPermissionGrantedMock.mockResolvedValue(true)
@@ -853,12 +867,10 @@ describe('MatrixNotificationService', () => {
     it('never injects folded / highlighted markers into the title', () => {
       localStorage.setItem(PREF_KEY, JSON.stringify({ keywords: ['deploy'], keywordHighlight: true, priority: 'high' }))
       const highlighted = matrixNotificationService.buildNotificationDisplay('Title', 'the deploy is green')
-      // eslint-disable-next-line no-useless-escape
       expect(highlighted.title).not.toMatch(/[[\]*•]/)
 
       localStorage.setItem(PREF_KEY, JSON.stringify({ priority: 'low' }))
       const folded = matrixNotificationService.buildNotificationDisplay('Title', 'the deploy is green')
-      // eslint-disable-next-line no-useless-escape
       expect(folded.title).not.toMatch(/[[\]*•]/)
     })
   })
