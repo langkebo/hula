@@ -70,12 +70,16 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
     deactivateAccount: mockDeactivateAccount,
     getIgnoredUsers: mockGetIgnoredUsers,
     setIgnoredUsers: mockSetIgnoredUsers,
-    setPresence: mockSetPresence,
     getCapabilities: mockGetCapabilities,
     getThirdPartyProtocols: mockGetThirdPartyProtocols,
     getMyRooms: mockGetMyRooms,
     getEventStream: mockGetEventStream
   }
+}))
+
+// setPresence 已从 MatrixAccountService 删除，委托给唯一门控写入点
+vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
+  matrixPresenceService: { setPresence: mockSetPresence }
 }))
 
 import { useAccount } from '../useAccount'
@@ -319,25 +323,29 @@ describe('useAccount', () => {
   })
 
   describe('presence', () => {
-    it('setPresence with statusMessage', async () => {
-      mockSetPresence.mockResolvedValueOnce(undefined)
+    it('setPresence delegates to the gated presence service with status message', async () => {
+      mockSetPresence.mockResolvedValueOnce('online')
       const { setPresence } = useAccount()
-      await setPresence('online', 'Working')
+      const effective = await setPresence('online', 'Working')
       expect(mockSetPresence).toHaveBeenCalledWith('online', 'Working')
+      expect(effective).toBe('online')
     })
 
-    it('setPresence without statusMessage', async () => {
-      mockSetPresence.mockResolvedValueOnce(undefined)
+    it('setPresence returns the effective presence decided by the service', async () => {
+      // 开关关闭时服务把 online 降级为 offline，调用方拿到生效值
+      mockSetPresence.mockResolvedValueOnce('offline')
       const { setPresence } = useAccount()
-      await setPresence('offline')
-      expect(mockSetPresence).toHaveBeenCalledWith('offline', undefined)
+      const effective = await setPresence('online')
+      expect(mockSetPresence).toHaveBeenCalledWith('online', undefined)
+      expect(effective).toBe('offline')
     })
 
-    it('setPresence with away status', async () => {
-      mockSetPresence.mockResolvedValueOnce(undefined)
+    it('setPresence forwards unavailable (away/busy 映射) as-is', async () => {
+      mockSetPresence.mockResolvedValueOnce('unavailable')
       const { setPresence } = useAccount()
-      await setPresence('away', 'On vacation')
-      expect(mockSetPresence).toHaveBeenCalledWith('away', 'On vacation')
+      const effective = await setPresence('unavailable', 'On vacation')
+      expect(mockSetPresence).toHaveBeenCalledWith('unavailable', 'On vacation')
+      expect(effective).toBe('unavailable')
     })
   })
 

@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum, OnlineEnum } from '@/enums'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { SessionBootstrapService } from '../SessionBootstrapService'
 import type { MatrixPostLoginBootstrapOptions, SessionRuntimeHost } from '../sessionRuntimeInternal'
 import { SessionRuntimeState } from '../sessionRuntimeInternal'
@@ -53,7 +52,8 @@ vi.mock('@/services/matrix/MatrixWsBridge', () => ({
 
 vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
   matrixPresenceService: {
-    setPresence: vi.fn().mockResolvedValue(undefined),
+    // 服务返回生效值：默认开关开启返回 online，关闭场景由用例覆盖返回值
+    setPresence: vi.fn().mockResolvedValue('online'),
     onPresenceChange: vi.fn().mockReturnValue(vi.fn())
   }
 }))
@@ -74,13 +74,17 @@ vi.mock('@/utils/PlatformConstants', () => ({
   isMac: () => true
 }))
 
-vi.mock('@/utils/presenceStatus', () => ({
-  buildPresenceStorePatch: (presence: { presence?: string }) => ({
-    activeStatus: OnlineEnum.ONLINE,
-    lastOptTime: 12345,
-    presence: presence.presence
-  })
-}))
+vi.mock('@/utils/presenceStatus', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/presenceStatus')>()
+  return {
+    ...actual,
+    buildPresenceStorePatch: (presence: { presence?: string }) => ({
+      activeStatus: OnlineEnum.ONLINE,
+      lastOptTime: 12345,
+      presence: presence.presence
+    })
+  }
+})
 
 vi.mock('@/utils/userIdentity', () => ({
   toLocalpart: (s: string) => s.split(':')[0].replace('@', '')
@@ -405,18 +409,19 @@ describe('SessionBootstrapService', () => {
   })
 
   describe('bootstrapPostLoginState - 在线状态开关', () => {
-    it('关闭开关后登录不再上报 online，且本地不置为在线', async () => {
+    it('只把 online 意图交给门控服务；服务返回 offline 时本地不置为在线', async () => {
       const { host, mocks } = createMockHost()
       mocks.getClient.mockReturnValue({})
-      useSettingStore().setShowOnlineStatusEnabled(false)
+
+      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
+      const setPresence = vi.mocked(matrixPresenceService.setPresence)
+      // 桌面关闭「显示在线状态」时服务返回 offline
+      setPresence.mockResolvedValueOnce('offline')
 
       const service = new SessionBootstrapService(host, state)
       await service.bootstrapPostLoginState()
 
-      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
-      const setPresence = vi.mocked(matrixPresenceService.setPresence)
-      expect(setPresence).not.toHaveBeenCalledWith('online')
-      expect(setPresence).toHaveBeenCalledWith('offline')
+      expect(setPresence).toHaveBeenCalledWith('online')
       expect(mocks.updateProfileFields).toHaveBeenCalledWith(
         expect.objectContaining({ activeStatus: OnlineEnum.OFFLINE })
       )
@@ -425,15 +430,16 @@ describe('SessionBootstrapService', () => {
       )
     })
 
-    it('开启开关时登录照旧上报 online，并把本地置为在线', async () => {
+    it('服务返回 online（开关开启）时上报 online，并把本地置为在线', async () => {
       const { host, mocks } = createMockHost()
       mocks.getClient.mockReturnValue({})
-      useSettingStore().setShowOnlineStatusEnabled(true)
+
+      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
+      vi.mocked(matrixPresenceService.setPresence).mockResolvedValueOnce('online')
 
       const service = new SessionBootstrapService(host, state)
       await service.bootstrapPostLoginState()
 
-      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
       expect(vi.mocked(matrixPresenceService.setPresence)).toHaveBeenCalledWith('online')
       expect(mocks.updateProfileFields).toHaveBeenCalledWith(
         expect.objectContaining({ activeStatus: OnlineEnum.ONLINE })

@@ -1,5 +1,8 @@
 import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { getLastSentPresence, recordSentPresence, resetSentPresence } from '@/utils/userStatus'
 import matrixClientService from '../../MatrixClientService'
 import { matrixPresenceService } from '../MatrixPresenceService'
 
@@ -20,7 +23,10 @@ describe('MatrixPresenceService', () => {
   }
 
   beforeEach(() => {
+    // setPresence 内部读取「显示在线状态」偏好，需要激活 Pinia
+    setActivePinia(createPinia())
     vi.clearAllMocks()
+    resetSentPresence()
 
     mockPresenceManager = {
       setPresence: vi.fn(),
@@ -57,6 +63,71 @@ describe('MatrixPresenceService', () => {
       )
 
       await expect(matrixPresenceService.setPresence('online')).rejects.toThrow()
+    })
+  })
+
+  // 门控唯一实现点：任何调用方传「意图」，由服务决定实际上报值并记账。
+  describe('setPresence 门控（唯一写入点）', () => {
+    beforeEach(() => {
+      mockPresenceManager.setPresence.mockResolvedValue(undefined)
+    })
+
+    it('开关关闭时把 online 降级为 offline 上报，并返回生效值', async () => {
+      useSettingStore().setShowOnlineStatusEnabled(false)
+
+      const effective = await matrixPresenceService.setPresence('online')
+
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('offline', '')
+      expect(mockPresenceManager.setPresence).not.toHaveBeenCalledWith('online', '')
+      expect(effective).toBe('offline')
+      expect(getLastSentPresence()).toBe('offline')
+    })
+
+    it('开关开启时 online 原样上报，并返回 online', async () => {
+      useSettingStore().setShowOnlineStatusEnabled(true)
+
+      const effective = await matrixPresenceService.setPresence('online')
+
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('online', '')
+      expect(effective).toBe('online')
+      expect(getLastSentPresence()).toBe('online')
+    })
+
+    it('开关关闭时 unavailable 原样上报（用户显式选择不受门控影响）', async () => {
+      useSettingStore().setShowOnlineStatusEnabled(false)
+
+      const effective = await matrixPresenceService.setPresence('unavailable')
+
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('unavailable', '')
+      expect(effective).toBe('unavailable')
+      expect(getLastSentPresence()).toBe('unavailable')
+    })
+
+    it('开关关闭时 offline 原样上报（登出/teardown 语义不变）', async () => {
+      useSettingStore().setShowOnlineStatusEnabled(false)
+
+      const effective = await matrixPresenceService.setPresence('offline')
+
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('offline', '')
+      expect(effective).toBe('offline')
+    })
+
+    it('状态消息与生效值一起写入', async () => {
+      useSettingStore().setShowOnlineStatusEnabled(false)
+
+      await matrixPresenceService.setPresence('online', '工作中')
+
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('offline', '工作中')
+    })
+
+    it('上报失败时不推进记账，避免心跳误判已降级', async () => {
+      useSettingStore().setShowOnlineStatusEnabled(true)
+      recordSentPresence('online')
+      mockPresenceManager.setPresence.mockRejectedValue(new Error('boom'))
+
+      await expect(matrixPresenceService.setPresence('offline')).rejects.toThrow('boom')
+
+      expect(getLastSentPresence()).toBe('online')
     })
   })
 

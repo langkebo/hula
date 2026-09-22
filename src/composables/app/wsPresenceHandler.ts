@@ -1,5 +1,5 @@
 import { RoomTypeEnum } from '@/enums'
-import type { PresenceInfo } from '@/services/matrix/user/MatrixPresenceService'
+import type { PresenceInfo, PresenceState } from '@/services/matrix/user/MatrixPresenceService'
 import type { useChatStore } from '@/stores/domains/chat/chat'
 import type { useContactStore } from '@/stores/domains/chat/contacts'
 import type { useGroupStore } from '@/stores/domains/chat/group'
@@ -16,7 +16,7 @@ interface ClientServiceDeps {
 }
 
 interface PresenceServiceDeps {
-  setPresence(presence: 'online' | 'offline' | 'unavailable', statusMsg?: string): Promise<void>
+  setPresence(presence: PresenceState, statusMsg?: string): Promise<PresenceState>
   onPresenceChange(handler: (info: PresenceInfo) => void): () => void
   subscribeToPresence(userIds: string[]): Promise<unknown>
   getBatchPresence(userIds: string[]): Promise<PresenceInfo[]>

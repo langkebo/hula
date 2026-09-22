@@ -7,7 +7,9 @@
 
 import type { MatrixClient } from 'matrix-js-sdk'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
+import { recordSentPresence, resolveOutgoingPresence } from '@/utils/userStatus'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixClientService } from '../MatrixClientService'
 
@@ -122,13 +124,23 @@ class MatrixPresenceService extends BaseMatrixService {
   }
 
   /**
-   * 设置在线状态
+   * 设置在线状态 —— **全应用唯一的 presence 写入点**。
    *
-   * @param presence 在线状态
+   * 调用方只传「意图」(desired presence)，是否上报由这里统一决定：
+   * 内部读取「允许其他用户看到您的在线状态」偏好，经
+   * `resolveOutgoingPresence` 得出生效值，写入 SDK 后调用 `recordSentPresence`
+   * 记账（心跳据此判断是否还需要降级），并返回生效值供调用方镜像本地
+   * `activeStatus`。调用点无需（也不应）再自行门控或记账。
+   *
+   * @param presence 期望的在线状态（意图）
    * @param statusMsg 状态消息（可选）
+   * @returns 实际写入服务端的生效值
    */
-  async setPresence(presence: PresenceState, statusMsg?: string): Promise<void> {
+  async setPresence(presence: PresenceState, statusMsg?: string): Promise<PresenceState> {
+    // 门控后实际上报值可能不同于意图，失败日志里同时给出两者便于定位
+    let effective: PresenceState = presence
     try {
+      effective = resolveOutgoingPresence(presence, useSettingStore().showOnlineStatusEnabled)
       const client = this.getClient()
       const presenceManager = client.getPresenceManager()
       const userId = client.getUserId()
@@ -137,16 +149,19 @@ class MatrixPresenceService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.common.user_id_not_found'))
       }
 
-      await presenceManager.setPresence(presence, statusMsg ?? '')
+      await presenceManager.setPresence(effective, statusMsg ?? '')
+      // 记账与写入同点：任何绕过此方法的直报都不存在，心跳的降级去重因此可靠
+      recordSentPresence(effective)
       // 心跳调用频率高（每45s），降为 DEBUG 避免 INFO 噪音淹没关键日志
-      logger.debug(`[Presence] 设置在线状态成功: ${presence}`)
+      logger.debug(`[Presence] 设置在线状态成功: ${effective}`)
+      return effective
     } catch (err) {
       const isClientNotReady = err instanceof Error && err.message === '客户端未初始化'
       const isFetchFailed = err instanceof Error && err.message.includes('Failed to fetch')
       if (isClientNotReady || isFetchFailed) {
-        logger.warn(`[Presence] 设置在线状态跳过 [${presence}]: ${formatMatrixError(err)}`)
+        logger.warn(`[Presence] 设置在线状态跳过 [${presence} -> ${effective}]: ${formatMatrixError(err)}`)
       } else {
-        logger.error(`[Presence] 设置在线状态失败 [${presence}]: ${formatMatrixError(err)}`)
+        logger.error(`[Presence] 设置在线状态失败 [${presence} -> ${effective}]: ${formatMatrixError(err)}`)
       }
       throw err
     }

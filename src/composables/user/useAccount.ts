@@ -1,4 +1,6 @@
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
+import type { PresenceState } from '@/services/matrix/user/MatrixPresenceService'
+import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 
 interface AuthData {
   type: string
@@ -86,8 +88,9 @@ export function useAccount() {
     return matrixAccountService.setIgnoredUsers(userIds)
   }
 
-  const setPresence = (presence: 'online' | 'offline' | 'unavailable' | 'away', statusMessage?: string) => {
-    return matrixAccountService.setPresence(presence, statusMessage)
+  /** 委托唯一门控 presence 服务：这里不再提供任何绕过门控的入口 */
+  const setPresence = (presence: PresenceState, statusMessage?: string) => {
+    return matrixPresenceService.setPresence(presence, statusMessage)
   }
 
   const getCapabilities = () => {

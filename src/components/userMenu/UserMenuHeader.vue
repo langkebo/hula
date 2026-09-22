@@ -57,7 +57,6 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { createLogger } from '@/utils/Logger'
-import { recordSentPresence, resolveOutgoingPresence } from '@/utils/userStatus'
 
 const logger = createLogger('UserMenuHeader')
 
@@ -147,16 +146,13 @@ async function handleStatusChange(statusId: string) {
   }
 
   const targetPresence = presenceMap[statusId] || 'online'
-  // 「允许其他用户看到您的在线状态」关闭时降级为 offline，并同步本地 activeStatus，
-  // 避免本地显示在线而对端看不到（与 userStatus store 的 changeCurrentUserState 同一规则，
-  // 规则本身只在 utils/userStatus.resolveOutgoingPresence 里实现一份）。
-  const presence = resolveOutgoingPresence(targetPresence, settingStore.showOnlineStatusEnabled)
-  const hidesOnline = presence !== targetPresence
 
   try {
-    await setPresence(presence)
-    // 记下最近成功上报的 presence，心跳据此判断是否还需要降级
-    recordSentPresence(presence)
+    // 门控与记账都在唯一写入点 matrixPresenceService.setPresence 内完成（此处经 useAccount 委托）；
+    // 这里只传意图，并用返回的生效值判断本地是否需要降级。
+    const effective = await setPresence(targetPresence)
+    const hidesOnline = effective !== targetPresence
+
     if (hidesOnline && userStore.userInfo) {
       userStore.userInfo.activeStatus = OnlineEnum.OFFLINE
     }

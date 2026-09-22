@@ -56,7 +56,7 @@ describe('SessionRuntimeState', () => {
   })
 
   it('onBeforeUnload calls matrixPresenceService.setPresence with unavailable', async () => {
-    mockSetPresence.mockResolvedValue(undefined)
+    mockSetPresence.mockResolvedValue('unavailable')
     const state = new SessionRuntimeState()
 
     state.onBeforeUnload()
