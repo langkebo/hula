@@ -133,7 +133,8 @@ class MatrixPresenceService extends BaseMatrixService {
    * `activeStatus`。调用点无需（也不应）再自行门控或记账。
    *
    * @param presence 期望的在线状态（意图）
-   * @param statusMsg 状态消息（可选）
+   * @param statusMsg 状态消息（可选）。**未传时保持 `undefined` 透传给 SDK**：SDK 会省略
+   *   `status_msg` 字段、不改动服务端状态文本；传空串反而会把它清空，因此这里不做 `?? ''` 兜底。
    * @returns 实际写入服务端的生效值
    */
   async setPresence(presence: PresenceState, statusMsg?: string): Promise<PresenceState> {
@@ -149,7 +150,7 @@ class MatrixPresenceService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.common.user_id_not_found'))
       }
 
-      await presenceManager.setPresence(effective, statusMsg ?? '')
+      await presenceManager.setPresence(effective, statusMsg)
       // 记账与写入同点：任何绕过此方法的直报都不存在，心跳的降级去重因此可靠
       recordSentPresence(effective)
       // 心跳调用频率高（每45s），降为 DEBUG 避免 INFO 噪音淹没关键日志
