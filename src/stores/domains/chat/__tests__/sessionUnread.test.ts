@@ -155,6 +155,8 @@ describe('useSessionUnreadStore', () => {
     })
 
     it('adopts the smaller server count when no lastReadTime and no newer message (another device read it)', () => {
+      // 收敛方向一（回执关）：服务端更小、且账本写入之后没有新消息 → 采信服务端。
+      // 与下面「有更新消息时不得覆盖」用例反向配对，两者共同钉住 noNewerMessage 判据。
       useSettingStore().setSendReadReceiptsEnabled(false)
       const store = useSessionUnreadStore()
       store.set('uid-1', 'room-a', 10)
@@ -163,6 +165,9 @@ describe('useSessionUnreadStore', () => {
       const updates = store.apply('uid-1', sessions)
       expect(updates).toEqual({})
       expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(3)
+      // 水位与观测值同步写回，下一次 apply 不会退回旧账本
+      expect(store.cacheStore['uid-1']?.['room-a']?.settledServerCount).toBe(0)
+      expect(store.cacheStore['uid-1']?.['room-a']?.observedServerCount).toBe(3)
     })
 
     it('keeps Math.max(cached, server) with receipts enabled when the server reports fewer', () => {
@@ -176,7 +181,11 @@ describe('useSessionUnreadStore', () => {
       expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(10)
     })
 
-    it('keeps the ledger count when no lastReadTime and the server reports fewer but a newer message exists', () => {
+    it('keeps the ledger count with receipts off when the server reports fewer but a newer message exists', () => {
+      // 收敛方向二（回执关）：服务端更小，但 activeTime 晚于账本写入 → 账本之后还有本机没记账的
+      // 新消息，用更小的服务端值覆盖会抹掉这条真实未读。回执开时收敛分支本身不启用，所以必须
+      // 显式关闭回执，用例才真正覆盖 noNewerMessage 判据（此前默认回执开，属于假绿）。
+      useSettingStore().setSendReadReceiptsEnabled(false)
       const store = useSessionUnreadStore()
       store.set('uid-1', 'room-a', 10)
       // activeTime 晚于账本写入时间：账本记完之后又来了一条还没记账的消息
@@ -184,6 +193,9 @@ describe('useSessionUnreadStore', () => {
       const updates = store.apply('uid-1', sessions)
       expect(updates).toEqual({ 'room-a': 10 })
       expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(10)
+      // 没有任何一条被误判成已结算：水位保持 0，观测值只记录服务端快照
+      expect(store.cacheStore['uid-1']?.['room-a']?.settledServerCount).toBe(0)
+      expect(store.cacheStore['uid-1']?.['room-a']?.observedServerCount).toBe(3)
     })
 
     it('folds messages that arrived while the app was closed into case 2 with the settled watermark', () => {
