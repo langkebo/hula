@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "_note": "消费方校验口径：只校验 owner/consumers 路径存在，不证明 consumers 真的在运行时读取该 key；判活不等于生效。storage 字段仅在发现器记录了实际写入介质时做一致性校验。",
   "keys": {
     "setting": {
       "owner": "src/stores/domains/settings/setting.ts:defineStore(StoresEnum.SETTING)+persist",
@@ -35,7 +36,7 @@
       "owner": "src/stores/domains/chat/sessionUnread.ts:defineStore(StoresEnum.SESSION_UNREAD)+persist",
       "consumers": ["src/stores/domains/chat/sessionUnread.ts", "src/services/matrix/auth/SessionLogoutService.ts"],
       "kind": "state",
-      "note": "未读账本；登出服务读取以决定跨会话回收"
+      "note": "未读账本（cacheStore / lastReadActiveTimeStore / settledServerCount）；store 自身水合，显式登出/账号重置在 SessionLogoutService 里 removeItem 清除（是清除点，不是读取点）"
     },
     "plugins": {
       "owner": "src/stores/domains/settings/plugins.ts:defineStore(StoresEnum.PLUGINS)+persist",
@@ -209,13 +210,14 @@
       "owner": "src/services/secure/robotAiProviderStorage.ts:STORAGE_KEYS.TRENDRADAR_API_KEY_SECURE",
       "consumers": ["src/services/secure/robotAiProviderStorage.ts"],
       "kind": "credential",
-      "note": "TrendRadar API key 的 localStorage 备份；storage 模块读写"
+      "note": "TrendRadar API key 的 secure storage 标识（经 setSecureSecret → Tauri 安全存储），SecureStorage 不可用时降级为加密后写 sessionStorage；不写 localStorage（旧 note 说“localStorage 备份”不实，2026-09-22 review 更正）"
     },
     "tjg-chat-trendradar-api-key-session": {
       "owner": "src/services/secure/robotAiProviderStorage.ts:STORAGE_KEYS.TRENDRADAR_API_KEY_SESSION",
       "consumers": ["src/services/secure/robotAiProviderStorage.ts"],
       "kind": "credential",
-      "note": "TrendRadar API key 的会话级缓存；storage 模块读写"
+      "storage": "session",
+      "note": "secure storage 不可用时的加密 sessionStorage 回退位；storage 模块在 persistSecret/loadSecret 中读写（可带 `::<userId>` 账号后缀）"
     },
     "proxySettings": {
       "owner": "src/composables/useBootstrap.ts:localStorage.setItem(proxySettings)",
@@ -243,11 +245,11 @@
       "note": "OIDC 流程中的 homeserver 地址（sessionStorage）；认证服务读写"
     },
     "oidc_state": {
-      "owner": "src/services/matrix/auth/MatrixOidcService.ts:sessionStorage.setItem(oidc_state)",
+      "owner": "src/services/matrix/auth/MatrixOidcService.ts:getAuthorizationUrl → sessionStorage.setItem('oidc_state', state)",
       "consumers": ["src/services/matrix/auth/MatrixOidcService.ts"],
       "kind": "credential",
       "storage": "session",
-      "note": "OIDC 授权码流程的 CSRF state（sessionStorage）；认证服务在同文件校验并清理"
+      "note": "OIDC 授权码流程的 CSRF state（sessionStorage）；handleCallback 读回 (:114) 与回调 state 比对，仅在换取 token 成功后 (:149) 清除——state 不匹配/缺 code_verifier 的提前返回不会清理"
     },
     "oidc_code_verifier": {
       "owner": "src/services/matrix/auth/MatrixOidcService.ts:sessionStorage.setItem(oidc_code_verifier)",
@@ -491,6 +493,28 @@
       "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
       "kind": "legacy",
       "note": "旧版设置键（showOnlineStatus），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-add-friend-search-history": {
+      "owner": "src/components/friend/AddFriendPane.vue:ADD_FRIEND_SEARCH_HISTORY_STORAGE_KEY",
+      "consumers": ["src/components/friend/AddFriendPane.vue", "src/composables/common/useRecentSearchHistory.ts"],
+      "kind": "cache",
+      "note": "添加好友面板的最近搜索词；AddFriendPane 把 key 传给 useRecentSearchHistory 读写（2026-09-22 review I4 补登记：写入点在 src/components，旧扫描面漏掉）"
+    },
+    "tjg-friend-search-history": {
+      "owner": "src/components/friend/composables/useFriendSearch.ts:FRIEND_SEARCH_HISTORY_STORAGE_KEY",
+      "consumers": [
+        "src/components/friend/composables/useFriendSearch.ts",
+        "src/components/friend/FriendListView.vue",
+        "src/composables/common/useRecentSearchHistory.ts"
+      ],
+      "kind": "cache",
+      "note": "好友列表的最近搜索词；useFriendSearch 传给 useRecentSearchHistory 读写，FriendListView 消费该 composable"
+    },
+    "tjg-friend-group-search-history": {
+      "owner": "src/components/friend/FriendGroupView.vue:FRIEND_GROUP_SEARCH_HISTORY_STORAGE_KEY",
+      "consumers": ["src/components/friend/FriendGroupView.vue", "src/composables/common/useRecentSearchHistory.ts"],
+      "kind": "cache",
+      "note": "好友分组视图的最近搜索词；FriendGroupView 传给 useRecentSearchHistory 读写"
     }
   }
 }

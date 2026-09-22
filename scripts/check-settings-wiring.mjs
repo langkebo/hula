@@ -8,7 +8,7 @@
  * **互相独立**的判据：
  *
  * A. 清单契约（阻塞）
- *    从 `src/{stores,services,utils,composables}/**` 发现持久化 key：
+ *    从 `src/{stores,services,utils,composables,components}/**` 发现持久化 key：
  *      - `*_STORAGE_KEY` / `*STORAGE_KEYS.*` 常量（含 `private static readonly`、
  *        `X: string = 'literal'` 类型标注与 `X = StoresEnum.Y` 的枚举写法）
  *      - `*STORAGE_KEYS` / `STORAGE_KEYS` 对象映射的每个字面量值，**声明语法不限**：
@@ -34,10 +34,10 @@
  * 已知局限（刻意保守，宁可漏报不误报）：
  *  - 只做静态语法发现。参数化写入（`setItem(storageKey)`）与非字面量模板键
  *    （`` `${PREFIX}${id}` ``）无法求值时会记录到"无法静态判定"清单并计数，不伪造 key。
- *  - 发现范围刻意限定在四个持久层目录；组件内定义的 key 不在此守门（Task 7 的死 key
- *    清理负责那一层）。
- *  - 消费方只校验路径存在性 + 可选 `storage` 介质一致性；"键真的被读"属于评审责任，
- *    不由正则假装证明（但清单里每条 consumer 都必须人工核验过读点，见 manifest 注释）。
+ *  - 发现范围是 `src/{stores,services,utils,composables,components}` 五个目录；其它目录
+ *    （views/layout/stores 之外的 mobile 私有实现等）里新写的持久化 key 不在此守门。
+ *  - 消费方校验是**路径存在性**，不是"这个路径真的读了该 key"：`consumers` 里的文件只要
+ *    存在即通过。判活仍是"有登记、有引用"，不代表开关在运行时生效（见 §13.4 的说明）。
  *
  * 用法：
  *   node scripts/check-settings-wiring.mjs             校验（CI / pre-commit）
@@ -51,8 +51,14 @@ const ROOT = 'src'
 const SW = 'src/views/settingsWindow'
 const MANIFEST = 'scripts/settings-wiring-manifest.json'
 const BASELINE = 'scripts/settings-wiring-baseline.json'
-/** 持久层发现范围：只有这四个目录算"配置真正落盘的地方"。 */
-const DISCOVERY_ROOTS = ['src/stores', 'src/services', 'src/utils', 'src/composables']
+/**
+ * 持久层发现范围：这五个目录算"配置真正落盘的地方"。
+ *
+ * `src/components` 是 2026-09-22 最终评审补进来的（I4）：组件里直接 `useRecentSearchHistory`
+ * 写 localStorage 的 key（`tjg-add-friend-search-history` 等）此前既不在发现范围、也不在清单里，
+ * 守门却打印"无未登记 key"，覆盖被高估。
+ */
+const DISCOVERY_ROOTS = ['src/stores', 'src/services', 'src/utils', 'src/composables', 'src/components']
 
 /** Windows 反斜杠 → POSIX：路径比较、baseline 键名、manifest 键都必须用 `/`。 */
 const toPosix = (p) => p.split('\\').join('/')
@@ -432,6 +438,25 @@ const dead = [...written.entries()]
 
 const regenerateHint = '  运行 node scripts/check-settings-wiring.mjs --update 重建死配置基线。'
 
+/**
+ * 序列化死配置基线，形状与 Biome 的 JSON 格式化（lineWidth 120）一致。
+ *
+ * 为什么不是简单 `JSON.stringify(..., null, 2)`：Biome 会把能在 120 列内放下的字符串
+ * 数组内联成一行，而 `JSON.stringify` 永远展开成多行，于是每次 `--update` 都会产生一次
+ * 纯空白 diff（2026-09-22 最终评审 minor）。这里按同一规则渲染，让 `--update` 的输出
+ * 与已提交（Biome 规范化过）的文件逐字节一致。
+ */
+function serializeBaseline(dead) {
+  const names = dead.map((d) => d.key)
+  const inlineNames = `[${names.map((name) => JSON.stringify(name)).join(', ')}]`
+  const inline = `  "deadKeyNames": ${inlineNames}`
+  const namesBlock =
+    inline.length <= 120
+      ? inline
+      : `  "deadKeyNames": [\n${names.map((name) => `    ${JSON.stringify(name)}`).join(',\n')}\n  ]`
+  return `{\n  "deadKeys": ${dead.length},\n${namesBlock}\n}\n`
+}
+
 /** 读取 JSON 文件；缺失返回 null，损坏返回 'invalid'。 */
 function readJson(path) {
   if (!existsSync(path)) return null
@@ -534,7 +559,7 @@ if (process.argv.includes('--update')) {
       process.exit(1)
     }
   }
-  writeFileSync(BASELINE, `${JSON.stringify({ deadKeys: dead.length, deadKeyNames: dead.map((d) => d.key) }, null, 2)}\n`)
+  writeFileSync(BASELINE, serializeBaseline(dead))
   console.log(`check-settings-wiring: 基线已更新为 ${dead.length}`)
   process.exit(0)
 }
@@ -637,6 +662,8 @@ console.log(
   `check-settings-wiring: OK 持久化 key 清单 ${discoveredNames.length}/${entries.size}（无未登记 key）、` +
     `死配置 ${dead.length}（基线 ${baseline.deadKeys}，键名均在基线内）`
 )
+console.log(`  扫描范围：${DISCOVERY_ROOTS.join('、')}（超出此范围的持久化写入不在本守门覆盖面）`)
+console.log('  口径提示：消费方只校验路径存在性，不证明该文件真的读取该 key；判活≠生效。')
 console.log(`  漏报自检通过：宽松扫描 ${permissive.size} 个 key 全部被发现器识别（含类型标注映射与 sessionStorage）`)
 if (unresolved.length > 0) {
   console.log(`  提示：${unresolved.length} 处持久化写入是动态 key，无法静态判定（已知局限，见脚本注释）`)
