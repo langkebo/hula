@@ -1,23 +1,13 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import LabsSettings from '../LabsSettings.vue'
 import { MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH } from '../settingsRoutes'
 
-const showToastMock = vi.fn()
-const showConfirmDialogMock = vi.fn().mockResolvedValue(undefined)
 const routerPushMock = vi.fn()
-
-vi.mock('vant', () => ({
-  showToast: (...args: any[]) => showToastMock(...args),
-  showConfirmDialog: (...args: any[]) => showConfirmDialogMock(...args)
-}))
 
 vi.mock('@iconify/vue', () => ({
   Icon: { name: 'Icon', template: '<i />', props: ['icon', 'width', 'color'] }
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
 }))
 
 vi.mock('vue-router', () => ({
@@ -40,19 +30,18 @@ vi.mock('@/mobile/components/chat-room/HeaderBar.vue', () => ({
   }
 }))
 
-const VanCellStub = {
+const VanCellStub = defineComponent({
   name: 'VanCell',
   props: ['title', 'label', 'isLink'],
-  template: `
-    <div class="van-cell" @click="$emit('click')">
-      <span class="van-cell__title">{{ title }}</span>
-      <span v-if="label" class="van-cell__label">{{ label }}</span>
-      <slot name="icon" />
-      <slot name="value" />
-      <slot name="right-icon" />
-    </div>
-  `
-}
+  emits: ['click'],
+  template: `<div class="van-cell" @click="$emit('click')">
+    <span class="van-cell__title">{{ title }}</span>
+    <span v-if="label" class="van-cell__label">{{ label }}</span>
+    <slot name="icon" />
+    <slot name="value" />
+    <slot name="right-icon" />
+  </div>`
+})
 
 function mountComponent() {
   return mount(LabsSettings, {
@@ -60,9 +49,7 @@ function mountComponent() {
       stubs: {
         'van-cell-group': { template: '<div><slot /></div>' },
         'van-cell': VanCellStub,
-        'van-tag': { template: '<span><slot /></span>', props: ['type', 'size'] },
-        'van-switch': { template: '<button />', props: ['modelValue', 'size'] },
-        'van-button': { template: '<button><slot /></button>', props: ['type', 'block', 'plain'] }
+        'van-tag': { template: '<span><slot /></span>', props: ['type', 'size'] }
       }
     }
   })
@@ -79,77 +66,37 @@ describe('LabsSettings', () => {
     expect(wrapper.html()).toBeTruthy()
   })
 
-  it('has 8 lab features by default', () => {
+  it('不再渲染零消费方的实验特性/调试/性能开关', () => {
     const wrapper = mountComponent()
-    expect((wrapper.vm as any).labFeatures).toHaveLength(8)
+
+    // 下列 key 已随 2026-09-22 孤儿文案清理删除（Task 7）；桩件对未命中 key 原样返回，
+    // 断言其不出现即断言这些开关没有被重新接回。
+    expect(wrapper.text()).not.toContain('mobile_labs.features.threads')
+    expect(wrapper.text()).not.toContain('mobile_labs.features.reactions')
+    expect(wrapper.text()).not.toContain('mobile_labs.debug_mode')
+    expect(wrapper.text()).not.toContain('mobile_labs.show_performance')
+    expect(wrapper.text()).not.toContain('mobile_labs.reset')
+    expect(wrapper.find('van-switch').exists()).toBe(false)
   })
 
-  it('custom-status and reactions are enabled by default', () => {
+  it('切换页面内所有控件后不写死 labs key', async () => {
     const wrapper = mountComponent()
-    const customStatus = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'custom-status')
-    const reactions = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'reactions')
-    expect(customStatus.enabled).toBe(true)
-    expect(reactions.enabled).toBe(true)
+
+    for (const cell of wrapper.findAll('.van-cell')) {
+      await cell.trigger('click')
+    }
+
+    expect(localStorage.getItem('tjg-lab-features')).toBeNull()
+    expect(localStorage.getItem('tjg-debug-mode')).toBeNull()
+    expect(localStorage.getItem('tjg-show-performance')).toBeNull()
   })
 
-  it('saves feature toggle to localStorage', () => {
+  it('保留到 Integrations 的入口与路由跳转', async () => {
     const wrapper = mountComponent()
-    const feature = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'threads')
-    feature.enabled = true
-    ;(wrapper.vm as any).handleToggleFeature(feature)
-    const saved = JSON.parse(localStorage.getItem('tjg-lab-features')!)
-    expect(saved).toContain('threads')
-  })
 
-  it('loads feature states from localStorage', () => {
-    localStorage.setItem('tjg-lab-features', JSON.stringify(['threads', 'voip']))
-    const wrapper = mountComponent()
-    const threads = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'threads')
-    const voip = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'voip')
-    const spaces = (wrapper.vm as any).labFeatures.find((f: any) => f.id === 'spaces')
-    expect(threads.enabled).toBe(true)
-    expect(voip.enabled).toBe(true)
-    expect(spaces.enabled).toBe(false)
-  })
+    expect(wrapper.text()).toContain('mobile_setting.integrations')
+    await wrapper.find('.van-cell').trigger('click')
 
-  it('debug mode is disabled by default', () => {
-    const wrapper = mountComponent()
-    expect((wrapper.vm as any).debugMode).toBe(false)
-  })
-
-  it('saves debug mode to localStorage', () => {
-    const wrapper = mountComponent()
-    ;(wrapper.vm as any).handleDebugModeChange(true)
-    expect(localStorage.getItem('tjg-debug-mode')).toBe('true')
-  })
-
-  it('resets all features triggers dialog', () => {
-    const wrapper = mountComponent()
-    ;(wrapper.vm as any).handleResetLabs()
-    expect(showConfirmDialogMock).toHaveBeenCalled()
-  })
-
-  it('loads debug mode from localStorage', () => {
-    localStorage.setItem('tjg-debug-mode', 'true')
-    const wrapper = mountComponent()
-    expect((wrapper.vm as any).debugMode).toBe(true)
-  })
-
-  it('loads performance metrics from localStorage', () => {
-    localStorage.setItem('tjg-show-performance', 'true')
-    const wrapper = mountComponent()
-    expect((wrapper.vm as any).showPerformanceMetrics).toBe(true)
-  })
-
-  it('saves performance metrics to localStorage', () => {
-    const wrapper = mountComponent()
-    ;(wrapper.vm as any).handlePerformanceChange(true)
-    expect(localStorage.getItem('tjg-show-performance')).toBe('true')
-  })
-
-  it('opens integrations from labs', () => {
-    const wrapper = mountComponent()
-    ;(wrapper.vm as any).openIntegrationsSettings()
     expect(routerPushMock).toHaveBeenCalledWith(MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH)
   })
 })

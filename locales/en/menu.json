@@ -32,11 +32,7 @@
   "modify_group_nickname": "Modify nickname",
   "add_friend": "Add Friend",
   "report": "Report",
-  "report_success": "Reported successfully, we will process it as soon as possible",
   "ctx_menu_more": "More",
-  "context_menu_actions": "Context menu",
-  "context_menu_reactions": "Reaction menu",
-  "context_submenu_actions": "Submenu",
   "set_admin": "Make admin",
   "set_admin_success": "Admin added",
   "set_admin_fail": "Grant admin failed",
@@ -58,7 +54,6 @@
   "allow_notifications": "Notify me",
   "receive_silently": "Receive silently",
   "block_group_messages": "Mute group",
-  "unblock_group_messages": "Unmute group",
   "block_user_messages": "Block chat",
   "unblock_user_messages": "Unblock chat",
   "remove_from_list": "Remove chat",
@@ -129,6 +124,5 @@
         "failed": "Failed to sign out"
       }
     }
-  },
-  "manage_friend_groups": "Friend groups"
+  }
 }

@@ -78,6 +78,7 @@ jobs:
           pnpm check:guard-patterns
           pnpm check:settings-wiring
           pnpm check:component-contracts
+          pnpm check:i18n-dead-keys
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps

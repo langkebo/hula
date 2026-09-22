@@ -1,107 +1,92 @@
 {
-  "room": {
-    "invite": {
-      "accept": "接受",
-      "reject": "拒绝"
-    }
-  },
-  "search_suggestions": "建议",
-  "search_guide": "在搜索框内搜索",
-  "no_search_results": "未找到相关结果",
-  "search_result": "搜索结果",
-  "search_history": "历史记录",
-  "search_input_placeholder": "搜索",
-  "clear_search_history": "清空",
-  "loading": {
-    "app": "加载应用中...",
-    "left_panel": "加载左侧面板...",
-    "data": "加载数据中...",
-    "right_panel": "加载右侧面板..."
-  },
-  "action": {
-    "message": "消息列表",
-    "message_short_title": "消息",
-    "contact": "好友列表",
-    "contact_short_title": "好友",
-    "file_manager": "文件管理器",
-    "file_manager_short_title": "文件",
-    "favorite": "收藏列表",
-    "favorite_short_title": "收藏",
-    "settings": "设置",
-    "settings_short_title": "设置",
-    "plugin": "插件",
-    "plugin_manage": "插件管理",
-    "more": "更多",
-    "opened": "已打开",
-    "start_group_chat": "发起群聊",
-    "add_friend_or_group": "加好友/群"
-  },
-  "plugins": {
-    "dynamic": "动态列表",
-    "dynamic_short_title": "动态",
-    "room_list": "房间列表",
-    "room_list_short_title": "房间",
-    "room_detail": {
-      "just_now": "刚刚",
-      "yesterday": "昨天",
-      "mute": "免打扰",
-      "encrypted": "加密聊天",
-      "burn": "阅后即焚",
-      "typing": "正在输入..."
-    },
-    "space_list": "空间列表",
-    "space_list_short_title": "空间",
-    "chatbot": "ChatBot",
-    "chatbot_short_title": "ChatBot",
-    "federation": "联邦",
-    "federation_short_title": "联邦",
-    "federation_loading": "正在加载联邦服务器...",
-    "federation_empty": "暂无联邦服务器",
-    "status": {
-      "builtin": "已内置",
-      "uninstalling": "卸载中"
-    },
+  "profile_edit": {
     "actions": {
-      "install": "安装",
-      "pin": "固定侧边栏",
-      "unpin": "取消固定",
-      "uninstall": "卸载"
+      "save": "保存"
+    },
+    "title": "编辑资料",
+    "form": {
+      "nickname": {
+        "label": "昵称",
+        "placeholder": "请输入你的昵称",
+        "remaining": "剩余改名次数: {count}",
+        "unlimited": "改名次数: 无限制"
+      }
+    },
+    "toast": {
+      "avatar_update_success": "头像更新成功",
+      "nickname_empty": "昵称不能为空",
+      "rename_limit": "改名次数不足",
+      "save_success": "保存成功",
+      "badge_wear_success": "佩戴成功",
+      "badge_wear_failed": "佩戴失败，请稍后重试",
+      "save_failed": "保存失败"
+    },
+    "badge": {
+      "current": "当前佩戴的徽章:",
+      "wear": "佩戴"
+    },
+    "avatar": {
+      "change": "更换头像",
+      "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb",
+      "choose_from_gallery": "从头像库选择"
     }
   },
-  "search_window": {
-    "title": "全网搜索",
-    "tabs": {
-      "recommend": "推荐",
-      "user": "找好友",
-      "group": "找群聊"
+  "friends_list": {
+    "status": {
+      "online": "在线",
+      "offline": "离线"
+    }
+  },
+  "chat_main": {
+    "network_offline": "当前网络不可用，请检查你的网络设置",
+    "network_connecting": "正在连接服务器...",
+    "network_ws_offline": "网络连接已断开，正在尝试重连...",
+    "feature": {
+      "coming_soon": "功能开发中"
     },
-    "placeholder": {
-      "recommend": "输入推荐关键词",
-      "user": "输入昵称搜索好友",
-      "group": "输入群号搜索群聊"
+    "translate": {
+      "empty": "没有可翻译的内容",
+      "failed": "翻译失败，请稍后重试"
     },
-    "labels": {
-      "account": "账号：{account}"
+    "file": {
+      "missing_local": "暂时找不到本地文件，请先下载后再试~",
+      "show_failed": "无法在文件夹中显示该文件",
+      "download_prompt": "文件还未下载，请先下载后再试~",
+      "download_success": "文件下载完成，请查看~",
+      "download_failed": "文件下载失败，请重试",
+      "save_success": "文件已保存到本地"
     },
-    "tooltip": {
-      "copy_account": "复制账号"
+    "image": {
+      "fetch_failed": "获取图片地址失败",
+      "locate_failed": "暂时无法定位该图片~",
+      "download_prompt": "图片未下载，正在保存到本地...",
+      "save_success": "图片已保存到本地",
+      "save_failed": "保存图片失败",
+      "download_failed": "图片下载失败，请重试~"
     },
-    "empty": {
-      "no_result": "未找到相关结果",
-      "prompt": "输入关键词搜索"
+    "delete": {
+      "confirm": "删除后将不会出现在你的消息记录中，确定删除吗?"
     },
-    "notification": {
-      "copy_success": "复制成功 {account}",
-      "search_fail": "搜索失败"
+    "announcement": {
+      "view_all": "查看全部"
     },
-    "buttons": {
-      "add": "添加",
-      "message": "发消息",
-      "edit_profile": "编辑资料"
+    "typing": {
+      "single": "{name} 正在输入...",
+      "multiple": "{count} 人正在输入..."
     },
-    "modal": {
-      "add_friend": "申请加好友",
-      "add_group": "申请加群"
+    "no_more": "没有更多消息",
+    "empty_title": "暂无消息",
+    "empty_desc": "发送第一条消息，开始聊天吧",
+    "new_messages": "{count} 条新消息",
+    "confirm": "确定",
+    "cancel": "取消",
+    "group_nickname": {
+      "title": "修改群昵称",
+      "placeholder": "请输入群昵称",
+      "error": {
+        "empty": "群昵称不能为空",
+        "invalid_room": "当前群聊信息异常"
+      }
     }
   },
   "chat_reaction": {
@@ -120,184 +105,6 @@
     "light": "灯光",
     "red_envelope": "红包"
   },
-  "chat_details": {
-    "single": {
-      "empty_signature": "这个人很高冷，暂时没有留下什么",
-      "region": "地区：{place}",
-      "unknown": "未知",
-      "badge_label": "徽章：",
-      "call_only_single": "仅单聊支持发起音视频通话",
-      "friend_info_missing": "无法获取好友信息",
-      "footer": {
-        "audio_call": "打电话",
-        "video_call": "打视频"
-      }
-    },
-    "group": {
-      "official_badge": "官方群聊认证",
-      "id": "群号 {account}",
-      "copy": "复制",
-      "copy_success": "复制成功 {account}",
-      "info_missing": "无法获取群聊信息",
-      "name_label": "房间名称",
-      "edit_name": "编辑房间名称",
-      "remark": {
-        "label": "群备注",
-        "placeholder": "请输入群聊备注",
-        "empty": "设置群聊备注",
-        "success": "群备注更新成功",
-        "fail": "群备注更新失败"
-      },
-      "nickname": {
-        "label": "我的本群昵称",
-        "placeholder": "请输入本群昵称",
-        "empty": "未设置",
-        "success": "本群昵称更新成功",
-        "fail": "本群昵称更新失败"
-      },
-      "announcement": {
-        "label": "群公告",
-        "empty": "未设置",
-        "window_title": "查看群公告"
-      },
-      "members": {
-        "count": "群成员（{count}人）",
-        "online": "在线 {count} 人"
-      }
-    },
-    "actions": {
-      "message": "进入聊天"
-    },
-    "window": {
-      "image_viewer": "图片查看"
-    }
-  },
-  "chat_header": {
-    "bot_tag": "助手",
-    "federated": "联邦房间",
-    "federated_tooltip": "联邦房间 · 由 {server} 提供服务",
-    "status_abnormal": "好友状态异常",
-    "start_meeting": "发起会议",
-    "meeting_widget_name": "房间会议",
-    "member_count": "{count} 位成员",
-    "member_count_online": "{count} 人在线",
-    "channel": "频道",
-    "toolbar": {
-      "audio_call": "语音通话",
-      "video_call": "视频通话",
-      "screen_share": "屏幕共享",
-      "remote_assist": "远程协助",
-      "invite_to_group": "邀请进群",
-      "start_group_chat": "发起群聊"
-    },
-    "sidebar": {
-      "single": {
-        "pin": "设为置顶",
-        "mute": "消息免打扰",
-        "shield": "屏蔽此人",
-        "delete_history": "删除聊天记录",
-        "delete_friend": "删除好友",
-        "report": "被骚扰了？举报该用户"
-      },
-      "group": {
-        "name_placeholder": "请输入群名称(最多12字)",
-        "official_badge": "官方群聊认证",
-        "copy": "复制",
-        "qr": "二维码",
-        "members": "群成员",
-        "channel_members": "频道成员",
-        "my_name": "我本群的昵称",
-        "remark": "群备注",
-        "remark_desc": "(群备注仅自己可见)",
-        "settings": {
-          "title": "群设置",
-          "pin": "设为置顶",
-          "mute": "消息免打扰",
-          "scan": "允许扫码进群"
-        },
-        "message_settings": {
-          "title": "群消息设置"
-        },
-        "manage_members": "管理群成员",
-        "delete_history": "删除聊天记录",
-        "dissolve": "解散群聊",
-        "exit": "退出群聊",
-        "report": "被骚扰了？举报该群"
-      }
-    },
-    "message_setting": {
-      "receive_no_alert": "接收消息但不提醒",
-      "shield": "屏蔽消息"
-    },
-    "modal": {
-      "confirm": "确定",
-      "cancel": "取消",
-      "invite_friends": "邀请好友进群",
-      "tips": {
-        "delete_friend": "确定删除该好友吗?",
-        "dissolve_group": "确定解散该群聊?",
-        "exit_group": "确定退出该群聊?",
-        "rename_group": "确定将群名称修改为 {name} 吗？",
-        "update_info": "确定保存群信息修改吗？",
-        "delete_history": "确定后将删除本地聊天记录"
-      }
-    },
-    "qr": {
-      "tip": "扫描二维码加入群聊",
-      "group_id_label": "群号：",
-      "actions": {
-        "forward": "转发",
-        "copy_group_id": "复制群号",
-        "save_image": "保存图片"
-      },
-      "toast": {
-        "group_id_copied": "群号已复制",
-        "save_success": "图片已保存",
-        "save_failed": "保存失败"
-      }
-    },
-    "toast": {
-      "copy_success": "复制成功 {account}",
-      "group_info_updated": "群聊信息已更新",
-      "group_info_update_failed": "群聊信息更新失败",
-      "todo": "暂未实现",
-      "pin_on": "已置顶",
-      "pin_off": "已取消置顶",
-      "pin_failed": "置顶失败",
-      "mute_on": "已设置接收消息但不提醒",
-      "mute_off": "已允许消息提醒",
-      "shield_on": "已屏蔽消息",
-      "shield_off": "已取消屏蔽",
-      "action_failed": "设置失败",
-      "group_name_empty": "群名称不能为空",
-      "group_name_too_long": "群名称不能超过12个字符",
-      "delete_history_success": "聊天记录已删除",
-      "delete_friend_success": "已删除好友",
-      "dissolve_not_allowed": "无法解散频道",
-      "dissolve_success": "已解散群聊",
-      "exit_not_allowed": "无法退出频道",
-      "exit_success": "已退出群聊",
-      "group_name_update_failed": "群名称更新失败"
-    },
-    "chat_info": "聊天信息",
-    "clear_messages": "清除消息",
-    "clear_messages_confirm_message": "确定清除所有消息？",
-    "delete_friend": "删除好友",
-    "delete_friend_confirm": "确定删除该好友？",
-    "delete_room": "删除房间",
-    "delete_room_confirm": "确定删除该房间？",
-    "group_info": "群信息",
-    "group_members": "群成员",
-    "group_name": "群名称",
-    "group_qr_code": "群二维码",
-    "input_group_name": "输入群名称…",
-    "input_my_name": "输入我的名称…",
-    "input_remark": "输入备注…",
-    "my_name_in_group": "我在群中的名称",
-    "pin_room": "固定房间",
-    "remark": "备注",
-    "share_qr_code": "分享二维码"
-  },
   "manage_group_member": {
     "title": "管理群成员",
     "search_placeholder_mobile": "搜索成员~",
@@ -314,6 +121,168 @@
     "confirm_remove_title": "确认踢出",
     "channel_manage_unsupported": "频道不支持管理成员"
   },
+  "secret_chat": {
+    "title": "私密聊天",
+    "no_password": "请先在设置中设置私密聊天密码",
+    "hidden_sessions_list": "隐藏会话列表",
+    "no_hidden_sessions": "暂无隐藏会话",
+    "no_messages": "暂无消息",
+    "hidden_sessions": "已隐藏的会话"
+  },
+  "chat_sidebar": {
+    "actions": {
+      "retry": "重试"
+    },
+    "search": {
+      "placeholder": "搜索"
+    },
+    "quota": {
+      "title": "配额"
+    },
+    "favorites": {
+      "total": "收藏消息 {count} 条",
+      "export_md": "导出 Markdown",
+      "export_txt": "导出文本",
+      "search_placeholder": "搜索收藏消息",
+      "empty": "暂无收藏消息",
+      "load_failed": "加载收藏消息失败"
+    },
+    "groups": {
+      "offline": "离线",
+      "online": "在线"
+    },
+    "roles": {
+      "owner": "群主",
+      "admin": "管理员",
+      "member": "普通成员"
+    },
+    "empty": {
+      "no_chat_selected": "未选择会话",
+      "select_to_start": "选择一个会话或发起新聊天",
+      "pins": "暂无置顶消息",
+      "files": "暂无文件"
+    },
+    "online_members": "在线成员 {count}",
+    "tabs": {
+      "members": "成员",
+      "files": "文件",
+      "pins": "置顶",
+      "favorites": "收藏"
+    },
+    "toggle": {
+      "expand": "展开信息面板",
+      "collapse": "收起信息面板"
+    },
+    "announcement": {
+      "title": "群公告须知",
+      "load_failed": "公告加载失败，请重试",
+      "default": "请不要把重要信息发到该群，网络不是法外之地，请遵守网络规范，否则直接删除。"
+    },
+    "pins": {
+      "title": "置顶消息",
+      "cancel": "取消置顶",
+      "selector_empty": "暂无置顶消息",
+      "selector_title": "置顶消息"
+    }
+  },
+  "chat_header": {
+    "delete_room": "删除房间",
+    "meeting_widget_name": "房间会议",
+    "delete_friend": "删除好友",
+    "group_members": "群成员",
+    "chat_info": "聊天信息",
+    "delete_friend_confirm": "确定删除该好友？",
+    "message_setting": {
+      "receive_no_alert": "接收消息但不提醒",
+      "shield": "屏蔽消息"
+    },
+    "federated": "联邦房间",
+    "group_name": "群名称",
+    "share_qr_code": "分享二维码",
+    "group_qr_code": "群二维码",
+    "my_name_in_group": "我在群中的名称",
+    "remark": "备注",
+    "input_group_name": "输入群名称…",
+    "channel": "频道",
+    "input_my_name": "输入我的名称…",
+    "group_info": "群信息",
+    "clear_messages": "清除消息",
+    "delete_room_confirm": "确定删除该房间？",
+    "pin_room": "固定房间",
+    "member_count": "{count} 位成员",
+    "clear_messages_confirm_message": "确定清除所有消息？",
+    "federated_tooltip": "联邦房间 · 由 {server} 提供服务",
+    "input_remark": "输入备注…",
+    "sidebar": {
+      "group": {
+        "message_settings": {
+          "title": "群消息设置"
+        }
+      }
+    }
+  },
+  "plugins": {
+    "room_list": "房间列表",
+    "room_list_short_title": "房间",
+    "room_detail": {
+      "just_now": "刚刚",
+      "yesterday": "昨天",
+      "mute": "免打扰"
+    },
+    "space_list": "空间列表",
+    "space_list_short_title": "空间",
+    "federation": "联邦",
+    "federation_short_title": "联邦",
+    "federation_loading": "正在加载联邦服务器...",
+    "federation_empty": "暂无联邦服务器",
+    "status": {
+      "builtin": "已内置",
+      "uninstalling": "卸载中"
+    },
+    "actions": {
+      "install": "安装",
+      "pin": "固定侧边栏",
+      "unpin": "取消固定",
+      "uninstall": "卸载"
+    }
+  },
+  "action": {
+    "message": "消息列表",
+    "message_short_title": "消息",
+    "contact": "好友列表",
+    "contact_short_title": "好友",
+    "file_manager": "文件管理器",
+    "file_manager_short_title": "文件",
+    "favorite": "收藏列表",
+    "favorite_short_title": "收藏",
+    "plugin": "插件",
+    "plugin_manage": "插件管理",
+    "more": "更多",
+    "opened": "已打开"
+  },
+  "chat_details": {
+    "single": {
+      "empty_signature": "这个人很高冷，暂时没有留下什么",
+      "region": "地区：{place}",
+      "unknown": "未知",
+      "friend_info_missing": "无法获取好友信息",
+      "footer": {
+        "audio_call": "打电话",
+        "video_call": "打视频"
+      }
+    },
+    "group": {
+      "name_label": "房间名称",
+      "edit_name": "编辑房间名称",
+      "announcement": {
+        "label": "群公告",
+        "window_title": "查看群公告"
+      }
+    },
+    "actions": {
+      "message": "进入聊天"
+    }
+  },
   "profile_card": {
     "online_status": "在线状态",
     "status": {
@@ -324,22 +293,15 @@
     },
     "labels": {
       "account": "账号",
-      "location": "所在地",
-      "badges": "获得的徽章",
-      "activities": "动态",
       "sex": "性别",
       "bio": "个人简介",
       "region": "地区",
       "birthday": "生日",
-      "joinTime": "加入时间",
       "male": "男",
       "female": "女"
     },
-    "location_unknown": "未知",
     "tooltip": {
-      "copy_account": "复制账号",
-      "bound_gitee": "已绑定 Gitee",
-      "bound_github": "已绑定 GitHub"
+      "copy_account": "复制账号"
     },
     "buttons": {
       "edit": "编辑资料",
@@ -360,111 +322,6 @@
     "error": {
       "title": "资料加载失败",
       "desc": "暂时无法获取该用户资料，请稍后重试"
-    },
-    "modal": {
-      "add_friend": "申请加好友"
-    },
-    "account_actions": "账号操作",
-    "developer_badge": "Tjg开发工程师"
-  },
-  "profile_edit": {
-    "title": "编辑资料",
-    "avatar": {
-      "change": "更换头像",
-      "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb",
-      "choose_from_gallery": "从头像库选择"
-    },
-    "badge": {
-      "current": "当前佩戴的徽章:",
-      "wear": "佩戴"
-    },
-    "errorBoundary": {
-      "title": "出现错误",
-      "message": "应用程序遇到了一个错误，请尝试刷新页面或重新加载应用。",
-      "retry": "重试",
-      "reload": "重新加载",
-      "showDetails": "显示详细信息",
-      "hideDetails": "隐藏详细信息"
-    },
-    "form": {
-      "nickname": {
-        "label": "昵称",
-        "placeholder": "请输入你的昵称",
-        "remaining": "剩余改名次数: {count}",
-        "unlimited": "改名次数: 无限制"
-      }
-    },
-    "actions": {
-      "save": "保存"
-    },
-    "toast": {
-      "avatar_update_success": "头像更新成功",
-      "nickname_empty": "昵称不能为空",
-      "rename_limit": "改名次数不足",
-      "save_success": "保存成功",
-      "badge_wear_success": "佩戴成功",
-      "badge_wear_failed": "佩戴失败，请稍后重试",
-      "save_failed": "保存失败"
-    }
-  },
-  "chat_sidebar": {
-    "announcement": {
-      "title": "群公告须知",
-      "load_failed": "公告加载失败，请重试",
-      "default": "请不要把重要信息发到该群，网络不是法外之地，请遵守网络规范，否则直接删除。",
-      "window": {
-        "add": "新增群公告",
-        "view": "查看群公告"
-      }
-    },
-    "actions": {
-      "retry": "重试"
-    },
-    "online_members": "在线成员 {count}",
-    "search": {
-      "placeholder": "搜索"
-    },
-    "roles": {
-      "owner": "群主",
-      "admin": "管理员",
-      "member": "普通成员"
-    },
-    "empty": {
-      "no_chat_selected": "未选择会话",
-      "select_to_start": "选择一个会话或发起新聊天",
-      "pins": "暂无置顶消息",
-      "files": "暂无文件"
-    },
-    "toggle": {
-      "expand": "展开信息面板",
-      "collapse": "收起信息面板"
-    },
-    "tabs": {
-      "members": "成员",
-      "files": "文件",
-      "pins": "置顶",
-      "favorites": "收藏"
-    },
-    "pins": {
-      "title": "置顶消息",
-      "cancel": "取消置顶",
-      "selector_empty": "暂无置顶消息",
-      "selector_title": "置顶消息"
-    },
-    "favorites": {
-      "total": "收藏消息 {count} 条",
-      "export_md": "导出 Markdown",
-      "export_txt": "导出文本",
-      "search_placeholder": "搜索收藏消息",
-      "empty": "暂无收藏消息",
-      "load_failed": "加载收藏消息失败"
-    },
-    "groups": {
-      "offline": "离线",
-      "online": "在线"
-    },
-    "quota": {
-      "title": "配额"
     }
   },
   "about": {
@@ -472,6 +329,16 @@
     "device": "当前设备：{type}{version}",
     "copyright": "Copyright © {start}-{end} 龙卷风",
     "rights": "All Rights Reserved."
+  },
+  "loading": {
+    "app": "加载应用中...",
+    "left_panel": "加载左侧面板...",
+    "data": "加载数据中...",
+    "right_panel": "加载右侧面板..."
+  },
+  "file_drop": {
+    "title": "松开鼠标即可发送文件",
+    "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件"
   },
   "apply_list": {
     "friend_notice": "好友通知",
@@ -509,125 +376,5 @@
     },
     "empty_friend": "暂无好友申请",
     "empty_group": "暂无群通知"
-  },
-  "chat_main": {
-    "network_offline": "当前网络不可用，请检查你的网络设置",
-    "network_connecting": "正在连接服务器...",
-    "network_ws_offline": "网络连接已断开，正在尝试重连...",
-    "copy": {
-      "empty": "没有可复制的内容",
-      "image_processing": "正在将 {format} 格式图片转换为 PNG 并复制...",
-      "image_success": "图片已复制到剪贴板",
-      "image_convert_success": "图片已转换为 PNG 并复制到剪贴板",
-      "selected_success": "选中文本已复制",
-      "message_success": "消息内容已复制",
-      "unknown_error": "复制内容失败，请稍后再试"
-    },
-    "feature": {
-      "coming_soon": "功能开发中"
-    },
-    "translate": {
-      "empty": "没有可翻译的内容",
-      "failed": "翻译失败，请稍后重试"
-    },
-    "file": {
-      "missing_local": "暂时找不到本地文件，请先下载后再试~",
-      "show_failed": "无法在文件夹中显示该文件",
-      "download_prompt": "文件还未下载，请先下载后再试~",
-      "download_success": "文件下载完成，请查看~",
-      "download_failed": "文件下载失败，请重试",
-      "save_success": "文件已保存到本地",
-      "save_failed": "文件保存失败，请重试"
-    },
-    "image": {
-      "fetch_failed": "获取图片地址失败",
-      "locate_failed": "暂时无法定位该图片~",
-      "download_prompt": "图片未下载，正在保存到本地...",
-      "save_success": "图片已保存到本地",
-      "save_failed": "保存图片失败",
-      "download_failed": "图片下载失败，请重试~"
-    },
-    "delete": {
-      "invalid_session": "无法确定消息所属的会话",
-      "confirm": "删除后将不会出现在你的消息记录中，确定删除吗?",
-      "success": "消息已删除"
-    },
-    "announcement": {
-      "view_all": "查看全部"
-    },
-    "typing": {
-      "single": "{name} 正在输入...",
-      "multiple": "{count} 人正在输入..."
-    },
-    "no_more": "没有更多消息",
-    "empty_title": "暂无消息",
-    "empty_desc": "发送第一条消息，开始聊天吧",
-    "new_messages": "{count} 条新消息",
-    "confirm": "确定",
-    "cancel": "取消",
-    "group_nickname": {
-      "title": "修改群昵称",
-      "placeholder": "请输入群昵称",
-      "error": {
-        "empty": "群昵称不能为空",
-        "invalid_room": "当前群聊信息异常"
-      }
-    },
-    "toast": {
-      "searching": "正在查找消息...",
-      "not_found": "加载历史消息失败，请稍后重试",
-      "multi_select_mobile": "移动端暂不支持消息多选",
-      "disbanded_group": "该群聊已解散，无法执行此操作"
-    }
-  },
-  "friends_list": {
-    "notice": {
-      "friend": "好友通知",
-      "group": "群通知"
-    },
-    "tabs": {
-      "friend": "好友",
-      "group": "群聊"
-    },
-    "collapse": {
-      "friend": "我的好友",
-      "group": "我的群聊"
-    },
-    "group": {
-      "special": "特别关心",
-      "normal": "我的好友",
-      "blocked": "已屏蔽"
-    },
-    "bot_tag": "助手",
-    "status": {
-      "online": "在线",
-      "offline": "离线",
-      "blocked": "已屏蔽"
-    },
-    "menu": {
-      "add_group": "添加分组",
-      "rename_group": "重命名该组",
-      "delete_group": "删除分组"
-    }
-  },
-  "create_group": {
-    "title": "创建群聊",
-    "action": "创建",
-    "success": "创建群聊成功",
-    "fail": "创建群聊失败",
-    "required_tag": "必选"
-  },
-  "file_drop": {
-    "title": "松开鼠标即可发送文件",
-    "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件"
-  },
-  "secret_chat": {
-    "title": "私密聊天",
-    "desc": "进入需要密码保护的私密会话",
-    "no_password": "请先在设置中设置私密聊天密码",
-    "hidden_sessions_list": "隐藏会话列表",
-    "no_hidden_sessions": "暂无隐藏会话",
-    "no_messages": "暂无消息",
-    "hidden_sessions": "已隐藏的会话"
   }
 }

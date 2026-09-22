@@ -250,6 +250,25 @@ describe('SessionLogoutService.resetLocalSessionState', () => {
     expect(clearInvitePolicyCacheMock).toHaveBeenCalledWith('@alice:test')
   })
 
+  it('clears the device-local DND mirror so the next account cannot inherit the previous window', async () => {
+    localStorage.setItem('tjg-push-dnd', 'true')
+    localStorage.setItem('tjg-push-dnd-start', '1000')
+    localStorage.setItem('tjg-push-dnd-end', '2000')
+    localStorage.setItem('tjg-push-dnd-updated-at', String(Date.now() + 60_000))
+    localStorage.setItem('tjg-push-dnd-owner', '@alice:test')
+
+    const { host } = createMockHost()
+    const service = new SessionLogoutService(host, new SessionRuntimeState())
+
+    await service.resetLocalSessionState()
+
+    expect(localStorage.getItem('tjg-push-dnd')).toBeNull()
+    expect(localStorage.getItem('tjg-push-dnd-start')).toBeNull()
+    expect(localStorage.getItem('tjg-push-dnd-end')).toBeNull()
+    expect(localStorage.getItem('tjg-push-dnd-updated-at')).toBeNull()
+    expect(localStorage.getItem('tjg-push-dnd-owner')).toBeNull()
+  })
+
   it('preserves tokens when preserveTokens is true', async () => {
     localStorage.setItem('user', 'u')
     localStorage.setItem('TOKEN', 't')

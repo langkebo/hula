@@ -14,9 +14,6 @@
     "find_friend": "找好友",
     "find_group": "找群聊"
   },
-  "friend": {
-    "title": "我的好友"
-  },
   "group": {
     "title": "我的群聊",
     "special": "特别关心",

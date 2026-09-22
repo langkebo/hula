@@ -1,24 +1,9 @@
 {
-  "webrtc": {
-    "no_device": "没有可用的设备!",
-    "get_stream_failed": "获取本地媒体流失败，请检查设备!",
-    "rtc_connection_failed": "RTC通讯连接失败!",
-    "get_devices_failed": "获取设备失败!",
-    "call_timeout": "通话无人接听，自动挂断",
-    "cleanup_failed": "部分资源清理失败!",
-    "room_not_found": "房间号不存在，请重新连接！",
-    "camera_failed": "无法开启摄像头"
-  },
   "window": {
     "create_failed": "窗口创建失败: {label}",
-    "modal_create_failed": "创建{title}窗口失败",
     "session_not_ready": "当前会话尚未准备好",
     "group_call_not_supported": "群聊暂不支持音视频通话",
     "user_info_missing": "无法获取对方用户信息"
-  },
-  "download": {
-    "failed": "下载失败",
-    "read_failed": "无法读取响应内容"
   },
   "avatar_upload": {
     "image_load_failed": "图片加载失败",
@@ -33,8 +18,7 @@
     "upload_failed": "文件上传失败，请重试"
   },
   "session": {
-    "detail_failed": "获取会话详情失败",
-    "show_failed": "显示会话失败"
+    "detail_failed": "获取会话详情失败"
   },
   "msg_input": {
     "file_size_exceeded": "文件大小不能超过500MB",

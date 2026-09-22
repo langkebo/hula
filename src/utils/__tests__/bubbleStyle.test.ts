@@ -102,8 +102,10 @@ describe('load/save', () => {
  * 气泡圆角一直由 render-message.scss 固定。jsdom/happy-dom 不解析 UnoCSS，
  * 所以这里读**磁盘上的 scss 源文件**做断言，证明属性与气泡圆角真的连上了。
  *
- * 方形规则必须同时覆盖接收方 `.bubble` 与发送方 `.bubble-oneself`；
- * 后者自身有 `rounded-[12px_4px_12px_12px]` 覆盖，只写 `.bubble` 会漏掉一半气泡。
+ * 方形规则必须同时覆盖接收方 `.bubble` 与发送方 `.bubble-oneself`；两者各自有
+ * `rounded-[12px_4px_12px_12px]` 覆盖，只写 `.bubble` 会漏掉一半气泡。
+ * 旧类 `.photo-wall` 全仓零生产者，其 SCSS 块已随本次债务清理删除，不再列入断言
+ * （复活时应新增生产者与样式，而不是靠一条无生产者的选择器制造"已覆盖"错觉）。
  */
 describe('render-message.scss 气泡圆角接线', () => {
   const scss = readFileSync(resolve(__dirname, '../../..', 'src/styles/scss/render-message.scss'), 'utf8')

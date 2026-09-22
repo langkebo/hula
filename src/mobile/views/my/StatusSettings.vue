@@ -60,7 +60,9 @@ import { showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
+import { OnlineEnum } from '@/enums'
+import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { createLogger } from '@/utils/Logger'
 
@@ -100,12 +102,19 @@ async function handleSave() {
       offline: 'offline'
     }
 
-    await matrixAccountService.setPresence(
-      presenceMap[currentStatusId.value] || 'online',
-      statusMessage.value || undefined
-    )
+    const targetPresence = presenceMap[currentStatusId.value] || 'online'
+    // 与桌面同一唯一写入点：门控与记账都在 matrixPresenceService.setPresence 内完成，
+    // 这里只传意图，并用返回的生效值把本地 activeStatus 同步为离线（hidesOnline 同语义）。
+    const effective = await matrixPresenceService.setPresence(targetPresence, statusMessage.value || undefined)
+    const hidesOnline = effective !== targetPresence
 
     userStatusStore.stateId = currentStatusId.value
+
+    const userStore = useUserStore()
+    if (hidesOnline && userStore.userInfo) {
+      userStore.userInfo.activeStatus = OnlineEnum.OFFLINE
+    }
+
     showToast({
       type: 'success',
       message: t('mobile_status.save_success')

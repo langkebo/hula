@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-11T10:32:29.556Z",
-  "count": 1064,
+  "count": 1063,
   "missing": [
     "src/services/backend/config.ts::clearMatrixSessionEndpointConfig",
     "src/services/backend/config.ts::getDefaultMatrixEndpointConfig",
@@ -692,7 +692,6 @@
     "src/services/matrix/messaging/MatrixReactionService.ts::removeReaction",
     "src/services/matrix/messaging/MatrixReactionService.ts::toggleReaction",
     "src/services/matrix/messaging/MatrixReceiptService.ts::getEventReaders",
-    "src/services/matrix/messaging/MatrixReceiptService.ts::getReadReceipts",
     "src/services/matrix/messaging/MatrixReceiptService.ts::getRoomsWithUnread",
     "src/services/matrix/messaging/MatrixReceiptService.ts::getUnreadCount",
     "src/services/matrix/messaging/MatrixReceiptService.ts::hasUnread",

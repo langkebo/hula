@@ -67,8 +67,8 @@ vi.mock('@/services/matrix/messaging/MatrixMessageService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/messaging/MatrixReceiptService', () => ({
-  matrixReceiptService: {
+vi.mock('@/services/matrix/messaging/MatrixReadStateService', () => ({
+  matrixReadStateService: {
     getReadReceipts: getReadReceiptsMock
   }
 }))

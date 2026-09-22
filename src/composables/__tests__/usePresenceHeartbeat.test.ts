@@ -13,7 +13,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 import { OnlineEnum } from '@/enums'
 
-const setPresenceMock = vi.fn<(state: string) => Promise<void>>(() => Promise.resolve())
+// presence 服务现在返回生效值，心跳据此镜像本地 activeStatus；mock 需返回同值
+const setPresenceMock = vi.fn<(state: string) => Promise<string>>((state: string) => Promise.resolve(state))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn(),

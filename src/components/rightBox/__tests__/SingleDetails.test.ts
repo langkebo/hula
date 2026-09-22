@@ -43,7 +43,9 @@ const getUserDevicesMock = vi.hoisted(() =>
  * 源码键名写错时桩抄的也是错键名，测试全绿、界面渲染裸 key（「自洽 stub」反模式）。
  * 本文件即实证：`FriendDetailsSections` 的联邦 chip 从 `friend.detail.federated_user`
  * 换到 `friend.federated_user` 后，手写桩仍是旧键 → 断言拿到裸 key，
- * 而真实语言表里两个键都健全（`friend.json` 的 `detail.federated_user` 与顶层 `federated_user`）。
+ * 而当时真实语言表里两个键都健全（`friend.json` 的 `detail.federated_user` 与顶层
+ * `federated_user`）。旧键 `friend.detail.federated_user` 已在 2026-09-22 孤儿文案清理中
+ * 作为零引用重复路径删除（Task 7），如今只剩顶层 `friend.federated_user` 一个活键。
  * `createI18nMock()` 直接解析 `locales/zh-CN/*.json`，未解析到的键原样返回，
  * 断言立刻暴露。故下面的文案断言一律用 `resolveMessage()` 取真实文案。
  */

@@ -1,5 +1,6 @@
 import type { IPusher, IPusherRequest, MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useI18nGlobal } from '@/services/i18n'
 import matrixClientService from '../../MatrixClientService'
 import { matrixNotificationService } from '../MatrixNotificationService'
 
@@ -7,6 +8,14 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
   error: vi.fn(),
   warn: vi.fn()
+}))
+
+const { isPermissionGrantedMock } = vi.hoisted(() => ({
+  isPermissionGrantedMock: vi.fn()
+}))
+
+vi.mock('@tauri-apps/plugin-notification', () => ({
+  isPermissionGranted: isPermissionGrantedMock
 }))
 
 vi.mock('../../MatrixClientService', () => ({
@@ -180,12 +189,12 @@ describe('MatrixNotificationService', () => {
     it('should update notification config', () => {
       matrixNotificationService.updateConfig({
         enableDesktop: false,
-        enableSound: false
+        showMessageContent: false
       })
 
       const config = matrixNotificationService.getConfig()
       expect(config.enableDesktop).toBe(false)
-      expect(config.enableSound).toBe(false)
+      expect(config.showMessageContent).toBe(false)
     })
   })
 
@@ -194,12 +203,27 @@ describe('MatrixNotificationService', () => {
       const config = matrixNotificationService.getConfig()
 
       expect(config).toHaveProperty('enableDesktop')
-      expect(config).toHaveProperty('enableSound')
-      expect(config).toHaveProperty('enableVibrate')
-      expect(config).toHaveProperty('showPreview')
       expect(config).toHaveProperty('showSender')
       expect(config).toHaveProperty('showMessageContent')
       expect(config).toHaveProperty('events')
+    })
+
+    it('no longer exposes the dead sound / vibrate / preview fields', () => {
+      const config = matrixNotificationService.getConfig() as unknown as Record<string, unknown>
+
+      expect(config).not.toHaveProperty('enableSound')
+      expect(config).not.toHaveProperty('enableVibrate')
+      expect(config).not.toHaveProperty('showPreview')
+    })
+  })
+
+  describe('dead surface removal', () => {
+    it('no longer exposes showNotification / playSound / vibrate', () => {
+      const service = matrixNotificationService as unknown as Record<string, unknown>
+
+      expect(service.showNotification).toBeUndefined()
+      expect(service.playSound).toBeUndefined()
+      expect(service.vibrate).toBeUndefined()
     })
   })
 
@@ -327,12 +351,67 @@ describe('MatrixNotificationService', () => {
       expect(localStorage.getItem(LEGACY_CONTENT_KEY)).toBeNull()
       expect(localStorage.getItem(LEGACY_SENDER_KEY)).toBeNull()
     })
+
+    it('adopts legacy display keys when the persisted config is corrupt JSON', async () => {
+      // 损坏时若回落「填满的默认配置」，默认值会被当成显式值：旧键不被采纳却被删除
+      // （用户关过的 showSender 升级后被静默恢复为开）。回落 {} 才表示"什么都没显式写过"。
+      localStorage.setItem(CONFIG_STORAGE_KEY, '{oops')
+      localStorage.setItem(LEGACY_SENDER_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().showSender).toBe(false)
+      expect(localStorage.getItem(LEGACY_SENDER_KEY)).toBeNull()
+    })
+
+    it('adopts legacy display keys when the persisted config fails validation', async () => {
+      // 合法 JSON 但不是配置对象：isValidNotificationConfig 判否 → 同样必须回落 {}
+      // （注意 `{ enableDesktop: 'yes' }` 不会触发校验失败：validateObject 在 requiredKeys
+      //  为空时不执行单键校验器，该字段类型错误被静默接受，见下面单独的回归用例）
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(['not', 'a', 'config']))
+      localStorage.setItem(LEGACY_CONTENT_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().showMessageContent).toBe(false)
+      expect(localStorage.getItem(LEGACY_CONTENT_KEY)).toBeNull()
+    })
+
+    it('still adopts legacy display keys when a persisted field has the wrong type', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ enableDesktop: 'yes' }))
+      localStorage.setItem(LEGACY_CONTENT_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().showMessageContent).toBe(false)
+      expect(localStorage.getItem(LEGACY_CONTENT_KEY)).toBeNull()
+    })
+
+    it('still lets an explicit persisted value win for its own field while other fields migrate', async () => {
+      // 对照组：合法配置里显式写过的字段保持新值，未写过的字段仍采纳旧键
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ showSender: false }))
+      localStorage.setItem(LEGACY_SENDER_KEY, 'true')
+      localStorage.setItem(LEGACY_CONTENT_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      const config = fresh.getConfig()
+      expect(config.showSender).toBe(false)
+      expect(config.showMessageContent).toBe(false)
+      expect(localStorage.getItem(LEGACY_SENDER_KEY)).toBeNull()
+      expect(localStorage.getItem(LEGACY_CONTENT_KEY)).toBeNull()
+    })
   })
 
   describe('dnd settings', () => {
     const DND_ENABLED_KEY = 'tjg-push-dnd'
     const DND_START_KEY = 'tjg-push-dnd-start'
     const DND_END_KEY = 'tjg-push-dnd-end'
+    const DND_UPDATED_AT_KEY = 'tjg-push-dnd-updated-at'
 
     /** 起止同一时刻 = 全天勿扰（与纯函数语义一致），避免依赖真实时钟。 */
     const allDayWindow = () => {
@@ -359,16 +438,19 @@ describe('MatrixNotificationService', () => {
       vi.resetModules()
       const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
 
-      expect(fresh.getDndSettings()).toEqual({ enabled: false, startTime: null, endTime: null })
+      expect(fresh.getDndSettings()).toEqual({ enabled: false, startTime: null, endTime: null, updatedAt: 0 })
     })
 
-    it('writes the window to the localStorage mirror', () => {
+    it('writes the window and its write timestamp to the localStorage mirror', () => {
       matrixNotificationService.setDndSettings({ enabled: true, startTime: 1000, endTime: 2000 })
 
-      expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+      const settings = matrixNotificationService.getDndSettings()
+      expect(settings).toMatchObject({ enabled: true, startTime: 1000, endTime: 2000 })
+      expect(settings.updatedAt).toBeGreaterThan(0)
       expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('true')
       expect(localStorage.getItem(DND_START_KEY)).toBe('1000')
       expect(localStorage.getItem(DND_END_KEY)).toBe('2000')
+      expect(localStorage.getItem(DND_UPDATED_AT_KEY)).toBe(String(settings.updatedAt))
     })
 
     it('clears a boundary from the mirror when the picker is emptied', () => {
@@ -381,22 +463,29 @@ describe('MatrixNotificationService', () => {
 
     it('hydrates a fresh instance from the mirror in the constructor', async () => {
       matrixNotificationService.setDndSettings({ enabled: true, startTime: 1000, endTime: 2000 })
+      const written = matrixNotificationService.getDndSettings()
 
       vi.resetModules()
       const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
 
-      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+      expect(fresh.getDndSettings()).toEqual({
+        enabled: true,
+        startTime: 1000,
+        endTime: 2000,
+        updatedAt: written.updatedAt
+      })
     })
 
     it('drops a corrupt mirror timestamp instead of guessing', async () => {
       localStorage.setItem(DND_ENABLED_KEY, 'true')
       localStorage.setItem(DND_START_KEY, 'not-a-number')
       localStorage.setItem(DND_END_KEY, '2000')
+      localStorage.removeItem(DND_UPDATED_AT_KEY)
 
       vi.resetModules()
       const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
 
-      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: null, endTime: 2000 })
+      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: null, endTime: 2000, updatedAt: 0 })
     })
 
     it('reports the injected clock inside an all-day window and outside a bounded one', () => {
@@ -411,23 +500,63 @@ describe('MatrixNotificationService', () => {
       expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(false)
     })
 
-    it('refreshes the cache when the account data has a window', async () => {
+    it('waits for the client before writing DND to account data instead of failing silently', async () => {
+      // beforeEach 把同步方法打桩了，这里恢复真实实现来验证"先等就绪再写"
+      dndSyncSpy.mockRestore()
+      const setAccountData = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setAccountData } as unknown as MatrixClient)
+
+      await matrixNotificationService.syncDndToAccountData({
+        enabled: false,
+        startTime: null,
+        endTime: null,
+        updatedAt: 123
+      })
+
+      expect(matrixClientService.waitForClientReady).toHaveBeenCalled()
+      expect(setAccountData).toHaveBeenCalledWith('io.hula.dnd_settings', {
+        enabled: false,
+        startTime: null,
+        endTime: null,
+        updatedAt: 123
+      })
+    })
+
+    it('does not leak an unhandled rejection when the DND account-data write fails', async () => {
+      dndSyncSpy.mockRestore()
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        setAccountData: vi.fn().mockRejectedValue(new Error('offline'))
+      } as unknown as MatrixClient)
+
+      await expect(
+        matrixNotificationService.syncDndToAccountData({ enabled: true, startTime: 1, endTime: 2, updatedAt: 1 })
+      ).resolves.toBeUndefined()
+    })
+
+    it('refreshes the cache when the account data has a newer window', async () => {
+      const serverUpdatedAt = Date.now() + 60_000
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getAccountData: vi.fn(() => ({
-          getContent: () => ({ enabled: true, startTime: 1000, endTime: 2000 })
+          getContent: () => ({ enabled: true, startTime: 1000, endTime: 2000, updatedAt: serverUpdatedAt })
         }))
       } as unknown as MatrixClient)
 
       const result = await matrixNotificationService.syncDndFromAccountData()
 
-      expect(result).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
-      expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+      expect(result).toEqual({ enabled: true, startTime: 1000, endTime: 2000, updatedAt: serverUpdatedAt })
+      expect(matrixNotificationService.getDndSettings()).toEqual({
+        enabled: true,
+        startTime: 1000,
+        endTime: 2000,
+        updatedAt: serverUpdatedAt
+      })
     })
 
     it('writes the local mirror after a successful account-data read so boot hydration sees it', async () => {
+      const serverUpdatedAt = Date.now() + 60_000
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getAccountData: vi.fn(() => ({
-          getContent: () => ({ enabled: true, startTime: 1000, endTime: 2000 })
+          getContent: () => ({ enabled: true, startTime: 1000, endTime: 2000, updatedAt: serverUpdatedAt })
         }))
       } as unknown as MatrixClient)
 
@@ -436,23 +565,30 @@ describe('MatrixNotificationService', () => {
       expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('true')
       expect(localStorage.getItem(DND_START_KEY)).toBe('1000')
       expect(localStorage.getItem(DND_END_KEY)).toBe('2000')
+      expect(localStorage.getItem(DND_UPDATED_AT_KEY)).toBe(String(serverUpdatedAt))
 
       // 冷启动：新实例只能从镜像水合，必须拿到账号数据那份窗口
       vi.resetModules()
       const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
-      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+      expect(fresh.getDndSettings()).toEqual({
+        enabled: true,
+        startTime: 1000,
+        endTime: 2000,
+        updatedAt: serverUpdatedAt
+      })
     })
 
     it('drops non-finite account-data timestamps instead of suppressing notifications', async () => {
+      const serverUpdatedAt = Date.now() + 60_000
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getAccountData: vi.fn(() => ({
-          getContent: () => ({ enabled: true, startTime: Number.NaN, endTime: 2000 })
+          getContent: () => ({ enabled: true, startTime: Number.NaN, endTime: 2000, updatedAt: serverUpdatedAt })
         }))
       } as unknown as MatrixClient)
 
       const result = await matrixNotificationService.syncDndFromAccountData()
 
-      expect(result).toEqual({ enabled: true, startTime: null, endTime: 2000 })
+      expect(result).toEqual({ enabled: true, startTime: null, endTime: 2000, updatedAt: serverUpdatedAt })
       // 边界不完整 → 不抑制，而不是凭一个 NaN 走跨午夜分支误判
       expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(false)
     })
@@ -469,6 +605,118 @@ describe('MatrixNotificationService', () => {
       matrixNotificationService.setDndSettings({ enabled: true, startTime: null, endTime: null })
 
       expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(true)
+    })
+  })
+
+  /**
+   * 冷启动 DND 拉取的冲突规则：`io.hula.dnd_settings` 新增 `updatedAt`，
+   * 只有服务端更新时间更新时才覆盖本地镜像，否则本机刚改的勿扰设置会被旧值顶回去。
+   */
+  describe('dnd account data pull', () => {
+    const DND_ENABLED_KEY = 'tjg-push-dnd'
+    const DND_UPDATED_AT_KEY = 'tjg-push-dnd-updated-at'
+
+    const stubAccountData = (content: Record<string, unknown> | null, userId = '@alice:test') => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getUserId: () => userId,
+        getAccountData: vi.fn(() => (content ? { getContent: () => content } : undefined))
+      } as unknown as MatrixClient)
+    }
+
+    // setDndSettings 的账号数据同步是副作用（stub 客户端没有 setAccountData 时会打错误日志），
+    // 与 dnd settings 块一样只打桩同步，保证测试输出干净；需要验证真实写入的用例单独 mockRestore。
+    let dndSyncSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      localStorage.clear()
+      dndSyncSpy = vi.spyOn(matrixNotificationService, 'syncDndToAccountData').mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+      dndSyncSpy.mockRestore()
+    })
+
+    it('applies a legacy server window at boot when the local mirror has no DND yet', async () => {
+      // 旧 payload 没有 updatedAt（视为 0）；本地从未配置过 → 服务端那份应当水合进来
+      stubAccountData({ enabled: true, startTime: 1000, endTime: 2000 })
+
+      const result = await matrixNotificationService.syncDndFromAccountData()
+
+      expect(result).toEqual({ enabled: true, startTime: 1000, endTime: 2000, updatedAt: 0 })
+      expect(matrixNotificationService.getDndSettings()).toEqual({
+        enabled: true,
+        startTime: 1000,
+        endTime: 2000,
+        updatedAt: 0
+      })
+      expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('true')
+    })
+
+    it('lets the server overwrite the local mirror when its updatedAt is newer', async () => {
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: null, endTime: null })
+      stubAccountData({ enabled: true, startTime: 5000, endTime: 6000, updatedAt: Date.now() + 60_000 })
+
+      await matrixNotificationService.syncDndFromAccountData()
+
+      expect(matrixNotificationService.getDndSettings()).toMatchObject({
+        enabled: true,
+        startTime: 5000,
+        endTime: 6000
+      })
+    })
+
+    it('keeps a newer local change when the server updatedAt is older', async () => {
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: null, endTime: null })
+      localStorage.setItem(DND_UPDATED_AT_KEY, '9999999999999')
+      stubAccountData({ enabled: true, startTime: 5000, endTime: 6000, updatedAt: 1000 })
+
+      await matrixNotificationService.syncDndFromAccountData()
+
+      expect(matrixNotificationService.getDndSettings().enabled).toBe(false)
+      expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('false')
+    })
+
+    it('does not let a legacy server payload without updatedAt overwrite a local edit', async () => {
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: null, endTime: null })
+      stubAccountData({ enabled: true, startTime: 5000, endTime: 6000 })
+
+      await matrixNotificationService.syncDndFromAccountData()
+
+      expect(matrixNotificationService.getDndSettings().enabled).toBe(false)
+    })
+
+    it('does not let the previous account mirror block the next account server window', async () => {
+      // 账号 A 写下一份带未来 updatedAt 的镜像（本机最新）
+      stubAccountData(null, '@alice:test')
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: null, endTime: null })
+      localStorage.setItem(DND_UPDATED_AT_KEY, String(Date.now() + 60_000))
+
+      // 换到账号 B：服务端是更旧的 updatedAt。B 本地没有自己的镜像，
+      // A 的镜像必须被作废，否则「本地新者胜」会把 B 的服务端值永远挡住。
+      stubAccountData({ enabled: true, startTime: 5000, endTime: 6000, updatedAt: 1000 }, '@bob:test')
+
+      await matrixNotificationService.syncDndFromAccountData()
+
+      expect(matrixNotificationService.getDndSettings()).toMatchObject({
+        enabled: true,
+        startTime: 5000,
+        endTime: 6000
+      })
+      expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('true')
+    })
+
+    it('stamps the account-data write with a monotonically fresh updatedAt', async () => {
+      // 该用例要验证真实写入，先恢复真实的 syncDndToAccountData
+      dndSyncSpy.mockRestore()
+      const setAccountData = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setAccountData } as unknown as MatrixClient)
+
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: 1000, endTime: 2000 })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      const payload = setAccountData.mock.calls[0][1] as { updatedAt: number }
+      expect(payload.updatedAt).toBeGreaterThan(0)
+      expect(payload.updatedAt).toBe(matrixNotificationService.getDndSettings().updatedAt)
     })
   })
 
@@ -531,7 +779,12 @@ describe('MatrixNotificationService', () => {
       localStorage.setItem(DND_START_KEY, String(start))
       localStorage.setItem(DND_END_KEY, String(end))
 
-      expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: start, endTime: end })
+      expect(matrixNotificationService.getDndSettings()).toEqual({
+        enabled: true,
+        startTime: start,
+        endTime: end,
+        updatedAt: 0
+      })
       expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(true)
       expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(
         false
@@ -539,28 +792,23 @@ describe('MatrixNotificationService', () => {
     })
   })
 
-  describe('requestNotificationPermission', () => {
-    it('should return false when Notification API is not available', async () => {
-      const originalNotification = window.Notification
-      Object.defineProperty(window, 'Notification', {
-        value: undefined,
-        writable: true
-      })
+  describe('canSendSystemNotification', () => {
+    it('returns true when the OS reports the notification permission as granted', async () => {
+      isPermissionGrantedMock.mockResolvedValue(true)
 
-      const result = await matrixNotificationService.requestNotificationPermission()
-      expect(result).toBe(false)
-
-      Object.defineProperty(window, 'Notification', {
-        value: originalNotification,
-        writable: true
-      })
+      await expect(matrixNotificationService.canSendSystemNotification()).resolves.toBe(true)
     })
-  })
 
-  describe('showNotification', () => {
-    it('should not show notification when desktop notifications are disabled', async () => {
-      matrixNotificationService.updateConfig({ enableDesktop: false })
-      await matrixNotificationService.showNotification('Test', 'Body')
+    it('returns false when the notification permission is denied', async () => {
+      isPermissionGrantedMock.mockResolvedValue(false)
+
+      await expect(matrixNotificationService.canSendSystemNotification()).resolves.toBe(false)
+    })
+
+    it('returns false and logs when the permission check rejects (non-Tauri runtime)', async () => {
+      isPermissionGrantedMock.mockRejectedValue(new Error('not a tauri runtime'))
+
+      await expect(matrixNotificationService.canSendSystemNotification()).resolves.toBe(false)
     })
   })
 
@@ -582,11 +830,11 @@ describe('MatrixNotificationService', () => {
       expect(display.body).toBe('Body')
     })
 
-    it('hides the body when the account-level summary switch is off', () => {
+    it('keeps the title clean and puts the folded signal in the body', () => {
       matrixNotificationService.updateConfig({ showMessageContent: false })
       const display = matrixNotificationService.buildNotificationDisplay('Title', 'Body')
-      expect(display.body).toBeUndefined()
-      expect(display.title).toContain('Title')
+      expect(display.title).toBe('Title')
+      expect(display.body).toBe(useI18nGlobal().t('message.notify.folded'))
     })
 
     it('lets high priority override the account-level summary switch', () => {
@@ -599,35 +847,31 @@ describe('MatrixNotificationService', () => {
     it('lets low priority fold the body even when summary is on', () => {
       localStorage.setItem(PREF_KEY, JSON.stringify({ priority: 'low' }))
       const display = matrixNotificationService.buildNotificationDisplay('Title', 'Body')
-      expect(display.body).toBeUndefined()
+      expect(display.body).toBe(useI18nGlobal().t('message.notify.folded'))
     })
 
-    it('prefixes the title when a keyword is highlighted', () => {
+    it('reports a keyword hit in the body instead of prefixing the title', () => {
       localStorage.setItem(PREF_KEY, JSON.stringify({ keywords: ['deploy'], keywordHighlight: true, priority: 'high' }))
       const display = matrixNotificationService.buildNotificationDisplay('Title', 'the deploy is green')
-      expect(display.title).toContain('[*]')
-      expect(display.body).toBe('the deploy is green')
+      expect(display.title).toBe('Title')
+      expect(display.body).toBe(useI18nGlobal().t('message.notify.keyword_hit', { body: 'the deploy is green' }))
     })
 
     it('does not highlight while the body is folded', () => {
       localStorage.setItem(PREF_KEY, JSON.stringify({ keywords: ['deploy'], keywordHighlight: true, priority: 'low' }))
       const display = matrixNotificationService.buildNotificationDisplay('Title', 'the deploy is green')
-      expect(display.title).not.toContain('[*]')
-      expect(display.body).toBeUndefined()
+      expect(display.title).toBe('Title')
+      expect(display.body).toBe(useI18nGlobal().t('message.notify.folded'))
     })
-  })
 
-  describe('playSound', () => {
-    it('should not play sound when sound is disabled', async () => {
-      matrixNotificationService.updateConfig({ enableSound: false })
-      await matrixNotificationService.playSound('/notification.mp3')
-    })
-  })
+    it('never injects folded / highlighted markers into the title', () => {
+      localStorage.setItem(PREF_KEY, JSON.stringify({ keywords: ['deploy'], keywordHighlight: true, priority: 'high' }))
+      const highlighted = matrixNotificationService.buildNotificationDisplay('Title', 'the deploy is green')
+      expect(highlighted.title).not.toMatch(/[[\]*•]/)
 
-  describe('vibrate', () => {
-    it('should not vibrate when vibration is disabled', async () => {
-      matrixNotificationService.updateConfig({ enableVibrate: false })
-      await matrixNotificationService.vibrate()
+      localStorage.setItem(PREF_KEY, JSON.stringify({ priority: 'low' }))
+      const folded = matrixNotificationService.buildNotificationDisplay('Title', 'the deploy is green')
+      expect(folded.title).not.toMatch(/[[\]*•]/)
     })
   })
 

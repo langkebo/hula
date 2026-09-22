@@ -68,18 +68,6 @@
           </div>
 
           <van-cell-group inset>
-            <van-cell :title="t('mobile_notifications.push_notifications')">
-              <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:cellphone-message" :width="20" color="var(--tjg-color-primary-500)" />
-                </div>
-              </template>
-              <template #right-icon>
-                <van-switch v-model="pushNotifications" :disabled="!notificationsEnabled" @change="handlePushToggle" />
-              </template>
-            </van-cell>
-
             <van-cell
               data-testid="notif-manage-push"
               :title="t('mobile_notifications.manage_push')"
@@ -91,36 +79,6 @@
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
                   <Icon icon="mdi:bell-cog-outline" :width="20" color="var(--tjg-color-info-500)" />
                 </div>
-              </template>
-            </van-cell>
-
-            <van-cell :title="t('mobile_notifications.email_notifications')">
-              <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:email-outline" :width="20" color="var(--tjg-color-info-500)" />
-                </div>
-              </template>
-              <template #right-icon>
-                <van-switch
-                  v-model="emailNotifications"
-                  :disabled="!notificationsEnabled"
-                  @change="handleEmailToggle" />
-              </template>
-            </van-cell>
-
-            <van-cell :title="t('mobile_notifications.encrypted_rooms')">
-              <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-primary-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:shield-lock-outline" :width="20" color="var(--tjg-color-primary-500)" />
-                </div>
-              </template>
-              <template #right-icon>
-                <van-switch
-                  v-model="encryptedRoomNotifications"
-                  :disabled="!notificationsEnabled"
-                  @change="handleEncryptedRoomToggle" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -240,9 +198,6 @@ const notificationsEnabled = ref(true)
 const soundEnabled = ref(true)
 const roomNotifyMode = ref('all')
 const groupNotifyMode = ref('mention')
-const pushNotifications = ref(true)
-const emailNotifications = ref(false)
-const encryptedRoomNotifications = ref(true)
 const saving = ref(false)
 
 const displayPreferences = loadNotificationDisplayPreferences()
@@ -353,18 +308,6 @@ async function handleSoundToggle(enabled: boolean) {
     logger.error('Failed to update notification sound', error)
     soundEnabled.value = !enabled
   }
-}
-
-function handlePushToggle(enabled: boolean) {
-  localStorage.setItem('tjg-push-notifications', enabled.toString())
-}
-
-function handleEmailToggle(enabled: boolean) {
-  localStorage.setItem('tjg-email-notifications', enabled.toString())
-}
-
-function handleEncryptedRoomToggle(enabled: boolean) {
-  localStorage.setItem('tjg-encrypted-room-notifications', enabled.toString())
 }
 
 async function handleSave() {

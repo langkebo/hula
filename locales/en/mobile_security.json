@@ -15,14 +15,6 @@
   "cross_signing_enabled": "Cross-signing is enabled for your account",
   "danger_section": "Danger Zone",
   "deactivate_account": "Deactivate Account",
-  "deactivate_confirm": {
-    "title": "Deactivate Account",
-    "message": "This action cannot be undone! All your data will be deleted. Are you sure?",
-    "confirm": "Deactivate",
-    "cancel": "Cancel"
-  },
-  "deactivate_failed": "Failed to deactivate account",
-  "deactivate_success": "Account deactivated",
   "devices": "Device Management",
   "disabled": "Disabled",
   "enabled": "Enabled",

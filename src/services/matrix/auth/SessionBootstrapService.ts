@@ -1,21 +1,20 @@
 import { startPresenceHeartbeat } from '@/composables/user/usePresenceHeartbeat'
-import { MsgEnum, OnlineEnum, SexEnum } from '@/enums'
+import { MsgEnum, SexEnum } from '@/enums'
 import { resolveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
-import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
+import { matrixPresenceService, type PresenceState } from '@/services/matrix/user/MatrixPresenceService'
 import type { RoomInfo, UserInfoType } from '@/services/types'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { MessageType } from '@/types/message'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { reportExtensionDegradationToUi } from '@/utils/extensionHealth'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
-import { buildPresenceStorePatch } from '@/utils/presenceStatus'
+import { buildPresenceStorePatch, mapPresenceToOnlineStatus } from '@/utils/presenceStatus'
 import { toLocalpart } from '@/utils/userIdentity'
-import { resolveOutgoingPresence } from '@/utils/userStatus'
 import type { SearchEventDoc, SearchRoomDoc } from '@/workers/matrixWorkerTypes'
 import type { MatrixPostLoginBootstrapOptions, SessionRuntimeHost, SessionRuntimeState } from './sessionRuntimeInternal'
 
@@ -151,6 +150,13 @@ export class SessionBootstrapService {
       await matrixClientService.waitForClientReady({ timeoutMs: 30_000 })
       await this.host.waitSyncPrepared()
 
+      // 仅勿扰时段跨设备：账号数据此时已同步（读取走本地账号数据存储，不发网络请求），
+      // 非阻塞拉一次并写回本地镜像。展示配置是设备本地偏好，刻意不在这里拉。
+      // 失败只记警告，不能影响 bootstrap（冲突规则见 syncDndFromAccountData）。
+      void matrixNotificationService.syncDndFromAccountData().catch((err) => {
+        logger.warn(`[login] 拉取服务端勿扰时段失败: ${err}`)
+      })
+
       this.host.clearUserLocalStorage()
       this.host.clearMessageCache()
 
@@ -226,23 +232,22 @@ export class SessionBootstrapService {
       logger.warn(`fetchUserProfile 失败，使用本地 displayName: ${err}`)
     }
 
-    // 「允许其他用户看到您的在线状态」关闭时不得上报 online：主动下发 offline 让对端
-    // 立即停看到上一会话遗留的在线状态，本地 activeStatus 一并置为离线，
-    // 避免本地显示在线而对端看不到（开关在 PrivacySettingsSection 暴露）。
-    // 规则只在 resolveOutgoingPresence 里实现一份，心跳 / 状态菜单 / 这里共用。
-    const showOnlineStatus = useSettingStore().showOnlineStatusEnabled
-    const initialPresence = resolveOutgoingPresence('online', showOnlineStatus)
+    // 「允许其他用户看到您的在线状态」关闭时不得上报 online：这里只传 online 意图，
+    // 门控由唯一写入点 matrixPresenceService.setPresence 统一完成，并用返回的生效值
+    // 镜像本地 activeStatus，避免本地显示在线而对端看不到（开关在 PrivacySettingsSection 暴露）。
+    // 上报失败时保守地按离线处理，不乐观显示在线。
+    let effective: PresenceState = 'offline'
 
     try {
       // 确保 client 就绪后再设置 presence，避免登录时序竞态导致 "客户端未初始化"
       await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
-      await matrixPresenceService.setPresence(initialPresence)
+      effective = await matrixPresenceService.setPresence('online')
     } catch (err) {
-      logger.warn(`setPresence(${initialPresence}) 失败：${err}`)
+      logger.warn(`setPresence(online) 失败：${err}`)
     }
 
     port.user.updateProfileFields({
-      activeStatus: showOnlineStatus ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE,
+      activeStatus: mapPresenceToOnlineStatus(effective),
       lastOptTime: Date.now()
     })
 

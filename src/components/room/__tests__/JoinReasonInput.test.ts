@@ -31,23 +31,10 @@ vi.mock('naive-ui', async () => {
         })
     }
   })
-  const NButton = defineComponent({
-    name: 'NButton',
-    props: {
-      type: { type: String, default: 'default' },
-      loading: { type: Boolean, default: false },
-      disabled: { type: Boolean, default: false }
-    },
-    emits: ['click'],
-    setup(props, { slots, emit }) {
-      return () =>
-        h('button', { type: 'button', disabled: props.disabled, onClick: () => emit('click') }, slots.default?.())
-    }
-  })
-  return { NInput, NButton }
+  return { NInput }
 })
 
-const mountInput = (props: Partial<{ modelValue: string; disabled: boolean; loading: boolean }> = {}) =>
+const mountInput = (props: Partial<{ modelValue: string; disabled: boolean }> = {}) =>
   mount(JoinReasonInput, {
     props: { modelValue: '', ...props }
   })
@@ -66,33 +53,13 @@ describe('JoinReasonInput', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([['reason text']])
   })
 
-  it('disables submit button when reason is empty', () => {
-    const wrapper = mountInput({ modelValue: '' })
-    const btn = wrapper.find('[data-testid="join-reason-submit"]')
-    expect(btn.attributes('disabled')).toBeDefined()
-  })
-
-  it('enables submit button when reason is non-empty', () => {
-    const wrapper = mountInput({ modelValue: 'a reason' })
-    const btn = wrapper.find('[data-testid="join-reason-submit"]')
-    expect(btn.attributes('disabled')).toBeUndefined()
-  })
-
-  it('emits submit with reason when submit button clicked', async () => {
-    const wrapper = mountInput({ modelValue: 'my reason' })
-    await wrapper.find('[data-testid="join-reason-submit"]').trigger('click')
-    expect(wrapper.emitted('submit')).toEqual([['my reason']])
-  })
-
-  it('does not emit submit when reason is empty and button clicked', async () => {
-    const wrapper = mountInput({ modelValue: '' })
-    await wrapper.find('[data-testid="join-reason-submit"]').trigger('click')
-    expect(wrapper.emitted('submit')).toBeUndefined()
-  })
-
-  it('disables textarea and submit when disabled prop is true', () => {
+  it('disables textarea when disabled prop is true', () => {
     const wrapper = mountInput({ modelValue: 'reason', disabled: true })
     expect(wrapper.find('[data-testid="join-reason-textarea"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('[data-testid="join-reason-submit"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('renders no inline submit button (submission is owned by the dialog footer)', () => {
+    const wrapper = mountInput({ modelValue: 'reason' })
+    expect(wrapper.find('[data-testid="join-reason-submit"]').exists()).toBe(false)
   })
 })

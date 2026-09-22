@@ -74,7 +74,6 @@ describe('MatrixAccountService', () => {
     getUserId: ReturnType<typeof vi.fn>
     getDeviceId: ReturnType<typeof vi.fn>
     getDeviceManager: ReturnType<typeof vi.fn>
-    setPresence: ReturnType<typeof vi.fn>
     getAccountData: ReturnType<typeof vi.fn>
     setAccountData: ReturnType<typeof vi.fn>
     getCapabilities: ReturnType<typeof vi.fn>
@@ -101,7 +100,6 @@ describe('MatrixAccountService', () => {
       getUserId: vi.fn(() => '@user:server'),
       getDeviceId: vi.fn(() => 'DEVICE1'),
       getDeviceManager: vi.fn(() => mockDeviceManager),
-      setPresence: vi.fn().mockResolvedValue({}),
       getAccountData: vi.fn().mockReturnValue(null),
       setAccountData: vi.fn().mockResolvedValue(undefined),
       getCapabilities: vi.fn().mockResolvedValue({ capabilities: { 'm.room.tombstone': { enabled: true } } }),
@@ -243,14 +241,6 @@ describe('MatrixAccountService', () => {
       )
       const result = await matrixAccountService.getEventStream()
       expect(result).toEqual({})
-    })
-  })
-
-  describe('setPresence', () => {
-    it('should set presence with status message', async () => {
-      const result = await matrixAccountService.setPresence('online', 'Working')
-      expect(result).toBe(true)
-      expect(mockClient.setPresence).toHaveBeenCalledWith('online', { status_msg: 'Working' })
     })
   })
 

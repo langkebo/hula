@@ -2,7 +2,6 @@
   "title": "Room Tags",
   "add": "Add Tag",
   "add_placeholder": "Enter tag name",
-  "remove": "Remove",
   "empty": "No tags yet",
   "suggested": "Suggested Tags",
   "name_too_long": "Tag name cannot exceed 32 characters",

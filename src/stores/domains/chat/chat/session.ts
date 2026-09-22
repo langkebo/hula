@@ -111,7 +111,9 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
 
   const syncPersistedUnreadCounts = (targetSessions: SessionItem[] = sessionList.value) => {
     if (!targetSessions.length) return
-    const updates = sessionUnreadStore.apply(userStore.userInfo?.uid, targetSessions)
+    // 当前打开的会话要单独告知 apply：messageMutations 对它不增加界面未读（消息已经显示在
+    // 视图里），但服务端 unread_count 仍会 +1，照常折算会把已经看到的这条算成未读。
+    const updates = sessionUnreadStore.apply(userStore.userInfo?.uid, targetSessions, globalStore.currentSessionRoomId)
     for (const [roomId, unreadCount] of Object.entries(updates)) {
       updateSession(roomId, { unreadCount })
     }
@@ -291,14 +293,20 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
 
   const markSessionRead = async (roomId: string) => {
     if (!roomId) return
+    // 先取清零前的未读数：关闭已读回执时服务端 unread_count 不会因本机已读而减少，
+    // 这个值就是服务端累计里「本次被本机读掉」的部分，计入账本的已结算水位后，
+    // 重启后 apply 才能把服务端累计值折算成本机真实未读（含离线期间新增的消息）。
+    const session = resolveSessionByRoomId(roomId)
+    const unreadBeforeRead = session?.unreadCount ?? 0
+
     setUnreadCount(roomId, 0)
+    sessionUnreadStore.markRead(userStore.userInfo?.uid, roomId, unreadBeforeRead)
     writeUnreadDetail(roomId, { total: 0, highlight: 0, silent: getUnreadDetail(roomId)?.silent ?? false })
 
     // 记录「已读到的活跃时间」：sessionUnread.apply 的情况 1 依赖它来清零并纠正
     // 服务端脏未读数。关闭已读回执时服务端 unread_count 不会归零，没有这条记录，
     // 下一次 syncPersistedUnreadCounts（会话列表重建 / 重连）就会用 Math.max 把角标写回来。
     // 与本地清零一致：无条件记录，不受回执开关影响。
-    const session = resolveSessionByRoomId(roomId)
     const activeTime = session?.activeTime ?? 0
     if (activeTime) {
       sessionUnreadStore.setLastRead(userStore.userInfo?.uid, roomId, activeTime)

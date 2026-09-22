@@ -84,8 +84,10 @@ class MatrixRuntimeSessionService {
 
   private clearUserLocalStorage(): void {
     // 刻意不含 'sessionUnread'：本例程唯一的调用点是 bootstrapPostLoginState，而冷启动自动登录 /
-    // 令牌恢复与手动登录走的是同一条 bootstrap 路径。若在这里删除未读账本（lastReadActiveTimeStore），
-    // 它会被「先水合、后清理」的启动顺序在每次冷启动后抹掉，跨重启的未读纠正只生效一次。
+    // 令牌恢复与手动登录走的是同一条 bootstrap 路径。未读账本（cacheStore 本机计数 +
+    // lastReadActiveTimeStore 已读水位 + 账本内的结算水位）已经整体持久化，若在这里删除，
+    // 它会被「先水合、后清理」的启动顺序在每次冷启动后抹掉：关闭已读回执时读过的消息会被
+    // 服务端累计值重新算进角标，跨重启的已读纠正也只生效一次。
     // 未读账本以 uid 为一级键（{ [uid]: { [roomId]: ... } }），换账号后旧 uid 的数据不会被新账号读到，
     // 因此真正的清除点是显式登出 / 账号重置（SessionLogoutService.resetLocalSessionState）。
     const userScopedStoreKeys = ['chat', 'group', 'contacts', 'cached']

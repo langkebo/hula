@@ -1,10 +1,8 @@
 import type { MatrixClient, MatrixEvent, ReadReceiptsManager, Room } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { NotificationCountType } from '@/types/matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import matrixClientService from '../MatrixClientService'
 
 const logger = createLogger('MatrixReceiptService')
 
@@ -21,14 +19,6 @@ interface PendingMarkAsReadTask {
   roomId: string
   queuedAt: number
   timer: ReturnType<typeof setTimeout> | null
-}
-
-export interface ReadReceipt {
-  userId: string
-  eventId: string
-  timestamp: number
-  avatarUrl?: string
-  displayName?: string
 }
 
 class MatrixReceiptService extends BaseMatrixService {
@@ -297,96 +287,6 @@ class MatrixReceiptService extends BaseMatrixService {
       logger.error(`[MatrixReceipt] 标记房间已读失败: ${err}`)
       throw err
     }
-  }
-
-  getReadReceipts(roomId: string, eventId: string): ReadReceipt[] {
-    const client = matrixClientService.getClient()
-    if (!client) return []
-
-    const room = client.getRoom(roomId)
-    if (!room) return []
-
-    const manager = this.getReadReceiptsManager()
-    return manager.getReceipt(roomId, eventId).map((receipt) => {
-      const member = room.getMember(receipt.userId)
-      return {
-        userId: receipt.userId,
-        eventId: receipt.eventId,
-        timestamp: receipt.ts,
-        avatarUrl: member?.getMxcAvatarUrl?.() ?? undefined,
-        displayName: member?.name || receipt.userId
-      }
-    })
-  }
-
-  getEventReaders(roomId: string, eventId: string): string[] {
-    const client = matrixClientService.getClient()
-    if (!client) return []
-
-    const myUserId = client.getUserId()
-    return this.getReadReceipts(roomId, eventId)
-      .filter((receipt) => receipt.userId !== myUserId)
-      .map((receipt) => receipt.userId)
-  }
-
-  getUnreadCount(roomId: string): number {
-    const client = matrixClientService.getClient()
-    if (!client) return 0
-
-    const room = client.getRoom(roomId)
-    if (!room) return 0
-
-    const unreadNotificationCount = room.getUnreadNotificationCount?.(NotificationCountType.Total)
-    if (typeof unreadNotificationCount === 'number' && unreadNotificationCount > 0) {
-      return unreadNotificationCount
-    }
-
-    const myUserId = client.getUserId()
-    if (!myUserId) return 0
-
-    const receipt = room.getEventReadUpTo?.(myUserId, false)
-    if (!receipt) {
-      return (
-        (room.getUnreadNotificationCount?.(NotificationCountType.Highlight) ?? 0) +
-        (room.getUnreadNotificationCount?.(NotificationCountType.Total) ?? 0)
-      )
-    }
-
-    const timeline = room.getLiveTimeline()
-    if (!timeline) return 0
-    const events = timeline.getEvents()
-    let unreadCount = 0
-
-    for (let i = events.length - 1; i >= 0; i--) {
-      const event = events[i]
-      if (event.getId() === receipt) break
-      if (event.getSender() !== myUserId) {
-        unreadCount++
-      }
-    }
-
-    return unreadCount
-  }
-
-  hasUnread(roomId: string): boolean {
-    const client = matrixClientService.getClient()
-    if (!client) return false
-
-    const room = client.getRoom(roomId)
-    if (!room) return false
-
-    return (
-      (room.getUnreadNotificationCount?.(NotificationCountType.Highlight) ?? 0) > 0 ||
-      (room.getUnreadNotificationCount?.(NotificationCountType.Total) ?? 0) > 0
-    )
-  }
-
-  getRoomsWithUnread(): string[] {
-    const client = matrixClientService.getClient()
-    if (!client) return []
-
-    const rooms = client.getRooms()
-    return rooms.filter((room) => this.hasUnread(room.roomId)).map((room) => room.roomId)
   }
 
   /**

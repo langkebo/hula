@@ -133,7 +133,10 @@ describe('i18n 源码引用可达性', () => {
   describe('收集器自检', () => {
     it('扫到了足量源码与引用（否则守卫会静默空转）', () => {
       expect(SOURCES.length).toBeGreaterThan(300)
-      expect(UNRESOLVED.length).toBeGreaterThan(100)
+      // 引用基线归零（所有 t() 引用都可达）后，不能再要求「存在未解析引用」来证明守卫在工作；
+      // 改为要求抽取到足量引用，未解析判定本身由解析器正反样例与桩键用例覆盖。
+      const totalRefs = SOURCES.reduce((sum, source) => sum + extractKeys(source.text).length, 0)
+      expect(totalRefs).toBeGreaterThan(500)
       expect(SOURCES.some((source) => source.path.includes('__tests__'))).toBe(false)
     })
 
@@ -189,9 +192,15 @@ describe('i18n 源码引用可达性', () => {
     it('基线文件本身是有效的（防止被清空后门禁失效）', () => {
       const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf-8')) as {
         unresolved: { total: number; by_namespace: Record<string, number> }
+        fallback: { total: number; by_namespace: Record<string, number> }
       }
-      expect(baseline.unresolved.total).toBeGreaterThan(0)
-      expect(Object.keys(baseline.unresolved.by_namespace).length).toBeGreaterThan(3)
+      // 基线可以合法地为 0（引用全部可达）；但结构必须完整、计数必须是数字，
+      // 而「清空基线来放开闸门」由上面的 ratchet 比较拦截（实际值仍不得超基线）。
+      expect(Number.isInteger(baseline.unresolved.total)).toBe(true)
+      expect(baseline.unresolved.total).toBeGreaterThanOrEqual(0)
+      expect(Number.isInteger(baseline.fallback.total)).toBe(true)
+      expect(typeof baseline.unresolved.by_namespace).toBe('object')
+      expect(Array.isArray(baseline.unresolved.by_namespace)).toBe(false)
     })
   })
 })

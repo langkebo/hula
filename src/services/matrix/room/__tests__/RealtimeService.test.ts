@@ -25,8 +25,8 @@ vi.mock('../../sync/MatrixSlidingSyncService', () => ({
 }))
 
 const getUnreadCountMock = vi.fn()
-vi.mock('../../messaging/MatrixReceiptService', () => ({
-  matrixReceiptService: {
+vi.mock('../../messaging/MatrixReadStateService', () => ({
+  matrixReadStateService: {
     getUnreadCount: (id: string) => getUnreadCountMock(id)
   }
 }))

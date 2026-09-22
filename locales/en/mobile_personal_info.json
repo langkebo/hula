@@ -1,10 +1,5 @@
 {
   "account": "ID",
-  "unlocked_count_park": {
-    "text1": "Unlocked",
-    "text2": "badges"
-  },
-  "no_medal": "No medals yet~",
   "follower": "Followers",
   "follow": "Following",
   "like": "Like",

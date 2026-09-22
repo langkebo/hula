@@ -29,7 +29,6 @@
       "close": "Close"
     },
     "open_in_new_window": "Open in New Window",
-    "private_mode": "Private Mode",
     "private_mode_toggle": "Toggle Private Mode",
     "private_mode_confirm_title": "Switch to Private Mode",
     "private_mode_confirm_desc": "In private mode:",
@@ -52,8 +51,7 @@
     "cannot_display": "Cannot display"
   },
   "link_preview": {
-    "unknown_link": "Unknown link",
-    "unknown_source": "Unknown source"
+    "unknown_link": "Unknown link"
   },
   "beacon": {
     "live_location": "Live Location Sharing",
@@ -68,14 +66,8 @@
     "screenshot_protected": "This chat is protected, screenshots are prohibited",
     "screenshot_detected_notice": "Screenshot activity has been recorded"
   },
-  "recall": {
-    "cannot_recall": "Cannot recall"
-  },
   "multi_msg": {
     "view_forwarded": "View {count} forwarded messages"
-  },
-  "url_preview": {
-    "loading": "Loading preview..."
   },
   "crypto_unavailable": {
     "message": "Encryption is not ready. Messages in this room cannot be sent. Please re-login or contact the administrator."
@@ -85,14 +77,9 @@
     "catchup": "Syncing history",
     "reconnecting": "Reconnecting",
     "error": "Connection error",
-    "connected": "Connected",
-    "offline_hint": "Offline: showing cached messages"
+    "connected": "Connected"
   },
   "encryption": {
-    "verified": "E2E Verified",
-    "unverified": "Unverified",
-    "risk": "Risk",
-    "plain": "Plain",
     "verified_title": "End-to-end encryption verified",
     "unverified_title": "End-to-end encryption not fully verified",
     "risk_title": "End-to-end encryption risk detected",

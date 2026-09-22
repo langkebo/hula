@@ -34,11 +34,7 @@
   "rules": {
     "email_require": "请输入邮箱地址",
     "email_invalid": "请输入有效的邮箱地址",
-    "email_code_require": "请输入发送到邮箱的验证码",
-    "code_length": "验证码必须为 {len} 位",
     "new_pass_require": "请输入新密码",
-    "new_pass_length": "密码必须为 {len} 个字符",
-    "confirm_pass_require": "请确认密码",
     "pass_not_match": "两次输入的密码不一致"
   },
   "too_many_requests": "请求过于频繁，请在 {s} 秒后再试",

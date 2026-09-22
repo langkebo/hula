@@ -487,19 +487,6 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
-  async setPresence(presence: 'online' | 'offline' | 'unavailable' | 'away', statusMessage?: string): Promise<boolean> {
-    const client = this.getClient()
-
-    try {
-      await client.setPresence(presence, { status_msg: statusMessage })
-      logger.info(`[MatrixAccount] 设置在线状态成功: ${presence}`)
-      return true
-    } catch (err) {
-      logger.error(`[MatrixAccount] 设置在线状态失败: ${err}`)
-      throw err
-    }
-  }
-
   async getCapabilities(): Promise<Record<string, unknown>> {
     const client = this.getClient()
     logger.debug(`[MatrixAccount] getCapabilities() 开始: workerStarted=${matrixWorkerHost.isStarted}`)

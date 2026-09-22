@@ -10,7 +10,6 @@
   "empty": "名单为空",
   "encrypt_new_dm": "新私聊默认加密",
   "encrypt_new_dm_hint": "新建私聊时默认开启端到端加密",
-  "encrypt_required": "无法关闭：服务端要求新私聊必须加密",
   "load_failed": "邀请权限加载失败",
   "loading": "加载中...",
   "mode": {

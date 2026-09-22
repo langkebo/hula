@@ -16,13 +16,13 @@
  * 登出或 onUnmounted 调用 stopPresenceHeartbeat().
  */
 
-import { OnlineEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import { matrixPresenceService, type PresenceState } from '@/services/matrix/user/MatrixPresenceService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
-import { getLastSentPresence, recordSentPresence, resetSentPresence, resolveOutgoingPresence } from '@/utils/userStatus'
+import { mapPresenceToOnlineStatus } from '@/utils/presenceStatus'
+import { getLastSentPresence, resetSentPresence } from '@/utils/userStatus'
 
 const logger = createLogger('usePresenceHeartbeat')
 
@@ -30,6 +30,17 @@ const logger = createLogger('usePresenceHeartbeat')
 export const PRESENCE_HEARTBEAT_INTERVAL_MS = 45 * 1000
 
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null
+
+/**
+ * 用服务返回的生效值镜像本地 activeStatus，避免本地显示在线而对端看不到。
+ */
+function mirrorLocalActiveStatus(effective: PresenceState): void {
+  const userStore = useUserStore()
+  if (!userStore.userInfo) return
+
+  userStore.userInfo.activeStatus = mapPresenceToOnlineStatus(effective)
+  userStore.userInfo.lastOptTime = Date.now()
+}
 
 async function pushOfflineDowngrade(): Promise<void> {
   // 只有「最近一次成功上报的是 online（或本会话尚未成功上报）」时才需要降级：
@@ -42,13 +53,9 @@ async function pushOfflineDowngrade(): Promise<void> {
   // client 未初始化时静默跳过，避免登录时序竞态产生噪音日志
   if (!matrixClientService.getClient()) return
   try {
-    await matrixPresenceService.setPresence('offline')
-    recordSentPresence('offline')
-    const userStore = useUserStore()
-    if (userStore.userInfo) {
-      userStore.userInfo.activeStatus = OnlineEnum.OFFLINE
-      userStore.userInfo.lastOptTime = Date.now()
-    }
+    // 记账由 presence 服务统一负责
+    const effective = await matrixPresenceService.setPresence('offline')
+    mirrorLocalActiveStatus(effective)
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err)
     logger.warn(`[PresenceHeartbeat] setPresence(offline) 降级失败: ${errMsg}`)
@@ -56,10 +63,10 @@ async function pushOfflineDowngrade(): Promise<void> {
 }
 
 async function pushOnline(): Promise<void> {
-  // 关闭「显示在线状态」后不再心跳上报 online；同时主动降级为 offline，
-  // 让对端在一个心跳周期内停止看到在线，而不是等 service 侧 presence 超时。
-  const outgoing = resolveOutgoingPresence('online', useSettingStore().showOnlineStatusEnabled)
-  if (outgoing === 'offline') {
+  // 开关关闭时不再心跳上报 online，而是主动走一次性离线降级，让对端在一个
+  // 心跳周期内停止看到在线。这只是「避免每 45s 重复下发同一个 offline」的去重分支：
+  // 真正的门控在 matrixPresenceService.setPresence 内，任何遗漏都会被它兜住。
+  if (!useSettingStore().showOnlineStatusEnabled) {
     await pushOfflineDowngrade()
     return
   }
@@ -68,13 +75,8 @@ async function pushOnline(): Promise<void> {
   if (!matrixClientService.getClient()) return
   try {
     // online 心跳必须每 45s 重复（对抗服务端 idle 降级），因此这里不做去重
-    await matrixPresenceService.setPresence('online')
-    recordSentPresence('online')
-    const userStore = useUserStore()
-    if (userStore.userInfo) {
-      userStore.userInfo.activeStatus = OnlineEnum.ONLINE
-      userStore.userInfo.lastOptTime = Date.now()
-    }
+    const effective = await matrixPresenceService.setPresence('online')
+    mirrorLocalActiveStatus(effective)
   } catch (err) {
     // 请求被中止（页面关闭/导航）或 client 未就绪，降级为 warn 避免噪音
     const errMsg = err instanceof Error ? err.message : String(err)

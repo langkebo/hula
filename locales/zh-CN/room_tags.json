@@ -2,7 +2,6 @@
   "title": "房间标签",
   "add": "添加标签",
   "add_placeholder": "请输入标签名",
-  "remove": "删除",
   "empty": "暂无标签",
   "suggested": "推荐标签",
   "name_too_long": "标签名不能超过 32 字符",

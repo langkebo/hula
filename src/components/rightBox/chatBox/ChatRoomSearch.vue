@@ -107,7 +107,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:isOpen', value: boolean): void
   (e: 'update:query', value: string): void
   (e: 'query-input'): void
   (e: 'select-result', index: number): void

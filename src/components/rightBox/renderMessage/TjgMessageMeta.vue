@@ -51,7 +51,7 @@ import { useTyping } from '@/composables/chat/useTyping'
 import { MessageStatusEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
-import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
+import { matrixReadStateService } from '@/services/matrix/messaging/MatrixReadStateService'
 import { formatChatTime } from '@/utils/ComputedTime'
 
 interface ReceiptInfo {
@@ -87,7 +87,7 @@ const receipts = computed<ReceiptInfo[]>(() => {
 
   const myUserId = matrixClientService.getUserId()
 
-  return matrixReceiptService
+  return matrixReadStateService
     .getReadReceipts(props.roomId, resolvedMessageId.value)
     .filter((receipt) => receipt.userId !== myUserId)
     .map((receipt) => ({

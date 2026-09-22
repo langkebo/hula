@@ -1,0 +1,520 @@
+{
+  "version": 1,
+  "_note": "消费方校验口径：只校验 owner/consumers 路径存在，不证明 consumers 真的在运行时读取该 key；判活不等于生效。storage 字段仅在发现器记录了实际写入介质时做一致性校验。",
+  "keys": {
+    "setting": {
+      "owner": "src/stores/domains/settings/setting.ts:defineStore(StoresEnum.SETTING)+persist",
+      "consumers": ["src/stores/domains/settings/setting.ts", "src/App.vue"],
+      "kind": "state",
+      "note": "主题/字体/通知总开关等设置状态；App.vue 在启动时经 store 读取"
+    },
+    "matrix": {
+      "owner": "src/stores/domains/chat/matrix.ts:defineStore(StoresEnum.MATRIX)+persist",
+      "consumers": ["src/stores/domains/chat/matrix.ts", "src/App.vue"],
+      "kind": "state",
+      "note": "会话恢复所需的 userId/deviceId/homeserverUrl/accessToken；App.vue 在启动时读取"
+    },
+    "user": {
+      "owner": "src/stores/domains/user/user.ts:USER_STORAGE_KEY + defineStore(StoresEnum.USER)+persist",
+      "consumers": ["src/stores/domains/user/user.ts", "src/App.vue"],
+      "kind": "state",
+      "note": "userInfo 跨窗口同步（storage 事件）与启动水合；App.vue 读取"
+    },
+    "history": {
+      "owner": "src/stores/domains/chat/history.ts:defineStore(StoresEnum.HISTORY)+persist",
+      "consumers": ["src/stores/domains/chat/history.ts", "src/components/rightBox/emoticon/index.vue"],
+      "kind": "state",
+      "note": "表情/最近使用历史；表情面板读取"
+    },
+    "loginHistory": {
+      "owner": "src/stores/domains/user/loginHistory.ts:defineStore(StoresEnum.LOGIN_HISTORY)+persist",
+      "consumers": ["src/stores/domains/user/loginHistory.ts", "src/shared/composables/useLoginFlow.ts"],
+      "kind": "state",
+      "note": "登录历史，登录流程读取以预填账号"
+    },
+    "sessionUnread": {
+      "owner": "src/stores/domains/chat/sessionUnread.ts:defineStore(StoresEnum.SESSION_UNREAD)+persist",
+      "consumers": ["src/stores/domains/chat/sessionUnread.ts", "src/services/matrix/auth/SessionLogoutService.ts"],
+      "kind": "state",
+      "note": "未读账本（cacheStore / lastReadActiveTimeStore / settledServerCount）；store 自身水合，显式登出/账号重置在 SessionLogoutService 里 removeItem 清除（是清除点，不是读取点）"
+    },
+    "plugins": {
+      "owner": "src/stores/domains/settings/plugins.ts:defineStore(StoresEnum.PLUGINS)+persist",
+      "consumers": ["src/stores/domains/settings/plugins.ts", "src/layout/left/components/definePlugins/List.vue"],
+      "kind": "state",
+      "note": "插件启用列表；左侧插件列表读取"
+    },
+    "guide": {
+      "owner": "src/stores/domains/settings/guide.ts:defineStore(StoresEnum.GUIDE)+persist",
+      "consumers": ["src/stores/domains/settings/guide.ts", "src/composables/common/useDriver.ts"],
+      "kind": "state",
+      "note": "新手引导完成状态；引导 composable 读取"
+    },
+    "menuTop": {
+      "owner": "src/stores/domains/settings/menuTop.ts:defineStore(StoresEnum.MENUTOP)+persist",
+      "consumers": ["src/stores/domains/settings/menuTop.ts", "src/layout/left/components/ActionList.vue"],
+      "kind": "state",
+      "note": "侧栏菜单状态；ActionList 读取"
+    },
+    "tjg-homeserver-url": {
+      "owner": "src/services/backend/config.ts:MATRIX_HOMESERVER_STORAGE_KEY",
+      "consumers": [
+        "src/services/backend/config.ts",
+        "src/components/common/HomeserverDialog.vue",
+        "src/views/loginWindow/OidcCallback.vue"
+      ],
+      "kind": "preference",
+      "note": "homeserver 地址；config.resolveMatrixEndpointConfig 读取，登录/设置界面写入"
+    },
+    "tjg-identity-server-url": {
+      "owner": "src/services/backend/config.ts:MATRIX_IDENTITY_SERVER_STORAGE_KEY",
+      "consumers": ["src/services/backend/config.ts", "src/mobile/views/my/HomeserverSettings.vue"],
+      "kind": "preference",
+      "note": "identity server 地址；config 读取，移动端 Homerserver 设置写入"
+    },
+    "tjg-session-homeserver-url": {
+      "owner": "src/services/backend/config.ts:MATRIX_SESSION_HOMESERVER_STORAGE_KEY",
+      "consumers": [
+        "src/services/backend/config.ts",
+        "src/services/matrix/auth/SessionRestoreService.ts",
+        "src/services/matrix/auth/SessionLoginService.ts"
+      ],
+      "kind": "credential",
+      "note": "登录会话实际使用的 homeserver（区别于待登录地址）；config.resolveMatrixSessionEndpointConfig 读取，SessionRestore/SessionLogin 在启动与 SSO 登录时消费"
+    },
+    "tjg-session-identity-server-url": {
+      "owner": "src/services/backend/config.ts:MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY",
+      "consumers": [
+        "src/services/backend/config.ts",
+        "src/services/matrix/auth/SessionRestoreService.ts",
+        "src/services/matrix/auth/SessionLoginService.ts",
+        "src/services/matrix/auth/SessionBootstrapService.ts"
+      ],
+      "kind": "credential",
+      "note": "登录会话实际使用的 identity server；config 读取，三个会话服务消费"
+    },
+    "tjg-bubble-style": {
+      "owner": "src/utils/bubbleStyle.ts:STORAGE_KEY",
+      "consumers": ["src/utils/bubbleStyle.ts", "src/App.vue"],
+      "kind": "preference",
+      "note": "气泡样式；loadBubbleStyle/applyBubbleStyle 在 App.vue 启动时应用"
+    },
+    "tjg-font-scale": {
+      "owner": "src/utils/fontScale.ts:STORAGE_KEY",
+      "consumers": ["src/utils/fontScale.ts", "src/App.vue"],
+      "kind": "preference",
+      "note": "全局字号缩放；loadFontScale/applyFontScale 在 App.vue 启动时应用"
+    },
+    "tjg-dm-privacy-preferences": {
+      "owner": "src/services/matrix/user/dmPrivacyPreferences.ts:DM_PRIVACY_PREFERENCES_STORAGE_KEY",
+      "consumers": [
+        "src/services/matrix/user/dmPrivacyPreferences.ts",
+        "src/services/matrix/room/MatrixDirectMessageService.ts",
+        "src/components/settings/InvitePermissionPanel.vue"
+      ],
+      "kind": "preference",
+      "note": "私聊隐私偏好；MatrixDirectMessageService 发送前读取加密策略，InvitePermissionPanel 编辑"
+    },
+    "tjg-notification-display-preferences": {
+      "owner": "src/services/matrix/notifications/notificationDisplayPreferences.ts:NOTIFICATION_DISPLAY_PREFERENCES_STORAGE_KEY",
+      "consumers": [
+        "src/services/matrix/notifications/notificationDisplayPreferences.ts",
+        "src/services/matrix/notifications/MatrixNotificationService.ts",
+        "src/views/settingsWindow/tabs/NotificationSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "通知展示偏好（优先级/关键词）；通知服务与设置页读取"
+    },
+    "tjg-keyword-notification": {
+      "owner": "src/services/matrix/notifications/notificationDisplayPreferences.ts:LEGACY_KEYWORD_NOTIFICATION_STORAGE_KEY",
+      "consumers": [
+        "src/services/matrix/notifications/notificationDisplayPreferences.ts",
+        "src/services/matrix/notifications/MatrixNotificationService.ts"
+      ],
+      "kind": "legacy",
+      "note": "旧版关键词通知开关，仅迁移读取后 removeItem"
+    },
+    "tjg-keywords": {
+      "owner": "src/services/matrix/notifications/notificationDisplayPreferences.ts:LEGACY_KEYWORDS_STORAGE_KEY",
+      "consumers": [
+        "src/services/matrix/notifications/notificationDisplayPreferences.ts",
+        "src/services/matrix/notifications/MatrixNotificationService.ts"
+      ],
+      "kind": "legacy",
+      "note": "旧版关键词列表，仅迁移读取后 removeItem"
+    },
+    "tjg-notification-config": {
+      "owner": "src/services/matrix/notifications/MatrixNotificationService.ts:CONFIG_STORAGE_KEY",
+      "consumers": [
+        "src/services/matrix/notifications/MatrixNotificationService.ts",
+        "src/views/settingsWindow/tabs/NotificationSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "通知总配置（含音量/开关）；服务读取，设置页经服务修改"
+    },
+    "tjg-thread-mention-notify": {
+      "owner": "src/services/matrix/notifications/MatrixNotificationService.ts:LEGACY_THREAD_MENTION_STORAGE_KEY",
+      "consumers": ["src/services/matrix/notifications/MatrixNotificationService.ts"],
+      "kind": "legacy",
+      "note": "旧版话题 @ 通知开关，仅迁移读取后 removeItem"
+    },
+    "tjg-integrations-enabled": {
+      "owner": "src/composables/useIntegrations.ts:STORAGE_KEYS.enabled",
+      "consumers": ["src/composables/useIntegrations.ts", "src/mobile/views/my/IntegrationsSettings.vue"],
+      "kind": "preference",
+      "note": "集成总开关；useIntegrations 读写，移动端集成设置页消费"
+    },
+    "tjg-integrations-permissions": {
+      "owner": "src/composables/useIntegrations.ts:STORAGE_KEYS.permissions",
+      "consumers": ["src/composables/useIntegrations.ts", "src/mobile/views/my/IntegrationsSettings.vue"],
+      "kind": "preference",
+      "note": "集成权限清单；useIntegrations 读写"
+    },
+    "tjg-integrations-state": {
+      "owner": "src/composables/useIntegrations.ts:STORAGE_KEYS.state",
+      "consumers": ["src/composables/useIntegrations.ts", "src/mobile/views/my/IntegrationsSettings.vue"],
+      "kind": "preference",
+      "note": "集成状态快照；useIntegrations 读写"
+    },
+    "tjg.rightPaneWidth": {
+      "owner": "src/composables/layout/useRightPaneWidth.ts:DEFAULT_STORAGE_KEY",
+      "consumers": ["src/composables/layout/useRightPaneWidth.ts", "src/layout/right/index.vue"],
+      "kind": "preference",
+      "note": "右侧栏分栏宽度；composable 读写，right/index.vue 挂载时应用"
+    },
+    "tjg:thumbnail-cache-metadata": {
+      "owner": "src/stores/domains/widget/thumbnailCache.ts:METADATA_STORAGE_KEY",
+      "consumers": ["src/stores/domains/widget/thumbnailCache.ts", "src/components/rightBox/renderMessage/Image.vue"],
+      "kind": "cache",
+      "note": "缩略图缓存元数据；store 读写，消息图片渲染消费"
+    },
+    "tjg-chat-ai-provider": {
+      "owner": "src/services/secure/robotAiProviderStorage.ts:STORAGE_KEYS.AI_PROVIDER",
+      "consumers": [
+        "src/services/secure/robotAiProviderStorage.ts",
+        "src/plugins/robot/composables/useAiProviderConfig.ts"
+      ],
+      "kind": "preference",
+      "note": "机器人 AI 提供方选择；storage 模块读写，AI 配置 composable 消费"
+    },
+    "tjg-chat-trendradar-config": {
+      "owner": "src/services/secure/robotAiProviderStorage.ts:STORAGE_KEYS.TRENDRADAR_CONFIG",
+      "consumers": [
+        "src/services/secure/robotAiProviderStorage.ts",
+        "src/plugins/robot/composables/useAiProviderConfig.ts"
+      ],
+      "kind": "preference",
+      "note": "TrendRadar 配置；storage 模块读写"
+    },
+    "tjg-chat-trendradar-api-key": {
+      "owner": "src/services/secure/robotAiProviderStorage.ts:STORAGE_KEYS.TRENDRADAR_API_KEY_SECURE",
+      "consumers": ["src/services/secure/robotAiProviderStorage.ts"],
+      "kind": "credential",
+      "note": "TrendRadar API key 的 secure storage 标识（经 setSecureSecret → Tauri 安全存储），SecureStorage 不可用时降级为加密后写 sessionStorage；不写 localStorage（旧 note 说“localStorage 备份”不实，2026-09-22 review 更正）"
+    },
+    "tjg-chat-trendradar-api-key-session": {
+      "owner": "src/services/secure/robotAiProviderStorage.ts:STORAGE_KEYS.TRENDRADAR_API_KEY_SESSION",
+      "consumers": ["src/services/secure/robotAiProviderStorage.ts"],
+      "kind": "credential",
+      "storage": "session",
+      "note": "secure storage 不可用时的加密 sessionStorage 回退位；storage 模块在 persistSecret/loadSecret 中读写（可带 `::<userId>` 账号后缀）"
+    },
+    "proxySettings": {
+      "owner": "src/composables/useBootstrap.ts:localStorage.setItem(proxySettings)",
+      "consumers": ["src/composables/useBootstrap.ts", "src/views/loginWindow/Network.vue"],
+      "kind": "preference",
+      "note": "代理设置；useBootstrap 启动水合，登录网络页编辑"
+    },
+    "deviceFingerprint": {
+      "owner": "src/services/secure/fingerprint.ts:localStorage.setItem(deviceFingerprint)",
+      "consumers": ["src/services/secure/fingerprint.ts"],
+      "kind": "cache",
+      "note": "设备指纹缓存（含时间戳）；模块自身读写"
+    },
+    "matrix.sliding_sync.pos": {
+      "owner": "src/services/matrix/MatrixSyncManager.ts:POS_STORAGE_KEY",
+      "consumers": ["src/services/matrix/MatrixSyncManager.ts"],
+      "kind": "cache",
+      "note": "Sliding Sync 的 since token；同步管理器读写并在失效时清除"
+    },
+    "oidc_homeserver_url": {
+      "owner": "src/services/matrix/auth/MatrixOidcService.ts:OIDC_HOMESERVER_STORAGE_KEY",
+      "consumers": ["src/services/matrix/auth/MatrixOidcService.ts"],
+      "kind": "credential",
+      "storage": "session",
+      "note": "OIDC 流程中的 homeserver 地址（sessionStorage）；认证服务读写"
+    },
+    "oidc_state": {
+      "owner": "src/services/matrix/auth/MatrixOidcService.ts:getAuthorizationUrl → sessionStorage.setItem('oidc_state', state)",
+      "consumers": ["src/services/matrix/auth/MatrixOidcService.ts"],
+      "kind": "credential",
+      "storage": "session",
+      "note": "OIDC 授权码流程的 CSRF state（sessionStorage）；handleCallback 读回 (:114) 与回调 state 比对，仅在换取 token 成功后 (:149) 清除——state 不匹配/缺 code_verifier 的提前返回不会清理"
+    },
+    "oidc_code_verifier": {
+      "owner": "src/services/matrix/auth/MatrixOidcService.ts:sessionStorage.setItem(oidc_code_verifier)",
+      "consumers": ["src/services/matrix/auth/MatrixOidcService.ts"],
+      "kind": "credential",
+      "storage": "session",
+      "note": "OIDC PKCE code_verifier（sessionStorage）；认证服务在同文件读回、刷新并用后清理"
+    },
+    "tjg-offline-queue": {
+      "owner": "src/services/offline/OfflineQueueService.ts:STORAGE_KEY",
+      "consumers": ["src/services/offline/OfflineQueueService.ts", "src/composables/app/useOfflineQueueReplay.ts"],
+      "kind": "cache",
+      "note": "离线消息队列；服务读写，重放 composable 消费"
+    },
+    "tjg-push-dnd": {
+      "owner": "src/services/matrix/notifications/dndMirror.ts:DND_MIRROR_STORAGE_KEYS.enabled",
+      "consumers": [
+        "src/services/matrix/notifications/dndMirror.ts",
+        "src/services/matrix/notifications/MatrixNotificationService.ts"
+      ],
+      "kind": "cache",
+      "note": "勿扰时段镜像-启用位；镜像模块读写，通知服务水合"
+    },
+    "tjg-push-dnd-start": {
+      "owner": "src/services/matrix/notifications/dndMirror.ts:DND_MIRROR_STORAGE_KEYS.start",
+      "consumers": [
+        "src/services/matrix/notifications/dndMirror.ts",
+        "src/services/matrix/notifications/MatrixNotificationService.ts"
+      ],
+      "kind": "cache",
+      "note": "勿扰时段镜像-开始时间"
+    },
+    "tjg-push-dnd-end": {
+      "owner": "src/services/matrix/notifications/dndMirror.ts:DND_MIRROR_STORAGE_KEYS.end",
+      "consumers": [
+        "src/services/matrix/notifications/dndMirror.ts",
+        "src/services/matrix/notifications/MatrixNotificationService.ts"
+      ],
+      "kind": "cache",
+      "note": "勿扰时段镜像-结束时间"
+    },
+    "tjg-push-dnd-updated-at": {
+      "owner": "src/services/matrix/notifications/dndMirror.ts:DND_MIRROR_STORAGE_KEYS.updatedAt",
+      "consumers": [
+        "src/services/matrix/notifications/dndMirror.ts",
+        "src/services/matrix/notifications/MatrixNotificationService.ts"
+      ],
+      "kind": "cache",
+      "note": "勿扰时段镜像-写入时间，用于本地/服务端新者胜"
+    },
+    "tjg-push-dnd-owner": {
+      "owner": "src/services/matrix/notifications/dndMirror.ts:DND_MIRROR_STORAGE_KEYS.owner",
+      "consumers": ["src/services/matrix/notifications/dndMirror.ts"],
+      "kind": "cache",
+      "note": "勿扰时段镜像归属 uid，换号即整体作废"
+    },
+    "tjg.lastCryptoUserId": {
+      "owner": "src/services/matrix/MatrixCryptoStateTracker.ts:localStorage.setItem(tjg.lastCryptoUserId)",
+      "consumers": ["src/services/matrix/MatrixCryptoStateTracker.ts", "src/services/matrix/MatrixClientLifecycle.ts"],
+      "kind": "cache",
+      "note": "上次加密用户 userId:deviceId；读取发生在 MatrixCryptoStateTracker 的 doEnsureCrypto（私有 readLastCryptoUser），运行时入口是 MatrixClientLifecycle.ensureCrypto"
+    },
+    "tjg.lastCryptoEncrypted": {
+      "owner": "src/services/matrix/MatrixCryptoStateTracker.ts:localStorage.setItem(tjg.lastCryptoEncrypted)",
+      "consumers": ["src/services/matrix/MatrixCryptoStateTracker.ts", "src/services/matrix/MatrixClientLifecycle.ts"],
+      "kind": "cache",
+      "note": "上次 crypto 是否加密的状态位；读取同 doEnsureCrypto（readLastCryptoEncrypted），用于判断是否需要提前清理 IndexedDB crypto store"
+    },
+    "tjg-audio-input": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.audioInputId",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "麦克风设备选择；loadMediaDevicePreferences 读回（通话侧 MatrixVoIPService 与设置页预览/测试消费）。设备选择目前只作用于设置页预览，真实通话需 replaceTrack（见模块头）"
+    },
+    "tjg-video-input": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.videoInputId",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "摄像头设备选择；loadMediaDevicePreferences 读回；与音频设备相同的未接线范围说明"
+    },
+    "tjg-echo-cancellation": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.echoCancellation",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "回声消除；经 toAudioQualityConstraints 在真实通话轨道上 applyConstraints"
+    },
+    "tjg-noise-suppression": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.noiseSuppression",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "降噪；经 toAudioQualityConstraints 在真实通话轨道上 applyConstraints"
+    },
+    "tjg-auto-gain": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.autoGain",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "自动增益（映射 autoGainControl）；经 toAudioQualityConstraints 在真实通话轨道上 applyConstraints"
+    },
+    "draft_*": {
+      "owner": "src/stores/domains/widget/global.ts:localStorage.setItem(draft_${roomId})",
+      "consumers": ["src/stores/domains/widget/global.ts"],
+      "kind": "cache",
+      "note": "按 roomId 的输入框草稿（动态键族）；global store 读写并清理过期草稿"
+    },
+    "tjg.persistedDeviceId:*": {
+      "owner": "src/services/matrix/deviceIdPersistence.ts:KEY_PREFIX",
+      "consumers": ["src/services/matrix/deviceIdPersistence.ts", "src/services/matrix/MatrixClientAuth.ts"],
+      "kind": "credential",
+      "note": "按登录标识持久化的 deviceId（动态键族），避免重复建设备"
+    },
+    "tjg:e2e:enabled": {
+      "owner": "src/utils/AppHarness.ts:E2E_STORAGE_KEY",
+      "consumers": ["src/utils/AppHarness.ts"],
+      "kind": "harness",
+      "note": "Playwright e2e 开关；AppHarness 读取"
+    },
+    "tjg:e2e:mock-auth": {
+      "owner": "src/utils/AppHarness.ts:MOCK_AUTH_STORAGE_KEY",
+      "consumers": ["src/utils/AppHarness.ts"],
+      "kind": "harness",
+      "note": "Playwright e2e 模拟登录开关；AppHarness 读取"
+    },
+    "tjg:e2e:platform": {
+      "owner": "src/utils/AppHarness.ts:PLATFORM_STORAGE_KEY",
+      "consumers": ["src/utils/AppHarness.ts", "src/composables/usePlatform.ts"],
+      "kind": "harness",
+      "note": "e2e 平台覆盖；AppHarness 与 usePlatform 读取"
+    },
+    "tjg-message-confirm": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.messageConfirm",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（messageConfirm），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-link-preview": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.linkPreview",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（linkPreview），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-emoji-convert": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.emojiConvert",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（emojiConvert），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-emoji-size": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.emojiSize",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（emojiSize），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-burn-default-enabled": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.burnDefaultEnabled",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（burnDefaultEnabled），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-burn-default-duration": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.burnDefaultDuration",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（burnDefaultDuration），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-burn-show-countdown": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.burnShowCountdown",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（burnShowCountdown），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-thread-auto-subscribe": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.threadAutoSubscribe",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（threadAutoSubscribe），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-thread-show-in-room": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.threadShowInRoom",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（threadShowInRoom），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-thread-notification-level": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.threadNotificationLevel",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（threadNotificationLevel），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-space-auto-join": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.spaceAutoJoinRooms",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（spaceAutoJoinRooms），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-space-show-subspaces": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.spaceShowSubspaces",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（spaceShowSubspaces），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-space-default-notification": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.spaceDefaultNotification",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（spaceDefaultNotification），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-send-receipts": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.sendReadReceipts",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（sendReadReceipts），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-show-typing": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.sendTypingNotifications",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（sendTypingNotifications），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-show-online": {
+      "owner": "src/stores/domains/settings/settings-helpers.ts:LEGACY_PREFERENCE_STORAGE_KEYS.showOnlineStatus",
+      "consumers": ["src/stores/domains/settings/settings-helpers.ts", "src/stores/domains/settings/setting.ts"],
+      "kind": "legacy",
+      "note": "旧版设置键（showOnlineStatus），仅 setting.ts 迁移读取后 removeItem；Task 7 复核删除"
+    },
+    "tjg-add-friend-search-history": {
+      "owner": "src/components/friend/AddFriendPane.vue:ADD_FRIEND_SEARCH_HISTORY_STORAGE_KEY",
+      "consumers": ["src/components/friend/AddFriendPane.vue", "src/composables/common/useRecentSearchHistory.ts"],
+      "kind": "cache",
+      "note": "添加好友面板的最近搜索词；AddFriendPane 把 key 传给 useRecentSearchHistory 读写（2026-09-22 review I4 补登记：写入点在 src/components，旧扫描面漏掉）"
+    },
+    "tjg-friend-search-history": {
+      "owner": "src/components/friend/composables/useFriendSearch.ts:FRIEND_SEARCH_HISTORY_STORAGE_KEY",
+      "consumers": [
+        "src/components/friend/composables/useFriendSearch.ts",
+        "src/components/friend/FriendListView.vue",
+        "src/composables/common/useRecentSearchHistory.ts"
+      ],
+      "kind": "cache",
+      "note": "好友列表的最近搜索词；useFriendSearch 传给 useRecentSearchHistory 读写，FriendListView 消费该 composable"
+    },
+    "tjg-friend-group-search-history": {
+      "owner": "src/components/friend/FriendGroupView.vue:FRIEND_GROUP_SEARCH_HISTORY_STORAGE_KEY",
+      "consumers": ["src/components/friend/FriendGroupView.vue", "src/composables/common/useRecentSearchHistory.ts"],
+      "kind": "cache",
+      "note": "好友分组视图的最近搜索词；FriendGroupView 传给 useRecentSearchHistory 读写"
+    }
+  }
+}

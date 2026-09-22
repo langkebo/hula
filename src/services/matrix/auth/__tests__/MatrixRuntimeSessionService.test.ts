@@ -679,6 +679,37 @@ describe('sessionUnread 记录与 bootstrap 清理顺序', () => {
     expect(restarted.apply(UID, [buildSession()])[ROOM]).toBe(0)
   })
 
+  it('冷启动后 cacheStore 与 lastReadActiveTimeStore 都水合，bootstrap 清理不删 sessionUnread', async () => {
+    localStorage.clear()
+    localStorage.setItem('chat', 'cached-chat')
+
+    // 第 1 次运行：未读账本的两半（本机计数 + 已读水位）都写入并持久化
+    bootPersistedPinia()
+    useSessionUnreadStore().set(UID, ROOM, 2)
+    useSessionUnreadStore().setLastRead(UID, ROOM, 100)
+    await nextTick()
+    expect(localStorage.getItem('sessionUnread')).not.toBeNull()
+
+    // 重启（第 2 次启动）：两半都必须能从 localStorage 水合
+    bootPersistedPinia()
+    expect(useSessionUnreadStore().cacheStore[UID]?.[ROOM]?.count).toBe(2)
+    expect(useSessionUnreadStore().lastReadActiveTimeStore[UID]?.[ROOM]).toBe(100)
+
+    mockPort.matrix.getUserId.mockReturnValue(UID)
+    mockPort.matrix.getAccessToken.mockReturnValue('access-token')
+    const service = createService()
+    await service.bootstrapPostLoginState({ account: 'alice', displayName: 'Alice', client: 'PC' })
+
+    // 清理例程确实跑了（chat 被删），但它不能碰未读账本
+    expect(localStorage.getItem('chat')).toBeNull()
+    expect(localStorage.getItem('sessionUnread')).not.toBeNull()
+
+    // 再重启一次：账本两半仍在
+    bootPersistedPinia()
+    expect(useSessionUnreadStore().cacheStore[UID]?.[ROOM]?.count).toBe(2)
+    expect(useSessionUnreadStore().lastReadActiveTimeStore[UID]?.[ROOM]).toBe(100)
+  })
+
   it('显式登出/账号重置时清除 sessionUnread 记录', async () => {
     localStorage.clear()
     localStorage.setItem('sessionUnread', JSON.stringify({ lastReadActiveTimeStore: { [UID]: { [ROOM]: 100 } } }))

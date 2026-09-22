@@ -16,7 +16,6 @@ interface ClientServiceDeps {
 }
 
 interface PresenceServiceDeps {
-  setPresence(presence: 'online' | 'offline' | 'unavailable', statusMsg?: string): Promise<void>
   onPresenceChange(handler: (info: PresenceInfo) => void): () => void
   subscribeToPresence(userIds: string[]): Promise<unknown>
   getBatchPresence(userIds: string[]): Promise<PresenceInfo[]>

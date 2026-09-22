@@ -27,15 +27,6 @@ type Story = StoryObj<typeof meta>
 
 export const Incoming: Story = {}
 
-export const Outgoing: Story = {
-  args: {
-    request: {
-      ...baseRequest,
-      direction: 'outgoing'
-    }
-  }
-}
-
 export const Expired: Story = {
   args: {
     request: {

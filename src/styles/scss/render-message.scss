@@ -46,6 +46,7 @@
  * 默认 @include bubble 已是圆角，这里只需覆盖 square。
  * 属性选择器 (0,2,0) 特异性高于 .bubble / .bubble-oneself (0,1,0)，
  * 无需 !important 即可盖过后者的 rounded-[12px_4px_12px_12px]。
+ * 仅覆盖有生产者的两个类：`.bubble`（接收方）与 `.bubble-oneself`（发送方）。
  */
 [data-bubble-style='square'] .bubble,
 [data-bubble-style='square'] .bubble-oneself {
@@ -84,10 +85,6 @@
   }
 }
 
-.photo-wall {
-  @extend .bubble-oneself;
-  @apply flex flex-col items-start gap-6px flex-1;
-}
 .float-header {
   @include float;
 }

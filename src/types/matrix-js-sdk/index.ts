@@ -4,7 +4,15 @@
  */
 /// <reference types="vite/client" />
 
-export type { ICreateClientOpts, MSC3575RoomData, MSC3575SlidingSyncResponse, SlidingSync } from 'matrix-js-sdk'
+export type {
+  ICreateClientOpts,
+  MatrixClient,
+  MSC3575RoomData,
+  MSC3575SlidingSyncResponse,
+  ReadReceiptsManager,
+  Room,
+  SlidingSync
+} from 'matrix-js-sdk'
 export {
   NotificationCountType,
   PendingEventOrdering,

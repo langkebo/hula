@@ -117,8 +117,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   batchToggle: [roomId: string]
-  batchSelectAll: []
-  batchClear: []
 }>()
 
 const resolvedBatchIds = computed(() => props.batchSelectedIds ?? new Set<string>())

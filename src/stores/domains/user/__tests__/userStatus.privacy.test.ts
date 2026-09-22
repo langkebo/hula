@@ -6,12 +6,16 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 
 const { setPresenceMock, updateUserItemMock } = vi.hoisted(() => ({
-  setPresenceMock: vi.fn().mockResolvedValue(true),
+  setPresenceMock: vi.fn(),
   updateUserItemMock: vi.fn().mockReturnValue(true)
 }))
 
-vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
-  matrixAccountService: { setPresence: setPresenceMock }
+// 门控已收敛到 MatrixPresenceService.setPresence（见该服务的门控测试）。
+// 这里不再 mock resolveOutgoingPresence：store 的职责只有两个——
+//   1) 把用户的「期望状态」作为意图传给唯一写入点；
+//   2) 用服务返回的「生效值」决定本地 activeStatus 是否降级。
+vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
+  matrixPresenceService: { setPresence: setPresenceMock }
 }))
 
 const userInfo = reactive<{
@@ -37,7 +41,7 @@ const ONLINE_STATE = { id: '1', title: '在线' }
 const AWAY_STATE = { id: '2', title: '忙碌' }
 const INVISIBLE_STATE = { id: '3', title: '隐身' }
 
-describe('userStatus.changeCurrentUserState 尊重「显示在线状态」偏好', () => {
+describe('userStatus.changeCurrentUserState 把门控交给 presence 服务', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -45,40 +49,48 @@ describe('userStatus.changeCurrentUserState 尊重「显示在线状态」偏好
     userInfo.userStateId = '1'
   })
 
-  it('关闭偏好后选择 online 降级为 offline，并把本地 activeStatus 置为离线', async () => {
+  it('把 online 意图原样交给服务，并按服务返回的 offline 把本地 activeStatus 置为离线', async () => {
+    // 桌面关闭「显示在线状态」时服务会返回 offline。开关必须在这里真的关掉，
+    // 否则调用点若重新加回 resolveOutgoingPresence 也会照传 online，断言失去意义。
     useSettingStore().setShowOnlineStatusEnabled(false)
+    setPresenceMock.mockResolvedValue('offline')
     const store = useUserStatusStore()
 
     await store.changeCurrentUserState(ONLINE_STATE)
 
-    expect(setPresenceMock).toHaveBeenCalledWith('offline')
-    expect(setPresenceMock).not.toHaveBeenCalledWith('online')
+    expect(setPresenceMock).toHaveBeenCalledWith('online')
     expect(userInfo.activeStatus).toBe(OnlineEnum.OFFLINE)
     // 用户的选择仍然记录下来，重新打开开关后按该状态上报
     expect(store.stateId).toBe('1')
     expect(userInfo.userStateId).toBe('1')
   })
 
-  it('开启偏好时选择 online 照旧上报 online', async () => {
+  it('服务返回 online（开关开启）时不降级本地 activeStatus', async () => {
     useSettingStore().setShowOnlineStatusEnabled(true)
+    setPresenceMock.mockResolvedValue('online')
     const store = useUserStatusStore()
 
     await store.changeCurrentUserState(ONLINE_STATE)
 
     expect(setPresenceMock).toHaveBeenCalledWith('online')
+    expect(userInfo.activeStatus).toBe(OnlineEnum.ONLINE)
     expect(store.stateId).toBe('1')
   })
 
-  it('关闭偏好不影响 away/busy/隐身 等非在线状态的上报', async () => {
+  it('away/隐身 等非在线状态原样上报，服务返回同值时不降级', async () => {
+    // 开关关闭只影响 online；away/offline 是用户显式选择，调用点必须原样传意图
     useSettingStore().setShowOnlineStatusEnabled(false)
+    setPresenceMock.mockResolvedValue('unavailable')
     const store = useUserStatusStore()
 
     await store.changeCurrentUserState(AWAY_STATE)
 
     expect(setPresenceMock).toHaveBeenCalledWith('unavailable')
     expect(store.stateId).toBe('2')
+    expect(userInfo.activeStatus).toBe(OnlineEnum.ONLINE)
 
     setPresenceMock.mockClear()
+    setPresenceMock.mockResolvedValue('offline')
     await store.changeCurrentUserState(INVISIBLE_STATE)
 
     expect(setPresenceMock).toHaveBeenCalledWith('offline')

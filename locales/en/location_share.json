@@ -9,12 +9,8 @@
   "duration_15min": "15 minutes",
   "duration_1hour": "1 hour",
   "duration_8hour": "8 hours",
-  "expires_in": "{minutes} minutes remaining",
   "my_location": "My location",
   "lat_lng": "Lat {lat}, Lng {lng}",
-  "description_label": "Location description",
-  "description_placeholder": "Optional, describe the location",
-  "open_in_map": "Open in map",
   "permission_denied": "Location permission denied. Please enable it in system settings.",
   "permission_failed": "Failed to get location",
   "start_success": "Location sharing started",
@@ -24,6 +20,5 @@
   "send_success": "Location sent",
   "send_failed": "Failed to send location",
   "beacon_info": "Location beacon",
-  "view_live": "View live location",
   "no_sharing": "No active location sharing"
 }

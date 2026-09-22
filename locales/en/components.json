@@ -38,18 +38,7 @@
   },
   "announcementCard": {
     "title": "Announcement",
-    "viewDetail": "View details",
-    "windowTitle": "View group announcement"
-  },
-  "slidingSyncIndicator": {
-    "syncingProgress": "Syncing {synced}/{total}",
-    "syncing": "Syncing...",
-    "complete": "Sync complete",
-    "error": "Sync failed"
-  },
-  "virtualList": {
-    "allMessagesLoaded": "All messages are loaded",
-    "loading": "Loading"
+    "viewDetail": "View details"
   },
   "memoryMonitor": {
     "minimize": "Minimize",

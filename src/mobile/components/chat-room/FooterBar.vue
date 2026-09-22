@@ -43,7 +43,7 @@ import VoicePanel from './panel/VoicePanel.vue'
 
 const { t } = useI18n()
 const globalStore = useGlobalStore()
-const emit = defineEmits(['focus', 'blur', 'updateHeight', 'location'])
+const emit = defineEmits(['updateHeight', 'location'])
 
 const showVoicePanel = ref(false)
 

@@ -56,7 +56,7 @@
             <ApplyList v-else-if="rightView === 'applyList'" :type="applyListType" />
             <!-- 阶段 4：弹窗改造为右侧栏内嵌面板 -->
             <AddFriendPane v-else-if="rightView === 'addFriend'" />
-            <CreateRoomPane v-else-if="rightView === 'createRoom'" />
+            <CreateRoomPane v-else-if="rightView === 'createRoom'" @close="handleBack" />
             <JoinRoomPane v-else-if="rightView === 'joinRoom'" />
             <CreateSpacePane v-else-if="rightView === 'createSpace'" />
             <!-- Step 1.1：空间子房间视图（路由派生 spaceId，SpaceChildrenPane 自包含加载数据） -->

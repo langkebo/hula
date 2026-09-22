@@ -9,7 +9,6 @@
     "toast": {
       "missing_local": "暂时找不到本地文件，请先下载后再试",
       "reveal_fail": "无法在文件夹中显示该文件",
-      "open_fail_hint": "无法打开或显示文件。请手动在文件管理器中找到并打开文件。",
       "download_open_fail": "文件下载成功，但无法打开或显示文件。请手动在文件管理器中查找下载的文件。",
       "download_failed": "下载文件失败: {reason}"
     }
@@ -64,14 +63,6 @@
     "camera_enable": "开启摄像头",
     "hangup": "挂断"
   },
-  "friend_verify": {
-    "title": "申请加好友",
-    "account": "账号: {account}",
-    "placeholder": "输入几句话，对TA说些什么吧",
-    "send_btn": "添加好友",
-    "toast_success": "已发送好友申请",
-    "default_msg": "我是{name}"
-  },
   "group_verify": {
     "title": "申请加群",
     "account": "群号: {account}",
@@ -83,16 +74,9 @@
   "message_list": {
     "sync_loading": "正在同步消息",
     "sync_complete": "消息同步完成",
-    "official_popover": "官方群聊认证",
-    "bot_popover": "Tjg助手",
     "mention_tag": "[有人{'@'}我]",
     "favorite_tag": "已置顶",
     "low_priority_tag": "低优先级",
-    "migrated_tag": "已迁移",
-    "shield_group": "您已屏蔽群聊",
-    "shield_user": "您已屏蔽此人",
-    "empty_description": "快和朋友聊天吧！",
-    "empty_action": "寻找好友",
     "default_last_msg": "欢迎使用Tjg"
   },
   "message_menu": {
@@ -192,7 +176,9 @@
   },
   "notify": {
     "new_messages": "新消息",
-    "ignore_all": "忽略全部"
+    "ignore_all": "忽略全部",
+    "folded": "内容已隐藏",
+    "keyword_hit": "关键词命中：{body}"
   },
   "tray": {
     "online_status_window_title": "在线状态",
@@ -211,8 +197,6 @@
         "location_error": "位置获取失败",
         "default": "选择位置"
       },
-      "share": "位置共享",
-      "send_failed": "发送位置失败",
       "result": {
         "map_error_title": "地图加载失败",
         "location_error_title": "位置获取失败"
@@ -231,17 +215,9 @@
         "fetching_address": "获取地址中...",
         "coordinate": "坐标: {lat}, {lng}",
         "unknown_address": "未知地址"
-      },
-      "errors": {
-        "missing_api_key": "腾讯地图API密钥未配置",
-        "geocode_failed": "获取地址失败"
       }
     },
-    "map": {
-      "marker_current": "当前位置"
-    },
     "hook": {
-      "permission_check_failed": "检查地理位置权限失败",
       "unsupported": "浏览器不支持地理位置功能",
       "error_generic": "获取位置失败",
       "permission_denied": "位置权限被拒绝",
@@ -264,7 +240,6 @@
   "multi_choose": {
     "search_placeholder": "搜索会话",
     "send_to_separately": "分别发送给",
-    "leave_message_placeholder": "给朋友留言",
     "single_forward": "逐条转发",
     "merge_forward": "合并转发",
     "save_to_pc": "保存至电脑",
@@ -273,7 +248,6 @@
     "exit_multi_select": "退出多选",
     "cancel_button": "取消",
     "send_button": "发送",
-    "not_implemented": "暂未实现",
     "select_delete_prompt": "请选择需要删除的消息",
     "delete_confirm": "删除后将不会出现在你的消息记录中，确定删除这{count}条消息吗?",
     "room_missing": "无法确定当前会话，删除失败",
@@ -282,7 +256,6 @@
     "delete_success": "已删除选中消息",
     "forward_success": "消息转发成功",
     "forward_failed": "消息转发失败",
-    "forward_partial_failed": "{failed}/{total} 个目标转发失败",
     "non_text_message": "［非文本消息］",
     "select_copy_prompt": "请选择需要复制的消息",
     "copy_success": "已复制选中消息",
@@ -304,9 +277,7 @@
     "success": "已转发到 {count} 个房间",
     "failed": "转发失败"
   },
-  "merge_msg_title": "合并消息",
   "multi_select": {
-    "selected_count": "已选 {count} 条",
     "copy": "复制",
     "forward": "转发",
     "delete": "删除",

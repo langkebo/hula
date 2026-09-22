@@ -37,6 +37,16 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
   }
 }))
 
+const { syncDndFromAccountDataMock } = vi.hoisted(() => ({
+  syncDndFromAccountDataMock: vi.fn().mockResolvedValue(null)
+}))
+
+vi.mock('@/services/matrix/notifications/MatrixNotificationService', () => ({
+  matrixNotificationService: {
+    syncDndFromAccountData: (...args: unknown[]) => syncDndFromAccountDataMock(...args)
+  }
+}))
+
 vi.mock('@/services/matrix/MatrixWorkerHost', () => ({
   matrixWorkerHost: {
     start: vi.fn().mockResolvedValue(undefined),
@@ -53,7 +63,8 @@ vi.mock('@/services/matrix/MatrixWsBridge', () => ({
 
 vi.mock('@/services/matrix/user/MatrixPresenceService', () => ({
   matrixPresenceService: {
-    setPresence: vi.fn().mockResolvedValue(undefined),
+    // 服务返回生效值：默认开关开启返回 online，关闭场景由用例覆盖返回值
+    setPresence: vi.fn().mockResolvedValue('online'),
     onPresenceChange: vi.fn().mockReturnValue(vi.fn())
   }
 }))
@@ -74,13 +85,17 @@ vi.mock('@/utils/PlatformConstants', () => ({
   isMac: () => true
 }))
 
-vi.mock('@/utils/presenceStatus', () => ({
-  buildPresenceStorePatch: (presence: { presence?: string }) => ({
-    activeStatus: OnlineEnum.ONLINE,
-    lastOptTime: 12345,
-    presence: presence.presence
-  })
-}))
+vi.mock('@/utils/presenceStatus', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/presenceStatus')>()
+  return {
+    ...actual,
+    buildPresenceStorePatch: (presence: { presence?: string }) => ({
+      activeStatus: OnlineEnum.ONLINE,
+      lastOptTime: 12345,
+      presence: presence.presence
+    })
+  }
+})
 
 vi.mock('@/utils/userIdentity', () => ({
   toLocalpart: (s: string) => s.split(':')[0].replace('@', '')
@@ -357,6 +372,31 @@ describe('SessionBootstrapService', () => {
       expect(mocks.addLoginHistory).toHaveBeenCalled()
     })
 
+    it('pulls the DND window from account data once after sync is prepared', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getClient.mockReturnValue({})
+
+      const service = new SessionBootstrapService(host, state)
+      await service.bootstrapPostLoginState()
+
+      // 仅 DND 跨设备：展示配置保持设备本地，冷启动只拉一次勿扰时段
+      expect(syncDndFromAccountDataMock).toHaveBeenCalledTimes(1)
+      expect(syncDndFromAccountDataMock.mock.invocationCallOrder[0]).toBeGreaterThan(
+        mocks.waitSyncPrepared.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('does not let a failing DND pull break the bootstrap', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getClient.mockReturnValue({})
+      syncDndFromAccountDataMock.mockRejectedValueOnce(new Error('account data unavailable'))
+
+      const service = new SessionBootstrapService(host, state)
+
+      await expect(service.bootstrapPostLoginState()).resolves.toBeUndefined()
+      expect(mocks.loadRooms).toHaveBeenCalled()
+    })
+
     it('sets current session room id when none is set and sessions exist', async () => {
       const { host, mocks } = createMockHost()
       mocks.getClient.mockReturnValue({})
@@ -405,18 +445,22 @@ describe('SessionBootstrapService', () => {
   })
 
   describe('bootstrapPostLoginState - 在线状态开关', () => {
-    it('关闭开关后登录不再上报 online，且本地不置为在线', async () => {
+    it('只把 online 意图交给门控服务；服务返回 offline 时本地不置为在线', async () => {
       const { host, mocks } = createMockHost()
       mocks.getClient.mockReturnValue({})
+      // 开关必须真的关掉：否则调用点若重新加回 resolveOutgoingPresence 也会照传 online，
+      // 「只传意图」的断言就永远为真、无法失败。
       useSettingStore().setShowOnlineStatusEnabled(false)
+
+      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
+      const setPresence = vi.mocked(matrixPresenceService.setPresence)
+      // 桌面关闭「显示在线状态」时服务返回 offline
+      setPresence.mockResolvedValueOnce('offline')
 
       const service = new SessionBootstrapService(host, state)
       await service.bootstrapPostLoginState()
 
-      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
-      const setPresence = vi.mocked(matrixPresenceService.setPresence)
-      expect(setPresence).not.toHaveBeenCalledWith('online')
-      expect(setPresence).toHaveBeenCalledWith('offline')
+      expect(setPresence).toHaveBeenCalledWith('online')
       expect(mocks.updateProfileFields).toHaveBeenCalledWith(
         expect.objectContaining({ activeStatus: OnlineEnum.OFFLINE })
       )
@@ -425,15 +469,37 @@ describe('SessionBootstrapService', () => {
       )
     })
 
-    it('开启开关时登录照旧上报 online，并把本地置为在线', async () => {
+    it('setPresence 失败时本地保守按离线处理，且失败被吞掉不中断引导', async () => {
       const { host, mocks } = createMockHost()
       mocks.getClient.mockReturnValue({})
+      // 开关开启，排除「因偏好关闭而降级」这条路径，单独钉住失败回退
       useSettingStore().setShowOnlineStatusEnabled(true)
+
+      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
+      vi.mocked(matrixPresenceService.setPresence).mockRejectedValueOnce(new Error('presence unavailable'))
+
+      const service = new SessionBootstrapService(host, state)
+      // 上报失败不应把整个登录引导打挂
+      await expect(service.bootstrapPostLoginState()).resolves.toBeUndefined()
+
+      expect(mocks.updateProfileFields).toHaveBeenCalledWith(
+        expect.objectContaining({ activeStatus: OnlineEnum.OFFLINE })
+      )
+      expect(mocks.updateProfileFields).not.toHaveBeenCalledWith(
+        expect.objectContaining({ activeStatus: OnlineEnum.ONLINE })
+      )
+    })
+
+    it('服务返回 online（开关开启）时上报 online，并把本地置为在线', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getClient.mockReturnValue({})
+
+      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
+      vi.mocked(matrixPresenceService.setPresence).mockResolvedValueOnce('online')
 
       const service = new SessionBootstrapService(host, state)
       await service.bootstrapPostLoginState()
 
-      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
       expect(vi.mocked(matrixPresenceService.setPresence)).toHaveBeenCalledWith('online')
       expect(mocks.updateProfileFields).toHaveBeenCalledWith(
         expect.objectContaining({ activeStatus: OnlineEnum.ONLINE })

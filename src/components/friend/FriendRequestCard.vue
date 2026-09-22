@@ -39,14 +39,6 @@
         @click="$emit('reject', request)">
         {{ t('friend.request.reject') }}
       </n-button>
-      <n-button
-        v-if="showCancel"
-        size="small"
-        :loading="processing"
-        :aria-label="t('friend.request.cancel')"
-        @click="$emit('cancel', request)">
-        {{ t('friend.request.cancel') }}
-      </n-button>
     </div>
   </article>
 </template>
@@ -78,7 +70,6 @@ const props = withDefaults(
 defineEmits<{
   accept: [request: FriendRequestItem]
   reject: [request: FriendRequestItem]
-  cancel: [request: FriendRequestItem]
 }>()
 
 const { t } = useI18n()
@@ -88,7 +79,6 @@ const remainingMs = computed(() => Math.max(0, expiresAt.value - (props.now || D
 const remainingHours = computed(() => Math.ceil(remainingMs.value / (60 * 60 * 1000)))
 const showAccept = computed(() => props.request.direction !== 'outgoing')
 const showReject = computed(() => props.request.direction !== 'outgoing')
-const showCancel = computed(() => props.request.direction === 'outgoing')
 const countdownLabel = computed(() => {
   if (remainingMs.value <= 0) {
     return t('friend.request.expired')

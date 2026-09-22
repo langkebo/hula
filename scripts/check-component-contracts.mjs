@@ -28,12 +28,24 @@
  * - `__tests__` 目录下的文件既不算声明方也不算使用方（测试自己 emit/监听不代表真实接线）；
  * - 从未被使用的组件不计入（那是死代码问题，不是"没人监听"问题）。
  *
- * 基线缺失或结构不合法时直接失败，绝不静默退化为 exit 0 空转。
- * 数量只能减少：`--update` 收紧基线，增加即失败；"可接受"的个案写进 `ACCEPTED_PATTERNS`
- * 并注明理由，而不是留在基线里。
+ * 全局自动注册组件（unplugin-vue-components）的名字**不是** basename：`renderMessage/index.vue`
+ * 注册成 `<RenderMessage>`。因此组件名→文件映射以插件产物 `src/typings/components.d.ts`
+ * （路径派生名）为权威，basename 表只在 d.ts 漂移时兜底；否则 35 个 `index.vue` 会因重名
+ * 被整体丢弃，`<RenderMessage>` 上的真实监听无从归属，产生"无人监听"误报。
  *
- * 已知局限（见报告）：不分析渲染函数 / `h()` / JSX 里手写的 `onXxx` 监听，也不跨文件
- * 追踪 `v-bind` 透传；这些场景由上面的"跳过"策略兜底，属于漏报而非误报。
+ * 基线缺失或结构不合法时直接失败，绝不静默退化为 exit 0 空转。
+ * 数量与键名双重 ratchet：当前集合必须 ⊆ 基线集合，`--update` 也拒绝任何新增条目
+ * （同数量换条目同样不放行）；"新增不可判定位置"（解析失败 / 对象展开 / 动态参数）会让
+ * 计数凭空下降，基线用 `skippedLocations` 冻结，新增同样 FAIL。
+ * "可接受"的个案写进 `ACCEPTED_PATTERNS` 并注明理由，而不是留在基线里；白名单条目一旦
+ * 失效（组件删除 / 事件不再声明 / 已不再压制任何事件）直接 FAIL，防止赦免腐化。
+ * 白名单名称集合本身也是 ratchet（当前 ⊆ 基线，`--update` 拒绝新增）：否则"破坏监听 +
+ * 追加白名单"一步就能洗绿。`followUp` 字段必须指向 §13.6 里真实存在的 follow-up 行。
+ *
+ * 已知局限（见报告）：不分析渲染函数 / `h()` / JSX 里手写的 `onXxx` 监听，`<component :is>`
+ * 动态挂载不识别，也不跨文件追踪 `v-bind` 透传；这些场景由上面的"跳过"策略兜底，
+ * 属于漏报而非误报。事件判据是"所有使用处的并集"，无法表达"某处监听、另一处断线"，
+ * 这类逐使用处缺口需要人工评审（例如历史窗口里 reply 气泡点击无响应）。
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join, relative, resolve } from 'node:path'
@@ -41,7 +53,12 @@ import { babelParse, compileScript, parse } from 'vue/compiler-sfc'
 
 const ROOT = 'src'
 const BASELINE = 'scripts/component-contracts-baseline.json'
+/** unplugin-vue-components 生成的全局组件名 → 文件映射（权威的路径派生名）。 */
+const DTS = 'src/typings/components.d.ts'
 const REGENERATE_HINT = '  运行 node scripts/check-component-contracts.mjs --update 重建基线。'
+
+/** Windows 反斜杠 → POSIX：路径比较与基线条目都必须用 `/`。 */
+const toPosix = (p) => p.split('\\').join('/')
 
 /**
  * 白名单：判据判它"没人监听"，但这是可接受的模式。
@@ -49,6 +66,10 @@ const REGENERATE_HINT = '  运行 node scripts/check-component-contracts.mjs --u
  * 只放**确实不该删**的个案，并写明理由；能在同一任务里删掉的死事件请直接删，
  * 不要塞进来。以下每一条都核对过：组件自己完成了用户可见的动作（或只是生命周期
  * 通知），事件是对外可选的延伸点，删掉可惜、留着也无害。
+ *
+ * 带 `followUp` 的是**已知产品行为断线**：事件所在功能确实缺失，但补全需要产品决策
+ * 或跨模块改动，登记进 `docs/mobile-feature-optimization-plan.md` §13 的 follow-up
+ * 清单后在此显式挂账。它们不是"可接受"，每次运行都会被点名，避免像旧基线那样静默冻结。
  */
 const ACCEPTED_PATTERNS = [
   {
@@ -110,11 +131,155 @@ const ACCEPTED_PATTERNS = [
     component: 'src/mobile/components/chat-room/FooterBar.vue',
     event: 'updateHeight',
     reason: 'ResizeObserver 的纯尺寸测量通知，父组件不消费也不影响功能'
+  },
+  /* --- 设计上可选：组件自身已完成用户可见动作，事件只是对外延伸点 --- */
+  {
+    component: 'src/components/common/AreaDrawer.vue',
+    event: 'update:value',
+    reason:
+      '选择结果由 @confirm 回传（EditProfile.vue:113-116 的 onConfirm）；直接 v-model:value 会把 Vant area code 写进 region（存的是拼接名称），不绑定才是正确形态'
+  },
+  {
+    component: 'src/components/settings/ThemeSwitcher.vue',
+    event: 'update:modelValue',
+    reason: '主题已由组件内 settingStore.toggleTheme + showFeedback 应用，事件只是可选双向绑定延伸点（ThemeSwitcher.test.ts 断言了该 emit）'
+  },
+  {
+    component: 'src/components/rightBox/MsgInput.vue',
+    event: 'input',
+    reason: 'handleInternalInput 已处理输入并自行启停 typing 指示，事件是可选外发钩子（与 InlineEdit::cancel 同类）'
+  },
+  {
+    component: 'src/mobile/components/virtual-scroll/SmartVirtualList.vue',
+    event: 'loadMore',
+    reason: '通用列表分页扩展点；现有 3 个父组件的数据源一次性给全，不消费该事件（组件内也没有 hasMore 守卫）'
+  },
+  {
+    component: 'src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue',
+    event: 'upgraded',
+    reason: '升级请求、成功提示与自关闭都由组件内 useRoomUpgradeFlow 完成，事件只是可选通知（父组件会保留旧版本号标签）'
+  },
+  /* --- 产品行为断线：功能真缺，登记为 follow-up 待办，不允许静默冻结 --- */
+  {
+    component: 'src/components/userMenu/ThreepidManager.vue',
+    event: 'add-email',
+    reason: 'AccountSettings.vue:122 以零 props/零监听挂载，邮箱管理完全不生效（输入框清空但请求不发出）',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #1'
+  },
+  {
+    component: 'src/components/userMenu/ThreepidManager.vue',
+    event: 'add-phone',
+    reason: '同上；手机号绑定同样不生效，useAccount.addThreePid/bindThreePid 零生产消费方',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #1'
+  },
+  {
+    component: 'src/components/userMenu/ThreepidManager.vue',
+    event: 'unbind',
+    reason: '同上；解绑按钮无监听，deleteThreePid/unbindThreePid 零生产消费方',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #1'
+  },
+  {
+    component: 'src/components/userMenu/UserMenuHeader.vue',
+    event: 'avatar-click',
+    reason: '头像有 cursor:pointer 但点击无任何行为，需要产品决定打开资料/设置/仅关闭',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #2'
+  },
+  {
+    component: 'src/components/room/RoomInviteActions.vue',
+    event: 'error',
+    reason: '接受/拒绝失败只有 logger.error，用户无感知；成功链路 onAcceptInvite/onRejectInvite 生产上也没人传',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #3'
+  },
+  {
+    component: 'src/components/common/GuestModeBanner.vue',
+    event: 'exit',
+    reason: '游客模式半成品：layout/index.vue 的 isGuestMode/guestUserId 从未被置真，横幅永不渲染',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #4'
+  },
+  {
+    component: 'src/components/common/GuestModeBanner.vue',
+    event: 'upgrade',
+    reason: '同上；MatrixGuestService 无生产引用，需要产品决定"实现游客态"还是"删除横幅"',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #4'
+  },
+  {
+    component: 'src/views/loginWindow/LoginBottomBar.vue',
+    event: 'guest-login',
+    reason: '登录页"更多选项"里的游客登录可见但无监听，且 i18n key login.guest 缺失（渲染原始 key）',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #5'
+  },
+  {
+    component: 'src/components/thread/ThreadPanel.vue',
+    event: 'sendReply',
+    reason: '发送会丢弃输入（无 store/service 调用），loadThreadReplies 是设空数组的 stub',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #6'
+  },
+  {
+    component: 'src/components/workbench/SpaceListItemCard.vue',
+    event: 'contextmenu',
+    reason: '右键空间卡无任何菜单；SpaceListPane 与 SpaceList.vue 都没有转发该事件',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #7'
+  },
+  {
+    component: 'src/components/workbench/RoomSessionList.vue',
+    event: 'batchToggle',
+    reason: '桌面批量模式没有入口：没有任何生产调用方传 batch-mode/batch-selected-ids（移动端有 MobileBatchToolbar）',
+    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #8'
   }
 ]
 
 /** Vue 运行时的双查找规则：`mode-change` / `modeChange` / `mode:change` 归一。 */
 const canonicalEvent = (name) => name.replace(/-(\w)/g, (_, c) => c.toUpperCase())
+
+/** 白名单名称集合（`component::event`）。它是**只减不增**的 ratchet 对象，见基线校验。 */
+const acceptedPatternNames = ACCEPTED_PATTERNS.map((p) => `${p.component}::${p.event}`)
+const acceptedNameSet = new Set(acceptedPatternNames)
+
+/** 产品行为断线的登记文档：`followUp` 必须指向其中真实存在的 §13.6 行。 */
+const FOLLOW_UP_DOC = 'docs/mobile-feature-optimization-plan.md'
+
+/**
+ * 校验 `ACCEPTED_PATTERNS` 里的 `followUp` 字段指向真实存在的 §13 follow-up 行。
+ *
+ * 为什么必须校验：`followUp` 是"这条断线挂在 §13 里待补"的承诺。文档改版/删行后，
+ * 一个只在注释里出现的字符串会继续打印 todo，指向一个不存在的待办——挂账变成假象。
+ * 这里解析 §13.6 表格首列的编号，要求 `followUp` 里的 `#N` 命中其中一行。
+ */
+function validateFollowUps() {
+  const errors = []
+  const withFollowUp = ACCEPTED_PATTERNS.filter((p) => p.followUp)
+  if (withFollowUp.length === 0) return errors
+  if (!existsSync(FOLLOW_UP_DOC)) {
+    errors.push(`${FOLLOW_UP_DOC} 不存在，无法校验 ${withFollowUp.length} 条 followUp`)
+    return errors
+  }
+  const text = readFileSync(FOLLOW_UP_DOC, 'utf8')
+  const start = text.indexOf('### 13.6')
+  const end = start < 0 ? -1 : text.indexOf('\n### ', start + 1)
+  const section = start < 0 ? '' : text.slice(start, end < 0 ? undefined : end)
+  const rows = new Set()
+  for (const m of section.matchAll(/^\|\s*(\d+)\s*\|/gm)) rows.add(Number(m[1]))
+  const rowList = [...rows].sort((a, b) => a - b)
+  for (const pattern of withFollowUp) {
+    const name = `${pattern.component}::${pattern.event}`
+    const ref = /([^\s]+\.md)\s+§13\s+follow-up\s+#(\d+)/.exec(pattern.followUp)
+    if (!ref) {
+      errors.push(`${name}：followUp 无法解析（应为 "<doc>.md §13 follow-up #N"）：${pattern.followUp}`)
+      continue
+    }
+    if (!existsSync(ref[1])) errors.push(`${name}：followUp 文档不存在 ${ref[1]}`)
+    if (rowList.length === 0) {
+      errors.push(`${name}：${FOLLOW_UP_DOC} 里找不到 §13.6 的 follow-up 表格行`)
+    } else if (!rows.has(Number(ref[2]))) {
+      errors.push(
+        `${name}：followUp #${ref[2]} 在 ${FOLLOW_UP_DOC} §13.6 里没有对应行（现有行：${rowList.join(', ')}）`
+      )
+    }
+  }
+  return errors
+}
+
+const followUpErrors = validateFollowUps()
 
 const kebab = (name) => name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
 
@@ -126,15 +291,36 @@ const pascalize = (name) => {
 
 const isTestPath = (path) => path.includes('__tests__') || /\.(test|spec)\.[cm]?[jt]sx?$/.test(path)
 
-/** 收集仓库内所有 `.vue`，测试目录排除在外。 */
+/** 收集仓库内所有 `.vue`，测试目录排除在外（POSIX 路径）。 */
 function collectVueFiles(dir) {
   const out = []
   for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry)
+    const full = toPosix(join(dir, entry))
     if (statSync(full).isDirectory()) out.push(...collectVueFiles(full))
     else if (extname(entry) === '.vue' && !isTestPath(full)) out.push(full)
   }
   return out
+}
+
+/**
+ * 读取 unplugin-vue-components 生成的 `src/typings/components.d.ts`，
+ * 得到「全局组件名 → 组件文件」的权威映射。
+ *
+ * 为什么必须读它：全局自动注册的组件名由**路径**派生（`renderMessage/index.vue`
+ * → `RenderMessage`），只按 basename 建表时 `index.vue` 会因重名被整体丢弃，
+ * 于是 `<RenderMessage>` 上的监听无从归属，`renderMessage/index::jump2Reply`
+ * 被误判成无人监听（检测器误报）。d.ts 是插件自己的产物，用它最不容易漂。
+ */
+function readGlobalComponents(dtsPath) {
+  const map = new Map()
+  if (!existsSync(dtsPath)) return map
+  const text = readFileSync(dtsPath, 'utf8')
+  const block = /interface GlobalComponents\s*\{([\s\S]*?)\n\s*\}/.exec(text)
+  if (!block) return map
+  for (const m of block[1].matchAll(/([A-Za-z_$][\w$]*)\s*:\s*typeof\s+import\('([^']+\.vue)'\)/g)) {
+    map.set(m[1], toPosix(relative(process.cwd(), resolve(dirname(dtsPath), m[2]))))
+  }
+  return map
 }
 
 /** 深度优先遍历 babel AST，对每个节点调用 visit。 */
@@ -321,12 +507,12 @@ function collectVueImports(node, fromPath) {
   return [...found]
 }
 
-/** `@/x` → `src/x`，`#/x` → `src/mobile/x`，`./`、`../` 相对当前文件。 */
+/** `@/x` → `src/x`，`#/x` → `src/mobile/x`，`./`、`../` 相对当前文件（统一 POSIX 分隔符）。 */
 function resolveImport(specifier, fromPath) {
-  if (specifier.startsWith('@/')) return join(ROOT, specifier.slice(2))
-  if (specifier.startsWith('#/')) return join(ROOT, 'mobile', specifier.slice(2))
-  if (specifier.startsWith('~/')) return specifier.slice(2)
-  return relative(process.cwd(), resolve(dirname(fromPath), specifier))
+  if (specifier.startsWith('@/')) return toPosix(join(ROOT, specifier.slice(2)))
+  if (specifier.startsWith('#/')) return toPosix(join(ROOT, 'mobile', specifier.slice(2)))
+  if (specifier.startsWith('~/')) return toPosix(specifier.slice(2))
+  return toPosix(relative(process.cwd(), resolve(dirname(fromPath), specifier)))
 }
 
 /**
@@ -335,7 +521,7 @@ function resolveImport(specifier, fromPath) {
  * 返回 `{ usages: Map<path, Set<event>>, opaque: Set<path> }`；`opaque` 里的组件
  * 存在无法静态判定的绑定（对象展开、动态参数），整体视为不可判定。
  */
-function scanTemplate(tagMap, templateAst, componentPaths) {
+function scanTemplate(tagMap, templateAst, componentPaths, globalPaths) {
   const usages = new Map()
   const opaque = new Set()
   if (!templateAst) return { usages, opaque }
@@ -344,11 +530,17 @@ function scanTemplate(tagMap, templateAst, componentPaths) {
     if (node.type !== 1 /* ELEMENT */) return
     const tag = node.tag
     // 全局注册的标签既可能写成 `<AreaDrawer>` 也可能写成 `<area-drawer>`（mobile 侧
-    // 大量使用 kebab）。只有带 `-` 的标签才做 kebab→Pascal 归一：原生标签（`<button>`、
-    // `<video>`、SVG `<text>` 等）都是无短横的单词，若一并 pascalize 会被错认成
-    // `Button.vue`/`Video.vue`/`Text.vue` 这类同名组件 → 张冠李戴的误报。
+    // 大量使用 kebab）。`globalPaths` 来自 unplugin-vue-components 的 components.d.ts，
+    // 是路径派生的权威名字；`componentPaths`（basename）只作 d.ts 漂移时的兜底。
+    // 原生标签（`<button>`、`<video>`、SVG `<text>` 等）都是无短横的单词，若一并
+    // pascalize 会被错认成 `Button.vue` 这类同名组件 → 张冠李戴的误报。
+    const pascal = tag.includes('-') ? pascalize(tag) : undefined
     const target =
-      tagMap.get(tag) ?? componentPaths.get(tag) ?? (tag.includes('-') ? componentPaths.get(pascalize(tag)) : undefined)
+      tagMap.get(tag) ??
+      globalPaths.get(tag) ??
+      (pascal === undefined ? undefined : globalPaths.get(pascal)) ??
+      componentPaths.get(tag) ??
+      (pascal === undefined ? undefined : componentPaths.get(pascal))
     if (target === undefined) return
     if (!usages.has(target)) usages.set(target, new Set())
     for (const prop of node.props) {
@@ -382,7 +574,11 @@ function scanTemplate(tagMap, templateAst, componentPaths) {
 
 const files = collectVueFiles(ROOT)
 
-// 组件名 → 文件路径，用于识别全局注册（unplugin-vue-components）的标签。
+// 全局组件名 → 文件路径。权威来源是 unplugin-vue-components 生成的 components.d.ts
+// （路径派生名，`renderMessage/index.vue` → `RenderMessage`）；basename 表只作兜底。
+const globalPaths = readGlobalComponents(DTS)
+
+// basename → 文件路径，作为 d.ts 漂移/未生成时的兜底。
 // 查找时对带 `-` 的标签再按 kebab→Pascal 归一（见 scanTemplate），因此这里保持
 // 只登记 basename，避免把 `button`/`video` 这类原生标签的别名也塞进来。
 const componentPaths = new Map()
@@ -426,7 +622,7 @@ for (const path of files) {
     continue
   }
   const tagMap = buildTagMap(descriptor, path)
-  const { usages, opaque } = scanTemplate(tagMap, descriptor.template?.ast, componentPaths)
+  const { usages, opaque } = scanTemplate(tagMap, descriptor.template?.ast, componentPaths, globalPaths)
   for (const [target, events] of usages) {
     if (target === path) continue
     if (!usageByComponent.has(target)) usageByComponent.set(target, { events: new Set(), opaque: false })
@@ -436,8 +632,8 @@ for (const path of files) {
   }
 }
 
-const accepted = new Set(ACCEPTED_PATTERNS.map((p) => `${p.component}::${p.event}`))
-const unlistened = []
+/** 声明的却没人监听的事件（**未**过滤 ACCEPTED_PATTERNS），用于白名单活性告警。 */
+const rawUnlistened = []
 for (const [path, emits] of declared) {
   const usage = usageByComponent.get(path)
   if (usage === undefined) continue // 从未被使用：死代码问题，不归本守门
@@ -447,13 +643,46 @@ for (const [path, emits] of declared) {
   }
   for (const event of emits) {
     if (usage.events.has(canonicalEvent(event))) continue
-    if (accepted.has(`${path}::${event}`)) continue
-    unlistened.push({ component: path, event })
+    rawUnlistened.push({ component: path, event })
   }
 }
 
-const sorted = unlistened.sort((a, b) => a.component.localeCompare(b.component) || a.event.localeCompare(b.event))
+const sorted = rawUnlistened
+  .filter((entry) => !acceptedNameSet.has(`${entry.component}::${entry.event}`))
+  .sort((a, b) => a.component.localeCompare(b.component) || a.event.localeCompare(b.event))
 const entryNames = sorted.map((e) => `${e.component}::${e.event}`)
+
+/**
+ * 白名单活性检查（失效即 FAIL）。
+ *
+ * 白名单一旦失效就变成"永久赦免"：将来同一事件再断线也悄无声息。三种失效形态都点名：
+ * 组件文件被删除、组件已不再声明该事件、条目已不再压制任何事件（说明已接线）。
+ * 失效条目属于**死配置**，必须删掉；只告警不阻塞等于把"永久赦免"从事件搬到了白名单。
+ */
+const rawNames = new Set(rawUnlistened.map((e) => `${e.component}::${e.event}`))
+const inertAccepted = []
+const deferredAccepted = []
+for (const pattern of ACCEPTED_PATTERNS) {
+  const name = `${pattern.component}::${pattern.event}`
+  if (pattern.followUp) deferredAccepted.push(`${name} — ${pattern.followUp}`)
+  if (!existsSync(pattern.component)) inertAccepted.push(`${name}（组件文件不存在）`)
+  else if (!(declared.get(pattern.component) ?? []).includes(pattern.event)) {
+    inertAccepted.push(`${name}（组件已不再声明该事件）`)
+  } else if (!rawNames.has(name)) inertAccepted.push(`${name}（已不再压制任何事件，应删除该白名单条目）`)
+}
+if (inertAccepted.length > 0) {
+  console.log(`check-component-contracts: ACCEPTED_PATTERNS 已失效 ${inertAccepted.length} 条（阻塞，须删除条目）`)
+  for (const item of inertAccepted) console.log(`  inert ${item}`)
+}
+// 产品行为断线不允许静默：每次运行都点名，指向 follow-up 文档
+if (deferredAccepted.length > 0) {
+  console.log(`check-component-contracts: 提示 ${deferredAccepted.length} 条产品行为断线挂账待补（非可接受模式）`)
+  for (const item of deferredAccepted) console.log(`  todo ${item}`)
+}
+if (followUpErrors.length > 0) {
+  console.log(`check-component-contracts: followUp 指向无效 ${followUpErrors.length} 条（阻塞）`)
+  for (const item of followUpErrors) console.log(`  invalid ${item}`)
+}
 
 // 无论 OK / FAIL / --update，都先把不可判定的位置点名，避免"漏报被当成通过"
 if (skipped.length > 0) {
@@ -471,26 +700,79 @@ function readBaseline() {
   }
 }
 
+/** 当前集合里基线没有的条目（子集校验共用）。 */
+const notInBaseline = (names, baselineNames) => names.filter((name) => !baselineNames.has(name))
+
 if (process.argv.includes('--update')) {
-  // ratchet 只允许收紧：--update 不能把基线抬高
   const previous = readBaseline()
-  if (
-    previous &&
-    previous !== 'invalid' &&
-    typeof previous.unlistenedEvents === 'number' &&
-    sorted.length > previous.unlistenedEvents
-  ) {
+  const usable = previous && previous !== 'invalid'
+  // ratchet 只允许收紧：--update 不能把基线抬高
+  if (usable && typeof previous.unlistenedEvents === 'number' && sorted.length > previous.unlistenedEvents) {
     console.error(`check-component-contracts: 拒绝抬高基线 — 本次 ${sorted.length} > 现有 ${previous.unlistenedEvents}`)
     for (const entry of sorted) console.error(`  ${entry.event.padEnd(28)} ${entry.component}`)
     console.error('ratchet 只允许收紧：新增断线必须先接线，或写进 ACCEPTED_PATTERNS 说明理由。')
     process.exit(1)
   }
+  // --update 必须走与 verify 相同的键名子集校验：同数量换条目同样拒绝
+  if (usable && Array.isArray(previous.unlistenedEventNames)) {
+    const added = notInBaseline(entryNames, new Set(previous.unlistenedEventNames))
+    if (added.length > 0) {
+      console.error('check-component-contracts: 拒绝新增条目 — --update 不允许写入基线里没有的无人监听事件')
+      for (const name of added) console.error(`  ${name}`)
+      console.error('修掉一条又引入一条等价断线同样不允许：先接线，或说明理由并显式更新基线。')
+      process.exit(1)
+    }
+  }
+  // 新增"不可判定"会让无人监听计数凭空下降，--update 不能借此收紧基线
+  if (usable && Array.isArray(previous.skippedLocations)) {
+    const addedSkips = notInBaseline(skipped, new Set(previous.skippedLocations))
+    if (addedSkips.length > 0) {
+      console.error('check-component-contracts: 拒绝新增不可判定位置 — 请先修好解析/绑定，别用跳过换绿')
+      for (const item of addedSkips) console.error(`  ${item}`)
+      process.exit(1)
+    }
+  }
+  // 白名单只减不增：把断线塞进 ACCEPTED_PATTERNS 会把它移出计数集合，
+  // --update 若接受新增白名单条目，等于"破坏监听 + 追加白名单"一步洗绿。
+  // 确需新增白名单条目时必须手工改基线文件（显式、可评审），不能由 --update 代劳。
+  if (usable && Array.isArray(previous.acceptedPatternNames)) {
+    const addedAccepted = notInBaseline(acceptedPatternNames, new Set(previous.acceptedPatternNames))
+    if (addedAccepted.length > 0) {
+      console.error('check-component-contracts: 拒绝新增白名单条目 — --update 不允许把新条目写进 ACCEPTED_PATTERNS 基线')
+      for (const name of addedAccepted) console.error(`  ${name}`)
+      console.error('白名单只减不增；确需赦免请在基线文件里手工登记该条目并说明理由。')
+      process.exit(1)
+    }
+  }
   writeFileSync(
     BASELINE,
-    `${JSON.stringify({ unlistenedEvents: sorted.length, unlistenedEventNames: entryNames }, null, 2)}\n`
+    `${JSON.stringify(
+      {
+        unlistenedEvents: sorted.length,
+        unlistenedEventNames: entryNames,
+        skippedLocations: skipped,
+        acceptedPatternNames
+      },
+      null,
+      2
+    )}\n`
   )
-  console.log(`check-component-contracts: 基线已更新为 ${sorted.length}`)
+  console.log(`check-component-contracts: 基线已更新为 ${sorted.length}（白名单 ${acceptedPatternNames.length} 条）`)
   process.exit(0)
+}
+
+// 白名单失效与 followUp 悬空都是"挂账变假象"，一律阻塞（--update 不豁免）。
+if (inertAccepted.length > 0) {
+  console.error(`check-component-contracts: FAIL — ${inertAccepted.length} 条 ACCEPTED_PATTERNS 已失效`)
+  for (const item of inertAccepted) console.error(`  ${item}`)
+  console.error('失效条目是死配置：从 ACCEPTED_PATTERNS 删除它，而不是留着继续赦免。')
+  process.exit(1)
+}
+if (followUpErrors.length > 0) {
+  console.error(`check-component-contracts: FAIL — ${followUpErrors.length} 条 followUp 指向不存在的 §13 行`)
+  for (const item of followUpErrors) console.error(`  ${item}`)
+  console.error('要么在 §13.6 补上对应行，要么删掉这条 followUp 挂账。')
+  process.exit(1)
 }
 
 if (!existsSync(BASELINE)) {
@@ -519,6 +801,45 @@ if (!Array.isArray(baseline.unlistenedEventNames)) {
   process.exit(1)
 }
 
+if (!Array.isArray(baseline.skippedLocations)) {
+  console.error(`check-component-contracts: FAIL — 基线文件缺少数组型 skippedLocations：${BASELINE}`)
+  console.error(REGENERATE_HINT)
+  process.exit(1)
+}
+
+if (!Array.isArray(baseline.acceptedPatternNames)) {
+  console.error(`check-component-contracts: FAIL — 基线文件缺少数组型 acceptedPatternNames：${BASELINE}`)
+  console.error('白名单名称集合是只减不增的 ratchet；补上该字段（或运行 --update 首次登记）后才能校验。')
+  process.exit(1)
+}
+
+/**
+ * 白名单名称集合 ratchet：当前 ACCEPTED_PATTERNS ⊆ 基线。
+ *
+ * 这是防"破坏监听 + 追加白名单"一步洗绿的关键：白名单条目会被 `sorted` 过滤掉，
+ * 只冻结"无人监听事件"数量时，新增白名单等于凭空变绿。新增条目必须手工改基线。
+ */
+const newAccepted = notInBaseline(acceptedPatternNames, new Set(baseline.acceptedPatternNames))
+if (newAccepted.length > 0) {
+  console.error(`check-component-contracts: FAIL — ACCEPTED_PATTERNS 新增 ${newAccepted.length} 条基线未登记的白名单条目`)
+  for (const name of newAccepted) console.error(`  ${name}`)
+  console.error('白名单只减不增：不许用"破坏监听 + 追加白名单"把断线洗绿。')
+  console.error('确需赦免请手工在基线 acceptedPatternNames 里登记该条目并说明理由（评审可见）。')
+  process.exit(1)
+}
+
+/**
+ * 新增"不可判定"位置必须先处置：跳过会把这些组件从计数里剔除，等价于凭空变绿。
+ * 当前基线冻结为 0 处跳过，任何新增都 FAIL。
+ */
+const newSkips = notInBaseline(skipped, new Set(baseline.skippedLocations))
+if (newSkips.length > 0) {
+  console.error(`check-component-contracts: FAIL — 新增不可判定位置 ${newSkips.length} 处（会让计数凭空下降）`)
+  for (const item of newSkips) console.error(`  ${item}`)
+  console.error('先修好解析/绑定，或确认后连同说明一起更新基线（不允许用跳过换绿）。')
+  process.exit(1)
+}
+
 if (sorted.length > baseline.unlistenedEvents) {
   console.error(`check-component-contracts: FAIL — 无人监听事件 ${sorted.length} > 基线 ${baseline.unlistenedEvents}`)
   for (const entry of sorted) console.error(`  ${entry.event.padEnd(28)} ${entry.component}`)
@@ -530,8 +851,7 @@ if (sorted.length > baseline.unlistenedEvents) {
  * 只比数量会漏掉「修掉一条真实断线又引入一条等价断线」（总数不变）。这里额外断言
  * 当前集合 ⊆ 基线集合：出现基线里没有的条目一律失败。
  */
-const baselineNames = new Set(baseline.unlistenedEventNames)
-const unexpected = entryNames.filter((name) => !baselineNames.has(name))
+const unexpected = notInBaseline(entryNames, new Set(baseline.unlistenedEventNames))
 if (unexpected.length > 0) {
   console.error('check-component-contracts: FAIL — 出现基线未记录的无人监听事件（换名绕过数量 ratchet）')
   for (const name of unexpected) console.error(`  ${name}`)
@@ -540,7 +860,8 @@ if (unexpected.length > 0) {
 }
 
 console.log(
-  `check-component-contracts: OK 无人监听事件 ${sorted.length}（基线 ${baseline.unlistenedEvents}，条目均在基线内）`
+  `check-component-contracts: OK 无人监听事件 ${sorted.length}（基线 ${baseline.unlistenedEvents}，条目均在基线内）；` +
+    `白名单 ${acceptedPatternNames.length}/${baseline.acceptedPatternNames.length} 条（只减不增）`
 )
 if (sorted.length < baseline.unlistenedEvents) {
   console.log('  可运行 node scripts/check-component-contracts.mjs --update 收紧基线')

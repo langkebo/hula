@@ -24,6 +24,7 @@
 import { emitTo } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useRoute } from 'vue-router'
+import { useMessageSound } from '@/composables/common/useMessageSound'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
 import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum, WsResponseMessageType } from '@/enums'
@@ -34,7 +35,6 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
-import { audioManager } from '@/utils/AudioManager'
 import { createLogger } from '@/utils/Logger'
 import { isMobile, isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
@@ -61,21 +61,7 @@ const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const { ensureNotifyWindow } = useWindow()
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
-const playMessageSound = async () => {
-  // 检查是否开启了消息提示音
-  if (!settingStore.notification?.messageSound) {
-    return
-  }
-
-  try {
-    const audio = new Audio('/sound/message.mp3')
-    const volume = settingStore.notification?.volume ?? 80
-    audio.volume = Math.min(1, Math.max(0, volume / 100))
-    await audioManager.play(audio, 'message-notification')
-  } catch (error) {
-    logger.warn('播放消息音效失败:', error)
-  }
-}
+const { playMessageSound } = useMessageSound()
 
 const props = withDefaults(defineProps<MobileLayoutProps>(), {
   safeAreaTop: true,

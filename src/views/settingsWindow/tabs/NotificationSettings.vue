@@ -7,14 +7,14 @@
           <span class="setting-label">{{ t('setting.notification.desktop.enable_label') }}</span>
           <span class="setting-desc">{{ t('setting.notification.desktop.enable_desc') }}</span>
         </div>
-        <n-switch v-model:value="desktopNotification" @update:value="handleNotificationChange" />
+        <n-switch :value="desktopNotification" @update:value="handleNotificationChange" />
       </div>
       <div v-if="desktopNotification" class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.notification.desktop.sound_label') }}</span>
           <span class="setting-desc">{{ t('setting.notification.desktop.sound_desc') }}</span>
         </div>
-        <n-switch v-model:value="notificationSound" @update:value="handleSoundChange" />
+        <n-switch :value="notificationSound" @update:value="handleSoundChange" />
       </div>
       <div v-if="notificationSound" class="setting-item">
         <div class="setting-info">
@@ -23,7 +23,7 @@
         </div>
         <div class="volume-control">
           <n-slider
-            v-model:value="soundVolume"
+            :value="soundVolume"
             :min="0"
             :max="100"
             :step="10"
@@ -43,14 +43,14 @@
           <span class="setting-label">{{ t('setting.notification.content.message_label') }}</span>
           <span class="setting-desc">{{ t('setting.notification.content.message_desc') }}</span>
         </div>
-        <n-switch v-model:value="showMessageContent" @update:value="handleContentChange" />
+        <n-switch :value="showMessageContent" @update:value="handleContentChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.notification.content.sender_label') }}</span>
           <span class="setting-desc">{{ t('setting.notification.content.sender_desc') }}</span>
         </div>
-        <n-switch v-model:value="showSenderName" @update:value="handleSenderChange" />
+        <n-switch :value="showSenderName" @update:value="handleSenderChange" />
       </div>
     </div>
 
@@ -63,7 +63,7 @@
           <span class="setting-label">{{ t('setting.notification.keyword.enable_label') }}</span>
           <span class="setting-desc">{{ t('setting.notification.keyword.enable_desc') }}</span>
         </div>
-        <n-switch v-model:value="keywordNotification" @update:value="handleKeywordToggle" />
+        <n-switch :value="keywordNotification" @update:value="handleKeywordToggle" />
       </div>
       <div v-if="keywordNotification" class="keywords-section">
         <div class="keywords-control">
@@ -92,7 +92,7 @@
           <span class="setting-label">{{ t('setting.notification.thread.mention_label') }}</span>
           <span class="setting-desc">{{ t('setting.notification.thread.mention_desc') }}</span>
         </div>
-        <n-switch v-model:value="threadMentionNotify" @update:value="handleThreadMentionNotify" />
+        <n-switch :value="threadMentionNotify" @update:value="handleThreadMentionNotify" />
       </div>
     </div>
 
@@ -140,7 +140,8 @@ const displayPreferences = ref(loadNotificationDisplayPreferences())
 
 type NotificationToggle = 'enableDesktop' | 'showMessageContent' | 'showSender'
 
-// 模板上 v-model:value 与 @update:value 会同时触发，这里按值去重，保证每次切换只落一次配置。
+// 单一写入者：模板只保留 `:value` + `@update:value`（不再 v-model:value），
+// 由 handler 负责写入，避免 setter 与 handler 双触发导致每次点击两次持久化 / 两次 account data PUT。
 function writeConfig(patch: Partial<Record<NotificationToggle, boolean>>) {
   const changed = (Object.keys(patch) as NotificationToggle[]).some(
     (key) => patch[key] !== notificationConfig.value[key]
@@ -162,6 +163,8 @@ const desktopNotification = computed({
   get: () => notificationConfig.value.enableDesktop,
   set: (value: boolean) => writeConfig({ enableDesktop: value })
 })
+// 提示音开关与音量来自 setting store（桌面/移动端布局播放提示音时读取），
+// 与上面持久化在 MatrixNotificationService 的桌面通知配置是两份独立状态。
 const notificationSound = computed({
   get: () => settingStore.messageSoundEnabled,
   set: (value: boolean) => settingStore.setMessageSoundEnabled(value)
@@ -203,25 +206,33 @@ onMounted(() => {
 })
 
 async function handleNotificationChange(value: boolean) {
-  if (value && 'Notification' in window) {
-    const permission = await Notification.requestPermission()
-    if (permission !== 'granted') {
-      showFeedback(t('setting.notification.feedback.permission_denied'), 'warning')
-      desktopNotification.value = false
-      return
+  try {
+    if (value && 'Notification' in window) {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') {
+        showFeedback(t('setting.notification.feedback.permission_denied'), 'warning')
+        desktopNotification.value = false
+        return
+      }
     }
+    desktopNotification.value = value
+    showFeedback(
+      t('setting.notification.feedback.desktop', {
+        state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
+      }),
+      'success'
+    )
+  } catch (err) {
+    // 权限请求可能 reject（插件不可用等）：回滚开关并给出反馈，不能留下"开着但不生效"的状态
+    desktopNotification.value = false
+    showFeedback(t('setting.notification.feedback.permission_denied'), 'error')
   }
-  desktopNotification.value = value
-  showFeedback(
-    t('setting.notification.feedback.desktop', {
-      state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
-    }),
-    'success'
-  )
 }
 
+// 单一写入者：模板用 `:value` + `@update:value`，由 handler 写 store；
+// 不叠加 v-model:value，否则 setter 与 handler 会各写一次。
 function handleSoundChange(value: boolean) {
-  settingStore.setMessageSoundEnabled(value)
+  notificationSound.value = value
   showFeedback(
     t('setting.notification.feedback.sound', {
       state: t(value ? 'setting.notification.common.enabled' : 'setting.notification.common.disabled')
@@ -231,7 +242,7 @@ function handleSoundChange(value: boolean) {
 }
 
 function handleVolumeChange(value: number) {
-  settingStore.setNotificationVolume(value)
+  soundVolume.value = value
 }
 
 function handleContentChange(value: boolean) {

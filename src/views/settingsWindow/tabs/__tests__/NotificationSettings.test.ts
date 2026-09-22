@@ -18,9 +18,6 @@ const setNotificationVolumeMock = vi.fn()
 // 因此在模块作用域用 vi.mock 提供可控桩件（工厂内的引用保持惰性，无 TDZ 风险）。
 const notificationConfigMock = {
   enableDesktop: true,
-  enableSound: true,
-  enableVibrate: true,
-  showPreview: true,
   showSender: true,
   showMessageContent: true,
   events: {} as Record<string, boolean>
@@ -33,8 +30,6 @@ const translationMap: Record<string, string> = {
   'setting.notification.desktop.title': '桌面通知',
   'setting.notification.keyword.title': '关键词通知',
   'setting.notification.thread.title': '线程通知',
-  'setting.notification.space.title': '空间通知',
-  'setting.notification.friend.title': '好友通知',
   'setting.notification.push_section.title': '推送与规则'
 }
 
@@ -59,8 +54,13 @@ type NotificationSettingsVm = ComponentPublicInstance & {
 }
 
 vi.mock('naive-ui', () => ({
-  NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
-  NSlider: { name: 'NSlider', template: '<div class="n-slider" />', props: ['value', 'min', 'max', 'step'] },
+  NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'], emits: ['update:value'] },
+  NSlider: {
+    name: 'NSlider',
+    template: '<div class="n-slider" />',
+    props: ['value', 'min', 'max', 'step'],
+    emits: ['update:value']
+  },
   NDivider: { name: 'NDivider', template: '<hr />' },
   NModal: {
     name: 'NModal',
@@ -121,9 +121,6 @@ describe('NotificationSettings', () => {
     vi.clearAllMocks()
     Object.assign(notificationConfigMock, {
       enableDesktop: true,
-      enableSound: true,
-      enableVibrate: true,
-      showPreview: true,
       showSender: true,
       showMessageContent: true,
       events: {}
@@ -272,10 +269,12 @@ describe('NotificationSettings', () => {
     const wrapper = mount(NotificationSettings)
     const text = wrapper.text()
 
+    // 下列 4 个 key 已在 2026-09-22 孤儿文案清理中删除（Task 7）。桩件对未命中 key 原样返回，
+    // 所以断言"不出现 key 名"等价于断言对应控件没有被重新接回（接回后会渲染裸 key）。
     expect(text).not.toContain('setting.notification.thread.reply_label')
     expect(text).not.toContain('setting.notification.thread.participate_label')
-    expect(text).not.toContain('空间通知')
-    expect(text).not.toContain('好友通知')
+    expect(text).not.toContain('setting.notification.space.title')
+    expect(text).not.toContain('setting.notification.friend.title')
     expect(wrapper.text()).toContain('线程通知')
   })
 
@@ -296,18 +295,86 @@ describe('NotificationSettings', () => {
     expect(localStorage.getItem('tjg-show-sender')).toBeNull()
   })
 
-  it('calls settingStore on sound change', () => {
+  it('renders the notification sound switch and the volume slider bound to the setting store', async () => {
     const wrapper = mount(NotificationSettings)
-    const vm = getVm(wrapper)
-    vm.handleSoundChange(false)
-    expect(setMessageSoundEnabledMock).toHaveBeenCalledWith(false)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('setting.notification.desktop.sound_label')
+    expect(wrapper.text()).toContain('setting.notification.desktop.volume_label')
+    // 默认音量 80% 由 store 读取后显示在数值标签上
+    expect(wrapper.text()).toContain('80%')
+    expect(wrapper.findComponent({ name: 'NSlider' }).exists()).toBe(true)
   })
 
-  it('calls settingStore on volume change', () => {
+  it('sound switch toggles messageSound through the setting store', async () => {
     const wrapper = mount(NotificationSettings)
-    const vm = getVm(wrapper)
-    vm.handleVolumeChange(50)
-    expect(setNotificationVolumeMock).toHaveBeenCalledWith(50)
+    await flushPromises()
+
+    // 开关顺序：桌面(0) / 通知声音(1) / 内容(2) / 发送者(3) / 关键词(4) / 线程提及(5)
+    wrapper.findAllComponents({ name: 'NSwitch' })[1].vm.$emit('update:value', false)
+    await flushPromises()
+
+    expect(setMessageSoundEnabledMock).toHaveBeenCalledTimes(1)
+    expect(setMessageSoundEnabledMock).toHaveBeenCalledWith(false)
+    expect(messageSuccessMock).toHaveBeenCalled()
+  })
+
+  it('volume slider writes notification.volume through the setting store', async () => {
+    const wrapper = mount(NotificationSettings)
+    await flushPromises()
+
+    wrapper.findComponent({ name: 'NSlider' }).vm.$emit('update:value', 30)
+    await flushPromises()
+
+    expect(setNotificationVolumeMock).toHaveBeenCalledTimes(1)
+    expect(setNotificationVolumeMock).toHaveBeenCalledWith(30)
+  })
+
+  it('desktop toggle writes the config exactly once per click', async () => {
+    const wrapper = mount(NotificationSettings)
+    await flushPromises()
+
+    wrapper.findAllComponents({ name: 'NSwitch' })[0].vm.$emit('update:value', false)
+    await flushPromises()
+
+    expect(updateNotificationConfigMock).toHaveBeenCalledTimes(1)
+    expect(updateNotificationConfigMock).toHaveBeenCalledWith({ enableDesktop: false })
+  })
+
+  it('content toggle writes the config exactly once per click', async () => {
+    const wrapper = mount(NotificationSettings)
+    await flushPromises()
+
+    // 恢复通知声音开关/音量滑块后顺序：桌面(0) / 声音(1) / 内容(2) / 发送者(3) / 关键词(4) / 线程提及(5)
+    wrapper.findAllComponents({ name: 'NSwitch' })[2].vm.$emit('update:value', false)
+    await flushPromises()
+
+    expect(updateNotificationConfigMock).toHaveBeenCalledTimes(1)
+    expect(updateNotificationConfigMock).toHaveBeenCalledWith({ showMessageContent: false })
+  })
+
+  it('sender toggle writes the config exactly once per click', async () => {
+    const wrapper = mount(NotificationSettings)
+    await flushPromises()
+
+    wrapper.findAllComponents({ name: 'NSwitch' })[3].vm.$emit('update:value', false)
+    await flushPromises()
+
+    expect(updateNotificationConfigMock).toHaveBeenCalledTimes(1)
+    expect(updateNotificationConfigMock).toHaveBeenCalledWith({ showSender: false })
+  })
+
+  it('thread mention toggle writes exactly one account-data update per click', async () => {
+    const wrapper = mount(NotificationSettings)
+    await flushPromises()
+
+    // v-model:value + @update:value 会同时触发 setter 与 handler，每次点击写两次
+    // （两次 account data PUT）；改成 :value + handler 后必须恰好一次。
+    wrapper.findAllComponents({ name: 'NSwitch' })[5].vm.$emit('update:value', false)
+    await flushPromises()
+
+    expect(setEventNotificationEnabledMock).toHaveBeenCalledTimes(1)
+    expect(setEventNotificationEnabledMock).toHaveBeenCalledWith('thread_mention', false)
   })
 
   it('桌面通知总开关写入 MatrixNotificationService 配置而不是死 key', async () => {
