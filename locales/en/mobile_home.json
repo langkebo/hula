@@ -1,7 +1,5 @@
 {
   "menu": {
-    "start_group_chat": "Start group chat",
-    "add_contact": "Add contact",
     "new_chat": "New Chat",
     "create_group_chat": "Create Group Chat",
     "pintop": "Pin Top",
@@ -27,14 +25,12 @@
   "mark_as_read_failed": "Failed to mark as read",
   "mark_as_unread_failed": "Failed to mark as unread",
   "new_chat_title": "New Chat",
-  "new_chat_prompt": "Enter the user ID of the person you want to chat with",
   "new_chat_creating": "Creating...",
   "new_chat_success": "Chat created",
   "new_chat_failed": "Failed to create chat",
   "user_id_placeholder": "User ID, e.g. {'@'}alice:example.com",
   "user_id_required": "Please enter a user ID",
   "create_group_title": "Create Group Chat",
-  "create_group_prompt": "Enter group name and member IDs (separated by commas)",
   "group_name_placeholder": "Group name",
   "group_name_required": "Please enter a group name",
   "group_members_placeholder": "Member IDs, separated by commas (optional)",

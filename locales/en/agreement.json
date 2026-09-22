@@ -1,9 +1,5 @@
 {
   "privacy": {
-    "header": {
-      "title": "Tjg Privacy Protection Guidelines",
-      "updatedAt": "Updated on: September 3, 2025"
-    },
     "sections": [
       {
         "title": "Introduction",
@@ -161,10 +157,6 @@
     ]
   },
   "server": {
-    "header": {
-      "title": "Tjg Service Agreement",
-      "updatedAt": "Updated on: September 3, 2025"
-    },
     "sections": [
       {
         "title": "1. Confirmation and Acceptance of Service Terms",

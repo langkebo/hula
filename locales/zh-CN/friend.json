@@ -26,28 +26,15 @@
     "hidden": "已隐藏"
   },
   "request": {
-    "title": "好友请求",
-    "search": "搜索好友请求",
-    "result_count": "“{keyword}” 共匹配到 {count} 条请求",
-    "incoming": "收到请求",
-    "outgoing": "发送请求",
     "accept": "接受",
     "reject": "拒绝",
-    "cancel": "撤销",
-    "empty": {
-      "incoming": "暂无好友请求",
-      "outgoing": "暂无发送中的请求",
-      "search": "没有匹配的好友请求"
-    },
     "success": {
       "accept": "已接受好友请求",
-      "reject": "已拒绝好友请求",
-      "cancel": "已撤销好友请求"
+      "reject": "已拒绝好友请求"
     },
     "error": {
       "accept": "接受好友请求失败",
-      "reject": "拒绝好友请求失败",
-      "cancel": "撤销好友请求失败"
+      "reject": "拒绝好友请求失败"
     }
   },
   "add": {
@@ -72,11 +59,8 @@
   },
   "detail": {
     "title": "好友详情",
-    "status": "在线状态",
-    "friend_status": "好友类型",
     "last_seen": "最后活跃",
     "note": "备注",
-    "since": "添加时间",
     "note_section": "修改备注",
     "note_placeholder": "设置好友备注",
     "note_saved": "备注已保存",
@@ -87,10 +71,6 @@
     "display_name_saved": "显示名已保存",
     "display_name_error": "保存显示名失败",
     "status_section": "设置状态",
-    "status_saved": "状态已更新",
-    "status_error": "更新状态失败",
-    "actions": "操作",
-    "send_message": "发消息",
     "encrypted_chat": "加密聊天",
     "remove_friend": "删除好友",
     "chat_error": "创建聊天失败",
@@ -100,14 +80,12 @@
     },
     "remove_success": "已删除好友",
     "remove_error": "删除好友失败",
-    "notFound": "未找到该好友信息",
     "just_now": "刚刚",
     "minutes_ago": "{count}分钟前",
     "hours_ago": "{count}小时前",
     "days_ago": "{count}天前",
     "group_section": "分组分配",
     "group_placeholder": "选择分组",
-    "group_unassigned": "未分组",
     "group_load_error": "加载分组失败",
     "group_assign_success": "已分配分组",
     "group_assign_error": "分配分组失败",
@@ -123,15 +101,12 @@
     "device_unknown": "未知设备",
     "federation_section": "联邦/服务器",
     "matrix_id": "Matrix ID",
-    "server_address": "服务器地址",
-    "federated_user": "联邦用户",
-    "local_user": "本地用户"
+    "server_address": "服务器地址"
   },
   "context": {
     "send_message": "发消息",
     "encrypted_chat": "加密聊天",
     "secret_chat": "设为私密好友",
-    "open_in_new_window": "在新窗口打开",
     "set_note": "设置备注",
     "set_display_name": "设置显示名",
     "set_favorite": "设为收藏",
@@ -143,12 +118,7 @@
     "voice_call": "语音通话"
   },
   "secret_chat": {
-    "success": "已设为私密好友",
-    "error": "设置私密好友失败",
-    "request_sent": "私密好友请求已发送",
-    "request_received": "收到私密好友请求",
-    "accept": "接受",
-    "reject": "拒绝"
+    "success": "已设为私密好友"
   },
   "search": {
     "history": "最近搜索",

@@ -2,7 +2,6 @@
   "search_placeholder": "搜索房间",
   "no_rooms": "暂无房间",
   "no_search_result": "未找到匹配的房间",
-  "no_more": "没有更多了",
   "no_topic": "暂无话题",
   "create_first": "创建第一个房间",
   "create_room": "创建房间",
@@ -28,9 +27,5 @@
   "public_room": "公开房间",
   "unnamed_room": "未命名房间",
   "search_public_rooms_placeholder": "输入关键词搜索公开房间",
-  "search_btn": "搜索",
-  "delete_room": "删除房间",
-  "delete_room_confirm": "确定要删除该房间吗？此操作无法撤销。",
-  "delete_success": "房间已删除",
-  "delete_failed": "删除房间失败"
+  "search_btn": "搜索"
 }

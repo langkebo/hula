@@ -1,10 +1,5 @@
 {
   "account": "ID",
-  "unlocked_count_park": {
-    "text1": "已点亮",
-    "text2": "枚勋章"
-  },
-  "no_medal": "还没有勋章~",
   "follower": "粉丝",
   "follow": "关注",
   "like": "点赞",

@@ -1,7 +1,5 @@
 {
   "title": "Settings",
-  "silent_label": "Notification",
-  "nickname": "Nickname",
   "theme": "Theme",
   "language": "Language",
   "version": "Version",

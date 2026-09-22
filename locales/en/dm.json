@@ -1,10 +1,4 @@
 {
-  "list": {
-    "title": "Direct Messages",
-    "search": "Search DMs",
-    "empty": "No direct messages",
-    "no_message": "No messages yet"
-  },
   "create": {
     "title": "Start Direct Message",
     "placeholder": "Enter user ID to search",
@@ -15,11 +9,5 @@
     "error": "Failed to create direct message",
     "recent_contacts": "Recent Contacts",
     "no_recent": "No recent contacts"
-  },
-  "context": {
-    "pin": "Pin",
-    "unpin": "Unpin",
-    "mark_read": "Mark as Read",
-    "delete": "Delete Conversation"
   }
 }

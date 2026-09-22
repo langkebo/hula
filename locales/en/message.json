@@ -9,7 +9,6 @@
     "toast": {
       "missing_local": "Local file not found. Please download it first~",
       "reveal_fail": "Unable to reveal the file in folder",
-      "open_fail_hint": "Unable to open or reveal the file. Please locate it manually in your file manager.",
       "download_open_fail": "File downloaded but cannot be opened or revealed. Please find it manually in your file manager.",
       "download_failed": "Failed to download file: {reason}"
     }
@@ -57,14 +56,6 @@
     "camera_enable": "Turn camera on",
     "hangup": "Hang up"
   },
-  "friend_verify": {
-    "title": "Add friend request",
-    "account": "Account: {account}",
-    "placeholder": "Say something to them...",
-    "send_btn": "Add friend",
-    "toast_success": "Friend request sent",
-    "default_msg": "I'm {name}"
-  },
   "group_verify": {
     "title": "Join group request",
     "account": "Group ID: {account}",
@@ -76,16 +67,9 @@
   "message_list": {
     "sync_loading": "Syncing messages",
     "sync_complete": "Message sync complete",
-    "official_popover": "Official group authentication",
-    "bot_popover": "Tjg Assistant",
     "mention_tag": "[Mentioned me]",
     "favorite_tag": "Pinned",
     "low_priority_tag": "Low priority",
-    "migrated_tag": "Migrated",
-    "shield_group": "Group muted",
-    "shield_user": "User muted",
-    "empty_description": "Start chatting with friends!",
-    "empty_action": "Find friends",
     "default_last_msg": "Welcome to Tjg"
   },
   "message_menu": {
@@ -206,8 +190,6 @@
         "location_error": "Location failed",
         "default": "Pick a location"
       },
-      "share": "Share location",
-      "send_failed": "Failed to send location",
       "result": {
         "map_error_title": "Map failed to load",
         "location_error_title": "Failed to get location"
@@ -226,17 +208,9 @@
         "fetching_address": "Getting address...",
         "coordinate": "Coord: {lat}, {lng}",
         "unknown_address": "Unknown address"
-      },
-      "errors": {
-        "missing_api_key": "Tencent Map API key not configured",
-        "geocode_failed": "Failed to fetch address"
       }
     },
-    "map": {
-      "marker_current": "Current location"
-    },
     "hook": {
-      "permission_check_failed": "Failed to check geolocation permission",
       "unsupported": "Geolocation is not supported in this browser",
       "error_generic": "Failed to obtain location",
       "permission_denied": "Location permission denied",
@@ -259,7 +233,6 @@
   "multi_choose": {
     "search_placeholder": "Search sessions",
     "send_to_separately": "Send separately to",
-    "leave_message_placeholder": "Leave a note",
     "single_forward": "Forward individually",
     "merge_forward": "Forward as summary",
     "save_to_pc": "Save to PC",
@@ -268,7 +241,6 @@
     "exit_multi_select": "Exit selection",
     "cancel_button": "Cancel",
     "send_button": "Send",
-    "not_implemented": "Not implemented yet",
     "select_delete_prompt": "Please select messages to delete",
     "delete_confirm": "Deleted messages will disappear from your history. Delete these {count} messages?",
     "room_missing": "Current session unknown, delete failed",
@@ -277,7 +249,6 @@
     "delete_success": "Selected messages deleted",
     "forward_success": "Messages forwarded",
     "forward_failed": "Failed to forward",
-    "forward_partial_failed": "{failed}/{total} target(s) failed to forward",
     "non_text_message": "[Non-text message]",
     "select_copy_prompt": "Please select messages to copy",
     "copy_success": "Selected messages copied",
@@ -299,9 +270,7 @@
     "success": "Forwarded to {count} rooms",
     "failed": "Failed to forward"
   },
-  "merge_msg_title": "Merged Messages",
   "multi_select": {
-    "selected_count": "{count} selected",
     "copy": "Copy",
     "forward": "Forward",
     "delete": "Delete",

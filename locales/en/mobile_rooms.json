@@ -2,7 +2,6 @@
   "search_placeholder": "Search rooms",
   "no_rooms": "No rooms yet",
   "no_search_result": "No matching rooms found",
-  "no_more": "No more",
   "no_topic": "No topic",
   "create_first": "Create your first room",
   "create_room": "Create Room",
@@ -28,9 +27,5 @@
   "public_room": "Public room",
   "unnamed_room": "Unnamed room",
   "search_public_rooms_placeholder": "Enter keywords to search public rooms",
-  "search_btn": "Search",
-  "delete_room": "Delete Room",
-  "delete_room_confirm": "Are you sure you want to delete this room? This action cannot be undone.",
-  "delete_success": "Room deleted",
-  "delete_failed": "Failed to delete room"
+  "search_btn": "Search"
 }

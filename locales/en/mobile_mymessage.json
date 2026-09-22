@@ -11,17 +11,13 @@
     "friend": "Friend Notifications",
     "group": "Group Notifications"
   },
-  "friend_request_message": "Message: ",
-  "message_content": "Message: ",
-  "reply": "Reply",
   "message_label": "Message:",
   "handler_label": "Handler:",
   "unknown_user": "Unknown",
   "empty_require": "No friend requests available",
   "empty_group_require": "No group application notifications available",
   "menu": {
-    "decline": "Decline",
-    "ignore": "Ignore"
+    "decline": "Decline"
   },
   "friend_request_status": {
     "accepted": "Your request has been accepted",

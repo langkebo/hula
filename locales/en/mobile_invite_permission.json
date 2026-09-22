@@ -10,7 +10,6 @@
   "empty": "The list is empty",
   "encrypt_new_dm": "Encrypt new direct messages",
   "encrypt_new_dm_hint": "Turn on end-to-end encryption by default for new DMs",
-  "encrypt_required": "Cannot be turned off: the server requires new DMs to be encrypted",
   "load_failed": "Failed to load invite permission",
   "loading": "Loading...",
   "mode": {

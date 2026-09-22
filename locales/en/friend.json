@@ -26,28 +26,15 @@
     "hidden": "Hidden"
   },
   "request": {
-    "title": "Friend Requests",
-    "search": "Search friend requests",
-    "result_count": "\"{keyword}\" matched {count} requests",
-    "incoming": "Incoming",
-    "outgoing": "Outgoing",
     "accept": "Accept",
     "reject": "Reject",
-    "cancel": "Cancel",
-    "empty": {
-      "incoming": "No friend requests",
-      "outgoing": "No pending requests",
-      "search": "No matching friend requests"
-    },
     "success": {
       "accept": "Friend request accepted",
-      "reject": "Friend request rejected",
-      "cancel": "Friend request cancelled"
+      "reject": "Friend request rejected"
     },
     "error": {
       "accept": "Failed to accept friend request",
-      "reject": "Failed to reject friend request",
-      "cancel": "Failed to cancel friend request"
+      "reject": "Failed to reject friend request"
     }
   },
   "add": {
@@ -72,11 +59,8 @@
   },
   "detail": {
     "title": "Friend Details",
-    "status": "Online Status",
-    "friend_status": "Friend Type",
     "last_seen": "Last Seen",
     "note": "Note",
-    "since": "Added",
     "note_section": "Edit Note",
     "note_placeholder": "Set friend note",
     "note_saved": "Note saved",
@@ -87,10 +71,6 @@
     "display_name_saved": "Display name saved",
     "display_name_error": "Failed to save display name",
     "status_section": "Set Status",
-    "status_saved": "Status updated",
-    "status_error": "Failed to update status",
-    "actions": "Actions",
-    "send_message": "Send Message",
     "encrypted_chat": "Encrypted Chat",
     "remove_friend": "Remove Friend",
     "chat_error": "Failed to create chat",
@@ -100,14 +80,12 @@
     },
     "remove_success": "Friend removed",
     "remove_error": "Failed to remove friend",
-    "notFound": "Friend information not found",
     "just_now": "Just now",
     "minutes_ago": "{count}m ago",
     "hours_ago": "{count}h ago",
     "days_ago": "{count}d ago",
     "group_section": "Group Assignment",
     "group_placeholder": "Select group",
-    "group_unassigned": "No group",
     "group_load_error": "Failed to load groups",
     "group_assign_success": "Group assigned",
     "group_assign_error": "Failed to assign group",
@@ -123,15 +101,12 @@
     "device_unknown": "Unknown device",
     "federation_section": "Federation / Server",
     "matrix_id": "Matrix ID",
-    "server_address": "Server address",
-    "federated_user": "Federated user",
-    "local_user": "Local user"
+    "server_address": "Server address"
   },
   "context": {
     "send_message": "Send Message",
     "encrypted_chat": "Encrypted Chat",
     "secret_chat": "Set as Secret Friend",
-    "open_in_new_window": "Open in New Window",
     "set_note": "Set Note",
     "set_display_name": "Set Display Name",
     "set_favorite": "Set as Favorite",
@@ -143,12 +118,7 @@
     "voice_call": "Voice call"
   },
   "secret_chat": {
-    "success": "Set as secret friend",
-    "error": "Failed to set secret friend",
-    "request_sent": "Secret friend request sent",
-    "request_received": "Secret friend request received",
-    "accept": "Accept",
-    "reject": "Reject"
+    "success": "Set as secret friend"
   },
   "search": {
     "history": "Recent searches",

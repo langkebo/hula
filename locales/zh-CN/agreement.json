@@ -1,9 +1,5 @@
 {
   "privacy": {
-    "header": {
-      "title": "Tjg隐私保护指引",
-      "updatedAt": "更新时间：2025年9月3日"
-    },
     "sections": [
       {
         "title": "引言",
@@ -155,10 +151,6 @@
     ]
   },
   "server": {
-    "header": {
-      "title": "Tjg服务协议",
-      "updatedAt": "更新时间：2025年9月3日"
-    },
     "sections": [
       {
         "title": "1. 服务条款的确认和接纳",

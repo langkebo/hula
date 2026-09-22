@@ -183,12 +183,14 @@ describe('i18n 回归测试 — 防止 key 路径不匹配复发', () => {
       expect(resolveKey(enChat, 'header.video_call')).toBe('Video Call')
     })
 
-    it('home.chat_header.toolbar.* 是 home.json 中独立的路径（与 chat.header.* 分属不同文件）', () => {
-      // home.json 的 chat_header.toolbar 下也有 video_call，但这是不同命名空间
-      // 两者翻译值可能相同（如均为"视频通话"），关键在于分属不同文件、不同路径，不会互相覆盖
-      expect(resolveKey(zhCNHome, 'chat_header.toolbar.video_call')).toBeDefined()
-      expect(resolveKey(enHome, 'chat_header.toolbar.video_call')).toBeDefined()
-      // chat.header.video_call 解析自 chat.json，home.chat_header.toolbar.video_call 解析自 home.json
+    it('home.chat_header.toolbar.* 的历史重复路径已清理（与 chat.header.* 分属不同文件且不再分叉）', () => {
+      // 历史问题 1：ChatHeaderToolbar 曾用 chat_header.toolbar.video_call，而 home.json 里
+      // 也留着一份同名的 chat_header.toolbar.* 重复定义。组件改用 chat.header.video_call 后，
+      // home.json 的这份重复定义成为零引用孤儿（Task 7 债务清理已删除）。
+      // 这里断言它不再复活：同名 key 一旦重新分叉，就会出现「改一处、漏一处」的旧缺陷。
+      expect(resolveKey(zhCNHome, 'chat_header.toolbar')).toBeUndefined()
+      expect(resolveKey(enHome, 'chat_header.toolbar')).toBeUndefined()
+      // chat.header.video_call 解析自 chat.json，home.json 的 header.video_call 不存在
       expect(resolveKey(zhCNChat, 'header.video_call')).toBeDefined()
       expect(resolveKey(zhCNHome, 'header.video_call')).toBeUndefined()
       expect(resolveKey(zhCNChat, 'chat_header.toolbar.video_call')).toBeUndefined()

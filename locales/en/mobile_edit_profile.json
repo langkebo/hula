@@ -10,7 +10,6 @@
     "nickname": "Enter a nickname",
     "gender": "Click to select gender",
     "brithday": "Please select a birthday",
-    "region": "Click to select region",
     "phone": "Enter a phone number",
     "bio": "Please enter a personal introduction"
   },

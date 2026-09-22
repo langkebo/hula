@@ -1,9 +1,4 @@
 {
-  "title": "Pinned Message",
-  "pinned_by": "Pinned by {name}",
-  "view": "View",
-  "dismiss": "Dismiss",
-  "empty": "No pinned messages",
   "load_failed": "Failed to load pinned message",
   "unpin_success": "Unpinned",
   "unpin_failed": "Failed to unpin",

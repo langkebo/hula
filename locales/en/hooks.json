@@ -1,24 +1,9 @@
 {
-  "webrtc": {
-    "no_device": "No device available!",
-    "get_stream_failed": "Failed to get local media stream, please check your device!",
-    "rtc_connection_failed": "RTC connection failed!",
-    "get_devices_failed": "Failed to get devices!",
-    "call_timeout": "Call not answered, auto hanging up",
-    "cleanup_failed": "Some resources failed to clean up!",
-    "room_not_found": "Room not found, please reconnect!",
-    "camera_failed": "Unable to turn on camera"
-  },
   "window": {
     "create_failed": "Window creation failed: {label}",
-    "modal_create_failed": "Failed to create {title} window",
     "session_not_ready": "Current session is not ready",
     "group_call_not_supported": "Group chats do not support audio/video calls",
     "user_info_missing": "Unable to get user info"
-  },
-  "download": {
-    "failed": "Download failed",
-    "read_failed": "Unable to read response content"
   },
   "avatar_upload": {
     "image_load_failed": "Image load failed",
@@ -33,8 +18,7 @@
     "upload_failed": "File upload failed, please retry"
   },
   "session": {
-    "detail_failed": "Failed to get session details",
-    "show_failed": "Failed to show session"
+    "detail_failed": "Failed to get session details"
   },
   "msg_input": {
     "file_size_exceeded": "File size cannot exceed 500MB",
