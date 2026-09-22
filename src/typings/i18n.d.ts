@@ -2494,45 +2494,59 @@ export type I18nKeys = {
     }
   },
   "friend": {
-    "list": {
-      "title": "好友列表",
-      "search": "搜索好友",
-      "empty": "暂无好友",
-      "capability_unavailable_title": "当前服务端未开启好友能力",
-      "capability_unavailable_description": "请联系管理员开启好友能力后再使用好友列表与请求功能。",
-      "online": "在线",
-      "offline": "离线",
-      "friend_list_label": "好友列表",
-      "new_request_announcement": "收到 {count} 条新的好友请求",
-      "pending_requests": "{count} 条待处理好友请求",
-      "view_all": "查看全部"
-    },
-    "filter": {
-      "all": "全部",
-      "favorite": "收藏",
-      "normal": "普通",
-      "blocked": "已屏蔽",
-      "hidden": "已隐藏"
-    },
     "status": {
       "normal": "普通好友",
       "favorite": "收藏好友",
       "blocked": "已屏蔽",
       "hidden": "已隐藏"
     },
+    "local_user": "本地用户",
     "request": {
-      "accept": "接受",
-      "reject": "拒绝",
       "success": {
         "accept": "已接受好友请求",
         "reject": "已拒绝好友请求"
       },
+      "expires_in": "{count} 秒后过期",
+      "reject": "拒绝",
+      "expired": "请求已过期",
       "error": {
         "accept": "接受好友请求失败",
         "reject": "拒绝好友请求失败"
       },
-      "expired": "请求已过期",
-      "expires_in": "{count} 秒后过期"
+      "accept": "接受"
+    },
+    "search": {
+      "history": "最近搜索",
+      "clear_history": "清空历史",
+      "clear_current": "清除搜索",
+      "searching": "正在更新搜索结果...",
+      "result_count": "“{keyword}” 共匹配到 {count} 位好友",
+      "filter_result_count": "{filter} 共 {count} 位好友",
+      "empty_title": "未找到匹配的好友",
+      "empty_description": "没有找到与 “{keyword}” 相关的好友，试试其他关键词。"
+    },
+    "group": {
+      "title": "好友分组",
+      "search": "搜索分组",
+      "empty": "暂无分组",
+      "empty_search": "没有匹配的分组",
+      "result_count": "“{keyword}” 共匹配到 {count} 个分组",
+      "create": "创建分组",
+      "name_placeholder": "请输入分组名称",
+      "member_count": "{count} 位成员",
+      "rename": "重命名",
+      "delete": "删除分组",
+      "create_success": "分组创建成功",
+      "create_failed": "创建分组失败",
+      "rename_success": "重命名成功",
+      "rename_failed": "重命名失败",
+      "delete_success": "分组已删除",
+      "delete_failed": "删除分组失败",
+      "load_failed": "加载分组失败",
+      "section": {
+        "favorite": "星标好友",
+        "ungrouped": "未分组"
+      }
     },
     "add": {
       "title": "添加好友",
@@ -2554,6 +2568,28 @@ export type I18nKeys = {
       "suggestions": "推荐好友",
       "request_pending": "已发送过好友请求，等待对方处理"
     },
+    "filter": {
+      "all": "全部",
+      "favorite": "收藏",
+      "normal": "普通",
+      "blocked": "已屏蔽",
+      "hidden": "已隐藏"
+    },
+    "context": {
+      "send_message": "发消息",
+      "encrypted_chat": "加密聊天",
+      "secret_chat": "设为私密好友",
+      "set_note": "设置备注",
+      "set_display_name": "设置显示名",
+      "set_favorite": "设为收藏",
+      "set_normal": "设为普通",
+      "set_blocked": "屏蔽好友",
+      "remove": "删除好友",
+      "friend_offline": "对方当前离线，无法发起通话",
+      "video_call": "视频通话",
+      "voice_call": "语音通话"
+    },
+    "federated_user": "联邦用户",
     "detail": {
       "title": "好友详情",
       "last_seen": "最后活跃",
@@ -2600,241 +2636,29 @@ export type I18nKeys = {
       "matrix_id": "Matrix ID",
       "server_address": "服务器地址"
     },
-    "context": {
-      "send_message": "发消息",
-      "encrypted_chat": "加密聊天",
-      "secret_chat": "设为私密好友",
-      "set_note": "设置备注",
-      "set_display_name": "设置显示名",
-      "set_favorite": "设为收藏",
-      "set_normal": "设为普通",
-      "set_blocked": "屏蔽好友",
-      "remove": "删除好友",
-      "friend_offline": "对方当前离线，无法发起通话",
-      "video_call": "视频通话",
-      "voice_call": "语音通话"
-    },
     "secret_chat": {
       "success": "已设为私密好友"
     },
-    "search": {
-      "history": "最近搜索",
-      "clear_history": "清空历史",
-      "clear_current": "清除搜索",
-      "searching": "正在更新搜索结果...",
-      "result_count": "“{keyword}” 共匹配到 {count} 位好友",
-      "filter_result_count": "{filter} 共 {count} 位好友",
-      "empty_title": "未找到匹配的好友",
-      "empty_description": "没有找到与 “{keyword}” 相关的好友，试试其他关键词。"
-    },
-    "group": {
-      "title": "好友分组",
-      "search": "搜索分组",
-      "empty": "暂无分组",
-      "empty_search": "没有匹配的分组",
-      "result_count": "“{keyword}” 共匹配到 {count} 个分组",
-      "create": "创建分组",
-      "name_placeholder": "请输入分组名称",
-      "member_count": "{count} 位成员",
-      "rename": "重命名",
-      "delete": "删除分组",
-      "create_success": "分组创建成功",
-      "create_failed": "创建分组失败",
-      "rename_success": "重命名成功",
-      "rename_failed": "重命名失败",
-      "delete_success": "分组已删除",
-      "delete_failed": "删除分组失败",
-      "load_failed": "加载分组失败",
-      "section": {
-        "favorite": "星标好友",
-        "ungrouped": "未分组"
-      }
-    },
-    "federated_user": "联邦用户",
-    "local_user": "本地用户"
+    "list": {
+      "title": "好友列表",
+      "search": "搜索好友",
+      "empty": "暂无好友",
+      "capability_unavailable_title": "当前服务端未开启好友能力",
+      "capability_unavailable_description": "请联系管理员开启好友能力后再使用好友列表与请求功能。",
+      "online": "在线",
+      "offline": "离线",
+      "friend_list_label": "好友列表",
+      "new_request_announcement": "收到 {count} 条新的好友请求",
+      "pending_requests": "{count} 条待处理好友请求",
+      "view_all": "查看全部"
+    }
   },
   "home": {
-    "loading": {
-      "app": "加载应用中...",
-      "left_panel": "加载左侧面板...",
-      "data": "加载数据中...",
-      "right_panel": "加载右侧面板..."
-    },
-    "action": {
-      "message": "消息列表",
-      "message_short_title": "消息",
-      "contact": "好友列表",
-      "contact_short_title": "好友",
-      "file_manager": "文件管理器",
-      "file_manager_short_title": "文件",
-      "favorite": "收藏列表",
-      "favorite_short_title": "收藏",
-      "plugin": "插件",
-      "plugin_manage": "插件管理",
-      "more": "更多",
-      "opened": "已打开"
-    },
-    "plugins": {
-      "room_list": "房间列表",
-      "room_list_short_title": "房间",
-      "room_detail": {
-        "just_now": "刚刚",
-        "yesterday": "昨天",
-        "mute": "免打扰"
-      },
-      "space_list": "空间列表",
-      "space_list_short_title": "空间",
-      "federation": "联邦",
-      "federation_short_title": "联邦",
-      "federation_loading": "正在加载联邦服务器...",
-      "federation_empty": "暂无联邦服务器",
-      "status": {
-        "builtin": "已内置",
-        "uninstalling": "卸载中"
-      },
-      "actions": {
-        "install": "安装",
-        "pin": "固定侧边栏",
-        "unpin": "取消固定",
-        "uninstall": "卸载"
-      }
-    },
-    "chat_reaction": {
-      "like": "好赞",
-      "unsatisfied": "不满",
-      "heart": "爱心",
-      "angry": "愤怒",
-      "party": "礼炮",
-      "rocket": "火箭",
-      "lol": "笑哭",
-      "clap": "鼓掌",
-      "flower": "鲜花",
-      "bomb": "炸弹",
-      "question": "疑问",
-      "victory": "胜利",
-      "light": "灯光",
-      "red_envelope": "红包"
-    },
-    "chat_details": {
-      "single": {
-        "empty_signature": "这个人很高冷，暂时没有留下什么",
-        "region": "地区：{place}",
-        "unknown": "未知",
-        "friend_info_missing": "无法获取好友信息",
-        "footer": {
-          "audio_call": "打电话",
-          "video_call": "打视频"
-        }
-      },
-      "group": {
-        "name_label": "房间名称",
-        "edit_name": "编辑房间名称",
-        "announcement": {
-          "label": "群公告",
-          "window_title": "查看群公告"
-        }
-      },
-      "actions": {
-        "message": "进入聊天"
-      }
-    },
-    "chat_header": {
-      "federated": "联邦房间",
-      "federated_tooltip": "联邦房间 · 由 {server} 提供服务",
-      "meeting_widget_name": "房间会议",
-      "member_count": "{count} 位成员",
-      "channel": "频道",
-      "message_setting": {
-        "receive_no_alert": "接收消息但不提醒",
-        "shield": "屏蔽消息"
-      },
-      "chat_info": "聊天信息",
-      "clear_messages": "清除消息",
-      "clear_messages_confirm_message": "确定清除所有消息？",
-      "delete_friend": "删除好友",
-      "delete_friend_confirm": "确定删除该好友？",
-      "delete_room": "删除房间",
-      "delete_room_confirm": "确定删除该房间？",
-      "group_info": "群信息",
-      "group_members": "群成员",
-      "group_name": "群名称",
-      "group_qr_code": "群二维码",
-      "input_group_name": "输入群名称…",
-      "input_my_name": "输入我的名称…",
-      "input_remark": "输入备注…",
-      "my_name_in_group": "我在群中的名称",
-      "pin_room": "固定房间",
-      "remark": "备注",
-      "share_qr_code": "分享二维码"
-    },
-    "manage_group_member": {
-      "title": "管理群成员",
-      "search_placeholder_mobile": "搜索成员~",
-      "search_placeholder_pc": "搜索群成员",
-      "selected_count": "已选择 {count} 人",
-      "remove_button": "踢出群聊",
-      "dialog_negative": "取消",
-      "dialog_positive": "确定",
-      "remove_confirm": "确定要踢出 {count} 位成员吗？",
-      "channel_not_allowed": "频道不允许踢出成员",
-      "select_member_warning": "请选择要踢出的成员",
-      "remove_success": "成功踢出 {count} 位成员",
-      "remove_failed": "踢出失败，请重试",
-      "confirm_remove_title": "确认踢出",
-      "channel_manage_unsupported": "频道不支持管理成员"
-    },
-    "profile_card": {
-      "online_status": "在线状态",
-      "status": {
-        "online": "在线",
-        "offline": "离线",
-        "away": "离开",
-        "busy": "忙碌"
-      },
-      "labels": {
-        "account": "账号",
-        "sex": "性别",
-        "bio": "个人简介",
-        "region": "地区",
-        "birthday": "生日",
-        "male": "男",
-        "female": "女"
-      },
-      "tooltip": {
-        "copy_account": "复制账号"
-      },
-      "buttons": {
-        "edit": "编辑资料",
-        "message": "发信息",
-        "add_friend": "加好友",
-        "mention": "@提及"
-      },
-      "notification": {
-        "copy_success": "复制成功 {account}",
-        "copy_copied": "已复制"
-      },
-      "presence": {
-        "activeNow": "刚刚活跃",
-        "activeMinutes": "{minutes} 分钟前活跃",
-        "activeHours": "{hours} 小时前活跃",
-        "activeDays": "{days} 天前活跃"
-      },
-      "error": {
-        "title": "资料加载失败",
-        "desc": "暂时无法获取该用户资料，请稍后重试"
-      }
-    },
     "profile_edit": {
+      "actions": {
+        "save": "保存"
+      },
       "title": "编辑资料",
-      "avatar": {
-        "change": "更换头像",
-        "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb",
-        "choose_from_gallery": "从头像库选择"
-      },
-      "badge": {
-        "current": "当前佩戴的徽章:",
-        "wear": "佩戴"
-      },
       "form": {
         "nickname": {
           "label": "昵称",
@@ -2842,9 +2666,6 @@ export type I18nKeys = {
           "remaining": "剩余改名次数: {count}",
           "unlimited": "改名次数: 无限制"
         }
-      },
-      "actions": {
-        "save": "保存"
       },
       "toast": {
         "avatar_update_success": "头像更新成功",
@@ -2854,106 +2675,22 @@ export type I18nKeys = {
         "badge_wear_success": "佩戴成功",
         "badge_wear_failed": "佩戴失败，请稍后重试",
         "save_failed": "保存失败"
+      },
+      "badge": {
+        "current": "当前佩戴的徽章:",
+        "wear": "佩戴"
+      },
+      "avatar": {
+        "change": "更换头像",
+        "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb",
+        "choose_from_gallery": "从头像库选择"
       }
     },
-    "chat_sidebar": {
-      "announcement": {
-        "title": "群公告须知",
-        "load_failed": "公告加载失败，请重试",
-        "default": "请不要把重要信息发到该群，网络不是法外之地，请遵守网络规范，否则直接删除。"
-      },
-      "actions": {
-        "retry": "重试"
-      },
-      "online_members": "在线成员 {count}",
-      "search": {
-        "placeholder": "搜索"
-      },
-      "roles": {
-        "owner": "群主",
-        "admin": "管理员",
-        "member": "普通成员"
-      },
-      "empty": {
-        "no_chat_selected": "未选择会话",
-        "select_to_start": "选择一个会话或发起新聊天",
-        "pins": "暂无置顶消息",
-        "files": "暂无文件"
-      },
-      "toggle": {
-        "expand": "展开信息面板",
-        "collapse": "收起信息面板"
-      },
-      "tabs": {
-        "members": "成员",
-        "files": "文件",
-        "pins": "置顶",
-        "favorites": "收藏"
-      },
-      "pins": {
-        "title": "置顶消息",
-        "cancel": "取消置顶",
-        "selector_empty": "暂无置顶消息",
-        "selector_title": "置顶消息"
-      },
-      "favorites": {
-        "total": "收藏消息 {count} 条",
-        "export_md": "导出 Markdown",
-        "export_txt": "导出文本",
-        "search_placeholder": "搜索收藏消息",
-        "empty": "暂无收藏消息",
-        "load_failed": "加载收藏消息失败"
-      },
-      "groups": {
-        "offline": "离线",
-        "online": "在线"
-      },
-      "quota": {
-        "title": "配额"
-      }
-    },
-    "about": {
-      "version": "版本：{version} ({arch})",
-      "device": "当前设备：{type}{version}",
-      "copyright": "Copyright © {start}-{end} 龙卷风",
-      "rights": "All Rights Reserved."
-    },
-    "apply_list": {
-      "friend_notice": "好友通知",
-      "group_notice": "群通知",
-      "you": "你",
-      "unknown_user": "未知用户",
-      "message_label": "留言：",
-      "handler_label": "处理人：{name}",
-      "accept": "接受",
+    "friends_list": {
       "status": {
-        "accepted": "已同意",
-        "rejected": "已拒绝",
-        "ignored": "已忽略",
-        "rejected_by_other": "对方已拒绝",
-        "pending": "等待验证"
-      },
-      "friend": {
-        "accepted_you": "已同意你的请求",
-        "pending": "正在验证你的邀请",
-        "request": "请求加为好友"
-      },
-      "group": {
-        "loading": "加载中...",
-        "apply": "申请加入 [{group}]",
-        "invite": "邀请{name}加入 [{group}]",
-        "invite_confirmed": "已同意加入 [{group}]",
-        "invite_you": "邀请你加入 [{group}]",
-        "kicked": "已被{operator}踢出 [{group}]",
-        "set_admin": "已被群主设置为 [{group}] 的管理员",
-        "remove_admin": "已被群主取消 [{group}] 的管理员权限"
-      },
-      "dropdown": {
-        "reject": "拒绝",
-        "ignore": "忽略"
-      },
-      "empty_friend": "暂无好友申请",
-      "empty_group": "暂无群通知"
+        "online": "在线",
+        "offline": "离线"
+      }
     },
     "chat_main": {
       "network_offline": "当前网络不可用，请检查你的网络设置",
@@ -3007,15 +2744,37 @@ export type I18nKeys = {
         }
       }
     },
-    "friends_list": {
-      "status": {
-        "online": "在线",
-        "offline": "离线"
-      }
+    "chat_reaction": {
+      "like": "好赞",
+      "unsatisfied": "不满",
+      "heart": "爱心",
+      "angry": "愤怒",
+      "party": "礼炮",
+      "rocket": "火箭",
+      "lol": "笑哭",
+      "clap": "鼓掌",
+      "flower": "鲜花",
+      "bomb": "炸弹",
+      "question": "疑问",
+      "victory": "胜利",
+      "light": "灯光",
+      "red_envelope": "红包"
     },
-    "file_drop": {
-      "title": "松开鼠标即可发送文件",
-      "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件"
+    "manage_group_member": {
+      "title": "管理群成员",
+      "search_placeholder_mobile": "搜索成员~",
+      "search_placeholder_pc": "搜索群成员",
+      "selected_count": "已选择 {count} 人",
+      "remove_button": "踢出群聊",
+      "dialog_negative": "取消",
+      "dialog_positive": "确定",
+      "remove_confirm": "确定要踢出 {count} 位成员吗？",
+      "channel_not_allowed": "频道不允许踢出成员",
+      "select_member_warning": "请选择要踢出的成员",
+      "remove_success": "成功踢出 {count} 位成员",
+      "remove_failed": "踢出失败，请重试",
+      "confirm_remove_title": "确认踢出",
+      "channel_manage_unsupported": "频道不支持管理成员"
     },
     "secret_chat": {
       "title": "私密聊天",
@@ -3024,6 +2783,254 @@ export type I18nKeys = {
       "no_hidden_sessions": "暂无隐藏会话",
       "no_messages": "暂无消息",
       "hidden_sessions": "已隐藏的会话"
+    },
+    "chat_sidebar": {
+      "actions": {
+        "retry": "重试"
+      },
+      "search": {
+        "placeholder": "搜索"
+      },
+      "quota": {
+        "title": "配额"
+      },
+      "favorites": {
+        "total": "收藏消息 {count} 条",
+        "export_md": "导出 Markdown",
+        "export_txt": "导出文本",
+        "search_placeholder": "搜索收藏消息",
+        "empty": "暂无收藏消息",
+        "load_failed": "加载收藏消息失败"
+      },
+      "groups": {
+        "offline": "离线",
+        "online": "在线"
+      },
+      "roles": {
+        "owner": "群主",
+        "admin": "管理员",
+        "member": "普通成员"
+      },
+      "empty": {
+        "no_chat_selected": "未选择会话",
+        "select_to_start": "选择一个会话或发起新聊天",
+        "pins": "暂无置顶消息",
+        "files": "暂无文件"
+      },
+      "online_members": "在线成员 {count}",
+      "tabs": {
+        "members": "成员",
+        "files": "文件",
+        "pins": "置顶",
+        "favorites": "收藏"
+      },
+      "toggle": {
+        "expand": "展开信息面板",
+        "collapse": "收起信息面板"
+      },
+      "announcement": {
+        "title": "群公告须知",
+        "load_failed": "公告加载失败，请重试",
+        "default": "请不要把重要信息发到该群，网络不是法外之地，请遵守网络规范，否则直接删除。"
+      },
+      "pins": {
+        "title": "置顶消息",
+        "cancel": "取消置顶",
+        "selector_empty": "暂无置顶消息",
+        "selector_title": "置顶消息"
+      }
+    },
+    "chat_header": {
+      "delete_room": "删除房间",
+      "meeting_widget_name": "房间会议",
+      "delete_friend": "删除好友",
+      "group_members": "群成员",
+      "chat_info": "聊天信息",
+      "delete_friend_confirm": "确定删除该好友？",
+      "message_setting": {
+        "receive_no_alert": "接收消息但不提醒",
+        "shield": "屏蔽消息"
+      },
+      "federated": "联邦房间",
+      "group_name": "群名称",
+      "share_qr_code": "分享二维码",
+      "group_qr_code": "群二维码",
+      "my_name_in_group": "我在群中的名称",
+      "remark": "备注",
+      "input_group_name": "输入群名称…",
+      "channel": "频道",
+      "input_my_name": "输入我的名称…",
+      "group_info": "群信息",
+      "clear_messages": "清除消息",
+      "delete_room_confirm": "确定删除该房间？",
+      "pin_room": "固定房间",
+      "member_count": "{count} 位成员",
+      "clear_messages_confirm_message": "确定清除所有消息？",
+      "federated_tooltip": "联邦房间 · 由 {server} 提供服务",
+      "input_remark": "输入备注…",
+      "sidebar": {
+        "group": {
+          "message_settings": {
+            "title": "群消息设置"
+          }
+        }
+      }
+    },
+    "plugins": {
+      "room_list": "房间列表",
+      "room_list_short_title": "房间",
+      "room_detail": {
+        "just_now": "刚刚",
+        "yesterday": "昨天",
+        "mute": "免打扰"
+      },
+      "space_list": "空间列表",
+      "space_list_short_title": "空间",
+      "federation": "联邦",
+      "federation_short_title": "联邦",
+      "federation_loading": "正在加载联邦服务器...",
+      "federation_empty": "暂无联邦服务器",
+      "status": {
+        "builtin": "已内置",
+        "uninstalling": "卸载中"
+      },
+      "actions": {
+        "install": "安装",
+        "pin": "固定侧边栏",
+        "unpin": "取消固定",
+        "uninstall": "卸载"
+      }
+    },
+    "action": {
+      "message": "消息列表",
+      "message_short_title": "消息",
+      "contact": "好友列表",
+      "contact_short_title": "好友",
+      "file_manager": "文件管理器",
+      "file_manager_short_title": "文件",
+      "favorite": "收藏列表",
+      "favorite_short_title": "收藏",
+      "plugin": "插件",
+      "plugin_manage": "插件管理",
+      "more": "更多",
+      "opened": "已打开"
+    },
+    "chat_details": {
+      "single": {
+        "empty_signature": "这个人很高冷，暂时没有留下什么",
+        "region": "地区：{place}",
+        "unknown": "未知",
+        "friend_info_missing": "无法获取好友信息",
+        "footer": {
+          "audio_call": "打电话",
+          "video_call": "打视频"
+        }
+      },
+      "group": {
+        "name_label": "房间名称",
+        "edit_name": "编辑房间名称",
+        "announcement": {
+          "label": "群公告",
+          "window_title": "查看群公告"
+        }
+      },
+      "actions": {
+        "message": "进入聊天"
+      }
+    },
+    "profile_card": {
+      "online_status": "在线状态",
+      "status": {
+        "online": "在线",
+        "offline": "离线",
+        "away": "离开",
+        "busy": "忙碌"
+      },
+      "labels": {
+        "account": "账号",
+        "sex": "性别",
+        "bio": "个人简介",
+        "region": "地区",
+        "birthday": "生日",
+        "male": "男",
+        "female": "女"
+      },
+      "tooltip": {
+        "copy_account": "复制账号"
+      },
+      "buttons": {
+        "edit": "编辑资料",
+        "message": "发信息",
+        "add_friend": "加好友",
+        "mention": "@提及"
+      },
+      "notification": {
+        "copy_success": "复制成功 {account}",
+        "copy_copied": "已复制"
+      },
+      "presence": {
+        "activeNow": "刚刚活跃",
+        "activeMinutes": "{minutes} 分钟前活跃",
+        "activeHours": "{hours} 小时前活跃",
+        "activeDays": "{days} 天前活跃"
+      },
+      "error": {
+        "title": "资料加载失败",
+        "desc": "暂时无法获取该用户资料，请稍后重试"
+      }
+    },
+    "about": {
+      "version": "版本：{version} ({arch})",
+      "device": "当前设备：{type}{version}",
+      "copyright": "Copyright © {start}-{end} 龙卷风",
+      "rights": "All Rights Reserved."
+    },
+    "loading": {
+      "app": "加载应用中...",
+      "left_panel": "加载左侧面板...",
+      "data": "加载数据中...",
+      "right_panel": "加载右侧面板..."
+    },
+    "file_drop": {
+      "title": "松开鼠标即可发送文件",
+      "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件"
+    },
+    "apply_list": {
+      "friend_notice": "好友通知",
+      "group_notice": "群通知",
+      "you": "你",
+      "unknown_user": "未知用户",
+      "message_label": "留言：",
+      "handler_label": "处理人：{name}",
+      "accept": "接受",
+      "status": {
+        "accepted": "已同意",
+        "rejected": "已拒绝",
+        "ignored": "已忽略",
+        "rejected_by_other": "对方已拒绝",
+        "pending": "等待验证"
+      },
+      "friend": {
+        "accepted_you": "已同意你的请求",
+        "pending": "正在验证你的邀请",
+        "request": "请求加为好友"
+      },
+      "group": {
+        "loading": "加载中...",
+        "apply": "申请加入 [{group}]",
+        "invite": "邀请{name}加入 [{group}]",
+        "invite_confirmed": "已同意加入 [{group}]",
+        "invite_you": "邀请你加入 [{group}]",
+        "kicked": "已被{operator}踢出 [{group}]",
+        "set_admin": "已被群主设置为 [{group}] 的管理员",
+        "remove_admin": "已被群主取消 [{group}] 的管理员权限"
+      },
+      "dropdown": {
+        "reject": "拒绝",
+        "ignore": "忽略"
+      },
+      "empty_friend": "暂无好友申请",
+      "empty_group": "暂无群通知"
     }
   },
   "hooks": {
@@ -3866,17 +3873,10 @@ export type I18nKeys = {
     "unpin_success": "已取消固定"
   },
   "message_container": {
+    "resend_failed": "消息重发失败，请重试",
+    "emoji_already_marked": "该表情已标记",
     "copy_translation": "复制翻译",
     "unknown_user": "未知用户",
-    "resend_success": "消息重发成功",
-    "resend_failed": "消息重发失败，请重试",
-    "copy_success": "复制成功",
-    "emoji_already_marked": "该表情已标记",
-    "retry": "重试",
-    "verify_sender_device": "验证发送方设备",
-    "long_press": {
-      "forward": "转发"
-    },
     "reaction": {
       "add_failed": "添加表情失败",
       "add_success": "添加成功",
@@ -3885,7 +3885,14 @@ export type I18nKeys = {
       "pick_emoji": "选择表情",
       "remove_failed": "移除表情失败",
       "remove_success": "已移除"
-    }
+    },
+    "retry": "重试",
+    "long_press": {
+      "forward": "转发"
+    },
+    "resend_success": "消息重发成功",
+    "copy_success": "复制成功",
+    "verify_sender_device": "验证发送方设备"
   },
   "mobile_burn": {
     "title": "阅后即焚",
@@ -5576,10 +5583,333 @@ export type I18nKeys = {
   },
   "server_notifications": {},
   "setting": {
+    "notification": {
+      "common": {
+        "enabled": "已启用",
+        "disabled": "已禁用",
+        "shown": "显示",
+        "hidden": "隐藏"
+      },
+      "desktop": {
+        "title": "桌面通知",
+        "enable_label": "启用桌面通知",
+        "enable_desc": "收到新消息时显示系统桌面通知",
+        "sound_label": "通知声音",
+        "sound_desc": "接收桌面通知时播放提示音",
+        "volume_label": "提示音音量",
+        "volume_desc": "调节桌面通知提示音的播放音量"
+      },
+      "content": {
+        "title": "通知内容",
+        "message_label": "显示消息内容",
+        "message_desc": "在通知中预览消息正文",
+        "sender_label": "显示发送者名称",
+        "sender_desc": "在通知中显示消息发送者"
+      },
+      "keyword": {
+        "title": "关键词提醒",
+        "enable_label": "启用关键词提醒",
+        "enable_desc": "当消息包含指定关键词时单独提醒",
+        "input_placeholder": "输入关键词后按回车添加",
+        "add": "添加关键词"
+      },
+      "thread": {
+        "title": "线程通知",
+        "mention_label": "线程中提及我时提醒",
+        "mention_desc": "当在线程消息中提及您时通知您"
+      },
+      "push_section": {
+        "title": "推送与规则",
+        "desc": "管理推送设备、规则和免打扰时间。"
+      },
+      "feedback": {
+        "permission_denied": "桌面通知权限未授予，无法启用桌面通知",
+        "desktop": "桌面通知已{state}",
+        "sound": "通知声音已{state}",
+        "message_content": "消息内容显示已{state}",
+        "sender_name": "发送者名称显示已{state}",
+        "keyword": "关键词提醒已{state}",
+        "keyword_added": "已添加关键词：{keyword}",
+        "keyword_removed": "已移除关键词：{keyword}",
+        "thread_mention": "线程提及提醒已{state}"
+      }
+    },
+    "account": {
+      "title": "账户",
+      "profile": "个人资料",
+      "change_avatar": "更换头像",
+      "avatar_uploading": "上传中...",
+      "change_avatar_hint": "点击更换头像",
+      "nickname": "昵称",
+      "nickname_placeholder": "请输入昵称",
+      "user_id": "用户 ID",
+      "about": "简介",
+      "about_placeholder": "介绍一下自己...",
+      "gender": "性别",
+      "gender_placeholder": "请选择性别",
+      "gender_male": "男",
+      "gender_female": "女",
+      "region": "地区",
+      "region_placeholder": "请输入地区",
+      "birthday": "生日",
+      "birthday_placeholder": "例如 1999-01-01",
+      "security": "账户安全",
+      "change_password": "修改密码",
+      "change_password_desc": "更新您的账户密码",
+      "current_password": "当前密码",
+      "current_password_placeholder": "请输入当前密码",
+      "current_password_required": "请输入当前密码",
+      "new_password": "新密码",
+      "new_password_placeholder": "请输入新密码",
+      "new_password_required": "请输入新密码",
+      "confirm_password": "确认密码",
+      "confirm_password_placeholder": "请再次输入密码",
+      "confirm_password_required": "请确认您的密码",
+      "password_incomplete": "请填写完整密码信息",
+      "password_mismatch": "两次输入的密码不一致",
+      "avatar_format_invalid": "只支持 JPG、PNG、WebP 格式的图片",
+      "avatar_too_large": "图片大小不能超过 5MB",
+      "avatar_updated": "头像已更新",
+      "avatar_update_failed": "头像更新失败",
+      "avatar_update_failed_retry": "头像上传失败，请稍后重试",
+      "nickname_updated": "昵称已更新",
+      "nickname_update_failed": "昵称更新失败",
+      "about_update_failed": "简介更新失败",
+      "extended_profile_updated": "资料已更新",
+      "extended_profile_update_failed": "资料更新失败",
+      "extended_profile_unsupported": "当前服务器暂不支持扩展资料字段",
+      "password_changed": "密码已修改",
+      "password_change_failed": "密码修改失败",
+      "password_change_failed_with_hint": "密码修改失败，请检查当前密码是否正确",
+      "password_too_short": "密码长度不能少于8个字符",
+      "password_too_long": "密码长度不能超过128个字符",
+      "password_need_uppercase": "密码必须包含至少一个大写字母",
+      "password_need_lowercase": "密码必须包含至少一个小写字母",
+      "password_need_digit": "密码必须包含至少一个数字",
+      "password_need_special": "密码必须包含至少一个特殊字符（如 !{'@'}#$%^&*）",
+      "password_too_weak": "密码强度不足，请设置更复杂的密码",
+      "password_wrong_current": "当前密码不正确，请重新输入",
+      "logout_other_devices": "修改密码后登出其他设备",
+      "danger_zone": "危险操作区",
+      "deactivate_account": "停用账户",
+      "deactivate_account_desc": "永久删除您的账户和数据",
+      "deactivate_confirm_title": "确认停用账户",
+      "deactivate_confirm_content": "停用账户将永久删除您的所有数据，此操作无法撤销。确定要继续吗？",
+      "deactivate_confirm": "确认",
+      "deactivate_success": "账户已停用",
+      "deactivate_failed": "停用账户失败"
+    },
+    "sessions": {
+      "all_other_devices_logged_out": "所有其他设备已登出",
+      "security_actions": "安全操作",
+      "device_logged_out": "设备已登出",
+      "logout_all_other_devices": "登出所有其他设备",
+      "last_active": "最后活动",
+      "fetch_failed": "获取设备列表失败",
+      "logout_device_confirm": "确定要登出设备 \"{name}\" 吗？该设备将无法再访问您的账户。",
+      "rename_device_title": "重命名设备",
+      "unnamed_device": "未命名设备",
+      "minutes_ago": "{count} 分钟前",
+      "device_name_updated": "设备名称已更新",
+      "current": "当前会话",
+      "unknown": "未知",
+      "logout_all_other_devices_desc": "登出除当前设备外的所有设备",
+      "hours_ago": "{count} 小时前",
+      "logout_all_confirm_with_count": "确定要登出所有其他设备吗？共 {count} 个设备将被登出。",
+      "current_device": "当前设备",
+      "enter_device_name": "请输入设备名称",
+      "device_name": "设备名称",
+      "no_other_devices": "没有其他设备",
+      "other_devices": "其他设备",
+      "logout_device_title": "登出设备",
+      "rename_failed": "重命名失败",
+      "rename": "重命名",
+      "device_name_placeholder": "请输入设备名称",
+      "days_ago": "{count} 天前",
+      "logout": "登出",
+      "logout_confirm": "确定登出",
+      "logout_all_failed": "批量登出失败",
+      "logout_all_action": "登出全部",
+      "current_device_fallback": "当前设备",
+      "logout_failed": "登出失败",
+      "just_now": "刚刚"
+    },
+    "diagnostics": {
+      "title": "诊断信息",
+      "reset": "重置指标",
+      "api_avg_latency": "API 平均延迟",
+      "api_p95_latency": "API P95 延迟",
+      "api_total_calls": "API 调用总数",
+      "sync_count": "Sliding Sync 次数",
+      "sync_avg_duration": "同步平均耗时",
+      "replay_success_rate": "离线回放成功率",
+      "retry_rate": "重试触发率",
+      "retry_rate_abnormal_title": "重试率异常",
+      "retry_rate_abnormal_desc": "网络不稳定，当前重试率为 {rate}%"
+    },
+    "push": {
+      "invite": {
+        "label": "邀请推送",
+        "desc": "收到房间邀请时发送推送通知"
+      },
+      "dnd": {
+        "title": "推送时间",
+        "label": "勿扰模式",
+        "desc": "在指定时间段内不发送推送通知",
+        "startTime": "开始时间",
+        "endTime": "结束时间"
+      },
+      "editor": {
+        "action_coalesce": "合并通知",
+        "action_dont_notify": "不通知",
+        "action_notify": "通知",
+        "default_rule": "默认规则",
+        "desc": "推送规则配置说明",
+        "disabled": "已禁用",
+        "empty": "暂无推送规则",
+        "load_failed": "加载失败",
+        "refresh": "刷新",
+        "rule_not_found": "未找到规则",
+        "title": "推送规则",
+        "update_failed": "更新失败",
+        "update_success": "更新成功"
+      },
+      "devices": "推送设备",
+      "enabled": "已启用",
+      "add_pusher": {
+        "label": "添加推送设备",
+        "title": "添加推送设备",
+        "kind_label": "设备类型",
+        "app_id_label": "应用 ID",
+        "app_id_placeholder": "例如: com.tjg.desktop",
+        "app_display_name_label": "应用名称",
+        "app_display_name_placeholder": "例如: Tjg 桌面端",
+        "device_display_name_label": "设备名称",
+        "device_display_name_placeholder": "例如: 我的 Mac",
+        "pushkey_label": "推送密钥",
+        "pushkey_placeholder": "输入推送密钥",
+        "lang_label": "语言",
+        "required": "应用 ID 和推送密钥为必填项",
+        "success": "推送设备添加成功",
+        "failed": "添加推送设备失败",
+        "confirm": "确认添加",
+        "cancel": "取消"
+      },
+      "message": {
+        "label": "消息推送",
+        "desc": "接收新消息时发送推送通知"
+      },
+      "delete": {
+        "title": "删除推送设备",
+        "content": "确定要删除推送设备 \"{name}\" 吗？删除后将不再接收该设备的推送通知。",
+        "confirm": "确定删除",
+        "cancel": "取消",
+        "success": "推送设备已删除",
+        "failed": "删除推送设备失败"
+      },
+      "rules_by_kind": {
+        "title": "推送规则详情",
+        "desc": "按类别查看和管理所有推送规则",
+        "pattern": "匹配模式",
+        "empty": "暂无规则",
+        "kinds": {
+          "override": "覆盖规则",
+          "content": "内容规则",
+          "room": "房间规则",
+          "sender": "发送者规则",
+          "underride": "默认规则"
+        }
+      },
+      "fetchFailed": "获取推送设备列表失败",
+      "master": {
+        "label": "启用推送通知",
+        "desc": "全局控制所有推送通知"
+      },
+      "disabled": "已禁用",
+      "rules": "推送规则",
+      "noDevices": "暂无已注册的推送设备",
+      "updateFailed": "推送设置更新失败",
+      "history": {
+        "title": "通知历史",
+        "desc": "查看最近的通知记录",
+        "empty": "暂无通知记录",
+        "no_content": "无内容"
+      }
+    },
     "common": {
       "cancel": "取消",
       "save": "保存",
       "confirm": "确认"
+    },
+    "appearance": {
+      "theme_auto": "跟随系统",
+      "theme_light": "浅色模式",
+      "theme_dark": "深色模式",
+      "theme_section": "主题",
+      "font_section": "字体设置",
+      "font_label": "字体",
+      "font_desc": "选择界面显示字体",
+      "font_size_label": "字体大小",
+      "font_size_desc": "调整界面字体大小",
+      "effects_section": "界面效果",
+      "window_shadow_label": "窗口阴影",
+      "window_shadow_desc": "为窗口添加阴影效果",
+      "blur_label": "模糊效果",
+      "blur_desc": "启用窗口模糊背景",
+      "bubble_section": "消息气泡",
+      "bubble_style_label": "气泡样式",
+      "bubble_style_desc": "选择消息气泡显示样式",
+      "bubble_rounded": "圆角",
+      "bubble_square": "方角",
+      "font_default": "默认字体",
+      "font_microsoft_yahei": "微软雅黑",
+      "font_pingfang_sc": "苹方",
+      "font_source_han_sans": "思源黑体",
+      "font_size_small": "小",
+      "font_size_standard": "标准",
+      "font_size_large": "大",
+      "font_size_extra_large": "超大",
+      "preview": {
+        "title": "实时预览",
+        "sample_text": "这是一段示例文字，用于预览当前主题效果。",
+        "button": "按钮",
+        "input_placeholder": "输入框",
+        "current_theme": "当前主题"
+      },
+      "feedback": {
+        "theme_changed": "主题已切换",
+        "font_changed": "字体已更改",
+        "font_size_changed": "字体大小已调整为 {size}",
+        "window_shadow_enabled": "已启用窗口阴影",
+        "window_shadow_disabled": "已禁用窗口阴影",
+        "blur_enabled": "已启用模糊效果",
+        "blur_disabled": "已禁用模糊效果",
+        "bubble_rounded": "已切换为圆角气泡",
+        "bubble_square": "已切换为方角气泡"
+      }
+    },
+    "invite_permission": {
+      "title": "邀请权限管理",
+      "mode": {
+        "allow_all": "允许所有人邀请",
+        "blocklist": "黑名单模式",
+        "allowlist": "白名单模式"
+      },
+      "blocklist": {
+        "title": "邀请黑名单"
+      },
+      "allowlist": {
+        "title": "邀请白名单"
+      },
+      "user_id_placeholder": "{'@'}user:example.com",
+      "add": "添加",
+      "dm_section": "私聊",
+      "allow_strangers": "允许非联系人私聊",
+      "allow_strangers_hint": "关闭后，不在好友列表里的人发起的私聊邀请会被自动拒绝",
+      "allow_strangers_inactive": "仅白名单模式忽略此开关（白名单之外一律拒）；黑名单模式下名单之外的人仍由它决定",
+      "encrypt_new_dm": "新私聊默认加密",
+      "encrypt_new_dm_hint": "新建私聊时默认开启端到端加密",
+      "save_failed": "邀请权限保存失败"
     },
     "dialog": {
       "current_tab": "当前设置",
@@ -5745,765 +6075,6 @@ export type I18nKeys = {
         "advanced": "高级",
         "other": "其他"
       }
-    },
-    "general": {
-      "chat": {
-        "translate_options": {
-          "tencent": "腾讯云翻译",
-          "youdao": "有道云翻译"
-        }
-      },
-      "ui": {
-        "font_options": {
-          "PingFang": "苹方",
-          "AliFangYuan": "阿里妈妈方圆体"
-        }
-      }
-    },
-    "preferences": {
-      "language_section": "语言",
-      "interface_language_label": "界面语言",
-      "interface_language_desc": "选择应用显示语言",
-      "language_auto": "自动检测",
-      "language_zh_cn": "简体中文",
-      "language_zh_tw": "繁體中文",
-      "language_en": "English",
-      "language_ja": "日本語",
-      "startup_storage_section": "启动与存储",
-      "auto_login_label": "自动登录",
-      "auto_login_desc": "启动应用后自动恢复上次登录状态",
-      "auto_startup_label": "开机启动",
-      "auto_startup_desc": "系统启动后自动启动桌面端应用",
-      "storage_directory_label": "本地存储目录",
-      "storage_directory_desc": "统一管理扫描目录并查看当前空间占用",
-      "storage_disk_usage": "磁盘占用 {percentage}%",
-      "storage_scan_progress": "扫描进度 {percentage}%",
-      "messaging_section": "消息发送",
-      "send_key_label": "发送键",
-      "send_key_desc": "选择发送消息的快捷键",
-      "send_key_ctrl_enter": "Ctrl + Enter",
-      "send_key_shift_enter": "Shift + Enter",
-      "message_confirm_label": "消息确认",
-      "message_confirm_desc": "发送前显示确认对话框",
-      "recall_time_label": "消息撤回时间",
-      "recall_time_desc": "设置消息可撤回的时间窗口",
-      "recall_2_minutes": "2 分钟",
-      "recall_5_minutes": "5 分钟",
-      "recall_10_minutes": "10 分钟",
-      "link_preview_section": "链接预览",
-      "link_preview_label": "启用链接预览",
-      "link_preview_desc": "自动生成消息中链接的预览",
-      "emoji_section": "表情符号",
-      "emoji_convert_label": "自动转换表情",
-      "emoji_convert_desc": "将 :) 等符号自动转换为表情",
-      "emoji_size_label": "表情大小",
-      "emoji_size_desc": "设置消息中表情的显示大小",
-      "emoji_small": "小",
-      "emoji_medium": "中",
-      "emoji_large": "大",
-      "burn_defaults_section": "阅后即焚默认",
-      "burn_default_enabled_label": "新私聊默认开启阅后即焚",
-      "burn_default_enabled_desc": "创建新私聊时自动开启阅后即焚",
-      "burn_default_duration_label": "默认焚毁时间",
-      "burn_default_duration_desc": "阅后即焚消息的默认焚毁时间",
-      "burn_show_countdown_label": "显示焚毁倒计时",
-      "burn_show_countdown_desc": "在消息上显示焚毁倒计时进度",
-      "thread_section": "线程偏好",
-      "thread_auto_subscribe_label": "参与线程时自动订阅",
-      "thread_auto_subscribe_desc": "在线程中发送消息后自动订阅该线程",
-      "thread_show_in_room_label": "在房间内显示线程入口",
-      "thread_show_in_room_desc": "在消息列表中显示线程入口图标",
-      "thread_notification_label": "线程通知级别",
-      "thread_notification_desc": "控制线程消息的通知行为",
-      "space_section": "空间偏好",
-      "space_auto_join_label": "加入空间时自动加入其房间",
-      "space_auto_join_desc": "加入空间后自动加入其中的所有房间",
-      "space_show_subspaces_label": "显示子空间",
-      "space_show_subspaces_desc": "在空间列表中显示嵌套的子空间",
-      "space_notification_label": "空间默认通知",
-      "space_notification_desc": "新加入空间的默认通知级别",
-      "privacy_section": "隐私偏好",
-      "read_receipts_label": "发送已读回执",
-      "read_receipts_desc": "让对方知道你已读消息",
-      "typing_notifications_label": "发送输入状态",
-      "typing_notifications_desc": "让对方看到你正在输入",
-      "notification_all_messages": "所有消息",
-      "notification_participating_only": "仅参与的",
-      "notification_mentions_only": "仅提及",
-      "notification_none": "无通知",
-      "feedback": {
-        "enabled": "已启用{label}",
-        "disabled": "已禁用{label}",
-        "option_set": "{label}已设置为 {value}",
-        "read_auto_startup_failed": "读取开机启动状态失败",
-        "initialize_storage_scan_failed": "初始化存储扫描失败",
-        "auto_startup_change_failed": "设置开机启动失败"
-      }
-    },
-    "account": {
-      "title": "账户",
-      "profile": "个人资料",
-      "change_avatar": "更换头像",
-      "avatar_uploading": "上传中...",
-      "change_avatar_hint": "点击更换头像",
-      "nickname": "昵称",
-      "nickname_placeholder": "请输入昵称",
-      "user_id": "用户 ID",
-      "about": "简介",
-      "about_placeholder": "介绍一下自己...",
-      "gender": "性别",
-      "gender_placeholder": "请选择性别",
-      "gender_male": "男",
-      "gender_female": "女",
-      "region": "地区",
-      "region_placeholder": "请输入地区",
-      "birthday": "生日",
-      "birthday_placeholder": "例如 1999-01-01",
-      "security": "账户安全",
-      "change_password": "修改密码",
-      "change_password_desc": "更新您的账户密码",
-      "current_password": "当前密码",
-      "current_password_placeholder": "请输入当前密码",
-      "current_password_required": "请输入当前密码",
-      "new_password": "新密码",
-      "new_password_placeholder": "请输入新密码",
-      "new_password_required": "请输入新密码",
-      "confirm_password": "确认密码",
-      "confirm_password_placeholder": "请再次输入密码",
-      "confirm_password_required": "请确认您的密码",
-      "password_incomplete": "请填写完整密码信息",
-      "password_mismatch": "两次输入的密码不一致",
-      "avatar_format_invalid": "只支持 JPG、PNG、WebP 格式的图片",
-      "avatar_too_large": "图片大小不能超过 5MB",
-      "avatar_updated": "头像已更新",
-      "avatar_update_failed": "头像更新失败",
-      "avatar_update_failed_retry": "头像上传失败，请稍后重试",
-      "nickname_updated": "昵称已更新",
-      "nickname_update_failed": "昵称更新失败",
-      "about_update_failed": "简介更新失败",
-      "extended_profile_updated": "资料已更新",
-      "extended_profile_update_failed": "资料更新失败",
-      "extended_profile_unsupported": "当前服务器暂不支持扩展资料字段",
-      "password_changed": "密码已修改",
-      "password_change_failed": "密码修改失败",
-      "password_change_failed_with_hint": "密码修改失败，请检查当前密码是否正确",
-      "password_too_short": "密码长度不能少于8个字符",
-      "password_too_long": "密码长度不能超过128个字符",
-      "password_need_uppercase": "密码必须包含至少一个大写字母",
-      "password_need_lowercase": "密码必须包含至少一个小写字母",
-      "password_need_digit": "密码必须包含至少一个数字",
-      "password_need_special": "密码必须包含至少一个特殊字符（如 !{'@'}#$%^&*）",
-      "password_too_weak": "密码强度不足，请设置更复杂的密码",
-      "password_wrong_current": "当前密码不正确，请重新输入",
-      "logout_other_devices": "修改密码后登出其他设备",
-      "danger_zone": "危险操作区",
-      "deactivate_account": "停用账户",
-      "deactivate_account_desc": "永久删除您的账户和数据",
-      "deactivate_confirm_title": "确认停用账户",
-      "deactivate_confirm_content": "停用账户将永久删除您的所有数据，此操作无法撤销。确定要继续吗？",
-      "deactivate_confirm": "确认",
-      "deactivate_success": "账户已停用",
-      "deactivate_failed": "停用账户失败"
-    },
-    "shortcut": {
-      "send_message_shortcut_option": "按 {key} 键发送消息"
-    },
-    "storage": {
-      "title": "存储",
-      "desc": "查看并清理本地缓存数据，管理存储占用",
-      "sdk_store": "SDK 缓存统计",
-      "hit_rate": "命中率",
-      "hits": "命中次数",
-      "misses": "未命中次数",
-      "evictions": "淘汰条目数",
-      "total_entries": "缓存条目总数",
-      "memory_usage": "内存占用",
-      "browser_storage": "浏览器存储占用",
-      "browser_usage": "已用空间",
-      "browser_quota": "配额上限",
-      "cleanup": "清理缓存",
-      "clear_sdk": "清理 SDK 缓存数据",
-      "clear_sdk_desc": "清除 Matrix SDK 的本地存储（房间数据、加密密钥等），不影响账号与服务器数据",
-      "clear": "立即清理",
-      "processed_files": "已处理文件",
-      "processed_files_unit": "{count} 个",
-      "total_size": "累计大小",
-      "path_type_default": "默认目录",
-      "path_type_custom": "自定义目录",
-      "fetching_directory": "正在获取目录路径...",
-      "select_directory": "选择目录",
-      "start_scan": "开始扫描",
-      "scanning": "扫描中...",
-      "select_directory_title": "选择要扫描的目录",
-      "select_directory_error": "选择目录失败"
-    },
-    "push": {
-      "devices": "推送设备",
-      "noDevices": "暂无已注册的推送设备",
-      "rules": "推送规则",
-      "enabled": "已启用",
-      "disabled": "已禁用",
-      "updateFailed": "推送设置更新失败",
-      "master": {
-        "label": "启用推送通知",
-        "desc": "全局控制所有推送通知"
-      },
-      "message": {
-        "label": "消息推送",
-        "desc": "接收新消息时发送推送通知"
-      },
-      "invite": {
-        "label": "邀请推送",
-        "desc": "收到房间邀请时发送推送通知"
-      },
-      "dnd": {
-        "title": "推送时间",
-        "label": "勿扰模式",
-        "desc": "在指定时间段内不发送推送通知",
-        "startTime": "开始时间",
-        "endTime": "结束时间"
-      },
-      "delete": {
-        "title": "删除推送设备",
-        "content": "确定要删除推送设备 \"{name}\" 吗？删除后将不再接收该设备的推送通知。",
-        "confirm": "确定删除",
-        "cancel": "取消",
-        "success": "推送设备已删除",
-        "failed": "删除推送设备失败"
-      },
-      "fetchFailed": "获取推送设备列表失败",
-      "add_pusher": {
-        "label": "添加推送设备",
-        "title": "添加推送设备",
-        "kind_label": "设备类型",
-        "app_id_label": "应用 ID",
-        "app_id_placeholder": "例如: com.tjg.desktop",
-        "app_display_name_label": "应用名称",
-        "app_display_name_placeholder": "例如: Tjg 桌面端",
-        "device_display_name_label": "设备名称",
-        "device_display_name_placeholder": "例如: 我的 Mac",
-        "pushkey_label": "推送密钥",
-        "pushkey_placeholder": "输入推送密钥",
-        "lang_label": "语言",
-        "required": "应用 ID 和推送密钥为必填项",
-        "success": "推送设备添加成功",
-        "failed": "添加推送设备失败",
-        "confirm": "确认添加",
-        "cancel": "取消"
-      },
-      "rules_by_kind": {
-        "title": "推送规则详情",
-        "desc": "按类别查看和管理所有推送规则",
-        "pattern": "匹配模式",
-        "empty": "暂无规则",
-        "kinds": {
-          "override": "覆盖规则",
-          "content": "内容规则",
-          "room": "房间规则",
-          "sender": "发送者规则",
-          "underride": "默认规则"
-        }
-      },
-      "history": {
-        "title": "通知历史",
-        "desc": "查看最近的通知记录",
-        "empty": "暂无通知记录",
-        "no_content": "无内容"
-      },
-      "editor": {
-        "action_coalesce": "合并通知",
-        "action_dont_notify": "不通知",
-        "action_notify": "通知",
-        "default_rule": "默认规则",
-        "desc": "推送规则配置说明",
-        "disabled": "已禁用",
-        "empty": "暂无推送规则",
-        "load_failed": "加载失败",
-        "refresh": "刷新",
-        "rule_not_found": "未找到规则",
-        "title": "推送规则",
-        "update_failed": "更新失败",
-        "update_success": "更新成功"
-      }
-    },
-    "notification": {
-      "common": {
-        "enabled": "已启用",
-        "disabled": "已禁用",
-        "shown": "显示",
-        "hidden": "隐藏"
-      },
-      "desktop": {
-        "title": "桌面通知",
-        "enable_label": "启用桌面通知",
-        "enable_desc": "收到新消息时显示系统桌面通知",
-        "sound_label": "通知声音",
-        "sound_desc": "接收桌面通知时播放提示音",
-        "volume_label": "提示音音量",
-        "volume_desc": "调节桌面通知提示音的播放音量"
-      },
-      "content": {
-        "title": "通知内容",
-        "message_label": "显示消息内容",
-        "message_desc": "在通知中预览消息正文",
-        "sender_label": "显示发送者名称",
-        "sender_desc": "在通知中显示消息发送者"
-      },
-      "keyword": {
-        "title": "关键词提醒",
-        "enable_label": "启用关键词提醒",
-        "enable_desc": "当消息包含指定关键词时单独提醒",
-        "input_placeholder": "输入关键词后按回车添加",
-        "add": "添加关键词"
-      },
-      "thread": {
-        "title": "线程通知",
-        "mention_label": "线程中提及我时提醒",
-        "mention_desc": "当在线程消息中提及您时通知您"
-      },
-      "push_section": {
-        "title": "推送与规则",
-        "desc": "管理推送设备、规则和免打扰时间。"
-      },
-      "feedback": {
-        "permission_denied": "桌面通知权限未授予，无法启用桌面通知",
-        "desktop": "桌面通知已{state}",
-        "sound": "通知声音已{state}",
-        "message_content": "消息内容显示已{state}",
-        "sender_name": "发送者名称显示已{state}",
-        "keyword": "关键词提醒已{state}",
-        "keyword_added": "已添加关键词：{keyword}",
-        "keyword_removed": "已移除关键词：{keyword}",
-        "thread_mention": "线程提及提醒已{state}"
-      }
-    },
-    "private_chat": {
-      "title": "私密聊天",
-      "enable": "启用私密聊天",
-      "enable_desc": "开启后，可以使用私密聊天密码保护您的聊天内容。",
-      "password": "私密聊天密码",
-      "set_password": "设置密码",
-      "change_password": "修改密码",
-      "clear": "清除私密聊天",
-      "clear_desc": "清除密码并重置所有私密聊天设置。",
-      "hide_sessions": "隐藏会话",
-      "hide_sessions_desc": "启用后，私密会话将不会在列表中显示。",
-      "auto_lock": "自动锁定",
-      "auto_lock_desc": "开启后，一段时间未使用将自动锁定私密聊天。",
-      "lock_timeout": "锁定超时",
-      "1_minute": "1 分钟",
-      "5_minutes": "5 分钟",
-      "15_minutes": "15 分钟",
-      "30_minutes": "30 分钟",
-      "1_hour": "1 小时",
-      "confirm_password": "确认密码",
-      "password_placeholder": "请输入密码",
-      "confirm_password_placeholder": "请再次输入密码",
-      "password_required": "请输入密码",
-      "confirm_password_required": "请再次输入密码",
-      "password_mismatch": "两次输入的密码不一致",
-      "password_too_short": "密码长度不能少于4位",
-      "password_set_success": "私密聊天密码设置成功",
-      "password_set_failed": "私密聊天密码设置失败",
-      "clear_confirm_title": "确认清除",
-      "clear_confirm_content": "确定要清除私密聊天密码吗？这将重置所有私密聊天设置。",
-      "clear_success": "已清除私密聊天设置"
-    },
-    "security": {
-      "encryption_status": "加密状态",
-      "encryption_enabled_title": "端到端加密已启用",
-      "encryption_disabled_title": "端到端加密未启用",
-      "encryption_enabled_desc": "您的消息受到端到端加密保护",
-      "encryption_disabled_desc": "消息未加密，建议启用加密功能",
-      "recovery_key": "恢复密钥",
-      "backup_label": "安全备份",
-      "manage_backup": "管理备份",
-      "setup_backup": "设置备份",
-      "export_recovery_key": "导出恢复密钥",
-      "export_recovery_key_desc": "将恢复密钥导出到安全位置",
-      "export": "导出",
-      "privacy_settings": "隐私设置",
-      "show_online_status": "显示在线状态",
-      "show_online_status_desc": "允许其他用户看到您的在线状态",
-      "show_typing_status": "显示输入状态",
-      "show_typing_status_desc": "允许其他用户看到您正在输入",
-      "send_read_receipts": "显示已读回执",
-      "send_read_receipts_desc": "发送消息已读回执",
-      "ignored_users": "被忽略的用户",
-      "no_ignored_users": "没有忽略的用户",
-      "unignore": "取消忽略",
-      "blocked_users": "屏蔽用户",
-      "no_blocked_users": "没有屏蔽的用户",
-      "unblock": "取消屏蔽",
-      "add_blocked_user": "+ 添加屏蔽用户",
-      "add_blocked_user_title": "添加屏蔽用户",
-      "user_id_label": "用户 ID",
-      "user_id_placeholder": "{'@'}user:example.com",
-      "manage": "管理",
-      "private_chat_password_configured": "已设置密码保护",
-      "private_chat_password_not_configured": "未设置密码",
-      "private_chat_lock_timeout_desc": "选择私密聊天重新上锁的等待时间",
-      "add": "添加",
-      "private_chat_enabled": "已启用私密聊天",
-      "private_chat_disabled": "已关闭私密聊天",
-      "backup_not_enabled": "加密未启用",
-      "backup_count": "已备份 {count} 个密钥",
-      "backup_not_configured": "未设置备份",
-      "backup_setup_success": "安全备份设置成功",
-      "enable_encryption_first": "请先启用加密功能",
-      "keys_exported": "密钥已导出，请妥善保管",
-      "export_key_failed": "导出密钥失败",
-      "online_status_shown": "已显示在线状态",
-      "online_status_hidden": "已隐藏在线状态",
-      "typing_status_shown": "已显示输入状态",
-      "typing_status_hidden": "已隐藏输入状态",
-      "read_receipts_enabled": "已启用已读回执",
-      "read_receipts_disabled": "已禁用已读回执",
-      "ignored_user_removed": "已取消忽略该用户",
-      "operation_failed": "操作失败",
-      "input_user_id_required": "请输入用户 ID",
-      "user_already_blocked": "该用户已在屏蔽列表中",
-      "blocked_user_added": "已添加屏蔽用户",
-      "blocked_user_removed": "已取消屏蔽该用户",
-      "security_key_label": "安全密钥",
-      "security_key_configured_desc": "安全密钥已设置，你的加密密钥受到保护",
-      "security_key_not_configured_desc": "未设置安全密钥，建议设置以保护加密数据",
-      "setup_action": "设置",
-      "security_key_created": "安全密钥设置成功",
-      "secure_backup_label": "安全备份 (4S)",
-      "secure_backup_desc": "管理安全备份，保护加密密钥和交叉签名密钥"
-    },
-    "sessions": {
-      "current_device": "当前设备",
-      "current_device_fallback": "当前设备",
-      "other_devices": "其他设备",
-      "device_name": "设备名称",
-      "device_name_placeholder": "请输入设备名称",
-      "last_active": "最后活动",
-      "unknown": "未知",
-      "rename": "重命名",
-      "logout": "登出",
-      "unnamed_device": "未命名设备",
-      "no_other_devices": "没有其他设备",
-      "security_actions": "安全操作",
-      "logout_all_other_devices": "登出所有其他设备",
-      "logout_all_other_devices_desc": "登出除当前设备外的所有设备",
-      "logout_all_action": "登出全部",
-      "rename_device_title": "重命名设备",
-      "fetch_failed": "获取设备列表失败",
-      "enter_device_name": "请输入设备名称",
-      "device_name_updated": "设备名称已更新",
-      "rename_failed": "重命名失败",
-      "logout_device_title": "登出设备",
-      "logout_device_confirm": "确定要登出设备 \"{name}\" 吗？该设备将无法再访问您的账户。",
-      "logout_confirm": "确定登出",
-      "device_logged_out": "设备已登出",
-      "logout_failed": "登出失败",
-      "logout_all_confirm_with_count": "确定要登出所有其他设备吗？共 {count} 个设备将被登出。",
-      "all_other_devices_logged_out": "所有其他设备已登出",
-      "logout_all_failed": "批量登出失败",
-      "current": "当前会话",
-      "days_ago": "{count} 天前",
-      "hours_ago": "{count} 小时前",
-      "just_now": "刚刚",
-      "minutes_ago": "{count} 分钟前"
-    },
-    "appearance": {
-      "theme_auto": "跟随系统",
-      "theme_light": "浅色模式",
-      "theme_dark": "深色模式",
-      "theme_section": "主题",
-      "font_section": "字体设置",
-      "font_label": "字体",
-      "font_desc": "选择界面显示字体",
-      "font_size_label": "字体大小",
-      "font_size_desc": "调整界面字体大小",
-      "effects_section": "界面效果",
-      "window_shadow_label": "窗口阴影",
-      "window_shadow_desc": "为窗口添加阴影效果",
-      "blur_label": "模糊效果",
-      "blur_desc": "启用窗口模糊背景",
-      "bubble_section": "消息气泡",
-      "bubble_style_label": "气泡样式",
-      "bubble_style_desc": "选择消息气泡显示样式",
-      "bubble_rounded": "圆角",
-      "bubble_square": "方角",
-      "font_default": "默认字体",
-      "font_microsoft_yahei": "微软雅黑",
-      "font_pingfang_sc": "苹方",
-      "font_source_han_sans": "思源黑体",
-      "font_size_small": "小",
-      "font_size_standard": "标准",
-      "font_size_large": "大",
-      "font_size_extra_large": "超大",
-      "preview": {
-        "title": "实时预览",
-        "sample_text": "这是一段示例文字，用于预览当前主题效果。",
-        "button": "按钮",
-        "input_placeholder": "输入框",
-        "current_theme": "当前主题"
-      },
-      "feedback": {
-        "theme_changed": "主题已切换",
-        "font_changed": "字体已更改",
-        "font_size_changed": "字体大小已调整为 {size}",
-        "window_shadow_enabled": "已启用窗口阴影",
-        "window_shadow_disabled": "已禁用窗口阴影",
-        "blur_enabled": "已启用模糊效果",
-        "blur_disabled": "已禁用模糊效果",
-        "bubble_rounded": "已切换为圆角气泡",
-        "bubble_square": "已切换为方角气泡"
-      }
-    },
-    "friends": {
-      "common": {
-        "edit": "编辑",
-        "delete": "删除"
-      },
-      "requests": {
-        "title": "好友请求",
-        "allow_label": "允许接收好友请求",
-        "allow_desc": "其他用户可以向你发送好友请求",
-        "auto_accept_label": "自动接受好友请求",
-        "auto_accept_desc": "收到好友请求时自动接受",
-        "message_required_label": "好友请求需要附言",
-        "message_required_desc": "发送好友请求时必须附带留言"
-      },
-      "groups": {
-        "title": "好友分组",
-        "empty": "暂无好友分组",
-        "member_count": "{count}人",
-        "create_action": "+ 创建新分组",
-        "create_title": "创建好友分组",
-        "create_confirm": "创建",
-        "name_label": "分组名称",
-        "name_placeholder": "输入分组名称",
-        "edit_title": "编辑分组名称",
-        "edit_placeholder": "输入新的分组名称",
-        "name_required": "请输入分组名称",
-        "create_success": "分组创建成功",
-        "create_failed": "创建分组失败",
-        "rename_success": "分组名称已更新",
-        "rename_failed": "更新分组名称失败",
-        "delete_title": "删除分组",
-        "delete_confirm": "确定要删除分组\"{name}\"吗？分组内的好友不会被删除。",
-        "delete_confirm_action": "确定删除",
-        "delete_success": "分组已删除",
-        "delete_failed": "删除分组失败"
-      },
-      "pending": {
-        "title": "待处理请求",
-        "incoming_title": "📥 收到的请求 ({count})",
-        "incoming_empty": "暂无收到的好友请求",
-        "outgoing_title": "📤 发出的请求 ({count})",
-        "outgoing_empty": "暂无发出的好友请求",
-        "waiting": "等待中",
-        "accept": "接受",
-        "reject": "拒绝",
-        "accept_success": "已接受好友请求",
-        "accept_failed": "接受好友请求失败",
-        "reject_success": "已拒绝好友请求",
-        "reject_failed": "拒绝好友请求失败",
-        "cancel_success": "已取消好友请求",
-        "cancel_failed": "取消好友请求失败"
-      },
-      "feedback": {
-        "settings_updated": "设置已更新"
-      }
-    },
-    "burn_after_read": {
-      "global": {
-        "title": "全局设置",
-        "enabled_label": "全局默认开启阅后即焚",
-        "enabled_desc": "新私聊默认开启阅后即焚功能",
-        "duration_label": "默认焚毁时间",
-        "duration_desc": "消息阅后的默认焚毁倒计时",
-        "countdown_label": "显示焚毁倒计时",
-        "countdown_desc": "在消息上显示焚毁倒计时进度"
-      },
-      "stats": {
-        "title": "焚毁统计",
-        "total_burned": "总焚毁消息",
-        "total_pending": "待焚毁消息",
-        "rooms_enabled": "开启房间数"
-      },
-      "durations": {
-        "30_seconds": "30秒",
-        "1_minute": "1分钟",
-        "5_minutes": "5分钟",
-        "1_hour": "1小时",
-        "24_hours": "24小时"
-      },
-      "formats": {
-        "seconds": "{count}秒",
-        "minutes": "{count}分钟",
-        "hours": "{count}小时",
-        "days": "{count}天"
-      },
-      "dialogs": {
-        "enable_title": "开启阅后即焚",
-        "enable_content": "全局开启后，新私聊将默认启用阅后即焚。阅后即焚不能保证对方未截图或保存消息。",
-        "enable_confirm": "确定开启"
-      },
-      "feedback": {
-        "global_enabled": "已全局开启阅后即焚",
-        "global_disabled": "已全局关闭阅后即焚",
-        "duration_changed": "默认焚毁时间已设置为{duration}",
-        "settings_updated": "设置已更新"
-      },
-      "warning": "阅后即焚不能保证对方未截图或保存消息。服务器会在消息到期后删除，但无法控制客户端行为。"
-    },
-    "voice_video": {
-      "test_microphone": "测试麦克风",
-      "start_preview": "开始预览",
-      "audio_section": "音频设置",
-      "audio_input_label": "音频输入设备",
-      "audio_input_desc": "选择用于语音通话的麦克风",
-      "select_microphone": "选择麦克风",
-      "audio_test_label": "音频测试",
-      "audio_test_desc": "测试麦克风是否正常工作",
-      "stop_test": "停止测试",
-      "audio_level": "音量级别: {value}%",
-      "video_section": "视频设置",
-      "video_input_label": "视频输入设备",
-      "video_input_desc": "选择用于视频通话的摄像头",
-      "select_camera": "选择摄像头",
-      "preview_label": "视频预览",
-      "preview_desc": "预览摄像头画面",
-      "stop_preview": "停止预览",
-      "call_section": "通话设置",
-      "echo_cancellation_label": "回声消除",
-      "echo_cancellation_desc": "消除通话中的回声",
-      "noise_suppression_label": "噪声抑制",
-      "noise_suppression_desc": "降低背景噪声",
-      "auto_gain_label": "自动增益",
-      "auto_gain_desc": "自动调整麦克风音量",
-      "microphone_fallback": "麦克风 {id}",
-      "camera_fallback": "摄像头 {id}",
-      "load_devices_failed": "获取设备列表失败，请检查权限",
-      "microphone_test_started": "麦克风测试已开始",
-      "microphone_access_failed": "无法访问麦克风，请检查权限",
-      "preview_started": "视频预览已开始",
-      "camera_access_failed": "无法访问摄像头，请检查权限"
-    },
-    "mjolnir": {
-      "alert_info": "Mjolnir 是一个管理屏蔽列表的工具，支持房间、用户和服务器的屏蔽管理。",
-      "user_bans": "用户屏蔽",
-      "room_bans": "房间屏蔽",
-      "server_bans": "服务器屏蔽",
-      "add_user": "添加用户",
-      "add_room": "添加房间",
-      "add_server": "添加服务器",
-      "add": "添加",
-      "confirm": "确定",
-      "cancel": "取消",
-      "no_room_bans": "暂无房间屏蔽规则",
-      "no_user_bans": "暂无用户屏蔽规则",
-      "no_server_bans": "暂无服务器屏蔽规则",
-      "remove": "移除",
-      "reason": "原因",
-      "reason_optional": "屏蔽原因（可选）",
-      "room_id": "房间 ID",
-      "user_id": "用户 ID",
-      "server_name": "服务器名称",
-      "add_room_rule": "添加房间屏蔽规则",
-      "add_user_rule": "添加用户屏蔽规则",
-      "add_server_rule": "添加服务器屏蔽规则",
-      "enter_room_id": "请输入房间 ID",
-      "enter_user_id": "请输入用户 ID",
-      "enter_server_name": "请输入服务器名称",
-      "added_room_rule": "已添加房间屏蔽规则",
-      "added_user_rule": "已添加用户屏蔽规则",
-      "added_server_rule": "已添加服务器屏蔽规则",
-      "remove_rule_title": "移除屏蔽规则",
-      "remove_rule_confirm": "确定要移除对 {entity} 的屏蔽吗？",
-      "removed_room_rule": "已移除房间屏蔽规则",
-      "removed_user_rule": "已移除用户屏蔽规则",
-      "removed_server_rule": "已移除服务器屏蔽规则"
-    },
-    "keyboard": {
-      "global_title": "全局快捷键",
-      "global_label": "启用全局快捷键",
-      "global_desc": "在应用未激活时也能使用快捷键",
-      "list_title": "快捷键列表",
-      "custom_title": "自定义快捷键",
-      "screenshot_label": "截图快捷键",
-      "screenshot_desc": "设置截图功能的快捷键",
-      "open_main_panel_label": "打开主面板",
-      "open_main_panel_desc": "设置打开主面板的快捷键",
-      "reset": "恢复默认快捷键",
-      "edit_title": "编辑快捷键",
-      "edit_hint": "请按下新的快捷键组合...",
-      "enabled": "已启用全局快捷键",
-      "disabled": "已禁用全局快捷键",
-      "updated": "快捷键已更新",
-      "reset_success": "快捷键已恢复默认设置",
-      "conflict_error": "快捷键冲突，请选择其他组合",
-      "actions": {
-        "send_message": "发送消息",
-        "new_line": "换行",
-        "search": "搜索",
-        "new_session": "新建会话",
-        "close_session": "关闭会话",
-        "settings": "设置",
-        "quit_app": "退出应用",
-        "fullscreen": "全屏"
-      },
-      "descriptions": {
-        "send_message": "在聊天窗口发送消息",
-        "new_line": "在输入框中换行",
-        "search": "打开搜索功能",
-        "new_session": "创建新的聊天会话",
-        "close_session": "关闭当前会话窗口",
-        "settings": "打开设置页面",
-        "quit_app": "退出应用程序",
-        "fullscreen": "切换全屏模式"
-      }
-    },
-    "help_about": {
-      "about": "关于 Tjg",
-      "version": "版本",
-      "matrix_sdk_version": "Matrix SDK",
-      "check_update": "检查更新",
-      "checking": "检查中...",
-      "current_version": "当前版本",
-      "up_to_date": "已是最新版本",
-      "new_version_found": "发现新版本: {version}",
-      "update_now": "立即更新",
-      "links": "链接",
-      "matrix_website": "Matrix 官网",
-      "matrix_spec": "Matrix 规范",
-      "synapse_docs": "Synapse 文档",
-      "project_home": "项目主页",
-      "support": "支持",
-      "submit_feedback": "提交反馈",
-      "feedback_desc": "报告 Bug 或提出功能建议",
-      "feedback_action": "反馈",
-      "view_logs": "查看日志",
-      "view_logs_desc": "打开应用日志目录",
-      "open": "打开",
-      "technical_info": "技术信息",
-      "runtime_platform": "运行平台",
-      "platform_desktop": "Tauri Desktop",
-      "platform_web": "Web Browser",
-      "tauri_version": "Tauri 版本",
-      "vue_version": "Vue 版本",
-      "check_update_failed": "检查更新失败",
-      "open_logs_failed": "无法打开日志目录",
-      "open_logs_unsupported": "Web 版本暂不支持此功能"
-    },
-    "diagnostics": {
-      "title": "诊断信息",
-      "reset": "重置指标",
-      "api_avg_latency": "API 平均延迟",
-      "api_p95_latency": "API P95 延迟",
-      "api_total_calls": "API 调用总数",
-      "sync_count": "Sliding Sync 次数",
-      "sync_avg_duration": "同步平均耗时",
-      "replay_success_rate": "离线回放成功率",
-      "retry_rate": "重试触发率",
-      "retry_rate_abnormal_title": "重试率异常",
-      "retry_rate_abnormal_desc": "网络不稳定，当前重试率为 {rate}%"
     },
     "encryption": {
       "title": "加密设置",
@@ -6689,39 +6260,475 @@ export type I18nKeys = {
       "cross_signing_configured": "已配置",
       "trust_section": "设备信任"
     },
+    "friends": {
+      "common": {
+        "edit": "编辑",
+        "delete": "删除"
+      },
+      "requests": {
+        "title": "好友请求",
+        "allow_label": "允许接收好友请求",
+        "allow_desc": "其他用户可以向你发送好友请求",
+        "auto_accept_label": "自动接受好友请求",
+        "auto_accept_desc": "收到好友请求时自动接受",
+        "message_required_label": "好友请求需要附言",
+        "message_required_desc": "发送好友请求时必须附带留言"
+      },
+      "groups": {
+        "title": "好友分组",
+        "empty": "暂无好友分组",
+        "member_count": "{count}人",
+        "create_action": "+ 创建新分组",
+        "create_title": "创建好友分组",
+        "create_confirm": "创建",
+        "name_label": "分组名称",
+        "name_placeholder": "输入分组名称",
+        "edit_title": "编辑分组名称",
+        "edit_placeholder": "输入新的分组名称",
+        "name_required": "请输入分组名称",
+        "create_success": "分组创建成功",
+        "create_failed": "创建分组失败",
+        "rename_success": "分组名称已更新",
+        "rename_failed": "更新分组名称失败",
+        "delete_title": "删除分组",
+        "delete_confirm": "确定要删除分组\"{name}\"吗？分组内的好友不会被删除。",
+        "delete_confirm_action": "确定删除",
+        "delete_success": "分组已删除",
+        "delete_failed": "删除分组失败"
+      },
+      "pending": {
+        "title": "待处理请求",
+        "incoming_title": "📥 收到的请求 ({count})",
+        "incoming_empty": "暂无收到的好友请求",
+        "outgoing_title": "📤 发出的请求 ({count})",
+        "outgoing_empty": "暂无发出的好友请求",
+        "waiting": "等待中",
+        "accept": "接受",
+        "reject": "拒绝",
+        "accept_success": "已接受好友请求",
+        "accept_failed": "接受好友请求失败",
+        "reject_success": "已拒绝好友请求",
+        "reject_failed": "拒绝好友请求失败",
+        "cancel_success": "已取消好友请求",
+        "cancel_failed": "取消好友请求失败"
+      },
+      "feedback": {
+        "settings_updated": "设置已更新"
+      }
+    },
+    "shortcut": {
+      "send_message_shortcut_option": "按 {key} 键发送消息"
+    },
+    "keyboard": {
+      "global_title": "全局快捷键",
+      "global_label": "启用全局快捷键",
+      "global_desc": "在应用未激活时也能使用快捷键",
+      "list_title": "快捷键列表",
+      "custom_title": "自定义快捷键",
+      "screenshot_label": "截图快捷键",
+      "screenshot_desc": "设置截图功能的快捷键",
+      "open_main_panel_label": "打开主面板",
+      "open_main_panel_desc": "设置打开主面板的快捷键",
+      "reset": "恢复默认快捷键",
+      "edit_title": "编辑快捷键",
+      "edit_hint": "请按下新的快捷键组合...",
+      "enabled": "已启用全局快捷键",
+      "disabled": "已禁用全局快捷键",
+      "updated": "快捷键已更新",
+      "reset_success": "快捷键已恢复默认设置",
+      "conflict_error": "快捷键冲突，请选择其他组合",
+      "actions": {
+        "send_message": "发送消息",
+        "new_line": "换行",
+        "search": "搜索",
+        "new_session": "新建会话",
+        "close_session": "关闭会话",
+        "settings": "设置",
+        "quit_app": "退出应用",
+        "fullscreen": "全屏"
+      },
+      "descriptions": {
+        "send_message": "在聊天窗口发送消息",
+        "new_line": "在输入框中换行",
+        "search": "打开搜索功能",
+        "new_session": "创建新的聊天会话",
+        "close_session": "关闭当前会话窗口",
+        "settings": "打开设置页面",
+        "quit_app": "退出应用程序",
+        "fullscreen": "切换全屏模式"
+      }
+    },
+    "help_about": {
+      "about": "关于 Tjg",
+      "version": "版本",
+      "matrix_sdk_version": "Matrix SDK",
+      "check_update": "检查更新",
+      "checking": "检查中...",
+      "current_version": "当前版本",
+      "up_to_date": "已是最新版本",
+      "new_version_found": "发现新版本: {version}",
+      "update_now": "立即更新",
+      "links": "链接",
+      "matrix_website": "Matrix 官网",
+      "matrix_spec": "Matrix 规范",
+      "synapse_docs": "Synapse 文档",
+      "project_home": "项目主页",
+      "support": "支持",
+      "submit_feedback": "提交反馈",
+      "feedback_desc": "报告 Bug 或提出功能建议",
+      "feedback_action": "反馈",
+      "view_logs": "查看日志",
+      "view_logs_desc": "打开应用日志目录",
+      "open": "打开",
+      "technical_info": "技术信息",
+      "runtime_platform": "运行平台",
+      "platform_desktop": "Tauri Desktop",
+      "platform_web": "Web Browser",
+      "tauri_version": "Tauri 版本",
+      "vue_version": "Vue 版本",
+      "check_update_failed": "检查更新失败",
+      "open_logs_failed": "无法打开日志目录",
+      "open_logs_unsupported": "Web 版本暂不支持此功能"
+    },
+    "voice_video": {
+      "test_microphone": "测试麦克风",
+      "start_preview": "开始预览",
+      "audio_section": "音频设置",
+      "audio_input_label": "音频输入设备",
+      "audio_input_desc": "选择用于语音通话的麦克风",
+      "select_microphone": "选择麦克风",
+      "audio_test_label": "音频测试",
+      "audio_test_desc": "测试麦克风是否正常工作",
+      "stop_test": "停止测试",
+      "audio_level": "音量级别: {value}%",
+      "video_section": "视频设置",
+      "video_input_label": "视频输入设备",
+      "video_input_desc": "选择用于视频通话的摄像头",
+      "select_camera": "选择摄像头",
+      "preview_label": "视频预览",
+      "preview_desc": "预览摄像头画面",
+      "stop_preview": "停止预览",
+      "call_section": "通话设置",
+      "echo_cancellation_label": "回声消除",
+      "echo_cancellation_desc": "消除通话中的回声",
+      "noise_suppression_label": "噪声抑制",
+      "noise_suppression_desc": "降低背景噪声",
+      "auto_gain_label": "自动增益",
+      "auto_gain_desc": "自动调整麦克风音量",
+      "microphone_fallback": "麦克风 {id}",
+      "camera_fallback": "摄像头 {id}",
+      "load_devices_failed": "获取设备列表失败，请检查权限",
+      "microphone_test_started": "麦克风测试已开始",
+      "microphone_access_failed": "无法访问麦克风，请检查权限",
+      "preview_started": "视频预览已开始",
+      "camera_access_failed": "无法访问摄像头，请检查权限"
+    },
+    "storage": {
+      "title": "存储",
+      "desc": "查看并清理本地缓存数据，管理存储占用",
+      "sdk_store": "SDK 缓存统计",
+      "hit_rate": "命中率",
+      "hits": "命中次数",
+      "misses": "未命中次数",
+      "evictions": "淘汰条目数",
+      "total_entries": "缓存条目总数",
+      "memory_usage": "内存占用",
+      "browser_storage": "浏览器存储占用",
+      "browser_usage": "已用空间",
+      "browser_quota": "配额上限",
+      "cleanup": "清理缓存",
+      "clear_sdk": "清理 SDK 缓存数据",
+      "clear_sdk_desc": "清除 Matrix SDK 的本地存储（房间数据、加密密钥等），不影响账号与服务器数据",
+      "clear": "立即清理",
+      "processed_files": "已处理文件",
+      "processed_files_unit": "{count} 个",
+      "total_size": "累计大小",
+      "path_type_default": "默认目录",
+      "path_type_custom": "自定义目录",
+      "fetching_directory": "正在获取目录路径...",
+      "select_directory": "选择目录",
+      "start_scan": "开始扫描",
+      "scanning": "扫描中...",
+      "select_directory_title": "选择要扫描的目录",
+      "select_directory_error": "选择目录失败"
+    },
+    "security": {
+      "encryption_status": "加密状态",
+      "encryption_enabled_title": "端到端加密已启用",
+      "encryption_disabled_title": "端到端加密未启用",
+      "encryption_enabled_desc": "您的消息受到端到端加密保护",
+      "encryption_disabled_desc": "消息未加密，建议启用加密功能",
+      "recovery_key": "恢复密钥",
+      "backup_label": "安全备份",
+      "manage_backup": "管理备份",
+      "setup_backup": "设置备份",
+      "export_recovery_key": "导出恢复密钥",
+      "export_recovery_key_desc": "将恢复密钥导出到安全位置",
+      "export": "导出",
+      "privacy_settings": "隐私设置",
+      "show_online_status": "显示在线状态",
+      "show_online_status_desc": "允许其他用户看到您的在线状态",
+      "show_typing_status": "显示输入状态",
+      "show_typing_status_desc": "允许其他用户看到您正在输入",
+      "send_read_receipts": "显示已读回执",
+      "send_read_receipts_desc": "发送消息已读回执",
+      "ignored_users": "被忽略的用户",
+      "no_ignored_users": "没有忽略的用户",
+      "unignore": "取消忽略",
+      "blocked_users": "屏蔽用户",
+      "no_blocked_users": "没有屏蔽的用户",
+      "unblock": "取消屏蔽",
+      "add_blocked_user": "+ 添加屏蔽用户",
+      "add_blocked_user_title": "添加屏蔽用户",
+      "user_id_label": "用户 ID",
+      "user_id_placeholder": "{'@'}user:example.com",
+      "manage": "管理",
+      "private_chat_password_configured": "已设置密码保护",
+      "private_chat_password_not_configured": "未设置密码",
+      "private_chat_lock_timeout_desc": "选择私密聊天重新上锁的等待时间",
+      "add": "添加",
+      "private_chat_enabled": "已启用私密聊天",
+      "private_chat_disabled": "已关闭私密聊天",
+      "backup_not_enabled": "加密未启用",
+      "backup_count": "已备份 {count} 个密钥",
+      "backup_not_configured": "未设置备份",
+      "backup_setup_success": "安全备份设置成功",
+      "enable_encryption_first": "请先启用加密功能",
+      "keys_exported": "密钥已导出，请妥善保管",
+      "export_key_failed": "导出密钥失败",
+      "online_status_shown": "已显示在线状态",
+      "online_status_hidden": "已隐藏在线状态",
+      "typing_status_shown": "已显示输入状态",
+      "typing_status_hidden": "已隐藏输入状态",
+      "read_receipts_enabled": "已启用已读回执",
+      "read_receipts_disabled": "已禁用已读回执",
+      "ignored_user_removed": "已取消忽略该用户",
+      "operation_failed": "操作失败",
+      "input_user_id_required": "请输入用户 ID",
+      "user_already_blocked": "该用户已在屏蔽列表中",
+      "blocked_user_added": "已添加屏蔽用户",
+      "blocked_user_removed": "已取消屏蔽该用户",
+      "security_key_label": "安全密钥",
+      "security_key_configured_desc": "安全密钥已设置，你的加密密钥受到保护",
+      "security_key_not_configured_desc": "未设置安全密钥，建议设置以保护加密数据",
+      "setup_action": "设置",
+      "security_key_created": "安全密钥设置成功",
+      "secure_backup_label": "安全备份 (4S)",
+      "secure_backup_desc": "管理安全备份，保护加密密钥和交叉签名密钥"
+    },
+    "burn_after_read": {
+      "global": {
+        "title": "全局设置",
+        "enabled_label": "全局默认开启阅后即焚",
+        "enabled_desc": "新私聊默认开启阅后即焚功能",
+        "duration_label": "默认焚毁时间",
+        "duration_desc": "消息阅后的默认焚毁倒计时",
+        "countdown_label": "显示焚毁倒计时",
+        "countdown_desc": "在消息上显示焚毁倒计时进度"
+      },
+      "stats": {
+        "title": "焚毁统计",
+        "total_burned": "总焚毁消息",
+        "total_pending": "待焚毁消息",
+        "rooms_enabled": "开启房间数"
+      },
+      "durations": {
+        "30_seconds": "30秒",
+        "1_minute": "1分钟",
+        "5_minutes": "5分钟",
+        "1_hour": "1小时",
+        "24_hours": "24小时"
+      },
+      "formats": {
+        "seconds": "{count}秒",
+        "minutes": "{count}分钟",
+        "hours": "{count}小时",
+        "days": "{count}天"
+      },
+      "dialogs": {
+        "enable_title": "开启阅后即焚",
+        "enable_content": "全局开启后，新私聊将默认启用阅后即焚。阅后即焚不能保证对方未截图或保存消息。",
+        "enable_confirm": "确定开启"
+      },
+      "feedback": {
+        "global_enabled": "已全局开启阅后即焚",
+        "global_disabled": "已全局关闭阅后即焚",
+        "duration_changed": "默认焚毁时间已设置为{duration}",
+        "settings_updated": "设置已更新"
+      },
+      "warning": "阅后即焚不能保证对方未截图或保存消息。服务器会在消息到期后删除，但无法控制客户端行为。"
+    },
+    "general": {
+      "chat": {
+        "translate_options": {
+          "tencent": "腾讯云翻译",
+          "youdao": "有道云翻译"
+        }
+      },
+      "ui": {
+        "font_options": {
+          "PingFang": "苹方",
+          "AliFangYuan": "阿里妈妈方圆体"
+        }
+      }
+    },
+    "preferences": {
+      "language_section": "语言",
+      "interface_language_label": "界面语言",
+      "interface_language_desc": "选择应用显示语言",
+      "language_auto": "自动检测",
+      "language_zh_cn": "简体中文",
+      "language_zh_tw": "繁體中文",
+      "language_en": "English",
+      "language_ja": "日本語",
+      "startup_storage_section": "启动与存储",
+      "auto_login_label": "自动登录",
+      "auto_login_desc": "启动应用后自动恢复上次登录状态",
+      "auto_startup_label": "开机启动",
+      "auto_startup_desc": "系统启动后自动启动桌面端应用",
+      "storage_directory_label": "本地存储目录",
+      "storage_directory_desc": "统一管理扫描目录并查看当前空间占用",
+      "storage_disk_usage": "磁盘占用 {percentage}%",
+      "storage_scan_progress": "扫描进度 {percentage}%",
+      "messaging_section": "消息发送",
+      "send_key_label": "发送键",
+      "send_key_desc": "选择发送消息的快捷键",
+      "send_key_ctrl_enter": "Ctrl + Enter",
+      "send_key_shift_enter": "Shift + Enter",
+      "message_confirm_label": "消息确认",
+      "message_confirm_desc": "发送前显示确认对话框",
+      "recall_time_label": "消息撤回时间",
+      "recall_time_desc": "设置消息可撤回的时间窗口",
+      "recall_2_minutes": "2 分钟",
+      "recall_5_minutes": "5 分钟",
+      "recall_10_minutes": "10 分钟",
+      "link_preview_section": "链接预览",
+      "link_preview_label": "启用链接预览",
+      "link_preview_desc": "自动生成消息中链接的预览",
+      "emoji_section": "表情符号",
+      "emoji_convert_label": "自动转换表情",
+      "emoji_convert_desc": "将 :) 等符号自动转换为表情",
+      "emoji_size_label": "表情大小",
+      "emoji_size_desc": "设置消息中表情的显示大小",
+      "emoji_small": "小",
+      "emoji_medium": "中",
+      "emoji_large": "大",
+      "burn_defaults_section": "阅后即焚默认",
+      "burn_default_enabled_label": "新私聊默认开启阅后即焚",
+      "burn_default_enabled_desc": "创建新私聊时自动开启阅后即焚",
+      "burn_default_duration_label": "默认焚毁时间",
+      "burn_default_duration_desc": "阅后即焚消息的默认焚毁时间",
+      "burn_show_countdown_label": "显示焚毁倒计时",
+      "burn_show_countdown_desc": "在消息上显示焚毁倒计时进度",
+      "thread_section": "线程偏好",
+      "thread_auto_subscribe_label": "参与线程时自动订阅",
+      "thread_auto_subscribe_desc": "在线程中发送消息后自动订阅该线程",
+      "thread_show_in_room_label": "在房间内显示线程入口",
+      "thread_show_in_room_desc": "在消息列表中显示线程入口图标",
+      "thread_notification_label": "线程通知级别",
+      "thread_notification_desc": "控制线程消息的通知行为",
+      "space_section": "空间偏好",
+      "space_auto_join_label": "加入空间时自动加入其房间",
+      "space_auto_join_desc": "加入空间后自动加入其中的所有房间",
+      "space_show_subspaces_label": "显示子空间",
+      "space_show_subspaces_desc": "在空间列表中显示嵌套的子空间",
+      "space_notification_label": "空间默认通知",
+      "space_notification_desc": "新加入空间的默认通知级别",
+      "privacy_section": "隐私偏好",
+      "read_receipts_label": "发送已读回执",
+      "read_receipts_desc": "让对方知道你已读消息",
+      "typing_notifications_label": "发送输入状态",
+      "typing_notifications_desc": "让对方看到你正在输入",
+      "notification_all_messages": "所有消息",
+      "notification_participating_only": "仅参与的",
+      "notification_mentions_only": "仅提及",
+      "notification_none": "无通知",
+      "feedback": {
+        "enabled": "已启用{label}",
+        "disabled": "已禁用{label}",
+        "option_set": "{label}已设置为 {value}",
+        "read_auto_startup_failed": "读取开机启动状态失败",
+        "initialize_storage_scan_failed": "初始化存储扫描失败",
+        "auto_startup_change_failed": "设置开机启动失败"
+      }
+    },
+    "mjolnir": {
+      "alert_info": "Mjolnir 是一个管理屏蔽列表的工具，支持房间、用户和服务器的屏蔽管理。",
+      "user_bans": "用户屏蔽",
+      "room_bans": "房间屏蔽",
+      "server_bans": "服务器屏蔽",
+      "add_user": "添加用户",
+      "add_room": "添加房间",
+      "add_server": "添加服务器",
+      "add": "添加",
+      "confirm": "确定",
+      "cancel": "取消",
+      "no_room_bans": "暂无房间屏蔽规则",
+      "no_user_bans": "暂无用户屏蔽规则",
+      "no_server_bans": "暂无服务器屏蔽规则",
+      "remove": "移除",
+      "reason": "原因",
+      "reason_optional": "屏蔽原因（可选）",
+      "room_id": "房间 ID",
+      "user_id": "用户 ID",
+      "server_name": "服务器名称",
+      "add_room_rule": "添加房间屏蔽规则",
+      "add_user_rule": "添加用户屏蔽规则",
+      "add_server_rule": "添加服务器屏蔽规则",
+      "enter_room_id": "请输入房间 ID",
+      "enter_user_id": "请输入用户 ID",
+      "enter_server_name": "请输入服务器名称",
+      "added_room_rule": "已添加房间屏蔽规则",
+      "added_user_rule": "已添加用户屏蔽规则",
+      "added_server_rule": "已添加服务器屏蔽规则",
+      "remove_rule_title": "移除屏蔽规则",
+      "remove_rule_confirm": "确定要移除对 {entity} 的屏蔽吗？",
+      "removed_room_rule": "已移除房间屏蔽规则",
+      "removed_user_rule": "已移除用户屏蔽规则",
+      "removed_server_rule": "已移除服务器屏蔽规则"
+    },
+    "private_chat": {
+      "title": "私密聊天",
+      "enable": "启用私密聊天",
+      "enable_desc": "开启后，可以使用私密聊天密码保护您的聊天内容。",
+      "password": "私密聊天密码",
+      "set_password": "设置密码",
+      "change_password": "修改密码",
+      "clear": "清除私密聊天",
+      "clear_desc": "清除密码并重置所有私密聊天设置。",
+      "hide_sessions": "隐藏会话",
+      "hide_sessions_desc": "启用后，私密会话将不会在列表中显示。",
+      "auto_lock": "自动锁定",
+      "auto_lock_desc": "开启后，一段时间未使用将自动锁定私密聊天。",
+      "lock_timeout": "锁定超时",
+      "1_minute": "1 分钟",
+      "5_minutes": "5 分钟",
+      "15_minutes": "15 分钟",
+      "30_minutes": "30 分钟",
+      "1_hour": "1 小时",
+      "confirm_password": "确认密码",
+      "password_placeholder": "请输入密码",
+      "confirm_password_placeholder": "请再次输入密码",
+      "password_required": "请输入密码",
+      "confirm_password_required": "请再次输入密码",
+      "password_mismatch": "两次输入的密码不一致",
+      "password_too_short": "密码长度不能少于4位",
+      "password_set_success": "私密聊天密码设置成功",
+      "password_set_failed": "私密聊天密码设置失败",
+      "clear_confirm_title": "确认清除",
+      "clear_confirm_content": "确定要清除私密聊天密码吗？这将重置所有私密聊天设置。",
+      "clear_success": "已清除私密聊天设置"
+    },
     "threepid": {
-      "add": "添加绑定",
       "unbind": "解绑",
-      "email_placeholder": "请输入邮箱地址",
       "phone_placeholder": "请输入手机号码",
       "emails_title": "邮箱",
+      "region_label": "地区",
+      "add": "添加绑定",
       "no_emails": "暂无邮箱",
-      "no_phones": "暂无手机号",
+      "email_placeholder": "请输入邮箱地址",
       "phones_title": "手机号",
-      "region_label": "地区"
-    },
-    "invite_permission": {
-      "title": "邀请权限管理",
-      "mode": {
-        "allow_all": "允许所有人邀请",
-        "blocklist": "黑名单模式",
-        "allowlist": "白名单模式"
-      },
-      "blocklist": {
-        "title": "邀请黑名单"
-      },
-      "allowlist": {
-        "title": "邀请白名单"
-      },
-      "user_id_placeholder": "{'@'}user:example.com",
-      "add": "添加",
-      "dm_section": "私聊",
-      "allow_strangers": "允许非联系人私聊",
-      "allow_strangers_hint": "关闭后，不在好友列表里的人发起的私聊邀请会被自动拒绝",
-      "allow_strangers_inactive": "仅白名单模式忽略此开关（白名单之外一律拒）；黑名单模式下名单之外的人仍由它决定",
-      "encrypt_new_dm": "新私聊默认加密",
-      "encrypt_new_dm_hint": "新建私聊时默认开启端到端加密",
-      "save_failed": "邀请权限保存失败"
+      "no_phones": "暂无手机号"
     }
   },
   "space": {
@@ -6978,18 +6985,19 @@ export type I18nKeys = {
   },
   "voice": {},
   "voip": {
+    "outgoing": {
+      "cancel": "取消呼叫"
+    },
     "states": {
       "ringing_outgoing": "正在呼叫...",
       "connected": "通话中"
     },
-    "incoming": {
-      "video_call": "视频来电",
-      "voice_call": "语音来电",
-      "answer": "接听",
-      "decline": "拒绝"
-    },
-    "outgoing": {
-      "cancel": "取消呼叫"
+    "unknown": "未知",
+    "call": {
+      "hangup": "挂断",
+      "mute": "静音",
+      "speaker": "扬声器",
+      "switch_camera": "翻转摄像头"
     },
     "errors": {
       "voip_unavailable": "VoIP 服务不可用",
@@ -7001,12 +7009,11 @@ export type I18nKeys = {
       "video_failed": "切换视频失败",
       "screenshare_failed": "屏幕共享失败"
     },
-    "call": {
-      "hangup": "挂断",
-      "mute": "静音",
-      "speaker": "扬声器",
-      "switch_camera": "翻转摄像头"
-    },
-    "unknown": "未知"
+    "incoming": {
+      "video_call": "视频来电",
+      "voice_call": "语音来电",
+      "answer": "接听",
+      "decline": "拒绝"
+    }
   }
 }

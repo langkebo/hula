@@ -1,16 +1,17 @@
 {
+  "outgoing": {
+    "cancel": "Cancel Call"
+  },
   "states": {
     "ringing_outgoing": "Calling...",
     "connected": "In call"
   },
-  "incoming": {
-    "video_call": "Video Call",
-    "voice_call": "Voice Call",
-    "answer": "Answer",
-    "decline": "Decline"
-  },
-  "outgoing": {
-    "cancel": "Cancel Call"
+  "unknown": "Unknown",
+  "call": {
+    "hangup": "Hang Up",
+    "mute": "Mute",
+    "speaker": "Speaker",
+    "switch_camera": "Switch Camera"
   },
   "errors": {
     "voip_unavailable": "VoIP service unavailable",
@@ -22,11 +23,10 @@
     "video_failed": "Video toggle failed",
     "screenshare_failed": "Screen share failed"
   },
-  "call": {
-    "hangup": "Hang Up",
-    "mute": "Mute",
-    "speaker": "Speaker",
-    "switch_camera": "Switch Camera"
-  },
-  "unknown": "Unknown"
+  "incoming": {
+    "video_call": "Video Call",
+    "voice_call": "Voice Call",
+    "answer": "Answer",
+    "decline": "Decline"
+  }
 }

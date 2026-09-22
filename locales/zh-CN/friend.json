@@ -1,43 +1,57 @@
 {
-  "list": {
-    "title": "好友列表",
-    "search": "搜索好友",
-    "empty": "暂无好友",
-    "capability_unavailable_title": "当前服务端未开启好友能力",
-    "capability_unavailable_description": "请联系管理员开启好友能力后再使用好友列表与请求功能。",
-    "online": "在线",
-    "offline": "离线",
-    "friend_list_label": "好友列表",
-    "new_request_announcement": "收到 {count} 条新的好友请求",
-    "pending_requests": "{count} 条待处理好友请求",
-    "view_all": "查看全部"
-  },
-  "filter": {
-    "all": "全部",
-    "favorite": "收藏",
-    "normal": "普通",
-    "blocked": "已屏蔽",
-    "hidden": "已隐藏"
-  },
   "status": {
     "normal": "普通好友",
     "favorite": "收藏好友",
     "blocked": "已屏蔽",
     "hidden": "已隐藏"
   },
+  "local_user": "本地用户",
   "request": {
-    "accept": "接受",
-    "reject": "拒绝",
     "success": {
       "accept": "已接受好友请求",
       "reject": "已拒绝好友请求"
     },
+    "expires_in": "{count} 秒后过期",
+    "reject": "拒绝",
+    "expired": "请求已过期",
     "error": {
       "accept": "接受好友请求失败",
       "reject": "拒绝好友请求失败"
     },
-    "expired": "请求已过期",
-    "expires_in": "{count} 秒后过期"
+    "accept": "接受"
+  },
+  "search": {
+    "history": "最近搜索",
+    "clear_history": "清空历史",
+    "clear_current": "清除搜索",
+    "searching": "正在更新搜索结果...",
+    "result_count": "“{keyword}” 共匹配到 {count} 位好友",
+    "filter_result_count": "{filter} 共 {count} 位好友",
+    "empty_title": "未找到匹配的好友",
+    "empty_description": "没有找到与 “{keyword}” 相关的好友，试试其他关键词。"
+  },
+  "group": {
+    "title": "好友分组",
+    "search": "搜索分组",
+    "empty": "暂无分组",
+    "empty_search": "没有匹配的分组",
+    "result_count": "“{keyword}” 共匹配到 {count} 个分组",
+    "create": "创建分组",
+    "name_placeholder": "请输入分组名称",
+    "member_count": "{count} 位成员",
+    "rename": "重命名",
+    "delete": "删除分组",
+    "create_success": "分组创建成功",
+    "create_failed": "创建分组失败",
+    "rename_success": "重命名成功",
+    "rename_failed": "重命名失败",
+    "delete_success": "分组已删除",
+    "delete_failed": "删除分组失败",
+    "load_failed": "加载分组失败",
+    "section": {
+      "favorite": "星标好友",
+      "ungrouped": "未分组"
+    }
   },
   "add": {
     "title": "添加好友",
@@ -59,6 +73,28 @@
     "suggestions": "推荐好友",
     "request_pending": "已发送过好友请求，等待对方处理"
   },
+  "filter": {
+    "all": "全部",
+    "favorite": "收藏",
+    "normal": "普通",
+    "blocked": "已屏蔽",
+    "hidden": "已隐藏"
+  },
+  "context": {
+    "send_message": "发消息",
+    "encrypted_chat": "加密聊天",
+    "secret_chat": "设为私密好友",
+    "set_note": "设置备注",
+    "set_display_name": "设置显示名",
+    "set_favorite": "设为收藏",
+    "set_normal": "设为普通",
+    "set_blocked": "屏蔽好友",
+    "remove": "删除好友",
+    "friend_offline": "对方当前离线，无法发起通话",
+    "video_call": "视频通话",
+    "voice_call": "语音通话"
+  },
+  "federated_user": "联邦用户",
   "detail": {
     "title": "好友详情",
     "last_seen": "最后活跃",
@@ -105,56 +141,20 @@
     "matrix_id": "Matrix ID",
     "server_address": "服务器地址"
   },
-  "context": {
-    "send_message": "发消息",
-    "encrypted_chat": "加密聊天",
-    "secret_chat": "设为私密好友",
-    "set_note": "设置备注",
-    "set_display_name": "设置显示名",
-    "set_favorite": "设为收藏",
-    "set_normal": "设为普通",
-    "set_blocked": "屏蔽好友",
-    "remove": "删除好友",
-    "friend_offline": "对方当前离线，无法发起通话",
-    "video_call": "视频通话",
-    "voice_call": "语音通话"
-  },
   "secret_chat": {
     "success": "已设为私密好友"
   },
-  "search": {
-    "history": "最近搜索",
-    "clear_history": "清空历史",
-    "clear_current": "清除搜索",
-    "searching": "正在更新搜索结果...",
-    "result_count": "“{keyword}” 共匹配到 {count} 位好友",
-    "filter_result_count": "{filter} 共 {count} 位好友",
-    "empty_title": "未找到匹配的好友",
-    "empty_description": "没有找到与 “{keyword}” 相关的好友，试试其他关键词。"
-  },
-  "group": {
-    "title": "好友分组",
-    "search": "搜索分组",
-    "empty": "暂无分组",
-    "empty_search": "没有匹配的分组",
-    "result_count": "“{keyword}” 共匹配到 {count} 个分组",
-    "create": "创建分组",
-    "name_placeholder": "请输入分组名称",
-    "member_count": "{count} 位成员",
-    "rename": "重命名",
-    "delete": "删除分组",
-    "create_success": "分组创建成功",
-    "create_failed": "创建分组失败",
-    "rename_success": "重命名成功",
-    "rename_failed": "重命名失败",
-    "delete_success": "分组已删除",
-    "delete_failed": "删除分组失败",
-    "load_failed": "加载分组失败",
-    "section": {
-      "favorite": "星标好友",
-      "ungrouped": "未分组"
-    }
-  },
-  "federated_user": "联邦用户",
-  "local_user": "本地用户"
+  "list": {
+    "title": "好友列表",
+    "search": "搜索好友",
+    "empty": "暂无好友",
+    "capability_unavailable_title": "当前服务端未开启好友能力",
+    "capability_unavailable_description": "请联系管理员开启好友能力后再使用好友列表与请求功能。",
+    "online": "在线",
+    "offline": "离线",
+    "friend_list_label": "好友列表",
+    "new_request_announcement": "收到 {count} 条新的好友请求",
+    "pending_requests": "{count} 条待处理好友请求",
+    "view_all": "查看全部"
+  }
 }

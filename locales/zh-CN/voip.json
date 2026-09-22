@@ -1,16 +1,17 @@
 {
+  "outgoing": {
+    "cancel": "取消呼叫"
+  },
   "states": {
     "ringing_outgoing": "正在呼叫...",
     "connected": "通话中"
   },
-  "incoming": {
-    "video_call": "视频来电",
-    "voice_call": "语音来电",
-    "answer": "接听",
-    "decline": "拒绝"
-  },
-  "outgoing": {
-    "cancel": "取消呼叫"
+  "unknown": "未知",
+  "call": {
+    "hangup": "挂断",
+    "mute": "静音",
+    "speaker": "扬声器",
+    "switch_camera": "翻转摄像头"
   },
   "errors": {
     "voip_unavailable": "VoIP 服务不可用",
@@ -22,11 +23,10 @@
     "video_failed": "切换视频失败",
     "screenshare_failed": "屏幕共享失败"
   },
-  "call": {
-    "hangup": "挂断",
-    "mute": "静音",
-    "speaker": "扬声器",
-    "switch_camera": "翻转摄像头"
-  },
-  "unknown": "未知"
+  "incoming": {
+    "video_call": "视频来电",
+    "voice_call": "语音来电",
+    "answer": "接听",
+    "decline": "拒绝"
+  }
 }

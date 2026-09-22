@@ -1,185 +1,9 @@
 {
-  "loading": {
-    "app": "加载应用中...",
-    "left_panel": "加载左侧面板...",
-    "data": "加载数据中...",
-    "right_panel": "加载右侧面板..."
-  },
-  "action": {
-    "message": "消息列表",
-    "message_short_title": "消息",
-    "contact": "好友列表",
-    "contact_short_title": "好友",
-    "file_manager": "文件管理器",
-    "file_manager_short_title": "文件",
-    "favorite": "收藏列表",
-    "favorite_short_title": "收藏",
-    "plugin": "插件",
-    "plugin_manage": "插件管理",
-    "more": "更多",
-    "opened": "已打开"
-  },
-  "plugins": {
-    "room_list": "房间列表",
-    "room_list_short_title": "房间",
-    "room_detail": {
-      "just_now": "刚刚",
-      "yesterday": "昨天",
-      "mute": "免打扰"
-    },
-    "space_list": "空间列表",
-    "space_list_short_title": "空间",
-    "federation": "联邦",
-    "federation_short_title": "联邦",
-    "federation_loading": "正在加载联邦服务器...",
-    "federation_empty": "暂无联邦服务器",
-    "status": {
-      "builtin": "已内置",
-      "uninstalling": "卸载中"
-    },
-    "actions": {
-      "install": "安装",
-      "pin": "固定侧边栏",
-      "unpin": "取消固定",
-      "uninstall": "卸载"
-    }
-  },
-  "chat_reaction": {
-    "like": "好赞",
-    "unsatisfied": "不满",
-    "heart": "爱心",
-    "angry": "愤怒",
-    "party": "礼炮",
-    "rocket": "火箭",
-    "lol": "笑哭",
-    "clap": "鼓掌",
-    "flower": "鲜花",
-    "bomb": "炸弹",
-    "question": "疑问",
-    "victory": "胜利",
-    "light": "灯光",
-    "red_envelope": "红包"
-  },
-  "chat_details": {
-    "single": {
-      "empty_signature": "这个人很高冷，暂时没有留下什么",
-      "region": "地区：{place}",
-      "unknown": "未知",
-      "friend_info_missing": "无法获取好友信息",
-      "footer": {
-        "audio_call": "打电话",
-        "video_call": "打视频"
-      }
-    },
-    "group": {
-      "name_label": "房间名称",
-      "edit_name": "编辑房间名称",
-      "announcement": {
-        "label": "群公告",
-        "window_title": "查看群公告"
-      }
-    },
-    "actions": {
-      "message": "进入聊天"
-    }
-  },
-  "chat_header": {
-    "federated": "联邦房间",
-    "federated_tooltip": "联邦房间 · 由 {server} 提供服务",
-    "meeting_widget_name": "房间会议",
-    "member_count": "{count} 位成员",
-    "channel": "频道",
-    "message_setting": {
-      "receive_no_alert": "接收消息但不提醒",
-      "shield": "屏蔽消息"
-    },
-    "chat_info": "聊天信息",
-    "clear_messages": "清除消息",
-    "clear_messages_confirm_message": "确定清除所有消息？",
-    "delete_friend": "删除好友",
-    "delete_friend_confirm": "确定删除该好友？",
-    "delete_room": "删除房间",
-    "delete_room_confirm": "确定删除该房间？",
-    "group_info": "群信息",
-    "group_members": "群成员",
-    "group_name": "群名称",
-    "group_qr_code": "群二维码",
-    "input_group_name": "输入群名称…",
-    "input_my_name": "输入我的名称…",
-    "input_remark": "输入备注…",
-    "my_name_in_group": "我在群中的名称",
-    "pin_room": "固定房间",
-    "remark": "备注",
-    "share_qr_code": "分享二维码"
-  },
-  "manage_group_member": {
-    "title": "管理群成员",
-    "search_placeholder_mobile": "搜索成员~",
-    "search_placeholder_pc": "搜索群成员",
-    "selected_count": "已选择 {count} 人",
-    "remove_button": "踢出群聊",
-    "dialog_negative": "取消",
-    "dialog_positive": "确定",
-    "remove_confirm": "确定要踢出 {count} 位成员吗？",
-    "channel_not_allowed": "频道不允许踢出成员",
-    "select_member_warning": "请选择要踢出的成员",
-    "remove_success": "成功踢出 {count} 位成员",
-    "remove_failed": "踢出失败，请重试",
-    "confirm_remove_title": "确认踢出",
-    "channel_manage_unsupported": "频道不支持管理成员"
-  },
-  "profile_card": {
-    "online_status": "在线状态",
-    "status": {
-      "online": "在线",
-      "offline": "离线",
-      "away": "离开",
-      "busy": "忙碌"
-    },
-    "labels": {
-      "account": "账号",
-      "sex": "性别",
-      "bio": "个人简介",
-      "region": "地区",
-      "birthday": "生日",
-      "male": "男",
-      "female": "女"
-    },
-    "tooltip": {
-      "copy_account": "复制账号"
-    },
-    "buttons": {
-      "edit": "编辑资料",
-      "message": "发信息",
-      "add_friend": "加好友",
-      "mention": "@提及"
-    },
-    "notification": {
-      "copy_success": "复制成功 {account}",
-      "copy_copied": "已复制"
-    },
-    "presence": {
-      "activeNow": "刚刚活跃",
-      "activeMinutes": "{minutes} 分钟前活跃",
-      "activeHours": "{hours} 小时前活跃",
-      "activeDays": "{days} 天前活跃"
-    },
-    "error": {
-      "title": "资料加载失败",
-      "desc": "暂时无法获取该用户资料，请稍后重试"
-    }
-  },
   "profile_edit": {
+    "actions": {
+      "save": "保存"
+    },
     "title": "编辑资料",
-    "avatar": {
-      "change": "更换头像",
-      "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb",
-      "choose_from_gallery": "从头像库选择"
-    },
-    "badge": {
-      "current": "当前佩戴的徽章:",
-      "wear": "佩戴"
-    },
     "form": {
       "nickname": {
         "label": "昵称",
@@ -187,9 +11,6 @@
         "remaining": "剩余改名次数: {count}",
         "unlimited": "改名次数: 无限制"
       }
-    },
-    "actions": {
-      "save": "保存"
     },
     "toast": {
       "avatar_update_success": "头像更新成功",
@@ -199,106 +20,22 @@
       "badge_wear_success": "佩戴成功",
       "badge_wear_failed": "佩戴失败，请稍后重试",
       "save_failed": "保存失败"
+    },
+    "badge": {
+      "current": "当前佩戴的徽章:",
+      "wear": "佩戴"
+    },
+    "avatar": {
+      "change": "更换头像",
+      "tips": "建议大小180 * 180像素，支持JPG、PNG、WEBP等格式，图片需小于500kb",
+      "choose_from_gallery": "从头像库选择"
     }
   },
-  "chat_sidebar": {
-    "announcement": {
-      "title": "群公告须知",
-      "load_failed": "公告加载失败，请重试",
-      "default": "请不要把重要信息发到该群，网络不是法外之地，请遵守网络规范，否则直接删除。"
-    },
-    "actions": {
-      "retry": "重试"
-    },
-    "online_members": "在线成员 {count}",
-    "search": {
-      "placeholder": "搜索"
-    },
-    "roles": {
-      "owner": "群主",
-      "admin": "管理员",
-      "member": "普通成员"
-    },
-    "empty": {
-      "no_chat_selected": "未选择会话",
-      "select_to_start": "选择一个会话或发起新聊天",
-      "pins": "暂无置顶消息",
-      "files": "暂无文件"
-    },
-    "toggle": {
-      "expand": "展开信息面板",
-      "collapse": "收起信息面板"
-    },
-    "tabs": {
-      "members": "成员",
-      "files": "文件",
-      "pins": "置顶",
-      "favorites": "收藏"
-    },
-    "pins": {
-      "title": "置顶消息",
-      "cancel": "取消置顶",
-      "selector_empty": "暂无置顶消息",
-      "selector_title": "置顶消息"
-    },
-    "favorites": {
-      "total": "收藏消息 {count} 条",
-      "export_md": "导出 Markdown",
-      "export_txt": "导出文本",
-      "search_placeholder": "搜索收藏消息",
-      "empty": "暂无收藏消息",
-      "load_failed": "加载收藏消息失败"
-    },
-    "groups": {
-      "offline": "离线",
-      "online": "在线"
-    },
-    "quota": {
-      "title": "配额"
-    }
-  },
-  "about": {
-    "version": "版本：{version} ({arch})",
-    "device": "当前设备：{type}{version}",
-    "copyright": "Copyright © {start}-{end} 龙卷风",
-    "rights": "All Rights Reserved."
-  },
-  "apply_list": {
-    "friend_notice": "好友通知",
-    "group_notice": "群通知",
-    "you": "你",
-    "unknown_user": "未知用户",
-    "message_label": "留言：",
-    "handler_label": "处理人：{name}",
-    "accept": "接受",
+  "friends_list": {
     "status": {
-      "accepted": "已同意",
-      "rejected": "已拒绝",
-      "ignored": "已忽略",
-      "rejected_by_other": "对方已拒绝",
-      "pending": "等待验证"
-    },
-    "friend": {
-      "accepted_you": "已同意你的请求",
-      "pending": "正在验证你的邀请",
-      "request": "请求加为好友"
-    },
-    "group": {
-      "loading": "加载中...",
-      "apply": "申请加入 [{group}]",
-      "invite": "邀请{name}加入 [{group}]",
-      "invite_confirmed": "已同意加入 [{group}]",
-      "invite_you": "邀请你加入 [{group}]",
-      "kicked": "已被{operator}踢出 [{group}]",
-      "set_admin": "已被群主设置为 [{group}] 的管理员",
-      "remove_admin": "已被群主取消 [{group}] 的管理员权限"
-    },
-    "dropdown": {
-      "reject": "拒绝",
-      "ignore": "忽略"
-    },
-    "empty_friend": "暂无好友申请",
-    "empty_group": "暂无群通知"
+      "online": "在线",
+      "offline": "离线"
+    }
   },
   "chat_main": {
     "network_offline": "当前网络不可用，请检查你的网络设置",
@@ -352,15 +89,37 @@
       }
     }
   },
-  "friends_list": {
-    "status": {
-      "online": "在线",
-      "offline": "离线"
-    }
+  "chat_reaction": {
+    "like": "好赞",
+    "unsatisfied": "不满",
+    "heart": "爱心",
+    "angry": "愤怒",
+    "party": "礼炮",
+    "rocket": "火箭",
+    "lol": "笑哭",
+    "clap": "鼓掌",
+    "flower": "鲜花",
+    "bomb": "炸弹",
+    "question": "疑问",
+    "victory": "胜利",
+    "light": "灯光",
+    "red_envelope": "红包"
   },
-  "file_drop": {
-    "title": "松开鼠标即可发送文件",
-    "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件"
+  "manage_group_member": {
+    "title": "管理群成员",
+    "search_placeholder_mobile": "搜索成员~",
+    "search_placeholder_pc": "搜索群成员",
+    "selected_count": "已选择 {count} 人",
+    "remove_button": "踢出群聊",
+    "dialog_negative": "取消",
+    "dialog_positive": "确定",
+    "remove_confirm": "确定要踢出 {count} 位成员吗？",
+    "channel_not_allowed": "频道不允许踢出成员",
+    "select_member_warning": "请选择要踢出的成员",
+    "remove_success": "成功踢出 {count} 位成员",
+    "remove_failed": "踢出失败，请重试",
+    "confirm_remove_title": "确认踢出",
+    "channel_manage_unsupported": "频道不支持管理成员"
   },
   "secret_chat": {
     "title": "私密聊天",
@@ -369,5 +128,253 @@
     "no_hidden_sessions": "暂无隐藏会话",
     "no_messages": "暂无消息",
     "hidden_sessions": "已隐藏的会话"
+  },
+  "chat_sidebar": {
+    "actions": {
+      "retry": "重试"
+    },
+    "search": {
+      "placeholder": "搜索"
+    },
+    "quota": {
+      "title": "配额"
+    },
+    "favorites": {
+      "total": "收藏消息 {count} 条",
+      "export_md": "导出 Markdown",
+      "export_txt": "导出文本",
+      "search_placeholder": "搜索收藏消息",
+      "empty": "暂无收藏消息",
+      "load_failed": "加载收藏消息失败"
+    },
+    "groups": {
+      "offline": "离线",
+      "online": "在线"
+    },
+    "roles": {
+      "owner": "群主",
+      "admin": "管理员",
+      "member": "普通成员"
+    },
+    "empty": {
+      "no_chat_selected": "未选择会话",
+      "select_to_start": "选择一个会话或发起新聊天",
+      "pins": "暂无置顶消息",
+      "files": "暂无文件"
+    },
+    "online_members": "在线成员 {count}",
+    "tabs": {
+      "members": "成员",
+      "files": "文件",
+      "pins": "置顶",
+      "favorites": "收藏"
+    },
+    "toggle": {
+      "expand": "展开信息面板",
+      "collapse": "收起信息面板"
+    },
+    "announcement": {
+      "title": "群公告须知",
+      "load_failed": "公告加载失败，请重试",
+      "default": "请不要把重要信息发到该群，网络不是法外之地，请遵守网络规范，否则直接删除。"
+    },
+    "pins": {
+      "title": "置顶消息",
+      "cancel": "取消置顶",
+      "selector_empty": "暂无置顶消息",
+      "selector_title": "置顶消息"
+    }
+  },
+  "chat_header": {
+    "delete_room": "删除房间",
+    "meeting_widget_name": "房间会议",
+    "delete_friend": "删除好友",
+    "group_members": "群成员",
+    "chat_info": "聊天信息",
+    "delete_friend_confirm": "确定删除该好友？",
+    "message_setting": {
+      "receive_no_alert": "接收消息但不提醒",
+      "shield": "屏蔽消息"
+    },
+    "federated": "联邦房间",
+    "group_name": "群名称",
+    "share_qr_code": "分享二维码",
+    "group_qr_code": "群二维码",
+    "my_name_in_group": "我在群中的名称",
+    "remark": "备注",
+    "input_group_name": "输入群名称…",
+    "channel": "频道",
+    "input_my_name": "输入我的名称…",
+    "group_info": "群信息",
+    "clear_messages": "清除消息",
+    "delete_room_confirm": "确定删除该房间？",
+    "pin_room": "固定房间",
+    "member_count": "{count} 位成员",
+    "clear_messages_confirm_message": "确定清除所有消息？",
+    "federated_tooltip": "联邦房间 · 由 {server} 提供服务",
+    "input_remark": "输入备注…",
+    "sidebar": {
+      "group": {
+        "message_settings": {
+          "title": "群消息设置"
+        }
+      }
+    }
+  },
+  "plugins": {
+    "room_list": "房间列表",
+    "room_list_short_title": "房间",
+    "room_detail": {
+      "just_now": "刚刚",
+      "yesterday": "昨天",
+      "mute": "免打扰"
+    },
+    "space_list": "空间列表",
+    "space_list_short_title": "空间",
+    "federation": "联邦",
+    "federation_short_title": "联邦",
+    "federation_loading": "正在加载联邦服务器...",
+    "federation_empty": "暂无联邦服务器",
+    "status": {
+      "builtin": "已内置",
+      "uninstalling": "卸载中"
+    },
+    "actions": {
+      "install": "安装",
+      "pin": "固定侧边栏",
+      "unpin": "取消固定",
+      "uninstall": "卸载"
+    }
+  },
+  "action": {
+    "message": "消息列表",
+    "message_short_title": "消息",
+    "contact": "好友列表",
+    "contact_short_title": "好友",
+    "file_manager": "文件管理器",
+    "file_manager_short_title": "文件",
+    "favorite": "收藏列表",
+    "favorite_short_title": "收藏",
+    "plugin": "插件",
+    "plugin_manage": "插件管理",
+    "more": "更多",
+    "opened": "已打开"
+  },
+  "chat_details": {
+    "single": {
+      "empty_signature": "这个人很高冷，暂时没有留下什么",
+      "region": "地区：{place}",
+      "unknown": "未知",
+      "friend_info_missing": "无法获取好友信息",
+      "footer": {
+        "audio_call": "打电话",
+        "video_call": "打视频"
+      }
+    },
+    "group": {
+      "name_label": "房间名称",
+      "edit_name": "编辑房间名称",
+      "announcement": {
+        "label": "群公告",
+        "window_title": "查看群公告"
+      }
+    },
+    "actions": {
+      "message": "进入聊天"
+    }
+  },
+  "profile_card": {
+    "online_status": "在线状态",
+    "status": {
+      "online": "在线",
+      "offline": "离线",
+      "away": "离开",
+      "busy": "忙碌"
+    },
+    "labels": {
+      "account": "账号",
+      "sex": "性别",
+      "bio": "个人简介",
+      "region": "地区",
+      "birthday": "生日",
+      "male": "男",
+      "female": "女"
+    },
+    "tooltip": {
+      "copy_account": "复制账号"
+    },
+    "buttons": {
+      "edit": "编辑资料",
+      "message": "发信息",
+      "add_friend": "加好友",
+      "mention": "@提及"
+    },
+    "notification": {
+      "copy_success": "复制成功 {account}",
+      "copy_copied": "已复制"
+    },
+    "presence": {
+      "activeNow": "刚刚活跃",
+      "activeMinutes": "{minutes} 分钟前活跃",
+      "activeHours": "{hours} 小时前活跃",
+      "activeDays": "{days} 天前活跃"
+    },
+    "error": {
+      "title": "资料加载失败",
+      "desc": "暂时无法获取该用户资料，请稍后重试"
+    }
+  },
+  "about": {
+    "version": "版本：{version} ({arch})",
+    "device": "当前设备：{type}{version}",
+    "copyright": "Copyright © {start}-{end} 龙卷风",
+    "rights": "All Rights Reserved."
+  },
+  "loading": {
+    "app": "加载应用中...",
+    "left_panel": "加载左侧面板...",
+    "data": "加载数据中...",
+    "right_panel": "加载右侧面板..."
+  },
+  "file_drop": {
+    "title": "松开鼠标即可发送文件",
+    "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件"
+  },
+  "apply_list": {
+    "friend_notice": "好友通知",
+    "group_notice": "群通知",
+    "you": "你",
+    "unknown_user": "未知用户",
+    "message_label": "留言：",
+    "handler_label": "处理人：{name}",
+    "accept": "接受",
+    "status": {
+      "accepted": "已同意",
+      "rejected": "已拒绝",
+      "ignored": "已忽略",
+      "rejected_by_other": "对方已拒绝",
+      "pending": "等待验证"
+    },
+    "friend": {
+      "accepted_you": "已同意你的请求",
+      "pending": "正在验证你的邀请",
+      "request": "请求加为好友"
+    },
+    "group": {
+      "loading": "加载中...",
+      "apply": "申请加入 [{group}]",
+      "invite": "邀请{name}加入 [{group}]",
+      "invite_confirmed": "已同意加入 [{group}]",
+      "invite_you": "邀请你加入 [{group}]",
+      "kicked": "已被{operator}踢出 [{group}]",
+      "set_admin": "已被群主设置为 [{group}] 的管理员",
+      "remove_admin": "已被群主取消 [{group}] 的管理员权限"
+    },
+    "dropdown": {
+      "reject": "拒绝",
+      "ignore": "忽略"
+    },
+    "empty_friend": "暂无好友申请",
+    "empty_group": "暂无群通知"
   }
 }

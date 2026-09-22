@@ -1,185 +1,9 @@
 {
-  "loading": {
-    "app": "Loading app...",
-    "left_panel": "Loading left panel...",
-    "data": "Loading data...",
-    "right_panel": "Loading right panel..."
-  },
-  "action": {
-    "message": "Messages",
-    "message_short_title": "Msg",
-    "contact": "Friend",
-    "contact_short_title": "Friend",
-    "file_manager": "File Manager",
-    "file_manager_short_title": "Files",
-    "favorite": "Favorites",
-    "favorite_short_title": "Favorites",
-    "plugin": "Plugins",
-    "plugin_manage": "Plugin Management",
-    "more": "More",
-    "opened": "opened"
-  },
-  "plugins": {
-    "room_list": "Rooms",
-    "room_list_short_title": "Rooms",
-    "room_detail": {
-      "just_now": "Just now",
-      "yesterday": "Yesterday",
-      "mute": "Muted"
-    },
-    "space_list": "Spaces",
-    "space_list_short_title": "Space",
-    "federation": "Federation",
-    "federation_short_title": "Federation",
-    "federation_loading": "Loading federation servers...",
-    "federation_empty": "No federation servers",
-    "status": {
-      "builtin": "Built-in",
-      "uninstalling": "Uninstalling"
-    },
-    "actions": {
-      "install": "Install",
-      "pin": "Pin to sidebar",
-      "unpin": "Unpin",
-      "uninstall": "Uninstall"
-    }
-  },
-  "chat_details": {
-    "single": {
-      "empty_signature": "This user hasn't left any bio yet",
-      "region": "Region: {place}",
-      "unknown": "Unknown",
-      "friend_info_missing": "Unable to load friend info",
-      "footer": {
-        "audio_call": "Voice call",
-        "video_call": "Video call"
-      }
-    },
-    "group": {
-      "name_label": "Room Name",
-      "edit_name": "Edit room name",
-      "announcement": {
-        "label": "Announcements",
-        "window_title": "View announcements"
-      }
-    },
-    "actions": {
-      "message": "Enter Chat"
-    }
-  },
-  "chat_reaction": {
-    "like": "Like",
-    "unsatisfied": "Unsatisfied",
-    "heart": "Heart",
-    "angry": "Angry",
-    "party": "Celebrate",
-    "rocket": "Rocket",
-    "lol": "Haha",
-    "clap": "Clap",
-    "flower": "Flower",
-    "bomb": "Bomb",
-    "question": "Confused",
-    "victory": "Victory",
-    "light": "Light",
-    "red_envelope": "Lucky money"
-  },
-  "chat_header": {
-    "federated": "Federated room",
-    "federated_tooltip": "Federated room · served by {server}",
-    "meeting_widget_name": "Room meeting",
-    "member_count": "{count} members",
-    "channel": "Channel",
-    "message_setting": {
-      "receive_no_alert": "Receive without alerts",
-      "shield": "Block messages"
-    },
-    "chat_info": "Chat Info",
-    "clear_messages": "Clear Messages",
-    "clear_messages_confirm_message": "Clear all messages?",
-    "delete_friend": "Delete Friend",
-    "delete_friend_confirm": "Delete this friend?",
-    "delete_room": "Delete Room",
-    "delete_room_confirm": "Delete this room?",
-    "group_info": "Group Info",
-    "group_members": "Group Members",
-    "group_name": "Group Name",
-    "group_qr_code": "Group QR Code",
-    "input_group_name": "Enter group name…",
-    "input_my_name": "Enter my name…",
-    "input_remark": "Enter remark…",
-    "my_name_in_group": "My Name in Group",
-    "pin_room": "Pin Room",
-    "remark": "Remark",
-    "share_qr_code": "Share QR Code"
-  },
-  "manage_group_member": {
-    "title": "Manage group members",
-    "search_placeholder_mobile": "Search members~",
-    "search_placeholder_pc": "Search group members",
-    "selected_count": "Selected {count} members",
-    "remove_button": "Remove from group",
-    "dialog_negative": "Cancel",
-    "dialog_positive": "Confirm",
-    "remove_confirm": "Remove {count} members?",
-    "channel_not_allowed": "Channels cannot remove members",
-    "select_member_warning": "Select members to remove",
-    "remove_success": "Removed {count} members",
-    "remove_failed": "Failed to remove members, please retry",
-    "confirm_remove_title": "Confirm removal",
-    "channel_manage_unsupported": "Channels do not support member management"
-  },
-  "profile_card": {
-    "online_status": "Online status",
-    "status": {
-      "online": "Online",
-      "offline": "Offline",
-      "away": "Away",
-      "busy": "Busy"
-    },
-    "labels": {
-      "account": "Account",
-      "sex": "Gender",
-      "bio": "Bio",
-      "region": "Region",
-      "birthday": "Birthday",
-      "male": "Male",
-      "female": "Female"
-    },
-    "tooltip": {
-      "copy_account": "Copy account"
-    },
-    "buttons": {
-      "edit": "Edit profile",
-      "message": "Message",
-      "add_friend": "Add friend",
-      "mention": "Mention"
-    },
-    "notification": {
-      "copy_success": "Copied {account}",
-      "copy_copied": "Copied"
-    },
-    "presence": {
-      "activeNow": "Active just now",
-      "activeMinutes": "Active {minutes} min ago",
-      "activeHours": "Active {hours} h ago",
-      "activeDays": "Active {days} d ago"
-    },
-    "error": {
-      "title": "Failed to load profile",
-      "desc": "Could not fetch this user's profile. Please try again later."
-    }
-  },
   "profile_edit": {
+    "actions": {
+      "save": "Save"
+    },
     "title": "Edit profile",
-    "avatar": {
-      "change": "Change avatar",
-      "tips": "Recommended size 180x180px. Supports JPG, PNG, WEBP formats and files under 500kb",
-      "choose_from_gallery": "Choose from gallery"
-    },
-    "badge": {
-      "current": "Current badge:",
-      "wear": "Wear"
-    },
     "form": {
       "nickname": {
         "label": "Nickname",
@@ -187,9 +11,6 @@
         "remaining": "Rename attempts left: {count}",
         "unlimited": "Rename attempts: unlimited"
       }
-    },
-    "actions": {
-      "save": "Save"
     },
     "toast": {
       "avatar_update_success": "Avatar updated",
@@ -199,106 +20,22 @@
       "badge_wear_success": "Badge worn successfully",
       "badge_wear_failed": "Failed to wear badge, please try again later",
       "save_failed": "Save Failed"
+    },
+    "badge": {
+      "current": "Current badge:",
+      "wear": "Wear"
+    },
+    "avatar": {
+      "change": "Change avatar",
+      "tips": "Recommended size 180x180px. Supports JPG, PNG, WEBP formats and files under 500kb",
+      "choose_from_gallery": "Choose from gallery"
     }
   },
-  "chat_sidebar": {
-    "announcement": {
-      "title": "Group announcement",
-      "load_failed": "Failed to load announcement, please retry",
-      "default": "Please avoid sharing sensitive information. Follow internet regulations or the message will be removed."
-    },
-    "actions": {
-      "retry": "Retry"
-    },
-    "online_members": "Online members {count}",
-    "search": {
-      "placeholder": "Search"
-    },
-    "roles": {
-      "owner": "Owner",
-      "admin": "Admin",
-      "member": "Member"
-    },
-    "empty": {
-      "no_chat_selected": "No chat selected",
-      "select_to_start": "Select a conversation or start a new chat",
-      "pins": "No pinned messages",
-      "files": "No Files"
-    },
-    "toggle": {
-      "expand": "Expand info panel",
-      "collapse": "Collapse info panel"
-    },
-    "tabs": {
-      "members": "Members",
-      "files": "Files",
-      "pins": "Pins",
-      "favorites": "Favorites"
-    },
-    "pins": {
-      "title": "Pinned Messages",
-      "cancel": "Unpin",
-      "selector_empty": "No Pinned Messages",
-      "selector_title": "Pinned Messages"
-    },
-    "favorites": {
-      "total": "{count} favorite(s)",
-      "export_md": "Export Markdown",
-      "export_txt": "Export Text",
-      "search_placeholder": "Search favorites",
-      "empty": "No favorite messages",
-      "load_failed": "Failed to load favorites"
-    },
-    "groups": {
-      "offline": "Offline",
-      "online": "Online"
-    },
-    "quota": {
-      "title": "Quota"
-    }
-  },
-  "about": {
-    "version": "Version: {version} ({arch})",
-    "device": "Device: {type}{version}",
-    "copyright": "Copyright © {start}-{end} 龙卷风",
-    "rights": "All Rights Reserved."
-  },
-  "apply_list": {
-    "friend_notice": "Friend Requests",
-    "group_notice": "Group Notifications",
-    "you": "You",
-    "unknown_user": "Unknown user",
-    "message_label": "Message: ",
-    "handler_label": "Handled by: {name}",
-    "accept": "Accept",
+  "friends_list": {
     "status": {
-      "accepted": "Approved",
-      "rejected": "Rejected",
-      "ignored": "Ignored",
-      "rejected_by_other": "Rejected by recipient",
-      "pending": "Pending verification"
-    },
-    "friend": {
-      "accepted_you": "Request approved",
-      "pending": "Waiting for verification",
-      "request": "Wants to add you as a friend"
-    },
-    "group": {
-      "loading": "Loading...",
-      "apply": "Request to join [{group}]",
-      "invite": "Invite {name} to join [{group}]",
-      "invite_confirmed": "Joined [{group}]",
-      "invite_you": "Invites you to join [{group}]",
-      "kicked": "Removed by {operator} from [{group}]",
-      "set_admin": "Set as admin of [{group}]",
-      "remove_admin": "Admin role removed from [{group}]"
-    },
-    "dropdown": {
-      "reject": "Reject",
-      "ignore": "Ignore"
-    },
-    "empty_friend": "No friend requests",
-    "empty_group": "No group notifications"
+      "online": "Online",
+      "offline": "Offline"
+    }
   },
   "chat_main": {
     "network_offline": "Network unavailable, please check your settings",
@@ -352,15 +89,37 @@
       }
     }
   },
-  "friends_list": {
-    "status": {
-      "online": "Online",
-      "offline": "Offline"
-    }
+  "chat_reaction": {
+    "like": "Like",
+    "unsatisfied": "Unsatisfied",
+    "heart": "Heart",
+    "angry": "Angry",
+    "party": "Celebrate",
+    "rocket": "Rocket",
+    "lol": "Haha",
+    "clap": "Clap",
+    "flower": "Flower",
+    "bomb": "Bomb",
+    "question": "Confused",
+    "victory": "Victory",
+    "light": "Light",
+    "red_envelope": "Lucky money"
   },
-  "file_drop": {
-    "title": "Release to send files",
-    "desc": "Drag and drop images or files, the current session will receive them"
+  "manage_group_member": {
+    "title": "Manage group members",
+    "search_placeholder_mobile": "Search members~",
+    "search_placeholder_pc": "Search group members",
+    "selected_count": "Selected {count} members",
+    "remove_button": "Remove from group",
+    "dialog_negative": "Cancel",
+    "dialog_positive": "Confirm",
+    "remove_confirm": "Remove {count} members?",
+    "channel_not_allowed": "Channels cannot remove members",
+    "select_member_warning": "Select members to remove",
+    "remove_success": "Removed {count} members",
+    "remove_failed": "Failed to remove members, please retry",
+    "confirm_remove_title": "Confirm removal",
+    "channel_manage_unsupported": "Channels do not support member management"
   },
   "secret_chat": {
     "title": "Secret Chat",
@@ -369,5 +128,253 @@
     "no_hidden_sessions": "No hidden sessions",
     "no_messages": "No messages",
     "hidden_sessions": "Hidden sessions"
+  },
+  "chat_sidebar": {
+    "actions": {
+      "retry": "Retry"
+    },
+    "search": {
+      "placeholder": "Search"
+    },
+    "quota": {
+      "title": "Quota"
+    },
+    "favorites": {
+      "total": "{count} favorite(s)",
+      "export_md": "Export Markdown",
+      "export_txt": "Export Text",
+      "search_placeholder": "Search favorites",
+      "empty": "No favorite messages",
+      "load_failed": "Failed to load favorites"
+    },
+    "groups": {
+      "offline": "Offline",
+      "online": "Online"
+    },
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member"
+    },
+    "empty": {
+      "no_chat_selected": "No chat selected",
+      "select_to_start": "Select a conversation or start a new chat",
+      "pins": "No pinned messages",
+      "files": "No Files"
+    },
+    "online_members": "Online members {count}",
+    "tabs": {
+      "members": "Members",
+      "files": "Files",
+      "pins": "Pins",
+      "favorites": "Favorites"
+    },
+    "toggle": {
+      "expand": "Expand info panel",
+      "collapse": "Collapse info panel"
+    },
+    "announcement": {
+      "title": "Group announcement",
+      "load_failed": "Failed to load announcement, please retry",
+      "default": "Please avoid sharing sensitive information. Follow internet regulations or the message will be removed."
+    },
+    "pins": {
+      "title": "Pinned Messages",
+      "cancel": "Unpin",
+      "selector_empty": "No Pinned Messages",
+      "selector_title": "Pinned Messages"
+    }
+  },
+  "chat_header": {
+    "delete_room": "Delete Room",
+    "meeting_widget_name": "Room meeting",
+    "delete_friend": "Delete Friend",
+    "group_members": "Group Members",
+    "chat_info": "Chat Info",
+    "delete_friend_confirm": "Delete this friend?",
+    "message_setting": {
+      "receive_no_alert": "Receive without alerts",
+      "shield": "Block messages"
+    },
+    "federated": "Federated room",
+    "group_name": "Group Name",
+    "share_qr_code": "Share QR Code",
+    "group_qr_code": "Group QR Code",
+    "my_name_in_group": "My Name in Group",
+    "remark": "Remark",
+    "input_group_name": "Enter group name…",
+    "channel": "Channel",
+    "input_my_name": "Enter my name…",
+    "group_info": "Group Info",
+    "clear_messages": "Clear Messages",
+    "delete_room_confirm": "Delete this room?",
+    "pin_room": "Pin Room",
+    "member_count": "{count} members",
+    "clear_messages_confirm_message": "Clear all messages?",
+    "federated_tooltip": "Federated room · served by {server}",
+    "input_remark": "Enter remark…",
+    "sidebar": {
+      "group": {
+        "message_settings": {
+          "title": "Message settings"
+        }
+      }
+    }
+  },
+  "plugins": {
+    "room_list": "Rooms",
+    "room_list_short_title": "Rooms",
+    "room_detail": {
+      "just_now": "Just now",
+      "yesterday": "Yesterday",
+      "mute": "Muted"
+    },
+    "space_list": "Spaces",
+    "space_list_short_title": "Space",
+    "federation": "Federation",
+    "federation_short_title": "Federation",
+    "federation_loading": "Loading federation servers...",
+    "federation_empty": "No federation servers",
+    "status": {
+      "builtin": "Built-in",
+      "uninstalling": "Uninstalling"
+    },
+    "actions": {
+      "install": "Install",
+      "pin": "Pin to sidebar",
+      "unpin": "Unpin",
+      "uninstall": "Uninstall"
+    }
+  },
+  "action": {
+    "message": "Messages",
+    "message_short_title": "Msg",
+    "contact": "Friend",
+    "contact_short_title": "Friend",
+    "file_manager": "File Manager",
+    "file_manager_short_title": "Files",
+    "favorite": "Favorites",
+    "favorite_short_title": "Favorites",
+    "plugin": "Plugins",
+    "plugin_manage": "Plugin Management",
+    "more": "More",
+    "opened": "opened"
+  },
+  "chat_details": {
+    "single": {
+      "empty_signature": "This user hasn't left any bio yet",
+      "region": "Region: {place}",
+      "unknown": "Unknown",
+      "friend_info_missing": "Unable to load friend info",
+      "footer": {
+        "audio_call": "Voice call",
+        "video_call": "Video call"
+      }
+    },
+    "group": {
+      "name_label": "Room Name",
+      "edit_name": "Edit room name",
+      "announcement": {
+        "label": "Announcements",
+        "window_title": "View announcements"
+      }
+    },
+    "actions": {
+      "message": "Enter Chat"
+    }
+  },
+  "profile_card": {
+    "online_status": "Online status",
+    "status": {
+      "online": "Online",
+      "offline": "Offline",
+      "away": "Away",
+      "busy": "Busy"
+    },
+    "labels": {
+      "account": "Account",
+      "sex": "Gender",
+      "bio": "Bio",
+      "region": "Region",
+      "birthday": "Birthday",
+      "male": "Male",
+      "female": "Female"
+    },
+    "tooltip": {
+      "copy_account": "Copy account"
+    },
+    "buttons": {
+      "edit": "Edit profile",
+      "message": "Message",
+      "add_friend": "Add friend",
+      "mention": "Mention"
+    },
+    "notification": {
+      "copy_success": "Copied {account}",
+      "copy_copied": "Copied"
+    },
+    "presence": {
+      "activeNow": "Active just now",
+      "activeMinutes": "Active {minutes} min ago",
+      "activeHours": "Active {hours} h ago",
+      "activeDays": "Active {days} d ago"
+    },
+    "error": {
+      "title": "Failed to load profile",
+      "desc": "Could not fetch this user's profile. Please try again later."
+    }
+  },
+  "about": {
+    "version": "Version: {version} ({arch})",
+    "device": "Device: {type}{version}",
+    "copyright": "Copyright © {start}-{end} 龙卷风",
+    "rights": "All Rights Reserved."
+  },
+  "loading": {
+    "app": "Loading app...",
+    "left_panel": "Loading left panel...",
+    "data": "Loading data...",
+    "right_panel": "Loading right panel..."
+  },
+  "file_drop": {
+    "title": "Release to send files",
+    "desc": "Drag and drop images or files, the current session will receive them"
+  },
+  "apply_list": {
+    "friend_notice": "Friend Requests",
+    "group_notice": "Group Notifications",
+    "you": "You",
+    "unknown_user": "Unknown user",
+    "message_label": "Message: ",
+    "handler_label": "Handled by: {name}",
+    "accept": "Accept",
+    "status": {
+      "accepted": "Approved",
+      "rejected": "Rejected",
+      "ignored": "Ignored",
+      "rejected_by_other": "Rejected by recipient",
+      "pending": "Pending verification"
+    },
+    "friend": {
+      "accepted_you": "Request approved",
+      "pending": "Waiting for verification",
+      "request": "Wants to add you as a friend"
+    },
+    "group": {
+      "loading": "Loading...",
+      "apply": "Request to join [{group}]",
+      "invite": "Invite {name} to join [{group}]",
+      "invite_confirmed": "Joined [{group}]",
+      "invite_you": "Invites you to join [{group}]",
+      "kicked": "Removed by {operator} from [{group}]",
+      "set_admin": "Set as admin of [{group}]",
+      "remove_admin": "Admin role removed from [{group}]"
+    },
+    "dropdown": {
+      "reject": "Reject",
+      "ignore": "Ignore"
+    },
+    "empty_friend": "No friend requests",
+    "empty_group": "No group notifications"
   }
 }
