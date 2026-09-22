@@ -4,11 +4,15 @@ import { useI18nGlobal } from '@/services/i18n'
 import matrixClientService from '../../MatrixClientService'
 import { matrixNotificationService } from '../MatrixNotificationService'
 
-vi.mock('@tauri-apps/plugin-log', () => ({
-  info: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn()
+const { pluginLoggerMocks } = vi.hoisted(() => ({
+  pluginLoggerMocks: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn()
+  }
 }))
+
+vi.mock('@tauri-apps/plugin-log', () => pluginLoggerMocks)
 
 const { isPermissionGrantedMock } = vi.hoisted(() => ({
   isPermissionGrantedMock: vi.fn()
@@ -404,6 +408,80 @@ describe('MatrixNotificationService', () => {
       expect(config.showMessageContent).toBe(false)
       expect(localStorage.getItem(LEGACY_SENDER_KEY)).toBeNull()
       expect(localStorage.getItem(LEGACY_CONTENT_KEY)).toBeNull()
+    })
+
+    it('drops only the invalid persisted field and keeps its valid siblings', async () => {
+      // 逐字段校验回归：`validateObject` 在 requiredKeys 为空时不跑单键校验器，
+      // 旧实现会让一个非法字段把整份配置打回默认值，合法字段一起丢失。
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ enableDesktop: false, showSender: 'yes' }))
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      const config = fresh.getConfig()
+      expect(config.enableDesktop).toBe(false)
+      expect(config.showSender).toBe(true)
+
+      // 重新持久化后只剩合法字段：非法值不会被当成显式值写回
+      const persisted = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) as string)
+      expect(persisted.enableDesktop).toBe(false)
+      expect(persisted).not.toHaveProperty('showSender')
+    })
+
+    it('drops a persisted field whose type is wrong without dropping the whole config', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ enableDesktop: true, showSender: 'yes' }))
+      localStorage.setItem(LEGACY_SENDER_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      const config = fresh.getConfig()
+      expect(config.enableDesktop).toBe(true)
+      // showSender 非法 → 视为「没写过」，旧 key 仍按一次迁移规则被采纳
+      expect(config.showSender).toBe(false)
+      expect(localStorage.getItem(LEGACY_SENDER_KEY)).toBeNull()
+    })
+  })
+
+  /**
+   * 损坏告警一次性：`getConfig()` 每次通知决策都会跑 `loadConfig`，
+   * 旧实现每次读取都重新告警，消息热路径上会刷屏。
+   */
+  describe('corrupt config warning', () => {
+    const CONFIG_STORAGE_KEY = 'tjg-notification-config'
+
+    const corruptionWarnings = () =>
+      pluginLoggerMocks.warn.mock.calls.filter(([message]) => String(message).includes('通知配置损坏'))
+
+    beforeEach(() => {
+      localStorage.clear()
+      pluginLoggerMocks.warn.mockClear()
+    })
+
+    it('warns once about a corrupt persisted config across repeated reads', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, '{oops')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      // 读满 50 次以越过 Logger 自身的同消息去重窗口（第 2 / 50 次才会真正落日志），
+      // 否则缺陷版本也会因为去重只留下一条，测试假绿。
+      for (let i = 0; i < 50; i++) {
+        expect(fresh.getConfig().enableDesktop).toBe(true)
+      }
+
+      expect(corruptionWarnings()).toHaveLength(1)
+    })
+
+    it('still warns when a structurally invalid config is discovered', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(['not', 'a', 'config']))
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      fresh.getConfig()
+
+      expect(corruptionWarnings()).toHaveLength(1)
     })
   })
 
