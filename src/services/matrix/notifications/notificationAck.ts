@@ -58,13 +58,16 @@ export async function sendReadReceipt(
  * 端点可用性探测结果按 `ACK_CHECK_TTL` 缓存：服务端不支持 ack 时不必每条通知都白试一次，
  * 但缓存过期后会重新探测，避免服务端升级后被永久钉死在回执路径。
  *
- * @param client 已就绪的矩阵客户端（回执兜底需要）
+ * 客户端**惰性解析**：纯 ack 路径（探测成功 / 命中可用缓存）根本不碰客户端，
+ * 因此客户端未初始化时不会像 eager 传参那样抛错；只有真正要走回执兜底时才调用 `getClient()`。
+ *
+ * @param getClient 客户端提供者（只在回执兜底分支调用，可抛错表示未初始化）
  * @param notificationId 通知 ID
  * @param roomId 兜底回执要标记的房间
  * @param eventId 兜底回执要标记的事件
  */
 export async function ackNotificationWithFallback(
-  client: ReadReceiptCapableClient,
+  getClient: () => ReadReceiptCapableClient,
   notificationId: string,
   roomId: string,
   eventId: string
@@ -75,7 +78,7 @@ export async function ackNotificationWithFallback(
       const ok = await ackNotification(notificationId)
       return { success: ok, method: 'ack' }
     }
-    const ok = await sendReadReceipt(client, roomId, eventId)
+    const ok = await sendReadReceipt(getClient(), roomId, eventId)
     return { success: ok, method: 'receipt' }
   }
 
@@ -89,6 +92,6 @@ export async function ackNotificationWithFallback(
   logger.info(`[MatrixNotification] ack 端点不可用，回退到已读回执: ${notificationId}`)
   ackEndpointAvailableCache = false
   ackCheckTimestamp = now
-  const receiptOk = await sendReadReceipt(client, roomId, eventId)
+  const receiptOk = await sendReadReceipt(getClient(), roomId, eventId)
   return { success: receiptOk, method: 'receipt' }
 }

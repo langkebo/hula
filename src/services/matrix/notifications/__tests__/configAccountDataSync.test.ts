@@ -38,10 +38,7 @@ describe('pullConfigFromAccountData', () => {
   it('drops non-boolean event entries from account data instead of persisting them', async () => {
     const store = new NotificationConfigStore()
 
-    await pullConfigFromAccountData(
-      accountDataClient({ events: { thread_mention: 'false', other_kind: true } }),
-      store
-    )
+    await pullConfigFromAccountData(accountDataClient({ events: { thread_mention: 'false', other_kind: true } }), store)
 
     expect(store.getConfig().events).toEqual({ other_kind: true })
     expect(persistedConfig().events).toEqual({ other_kind: true })

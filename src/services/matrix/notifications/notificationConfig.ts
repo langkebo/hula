@@ -223,6 +223,28 @@ export class NotificationConfigStore {
   }
 
   /**
+   * 整份采用服务端配置（显式恢复入口）：先本地重载观察其它窗口的改动，
+   * 再让服务端字段覆盖同名字段；但 `events` 是**清洗后整体替换**，不是 `setConfig` 的浅合并。
+   *
+   * 这两点都来自拆分前 `syncConfigFromAccountData` 的语义，必须逐字保持：
+   * - 整体替换：服务端那份就是该字段的完整快照，本地独有的 kind 不能残留
+   *   （否则服务端删掉的开关会在下次拉取后复活）。
+   * - 逐键清洗：账号数据里的非布尔条目不能被原样写进配置并持久化。
+   *
+   * @param serverConfig 账号数据 `getContent()` 里的配置对象（未受信任，需清洗）
+   */
+  applyServerConfig(serverConfig: Partial<NotificationConfig>): NotificationConfig {
+    this.loadConfig()
+    this.config = {
+      ...this.config,
+      ...serverConfig,
+      events: sanitizeNotificationEvents(serverConfig.events ?? this.config.events) ?? {}
+    }
+    this.persistConfig()
+    return this.getConfig()
+  }
+
+  /**
    * 取出并清空「待告警的损坏配置」。
    *
    * 返回 `null` 表示本次读取没有新发现的损坏（已告警过 / 本来就是合法配置）。

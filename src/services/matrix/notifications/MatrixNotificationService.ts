@@ -413,6 +413,9 @@ class MatrixNotificationService extends BaseMatrixService {
 
   /**
    * 通知确认并带 ack → 已读回执的自动降级（探测结果按 TTL 缓存，见 `notificationAck`）。
+   *
+   * 客户端惰性解析：纯 ack 路径不应因为客户端未初始化而失败，
+   * 只有回执兜底分支才真正读取客户端。
    */
   async ackNotificationWithFallback(
     notificationId: string,
@@ -422,7 +425,7 @@ class MatrixNotificationService extends BaseMatrixService {
     success: boolean
     method: 'ack' | 'receipt'
   }> {
-    return postNotificationAckWithFallback(this.getNotificationClient(), notificationId, roomId, eventId)
+    return postNotificationAckWithFallback(() => this.getNotificationClient(), notificationId, roomId, eventId)
   }
 
   /**

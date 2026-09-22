@@ -4,9 +4,6 @@ import { type DndWindow, type DndWindowInput, isWithinDndWindow } from './dndWin
 
 const logger = createLogger('DndSettingsStore')
 
-/** 账号数据里的勿扰时段类型（跨设备同步）。 */
-export const DND_ACCOUNT_DATA_TYPE = 'io.hula.dnd_settings'
-
 /** localStorage 镜像值 → 时间戳；非法值视为未配置（null），不猜。 */
 function parseStoredDndTimestamp(value: string | null): number | null {
   if (value === null) {

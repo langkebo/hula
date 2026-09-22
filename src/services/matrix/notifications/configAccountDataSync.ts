@@ -45,7 +45,9 @@ export async function pushConfigToAccountData(
  * 跨设备同步会引入设备语义冲突与冲突判定成本。保留该方法只作为将来的显式恢复入口：
  * 若要接线，必须先定义「哪些字段算账号级」与「服务端/本地谁赢」，不能直接整份覆盖本地。
  *
- * 读回时先本地重载（观察其它窗口的改动），再让服务端字段覆盖同名字段。
+ * 读回时先本地重载（观察其它窗口的改动），再让服务端字段覆盖同名字段；
+ * `events` 例外：服务端那份经逐键清洗后**整体替换**（不是浅合并，且丢弃非布尔条目），
+ * 与拆分前的 `syncConfigFromAccountData` 保持一致，见 `NotificationConfigStore.applyServerConfig`。
  *
  * @param client 已就绪的矩阵客户端
  * @param store 本地配置存储（负责迁移、持久化与逐字段校验）
@@ -65,8 +67,7 @@ export async function pullConfigFromAccountData(
     return false
   }
 
-  store.loadConfig()
-  store.setConfig({ ...store.getConfig(), ...serverConfig })
+  store.applyServerConfig(serverConfig)
   logger.info('[MatrixNotification] 从服务端同步通知配置成功')
   return true
 }
