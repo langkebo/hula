@@ -288,11 +288,13 @@
   },
   "invite": {
     "accept": "Accept",
+    "accept_failed": "Failed to accept the invite",
     "failed": "Invite Failed",
     "invalid_user_id": "Invalid User ID",
     "invite": "Invite",
     "or_enter_id": "Or enter user ID",
     "reject": "Reject",
+    "reject_failed": "Failed to reject the invite",
     "search_placeholder": "Search user ID…",
     "success": "Invite Success",
     "title": "Invite Users",

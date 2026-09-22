@@ -175,12 +175,6 @@ const ACCEPTED_PATTERNS = [
     followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #2'
   },
   {
-    component: 'src/components/room/RoomInviteActions.vue',
-    event: 'error',
-    reason: '接受/拒绝失败只有 logger.error，用户无感知；成功链路 onAcceptInvite/onRejectInvite 生产上也没人传',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #3'
-  },
-  {
     component: 'src/components/thread/ThreadPanel.vue',
     event: 'sendReply',
     reason: '发送会丢弃输入（无 store/service 调用），loadThreadReplies 是设空数组的 stub',

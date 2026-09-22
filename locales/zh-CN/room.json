@@ -288,11 +288,13 @@
   },
   "invite": {
     "accept": "接受",
+    "accept_failed": "接受邀请失败",
     "failed": "邀请失败",
     "invalid_user_id": "无效的用户 ID",
     "invite": "邀请",
     "or_enter_id": "或输入用户 ID",
     "reject": "拒绝",
+    "reject_failed": "拒绝邀请失败",
     "search_placeholder": "搜索用户 ID…",
     "success": "邀请成功",
     "title": "邀请用户",
