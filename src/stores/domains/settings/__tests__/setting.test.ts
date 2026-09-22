@@ -289,6 +289,12 @@ describe('SettingStore', () => {
       expect(store.sendTypingNotificationsEnabled).toBe(false)
     })
 
+    it('setShowOnlineStatusEnabled updates online status flag', () => {
+      const store = useSettingStore()
+      store.setShowOnlineStatusEnabled(false)
+      expect(store.showOnlineStatusEnabled).toBe(false)
+    })
+
     it('ensurePreferenceSettings repairs missing preference fields with defaults', () => {
       const store = useSettingStore()
       store.preferences = {
@@ -306,7 +312,8 @@ describe('SettingStore', () => {
         spaceShowSubspaces: undefined as never,
         spaceDefaultNotification: undefined as never,
         sendReadReceipts: undefined as never,
-        sendTypingNotifications: undefined as never
+        sendTypingNotifications: undefined as never,
+        showOnlineStatus: undefined as never
       }
       store.ensurePreferenceSettings()
       expect(store.messageConfirmEnabled).toBe(false)
@@ -324,6 +331,7 @@ describe('SettingStore', () => {
       expect(store.spaceDefaultNotification).toBe('all_messages')
       expect(store.sendReadReceiptsEnabled).toBe(true)
       expect(store.sendTypingNotificationsEnabled).toBe(true)
+      expect(store.showOnlineStatusEnabled).toBe(true)
     })
 
     it('migrateLegacyPreferenceSettings migrates legacy localStorage keys once', () => {
@@ -341,8 +349,9 @@ describe('SettingStore', () => {
       localStorage.setItem('tjg-space-auto-join', 'true')
       localStorage.setItem('tjg-space-show-subspaces', 'false')
       localStorage.setItem('tjg-space-default-notification', 'mentions_only')
-      localStorage.setItem('tjg-send-read-receipts', 'false')
-      localStorage.setItem('tjg-send-typing-notifications', 'false')
+      localStorage.setItem('tjg-send-receipts', 'false')
+      localStorage.setItem('tjg-show-typing', 'false')
+      localStorage.setItem('tjg-show-online', 'false')
 
       store.migrateLegacyPreferenceSettings()
 
@@ -361,6 +370,7 @@ describe('SettingStore', () => {
       expect(store.spaceDefaultNotification).toBe('mentions_only')
       expect(store.sendReadReceiptsEnabled).toBe(false)
       expect(store.sendTypingNotificationsEnabled).toBe(false)
+      expect(store.showOnlineStatusEnabled).toBe(false)
       expect(localStorage.getItem('tjg-message-confirm')).toBeNull()
       expect(localStorage.getItem('tjg-link-preview')).toBeNull()
       expect(localStorage.getItem('tjg-emoji-convert')).toBeNull()
@@ -374,8 +384,9 @@ describe('SettingStore', () => {
       expect(localStorage.getItem('tjg-space-auto-join')).toBeNull()
       expect(localStorage.getItem('tjg-space-show-subspaces')).toBeNull()
       expect(localStorage.getItem('tjg-space-default-notification')).toBeNull()
-      expect(localStorage.getItem('tjg-send-read-receipts')).toBeNull()
-      expect(localStorage.getItem('tjg-send-typing-notifications')).toBeNull()
+      expect(localStorage.getItem('tjg-send-receipts')).toBeNull()
+      expect(localStorage.getItem('tjg-show-typing')).toBeNull()
+      expect(localStorage.getItem('tjg-show-online')).toBeNull()
     })
   })
 

@@ -26,16 +26,11 @@
           <span class="setting-label">{{ t('setting.appearance.font_size_label') }}</span>
           <span class="setting-desc">{{ t('setting.appearance.font_size_desc') }}</span>
         </div>
-        <div class="font-size-control">
-          <n-slider
-            v-model:value="fontSize"
-            :min="12"
-            :max="20"
-            :step="1"
-            class="font-size-slider"
-            @update:value="handleFontSizeChange" />
-          <span class="font-value">{{ fontSize }}px</span>
-        </div>
+        <n-select
+          v-model:value="fontScale"
+          :options="fontScaleOptions"
+          class="font-scale-select"
+          @update:value="handleFontScaleChange" />
       </div>
     </div>
 
@@ -78,13 +73,15 @@
 </template>
 
 <script setup lang="ts">
-import { NDivider, NSelect, NSlider, NSwitch } from 'naive-ui'
-import { computed, onMounted, ref } from 'vue'
+import { NDivider, NSelect, NSwitch } from 'naive-ui'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppearancePreview from '@/components/settings/AppearancePreview.vue'
 import ThemeSwitcher from '@/components/settings/ThemeSwitcher.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { applyBubbleStyle, loadBubbleStyle, saveBubbleStyle } from '@/utils/bubbleStyle'
+import { applyFontScale, FONT_SCALE_STEPS, loadFontScale, normalizeFontScale, saveFontScale } from '@/utils/fontScale'
 
 defineOptions({
   name: 'AppearanceSettings'
@@ -101,28 +98,34 @@ const fontOptions = computed(() => [
   { label: t('setting.appearance.font_source_han_sans'), value: 'Source Han Sans' }
 ])
 
+/** 档位与标签一一对应：选项、回显文案都从这一份来源派生 */
+const FONT_SCALE_STEP_LABELS = [
+  { scale: FONT_SCALE_STEPS[0], labelKey: 'setting.appearance.font_size_small' },
+  { scale: FONT_SCALE_STEPS[1], labelKey: 'setting.appearance.font_size_standard' },
+  { scale: FONT_SCALE_STEPS[2], labelKey: 'setting.appearance.font_size_large' },
+  { scale: FONT_SCALE_STEPS[3], labelKey: 'setting.appearance.font_size_extra_large' }
+] as const
+
+const fontScaleOptions = computed(() =>
+  FONT_SCALE_STEP_LABELS.map(({ scale, labelKey }) => ({ label: t(labelKey), value: scale }))
+)
+
+/** 只允许落在这四档上：落档失败说明存储或调用方坏了，钳到基准而不是显示非法值 */
+function resolveStepLabel(scale: number): string {
+  const step = FONT_SCALE_STEP_LABELS.find((item) => item.scale === scale) ?? FONT_SCALE_STEP_LABELS[1]
+  return t(step.labelKey)
+}
+
 const currentTheme = computed(() => {
   return settingStore.themePattern === 'os' ? 'os' : settingStore.themeContent
 })
 
 const fontFamily = ref(settingStore.pageFontFamily)
-const fontSize = ref(14)
+const fontScale = ref(loadFontScale())
 const windowShadow = ref(settingStore.pageShadowEnabled)
 const blurEffect = ref(settingStore.pageBlurEnabled)
-const bubbleStyle = ref(true)
-
-onMounted(() => {
-  const savedFontSize = localStorage.getItem('tjg-font-size')
-  if (savedFontSize) {
-    fontSize.value = parseInt(savedFontSize, 10)
-    applyFontSize(fontSize.value)
-  }
-
-  const savedBubbleStyle = localStorage.getItem('tjg-bubble-style')
-  if (savedBubbleStyle !== null) {
-    bubbleStyle.value = savedBubbleStyle === 'true'
-  }
-})
+/** 开关 checked = 圆角，与既有文案一致；存储层用 rounded / square 两个值 */
+const bubbleStyle = ref(loadBubbleStyle() === 'rounded')
 
 function handleFontChange(value: string) {
   settingStore.setPageFont(value)
@@ -130,14 +133,12 @@ function handleFontChange(value: string) {
   showFeedback(t('setting.appearance.feedback.font_changed'), 'success')
 }
 
-function handleFontSizeChange(value: number) {
-  applyFontSize(value)
-  localStorage.setItem('tjg-font-size', value.toString())
-  showFeedback(t('setting.appearance.feedback.font_size_changed', { size: String(value) }), 'success')
-}
-
-function applyFontSize(size: number) {
-  document.documentElement.style.setProperty('--font-size-base', `${size}px`)
+function handleFontScaleChange(value: number) {
+  const scale = normalizeFontScale(value)
+  fontScale.value = scale
+  applyFontScale(scale)
+  saveFontScale(scale)
+  showFeedback(t('setting.appearance.feedback.font_size_changed', { size: resolveStepLabel(scale) }), 'success')
 }
 
 function handleShadowChange(value: boolean) {
@@ -159,7 +160,9 @@ function handleBlurChange(value: boolean) {
 }
 
 function handleBubbleStyleChange(value: boolean) {
-  localStorage.setItem('tjg-bubble-style', value.toString())
+  const style = value ? 'rounded' : 'square'
+  applyBubbleStyle(style)
+  saveBubbleStyle(style)
   showFeedback(
     value ? t('setting.appearance.feedback.bubble_rounded') : t('setting.appearance.feedback.bubble_square'),
     'success'
@@ -211,24 +214,8 @@ function handleBubbleStyleChange(value: boolean) {
   margin-top: var(--tjg-space-1);
 }
 
-.font-size-control {
-  display: flex;
-  align-items: center;
-  gap: var(--tjg-space-3);
-}
-
 .font-family-select,
-.font-size-slider {
+.font-scale-select {
   width: 150px;
-}
-
-.font-size-slider {
-  width: 120px;
-}
-
-.font-value {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-secondary);
-  min-width: 36px;
 }
 </style>

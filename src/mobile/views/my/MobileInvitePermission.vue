@@ -36,7 +36,7 @@
                 <van-switch
                   v-model="allowStrangers"
                   data-testid="allow-strangers"
-                  :disabled="mode !== 'allow_all'"
+                  :disabled="mode === 'allowlist'"
                   @change="handleAllowStrangersChange" />
               </template>
             </van-cell>
@@ -53,7 +53,7 @@
             </van-cell>
 
             <van-cell
-              v-if="mode !== 'allow_all'"
+              v-if="mode === 'allowlist'"
               data-testid="allow-strangers-note"
               :title="t('mobile_invite_permission.allow_strangers_inactive')" />
           </van-cell-group>
@@ -133,7 +133,6 @@ const mode = ref<InvitePolicyMode>('allow_all')
 const blocklist = ref<string[]>([])
 const allowlist = ref<string[]>([])
 const allowStrangers = ref(true)
-const contacts = ref<string[]>([])
 const newUserId = ref('')
 const encryptByDefault = ref(loadDmPrivacyPreferences().encryptByDefault)
 
@@ -142,7 +141,9 @@ const activeList = computed(() => (mode.value === 'blocklist' ? blocklist.value 
 
 onMounted(async () => {
   try {
-    const policy = await matrixAccountService.getInvitePolicy()
+    // 严格读取：能区分「从未存过」（null）与「读取失败」（抛错），
+    // 读取失败时展示错误而不是把默认策略当成账号真实策略渲染。
+    const policy = await matrixAccountService.getInvitePolicyStrict()
     applyConfig(policy)
   } catch (error) {
     logger.error('Failed to load invite permission config', error)
@@ -152,29 +153,34 @@ onMounted(async () => {
   }
 })
 
-function applyConfig(policy: InvitePolicy) {
+function applyConfig(policy: InvitePolicy | null) {
   const normalized = normalizeInvitePolicy(policy)
   mode.value = normalized.mode
   blocklist.value = normalized.blocklist
   allowlist.value = normalized.allowlist
   allowStrangers.value = normalized.allowStrangers
-  contacts.value = normalized.contacts
 }
 
-function buildPolicy(): InvitePolicy {
-  return {
-    mode: mode.value,
-    blocklist: blocklist.value,
-    allowlist: allowlist.value,
-    allowStrangers: allowStrangers.value,
-    contacts: contacts.value
-  }
-}
-
+/**
+ * 写回本页拥有的四个字段。
+ *
+ * **写前必须严格重读**（与桌面编辑器一致）：本页只拥有 mode / blocklist /
+ * allowlist / allowStrangers，其余字段（好友请求三项、contacts）必须来自
+ * 服务端最新值。读取失败会抛错 → 中止写入并提示；绝不拿挂载快照或默认值
+ * 整对象覆盖，否则一次读取失败 + 一次成功的 PUT 就会静默删掉服务端策略。
+ */
 async function persist() {
   saving.value = true
   try {
-    await matrixAccountService.setInvitePolicy(buildPolicy())
+    const latest = await matrixAccountService.getInvitePolicyStrict()
+    const base = normalizeInvitePolicy(latest)
+    await matrixAccountService.setInvitePolicy({
+      ...base,
+      mode: mode.value,
+      blocklist: blocklist.value,
+      allowlist: allowlist.value,
+      allowStrangers: allowStrangers.value
+    })
   } catch (error) {
     logger.error('Failed to persist invite policy', error)
     showToast({ type: 'fail', message: t('mobile_invite_permission.save_failed') })
@@ -193,8 +199,9 @@ async function handleModeChange(next: InvitePolicyMode | number | string) {
 }
 
 /**
- * 「允许非联系人私聊」只在 allow_all 下有意义：
- * 名单模式已经表达了"谁能进"，再用 contacts 判一次会互相矛盾。
+ * 「允许非联系人私聊」在 `allow_all` 与 `blocklist` 下都参与判定：
+ * `blocklist` 是叠加在它之上的拒绝维度（名单里的人无条件拒），名单外的用户
+ * 仍由这个开关决定。只有 `allowlist` 由名单显式决定，开关不生效。
  */
 async function handleAllowStrangersChange(next: boolean) {
   allowStrangers.value = next

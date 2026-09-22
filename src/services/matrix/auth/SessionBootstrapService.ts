@@ -7,6 +7,7 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import type { RoomInfo, UserInfoType } from '@/services/types'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { MessageType } from '@/types/message'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { reportExtensionDegradationToUi } from '@/utils/extensionHealth'
@@ -14,6 +15,7 @@ import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
 import { buildPresenceStorePatch } from '@/utils/presenceStatus'
 import { toLocalpart } from '@/utils/userIdentity'
+import { resolveOutgoingPresence } from '@/utils/userStatus'
 import type { SearchEventDoc, SearchRoomDoc } from '@/workers/matrixWorkerTypes'
 import type { MatrixPostLoginBootstrapOptions, SessionRuntimeHost, SessionRuntimeState } from './sessionRuntimeInternal'
 
@@ -224,16 +226,23 @@ export class SessionBootstrapService {
       logger.warn(`fetchUserProfile 失败，使用本地 displayName: ${err}`)
     }
 
+    // 「允许其他用户看到您的在线状态」关闭时不得上报 online：主动下发 offline 让对端
+    // 立即停看到上一会话遗留的在线状态，本地 activeStatus 一并置为离线，
+    // 避免本地显示在线而对端看不到（开关在 PrivacySettingsSection 暴露）。
+    // 规则只在 resolveOutgoingPresence 里实现一份，心跳 / 状态菜单 / 这里共用。
+    const showOnlineStatus = useSettingStore().showOnlineStatusEnabled
+    const initialPresence = resolveOutgoingPresence('online', showOnlineStatus)
+
     try {
       // 确保 client 就绪后再设置 presence，避免登录时序竞态导致 "客户端未初始化"
       await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
-      await matrixPresenceService.setPresence('online')
+      await matrixPresenceService.setPresence(initialPresence)
     } catch (err) {
-      logger.warn(`setPresence(online) 失败：${err}`)
+      logger.warn(`setPresence(${initialPresence}) 失败：${err}`)
     }
 
     port.user.updateProfileFields({
-      activeStatus: OnlineEnum.ONLINE,
+      activeStatus: showOnlineStatus ? OnlineEnum.ONLINE : OnlineEnum.OFFLINE,
       lastOptTime: Date.now()
     })
 

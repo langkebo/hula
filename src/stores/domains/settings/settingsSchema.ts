@@ -5,11 +5,9 @@ export const SETTINGS_TAB_IDS = [
   'notifications',
   'preferences',
   'keyboard',
-  'sidebar',
   'voiceVideo',
   'securityPrivacy',
   'encryption',
-  'labs',
   'mjolnir',
   'helpAbout',
   'friends',
@@ -57,11 +55,9 @@ export const SETTINGS_TABS: SettingsTab[] = [
   { id: 'notifications', label: 'Notifications', icon: 'bell', group: 'general' },
   { id: 'preferences', label: 'Preferences', icon: 'settings', group: 'general' },
   { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', group: 'general', desktopOnly: true },
-  { id: 'sidebar', label: 'Sidebar', icon: 'sidebar', group: 'general', desktopOnly: true },
   { id: 'voiceVideo', label: 'Voice & Video', icon: 'microphone', group: 'communication' },
   { id: 'securityPrivacy', label: 'Security & Privacy', icon: 'shield', group: 'security' },
   { id: 'encryption', label: 'Encryption', icon: 'key', group: 'security' },
-  { id: 'labs', label: 'Labs', icon: 'flask', group: 'advanced' },
   { id: 'mjolnir', label: 'Moderation', icon: 'block-helper', group: 'advanced' },
   { id: 'helpAbout', label: 'Help & About', icon: 'help-circle', group: 'other' },
   { id: 'friends', label: 'Friends', icon: 'account-group', group: 'communication' },
@@ -76,11 +72,9 @@ const SETTINGS_TAB_TRANSLATION_KEYS: Record<SettingsTabType, string> = {
   notifications: 'setting.dialog.tabs.notifications',
   preferences: 'setting.dialog.tabs.preferences',
   keyboard: 'setting.dialog.tabs.keyboard',
-  sidebar: 'setting.dialog.tabs.sidebar',
   voiceVideo: 'setting.dialog.tabs.voice_video',
   securityPrivacy: 'setting.dialog.tabs.security_privacy',
   encryption: 'setting.dialog.tabs.encryption',
-  labs: 'setting.dialog.tabs.labs',
   mjolnir: 'setting.dialog.tabs.mjolnir',
   helpAbout: 'setting.dialog.tabs.help_about',
   friends: 'setting.dialog.tabs.friends',
@@ -99,7 +93,7 @@ export const SETTINGS_LEGACY_TAB_MAP: Record<LegacySettingsTabType, SettingsTabT
 
 export const SETTINGS_CANONICAL_ROUTE_SEGMENTS = {
   notifications: 'notifications',
-  labs: 'labs',
+  labs: 'labs', // 桌面 Labs tab 已删除；移动端 Labs 设置路由仍在使用，不能一并移除
   securityPrivacy: 'security-privacy',
   helpAbout: 'help-about'
 } as const

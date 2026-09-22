@@ -409,44 +409,62 @@ class MatrixAccountService extends BaseMatrixService {
   }
 
   /**
-   * 读取邀请策略（`im.hula.invite_policy` account data）。
+   * 读取邀请策略（`im.hula.invite_policy` account data）——宽松变体，供**只读**路径使用。
    *
    * account data 是权威来源；读取失败时返回归一化后的默认值（allow_all），
    * 而不是抛错——隐私设置页拿到默认值仍可正常渲染。
+   *
+   * **写路径（read-modify-write）不能用这个变体**，必须用
+   * `getInvitePolicyStrict()`：这里把「读取失败」和「账号上还没存过策略」
+   * 都折叠成同一份默认值，调用方无法区分。若拿它当写前重读的基线，
+   * 一次读取失败 + 一次成功的 PUT 就会把用户账号上已有的
+   * mode/blocklist/allowlist/allowStrangers 静默删成默认值。
    *
    * 兼容旧 key：早期版本把账号级策略写在 `im.hula.invite_blocklist`，
    * 该名字与后端**房间级**表/端点同名（语义不同）。这里做一次性回退读取，
    * 避免老用户升级后策略被静默重置为 allow_all。
    */
   async getInvitePolicy(): Promise<InvitePolicy> {
-    const client = this.getClient()
-
     try {
-      const accountData = await client.getAccountDataFromServer(INVITE_POLICY_ACCOUNT_DATA_TYPE)
-      if (accountData) {
-        const policy = normalizeInvitePolicy(accountData)
-        cacheInvitePolicy(policy)
-        logger.info(`[MatrixAccount] 获取邀请策略成功: mode=${policy.mode}`)
-        return policy
-      }
+      return (await this.getInvitePolicyStrict()) ?? normalizeInvitePolicy(null)
     } catch (err) {
-      logger.error(`[MatrixAccount] 获取邀请策略失败: ${err}`)
+      logger.error(`[MatrixAccount] 获取邀请策略失败（宽松回退默认值）: ${err}`)
       return normalizeInvitePolicy(null)
     }
+  }
 
-    try {
-      const legacy = await client.getAccountDataFromServer(LEGACY_INVITE_POLICY_ACCOUNT_DATA_TYPE)
-      if (legacy) {
-        const policy = normalizeInvitePolicy(legacy)
-        cacheInvitePolicy(policy)
-        logger.info(`[MatrixAccount] 已从旧 key 迁移邀请策略: mode=${policy.mode}`)
-        return policy
-      }
-    } catch (err) {
-      logger.warn(`[MatrixAccount] 读取旧邀请策略 key 失败（忽略）: ${err}`)
+  /**
+   * 读取邀请策略（`im.hula.invite_policy` account data）——严格变体，供**写路径**使用。
+   *
+   * 与 `getInvitePolicy()` 的唯一区别是能区分两种「拿不到策略」：
+   * - 返回 `null`：新 key 与旧 key 在服务器上都确实不存在（SDK 对 404 返回 null），
+   *   账号还没存过策略，调用方可以安全地以默认策略为基线创建；
+   * - 抛错：读取真的失败（网络 / 鉴权等），此时**无法判断**账号上有没有策略。
+   *
+   * read-modify-write 的写前重读必须走这里：读取失败就中止写入并走错误反馈，
+   * 绝不能回落默认值再写回——那会把用户已有的策略整份覆盖掉，
+   * 而且因为随后的 PUT 成功，调用方还会以为保存成功了。
+   */
+  async getInvitePolicyStrict(): Promise<InvitePolicy | null> {
+    const client = this.getClient()
+
+    const accountData = await client.getAccountDataFromServer(INVITE_POLICY_ACCOUNT_DATA_TYPE)
+    if (accountData) {
+      const policy = normalizeInvitePolicy(accountData)
+      cacheInvitePolicy(policy, client.getUserId())
+      logger.info(`[MatrixAccount] 获取邀请策略成功: mode=${policy.mode}`)
+      return policy
     }
 
-    return normalizeInvitePolicy(null)
+    const legacy = await client.getAccountDataFromServer(LEGACY_INVITE_POLICY_ACCOUNT_DATA_TYPE)
+    if (legacy) {
+      const policy = normalizeInvitePolicy(legacy)
+      cacheInvitePolicy(policy, client.getUserId())
+      logger.info(`[MatrixAccount] 已从旧 key 迁移邀请策略: mode=${policy.mode}`)
+      return policy
+    }
+
+    return null
   }
 
   /**
@@ -460,7 +478,7 @@ class MatrixAccountService extends BaseMatrixService {
 
     try {
       await client.setAccountData(INVITE_POLICY_ACCOUNT_DATA_TYPE, { ...normalized })
-      cacheInvitePolicy(normalized)
+      cacheInvitePolicy(normalized, client.getUserId())
       logger.info(`[MatrixAccount] 设置邀请策略成功: mode=${normalized.mode}`)
       return true
     } catch (err) {

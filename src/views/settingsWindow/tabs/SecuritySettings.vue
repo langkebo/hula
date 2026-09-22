@@ -27,8 +27,6 @@
 
     <n-divider />
 
-    <InviteListsSection />
-
     <n-card :title="t('setting.invite_permission.title')" class="settings-card">
       <InvitePermissionPanel />
     </n-card>
@@ -61,7 +59,6 @@ import { createLogger } from '@/utils/Logger'
 import BlockedUsersSection from './sections/BlockedUsersSection.vue'
 import EncryptionStatusSection from './sections/EncryptionStatusSection.vue'
 import IgnoredUsersSection from './sections/IgnoredUsersSection.vue'
-import InviteListsSection from './sections/InviteListsSection.vue'
 import PrivacySettingsSection from './sections/PrivacySettingsSection.vue'
 import PrivateChatSection from './sections/PrivateChatSection.vue'
 

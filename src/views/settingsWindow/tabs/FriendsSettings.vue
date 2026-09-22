@@ -7,21 +7,21 @@
           <span class="setting-label">{{ t('setting.friends.requests.allow_label') }}</span>
           <span class="setting-desc">{{ t('setting.friends.requests.allow_desc') }}</span>
         </div>
-        <n-switch v-model:value="allowFriendRequests" @update:value="handleToggle('allowFriendRequests')" />
+        <n-switch v-model:value="allowFriendRequests" @update:value="handleToggle" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.friends.requests.auto_accept_label') }}</span>
           <span class="setting-desc">{{ t('setting.friends.requests.auto_accept_desc') }}</span>
         </div>
-        <n-switch v-model:value="autoAcceptFriends" @update:value="handleToggle('autoAcceptFriends')" />
+        <n-switch v-model:value="autoAcceptFriends" @update:value="handleToggle" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.friends.requests.message_required_label') }}</span>
           <span class="setting-desc">{{ t('setting.friends.requests.message_required_desc') }}</span>
         </div>
-        <n-switch v-model:value="friendRequestMessage" @update:value="handleToggle('friendRequestMessage')" />
+        <n-switch v-model:value="requireFriendRequestMessage" @update:value="handleToggle" />
       </div>
     </div>
 
@@ -138,8 +138,10 @@ import { NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, NSwitch, us
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { matrixAccountService } from '@/services/matrix'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { DEFAULT_INVITE_POLICY, type InvitePolicy, normalizeInvitePolicy } from '@/services/matrix/user/invitePolicy'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('FriendsSettings')
@@ -163,9 +165,28 @@ interface FriendRequest {
   message?: string
 }
 
-const allowFriendRequests = ref(true)
-const autoAcceptFriends = ref(false)
-const friendRequestMessage = ref(true)
+/**
+ * 好友请求三开关的唯一数据源是账号级邀请策略 `im.hula.invite_policy` 的
+ * account data。
+ *
+ * 消费方在 synapse-rust 后端：前端只负责读写，不做本地强制，所以这里读到的值
+ * 只是「后端会读到的策略」，不是「功能已生效」的证据。
+ */
+const allowFriendRequests = ref(DEFAULT_INVITE_POLICY.allowFriendRequests)
+const autoAcceptFriends = ref(DEFAULT_INVITE_POLICY.autoAcceptFriends)
+const requireFriendRequestMessage = ref(DEFAULT_INVITE_POLICY.requireFriendRequestMessage)
+
+/**
+ * 最近一次「成功读入或成功写回」的三个开关值。
+ *
+ * `n-switch` 是先改本地模型再触发 `handleToggle`：保存失败时若不回滚，
+ * 界面会显示成已保存，而账号上的策略其实没变。失败时回滚到这里。
+ */
+const persistedFlags = ref({
+  allowFriendRequests: DEFAULT_INVITE_POLICY.allowFriendRequests,
+  autoAcceptFriends: DEFAULT_INVITE_POLICY.autoAcceptFriends,
+  requireFriendRequestMessage: DEFAULT_INVITE_POLICY.requireFriendRequestMessage
+})
 
 const loadingGroups = ref(false)
 const loadingRequests = ref(false)
@@ -179,44 +200,62 @@ const newGroupName = ref('')
 const editGroupName = ref('')
 const editingGroupId = ref('')
 
-const STORAGE_KEY = 'tjg-friend-settings'
-
 onMounted(async () => {
   // P0-#3：好友分组/请求依赖 MatrixClient，冷启动时客户端尚未就绪会导致
-  // 「Failed to load friend groups」等报错。先等待客户端就绪再发请求。
-  loadSettings()
+  // 「Failed to load friend groups」等报错。好友请求策略存在 account data 上，
+  // 同样必须先等客户端就绪，否则读到的是归一化默认值而不是账号上的真实策略。
   try {
     await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
   } catch {
-    logger.warn('[FriendsSettings] 客户端未在超时内就绪，使用本地缓存设置')
+    logger.warn('[FriendsSettings] 客户端未在超时内就绪，好友请求策略可能退回默认值')
   }
+  await loadSettings()
   await loadFriendGroups()
   await loadFriendRequests()
 })
 
-function loadSettings() {
-  const saved = localStorage.getItem(STORAGE_KEY)
-  if (saved) {
-    try {
-      const data = JSON.parse(saved)
-      if (data.allowFriendRequests !== undefined) allowFriendRequests.value = data.allowFriendRequests
-      if (data.autoAcceptFriends !== undefined) autoAcceptFriends.value = data.autoAcceptFriends
-      if (data.friendRequestMessage !== undefined) friendRequestMessage.value = data.friendRequestMessage
-    } catch {
-      // ignore
+async function loadSettings() {
+  try {
+    const policy = normalizeInvitePolicy(await matrixAccountService.getInvitePolicy())
+    allowFriendRequests.value = policy.allowFriendRequests
+    autoAcceptFriends.value = policy.autoAcceptFriends
+    requireFriendRequestMessage.value = policy.requireFriendRequestMessage
+    persistedFlags.value = {
+      allowFriendRequests: policy.allowFriendRequests,
+      autoAcceptFriends: policy.autoAcceptFriends,
+      requireFriendRequestMessage: policy.requireFriendRequestMessage
     }
+  } catch (error) {
+    logger.warn('加载好友请求策略失败:', error)
   }
 }
 
-function saveSettings() {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      allowFriendRequests: allowFriendRequests.value,
-      autoAcceptFriends: autoAcceptFriends.value,
-      friendRequestMessage: friendRequestMessage.value
-    })
-  )
+/**
+ * 写回好友请求策略。
+ *
+ * **写前必须重读**：同一份 account data 还被 `BlockedUsersSection` 与
+ * `InvitePermissionPanel` 编辑（SecuritySettings 同时挂载它们）。若用挂载时的
+ * 快照整份写回，对方刚保存的改动会被静默覆盖。这里只覆盖本组件拥有的三个字段。
+ *
+ * 重读走**严格**变体 `getInvitePolicyStrict()`：读取失败会抛错而不是回落
+ * `normalizeInvitePolicy(null)` 的默认策略。否则「读失败 + 写成功」会用
+ * `{mode: 'allow_all', blocklist: [], allowlist: []}` 静默删掉用户已有的策略，
+ * 还会因为 PUT 成功而弹「已保存」。
+ */
+async function saveSettings() {
+  const latest = normalizeInvitePolicy(await matrixAccountService.getInvitePolicyStrict())
+  const next: InvitePolicy = {
+    ...latest,
+    allowFriendRequests: allowFriendRequests.value,
+    autoAcceptFriends: autoAcceptFriends.value,
+    requireFriendRequestMessage: requireFriendRequestMessage.value
+  }
+  await matrixAccountService.setInvitePolicy(next)
+  persistedFlags.value = {
+    allowFriendRequests: next.allowFriendRequests,
+    autoAcceptFriends: next.autoAcceptFriends,
+    requireFriendRequestMessage: next.requireFriendRequestMessage
+  }
 }
 
 async function loadFriendGroups() {
@@ -259,9 +298,18 @@ async function loadFriendRequests() {
   }
 }
 
-function handleToggle(_key: string) {
-  saveSettings()
-  showFeedback(t('setting.friends.feedback.settings_updated'), 'success')
+async function handleToggle() {
+  try {
+    await saveSettings()
+    showFeedback(t('setting.friends.feedback.settings_updated'), 'success')
+  } catch (error) {
+    logger.error('保存好友请求策略失败:', error)
+    // 保存没有成功：把开关回滚到最近一次确认过的值，不显示成已生效
+    allowFriendRequests.value = persistedFlags.value.allowFriendRequests
+    autoAcceptFriends.value = persistedFlags.value.autoAcceptFriends
+    requireFriendRequestMessage.value = persistedFlags.value.requireFriendRequestMessage
+    showFeedback(t('setting.invite_permission.save_failed'), 'error')
+  }
 }
 
 async function handleCreateGroup() {

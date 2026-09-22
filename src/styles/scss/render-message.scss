@@ -41,6 +41,17 @@
     box-shadow var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 }
 
+/**
+ * 方形气泡（data-bubble-style='square'，由 App.vue / 外观设置写入根元素）。
+ * 默认 @include bubble 已是圆角，这里只需覆盖 square。
+ * 属性选择器 (0,2,0) 特异性高于 .bubble / .bubble-oneself (0,1,0)，
+ * 无需 !important 即可盖过后者的 rounded-[12px_4px_12px_12px]。
+ */
+[data-bubble-style='square'] .bubble,
+[data-bubble-style='square'] .bubble-oneself {
+  border-radius: var(--tjg-radius-xs);
+}
+
 /* 气泡 hover 微浮 — 对齐原型 B2（transform 不触发 reflow，无布局抖动） */
 .bubble:hover,
 .bubble-oneself:hover {

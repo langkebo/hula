@@ -122,6 +122,19 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     sessionUnreadStore.set(userStore.userInfo?.uid, roomId, count)
   }
 
+  /**
+   * 设置会话未读数：界面与 sessionUnread 本地账本一起更新。
+   *
+   * 本机产生的未读变化（新消息 +1、已读清零）必须记账：关闭已读回执时服务端
+   * unread_count 不会因本机已读而减少，apply 的「情况 2」以本地账本为准，
+   * 账本不更新就会在会话列表重建 / 重连时把增量丢掉或把已读的算回来。
+   */
+  const setUnreadCount = (roomId: string, count: number) => {
+    if (!roomId) return
+    updateSession(roomId, { unreadCount: count })
+    persistUnreadCount(roomId, count)
+  }
+
   const rebuildSessionMap = () => {
     if (!sessionList.value.length) return
     sessionMap.value = sessionList.value.reduce(
@@ -278,12 +291,27 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
 
   const markSessionRead = async (roomId: string) => {
     if (!roomId) return
-    updateSession(roomId, { unreadCount: 0 })
-    persistUnreadCount(roomId, 0)
+    setUnreadCount(roomId, 0)
     writeUnreadDetail(roomId, { total: 0, highlight: 0, silent: getUnreadDetail(roomId)?.silent ?? false })
+
+    // 记录「已读到的活跃时间」：sessionUnread.apply 的情况 1 依赖它来清零并纠正
+    // 服务端脏未读数。关闭已读回执时服务端 unread_count 不会归零，没有这条记录，
+    // 下一次 syncPersistedUnreadCounts（会话列表重建 / 重连）就会用 Math.max 把角标写回来。
+    // 与本地清零一致：无条件记录，不受回执开关影响。
+    const session = resolveSessionByRoomId(roomId)
+    const activeTime = session?.activeTime ?? 0
+    if (activeTime) {
+      sessionUnreadStore.setLastRead(userStore.userInfo?.uid, roomId, activeTime)
+    }
+
     try {
-      await matrixReceiptService.markRoomAsRead(roomId)
-      void refreshUnreadDetail(roomId).catch(() => null)
+      // 关闭「发送已读回执」时服务端收不到 m.read，unread_count 仍 >0；
+      // 若无条件回读，用户正在浏览的房间会出现「角标清零 -> 弹回」并跨重启存活。
+      // 因此只在实际发出回执后回读，本地清零保持无条件。
+      const receiptSent = await matrixReceiptService.markRoomAsRead(roomId)
+      if (receiptSent) {
+        void refreshUnreadDetail(roomId).catch(() => null)
+      }
     } catch (err) {
       logger.error('标记会话已读失败:', err)
     }
@@ -357,6 +385,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     getGroupSessions,
     removeSession,
     addSession,
+    setUnreadCount,
     resetSessionSelection,
     clearCurrentSessionUnread,
     updateTotalUnreadCount,

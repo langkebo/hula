@@ -11,7 +11,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('../../MatrixClientService', () => ({
   default: {
-    getClient: vi.fn(() => null as MatrixClient | null)
+    getClient: vi.fn(() => null as MatrixClient | null),
+    waitForClientReady: vi.fn().mockResolvedValue(undefined)
   }
 }))
 
@@ -198,6 +199,343 @@ describe('MatrixNotificationService', () => {
       expect(config).toHaveProperty('showPreview')
       expect(config).toHaveProperty('showSender')
       expect(config).toHaveProperty('showMessageContent')
+      expect(config).toHaveProperty('events')
+    })
+  })
+
+  describe('events config', () => {
+    const CONFIG_STORAGE_KEY = 'tjg-notification-config'
+    const LEGACY_THREAD_MENTION_KEY = 'tjg-thread-mention-notify'
+
+    beforeEach(() => {
+      localStorage.clear()
+      matrixNotificationService.updateConfig({ events: {} })
+    })
+
+    it('exposes an empty events map by default (missing field means enabled)', () => {
+      expect(matrixNotificationService.getConfig().events).toEqual({})
+    })
+
+    it('persists the thread_mention switch and restores it in a fresh instance', async () => {
+      matrixNotificationService.setEventNotificationEnabled('thread_mention', false)
+
+      expect(matrixNotificationService.getConfig().events.thread_mention).toBe(false)
+      expect(JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) as string).events.thread_mention).toBe(false)
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events.thread_mention).toBe(false)
+    })
+
+    it('drops a persisted events value that is not a boolean map', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ events: 'nope' }))
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events).toEqual({})
+    })
+
+    it('drops non-boolean event entries but keeps the boolean ones', async () => {
+      localStorage.setItem(
+        CONFIG_STORAGE_KEY,
+        JSON.stringify({ events: { thread_mention: 'false', other_kind: true } })
+      )
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events).toEqual({ other_kind: true })
+    })
+
+    it('migrates the legacy thread mention key once, letting the new value win', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ events: {} }))
+      localStorage.setItem(LEGACY_THREAD_MENTION_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events.thread_mention).toBe(false)
+      expect(localStorage.getItem(LEGACY_THREAD_MENTION_KEY)).toBeNull()
+
+      // 新值已存在时以新值为准：再次构造实例不会被旧 key 覆盖回去
+      localStorage.setItem(LEGACY_THREAD_MENTION_KEY, 'true')
+      fresh.setEventNotificationEnabled('thread_mention', false)
+      vi.resetModules()
+      const again = (await import('../MatrixNotificationService')).matrixNotificationService
+      expect(again.getConfig().events.thread_mention).toBe(false)
+    })
+
+    it('migrates the legacy thread mention key even when no config was ever persisted', async () => {
+      localStorage.removeItem(CONFIG_STORAGE_KEY)
+      localStorage.setItem(LEGACY_THREAD_MENTION_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getConfig().events.thread_mention).toBe(false)
+      expect(localStorage.getItem(LEGACY_THREAD_MENTION_KEY)).toBeNull()
+    })
+  })
+
+  describe('legacy display config migration', () => {
+    const CONFIG_STORAGE_KEY = 'tjg-notification-config'
+    const LEGACY_DESKTOP_KEY = 'tjg-desktop-notification'
+    const LEGACY_CONTENT_KEY = 'tjg-show-content'
+    const LEGACY_SENDER_KEY = 'tjg-show-sender'
+
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it('adopts the base notification keys once when the new config never set them', async () => {
+      localStorage.setItem(LEGACY_DESKTOP_KEY, 'false')
+      localStorage.setItem(LEGACY_CONTENT_KEY, 'false')
+      localStorage.setItem(LEGACY_SENDER_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      const config = fresh.getConfig()
+      expect(config.enableDesktop).toBe(false)
+      expect(config.showMessageContent).toBe(false)
+      expect(config.showSender).toBe(false)
+      expect(localStorage.getItem(LEGACY_DESKTOP_KEY)).toBeNull()
+      expect(localStorage.getItem(LEGACY_CONTENT_KEY)).toBeNull()
+      expect(localStorage.getItem(LEGACY_SENDER_KEY)).toBeNull()
+
+      // 已持久化：再次冷启动仍然保持"关"，不依赖旧 key
+      vi.resetModules()
+      const again = (await import('../MatrixNotificationService')).matrixNotificationService
+      expect(again.getConfig().enableDesktop).toBe(false)
+      expect(again.getConfig().showMessageContent).toBe(false)
+      expect(again.getConfig().showSender).toBe(false)
+    })
+
+    it('lets a newer persisted value win over the legacy key', async () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ showMessageContent: true, showSender: true }))
+      localStorage.setItem(LEGACY_CONTENT_KEY, 'false')
+      localStorage.setItem(LEGACY_SENDER_KEY, 'false')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      const config = fresh.getConfig()
+      expect(config.showMessageContent).toBe(true)
+      expect(config.showSender).toBe(true)
+      expect(localStorage.getItem(LEGACY_CONTENT_KEY)).toBeNull()
+      expect(localStorage.getItem(LEGACY_SENDER_KEY)).toBeNull()
+    })
+  })
+
+  describe('dnd settings', () => {
+    const DND_ENABLED_KEY = 'tjg-push-dnd'
+    const DND_START_KEY = 'tjg-push-dnd-start'
+    const DND_END_KEY = 'tjg-push-dnd-end'
+
+    /** 起止同一时刻 = 全天勿扰（与纯函数语义一致），避免依赖真实时钟。 */
+    const allDayWindow = () => {
+      const now = Date.now()
+      return { enabled: true, startTime: now, endTime: now }
+    }
+
+    // 账号数据同步是副作用（客户端未初始化时会打错误日志），这里只打桩同步，不碰缓存/镜像断言
+    let dndSyncSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      localStorage.clear()
+      dndSyncSpy = vi.spyOn(matrixNotificationService, 'syncDndToAccountData').mockResolvedValue(undefined)
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: null, endTime: null })
+    })
+
+    afterEach(() => {
+      dndSyncSpy.mockRestore()
+    })
+
+    it('defaults to a disabled, boundary-less window when the mirror is empty', async () => {
+      localStorage.clear()
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getDndSettings()).toEqual({ enabled: false, startTime: null, endTime: null })
+    })
+
+    it('writes the window to the localStorage mirror', () => {
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: 1000, endTime: 2000 })
+
+      expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+      expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('true')
+      expect(localStorage.getItem(DND_START_KEY)).toBe('1000')
+      expect(localStorage.getItem(DND_END_KEY)).toBe('2000')
+    })
+
+    it('clears a boundary from the mirror when the picker is emptied', () => {
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: 1000, endTime: 2000 })
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: null, endTime: 2000 })
+
+      expect(matrixNotificationService.getDndSettings().startTime).toBeNull()
+      expect(localStorage.getItem(DND_START_KEY)).toBeNull()
+    })
+
+    it('hydrates a fresh instance from the mirror in the constructor', async () => {
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: 1000, endTime: 2000 })
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+    })
+
+    it('drops a corrupt mirror timestamp instead of guessing', async () => {
+      localStorage.setItem(DND_ENABLED_KEY, 'true')
+      localStorage.setItem(DND_START_KEY, 'not-a-number')
+      localStorage.setItem(DND_END_KEY, '2000')
+
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+
+      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: null, endTime: 2000 })
+    })
+
+    it('reports the injected clock inside an all-day window and outside a bounded one', () => {
+      matrixNotificationService.setDndSettings(allDayWindow())
+      expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(true)
+
+      matrixNotificationService.setDndSettings({
+        enabled: true,
+        startTime: new Date(2026, 5, 15, 22, 0).getTime(),
+        endTime: new Date(2026, 5, 15, 23, 0).getTime()
+      })
+      expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(false)
+    })
+
+    it('refreshes the cache when the account data has a window', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getAccountData: vi.fn(() => ({
+          getContent: () => ({ enabled: true, startTime: 1000, endTime: 2000 })
+        }))
+      } as unknown as MatrixClient)
+
+      const result = await matrixNotificationService.syncDndFromAccountData()
+
+      expect(result).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+      expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+    })
+
+    it('writes the local mirror after a successful account-data read so boot hydration sees it', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getAccountData: vi.fn(() => ({
+          getContent: () => ({ enabled: true, startTime: 1000, endTime: 2000 })
+        }))
+      } as unknown as MatrixClient)
+
+      await matrixNotificationService.syncDndFromAccountData()
+
+      expect(localStorage.getItem(DND_ENABLED_KEY)).toBe('true')
+      expect(localStorage.getItem(DND_START_KEY)).toBe('1000')
+      expect(localStorage.getItem(DND_END_KEY)).toBe('2000')
+
+      // 冷启动：新实例只能从镜像水合，必须拿到账号数据那份窗口
+      vi.resetModules()
+      const fresh = (await import('../MatrixNotificationService')).matrixNotificationService
+      expect(fresh.getDndSettings()).toEqual({ enabled: true, startTime: 1000, endTime: 2000 })
+    })
+
+    it('drops non-finite account-data timestamps instead of suppressing notifications', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getAccountData: vi.fn(() => ({
+          getContent: () => ({ enabled: true, startTime: Number.NaN, endTime: 2000 })
+        }))
+      } as unknown as MatrixClient)
+
+      const result = await matrixNotificationService.syncDndFromAccountData()
+
+      expect(result).toEqual({ enabled: true, startTime: null, endTime: 2000 })
+      // 边界不完整 → 不抑制，而不是凭一个 NaN 走跨午夜分支误判
+      expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(false)
+    })
+
+    it('suppresses a plain mention through the decision gate while DND is active', () => {
+      matrixNotificationService.setDndSettings(allDayWindow())
+
+      expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(
+        false
+      )
+    })
+
+    it('leaves a plain mention untouched while DND is inactive', () => {
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: null, endTime: null })
+
+      expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(true)
+    })
+  })
+
+  /**
+   * I3 回归：独立聊天窗口是各自独立的 realm，各持一份模块级内存快照。
+   * 只读构造时的快照会导致「在设置窗口改了通知/DND，已打开的聊天窗口不生效」，
+   * 且写回整份快照会覆盖别的窗口刚改的字段。
+   */
+  describe('cross-window freshness', () => {
+    const CONFIG_STORAGE_KEY = 'tjg-notification-config'
+    const DND_ENABLED_KEY = 'tjg-push-dnd'
+    const DND_START_KEY = 'tjg-push-dnd-start'
+    const DND_END_KEY = 'tjg-push-dnd-end'
+
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it('getConfig observes a config written by another window', () => {
+      matrixNotificationService.updateConfig({ showSender: true, showMessageContent: true })
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ showSender: false, showMessageContent: false }))
+
+      const config = matrixNotificationService.getConfig()
+
+      expect(config.showSender).toBe(false)
+      expect(config.showMessageContent).toBe(false)
+    })
+
+    it('a stale window cannot clobber a newer field when it changes another field', () => {
+      // 另一个窗口刚把内容预览关掉
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ showMessageContent: false, showSender: true }))
+
+      // 本窗口的旧快照只改 showSender，写回时不能把 showMessageContent 顶回旧值
+      matrixNotificationService.updateConfig({ showSender: false })
+
+      const persisted = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) as string)
+      expect(persisted.showMessageContent).toBe(false)
+      expect(persisted.showSender).toBe(false)
+    })
+
+    it('setEventNotificationEnabled merges into the freshest persisted events map', () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ events: { other_kind: true } }))
+
+      matrixNotificationService.setEventNotificationEnabled('thread_mention', false)
+
+      const persisted = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY) as string)
+      expect(persisted.events).toEqual({ other_kind: true, thread_mention: false })
+    })
+
+    it('shouldNotifyMessage reads the freshest persisted event switches', () => {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ events: { thread_mention: false } }))
+
+      expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: true, body: 'hi' })).toBe(false)
+    })
+
+    it('the DND gate observes a window written by another window', () => {
+      const start = new Date(2026, 5, 15, 1, 0).getTime()
+      const end = new Date(2026, 5, 15, 23, 0).getTime()
+      localStorage.setItem(DND_ENABLED_KEY, 'true')
+      localStorage.setItem(DND_START_KEY, String(start))
+      localStorage.setItem(DND_END_KEY, String(end))
+
+      expect(matrixNotificationService.getDndSettings()).toEqual({ enabled: true, startTime: start, endTime: end })
+      expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(true)
+      expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(
+        false
+      )
     })
   })
 

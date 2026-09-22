@@ -27,9 +27,10 @@
 
 <script setup lang="ts">
 import { NSwitch } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({
   name: 'PrivacySettingsSection'
@@ -37,36 +38,31 @@ defineOptions({
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
+const settingStore = useSettingStore()
 
-// 隐私设置默认全部开启，挂载时从 localStorage 读取持久化值
-const showOnlineStatus = ref(true)
-const showTypingStatus = ref(true)
-const sendReadReceipts = ref(true)
-
-onMounted(() => {
-  loadPrivacySettings()
+// 隐私设置以 store 的 preferences 为唯一数据源，默认全部开启
+const showOnlineStatus = computed({
+  get: () => settingStore.showOnlineStatusEnabled,
+  set: (value: boolean) => settingStore.setShowOnlineStatusEnabled(value)
 })
 
-// 从 localStorage 加载隐私设置（不依赖 Matrix 客户端，可独立加载）
-function loadPrivacySettings() {
-  const savedOnline = localStorage.getItem('tjg-show-online')
-  if (savedOnline !== null) {
-    showOnlineStatus.value = savedOnline === 'true'
-  }
+const showTypingStatus = computed({
+  get: () => settingStore.sendTypingNotificationsEnabled,
+  set: (value: boolean) => settingStore.setSendTypingNotificationsEnabled(value)
+})
 
-  const savedTyping = localStorage.getItem('tjg-show-typing')
-  if (savedTyping !== null) {
-    showTypingStatus.value = savedTyping === 'true'
-  }
+const sendReadReceipts = computed({
+  get: () => settingStore.sendReadReceiptsEnabled,
+  set: (value: boolean) => settingStore.setSendReadReceiptsEnabled(value)
+})
 
-  const savedReceipts = localStorage.getItem('tjg-send-receipts')
-  if (savedReceipts !== null) {
-    sendReadReceipts.value = savedReceipts === 'true'
-  }
-}
+onMounted(() => {
+  // 遗留的 localStorage key 由 store 迁移逻辑读取一次并 removeItem，组件本身不碰 localStorage
+  settingStore.migrateLegacyPreferenceSettings()
+})
 
 function handleOnlineStatusChange(value: boolean) {
-  localStorage.setItem('tjg-show-online', value.toString())
+  settingStore.setShowOnlineStatusEnabled(value)
   showFeedback(
     value ? t('setting.security.online_status_shown') : t('setting.security.online_status_hidden'),
     'success'
@@ -74,7 +70,7 @@ function handleOnlineStatusChange(value: boolean) {
 }
 
 function handleTypingStatusChange(value: boolean) {
-  localStorage.setItem('tjg-show-typing', value.toString())
+  settingStore.setSendTypingNotificationsEnabled(value)
   showFeedback(
     value ? t('setting.security.typing_status_shown') : t('setting.security.typing_status_hidden'),
     'success'
@@ -82,7 +78,7 @@ function handleTypingStatusChange(value: boolean) {
 }
 
 function handleReadReceiptsChange(value: boolean) {
-  localStorage.setItem('tjg-send-receipts', value.toString())
+  settingStore.setSendReadReceiptsEnabled(value)
   showFeedback(
     value ? t('setting.security.read_receipts_enabled') : t('setting.security.read_receipts_disabled'),
     'success'

@@ -1,4 +1,9 @@
 import type { MatrixClient } from '@/services/matrix/sdk'
+import {
+  loadMediaDevicePreferences,
+  type MediaDevicePreferences,
+  toAudioQualityConstraints
+} from '@/services/media/mediaDevicePreferences'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import {
@@ -31,6 +36,9 @@ class MatrixVoIPService extends BaseMatrixService {
   // v40：本地/远端媒体流由 SDK 在 placeCall/answer 之后通过 feeds_changed 事件下发，
   // 服务层不再自行 getUserMedia 持有流，避免与 SDK 内部采集重复竞争摄像头/麦克风。
   private callMediaState: Map<string, { audioMuted: boolean; videoMuted: boolean }> = new Map()
+  // 音质偏好：每次通话只读一次（feeds_changed 会反复触发），每条轨道只施加一次。
+  private appliedAudioQualityTracks = new WeakSet<MediaStreamTrack>()
+  private callAudioQualityPreferences: Map<string, MediaDevicePreferences> = new Map()
   private observedClient: MatrixClient | null = null
   private readonly incomingCallListener = (call: VoIPCall) => this.handleIncomingCall(call)
   private readonly hangupCallListener = (call: VoIPCall) => this.handleCallHangup(call)
@@ -89,6 +97,7 @@ class MatrixVoIPService extends BaseMatrixService {
     this.calls.clear()
     this.callHandlers.clear()
     this.callMediaState.clear()
+    this.callAudioQualityPreferences.clear()
     // screenStream 是服务层通过 getDisplayMedia 持有的共享屏幕流，需自行释放。
     this.screenStream?.getTracks().forEach((t) => t.stop())
     this.screenStream = null
@@ -257,7 +266,45 @@ class MatrixVoIPService extends BaseMatrixService {
     }
     if (localStream.getTracks().length > 0) callInfo.localStream = localStream
     if (remoteStream.getTracks().length > 0) callInfo.remoteStream = remoteStream
+    this.applyLocalAudioQualityPreferences(callId, localStream)
     this.notifyCallUpdate(callId)
+  }
+
+  /**
+   * 把用户保存的音质偏好施加到 SDK 采集的本地音轨上。
+   *
+   * 这是本地音轨唯一可达的接缝：服务层不自己 `getUserMedia`（避免与 SDK 采集竞争设备），
+   * 本地轨道只在 `feeds_changed` 里随 SDK 的 feed 出现。
+   *
+   * 幂等：偏好每次通话只读一次并缓存（`feeds_changed` 会反复触发），
+   * 每条轨道只施加一次（`WeakSet`）；SDK 重建轨道后新轨对象不在集合里，会重新施加。
+   *
+   * 只对 `kind === 'audio'` 的轨道施加——把音频约束喂给视频轨道会 reject；
+   * 逐轨道 try/catch，单条轨道失败不影响通话。
+   */
+  private applyLocalAudioQualityPreferences(callId: string, localStream: MediaStream): void {
+    const audioTracks = localStream.getTracks().filter((track) => track.kind === 'audio')
+    if (audioTracks.length === 0) return
+
+    let preferences = this.callAudioQualityPreferences.get(callId)
+    if (!preferences) {
+      preferences = loadMediaDevicePreferences()
+      this.callAudioQualityPreferences.set(callId, preferences)
+    }
+    // 只传三个布尔：deviceId 不可变、volume 不是合法约束，混进来会让整次调用 reject。
+    const quality = toAudioQualityConstraints(preferences)
+
+    for (const track of audioTracks) {
+      if (this.appliedAudioQualityTracks.has(track)) continue
+      this.appliedAudioQualityTracks.add(track)
+      try {
+        void track.applyConstraints(quality).catch((error: unknown) => {
+          logger.warn(`[VoIP] 应用音频约束失败: ${String(error)}`)
+        })
+      } catch (error) {
+        logger.warn(`[VoIP] 应用音频约束失败: ${String(error)}`)
+      }
+    }
   }
 
   private cleanupCall(callId: string): void {
@@ -268,6 +315,7 @@ class MatrixVoIPService extends BaseMatrixService {
     }
     // 本地/远端 MediaStream 由 SDK 拥有，挂断时 SDK 自行释放，这里不应 stop 其轨道。
     this.callMediaState.delete(callId)
+    this.callAudioQualityPreferences.delete(callId)
     this.calls.delete(callId)
   }
 

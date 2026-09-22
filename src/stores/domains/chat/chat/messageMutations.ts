@@ -3,6 +3,8 @@ import type { ComputedRef, Ref } from 'vue'
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import { useMitt } from '@/composables/common/useMitt'
 import { type MessageStatusEnum, MittEnum, MsgEnum, RoomTypeEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
 import type { useGroupStore } from '@/stores/domains/chat/group'
@@ -202,8 +204,10 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
       const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
 
       if (shouldIncreaseUnread) {
-        updateData.unreadCount = (session.unreadCount || 0) + 1
-        logger.debug('增加未读数:', msg.message.roomId, updateData.unreadCount)
+        const nextUnread = (session.unreadCount || 0) + 1
+        // 走 setUnreadCount：界面与 sessionUnread 本地账本一起更新（关闭已读回执时账本是唯一可信计数）
+        sessionStore.setUnreadCount(msg.message.roomId, nextUnread)
+        logger.debug('增加未读数:', msg.message.roomId, nextUnread)
       }
 
       sessionStore.updateSession(msg.message.roomId, updateData)
@@ -223,7 +227,7 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
           const isSelfMessage = msg.fromUser?.uid === userStore.userInfo?.uid
           const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
           if (shouldIncreaseUnread) {
-            sessionStore.updateSession(msg.message.roomId, { unreadCount: 1 })
+            sessionStore.setUnreadCount(msg.message.roomId, 1)
           }
         }
       } catch (err) {
@@ -235,12 +239,37 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
       }
     }
 
-    if (msg.message.body.atUidList?.includes(userStore.userInfo?.uid ?? '') && cacheUser) {
-      sendNotification({
-        title: cacheUser.name as string,
-        body: msg.message.body.content || msg.message.body.body || '',
-        icon: cacheUser.avatar as string
+    const isOwnMessage = msg.fromUser?.uid === userStore.userInfo?.uid
+    const notificationBody = msg.message.body.content || msg.message.body.body || ''
+    const isMention = msg.message.body.atUidList?.includes(userStore.userInfo?.uid ?? '') ?? false
+    // 唯一的系统通知分发点：统一决策门在 messageMutations 生效（提及 / 线程提及 / 关键词）。
+    // 自己发送的消息永不通知，因此不进入决策门。
+    const shouldSendNotification =
+      !isOwnMessage &&
+      matrixNotificationService.shouldNotifyMessage({
+        isMention,
+        isThread: Boolean(msg.message.body.threadId),
+        body: notificationBody
       })
+
+    if (shouldSendNotification) {
+      const notificationConfig = matrixNotificationService.getConfig()
+
+      if (notificationConfig.enableDesktop) {
+        // showSender=false 时退化为中性标题而非房间名：单聊的房间名就是对方昵称，
+        // 沿用房间名仍会泄漏发送者身份，中性标题对所有房间类型都安全。
+        // 群缓存冷时退化为消息自带发送者，避免关键词通知静默失效。
+        const senderName = cacheUser?.name || msg.fromUser?.username || msg.fromUser?.uid || ''
+        const senderAvatar = cacheUser?.avatar ?? msg.fromUser?.avatar
+        const title = notificationConfig.showSender ? senderName : useI18nGlobal().t('message.notify.new_messages')
+        const display = matrixNotificationService.buildNotificationDisplay(title, notificationBody)
+
+        sendNotification({
+          title: display.title,
+          body: display.body,
+          icon: senderAvatar
+        })
+      }
     }
 
     if (!isActiveChatView || msg.message.roomId !== targetRoomId) {

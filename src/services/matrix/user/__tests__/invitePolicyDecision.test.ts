@@ -115,7 +115,7 @@ describe('decideInviteAction', () => {
     expect(decision?.action).toBe('decline')
   })
 
-  it('does not act when there is no inviter to evaluate', () => {
+  it('does not act when there is no inviter to evaluate in permissive modes', () => {
     expect(
       decideInviteAction(
         event({ inviterUserId: undefined }),
@@ -123,6 +123,34 @@ describe('decideInviteAction', () => {
         ME
       )
     ).toBeNull()
+    expect(decideInviteAction(event({ inviterUserId: undefined }), policy({ mode: 'allow_all' }), ME)).toBeNull()
+  })
+
+  /**
+   * I10 回归：allowlist 是显式白名单，未列出的人一律拒绝（`shouldRejectInvite`）。
+   * 拿不到邀请人时提前 return null 会让最严格的模式反而 fail-open。
+   */
+  it('declines in allowlist mode when the inviter cannot be resolved', () => {
+    const decision = decideInviteAction(
+      event({ inviterUserId: undefined }),
+      policy({ mode: 'allowlist', allowlist: ['@friend:server'] }),
+      ME
+    )
+    expect(decision).toEqual<InvitePolicyDecision>({
+      action: 'decline',
+      roomId: '!r:example.org',
+      inviterUserId: ''
+    })
+  })
+
+  it('also declines in allowlist mode when a whitespace-only inviter is supplied', () => {
+    expect(
+      decideInviteAction(
+        event({ inviterUserId: '   ' }),
+        policy({ mode: 'allowlist', allowlist: ['@friend:server'] }),
+        ME
+      )?.action
+    ).toBe('decline')
   })
 
   it('honours the non-contact DM rule through the supplied contact state', () => {
@@ -166,6 +194,29 @@ describe('decideInviteAction', () => {
       expect(decideInviteAction(event(), p, ME)?.action).toBe('decline')
     })
 
+    it('declines a confirmed stranger when a blocklist is in use and strangers are disallowed', () => {
+      // 隐私回归：屏蔽只是往黑名单里加人，不该顺手关掉「仅允许联系人」基线。
+      // 旧实现里 mode === 'blocklist' 提前 return，非联系人反而被放行。
+      const p = policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: false, contacts: [] })
+      expect(decideInviteAction(event({ inviterUserId: '@x:evil.org' }), p, ME, undefined, 'stranger')?.action).toBe(
+        'decline'
+      )
+      expect(
+        decideInviteAction(event({ inviterUserId: '@stranger:server' }), p, ME, undefined, 'stranger')?.action
+      ).toBe('decline')
+    })
+
+    it('declines a blocklisted user in allowlist mode as well', () => {
+      const p = policy({
+        mode: 'allowlist',
+        allowlist: ['@spam:evil.org', '@friend:server'],
+        blocklist: ['@spam:evil.org'],
+        allowStrangers: false
+      })
+      expect(decideInviteAction(event(), p, ME)?.action).toBe('decline')
+      expect(decideInviteAction(event({ inviterUserId: '@friend:server' }), p, ME)).toBeNull()
+    })
+
     it('declines a non-allowlisted user even with no contact state at all', () => {
       const p = policy({ mode: 'allowlist', allowlist: ['@friend:server'], allowStrangers: false })
       expect(decideInviteAction(event(), p, ME)?.action).toBe('decline')
@@ -186,6 +237,61 @@ describe('decideInviteAction', () => {
     it('does not fail open in allow_all when strangers are allowed', () => {
       const p = policy({ mode: 'allow_all', allowStrangers: true })
       expect(decideInviteAction(event(), p, ME, undefined, 'stranger')).toBeNull()
+    })
+  })
+
+  /**
+   * 评审 Critical #1：强制点必须在**每个** contacts 规则生效的模式下解析并使用
+   * 动态联系人状态。旧实现的 fail-open 守卫只认 `allow_all`，于是 blocklist 模式下
+   * `contactState` 被忽略，默认 `allowStrangers: false` 的用户连好友的邀请都会被拒。
+   */
+  describe('blocklist mode honours the dynamic contact state', () => {
+    const restricted = policy({
+      mode: 'blocklist',
+      blocklist: ['@blocked:evil.org'],
+      allowStrangers: false,
+      contacts: []
+    })
+
+    it('does not decline a confirmed contact', () => {
+      expect(
+        decideInviteAction(event({ inviterUserId: '@friend:server' }), restricted, ME, undefined, 'contact')
+      ).toBeNull()
+    })
+
+    it('declines a confirmed stranger', () => {
+      expect(
+        decideInviteAction(event({ inviterUserId: '@stranger:server' }), restricted, ME, undefined, 'stranger')?.action
+      ).toBe('decline')
+    })
+
+    it('declines a blocklisted user whatever the contact state says', () => {
+      for (const state of ['contact', 'stranger', 'unknown', undefined] as const) {
+        expect(
+          decideInviteAction(event({ inviterUserId: '@blocked:evil.org' }), restricted, ME, undefined, state)?.action
+        ).toBe('decline')
+      }
+    })
+
+    it('allows any non-blocklisted inviter when strangers are allowed', () => {
+      const open = policy({ mode: 'blocklist', blocklist: ['@blocked:evil.org'], allowStrangers: true })
+      expect(
+        decideInviteAction(event({ inviterUserId: '@stranger:server' }), open, ME, undefined, 'stranger')
+      ).toBeNull()
+    })
+
+    it('fails open when the contact state is unknown or missing', () => {
+      expect(
+        decideInviteAction(event({ inviterUserId: '@stranger:server' }), restricted, ME, undefined, 'unknown')
+      ).toBeNull()
+      expect(decideInviteAction(event({ inviterUserId: '@stranger:server' }), restricted, ME)).toBeNull()
+    })
+
+    it('fails open exactly like allow_all does', () => {
+      const onlyContacts = policy({ mode: 'allow_all', allowStrangers: false })
+      expect(decideInviteAction(event(), onlyContacts, ME, undefined, 'unknown')).toBeNull()
+      expect(decideInviteAction(event(), onlyContacts, ME)).toBeNull()
+      expect(decideInviteAction(event(), onlyContacts, ME, undefined, 'stranger')?.action).toBe('decline')
     })
   })
 

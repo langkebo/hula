@@ -170,16 +170,23 @@ describe('InvitePolicyEnforcer', () => {
     await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
   })
 
-  it('does not decline when the member event has no sender', async () => {
+  it('declines in allowlist mode when the member event has no sender', async () => {
+    // I10：allowlist 是显式白名单，邀请人无法解析时不能 fail-open
     const e = enforcer({ policy: policy({ mode: 'allowlist' }) })
     e.start()
     fireMember(memberWithInviter({ events: { member: {} } }))
-    await new Promise((r) => setTimeout(r, 20))
-    expect(state.leaveCalls).toEqual([])
+    await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
   })
 
-  it('does not decline when the member has no event at all', async () => {
+  it('declines in allowlist mode when the member has no event at all', async () => {
     const e = enforcer({ policy: policy({ mode: 'allowlist' }) })
+    e.start()
+    fireMember(memberWithInviter({ events: undefined }))
+    await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
+  })
+
+  it('does not decline an unresolvable inviter in permissive modes', async () => {
+    const e = enforcer({ policy: policy({ mode: 'allow_all' }) })
     e.start()
     fireMember(memberWithInviter({ events: undefined }))
     await new Promise((r) => setTimeout(r, 20))
@@ -239,7 +246,7 @@ describe('InvitePolicyEnforcer', () => {
       expect(state.leaveCalls).toEqual([])
     })
 
-    it('does not query contacts in blocklist mode', async () => {
+    it('does not query contacts in blocklist mode while strangers are allowed', async () => {
       const resolveContactState = vi.fn(async () => 'stranger' as const)
       const e = new InvitePolicyEnforcer({
         getCurrentUserId: () => '@me:example.org',
@@ -251,6 +258,81 @@ describe('InvitePolicyEnforcer', () => {
       fireMember(memberWithInviter())
       await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
       expect(resolveContactState).not.toHaveBeenCalled()
+    })
+
+    /**
+     * 评审 Critical #1：旧实现只在 allow_all 下解析联系人状态，blocklist 模式下
+     * `contactState` 恒为 undefined，判定退回不可靠的静态 contacts 快照——
+     * 默认 allowStrangers=false 时好友的邀请也会被自动拒掉。
+     */
+    it('does not decline a confirmed contact when a blocklist is in use', async () => {
+      const resolveContactState = vi.fn(async () => 'contact' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: false }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await vi.waitFor(() => expect(resolveContactState).toHaveBeenCalledWith('@spam:evil.org'))
+      await new Promise((r) => setTimeout(r, 20))
+      expect(state.leaveCalls).toEqual([])
+    })
+
+    it('still declines a confirmed stranger when a blocklist is in use', async () => {
+      const resolveContactState = vi.fn(async () => 'stranger' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: false }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
+    })
+
+    it('declines a blocklisted user even when the contact state says contact', async () => {
+      const resolveContactState = vi.fn(async () => 'contact' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@spam:evil.org'], allowStrangers: false }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await vi.waitFor(() => expect(state.leaveCalls).toContain('!r:example.org'))
+    })
+
+    it('allows a non-blocklisted inviter in blocklist mode when strangers are allowed', async () => {
+      const resolveContactState = vi.fn(async () => 'stranger' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: true }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await new Promise((r) => setTimeout(r, 20))
+      expect(state.leaveCalls).toEqual([])
+      expect(resolveContactState).not.toHaveBeenCalled()
+    })
+
+    it('fails open in blocklist mode when the contact state is unknown', async () => {
+      const resolveContactState = vi.fn(async () => 'unknown' as const)
+      const e = new InvitePolicyEnforcer({
+        getCurrentUserId: () => '@me:example.org',
+        getPolicy: () => policy({ mode: 'blocklist', blocklist: ['@x:evil.org'], allowStrangers: false }),
+        onDeclined: vi.fn(),
+        resolveContactState
+      })
+      e.start()
+      fireMember(memberWithInviter())
+      await new Promise((r) => setTimeout(r, 20))
+      expect(state.leaveCalls).toEqual([])
     })
 
     it('does not query contacts when strangers are allowed', async () => {

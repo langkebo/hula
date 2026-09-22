@@ -139,16 +139,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import {
-  NButton,
-  NDivider,
-  NEmpty,
-  NInput,
-  NSpin,
-  NSwitch,
-  NTimePicker,
-  useDialog
-} from 'naive-ui'
+import { NButton, NDivider, NEmpty, NInput, NSpin, NSwitch, NTimePicker, useDialog } from 'naive-ui'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -291,28 +282,12 @@ function loadSavedSettings() {
 }
 
 async function loadDndSettings() {
-  const serverDnd = await matrixNotificationService.syncDndFromAccountData()
-  if (serverDnd) {
-    dndEnabled.value = serverDnd.enabled
-    dndStartTime.value = serverDnd.startTime
-    dndEndTime.value = serverDnd.endTime
-    return
-  }
-
-  const savedDnd = localStorage.getItem('tjg-push-dnd')
-  if (savedDnd !== null) {
-    dndEnabled.value = savedDnd === 'true'
-  }
-
-  const savedDndStart = localStorage.getItem('tjg-push-dnd-start')
-  if (savedDndStart) {
-    dndStartTime.value = parseInt(savedDndStart, 10)
-  }
-
-  const savedDndEnd = localStorage.getItem('tjg-push-dnd-end')
-  if (savedDndEnd) {
-    dndEndTime.value = parseInt(savedDndEnd, 10)
-  }
+  // 服务是勿扰状态的唯一所有者：先尝试账号数据刷新缓存，再统一从服务读取
+  await matrixNotificationService.syncDndFromAccountData()
+  const settings = matrixNotificationService.getDndSettings()
+  dndEnabled.value = settings.enabled
+  dndStartTime.value = settings.startTime
+  dndEndTime.value = settings.endTime
 }
 
 function getRulesByKind(kind: string): IPushRule[] {
@@ -445,9 +420,28 @@ async function handleInvitePushToggle(enabled: boolean) {
   }
 }
 
+/**
+ * 默认勿扰窗口：本地时间 22:00 → 次日 08:00。
+ *
+ * 开关默认没有时间边界（`null`），而 `isWithinDndWindow` 对缺边界的窗口返回 false。
+ * 直接打开开关会得到一个"看着打开、什么也不抑制"的死开关——用户没有任何反馈。
+ * 打开时用这组默认值补齐空边界，选择器随即显示它，用户可再调整。
+ */
+function defaultDndBounds(): { startTime: number; endTime: number } {
+  const start = new Date()
+  start.setHours(22, 0, 0, 0)
+  const end = new Date()
+  end.setHours(8, 0, 0, 0)
+  return { startTime: start.getTime(), endTime: end.getTime() }
+}
+
 function handleDndToggle(enabled: boolean) {
-  localStorage.setItem('tjg-push-dnd', enabled.toString())
-  matrixNotificationService.syncDndToAccountData({
+  if (enabled && (dndStartTime.value === null || dndEndTime.value === null)) {
+    const fallback = defaultDndBounds()
+    dndStartTime.value = dndStartTime.value ?? fallback.startTime
+    dndEndTime.value = dndEndTime.value ?? fallback.endTime
+  }
+  matrixNotificationService.setDndSettings({
     enabled,
     startTime: dndStartTime.value,
     endTime: dndEndTime.value
@@ -456,13 +450,7 @@ function handleDndToggle(enabled: boolean) {
 }
 
 function handleDndTimeChange() {
-  if (dndStartTime.value !== null) {
-    localStorage.setItem('tjg-push-dnd-start', dndStartTime.value.toString())
-  }
-  if (dndEndTime.value !== null) {
-    localStorage.setItem('tjg-push-dnd-end', dndEndTime.value.toString())
-  }
-  matrixNotificationService.syncDndToAccountData({
+  matrixNotificationService.setDndSettings({
     enabled: dndEnabled.value,
     startTime: dndStartTime.value,
     endTime: dndEndTime.value

@@ -235,6 +235,7 @@ vi.mock('naive-ui', async () => {
             type: 'button',
             disabled: props.disabled,
             'data-test': 'backup-switch',
+            'data-value': String(props.value),
             onClick: () => emit('update:value', !props.value)
           },
           'switch'
@@ -486,6 +487,48 @@ describe('EncryptionSettings', () => {
 
     expect((wrapper.vm as any).showVerifyDialog).toBe(true)
     expect((wrapper.vm as any).selectedVerificationTransaction.deviceId).toBe('DEVICE_TWO')
+  })
+
+  it('备份开关反映真实备份状态而不是 localStorage', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(localStorage.getItem('tjg-backup-enabled')).toBeNull()
+
+    await wrapper.get('[data-test="backup-switch"]').trigger('click')
+    await flushPromises()
+
+    expect(localStorage.getItem('tjg-backup-enabled')).toBeNull()
+  })
+
+  it('关闭备份开关保持显示的备份状态不变且不写存储', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="backup-switch"]').attributes('data-value')).toBe('true')
+
+    await wrapper.get('[data-test="backup-switch"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="backup-switch"]').attributes('data-value')).toBe('true')
+    expect((wrapper.vm as any).backupEnabled).toBe(true)
+    expect(messageWarningMock).toHaveBeenCalledWith('已禁用安全备份')
+    expect(localStorage.getItem('tjg-backup-enabled')).toBeNull()
+  })
+
+  it('打开备份开关进入备份设置向导', async () => {
+    encryptionStoreState.backupEnabled = false
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="backup-switch"]').attributes('data-value')).toBe('false')
+
+    await wrapper.get('[data-test="backup-switch"]').trigger('click')
+    await flushPromises()
+
+    expect((wrapper.vm as any).showBackupDialog).toBe(true)
+    expect(messageWarningMock).not.toHaveBeenCalledWith('已禁用安全备份')
   })
 
   it('在加密未启用和指纹缺失时走降级逻辑', async () => {

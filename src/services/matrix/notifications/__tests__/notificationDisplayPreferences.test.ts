@@ -158,6 +158,100 @@ describe('load / save round trip', () => {
   })
 })
 
+describe('keywordNotifications', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('defaults to false so non-mention messages keep the pre-migration behaviour', () => {
+    expect(DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES.keywordNotifications).toBe(false)
+    expect(loadNotificationDisplayPreferences().keywordNotifications).toBe(false)
+  })
+
+  it('normalizes a non-boolean value back to the default', () => {
+    expect(normalizeNotificationDisplayPreferences({ keywordNotifications: 'yes' }).keywordNotifications).toBe(false)
+  })
+
+  it('keeps an explicit true', () => {
+    expect(normalizeNotificationDisplayPreferences({ keywordNotifications: true }).keywordNotifications).toBe(true)
+  })
+
+  it('round-trips through save / load', () => {
+    saveNotificationDisplayPreferences(prefs({ keywordNotifications: true, keywords: ['deploy'] }))
+    const loaded = loadNotificationDisplayPreferences()
+    expect(loaded.keywordNotifications).toBe(true)
+    expect(loaded.keywords).toEqual(['deploy'])
+  })
+})
+
+describe('legacy keyword preference migration', () => {
+  const LEGACY_KEYWORD_TOGGLE = 'tjg-keyword-notification'
+  const LEGACY_KEYWORDS = 'tjg-keywords'
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('migrates the legacy toggle and keyword list into the display preferences store', () => {
+    localStorage.setItem(LEGACY_KEYWORD_TOGGLE, 'true')
+    localStorage.setItem(LEGACY_KEYWORDS, JSON.stringify(['deploy', '运维']))
+
+    const loaded = loadNotificationDisplayPreferences()
+
+    expect(loaded.keywordNotifications).toBe(true)
+    expect(loaded.keywords).toEqual(['deploy', '运维'])
+    expect(localStorage.getItem(LEGACY_KEYWORD_TOGGLE)).toBeNull()
+    expect(localStorage.getItem(LEGACY_KEYWORDS)).toBeNull()
+    // 迁移结果落盘后再次读取仍一致（幂等）
+    expect(loadNotificationDisplayPreferences()).toEqual(loaded)
+  })
+
+  it('keeps the new value when it already exists (new value wins over legacy)', () => {
+    saveNotificationDisplayPreferences(prefs({ keywordNotifications: false, keywords: ['new'] }))
+    localStorage.setItem(LEGACY_KEYWORD_TOGGLE, 'true')
+    localStorage.setItem(LEGACY_KEYWORDS, JSON.stringify(['legacy']))
+
+    const loaded = loadNotificationDisplayPreferences()
+
+    expect(loaded.keywordNotifications).toBe(false)
+    expect(loaded.keywords).toEqual(['new'])
+  })
+
+  it('does not resurrect a migrated legacy value after a later save', () => {
+    localStorage.setItem(LEGACY_KEYWORD_TOGGLE, 'true')
+    loadNotificationDisplayPreferences()
+    saveNotificationDisplayPreferences(prefs({ keywordNotifications: false }))
+
+    expect(loadNotificationDisplayPreferences().keywordNotifications).toBe(false)
+  })
+
+  it('tolerates a corrupt legacy keyword list instead of throwing', () => {
+    localStorage.setItem(LEGACY_KEYWORDS, '{not json')
+    expect(loadNotificationDisplayPreferences().keywords).toEqual([])
+    expect(localStorage.getItem(LEGACY_KEYWORDS)).toBeNull()
+  })
+
+  it('drops non-string entries from the legacy keyword list', () => {
+    localStorage.setItem(LEGACY_KEYWORDS, JSON.stringify(['ok', 7, null]))
+    expect(loadNotificationDisplayPreferences().keywords).toEqual(['ok'])
+  })
+
+  it('ignores a legacy toggle that is neither true nor false', () => {
+    localStorage.setItem(LEGACY_KEYWORD_TOGGLE, 'maybe')
+    expect(loadNotificationDisplayPreferences().keywordNotifications).toBe(false)
+  })
+
+  it('does not write to a read-only storage while migrating', () => {
+    const readOnly = {
+      getItem: (key: string) => (key === LEGACY_KEYWORD_TOGGLE ? 'true' : null)
+    } as unknown as Pick<Storage, 'getItem'>
+
+    const loaded = loadNotificationDisplayPreferences(readOnly)
+
+    expect(loaded.keywordNotifications).toBe(true)
+  })
+})
+
 describe('materializeNotificationContent', () => {
   const input = { title: 'Re: deploy', body: 'the deploy is green' }
 

@@ -30,6 +30,10 @@ export interface InvitePolicyDecision {
  * 返回 `null` 表示不动作。**失败方向是"不动作"而不是"拒邀"**：
  * - 拿不到自己的 user id 时无法判断邀请是不是给自己的，此时按策略一律拒邀会误拒他人邀请
  * - 拿不到邀请人时无法评估策略，同样不动作（宁可漏放，不可误拒）
+ *
+ * 唯一的例外是 `mode === 'allowlist'`：它是显式白名单，未列出的人一律拒绝
+ * （见 `shouldRejectInvite`）。拿不到邀请人就无法证明其在名单内，必须拒绝，
+ * 否则最严格的模式反而 fail-open。
  */
 export function decideInviteAction(
   event: InviteEventLike,
@@ -58,7 +62,15 @@ export function decideInviteAction(
 
   const inviter = normalizeUserId(event.inviterUserId) || normalizeUserId(fallbackInviterUserId)
   if (!inviter) {
-    return null
+    /*
+     * 拿不到邀请人（member 事件没有 sender，房间状态也解析不出）：
+     * - `allowlist` 是显式白名单，未列出的人一律拒绝；无法证明邀请人在名单内就必须拒，
+     *   否则最严格的模式反而 fail-open，与 `shouldRejectInvite` 的 allowlist 语义矛盾；
+     * - 其它模式无法评估策略，保持不动作（宁可漏放，不可误拒好友）。
+     *
+     * 拒邀记录的 inviterUserId 为空字符串：调用方只有一个房间可离开，撤回不需要邀请人。
+     */
+    return normalizeInvitePolicy(policy).mode === 'allowlist' ? { action: 'decline', roomId, inviterUserId: '' } : null
   }
 
   /**
@@ -74,21 +86,18 @@ export function decideInviteAction(
   }
 
   /*
-   * 「仅允许联系人私聊」是唯一依赖**动态查询**的判定，因此必须 fail-open：
+   * 判定唯一入口是 `shouldRejectInvite`（单点策略逻辑）：它第一件做的事就是
+   * 与 mode 正交的 blocklist 检查，随后才轮到「仅允许联系人」。
    *
+   * 「仅允许联系人」依赖**动态查询**，因此 must fail-open：
    * `MatrixFriendService.isFriend()` 查询失败时返回 false，与"确认不是好友"
    * 不可区分。如果把失败当陌生人，后端抖动或离线一次，用户就会在那个窗口里
-   * 把所有好友的邀请都拒掉。所以只有拿到确凿的 `stranger` 才拒，`unknown` 放行。
-   *
-   * 注意 `mode === 'allow_all'` 这个前提不能少：强制点只在 allow_all 下查联系人，
-   * 若不给名单模式放行，blocklist / allowlist 会因为拿不到 contactState 而被
-   * 一并拦掉——用户拉黑的人反而能进房间（已有回归测试覆盖）。
+   * 把所有好友的邀请都拒掉。所以只有拿到确凿的 `stranger` 才拒，`unknown`
+   * 与缺省一律放行——这条 fail-open 规则对**每个** contacts 生效的模式
+   * （allow_all 与 blocklist）都成立，不能在判定层另开一份只认 allow_all 的
+   * 守卫：那会让 blocklist 模式下的好友邀请被静默拒掉。
    */
-  if (policy.mode === 'allow_all' && policy.allowStrangers === false && contactState !== 'stranger') {
-    return null
-  }
-
-  if (!shouldRejectInvite(inviter, policy)) {
+  if (!shouldRejectInvite(inviter, policy, contactState)) {
     return null
   }
 

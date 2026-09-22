@@ -24,6 +24,7 @@ export const DEFAULT_DM_PRIVACY_PREFERENCES: DmPrivacyPreferences = {
   encryptByDefault: true
 }
 
+/** 归一化任意输入为完整的私聊偏好：非法字段回落默认值。 */
 export function normalizeDmPrivacyPreferences(input: unknown): DmPrivacyPreferences {
   if (!input || typeof input !== 'object') {
     return { ...DEFAULT_DM_PRIVACY_PREFERENCES }
@@ -59,6 +60,7 @@ export function resolveDmEncryption(
   return normalizeDmPrivacyPreferences(preferences).encryptByDefault
 }
 
+/** 从本地存储读取私聊偏好；读取失败、无数据或数据非法时回落默认值。 */
 export function loadDmPrivacyPreferences(storage: Pick<Storage, 'getItem'> = localStorage): DmPrivacyPreferences {
   let stored: string | null = null
   try {
@@ -80,6 +82,7 @@ export function loadDmPrivacyPreferences(storage: Pick<Storage, 'getItem'> = loc
   return normalizeDmPrivacyPreferences(safeJsonParse(stored, isValidShape, {}))
 }
 
+/** 归一化后写入本地存储；写入失败只记警告，不抛出。 */
 export function cacheDmPrivacyPreferences(
   preferences: DmPrivacyPreferences,
   storage: Pick<Storage, 'setItem'> = localStorage

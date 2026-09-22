@@ -44,7 +44,7 @@ import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useVoIPIncomingCall } from '@/composables/useVoIPIncomingCall'
 import { MittEnum, ThemeEnum } from '@/enums'
 import { createContactStateResolver } from '@/services/matrix/user/contactStateResolver'
-import { cacheInvitePolicy, loadInvitePolicy } from '@/services/matrix/user/invitePolicy'
+import { loadInvitePolicy } from '@/services/matrix/user/invitePolicy'
 import { createInvitePolicyEnforcer } from '@/services/matrix/user/invitePolicyEnforcer'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
@@ -52,6 +52,8 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { applyBubbleStyle, loadBubbleStyle } from '@/utils/bubbleStyle'
+import { applyFontScale, loadFontScale } from '@/utils/fontScale'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
 import { isNonMatrixWindow } from '@/utils/windowLabels'
@@ -220,9 +222,18 @@ const invitePolicyEnforcement = useInvitePolicyEnforcement({
       resolveContactState: (userId) => contactStateResolver.resolve(userId)
     }),
   getCurrentUserId: () => matrixStore.userId ?? undefined,
-  getPolicy: () => loadInvitePolicy(),
+  // 缓存按 userId 隔离；早期还没拿到 user id 时返回默认策略（不会读到别人的缓存）
+  getPolicy: () => loadInvitePolicy(matrixStore.userId ?? undefined),
+  /**
+   * 写路径的严格重读：`syncContacts()` 只拥有 `contacts`，其余字段必须来自服务端。
+   * 抛错（读取失败）会被 composable 捕获并跳过写入，绝不回落默认值整对象覆盖。
+   */
+  getPolicyStrict: async () => {
+    const account = await import('@/services/matrix/user/MatrixAccountService')
+    return account.matrixAccountService.getInvitePolicyStrict()
+  },
   savePolicy: async (policy) => {
-    cacheInvitePolicy(policy)
+    // `setInvitePolicy` 成功后才写本地缓存，避免 PUT 失败时缓存先被污染
     const account = await import('@/services/matrix/user/MatrixAccountService')
     return account.matrixAccountService.setInvitePolicy(policy)
   },
@@ -485,6 +496,10 @@ onMounted(async () => {
   await setupWindowHandlers()
   await setupMobileReLoginListener()
   setupThemeWatchers()
+  // 字体缩放不是响应式 store：启动时读一次 localStorage 并写到 :root，供字号 token 消费
+  applyFontScale(loadFontScale())
+  // 气泡样式同理：读一次存储写到根元素 data 属性，由 render-message.scss 消费
+  applyBubbleStyle(loadBubbleStyle())
   if (!skipMatrixInit) {
     wsEventHandler.registerHandlers()
     presenceSync.startPresenceWatch()

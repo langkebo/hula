@@ -37,6 +37,10 @@ export interface ContactStateResolver {
 
 const DEFAULT_TTL_MS = 5 * 60 * 1000
 
+/**
+ * 创建三态联系人解析器：按 TTL 缓存并合并并发查询，
+ * 查询失败回落 `unknown`（fail-open），不写缓存以便下次重试。
+ */
 export function createContactStateResolver(deps: ContactStateResolverDeps): ContactStateResolver {
   const ttlMs = deps.ttlMs ?? DEFAULT_TTL_MS
   const now = deps.now ?? (() => Date.now())

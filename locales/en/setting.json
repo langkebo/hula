@@ -369,6 +369,10 @@
     "font_microsoft_yahei": "Microsoft YaHei",
     "font_pingfang_sc": "PingFang SC",
     "font_source_han_sans": "Source Han Sans",
+    "font_size_small": "Small",
+    "font_size_standard": "Standard",
+    "font_size_large": "Large",
+    "font_size_extra_large": "Extra large",
     "preview": {
       "title": "Live Preview",
       "sample_text": "This is sample text to preview the current theme.",
@@ -379,7 +383,7 @@
     "feedback": {
       "theme_changed": "Theme switched",
       "font_changed": "Font changed",
-      "font_size_changed": "Font size changed to {size}px",
+      "font_size_changed": "Font size changed to {size}",
       "window_shadow_enabled": "Window shadow enabled",
       "window_shadow_disabled": "Window shadow disabled",
       "blur_enabled": "Blur effect enabled",
@@ -1550,7 +1554,7 @@
     "dm_section": "Direct messages",
     "allow_strangers": "Allow direct messages from non-contacts",
     "allow_strangers_hint": "When off, DM invites from people outside your friend list are declined automatically",
-    "allow_strangers_inactive": "A list mode is active; this switch only applies in \"Allow everyone\" mode",
+    "allow_strangers_inactive": "Only allowlist mode ignores this switch (anyone outside the list is declined); in blocklist mode it still applies to people who are not listed",
     "encrypt_new_dm": "Encrypt new direct messages",
     "encrypt_new_dm_hint": "Turn on end-to-end encryption by default for new DMs",
     "load_failed": "Failed to load invite permission",

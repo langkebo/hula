@@ -8,16 +8,22 @@ import InvitePermissionPanel from '../InvitePermissionPanel.vue'
  * 背景：该面板原先被 `SecuritySettings.vue` 以 `<InvitePermissionPanel />` 挂载，
  * **不传 props 也不接事件**，而面板自身没有任何状态与服务调用——三档模式点了没反应，
  * 名单加了也不落库，等于一个纯装饰组件。本次改为自包含（与移动端同一套 API）。
+ *
+ * 面板自包含后，原先抛给父组件的 `mode-change` / `add-user` / `remove-user`
+ * 三个事件没有任何使用处监听，已删除；对应断言"emit 了某个事件"的测试一并删除，
+ * 保留的是断言 account data 真的被写回的持久化测试。
  */
 
-const { getPolicyMock, setPolicyMock } = vi.hoisted(() => ({
+const { getPolicyMock, getPolicyStrictMock, setPolicyMock } = vi.hoisted(() => ({
   getPolicyMock: vi.fn(),
+  getPolicyStrictMock: vi.fn(),
   setPolicyMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix', () => ({
   matrixAccountService: {
     getInvitePolicy: () => getPolicyMock(),
+    getInvitePolicyStrict: () => getPolicyStrictMock(),
     setInvitePolicy: (...args: unknown[]) => setPolicyMock(...args)
   }
 }))
@@ -112,6 +118,14 @@ describe('InvitePermissionPanel', () => {
     vi.clearAllMocks()
     localStorage.clear()
     getPolicyMock.mockResolvedValue({
+      mode: 'allow_all',
+      blocklist: [],
+      allowlist: [],
+      allowStrangers: true,
+      contacts: []
+    })
+    // 写前重读走严格变体：默认与宽松变体同一份值
+    getPolicyStrictMock.mockResolvedValue({
       mode: 'allow_all',
       blocklist: [],
       allowlist: [],
@@ -216,6 +230,105 @@ describe('InvitePermissionPanel', () => {
       await flushPromises()
       expect(wrapper.find('.invite-permission-panel').exists()).toBe(true)
     })
+
+    /**
+     * Important #2：`SecuritySettings` 同时挂了 `BlockedUsersSection`，两者写同一份
+     * account data。面板挂载时的快照会过期，写前必须重读最新策略。
+     */
+    it('写回前重读最新策略，不覆盖另一编辑器的改动', async () => {
+      getPolicyMock.mockResolvedValueOnce({
+        mode: 'allow_all',
+        blocklist: [],
+        allowlist: [],
+        allowStrangers: false,
+        contacts: []
+      })
+      const wrapper = mount(InvitePermissionPanel)
+      await flushPromises()
+
+      // BlockedUsersSection 在面板挂载之后屏蔽了一个人（写前严格重读看得到）
+      getPolicyStrictMock.mockResolvedValue({
+        mode: 'allow_all',
+        blocklist: ['@blocked:evil.org'],
+        allowlist: [],
+        allowStrangers: false,
+        contacts: []
+      })
+
+      wrapper.findComponent({ name: 'NRadioGroup' }).vm.$emit('update:value', 'blocklist')
+      await flushPromises()
+
+      // 旧实现：面板用挂载时的空快照写回 → @blocked 被静默解除屏蔽
+      expect(setPolicyMock).toHaveBeenCalledWith(
+        expect.objectContaining({ mode: 'blocklist', blocklist: ['@blocked:evil.org'] })
+      )
+    })
+
+    /**
+     * 评审 Important #1（同类残留）：宽松的 `getInvitePolicy()` 读取失败时返回默认
+     * 策略，写前重读若用它，会把账号上的 mode/blocklist/allowlist 静默覆盖成默认值。
+     * 严格变体读取失败必须中止写入。
+     */
+    it('写前严格重读失败时中止写入，不拿默认策略覆盖账号', async () => {
+      const wrapper = mount(InvitePermissionPanel)
+      await flushPromises()
+
+      getPolicyStrictMock.mockRejectedValue(new TypeError('read failed'))
+
+      wrapper.findComponent({ name: 'NRadioGroup' }).vm.$emit('update:value', 'blocklist')
+      await flushPromises()
+
+      expect(setPolicyMock).not.toHaveBeenCalled()
+    })
+
+    /**
+     * Important #3：`allowStrangers` 在 blocklist 模式下决定"非名单用户"是否放行，
+     * 因此该模式下面板必须允许操作这个开关；只有 allowlist 由名单独占决定。
+     */
+    it('blocklist 模式下允许非联系人私聊开关可用，且不再显示失效提示', () => {
+      const wrapper = mount(InvitePermissionPanel, {
+        props: { visible: true, mode: 'blocklist', blocklist: [], allowlist: [] }
+      })
+      const toggle = wrapper.find('[data-test="allow-strangers"]')
+      expect(toggle.exists()).toBe(true)
+      expect(toggle.attributes('disabled')).toBeUndefined()
+      expect(wrapper.find('[data-test="allow-strangers-note"]').exists()).toBe(false)
+    })
+
+    it('allowlist 模式下开关禁用并提示名单决定一切', () => {
+      const wrapper = mount(InvitePermissionPanel, {
+        props: { visible: true, mode: 'allowlist', blocklist: [], allowlist: [] }
+      })
+      expect(wrapper.find('[data-test="allow-strangers"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-test="allow-strangers-note"]').exists()).toBe(true)
+    })
+
+    it('allow_all 模式下开关可用且不显示失效提示', () => {
+      const wrapper = mount(InvitePermissionPanel, {
+        props: { visible: true, mode: 'allow_all', blocklist: [], allowlist: [] }
+      })
+      expect(wrapper.find('[data-test="allow-strangers"]').attributes('disabled')).toBeUndefined()
+      expect(wrapper.find('[data-test="allow-strangers-note"]').exists()).toBe(false)
+    })
+
+    it('blocklist 模式下切换开关会写回且不丢名单', async () => {
+      const policy = {
+        mode: 'blocklist',
+        blocklist: ['@spam:evil.org'],
+        allowlist: [],
+        allowStrangers: false,
+        contacts: []
+      }
+      getPolicyMock.mockResolvedValue(policy)
+      getPolicyStrictMock.mockResolvedValue(policy)
+      const wrapper = mount(InvitePermissionPanel)
+      await flushPromises()
+      await wrapper.find('[data-test="allow-strangers"]').trigger('click')
+      await flushPromises()
+      expect(setPolicyMock).toHaveBeenCalledWith(
+        expect.objectContaining({ allowStrangers: true, blocklist: ['@spam:evil.org'] })
+      )
+    })
   })
 
   it('visible=true 时渲染面板', () => {
@@ -249,17 +362,6 @@ describe('InvitePermissionPanel', () => {
     expect(values).toEqual(['allow_all', 'blocklist', 'allowlist'])
   })
 
-  it('切换模式时触发 mode-change 事件', async () => {
-    const wrapper = mount(InvitePermissionPanel, {
-      props: { visible: true, mode: 'allow_all', blocklist: [], allowlist: [] }
-    })
-    const radioGroup = wrapper.findComponent({ name: 'NRadioGroup' })
-    radioGroup.vm.$emit('update:value', 'blocklist')
-    await wrapper.vm.$nextTick()
-    expect(wrapper.emitted('mode-change')).toBeTruthy()
-    expect(wrapper.emitted('mode-change')?.[0]).toEqual(['blocklist'])
-  })
-
   it('blocklist 模式下显示黑名单列表', () => {
     const wrapper = mount(InvitePermissionPanel, {
       props: {
@@ -286,41 +388,5 @@ describe('InvitePermissionPanel', () => {
     const section = wrapper.find('[data-test="allowlist-section"]')
     expect(section.exists()).toBe(true)
     expect(section.text()).toContain('@bob:example.com')
-  })
-
-  it('添加用户到黑名单时触发 add-user 事件', async () => {
-    const wrapper = mount(InvitePermissionPanel, {
-      props: { visible: true, mode: 'blocklist', blocklist: [], allowlist: [] }
-    })
-    const section = wrapper.find('[data-test="blocklist-section"]')
-    await section.find('[data-test="NInput"]').setValue('@newuser:example.com')
-    await section.find('[data-test="add-blocklist-button"]').trigger('click')
-    expect(wrapper.emitted('add-user')).toBeTruthy()
-    expect(wrapper.emitted('add-user')?.[0]).toEqual(['blocklist', '@newuser:example.com'])
-  })
-
-  it('添加用户到白名单时触发 add-user 事件', async () => {
-    const wrapper = mount(InvitePermissionPanel, {
-      props: { visible: true, mode: 'allowlist', blocklist: [], allowlist: [] }
-    })
-    const section = wrapper.find('[data-test="allowlist-section"]')
-    await section.find('[data-test="NInput"]').setValue('@newuser2:example.com')
-    await section.find('[data-test="add-allowlist-button"]').trigger('click')
-    expect(wrapper.emitted('add-user')?.[0]).toEqual(['allowlist', '@newuser2:example.com'])
-  })
-
-  it('移除用户时触发 remove-user 事件', async () => {
-    const wrapper = mount(InvitePermissionPanel, {
-      props: {
-        visible: true,
-        mode: 'blocklist',
-        blocklist: ['@alice:example.com'],
-        allowlist: []
-      }
-    })
-    const removeButton = wrapper.find('[data-test="blocklist-section"] [data-test="NListItem"] [data-test="NButton"]')
-    await removeButton.trigger('click')
-    expect(wrapper.emitted('remove-user')).toBeTruthy()
-    expect(wrapper.emitted('remove-user')?.[0]).toEqual(['blocklist', '@alice:example.com'])
   })
 })

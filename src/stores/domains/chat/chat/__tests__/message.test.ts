@@ -2,11 +2,13 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 
-const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef } = vi.hoisted(() => ({
+const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef, groupUserRef } = vi.hoisted(() => ({
   globalStoreMock: {
     currentSessionRoomId: 'room-1',
     currentSession: null as null | { type?: number }
   },
+  // 群成员信息解析结果，决定桌面通知标题/头像的来源（null 表示群缓存冷，回退到消息自带发送者）
+  groupUserRef: { value: null as null | { name: string; avatar: string } },
   timerWorkerMock: {
     postMessage: vi.fn(),
     terminate: vi.fn(),
@@ -74,7 +76,7 @@ vi.mock('@/stores/domains/widget/global', () => ({
 
 vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => ({
-    getUserInfo: vi.fn(() => null),
+    getUserInfo: vi.fn(() => groupUserRef.value),
     myNameInCurrentGroup: ''
   })
 }))
@@ -130,10 +132,27 @@ vi.mock('@/services/matrix/MatrixEventService', () => ({
   }
 }))
 
+import { type Options, sendNotification } from '@tauri-apps/plugin-notification'
+import { useI18nGlobal } from '@/services/i18n'
 import matrixEventService from '@/services/matrix/MatrixEventService'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
+import {
+  DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES,
+  type NotificationDisplayPreferences,
+  saveNotificationDisplayPreferences
+} from '@/services/matrix/notifications/notificationDisplayPreferences'
 import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { useChatStore } from '@/stores/domains/chat/chat/message'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
+
+// 真实单例：通知开关由 UI 通过 updateConfig 写入，这里复用同一条写入路径，
+// 只把「同步到服务端」的副作用打桩，避免测试触发网络等待。
+const syncNotificationConfigSpy = vi.spyOn(matrixNotificationService, 'syncConfigToAccountData')
+// 勿扰设置同样只对「同步到服务端」打桩：本地镜像走真实服务路径，是行为断言的一部分。
+const syncDndToAccountDataSpy = vi.spyOn(matrixNotificationService, 'syncDndToAccountData')
+
+// sendNotification 的入参签名是 `Options | string`，这里收敛成最近一次实际发送的选项对象
+const lastSentOptions = (): Options => vi.mocked(sendNotification).mock.calls[0][0] as Options
 
 const createMessage = (id: string, roomId = 'room-1'): MessageType => ({
   clientKey: id,
@@ -157,6 +176,7 @@ describe('ChatMessageStore', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     windowLabelRef.value = 'home'
+    groupUserRef.value = null
     globalStoreMock.currentSessionRoomId = 'room-1'
     globalStoreMock.currentSession = null
     timerWorkerMock.postMessage.mockClear()
@@ -527,5 +547,268 @@ describe('ChatMessageStore', () => {
     expect(store.getMsgIndex('20')).toBe(1)
     expect(store.getMsgIndex('40')).toBe(3)
     expect(store.currentMessageOptions).toMatchObject({ hasLoadedOnce: true, isLoading: false })
+  })
+
+  describe('desktop notification wiring', () => {
+    const mentionMessage = (id: string, content = `message-${id}`, roomId = 'room-1'): MessageType => ({
+      clientKey: id,
+      message: {
+        id,
+        roomId,
+        sendTime: Number(id),
+        type: MsgEnum.TEXT,
+        body: {
+          body: content,
+          content,
+          atUidList: ['user-1']
+        }
+      },
+      fromUser: { uid: 'user-2', username: 'tester' }
+    })
+
+    const threadMentionMessage = (id: string, content = `message-${id}`, roomId = 'room-1'): MessageType => {
+      const msg = mentionMessage(id, content, roomId)
+      msg.message.body.threadId = '$thread-root'
+      return msg
+    }
+
+    const keywordMessage = (id: string, content: string, roomId = 'room-1'): MessageType => ({
+      clientKey: id,
+      message: {
+        id,
+        roomId,
+        sendTime: Number(id),
+        type: MsgEnum.TEXT,
+        body: {
+          body: content,
+          content
+        }
+      },
+      fromUser: { uid: 'user-2', username: 'tester' }
+    })
+
+    const setDisplayPreferences = (overrides: Partial<NotificationDisplayPreferences>) => {
+      saveNotificationDisplayPreferences({ ...DEFAULT_NOTIFICATION_DISPLAY_PREFERENCES, ...overrides })
+    }
+
+    beforeEach(() => {
+      // updateConfig 是合并语义，必须同时复位 events 与关键词展示偏好，否则用例互相污染
+      localStorage.clear()
+      matrixNotificationService.updateConfig({ events: {} })
+      groupUserRef.value = { name: 'Alice', avatar: 'mxc://alice' }
+      syncNotificationConfigSpy.mockResolvedValue(undefined)
+      syncDndToAccountDataSpy.mockResolvedValue(undefined)
+      // 单例跨用例存活，勿扰窗口必须逐例复位，否则会污染后续通知断言
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: null, endTime: null })
+      // 逐例复位为默认配置，等价于用户在设置里把三个开关都打开
+      matrixNotificationService.updateConfig({
+        enableDesktop: true,
+        showMessageContent: true,
+        showSender: true
+      })
+      vi.mocked(sendNotification).mockClear()
+    })
+
+    it('sends sender, content and avatar by default', async () => {
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('1', 'hello there'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(sendNotification).mock.calls[0][0]).toMatchObject({
+        title: 'Alice',
+        body: 'hello there',
+        icon: 'mxc://alice'
+      })
+    })
+
+    it('sends nothing at all when desktop notifications are disabled', async () => {
+      matrixNotificationService.updateConfig({ enableDesktop: false })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('2', 'hello there'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('hides the content when the message-content switch is off', async () => {
+      matrixNotificationService.updateConfig({ showMessageContent: false })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('3', 'hello there'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      const payload = lastSentOptions()
+      expect(payload.body).toBeUndefined()
+      expect(payload.title).toBe('[•] Alice')
+    })
+
+    it('never exposes the sender name when the sender switch is off', async () => {
+      matrixNotificationService.updateConfig({ showSender: false })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('4', 'hello there'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      const payload = lastSentOptions()
+      expect(JSON.stringify(payload)).not.toContain('Alice')
+      expect(payload.title).toBe(useI18nGlobal().t('message.notify.new_messages'))
+      expect(payload.body).toBe('hello there')
+      // 头像按现状保留：showSender 只约束标题里的发送者名字
+      expect(payload.icon).toBe('mxc://alice')
+    })
+
+    it('ignores messages that do not mention the current user', async () => {
+      const store = useChatStore()
+      const msg = mentionMessage('5', 'hello there')
+      msg.message.body.atUidList = ['user-9']
+
+      await store.pushMsg(msg)
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('keeps notifying for a thread mention while the thread switch is at its default', async () => {
+      const store = useChatStore()
+
+      await store.pushMsg(threadMentionMessage('6', 'threaded hello'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('threaded hello')
+    })
+
+    it('stops notifying for a thread mention once the thread switch is off', async () => {
+      matrixNotificationService.setEventNotificationEnabled('thread_mention', false)
+      const store = useChatStore()
+
+      await store.pushMsg(threadMentionMessage('7', 'threaded hello'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('still notifies for a plain mention while the thread switch is off', async () => {
+      matrixNotificationService.setEventNotificationEnabled('thread_mention', false)
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('8', 'plain hello'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('plain hello')
+    })
+
+    it('stays silent for a threaded reply that does not mention the current user', async () => {
+      const store = useChatStore()
+      const msg = keywordMessage('14', 'threaded reply')
+      msg.message.body.threadId = '$thread-root'
+
+      await store.pushMsg(msg)
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('notifies for a threaded reply once keyword notifications are on and the body hits a keyword', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['deploy'] })
+      const store = useChatStore()
+      const msg = keywordMessage('15', 'the deploy is green')
+      msg.message.body.threadId = '$thread-root'
+
+      await store.pushMsg(msg)
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('the deploy is green')
+    })
+
+    it('stays silent for a keyword hit while keyword notifications are off (default)', async () => {
+      setDisplayPreferences({ keywordNotifications: false, keywords: ['deploy'] })
+      const store = useChatStore()
+
+      await store.pushMsg(keywordMessage('9', 'the deploy is green'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('notifies for a keyword hit once keyword notifications are on', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['deploy'] })
+      const store = useChatStore()
+
+      await store.pushMsg(keywordMessage('10', 'the deploy is green'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('the deploy is green')
+      // 关键词高亮（展示偏好，默认开启）仍按现状给标题加前缀
+      expect(lastSentOptions().title).toBe('[*] Alice')
+    })
+
+    it('stays silent when keyword notifications are on but the body misses every keyword', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['incident'] })
+      const store = useChatStore()
+
+      await store.pushMsg(keywordMessage('11', 'the deploy is green'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('never notifies for a message sent by the current user, even on a keyword hit', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['deploy'] })
+      const store = useChatStore()
+      const msg = keywordMessage('12', 'the deploy is green')
+      msg.fromUser = { uid: 'user-1', username: 'me' }
+
+      await store.pushMsg(msg)
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the message sender when the group cache has no entry', async () => {
+      setDisplayPreferences({ keywordNotifications: true, keywords: ['deploy'] })
+      groupUserRef.value = null
+      const store = useChatStore()
+
+      await store.pushMsg(keywordMessage('13', 'the deploy is green'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().title).toBe('[*] tester')
+      expect(lastSentOptions().body).toBe('the deploy is green')
+      expect(lastSentOptions().icon).toBeUndefined()
+    })
+
+    // 勿扰窗口只用「当前时刻起止」构造（起止相同 = 全天），因此不受真实时钟影响；
+    // 越界判定另用「一小时后开始」的窗口验证，同样与时区/时刻无关。
+    it('suppresses a plain mention while the Do Not Disturb window is active', async () => {
+      const now = Date.now()
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: now, endTime: now })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('16', 'quiet hours'))
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
+    it('notifies again once the Do Not Disturb switch is turned off', async () => {
+      const now = Date.now()
+      matrixNotificationService.setDndSettings({ enabled: true, startTime: now, endTime: now })
+      matrixNotificationService.setDndSettings({ enabled: false, startTime: now, endTime: now })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('17', 'loud again'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('loud again')
+    })
+
+    it('still notifies while DND is enabled but the window does not cover now', async () => {
+      const now = Date.now()
+      matrixNotificationService.setDndSettings({
+        enabled: true,
+        startTime: now + 60 * 60 * 1000,
+        endTime: now + 2 * 60 * 60 * 1000
+      })
+      const store = useChatStore()
+
+      await store.pushMsg(mentionMessage('18', 'outside the window'))
+
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(lastSentOptions().body).toBe('outside the window')
+    })
   })
 })

@@ -370,8 +370,8 @@ describe('Task 8/10/11 — new token guards', () => {
   })
 
   it('defines --tjg-font-size-2xs/md/2lg tokens (Task 11)', () => {
-    expect(tokensContent).toContain('--tjg-font-size-2xs: 11px')
-    expect(tokensContent).toContain('--tjg-font-size-md: 13px')
-    expect(tokensContent).toContain('--tjg-font-size-2lg: 15px')
+    expect(tokensContent).toContain('--tjg-font-size-2xs: calc(11px * var(--tjg-font-scale))')
+    expect(tokensContent).toContain('--tjg-font-size-md: calc(13px * var(--tjg-font-scale))')
+    expect(tokensContent).toContain('--tjg-font-size-2lg: calc(15px * var(--tjg-font-scale))')
   })
 })

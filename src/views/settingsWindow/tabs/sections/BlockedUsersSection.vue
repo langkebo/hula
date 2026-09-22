@@ -32,64 +32,103 @@
 
 <script setup lang="ts">
 import { NButton, NEmpty, NForm, NFormItem, NInput, NModal, NSpin } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { matrixAccountService } from '@/services/matrix'
+import { type InvitePolicy, normalizeInvitePolicy, normalizeUserId } from '@/services/matrix/user/invitePolicy'
+import { createLogger } from '@/utils/Logger'
 
 defineOptions({
   name: 'BlockedUsersSection'
 })
 
+const logger = createLogger('BlockedUsersSection')
+
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 const loadingBlocked = ref(false)
-const blockedUsers = ref<string[]>([])
+/**
+ * 屏蔽名单的唯一数据源是账号级邀请策略 `im.hula.invite_policy` 的 `blocklist`。
+ *
+ * 这里不再用 localStorage：那份 `tjg-blocked-users` 只有本组件自己读写，
+ * 判定层（`shouldRejectInvite`）从不读它，屏蔽了人也不会真的拒邀。
+ */
+const policy = ref<InvitePolicy | null>(null)
 const showAddBlocked = ref(false)
 const newBlockedUser = ref('')
+
+const blockedUsers = computed(() => policy.value?.blocklist ?? [])
 
 onMounted(() => {
   loadBlockedUsers()
 })
 
-// 屏蔽用户列表存储于 localStorage，不依赖 Matrix 客户端
 async function loadBlockedUsers() {
   loadingBlocked.value = true
   try {
-    const saved = localStorage.getItem('tjg-blocked-users')
-    if (saved) {
-      blockedUsers.value = JSON.parse(saved)
-    }
-  } catch {
-    // ignore
+    policy.value = await matrixAccountService.getInvitePolicy()
+  } catch (error) {
+    logger.warn('加载屏蔽名单失败:', error)
   } finally {
     loadingBlocked.value = false
   }
 }
 
-function saveBlockedUsers() {
-  localStorage.setItem('tjg-blocked-users', JSON.stringify(blockedUsers.value))
+/**
+ * 写回屏蔽名单。
+ *
+ * **写前必须重读**：`SecuritySettings` 同时挂了 `InvitePermissionPanel`，它有自己
+ * 的一份屏蔽名单编辑 UI，两者写同一份 account data。若用挂载时的快照整份写回，
+ * 对方刚保存的改动会被静默覆盖（在面板加了人 → 回到这里删除另一个人 → 前一个
+ * 改动被回滚）。
+ *
+ * 读取失败直接抛出，由调用方走错误反馈：绝不拿 `normalizeInvitePolicy(null)` 的
+ * 默认策略（`mode: allow_all` + 空名单）覆盖账号上已有的策略。为此重读走
+ * **严格**变体 `getInvitePolicyStrict()`——宽松的 `getInvitePolicy()` 会把读取
+ * 失败折叠成那份默认策略，写回就等于静默删策略。
+ *
+ * 只改 `blocklist`，**不动 `mode`**：`mode` 是用户显式选择的模式，
+ * 强行改成 `blocklist` 会把「仅允许联系人」这条基线静默关掉。
+ */
+async function updateBlocklist(mutate: (current: string[]) => string[]) {
+  const latest = normalizeInvitePolicy(await matrixAccountService.getInvitePolicyStrict())
+  const next: InvitePolicy = { ...latest, blocklist: mutate(latest.blocklist) }
+  await matrixAccountService.setInvitePolicy(next)
+  policy.value = next
 }
 
-function handleAddBlocked() {
-  if (!newBlockedUser.value.trim()) {
+async function handleAddBlocked() {
+  const userId = normalizeUserId(newBlockedUser.value)
+  if (!userId) {
     showFeedback(t('setting.security.input_user_id_required'), 'warning')
     return false
   }
-  if (blockedUsers.value.includes(newBlockedUser.value.trim())) {
+  if (blockedUsers.value.includes(userId)) {
     showFeedback(t('setting.security.user_already_blocked'), 'warning')
     return false
   }
-  blockedUsers.value.push(newBlockedUser.value.trim())
+
   newBlockedUser.value = ''
-  saveBlockedUsers()
-  showFeedback(t('setting.security.blocked_user_added'), 'success')
+  try {
+    await updateBlocklist((current) => (current.includes(userId) ? current : [...current, userId]))
+    showFeedback(t('setting.security.blocked_user_added'), 'success')
+  } catch (error) {
+    logger.error('添加屏蔽用户失败:', error)
+    showFeedback(t('setting.security.operation_failed'), 'error')
+  }
+  return true
 }
 
-function handleUnblock(userId: string) {
-  blockedUsers.value = blockedUsers.value.filter((u) => u !== userId)
-  saveBlockedUsers()
-  showFeedback(t('setting.security.blocked_user_removed'), 'success')
+async function handleUnblock(userId: string) {
+  try {
+    await updateBlocklist((current) => current.filter((u) => u !== userId))
+    showFeedback(t('setting.security.blocked_user_removed'), 'success')
+  } catch (error) {
+    logger.error('取消屏蔽失败:', error)
+    showFeedback(t('setting.security.operation_failed'), 'error')
+  }
 }
 </script>
 

@@ -30,7 +30,8 @@ export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
   spaceShowSubspaces: true,
   spaceDefaultNotification: 'all_messages' as 'all_messages' | 'mentions_only' | 'none',
   sendReadReceipts: true,
-  sendTypingNotifications: true
+  sendTypingNotifications: true,
+  showOnlineStatus: true
 })
 
 export const normalizeNotificationVolume = (volume?: number) => {
@@ -52,8 +53,12 @@ export const LEGACY_PREFERENCE_STORAGE_KEYS = {
   spaceAutoJoinRooms: 'tjg-space-auto-join',
   spaceShowSubspaces: 'tjg-space-show-subspaces',
   spaceDefaultNotification: 'tjg-space-default-notification',
-  sendReadReceipts: 'tjg-send-read-receipts',
-  sendTypingNotifications: 'tjg-send-typing-notifications'
+  // 旧隐私设置页（base 的 PrivacySettingsSection.vue）实际写入的 key：
+  // 注意不是 tjg-send-read-receipts / tjg-send-typing-notifications——那两个从没有
+  // 任何 UI 写过，按它们迁移只会制造"迁移了假 key"的假信心。
+  sendReadReceipts: 'tjg-send-receipts',
+  sendTypingNotifications: 'tjg-show-typing',
+  showOnlineStatus: 'tjg-show-online'
 } as const
 
 export const readLegacyBooleanPreference = (key: string) => {

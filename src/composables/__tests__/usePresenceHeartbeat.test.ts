@@ -8,6 +8,7 @@
  * - stop 后定时器被清除, 不再心跳
  */
 
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 import { OnlineEnum } from '@/enums'
@@ -55,6 +56,8 @@ const flushMicro = async () => {
 
 describe('usePresenceHeartbeat', () => {
   beforeEach(() => {
+    // pushOnline 现在读取「显示在线状态」偏好（默认开启），需要激活 Pinia
+    setActivePinia(createPinia())
     vi.useFakeTimers()
     setPresenceMock.mockClear()
     userStoreMock.userInfo.activeStatus = OnlineEnum.OFFLINE

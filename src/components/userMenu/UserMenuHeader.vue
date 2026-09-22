@@ -51,11 +51,13 @@ import { useI18n } from 'vue-i18n'
 import defaultAvatarImg from '@/assets/img/win.png'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAccount } from '@/composables/user/useAccount'
+import { OnlineEnum } from '@/enums'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { createLogger } from '@/utils/Logger'
+import { recordSentPresence, resolveOutgoingPresence } from '@/utils/userStatus'
 
 const logger = createLogger('UserMenuHeader')
 
@@ -144,8 +146,20 @@ async function handleStatusChange(statusId: string) {
     offline: 'offline'
   }
 
+  const targetPresence = presenceMap[statusId] || 'online'
+  // 「允许其他用户看到您的在线状态」关闭时降级为 offline，并同步本地 activeStatus，
+  // 避免本地显示在线而对端看不到（与 userStatus store 的 changeCurrentUserState 同一规则，
+  // 规则本身只在 utils/userStatus.resolveOutgoingPresence 里实现一份）。
+  const presence = resolveOutgoingPresence(targetPresence, settingStore.showOnlineStatusEnabled)
+  const hidesOnline = presence !== targetPresence
+
   try {
-    await setPresence(presenceMap[statusId] || 'online')
+    await setPresence(presence)
+    // 记下最近成功上报的 presence，心跳据此判断是否还需要降级
+    recordSentPresence(presence)
+    if (hidesOnline && userStore.userInfo) {
+      userStore.userInfo.activeStatus = OnlineEnum.OFFLINE
+    }
     showFeedback(t('menu.user_menu.status.updated'), 'success')
   } catch (error) {
     logger.error('Failed to update user presence:', error)

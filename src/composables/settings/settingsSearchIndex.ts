@@ -2,7 +2,6 @@ import {
   getSettingsTabLabel,
   type LegacySettingsTabType,
   SETTINGS_CANONICAL_ROUTE_SEGMENTS,
-  SETTINGS_LABS_CHILD_ROUTE_SEGMENTS,
   SETTINGS_LEGACY_TAB_MAP,
   SETTINGS_TABS,
   type SettingsTab,
@@ -19,10 +18,6 @@ export type SettingsSearchKeywordResolver = (tabId: SettingsTabType) => string[]
 
 const ROUTE_TERMS: Partial<Record<SettingsTabType, string[]>> = {
   notifications: [SETTINGS_CANONICAL_ROUTE_SEGMENTS.notifications],
-  labs: [
-    SETTINGS_CANONICAL_ROUTE_SEGMENTS.labs,
-    `${SETTINGS_CANONICAL_ROUTE_SEGMENTS.labs}/${SETTINGS_LABS_CHILD_ROUTE_SEGMENTS.integrations}`
-  ],
   securityPrivacy: [SETTINGS_CANONICAL_ROUTE_SEGMENTS.securityPrivacy],
   helpAbout: [SETTINGS_CANONICAL_ROUTE_SEGMENTS.helpAbout]
 }

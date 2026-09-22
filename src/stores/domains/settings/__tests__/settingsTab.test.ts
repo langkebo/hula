@@ -7,10 +7,11 @@ describe('settingsTab', () => {
     setActivePinia(createPinia())
   })
 
-  it('keeps the desktop settings navigation aligned to the 16 documented tabs', () => {
-    expect(SETTINGS_TABS).toHaveLength(16)
+  it('keeps the desktop settings navigation aligned to the 14 documented tabs', () => {
+    expect(SETTINGS_TABS).toHaveLength(14)
     expect(SETTINGS_TABS.map((tab) => tab.id)).not.toContain('push')
     expect(SETTINGS_TABS.map((tab) => tab.id)).not.toContain('integrations')
+    expect(SETTINGS_TABS.map((tab) => tab.id)).not.toContain('labs')
     expect(SETTINGS_TABS.map((tab) => tab.id)).toContain('securityPrivacy')
     expect(SETTINGS_TABS.map((tab) => tab.id)).toContain('helpAbout')
   })

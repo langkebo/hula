@@ -81,6 +81,7 @@ export class InvitePolicyEnforcer {
 
   constructor(private readonly options: InvitePolicyEnforcerOptions) {}
 
+  /** 订阅 `Room.member` 事件；重复调用是幂等的，客户端未初始化时只记警告。 */
   start(): void {
     if (this.handler) {
       return
@@ -100,6 +101,7 @@ export class InvitePolicyEnforcer {
     logger.info('邀请策略强制已启动')
   }
 
+  /** 退订事件并清空监听引用；未启动时调用是安全的空操作。 */
   stop(): void {
     if (this.handler && this.client) {
       this.client.off(ROOM_MEMBER_EVENT, this.handler)
@@ -162,11 +164,16 @@ export class InvitePolicyEnforcer {
     const inviterUserId = this.resolveInviter(member)
 
     /*
-     * 只在「仅允许联系人私聊」时才去查联系人状态：这是唯一需要网络查询的判定，
-     * 其余模式用不上就不该为一个必然被拒的邀请多打一次请求。
+     * 只在「仅允许联系人私聊」时才去查联系人状态：这是唯一需要网络查询的判定。
+     *
+     * 条件必须同时覆盖 `allow_all` 与 `blocklist`——这两个模式下非名单用户都受
+     * `allowStrangers` 约束。旧实现只认 `allow_all`，于是 blocklist 模式拿不到
+     * `contactState`，判定退回不可靠的静态 contacts 快照，默认 `allowStrangers:
+     * false` 时连好友的邀请都会被自动拒掉（评审 Critical #1）。
+     * `allowlist` 由名单显式决定，不需要查询。
      */
     let contactState: ContactState | undefined
-    if (policy.allowStrangers === false && policy.mode === 'allow_all' && inviterUserId) {
+    if (policy.allowStrangers === false && policy.mode !== 'allowlist' && inviterUserId) {
       contactState = (await this.options.resolveContactState?.(inviterUserId)) ?? 'unknown'
     }
 
@@ -220,6 +227,7 @@ export class InvitePolicyEnforcer {
   }
 }
 
+/** 创建邀请策略强制点实例。 */
 export function createInvitePolicyEnforcer(options: InvitePolicyEnforcerOptions): InvitePolicyEnforcer {
   return new InvitePolicyEnforcer(options)
 }

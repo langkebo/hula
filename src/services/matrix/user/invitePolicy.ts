@@ -1,5 +1,6 @@
 import { createLogger } from '@/utils/Logger'
 import { safeJsonParse, validateObject } from '@/utils/typeGuard'
+import type { ContactState } from './contactStateResolver'
 
 const logger = createLogger('InvitePolicy')
 
@@ -32,24 +33,42 @@ export const INVITE_POLICY_MODES = ['allow_all', 'blocklist', 'allowlist'] as co
 export type InvitePolicyMode = (typeof INVITE_POLICY_MODES)[number]
 
 export interface InvitePolicy {
-  /** `allow_all` 不按名单拒绝；`blocklist` 拒绝名单内；`allowlist` 仅放行名单内。 */
+  /** `allow_all` 不按名单拒绝；`blocklist` 仅表示「默认放行」（名单本身与 mode 正交）；`allowlist` 仅放行名单内。 */
   mode: InvitePolicyMode
-  /** mode === 'blocklist' 时生效。 */
+  /**
+   * 拒绝名单。与 `mode` 正交：名单内的人在任何 mode 下都被拒绝，
+   * 包括 `allow_all`（否则一屏蔽某人就会把「仅允许联系人」基线静默关掉）。
+   */
   blocklist: string[]
-  /** mode === 'allowlist' 时生效。 */
+  /** `mode === 'allowlist'` 时生效。 */
   allowlist: string[]
   /**
    * 是否允许非联系人发起的私聊（房间邀请）。
    *
-   * 仅在 `mode === 'allow_all'` 时参与判定：名单模式已经表达了「谁能进」，
-   * 再用 contacts 二次判定会互相矛盾。
+   * 除 `mode === 'allowlist'` 外都参与判定：名单里没写的人走这条规则，
+   * 名单是叠加在它之上的拒绝维度，而不是替代它的模式。
    */
   allowStrangers: boolean
   /**
+   * 是否允许接收好友请求。
+   *
+   * **消费方在 synapse-rust 后端**：它读取同一份 `im.hula.invite_policy`
+   * account data 来裁决好友请求。前端只负责读写与归一化，不做本地强制，
+   * 因此本仓库无法给出「开关真的生效」的行为证据。
+   */
+  allowFriendRequests: boolean
+  /** 是否自动接受收到的好友请求。消费方同上（后端 account data）。 */
+  autoAcceptFriends: boolean
+  /** 发送好友请求是否必须附言。消费方同上（后端 account data）。 */
+  requireFriendRequestMessage: boolean
+  /**
    * 联系人（好友）user id 快照。
    *
-   * 仅用于展示/调试：**不再参与判定**。判定改用 `ContactStateResolver` 的三态结果，
-   * 因为这份静态快照在查询失败时是空的，会让"仅允许联系人"退化成"谁都不认识"。
+   * **不参与判定**，只随 account data 往返保存（展示/调试/兼容旧数据）。
+   * 判定一律用 `ContactStateResolver` 的**动态**三态结果，由调用方传给
+   * `shouldRejectInvite` / `decideInviteAction`：
+   * 这份静态快照在查询失败时是空的，一旦拿它当依据，「仅允许联系人」就会
+   * 退化成「谁都不认识」，把好友的邀请一起拒掉。
    */
   contacts: string[]
 }
@@ -70,9 +89,14 @@ export const DEFAULT_INVITE_POLICY: InvitePolicy = {
   blocklist: [],
   allowlist: [],
   allowStrangers: false,
+  // 好友请求默认放开接收，但不自动接受；附言是默认要求（与旧 UI 默认一致）
+  allowFriendRequests: true,
+  autoAcceptFriends: false,
+  requireFriendRequestMessage: true,
   contacts: []
 }
 
+/** 类型守卫：判断未知输入是否为合法的邀请策略模式。 */
 export function isInvitePolicyMode(value: unknown): value is InvitePolicyMode {
   return typeof value === 'string' && (INVITE_POLICY_MODES as readonly string[]).includes(value)
 }
@@ -80,6 +104,11 @@ export function isInvitePolicyMode(value: unknown): value is InvitePolicyMode {
 /** 归一化 Matrix 用户 id：去空白。不做大小写折叠——Matrix id 局部部分大小写敏感。 */
 export function normalizeUserId(userId: unknown): string {
   return typeof userId === 'string' ? userId.trim() : ''
+}
+
+/** 布尔字段归一化：非法输入（缺失 / 字符串 / 数字 / null）一律回落默认值。 */
+function normalizeBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback
 }
 
 function normalizeUserIdList(value: unknown): string[] {
@@ -99,6 +128,7 @@ function normalizeUserIdList(value: unknown): string[] {
   return result
 }
 
+/** 归一化任意输入为完整的邀请策略：非法字段逐个回落默认值，名单去重去空白。 */
 export function normalizeInvitePolicy(input: unknown): InvitePolicy {
   if (!input || typeof input !== 'object') {
     return { ...DEFAULT_INVITE_POLICY, blocklist: [], allowlist: [], contacts: [] }
@@ -110,8 +140,13 @@ export function normalizeInvitePolicy(input: unknown): InvitePolicy {
     mode: isInvitePolicyMode(candidate.mode) ? candidate.mode : DEFAULT_INVITE_POLICY.mode,
     blocklist: normalizeUserIdList(candidate.blocklist),
     allowlist: normalizeUserIdList(candidate.allowlist),
-    allowStrangers:
-      typeof candidate.allowStrangers === 'boolean' ? candidate.allowStrangers : DEFAULT_INVITE_POLICY.allowStrangers,
+    allowStrangers: normalizeBoolean(candidate.allowStrangers, DEFAULT_INVITE_POLICY.allowStrangers),
+    allowFriendRequests: normalizeBoolean(candidate.allowFriendRequests, DEFAULT_INVITE_POLICY.allowFriendRequests),
+    autoAcceptFriends: normalizeBoolean(candidate.autoAcceptFriends, DEFAULT_INVITE_POLICY.autoAcceptFriends),
+    requireFriendRequestMessage: normalizeBoolean(
+      candidate.requireFriendRequestMessage,
+      DEFAULT_INVITE_POLICY.requireFriendRequestMessage
+    ),
     contacts: normalizeUserIdList(candidate.contacts)
   }
 }
@@ -119,19 +154,36 @@ export function normalizeInvitePolicy(input: unknown): InvitePolicy {
 /**
  * 是否应自动拒绝来自 `inviterUserId` 的邀请。
  *
- * 判定顺序：
- * 1. 名单模式优先（blocklist / allowlist）——名单是显式表达，优先级最高
- * 2. `allow_all` 下若关闭了「允许非联系人私聊」，非联系人一律拒绝
+ * `contactState` 是「仅允许联系人」规则的**唯一**依据，必须是
+ * `ContactStateResolver` 的**动态**三态结果：
+ * - `stranger` 拒绝
+ * - `contact` 放行
+ * - `unknown` / 未提供：fail-open 放行——查询失败与「确认不是好友」不可区分，
+ *   把失败当陌生人会在后端抖动时误拒所有好友
  *
- * 无法确定邀请人身份（空白 id）时，只要不是 allow_all 就拒绝：
- * 拿不到身份不能默认放行。
+ * `policy.contacts` 里那份静态快照**不参与判定**（查询失败时它是空的）。
+ *
+ * 判定顺序：
+ * 1. `blocklist` 与 `mode` 正交，先判：名单内的人永远拒绝，任何 mode、任何
+ *    `contactState` 都压不过它。这条规则不能落在任何 mode 分支里——
+ *    `mode === 'blocklist'` 一旦提前 return，`allowStrangers` 就被绕过，
+ *    用户屏蔽一个人就会静默关掉「仅允许联系人」基线。
+ * 2. `allowlist` 是显式白名单，只放行名单内的人，不看 `contactState`（显式表达
+ *    优先于动态查询，失败也不 fail-open）。
+ * 3. 其余模式看 `allowStrangers`：放开则放行。
+ * 4. 最后才是「仅允许联系人」：只有确认的 `stranger` 才拒。
+ *
+ * 拿不到邀请人身份（空白 id）时，只要走到最后一步就拒绝：连身份都读不到，
+ * 谈不上"可能的好友"，不能默认放行。
  */
-export function shouldRejectInvite(inviterUserId: unknown, policy: InvitePolicy): boolean {
+export function shouldRejectInvite(inviterUserId: unknown, policy: InvitePolicy, contactState?: ContactState): boolean {
   const normalized = normalizeInvitePolicy(policy)
   const inviter = normalizeUserId(inviterUserId)
 
-  if (normalized.mode === 'blocklist') {
-    return inviter ? normalized.blocklist.includes(inviter) : true
+  // blocklist 是与 mode 正交的独立维度：黑名单里的人永远拒绝，
+  // 不因为 mode 是 allow_all 就被跳过（否则一屏蔽某人就会关掉"仅联系人"基线）
+  if (inviter && normalized.blocklist.includes(inviter)) {
+    return true
   }
 
   if (normalized.mode === 'allowlist') {
@@ -142,14 +194,46 @@ export function shouldRejectInvite(inviterUserId: unknown, policy: InvitePolicy)
     return false
   }
 
-  // 非联系人私聊未开启：拿不到身份时同样不放行
-  return inviter ? !normalized.contacts.includes(inviter) : true
+  // 「仅允许联系人」：fail-open，只有确认的陌生人才拒
+  if (contactState === 'stranger') {
+    return true
+  }
+  if (contactState === 'contact') {
+    return false
+  }
+
+  return !inviter
 }
 
-export function loadInvitePolicy(storage: Pick<Storage, 'getItem'> = localStorage): InvitePolicy {
+/**
+ * 本地缓存的 storage key：**按账号隔离**。
+ *
+ * 同设备 A→B 换账号时，全局 key 会让 B 读到 A 的策略（名单/黑名单/隐私字段）。
+ * 登出时由 `clearInvitePolicyCache` 回收当前账号这一条；其它账号的缓存不受影响，
+ * 因为它们是不同的 key。
+ */
+export function invitePolicyCacheKey(userId: string): string {
+  return `${INVITE_POLICY_ACCOUNT_DATA_TYPE}:${userId}`
+}
+
+/**
+ * 从本地存储读取邀请策略缓存；读取失败或无数据时回落默认策略。
+ *
+ * `userId` 缺失（启动早期尚未拿到账号）时不读任何 key，直接返回默认策略：
+ * 既不会读到别的账号的缓存，也不会因为"还没有身份"而把谁的数据当成自己的。
+ */
+export function loadInvitePolicy(
+  userId?: string | null,
+  storage: Pick<Storage, 'getItem'> = localStorage
+): InvitePolicy {
+  const normalizedUserId = normalizeUserId(userId)
+  if (!normalizedUserId) {
+    return normalizeInvitePolicy(null)
+  }
+
   let stored: string | null = null
   try {
-    stored = storage.getItem(INVITE_POLICY_ACCOUNT_DATA_TYPE)
+    stored = storage.getItem(invitePolicyCacheKey(normalizedUserId))
   } catch (err) {
     logger.warn('读取本地邀请策略缓存失败:', err)
     return normalizeInvitePolicy(null)
@@ -165,6 +249,9 @@ export function loadInvitePolicy(storage: Pick<Storage, 'getItem'> = localStorag
       blocklist: (v) => v === undefined || Array.isArray(v),
       allowlist: (v) => v === undefined || Array.isArray(v),
       allowStrangers: (v) => v === undefined || typeof v === 'boolean',
+      allowFriendRequests: (v) => v === undefined || typeof v === 'boolean',
+      autoAcceptFriends: (v) => v === undefined || typeof v === 'boolean',
+      requireFriendRequestMessage: (v) => v === undefined || typeof v === 'boolean',
       contacts: (v) => v === undefined || Array.isArray(v)
     })
 
@@ -176,11 +263,44 @@ export function loadInvitePolicy(storage: Pick<Storage, 'getItem'> = localStorag
  *
  * account data 是权威来源，但读取需要已登录客户端；缓存一份可让未登录/离线时
  * 沿用上次策略，而不是退回 allow_all（那会让自动拒邀静默失效）。
+ *
+ * `userId` 缺失时**跳过写入**：没有账号身份就没有隔离维度，写无主 key 会让下一个
+ * 登录的账号读到它。读取侧同样在无 user id 时返回默认值，语义对称。
  */
-export function cacheInvitePolicy(policy: InvitePolicy, storage: Pick<Storage, 'setItem'> = localStorage): void {
+export function cacheInvitePolicy(
+  policy: InvitePolicy,
+  userId?: string | null,
+  storage: Pick<Storage, 'setItem'> = localStorage
+): void {
+  const normalizedUserId = normalizeUserId(userId)
+  if (!normalizedUserId) {
+    return
+  }
+
   try {
-    storage.setItem(INVITE_POLICY_ACCOUNT_DATA_TYPE, JSON.stringify(normalizeInvitePolicy(policy)))
+    storage.setItem(invitePolicyCacheKey(normalizedUserId), JSON.stringify(normalizeInvitePolicy(policy)))
   } catch (err) {
     logger.warn('缓存邀请策略失败:', err)
+  }
+}
+
+/**
+ * 登出/账号重置时清掉当前账号的本地策略缓存。
+ *
+ * 不清别的账号：它们的缓存是不同的 key，换回该账号时仍可离线沿用。
+ */
+export function clearInvitePolicyCache(
+  userId?: string | null,
+  storage: Pick<Storage, 'removeItem'> = localStorage
+): void {
+  const normalizedUserId = normalizeUserId(userId)
+  if (!normalizedUserId) {
+    return
+  }
+
+  try {
+    storage.removeItem(invitePolicyCacheKey(normalizedUserId))
+  } catch (err) {
+    logger.warn('清理邀请策略缓存失败:', err)
   }
 }
