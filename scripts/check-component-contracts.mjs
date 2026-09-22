@@ -223,12 +223,6 @@ const ACCEPTED_PATTERNS = [
     followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #6'
   },
   {
-    component: 'src/components/workbench/SpaceListItemCard.vue',
-    event: 'contextmenu',
-    reason: '右键空间卡无任何菜单；SpaceListPane 与 SpaceList.vue 都没有转发该事件',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #7'
-  },
-  {
     component: 'src/components/workbench/RoomSessionList.vue',
     event: 'batchToggle',
     reason: '桌面批量模式没有入口：没有任何生产调用方传 batch-mode/batch-selected-ids（移动端有 MobileBatchToolbar）',

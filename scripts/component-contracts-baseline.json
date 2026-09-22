@@ -29,7 +29,6 @@
     "src/components/common/GuestModeBanner.vue::upgrade",
     "src/views/loginWindow/LoginBottomBar.vue::guest-login",
     "src/components/thread/ThreadPanel.vue::sendReply",
-    "src/components/workbench/SpaceListItemCard.vue::contextmenu",
     "src/components/workbench/RoomSessionList.vue::batchToggle"
   ]
 }

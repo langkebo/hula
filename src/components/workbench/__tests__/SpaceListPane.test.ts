@@ -117,7 +117,7 @@ vi.mock('../SpaceListItemCard.vue', () => ({
   default: defineComponent({
     name: 'SpaceListItemCard',
     props: { item: { type: Object as PropType<SpaceListItem>, required: true }, active: Boolean },
-    emits: ['click', 'pin', 'settings', 'leave', 'delete', 'contextmenu'],
+    emits: ['click', 'pin', 'settings', 'leave', 'delete'],
     setup(props, { emit }) {
       return () =>
         h(
@@ -126,8 +126,7 @@ vi.mock('../SpaceListItemCard.vue', () => ({
             class: ['space-card-stub', { 'space-card-stub--active': props.active }],
             'data-test': 'space-card',
             'data-space-id': props.item.spaceId,
-            onClick: () => emit('click'),
-            onContextmenu: (e: Event) => emit('contextmenu', { item: props.item, event: e })
+            onClick: () => emit('click')
           },
           [
             h('span', { class: 'space-card-stub__name' }, props.item.name),
