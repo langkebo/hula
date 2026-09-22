@@ -50,6 +50,8 @@
       @delete-space="handleDeleteSpace"
       @close-manage-pane="closeManagePane"
       @submit-manage-pane="submitManagePane"
+      @select-space="handleSelectSpace"
+      @member-click="handleMemberClick"
       @update:sub-view="subView = $event"
       @update:invite-user-id="inviteForm.userId = $event"
       @update:add-room-id="addRoomForm.roomId = $event"
@@ -65,13 +67,17 @@ import SpaceDetailsPane from '@/components/workbench/SpaceDetailsPane.vue'
 import type { SpaceListItem } from '@/components/workbench/SpaceListPane.vue'
 import { useEnterChat } from '@/composables/chat/useEnterChat'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import type { SpaceInfo } from '@/composables/space'
 import { useSpace, useSpaceMembers, useSpaceRooms, useSpaces } from '@/composables/space'
+import { buildSpaceRoute } from '@/router/spaceNavigation'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
 import { useRoomStore } from '@/stores/domains/chat/room'
+import { createLogger } from '@/utils/Logger'
 
 type SpaceManageMode = 'invite' | 'add-room'
 
+const logger = createLogger('SpaceChildrenPane')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const route = useRoute()
@@ -200,6 +206,21 @@ const handleEnterRoom = async (roomId: string) => {
   } catch (err) {
     showFeedback(String(err), 'error')
   }
+}
+
+// 选择层级树里的空间：与 SpaceList.vue 的 handleSelectSpace 同行为（路由跳转），
+// 但 SpaceDetailsPane 的 selectSpace 事件携带的是 SpaceInfo，需取 spaceId。
+const handleSelectSpace = (space: SpaceInfo) => {
+  if (!space?.spaceId) return
+  void router.push(buildSpaceRoute(space.spaceId))
+}
+
+// 点击成员：与 GroupDetails.vue 的 handleMemberClick 同行为，跳转好友详情
+const handleMemberClick = (userId: string) => {
+  if (!userId) return
+  void router.push({ path: `/friend/${encodeURIComponent(userId)}` }).catch((err) => {
+    logger.warn('跳转成员详情失败:', err)
+  })
 }
 
 // 切换子房间建议标记（星标）

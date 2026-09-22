@@ -105,7 +105,6 @@ const emit = defineEmits<{
   (e: 'export-key'): void
   (e: 'manage-security-key'): void
   (e: 'manage-secure-backup'): void
-  (e: 'backup-success'): void
 }>()
 
 const { t } = useI18n()

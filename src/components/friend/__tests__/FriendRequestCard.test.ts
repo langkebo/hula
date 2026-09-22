@@ -57,7 +57,7 @@ describe('FriendRequestCard', () => {
     expect(wrapper.text()).toContain('friend.request.reject')
   })
 
-  it('renders outgoing request correctly', () => {
+  it('renders outgoing request without action buttons', () => {
     const wrapper = mount(FriendRequestCard, {
       props: {
         request: { ...mockRequest, direction: 'outgoing' }
@@ -67,8 +67,11 @@ describe('FriendRequestCard', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('friend.request.cancel')
+    // outgoing（已发出的申请）没有生产挂载点：取消入口由 FriendsSettings 承担，
+    // 卡片本身不再渲染任何动作按钮。
+    expect(wrapper.text()).not.toContain('friend.request.cancel')
     expect(wrapper.text()).not.toContain('friend.request.accept')
+    expect(wrapper.find('[data-test="friend-request-accept"]').exists()).toBe(false)
   })
 
   it('shows countdown correctly', () => {

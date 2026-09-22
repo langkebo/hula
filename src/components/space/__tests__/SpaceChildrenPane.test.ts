@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, ref } from 'vue'
+import { buildSpaceRoute } from '@/router/spaceNavigation'
 import SpaceChildrenPane from '../SpaceChildrenPane.vue'
 
 const {
@@ -24,7 +25,7 @@ const {
   enterChatMock,
   enterSpaceMock
 } = vi.hoisted(() => ({
-  routerPushMock: vi.fn(),
+  routerPushMock: vi.fn(async () => undefined),
   routerBackMock: vi.fn(),
   showFeedbackMock: vi.fn(),
   roomHasTagMock: vi.fn(() => false),
@@ -195,7 +196,21 @@ vi.mock('@/components/workbench/SpaceDetailsPane.vue', () => ({
           h('button', { onClick: () => emit('enterSpace') }, 'enter'),
           h('button', { onClick: () => emit('enterRoom', '!room-1:server') }, 'room'),
           h('button', { onClick: () => emit('leaveSpace') }, 'leave'),
-          h('button', { onClick: () => emit('deleteSpace') }, 'delete')
+          h('button', { onClick: () => emit('deleteSpace') }, 'delete'),
+          h(
+            'button',
+            {
+              'data-test': 'stub-select-space',
+              onClick: () =>
+                emit('selectSpace', { spaceId: '!space-2:server', name: 'Design Team', memberCount: 0, childCount: 0 })
+            },
+            'select'
+          ),
+          h(
+            'button',
+            { 'data-test': 'stub-member-click', onClick: () => emit('memberClick', '@alice:server') },
+            'member'
+          )
         ])
     }
   })
@@ -273,6 +288,50 @@ describe('SpaceChildrenPane', () => {
     await vm.handleEnterRoom('!room-1:server')
 
     expect(enterChatMock).toHaveBeenCalledWith('!room-1:server', 'room')
+  })
+
+  // 回归：SpaceDetailsPane 的层级树选中/成员点击原先无人监听（守门基线 32 条之一）。
+  // 行为必须与参考实现一致：SpaceList.vue:183-187 / GroupDetails.vue:176-181。
+  it('routes to the selected space when the hierarchy tree emits select-space', async () => {
+    const wrapper = mount(SpaceChildrenPane)
+    await flushPromises()
+    routerPushMock.mockClear()
+
+    await wrapper.get('[data-test="stub-select-space"]').trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledWith(buildSpaceRoute('!space-2:server'))
+  })
+
+  it('ignores select-space with an empty space id', async () => {
+    const wrapper = mount(SpaceChildrenPane)
+    await flushPromises()
+    routerPushMock.mockClear()
+
+    const vm = wrapper.vm as unknown as { handleSelectSpace: (space: { spaceId: string }) => void }
+    vm.handleSelectSpace({ spaceId: '' })
+
+    expect(routerPushMock).not.toHaveBeenCalled()
+  })
+
+  it('routes to friend details when a member row emits member-click', async () => {
+    const wrapper = mount(SpaceChildrenPane)
+    await flushPromises()
+    routerPushMock.mockClear()
+
+    await wrapper.get('[data-test="stub-member-click"]').trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledWith({ path: `/friend/${encodeURIComponent('@alice:server')}` })
+  })
+
+  it('ignores member-click with an empty user id', async () => {
+    const wrapper = mount(SpaceChildrenPane)
+    await flushPromises()
+    routerPushMock.mockClear()
+
+    const vm = wrapper.vm as unknown as { handleMemberClick: (id: string) => void }
+    vm.handleMemberClick('')
+
+    expect(routerPushMock).not.toHaveBeenCalled()
   })
 
   it('validates invite form submission', async () => {

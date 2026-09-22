@@ -7,7 +7,6 @@ vi.mock('vue-i18n', () => ({
 }))
 
 const reasonHolder = vi.hoisted(() => ({
-  emit: null as null | ((reason: string) => void),
   emitUpdate: null as null | ((value: string) => void)
 }))
 
@@ -16,12 +15,10 @@ vi.mock('../JoinReasonInput.vue', () => ({
     name: 'JoinReasonInput',
     props: {
       modelValue: { type: String, default: '' },
-      disabled: { type: Boolean, default: false },
-      showSubmit: { type: Boolean, default: true }
+      disabled: { type: Boolean, default: false }
     },
-    emits: ['update:modelValue', 'submit'],
+    emits: ['update:modelValue'],
     setup(_: Record<string, unknown>, { emit }: { emit: (event: string, ...args: unknown[]) => void }) {
-      reasonHolder.emit = (reason: string) => emit('submit', reason)
       reasonHolder.emitUpdate = (value: string) => emit('update:modelValue', value)
       return () => null
     }

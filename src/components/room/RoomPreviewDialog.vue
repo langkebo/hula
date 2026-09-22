@@ -80,7 +80,6 @@
           <join-reason-input
             v-model="reason"
             :disabled="loading"
-            :show-submit="false"
             class="room-preview-dialog__reason mt-[--tjg-space-1]" />
           <p
             v-if="!canJoin"

@@ -36,11 +36,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'drag-start', event: MouseEvent): void
-  (e: 'drag-move', event: MouseEvent): void
-  (e: 'drag-end'): void
   (e: 'resize-start', event: MouseEvent, direction: string): void
-  (e: 'resize-move', event: MouseEvent): void
-  (e: 'resize-end'): void
   (e: 'border-radius-change', value: number): void
   (e: 'confirm'): void
 }>()
