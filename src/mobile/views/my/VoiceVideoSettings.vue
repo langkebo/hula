@@ -25,34 +25,6 @@
                 </van-picker-group>
               </template>
             </van-cell>
-
-            <van-cell :title="t('mobile_voice_video.audio_output')">
-              <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-success-100)] mr-12px flex items-center justify-center">
-                  <Icon icon="mdi:speaker" :width="20" color="var(--tjg-color-success-500)" />
-                </div>
-              </template>
-              <template #right-icon>
-                <van-field v-model="audioOutputName" readonly is-link @click="showAudioOutputPicker = true" />
-              </template>
-            </van-cell>
-          </van-cell-group>
-
-          <van-cell-group inset>
-            <van-cell :title="t('mobile_voice_video.input_volume')">
-              <template #value>
-                <van-slider v-model="inputVolume" :min="0" :max="100" class="w-100px" />
-                <span class="ml-8px text-12px text-[var(--tjg-text-secondary)]">{{ inputVolume }}%</span>
-              </template>
-            </van-cell>
-
-            <van-cell :title="t('mobile_voice_video.output_volume')">
-              <template #value>
-                <van-slider v-model="outputVolume" :min="0" :max="100" class="w-100px" />
-                <span class="ml-8px text-12px text-[var(--tjg-text-secondary)]">{{ outputVolume }}%</span>
-              </template>
-            </van-cell>
           </van-cell-group>
 
           <van-cell-group inset>
@@ -143,13 +115,6 @@
           @cancel="showAudioInputPicker = false" />
       </van-popup>
 
-      <van-popup v-model:show="showAudioOutputPicker" position="bottom" round>
-        <van-picker
-          :columns="audioOutputOptions"
-          @confirm="onAudioOutputConfirm"
-          @cancel="showAudioOutputPicker = false" />
-      </van-popup>
-
       <van-popup v-model:show="showVideoInputPicker" position="bottom" round>
         <van-picker
           :columns="videoInputOptions"
@@ -177,32 +142,20 @@ const isPreviewing = ref(false)
 const audioLevel = ref(0)
 
 const audioInputId = ref<string | null>(null)
-const audioOutputId = ref<string | null>(null)
 const videoInputId = ref<string | null>(null)
-const inputVolume = ref(100)
-const outputVolume = ref(100)
 const echoCancellation = ref(true)
 const noiseSuppression = ref(true)
 const autoGainControl = ref(true)
 
 const showAudioInputPicker = ref(false)
-const showAudioOutputPicker = ref(false)
 const showVideoInputPicker = ref(false)
 
 const audioInputDevices = ref<MediaDeviceInfo[]>([])
-const audioOutputDevices = ref<MediaDeviceInfo[]>([])
 const videoInputDevices = ref<MediaDeviceInfo[]>([])
 
 const audioInputOptions = computed(() =>
   audioInputDevices.value.map((d) => ({
     text: d.label || `${t('mobile_voice_video.microphone')} ${d.deviceId.slice(0, 8)}`,
-    value: d.deviceId
-  }))
-)
-
-const audioOutputOptions = computed(() =>
-  audioOutputDevices.value.map((d) => ({
-    text: d.label || `${t('mobile_voice_video.speaker')} ${d.deviceId.slice(0, 8)}`,
     value: d.deviceId
   }))
 )
@@ -216,11 +169,6 @@ const videoInputOptions = computed(() =>
 
 const audioInputName = computed(() => {
   const device = audioInputDevices.value.find((d) => d.deviceId === audioInputId.value)
-  return device?.label || t('mobile_voice_video.select_device')
-})
-
-const audioOutputName = computed(() => {
-  const device = audioOutputDevices.value.find((d) => d.deviceId === audioOutputId.value)
   return device?.label || t('mobile_voice_video.select_device')
 })
 
@@ -251,14 +199,10 @@ async function loadDevices() {
     const devices = await navigator.mediaDevices.enumerateDevices()
 
     audioInputDevices.value = devices.filter((d) => d.kind === 'audioinput')
-    audioOutputDevices.value = devices.filter((d) => d.kind === 'audiooutput')
     videoInputDevices.value = devices.filter((d) => d.kind === 'videoinput')
 
     if (audioInputDevices.value.length > 0 && !audioInputId.value) {
       audioInputId.value = audioInputDevices.value[0].deviceId
-    }
-    if (audioOutputDevices.value.length > 0 && !audioOutputId.value) {
-      audioOutputId.value = audioOutputDevices.value[0].deviceId
     }
     if (videoInputDevices.value.length > 0 && !videoInputId.value) {
       videoInputId.value = videoInputDevices.value[0].deviceId
@@ -275,12 +219,6 @@ async function loadDevices() {
 }
 
 function loadSavedSettings() {
-  const savedInputVolume = localStorage.getItem('tjg-input-volume')
-  if (savedInputVolume) inputVolume.value = parseInt(savedInputVolume, 10)
-
-  const savedOutputVolume = localStorage.getItem('tjg-output-volume')
-  if (savedOutputVolume) outputVolume.value = parseInt(savedOutputVolume, 10)
-
   const savedEcho = localStorage.getItem('tjg-echo-cancellation')
   if (savedEcho) echoCancellation.value = savedEcho === 'true'
 
@@ -295,12 +233,6 @@ function onAudioInputConfirm({ selectedOptions }: { selectedOptions: Array<{ val
   audioInputId.value = selectedOptions[0].value
   localStorage.setItem('tjg-audio-input', audioInputId.value!)
   showAudioInputPicker.value = false
-}
-
-function onAudioOutputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
-  audioOutputId.value = selectedOptions[0].value
-  localStorage.setItem('tjg-audio-output', audioOutputId.value!)
-  showAudioOutputPicker.value = false
 }
 
 function onVideoInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {

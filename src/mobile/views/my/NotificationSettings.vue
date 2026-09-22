@@ -76,7 +76,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="pushNotifications" :disabled="!notificationsEnabled" @change="handlePushToggle" />
+                <van-switch v-model="pushNotifications" :disabled="!notificationsEnabled" />
               </template>
             </van-cell>
 
@@ -102,10 +102,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="emailNotifications"
-                  :disabled="!notificationsEnabled"
-                  @change="handleEmailToggle" />
+                <van-switch v-model="emailNotifications" :disabled="!notificationsEnabled" />
               </template>
             </van-cell>
 
@@ -117,10 +114,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="encryptedRoomNotifications"
-                  :disabled="!notificationsEnabled"
-                  @change="handleEncryptedRoomToggle" />
+                <van-switch v-model="encryptedRoomNotifications" :disabled="!notificationsEnabled" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -353,18 +347,6 @@ async function handleSoundToggle(enabled: boolean) {
     logger.error('Failed to update notification sound', error)
     soundEnabled.value = !enabled
   }
-}
-
-function handlePushToggle(enabled: boolean) {
-  localStorage.setItem('tjg-push-notifications', enabled.toString())
-}
-
-function handleEmailToggle(enabled: boolean) {
-  localStorage.setItem('tjg-email-notifications', enabled.toString())
-}
-
-function handleEncryptedRoomToggle(enabled: boolean) {
-  localStorage.setItem('tjg-encrypted-room-notifications', enabled.toString())
 }
 
 async function handleSave() {

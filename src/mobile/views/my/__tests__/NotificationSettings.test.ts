@@ -1,5 +1,6 @@
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import NotificationSettings from '../NotificationSettings.vue'
 
 const { showToastMock, getPushRulesMock, setPushRuleEnabledMock, setPushRuleActionsMock } = vi.hoisted(() => {
@@ -11,40 +12,9 @@ const { showToastMock, getPushRulesMock, setPushRuleEnabledMock, setPushRuleActi
   }
 })
 
-vi.mock('vant', async () => {
-  const { defineComponent } = await import('vue')
-  // 同时导出 PascalCase 与 kebab-case：模板里写的是小写标签，
-  // 只导出 PascalCase 时 Vue 解析不到，组件会被当成未解析标签整体丢弃（槽位一起消失）。
-  const passthrough = (name: string, tag = 'div') =>
-    defineComponent({
-      name,
-      inheritAttrs: false,
-      template: `<${tag} v-bind="$attrs"><slot name="icon" /><slot name="title" /><slot /><slot name="value" /><slot name="right-icon" /></${tag}>`
-    })
-  return {
-    showToast: (...args: any[]) => showToastMock(...args),
-    VanCellGroup: passthrough('VanCellGroup'),
-    'van-cell-group': passthrough('VanCellGroup'),
-    VanCell: passthrough('VanCell'),
-    'van-cell': passthrough('VanCell'),
-    VanField: passthrough('VanField'),
-    'van-field': passthrough('VanField'),
-    VanSwitch: passthrough('VanSwitch'),
-    'van-switch': passthrough('VanSwitch'),
-    VanRadioGroup: passthrough('VanRadioGroup'),
-    'van-radio-group': passthrough('VanRadioGroup'),
-    VanRadio: passthrough('VanRadio'),
-    'van-radio': passthrough('VanRadio'),
-    VanButton: passthrough('VanButton', 'button'),
-    'van-button': passthrough('VanButton', 'button'),
-    VanPopup: passthrough('VanPopup'),
-    'van-popup': passthrough('VanPopup'),
-    VanPicker: passthrough('VanPicker'),
-    'van-picker': passthrough('VanPicker'),
-    VanLoading: passthrough('VanLoading'),
-    'van-loading': passthrough('VanLoading')
-  }
-})
+vi.mock('vant', () => ({
+  showToast: (...args: any[]) => showToastMock(...args)
+}))
 
 vi.mock('@iconify/vue', () => ({
   Icon: { name: 'Icon', template: '<i />', props: ['icon', 'width', 'color'] }
@@ -83,9 +53,63 @@ vi.mock('@/mobile/components/chat-room/HeaderBar.vue', () => ({
   }
 }))
 
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: vi.fn() })
+}))
+
 vi.mock('@/router', () => ({
   default: { push: vi.fn(), back: vi.fn() }
 }))
+
+// van-* 在测试环境里是未解析标签，直接挂载会丢掉具名插槽（开关不会被渲染）。
+// 这里给出能渲染插槽、并真实触发 v-model/change 的最小替身，交互断言才有意义。
+const VanCellStub = defineComponent({
+  name: 'VanCell',
+  props: ['title', 'label', 'isLink'],
+  template: `<div class="van-cell">
+    <span class="van-cell__title">{{ title }}</span>
+    <span v-if="label" class="van-cell__label">{{ label }}</span>
+    <slot name="icon" />
+    <slot name="value" />
+    <slot name="right-icon" />
+  </div>`
+})
+
+const VanSwitchStub = defineComponent({
+  name: 'VanSwitch',
+  props: { modelValue: { type: Boolean, default: false }, disabled: Boolean },
+  emits: ['update:modelValue', 'change'],
+  template: `<button class="van-switch" :disabled="disabled" @click="$emit('update:modelValue', !modelValue); $emit('change', !modelValue)" />`
+})
+
+function mountComponent() {
+  return mount(NotificationSettings, {
+    global: {
+      stubs: {
+        'van-cell-group': { template: '<div><slot /></div>' },
+        'van-cell': VanCellStub,
+        'van-switch': VanSwitchStub,
+        'van-field': {
+          template: '<input class="van-field" />',
+          props: ['modelValue', 'label', 'placeholder', 'disabled']
+        },
+        'van-radio-group': { template: '<div><slot /></div>', props: ['modelValue', 'direction'] },
+        'van-radio': { template: '<label><slot /></label>', props: ['name'] },
+        'van-button': { template: '<button><slot /></button>', props: ['type', 'block', 'loading'] },
+        'van-popup': { template: '<div><slot /></div>', props: ['show', 'position', 'round'] },
+        'van-picker': { template: '<div />', props: ['columns', 'modelValue'] }
+      }
+    }
+  })
+}
+
+function switchInCell(wrapper: VueWrapper, titleKey: string) {
+  const cell = wrapper.findAll('.van-cell').find((c) => c.text().includes(titleKey))
+  expect(cell, `cell ${titleKey} should exist`).toBeDefined()
+  const toggle = cell!.findComponent({ name: 'VanSwitch' })
+  expect(toggle.exists(), `switch in ${titleKey} should exist`).toBe(true)
+  return toggle
+}
 
 describe('NotificationSettings', () => {
   beforeEach(() => {
@@ -95,27 +119,27 @@ describe('NotificationSettings', () => {
   })
 
   it('renders correctly', () => {
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     expect(wrapper.html()).toBeTruthy()
   })
 
   it('has notifications enabled by default', () => {
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     expect((wrapper.vm as any).notificationsEnabled).toBe(true)
   })
 
   it('has sound enabled by default', () => {
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     expect((wrapper.vm as any).soundEnabled).toBe(true)
   })
 
   it('has push notifications enabled by default', () => {
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     expect((wrapper.vm as any).pushNotifications).toBe(true)
   })
 
   it('loads push rules on mount', async () => {
-    const _wrapper = mount(NotificationSettings)
+    const _wrapper = mountComponent()
     await vi.dynamicImportSettled()
     expect(getPushRulesMock).toHaveBeenCalled()
   })
@@ -126,7 +150,7 @@ describe('NotificationSettings', () => {
         override: [{ rule_id: '.m.rule.master', enabled: false }]
       }
     })
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     await vi.dynamicImportSettled()
     expect((wrapper.vm as any).notificationsEnabled).toBe(true)
   })
@@ -137,13 +161,13 @@ describe('NotificationSettings', () => {
         room: [{ rule_id: '.m.rule.room_one_to_one', enabled: true }]
       }
     })
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     await vi.dynamicImportSettled()
     expect((wrapper.vm as any).roomNotifyMode).toBe('all')
   })
 
   it('handles notifications toggle', async () => {
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     await vm.handleNotificationsToggle(false)
@@ -151,37 +175,33 @@ describe('NotificationSettings', () => {
   })
 
   it('handles sound toggle', async () => {
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     await vm.handleSoundToggle(false)
     expect(setPushRuleActionsMock).toHaveBeenCalled()
   })
 
-  it('saves push notifications to localStorage', () => {
-    const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
-    vm.handlePushToggle(true)
-    expect(localStorage.getItem('tjg-push-notifications')).toBe('true')
-  })
+  it('三个零消费方的开关经真实交互后不写入死 key', async () => {
+    const wrapper = mountComponent()
+    await vi.dynamicImportSettled()
 
-  it('saves email notifications to localStorage', () => {
-    const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
-    vm.handleEmailToggle(true)
-    expect(localStorage.getItem('tjg-email-notifications')).toBe('true')
-  })
+    for (const titleKey of [
+      'mobile_notifications.push_notifications',
+      'mobile_notifications.email_notifications',
+      'mobile_notifications.encrypted_rooms'
+    ]) {
+      await switchInCell(wrapper, titleKey).trigger('click')
+    }
 
-  it('saves encrypted room notifications to localStorage', () => {
-    const wrapper = mount(NotificationSettings)
-    const vm = wrapper.vm as any
-    vm.handleEncryptedRoomToggle(true)
-    expect(localStorage.getItem('tjg-encrypted-room-notifications')).toBe('true')
+    expect(localStorage.getItem('tjg-push-notifications')).toBeNull()
+    expect(localStorage.getItem('tjg-email-notifications')).toBeNull()
+    expect(localStorage.getItem('tjg-encrypted-room-notifications')).toBeNull()
   })
 
   describe('notification display preferences', () => {
     it('exposes the three controls with defaults', () => {
-      const wrapper = mount(NotificationSettings)
+      const wrapper = mountComponent()
       const vm = wrapper.vm as any
       expect(vm.contentSummary).toBe(true)
       expect(vm.keywordHighlight).toBe(true)
@@ -194,7 +214,7 @@ describe('NotificationSettings', () => {
         'tjg-notification-display-preferences',
         JSON.stringify({ contentSummary: false, keywordHighlight: false, keywords: ['deploy'], priority: 'low' })
       )
-      const wrapper = mount(NotificationSettings)
+      const wrapper = mountComponent()
       const vm = wrapper.vm as any
       expect(vm.contentSummary).toBe(false)
       expect(vm.keywordHighlight).toBe(false)
@@ -202,17 +222,17 @@ describe('NotificationSettings', () => {
       expect(vm.keywordsInput).toBe('deploy')
     })
 
-    it('persists the content summary toggle', () => {
-      const wrapper = mount(NotificationSettings)
-      const vm = wrapper.vm as any
-      vm.contentSummary = false
-      vm.handleContentSummaryToggle()
+    it('persists the content summary toggle through a real switch interaction', async () => {
+      const wrapper = mountComponent()
+
+      await switchInCell(wrapper, 'mobile_notifications.content_summary').trigger('click')
+
       const stored = JSON.parse(localStorage.getItem('tjg-notification-display-preferences') as string)
       expect(stored.contentSummary).toBe(false)
     })
 
     it('persists the keyword highlight toggle', () => {
-      const wrapper = mount(NotificationSettings)
+      const wrapper = mountComponent()
       const vm = wrapper.vm as any
       vm.keywordHighlight = false
       vm.handleKeywordHighlightToggle()
@@ -231,7 +251,7 @@ describe('NotificationSettings', () => {
           priority: 'medium'
         })
       )
-      const wrapper = mount(NotificationSettings)
+      const wrapper = mountComponent()
       const vm = wrapper.vm as any
       vm.contentSummary = false
 
@@ -243,7 +263,7 @@ describe('NotificationSettings', () => {
     })
 
     it('normalizes keywords on blur', () => {
-      const wrapper = mount(NotificationSettings)
+      const wrapper = mountComponent()
       const vm = wrapper.vm as any
       vm.keywordsInput = ' deploy ,, DEPLOY ， 运维 '
       vm.handleKeywordsCommit()
@@ -253,7 +273,7 @@ describe('NotificationSettings', () => {
     })
 
     it('persists a confirmed priority and closes the picker', () => {
-      const wrapper = mount(NotificationSettings)
+      const wrapper = mountComponent()
       const vm = wrapper.vm as any
       vm.showPriorityPicker = true
       vm.handlePriorityConfirm({ selectedValues: ['high'] })
@@ -264,21 +284,21 @@ describe('NotificationSettings', () => {
     })
 
     it('ignores an unknown priority value', () => {
-      const wrapper = mount(NotificationSettings)
+      const wrapper = mountComponent()
       const vm = wrapper.vm as any
       vm.handlePriorityConfirm({ selectedValues: ['urgent'] })
       expect(vm.priority).toBe('medium')
     })
 
     it('renders the priority labels from i18n keys', () => {
-      const wrapper = mount(NotificationSettings)
+      const wrapper = mountComponent()
       const vm = wrapper.vm as any
       expect(vm.priorityColumns.map((c: any) => c.value)).toEqual(['low', 'medium', 'high'])
       expect(vm.priorityLabel).toBe('mobile_notifications.priority_medium')
     })
 
     it('renders the display section controls', () => {
-      const wrapper = mount(NotificationSettings)
+      const wrapper = mountComponent()
       expect(wrapper.find('[data-testid="notif-content-summary"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="notif-keyword-highlight"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="notif-keywords"]').exists()).toBe(true)
@@ -287,7 +307,7 @@ describe('NotificationSettings', () => {
   })
 
   it('saves push rules on handleSave', async () => {
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     vm.roomNotifyMode = 'none'
@@ -299,7 +319,7 @@ describe('NotificationSettings', () => {
 
   it('shows error on save failure', async () => {
     setPushRuleEnabledMock.mockRejectedValue(new Error('fail'))
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     await vm.handleSave()
@@ -308,7 +328,7 @@ describe('NotificationSettings', () => {
 
   it('reverts notification toggle on failure', async () => {
     setPushRuleEnabledMock.mockRejectedValue(new Error('fail'))
-    const wrapper = mount(NotificationSettings)
+    const wrapper = mountComponent()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
     await vm.handleNotificationsToggle(false)
