@@ -46,9 +46,12 @@
  * 默认 @include bubble 已是圆角，这里只需覆盖 square。
  * 属性选择器 (0,2,0) 特异性高于 .bubble / .bubble-oneself (0,1,0)，
  * 无需 !important 即可盖过后者的 rounded-[12px_4px_12px_12px]。
+ * `.photo-wall` 通过 @extend .bubble-oneself 复用发送方气泡外观，这里显式列出，
+ * 保证图片墙同样跟随方形档位，而不用依赖 @extend 的跨规则展开。
  */
 [data-bubble-style='square'] .bubble,
-[data-bubble-style='square'] .bubble-oneself {
+[data-bubble-style='square'] .bubble-oneself,
+[data-bubble-style='square'] .photo-wall {
   border-radius: var(--tjg-radius-xs);
 }
 
