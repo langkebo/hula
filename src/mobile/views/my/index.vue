@@ -45,7 +45,8 @@ import { useRouter } from 'vue-router'
 import MobileQuickActions from '#/components/my/MobileQuickActions.vue'
 import PersonalInfo from '#/components/my/PersonalInfo.vue'
 import Settings from '#/components/my/Settings.vue'
-import { matrixClientService, profileService } from '@/services/matrix'
+import { useSessionActions } from '@/composables/user/useSessionActions'
+import { profileService } from '@/services/matrix'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
@@ -55,6 +56,9 @@ const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 const settingStore = useSettingStore()
+// 登出走 SessionOrchestrator 的显式登出清理（resetLocalSessionState）：直接调
+// matrixClientService.logout() 只拆 SDK 客户端，会漏掉 sessionUnread、DND 镜像与邀请策略缓存。
+const { logoutCurrentSession } = useSessionActions()
 
 const isShow = ref(true)
 
@@ -113,7 +117,7 @@ async function handleLogout() {
   isLoggingOut.value = true
   try {
     showToast({ type: 'loading', message: t('mobile_setting.logout_confirm.message'), forbidClick: true })
-    await matrixClientService.logout()
+    await logoutCurrentSession()
     settingStore.toggleLogin(false, false)
     showToast({ type: 'success', message: t('mobile_setting.logout_success') })
     await router.push('/mobile/login')
