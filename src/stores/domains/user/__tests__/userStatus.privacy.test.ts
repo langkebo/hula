@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 import { OnlineEnum } from '@/enums'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 
 const { setPresenceMock, updateUserItemMock } = vi.hoisted(() => ({
@@ -49,7 +50,9 @@ describe('userStatus.changeCurrentUserState 把门控交给 presence 服务', ()
   })
 
   it('把 online 意图原样交给服务，并按服务返回的 offline 把本地 activeStatus 置为离线', async () => {
-    // 桌面关闭「显示在线状态」时服务会返回 offline
+    // 桌面关闭「显示在线状态」时服务会返回 offline。开关必须在这里真的关掉，
+    // 否则调用点若重新加回 resolveOutgoingPresence 也会照传 online，断言失去意义。
+    useSettingStore().setShowOnlineStatusEnabled(false)
     setPresenceMock.mockResolvedValue('offline')
     const store = useUserStatusStore()
 
@@ -63,6 +66,7 @@ describe('userStatus.changeCurrentUserState 把门控交给 presence 服务', ()
   })
 
   it('服务返回 online（开关开启）时不降级本地 activeStatus', async () => {
+    useSettingStore().setShowOnlineStatusEnabled(true)
     setPresenceMock.mockResolvedValue('online')
     const store = useUserStatusStore()
 
@@ -74,6 +78,8 @@ describe('userStatus.changeCurrentUserState 把门控交给 presence 服务', ()
   })
 
   it('away/隐身 等非在线状态原样上报，服务返回同值时不降级', async () => {
+    // 开关关闭只影响 online；away/offline 是用户显式选择，调用点必须原样传意图
+    useSettingStore().setShowOnlineStatusEnabled(false)
     setPresenceMock.mockResolvedValue('unavailable')
     const store = useUserStatusStore()
 

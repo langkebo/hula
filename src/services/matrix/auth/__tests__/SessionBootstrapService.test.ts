@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum, OnlineEnum } from '@/enums'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { SessionBootstrapService } from '../SessionBootstrapService'
 import type { MatrixPostLoginBootstrapOptions, SessionRuntimeHost } from '../sessionRuntimeInternal'
 import { SessionRuntimeState } from '../sessionRuntimeInternal'
@@ -412,6 +413,9 @@ describe('SessionBootstrapService', () => {
     it('只把 online 意图交给门控服务；服务返回 offline 时本地不置为在线', async () => {
       const { host, mocks } = createMockHost()
       mocks.getClient.mockReturnValue({})
+      // 开关必须真的关掉：否则调用点若重新加回 resolveOutgoingPresence 也会照传 online，
+      // 「只传意图」的断言就永远为真、无法失败。
+      useSettingStore().setShowOnlineStatusEnabled(false)
 
       const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
       const setPresence = vi.mocked(matrixPresenceService.setPresence)
@@ -422,6 +426,27 @@ describe('SessionBootstrapService', () => {
       await service.bootstrapPostLoginState()
 
       expect(setPresence).toHaveBeenCalledWith('online')
+      expect(mocks.updateProfileFields).toHaveBeenCalledWith(
+        expect.objectContaining({ activeStatus: OnlineEnum.OFFLINE })
+      )
+      expect(mocks.updateProfileFields).not.toHaveBeenCalledWith(
+        expect.objectContaining({ activeStatus: OnlineEnum.ONLINE })
+      )
+    })
+
+    it('setPresence 失败时本地保守按离线处理，且失败被吞掉不中断引导', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getClient.mockReturnValue({})
+      // 开关开启，排除「因偏好关闭而降级」这条路径，单独钉住失败回退
+      useSettingStore().setShowOnlineStatusEnabled(true)
+
+      const { matrixPresenceService } = await import('@/services/matrix/user/MatrixPresenceService')
+      vi.mocked(matrixPresenceService.setPresence).mockRejectedValueOnce(new Error('presence unavailable'))
+
+      const service = new SessionBootstrapService(host, state)
+      // 上报失败不应把整个登录引导打挂
+      await expect(service.bootstrapPostLoginState()).resolves.toBeUndefined()
+
       expect(mocks.updateProfileFields).toHaveBeenCalledWith(
         expect.objectContaining({ activeStatus: OnlineEnum.OFFLINE })
       )
