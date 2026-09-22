@@ -89,19 +89,19 @@
           <van-cell-group inset>
             <van-cell :title="t('mobile_voice_video.echo_cancellation')">
               <template #right-icon>
-                <van-switch v-model="echoCancellation" />
+                <van-switch v-model="echoCancellation" @change="handleEchoCancellationChange" />
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_voice_video.noise_suppression')">
               <template #right-icon>
-                <van-switch v-model="noiseSuppression" />
+                <van-switch v-model="noiseSuppression" @change="handleNoiseSuppressionChange" />
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_voice_video.auto_gain')">
               <template #right-icon>
-                <van-switch v-model="autoGainControl" />
+                <van-switch v-model="autoGainControl" @change="handleAutoGainChange" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -130,6 +130,7 @@ import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { loadMediaDevicePreferences, saveMediaDevicePreferences } from '@/services/media/mediaDevicePreferences'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('VoiceVideoSettings')
@@ -219,14 +220,23 @@ async function loadDevices() {
 }
 
 function loadSavedSettings() {
-  const savedEcho = localStorage.getItem('tjg-echo-cancellation')
-  if (savedEcho) echoCancellation.value = savedEcho === 'true'
+  // 与桌面设置窗口共用同一份偏好（localStorage key 映射与归一化都在 shared 模块里）
+  const preferences = loadMediaDevicePreferences()
+  echoCancellation.value = preferences.echoCancellation
+  noiseSuppression.value = preferences.noiseSuppression
+  autoGainControl.value = preferences.autoGain
+}
 
-  const savedNoise = localStorage.getItem('tjg-noise-suppression')
-  if (savedNoise) noiseSuppression.value = savedNoise === 'true'
+function handleEchoCancellationChange(value: boolean) {
+  saveMediaDevicePreferences({ echoCancellation: value })
+}
 
-  const savedAutoGain = localStorage.getItem('tjg-auto-gain')
-  if (savedAutoGain) autoGainControl.value = savedAutoGain === 'true'
+function handleNoiseSuppressionChange(value: boolean) {
+  saveMediaDevicePreferences({ noiseSuppression: value })
+}
+
+function handleAutoGainChange(value: boolean) {
+  saveMediaDevicePreferences({ autoGain: value })
 }
 
 function onAudioInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
