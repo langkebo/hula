@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, ref } from 'vue'
+import { useAriaLive } from '@/composables/common/useAriaLive'
 import { buildSpaceRoute } from '@/router/spaceNavigation'
 import SpaceChildrenPane from '../SpaceChildrenPane.vue'
 
@@ -300,6 +301,19 @@ describe('SpaceChildrenPane', () => {
     await wrapper.get('[data-test="stub-select-space"]').trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledWith(buildSpaceRoute('!space-2:server'))
+  })
+
+  // 与参考实现 SpaceList.vue:184-189 同语义：选择空间时向屏幕阅读器播报空间名。
+  it('announces the selected space for screen readers', async () => {
+    const wrapper = mount(SpaceChildrenPane)
+    await flushPromises()
+
+    const { messages, clearAnnouncements } = useAriaLive()
+    clearAnnouncements()
+
+    await wrapper.get('[data-test="stub-select-space"]').trigger('click')
+
+    expect(messages.value.map((m) => m.text)).toContain('space.space_selected:{"name":"Design Team"}')
   })
 
   it('ignores select-space with an empty space id', async () => {
