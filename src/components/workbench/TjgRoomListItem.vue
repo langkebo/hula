@@ -5,7 +5,6 @@
     :data-test="`session-item-${roomId}`"
     :aria-label="ariaLabel"
     :aria-current="isActive ? 'true' : undefined"
-    :aria-pressed="isBatchMode ? isBatchSelected : undefined"
     class="tjg-room-list-item"
     :class="itemClasses"
     @click="handleClick"
@@ -13,12 +12,6 @@
     @keydown.space.prevent="handleClick"
     @contextmenu="handleContextMenu">
     <n-flex align="center" :size="12">
-      <n-checkbox
-        v-if="isBatchMode"
-        :checked="isBatchSelected"
-        class="tjg-room-list-item__checkbox"
-        @update:checked="handleBatchToggle"
-        @click.stop />
       <n-badge :dot="isFavorite" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
         <n-avatar
           :size="44"
@@ -127,8 +120,6 @@ const props = defineProps<{
   classes?: Record<string, boolean>
   menu?: ContextMenuItem[]
   'special-menu'?: ContextMenuItem[]
-  batchMode?: boolean
-  batchSelected?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -137,7 +128,6 @@ const emit = defineEmits<{
   select: [item: SessionItem, menu: unknown]
   'accept-invite': [item: SessionItem]
   'reject-invite': [item: SessionItem]
-  'batch-toggle': [roomId: string]
   'menu-show': []
 }>()
 
@@ -179,8 +169,6 @@ const isFavorite = computed(() => hasFavoriteTag.value)
 const isEncrypted = computed(() => props.item.isEncrypted ?? false)
 const isBurnAfterRead = computed(() => props.item.isBurnAfterRead ?? false)
 const isInvite = computed(() => props.item.membership === 'invite')
-const isBatchMode = computed(() => props.batchMode ?? false)
-const isBatchSelected = computed(() => props.batchSelected ?? false)
 const isActive = computed(() => globalStore.currentSessionRoomId === roomId.value)
 
 const timeText = computed(() => {
@@ -219,8 +207,6 @@ const typingText = computed(() => {
 // 加密/置顶/静音等语义由名称行小图标表达；类型 group/dm/space 类已废弃。
 const itemClasses = computed(() => ({
   'tjg-room-list-item--selected': isActive.value,
-  'tjg-room-list-item--batch': isBatchMode.value,
-  'tjg-room-list-item--batch-selected': isBatchSelected.value,
   'tjg-room-list-item--muted': props.classes?.muted ?? false,
   'tjg-room-list-item--burn': isBurnAfterRead.value
 }))
@@ -233,10 +219,6 @@ const ariaLabel = computed(() => {
 })
 
 const handleClick = () => {
-  if (isBatchMode.value) {
-    emit('batch-toggle', roomId.value)
-    return
-  }
   emit('click', props.item)
 }
 
@@ -261,10 +243,6 @@ const handleAcceptInvite = () => {
 
 const handleRejectInvite = () => {
   emit('reject-invite', props.item)
-}
-
-const handleBatchToggle = () => {
-  emit('batch-toggle', roomId.value)
 }
 </script>
 
@@ -314,15 +292,6 @@ const handleBatchToggle = () => {
     }
   }
 
-  &--batch {
-    padding-left: 12px;
-  }
-
-  &--batch-selected {
-    background: var(--tjg-color-primary-100);
-    box-shadow: inset 0 0 0 1px var(--tjg-color-primary-300-alpha);
-  }
-
   &--muted {
     opacity: 0.65;
   }
@@ -342,10 +311,6 @@ const handleBatchToggle = () => {
       animation: burn-pulse 2s infinite;
     }
   }
-}
-
-.tjg-room-list-item__checkbox {
-  flex-shrink: 0;
 }
 
 .tjg-room-list-item__name {

@@ -69,17 +69,14 @@ vi.mock('@/components/common/ContextMenu.vue', () => ({
 vi.mock('../TjgRoomListItem.vue', () => ({
   default: {
     name: 'TjgRoomListItem',
-    props: ['item', 'batchMode', 'batchSelected', 'classes'],
-    emits: ['batch-toggle', 'contextmenu'],
+    props: ['item', 'classes'],
+    emits: ['click'],
     template: `
       <button
         type="button"
         data-test="TjgRoomListItem"
-        :data-batch-mode="String(batchMode)"
-        :data-batch-selected="String(batchSelected)"
         :data-selected="String(Boolean(classes?.selected))"
-        @click="$emit('batch-toggle', item?.roomId)"
-        @contextmenu.prevent="$emit('contextmenu', $event, item)">
+        @click="$emit('click', item)">
         {{ item?.name }}
       </button>
     `
@@ -261,21 +258,6 @@ describe('RoomSessionList', () => {
     await nextTick()
 
     expect(scrollToMock).not.toHaveBeenCalled()
-  })
-
-  it('passes batch props into room items and re-emits batch toggles', async () => {
-    const wrapper = mountComponent({
-      sessionList: [{ roomId: '!room:server', name: 'Alpha' } as never],
-      batchMode: true,
-      batchSelectedIds: new Set(['!room:server'])
-    })
-
-    const item = wrapper.get('[data-test="TjgRoomListItem"]')
-    expect(item.attributes('data-batch-mode')).toBe('true')
-    expect(item.attributes('data-batch-selected')).toBe('true')
-
-    await item.trigger('click')
-    expect(wrapper.emitted('batchToggle')).toEqual([['!room:server']])
   })
 
   it('exposes list accessibility metadata for session results', () => {

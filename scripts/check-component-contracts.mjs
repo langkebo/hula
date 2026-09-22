@@ -221,12 +221,6 @@ const ACCEPTED_PATTERNS = [
     event: 'sendReply',
     reason: '发送会丢弃输入（无 store/service 调用），loadThreadReplies 是设空数组的 stub',
     followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #6'
-  },
-  {
-    component: 'src/components/workbench/RoomSessionList.vue',
-    event: 'batchToggle',
-    reason: '桌面批量模式没有入口：没有任何生产调用方传 batch-mode/batch-selected-ids（移动端有 MobileBatchToolbar）',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #8'
   }
 ]
 

@@ -28,7 +28,6 @@
     "src/components/common/GuestModeBanner.vue::exit",
     "src/components/common/GuestModeBanner.vue::upgrade",
     "src/views/loginWindow/LoginBottomBar.vue::guest-login",
-    "src/components/thread/ThreadPanel.vue::sendReply",
-    "src/components/workbench/RoomSessionList.vue::batchToggle"
+    "src/components/thread/ThreadPanel.vue::sendReply"
   ]
 }

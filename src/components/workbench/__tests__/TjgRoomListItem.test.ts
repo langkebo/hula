@@ -217,28 +217,10 @@ describe('TjgRoomListItem', () => {
     expect(unreadBadge?.attributes('data-show')).toBe('true')
   })
 
-  it('toggles batch selection instead of opening the room when batch mode is active', async () => {
-    const wrapper = mount(TjgRoomListItem, {
-      props: {
-        ...createProps(),
-        batchMode: true,
-        batchSelected: true
-      }
-    })
-
-    await wrapper.get('.tjg-room-list-item').trigger('click')
-
-    expect(wrapper.emitted('batch-toggle')).toEqual([['!room:example.com']])
-    expect(wrapper.emitted('click')).toBeUndefined()
-    expect(wrapper.find('[data-test="NCheckbox"]').element).toBeTruthy()
-  })
-
   it('supports keyboard activation and exposes selection aria state', async () => {
     const wrapper = mount(TjgRoomListItem, {
       props: {
         ...createProps(),
-        batchMode: true,
-        batchSelected: true,
         classes: { selected: true }
       }
     })
@@ -246,9 +228,9 @@ describe('TjgRoomListItem', () => {
     const item = wrapper.get('.tjg-room-list-item')
     expect(item.attributes('tabindex')).toBe('0')
     expect(item.attributes('aria-current')).toBe('true')
-    expect(item.attributes('aria-pressed')).toBe('true')
+    expect(item.attributes('aria-pressed')).toBeUndefined()
 
     await item.trigger('keydown.enter')
-    expect(wrapper.emitted('batch-toggle')).toEqual([['!room:example.com']])
+    expect(wrapper.emitted('click')).toHaveLength(1)
   })
 })
