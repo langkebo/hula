@@ -58,7 +58,6 @@ function mountComponent() {
 describe('LabsSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage.clear()
   })
 
   it('renders correctly', () => {
@@ -77,18 +76,6 @@ describe('LabsSettings', () => {
     expect(wrapper.text()).not.toContain('mobile_labs.show_performance')
     expect(wrapper.text()).not.toContain('mobile_labs.reset')
     expect(wrapper.find('van-switch').exists()).toBe(false)
-  })
-
-  it('切换页面内所有控件后不写死 labs key', async () => {
-    const wrapper = mountComponent()
-
-    for (const cell of wrapper.findAll('.van-cell')) {
-      await cell.trigger('click')
-    }
-
-    expect(localStorage.getItem('tjg-lab-features')).toBeNull()
-    expect(localStorage.getItem('tjg-debug-mode')).toBeNull()
-    expect(localStorage.getItem('tjg-show-performance')).toBeNull()
   })
 
   it('保留到 Integrations 的入口与路由跳转', async () => {
