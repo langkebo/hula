@@ -73,15 +73,24 @@
     },
     "tjg-session-homeserver-url": {
       "owner": "src/services/backend/config.ts:MATRIX_SESSION_HOMESERVER_STORAGE_KEY",
-      "consumers": ["src/services/backend/config.ts", "src/components/common/HomeserverDialog.vue"],
+      "consumers": [
+        "src/services/backend/config.ts",
+        "src/services/matrix/auth/SessionRestoreService.ts",
+        "src/services/matrix/auth/SessionLoginService.ts"
+      ],
       "kind": "credential",
-      "note": "登录会话实际使用的 homeserver（区别于待登录地址）"
+      "note": "登录会话实际使用的 homeserver（区别于待登录地址）；config.resolveMatrixSessionEndpointConfig 读取，SessionRestore/SessionLogin 在启动与 SSO 登录时消费"
     },
     "tjg-session-identity-server-url": {
       "owner": "src/services/backend/config.ts:MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY",
-      "consumers": ["src/services/backend/config.ts"],
+      "consumers": [
+        "src/services/backend/config.ts",
+        "src/services/matrix/auth/SessionRestoreService.ts",
+        "src/services/matrix/auth/SessionLoginService.ts",
+        "src/services/matrix/auth/SessionBootstrapService.ts"
+      ],
       "kind": "credential",
-      "note": "登录会话实际使用的 identity server"
+      "note": "登录会话实际使用的 identity server；config 读取，三个会话服务消费"
     },
     "tjg-bubble-style": {
       "owner": "src/utils/bubbleStyle.ts:STORAGE_KEY",
@@ -230,7 +239,22 @@
       "owner": "src/services/matrix/auth/MatrixOidcService.ts:OIDC_HOMESERVER_STORAGE_KEY",
       "consumers": ["src/services/matrix/auth/MatrixOidcService.ts"],
       "kind": "credential",
+      "storage": "session",
       "note": "OIDC 流程中的 homeserver 地址（sessionStorage）；认证服务读写"
+    },
+    "oidc_state": {
+      "owner": "src/services/matrix/auth/MatrixOidcService.ts:sessionStorage.setItem(oidc_state)",
+      "consumers": ["src/services/matrix/auth/MatrixOidcService.ts"],
+      "kind": "credential",
+      "storage": "session",
+      "note": "OIDC 授权码流程的 CSRF state（sessionStorage）；认证服务在同文件校验并清理"
+    },
+    "oidc_code_verifier": {
+      "owner": "src/services/matrix/auth/MatrixOidcService.ts:sessionStorage.setItem(oidc_code_verifier)",
+      "consumers": ["src/services/matrix/auth/MatrixOidcService.ts"],
+      "kind": "credential",
+      "storage": "session",
+      "note": "OIDC PKCE code_verifier（sessionStorage）；认证服务在同文件读回、刷新并用后清理"
     },
     "tjg-offline-queue": {
       "owner": "src/services/offline/OfflineQueueService.ts:STORAGE_KEY",
@@ -282,15 +306,65 @@
     },
     "tjg.lastCryptoUserId": {
       "owner": "src/services/matrix/MatrixCryptoStateTracker.ts:localStorage.setItem(tjg.lastCryptoUserId)",
-      "consumers": ["src/services/matrix/MatrixCryptoStateTracker.ts", "src/services/matrix/MatrixClientState.ts"],
+      "consumers": ["src/services/matrix/MatrixCryptoStateTracker.ts", "src/services/matrix/MatrixClientLifecycle.ts"],
       "kind": "cache",
-      "note": "上次加密用户，用于登录后判断是否需要重建 crypto store"
+      "note": "上次加密用户 userId:deviceId；读取发生在 MatrixCryptoStateTracker 的 doEnsureCrypto（私有 readLastCryptoUser），运行时入口是 MatrixClientLifecycle.ensureCrypto"
     },
     "tjg.lastCryptoEncrypted": {
       "owner": "src/services/matrix/MatrixCryptoStateTracker.ts:localStorage.setItem(tjg.lastCryptoEncrypted)",
-      "consumers": ["src/services/matrix/MatrixCryptoStateTracker.ts", "src/services/matrix/MatrixClientState.ts"],
+      "consumers": ["src/services/matrix/MatrixCryptoStateTracker.ts", "src/services/matrix/MatrixClientLifecycle.ts"],
       "kind": "cache",
-      "note": "上次 crypto 是否加密的状态位"
+      "note": "上次 crypto 是否加密的状态位；读取同 doEnsureCrypto（readLastCryptoEncrypted），用于判断是否需要提前清理 IndexedDB crypto store"
+    },
+    "tjg-audio-input": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.audioInputId",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "麦克风设备选择；loadMediaDevicePreferences 读回（通话侧 MatrixVoIPService 与设置页预览/测试消费）。设备选择目前只作用于设置页预览，真实通话需 replaceTrack（见模块头）"
+    },
+    "tjg-video-input": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.videoInputId",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "摄像头设备选择；loadMediaDevicePreferences 读回；与音频设备相同的未接线范围说明"
+    },
+    "tjg-echo-cancellation": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.echoCancellation",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "回声消除；经 toAudioQualityConstraints 在真实通话轨道上 applyConstraints"
+    },
+    "tjg-noise-suppression": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.noiseSuppression",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "降噪；经 toAudioQualityConstraints 在真实通话轨道上 applyConstraints"
+    },
+    "tjg-auto-gain": {
+      "owner": "src/services/media/mediaDevicePreferences.ts:STORAGE_KEYS.autoGain",
+      "consumers": [
+        "src/services/media/mediaDevicePreferences.ts",
+        "src/services/matrix/media/MatrixVoIPService.ts",
+        "src/views/settingsWindow/tabs/VoiceVideoSettings.vue"
+      ],
+      "kind": "preference",
+      "note": "自动增益（映射 autoGainControl）；经 toAudioQualityConstraints 在真实通话轨道上 applyConstraints"
     },
     "draft_*": {
       "owner": "src/stores/domains/widget/global.ts:localStorage.setItem(draft_${roomId})",

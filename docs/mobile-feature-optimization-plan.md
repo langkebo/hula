@@ -875,17 +875,25 @@ node scripts/check-settings-wiring.mjs --list   # 打印发现的持久化 key �
 不代表开关接线）：
 
 - 从 `src/{stores,services,utils,composables}/**` 发现持久化 key：`*_STORAGE_KEY` 常量
-  （含 `private static readonly` 与 `X = StoresEnum.Y` 枚举写法）、`*STORAGE_KEYS` 映射的每个
-  字面量值、`defineStore(...)` 且有 `persist` 配置时的 store id、`localStorage.setItem` 的
-  字面量 / 同文件常量 / 对象成员，以及模板键族（`` `${PREFIX}${id}` `` → `<prefix>*`）。
+  （含 `private static readonly`、`X: string = 'literal'` 类型标注与 `X = StoresEnum.Y` 枚举写法）、
+  `*STORAGE_KEYS` 映射的每个字面量值（**声明语法不限**：`= {`、`const X: Record<K, V> = {`、
+  `satisfies` / `as const` 均可）、`defineStore(...)` 且有 `persist` 配置时的 store id、
+  `localStorage` **与 `sessionStorage`** 的 `setItem` 字面量 / 同文件常量 / 对象成员，
+  以及模板键族（`` `${PREFIX}${id}` `` → `<prefix>*`）。
 - 发现到的 key 必须登记在 `scripts/settings-wiring-manifest.json`（`key → owner + ≥1 真实
-  consumer 路径 + kind + note`），否则 FAIL；清单里 owner/consumers 路径必须存在
-  （删文件/改名即 FAIL）。当前 63 个可静态求值的 key 全部登记。
+  consumer 路径 + kind + note`，可带 `storage: local|session`），否则 FAIL；清单里
+  owner/consumers 路径必须存在（删文件/改名即 FAIL），标注了 `storage` 的条目还要与实际
+  写入介质一致。当前 70 个可静态求值的 key 全部登记。
+- **漏报自检（阻塞）**：另用一条刻意更宽松的语法假设重扫同一批目录，宽松扫到而发现器没扫到的
+  key 一律 FAIL。历史缺陷正是这里静默失效——`const STORAGE_KEYS: Record<...> = {...}` 带类型
+  标注时整条不可见，守门却继续打印"无未登记 key"（2026-09-22 review Critical #1）。
 - 保留死配置数量 ratchet，并**同时**校验键名集合：当前集合 ⊆ 基线集合；`--update` 也拒绝
   任何新增键名（同数量换键同样不放行）。
 - 已知局限：只做静态语法发现。参数化写入（`setItem(storageKey)`）与纯变量模板键无法求值，
-  只打印"无法静态判定 N 处"（当前 9 处）而不伪造 key；组件内（`src/components`）定义的 key
-  不在发现范围。消费方只校验路径存在性，"键真的被读"属于评审责任，正则不假装证明。
+  只打印"无法静态判定 N 处"（当前 10 处）而不伪造 key；组件内（`src/components`）定义的 key
+  不在发现范围。行/块注释里的 `setItem('…')` 已排除。消费方只校验路径存在性，"键真的被读"
+  属于评审责任，正则不假装证明（2026-09-22 review Important #2 修正了两条把"只写不读"文件
+  当消费方的错误登记：`tjg-session-homeserver-url`、`tjg.lastCrypto*`）。
 - **只守引用，不守生效。** 判活仍是引用/清单计数，"消费方是否真在运行时消费"它判断不了。
   Task 13 是实证：8 个音视频 key 并入 `mediaDevicePreferences` 后全部被记为"已消费"，
   但其中设备选择与音量在通话路径上仍无效果；最终修复波按用户裁决（M1）删掉了
@@ -898,6 +906,10 @@ node scripts/check-settings-wiring.mjs --list   # 打印发现的持久化 key �
 
 历史局限（Task 5 已解决，保留作为记录）：写入面只覆盖设置窗口导致"写入搬走即脱离视野"，
 已由持久层发现 + 清单取代；`--update` 曾只拒绝抬高数量、允许同数量换键，已改为键名子集校验。
+2026-09-22 review 追加修复（同一提交）：带类型标注的 `*STORAGE_KEYS` 漏报（Critical #1，已加
+漏报自检）、两条不读 key 的假消费方（Important #2）、`sessionStorage` 写入不建账
+（Important #3，`oidc_state` / `oidc_code_verifier` / `oidc_homeserver_url` 已登记为
+`storage: session`），清单 63 → 70。
 
 #### `check:component-contracts`（`scripts/check-component-contracts.mjs`）
 
@@ -939,9 +951,9 @@ Task 5 收紧后的口径：
 | --- | --- | --- |
 | `npx vue-tsc --noEmit` | 0 错误，exit 0 | |
 | `npx vitest run` | 796/796 文件、9199/9199 用例通过；exit 1 | 唯一的非零来源是 3 个**既有** crypto unhandled rejection（`CryptoSDKAdapter` / `CryptoKeyBackupAdapter` 报 `CryptoApi 不可用`）。本分支未触碰 `src/services/matrix/crypto/`；单独跑这两个文件（74/74 用例通过）同样复现 exit 1 |
-| `check:settings-wiring` | OK 持久化 key 清单 63/63、死配置 1（基线 1） | Task 5 改为"清单 + 持久层发现"；仅剩 `tjg-mjolnir-ban-lists` 为死配置 |
+| `check:settings-wiring` | OK 持久化 key 清单 70/70、死配置 1（基线 1） | Task 5 改为"清单 + 持久层发现"（2026-09-22 review 后补类型标注映射/sessionStorage/漏报自检）；仅剩 `tjg-mjolnir-ban-lists` 为死配置 |
 | `check:component-contracts` | OK 无人监听事件 0（基线 0） | Task 5 由 32 收紧到 0；11 条产品断线移入 13.6 follow-up |
-| `check:i18n-dead-keys` | OK（基线冻结当前孤儿集合） | Task 5 新增：命名空间感知 + 跳过测试 + 键名子集 ratchet；Task 7 负责把基线降下来 |
+| `check:i18n-dead-keys` | OK 孤儿 1979（基线 1979）+ 动态族排除 148（23 前缀） | Task 5 新增：命名空间感知 + 跳过测试 + 键名子集 ratchet；动态前缀族单独成节、"Task 7 不得删除"；Task 7 负责把孤儿基线降下来 |
 | `check:doc-coverage` | OK（1069 → 1054，基线 1064，无回归） | 补 15 处缺失 JSDoc 摘要，纯注释改动；这 15 处在基线提交 `e157675a` 上同样报错，属分支级既有漂移 |
 | `check:ratchet` | 6/6 OK | |
 | `check:sdk-boundary` | OK（205 / 基线 187，无回归） | |
@@ -951,7 +963,7 @@ Task 5 收紧后的口径：
 | `check:file-size` | FAIL（既有） | 基线提交上同样 FAIL（同样点到 `Image.vue`）。本分支让 6 个基线文件继续变长，并使 `MatrixReceiptService.ts`（376 → 414 行）越过 400 行线。未做 `--update`：那会一次性赦免全部既有增长，把 ratchet 变成橡皮图章 |
 
 结论：Task 5 之后两个守门不再是"扫不到真实持久层 / 只剩冻结数字"的橡皮图章——
-settings-wiring 以清单覆盖 63 个持久层 key 并把 `--update` 收紧到键名子集，
+settings-wiring 以清单覆盖 70 个持久层 key 并把 `--update` 收紧到键名子集，
 component-contracts 的冻结基线归零、新增跳过即 FAIL、白名单失效会告警；
 i18n 死 key 从 report-only 变成带基线的 ratchet。**但清单/引用判据仍只证明"有登记、有引用"，
 不证明"开关在运行时生效"**，有效性只能由各任务的行为测试提供证据。
@@ -1025,7 +1037,10 @@ init-iife 会替换 `window.Notification`，并把 `requestPermission` / `permis
 - 每个开关双写：`v-model` 与 `@update:value` 同时触发 handler，绕过 `writeConfig` 去重；
   `NotificationSettings.vue`。
 - orphan locale key：已删除开关与控件的文案残留，未清理（**Task 5 已加守门**：
-  `check:i18n-dead-keys` 以基线冻结当前孤儿集合并在 CI 拦截新增，Task 7 负责把基线降下来）。
+  `check:i18n-dead-keys` 以基线冻结当前孤儿集合并在 CI 拦截新增，Task 7 负责把基线降下来；
+  2026-09-22 review 后动态拼接前缀族（148 个 key / 23 个前缀，含 `room_preview.` 这类
+  "模板赋给变量再由 `t?.(var)` 消费"的中转写法）单独成节排除，明确
+  "Task 7 不得删除"，避免把动态可达的活文案当孤儿误删）。
 - `.photo-wall` 零使用：`@extend .bubble-oneself` 的选择器没有使用方，复活时需补选择器；
   `render-message.scss`。
 - 守门实现 nits（**Task 5 已修复**）：Windows 反斜杠路径会让白名单/基线失配（已统一 POSIX）；
