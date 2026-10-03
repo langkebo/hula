@@ -219,4 +219,29 @@ describe('MatrixSpaceService', () => {
       expect(result).toEqual([])
     })
   })
+
+  it('updateSpace 透传 join_rule / visibility / is_public', async () => {
+    const mockUpdate = vi.fn().mockResolvedValue({})
+    vi.mocked(matrixClientService.getClient).mockReturnValue(
+      asMatrixClient({ getSpaceManager: () => ({ updateSpace: mockUpdate }) })
+    )
+
+    await matrixSpaceService.updateSpace('!space:hs', {
+      name: '新名',
+      topic: '新简介',
+      avatarUrl: 'mxc://avatar',
+      joinRule: 'invite',
+      visibility: Visibility.Private,
+      isPublic: false
+    })
+
+    expect(mockUpdate).toHaveBeenCalledWith('!space:hs', {
+      name: '新名',
+      topic: '新简介',
+      avatar_url: 'mxc://avatar',
+      join_rule: 'invite',
+      visibility: 'private',
+      is_public: false
+    })
+  })
 })
