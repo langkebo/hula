@@ -66,7 +66,8 @@
   <ThreadPanel
     v-model:show="threadPanelVisible"
     :original-message="threadOriginalMessage ?? undefined"
-    :thread-id="activeThreadId" />
+    :thread-id="activeThreadId"
+    :room-id="activeThreadRoomId" />
 
   <!-- 事件举报对话框 -->
   <EventReportDialog
@@ -138,6 +139,7 @@ defineProps<{
   groupNicknameSubmitting: boolean
   threadOriginalMessage: ThreadOriginalMessage | null
   activeThreadId: string
+  activeThreadRoomId: string
   eventReportData: { eventId: string; roomId: string; eventContent: string }
   privateModeFeatures: PrivateModeFeature[]
 }>()

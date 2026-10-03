@@ -121,6 +121,7 @@
     :group-nickname-submitting="groupNicknameSubmitting"
     :thread-original-message="threadOriginalMessage"
     :active-thread-id="activeThreadId"
+    :active-thread-room-id="activeThreadRoomId"
     :event-report-data="eventReportData"
     :private-mode-features="privateModeFeatures"
     @confirm="handleConfirm"
@@ -299,8 +300,14 @@ onUnmounted(() => {
 })
 
 // ===== 线程面板 + 事件举报 =====
-const { threadPanelVisible, activeThreadId, threadOriginalMessage, eventReportVisible, eventReportData } =
-  useChatDialogs(getMessageSenderUid)
+const {
+  threadPanelVisible,
+  activeThreadId,
+  activeThreadRoomId,
+  threadOriginalMessage,
+  eventReportVisible,
+  eventReportData
+} = useChatDialogs(getMessageSenderUid)
 
 // ===== 粘性事件（置顶消息横幅）=====
 const pinnedMessageFlow = usePinnedMessage({ roomId: () => globalStore.currentSessionRoomId ?? null })
@@ -340,7 +347,7 @@ function handleDeviceVerifySuccess() {
   closeDeviceVerify()
 }
 
-defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId, stickyEvents, canSetSticky })
+defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId, activeThreadRoomId, stickyEvents, canSetSticky })
 
 const isMobileRef = ref(isMobile())
 

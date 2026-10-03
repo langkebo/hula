@@ -6,6 +6,28 @@ import VoiceVideoSettings from '../VoiceVideoSettings.vue'
 const showToastMock = vi.fn()
 const PICKED_DEVICE_ID = 'picked-device'
 
+const { loadPreferencesSpy, savePreferencesSpy } = vi.hoisted(() => ({
+  loadPreferencesSpy: vi.fn(),
+  savePreferencesSpy: vi.fn()
+}))
+
+// 只包裹共享偏好模块的读写入口，落盘仍走真实实现，这样既能断言"经共享模块写回"，
+// 又能验证 localStorage 的往返。
+vi.mock('@/services/media/mediaDevicePreferences', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/media/mediaDevicePreferences')>()
+  return {
+    ...actual,
+    loadMediaDevicePreferences: (...args: Parameters<typeof actual.loadMediaDevicePreferences>) => {
+      loadPreferencesSpy(...args)
+      return actual.loadMediaDevicePreferences(...args)
+    },
+    saveMediaDevicePreferences: (...args: Parameters<typeof actual.saveMediaDevicePreferences>) => {
+      savePreferencesSpy(...args)
+      return actual.saveMediaDevicePreferences(...args)
+    }
+  }
+})
+
 vi.mock('vant', () => ({
   showToast: (...args: unknown[]) => showToastMock(...args)
 }))
@@ -60,6 +82,22 @@ const VanPickerStub = defineComponent({
   template: `<button class="picker-confirm" @click="$emit('confirm', { selectedOptions: [{ value: '${PICKED_DEVICE_ID}' }] })">ok</button>`
 })
 
+// 模拟 van-switch 的 v-model + change 语义：真实组件会在用户切换时同时更新 modelValue 并抛出 change。
+const VanSwitchStub = defineComponent({
+  name: 'VanSwitch',
+  props: { modelValue: { type: Boolean, default: false } },
+  emits: ['update:modelValue', 'change'],
+  template: `<button class="quality-switch" :data-value="String(modelValue)" @click="toggle" />`,
+  setup(props, { emit }) {
+    const toggle = () => {
+      const next = !props.modelValue
+      emit('update:modelValue', next)
+      emit('change', next)
+    }
+    return { toggle }
+  }
+})
+
 function mountComponent() {
   return mount(VoiceVideoSettings, {
     global: {
@@ -69,7 +107,7 @@ function mountComponent() {
         'van-field': VanFieldStub,
         'van-picker-group': { template: '<div><slot /></div>' },
         'van-slider': { template: '<div class="van-slider" />', props: ['modelValue', 'min', 'max'] },
-        'van-switch': { template: '<button class="quality-switch" />', props: ['modelValue'] },
+        'van-switch': VanSwitchStub,
         'van-button': { template: '<button><slot /></button>', props: ['type', 'size', 'loading'] },
         'van-popup': VanPopupStub,
         'van-picker': VanPickerStub
@@ -141,5 +179,38 @@ describe('VoiceVideoSettings', () => {
     expect(localStorage.getItem('tjg-output-volume')).toBeNull()
     expect(localStorage.getItem('tjg-audio-input')).toBe(PICKED_DEVICE_ID)
     expect(localStorage.getItem('tjg-video-input')).toBe(PICKED_DEVICE_ID)
+  })
+
+  it('音质开关经共享偏好模块写回，并在重新挂载时回读', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    // 默认三个开关全开，且挂载时走共享模块读取
+    expect(loadPreferencesSpy).toHaveBeenCalled()
+    const switches = wrapper.findAll('.quality-switch')
+    expect(switches.map((s) => s.attributes('data-value'))).toEqual(['true', 'true', 'true'])
+
+    await switches[0].trigger('click')
+    expect(savePreferencesSpy).toHaveBeenCalledWith({ echoCancellation: false })
+    expect(localStorage.getItem('tjg-echo-cancellation')).toBe('false')
+
+    await switches[1].trigger('click')
+    expect(savePreferencesSpy).toHaveBeenCalledWith({ noiseSuppression: false })
+    expect(localStorage.getItem('tjg-noise-suppression')).toBe('false')
+
+    await switches[2].trigger('click')
+    expect(savePreferencesSpy).toHaveBeenCalledWith({ autoGain: false })
+    expect(localStorage.getItem('tjg-auto-gain')).toBe('false')
+
+    // 重新挂载后从共享模块读回同一份偏好
+    wrapper.unmount()
+    const remounted = mountComponent()
+    await flushPromises()
+
+    expect(remounted.findAll('.quality-switch').map((s) => s.attributes('data-value'))).toEqual([
+      'false',
+      'false',
+      'false'
+    ])
   })
 })

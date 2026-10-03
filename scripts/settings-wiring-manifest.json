@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_note": "消费方校验口径：只校验 owner/consumers 路径存在，不证明 consumers 真的在运行时读取该 key；判活不等于生效。storage 字段仅在发现器记录了实际写入介质时做一致性校验。",
+  "_note": "消费方校验口径：owner/consumers 路径必须存在，且每个 key 至少要有一个 consumer 能在文件里查到引用证据（key 字面量 / *_STORAGE_KEY 常量 / 映射成员出现在非写入位置，或引用 owner 模块/store）；只有路径、查不到引用的条目会单列打印为 consumer unverified，仍不证明在运行时真的读取该 key，判活不等于生效。storage 字段仅在发现器记录了实际写入介质时做一致性校验。",
   "keys": {
     "setting": {
       "owner": "src/stores/domains/settings/setting.ts:defineStore(StoresEnum.SETTING)+persist",

@@ -4,7 +4,7 @@
       <div v-if="visible" class="menu-overlay" @click="handleOverlayClick" @contextmenu.prevent>
         <Transition name="slide">
           <div v-if="visible" class="user-menu-dropdown" :style="menuStyle" @click.stop>
-            <UserMenuHeader @theme-toggle="$emit('theme-toggle')" />
+            <UserMenuHeader @theme-toggle="$emit('theme-toggle')" @avatar-click="handleAvatarClick" />
 
             <template v-for="section in menuSections" :key="section.id">
               <div v-if="section.title" class="menu-section-title">{{ section.title }}</div>
@@ -62,7 +62,12 @@ const emit = defineEmits<{
 
 const visible = ref(false)
 
-const { menuSections } = useUserMenu()
+const { menuSections, openSettings } = useUserMenu()
+
+/** 点头像打开个人资料：复用菜单里「账号设置」同一路由（/settings?tab=account），并关闭菜单。 */
+function handleAvatarClick() {
+  openSettings('account')
+}
 
 const iconMap: Record<string, string> = {
   home: 'mdi:home',

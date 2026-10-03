@@ -77,8 +77,8 @@ describe('MatrixPresenceService', () => {
 
       const effective = await matrixPresenceService.setPresence('online')
 
-      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('offline', '')
-      expect(mockPresenceManager.setPresence).not.toHaveBeenCalledWith('online', '')
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('offline', undefined)
+      expect(mockPresenceManager.setPresence).not.toHaveBeenCalledWith('online', undefined)
       expect(effective).toBe('offline')
       expect(getLastSentPresence()).toBe('offline')
     })
@@ -88,7 +88,7 @@ describe('MatrixPresenceService', () => {
 
       const effective = await matrixPresenceService.setPresence('online')
 
-      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('online', '')
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('online', undefined)
       expect(effective).toBe('online')
       expect(getLastSentPresence()).toBe('online')
     })
@@ -98,7 +98,7 @@ describe('MatrixPresenceService', () => {
 
       const effective = await matrixPresenceService.setPresence('unavailable')
 
-      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('unavailable', '')
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('unavailable', undefined)
       expect(effective).toBe('unavailable')
       expect(getLastSentPresence()).toBe('unavailable')
     })
@@ -108,7 +108,7 @@ describe('MatrixPresenceService', () => {
 
       const effective = await matrixPresenceService.setPresence('offline')
 
-      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('offline', '')
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('offline', undefined)
       expect(effective).toBe('offline')
     })
 
@@ -128,6 +128,30 @@ describe('MatrixPresenceService', () => {
       await expect(matrixPresenceService.setPresence('offline')).rejects.toThrow('boom')
 
       expect(getLastSentPresence()).toBe('online')
+    })
+  })
+
+  // status_msg 语义：省略 = 不动服务端状态文本（SDK 收到 undefined 时会省略该字段），
+  // 传空串反而会清空它。这里钉住「只在调用方显式提供时才写入」。
+  describe('setPresence status_msg 语义', () => {
+    beforeEach(() => {
+      mockPresenceManager.setPresence.mockResolvedValue(undefined)
+      useSettingStore().setShowOnlineStatusEnabled(true)
+    })
+
+    it('未传状态消息时以 undefined 透传，不清空服务端状态文本', async () => {
+      await matrixPresenceService.setPresence('online')
+
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledTimes(1)
+      const [state, statusMsg] = mockPresenceManager.setPresence.mock.calls[0]
+      expect(state).toBe('online')
+      expect(statusMsg).toBeUndefined()
+    })
+
+    it('传入状态消息时更新服务端状态文本', async () => {
+      await matrixPresenceService.setPresence('online', '远程办公')
+
+      expect(mockPresenceManager.setPresence).toHaveBeenCalledWith('online', '远程办公')
     })
   })
 

@@ -233,6 +233,5 @@
     "verify_failed": "Verification failed"
   },
   "service_agreement_title": "Terms of Service",
-  "privacy_policy_title": "Privacy Policy",
-  "guest": "Login as Guest"
+  "privacy_policy_title": "Privacy Policy"
 }

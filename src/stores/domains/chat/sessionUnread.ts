@@ -320,6 +320,13 @@ export const useSessionUnreadStore = defineStore(
      *
      * 关闭已读回执时服务端 unread_count 不会因本机已读而减少，只有这个水位才能让 apply
      * 把服务端累计值折算成本机真实未读（含离线期间新增的消息）。
+     *
+     * **无条件推进水位是有意行为，不要「修」成按回执开关条件推进。**
+     * 水位维护的是账本不变量「服务端 unread_count === settledServerCount + count」，与回执开关无关：
+     * 回执开时服务端会因 m.read 自行把 unread_count 归零，水位随之被后续 apply 收敛掉，多记无害；
+     * 回执关时它是唯一的已结算凭据。缺了这次推进，回执关下已经读过的条数会在下一次 apply 被服务端
+     * 累计值重新算成未读（角标弹回），跨设备收敛也会失去可信基线（别的设备读小的值会被误判成本机
+     * 仍有本地增量）。调用点据此也在本地清零时无条件调用（见 session.ts markSessionRead）。
      */
     const markRead = (uid: string | undefined, roomId: string, readCount: number) => {
       const cache = ensureUserCache(uid)

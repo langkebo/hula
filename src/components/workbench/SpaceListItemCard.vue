@@ -8,8 +8,7 @@
     }"
     @click="emit('click')"
     @mouseenter="hovered = true"
-    @mouseleave="hovered = false"
-    @contextmenu="emit('contextmenu', { item, event: $event })">
+    @mouseleave="hovered = false">
     <n-badge :dot="item.isPinned" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
       <div class="space-card__avatar">
         <n-avatar
@@ -119,7 +118,6 @@ const emit = defineEmits<{
   settings: [spaceId: string]
   leave: [spaceId: string]
   delete: [spaceId: string]
-  contextmenu: [payload: { item: SpaceListItem; event: MouseEvent }]
 }>()
 
 const { t } = useI18n()

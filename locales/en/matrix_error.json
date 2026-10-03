@@ -93,8 +93,5 @@
   },
   "event_report": {
     "manager_not_initialized": "Event Report Service Not Initialized"
-  },
-  "guest": {
-    "manager_not_initialized": "Guest Service Not Initialized"
   }
 }

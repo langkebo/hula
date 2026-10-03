@@ -19,17 +19,6 @@
     "src/components/settings/ThemeSwitcher.vue::update:modelValue",
     "src/components/rightBox/MsgInput.vue::input",
     "src/mobile/components/virtual-scroll/SmartVirtualList.vue::loadMore",
-    "src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue::upgraded",
-    "src/components/userMenu/ThreepidManager.vue::add-email",
-    "src/components/userMenu/ThreepidManager.vue::add-phone",
-    "src/components/userMenu/ThreepidManager.vue::unbind",
-    "src/components/userMenu/UserMenuHeader.vue::avatar-click",
-    "src/components/room/RoomInviteActions.vue::error",
-    "src/components/common/GuestModeBanner.vue::exit",
-    "src/components/common/GuestModeBanner.vue::upgrade",
-    "src/views/loginWindow/LoginBottomBar.vue::guest-login",
-    "src/components/thread/ThreadPanel.vue::sendReply",
-    "src/components/workbench/SpaceListItemCard.vue::contextmenu",
-    "src/components/workbench/RoomSessionList.vue::batchToggle"
+    "src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue::upgraded"
   ]
 }

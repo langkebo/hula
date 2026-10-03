@@ -9,11 +9,6 @@ const {
   mockSetDeviceName,
   mockDeleteDevice,
   mockDeleteDevices,
-  mockGetThreePids,
-  mockAddThreePid,
-  mockBindThreePid,
-  mockDeleteThreePid,
-  mockUnbindThreePid,
   mockRequestEmailTokenFor3Pid,
   mockRequestMsisdnTokenFor3Pid,
   mockDeactivateAccount,
@@ -33,11 +28,6 @@ const {
   mockSetDeviceName: vi.fn(),
   mockDeleteDevice: vi.fn(),
   mockDeleteDevices: vi.fn(),
-  mockGetThreePids: vi.fn(),
-  mockAddThreePid: vi.fn(),
-  mockBindThreePid: vi.fn(),
-  mockDeleteThreePid: vi.fn(),
-  mockUnbindThreePid: vi.fn(),
   mockRequestEmailTokenFor3Pid: vi.fn(),
   mockRequestMsisdnTokenFor3Pid: vi.fn(),
   mockDeactivateAccount: vi.fn(),
@@ -60,11 +50,6 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
     setDeviceName: mockSetDeviceName,
     deleteDevice: mockDeleteDevice,
     deleteDevices: mockDeleteDevices,
-    getThreePids: mockGetThreePids,
-    addThreePid: mockAddThreePid,
-    bindThreePid: mockBindThreePid,
-    deleteThreePid: mockDeleteThreePid,
-    unbindThreePid: mockUnbindThreePid,
     requestEmailTokenFor3Pid: mockRequestEmailTokenFor3Pid,
     requestMsisdnTokenFor3Pid: mockRequestMsisdnTokenFor3Pid,
     deactivateAccount: mockDeactivateAccount,
@@ -209,49 +194,6 @@ describe('useAccount', () => {
   })
 
   describe('3PID management', () => {
-    it('getThreePids returns pid list', async () => {
-      const pids = { threepids: [{ medium: 'email', address: 'a@b.c' }] }
-      mockGetThreePids.mockResolvedValueOnce(pids)
-      const { getThreePids } = useAccount()
-      const result = await getThreePids()
-      expect(result).toEqual(pids)
-    })
-
-    it('addThreePid delegates with bind', async () => {
-      mockAddThreePid.mockResolvedValueOnce(undefined)
-      const { addThreePid } = useAccount()
-      await addThreePid('sid1', 'secret1', true)
-      expect(mockAddThreePid).toHaveBeenCalledWith('sid1', 'secret1', true)
-    })
-
-    it('addThreePid without bind', async () => {
-      mockAddThreePid.mockResolvedValueOnce(undefined)
-      const { addThreePid } = useAccount()
-      await addThreePid('sid1', 'secret1')
-      expect(mockAddThreePid).toHaveBeenCalledWith('sid1', 'secret1', undefined)
-    })
-
-    it('bindThreePid delegates to service', async () => {
-      mockBindThreePid.mockResolvedValueOnce(undefined)
-      const { bindThreePid } = useAccount()
-      await bindThreePid('sid1', 'secret1', 'email', 'a@b.c')
-      expect(mockBindThreePid).toHaveBeenCalledWith('sid1', 'secret1', 'email', 'a@b.c')
-    })
-
-    it('deleteThreePid delegates to service', async () => {
-      mockDeleteThreePid.mockResolvedValueOnce(undefined)
-      const { deleteThreePid } = useAccount()
-      await deleteThreePid('email', 'a@b.c')
-      expect(mockDeleteThreePid).toHaveBeenCalledWith('email', 'a@b.c')
-    })
-
-    it('unbindThreePid delegates to service', async () => {
-      mockUnbindThreePid.mockResolvedValueOnce(undefined)
-      const { unbindThreePid } = useAccount()
-      await unbindThreePid('email', 'a@b.c')
-      expect(mockUnbindThreePid).toHaveBeenCalledWith('email', 'a@b.c')
-    })
-
     it('requestEmailTokenFor3Pid delegates with sendAttempt', async () => {
       mockRequestEmailTokenFor3Pid.mockResolvedValueOnce({ sid: 'sid1' })
       const { requestEmailTokenFor3Pid } = useAccount()
@@ -418,36 +360,6 @@ describe('useAccount', () => {
       mockDeleteDevices.mockRejectedValueOnce(new Error('batch delete failed'))
       const { deleteDevices } = useAccount()
       await expect(deleteDevices(['DEV1', 'DEV2'])).rejects.toThrow('batch delete failed')
-    })
-
-    it('getThreePids propagates error', async () => {
-      mockGetThreePids.mockRejectedValueOnce(new Error('3pid fetch failed'))
-      const { getThreePids } = useAccount()
-      await expect(getThreePids()).rejects.toThrow('3pid fetch failed')
-    })
-
-    it('addThreePid propagates error', async () => {
-      mockAddThreePid.mockRejectedValueOnce(new Error('add 3pid failed'))
-      const { addThreePid } = useAccount()
-      await expect(addThreePid('sid1', 'secret1')).rejects.toThrow('add 3pid failed')
-    })
-
-    it('bindThreePid propagates error', async () => {
-      mockBindThreePid.mockRejectedValueOnce(new Error('bind failed'))
-      const { bindThreePid } = useAccount()
-      await expect(bindThreePid('sid1', 'secret1', 'email', 'a@b.c')).rejects.toThrow('bind failed')
-    })
-
-    it('deleteThreePid propagates error', async () => {
-      mockDeleteThreePid.mockRejectedValueOnce(new Error('delete 3pid failed'))
-      const { deleteThreePid } = useAccount()
-      await expect(deleteThreePid('email', 'a@b.c')).rejects.toThrow('delete 3pid failed')
-    })
-
-    it('unbindThreePid propagates error', async () => {
-      mockUnbindThreePid.mockRejectedValueOnce(new Error('unbind failed'))
-      const { unbindThreePid } = useAccount()
-      await expect(unbindThreePid('email', 'a@b.c')).rejects.toThrow('unbind failed')
     })
 
     it('requestEmailTokenFor3Pid propagates error', async () => {

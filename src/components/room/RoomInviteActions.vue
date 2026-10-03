@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { createLogger } from '@/utils/Logger'
 
@@ -24,10 +25,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   accepted: [roomId: string]
   rejected: [roomId: string]
-  error: [roomId: string, action: 'accept' | 'reject', error: unknown]
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const accepting = ref(false)
 const rejecting = ref(false)
 
@@ -39,7 +40,7 @@ const handleAccept = async () => {
     emit('accepted', props.roomId)
   } catch (err) {
     logger.error(`接受邀请失败: ${err}`)
-    emit('error', props.roomId, 'accept', err)
+    showFeedback(t('room.invite.accept_failed'), 'error')
   } finally {
     accepting.value = false
   }
@@ -53,7 +54,7 @@ const handleReject = async () => {
     emit('rejected', props.roomId)
   } catch (err) {
     logger.error(`拒绝邀请失败: ${err}`)
-    emit('error', props.roomId, 'reject', err)
+    showFeedback(t('room.invite.reject_failed'), 'error')
   } finally {
     rejecting.value = false
   }

@@ -57,7 +57,10 @@
             </n-tag>
 
             <template v-for="item in group.messages" :key="item.message.id">
-              <div class="px-4px py-12px mb-16px">
+              <div
+                class="px-4px py-12px mb-16px"
+                :class="{ 'active-reply': activeReply === item.message.id }"
+                :data-event-id="item.message.id">
                 <!-- 消息头像和信息 -->
                 <div class="flex cursor-default">
                   <n-avatar
@@ -85,7 +88,8 @@
                     :on-image-click="handleImageClick"
                     :on-video-click="handleVideoClick"
                     :search-keyword="searchKeyword"
-                    :history-mode="true" />
+                    :history-mode="true"
+                    @jump2-reply="jumpToReply" />
                 </ContextMenu>
               </div>
             </template>
@@ -102,6 +106,7 @@ import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useChatMain } from '@/composables/chat/useChatMain'
+import { useReplyJump } from '@/composables/chat/useReplyJump'
 import { useImageViewer } from '@/composables/common/useImageViewer'
 import { useVideoViewer } from '@/composables/common/useVideoViewer'
 import { MsgEnum, TauriCommand } from '@/enums'
@@ -148,6 +153,12 @@ const dateRange = ref<[number, number] | null>(null)
 
 // 从路由参数获取房间ID
 const roomId = computed(() => route.query.roomId as string)
+
+// 回复气泡点击：在历史窗口已加载的消息里定位并高亮原消息（与聊天主列表同语义）。
+const { activeReply, jumpToReply } = useReplyJump({
+  findIndexByEventId: (eventId) => messages.value.findIndex((item) => item.message.id === eventId),
+  resolveElement: (eventId) => document.querySelector(`[data-event-id="${eventId}"]`)
+})
 
 // 我的群昵称
 const getUserDisplayName = computed(() => (uid: string) => {

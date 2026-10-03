@@ -1787,9 +1787,7 @@ export type I18nKeys = {
       "about": "关于"
     },
     "copy": "复制",
-    "exit": "退出",
     "load_more": "加载更多",
-    "login": "登录",
     "saving": "保存中…",
     "unknownUser": "未知用户"
   },
@@ -3330,8 +3328,7 @@ export type I18nKeys = {
       "verify_failed": "验证失败"
     },
     "service_agreement_title": "服务协议",
-    "privacy_policy_title": "隐私保护指引",
-    "guest": "以游客身份登录"
+    "privacy_policy_title": "隐私保护指引"
   },
   "matrix_error": {
     "common": {
@@ -3428,9 +3425,6 @@ export type I18nKeys = {
     },
     "event_report": {
       "manager_not_initialized": "事件举报服务未初始化"
-    },
-    "guest": {
-      "manager_not_initialized": "访客服务未初始化"
     }
   },
   "menu": {
@@ -5449,11 +5443,13 @@ export type I18nKeys = {
     },
     "invite": {
       "accept": "接受",
+      "accept_failed": "接受邀请失败",
       "failed": "邀请失败",
       "invalid_user_id": "无效的用户 ID",
       "invite": "邀请",
       "or_enter_id": "或输入用户 ID",
       "reject": "拒绝",
+      "reject_failed": "拒绝邀请失败",
       "search_placeholder": "搜索用户 ID…",
       "success": "邀请成功",
       "title": "邀请用户",
@@ -6718,17 +6714,6 @@ export type I18nKeys = {
       "clear_confirm_title": "确认清除",
       "clear_confirm_content": "确定要清除私密聊天密码吗？这将重置所有私密聊天设置。",
       "clear_success": "已清除私密聊天设置"
-    },
-    "threepid": {
-      "unbind": "解绑",
-      "phone_placeholder": "请输入手机号码",
-      "emails_title": "邮箱",
-      "region_label": "地区",
-      "add": "添加绑定",
-      "no_emails": "暂无邮箱",
-      "email_placeholder": "请输入邮箱地址",
-      "phones_title": "手机号",
-      "no_phones": "暂无手机号"
     }
   },
   "space": {
@@ -6894,7 +6879,9 @@ export type I18nKeys = {
     "title": "消息线程",
     "replies": "回复",
     "no_replies": "暂无回复",
-    "reply_placeholder": "输入回复内容..."
+    "reply_placeholder": "输入回复内容...",
+    "send_failed": "发送回复失败",
+    "load_failed": "加载回复失败"
   },
   "trendradar": {
     "title": "TrendRadar 资讯助手",

@@ -1057,16 +1057,5 @@
     "clear_confirm_title": "确认清除",
     "clear_confirm_content": "确定要清除私密聊天密码吗？这将重置所有私密聊天设置。",
     "clear_success": "已清除私密聊天设置"
-  },
-  "threepid": {
-    "unbind": "解绑",
-    "phone_placeholder": "请输入手机号码",
-    "emails_title": "邮箱",
-    "region_label": "地区",
-    "add": "添加绑定",
-    "no_emails": "暂无邮箱",
-    "email_placeholder": "请输入邮箱地址",
-    "phones_title": "手机号",
-    "no_phones": "暂无手机号"
   }
 }

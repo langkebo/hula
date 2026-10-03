@@ -27,14 +27,17 @@
             :data-key="item.fromUser.uid === userUid ? `U${item.message.id}` : `Q${item.message.id}`"
             :special-menu="specialMenuList(item.message.type)"
             @select="$event.click(item)">
-            <div :class="{ bubble: !isSpecialMsgType(item.message.type) }">
+            <div
+              :class="{ bubble: !isSpecialMsgType(item.message.type), 'active-reply': activeReply === item.message.id }"
+              :data-event-id="item.message.id">
               <RenderMessage
                 :message="item"
                 :from-user="item.fromUser"
                 :is-group="true"
                 :on-image-click="handleImageClick"
                 :on-video-click="handleVideoClick"
-                :history-mode="true" />
+                :history-mode="true"
+                @jump2-reply="jumpToReply" />
             </div>
           </ContextMenu>
         </div>
@@ -47,6 +50,7 @@
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import RenderMessage from '@/components/rightBox/renderMessage/index.vue'
 import { useChatMain } from '@/composables/chat/useChatMain'
+import { useReplyJump } from '@/composables/chat/useReplyJump'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useImageViewer } from '@/composables/common/useImageViewer'
 import { useVideoViewer } from '@/composables/common/useVideoViewer'
@@ -82,6 +86,12 @@ const choosedMsgs = ref<Msg[]>([])
 const msgs = ref<MessageType[]>([])
 const users = ref<UserItem[]>([])
 const route = useRoute()
+
+// 回复气泡点击：在多选窗口自己的消息列表里定位并高亮原消息（与聊天主列表同语义）。
+const { activeReply, jumpToReply } = useReplyJump({
+  findIndexByEventId: (eventId) => msgs.value.findIndex((item) => item.message.id === eventId),
+  resolveElement: (eventId) => document.querySelector(`[data-event-id="${eventId}"]`)
+})
 
 const userUid = computed(() => userStore.userInfo?.uid)
 

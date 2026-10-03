@@ -5,7 +5,6 @@
     :class="{ 'is-dragging-files': isDraggingFiles }">
     <SkipLink target="#center" :label="t('common.skip_to_sessions')" />
     <SkipLink target="#chat-main" :label="t('common.skip_to_chat')" />
-    <GuestModeBanner :visible="isGuestMode" :guest-user-id="guestUserId" />
     <div class="flex flex-1 min-h-0">
       <AsyncLeft />
       <AsyncCenter />
@@ -42,7 +41,6 @@ import { UserAttentionType } from '@tauri-apps/api/window'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
-import GuestModeBanner from '@/components/common/GuestModeBanner.vue'
 import SkipLink from '@/components/common/SkipLink.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
@@ -229,8 +227,6 @@ const contactStore = useContactStore()
 const { checkUpdate, CHECK_UPDATE_TIME } = useCheckUpdate()
 const shrinkStatus = ref(false)
 const isDraggingFiles = ref(false)
-const isGuestMode = ref(false)
-const guestUserId = ref<string | null>(null)
 const tauriFileDropUnlisteners: UnlistenFn[] = []
 
 // 导入Web Worker

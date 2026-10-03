@@ -36,8 +36,7 @@ const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef, grou
       getGroupSessions: vi.fn(() => []),
       resetSessionSelection: vi.fn(),
       addSession: vi.fn(),
-      removeSession: vi.fn(),
-      clearCurrentSessionUnread: vi.fn()
+      removeSession: vi.fn()
     }
   }))
 

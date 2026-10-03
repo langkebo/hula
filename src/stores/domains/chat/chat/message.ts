@@ -314,10 +314,6 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     sessionStore.markSessionRead(roomId)
   }
 
-  const clearCurrentSessionUnread = () => {
-    sessionStore.clearCurrentSessionUnread()
-  }
-
   const removeSession = (roomId: string) => {
     sessionStore.removeSession(roomId)
   }
@@ -417,7 +413,6 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     resetSessionSelection,
     checkMsgExist,
     clearRedundantMessages,
-    clearCurrentSessionUnread,
     shouldKeepTransientMessage,
     clearOtherRoomsMessages,
     clearRoomMessagesExceptTransient,

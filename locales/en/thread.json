@@ -2,5 +2,7 @@
   "title": "Thread",
   "replies": "Replies",
   "no_replies": "No replies yet",
-  "reply_placeholder": "Type a reply..."
+  "reply_placeholder": "Type a reply...",
+  "send_failed": "Failed to send the reply",
+  "load_failed": "Failed to load replies"
 }

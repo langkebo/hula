@@ -67,6 +67,7 @@ import SpaceDetailsPane from '@/components/workbench/SpaceDetailsPane.vue'
 import type { SpaceListItem } from '@/components/workbench/SpaceListPane.vue'
 import { useEnterChat } from '@/composables/chat/useEnterChat'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useAriaLive } from '@/composables/common/useAriaLive'
 import type { SpaceInfo } from '@/composables/space'
 import { useSpace, useSpaceMembers, useSpaceRooms, useSpaces } from '@/composables/space'
 import { buildSpaceRoute } from '@/router/spaceNavigation'
@@ -80,6 +81,7 @@ type SpaceManageMode = 'invite' | 'add-room'
 const logger = createLogger('SpaceChildrenPane')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
+const { announce } = useAriaLive()
 const route = useRoute()
 const router = useRouter()
 const roomStore = useRoomStore()
@@ -208,10 +210,12 @@ const handleEnterRoom = async (roomId: string) => {
   }
 }
 
-// 选择层级树里的空间：与 SpaceList.vue 的 handleSelectSpace 同行为（路由跳转），
+// 选择层级树里的空间：与 SpaceList.vue 的 handleSelectSpace 同行为（a11y 播报 + 路由跳转），
 // 但 SpaceDetailsPane 的 selectSpace 事件携带的是 SpaceInfo，需取 spaceId。
 const handleSelectSpace = (space: SpaceInfo) => {
   if (!space?.spaceId) return
+  const spaceName = space.name || spaces.value.find((s) => s.spaceId === space.spaceId)?.name || space.spaceId
+  announce(t('space.space_selected', { name: spaceName }), 'polite')
   void router.push(buildSpaceRoute(space.spaceId))
 }
 

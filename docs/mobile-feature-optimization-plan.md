@@ -967,7 +967,7 @@ Task 5 收紧后的口径（含 2026-09-22 最终评审 I5 的两项加固）：
 | `npx vue-tsc --noEmit` | 0 错误，exit 0 | |
 | `npx vitest run` | 803/803 文件、9294/9294 用例通过；exit 1 | 唯一的非零来源是 3 个**既有** crypto unhandled rejection（`CryptoSDKAdapter` / `CryptoKeyBackupAdapter` 报 `CryptoApi 不可用`）。本分支未触碰 `src/services/matrix/crypto/` |
 | `check:settings-wiring` | OK 持久化 key 清单 73/73、死配置 1（基线 1） | Task 5 改为"清单 + 持久层发现"（2026-09-22 review 后补类型标注映射/sessionStorage/漏报自检）；最终评审 I4 把发现范围扩到 `src/components` 并补登记 3 个 key（70 → 73）；仅剩 `tjg-mjolnir-ban-lists` 为死配置 |
-| `check:component-contracts` | OK 无人监听事件 0（基线 0）、白名单 28/28（只减不增） | Task 5 由 32 收紧到 0；11 条产品断线移入 13.6 follow-up；最终评审 I5 给白名单名称集合加 ratchet、失效条目改 FAIL、`followUp` 校验必须命中 §13.6 真实行 |
+| `check:component-contracts` | OK 无人监听事件 0（基线 0）、白名单 17/17（只减不增；Task 5 时 28/28，Task 6 处置 11 条后收缩） | Task 5 由 32 收紧到 0；11 条产品断线移入 13.6 follow-up；最终评审 I5 给白名单名称集合加 ratchet、失效条目改 FAIL、`followUp` 校验必须命中 §13.6 真实行；Task 6 接线 3 类、删除 6 类后 `followUp` 挂账清空 |
 | `check:i18n-dead-keys` | OK 孤儿 0（基线 0）+ 动态族排除 148（23 前缀，阻塞 delta） | Task 5 新增：命名空间感知 + 跳过测试 + 键名子集 ratchet；动态前缀族单独成节、"Task 7 不得删除"；Task 7 删除 1979 条孤儿把基线降到 0；最终评审 I5 给动态族加阻塞 delta（新增必须 `--update --accept-new-dynamic` 显式记账） |
 | `check:doc-coverage` | OK（1041，基线 1063，无回归） | 补 15 处缺失 JSDoc 摘要，纯注释改动；这 15 处在基线提交 `e157675a` 上同样报错，属分支级既有漂移；本次清理基线里已迁走的 `MatrixReceiptService.ts::getReadReceipts`（Task 6），1064 → 1063 |
 | `check:ratchet` | 6/6 OK | |
@@ -1019,7 +1019,7 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
 | 移动端 [M2] `VoiceVideoSettings.vue` 残留桌面已删的输出设备/音量控件并直接写 key | 删除零消费方控件与字段；保留经 `applyConstraints` 生效的音质布尔 | Task 3 `552df0d0`..`a7ea0620` | `src/mobile/views/my/VoiceVideoSettings.vue`；处置依据见 13.3「无实现」 |
 | 移动端 [M3] `LabsSettings.vue` 仍写桌面已删的 labs 死 key | 删除三个死开关，保留 Labs 页与 Integrations 入口 | Task 3 `552df0d0`..`a7ea0620` | `src/mobile/views/my/LabsSettings.vue` |
 | `.photo-wall` 全仓零生产者，却仍列入 `[data-bubble-style='square']` 与结构守卫 | 删除死样式与惰性守卫覆盖 | Task 7 `926b47be` | `render-message.scss` 与结构守卫不再包含该选择器 |
-| 守门口径缺口：[I4] settings-wiring 扫描面不含 `src/components`、[I5] component-contracts 白名单无 ratchet、i18n dynamic 桶 warn-only | 扩扫描面 + 白名单名称 ratchet + 动态族阻塞 delta | 最终修复波（见 13.4 与本节 (2)） | `check:settings-wiring` 73/73、`check:component-contracts` 白名单 28/28 只减不增、`check:i18n-dead-keys` 动态 delta 阻塞 |
+| 守门口径缺口：[I4] settings-wiring 扫描面不含 `src/components`、[I5] component-contracts 白名单无 ratchet、i18n dynamic 桶 warn-only | 扩扫描面 + 白名单名称 ratchet + 动态族阻塞 delta | 最终修复波（见 13.4 与本节 (2)） | `check:settings-wiring` 73/73、`check:component-contracts` 白名单 17/17 只减不增、`check:i18n-dead-keys` 动态 delta 阻塞 |
 | 守门/代码 nits：`.storybook` 过期 mock、doc-coverage 基线仍列 `getReadReceipts`、`MatrixReadStateService` 空继承、settings-wiring 基线形态与 `--update` 不一致、`wsPresenceHandler` 死 `setPresence` 成员、presence 守卫可被解构绕过 | 全部清理或加固（基线改为 `--update` 按 Biome 规则序列化，首次 `--update` 无空白 diff） | 最终修复波（分支尾部 `config`/`service`/`test` 提交） | 对应文件见提交记录；presence 守卫新增解构检测与注释剥除 |
 
 #### （1）需要产品/设计裁决
@@ -1080,10 +1080,10 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
   需自定义 composer 包装，把 `t()` 的 key 参数收紧为生成的字面量联合类型。
 - **测试清理 minor**：`LabsSettings.test` 遗留 vant mock / `VanSwitchStub` 死脚手架、
   toggle-all 循环已空转；通知相关测试未打桩 `syncDndToAccountData` 产生 stderr 噪音、
-  `GuestModeBannerIntegration` 打桩新 composable（仅计时，覆盖在 `useMessageSound.test`）；
+  `LayoutRegression.test`（原 `GuestModeBannerIntegration.test`）打桩新 composable（仅计时，覆盖在 `useMessageSound.test`）；
   `handleSelectSpace` 少 a11y announce；删除 emit 后遗留 `friend.request.cancel` locale。
-- **11 条产品行为断线（组件事件）见 13.6**：白名单以 `followUp` 挂账、每次运行打印 `todo`；
-  `followUp` 现已校验必须命中 §13.6 表格里的真实行，悬空即 FAIL。
+- **11 条产品行为断线（组件事件）见 13.6**：曾在白名单以 `followUp` 挂账、每次运行打印
+  `todo`，`followUp` 悬空即 FAIL；Task 6 逐条接线/删除后挂账与 13.6 表格已清空。
 
 #### （3）移动端平行实现缺口
 
@@ -1102,20 +1102,15 @@ Task 5 把 `check:component-contracts` 的 32 条冻结基线收紧到 **0**：3
 守门每次运行都会打印 `todo` 提示——它们不再是被冻结的静默数字，而是可检索的待办。
 每条都带 file:line 与"缺什么"；补全需要产品决策或跨模块改动，故不属本次债务清理范围。
 
-| # | 断线 | 触发点（emit） | 挂载点 | 缺什么 |
-| --- | --- | --- | --- | --- |
-| 1 | `ThreepidManager` 邮箱/手机增删解绑 | `src/components/userMenu/ThreepidManager.vue:158`（add-email）/`:165`（add-phone）/`:152`（unbind）；按钮 `:33`/`:74`/`:19`、`:55` | `src/views/settingsWindow/tabs/AccountSettings.vue:122`（`<ThreepidManager />`，零 props 零监听） | 邮箱/手机管理 100% 不生效：输入框清空得像成功，请求从不发出。后端能力已在 `src/composables/user/useAccount.ts:46-64`（`getThreePids`/`addThreePid`/`bindThreePid`/`deleteThreePid`/`unbindThreePid`，`useAccount` 返回值 `:121` 起导出）但零生产消费方；需要接线 + 格式校验 + 错误反馈 |
-| 2 | `UserMenuHeader::avatar-click` | `src/components/userMenu/UserMenuHeader.vue:133`（`handleAvatarClick`，emit 在 `:134`；`.user-avatar @click` 在 `:4`，`cursor:pointer` 在 `:188`） | `src/components/userMenu/UserMenuDropdown.vue:7`、`UserMenuMobile.vue:9`（只绑 `@theme-toggle`） | 可点击头像无任何行为；需要产品决定：打开个人资料 / 打开设置 / 仅关闭菜单 |
-| 3 | `RoomInviteActions::error` | `src/components/room/RoomInviteActions.vue:42`（接受失败）、`:56`（拒绝失败） | `src/components/workbench/TjgRoomListItem.vue:79-83`（只绑 `@accepted`/`@rejected`） | 接受/拒绝失败只有 `logger.error`，用户完全无感知。注意成功链路同样惰性：`RoomSessionList.vue:47-48` 转发给可选 `onAcceptInvite?`/`onRejectInvite?`，唯一生产消费方 `src/views/homeWindow/message/index.vue:22-36` 两个都没传；诚实的修法是在 `RoomInviteActions`/facade 内部就地给出错误反馈 |
-| 4 | `GuestModeBanner::exit` / `::upgrade` | `src/components/common/GuestModeBanner.vue:30` / `:27`（声明 `:47-50`） | `src/layout/index.vue:8`（`<GuestModeBanner :visible="isGuestMode" :guest-user-id="guestUserId" />`，零监听） | 半成品：`isGuestMode`（`layout/index.vue:232`）与 `guestUserId`（`:233`）从未被置真，横幅永不渲染；`MatrixGuestService` 除测试外无引用。需要产品决定"实现游客态 + upgrade/exit"还是"删除横幅 + 挂载 + refs" |
-| 5 | `LoginBottomBar::guest-login` | `src/views/loginWindow/LoginBottomBar.vue:54`（声明 `:79`，`data-test="guest-login-btn"`） | `src/views/loginWindow/Login.vue:35-43`（7 个事件绑了 6 个，没有 `@guest-login`） | 用户可见的死入口；同时 i18n key `login.guest` 在 `locales/{zh-CN,en}/login.json` 缺失，行内渲染原始 key。需要实现游客登录或移除该行 |
-| 6 | `ThreadPanel::sendReply` | `src/components/thread/ThreadPanel.vue:103`（`handleSendReply`；声明 `:90`） | `src/components/rightBox/chatBox/ChatModals.vue:66-69`（唯一挂载：`v-model:show` + props，无监听） | 点发送直接丢弃输入（无 store/service 调用、无乐观追加），`loadThreadReplies()`（`:113-115`）是设 `[]` 的 stub。需接 `matrixThreadService.sendThreadReply`（`MatrixThreadService.ts:67`）/ `getThreadRepliesViaApi`（`:359`） |
-| 7 | `SpaceListItemCard::contextmenu` | `src/components/workbench/SpaceListItemCard.vue:12`（卡片 `@contextmenu`，原生 `MouseEvent`；声明 `:122`） | `src/components/workbench/SpaceListPane.vue:78-85`、`:98-107`、`:120-129`（绑了 click/pin/settings/leave/delete，没有 `@contextmenu`）；`SpaceListPane` 不转发，`src/views/homeWindow/SpaceList.vue:80` 也没监听 | 右键空间卡无任何反应（出生即死，无提交绑定过）。需要右键菜单设计：卡片内 `ContextMenu`（参照 `TjgRoomListItem.vue:14/245-248`）或逐层转发，否则删除 |
-| 8 | `RoomSessionList::batchToggle`（潜在，无用户可见破坏） | `src/components/workbench/RoomSessionList.vue:125`（`handleBatchToggle`；子组件 `@batch-toggle` 在 `:49`，声明 `:119`） | `src/views/homeWindow/message/index.vue:22-35`（不传批量 props、不监听） | 只有 `TjgRoomListItem` 在 `batchMode` 为真时才触发（`TjgRoomListItem.vue:16-21`/`:235-241`/`:266-268`），但没有任何生产调用方传 `batch-mode`/`batch-selected-ids`；桌面批量模式没有入口/owner（移动端有 `MobileBatchToolbar`）。需要产品决定接线还是删除 props + emit + 复选框分支 |
+Task 6 已把这 11 条逐条处置（能接的接、接不上的删），`ACCEPTED_PATTERNS` 的 `followUp`
+挂账随之清空、本节表格删除，守门不再打印 `todo`；逐条处置见
+`.superpowers/sdd/2026-09-23-issues-cleanup/task-6-report.md`。
 
-补充（不计入上表，检测器口径说明）：`renderMessage/index::jump2Reply` 的"无人监听"是
-检测器误报，已随全局组件名解析修复；但历史窗口仍有**逐使用处**的真实缺口——
-`src/views/multiMsgWindow/index.vue:31-38` 与 `src/views/chatHistory/index.vue:81-90`
-在 `<RenderMessage>` 上不绑 `@jump2-reply`，回复气泡点击无响应。本守门的事件判据是"所有
-使用处的并集"，表达不了这种"一处监听、另一处断线"，故只能在此登记为人工复核项。
+补充（不计入上表，检测器口径说明）：`renderMessage/index::jump2Reply` 的"无人监听"本是
+检测器误报（全局组件名按 `src/typings/components.d.ts` 的路径派生名解析后消失）；但历史窗口
+还有**逐使用处**的真实缺口——`src/views/multiMsgWindow/index.vue` 与
+`src/views/chatHistory/index.vue` 的 `<RenderMessage>` 不绑 `@jump2-reply`，回复气泡点击无响应。
+本守门的事件判据是"所有使用处的并集"，表达不了这种"一处监听、另一处断线"。Task 6 已给两处
+补上 `@jump2-reply`（共用 `useReplyJump`：命中则高亮 + 滚动，未命中给 warning），
+并各带行为测试。
 

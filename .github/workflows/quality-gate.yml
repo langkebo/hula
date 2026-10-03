@@ -84,26 +84,34 @@ jobs:
         run: pnpm exec playwright install chromium --with-deps
 
       - name: A11y Accessibility Scan
+        shell: bash
         run: |
-          # 启动 Storybook 后台进程
-          pnpm storybook &
+          # 策略（b）：CI 真正启动 Storybook 后再扫描；启动失败即显式失败，绝不静默通过。
+          set +e
+          pnpm storybook > /tmp/storybook.log 2>&1 &
           STORYBOOK_PID=$!
-          # 等待 Storybook 就绪（端口 6006）
-          for i in $(seq 1 30); do
+          trap 'kill "$STORYBOOK_PID" 2>/dev/null || true; wait "$STORYBOOK_PID" 2>/dev/null || true' EXIT
+
+          READY=0
+          for i in $(seq 1 45); do
             if curl -sf http://localhost:6006 >/dev/null 2>&1; then
               echo "Storybook 就绪"
+              READY=1
               break
             fi
-            echo "等待 Storybook 就绪 ($i/30)..."
+            echo "等待 Storybook 就绪 ($i/45)..."
             sleep 2
           done
-          # 运行 axe-core 扫描
-          pnpm check:a11y
-          EXIT_CODE=$?
-          # 终止 Storybook
-          kill $STORYBOOK_PID 2>/dev/null || true
-          wait $STORYBOOK_PID 2>/dev/null || true
-          exit $EXIT_CODE
+
+          if [ "$READY" -ne 1 ]; then
+            echo "Storybook 未在 90s 内就绪，a11y 扫描无法执行"
+            tail -n 50 /tmp/storybook.log || true
+            exit 1
+          fi
+
+          # 运行 axe-core 扫描（未就绪时脚本自身 exit 2，不会假装绿）
+          pnpm check:a11y --url "$STORYBOOK_URL"
+          exit $?
         env:
           STORYBOOK_URL: http://localhost:6006
 

@@ -1,5 +1,5 @@
 export const GUEST = {
-  /** @deprecated Use MatrixGuestService.registerGuest() instead */
+  /** @deprecated 游客注册未接入产品流程，仅保留路径常量 */
   REGISTER: '/register/guest',
   /** @deprecated Use MatrixAuthService.login() instead */
   LOGIN: '/login',

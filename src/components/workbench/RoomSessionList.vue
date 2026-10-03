@@ -39,14 +39,11 @@
           :classes="getItemClasses(item)"
           :menu="visibleMenu(item)"
           :special-menu="visibleSpecialMenu(item)"
-          :batch-mode="batchMode"
-          :batch-selected="resolvedBatchIds.has(item.roomId)"
           @click="onMsgClick(item)"
           @dblclick="onMsgDblclick(item)"
           @select="(e: any) => handleSelect(item as SessionItem, e)"
           @accept-invite="onAcceptInvite?.($event)"
           @reject-invite="onRejectInvite?.($event)"
-          @batch-toggle="handleBatchToggle"
           @menu-show="onMenuShow as unknown as () => void" />
       </RecycleScroller>
     </div>
@@ -111,19 +108,8 @@ const props = defineProps<{
   onRetryNetwork?: () => void | Promise<void>
   onAcceptInvite?: (item: SessionListItem) => void | Promise<void>
   onRejectInvite?: (item: SessionListItem) => void | Promise<void>
-  batchMode?: boolean
-  batchSelectedIds?: Set<string>
 }>()
 
-const emit = defineEmits<{
-  batchToggle: [roomId: string]
-}>()
-
-const resolvedBatchIds = computed(() => props.batchSelectedIds ?? new Set<string>())
-
-const handleBatchToggle = (roomId: string) => {
-  emit('batchToggle', roomId)
-}
 const showRetryAction = computed(() => Boolean(props.networkBanner?.retryable && props.onRetryNetwork))
 
 const handleSelect = (item: SessionItem, menuItem: OPT.RightMenu<SessionItem>) => {

@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-11T10:32:29.447Z",
-  "count": 187,
+  "count": 184,
   "violations": [
     "src/composables/messaging/useMessageForward.ts::matrix-js-sdk",
     "src/composables/messaging/useMessageForward.ts::unknown-as-MatrixEvent#1",
@@ -94,9 +94,6 @@
     "src/services/matrix/friends/MatrixSpecialFriendService.ts::matrix-js-sdk",
     "src/services/matrix/friends/__tests__/MatrixFriendService.test.ts::matrix-js-sdk",
     "src/services/matrix/friends/__tests__/MatrixSpecialFriendService.test.ts::matrix-js-sdk",
-    "src/services/matrix/guest/MatrixGuestService.ts::matrix-js-sdk",
-    "src/services/matrix/guest/MatrixGuestService.ts::matrix-js-sdk/guest",
-    "src/services/matrix/guest/__tests__/MatrixGuestService.test.ts::matrix-js-sdk",
     "src/services/matrix/matrixClientAccessor.ts::matrix-js-sdk",
     "src/services/matrix/matrixClientAccessor.ts::matrix-js-sdk/telemetry",
     "src/services/matrix/media/MatrixMediaService.ts::matrix-js-sdk/media",

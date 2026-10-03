@@ -48,12 +48,6 @@
             class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px p-8px">
             {{ t('login.option.items.network_setting') }}
           </div>
-          <div
-            data-test="guest-login-btn"
-            class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px p-8px"
-            @click="emit('guest-login')">
-            {{ t('login.guest') }}
-          </div>
         </n-flex>
       </n-popover>
     </div>
@@ -76,7 +70,6 @@ const emit = defineEmits<{
   'open-register': []
   'open-forget-password': []
   'open-server-config': []
-  'guest-login': []
 }>()
 
 const { t } = useI18n()

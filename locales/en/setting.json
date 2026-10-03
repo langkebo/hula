@@ -1057,16 +1057,5 @@
     "clear_confirm_title": "Confirm Clear",
     "clear_confirm_content": "Are you sure you want to clear the private chat password? This will reset all private chat settings.",
     "clear_success": "Private chat settings cleared"
-  },
-  "threepid": {
-    "unbind": "Unbind",
-    "phone_placeholder": "Enter phone number",
-    "emails_title": "Emails",
-    "region_label": "Region",
-    "add": "Add Binding",
-    "no_emails": "No Emails",
-    "email_placeholder": "Enter email address",
-    "phones_title": "Phones",
-    "no_phones": "No Phones"
   }
 }

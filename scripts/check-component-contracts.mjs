@@ -23,7 +23,9 @@
  *   标为"不可判定"并整体跳过，不把可能的活事件报成死的；
  * - 动态参数 `@[name]` / `v-model:[name]` / `v-bind:[name]`（arg 非静态）的文本不是事件名，
  *   同样按不可判定整体跳过；
- * - `<component :is>` 动态挂载的组件当前不识别，按"从未使用"处理（见已知局限），不计入；
+ * - `<component :is>` 动态挂载不参与"用了组件却没人监听"的判定：它们被单列成
+ *   `dynamic` 跳过项并打印（能静态认出的目标会标注组件路径与"仅动态挂载"），
+ *   既不制造"用了组件却没人监听"的误报，也不因为归不到监听方而把目标算成未使用；
  * - `emits` 无法解析（编译或 babel 解析失败）时跳过该文件，并在输出里点名；
  * - `__tests__` 目录下的文件既不算声明方也不算使用方（测试自己 emit/监听不代表真实接线）；
  * - 从未被使用的组件不计入（那是死代码问题，不是"没人监听"问题）。
@@ -32,6 +34,11 @@
  * 注册成 `<RenderMessage>`。因此组件名→文件映射以插件产物 `src/typings/components.d.ts`
  * （路径派生名）为权威，basename 表只在 d.ts 漂移时兜底；否则 35 个 `index.vue` 会因重名
  * 被整体丢弃，`<RenderMessage>` 上的真实监听无从归属，产生"无人监听"误报。
+ *
+ * d.ts 新鲜度/有效性校验（阻塞，先于任何扫描）：文件缺失、解析不出 `GlobalComponents`
+ * 条目、或存在已登记的全局组件文件没有出现在 d.ts 里时，直接给出明确指引并失败，
+ * 而不是带着残缺映射继续扫描、把全局组件误判成"无人监听"制造大面积假 FAIL。
+ * d.ts 里指向已删除文件的陈旧条目只告警（不影响判定，清理是显式维护动作）。
  *
  * 基线缺失或结构不合法时直接失败，绝不静默退化为 exit 0 空转。
  * 数量与键名双重 ratchet：当前集合必须 ⊆ 基线集合，`--update` 也拒绝任何新增条目
@@ -42,10 +49,11 @@
  * 白名单名称集合本身也是 ratchet（当前 ⊆ 基线，`--update` 拒绝新增）：否则"破坏监听 +
  * 追加白名单"一步就能洗绿。`followUp` 字段必须指向 §13.6 里真实存在的 follow-up 行。
  *
- * 已知局限（见报告）：不分析渲染函数 / `h()` / JSX 里手写的 `onXxx` 监听，`<component :is>`
- * 动态挂载不识别，也不跨文件追踪 `v-bind` 透传；这些场景由上面的"跳过"策略兜底，
- * 属于漏报而非误报。事件判据是"所有使用处的并集"，无法表达"某处监听、另一处断线"，
- * 这类逐使用处缺口需要人工评审（例如历史窗口里 reply 气泡点击无响应）。
+ * 已知局限（见报告）：不分析渲染函数 / `h()` / JSX 里手写的 `onXxx` 监听，
+ * `<component :is>` 动态挂载的监听方不归属（见上方 dynamic 跳过策略），也不跨文件追踪
+ * `v-bind` 透传；这些场景由上面的"跳过"策略兜底，属于漏报而非误报。事件判据是"所有使用处
+ * 的并集"，无法表达"某处监听、另一处断线"，这类逐使用处缺口需要人工评审（例如历史窗口里
+ * reply 气泡点击无响应）。
  */
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join, relative, resolve } from 'node:path'
@@ -158,73 +166,6 @@ const ACCEPTED_PATTERNS = [
     component: 'src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue',
     event: 'upgraded',
     reason: '升级请求、成功提示与自关闭都由组件内 useRoomUpgradeFlow 完成，事件只是可选通知（父组件会保留旧版本号标签）'
-  },
-  /* --- 产品行为断线：功能真缺，登记为 follow-up 待办，不允许静默冻结 --- */
-  {
-    component: 'src/components/userMenu/ThreepidManager.vue',
-    event: 'add-email',
-    reason: 'AccountSettings.vue:122 以零 props/零监听挂载，邮箱管理完全不生效（输入框清空但请求不发出）',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #1'
-  },
-  {
-    component: 'src/components/userMenu/ThreepidManager.vue',
-    event: 'add-phone',
-    reason: '同上；手机号绑定同样不生效，useAccount.addThreePid/bindThreePid 零生产消费方',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #1'
-  },
-  {
-    component: 'src/components/userMenu/ThreepidManager.vue',
-    event: 'unbind',
-    reason: '同上；解绑按钮无监听，deleteThreePid/unbindThreePid 零生产消费方',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #1'
-  },
-  {
-    component: 'src/components/userMenu/UserMenuHeader.vue',
-    event: 'avatar-click',
-    reason: '头像有 cursor:pointer 但点击无任何行为，需要产品决定打开资料/设置/仅关闭',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #2'
-  },
-  {
-    component: 'src/components/room/RoomInviteActions.vue',
-    event: 'error',
-    reason: '接受/拒绝失败只有 logger.error，用户无感知；成功链路 onAcceptInvite/onRejectInvite 生产上也没人传',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #3'
-  },
-  {
-    component: 'src/components/common/GuestModeBanner.vue',
-    event: 'exit',
-    reason: '游客模式半成品：layout/index.vue 的 isGuestMode/guestUserId 从未被置真，横幅永不渲染',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #4'
-  },
-  {
-    component: 'src/components/common/GuestModeBanner.vue',
-    event: 'upgrade',
-    reason: '同上；MatrixGuestService 无生产引用，需要产品决定"实现游客态"还是"删除横幅"',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #4'
-  },
-  {
-    component: 'src/views/loginWindow/LoginBottomBar.vue',
-    event: 'guest-login',
-    reason: '登录页"更多选项"里的游客登录可见但无监听，且 i18n key login.guest 缺失（渲染原始 key）',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #5'
-  },
-  {
-    component: 'src/components/thread/ThreadPanel.vue',
-    event: 'sendReply',
-    reason: '发送会丢弃输入（无 store/service 调用），loadThreadReplies 是设空数组的 stub',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #6'
-  },
-  {
-    component: 'src/components/workbench/SpaceListItemCard.vue',
-    event: 'contextmenu',
-    reason: '右键空间卡无任何菜单；SpaceListPane 与 SpaceList.vue 都没有转发该事件',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #7'
-  },
-  {
-    component: 'src/components/workbench/RoomSessionList.vue',
-    event: 'batchToggle',
-    reason: '桌面批量模式没有入口：没有任何生产调用方传 batch-mode/batch-selected-ids（移动端有 MobileBatchToolbar）',
-    followUp: 'docs/mobile-feature-optimization-plan.md §13 follow-up #8'
   }
 ]
 
@@ -321,6 +262,71 @@ function readGlobalComponents(dtsPath) {
     map.set(m[1], toPosix(relative(process.cwd(), resolve(dirname(dtsPath), m[2]))))
   }
   return map
+}
+
+/**
+ * unplugin-vue-components 在当前仓库会全局注册的组件文件。
+ *
+ * 与 `build/config/components.ts` 的 dirs/globs 保持一致：默认 / 移动端平台扫
+ * `src/components` + `src/mobile/components`，并排除 4 个线程视图覆盖组件。
+ * 只用于校验 d.ts 覆盖率（新鲜度），不参与名字解析。
+ */
+const COMPONENT_DIRS = ['src/components', 'src/mobile/components']
+const COMPONENT_EXCLUDES = new Set([
+  'src/components/thread/ThreadIndicator.vue',
+  'src/components/thread/ThreadView.vue',
+  'src/mobile/components/thread/ThreadIndicator.vue',
+  'src/mobile/components/thread/ThreadView.vue'
+])
+
+function expectedGlobalComponents(vueFiles) {
+  return new Set(
+    vueFiles.filter(
+      (path) => COMPONENT_DIRS.some((dir) => path.startsWith(`${dir}/`)) && !COMPONENT_EXCLUDES.has(path)
+    )
+  )
+}
+
+const DTS_HINT = [
+  `  ${DTS} 是 unplugin-vue-components 的产物，本守门靠它把路径派生的全局组件名（RenderMessage 等）映射回文件。`,
+  '  修复方式：运行一次 vite / vitest 让插件重写该文件（例如 `npx vitest run src/locales`），',
+  '  或手动补齐缺失条目；不要继续用 basename 兜底扫描 —— 那会把全局组件误判成"无人监听"，产生大面积假 FAIL。'
+]
+
+/**
+ * d.ts 新鲜度 / 有效性校验。
+ *
+ * 返回 `{ globalPaths, problems, warnings }`：`problems` 非空时调用方必须给出明确指引并
+ * 退出，**先于**任何"用了组件却没人监听"的扫描 —— 残缺映射下的扫描结果没有意义。
+ */
+function checkComponentsDts(vueFiles) {
+  const problems = []
+  const warnings = []
+  if (!existsSync(DTS)) {
+    problems.push(`缺少 ${DTS}（unplugin-vue-components 的生成物）`)
+    return { globalPaths: new Map(), problems, warnings }
+  }
+  const globalPaths = readGlobalComponents(DTS)
+  if (globalPaths.size === 0) {
+    problems.push(`${DTS} 里解析不到任何 GlobalComponents 条目（未生成或结构已变）`)
+    return { globalPaths, problems, warnings }
+  }
+  const expected = expectedGlobalComponents(vueFiles)
+  const covered = new Set(globalPaths.values())
+  const missing = [...expected].filter((path) => !covered.has(path)).sort()
+  if (missing.length > 0) {
+    const preview = missing.slice(0, 5).join('、')
+    problems.push(
+      `${DTS} 已陈旧：${missing.length} 个全局组件文件未登记（${preview}${missing.length > 5 ? ' …' : ''}）`
+    )
+  }
+  const dangling = [...covered].filter((path) => !existsSync(path)).sort()
+  if (dangling.length > 0) {
+    warnings.push(
+      `${DTS} 含 ${dangling.length} 个指向已删除文件的陈旧条目（不影响判定，建议重新生成）：${dangling.join('、')}`
+    )
+  }
+  return { globalPaths, problems, warnings }
 }
 
 /** 深度优先遍历 babel AST，对每个节点调用 visit。 */
@@ -524,11 +530,21 @@ function resolveImport(specifier, fromPath) {
 function scanTemplate(tagMap, templateAst, componentPaths, globalPaths) {
   const usages = new Map()
   const opaque = new Set()
-  if (!templateAst) return { usages, opaque }
+  const dynamic = []
+  if (!templateAst) return { usages, opaque, dynamic }
 
   const visit = (node) => {
     if (node.type !== 1 /* ELEMENT */) return
     const tag = node.tag
+
+    // `<component :is>` 动态挂载：目标运行时才确定，事件监听方无法静态归属。
+    // 单列成 dynamic 跳过项打印，**不**参与"用了组件却没人监听"的判定，避免误报。
+    if (tag.toLowerCase() === 'component') {
+      const mount = readDynamicMount(node, tagMap, componentPaths, globalPaths)
+      if (mount !== null) dynamic.push(mount)
+      return
+    }
+
     // 全局注册的标签既可能写成 `<AreaDrawer>` 也可能写成 `<area-drawer>`（mobile 侧
     // 大量使用 kebab）。`globalPaths` 来自 unplugin-vue-components 的 components.d.ts，
     // 是路径派生的权威名字；`componentPaths`（basename）只作 d.ts 漂移时的兜底。
@@ -569,14 +585,76 @@ function scanTemplate(tagMap, templateAst, componentPaths, globalPaths) {
     for (const child of node.children ?? []) stack.push(child)
     for (const branch of node.branches ?? []) stack.push(branch)
   }
-  return { usages, opaque }
+  return { usages, opaque, dynamic }
+}
+
+/** 读取 `<component>` 上的 `:is` / `v-bind:is` / `is` 表达式；没有 `is` 返回 undefined。 */
+function readIsExpression(props) {
+  for (const prop of props) {
+    if (prop.type === 6 /* ATTRIBUTE */ && prop.name === 'is') {
+      return prop.value ? String(prop.value.content) : ''
+    }
+    if (
+      prop.type === 7 /* DIRECTIVE */ &&
+      prop.name === 'bind' &&
+      prop.arg?.type === 4 &&
+      prop.arg.isStatic &&
+      prop.arg.content === 'is'
+    ) {
+      return prop.exp ? String(prop.exp.content) : null
+    }
+  }
+  return undefined
+}
+
+/**
+ * 尽力识别 `<component :is>` 的目标：`is="Foo"` / `:is="Foo"`（本地导入或全局名）能
+ * 静态解析时给出组件路径，`componentMap[...]` / 三元 / 运行时变量等返回 undefined。
+ * 识别结果只用于诊断输出，不参与事件判定。
+ */
+function resolveDynamicMountTarget(expr, tagMap, componentPaths, globalPaths) {
+  if (expr === null || expr === undefined) return undefined
+  const trimmed = expr.trim()
+  const literal = /^'([^']+)'$/.exec(trimmed) ?? /^"([^"]+)"$/.exec(trimmed)
+  const name = literal ? literal[1] : /^[A-Za-z_$][\w$]*$/.test(trimmed) ? trimmed : null
+  if (name === null) return undefined
+  const pascal = name.includes('-') ? pascalize(name) : name
+  return (
+    tagMap.get(name) ??
+    globalPaths.get(name) ??
+    globalPaths.get(pascal) ??
+    componentPaths.get(name) ??
+    componentPaths.get(pascal)
+  )
+}
+
+/** 组装一条 `<component :is>` 诊断记录（`{ line, expr, target }`），非动态挂载返回 null。 */
+function readDynamicMount(node, tagMap, componentPaths, globalPaths) {
+  const expr = readIsExpression(node.props)
+  if (expr === undefined) return null
+  return {
+    line: node.loc?.start?.line ?? 0,
+    expr: expr === null ? '<无法读取>' : expr,
+    target: resolveDynamicMountTarget(expr, tagMap, componentPaths, globalPaths)
+  }
 }
 
 const files = collectVueFiles(ROOT)
 
+// d.ts 新鲜度 / 有效性校验：先于任何"用了组件却没人监听"的扫描。残缺映射会让全局组件
+// 归不到文件、被误判成"无人监听"，那样打印出来的 FAIL 是假失败，必须用明确指引拦截。
+const dtsCheck = checkComponentsDts(files)
+if (dtsCheck.problems.length > 0) {
+  console.error(`check-component-contracts: FAIL — ${DTS} 缺失或陈旧，无法可靠解析全局组件名`)
+  for (const problem of dtsCheck.problems) console.error(`  ${problem}`)
+  for (const line of DTS_HINT) console.error(line)
+  process.exit(1)
+}
+for (const warning of dtsCheck.warnings) console.log(`check-component-contracts: 提示 ${warning}`)
+
 // 全局组件名 → 文件路径。权威来源是 unplugin-vue-components 生成的 components.d.ts
 // （路径派生名，`renderMessage/index.vue` → `RenderMessage`）；basename 表只作兜底。
-const globalPaths = readGlobalComponents(DTS)
+const globalPaths = dtsCheck.globalPaths
 
 // basename → 文件路径，作为 d.ts 漂移/未生成时的兜底。
 // 查找时对带 `-` 的标签再按 kebab→Pascal 归一（见 scanTemplate），因此这里保持
@@ -614,6 +692,7 @@ for (const path of files) {
 
 // 反向建表：使用方模板 → 它用到了哪些组件
 const usageByComponent = new Map()
+const dynamicMounts = []
 for (const path of files) {
   let descriptor
   try {
@@ -622,13 +701,37 @@ for (const path of files) {
     continue
   }
   const tagMap = buildTagMap(descriptor, path)
-  const { usages, opaque } = scanTemplate(tagMap, descriptor.template?.ast, componentPaths, globalPaths)
+  const { usages, opaque, dynamic } = scanTemplate(
+    tagMap,
+    descriptor.template?.ast,
+    componentPaths,
+    globalPaths
+  )
+  for (const mount of dynamic) dynamicMounts.push({ path, ...mount })
   for (const [target, events] of usages) {
     if (target === path) continue
     if (!usageByComponent.has(target)) usageByComponent.set(target, { events: new Set(), opaque: false })
     const entry = usageByComponent.get(target)
     for (const event of events) entry.events.add(event)
     if (opaque.has(target)) entry.opaque = true
+  }
+}
+
+/**
+ * `<component :is>` 动态挂载跳过项（**不**进入 `skipped` ratchet）：它们是结构性的
+ * 运行时挂载，不是解析退化，冻结计数会把正常重构也拦住。这里只如实点名，让"漏报"
+ * 可见：能静态认出的目标标注组件路径，并注明它是否只靠动态挂载出现。
+ */
+dynamicMounts.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line)
+if (dynamicMounts.length > 0) {
+  console.log(
+    `check-component-contracts: 跳过 ${dynamicMounts.length} 处 <component :is> 动态挂载（监听方无法静态归属，不参与无人监听判定）`
+  )
+  for (const mount of dynamicMounts) {
+    const target = mount.target
+      ? `→ ${mount.target}${usageByComponent.has(mount.target) ? '' : '（仅动态挂载）'}`
+      : '（未解析）'
+    console.log(`  dynamic ${mount.path}:${mount.line} :is="${mount.expr}" ${target}`)
   }
 }
 
