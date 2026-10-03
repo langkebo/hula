@@ -269,9 +269,9 @@ export interface EventReportHistory {
   id: number
   report_id: number
   action: string
-  actor_user_id: string
-  old_status: string | null
-  new_status: string
-  reason: string | null
+  actor_user_id?: string
+  old_status?: string | null
+  new_status?: string
+  reason?: string | null
   created_ts: number
 }

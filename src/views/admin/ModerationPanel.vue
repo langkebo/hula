@@ -503,10 +503,8 @@ async function confirmAction() {
 }
 
 async function handleHistory(id: number) {
-  // 适配：SDK getReportHistory 声明返回 ReportResponse[]，但后端实际返回 ReportHistoryResponse[]
-  // （含 action/actor_user_id/new_status 等历史字段，与本地 EventReportHistory 一致）
   try {
-    const history = (await matrixEventReportService.getReportHistory(id)) as unknown as EventReportHistory[]
+    const history = await matrixEventReportService.getReportHistory(id)
     historyDialog.value = { show: true, history }
   } catch {
     // 旧实现 getEventReportHistory 默认 throwOnError=false，失败返回 [] 且对话框照常打开；
