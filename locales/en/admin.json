@@ -85,7 +85,6 @@
     "roomsJoined": "Rooms Joined",
     "search": "Search user ID or display name",
     "sessions": "Sessions",
-    "setRateLimit": "Set Rate Limit",
     "shadowBan": "Shadow Ban",
     "shadowBanConfirm": "Are you sure you want to shadow ban user {userId}?",
     "shadowBanFailed": "Failed to apply shadow ban",

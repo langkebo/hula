@@ -85,7 +85,6 @@
     "roomsJoined": "已加入房间",
     "search": "搜索用户ID或显示名称",
     "sessions": "会话",
-    "setRateLimit": "设置速率限制",
     "shadowBan": "影子封禁",
     "shadowBanConfirm": "确定要影子封禁用户 {userId} 吗？",
     "shadowBanFailed": "影子封禁失败",
