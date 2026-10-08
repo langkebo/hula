@@ -13,7 +13,7 @@ const mockDmManager = {
     updateDirectRoom: vi.fn()
   },
   list: {
-    getDMRooms: vi.fn(async () => [] as Awaited<ReturnType<DirectMessageManager['getDMRooms']>>),
+    getDMRooms: vi.fn(async () => [] as Awaited<ReturnType<DirectMessageManager['list']['getDMRooms']>>),
     getDmForUser: vi.fn(() => null),
     getDmRoomInfo: vi.fn(() => null),
     getDirectRoomsByUser: vi.fn(async () => ({})),
@@ -126,7 +126,7 @@ describe('MatrixDirectMessageService', () => {
         invitees: ['@alice:example.com'],
         inviter: '@alice:example.com'
       }
-    ] as unknown as Awaited<ReturnType<DirectMessageManager['getDMRooms']>>)
+    ] as unknown as Awaited<ReturnType<DirectMessageManager['list']['getDMRooms']>>)
 
     await matrixDirectMessageService.initialize()
 
