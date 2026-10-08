@@ -280,10 +280,6 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
     return this.users.deleteUserDevice(userId, deviceId)
   }
 
-  async deleteUserDevices(userId: string, deviceIds: string[]): Promise<void> {
-    return this.users.deleteUserDevices(userId, deviceIds)
-  }
-
   async getRateLimit(userId: string): Promise<RateLimit | null> {
     return this.users.getRateLimit(userId)
   }

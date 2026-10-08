@@ -52,7 +52,6 @@ describe('adminService facade', () => {
       getAccountStatus: vi.fn().mockResolvedValue(null),
       getUserDevices: vi.fn().mockResolvedValue([]),
       deleteUserDevice: vi.fn().mockResolvedValue(undefined),
-      deleteUserDevices: vi.fn().mockResolvedValue(undefined),
       shadowBanUser: vi.fn().mockResolvedValue(undefined),
       unshadowBanUser: vi.fn().mockResolvedValue(undefined),
       getShadowBanStatus: vi.fn().mockResolvedValue(null),
@@ -395,9 +394,6 @@ describe('adminService facade', () => {
 
       await expect(adminService.deleteUserDevice('@user:server', 'dev1')).resolves.toBeUndefined()
       expect(mockAdminManager.deleteUserDevice).toHaveBeenCalledWith('@user:server', 'dev1')
-
-      await expect(adminService.deleteUserDevices('@user:server', ['dev1', 'dev2'])).resolves.toBeUndefined()
-      expect(mockAdminManager.deleteUserDevices).toHaveBeenCalledWith('@user:server', ['dev1', 'dev2'])
     })
 
     it('should manage legacy rate limit delegators', async () => {

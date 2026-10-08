@@ -250,18 +250,6 @@ export class AdminUserService {
     }
   }
 
-  async deleteUserDevices(userId: string, deviceIds: string[]): Promise<void> {
-    try {
-      const admin = await this.sdkAdmin()
-      await admin.deleteUserDevices(userId, deviceIds)
-      logger.info(`[Admin] 批量删除设备: ${deviceIds.length}个`)
-    } catch (err) {
-      if (this.isPermissionDenied(err)) return
-      logger.error(`[Admin] 批量删除设备失败: ${err}`)
-      throw err
-    }
-  }
-
   async getRateLimit(userId: string): Promise<RateLimit | null> {
     try {
       const admin = await this.sdkAdmin()

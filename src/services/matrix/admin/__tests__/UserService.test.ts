@@ -26,7 +26,6 @@ const makeAdmin = () =>
     activateUser: vi.fn(),
     getUserDevices: vi.fn(),
     deleteUserDevice: vi.fn(),
-    deleteUserDevices: vi.fn(),
     getRateLimitOverride: vi.fn(),
     overrideRateLimit: vi.fn(),
     deleteRateLimitOverride: vi.fn(),
