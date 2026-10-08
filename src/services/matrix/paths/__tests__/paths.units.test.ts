@@ -185,10 +185,6 @@ describe('paths/room · 其它路径', () => {
     expect(ROOM.CALL('!r:s', 'call123')).toBe('/rooms/!r%3As/call/call123')
   })
 
-  it('ANTI_SCREENSHOT 编码 roomId', () => {
-    expect(ROOM.ANTI_SCREENSHOT('!r:s')).toBe('/rooms/!r%3As/anti_screenshot')
-  })
-
   it('SUMMARY_MEMBERS 编码 roomId', () => {
     expect(ROOM.SUMMARY_MEMBERS('!r:s')).toBe('/rooms/!r%3As/summary/members')
   })

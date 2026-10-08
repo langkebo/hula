@@ -33,7 +33,6 @@ export const ROOM = {
   /** @deprecated Use TagsService methods instead */
   TAGS: (roomId: string, userId: string) =>
     `/user/${encodeURIComponent(userId)}/rooms/${encodeURIComponent(roomId)}/tags`,
-  ANTI_SCREENSHOT: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/anti_screenshot`,
   SUMMARY_MEMBERS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary/members`,
   SUMMARY_STATE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary/state`,
   TIMESTAMP_TO_EVENT: (roomId: string) => `${PREFIX_V1}/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`,
@@ -63,7 +62,6 @@ export const ROOM = {
   TURN_SERVER: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/turn_server`,
   ROOM_SYNC: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/sync`,
   CALL: (roomId: string, callId: string) => `/rooms/${encodeURIComponent(roomId)}/call/${encodeURIComponent(callId)}`,
-  VAULT_DATA: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/vault_data`,
   /** P2-8 事件签名 (FT-089) */
   SIGN_EVENT: (roomId: string, eventId: string) =>
     `/rooms/${encodeURIComponent(roomId)}/sign/${encodeURIComponent(eventId)}`,
