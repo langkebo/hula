@@ -8,6 +8,6 @@
   "ledger_schema": "4",
   "synapse_rust_commit": "6ac3906c704bcfbd05f18f7d39dcc0d5ea2f08e5",
   "tarball_sha256": "sha256-835a71cbe503bb1faa869d48dcbfd217055dc9d434d8ebc7e16cffbb3b62e3d1",
-  "pinned_at": "2026-10-08T09:44:29.664Z",
+  "pinned_at": "2026-10-08T09:48:41.259Z",
   "pinned_by": "ljf"
 }
