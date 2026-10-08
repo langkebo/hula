@@ -39,19 +39,25 @@ function makeClientClient(overrides: Partial<Record<string, unknown>> = {}): Mat
   })
 }
 
-interface MockedManager {
+interface MockedSpaceQueryManager {
   getRoomParentSpaces: ReturnType<typeof vi.fn>
   searchSpaces: ReturnType<typeof vi.fn>
   getUserSpaces: ReturnType<typeof vi.fn>
   getPublicSpaces: ReturnType<typeof vi.fn>
 }
 
+interface MockedManager {
+  query: MockedSpaceQueryManager
+}
+
 function makeManager(): MockedManager {
   return {
-    getRoomParentSpaces: vi.fn(),
-    searchSpaces: vi.fn(),
-    getUserSpaces: vi.fn(),
-    getPublicSpaces: vi.fn()
+    query: {
+      getRoomParentSpaces: vi.fn(),
+      searchSpaces: vi.fn(),
+      getUserSpaces: vi.fn(),
+      getPublicSpaces: vi.fn()
+    }
   }
 }
 
@@ -73,15 +79,15 @@ describe('spaceQueries', () => {
 
   describe('getRoomParentSpaces', () => {
     it('returns parent spaces from SpaceManager', async () => {
-      manager.getRoomParentSpaces.mockResolvedValue([makeSdkSpace('!p1:server', 'Parent 1')])
+      manager.query.getRoomParentSpaces.mockResolvedValue([makeSdkSpace('!p1:server', 'Parent 1')])
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.getRoomParentSpaces('!room:server')
       expect(result).toEqual([{ spaceId: '!p1:server', name: 'Parent 1', memberCount: 0, childCount: 0 }])
-      expect(manager.getRoomParentSpaces).toHaveBeenCalledWith('!room:server')
+      expect(manager.query.getRoomParentSpaces).toHaveBeenCalledWith('!room:server')
     })
 
     it('returns [] when manager throws', async () => {
-      manager.getRoomParentSpaces.mockRejectedValue(new Error('manager down'))
+      manager.query.getRoomParentSpaces.mockRejectedValue(new Error('manager down'))
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.getRoomParentSpaces('!room:server')
       expect(result).toEqual([])
@@ -93,19 +99,19 @@ describe('spaceQueries', () => {
       const queries = createSpaceQueries(getClient, getSpaceManager)
       await expect(queries.searchSpaces('')).resolves.toEqual([])
       await expect(queries.searchSpaces('   ')).resolves.toEqual([])
-      expect(manager.searchSpaces).not.toHaveBeenCalled()
+      expect(manager.query.searchSpaces).not.toHaveBeenCalled()
     })
 
     it('searches via SpaceManager', async () => {
-      manager.searchSpaces.mockResolvedValue([makeSdkSpace('!s1:server', 'Search Hit')])
+      manager.query.searchSpaces.mockResolvedValue([makeSdkSpace('!s1:server', 'Search Hit')])
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.searchSpaces('hit', 5)
       expect(result).toEqual([{ spaceId: '!s1:server', name: 'Search Hit', memberCount: 0, childCount: 0 }])
-      expect(manager.searchSpaces).toHaveBeenCalledWith('hit', 5)
+      expect(manager.query.searchSpaces).toHaveBeenCalledWith('hit', 5)
     })
 
     it('returns [] when manager throws', async () => {
-      manager.searchSpaces.mockRejectedValue(new Error('manager down'))
+      manager.query.searchSpaces.mockRejectedValue(new Error('manager down'))
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.searchSpaces('anything', 10)
       expect(result).toEqual([])
@@ -114,21 +120,21 @@ describe('spaceQueries', () => {
 
   describe('getUserSpaces', () => {
     it('returns user spaces from SpaceManager', async () => {
-      manager.getUserSpaces.mockResolvedValue([makeSdkSpace('!u1:server', 'My Space')])
+      manager.query.getUserSpaces.mockResolvedValue([makeSdkSpace('!u1:server', 'My Space')])
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.getUserSpaces()
       expect(result).toEqual([{ spaceId: '!u1:server', name: 'My Space', memberCount: 0, childCount: 0 }])
     })
 
     it('returns [] when manager fails and no fallback client exists', async () => {
-      manager.getUserSpaces.mockRejectedValue(new Error('manager down'))
+      manager.query.getUserSpaces.mockRejectedValue(new Error('manager down'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       const queries = createSpaceQueries(getClient, getSpaceManager)
       await expect(queries.getUserSpaces()).resolves.toEqual([])
     })
 
     it('falls back to local rooms when manager fails and a client exists', async () => {
-      manager.getUserSpaces.mockRejectedValue(new Error('manager down'))
+      manager.query.getUserSpaces.mockRejectedValue(new Error('manager down'))
       const fallbackClient = makeClientClient({
         getRooms: vi.fn(() => [makeSpaceRoom('!uA:server', [], 'Local Space')] as unknown as Room[])
       })
@@ -141,7 +147,7 @@ describe('spaceQueries', () => {
 
     it('returns [] when manager times out and no fallback client exists', async () => {
       vi.useFakeTimers()
-      manager.getUserSpaces.mockReturnValue(new Promise<never>(() => {}))
+      manager.query.getUserSpaces.mockReturnValue(new Promise<never>(() => {}))
       vi.mocked(matrixClientService.getClient).mockReturnValue(null)
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const promise = queries.getUserSpaces()
@@ -153,30 +159,30 @@ describe('spaceQueries', () => {
 
   describe('getPublicSpaces', () => {
     it('returns public spaces from manager response.spaces', async () => {
-      manager.getPublicSpaces.mockResolvedValue({ spaces: [makeSdkSpace('!pub1:server', 'Public 1')] })
+      manager.query.getPublicSpaces.mockResolvedValue({ spaces: [makeSdkSpace('!pub1:server', 'Public 1')] })
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.getPublicSpaces()
       expect(result).toEqual([{ spaceId: '!pub1:server', name: 'Public 1', memberCount: 0, childCount: 0 }])
-      expect(manager.getPublicSpaces).toHaveBeenCalledWith({ limit: 50 })
+      expect(manager.query.getPublicSpaces).toHaveBeenCalledWith({ limit: 50 })
     })
 
     it('returns public spaces from manager response.chunk', async () => {
-      manager.getPublicSpaces.mockResolvedValue({ chunk: [makeSdkSpace('!pub2:server', 'Public 2')] })
+      manager.query.getPublicSpaces.mockResolvedValue({ chunk: [makeSdkSpace('!pub2:server', 'Public 2')] })
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.getPublicSpaces(20)
       expect(result).toEqual([{ spaceId: '!pub2:server', name: 'Public 2', memberCount: 0, childCount: 0 }])
-      expect(manager.getPublicSpaces).toHaveBeenCalledWith({ limit: 20 })
+      expect(manager.query.getPublicSpaces).toHaveBeenCalledWith({ limit: 20 })
     })
 
     it('returns public spaces from manager response.rooms', async () => {
-      manager.getPublicSpaces.mockResolvedValue({ rooms: [makeSdkSpace('!pub3:server', 'Public 3')] })
+      manager.query.getPublicSpaces.mockResolvedValue({ rooms: [makeSdkSpace('!pub3:server', 'Public 3')] })
       const queries = createSpaceQueries(getClient, getSpaceManager)
       const result = await queries.getPublicSpaces()
       expect(result).toEqual([{ spaceId: '!pub3:server', name: 'Public 3', memberCount: 0, childCount: 0 }])
     })
 
     it('falls back to client.publicRooms when manager throws', async () => {
-      manager.getPublicSpaces.mockRejectedValue(new Error('manager down'))
+      manager.query.getPublicSpaces.mockRejectedValue(new Error('manager down'))
       client.publicRooms = vi.fn().mockResolvedValue({
         chunk: [
           {
@@ -204,7 +210,7 @@ describe('spaceQueries', () => {
     })
 
     it('returns [] when manager and publicRooms both fail', async () => {
-      manager.getPublicSpaces.mockRejectedValue(new Error('manager down'))
+      manager.query.getPublicSpaces.mockRejectedValue(new Error('manager down'))
       client.publicRooms = vi.fn().mockRejectedValue(new Error('publicRooms down'))
       const queries = createSpaceQueries(getClient, getSpaceManager)
       await expect(queries.getPublicSpaces()).resolves.toEqual([])

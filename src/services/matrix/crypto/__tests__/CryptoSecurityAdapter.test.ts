@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
-import type { CryptoApi, DeviceTrustManager, MatrixClientExtended } from '@/types/matrix-extensions'
+import type { CryptoApi, MatrixClientExtended } from '@/types/matrix-extensions'
 import { CryptoSecurityAdapter } from '../CryptoSecurityAdapter'
 import type { CryptoAdapterAccessors } from '../cryptoAdapterTypes'
 
@@ -17,7 +17,6 @@ function createMockAccessors(opts: {
   crypto?: CryptoApi | null
   client?: Partial<MatrixClientExtended> | null
   matrixClient?: Partial<MatrixClient> | null
-  trustManager?: DeviceTrustManager | null
 }): CryptoAdapterAccessors {
   const client = (opts.client ?? {}) as MatrixClientExtended
   const matrixClient = (opts.matrixClient ?? { getUserId: () => '@alice:matrix.org' }) as MatrixClient
@@ -25,34 +24,14 @@ function createMockAccessors(opts: {
     getCrypto: () => opts.crypto ?? null,
     getExtendedClient: () => client,
     getClient: () => matrixClient,
-    getDeviceTrustManager: () => opts.trustManager ?? null,
     getSecureBackupManager: () => null,
     getKeyBackupManager: () => null,
     getSDKDeviceKeysManager: () => null,
-    getSDKKeyBackupManager: () => null,
-    getSDKKeyVerificationManager: () => null
+    getSDKKeyBackupManager: () => null
   } as CryptoAdapterAccessors
 }
 
 describe('CryptoSecurityAdapter', () => {
-  describe('getSecuritySummary', () => {
-    it('returns summary from DeviceTrustManager when available', async () => {
-      const summary = { crossSigningVerified: true }
-      const trustManager = {
-        getSecuritySummary: vi.fn().mockResolvedValue(summary)
-      } as unknown as DeviceTrustManager
-      const adapter = new CryptoSecurityAdapter(createMockAccessors({ trustManager }))
-
-      await expect(adapter.getSecuritySummary()).resolves.toBe(summary)
-      expect(trustManager.getSecuritySummary).toHaveBeenCalled()
-    })
-
-    it('returns null when no DeviceTrustManager', async () => {
-      const adapter = new CryptoSecurityAdapter(createMockAccessors({}))
-      await expect(adapter.getSecuritySummary()).resolves.toBeNull()
-    })
-  })
-
   describe('getCrossSigningStatus', () => {
     it('returns all-false defaults when no CryptoApi', async () => {
       const adapter = new CryptoSecurityAdapter(createMockAccessors({}))

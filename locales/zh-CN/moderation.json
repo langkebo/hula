@@ -62,7 +62,6 @@
       "delete": "删除",
       "dismiss": "驳回",
       "escalate": "上报",
-      "history": "历史",
       "resolve": "解决"
     },
     "dialog": {
@@ -71,9 +70,6 @@
       "reasonPlaceholder": "请输入驳回原因…",
       "reasonRequired": "请输入驳回原因",
       "resolveTitle": "解决备注"
-    },
-    "history": {
-      "title": "处理历史"
     },
     "loadFailed": "加载失败，请重试",
     "stats": {

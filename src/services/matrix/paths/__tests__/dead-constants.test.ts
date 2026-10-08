@@ -62,10 +62,11 @@ describe('FT-120: 无死路径常量', () => {
   })
 
   describe('CRYPTO 模块仅保留被 L2 服务引用的常量', () => {
-    // MatrixCryptoService → ROOM_KEYS_RECOVER / VERIFY_START / QR_CODE_SHOW / QR_CODE_SCAN
-    // MatrixDeviceService.getRoomKeyRequests → ROOM_KEYS_REQUEST
-    it('CRYPTO 仅包含被 L2 服务引用的 5 个常量', () => {
-      expectKeys(CRYPTO, ['ROOM_KEYS_RECOVER', 'VERIFY_START', 'QR_CODE_SHOW', 'QR_CODE_SCAN', 'ROOM_KEYS_REQUEST'])
+    // MatrixCryptoService → ROOM_KEYS_RECOVER；MatrixDeviceService.getRoomKeyRequests → ROOM_KEYS_REQUEST
+    // VERIFY_START / QR_CODE_SHOW / QR_CODE_SCAN 已随后端 `keys/device_signing/verify_*`
+    // 与 `keys/qr_code/*` 的删除一并移除（C3′，2026-10-08）
+    it('CRYPTO 仅包含仍被引用的 2 个常量', () => {
+      expectKeys(CRYPTO, ['ROOM_KEYS_RECOVER', 'ROOM_KEYS_REQUEST'])
     })
 
     it('CRYPTO 不再包含已移除的死常量', () => {
@@ -85,7 +86,11 @@ describe('FT-120: 无死路径常量', () => {
         'KEY_ROTATION_CHECK',
         'KEY_ROTATION_ROTATE',
         'KEY_ROTATION_REVOKE',
-        'KEY_ROTATION_CONFIG'
+        'KEY_ROTATION_CONFIG',
+        // 后端端点与 SDK manager 同批删除：不得再留能力探测路径
+        'VERIFY_START',
+        'QR_CODE_SHOW',
+        'QR_CODE_SCAN'
       ]) {
         expect(CRYPTO).not.toHaveProperty(dead)
       }

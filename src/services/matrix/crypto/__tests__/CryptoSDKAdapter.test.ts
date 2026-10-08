@@ -36,12 +36,10 @@ interface MockExtendedClient {
   getRoom: MockFn
   sendStateEvent: MockFn
   getCrypto: MockFn
-  getDeviceTrustManager: MockFn
   getSecureBackupManager: MockFn
   getKeyBackupManager: MockFn
   getDeviceKeysManager: MockFn
   getSDKKeyBackupManager: MockFn
-  getKeyVerificationManager: MockFn
   setDeviceBlocked: MockFn
   setDeviceVerified: MockFn
   checkDeviceTrust: MockFn
@@ -58,12 +56,10 @@ function createMockExtendedClient(): MockExtendedClient {
     getRoom: vi.fn(),
     sendStateEvent: vi.fn(),
     getCrypto: vi.fn(() => null),
-    getDeviceTrustManager: vi.fn(() => null),
     getSecureBackupManager: vi.fn(() => null),
     getKeyBackupManager: vi.fn(() => null),
     getDeviceKeysManager: vi.fn(() => null),
     getSDKKeyBackupManager: vi.fn(() => null),
-    getKeyVerificationManager: vi.fn(() => null),
     setDeviceBlocked: vi.fn(),
     setDeviceVerified: vi.fn(),
     checkDeviceTrust: vi.fn(),
@@ -142,22 +138,24 @@ describe('CryptoSDKAdapter', () => {
   })
 
   describe('getDevices', () => {
-    it('should source devices from keys/query and trust from DeviceTrustManager', async () => {
-      const mockTrustManager = {
-        getDeviceTrustList: vi.fn().mockResolvedValue([{ device_id: 'D1', trust_level: 'verified' }])
-      }
+    it('should source devices from keys/query and isVerified from CryptoApi', async () => {
       const mockDeviceKeysManager = {
         getUserDevices: vi.fn().mockResolvedValue({
           D1: { device_id: 'D1', unsigned: { device_display_name: 'Phone' } }
         })
       }
-      mockClient.getDeviceTrustManager = vi.fn(() => mockTrustManager)
       mockClient.getDeviceKeysManager = vi.fn(() => mockDeviceKeysManager)
+      mockClient.getCrypto = vi.fn(() => ({
+        getDeviceVerificationStatus: vi.fn().mockResolvedValue({
+          isVerified: () => true,
+          crossSigningVerified: false
+        })
+      }))
 
       const result = await cryptoSDKAdapter.getDevices('@user:server')
 
       // 回归守卫：设备必须来自 keys/query（唯一能查他人设备的端点），
-      // 信任列表只负责 isVerified，且不含 user_id / display_name。
+      // 验证状态来自本机 crypto store（后端 GET /device_trust 已随模块删除）。
       expect(mockDeviceKeysManager.getUserDevices).toHaveBeenCalledWith('@user:server')
       expect(result).toEqual([
         {
@@ -169,13 +167,15 @@ describe('CryptoSDKAdapter', () => {
       ])
     })
 
-    it('should map trust_level correctly for unverified devices', async () => {
-      const mockTrustManager = {
-        getDeviceTrustList: vi.fn().mockResolvedValue([{ device_id: 'D2', trust_level: 'unverified' }])
-      }
-      mockClient.getDeviceTrustManager = vi.fn(() => mockTrustManager)
+    it('should map an unverified device to isVerified=false', async () => {
       mockClient.getDeviceKeysManager = vi.fn(() => ({
         getUserDevices: vi.fn().mockResolvedValue({ D2: { device_id: 'D2' } })
+      }))
+      mockClient.getCrypto = vi.fn(() => ({
+        getDeviceVerificationStatus: vi.fn().mockResolvedValue({
+          isVerified: () => false,
+          crossSigningVerified: false
+        })
       }))
 
       const result = await cryptoSDKAdapter.getDevices('@user:server')
@@ -183,14 +183,11 @@ describe('CryptoSDKAdapter', () => {
       expect(result[0].isVerified).toBe(false)
     })
 
-    it('should not derive devices from the caller-scoped trust list alone', async () => {
-      const getDeviceTrustList = vi.fn().mockResolvedValue([{ device_id: 'D3', trust_level: 'verified' }])
-      mockClient.getDeviceTrustManager = vi.fn(() => ({ getDeviceTrustList }))
+    it('should fail loudly when keys/query is unavailable', async () => {
       mockClient.getDeviceKeysManager = vi.fn(() => null)
 
-      // 没有 keys/query 能力时显式失败，绝不把 device_trust 列表当设备来源
+      // 没有 keys/query 能力时显式失败，绝不退化成「该用户没有设备」
       await expect(cryptoSDKAdapter.getDevices('@user:server')).rejects.toThrow(/DeviceKeysManager/)
-      expect(getDeviceTrustList).not.toHaveBeenCalled()
     })
 
     it('should fail loudly instead of falling back to the phantom getStoredDevicesForUser', async () => {
@@ -204,31 +201,16 @@ describe('CryptoSDKAdapter', () => {
   })
 
   describe('verifyDevice', () => {
-    it('should use DeviceTrustManager when available', async () => {
-      const mockTrustManager = {
-        requestVerification: vi.fn().mockResolvedValue({ token: 'tok123' }),
-        respondToVerification: vi.fn().mockResolvedValue(undefined)
-      }
-      mockClient.getDeviceTrustManager = vi.fn(() => mockTrustManager)
-      await cryptoSDKAdapter.verifyDevice('@user:server', 'DEVICE1')
-      expect(mockTrustManager.requestVerification).toHaveBeenCalled()
-      expect(mockTrustManager.respondToVerification).toHaveBeenCalledWith('tok123', true)
-    })
-
-    it('should use CryptoApi.setDeviceVerified when no Manager', async () => {
-      mockClient.getDeviceTrustManager = vi.fn(() => null)
+    it('should mark the device verified through CryptoApi', async () => {
       const mockCrypto = { setDeviceVerified: vi.fn().mockResolvedValue(undefined) }
       mockClient.getCrypto = vi.fn(() => mockCrypto)
       await cryptoSDKAdapter.verifyDevice('@user:server', 'DEVICE1')
       expect(mockCrypto.setDeviceVerified).toHaveBeenCalledWith('@user:server', 'DEVICE1')
     })
 
-    it('should fall back to legacy setDeviceVerified', async () => {
-      mockClient.getDeviceTrustManager = vi.fn(() => null)
+    it('should fail loudly when CryptoApi is unavailable', async () => {
       mockClient.getCrypto = vi.fn(() => null)
-      mockClient.setDeviceVerified = vi.fn().mockResolvedValue(undefined)
-      await cryptoSDKAdapter.verifyDevice('@user:server', 'DEVICE1')
-      expect(mockClient.setDeviceVerified).toHaveBeenCalledWith('@user:server', 'DEVICE1')
+      await expect(cryptoSDKAdapter.verifyDevice('@user:server', 'DEVICE1')).rejects.toThrow(/CryptoApi/)
     })
   })
 
@@ -240,11 +222,9 @@ describe('CryptoSDKAdapter', () => {
       expect(mockCrypto.setDeviceVerified).toHaveBeenCalledWith('@user:server', 'DEVICE1', false)
     })
 
-    it('should fall back to legacy setDeviceVerified(false)', async () => {
+    it('should fail loudly when CryptoApi is unavailable', async () => {
       mockClient.getCrypto = vi.fn(() => null)
-      mockClient.setDeviceVerified = vi.fn().mockResolvedValue(undefined)
-      await cryptoSDKAdapter.unverifyDevice('@user:server', 'DEVICE1')
-      expect(mockClient.setDeviceVerified).toHaveBeenCalledWith('@user:server', 'DEVICE1', false)
+      await expect(cryptoSDKAdapter.unverifyDevice('@user:server', 'DEVICE1')).rejects.toThrow(/CryptoApi/)
     })
   })
 
@@ -394,12 +374,10 @@ describe('CryptoSDKAdapter', () => {
   describe('getManagerAccessors', () => {
     it('should return accessor functions', () => {
       const accessors = cryptoSDKAdapter.getManagerAccessors()
-      expect(typeof accessors.deviceTrust).toBe('function')
       expect(typeof accessors.secureBackup).toBe('function')
       expect(typeof accessors.keyBackup).toBe('function')
       expect(typeof accessors.sdkDeviceKeys).toBe('function')
       expect(typeof accessors.sdkKeyBackup).toBe('function')
-      expect(typeof accessors.sdkKeyVerification).toBe('function')
     })
   })
 

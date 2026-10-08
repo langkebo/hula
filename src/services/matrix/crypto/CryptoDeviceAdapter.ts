@@ -2,10 +2,10 @@
  * CryptoDeviceAdapter — device trust and verification operations.
  *
  * Extracted from CryptoSDKAdapter to keep file sizes under the 400-line budget.
- * All methods delegate to SDK managers via CryptoAdapterAccessors.
+ * All methods delegate to the live CryptoApi / SDK managers via CryptoAdapterAccessors.
  */
 
-import type { TrustLevel, VerificationRequest } from '@/types/matrix-extensions'
+import type { VerificationRequest } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import type { CryptoAdapterAccessors, DeviceInfo, DeviceVerificationResult } from './cryptoAdapterTypes'
 
@@ -29,7 +29,7 @@ export class CryptoDeviceAdapter {
     const sdkDeviceKeysManager = this.accessors.getSDKDeviceKeysManager()
     if (sdkDeviceKeysManager) {
       const deviceMap = (await sdkDeviceKeysManager.getUserDevices(userId)) ?? {}
-      const trustByDeviceId = await this.loadTrustByDeviceId()
+      const verifiedByDeviceId = await this.loadVerificationByDeviceId(userId)
       return Object.entries(deviceMap).map(([deviceId, content]) => {
         const keys = (content ?? {}) as Record<string, unknown>
         const unsigned = (keys.unsigned ?? {}) as Record<string, unknown>
@@ -42,7 +42,7 @@ export class CryptoDeviceAdapter {
               : typeof unsigned.device_display_name === 'string'
                 ? unsigned.device_display_name
                 : undefined,
-          isVerified: trustByDeviceId.get(deviceId) === 'verified'
+          isVerified: verifiedByDeviceId.get(deviceId) ?? false
         }
       })
     }
@@ -62,7 +62,7 @@ export class CryptoDeviceAdapter {
       const keys = (deviceMap[deviceId] ?? null) as Record<string, unknown> | null
       if (keys) {
         const unsigned = (keys.unsigned ?? {}) as Record<string, unknown>
-        const trustByDeviceId = await this.loadTrustByDeviceId()
+        const verifiedByDeviceId = await this.loadVerificationByDeviceId(userId)
         return {
           deviceId,
           userId,
@@ -72,20 +72,8 @@ export class CryptoDeviceAdapter {
               : typeof unsigned.device_display_name === 'string'
                 ? unsigned.device_display_name
                 : undefined,
-          isVerified: trustByDeviceId.get(deviceId) === 'verified'
+          isVerified: verifiedByDeviceId.get(deviceId) ?? false
         }
-      }
-    }
-
-    const trustManager = this.accessors.getDeviceTrustManager()
-    if (trustManager) {
-      const trustInfo = await trustManager.getDeviceTrust(deviceId)
-      if (!trustInfo) return null
-      // trust 记录里没有 user_id / display_name / last_seen_*，不要凭空取值。
-      return {
-        deviceId: trustInfo.device_id,
-        userId,
-        isVerified: trustInfo.trust_level === 'verified'
       }
     }
 
@@ -96,69 +84,62 @@ export class CryptoDeviceAdapter {
   }
 
   /**
-   * `GET /device_trust` 只覆盖当前用户自己的设备，且不含 user_id，
-   * 因此只能按 device_id 建索引；信任等级取不到时按「未验证」处理。
+   * 逐设备查询本地验证状态。
+   *
+   * 权威来源是 `CryptoApi.getDeviceVerificationStatus`（本机 crypto store），
+   * 不是后端 HTTP：`GET /device_trust` 已随后端模块一并删除，调用必然 404。
+   * 查询失败时按「未验证」处理，并显式记录，避免把「查询失败」伪装成「确实未验证」。
    */
-  private async loadTrustByDeviceId(): Promise<Map<string, TrustLevel>> {
-    const trustManager = this.accessors.getDeviceTrustManager()
-    if (!trustManager) return new Map()
+  private async loadVerificationByDeviceId(userId: string): Promise<Map<string, boolean>> {
+    const crypto = this.accessors.getCrypto()
+    const result = new Map<string, boolean>()
+    if (!crypto) return result
+
+    const sdkDeviceKeysManager = this.accessors.getSDKDeviceKeysManager()
+    if (!sdkDeviceKeysManager) return result
+
+    let deviceIds: string[]
     try {
-      const trustList = await trustManager.getDeviceTrustList()
-      return new Map(trustList.map((d) => [d.device_id, d.trust_level]))
+      deviceIds = Object.keys((await sdkDeviceKeysManager.getUserDevices(userId)) ?? {})
     } catch (err) {
-      logger.warn(`设备信任列表获取失败，按未验证处理: ${err}`)
-      return new Map()
+      logger.warn(`设备列表获取失败，按未验证处理: ${err}`)
+      return result
     }
+
+    await Promise.all(
+      deviceIds.map(async (deviceId) => {
+        try {
+          const status = await crypto.getDeviceVerificationStatus(userId, deviceId)
+          result.set(deviceId, status?.isVerified() ?? false)
+        } catch (err) {
+          logger.warn(`设备 ${deviceId} 验证状态获取失败，按未验证处理: ${err}`)
+          result.set(deviceId, false)
+        }
+      })
+    )
+    return result
   }
 
   /** 验证设备
    */
   async verifyDevice(userId: string, deviceId: string): Promise<void> {
-    const trustManager = this.accessors.getDeviceTrustManager()
-    if (trustManager) {
-      await trustManager.respondToVerification(
-        (
-          await trustManager.requestVerification({
-            new_device_id: deviceId,
-            device_id: this.accessors.getClient().getDeviceId() ?? '',
-            method: 'sas'
-          })
-        ).token,
-        true
-      )
-      logger.info(`设备验证成功(Manager): ${userId}:${deviceId}`)
-      return
-    }
-
     const crypto = this.accessors.getCrypto()
-    if (crypto) {
-      await crypto.setDeviceVerified(userId, deviceId)
-      logger.info(`设备验证成功(CryptoApi): ${userId}:${deviceId}`)
-      return
+    if (!crypto) {
+      throw new Error('无法标记设备已验证：CryptoApi 不可用')
     }
-
-    const client = this.accessors.getExtendedClient()
-    if (typeof client.setDeviceVerified === 'function') {
-      await client.setDeviceVerified(userId, deviceId)
-      logger.info(`设备验证成功(Legacy): ${userId}:${deviceId}`)
-    }
+    await crypto.setDeviceVerified(userId, deviceId)
+    logger.info(`设备验证成功(CryptoApi): ${userId}:${deviceId}`)
   }
 
   /** 取消验证设备
    */
   async unverifyDevice(userId: string, deviceId: string): Promise<void> {
     const crypto = this.accessors.getCrypto()
-    if (crypto) {
-      await crypto.setDeviceVerified(userId, deviceId, false)
-      logger.info(`取消设备验证: ${userId}:${deviceId}`)
-      return
+    if (!crypto) {
+      throw new Error('无法取消设备验证：CryptoApi 不可用')
     }
-
-    const client = this.accessors.getExtendedClient()
-    if (typeof client.setDeviceVerified === 'function') {
-      await client.setDeviceVerified(userId, deviceId, false)
-      logger.info(`取消设备验证(Legacy): ${userId}:${deviceId}`)
-    }
+    await crypto.setDeviceVerified(userId, deviceId, false)
+    logger.info(`取消设备验证: ${userId}:${deviceId}`)
   }
 
   /** 获取设备验证状态
@@ -187,22 +168,9 @@ export class CryptoDeviceAdapter {
   /** 请求设备验证
    */
   async requestDeviceVerification(userId: string, deviceId: string): Promise<VerificationRequest | null> {
-    const trustManager = this.accessors.getDeviceTrustManager()
-    if (trustManager) {
-      await trustManager.requestVerification({
-        new_device_id: deviceId,
-        device_id: this.accessors.getClient().getDeviceId() ?? '',
-        method: 'sas'
-      })
-      return null
-    }
-
     const crypto = this.accessors.getCrypto()
-    if (crypto) {
-      return await crypto.requestDeviceVerification(userId, deviceId)
-    }
-
-    return null
+    if (!crypto) return null
+    return await crypto.requestDeviceVerification(userId, deviceId)
   }
 
   /**

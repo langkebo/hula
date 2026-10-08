@@ -1,26 +1,17 @@
 {
   "title": "Device Verification",
   "methods": {
-    "sas": "Emoji Match",
-    "qr_scan": "Scan QR Code",
-    "qr_show": "Show QR Code"
+    "sas": "Emoji Match"
   },
   "steps": {
-    "show_key": "Compare Emoji",
-    "show_qr": "Show QR",
-    "scan_qr": "Scan QR"
+    "show_key": "Compare Emoji"
   },
   "sas": {
     "match": "They Match",
     "mismatch": "They Don't Match",
     "waiting": "Waiting for the other side to confirm..."
   },
-  "qr": {
-    "show_desc": "Ask the other side to scan this QR code",
-    "scan_desc": "Point your camera at the other device's QR code",
-    "show_unavailable": "QR code display is not yet available",
-    "scan_unavailable": "QR code scanning is not yet available"
-  },
+  "qr": {},
   "result": {
     "success_title": "Verification Successful",
     "success_desc": "Device verified. You can now communicate securely.",

@@ -1,8 +1,6 @@
-import type { IScanQrCodeRequest, MatrixClient } from 'matrix-js-sdk'
+import type { MatrixClient } from 'matrix-js-sdk'
 import type { CryptoApi, VerificationRequest as SDKVerificationRequest, ShowSasCallbacks } from 'matrix-js-sdk/crypto'
 import { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
-import type { KeyVerificationManager } from 'matrix-js-sdk/key-verification'
-import type { MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
@@ -125,11 +123,6 @@ export class VerificationService extends BaseMatrixService {
     const client = this.getClient()
     this.setupEventListeners(client)
     return client
-  }
-
-  private getSDKKeyVerificationManager(): KeyVerificationManager | null {
-    const client = this.getClient() as unknown as MatrixClientExtended
-    return client.getKeyVerificationManager?.() ?? null
   }
 
   private setupEventListeners(clientParam?: MatrixClient): void {
@@ -339,45 +332,6 @@ export class VerificationService extends BaseMatrixService {
       return false
     }
     return this.isDeviceVerified(userId, deviceId)
-  }
-
-  async getVerificationRequests(): Promise<Array<Record<string, unknown>>> {
-    try {
-      const manager = this.getSDKKeyVerificationManager()
-      if (!manager) throw new Error('KeyVerificationManager not available')
-      const result = await manager.getVerificationRequestsHttp()
-      logger.info('[Verification] 获取验证请求列表成功')
-      return (result.requests ?? []) as unknown as Array<Record<string, unknown>>
-    } catch (err) {
-      logger.error(`[Verification] 获取验证请求列表失败: ${err}`)
-      return []
-    }
-  }
-
-  async getQrCodeShow(): Promise<{ qr_code: string; transaction_id: string } | null> {
-    try {
-      const manager = this.getSDKKeyVerificationManager()
-      if (!manager) throw new Error('KeyVerificationManager not available')
-      const result = await manager.showQrCodeHttp()
-      logger.info('[Verification] 获取二维码成功')
-      return result as unknown as { qr_code: string; transaction_id: string }
-    } catch (err) {
-      logger.error(`[Verification] 获取二维码失败: ${err}`)
-      return null
-    }
-  }
-
-  async scanQrCode(qrCodeData: string): Promise<boolean> {
-    try {
-      const manager = this.getSDKKeyVerificationManager()
-      if (!manager) throw new Error('KeyVerificationManager not available')
-      await manager.scanQrCodeHttp({ qr_code: qrCodeData } as unknown as IScanQrCodeRequest)
-      logger.info('[Verification] 扫描二维码成功')
-      return true
-    } catch (err) {
-      logger.error(`[Verification] 扫描二维码失败: ${err}`)
-      return false
-    }
   }
 }
 

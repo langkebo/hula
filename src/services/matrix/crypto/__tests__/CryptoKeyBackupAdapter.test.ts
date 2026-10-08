@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type {
-  DeviceKeysManager,
-  KeyVerificationManager,
-  MatrixClient,
-  SDKKeyBackupManager
-} from '@/services/matrix/sdk'
+import type { DeviceKeysManager, MatrixClient, SDKKeyBackupManager } from '@/services/matrix/sdk'
 import { encodeRecoveryKey as encodeRecoveryKeyReal } from '@/services/matrix/sdk'
 import type {
   CryptoApi,
@@ -56,8 +51,7 @@ function createMockAccessors(opts: {
     getSecureBackupManager: () => opts.secureBackupManager ?? null,
     getKeyBackupManager: () => opts.keyBackupManager ?? null,
     getSDKDeviceKeysManager: () => null as unknown as DeviceKeysManager | null,
-    getSDKKeyBackupManager: () => opts.sdkKeyBackupManager ?? null,
-    getSDKKeyVerificationManager: () => null as unknown as KeyVerificationManager | null
+    getSDKKeyBackupManager: () => opts.sdkKeyBackupManager ?? null
   } as CryptoAdapterAccessors
 }
 

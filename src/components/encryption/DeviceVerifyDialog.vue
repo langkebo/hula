@@ -27,8 +27,6 @@
           v-model:selected-device-id="selectedDeviceId"
           @cancel="handleCancel"
           @view-pending="openPendingList"
-          @show-qr="openQrShow"
-          @scan-qr="openQrScan"
           @decline="handleDecline"
           @start="startVerification"
           @accept-pending="acceptPendingRequest"
@@ -55,20 +53,6 @@
           @confirm="handleConfirm"
           @cancel="handleCancel" />
 
-        <!-- Step: Show QR / Scan QR -->
-        <DeviceVerifyQrStep
-          v-else-if="step === 'showQr' || step === 'scanQr'"
-          :mode="step === 'showQr' ? 'show' : 'scan'"
-          :qr-code-data="qrCodeData"
-          v-model:qr-code-to-scan="qrCodeToScan"
-          v-model:show-cancel-reason="showCancelReason"
-          v-model:cancel-reason="cancelReason"
-          @hide-cancel-reason="hideCancelReason"
-          @cancel-with-reason="handleCancelWithReason"
-          @cancel="handleCancel"
-          @scan-qr="openQrScan"
-          @submit-qr="submitQrScan" />
-
         <!-- Step: Success / Rejected -->
         <DeviceVerifyResultStep
           v-else-if="step === 'success' || step === 'rejected'"
@@ -88,7 +72,6 @@ import type { VerificationTransaction } from '@/services/matrix/crypto/MatrixVer
 import DeviceVerifyFingerprintStep from './DeviceVerifyFingerprintStep.vue'
 import DeviceVerifyIntroStep from './DeviceVerifyIntroStep.vue'
 import DeviceVerifyPendingStep from './DeviceVerifyPendingStep.vue'
-import DeviceVerifyQrStep from './DeviceVerifyQrStep.vue'
 import DeviceVerifyResultStep from './DeviceVerifyResultStep.vue'
 
 defineOptions({
@@ -102,7 +85,7 @@ const props = defineProps<{
   deviceId?: string
   deviceName?: string
   inboundRequest?: VerificationTransaction | null
-  initialMode?: 'sas' | 'qr_show' | 'qr_scan'
+  initialMode?: 'sas'
 }>()
 
 const emit = defineEmits<{
@@ -122,8 +105,6 @@ const {
   step,
   loading,
   fingerprint,
-  qrCodeData,
-  qrCodeToScan,
   cancelReason,
   showCancelReason,
   pendingVerifications,
@@ -145,10 +126,7 @@ const {
   handleCancelWithReason,
   hideCancelReason,
   handleClose,
-  openQrShow,
-  openQrScan,
   startVerification,
-  submitQrScan,
   handleConfirm,
   handleReject
 } = useDeviceVerifyDialog({ props, emit, visible })

@@ -129,21 +129,6 @@
         </n-space>
       </template>
     </n-modal>
-
-    <n-modal :show="historyDialog.show" preset="dialog" :title="t('moderation.event_reports.history.title')">
-      <n-list bordered>
-        <n-list-item v-for="item in historyDialog.history" :key="item.id">
-          <n-thing :title="item.action" :description="item.reason || ''">
-            <template #header-extra>
-              {{ item.actor_user_id }}
-            </template>
-          </n-thing>
-        </n-list-item>
-      </n-list>
-      <template #action>
-        <n-button @click="historyDialog.show = false">{{ t('common.close') }}</n-button>
-      </template>
-    </n-modal>
   </div>
 </template>
 
@@ -173,7 +158,7 @@ import { storeToRefs } from 'pinia'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import type { EventReport, EventReportHistory } from '@/services/matrix/admin/AdminTypes'
+import type { EventReport } from '@/services/matrix/admin/AdminTypes'
 import { matrixEventReportService } from '@/services/matrix/moderation/MatrixEventReportService'
 import { useModerationStore } from '@/stores/domains/chat/moderation'
 import type { Report } from '@/types/matrix-services'
@@ -297,7 +282,6 @@ const eventReportStats = ref({ total: 0, open: 0, resolved: 0, dismissed: 0 })
 const eventReportStatusFilter = ref<string | null>(null)
 const eventReportLoading = ref(false)
 const actionDialog = ref({ show: false, type: 'resolve' as 'resolve' | 'dismiss', reportId: 0, reason: '' })
-const historyDialog = ref({ show: false, history: [] as EventReportHistory[] })
 
 const eventReportStatusOptions = computed(() => [
   { label: t('moderation.status.open'), value: 'open' },
@@ -364,15 +348,6 @@ const eventReportColumns = computed<DataTableColumns<EventReport>>(() => [
               onClick: () => openActionDialog('dismiss', row.id)
             },
             { default: () => t('moderation.event_reports.actions.dismiss') }
-          ),
-          h(
-            NButton,
-            {
-              size: 'small',
-              'data-testid': 'event-report-action-history',
-              onClick: () => handleHistory(row.id)
-            },
-            { default: () => t('moderation.event_reports.actions.history') }
           )
         ]
       })
@@ -499,17 +474,6 @@ async function confirmAction() {
     } catch {
       // 失败时保持对话框打开（旧实现返回 null 时不关闭）
     }
-  }
-}
-
-async function handleHistory(id: number) {
-  try {
-    const history = await matrixEventReportService.getReportHistory(id)
-    historyDialog.value = { show: true, history }
-  } catch {
-    // 旧实现 getEventReportHistory 默认 throwOnError=false，失败返回 [] 且对话框照常打开；
-    // 新服务失败抛错，这里 catch 后以空历史打开对话框，保持行为一致（同 delete 分支的静默策略）
-    historyDialog.value = { show: true, history: [] }
   }
 }
 

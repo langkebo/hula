@@ -1,26 +1,17 @@
 {
   "title": "设备验证",
   "methods": {
-    "sas": "Emoji 对比验证",
-    "qr_scan": "扫码验证",
-    "qr_show": "显示二维码"
+    "sas": "Emoji 对比验证"
   },
   "steps": {
-    "show_key": "对比 Emoji",
-    "show_qr": "显示二维码",
-    "scan_qr": "扫描二维码"
+    "show_key": "对比 Emoji"
   },
   "sas": {
     "match": "匹配",
     "mismatch": "不匹配",
     "waiting": "等待对方确认..."
   },
-  "qr": {
-    "show_desc": "请让对方扫描此二维码",
-    "scan_desc": "将摄像头对准对方显示的二维码",
-    "show_unavailable": "二维码展示功能暂未开放",
-    "scan_unavailable": "二维码扫描功能暂未开放"
-  },
+  "qr": {},
   "result": {
     "success_title": "验证成功",
     "success_desc": "设备已验证，现在可以安全通信",

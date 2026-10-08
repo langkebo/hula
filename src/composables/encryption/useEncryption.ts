@@ -77,8 +77,6 @@ interface UseEncryptionResult {
   confirmSas: (transactionId: string) => Promise<void>
   cancelVerification: (transactionId: string, reason: string) => Promise<void>
   getPendingVerifications: () => Promise<VerificationTransaction[]>
-  getQrCodeShow: () => Promise<{ qr_code: string; transaction_id: string } | null>
-  scanQrCode: (qrCodeData: string) => Promise<boolean>
 
   exportRoomKeys: () => Promise<string>
   importRoomKeys: (keysJson: string) => Promise<{ imported: number; total: number }>
@@ -334,8 +332,6 @@ export function useEncryption(): UseEncryptionResult {
     confirmSas: matrixVerificationService.confirmSas,
     cancelVerification: matrixVerificationService.cancelVerification,
     getPendingVerifications: matrixVerificationService.getPendingVerifications,
-    getQrCodeShow: matrixVerificationService.getQrCodeShow,
-    scanQrCode: matrixVerificationService.scanQrCode,
     exportRoomKeys,
     importRoomKeys,
     getUnverifiedDevicesInRoom,

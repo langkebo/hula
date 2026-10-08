@@ -158,20 +158,6 @@
         </n-button>
         <n-tag v-else type="success">{{ t('setting.encryption.verified') }}</n-tag>
       </div>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.encryption.qr_verify_label') }}</span>
-          <span class="setting-desc">{{ t('setting.encryption.qr_verify_desc') }}</span>
-        </div>
-        <div class="flex gap-8px">
-          <n-button size="small" @click="openVerifyDialog('qr_show')">
-            {{ t('setting.encryption.device_verify_dialog.show_qr') }}
-          </n-button>
-          <n-button size="small" @click="openVerifyDialog('qr_scan')">
-            {{ t('setting.encryption.device_verify_dialog.scan_qr') }}
-          </n-button>
-        </div>
-      </div>
       <div v-if="pendingVerifications.length" class="pending-verifications">
         <div class="pending-title">{{ t('setting.encryption.pending_verifications_label') }}</div>
         <div v-for="request in pendingVerifications" :key="request.transactionId" class="pending-item">
@@ -333,7 +319,7 @@ const showE2EEBootstrapWizard = ref(false)
 const createBackupLoading = ref(false)
 const pendingVerifications = ref<VerificationTransaction[]>([])
 const selectedVerificationTransaction = ref<VerificationTransaction | null>(null)
-const verifyDialogMode = ref<'sas' | 'qr_show' | 'qr_scan'>('sas')
+const verifyDialogMode = ref<'sas'>('sas')
 
 const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
 const securityKeySetup = computed(() => encryptionStore.securityKeyConfigured)
@@ -426,7 +412,7 @@ function handleVerifyDevice() {
   openVerifyDialog('sas')
 }
 
-function openVerifyDialog(mode: 'sas' | 'qr_show' | 'qr_scan') {
+function openVerifyDialog(mode: 'sas') {
   verifyDialogMode.value = mode
   selectedVerificationTransaction.value = null
   showVerifyDialog.value = true

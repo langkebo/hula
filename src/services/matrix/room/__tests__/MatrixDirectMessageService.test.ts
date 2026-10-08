@@ -4,18 +4,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import matrixClientService from '../../MatrixClientService'
 import { matrixDirectMessageService } from '../MatrixDirectMessageService'
 
+// 门面上的 54 处 @deprecated 纯委托已删除（SDK C5）；调用点改走 sub-manager。
 const mockDmManager = {
-  createDm: vi.fn(),
-  getDMRooms: vi.fn(async () => [] as Awaited<ReturnType<DirectMessageManager['getDMRooms']>>),
-  getDmForUser: vi.fn(() => null),
-  setDmRoom: vi.fn(),
-  removeDmRoom: vi.fn(),
-  getDmRoomInfo: vi.fn(() => null),
-  getDirectRoomsByUser: vi.fn(async () => ({})),
-  getDirectRoomsFromServer: vi.fn(),
-  updateDirectRoom: vi.fn(),
-  isDmRoomFromServer: vi.fn(),
-  getDmPartnerFromServer: vi.fn()
+  creation: {
+    createDm: vi.fn(),
+    setDmRoom: vi.fn(),
+    removeDmRoom: vi.fn(),
+    updateDirectRoom: vi.fn()
+  },
+  list: {
+    getDMRooms: vi.fn(async () => [] as Awaited<ReturnType<DirectMessageManager['getDMRooms']>>),
+    getDmForUser: vi.fn(() => null),
+    getDmRoomInfo: vi.fn(() => null),
+    getDirectRoomsByUser: vi.fn(async () => ({})),
+    getDirectRoomsFromServer: vi.fn(),
+    isDmRoomFromServer: vi.fn(),
+    getDmPartnerFromServer: vi.fn()
+  }
 }
 
 const mockClient = {
@@ -36,7 +41,7 @@ describe('MatrixDirectMessageService', () => {
   })
 
   it('should get direct rooms from server', async () => {
-    mockDmManager.getDirectRoomsFromServer.mockResolvedValueOnce({
+    mockDmManager.list.getDirectRoomsFromServer.mockResolvedValueOnce({
       '@alice:example.com': ['!dm:example.com']
     })
 
@@ -45,7 +50,7 @@ describe('MatrixDirectMessageService', () => {
     expect(result).toEqual({
       '@alice:example.com': ['!dm:example.com']
     })
-    expect(mockDmManager.getDirectRoomsFromServer).toHaveBeenCalledTimes(1)
+    expect(mockDmManager.list.getDirectRoomsFromServer).toHaveBeenCalledTimes(1)
   })
 
   it('should throw when querying dm rooms without manager by default', async () => {
@@ -75,12 +80,12 @@ describe('MatrixDirectMessageService', () => {
   })
 
   it('should delegate isDmRoomFromServer with default throwOnError', async () => {
-    mockDmManager.isDmRoomFromServer.mockResolvedValueOnce(true)
+    mockDmManager.list.isDmRoomFromServer.mockResolvedValueOnce(true)
 
     const result = await matrixDirectMessageService.isDmRoomFromServer('!dm:example.com')
 
     expect(result).toBe(true)
-    expect(mockDmManager.isDmRoomFromServer).toHaveBeenCalledWith('!dm:example.com', true)
+    expect(mockDmManager.list.isDmRoomFromServer).toHaveBeenCalledWith('!dm:example.com', true)
   })
 
   it('should return false when manager is unavailable and throwOnError is false', async () => {
@@ -90,7 +95,7 @@ describe('MatrixDirectMessageService', () => {
   })
 
   it('should get dm partner from server', async () => {
-    mockDmManager.getDmPartnerFromServer.mockResolvedValueOnce({
+    mockDmManager.list.getDmPartnerFromServer.mockResolvedValueOnce({
       room_id: '!dm:example.com',
       user_id: '@alice:example.com',
       display_name: 'Alice',
@@ -105,7 +110,7 @@ describe('MatrixDirectMessageService', () => {
       display_name: 'Alice',
       avatar_url: 'mxc://example.com/alice'
     })
-    expect(mockDmManager.getDmPartnerFromServer).toHaveBeenCalledWith('!dm:example.com', true)
+    expect(mockDmManager.list.getDmPartnerFromServer).toHaveBeenCalledWith('!dm:example.com', true)
   })
 
   it('should return null when partner lookup falls back without manager', async () => {
@@ -115,7 +120,7 @@ describe('MatrixDirectMessageService', () => {
   })
 
   it('should resolve cached room info by room id after initialization', async () => {
-    mockDmManager.getDMRooms.mockResolvedValueOnce([
+    mockDmManager.list.getDMRooms.mockResolvedValueOnce([
       {
         roomId: '!dm:example.com',
         invitees: ['@alice:example.com'],
@@ -135,21 +140,27 @@ describe('MatrixDirectMessageService', () => {
   it('should refresh cached manager when matrix client changes', async () => {
     const oldDmManager = {
       ...mockDmManager,
-      getDMRooms: vi.fn(() => [
-        {
-          roomId: '!old:example.com',
-          invitees: ['@old:example.com']
-        }
-      ])
+      list: {
+        ...mockDmManager.list,
+        getDMRooms: vi.fn(() => [
+          {
+            roomId: '!old:example.com',
+            invitees: ['@old:example.com']
+          }
+        ])
+      }
     }
     const newDmManager = {
       ...mockDmManager,
-      getDMRooms: vi.fn(() => [
-        {
-          roomId: '!new:example.com',
-          invitees: ['@new:example.com']
-        }
-      ])
+      list: {
+        ...mockDmManager.list,
+        getDMRooms: vi.fn(() => [
+          {
+            roomId: '!new:example.com',
+            invitees: ['@new:example.com']
+          }
+        ])
+      }
     }
     const oldClient = {
       getDirectMessageManager: vi.fn(() => oldDmManager as unknown as DirectMessageManager),
@@ -166,8 +177,8 @@ describe('MatrixDirectMessageService', () => {
     vi.mocked(matrixClientService.getClient).mockReturnValue(newClient as unknown as MatrixClient)
     const rooms = await matrixDirectMessageService.getDMRooms()
 
-    expect(oldDmManager.getDMRooms).toHaveBeenCalledTimes(1)
-    expect(newDmManager.getDMRooms).toHaveBeenCalledTimes(1)
+    expect(oldDmManager.list.getDMRooms).toHaveBeenCalledTimes(1)
+    expect(newDmManager.list.getDMRooms).toHaveBeenCalledTimes(1)
     expect(rooms[0].roomId).toBe('!new:example.com')
   })
 })

@@ -12,12 +12,6 @@
         <van-button block @click="startSas">
           {{ $t('verification.methods.sas') }}
         </van-button>
-        <van-button block plain @click="showQr">
-          {{ $t('verification.methods.qr_show') }}
-        </van-button>
-        <van-button block plain @click="scanQr">
-          {{ $t('verification.methods.qr_scan') }}
-        </van-button>
       </div>
 
       <!-- pending: Loading spinner -->
@@ -38,24 +32,6 @@
           <van-button type="danger" @click="mismatch">{{ $t('verification.sas.mismatch') }}</van-button>
           <van-button type="primary" @click="match">{{ $t('verification.sas.match') }}</van-button>
         </div>
-      </div>
-
-      <!-- showQr: Display QR code placeholder -->
-      <div v-else-if="step === 'showQr'" class="flex flex-col items-center gap-3">
-        <div class="w-48 h-48 bg-[var(--tjg-surface-panel)] flex items-center justify-center rounded-lg">
-          <van-icon name="qr" size="64" color="var(--van-gray-5)" />
-        </div>
-        <span class="text-sm text-[--text-secondary]">{{ $t('verification.qr.show_desc') }}</span>
-        <span class="text-xs text-[--van-warning-color]">{{ $t('verification.qr.show_unavailable') }}</span>
-      </div>
-
-      <!-- scanQr: Scanner placeholder -->
-      <div v-else-if="step === 'scanQr'" class="flex flex-col items-center gap-3">
-        <div class="w-full h-48 bg-black flex items-center justify-center rounded-lg">
-          <van-icon name="scan" size="48" color="var(--van-gray-5)" />
-        </div>
-        <span class="text-sm text-[--text-secondary]">{{ $t('verification.qr.scan_desc') }}</span>
-        <span class="text-xs text-[--van-warning-color]">{{ $t('verification.qr.scan_unavailable') }}</span>
       </div>
 
       <!-- success -->
@@ -137,26 +113,12 @@ const dialogTitle = computed(() => {
       return t('verification.title')
     case 'showKey':
       return t('verification.steps.show_key')
-    case 'showQr':
-      return t('verification.steps.show_qr')
-    case 'scanQr':
-      return t('verification.steps.scan_qr')
     case 'success':
       return t('verification.result.success_title')
     default:
       return t('verification.title')
   }
 })
-
-function showQr() {
-  // QR show mode — platform-specific rendering would go here
-  step.value = 'showQr'
-}
-
-function scanQr() {
-  // QR scan mode — camera binding would go here
-  step.value = 'scanQr'
-}
 
 async function match() {
   await confirmSas(true)

@@ -160,7 +160,7 @@ describe('MatrixSpaceService', () => {
         next_batch: 'batch_token'
       })
       vi.mocked(matrixClientService.getClient).mockReturnValue(
-        asMatrixClient({ getSpaceManager: () => ({ getSpaceHierarchyPage }) })
+        asMatrixClient({ getSpaceManager: () => ({ hierarchy: { getSpaceHierarchyPage } }) })
       )
 
       const result = await matrixSpaceService.getSpaceHierarchy('!space:server', { limit: 10, maxDepth: 3 })
@@ -178,7 +178,9 @@ describe('MatrixSpaceService', () => {
     it('should return empty rooms on error', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(
         asMatrixClient({
-          getSpaceManager: () => ({ getSpaceHierarchyPage: vi.fn().mockRejectedValue(new Error('boom')) })
+          getSpaceManager: () => ({
+            hierarchy: { getSpaceHierarchyPage: vi.fn().mockRejectedValue(new Error('boom')) }
+          })
         })
       )
 
@@ -197,7 +199,7 @@ describe('MatrixSpaceService', () => {
         ]
       })
       vi.mocked(matrixClientService.getClient).mockReturnValue(
-        asMatrixClient({ getSpaceManager: () => ({ getSpaceTreePath }) })
+        asMatrixClient({ getSpaceManager: () => ({ hierarchy: { getSpaceTreePath } }) })
       )
 
       const result = await matrixSpaceService.getSpaceTreePath('!child:server')
@@ -210,7 +212,9 @@ describe('MatrixSpaceService', () => {
     it('should return empty array when getSpaceTreePath fails', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(
         asMatrixClient({
-          getSpaceManager: () => ({ getSpaceTreePath: vi.fn().mockRejectedValue(new Error('boom')) })
+          getSpaceManager: () => ({
+            hierarchy: { getSpaceTreePath: vi.fn().mockRejectedValue(new Error('boom')) }
+          })
         })
       )
 
@@ -223,7 +227,7 @@ describe('MatrixSpaceService', () => {
   it('updateSpace 透传 join_rule / visibility / is_public', async () => {
     const mockUpdate = vi.fn().mockResolvedValue({})
     vi.mocked(matrixClientService.getClient).mockReturnValue(
-      asMatrixClient({ getSpaceManager: () => ({ updateSpace: mockUpdate }) })
+      asMatrixClient({ getSpaceManager: () => ({ lifecycle: { updateSpace: mockUpdate } }) })
     )
 
     await matrixSpaceService.updateSpace('!space:hs', {

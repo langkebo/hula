@@ -24,12 +24,10 @@ function makeAccessors(crypto: Partial<CryptoApi> | null): CryptoAdapterAccessor
     getCrypto: () => crypto as CryptoApi | null,
     getExtendedClient: () => ({}) as never,
     getClient: () => ({}) as never,
-    getDeviceTrustManager: () => null,
     getSecureBackupManager: () => null as SecureBackupManager | null,
     getKeyBackupManager: () => null,
     getSDKDeviceKeysManager: () => null,
-    getSDKKeyBackupManager: () => null,
-    getSDKKeyVerificationManager: () => null
+    getSDKKeyBackupManager: () => null
   } as CryptoAdapterAccessors
 }
 

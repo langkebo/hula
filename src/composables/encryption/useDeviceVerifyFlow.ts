@@ -6,16 +6,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useDeviceVerifyFlow')
 
-type VerificationStep =
-  | 'intro'
-  | 'pending'
-  | 'showKey'
-  | 'showQr'
-  | 'scanQr'
-  | 'success'
-  | 'rejected'
-  | 'cancelled'
-  | 'failed'
+type VerificationStep = 'intro' | 'pending' | 'showKey' | 'success' | 'rejected' | 'cancelled' | 'failed'
 
 interface PendingRequest {
   transactionId: string
@@ -51,7 +42,7 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
   const errorMessage = ref<string | null>(null)
 
   const isIdle = computed(() => step.value === 'intro')
-  const isVerifying = computed(() => ['pending', 'showKey', 'showQr', 'scanQr'].includes(step.value))
+  const isVerifying = computed(() => ['pending', 'showKey'].includes(step.value))
   const isFinished = computed(() => ['success', 'rejected', 'cancelled', 'failed'].includes(step.value))
 
   const refreshPendingRequests = async (): Promise<void> => {

@@ -3,18 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import DeviceVerifyDialog from '../DeviceVerifyDialog.vue'
 
 type DeviceVerifyDialogVm = {
-  step: 'intro' | 'showKey' | 'showQr' | 'scanQr' | 'success' | 'rejected'
+  step: 'intro' | 'showKey' | 'success' | 'rejected'
   fingerprint: string
   fingerprintChunks: string[]
-  qrCodeData: string
-  qrCodeToScan: string
   startVerification: () => Promise<void>
   handleConfirm: () => Promise<void>
   handleReject: () => Promise<void>
   handleClose: () => void
-  openQrShow: () => Promise<void>
-  openQrScan: () => void
-  submitQrScan: () => Promise<void>
   handleCancel: () => Promise<void>
 }
 
@@ -26,8 +21,6 @@ const {
   confirmSasMock,
   cancelVerificationMock,
   getPendingVerificationsMock,
-  getQrCodeShowMock,
-  scanQrCodeMock,
   showFeedbackMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
@@ -37,8 +30,6 @@ const {
   confirmSasMock: vi.fn(),
   cancelVerificationMock: vi.fn(),
   getPendingVerificationsMock: vi.fn(),
-  getQrCodeShowMock: vi.fn(),
-  scanQrCodeMock: vi.fn(),
   showFeedbackMock: vi.fn()
 }))
 
@@ -84,18 +75,6 @@ vi.mock('naive-ui', async () => {
         return () => h('div', { 'data-test': 'spin' }, slots.default?.())
       }
     }),
-    NQrCode: defineComponent({
-      name: 'NQrCode',
-      props: {
-        value: {
-          type: String,
-          default: ''
-        }
-      },
-      setup(props) {
-        return () => h('div', { 'data-test': 'qr-code' }, props.value)
-      }
-    }),
     NSteps: defineComponent({
       name: 'NSteps',
       setup(_, { slots }) {
@@ -132,9 +111,7 @@ vi.mock('@/composables/encryption', () => ({
     acceptVerification: acceptVerificationMock,
     confirmSas: confirmSasMock,
     cancelVerification: cancelVerificationMock,
-    getPendingVerifications: getPendingVerificationsMock,
-    getQrCodeShow: getQrCodeShowMock,
-    scanQrCode: scanQrCodeMock
+    getPendingVerifications: getPendingVerificationsMock
   })
 }))
 
@@ -153,10 +130,6 @@ vi.mock('vue-i18n', () => ({
         'setting.encryption.device_verify_dialog.fingerprint_unavailable': '无法获取指纹',
         'setting.encryption.device_verify_dialog.load_fingerprint_failed': '获取设备密钥失败',
         'setting.encryption.device_verify_dialog.verify_failed': '验证失败',
-        'setting.encryption.device_verify_dialog.scan_qr_required': '请输入二维码内容',
-        'setting.encryption.device_verify_dialog.qr_scan_success': '二维码验证成功',
-        'setting.encryption.device_verify_dialog.qr_scan_failed': '二维码验证失败',
-        'setting.encryption.device_verify_dialog.qr_load_failed': '二维码加载失败',
         'setting.encryption.verify_success': '设备验证成功'
       }
       return map[key] ?? key
@@ -179,11 +152,6 @@ describe('DeviceVerifyDialog', () => {
     confirmSasMock.mockResolvedValue(undefined)
     cancelVerificationMock.mockResolvedValue(undefined)
     getPendingVerificationsMock.mockResolvedValue([])
-    getQrCodeShowMock.mockResolvedValue({
-      qr_code: 'MATRIX-QR-CODE',
-      transaction_id: 'txn-qr'
-    })
-    scanQrCodeMock.mockResolvedValue(true)
   })
 
   const mountComponent = (props?: Record<string, unknown>) =>
@@ -262,27 +230,7 @@ describe('DeviceVerifyDialog', () => {
     expect(wrapper.emitted('update:show')).toContainEqual([false])
   })
 
-  it('支持二维码展示与扫码提交', async () => {
-    const wrapper = mountComponent({
-      initialMode: 'qr_show'
-    })
-
-    await flushPromises()
-    expect(getQrCodeShowMock).toHaveBeenCalled()
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('showQr')
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).qrCodeData).toBe('MATRIX-QR-CODE')
-    expect(wrapper.find('[data-test="qr-code"]').text()).toBe('MATRIX-QR-CODE')
-
-    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).openQrScan()
-    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).qrCodeToScan = 'SCANNED-QR'
-    await (wrapper.vm as unknown as DeviceVerifyDialogVm).submitQrScan()
-
-    expect(scanQrCodeMock).toHaveBeenCalledWith('SCANNED-QR')
-    expect(showFeedbackMock).toHaveBeenCalledWith('二维码验证成功', 'success')
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('success')
-  })
-
-  it('缺少会话上下文或二维码输入为空时给出错误反馈', async () => {
+  it('缺少会话上下文时给出错误反馈', async () => {
     getCurrentSessionContextMock.mockReturnValue({
       userId: null,
       deviceId: null,
@@ -295,11 +243,5 @@ describe('DeviceVerifyDialog', () => {
 
     expect(showFeedbackMock).toHaveBeenCalledWith('获取设备密钥失败', 'error')
     expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('rejected')
-
-    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).openQrScan()
-    ;(wrapper.vm as unknown as DeviceVerifyDialogVm).qrCodeToScan = '   '
-    await (wrapper.vm as unknown as DeviceVerifyDialogVm).submitQrScan()
-
-    expect(showFeedbackMock).toHaveBeenCalledWith('请输入二维码内容', 'warning')
   })
 })

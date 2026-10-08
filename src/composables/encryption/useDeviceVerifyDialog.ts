@@ -9,7 +9,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('DeviceVerify')
 
 /** 设备验证对话框步骤状态机 */
-export type DeviceVerifyStep = 'intro' | 'pendingList' | 'showKey' | 'showQr' | 'scanQr' | 'success' | 'rejected'
+export type DeviceVerifyStep = 'intro' | 'pendingList' | 'showKey' | 'success' | 'rejected'
 
 /** 供 UI 选择的目标设备（跨用户验证时由 keys/query 拉取） */
 export interface DeviceOption {
@@ -29,7 +29,7 @@ export interface DeviceVerifyDialogProps {
   deviceId?: string
   deviceName?: string
   inboundRequest?: VerificationTransaction | null
-  initialMode?: 'sas' | 'qr_show' | 'qr_scan'
+  initialMode?: 'sas'
 }
 
 export type DeviceVerifyDialogEmit = {
@@ -45,7 +45,7 @@ interface UseDeviceVerifyDialogOptions {
 
 /**
  * PC 端 DeviceVerifyDialog 状态机 composable
- * 封装 SAS / QR 验证流程：request → accept → show SAS → confirm → done
+ * 封装 SAS 验证流程：request → accept → show SAS → confirm → done
  * 通过 useEncryption 服务层调用 Matrix，不直接依赖 SDK
  */
 export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyDialogOptions) {
@@ -86,8 +86,6 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
       case 'pendingList':
         return 1
       case 'showKey':
-      case 'showQr':
-      case 'scanQr':
         return 2
       case 'success':
       case 'rejected':
@@ -144,11 +142,6 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
         resetState(props.inboundRequest || null)
         await loadTargetDevices()
         await loadPendingVerifications()
-        if (props.initialMode === 'qr_show') {
-          await openQrShow()
-        } else if (props.initialMode === 'qr_scan') {
-          openQrScan()
-        }
       }
     },
     { immediate: true }
@@ -295,30 +288,6 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     resetState()
   }
 
-  async function openQrShow() {
-    loading.value = true
-
-    try {
-      const qrPayload = await encryption.getQrCodeShow()
-      if (!qrPayload?.qr_code) {
-        throw new Error('QR code unavailable')
-      }
-
-      qrCodeData.value = qrPayload.qr_code
-      transactionId.value = qrPayload.transaction_id || transactionId.value
-      step.value = 'showQr'
-    } catch (error) {
-      logger.warn('Failed to load QR verification payload:', error)
-      showFeedback(t('setting.encryption.device_verify_dialog.qr_load_failed'), 'error')
-    } finally {
-      loading.value = false
-    }
-  }
-
-  function openQrScan() {
-    step.value = 'scanQr'
-  }
-
   /**
    * 本机是否具备可用的会话上下文。
    *
@@ -371,33 +340,6 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     } catch (error) {
       logger.warn('Failed to start/accept verification:', error)
       showFeedback(t('setting.encryption.device_verify_dialog.load_fingerprint_failed'), 'error')
-      step.value = 'rejected'
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function submitQrScan() {
-    const rawQrCode = qrCodeToScan.value.trim()
-    if (!rawQrCode) {
-      showFeedback(t('setting.encryption.device_verify_dialog.scan_qr_required'), 'warning')
-      return
-    }
-
-    loading.value = true
-
-    try {
-      const success = await encryption.scanQrCode(rawQrCode)
-      if (!success) {
-        throw new Error('QR scan was not accepted')
-      }
-
-      step.value = 'success'
-      emit('success')
-      showFeedback(t('setting.encryption.device_verify_dialog.qr_scan_success'), 'success')
-    } catch (error) {
-      logger.error('QR verification failed:', error)
-      showFeedback(t('setting.encryption.device_verify_dialog.qr_scan_failed'), 'error')
       step.value = 'rejected'
     } finally {
       loading.value = false
@@ -462,10 +404,7 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     handleCancelWithReason,
     hideCancelReason,
     handleClose,
-    openQrShow,
-    openQrScan,
     startVerification,
-    submitQrScan,
     handleConfirm,
     handleReject
   }

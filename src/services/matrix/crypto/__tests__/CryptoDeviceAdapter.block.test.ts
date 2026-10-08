@@ -29,8 +29,7 @@ function makeAccessors(opts: { client?: Partial<MatrixClientExtended>; crypto?: 
     getSecureBackupManager: () => null,
     getKeyBackupManager: () => null,
     getSDKDeviceKeysManager: () => null,
-    getSDKKeyBackupManager: () => null,
-    getSDKKeyVerificationManager: () => null
+    getSDKKeyBackupManager: () => null
   } as CryptoAdapterAccessors
 }
 

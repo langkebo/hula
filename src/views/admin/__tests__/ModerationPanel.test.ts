@@ -64,7 +64,6 @@ const eventResolveReportMock = vi.fn()
 const dismissReportMock = vi.fn()
 const escalateReportMock = vi.fn()
 const deleteReportMock = vi.fn()
-const getReportHistoryMock = vi.fn()
 
 vi.mock('@/services/matrix/moderation/MatrixEventReportService', () => ({
   matrixEventReportService: {
@@ -75,8 +74,7 @@ vi.mock('@/services/matrix/moderation/MatrixEventReportService', () => ({
     resolveReport: (...args: unknown[]) => eventResolveReportMock(...args),
     dismissReport: (...args: unknown[]) => dismissReportMock(...args),
     escalateReport: (...args: unknown[]) => escalateReportMock(...args),
-    deleteReport: (...args: unknown[]) => deleteReportMock(...args),
-    getReportHistory: (...args: unknown[]) => getReportHistoryMock(...args)
+    deleteReport: (...args: unknown[]) => deleteReportMock(...args)
   }
 }))
 
@@ -174,7 +172,6 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     dismissReportMock.mockResolvedValue(null)
     escalateReportMock.mockResolvedValue(null)
     deleteReportMock.mockResolvedValue(undefined)
-    getReportHistoryMock.mockResolvedValue([])
   })
 
   const mountPanel = () =>
@@ -392,46 +389,6 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await flushPromises()
 
     expect(eventResolveReportMock).not.toHaveBeenCalled()
-  })
-
-  it('点击历史按钮打开历史对话框', async () => {
-    listReportsMock.mockResolvedValue([sampleEventReport])
-    const history = [
-      {
-        id: 1,
-        report_id: 101,
-        action: 'create',
-        actor_user_id: '@alice:hs',
-        old_status: null,
-        new_status: 'open',
-        reason: null,
-        created_ts: 1700000000000
-      }
-    ]
-    getReportHistoryMock.mockResolvedValue(history)
-
-    const wrapper = mountPanel()
-    await flushPromises()
-
-    await wrapper.find('[data-testid="event-report-action-history"]').trigger('click')
-    await flushPromises()
-
-    expect(getReportHistoryMock).toHaveBeenCalledWith(101)
-  })
-
-  it('获取历史失败时仍打开历史对话框（空历史，保持旧 throwOnError=false 语义）', async () => {
-    listReportsMock.mockResolvedValue([sampleEventReport])
-    getReportHistoryMock.mockRejectedValue(new Error('boom'))
-
-    const wrapper = mountPanel()
-    await flushPromises()
-
-    await wrapper.find('[data-testid="event-report-action-history"]').trigger('click')
-    await flushPromises()
-
-    expect(getReportHistoryMock).toHaveBeenCalledWith(101)
-    // 失败不产生未捕获 rejection，对话框仍打开（空历史）
-    expect(wrapper.find('.n-modal').exists()).toBe(true)
   })
 
   it('加载事件举报失败时显示错误反馈并清空列表', async () => {

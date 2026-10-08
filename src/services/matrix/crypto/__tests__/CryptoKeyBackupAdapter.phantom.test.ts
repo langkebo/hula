@@ -35,8 +35,7 @@ function makeAccessors(opts: {
     getSecureBackupManager: () => null,
     getKeyBackupManager: () => (opts.keyBackupManager ?? null) as KeyBackupManager | null,
     getSDKDeviceKeysManager: () => null,
-    getSDKKeyBackupManager: () => null,
-    getSDKKeyVerificationManager: () => null
+    getSDKKeyBackupManager: () => null
   } as CryptoAdapterAccessors
 }
 

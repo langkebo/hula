@@ -62,7 +62,6 @@
       "delete": "Delete",
       "dismiss": "Dismiss",
       "escalate": "Escalate",
-      "history": "History",
       "resolve": "Resolve"
     },
     "dialog": {
@@ -71,9 +70,6 @@
       "reasonPlaceholder": "Enter dismiss reason…",
       "reasonRequired": "Dismiss reason is required",
       "resolveTitle": "Resolve Note"
-    },
-    "history": {
-      "title": "History"
     },
     "loadFailed": "Load Failed, Please Retry",
     "stats": {

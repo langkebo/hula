@@ -23,7 +23,7 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
     async getRoomParentSpaces(roomId: string): Promise<SpaceInfo[]> {
       try {
         const manager = getSpaceManager()
-        const spaces = await manager.getRoomParentSpaces(roomId)
+        const spaces = await manager.query.getRoomParentSpaces(roomId)
         return spaces.map((s) => sdkSpaceToSpaceInfo(s))
       } catch (err) {
         logger.error(`[Space] 获取父空间失败: ${err}`)
@@ -37,7 +37,7 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
       if (!query.trim()) return []
       try {
         const manager = getSpaceManager()
-        const spaces = await manager.searchSpaces(query, limit)
+        const spaces = await manager.query.searchSpaces(query, limit)
         return spaces.map((s) => sdkSpaceToSpaceInfo(s))
       } catch (err) {
         logger.error(`[Space] 搜索空间失败: ${err}`)
@@ -53,7 +53,7 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('getUserSpaces timeout')), 3000)
         )
-        const spaces = await Promise.race([manager.getUserSpaces(), timeoutPromise])
+        const spaces = await Promise.race([manager.query.getUserSpaces(), timeoutPromise])
         return spaces.map((s) => sdkSpaceToSpaceInfo(s))
       } catch (err) {
         const client = matrixClientService.getClient()
@@ -76,7 +76,7 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
     async getPublicSpaces(limit: number = 50): Promise<SpaceInfo[]> {
       try {
         const manager = getSpaceManager()
-        const response = await manager.getPublicSpaces({ limit })
+        const response = await manager.query.getPublicSpaces({ limit })
         const rawList = response.spaces ?? response.chunk ?? response.rooms ?? []
         return rawList.map((s) => sdkSpaceToSpaceInfo(s))
       } catch (err) {

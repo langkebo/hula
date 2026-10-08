@@ -87,7 +87,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       if (!opts.userIds) {
         opts.userIds = [userId]
       }
-      const roomId = await manager.createDm(opts as CreateDmOptions)
+      const roomId = await manager.creation.createDm(opts as CreateDmOptions)
       await this.refreshCache()
       logger.info(`[MatrixDM] 创建私聊房间成功: ${roomId} -> ${userId}`)
       return roomId
@@ -101,7 +101,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
     const manager = this.requireManager()
 
     try {
-      const roomId = await manager.createDm({ userIds: [userId], isEncrypted: true })
+      const roomId = await manager.creation.createDm({ userIds: [userId], isEncrypted: true })
       await this.refreshCache()
       logger.info(`[MatrixDM] 创建加密私聊房间成功: ${roomId} -> ${userId}`)
       return roomId
@@ -124,7 +124,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
     try {
-      return await manager.getDMRooms()
+      return await manager.list.getDMRooms()
     } catch (err) {
       logger.error(`[MatrixDM] 获取DM房间列表失败: ${err}`)
       if (throwOnError) throw err
@@ -145,7 +145,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
     try {
-      return manager.getDmForUser(userId) ?? null
+      return manager.list.getDmForUser(userId) ?? null
     } catch (err) {
       logger.error(`[MatrixDM] 获取用户DM房间失败: ${userId} ${err}`)
       if (throwOnError) throw err
@@ -162,7 +162,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
     const manager = this.requireManager()
 
     try {
-      await manager.setDmRoom(roomId, userId)
+      await manager.creation.setDmRoom(roomId, userId)
       await this.refreshCache()
       logger.info(`[MatrixDM] 设置房间为私聊: ${roomId} -> ${userId}`)
     } catch (err) {
@@ -175,7 +175,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
     const manager = this.requireManager()
 
     try {
-      await manager.removeDmRoom(roomId, userId)
+      await manager.creation.removeDmRoom(roomId, userId)
       await this.refreshCache()
       logger.info(`[MatrixDM] 从私聊列表移除房间: ${roomId}`)
     } catch (err) {
@@ -201,7 +201,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       }
       throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
-    return manager.getDmRoomInfo(roomId)
+    return manager.list.getDmRoomInfo(roomId)
   }
 
   async getDmRoomInfos(): Promise<DmRoomInfo[]>
@@ -238,7 +238,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
     }
 
     try {
-      const userDmMap = await manager.getDirectRoomsByUser()
+      const userDmMap = await manager.list.getDirectRoomsByUser()
       const rooms: Room[] = []
 
       for (const userId of userIds) {
@@ -260,7 +260,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
 
   async getDirectRoomsFromServer(): Promise<IDirectRoomsMap> {
     try {
-      return await this.requireManager().getDirectRoomsFromServer()
+      return await this.requireManager().list.getDirectRoomsFromServer()
     } catch (err) {
       logger.error(`[MatrixDM] 从服务器获取DM房间失败: ${err}`)
       throw err
@@ -269,7 +269,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
 
   async updateDirectRoom(roomId: string, userIds: string[]): Promise<void> {
     try {
-      await this.requireManager().updateDirectRoom(roomId, userIds)
+      await this.requireManager().creation.updateDirectRoom(roomId, userIds)
       await this.refreshCache()
     } catch (err) {
       logger.error(`[MatrixDM] 更新DM房间失败: ${roomId} ${err}`)
@@ -286,7 +286,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
 
-    return manager.isDmRoomFromServer(roomId, throwOnError)
+    return manager.list.isDmRoomFromServer(roomId, throwOnError)
   }
 
   async getDmPartnerFromServer(roomId: string, throwOnError = true): Promise<DmPartnerResponse | null> {
@@ -298,7 +298,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
       throw new Error(this.t('matrix_error.room.direct_message_manager_not_initialized'))
     }
 
-    return manager.getDmPartnerFromServer(roomId, throwOnError)
+    return manager.list.getDmPartnerFromServer(roomId, throwOnError)
   }
 
   /**

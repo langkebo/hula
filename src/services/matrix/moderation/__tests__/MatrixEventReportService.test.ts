@@ -60,8 +60,7 @@ describe('MatrixEventReportService', () => {
         resolveReport: vi.fn().mockResolvedValue({ id: 1, status: 'resolved' }),
         dismissReport: vi.fn().mockResolvedValue({ id: 1, status: 'dismissed' }),
         escalateReport: vi.fn().mockResolvedValue({ id: 1, status: 'escalated' }),
-        deleteReport: vi.fn().mockResolvedValue(undefined),
-        getReportHistory: vi.fn().mockResolvedValue([{ id: 1, action: 'create' }])
+        deleteReport: vi.fn().mockResolvedValue(undefined)
       }
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getEventReportManager: () => manager,
@@ -97,12 +96,6 @@ describe('MatrixEventReportService', () => {
       expect(manager.dismissReport).toHaveBeenCalledWith(1, { reason: 'no' })
       expect(manager.escalateReport).toHaveBeenCalledWith(1, undefined)
       expect(manager.deleteReport).toHaveBeenCalledWith(1)
-      expect(authedRequestMock).not.toHaveBeenCalled()
-    })
-
-    it('getReportHistory 走 manager.getReportHistory，不触发 authedRequest', async () => {
-      await expect(matrixEventReportService.getReportHistory(1)).resolves.toEqual([{ id: 1, action: 'create' }])
-      expect(manager.getReportHistory).toHaveBeenCalledWith(1)
       expect(authedRequestMock).not.toHaveBeenCalled()
     })
   })

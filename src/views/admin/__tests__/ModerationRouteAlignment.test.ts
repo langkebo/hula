@@ -29,7 +29,6 @@ vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     getReports: vi.fn(),
     getEventReport: vi.fn(),
-    getEventReportHistory: vi.fn(),
     resolveReport: vi.fn(),
     getContentFilters: vi.fn(),
     addContentFilter: vi.fn(),
@@ -48,8 +47,7 @@ vi.mock('@/services/matrix/moderation/MatrixEventReportService', () => ({
     resolveReport: vi.fn(),
     dismissReport: vi.fn(),
     escalateReport: vi.fn(),
-    deleteReport: vi.fn(),
-    getReportHistory: vi.fn().mockResolvedValue([])
+    deleteReport: vi.fn()
   }
 }))
 

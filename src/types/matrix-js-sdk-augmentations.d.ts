@@ -363,7 +363,7 @@ declare module 'matrix-js-sdk' {
     // getPresenceManager now available in SDK
     // getDeviceKeysManager now available in SDK
     // getCryptoKeysManager now available in SDK
-    // getKeyVerificationManager now available in SDK
+    // getKeyVerificationManager 已随死后端面（keys/device_signing/verify_*）一并删除
     // getTypingManager now available in SDK
     // getReadReceiptsManager now available in SDK
     on(event: 'room', listener: (room: Room) => void): void
@@ -411,7 +411,7 @@ declare module 'matrix-js-sdk' {
     off(event: string, listener: (...args: unknown[]) => void): void
     // Manager accessors (synapse-rust extensions)
     // 注：getDirectMessageManager/getDeviceManager/getKeyBackupManager/getDeviceKeysManager/
-    // getCryptoKeysManager/getKeyVerificationManager 已由 SDK matrix-client-extensions.d.ts
+    // getCryptoKeysManager 已由 SDK matrix-client-extensions.d.ts 声明（getKeyVerificationManager 已删除）
     // 上浮强类型 getter，此处不再重复声明（避免弱类型 `?: unknown` 遮蔽 SDK 类型）。
     getMediaQuotaManager?(): unknown
     quotaManager?: unknown

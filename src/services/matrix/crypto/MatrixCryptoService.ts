@@ -106,12 +106,7 @@ class MatrixCryptoService extends BaseMatrixService {
     try {
       const result = await cryptoSDKAdapter.requestDeviceVerification(userId, deviceId)
       if (result) {
-        logger.info(`[MatrixCrypto] 设备验证请求已发送(SDK): ${userId}:${deviceId}`)
-      } else {
-        const trustManager = cryptoSDKAdapter.getManagerAccessors().deviceTrust()
-        if (trustManager) {
-          logger.info(`[MatrixCrypto] 设备验证请求已发送: ${userId}:${deviceId}`)
-        }
+        logger.info(`[MatrixCrypto] 设备验证请求已发送: ${userId}:${deviceId}`)
       }
       return result
     } catch (err) {

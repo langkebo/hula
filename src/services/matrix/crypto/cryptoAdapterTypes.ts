@@ -6,19 +6,8 @@
  * keeping CryptoSDKAdapter as the single owner of client/cache state.
  */
 
-import type {
-  DeviceKeysManager,
-  KeyVerificationManager,
-  MatrixClient,
-  SDKKeyBackupManager
-} from '@/services/matrix/sdk'
-import type {
-  CryptoApi,
-  DeviceTrustManager,
-  KeyBackupManager,
-  MatrixClientExtended,
-  SecureBackupManager
-} from '@/types/matrix-extensions'
+import type { DeviceKeysManager, MatrixClient, SDKKeyBackupManager } from '@/services/matrix/sdk'
+import type { CryptoApi, KeyBackupManager, MatrixClientExtended, SecureBackupManager } from '@/types/matrix-extensions'
 
 export interface DeviceInfo {
   deviceId: string
@@ -72,12 +61,10 @@ export interface CryptoAdapterAccessors {
   getCrypto(): CryptoApi | null
   getExtendedClient(): MatrixClientExtended
   getClient(): MatrixClient
-  getDeviceTrustManager(): DeviceTrustManager | null
   getSecureBackupManager(): SecureBackupManager | null
   getKeyBackupManager(): KeyBackupManager | null
   getSDKDeviceKeysManager(): DeviceKeysManager | null
   getSDKKeyBackupManager(): SDKKeyBackupManager | null
-  getSDKKeyVerificationManager(): KeyVerificationManager | null
 }
 
 /**

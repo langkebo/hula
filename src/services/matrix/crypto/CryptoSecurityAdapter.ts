@@ -4,7 +4,7 @@
  * Extracted from CryptoSDKAdapter to keep file sizes under the 400-line budget.
  */
 
-import type { CryptoApi, ISecuritySummary } from '@/types/matrix-extensions'
+import type { CryptoApi } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import type { CrossSigningStatusResult, CryptoAdapterAccessors } from './cryptoAdapterTypes'
 
@@ -12,16 +12,6 @@ const logger = createLogger('CryptoSecurityAdapter')
 
 export class CryptoSecurityAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
-
-  /** 获取加密安全摘要
-   */
-  async getSecuritySummary(): Promise<ISecuritySummary | null> {
-    const trustManager = this.accessors.getDeviceTrustManager()
-    if (trustManager) {
-      return await trustManager.getSecuritySummary()
-    }
-    return null
-  }
 
   /** 获取交叉签名状态
    */

@@ -92,7 +92,7 @@ class SpaceService extends BaseMatrixService {
       })
       logger.info(`[Space] Space 已创建: ${room_id}`)
       try {
-        await this.getSpaceManager().createSpace({
+        await this.getSpaceManager().lifecycle.createSpace({
           room_id,
           name: options.name,
           topic: options.topic,
@@ -119,13 +119,13 @@ class SpaceService extends BaseMatrixService {
 
   async getSpace(spaceId: string): Promise<SpaceInfo | null> {
     try {
-      const space = await this.getSpaceManager().getSpace(spaceId)
+      const space = await this.getSpaceManager().lifecycle.getSpace(spaceId)
       const client = this.getClient()
       const room = client.getRoom(spaceId) ?? undefined
       const info = sdkSpaceToSpaceInfo(space, room)
       if (!room) {
         try {
-          const stats = await this.getSpaceManager().getSpaceStats(spaceId)
+          const stats = await this.getSpaceManager().query.getSpaceStats(spaceId)
           info.memberCount = stats.memberCount
           info.childCount = stats.childCount
         } catch {
@@ -159,7 +159,7 @@ class SpaceService extends BaseMatrixService {
           : undefined
 
     try {
-      await this.getSpaceManager().updateSpace(spaceId, {
+      await this.getSpaceManager().lifecycle.updateSpace(spaceId, {
         name: options.name,
         topic: options.topic,
         avatar_url: options.avatarUrl,
@@ -185,7 +185,7 @@ class SpaceService extends BaseMatrixService {
 
   async deleteSpace(spaceId: string): Promise<void> {
     try {
-      await this.getSpaceManager().deleteSpace(spaceId)
+      await this.getSpaceManager().lifecycle.deleteSpace(spaceId)
       logger.info(`[Space] Space 已删除: ${spaceId}`)
     } catch (err) {
       logger.info(`[Space] SpaceManager 删除失败，回退到离开房间: ${err}`)
@@ -203,7 +203,7 @@ class SpaceService extends BaseMatrixService {
 
   async getSpaceMembers(spaceId: string): Promise<SdkSpaceMember[]> {
     try {
-      return await this.getSpaceManager().getSpaceMembers(spaceId)
+      return await this.getSpaceManager().member.getSpaceMembers(spaceId)
     } catch (err) {
       logger.error(`[Space] SpaceManager 获取成员失败，回退: ${err}`)
       try {
@@ -221,7 +221,7 @@ class SpaceService extends BaseMatrixService {
 
   async inviteToSpace(spaceId: string, userId: string): Promise<void> {
     try {
-      await this.getSpaceManager().inviteToSpace(spaceId, userId)
+      await this.getSpaceManager().member.inviteToSpace(spaceId, userId)
       logger.info(`[Space] 邀请用户到 Space 成功: ${userId} -> ${spaceId}`)
     } catch (err) {
       logger.info(`[Space] SpaceManager 邀请失败，回退到客户端调用: ${err}`)
@@ -246,7 +246,7 @@ class SpaceService extends BaseMatrixService {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        await this.getSpaceManager().joinSpace(spaceId, { via_servers: viaServers })
+        await this.getSpaceManager().member.joinSpace(spaceId, { via_servers: viaServers })
         logger.info(`[Space] 加入 Space 成功: ${spaceId} (尝试 ${attempt + 1})`)
         return
       } catch (err) {
@@ -286,7 +286,7 @@ class SpaceService extends BaseMatrixService {
 
   async leaveSpace(spaceId: string): Promise<void> {
     try {
-      await this.getSpaceManager().leaveSpace(spaceId)
+      await this.getSpaceManager().member.leaveSpace(spaceId)
       logger.info(`[Space] 离开 Space 成功: ${spaceId}`)
     } catch (err) {
       logger.info(`[Space] SpaceManager 离开失败，回退到客户端调用: ${err}`)
@@ -304,7 +304,7 @@ class SpaceService extends BaseMatrixService {
 
   async getSpaceChildren(spaceId: string): Promise<SdkSpaceChild[]> {
     try {
-      return await this.getSpaceManager().getSpaceChildren(spaceId)
+      return await this.getSpaceManager().child.getSpaceChildren(spaceId)
     } catch (err) {
       logger.error(`[Space] SpaceManager 获取子房间失败，回退: ${err}`)
       try {
@@ -334,7 +334,7 @@ class SpaceService extends BaseMatrixService {
 
   async removeChild(spaceId: string, roomId: string): Promise<void> {
     try {
-      await this.getSpaceManager().removeChild(spaceId, roomId)
+      await this.getSpaceManager().child.removeChild(spaceId, roomId)
       logger.info(`[Space] 子房间已移除: ${roomId} 从 ${spaceId}`)
     } catch (err) {
       logger.info(`[Space] SpaceManager 移除子房间失败，回退到状态事件: ${err}`)
@@ -354,7 +354,7 @@ class SpaceService extends BaseMatrixService {
     options?: { via?: string[]; suggested?: boolean }
   ): Promise<void> {
     try {
-      await this.getSpaceManager().addChild(spaceId, {
+      await this.getSpaceManager().child.addChild(spaceId, {
         room_id: roomId,
         via_servers: options?.via || [],
         suggested: options?.suggested || false
@@ -408,7 +408,7 @@ class SpaceService extends BaseMatrixService {
 
   async getSpaceRooms(spaceId: string): Promise<Array<{ roomId: string; name: string; avatarUrl?: string }>> {
     try {
-      const spaces = await this.getSpaceManager().getSpaceRooms(spaceId)
+      const spaces = await this.getSpaceManager().child.getSpaceRooms(spaceId)
       return spaces.map((s) => ({ roomId: s.room_id, name: s.name || '', avatarUrl: s.avatar_url || undefined }))
     } catch (err) {
       logger.error(`[Space] SpaceManager 获取 Space 房间列表失败，回退: ${err}`)
@@ -441,7 +441,7 @@ class SpaceService extends BaseMatrixService {
     options?: { from?: string; limit?: number; maxDepth?: number; suggestedOnly?: boolean }
   ): Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }> {
     try {
-      return (await this.getSpaceManager().getSpaceHierarchyPage(spaceId, {
+      return (await this.getSpaceManager().hierarchy.getSpaceHierarchyPage(spaceId, {
         from: options?.from,
         limit: options?.limit,
         max_depth: options?.maxDepth,
@@ -455,7 +455,7 @@ class SpaceService extends BaseMatrixService {
 
   async getSpaceTreePath(spaceId: string): Promise<Array<{ space_id: string; name: string }>> {
     try {
-      const result = (await this.getSpaceManager().getSpaceTreePath(spaceId)) as {
+      const result = (await this.getSpaceManager().hierarchy.getSpaceTreePath(spaceId)) as {
         path?: Array<{ space_id: string; name: string }>
       }
       return normalizeSpaceTreePathItems(result.path ?? [])

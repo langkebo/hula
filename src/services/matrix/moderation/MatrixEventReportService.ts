@@ -6,7 +6,6 @@ import type {
   EventReportCountResponse,
   EventReportManager,
   QueryParams,
-  ReportHistoryResponse,
   ReportResponse,
   ResolveReportBody,
   StatsResponse,
@@ -235,18 +234,6 @@ class MatrixEventReportService extends BaseMatrixService {
       logger.info(`[MatrixEventReport] 删除举报成功: id=${id}`)
     } catch (err) {
       logger.error(`[MatrixEventReport] 删除举报失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getReportHistory(id: number): Promise<ReportHistoryResponse[]> {
-    try {
-      const manager = await this.requireEventReportManager()
-      const history = await manager.getReportHistory(id)
-      logger.info(`[MatrixEventReport] 获取举报历史成功: id=${id}, ${history.length} 条`)
-      return history
-    } catch (err) {
-      logger.error(`[MatrixEventReport] 获取举报历史失败: ${err}`)
       throw err
     }
   }

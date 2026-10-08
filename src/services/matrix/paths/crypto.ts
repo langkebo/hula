@@ -1,5 +1,3 @@
-import { PREFIX_V1 } from './prefixes'
-
 /**
  * Crypto 路径组（L3 路径常量）
  *
@@ -15,18 +13,14 @@ import { PREFIX_V1 } from './prefixes'
  *   ROOM_KEYS_RECOVERY_PROGRESS / ROOM_KEYS_VERIFY / ROOM_KEYS_BATCH_RECOVER /
  *   ROOM_KEYS_RECOVER_ROOM / ROOM_KEYS_RECOVER_SESSION / ROOM_KEYS_EXPORT / ROOM_KEYS_IMPORT — 走 manager
  *   VERIFY_ACCEPT / VERIFY_KEY_AGREEMENT / VERIFY_MAC / VERIFY_DONE / VERIFY_CANCEL /
- *   VERIFY_REQUESTS — 走 KeyVerificationManager
  *   KEY_ROTATION_* — 未实现
+ *   VERIFY_START / QR_CODE_SHOW / QR_CODE_SCAN — 后端 `keys/device_signing/verify_*`
+ *   与 `keys/qr_code/*` 已整段删除（2026-09-25 E2EE 重构），SDK 侧 KeyVerificationManager
+ *   与对应能力探测同批删除，前端不得再保留「点了必然失败」的入口
  */
 export const CRYPTO = {
   /** POST — 密钥恢复端点（MatrixCryptoService.recoverKey 能力探测）。 */
   ROOM_KEYS_RECOVER: '/room_keys/recover',
   /** GET — 房间密钥请求列表（MatrixDeviceService.getRoomKeyRequests）。 */
-  ROOM_KEYS_REQUEST: '/room_keys/request',
-  /** POST — SAS 验证启动（MatrixCryptoService 能力探测）。 */
-  VERIFY_START: PREFIX_V1 + '/keys/device_signing/verify_start',
-  /** GET — 显示 QR 码（MatrixCryptoService.showQrCode 能力探测）。 */
-  QR_CODE_SHOW: PREFIX_V1 + '/keys/qr_code/show',
-  /** POST — 扫描 QR 码（MatrixCryptoService.scanQrCode 能力探测）。 */
-  QR_CODE_SCAN: PREFIX_V1 + '/keys/qr_code/scan'
+  ROOM_KEYS_REQUEST: '/room_keys/request'
 } as const

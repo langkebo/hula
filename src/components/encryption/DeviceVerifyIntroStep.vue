@@ -136,12 +136,6 @@
       <n-button v-if="pendingVerifications.length === 0 && !inboundRequest" tertiary @click="emit('view-pending')">
         {{ t('setting.encryption.device_verify_dialog.view_pending') }}
       </n-button>
-      <n-button tertiary @click="emit('show-qr')">
-        {{ t('setting.encryption.device_verify_dialog.show_qr') }}
-      </n-button>
-      <n-button tertiary @click="emit('scan-qr')">
-        {{ t('setting.encryption.device_verify_dialog.scan_qr') }}
-      </n-button>
       <n-button v-if="inboundRequest" type="error" ghost @click="emit('decline')">
         {{ t('setting.encryption.device_verify_dialog.decline_request') }}
       </n-button>
@@ -195,8 +189,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'cancel'): void
   (e: 'view-pending'): void
-  (e: 'show-qr'): void
-  (e: 'scan-qr'): void
   (e: 'decline'): void
   (e: 'start'): void
   (e: 'accept-pending', req: VerificationTransaction): void

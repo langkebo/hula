@@ -10,17 +10,10 @@
  * are kept here because they are thin and directly use client/crypto access.
  */
 
-import type {
-  DeviceKeysManager,
-  KeyVerificationManager,
-  MatrixClient,
-  SDKKeyBackupManager
-} from '@/services/matrix/sdk'
+import type { DeviceKeysManager, MatrixClient, SDKKeyBackupManager } from '@/services/matrix/sdk'
 import type {
   CryptoApi,
-  DeviceTrustManager,
   GeneratedSecretStorageKey,
-  ISecuritySummary,
   KeyBackupManager,
   MatrixClientExtended,
   SecureBackupManager,
@@ -95,12 +88,6 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
     this.cryptoCache = null
   }
 
-  /** 获取设备信任管理器
-   */
-  getDeviceTrustManager(): DeviceTrustManager | null {
-    return this.getExtendedClient().getDeviceTrustManager?.() ?? null
-  }
-
   /** 获取安全备份管理器
    */
   getSecureBackupManager(): SecureBackupManager | null {
@@ -125,20 +112,12 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
     return this.getExtendedClient().getSDKKeyBackupManager?.() ?? null
   }
 
-  /** 获取 SDK 密钥验证管理器
-   */
-  getSDKKeyVerificationManager(): KeyVerificationManager | null {
-    return this.getExtendedClient().getKeyVerificationManager?.() ?? null
-  }
-
   getManagerAccessors() {
     return {
-      deviceTrust: () => this.getDeviceTrustManager(),
       secureBackup: () => this.getSecureBackupManager(),
       keyBackup: () => this.getKeyBackupManager(),
       sdkDeviceKeys: () => this.getSDKDeviceKeysManager(),
-      sdkKeyBackup: () => this.getSDKKeyBackupManager(),
-      sdkKeyVerification: () => this.getSDKKeyVerificationManager()
+      sdkKeyBackup: () => this.getSDKKeyBackupManager()
     }
   }
 
@@ -179,10 +158,6 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
   }
 
   // ==================== Security Summary & Cross-Signing (delegated) ====================
-
-  getSecuritySummary(): Promise<ISecuritySummary | null> {
-    return this.securityAdapter.getSecuritySummary()
-  }
 
   getCrossSigningStatus(): Promise<CrossSigningStatusResult> {
     return this.securityAdapter.getCrossSigningStatus()
@@ -339,12 +314,6 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
   requireSDKKeyBackupManager(): SDKKeyBackupManager {
     const manager = this.getSDKKeyBackupManager()
     if (!manager) throw new Error('SDKKeyBackupManager not available')
-    return manager
-  }
-
-  requireSDKKeyVerificationManager(): KeyVerificationManager {
-    const manager = this.getSDKKeyVerificationManager()
-    if (!manager) throw new Error('KeyVerificationManager not available')
     return manager
   }
 

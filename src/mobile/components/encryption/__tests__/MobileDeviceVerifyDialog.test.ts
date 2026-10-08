@@ -90,12 +90,10 @@ describe('MobileDeviceVerifyDialog', () => {
     vi.clearAllMocks()
   })
 
-  it('renders intro state with three action buttons', () => {
+  it('renders intro state with the SAS action button', () => {
     const wrapper = createWrapper()
     expect(wrapper.find('.van-dialog-stub').exists()).toBe(true)
     expect(wrapper.text()).toContain('verification.methods.sas')
-    expect(wrapper.text()).toContain('verification.methods.qr_show')
-    expect(wrapper.text()).toContain('verification.methods.qr_scan')
   })
 
   it('accepts userId and deviceId props', () => {
@@ -171,20 +169,6 @@ describe('MobileDeviceVerifyDialog', () => {
     mockStep.value = 'success'
     const wrapper = createWrapper()
     expect(wrapper.text()).toContain('verification.result.success_desc')
-  })
-
-  it('renders QR show placeholder with unavailable notice', () => {
-    mockStep.value = 'showQr'
-    const wrapper = createWrapper()
-    expect(wrapper.text()).toContain('verification.qr.show_desc')
-    expect(wrapper.text()).toContain('verification.qr.show_unavailable')
-  })
-
-  it('renders QR scan placeholder with unavailable notice', () => {
-    mockStep.value = 'scanQr'
-    const wrapper = createWrapper()
-    expect(wrapper.text()).toContain('verification.qr.scan_desc')
-    expect(wrapper.text()).toContain('verification.qr.scan_unavailable')
   })
 
   it('renders pending requests when list is non-empty', () => {
