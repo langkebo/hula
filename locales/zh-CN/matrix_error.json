@@ -78,7 +78,7 @@
     "status_update_unsupported": "FriendManager 不支持好友状态更新: {status}"
   },
   "widget": {
-    "manager_not_initialized": "WidgetsManager 未初始化"
+    "manager_not_initialized": "WidgetManager 未初始化"
   },
   "worker": {
     "not_started": "worker 未启动，先调用 start()"

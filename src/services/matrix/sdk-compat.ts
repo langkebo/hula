@@ -18,13 +18,13 @@ import type { MatrixClient } from 'matrix-js-sdk'
 
 export type { Space, SpaceChild, SpaceManager, SpaceMember } from 'matrix-js-sdk/space'
 
-// WidgetsManager (and its response types) are NOT exposed as a public subpath
-// export by the SDK fork — only `matrix-js-sdk/space`, `matrix-js-sdk/admin`, etc.
-// are. The type is reachable through the augmented `MatrixClient.getWidgetsManager()`
-// getter, so we derive it here to keep consumers off the internal `lib/widgets` path
-// and give CI a single boundary to guard.
-export type WidgetsManager = ReturnType<MatrixClient['getWidgetsManager']>
-export type WidgetMessageResponse = ReturnType<WidgetsManager['sendWidgetMessage']>
+// WidgetManager (and its response types) are NOT exposed as a public subpath
+// export by the SDK fork — there is no `matrix-js-sdk/widget` entry — so the type is
+// derived from the augmented `MatrixClient.getWidgetManager()` getter. Deriving here
+// keeps consumers off the internal `lib/widget` path and gives CI one boundary to guard.
+// 旧层 `WidgetsManager`（`src/widgets/`）已按反冗余原则整层删除（SDK C1）。
+export type WidgetManager = ReturnType<MatrixClient['getWidgetManager']>
+export type WidgetMessageResponse = ReturnType<WidgetManager['sendWidgetEvent']>
 
 let compatInitialized = false
 

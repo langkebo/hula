@@ -37,7 +37,7 @@ const baseClientShape = () => ({
   getDeviceManager: vi.fn(() => null),
   getKeyBackupManager: vi.fn(() => null),
   getPushers: vi.fn(async () => []),
-  getWidgetsManager: vi.fn(() => null)
+  getWidgetManager: vi.fn(() => null)
 })
 
 /**

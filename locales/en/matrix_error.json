@@ -78,7 +78,7 @@
     "status_update_unsupported": "FriendManager does not support friend status update: {status}"
   },
   "widget": {
-    "manager_not_initialized": "WidgetsManager not initialized"
+    "manager_not_initialized": "WidgetManager not initialized"
   },
   "worker": {
     "not_started": "Worker not started, call start() first"

@@ -279,7 +279,9 @@ async function handleSendMessage() {
       ...messageHistory.value,
       {
         direction: 'sent',
-        type: (result?.type as string | undefined) ?? 'm.custom',
+        // 响应形状是 `{ event_id }`（后端 `send_room_widget_message` 目前显式拒绝合成事件，
+        // 要求改走标准房间发送端点）；消息类型以请求体为准，不再从响应里取。
+        type: 'm.custom',
         content: messageInput.value.trim(),
         timestamp: Date.now()
       }

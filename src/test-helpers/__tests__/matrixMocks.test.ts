@@ -10,7 +10,7 @@ import {
 
 type ManagerAccessors = {
   getDirectMessageManager?: () => null
-  getWidgetsManager?: () => null
+  getWidgetManager?: () => null
 }
 
 type RoomWithState = MockRoom & {
@@ -41,7 +41,7 @@ describe('createMockMatrixClient', () => {
   it('manager accessors short-circuit to null by default', () => {
     const client = createMockMatrixClient() as MockMatrixClient & ManagerAccessors
     expect(client.getDirectMessageManager?.()).toBeNull()
-    expect(client.getWidgetsManager?.()).toBeNull()
+    expect(client.getWidgetManager?.()).toBeNull()
   })
 })
 
