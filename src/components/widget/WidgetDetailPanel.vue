@@ -104,38 +104,6 @@
           </div>
         </n-spin>
       </n-tab-pane>
-
-      <!-- Messages -->
-      <n-tab-pane name="messages" :tab="t('common.widget.messages')">
-        <div class="messages-section">
-          <div class="message-history">
-            <div v-if="messageHistory.length === 0" class="empty-row">
-              <n-empty size="small" :description="t('common.widget.no_messages')" />
-            </div>
-            <div v-for="(msg, index) in messageHistory" :key="index" class="message-item">
-              <n-tag size="small" :type="msg.direction === 'sent' ? 'success' : 'info'" class="msg-tag">
-                {{ msg.direction === 'sent' ? t('common.widget.msg_sent') : t('common.widget.msg_received') }}
-              </n-tag>
-              <span class="msg-type">{{ msg.type }}</span>
-              <span class="msg-content">{{ msg.content }}</span>
-              <span class="msg-time">{{ new Date(msg.timestamp).toLocaleTimeString() }}</span>
-            </div>
-          </div>
-          <div class="message-input-row">
-            <n-input
-              v-model:value="messageInput"
-              :placeholder="t('common.widget.message_placeholder')"
-              size="small"
-              class="flex-1"
-              @keyup.enter="handleSendMessage" />
-            <n-button type="primary" size="small" :loading="sendingMessage" @click="handleSendMessage">
-              <template #icon>
-                <n-icon><Icon icon="mdi:send" /></n-icon>
-              </template>
-            </n-button>
-          </div>
-        </div>
-      </n-tab-pane>
     </n-tabs>
   </div>
 </template>
@@ -253,49 +221,6 @@ async function handleTerminateSession(sessionId: string) {
   }
 }
 
-// ===== Messages =====
-interface WidgetMessage {
-  direction: 'sent' | 'received'
-  type: string
-  content: string
-  timestamp: number
-}
-
-const messageHistory = ref<WidgetMessage[]>([])
-const messageInput = ref('')
-const sendingMessage = ref(false)
-
-async function handleSendMessage() {
-  if (!props.widget || !messageInput.value.trim()) return
-  sendingMessage.value = true
-  try {
-    const result = await matrixWidgetService.sendWidgetMessage(
-      props.roomId,
-      props.widget.id,
-      { type: 'm.custom', content: { body: messageInput.value.trim() } },
-      true
-    )
-    messageHistory.value = [
-      ...messageHistory.value,
-      {
-        direction: 'sent',
-        // 响应形状是 `{ event_id }`（后端 `send_room_widget_message` 目前显式拒绝合成事件，
-        // 要求改走标准房间发送端点）；消息类型以请求体为准，不再从响应里取。
-        type: 'm.custom',
-        content: messageInput.value.trim(),
-        timestamp: Date.now()
-      }
-    ]
-    messageInput.value = ''
-    showFeedback(t('common.widget.message_sent'), 'success')
-  } catch (e) {
-    logger.error('发送Widget消息失败', e)
-    showFeedback(t('common.widget.message_send_failed'), 'error')
-  } finally {
-    sendingMessage.value = false
-  }
-}
-
 // ===== Reload all data =====
 async function reload() {
   await Promise.all([loadWidgetConfig(), loadCapabilities(), loadSessions()])
@@ -309,7 +234,6 @@ watch(
     detailTab.value = 'config'
     capabilities.value = []
     sessions.value = []
-    messageHistory.value = []
     widgetConfig.value = {}
     void reload()
   }

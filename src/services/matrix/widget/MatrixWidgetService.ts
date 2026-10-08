@@ -1,7 +1,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
-import type { WidgetManager, WidgetMessageResponse } from '../sdk-compat'
+import type { WidgetManager } from '../sdk-compat'
 
 const logger = createLogger('MatrixWidgetService')
 
@@ -415,26 +415,6 @@ class MatrixWidgetService {
       return await manager.setWidgetCapabilities(roomId, widgetId, capabilities)
     } catch (err) {
       logger.error(`[MatrixWidgetService] 设置Widget能力失败: ${widgetId} ${err}`)
-      if (throwOnError) throw err
-      return null
-    }
-  }
-
-  async sendWidgetMessage(
-    roomId: string,
-    widgetId: string,
-    message: SendWidgetMessageRequest,
-    throwOnError = true
-  ): Promise<WidgetMessageResponse | null> {
-    const manager = this.getManager()
-    if (!manager) {
-      if (!throwOnError) return null
-      throw new Error(useI18nGlobal().t('matrix_error.widget.manager_not_initialized'))
-    }
-    try {
-      return await manager.sendWidgetEvent(roomId, widgetId, message as unknown as Record<string, unknown>)
-    } catch (err) {
-      logger.error(`[MatrixWidgetService] 发送Widget消息失败: ${widgetId} ${err}`)
       if (throwOnError) throw err
       return null
     }

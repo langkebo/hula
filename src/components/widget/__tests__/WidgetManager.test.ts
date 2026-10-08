@@ -103,7 +103,6 @@ vi.mock('@/services/matrix/widget/MatrixWidgetService', () => ({
     getWidgetSessions: vi.fn().mockResolvedValue([]),
     updateWidget: vi.fn().mockResolvedValue(null),
     setWidgetCapabilities: vi.fn().mockResolvedValue(null),
-    sendWidgetMessage: vi.fn().mockResolvedValue(null),
     terminateWidgetSession: vi.fn().mockResolvedValue(true)
   }
 }))

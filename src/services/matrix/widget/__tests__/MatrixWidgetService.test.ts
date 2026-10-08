@@ -29,8 +29,7 @@ const mockWidgetManager = {
   getWidgetSession: vi.fn(),
   deleteWidgetSession: vi.fn(),
   setWidgetCapabilities: vi.fn(),
-  getWidgetCapabilities: vi.fn(),
-  sendWidgetEvent: vi.fn()
+  getWidgetCapabilities: vi.fn()
 }
 
 type WidgetManagerLike = typeof mockWidgetManager
