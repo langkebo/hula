@@ -1,7 +1,7 @@
 /**
  * FT-120: L3 路径常量"无死常量"契约测试
  *
- * 验证 DM / MODERATION / AUTH / CRYPTO / VOICE / ROOM 模块中只保留被 L2 服务实际引用的常量，
+ * 验证 DM / MODERATION / AUTH / VOICE / ROOM 模块中只保留被 L2 服务实际引用的常量，
  * 防止维护者被从未使用的路径常量误导。
  *
  * 当某常量不再被任何 L2 服务引用时，应将其从此处的 expected 集合中移除并从源文件删除；
@@ -10,7 +10,6 @@
 import { describe, expect, it } from 'vitest'
 
 import { AUTH } from '../auth'
-import { CRYPTO } from '../crypto'
 import { MEDIA } from '../media'
 import { MODERATION } from '../moderation'
 import { ROOM } from '../room'
@@ -57,42 +56,6 @@ describe('FT-120: 无死路径常量', () => {
         'EMAIL_REQUEST_TOKEN'
       ]) {
         expect(AUTH).not.toHaveProperty(dead)
-      }
-    })
-  })
-
-  describe('CRYPTO 模块仅保留被 L2 服务引用的常量', () => {
-    // MatrixCryptoService → ROOM_KEYS_RECOVER；MatrixDeviceService.getRoomKeyRequests → ROOM_KEYS_REQUEST
-    // VERIFY_START / QR_CODE_SHOW / QR_CODE_SCAN 已随后端 `keys/device_signing/verify_*`
-    // 与 `keys/qr_code/*` 的删除一并移除（C3′，2026-10-08）
-    it('CRYPTO 仅包含仍被引用的 2 个常量', () => {
-      expectKeys(CRYPTO, ['ROOM_KEYS_RECOVER', 'ROOM_KEYS_REQUEST'])
-    })
-
-    it('CRYPTO 不再包含已移除的死常量', () => {
-      for (const dead of [
-        'KEYS_UPLOAD',
-        'KEYS_QUERY',
-        'KEYS_CLAIM',
-        'KEYS_CHANGES',
-        'DEVICE_SIGNING_UPLOAD',
-        'SIGNATURES_UPLOAD',
-        'SEND_TO_DEVICE',
-        'ROOM_KEYS_VERSION',
-        'ROOM_KEYS_KEYS',
-        'ROOM_KEYS_RECOVERY_PROGRESS',
-        'ROOM_KEYS_VERIFY',
-        'ROOM_KEYS_BATCH_RECOVER',
-        'KEY_ROTATION_CHECK',
-        'KEY_ROTATION_ROTATE',
-        'KEY_ROTATION_REVOKE',
-        'KEY_ROTATION_CONFIG',
-        // 后端端点与 SDK manager 同批删除：不得再留能力探测路径
-        'VERIFY_START',
-        'QR_CODE_SHOW',
-        'QR_CODE_SCAN'
-      ]) {
-        expect(CRYPTO).not.toHaveProperty(dead)
       }
     })
   })

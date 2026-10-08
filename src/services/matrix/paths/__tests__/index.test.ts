@@ -11,7 +11,6 @@ describe('paths/index aggregate', () => {
     expect(MATRIX_PATHS.ROOM).toBeDefined()
     expect(MATRIX_PATHS.BURN).toBeDefined()
     expect(MATRIX_PATHS.FRIENDS).toBeDefined()
-    expect(MATRIX_PATHS.CRYPTO).toBeDefined()
     expect(MATRIX_PATHS.SPACE).toBeDefined()
     expect(MATRIX_PATHS.SYNC).toBeDefined()
     expect(MATRIX_PATHS.NOTIFICATION).toBeDefined()

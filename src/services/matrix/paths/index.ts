@@ -4,7 +4,6 @@ import { ADMIN } from './admin'
 import { AUTH } from './auth'
 import { BURN } from './burn'
 import { CLIENT_CONFIG } from './clientConfig'
-import { CRYPTO } from './crypto'
 import { FRIENDS } from './friends'
 import { GUEST } from './guest'
 import { MEDIA } from './media'
@@ -40,7 +39,6 @@ export const MATRIX_PATHS = {
   ROOM,
   BURN,
   FRIENDS,
-  CRYPTO,
   SPACE,
   SYNC,
   NOTIFICATION,
