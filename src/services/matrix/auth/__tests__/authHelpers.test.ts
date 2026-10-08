@@ -31,7 +31,12 @@ vi.mock('@/services/matrix/network/runtimeFetch', () => ({
   getRuntimeAwareFetchFn: vi.fn()
 }))
 
-vi.mock('@/services/matrix/sdk', () => ({
+// 部分 mock：只替换 createClient，其余导出（尤其 `SDK_CONTRACT_ROUTE_TABLES`，
+// `paths/sdk-paths.ts` 在模块加载期就会读取）必须保留真实实现。
+// 旧写法 `() => ({ createClient: vi.fn() })` 会把该导出抹掉，报
+// "No SDK_CONTRACT_ROUTE_TABLES export is defined on the mock"。
+vi.mock('@/services/matrix/sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/services/matrix/sdk')>()),
   createClient: vi.fn()
 }))
 

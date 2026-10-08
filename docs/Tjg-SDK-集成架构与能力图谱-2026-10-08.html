@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TJG × matrix-js-sdk × synapse-rust 集成架构与能力图谱 — 2026-10-08</title>
+<style>
+  :root{
+    --tjg-brand:#13987f;
+    --tjg-brand-2:#4ecdc4;
+    --tjg-ink:#0f172a;
+    --tjg-ink-2:#334155;
+    --tjg-ink-3:#64748b;
+    --tjg-line:#e2e8f0;
+    --tjg-bg:#f6f8fa;
+    --tjg-card:#ffffff;
+    --tjg-ui:#2563eb;
+    --tjg-store:#7c3aed;
+    --tjg-service:#0891b2;
+    --tjg-sdk:#ea580c;
+    --tjg-net:#ca8a04;
+    --tjg-be:#be123c;
+    --tjg-tauri:#475569;
+    --tjg-std:#0891b2;
+    --tjg-priv:#be123c;
+    --tjg-admin:#7c3aed;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--tjg-bg);color:var(--tjg-ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+    line-height:1.7;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px 80px}
+  code,.mono{font-family:'SF Mono',ui-monospace,Menlo,Monaco,Consolas,monospace;font-size:.86em}
+  code{background:#eef2f6;padding:1px 5px;border-radius:4px;color:#0f172a}
+
+  /* ---------- cover ---------- */
+  .cover{background:linear-gradient(135deg,#0f766e 0%,#13987f 45%,#4ecdc4 100%);color:#fff;padding:56px 0 48px;margin-bottom:36px}
+  .cover .wrap{padding-bottom:0}
+  .cover h1{margin:0 0 10px;font-size:34px;letter-spacing:-.5px}
+  .cover p.sub{margin:0;font-size:15px;opacity:.92}
+  .pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .pill{background:rgba(255,255,255,.2);backdrop-filter:blur(6px);padding:4px 12px;border-radius:999px;font-size:12.5px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:26px}
+  .kpi{background:rgba(255,255,255,.16);backdrop-filter:blur(6px);border-radius:12px;padding:14px 16px}
+  .kpi b{display:block;font-size:26px;line-height:1.2}
+  .kpi span{font-size:12.5px;opacity:.88}
+  .kpi i{display:block;font-style:normal;font-size:11.5px;opacity:.75;margin-top:3px}
+
+  /* ---------- sections ---------- */
+  section{background:var(--tjg-card);border:1px solid var(--tjg-line);border-radius:14px;padding:26px 28px;margin-bottom:26px}
+  h2{margin:0 0 6px;font-size:21px;letter-spacing:-.2px}
+  h2 .idx{color:var(--tjg-brand);font-weight:800;margin-right:8px}
+  h3{margin:26px 0 10px;font-size:16px}
+  h4{margin:20px 0 8px;font-size:14px;color:var(--tjg-ink-2)}
+  .lead{color:var(--tjg-ink-3);font-size:13.5px;margin:0 0 20px}
+  p{margin:10px 0}
+  ul,ol{margin:10px 0;padding-left:22px}
+  li{margin:5px 0}
+  .note{background:#f0fdfa;border-left:3px solid var(--tjg-brand);padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;margin:14px 0}
+  .warn{background:#fff7ed;border-left:3px solid #ea580c;padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;margin:14px 0}
+  .danger{background:#fef2f2;border-left:3px solid #dc2626;padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;margin:14px 0}
+
+  /* ---------- layered diagram ---------- */
+  .stack{display:flex;flex-direction:column;gap:0;margin:8px 0 4px}
+  .layer{display:grid;grid-template-columns:132px 1fr;border:1px solid var(--tjg-line);border-radius:10px;overflow:hidden;background:#fff}
+  .layer + .layer{margin-top:8px}
+  .layer .tag{padding:12px 12px;font-size:12.5px;font-weight:700;color:#fff;display:flex;flex-direction:column;justify-content:center;gap:2px}
+  .layer .tag small{font-weight:400;font-size:10.5px;opacity:.85;line-height:1.35}
+  .layer .body{padding:11px 14px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .chip{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:3px 9px;font-size:12px;color:var(--tjg-ink-2)}
+  .chip.k{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+  .chip.p{background:#fdf2f8;border-color:#fbcfe8;color:#9d174d}
+  .chip.a{background:#f5f3ff;border-color:#ddd6fe;color:#5b21b6}
+  .l-ui .tag{background:var(--tjg-ui)}
+  .l-store .tag{background:var(--tjg-store)}
+  .l-svc .tag{background:var(--tjg-service)}
+  .l-sdk .tag{background:var(--tjg-sdk)}
+  .l-net .tag{background:var(--tjg-net)}
+  .l-be .tag{background:var(--tjg-be)}
+  .l-tauri .tag{background:var(--tjg-tauri)}
+  .arrow{text-align:center;color:#94a3b8;font-size:15px;line-height:1;margin:5px 0}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.split{grid-template-columns:1fr}.layer{grid-template-columns:1fr}.layer .tag{flex-direction:row;gap:8px}}
+
+  /* ---------- flow ---------- */
+  .flow{display:flex;flex-direction:column;gap:0;margin:16px 0}
+  .step{display:grid;grid-template-columns:52px 1fr;gap:0;align-items:stretch}
+  .step .n{display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:var(--tjg-service);font-size:13px}
+  .step .c{border:1px solid var(--tjg-line);border-left:none;border-radius:0 10px 10px 0;padding:10px 14px;background:#fff}
+  .step .c b{font-size:13.5px}
+  .step .c .path{font-size:11.5px;color:var(--tjg-ink-3);display:block;margin-top:2px}
+  .step .c .api{font-size:12px;margin-top:5px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;padding:5px 8px}
+  .step + .step{margin-top:6px}
+  .step .n.sdk{background:var(--tjg-sdk)}
+  .step .n.be{background:var(--tjg-be)}
+  .step .n.ui{background:var(--tjg-ui)}
+  .step .n.store{background:var(--tjg-store)}
+  .step .n.tauri{background:var(--tjg-tauri)}
+
+  /* ---------- tables ---------- */
+  table{width:100%;border-collapse:collapse;font-size:12.8px;margin:12px 0}
+  th,td{border:1px solid var(--tjg-line);padding:7px 10px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;font-weight:700;font-size:12.3px;color:var(--tjg-ink-2);white-space:nowrap}
+  tbody tr:nth-child(even){background:#fcfdfe}
+  td code{font-size:11.6px;background:#f1f5f9}
+  .scroll{overflow-x:auto}
+
+  /* ---------- bars ---------- */
+  .bars{display:flex;flex-direction:column;gap:7px;margin:14px 0}
+  .bar{display:grid;grid-template-columns:200px 1fr 58px;gap:10px;align-items:center;font-size:12.5px}
+  .bar .t{color:var(--tjg-ink-2);font-family:'SF Mono',ui-monospace,monospace;font-size:11.6px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar .track{background:#eef2f6;border-radius:5px;height:16px;overflow:hidden}
+  .bar .fill{height:100%;border-radius:5px}
+  .bar .v{text-align:right;font-weight:700;font-size:12px;color:var(--tjg-ink-2)}
+  @media(max-width:700px){.bar{grid-template-columns:120px 1fr 46px}}
+
+  /* ---------- capability map ---------- */
+  .capgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:14px;margin-top:14px}
+  .cap{border:1px solid var(--tjg-line);border-radius:11px;overflow:hidden;background:#fff}
+  .cap h4{margin:0;padding:9px 13px;background:#f8fafc;border-bottom:1px solid var(--tjg-line);font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .cap h4 em{font-style:normal;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:#e2e8f0;color:var(--tjg-ink-2);white-space:nowrap}
+  .cap h4 em.priv{background:#fee2e2;color:#991b1b}
+  .cap h4 em.mix{background:#ffedd5;color:#9a3412}
+  .cap ul{padding:10px 14px 12px 30px;margin:0;font-size:12.4px;color:var(--tjg-ink-2)}
+  .cap ul li{margin:3px 0}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--tjg-ink-3);margin-top:12px}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+  footer{text-align:center;color:var(--tjg-ink-3);font-size:12px;padding:24px 0 0}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="wrap">
+    <div class="pills">
+      <span class="pill">TJG 天机阁</span>
+      <span class="pill">matrix-js-sdk 40.2.0-langkebo.5</span>
+      <span class="pill">synapse-rust @ 04dd417</span>
+      <span class="pill">2026-10-08</span>
+    </div>
+    <h1>TJG 如何通过集成 SDK 与后端交互</h1>
+    <p class="sub">调用链解剖 · 能力图谱 · 四类 API 表面（标准 Matrix / Synapse Admin / vendor 私有 / AI 扩展）</p>
+    <div class="kpis">
+      <div class="kpi"><b>6</b><span>分层</span><i>UI → Store → Service → SDK → 传输 → 后端</i></div>
+      <div class="kpi"><b>220</b><span>个 Service 文件</span><i>13 个业务域，253 个测试文件</i></div>
+      <div class="kpi"><b>98</b><span>个 SDK Manager 扩展</span><i>默认全量注册，按需 getXxxManager()</i></div>
+      <div class="kpi"><b>1159</b><span>条后端路由</span><i>由 ledger 驱动 SDK 契约生成</i></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ 1 ============ -->
+<section>
+  <h2><span class="idx">图 1</span>六层集成架构：SDK 位于哪一层，边界在哪</h2>
+  <p class="lead">TJG 不直接说 HTTP，而是把 <code>matrix-js-sdk</code> 当作唯一的协议出口；SDK 之下再挂一层「运行时传输」，才落到 synapse-rust。</p>
+
+  <div class="stack">
+    <div class="layer l-ui">
+      <div class="tag">UI 层<small>Vue 3 / Tauri</small></div>
+      <div class="body">
+        <span class="chip">桌面 <code>src/views/</code></span>
+        <span class="chip">移动 <code>src/mobile/</code></span>
+        <span class="chip">组件 <code>src/components/</code></span>
+        <span class="chip">组合式 <code>src/composables/</code></span>
+        <span class="chip k">约束：禁止直接 import matrix-js-sdk</span>
+      </div>
+    </div>
+    <div class="arrow">▼ 只调用 store action / service 方法</div>
+
+    <div class="layer l-store">
+      <div class="tag">状态层<small>Pinia</small></div>
+      <div class="body">
+        <span class="chip">chat/</span><span class="chip">user/</span><span class="chip">settings/</span><span class="chip">admin/</span><span class="chip">widget/</span>
+        <span class="chip k">persist → localStorage，乐观渲染</span>
+      </div>
+    </div>
+    <div class="arrow">▼ service 方法</div>
+
+    <div class="layer l-svc">
+      <div class="tag">服务层<small>src/services/matrix/</small></div>
+      <div class="body">
+        <span class="chip">auth 19</span><span class="chip">room 23</span><span class="chip">messaging 21</span>
+        <span class="chip">crypto 16</span><span class="chip">notifications 16</span><span class="chip">media 13</span>
+        <span class="chip">user 11</span><span class="chip">admin 20</span><span class="chip">friends 6</span>
+        <span class="chip">ai 5</span><span class="chip">extensions 6</span>
+      </div>
+    </div>
+    <div class="arrow">▼ 三条 SDK 接入方式</div>
+
+    <div class="layer l-sdk">
+      <div class="tag">SDK 门面层<small>matrix-js-sdk fork</small></div>
+      <div class="body">
+        <span class="chip">① <code>BaseMatrixService.getClient()</code> → <code>client.xxx()</code> · 40 个服务</span>
+        <span class="chip">② <code>client.getXxxManager()</code> · ~50 个域管理器</span>
+        <span class="chip">③ <code>client.http.authedRequest()</code> · 10 个服务</span>
+        <span class="chip p">④ 裸 fetch · 4 个 SynapseExtensionHttpBase 子类</span>
+      </div>
+    </div>
+    <div class="arrow">▼ client 创建时注入 <code>fetchFn</code></div>
+
+    <div class="layer l-net">
+      <div class="tag">传输层<small>runtimeFetch.ts</small></div>
+      <div class="body">
+        <span class="chip">Tauri plugin-http（Rust reqwest 代理）</span>
+        <span class="chip">限流拦截器 <code>createRateLimitedFetch</code></span>
+        <span class="chip">网络级重试（指数退避 ×2）</span>
+        <span class="chip">浏览器 fetch 回退 + dev proxy 重写</span>
+      </div>
+    </div>
+    <div class="arrow">▼ HTTPS / WSS → <code>:8008</code></div>
+
+    <div class="layer l-be">
+      <div class="tag">后端<small>synapse-rust</small></div>
+      <div class="body">
+        <span class="chip">Axum 路由层 <code>src/web/routes/</code> · 1159 条</span>
+        <span class="chip">service 层</span>
+        <span class="chip">storage（PostgreSQL）</span>
+        <span class="chip">Redis</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="split" style="margin-top:20px">
+    <div>
+      <h4>旁路：Tauri / Rust 侧</h4>
+      <div class="stack">
+        <div class="layer l-tauri">
+          <div class="tag">本地能力<small>src-tauri/</small></div>
+          <div class="body">
+            <span class="chip">SQLite 消息历史</span>
+            <span class="chip">系统钥匙串存 token / SSSS 密码</span>
+            <span class="chip">文件管理 · 通知 · 托盘 · 更新</span>
+            <span class="chip">20 个 command 模块</span>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12.5px;color:var(--tjg-ink-3)">调用方式：<code>invokeWithErrorHandler('cmd', args)</code>，与 Matrix 链路完全并行，不经过 SDK。</p>
+    </div>
+    <div>
+      <h4>旁路：Web Worker</h4>
+      <div class="stack">
+        <div class="layer l-tauri" style="--x:0">
+          <div class="tag" style="background:#0d9488">Worker<small>matrixSdk.worker.ts</small></div>
+          <div class="body">
+            <span class="chip k">本地全文搜索索引（IndexedDB）</span>
+            <span class="chip k">预登录探测：versions / loginFlows / CORS / capabilities</span>
+            <span class="chip">Sliding Sync 端点连通性探测</span>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12.5px;color:var(--tjg-ink-3)">注意：Worker 内 <code>state.client</code> 从未被主线程初始化，客户端生命周期 handler 属未被调用的骨架。</p>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--tjg-std)"></i>标准 Matrix 协议</span>
+    <span><i class="dot" style="background:var(--tjg-priv)"></i>synapse-rust 私有（vendor）</span>
+    <span><i class="dot" style="background:var(--tjg-admin)"></i>Synapse Admin API</span>
+  </div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section>
+  <h2><span class="idx">图 2</span>一次「发送文本消息」的逐帧调用链</h2>
+  <p class="lead">主链路是 <b>组件 → composable → service → SDK</b>；Pinia store 是 composable 调用的<b>乐观渲染目标</b>，不是发送路径的中间站。</p>
+
+  <div class="flow">
+    <div class="step"><div class="n ui">1</div><div class="c">
+      <b>用户按回车 / 点发送</b><span class="path">src/components/rightBox/MsgInput.vue:587-598 → send()</span>
+      <div class="api mono">@keydown.enter → handleEnterKey → inputKeyDown → sendCore()</div>
+    </div></div>
+    <div class="step"><div class="n">2</div><div class="c">
+      <b>Composable：策略分发 + 内容构建</b><span class="path">composables/chat/useMsgInputSend.ts:53-109 · strategy/strategies/text.ts:13-62</span>
+      <div class="api mono">getMessageContentType() → getStrategy() → buildMessageBody()（DOMPurify 清洗）</div>
+    </div></div>
+    <div class="step"><div class="n store">3</div><div class="c">
+      <b>乐观渲染：先插本地消息</b><span class="path">useMsgInputSend.ts:69-83</span>
+      <div class="api mono">tempMsgId = 'T' + Date.now() → chatStore.pushMsg(tempMsg)，状态 SENDING</div>
+    </div></div>
+    <div class="step"><div class="n">4</div><div class="c">
+      <b>发送编排：连接门控 + 离线兜底</b><span class="path">composables/chat/useMessageSender.ts:26-41</span>
+      <div class="api mono">navigator.onLine && connectionState==='CONNECTED' ? 发送 : offlineQueueService.enqueue()</div>
+    </div></div>
+    <div class="step"><div class="n">5</div><div class="c">
+      <b>Service：重试包装</b><span class="path">services/matrix/messaging/MatrixMessageService.ts:83-133</span>
+      <div class="api mono">sendWithRetry（≤3 次，指数退避 1s→2s；NON_RETRYABLE_ERROR_PATTERNS 短路）</div>
+    </div></div>
+    <div class="step"><div class="n">6</div><div class="c">
+      <b>Service：加密前置校验</b><span class="path">services/matrix/MatrixEventService.ts:96-129</span>
+      <div class="api mono">加密房间但 Crypto 未就绪 → 提前抛错（避免堵住 SDK 发送队列）</div>
+    </div></div>
+    <div class="step"><div class="n sdk">7</div><div class="c">
+      <b>SDK：本地事件 + E2EE 加密</b><span class="path">client.ts:1921→1990→2046 · client-encrypt-send.ts:33</span>
+      <div class="api mono">prepareSendCompleteEventLifecycle → encryptAndSendEventWorkflow（Rust Crypto WASM）</div>
+    </div></div>
+    <div class="step"><div class="n sdk">8</div><div class="c">
+      <b>SDK：HTTP 层发出请求</b><span class="path">client-send-http.ts:38-78 · http-api/fetch.ts:153→366</span>
+      <div class="api mono">PUT /_matrix/client/v3/rooms/{roomId}/send/m.room.message/{txnId}</div>
+    </div></div>
+    <div class="step"><div class="n">9</div><div class="c">
+      <b>fetchFn 插桩：限流熔断 + 重试</b><span class="path">http-api/fetch.ts:83-89 → network/runtimeFetch.ts:230 → MatrixRateLimitInterceptor.ts:212-276</span>
+      <div class="api mono">全局熔断 6/10s、端点熔断 3 次、429 重试 ≤3 次；/sync 三类路径刻意放行</div>
+    </div></div>
+    <div class="step"><div class="n be">10</div><div class="c">
+      <b>synapse-rust 落库并返回</b><span class="path">route → service → storage(PostgreSQL)</span>
+      <div class="api mono">200 { "event_id": "$…" }</div>
+    </div></div>
+    <div class="step"><div class="n store">11</div><div class="c">
+      <b>回流：本地消息对账</b><span class="path">room/RealtimeService.ts:126-141 → stores/domains/chat/room/sync.ts:203-227</span>
+      <div class="api mono">checkMsgExist → updateMsg(status=SUCCESS, newMsgId=event_id)</div>
+    </div></div>
+    <div class="step"><div class="n tauri">12</div><div class="c">
+      <b>旁路：搜索索引增量</b><span class="path">MatrixEventRouter → matrixWorkerHost.upsertSearchEvents()</span>
+      <div class="api mono">postMessage 到 Worker，写入 IndexedDB 全文索引</div>
+    </div></div>
+  </div>
+
+  <div class="note"><b>关键点：</b>service 层只有 374 行里的一层薄封装（txnId + 重试 + 日志），真正的协议复杂度（加密、事务 ID 去重、时间线插入、失败重发）全部由 SDK 承担。这就是「集成 SDK」相对「手写 REST」的核心收益。</div>
+  <div class="warn"><b>事件回流存在双轨：</b><code>RealtimeService</code> 直接 <code>client.on(RoomEvent.Timeline)</code> 是实际生效路径；<code>MatrixEventRouter.emit('timeline')</code> 全仓<b>无任何消费者</b>，属冗余实现。</div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section>
+  <h2><span class="idx">图 3</span>后端 API 表面：SDK 契约覆盖了 1159 条路由</h2>
+  <p class="lead">synapse-rust 用 route ledger 声明全部路由，SDK 通过 <code>pnpm contract:sync</code> + <code>contract:codegen</code> 生成 46 个 <code>__generated__</code> 模块的类型化路由表；TJG 再用契约测试强制前端路径与之对齐。</p>
+
+  <h3>按命名空间分布</h3>
+  <div class="bars">
+    <div class="bar"><span class="t">/_matrix/client/v3</span><span class="track"><span class="fill" style="width:100%;background:var(--tjg-std)"></span></span><span class="v">395</span></div>
+    <div class="bar"><span class="t">/_synapse/admin/**</span><span class="track"><span class="fill" style="width:74.7%;background:var(--tjg-admin)"></span></span><span class="v">295</span></div>
+    <div class="bar"><span class="t">/_matrix/client/v1</span><span class="track"><span class="fill" style="width:55.4%;background:var(--tjg-std)"></span></span><span class="v">219</span></div>
+    <div class="bar"><span class="t">/_matrix/vendor/v1</span><span class="track"><span class="fill" style="width:17.2%;background:var(--tjg-priv)"></span></span><span class="v">68</span></div>
+    <div class="bar"><span class="t">/_matrix/federation</span><span class="track"><span class="fill" style="width:11.1%;background:#94a3b8"></span></span><span class="v">44</span></div>
+    <div class="bar"><span class="t">/_matrix/media/**</span><span class="track"><span class="fill" style="width:8.1%;background:var(--tjg-std)"></span></span><span class="v">32</span></div>
+    <div class="bar"><span class="t">/_synapse/worker</span><span class="track"><span class="fill" style="width:6.6%;background:var(--tjg-admin)"></span></span><span class="v">26</span></div>
+    <div class="bar"><span class="t">/_matrix/client/unstable</span><span class="track"><span class="fill" style="width:5.8%;background:var(--tjg-std)"></span></span><span class="v">23</span></div>
+    <div class="bar"><span class="t">/_matrix/app（AS）</span><span class="track"><span class="fill" style="width:3%;background:#94a3b8"></span></span><span class="v">12</span></div>
+    <div class="bar"><span class="t">其他（well-known / cas / key …）</span><span class="track"><span class="fill" style="width:11%;background:#94a3b8"></span></span><span class="v">45</span></div>
+  </div>
+
+  <div class="split">
+    <div>
+      <h4>四类 API 表面（TJG 的实际用法）</h4>
+      <div class="scroll"><table>
+        <thead><tr><th>表面</th><th>规模</th><th>TJG 接入方式</th></tr></thead>
+        <tbody>
+          <tr><td><b>标准 Matrix</b><br><span class="mono" style="font-size:11px">/_matrix/client/v3·v1·unstable</span></td><td>637</td><td>SDK 原生方法 + 域 Manager，service 层薄封装</td></tr>
+          <tr><td><b>Synapse Admin</b><br><span class="mono" style="font-size:11px">/_synapse/admin/**</span></td><td>295</td><td><code>client.getAdminManager()</code> 等 20 个 admin 服务</td></tr>
+          <tr><td><b>vendor 私有</b><br><span class="mono" style="font-size:11px">/_matrix/vendor/v1</span></td><td>68</td><td>好友/语音/阅后即焚/密钥轮换：SDK FriendManager 等扩展 + 部分直连</td></tr>
+          <tr><td><b>AI 扩展</b><br><span class="mono" style="font-size:11px">OpenClaw 网关</span></td><td>42</td><td>受 <code>VITE_AI_EXTENSION_ENABLED</code> 开关控制，关闭时直接拒绝请求</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <h4>路由最多的后端模块 Top 12</h4>
+      <div class="scroll"><table>
+        <thead><tr><th>模块</th><th>路由数</th></tr></thead>
+        <tbody>
+          <tr><td><code>room</code></td><td>99</td></tr>
+          <tr><td><code>key_backup</code></td><td>66</td></tr>
+          <tr><td><code>friend_room</code></td><td>65</td></tr>
+          <tr><td><code>federation</code></td><td>55</td></tr>
+          <tr><td><code>space</code></td><td>48</td></tr>
+          <tr><td><code>admin::room</code></td><td>46</td></tr>
+          <tr><td><code>app_service</code></td><td>39</td></tr>
+          <tr><td><code>e2ee</code></td><td>38</td></tr>
+          <tr><td><code>media</code></td><td>36</td></tr>
+          <tr><td><code>voice</code></td><td>30</td></tr>
+          <tr><td><code>admin::user</code></td><td>26</td></tr>
+          <tr><td><code>thread</code></td><td>23</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <h3>契约链：后端是唯一事实源</h3>
+  <div class="flow">
+    <div class="step"><div class="n be">1</div><div class="c"><b>synapse-rust 声明路由</b><span class="path">src/web/routes/route_ledger.rs · ledger_export.rs</span><div class="api mono">导出 fixture → tests/unit/fixtures/ledger_export_sdk/</div></div></div>
+    <div class="step"><div class="n sdk">2</div><div class="c"><b>SDK 同步并生成代码</b><span class="path">matrix-js-sdk</span><div class="api mono">pnpm contract:sync → docs/api-contract/generated/<br>pnpm contract:codegen → src/&lt;module&gt;/__generated__/{route-table,dto,contract-assertions}.ts</div></div></div>
+    <div class="step"><div class="n">3</div><div class="c"><b>TJG 消费并校验</b><span class="path">src/services/matrix/paths/sdk-paths.ts</span><div class="api mono">SDK_PATHS → MATRIX_PATHS，契约测试强制一致；meta/sdk-pin.json 锁 commit + SHA256</div></div></div>
+  </div>
+  <div class="warn"><b>副作用：</b>SDK 的路由表是生成物，前端又深度导入了 <code>../../../../../matrix-js-sdk/src/…/__generated__/route-table</code>。这意味着 <b>Tjg 构建实际上依赖 sibling 仓库的源码路径</b>，而不只是 vendored tarball——这是一处需要留意的耦合。</div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section>
+  <h2><span class="idx">图 4</span>冷启动与会话生命周期</h2>
+  <p class="lead">登录/恢复之后，SDK 侧发生的事：建 client → 注册 98 个 Manager 扩展 → 初始化 Rust Crypto → 探测 Sliding Sync → startClient。</p>
+
+  <div class="flow">
+    <div class="step"><div class="n ui">1</div><div class="c"><b>会话恢复 / 登录</b><span class="path">auth/SessionOrchestrator.ts → SessionRestoreService / SessionLoginService</span><div class="api mono">restoreWithAccessToken({ uid, accessToken, refreshToken, bootstrapAfterRestore: true })</div></div></div>
+    <div class="step"><div class="n">2</div><div class="c"><b>预解析 deviceId（跳过重建）</b><span class="path">MatrixClientLifecycle.resolveDeviceIdByWhoami</span><div class="api mono">GET /_matrix/client/v3/account/whoami（裸 fetch，不经 SDK）</div></div></div>
+    <div class="step"><div class="n sdk">3</div><div class="c"><b>创建 MatrixClient</b><span class="path">MatrixConnectionManager.initialize (146-179)</span><div class="api mono">clientOpts = { baseUrl, deviceId, accessToken, useAuthorizationHeader, fetchFn, cryptoCallbacks, store: IndexedDBStore }<br>await initializeManagerExtensions() → 98 个域 Manager 挂载</div></div></div>
+    <div class="step"><div class="n sdk">4</div><div class="c"><b>启动客户端</b><span class="path">MatrixClientLifecycle.doStartClient (163-254)</span><div class="api mono">isSlidingSyncSupported()（5s 超时兜底降级 /sync）→ syncManager.create() → cryptoTracker.ensureCrypto() → eventRouter.setup() → client.startClient()</div></div></div>
+    <div class="step"><div class="n sdk">5</div><div class="c"><b>Sliding Sync 多列表订阅</b><span class="path">MatrixSyncManager.create (89-187)</span><div class="api mono">4 个 list：default / friends(im.hula.friend_list) / spaces(m.space) / dms(is_dm=true)<br>pos 持久化 localStorage，TTL 25min（对齐后端 CONNECTION_TTL_MS=30min）</div></div></div>
+    <div class="step"><div class="n sdk">6</div><div class="c"><b>状态机流转</b><span class="path">MatrixConnectionManager.mapSyncState (199-234)</span><div class="api mono">SDK SyncState → DISCONNECTED / CONNECTING / CONNECTED / SYNCING / CATCHUP / RECONNECTING / ERROR</div></div></div>
+    <div class="step"><div class="n">7</div><div class="c"><b>启动后置流水线</b><span class="path">auth/SessionBootstrapService (150-215)</span><div class="api mono">syncDndFromAccountData → loadRooms → getSessionList → setUserInfo → startPresencePipeline → matrixWsBridge.start() → matrixWorkerHost.start() → bootstrapSearchIndex</div></div></div>
+  </div>
+
+  <h3>连接状态机</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px;margin-top:8px">
+    <span class="chip">DISCONNECTED</span><span style="color:#94a3b8">→</span>
+    <span class="chip">CONNECTING</span><span style="color:#94a3b8">→</span>
+    <span class="chip k">CONNECTED</span><span style="color:#94a3b8">→</span>
+    <span class="chip k">SYNCING</span><span style="color:#94a3b8">→</span>
+    <span class="chip k">CATCHUP</span><span style="color:#94a3b8">→</span>
+    <span class="chip k">SYNCED</span>
+    <span style="color:#94a3b8;margin-left:10px">任一环节 ↘</span>
+    <span class="chip p">ERROR →（指数退避重连）</span>
+    <span class="chip p" style="margin-left:8px">RECONNECTING（连续 3 次 sync 错误触发）</span>
+  </div>
+  <div class="note"><b>永不白屏策略：</b>登录后立刻用缓存数据渲染 UI，后台异步 <code>startClient()</code>；仅在 access_token 401 且无本地缓存时才跳登录页。Rust Crypto 初始化用 Web Locks + BroadcastChannel 做跨 WebView 互斥，避免多窗口争抢同一 IndexedDB。</div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section>
+  <h2><span class="idx">图 5</span>通过集成 SDK 可实现的能力图谱</h2>
+  <p class="lead">按 13 个业务域归纳。<em class="mono" style="font-size:11px">标准</em> = 标准 Matrix 协议；<em class="mono" style="font-size:11px">私有</em> = synapse-rust vendor 扩展；<em class="mono" style="font-size:11px">混合</em> = 两者兼有。</p>
+
+  <div class="capgrid">
+    <div class="cap">
+      <h4>认证与会话 <em>混合</em></h4>
+      <ul>
+        <li>密码登录、SSO 跳转、loginToken 完成</li>
+        <li>SAML / CAS / OIDC（含 discovery、jwks）</li>
+        <li>扫码登录 MSC4108（rendezvous 安全通道）</li>
+        <li>access_token 刷新与原地更新（不重建 client）</li>
+        <li>token 登录 / 会话恢复 / 登出清理 store</li>
+        <li>验证码 captcha、注册令牌、游客路径常量</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>房间与空间 <em>混合</em></h4>
+      <ul>
+        <li>创建 / 加入 / 邀请 / 离开 / 踢人 / 封禁</li>
+        <li>房间列表、别名、标签、话题、权限、成员</li>
+        <li>Space 层级树、父子关系、批量子房间</li>
+        <li>历史消息分页、事件上下文、时间戳定位事件</li>
+        <li>房间摘要 <code>summary/members·state</code>（私有）</li>
+        <li>防截屏 <code>anti_screenshot</code>（私有）</li>
+        <li>Sliding Sync 房间列表增量维护</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>消息与线程 <em>标准</em></h4>
+      <ul>
+        <li>文本 / HTML / emote / 图片 / 文件 / 位置</li>
+        <li>回复、编辑、撤回（redact）、转发</li>
+        <li>线程（thread）创建、参与、状态</li>
+        <li>表情回应与关系聚合 <code>/relations</code> <code>/aggregations</code></li>
+        <li>typing 状态、已读回执、阅读位置</li>
+        <li>消息重试、txnId 幂等、失败重发</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>端到端加密 <em>标准</em></h4>
+      <ul>
+        <li>Rust Crypto（WASM）初始化与健康监控</li>
+        <li>设备密钥上传/查询/认领、交叉签名</li>
+        <li>密钥备份与恢复（key_backup 66 条路由）</li>
+        <li>SSSS 密钥保险箱（私钥仅驻内存）</li>
+        <li>SAS / QR 设备验证、设备信任</li>
+        <li>Dehydrated device（离线设备）</li>
+        <li>密钥轮换（vendor 私有，18 条路由）</li>
+        <li>附件加密 / 解密</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>媒体与通话 <em>混合</em></h4>
+      <ul>
+        <li>上传 / 下载 / 缩略图 / 媒体配置与配额</li>
+        <li>大文件分片上传（ChunkUploadService）</li>
+        <li>语音消息：上传、转码、优化、转写（私有）</li>
+        <li>VoIP 通话：TURN、MSC4143 RTC transports</li>
+        <li>位置共享 m.location、Beacon 信标</li>
+        <li>URL 预览</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>通知与推送 <em>混合</em></h4>
+      <ul>
+        <li>Push rules 增删改查、推送规则编辑器</li>
+        <li>Pushers 注册（APNs / FCM / WebPush）</li>
+        <li>通知决策门（房间级 / 全局 / DND）</li>
+        <li>勿扰时段跨设备同步（账号数据）</li>
+        <li>通知确认 ack、徽章计数</li>
+        <li>本地系统通知（Tauri 插件）</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>用户与好友 <em>混合</em></h4>
+      <ul>
+        <li>Profile（displayname / avatar_url / 扩展字段）</li>
+        <li>Presence 在线状态（含门控开关）</li>
+        <li>设备列表、设备删除、三方 ID (3PID)</li>
+        <li>用户目录搜索</li>
+        <li>好友关系：申请/接受/拒绝/删除/备注/分组/搜索（vendor 私有，65 条路由）</li>
+        <li>特殊关注好友、好友 DM 与状态</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>管理后台 <em>私有</em></h4>
+      <ul>
+        <li>用户：查询/停用/激活/重置密码/登出</li>
+        <li>房间：列表/详情/成员/封禁/删除</li>
+        <li>媒体：配额、清理、大小统计</li>
+        <li>联邦：目的地、重试、黑洞</li>
+        <li>注册令牌、报表、保留策略、通知、安全、审计</li>
+        <li>后台更新任务、外部服务健康检查</li>
+        <li>遥测（Rust 实现，Web/Worker 双视图）</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>AI 能力 <em class="priv">私有</em></h4>
+      <ul>
+        <li>会话管理（创建/更新/分页/删除）</li>
+        <li>模型列表、剩余额度、用量</li>
+        <li>Chat Role 角色与分类</li>
+        <li>API Key 管理、余额查询、平台配置</li>
+        <li>图像绘制、视频生成、音频生成与音色</li>
+        <li>消息流式发送 <code>messageSendStream</code></li>
+        <li>地图：坐标转换、逆地理编码、静态图</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>同步 <em>标准</em></h4>
+      <ul>
+        <li>Sliding Sync 多列表（default/friends/spaces/dms）</li>
+        <li>网络自适应预设（wifi → slow-2g 四档）</li>
+        <li>pos 增量持久化 + 400 过期清理</li>
+        <li>Sliding Sync 不可用时降级传统 <code>/sync</code></li>
+        <li>系统唤醒后强制重连</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>搜索 <em>混合</em></h4>
+      <ul>
+        <li>服务端搜索 <code>getSearchManager()</code></li>
+        <li>本地全文索引在 Worker + IndexedDB</li>
+        <li>房间/事件增量 upsert、撤回删除、重置</li>
+      </ul>
+    </div>
+
+    <div class="cap">
+      <h4>Widget / 其他 <em class="priv">私有</em></h4>
+      <ul>
+        <li>Widget 能力协商与消息收发</li>
+        <li>阅后即焚（burn-after-read）统计与房间设置</li>
+        <li>事件举报、房间举报、评分</li>
+        <li>举报扫描器信息</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:18px">
+    <b>一句话总结能力边界：</b>凡是「聊天软件该有的」——登录、房间、消息、线程、加密、媒体、通话、通知、好友、搜索——TJG 全部通过 SDK 拿到，service 层只做编排；凡是「synapse-rust 特有的运营/私有协议」——好友关系、语音转写、阅后即焚、密钥轮换、AI、管理后台——走的是 SDK 的 Manager 扩展或 <code>authedRequest</code>/裸 fetch，仍然复用同一套鉴权与传输管线。
+  </div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section>
+  <h2><span class="idx">图 6</span>三层防护：限流、去重、重试挂在哪</h2>
+  <p class="lead">这是「集成 SDK」而不是「到处 fetch」的第二个收益：横切关注点有唯一插桩点。</p>
+  <div class="scroll"><table>
+    <thead><tr><th>机制</th><th>文件</th><th>插桩位置</th><th>行为</th></tr></thead>
+    <tbody>
+      <tr><td>运行时传输选择</td><td><code>network/runtimeFetch.ts:230</code></td><td><code>createClient({ fetchFn })</code> → SDK 所有 HTTP 都走它</td><td>Tauri 下用 Rust reqwest；失败回退浏览器 fetch；dev 环境重写为 Vite proxy 避免 CORS/自签证书</td></tr>
+      <tr><td>限流拦截</td><td><code>MatrixRateLimitInterceptor.ts</code></td><td><code>getRuntimeAwareFetch</code> 的返回值被 <code>createRateLimitedFetch</code> 包裹</td><td>按 429 / <code>Retry-After</code> / <code>x-ratelimit-remaining</code> 退避排队</td></tr>
+      <tr><td>网络级重试</td><td><code>network/runtimeFetch.ts:138</code></td><td>fetchWithRetry</td><td>仅对连接拒绝/超时等网络错误指数退避 2 次；4xx/5xx 不重试；主动 abort 归一化为 AbortError 不重放</td></tr>
+      <tr><td>请求去重</td><td><code>MatrixRequestDeduper.ts</code></td><td>service 层显式调用</td><td>合并同一时刻的相同在途请求</td></tr>
+      <tr><td>Token 刷新</td><td><code>MatrixTokenManager.ts</code></td><td>ConnectionManager 原地 <code>setAccessToken</code></td><td>身份等价时绝不重建 client，避免 sync 中断与 E2EE 重新握手</td></tr>
+      <tr><td>SDK 超时/取消语义</td><td><code>runtimeFetch.ts:99-112</code></td><td>Tauri plugin-http 资源表竞态</td><td>「resource id invalid」/「Request cancelled」识别为主动取消，避免 /sync 幽灵重放</td></tr>
+      <tr><td>Store 缓存</td><td><code>storeFactory.ts</code></td><td><code>createClient({ store })</code></td><td>per-user IndexedDBStore（多账号隔离 + 多窗口 startup 锁）；失败降级 MemoryStore</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section>
+  <h2><span class="idx">图 7</span>值得注意的耦合与风险点</h2>
+  <div class="danger"><b>① 设置/撤销群管理员调用了不存在的 SDK 方法（P0，活跃路径）。</b>
+  <code>room/RoomOperations.ts:495-498</code> 里是
+  <code>await client.setUserPowerLevel(userId, roomId, powerLevel)</code>。实测（在已安装的
+  <code>Tjg/node_modules/matrix-js-sdk</code> 内检索）：<code>setUserPowerLevel</code>
+  在整个包的 <code>src/</code> + <code>lib/</code> 中<b>只有 1 处命中</b>，即
+  <code>src/matrix-client-extensions.ts:362</code> 的<b>类型声明</b>——没有任何
+  <code>MatrixClient.prototype</code> 或 Manager 实现；且 SDK 声明的签名是
+  <code>(roomId, userId, powerLevel)</code>，与 Tjg 传入的<b>顺序相反</b>。<br/>
+  调用链是真实用户路径：右键菜单 <code>contextMenuLists.ts:560 / :589</code> →
+  <code>groupStore.addAdmin / revokeAdmin</code>（<code>roles.ts:94 / :108</code>）→
+  <code>setMemberPowerLevel</code> → <b><code>TypeError: client.setUserPowerLevel is not a function</code></b>。
+  SDK 真正可用的等价 API 是 <code>StateSendManager.setPowerLevel(roomId, userId, powerLevel)</code>
+  （<code>src/state-send/index.ts:59</code>）。</div>
+  <div class="danger"><b>② Worker 名不副实。</b><code>MatrixWorkerHost</code> 只暴露 15 个方法（搜索索引、探测、store 统计），<b>未暴露</b> <code>initialize/login/startClient/syncOnce/getClient</code>；主线程从不发送这些消息。因此 Worker 内 <code>state.client</code> 永远是 null，<code>handleGetStats</code> 恒返回 null、<code>handleClearStores</code> 恒为 no-op。CLAUDE.md 中「Matrix SDK 运行在 Web Worker」目前是设计意图而非既成事实。</div>
+  <div class="warn"><b>③ 四条接入路径并存，且同一后端路由常有多套实现。</b>service 层同时存在 <code>client.xxx()</code>（40 个服务）、<code>getXxxManager()</code>、<code>client.http.authedRequest()</code>（10 个服务）与 <code>SynapseExtensionHttpBase</code> 里的裸 <code>fetch</code>（4 个子类）。后两者绕过 SDK 的 Manager 层。<br/>
+  实测的并行实现：<b>房间能力</b> —— <code>MetadataService.ts:32</code>（走 RoomManager）vs <code>RoomCapabilitiesService.ts:52</code>（走 <code>matrixHttpClient</code> + 自建 5min 缓存 + 去重）；<b>房间摘要</b> —— <code>SummaryService.ts:110</code> vs <code>MatrixRoomSummaryService.ts:221-366</code> vs <code>extensions/SynapseRoomSummaryService.ts</code>；<b>sticky events</b> —— <code>RoomOperations.ts:448/462</code> vs <code>SynapseStickyEventService.ts:24</code>。</div>
+  <div class="warn"><b>③b 其他静态可见风险。</b>
+  <code>RoomOperations.ts:318-336</code> 的 <code>incrementUnread</code>/<code>clearUnread</code> 是<b>空实现存根</b>（只 <code>getRoom()</code> 后吞异常）；
+  pin/unpin（<code>:427-442</code>）、<code>setDirectRoom</code>（<code>:223-234</code>）、pushRule 先删后建（<code>:570-595</code>）均为<b>非原子读改写且无并发保护</b>；
+  <code>MatrixMessageService.ts:169/189</code> 的 <code>sendHtmlMessage</code>/<code>sendEmote</code> 实参顺序存疑（<code>m&lt;timestamp&gt;</code> 型 txnId 不满足 SDK 的 <code>$</code>/null 前缀消解规则）；
+  <code>client.login()</code> 与 <code>client.oidcUserInfo()</code> 同样只有类型声明无实现，SSO 登录对 HTTP 回退形成隐性依赖（<code>MatrixClientAuth.ts:199</code>、<code>MatrixOidcService.ts:178</code>）；
+  <code>MatrixDelayedEventsService.ts:205</code> 调用的 <code>client._unstable_getDelayedEvents</code> 在 vendored 包中无实现。</div>
+  <div class="warn"><b>④ 前缀剥离补丁。</b><code>MatrixHttpClient.stripMatrixPrefix()</code> 存在的原因是「调用方传了完整前缀，SDK 又拼一次默认前缀」导致 URL 翻倍 404。这是路径常量与 SDK 默认前缀约定不一致的症状性修复。</div>
+  <div class="warn"><b>⑤ 构建依赖 sibling 源码。</b><code>paths/sdk-paths.ts</code> 深度导入 <code>../../../../../matrix-js-sdk/src/…/__generated__/route-table</code>，绕过 SDK package exports；纯净的 tarball 消费模式下该路径并不存在。</div>
+  <div class="danger"><b>⑥ Sliding Sync 好友列表过滤常量与后端不匹配。</b><code>MatrixSyncManager.ts:119</code> 用
+  <code>room_types: ['im.hula.friend_list']</code>，但后端 <code>friend_room_service/mod.rs:161</code> 创建好友列表房间时用的是
+  <code>m.friends</code>；全仓检索 <code>im.hula</code> 在 synapse-rust 中 0 命中。该 list 恒为空，好友房间实际随
+  <code>default</code> 列表同步。</div>
+  <div class="warn"><b>⑦ 扩展降级监控只覆盖 1/98。</b>
+  <code>src/stores/domains/chat/capability.ts:10</code> 只登记
+  <code>CRITICAL_EXTENSION_IDS = ['friend-manager']</code>。其余 97 个 Manager 扩展
+  （admin / voice / beacon / media / keyRotation …）缺失时不会进入 degraded 告警，
+  只在各自调用点兜底或抛错——用户侧看不到降级信号。</div>
+  <div class="warn"><b>⑧ RoomSummaryManager 方法名 10 处不匹配（潜伏缺陷，当前无调用点）。</b>
+  <code>room/MatrixRoomSummaryService.ts:9-21</code> 声明了一个<b>本地</b> <code>interface RoomSummaryManager</code>；
+  其中 <code>createRoomSummary / updateRoomSummary / deleteRoomSummary / syncRoomSummary /
+  batchWriteMemberSummaries / updateMemberSummary / deleteMemberSummary / recalculateStats /
+  recalculateHeroes / clearUnread</code> 在 SDK fork 的 <code>RoomSummaryManager</code> 里
+  <b>一个都不存在</b>（逐名 grep 0 命中）；SDK 侧对应 <code>createOrRefreshSummary / updateSummary /
+  deleteSummary / syncSummary / writeSummaryMembers / updateSummaryMember / deleteSummaryMember /
+  recalculateSummaryStats / recalculateSummaryHeroes / clearSummaryUnread</code>。<br/>
+  <b>实测影响面：</b>受影响的只是 service 上的 <code>*ViaApi</code> 一族，它们<b>全部没有调用点</b>，
+  且用 <code>if (!manager.xxx) throw</code> 守卫，所以一旦被调用必抛错、当前不会在线上触发。
+  <b>实际在用的</b> <code>getRoomSummary / getRoomSummaries / getAllRoomSummaries / getRoomListSnapshot /
+  getRoomStats / getRoomMembers</code> 压根不经过 SDK manager，而是本地读 <code>client.getRoom()</code> 自建
+  （<code>:72-100</code>），功能正常。→ 属潜伏缺陷 + 误导性类型，非线上故障。</div>
+  <div class="warn"><b>⑨ 4 个 SlidingSync 幻影类型声明（死声明，非活跃缺陷）。</b>
+  <code>src/types/matrix-js-sdk-augmentations.d.ts:44-57</code> 声明
+  <code>getList / subscribeToRoom / unsubscribeFromRoom / getSyncToken</code> 为「Tjg 自定义扩展」。
+  实测：<code>getList</code> 属于 <b><code>SlidingList</code></b> 类（<code>sliding-sync.ts:230</code>）而非 <code>SlidingSync</code>；
+  其余三个在 <code>sliding-sync.ts</code> 全文 <b>0 命中</b>。全仓确认这 4 个方法<b>没有任何调用点</b>。
+  对照：<code>setInitialPos</code> 是真实存在的 fork 方法（<code>:363</code>），且被正常使用。</div>
+  <div class="warn"><b>⑩ 去重器与缓存管理器基本是死资产。</b>
+  <code>MatrixRequestDeduper</code> 只在 3 处被手动包裹（房间能力、房间未读数、pusher 列表），
+  <b>发消息/建房间/上传都不去重</b>；<code>MatrixCacheManager</code> 在生产代码里只被读 stats，无任何 get/set 调用。</div>
+  <div class="warn"><b>⑪ XHR 旁路逃过守卫。</b>
+  <code>media/mediaUploadHelpers.ts:48-111</code> 用 <code>XMLHttpRequest</code> 直连
+  <code>POST /_matrix/media/v3/upload</code> 并手工带 token；<code>scripts/check-no-raw-fetch.mjs:13</code>
+  的正则 <code>\bfetch\(</code> 抓不到 XHR，该请求也不经过限流熔断器。同理 Worker 内 <code>fetch</code>
+  与 <code>App.vue</code>/<code>useAvatarUpload</code>/<code>video.ts</code> 的业务 fetch 也不受限流覆盖。</div>
+  <div class="note"><b>⑫ 契约链是真正的护城河。</b>1159 条路由 / 46 个生成模块 / <code>meta/sdk-pin.json</code> 锁 commit+SHA256 / <code>friends.contract.test.ts</code> 等契约测试——这套机制让「后端改路由 → 前端编译失败」成为可能，是三仓库协同里最有价值的部分。</div>
+</section>
+
+<footer>
+  基于 Tjg @ 2026-10-08 · matrix-js-sdk 40.2.0-langkebo.5 (640cc44) · synapse-rust 04dd417 静态代码调研生成
+</footer>
+
+</div>
+</body>
+</html>

@@ -27,7 +27,14 @@ import { fileURLToPath } from 'node:url'
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const packageJsonPath = path.join(repoRoot, 'package.json')
 const pinPath = path.join(repoRoot, 'meta', 'sdk-pin.json')
-const sdkSiblingRoot = path.resolve(repoRoot, '..', 'matrix-js-sdk')
+// Which SDK checkout to pack. Defaults to the sibling `../matrix-js-sdk`, but the
+// documented way to work on the SDK without disturbing another writer's in-flight
+// state is a `git worktree` (see the workspace CLAUDE.md), so allow pointing the
+// packer at it explicitly:
+//   TJG_SDK_DIR=/path/to/sdk-worktree node scripts/pack-sdk-tarball.mjs --apply
+const sdkSiblingRoot = process.env.TJG_SDK_DIR
+  ? path.resolve(process.env.TJG_SDK_DIR)
+  : path.resolve(repoRoot, '..', 'matrix-js-sdk')
 const synapseSiblingRoot = path.resolve(repoRoot, '..', 'synapse-rust')
 const vendorDir = path.join(repoRoot, 'vendor')
 const tarballPath = path.join(vendorDir, 'matrix-js-sdk.tgz')

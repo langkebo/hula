@@ -6,13 +6,19 @@
  * 前端 `MATRIX_PATHS`（见 `./index.ts`）是对 SDK 路由的 ergonomic 视图，二者必须保持一致；
  * `__tests__/friends.contract.test.ts` 等契约测试会强制校验，`validateTjgPath` 提供运行时校验能力。
  *
- * 注：SDK `package.json` exports 未暴露 `__generated__/route-table`，这里通过相对路径深度导入
- * （与既有 `__tests__/friends.contract.test.ts` 一致），在 vite 构建与 vitest 中均可解析。
+ * 注：此前这里用 `../../../../../matrix-js-sdk/src/...` 深度导入 SDK 源文件，有两个真实问题：
+ *   1. 绕过 SDK `package.json#exports`，把前端绑死在 SDK 的**源码目录布局**上；
+ *   2. 该相对路径解析到的是工作区 sibling 仓库，而运行时 `matrix-js-sdk` 解析到 vendored tarball，
+ *      于是同一次构建里混入了两个 SDK 版本——契约常量与实际 HTTP 客户端可能对不上。
+ * 现统一走 SDK 的聚合契约出口 `matrix-js-sdk/contract`（经本仓唯一的 SDK 咽喉点
+ * `@/services/matrix/sdk` 转发，以符合 `check-sdk-boundary` 的边界约定）。
  */
-import { BURN_AFTER_READ_ROUTES } from '../../../../../matrix-js-sdk/src/burn-after-read/__generated__/route-table'
-import { FRIEND_ROUTES } from '../../../../../matrix-js-sdk/src/friend/__generated__/route-table'
-import { ROOM_ROUTES } from '../../../../../matrix-js-sdk/src/room/__generated__/route-table'
-import { WIDGET_ROUTES } from '../../../../../matrix-js-sdk/src/widget/__generated__/route-table'
+import { SDK_CONTRACT_ROUTE_TABLES } from '../sdk'
+
+const BURN_AFTER_READ_ROUTES = SDK_CONTRACT_ROUTE_TABLES['burn-after-read']
+const FRIEND_ROUTES = SDK_CONTRACT_ROUTE_TABLES.friend
+const ROOM_ROUTES = SDK_CONTRACT_ROUTE_TABLES.room
+const WIDGET_ROUTES = SDK_CONTRACT_ROUTE_TABLES.widget
 
 // 按模块分组导出（沿用 SDK `_ROUTES` 命名的同时提供 `_PATHS` 别名，便于按模块定向校验）
 /** SDK friend 模块路由表。 */

@@ -7,10 +7,14 @@
  * 当后端路径变更时，此测试会失败，强制开发者同步前端路径常量。
  */
 import { describe, expect, it } from 'vitest'
-// SDK route-table 通过相对路径导入，绕过 package.json exports 限制（仅测试使用）
-import { FRIEND_ROUTES } from '../../../../../../matrix-js-sdk/src/friend/__generated__/route-table'
+// 走本仓唯一的 SDK 咽喉点（`@/services/matrix/sdk` 转发了 SDK 的聚合契约出口）。
+// 不再用相对路径深度导入 SDK 源码：那会绕过 package.json#exports、把测试绑死在
+// SDK 的源码目录布局上，且可能解析到另一个 SDK 检出。
+import { SDK_CONTRACT_ROUTE_TABLES } from '@/services/matrix/sdk'
 import { FRIENDS } from '../friends'
-import { PREFIX_V1 } from '../prefixes'
+import { PREFIX_V1, PREFIX_V3, PREFIX_VENDOR_V1 } from '../prefixes'
+
+const FRIEND_ROUTES = SDK_CONTRACT_ROUTE_TABLES.friend
 
 /** 将 SDK route-table 中的 {param} 占位符替换为通配正则，用于匹配前端路径 */
 function buildPathMatcher(sdkPath: string): RegExp {
@@ -93,10 +97,14 @@ describe('§9.1 路径常量单一事实源 — friends 模块', () => {
     expectPathMatchesSdk(FRIENDS.STATUS('@alice:server'))
   })
 
-  it('前端使用的 PREFIX_V1 与 SDK route-table v1 前缀一致', () => {
-    // 抽样验证：SDK 第一条 v1 路径的前缀应与 PREFIX_V1 一致
-    const firstV1Path = v1Paths[0]
-    expect(firstV1Path).toBeDefined()
-    expect(firstV1Path.startsWith(PREFIX_V1)).toBe(true)
+  it('SDK route-table 的 v1 路径只落在私有规范前缀 PREFIX_VENDOR_V1 上', () => {
+    // ISSUE-13：私有面唯一规范位置是 `/_matrix/vendor/v1`。后端 2026-10-08 删除了
+    // `/_matrix/client/{v1,v3}` 下的 77 条死别名，SDK route-table 随之收敛 ⇒ 这条
+    // 断言从"v1 前缀必须是 client/v1"反转为"v1 前缀必须全部是 vendor/v1，且不得再出现
+    // client 前缀孪生"。它同时是回归守卫：谁把别名加回来，这里立刻红。
+    expect(v1Paths.length).toBeGreaterThan(0)
+    expect(v1Paths.every((p) => p.startsWith(PREFIX_VENDOR_V1))).toBe(true)
+    const clientTwins = FRIEND_ROUTES.filter((r) => r.path.startsWith(PREFIX_V1) || r.path.startsWith(PREFIX_V3))
+    expect(clientTwins).toEqual([])
   })
 })

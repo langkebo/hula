@@ -42,6 +42,16 @@ export {
 } from 'matrix-js-sdk'
 export type { AdminManager, AdminShutdownRoomResult } from 'matrix-js-sdk/admin'
 export { ClientEvent } from 'matrix-js-sdk/client'
+export type { SdkContractModule, SdkContractRoute } from 'matrix-js-sdk/contract'
+// 契约路由表：SDK 的聚合出口（`matrix-js-sdk/contract` 汇总全部 __generated__/route-table）。
+// 这里转发而非让 paths/sdk-paths.ts 直接 import，是为了保持「SDK 只有一个咽喉点」的边界约定
+// —— scripts/check-sdk-boundary.mjs 只放行本文件这类白名单模块。
+export {
+  SDK_CONTRACT_MODULE_SIZES,
+  SDK_CONTRACT_MODULES,
+  SDK_CONTRACT_ROUTE_TABLES,
+  SDK_CONTRACT_ROUTES
+} from 'matrix-js-sdk/contract'
 export type { CryptoCallbacks } from 'matrix-js-sdk/crypto'
 export { decodeRecoveryKey, encodeRecoveryKey } from 'matrix-js-sdk/crypto'
 export type { DeviceKeysManager } from 'matrix-js-sdk/device-keys'
