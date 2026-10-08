@@ -72,7 +72,15 @@ vi.mock('@/components/windows/ActionBar.vue', async () => {
 
 vi.mock('@/components/common/ContextMenu.vue', async () => {
   const { defineComponent, h } = await import('vue')
-  return { default: defineComponent({ name: 'ContextMenu', setup: (_, { slots }) => () => h('div', slots.default?.()) }) }
+  return {
+    default: defineComponent({
+      name: 'ContextMenu',
+      setup:
+        (_, { slots }) =>
+        () =>
+          h('div', slots.default?.())
+    })
+  }
 })
 
 vi.mock('@/components/rightBox/renderMessage/index.vue', async () => {

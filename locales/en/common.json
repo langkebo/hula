@@ -109,5 +109,12 @@
   "copy": "Copy",
   "load_more": "Load More",
   "saving": "Saving…",
-  "unknownUser": "Unknown User"
+  "unknownUser": "Unknown User",
+  "thread": {
+    "load_failed": "Failed to load thread",
+    "send": "Send",
+    "send_failed": "Failed to send",
+    "send_success": "Sent",
+    "start": "Start thread"
+  }
 }

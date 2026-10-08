@@ -74,7 +74,10 @@ const mountComponent = async () => {
         'van-popup': defineComponent({
           name: 'VanPopup',
           props: { show: Boolean },
-          setup: (_, { slots }) => () => h('div', slots.default?.())
+          setup:
+            (_, { slots }) =>
+            () =>
+              h('div', slots.default?.())
         }),
         'van-image': true,
         'van-cell': true

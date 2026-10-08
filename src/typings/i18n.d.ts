@@ -1783,7 +1783,14 @@ export type I18nKeys = {
     "copy": "复制",
     "load_more": "加载更多",
     "saving": "保存中…",
-    "unknownUser": "未知用户"
+    "unknownUser": "未知用户",
+    "thread": {
+      "load_failed": "加载讨论串失败",
+      "send": "发送",
+      "send_failed": "发送失败",
+      "send_success": "发送成功",
+      "start": "开始讨论串"
+    }
   },
   "components": {
     "common": {
@@ -5007,7 +5014,6 @@ export type I18nKeys = {
         "delete": "删除",
         "dismiss": "驳回",
         "escalate": "上报",
-        "history": "历史",
         "resolve": "解决"
       },
       "dialog": {
@@ -5016,9 +5022,6 @@ export type I18nKeys = {
         "reasonPlaceholder": "请输入驳回原因…",
         "reasonRequired": "请输入驳回原因",
         "resolveTitle": "解决备注"
-      },
-      "history": {
-        "title": "处理历史"
       },
       "loadFailed": "加载失败，请重试",
       "stats": {
@@ -6142,8 +6145,6 @@ export type I18nKeys = {
       "this_device_verified": "此设备已验证",
       "this_device_unverified": "此设备未验证",
       "verify_device_action": "验证设备",
-      "qr_verify_label": "二维码验证",
-      "qr_verify_desc": "通过显示或扫描二维码完成跨设备验证",
       "pending_verifications_label": "待处理验证请求",
       "pending_verification_cancelled": "已取消待处理验证",
       "pending_verification_cancel_failed": "取消待处理验证失败",
@@ -6184,21 +6185,9 @@ export type I18nKeys = {
         "start_verification": "开始验证",
         "accept_request": "接受请求",
         "inbound_request_hint": "检测到来自另一台设备的验证请求，请先接受再核对指纹。",
-        "show_qr": "显示二维码",
-        "scan_qr": "扫描二维码",
         "fingerprint_label": "设备密钥指纹",
         "fingerprint_hint": "请确认此指纹与您其他设备上显示的指纹一致",
         "match_question": "此指纹是否与您其他设备上显示的一致？",
-        "qr_code_label": "设备验证二维码",
-        "qr_code_hint": "请在另一台设备上扫描此二维码，扫描后可继续完成验证。",
-        "scan_qr_label": "扫描另一台设备展示的二维码",
-        "scan_qr_placeholder": "粘贴或输入二维码内容",
-        "scan_qr_hint": "如果当前设备无法直接扫码，可先在另一端复制二维码内容到此处。",
-        "submit_qr": "提交二维码",
-        "scan_qr_required": "请输入二维码内容",
-        "qr_scan_success": "二维码验证成功",
-        "qr_scan_failed": "二维码验证失败",
-        "qr_load_failed": "二维码加载失败",
         "mismatch": "不匹配",
         "confirm_match": "确认匹配",
         "success_title": "设备验证成功！",
@@ -6926,26 +6915,17 @@ export type I18nKeys = {
   "verification": {
     "title": "设备验证",
     "methods": {
-      "sas": "Emoji 对比验证",
-      "qr_scan": "扫码验证",
-      "qr_show": "显示二维码"
+      "sas": "Emoji 对比验证"
     },
     "steps": {
-      "show_key": "对比 Emoji",
-      "show_qr": "显示二维码",
-      "scan_qr": "扫描二维码"
+      "show_key": "对比 Emoji"
     },
     "sas": {
       "match": "匹配",
       "mismatch": "不匹配",
       "waiting": "等待对方确认..."
     },
-    "qr": {
-      "show_desc": "请让对方扫描此二维码",
-      "scan_desc": "将摄像头对准对方显示的二维码",
-      "show_unavailable": "二维码展示功能暂未开放",
-      "scan_unavailable": "二维码扫描功能暂未开放"
-    },
+    "qr": {},
     "result": {
       "success_title": "验证成功",
       "success_desc": "设备已验证，现在可以安全通信",

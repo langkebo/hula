@@ -109,5 +109,12 @@
   "copy": "复制",
   "load_more": "加载更多",
   "saving": "保存中…",
-  "unknownUser": "未知用户"
+  "unknownUser": "未知用户",
+  "thread": {
+    "load_failed": "加载讨论串失败",
+    "send": "发送",
+    "send_failed": "发送失败",
+    "send_success": "发送成功",
+    "start": "开始讨论串"
+  }
 }
