@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AppError } from '@/common/errors'
+import { type AppError, toAppError } from '@/common/errors'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 
 const announceMock = vi.hoisted(() => vi.fn())
@@ -120,6 +120,50 @@ describe('useActionFeedback', () => {
       showError(new Error('网络断开'))
       // Error 对象无 errcode，回退到 message
       expect(window.$message.error).toHaveBeenCalledWith('网络断开')
+    })
+  })
+
+  describe('showError — AppError.i18nKey 优先于 errcode 表', () => {
+    it('优先展示 i18nKey 的 vue-i18n 文案（502 走 server_unavailable，而非 HTTP_502 表文案）', () => {
+      const { showError } = useActionFeedback()
+      // toAppError 对 5xx 产出 code=HTTP_502、i18nKey=error.matrix.server_unavailable，
+      // 两个候选文案在 zh-CN 下不同（网关错误 vs 服务器暂时不可用），可观测地证明读取点。
+      const appError = toAppError(Object.assign(new Error('bad gateway'), { httpStatus: 502 }))
+      expect('code' in appError ? appError.code : undefined).toBe('HTTP_502')
+      expect(appError.i18nKey).toBe('error.matrix.server_unavailable')
+
+      showError(appError)
+
+      expect(window.$message.error).toHaveBeenCalledWith('服务器暂时不可用，请稍后重试')
+      expect(announceMock).toHaveBeenCalledWith('服务器暂时不可用，请稍后重试', 'assertive')
+    })
+
+    it('i18nKey 缺失时回落 errcode 表（行为保持）', () => {
+      const { showError } = useActionFeedback()
+      const appError: AppError = {
+        kind: 'retryable',
+        code: 'TIMEOUT',
+        message: 'raw timeout'
+      }
+
+      showError(appError)
+
+      expect(window.$message.error).toHaveBeenCalledWith('请求超时，请稍后重试')
+    })
+
+    it('i18nKey 未注册时回落 errcode 表（行为保持）', () => {
+      const { showError } = useActionFeedback()
+      const appError: AppError = {
+        kind: 'fatal',
+        code: 'M_FORBIDDEN',
+        message: 'raw forbidden',
+        correlationId: 'corr-i18n-missing',
+        i18nKey: 'error.matrix.this_key_does_not_exist'
+      }
+
+      showError(appError)
+
+      expect(window.$message.error).toHaveBeenCalledWith('权限不足，无法执行此操作')
     })
   })
 
