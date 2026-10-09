@@ -1103,6 +1103,23 @@ crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均
   收口点），不得为省事引入 `any`；然后分批把全仓 `useI18n()/t()` 调用点迁到包装后的类型。
   迁移完成前，唯一静态保障是 `scripts/check-i18n-refs.mjs` 的命名空间 ratchet
   （读真实语言包解析 `t('字面量')`）；`vue-tsc` 不能替代它。
+  - **9a 能力已落地（2026-10-10，分支 `feat/remaining-debt`，见
+    `.superpowers/sdd/2026-10-10-remaining-debt/task-9a-report.md`）**：
+    `scripts/generate-i18n-types.mjs` 除嵌套 `I18nKeys` 外再生成扁平点分联合
+    `I18nKeyPaths`（5421 条，生成期算清、避免类型层递归展开）；新增
+    `src/plugins/i18n/index.ts` 的 `useTypedI18n()`——`t(key: I18nKeyPaths, params?)` +
+    显式动态出口 `tDynamic(key: string, params?)`，`te`/`tm`/`rt`/`locale` 原样透传，
+    边界仅一处 `as unknown as`、无 `any`。实测 `vue-tsc --noEmit` 36.55s → 35.46s（无退化）。
+    伪造 key 在迁移过的文件里报 `TS2345`，未迁移文件仍用 stock `useI18n()`（宽类型，
+    **不是不一致状态**）。
+  - **9c 迁移余量（未完成，待后续轮次）**：实测仍有 **425 文件 / 6472 个 `t()` 调用点**
+    使用 stock `useI18n()`：`src/components` 199（2303）、`src/mobile` 86（1423）、
+    `src/views` 85（2081）、`src/composables` 25（220）、`src/plugins/robot` 19（369）、
+    `src/layout` 8（67）、`src/stores` 2（5）、`src/App.vue` 1（4）。建议顺序
+    `composables` → `layout` → `stores` → `views`（小批）→ `components`/`mobile`（大批，
+    共 285 文件 / 3726 调用点，机械改动、低风险、纯 churn）。本轮已完成代表性小批 6 文件
+    （`src/composables/common` ×2、`src/components`、`src/layout`、`src/views`、`src/mobile`
+    各 1），生产 `tDynamic` 1 处。
 - **i18n dead-key 判活仍是「上界」而非证明（已接受局限）**：Task 4 已把判活收紧到翻译引用
   位置，但守门的**键注册表档**（变量初始化、数组元素、`return` 表达式、SCSS `content:`、
   内联模板对象）仍把"任意字符串字面量出现在这些位置"算作 liveness 证据，理论上可造成假活。
