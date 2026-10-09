@@ -1,3 +1,5 @@
+import { PREFIX_ADMIN_V1 } from './prefixes'
+
 export const ADMIN = {
   SYNAPSE_ADMIN_BASE: '/_synapse/admin/v1',
   /**
@@ -41,5 +43,5 @@ export const ADMIN = {
   APPSERVICES: '/_synapse/admin/v1/appservices',
   APPSERVICE_BY_ID: (id: string) => `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`,
   /** @deprecated Use AdminFacadeService methods instead */
-  MATRIX_WHOAMI: '/_matrix/admin/v1/whoami'
+  MATRIX_WHOAMI: `${PREFIX_ADMIN_V1}/whoami`
 } as const

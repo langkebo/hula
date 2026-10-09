@@ -3,6 +3,7 @@ import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
 import { getMatrixAccessToken, getMatrixClient, getMatrixHomeserverUrl } from './matrixClientAccessor'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
+import { PREFIX_V3 } from './paths/prefixes'
 
 interface MatrixHttpRequestOptions {
   queryParams?: Record<string, string | number>
@@ -423,16 +424,16 @@ class MatrixHttpClient {
   /**
    * 房间短路径构造。
    *
-   * `prefix` 缺省为 SDK 默认的 `/_matrix/client/v3`；room-scoped **私有**端点
+   * `prefix` 缺省为 SDK 默认的 v3 前缀（`PREFIX_V3`）；room-scoped **私有**端点
    * （unread_count / capabilities 等，后端 2026-10-08 M3 迁走）必须显式传
    * `PREFIX_VENDOR_V1`，否则会 404。
    */
-  buildRoomPath(roomId: string, suffix: string, prefix = '/_matrix/client/v3'): string {
+  buildRoomPath(roomId: string, suffix: string, prefix = PREFIX_V3): string {
     return `${prefix}/rooms/${encodeURIComponent(roomId)}/${suffix}`
   }
 
   buildUserPath(userId: string, suffix: string): string {
-    return `/_matrix/client/v3/user/${encodeURIComponent(userId)}/${suffix}`
+    return `${PREFIX_V3}/user/${encodeURIComponent(userId)}/${suffix}`
   }
 }
 
