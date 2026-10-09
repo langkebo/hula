@@ -135,6 +135,28 @@ describe('CryptoKeyBackupAdapter', () => {
       await expect(adapter.setupKeyBackupWithOptions()).rejects.toThrow('CryptoApi 不可用')
     })
 
+    it('setup 失败时不留悬空拒绝（并发锁清理不得产生未处理拒绝）', async () => {
+      const seen: unknown[] = []
+      const onRejection = (reason: unknown) => seen.push(reason)
+      process.on('unhandledRejection', onRejection)
+      try {
+        const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto: null }))
+
+        // 调用方仍须拿到拒绝
+        await expect(adapter.setupKeyBackupWithOptions()).rejects.toThrow('CryptoApi 不可用')
+        // 锁释放后的再入路径同样不应产生悬空拒绝
+        await adapter.setupKeyBackupWithOptions().catch(() => undefined)
+
+        // Node 在微任务队列清空后的 tick 才派发 unhandledRejection
+        await new Promise((resolve) => setTimeout(resolve, 0))
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      } finally {
+        process.off('unhandledRejection', onRejection)
+      }
+
+      expect(seen.map((reason) => (reason instanceof Error ? reason.message : String(reason)))).toEqual([])
+    })
+
     it('branch 1: restores from existing recoveryKey when provided as string', async () => {
       const crypto = { restoreKeyBackup: vi.fn().mockResolvedValue({ imported: 5, total: 5 }) } as unknown as CryptoApi
       const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))

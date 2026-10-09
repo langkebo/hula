@@ -133,9 +133,13 @@ export class CryptoKeyBackupAdapter {
 
     const task = this._doSetupKeyBackup(input)
     setupInFlight = task
-    task.finally(() => {
+    // 用 then(clear, clear) 而不是 finally()：finally() 派生出的 Promise 在 task 拒绝时
+    // 同样拒绝且无人处理，会产生 unhandled rejection（vitest 因此 exit 1）。
+    // 调用方仍从 `return task` 拿到拒绝，setupKeyBackup 的 catch 行为不变。
+    const clear = () => {
       if (setupInFlight === task) setupInFlight = null
-    })
+    }
+    task.then(clear, clear)
     return task
   }
 
