@@ -217,6 +217,37 @@ function main() {
     }
   }
 
+  // Cross-repo binding (治理方案 §13.21.3 偏差 4 / §13.21.6 第 6 项):
+  // pin.synapse_rust_commit 必须等于后端 HEAD。此前该校验只覆盖 link/registry
+  // 模式且只比对 SDK 契约镜像里的 commit，**tarball 模式（Tjg 实际用法）整段跳过**
+  // ⇒ pin 落后后端 HEAD 时会静默通过。
+  //
+  // 缺兄弟仓时**显式 SKIP**（打印 banner），不静默通过；仓在但读不到 HEAD 则 fail-closed。
+  const backendSibling = path.resolve(repoRoot, '..', 'synapse-rust')
+  if (pin.synapse_rust_commit) {
+    if (!fs.existsSync(backendSibling)) {
+      process.stdout.write(
+        `verify-sdk-pin: SKIP backend-HEAD binding — ${backendSibling} is not checked out (Tjg-only CI, not a pass).\n`,
+      )
+    } else {
+      const backendHead = gitCommit(backendSibling)
+      if (!backendHead) {
+        die(
+          1,
+          `cannot resolve git HEAD in ${backendSibling}; refusing to pass the backend-HEAD binding on a missing input.`,
+        )
+      }
+      if (!backendHead.startsWith(pin.synapse_rust_commit)) {
+        die(
+          1,
+          `synapse_rust_commit is behind the backend HEAD:\n  pin=${pin.synapse_rust_commit}\n  backend HEAD=${backendHead}\n` +
+            `Repack and refresh the pin (node scripts/pack-sdk-tarball.mjs --apply --allow-commit-drift) ` +
+            `after the SDK contract mirror has been synced to that commit.`,
+        )
+      }
+    }
+  }
+
   process.stdout.write(
     `verify-sdk-pin: branch='${branch}' mode=${actualMode} sdk_version=${pin.sdk_version || '(dev)'} sdk_commit=${pin.sdk_commit || '(dev)'} synapse_rust=${pin.synapse_rust_commit || '(dev)'} — ok\n`,
   )
