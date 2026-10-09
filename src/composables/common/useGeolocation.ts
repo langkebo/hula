@@ -1,4 +1,4 @@
-import { useI18n } from 'vue-i18n'
+import { useTypedI18n } from '@/plugins/i18n'
 import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
 import { createLogger } from '@/utils/Logger'
 
@@ -31,7 +31,7 @@ export type LocationWithTransform = {
 }
 
 export const useGeolocation = () => {
-  const { t } = useI18n()
+  const { t } = useTypedI18n()
   const state = ref<GeolocationState>({
     loading: false,
     error: null,

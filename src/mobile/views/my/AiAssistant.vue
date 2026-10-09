@@ -257,13 +257,13 @@
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useTypedI18n } from '@/plugins/i18n'
 import { siliconFlowService } from '@/services/siliconflow/SiliconFlowService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiAssistant')
 
-const { t } = useI18n()
+const { t } = useTypedI18n()
 
 interface Message {
   id: string

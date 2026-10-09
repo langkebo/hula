@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
+import { useTypedI18n } from '@/plugins/i18n'
 
 defineProps<{
   isSingleChat: boolean
@@ -45,5 +45,5 @@ defineProps<{
   footerHeight: number
 }>()
 
-const { t } = useI18n()
+const { t } = useTypedI18n()
 </script>

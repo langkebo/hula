@@ -115,8 +115,8 @@
 import { Icon } from '@iconify/vue'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { useI18n } from 'vue-i18n'
 import RendezvousSessionManager from '@/components/rendezvous/RendezvousSessionManager.vue'
+import { useTypedI18n } from '@/plugins/i18n'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
@@ -143,7 +143,7 @@ const settingStore = useSettingStore()
 const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const { createWebviewWindow } = useWindow()
 const { isTrayMenuShow } = storeToRefs(globalStore)
-const { t } = useI18n()
+const { t } = useTypedI18n()
 type LoadTextKey = 'loading' | 'refreshing' | 'scan_hint' | 'login' | 'retry' | 'auth_pending'
 type ScanStatusTextKey = 'success' | 'error' | 'auth' | 'expired' | 'fetch_failed' | 'generate_fail' | 'general_error'
 const loginMode = ref<'quick' | 'rendezvous'>('quick')
