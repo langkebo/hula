@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { formatChatTime, formatDateLabel } from '../ComputedTime'
+import { formatChatTime, formatDateLabel, normalizeHistoryDateRange } from '../ComputedTime'
 
 // Mock useI18nGlobal to avoid i18n setup in unit tests
 vi.mock('@/services/i18n', () => ({
@@ -140,5 +140,42 @@ describe('formatDateLabel', () => {
     vi.setSystemTime(new Date('2026-08-05T12:00:00'))
     const ts = new Date('2026-06-15T10:00:00').getTime()
     expect(formatDateLabel(ts)).toBe('06-15')
+  })
+})
+
+describe('normalizeHistoryDateRange', () => {
+  it('同一天：起止收敛到当天 00:00:00.000 - 23:59:59.999', () => {
+    const sameMoment = new Date(2026, 5, 15, 10, 30).getTime()
+
+    expect(normalizeHistoryDateRange([sameMoment, sameMoment])).toEqual([
+      new Date(2026, 5, 15, 0, 0, 0, 0).getTime(),
+      new Date(2026, 5, 15, 23, 59, 59, 999).getTime()
+    ])
+  })
+
+  it('不同天：只把结束时间收敛到当天最后一刻', () => {
+    const start = new Date(2026, 5, 1, 8, 0).getTime()
+    const end = new Date(2026, 5, 15, 10, 30).getTime()
+
+    expect(normalizeHistoryDateRange([start, end])).toEqual([start, new Date(2026, 5, 15, 23, 59, 59, 999).getTime()])
+  })
+
+  it('不同天且结束时间已是当天最后一刻：返回 null，避免无意义写回', () => {
+    const start = new Date(2026, 5, 1, 8, 0).getTime()
+    const end = new Date(2026, 5, 15, 23, 59, 59, 999).getTime()
+
+    expect(normalizeHistoryDateRange([start, end])).toBeNull()
+  })
+
+  it('跨月边界按本地日期计算，不依赖固定时区偏移', () => {
+    const start = new Date(2026, 0, 31, 12, 0).getTime()
+    const end = new Date(2026, 1, 1, 12, 0).getTime()
+
+    expect(normalizeHistoryDateRange([start, end])).toEqual([start, new Date(2026, 1, 1, 23, 59, 59, 999).getTime()])
+  })
+
+  it('非法入参返回 null 而不是抛错', () => {
+    expect(normalizeHistoryDateRange(null)).toBeNull()
+    expect(normalizeHistoryDateRange([0, 0])).toBeNull()
   })
 })

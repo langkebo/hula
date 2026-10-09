@@ -127,6 +127,39 @@ export const formatDateLabel = (timestamp: number): string => {
   }
 }
 
+/**
+ * 归一化聊天历史日期筛选区间（纯函数，无副作用）：
+ * - 同一天：起止收敛到当天 `00:00:00.000` ~ `23:59:59.999`（日期选择器同一天会返回同一个时间戳）
+ * - 不同天：只把结束时间收敛到当天最后一刻
+ * @param value 日期选择器返回值 `[startTime, endTime]`
+ * @returns 需要写回的归一化区间；无需调整或入参非法时返回 `null`
+ */
+export const normalizeHistoryDateRange = (value: [number, number] | null): [number, number] | null => {
+  if (!Array.isArray(value) || value.length !== 2 || !value[0] || !value[1]) {
+    return null
+  }
+
+  const [rawStart, rawEnd] = value
+  const startDate = new Date(rawStart)
+  const endDate = new Date(rawEnd)
+  const endOfDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999).getTime()
+
+  if (startDate.toDateString() === endDate.toDateString()) {
+    const startOfDay = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate(),
+      0,
+      0,
+      0,
+      0
+    ).getTime()
+    return [startOfDay, endOfDay]
+  }
+
+  return endOfDay === rawEnd ? null : [rawStart, endOfDay]
+}
+
 /** 相对时间(前) */
 export const handRelativeTime = (time: string) => {
   return dayjs(time).fromNow()
