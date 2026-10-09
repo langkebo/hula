@@ -144,3 +144,19 @@
 - §13 更新为清理后的真实状态：已解决条目移入"已清除"或删除，剩余真实债务（含本计划未覆盖的：`m.read.private` 等后端确认、通知展示配置跨设备（已裁决本机）、`replaceTrack`、`<component :is>`、build 生成物新鲜度、全量退出码等）如实保留。
 - 跑全套门禁与全量测试，记录实测输出；`check:file-size` 按"只重构我们弄大的、其余基线化并写明依据"处理；`check:v-html`、`check:a11y` 按 Task 1 结果。
 - 提交后准备整分支评审与合并 master。
+
+---
+
+## 执行状态（2026-09-23）
+
+- **Task 1-7：完成**。逐任务提交、评审与 fix 轮记录见
+  `.superpowers/sdd/2026-09-23-issues-cleanup/progress.md`。
+- **Task 8：DEFERRED**（控制器裁决，走本节允许的 BLOCKED 路径）。未提交半成品迁移；
+  自定义 composer 包装与分批迁移的设计要点记入
+  `docs/mobile-feature-optimization-plan.md` §13（2）。
+- **Task 9：完成** §13 更新、`check:file-size` 基线收口与全量门禁实测；报告见
+  `.superpowers/sdd/2026-09-23-issues-cleanup/task-9-report.md`。**未决（NOT DONE）**：
+  全量 `npx vitest run` 有 8 个本分支引入的真实失败（Task 3 改了 `status_msg` 透传语义、
+  `usePresenceHeartbeat.privacy.test.ts` 的断言未同步）+ 1 个既有时间炸弹用例；
+  `check:icon-colors` 是仓库既有红灯（`public/icon.js`，分支未触碰）。
+  详见 §13（4）本轮全量实测未决项。
