@@ -865,9 +865,17 @@ describe('MatrixNotificationService', () => {
         updatedAt: 0
       })
       expect(matrixNotificationService.isWithinDndWindow(new Date(2026, 5, 15, 3, 0))).toBe(true)
-      expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(
-        false
-      )
+      // shouldNotifyMessage 内部用 `new Date()` 判断「此刻是否在窗口内」，必须把系统时间
+      // 钉在窗口内的时刻；否则用例只在本地 01:00-23:00 之间通过（依赖运行时刻的时间炸弹）。
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 5, 15, 3, 0))
+      try {
+        expect(matrixNotificationService.shouldNotifyMessage({ isMention: true, isThread: false, body: 'hi' })).toBe(
+          false
+        )
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 

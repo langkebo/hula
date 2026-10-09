@@ -31,6 +31,9 @@ vi.mock('@/stores/domains/chat/group', () => ({
 
 const ONLINE_STATE = { id: '1', title: '在线' }
 
+// 断言里的第二个参数固定为 undefined：心跳调用点不传状态消息，服务层刻意不做 `?? ''`
+// 兜底（空串会清空服务端 status_msg，见 MatrixPresenceService#setPresence）。
+// 语义细节由 MatrixPresenceService.test.ts 的「setPresence status_msg 语义」覆盖。
 describe('usePresenceHeartbeat 尊重「显示在线状态」偏好', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -47,8 +50,8 @@ describe('usePresenceHeartbeat 尊重「显示在线状态」偏好', () => {
     const { pushOnlineForTest } = await import('@/composables/user/usePresenceHeartbeat')
     await pushOnlineForTest()
 
-    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', '')
-    expect(presenceManagerSetPresence).not.toHaveBeenCalledWith('online', '')
+    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', undefined)
+    expect(presenceManagerSetPresence).not.toHaveBeenCalledWith('online', undefined)
   })
 
   it('偏好开启时正常上报 online', async () => {
@@ -56,7 +59,7 @@ describe('usePresenceHeartbeat 尊重「显示在线状态」偏好', () => {
     const { pushOnlineForTest } = await import('@/composables/user/usePresenceHeartbeat')
     await pushOnlineForTest()
 
-    expect(presenceManagerSetPresence).toHaveBeenCalledWith('online', '')
+    expect(presenceManagerSetPresence).toHaveBeenCalledWith('online', undefined)
   })
 
   it('关闭偏好后主动降级为 offline，并把本地状态置为离线', async () => {
@@ -64,7 +67,7 @@ describe('usePresenceHeartbeat 尊重「显示在线状态」偏好', () => {
     const { pushOnlineForTest } = await import('@/composables/user/usePresenceHeartbeat')
     await pushOnlineForTest()
 
-    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', '')
+    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', undefined)
     expect(userInfo.activeStatus).toBe(OnlineEnum.OFFLINE)
   })
 
@@ -75,7 +78,7 @@ describe('usePresenceHeartbeat 尊重「显示在线状态」偏好', () => {
     await pushOnlineForTest()
 
     expect(presenceManagerSetPresence).toHaveBeenCalledTimes(1)
-    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', '')
+    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', undefined)
   })
 
   it('重新打开偏好后恢复上报 online', async () => {
@@ -88,7 +91,7 @@ describe('usePresenceHeartbeat 尊重「显示在线状态」偏好', () => {
     settingStore.setShowOnlineStatusEnabled(true)
     await pushOnlineForTest()
 
-    expect(presenceManagerSetPresence).toHaveBeenLastCalledWith('online', '')
+    expect(presenceManagerSetPresence).toHaveBeenLastCalledWith('online', undefined)
     expect(userInfo.activeStatus).toBe(OnlineEnum.ONLINE)
   })
 
@@ -102,20 +105,20 @@ describe('usePresenceHeartbeat 尊重「显示在线状态」偏好', () => {
     settingStore.setShowOnlineStatusEnabled(false)
     await pushOnlineForTest()
     expect(presenceManagerSetPresence).toHaveBeenCalledTimes(1)
-    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', '')
+    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', undefined)
 
     // 2. 重新打开开关，并在状态选择器里选「在线」——该路径直报 online，不经过心跳
     //    （用户完全可能在下一个 45s tick 到来之前就再次关闭开关）
     settingStore.setShowOnlineStatusEnabled(true)
     presenceManagerSetPresence.mockClear()
     await useUserStatusStore().changeCurrentUserState(ONLINE_STATE)
-    expect(presenceManagerSetPresence).toHaveBeenCalledWith('online', '')
+    expect(presenceManagerSetPresence).toHaveBeenCalledWith('online', undefined)
 
     // 3. 同一个心跳周期内再次关闭开关 → 必须重新降级，不能被一次性标记永久抑制
     settingStore.setShowOnlineStatusEnabled(false)
     presenceManagerSetPresence.mockClear()
     await pushOnlineForTest()
-    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', '')
+    expect(presenceManagerSetPresence).toHaveBeenCalledWith('offline', undefined)
   })
 
   it('开关打开期间的心跳照旧上报 online，不会降级', async () => {
@@ -126,8 +129,8 @@ describe('usePresenceHeartbeat 尊重「显示在线状态」偏好', () => {
     presenceManagerSetPresence.mockClear()
     await pushOnlineForTest()
 
-    expect(presenceManagerSetPresence).toHaveBeenCalledWith('online', '')
-    expect(presenceManagerSetPresence).not.toHaveBeenCalledWith('offline', '')
+    expect(presenceManagerSetPresence).toHaveBeenCalledWith('online', undefined)
+    expect(presenceManagerSetPresence).not.toHaveBeenCalledWith('offline', undefined)
   })
 
   it('关闭开关后用户显式选择 away/busy（unavailable）不会被心跳改写成 offline', async () => {
@@ -139,10 +142,10 @@ describe('usePresenceHeartbeat 尊重「显示在线状态」偏好', () => {
     presenceManagerSetPresence.mockClear()
 
     await useUserStatusStore().changeCurrentUserState({ id: '2', title: '忙碌' })
-    expect(presenceManagerSetPresence).toHaveBeenCalledWith('unavailable', '')
+    expect(presenceManagerSetPresence).toHaveBeenCalledWith('unavailable', undefined)
 
     presenceManagerSetPresence.mockClear()
     await pushOnlineForTest()
-    expect(presenceManagerSetPresence).not.toHaveBeenCalledWith('offline', '')
+    expect(presenceManagerSetPresence).not.toHaveBeenCalledWith('offline', undefined)
   })
 })
