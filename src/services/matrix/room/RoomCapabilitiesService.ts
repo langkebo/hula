@@ -1,14 +1,18 @@
 import { createLogger } from '@/utils/Logger'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import { MatrixRequestDeduper } from '../MatrixRequestDeduper'
+import { PREFIX_VENDOR_V1 } from '../paths/prefixes'
 
 const logger = createLogger('RoomCapabilitiesService')
 
 /**
- * 契约: GET /_matrix/client/v3/rooms/{room_id}/capabilities
+ * 契约: GET /_matrix/vendor/v1/rooms/{room_id}/capabilities
  * 顶层稳定字段 - room_id, room_version, capabilities, features, join_rule
  * capabilities 稳定字段 - knock, restricted, threading, read_receipts, typing_notifications
  * features 稳定字段 - encryption, federation, guest_access
+ *
+ * 注：room-scoped `capabilities` 属私有扩展，唯一规范位置是 `/_matrix/vendor/v1`
+ * （后端 2026-10-08 从 `/_matrix/client/v3` 迁走）；默认 v3 前缀会 404 并静默沿用缓存。
  */
 interface RoomCapabilitiesPayload {
   room_id: string
@@ -49,7 +53,7 @@ class RoomCapabilitiesService {
     }
 
     return MatrixRequestDeduper.dedupe(`room-capabilities:${roomId}`, async () => {
-      const path = matrixHttpClient.buildRoomPath(roomId, 'capabilities')
+      const path = matrixHttpClient.buildRoomPath(roomId, 'capabilities', PREFIX_VENDOR_V1)
       const result = await matrixHttpClient.get<RoomCapabilitiesPayload>(path, {
         logPrefix: 'RoomCapabilities'
       })

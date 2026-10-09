@@ -420,8 +420,15 @@ class MatrixHttpClient {
     return encodeURIComponent(id)
   }
 
-  buildRoomPath(roomId: string, suffix: string): string {
-    return `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/${suffix}`
+  /**
+   * 房间短路径构造。
+   *
+   * `prefix` 缺省为 SDK 默认的 `/_matrix/client/v3`；room-scoped **私有**端点
+   * （unread_count / capabilities 等，后端 2026-10-08 M3 迁走）必须显式传
+   * `PREFIX_VENDOR_V1`，否则会 404。
+   */
+  buildRoomPath(roomId: string, suffix: string, prefix = '/_matrix/client/v3'): string {
+    return `${prefix}/rooms/${encodeURIComponent(roomId)}/${suffix}`
   }
 
   buildUserPath(userId: string, suffix: string): string {

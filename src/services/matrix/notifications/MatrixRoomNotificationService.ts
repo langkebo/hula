@@ -1,6 +1,7 @@
 import { NotificationTypeEnum } from '@/enums'
 import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 import { MatrixRequestDeduper } from '@/services/matrix/MatrixRequestDeduper'
+import { PREFIX_VENDOR_V1 } from '@/services/matrix/paths/prefixes'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixPushService } from './MatrixPushService'
@@ -9,8 +10,12 @@ const logger = createLogger('MatrixRoomNotification')
 const ROOM_NOTIFICATION_SETTINGS_EVENT = 'tjg.room.notification_settings'
 
 /**
- * 契约: GET /_matrix/client/v3/rooms/{room_id}/unread_count
+ * 契约: GET /_matrix/vendor/v1/rooms/{room_id}/unread_count
  * 顶层稳定字段 - notification_count, highlight_count
+ *
+ * 注：该端点是私有扩展，唯一规范位置是 `/_matrix/vendor/v1`（后端 2026-10-08 从
+ * `/_matrix/client/v3` 迁走，见 MIXED_MODULE_PRIVATE_ROUTES_PLAN_2026-10-08.md §3 M3）。
+ * 找不到会被 404 静默降级为本地计数，故前缀必须显式给。
  */
 interface RoomUnreadCountPayload {
   notification_count: number
@@ -69,13 +74,13 @@ class MatrixRoomNotificationService extends BaseMatrixService {
 
   /**
    * 拉取房间最新未读 / 提及计数
-   * 契约 GET /_matrix/client/v3/rooms/{room_id}/unread_count
+   * 契约 GET /_matrix/vendor/v1/rooms/{room_id}/unread_count
    */
   async fetchUnreadCount(roomId: string): Promise<RoomUnreadCountPayload | null> {
     if (!roomId || !this.isUnreadCountSupported) return null
 
     return MatrixRequestDeduper.dedupe(`room-unread-count:${roomId}`, async () => {
-      const path = matrixHttpClient.buildRoomPath(roomId, 'unread_count')
+      const path = matrixHttpClient.buildRoomPath(roomId, 'unread_count', PREFIX_VENDOR_V1)
 
       try {
         const result = await matrixHttpClient.get<Partial<RoomUnreadCountPayload>>(path, {

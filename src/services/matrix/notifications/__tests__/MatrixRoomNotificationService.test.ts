@@ -8,7 +8,7 @@ import matrixClientService from '../../MatrixClientService'
 const TEST_BASE_URL = 'https://matrix.test'
 
 const server = setupMswServer(
-  http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/unread_count`, () => {
+  http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/rooms/:roomId/unread_count`, () => {
     return HttpResponse.json({ notification_count: 5, highlight_count: 2 })
   })
 )
@@ -26,8 +26,8 @@ vi.mock('../../MatrixRequestDeduper', () => ({
   }
 }))
 
-const buildRoomPathImpl = vi.fn((roomId: string, suffix: string) => {
-  return `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/${suffix}`
+const buildRoomPathImpl = vi.fn((roomId: string, suffix: string, prefix = '/_matrix/client/v3') => {
+  return `${prefix}/rooms/${encodeURIComponent(roomId)}/${suffix}`
 })
 
 const getImpl = vi.fn(async (path: string) => {
@@ -125,14 +125,14 @@ describe('MatrixRoomNotificationService', () => {
     it('returns notification + highlight from /unread_count', async () => {
       const result = await matrixRoomNotificationService.fetchUnreadCount('!u:server')
 
-      expect(buildRoomPathImpl).toHaveBeenCalledWith('!u:server', 'unread_count')
+      expect(buildRoomPathImpl).toHaveBeenCalledWith('!u:server', 'unread_count', '/_matrix/vendor/v1')
       expect(getImpl).toHaveBeenCalledTimes(1)
       expect(result).toEqual({ notification_count: 5, highlight_count: 2 })
     })
 
     it('coerces missing fields to zero', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/unread_count`, () => {
+        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/rooms/:roomId/unread_count`, () => {
           return HttpResponse.json({})
         })
       )
@@ -144,7 +144,7 @@ describe('MatrixRoomNotificationService', () => {
 
     it('returns null when unread_count is not supported', async () => {
       server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/client/v3/rooms/:roomId/unread_count`, () => {
+        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/rooms/:roomId/unread_count`, () => {
           return new HttpResponse(null, { status: 404 })
         })
       )
