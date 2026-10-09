@@ -1,8 +1,4 @@
-import { MatrixAuthService } from './auth/MatrixAuthService'
-
 export { matrixClientService } from './MatrixClientService'
-
-const _matrixAuthService = new MatrixAuthService()
 
 // ============================================================
 // SDK re-exports: single choke-point for components and stores.

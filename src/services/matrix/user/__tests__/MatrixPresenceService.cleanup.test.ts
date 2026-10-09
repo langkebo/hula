@@ -27,8 +27,6 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   debug: vi.fn()
 }))
 
-const _asMatrixClient = <T extends object>(client: T) => client as unknown as MatrixClient
-
 describe('MatrixPresenceService M-3: onPresenceChange 清理抗噪音', () => {
   let mockClient: Partial<MatrixClient>
   let mockPresenceManager: {

@@ -73,7 +73,7 @@ vi.mock('matrix-js-sdk/friend', () => ({
 
 const TEST_BASE_URL = 'https://matrix.example.com'
 
-const _server = setupMswServer(
+setupMswServer(
   // Friend endpoints use /_matrix/vendor/v1/ prefix
   http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/friends`, () => {
     return HttpResponse.json({ friends: [] })

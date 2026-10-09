@@ -7,7 +7,7 @@ import { AdminMediaService } from '../MediaService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const _server = setupMswServer(
+setupMswServer(
   http.post(`${TEST_BASE_URL}/_matrix/client/v1/admin/purge_remote_media`, () => {
     return HttpResponse.json({ deleted: 3 })
   })

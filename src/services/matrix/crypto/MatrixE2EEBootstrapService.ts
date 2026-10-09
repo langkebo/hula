@@ -200,4 +200,3 @@ class MatrixE2EEManager {
 }
 
 export const matrixE2EEBootstrapService = new MatrixE2EEManager()
-const _matrixE2EEManager = matrixE2EEBootstrapService

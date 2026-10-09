@@ -7,7 +7,7 @@ import { MatrixRoomMembershipService } from '../MembershipService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const _server = setupMswServer(
+setupMswServer(
   http.post(`${TEST_BASE_URL}${PREFIX_V3}/knock/:roomId`, () => {
     return HttpResponse.json({ room_id: '!r' })
   }),

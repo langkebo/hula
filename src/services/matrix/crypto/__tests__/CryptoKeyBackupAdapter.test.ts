@@ -11,14 +11,6 @@ import type {
 import { CryptoKeyBackupAdapter } from '../CryptoKeyBackupAdapter'
 import type { CryptoAdapterAccessors } from '../cryptoAdapterTypes'
 
-// Mock: 测试辅助函数 - 生成 base58 编码的恢复密钥
-function _encodeRecoveryKey(bytes: Uint8Array): string {
-  // 简化实现：直接将字节转为 hex 字符串作为模拟密钥
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-}
-
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     error: vi.fn(),

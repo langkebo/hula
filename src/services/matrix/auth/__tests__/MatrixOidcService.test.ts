@@ -7,7 +7,7 @@ import { matrixOidcService } from '../MatrixOidcService'
 
 const TEST_BASE_URL = 'https://hs.example.com'
 
-const _server = setupMswServer(
+setupMswServer(
   http.get(`${TEST_BASE_URL}/.well-known/openid-configuration`, () => {
     return HttpResponse.json({
       issuer: 'https://issuer.example.com',

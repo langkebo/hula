@@ -12,15 +12,6 @@ const deviceId = ref<string | null>(null)
 const accessToken = ref<string | null>(null)
 const homeserverUrl = ref<string | null>(null)
 
-function _useMatrixSessionState() {
-  return {
-    userId,
-    deviceId,
-    accessToken,
-    homeserverUrl
-  }
-}
-
 export function getMatrixSessionSnapshot(): MatrixSessionSnapshot {
   return {
     userId: userId.value,
@@ -45,11 +36,4 @@ export function patchMatrixSessionSnapshot(snapshot: Partial<MatrixSessionSnapsh
   }
 
   return getMatrixSessionSnapshot()
-}
-
-function _resetMatrixSessionSnapshotForTests(): void {
-  userId.value = null
-  deviceId.value = null
-  accessToken.value = null
-  homeserverUrl.value = null
 }

@@ -7,7 +7,7 @@ import matrixClientService from '../../MatrixClientService'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
 
-const _server = setupMswServer(
+setupMswServer(
   http.post(`${TEST_BASE_URL}/_matrix/vendor/v1/voice/upload`, () => {
     // 后端 upload 响应形状（voice_service.rs:130-136），无 event_id
     return HttpResponse.json({

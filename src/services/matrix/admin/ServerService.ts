@@ -38,7 +38,6 @@ export class AdminServerService {
       const admin = await this.sdkAdmin()
       const result = await admin.getServerStatus()
       if (!result) return null
-      const _up = result.status === 'online'
       return {
         status: result.status,
         uptime: result.uptime

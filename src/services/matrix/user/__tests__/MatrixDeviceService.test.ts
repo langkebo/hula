@@ -42,7 +42,7 @@ vi.mock('@/services/matrix/MatrixHttpClient', () => ({
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const _server = setupMswServer(
+setupMswServer(
   http.get(`${TEST_BASE_URL}/_matrix/client/v3/devices`, () => {
     return HttpResponse.json({
       devices: [

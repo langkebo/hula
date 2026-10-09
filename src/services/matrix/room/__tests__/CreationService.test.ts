@@ -58,10 +58,6 @@ const makeRoom = (overrides: unknown = {}): Room =>
     ...(overrides as Record<string, unknown>)
   }) as unknown as Room
 
-function _hasStateEventType(value: unknown, type: string): boolean {
-  return typeof value === 'object' && value !== null && 'type' in value && (value as { type?: string }).type === type
-}
-
 describe('MatrixRoomCreationService', () => {
   let service: InstanceType<typeof MatrixRoomCreationService>
 

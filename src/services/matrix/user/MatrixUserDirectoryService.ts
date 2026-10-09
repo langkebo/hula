@@ -146,38 +146,3 @@ class UserDirectoryService extends BaseMatrixService {
  * 单例实例
  */
 export const userDirectoryService = new UserDirectoryService()
-
-/**
- * Vue Composable
- */
-import { ref } from 'vue'
-
-function _useUserDirectory() {
-  const results = ref<UserDirectorySearchResult[]>([])
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-
-  async function search(query: string, limit?: number) {
-    isLoading.value = true
-    error.value = null
-    try {
-      results.value = await userDirectoryService.searchUsers(query, limit)
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '搜索失败'
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  function clearResults() {
-    results.value = []
-  }
-
-  return {
-    results,
-    isLoading,
-    error,
-    search,
-    clearResults
-  }
-}

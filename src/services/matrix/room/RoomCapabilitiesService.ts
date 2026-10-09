@@ -118,7 +118,6 @@ class RoomCapabilitiesService {
 }
 
 export const roomCapabilitiesService = new RoomCapabilitiesService()
-const _ROOM_FEATURE_NAMES = STABLE_FEATURES
 
 // 测试 / 诊断辅助导出
 export const __ROOM_CAPABILITIES_TTL_MS__ = CAPABILITY_TTL_MS

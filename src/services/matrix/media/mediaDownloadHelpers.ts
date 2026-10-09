@@ -10,10 +10,7 @@ import {
   matrixAttachmentDecryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { HttpClient, HttpClientError } from '@/utils/HttpClient'
-import { createLogger } from '@/utils/Logger'
 import type { MatrixClient } from '../sdk'
-
-const _logger = createLogger('MediaDownloadHelpers')
 
 /** 解析媒体下载 URL
  */

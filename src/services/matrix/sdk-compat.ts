@@ -24,15 +24,3 @@ export type { Space, SpaceChild, SpaceManager, SpaceMember } from 'matrix-js-sdk
 // keeps consumers off the internal `lib/widget` path and gives CI one boundary to guard.
 // 旧层 `WidgetsManager`（`src/widgets/`）已按反冗余原则整层删除（SDK C1）。
 export type WidgetManager = ReturnType<MatrixClient['getWidgetManager']>
-
-let compatInitialized = false
-
-function _ensureMatrixSdkCompat(): void {
-  // Import side effects above install custom manager extensions exactly once
-  // per module graph. This function gives callers an explicit boundary hook.
-  compatInitialized = true
-}
-
-function _isMatrixSdkCompatReady(): boolean {
-  return compatInitialized
-}

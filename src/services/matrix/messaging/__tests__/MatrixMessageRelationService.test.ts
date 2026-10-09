@@ -8,7 +8,7 @@ import { matrixMessageRelationService } from '../MatrixMessageRelationService'
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
 
-const _server = setupMswServer(
+setupMswServer(
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/rooms/:roomId/relations/:eventId`, () => {
     return HttpResponse.json({ chunk: [], original_event: {} })
   }),

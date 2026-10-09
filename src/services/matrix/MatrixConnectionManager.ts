@@ -419,7 +419,6 @@ export class MatrixConnectionManager {
   private assertCriticalExtensions(): void {
     if (!this.client) return
 
-    const _clientWithMethods = this.client as unknown as Record<string, unknown>
     const results: Record<string, 'healthy' | 'degraded'> = {}
 
     // FriendManager 扩展 —— 注册检查统一委托单一真相谓词，避免逻辑漂移

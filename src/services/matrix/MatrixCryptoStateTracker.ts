@@ -166,21 +166,6 @@ function broadcastCryptoInitDone(): void {
 }
 
 /**
- * 跨窗口事件处理器：当其他窗口开始初始化时，本窗口暂停并等待。
- */
-function _setupCrossWindowListener(): void {
-  const coord = getCrossWindowCoordinator()
-  if (!coord || coord.isInitializing) return
-
-  coord.channel.onmessage = (event: MessageEvent) => {
-    if (event.data === 'crypto-init-started' && !coord.isInitializing) {
-      // 其他窗口正在初始化，本窗口等待
-      logger.info('[Crypto] 检测到其他窗口正在初始化 crypto，等待完成...')
-    }
-  }
-}
-
-/**
  * Crypto 状态追踪器
  *
  * 深模块：小接口（ensureCrypto/handleEventDecrypted/getState）+ 大实现
