@@ -246,13 +246,15 @@ class ChunkUploadService {
     try {
       const media = this.getMedia(client)
       const resp = await media.getChunkUploadProgress(uploadId)
+      // SDK 已按后端契约提供 `uploaded_chunks` / `uploaded_size` / `total_size` / `status`
+      // （此前读的是 SDK 猜的 `received_chunks` / `bytes_received` / `total_bytes` ⇒ 恒 undefined）。
       return {
         upload_id: resp.upload_id,
-        uploaded_chunks: resp.received_chunks,
+        uploaded_chunks: resp.uploaded_chunks,
         total_chunks: resp.total_chunks,
-        uploaded_size: resp.bytes_received,
-        total_size: resp.total_bytes,
-        status: 'in_progress'
+        uploaded_size: resp.uploaded_size,
+        total_size: resp.total_size ?? null,
+        status: resp.status ?? 'in_progress'
       }
     } catch {
       return null
