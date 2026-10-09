@@ -267,11 +267,17 @@ function main() {
       }
       // 变异自证用逃生阀：允许把比对区间钉成任意 `A..B`（默认 `<pin>..HEAD`），
       // 以便用**已存在的历史区间**证明「路由面落后 ⇒ 红」这一段真的能判红。
+      //
+      // 判据锚点是 **SDK 车道的 ledger 快照**（`tests/unit/fixtures/ledger_export_sdk/`），
+      // 不是 `synapse-web/src/routes/**`：后者会被「删一个未使用的 import」这类
+      // **非路由改动**推进而误报（实测 2026-10-09：`e2c8969ae` 仅删一行 import 就让门禁变红）。
+      // 后端自身的守卫要求「路由面变化 ⇒ 必须重生成 fixture」，所以 fixture 变动才是
+      // 「契约面真的变了」的可靠代理。
       const range = process.env.SYNAPSE_PIN_RANGE || `${pin.synapse_rust_commit}..${backendHead}`
-      const routePaths = ['synapse-web/src/routes', 'tests/unit/fixtures/ledger_export_sdk']
+      const contractPaths = ['tests/unit/fixtures/ledger_export_sdk']
       let changed = ''
       try {
-        changed = execSync(`git log --oneline ${range} -- ${routePaths.join(' ')}`, {
+        changed = execSync(`git log --oneline ${range} -- ${contractPaths.join(' ')}`, {
           cwd: backendSibling
         })
           .toString()
