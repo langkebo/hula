@@ -14,7 +14,7 @@
     :style="{ height: `${footerHeight}px` }"
     class="absolute inset-0 z-997 backdrop-blur-md cursor-default flex-center select-none pointer-events-auto bg-[--tjg-surface-overlay]">
     <n-flex align="center" justify="center" class="pb-60px">
-      <svg class="size-24px">
+      <svg class="size-24px color-[--tjg-color-danger-500]">
         <use href="#cloudError"></use>
       </svg>
       <span class="text-(14px [--tjg-text-tertiary])">{{ t('editor.relation.not_friends') }}</span>

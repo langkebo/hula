@@ -45,7 +45,12 @@
             :size="12"
             align="center"
             class="w-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-            <svg class="size-42px animate-pulse">
+            <!-- 图标走 currentColor：按状态给出显式语义色（error=危险色，auth=品牌色；success 符号自带固定双色调） -->
+            <svg
+              class="size-42px animate-pulse"
+              :class="
+                scanStatus.status === 'error' ? 'color-[--tjg-color-danger-500]' : 'color-[--tjg-color-primary-500]'
+              ">
               <use :href="`#${scanStatus.icon}`"></use>
             </svg>
             <span class="text-(14px [--tjg-text-quaternary])">{{ scanStatusText }}</span>

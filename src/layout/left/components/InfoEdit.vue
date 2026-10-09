@@ -128,7 +128,7 @@
                 </template>
                 <n-popover trigger="hover">
                   <template #trigger>
-                    <svg class="size-24px outline-none">
+                    <svg class="size-24px outline-none color-[--tjg-color-primary-500]">
                       <use href="#tips"></use>
                     </svg>
                   </template>
