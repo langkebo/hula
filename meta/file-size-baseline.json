@@ -1,6 +1,6 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-10-09T15:22:58.269Z",
+  "updated_at": "2026-10-09T15:38:54.656Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
@@ -388,10 +388,6 @@
       "lines": 438
     },
     {
-      "file": "src/views/chatHistory/index.vue",
-      "lines": 438
-    },
-    {
       "file": "src/utils/PathUtil.ts",
       "lines": 433
     },
@@ -474,6 +470,10 @@
     {
       "file": "src/composables/encryption/useDeviceVerifyDialog.ts",
       "lines": 412
+    },
+    {
+      "file": "src/views/chatHistory/index.vue",
+      "lines": 411
     },
     {
       "file": "src/services/matrix/MatrixClientAuth.ts",

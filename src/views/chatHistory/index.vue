@@ -116,7 +116,7 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { formatDateLabel } from '@/utils/ComputedTime'
+import { formatDateLabel, normalizeHistoryDateRange } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 
@@ -208,38 +208,11 @@ const handleSearch = useDebounceFn(() => {
   resetAndReload()
 }, 300)
 
-// 处理日期筛选变化
+// 处理日期筛选变化：日期边界归一化逻辑见 @/utils/ComputedTime#normalizeHistoryDateRange
 const handleDateChange = useDebounceFn((value: [number, number] | null) => {
-  if (Array.isArray(value) && value.length === 2 && value[0] && value[1]) {
-    // 修复日期边界问题：如果选择同一天，结束时间应该是当天的23:59:59.999
-    let startTime = value[0]
-    let endTime = value[1]
-
-    const startDate = new Date(startTime)
-    const endDate = new Date(endTime)
-
-    // 检查是否是同一天（日期选择器可能返回同样的时间戳）
-    const isSameDay = startDate.toDateString() === endDate.toDateString()
-
-    if (isSameDay) {
-      // 如果是同一天，调整时间范围
-      const adjustedStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0)
-      const adjustedEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999)
-
-      startTime = adjustedStart.getTime()
-      endTime = adjustedEnd.getTime()
-
-      // 更新 dateRange 的值
-      dateRange.value = [startTime, endTime]
-    } else {
-      // 如果是不同天，确保结束时间是当天的最后一刻
-      const adjustedEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999)
-      endTime = adjustedEnd.getTime()
-
-      if (endTime !== value[1]) {
-        dateRange.value = [startTime, endTime]
-      }
-    }
+  const normalized = normalizeHistoryDateRange(value)
+  if (normalized) {
+    dateRange.value = normalized
   }
 
   resetAndReload()
