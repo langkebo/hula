@@ -996,10 +996,8 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
 --noEmit` exit 0；第三轮 `feat/remaining-debt` 修掉了 vitest 非零退出的根因（`78637d4c`，
 `Errors 0`）并把 `check:icon-colors` 的既有红灯清零（`2974323b`）：`npx vitest run
 --maxWorkers=2` 807/807 文件、9299/9299 用例通过、**exit 0**。上表唯一非绿色是刻意设计的
-`check:a11y` 离线 exit 2（需就绪的 Storybook，或显式 `--skip-if-unreachable`）；此前记为
-既有红灯的 `check:icon-colors`（`public/icon.js` 与 master 逐字节相同、同样 FAIL，
-见 (4)）；`check:a11y` 离线 exit 2 是 Task 1 的刻意设计（需就绪的 Storybook，或显式
-`--skip-if-unreachable` 打印 SKIP）。其余剩余项见 (4)。
+`check:a11y` 离线 exit 2（需就绪的 Storybook，或显式 `--skip-if-unreachable` 打印 SKIP）；
+此前记为既有红灯的 `check:icon-colors` 已在第三轮清零（见 (4)）。其余剩余项见 (4)。
 
 音视频设置治理后的**剩余债务**（如实记录）：`audioInputId` / `videoInputId` 目前
 只作用于设置页的麦克风测试与摄像头预览；把设备选择应用到真实通话需要
@@ -1132,7 +1130,8 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
     边界仅一处 `as unknown as`、无 `any`。实测 `vue-tsc --noEmit` 36.55s → 35.46s（无退化）。
     伪造 key 在迁移过的文件里报 `TS2345`，未迁移文件仍用 stock `useI18n()`（宽类型，
     **不是不一致状态**）。
-  - **9c 迁移余量（未完成，待后续轮次）**：实测仍有 **425 文件 / 6472 个 `t()` 调用点**
+  - **9c 迁移余量（未完成，待后续轮次）**：实测仍有 **425 文件（精确）／约 6.5k 个 `t()` 调用点**
+    （`t('`/`t("`/模板反引号口径 6458、宽口径 `(?<![\w.$])t\(` 6471；逐目录数字随口径略有出入）
     使用 stock `useI18n()`：`src/components` 199（2303）、`src/mobile` 86（1423）、
     `src/views` 85（2081）、`src/composables` 25（220）、`src/plugins/robot` 19（369）、
     `src/layout` 8（67）、`src/stores` 2（5）、`src/App.vue` 1（4）。建议顺序

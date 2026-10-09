@@ -125,6 +125,7 @@ export class CryptoKeyBackupAdapter {
     }
   }
 
+  /** 设置密钥备份（recoveryKey / password / 生成的 key），受 `setupInFlight` 并发锁保护。 */
   async setupKeyBackupWithOptions(input?: KeyBackupSetupInput): Promise<string> {
     // 并发锁：如果已有 setup 流程在执行，复用其结果（防止并行 SSSS 上传）
     if (setupInFlight) {
