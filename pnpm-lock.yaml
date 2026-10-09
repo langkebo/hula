@@ -1483,7 +1483,7 @@ packages:
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
   '@langkebo/matrix-js-sdk@file:vendor/matrix-js-sdk.tgz':
-    resolution: {integrity: sha512-sEt8TB9wFL3hFzMPo3NT4SN2VPwVeg0XdBi/bSECCluXXoEe91eg+bkZBH40Ul/B/gHqp0lKc1gUhbltYyBvRg==, tarball: file:vendor/matrix-js-sdk.tgz}
+    resolution: {integrity: sha512-q6bZD65kyZmewNOIchTG4apJqj7kU/RyqnpimTU97CfRcV4kto34Dth3WggKCPkr9F+MgW8896/iTdtxxtQmRw==, tarball: file:vendor/matrix-js-sdk.tgz}
     version: 40.2.0-langkebo.5
     engines: {node: '>=22.0.0'}
 
