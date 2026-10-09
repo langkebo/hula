@@ -70,6 +70,16 @@ async function uploadSsssKeyDirectly(client: MatrixClient, generatedKey: Generat
   return keyId
 }
 
+/** 密钥备份设置入参：字符串等价于 recoveryKey；对象形式带 password / authData / generatedKey。 */
+type KeyBackupSetupInput =
+  | string
+  | {
+      recoveryKey?: string
+      password?: string
+      authData?: unknown
+      generatedKey?: GeneratedSecretStorageKey | null
+    }
+
 export class CryptoKeyBackupAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
 
@@ -115,16 +125,7 @@ export class CryptoKeyBackupAdapter {
     }
   }
 
-  async setupKeyBackupWithOptions(
-    input?:
-      | string
-      | {
-          recoveryKey?: string
-          password?: string
-          authData?: unknown
-          generatedKey?: GeneratedSecretStorageKey | null
-        }
-  ): Promise<string> {
+  async setupKeyBackupWithOptions(input?: KeyBackupSetupInput): Promise<string> {
     // 并发锁：如果已有 setup 流程在执行，复用其结果（防止并行 SSSS 上传）
     if (setupInFlight) {
       logger.warn('[CryptoKeyBackupAdapter] setupKeyBackupWithOptions 已有流程在执行，复用现有 Promise')
@@ -144,16 +145,7 @@ export class CryptoKeyBackupAdapter {
   }
 
   /** 实际执行密钥备份设置（内部方法，受 setupInFlight 锁保护） */
-  private async _doSetupKeyBackup(
-    input?:
-      | string
-      | {
-          recoveryKey?: string
-          password?: string
-          authData?: unknown
-          generatedKey?: GeneratedSecretStorageKey | null
-        }
-  ): Promise<string> {
+  private async _doSetupKeyBackup(input?: KeyBackupSetupInput): Promise<string> {
     // 用 logger.warn 确保所有步骤都显示在终端（INFO 级别可能被 Tauri 插件缓冲丢失）
     const log = (msg: string) => {
       logger.warn(`[CryptoKeyBackupAdapter] ${msg}`)
