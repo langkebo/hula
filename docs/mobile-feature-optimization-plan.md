@@ -1061,7 +1061,7 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
 | 守门局限：settings-wiring 不要求消费方引用证据、`--update` 不校验清单；component-contracts 无 `components.d.ts` 新鲜度校验且 `<component :is>` 误报为断线 | 消费方引用要求精确 owner 模块/同目录 barrel 且绑定被真实使用、祖先 import 降级 unverified、证据扫描先剥注释；`--update` 先校验清单；新增生成物新鲜度校验；`<component :is>` 单列 `dynamic` 显式跳过并打印 | Task 5 `f85d3c6b`、`1b547494`、`aaff743e` | `scripts/check-settings-wiring.mjs`、`scripts/check-component-contracts.mjs:26-27,533-545`（dynamic 跳过） |
 | `MatrixNotificationService.ts` 867 行越过 400 红线；`isValidNotificationConfig` 对 `validateObject` 全有全无；损坏配置按每条消息重复告警 | 拆出 7 个职责模块（867→519）；配置校验改逐字段；损坏配置告警一次性 | Task 2 `0ef1747d`（失败用例 `cad235ca`；events 语义/惰性 client 修复 `e3454ccc` + `377d5e01`） | `src/services/matrix/notifications/`（`notificationConfig.ts` 347、`dndSettingsStore.ts` 136、`notificationAck.ts` 98、`configAccountDataSync.ts` 74、`dndAccountDataSync.ts` 61、`notificationDecisionGate.ts` 80、`systemNotificationPermission.ts` 27）；`MatrixNotificationService.ts` 519 行（守门口径 520）< 基线 520 |
 | presence「未传 `status_msg`」被写成 `''`，会清空服务端状态文本 | 未传时原样透传 `undefined`，由 SDK 省略字段 | Task 3 `8ee9c27c`（失败用例 `ab51e6ff`） | `src/services/matrix/user/MatrixPresenceService.ts:136-137`（注释）、`:153`（`presenceManager.setPresence(effective, statusMsg)`） |
-| `clearCurrentSessionUnread` 零生产调用方且不推进 `settled` 水位 | 删除方法、`message.ts` 包装与类型导出；`markRead` 无条件推进水位标注为**有意行为** | Task 3 `3c9f8df5` | `grep -rn clearCurrentSessionUnread src/` 无命中；`sessionUnread.ts:325-331`（「不要修成条件推进」） |
+| `clearCurrentSessionUnread` 零生产调用方且不推进 `settled` 水位 | 删除方法、`message.ts` 包装与类型导出；`markRead` 无条件推进水位标注为**有意行为** | Task 3 `3c9f8df5` | `grep -rn clearCurrentSessionUnread src/` 无命中；`sessionUnread.ts:324`（「不要修成条件推进」） |
 | `sessionUnread.test.ts` 的收敛用例因 gating 之后不再验证 `noNewerMessage`（假绿） | 回执关闭下恢复双向收敛覆盖（服务端更小 + `activeTime` 前移） | Task 3 `4d54b238` | `src/stores/domains/chat/__tests__/sessionUnread.test.ts:158-205`、`:302-309` |
 | `check:v-html` 把 `ThemeSwitcher.vue` 注释里的 "v-html" 字样误报（基线提交上同样 FAIL） | 按 SFC 模板语义判定：先剥模板注释再匹配，注释里的字样不再命中 | Task 1 `517c7f83` | `node scripts/check-v-html.mjs` → exit 0「No unauthorized v-html usage found」 |
 | `check:a11y` 离线/CI 策略不明（Storybook 不可达时行为未定义） | 离线默认**显式失败 exit 2**，仅显式 `--skip-if-unreachable` 才打印 SKIP；CI 由 workflow 真正启动 Storybook 并轮询就绪后再扫描 | Task 1 `292f0d08` | `scripts/check-a11y.mjs:9-17,97-98`；`.github/workflows/quality-gate.yml` 的 a11y 步骤 |
@@ -1085,7 +1085,7 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
 - **首启通知权限：已裁决「保持只检查、不主动申请」**。`canSendSystemNotification()` 只检查、
   不申请，申请入口仍是设置页（`NotificationSettings.vue` 的 `requestPermission()` 路径）；
   后台首条消息不会主动弹权限框。Task 4 的刻意取舍，本轮沿用。
-- **未读账本 `markRead` 无条件推进水位：有意行为，不修**（见 `sessionUnread.ts:325-331` 的
+- **未读账本 `markRead` 无条件推进水位：有意行为，不修**（见 `sessionUnread.ts:324` 的
   显式注释）；`sessionUnread.test.ts` 的收敛覆盖已在 Task 3 恢复（见「本轮清除」）。
 
 #### （2）工程 follow-up（含门禁自身的改进）
@@ -1114,8 +1114,9 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
   按「只重构本分支弄大的、其余基线化并写明依据」的裁决：本工作流自身把两个文件顶出各自基线的
   改动已分别处置——`src/views/chatHistory/index.vue`（Task 6 jump2Reply 接线 427 → 438）在收尾
   复核中把日期边界归一化抽成纯函数 `normalizeHistoryDateRange`（`ea4d2067`），回到 410 行、
-  基线收紧为 411；`src/services/matrix/MatrixHttpClient.ts`（432 → 441，M3 私有端点改走
-  `paths/prefixes.ts` 常量 `bb761cb6`/`817fde4c` 的净增）**基线化不重构**：这 9 行正是
+  基线收紧为 411；`src/services/matrix/MatrixHttpClient.ts`（M3 私有端点改走 `paths/prefixes.ts` 常量，`817fde4c` +
+  `bb761cb6` 共净增 8 行；守卫基线口径 432 → 441 的差额里另有 1 行是分支前的 master 漂移）
+  **基线化不重构**：这几行正是
   `matrix_prefix_hardcoded` 从 72 降到 63 的代价，压回基线只能把字面量重新内联，会立刻撞回
   ratchet 红灯。其余越基线文件在分支前就已被 master 顶出基线，分支只在其上小幅增减。
 - **`check:a11y` 需要就绪的 Storybook**：`pnpm check:a11y` 只扫描、不启动 Storybook；
@@ -1199,7 +1200,7 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
   exit 1）→ 仓库既有红灯，且在 CI 的 Boundary Checks 里是硬门禁。**修法需要设计裁决**：
   逐符号改为 `currentColor`（会让 `sliding` 的 #666 点阵、`tips`/`Security` 的品牌绿跟随文本色，
   属可见视觉变更），或确认品牌装饰语义后登记 `scripts/audit-icon-colors.py` 的 `WHITELIST`
-  （上限 5，当前 1，装不下 8 个）；两者都不是纯工程改动，故不在本轮擅自改。
+  （上限 5，当前 1，装不下这 9 个）；两者都不是纯工程改动，故不在本轮擅自改。
 - **文件体积：本工作流把它顶出基线的两个文件已分别处置**：
   `src/views/chatHistory/index.vue` 由 Task 6 的 jump2Reply 接线从 427 增到 438，收尾复核把
   `handleDateChange` 的日期边界归一化抽成纯函数 `normalizeHistoryDateRange`
