@@ -155,8 +155,11 @@
   自定义 composer 包装与分批迁移的设计要点记入
   `docs/mobile-feature-optimization-plan.md` §13（2）。
 - **Task 9：完成** §13 更新、`check:file-size` 基线收口与全量门禁实测；报告见
-  `.superpowers/sdd/2026-09-23-issues-cleanup/task-9-report.md`。**未决（NOT DONE）**：
-  全量 `npx vitest run` 有 8 个本分支引入的真实失败（Task 3 改了 `status_msg` 透传语义、
-  `usePresenceHeartbeat.privacy.test.ts` 的断言未同步）+ 1 个既有时间炸弹用例；
-  `check:icon-colors` 是仓库既有红灯（`public/icon.js`，分支未触碰）。
-  详见 §13（4）本轮全量实测未决项。
+  `.superpowers/sdd/2026-09-23-issues-cleanup/task-9-report.md`。收尾独立评审后补了一轮
+  **fix round**（`e0ccf0f4`、`ea4d2067`，见报告「补记」）：首轮全量暴露的 8 个断言失败
+  （Task 3 改了 `status_msg` 透传语义、`usePresenceHeartbeat.privacy.test.ts` 断言未同步）
+  与 1 个既有 DND 时间炸弹用例已修；`chatHistory/index.vue` 的日期归一化抽成纯函数，回到
+  体积基线内并收紧基线。合并 master `5e9c4b99`（SDK 重钉）后复跑：`vue-tsc` 0 错误、
+  `npx vitest run --maxWorkers=2` 805/805 文件、9279/9279 用例通过、exit 0。
+  唯一未修的红色门禁是仓库既有 `check:icon-colors`（`public/icon.js`，与 master 逐字节
+  相同、同样 FAIL；修法需设计裁决），详见 §13（4）。

@@ -965,7 +965,7 @@ Task 5 收紧后的口径（含 2026-09-22 最终评审 I5 的两项加固）：
 | 门禁 | 结果 | 说明 |
 | --- | --- | --- |
 | `npx vue-tsc --noEmit` | 0 错误，exit 0 | |
-| `npx vitest run` | **exit 1**。`--maxWorkers=2` 下 803/805 文件、9265/9274 用例通过、9 failed、Errors 3 | 3 个 Errors 全是**既有** crypto unhandled rejection（`CryptoKeyBackupAdapter` 报 `CryptoApi 不可用`）。9 个失败 = 8 个**本分支 Task 3 引入**（`usePresenceHeartbeat.privacy.test.ts` 仍断言 `(state, '')`，未随 `status_msg` 透传 `undefined` 同步）+ 1 个既有时间炸弹（DND 用例只在本地 01:00–23:00 通过）。裸 `npx vitest run` 默认并发下另有约 26 个 worker fork 启动失败（6 个文件 Failed Suite、约 400 用例未执行、Errors 29），低并发复跑即消失。详见 (4) |
+| `npx vitest run --maxWorkers=2` | **exit 0**：805/805 文件、9279/9279 用例通过、0 failed、Errors 3 | 3 个 Errors 全是**既有** crypto unhandled rejection（`CryptoKeyBackupAdapter` 报 `CryptoApi 不可用`），不产生失败用例。首轮全量曾暴露 8 个真实失败（`usePresenceHeartbeat.privacy.test.ts` 的断言未随 Task 3 的 `status_msg` 透传 `undefined` 同步）+ 1 个 DND 时间炸弹（用例只在本地 01:00–23:00 通过），已由 `e0ccf0f4` 修复并验证。裸 `npx vitest run` 默认并发下另有约 26 个 worker fork 启动失败（6 个文件 Failed Suite、约 400 用例未执行、Errors 29），低并发复跑即消失，属本机资源限制而非代码缺陷。详见 (4) |
 | `check:settings-wiring` | OK 持久化 key 清单 73/73、死配置 1（基线 1）；消费方证据 verified 135/146、unverified 11 | Task 5 `f85d3c6b`/`aaff743e`：消费方引用要求精确 owner 模块/同目录 barrel 且绑定被真实使用、证据扫描先剥注释、祖先目录 import 降级 unverified、`--update` 先校验清单。剩余 11 条只证明路径存在（判活≠生效） |
 | `check:component-contracts` | OK 无人监听事件 0（基线 0）、白名单 17/17（只减不增） | Task 5 `1b547494` 新增 `components.d.ts` 生成物新鲜度校验；Task 6 接线 3 类、删死入口 6 类后 `followUp` 挂账清空；`<component :is>` 动态挂载单列 `dynamic` 显式跳过并打印（不参与断线判定）；白名单名称集合 ratchet、失效即 FAIL |
 | `check:i18n-dead-keys` | OK 孤儿 0（基线 0）+ 动态族 148 key / 23 前缀（阻塞 delta） | Task 4 `6d30d85e` 把判活收紧到**翻译引用位置**（注释/URL/普通字符串/成员表达式不算引用），动态族文件路径改相对路径；Task 7 删 1979 条孤儿把基线降到 0 |
@@ -983,7 +983,7 @@ Task 5 收紧后的口径（含 2026-09-22 最终评审 I5 的两项加固）：
 | `check:icon-colors` | **FAIL（既有，与本分支无关）** | `python3 scripts/audit-icon-colors.py` 报 `public/icon.js` 9 个 symbol / 21 处非白名单硬编码。该文件最后修改 `73ab2467`，分支未触碰（`git diff 6c6af608 8ff9e732 -- public/` 为空），且与 master `5e9c4b99` 逐字节相同 → 仓库既有红灯，见 (4) |
 | `check:a11y` | 离线 exit 2（预期）；`--skip-if-unreachable` → exit 0 SKIP | 需先 `pnpm storybook`；CI 由 workflow 启动 Storybook 后扫描（Task 1 `292f0d08`） |
 | `check:v-html` | OK，exit 0 | Task 1 `517c7f83` 改为按 SFC 模板语义判定（先剥模板注释再匹配），`ThemeSwitcher.vue` 注释里的 "v-html" 字样不再误报 |
-| `check:file-size` | OK，exit 0（129 个 >400 文件 = 基线 129；1 个 >800 红线，**在基线内**且仅 INFO） | Task 9 按裁决 `--update` 基线化 master 既有漂移（16 个新越线文件 + 44 个超过各自基线的文件）；分支自建新文件无一越 400 线，`MatrixNotificationService.ts` 867 → 519（< 基线 525）。守门**不在 CI**。分支自身唯一把文件顶出基线的改动是 `src/views/chatHistory/index.vue`（427 → 438），见 (4) |
+| `check:file-size` | OK，exit 0（129 个 >400 文件 = 基线 129；1 个 >800 红线，**在基线内**且仅 INFO） | Task 9 按裁决 `--update` 基线化 master 既有漂移；分支自建新文件无一越 400 线，`MatrixNotificationService.ts` 867 → 519（守门口径 520，< 基线 520）。守门**不在 CI**。收尾后把 `src/views/chatHistory/index.vue` 的日期归一化抽成纯函数（`ea4d2067`），该文件回到 410 行（守门口径 411），基线随之由 438 收紧为 411；同批把 `MatrixHttpClient.ts`（432 → 441，M3 前缀常量化 `bb761cb6`/`817fde4c` 的净增）等 master 漂移一并基线化，依据见 (2) |
 
 结论：Task 5 之后两个守门不再是"扫不到真实持久层 / 只剩冻结数字"的橡皮图章——
 settings-wiring 以清单覆盖 73 个持久层 key 并把 `--update` 收紧到键名子集，
@@ -991,10 +991,12 @@ component-contracts 的冻结基线归零、新增跳过即 FAIL、白名单只�
 i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是阻塞 delta。**但清单/引用判据
 仍只证明"有登记、有引用"，不证明"开关在运行时生效"**，有效性只能由各任务的行为测试提供证据。
 守门可证伪性在 Task 14、Task 5 与本次最终修复波均已实测（临时制造违规会 FAIL，恢复后 OK）。
-本轮 Task 1 清掉了 `check:v-html` 的注释误报、Task 9 把 `check:file-size` 按裁决基线化，
-上表**已无 FAIL 守门**；`npx vitest run` 仍以 exit 1 收尾，但原因已从"纯既有 crypto
-unhandled rejection"变为「3 类未决项」——详见 (4) 本轮全量实测未决项，其中 8 个真实失败
-系本分支 Task 3 改了 `status_msg` 语义而用例断言未同步，**尚未修复**。
+本轮 Task 1 清掉了 `check:v-html` 的注释误报，Task 9 把 `check:file-size` 按裁决基线化，并在
+收尾复核中修掉了首轮全量暴露的 8 个断言失败与 1 个 DND 时间炸弹（`e0ccf0f4`）：`npx vue-tsc
+--noEmit` 与 `npx vitest run --maxWorkers=2` 现均 exit 0。上表仍有两处非绿色，均非本轮引入：
+`check:icon-colors` 是**仓库既有红灯**（`public/icon.js` 与 master 逐字节相同、同样 FAIL，
+见 (4)）；`check:a11y` 离线 exit 2 是 Task 1 的刻意设计（需就绪的 Storybook，或显式
+`--skip-if-unreachable` 打印 SKIP）。其余剩余项见 (4)。
 
 音视频设置治理后的**剩余债务**（如实记录）：`audioInputId` / `videoInputId` 目前
 只作用于设置页的麦克风测试与摄像头预览；把设备选择应用到真实通话需要
@@ -1057,9 +1059,9 @@ unhandled rejection"变为「3 类未决项」——详见 (4) 本轮全量实�
 | i18n 判活口径过宽：注释/URL/普通字符串/成员表达式里的同形点分 token 都算「已引用」，判活是上界而非证明 | 判活收紧到**翻译引用位置**（`t()`/`tc()` 等调用点 + 键注册表位置 + `new Error('key')`）；注释/URL/import/成员表达式不算引用；`--list` 动态族文件路径改相对路径 | Task 4 `6d30d85e` | `scripts/check-i18n-dead-keys.mjs` 头部「判活证据」段与 `collectScriptReferences`；`grep -n 'path.relative(root'`（`:277`） |
 | `check:doc-coverage` 基线仍列已迁移/已删方法（本次清 `getReadReceipts`） | 移除陈旧条目，ratchet 计数与实际一致 | Task 4 `e98eb35a` | `scripts/doc-coverage-baseline.json`（count 1026，指向现存符号） |
 | 守门局限：settings-wiring 不要求消费方引用证据、`--update` 不校验清单；component-contracts 无 `components.d.ts` 新鲜度校验且 `<component :is>` 误报为断线 | 消费方引用要求精确 owner 模块/同目录 barrel 且绑定被真实使用、祖先 import 降级 unverified、证据扫描先剥注释；`--update` 先校验清单；新增生成物新鲜度校验；`<component :is>` 单列 `dynamic` 显式跳过并打印 | Task 5 `f85d3c6b`、`1b547494`、`aaff743e` | `scripts/check-settings-wiring.mjs`、`scripts/check-component-contracts.mjs:26-27,533-545`（dynamic 跳过） |
-| `MatrixNotificationService.ts` 867 行越过 400 红线；`isValidNotificationConfig` 对 `validateObject` 全有全无；损坏配置按每条消息重复告警 | 拆出 7 个职责模块（867→519）；配置校验改逐字段；损坏配置告警一次性 | Task 2 `0ef1747d`（失败用例 `cad235ca`；events 语义/惰性 client 修复 `e3454ccc` + `377d5e01`） | `src/services/matrix/notifications/`（`notificationConfig.ts` 347、`dndSettingsStore.ts` 136、`notificationAck.ts` 98、`configAccountDataSync.ts` 74、`dndAccountDataSync.ts` 61、`notificationDecisionGate.ts` 80、`systemNotificationPermission.ts` 27）；`MatrixNotificationService.ts` 519 行 < 基线 525 |
+| `MatrixNotificationService.ts` 867 行越过 400 红线；`isValidNotificationConfig` 对 `validateObject` 全有全无；损坏配置按每条消息重复告警 | 拆出 7 个职责模块（867→519）；配置校验改逐字段；损坏配置告警一次性 | Task 2 `0ef1747d`（失败用例 `cad235ca`；events 语义/惰性 client 修复 `e3454ccc` + `377d5e01`） | `src/services/matrix/notifications/`（`notificationConfig.ts` 347、`dndSettingsStore.ts` 136、`notificationAck.ts` 98、`configAccountDataSync.ts` 74、`dndAccountDataSync.ts` 61、`notificationDecisionGate.ts` 80、`systemNotificationPermission.ts` 27）；`MatrixNotificationService.ts` 519 行（守门口径 520）< 基线 520 |
 | presence「未传 `status_msg`」被写成 `''`，会清空服务端状态文本 | 未传时原样透传 `undefined`，由 SDK 省略字段 | Task 3 `8ee9c27c`（失败用例 `ab51e6ff`） | `src/services/matrix/user/MatrixPresenceService.ts:136-137`（注释）、`:153`（`presenceManager.setPresence(effective, statusMsg)`） |
-| `clearCurrentSessionUnread` 零生产调用方且不推进 `settled` 水位 | 删除方法、`message.ts` 包装与类型导出；`markRead` 无条件推进水位标注为**有意行为** | Task 3 `3c9f8df5` | `grep -rn clearCurrentSessionUnread src/` 无命中；`sessionUnread.ts:319-324`（「不要修成条件推进」） |
+| `clearCurrentSessionUnread` 零生产调用方且不推进 `settled` 水位 | 删除方法、`message.ts` 包装与类型导出；`markRead` 无条件推进水位标注为**有意行为** | Task 3 `3c9f8df5` | `grep -rn clearCurrentSessionUnread src/` 无命中；`sessionUnread.ts:325-331`（「不要修成条件推进」） |
 | `sessionUnread.test.ts` 的收敛用例因 gating 之后不再验证 `noNewerMessage`（假绿） | 回执关闭下恢复双向收敛覆盖（服务端更小 + `activeTime` 前移） | Task 3 `4d54b238` | `src/stores/domains/chat/__tests__/sessionUnread.test.ts:158-205`、`:302-309` |
 | `check:v-html` 把 `ThemeSwitcher.vue` 注释里的 "v-html" 字样误报（基线提交上同样 FAIL） | 按 SFC 模板语义判定：先剥模板注释再匹配，注释里的字样不再命中 | Task 1 `517c7f83` | `node scripts/check-v-html.mjs` → exit 0「No unauthorized v-html usage found」 |
 | `check:a11y` 离线/CI 策略不明（Storybook 不可达时行为未定义） | 离线默认**显式失败 exit 2**，仅显式 `--skip-if-unreachable` 才打印 SKIP；CI 由 workflow 真正启动 Storybook 并轮询就绪后再扫描 | Task 1 `292f0d08` | `scripts/check-a11y.mjs:9-17,97-98`；`.github/workflows/quality-gate.yml` 的 a11y 步骤 |
@@ -1083,7 +1085,7 @@ unhandled rejection"变为「3 类未决项」——详见 (4) 本轮全量实�
 - **首启通知权限：已裁决「保持只检查、不主动申请」**。`canSendSystemNotification()` 只检查、
   不申请，申请入口仍是设置页（`NotificationSettings.vue` 的 `requestPermission()` 路径）；
   后台首条消息不会主动弹权限框。Task 4 的刻意取舍，本轮沿用。
-- **未读账本 `markRead` 无条件推进水位：有意行为，不修**（见 `sessionUnread.ts:319-324` 的
+- **未读账本 `markRead` 无条件推进水位：有意行为，不修**（见 `sessionUnread.ts:325-331` 的
   显式注释）；`sessionUnread.test.ts` 的收敛覆盖已在 Task 3 恢复（见「本轮清除」）。
 
 #### （2）工程 follow-up（含门禁自身的改进）
@@ -1106,11 +1108,16 @@ unhandled rejection"变为「3 类未决项」——详见 (4) 本轮全量实�
   实测当前 key 集合中 **0 条假活**，故作为**已接受的口径局限**记入本节，不再单独开修复轮；
   脚本头部已披露该档是"刻意放宽"。
 - **`check:file-size` 的 per-file 增长与基线（本轮收口）**：见 13.5。守门**不在 CI**；
-  本轮 `--update` 基线化的是 master 既有漂移（16 个新越线文件 + 44 个超过各自基线的文件），
-  分支自建的 8 个新文件无一越 400 线，`MatrixNotificationService.ts` 已从 867 降到 519
-  （< 基线 525）。分支自身唯一把文件顶出基线的改动是
-  `src/views/chatHistory/index.vue`（427 → 438，Task 6 的 jump2Reply 接线），
-  已连同本次基线提升记录，亦见「(4) 本轮全量实测未决项」。
+  本轮 `--update` 基线化的是 master 既有漂移（16 个新越线文件 + 43 个超过各自基线的文件，
+  同时收紧 29 个缩小条目、移除 25 个已删/降到 400 以下的条目），分支自建的 8 个新文件无一
+  越 400 线，`MatrixNotificationService.ts` 已从 867 降到 519（守门口径 520，< 基线 520）。
+  按「只重构本分支弄大的、其余基线化并写明依据」的裁决：本工作流自身把两个文件顶出各自基线的
+  改动已分别处置——`src/views/chatHistory/index.vue`（Task 6 jump2Reply 接线 427 → 438）在收尾
+  复核中把日期边界归一化抽成纯函数 `normalizeHistoryDateRange`（`ea4d2067`），回到 410 行、
+  基线收紧为 411；`src/services/matrix/MatrixHttpClient.ts`（432 → 441，M3 私有端点改走
+  `paths/prefixes.ts` 常量 `bb761cb6`/`817fde4c` 的净增）**基线化不重构**：这 9 行正是
+  `matrix_prefix_hardcoded` 从 72 降到 63 的代价，压回基线只能把字面量重新内联，会立刻撞回
+  ratchet 红灯。其余越基线文件在分支前就已被 master 顶出基线，分支只在其上小幅增减。
 - **`check:a11y` 需要就绪的 Storybook**：`pnpm check:a11y` 只扫描、不启动 Storybook；
   本地离线跑得到 exit 2（显式失败），需要先 `pnpm storybook` 或显式传
   `--skip-if-unreachable`（打印 SKIP）。CI 由 `.github/workflows/quality-gate.yml` 先启动
@@ -1159,41 +1166,48 @@ unhandled rejection"变为「3 类未决项」——详见 (4) 本轮全量实�
   （`src/services/media/mediaDevicePreferences.ts`），接真实通话时直接复用。
 - 移动端音质开关的写回缺口已在 Task 7 清除（见「本轮清除」），不再列为缺口。
 
-#### （4）本轮全量实测未决项（Task 9 发现）
+#### （4）本轮全量实测结论与剩余项（Task 9 起测，收尾复核更新）
 
-`npx vitest run` 全量实测（2026-10-09 23:23–23:26）暴露以下未决项，**Task 9 未修复**
-（收尾任务不改行为；逐条给出修法与证据）：
+`npx vitest run --maxWorkers=2` 末次全量实测（合并 master `5e9c4b99` 后）结果：
+**805/805 文件、9279/9279 用例通过、0 failed、`Errors 3`（既有 crypto unhandled rejection），exit 0**。
+首轮全量（2026-10-09 23:23–23:26）暴露过 3 个问题，其中 2 个已在收尾复核中修复：
 
-- **8 个真实测试失败（本分支引入）**：
+- **8 个真实测试失败（Task 3 引入，已修复 `e0ccf0f4`）**：
   `src/composables/__tests__/usePresenceHeartbeat.privacy.test.ts` 的 8 个用例断言
   `presenceManager.setPresence(state, '')`，而 Task 3 `8ee9c27c` 已把未传 `status_msg` 改为
-  透传 `undefined`（`MatrixPresenceService.ts:153`），假 SDK manager 收到
-  `('offline'|'online', undefined)`。源码改动是有意的、**测试断言未同步**：
-  应把断言改为 `undefined`（或断言「第二参数不是空串」）。任务级验证当时只跑了目标文件，
-  这是首次全量运行才暴露。
-- **1 个既有时间炸弹用例**：`MatrixNotificationService.test.ts` 的
+  透传 `undefined`（`MatrixPresenceService.ts:153`）。源码改动是有意的、测试断言未同步；
+  任务级验证当时只跑了目标文件，首次全量运行才暴露。修法：13 处断言改为 `undefined`
+  （断言仍钉住第二参数的位置，不是放宽），并加注释说明该契约；语义细节由
+  `MatrixPresenceService.test.ts` 的「setPresence status_msg 语义」覆盖。独立评审用临时工程
+  验证了 1 参数调用**不会**通过 `('offline', undefined)` 断言（arity 仍被钉住，非放宽）。
+- **1 个既有时间炸弹用例（已修复 `e0ccf0f4`）**：`MatrixNotificationService.test.ts` 的
   `the DND gate observes a window written by another window` 把 DND 窗口写死为
-  2026-06-15 01:00–23:00，而 `shouldNotifyMessage` 用 `new Date()` 判定（`dndWindow.ts:51-53`
-  只比"当天分钟数"），因此只在本地时间 01:00–23:00 内通过；本次运行于 23:27，落在窗口外而
-  FAIL。与分支无关（分支基线上 `shouldNotifyMessage` 同样取 `new Date()`）。
-- **全量 run 的 worker 资源抖动**：默认并发下约 26 个 worker fork 启动失败，表现为 6 个测试
-  文件「模块找不到」的 Failed Suite、约 400 个用例未执行、`Errors 29`
-  （2 个既有 crypto `CryptoApi 不可用` unhandled rejection + 其余为 worker 启动失败）。
-  这 6 个文件低并发重跑全部通过（6 files / 101 tests passed），属本机资源限制而非代码缺陷。
-- **`check:icon-colors` 既有红灯（与本分支无关）**：`python3 scripts/audit-icon-colors.py`
-  在 `public/icon.js` 上报 9 个 symbol / 21 处非白名单硬编码（`RightArrow`/`Security`/`build`/
-  `cloudError`/`docs`/`minus`/`perf`/`sliding`/`tips`），白名单外残留 3 处。该文件最后修改于
-  `73ab2467`，本分支未触碰，且与 master `5e9c4b99` 上的文件、脚本逐字节相同，属仓库既有红灯；
-  该步骤在 CI 的 Boundary Checks 里是硬门禁。修法：替换为 `currentColor`，或确认品牌装饰
-  语义后登记进 `scripts/audit-icon-colors.py` 的 `WHITELIST`（当前 1/5）。
-- **文件体积：本分支自身把 `src/views/chatHistory/index.vue` 顶出基线（未重构）**：
-  Task 6 的 jump2Reply 接线把它从基线 427 增到 438（+11），而该文件在分支前恰好等于基线；
-  Task 9 `--update` 因此把它的基线提升到 438。按"只重构本分支弄大的"裁决，本应重构成 ≤427，
-  但收尾任务限定不改行为，实际未做（记为 NOT DONE）；建议后续把 `handleDateChange` 的
-  日期边界归一化抽成纯函数下沉到 `src/utils/ComputedTime.ts` 即可回到基线内。
-  其余分支触碰的越基线文件（`ChatMain.vue` +7、`SpaceChildrenPane.vue` +4、
-  `components.d.ts` -4、`message.ts` -5、`AccountSettings.vue` -5）在分支前就已被 master 顶出
-  基线，分支只是在其上小幅增减，未改变"是否越线"的结论。
+  2026-06-15 01:00–23:00，而 `shouldNotifyMessage` 用真实 `new Date()` 判定
+  （`dndWindow.ts:51-53` 只比"当天分钟数"），因此只在本地时间 01:00–23:00 内通过；首轮运行
+  于 23:27 落在窗口外而 FAIL。修法：把系统时间钉在窗口内（`vi.useFakeTimers()` +
+  `vi.setSystemTime(new Date(2026, 5, 15, 3, 0))`），去掉运行时刻依赖而不是放宽断言；
+  独立评审已实测「去掉 pin 会 RED、把门控改成恒真也会 RED」。
+- **全量 run 的 worker 资源抖动（本机限制，不改代码）**：默认并发下约 26 个 worker fork
+  启动失败，表现为 6 个测试文件「模块找不到」的 Failed Suite、约 400 个用例未执行、
+  `Errors 29`（2 个既有 crypto `CryptoApi 不可用` unhandled rejection + 其余为 worker 启动
+  失败）。这 6 个文件低并发重跑全部通过（6 files / 101 tests passed）。
+- **`check:icon-colors` 既有红灯（与本工作流无关，未修）**：`python3 scripts/audit-icon-colors.py`
+  在 `public/icon.js` 上报 9 个 symbol / 21 处非白名单 `data-follow-*` 硬编码
+  （`RightArrow`/`Security`/`build`/`cloudError`/`docs`/`minus`/`perf`/`sliding`/`tips`）——这些
+  符号同时带 `fill="<同一 hex>"`，即当前确实渲染写死颜色、无法被 `currentColor` 重着色。
+  该文件最后修改于 `73ab2467`，本工作流未触碰，且与 master `5e9c4b99` 逐字节相同（脚本同样
+  exit 1）→ 仓库既有红灯，且在 CI 的 Boundary Checks 里是硬门禁。**修法需要设计裁决**：
+  逐符号改为 `currentColor`（会让 `sliding` 的 #666 点阵、`tips`/`Security` 的品牌绿跟随文本色，
+  属可见视觉变更），或确认品牌装饰语义后登记 `scripts/audit-icon-colors.py` 的 `WHITELIST`
+  （上限 5，当前 1，装不下 8 个）；两者都不是纯工程改动，故不在本轮擅自改。
+- **文件体积：本工作流把它顶出基线的两个文件已分别处置**：
+  `src/views/chatHistory/index.vue` 由 Task 6 的 jump2Reply 接线从 427 增到 438，收尾复核把
+  `handleDateChange` 的日期边界归一化抽成纯函数 `normalizeHistoryDateRange`
+  （`src/utils/ComputedTime.ts`，`ea4d2067` + 5 个单测），该文件回到 410 行、基线由 438 收紧为
+  411，行为逐分支核对与内联实现一致；`src/services/matrix/MatrixHttpClient.ts`（432 → 441）
+  按裁决基线化不重构，依据见 (2)。其余本工作流触碰的越基线文件（`ChatMain.vue` +7、
+  `SpaceChildrenPane.vue` +4、`components.d.ts` -4、`message.ts` -5、`AccountSettings.vue` -5）
+  在分支前就已被 master 顶出基线，未改变"是否越线"的结论。
 
 ### 13.6 组件事件断线 follow-up（Task 5 移出冻结基线）
 
