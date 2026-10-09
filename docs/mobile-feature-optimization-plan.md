@@ -965,7 +965,7 @@ Task 5 收紧后的口径（含 2026-09-22 最终评审 I5 的两项加固）：
 | 门禁 | 结果 | 说明 |
 | --- | --- | --- |
 | `npx vue-tsc --noEmit` | 0 错误，exit 0 | |
-| `npx vitest run --maxWorkers=2` | **exit 0**：805/805 文件、9279/9279 用例通过、0 failed、Errors 3 | 3 个 Errors 全是**既有** crypto unhandled rejection（`CryptoKeyBackupAdapter` 报 `CryptoApi 不可用`），不产生失败用例。首轮全量曾暴露 8 个真实失败（`usePresenceHeartbeat.privacy.test.ts` 的断言未随 Task 3 的 `status_msg` 透传 `undefined` 同步）+ 1 个 DND 时间炸弹（用例只在本地 01:00–23:00 通过），已由 `e0ccf0f4` 修复并验证。裸 `npx vitest run` 默认并发下另有约 26 个 worker fork 启动失败（6 个文件 Failed Suite、约 400 用例未执行、Errors 29），低并发复跑即消失，属本机资源限制而非代码缺陷。详见 (4) |
+| `npx vitest run --maxWorkers=2` | 805/805 文件、9279/9279 用例通过、**0 failed**；进程仍 **exit 1**（`Errors 3`） | 3 个 Errors 全是**既有** crypto unhandled rejection（`CryptoKeyBackupAdapter` 报 `CryptoApi 不可用`），不产生失败用例，但会让 vitest 进程以 exit 1 收尾（实测 `npx vitest run --maxWorkers=2; echo $?` → 1）。首轮全量曾暴露 8 个真实失败（`usePresenceHeartbeat.privacy.test.ts` 的断言未随 Task 3 的 `status_msg` 透传 `undefined` 同步）+ 1 个 DND 时间炸弹（用例只在本地 01:00–23:00 通过），已由 `e0ccf0f4` 修复并验证。裸 `npx vitest run` 默认并发下另有约 26 个 worker fork 启动失败（6 个文件 Failed Suite、约 400 用例未执行、Errors 29），低并发复跑即消失；与其它重负载命令（12 个 check 脚本 + biome）并发跑时也会放大成文件级 Failed Suite（实测 122 文件 Failed Suite / 15 failed），单独复跑即 9279/9279 全绿——属本机资源限制而非代码缺陷。详见 (4) |
 | `check:settings-wiring` | OK 持久化 key 清单 73/73、死配置 1（基线 1）；消费方证据 verified 135/146、unverified 11 | Task 5 `f85d3c6b`/`aaff743e`：消费方引用要求精确 owner 模块/同目录 barrel 且绑定被真实使用、证据扫描先剥注释、祖先目录 import 降级 unverified、`--update` 先校验清单。剩余 11 条只证明路径存在（判活≠生效） |
 | `check:component-contracts` | OK 无人监听事件 0（基线 0）、白名单 17/17（只减不增） | Task 5 `1b547494` 新增 `components.d.ts` 生成物新鲜度校验；Task 6 接线 3 类、删死入口 6 类后 `followUp` 挂账清空；`<component :is>` 动态挂载单列 `dynamic` 显式跳过并打印（不参与断线判定）；白名单名称集合 ratchet、失效即 FAIL |
 | `check:i18n-dead-keys` | OK 孤儿 0（基线 0）+ 动态族 148 key / 23 前缀（阻塞 delta） | Task 4 `6d30d85e` 把判活收紧到**翻译引用位置**（注释/URL/普通字符串/成员表达式不算引用），动态族文件路径改相对路径；Task 7 删 1979 条孤儿把基线降到 0 |
@@ -993,7 +993,8 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
 守门可证伪性在 Task 14、Task 5 与本次最终修复波均已实测（临时制造违规会 FAIL，恢复后 OK）。
 本轮 Task 1 清掉了 `check:v-html` 的注释误报，Task 9 把 `check:file-size` 按裁决基线化，并在
 收尾复核中修掉了首轮全量暴露的 8 个断言失败与 1 个 DND 时间炸弹（`e0ccf0f4`）：`npx vue-tsc
---noEmit` 与 `npx vitest run --maxWorkers=2` 现均 exit 0。上表仍有两处非绿色，均非本轮引入：
+--noEmit` exit 0；`npx vitest run --maxWorkers=2` 0 failed、9279/9279 通过，但进程仍因 3 个既有
+crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均非本轮引入：
 `check:icon-colors` 是**仓库既有红灯**（`public/icon.js` 与 master 逐字节相同、同样 FAIL，
 见 (4)）；`check:a11y` 离线 exit 2 是 Task 1 的刻意设计（需就绪的 Storybook，或显式
 `--skip-if-unreachable` 打印 SKIP）。其余剩余项见 (4)。
@@ -1170,7 +1171,8 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
 #### （4）本轮全量实测结论与剩余项（Task 9 起测，收尾复核更新）
 
 `npx vitest run --maxWorkers=2` 末次全量实测（合并 master `5e9c4b99` 后）结果：
-**805/805 文件、9279/9279 用例通过、0 failed、`Errors 3`（既有 crypto unhandled rejection），exit 0**。
+**805/805 文件、9279/9279 用例通过、0 failed；进程 exit 1，对应 `Errors 3`**（既有 crypto
+unhandled rejection，不产生失败用例）。
 首轮全量（2026-10-09 23:23–23:26）暴露过 3 个问题，其中 2 个已在收尾复核中修复：
 
 - **8 个真实测试失败（Task 3 引入，已修复 `e0ccf0f4`）**：

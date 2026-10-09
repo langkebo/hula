@@ -160,6 +160,7 @@
   （Task 3 改了 `status_msg` 透传语义、`usePresenceHeartbeat.privacy.test.ts` 断言未同步）
   与 1 个既有 DND 时间炸弹用例已修；`chatHistory/index.vue` 的日期归一化抽成纯函数，回到
   体积基线内并收紧基线。合并 master `5e9c4b99`（SDK 重钉）后复跑：`vue-tsc` 0 错误、
-  `npx vitest run --maxWorkers=2` 805/805 文件、9279/9279 用例通过、exit 0。
+  `npx vitest run --maxWorkers=2` 805/805 文件、9279/9279 用例通过、0 failed
+  （进程仍因 3 个既有 crypto unhandled rejection 以 exit 1 收尾）。
   唯一未修的红色门禁是仓库既有 `check:icon-colors`（`public/icon.js`，与 master 逐字节
   相同、同样 FAIL；修法需设计裁决），详见 §13（4）。
