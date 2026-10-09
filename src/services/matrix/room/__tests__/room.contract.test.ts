@@ -26,7 +26,7 @@ vi.mock('@/services/i18n', () => ({
 }))
 
 setupMswServer(
-  http.post(`${HOMESERVER}/_matrix/client/v3/translate`, async ({ request }) => {
+  http.post(`${HOMESERVER}/_matrix/vendor/v1/translate`, async ({ request }) => {
     seenUrls.push(request.url)
     return HttpResponse.json({ translated_text: 'translated' })
   })
@@ -50,12 +50,12 @@ describe('Room service URL construction contract (real SDK + msw)', () => {
     vi.clearAllMocks()
   })
 
-  it('translateText hits /_matrix/client/v3/translate exactly once (no duplication)', async () => {
+  it('translateText hits /_matrix/vendor/v1/translate exactly once (no duplication)', async () => {
     const result = await roomOperations.translateText('hello', 'zh', false)
 
     const translateCalls = seenUrls.filter((u) => u.includes('/translate'))
     expect(translateCalls).toHaveLength(1)
-    expect(translateCalls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/translate`)
+    expect(translateCalls[0]).toBe(`${HOMESERVER}/_matrix/vendor/v1/translate`)
     expect(result).toBe('translated')
   })
 })
