@@ -468,3 +468,23 @@ Expected: 全绿；报告里给出「迁移目录数 / 动态 key 出口数 / vu
 git add src/plugins/i18n src/typings/i18n.d.ts
 git commit -m "feat(i18n): t() key 参数收紧为 I18nKeys，动态 key 走显式出口"
 ```
+
+---
+
+## Task 9 修订（2026-10-10，控制器）
+
+**为什么要改：** 首次派发的 Task 9 实现者在做完 RED 探针后即耗尽上下文终止（未产生任何提交、无残留文件）。控制器实测迁移规模：`useI18n()` 共 **431 文件 / 435 处**，`t()` 调用 **6773 处**（components 201、views 86、mobile 87、composables 31、layout 8、stores 2）。一次性迁移全仓既超出单轮可完成范围，也会产生跨全仓的巨型 diff。另实测 `src/typings/i18n.d.ts` 的 `I18nKeys` 是**嵌套对象类型**而非点分联合，不能直接当 `t()` 的 key 类型用。
+
+**修订后的 Task 9（能力优先 + 代表性迁移 + 余量登记）：**
+
+- **9a（必做，一次派发）**
+  1. 扩展 `scripts/generate-i18n-types.mjs`：除 `I18nKeys` 外再生成**扁平点分联合** `I18nKeyPaths`（形如 `"admin.title" | "admin.users.refresh" | …`）；重新生成 `src/typings/i18n.d.ts` 并提交。理由：避免用递归条件类型在 4000+ key 上做路径展开（TS 性能风险），生成期一次性算清。
+  2. 新建 typed 包装（`src/plugins/i18n/index.ts`）：`t(key: I18nKeyPaths, params?)` + 显式动态出口 `tDynamic(key: string, params?)`；仅在边界处 `as unknown as` 一次并写明理由，**禁止 `any`**；`te`/`tm`/`rt` 等其余 composer API 原样透传。
+  3. RED 探针：迁移前 `vue-tsc` 抓不到不存在的字面量 key（记录输出）；GREEN 探针：在**已迁移**的文件里写不存在 key 必须报 TS 错（记录错误码），真实 key 与 `tDynamic` 动态 key 必须通过。
+  4. 测量 `npx vue-tsc --noEmit` 前后耗时并记录。
+  5. 迁移**代表性小批**（≤20 文件，优先本轮已改动的文件 + `src/composables/common`），每个文件保留行为不变；`tDynamic` 每处都要给一行理由。
+  6. 报告里给出：剩余未迁移目录/文件数（预期 ≈ 415 文件），并说明未迁移文件继续用 stock `useI18n()`（宽类型，**不是不一致状态**），CI 的静态保障仍是 `check-i18n-refs`。
+- **9b（本计划内尽力而为）** 若 9a 顺利，按 `src/composables` → `src/layout` → `src/stores` → `src/views`（小批）顺序继续迁移，每批一个提交；每批 `vue-tsc` + `biome` 必绿。
+- **9c（明确登记的余量）** `src/components`(201) 与 `src/mobile`(87) 的全量迁移登记为 §13 follow-up（机械改动、风险低、纯 churn），不在本轮强行完成。
+
+**验收（修订后）：** ①`I18nKeyPaths` 已生成且 `vue-tsc` 在迁移过的文件上能抓到伪造 key（探针可证伪）；②`tDynamic` 是唯一动态出口且每处有理由；③未迁移文件保持可用、`vue-tsc`/biome/`check-i18n-refs`/`check-i18n-dead-keys` 全绿、全量测试通过；④余量在 §13 有明确条目与文件数。
