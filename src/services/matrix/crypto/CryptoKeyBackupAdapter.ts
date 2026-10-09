@@ -70,6 +70,16 @@ async function uploadSsssKeyDirectly(client: MatrixClient, generatedKey: Generat
   return keyId
 }
 
+/** 密钥备份设置入参：字符串等价于 recoveryKey；对象形式带 password / authData / generatedKey。 */
+type KeyBackupSetupInput =
+  | string
+  | {
+      recoveryKey?: string
+      password?: string
+      authData?: unknown
+      generatedKey?: GeneratedSecretStorageKey | null
+    }
+
 export class CryptoKeyBackupAdapter {
   constructor(private readonly accessors: CryptoAdapterAccessors) {}
 
@@ -115,16 +125,8 @@ export class CryptoKeyBackupAdapter {
     }
   }
 
-  async setupKeyBackupWithOptions(
-    input?:
-      | string
-      | {
-          recoveryKey?: string
-          password?: string
-          authData?: unknown
-          generatedKey?: GeneratedSecretStorageKey | null
-        }
-  ): Promise<string> {
+  /** 设置密钥备份（recoveryKey / password / 生成的 key），受 `setupInFlight` 并发锁保护。 */
+  async setupKeyBackupWithOptions(input?: KeyBackupSetupInput): Promise<string> {
     // 并发锁：如果已有 setup 流程在执行，复用其结果（防止并行 SSSS 上传）
     if (setupInFlight) {
       logger.warn('[CryptoKeyBackupAdapter] setupKeyBackupWithOptions 已有流程在执行，复用现有 Promise')
@@ -133,23 +135,18 @@ export class CryptoKeyBackupAdapter {
 
     const task = this._doSetupKeyBackup(input)
     setupInFlight = task
-    task.finally(() => {
+    // 用 then(clear, clear) 而不是 finally()：finally() 派生出的 Promise 在 task 拒绝时
+    // 同样拒绝且无人处理，会产生 unhandled rejection（vitest 因此 exit 1）。
+    // 调用方仍从 `return task` 拿到拒绝，setupKeyBackup 的 catch 行为不变。
+    const clear = () => {
       if (setupInFlight === task) setupInFlight = null
-    })
+    }
+    task.then(clear, clear)
     return task
   }
 
   /** 实际执行密钥备份设置（内部方法，受 setupInFlight 锁保护） */
-  private async _doSetupKeyBackup(
-    input?:
-      | string
-      | {
-          recoveryKey?: string
-          password?: string
-          authData?: unknown
-          generatedKey?: GeneratedSecretStorageKey | null
-        }
-  ): Promise<string> {
+  private async _doSetupKeyBackup(input?: KeyBackupSetupInput): Promise<string> {
     // 用 logger.warn 确保所有步骤都显示在终端（INFO 级别可能被 Tauri 插件缓冲丢失）
     const log = (msg: string) => {
       logger.warn(`[CryptoKeyBackupAdapter] ${msg}`)

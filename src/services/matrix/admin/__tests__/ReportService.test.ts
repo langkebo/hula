@@ -147,8 +147,12 @@ describe('AdminReportService', () => {
       scoreReport: scoreReportMock
     })
 
-    await expect(service.scoreReport('!r:hs', '$e1', 5)).rejects.toThrow('matrix_error.admin.score_range_invalid')
-    await expect(service.scoreReport('!r:hs', '$e1', -101)).rejects.toThrow('matrix_error.admin.score_range_invalid')
+    // 越界报错必须直接抛本地化文案，而不是裸 i18n key（key 到不了 UI）
+    await expect(service.scoreReport('!r:hs', '$e1', 5)).rejects.toThrow('评分必须在 -100 到 0 之间')
+    await expect(service.scoreReport('!r:hs', '$e1', -101)).rejects.toThrow('评分必须在 -100 到 0 之间')
+    // 文案例外：机器可读 key 仍需可检索（语义同 AppError.i18nKey），不得因翻译而丢失
+    const rangeErr: unknown = await service.scoreReport('!r:hs', '$e1', 5).catch((e: unknown) => e)
+    expect((rangeErr as { i18nKey?: string }).i18nKey).toBe('matrix_error.admin.score_range_invalid')
     expect(scoreReportMock).not.toHaveBeenCalled()
 
     await service.scoreReport('!r:hs', '$e1', -50)

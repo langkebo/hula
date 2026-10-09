@@ -1,4 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import { useI18nGlobal } from '@/services/i18n'
 import type { AdminManager } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import type { AdminReport, ReportRequest, ReportRoomResponse, ScannerInfo } from './AdminTypes'
@@ -100,7 +101,15 @@ export class AdminReportService {
 
   async scoreReport(roomId: string, eventId: string, score: number): Promise<void> {
     if (score < -100 || score > 0) {
-      throw new Error('matrix_error.admin.score_range_invalid')
+      // 本类不继承 BaseMatrixService（走显式 getter 注入以便测试），取不到 `this.t`，
+      // 故与 src/services/backend/tauriCommand.ts 同款直接 useI18nGlobal().t(...)：
+      // 抛出的 message 必须是可直接展示的本地化文案，而不是裸 key。
+      const i18nKey = 'matrix_error.admin.score_range_invalid'
+      const rangeError = new Error(useI18nGlobal().t(i18nKey)) as Error & { i18nKey?: string }
+      // 文案例外：同时保留机器可读 key（字段名与语义对齐 AppError.i18nKey），
+      // 避免告警去重/机器消费被迫依赖随语言变化的 message 文本。
+      rangeError.i18nKey = i18nKey
+      throw rangeError
     }
     try {
       await this.getReportingMgr().scoreReport(roomId, eventId, score)

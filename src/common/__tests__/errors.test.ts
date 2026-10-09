@@ -31,6 +31,7 @@ import {
   fingerprint,
   isAuthError,
   isRetryable,
+  resolveDisplayMessage,
   toAppError
 } from '@/common/errors'
 import { AppException, ErrorType } from '@/common/exception'
@@ -288,6 +289,73 @@ describe('errors', () => {
       const err = Object.assign(new Error('token unknown'), { errcode: 'M_UNKNOWN_TOKEN' })
       const result = toAppError(err)
       expect((result as AppErrorAuth).i18nKey).toBeTruthy()
+    })
+
+    it('does not store a non-key sentence in i18nKey on the fallback path', () => {
+      // 修 267/275：`translateMatrixError`（deprecated）的 userMessage 字段语义是「用户文案」。
+      // 一旦它返回的是已翻译的句子而不是 key，i18nKey 必须留空，展示层回落 message。
+      vi.mocked(translateMatrixError).mockReturnValueOnce({
+        recoverable: false,
+        userMessage: '已经翻译好的整句文案',
+        level: 'toast'
+      })
+      const result = toAppError(new Error('boom'))
+      expect(result.i18nKey).toBeUndefined()
+      expect(result.message).toBe('boom')
+    })
+
+    it('keeps a real key from the fallback translator', () => {
+      vi.mocked(translateMatrixError).mockReturnValueOnce({
+        recoverable: true,
+        userMessage: 'error.matrix.network',
+        level: 'toast'
+      })
+      const result = toAppError(new Error('transient'))
+      expect(result.i18nKey).toBe('error.matrix.network')
+    })
+  })
+
+  describe('resolveDisplayMessage', () => {
+    it('prefers the localized i18nKey text when the key resolves', () => {
+      const translate = vi.fn((key: string) => `T:${key}`)
+      const err: AppError = {
+        kind: 'auth',
+        code: 'M_FORBIDDEN',
+        recoverable: false,
+        message: 'raw sdk message',
+        i18nKey: 'error.matrix.forbidden'
+      }
+      expect(resolveDisplayMessage(err, translate)).toBe('T:error.matrix.forbidden')
+      expect(translate).toHaveBeenCalledWith('error.matrix.forbidden')
+    })
+
+    it('falls back to message when i18nKey is absent', () => {
+      const translate = vi.fn((key: string) => `T:${key}`)
+      const err: AppError = { kind: 'retryable', message: 'network down' }
+      expect(resolveDisplayMessage(err, translate)).toBe('network down')
+      expect(translate).not.toHaveBeenCalled()
+    })
+
+    it('falls back to message when the key does not resolve (translate echoes the key)', () => {
+      const err: AppError = {
+        kind: 'fatal',
+        code: 'UNKNOWN',
+        message: 'raw fallback message',
+        correlationId: 'c1',
+        i18nKey: 'error.matrix.ghost_key'
+      }
+      expect(resolveDisplayMessage(err, (key) => key)).toBe('raw fallback message')
+    })
+
+    it('falls back to message when the key resolves to an empty string', () => {
+      const err: AppError = {
+        kind: 'auth',
+        code: 'M_FORBIDDEN',
+        recoverable: false,
+        message: 'raw fallback message',
+        i18nKey: 'error.matrix.forbidden'
+      }
+      expect(resolveDisplayMessage(err, () => '')).toBe('raw fallback message')
     })
   })
 

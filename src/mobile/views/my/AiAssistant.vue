@@ -85,7 +85,7 @@
               <div class="grid grid-cols-2 gap-12px w-full px-16px mt-16px">
                 <div
                   v-for="suggestion in suggestions"
-                  :key="suggestion.id"
+                  :key="suggestion.title"
                   class="bg-[--tjg-surface-panel] rounded-12px p-12px shadow-sm border border-[--tjg-border-default] active:bg-[--tjg-surface-list-hover]"
                   @click="handleSuggestionClick(suggestion)">
                   <div class="flex items-center gap-8px mb-8px">
@@ -257,13 +257,13 @@
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, nextTick, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useTypedI18n } from '@/plugins/i18n'
 import { siliconFlowService } from '@/services/siliconflow/SiliconFlowService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AiAssistant')
 
-const { t } = useI18n()
+const { t } = useTypedI18n()
 
 interface Message {
   id: string
@@ -370,40 +370,37 @@ const filteredModels = computed(() => {
   return siliconflowModels
 })
 
-const suggestions = [
+// 用 computed 而非模块级常量：常量只在初始化时求值一次，切语言不会重算。
+const suggestions = computed(() => [
   {
-    id: 1,
-    title: 'ai_assistant.suggestions.translate',
-    desc: 'ai_assistant.suggestions.translate_desc',
+    title: t('ai_assistant.suggestions.translate'),
+    desc: t('ai_assistant.suggestions.translate_desc'),
     icon: 'mdi:translate',
     color: 'var(--tjg-color-info-500)',
     prompt: t('ai_assistant.suggestions.translate_prompt')
   },
   {
-    id: 2,
-    title: 'ai_assistant.suggestions.summarize',
-    desc: 'ai_assistant.suggestions.summarize_desc',
+    title: t('ai_assistant.suggestions.summarize'),
+    desc: t('ai_assistant.suggestions.summarize_desc'),
     icon: 'mdi:text-box-outline',
     color: 'var(--tjg-color-success-500)',
     prompt: t('ai_assistant.suggestions.summarize_prompt')
   },
   {
-    id: 3,
-    title: 'ai_assistant.suggestions.code',
-    desc: 'ai_assistant.suggestions.code_desc',
+    title: t('ai_assistant.suggestions.code'),
+    desc: t('ai_assistant.suggestions.code_desc'),
     icon: 'mdi:code-tags',
     color: 'var(--tjg-color-purple-500)',
     prompt: t('ai_assistant.suggestions.code_prompt')
   },
   {
-    id: 4,
-    title: 'ai_assistant.suggestions.chat',
-    desc: 'ai_assistant.suggestions.chat_desc',
+    title: t('ai_assistant.suggestions.chat'),
+    desc: t('ai_assistant.suggestions.chat_desc'),
     icon: 'mdi:chat-outline',
     color: 'var(--tjg-color-warning-500)',
     prompt: t('ai_assistant.suggestions.chat_prompt')
   }
-]
+])
 
 function scrollToBottom() {
   nextTick(() => {
@@ -626,7 +623,7 @@ async function testConnection() {
   }
 }
 
-function handleSuggestionClick(suggestion: (typeof suggestions)[0]) {
+function handleSuggestionClick(suggestion: (typeof suggestions.value)[number]) {
   inputText.value = suggestion.prompt
   handleSend()
 }

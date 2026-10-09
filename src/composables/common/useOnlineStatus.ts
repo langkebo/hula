@@ -1,7 +1,7 @@
 import { storeToRefs } from 'pinia'
 import { type ComputedRef, computed, type Ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { OnlineEnum } from '@/enums'
+import { useTypedI18n } from '@/plugins/i18n'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -9,7 +9,7 @@ import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 
 // 在线状态管理(仅是在线和离线)
 export const useOnlineStatus = (uid?: ComputedRef<string | undefined> | Ref<string | undefined>) => {
-  const { t } = useI18n()
+  const { t, tDynamic } = useTypedI18n()
   const userStore = useUserStore()
   const groupStore = useGroupStore()
   const contactStore = useContactStore()
@@ -66,7 +66,8 @@ export const useOnlineStatus = (uid?: ComputedRef<string | undefined> | Ref<stri
   const statusTitle = computed(() => {
     if (hasCustomState.value && userStatus.value?.title) {
       const key = `auth.onlineStatus.states.${userStatus.value.title}`
-      const translated = t(key)
+      // 尾段是运行时可配的自定义状态标题（STO.UserState.title），静态不可知，故走 tDynamic。
+      const translated = tDynamic(key)
       return translated === key ? userStatus.value.title : translated
     }
     return isOnline.value ? t('home.profile_card.status.online') : t('home.profile_card.status.offline')

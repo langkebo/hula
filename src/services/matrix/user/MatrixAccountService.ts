@@ -304,46 +304,6 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
-  async requestEmailTokenFor3Pid(
-    email: string,
-    clientSecret: string,
-    sendAttempt: number = 1
-  ): Promise<{ sid: string }> {
-    const client = this.getClient()
-
-    try {
-      const result = await client.requestAdd3pidEmailToken(clientSecret, email, sendAttempt)
-      logger.info(`[MatrixAccount] 请求 3PID 邮箱验证令牌成功: ${email}`)
-      return { sid: result.sid }
-    } catch (err) {
-      logger.error(`[MatrixAccount] 请求 3PID 邮箱验证令牌失败: ${err}`)
-      throw err
-    }
-  }
-
-  async requestMsisdnTokenFor3Pid(
-    countryCode: string,
-    phoneNumber: string,
-    clientSecret: string,
-    sendAttempt: number = 1
-  ): Promise<{ sid: string; msisdn: string; submit_url?: string }> {
-    const client = this.getClient()
-
-    try {
-      const result = await client.requestAdd3pidMsisdnToken(clientSecret, countryCode, phoneNumber, sendAttempt)
-      logger.info(`[MatrixAccount] 请求 3PID 手机验证令牌成功: ${countryCode}${phoneNumber}`)
-      const extra = result as unknown as Record<string, unknown>
-      return {
-        sid: result.sid,
-        msisdn: extra.msisdn as string,
-        submit_url: extra.submit_url as string | undefined
-      }
-    } catch (err) {
-      logger.error(`[MatrixAccount] 请求 3PID 手机验证令牌失败: ${err}`)
-      throw err
-    }
-  }
-
   async getAccountData<T = Record<string, unknown>>(eventType: string): Promise<T | null> {
     const client = this.getClient()
 

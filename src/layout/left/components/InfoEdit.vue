@@ -128,7 +128,7 @@
                 </template>
                 <n-popover trigger="hover">
                   <template #trigger>
-                    <svg class="size-24px outline-none">
+                    <svg class="size-24px outline-none color-[--tjg-color-primary-500]">
                       <use href="#tips"></use>
                     </svg>
                   </template>
@@ -162,7 +162,6 @@
 </template>
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import AvatarGallery from '@/components/common/AvatarGallery.vue'
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
@@ -174,6 +173,7 @@ import { useAccount } from '@/composables/user/useAccount'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import { IsYesEnum, MittEnum } from '@/enums'
 import { leftHook } from '@/layout/left/hook.ts'
+import { useTypedI18n } from '@/plugins/i18n'
 import { badgeService } from '@/services/notification/BadgeService'
 import type { ModifyUserInfoType } from '@/services/types'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
@@ -183,7 +183,7 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
-const { t } = useI18n()
+const { t } = useTypedI18n()
 const { showFeedback } = useActionFeedback()
 const { updateAvatar } = useAccount()
 const localUserInfo = ref<Partial<ModifyUserInfoType>>({})

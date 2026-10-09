@@ -9,8 +9,6 @@ const {
   mockSetDeviceName,
   mockDeleteDevice,
   mockDeleteDevices,
-  mockRequestEmailTokenFor3Pid,
-  mockRequestMsisdnTokenFor3Pid,
   mockDeactivateAccount,
   mockGetIgnoredUsers,
   mockSetIgnoredUsers,
@@ -28,8 +26,6 @@ const {
   mockSetDeviceName: vi.fn(),
   mockDeleteDevice: vi.fn(),
   mockDeleteDevices: vi.fn(),
-  mockRequestEmailTokenFor3Pid: vi.fn(),
-  mockRequestMsisdnTokenFor3Pid: vi.fn(),
   mockDeactivateAccount: vi.fn(),
   mockGetIgnoredUsers: vi.fn(),
   mockSetIgnoredUsers: vi.fn(),
@@ -50,8 +46,6 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
     setDeviceName: mockSetDeviceName,
     deleteDevice: mockDeleteDevice,
     deleteDevices: mockDeleteDevices,
-    requestEmailTokenFor3Pid: mockRequestEmailTokenFor3Pid,
-    requestMsisdnTokenFor3Pid: mockRequestMsisdnTokenFor3Pid,
     deactivateAccount: mockDeactivateAccount,
     getIgnoredUsers: mockGetIgnoredUsers,
     setIgnoredUsers: mockSetIgnoredUsers,
@@ -190,31 +184,6 @@ describe('useAccount', () => {
       mockDeleteDevice.mockRejectedValueOnce(new Error('not found'))
       const { deleteDevice } = useAccount()
       await expect(deleteDevice('UNKNOWN')).rejects.toThrow('not found')
-    })
-  })
-
-  describe('3PID management', () => {
-    it('requestEmailTokenFor3Pid delegates with sendAttempt', async () => {
-      mockRequestEmailTokenFor3Pid.mockResolvedValueOnce({ sid: 'sid1' })
-      const { requestEmailTokenFor3Pid } = useAccount()
-      const result = await requestEmailTokenFor3Pid('a@b.c', 'secret', 1)
-      expect(result).toEqual({ sid: 'sid1' })
-      expect(mockRequestEmailTokenFor3Pid).toHaveBeenCalledWith('a@b.c', 'secret', 1)
-    })
-
-    it('requestEmailTokenFor3Pid without sendAttempt', async () => {
-      mockRequestEmailTokenFor3Pid.mockResolvedValueOnce({ sid: 'sid1' })
-      const { requestEmailTokenFor3Pid } = useAccount()
-      await requestEmailTokenFor3Pid('a@b.c', 'secret')
-      expect(mockRequestEmailTokenFor3Pid).toHaveBeenCalledWith('a@b.c', 'secret', undefined)
-    })
-
-    it('requestMsisdnTokenFor3Pid delegates to service', async () => {
-      mockRequestMsisdnTokenFor3Pid.mockResolvedValueOnce({ sid: 'sid2' })
-      const { requestMsisdnTokenFor3Pid } = useAccount()
-      const result = await requestMsisdnTokenFor3Pid('CN', '13800138000', 'secret', 1)
-      expect(result).toEqual({ sid: 'sid2' })
-      expect(mockRequestMsisdnTokenFor3Pid).toHaveBeenCalledWith('CN', '13800138000', 'secret', 1)
     })
   })
 
@@ -360,18 +329,6 @@ describe('useAccount', () => {
       mockDeleteDevices.mockRejectedValueOnce(new Error('batch delete failed'))
       const { deleteDevices } = useAccount()
       await expect(deleteDevices(['DEV1', 'DEV2'])).rejects.toThrow('batch delete failed')
-    })
-
-    it('requestEmailTokenFor3Pid propagates error', async () => {
-      mockRequestEmailTokenFor3Pid.mockRejectedValueOnce(new Error('email token failed'))
-      const { requestEmailTokenFor3Pid } = useAccount()
-      await expect(requestEmailTokenFor3Pid('a@b.c', 'secret')).rejects.toThrow('email token failed')
-    })
-
-    it('requestMsisdnTokenFor3Pid propagates error', async () => {
-      mockRequestMsisdnTokenFor3Pid.mockRejectedValueOnce(new Error('msisdn token failed'))
-      const { requestMsisdnTokenFor3Pid } = useAccount()
-      await expect(requestMsisdnTokenFor3Pid('CN', '13800138000', 'secret')).rejects.toThrow('msisdn token failed')
     })
 
     it('getIgnoredUsers propagates error', async () => {

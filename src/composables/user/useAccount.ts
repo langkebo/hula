@@ -43,19 +43,6 @@ export function useAccount() {
     return matrixAccountService.deleteDevices(deviceIds, authData)
   }
 
-  const requestEmailTokenFor3Pid = (email: string, clientSecret: string, sendAttempt?: number) => {
-    return matrixAccountService.requestEmailTokenFor3Pid(email, clientSecret, sendAttempt)
-  }
-
-  const requestMsisdnTokenFor3Pid = (
-    countryCode: string,
-    phoneNumber: string,
-    clientSecret: string,
-    sendAttempt?: number
-  ) => {
-    return matrixAccountService.requestMsisdnTokenFor3Pid(countryCode, phoneNumber, clientSecret, sendAttempt)
-  }
-
   const deactivateAccount = (authData?: AuthData, erase?: boolean) => {
     return matrixAccountService.deactivateAccount(authData, erase)
   }
@@ -98,8 +85,6 @@ export function useAccount() {
     setDeviceName,
     deleteDevice,
     deleteDevices,
-    requestEmailTokenFor3Pid,
-    requestMsisdnTokenFor3Pid,
     deactivateAccount,
     getIgnoredUsers,
     setIgnoredUsers,

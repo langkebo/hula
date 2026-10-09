@@ -1,5 +1,7 @@
 import type { AppError } from '@/common/errors'
+import { resolveDisplayMessage } from '@/common/errors'
 import { getLocalizedMessageFromAppError, resolveErrorMessage } from '@/locales/errors'
+import { useI18nGlobal } from '@/services/i18n'
 import type { AriaLivePoliteness } from './useAriaLive'
 import { useAriaLive } from './useAriaLive'
 
@@ -40,7 +42,8 @@ export function useActionFeedback() {
   }
 
   /**
-   * §9.3.5 展示错误反馈，自动从 errcode 解析中心化文案。
+   * §9.3.5 展示错误反馈，优先从 `AppError.i18nKey` 解析 vue-i18n 文案；
+   * key 缺失或未注册时回落到 errcode 文案表。
    *
    * @param err errcode 字符串、AppError 或原始 Error 对象
    * @param type 反馈类型，默认 'error'
@@ -50,7 +53,10 @@ export function useActionFeedback() {
     if (typeof err === 'string') {
       message = resolveErrorMessage(err)
     } else if (isAppError(err)) {
-      message = getLocalizedMessageFromAppError(err)
+      const localized = resolveDisplayMessage(err, (key) => useI18nGlobal().t(key))
+      // 无 i18nKey / key 未注册时 resolveDisplayMessage 回落为 message，
+      // 此时保留既有 errcode 表行为，保证原本文案不变。
+      message = localized === err.message ? getLocalizedMessageFromAppError(err) : localized
     } else {
       const errcode = (err as { errcode?: string })?.errcode
       message = errcode ? resolveErrorMessage(errcode) : err.message || resolveErrorMessage('UNKNOWN')

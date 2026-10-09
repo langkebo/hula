@@ -45,7 +45,12 @@
             :size="12"
             align="center"
             class="w-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-            <svg class="size-42px animate-pulse">
+            <!-- 图标走 currentColor：按状态给出显式语义色（error=危险色，auth=品牌色；success 符号自带固定双色调） -->
+            <svg
+              class="size-42px animate-pulse"
+              :class="
+                scanStatus.status === 'error' ? 'color-[--tjg-color-danger-500]' : 'color-[--tjg-color-primary-500]'
+              ">
               <use :href="`#${scanStatus.icon}`"></use>
             </svg>
             <span class="text-(14px [--tjg-text-quaternary])">{{ scanStatusText }}</span>
@@ -110,8 +115,8 @@
 import { Icon } from '@iconify/vue'
 import { darkTheme, lightTheme } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { useI18n } from 'vue-i18n'
 import RendezvousSessionManager from '@/components/rendezvous/RendezvousSessionManager.vue'
+import { useTypedI18n } from '@/plugins/i18n'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
@@ -138,7 +143,7 @@ const settingStore = useSettingStore()
 const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 const { createWebviewWindow } = useWindow()
 const { isTrayMenuShow } = storeToRefs(globalStore)
-const { t } = useI18n()
+const { t } = useTypedI18n()
 type LoadTextKey = 'loading' | 'refreshing' | 'scan_hint' | 'login' | 'retry' | 'auth_pending'
 type ScanStatusTextKey = 'success' | 'error' | 'auth' | 'expired' | 'fetch_failed' | 'generate_fail' | 'general_error'
 const loginMode = ref<'quick' | 'rendezvous'>('quick')

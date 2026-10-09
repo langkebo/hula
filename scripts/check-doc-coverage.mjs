@@ -122,7 +122,16 @@ async function scanFile(file) {
     missing.push({ file: path.relative(projectRoot, file), name })
   }
 
-  return missing
+  // 同一符号可能在文件里出现多行：重载签名（如 5 行 `getDMRooms(...)`）会各自 push
+  // 一次，而基线按 keyOf（file::name）记录，重复条目只会稀释 ratchet 计数。按 keyOf
+  // 在源头去重，保留首次出现的顺序。
+  const seen = new Set()
+  return missing.filter((m) => {
+    const k = keyOf(m)
+    if (seen.has(k)) return false
+    seen.add(k)
+    return true
+  })
 }
 
 /**
