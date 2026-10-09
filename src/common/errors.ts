@@ -95,6 +95,22 @@ const I18N_KEY_MAP: Record<string, string> = {
   FRIEND_REQUEST_PENDING: 'error.matrix.friend_pending'
 }
 
+/**
+ * 兜底路径可接受的 i18n key 白名单。
+ *
+ * `translateMatrixError`（@deprecated）的 `TranslatedError.userMessage` 字段语义是
+ * 「用户文案」，但其当前实现里存的是 `error.matrix.*` key。这里只接受真实存在的 key：
+ * 一旦该 deprecated 接口回归「返回已翻译整句」的语义，`i18nKey` 会退化为 undefined，
+ * 展示层回落到 `message`，而不是把一整句译文塞进 key 字段（见 `toAppError` 兜底分支）。
+ */
+const FALLBACK_I18N_KEYS: ReadonlySet<string> = new Set<string>([
+  ...Object.values(I18N_KEY_MAP),
+  'error.matrix.invalid_credentials',
+  'error.matrix.network',
+  'error.matrix.server_unavailable',
+  'error.matrix.unknown'
+])
+
 type AnyErrorLike = Error & {
   errcode?: string
   httpStatus?: number
@@ -259,12 +275,15 @@ export function toAppError(err: unknown, options: { resource?: string; field?: s
   // recoverability signal, then wrap as fatal with a correlation id so UI can
   // reference it in a support ticket.
   const translated = translateMatrixError(err)
+  // `translated.userMessage` 名义上是「用户文案」；只接受白名单内的真实 key，
+  // 保证 `i18nKey` 字段恒为可解析的 key（否则留空，展示层回落 `message`）。
+  const fallbackI18nKey = FALLBACK_I18N_KEYS.has(translated.userMessage) ? translated.userMessage : undefined
   if (translated.recoverable) {
     return {
       kind: 'retryable',
       code: 'UNKNOWN_RETRYABLE',
       message: e.message || translated.userMessage,
-      i18nKey: translated.userMessage
+      i18nKey: fallbackI18nKey
     }
   }
   return {
@@ -272,8 +291,26 @@ export function toAppError(err: unknown, options: { resource?: string; field?: s
     code: errcode || name || 'UNKNOWN',
     message: e.message || translated.userMessage,
     correlationId: newCorrelationId(),
-    i18nKey: translated.userMessage
+    i18nKey: fallbackI18nKey
   }
+}
+
+/**
+ * 展示用文案：`i18nKey` 能翻译出「非 key 本身」的文案时优先使用，否则回落 `message`。
+ *
+ * 纯函数，`translate` 由调用方注入（生产走 vue-i18n 全局 composer），无需挂载 UI 即可测试。
+ * 回落条件保证既有展示行为不变：无 `i18nKey`、key 未注册（`translate` 原样回吐 key）、
+ * 翻译结果为空串时，展示的仍是原始 `message`。
+ *
+ * @param err 已分类的应用错误
+ * @param translate key → 文案 的翻译函数；key 不存在时必须原样返回 key
+ */
+export function resolveDisplayMessage(err: AppError, translate: (key: string) => string): string {
+  if (err.i18nKey) {
+    const localized = translate(err.i18nKey)
+    if (localized && localized !== err.i18nKey) return localized
+  }
+  return err.message
 }
 
 function appExceptionToAppError(err: AppException, options: { resource?: string; field?: string }): AppError {

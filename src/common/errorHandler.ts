@@ -3,8 +3,9 @@
  * 提供统一的错误处理和上报机制
  */
 
+import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
-import { type AppError, toAppError } from './errors'
+import { type AppError, resolveDisplayMessage, toAppError } from './errors'
 import { AppException, ErrorType } from './exception'
 
 const logger = createLogger('GlobalErrorHandler')
@@ -98,7 +99,10 @@ class GlobalErrorHandler {
   public handleMatrixError(error: unknown, context?: Record<string, unknown>): AppError {
     const appError = toAppError(error)
     const level = appError.kind === 'auth' ? 'dialog' : appError.kind === 'fatal' ? 'dialog' : 'toast'
-    this.handleError(error, { ...context, matrixErrorLevel: level })
+    // 展示出口：优先用 `i18nKey` 解析本地化文案；无 key 或 key 未注册时回落 `message`，
+    // 既有能正确展示的文案不受影响。
+    const userMessage = resolveDisplayMessage(appError, (key) => useI18nGlobal().t(key))
+    this.handleError(error, { ...context, matrixErrorLevel: level, userMessage })
     return appError
   }
 
