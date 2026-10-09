@@ -116,7 +116,7 @@ function main() {
       die(
         1,
         `ledger_schema mismatch: pin='${pin.ledger_schema}' but SDK LEDGER_SCHEMA_VERSION='${m[1]}' (${sdkContractSync}). ` +
-          `Run \`pnpm contract:sync\` in matrix-js-sdk, commit the regenerated files, then set meta/sdk-pin.json ledger_schema to '${m[1]}'.`,
+          `Run \`pnpm contract:sync\` in matrix-js-sdk, commit the regenerated files, then set meta/sdk-pin.json ledger_schema to '${m[1]}'.`
       )
     }
   }
@@ -124,29 +124,20 @@ function main() {
   const sdkSpec = pkg.dependencies?.['matrix-js-sdk'] ?? pkg.devDependencies?.['matrix-js-sdk']
   if (!sdkSpec) die(1, 'matrix-js-sdk is not a dependency of hula')
 
-  const actualMode = sdkSpec.startsWith('link:')
-    ? 'link'
-    : sdkSpec.startsWith('file:')
-      ? 'tarball'
-      : 'registry'
+  const actualMode = sdkSpec.startsWith('link:') ? 'link' : sdkSpec.startsWith('file:') ? 'tarball' : 'registry'
 
   if (isReleaseBranch && actualMode === 'link') {
     die(2, `release branch '${branch}' cannot use 'link:' SDK mode; pack a tarball and pin it.`)
   }
 
   if (pin.sdk_mode !== actualMode) {
-    die(
-      1,
-      `sdk_mode mismatch: pin='${pin.sdk_mode}' but package.json implies '${actualMode}' (spec: ${sdkSpec})`,
-    )
+    die(1, `sdk_mode mismatch: pin='${pin.sdk_mode}' but package.json implies '${actualMode}' (spec: ${sdkSpec})`)
   }
 
   // On dev branches with an empty pin, stop here with a warning only.
   const pinIsEmpty = !pin.sdk_commit && !pin.sdk_version && !pin.pinned_at
   if (pinIsEmpty && !isReleaseBranch) {
-    process.stdout.write(
-      `verify-sdk-pin: dev branch '${branch}', pin is empty, mode=${actualMode}; ok.\n`,
-    )
+    process.stdout.write(`verify-sdk-pin: dev branch '${branch}', pin is empty, mode=${actualMode}; ok.\n`)
     return
   }
   if (pinIsEmpty && isReleaseBranch) {
@@ -159,7 +150,7 @@ function main() {
   if (installedSdkPkg && pin.sdk_version && installedSdkPkg.version !== pin.sdk_version) {
     die(
       1,
-      `installed sdk_version mismatch: pin='${pin.sdk_version}' but node_modules/matrix-js-sdk version is '${installedSdkPkg.version}'`,
+      `installed sdk_version mismatch: pin='${pin.sdk_version}' but node_modules/matrix-js-sdk version is '${installedSdkPkg.version}'`
     )
   }
 
@@ -171,15 +162,12 @@ function main() {
       if (pin.sdk_version && sdkPkg.version !== pin.sdk_version) {
         die(
           1,
-          `sdk_version mismatch: pin='${pin.sdk_version}' but ../matrix-js-sdk/package.json version is '${sdkPkg.version}'`,
+          `sdk_version mismatch: pin='${pin.sdk_version}' but ../matrix-js-sdk/package.json version is '${sdkPkg.version}'`
         )
       }
       actualSdkCommit = gitCommit(sdkRoot)
       if (pin.sdk_commit && actualSdkCommit && !actualSdkCommit.startsWith(pin.sdk_commit)) {
-        die(
-          1,
-          `sdk_commit mismatch: pin='${pin.sdk_commit}' but ../matrix-js-sdk HEAD is '${actualSdkCommit}'`,
-        )
+        die(1, `sdk_commit mismatch: pin='${pin.sdk_commit}' but ../matrix-js-sdk HEAD is '${actualSdkCommit}'`)
       }
 
       // Verify contract chain: pin's synapse_rust_commit MUST match the
@@ -193,7 +181,7 @@ function main() {
           die(
             1,
             `synapse_rust_commit mismatch: pin='${pin.synapse_rust_commit}' but SDK contract was generated from '${contract.synapse_rust_commit}'. ` +
-              `Run \`pnpm contract:sync\` in matrix-js-sdk, commit the regenerated files, then update meta/sdk-pin.json.`,
+              `Run \`pnpm contract:sync\` in matrix-js-sdk, commit the regenerated files, then update meta/sdk-pin.json.`
           )
         }
       }
@@ -207,49 +195,105 @@ function main() {
     if (!fs.existsSync(tarballPath)) die(1, `tarball not found on disk: ${tarballPath}`)
     const actualHash = sha256File(tarballPath)
     if (pin.tarball_sha256 && actualHash !== pin.tarball_sha256) {
-      die(
-        1,
-        `tarball_sha256 mismatch:\n  pin=${pin.tarball_sha256}\n  disk=${actualHash}\n  path=${tarballPath}`,
-      )
+      die(1, `tarball_sha256 mismatch:\n  pin=${pin.tarball_sha256}\n  disk=${actualHash}\n  path=${tarballPath}`)
     }
     if (!installedSdkPkg) {
       die(1, 'tarball mode requires node_modules/matrix-js-sdk/package.json after install')
     }
   }
 
-  // Cross-repo binding (治理方案 §13.21.3 偏差 4 / §13.21.6 第 6 项):
-  // pin.synapse_rust_commit 必须等于后端 HEAD。此前该校验只覆盖 link/registry
-  // 模式且只比对 SDK 契约镜像里的 commit，**tarball 模式（Tjg 实际用法）整段跳过**
-  // ⇒ pin 落后后端 HEAD 时会静默通过。
+  // Cross-repo binding (治理方案 §13.21.3 偏差 4 / §13.21.6 第 6 项 / §13.23.7):
   //
-  // 缺兄弟仓时**显式 SKIP**（打印 banner），不静默通过；仓在但读不到 HEAD 则 fail-closed。
-  const backendSibling = path.resolve(repoRoot, '..', 'synapse-rust')
+  // 两段判据：
+  //   A. **契约镜像绑定**（仅在显式给出 `TJG_SDK_DIR` 时启用，与
+  //      `scripts/pack-sdk-tarball.mjs` 同源）：pin.synapse_rust_commit 必须等于该
+  //      worktree 的 `docs/api-contract/generated/index.json` 里的 `synapse_rust_commit`。
+  //      本仓同时存在 `matrix-js-sdk/`(develop) 与 `.wt-sdk-clean/`(release) 两个
+  //      worktree，默认取 `../matrix-js-sdk` 会把 develop 的镜像误当成 pin 的来源，
+  //      故未显式指定时**显式 SKIP**（打印 banner，不静默通过）。
+  //   B. **路由面新鲜度**（后端兄弟仓在场时始终执行）：自 `pin.synapse_rust_commit`
+  //      起，后端不得再有触碰 `synapse-web/src/routes/**` 或
+  //      `tests/unit/fixtures/ledger_export_sdk/**` 的提交；且该 commit 必须是后端
+  //      HEAD 的祖先。
+  //
+  // 为什么不再直接比「后端 HEAD」：任何一次纯文档提交都会移动 HEAD，pin 便永远追不上
+  // （实测：记录 §13.23 的 docs 提交 `d0eb8306e` 让门禁第二次变红）。真正的不变量是
+  // 「pin ↔ 契约快照一致」且「快照未落后于路由面」，而不是「等于 HEAD」。
   if (pin.synapse_rust_commit) {
+    const sdkDirEnv = process.env.TJG_SDK_DIR
+    if (!sdkDirEnv) {
+      process.stdout.write(
+        `verify-sdk-pin: SKIP contract-mirror binding — TJG_SDK_DIR is not set, so the SDK worktree that produced the tarball is unidentified (not a pass; set TJG_SDK_DIR=<sdk worktree> to enable).\n`
+      )
+    } else {
+      const mirrorIndex = path.join(path.resolve(sdkDirEnv), 'docs', 'api-contract', 'generated', 'index.json')
+      if (!fs.existsSync(mirrorIndex)) {
+        die(1, `TJG_SDK_DIR=${sdkDirEnv} but ${mirrorIndex} does not exist; refusing to pass on a missing input.`)
+      }
+      const mirrorCommit = readJson(mirrorIndex).synapse_rust_commit || ''
+      if (!mirrorCommit) {
+        die(1, `cannot read synapse_rust_commit from ${mirrorIndex}; refusing to pass on a missing input.`)
+      }
+      if (mirrorCommit !== pin.synapse_rust_commit) {
+        die(
+          1,
+          `synapse_rust_commit mismatch with the SDK contract mirror:\n  pin=${pin.synapse_rust_commit}\n  mirror=${mirrorCommit} (${mirrorIndex})\n` +
+            `Run \`pnpm contract:sync\` in that worktree, commit the regenerated files, then refresh the pin.`
+        )
+      }
+    }
+
+    const backendSibling = path.resolve(repoRoot, '..', 'synapse-rust')
     if (!fs.existsSync(backendSibling)) {
       process.stdout.write(
-        `verify-sdk-pin: SKIP backend-HEAD binding — ${backendSibling} is not checked out (Tjg-only CI, not a pass).\n`,
+        `verify-sdk-pin: SKIP route-freshness binding — ${backendSibling} is not checked out (Tjg-only CI, not a pass).\n`
       )
     } else {
       const backendHead = gitCommit(backendSibling)
       if (!backendHead) {
+        die(1, `cannot resolve git HEAD in ${backendSibling}; refusing to pass the route-freshness binding.`)
+      }
+      try {
+        execSync(`git merge-base --is-ancestor ${pin.synapse_rust_commit} ${backendHead}`, {
+          cwd: backendSibling,
+          stdio: 'ignore'
+        })
+      } catch {
         die(
           1,
-          `cannot resolve git HEAD in ${backendSibling}; refusing to pass the backend-HEAD binding on a missing input.`,
+          `pin.synapse_rust_commit is not an ancestor of the backend HEAD:\n  pin=${pin.synapse_rust_commit}\n  backend HEAD=${backendHead}\n` +
+            `Re-pin against a commit that exists in the backend history.`
         )
       }
-      if (!backendHead.startsWith(pin.synapse_rust_commit)) {
+      // 变异自证用逃生阀：允许把比对区间钉成任意 `A..B`（默认 `<pin>..HEAD`），
+      // 以便用**已存在的历史区间**证明「路由面落后 ⇒ 红」这一段真的能判红。
+      const range = process.env.SYNAPSE_PIN_RANGE || `${pin.synapse_rust_commit}..${backendHead}`
+      const routePaths = ['synapse-web/src/routes', 'tests/unit/fixtures/ledger_export_sdk']
+      let changed = ''
+      try {
+        changed = execSync(`git log --oneline ${range} -- ${routePaths.join(' ')}`, {
+          cwd: backendSibling
+        })
+          .toString()
+          .trim()
+      } catch {
+        die(1, `cannot resolve git range ${range} in ${backendSibling}; refusing to pass on a missing input.`)
+      }
+      if (changed) {
         die(
           1,
-          `synapse_rust_commit is behind the backend HEAD:\n  pin=${pin.synapse_rust_commit}\n  backend HEAD=${backendHead}\n` +
-            `Repack and refresh the pin (node scripts/pack-sdk-tarball.mjs --apply --allow-commit-drift) ` +
-            `after the SDK contract mirror has been synced to that commit.`,
+          `SDK contract mirror is stale — backend has route/ledger commits after ${pin.synapse_rust_commit}:\n` +
+            changed
+              .split('\n')
+              .map((l) => `  ${l}`)
+              .join('\n') +
+            `\nRun \`pnpm contract:sync && pnpm contract:codegen\` in matrix-js-sdk, commit, then repack + refresh the pin.`
         )
       }
     }
   }
-
   process.stdout.write(
-    `verify-sdk-pin: branch='${branch}' mode=${actualMode} sdk_version=${pin.sdk_version || '(dev)'} sdk_commit=${pin.sdk_commit || '(dev)'} synapse_rust=${pin.synapse_rust_commit || '(dev)'} — ok\n`,
+    `verify-sdk-pin: branch='${branch}' mode=${actualMode} sdk_version=${pin.sdk_version || '(dev)'} sdk_commit=${pin.sdk_commit || '(dev)'} synapse_rust=${pin.synapse_rust_commit || '(dev)'} — ok\n`
   )
 }
 
