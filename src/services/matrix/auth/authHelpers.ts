@@ -40,6 +40,8 @@ export interface MatrixCaptchaResult {
 }
 
 export type MatrixAuthPayload = Record<string, unknown>
+// Tjg 侧流程名 → SDK `submitEmailToken(..., scope)` 的映射见 MatrixAuthService：
+// `password_reset` → `password`，其余 → `register`（后端三条路径挂同一处理器）。
 export type MatrixEmailTokenPurpose = 'register' | 'password_reset'
 
 /** 构建注册认证参数
@@ -300,33 +302,6 @@ export async function matrixRequestPasswordEmailToken(
       send_attempt: sendAttempt
     },
     '请求找回密码邮箱令牌失败'
-  )
-}
-
-/** 解析邮箱令牌提交路径
- */
-export function resolveSubmitEmailTokenPath(purpose: MatrixEmailTokenPurpose): string {
-  return purpose === 'password_reset'
-    ? `${PREFIX_V3}/account/password/email/submitToken`
-    : `${PREFIX_V3}/register/email/submitToken`
-}
-
-/** 提交邮箱验证令牌
- */
-export async function matrixSubmitEmailToken(
-  token: string,
-  clientSecret: string,
-  sid: string,
-  purpose: MatrixEmailTokenPurpose = 'register'
-): Promise<Record<string, unknown>> {
-  return postMatrixJson(
-    resolveSubmitEmailTokenPath(purpose),
-    {
-      token,
-      client_secret: clientSecret,
-      sid
-    },
-    '提交邮箱令牌失败'
   )
 }
 

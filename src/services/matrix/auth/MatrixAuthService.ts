@@ -18,7 +18,6 @@ import {
   matrixLogin,
   matrixRegister,
   matrixRequestEmailToken,
-  matrixSubmitEmailToken,
   runSdkFirst,
   withClientSecret
 } from './authHelpers'
@@ -141,15 +140,17 @@ export class MatrixAuthService {
     sid: string,
     purpose: MatrixEmailTokenPurpose = 'register'
   ): Promise<Record<string, unknown>> {
-    if (purpose === 'password_reset') {
-      return matrixSubmitEmailToken(token, clientSecret, sid, purpose)
+    // 后端三条 submitToken 路径挂同一个处理器（assembly.rs::submit_email_token），
+    // SDK 的 `submitEmailToken(..., scope)` 已覆盖 register/password/threepid。
+    // 此前 Tjg 为 `password_reset` 自建 `matrixSubmitEmailToken` 直连路径 —— 那是重复实现，
+    // 已随 SDK 补齐 scope 一起删除。
+    const scope = purpose === 'password_reset' ? 'password' : 'register'
+    try {
+      return await createTemporaryMatrixClient().getAccountManager().submitEmailToken(sid, clientSecret, token, scope)
+    } catch (err) {
+      logger.warn(`提交邮箱令牌失败: ${err instanceof Error ? err.message : String(err)}`)
+      throw normalizeSdkMatrixError(err, '提交邮箱令牌失败')
     }
-
-    return runSdkFirst(
-      () => createTemporaryMatrixClient().getAccountManager().submitEmailToken(sid, clientSecret, token),
-      () => matrixSubmitEmailToken(token, clientSecret, sid, purpose),
-      '提交邮箱令牌失败'
-    )
   }
 
   // ===== 会话 / 账户 =====

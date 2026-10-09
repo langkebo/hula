@@ -193,13 +193,18 @@ function applyTarballMode(pin, sdkHead) {
 
   const sdkPkg = readJson(path.join(sdkSiblingRoot, 'package.json'))
   const synapseHead = gitHead(synapseSiblingRoot)
+  // `synapse_rust_commit` 必须绑定「本 SDK 契约镜像生成时所用的后端 commit」，而不是后端当前
+  // HEAD：后者会被任何一次纯文档/非路由提交推进，导致 pin 永远追不上，并在 verify-sdk-pin 的
+  // 契约镜像段判红（治理方案 §13.27）。优先读镜像的 `index.json`，读不到再退回后端 HEAD。
+  const mirrorIndexPath = path.join(sdkSiblingRoot, 'docs', 'api-contract', 'generated', 'index.json')
+  const mirrorCommit = fs.existsSync(mirrorIndexPath) ? readJson(mirrorIndexPath).synapse_rust_commit || '' : ''
 
   const nextPin = {
     ...pin,
     sdk_version: sdkPkg.version || pin.sdk_version,
     sdk_commit: sdkHead || pin.sdk_commit,
     sdk_mode: 'tarball',
-    synapse_rust_commit: synapseHead || pin.synapse_rust_commit,
+    synapse_rust_commit: mirrorCommit || synapseHead || pin.synapse_rust_commit,
     tarball_sha256: sha256File(tarballPath),
     pinned_at: new Date().toISOString(),
     pinned_by: pinnedBy()

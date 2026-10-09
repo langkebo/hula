@@ -5,7 +5,6 @@ import {
   buildResetPasswordAuth,
   generateClientSecret,
   resolveMatrixClientUrl,
-  resolveSubmitEmailTokenPath,
   runSdkFirst,
   withClientSecret
 } from '../authHelpers'
@@ -198,24 +197,6 @@ describe('resolveMatrixClientUrl', () => {
 
   it('handles path without leading slash', () => {
     expect(resolveMatrixClientUrl('path/to/resource')).toBe('https://matrix.example.com/path/to/resource')
-  })
-})
-
-describe('resolveSubmitEmailTokenPath', () => {
-  it('returns register path for register purpose', () => {
-    const path = resolveSubmitEmailTokenPath('register')
-    expect(path).toContain('/register/email/submitToken')
-  })
-
-  it('returns password reset path for password_reset purpose', () => {
-    const path = resolveSubmitEmailTokenPath('password_reset')
-    expect(path).toContain('/account/password/email/submitToken')
-  })
-
-  it('returns different paths for different purposes', () => {
-    const registerPath = resolveSubmitEmailTokenPath('register')
-    const resetPath = resolveSubmitEmailTokenPath('password_reset')
-    expect(registerPath).not.toBe(resetPath)
   })
 })
 

@@ -592,14 +592,14 @@ describe('MatrixAuthService', () => {
 
         const result = await MatrixAuthService.submitEmailToken('code123', 'secret123', 'sid123')
 
-        expect(submitEmailToken).toHaveBeenCalledWith('sid123', 'secret123', 'code123')
+        expect(submitEmailToken).toHaveBeenCalledWith('sid123', 'secret123', 'code123', 'register')
         expect(result).toEqual({
           success: true
         })
       })
 
-      it('should submit password reset email token through password reset endpoint', async () => {
-        const submitEmailToken = vi.fn()
+      it('should submit password reset token through the SDK `password` scope', async () => {
+        const submitEmailToken = vi.fn().mockResolvedValue({ success: true })
 
         vi.spyOn(sdk, 'createClient').mockReturnValue({
           getAccountManager: () => ({
@@ -607,22 +607,11 @@ describe('MatrixAuthService', () => {
           })
         } as unknown as MatrixClient)
 
-        let requestBody: Record<string, unknown> = {}
-        server.use(
-          http.post(`${TEST_BASE_URL}/_matrix/client/v3/account/password/email/submitToken`, async ({ request }) => {
-            requestBody = (await request.json()) as Record<string, unknown>
-            return HttpResponse.json({ success: true })
-          })
-        )
-
         const result = await MatrixAuthService.submitEmailToken('code123', 'secret123', 'sid123', 'password_reset')
 
-        expect(submitEmailToken).not.toHaveBeenCalled()
-        expect(requestBody).toEqual({
-          token: 'code123',
-          client_secret: 'secret123',
-          sid: 'sid123'
-        })
+        // 回归守卫：`password_reset` 必须映射到 SDK 的 `password` scope
+        // （后端 `POST /account/password/email/submitToken`），而不是 Tjg 自建路径。
+        expect(submitEmailToken).toHaveBeenCalledWith('sid123', 'secret123', 'code123', 'password')
         expect(result).toEqual({ success: true })
       })
 
@@ -646,7 +635,7 @@ describe('MatrixAuthService', () => {
         )
       })
 
-      it('should fall back to homeserver email token submission when sdk throws runtime error', async () => {
+      it('should surface SDK runtime errors without an HTTP fallback（单一 SDK 路径）', async () => {
         const submitEmailToken = vi.fn().mockRejectedValue(new Error('sdk bootstrap failed'))
 
         vi.spyOn(sdk, 'createClient').mockReturnValue({
@@ -655,28 +644,10 @@ describe('MatrixAuthService', () => {
           })
         } as unknown as MatrixClient)
 
-        const result = await MatrixAuthService.submitEmailToken('code123', 'secret123', 'sid123')
-
-        expect(result).toEqual({ success: true })
-      })
-
-      it('should show readable token expiry error from homeserver fallback', async () => {
-        const submitEmailToken = vi.fn().mockRejectedValue(new Error('sdk bootstrap failed'))
-
-        vi.spyOn(sdk, 'createClient').mockReturnValue({
-          getAccountManager: () => ({
-            submitEmailToken
-          })
-        } as unknown as MatrixClient)
-
-        server.use(
-          http.post(`${TEST_BASE_URL}/_matrix/client/v3/register/email/submitToken`, () => {
-            return HttpResponse.json({ errcode: 'M_TOKEN_EXPIRED' }, { status: 400 })
-          })
-        )
-
+        // 回归守卫：SDK 的 `submitEmailToken(..., scope)` 已覆盖三种 scope，
+        // Tjg 的 `matrixSubmitEmailToken` HTTP 回退（重复实现）已删除 ⇒ 运行时错误直接抛出。
         await expect(MatrixAuthService.submitEmailToken('code123', 'secret123', 'sid123')).rejects.toThrow(
-          '提交邮箱令牌失败 (400): [M_TOKEN_EXPIRED] (验证码已过期)'
+          '提交邮箱令牌失败: sdk bootstrap failed'
         )
       })
     })
