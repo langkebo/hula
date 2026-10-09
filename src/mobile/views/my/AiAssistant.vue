@@ -85,7 +85,7 @@
               <div class="grid grid-cols-2 gap-12px w-full px-16px mt-16px">
                 <div
                   v-for="suggestion in suggestions"
-                  :key="suggestion.id"
+                  :key="suggestion.title"
                   class="bg-[--tjg-surface-panel] rounded-12px p-12px shadow-sm border border-[--tjg-border-default] active:bg-[--tjg-surface-list-hover]"
                   @click="handleSuggestionClick(suggestion)">
                   <div class="flex items-center gap-8px mb-8px">
@@ -370,11 +370,9 @@ const filteredModels = computed(() => {
   return siliconflowModels
 })
 
-// 用 computed 而不是模块级常量：模块级常量只在组件初始化时求值一次，
-// 语言切换不会重算；computed 依赖响应式的 locale，切语言即时重渲染。
+// 用 computed 而非模块级常量：常量只在初始化时求值一次，切语言不会重算。
 const suggestions = computed(() => [
   {
-    id: 1,
     title: t('ai_assistant.suggestions.translate'),
     desc: t('ai_assistant.suggestions.translate_desc'),
     icon: 'mdi:translate',
@@ -382,7 +380,6 @@ const suggestions = computed(() => [
     prompt: t('ai_assistant.suggestions.translate_prompt')
   },
   {
-    id: 2,
     title: t('ai_assistant.suggestions.summarize'),
     desc: t('ai_assistant.suggestions.summarize_desc'),
     icon: 'mdi:text-box-outline',
@@ -390,7 +387,6 @@ const suggestions = computed(() => [
     prompt: t('ai_assistant.suggestions.summarize_prompt')
   },
   {
-    id: 3,
     title: t('ai_assistant.suggestions.code'),
     desc: t('ai_assistant.suggestions.code_desc'),
     icon: 'mdi:code-tags',
@@ -398,7 +394,6 @@ const suggestions = computed(() => [
     prompt: t('ai_assistant.suggestions.code_prompt')
   },
   {
-    id: 4,
     title: t('ai_assistant.suggestions.chat'),
     desc: t('ai_assistant.suggestions.chat_desc'),
     icon: 'mdi:chat-outline',
