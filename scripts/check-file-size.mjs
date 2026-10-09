@@ -48,10 +48,14 @@ function isTestPath(relPath) {
 }
 
 function isGenerated(relPath) {
-  // Auto-generated files: i18n types, sdk augmentations
+  // Auto-generated files: i18n types, sdk augmentations, per-platform component typings
+  // （`components.{mobile,pc}.d.ts` 由 build/config/components.ts 按平台生成且被 .gitignore 忽略，
+  // 本地跑过 dev/build 就会存在，不属于需要人工拆分的源码；`components.d.ts` 是跟踪文件，仍照常计入）
   return (
     relPath.endsWith('i18n.d.ts') ||
-    relPath.includes('matrix-js-sdk-augmentations.d.ts')
+    relPath.includes('matrix-js-sdk-augmentations.d.ts') ||
+    relPath.endsWith('components.mobile.d.ts') ||
+    relPath.endsWith('components.pc.d.ts')
   )
 }
 

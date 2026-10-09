@@ -1120,6 +1120,10 @@ crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均
   **基线化不重构**：这几行正是
   `matrix_prefix_hardcoded` 从 72 降到 63 的代价，压回基线只能把字面量重新内联，会立刻撞回
   ratchet 红灯。其余越基线文件在分支前就已被 master 顶出基线，分支只在其上小幅增减。
+  另：守门的 `isGenerated` 豁免原先只覆盖 `i18n.d.ts` / SDK augmentations，本机跑过 dev/build 后
+  `src/typings/components.{mobile,pc}.d.ts`（gitignored 的平台生成物）会被误判成「新越线文件」令
+  守门变红（master 上同样红，与本轮无关）；本轮把这两个平台生成物一并豁免（跟踪文件
+  `components.d.ts` 仍照常计入），并用临时 450 行文件实测守门仍会 FAIL，可证伪性未削弱。
 - **`check:a11y` 需要就绪的 Storybook**：`pnpm check:a11y` 只扫描、不启动 Storybook；
   本地离线跑得到 exit 2（显式失败），需要先 `pnpm storybook` 或显式传
   `--skip-if-unreachable`（打印 SKIP）。CI 由 `.github/workflows/quality-gate.yml` 先启动
