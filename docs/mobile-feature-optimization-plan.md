@@ -965,7 +965,7 @@ Task 5 收紧后的口径（含 2026-09-22 最终评审 I5 的两项加固）：
 | 门禁 | 结果 | 说明 |
 | --- | --- | --- |
 | `npx vue-tsc --noEmit` | 0 错误，exit 0 | |
-| `npx vitest run --maxWorkers=2` | 805/805 文件、9279/9279 用例通过、**0 failed**；进程仍 **exit 1**（`Errors 3`） | 3 个 Errors 全是**既有** crypto unhandled rejection（`CryptoKeyBackupAdapter` 报 `CryptoApi 不可用`），不产生失败用例，但会让 vitest 进程以 exit 1 收尾（实测 `npx vitest run --maxWorkers=2; echo $?` → 1）。首轮全量曾暴露 8 个真实失败（`usePresenceHeartbeat.privacy.test.ts` 的断言未随 Task 3 的 `status_msg` 透传 `undefined` 同步）+ 1 个 DND 时间炸弹（用例只在本地 01:00–23:00 通过），已由 `e0ccf0f4` 修复并验证。裸 `npx vitest run` 默认并发下另有约 26 个 worker fork 启动失败（6 个文件 Failed Suite、约 400 用例未执行、Errors 29），低并发复跑即消失；与其它重负载命令（12 个 check 脚本 + biome）并发跑时也会放大成文件级 Failed Suite（实测 122 文件 Failed Suite / 15 failed），单独复跑即 9279/9279 全绿——属本机资源限制而非代码缺陷。详见 (4) |
+| `npx vitest run --maxWorkers=2` | 807/807 文件、9299/9299 用例通过、**0 failed**、`Errors 0`、**exit 0** | 此前的 3 个 `Errors` 是 `CryptoKeyBackupAdapter` 的 `task.finally()` 派生悬空拒绝（`CryptoApi 不可用`），已被 `78637d4c` 从根上消除（旧实现隔离副本实测 Errors 3、堆栈全部指向该行）；现进程 `exit 0`。首轮全量曾暴露 8 个真实失败（`usePresenceHeartbeat.privacy.test.ts` 的断言未随 Task 3 的 `status_msg` 透传 `undefined` 同步）+ 1 个 DND 时间炸弹（用例只在本地 01:00–23:00 通过），已由 `e0ccf0f4` 修复并验证。裸 `npx vitest run` 默认并发下另有约 26 个 worker fork 启动失败（6 个文件 Failed Suite、约 400 用例未执行、Errors 29），低并发复跑即消失；与其它重负载命令（12 个 check 脚本 + biome）并发跑时也会放大成文件级 Failed Suite（实测 122 文件 Failed Suite / 15 failed），单独复跑即 9279/9279 全绿——属本机资源限制而非代码缺陷。详见 (4) |
 | `check:settings-wiring` | OK 持久化 key 清单 73/73、死配置 1（基线 1）；消费方证据 verified 135/146、unverified 11 | Task 5 `f85d3c6b`/`aaff743e`：消费方引用要求精确 owner 模块/同目录 barrel 且绑定被真实使用、证据扫描先剥注释、祖先目录 import 降级 unverified、`--update` 先校验清单。剩余 11 条只证明路径存在（判活≠生效） |
 | `check:component-contracts` | OK 无人监听事件 0（基线 0）、白名单 17/17（只减不增） | Task 5 `1b547494` 新增 `components.d.ts` 生成物新鲜度校验；Task 6 接线 3 类、删死入口 6 类后 `followUp` 挂账清空；`<component :is>` 动态挂载单列 `dynamic` 显式跳过并打印（不参与断线判定）；白名单名称集合 ratchet、失效即 FAIL |
 | `check:i18n-dead-keys` | OK 孤儿 0（基线 0）+ 动态族 148 key / 23 前缀（阻塞 delta） | Task 4 `6d30d85e` 把判活收紧到**翻译引用位置**（注释/URL/普通字符串/成员表达式不算引用），动态族文件路径改相对路径；Task 7 删 1979 条孤儿把基线降到 0 |
@@ -993,9 +993,11 @@ i18n 死 key 从 report-only 变成带基线的 ratchet，动态族新增也是�
 守门可证伪性在 Task 14、Task 5 与本次最终修复波均已实测（临时制造违规会 FAIL，恢复后 OK）。
 本轮 Task 1 清掉了 `check:v-html` 的注释误报，Task 9 把 `check:file-size` 按裁决基线化，并在
 收尾复核中修掉了首轮全量暴露的 8 个断言失败与 1 个 DND 时间炸弹（`e0ccf0f4`）：`npx vue-tsc
---noEmit` exit 0；`npx vitest run --maxWorkers=2` 0 failed、9279/9279 通过，但进程仍因 3 个既有
-crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均非本轮引入：
-`check:icon-colors` 是**仓库既有红灯**（`public/icon.js` 与 master 逐字节相同、同样 FAIL，
+--noEmit` exit 0；第三轮 `feat/remaining-debt` 修掉了 vitest 非零退出的根因（`78637d4c`，
+`Errors 0`）并把 `check:icon-colors` 的既有红灯清零（`2974323b`）：`npx vitest run
+--maxWorkers=2` 807/807 文件、9299/9299 用例通过、**exit 0**。上表唯一非绿色是刻意设计的
+`check:a11y` 离线 exit 2（需就绪的 Storybook，或显式 `--skip-if-unreachable`）；此前记为
+既有红灯的 `check:icon-colors`（`public/icon.js` 与 master 逐字节相同、同样 FAIL，
 见 (4)）；`check:a11y` 离线 exit 2 是 Task 1 的刻意设计（需就绪的 Storybook，或显式
 `--skip-if-unreachable` 打印 SKIP）。其余剩余项见 (4)。
 
@@ -1006,23 +1008,26 @@ crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均
 `@change`，经共享偏好模块落盘；见「本轮清除（feat/issues-cleanup）」）。`audioOutputId` /
 `inputVolume` / `outputVolume` 因全仓零消费方已连同控件删除。
 
-### 遗留债务与后续项（feat/issues-cleanup Task 1-9 清理后）
+### 遗留债务与后续项（feat/remaining-debt 第三轮清理后）
 
-本节记录的是一次**两轮**清理后的真实状态：
+本节记录的是**三轮**清理后的真实状态：
 
-- 上一轮 `feat/debt-cleanup`（2026-09-21，Task 1-7 + 整分支最终修复波）把 2026-09-21
-  治理留下的登记大部分兑现，清除记录保留在「(0) 上一轮已清除条目」。
-- 本轮 `feat/issues-cleanup`（2026-09-23，Task 1-9）在 master 最新基线上再清一批：
-  门禁误报与离线/CI 策略（Task 1）、通知服务拆分与逐字段校验/告警一次性（Task 2）、
-  presence 语义与未读账本覆盖（Task 3）、i18n 判活收紧与基线清理（Task 4）、守门加固
-  （Task 5）、组件事件断线分级处置（Task 6）、测试与移动端 minor（Task 7）。清除记录见
-  「(1) 本轮清除」。Task 8（i18n `t()` 类型收紧）经裁决 DEFERRED，设计要点见「(2)」。
+- 第一轮 `feat/debt-cleanup`（2026-09-21，Task 1-7 + 整分支最终修复波）把 2026-09-21
+  治理留下的登记大部分兑现，清除记录保留在「(0) 第一轮已清除条目」。
+- 第二轮 `feat/issues-cleanup`（2026-09-23，Task 1-9）：门禁误报与离线/CI 策略（Task 1）、
+  通知服务拆分与逐字段校验/告警一次性（Task 2）、presence 语义与未读账本覆盖（Task 3）、
+  i18n 判活收紧与基线清理（Task 4）、守门加固（Task 5）、组件事件断线分级处置（Task 6）、
+  测试与移动端 minor（Task 7）；i18n `t()` 类型收紧（Task 8）经裁决 DEFERRED。清除记录见
+  「(0.5) 第二轮清除」。
+- 本轮 `feat/remaining-debt`（2026-10-10）：图标硬编码色、vitest 非零退出根因、几个零散
+  债务，以及第二轮 DEFERRED 的 i18n `t()` 类型收紧（能力落地 + 代表性迁移）。清除记录见
+  「(1) 本轮清除（feat/remaining-debt）」。
 
 剩下的是清理后**仍然真实存在**的债务与已裁决项。「哪些已清除、哪些仍真实存在」以本节
 对照表与各小节为准。验收判据仍是各任务在**真实路径上的行为测试**，不是死配置数量
 （见 13.2、13.5）。
 
-#### (0) 上一轮已清除条目（feat/debt-cleanup，原登记 → 处置 → 证据）
+#### (0) 第一轮已清除条目（feat/debt-cleanup，原登记 → 处置 → 证据）
 
 | 原登记条目（清理前） | 处置 | 清除任务 / 提交 | 证据（当前代码） |
 | --- | --- | --- | --- |
@@ -1045,7 +1050,7 @@ crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均
 | 守门口径缺口：[I4] settings-wiring 扫描面不含 `src/components`、[I5] component-contracts 白名单无 ratchet、i18n dynamic 桶 warn-only | 扩扫描面 + 白名单名称 ratchet + 动态族阻塞 delta | 最终修复波（见 13.4 与本节 (2)） | `check:settings-wiring` 73/73、`check:component-contracts` 白名单 17/17 只减不增、`check:i18n-dead-keys` 动态 delta 阻塞 |
 | 守门/代码 nits：`.storybook` 过期 mock、doc-coverage 基线仍列 `getReadReceipts`、`MatrixReadStateService` 空继承、settings-wiring 基线形态与 `--update` 不一致、`wsPresenceHandler` 死 `setPresence` 成员、presence 守卫可被解构绕过 | 全部清理或加固（基线改为 `--update` 按 Biome 规则序列化，首次 `--update` 无空白 diff） | 最终修复波（分支尾部 `config`/`service`/`test` 提交） | 对应文件见提交记录；presence 守卫新增解构检测与注释剥除 |
 
-#### (1) 本轮清除（feat/issues-cleanup，2026-09-23）
+#### (0.5) 第二轮清除（feat/issues-cleanup，2026-09-23）
 
 | 本轮登记条目（清理前） | 处置 | 清除任务 / 提交 | 证据（当前代码 / 实测） |
 | --- | --- | --- | --- |
@@ -1066,6 +1071,21 @@ crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均
 | `sessionUnread.test.ts` 的收敛用例因 gating 之后不再验证 `noNewerMessage`（假绿） | 回执关闭下恢复双向收敛覆盖（服务端更小 + `activeTime` 前移） | Task 3 `4d54b238` | `src/stores/domains/chat/__tests__/sessionUnread.test.ts:158-205`、`:302-309` |
 | `check:v-html` 把 `ThemeSwitcher.vue` 注释里的 "v-html" 字样误报（基线提交上同样 FAIL） | 按 SFC 模板语义判定：先剥模板注释再匹配，注释里的字样不再命中 | Task 1 `517c7f83` | `node scripts/check-v-html.mjs` → exit 0「No unauthorized v-html usage found」 |
 | `check:a11y` 离线/CI 策略不明（Storybook 不可达时行为未定义） | 离线默认**显式失败 exit 2**，仅显式 `--skip-if-unreachable` 才打印 SKIP；CI 由 workflow 真正启动 Storybook 并轮询就绪后再扫描 | Task 1 `292f0d08` | `scripts/check-a11y.mjs:9-17,97-98`；`.github/workflows/quality-gate.yml` 的 a11y 步骤 |
+
+#### (1) 本轮清除（feat/remaining-debt，2026-10-10）
+
+| 本轮登记条目（清理前） | 处置 | 任务 / 提交 | 证据（当前代码 / 实测） |
+| --- | --- | --- | --- |
+| `check:icon-colors` 既有红灯：`public/icon.js` 9 个 symbol / 21 处 `data-follow-*` 硬编码（且同值渲染 `fill`/`stroke`），CI Boundary Checks 硬门禁 | 单色符号（RightArrow/Security/cloudError/minus/sliding 与未引用的 build/docs/perf）的 `data-follow-*` **与**渲染 `fill`/`stroke` 一并改 `currentColor`；`tips` 用 `currentColor` + `fill-opacity="0.3"` 保留浅底；使用处补语义色（FooterOverlays/QRCode/InfoEdit 用 `--tjg-color-danger-500`/`--tjg-color-primary-500`） | T1 `2974323b` | `python3 scripts/audit-icon-colors.py` exit 1 → **exit 0**；src/ 非测试内 11 处 `<use>` 全部有显式颜色上下文；探针（改回一处硬编码）仍 FAIL |
+| `npx vitest run` 以 exit 1 收尾（`Errors 3`，`CryptoApi 不可用` unhandled rejection） | `CryptoKeyBackupAdapter.setupKeyBackupWithOptions` 并发锁不再用 `task.finally()`（其派生 Promise 无人处理），改 `task.then(clear, clear)`；调用方仍拿到拒绝 | T2 `78637d4c` | 旧实现隔离副本实测 `Errors 3`、3 处堆栈**全部**指向该 `finally` 行；修复后单文件 `Unhandled Rejection` 0、全量 **exit 0 / Errors 0** |
+| `src/typings/components.d.ts` 仍列已删组件 `ExternalServiceManager`/`MobileMessageActions` | 删除 4 条陈旧条目 | T3 `fa7d148d` | `check-component-contracts` 陈旧生成物告警 2 → 0；`vue-tsc` 0 |
+| `check:doc-coverage` 基线 22 条重复（`file::name` 同键） | `scanFile` 返回前按 `keyOf` 去重；基线重新生成 | T4 `e0e6387d` | 基线 1026 → 995（去 22 重复 + 9 条已不缺失），`dupes 0`、无新增；`--strict` 语义不变；探针仍 FAIL |
+| `AiAssistant.vue` 建议卡渲染裸 i18n key | `suggestions` 改 `computed` + `t()`，去掉仅作 v-for key 的冗余 `id` | T5 `5eb2456a`、`9c3c3201` | 新行为测试 RED（渲染出 `ai_assistant.suggestions.*`）→ GREEN（中文文案 + 切语言重渲染） |
+| `AppError.i18nKey` 零生产读取方；且 `errors.ts` 曾把已翻译文案塞进该字段 | 补齐 6 个缺失的 `error.matrix.*` key（zh/en）；新增 `resolveDisplayMessage`；把**活路径** `useActionFeedback.showError` 的 AppError 分支改为优先读 `i18nKey`、缺失/未翻译回落 errcode 表 | T6 `276ecb9e` + fix `40ffacad` | 链路实测 `multiMsgWindow:171 → showError → resolveDisplayMessage → vue-i18n`；RED（502 文案由「网关错误」变「服务器暂时不可用」）；errcode 表未删、行为回落有测试 |
+| `useAccount.requestEmailTokenFor3Pid`/`requestMsisdnTokenFor3Pid` 零生产消费方 | 删除两个 composable 包装 + 服务方法 + 5 个专属用例 | T7 `533727c2` | 全仓（含 .rs/.json/.mjs/e2e）grep 无活引用/动态引用；98 删除 0 新增；`vue-tsc` 0 |
+| `matrix_error.admin.score_range_invalid` 从未被翻译 | `ReportService.scoreReport` 抛本地化文案并保留原始 key 属性 | T8 `2ef6db3c` | RED「got `matrix_error.admin.score_range_invalid`」→ GREEN 中文文案；zh/en 两份 locale 均存在 |
+| 第二轮 DEFERRED 的 i18n `t()` 类型收紧 | 生成扁平点分联合 `I18nKeyPaths`（5421 条）；新增 `useTypedI18n()`（`t(key: I18nKeyPaths)` + 显式动态出口 `tDynamic`，无 `any`）；代表性迁移 6 文件 | T9a `6260e31d`、`0f5b2dbd` | RED：stock `useI18n()` 下伪造 key → `vue-tsc` 0 错误；GREEN：迁移后同名伪造 key → **TS2345**；`vue-tsc` 耗时 36.55s → 35.46s（无退化）；余量见 (2) |
+| 本轮自身把两个文件顶出体积基线（AiAssistant +2、CryptoKeyBackupAdapter +4） | 不抬基线：密钥备份入参联合类型去重、去掉冗余 `id` 字段 | `38b5e543`、`9c3c3201` | `check-file-size` exit 0（129 = 基线 129），两文件均回落到各自基线内 |
 
 #### （1）已裁决项与仍需产品/后端确认
 
@@ -1097,7 +1117,7 @@ crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均
   `scripts/generate-i18n-types.mjs` 从语言包生成为字面量联合类型
   （`src/typings/i18n.d.ts:6`），但 `useI18n()/t()` 的 key 参数仍是 vue-i18n 的宽
   `Key | ResourceKeys | number`，因此 `vue-tsc` 抓不到「删了却被引用的字面量 key」。
-  具体设计（未实施，不提交半成品迁移）：在 `src/plugins/i18n` 包装 `useI18n()` 的返回，
+  具体设计（9a 已落地能力、迁移分轮进行，见下）：在 `src/plugins/i18n` 包装 `useI18n()` 的返回，
   把 `t` 的 key 参数声明为 `I18nKeys`（点分路径字面量联合，必要时用递归映射类型展开以保留
   `t('a.b')` 的补全）；动态 key 走**显式**动态 API（如 `tDynamic(key: string)` 或一处集中
   收口点），不得为省事引入 `any`；然后分批把全仓 `useI18n()/t()` 调用点迁到包装后的类型。
@@ -1145,25 +1165,33 @@ crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均
   本地离线跑得到 exit 2（显式失败），需要先 `pnpm storybook` 或显式传
   `--skip-if-unreachable`（打印 SKIP）。CI 由 `.github/workflows/quality-gate.yml` 先启动
   Storybook 并轮询就绪再扫描（Task 1 `292f0d08`）。
-- **`src/typings/components.d.ts` 仍列已删组件 `ExternalServiceManager` /
-  `MobileMessageActions`**：两处 `.vue` 均已不存在，生成物仍保留其条目
-  （`components.d.ts:85,149,418,482`）；`check:component-contracts` 对此只告警不 FAIL。
-  既有漂移，本轮未清理。
-- **`check:doc-coverage` 基线存在重复条目**：`scripts/doc-coverage-baseline.json` 的
-  `missing` 数组有 22 条重复（如 `MatrixDirectMessageService.ts::getDMRooms` ×4），
-  是既有生成口径问题；本轮未改基线生成器。
-- **`useAccount.requestEmailTokenFor3Pid` / `requestMsisdnTokenFor3Pid` 零生产消费方**：
-  只在 `src/composables/user/useAccount.ts:46-56,101-102` 定义/导出，测试外无调用点；
-  若后端不做 3PID 注册流程应删除（YAGNI 候选）。
-- **`AiAssistant.vue` 的建议卡文案未走 `t()`**：`suggestions` 数组的 `title` / `desc`
-  直接存 key 字符串（`src/mobile/views/my/AiAssistant.vue:376-401`），模板原样渲染该 key
-  （`:93,95`），只有 `prompt` 走了 `t()`；应补 `t()` 或改 computed。
-- **`AppError.i18nKey` 零生产读取方**：`src/common/errors.ts` 每个变体都写入 `i18nKey`，
-  但 `grep -rn '\.i18nKey' src/`（非测试）无读取点，UI 目前只用 `message`；要么接线，
-  要么删字段以免误导。
-- **`matrix_error.admin.score_range_invalid` 从未被翻译**：`ReportService.ts:103` 抛原始
-  `new Error('matrix_error.admin.score_range_invalid')`，没走 `matrixErrorTranslator`；
-  文案存在于 `src/typings/i18n.d.ts:3399` 但到不了 UI。
+- **守门盲区：`audit-icon-colors.py` 只校验 `data-follow-*`，不校验渲染属性**：探针证明
+  只把 `data-follow-stroke` 留作 `currentColor`、把渲染 `stroke` 改回 `#333`，守门仍 exit 0
+  ——即「只改元数据不改渲染」可以骗过它。本轮已同时改两者并逐个复核，但守门本身建议补一条
+  「渲染 `fill`/`stroke` 硬编码」校验。另：`build` 符号内仍有余下 2 处无 `data-follow` 孪生属性的
+  渲染描边（`#A47E73`/`#F4CAA3`，发丝线）与 `build`/`docs`/`perf` 的插画渐变 `stop-color`，
+  属多色插画、符号全仓零引用，未转换。
+- **`check:component-contracts` 对陈旧生成条目只 warn 不 FAIL**：`components.d.ts` 里的悬空条目
+  是 `warnings`，不会让守门变红（`scripts/check-component-contracts.mjs:323-328`），
+  所以本轮清理无法被守门守住、未来可能静默回归；建议升级为 FAIL 或纳入基线 ratchet。
+- **AppError 本地化仍是双轨，且活路径缺真实数据**：`error.matrix.*`（vue-i18n）与
+  `MESSAGES_BY_LOCALE`（errcode 表）并存，en 下 13 个 errcode 措辞不同；`showError` 目前唯一
+  生产调用方 `multiMsgWindow/index.vue:171` 传的是原始 SDK `Error`，所以新接的 `i18nKey` 分支
+  尚无真实数据走到（`handleMatrixError`/`globalErrorHandler` 更是零调用死代码）。
+  `useActionFeedback.ts` 的回落判据是 `localized === err.message`，更稳的是与 `i18nKey` 比较
+  （en 下措辞差异时可能误回落）。建议后续合并两套表并给错误展示补端到端覆盖。
+- **`scoreReport` 零生产调用方**：`ReportService.scoreReport` 只被 `AdminFacadeService` 转发、
+  无 UI 调用点，所以本轮补的本地化文案目前是「具备」而非「用户可见」。
+- **3PID 的 SDK augmentation 仍声明 `requestAdd3pidEmailToken`/`requestAdd3pidMsisdnToken`**
+  （`src/types/matrix-js-sdk-augmentations.d.ts:326,332`）：方法级增强合法，但本仓删掉包装后
+  已无消费者；`check-sdk-augmentations` 只校验 enum，不覆盖方法级增强。
+- **环境：新 worktree 默认没有 `.husky/_`**（由 `pnpm install` 生成），`core.hooksPath` 指向它
+  会导致 pre-commit 静默不执行；本轮用 `npx husky` 恢复。CI 不受影响，但本地新 worktree 要注意。
+- **全量测试在并发重负载下会放大成文件级失败**：与 12 个 check 脚本 + biome 并发时实测出现
+  122 文件 Failed Suite / 15 failed（另一次并发评测出现 4 个加载超时），单独复跑即
+  807/807、9299/9299 全绿；属本机资源限制。
+- **`ReportService` 的范围错误测试硬编码中文文案**：默认 locale 为 zh-CN 时通过，若将来默认
+  locale 改为 en 需同步调整该断言。
 - **presence 剩余 minor**：启动失败路径改为本地 `offline` 仅维持一个心跳周期，未被测试钉住。
   （`status_msg` 的 `''`→`undefined` 语义已在 Task 3 修复，见「本轮清除」。）
 - **守门自身剩余的口径局限**（本轮加固后仍存在）：
@@ -1189,12 +1217,12 @@ crypto unhandled rejection 以 exit 1 收尾。上表仍有两处非绿色，均
   （`src/services/media/mediaDevicePreferences.ts`），接真实通话时直接复用。
 - 移动端音质开关的写回缺口已在 Task 7 清除（见「本轮清除」），不再列为缺口。
 
-#### （4）本轮全量实测结论与剩余项（Task 9 起测，收尾复核更新）
+#### （4）末次全量实测结论与剩余项（Task 9 起测，第三轮更新）
 
-`npx vitest run --maxWorkers=2` 末次全量实测（合并 master `5e9c4b99` 后）结果：
-**805/805 文件、9279/9279 用例通过、0 failed；进程 exit 1，对应 `Errors 3`**（既有 crypto
-unhandled rejection，不产生失败用例）。
-首轮全量（2026-10-09 23:23–23:26）暴露过 3 个问题，其中 2 个已在收尾复核中修复：
+`npx vitest run --maxWorkers=2` 末次全量实测（第三轮 `feat/remaining-debt`，2026-10-10）结果：
+**807/807 文件、9299/9299 用例通过、0 failed、`Errors 0`、exit 0**。
+历史问题：首轮全量（2026-10-09 23:23–23:26）暴露过 3 个问题，其中 2 个在第二轮收尾修复、
+第 3 个（`Errors 3` 的 crypto 悬空拒绝）在第三轮从根上修复（`78637d4c`）。逐条如下：
 
 - **8 个真实测试失败（Task 3 引入，已修复 `e0ccf0f4`）**：
   `src/composables/__tests__/usePresenceHeartbeat.privacy.test.ts` 的 8 个用例断言
@@ -1215,15 +1243,15 @@ unhandled rejection，不产生失败用例）。
   启动失败，表现为 6 个测试文件「模块找不到」的 Failed Suite、约 400 个用例未执行、
   `Errors 29`（2 个既有 crypto `CryptoApi 不可用` unhandled rejection + 其余为 worker 启动
   失败）。这 6 个文件低并发重跑全部通过（6 files / 101 tests passed）。
-- **`check:icon-colors` 既有红灯（与本工作流无关，未修）**：`python3 scripts/audit-icon-colors.py`
+- **`check:icon-colors` 既有红灯（第三轮已修，`2974323b`）**：`python3 scripts/audit-icon-colors.py`
   在 `public/icon.js` 上报 9 个 symbol / 21 处非白名单 `data-follow-*` 硬编码
   （`RightArrow`/`Security`/`build`/`cloudError`/`docs`/`minus`/`perf`/`sliding`/`tips`）——这些
   符号同时带 `fill="<同一 hex>"`，即当前确实渲染写死颜色、无法被 `currentColor` 重着色。
   该文件最后修改于 `73ab2467`，本工作流未触碰，且与 master `5e9c4b99` 逐字节相同（脚本同样
-  exit 1）→ 仓库既有红灯，且在 CI 的 Boundary Checks 里是硬门禁。**修法需要设计裁决**：
-  逐符号改为 `currentColor`（会让 `sliding` 的 #666 点阵、`tips`/`Security` 的品牌绿跟随文本色，
-  属可见视觉变更），或确认品牌装饰语义后登记 `scripts/audit-icon-colors.py` 的 `WHITELIST`
-  （上限 5，当前 1，装不下这 9 个）；两者都不是纯工程改动，故不在本轮擅自改。
+  exit 1）→ 仓库既有红灯。第三轮按用户裁决「逐符号转 currentColor」处置：9 个符号的
+  `data-follow-*` 与渲染 `fill`/`stroke` 一并改 `currentColor`，`tips` 用
+  `currentColor` + `fill-opacity="0.3"` 保留浅底，使用处补 `--tjg-color-*` 语义色；
+  `audit-icon-colors.py` 现 exit 0，未占用 WHITELIST 名额（仍 1/5）。残留见 (2) 的守门盲区条目。
 - **文件体积：本工作流把它顶出基线的两个文件已分别处置**：
   `src/views/chatHistory/index.vue` 由 Task 6 的 jump2Reply 接线从 427 增到 438，收尾复核把
   `handleDateChange` 的日期边界归一化抽成纯函数 `normalizeHistoryDateRange`
@@ -1231,7 +1259,9 @@ unhandled rejection，不产生失败用例）。
   411，行为逐分支核对与内联实现一致；`src/services/matrix/MatrixHttpClient.ts`（432 → 441）
   按裁决基线化不重构，依据见 (2)。其余本工作流触碰的越基线文件（`ChatMain.vue` +7、
   `SpaceChildrenPane.vue` +4、`components.d.ts` -4、`message.ts` -5、`AccountSettings.vue` -5）
-  在分支前就已被 master 顶出基线，未改变"是否越线"的结论。
+  在分支前就已被 master 顶出基线，未改变"是否越线"的结论。第三轮自身把
+  `AiAssistant.vue`（+2）与 `CryptoKeyBackupAdapter.ts`（+4）顶出各自基线，处置为**不抬基线**：
+  入参联合类型去重 + 去掉冗余 `id` 字段（`38b5e543`/`9c3c3201`），两文件均回落到基线内。
 
 ### 13.6 组件事件断线 follow-up（Task 5 移出冻结基线）
 
