@@ -188,6 +188,10 @@ function main() {
     }
   }
 
+  // 产出 tarball 的 SDK worktree（与 pack-sdk-tarball.mjs 同源）。同时服务下面两段判据：
+  // tarball 段的 `sdk_commit` 新鲜度、以及跨仓绑定段的契约镜像绑定。
+  const sdkDirEnv = process.env.TJG_SDK_DIR
+
   if (actualMode === 'tarball') {
     const match = /^file:(.+\.tgz)$/.exec(sdkSpec)
     if (!match) die(1, `tarball mode but spec is not a file:*.tgz: ${sdkSpec}`)
@@ -199,6 +203,28 @@ function main() {
     }
     if (!installedSdkPkg) {
       die(1, 'tarball mode requires node_modules/matrix-js-sdk/package.json after install')
+    }
+    // `sdk_commit` 新鲜度（治理方案 §13.30）：tarball 模式此前**只**比对 tarball hash 与
+    // 契约镜像/后端，从不比对 `pin.sdk_commit` 与 SDK worktree HEAD ⇒ 「release 提交了修复、
+    // 但 tarball 还是旧 commit 打的包」会**静默通过**（实测：release 删掉 `getSamlRedirect`
+    // 之后 pin 仍指向旧 commit，tarball 里还带着被删的方法，门禁报 ok）。
+    // 需要 `TJG_SDK_DIR` 才能定位 worktree；未指定时显式 SKIP（打印 banner，不静默通过）。
+    if (!sdkDirEnv) {
+      process.stdout.write(
+        `verify-sdk-pin: SKIP sdk_commit freshness — TJG_SDK_DIR is not set, so the SDK worktree that produced the tarball is unidentified (not a pass; set TJG_SDK_DIR=<sdk worktree> to enable).\n`,
+      )
+    } else {
+      const sdkHead = gitCommit(path.resolve(sdkDirEnv))
+      if (!sdkHead) {
+        die(1, `cannot resolve git HEAD in ${sdkDirEnv}; refusing to pass the sdk_commit freshness binding.`)
+      }
+      if (pin.sdk_commit && !sdkHead.startsWith(pin.sdk_commit)) {
+        die(
+          1,
+          `sdk_commit is behind the SDK worktree HEAD (the tarball is stale):\n  pin=${pin.sdk_commit}\n  SDK HEAD=${sdkHead}\n` +
+            `Rebuild + repack: TJG_SDK_DIR=<sdk worktree> node scripts/pack-sdk-tarball.mjs --allow-commit-drift --apply, then pnpm add ./vendor/matrix-js-sdk.tgz --ignore-scripts and re-verify.`,
+        )
+      }
     }
   }
 
@@ -220,7 +246,6 @@ function main() {
   // （实测：记录 §13.23 的 docs 提交 `d0eb8306e` 让门禁第二次变红）。真正的不变量是
   // 「pin ↔ 契约快照一致」且「快照未落后于路由面」，而不是「等于 HEAD」。
   if (pin.synapse_rust_commit) {
-    const sdkDirEnv = process.env.TJG_SDK_DIR
     if (!sdkDirEnv) {
       process.stdout.write(
         `verify-sdk-pin: SKIP contract-mirror binding — TJG_SDK_DIR is not set, so the SDK worktree that produced the tarball is unidentified (not a pass; set TJG_SDK_DIR=<sdk worktree> to enable).\n`
