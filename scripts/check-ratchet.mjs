@@ -89,7 +89,20 @@ const INLINE_STYLE_ALLOWLIST = new Map([
 ])
 
 const counters = {
-  matrix_prefix_hardcoded: { pattern: /\/_matrix/g, includeTests: false, total: 0, files: new Map() },
+  /**
+   * 判据本意是「**新的请求**必须走 MatrixHttpClient 网关 / 相对路径」，
+   * 而注释里引用真实路径（如 JSDoc 写 `GET /_matrix/client/v3/login/sso/redirect/saml`）
+   * 不是请求 —— 同 `hardcoded_color` 的既有约定（"excluding comments"），
+   * 故这里也剥注释后再计数（2026-10-10：并发写者给 `MatrixAuthSaml.ts` 补 JSDoc
+   * 引用了真实路径，把计数从 63 顶到 64，实际零新增请求）。
+   */
+  matrix_prefix_hardcoded: {
+    pattern: /\/_matrix/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsOnly
+  },
   ts_expect_error: { pattern: /@ts-expect-error/g, includeTests: true, total: 0, files: new Map() },
   hardcoded_color: {
     pattern: /#[0-9a-fA-F]{3}\b|#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{8}\b|rgba?\(\s*[0-9]/g,
@@ -181,7 +194,9 @@ let failed = false
     ([file, count]) => count > (INLINE_STYLE_ALLOWLIST.get(file) ?? 0)
   )
   if (unexpected.length > 0) {
-    console.error('check-ratchet: FAIL inline_style: 出现具名 allowlist 之外的内联样式（n-popover 参数是唯一已裁定例外）：')
+    console.error(
+      'check-ratchet: FAIL inline_style: 出现具名 allowlist 之外的内联样式（n-popover 参数是唯一已裁定例外）：'
+    )
     for (const [file, count] of unexpected) {
       console.error(`    ${count}\t${file}（allowlist 登记 ${INLINE_STYLE_ALLOWLIST.get(file) ?? 0} 处）`)
     }
