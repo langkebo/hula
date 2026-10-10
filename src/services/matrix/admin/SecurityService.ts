@@ -265,15 +265,27 @@ export class AdminSecurityService {
     }
   }
 
+  /**
+   * 获取服务器备份列表。
+   *
+   * W-07（2026-10-10 重钉 release tarball 时暴露）：本后端**不提供**服务端备份管理端点。
+   * `synapse-web/src/routes/admin/server.rs:488-493` 有一条专测断言
+   * `/_synapse/admin/v1/backups` **不在** manifest 里（注释原话："backups endpoint should not be
+   * registered — backups are managed by external infrastructure"），后端路由表三份 `.inc.rs`
+   * 与 SDK 生成的 `admin/__generated__/route-table.ts` 均零命中。
+   * SDK 侧的 `AdminManager.listBackups()` 已随 release `a321796e2`（develop 同批）删除，
+   * 旧实现里的 `admin.listBackups()` 因此变成**调用不存在的方法**。
+   *
+   * 故此处不再向 SDK 发起调用，直接返回空列表并 warn。
+   * 保留本方法（而不是连同维护页的「备份列表」卡片一起删）是**刻意的**：
+   * 卡片是否保留属产品面决策，且旧实现把异常吞掉后同样返回 `[]`
+   * ⇒ 本次改动**不改变任何既有可见行为**，只把"静默失败"变成"显式告知"。
+   *
+   * @returns 备份信息列表（当前恒为空数组）。
+   */
   async getBackups(): Promise<Array<Record<string, unknown>>> {
-    try {
-      const admin = await this.sdkAdmin()
-      const result = await admin.listBackups()
-      return (result?.backups ?? []) as unknown as Array<Record<string, unknown>>
-    } catch (err) {
-      logger.error(`[Admin] 获取备份信息失败: ${err}`)
-      return []
-    }
+    logger.warn('[Admin] 后端未提供服务端备份管理端点（由外部基础设施管理），备份列表恒为空')
+    return []
   }
 
   async getFederationServerStatus(serverName: string): Promise<Record<string, unknown> | null> {

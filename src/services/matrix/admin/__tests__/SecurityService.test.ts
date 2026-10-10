@@ -19,7 +19,6 @@ const makeAdmin = () =>
     setFeatureFlag: vi.fn(),
     updateFeatureFlag: vi.fn(),
     deleteFeatureFlag: vi.fn(),
-    listBackups: vi.fn(),
     getAuditEvent: vi.fn(),
     listSamlMappings: vi.fn(),
     listSecurityEvents: vi.fn(),

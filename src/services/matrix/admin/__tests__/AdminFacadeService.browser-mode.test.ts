@@ -61,7 +61,6 @@ describe('AdminFacadeService — C-1 浏览器 dev 模式（无 Tauri runtime）
       getMedia: vi.fn().mockResolvedValue({ media: [], next_token: undefined }),
       getFederationDestinations: vi.fn().mockResolvedValue([]),
       listAuditEvents: vi.fn().mockResolvedValue({ events: [], next_batch: undefined }),
-      listBackups: vi.fn().mockResolvedValue({ backups: [] }),
       listSpaces: vi.fn().mockResolvedValue({ spaces: [], next_batch: undefined }),
       listSecurityEvents: vi.fn().mockResolvedValue({ events: [], next_token: undefined }),
       listIpBlocks: vi.fn().mockResolvedValue([]),

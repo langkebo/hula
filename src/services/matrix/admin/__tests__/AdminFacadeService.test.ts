@@ -168,7 +168,6 @@ describe('adminService facade', () => {
       setFeatureFlag: vi.fn().mockResolvedValue({}),
       updateFeatureFlag: vi.fn().mockResolvedValue({}),
       deleteFeatureFlag: vi.fn().mockResolvedValue(undefined),
-      listBackups: vi.fn().mockResolvedValue({ backups: [] }),
       getRegisterNonce: vi.fn().mockResolvedValue({ nonce: 'abc123' }),
       registerAdmin: vi.fn().mockResolvedValue({ access_token: 'tok2', user_id: '@new:server', device_id: 'dev2' }),
       getServerStats: vi.fn().mockResolvedValue({}),
@@ -297,11 +296,16 @@ describe('adminService facade', () => {
       await adminService.deleteFeatureFlag('flagA')
       expect(mockAdminManager.deleteFeatureFlag).toHaveBeenCalledWith('flagA')
     })
+  })
 
-    it('should get backups via SDK', async () => {
-      mockAdminManager.listBackups.mockResolvedValue({ backups: [{ id: 1 }] })
+  describe('Backups (W-07)', () => {
+    it('returns an empty list and never calls the SDK — the backend has no /admin/backups endpoint', async () => {
+      // 后端明确不注册 `/_synapse/admin/v1/backups`
+      // （synapse-web/src/routes/admin/server.rs:488-493 有专测断言），SDK 的
+      // `AdminManager.listBackups()` 亦已删除 ⇒ 该路径只能返回空，且**不得**再碰 SDK。
       const result = await adminService.getBackups()
-      expect(result).toHaveLength(1)
+
+      expect(result).toEqual([])
     })
   })
 
