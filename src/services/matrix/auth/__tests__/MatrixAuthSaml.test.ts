@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { matrixClientService } from '../../MatrixClientService'
 import { authedRequestWithPath } from '../../MatrixHttpClient'
-import { PREFIX_V3 } from '../../paths'
 import { normalizeSdkMatrixError } from '../authErrors'
 import { postMatrixJson } from '../authHelpers'
 import { getSamlMetadata, getSamlRedirect, handleSamlCallback, samlLogout } from '../MatrixAuthSaml'
@@ -16,10 +15,6 @@ vi.mock('../../MatrixClientService', () => ({
 
 vi.mock('../../MatrixHttpClient', () => ({
   authedRequestWithPath: vi.fn()
-}))
-
-vi.mock('../../paths', () => ({
-  PREFIX_V3: '/_matrix/client/v3'
 }))
 
 vi.mock('../authErrors', () => ({
@@ -40,7 +35,8 @@ const mockSamlManager = {
   getSpMetadata: vi.fn(),
   getIdpMetadata: vi.fn().mockResolvedValue({ entityID: 'https://saml.example/meta' }),
   initiateLogin: vi.fn(),
-  getLoginRedirectUrl: vi.fn()
+  getLoginRedirectUrl: vi.fn(),
+  handleCallback: vi.fn()
 }
 
 const dummyClient = {
@@ -88,25 +84,37 @@ describe('getSamlRedirect', () => {
 })
 
 describe('handleSamlCallback', () => {
-  it('posts the saml response body and returns the login result', async () => {
-    mockPostMatrixJson.mockResolvedValue({ user_id: '@u:matrix.org', access_token: 'tok', device_id: 'D' })
+  it('收敛到 SDK 的 SamlAuthManager.handleCallback，不再裸调（W-03）', async () => {
+    mockSamlManager.handleCallback.mockResolvedValue({
+      user_id: '@u:matrix.org',
+      access_token: 'tok',
+      device_id: 'D'
+    })
+
     const result = await handleSamlCallback('raw-saml')
+
     expect(result).toEqual({ user_id: '@u:matrix.org', access_token: 'tok', device_id: 'D' })
-    expect(mockPostMatrixJson).toHaveBeenCalledWith(
-      `${PREFIX_V3}/login/saml/callback`,
-      { saml_response: 'raw-saml' },
-      'SAML 回调处理失败'
-    )
+    expect(mockSamlManager.handleCallback).toHaveBeenCalledWith('raw-saml', undefined)
+    // 旧实现裸调 `POST ${PREFIX_V3}/login/saml/callback`
+    expect(mockPostMatrixJson).not.toHaveBeenCalled()
+    expect(mockAuthedRequestWithPath).not.toHaveBeenCalled()
   })
 
-  it('includes relay_state and session_id when provided', async () => {
-    mockPostMatrixJson.mockResolvedValue({ user_id: '@u:matrix.org', access_token: 'tok', device_id: 'D' })
-    await handleSamlCallback('raw-saml', 'relay-1', 'sess-1')
-    expect(mockPostMatrixJson).toHaveBeenCalledWith(
-      `${PREFIX_V3}/login/saml/callback`,
-      { saml_response: 'raw-saml', relay_state: 'relay-1', session_id: 'sess-1' },
-      'SAML 回调处理失败'
-    )
+  it('透传 relayState；**不再下发 session_id**（后端 SamlCallbackBody 是 deny_unknown_fields 且无该字段 ⇒ 400）', async () => {
+    mockSamlManager.handleCallback.mockResolvedValue({
+      user_id: '@u:matrix.org',
+      access_token: 'tok',
+      device_id: 'D'
+    })
+
+    await handleSamlCallback('raw-saml', 'relay-1')
+
+    expect(mockSamlManager.handleCallback).toHaveBeenCalledWith('raw-saml', 'relay-1')
+  })
+
+  it('throws when the client is not initialized', async () => {
+    mockGetClient.mockReturnValue(null)
+    await expect(handleSamlCallback('raw-saml')).rejects.toThrow('matrix_error.common.client_not_initialized')
   })
 })
 

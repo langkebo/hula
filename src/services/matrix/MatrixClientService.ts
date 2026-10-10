@@ -161,8 +161,8 @@ class MatrixClientService {
     return this.auth.login(username, password, deviceName)
   }
 
-  async getSSOLoginUrl(identityProviderId?: string): Promise<string> {
-    return this.auth.getSSOLoginUrl(identityProviderId)
+  async getSSOLoginUrl(): Promise<string> {
+    return this.auth.getSSOLoginUrl()
   }
 
   async completeSSOLogin(loginToken: string): Promise<LoginResult> {

@@ -155,8 +155,15 @@ export class MatrixClientAuth {
   }
 
   /** 获取 SSO 登录 URL
+   *
+   * W-06 收口（2026-10-10）：`client.getSsoLoginUrl()` 已删除 `idpId` 形参、且第二参是
+   * **`loginType`（会拼进 URL 路径段）**而不是设备名 —— 旧调用传 `'Tjg Client'` 会拼出
+   * `/_matrix/client/v3/login/Tjg%20Client/redirect/…` ⇒ **404**（后端只注册
+   * `/login/sso/redirect` 与 `/login/sso/redirect/{cas|saml}`）。
+   * 本方法只需默认的 `loginType="sso"`，故不再接受任何 IdP 参数
+   * （本后端的 IdP 选择靠路径段，无查询参数落点）。
    */
-  async getSSOLoginUrl(identityProviderId?: string): Promise<string> {
+  async getSSOLoginUrl(): Promise<string> {
     const { connectionManager } = this.deps
     const client = connectionManager.getClient()
     if (!client) {
@@ -171,7 +178,7 @@ export class MatrixClientAuth {
         throw new Error(useI18nGlobal().t('matrix_error.auth.sso_not_supported'))
       }
 
-      const ssoUrl = client.getSsoLoginUrl(window.location.href, 'Tjg Client', identityProviderId)
+      const ssoUrl = client.getSsoLoginUrl(window.location.href)
 
       logger.info('获取 SSO 登录 URL 成功')
       return ssoUrl

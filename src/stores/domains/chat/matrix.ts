@@ -156,9 +156,9 @@ export const useMatrixStore = defineStore(
       }
     }
 
-    async function getSSOLoginUrl(identityProviderId?: string): Promise<string> {
+    async function getSSOLoginUrl(): Promise<string> {
       try {
-        return await matrixClientService.getSSOLoginUrl(identityProviderId)
+        return await matrixClientService.getSSOLoginUrl()
       } catch (error) {
         logger.error('获取 SSO 登录 URL 失败:', error)
         throw error

@@ -1,8 +1,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixClientService } from '../MatrixClientService'
-import { PREFIX_V3 } from '../paths'
 import { normalizeSdkMatrixError } from './authErrors'
-import { type MatrixLoginResult, postMatrixJson } from './authHelpers'
+import type { MatrixLoginResult } from './authHelpers'
 
 /** 获取 SAML 登录重定向地址
  *
@@ -33,17 +32,29 @@ export async function getSamlRedirect(redirectUrl?: string): Promise<string> {
 }
 
 /** 处理 SAML 登录回调
+ *
+ * W-03 收口（2026-10-10）：收敛到 SDK 的 `SamlAuthManager.handleCallback`
+ * （走生成的 route-table/dto，与后端 `saml.rs` 注册的
+ * `GET|POST /_matrix/client/v3/login/saml/callback` 一致）。
+ *
+ * 旧实现自带裸调 `POST ${PREFIX_V3}/login/saml/callback` 并下发 `session_id`：
+ * 后端 `SamlCallbackBody` 是 `#[serde(deny_unknown_fields)]` 且**只声明**
+ * `SAMLResponse|saml_response`、`SAMLRequest|saml_request`、`RelayState|relay_state`
+ * （`synapse-web/src/routes/saml.rs:67-80`）⇒ 传 `session_id` 会被 serde 拒绝 ⇒ **400**。
+ * 故 `sessionId` 形参一并删除（后端无此字段，留着即撒谎）；若将来确有服务端会话需求，
+ * 应改**后端**补字段，而不是前端假传。见方案文档 §9.14.3（W-03）。
  */
-export async function handleSamlCallback(
-  samlResponse: string,
-  relayState?: string,
-  sessionId?: string
-): Promise<MatrixLoginResult> {
-  const body: Record<string, unknown> = { saml_response: samlResponse }
-  if (relayState) body.relay_state = relayState
-  if (sessionId) body.session_id = sessionId
+export async function handleSamlCallback(samlResponse: string, relayState?: string): Promise<MatrixLoginResult> {
+  const client = matrixClientService.getClient()
+  if (!client) {
+    throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
+  }
 
-  return postMatrixJson<MatrixLoginResult>(`${PREFIX_V3}/login/saml/callback`, body, 'SAML 回调处理失败')
+  try {
+    return await client.getSamlAuthManager().handleCallback(samlResponse, relayState)
+  } catch (err) {
+    throw normalizeSdkMatrixError(err, 'SAML 回调处理失败')
+  }
 }
 
 /** SAML 登出

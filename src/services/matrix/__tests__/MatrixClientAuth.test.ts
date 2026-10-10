@@ -227,14 +227,16 @@ describe('MatrixClientAuth.getSSOLoginUrl', () => {
     await expect(auth.getSSOLoginUrl()).rejects.toThrow('matrix_error.common.client_not_initialized')
   })
 
-  it('返回 SSO 登录 URL', async () => {
+  it('返回 SSO 登录 URL（不再传第二参/IdP —— 第二参是 loginType 且会拼进路径段，W-06）', async () => {
     const { auth, deps, client } = makeAuth()
     deps.connectionManager.getClient.mockReturnValue(client)
     client.loginFlows.mockResolvedValue({ flows: [{ type: 'm.login.sso' }] })
 
-    const url = await auth.getSSOLoginUrl('oidc-provider')
+    const url = await auth.getSSOLoginUrl()
 
-    expect(client.getSsoLoginUrl).toHaveBeenCalledWith(window.location.href, 'Tjg Client', 'oidc-provider')
+    // 旧调用是 `(href, 'Tjg Client', identityProviderId)` ⇒ 拼出
+    // `/_matrix/client/v3/login/Tjg%20Client/redirect/…` ⇒ 404
+    expect(client.getSsoLoginUrl).toHaveBeenCalledWith(window.location.href)
     expect(url).toBe('http://sso.url')
   })
 

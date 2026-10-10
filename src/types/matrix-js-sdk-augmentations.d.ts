@@ -179,8 +179,15 @@ declare module 'matrix-js-sdk' {
     ): Promise<IRequestTokenResponse>
     loginFlows(): Promise<{ flows: Array<Record<string, unknown>> }>
     loginFlows(): Promise<{ flows: Array<{ type: string }> }>
-    getSsoLoginUrl(redirectUrl: string, deviceName?: string, identityProviderId?: string): string
-    getSsoLoginUrl(redirectUrl: string, deviceName?: string, idpId?: string): string
+    // W-06 收口（2026-10-10）：此处原有的两行 `getSsoLoginUrl(redirectUrl, deviceName?, …)`
+    // 是**错误的重复声明** —— SDK 早已声明该方法，且第二参是
+    // `loginType`（**会拼进 URL 路径段**，默认 "sso"）而不是设备名。
+    // 该错误命名直接诱导调用方传 `'Tjg Client'`，拼出
+    // `/_matrix/client/v3/login/Tjg%20Client/redirect/…` ⇒ **404**
+    // （后端只注册 `/login/sso/redirect` 与 `/login/sso/redirect/{cas|saml}`）。
+    // 故**删除**这两行，直接用 SDK 的真实声明（形如
+    // `(redirectUrl: string, loginType?: string, idpId?: string, action?: SSOAction): string`；
+    // SDK 侧的 `idpId` 已按 §9.14.3 W-06 删除，随下次重打包生效）。
     // SDK 已声明 callEventHandler?: CallEventHandler（client.d.ts:354），
     // 此处不再重复声明 voipHandler / getCallHandler（SDK 中不存在，是幻影声明）。
     createCall(roomId: string, threadId?: string, opts?: { audio: boolean; video: boolean }): MatrixCall | null
