@@ -4,7 +4,6 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { initializeManagerExtensions } from '@/services/matrix/sdk'
 import { matrixClientService } from '../MatrixClientService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 import { logger, normalizeSdkMatrixError } from './authErrors'
 import {
@@ -283,28 +282,6 @@ export class MatrixAuthService {
       // R-20: well-known is optional (相对合理), use warn not error
       logger.warn('fetchWellKnown failed:', err)
       return {}
-    }
-  }
-
-  static async getSsoLoginUrl(idpId?: string, redirectUrl?: string): Promise<string> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      const queryParams: Record<string, string> = {}
-      if (idpId) queryParams.idp_id = idpId
-      if (redirectUrl) queryParams.redirectUrl = redirectUrl
-      const result = await authedRequestWithPath<{ redirect_url?: string }>(
-        client,
-        'GET',
-        '/login/sso/redirect',
-        Object.keys(queryParams).length > 0 ? queryParams : undefined
-      )
-      return result.redirect_url ?? ''
-    } catch (err) {
-      throw normalizeSdkMatrixError(err, '获取 SSO 登录URL失败')
     }
   }
 }

@@ -704,3 +704,31 @@ describe('R-20: error logging', () => {
     expect(loggerSpy.warn).toHaveBeenCalledWith('fetchWellKnown failed:', expect.any(Error))
   })
 })
+
+describe('W-04 收口守卫：SSO 登录 URL 的单一真源', () => {
+  it('MatrixAuthService 不再暴露 getSsoLoginUrl —— SSO 入口唯一收敛到 MatrixClientAuth.getSSOLoginUrl()', () => {
+    // 2026-10-10 W-04 删除。旧实现自带裸调：
+    //   GET /login/sso/redirect + `idp_id` 查询参数，并期望 JSON `{ redirect_url }`。
+    // 三处都与后端不符：
+    //   ① 后端 `SsoRedirectQuery`（synapse-web/src/routes/oidc/sso.rs:19）只认
+    //      `redirectUrl` / `redirect_url`，**没有** `idp_id`；且**无** `deny_unknown_fields`
+    //      ⇒ 传了不报错、被 serde **静默丢弃**（"看起来在选择 IdP，实际没生效"）。
+    //      本后端的 IdP 选择靠**字面量路径段**（`/login/sso/redirect/{cas|saml}`），无查询参数落点。
+    //   ② 处理器返回 `Result<Redirect, ApiError>`（sso.rs:111）⇒ **302**，不是 JSON
+    //      ⇒ `result.redirect_url ?? ''` 恒为空串。
+    //   ③ 它走 `authedRequestWithPath`（带认证），而这是**登录前**的端点，此时还没有
+    //      access_token —— 该路径在实际登录场景根本不成立。
+    // 保留它 = 同一功能两份实现，且其中一份是坏的（规范实现见
+    // `MatrixClientAuth.getSSOLoginUrl`，走 SDK `client.getSsoLoginUrl`）。
+    expect(Object.getOwnPropertyNames(MatrixAuthService)).not.toContain('getSsoLoginUrl')
+  })
+
+  it('MatrixAuthService.ts 不再裸调后端 HTTP（不 import authedRequestWithPath）', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { resolve } = await import('node:path')
+    // 注意：不要用 `new URL(..., import.meta.url)` —— 本机 CLI 的 fs shim 不接受 `file:`
+    // URL 作为 readFileSync 入参（`TypeError: The URL must be of scheme file`）。
+    const src = readFileSync(resolve(process.cwd(), 'src/services/matrix/auth/MatrixAuthService.ts'), 'utf8')
+    expect(src).not.toContain('authedRequestWithPath')
+  })
+})
