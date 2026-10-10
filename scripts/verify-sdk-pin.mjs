@@ -22,6 +22,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { fingerprintLibDir } from './sdk-lib-fingerprint.mjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const pinPath = path.join(repoRoot, 'meta', 'sdk-pin.json')
@@ -93,7 +94,7 @@ function sha256File(p) {
   return `sha256-${crypto.createHash('sha256').update(buf).digest('hex')}`
 }
 
-function main() {
+async function main() {
   const pin = readJson(pinPath)
   const schema = readJson(schemaPath)
   const pkg = readJson(pkgPath)
@@ -204,6 +205,45 @@ function main() {
     if (!installedSdkPkg) {
       die(1, 'tarball mode requires node_modules/matrix-js-sdk/package.json after install')
     }
+
+    // 🔴 N-05（2026-10-10）：**已安装产物 ↔ tarball 内容**的一致性。
+    //
+    // 上面只比了「tarball 文件 sha256」与「installedSdkPkg.version **字符串**」——
+    // 而 release 线改代码**不改版本号**（仍是 40.2.0-langkebo.5）⇒
+    // 「node_modules 里装的是哪个 commit 打的包」在这两条判据下**完全不可见**。
+    // 实证：重钉前 Tjg 的 `vue-tsc` 一直是绿的；换掉 tarball 并**真正** `pnpm install`
+    // 之后立刻暴露 `AdminManager.listBackups` 已不存在（W-07，方案文档 §9.14.9）。
+    //
+    // 判据 = `pin.sdk_lib_fingerprint`（打进该 tarball 的 lib 指纹，由 pack 时产出
+    // worktree 的 `lib/` 算出；`pnpm pack` 不改写 lib 内容）必须等于**当前已安装包**
+    // 的 lib 指纹 ⇒ 传递出「node_modules 里的 lib == tarball 里的 lib」。
+    // **fail-closed**：pin 缺字段、或 node_modules 的 lib 取不到 ⇒ 一律失败。
+    if (!pin.sdk_lib_fingerprint) {
+      die(
+        1,
+        'pin is missing `sdk_lib_fingerprint`, so the installed artifact cannot be tied to the tarball content.\n' +
+          '  Re-pin: TJG_SDK_DIR=<sdk worktree> node scripts/pack-sdk-tarball.mjs --apply --allow-commit-drift'
+      )
+    }
+    const installedLibDir = path.join(path.dirname(installedSdkPkgPath), 'lib')
+    const installedFingerprint = await fingerprintLibDir(installedLibDir)
+    if (!installedFingerprint) {
+      die(
+        1,
+        `cannot fingerprint ${installedLibDir} (missing or empty); refusing to pass the installed-vs-tarball binding.`
+      )
+    }
+    if (installedFingerprint !== pin.sdk_lib_fingerprint) {
+      die(
+        1,
+        'installed SDK lib does not match the pinned tarball content (N-05):\n' +
+          `  pin       = ${pin.sdk_lib_fingerprint}\n` +
+          `  installed = ${installedFingerprint}\n` +
+          `  dir       = ${installedLibDir}\n` +
+          'node_modules/matrix-js-sdk is stale or built from a different commit. ' +
+          'Run `pnpm install --update-checksums` (or a clean install) and re-verify.'
+      )
+    }
     // `sdk_commit` 新鲜度（治理方案 §13.30）：tarball 模式此前**只**比对 tarball hash 与
     // 契约镜像/后端，从不比对 `pin.sdk_commit` 与 SDK worktree HEAD ⇒ 「release 提交了修复、
     // 但 tarball 还是旧 commit 打的包」会**静默通过**（实测：release 删掉 `getSamlRedirect`
@@ -211,7 +251,7 @@ function main() {
     // 需要 `TJG_SDK_DIR` 才能定位 worktree；未指定时显式 SKIP（打印 banner，不静默通过）。
     if (!sdkDirEnv) {
       process.stdout.write(
-        `verify-sdk-pin: SKIP sdk_commit freshness — TJG_SDK_DIR is not set, so the SDK worktree that produced the tarball is unidentified (not a pass; set TJG_SDK_DIR=<sdk worktree> to enable).\n`,
+        `verify-sdk-pin: SKIP sdk_commit freshness — TJG_SDK_DIR is not set, so the SDK worktree that produced the tarball is unidentified (not a pass; set TJG_SDK_DIR=<sdk worktree> to enable).\n`
       )
     } else {
       const sdkHead = gitCommit(path.resolve(sdkDirEnv))
@@ -226,7 +266,7 @@ function main() {
         let shippedChanges = ''
         try {
           shippedChanges = execSync(`git diff --name-only ${pin.sdk_commit}..${sdkHead} -- src package.json`, {
-            cwd: path.resolve(sdkDirEnv),
+            cwd: path.resolve(sdkDirEnv)
           })
             .toString()
             .trim()
@@ -241,7 +281,7 @@ function main() {
                 .split('\n')
                 .map((l) => `    ${l}`)
                 .join('\n') +
-              `\nRebuild + repack: TJG_SDK_DIR=<sdk worktree> node scripts/pack-sdk-tarball.mjs --allow-commit-drift --apply, then pnpm add ./vendor/matrix-js-sdk.tgz --ignore-scripts and re-verify.`,
+              `\nRebuild + repack: TJG_SDK_DIR=<sdk worktree> node scripts/pack-sdk-tarball.mjs --allow-commit-drift --apply, then pnpm add ./vendor/matrix-js-sdk.tgz --ignore-scripts and re-verify.`
           )
         }
       }
@@ -348,4 +388,4 @@ function main() {
   )
 }
 
-main()
+await main()

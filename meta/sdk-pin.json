@@ -9,5 +9,6 @@
   "synapse_rust_commit": "998d2ad2b08da8e852ffa97ed17d9c771a90c4ff",
   "tarball_sha256": "sha256-76b1c14c0f313bc7e09d6f8adab3153025b04409680d1399f14f808f695e4106",
   "pinned_at": "2026-10-10T03:38:01.136Z",
-  "pinned_by": "ljf"
+  "pinned_by": "ljf",
+  "sdk_lib_fingerprint": "sha256-ec8820ca232c526b6d41e5a0b5289c957d9a79f25f10b74c29c66ccfff46c6ad"
 }

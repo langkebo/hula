@@ -39,6 +39,11 @@
       "type": "string",
       "pattern": "^(sha256-[A-Fa-f0-9]{64}|)$"
     },
+    "sdk_lib_fingerprint": {
+      "type": "string",
+      "pattern": "^(sha256-[A-Fa-f0-9]{64}|)$",
+      "description": "In-package `lib/` content fingerprint of the pinned artifact (N-05). Binds the *installed* package to the tarball content — a version string cannot, because the release line changes code without bumping the version. Computed by scripts/sdk-lib-fingerprint.mjs; verified against node_modules by scripts/verify-sdk-pin.mjs."
+    },
     "pinned_at": {
       "type": "string",
       "description": "ISO-8601 UTC timestamp, empty on dev branches."

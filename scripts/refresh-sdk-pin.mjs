@@ -5,6 +5,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { fingerprintLibDir } from './sdk-lib-fingerprint.mjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const packageJsonPath = path.join(repoRoot, 'package.json')
@@ -53,13 +54,24 @@ function resolveSdkVersion() {
   return ''
 }
 
+/**
+ * N-05：lib 指纹。**以已安装包为准**（与 `verify-sdk-pin.mjs` 同源），
+ * 这样 `refresh` 之后的 `verify` 必然自洽；装不到时回退到兄弟仓的 `lib/`，
+ * 两者都取不到则写空串 —— 交给 verify 的 fail-closed 判据拦下。
+ */
+async function resolveLibFingerprint() {
+  const installed = await fingerprintLibDir(path.join(repoRoot, 'node_modules', 'matrix-js-sdk', 'lib'))
+  if (installed) return installed
+  return (await fingerprintLibDir(path.join(sdkSiblingRoot, 'lib'))) || ''
+}
+
 function resolveTarballSha(spec) {
   if (!spec.startsWith('file:')) return ''
   const tarballPath = path.resolve(repoRoot, spec.slice('file:'.length))
   return fs.existsSync(tarballPath) ? sha256File(tarballPath) : ''
 }
 
-function main() {
+async function main() {
   const pkg = readJson(packageJsonPath)
   const pin = readJson(pinPath)
   const sdkSpec = resolveSdkSpec(pkg)
@@ -75,20 +87,17 @@ function main() {
     sdk_mode: resolveSdkMode(sdkSpec),
     synapse_rust_commit: gitCommit(synapseSiblingRoot),
     tarball_sha256: resolveTarballSha(sdkSpec),
+    sdk_lib_fingerprint: await resolveLibFingerprint(),
     pinned_at: new Date().toISOString(),
     pinned_by:
-      process.env.GIT_AUTHOR_NAME ||
-      process.env.GITHUB_ACTOR ||
-      process.env.USER ||
-      process.env.USERNAME ||
-      'unknown',
+      process.env.GIT_AUTHOR_NAME || process.env.GITHUB_ACTOR || process.env.USER || process.env.USERNAME || 'unknown'
   }
 
   fs.writeFileSync(pinPath, `${JSON.stringify(nextPin, null, 2)}\n`, 'utf8')
 
   process.stdout.write(
-    `refresh-sdk-pin: wrote ${path.relative(repoRoot, pinPath)} mode=${nextPin.sdk_mode} sdk_version=${nextPin.sdk_version || '(unknown)'} sdk_commit=${nextPin.sdk_commit || '(missing)'} synapse_rust=${nextPin.synapse_rust_commit || '(missing)'}\n`,
+    `refresh-sdk-pin: wrote ${path.relative(repoRoot, pinPath)} mode=${nextPin.sdk_mode} sdk_version=${nextPin.sdk_version || '(unknown)'} sdk_commit=${nextPin.sdk_commit || '(missing)'} synapse_rust=${nextPin.synapse_rust_commit || '(missing)'}\n`
   )
 }
 
-main()
+await main()

@@ -23,6 +23,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { fingerprintLibDir } from './sdk-lib-fingerprint.mjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const packageJsonPath = path.join(repoRoot, 'package.json')
@@ -79,11 +80,7 @@ function sha256File(p) {
 
 function pinnedBy() {
   return (
-    process.env.GIT_AUTHOR_NAME ||
-    process.env.GITHUB_ACTOR ||
-    process.env.USER ||
-    process.env.USERNAME ||
-    'unknown'
+    process.env.GIT_AUTHOR_NAME || process.env.GITHUB_ACTOR || process.env.USER || process.env.USERNAME || 'unknown'
   )
 }
 
@@ -101,6 +98,8 @@ function doRestore() {
   const pin = readJson(pinPath)
   pin.sdk_mode = 'link'
   pin.tarball_sha256 = ''
+  // link 模式下 verify 不走 tarball 段，但把上一轮的指纹清掉，避免它看起来仍然生效。
+  pin.sdk_lib_fingerprint = ''
   pin.pinned_at = new Date().toISOString()
   pin.pinned_by = pinnedBy()
   writeJson(pinPath, pin)
@@ -113,10 +112,7 @@ function doRestore() {
 
 function ensureSiblingExists() {
   if (!fs.existsSync(path.join(sdkSiblingRoot, 'package.json'))) {
-    fail(
-      1,
-      `sibling matrix-js-sdk not found at ${sdkSiblingRoot}; clone it next to hula/ before packing`
-    )
+    fail(1, `sibling matrix-js-sdk not found at ${sdkSiblingRoot}; clone it next to hula/ before packing`)
   }
 }
 
@@ -132,10 +128,7 @@ function ensureCommitMatchesPin(pin) {
     return head
   }
   if (!head) {
-    fail(
-      1,
-      `cannot resolve git HEAD in ${sdkSiblingRoot}; pass --allow-commit-drift to bypass`
-    )
+    fail(1, `cannot resolve git HEAD in ${sdkSiblingRoot}; pass --allow-commit-drift to bypass`)
   }
   if (!head.startsWith(pin.sdk_commit)) {
     fail(
@@ -180,7 +173,7 @@ function runPnpmPack() {
   return tarballPath
 }
 
-function applyTarballMode(pin, sdkHead) {
+async function applyTarballMode(pin, sdkHead) {
   const pkg = readJson(packageJsonPath)
   if (pkg.dependencies && 'matrix-js-sdk' in pkg.dependencies) {
     pkg.dependencies['matrix-js-sdk'] = tarballRelSpec
@@ -192,6 +185,18 @@ function applyTarballMode(pin, sdkHead) {
   writeJson(packageJsonPath, pkg)
 
   const sdkPkg = readJson(path.join(sdkSiblingRoot, 'package.json'))
+  // N-05：把**打进该 tarball 的 lib 指纹**记进 pin，让 verify 能把「已安装产物」与
+  // 「tarball 内容」绑起来（只比 tarball 文件 sha256 + 版本字符串在"同版本不同内容"
+  // 下一次也拦不住 —— 见 §9.14.9 W-07/N-05）。取不到 ⇒ 直接失败，绝不写空值：
+  // 空指纹会让 verify 的 fail-closed 判据每次都红，或（若判据写松）变成永久假绿。
+  const sdkLibFingerprint = await fingerprintLibDir(path.join(sdkSiblingRoot, 'lib'))
+  if (!sdkLibFingerprint) {
+    fail(
+      1,
+      `cannot fingerprint ${path.join(sdkSiblingRoot, 'lib')} — build the SDK first ` +
+        '(pnpm build:compile && pnpm build:types) so the pin can bind the installed artifact to the tarball content.'
+    )
+  }
   const synapseHead = gitHead(synapseSiblingRoot)
   // `synapse_rust_commit` 必须绑定「本 SDK 契约镜像生成时所用的后端 commit」，而不是后端当前
   // HEAD：后者会被任何一次纯文档/非路由提交推进，导致 pin 永远追不上，并在 verify-sdk-pin 的
@@ -206,6 +211,7 @@ function applyTarballMode(pin, sdkHead) {
     sdk_mode: 'tarball',
     synapse_rust_commit: mirrorCommit || synapseHead || pin.synapse_rust_commit,
     tarball_sha256: sha256File(tarballPath),
+    sdk_lib_fingerprint: sdkLibFingerprint,
     pinned_at: new Date().toISOString(),
     pinned_by: pinnedBy()
   }
@@ -213,7 +219,7 @@ function applyTarballMode(pin, sdkHead) {
   return nextPin
 }
 
-function doPack() {
+async function doPack() {
   ensureSiblingExists()
   const pin = readJson(pinPath)
   const sdkHead = ensureCommitMatchesPin(pin)
@@ -222,7 +228,7 @@ function doPack() {
   const sizeKb = (fs.statSync(tarball).size / 1024).toFixed(1)
 
   if (apply) {
-    const next = applyTarballMode(pin, sdkHead)
+    const next = await applyTarballMode(pin, sdkHead)
     process.stdout.write(
       `pack-sdk-tarball: applied tarball mode\n` +
         `  tarball: ${path.relative(repoRoot, tarball)} (${sizeKb} KB)\n` +
@@ -242,7 +248,7 @@ function doPack() {
 
 try {
   if (restore) doRestore()
-  else doPack()
+  else await doPack()
 } catch (err) {
   if (err && typeof err.status === 'number') process.exit(err.status)
   process.stderr.write(`pack-sdk-tarball: unexpected error — ${err?.message || err}\n`)
