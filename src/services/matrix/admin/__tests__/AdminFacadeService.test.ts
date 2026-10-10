@@ -298,17 +298,6 @@ describe('adminService facade', () => {
     })
   })
 
-  describe('Backups (W-07)', () => {
-    it('returns an empty list and never calls the SDK — the backend has no /admin/backups endpoint', async () => {
-      // 后端明确不注册 `/_synapse/admin/v1/backups`
-      // （synapse-web/src/routes/admin/server.rs:488-493 有专测断言），SDK 的
-      // `AdminManager.listBackups()` 亦已删除 ⇒ 该路径只能返回空，且**不得**再碰 SDK。
-      const result = await adminService.getBackups()
-
-      expect(result).toEqual([])
-    })
-  })
-
   describe('User Management', () => {
     it('should get users', async () => {
       mockAdminManager.getUsersPaginated.mockResolvedValue({

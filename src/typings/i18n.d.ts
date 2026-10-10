@@ -258,18 +258,13 @@ export type I18nKeys = {
     "load_failed": "加载失败",
     "maintenance": {
       "title": "维护与特性开关",
-      "subtitle": "查看媒体缓存、备份与 Feature Flags，并执行完整管理操作",
+      "subtitle": "查看媒体缓存与 Feature Flags，并执行完整管理操作",
       "media_cache": "媒体缓存",
       "no_stats": "暂无统计数据",
       "purge_before": "清理此时间之前的媒体",
       "purge": "清理缓存",
       "purge_success": "已清理 {count} 项媒体缓存",
       "purge_failed": "清理媒体缓存失败",
-      "backups": "备份列表",
-      "backup_id": "备份 ID",
-      "backup_size": "大小",
-      "backup_created": "创建时间",
-      "backup_status": "状态",
       "experimental_features": "Feature Flags",
       "no_features": "暂无 Feature Flags",
       "feature_updated": "特性开关已更新",
@@ -7233,11 +7228,6 @@ export type I18nKeyPaths =
   | "admin.maintenance.purge"
   | "admin.maintenance.purge_success"
   | "admin.maintenance.purge_failed"
-  | "admin.maintenance.backups"
-  | "admin.maintenance.backup_id"
-  | "admin.maintenance.backup_size"
-  | "admin.maintenance.backup_created"
-  | "admin.maintenance.backup_status"
   | "admin.maintenance.experimental_features"
   | "admin.maintenance.no_features"
   | "admin.maintenance.feature_updated"

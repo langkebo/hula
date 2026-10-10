@@ -31,17 +31,6 @@
         </n-card>
       </n-gi>
 
-      <n-gi span="2 m:1">
-        <n-card :title="t('admin.maintenance.backups')" size="small">
-          <n-data-table
-            :columns="backupColumns"
-            :data="backups"
-            :pagination="{ pageSize: 10 }"
-            :bordered="false"
-            size="small" />
-        </n-card>
-      </n-gi>
-
       <n-gi span="2">
         <n-card size="small">
           <n-tabs v-model:value="featureTab" type="line" animated>
@@ -74,10 +63,8 @@
 
 <script setup lang="ts">
 import {
-  type DataTableColumns,
   NButton,
   NCard,
-  NDataTable,
   NDatePicker,
   NDescriptions,
   NDescriptionsItem,
@@ -91,10 +78,9 @@ import {
   NSpace,
   NSwitch,
   NTabPane,
-  NTabs,
-  NTag
+  NTabs
 } from 'naive-ui'
-import { computed, h, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import FeatureFlagManager from '@/components/admin/FeatureFlagManager.vue'
 import { useAdminMaintenance } from '@/composables/admin'
@@ -106,7 +92,6 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 const maintenance = useAdminMaintenance()
-const backups = maintenance.backups
 const mediaStats = maintenance.mediaStats
 const experimentalFeatures = maintenance.experimentalFeatures
 const loading = maintenance.loading
@@ -138,32 +123,6 @@ const featureEntries = computed<FeatureEntry[]>(() =>
     return { key, enabled: false, description: String(value ?? '') }
   })
 )
-
-const backupColumns: DataTableColumns<Record<string, unknown>> = [
-  { title: t('admin.maintenance.backup_id'), key: 'id', ellipsis: { tooltip: true } },
-  { title: t('admin.maintenance.backup_size'), key: 'size', width: 120 },
-  {
-    title: t('admin.maintenance.backup_created'),
-    key: 'created_at',
-    width: 180,
-    render: (row) => {
-      const ts = row.created_at as number | string | undefined
-      if (!ts) return '-'
-      const n = typeof ts === 'number' ? ts : Date.parse(String(ts))
-      return Number.isFinite(n) ? new Date(n).toLocaleString() : String(ts)
-    }
-  },
-  {
-    title: t('admin.maintenance.backup_status'),
-    key: 'status',
-    width: 120,
-    render: (row) => {
-      const status = String(row.status ?? 'unknown')
-      const type = status === 'completed' ? 'success' : status === 'failed' ? 'error' : 'default'
-      return h(NTag, { size: 'small', type }, () => status)
-    }
-  }
-]
 
 async function loadData() {
   try {

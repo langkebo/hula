@@ -82,14 +82,6 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   }
 
   /**
-   * 获取服务器备份列表。
-   * @returns 备份信息列表。
-   */
-  async getBackups(): Promise<Array<Record<string, unknown>>> {
-    return this.security.getBackups()
-  }
-
-  /**
    * 获取联邦服务器状态。
    * @param serverName 联邦服务器名。
    * @returns 服务器状态信息，不存在时返回 null。

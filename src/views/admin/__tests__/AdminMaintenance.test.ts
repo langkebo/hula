@@ -9,7 +9,6 @@ const { loadAllMock, purgeMediaCacheMock, setExperimentalFeatureMock, showFeedba
   setExperimentalFeatureMock: vi.fn(),
   showFeedbackMock: vi.fn(),
   state: {
-    backups: [] as Array<Record<string, unknown>>,
     mediaStats: null as Record<string, unknown> | null,
     experimentalFeatures: {} as Record<string, unknown>,
     loading: false,
@@ -20,7 +19,6 @@ const { loadAllMock, purgeMediaCacheMock, setExperimentalFeatureMock, showFeedba
 
 vi.mock('@/composables/admin', () => ({
   useAdminMaintenance: () => ({
-    backups: ref(state.backups),
     mediaStats: ref(state.mediaStats),
     experimentalFeatures: ref(state.experimentalFeatures),
     loading: ref(state.loading),
@@ -169,7 +167,6 @@ vi.mock('naive-ui', async () => {
 describe('AdminMaintenance', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    state.backups = [{ id: 'backup-1', size: '1.2GB', created_at: 1700000000000, status: 'completed' }]
     state.mediaStats = { cacheSize: '2.4GB', fileCount: 1200 }
     state.experimentalFeatures = {
       'labs.feature_a': true,
@@ -198,15 +195,6 @@ describe('AdminMaintenance', () => {
 
     expect(wrapper.text()).toContain('cacheSize')
     expect(wrapper.text()).toContain('2.4GB')
-  })
-
-  it('渲染备份列表到表格', async () => {
-    const wrapper = mountComponent()
-    await flushPromises()
-
-    const table = wrapper.findComponent({ name: 'NDataTable' })
-    expect(table.exists()).toBe(true)
-    expect(table.text()).toContain('backup-1')
   })
 
   it('切换到简单特性页签时渲染实验特性列表', async () => {

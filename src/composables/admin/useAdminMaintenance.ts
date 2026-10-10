@@ -31,7 +31,6 @@ export interface AdminFeatureFlagInput {
 }
 
 interface UseAdminMaintenanceResult {
-  backups: Ref<Array<Record<string, unknown>>>
   experimentalFeatures: Ref<Record<string, unknown>>
   featureFlags: Ref<AdminFeatureFlag[]>
   mediaStats: Ref<Record<string, unknown> | null>
@@ -41,7 +40,6 @@ interface UseAdminMaintenanceResult {
   featureSaving: Ref<boolean>
   featureDeleting: Ref<boolean>
 
-  loadBackups: () => Promise<void>
   loadExperimentalFeatures: () => Promise<void>
   loadFeatureFlags: () => Promise<void>
   loadMediaStats: () => Promise<void>
@@ -56,13 +54,12 @@ interface UseAdminMaintenanceResult {
 /**
  * Admin maintenance composable.
  *
- * Owns state + orchestration for the Phase E maintenance surface (backups,
- * media cache purge, experimental feature flags, media stats). Views are
+ * Owns state + orchestration for the Phase E maintenance surface
+ * (media cache purge, experimental feature flags, media stats). Views are
  * render-only and delegate mutation orchestration here so desktop and mobile
  * share the same behavior.
  */
 export function useAdminMaintenance(): UseAdminMaintenanceResult {
-  const backups = ref<Array<Record<string, unknown>>>([])
   const experimentalFeatures = ref<Record<string, unknown>>({})
   const featureFlags = ref<AdminFeatureFlag[]>([])
   const mediaStats = ref<Record<string, unknown> | null>(null)
@@ -71,10 +68,6 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
   const featureMutating = ref(false)
   const featureSaving = ref(false)
   const featureDeleting = ref(false)
-
-  async function loadBackups() {
-    backups.value = await adminService.getBackups()
-  }
 
   async function loadExperimentalFeatures() {
     const flags = (await adminService.listFeatureFlagsDetailed()) as AdminFeatureFlag[]
@@ -109,7 +102,7 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
   async function loadAll() {
     loading.value = true
     try {
-      await Promise.allSettled([loadBackups(), loadExperimentalFeatures(), loadMediaStats()])
+      await Promise.allSettled([loadExperimentalFeatures(), loadMediaStats()])
     } finally {
       loading.value = false
     }
@@ -162,7 +155,6 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
   }
 
   return {
-    backups,
     experimentalFeatures,
     featureFlags,
     mediaStats,
@@ -171,7 +163,6 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
     featureMutating,
     featureSaving,
     featureDeleting,
-    loadBackups,
     loadExperimentalFeatures,
     loadFeatureFlags,
     loadMediaStats,

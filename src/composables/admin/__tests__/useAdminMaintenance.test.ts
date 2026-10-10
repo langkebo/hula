@@ -3,7 +3,6 @@ import { useAdminMaintenance } from '../useAdminMaintenance'
 
 vi.mock('@/services/matrix/admin', () => ({
   adminService: {
-    getBackups: vi.fn().mockResolvedValue([]),
     listFeatureFlagsDetailed: vi.fn().mockResolvedValue([]),
     getMediaStats: vi.fn().mockResolvedValue(null),
     purgeMediaCache: vi.fn().mockResolvedValue({ deleted: 0 }),
@@ -34,8 +33,7 @@ describe('useAdminMaintenance', () => {
     vi.clearAllMocks()
   })
 
-  it('loadAll fans out to backups/features/stats in parallel', async () => {
-    vi.mocked(adminService.getBackups).mockResolvedValueOnce([{ id: 'b1' }])
+  it('loadAll fans out to features/stats in parallel', async () => {
     vi.mocked(adminService.listFeatureFlagsDetailed).mockResolvedValueOnce([
       {
         flagKey: 'foo',
@@ -57,13 +55,11 @@ describe('useAdminMaintenance', () => {
     const c = useAdminMaintenance()
     await c.loadAll()
 
-    expect(c.backups.value).toHaveLength(1)
     expect(c.featureFlags.value).toHaveLength(1)
     expect(c.experimentalFeatures.value.foo).toEqual(
       expect.objectContaining({ enabled: true, status: 'enabled', targetScope: 'global' })
     )
     expect(c.mediaStats.value).toEqual({ total: 10 })
-    expect(adminService.getBackups).toHaveBeenCalledTimes(1)
     expect(adminService.listFeatureFlagsDetailed).toHaveBeenCalledTimes(1)
     expect(adminService.getMediaStats).toHaveBeenCalledTimes(1)
   })
