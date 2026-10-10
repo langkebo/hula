@@ -59,29 +59,29 @@ describe('getSamlRedirect', () => {
     await expect(getSamlRedirect()).rejects.toThrow('matrix_error.common.client_not_initialized')
   })
 
-  it('returns the redirect_url from the homeserver', async () => {
-    mockAuthedRequestWithPath.mockResolvedValue({ redirect_url: 'https://saml.example/start' })
+  it('delegates to SamlAuthManager.getLoginRedirectUrl, without the raw /login/saml/redirect call', async () => {
+    mockSamlManager.getLoginRedirectUrl.mockReturnValue('https://hs.example/_matrix/client/v3/login/sso/redirect/saml')
     const result = await getSamlRedirect()
-    expect(result).toBe('https://saml.example/start')
-    expect(mockAuthedRequestWithPath).toHaveBeenCalledWith(dummyClient, 'GET', '/login/saml/redirect', undefined)
+    expect(result).toBe('https://hs.example/_matrix/client/v3/login/sso/redirect/saml')
+    // 无 redirectUrl 时传空串 ⇒ SDK 不拼 `?...` 查询串（与旧行为等价）
+    expect(mockSamlManager.getLoginRedirectUrl).toHaveBeenCalledWith('')
+    // 旧实现裸调 `GET /login/saml/redirect`（后端不存在 ⇒ 404，见方案文档 §9.11.4）；
+    // 收口后不得再出现任何裸调
+    expect(mockAuthedRequestWithPath).not.toHaveBeenCalled()
   })
 
-  it('passes idp_id and redirectUrl as query params when provided', async () => {
-    mockAuthedRequestWithPath.mockResolvedValue({ redirect_url: 'https://saml.example/start' })
-    await getSamlRedirect('idp-1', 'https://cb.example')
-    expect(mockAuthedRequestWithPath).toHaveBeenCalledWith(dummyClient, 'GET', '/login/saml/redirect', {
-      idp_id: 'idp-1',
-      redirectUrl: 'https://cb.example'
+  it('passes redirectUrl through as the single argument', async () => {
+    mockSamlManager.getLoginRedirectUrl.mockReturnValue(
+      'https://hs.example/_matrix/client/v3/login/sso/redirect/saml?x=1'
+    )
+    await getSamlRedirect('https://cb.example')
+    expect(mockSamlManager.getLoginRedirectUrl).toHaveBeenCalledWith('https://cb.example')
+  })
+
+  it('normalizes the error when the redirect URL cannot be built', async () => {
+    mockSamlManager.getLoginRedirectUrl.mockImplementation(() => {
+      throw new Error('boom')
     })
-  })
-
-  it('returns empty string when redirect_url is absent', async () => {
-    mockAuthedRequestWithPath.mockResolvedValue({})
-    await expect(getSamlRedirect()).resolves.toBe('')
-  })
-
-  it('normalizes the error when the request fails', async () => {
-    mockAuthedRequestWithPath.mockRejectedValue(new Error('boom'))
     await expect(getSamlRedirect()).rejects.toThrow('获取 SAML 重定向失败')
     expect(mockNormalizeSdkMatrixError).toHaveBeenCalled()
   })

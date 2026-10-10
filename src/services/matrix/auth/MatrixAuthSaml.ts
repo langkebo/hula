@@ -1,32 +1,32 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixClientService } from '../MatrixClientService'
-import { authedRequestWithPath } from '../MatrixHttpClient'
 import { PREFIX_V3 } from '../paths'
 import { normalizeSdkMatrixError } from './authErrors'
 import { type MatrixLoginResult, postMatrixJson } from './authHelpers'
 
 /** 获取 SAML 登录重定向地址
  *
- * NOTE: SDK getSamlAuthManager().getLoginRedirectUrl() 不支持 idpId 参数，
- * 暂保留 authedRequestWithPath 以传递 idp_id 查询参数。
+ * P2-2 收口（2026-10-10）：改走 `client.getSamlAuthManager().getLoginRedirectUrl()`。
+ *
+ * 旧实现自带 `GET /login/saml/redirect` 裸调 —— 该路径**后端根本不存在**
+ * （`synapse-web/src/routes/saml.rs` 与镜像 route-manifest **双双零命中**，
+ * 后端实际注册的是 `GET /_matrix/client/v3/login/sso/redirect/saml`）⇒ 恒 404；
+ * 且它顺带下发的 `idp_id` 后端也不认（`SamlLoginQuery` 带 `deny_unknown_fields`，
+ * 只声明 `redirectUrl`/`redirect_url`）。
+ *
+ * `idpId` 形参一并删除：本后端的 IdP 选择靠**字面量路径段**（`/saml`、`/cas`）
+ * 而非查询参数，路由表中不存在 `{idp_id}` 形态 ⇒ 该参数无落点，留着即撒谎。
+ * `getLoginRedirectUrl` 是纯 URL 拼接（无网络请求），返回的地址供浏览器跳转，
+ * 与后端 `saml_login_redirect` 的 302 语义一致（浏览器访问 homeserver → 302 → IdP）。
  */
-export async function getSamlRedirect(idpId?: string, redirectUrl?: string): Promise<string> {
+export async function getSamlRedirect(redirectUrl?: string): Promise<string> {
   const client = matrixClientService.getClient()
   if (!client) {
     throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
   }
 
   try {
-    const queryParams: Record<string, string> = {}
-    if (idpId) queryParams.idp_id = idpId
-    if (redirectUrl) queryParams.redirectUrl = redirectUrl
-    const result = await authedRequestWithPath<{ redirect_url?: string }>(
-      client,
-      'GET',
-      '/login/saml/redirect',
-      Object.keys(queryParams).length > 0 ? queryParams : undefined
-    )
-    return result.redirect_url ?? ''
+    return client.getSamlAuthManager().getLoginRedirectUrl(redirectUrl ?? '')
   } catch (err) {
     throw normalizeSdkMatrixError(err, '获取 SAML 重定向失败')
   }
