@@ -219,11 +219,31 @@ function main() {
         die(1, `cannot resolve git HEAD in ${sdkDirEnv}; refusing to pass the sdk_commit freshness binding.`)
       }
       if (pin.sdk_commit && !sdkHead.startsWith(pin.sdk_commit)) {
-        die(
-          1,
-          `sdk_commit is behind the SDK worktree HEAD (the tarball is stale):\n  pin=${pin.sdk_commit}\n  SDK HEAD=${sdkHead}\n` +
-            `Rebuild + repack: TJG_SDK_DIR=<sdk worktree> node scripts/pack-sdk-tarball.mjs --allow-commit-drift --apply, then pnpm add ./vendor/matrix-js-sdk.tgz --ignore-scripts and re-verify.`,
-        )
+        // 只有**进 tarball 的路径**变了才算「tarball 陈旧」。tarball 实际只含
+        // `package/{src,lib,package.json,LICENSE,README.md,CHANGELOG.md}`（`lib` 由 `src` 编译），
+        // 因此纯 `spec/**`、`docs/**`、`scripts/**` 提交不该逼人重打包（否则测试/文档提交
+        // 会让 pin 每次都变红 —— 2026-10-10 实测：N-02 的 test-only 提交即触发）。
+        let shippedChanges = ''
+        try {
+          shippedChanges = execSync(`git diff --name-only ${pin.sdk_commit}..${sdkHead} -- src package.json`, {
+            cwd: path.resolve(sdkDirEnv),
+          })
+            .toString()
+            .trim()
+        } catch {
+          die(1, `cannot diff ${pin.sdk_commit}..${sdkHead} in ${sdkDirEnv}; refusing to pass on a missing input.`)
+        }
+        if (shippedChanges) {
+          die(
+            1,
+            `sdk_commit is behind the SDK worktree HEAD and the **shipped surface** changed (the tarball is stale):\n  pin=${pin.sdk_commit}\n  SDK HEAD=${sdkHead}\n  changed:\n` +
+              shippedChanges
+                .split('\n')
+                .map((l) => `    ${l}`)
+                .join('\n') +
+              `\nRebuild + repack: TJG_SDK_DIR=<sdk worktree> node scripts/pack-sdk-tarball.mjs --allow-commit-drift --apply, then pnpm add ./vendor/matrix-js-sdk.tgz --ignore-scripts and re-verify.`,
+          )
+        }
       }
     }
   }
