@@ -15,6 +15,14 @@
 - **禁用旧版 pnpm 对高版本 lockfile 跑 `--force`**：先删后链，失败留残骸（`typescript`/`.bin/vue-tsc` 消失 → npx 抓错版本）
 - 后果：CI `--frozen-lockfile` 报 `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`（pnpm12 抹掉 lockfile 顶层 `overrides:` 块，pnpm10 仍读 package.json）→ 建议 `packageManager` 钉版本
 
+## 本地 SDK 重新集成（`vendor/matrix-js-sdk.tgz`）
+- 判据只看 **`sdk_lib_fingerprint`**：同版本号不同内容时，`tarball_sha256` + version 字符串都拦不住（`scripts/sdk-lib-fingerprint.mjs` 文档 §N-05）
+- 采集本地 SDK 事实：`git -C ../matrix-js-sdk log -1`、`pnpm --version`（SDK 目录=10.29.3，Tjg 目录=12.4.1，corepack 按各自 `packageManager` 切换）
+- **打包必须加 `npm_config_ignore_scripts=true`**：`pnpm pack` 会触发 SDK 的 `prepare` = `husky && pnpm build` → `rimraf lib` 被 WorkBuddy 安全删除 shim 拒（`SAFE_DELETE_BULK_CONFIRM_REQUIRED`，2496 文件 > 阈值 50）。lib 已新鲜时跳过正合适。命令：`npm_config_ignore_scripts=true node scripts/pack-sdk-tarball.mjs --apply --allow-commit-drift`（pin 陈旧时需 `--allow-commit-drift`）
+- **⚠️ pnpm 对 `file:` tarball 有静默捷径**：lockfile 已有 resolution 时，换掉 `.tgz` 后 `pnpm install` **不重读本地文件、不更新 integrity**，静默装回旧内容（本次实测：install 报 `+ matrix-js-sdk` 成功，但指纹仍是旧的）。修法：定点改写 lockfile 里该条 `resolution.integrity`（新值 = `sha512-` + tarball 的 sha512 base64；`grep -c` 确认恰好 1 处）→ 删 `node_modules/.pnpm/@langkebo+matrix-js-sdk@*` 与软链 → `pnpm install`（会耗时数十秒，短于 3s 即说明没真解包）
+- 收尾门禁：`TJG_SDK_DIR=<abs sdk path> pnpm verify:sdk-pin`（不带该变量会有 2 段 SKIP，不算 pass）+ `pnpm check:sdk-types` + `pnpm typecheck`
+- 提交：`meta/sdk-pin.json` + `pnpm-lock.yaml` + `vendor/matrix-js-sdk.tgz` **三者必须一起提交**
+
 ## 项目约定
 - commitlint scope: core/ui/chat/mobile/plugin/hook/service/util/i18n/config/ci/test/tauri；**管理后台用 `ui`**。token 前缀 `--tjg-*`
 - i18n：文件名即命名空间，**首段要剥掉**；占位符 **`{name}`**（`{{name}}` 会渲染成 `{值}`）
