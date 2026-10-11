@@ -6,17 +6,18 @@
  * `this.request()` → `getRuntimeAwareFetch()` → `globalThis.fetch`, so we
  * DO NOT mock getRuntimeAwareFetch. MSW intercepts the real fetch call.
  *
- * 前缀口径（2026-10-11 修正，见 `scripts/bare-matrix-paths-baseline.json` L-D03~L-D08）：
- * - sticky events → `/_matrix/client/unstable/org.matrix.msc4354`（后端唯一注册形态）；
- * - room summary（含 members/state/stats）→ `/_matrix/vendor/v1`（后端只在 vendor/v1 与 client/v1 注册，
- *   **没有 v3**；守卫测试 `synapse-web/src/routes/route_module.rs:374` 断言 v3 计数为 0）；
- * - room ephemeral 仍走 `/_matrix/client/v3`（该路由确实注册在 v3）。
+ * 前缀口径（2026-10-11，见 `scripts/bare-matrix-paths-baseline.json` 的 history）：
+ * - sticky events → `/_matrix/client/unstable/org.matrix.msc4354`（后端唯一注册形态，L-D03/L-D04）；
+ * - room ephemeral 仍走 `/_matrix/client/v3`（该路由确实注册在 v3）；
+ * - room summary（含 members/state/stats）**已不在本文件覆盖**：该能力已收敛到 SDK
+ *   `RoomSummaryManager`，其路径正确性由 SDK 侧 path-contract / wire-format 门禁保证
+ *   （历史 404 见 L-D05~L-D08：曾误用 client/v3，后端无该形态）。
  * Contract value: verify URL correctness (path, encoded roomId, query string),
  * HTTP method, request body shape, and response unwrapping
  * (`{data: ...}` wrapper vs bare payload).
  *
  * Covers: invite blocklist/allowlist,
- * sticky events, room summary (members/state/stats), ephemeral.
+ * sticky events, ephemeral.
  * Burn-after-read endpoints are covered by MatrixBurnAfterReadService tests.
  * Captcha endpoints are covered by SDK CaptchaManager (matrix-js-sdk/lib/captcha),
  * not exposed via package.json exports — frontend has no production callers.
@@ -69,29 +70,6 @@ const server = setupMswServer(
       return HttpResponse.json({ status: 'ok' })
     }
   ),
-  http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({
-      data: {
-        room_id: '!room:hs',
-        name: 'Test Room',
-        heroes: [],
-        stats: { room_id: '!room:hs', total_events: 100, total_messages: 50, total_media: 10, storage_size: 1024 }
-      }
-    })
-  }),
-  http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary/members`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json([{ user_id: '@u:hs', membership: 'join', is_hero: false }])
-  }),
-  http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary/state`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json([{ event_type: 'm.room.name', state_key: '', event_id: '$e:hs', content: { name: 'R' } }])
-  }),
-  http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary/stats`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ room_id: '!room:hs', total_messages: 5 })
-  }),
   http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/ephemeral`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ data: { chunk: [{ type: 'm.typing', content: {} }] } })
@@ -151,72 +129,6 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
       expect(deleteCall!.url).toBe(
         `${HOMESERVER}/_matrix/client/unstable/org.matrix.msc4354/rooms/!room%3Ahs/sticky_events/m.room.name`
       )
-    })
-  })
-
-  describe('room summary', () => {
-    it('getRoomSummary hits GET /_matrix/vendor/v1/rooms/{roomId}/summary and unwraps {data}', async () => {
-      const result = await synapseRoomSummaryService.getRoomSummary('!room:hs')
-      const calls = filterBy('/summary')
-      const getCall = calls.find((c) => c.method === 'GET' && !c.url.includes('/summary/'))
-      expect(getCall).toBeDefined()
-      expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/vendor/v1/rooms/!room%3Ahs/summary`)
-      expect(result?.room_id).toBe('!room:hs')
-      expect(result?.name).toBe('Test Room')
-    })
-
-    it('getRoomSummary accepts bare payload (no {data} wrapper)', async () => {
-      server.use(
-        http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary`, ({ request }) => {
-          seenUrls.push({ method: request.method, url: request.url })
-          return HttpResponse.json({
-            room_id: '!bare:hs',
-            name: 'Bare',
-            heroes: [],
-            stats: { room_id: '!bare:hs', total_events: 1, total_messages: 1, total_media: 0, storage_size: 10 }
-          })
-        })
-      )
-      const result = await synapseRoomSummaryService.getRoomSummary('!bare:hs')
-      expect(result?.room_id).toBe('!bare:hs')
-      expect(result?.name).toBe('Bare')
-    })
-
-    it('getRoomSummary returns null on 404 when throwOnError=false', async () => {
-      server.use(
-        http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary`, ({ request }) => {
-          seenUrls.push({ method: request.method, url: request.url })
-          return new HttpResponse(null, { status: 404 })
-        })
-      )
-      const result = await synapseRoomSummaryService.getRoomSummary('!missing:hs', false)
-      expect(result).toBeNull()
-    })
-
-    it('getRoomSummaryMembers hits GET /_matrix/vendor/v1/rooms/{roomId}/summary/members (bare array)', async () => {
-      const result = await synapseRoomSummaryService.getRoomSummaryMembers('!room:hs')
-      const calls = filterBy('/summary/members')
-      expect(calls).toHaveLength(1)
-      expect(calls[0].method).toBe('GET')
-      expect(result).toHaveLength(1)
-      expect(result[0].user_id).toBe('@u:hs')
-    })
-
-    it('getRoomSummaryState hits GET /_matrix/vendor/v1/rooms/{roomId}/summary/state (bare array)', async () => {
-      const result = await synapseRoomSummaryService.getRoomSummaryState('!room:hs')
-      const calls = filterBy('/summary/state')
-      expect(calls).toHaveLength(1)
-      expect(calls[0].method).toBe('GET')
-      expect(result).toHaveLength(1)
-      expect(result[0].event_type).toBe('m.room.name')
-    })
-
-    it('getRoomSummaryStats hits GET /_matrix/vendor/v1/rooms/{roomId}/summary/stats (bare object)', async () => {
-      const result = await synapseRoomSummaryService.getRoomSummaryStats('!room:hs')
-      const calls = filterBy('/summary/stats')
-      expect(calls).toHaveLength(1)
-      expect(calls[0].method).toBe('GET')
-      expect(result?.total_messages).toBe(5)
     })
   })
 

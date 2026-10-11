@@ -1,10 +1,22 @@
 import { createLogger } from '@/utils/Logger'
 import endpointCapabilityService from '../EndpointCapabilityService'
-import { PREFIX_V3, PREFIX_VENDOR_V1 } from '../paths/prefixes'
+import { PREFIX_V3 } from '../paths/prefixes'
 import { SynapseExtensionHttpBase } from './SynapseExtensionHttpBase'
 
 const logger = createLogger('SynapseRoomSummaryService')
 
+/**
+ * 房间摘要英雄成员（与 SDK `RoomSummaryManager` 返回的 `RoomSummaryHero` 同形）。
+ */
+export interface RoomSummaryHero {
+  user_id: string
+  display_name?: string
+  avatar_url?: string
+}
+
+/**
+ * 房间摘要（形状对齐 SDK `RoomSummaryManager.getRoomSummary()` 的返回值）。
+ */
 export interface RoomSummary {
   room_id: string
   room_type?: string
@@ -23,63 +35,39 @@ export interface RoomSummary {
   invited_member_count?: number
   last_event_ts?: number
   last_message_ts?: number
-  heroes: RoomSummaryMember[]
-  stats: RoomSummaryStats
-}
-
-export interface RoomSummaryMember {
-  user_id: string
-  display_name?: string
-  avatar_url?: string
-  membership: string
-  is_hero: boolean
-}
-
-export interface RoomSummaryStats {
-  room_id: string
-  total_events: number
-  total_state_events?: number
-  total_messages: number
-  total_media: number
-  storage_size: number
-}
-
-export interface RoomSummaryState {
-  event_type: string
-  state_key: string
-  event_id: string
-  content: Record<string, unknown>
+  heroes: RoomSummaryHero[]
 }
 
 export type RoomEphemeralEvent = Record<string, unknown>
 
 /**
- * synapse-rust 房间摘要/临时事件扩展。
- * 从 SynapseRustExtensionsService 拆分而来。
+ * synapse-rust 房间摘要 / 临时事件扩展。
  *
- * ⚠️ 前缀口径（2026-10-11 修正 404，见 `scripts/bare-matrix-paths-baseline.json` L-D05~L-D08）：
- * 私有 room summary 端点在后端**只注册在 `/_matrix/vendor/v1` 与 `/_matrix/client/v1`**，
- * **没有 v3**（后端守卫测试 `synapse-web/src/routes/route_module.rs:374` 显式断言
- * `client/v3/rooms/{room_id}/summary` 计数为 0）。此前这里用 `PREFIX_V3` ⇒ 四个方法恒 404。
- * 现统一走 `PREFIX_VENDOR_V1`（与 SDK `RoomSummaryManager` 的 `requestVendor` 一致）。
- * 后续如需彻底去重，可迁移到 `client.getRoomSummaryManager()`（AccountDataService 已是该范式）。
+ * ⚠️ **房间摘要已收敛到 SDK 的 `RoomSummaryManager`**（`client.getRoomSummaryManager()`）：
+ * summary / members / state / stats 四条路径由 SDK 侧门禁（path-contract、wire-format）
+ * 保证与后端契约一致，本服务**不再**自行拼接这些路径。历史 404 证据见
+ * `scripts/bare-matrix-paths-baseline.json` 的 `history`（L-D05~L-D08：曾误用 client/v3，
+ * 后端只在 vendor/v1 与 client/v1 注册，无 v3）。
+ *
+ * 本服务只保留 SDK 尚未封装的 synapse-rust 扩展端点（room ephemeral）。
  */
 class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
-  /** 获取房间摘要
+  /**
+   * 获取房间摘要（委托 SDK `RoomSummaryManager`）。
+   *
+   * `forceRefresh=true`：保持本服务原有的「每次直连拉取、不读缓存」语义
+   * （SDK manager 默认会走自己的 summaryCache）。
    */
   async getRoomSummary(roomId: string, throwOnError = true): Promise<RoomSummary | null> {
     try {
-      const path = `${PREFIX_VENDOR_V1}/rooms/${encodeURIComponent(roomId)}/summary`
-      const available = await endpointCapabilityService.check('GET', path)
-      if (!available) {
-        logger.warn('[SynapseRust] 房间摘要端点不可用')
+      const summary = await this.getClient()
+        .getRoomSummaryManager()
+        .getRoomSummary(roomId, undefined, true, throwOnError)
+      if (!summary) {
         return null
       }
-
-      const response = await this.request<RoomSummary | { data?: RoomSummary }>(path, { method: 'GET' })
-      const data = this.unwrapMaybeWrappedData(response)
       logger.info(`[SynapseRust] 获取房间摘要成功: roomId=${roomId}`)
-      return data || null
+      return summary
     } catch (err) {
       logger.error(`[SynapseRust] 获取房间摘要失败: ${err}`)
       if (throwOnError) {
@@ -89,78 +77,7 @@ class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
     }
   }
 
-  /** 获取房间摘要成员列表
-   */
-  async getRoomSummaryMembers(roomId: string, throwOnError = true): Promise<RoomSummaryMember[]> {
-    try {
-      const response = await this.request<RoomSummaryMember[] | { data?: RoomSummaryMember[] }>(
-        `${PREFIX_VENDOR_V1}/rooms/${encodeURIComponent(roomId)}/summary/members`,
-        { method: 'GET' }
-      )
-      const data = this.unwrapMaybeWrappedData(response)
-      const members = data || []
-      logger.info(`[SynapseRust] 获取房间摘要成员成功: roomId=${roomId}, count=${members.length}`)
-      return members
-    } catch (err) {
-      logger.error(`[SynapseRust] 获取房间摘要成员失败: ${err}`)
-      if (throwOnError) {
-        throw err
-      }
-      return []
-    }
-  }
-
-  /** 获取房间摘要英雄成员
-   */
-  async getRoomSummaryHeroes(roomId: string, throwOnError = true): Promise<RoomSummaryMember[]> {
-    const members = await this.getRoomSummaryMembers(roomId, throwOnError)
-    const heroes = members.filter((member) => member.is_hero)
-    logger.info(`[SynapseRust] 获取房间英雄成员成功: roomId=${roomId}, count=${heroes.length}`)
-    return heroes
-  }
-
-  /** 获取房间摘要状态事件
-   */
-  async getRoomSummaryState(roomId: string, throwOnError = true): Promise<RoomSummaryState[]> {
-    try {
-      const response = await this.request<RoomSummaryState[] | { data?: RoomSummaryState[] }>(
-        `${PREFIX_VENDOR_V1}/rooms/${encodeURIComponent(roomId)}/summary/state`,
-        { method: 'GET' }
-      )
-      const data = this.unwrapMaybeWrappedData(response)
-      const state = data || []
-      logger.info(`[SynapseRust] 获取房间摘要状态成功: roomId=${roomId}, count=${state.length}`)
-      return state
-    } catch (err) {
-      logger.error(`[SynapseRust] 获取房间摘要状态失败: ${err}`)
-      if (throwOnError) {
-        throw err
-      }
-      return []
-    }
-  }
-
-  /** 获取房间摘要统计数据
-   */
-  async getRoomSummaryStats(roomId: string, throwOnError = true): Promise<RoomSummaryStats | null> {
-    try {
-      const response = await this.request<RoomSummaryStats | { data?: RoomSummaryStats }>(
-        `${PREFIX_VENDOR_V1}/rooms/${encodeURIComponent(roomId)}/summary/stats`,
-        { method: 'GET' }
-      )
-      const data = this.unwrapMaybeWrappedData(response)
-      logger.info(`[SynapseRust] 获取房间摘要统计成功: roomId=${roomId}`)
-      return data || null
-    } catch (err) {
-      logger.error(`[SynapseRust] 获取房间摘要统计失败: ${err}`)
-      if (throwOnError) {
-        throw err
-      }
-      return null
-    }
-  }
-
-  /** 获取房间临时事件
+  /** 获取房间临时事件（SDK 未封装的 synapse-rust 扩展端点）。
    */
   async getRoomEphemeral(roomId: string, types?: string[]): Promise<RoomEphemeralEvent[]> {
     try {

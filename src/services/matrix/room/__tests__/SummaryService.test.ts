@@ -109,20 +109,11 @@ describe('MatrixRoomSummaryAggregateService', () => {
         joined_member_count: 5,
         heroes: [
           {
-            user_id: '@a:e',
-            membership: 'join',
-            is_hero: true
+            user_id: '@a:e'
           }
         ],
         canonical_alias: '#s:e',
-        join_rule: 'public',
-        stats: {
-          room_id: '!r:e',
-          total_events: 0,
-          total_messages: 0,
-          total_media: 0,
-          storage_size: 0
-        }
+        join_rule: 'public'
       }
       const s = service.toServerRoomSummary(summary, room)
       expect(s.roomId).toBe('!r:e')
@@ -140,18 +131,8 @@ describe('MatrixRoomSummaryAggregateService', () => {
         name: undefined,
         topic: undefined,
         avatar_url: undefined,
-        heroes: [
-          { user_id: '@a:e', membership: 'join', is_hero: true },
-          { user_id: '@b:e', membership: 'join', is_hero: true }
-        ],
-        canonical_alias: undefined,
-        stats: {
-          room_id: '!r',
-          total_events: 0,
-          total_messages: 0,
-          total_media: 0,
-          storage_size: 0
-        }
+        heroes: [{ user_id: '@a:e' }, { user_id: '@b:e' }],
+        canonical_alias: undefined
       }
       const s = service.toServerRoomSummary(summary, null)
       expect(s.memberCount).toBe(2)
@@ -167,14 +148,7 @@ describe('MatrixRoomSummaryAggregateService', () => {
         topic: undefined,
         avatar_url: undefined,
         heroes: [],
-        canonical_alias: undefined,
-        stats: {
-          room_id: '!r',
-          total_events: 0,
-          total_messages: 0,
-          total_media: 0,
-          storage_size: 0
-        }
+        canonical_alias: undefined
       }
       expect(service.toServerRoomSummary(summary, room).joinRule).toBe('knock')
     })
