@@ -710,29 +710,45 @@ describe('RoomOperations', () => {
   })
 
   describe('setMemberPowerLevel', () => {
-    it('forwards to client.setUserPowerLevel', async () => {
-      const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as never)
-      await ops.setMemberPowerLevel('!r', '@u:e', 50)
-      expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 50)
+    // 回归防护：SDK 真实签名为 setPowerLevel(roomId, userId, powerLevel)。
+    // 历史缺陷曾调用不存在的 `setUserPowerLevel` 且把 (roomId, userId) 写反（RoomOperations.ts:497）。
+    // 下面的断言同时锁住「方法名」与「实参顺序」——任一处回退都会红。
+    it('forwards to client.setPowerLevel with (roomId, userId, powerLevel)', async () => {
+      const setPowerLevel = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setPowerLevel } as never)
+      await ops.setMemberPowerLevel('!r:e', '@u:e', 50)
+      expect(setPowerLevel).toHaveBeenCalledWith('!r:e', '@u:e', 50)
+    })
+
+    it('把 roomId 放在第一参、userId 放在第二参（反序即失败）', async () => {
+      const captured: unknown[][] = []
+      const setPowerLevel = vi.fn((...args: unknown[]) => {
+        captured.push(args)
+        return Promise.resolve(undefined)
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setPowerLevel } as never)
+      await ops.setMemberPowerLevel('!room:e', '@user:e', 50)
+      const [first, second] = captured[0] ?? []
+      expect(String(first).startsWith('!')).toBe(true)
+      expect(String(second).startsWith('@')).toBe(true)
     })
   })
 
   describe('setMemberAsAdmin', () => {
     it('sets power level to 100', async () => {
-      const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as never)
-      await ops.setMemberAsAdmin('!r', '@u:e')
-      expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 100)
+      const setPowerLevel = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setPowerLevel } as never)
+      await ops.setMemberAsAdmin('!r:e', '@u:e')
+      expect(setPowerLevel).toHaveBeenCalledWith('!r:e', '@u:e', 100)
     })
   })
 
   describe('removeMemberAsAdmin', () => {
     it('sets power level to 0', async () => {
-      const setUserPowerLevel = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ setUserPowerLevel } as never)
-      await ops.removeMemberAsAdmin('!r', '@u:e')
-      expect(setUserPowerLevel).toHaveBeenCalledWith('@u:e', '!r', 0)
+      const setPowerLevel = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ setPowerLevel } as never)
+      await ops.removeMemberAsAdmin('!r:e', '@u:e')
+      expect(setPowerLevel).toHaveBeenCalledWith('!r:e', '@u:e', 0)
     })
   })
 

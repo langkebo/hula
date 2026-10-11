@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-05T09:26:06.533Z",
+  "generated_at": "2026-10-11T08:16:43.164Z",
   "approved_boundary": [
     "src/services/matrix/network/",
     "src/services/matrix/sdk.ts",
@@ -12,644 +12,519 @@
   ],
   "summary": {
     "authedRequest": {
-      "total": 4,
-      "violations": 0
+      "total": 1,
+      "violations": 1
     },
     "rawFetch": {
-      "total": 1,
-      "violations": 0
+      "total": 10,
+      "violations": 9
     },
     "tauriInvoke": {
-      "total": 2,
+      "total": 7,
       "violations": 0
     },
     "inlineMatrixUri": {
-      "total": 116,
-      "violations": 19
+      "total": 80,
+      "violations": 77
     }
   },
   "findings": {
     "authedRequest": [
       {
-        "file": "src/services/matrix/MatrixRequestHelper.ts",
-        "line": 25,
-        "approved": true
-      },
-      {
-        "file": "src/services/matrix/MatrixRequestHelper.ts",
-        "line": 43,
-        "approved": true
-      },
-      {
-        "file": "src/services/matrix/MatrixRequestHelper.ts",
-        "line": 62,
-        "approved": true
-      },
-      {
-        "file": "src/services/matrix/MatrixRequestHelper.ts",
-        "line": 81,
-        "approved": true
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 102,
+        "approved": false
       }
     ],
     "rawFetch": [
       {
+        "file": "src/App.vue",
+        "line": 361,
+        "approved": false
+      },
+      {
+        "file": "src/composables/user/useAvatarUpload.ts",
+        "line": 126,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 273,
+        "approved": false
+      },
+      {
         "file": "src/services/matrix/network/runtimeFetch.ts",
-        "line": 564,
+        "line": 237,
         "approved": true
+      },
+      {
+        "file": "src/strategy/strategies/video.ts",
+        "line": 144,
+        "approved": false
+      },
+      {
+        "file": "src/workers/workerProbeHandlers.ts",
+        "line": 33,
+        "approved": false
+      },
+      {
+        "file": "src/workers/workerProbeHandlers.ts",
+        "line": 63,
+        "approved": false
+      },
+      {
+        "file": "src/workers/workerProbeHandlers.ts",
+        "line": 100,
+        "approved": false
+      },
+      {
+        "file": "src/workers/workerProbeHandlers.ts",
+        "line": 137,
+        "approved": false
+      },
+      {
+        "file": "src/workers/workerProbeHandlers.ts",
+        "line": 159,
+        "approved": false
       }
     ],
     "tauriInvoke": [
       {
-        "file": "src/services/matrix/ai/AIService.ts",
-        "line": 251,
+        "file": "src/composables/chat/useScreenshotDetection.ts",
+        "line": 32,
+        "approved": false
+      },
+      {
+        "file": "src/composables/chat/useScreenshotDetection.ts",
+        "line": 55,
         "approved": false
       },
       {
         "file": "src/services/matrix/ai/AIService.ts",
-        "line": 331,
+        "line": 243,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/ai/AIService.ts",
+        "line": 332,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/matrixClientPlatform.ts",
+        "line": 7,
+        "approved": false
+      },
+      {
+        "file": "src/services/secure/secureStorage.ts",
+        "line": 63,
+        "approved": false
+      },
+      {
+        "file": "src/services/secure/secureStorage.ts",
+        "line": 77,
         "approved": false
       }
     ],
     "inlineMatrixUri": [
       {
-        "file": "src/services/api/domains/application-service-routes.ts",
-        "line": 7,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/application-service-routes.ts",
-        "line": 8,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 107,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 118,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 129,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 140,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 149,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 150,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 158,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 160,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 173,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 184,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/auth.ts",
-        "line": 195,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/client.ts",
-        "line": 23,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/client.ts",
-        "line": 32,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/client.ts",
-        "line": 41,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/config.ts",
-        "line": 18,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/encryption-routes.ts",
-        "line": 7,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/encryption-routes.ts",
-        "line": 8,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/encryption-routes.ts",
-        "line": 9,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/encryption-routes.ts",
-        "line": 10,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/encryption-routes.ts",
-        "line": 11,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/encryption-routes.ts",
-        "line": 12,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 2,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 3,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 10,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 11,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 12,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 13,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 15,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 17,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 19,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 20,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 21,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 22,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 23,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 24,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 25,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 27,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 29,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 30,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 31,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 32,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 34,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/key-backup-routes.ts",
-        "line": 36,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/media-routes.ts",
-        "line": 6,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/media-routes.ts",
-        "line": 10,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/oidc-routes.ts",
-        "line": 4,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/oidc-routes.ts",
-        "line": 7,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/oidc-routes.ts",
-        "line": 8,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/oidc-routes.ts",
-        "line": 13,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/server-notification-routes.ts",
-        "line": 7,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/server-notification-routes.ts",
-        "line": 8,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/server-notification-routes.ts",
-        "line": 9,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/server-notification-routes.ts",
-        "line": 10,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/server-notification-routes.ts",
-        "line": 11,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/server-notification-routes.ts",
-        "line": 12,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 5,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 9,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 10,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 11,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 12,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 13,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 14,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 15,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 16,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 17,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 18,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 19,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 20,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 21,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 22,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 23,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 24,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 25,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 27,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 28,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 29,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 30,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 31,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 34,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 36,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 37,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/synapse.ts",
-        "line": 39,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/upload-routes.ts",
-        "line": 4,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/upload-routes.ts",
-        "line": 7,
-        "approved": true
-      },
-      {
-        "file": "src/services/api/domains/upload-routes.ts",
-        "line": 8,
-        "approved": true
-      },
-      {
-        "file": "src/services/matrix/MatrixClientService.ts",
-        "line": 194,
-        "approved": true
-      },
-      {
-        "file": "src/services/matrix/MatrixRequestHelper.ts",
-        "line": 96,
-        "approved": true
-      },
-      {
-        "file": "src/services/matrix/MatrixRequestHelper.ts",
-        "line": 100,
-        "approved": true
-      },
-      {
-        "file": "src/services/matrix/crypto/MatrixDehydratedDeviceService.ts",
-        "line": 38,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/crypto/MatrixDehydratedDeviceService.ts",
-        "line": 48,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/crypto/MatrixDehydratedDeviceService.ts",
-        "line": 81,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/crypto/MatrixDehydratedDeviceService.ts",
-        "line": 111,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/crypto/MatrixDehydratedDeviceService.ts",
-        "line": 142,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/crypto/MatrixDehydratedDeviceService.ts",
-        "line": 162,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/crypto/MatrixDehydratedDeviceService.ts",
-        "line": 173,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/crypto/MatrixDehydratedDeviceService.ts",
-        "line": 184,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 214,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 215,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 234,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 253,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 268,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
+        "file": "src/services/matrix/MatrixCapabilityService.ts",
         "line": 286,
         "approved": false
       },
       {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 308,
+        "file": "src/services/matrix/MatrixClientAuth.ts",
+        "line": 161,
         "approved": false
       },
       {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 324,
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 34,
         "approved": false
       },
       {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 332,
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 35,
         "approved": false
       },
       {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 351,
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 39,
         "approved": false
       },
       {
-        "file": "src/services/matrix/media/MatrixVoiceService.ts",
-        "line": 369,
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 40,
         "approved": false
       },
       {
-        "file": "src/services/performance/ChunkUploadService.ts",
-        "line": 140,
-        "approved": true
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 41,
+        "approved": false
       },
       {
-        "file": "src/utils/MatrixDiagnostics.ts",
+        "file": "src/services/matrix/MatrixHttpClient.ts",
         "line": 42,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 43,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 44,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 45,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 46,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 47,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 48,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 49,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 50,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixHttpClient.ts",
+        "line": 53,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixWorkerHost.ts",
+        "line": 141,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/MatrixWorkerHost.ts",
+        "line": 158,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/BackgroundUpdateService.ts",
+        "line": 4,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/ExternalServiceService.ts",
+        "line": 4,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/TelemetryService.ts",
+        "line": 4,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/UserService.ts",
+        "line": 207,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/auth/MatrixAuthSaml.ts",
+        "line": 12,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/auth/MatrixAuthSaml.ts",
+        "line": 38,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/auth/MatrixAuthSaml.ts",
+        "line": 80,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/auth/MatrixOidcService.ts",
+        "line": 255,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/extensions/SynapseFriendExtensionService.ts",
+        "line": 73,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/extensions/SynapseFriendExtensionService.ts",
+        "line": 85,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/extensions/SynapseStickyEventService.ts",
+        "line": 12,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/media/mediaUploadHelpers.ts",
+        "line": 58,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/messaging/MatrixDelayedEventsService.ts",
+        "line": 18,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/messaging/MatrixDelayedEventsService.ts",
+        "line": 19,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/notifications/MatrixRoomNotificationService.ts",
+        "line": 77,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 2,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 5,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 8,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 10,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 12,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 14,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 16,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 18,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 20,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 22,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 24,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 26,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 27,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 37,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 38,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 39,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 40,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/auth.ts",
+        "line": 9,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/moderation.ts",
+        "line": 14,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/moderation.ts",
+        "line": 15,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/moderation.ts",
+        "line": 17,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/moderation.ts",
+        "line": 22,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/prefixes.ts",
+        "line": 1,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/prefixes.ts",
+        "line": 2,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/prefixes.ts",
+        "line": 3,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/prefixes.ts",
+        "line": 4,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/prefixes.ts",
+        "line": 5,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/sdk-paths.ts",
+        "line": 69,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/sdk-paths.ts",
+        "line": 70,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/sync.ts",
+        "line": 11,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/voice.ts",
+        "line": 13,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/room/RoomOperations.ts",
+        "line": 135,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/room/RoomOperations.ts",
+        "line": 144,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/room/TimelineService.ts",
+        "line": 110,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/user/MatrixAccountService.ts",
+        "line": 502,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/user/MatrixDeviceService.ts",
+        "line": 86,
+        "approved": false
+      },
+      {
+        "file": "src/services/performance/UploadService.ts",
+        "line": 46,
+        "approved": false
+      },
+      {
+        "file": "src/services/performance/UploadService.ts",
+        "line": 66,
+        "approved": false
+      },
+      {
+        "file": "src/stores/domains/chat/chat/session.ts",
+        "line": 86,
+        "approved": false
+      },
+      {
+        "file": "src/utils/MatrixDiagnostics.ts",
+        "line": 39,
         "approved": true
       },
       {
         "file": "src/utils/MatrixDiagnostics.ts",
-        "line": 71,
+        "line": 69,
         "approved": true
       },
       {
         "file": "src/utils/MatrixDiagnostics.ts",
-        "line": 101,
+        "line": 159,
         "approved": true
       },
       {
-        "file": "src/utils/MatrixDiagnostics.ts",
-        "line": 102,
-        "approved": true
+        "file": "src/workers/workerProbeHandlers.ts",
+        "line": 28,
+        "approved": false
       },
       {
-        "file": "src/utils/MatrixDiagnostics.ts",
-        "line": 103,
-        "approved": true
+        "file": "src/workers/workerProbeHandlers.ts",
+        "line": 62,
+        "approved": false
       },
       {
-        "file": "src/utils/MatrixDiagnostics.ts",
-        "line": 153,
-        "approved": true
+        "file": "src/workers/workerProbeHandlers.ts",
+        "line": 137,
+        "approved": false
+      },
+      {
+        "file": "src/workers/workerProbeHandlers.ts",
+        "line": 158,
+        "approved": false
       }
     ]
   }

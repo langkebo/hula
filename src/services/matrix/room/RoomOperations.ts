@@ -494,7 +494,9 @@ export class RoomOperations extends BaseMatrixService {
 
   async setMemberPowerLevel(roomId: string, userId: string, powerLevel: number): Promise<void> {
     const client = this.getClient()
-    await client.setUserPowerLevel(userId, roomId, powerLevel)
+    // SDK 真实签名为 setPowerLevel(roomId, userId, powerLevel)（client.d.ts:1423）。
+    // 历史缺陷：曾误用不存在的 setUserPowerLevel，且实参顺序与声明相反。
+    await client.setPowerLevel(roomId, userId, powerLevel)
   }
 
   async setMemberAsAdmin(roomId: string, userId: string): Promise<void> {

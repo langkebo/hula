@@ -42,16 +42,6 @@ declare module 'matrix-js-sdk' {
   // setInitialPos 是 SDK 源码中存在的 public 方法（sliding-sync.ts:334），但部分 SDK 构建的
   // .d.ts 未导出该方法，此处补充类型声明以支持 MatrixSyncManager 的增量 sync pos 持久化。
   interface SlidingSync {
-    getList(listName: string):
-      | {
-          rooms: string[]
-          setSort: (sort: string[]) => void
-          setFilters: (filters: Record<string, unknown>) => void
-        }
-      | undefined
-    subscribeToRoom(roomId: string, opts?: { timelineLimit?: number; invite?: boolean }): void
-    unsubscribeFromRoom(roomId: string): void
-    getSyncToken(): string | null
     /** 设置初始 pos，用于重启后增量 sync。必须在 start() 之前调用。SDK: sliding-sync.ts:334 */
     setInitialPos(pos: string): void
   }
@@ -191,7 +181,6 @@ declare module 'matrix-js-sdk' {
     // SDK 已声明 callEventHandler?: CallEventHandler（client.d.ts:354），
     // 此处不再重复声明 voipHandler / getCallHandler（SDK 中不存在，是幻影声明）。
     createCall(roomId: string, threadId?: string, opts?: { audio: boolean; video: boolean }): MatrixCall | null
-    isCryptoEnabled(): boolean
     getCrypto(): CryptoApi | null
     // 说明：SDK 没有 `client.crypto` 属性（只有 getCrypto()），
     // 也没有 getCrossSigningInfo / getStoredDevice / getUserDevices / getKeyBackupEnabled。
@@ -200,12 +189,9 @@ declare module 'matrix-js-sdk' {
     createFilter(filter: unknown): Promise<unknown>
     getRoom(roomId: string): Room | null
     getRooms(): Room[]
-    getAllRooms(): Room[]
     getUser(userId: string): User | null
     getUserId(): string | null
     getDeviceId(): string | null
-    getRoomsByUserId(userId: string): Room[]
-    getInvitedRooms(): Room[]
     getJoinedRooms(): Room[]
     createRoom(opts: ICreateRoomOpts): Promise<{ room_id: string }>
     createRoom(options: ICreateRoomOpts): Promise<{ room_id: string }>
@@ -250,7 +236,6 @@ declare module 'matrix-js-sdk' {
     ): Promise<Record<string, unknown>>
     isUsernameAvailable(username: string): Promise<{ available?: boolean }>
     setAccountData(eventType: string, content: unknown): Promise<void>
-    getRoomState(roomId: string): RoomState | null
     getRoomMembers(roomId: string): RoomMember[]
     getRoomEvent(roomId: string, eventId: string): Promise<MatrixEvent>
     sendMessage(roomId: string, threadId: string | null, content: IContent, txnId?: string): Promise<ISendEventResponse>
@@ -295,16 +280,12 @@ declare module 'matrix-js-sdk' {
     getRoomDirectoryVisibility(roomId: string): Promise<{ visibility: 'public' | 'private' }>
     setRoomDirectoryVisibility(roomId: string, visibility: 'public' | 'private'): Promise<void>
     login(loginType: string, data: Record<string, unknown>): Promise<LoginResponse>
-    getMediaApiUrl(path: string): string
     logout(): Promise<void>
     startClient(opts?: Record<string, unknown>): Promise<void>
     kick(roomId: string, userId: string, reason?: string): Promise<void>
     ban(roomId: string, userId: string, reason?: string): Promise<void>
     unban(roomId: string, userId: string): Promise<void>
-    setRoomEncryption(roomId: string, encryption: unknown): Promise<void>
     getSyncState(): string | null
-    getRoomsNav(): unknown
-    generateTxnId(): string
     getAccessToken(): string | null
     setAccessToken(token: string): void
     getDomain(): string
@@ -321,15 +302,8 @@ declare module 'matrix-js-sdk' {
     ): string | null
     setPresence(presence: string, opts?: Record<string, unknown>): Promise<void>
     setPresence(opts: { presence: string; status_msg?: string }): Promise<void>
-    getPresence(userId: string): Promise<{ presence: string; last_active_ago?: number; status_msg?: string }>
     getProfileInfo(userId: string): Promise<{ displayname?: string; avatar_url?: string }>
     getUserProfile(userId: string): Promise<{ displayname?: string; avatar_url?: string }>
-    getDevices(): Promise<Device[]>
-    getDevice(deviceId: string): Promise<Device>
-    setDeviceName(deviceId: string, name: string): Promise<void>
-    updateDevice(deviceId: string, updates: IDeviceUpdateRequest): Promise<void>
-    deleteDevice(deviceId: string, auth?: Record<string, unknown>): Promise<void>
-    deleteMultipleDevices(deviceIds: string[], auth?: Record<string, unknown>): Promise<void>
     requestAdd3pidEmailToken(
       email: string,
       clientSecret: string,
@@ -346,18 +320,11 @@ declare module 'matrix-js-sdk' {
     deactivateAccount(auth?: Record<string, unknown>, erase?: boolean): Promise<{ id_server_unbind_result?: string }>
     getAccountDataFromServer(eventType: string): Promise<Record<string, unknown> | null>
     setRoomAccountData(roomId: string, eventType: string, content: Record<string, unknown>): Promise<void>
-    sendReadReceipt(event: MatrixEvent, receiptType?: ReceiptType): Promise<Record<string, unknown>>
-    sendReadReceipt(
-      roomId: string,
-      event: MatrixEvent,
-      opts?: Record<string, unknown>
-    ): Promise<Record<string, unknown>>
     forget(roomId: string): Promise<void>
     upgradeRoom(roomId: string, version: string): Promise<{ replacement_room: string }>
     createAlias(alias: string, roomId: string): Promise<void>
     deleteAlias(alias: string): Promise<void>
     getEventContext(roomId: string, eventId: string, opts?: Record<string, unknown>): Promise<Record<string, unknown>>
-    setUserPowerLevel(roomId: string, userId: string, powerLevel: number): Promise<void>
     setPowerLevel(roomId: string, userId: string, powerLevel: number, event?: MatrixEvent): Promise<void>
     scrollback(room: Room, limit: number): Promise<Room>
     redact(roomId: string, eventId: string, txnId?: string, opts?: { reason?: string }): Promise<{ event_id: string }>
@@ -421,7 +388,6 @@ declare module 'matrix-js-sdk' {
     // getCryptoKeysManager 已由 SDK matrix-client-extensions.d.ts 声明（getKeyVerificationManager 已删除）
     // 上浮强类型 getter，此处不再重复声明（避免弱类型 `?: unknown` 遮蔽 SDK 类型）。
     getMediaQuotaManager?(): unknown
-    quotaManager?: unknown
     // Upload
     uploadContent(
       file: Blob | File,
@@ -435,7 +401,6 @@ declare module 'matrix-js-sdk' {
       }
     ): Promise<{ content_uri: string }>
     // Report
-    reportEvent(roomId: string, eventId: string, reason: string, explanation?: string): Promise<unknown>
     // Retention
     getServerRetention(): Promise<RetentionPolicy | null>
     getServerRetention(): Promise<Record<string, unknown>>
@@ -456,26 +421,8 @@ declare module 'matrix-js-sdk' {
     avatarUrl: string | null
     membership: string
     powerLevel: number
-    isDirect(): boolean
-    getUserId(): string
-    getRoomId(): string
-    getName(): string
     getAvatarUrl(): string | null
     getMxcAvatarUrl(): string | null | undefined
-    getDisplayName(): string | null
-    getPowerLevel(): number
-    getRevisedDisplayName(): string
-    setDisplayName(name: string): Promise<void>
-    setAvatar(avatar: string): Promise<void>
-    changePowerLevel(delta: number): Promise<void>
-    canKick(userId: string): boolean
-    canBan(): boolean
-    canRedact(): boolean
-    canSendEvent(eventType: string): boolean
-    isIgnored(): boolean
-    getIgnoredUsers(): string[]
-    ignore(): Promise<void>
-    unignore(): Promise<void>
   }
 
   // User 类型
@@ -483,11 +430,7 @@ declare module 'matrix-js-sdk' {
     userId: string
     displayName: string | null
     avatarUrl: string | null
-    getUserId(): string
-    getDisplayName(): string | null
     setDisplayName(name: string): Promise<void>
-    getAvatarUrl(): string | null
-    setAvatar(avatar: string): Promise<void>
   }
 
   // synapse-rust 特有：阅后即焚功能管理器
@@ -505,12 +448,6 @@ declare module 'matrix-js-sdk' {
     before_limit?: number
     after_limit?: number
     include_profile?: boolean
-  }
-
-  export interface SearchResponse {
-    results: SearchResult[]
-    count: number
-    next_batch?: string
   }
 
   // ==================== 同步类型 ====================
