@@ -9,11 +9,13 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { ADMIN } from '../admin'
 import { AUTH } from '../auth'
 import { MEDIA } from '../media'
 import { MODERATION } from '../moderation'
 import { ROOM } from '../room'
 import { VOICE } from '../voice'
+import { WIDGET } from '../widget'
 
 /** 断言对象的键集合恰好等于 expectedKeys（顺序无关）。 */
 function expectKeys(obj: object, expectedKeys: string[]): void {
@@ -132,6 +134,20 @@ describe('FT-120: 无死路径常量', () => {
     it('ROOM 不再包含 INVITE_BLOCKLIST / INVITE_ALLOWLIST', () => {
       expect(ROOM).not.toHaveProperty('INVITE_BLOCKLIST')
       expect(ROOM).not.toHaveProperty('INVITE_ALLOWLIST')
+    })
+  })
+
+  describe('ADMIN / WIDGET 不再包含已修 404 的死常量（批次 L：L-D01 / L-D09 / L-D10）', () => {
+    // 证据：scripts/bare-matrix-paths-baseline.json 的 history；
+    // MATRIX_WHOAMI 的后端命名空间已移除，USER_DEACTIVATE 应为 v1，WIDGET.SEND 后端无此端点。
+    it('ADMIN 不含 MATRIX_WHOAMI / USER_DEACTIVATE', () => {
+      expect(ADMIN).not.toHaveProperty('MATRIX_WHOAMI')
+      expect(ADMIN).not.toHaveProperty('USER_DEACTIVATE')
+    })
+
+    it('WIDGET 不含 SEND（后端无该端点；仅保留 CAPABILITIES）', () => {
+      expect(WIDGET).not.toHaveProperty('SEND')
+      expect(WIDGET).toHaveProperty('CAPABILITIES')
     })
   })
 })

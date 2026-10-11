@@ -1,5 +1,3 @@
-import { PREFIX_ADMIN_V1 } from './prefixes'
-
 export const ADMIN = {
   SYNAPSE_ADMIN_BASE: '/_synapse/admin/v1',
   /**
@@ -18,8 +16,6 @@ export const ADMIN = {
   WHOIS: (userId: string) => `/_synapse/admin/v1/whois/${encodeURIComponent(userId)}`,
   /** @deprecated Use AdminUserService methods instead */
   USERS: '/_synapse/admin/v2/users',
-  /** 用户停用/激活 API */
-  USER_DEACTIVATE: (userId: string) => `/_synapse/admin/v2/users/${encodeURIComponent(userId)}/deactivate`,
   /** @deprecated Use AdminRoomService methods instead */
   ROOMS: '/_synapse/admin/v1/rooms',
   /** @deprecated Use RegistrationTokensService methods instead */
@@ -41,7 +37,5 @@ export const ADMIN = {
   REPORTS: '/_synapse/admin/v1/reports',
   REPORT_BY_ID: (reportId: string) => `/_synapse/admin/v1/reports/${encodeURIComponent(reportId)}`,
   APPSERVICES: '/_synapse/admin/v1/appservices',
-  APPSERVICE_BY_ID: (id: string) => `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`,
-  /** @deprecated Use AdminFacadeService methods instead */
-  MATRIX_WHOAMI: `${PREFIX_ADMIN_V1}/whoami`
+  APPSERVICE_BY_ID: (id: string) => `/_synapse/admin/v1/appservices/${encodeURIComponent(id)}`
 } as const

@@ -1,12 +1,9 @@
 {
-  "generatedAt": "2026-10-11T00:42:15.623Z",
+  "generatedAt": "2026-10-11T01:33:49.029Z",
   "routeSources": ["sdk-contract(installed): 729", "backend-manifest: +235"],
-  "note": "knownDefects = 已确认的裸调 404 缺陷（tracking 号供修复批次引用）。门禁只登记不静默：--strict 时失败；修复后条目应消失（棘轮只降不升）。",
+  "note": "knownDefects = 当前未修的裸调 404 缺陷（须为 0 或显式登记；--strict 时失败）。history = 已修缺陷沿革（仅记录，不参与豁免）。",
   "defectEvidence": "每条缺陷已回源 synapse-rust 后端源码/守卫测试复核（证据见各条 reason 字段）。",
   "inventory": {
-    "/_matrix/admin/v1/whoami": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
     "/_matrix/client/unstable/org.matrix.msc4108/rendezvous": {
       "files": ["src/services/matrix/paths/auth.ts"]
     },
@@ -239,9 +236,6 @@
     "/_synapse/admin/v2/users": {
       "files": ["src/services/matrix/paths/admin.ts"]
     },
-    "/_synapse/admin/v2/users/{p}/deactivate": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
     "/.well-known/matrix/client": {
       "files": ["src/services/backend/discovery.ts", "src/services/matrix/paths/wellKnown.ts"]
     },
@@ -443,9 +437,6 @@
     "/rooms/{p}/widgets/{p}/capabilities": {
       "files": ["src/services/matrix/paths/widget.ts"]
     },
-    "/rooms/{p}/widgets/{p}/send": {
-      "files": ["src/services/matrix/paths/widget.ts"]
-    },
     "/spaces": {
       "files": ["src/services/matrix/paths/space.ts"]
     },
@@ -543,26 +534,89 @@
       "files": ["src/services/matrix/paths/user.ts"]
     }
   },
-  "knownDefects": {
-    "/_matrix/admin/v1/whoami": {
+  "knownDefects": {},
+  "history": [
+    {
+      "path": "/_matrix/admin/v1/whoami",
       "tracking": "L-D01",
       "severity": "latent",
       "consumer": "MATRIX_WHOAMI（admin.ts 常量，生产零调用点）",
-      "reason": "后端已移除 /_matrix/admin/v1* 命名空间（synapse-rust external_service.rs:420 注释「原先还挂了一份 /_matrix/admin/v1/external_services*」）。正式形态：/_synapse/admin/v1/whoami、/_matrix/client/v1|v3/account/whoami。"
+      "reason": "后端已移除 /_matrix/admin/v1* 命名空间（synapse-rust external_service.rs:420 注释「原先还挂了一份 /_matrix/admin/v1/external_services*」）。正式形态：/_synapse/admin/v1/whoami、/_matrix/client/v1|v3/account/whoami。",
+      "status": "fixed"
     },
-    "/_synapse/admin/v2/users/{p}/deactivate": {
+    {
+      "path": "/_matrix/client/v1/rooms/{p}/report/{p}/scanner_info",
+      "tracking": "L-D02",
+      "severity": "latent",
+      "consumer": "MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO（ReportService 实际走 vendor/v1，常量本身错误）",
+      "reason": "正式形态 /_matrix/vendor/v1/rooms/{room_id}/report/{event_id}/scanner_info（synapse-rust derived_route_table_always.inc.rs:3327；Tjg timeline.account.contract.test.ts 亦断言 vendor/v1）。client/v1 形态后端零命中。",
+      "status": "fixed"
+    },
+    {
+      "path": "/_matrix/client/v3/rooms/{p}/sticky_events",
+      "tracking": "L-D03",
+      "severity": "live",
+      "consumer": "SynapseStickyEventService.getStickyEvents",
+      "reason": "正式形态 /_matrix/client/unstable/org.matrix.msc4354/rooms/{room_id}/sticky_events（synapse-rust derived_route_table_always.inc.rs:207）。v3 形态零命中 ⇒ 404。",
+      "status": "fixed"
+    },
+    {
+      "path": "/_matrix/client/v3/rooms/{p}/sticky_events/{p}",
+      "tracking": "L-D04",
+      "severity": "live",
+      "consumer": "SynapseStickyEventService.setStickyEvent/clearStickyEvent",
+      "reason": "正式形态 .../msc4354/rooms/{room_id}/sticky_events/{event_type}（同 L-D03）。v3 形态零命中 ⇒ 404。",
+      "status": "fixed"
+    },
+    {
+      "path": "/_matrix/client/v3/rooms/{p}/summary",
+      "tracking": "L-D05",
+      "severity": "live",
+      "consumer": "SynapseRoomSummaryService.getRoomSummary ← SummaryService",
+      "reason": "后端守卫测试 room_module.rs:372-374 显式断言 client/v3 rooms/{room_id}/summary 计数为 0（「私有 room summary 仍挂在 client v3 前缀下」）。正式形态 /_matrix/client/v1/rooms/{room_id}/summary 或 /_matrix/vendor/v1/... ⇒ v3 恒 404。",
+      "status": "fixed"
+    },
+    {
+      "path": "/_matrix/client/v3/rooms/{p}/summary/members",
+      "tracking": "L-D06",
+      "severity": "live",
+      "consumer": "SynapseRoomSummaryService",
+      "reason": "正式形态 /_matrix/vendor/v1/rooms/{room_id}/summary/members（room_module.rs:371 断言）。v3 形态零命中。",
+      "status": "fixed"
+    },
+    {
+      "path": "/_matrix/client/v3/rooms/{p}/summary/state",
+      "tracking": "L-D07",
+      "severity": "live",
+      "consumer": "SynapseRoomSummaryService",
+      "reason": "正式形态 /_matrix/vendor/v1/rooms/{room_id}/summary/state。v3 形态零命中。",
+      "status": "fixed"
+    },
+    {
+      "path": "/_matrix/client/v3/rooms/{p}/summary/stats",
+      "tracking": "L-D08",
+      "severity": "live",
+      "consumer": "SynapseRoomSummaryService",
+      "reason": "正式形态 /_matrix/vendor/v1/rooms/{room_id}/summary/stats。v3 形态零命中。",
+      "status": "fixed"
+    },
+    {
+      "path": "/_synapse/admin/v2/users/{p}/deactivate",
       "tracking": "L-D09",
       "severity": "latent",
       "consumer": "ADMIN.USER_DEACTIVATE（生产零调用点）",
-      "reason": "正式形态 /_synapse/admin/v1/users/{user_id}/deactivate（synapse-rust admin_auth.rs:501/533 断言 v1）。v2 形态零命中 ⇒ 404。"
+      "reason": "正式形态 /_synapse/admin/v1/users/{user_id}/deactivate（synapse-rust admin_auth.rs:501/533 断言 v1）。v2 形态零命中 ⇒ 404。",
+      "status": "fixed"
     },
-    "/rooms/{p}/widgets/{p}/send": {
+    {
+      "path": "/rooms/{p}/widgets/{p}/send",
       "tracking": "L-D10",
       "severity": "latent",
       "consumer": "WIDGET.SEND（生产零调用点）",
-      "reason": "后端 widget 面无 /send 端点（仅有 /_matrix/vendor/v1/rooms/{room_id}/widgets/{widget_id}/capabilities、/_matrix/vendor/v1/widgets/{widget_id}/config 等）。任意前缀候选均零命中 ⇒ 404。"
+      "reason": "后端 widget 面无 /send 端点（仅有 /_matrix/vendor/v1/rooms/{room_id}/widgets/{widget_id}/capabilities、/_matrix/vendor/v1/widgets/{widget_id}/config 等）。任意前缀候选均零命中 ⇒ 404。",
+      "status": "fixed"
     }
-  },
+  ],
   "dynamicTails": [
     {
       "path": "/_matrix/client/v3/user/{p}/{p}",

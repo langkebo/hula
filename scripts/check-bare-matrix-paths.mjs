@@ -456,10 +456,12 @@ async function loadBaseline() {
 }
 
 /**
- * 已确认缺陷登记表（tracking 号供修复批次引用；证据已回源 synapse-rust 复核）。
- * 内嵌而非手写台账：保证 `--update-baseline` 重新生成台账时不丢证据。
+ * 已修缺陷的沿革（evidence trail；证据已回源 synapse-rust 源码/守卫测试复核）。
+ *
+ * ⚠️ **本表只作历史记录，不参与豁免判定**：若某条路径被重新引入，它会被当作
+ * 「未登记缺陷」直接失败 —— 不会因为这里留着条目而被放行（避免"历史即豁免"的纸面门禁）。
  */
-const KNOWN_DEFECT_REGISTRY = {
+const DEFECT_HISTORY = {
   '/_matrix/admin/v1/whoami': {
     tracking: 'L-D01',
     severity: 'latent',
@@ -640,8 +642,7 @@ export async function runGate({ tracking = {} } = {}) {
   if (wrote) {
     const nextKnown = {}
     for (const d of defects) {
-      const reg = KNOWN_DEFECT_REGISTRY[d.path]
-      nextKnown[d.path] = knownDefects[d.path] || reg || {
+      nextKnown[d.path] = knownDefects[d.path] || {
         tracking: tracking[d.path] || 'L-fix-pending',
         severity: 'unknown',
         reason: '命中失败：后端 manifest/SDK 路由表无此路径（疑似 404）',
@@ -652,12 +653,15 @@ export async function runGate({ tracking = {} } = {}) {
       generatedAt: new Date().toISOString(),
       routeSources: sources,
       note:
-        'knownDefects = 已确认的裸调 404 缺陷（tracking 号供修复批次引用）。门禁只登记不静默：--strict 时失败；修复后条目应消失（棘轮只降不升）。',
+        'knownDefects = 当前未修的裸调 404 缺陷（须为 0 或显式登记；--strict 时失败）。history = 已修缺陷沿革（仅记录，不参与豁免）。',
       defectEvidence: '每条缺陷已回源 synapse-rust 后端源码/守卫测试复核（证据见各条 reason 字段）。',
       inventory: Object.fromEntries(
         [...inventory.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, { files: [...v].sort() }])
       ),
       knownDefects: nextKnown,
+      history: Object.entries(DEFECT_HISTORY)
+        .map(([p, v]) => ({ path: p, ...v, status: 'fixed' }))
+        .sort((a, b) => a.tracking.localeCompare(b.tracking)),
       dynamicTails: dynamicTails.map((d) => ({ path: d.path, files: d.files })),
       prefixRoots: [...usedPrefixRoots].sort(),
       unresolved: unresolved.map((u) => ({ file: u.file, snippet: u.snippet })).sort((a, b) => a.file.localeCompare(b.file)),
