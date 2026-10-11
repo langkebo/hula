@@ -18,7 +18,7 @@ const makeAdmin = () => ({
 })
 
 const makeClient = () => ({
-  getRoomStateEvent: vi.fn(),
+  getStateEvent: vi.fn(),
   sendStateEvent: vi.fn(),
   redact: vi.fn(),
   getServerRetention: vi.fn()
@@ -65,17 +65,19 @@ describe('AdminRetentionService', () => {
   })
 
   it('getRoomRetention 读取 m.room.retention 状态事件', async () => {
-    client.getRoomStateEvent.mockResolvedValueOnce({ min_lifetime: 100, max_lifetime: 200 })
+    // SDK 的方法是 `client.getStateEvent(roomId, eventType, stateKey?)`（`client.d.ts:3279`）；
+    // `getRoomStateEvent` 是早期被清理掉的幻影方法名，实现早已改成 `getStateEvent`，测试没跟上。
+    client.getStateEvent.mockResolvedValueOnce({ min_lifetime: 100, max_lifetime: 200 })
 
     await expect(service.getRoomRetention('!r:hs')).resolves.toEqual({
       roomId: '!r:hs',
       policy: { min_lifetime: 100, max_lifetime: 200 }
     })
-    expect(client.getRoomStateEvent).toHaveBeenCalledWith('!r:hs', 'm.room.retention', '')
+    expect(client.getStateEvent).toHaveBeenCalledWith('!r:hs', 'm.room.retention', '')
   })
 
   it('getRoomRetention 出错时仅返回 roomId', async () => {
-    client.getRoomStateEvent.mockRejectedValueOnce(new Error('boom'))
+    client.getStateEvent.mockRejectedValueOnce(new Error('boom'))
     await expect(service.getRoomRetention('!r:hs')).resolves.toEqual({ roomId: '!r:hs' })
   })
 

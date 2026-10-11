@@ -3,6 +3,14 @@ import { MatrixClientLifecycle } from '@/services/matrix/MatrixClientLifecycle'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
+/**
+ * `startClient()` 的两个用例走的是真实的重试/退避与 sync 启动编排。
+ * 实测（2026-10-11）：串行 12.5s / 0.8s，全量并行时被拖到 30.7s / 5.0s
+ * 而触发默认 5s 超时。这里只对这两个用例放宽（保留其余 18 例的 5s 挂起检测）。
+ * 见审计报告 §12.2 / §13。
+ */
+const SLOW_ASYNC_START_TIMEOUT_MS = 60_000
+
 // ---- 依赖 mock（白盒：不依赖真实 SDK / 网络）-----------------------------------
 
 vi.mock('@/utils/Logger', () => ({
@@ -214,39 +222,47 @@ describe('MatrixClientLifecycle', () => {
       await expect(lifecycle.startClient()).rejects.toThrow('matrix_error.common.client_not_initialized')
     })
 
-    it('Sliding Sync 可用时创建实例并启动', async () => {
-      const made = makeLifecycle()
-      const { lifecycle, connectionManager, eventRouter, syncManager, cryptoTracker } = made
-      connectionManager.client = makeClient()
-      connectionManager.config = baseConfig()
+    it(
+      'Sliding Sync 可用时创建实例并启动',
+      async () => {
+        const made = makeLifecycle()
+        const { lifecycle, connectionManager, eventRouter, syncManager, cryptoTracker } = made
+        connectionManager.client = makeClient()
+        connectionManager.config = baseConfig()
 
-      await lifecycle.startClient()
+        await lifecycle.startClient()
 
-      expect(syncManager.create).toHaveBeenCalled()
-      expect(syncManager.resetReady).toHaveBeenCalled()
-      expect(syncManager.get).toHaveBeenCalled()
-      expect(cryptoTracker.ensureCrypto).toHaveBeenCalled()
-      expect(eventRouter.setSyncStateHandler).toHaveBeenCalled()
-      expect(eventRouter.setLifecycleErrorHandler).toHaveBeenCalled()
-      expect(eventRouter.setLifecycleResetHandler).toHaveBeenCalled()
-      expect(eventRouter.setEventDecryptedHandler).toHaveBeenCalled()
-      expect(eventRouter.setup).toHaveBeenCalled()
-      expect(connectionManager.getClient().startClient).toHaveBeenCalledWith(
-        expect.objectContaining({ slidingSync: expect.any(Object) })
-      )
-    })
+        expect(syncManager.create).toHaveBeenCalled()
+        expect(syncManager.resetReady).toHaveBeenCalled()
+        expect(syncManager.get).toHaveBeenCalled()
+        expect(cryptoTracker.ensureCrypto).toHaveBeenCalled()
+        expect(eventRouter.setSyncStateHandler).toHaveBeenCalled()
+        expect(eventRouter.setLifecycleErrorHandler).toHaveBeenCalled()
+        expect(eventRouter.setLifecycleResetHandler).toHaveBeenCalled()
+        expect(eventRouter.setEventDecryptedHandler).toHaveBeenCalled()
+        expect(eventRouter.setup).toHaveBeenCalled()
+        expect(connectionManager.getClient().startClient).toHaveBeenCalledWith(
+          expect.objectContaining({ slidingSync: expect.any(Object) })
+        )
+      },
+      SLOW_ASYNC_START_TIMEOUT_MS
+    )
 
-    it('Sliding Sync 不可用时降级到传统 /sync', async () => {
-      const { lifecycle, connectionManager, syncManager, client } = makeStartClientEnv()
-      client.isSlidingSyncSupported.mockResolvedValue(false)
-      connectionManager.config = baseConfig()
+    it(
+      'Sliding Sync 不可用时降级到传统 /sync',
+      async () => {
+        const { lifecycle, connectionManager, syncManager, client } = makeStartClientEnv()
+        client.isSlidingSyncSupported.mockResolvedValue(false)
+        connectionManager.config = baseConfig()
 
-      await lifecycle.startClient()
+        await lifecycle.startClient()
 
-      expect(syncManager.stop).toHaveBeenCalled()
-      expect(syncManager.create).not.toHaveBeenCalled()
-      expect(client.startClient).toHaveBeenCalled()
-    })
+        expect(syncManager.stop).toHaveBeenCalled()
+        expect(syncManager.create).not.toHaveBeenCalled()
+        expect(client.startClient).toHaveBeenCalled()
+      },
+      SLOW_ASYNC_START_TIMEOUT_MS
+    )
 
     it('Sliding Sync 探测抛错时保守降级', async () => {
       const { lifecycle, connectionManager, syncManager, client } = makeStartClientEnv()

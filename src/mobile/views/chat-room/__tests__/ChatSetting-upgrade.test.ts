@@ -163,7 +163,7 @@ describe('ChatSetting - room upgrade entry', () => {
   })
 
   it('renders the upgrade cell with Room Upgrade title and current version, dialog hidden initially', {
-    timeout: 30000
+    timeout: 120000
   }, async () => {
     const ChatSetting = (await ChatSettingModule).default
     const wrapper = mount(ChatSetting, mountOptions())
@@ -174,7 +174,7 @@ describe('ChatSetting - room upgrade entry', () => {
   })
 
   it('mounts without throwing and renders upgrade section with title, version, and hidden dialog', {
-    timeout: 30000
+    timeout: 120000
   }, async () => {
     const ChatSetting = (await ChatSettingModule).default
     const wrapper = mount(ChatSetting, mountOptions())

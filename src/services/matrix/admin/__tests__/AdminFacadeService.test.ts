@@ -442,13 +442,18 @@ describe('adminService facade', () => {
     })
 
     it('should get user rooms via SDK', async () => {
+      // 后端 `admin/user.rs:490` 返回 `{joined_rooms, total, ...}`，元素是 **room id 字符串**；
+      // SDK `UserRoomsResponse{joined_rooms: string[], total, next_batch?}`。旧 mock 用了
+      // 后端不存在的 `rooms` 键（且元素形状是对象），于是实现取到空数组。
       mockAdminManager.getUserRooms.mockResolvedValue({
-        rooms: [{ room_id: '!room:server', membership: 'join', is_room_admin: true }]
+        joined_rooms: ['!room:server'],
+        total: 1
       })
       const result = await adminService.getUserRooms('@user:server')
       expect(result).toHaveLength(1)
       expect(result[0].roomId).toBe('!room:server')
-      expect(result[0].isRoomAdmin).toBe(true)
+      // 该端点只给 room id，不提供 membership / is_room_admin（SDK 与后端均无此信息）
+      expect(result[0].isRoomAdmin).toBe(false)
       expect(mockAdminManager.getUserRooms).toHaveBeenCalledWith('@user:server')
     })
 
@@ -470,7 +475,9 @@ describe('adminService facade', () => {
       })
       const result = await adminService.batchDeactivateUsers(['@u1:server'])
       expect(result).toHaveLength(1)
-      expect(mockAdminManager.batchDeactivateUsers).toHaveBeenCalledWith({ user_ids: ['@u1:server'], erase: false })
+      // 请求体字段名是 `users`（后端 `admin/user.rs:901` 读 `body.users`；
+      // SDK `BatchDeactivateUsersRequest{users, erase?}`）。旧断言写作 `user_ids`，与两端均不符。
+      expect(mockAdminManager.batchDeactivateUsers).toHaveBeenCalledWith({ users: ['@u1:server'], erase: false })
     })
 
     it('should evict user via SDK', async () => {
@@ -567,18 +574,17 @@ describe('adminService facade', () => {
       expect(mockAdminManager.makeRoomAdmin).toHaveBeenCalledWith('!room:server', { user_id: '@user:server' })
     })
 
-    it('should purge history via SDK with field mapping', async () => {
-      mockAdminManager.purgeRoomHistory.mockResolvedValue({ purge_id: 'pid123' })
-      const result = await adminService.purgeHistory('!room:server', {
-        purgeUpToTs: 123456,
-        purgeUpToEventId: '$e1',
-        deleteLocalEvents: true
-      })
-      expect(result.purgeId).toBe('pid123')
+    // 契约（后端 `admin/room/management.rs::purge_history` + SDK `admin-room-types.d.ts`）：
+    // 请求体只读 `purge_up_to_ts` / `dry_run`；响应是 `{success, deleted_events, dry_run}`。
+    // 旧用例断言了后端从不读取的 `purge_up_to_event_id` / `delete_local_events`，
+    // 并期望一个后端从不返回的 `purge_id`（那是另一个端点 purgeRoom 的字段）。
+    it('should purge history via SDK with the backend-supported payload only', async () => {
+      mockAdminManager.purgeRoomHistory.mockResolvedValue({ success: true, deleted_events: 42, dry_run: false })
+      const result = await adminService.purgeHistory('!room:server', { purgeUpToTs: 123456, dryRun: true })
+      expect(result).toEqual({ success: true, deletedEvents: 42, dryRun: false })
       expect(mockAdminManager.purgeRoomHistory).toHaveBeenCalledWith('!room:server', {
-        purge_up_to_event_id: '$e1',
         purge_up_to_ts: 123456,
-        delete_local_events: true
+        dry_run: true
       })
     })
 
@@ -734,7 +740,10 @@ describe('adminService facade', () => {
         nonce: 'nonce',
         admin: false,
         displayname: 'new',
-        mac: undefined
+        // `mac` 在后端（`register.rs::RegisterRequest`）是**必填**字段，省略会 422；
+        // SDK 类型也把它标为必填，并注明「照类型调用必然 422（missing field mac）」。
+        // 因此无 mac 时必须传空串占位，而不是 `undefined`（旧断言会让 JSON 丢掉该键）。
+        mac: ''
       })
     })
   })
@@ -858,9 +867,12 @@ describe('adminService facade', () => {
     })
 
     it('should list audit log via SDK', async () => {
+      // 游标键是 `next_batch`（SDK `AuditEventPage{events, total, next_batch}`；
+      // SDK 已系统性把早期误写的 `next_token` 更正为 `next_batch`）。旧 mock 用的是 `next_token`。
       mockAdminManager.listAuditEvents.mockResolvedValue({
         events: [{ event_id: '$e1' }],
-        next_token: 'tok2'
+        total: 1,
+        next_batch: 'tok2'
       })
       const result = await adminService.getAuditLog(25, '1700000000', '@u:server', 'login')
       expect(result.logs).toHaveLength(1)

@@ -165,7 +165,7 @@
     "dangerZone": "Danger Zone",
     "purgeHistory": "Purge History",
     "purgeHistoryConfirm": "Are you sure you want to purge the history of this room? This action cannot be undone.",
-    "purgeHistorySuccess": "History purge started (ID: {purgeId})",
+    "purgeHistorySuccess": "History purge completed ({count} events deleted)",
     "purgeHistoryFailed": "Failed to purge history",
     "shutdown": "Shutdown Room",
     "shutdownConfirm": "Are you sure you want to shutdown room {name}? All users will be kicked.",

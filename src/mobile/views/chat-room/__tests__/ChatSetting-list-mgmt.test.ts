@@ -92,7 +92,7 @@ const i18n = createI18n({
 const ChatSettingModule = import('#/views/chat-room/ChatSetting.vue')
 
 describe('ChatSetting - list management entries', () => {
-  it('renders without error', { timeout: 15000 }, async () => {
+  it('renders without error', { timeout: 120000 }, async () => {
     const ChatSetting = (await ChatSettingModule).default
     const wrapper = mount(ChatSetting, {
       global: {

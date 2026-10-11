@@ -29,14 +29,16 @@ describe('AdminServerService', () => {
     service = new AdminServerService(async () => admin as unknown as AdminManager)
   })
 
-  it('getServerStats 映射统计字段（total_* 优先）', async () => {
+  // 真实字段集见 SDK `ServerStats`（`admin-server-types.d.ts`，已对照后端 `server.rs::get_statistics`）：
+  // 有 `total_rooms` / `total_users` / `daily_active_users` / `monthly_active_users` / `total_messages`；
+  // **没有** `total_nonlocal_users` / `server_start_time` / `room_count` / `user_count`（旧 mock 用的是这些）。
+  it('getServerStats 映射真实统计字段', async () => {
     admin.getServerStats.mockResolvedValueOnce({
       total_rooms: 12,
       total_users: 34,
       daily_active_users: 5,
       monthly_active_users: 6,
-      total_nonlocal_users: 7,
-      server_start_time: 1700
+      total_messages: 7
     })
 
     await expect(service.getServerStats()).resolves.toEqual({
@@ -45,16 +47,16 @@ describe('AdminServerService', () => {
       dailyActiveUsers: 5,
       monthlyActiveUsers: 6,
       messageCount: 7,
-      startServerTime: 1700
+      // 后端不提供服务器启动时间 ⇒ 恒为 0（见审计报告 §13 的死字段登记）
+      startServerTime: 0
     })
   })
 
-  it('getServerStats 支持 room_count/user_count 备用字段', async () => {
-    admin.getServerStats.mockResolvedValueOnce({ room_count: 3, user_count: 4 })
-
+  it('getServerStats 对后端不返回的字段回落到 0', async () => {
+    admin.getServerStats.mockResolvedValueOnce({})
     const result = await service.getServerStats()
-    expect(result.roomCount).toBe(3)
-    expect(result.userCount).toBe(4)
+    expect(result.roomCount).toBe(0)
+    expect(result.userCount).toBe(0)
   })
 
   it('getServerStats 出错时返回全零默认值', async () => {
@@ -70,9 +72,11 @@ describe('AdminServerService', () => {
     })
   })
 
-  it('getServerStatus 映射状态且出错时返回 null', async () => {
-    admin.getServerStatus.mockResolvedValueOnce({ status: 'online', uptime: 3600 })
-    await expect(service.getServerStatus()).resolves.toEqual({ status: 'online', uptime: 3600 })
+  // 后端 `server.rs::get_status` 返回 `{db_ok, server_ok, up}`（SDK `ServerStatus` 同形）；
+  // 没有 `status: 'online'` 也没有 `uptime`（旧 mock 用的是上游 Synapse 的形状）。
+  it('getServerStatus 由 up 字段映射状态且出错时返回 null', async () => {
+    admin.getServerStatus.mockResolvedValueOnce({ db_ok: true, server_ok: true, up: true })
+    await expect(service.getServerStatus()).resolves.toEqual({ status: 'online', uptime: undefined })
 
     admin.getServerStatus.mockRejectedValueOnce(new Error('boom'))
     await expect(service.getServerStatus()).resolves.toBeNull()

@@ -47,13 +47,15 @@ describe('AdminSecurityService', () => {
   })
 
   it('maps federation destinations into facade shape', async () => {
+    // SDK `FederationDestination` 的时间戳键是 `last_successful_ts`
+    // （`admin-federation-types.d.ts:40`）；不存在 `last_successful_stream_ordering`。
     ;(admin as any).getFederationDestinations.mockResolvedValueOnce([
       {
         destination: 'server.com',
         retry_last_ts: 1,
         retry_interval: 2,
         failure_ts: 3,
-        last_successful_stream_ordering: 4
+        last_successful_ts: 4
       }
     ])
 
@@ -69,9 +71,11 @@ describe('AdminSecurityService', () => {
   })
 
   it('maps audit log query and response', async () => {
+    // 游标键是 `next_batch`（SDK `AuditEventPage{events, total, next_batch}`）。
     ;(admin as any).listAuditEvents.mockResolvedValueOnce({
       events: [{ event_id: '$e1' }],
-      next_token: 'next'
+      total: 1,
+      next_batch: 'next'
     })
 
     const result = await service.getAuditLog(25, '1700000000', '@u:server', 'login')

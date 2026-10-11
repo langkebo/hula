@@ -1,0 +1,6 @@
+{
+  "testFiles": 808,
+  "tests": 9293,
+  "note": "全量单元套件的计数地板（只升不降）。用 scripts/check-unit-suite-floor.mjs --update 抬高；不存在降低的路径。初始值由 2026-10-11 首次接 CI 时的实测值填入。",
+  "updatedAt": "2026-10-11T11:52:14.146Z"
+}

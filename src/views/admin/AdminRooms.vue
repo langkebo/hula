@@ -521,7 +521,9 @@ async function handlePurgeHistory() {
   if (!selectedRoom.value) return
   try {
     const result = await admin.purgeHistory(selectedRoom.value.roomId)
-    showFeedback(t('admin.rooms.purgeHistorySuccess', { purgeId: result.purgeId }), 'success')
+    // 后端 purge_history 返回 {success, deleted_events, dry_run}，**不返回 purge_id**
+    // （purge_id 只属于另一个端点 purgeRoom）——旧文案「已启动（ID: …）」会显示空 ID。
+    showFeedback(t('admin.rooms.purgeHistorySuccess', { count: result.deletedEvents }), 'success')
   } catch (err) {
     if (handleAdminError(err)) {
       showFeedback(t('admin.rooms.purgeHistoryFailed'), 'error')

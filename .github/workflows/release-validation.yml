@@ -114,6 +114,13 @@ jobs:
         working-directory: hula
         run: pnpm check:release
 
+      # 发布校验必须跑全量单元套件（2026-10-11 新增）。
+      # 此前 release/** 分支的校验链只有静态门禁；而 CI 里也没有任何一步跑全量单测，
+      # 于是一批既有红灯长期无人知。`check:unit-suite` = 全量套件 + 套件地板/目录覆盖断言。
+      - name: Run full unit suite
+        working-directory: hula
+        run: pnpm check:unit-suite
+
       - name: Upload SDK tarball artifact
         if: always()
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3

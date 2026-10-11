@@ -1,7 +1,15 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+/**
+ * 本文件是「扫描全仓」类结构守卫：逐文件读取 `src/**` 并做逐字符扫描。
+ * 实测（2026-10-11，全量并行跑）：单文件耗时 37s，远超 vitest 默认 5s ⇒ 该守卫**恒超时**，
+ * 等于从未生效。这里显式放宽到 120s（纯文件系统遍历，无线程/网络等待，
+ * 放宽超时不会掩盖真正的挂起）。见审计报告 §12.2 / §13。
+ */
+vi.setConfig({ testTimeout: 120_000 })
 
 /**
  * presence 唯一写入点结构守卫。

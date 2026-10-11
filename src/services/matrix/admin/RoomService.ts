@@ -231,17 +231,35 @@ export class AdminRoomService {
     }
   }
 
+  /**
+   * 清理房间历史（`POST /_synapse/admin/v1/rooms/{roomId}/purge_history`）。
+   *
+   * 契约（对照后端 `admin/room/management.rs::purge_history` 与 SDK
+   * `admin-room-types.d.ts` 的 2026-10-08 修正）：
+   * - 请求体**只读** `purge_up_to_ts` 与 `dry_run`。原先声明的 `purge_up_to_event_id` /
+   *   `delete_local_events` 后端从不读（静默忽略 ⇒ 调用方以为按事件 ID 截断，实际只按时间戳），
+   *   因此这里不再暴露这两个参数。
+   * - 响应是 `{success, deleted_events, dry_run}`，**没有 `purge_id`**（`purge_id` 只由另一个
+   *   端点 `purgeRoom` 返回）。旧实现返回捏造的 `{purgeId: ''}`，会让 UI 显示「ID: 」空值。
+   */
   async purgeHistory(
     roomId: string,
-    options?: { purgeUpToEventId?: string; purgeUpToTs?: number; deleteLocalEvents?: boolean }
-  ): Promise<{ purgeId: string }> {
+    options?: { purgeUpToTs?: number; dryRun?: boolean }
+  ): Promise<{ success: boolean; deletedEvents: number; dryRun: boolean }> {
     try {
       const admin = await this.sdkAdmin()
-      await admin.purgeRoomHistory(roomId, {
-        purge_up_to_ts: options?.purgeUpToTs
-      })
-      logger.info(`[Admin] 清理历史: ${roomId}`)
-      return { purgeId: '' }
+      const payload: import('matrix-js-sdk/admin').PurgeHistoryPayload = {
+        purge_up_to_ts: options?.purgeUpToTs,
+        dry_run: options?.dryRun
+      }
+      const result = await admin.purgeRoomHistory(roomId, payload)
+      const deletedEvents = result?.deleted_events ?? 0
+      logger.info(`[Admin] 清理历史: ${roomId}（删除 ${deletedEvents} 条事件）`)
+      return {
+        success: result?.success ?? false,
+        deletedEvents,
+        dryRun: result?.dry_run ?? false
+      }
     } catch (err) {
       logger.error(`[Admin] 清理历史失败: ${err}`)
       throw err

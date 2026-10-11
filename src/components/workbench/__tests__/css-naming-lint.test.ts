@@ -15,7 +15,11 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+// 「扫描全仓」类守卫：逐文件读取并扫描全部 src/**。实测单文件耗时 35s ⇒ 默认 5s 必然超时
+// （两个用例都恒红）。显式放宽到 120s。见审计报告 §12.2 / §13。
+vi.setConfig({ testTimeout: 120_000 })
 
 const ROOT = resolve(__dirname, '..', '..', '..', '..')
 const SRC_DIR = resolve(ROOT, 'src')

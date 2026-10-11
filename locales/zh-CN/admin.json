@@ -165,7 +165,7 @@
     "dangerZone": "危险区域",
     "purgeHistory": "清理历史",
     "purgeHistoryConfirm": "确定要清理此房间的历史消息吗？此操作无法撤销。",
-    "purgeHistorySuccess": "历史清理已启动（ID: {purgeId}）",
+    "purgeHistorySuccess": "历史清理完成（删除 {count} 条事件）",
     "purgeHistoryFailed": "清理历史失败",
     "shutdown": "关闭房间",
     "shutdownConfirm": "确定要关闭房间 {name} 吗？所有用户将被踢出。",

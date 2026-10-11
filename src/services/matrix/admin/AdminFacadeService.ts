@@ -735,8 +735,8 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
 
   async purgeHistory(
     roomId: string,
-    options?: { purgeUpToEventId?: string; purgeUpToTs?: number; deleteLocalEvents?: boolean }
-  ): Promise<{ purgeId: string }> {
+    options?: { purgeUpToTs?: number; dryRun?: boolean }
+  ): Promise<{ success: boolean; deletedEvents: number; dryRun: boolean }> {
     return this.rooms.purgeHistory(roomId, options)
   }
 

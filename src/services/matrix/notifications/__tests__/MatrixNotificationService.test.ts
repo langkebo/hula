@@ -4,6 +4,14 @@ import { useI18nGlobal } from '@/services/i18n'
 import matrixClientService from '../../MatrixClientService'
 import { matrixNotificationService } from '../MatrixNotificationService'
 
+/**
+ * 本文件有 19 个用例使用 `vi.resetModules()` + 动态 `await import('../MatrixNotificationService')`
+ * 来验证「新实例从 localStorage 镜像/配置冷启动」，这会把整个模块图重新加载一遍。
+ * 实测（2026-10-11）：串行模式下整文件 76 例 20.6s 全通过；**并行**模式下每例被拖到 ≥5s
+ * 而触发默认 5s 超时（19 例假红）。显式放宽到 30s（≈20 倍余量）。见审计报告 §12.2 / §13。
+ */
+vi.setConfig({ testTimeout: 30_000 })
+
 const { pluginLoggerMocks } = vi.hoisted(() => ({
   pluginLoggerMocks: {
     info: vi.fn(),

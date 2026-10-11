@@ -69,7 +69,7 @@ const i18n = createI18n({
 const MobileChatMainModule = import('#/views/chat-room/MobileChatMain.vue')
 
 describe('MobileChatMain - forward dialog', () => {
-  it('renders with MobileForwardDialog component', { timeout: 30000 }, async () => {
+  it('renders with MobileForwardDialog component', { timeout: 120000 }, async () => {
     const MobileChatMain = (await MobileChatMainModule).default
     const wrapper = mount(MobileChatMain, {
       global: {

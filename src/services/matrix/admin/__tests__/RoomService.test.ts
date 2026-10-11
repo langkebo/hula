@@ -106,11 +106,12 @@ describe('AdminRoomService', () => {
     await expect(service.deleteRoom('bad-room')).rejects.toThrow('Invalid room ID')
   })
 
-  it('shutdownRoom maps kicked and alias fields', async () => {
+  it('shutdownRoom maps kicked fields', async () => {
+    // SDK/后端 `AdminShutdownRoomResult` 只有 `{closed_room, kicked_users, failed_to_kick_users}`
+    // —— `local_aliases` / `new_room_id` 是本后端**从不返回**的字段（SDK 类型注释原文）。
     ;(admin as any).shutdownRoom.mockResolvedValueOnce({
       kicked_users: ['@u1:server.com'],
-      failed_to_kick_users: ['@u2:server.com'],
-      local_aliases: ['#room:server.com']
+      failed_to_kick_users: ['@u2:server.com']
     })
 
     const result = await service.shutdownRoom('!room:server.com')
@@ -118,7 +119,8 @@ describe('AdminRoomService', () => {
     expect(result).toEqual({
       kickedUsers: ['@u1:server.com'],
       failedToKickUsers: ['@u2:server.com'],
-      localAliases: ['#room:server.com']
+      // 该端点不返回本地别名，故恒为空数组（见审计报告 §13 的死字段登记）
+      localAliases: []
     })
   })
 
@@ -127,20 +129,17 @@ describe('AdminRoomService', () => {
     expect(client.kick).toHaveBeenCalledWith('!room:server.com', '@u1:server.com', 'spam')
   })
 
-  it('purgeHistory maps camelCase options to snake_case', async () => {
-    ;(admin as any).purgeRoomHistory.mockResolvedValueOnce({ purge_id: 'pid-1' })
+  it('purgeHistory 只发送后端支持的字段并回传真实结果', async () => {
+    // 后端 `admin/room/management.rs::purge_history` 只读 `purge_up_to_ts` / `dry_run`，
+    // 返回 `{success, deleted_events, dry_run}`（无 `purge_id`；那是 purgeRoom 的字段）。
+    ;(admin as any).purgeRoomHistory.mockResolvedValueOnce({ success: true, deleted_events: 9, dry_run: false })
 
-    const result = await service.purgeHistory('!room:server.com', {
-      purgeUpToEventId: '$event',
-      purgeUpToTs: 123,
-      deleteLocalEvents: true
-    })
+    const result = await service.purgeHistory('!room:server.com', { purgeUpToTs: 123, dryRun: true })
 
-    expect(result).toEqual({ purgeId: 'pid-1' })
+    expect(result).toEqual({ success: true, deletedEvents: 9, dryRun: false })
     expect((admin as any).purgeRoomHistory).toHaveBeenCalledWith('!room:server.com', {
-      purge_up_to_event_id: '$event',
       purge_up_to_ts: 123,
-      delete_local_events: true
+      dry_run: true
     })
   })
 

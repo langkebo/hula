@@ -77,6 +77,8 @@
     "lint": "biome check",
     "typecheck": "vue-tsc --noEmit",
     "test:unit": "node scripts/run-vitest.js run",
+    "test:run:report": "node scripts/run-vitest.js run --reporter=default --reporter=json --outputFile.json=vitest-full-report.json",
+    "check:unit-suite": "node scripts/run-vitest.js run --reporter=default --reporter=json --outputFile.json=vitest-full-report.json; node scripts/check-unit-suite-floor.mjs vitest-full-report.json",
     "test:stability": "node scripts/run-vitest.js run src/services/matrix/__tests__/stability.contract.test.ts src/utils/__tests__/ExecutionGuard.test.ts",
     "test:contract": "node scripts/run-vitest.js run src/services/matrix/__tests__/stability.contract.test.ts src/utils/__tests__/ExecutionGuard.test.ts src/utils/__tests__/ErrorTracker.test.ts src/services/matrix/__tests__/MatrixClientService.spec.ts",
     "test:crypto-health": "node scripts/test-crypto-health.js",

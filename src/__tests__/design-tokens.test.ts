@@ -9,7 +9,12 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+// 「扫描全仓」类守卫：每个用例都会重新遍历 src/**（.vue/.ts/.css/.scss）并正则扫描。
+// 实测（2026-10-11，全量并行跑）单文件 191s ⇒ 默认 5s 必然超时，**断言从未真正执行过**。
+// 显式放宽到 120s；放宽后若仍有失败，那才是真实的 token 缺陷。见审计报告 §12.2 / §13。
+vi.setConfig({ testTimeout: 120_000 })
 
 const ROOT = resolve(__dirname, '..', '..')
 const SRC_DIR = resolve(ROOT, 'src')

@@ -65,6 +65,9 @@ describe('AdminUserService', () => {
   })
 
   it('getUsers maps SDK payload to UserInfo', async () => {
+    // 该后端**不返回** `last_seen_ts` / `last_seen_ip`（SDK 类型注释原文：
+    // 「原先声明的 suspended / erased / last_seen_ts / last_seen_ip 该后端从不返回，已删除」，
+    // 见 `admin-user-types.d.ts` 的 `AdminAccountDetails`），故 mock 与期望都不应包含它。
     ;(admin as any).getUsersPaginated.mockResolvedValueOnce({
       items: [
         {
@@ -74,8 +77,7 @@ describe('AdminUserService', () => {
           deactivated: false,
           is_guest: true,
           created_ts: 456,
-          displayname: 'User',
-          last_seen_ts: 123
+          displayname: 'User'
         }
       ],
       nextToken: 'next'
@@ -93,8 +95,7 @@ describe('AdminUserService', () => {
           deactivated: false,
           isGuest: true,
           createdTs: 456,
-          displayname: 'User',
-          lastSeenTs: 123
+          displayname: 'User'
         }
       ],
       nextToken: 'next'
@@ -197,23 +198,27 @@ describe('AdminUserService', () => {
     await expect(service.deleteRateLimit('bad-id')).rejects.toThrow('Invalid user ID')
   })
 
-  it('getUserRooms supports string and object room entries', async () => {
+  // 后端 `admin/user.rs:490` 返回 `{joined_rooms: string[], total}` —— 元素是 **room id 字符串**，
+  // 没有 membership / is_room_admin 信息（SDK `UserRoomsResponse` 同形）。旧 mock 用的 `rooms`
+  // 键在后端不存在，于是解析结果恒为空数组。
+  it('getUserRooms maps joined_rooms into facade shape', async () => {
     ;(admin as any).getUserRooms.mockResolvedValueOnce({
-      rooms: ['!plain:server.com', { room_id: '!rich:server.com', membership: 'join', is_room_admin: true }]
+      joined_rooms: ['!plain:server.com'],
+      total: 1
     })
 
     const result = await service.getUserRooms('@alice:server.com')
 
-    expect(result).toEqual([
-      { roomId: '!plain:server.com', membership: '', isRoomAdmin: false },
-      { roomId: '!rich:server.com', membership: 'join', isRoomAdmin: true }
-    ])
+    expect(result).toEqual([{ roomId: '!plain:server.com', membership: '', isRoomAdmin: false }])
   })
 
   it('batchCreateUsers falls back to created and failed arrays', async () => {
+    // 后端 `admin/user.rs:874` 返回 `{created, failed, total}`（SDK 同形，两个键都是 string[]）；
+    // 旧 mock 用的是不存在的 `errors` 且元素是对象。
     ;(admin as any).batchCreateUsers.mockResolvedValueOnce({
       created: ['@ok:server.com'],
-      errors: [{ user_id: '@bad:server.com' }]
+      failed: ['@bad:server.com'],
+      total: 2
     })
 
     const result = await service.batchCreateUsers([{ username: 'ok', password: 'pass' }])

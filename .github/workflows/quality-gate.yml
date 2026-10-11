@@ -129,3 +129,72 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # 全量单元套件（2026-10-11 新增）。
+  #
+  # 背景：在此之前 CI 只跑 `test:contract`（4 个指定文件）与 `test:crypto-health`，
+  # **全量套件从未在 CI 执行**，于是 5 个文件、29 个用例长期红着无人知（其中 2 个是
+  # 「扫描全仓」类结构守卫恒超时 ⇒ 等于不存在）。见审计报告 §12.2 / §13。
+  #
+  # 两个判据彼此独立，缺一不可：
+  #   ① `pnpm test:run` 的退出码 —— 有任何用例失败即红；
+  #   ② `check-unit-suite-floor.mjs` 的基数断言 —— 即使 ① 被绕过/跳过，
+  #      仍会因「文件数/用例数低于地板」或「关键目录无覆盖」而红
+  #      （防止有人用一行 exclude 把套件悄悄架空）。
+  unit-tests:
+    name: Unit Tests (full suite)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 12
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Cache dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.STORE_PATH }}
+            node_modules
+          key: ${{ runner.os }}-pnpm-quality-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-quality-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run full unit suite
+        run: pnpm test:run:report
+
+      - name: Assert suite floor and directory coverage
+        if: always()
+        run: node scripts/check-unit-suite-floor.mjs vitest-full-report.json
+
+      - name: Upload vitest report
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: vitest-report
+          path: vitest-full-report.json
+          if-no-files-found: warn
+          retention-days: 7

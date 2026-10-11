@@ -44,8 +44,8 @@ interface UseAdminRoomsResult {
   makeRoomAdmin: (roomId: string, userId?: string) => Promise<void>
   purgeHistory: (
     roomId: string,
-    options?: { purgeUpToEventId?: string; purgeUpToTs?: number; deleteLocalEvents?: boolean }
-  ) => Promise<{ purgeId: string }>
+    options?: { purgeUpToTs?: number; dryRun?: boolean }
+  ) => Promise<{ success: boolean; deletedEvents: number; dryRun: boolean }>
 
   loadRooms: (limit?: number, searchTerm?: string) => Promise<void>
   selectRoom: (room: RoomInfo | null) => Promise<void>
@@ -223,10 +223,7 @@ export function useAdminRooms(): UseAdminRoomsResult {
     await adminService.makeRoomAdmin(roomId, userId)
   }
 
-  async function purgeHistory(
-    roomId: string,
-    options?: { purgeUpToEventId?: string; purgeUpToTs?: number; deleteLocalEvents?: boolean }
-  ) {
+  async function purgeHistory(roomId: string, options?: { purgeUpToTs?: number; dryRun?: boolean }) {
     return adminService.purgeHistory(roomId, options)
   }
 

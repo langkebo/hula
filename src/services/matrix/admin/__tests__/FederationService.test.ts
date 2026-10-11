@@ -28,13 +28,15 @@ describe('AdminFederationService', () => {
   })
 
   it('getFederationDestinations 将 snake_case 映射为 camelCase', async () => {
+    // SDK `FederationDestination` 的时间戳键是 `last_successful_ts`
+    // （`admin-federation-types.d.ts:40`），不存在 `last_successful_stream_ordering`。
     admin.getFederationDestinations.mockResolvedValueOnce([
       {
         destination: 'remote.hs',
         retry_last_ts: 1,
         retry_interval: 2,
         failure_ts: 3,
-        last_successful_stream_ordering: 4
+        last_successful_ts: 4
       }
     ])
 
@@ -62,7 +64,13 @@ describe('AdminFederationService', () => {
   })
 
   it('getFederationBlacklist 委托 AdminManager 并映射 server_name→domain', async () => {
-    admin.getFederationBlacklist.mockResolvedValueOnce([{ server_name: 'evil.hs', reason: 'spam', added_ts: 100 }])
+    // 后端/SDK 返回的是**响应壳** `{blacklist, total, next_batch}`（`admin-federation-types.d.ts:14-18`），
+    // 条目字段是 `added_at`（不是 `added_ts`）。旧 mock 直接给了一个数组 + 错误的键名。
+    admin.getFederationBlacklist.mockResolvedValueOnce({
+      blacklist: [{ server_name: 'evil.hs', reason: 'spam', added_at: 100 }],
+      total: 1,
+      next_batch: null
+    })
 
     await expect(service.getFederationBlacklist()).resolves.toEqual([
       { domain: 'evil.hs', reason: 'spam', addedBy: undefined, addedAt: 100 }

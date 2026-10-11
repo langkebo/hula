@@ -7,7 +7,11 @@
  * 当某常量不再被任何 L2 服务引用时，应将其从此处的 expected 集合中移除并从源文件删除；
  * 反之，新增常量时必须先在 L2 服务中接入，再将键名加入此处的 expected 集合。
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+// 「扫描全仓」类守卫：用例会遍历 src/** 检查常量引用。实测单文件 16s ⇒ 默认 5s 必然超时
+// （断言从未真正执行）。显式放宽到 120s。见审计报告 §12.2 / §13。
+vi.setConfig({ testTimeout: 120_000 })
 
 import { ADMIN } from '../admin'
 import { AUTH } from '../auth'
