@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-11T08:10:00.000Z",
-  "note": "SDK augmentation 幻影成员登记表。exemptions = 有意为之的类型扩展（SDK 确实没有，tjg 需要）；debt = 上游 API 的陈旧副本 / 死声明，需要逐项烧掉。两项都必须写理由。棘轮：新增未登记幻影即红；条目不再命中即 stale，必须用 --update 剪掉。",
+  "generatedAt": "2026-10-11T08:22:22.116Z",
+  "note": "SDK augmentation 幻影成员登记表。exemptions = 有意为之的类型扩展（SDK 确实没有，tjg 需要）；debt = 上游 API 的陈旧副本 / 死声明，需要逐项烧掉。两项都必须写理由。已烧掉：MatrixClient.mxcUrlToHttp（批次 B′-1，改为 ProfileManager 单一事实源）。棘轮：新增未登记幻影即红；条目不再命中即 stale，必须用 --update 剪掉。",
   "exemptions": {
     "ICreateRoomOpts.ignore_duplicate_name": "synapse-rust 的 create_room 支持该非标准字段；用户在「仍然创建」确认后置 true 重发，跳过 409 M_ROOM_IN_USE 查重。SDK 的 ICreateRoomOpts 无此字段，需 augmentation 补。使用点 CreationService.ts:107。",
     "ICreateRoomOpts.room_types": "空间创建需要 room_types: ['m.space']。SDK 导出的 ICreateRoomOpts 未含该字段（后端支持）。使用点 MatrixSpaceService.ts:87。"
@@ -12,7 +12,6 @@
     "MatrixClient.getRoomMembers": "fork 未在 MatrixClient 暴露（同类能力走 getMembershipManager()/getRoomStateManager()）。活跃调用点：room/MatrixSpaceService.ts:213，其结果被 .map() 消费 ⇒ 运行时 TypeError。批次 B′ 迁移。",
     "MatrixClient.isRoomEncrypted": "fork 已移除该方法（相关能力为 hasCrypto / room 侧加密状态）。活跃调用点 5 处（MatrixClientState.ts:126、MatrixEventService.ts:112、room/CreationService.ts:139、room/MatrixRoomSummaryService.ts:178 等）⇒ 返回 undefined 被当 false。批次 B′ 迁移。",
     "MatrixClient.login": "fork 的 MatrixClient 没有 login（只有 loginRequest/loginFlows；HuLaClient 才暴露 login）。活跃调用点：MatrixClientAuth.ts:206、workers/workerClientHandlers.ts:101 ⇒ 登录/worker 路径运行时 TypeError。批次 B′ 迁移。",
-    "MatrixClient.mxcUrlToHttp": "fork 把该方法放在 ProfileManager：client.getProfileManager().mxcUrlToHttp(...)（SDK 自身用法见 lib/models/MSC3089Branch.js:137）。活跃调用点 6 处（media/MatrixMediaService.ts:267/271/272/283/284、media/MatrixMultimediaService.ts:291、MatrixClientLifecycle.ts:101）。当前代码用 typeof === 'function' 兜底成静默降级 ⇒ 媒体与头像 URL 实际不可用。最高优先级。",
     "MatrixClient.redact": "fork 已改名为 client.redactEvent(roomId, eventId, txnId?, opts?)。活跃调用点：admin/RetentionService.ts:122 ⇒ 运行时 TypeError。批次 B′ 迁移。",
     "MatrixClient.sendEmote": "fork 已改名为 client.sendEmoteMessage(...) / sendHtmlEmote(...)。活跃调用点：messaging/MatrixMessageService.ts:189 ⇒ 运行时 TypeError。批次 B′ 迁移。",
     "MatrixClient.setRoomAvatar": "fork 未在 MatrixClient 暴露（只有 setRoomName/setRoomTopic）。活跃调用点 8 处（rightBox/GroupDetails.vue:217、room/settings-tabs/BasicTab.vue:149/202 等）⇒ 设置房间/空间头像抛 TypeError。批次 B′ 迁移。",

@@ -291,15 +291,8 @@ declare module 'matrix-js-sdk' {
     getDomain(): string
     setDisplayName(name: string): Promise<void>
     setAvatarUrl(url: string): Promise<void>
-    mxcUrlToHttp(
-      mxcUrl: string,
-      width?: number,
-      height?: number,
-      resizeMethod?: string,
-      allowDirectLinks?: boolean,
-      allowRedirects?: boolean,
-      useAuthentication?: boolean
-    ): string | null
+    // mxcUrlToHttp 幻影声明已删除（2026-10-11）：本 fork 把该方法放在 ProfileManager 上，
+    // MatrixClient 本体没有。统一走 src/services/matrix/media/mxcUrl.ts 的 resolveMxcToHttp()。
     setPresence(presence: string, opts?: Record<string, unknown>): Promise<void>
     setPresence(opts: { presence: string; status_msg?: string }): Promise<void>
     getProfileInfo(userId: string): Promise<{ displayname?: string; avatar_url?: string }>

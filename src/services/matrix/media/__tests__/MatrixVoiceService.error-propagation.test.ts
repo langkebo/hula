@@ -50,7 +50,9 @@ const mockClient = {
   http: {
     authedRequest: authedRequestMock
   },
-  mxcUrlToHttp: vi.fn((mxcUrl: string) => `https://cdn.example.com/${mxcUrl.replace('mxc://', '')}`),
+  getProfileManager: vi.fn(() => ({
+    mxcUrlToHttp: vi.fn((mxcUrl: string) => `https://cdn.example.com/${mxcUrl.replace('mxc://', '')}`)
+  })),
   getRoom: vi.fn(() => null),
   getVoiceManager: vi.fn(() => voiceMgr)
 }

@@ -183,8 +183,9 @@ const supportsExtendedProfile = computed(() => hasUnstable('uk.tcpip.msc4133'))
 
 const displayAvatarUrl = computed(() => {
   if (userAvatar.value?.startsWith('mxc://')) {
-    // client.mxcUrlToHttp 在某些 client 包装层上会被剥离（导致整页 OnErrorCaptured 触发、整屏变红字）。
-    // 这里 try/catch 兜底：失败时直接展示 mxc 原值，naive-avatar 会降级到 placeholder。
+    // 解析统一由 matrixMediaService.getMediaUrl → media/mxcUrl 的 resolveMxcToHttp 承担
+    // （SDK 的 mxcUrlToHttp 在 ProfileManager 上；此前误调 client.mxcUrlToHttp 导致静默失效）。
+    // 这里保留 try/catch 兜底：失败时返回 mxc 原值，naive-avatar 会降级到 placeholder。
     try {
       return matrixMediaService.getMediaUrl(userAvatar.value, 160, 160) || userAvatar.value
     } catch (err) {

@@ -14,6 +14,7 @@
  */
 import { useI18nGlobal } from '@/services/i18n'
 import { setupSystemResumeListener } from '@/services/matrix/matrixClientPlatform'
+import { resolveMxcToHttp } from '@/services/matrix/media/mxcUrl'
 import type { MatrixClient } from '@/services/matrix/sdk'
 import { PendingEventOrdering } from '@/types/matrix-js-sdk'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -93,22 +94,11 @@ export class MatrixClientLifecycle {
     }
 
     // Register mxc:// resolver so AvatarUtils can convert Matrix media URIs.
-    // Use client.mxcUrlToHttp() directly to avoid circular dependency with MatrixMediaService.
+    // 走 media/mxcUrl 的单一事实源（SDK 的 mxcUrlToHttp 在 ProfileManager 上，不在 MatrixClient 上）；
+    // 该模块是叶子依赖，不会与 MatrixMediaService 形成循环引用。
     const client = connectionManager.getClient()
     if (client) {
-      AvatarUtils.setMxcResolver((mxcUrl, width, height) => {
-        // 防护：登录失败或 client 未完全初始化时 mxcUrlToHttp 可能不存在
-        const resolver = client.mxcUrlToHttp
-        if (typeof resolver !== 'function') return null
-        try {
-          if (width && height) {
-            return resolver.call(client, mxcUrl, width, height, 'scale')
-          }
-          return resolver.call(client, mxcUrl)
-        } catch {
-          return null
-        }
-      })
+      AvatarUtils.setMxcResolver((mxcUrl, width, height) => resolveMxcToHttp(client, mxcUrl, width, height))
     }
   }
 

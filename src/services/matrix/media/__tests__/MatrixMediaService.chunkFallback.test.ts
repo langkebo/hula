@@ -9,7 +9,7 @@ vi.mock('../../MatrixClientService', () => {
   const svc = {
     getClient: () => ({
       getMediaManager: () => ({ uploadContent: mediaUploadMock }),
-      mxcUrlToHttp: () => null,
+      getProfileManager: () => ({ mxcUrlToHttp: () => null }),
       http: { authedRequest: vi.fn() }
     }),
     getTelemetry: () => null

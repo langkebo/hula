@@ -5,6 +5,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
+import { type MxcResolverClient, resolveMxcToHttp } from './mxcUrl'
 
 interface VoiceTranscriptionParams {
   roomId: string
@@ -18,16 +19,7 @@ interface VoiceTranscriptionResult {
   segments?: Array<{ start: number; end: number; text: string }>
 }
 
-interface MxcHttpClient {
-  mxcUrlToHttp?: (
-    mxcUrl: string,
-    width?: number,
-    height?: number,
-    resizeMethod?: string,
-    allowDirectLinks?: boolean,
-    allowRedirects?: boolean,
-    useAuthentication?: boolean
-  ) => string | null
+interface MxcHttpClient extends MxcResolverClient {
   getRoom(roomId: string): RoomLike | null
 }
 
@@ -128,7 +120,7 @@ class MatrixVoiceService extends BaseMatrixService {
     }
 
     const client = this.getVoiceClient()
-    return client.mxcUrlToHttp?.(mxcUrl) ?? undefined
+    return resolveMxcToHttp(client, mxcUrl) ?? undefined
   }
 
   getPlayableUrl(mxcUrl?: string, fallbackUrl?: string): string {

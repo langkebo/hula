@@ -41,7 +41,7 @@ function makeClient(overrides: Record<string, unknown> = {}) {
     isSlidingSyncSupported: vi.fn(async () => true),
     startClient: vi.fn(async () => undefined),
     stopClient: vi.fn(),
-    mxcUrlToHttp: vi.fn(() => 'http://resolved'),
+    getProfileManager: vi.fn(() => ({ mxcUrlToHttp: vi.fn(() => 'http://resolved') })),
     getDeviceId: vi.fn(() => 'DEV1'),
     ...overrides
   }

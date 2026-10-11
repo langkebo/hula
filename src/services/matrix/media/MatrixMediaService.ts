@@ -22,6 +22,7 @@ import {
   type UploadResult
 } from './mediaTypes'
 import { createUploadOptions, uploadContentWithChunkFallback } from './mediaUploadHelpers'
+import { resolveMxcToHttp } from './mxcUrl'
 
 const logger = createLogger('MatrixMediaService')
 
@@ -260,32 +261,12 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   // ── URL 解析 ──
 
   getMediaUrl(mxcUrl: string, width?: number, height?: number): string | null {
-    if (!mxcUrl?.startsWith('mxc://')) return null
-    const client = this.getClient()
-    // 容错：极少数 client 包装层会剥离 SDK 实例方法。优先调用标准方法；失败时回落到 mxc 原值返回。
-    try {
-      if (typeof client?.mxcUrlToHttp !== 'function') {
-        logger.warn('[MatrixMedia] client.mxcUrlToHttp 不可用，返回原始 mxc')
-        return mxcUrl
-      }
-      if (width && height) return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
-      return client.mxcUrlToHttp(mxcUrl) ?? null
-    } catch (err) {
-      logger.warn(`[MatrixMedia] mxcUrlToHttp 调用失败: ${(err as Error)?.message ?? err}`)
-      return mxcUrl
-    }
+    // 统一走 resolveMxcToHttp（SDK 的 mxcUrlToHttp 在 ProfileManager 上，不在 MatrixClient 上）
+    return resolveMxcToHttp(this.getClient(), mxcUrl, width, height)
   }
 
   getThumbnailUrl(mxcUrl: string, width: number, height: number): string | null {
-    if (!mxcUrl?.startsWith('mxc://')) return null
-    const client = this.getClient()
-    try {
-      if (typeof client?.mxcUrlToHttp !== 'function') return null
-      return client.mxcUrlToHttp(mxcUrl, width, height, 'scale') ?? null
-    } catch (err) {
-      logger.warn(`[MatrixMedia] mxcUrlToHttp(thumbnail) 失败: ${(err as Error)?.message ?? err}`)
-      return null
-    }
+    return resolveMxcToHttp(this.getClient(), mxcUrl, width, height)
   }
 
   // ── 下载（委托 mediaDownloadHelpers）──

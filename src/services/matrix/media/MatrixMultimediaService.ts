@@ -3,6 +3,7 @@ import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { resolveMxcToHttp } from './mxcUrl'
 
 const logger = createLogger('MatrixMultimediaService')
 
@@ -288,7 +289,7 @@ class MatrixMultimediaService extends BaseMatrixService {
     }
 
     try {
-      const httpUrl = client.mxcUrlToHttp(mxcUrl)
+      const httpUrl = resolveMxcToHttp(client, mxcUrl)
       if (!httpUrl) {
         throw new Error(this.t('matrix_error.media.invalid_mxc_url'))
       }

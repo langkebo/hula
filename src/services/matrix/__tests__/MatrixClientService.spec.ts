@@ -75,7 +75,7 @@ vi.mock('matrix-js-sdk', () => {
     getDeviceId: vi.fn().mockReturnValue('DEVICE_ID'),
     getAccessToken: vi.fn().mockReturnValue('ACCESS_TOKEN'),
     isSlidingSyncSupported: vi.fn().mockResolvedValue(false),
-    mxcUrlToHttp: vi.fn().mockReturnValue(null)
+    getProfileManager: vi.fn(() => ({ mxcUrlToHttp: vi.fn().mockReturnValue(null) }))
   }
 
   return {

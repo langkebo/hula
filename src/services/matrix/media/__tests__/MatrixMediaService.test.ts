@@ -24,7 +24,11 @@ const mockClient = {
   getMediaManager: vi.fn(() => ({
     uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/uploaded123' })
   })),
-  mxcUrlToHttp: vi.fn((url: string) => url.replace('mxc://', 'https://matrix.test/_matrix/media/r0/download/'))
+  // mxc → http 的真实归属是 ProfileManager（SDK：lib/models/MSC3089Branch.js:137）。
+  // 刻意不在 client 本体上提供 mxcUrlToHttp —— 若实现回退成 client.mxcUrlToHttp，解析结果会是 null，用例即红。
+  getProfileManager: vi.fn(() => ({
+    mxcUrlToHttp: vi.fn((url: string) => url.replace('mxc://', 'https://matrix.test/_matrix/media/r0/download/'))
+  }))
 }
 
 describe('MatrixMediaService', () => {
@@ -116,7 +120,7 @@ describe('MatrixMediaService', () => {
       })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getMediaManager: () => ({ uploadContent }),
-        mxcUrlToHttp: vi.fn()
+        getProfileManager: () => ({ mxcUrlToHttp: vi.fn() })
       } as unknown as MatrixClient)
 
       const file = new File(['secret-content'], 'secret.txt', { type: 'text/plain' })
@@ -205,7 +209,9 @@ describe('MatrixMediaService', () => {
             content_uri: 'mxc://matrix.org/uploaded123'
           })
         }),
-        mxcUrlToHttp: vi.fn().mockReturnValue('https://matrix.org/media/uploaded123')
+        getProfileManager: () => ({
+          mxcUrlToHttp: vi.fn().mockReturnValue('https://matrix.org/media/uploaded123')
+        })
       } as unknown as MatrixClient)
       vi.mocked(matrixClientService.getTelemetry).mockReturnValue({
         trackMediaUploaded: vi.fn()
@@ -235,7 +241,9 @@ describe('MatrixMediaService', () => {
 
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getMediaManager: () => ({ uploadContent }),
-        mxcUrlToHttp: vi.fn().mockReturnValue('https://matrix.org/media/uploaded123')
+        getProfileManager: () => ({
+          mxcUrlToHttp: vi.fn().mockReturnValue('https://matrix.org/media/uploaded123')
+        })
       } as unknown as MatrixClient)
 
       const onProgress = vi.fn()
@@ -255,6 +263,30 @@ describe('MatrixMediaService', () => {
     it('should get thumbnail url with dimensions', () => {
       const url = matrixMediaService.getThumbnailUrl('mxc://matrix.org/abc123', 100, 100)
       expect(url).toBe('https://matrix.org/media/uploaded123')
+    })
+
+    // 回归防护：mxc → http 必须走 ProfileManager（SDK 的 mxcUrlToHttp 不在 MatrixClient 上）。
+    // 若实现回退成 client.mxcUrlToHttp(...)，下面两处断言会直接失败。
+    it('把尺寸按 (width, height, "scale") 传给 ProfileManager.mxcUrlToHttp', () => {
+      const mxcUrlToHttp = vi.fn().mockReturnValue('https://matrix.org/media/thumb')
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getProfileManager: () => ({ mxcUrlToHttp })
+      } as unknown as MatrixClient)
+
+      expect(matrixMediaService.getThumbnailUrl('mxc://matrix.org/abc123', 64, 48)).toBe(
+        'https://matrix.org/media/thumb'
+      )
+      expect(mxcUrlToHttp).toHaveBeenCalledWith('mxc://matrix.org/abc123', 64, 48, 'scale')
+    })
+
+    it('客户端只有幻影形态的 client.mxcUrlToHttp 时不得解析出 URL', () => {
+      const phantom = vi.fn().mockReturnValue('https://should-not-be-used.example/x')
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        mxcUrlToHttp: phantom
+      } as unknown as MatrixClient)
+
+      expect(matrixMediaService.getMediaUrl('mxc://matrix.org/abc123')).toBeNull()
+      expect(phantom).not.toHaveBeenCalled()
     })
   })
 
