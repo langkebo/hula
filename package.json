@@ -63,6 +63,8 @@
     "check:v-html": "node scripts/check-v-html.mjs",
     "check:doc-coverage": "node scripts/check-doc-coverage.mjs",
     "check:sdk-boundary": "node scripts/check-sdk-boundary.mjs",
+    "check:bare-matrix-paths": "node scripts/check-bare-matrix-paths.mjs",
+    "check:bare-matrix-paths:strict": "node scripts/check-bare-matrix-paths.mjs --strict",
     "check:ratchet": "node scripts/check-ratchet.mjs",
     "check:settings-wiring": "node scripts/check-settings-wiring.mjs",
     "check:component-contracts": "node scripts/check-component-contracts.mjs",

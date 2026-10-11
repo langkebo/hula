@@ -1,6 +1,6 @@
 import { createLogger } from '@/utils/Logger'
 import endpointCapabilityService from '../EndpointCapabilityService'
-import { PREFIX_V3 } from '../paths'
+import { PREFIX_V3, PREFIX_VENDOR_V1 } from '../paths/prefixes'
 import { SynapseExtensionHttpBase } from './SynapseExtensionHttpBase'
 
 const logger = createLogger('SynapseRoomSummaryService')
@@ -56,13 +56,20 @@ export type RoomEphemeralEvent = Record<string, unknown>
 /**
  * synapse-rust 房间摘要/临时事件扩展。
  * 从 SynapseRustExtensionsService 拆分而来。
+ *
+ * ⚠️ 前缀口径（2026-10-11 修正 404，见 `scripts/bare-matrix-paths-baseline.json` L-D05~L-D08）：
+ * 私有 room summary 端点在后端**只注册在 `/_matrix/vendor/v1` 与 `/_matrix/client/v1`**，
+ * **没有 v3**（后端守卫测试 `synapse-web/src/routes/route_module.rs:374` 显式断言
+ * `client/v3/rooms/{room_id}/summary` 计数为 0）。此前这里用 `PREFIX_V3` ⇒ 四个方法恒 404。
+ * 现统一走 `PREFIX_VENDOR_V1`（与 SDK `RoomSummaryManager` 的 `requestVendor` 一致）。
+ * 后续如需彻底去重，可迁移到 `client.getRoomSummaryManager()`（AccountDataService 已是该范式）。
  */
 class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
   /** 获取房间摘要
    */
   async getRoomSummary(roomId: string, throwOnError = true): Promise<RoomSummary | null> {
     try {
-      const path = `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/summary`
+      const path = `${PREFIX_VENDOR_V1}/rooms/${encodeURIComponent(roomId)}/summary`
       const available = await endpointCapabilityService.check('GET', path)
       if (!available) {
         logger.warn('[SynapseRust] 房间摘要端点不可用')
@@ -87,7 +94,7 @@ class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
   async getRoomSummaryMembers(roomId: string, throwOnError = true): Promise<RoomSummaryMember[]> {
     try {
       const response = await this.request<RoomSummaryMember[] | { data?: RoomSummaryMember[] }>(
-        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/summary/members`,
+        `${PREFIX_VENDOR_V1}/rooms/${encodeURIComponent(roomId)}/summary/members`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -117,7 +124,7 @@ class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
   async getRoomSummaryState(roomId: string, throwOnError = true): Promise<RoomSummaryState[]> {
     try {
       const response = await this.request<RoomSummaryState[] | { data?: RoomSummaryState[] }>(
-        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/summary/state`,
+        `${PREFIX_VENDOR_V1}/rooms/${encodeURIComponent(roomId)}/summary/state`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)
@@ -138,7 +145,7 @@ class SynapseRoomSummaryService extends SynapseExtensionHttpBase {
   async getRoomSummaryStats(roomId: string, throwOnError = true): Promise<RoomSummaryStats | null> {
     try {
       const response = await this.request<RoomSummaryStats | { data?: RoomSummaryStats }>(
-        `${PREFIX_V3}/rooms/${encodeURIComponent(roomId)}/summary/stats`,
+        `${PREFIX_VENDOR_V1}/rooms/${encodeURIComponent(roomId)}/summary/stats`,
         { method: 'GET' }
       )
       const data = this.unwrapMaybeWrappedData(response)

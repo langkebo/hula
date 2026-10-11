@@ -74,6 +74,7 @@ jobs:
           pnpm check:v-html
           pnpm check:doc-coverage
           pnpm check:sdk-boundary
+          pnpm check:bare-matrix-paths
           pnpm check:icon-colors
           pnpm check:guard-patterns
           pnpm check:settings-wiring

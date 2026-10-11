@@ -1,4 +1,4 @@
-import { PREFIX_V1 } from './prefixes'
+import { PREFIX_V1, PREFIX_VENDOR_V1 } from './prefixes'
 
 export const ROOM = {
   /** @deprecated Use CreationService.createRoom() instead */
@@ -37,7 +37,7 @@ export const ROOM = {
   SUMMARY_STATE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/summary/state`,
   TIMESTAMP_TO_EVENT: (roomId: string) => `${PREFIX_V1}/rooms/${encodeURIComponent(roomId)}/timestamp_to_event`,
   REPORT_SCANNER_INFO: (roomId: string, eventId: string) =>
-    `${PREFIX_V1}/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/scanner_info`,
+    `${PREFIX_VENDOR_V1}/rooms/${encodeURIComponent(roomId)}/report/${encodeURIComponent(eventId)}/scanner_info`,
   NOTIFICATIONS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/notifications`,
   UNREAD_COUNT: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/unread_count`,
   TIMELINE: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/timeline`,

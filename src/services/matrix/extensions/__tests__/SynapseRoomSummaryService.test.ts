@@ -31,6 +31,11 @@ vi.mock('../../paths', () => ({
   PREFIX_V3: '/_matrix/client/v3'
 }))
 
+vi.mock('../../paths/prefixes', () => ({
+  PREFIX_V3: '/_matrix/client/v3',
+  PREFIX_VENDOR_V1: '/_matrix/vendor/v1'
+}))
+
 function makeResponse(args: { ok: boolean; status: number; textResp?: string }): Response {
   return {
     ok: args.ok,

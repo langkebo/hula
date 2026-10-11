@@ -5,7 +5,7 @@ import { AUTH } from '../auth'
 import { BURN } from '../burn'
 import { MODERATION } from '../moderation'
 import { NOTIFICATION } from '../notification'
-import { PREFIX_V1, PREFIX_V3 } from '../prefixes'
+import { PREFIX_V1, PREFIX_V3, PREFIX_VENDOR_V1 } from '../prefixes'
 import { ROOM } from '../room'
 import { VOICE } from '../voice'
 import { WELL_KNOWN } from '../wellKnown'
@@ -123,8 +123,10 @@ describe('paths/room · v1 前缀路径', () => {
     expect(ROOM.TIMESTAMP_TO_EVENT('!r:s')).toBe(`${PREFIX_V1}/rooms/!r%3As/timestamp_to_event`)
   })
 
-  it('REPORT_SCANNER_INFO 使用 v1 前缀并编码 eventId', () => {
-    expect(ROOM.REPORT_SCANNER_INFO('!r:s', '$ev:1')).toBe(`${PREFIX_V1}/rooms/!r%3As/report/%24ev%3A1/scanner_info`)
+  it('REPORT_SCANNER_INFO 使用 vendor/v1 前缀并编码 eventId', () => {
+    expect(ROOM.REPORT_SCANNER_INFO('!r:s', '$ev:1')).toBe(
+      `${PREFIX_VENDOR_V1}/rooms/!r%3As/report/%24ev%3A1/scanner_info`
+    )
   })
 })
 

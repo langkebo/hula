@@ -40,7 +40,8 @@ describe('ROOM', () => {
 
   it('PREFIX_V1 endpoints', () => {
     expect(ROOM.TIMESTAMP_TO_EVENT('!r')).toBe('/_matrix/client/v1/rooms/!r/timestamp_to_event')
-    expect(ROOM.REPORT_SCANNER_INFO('!r', '$e')).toBe('/_matrix/client/v1/rooms/!r/report/%24e/scanner_info')
+    // scanner_info 属私有扩展面 ⇒ vendor/v1（后端只在 vendor/v1 注册；v1 形态零命中）
+    expect(ROOM.REPORT_SCANNER_INFO('!r', '$e')).toBe('/_matrix/vendor/v1/rooms/!r/report/%24e/scanner_info')
   })
 
   it('no-rooms-prefix endpoints', () => {

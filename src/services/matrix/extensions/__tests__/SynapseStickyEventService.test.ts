@@ -32,6 +32,10 @@ vi.mock('../../paths', () => ({
   MATRIX_PATHS: {}
 }))
 
+vi.mock('../../paths/prefixes', () => ({
+  PREFIX_UNSTABLE: '/_matrix/client/unstable'
+}))
+
 function makeResponse(args: { ok: boolean; status: number; textResp?: string }): Response {
   return {
     ok: args.ok,

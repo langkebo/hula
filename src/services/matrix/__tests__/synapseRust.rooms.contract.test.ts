@@ -6,7 +6,11 @@
  * `this.request()` → `getRuntimeAwareFetch()` → `globalThis.fetch`, so we
  * DO NOT mock getRuntimeAwareFetch. MSW intercepts the real fetch call.
  *
- * All endpoints here use PREFIX_V3 (/matrix/client/v3) inlined in the service.
+ * 前缀口径（2026-10-11 修正，见 `scripts/bare-matrix-paths-baseline.json` L-D03~L-D08）：
+ * - sticky events → `/_matrix/client/unstable/org.matrix.msc4354`（后端唯一注册形态）；
+ * - room summary（含 members/state/stats）→ `/_matrix/vendor/v1`（后端只在 vendor/v1 与 client/v1 注册，
+ *   **没有 v3**；守卫测试 `synapse-web/src/routes/route_module.rs:374` 断言 v3 计数为 0）；
+ * - room ephemeral 仍走 `/_matrix/client/v3`（该路由确实注册在 v3）。
  * Contract value: verify URL correctness (path, encoded roomId, query string),
  * HTTP method, request body shape, and response unwrapping
  * (`{data: ...}` wrapper vs bare payload).
@@ -44,22 +48,28 @@ vi.mock('../EndpointCapabilityService', () => ({
 }))
 
 const server = setupMswServer(
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/sticky_events`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/client/unstable/org.matrix.msc4354/rooms/:roomId/sticky_events`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({
       data: { events: [{ event_id: '$e1:hs', event_type: 'm.room.name', content: {}, updated_ts: 1 }] }
     })
   }),
-  http.post(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/sticky_events`, async ({ request }) => {
-    const body = await request.text()
-    seenUrls.push({ method: request.method, url: request.url, body })
-    return HttpResponse.json({ status: 'ok' })
-  }),
-  http.delete(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/sticky_events/:eventType`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ status: 'ok' })
-  }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/summary`, ({ request }) => {
+  http.post(
+    `${HOMESERVER}/_matrix/client/unstable/org.matrix.msc4354/rooms/:roomId/sticky_events`,
+    async ({ request }) => {
+      const body = await request.text()
+      seenUrls.push({ method: request.method, url: request.url, body })
+      return HttpResponse.json({ status: 'ok' })
+    }
+  ),
+  http.delete(
+    `${HOMESERVER}/_matrix/client/unstable/org.matrix.msc4354/rooms/:roomId/sticky_events/:eventType`,
+    ({ request }) => {
+      seenUrls.push({ method: request.method, url: request.url })
+      return HttpResponse.json({ status: 'ok' })
+    }
+  ),
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({
       data: {
@@ -70,15 +80,15 @@ const server = setupMswServer(
       }
     })
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/summary/members`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary/members`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json([{ user_id: '@u:hs', membership: 'join', is_hero: false }])
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/summary/state`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary/state`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json([{ event_type: 'm.room.name', state_key: '', event_id: '$e:hs', content: { name: 'R' } }])
   }),
-  http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/summary/stats`, ({ request }) => {
+  http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary/stats`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ room_id: '!room:hs', total_messages: 5 })
   }),
@@ -111,17 +121,19 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
   const filterBy = (substring: string) => seenUrls.filter((u) => u.url.includes(substring))
 
   describe('sticky events', () => {
-    it('getStickyEvents hits GET /_matrix/client/v3/rooms/{roomId}/sticky_events', async () => {
+    it('getStickyEvents hits GET /_matrix/client/unstable/org.matrix.msc4354/rooms/{roomId}/sticky_events', async () => {
       const result = await synapseStickyEventService.getStickyEvents('!room:hs')
       const calls = filterBy('/sticky_events')
       const getCall = calls.find((c) => c.method === 'GET' && !c.url.includes('/sticky_events/'))
       expect(getCall).toBeDefined()
-      expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/sticky_events`)
+      expect(getCall!.url).toBe(
+        `${HOMESERVER}/_matrix/client/unstable/org.matrix.msc4354/rooms/!room%3Ahs/sticky_events`
+      )
       expect(result).toHaveLength(1)
       expect(result[0].event_id).toBe('$e1:hs')
     })
 
-    it('setStickyEvent POSTs /_matrix/client/v3/rooms/{roomId}/sticky_events with {events:[{event_id,event_type}]}', async () => {
+    it('setStickyEvent POSTs /_matrix/client/unstable/org.matrix.msc4354/rooms/{roomId}/sticky_events with {events:[{event_id,event_type}]}', async () => {
       await synapseStickyEventService.setStickyEvent('!room:hs', '$e1:hs', 'm.room.name')
       const calls = filterBy('/sticky_events')
       const postCall = calls.find((c) => c.method === 'POST')
@@ -131,29 +143,31 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
       })
     })
 
-    it('clearStickyEvent DELETEs /_matrix/client/v3/rooms/{roomId}/sticky_events/{eventType}', async () => {
+    it('clearStickyEvent DELETEs /_matrix/client/unstable/org.matrix.msc4354/rooms/{roomId}/sticky_events/{eventType}', async () => {
       await synapseStickyEventService.clearStickyEvent('!room:hs', 'm.room.name')
       const calls = filterBy('/sticky_events/')
       const deleteCall = calls.find((c) => c.method === 'DELETE')
       expect(deleteCall).toBeDefined()
-      expect(deleteCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/sticky_events/m.room.name`)
+      expect(deleteCall!.url).toBe(
+        `${HOMESERVER}/_matrix/client/unstable/org.matrix.msc4354/rooms/!room%3Ahs/sticky_events/m.room.name`
+      )
     })
   })
 
   describe('room summary', () => {
-    it('getRoomSummary hits GET /_matrix/client/v3/rooms/{roomId}/summary and unwraps {data}', async () => {
+    it('getRoomSummary hits GET /_matrix/vendor/v1/rooms/{roomId}/summary and unwraps {data}', async () => {
       const result = await synapseRoomSummaryService.getRoomSummary('!room:hs')
       const calls = filterBy('/summary')
       const getCall = calls.find((c) => c.method === 'GET' && !c.url.includes('/summary/'))
       expect(getCall).toBeDefined()
-      expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/client/v3/rooms/!room%3Ahs/summary`)
+      expect(getCall!.url).toBe(`${HOMESERVER}/_matrix/vendor/v1/rooms/!room%3Ahs/summary`)
       expect(result?.room_id).toBe('!room:hs')
       expect(result?.name).toBe('Test Room')
     })
 
     it('getRoomSummary accepts bare payload (no {data} wrapper)', async () => {
       server.use(
-        http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/summary`, ({ request }) => {
+        http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary`, ({ request }) => {
           seenUrls.push({ method: request.method, url: request.url })
           return HttpResponse.json({
             room_id: '!bare:hs',
@@ -170,7 +184,7 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
 
     it('getRoomSummary returns null on 404 when throwOnError=false', async () => {
       server.use(
-        http.get(`${HOMESERVER}/_matrix/client/v3/rooms/:roomId/summary`, ({ request }) => {
+        http.get(`${HOMESERVER}/_matrix/vendor/v1/rooms/:roomId/summary`, ({ request }) => {
           seenUrls.push({ method: request.method, url: request.url })
           return new HttpResponse(null, { status: 404 })
         })
@@ -179,7 +193,7 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
       expect(result).toBeNull()
     })
 
-    it('getRoomSummaryMembers hits GET /_matrix/client/v3/rooms/{roomId}/summary/members (bare array)', async () => {
+    it('getRoomSummaryMembers hits GET /_matrix/vendor/v1/rooms/{roomId}/summary/members (bare array)', async () => {
       const result = await synapseRoomSummaryService.getRoomSummaryMembers('!room:hs')
       const calls = filterBy('/summary/members')
       expect(calls).toHaveLength(1)
@@ -188,7 +202,7 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
       expect(result[0].user_id).toBe('@u:hs')
     })
 
-    it('getRoomSummaryState hits GET /_matrix/client/v3/rooms/{roomId}/summary/state (bare array)', async () => {
+    it('getRoomSummaryState hits GET /_matrix/vendor/v1/rooms/{roomId}/summary/state (bare array)', async () => {
       const result = await synapseRoomSummaryService.getRoomSummaryState('!room:hs')
       const calls = filterBy('/summary/state')
       expect(calls).toHaveLength(1)
@@ -197,7 +211,7 @@ describe('SynapseRust extensions rooms URL construction contract (real fetch + m
       expect(result[0].event_type).toBe('m.room.name')
     })
 
-    it('getRoomSummaryStats hits GET /_matrix/client/v3/rooms/{roomId}/summary/stats (bare object)', async () => {
+    it('getRoomSummaryStats hits GET /_matrix/vendor/v1/rooms/{roomId}/summary/stats (bare object)', async () => {
       const result = await synapseRoomSummaryService.getRoomSummaryStats('!room:hs')
       const calls = filterBy('/summary/stats')
       expect(calls).toHaveLength(1)
