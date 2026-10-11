@@ -43,7 +43,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const members = await admin.getRoomMembers(roomId)
-      return (members ?? []).map((m) => m.user_id)
+      return (members?.members ?? []).map((m) => m.user_id)
     } catch (err) {
       logger.error(`[Admin] 获取房间成员失败: ${err}`)
       return []
@@ -86,7 +86,7 @@ export class AdminRoomService {
       return {
         kickedUsers: result?.kicked_users ?? [],
         failedToKickUsers: result?.failed_to_kick_users ?? [],
-        localAliases: result?.local_aliases ?? []
+        localAliases: []
       }
     } catch (err) {
       logger.error(`[Admin] 关闭房间失败: ${err}`)
@@ -218,6 +218,9 @@ export class AdminRoomService {
   }
 
   async makeRoomAdmin(roomId: string, userId?: string): Promise<void> {
+    if (!userId) {
+      throw new Error('makeRoomAdmin: userId 不能为空')
+    }
     try {
       const admin = await this.sdkAdmin()
       await admin.makeRoomAdmin(roomId, { user_id: userId })
@@ -234,13 +237,11 @@ export class AdminRoomService {
   ): Promise<{ purgeId: string }> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.purgeRoomHistory(roomId, {
-        purge_up_to_event_id: options?.purgeUpToEventId,
-        purge_up_to_ts: options?.purgeUpToTs,
-        delete_local_events: options?.deleteLocalEvents
+      await admin.purgeRoomHistory(roomId, {
+        purge_up_to_ts: options?.purgeUpToTs
       })
       logger.info(`[Admin] 清理历史: ${roomId}`)
-      return { purgeId: result?.purge_id ?? '' }
+      return { purgeId: '' }
     } catch (err) {
       logger.error(`[Admin] 清理历史失败: ${err}`)
       throw err
@@ -332,7 +333,7 @@ export class AdminRoomService {
       const result = await admin.searchRoomEvents(roomId, { search_term: searchTerm, limit })
       return {
         results: (result?.results ?? []).map((e) => e as unknown as Record<string, unknown>),
-        nextBatch: result?.next_batch
+        nextBatch: undefined
       }
     } catch (err) {
       logger.error(`[Admin] 房间内搜索失败: ${err}`)
@@ -352,7 +353,7 @@ export class AdminRoomService {
       const result = await admin.searchRooms({ search_term: searchTerm })
       return {
         rooms: (result?.results ?? []).map((e) => e as unknown as Record<string, unknown>),
-        nextBatch: result?.next_batch
+        nextBatch: result?.next_batch ?? undefined
       }
     } catch (err) {
       logger.error(`[Admin] 全局房间搜索失败: ${err}`)
@@ -384,7 +385,7 @@ export class AdminRoomService {
       const result = await admin.listSpaces(from, limit)
       return {
         spaces: (result?.spaces ?? []).map((s) => s as unknown as Record<string, unknown>),
-        next_batch: result?.next_batch
+        next_batch: undefined
       }
     } catch (err) {
       logger.error(`[Admin] 获取空间列表失败: ${err}`)

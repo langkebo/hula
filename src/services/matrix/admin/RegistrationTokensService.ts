@@ -1,34 +1,10 @@
+import type { AdminManager } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import type { RegistrationToken } from './AdminTypes'
 
 const logger = createLogger('RegistrationTokensService')
 
-type SdkAdminManager = {
-  getRegistrationTokens(): Promise<
-    Array<{
-      token: string
-      uses_allowed?: number
-      pending?: number
-      completed?: number
-      expiry_ts?: number
-    }>
-  >
-  createRegistrationToken(
-    tokenOrPayload: string | { token: string; uses_allowed?: number; expiry_ts?: number },
-    usesAllowed?: number,
-    expiryTs?: number
-  ): Promise<{
-    token: string
-    uses_allowed?: number
-    pending?: number
-    completed?: number
-    expiry_ts?: number
-  }>
-  updateRegistrationToken(token: string, body: { uses_allowed?: number; expiry_ts?: number }): Promise<void>
-  deleteRegistrationToken(token: string): Promise<void>
-}
-
-type SdkAdminGetter = () => Promise<SdkAdminManager>
+type SdkAdminGetter = () => Promise<AdminManager>
 
 /**
  * Admin Registration Tokens domain service.
@@ -43,13 +19,13 @@ export class AdminRegistrationTokensService {
   async list(): Promise<RegistrationToken[]> {
     try {
       const admin = await this.sdkAdmin()
-      const tokens = await admin.getRegistrationTokens()
-      return (tokens ?? []).map((t) => ({
+      const page = await admin.getRegistrationTokens()
+      return (page?.registration_tokens ?? []).map((t) => ({
         token: t.token,
-        usesAllowed: t.uses_allowed,
+        usesAllowed: t.uses_allowed ?? undefined,
         pending: t.pending ?? 0,
         completed: t.completed ?? 0,
-        expiryTime: t.expiry_ts
+        expiryTime: t.expiry_time ?? undefined
       }))
     } catch (err) {
       logger.error(`[Admin] 获取注册令牌失败: ${err}`)
@@ -75,23 +51,18 @@ export class AdminRegistrationTokensService {
   }): Promise<RegistrationToken | null> {
     try {
       const admin = await this.sdkAdmin()
-      let result: { token: string; uses_allowed?: number; pending?: number; completed?: number; expiry_ts?: number }
-      if (options?.token) {
-        result = await admin.createRegistrationToken({
-          token: options.token,
-          uses_allowed: options.usesAllowed,
-          expiry_ts: options.expiryTime
-        })
-      } else {
-        result = await admin.createRegistrationToken(`tjg_${Date.now()}`, options?.usesAllowed, options?.expiryTime)
-      }
+      const result = await admin.createRegistrationToken({
+        token: options?.token ?? `tjg_${Date.now()}`,
+        uses_allowed: options?.usesAllowed,
+        expiry_time: options?.expiryTime
+      })
       logger.info('[Admin] 注册令牌已创建')
       return {
         token: result.token,
-        usesAllowed: result.uses_allowed,
+        usesAllowed: result.uses_allowed ?? undefined,
         pending: result.pending ?? 0,
         completed: result.completed ?? 0,
-        expiryTime: result.expiry_ts
+        expiryTime: result.expiry_time ?? undefined
       }
     } catch (err) {
       logger.error(`[Admin] 创建注册令牌失败: ${err}`)
@@ -105,9 +76,9 @@ export class AdminRegistrationTokensService {
   ): Promise<RegistrationToken | null> {
     try {
       const admin = await this.sdkAdmin()
-      const body: { uses_allowed?: number; expiry_ts?: number } = {}
+      const body: { uses_allowed?: number; expiry_time?: number } = {}
       if (updates.usesAllowed !== undefined) body.uses_allowed = updates.usesAllowed
-      if (updates.expiryTime !== undefined) body.expiry_ts = updates.expiryTime
+      if (updates.expiryTime !== undefined) body.expiry_time = updates.expiryTime
       await admin.updateRegistrationToken(token, body)
       logger.info(`[Admin] 注册令牌已更新: ${token}`)
       return this.get(token)

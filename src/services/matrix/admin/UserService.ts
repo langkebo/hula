@@ -144,7 +144,7 @@ export class AdminUserService {
         nonce,
         admin,
         displayname: username,
-        mac
+        mac: mac ?? ''
       })
       logger.info(`[Admin] 管理员注册用户: ${username}`)
       return {
@@ -350,7 +350,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserRooms(userId)
-      const rooms = (result?.rooms ?? []) as Array<string | SynapseUserRoom>
+      const rooms = (result?.joined_rooms ?? []) as Array<string | SynapseUserRoom>
       if (Array.isArray(rooms)) {
         return rooms.map((room) => {
           if (typeof room === 'string') {
@@ -384,12 +384,12 @@ export class AdminUserService {
   }
 
   async getUserStatsList(
-    limit = 100,
-    from?: string
+    _limit = 100,
+    _from?: string
   ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string }> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.listUserStats(from, limit)
+      const result = await admin.listUserStats()
       return {
         stats: [result as unknown as Record<string, unknown>],
         nextToken: undefined
@@ -411,10 +411,9 @@ export class AdminUserService {
   ): Promise<Array<{ userId: string; success: boolean }>> {
     try {
       const admin = await this.sdkAdmin()
-      const domain = this.getClient().getDomain()
       const payload: BatchCreateUsersRequest = {
         users: users.map((user) => ({
-          user_id: `@${user.username}:${domain}`,
+          username: user.username,
           password: user.password,
           displayname: user.displayname,
           admin: user.admin || false
@@ -423,7 +422,7 @@ export class AdminUserService {
       const result = await admin.batchCreateUsers(payload)
       logger.info(`[Admin] 批量创建用户: ${users.length}个`)
       const created = (result?.created ?? []).map((userId) => ({ userId, success: true }))
-      const errors = (result?.errors ?? []).map((e) => ({ userId: e.user_id, success: false }))
+      const errors = (result?.failed ?? []).map((userId) => ({ userId, success: false }))
       return [...created, ...errors]
     } catch (err) {
       if (this.isPermissionDenied(err)) return []
@@ -435,11 +434,11 @@ export class AdminUserService {
   async batchDeactivateUsers(userIds: string[], erase = false): Promise<Array<{ userId: string; success: boolean }>> {
     try {
       const admin = await this.sdkAdmin()
-      const payload: BatchDeactivateUsersRequest = { user_ids: userIds, erase }
+      const payload: BatchDeactivateUsersRequest = { users: userIds, erase }
       const result = await admin.batchDeactivateUsers(payload)
       logger.info(`[Admin] 批量停用用户: ${userIds.length}个`)
       const deactivated = (result?.deactivated ?? []).map((userId) => ({ userId, success: true }))
-      const errors = (result?.errors ?? []).map((e) => ({ userId: e.user_id, success: false }))
+      const errors = (result?.failed ?? []).map((userId) => ({ userId, success: false }))
       return [...deactivated, ...errors]
     } catch (err) {
       if (this.isPermissionDenied(err)) return []
@@ -592,8 +591,7 @@ export class AdminUserService {
       deactivated: user.deactivated,
       isGuest: user.is_guest,
       createdTs: user.created_ts,
-      displayname: user.displayname,
-      lastSeenTs: user.last_seen_ts
+      displayname: user.displayname
     }
   }
 }

@@ -40,7 +40,11 @@ export {
   SlidingSyncState,
   Visibility
 } from 'matrix-js-sdk'
-export type { AdminManager, AdminShutdownRoomResult } from 'matrix-js-sdk/admin'
+export type {
+  AdminManager,
+  AdminShutdownRoomResult,
+  FederationDestination as SdkFederationDestination
+} from 'matrix-js-sdk/admin'
 export { ClientEvent } from 'matrix-js-sdk/client'
 export type { SdkContractModule, SdkContractRoute } from 'matrix-js-sdk/contract'
 // 契约路由表：SDK 的聚合出口（`matrix-js-sdk/contract` 汇总全部 __generated__/route-table）。

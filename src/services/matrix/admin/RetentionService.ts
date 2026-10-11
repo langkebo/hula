@@ -87,7 +87,7 @@ export class AdminRetentionService {
     if (!this.getClient) throw new Error('[AdminRetention] getClient not provided')
     const client = this.getClient()
     try {
-      const policy = await client.getRoomStateEvent(roomId, 'm.room.retention', '')
+      const policy = await client.getStateEvent(roomId, 'm.room.retention', '')
       return {
         roomId,
         policy: policy

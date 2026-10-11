@@ -1,4 +1,4 @@
-import type { FeatureFlag } from 'matrix-js-sdk/admin'
+import type { FeatureFlag, FederationDestination as SdkFederationDestination } from 'matrix-js-sdk/admin'
 import { createLogger } from '@/utils/Logger'
 import type { FederationDestination } from './AdminTypes'
 
@@ -119,7 +119,7 @@ export class AdminSecurityService {
       const result = await admin.listAuditEvents(params)
       return {
         logs: (result?.events ?? []).map((e) => e as unknown as Record<string, unknown>),
-        next_batch: result?.next_token != null ? String(result.next_token) : undefined
+        next_batch: result?.next_batch != null ? String(result.next_batch) : undefined
       }
     } catch (err) {
       logger.error(`[Admin] 获取审计日志失败: ${err}`)
@@ -430,23 +430,15 @@ export class AdminSecurityService {
   }
 
   private mapFederationDestination(
-    destination: FederationDestinationSdk,
+    destination: SdkFederationDestination,
     fallbackDestination = ''
   ): FederationDestination {
     return {
       destination: destination.destination || fallbackDestination,
-      retryLastTs: destination.retry_last_ts,
-      retryInterval: destination.retry_interval,
-      failureTs: destination.failure_ts,
-      lastSuccessfulStreamOrdering: destination.last_successful_stream_ordering
+      retryLastTs: destination.retry_last_ts ?? undefined,
+      retryInterval: destination.retry_interval ?? undefined,
+      failureTs: destination.failure_ts ?? undefined,
+      lastSuccessfulStreamOrdering: destination.last_successful_ts ?? undefined
     }
   }
-}
-
-type FederationDestinationSdk = {
-  destination?: string
-  retry_last_ts?: number
-  retry_interval?: number
-  failure_ts?: number
-  last_successful_stream_ordering?: number
 }

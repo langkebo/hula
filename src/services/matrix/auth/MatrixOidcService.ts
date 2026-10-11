@@ -175,7 +175,7 @@ class MatrixOidcService {
       const client = this.getClient()
       if (!client) return null
 
-      const userInfo = await client.oidcUserInfo()
+      const userInfo = await client.getOidcManager().getUserInfo()
       return userInfo as unknown as OidcUserInfo
     } catch (err) {
       logger.error(`[MatrixOidcService] Error getting user info: ${err}`)

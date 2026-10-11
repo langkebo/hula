@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AdminManager } from '@/services/matrix/sdk'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -21,14 +22,16 @@ describe('AdminRegistrationTokensService', () => {
 
   beforeEach(() => {
     admin = makeAdmin()
-    service = new AdminRegistrationTokensService(async () => admin)
+    service = new AdminRegistrationTokensService(async () => admin as unknown as AdminManager)
   })
 
-  it('list maps SDK snake_case to domain camelCase', async () => {
-    admin.getRegistrationTokens.mockResolvedValueOnce([
-      { token: 't1', uses_allowed: 5, pending: 1, completed: 2, expiry_ts: 1700000000 },
-      { token: 't2' }
-    ])
+  it('list maps SDK snake_case page to domain camelCase', async () => {
+    admin.getRegistrationTokens.mockResolvedValueOnce({
+      registration_tokens: [
+        { token: 't1', uses_allowed: 5, pending: 1, completed: 2, expiry_time: 1700000000 },
+        { token: 't2' }
+      ]
+    })
     const result = await service.list()
     expect(result).toEqual([
       { token: 't1', usesAllowed: 5, pending: 1, completed: 2, expiryTime: 1700000000 },
@@ -42,13 +45,15 @@ describe('AdminRegistrationTokensService', () => {
   })
 
   it('get returns the matching token from list', async () => {
-    admin.getRegistrationTokens.mockResolvedValueOnce([{ token: 't1' }, { token: 't2' }])
+    admin.getRegistrationTokens.mockResolvedValueOnce({
+      registration_tokens: [{ token: 't1' }, { token: 't2' }]
+    })
     const result = await service.get('t2')
     expect(result?.token).toBe('t2')
   })
 
   it('get returns null when missing', async () => {
-    admin.getRegistrationTokens.mockResolvedValueOnce([])
+    admin.getRegistrationTokens.mockResolvedValueOnce({ registration_tokens: [] })
     expect(await service.get('tX')).toBeNull()
   })
 
@@ -58,13 +63,13 @@ describe('AdminRegistrationTokensService', () => {
       uses_allowed: 3,
       pending: 0,
       completed: 0,
-      expiry_ts: 123
+      expiry_time: 123
     })
     const result = await service.create({ token: 'new', usesAllowed: 3, expiryTime: 123 })
     expect(admin.createRegistrationToken).toHaveBeenCalledWith({
       token: 'new',
       uses_allowed: 3,
-      expiry_ts: 123
+      expiry_time: 123
     })
     expect(result).toEqual({
       token: 'new',
@@ -75,10 +80,14 @@ describe('AdminRegistrationTokensService', () => {
     })
   })
 
-  it('create omits undefined fields from the body', async () => {
+  it('create generates a token when none is supplied', async () => {
     admin.createRegistrationToken.mockResolvedValueOnce({ token: 'auto' })
     await service.create()
-    expect(admin.createRegistrationToken).toHaveBeenCalledWith(expect.stringMatching(/^tjg_\d+$/), undefined, undefined)
+    expect(admin.createRegistrationToken).toHaveBeenCalledWith({
+      token: expect.stringMatching(/^tjg_\d+$/),
+      uses_allowed: undefined,
+      expiry_time: undefined
+    })
   })
 
   it('create returns null on backend error', async () => {
@@ -88,7 +97,9 @@ describe('AdminRegistrationTokensService', () => {
 
   it('update passes snake_case body and refreshes via list', async () => {
     admin.updateRegistrationToken.mockResolvedValueOnce(undefined)
-    admin.getRegistrationTokens.mockResolvedValueOnce([{ token: 't1', uses_allowed: 9 }])
+    admin.getRegistrationTokens.mockResolvedValueOnce({
+      registration_tokens: [{ token: 't1', uses_allowed: 9 }]
+    })
     const result = await service.update('t1', { usesAllowed: 9 })
     expect(admin.updateRegistrationToken).toHaveBeenCalledWith('t1', { uses_allowed: 9 })
     expect(result?.usesAllowed).toBe(9)

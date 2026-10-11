@@ -13,12 +13,12 @@ export class AdminServerService {
       const admin = await this.sdkAdmin()
       const stats = await admin.getServerStats()
       return {
-        roomCount: Number(stats?.total_rooms ?? stats?.room_count ?? 0),
-        userCount: Number(stats?.total_users ?? stats?.user_count ?? 0),
+        roomCount: Number(stats?.total_rooms ?? 0),
+        userCount: Number(stats?.total_users ?? 0),
         dailyActiveUsers: Number(stats?.daily_active_users ?? 0),
         monthlyActiveUsers: Number(stats?.monthly_active_users ?? 0),
-        messageCount: Number(stats?.total_nonlocal_users ?? 0),
-        startServerTime: Number(stats?.server_start_time ?? 0)
+        messageCount: Number(stats?.total_messages ?? 0),
+        startServerTime: 0
       }
     } catch (err) {
       logger.error(`[AdminServer] 获取统计失败: ${err}`)
@@ -39,8 +39,8 @@ export class AdminServerService {
       const result = await admin.getServerStatus()
       if (!result) return null
       return {
-        status: result.status,
-        uptime: result.uptime
+        status: result.up ? 'online' : 'offline',
+        uptime: undefined
       }
     } catch (err) {
       logger.error(`[AdminServer] 获取服务器状态失败: ${err}`)

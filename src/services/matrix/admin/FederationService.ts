@@ -1,4 +1,4 @@
-import type { AdminManager } from '@/services/matrix/sdk'
+import type { AdminManager, SdkFederationDestination } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import type { FederationBlacklistEntry, FederationDestination } from './AdminTypes'
 
@@ -45,12 +45,12 @@ export class AdminFederationService {
   async getFederationBlacklist(): Promise<FederationBlacklistEntry[]> {
     try {
       const admin = await this.sdkAdmin()
-      const items = await admin.getFederationBlacklist()
-      return (items ?? []).map((item) => ({
+      const page = await admin.getFederationBlacklist()
+      return (page?.blacklist ?? []).map((item) => ({
         domain: item.server_name,
-        reason: item.reason,
+        reason: item.reason ?? undefined,
         addedBy: undefined,
-        addedAt: item.added_ts
+        addedAt: item.added_at
       }))
     } catch (err) {
       logger.error(`[AdminFederation] 获取联邦黑名单失败: ${err}`)
@@ -83,23 +83,15 @@ export class AdminFederationService {
   }
 
   private mapFederationDestination(
-    destination: FederationDestinationSdk,
+    destination: SdkFederationDestination,
     fallbackDestination = ''
   ): FederationDestination {
     return {
       destination: destination.destination || fallbackDestination,
-      retryLastTs: destination.retry_last_ts,
-      retryInterval: destination.retry_interval,
-      failureTs: destination.failure_ts,
-      lastSuccessfulStreamOrdering: destination.last_successful_stream_ordering
+      retryLastTs: destination.retry_last_ts ?? undefined,
+      retryInterval: destination.retry_interval ?? undefined,
+      failureTs: destination.failure_ts ?? undefined,
+      lastSuccessfulStreamOrdering: destination.last_successful_ts ?? undefined
     }
   }
-}
-
-type FederationDestinationSdk = {
-  destination?: string
-  retry_last_ts?: number
-  retry_interval?: number
-  failure_ts?: number
-  last_successful_stream_ordering?: number
 }
