@@ -235,3 +235,32 @@ export async function deleteCryptoStorageKey(userId: string, deviceId: string): 
 export function clearCryptoStorageKeyCache(): void {
   keyCache.clear()
 }
+
+/**
+ * 记录 crypto storageKey **实际存放的后端**。
+ *
+ * 为什么抽到这里而不是内联在调用方：`MatrixCryptoStateTracker.ts` 属于
+ * `check:file-size` 的体积基线受管文件（只许缩不许增），内联这段日志会让它增长
+ * 十余行并顶红门禁。放在本模块还能与"从哪个后端读取"的既有文案共用同一描述函数。
+ *
+ * 后端事实来自 Rust 侧**实测**：**降级时不得出现 "keychain" 字样** ——
+ * 历史实现无条件打印"已从 keychain 获取"，而同一 run 的 Rust 侧却打印
+ * `Keychain bug detected … Falling back to file storage`，两处日志互相矛盾，
+ * 使"密钥其实只在 master-key 加密的文件里"这一降级对用户与排障者都不可见。
+ *
+ * @param userId Matrix 用户 ID
+ * @param deviceId Matrix 设备 ID
+ */
+export async function logCryptoStorageKeyBackend(userId: string, deviceId: string): Promise<void> {
+  const backendInfo = await getSecureStorageBackendInfo()
+  const backendLabel = describeSecureStorageBackend(backendInfo)
+
+  if (backendInfo.degraded) {
+    logger.warn(
+      `crypto storageKey（32 字节）仅存于 ${backendLabel} —— 未受操作系统密钥库保护；crypto store 将加密: ${userId}/${deviceId}`
+    )
+    return
+  }
+
+  logger.info(`crypto storageKey（32 字节）存储于 ${backendLabel}，crypto store 将加密: ${userId}/${deviceId}`)
+}

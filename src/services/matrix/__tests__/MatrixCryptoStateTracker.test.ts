@@ -10,7 +10,9 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 vi.mock('@/services/secure/cryptoStorageKey', () => ({
   getOrCreateCryptoStorageKey: vi.fn().mockResolvedValue(null),
-  deleteCryptoStorageKey: vi.fn().mockResolvedValue(undefined)
+  deleteCryptoStorageKey: vi.fn().mockResolvedValue(undefined),
+  // 密钥存放后端的日志（本文件不关心其内容，但 mock 必须与模块导出同形）
+  logCryptoStorageKeyBackend: vi.fn().mockResolvedValue(undefined)
 }))
 
 /**
