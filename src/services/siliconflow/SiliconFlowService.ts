@@ -123,7 +123,8 @@ class SiliconFlowClient {
         timeoutMs: 5000,
         headers: {
           Authorization: `Bearer ${this.config.apiKey}`
-        }
+        },
+        allowDynamicHost: true
       })
 
       this.updateConnectionState({
@@ -175,7 +176,8 @@ class SiliconFlowClient {
     const response = await HttpClient.streamResponse(`${this.config.baseUrl}/v1/chat/completions`, requestBody, {
       headers: {
         Authorization: `Bearer ${this.config.apiKey}`
-      }
+      },
+      allowDynamicHost: true
     })
 
     const reader = response.body?.getReader()
@@ -224,7 +226,8 @@ class SiliconFlowClient {
   async testConnection(baseUrl: string, apiKey: string): Promise<boolean> {
     try {
       await HttpClient.get(`${baseUrl}/v1/models`, {
-        headers: { Authorization: `Bearer ${apiKey}` }
+        headers: { Authorization: `Bearer ${apiKey}` },
+        allowDynamicHost: true
       })
       return true
     } catch (err) {
@@ -252,7 +255,8 @@ class SiliconFlowClient {
     return HttpClient.streamResponse(`${config.baseUrl}/v1/chat/completions`, body, {
       headers: {
         Authorization: `Bearer ${config.apiKey}`
-      }
+      },
+      allowDynamicHost: true
     })
   }
 

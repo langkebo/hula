@@ -1,6 +1,6 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-10-12T08:00:57.464Z",
+  "updated_at": "2026-10-12T12:18:59.214Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
@@ -288,11 +288,11 @@
       "lines": 479
     },
     {
-      "file": "src/mobile/views/my/EncryptionSettings.vue",
-      "lines": 477
+      "file": "src/utils/PerformanceReporter.ts",
+      "lines": 478
     },
     {
-      "file": "src/utils/PerformanceReporter.ts",
+      "file": "src/mobile/views/my/EncryptionSettings.vue",
       "lines": 477
     },
     {
@@ -384,11 +384,11 @@
       "lines": 438
     },
     {
-      "file": "src/utils/PathUtil.ts",
-      "lines": 433
+      "file": "src/mobile/views/my/SecuritySettings.vue",
+      "lines": 432
     },
     {
-      "file": "src/mobile/views/my/SecuritySettings.vue",
+      "file": "src/utils/PathUtil.ts",
       "lines": 432
     },
     {
@@ -440,15 +440,15 @@
       "lines": 419
     },
     {
+      "file": "src/services/siliconflow/SiliconFlowService.ts",
+      "lines": 419
+    },
+    {
       "file": "src/components/space/SpaceTree.vue",
       "lines": 416
     },
     {
       "file": "src/composables/common/useUpload.ts",
-      "lines": 415
-    },
-    {
-      "file": "src/services/siliconflow/SiliconFlowService.ts",
       "lines": 415
     },
     {

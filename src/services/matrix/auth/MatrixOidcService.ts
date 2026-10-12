@@ -60,7 +60,8 @@ class MatrixOidcService {
 
       const url = `${homeserverUrl}${MATRIX_PATHS.WELL_KNOWN.OIDC_DISCOVERY}`
 
-      const discovery = await HttpClient.get<OidcDiscoveryDocument>(url)
+      // homeserver 由 env/用户配置（动态 host）
+      const discovery = await HttpClient.get<OidcDiscoveryDocument>(url, { allowDynamicHost: true })
       this.discovery = discovery
       logger.info(`[MatrixOidcService] OIDC discovered successfully. Issuer: ${discovery.issuer}`)
       return discovery
@@ -253,11 +254,16 @@ class MatrixOidcService {
         access_token: string
         device_id: string
         refresh_token?: string
-      }>(`${homeserverUrl}/_matrix/client/v3/oidc/token`, {
-        grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
-        oidc_access_token: oidcAccessToken,
-        oidc_refresh_token: oidcRefreshToken
-      })
+      }>(
+        `${homeserverUrl}/_matrix/client/v3/oidc/token`,
+        {
+          grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
+          oidc_access_token: oidcAccessToken,
+          oidc_refresh_token: oidcRefreshToken
+        },
+        // homeserver 由 env/用户配置（动态 host）
+        { allowDynamicHost: true }
+      )
 
       logger.info(`[MatrixOidcService] OIDC to Matrix token exchange successful`)
       return result

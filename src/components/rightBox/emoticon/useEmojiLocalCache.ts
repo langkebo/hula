@@ -160,7 +160,7 @@ export const useEmojiLocalCache = ({ isFavoritesView, emojiStore, userStore }: U
   const downloadEmojiFile = async (url: string) => {
     const worker = getEmojiWorker()
     if (!worker) {
-      const buffer = await HttpClient.downloadBytes(url)
+      const buffer = await HttpClient.downloadBytes(url, { allowDynamicHost: true })
       return new Uint8Array(buffer)
     }
 

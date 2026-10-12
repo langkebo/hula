@@ -294,7 +294,7 @@ class MatrixMultimediaService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.media.invalid_mxc_url'))
       }
 
-      const buffer = await HttpClient.downloadBytes(httpUrl)
+      const buffer = await HttpClient.downloadBytes(httpUrl, { allowDynamicHost: true })
       const mimeHint = filename.split('.').pop()?.toLowerCase()
       const mimeType = mimeHint && MIME_EXT_MAP[mimeHint] ? MIME_EXT_MAP[mimeHint] : 'application/octet-stream'
       const blob = new Blob([buffer], { type: mimeType })

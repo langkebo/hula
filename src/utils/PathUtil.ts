@@ -276,7 +276,7 @@ export const ensureModelFile = async (fileName: string, remoteUrl: string): Prom
   const modelExists = await exists(modelRelativePath, { baseDir })
 
   if (!modelExists) {
-    const buffer = await HttpClient.downloadBytes(remoteUrl)
+    const buffer = await HttpClient.downloadBytes(remoteUrl, { allowDynamicHost: true })
     await writeFile(modelRelativePath, new Uint8Array(buffer), {
       baseDir
     })
@@ -317,7 +317,7 @@ export async function detectRemoteFileType(options: {
       // 1. 先发送 HEAD 请求，检查文件是否存在及大小
       let headResponse: Response
       try {
-        headResponse = await HttpClient.head(url)
+        headResponse = await HttpClient.head(url, { allowDynamicHost: true })
       } catch (e) {
         showFeedback('找不到文件', 'error')
         throw e
@@ -352,7 +352,8 @@ export async function detectRemoteFileType(options: {
       const rangeEnd = shouldUseRange ? byteLength - 1 : void 0
 
       const buffer = await HttpClient.downloadBytes(url, {
-        headers: shouldUseRange ? { Range: `bytes=0-${rangeEnd}` } : undefined
+        headers: shouldUseRange ? { Range: `bytes=0-${rangeEnd}` } : undefined,
+        allowDynamicHost: true
       })
 
       // 4. 如果 buffer 有数据，尝试解析文件类型
@@ -390,7 +391,7 @@ export async function getFile(absolutePath: string) {
 
 export async function getRemoteFileSize(url: string): Promise<number | null> {
   try {
-    const response = await HttpClient.head(url)
+    const response = await HttpClient.head(url, { allowDynamicHost: true })
     const length = response.headers.get('content-length')
     return length ? Number(length) : null
   } catch (error) {

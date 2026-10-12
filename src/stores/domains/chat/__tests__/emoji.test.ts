@@ -48,7 +48,8 @@ vi.mock('@/services/matrix/messaging/MatrixEmojiService', () => ({
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({
     error: vi.fn(),
-    warn: vi.fn()
+    warn: vi.fn(),
+    info: vi.fn()
   })
 }))
 

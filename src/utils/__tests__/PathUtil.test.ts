@@ -171,7 +171,7 @@ describe('PathUtil', () => {
     it('returns the content-length header as a number', async () => {
       headMock.mockResolvedValue(new Response(null, { headers: { 'content-length': '2048' } }))
       const size = await getRemoteFileSize('https://example.com/image.png')
-      expect(headMock).toHaveBeenCalledWith('https://example.com/image.png')
+      expect(headMock).toHaveBeenCalledWith('https://example.com/image.png', { allowDynamicHost: true })
       expect(size).toBe(2048)
     })
 
@@ -374,7 +374,7 @@ describe('PathUtil', () => {
       const buffer = new ArrayBuffer(8)
       downloadBytesMock.mockResolvedValue(buffer)
       const result = await ensureModelFile('tjg.glb', 'https://example.com/hula.glb')
-      expect(downloadBytesMock).toHaveBeenCalledWith('https://example.com/hula.glb')
+      expect(downloadBytesMock).toHaveBeenCalledWith('https://example.com/hula.glb', { allowDynamicHost: true })
       expect(writeFileMock).toHaveBeenCalledWith('userData/models/tjg.glb', expect.any(Uint8Array), {
         baseDir: 'AppData'
       })
@@ -408,9 +408,10 @@ describe('PathUtil', () => {
       headMock.mockResolvedValue(new Response(null, { headers: { 'content-length': '8192' } }))
       downloadBytesMock.mockResolvedValue(new ArrayBuffer(8))
       const result = await detectRemoteFileType({ url: 'https://example.com/image.png' })
-      expect(headMock).toHaveBeenCalledWith('https://example.com/image.png')
+      expect(headMock).toHaveBeenCalledWith('https://example.com/image.png', { allowDynamicHost: true })
       expect(downloadBytesMock).toHaveBeenCalledWith('https://example.com/image.png', {
-        headers: { Range: 'bytes=0-4099' }
+        headers: { Range: 'bytes=0-4099' },
+        allowDynamicHost: true
       })
       expect(fileTypeFromBufferMock).toHaveBeenCalled()
       expect(result).toEqual({ ext: 'png', mime: 'image/png' })
@@ -445,7 +446,8 @@ describe('PathUtil', () => {
       })
       // When file size is below byteLength, the Range header should NOT be sent
       expect(downloadBytesMock).toHaveBeenCalledWith('https://example.com/small.png', {
-        headers: undefined
+        headers: undefined,
+        allowDynamicHost: true
       })
       expect(result).toEqual({ ext: 'png', mime: 'image/png' })
     })

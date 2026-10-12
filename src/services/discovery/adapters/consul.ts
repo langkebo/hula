@@ -41,7 +41,8 @@ export class ConsulRegistry implements Registry {
     const url = `${this.baseUrl}/v1/health/service/${options.serviceName}?${params.toString()}`
 
     try {
-      const data = await HttpClient.get<ConsulServiceEntry[]>(url)
+      // Consul baseUrl 由 env/配置驱动（动态 host）
+      const data = await HttpClient.get<ConsulServiceEntry[]>(url, { allowDynamicHost: true })
       return data.map((entry: ConsulServiceEntry) => ({
         id: entry.Service.ID,
         serviceName: entry.Service.Service,

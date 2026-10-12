@@ -136,7 +136,8 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
    * @returns 下载的 ArrayBuffer 数据
    */
   const fetchAndDownloadAudioFile = async (cachePath: string, fileName: string, url: string): Promise<ArrayBuffer> => {
-    const buffer = await HttpClient.downloadBytes(url)
+    // 用户/数据驱动的音频 URL（动态 host）
+    const buffer = await HttpClient.downloadBytes(url, { allowDynamicHost: true })
     const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
     const dirExists = await exists(cachePath, { baseDir })
 

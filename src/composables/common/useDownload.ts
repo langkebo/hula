@@ -29,7 +29,8 @@ export const useDownload = () => {
         }
       }
 
-      const buffer = await HttpClient.downloadBytes(url)
+      // 用户/数据驱动的下载 URL（动态 host）
+      const buffer = await HttpClient.downloadBytes(url, { allowDynamicHost: true })
       await writeFile(savePath, new Uint8Array(buffer), { baseDir })
       process.value = 100
       trigger('success')

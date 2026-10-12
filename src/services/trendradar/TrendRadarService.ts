@@ -98,8 +98,10 @@ class TrendRadarService {
     }
 
     try {
+      // mcpEndpoint 由 env 配置（动态 host）
       const data = await HttpClient.post<McpRpcResponse<T>>(this.mcpEndpoint, request, {
-        timeoutMs: DEFAULT_TIMEOUT
+        timeoutMs: DEFAULT_TIMEOUT,
+        allowDynamicHost: true
       })
 
       if (data.error) {

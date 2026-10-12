@@ -18,7 +18,8 @@ self.addEventListener('message', async (event: MessageEvent<DownloadRequest>) =>
   }
 
   try {
-    const buffer = await HttpClient.downloadBytes(url)
+    // 用户/数据驱动的图片 URL（动态 host）
+    const buffer = await HttpClient.downloadBytes(url, { allowDynamicHost: true })
     logger.info(`文件下载成功: ${url}`)
     self.postMessage({ success: true, url, buffer }, [buffer])
   } catch (error) {

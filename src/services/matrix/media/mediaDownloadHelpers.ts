@@ -49,7 +49,9 @@ export async function downloadFileBytes(
   if (accessToken && downloadUrl.startsWith(client.getHomeserverUrl())) {
     try {
       const buffer = await HttpClient.downloadBytes(downloadUrl, {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        // homeserver 由 env/用户配置（动态 host）
+        allowDynamicHost: true
       })
       return new Uint8Array(buffer)
     } catch (err) {
@@ -62,7 +64,8 @@ export async function downloadFileBytes(
           const authDownloadUrl = `${client.getHomeserverUrl()}_matrix/client/v1/media/download/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`
           try {
             const buffer = await HttpClient.downloadBytes(authDownloadUrl, {
-              headers: { Authorization: `Bearer ${accessToken}` }
+              headers: { Authorization: `Bearer ${accessToken}` },
+              allowDynamicHost: true
             })
             return new Uint8Array(buffer)
           } catch {
@@ -72,14 +75,15 @@ export async function downloadFileBytes(
         // Last fallback: access_token in query (only if all else fails)
         const separator = downloadUrl.includes('?') ? '&' : '?'
         const queryUrl = `${downloadUrl}${separator}access_token=${encodeURIComponent(accessToken)}`
-        const buffer = await HttpClient.downloadBytes(queryUrl)
+        const buffer = await HttpClient.downloadBytes(queryUrl, { allowDynamicHost: true })
         return new Uint8Array(buffer)
       }
       throw err
     }
   }
 
-  const buffer = await HttpClient.downloadBytes(downloadUrl)
+  // downloadUrl 可能为 homeserver 或外部媒体地址（动态 host）
+  const buffer = await HttpClient.downloadBytes(downloadUrl, { allowDynamicHost: true })
   return new Uint8Array(buffer)
 }
 

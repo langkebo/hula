@@ -244,11 +244,15 @@ describe('MatrixOidcService — exchangeOidcForMatrixToken migrated to HttpClien
       'oidc-refresh-token-value'
     )
 
-    expect(mockHttpClientPost).toHaveBeenCalledWith(`${TEST_BASE_URL}/_matrix/client/v3/oidc/token`, {
-      grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
-      oidc_access_token: 'oidc-access-token-value',
-      oidc_refresh_token: 'oidc-refresh-token-value'
-    })
+    expect(mockHttpClientPost).toHaveBeenCalledWith(
+      `${TEST_BASE_URL}/_matrix/client/v3/oidc/token`,
+      {
+        grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
+        oidc_access_token: 'oidc-access-token-value',
+        oidc_refresh_token: 'oidc-refresh-token-value'
+      },
+      { allowDynamicHost: true }
+    )
     expect(result?.user_id).toBe('@oidc:example.com')
     expect(result?.access_token).toBe('matrix-abc')
     expect(result?.device_id).toBe('DEVICE-XYZ')

@@ -36,7 +36,10 @@ export class MatrixDiagnostics {
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getServerVersions(this.homeserverUrl)
-        : await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}/_matrix/client/versions`)
+        : await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}/_matrix/client/versions`, {
+            // homeserver 由 env/用户配置（动态 host）
+            allowDynamicHost: true
+          })
 
       if (data.versions && data.versions.length > 0) {
         return {
@@ -66,7 +69,10 @@ export class MatrixDiagnostics {
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getLoginFlows(this.homeserverUrl)
-        : await HttpClient.get<{ flows?: Array<{ type: string }> }>(`${this.homeserverUrl}/_matrix/client/v3/login`)
+        : await HttpClient.get<{ flows?: Array<{ type: string }> }>(`${this.homeserverUrl}/_matrix/client/v3/login`, {
+            // homeserver 由 env/用户配置（动态 host）
+            allowDynamicHost: true
+          })
 
       if (data.flows && data.flows.length > 0) {
         const flowTypes = data.flows.map((f: { type: string }) => f.type)
@@ -104,7 +110,7 @@ export class MatrixDiagnostics {
       results = []
       for (const endpoint of endpoints) {
         try {
-          await HttpClient.get<Record<string, unknown>>(`${this.homeserverUrl}${endpoint}`)
+          await HttpClient.get<Record<string, unknown>>(`${this.homeserverUrl}${endpoint}`, { allowDynamicHost: true })
           results.push({
             endpoint,
             status: 200,
@@ -156,7 +162,9 @@ export class MatrixDiagnostics {
       const corsHeaders = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.probeCors(this.homeserverUrl)
         : await (async () => {
-            await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}/_matrix/client/versions`)
+            await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}/_matrix/client/versions`, {
+              allowDynamicHost: true
+            })
             return {
               'access-control-allow-origin': '*',
               'access-control-allow-methods': '*',

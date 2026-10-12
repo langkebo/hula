@@ -182,7 +182,9 @@ async function loadVersionInfo() {
     }
 
     try {
-      const pkg = await HttpClient.get<{ version: string; dependencies?: Record<string, string> }>('/package.json')
+      const pkg = await HttpClient.get<{ version: string; dependencies?: Record<string, string> }>('/package.json', {
+        allowDynamicHost: true
+      })
       if (pkg.version) {
         appVersion.value = pkg.version
       }

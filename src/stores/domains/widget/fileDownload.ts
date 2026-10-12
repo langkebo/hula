@@ -239,7 +239,8 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
       const filePath = await join(downloadsDir, fileName)
 
       // 下载文件
-      const buffer = await HttpClient.downloadBytes(fileUrl)
+      // 用户消息中的文件 URL（动态 host）
+      const buffer = await HttpClient.downloadBytes(fileUrl, { allowDynamicHost: true })
       const fileData = new Uint8Array(buffer)
 
       // 写入文件

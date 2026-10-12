@@ -43,7 +43,10 @@ class UploadService {
     content_type?: string
   }): Promise<OssTokenResponse | null> {
     try {
-      const data = await HttpClient.post<OssTokenResponse>(`${this.baseUrl}/_matrix/client/v3/upload/token`, params)
+      // baseUrl 来自 env 配置的 homeserver（动态 host）
+      const data = await HttpClient.post<OssTokenResponse>(`${this.baseUrl}/_matrix/client/v3/upload/token`, params, {
+        allowDynamicHost: true
+      })
       logger.info('[Upload] 获取上传令牌成功')
       return data
     } catch (err) {
@@ -63,7 +66,9 @@ class UploadService {
    */
   async getUploadProvider(): Promise<UploadProviderResponse> {
     try {
-      const data = await HttpClient.get<UploadProviderResponse>(`${this.baseUrl}/_matrix/client/v3/upload/provider`)
+      const data = await HttpClient.get<UploadProviderResponse>(`${this.baseUrl}/_matrix/client/v3/upload/provider`, {
+        allowDynamicHost: true
+      })
       logger.info('[Upload] 获取上传提供商成功')
       return data
     } catch (err) {

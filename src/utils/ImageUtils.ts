@@ -284,8 +284,8 @@ export const getImageDimensions = async (
 
         if (includeSize && typeof input === 'string') {
           try {
-            // 获取远程图片大小
-            const response = await HttpClient.head(input)
+            // 获取远程图片大小；input 为用户/数据驱动（动态 host）
+            const response = await HttpClient.head(input, { allowDynamicHost: true })
             result.size = parseInt(response.headers.get('content-length') || '0', 10)
           } catch {
             // 如果无法获取大小，使用默认值

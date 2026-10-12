@@ -76,7 +76,7 @@ describe('downloadFileBytes', () => {
 
     const result = await downloadFileBytes(client, 'https://other.example/f.png', (m) => m, t)
 
-    expect(downloadBytes).toHaveBeenCalledWith('https://other.example/f.png')
+    expect(downloadBytes).toHaveBeenCalledWith('https://other.example/f.png', { allowDynamicHost: true })
     expect(result).toBeInstanceOf(Uint8Array)
   })
 
@@ -88,7 +88,8 @@ describe('downloadFileBytes', () => {
     await downloadFileBytes(client, downloadUrl, (m) => m, t)
 
     expect(downloadBytes).toHaveBeenCalledWith(downloadUrl, {
-      headers: { Authorization: 'Bearer tok' }
+      headers: { Authorization: 'Bearer tok' },
+      allowDynamicHost: true
     })
   })
 
@@ -104,7 +105,8 @@ describe('downloadFileBytes', () => {
     // 第二次调用为 MSC3916 auth endpoint
     const authUrl = 'https://hs.example.com_matrix/client/v1/media/download/server/media1'
     expect(downloadBytes).toHaveBeenNthCalledWith(2, authUrl, {
-      headers: { Authorization: 'Bearer tok' }
+      headers: { Authorization: 'Bearer tok' },
+      allowDynamicHost: true
     })
     expect(result).toBeInstanceOf(Uint8Array)
   })
@@ -120,7 +122,7 @@ describe('downloadFileBytes', () => {
     await downloadFileBytes(client, 'mxc://server/media1', () => downloadUrl, t)
 
     const queryUrl = `${downloadUrl}?access_token=tok`
-    expect(downloadBytes).toHaveBeenLastCalledWith(queryUrl)
+    expect(downloadBytes).toHaveBeenLastCalledWith(queryUrl, { allowDynamicHost: true })
   })
 
   it('should rethrow non-404 errors', async () => {
