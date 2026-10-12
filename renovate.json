@@ -21,6 +21,12 @@
   },
   "packageRules": [
     {
+      "description": "Frontier packages: major upgrades require manual Dependency Dashboard approval (see docs/baseline/upstream-version-watch.md)",
+      "matchPackageNames": ["typescript", "vue-router", "vite", "vitest", "storybook", "vue-tsc"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "non-major dependencies",
       "groupSlug": "minor-patch-updates"
