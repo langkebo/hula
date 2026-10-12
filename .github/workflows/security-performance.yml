@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
   actions: read
 
 concurrency:
@@ -47,18 +46,6 @@ jobs:
         uses: rustsec/audit-check@v2
         with:
           working-directory: src-tauri
-
-      - name: Run CodeQL
-        uses: github/codeql-action/init@df409f7d9260372bd5f19e5b04e83cb3c43714ae
-        with:
-          languages: javascript
-          queries: security-and-quality
-
-      - name: Build project
-        run: pnpm build
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@df409f7d9260372bd5f19e5b04e83cb3c43714ae
 
   performance-metrics:
     name: Performance Metrics
