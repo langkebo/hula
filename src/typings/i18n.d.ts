@@ -199,7 +199,6 @@ export type I18nKeys = {
       "dailyActive": "日活跃用户",
       "monthlyActive": "月活跃用户",
       "messages": "消息总数",
-      "uptime": "运行时间",
       "serverHealth": "服务器健康",
       "healthy": "健康",
       "unhealthy": "异常",
@@ -664,7 +663,6 @@ export type I18nKeys = {
       "load_accounts": "加载访客账户",
       "load_accounts_failed": "加载访客账户失败",
       "no_accounts": "暂无访客账户",
-      "last_active": "最后活跃",
       "deactivate": "停用",
       "deactivate_title": "停用访客账户",
       "deactivate_confirm": "确定要停用访客 {userId} 吗？",
@@ -697,7 +695,7 @@ export type I18nKeys = {
       "failed": "失败",
       "failureTs": "失败时间",
       "lastRetry": "最后重试",
-      "lastSuccessfulStreamOrdering": "最后成功流排序",
+      "lastSuccessfulTs": "最后成功时间",
       "reason": "原因",
       "reasonPlaceholder": "输入加入黑名单的原因",
       "removeBlacklistConfirm": "确定将 {domain} 从黑名单移除吗？",
@@ -3363,7 +3361,6 @@ export type I18nKeys = {
       "leave_room_failed": "离开房间失败"
     },
     "room": {
-      "summary_manager_unavailable": "RoomSummaryManager 不可用",
       "direct_message_manager_not_initialized": "DirectMessageManager 未初始化"
     },
     "crypto": {
@@ -7170,7 +7167,6 @@ export type I18nKeyPaths =
   | "admin.dashboard.dailyActive"
   | "admin.dashboard.monthlyActive"
   | "admin.dashboard.messages"
-  | "admin.dashboard.uptime"
   | "admin.dashboard.serverHealth"
   | "admin.dashboard.healthy"
   | "admin.dashboard.unhealthy"
@@ -7587,7 +7583,6 @@ export type I18nKeyPaths =
   | "admin.guests.load_accounts"
   | "admin.guests.load_accounts_failed"
   | "admin.guests.no_accounts"
-  | "admin.guests.last_active"
   | "admin.guests.deactivate"
   | "admin.guests.deactivate_title"
   | "admin.guests.deactivate_confirm"
@@ -7618,7 +7613,7 @@ export type I18nKeyPaths =
   | "admin.federation.failed"
   | "admin.federation.failureTs"
   | "admin.federation.lastRetry"
-  | "admin.federation.lastSuccessfulStreamOrdering"
+  | "admin.federation.lastSuccessfulTs"
   | "admin.federation.reason"
   | "admin.federation.reasonPlaceholder"
   | "admin.federation.removeBlacklistConfirm"
@@ -9484,7 +9479,6 @@ export type I18nKeyPaths =
   | "matrix_error.client.access_token_required"
   | "matrix_error.client.join_room_failed"
   | "matrix_error.client.leave_room_failed"
-  | "matrix_error.room.summary_manager_unavailable"
   | "matrix_error.room.direct_message_manager_not_initialized"
   | "matrix_error.crypto.not_enabled"
   | "matrix_error.crypto.passphrase_verification_failed"

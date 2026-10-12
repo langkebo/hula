@@ -45,7 +45,7 @@ vi.mock('@/services/i18n', () => ({
 }))
 
 describe('MatrixHttpClient', () => {
-  let authedRequest: ReturnType<typeof vi.fn>
+  let authedRequestWithPrefix: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -61,33 +61,34 @@ describe('MatrixHttpClient', () => {
       finish: vi.fn(),
       error: vi.fn()
     })
-    authedRequest = vi.fn().mockResolvedValue({})
+    authedRequestWithPrefix = vi.fn().mockResolvedValue({})
     getMatrixHomeserverUrlMock.mockReturnValue('https://matrix.test')
     getMatrixAccessTokenMock.mockReturnValue('tok-abc')
     runtimeFetchMock.mockResolvedValue(new Response('{}', { status: 200 }))
+    // B-1：client 分支统一走 SDK manager 的 authedRequestWithPrefix（内部剥离完整前缀）
     getMatrixClientMock.mockReturnValue({
-      http: { authedRequest }
+      getRoomManager: () => ({ authedRequestWithPrefix })
     } as unknown as MatrixClient)
   })
 
   it('uses the accessor-provided Matrix client for GET requests', async () => {
-    authedRequest.mockResolvedValueOnce({ ok: true })
+    authedRequestWithPrefix.mockResolvedValueOnce({ ok: true })
 
     const result = await matrixHttpClient.get<{ ok: boolean }>('/test')
 
-    expect(authedRequest).toHaveBeenCalledWith('GET', '/test', undefined)
+    expect(authedRequestWithPrefix).toHaveBeenCalledWith('GET', '/test', undefined, undefined)
     expect(result).toEqual({ ok: true })
   })
 
   it('passes body for POST requests', async () => {
     await matrixHttpClient.post('/send', { body: 'hello' })
 
-    expect(authedRequest).toHaveBeenCalledWith('POST', '/send', undefined, { body: 'hello' })
+    expect(authedRequestWithPrefix).toHaveBeenCalledWith('POST', '/send', undefined, { body: 'hello' })
     expect(infoMock).toHaveBeenCalled()
   })
 
   it('returns the default value when safe request fails', async () => {
-    authedRequest.mockRejectedValueOnce(new Error('boom'))
+    authedRequestWithPrefix.mockRejectedValueOnce(new Error('boom'))
 
     const result = await matrixHttpClient.get('/test', {
       defaultValue: { fallback: true }
@@ -98,7 +99,7 @@ describe('MatrixHttpClient', () => {
   })
 
   it('throws when throwOnError is enabled', async () => {
-    authedRequest.mockRejectedValueOnce(new Error('boom'))
+    authedRequestWithPrefix.mockRejectedValueOnce(new Error('boom'))
 
     await expect(
       matrixHttpClient.get('/test', {
@@ -108,7 +109,7 @@ describe('MatrixHttpClient', () => {
   })
 
   it('returns false for delete when request fails', async () => {
-    authedRequest.mockRejectedValueOnce(new Error('boom'))
+    authedRequestWithPrefix.mockRejectedValueOnce(new Error('boom'))
 
     await expect(matrixHttpClient.delete('/test')).resolves.toBe(false)
   })
@@ -143,7 +144,7 @@ describe('MatrixHttpClient', () => {
   })
 
   it('request 不再操作 window.$loadingBar（即使传入 showLoading）', async () => {
-    authedRequest.mockResolvedValueOnce({ ok: true })
+    authedRequestWithPrefix.mockResolvedValueOnce({ ok: true })
 
     await matrixHttpClient.request('GET', '/test', {
       showLoading: true
@@ -155,7 +156,7 @@ describe('MatrixHttpClient', () => {
   })
 
   it('request 失败不再操作 window.$loadingBar', async () => {
-    authedRequest.mockRejectedValueOnce(new Error('boom'))
+    authedRequestWithPrefix.mockRejectedValueOnce(new Error('boom'))
 
     await expect(
       matrixHttpClient.request('GET', '/test', {
@@ -169,7 +170,7 @@ describe('MatrixHttpClient', () => {
   })
 
   it('request 不再操作 window.$message（即使传入 showErrorToast）', async () => {
-    authedRequest.mockRejectedValueOnce(new Error('boom'))
+    authedRequestWithPrefix.mockRejectedValueOnce(new Error('boom'))
 
     await expect(
       matrixHttpClient.request('GET', '/test', {
@@ -181,7 +182,7 @@ describe('MatrixHttpClient', () => {
   })
 
   it('safeRequest 默认（quiet 未设）失败时不再调用 window.$message.error', async () => {
-    authedRequest.mockRejectedValueOnce(new Error('boom'))
+    authedRequestWithPrefix.mockRejectedValueOnce(new Error('boom'))
 
     await matrixHttpClient.get('/test')
 

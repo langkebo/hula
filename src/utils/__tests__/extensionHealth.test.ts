@@ -14,7 +14,7 @@ describe('reportExtensionDegradationToUi (O3)', () => {
 
   it('降级时弹出 warning toast', () => {
     const cap = useCapabilityStore()
-    cap.setExtensionHealth('friend-manager', 'degraded')
+    cap.setExtensionHealth('getFriendManager', 'degraded')
 
     const warningSpy = vi.fn()
     vi.stubGlobal('$message', { warning: warningSpy })
@@ -22,12 +22,12 @@ describe('reportExtensionDegradationToUi (O3)', () => {
     reportExtensionDegradationToUi()
 
     expect(warningSpy).toHaveBeenCalledTimes(1)
-    expect(warningSpy).toHaveBeenCalledWith(expect.stringContaining('friend-manager'))
+    expect(warningSpy).toHaveBeenCalledWith(expect.stringContaining('getFriendManager'))
   })
 
   it('无降级时不弹 toast', () => {
     const cap = useCapabilityStore()
-    cap.setExtensionHealth('friend-manager', 'healthy')
+    cap.setExtensionHealth('getFriendManager', 'healthy')
 
     const warningSpy = vi.fn()
     vi.stubGlobal('$message', { warning: warningSpy })
@@ -48,7 +48,7 @@ describe('reportExtensionDegradationToUi (O3)', () => {
 
   it('window.$message 不可用时不抛异常', () => {
     const cap = useCapabilityStore()
-    cap.setExtensionHealth('friend-manager', 'degraded')
+    cap.setExtensionHealth('getFriendManager', 'degraded')
 
     vi.stubGlobal('$message', undefined)
 

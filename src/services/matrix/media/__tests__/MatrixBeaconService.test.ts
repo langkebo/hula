@@ -69,12 +69,12 @@ describe('MatrixBeaconService', () => {
     })
 
     it('should read top-level description/timeout/live (not nested beacon_info)', async () => {
-      const getRoomEvent = vi.fn().mockResolvedValue({
-        sender: { userId: '@alice:example.com' },
-        getTs: () => 1700000000000,
-        getContent: () => ({ description: 'Alice beacon', timeout: 3600000, live: true })
+      const fetchRoomEvent = vi.fn().mockResolvedValue({
+        sender: '@alice:example.com',
+        origin_server_ts: 1700000000000,
+        content: { description: 'Alice beacon', timeout: 3600000, live: true }
       })
-      const mockClient = { getRoomEvent } as unknown as MockClient
+      const mockClient = { fetchRoomEvent } as unknown as MockClient
       mockGetClient(mockClient)
 
       const result = await matrixBeaconService.getBeaconInfo('!room:id', '$beacon_info_1')
@@ -389,29 +389,29 @@ describe('MatrixBeaconService', () => {
     })
 
     it('should stop beacon via BeaconManager.stopBeaconSharing with a live:false state event', async () => {
-      const getRoomEvent = vi.fn().mockResolvedValue({
-        getContent: () => ({ timeout: 3600000, description: 'Test beacon' })
+      const fetchRoomEvent = vi.fn().mockResolvedValue({
+        content: { timeout: 3600000, description: 'Test beacon' }
       })
       const stopBeaconSharing = vi.fn().mockResolvedValue({ event_id: '$beacon_info_stopped' })
       const getBeaconManager = vi.fn(() => ({ stopBeaconSharing }))
-      const mockClient = { getRoomEvent, getBeaconManager } as unknown as MockClient
+      const mockClient = { fetchRoomEvent, getBeaconManager } as unknown as MockClient
       mockGetClient(mockClient)
 
       const result = await matrixBeaconService.stopBeacon('!room:id', '$beacon_info_1')
 
       expect(result).toBe(true)
-      expect(getRoomEvent).toHaveBeenCalledWith('!room:id', '$beacon_info_1')
+      expect(fetchRoomEvent).toHaveBeenCalledWith('!room:id', '$beacon_info_1')
       expect(getBeaconManager).toHaveBeenCalled()
       expect(stopBeaconSharing).toHaveBeenCalledWith('!room:id', 3600000, 'Test beacon')
     })
 
     it('should default timeout to 3600000 when beacon_info content omits timeout', async () => {
-      const getRoomEvent = vi.fn().mockResolvedValue({
-        getContent: () => ({ description: 'Test beacon' })
+      const fetchRoomEvent = vi.fn().mockResolvedValue({
+        content: { description: 'Test beacon' }
       })
       const stopBeaconSharing = vi.fn().mockResolvedValue({ event_id: '$beacon_info_stopped' })
       const getBeaconManager = vi.fn(() => ({ stopBeaconSharing }))
-      const mockClient = { getRoomEvent, getBeaconManager } as unknown as MockClient
+      const mockClient = { fetchRoomEvent, getBeaconManager } as unknown as MockClient
       mockGetClient(mockClient)
 
       const result = await matrixBeaconService.stopBeacon('!room:id', '$beacon_info_1')

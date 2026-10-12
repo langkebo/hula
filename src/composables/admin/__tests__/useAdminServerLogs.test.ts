@@ -28,7 +28,7 @@ describe('useAdminServerLogs', () => {
 
   it('populates panel refs', async () => {
     const c = useAdminServerLogs()
-    vi.mocked(adminService.getServerStatus).mockResolvedValueOnce({ status: 'online', uptime: 100 })
+    vi.mocked(adminService.getServerStatus).mockResolvedValueOnce({ status: 'online' })
     vi.mocked(adminService.getServerHealth).mockResolvedValueOnce({ healthy: true, checks: { db: { status: 'ok' } } })
     vi.mocked(adminService.getServerVersion).mockResolvedValueOnce({ serverVersion: '1.0.0', pythonVersion: 'Rust' })
     vi.mocked(adminService.getServerStats).mockResolvedValueOnce({
@@ -36,11 +36,10 @@ describe('useAdminServerLogs', () => {
       roomCount: 2,
       dailyActiveUsers: 3,
       monthlyActiveUsers: 4,
-      messageCount: 5,
-      startServerTime: 6
+      messageCount: 5
     })
     await c.loadPanel()
-    expect(c.status.value).toEqual({ status: 'online', uptime: 100 })
+    expect(c.status.value).toEqual({ status: 'online' })
     expect(c.health.value?.healthy).toBe(true)
     expect(c.version.value?.serverVersion).toBe('1.0.0')
     expect(c.stats.value?.roomCount).toBe(2)

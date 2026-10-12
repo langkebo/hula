@@ -5,6 +5,7 @@ import {
   type RoomSummary as SynapseRoomSummary,
   synapseRoomSummaryService
 } from '../extensions/SynapseRoomSummaryService'
+import { getRoomTopic as readRoomTopic } from './roomTopic'
 
 const logger = createLogger('SummaryService')
 
@@ -38,7 +39,8 @@ export interface MatrixRoomLiteSummary {
  */
 export class MatrixRoomSummaryAggregateService extends BaseMatrixService {
   private getRoomTopic(room: Room): string | null {
-    return room.topic ?? null
+    // `Room` 没有 `topic` 属性（旧代码读 `room.topic` 恒为 undefined）；真实来源是状态事件。
+    return readRoomTopic(room)
   }
 
   private normalizeJoinRule(joinRule: string | null | undefined): MatrixRoomSummary['joinRule'] {

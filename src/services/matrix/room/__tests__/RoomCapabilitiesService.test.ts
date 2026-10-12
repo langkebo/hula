@@ -9,7 +9,11 @@ const mockAuthedRequest = vi.fn()
 const mockAccessorClient = {
   http: {
     authedRequest: mockAuthedRequest
-  }
+  },
+  // 生产路径经 MatrixHttpClient → client.getRoomManager().authedRequestWithPrefix(...)
+  getRoomManager: () => ({
+    authedRequestWithPrefix: mockAuthedRequest
+  })
 }
 
 vi.mock('../../matrixClientAccessor', () => ({

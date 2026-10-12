@@ -186,7 +186,9 @@ class MatrixMessageService extends BaseMatrixService {
     return this.sendWithRetry(async () => {
       const client = this.getClient()
       const txnId = txId || `m${Date.now()}`
-      const response = await client.sendEmote(roomId, txnId, content)
+      // SDK 真实方法名是 `sendEmoteMessage(roomId, body, txnId?)` —— 注意实参顺序与本函数不同
+      // （旧代码调用幻影方法 `client.sendEmote(roomId, txnId, content)`）。
+      const response = await client.sendEmoteMessage(roomId, content, txnId)
       logger.info(`[MatrixMessage] Emote message sent to ${roomId}: ${txnId}`)
       return response
     }, 'sendEmoteMessage')

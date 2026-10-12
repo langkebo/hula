@@ -12,6 +12,7 @@
  * 不再让主类直接承载这些方法的实现细节。
  */
 import type { EventDecryptedDebugState, RustCryptoDebugState } from '@/services/matrix/MatrixCryptoStateTracker'
+import { isRoomEncrypted } from '@/services/matrix/roomEncryption'
 import type { MatrixClient, SlidingSync, User } from '@/services/matrix/sdk'
 import type { ConnectionState, MatrixConnectionManager } from './MatrixConnectionManager'
 import type { MatrixCryptoStateTracker } from './MatrixCryptoStateTracker'
@@ -123,6 +124,6 @@ export class MatrixClientState {
   /** 判断房间是否加密
    */
   isRoomEncrypted(roomId: string): boolean {
-    return this.deps.connectionManager.getClient()?.isRoomEncrypted?.(roomId) ?? false
+    return isRoomEncrypted(this.deps.connectionManager.getClient(), roomId)
   }
 }

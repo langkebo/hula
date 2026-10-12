@@ -65,7 +65,7 @@ describe('AdminSecurityService', () => {
         retryLastTs: 1,
         retryInterval: 2,
         failureTs: 3,
-        lastSuccessfulStreamOrdering: 4
+        lastSuccessfulTs: 4
       }
     ])
   })

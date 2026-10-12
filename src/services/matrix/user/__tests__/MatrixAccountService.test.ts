@@ -34,30 +34,32 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const mockAuthedRequest = vi
   .fn()
-  .mockImplementation(
-    async (method: string, path: string, queryParams?: unknown, body?: unknown, opts?: { prefix?: string }) => {
-      const defaultPrefix = opts?.prefix ?? (path.startsWith('/_') ? '' : PREFIX_V3)
-      const url = new URL(`${TEST_BASE_URL}${defaultPrefix}${path}`)
-      if (queryParams && typeof queryParams === 'object') {
-        for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
-          url.searchParams.set(key, value)
-        }
+  .mockImplementation(async (method: string, path: string, queryParams?: unknown, body?: unknown) => {
+    const defaultPrefix = path.startsWith('/_') ? '' : PREFIX_V3
+    const url = new URL(`${TEST_BASE_URL}${defaultPrefix}${path}`)
+    if (queryParams && typeof queryParams === 'object') {
+      for (const [key, value] of Object.entries(queryParams as Record<string, string>)) {
+        url.searchParams.set(key, value)
       }
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer test-access-token'
-      }
-      const response = await fetch(url.toString(), {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      return response.json()
     }
-  )
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer test-access-token'
+    }
+    const response = await fetch(url.toString(), {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined
+    })
+    if (!response.ok) {
+      // 还原真实 SDK 的 MatrixError 形状：HTTP 错误必须携带 httpStatus，
+      // 否则 getMyRooms 的 404 降级判据（仅看 err.httpStatus）无法被触发。
+      const error = new Error(`HTTP ${response.status}`) as Error & { httpStatus?: number }
+      error.httpStatus = response.status
+      throw error
+    }
+    return response.json()
+  })
 
 describe('MatrixAccountService', () => {
   let mockDeviceManager: {
@@ -77,8 +79,10 @@ describe('MatrixAccountService', () => {
     getAccountData: ReturnType<typeof vi.fn>
     setAccountData: ReturnType<typeof vi.fn>
     getCapabilities: ReturnType<typeof vi.fn>
+    getUnstableFeatures: ReturnType<typeof vi.fn>
     getThirdpartyProtocols: ReturnType<typeof vi.fn>
-    http: { authedRequest: ReturnType<typeof vi.fn> }
+    getRoomManager: ReturnType<typeof vi.fn>
+    getJoinedRooms: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
@@ -102,9 +106,11 @@ describe('MatrixAccountService', () => {
       getDeviceManager: vi.fn(() => mockDeviceManager),
       getAccountData: vi.fn().mockReturnValue(null),
       setAccountData: vi.fn().mockResolvedValue(undefined),
-      getCapabilities: vi.fn().mockResolvedValue({ capabilities: { 'm.room.tombstone': { enabled: true } } }),
+      getCapabilities: vi.fn().mockResolvedValue({ 'm.room.tombstone': { enabled: true } }),
+      getUnstableFeatures: vi.fn(() => ({ 'io.hula.friends': true })),
       getThirdpartyProtocols: vi.fn().mockResolvedValue({ irc: { fields: ['network'] } }),
-      http: { authedRequest: mockAuthedRequest }
+      getRoomManager: vi.fn(() => ({ authedRequestWithPrefix: mockAuthedRequest })),
+      getJoinedRooms: vi.fn().mockResolvedValue({ joined_rooms: [] })
     }
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
   })
@@ -141,19 +147,19 @@ describe('MatrixAccountService', () => {
   })
 
   describe('getCapabilities', () => {
-    it('should get capabilities via single authedRequest (no duplication)', async () => {
+    it('should get capabilities via the SDK path and preserve unstable_features', async () => {
       const result = await matrixAccountService.getCapabilities()
 
-      // 返回完整响应体（含 unstable_features）
+      // 经 SDK 路径取回：能力表 + 顶层 unstable_features 拼回同一对象
       expect(result).toEqual({
-        capabilities: { 'm.room.tombstone': { enabled: true } },
+        'm.room.tombstone': { enabled: true },
         unstable_features: { 'io.hula.friends': true }
       })
-      // authedRequest 恰好调用一次（不存在 SDK + 补充 fetch 双请求）
-      expect(mockAuthedRequest).toHaveBeenCalledTimes(1)
-      expect(mockAuthedRequest).toHaveBeenCalledWith('GET', '/capabilities', undefined, undefined, undefined)
-      // 不应走 SDK client.getCapabilities()（它会丢弃 unstable_features）
-      expect(mockClient.getCapabilities).not.toHaveBeenCalled()
+      // 走 SDK：getCapabilities 拿能力表，getUnstableFeatures 拿开关
+      expect(mockClient.getCapabilities).toHaveBeenCalledTimes(1)
+      expect(mockClient.getUnstableFeatures).toHaveBeenCalled()
+      // 不再绕过 SDK 直接打裸通道
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
     })
 
     it('should return unstable_features from the response', async () => {
@@ -163,8 +169,15 @@ describe('MatrixAccountService', () => {
       expect(result.unstable_features).toEqual({ 'io.hula.friends': true })
     })
 
+    it('should omit unstable_features when the server does not send any', async () => {
+      mockClient.getUnstableFeatures.mockReturnValueOnce(undefined)
+      const result = await matrixAccountService.getCapabilities()
+      expect(result).toEqual({ 'm.room.tombstone': { enabled: true } })
+      expect(result).not.toHaveProperty('unstable_features')
+    })
+
     it('should return empty object on error', async () => {
-      mockAuthedRequest.mockRejectedValueOnce(new Error('HTTP 500'))
+      mockClient.getCapabilities.mockRejectedValueOnce(new Error('HTTP 500'))
       const result = await matrixAccountService.getCapabilities()
       expect(result).toEqual({})
     })
@@ -208,6 +221,47 @@ describe('MatrixAccountService', () => {
       const result = await matrixAccountService.getMyRooms()
       expect(result).toEqual([])
     })
+
+    // 审计 §8 B-5：后端 /my_rooms 返回 404 ⇒ 降级返回 SDK getJoinedRooms() 的结果。
+    // 语义差异（本用例显式记录，防止把降级当成等价替换）：
+    //   - `/_matrix/vendor/v1/my_rooms`（后端私有）：后端自定义视图，含排序语义，
+    //     可能包含/排除特定私有房间；
+    //   - `getJoinedRooms()` → `/_matrix/client/v3/joined_rooms`（标准）：返回**未经排序**
+    //     的完整已加入房间集合。
+    //   二者仅在「集合可用性」上等价，在「排序」与「私有房间可见性」上不等价。
+    it('degrades to SDK getJoinedRooms() on 404 (semantics documented)', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
+          return new HttpResponse(null, { status: 404 })
+        })
+      )
+      mockClient.getJoinedRooms.mockResolvedValue({
+        joined_rooms: ['!joined1:server', '!joined2:server']
+      })
+
+      const result = await matrixAccountService.getMyRooms()
+
+      expect(mockClient.getJoinedRooms).toHaveBeenCalledTimes(1)
+      expect(result).toEqual(['!joined1:server', '!joined2:server'])
+    })
+
+    // 审计 §8 B-5 反例断言：降级判据只能看 `err.httpStatus`，不得引入隐式条件。
+    // 非 404（此处 500）不得触发 getJoinedRooms() 降级。
+    it('does not degrade on non-404 errors (only err.httpStatus === 404 triggers fallback)', async () => {
+      server.use(
+        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
+          return new HttpResponse(null, { status: 500 })
+        })
+      )
+      mockClient.getJoinedRooms.mockResolvedValue({
+        joined_rooms: ['!should-not-be-used:server']
+      })
+
+      const result = await matrixAccountService.getMyRooms()
+
+      expect(mockClient.getJoinedRooms).not.toHaveBeenCalled()
+      expect(result).toEqual([])
+    })
   })
 
   describe('getEventStream', () => {
@@ -228,7 +282,6 @@ describe('MatrixAccountService', () => {
           timeout: '15000',
           from: 'from_token'
         },
-        undefined,
         undefined
       )
     })

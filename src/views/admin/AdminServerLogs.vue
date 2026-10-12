@@ -19,9 +19,6 @@
             <n-descriptions-item label="状态">
               <n-tag :type="statusTagType">{{ statusLabel }}</n-tag>
             </n-descriptions-item>
-            <n-descriptions-item label="运行时长">
-              {{ formatDuration(status?.uptime) }}
-            </n-descriptions-item>
           </n-descriptions>
         </n-card>
 
@@ -107,15 +104,6 @@ const statusTagType = computed(() => {
       return 'default'
   }
 })
-
-function formatDuration(value?: number): string {
-  if (!value) return '-'
-  const seconds = value > 1_000_000 ? Math.floor(value / 1000) : Math.floor(value)
-  const days = Math.floor(seconds / 86400)
-  const hours = Math.floor((seconds % 86400) / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  return `${days}d ${hours}h ${minutes}m`
-}
 
 onMounted(() => loadPanel())
 </script>

@@ -94,13 +94,15 @@ describe('MatrixRoomSummaryService', () => {
       isSpaceRoom: vi.fn(() => false),
       getLiveTimeline: vi.fn(() => mockTimeline),
       getUnreadNotificationCount: vi.fn(() => 5) as unknown as Room['getUnreadNotificationCount'],
+      // 加密判据：roomEncryption.ts 读的是 room.hasEncryptionStateEvent()（同步布尔），
+      // 不是幻影方法 client.isRoomEncrypted(roomId)。
+      hasEncryptionStateEvent: vi.fn(() => false),
       currentState: mockCurrentState
     } as unknown as Room
 
     mockClient = {
       getRoom: vi.fn(() => mockRoom),
-      getRooms: vi.fn(() => [mockRoom]),
-      isRoomEncrypted: vi.fn(() => false)
+      getRooms: vi.fn(() => [mockRoom])
     }
 
     vi.restoreAllMocks()
@@ -222,7 +224,7 @@ describe('MatrixRoomSummaryService', () => {
         if (kind === 'highlight') return 2
         return 9
       }) as unknown as Room['getUnreadNotificationCount']
-      vi.mocked(mockClient.isRoomEncrypted!).mockReturnValue(true)
+      vi.mocked(mockRoom.hasEncryptionStateEvent).mockReturnValue(true)
 
       const snapshot = matrixRoomSummaryService.getRoomListSnapshot('!room123:example.com')
 

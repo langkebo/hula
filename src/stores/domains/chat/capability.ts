@@ -6,10 +6,6 @@ import type { MatrixCapabilities } from '@/types/message'
 /** 扩展健康状态：healthy=已注册，degraded=缺失但已降级，unknown=未检测 */
 export type ExtensionHealthStatus = 'healthy' | 'degraded' | 'unknown'
 
-/** 关键扩展 ID —— 与 SDK initializeManagerExtensions 注册的访问器名对应 */
-export const CRITICAL_EXTENSION_IDS = ['friend-manager'] as const
-export type CriticalExtensionId = (typeof CRITICAL_EXTENSION_IDS)[number]
-
 export const useCapabilityStore = defineStore(StoresEnum.CAPABILITY, () => {
   const unstableFeatures = ref<Record<string, boolean>>({})
   const capabilities = ref<Record<string, unknown>>({})

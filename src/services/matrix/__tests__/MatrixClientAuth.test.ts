@@ -37,16 +37,19 @@ vi.mock('@/utils/AvatarUtils', () => ({
 // ---- 测试工具 ----------------------------------------------------------------
 
 function makeClient() {
+  const login = vi.fn()
   return {
     loginRequest: vi.fn(),
-    login: vi.fn(),
+    login,
     loginFlows: vi.fn(),
     getSsoLoginUrl: vi.fn(() => 'http://sso.url'),
     refreshToken: vi.fn(),
     setAccessToken: vi.fn(),
     getUserId: vi.fn(() => '@alice:hs'),
     getDeviceId: vi.fn(() => 'DEV1'),
-    logout: vi.fn(async () => undefined)
+    logout: vi.fn(async () => undefined),
+    // SDK 真实归属：登录走 client.getAccountManager().login(type, params)
+    getAccountManager: vi.fn(() => ({ login }))
   }
 }
 

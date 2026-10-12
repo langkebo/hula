@@ -106,3 +106,16 @@ export function toUserId(value: unknown): string | null {
 export function toFriendRequest(value: unknown): FriendRequest | null {
   return value && typeof value === 'object' ? (value as FriendRequest) : null
 }
+
+/**
+ * 生成好友请求的幂等键（审计 §7 批次 B-4 / §8 B-4）。
+ *
+ * 同一 (操作, 目标用户) 恒定返回同一键，使「SDK 通道失败 → REST 降级重发」的两次请求
+ * 在服务端可被识别为同一逻辑操作并去重，避免重复提交。
+ *
+ * @param userId 目标好友用户 ID
+ * @returns 确定性幂等键
+ */
+export function buildFriendRequestIdempotencyKey(userId: string): string {
+  return `friend-request:${userId}`
+}

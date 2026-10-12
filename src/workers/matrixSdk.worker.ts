@@ -16,7 +16,6 @@ import type {
   SearchEventDoc,
   SearchQueryPayload,
   SearchRoomDoc,
-  SyncOptions,
   WorkerMessage
 } from './matrixWorkerTypes'
 import {
@@ -26,8 +25,7 @@ import {
   handleInitialize,
   handleLogin,
   handleStartClient,
-  handleStopClient,
-  handleSyncOnce
+  handleStopClient
 } from './workerClientHandlers'
 import {
   handleGetCapabilities,
@@ -68,7 +66,6 @@ const messageHandlers: Record<string, HandlerFn> = {
   clearStores: () => handleClearStores(),
   getStats: () => handleGetStats(),
   getClient: () => handleGetClient(),
-  syncOnce: (payload) => handleSyncOnce(payload as SyncOptions),
 
   // --- 服务器探测 ---
   getServerVersions: (payload) => handleGetServerVersions(payload as { baseUrl: string; accessToken?: string }),

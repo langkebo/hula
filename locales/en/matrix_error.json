@@ -36,7 +36,6 @@
     "leave_room_failed": "Failed to leave room"
   },
   "room": {
-    "summary_manager_unavailable": "RoomSummaryManager unavailable",
     "direct_message_manager_not_initialized": "DirectMessageManager not initialized"
   },
   "crypto": {

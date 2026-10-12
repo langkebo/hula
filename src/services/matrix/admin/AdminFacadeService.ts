@@ -12,7 +12,6 @@ import type {
   FederationBlacklistEntry,
   FederationDestination,
   QuotaAlert,
-  QuotaConfig,
   QuotaStats,
   QuotaStatus,
   RateLimit,
@@ -516,32 +515,8 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
     return this.quota.getQuotaAlerts()
   }
 
-  async getQuotaConfigs(): Promise<QuotaConfig[]> {
-    return this.quota.getQuotaConfigs()
-  }
-
-  async setUserQuota(userId: string, quota: number): Promise<void> {
-    return this.quota.setUserQuota(userId, quota)
-  }
-
   async getServerQuota(): Promise<ServerQuota> {
     return this.quota.getServerQuota()
-  }
-
-  async getUploadSizeLimit(throwOnError = true): Promise<number> {
-    return this.quota.getUploadSizeLimit(throwOnError)
-  }
-
-  async getUploadFileSizeLimit(throwOnError = true): Promise<number> {
-    return this.quota.getUploadFileSizeLimit(throwOnError)
-  }
-
-  async getUserStorageUsage(throwOnError = true): Promise<{ size: number; ntFiles: number } | null> {
-    return this.quota.getUserStorageUsage(throwOnError)
-  }
-
-  async hasStorageSpace(requiredBytes: number): Promise<boolean> {
-    return this.quota.hasStorageSpace(requiredBytes)
   }
 
   // ==================== Retention (client API) ====================
@@ -796,7 +771,7 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
       message?: string
       block?: boolean
     }
-  ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; localAliases: string[]; newRoomId?: string }> {
+  ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; newRoomId?: string }> {
     return this.rooms.deleteRoom(roomId, options)
   }
 

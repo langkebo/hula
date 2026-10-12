@@ -79,16 +79,32 @@ describe('sendFriendRequest', () => {
     expect(synapseFriendExtensionService.sendFriendRequest).not.toHaveBeenCalled()
   })
 
-  it('FriendManager 为空时回退到 REST API', async () => {
+  it('FriendManager 为空时回退到 REST API，并携带确定性幂等键', async () => {
     mockSync.ensureFriendManager.mockResolvedValue(null)
     vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockResolvedValue({ request_id: 1, status: 'pending' })
 
     await operations.sendFriendRequest('@alice:example.org')
 
-    expect(synapseFriendExtensionService.sendFriendRequest).toHaveBeenCalledWith('@alice:example.org', undefined)
+    expect(synapseFriendExtensionService.sendFriendRequest).toHaveBeenCalledWith('@alice:example.org', undefined, {
+      idempotencyKey: 'friend-request:@alice:example.org'
+    })
   })
 
-  it('manager 抛出 409/already exists 时视为正常业务，不抛错', async () => {
+  // 审计 §8 B-4 用例 1：业务错误（409）不降级、视为成功
+  it('SDK 抛 409 业务冲突时不调用 REST 通道，且视为成功', async () => {
+    mockSync.ensureFriendManager.mockResolvedValue(mockManager)
+    const conflict = Object.assign(new Error('friend request already exists'), {
+      httpStatus: 409,
+      errcode: 'M_USER_IN_USE'
+    })
+    mockManager.sendFriendRequest.mockRejectedValue(conflict)
+
+    await expect(operations.sendFriendRequest('@alice:example.org')).resolves.toBeUndefined()
+    expect(synapseFriendExtensionService.sendFriendRequest).not.toHaveBeenCalled()
+    expect(matrixRoomActionFacade.createDirectRoom).not.toHaveBeenCalled()
+  })
+
+  it('旧式字符串错误（无结构化字段）中的 already exists 仍视为业务成功', async () => {
     mockSync.ensureFriendManager.mockResolvedValue(mockManager)
     mockManager.sendFriendRequest.mockRejectedValue(new Error('friend request already exists'))
 
@@ -96,34 +112,52 @@ describe('sendFriendRequest', () => {
     expect(synapseFriendExtensionService.sendFriendRequest).not.toHaveBeenCalled()
   })
 
-  it('manager 抛错时降级到 REST API 并成功返回', async () => {
+  // 审计 §8 B-4 用例 2：连接类错误可降级，且降级调用必须携带幂等键
+  it('SDK 抛连接类错误时降级到 REST API，且降级调用携带幂等键', async () => {
     mockSync.ensureFriendManager.mockResolvedValue(mockManager)
-    mockManager.sendFriendRequest.mockRejectedValue(new Error('boom'))
+    mockManager.sendFriendRequest.mockRejectedValue(new TypeError('fetch failed'))
     vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockResolvedValue({ request_id: 1, status: 'pending' })
 
     await operations.sendFriendRequest('@alice:example.org')
 
-    expect(synapseFriendExtensionService.sendFriendRequest).toHaveBeenCalledWith('@alice:example.org', undefined)
+    expect(synapseFriendExtensionService.sendFriendRequest).toHaveBeenCalledWith('@alice:example.org', undefined, {
+      idempotencyKey: 'friend-request:@alice:example.org'
+    })
   })
 
-  it('manager 抛端点不可用错误且 REST 也失败时回退到创建 DM 房间', async () => {
+  // 审计 §8 B-4 变异自证：去掉幂等键 ⇒ 本用例的「重复提交」断言必须失败
+  it('重复提交共享同一幂等键，使服务端可识别为同一逻辑操作', async () => {
+    mockSync.ensureFriendManager.mockResolvedValue(mockManager)
+    mockManager.sendFriendRequest.mockRejectedValue(new TypeError('fetch failed'))
+    vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockResolvedValue({ request_id: 1, status: 'pending' })
+
+    await operations.sendFriendRequest('@alice:example.org')
+    await operations.sendFriendRequest('@alice:example.org')
+
+    const calls = vi.mocked(synapseFriendExtensionService.sendFriendRequest).mock.calls
+    expect(calls).toHaveLength(2)
+    expect(calls[0][2]?.idempotencyKey).toBe('friend-request:@alice:example.org')
+    expect(calls[1][2]?.idempotencyKey).toBe(calls[0][2]?.idempotencyKey)
+  })
+
+  it('好友端点不可用时回退到创建 DM 房间', async () => {
     mockSync.ensureFriendManager.mockResolvedValue(mockManager)
     mockManager.sendFriendRequest.mockRejectedValue(new Error('friend endpoint unavailable'))
-    vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockRejectedValue(new Error('rest boom'))
     vi.mocked(matrixRoomActionFacade.createDirectRoom).mockResolvedValue('!dm:example.org')
 
     await operations.sendFriendRequest('@alice:example.org')
 
     expect(matrixRoomActionFacade.createDirectRoom).toHaveBeenCalledWith('@alice:example.org')
+    expect(synapseFriendExtensionService.sendFriendRequest).not.toHaveBeenCalled()
   })
 
-  it('全部路径失败时抛出原始错误', async () => {
+  it('连接类错误降级 REST 仍失败且不适用 DM 兜底时抛出原始错误', async () => {
     mockSync.ensureFriendManager.mockResolvedValue(mockManager)
-    mockManager.sendFriendRequest.mockRejectedValue(new Error('boom'))
+    mockManager.sendFriendRequest.mockRejectedValue(new TypeError('fetch failed'))
     vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockRejectedValue(new Error('rest boom'))
-    vi.mocked(matrixRoomActionFacade.createDirectRoom).mockRejectedValue(new Error('dm boom'))
 
-    await expect(operations.sendFriendRequest('@alice:example.org')).rejects.toThrow('boom')
+    await expect(operations.sendFriendRequest('@alice:example.org')).rejects.toThrow('fetch failed')
+    expect(matrixRoomActionFacade.createDirectRoom).not.toHaveBeenCalled()
   })
 })
 

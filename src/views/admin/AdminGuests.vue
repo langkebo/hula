@@ -111,7 +111,6 @@ function mapGuestAccount(user: UserInfo): GuestAccountRow {
     userId: user.userId || '-',
     displayName: user.displayname || '-',
     createdAt: user.createdTs,
-    lastActive: user.lastSeenTs,
     isDeactivated: Boolean(user.deactivated)
   }
 }
@@ -155,7 +154,6 @@ interface GuestAccountRow {
   userId: string
   displayName: string
   createdAt?: number
-  lastActive?: number
   isDeactivated: boolean
 }
 
@@ -238,14 +236,6 @@ const accountColumns = computed(() => [
     width: 180,
     render(row: GuestAccountRow) {
       return row.createdAt ? new Date(row.createdAt).toLocaleString() : '-'
-    }
-  },
-  {
-    title: t('admin.guests.last_active'),
-    key: 'lastActive',
-    width: 180,
-    render(row: GuestAccountRow) {
-      return row.lastActive ? new Date(row.lastActive).toLocaleString() : '-'
     }
   },
   {

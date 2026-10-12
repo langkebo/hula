@@ -18,6 +18,11 @@
 
 import { resolveMatrixRuntimeHomeserverUrl } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
+import {
+  CRITICAL_EXTENSION_IDS,
+  FRIEND_EXTENSION_ID,
+  isExtensionRegistered
+} from '@/services/matrix/extensions/criticalExtensions'
 import { isFriendManagerRegistered } from '@/services/matrix/extensions/managerExtensions'
 import { setMatrixClientAccessor } from '@/services/matrix/matrixClientAccessor'
 import { getRuntimeAwareFetchFn } from '@/services/matrix/network/runtimeFetch'
@@ -410,8 +415,9 @@ export class MatrixConnectionManager {
    * 在 initializeManagerExtensions() 后调用。检测结果写入 capability store 的
    * extensionHealth 字段，UI 层可据此显示降级提示。
    *
-   * 检测方式：通过鸭子类型检查 client 上的扩展访问器方法是否存在。
-   * - friend-manager：检查 `client.getFriendManager` 是否为 function
+   * 检测范围由 `CRITICAL_EXTENSION_IDS` 决定——该清单从 SDK 扩展注册表
+   * (`DEFAULT_CORE_EXTENSIONS`) 派生，SDK 新增扩展会自动纳入监控。
+   * FriendManager 保留专用谓词与 `friend_manager_degraded` 遥测契约（O7）。
    *
    * 缺失时不 throw（与现有 MatrixFriendService 的 REST 降级策略一致），
    * 但会 warn 级日志 + 标记 degraded，不再被 info 级静默吞掉。
@@ -420,30 +426,51 @@ export class MatrixConnectionManager {
     if (!this.client) return
 
     const results: Record<string, 'healthy' | 'degraded'> = {}
+    const degradedOthers: string[] = []
 
-    // FriendManager 扩展 —— 注册检查统一委托单一真相谓词，避免逻辑漂移
-    const hasFriendManager = isFriendManagerRegistered(this.client)
+    for (const accessor of CRITICAL_EXTENSION_IDS) {
+      // FriendManager 走专用谓词（含 friendManager.start 回退形态），保留 O7 遥测
+      if (accessor === FRIEND_EXTENSION_ID) {
+        const hasFriendManager = isFriendManagerRegistered(this.client)
+        results[accessor] = hasFriendManager ? 'healthy' : 'degraded'
+        if (!hasFriendManager) {
+          logger.warn(
+            '[扩展健康断言] FriendManager 扩展未注册，好友功能将降级到 REST API。' +
+              '可能原因：initializeManagerExtensions 失败或 SDK 版本不兼容。'
+          )
+          track({
+            kind: 'health',
+            name: 'friend_manager_degraded',
+            severity: 'warn',
+            context: {
+              reason: 'getFriendManager_unavailable',
+              fallback: 'rest_api',
+              possibleCause: 'initializeManagerExtensions_failed_or_sdk_incompatible'
+            }
+          })
+        } else {
+          logger.info('[扩展健康断言] FriendManager 扩展已注册')
+        }
+        continue
+      }
 
-    results['friend-manager'] = hasFriendManager ? 'healthy' : 'degraded'
+      const registered = isExtensionRegistered(this.client, accessor)
+      results[accessor] = registered ? 'healthy' : 'degraded'
+      if (!registered) degradedOthers.push(accessor)
+    }
 
-    if (!hasFriendManager) {
-      logger.warn(
-        '[扩展健康断言] FriendManager 扩展未注册，好友功能将降级到 REST API。' +
-          '可能原因：initializeManagerExtensions 失败或 SDK 版本不兼容。'
-      )
-      // O2: 通过 telemetry 事件总线发射健康事件，供监控/告警消费
+    if (degradedOthers.length > 0) {
+      // 聚合遥测：一次事件承载全部非 friend 降级，避免逐条刷屏
+      logger.warn(`[扩展健康断言] ${degradedOthers.length} 个 SDK 扩展未注册：${degradedOthers.join(', ')}`)
       track({
         kind: 'health',
-        name: 'friend_manager_degraded',
+        name: 'extension_degraded',
         severity: 'warn',
         context: {
-          reason: 'getFriendManager_unavailable',
-          fallback: 'rest_api',
-          possibleCause: 'initializeManagerExtensions_failed_or_sdk_incompatible'
+          count: degradedOthers.length,
+          extensions: degradedOthers
         }
       })
-    } else {
-      logger.info('[扩展健康断言] FriendManager 扩展已注册')
     }
 
     // 写入 capability store（Pinia 可能未初始化，如独立 WebView / 测试环境）

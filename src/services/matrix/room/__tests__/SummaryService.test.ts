@@ -11,11 +11,12 @@ vi.mock('../../extensions/SynapseRoomSummaryService', () => ({
   }
 }))
 
-const makeRoom = (overrides: Partial<Room> = {}): Room =>
-  ({
+const makeRoom = (overrides: Partial<Room> = {}, opts: { topic?: string | null } = {}): Room => {
+  // 主题的真实来源是状态事件 m.room.topic（`Room` 类没有 `topic` 属性）。
+  const topicValue = opts.topic === undefined ? 'topic' : opts.topic
+  return {
     roomId: '!r:e',
     name: 'Room',
-    topic: 'topic',
     getMxcAvatarUrl: () => 'mxc://e/a',
     getJoinedMembers: () => [{}, {}, {}],
     getJoinRule: () => JoinRule.Invite,
@@ -29,11 +30,16 @@ const makeRoom = (overrides: Partial<Room> = {}): Room =>
             getTs: () => 1000
           }
         }
+        if (type === 'm.room.topic') {
+          if (topicValue == null) return null
+          return { getContent: () => ({ topic: topicValue }) }
+        }
         return null
       })
     },
     ...overrides
-  }) as unknown as Room
+  } as unknown as Room
+}
 
 describe('MatrixRoomSummaryAggregateService', () => {
   let service: InstanceType<typeof MatrixRoomSummaryAggregateService>
@@ -92,7 +98,7 @@ describe('MatrixRoomSummaryAggregateService', () => {
     })
 
     it('topic falls back to null when Room has no topic', () => {
-      const room = makeRoom({ topic: undefined })
+      const room = makeRoom({}, { topic: null })
       expect(service.toLocalRoomSummary(room).topic).toBeNull()
     })
   })

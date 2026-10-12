@@ -51,7 +51,10 @@ vi.mock('@/services/matrix/sdk', () => ({
     setAccessToken: vi.fn(),
     whenManagerExtensionsReady: vi.fn().mockResolvedValue(undefined)
   })),
-  initializeManagerExtensions: vi.fn().mockResolvedValue(undefined)
+  initializeManagerExtensions: vi.fn().mockResolvedValue(undefined),
+  // criticalExtensions 从 sdk 咽喉点取扩展清单派生 CRITICAL_EXTENSION_IDS，
+  // 必须提供清单本体，否则 Object.keys(undefined) 会在模块加载期抛错。
+  DEFAULT_CORE_EXTENSIONS: { includeFriend: true }
 }))
 
 vi.mock('@/stores/domains/chat/capability', () => ({

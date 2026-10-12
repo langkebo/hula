@@ -7,7 +7,7 @@ const { loadPanelMock, state } = vi.hoisted(() => ({
   loadPanelMock: vi.fn(),
   state: {
     loading: false,
-    status: null as { status: string; uptime?: number } | null,
+    status: null as { status: string } | null,
     health: null as { healthy: boolean; checks?: Record<string, unknown> } | null,
     version: null as { serverVersion?: string; pythonVersion?: string } | null,
     stats: null as { userCount?: number; roomCount?: number; dailyActiveUsers?: number } | null
@@ -80,7 +80,7 @@ describe('AdminServerLogs', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     state.loading = false
-    state.status = { status: 'online', uptime: 90061000 }
+    state.status = { status: 'online' }
     state.health = { healthy: true, checks: { db: 'ok' } }
     state.version = { serverVersion: '1.2.3', pythonVersion: '3.11' }
     state.stats = { userCount: 100, roomCount: 50, dailyActiveUsers: 42 }
@@ -118,7 +118,7 @@ describe('AdminServerLogs', () => {
   })
 
   it('降级状态显示 Degraded 并使用 warning 标签', async () => {
-    state.status = { status: 'degraded', uptime: 1000 }
+    state.status = { status: 'degraded' }
     const wrapper = mountComponent()
     await flushPromises()
 
@@ -135,14 +135,6 @@ describe('AdminServerLogs', () => {
     expect(wrapper.text()).toContain('Unhealthy')
     const healthTag = wrapper.findAllComponents({ name: 'NTag' })[1]
     expect(healthTag.attributes('data-type')).toBe('error')
-  })
-
-  it('运行时长格式化为天/时/分', async () => {
-    // 90061000 ms > 1_000_000 → 按秒处理：90061s = 1d 1h 1m
-    const wrapper = mountComponent()
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('1d 1h 1m')
   })
 
   it('全部数据为空时展示 EmptyState', async () => {

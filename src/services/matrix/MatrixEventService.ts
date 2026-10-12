@@ -7,6 +7,7 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from './BaseMatrixService'
 import matrixMessageAdapter from './messaging/MatrixMessageAdapter'
 import { matrixRoomQueryService } from './room/QueryService'
+import { isRoomEncrypted } from './roomEncryption'
 
 const logger = createLogger('MatrixEvent')
 
@@ -109,7 +110,7 @@ class MatrixEventService extends BaseMatrixService {
 
     // 预检查：加密房间但 crypto 未初始化时提前失败，避免触发 SDK 发送队列阻塞
     // （SDK 内部队列被失败事件阻塞后，后续所有发送都会报 "Event blocked by other events not yet sent"）
-    if (typeof client.isRoomEncrypted === 'function' && client.isRoomEncrypted(roomId)) {
+    if (isRoomEncrypted(client, roomId)) {
       const cryptoClient = client as MatrixClient & { getCrypto?: () => unknown }
       if (typeof cryptoClient.getCrypto !== 'function' || !cryptoClient.getCrypto()) {
         logger.error(`发送事件失败（加密房间但 crypto 未初始化）: ${roomId}/${eventType}`)

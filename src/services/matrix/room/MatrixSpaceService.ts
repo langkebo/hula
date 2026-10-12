@@ -174,7 +174,9 @@ class SpaceService extends BaseMatrixService {
         const client = this.getClient()
         if (options.name) await client.setRoomName(spaceId, options.name)
         if (options.topic !== undefined) await client.setRoomTopic(spaceId, options.topic)
-        if (options.avatarUrl) await client.setRoomAvatar(spaceId, options.avatarUrl)
+        // SDK 真实归属是 `getRoomSettingsManager().setRoomAvatar(roomId, mxcUrl)`
+        // （SDK 的 JSDoc 原文即此用法）；MatrixClient 本体没有 setRoomAvatar。
+        if (options.avatarUrl) await client.getRoomSettingsManager().setRoomAvatar(spaceId, options.avatarUrl)
         logger.info(`[Space] Space 已更新（回退）: ${spaceId}`)
       } catch (fallbackErr) {
         logger.error(`[Space] 更新 Space 失败: ${fallbackErr}`)
@@ -209,7 +211,9 @@ class SpaceService extends BaseMatrixService {
       try {
         const room = this.getClient().getRoom(spaceId)
         if (room) return room.getJoinedMembers().map((m) => ({ space_id: spaceId, user_id: m.userId }))
+        // SDK 真实归属是 `getMembershipManager().getRoomMembers(roomId)`；MatrixClient 本体没有该方法。
         return this.getClient()
+          .getMembershipManager()
           .getRoomMembers(spaceId)
           .map((m) => ({ space_id: spaceId, user_id: m.userId }))
       } catch (fallbackErr) {

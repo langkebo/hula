@@ -100,8 +100,7 @@ describe('AdminFacadeService — C-1 浏览器 dev 模式（无 Tauri runtime）
       userCount: 0,
       dailyActiveUsers: 0,
       monthlyActiveUsers: 0,
-      messageCount: 0,
-      startServerTime: 0
+      messageCount: 0
     })
     expect(mockAdminManager.getServerStats).not.toHaveBeenCalled()
   })
@@ -115,8 +114,7 @@ describe('AdminFacadeService — C-1 浏览器 dev 模式（无 Tauri runtime）
       userCount: 0,
       dailyActiveUsers: 0,
       monthlyActiveUsers: 0,
-      messageCount: 0,
-      startServerTime: 0
+      messageCount: 0
     })
     expect(mockAdminManager.getServerStats).not.toHaveBeenCalled()
   })

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-11T08:16:43.164Z",
+  "generated_at": "2026-10-11T23:43:11.914Z",
   "approved_boundary": [
     "src/services/matrix/network/",
     "src/services/matrix/sdk.ts",
@@ -12,8 +12,8 @@
   ],
   "summary": {
     "authedRequest": {
-      "total": 1,
-      "violations": 1
+      "total": 0,
+      "violations": 0
     },
     "rawFetch": {
       "total": 10,
@@ -24,18 +24,12 @@
       "violations": 0
     },
     "inlineMatrixUri": {
-      "total": 80,
-      "violations": 77
+      "total": 75,
+      "violations": 72
     }
   },
   "findings": {
-    "authedRequest": [
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 102,
-        "approved": false
-      }
-    ],
+    "authedRequest": [],
     "rawFetch": [
       {
         "file": "src/App.vue",
@@ -49,7 +43,7 @@
       },
       {
         "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 273,
+        "line": 221,
         "approved": false
       },
       {
@@ -138,77 +132,7 @@
       },
       {
         "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 34,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 35,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 39,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 40,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
         "line": 41,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 42,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 43,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 44,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 45,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 46,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 47,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 48,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 49,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 50,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/MatrixHttpClient.ts",
-        "line": 53,
         "approved": false
       },
       {
@@ -222,6 +146,31 @@
         "approved": false
       },
       {
+        "file": "src/services/matrix/admin/AdminTypes.ts",
+        "line": 201,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/AdminTypes.ts",
+        "line": 201,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/AdminTypes.ts",
+        "line": 216,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/AdminTypes.ts",
+        "line": 223,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/AdminTypes.ts",
+        "line": 235,
+        "approved": false
+      },
+      {
         "file": "src/services/matrix/admin/BackgroundUpdateService.ts",
         "line": 4,
         "approved": false
@@ -229,6 +178,26 @@
       {
         "file": "src/services/matrix/admin/ExternalServiceService.ts",
         "line": 4,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/QuotaService.ts",
+        "line": 20,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/QuotaService.ts",
+        "line": 22,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/QuotaService.ts",
+        "line": 61,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/admin/RoomService.ts",
+        "line": 235,
         "approved": false
       },
       {
@@ -298,22 +267,7 @@
       },
       {
         "file": "src/services/matrix/paths/admin.ts",
-        "line": 2,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/paths/admin.ts",
-        "line": 5,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/paths/admin.ts",
-        "line": 8,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/paths/admin.ts",
-        "line": 10,
+        "line": 7,
         "approved": false
       },
       {
@@ -358,17 +312,12 @@
       },
       {
         "file": "src/services/matrix/paths/admin.ts",
-        "line": 27,
+        "line": 28,
         "approved": false
       },
       {
         "file": "src/services/matrix/paths/admin.ts",
-        "line": 37,
-        "approved": false
-      },
-      {
-        "file": "src/services/matrix/paths/admin.ts",
-        "line": 38,
+        "line": 29,
         "approved": false
       },
       {
@@ -379,6 +328,16 @@
       {
         "file": "src/services/matrix/paths/admin.ts",
         "line": 40,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 41,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/admin.ts",
+        "line": 42,
         "approved": false
       },
       {
@@ -429,6 +388,16 @@
       {
         "file": "src/services/matrix/paths/prefixes.ts",
         "line": 5,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/prefixes.ts",
+        "line": 7,
+        "approved": false
+      },
+      {
+        "file": "src/services/matrix/paths/prefixes.ts",
+        "line": 9,
         "approved": false
       },
       {

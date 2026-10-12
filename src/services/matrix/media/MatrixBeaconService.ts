@@ -107,19 +107,24 @@ class MatrixBeaconService {
     try {
       const client = this.getClient()
       if (!client) return null
-      const event = await client.getRoomEvent(roomId, eventId)
-      const content = event.getContent() as { description?: string; timeout?: number; live?: boolean }
+      // SDK 真实方法名是 `fetchRoomEvent(roomId, eventId): Promise<Partial<IEvent>>`
+      // —— 返回的是**普通事件对象**（不是 MatrixEvent），故读 `.content` 而非 `.getContent()`。
+      const event = await client.fetchRoomEvent(roomId, eventId)
+      const content = event.content as { description?: string; timeout?: number; live?: boolean }
 
       if (content.timeout === undefined) return null
 
       return {
         event_id: eventId,
         room_id: roomId,
-        user_id: event.sender?.userId || '',
+        // `fetchRoomEvent` 返回的是原始事件对象（Partial<IEvent>），不是 MatrixEvent：
+        // `sender` 直接就是 user_id 字符串，时间戳字段是 `origin_server_ts`。
+        // （旧代码写的是 MatrixEvent 的 `getSender().userId` / `getTs()`，因为幻影声明成 MatrixEvent 才编译通过。）
+        user_id: event.sender || '',
         description: content.description,
         timeout: content.timeout,
         is_live: content.live ?? false,
-        last_updated: event.getTs() || Date.now()
+        last_updated: event.origin_server_ts || Date.now()
       }
     } catch (err) {
       logger.warn('getBeaconInfo failed:', err)
@@ -271,8 +276,8 @@ class MatrixBeaconService {
       if (!client) return false
 
       // 读取现有 beacon_info 以保留 timeout/description
-      const event = await client.getRoomEvent(roomId, beaconInfoEventId)
-      const content = event.getContent() as { description?: string; timeout?: number }
+      const event = await client.fetchRoomEvent(roomId, beaconInfoEventId)
+      const content = event.content as { description?: string; timeout?: number }
 
       // SDK BeaconManager.stopBeaconSharing 发送 live:false 的 m.beacon_info state event
       await client.getBeaconManager().stopBeaconSharing(roomId, content.timeout ?? 3600000, content.description)

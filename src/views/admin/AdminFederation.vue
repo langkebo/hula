@@ -110,8 +110,8 @@
           <n-descriptions-item :label="t('admin.federation.failureTs')">
             {{ selectedDest.failureTs ? new Date(selectedDest.failureTs).toLocaleString() : '-' }}
           </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.federation.lastSuccessfulStreamOrdering')">
-            {{ selectedDest.lastSuccessfulStreamOrdering ?? '-' }}
+          <n-descriptions-item :label="t('admin.federation.lastSuccessfulTs')">
+            {{ selectedDest.lastSuccessfulTs ? new Date(selectedDest.lastSuccessfulTs).toLocaleString() : '-' }}
           </n-descriptions-item>
         </n-descriptions>
         <n-space class="mt-16px">

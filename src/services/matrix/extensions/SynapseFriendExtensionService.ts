@@ -144,20 +144,27 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
 
   async sendFriendRequest(
     userId: string,
-    message?: string
+    message?: string,
+    options: { idempotencyKey?: string } = {}
   ): Promise<{
     request_id: number
     status: string
   }> {
     try {
       if (!(await this.isFriendEndpointAvailable())) return { request_id: 0, status: 'unavailable' }
+      // 幂等键让「SDK 通道失败 → REST 降级重发」可被服务端识别为同一逻辑操作（审计 §7 批次 B-4）
+      const headers: Record<string, string> = {}
+      if (options.idempotencyKey) {
+        headers['Idempotency-Key'] = options.idempotencyKey
+      }
       const response = await this.request<{
         request_id?: number
         status?: string
         data?: { request_id: number; status: string }
       }>(MATRIX_PATHS.FRIENDS.REQUEST, {
         method: 'POST',
-        body: JSON.stringify({ user_id: userId, message })
+        body: JSON.stringify({ user_id: userId, message }),
+        headers
       })
 
       let data: { request_id: number; status: string } | undefined

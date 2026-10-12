@@ -8,7 +8,7 @@
 
 import type { StoreStats } from 'matrix-js-sdk'
 import { useI18nGlobal } from '@/services/i18n'
-import type { LoginResult, MatrixClientConfig, SyncOptions } from './matrixWorkerTypes'
+import type { LoginResult, MatrixClientConfig } from './matrixWorkerTypes'
 import { extractClientConfig, initSDK, state } from './workerState'
 
 /**
@@ -98,7 +98,9 @@ export async function handleLogin(payload: {
     throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
   }
 
-  const loginResponse = await state.client.login('m.login.password', {
+  // SDK 真实归属是 `getAccountManager().login(type, params)`（内部写入 accessToken / userId）；
+  // MatrixClient 本体没有 `login`。
+  const loginResponse = await state.client.getAccountManager().login('m.login.password', {
     user: payload.username,
     password: payload.password,
     initial_device_display_name: payload.deviceName || 'Tjg Client'
@@ -171,14 +173,4 @@ export async function handleGetStats(): Promise<StoreStats | null> {
  */
 export async function handleGetClient(): Promise<unknown> {
   return state.client
-}
-
-/**
- * 执行一次同步
- */
-export async function handleSyncOnce(options?: SyncOptions): Promise<void> {
-  if (!state.client) {
-    throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
-  }
-  await state.client.syncOnce(options as Record<string, unknown>)
 }

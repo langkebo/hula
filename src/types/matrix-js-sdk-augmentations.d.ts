@@ -4,7 +4,13 @@
  */
 /// <reference types="vite/client" />
 
-import type { Body, IHttpOpts, IRequestOpts, QueryDict } from 'matrix-js-sdk'
+// ⚠️ 这里必须显式导入所有在 `declare module 'matrix-js-sdk'` 内被引用的 SDK 类型。
+// 历史坑（2026-10-11 审计 §13 发现）：本文件里 `Room` 是**未导入的裸名**，而文件内恰好有一个
+// 本地 `interface Room { topic?: string }` 兜住了它 —— 于是 `getRoom(roomId): Room | null`
+// 一直能编译。删掉那条幻影声明后，`Room` 变成不可解析，`client.getRoom()` 的返回类型**静默塌成
+// `any`**，连带 6 处 `.map((m) => …)` 回调退化为隐式 any（strict 下报 TS7006）。
+// 教训：augmentation 里引用 SDK 类型必须走 import，不能依赖本地同名声明的「巧合」。
+import type { Body, IHttpOpts, IRequestOpts, MatrixEvent, QueryDict, Room, RoomMember } from 'matrix-js-sdk'
 
 declare module 'matrix-js-sdk' {
   // ==================== MatrixHttpApi 方法重载 ====================
@@ -28,17 +34,7 @@ declare module 'matrix-js-sdk' {
     ): Promise<T>
   }
 
-  // ==================== MSC3575RoomData 扩展 ====================
-  // tjg 的 MatrixSlidingSyncService 期望 roomData 有 state/summary 字段（tjg 自定义扩展）。
-  // SDK 的 MSC3575RoomData 没有这两个字段，此处通过 interface augmentation 添加。
-  interface MSC3575RoomData {
-    state?: Record<string, unknown>
-    summary?: Record<string, unknown>
-  }
-
   // ==================== SlidingSync 方法扩展 ====================
-  // tjg 的 MatrixSlidingSyncService 使用 getList/subscribeToRoom/unsubscribeFromRoom/getSyncToken
-  // 等方法，这些是 tjg 自定义的 SlidingSync 扩展（SDK 的 SlidingSync class 没有这些方法）。
   // setInitialPos 是 SDK 源码中存在的 public 方法（sliding-sync.ts:334），但部分 SDK 构建的
   // .d.ts 未导出该方法，此处补充类型声明以支持 MatrixSyncManager 的增量 sync pos 持久化。
   interface SlidingSync {
@@ -49,10 +45,6 @@ declare module 'matrix-js-sdk' {
   // ==================== Room 属性扩展 ====================
   // tjg 代码直接访问 room.topic（SDK 的 Room class 没有此属性，需通过 currentState 获取）。
   // 此处添加 topic 属性扩展，避免大量代码重构。
-  interface Room {
-    topic?: string
-  }
-
   // ==================== 补充 SDK 缺失的类型 ====================
 
   // Note: These types exist in matrix-js-sdk/@types/partials.ts but are not exported from main index
@@ -185,19 +177,16 @@ declare module 'matrix-js-sdk' {
     // 说明：SDK 没有 `client.crypto` 属性（只有 getCrypto()），
     // 也没有 getCrossSigningInfo / getStoredDevice / getUserDevices / getKeyBackupEnabled。
     // 这些幻影声明已移除——保留会让 vue-tsc 通过而运行时 undefined。
-    isRoomEncrypted(roomId: string): boolean
     createFilter(filter: unknown): Promise<unknown>
     getRoom(roomId: string): Room | null
     getRooms(): Room[]
     getUser(userId: string): User | null
     getUserId(): string | null
     getDeviceId(): string | null
-    getJoinedRooms(): Room[]
     createRoom(opts: ICreateRoomOpts): Promise<{ room_id: string }>
     createRoom(options: ICreateRoomOpts): Promise<{ room_id: string }>
     setRoomName(roomId: string, name: string): Promise<void>
     setRoomTopic(roomId: string, topic: string): Promise<void>
-    setRoomAvatar(roomId: string, url: string): Promise<void>
     getRoomTags(roomId: string): Promise<{ tags: Record<string, { order?: number }> }>
     setRoomTag(roomId: string, tagName: string, metadata?: { order?: number }): Promise<EmptyObject>
     deleteRoomTag(roomId: string, tagName: string): Promise<EmptyObject>
@@ -236,12 +225,9 @@ declare module 'matrix-js-sdk' {
     ): Promise<Record<string, unknown>>
     isUsernameAvailable(username: string): Promise<{ available?: boolean }>
     setAccountData(eventType: string, content: unknown): Promise<void>
-    getRoomMembers(roomId: string): RoomMember[]
-    getRoomEvent(roomId: string, eventId: string): Promise<MatrixEvent>
     sendMessage(roomId: string, threadId: string | null, content: IContent, txnId?: string): Promise<ISendEventResponse>
     sendTextMessage(roomId: string, text: string, threadId?: string): Promise<ISendEventResponse>
     sendHtmlMessage(roomId: string, txnId: string, body: string, html: string): Promise<ISendEventResponse>
-    sendEmote(roomId: string, txnId: string, content: string): Promise<ISendEventResponse>
     sendEvent(roomId: string, eventType: string, content: unknown, txnId?: string): Promise<ISendEventResponse>
     redactEvent(roomId: string, eventId: string, txnId?: string, opts?: { reason?: string }): Promise<void>
     getTypingManager(): TypingManager
@@ -276,10 +262,8 @@ declare module 'matrix-js-sdk' {
       }>
       limited: boolean
     }>
-    getProfile(userId: string): Promise<{ displayname?: string; avatar_url?: string }>
     getRoomDirectoryVisibility(roomId: string): Promise<{ visibility: 'public' | 'private' }>
     setRoomDirectoryVisibility(roomId: string, visibility: 'public' | 'private'): Promise<void>
-    login(loginType: string, data: Record<string, unknown>): Promise<LoginResponse>
     logout(): Promise<void>
     startClient(opts?: Record<string, unknown>): Promise<void>
     kick(roomId: string, userId: string, reason?: string): Promise<void>
@@ -320,9 +304,7 @@ declare module 'matrix-js-sdk' {
     getEventContext(roomId: string, eventId: string, opts?: Record<string, unknown>): Promise<Record<string, unknown>>
     setPowerLevel(roomId: string, userId: string, powerLevel: number, event?: MatrixEvent): Promise<void>
     scrollback(room: Room, limit: number): Promise<Room>
-    redact(roomId: string, eventId: string, txnId?: string, opts?: { reason?: string }): Promise<{ event_id: string }>
     getVisibleRooms(): Room[]
-    syncOnce(opts?: Record<string, unknown>): Promise<void>
     // getBurnAfterReadManager now available in SDK (matrix-js-sdk@40.2.0+)
     // getSpaceManager now available in SDK
     // getKeyRotationManager now available in SDK
@@ -380,7 +362,6 @@ declare module 'matrix-js-sdk' {
     // 注：getDirectMessageManager/getDeviceManager/getKeyBackupManager/getDeviceKeysManager/
     // getCryptoKeysManager 已由 SDK matrix-client-extensions.d.ts 声明（getKeyVerificationManager 已删除）
     // 上浮强类型 getter，此处不再重复声明（避免弱类型 `?: unknown` 遮蔽 SDK 类型）。
-    getMediaQuotaManager?(): unknown
     // Upload
     uploadContent(
       file: Blob | File,
@@ -411,7 +392,6 @@ declare module 'matrix-js-sdk' {
     roomId: string
     name: string
     rawDisplayName: string
-    avatarUrl: string | null
     membership: string
     powerLevel: number
     getAvatarUrl(): string | null

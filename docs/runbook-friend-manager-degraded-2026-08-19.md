@@ -1,7 +1,7 @@
 # Runbook：friend_manager_degraded 事件排查
 
 > 用途：当 telemetry 事件总线（`src/utils/telemetry.ts`）发射 `friend_manager_degraded`（kind=health, severity=warn）时，值班/研发按本手册排查与恢复。
-> 关联代码：`src/services/matrix/MatrixConnectionManager.ts` 的 `assertCriticalExtensions()`（L432–470）、`src/utils/extensionHealth.ts`、`src/stores/domains/chat/capability.ts`。
+> 关联代码：`src/services/matrix/MatrixConnectionManager.ts` 的 `assertCriticalExtensions()`、`src/services/matrix/extensions/criticalExtensions.ts`（关键扩展清单派生）、`src/utils/extensionHealth.ts`、`src/stores/domains/chat/capability.ts`。
 
 ---
 
@@ -19,6 +19,22 @@
 **语义**：Matrix SDK 客户端上未检测到 `FriendManager` 扩展（`getFriendManager` 访问器缺失或非函数），好友能力从增量扩展降级为 REST API 全量拉取。**不阻塞登录与基础聊天**，但好友列表/好友状态变更的实时性下降。
 
 **发射时机**：每次 `setClient()` 后 `assertCriticalExtensions()` 运行时（客户端创建/重建后）。
+
+### 1.1 关联事件：`extension_degraded`
+
+`assertCriticalExtensions()` 现在会遍历由 SDK 扩展清单（`DEFAULT_CORE_EXTENSIONS`）派生的全部关键扩展 ID
+（见 `src/services/matrix/extensions/criticalExtensions.ts`）。除 FriendManager 保留本手册的专用事件外，
+其余任一扩展未注册会聚合为一次 `extension_degraded` 事件：
+
+| 字段 | 值 |
+|---|---|
+| 事件名 | `extension_degraded` |
+| kind | `health` |
+| severity | `warn` |
+| context.count | 未注册扩展数量 |
+| context.extensions | 未注册扩展访问器名列表（如 `getProfileManager`） |
+
+该事件同样不阻塞登录与基础聊天，明细可在诊断面板查看。
 
 ---
 
@@ -45,7 +61,7 @@
 ### 3.3 查看 capability store 状态
 
 - 诊断面板（`src/components/settings/DiagnosticsPanel.vue`）读取 `hasDegradedExtension`。
-- `extensionHealth['friend-manager']` 应为 `healthy` | `degraded`。
+- `extensionHealth['getFriendManager']` 应为 `healthy` | `degraded`（键名即访问器名，与新派生清单一致）。
 
 ### 3.4 复现检查（本地）
 
@@ -75,7 +91,7 @@
 ### 4.3 回滚建议
 
 - 回退到已知健康的 SDK fork 版本（上一稳定 tag），重新 `pnpm install --config.confirmModulesPurge=false`。
-- 复跑 `node scripts/run-vitest.js run src/services/matrix/__tests__/MatrixClientService.spec.ts`（含 O7 降级遥测契约），确认 `friend-manager` 恢复 healthy。
+- 复跑 `node scripts/run-vitest.js run src/services/matrix/__tests__/MatrixClientService.spec.ts`（含 O7 降级遥测契约），确认 `getFriendManager` 恢复 healthy。
 
 ---
 
@@ -83,7 +99,7 @@
 
 完成修复后：
 
-1. 重建客户端（或重启应用），确认日志无 `未注册` warn、诊断面板 `extensionHealth['friend-manager'] = healthy`。
+1. 重建客户端（或重启应用），确认日志无 `未注册` warn、诊断面板 `extensionHealth['getFriendManager'] = healthy`。
 2. `track` 事件不再发射 `friend_manager_degraded`（或频率回落基线）。
 3. 若期间降级到 REST API，验证好友列表可正常拉取（降级路径可用），再观察恢复。
 
@@ -100,6 +116,7 @@
 ## 7. 关联文档
 
 - 扩展注册单一真相 `src/services/matrix/extensions/managerExtensions.ts`（`isFriendManagerRegistered`）。
+- 关键扩展清单派生 `src/services/matrix/extensions/criticalExtensions.ts`（`CRITICAL_EXTENSION_IDS` / `findUnregisteredExtensions`）。
 - 降级 UI 暴露 `src/utils/extensionHealth.ts`（`reportExtensionDegradationToUi`）。
 - 诊断导出 `src/utils/dumpDiagnostics.ts`。
 - 事件总线 `src/utils/telemetry.ts`。

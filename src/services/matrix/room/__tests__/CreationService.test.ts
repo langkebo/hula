@@ -315,15 +315,19 @@ describe('MatrixRoomCreationService', () => {
       expect(service.convertRoomToRoomInfo(room).isDirect).toBe(true)
     })
 
-    it('returns isEncrypted=true when client.isRoomEncrypted returns true', () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ isRoomEncrypted: () => true } as never)
+    it('returns isEncrypted=true when the room encryption state event is present', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoom: () => ({ hasEncryptionStateEvent: () => true })
+      } as never)
       expect(service.convertRoomToRoomInfo(makeRoom()).isEncrypted).toBe(true)
     })
   })
 
   describe('joinRoomAndGetInfo', () => {
     it('joins the room via MembershipService then converts to RoomInfo', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ isRoomEncrypted: () => false } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoom: () => ({ hasEncryptionStateEvent: () => false })
+      } as never)
       const room = makeRoom()
       joinRoomMock.mockResolvedValueOnce(room)
       const info = await service.joinRoomAndGetInfo('!r:e')

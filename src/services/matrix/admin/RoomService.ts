@@ -85,8 +85,7 @@ export class AdminRoomService {
       logger.info(`[Admin] 房间已关闭: ${roomId}`)
       return {
         kickedUsers: result?.kicked_users ?? [],
-        failedToKickUsers: result?.failed_to_kick_users ?? [],
-        localAliases: []
+        failedToKickUsers: result?.failed_to_kick_users ?? []
       }
     } catch (err) {
       logger.error(`[Admin] 关闭房间失败: ${err}`)
@@ -476,7 +475,7 @@ export class AdminRoomService {
       message?: string
       block?: boolean
     }
-  ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; localAliases: string[]; newRoomId?: string }> {
+  ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; newRoomId?: string }> {
     if (!isValidMatrixRoomId(roomId)) throw new Error(`Invalid room ID: ${roomId}`)
     try {
       const admin = await this.sdkAdmin()
@@ -492,7 +491,6 @@ export class AdminRoomService {
       return {
         kickedUsers: [],
         failedToKickUsers: [],
-        localAliases: [],
         newRoomId: undefined
       }
     } catch (err) {

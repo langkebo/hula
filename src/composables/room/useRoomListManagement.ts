@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
+import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useRoomListManagement')
@@ -48,10 +49,13 @@ export function useRoomListManagement(options: UseRoomListManagementOptions) {
       m as unknown as { events?: { sender?: string; replacedByUser?: string; content?: { reason?: string } }[] }
     ).events
     const reason = banEvent?.find((e) => e?.content?.reason)?.content?.reason
+    // SDK 的 RoomMember 没有 `avatarUrl` 属性（旧代码读它恒为 undefined）；
+    // 真实入口是 `getMxcAvatarUrl()`，再交给 AvatarUtils 走统一的 mxc → http 解析链。
+    const mxcAvatar = m.getMxcAvatarUrl()
     return {
       userId: m.userId,
       name: m.name || m.rawDisplayName || m.userId,
-      avatarUrl: m.avatarUrl ?? undefined,
+      avatarUrl: mxcAvatar ? AvatarUtils.getAvatarUrl(mxcAvatar, 64) : undefined,
       reason,
       membership: m.membership ?? 'join'
     }

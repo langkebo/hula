@@ -86,8 +86,9 @@ describe('MatrixClientService', () => {
     })
 
     it('should return true when room is encrypted', () => {
+      const hasEncryptionStateEvent = vi.fn().mockReturnValue(true)
       const mockClient = {
-        isRoomEncrypted: vi.fn().mockReturnValue(true)
+        getRoom: vi.fn().mockReturnValue({ hasEncryptionStateEvent })
       }
       ;(
         matrixClientService as unknown as { connectionManager: { setClient: (c: unknown) => void } }
@@ -95,12 +96,13 @@ describe('MatrixClientService', () => {
 
       const result = matrixClientService.isRoomEncrypted('!room:server')
       expect(result).toBe(true)
-      expect(mockClient.isRoomEncrypted).toHaveBeenCalledWith('!room:server')
+      expect(mockClient.getRoom).toHaveBeenCalledWith('!room:server')
+      expect(hasEncryptionStateEvent).toHaveBeenCalled()
     })
 
     it('should return false when room is not encrypted', () => {
       const mockClient = {
-        isRoomEncrypted: vi.fn().mockReturnValue(false)
+        getRoom: vi.fn().mockReturnValue({ hasEncryptionStateEvent: vi.fn().mockReturnValue(false) })
       }
       ;(
         matrixClientService as unknown as { connectionManager: { setClient: (c: unknown) => void } }

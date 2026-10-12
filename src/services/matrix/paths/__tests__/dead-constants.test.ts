@@ -1,11 +1,15 @@
 /**
  * FT-120: L3 路径常量"无死常量"契约测试
  *
- * 验证 DM / MODERATION / AUTH / VOICE / ROOM 模块中只保留被 L2 服务实际引用的常量，
+ * 验证 AUTH / VOICE / ROOM 模块中只保留被 L2 服务实际引用的常量，
  * 防止维护者被从未使用的路径常量误导。
  *
  * 当某常量不再被任何 L2 服务引用时，应将其从此处的 expected 集合中移除并从源文件删除；
  * 反之，新增常量时必须先在 L2 服务中接入，再将键名加入此处的 expected 集合。
+ *
+ * C-2（§7/§8）：MODERATION / MEDIA / ADMIN / WIDGET / USER / BURN / GUEST /
+ * ACCOUNT_DATA / RELATIONS / RENDEZVOUS 等命名空间因生产零引用，其源模块与
+ * 本用例中的对应断言已一并删除，见 __tests__/index.test.ts 的删除结果锁定用例。
  */
 import { describe, expect, it, vi } from 'vitest'
 
@@ -13,13 +17,9 @@ import { describe, expect, it, vi } from 'vitest'
 // （断言从未真正执行）。显式放宽到 120s。见审计报告 §12.2 / §13。
 vi.setConfig({ testTimeout: 120_000 })
 
-import { ADMIN } from '../admin'
 import { AUTH } from '../auth'
-import { MEDIA } from '../media'
-import { MODERATION } from '../moderation'
 import { ROOM } from '../room'
 import { VOICE } from '../voice'
-import { WIDGET } from '../widget'
 
 /** 断言对象的键集合恰好等于 expectedKeys（顺序无关）。 */
 function expectKeys(obj: object, expectedKeys: string[]): void {
@@ -27,20 +27,6 @@ function expectKeys(obj: object, expectedKeys: string[]): void {
 }
 
 describe('FT-120: 无死路径常量', () => {
-  describe('MODERATION 模块仅保留被 L2 服务引用的常量', () => {
-    // ReportService.reportRoom → MODERATION.REPORT_ROOM
-    // ReportService.scoreReport → MODERATION.REPORT_EVENT_SCORE
-    it('MODERATION 仅包含 REPORT_ROOM 与 REPORT_EVENT_SCORE', () => {
-      expectKeys(MODERATION, ['REPORT_ROOM', 'REPORT_EVENT_SCORE'])
-    })
-
-    it('MODERATION 不再包含已移除的死常量', () => {
-      expect(MODERATION).not.toHaveProperty('REPORT_EVENT')
-      expect(MODERATION).not.toHaveProperty('REPORT_USER')
-      expect(MODERATION).not.toHaveProperty('SCANNER_INFO')
-    })
-  })
-
   describe('AUTH 模块仅保留被 L2 服务引用的常量', () => {
     // MatrixQrLoginSdkService.reciprocateLogin → AUTH.QR_GENERATE_TOKEN
     // MSC4108_CREATE_RENDEZVOUS / MSC4108_RENDEZVOUS_SESSION 由 SDK 内部 rendezvous 传输使用，
@@ -70,33 +56,6 @@ describe('FT-120: 无死路径常量', () => {
     it('MATRIX_PATHS 不再包含 DM 键', async () => {
       const { MATRIX_PATHS } = await import('../index')
       expect(MATRIX_PATHS).not.toHaveProperty('DM')
-    })
-  })
-
-  describe('MEDIA 模块仅保留被 L2 服务引用的常量', () => {
-    // MatrixUrlPreviewService 已移除，其引用的 DOWNLOAD_PREFIX / MEDIA_PREFIX 已随之删除；
-    // 上传/配额/配置/删除/具名上传/预览端点均已迁移到 client.getMediaManager()，
-    // 不再需要路径常量。当前 MEDIA 不含任何常量。
-    it('MEDIA 不再包含任何路径常量', () => {
-      expectKeys(MEDIA, [])
-    })
-
-    it('MEDIA 不再包含已迁移到 MediaManager 的死常量', () => {
-      for (const dead of [
-        'DOWNLOAD_PREFIX',
-        'MEDIA_PREFIX',
-        'UPLOAD',
-        'UPLOAD_WITH_ID',
-        'CONFIG',
-        'DELETE',
-        'QUOTA_ALERTS',
-        'QUOTA_CHECK',
-        'QUOTA_STATS',
-        'CLIENT_MEDIA_CONFIG',
-        'PREVIEW_URL'
-      ]) {
-        expect(MEDIA).not.toHaveProperty(dead)
-      }
     })
   })
 
@@ -138,20 +97,6 @@ describe('FT-120: 无死路径常量', () => {
     it('ROOM 不再包含 INVITE_BLOCKLIST / INVITE_ALLOWLIST', () => {
       expect(ROOM).not.toHaveProperty('INVITE_BLOCKLIST')
       expect(ROOM).not.toHaveProperty('INVITE_ALLOWLIST')
-    })
-  })
-
-  describe('ADMIN / WIDGET 不再包含已修 404 的死常量（批次 L：L-D01 / L-D09 / L-D10）', () => {
-    // 证据：scripts/bare-matrix-paths-baseline.json 的 history；
-    // MATRIX_WHOAMI 的后端命名空间已移除，USER_DEACTIVATE 应为 v1，WIDGET.SEND 后端无此端点。
-    it('ADMIN 不含 MATRIX_WHOAMI / USER_DEACTIVATE', () => {
-      expect(ADMIN).not.toHaveProperty('MATRIX_WHOAMI')
-      expect(ADMIN).not.toHaveProperty('USER_DEACTIVATE')
-    })
-
-    it('WIDGET 不含 SEND（后端无该端点；仅保留 CAPABILITIES）', () => {
-      expect(WIDGET).not.toHaveProperty('SEND')
-      expect(WIDGET).toHaveProperty('CAPABILITIES')
     })
   })
 })

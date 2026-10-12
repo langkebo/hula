@@ -8,7 +8,7 @@ vi.mock('@/services/matrix/admin', () => ({
     getRoomState: vi.fn().mockResolvedValue(null),
     deleteRoom: vi.fn().mockResolvedValue(undefined),
     blockRoom: vi.fn().mockResolvedValue(undefined),
-    shutdownRoom: vi.fn().mockResolvedValue({ kickedUsers: [], failedToKickUsers: [], localAliases: [] }),
+    shutdownRoom: vi.fn().mockResolvedValue({ kickedUsers: [], failedToKickUsers: [] }),
     forceJoinRoom: vi.fn().mockResolvedValue(undefined),
     forceLeaveRoom: vi.fn().mockResolvedValue(undefined)
   }
@@ -114,8 +114,7 @@ describe('useAdminRooms', () => {
   it('shutdownRoom returns kickedUsers and clears selection', async () => {
     vi.mocked(adminService.shutdownRoom).mockResolvedValueOnce({
       kickedUsers: ['@a:s'],
-      failedToKickUsers: [],
-      localAliases: []
+      failedToKickUsers: []
     })
     const c = useAdminRooms()
     await c.selectRoom({

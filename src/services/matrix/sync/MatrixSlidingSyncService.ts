@@ -29,7 +29,8 @@ class MatrixSlidingSyncService {
       notification_count?: number
       highlight_count?: number
       timeline?: unknown[]
-      state?: Record<string, unknown>
+      /** SDK 的 roomData 字段（旧代码误写为 state: Record<string,unknown>，恒为 undefined） */
+      required_state?: unknown[]
     }
   > = new Map()
   private readonly lifecycleListener = (
@@ -152,12 +153,8 @@ class MatrixSlidingSyncService {
       notification_count: roomData.notification_count,
       highlight_count: roomData.highlight_count,
       timeline: roomData.timeline,
-      state: roomData.state
+      required_state: roomData.required_state
     })
-
-    if (roomData.summary) {
-      this.callbacks.onRoomUpdate?.(roomId)
-    }
 
     if (roomData.notification_count !== undefined) {
       this.callbacks.onUnreadCountsUpdate?.([
@@ -175,8 +172,9 @@ class MatrixSlidingSyncService {
 
   private shouldRefreshRoomList(resp: MSC3575SlidingSyncResponse): boolean {
     return Object.values(resp.rooms).some((roomData) => {
-      const hasStateDelta = !!roomData.state && Object.keys(roomData.state).length > 0
-      const hasSummaryDelta = !!roomData.summary && Object.keys(roomData.summary).length > 0
+      // SDK 的 MSC3575RoomData 字段是 required_state / timeline；没有 state / summary。
+      // 旧代码的 hasSummaryDelta 恒为 false（死条件），已删除；state 判据改用 required_state。
+      const hasStateDelta = (roomData.required_state?.length ?? 0) > 0
 
       return Boolean(
         roomData.initial ||
@@ -184,8 +182,7 @@ class MatrixSlidingSyncService {
           roomData.is_dm !== undefined ||
           roomData.prev_batch !== undefined ||
           roomData.timeline?.length ||
-          hasStateDelta ||
-          hasSummaryDelta
+          hasStateDelta
       )
     })
   }

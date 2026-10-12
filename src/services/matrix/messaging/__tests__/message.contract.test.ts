@@ -6,10 +6,11 @@
  *
  * Covers `MatrixMessageService.fetchServerMessages` (private), reached via
  * `getMessageList` with an empty-room stub so the server-fetch fallback fires.
- * Before the stripMatrixPrefix fix, the path was
- * `/_matrix/client/v3/rooms/.../messages` and the SDK re-prepended
- * `/_matrix/client/v3`, producing `/_matrix/client/v3/_matrix/client/v3/...`
- * and a 404. This test locks in the short-path fix.
+ * The path is a short path (`/rooms/.../messages`) and the SDK prepends the
+ * default `/_matrix/client/v3` prefix once, so the wire URL stays single-prefixed.
+ * If a fully-prefixed path were passed instead, the SDK would re-prepend its
+ * default prefix and produce `/_matrix/client/v3/_matrix/client/v3/...` → 404.
+ * This test locks in the short-path convention.
  */
 import { createClient, type MatrixClient } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'

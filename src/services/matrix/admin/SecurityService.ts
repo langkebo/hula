@@ -438,7 +438,7 @@ export class AdminSecurityService {
       retryLastTs: destination.retry_last_ts ?? undefined,
       retryInterval: destination.retry_interval ?? undefined,
       failureTs: destination.failure_ts ?? undefined,
-      lastSuccessfulStreamOrdering: destination.last_successful_ts ?? undefined
+      lastSuccessfulTs: destination.last_successful_ts ?? undefined
     }
   }
 }

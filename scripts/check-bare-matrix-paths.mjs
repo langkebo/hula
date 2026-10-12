@@ -4,19 +4,25 @@
  *
  * 判据（L2）：Tjg 源码中每一个**可静态解析**的 Matrix/Synapse API 路径字面量，
  * 必须命中 SDK 契约路由表（安装产物 `matrix-js-sdk/contract`，即钉版 tarball 内的
- * 39 张 route-table）∪ 后端镜像 manifest（sibling `../matrix-js-sdk` 在场时并入）。
- * 命不中即 W-02/W-03/W-04 形态的 404 缺陷。
+ * 39 张 route-table）∪ **后端权威路径集**。
+ *
+ * 后端权威（C-1，spec §7 C-1 / §8 C-1）：权威口径为 synapse-rust 导出 ledger 的
+ * **distinct path 数 814**（entry_count 1027 是 (method, path) 条目数，非 distinct path，
+ * 二者差 213 属单位口径差异，非覆盖缺口）。权威来源优先级：
+ *   `--manifest <path>` 覆盖 > sibling `../matrix-js-sdk` 在场时的新鲜 manifest >
+ *   本地 vendored 快照 `scripts/contract-authority-paths.json`（`--sync-authority` 刷新）。
+ * 判据面 = SDK 契约 ∪ 权威路径；差集（权威 \ 判据面）必须为 0，否则失败（除非显式登记）。
  *
  * 抽取范围（L1）：
  *   1. 全 src/** 的绝对 API 形态字面量：`/_matrix/`、`/_synapse/`、`/.well-known/`
  *      （字符串/模板字面量均支持；注释不计——tokenizer 剥离；`*.d.ts` 跳过）；
  *   2. `src/services/matrix/paths/**` 的**相对**路径（如 '/createRoom'）——按前缀候选
- *      （SDK 默认 v3 + MatrixHttpClient 的 MATRIX_PREFIXES + prefixes.ts 常量值）补全后再比对
+ *      （SDK 默认 v3 + prefixes.ts 常量值）补全后再比对
  *      （L1 教训：不算默认前缀会把 '/register/captcha/status' 误判成不存在）；
  *   3. `${PREFIX_X}/...` 模板与 `PREFIX_X + '...'` 拼接：代入前缀常量/模块内局部常量后比对。
  *      多段变量拼接等抽不到的形态落「unresolved」具名桶（只降不升）。
  *   4. 前缀**本体**（如 '/_matrix/client/v3'、`MSC4354_PREFIX`）不是端点，按结构识别
- *      （值 ∈ MATRIX_PREFIXES ∪ prefixes.ts 常量值，或由 `*PREFIX*`/`*_BASE*` 命名的常量）
+ *      （值 ∈ prefixes.ts 常量值，或由 `*PREFIX*`/`*_BASE*` 命名的常量）
  *      进 prefixRoots 桶，不算违规。
  *   5. 末段为占位符且存在更长路由以该 head 开头 ⇒ 动态尾段（如 MatrixHttpClient 的
  *      `${PREFIX_V3}/user/${userId}/${suffix}`），进 dynamicTails 桶，不算违规。
@@ -33,6 +39,8 @@
  *   node scripts/check-bare-matrix-paths.mjs --strict           # knownDefects 也当违规（修复批次用）
  *   node scripts/check-bare-matrix-paths.mjs --accept-new       # 接受本次新增路径并写台账
  *   node scripts/check-bare-matrix-paths.mjs --update-baseline  # 刷新台账
+ *   node scripts/check-bare-matrix-paths.mjs --report           # 写 C-1 差集报告（CI 产物）
+ *   node scripts/check-bare-matrix-paths.mjs --sync-authority   # 从 sibling/--manifest 刷新本地权威快照
  *
  * 退出码：0 通过；1 违规/回归；2 扫描失败。
  */
@@ -46,8 +54,12 @@ const projectRoot = path.resolve(__dirname, '..')
 const srcRoot = path.join(projectRoot, 'src')
 const pathsDir = path.join(srcRoot, 'services', 'matrix', 'paths')
 const prefixesFile = path.join(pathsDir, 'prefixes.ts')
-const httpClientFile = path.join(srcRoot, 'services', 'matrix', 'MatrixHttpClient.ts')
 const baselineFile = path.join(projectRoot, 'scripts', 'bare-matrix-paths-baseline.json')
+// C-1：后端权威路径的**本地 vendored 快照**（CI 无 sibling 时的判据面来源，见 spec §7 C-1 / §8 C-1）。
+const authorityFile = path.join(projectRoot, 'scripts', 'contract-authority-paths.json')
+// C-1：差集报告（CI 产物）与「剩余项登记理由」表。
+const diffReportFile = path.join(projectRoot, 'scripts', 'contract-judgment-diff.json')
+const registeredFile = path.join(projectRoot, 'scripts', 'contract-judgment-diff-registered.json')
 
 const args = process.argv.slice(2)
 const argSet = new Set(args)
@@ -55,6 +67,8 @@ const jsonOutput = argSet.has('--json')
 const strictMode = argSet.has('--strict')
 const updateBaseline = argSet.has('--update-baseline')
 const acceptNew = argSet.has('--accept-new') || updateBaseline
+const writeReport = argSet.has('--report')
+const syncAuthorityFlag = argSet.has('--sync-authority')
 const manifestOverride = args.includes('--manifest') ? args[args.indexOf('--manifest') + 1] : null
 
 const FILE_EXT = /\.(ts|tsx|vue)$/
@@ -76,55 +90,151 @@ async function loadPrefixConstants() {
   return consts
 }
 
-/** 前缀本体单一来源：MatrixHttpClient.ts 的 MATRIX_PREFIXES ∪ prefixes.ts 常量值。 */
+/** 前缀本体单一来源：prefixes.ts 常量值（前缀解析已随批次 B-1 收敛到 SDK，本地表删除）。 */
 async function loadPrefixRoots(prefixConsts) {
   const roots = new Set(Object.values(prefixConsts))
-  let text = ''
-  try {
-    text = await readFile(httpClientFile, 'utf8')
-  } catch {
-    /* 不在场则只用 prefixes.ts */
-  }
-  const block = text.match(/const\s+MATRIX_PREFIXES\s*=\s*\[([\s\S]*?)\]/)
-  if (block) for (const m of block[1].matchAll(/'([^']+)'/g)) roots.add(m[1])
   roots.add('/_matrix/') // startsWith('/_matrix/') 守卫字符串，非端点
   return roots
 }
 
 async function loadSdkRoutes() {
-  const sources = []
   const paths = new Map()
+  let count = 0
   try {
     const mod = await import('matrix-js-sdk/contract')
+    count = mod.SDK_CONTRACT_ROUTES.length
     for (const r of mod.SDK_CONTRACT_ROUTES) if (!paths.has(r.path)) paths.set(r.path, 'sdk-contract')
-    sources.push(`sdk-contract(installed): ${mod.SDK_CONTRACT_ROUTES.length}`)
   } catch (err) {
     console.error(`扫描失败：无法导入安装产物的 SDK 契约路由表（matrix-js-sdk/contract）：${err.message}`)
     process.exit(2)
   }
-  const candidates = manifestOverride
-    ? [manifestOverride]
-    : [path.resolve(projectRoot, '..', 'matrix-js-sdk', 'docs', 'api-contract', 'generated', 'route-manifest.all.json')]
-  for (const p of candidates) {
+  return { count, paths }
+}
+
+/** sibling 新鲜 manifest 路径（`../matrix-js-sdk` 在场时可用；CI 无 sibling）。 */
+function siblingManifestPath() {
+  return path.resolve(projectRoot, '..', 'matrix-js-sdk', 'docs', 'api-contract', 'generated', 'route-manifest.all.json')
+}
+
+/** 从 manifest 抽取 **distinct path 集**（去重；entry 数另计）。 */
+export function distinctPathsFromManifest(manifest) {
+  const entries = manifest.entries || manifest.routes || []
+  const set = new Set()
+  for (const e of entries) if (e.path) set.add(e.path)
+  return set
+}
+
+async function readManifest(p) {
+  const m = JSON.parse(await readFile(p, 'utf8'))
+  const entries = m.entries || m.routes || []
+  return {
+    paths: distinctPathsFromManifest(m),
+    entryCount: entries.length,
+    meta: {
+      schema_version: m.schema_version ?? null,
+      generated_at: m.generated_at ?? null,
+      synapse_rust_commit: m.synapse_rust_commit ?? null,
+      state_profile: m.state_profile ?? null,
+    },
+  }
+}
+
+/**
+ * 后端权威路径集（C-1）。来源优先级：`--manifest` 覆盖 > sibling 新鲜 manifest > 本地 vendored 快照。
+ * 无论哪条来源，**distinct path 集合**即权威口径（entry_count 的 (method, path) 口径另存于 meta）。
+ */
+async function loadBackendAuthority() {
+  if (manifestOverride) {
     try {
-      const m = JSON.parse(await readFile(p, 'utf8'))
-      const entries = m.entries || m.routes || []
-      let added = 0
-      for (const e of entries) {
-        if (e.path && !paths.has(e.path)) {
-          paths.set(e.path, 'backend-manifest')
-          added++
-        }
-      }
-      sources.push(`backend-manifest: +${added}`)
-    } catch {
-      if (manifestOverride) {
-        console.error(`扫描失败：--manifest 不可读：${manifestOverride}`)
-        process.exit(2)
-      }
+      return { source: 'manifest-override', sourcePath: manifestOverride, ...(await readManifest(manifestOverride)) }
+    } catch (err) {
+      console.error(`扫描失败：--manifest 不可读：${manifestOverride}（${err.message}）`)
+      process.exit(2)
     }
   }
-  return { sources, paths }
+  const sib = siblingManifestPath()
+  try {
+    return { source: 'sibling-manifest', sourcePath: sib, ...(await readManifest(sib)) }
+  } catch {
+    // 无 sibling（如 CI）：回落到本地 vendored 快照
+  }
+  try {
+    const m = JSON.parse(await readFile(authorityFile, 'utf8'))
+    return {
+      source: 'vendored-snapshot',
+      sourcePath: authorityFile,
+      paths: new Set(m.paths || []),
+      entryCount: m.entry_count ?? null,
+      meta: {
+        schema_version: m.schema_version ?? null,
+        generated_at: m.generated_at ?? null,
+        synapse_rust_commit: m.synapse_rust_commit ?? null,
+        state_profile: m.state_profile ?? null,
+      },
+    }
+  } catch (err) {
+    console.error(
+      `扫描失败：无法加载后端权威路径（sibling manifest 缺失且本地快照不可读）：${authorityFile}（${err.message}）`
+    )
+    process.exit(2)
+  }
+}
+
+/** C-1 差集：权威路径 \ 判据面；未登记项须失败，已登记项进「剩余理由」清单。 */
+export function computeContractDiff({ authorityPaths, surfacePaths, registeredPaths = [] }) {
+  const reg = new Set(registeredPaths)
+  const missing = [...authorityPaths].filter((p) => !surfacePaths.has(p)).sort()
+  return {
+    missingFromSurface: missing.filter((p) => !reg.has(p)),
+    registeredRemaining: missing.filter((p) => reg.has(p)),
+  }
+}
+
+async function loadRegistered() {
+  try {
+    const m = JSON.parse(await readFile(registeredFile, 'utf8'))
+    return Array.isArray(m.registered) ? m.registered : []
+  } catch {
+    return []
+  }
+}
+
+/** 由 sibling/--manifest 刷新本地权威快照（`--sync-authority`）。 */
+async function syncAuthority() {
+  const src = manifestOverride ? path.resolve(manifestOverride) : siblingManifestPath()
+  let manifest
+  try {
+    manifest = JSON.parse(await readFile(src, 'utf8'))
+  } catch (err) {
+    console.error(`同步失败：权威 manifest 不可读：${src}（${err.message}）`)
+    process.exit(2)
+  }
+  const entries = manifest.entries || manifest.routes || []
+  const paths = [...distinctPathsFromManifest(manifest)].sort()
+  const out = {
+    schema_version: '1',
+    generated_at: new Date().toISOString(),
+    source: path.relative(projectRoot, src),
+    upstream: {
+      schema_version: manifest.schema_version ?? null,
+      generated_at: manifest.generated_at ?? null,
+      synapse_rust_commit: manifest.synapse_rust_commit ?? null,
+      state_profile: manifest.state_profile ?? null,
+    },
+    synapse_rust_commit: manifest.synapse_rust_commit ?? null,
+    state_profile: manifest.state_profile ?? null,
+    entry_count: entries.length,
+    distinct_path_count: paths.length,
+    note:
+      'synapse-rust 导出 ledger 的 distinct path 权威快照（C-1）。entry_count 为 (method, path) 条目数；' +
+      'distinct_path_count 才是判据面口径。由 scripts/check-bare-matrix-paths.mjs --sync-authority 生成。',
+    paths,
+  }
+  await writeFile(authorityFile, formatJsonForBiome(out) + '\n', 'utf8')
+  console.log(
+    `[bare-matrix-paths] 已刷新权威快照 ${path.relative(projectRoot, authorityFile)}：` +
+      `entries=${entries.length}，distinct paths=${paths.length}，来源 ${path.relative(projectRoot, src)}`
+  )
 }
 
 function routeTemplateToRegExp(template) {
@@ -559,7 +669,31 @@ export function formatJsonForBiome(value, indent = '') {
 export async function runGate({ tracking = {} } = {}) {
   const prefixConsts = await loadPrefixConstants()
   const prefixRoots = await loadPrefixRoots(prefixConsts)
-  const { sources, paths } = await loadSdkRoutes()
+  const sdk = await loadSdkRoutes()
+  const authority = await loadBackendAuthority()
+  const registered = await loadRegistered()
+
+  // 判据面 = SDK 契约 ∪ 后端权威路径（C-1：把权威并入判据面，消除口径缺口）。
+  const paths = new Map(sdk.paths)
+  let authorityAdded = 0
+  for (const p of authority.paths) {
+    if (!paths.has(p)) {
+      paths.set(p, 'backend-authority')
+      authorityAdded++
+    }
+  }
+  const sources = [
+    `sdk-contract(installed): ${sdk.count}`,
+    `backend-authority(${authority.source}): ${authority.paths.size}（并入判据面 +${authorityAdded}）`,
+  ]
+  const surfacePaths = new Set(paths.keys())
+  const contractDiff = computeContractDiff({
+    authorityPaths: authority.paths,
+    surfacePaths,
+    registeredPaths: registered.map((r) => r.path),
+  })
+  const sdkContractCovered = [...authority.paths].filter((p) => sdk.paths.has(p)).length
+
   const routeRegexes = [...paths.keys()].map(routeTemplateToRegExp)
   const prefixCands = prefixCandidates(prefixConsts, prefixRoots)
 
@@ -585,6 +719,18 @@ export async function runGate({ tracking = {} } = {}) {
     knownDefects: 0,
     prefixRoots: usedPrefixRoots.size,
     unresolved: unresolved.length,
+    contractDiff: {
+      authoritySource: authority.source,
+      authoritySourcePath: path.relative(projectRoot, authority.sourcePath),
+      authorityEntriesMethodPath: authority.entryCount,
+      authorityDistinctPaths: authority.paths.size,
+      surfaceDistinctPaths: surfacePaths.size,
+      sdkContractPaths: sdk.paths.size,
+      sdkContractCoveredAuthorityPaths: sdkContractCovered,
+      authorityRequiringVendored: authority.paths.size - sdkContractCovered,
+      missingFromSurface: contractDiff.missingFromSurface.length,
+      registeredRemaining: contractDiff.registeredRemaining.length,
+    },
   }
 
   const defects = []
@@ -612,6 +758,13 @@ export async function runGate({ tracking = {} } = {}) {
   const unresolvedGrew = unresolved.length > baseUnresolved.length
 
   const problems = []
+  if (contractDiff.missingFromSurface.length) {
+    problems.push(
+      `C-1 契约差集：${contractDiff.missingFromSurface.length} 条后端权威路径不在判据面内（判据面未覆盖后端 ⇒ 裸调写错不报）：` +
+        contractDiff.missingFromSurface.map((p) => `\n  ${p}`).join('') +
+        `\n  （如确属有意排除，登记到 ${path.relative(projectRoot, registeredFile)} 并附理由）`
+    )
+  }
   if (untrackedDefects.length) {
     problems.push(
       `发现 ${untrackedDefects.length} 条未登记缺陷路径（裸调命中失败，W-02/W-03/W-04 形态 404）：` +
@@ -673,16 +826,56 @@ export async function runGate({ tracking = {} } = {}) {
   report.matchedPaths = inventory.size - defects.length - dynamicTails.length
   report.knownDefects = defects.length
   report.dynamicTails = dynamicTails.length
+
+  if (writeReport) {
+    const diffReport = {
+      generatedAt: report.generatedAt,
+      spec: 'C-1（§7 C-1 / §8 C-1）：契约口径单一化 —— 后端权威 distinct path 为 814，判据面向上对齐并记录差集',
+      calibre: {
+        note:
+          '权威 ledger entry_count=1027 为 (method, path) 条目数；distinct path=814 才是判据面口径。' +
+          '1027-814=213 属单位口径差异，非覆盖缺口（spec §2.1/§5 P2-6 旧结论按此口径修正）。',
+      },
+      authority: {
+        source: authority.source,
+        sourcePath: path.relative(projectRoot, authority.sourcePath),
+        entryCountMethodPath: authority.entryCount,
+        distinctPaths: authority.paths.size,
+        upstream: authority.meta,
+      },
+      judgmentSurface: {
+        distinctPaths: surfacePaths.size,
+        sources,
+        sdkContractPaths: sdk.paths.size,
+        authorityOnlyPaths: authority.paths.size - sdkContractCovered,
+      },
+      diff: {
+        missingFromSurface: contractDiff.missingFromSurface,
+        registeredRemaining: registered.filter((r) => contractDiff.registeredRemaining.includes(r.path)),
+      },
+    }
+    await writeFile(diffReportFile, formatJsonForBiome(diffReport) + '\n', 'utf8')
+  }
+
   return { report, defects, dynamicTails, untrackedDefects, fixedDefects, newPaths, removedPaths, unresolved, problems, wrote }
 }
 
 const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isDirectRun) {
+  if (syncAuthorityFlag) {
+    await syncAuthority()
+    process.exit(0)
+  }
   const r = await runGate()
   if (jsonOutput) {
     console.log(JSON.stringify({ ...r.report, problems: r.problems }, null, 2))
   } else {
-    console.log(`[bare-matrix-paths] 路由源：${r.report.routeSources.join(' | ')}（共 ${r.report.routeCount} 条）`)
+    console.log(`[bare-matrix-paths] 路由源：${r.report.routeSources.join(' | ')}（判据面共 ${r.report.routeCount} 条）`)
+    const cd = r.report.contractDiff
+    console.log(
+      `[bare-matrix-paths] C-1 契约差集：权威 ${cd.authorityDistinctPaths} distinct（ledger ${cd.authorityEntriesMethodPath} 条目，源 ${cd.authoritySource}）` +
+        ` vs 判据面 ${cd.surfaceDistinctPaths} ⇒ 缺 ${cd.missingFromSurface}（已登记剩余 ${cd.registeredRemaining}）`
+    )
     console.log(
       `[bare-matrix-paths] 扫描 ${r.report.scannedFiles} 文件：命中 ${r.report.matchedPaths}，登记缺陷 ${r.report.knownDefects}，动态尾段 ${r.report.dynamicTails}，前缀本体 ${r.report.prefixRoots}，unresolved ${r.report.unresolved}`
     )

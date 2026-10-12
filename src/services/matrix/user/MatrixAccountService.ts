@@ -462,19 +462,22 @@ class MatrixAccountService extends BaseMatrixService {
           return result
         } catch (err) {
           const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
-          logger.warn(`[MatrixAccount] getCapabilities() 失败（worker）: ${detail}, 降级到 authedRequest`)
+          logger.warn(`[MatrixAccount] getCapabilities() 失败（worker）: ${detail}, 降级到 SDK`)
         }
       } else {
-        logger.warn('[MatrixAccount] getCapabilities() worker 已启动但无 accessToken, 降级到 authedRequest')
+        logger.warn('[MatrixAccount] getCapabilities() worker 已启动但无 accessToken, 降级到 SDK')
       }
     }
 
-    // 非 worker 路径：通过 SDK authedRequest 发起单次请求，返回完整响应体（含 unstable_features）。
-    // 注意：不能用 client.getCapabilities()，它只返回 IServerCapabilities（丢弃 unstable_features），
-    // 会导致需要第二次 HTTP 请求补充获取 unstable_features（如 io.hula.friends）。
+    // 非 worker 路径：回归 SDK。SDK 已把顶层 unstable_features 单独缓存
+    // （`ServerCapabilities.fetchCapabilities`），因此 `getCapabilities()` 拿能力表、
+    // `getUnstableFeatures()` 拿开关，两者拼回完整响应体，无需第二次 HTTP 请求。
     try {
-      const result = await authedRequestWithPath<Record<string, unknown>>(client, 'GET', '/capabilities')
-      logger.debug('[MatrixAccount] getCapabilities() 成功（authedRequest）')
+      const capabilities = await client.getCapabilities()
+      const unstableFeatures = client.getUnstableFeatures()
+      const result: Record<string, unknown> = { ...capabilities }
+      if (unstableFeatures) result.unstable_features = unstableFeatures
+      logger.debug('[MatrixAccount] getCapabilities() 成功（SDK）')
       return result
     } catch (err) {
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
@@ -510,13 +513,19 @@ class MatrixAccountService extends BaseMatrixService {
       const result = await authedRequestWithPath<{ room_ids?: string[] }>(client, 'GET', `${PREFIX_VENDOR_V1}/my_rooms`)
       return result.room_ids ?? []
     } catch (err) {
-      // 如果返回 404，说明该非标准端点在后端不存在，降级到标准 Matrix API
+      // 降级判据（审计 §8 B-5 反例断言）：仅以 `err.httpStatus === 404` 判定，
+      // 不得引入 httpStatus 之外的隐式条件（如消息文本、errcode 猜测）触发降级。
       const statusCode = (err as { httpStatus?: number }).httpStatus
       if (statusCode === 404) {
         logger.info('[MatrixAccount] /my_rooms 端点不可用(404)，降级使用 getJoinedRooms()')
         try {
-          const joinedRooms = await client.getJoinedRooms()
-          return joinedRooms.map((room: { roomId: string }) => room.roomId)
+          // 语义差异（审计 §8 B-5）：`/_matrix/vendor/v1/my_rooms` 是 synapse-rust 私有端点，
+          // 返回后端自定义视图（含排序语义，可能包含/排除特定私有房间）；而 SDK 标准
+          // `getJoinedRooms()` 命中 `/_matrix/client/v3/joined_rooms`，返回**未经排序**的
+          // 完整已加入房间集合。二者仅在「集合可用性」上等价，在「排序」与「私有房间可见性」
+          // 上不等价；本降级仅保证功能可用，调用方不得依赖返回顺序。
+          const { joined_rooms } = await client.getJoinedRooms()
+          return joined_rooms
         } catch (fallbackErr) {
           logger.error(`[MatrixAccount] 降级 getJoinedRooms() 也失败: ${fallbackErr}`)
           return []

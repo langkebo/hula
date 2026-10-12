@@ -23,17 +23,19 @@ const baseClientShape = () => ({
   getRooms: vi.fn(() => [] as Room[]),
   getUserId: vi.fn(() => '@self:example.com'),
   getDeviceId: vi.fn(() => 'DEVICE_ID'),
-  getProfile: vi.fn(async () => ({})),
+  // 注意：这里必须是 fork 里的**真实**方法名。曾写成上游旧名 `getProfile` / `getRoomStateEvent`
+  // （本 fork 已改为 `getProfileInfo` / `getStateEvent`）—— 幻影名的默认 mock 等于没 mock，
+  // 调用方拿到的是 undefined，测试却「通过」。见审计报告 §14。
+  getProfileInfo: vi.fn(async () => ({})),
   searchUserDirectory: vi.fn(async () => ({ results: [], limited: false })),
   reportEvent: vi.fn(async () => ({})),
   getServerRetention: vi.fn(async () => ({})),
-  getRoomStateEvent: vi.fn(async () => ({})),
+  getStateEvent: vi.fn(async () => ({})),
   uploadContent: vi.fn(async () => ({ content_uri: 'mxc://example/abc' })),
   sync: vi.fn(async () => ({})),
   stopClient: vi.fn(),
   // Manager accessors — return null by default so `?.` chains short-circuit.
   getDirectMessageManager: vi.fn(() => null),
-  getMediaQuotaManager: vi.fn(() => null),
   getDeviceManager: vi.fn(() => null),
   getKeyBackupManager: vi.fn(() => null),
   getPushers: vi.fn(async () => []),

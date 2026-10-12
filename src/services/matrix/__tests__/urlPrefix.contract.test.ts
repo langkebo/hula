@@ -7,13 +7,63 @@ import { resetMatrixClientAccessorForTests, setMatrixClientAccessor } from '../m
 
 const HOMESERVER = 'https://hs.contract.test'
 
+/**
+ * B-1 前缀解析等价性用例表。
+ *
+ * 前缀剥离的单一权威来源是 SDK `BaseManager.KNOWN_PREFIXES`（21 条，长前缀优先，单遍剥离）。
+ * 本表逐项锁定「传入完整前缀路径」在网线上产生的最终 URL，确保不会出现
+ * 「完整前缀 + SDK 默认前缀」二次拼接导致的 URL 翻倍（双前缀 → 404）。
+ *
+ * 相比旧实现维护的 12 条本地前缀表，SDK 表额外覆盖 federation / key / identity /
+ * msc3575 / msc4186 等命名空间——表中标注「旧本地表未覆盖」的两项即为新增保障。
+ */
+const CASES: Array<{ label: string; input: string; expectedPath: string }> = [
+  {
+    label: '默认 v3 前缀 + room send 子路径',
+    input: '/_matrix/client/v3/rooms/!room:hs.contract.test/send/m.room.message/txn-1',
+    expectedPath: '/_matrix/client/v3/rooms/!room:hs.contract.test/send/m.room.message/txn-1'
+  },
+  {
+    label: 'synapse admin v1 命名空间',
+    input: '/_synapse/admin/v1/users',
+    expectedPath: '/_synapse/admin/v1/users'
+  },
+  {
+    label: 'vendor v1 命名空间',
+    input: '/_matrix/vendor/v1/friends',
+    expectedPath: '/_matrix/vendor/v1/friends'
+  },
+  {
+    label: 'media v3 命名空间',
+    input: '/_matrix/media/v3/upload',
+    expectedPath: '/_matrix/media/v3/upload'
+  },
+  {
+    label: 'Sliding Sync simplified_msc3575（旧本地表未覆盖）',
+    input: '/_matrix/client/unstable/org.matrix.simplified_msc3575/sync',
+    expectedPath: '/_matrix/client/unstable/org.matrix.simplified_msc3575/sync'
+  },
+  {
+    label: 'federation v1 命名空间（旧本地表未覆盖）',
+    input: '/_matrix/federation/v1/version',
+    expectedPath: '/_matrix/federation/v1/version'
+  },
+  {
+    label: '短路径回落到默认 v3 前缀',
+    input: '/sync',
+    expectedPath: '/_matrix/client/v3/sync'
+  }
+]
+
 const seenUrls: string[] = []
 
 setupMswServer(
-  http.get(`${HOMESERVER}/_matrix/client/v3/sync`, ({ request }) => {
-    seenUrls.push(request.url)
-    return HttpResponse.json({ next_batch: 'batch-1' })
-  })
+  ...CASES.map(({ expectedPath }) =>
+    http.get(`${HOMESERVER}${expectedPath}`, ({ request }) => {
+      seenUrls.push(request.url)
+      return HttpResponse.json({ ok: true })
+    })
+  )
 )
 
 describe('URL prefix contract (real SDK http layer + msw)', () => {
@@ -31,23 +81,11 @@ describe('URL prefix contract (real SDK http layer + msw)', () => {
     resetMatrixClientAccessorForTests()
   })
 
-  it('a hardcoded fully-prefixed path reaches the wire with exactly one /_matrix prefix', async () => {
-    const result = await matrixHttpClient.request<{ next_batch: string }>('GET', '/_matrix/client/v3/sync')
+  for (const { label, input, expectedPath } of CASES) {
+    it(`${label}: 输入 ${input} 落到 ${expectedPath}`, async () => {
+      await matrixHttpClient.request('GET', input)
 
-    expect(result).toEqual({ next_batch: 'batch-1' })
-    expect(seenUrls).toHaveLength(1)
-    expect(seenUrls[0]).toBe(`${HOMESERVER}/_matrix/client/v3/sync`)
-  })
-
-  it('an unprefixed path converges to the same wire URL', async () => {
-    await matrixHttpClient.request('GET', '/sync')
-
-    expect(seenUrls).toEqual([`${HOMESERVER}/_matrix/client/v3/sync`])
-  })
-
-  it('a double-prefixed path converges to the same wire URL', async () => {
-    await matrixHttpClient.request('GET', '/_matrix/client/v3/_matrix/client/v3/sync')
-
-    expect(seenUrls).toEqual([`${HOMESERVER}/_matrix/client/v3/sync`])
-  })
+      expect(seenUrls).toEqual([`${HOMESERVER}${expectedPath}`])
+    })
+  }
 })

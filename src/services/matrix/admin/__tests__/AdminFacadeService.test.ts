@@ -202,8 +202,7 @@ describe('adminService facade', () => {
         userCount: 0,
         dailyActiveUsers: 0,
         monthlyActiveUsers: 0,
-        messageCount: 0,
-        startServerTime: 0
+        messageCount: 0
       })
     })
 
@@ -213,8 +212,7 @@ describe('adminService facade', () => {
         total_users: 20,
         daily_active_users: 7,
         monthly_active_users: 18,
-        total_nonlocal_users: 99,
-        server_start_time: 123456
+        total_nonlocal_users: 99
       })
       const result = await adminService.getServerStats()
       expect(result.roomCount).toBe(5)

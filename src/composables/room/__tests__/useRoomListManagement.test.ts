@@ -47,7 +47,8 @@ const makeMember = (userId: string, membership: string, name?: string, reason?: 
   userId,
   name,
   rawDisplayName: name,
-  avatarUrl: undefined,
+  // SDK 的 RoomMember 无 `avatarUrl` 属性；真实入口是 getMxcAvatarUrl()
+  getMxcAvatarUrl: () => undefined,
   membership,
   events: reason ? [{ sender: '@admin:s', content: { reason } }] : []
 })

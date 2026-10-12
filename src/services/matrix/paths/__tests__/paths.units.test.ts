@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ADMIN } from '../admin'
 import { AUTH } from '../auth'
-import { BURN } from '../burn'
-import { MODERATION } from '../moderation'
 import { NOTIFICATION } from '../notification'
 import { PREFIX_V1, PREFIX_V3, PREFIX_VENDOR_V1 } from '../prefixes'
 import { ROOM } from '../room'
@@ -27,16 +24,6 @@ describe('paths/wellKnown', () => {
 
   it('OIDC_DISCOVERY 指向 openid-configuration', () => {
     expect(WELL_KNOWN.OIDC_DISCOVERY).toBe('/.well-known/openid-configuration')
-  })
-})
-
-describe('paths/burn', () => {
-  it('STATS 为字符串常量', () => {
-    expect(BURN.STATS).toBe('/_matrix/vendor/v1/user/burn/stats')
-  })
-
-  it('ROOM_BURN 编码 roomId（FT-089: 与其他 ROOM 路径一致使用 encodeURIComponent）', () => {
-    expect(BURN.ROOM_BURN('!room:server')).toBe('/_matrix/vendor/v1/rooms/!room%3Aserver/burn')
   })
 })
 
@@ -233,55 +220,5 @@ describe('paths/notification · pushers 路径常量（FT-088）', () => {
 
   it('PUSHERS_SET 指向 pushers/set 端点', () => {
     expect(NOTIFICATION.PUSHERS_SET).toBe('/pushers/set')
-  })
-})
-
-describe('paths/admin · external_services 子路径（FT-090: AdminExternalServiceService 使用）', () => {
-  it('EXTERNAL_SERVICES_LIST 为相对路径常量', () => {
-    expect(ADMIN.EXTERNAL_SERVICES_LIST).toBe('/external_services')
-  })
-
-  it('SYNAPSE_ADMIN_BASE 为 v1 前缀', () => {
-    expect(ADMIN.SYNAPSE_ADMIN_BASE).toBe('/_synapse/admin/v1')
-  })
-
-  it('SYNAPSE_ADMIN_BASE_V2 为 v2 前缀（FT-119: 与 ADMIN.USERS 的 v2 版本对齐）', () => {
-    expect(ADMIN.SYNAPSE_ADMIN_BASE_V2).toBe('/_synapse/admin/v2')
-  })
-
-  it('EXTERNAL_SERVICES_BY_ID 编码 asId', () => {
-    expect(ADMIN.EXTERNAL_SERVICES_BY_ID('trendradar_news-bot')).toBe('/external_services/trendradar_news-bot')
-  })
-
-  it('EXTERNAL_SERVICES_BY_ID 对特殊字符进行编码', () => {
-    expect(ADMIN.EXTERNAL_SERVICES_BY_ID('as/id with space')).toBe('/external_services/as%2Fid%20with%20space')
-  })
-
-  it('EXTERNAL_SERVICES_HEALTH 为相对路径常量', () => {
-    expect(ADMIN.EXTERNAL_SERVICES_HEALTH).toBe('/external_services/health')
-  })
-
-  it('EXTERNAL_SERVICES_HEALTH_BY_ID 编码 asId', () => {
-    expect(ADMIN.EXTERNAL_SERVICES_HEALTH_BY_ID('trendradar_news-bot')).toBe(
-      '/external_services/trendradar_news-bot/health'
-    )
-  })
-
-  it('EXTERNAL_SERVICES_HEALTH_CHECK 编码 asId', () => {
-    expect(ADMIN.EXTERNAL_SERVICES_HEALTH_CHECK('trendradar_news-bot')).toBe(
-      '/external_services/trendradar_news-bot/health/check'
-    )
-  })
-})
-
-describe('paths/moderation · 举报与评分路径（FT-091: ReportService 使用）', () => {
-  it('REPORT_EVENT_SCORE v3 前缀并编码 roomId 与 eventId', () => {
-    expect(MODERATION.REPORT_EVENT_SCORE('v3', '!r:hs', '$e1')).toBe(
-      '/_matrix/client/v3/rooms/!r%3Ahs/report/%24e1/score'
-    )
-  })
-
-  it('REPORT_ROOM 使用 v3 前缀并编码 roomId', () => {
-    expect(MODERATION.REPORT_ROOM('!r:hs')).toBe('/_matrix/client/v3/rooms/!r%3Ahs/report')
   })
 })

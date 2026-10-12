@@ -163,9 +163,6 @@
             <n-descriptions-item :label="t('admin.dashboard.messages')">
               {{ stats?.messageCount ?? '-' }}
             </n-descriptions-item>
-            <n-descriptions-item :label="t('admin.dashboard.uptime')">
-              {{ formatUptime(stats?.startServerTime) }}
-            </n-descriptions-item>
           </n-descriptions>
         </div>
 
@@ -418,15 +415,6 @@ const statCards = computed(() => [
     color: 'var(--tjg-color-beta-500)'
   }
 ])
-
-function formatUptime(timestamp?: number): string {
-  if (!timestamp) return '-'
-  const now = Date.now()
-  const diff = now - timestamp
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  return `${days}d ${hours}h`
-}
 
 async function loadData() {
   if (!adminStore.isAdmin) return

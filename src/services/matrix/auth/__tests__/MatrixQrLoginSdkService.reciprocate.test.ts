@@ -16,7 +16,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-const authedRequestImpl = vi.fn()
+const authedRequestWithPrefixImpl = vi.fn()
+const httpAuthedRequestImpl = vi.fn()
 
 function makeMockClient() {
   return {
@@ -24,7 +25,9 @@ function makeMockClient() {
     getHomeserverUrl: vi.fn(() => 'https://matrix.example.com'),
     getUserId: vi.fn(() => '@user:example.com'),
     getDeviceId: vi.fn(() => 'EXISTING_DEVICE_001'),
-    http: { authedRequest: authedRequestImpl }
+    // B-1：authedRequestWithPath 统一走 SDK manager 的 authedRequestWithPrefix
+    getRoomManager: () => ({ authedRequestWithPrefix: authedRequestWithPrefixImpl }),
+    http: { authedRequest: httpAuthedRequestImpl }
   }
 }
 
@@ -54,7 +57,7 @@ describe('MatrixQrLoginSdkService.reciprocateLogin qr_token path (FT-091)', () =
     vi.clearAllMocks()
     vi.resetModules()
 
-    authedRequestImpl.mockResolvedValue({
+    authedRequestWithPrefixImpl.mockResolvedValue({
       login_token: 'token-abc-123',
       expires_in_ms: 60000
     })
@@ -82,15 +85,14 @@ describe('MatrixQrLoginSdkService.reciprocateLogin qr_token path (FT-091)', () =
 
     await service.reciprocateLogin()
 
-    // authedRequest 应被调用，路径来自 L3 常量
-    const qrTokenCall = authedRequestImpl.mock.calls.find((call) => call[0] === 'POST')
+    // 应经 SDK manager 的 authedRequestWithPrefix 调用，路径来自 L3 常量
+    const qrTokenCall = authedRequestWithPrefixImpl.mock.calls.find((call: unknown[]) => call[0] === 'POST')
     expect(qrTokenCall).toBeDefined()
-    // stripMatrixPrefix 会剥离 v1 前缀，path 变为 /login/qr_token，prefix 为 /_matrix/client/v1
-    expect(qrTokenCall![1]).toBe('/login/qr_token')
-    expect(qrTokenCall![4]).toEqual({ prefix: '/_matrix/client/v1' })
+    // B-1：完整前缀路径原样交由 SDK manager，前缀剥离由 SDK KNOWN_PREFIXES 完成
+    expect(qrTokenCall![1]).toBe(MATRIX_PATHS.AUTH.QR_GENERATE_TOKEN)
   })
 
-  it('reciprocateLogin 调用的完整 URL 等价于 MATRIX_PATHS.AUTH.QR_GENERATE_TOKEN', async () => {
+  it('reciprocateLogin 经 SDK manager 而非 client.http.authedRequest 发送请求', async () => {
     const mod = await import('../MatrixQrLoginSdkService')
     const mockChannel = makeMockChannel()
     const mockSession = { url: 'https://rz.example.com/s1', ready: true, cancelled: false }
@@ -101,12 +103,11 @@ describe('MatrixQrLoginSdkService.reciprocateLogin qr_token path (FT-091)', () =
 
     await service.reciprocateLogin()
 
-    const qrTokenCall = authedRequestImpl.mock.calls.find((call) => call[0] === 'POST')
+    // B-1：统一入口是 SDK manager，而非底层 client.http.authedRequest
+    const qrTokenCall = authedRequestWithPrefixImpl.mock.calls.find((call: unknown[]) => call[0] === 'POST')
     expect(qrTokenCall).toBeDefined()
-    // 完整 URL = prefix + path，应等于 L3 常量值
-    const prefix = qrTokenCall![4]?.prefix ?? ''
-    const path = qrTokenCall![1]
-    expect(`${prefix}${path}`).toBe(MATRIX_PATHS.AUTH.QR_GENERATE_TOKEN)
+    expect(qrTokenCall![1]).toBe(MATRIX_PATHS.AUTH.QR_GENERATE_TOKEN)
+    expect(httpAuthedRequestImpl).not.toHaveBeenCalled()
   })
 
   it('源码中 reciprocateLogin 使用 MATRIX_PATHS.AUTH.QR_GENERATE_TOKEN 而非硬编码路径（FT-091）', () => {

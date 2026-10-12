@@ -12,7 +12,7 @@ function makeClient(partial: Partial<Record<string, unknown>> = {}): MatrixClien
     getDomain: vi.fn(),
     getDeviceId: vi.fn(),
     getUser: vi.fn(),
-    isRoomEncrypted: vi.fn(),
+    getRoom: vi.fn(),
     ...partial
   })
 }
@@ -240,14 +240,18 @@ describe('MatrixClientState', () => {
     expect(state.getUser('@alice:matrix.org')).toBeNull()
   })
 
-  it('isRoomEncrypted returns the client result', () => {
+  // 判据已从幻影方法 client.isRoomEncrypted(roomId) 迁到
+  // room.hasEncryptionStateEvent()（见 src/services/matrix/roomEncryption.ts）。
+  it('isRoomEncrypted reads the room encryption state event', () => {
     const deps = makeDeps()
     const mocked = getMockedDeps(deps)
-    const client = makeClient({ isRoomEncrypted: vi.fn(() => true) })
+    const hasEncryptionStateEvent = vi.fn(() => true)
+    const client = makeClient({ getRoom: vi.fn(() => ({ hasEncryptionStateEvent })) })
     mocked.connectionManager.getClient.mockReturnValue(client)
     const state = new MatrixClientState(deps)
     expect(state.isRoomEncrypted('!room:matrix.org')).toBe(true)
-    expect(client.isRoomEncrypted).toHaveBeenCalledWith('!room:matrix.org')
+    expect(client.getRoom).toHaveBeenCalledWith('!room:matrix.org')
+    expect(hasEncryptionStateEvent).toHaveBeenCalled()
   })
 
   it('isRoomEncrypted returns false when client is missing', () => {
@@ -258,10 +262,19 @@ describe('MatrixClientState', () => {
     expect(state.isRoomEncrypted('!room:matrix.org')).toBe(false)
   })
 
-  it('isRoomEncrypted returns false when client has no isRoomEncrypted', () => {
+  it('isRoomEncrypted returns false when the room is unknown', () => {
     const deps = makeDeps()
     const mocked = getMockedDeps(deps)
-    const client = makeClient({ isRoomEncrypted: undefined })
+    const client = makeClient({ getRoom: vi.fn(() => null) })
+    mocked.connectionManager.getClient.mockReturnValue(client)
+    const state = new MatrixClientState(deps)
+    expect(state.isRoomEncrypted('!room:matrix.org')).toBe(false)
+  })
+
+  it('isRoomEncrypted returns false when the room exposes no encryption state event', () => {
+    const deps = makeDeps()
+    const mocked = getMockedDeps(deps)
+    const client = makeClient({ getRoom: vi.fn(() => ({})) })
     mocked.connectionManager.getClient.mockReturnValue(client)
     const state = new MatrixClientState(deps)
     expect(state.isRoomEncrypted('!room:matrix.org')).toBe(false)

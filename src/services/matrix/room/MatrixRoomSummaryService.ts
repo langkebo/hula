@@ -1,24 +1,10 @@
 import { type MatrixClient, type MatrixEvent, NotificationCountType, type Room } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { isRoomEncrypted } from '../roomEncryption'
 import matrixRoomStoreAdapter from './MatrixRoomStoreAdapter'
 
 const logger = createLogger('MatrixRoomSummaryService')
-
-interface RoomSummaryManager {
-  createRoomSummary(roomId: string): Promise<Record<string, unknown>>
-  updateRoomSummary(roomId: string, updates: Record<string, unknown>): Promise<Record<string, unknown>>
-  deleteRoomSummary(roomId: string): Promise<void>
-  syncRoomSummary(roomId: string): Promise<Record<string, unknown> | null>
-  batchWriteMemberSummaries(roomId: string, members: Array<Record<string, unknown>>): Promise<void>
-  updateMemberSummary(roomId: string, userId: string, data: Record<string, unknown>): Promise<void>
-  deleteMemberSummary(roomId: string, userId: string): Promise<void>
-  getSummaryState(roomId: string, type: string, key?: string): Promise<Record<string, unknown> | null>
-  updateSummaryState(roomId: string, type: string, key: string, content: Record<string, unknown>): Promise<void>
-  recalculateStats(roomId: string): Promise<Record<string, unknown> | null>
-  recalculateHeroes(roomId: string): Promise<void>
-  clearUnread(roomId: string): Promise<void>
-}
 
 export interface RoomSummary {
   roomId: string
@@ -175,7 +161,7 @@ class MatrixRoomSummaryService extends BaseMatrixService {
 
   private buildRoomListSnapshot(room: Room): RoomListSnapshot {
     const client = this.getClient()
-    const snapshot = matrixRoomStoreAdapter.convertRoomToRoomInfo(room, client.isRoomEncrypted?.(room.roomId) ?? false)
+    const snapshot = matrixRoomStoreAdapter.convertRoomToRoomInfo(room, isRoomEncrypted(client, room.roomId))
 
     const notificationCount =
       typeof room.getUnreadNotificationCount === 'function'
@@ -198,177 +184,6 @@ class MatrixRoomSummaryService extends BaseMatrixService {
     }
     const ts = event.getTs()
     return typeof ts === 'number' ? ts : null
-  }
-
-  // ==================== REST API Methods (via RoomSummaryManager) ====================
-
-  private getRoomSummaryManager(): RoomSummaryManager | null {
-    const client = this.getClient()
-    return (
-      (client as unknown as { getRoomSummaryManager?: () => RoomSummaryManager | null }).getRoomSummaryManager?.() ??
-      null
-    )
-  }
-
-  private ensureRoomSummaryManager(): RoomSummaryManager {
-    const manager = this.getRoomSummaryManager()
-    if (!manager) {
-      throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
-    }
-    return manager
-  }
-
-  async createRoomSummaryViaApi(roomId: string): Promise<Record<string, unknown> | null> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager) return null
-    try {
-      const result = await manager.createRoomSummary(roomId)
-      logger.info(`[MatrixRoomSummary] 创建房间摘要成功: ${roomId}`)
-      return result
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 创建房间摘要失败: ${err}`)
-      return null
-    }
-  }
-
-  async updateRoomSummaryViaApi(
-    roomId: string,
-    updates: Record<string, unknown>
-  ): Promise<Record<string, unknown> | null> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager) return null
-    try {
-      const result = await manager.updateRoomSummary(roomId, updates)
-      logger.info(`[MatrixRoomSummary] 更新房间摘要成功: ${roomId}`)
-      return result
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 更新房间摘要失败: ${err}`)
-      throw err
-    }
-  }
-
-  async deleteRoomSummaryViaApi(roomId: string): Promise<void> {
-    const manager = this.ensureRoomSummaryManager()
-    if (!manager.deleteRoomSummary) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
-    try {
-      await manager.deleteRoomSummary(roomId)
-      logger.info(`[MatrixRoomSummary] 删除房间摘要成功: ${roomId}`)
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 删除房间摘要失败: ${err}`)
-      throw err
-    }
-  }
-
-  async syncRoomSummaryViaApi(roomId: string): Promise<Record<string, unknown> | null> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.syncRoomSummary) return null
-    try {
-      const result = await manager.syncRoomSummary(roomId)
-      logger.info(`[MatrixRoomSummary] 同步房间摘要成功: ${roomId}`)
-      return result
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 同步房间摘要失败: ${err}`)
-      return null
-    }
-  }
-
-  async batchWriteMemberSummaries(roomId: string, members: Array<Record<string, unknown>>): Promise<void> {
-    const manager = this.ensureRoomSummaryManager()
-    if (!manager.batchWriteMemberSummaries) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
-    try {
-      await manager.batchWriteMemberSummaries(roomId, members)
-      logger.info(`[MatrixRoomSummary] 批量写入成员摘要成功: ${roomId}`)
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 批量写入成员摘要失败: ${err}`)
-      throw err
-    }
-  }
-
-  async updateMemberSummary(roomId: string, userId: string, data: Record<string, unknown>): Promise<void> {
-    const manager = this.ensureRoomSummaryManager()
-    if (!manager.updateMemberSummary) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
-    try {
-      await manager.updateMemberSummary(roomId, userId, data)
-      logger.info(`[MatrixRoomSummary] 更新成员摘要成功: ${roomId}/${userId}`)
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 更新成员摘要失败: ${err}`)
-      throw err
-    }
-  }
-
-  async deleteMemberSummary(roomId: string, userId: string): Promise<void> {
-    const manager = this.ensureRoomSummaryManager()
-    if (!manager.deleteMemberSummary) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
-    try {
-      await manager.deleteMemberSummary(roomId, userId)
-      logger.info(`[MatrixRoomSummary] 删除成员摘要成功: ${roomId}/${userId}`)
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 删除成员摘要失败: ${err}`)
-      throw err
-    }
-  }
-
-  async getRoomSummaryStateViaApi(roomId: string, type: string, key?: string): Promise<Record<string, unknown> | null> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.getSummaryState) return null
-    try {
-      return await manager.getSummaryState(roomId, type, key)
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 获取摘要状态失败: ${err}`)
-      return null
-    }
-  }
-
-  async updateRoomSummaryStateViaApi(
-    roomId: string,
-    type: string,
-    key: string,
-    content: Record<string, unknown>
-  ): Promise<void> {
-    const manager = this.ensureRoomSummaryManager()
-    if (!manager.updateSummaryState) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
-    try {
-      await manager.updateSummaryState(roomId, type, key, content)
-      logger.info(`[MatrixRoomSummary] 更新摘要状态成功: ${roomId}/${type}/${key}`)
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 更新摘要状态失败: ${err}`)
-      throw err
-    }
-  }
-
-  async recalculateRoomStats(roomId: string): Promise<Record<string, unknown> | null> {
-    const manager = this.getRoomSummaryManager()
-    if (!manager?.recalculateStats) return null
-    try {
-      return await manager.recalculateStats(roomId)
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 重算统计失败: ${err}`)
-      return null
-    }
-  }
-
-  async recalculateHeroes(roomId: string): Promise<void> {
-    const manager = this.ensureRoomSummaryManager()
-    if (!manager.recalculateHeroes) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
-    try {
-      await manager.recalculateHeroes(roomId)
-      logger.info(`[MatrixRoomSummary] 重算 heroes 成功: ${roomId}`)
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 重算 heroes 失败: ${err}`)
-      throw err
-    }
-  }
-
-  async clearUnreadSummary(roomId: string): Promise<void> {
-    const manager = this.ensureRoomSummaryManager()
-    if (!manager.clearUnread) throw new Error(this.t('matrix_error.room.summary_manager_unavailable'))
-    try {
-      await manager.clearUnread(roomId)
-      logger.info(`[MatrixRoomSummary] 清理未读摘要成功: ${roomId}`)
-    } catch (err) {
-      logger.error(`[MatrixRoomSummary] 清理未读摘要失败: ${err}`)
-      throw err
-    }
   }
 }
 

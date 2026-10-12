@@ -17,8 +17,7 @@ export class AdminServerService {
         userCount: Number(stats?.total_users ?? 0),
         dailyActiveUsers: Number(stats?.daily_active_users ?? 0),
         monthlyActiveUsers: Number(stats?.monthly_active_users ?? 0),
-        messageCount: Number(stats?.total_messages ?? 0),
-        startServerTime: 0
+        messageCount: Number(stats?.total_messages ?? 0)
       }
     } catch (err) {
       logger.error(`[AdminServer] 获取统计失败: ${err}`)
@@ -27,8 +26,7 @@ export class AdminServerService {
         userCount: 0,
         dailyActiveUsers: 0,
         monthlyActiveUsers: 0,
-        messageCount: 0,
-        startServerTime: 0
+        messageCount: 0
       }
     }
   }
@@ -39,8 +37,7 @@ export class AdminServerService {
       const result = await admin.getServerStatus()
       if (!result) return null
       return {
-        status: result.up ? 'online' : 'offline',
-        uptime: undefined
+        status: result.up ? 'online' : 'offline'
       }
     } catch (err) {
       logger.error(`[AdminServer] 获取服务器状态失败: ${err}`)

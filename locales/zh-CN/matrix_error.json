@@ -36,7 +36,6 @@
     "leave_room_failed": "离开房间失败"
   },
   "room": {
-    "summary_manager_unavailable": "RoomSummaryManager 不可用",
     "direct_message_manager_not_initialized": "DirectMessageManager 未初始化"
   },
   "crypto": {

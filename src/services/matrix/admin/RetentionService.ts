@@ -119,7 +119,10 @@ export class AdminRetentionService {
     if (!this.getClient) throw new Error('[AdminRetention] getClient not provided')
     const client = this.getClient()
     try {
-      await client.redact(roomId, '')
+      // 保留策略是 `m.room.retention` **状态事件**：删除 = 写入空 content。
+      // 旧代码调用幻影方法 `client.redact(roomId, '')`（相当于"撤回一个空 eventId"），
+      // 既不存在也不表达"删除策略"的语义。
+      await client.sendStateEvent(roomId, 'm.room.retention', {}, '')
       logger.info(`[AdminRetention] 删除保留策略成功: ${roomId}`)
     } catch (err) {
       logger.error(`[AdminRetention] 删除保留策略失败: ${err}`)

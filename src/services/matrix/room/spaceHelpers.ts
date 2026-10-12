@@ -7,6 +7,7 @@
 import type { Room } from '../sdk'
 import type { Space as SdkSpace } from '../sdk-compat'
 import type { SpaceInfo } from './MatrixSpaceService'
+import { getRoomTopic } from './roomTopic'
 
 /** 将 SDK 空间对象转换为空间信息
  * @param room - 可选的已加载房间对象，用于获取准确的成员和子房间计数
@@ -28,7 +29,7 @@ export function roomToSpaceInfo(room: Room, getSpaceChildIds: (room: Room) => st
   return {
     spaceId: room.roomId,
     name: room.name || '',
-    topic: room.topic || undefined,
+    topic: getRoomTopic(room) ?? undefined,
     avatarUrl: room.getMxcAvatarUrl() || undefined,
     memberCount: room.getJoinedMembers().length,
     childCount: getSpaceChildIds(room).length

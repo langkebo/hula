@@ -103,7 +103,6 @@ describe('AdminGuests', () => {
           userId: '@guest1:server.test',
           displayname: 'Guest One',
           createdTs: 1000,
-          lastSeenTs: 3000,
           deactivated: false,
           isGuest: true
         },
@@ -111,7 +110,6 @@ describe('AdminGuests', () => {
           userId: '@guest2:server.test',
           displayname: 'Guest Two',
           createdTs: 2000,
-          lastSeenTs: 4000,
           deactivated: true,
           isGuest: true
         }

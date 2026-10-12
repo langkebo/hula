@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-11T01:47:13.908Z",
-  "routeSources": ["sdk-contract(installed): 729", "backend-manifest: +235"],
+  "generatedAt": "2026-10-12T00:49:46.174Z",
+  "routeSources": ["sdk-contract(installed): 729", "backend-authority(sibling-manifest): 814（并入判据面 +235）"],
   "note": "knownDefects = 当前未修的裸调 404 缺陷（须为 0 或显式登记；--strict 时失败）。history = 已修缺陷沿革（仅记录，不参与豁免）。",
   "defectEvidence": "每条缺陷已回源 synapse-rust 后端源码/守卫测试复核（证据见各条 reason 字段）。",
   "inventory": {
@@ -21,15 +21,6 @@
     },
     "/_matrix/client/v1/login/qr_token": {
       "files": ["src/services/matrix/paths/auth.ts"]
-    },
-    "/_matrix/client/v1/rendezvous": {
-      "files": ["src/services/matrix/paths/rendezvous.ts"]
-    },
-    "/_matrix/client/v1/rendezvous/{p}": {
-      "files": ["src/services/matrix/paths/rendezvous.ts"]
-    },
-    "/_matrix/client/v1/rendezvous/{p}/messages": {
-      "files": ["src/services/matrix/paths/rendezvous.ts"]
     },
     "/_matrix/client/v1/rooms/{p}/hierarchy": {
       "files": ["src/services/matrix/paths/space.ts"]
@@ -81,9 +72,6 @@
     },
     "/_matrix/client/v3/rooms/{p}/ephemeral": {
       "files": ["src/services/matrix/extensions/SynapseRoomSummaryService.ts"]
-    },
-    "/_matrix/client/v3/rooms/{p}/report": {
-      "files": ["src/services/matrix/paths/moderation.ts"]
     },
     "/_matrix/client/v3/upload/provider": {
       "files": ["src/services/performance/UploadService.ts"]
@@ -149,14 +137,8 @@
     "/_matrix/vendor/v1/my_rooms": {
       "files": ["src/services/matrix/user/MatrixAccountService.ts"]
     },
-    "/_matrix/vendor/v1/rooms/{p}/burn": {
-      "files": ["src/services/matrix/paths/burn.ts"]
-    },
     "/_matrix/vendor/v1/rooms/{p}/report/{p}/scanner_info": {
       "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/_matrix/vendor/v1/user/burn/stats": {
-      "files": ["src/services/matrix/paths/burn.ts"]
     },
     "/_matrix/vendor/v1/voice/{p}": {
       "files": ["src/services/matrix/paths/voice.ts"]
@@ -182,80 +164,17 @@
     "/_matrix/vendor/v1/voice/user/{p}": {
       "files": ["src/services/matrix/paths/voice.ts"]
     },
-    "/_synapse/admin/v1/appservices": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/appservices/{p}": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/captcha/cleanup": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/external_services": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/federation/destinations": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/registration_tokens": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/reports": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/reports/{p}": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/rooms": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/server": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/server_version": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/whoami": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v1/whois/{p}": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/_synapse/admin/v2/users": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
     "/.well-known/matrix/client": {
       "files": ["src/services/backend/discovery.ts", "src/services/matrix/paths/wellKnown.ts"]
     },
     "/.well-known/openid-configuration": {
       "files": ["src/services/matrix/paths/wellKnown.ts"]
     },
-    "/account/guest": {
-      "files": ["src/services/matrix/paths/guest.ts"]
-    },
     "/config/client": {
       "files": ["src/services/matrix/paths/clientConfig.ts"]
     },
     "/createRoom": {
       "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/devices": {
-      "files": ["src/services/matrix/paths/user.ts"]
-    },
-    "/external_services": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/external_services/{p}": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/external_services/{p}/health": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/external_services/{p}/health/check": {
-      "files": ["src/services/matrix/paths/admin.ts"]
-    },
-    "/external_services/health": {
-      "files": ["src/services/matrix/paths/admin.ts"]
     },
     "/friends": {
       "files": ["src/services/matrix/paths/friends.ts"]
@@ -278,29 +197,11 @@
     "/knock/{p}": {
       "files": ["src/services/matrix/paths/room.ts"]
     },
-    "/login": {
-      "files": ["src/services/matrix/paths/guest.ts"]
-    },
     "/notifications": {
       "files": ["src/services/matrix/paths/notification.ts"]
     },
     "/notifications/{p}/ack": {
       "files": ["src/services/matrix/paths/notification.ts"]
-    },
-    "/presence/{p}/status": {
-      "files": ["src/services/matrix/paths/user.ts"]
-    },
-    "/profile/{p}": {
-      "files": ["src/services/matrix/paths/user.ts"]
-    },
-    "/profile/{p}/avatar_url": {
-      "files": ["src/services/matrix/paths/user.ts"]
-    },
-    "/profile/{p}/displayname": {
-      "files": ["src/services/matrix/paths/user.ts"]
-    },
-    "/publicRooms": {
-      "files": ["src/services/matrix/paths/user.ts"]
     },
     "/pushers": {
       "files": ["src/services/matrix/paths/notification.ts"]
@@ -310,15 +211,6 @@
     },
     "/pushrules/": {
       "files": ["src/services/matrix/paths/notification.ts"]
-    },
-    "/register/guest": {
-      "files": ["src/services/matrix/paths/guest.ts"]
-    },
-    "/rendezvous": {
-      "files": ["src/services/matrix/paths/rendezvous.ts"]
-    },
-    "/rooms/{p}/aggregations/{p}/{p}": {
-      "files": ["src/services/matrix/paths/relations.ts"]
     },
     "/rooms/{p}/aliases": {
       "files": ["src/services/matrix/paths/room.ts"]
@@ -377,15 +269,6 @@
     "/rooms/{p}/redact/{p}/{p}": {
       "files": ["src/services/matrix/paths/room.ts"]
     },
-    "/rooms/{p}/relations/{p}": {
-      "files": ["src/services/matrix/paths/relations.ts"]
-    },
-    "/rooms/{p}/relations/{p}/{p}": {
-      "files": ["src/services/matrix/paths/relations.ts"]
-    },
-    "/rooms/{p}/relations/{p}/{p}/{p}": {
-      "files": ["src/services/matrix/paths/relations.ts"]
-    },
     "/rooms/{p}/send/{p}/{p}": {
       "files": ["src/services/matrix/paths/room.ts"]
     },
@@ -421,9 +304,6 @@
     },
     "/rooms/{p}/verify/{p}": {
       "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/widgets/{p}/capabilities": {
-      "files": ["src/services/matrix/paths/widget.ts"]
     },
     "/spaces": {
       "files": ["src/services/matrix/paths/space.ts"]
@@ -482,26 +362,8 @@
     "/spaces/user": {
       "files": ["src/services/matrix/paths/space.ts"]
     },
-    "/uk.tcpip.msc4133/profile/{p}": {
-      "files": ["src/services/matrix/paths/user.ts"]
-    },
-    "/uk.tcpip.msc4133/profile/{p}/{p}": {
-      "files": ["src/services/matrix/paths/user.ts"]
-    },
-    "/user_directory/search": {
-      "files": ["src/services/matrix/paths/user.ts"]
-    },
-    "/user/{p}/account_data/{p}": {
-      "files": ["src/services/matrix/paths/accountData.ts"]
-    },
-    "/user/{p}/rooms/{p}/account_data/{p}": {
-      "files": ["src/services/matrix/paths/accountData.ts"]
-    },
     "/user/{p}/rooms/{p}/tags": {
       "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/user/burn/stats": {
-      "files": ["src/services/matrix/paths/burn.ts"]
     },
     "/voice/config": {
       "files": ["src/services/matrix/paths/voice.ts"]
@@ -517,9 +379,6 @@
     },
     "/voice/upload": {
       "files": ["src/services/matrix/paths/voice.ts"]
-    },
-    "/voip/turnServer": {
-      "files": ["src/services/matrix/paths/user.ts"]
     }
   },
   "knownDefects": {},
@@ -615,16 +474,11 @@
     ".m.rule.",
     "/_matrix/",
     "/_matrix/admin/v1",
-    "/_matrix/client",
-    "/_matrix/client/r0",
     "/_matrix/client/unstable",
     "/_matrix/client/unstable/org.matrix.msc4108",
     "/_matrix/client/unstable/org.matrix.msc4354",
     "/_matrix/client/v1",
     "/_matrix/client/v3",
-    "/_matrix/media/r0",
-    "/_matrix/media/v1",
-    "/_matrix/media/v3",
     "/_matrix/vendor/v1",
     "/_synapse/admin/v1",
     "/_synapse/admin/v2",

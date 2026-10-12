@@ -622,11 +622,14 @@
   <code>room_types: ['im.hula.friend_list']</code>，但后端 <code>friend_room_service/mod.rs:161</code> 创建好友列表房间时用的是
   <code>m.friends</code>；全仓检索 <code>im.hula</code> 在 synapse-rust 中 0 命中。该 list 恒为空，好友房间实际随
   <code>default</code> 列表同步。</div>
-  <div class="warn"><b>⑦ 扩展降级监控只覆盖 1/98。</b>
-  <code>src/stores/domains/chat/capability.ts:10</code> 只登记
-  <code>CRITICAL_EXTENSION_IDS = ['friend-manager']</code>。其余 97 个 Manager 扩展
-  （admin / voice / beacon / media / keyRotation …）缺失时不会进入 degraded 告警，
-  只在各自调用点兜底或抛错——用户侧看不到降级信号。</div>
+  <div class="warn"><b>⑦ 扩展降级监控只覆盖 1/98（已修复 · C-3）。</b>
+  <code>src/stores/domains/chat/capability.ts</code> 曾只登记
+  <code>CRITICAL_EXTENSION_IDS = ['friend-manager']</code>，其余 97 个 Manager 扩展
+  （admin / voice / beacon / media / keyRotation …）缺失时不会进入 degraded 告警。
+  现已改为从 SDK 扩展注册表 <code>DEFAULT_CORE_EXTENSIONS</code> 派生
+  （<code>src/services/matrix/extensions/criticalExtensions.ts</code>）：<code>CRITICAL_EXTENSION_IDS</code>
+  长度恒等于扩展清单长度，SDK 新增扩展自动纳入监控；非 FriendManager 扩展的降级聚合为一次
+  <code>extension_degraded</code> 遥测事件，FriendManager 保留专用 <code>friend_manager_degraded</code> 事件。</div>
   <div class="warn"><b>⑧ RoomSummaryManager 方法名 10 处不匹配（潜伏缺陷，当前无调用点）。</b>
   <code>room/MatrixRoomSummaryService.ts:9-21</code> 声明了一个<b>本地</b> <code>interface RoomSummaryManager</code>；
   其中 <code>createRoomSummary / updateRoomSummary / deleteRoomSummary / syncRoomSummary /

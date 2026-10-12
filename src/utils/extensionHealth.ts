@@ -22,7 +22,13 @@ export function reportExtensionDegradationToUi(): void {
     if (degraded.length === 0) return
 
     logger.warn(`[ExtensionHealth] 检测到降级扩展: ${degraded.join(', ')}`)
-    window.$message?.warning?.(`部分功能已降级（${degraded.join(', ')}），不影响基础使用`)
+
+    // 关键扩展覆盖全部 SDK 扩展，降级项可能较多；toast 只展示前几项 + 总数，
+    // 完整明细引导用户到设置 > 帮助 > 诊断面板。
+    const MAX_LISTED = 3
+    const head = degraded.slice(0, MAX_LISTED).join(', ')
+    const suffix = degraded.length > MAX_LISTED ? ` 等 ${degraded.length} 项` : ''
+    window.$message?.warning?.(`部分功能已降级（${head}${suffix}），不影响基础使用`)
   } catch (err) {
     // 降级提示是 non-blocking 的，不应影响主流程
     logger.warn(`[ExtensionHealth] 降级提示失败（已忽略）: ${err}`)

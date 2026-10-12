@@ -4,12 +4,10 @@ export interface ServerStats {
   dailyActiveUsers: number
   monthlyActiveUsers: number
   messageCount: number
-  startServerTime: number
 }
 
 export interface ServerStatus {
   status: string
-  uptime?: number
 }
 
 export interface ServerHealth {
@@ -31,7 +29,6 @@ export interface UserInfo {
   isGuest?: boolean
   createdTs?: number
   displayname?: string
-  lastSeenTs?: number
 }
 
 export interface UserDevice {
@@ -72,7 +69,6 @@ export interface RoomState {
 export interface ShutdownRoomResult {
   kickedUsers: string[]
   failedToKickUsers: string[]
-  localAliases: string[]
 }
 
 export interface FederationDestination {
@@ -80,7 +76,7 @@ export interface FederationDestination {
   retryLastTs?: number
   retryInterval?: number
   failureTs?: number
-  lastSuccessfulStreamOrdering?: number
+  lastSuccessfulTs?: number
 }
 
 export interface FederationBlacklistEntry {
@@ -196,47 +192,48 @@ export interface ResolveReportRequest {
   notes?: string
 }
 
+// ── 媒体配额（2026-10-11 对齐后端真实响应形状）──────────────────────────────
+// 后端只有 4 条 quota 路由（`registered_routes`）：
+//   GET /_matrix/media/v1/quota/{check,stats,alerts}、GET /_synapse/admin/v1/media/quota
+// 旧类型的字段（`totalFiles`/`byType`/`byRoom`/`lastUpdated`、`QuotaAlert.id/type/...`、
+// `ServerQuota.totalUsed/totalLimit/userCount/averageUsage`、以及整个 `QuotaConfig`）
+// 都是**凭空声明**的形状，后端从不返回 —— 已按真实响应重写/删除。
+
 export interface QuotaStatus {
   used: number
   limit: number
   remaining: number
+  /** 由 used/limit 推导（后端不返回） */
   percentage: number
+  /** 由 used/limit 推导（后端不返回） */
   exceeded: boolean
 }
 
+/** `GET /_matrix/media/v1/quota/stats` 的响应（SDK `MediaQuotaStatsResponse`） */
 export interface QuotaStats {
-  totalFiles: number
-  totalSize: number
-  byType: Record<string, { count: number; size: number }>
-  byRoom: Record<string, { count: number; size: number }>
-  lastUpdated: number
+  storageBytes: number
+  mediaCount: number
+  limitBytes: number
 }
 
+/** `GET /_matrix/media/v1/quota/alerts` 的条目（SDK `MediaQuotaAlert`，snake_case） */
 export interface QuotaAlert {
-  id: string
-  type: 'warning' | 'critical' | 'exceeded'
+  alert_id: string
+  alert_type: 'quota_warning' | 'quota_exceeded'
+  threshold_percent: number
+  current_usage_bytes: number
+  quota_limit_bytes: number
   message: string
-  threshold: number
-  currentValue: number
-  createdAt: number
-  acknowledged: boolean
+  created_ts: number
+  is_read: boolean
 }
 
-export interface QuotaConfig {
-  id: string
-  name: string
-  defaultQuota: number
-  maxQuota: number
-  warningThreshold: number
-  criticalThreshold: number
-  enabled: boolean
-}
-
+/** `GET /_synapse/admin/v1/media/quota` 的响应（SDK `MediaQuotaResponse`） */
 export interface ServerQuota {
-  totalUsed: number
-  totalLimit: number
-  userCount: number
-  averageUsage: number
+  totalSize: number
+  totalCount: number
+  defaultSizeLimit: number
+  defaultCountLimit: number
 }
 
 export interface RetentionPolicy {

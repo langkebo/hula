@@ -181,11 +181,13 @@ describe('spaceHelpers', () => {
       expect(result.name).toBe('')
     })
 
-    it('uses room.topic for topic', () => {
+    it('reads topic from m.room.topic state event', () => {
       const room = {
         roomId: '!room4:server',
         name: 'Name',
-        topic: 'Room Topic',
+        currentState: {
+          getStateEvents: vi.fn().mockReturnValue({ getContent: () => ({ topic: 'Room Topic' }) })
+        },
         getMxcAvatarUrl: vi.fn().mockReturnValue(''),
         getJoinedMembers: vi.fn().mockReturnValue([])
       } as unknown as Room
@@ -282,7 +284,9 @@ describe('spaceHelpers', () => {
       const room = {
         roomId: '!room10:server',
         name: 'Full Room',
-        topic: 'Full Topic',
+        currentState: {
+          getStateEvents: vi.fn().mockReturnValue({ getContent: () => ({ topic: 'Full Topic' }) })
+        },
         getMxcAvatarUrl: vi.fn().mockReturnValue('mxc://server/full'),
         getJoinedMembers: vi.fn().mockReturnValue(members)
       } as unknown as Room

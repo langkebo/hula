@@ -1,6 +1,7 @@
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixClientService } from '../MatrixClientService'
+import { createMatrixTransportError } from '../MatrixRequestHelper'
 import { getRuntimeAwareFetch } from '../network/runtimeFetch'
 
 const logger = createLogger('SynapseExtensionHttpBase')
@@ -100,25 +101,29 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
     const text = await response.text()
 
     if (!response.ok) {
-      // 429 限流是正常行为，降级为 WARN 避免日志噪音
-      if (response.status === 429) {
-        const retryAfter = response.headers.get('Retry-After')
-        logger.warn(`[SynapseRust] ${endpoint} 请求被限流${retryAfter ? `，建议 ${retryAfter}s 后重试` : ''}`)
-        throw new Error(this.t('matrix_error.extensions.rate_limited'))
-      }
+      const isRateLimited = response.status === 429
+      const transportError = createMatrixTransportError({
+        status: response.status,
+        statusText: response.statusText,
+        bodyText: text,
+        headers: response.headers,
+        message: isRateLimited ? this.t('matrix_error.extensions.rate_limited') : undefined,
+        fallbackMessage: isRateLimited
+          ? undefined
+          : this.t('matrix_error.extensions.api_request_failed_with_status', { status: response.status })
+      })
 
-      let parsed: Record<string, unknown> = {}
-      try {
-        parsed = text ? JSON.parse(text) : {}
-      } catch {
-        parsed = { error: text || `HTTP ${response.status}` }
+      // 429 限流是正常行为，降级为 WARN 避免日志噪音
+      if (isRateLimited) {
+        logger.warn(
+          `[SynapseRust] ${endpoint} 请求被限流${
+            transportError.retryAfterMs !== undefined ? `，建议 ${transportError.retryAfterMs}ms 后重试` : ''
+          }`
+        )
+      } else {
+        logger.error(`[SynapseRust] API 请求失败: ${endpoint}`, transportError.data)
       }
-      logger.error(`[SynapseRust] API 请求失败: ${endpoint}`, parsed)
-      throw new Error(
-        (parsed.message as string) ||
-          (parsed.error as string) ||
-          this.t('matrix_error.extensions.api_request_failed_with_status', { status: response.status })
-      )
+      throw transportError
     }
 
     if (!text || text.trim() === '') {

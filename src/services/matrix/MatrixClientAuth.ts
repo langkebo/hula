@@ -203,7 +203,10 @@ export class MatrixClientAuth {
       let loginResponse: LoginResponse
 
       try {
-        loginResponse = await client.login('m.login.token', {
+        // SDK 真实归属是 `getAccountManager().login(type, params)` ——
+        // 它内部调 loginRequest 并**写入 accessToken / userId**（`lib/account/index.js:237-246`）；
+        // MatrixClient 本体没有 `login`。
+        loginResponse = await client.getAccountManager().login('m.login.token', {
           token: loginToken
         })
       } catch (error) {

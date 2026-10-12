@@ -74,13 +74,22 @@ jobs:
           pnpm check:v-html
           pnpm check:doc-coverage
           pnpm check:sdk-boundary
-          pnpm check:bare-matrix-paths
+          pnpm check:bare-matrix-paths:report
           pnpm quality:no-raw-fetch
           pnpm check:icon-colors
           pnpm check:guard-patterns
           pnpm check:settings-wiring
           pnpm check:component-contracts
           pnpm check:i18n-dead-keys
+
+      - name: Upload contract judgment diff (C-1)
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: contract-judgment-diff
+          path: scripts/contract-judgment-diff.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps

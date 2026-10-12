@@ -56,11 +56,11 @@ describe('dumpDiagnostics (O4)', () => {
 
   it('包含降级扩展信息', () => {
     const cap = useCapabilityStore()
-    cap.setExtensionHealth('friend-manager', 'degraded')
+    cap.setExtensionHealth('getFriendManager', 'degraded')
 
     const snapshot = dumpDiagnostics()
 
-    expect(snapshot.extensionHealth['friend-manager']).toBe('degraded')
+    expect(snapshot.extensionHealth['getFriendManager']).toBe('degraded')
     expect(snapshot.hasDegradedExtension).toBe(true)
   })
 

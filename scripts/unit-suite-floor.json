@@ -1,6 +1,6 @@
 {
-  "testFiles": 808,
-  "tests": 9293,
-  "note": "全量单元套件的计数地板（只升不降）。用 scripts/check-unit-suite-floor.mjs --update 抬高；不存在降低的路径。初始值由 2026-10-11 首次接 CI 时的实测值填入。",
-  "updatedAt": "2026-10-11T11:52:14.146Z"
+  "testFiles": 801,
+  "tests": 9290,
+  "note": "全量单元套件的计数地板（只升不降）。用 scripts/check-unit-suite-floor.mjs --update 抬高；--update 不存在自动降低的路径。初始值 808/9293 由 2026-10-11 首次接 CI 时的实测值填入。2026-10-12 手工重基到 801/9290：spec §7 C-2 强制清理 10 个零引用命名空间常量，连同死源文件一并删除了 10 个对应测试文件（src/services/matrix/paths/__tests__/{accountData,admin,burn,guest,media,moderation,relations,rendezvous,user,widget}.test.ts），另新增 3 个测试文件，故 808-10+3=801、9293-净减3=9290。删除的是死代码及其测试（源文件与用例成对移除，活代码覆盖无损失），属有据可查的合法降低。",
+  "updatedAt": "2026-10-12T01:40:15.024Z"
 }

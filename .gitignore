@@ -78,6 +78,9 @@ preview/
 # Vitest full report (large, regenerated on demand)
 vitest-full-report.json
 
+# C-1 contract judgment diff report (generated CI artifact; authority snapshot + registry are committed instead)
+scripts/contract-judgment-diff.json
+
 # Build config generated output
 build/config/*.d.ts
 build/config/*.js

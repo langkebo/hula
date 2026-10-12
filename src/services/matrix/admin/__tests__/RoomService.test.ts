@@ -118,9 +118,7 @@ describe('AdminRoomService', () => {
 
     expect(result).toEqual({
       kickedUsers: ['@u1:server.com'],
-      failedToKickUsers: ['@u2:server.com'],
-      // 该端点不返回本地别名，故恒为空数组（见审计报告 §13 的死字段登记）
-      localAliases: []
+      failedToKickUsers: ['@u2:server.com']
     })
   })
 

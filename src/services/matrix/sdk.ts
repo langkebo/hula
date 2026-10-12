@@ -63,6 +63,11 @@ export type { Friend, FriendManager, FriendRequest } from 'matrix-js-sdk/friend'
 export { FriendEvent } from 'matrix-js-sdk/friend'
 export { ClientPrefix, VendorPrefix } from 'matrix-js-sdk/http-api'
 export type { KeyBackupManager as SDKKeyBackupManager } from 'matrix-js-sdk/key-backup'
+// 扩展清单：SDK 的权威扩展注册表（AUTO-GENERATED），用于派生关键扩展 ID。
+// 与 route-table 类似，这里转发而非让调用方直接 import 子路径，以维持
+// 「SDK 只有一个咽喉点」的边界约定（scripts/check-sdk-boundary.mjs 只放行本文件）。
+export type { ManagerExtensionsOptions } from 'matrix-js-sdk/manager-extensions'
+export { DEFAULT_CORE_EXTENSIONS } from 'matrix-js-sdk/manager-extensions'
 export type { MediaManager } from 'matrix-js-sdk/media'
 export { RoomEvent } from 'matrix-js-sdk/models/room'
 export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'

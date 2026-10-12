@@ -46,9 +46,7 @@ describe('AdminServerService', () => {
       userCount: 34,
       dailyActiveUsers: 5,
       monthlyActiveUsers: 6,
-      messageCount: 7,
-      // 后端不提供服务器启动时间 ⇒ 恒为 0（见审计报告 §13 的死字段登记）
-      startServerTime: 0
+      messageCount: 7
     })
   })
 
@@ -67,8 +65,7 @@ describe('AdminServerService', () => {
       userCount: 0,
       dailyActiveUsers: 0,
       monthlyActiveUsers: 0,
-      messageCount: 0,
-      startServerTime: 0
+      messageCount: 0
     })
   })
 
@@ -76,7 +73,7 @@ describe('AdminServerService', () => {
   // 没有 `status: 'online'` 也没有 `uptime`（旧 mock 用的是上游 Synapse 的形状）。
   it('getServerStatus 由 up 字段映射状态且出错时返回 null', async () => {
     admin.getServerStatus.mockResolvedValueOnce({ db_ok: true, server_ok: true, up: true })
-    await expect(service.getServerStatus()).resolves.toEqual({ status: 'online', uptime: undefined })
+    await expect(service.getServerStatus()).resolves.toEqual({ status: 'online' })
 
     admin.getServerStatus.mockRejectedValueOnce(new Error('boom'))
     await expect(service.getServerStatus()).resolves.toBeNull()

@@ -4,6 +4,7 @@ import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import type { RoomInfo, RoomMemberInfo } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
+import { isRoomEncrypted } from '../roomEncryption'
 import { matrixRoomMembershipService } from './MembershipService'
 
 const logger = createLogger('CreationService')
@@ -136,7 +137,7 @@ export class MatrixRoomCreationService {
     }
 
     const client = matrixClientService.getClient()
-    const isEncrypted = client?.isRoomEncrypted?.(room.roomId) ?? false
+    const isEncrypted = isRoomEncrypted(client, room.roomId)
 
     const roomAsRecord = room as unknown as Record<string, unknown>
     const isSpaceRoom = typeof roomAsRecord.isSpaceRoom === 'function' ? (roomAsRecord.isSpaceRoom() as boolean) : false

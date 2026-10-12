@@ -1,6 +1,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
+import { createMatrixTransportError } from './MatrixRequestHelper'
 import { getMatrixAccessToken, getMatrixClient, getMatrixHomeserverUrl } from './matrixClientAccessor'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
 import { PREFIX_V3 } from './paths/prefixes'
@@ -19,76 +20,31 @@ interface MatrixHttpRequestOptions {
 
 type MatrixHttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS'
 
-interface MatrixAuthedRequestInvoker {
-  authedRequest(
-    method: MatrixHttpMethod,
+/**
+ * SDK manager 的前缀感知请求入口。
+ *
+ * `Method` 是 SDK 字符串枚举，前端以字符串字面量调用，故此处经本地结构类型收敛。
+ */
+interface MatrixAuthedRequestWithPrefixInvoker {
+  authedRequestWithPrefix<T>(
+    method: string,
     path: string,
     queryParams?: Record<string, string>,
-    body?: Record<string, unknown>,
-    options?: { headers?: Record<string, string>; prefix?: string }
-  ): Promise<unknown>
+    body?: Record<string, unknown>
+  ): Promise<T>
 }
 
 /**
- * 已知的 Matrix SDK 前缀列表（长前缀优先匹配，避免短前缀误匹配）。
- * SDK authedRequest 默认使用 ClientPrefix.V3 (/_matrix/client/v3)，会自动拼接到 path 前。
- * 若调用方传入的 path 已含完整前缀，会导致 URL 翻倍（如 /_matrix/client/v3/_matrix/client/v3/...）。
- * 此函数检测并剥离已知前缀，返回短路径和需要显式设置的 prefix（仅非默认前缀需要）。
- */
-const MATRIX_PREFIXES = [
-  '/_matrix/vendor/v1',
-  '/_matrix/client/v3',
-  '/_matrix/client/v1',
-  '/_matrix/client/r0',
-  '/_matrix/client/unstable',
-  '/_matrix/client',
-  '/_matrix/media/v3',
-  '/_matrix/media/v1',
-  '/_matrix/media/r0',
-  '/_synapse/admin/v1',
-  '/_synapse/admin/v2',
-  '/_matrix/admin/v1'
-] as const
-
-const SDK_DEFAULT_PREFIX = '/_matrix/client/v3'
-
-/**
- * 剥离 path 中的已知 Matrix 前缀，避免 SDK authedRequest 再次拼接导致 URL 翻倍。
- * @returns { path: 短路径, prefix: 需显式设置的 prefix（undefined 表示用 SDK 默认） }
- */
-export function stripMatrixPrefix(requestPath: string): { path: string; prefix?: string } {
-  let current = requestPath
-  let lastNonDefaultPrefix: string | undefined
-
-  for (;;) {
-    let found = false
-    for (const prefix of MATRIX_PREFIXES) {
-      if (current === prefix || current.startsWith(`${prefix}/`)) {
-        current = current.slice(prefix.length) || '/'
-        if (prefix !== SDK_DEFAULT_PREFIX) {
-          lastNonDefaultPrefix = prefix
-        }
-        found = true
-        break
-      }
-    }
-    if (!found) break
-  }
-
-  if (lastNonDefaultPrefix) {
-    return { path: current, prefix: lastNonDefaultPrefix }
-  }
-  return { path: current }
-}
-
-/**
- * 使用 stripMatrixPrefix 包装 client.http.authedRequest。
+ * 使用 SDK BaseManager.authedRequestWithPrefix 发送带完整前缀的 Matrix 请求。
  *
  * 用于 path 含完整前缀（如 MATRIX_PATHS.SPACE.HIERARCHY，含 PREFIX_V1）的场景：
- * 剥离已知前缀后以 { prefix } 选项传递，避免 SDK 再次拼接默认 client 前缀
- * 导致 URL 翻倍（双前缀 → 404）。
+ * SDK 内部按 `KNOWN_PREFIXES`（21 条，长前缀优先）单遍剥离路径中已有的
+ * `/_matrix/...` 完整前缀，并以命中前缀作为请求 `prefix`，避免默认 v3 前缀二次
+ * 拼接导致 URL 翻倍（双前缀 → 404）。相比旧的本地 12 条前缀表，SDK 表额外覆盖
+ * federation / key / identity / msc3575 / msc4186 等命名空间，是前缀解析的单一权威来源。
  *
- * 对于短路径（不含前缀），stripMatrixPrefix 原样返回，行为等价于直接调用 authedRequest。
+ * 短路径（不含前缀）直接用 SDK 默认 v3 前缀，行为等价于直接调用 authedRequest。
+ * `getRoomManager()` 在 `createClient()` 返回后即同步可用（SDK 会同步安装核心 manager 扩展）。
  */
 export async function authedRequestWithPath<T>(
   client: MatrixClient,
@@ -97,9 +53,13 @@ export async function authedRequestWithPath<T>(
   queryParams?: Record<string, string>,
   body?: object
 ): Promise<T> {
-  const { path, prefix } = stripMatrixPrefix(fullPath)
-  const opts = prefix ? { prefix } : undefined
-  return (await client.http.authedRequest(method, path, queryParams, body, opts)) as T
+  const requester = client.getRoomManager() as unknown as MatrixAuthedRequestWithPrefixInvoker
+  return await requester.authedRequestWithPrefix<T>(
+    method,
+    fullPath,
+    queryParams,
+    body as Record<string, unknown> | undefined
+  )
 }
 
 const AI_EXTENSION_ENABLED = import.meta.env.VITE_AI_EXTENSION_ENABLED === 'true'
@@ -221,9 +181,9 @@ class MatrixHttpClient {
         const result = await this._doRequest<T>(method, requestPath, requestOptions)
         return result
       } catch (err: unknown) {
-        const error = err as Error & { message?: string }
+        const status = (err as { httpStatus?: unknown }).httpStatus
         // Retry only on network errors or 5xx server errors
-        const isRetryable = err instanceof TypeError || error.message?.includes('HTTP 5')
+        const isRetryable = err instanceof TypeError || (typeof status === 'number' && status >= 500)
         if (!isRetryable || retries <= 0) {
           throw err
         }
@@ -253,21 +213,10 @@ class MatrixHttpClient {
       : undefined
 
     if (client) {
-      // client.http.authedRequest 内部会自动处理 accessToken 和 baseUrl
-      // stripMatrixPrefix 剥离已知前缀，避免 SDK 再次拼接导致 URL 翻倍
-      const { path: strippedPath, prefix: strippedPrefix } = stripMatrixPrefix(requestPath)
-      const http = client.http as unknown as MatrixAuthedRequestInvoker
-      const opts: { headers?: Record<string, string>; prefix?: string } = {}
-      if (requestOptions.headers) opts.headers = requestOptions.headers
-      if (strippedPrefix) opts.prefix = strippedPrefix
-
-      if (Object.keys(opts).length > 0) {
-        return (await http.authedRequest(method, strippedPath, queryParams, requestOptions.body, opts)) as T
-      }
-      if (requestOptions.body !== undefined) {
-        return (await http.authedRequest(method, strippedPath, queryParams, requestOptions.body)) as T
-      }
-      return (await http.authedRequest(method, strippedPath, queryParams)) as T
+      // 经 SDK manager 统一入口：内部自动处理 accessToken / baseUrl，
+      // 并按 KNOWN_PREFIXES 剥离路径中已有的完整前缀，避免二次拼接默认 v3 前缀。
+      const requester = client.getRoomManager() as unknown as MatrixAuthedRequestWithPrefixInvoker
+      return await requester.authedRequestWithPrefix<T>(method, requestPath, queryParams, requestOptions.body)
     }
 
     // 回退到手动 fetch (用于 client 尚未初始化或非 authed 请求)
@@ -299,7 +248,14 @@ class MatrixHttpClient {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => '')
-      throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`)
+      throw createMatrixTransportError({
+        status: response.status,
+        statusText: response.statusText,
+        bodyText: errorText,
+        headers: response.headers,
+        method,
+        url: urlWithParams
+      })
     }
 
     const responseText = await response.text()

@@ -2,12 +2,43 @@ import { useI18nGlobal } from '@/services/i18n'
 import { createLogger } from '@/utils/Logger'
 
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
+import { isConnectionClassError } from '../MatrixRequestHelper'
 import { matrixRoomActionFacade } from '../room/ActionFacade'
-import type { FriendManagerCompat, FriendStatus } from './friendUtils'
+import { buildFriendRequestIdempotencyKey, type FriendManagerCompat, type FriendStatus } from './friendUtils'
 import type { MatrixFriendSync } from './MatrixFriendSync'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
 
 const logger = createLogger('MatrixFriendOperations')
+
+/** 「好友请求已存在」这类业务冲突的 errcode 白名单：属于幂等成功，不应重发。 */
+const FRIEND_CONFLICT_ERRCODES: ReadonlySet<string> = new Set([
+  'M_USER_IN_USE',
+  'FRIEND_ALREADY_EXISTS',
+  'FRIEND_REQUEST_PENDING'
+])
+
+/**
+ * 判定「好友请求已存在」这类业务冲突：属于幂等成功，既不应重发也不应报错。
+ *
+ * 优先读结构化字段（`errcode` / `httpStatus === 409`），仅在结构化字段缺失时回落到
+ * message 匹配，以兼容未携带结构化字段的历史错误（审计 §8 B-4 用例 1）。
+ */
+function isFriendRequestConflict(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  const record = err as unknown as Record<string, unknown>
+  const data = (record.data && typeof record.data === 'object' ? record.data : {}) as Record<string, unknown>
+  const errcode =
+    typeof record.errcode === 'string' ? record.errcode : typeof data.errcode === 'string' ? data.errcode : ''
+  if (FRIEND_CONFLICT_ERRCODES.has(errcode)) return true
+  const httpStatus =
+    typeof record.httpStatus === 'number'
+      ? record.httpStatus
+      : typeof data.httpStatus === 'number'
+        ? data.httpStatus
+        : undefined
+  if (httpStatus === 409) return true
+  return err.message.includes('already exists') || err.message.includes('M_USER_IN_USE')
+}
 
 /**
  * 承载好友关系操作：发送/接受/取消/拒绝请求、删除好友、设置备注/昵称/状态。
@@ -17,40 +48,37 @@ export class MatrixFriendOperations {
   constructor(private readonly sync: MatrixFriendSync) {}
 
   /** 发送好友请求
+   *
+   * 降级策略（审计 §7 批次 B-4 / §8 B-4）：仅当**确证请求未到达服务端**（连接类错误）
+   * 时才降级到 REST 重发，并携带确定性幂等键；业务错误（409 等）不降级、视为成功，
+   * 以避免首次实际已成功时的重复提交。
    */
   async sendFriendRequest(userId: string, reason?: string): Promise<void> {
     const manager = await this.sync.ensureFriendManager(false)
+    const idempotencyKey = buildFriendRequestIdempotencyKey(userId)
 
     try {
       if (manager) {
         await manager.sendFriendRequest(userId, reason)
       } else {
-        await synapseFriendExtensionService.sendFriendRequest(userId, reason)
+        await synapseFriendExtensionService.sendFriendRequest(userId, reason, { idempotencyKey })
       }
       logger.info(`[MatrixFriend] 发送好友请求成功: ${userId}`)
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err)
-
-      // 409 已存在待处理的好友请求，属于正常业务场景，不应作为错误
-      if (errMsg.includes('already exists') || errMsg.includes('M_USER_IN_USE') || errMsg.includes('409')) {
+      // 业务冲突（已存在待处理请求）属于幂等成功：不重发、不报错
+      if (isFriendRequestConflict(err)) {
         logger.info(`[MatrixFriend] 好友请求已存在: ${userId}`)
         return
       }
 
-      // FriendManager 失败时降级到 REST API
-      if (manager) {
+      // 仅在确证请求未到达服务端（连接类错误）时才降级 REST 重发，并携带同一幂等键
+      if (manager && isConnectionClassError(err)) {
         try {
-          await synapseFriendExtensionService.sendFriendRequest(userId, reason)
+          await synapseFriendExtensionService.sendFriendRequest(userId, reason, { idempotencyKey })
           logger.info(`[MatrixFriend] 发送好友请求成功(REST降级): ${userId}`)
           return
         } catch (restErr) {
-          const restErrMsg = restErr instanceof Error ? restErr.message : String(restErr)
-          // REST 降级也返回 409，同样属于正常场景
-          if (
-            restErrMsg.includes('already exists') ||
-            restErrMsg.includes('M_USER_IN_USE') ||
-            restErrMsg.includes('409')
-          ) {
+          if (isFriendRequestConflict(restErr)) {
             logger.info(`[MatrixFriend] 好友请求已存在(REST): ${userId}`)
             return
           }
@@ -59,6 +87,7 @@ export class MatrixFriendOperations {
       }
 
       // 好友端点不可用时，回退到创建 DM 房间作为添加好友的替代方案
+      const errMsg = err instanceof Error ? err.message : String(err)
       if (errMsg.includes('不可用') || errMsg.includes('unavailable') || errMsg.includes('404')) {
         logger.info(`[MatrixFriend] 好友端点不可用，回退到创建 DM 房间: ${userId}`)
         try {
