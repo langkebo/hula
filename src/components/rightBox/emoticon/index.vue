@@ -12,7 +12,7 @@
         <div v-if="activeIndex === 0">
           <div v-if="emojiRef.historyList?.length > 0">
             <span
-              v-if="!checkIsUrl(emojiRef.historyList[0])"
+              v-if="!isValidUrl(emojiRef.historyList[0])"
               class="text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-primary]">
               {{ t('emoticon.recent.title') }}
             </span>
@@ -21,7 +21,7 @@
                 align="center"
                 justify="center"
                 class="emoji-item"
-                v-for="(item, index) in [...new Set(emojiRef.historyList)].filter((emoji) => !checkIsUrl(emoji))"
+                v-for="(item, index) in [...new Set(emojiRef.historyList)].filter((emoji) => !isValidUrl(emoji))"
                 :key="index"
                 @click.stop="chooseEmoji(item)">
                 {{ item }}
@@ -196,6 +196,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { getAllTypeEmojis } from '@/utils/Emoji.ts'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
+import { isValidUrl } from '@/utils/StringUtils'
 import { useEmojiLocalCache } from './useEmojiLocalCache'
 import { useEmojiPagination } from './useEmojiPagination'
 
@@ -360,15 +361,6 @@ const {
   emojiUrlToLocalMap,
   localUrlCache
 } = useEmojiLocalCache({ isFavoritesView, emojiStore, userStore })
-
-const checkIsUrl = (str: string) => {
-  try {
-    new URL(str)
-    return true
-  } catch {
-    return false
-  }
-}
 
 const handleContextMenu = (event: MouseEvent, item: EmojiListItem) => {
   event.preventDefault()

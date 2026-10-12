@@ -34,7 +34,7 @@
           </div>
           <div class="stat-item">
             <span class="stat-label">{{ t('setting.storage.memory_usage') }}</span>
-            <span class="stat-value">{{ formatBytes(stats?.memoryUsageBytes) }}</span>
+            <span class="stat-value">{{ memoryUsageText }}</span>
           </div>
         </div>
       </n-spin>
@@ -80,6 +80,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import type { StoreStats } from '@/services/matrix/sdk'
+import { formatBytes } from '@/utils/Formatting'
 
 const { t } = useI18n()
 
@@ -94,12 +95,9 @@ const hitRateText = computed(() => {
   return `${(stats.value.hitRate * 100).toFixed(1)}%`
 })
 
-function formatBytes(bytes?: number): string {
-  if (bytes === undefined || bytes === null || Number.isNaN(bytes)) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
+const memoryUsageText = computed(() =>
+  stats.value?.memoryUsageBytes == null ? '-' : formatBytes(stats.value.memoryUsageBytes)
+)
 
 async function loadStats(): Promise<void> {
   loadingStats.value = true

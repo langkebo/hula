@@ -7,6 +7,7 @@ import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useHistoryStore } from '@/stores/domains/chat/history'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
+import { isValidUrl } from '@/utils/StringUtils'
 
 type MsgInputLike = {
   messageInputDom: HTMLElement
@@ -39,14 +40,7 @@ export function useFooterEmoji(
     return historyStore.emoji.slice(0, 15)
   })
 
-  const checkIsUrl = (str: string) => {
-    try {
-      new URL(str)
-      return true
-    } catch {
-      return false
-    }
-  }
+  const checkIsUrl = isValidUrl
 
   const resolveRecentRenderUrl = (url: string) => {
     const matched = emojiStore.emojiList.find((item) => item.expressionUrl === url)

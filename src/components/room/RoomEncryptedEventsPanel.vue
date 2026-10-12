@@ -17,7 +17,7 @@
               data-testid="encrypted-event-item">
               <div class="event-row">
                 <span class="event-label">{{ t('room.encrypted_events.event_id') }}:</span>
-                <span class="event-value" :title="String(item.event_id)">{{ truncateId(String(item.event_id)) }}</span>
+                <span class="event-value" :title="String(item.event_id)">{{ truncateMiddle(String(item.event_id)) }}</span>
               </div>
               <div class="event-row">
                 <span class="event-label">{{ t('room.encrypted_events.algorithm') }}:</span>
@@ -26,7 +26,7 @@
               <div class="event-row">
                 <span class="event-label">{{ t('room.encrypted_events.session_id') }}:</span>
                 <span class="event-value" :title="String(item.session_id)">
-                  {{ truncateId(String(item.session_id)) }}
+                  {{ truncateMiddle(String(item.session_id)) }}
                 </span>
               </div>
               <div v-if="item.sender" class="event-row">
@@ -47,6 +47,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixRoomAccountDataService } from '@/services/matrix/room/AccountDataService'
+import { truncateMiddle } from '@/utils/StringUtils'
 
 interface EncryptedEvent {
   event_id: string
@@ -68,11 +69,6 @@ const events = computed<EncryptedEvent[]>(() => {
   const list = eventsData.value?.events
   return Array.isArray(list) ? (list as EncryptedEvent[]) : []
 })
-
-function truncateId(id: string): string {
-  if (id.length <= 24) return id
-  return `${id.slice(0, 12)}...${id.slice(-8)}`
-}
 
 async function loadEvents() {
   loading.value = true

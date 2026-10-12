@@ -14,7 +14,7 @@
               <div class="queue-item-row">
                 <span class="queue-item-label">{{ t('room.message_queue.event_id') }}:</span>
                 <span class="queue-item-value" :title="String(item.event_id)">
-                  {{ truncateId(String(item.event_id)) }}
+                  {{ truncateMiddle(String(item.event_id)) }}
                 </span>
               </div>
               <div class="queue-item-row">
@@ -39,6 +39,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixRoomAccountDataService } from '@/services/matrix/room/AccountDataService'
+import { truncateMiddle } from '@/utils/StringUtils'
 
 interface QueueItem {
   event_id: string
@@ -59,11 +60,6 @@ const queueItems = computed<QueueItem[]>(() => {
   const queue = queueData.value?.queue
   return Array.isArray(queue) ? (queue as QueueItem[]) : []
 })
-
-function truncateId(id: string): string {
-  if (id.length <= 24) return id
-  return `${id.slice(0, 12)}...${id.slice(-8)}`
-}
 
 function formatContent(content: unknown): string {
   if (content === null || content === undefined) return '-'

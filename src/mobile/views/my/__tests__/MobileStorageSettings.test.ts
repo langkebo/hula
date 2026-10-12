@@ -56,7 +56,8 @@ interface Vm {
   quota: number
   hitRateText: string
   usageText: string
-  formatBytes: (b?: number) => string
+  quotaText: string
+  memoryUsageText: string
   loadStats: () => Promise<void>
   handleClear: () => Promise<void>
 }
@@ -99,14 +100,24 @@ describe('MobileStorageSettings', () => {
     expect(vmOf(wrapper).hitRateText).toBe('80.0%')
   })
 
-  it('字节格式化覆盖 B / KB / MB 三档', async () => {
+  it('字节格式化统一到 Formatting.formatBytes（B / KB / MB 档位）', async () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    expect(vmOf(wrapper).formatBytes(512)).toBe('512 B')
-    expect(vmOf(wrapper).formatBytes(2048)).toBe('2.0 KB')
-    expect(vmOf(wrapper).formatBytes(3 * 1024 * 1024)).toBe('3.0 MB')
-    expect(vmOf(wrapper).formatBytes(undefined)).toBe('-')
+    // stats.memoryUsageBytes = 1024 -> 1 KB
+    expect(vmOf(wrapper).memoryUsageText).toBe('1 KB')
+    // navigator.storage.estimate usage=2048 / quota=4096
+    expect(vmOf(wrapper).usageText).toBe('2 KB')
+    expect(vmOf(wrapper).quotaText).toBe('4 KB')
+  })
+
+  it('统计缺失时内存用量显示占位符 -', async () => {
+    getStatsMock.mockRejectedValueOnce(new Error('boom'))
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(vmOf(wrapper).memoryUsageText).toBe('-')
   })
 
   it('navigator.storage 不可用时不崩溃（降级为未知用量）', async () => {

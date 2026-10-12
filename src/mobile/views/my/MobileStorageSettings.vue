@@ -14,7 +14,7 @@
           <!-- 缓存统计 -->
           <van-cell-group :title="t('mobile_storage.cache_section')" inset>
             <van-cell :title="t('mobile_storage.hit_rate')" :value="hitRateText" />
-            <van-cell :title="t('mobile_storage.memory_usage')" :value="formatBytes(stats?.memoryUsageBytes)" />
+            <van-cell :title="t('mobile_storage.memory_usage')" :value="memoryUsageText" />
             <van-cell :title="t('mobile_storage.cached_items')" :value="String(stats?.totalEntries ?? 0)" />
           </van-cell-group>
 
@@ -53,6 +53,7 @@ import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.v
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import type { StoreStats } from '@/services/matrix/sdk'
+import { formatBytes } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileStorageSettings')
@@ -72,19 +73,15 @@ const hitRateText = computed(() => {
 
 const usageText = computed(() => formatBytes(usage.value))
 const quotaText = computed(() => formatBytes(quota.value))
+const memoryUsageText = computed(() =>
+  stats.value?.memoryUsageBytes == null ? '-' : formatBytes(stats.value.memoryUsageBytes)
+)
 
 /** 用量占比，封顶 100（配额未知时为 0） */
 const usagePercent = computed(() => {
   if (!quota.value) return 0
   return Math.min(100, Math.round((usage.value / quota.value) * 100))
 })
-
-function formatBytes(bytes?: number): string {
-  if (bytes === undefined || bytes === null || Number.isNaN(bytes)) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
 
 async function loadStats(): Promise<void> {
   loading.value = true

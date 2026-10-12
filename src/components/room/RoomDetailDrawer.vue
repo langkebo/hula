@@ -76,7 +76,7 @@
                     <div class="room-drawer__id-row flex items-center gap-[--tjg-space-1] mt-2px">
                       <span
                         class="text-[length:var(--tjg-font-size-2xs)] color-[--tjg-text-tertiary] font-mono truncate">
-                        {{ truncateId(roomId) }}
+                        {{ truncateMiddle(roomId ?? '', 20, 10, 6) }}
                       </span>
                       <button
                         type="button"
@@ -182,6 +182,7 @@ import { OnlineEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group/types'
+import { truncateMiddle } from '@/utils/StringUtils'
 
 interface RoomDetail {
   name: string
@@ -226,11 +227,6 @@ const {
 const announcementCount = computed(() => pinnedEventIds.value?.length ?? 0)
 
 const avatarPlaceholder = computed(() => roomDetail.value?.name?.charAt(0) || '?')
-
-const truncateId = (id: string) => {
-  if (id.length <= 20) return id
-  return `${id.slice(0, 10)}...${id.slice(-6)}`
-}
 
 const copyRoomId = async () => {
   if (!props.roomId) return
