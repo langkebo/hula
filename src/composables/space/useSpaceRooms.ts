@@ -1,7 +1,7 @@
-import { Visibility } from 'matrix-js-sdk'
 import { type Ref, ref } from 'vue'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
+import { Visibility } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useSpaceRooms')

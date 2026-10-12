@@ -1,8 +1,8 @@
-import type { RoomMember } from 'matrix-js-sdk'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
+import type { RoomMember } from '@/services/matrix/sdk'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 

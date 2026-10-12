@@ -11,6 +11,14 @@
  *   - a new violator appears that is not in the baseline, OR
  *   - the total violator count exceeds the baseline count.
  *
+ * Violations are counted per distinct key (`file::specifier`, see `keyOf`):
+ * a file that writes the same `matrix-js-sdk` import twice violates the
+ * boundary once. Counting raw occurrences instead let duplicate import lines
+ * inflate the total while every key stayed inside the baseline — the gate then
+ * reported `newRegressions: []` and exited 0 even though the count had grown.
+ * The count ratchet below is applied to the deduped set so it can actually
+ * fire (see `evaluateGate`).
+ *
  * Refresh the baseline intentionally with `--update-baseline` (or env
  * `SDK_BOUNDARY_BASELINE_UPDATE=1`). The baseline count MUST only shrink.
  *
@@ -123,7 +131,7 @@ async function* walk(dir) {
   }
 }
 
-function scanFileText(text) {
+export function scanFileText(text) {
   // Strip comments before running the import regex. `[\s\S]*?` in IMPORT_RE
   // spans newlines (so multi-line imports are caught) but it also happily
   // walks from an unrelated `import` line into a later comment that mentions
@@ -143,7 +151,7 @@ function scanFileText(text) {
   return imports
 }
 
-function stripComments(text) {
+export function stripComments(text) {
   // Replace comments with equivalent whitespace so line/column offsets stay
   // stable for anything that consumes the output later.
   let out = ''
@@ -224,7 +232,7 @@ function scanSdkUnknownCasts(text) {
   return hits
 }
 
-function classifySpecifier(specifier, dynamic) {
+export function classifySpecifier(specifier, dynamic) {
   // 'matrix-js-sdk' → bare; 'matrix-js-sdk/core' → subpath 'core'
   const base = specifier === 'matrix-js-sdk'
     ? { kind: 'bare', subpath: null }
@@ -233,7 +241,7 @@ function classifySpecifier(specifier, dynamic) {
   return base
 }
 
-function keyOf(entry) {
+export function keyOf(entry) {
   if (entry.kind === 'authed-request') {
     // Per-file ordinal: stable under within-file refactors; only changes
     // when a new call is added (ordinal grows) or one is removed (shrinks).
@@ -246,6 +254,61 @@ function keyOf(entry) {
     return `${entry.file}::unknown-as-${entry.type}#${entry.ordinal}`
   }
   return `${entry.file}::${entry.specifier}${entry.dynamic ? '::dynamic' : ''}`
+}
+
+/**
+ * Collapse the raw violation list to one entry per distinct `keyOf` key.
+ * A file importing `matrix-js-sdk` twice is one boundary violation, not two;
+ * only the first occurrence is kept. Without this the count ratchet compares
+ * occurrence-inflated totals against a de-facto unique baseline and can never
+ * fire (this was the AR-03 defect).
+ */
+export function dedupeViolations(violations) {
+  const seen = new Set()
+  const out = []
+  for (const v of violations) {
+    const key = keyOf(v)
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(v)
+  }
+  return out
+}
+
+/**
+ * Pure gate decision — no I/O, no process.exit, so it can be unit tested.
+ *
+ * @param {Array<object>} violations raw scan output (may contain duplicates)
+ * @param {{count: number, violations: Set<string>}|null} baseline
+ * @param {{strict?: boolean}} [opts]
+ * @returns {{
+ *   current: Array<object>,
+ *   regressed: Array<object>,
+ *   fixed: string[],
+ *   countRegression: boolean,
+ *   failed: boolean,
+ *   hasBaseline: boolean
+ * }}
+ */
+export function evaluateGate(violations, baseline, { strict = false } = {}) {
+  const current = dedupeViolations(violations)
+  if (!baseline) {
+    return {
+      current,
+      regressed: [],
+      fixed: [],
+      countRegression: false,
+      failed: strict ? current.length > 0 : false,
+      hasBaseline: false
+    }
+  }
+  const currentKeys = new Set(current.map(keyOf))
+  const regressed = current.filter((v) => !baseline.violations.has(keyOf(v)))
+  const fixed = [...baseline.violations].filter((k) => !currentKeys.has(k))
+  // Count ratchet: the deduped total must not exceed the frozen baseline.
+  const countRegression = current.length > baseline.count
+  const failed = strict ? current.length > 0 : regressed.length > 0 || countRegression
+  return { current, regressed, fixed, countRegression, failed, hasBaseline: true }
 }
 
 async function loadBaseline() {
@@ -275,25 +338,25 @@ async function writeBaseline(violations) {
   await writeFile(baselineFile, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
 }
 
-async function main() {
-  try {
-    await stat(srcRoot)
-  } catch {
-    console.error(`[sdk-boundary] src root not found: ${srcRoot}`)
-    process.exit(2)
-  }
-
+/**
+ * Walk `rootDir` and collect every boundary violation, tag channels by kind.
+ * Pure with respect to process state (no console/exit) so it can be reused by
+ * tests and by `main`. Paths are emitted relative to `projectRoot`.
+ *
+ * @param {string} rootDir absolute path of the `src` tree to scan
+ * @returns {Promise<{violations: Array<object>, scanned: number}>}
+ */
+export async function collectViolations(rootDir) {
   const violations = []
   let scanned = 0
 
-  for await (const file of walk(srcRoot)) {
+  for await (const file of walk(rootDir)) {
     scanned++
     let text
     try {
       text = await readFile(file, 'utf8')
     } catch (err) {
-      console.error(`[sdk-boundary] failed to read ${file}: ${err.message}`)
-      process.exit(2)
+      throw new Error(`[sdk-boundary] failed to read ${file}: ${err.message}`)
     }
 
     const rel = path.relative(projectRoot, file).split(path.sep).join('/')
@@ -368,10 +431,30 @@ async function main() {
     }
   }
 
+  return { violations, scanned }
+}
+
+async function main() {
+  try {
+    await stat(srcRoot)
+  } catch {
+    console.error(`[sdk-boundary] src root not found: ${srcRoot}`)
+    process.exit(2)
+  }
+
+  let violations
+  let scanned
+  try {
+    ;({ violations, scanned } = await collectViolations(srcRoot))
+  } catch (err) {
+    console.error(err.message)
+    process.exit(2)
+  }
+
   if (updateBaseline) {
     await writeBaseline(violations)
     console.log(
-      `[sdk-boundary] baseline updated: ${violations.length} violation(s) recorded at ${path.relative(
+      `[sdk-boundary] baseline updated: ${dedupeViolations(violations).length} violation(s) recorded at ${path.relative(
         projectRoot,
         baselineFile
       )}`
@@ -380,25 +463,22 @@ async function main() {
   }
 
   const baseline = await loadBaseline()
-  const currentKeys = new Set(violations.map(keyOf))
+  const { current, regressed, fixed, countRegression, failed } = evaluateGate(violations, baseline, {
+    strict: strictMode
+  })
 
-  let regressed = []
-  let fixed = []
-  if (baseline) {
-    regressed = violations.filter((v) => !baseline.violations.has(keyOf(v)))
-    fixed = [...baseline.violations].filter((k) => !currentKeys.has(k))
-  }
-
-  const byKind = violations.reduce((acc, v) => {
+  const byKind = current.reduce((acc, v) => {
     acc[v.kind] = (acc[v.kind] ?? 0) + 1
     return acc
   }, {})
 
   const report = {
     scanned,
-    currentViolations: violations.length,
+    currentViolations: current.length,
+    rawOccurrences: violations.length,
     baselineViolations: baseline?.count ?? null,
     byKind,
+    countRegression,
     newRegressions: regressed,
     nowResolved: fixed
   }
@@ -408,7 +488,7 @@ async function main() {
   } else {
     console.log(`[sdk-boundary] scanned ${scanned} source file(s) under src/`)
     console.log(
-      `[sdk-boundary] current violations: ${violations.length} (bare=${byKind.bare ?? 0}, subpath=${byKind.subpath ?? 0}, bare-dynamic=${byKind['bare-dynamic'] ?? 0}, subpath-dynamic=${byKind['subpath-dynamic'] ?? 0}, authed-request=${byKind['authed-request'] ?? 0}, http-request=${byKind['http-request'] ?? 0}, sdk-unknown-cast=${byKind['sdk-unknown-cast'] ?? 0})`
+      `[sdk-boundary] current violations: ${current.length} (bare=${byKind.bare ?? 0}, subpath=${byKind.subpath ?? 0}, bare-dynamic=${byKind['bare-dynamic'] ?? 0}, subpath-dynamic=${byKind['subpath-dynamic'] ?? 0}, authed-request=${byKind['authed-request'] ?? 0}, http-request=${byKind['http-request'] ?? 0}, sdk-unknown-cast=${byKind['sdk-unknown-cast'] ?? 0})`
     )
     if (baseline) {
       console.log(`[sdk-boundary] baseline violations: ${baseline.count}`)
@@ -426,21 +506,26 @@ async function main() {
             console.log(`  ${v.file}  <- '${v.specifier}'`)
           }
         }
-      } else {
-        console.log('[sdk-boundary] OK — no regressions vs baseline')
       }
+      if (countRegression) {
+        console.log(
+          `[sdk-boundary] FAIL — violation count regressed: ${current.length} > baseline ${baseline.count}`
+        )
+      }
+      if (!failed) console.log('[sdk-boundary] OK — no regressions vs baseline')
     } else {
       console.log('[sdk-boundary] no baseline present; run with --update-baseline to record the current state')
     }
   }
 
-  if (strictMode) {
-    process.exit(violations.length === 0 ? 0 : 1)
-  }
-  process.exit(regressed.length === 0 ? 0 : 1)
+  process.exit(failed ? 1 : 0)
 }
 
-main().catch((err) => {
-  console.error('[sdk-boundary] unexpected error', err)
-  process.exit(2)
-})
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error('[sdk-boundary] unexpected error', err)
+    process.exit(2)
+  })
+}

@@ -1,8 +1,8 @@
-import type { MatrixEvent } from 'matrix-js-sdk'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixForwardService } from '@/services/matrix/messaging/MatrixForwardService'
+import type { MatrixEvent } from '@/services/matrix/sdk'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
@@ -40,8 +40,9 @@ export function useMessageForward(options: UseMessageForwardOptions) {
   const chatStore = useChatStore()
   const globalStore = useGlobalStore()
 
-  // 内部保存 sourceEvent 的 ref,允许通过 setSourceEvent 动态更新
-  const sourceEventRef = ref<MatrixEvent | null>(options.sourceEvent)
+  // 内部保存 sourceEvent 的 ref(shallowRef 保留 MatrixEvent 类身份,避免深层 unwrap 丢失类私有字段),
+  // 允许通过 setSourceEvent 动态更新
+  const sourceEventRef = shallowRef<MatrixEvent | null>(options.sourceEvent)
 
   // 选中的目标房间 ID 列表
   const targetRoomIds = ref<string[]>([])
@@ -137,7 +138,7 @@ export function useMessageForward(options: UseMessageForwardOptions) {
         // 单房间转发,直接调用 forwardEvent
         const targetRoomId = roomIds[0]
         try {
-          await matrixForwardService.forwardEvent(event as unknown as MatrixEvent, targetRoomId)
+          await matrixForwardService.forwardEvent(event, targetRoomId)
           successCount = 1
           logger.info(`[forward] 转发成功: ${event.getId()} -> ${targetRoomId}`)
         } catch (err) {
@@ -145,7 +146,7 @@ export function useMessageForward(options: UseMessageForwardOptions) {
         }
       } else {
         // 多房间转发,调用 forwardEventToMultipleRooms
-        const results = await matrixForwardService.forwardEventToMultipleRooms(event as unknown as MatrixEvent, roomIds)
+        const results = await matrixForwardService.forwardEventToMultipleRooms(event, roomIds)
         successCount = results.filter((r) => r.success).length
       }
 

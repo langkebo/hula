@@ -15,6 +15,7 @@ export type {
   MatrixEvent,
   MBeaconEventContent,
   MBeaconInfoEventContent,
+  PushRuleAction,
   Room,
   RoomMember,
   RoomState,
@@ -38,6 +39,7 @@ export {
   PushRuleActionName,
   PushRuleKind,
   SlidingSyncState,
+  TweakName,
   Visibility
 } from 'matrix-js-sdk'
 export type {

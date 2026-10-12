@@ -25,7 +25,7 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-import { PushRuleActionName, TweakName } from 'matrix-js-sdk'
+import { PushRuleActionName, TweakName } from '@/services/matrix/sdk'
 import type { IPushRules } from '@/types/matrix-services'
 import { buildActions, inferActionType, usePushRuleEditor } from '../usePushRuleEditor'
 

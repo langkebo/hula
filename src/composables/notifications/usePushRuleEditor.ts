@@ -1,8 +1,8 @@
-import { type PushRuleAction, PushRuleActionName } from 'matrix-js-sdk'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
+import { type PushRuleAction, PushRuleActionName } from '@/services/matrix/sdk'
 import type { IPushRule, IPushRules } from '@/types/matrix-services'
 import { createLogger } from '@/utils/Logger'
 

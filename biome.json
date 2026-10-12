@@ -138,7 +138,14 @@
       }
     },
     {
-      "includes": ["src/stores/**", "src/views/**", "src/components/**", "src/mobile/**", "src/layout/**"],
+      "includes": [
+        "src/stores/**",
+        "src/views/**",
+        "src/components/**",
+        "src/mobile/**",
+        "src/layout/**",
+        "src/composables/**"
+      ],
       "linter": {
         "rules": {
           "style": {
