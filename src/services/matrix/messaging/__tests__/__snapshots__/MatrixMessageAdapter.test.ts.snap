@@ -1,0 +1,103 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MatrixMessageAdapter > snapshot contracts > convertMatrixContent snapshot for beacon 1`] = `
+{
+  "description": "实时位置共享",
+  "isLive": true,
+  "lastUpdateTs": 1700000000000,
+  "timeout": 3600000,
+  "uri": undefined,
+}
+`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > convertMatrixContent snapshot for file 1`] = `
+{
+  "encryptedFile": undefined,
+  "fileName": "doc.pdf",
+  "size": 4096,
+  "url": "mxc://server/doc",
+}
+`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > convertMatrixContent snapshot for image 1`] = `
+{
+  "encryptedFile": undefined,
+  "fileName": "cat.png",
+  "height": 480,
+  "mimetype": "image/png",
+  "size": 1024,
+  "url": "mxc://server/cat",
+  "width": 640,
+}
+`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > convertMatrixContent snapshot for location 1`] = `
+{
+  "address": "北京",
+  "latitude": "39.9042",
+  "longitude": "116.4074",
+  "precision": "",
+  "timestamp": "1700000000000",
+}
+`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > convertMatrixContent snapshot for text 1`] = `
+{
+  "content": "hello",
+}
+`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > convertMatrixContent snapshot for unhandled msgtype falls back to json content 1`] = `
+{
+  "content": "{"foo":"bar"}",
+}
+`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > convertMatrixContent snapshot for video with thumbnail 1`] = `
+{
+  "duration": 15,
+  "encryptedFile": undefined,
+  "filename": "clip.mp4",
+  "mimetype": "video/mp4",
+  "size": 2048,
+  "thumbHeight": 240,
+  "thumbUrl": "mxc://server/thumb",
+  "thumbWidth": 320,
+  "thumbnailEncryptedFile": undefined,
+  "url": "mxc://server/clip",
+}
+`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > convertMatrixContent snapshot for voice 1`] = `
+{
+  "encryptedFile": undefined,
+  "fileName": "voice.ogg",
+  "mimeType": "audio/ogg",
+  "mxcUrl": "mxc://server/voice",
+  "second": 8,
+  "size": 300,
+  "url": "mxc://server/voice",
+}
+`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for audio 1`] = `5`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for beacon info 1`] = `16`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for encrypted text 1`] = `1`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for file 1`] = `4`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for image 1`] = `3`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for location 1`] = `10`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for member 1`] = `8`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for redaction 1`] = `2`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for text 1`] = `1`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for unknown msgtype 1`] = `0`;
+
+exports[`MatrixMessageAdapter > snapshot contracts > getMsgTypeFromEventLike snapshot for video 1`] = `6`;

@@ -1,0 +1,130 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for emoji 1`] = `
+{
+  "body": "wave.png",
+  "info": {
+    "h": 0,
+    "mimetype": "image/png",
+    "size": 0,
+    "w": 0,
+  },
+  "msgtype": "m.image",
+  "url": "mxc://server/wave",
+}
+`;
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for file 1`] = `
+{
+  "body": "doc.pdf",
+  "info": {
+    "mimetype": "application/pdf",
+    "size": 4096,
+  },
+  "msgtype": "m.file",
+  "url": "mxc://server/doc",
+}
+`;
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for image encrypted 1`] = `
+{
+  "body": "secret.png",
+  "file": {
+    "url": "mxc://server/enc",
+    "v": "v2",
+  },
+  "info": {
+    "h": 0,
+    "mimetype": "image/png",
+    "size": 0,
+    "w": 0,
+  },
+  "msgtype": "m.image",
+}
+`;
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for image plain 1`] = `
+{
+  "body": "cat.png",
+  "info": {
+    "h": 480,
+    "mimetype": "image/png",
+    "size": 1024,
+    "w": 640,
+  },
+  "msgtype": "m.image",
+  "url": "mxc://server/cat",
+}
+`;
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for location with info 1`] = `
+{
+  "body": "Home",
+  "geo_uri": "geo:1,2",
+  "info": {
+    "address": "Beijing",
+    "timestamp": "1000",
+  },
+  "msgtype": "m.location",
+}
+`;
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for notice 1`] = `
+{
+  "body": "notice body",
+  "msgtype": "m.notice",
+}
+`;
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for text with reply 1`] = `
+{
+  "body": "hello",
+  "m.relates_to": {
+    "m.in_reply_to": {
+      "event_id": "$reply:server",
+    },
+  },
+  "msgtype": "m.text",
+}
+`;
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for unhandled msgtype falls back to json body 1`] = `
+{
+  "body": "{"foo":"bar"}",
+  "msgtype": "m.audio",
+}
+`;
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for video with thumbnail 1`] = `
+{
+  "body": "clip.mp4",
+  "info": {
+    "duration": 15,
+    "h": 240,
+    "mimetype": "video/mp4",
+    "size": 2048,
+    "thumbnail_info": {
+      "h": 240,
+      "size": 512,
+      "w": 320,
+    },
+    "thumbnail_url": "mxc://server/thumb",
+    "w": 320,
+  },
+  "msgtype": "m.video",
+  "url": "mxc://server/clip",
+}
+`;
+
+exports[`buildMatrixContent > snapshot contracts > snapshot for voice 1`] = `
+{
+  "body": "voice.ogg",
+  "info": {
+    "duration": 8,
+    "mimetype": "audio/ogg",
+    "size": 300,
+  },
+  "msgtype": "m.audio",
+  "url": "mxc://server/voice",
+}
+`;

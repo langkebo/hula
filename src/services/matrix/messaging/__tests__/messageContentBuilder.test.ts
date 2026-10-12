@@ -536,4 +536,53 @@ describe('buildMatrixContent', () => {
       expect(ReexportedMatrixBurnDuration.SEC_300).toBe(300)
     })
   })
+
+  // 快照契约：锁定各消息类型产出的完整 content 结构，避免协议字段被无意改动。
+  // 代表性载荷覆盖主分支（回复、加密文件、缩略图、位置信息等）。
+  describe('snapshot contracts', () => {
+    const cases: Array<[string, MsgEnum, unknown]> = [
+      ['text with reply', MsgEnum.TEXT, { content: 'hello', reply: { id: '$reply:server' } }],
+      ['notice', MsgEnum.NOTICE, { content: 'notice body' }],
+      [
+        'image plain',
+        MsgEnum.IMAGE,
+        { fileName: 'cat.png', url: 'mxc://server/cat', size: 1024, width: 640, height: 480, mimetype: 'image/png' }
+      ],
+      [
+        'image encrypted',
+        MsgEnum.IMAGE,
+        { fileName: 'secret.png', encryptedFile: { url: 'mxc://server/enc', v: 'v2' } }
+      ],
+      ['emoji', MsgEnum.EMOJI, { fileName: 'wave.png', url: 'mxc://server/wave' }],
+      [
+        'video with thumbnail',
+        MsgEnum.VIDEO,
+        {
+          fileName: 'clip.mp4',
+          url: 'mxc://server/clip',
+          thumbUrl: 'mxc://server/thumb',
+          size: 2048,
+          duration: 15,
+          thumbWidth: 320,
+          thumbHeight: 240,
+          thumbSize: 512,
+          mimetype: 'video/mp4'
+        }
+      ],
+      ['voice', MsgEnum.VOICE, { fileName: 'voice.ogg', mxcUrl: 'mxc://server/voice', size: 300, second: 8 }],
+      ['file', MsgEnum.FILE, { fileName: 'doc.pdf', url: 'mxc://server/doc', size: 4096, mimetype: 'application/pdf' }],
+      [
+        'location with info',
+        MsgEnum.LOCATION,
+        { description: 'Home', geoUri: 'geo:1,2', info: { address: 'Beijing', timestamp: '1000' } }
+      ],
+      ['unhandled msgtype falls back to json body', MsgEnum.AUDIO, { foo: 'bar' }]
+    ]
+
+    for (const [name, msgType, payload] of cases) {
+      it(`snapshot for ${name}`, () => {
+        expect(buildMatrixContent(msgType, payload)).toMatchSnapshot()
+      })
+    }
+  })
 })

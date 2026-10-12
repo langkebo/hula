@@ -75,17 +75,16 @@ export default defineConfig(
             environment: 'happy-dom',
             globals: true,
             setupFiles: ['./tests/setup.ts'],
-            // 超时策略（2026-10-11，接入全量单测到 CI 时确定）：
+            // 超时策略（2026-10-11 初定 60s；2026-10-12 P2-4 收敛到 30s，对齐审查报告 TS-04）：
             // 本套件每个测试文件都要付一次较重的环境构建代价（Vue 插件 + naive-ui + 自动导入），
-            // 单文件环境构建实测 1–60s，而 vitest 默认 5s 是**按用例**计的；另有相当一批用例用
-            // 动态 `await import()` 拉入重型模块（其 transform 成本随并行度放大 10–20 倍）。
-            // 结果就是「断言从未真正执行」——只是从未有人跑过全量套件所以没人发现。
-            // 故把默认值放宽到 60s；最重的两类再显式放宽到 120s：
+            // 另有相当一批用例用动态 `await import()` 拉入重型模块（其 transform 成本随并行度放大）。
+            // 默认值用于覆盖「绝大多数用例」；个别确实更慢的用例必须**自带**更长的 timeout，
+            // 以便默认值保持为一个有意义的护栏（避免掩盖慢测试/死锁），当前两类显式放宽：
             //   ① 「扫描全仓」类结构守卫（presenceSingleWriter / css-naming-lint / design-tokens /
-            //      dead-constants），见各文件顶部的 vi.setConfig；
-            //   ② 重型移动端组件挂载（src/mobile/views/chat-room/__tests__/**，用例自带 timeout）。
+            //      dead-constants），见各文件顶部的 vi.setConfig（30–120s）；
+            //   ② 重型移动端组件挂载（src/mobile/views/chat-room/__tests__/**，用例自带 120s timeout）。
             // 详见审计报告 §12.2 / §13。
-            testTimeout: 60_000,
+            testTimeout: 30_000,
             // 约定：.test.ts 用于单元测试和契约测试（src/**/__tests__/、src/**/*.test.ts），
             //       .spec.ts 用于集成测试和 E2E 场景（tests/、e2e/）。
             //       两种模式均被 vitest 发现执行，无功能差异，仅命名约定区分用途。

@@ -82,9 +82,15 @@ fn test_environment_try_from_invalid() {
 }
 
 // =================== Settings Tests ===================
-use configuration::{
-    BackendSettings, DatabaseSettings, IceServer, MinioSettings, Settings, Tencent, Youdao,
-};
+use configuration::{BackendSettings, DatabaseSettings, Settings};
+
+/// 用项目既有的 config crate 解析 YAML，替代已归档的 serde_yaml。
+fn parse_settings_yaml(yaml: &str) -> Result<Settings, config::ConfigError> {
+    config::Config::builder()
+        .add_source(config::File::from_str(yaml, config::FileFormat::Yaml))
+        .build()?
+        .try_deserialize::<Settings>()
+}
 
 #[test]
 fn test_settings_deserialization() {
@@ -95,7 +101,7 @@ backend:
   base_url: "http://localhost:8008"
   ws_url: "ws://localhost:8008"
 "#;
-    let settings: Result<Settings, _> = serde_yaml::from_str(yaml);
+    let settings: Result<Settings, _> = parse_settings_yaml(yaml);
     assert!(settings.is_ok());
     let settings = settings.unwrap();
     assert_eq!(settings.database.sqlite_file, "test.sqlite");
@@ -135,7 +141,7 @@ ice_server:
   username: "turn_user"
   credential: "turn_pass"
 "#;
-    let settings: Result<Settings, _> = serde_yaml::from_str(yaml);
+    let settings: Result<Settings, _> = parse_settings_yaml(yaml);
     assert!(settings.is_ok());
     let settings = settings.unwrap();
     assert!(settings.youdao.is_some());
@@ -169,11 +175,11 @@ fn test_settings_serialization() {
         minio: None,
         ice_server: None,
     };
-    let yaml = serde_yaml::to_string(&settings);
-    assert!(yaml.is_ok());
-    let yaml = yaml.unwrap();
-    assert!(yaml.contains("test.sqlite"));
-    assert!(yaml.contains("http://localhost:8008"));
+    let json = serde_json::to_string(&settings);
+    assert!(json.is_ok());
+    let json = json.unwrap();
+    assert!(json.contains("test.sqlite"));
+    assert!(json.contains("http://localhost:8008"));
 }
 
 // =================== Crypto Tests ===================

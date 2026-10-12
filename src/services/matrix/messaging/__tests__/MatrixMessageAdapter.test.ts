@@ -190,4 +190,89 @@ describe('MatrixMessageAdapter', () => {
       })
     })
   })
+
+  // 快照契约：锁定事件类型判定与 content 反序列化的完整输出结构。
+  // 与 messageContentBuilder 的快照互为逆向契约，覆盖收发两个方向的关键字段。
+  describe('snapshot contracts', () => {
+    const msgTypeCases: Array<[string, string, Record<string, unknown>]> = [
+      ['redaction', 'm.room.redaction', {}],
+      ['member', 'm.room.member', { membership: 'join' }],
+      ['beacon info', 'm.beacon_info', { timeout: 1000, live: true }],
+      ['text', 'm.room.message', { msgtype: 'm.text', body: 'hi' }],
+      ['image', 'm.room.message', { msgtype: 'm.image' }],
+      ['video', 'm.room.message', { msgtype: 'm.video' }],
+      ['audio', 'm.room.message', { msgtype: 'm.audio' }],
+      ['file', 'm.room.message', { msgtype: 'm.file' }],
+      ['location', 'm.room.message', { msgtype: 'm.location' }],
+      ['unknown msgtype', 'm.room.message', { msgtype: 'm.unknown' }],
+      ['encrypted text', 'm.room.encrypted', { msgtype: 'm.text' }]
+    ]
+
+    for (const [name, eventType, content] of msgTypeCases) {
+      it(`getMsgTypeFromEventLike snapshot for ${name}`, () => {
+        expect(matrixMessageAdapter.getMsgTypeFromEventLike(eventType, content)).toMatchSnapshot()
+      })
+    }
+
+    const contentCases: Array<[string, MsgEnum, Record<string, unknown>]> = [
+      ['text', MsgEnum.TEXT, { msgtype: 'm.text', body: 'hello' }],
+      [
+        'image',
+        MsgEnum.IMAGE,
+        {
+          msgtype: 'm.image',
+          body: 'cat.png',
+          url: 'mxc://server/cat',
+          info: { size: 1024, w: 640, h: 480, mimetype: 'image/png' }
+        }
+      ],
+      [
+        'video with thumbnail',
+        MsgEnum.VIDEO,
+        {
+          msgtype: 'm.video',
+          body: 'clip.mp4',
+          url: 'mxc://server/clip',
+          info: {
+            size: 2048,
+            duration: 15,
+            w: 320,
+            h: 240,
+            mimetype: 'video/mp4',
+            thumbnail_url: 'mxc://server/thumb',
+            thumbnail_info: { w: 320, h: 240 }
+          }
+        }
+      ],
+      [
+        'voice',
+        MsgEnum.VOICE,
+        {
+          msgtype: 'm.audio',
+          body: 'voice.ogg',
+          url: 'mxc://server/voice',
+          info: { size: 300, duration: 8, mimetype: 'audio/ogg' }
+        }
+      ],
+      ['file', MsgEnum.FILE, { msgtype: 'm.file', body: 'doc.pdf', url: 'mxc://server/doc', info: { size: 4096 } }],
+      [
+        'location',
+        MsgEnum.LOCATION,
+        {
+          msgtype: 'm.location',
+          body: '位置: 北京',
+          'm.location': { uri: 'geo:39.9042,116.4074;u=10', description: '北京' },
+          'm.ts': 1700000000000
+        }
+      ],
+      ['beacon', MsgEnum.BEACON, { description: '实时位置共享', timeout: 3600000, live: true, 'm.ts': 1700000000000 }],
+      ['unhandled msgtype falls back to json content', MsgEnum.UNKNOWN, { foo: 'bar' }]
+    ]
+
+    for (const [name, msgType, content] of contentCases) {
+      it(`convertMatrixContent snapshot for ${name}`, () => {
+        expect(matrixMessageAdapter.convertMatrixContent(content, msgType)).toMatchSnapshot()
+      })
+    }
+  })
 })
