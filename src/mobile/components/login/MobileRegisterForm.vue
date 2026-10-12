@@ -113,7 +113,7 @@
     <!-- 邮箱域名建议 -->
     <div
       v-if="showEmailSuggestions"
-      class="border-[1px] border-solid border-[rgba(70,70,70,0.1)] absolute w-80% bg-[--tjg-surface-elevated] z-99 rounded-8px p-4px box-border">
+      class="border-[1px] border-solid border-[--login-dropdown-border] absolute w-80% bg-[--tjg-surface-elevated] z-99 rounded-8px p-4px box-border">
       <div
         v-for="option in commonEmailDomains"
         :key="option.value"

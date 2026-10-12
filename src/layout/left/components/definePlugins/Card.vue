@@ -335,7 +335,7 @@ onUnmounted(() => {
 }
 
 .filter-shadow {
-  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(var(--tjg-shadow-icon-halo));
 }
 
 .v-enter-active,

@@ -9,7 +9,7 @@
 
           <div class="flex-1 min-w-0">
             <div class="text-15px font-semibold text-white truncate">{{ displayName }}</div>
-            <div class="mt-4px text-12px text-#FFFFFFB3 truncate">{{ callMessage }}</div>
+            <div class="mt-4px text-12px text-white/70 truncate">{{ callMessage }}</div>
           </div>
 
           <div class="flex items-center gap-18px">
@@ -217,7 +217,7 @@ useMitt.on('RoomClosed', handleCallEnd)
   border: 1px solid var(--tjg-border-contrast);
   border-radius: var(--tjg-radius-panel);
   padding: 12px 16px;
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
+  box-shadow: var(--tjg-shadow-call-float);
 }
 
 .avatar-shell {

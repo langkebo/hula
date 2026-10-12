@@ -471,7 +471,7 @@ async function handleSessionRecover() {
 }
 
 :deep(.dark) .file-info {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--tjg-surface-inverse-subtle);
 }
 
 .file-icon {

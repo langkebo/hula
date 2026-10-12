@@ -441,7 +441,7 @@ onUnmounted(() => {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--tjg-scrollbar-thumb-inverse);
   border-radius: 3px;
 }
 

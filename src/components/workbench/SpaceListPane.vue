@@ -372,7 +372,7 @@ const emptyDescription = computed(() => {
   &--active {
     background: var(--tjg-surface-panel);
     color: var(--tjg-color-primary-500);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--tjg-shadow-sm);
   }
 }
 
