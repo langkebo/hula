@@ -5,6 +5,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('HttpClient')
 const warnedAllowlistHosts = new Set<string>()
+const dynamicExemptHosts = new Set<string>()
 
 export class HttpClientError extends Error {
   constructor(
@@ -34,6 +35,11 @@ interface HttpClientConfig {
   signal?: AbortSignal
   headers?: Record<string, string>
   keepalive?: boolean
+  /**
+   * 显式动态豁免：放行白名单外的「用户/数据驱动 URL」（如 homeserver、emoji/media/widget、自定义模型端点）。
+   * 仅在 allowlist 未命中时生效；仍会记录 host（绝不记录 query/token）。
+   */
+  allowDynamicHost?: boolean
 }
 
 const DEFAULT_TIMEOUT_MS = 30_000
@@ -42,7 +48,8 @@ async function fetchWithTimeout(
   url: string,
   init: RequestInit,
   timeoutMs: number,
-  externalSignal?: AbortSignal
+  externalSignal?: AbortSignal,
+  allowDynamicHost = false
 ): Promise<Response> {
   if (externalSignal?.aborted) {
     throw new DOMException('The operation was aborted', 'AbortError')
@@ -54,14 +61,22 @@ async function fetchWithTimeout(
   if (!decision.allowed) {
     // 只记录 host 与 reason，绝不记录完整 URL（可能含 query/token）
     const host = decision.host ?? 'unknown'
-    if (!warnedAllowlistHosts.has(host)) {
-      warnedAllowlistHosts.add(host)
-      logger.warn(
-        `host allowlist ${allowlist.mode === 'enforce' ? 'blocked' : 'observed'}: host=${host} reason=${decision.reason}`
-      )
-    }
-    if (allowlist.mode === 'enforce') {
-      throw new HttpClientBlockedError(decision.host, decision.reason, url)
+    if (allowDynamicHost) {
+      // 显式动态豁免：放行用户/数据驱动 URL，仅记录 host 供审计
+      if (!dynamicExemptHosts.has(host)) {
+        dynamicExemptHosts.add(host)
+        logger.info(`host allowlist dynamic-exempt: host=${host} reason=${decision.reason}`)
+      }
+    } else {
+      if (!warnedAllowlistHosts.has(host)) {
+        warnedAllowlistHosts.add(host)
+        logger.warn(
+          `host allowlist ${allowlist.mode === 'enforce' ? 'blocked' : 'observed'}: host=${host} reason=${decision.reason}`
+        )
+      }
+      if (allowlist.mode === 'enforce') {
+        throw new HttpClientBlockedError(decision.host, decision.reason, url)
+      }
     }
   }
 
@@ -116,7 +131,8 @@ export class HttpClient {
       url,
       { method: 'GET', headers: config?.headers, keepalive: config?.keepalive },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      config?.signal
+      config?.signal,
+      config?.allowDynamicHost
     )
     if (!response.ok) {
       throw await toHttpClientError(response, 'GET', url)
@@ -152,7 +168,8 @@ export class HttpClient {
         keepalive: config?.keepalive
       },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      config?.signal
+      config?.signal,
+      config?.allowDynamicHost
     )
     if (!response.ok) {
       throw await toHttpClientError(response, 'POST', url)
@@ -175,7 +192,8 @@ export class HttpClient {
         keepalive: config?.keepalive
       },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      config?.signal
+      config?.signal,
+      config?.allowDynamicHost
     )
     if (!response.ok) {
       throw await toHttpClientError(response, 'PUT', url)
@@ -188,7 +206,8 @@ export class HttpClient {
       url,
       { method: 'HEAD', headers: config?.headers, keepalive: config?.keepalive },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      config?.signal
+      config?.signal,
+      config?.allowDynamicHost
     )
     if (!response.ok) {
       throw await toHttpClientError(response, 'HEAD', url)
@@ -201,7 +220,8 @@ export class HttpClient {
       url,
       { method: 'GET', headers: config?.headers, keepalive: config?.keepalive },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      config?.signal
+      config?.signal,
+      config?.allowDynamicHost
     )
     if (!response.ok) {
       throw await toHttpClientError(response, 'GET', url)
@@ -223,7 +243,8 @@ export class HttpClient {
         keepalive: config?.keepalive
       },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      config?.signal
+      config?.signal,
+      config?.allowDynamicHost
     )
     if (!response.ok) {
       throw await toHttpClientError(response, 'POST', url)

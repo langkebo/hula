@@ -101,5 +101,39 @@ describe('HttpClient', () => {
       const data = await HttpClient.get<{ ok: boolean }>('https://example.test/api/ok')
       expect(data.ok).toBe(true)
     })
+
+    it('observes but does not block an unknown host by default (report)', async () => {
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_MODE', '')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_DEV', 'https://allowed.test')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_PROD', 'https://allowed.test')
+      vi.stubEnv('VITE_HOMESERVER_URL', '')
+      server.use(http.get('https://unknown.test/api', () => HttpResponse.json({ ok: true })))
+
+      const data = await HttpClient.get<{ ok: boolean }>('https://unknown.test/api')
+      expect(data.ok).toBe(true)
+    })
+
+    it('allows a non-allowlisted host when the dynamic exemption is set (enforce)', async () => {
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_MODE', 'enforce')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_DEV', 'https://allowed.test')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_PROD', 'https://allowed.test')
+      vi.stubEnv('VITE_HOMESERVER_URL', '')
+      server.use(http.get('https://user-model.example.com/api', () => HttpResponse.json({ ok: true })))
+
+      const data = await HttpClient.get<{ ok: boolean }>('https://user-model.example.com/api', {
+        allowDynamicHost: true
+      })
+      expect(data.ok).toBe(true)
+    })
+
+    it('still blocks a non-allowlisted host without the dynamic exemption (enforce)', async () => {
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_MODE', 'enforce')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_DEV', 'https://allowed.test')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_PROD', 'https://allowed.test')
+      vi.stubEnv('VITE_HOMESERVER_URL', '')
+      server.use(http.get('https://user-model.example.com/api', () => HttpResponse.json({ ok: true })))
+
+      await expect(HttpClient.get('https://user-model.example.com/api')).rejects.toThrow(HttpClientBlockedError)
+    })
   })
 })
