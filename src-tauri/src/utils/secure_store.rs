@@ -158,6 +158,42 @@ fn test_fallback_writable() -> bool {
     ok
 }
 
+/// 探测 keychain 是否真正可写（写-读-删往返验证）。
+///
+/// 用于 `is_available()`：`Entry::new(...).is_ok()` 几乎恒为 true，不能作为
+/// keychain 可用性依据（会导致可用性误报）。必须实际尝试一次写入+读回+删除来验证，
+/// 与 `test_fallback_writable` 对齐。
+///
+/// macOS dev 模式下常见 `set_password` 返回 Ok 但用新 Entry 读取返回 `NoEntry`
+/// （ACL 不匹配），该情形必须判定为不可用，否则上层会误以为 secret 已持久化。
+fn test_keychain_writable() -> bool {
+    let probe_key = "__hula_probe_keychain_writable__";
+    let probe_value = "probe";
+    let service = get_service_name();
+
+    let entry = match Entry::new(service, probe_key) {
+        Ok(entry) => entry,
+        Err(_) => return false,
+    };
+
+    if entry.set_password(probe_value).is_err() {
+        // 写入失败时也尽力清理可能残留的条目
+        let _ = entry.delete_credential();
+        return false;
+    }
+
+    // 用 NEW Entry 实例读回验证，模拟 SecureStore::get 的真实读取路径。
+    let verified = match Entry::new(service, probe_key) {
+        Ok(v_entry) => matches!(v_entry.get_password(), Ok(ref v) if v == probe_value),
+        Err(_) => false,
+    };
+
+    // 清理探测条目（无论验证结果如何）
+    let _ = entry.delete_credential();
+
+    verified
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum SecureStoreError {
     #[error("Secure storage backend is not available on this platform")]
@@ -366,9 +402,10 @@ impl SecureStore {
     }
 
     pub fn is_available() -> bool {
-        // keychain 可用性检查：Entry 可创建即认为可用
-        let keychain_available =
-            Entry::new(get_service_name(), "__hula_test_availability__").is_ok();
+        // keychain 可用性检查：必须实际写-读-删往返验证。
+        // `Entry::new(...).is_ok()` 几乎恒为 true，会导致可用性误报
+        //（日志中出现 available=true 但 set 仍失败）。
+        let keychain_available = test_keychain_writable();
 
         // 文件 fallback 可用性检查：不能仅检查路径可计算（HOME 存在不代表可写），
         // 必须实际尝试一次写-读-删往返来验证。
