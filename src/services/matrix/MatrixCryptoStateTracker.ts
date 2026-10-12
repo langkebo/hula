@@ -65,34 +65,23 @@ type RustCryptoCapableClient = MatrixClient & {
 }
 
 /**
- * ensureCrypto 跨窗口互斥锁名称。
+ * ensureCrypto 跨窗口互斥锁名称（Web Locks）。
  *
  * 背景：Tauri 多窗口架构中，每个 WebView 窗口有独立的 globalThis 和模块实例，
- * 导致 globalThis 级 mutex 无法跨窗口工作。多个窗口并发调用 initRustCrypto
- * 会竞争同一 IndexedDB（同 origin 共享），导致第二个卡到 8s 超时。
+ * 导致 globalThis 级 mutex 无法跨窗口工作。而同源 IndexedDB 是**共享**的
+ * （crypto store 的 DB 名固定为 `matrix-js-sdk::matrix-sdk-crypto` 等 3 个），
+ * 多个窗口并发 `initRustCrypto` 会争抢同一组 DB，第二个可能卡到 8s 超时。
  *
- * 方案：使用 Web Locks API（navigator.locks.request）实现跨窗口互斥锁。
- * Web Locks 是浏览器原生提供的跨标签/窗口锁机制，同源所有窗口共享。
- * Tauri macOS WKWebView（Safari 16.4+）支持此 API。
+ * 语义（2026-10-13 取证后订正，勿回退）：
+ * - 本锁**只负责串行化** —— 让各窗口的 initRustCrypto 依次进行。
+ * - ⚠️ 这里**没有**、也**不可能有**「其他窗口已初始化 ⇒ 本窗口跳过」的语义：
+ *   每个 WebView 的 client 实例是独立的，`getCrypto()` 看不到别窗口的 crypto（恒 undefined）；
+ *   且每个窗口都**必须**有自己的 OlmMachine 才能解密。历史上曾用 BroadcastChannel
+ *   （`tjg-crypto-init`）实现该"跳过"，实测恒不可达（死代码），已删除。
+ * - Web Locks 是浏览器原生提供的跨标签/窗口锁机制，同源所有窗口共享。
+ *   Tauri macOS WKWebView（Safari 16.4+）支持此 API。
  */
 const CRYPTO_LOCK_NAME = 'tjg-ensure-crypto'
-
-/**
- * 跨 WebView crypto 初始化协调 Channel 名称。
- *
- * 背景：每个 WebView 有独立的 globalThis，导致 globalThis 级单例无法跨窗口共享。
- * 多个 WebView（home/settings/call）各自创建 MatrixClientService 实例，
- * 各自独立调用 initRustCrypto，竞争同一 IndexedDB，导致：
- * 1. 重复初始化开销（每次约 5-10s）
- * 2. RoomStore.DetailCache 被反复清空→重拉网络
- * 3. 跨窗口状态竞态
- *
- * 方案：使用 BroadcastChannel 实现跨窗口协调。
- * - 第一个初始化的窗口广播 "crypto-init-started"
- * - 其他窗口收到后等待 "crypto-init-done" 消息
- * - 初始化完成后广播 "crypto-init-done"
- */
-const CRYPTO_CHANNEL_NAME = 'tjg-crypto-init'
 
 /**
  * 检测 Web Locks API 是否可用。
@@ -100,94 +89,6 @@ const CRYPTO_CHANNEL_NAME = 'tjg-crypto-init'
  */
 function isWebLocksAvailable(): boolean {
   return typeof navigator !== 'undefined' && navigator.locks != null && typeof navigator.locks.request === 'function'
-}
-
-/**
- * 检测 BroadcastChannel API 是否可用（跨窗口通信）。
- * 测试环境（Node.js/vitest）下跳过：BroadcastChannel 存在但无其他窗口响应，
- * 会导致 15s 超时阻塞测试。
- */
-function isBroadcastChannelAvailable(): boolean {
-  if (typeof BroadcastChannel === 'undefined') return false
-  // Node.js 测试环境（vitest）：跳过跨窗口协调
-  if (typeof globalThis.process !== 'undefined') return false
-  return true
-}
-
-/**
- * 跨窗口 crypto 初始化协调状态。
- *
- * 使用 BroadcastChannel 实现跨 WebView 的初始化协调：
- * - 窗口 A 开始初始化时广播 "started"
- * - 窗口 B/C 收到 "started" 后等待 "done"（最多等 15s）
- * - 窗口 A 完成后广播 "done"
- * - 超时后窗口 B/C 自行初始化（兜底）
- */
-let crossWindowCoordinator: {
-  channel: BroadcastChannel
-  isInitializing: boolean
-  initPromise: Promise<boolean> | null
-} | null = null
-
-function getCrossWindowCoordinator(): typeof crossWindowCoordinator {
-  if (crossWindowCoordinator) return crossWindowCoordinator
-  if (!isBroadcastChannelAvailable()) return null
-
-  const channel = new BroadcastChannel(CRYPTO_CHANNEL_NAME)
-  crossWindowCoordinator = {
-    channel,
-    isInitializing: false,
-    initPromise: null
-  }
-  return crossWindowCoordinator
-}
-
-/**
- * 等待其他窗口完成 crypto 初始化。
- *
- * @returns true 表示其他窗口已完成，本窗口可跳过初始化；false 表示超时需自行初始化
- *
- * 根因（2026-08-25）：原实现无条件等待 15s「crypto-init-done」广播，但第一个初始化窗口
- * 没有任何其他窗口给它广播 done，导致白等 15s —— 这正是日志中「登录后 Matrix 启动收尾
- * 超过 15000ms」的直接来源（28.059 初始化 → 42.920 超时，中间完全静默）。
- *
- * 修复：将等待缩短到 1s。跨窗口互斥已由 ensureCrypto 层的 Web Locks
- * （navigator.locks.request exclusive）保证，此处的 done 广播仅是「其他窗口恰好已完成」
- * 的短探测，无需长等。
- */
-const CROSS_WINDOW_DONE_WAIT_MS = 1_000
-
-async function waitForCrossWindowCryptoInit(): Promise<boolean> {
-  const coord = getCrossWindowCoordinator()
-  if (!coord) return false
-
-  return new Promise<boolean>((resolve) => {
-    const timeout = setTimeout(() => {
-      coord.channel.onmessage = null
-      resolve(false)
-    }, CROSS_WINDOW_DONE_WAIT_MS)
-
-    coord.channel.onmessage = (event: MessageEvent) => {
-      if (event.data === 'crypto-init-done') {
-        clearTimeout(timeout)
-        coord.channel.onmessage = null
-        resolve(true)
-      }
-    }
-
-    // 通知其他窗口：本窗口即将开始初始化
-    coord.channel.postMessage('crypto-init-started')
-  })
-}
-
-/**
- * 广播 crypto 初始化完成事件。
- */
-function broadcastCryptoInitDone(): void {
-  const coord = getCrossWindowCoordinator()
-  if (coord) {
-    coord.channel.postMessage('crypto-init-done')
-  }
 }
 
 /**
@@ -243,6 +144,8 @@ export class MatrixCryptoStateTracker {
     const cryptoClient = client as RustCryptoCapableClient
 
     if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
+      // 唯一的"已可用即不重复初始化"判据：只看**本窗口本 client** 是否已就绪。
+      // 这是重复调用 ensureCrypto（同一 client）的真实护栏；跨窗口不适用（也做不到）。
       this.rustCryptoDebugState = {
         attempted: false,
         initialized: true,
@@ -271,25 +174,15 @@ export class MatrixCryptoStateTracker {
     const ENSURE_CRYPTO_TIMEOUT_MS = 8_000
 
     if (isWebLocksAvailable()) {
-      // 使用 Web Locks API 实现跨窗口互斥锁
-      // 其他窗口正在初始化 crypto 时，本窗口等待锁释放
+      // Web Locks 只做**串行化**：等别窗口释放锁，再执行本窗口自己的 initRustCrypto。
+      // 不再有「其他窗口已完成 ⇒ 本窗口跳过」的判断（恒不可达，取证见 CRYPTO_LOCK_NAME 注释）；
+      // 也不再有锁内复查 —— 同 client 重入由方法开头的 getCrypto() 早退 + startClient 的
+      // IdempotencyGuard 覆盖，锁内复查只能看到本窗口这一个 client，等于重复判断。
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), ENSURE_CRYPTO_TIMEOUT_MS)
 
       try {
         await navigator.locks.request(CRYPTO_LOCK_NAME, { mode: 'exclusive', signal: controller.signal }, async () => {
-          // 获取锁后检查 crypto 是否已可用（可能其他窗口已完成）
-          if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
-            this.rustCryptoDebugState = {
-              attempted: false,
-              initialized: true,
-              skippedReason: 'crypto-already-available-after-lock',
-              error: null,
-              usedIndexedDB: null,
-              storeEncrypted: null
-            }
-            return
-          }
           logger.info('获取到 crypto 锁，开始初始化 Rust Crypto')
           await this.doEnsureCrypto(cryptoClient)
         })
@@ -298,21 +191,9 @@ export class MatrixCryptoStateTracker {
           logger.warn(
             `ensureCrypto 超过 ${ENSURE_CRYPTO_TIMEOUT_MS}ms 未完成（等待其他窗口释放锁），转为后台继续（不阻塞 sync 启动）`
           )
-          // 后台重新尝试获取锁（不超时），其他窗口完成后本窗口继续初始化
+          // 后台重新排队等锁（不超时）：锁释放后本窗口继续完成**自己的**初始化。
           navigator.locks
             .request(CRYPTO_LOCK_NAME, { mode: 'exclusive' }, async () => {
-              if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
-                this.rustCryptoDebugState = {
-                  attempted: false,
-                  initialized: true,
-                  skippedReason: 'crypto-already-available-after-lock-retry',
-                  error: null,
-                  usedIndexedDB: null,
-                  storeEncrypted: null
-                }
-                logger.info('后台等待锁后 crypto 已可用，跳过初始化')
-                return
-              }
               logger.info('后台获取到 crypto 锁，开始初始化 Rust Crypto')
               await this.doEnsureCrypto(cryptoClient)
             })
@@ -354,25 +235,9 @@ export class MatrixCryptoStateTracker {
    * 超时后此任务仍会在后台继续执行（fire-and-forget），最终更新 rustCryptoDebugState。
    */
   private async doEnsureCrypto(cryptoClient: RustCryptoCapableClient): Promise<void> {
-    // 跨窗口协调：如果其他 WebView 正在初始化 crypto，等待其完成
-    // 避免多窗口并发 initRustCrypto 竞争 IndexedDB
-    const otherWindowDone = await waitForCrossWindowCryptoInit()
-    if (otherWindowDone) {
-      // 其他窗口已完成初始化，检查 crypto 是否已可用
-      if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
-        this.rustCryptoDebugState = {
-          attempted: false,
-          initialized: true,
-          skippedReason: 'crypto-initialized-by-other-window',
-          error: null,
-          usedIndexedDB: null,
-          storeEncrypted: null
-        }
-        logger.info('[Crypto] 其他窗口已完成 crypto 初始化，本窗口跳过')
-        return
-      }
-    }
-
+    // 本方法**不做任何跨窗口判定**：既不等别窗口、也不因别窗口已完成而跳过。
+    // 理由见 CRYPTO_LOCK_NAME 注释（每窗口独立 OlmMachine；本窗口 getCrypto() 看不到别窗口）。
+    // 跨窗口只由外层 Web Locks 串行化。
     const userId = cryptoClient.getUserId?.()
     const deviceId = cryptoClient.getDeviceId?.()
     if (!userId || !deviceId) {
@@ -462,7 +327,6 @@ export class MatrixCryptoStateTracker {
         storeEncrypted: storeEncrypted
       }
       logger.info(`Rust Crypto 初始化完成: ${userId}/${deviceId}`)
-      broadcastCryptoInitDone()
     } catch (err) {
       const errMsg = normalizeCryptoError(err)
       // WASM 抛出的错误通常是空对象 {}（wasm-bindgen 转换），
@@ -496,7 +360,6 @@ export class MatrixCryptoStateTracker {
             storeEncrypted: storeEncrypted
           }
           logger.info(`Rust Crypto 重试初始化完成: ${userId}/${deviceId}`)
-          broadcastCryptoInitDone()
           return
         } catch (retryErr) {
           const retryMsg = normalizeCryptoError(retryErr)

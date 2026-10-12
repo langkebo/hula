@@ -415,7 +415,7 @@
     <span class="chip p">ERROR →（指数退避重连）</span>
     <span class="chip p" style="margin-left:8px">RECONNECTING（连续 3 次 sync 错误触发）</span>
   </div>
-  <div class="note"><b>永不白屏策略：</b>登录后立刻用缓存数据渲染 UI，后台异步 <code>startClient()</code>；仅在 access_token 401 且无本地缓存时才跳登录页。Rust Crypto 初始化用 Web Locks + BroadcastChannel 做跨 WebView 互斥，避免多窗口争抢同一 IndexedDB。</div>
+  <div class="note"><b>永不白屏策略：</b>登录后立刻用缓存数据渲染 UI，后台异步 <code>startClient()</code>；仅在 access_token 401 且无本地缓存时才跳登录页。Rust Crypto 初始化由 Web Locks 跨 WebView <b>串行化</b>（每个窗口各自持有 OlmMachine，不存在"别窗口完成即跳过"），避免多窗口同时争抢同一 IndexedDB。</div>
 </section>
 
 <!-- ============ 5 ============ -->

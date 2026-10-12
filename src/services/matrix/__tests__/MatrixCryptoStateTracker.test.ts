@@ -383,3 +383,143 @@ describe('MatrixCryptoStateTracker - storageKey 原语与加密状态可观测�
     expect(deleteDbMock).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * 跨窗口语义（2026-10-13 取证后订正，报告见仓库外
+ * OPS_ARTIFACTS/TJG_multi_window_crypto_store_forensics_2026-10-13.md）。
+ *
+ * Tauri 每个 WebView 有独立 JS 上下文，但同源 IndexedDB 共享同一组 crypto DB。
+ * 结论：**每个窗口都必须有自己的 OlmMachine**，跨窗口只由 Web Locks **串行化** ——
+ * 「其他窗口已完成 ⇒ 本窗口跳过」既不可达也不可能实现（本窗口 client 的 getCrypto()
+ * 看不到别窗口的 crypto）。原 BroadcastChannel 协调 + 锁内复查分支已删除。
+ * 本组测试锁住这两条语义，防止回退。
+ */
+describe('MatrixCryptoStateTracker - 跨窗口语义（无跳过，仅串行化）', () => {
+  let tracker: MatrixCryptoStateTracker
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    tracker = new MatrixCryptoStateTracker()
+    vi.mocked(getOrCreateCryptoStorageKey).mockResolvedValue(null)
+    Object.defineProperty(globalThis, 'indexedDB', {
+      value: {
+        deleteDatabase: vi.fn().mockImplementation(() => {
+          const req = {
+            onsuccess: null as (() => void) | null,
+            onerror: null as (() => void) | null,
+            onblocked: null as (() => void) | null
+          }
+          setTimeout(() => req.onsuccess?.(), 0)
+          return req
+        }),
+        databases: vi.fn().mockResolvedValue([])
+      },
+      configurable: true,
+      writable: true
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    delete (globalThis.navigator as { locks?: unknown }).locks
+    localStorage.clear()
+  })
+
+  /** mock client：initRustCrypto 被调用后 getCrypto 变为可用（贴近真实 SDK 行为） */
+  function createClient(userId: string, deviceId: string) {
+    let cryptoAvailable: unknown = null
+    const initRustCrypto = vi.fn().mockImplementation(async () => {
+      cryptoAvailable = { ready: true }
+    })
+    const client = {
+      getUserId: vi.fn().mockReturnValue(userId),
+      getDeviceId: vi.fn().mockReturnValue(deviceId),
+      getCrypto: vi.fn().mockImplementation(() => cryptoAvailable),
+      initRustCrypto
+    } as unknown as Parameters<MatrixCryptoStateTracker['ensureCrypto']>[0]
+    return { client, initRustCrypto }
+  }
+
+  it('不得因其他窗口的完成广播而跳过初始化（跨窗口跳过语义已删除）', async () => {
+    const posted: unknown[] = []
+    class FakeBroadcastChannel {
+      onmessage: ((event: MessageEvent) => void) | null = null
+      constructor(public readonly name: string) {
+        posted.push(`open:${name}`)
+      }
+      postMessage(data: unknown): void {
+        posted.push(data)
+      }
+      close(): void {}
+    }
+    vi.stubGlobal('BroadcastChannel', FakeBroadcastChannel)
+
+    const { client, initRustCrypto } = createClient('@user:test.com', 'device-A')
+    await tracker.ensureCrypto(client, true)
+
+    // 本窗口必须真的初始化自己的 OlmMachine
+    expect(initRustCrypto).toHaveBeenCalledTimes(1)
+    const state = tracker.getRustCryptoDebugState()
+    expect(state.initialized).toBe(true)
+    expect(state.skippedReason).not.toBe('crypto-initialized-by-other-window')
+    // 且不再有任何跨窗口广播（旧机制被整体删除）
+    expect(posted).toEqual([])
+  })
+
+  it('不得再有固定 1s 跨窗口探测延迟（旧实现每次初始化都白等 1s）', async () => {
+    vi.useFakeTimers()
+    const { client, initRustCrypto } = createClient('@user:test.com', 'device-B')
+
+    const pending = tracker.ensureCrypto(client, true)
+    // 只推进 10ms：旧实现会在这里白等 1000ms 的「crypto-init-done」探测，
+    // 因而 initRustCrypto 尚未被调用 —— 本断言即该缺陷的探针。
+    await vi.advanceTimersByTimeAsync(10)
+
+    expect(initRustCrypto).toHaveBeenCalledTimes(1)
+    await pending
+  })
+
+  it('跨窗口串行化仍由 Web Locks 承担（tjg-ensure-crypto / exclusive）', async () => {
+    const requests: Array<{ name: string; mode: string }> = []
+    Object.defineProperty(globalThis.navigator, 'locks', {
+      value: {
+        request: async (name: string, options: { mode?: string }, callback: () => Promise<void>) => {
+          requests.push({ name, mode: options?.mode ?? '' })
+          return await callback()
+        }
+      },
+      configurable: true,
+      writable: true
+    })
+
+    const { client, initRustCrypto } = createClient('@user:test.com', 'device-C')
+    await tracker.ensureCrypto(client, true)
+
+    expect(requests).toEqual([{ name: 'tjg-ensure-crypto', mode: 'exclusive' }])
+    expect(initRustCrypto).toHaveBeenCalledTimes(1)
+  })
+
+  it('本 client crypto 已可用时不得重复初始化（唯一真实护栏）', async () => {
+    const { client, initRustCrypto } = createClient('@user:test.com', 'device-D')
+    // 先初始化一次，使该 client 的 getCrypto() 可用
+    await tracker.ensureCrypto(client, true)
+    expect(initRustCrypto).toHaveBeenCalledTimes(1)
+
+    // 第二次调用必须走 getCrypto() 早退，而不是再 init 一次
+    await tracker.ensureCrypto(client, true)
+
+    expect(initRustCrypto).toHaveBeenCalledTimes(1)
+    expect(tracker.getRustCryptoDebugState().skippedReason).toBe('crypto-already-available')
+  })
+
+  it('同一 client 连续两次调用只初始化一次（锁定早退语义，不依赖锁内复查）', async () => {
+    const { client, initRustCrypto } = createClient('@user:test.com', 'device-E')
+
+    await tracker.ensureCrypto(client, true)
+    await tracker.ensureCrypto(client, true)
+
+    expect(initRustCrypto).toHaveBeenCalledTimes(1)
+  })
+})
