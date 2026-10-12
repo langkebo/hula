@@ -75,7 +75,6 @@ if (process.env.NODE_ENV === 'development') {
   Object.defineProperty(window, '__tjg_cache_stats', {
     get: () => MatrixCacheManager.getStats()
   })
-  MatrixCacheManager.enableStatsReporting()
 
   if (isMobile()) {
     import('eruda').then((module) => {

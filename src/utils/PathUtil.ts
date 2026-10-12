@@ -415,13 +415,11 @@ export async function getRemoteFileSize(url: string): Promise<number | null> {
  *
  * // 查询本地绝对路径文件元信息
  * const meta = await getFilesMeta<FilesMeta>(['C:\\Users\\User\\Documents\\file.docx'])
- * if (meta[0].exists) {
- *   console.log('文件存在，类型为', meta[0].file_type)
- * }
+ * // meta[0].exists 为 true 时表示文件存在，meta[0].file_type 为其扩展名类型
  *
  * // 查询远程 URL 文件元信息
  * const metas = await getFilesMeta<FilesMeta>(['https://example.com/file.pdf'])
- * metas.forEach(m => console.log(m.file_type))
+ * // metas 中每项的 file_type 即为该文件的类型
  */
 export async function getFilesMeta<T>(filesPath: string[]) {
   return invokeWithErrorHandler<T>('get_files_meta', {

@@ -96,6 +96,14 @@ describe('MatrixCacheManager', () => {
       expect(stats.maxSize).toBe(500)
     })
   })
+
+  describe('stats reporting timer', () => {
+    it('no longer exposes the no-op stats reporting timer API', () => {
+      expect('enableStatsReporting' in MatrixCacheManager).toBe(false)
+      expect('disableStatsReporting' in MatrixCacheManager).toBe(false)
+      expect('statsInterval' in MatrixCacheManager).toBe(false)
+    })
+  })
 })
 
 describe('createCachedFetcher', () => {

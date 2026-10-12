@@ -3,8 +3,8 @@
     <!-- 上部分操作栏 -->
     <header ref="header" class="flex-col-x-center gap-10px color-[--left-icon-color]">
       <div
-        v-for="(item, index) in menuTop"
-        :key="index"
+        v-for="item in menuTop"
+        :key="item.url"
         :class="[
           { active: activeUrl === item.url },
           openWindowsList.has(item.url) ? 'color-[--left-win-icon-color]' : 'top-action flex-col-center',
@@ -96,8 +96,8 @@
       </section>
 
       <div
-        v-for="(item, index) in noMiniShowPlugins"
-        :key="index"
+        v-for="item in noMiniShowPlugins"
+        :key="item.url"
         :class="[
           { active: activeUrl === item.url },
           openWindowsList.has(item.url) ? 'color-[--left-win-icon-color]' : 'top-action flex-col-center',
@@ -203,8 +203,8 @@
     <!-- 下部分操作栏 -->
     <footer class="flex-col-x-center mt-10px gap-10px color-[--left-icon-color] select-none">
       <div
-        v-for="(item, index) in itemsBottom"
-        :key="index"
+        v-for="item in itemsBottom"
+        :key="item.url"
         :class="[
           { active: activeUrl === item.url },
           openWindowsList.has(item.url) ? 'color-[--left-win-icon-color]' : 'bottom-action flex-col-center',
@@ -306,7 +306,7 @@
           </template>
           <div class="setting-item">
             <div class="menu-list">
-              <div v-for="(item, index) in moreList" :key="index">
+              <div v-for="item in moreList" :key="item.icon">
                 <div class="menu-item" @click="() => item.click()">
                   <svg>
                     <use :href="`#${item.icon}`"></use>
