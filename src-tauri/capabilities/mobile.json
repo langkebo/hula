@@ -107,8 +107,15 @@
     {
       "identifier": "http:default",
       "allow": [
-        { "url": "https://**" },
+        { "url": "https://gitee.com" },
+        { "url": "https://gitee.com:**" },
+        { "url": "https://api.siliconflow.cn" },
+        { "url": "https://api.siliconflow.cn:**" },
+        { "url": "https://translate.googleapis.com" },
+        { "url": "https://translate.googleapis.com:**" },
+        { "url": "https://localhost:**" },
         { "url": "http://localhost:**" },
+        { "url": "https://127.0.0.1:**" },
         { "url": "http://127.0.0.1:**" }
       ]
     },
