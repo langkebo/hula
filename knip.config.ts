@@ -34,13 +34,8 @@ const config: KnipConfig = {
     'matrix-events-sdk',
     'matrix-widget-api',
     'sdp-transform',
-    // release-it 运行时插件，尚未在 devDependencies 声明（P2-3 补声明）
-    '@release-it/bumper',
-    '@release-it/conventional-changelog',
     // UnoCSS 虚拟模块（由 @unocss/vite 在构建期提供）
-    'uno.css',
-    // 待 P2-3 核实删除：uuid 包已不在依赖中，@types/uuid 为孤儿声明
-    '@types/uuid'
+    'uno.css'
   ],
   ignoreBinaries: ['depcheck', 'adb', 'python3'],
   // e2e 用例经 `/* @vite-ignore */` 动态 import 的 Vite dev-server 绝对路径

@@ -17,6 +17,10 @@ overrides:
   nanoid@<3.3.17: ^3.3.17
   brace-expansion@>=4.0.0 <5.0.9: ^5.0.9
   js-yaml@>=4.0.0 <4.3.1: ^4.3.1
+  # @conventional-changelog/git-client@3.2.0（release-it 变更日志插件传递依赖）要求
+  # peer ^7.1.3，而锁文件仍停留在 commitlint 允许的 7.1.2；统一提升到 7.1.3
+  # （同时满足 @commitlint/parse 的 ^7.0.0），消除 peer 不满足告警。
+  conventional-commits-parser@<7.1.3: ^7.1.3
 
 # 依赖安装脚本的审批清单。pnpm 11 起 `onlyBuiltDependencies` /
 # `ignoredBuiltDependencies` 已被本设置取代，且不再读取 package.json 的 `pnpm` 字段，
