@@ -186,7 +186,12 @@ jobs:
       - name: Run tests with coverage
         run: pnpm coverage
 
+      - name: Check coverage floor
+        if: always()
+        run: node scripts/check-coverage-floor.mjs coverage/coverage-summary.json
+
       - name: Upload coverage reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report

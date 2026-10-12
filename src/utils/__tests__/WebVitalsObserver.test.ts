@@ -125,8 +125,6 @@ describe('WebVitalsObserver — 单次执行守卫', () => {
   it('SSR 环境（无 window）start 不抛错', () => {
     // window 在 jsdom 环境存在，此测试验证 hasStarted 守卫
     // 已在 beforeEach 中 stop，hasStarted = false
-    startWebVitalObserver()
-    // 不抛错即通过
-    expect(true).toBe(true)
+    expect(() => startWebVitalObserver()).not.toThrow()
   })
 })

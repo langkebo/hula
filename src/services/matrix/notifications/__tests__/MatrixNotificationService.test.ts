@@ -78,16 +78,16 @@ describe('MatrixNotificationService', () => {
     })
 
     it('should load push rules on initialization', async () => {
+      const getPushRules = vi.fn().mockResolvedValue({
+        global: { rule_id: 'global-rule' }
+      })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getPushManager: vi.fn().mockReturnValue({
-          getPushRules: vi.fn().mockResolvedValue({
-            global: { rule_id: 'global-rule' }
-          })
-        })
+        getPushManager: vi.fn().mockReturnValue({ getPushRules })
       } as unknown as MatrixClient)
 
       await matrixNotificationService.initialize()
-      expect(true).toBe(true)
+
+      expect(getPushRules).toHaveBeenCalled()
     })
   })
 

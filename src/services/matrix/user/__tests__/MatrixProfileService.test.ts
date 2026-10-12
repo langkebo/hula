@@ -38,9 +38,16 @@ describe('ProfileService', () => {
   })
 
   describe('initialize', () => {
-    it('should set client', () => {
+    it('should set client', async () => {
+      mockClient.getProfileInfo.mockResolvedValueOnce({ displayname: 'Set Client User' })
+
       profileService.initialize(mockClient as unknown as MatrixClient)
-      expect(true).toBe(true)
+
+      // initialize 后 provider 无 client 时，服务应回退到显式使用的 client
+      await expect(profileService.getProfile('@set:matrix.org')).resolves.toMatchObject({
+        userId: '@set:matrix.org',
+        displayname: 'Set Client User'
+      })
     })
   })
 

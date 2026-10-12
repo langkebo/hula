@@ -1,0 +1,8 @@
+{
+  "lines": 51,
+  "statements": 50,
+  "functions": 43,
+  "branches": 41,
+  "note": "全量单元测试覆盖率地板（只升不降，百分比整数）。用 scripts/check-coverage-floor.mjs coverage/coverage-summary.json --update 抬高；--update 不存在自动降低的路径（取 Math.max(旧值, floor(实测))）。初始值由 2026-10-12 全量实测向下取整：lines 51.15 / statements 50.17（另实测 branches 41.66 / functions 43.52）。因 v8 的 all:true，未被任何用例导入的 src 文件也计 0%，故总量偏低；地板随迭代只升不降地抬升。",
+  "updatedAt": "2026-10-12T05:31:00.000Z"
+}

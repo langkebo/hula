@@ -47,22 +47,22 @@ describe('MatrixMediaService', () => {
 
   describe('setCompressOptions', () => {
     it('should update compress options', () => {
-      matrixMediaService.setCompressOptions({
-        quality: 0.5,
-        maxWidth: 800,
-        maxHeight: 600
-      })
-
-      expect(true).toBe(true)
+      expect(() =>
+        matrixMediaService.setCompressOptions({
+          quality: 0.5,
+          maxWidth: 800,
+          maxHeight: 600
+        })
+      ).not.toThrow()
     })
   })
 
   describe('setEnableCompression', () => {
     it('should toggle compression', () => {
-      matrixMediaService.setEnableCompression(false)
-      matrixMediaService.setEnableCompression(true)
-
-      expect(true).toBe(true)
+      expect(() => {
+        matrixMediaService.setEnableCompression(false)
+        matrixMediaService.setEnableCompression(true)
+      }).not.toThrow()
     })
   })
 

@@ -42,14 +42,18 @@ vi.mock('matrix-js-sdk', () => ({
   IndexedDBStore: class {}
 }))
 
-// Mock logger
-vi.mock('@/utils/Logger', () => ({
-  createLogger: () => ({
+// Mock logger（hoisted 共享对象，便于断言 error 被调用）
+const { loggerMocks } = vi.hoisted(() => ({
+  loggerMocks: {
     info: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
     debug: vi.fn()
-  })
+  }
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => loggerMocks
 }))
 
 vi.mock('../sdk-compat', () => ({
@@ -330,18 +334,19 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
   describe('错误处理', () => {
     it('应该在同步错误时记录详细日志', async () => {
       await matrixClientService.initialize(testConfig)
+      await matrixClientService.startClient()
 
-      // 触发同步错误
+      // 触发同步错误（非限流/超时，应输出 error 级日志）
       const client = matrixClientService.getClient()
-      if (client) {
-        const syncListener = vi.mocked(client.on).mock.calls.find((call) => call[0] === 'sync')?.[1]
-        if (syncListener) {
-          syncListener('ERROR', 'SYNCING', { error: 'Test error' })
-        }
-      }
+      const syncListener = vi.mocked(client!.on).mock.calls.find((call) => call[0] === 'sync')?.[1] as
+        | ((state: string, prevState?: string, data?: unknown) => void)
+        | undefined
+      expect(syncListener).toBeTypeOf('function')
 
-      // 验证错误日志被记录（通过 mock 验证）
-      expect(true).toBe(true) // 实际应该验证 logger.error 被调用
+      syncListener?.('ERROR', 'SYNCING', { errcode: 'M_UNKNOWN', error: 'Test error' })
+
+      // ConnectionManager.mapSyncState 对非限流/超时错误输出 error 级日志
+      expect(loggerMocks.error).toHaveBeenCalledWith(expect.stringContaining('同步错误'), expect.anything())
     })
   })
 

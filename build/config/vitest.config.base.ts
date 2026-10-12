@@ -48,9 +48,21 @@ export const baseVitestConfig: UserConfig = {
     setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'json-summary', 'html'],
+      // 即使套件里有失败用例也强制落盘：全量运行时事件循环可能被加密货币相关图谱阻塞，
+      // 进程在 close 阶段超时退出，若不开启此选项覆盖率报告将不会被写出（CI artifact 为空）。
+      reportOnFailure: true,
       include: ['src/**/*.{vue,js,jsx,ts,tsx}'],
-      exclude: ['src/**/*.{test,spec}.{js,ts}', 'src/types/**', 'src/**/*.d.ts']
+      exclude: ['src/**/*.{test,spec}.{js,ts}', 'src/types/**', 'src/**/*.d.ts'],
+      // 覆盖率地板：以 2026-10-12 全量实测值向下取整。权威登记见 scripts/coverage-floor.json，
+      // 由 scripts/check-coverage-floor.mjs 做「只升不降」的棘轮断言。此处为第二道防线，
+      // 保证 vitest 自身在低于阈值时即以非零码退出。
+      thresholds: {
+        lines: 51,
+        statements: 50,
+        functions: 43,
+        branches: 41
+      }
     }
   }
 }
