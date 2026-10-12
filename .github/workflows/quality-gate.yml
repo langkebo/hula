@@ -150,6 +150,20 @@ jobs:
   #   ② `check-unit-suite-floor.mjs` 的基数断言 —— 即使 ① 被绕过/跳过，
   #      仍会因「文件数/用例数低于地板」或「关键目录无覆盖」而红
   #      （防止有人用一行 exclude 把套件悄悄架空）。
+  #
+  # 并发限流（2026-10-12，spec §14.6-4 / §14.7）：2 vCPU runner 上全量套件默认满载并行，
+  # 重型/扫描类用例（扫描全 `src`）会因「环境构建 + transform」争抢而「假红」——
+  # 表现为「失败用例耗时接近其 timeout」，单独复跑即通过（同文件耗时差可达 7–17 倍）。
+  # 故把 vitest 并发限到 50%，以稳定换速度。
+  #
+  # 负载伪红甄别步骤（报出「失败文件」时先做，勿直接当缺陷）：
+  #   ① 取 artifact `vitest-report` 中的失败文件名与耗时；
+  #   ② 本地单独复跑：`pnpm vitest run <失败文件> --no-file-parallelism`（无其他竞争负载）；
+  #   ③ 「失败用例耗时 ≈ 其 timeout」且单独复跑通过 ⇒ 负载伪红，不计入缺陷；
+  #      单独复跑仍失败 ⇒ 真实失败，按缺陷修。
+  #
+  # 本地「一次到底」需两条命令（spec §14.6-3）：
+  #   `pnpm check:release`（14 判据聚合链）+ `pnpm check:unit-suite`（全量单测 + 套件地板断言）。
   unit-tests:
     name: Unit Tests (full suite)
     runs-on: ubuntu-latest
@@ -193,7 +207,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run full unit suite
-        run: pnpm test:run:report
+        # 并发限流（spec §14.6-4）：避免 2 vCPU runner 上的负载伪红，详见本 job 头注释。
+        # 注意：此处不可写成 `-- --maxWorkers=50%` —— pnpm 会把 `--` 原样透传，
+        # 而 vitest 会忽略 `--` 之后的全部参数（限流将静默失效）。
+        run: pnpm test:run:report --maxWorkers=50%
 
       - name: Assert suite floor and directory coverage
         if: always()
