@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "mobile-hula-capability",
+  "description": "Scopes the hula plugin permissions (token retrieval, splash completion, iOS badge authorization) to the mobile main window only.",
+  "platforms": ["iOS", "android"],
+  "windows": ["mobile-home"],
+  "permissions": [
+    {
+      "identifier": "hula:default",
+      "scope": {
+        "allow": ["get_user_tokens", "set_complete", "request_ios_badge_authorization"]
+      }
+    }
+  ]
+}

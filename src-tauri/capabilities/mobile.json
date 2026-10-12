@@ -118,12 +118,6 @@
         { "url": "https://127.0.0.1:**" },
         { "url": "http://127.0.0.1:**" }
       ]
-    },
-    {
-      "identifier": "hula:default",
-      "scope": {
-        "allow": ["get_user_tokens", "set_complete", "request_ios_badge_authorization"]
-      }
     }
   ]
 }
