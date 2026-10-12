@@ -164,6 +164,27 @@ const counters = {
     files: new Map(),
     strip: stripCommentsAndHtmlComments,
     extensions: VUE_EXTENSIONS
+  },
+  /**
+   * 运行期平台分支（`isMobile()` 调用点，非测试）。
+   *
+   * 判据本意：桌面/移动应各自实现（`src/components` vs `src/mobile`），
+   * 而不是在同一文件里用 `isMobile()` 内联分叉 —— 内联分支是临界候补的临时形态，
+   * 每新增一处都会把「单一实现」再撕开一道口子（P1-6 CP-01）。
+   *
+   * 口径：
+   *  - `(?<![\w$])` 排除定义处 `function isMobile(` 的子串命中；
+   *  - 只统计调用 `isMobile(`，测试用 `.test.ts` 不计入（默认 includeTests: false）；
+   *  - `.ts`/`.vue` 全覆盖（默认 SOURCE_EXTENSIONS）。
+   *
+   * 收敛策略（不批量重写）：新代码禁止新增内联分支，存量按模块分批下沉到
+   * `src/mobile/` 独立实现，该计数只能降不能升。
+   */
+  is_mobile_branch: {
+    pattern: /(?<![\w$])isMobile\(/g,
+    includeTests: false,
+    total: 0,
+    files: new Map()
   }
 }
 

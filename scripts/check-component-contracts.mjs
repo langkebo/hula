@@ -142,7 +142,7 @@ const ACCEPTED_PATTERNS = [
   },
   /* --- 设计上可选：组件自身已完成用户可见动作，事件只是对外延伸点 --- */
   {
-    component: 'src/components/common/AreaDrawer.vue',
+    component: 'src/mobile/components/AreaDrawer.vue',
     event: 'update:value',
     reason:
       '选择结果由 @confirm 回传（EditProfile.vue:113-116 的 onConfirm）；直接 v-model:value 会把 Vant area code 写进 region（存的是拼接名称），不绑定才是正确形态'

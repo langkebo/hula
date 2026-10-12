@@ -1,42 +1,20 @@
 <template>
-  <NDrawer
-    v-model:show="showModel"
-    class="rounded-t-20px! overflow-hidden"
-    position="bottom"
-    round
-    placement="bottom"
-    default-height="350px">
-    <VantArea
+  <van-popup v-model:show="showModel" class="rounded-t-20px! overflow-hidden" position="bottom" round>
+    <van-area
+      v-model="valueModel"
       :area-list="areaList"
-      @scroll-into="onScrollInto"
+      :cancel-button-text="t('components.common.cancel')"
+      :confirm-button-text="t('components.common.confirm')"
       @cancel="onCancel"
       @change="onChange"
-      @confirm="onConfirm"
-      v-model="valueModel">
-      <template #cancel>
-        <n-button strong secondary round>
-          {{ t('components.common.cancel') }}
-        </n-button>
-      </template>
-
-      <template #confirm>
-        <n-button strong secondary round type="success">
-          {{ t('components.common.confirm') }}
-        </n-button>
-      </template>
-    </VantArea>
-  </NDrawer>
+      @confirm="onConfirm" />
+  </van-popup>
 </template>
 
 <script setup lang="ts">
 import { areaList as list } from '@vant/area-data'
-import { NDrawer } from 'naive-ui'
-import { type AreaList, Area as VantArea } from 'vant'
+import type { AreaList } from 'vant'
 import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
-import { invokeSilently } from '@/utils/TauriInvokeHandler'
-
-const logger = createLogger('AreaDrawer')
 
 interface AreaProps {
   areaList?: AreaList
@@ -61,9 +39,4 @@ const valueModel = defineModel<string>('value')
 const { areaList = list } = defineProps<Props>()
 
 const { t } = useI18n()
-
-const onScrollInto = () => {
-  logger.debug('into')
-  invokeSilently('trigger_haptic_feedback')
-}
 </script>
