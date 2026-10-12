@@ -106,8 +106,24 @@ jobs:
         working-directory: hula
         run: pnpm install --no-frozen-lockfile
 
+      # 🔴 必须显式传入 `TJG_SDK_DIR`（2026-10-12）。
+      #
+      # 本 job 上面已按 pin 检出两个 sibling（`matrix-js-sdk@pin.sdk_commit`、
+      # `synapse-rust@pin.synapse_rust_commit`），但 `verify-sdk-pin` **不会**自己
+      # 去找它们——它只认 `TJG_SDK_DIR`（刻意如此：工作区里同时存在 develop 与
+      # release 两条 SDK worktree，自动探测会把 develop 的契约镜像误当成 pin 的来源）。
+      # 变量不传 ⇒ 脚本打印 `SKIP sdk_commit freshness` / `SKIP contract-mirror binding`
+      # 两行 banner 后**照常退出 0**——而它自述「SKIP 不是 pass」。
+      #
+      # 后果是实打实的：`contract-mirror binding`（把 `pin.synapse_rust_commit` 与
+      # SDK worktree 里 `docs/api-contract/generated/index.json` 的 `synapse_rust_commit`
+      # 对死）是**唯一**能抓「契约镜像刷新了、pin 忘了刷」这类跨仓漂移的判据。
+      # 2026-10-12 实测正是栽在这里：SDK 侧镜像已随后端从 `14f892e3` 走到 `122aaf109`，
+      # 而 pin 仍记旧值 —— 本地 `verify:sdk-pin` 判红，release 线却全绿。
       - name: Verify SDK pin
         working-directory: hula
+        env:
+          TJG_SDK_DIR: ${{ github.workspace }}/matrix-js-sdk
         run: pnpm verify:sdk-pin
 
       - name: Run release gate chain
