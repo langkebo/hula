@@ -398,7 +398,7 @@
     <div class="step"><div class="n">2</div><div class="c"><b>预解析 deviceId（跳过重建）</b><span class="path">MatrixClientLifecycle.resolveDeviceIdByWhoami</span><div class="api mono">GET /_matrix/client/v3/account/whoami（裸 fetch，不经 SDK）</div></div></div>
     <div class="step"><div class="n sdk">3</div><div class="c"><b>创建 MatrixClient</b><span class="path">MatrixConnectionManager.initialize (146-179)</span><div class="api mono">clientOpts = { baseUrl, deviceId, accessToken, useAuthorizationHeader, fetchFn, cryptoCallbacks, store: IndexedDBStore }<br>await initializeManagerExtensions() → 98 个域 Manager 挂载</div></div></div>
     <div class="step"><div class="n sdk">4</div><div class="c"><b>启动客户端</b><span class="path">MatrixClientLifecycle.doStartClient (163-254)</span><div class="api mono">isSlidingSyncSupported()（5s 超时兜底降级 /sync）→ syncManager.create() → cryptoTracker.ensureCrypto() → eventRouter.setup() → client.startClient()</div></div></div>
-    <div class="step"><div class="n sdk">5</div><div class="c"><b>Sliding Sync 多列表订阅</b><span class="path">MatrixSyncManager.create (89-187)</span><div class="api mono">4 个 list：default / friends(im.hula.friend_list) / spaces(m.space) / dms(is_dm=true)<br>pos 持久化 localStorage，TTL 25min（对齐后端 CONNECTION_TTL_MS=30min）</div></div></div>
+    <div class="step"><div class="n sdk">5</div><div class="c"><b>Sliding Sync 多列表订阅</b><span class="path">MatrixSyncManager.create (89-195)</span><div class="api mono">3 个 list：default / spaces(m.space) / dms(is_dm=true)　〔friends 列表已按 spec §5 P3-3 移除〕<br>pos 持久化 localStorage，TTL 25min（对齐后端 CONNECTION_TTL_MS=30min）</div></div></div>
     <div class="step"><div class="n sdk">6</div><div class="c"><b>状态机流转</b><span class="path">MatrixConnectionManager.mapSyncState (199-234)</span><div class="api mono">SDK SyncState → DISCONNECTED / CONNECTING / CONNECTED / SYNCING / CATCHUP / RECONNECTING / ERROR</div></div></div>
     <div class="step"><div class="n">7</div><div class="c"><b>启动后置流水线</b><span class="path">auth/SessionBootstrapService (150-215)</span><div class="api mono">syncDndFromAccountData → loadRooms → getSessionList → setUserInfo → startPresencePipeline → matrixWsBridge.start() → matrixWorkerHost.start() → bootstrapSearchIndex</div></div></div>
   </div>
@@ -618,10 +618,11 @@
   <code>MatrixDelayedEventsService.ts:205</code> 调用的 <code>client._unstable_getDelayedEvents</code> 在 vendored 包中无实现。</div>
   <div class="warn"><b>④ 前缀剥离补丁。</b><code>MatrixHttpClient.stripMatrixPrefix()</code> 存在的原因是「调用方传了完整前缀，SDK 又拼一次默认前缀」导致 URL 翻倍 404。这是路径常量与 SDK 默认前缀约定不一致的症状性修复。</div>
   <div class="warn"><b>⑤ 构建依赖 sibling 源码。</b><code>paths/sdk-paths.ts</code> 深度导入 <code>../../../../../matrix-js-sdk/src/…/__generated__/route-table</code>，绕过 SDK package exports；纯净的 tarball 消费模式下该路径并不存在。</div>
-  <div class="danger"><b>⑥ Sliding Sync 好友列表过滤常量与后端不匹配。</b><code>MatrixSyncManager.ts:119</code> 用
+  <div class="warn"><b>⑥ Sliding Sync 好友列表过滤常量与后端不匹配（已修复 · §5 P3-3）。</b><code>MatrixSyncManager.ts</code> 曾用
   <code>room_types: ['im.hula.friend_list']</code>，但后端 <code>friend_room_service/mod.rs:161</code> 创建好友列表房间时用的是
   <code>m.friends</code>；全仓检索 <code>im.hula</code> 在 synapse-rust 中 0 命中。该 list 恒为空，好友房间实际随
-  <code>default</code> 列表同步。</div>
+  <code>default</code> 列表同步。<b>处置</b>：直接删除该恒空列表（前端与 SDK 均无消费点——SDK <code>FriendListManager</code> 走 REST <code>/friends</code>），
+  现仅保留 <b>3 个 list</b>（<code>default</code> / <code>spaces</code> / <code>dms</code>），单测改为负向回归守卫。</div>
   <div class="warn"><b>⑦ 扩展降级监控只覆盖 1/98（已修复 · C-3）。</b>
   <code>src/stores/domains/chat/capability.ts</code> 曾只登记
   <code>CRITICAL_EXTENSION_IDS = ['friend-manager']</code>，其余 97 个 Manager 扩展
