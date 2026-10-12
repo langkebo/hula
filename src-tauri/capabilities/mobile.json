@@ -3,7 +3,7 @@
   "identifier": "mobile-capability",
   "description": "Capability for mobile platforms (iOS/Android) with minimized permissions",
   "platforms": ["iOS", "android"],
-  "windows": ["*"],
+  "windows": ["mobile-home"],
   "permissions": [
     "core:default",
     "core:webview:deny-internal-toggle-devtools",
