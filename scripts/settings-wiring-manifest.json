@@ -219,6 +219,13 @@
       "storage": "session",
       "note": "secure storage 不可用时的加密 sessionStorage 回退位；storage 模块在 persistSecret/loadSecret 中读写（可带 `::<userId>` 账号后缀）"
     },
+    "tjg-session-crypto-secret-v2": {
+      "owner": "src/services/secure/sessionCrypto.ts:SESSION_CRYPTO_SECRET_STORAGE_KEY",
+      "consumers": ["src/services/secure/sessionCrypto.ts"],
+      "kind": "credential",
+      "storage": "local",
+      "note": "会话级加密的 per-install 随机密钥（32 字节 base64）；仅在 Tauri 安全存储不可用时用于加密 sessionStorage 回退值（tjg-chat-trendradar-api-key-session），模块自身读写"
+    },
     "proxySettings": {
       "owner": "src/composables/useBootstrap.ts:localStorage.setItem(proxySettings)",
       "consumers": ["src/composables/useBootstrap.ts", "src/views/loginWindow/Network.vue"],

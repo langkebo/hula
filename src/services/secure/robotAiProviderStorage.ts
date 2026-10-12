@@ -84,8 +84,13 @@ async function persistSecret(secureKey: string, sessionKey: string, value: strin
     return
   }
 
-  const encrypted = await encryptForSession(value)
-  window.sessionStorage.setItem(sessionKey, encrypted)
+  try {
+    const encrypted = await encryptForSession(value)
+    window.sessionStorage.setItem(sessionKey, encrypted)
+  } catch (error) {
+    logger.error('会话加密失败，已放弃写入 sessionStorage（不降级为明文）', error)
+    window.sessionStorage.removeItem(sessionKey)
+  }
 }
 
 async function loadSecret(secureKey: string, sessionKey: string): Promise<string> {
@@ -102,7 +107,12 @@ async function loadSecret(secureKey: string, sessionKey: string): Promise<string
   if (!raw) {
     return ''
   }
-  return (await decryptFromSession(raw)).trim()
+  try {
+    return (await decryptFromSession(raw)).trim()
+  } catch (error) {
+    logger.warn('会话密文解密失败，忽略该回退值', error)
+    return ''
+  }
 }
 
 async function loadScopedSecret(
