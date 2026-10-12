@@ -1,4 +1,10 @@
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import { isUrlAllowed } from '@/utils/hostAllowlist'
+import { currentEnv, getAllowlistConfig } from '@/utils/httpAllowlistConfig'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('HttpClient')
+const warnedAllowlistHosts = new Set<string>()
 
 export class HttpClientError extends Error {
   constructor(
@@ -9,6 +15,17 @@ export class HttpClientError extends Error {
   ) {
     super(message)
     this.name = 'HttpClientError'
+  }
+}
+
+export class HttpClientBlockedError extends Error {
+  constructor(
+    public readonly host: string | null,
+    public readonly reason: string,
+    public readonly blockedUrl: string
+  ) {
+    super(`Request blocked by host allowlist (${reason}): ${host ?? 'unknown'}`)
+    this.name = 'HttpClientBlockedError'
   }
 }
 
@@ -29,6 +46,23 @@ async function fetchWithTimeout(
 ): Promise<Response> {
   if (externalSignal?.aborted) {
     throw new DOMException('The operation was aborted', 'AbortError')
+  }
+
+  const env = currentEnv()
+  const allowlist = getAllowlistConfig(env)
+  const decision = isUrlAllowed(url, allowlist.rules, env)
+  if (!decision.allowed) {
+    // 只记录 host 与 reason，绝不记录完整 URL（可能含 query/token）
+    const host = decision.host ?? 'unknown'
+    if (!warnedAllowlistHosts.has(host)) {
+      warnedAllowlistHosts.add(host)
+      logger.warn(
+        `host allowlist ${allowlist.mode === 'enforce' ? 'blocked' : 'observed'}: host=${host} reason=${decision.reason}`
+      )
+    }
+    if (allowlist.mode === 'enforce') {
+      throw new HttpClientBlockedError(decision.host, decision.reason, url)
+    }
   }
 
   const controller = new AbortController()

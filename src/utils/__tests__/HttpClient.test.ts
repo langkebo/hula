@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { HttpClient, HttpClientError } from '@/utils/HttpClient'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { HttpClient, HttpClientBlockedError, HttpClientError } from '@/utils/HttpClient'
 
 const server = setupServer()
 
@@ -71,6 +71,35 @@ describe('HttpClient', () => {
       server.use(http.get('https://example.test/file.bin', () => HttpResponse.arrayBuffer(payload.buffer)))
       const result = await HttpClient.downloadBytes('https://example.test/file.bin')
       expect(new Uint8Array(result)).toEqual(payload)
+    })
+  })
+
+  describe('host allowlist', () => {
+    afterEach(() => {
+      vi.unstubAllEnvs()
+      vi.restoreAllMocks()
+    })
+
+    it('rejects and sends no request when the host is not allowlisted (enforce)', async () => {
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_MODE', 'enforce')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_DEV', 'https://allowed.test')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_PROD', 'https://allowed.test')
+      vi.stubEnv('VITE_HOMESERVER_URL', '')
+      const fetchSpy = vi.spyOn(globalThis, 'fetch')
+
+      await expect(HttpClient.get('https://blocked.test/api')).rejects.toThrow(HttpClientBlockedError)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it('allows the request when the host is allowlisted (enforce)', async () => {
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_MODE', 'enforce')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_DEV', 'https://example.test')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_PROD', 'https://example.test')
+      vi.stubEnv('VITE_HOMESERVER_URL', '')
+      server.use(http.get('https://example.test/api/ok', () => HttpResponse.json({ ok: true })))
+
+      const data = await HttpClient.get<{ ok: boolean }>('https://example.test/api/ok')
+      expect(data.ok).toBe(true)
     })
   })
 })
