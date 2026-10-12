@@ -177,30 +177,6 @@ export class HttpClient {
     return response.json() as Promise<T>
   }
 
-  static async put<T = unknown>(url: string, body?: unknown, config?: HttpClientConfig): Promise<T> {
-    const rawBody = body !== undefined && body !== null && HttpClient.isRawBody(body)
-    const headers: Record<string, string> = {
-      'Content-Type': rawBody ? (config?.headers?.['Content-Type'] ?? 'application/octet-stream') : 'application/json',
-      ...config?.headers
-    }
-    const response = await fetchWithTimeout(
-      url,
-      {
-        method: 'PUT',
-        headers,
-        body: rawBody ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined,
-        keepalive: config?.keepalive
-      },
-      config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      config?.signal,
-      config?.allowDynamicHost
-    )
-    if (!response.ok) {
-      throw await toHttpClientError(response, 'PUT', url)
-    }
-    return response.json() as Promise<T>
-  }
-
   static async head(url: string, config?: HttpClientConfig): Promise<Response> {
     const response = await fetchWithTimeout(
       url,
