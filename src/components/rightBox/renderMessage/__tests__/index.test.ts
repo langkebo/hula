@@ -48,9 +48,16 @@ describe('renderMessage/index.vue - MessageLockBadge 绑定契约', () => {
     expect(source).not.toMatch(/:trust-level="trustLevel"/)
   })
 
-  it('应以 isEncryptedMessage 作为显隐守卫', () => {
-    expect(source).toMatch(/v-if="isEncryptedMessage"/)
+  it('显隐守卫必须同时覆盖「已加密」与「加密房间里的明文（risk）」', () => {
+    // 只按 isEncryptedMessage 渲染会让 risk 永远显示不出来 ——
+    // risk 的语义正是「加密房间里出现了明文消息」，此时 isEncryptedMessage 为 false。
+    expect(source).toMatch(/v-if="isEncryptedMessage \|\| lockBadgeLevel === 'risk'"/)
     expect(source).toMatch(/const\s*\{\s*isEncrypted:\s*isEncryptedMessage/)
+  })
+
+  it('必须向 useMessageTrust 传入房间加密状态（risk 判据的唯一来源）', () => {
+    expect(source).toMatch(/isEncrypted:\s*\(\)\s*=>/)
+    expect(source).toMatch(/isRoomEncrypted\(/)
   })
 
   it('应按 isMe 区分左右定位 class', () => {

@@ -40,9 +40,9 @@ vi.mock('matrix-js-sdk/friend', () => ({
 }))
 
 vi.mock('@/services/secure/cryptoStorageKey', () => ({
-  getOrCreateCryptoStoragePassword: vi.fn().mockResolvedValue(null),
-  clearCryptoStoragePasswordCache: vi.fn(),
-  deleteCryptoStoragePassword: vi.fn().mockResolvedValue(undefined)
+  getOrCreateCryptoStorageKey: vi.fn().mockResolvedValue(null),
+  clearCryptoStorageKeyCache: vi.fn(),
+  deleteCryptoStorageKey: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('@/stores/domains/chat/capability', () => ({

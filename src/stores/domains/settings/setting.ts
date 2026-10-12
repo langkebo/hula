@@ -12,6 +12,7 @@ import {
   normalizeEmojiSize,
   normalizeNotificationVolume,
   normalizeSpaceDefaultNotification,
+  normalizeStrictUnverifiedRooms,
   normalizeTheme,
   normalizeThreadNotificationLevel,
   readLegacyBooleanPreference,
@@ -122,7 +123,11 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       normalizeSpaceDefaultNotification(state.preferences?.spaceDefaultNotification),
     sendReadReceiptsEnabled: (state: STO.Setting) => state.preferences?.sendReadReceipts ?? true,
     sendTypingNotificationsEnabled: (state: STO.Setting) => state.preferences?.sendTypingNotifications ?? true,
-    showOnlineStatusEnabled: (state: STO.Setting) => state.preferences?.showOnlineStatus ?? true
+    showOnlineStatusEnabled: (state: STO.Setting) => state.preferences?.showOnlineStatus ?? true,
+    /** R-1：全局严格模式（不向未验证设备发送加密房间密钥） */
+    blockUnverifiedDevicesEnabled: (state: STO.Setting) => state.preferences?.blockUnverifiedDevices ?? false,
+    /** R-1：逐房间严格模式列表 */
+    strictUnverifiedRooms: (state: STO.Setting) => state.preferences?.strictUnverifiedRooms ?? []
   },
   actions: {
     /** 初始化主题 */
@@ -233,6 +238,9 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.preferences.sendTypingNotifications =
         this.preferences.sendTypingNotifications ?? defaults.sendTypingNotifications
       this.preferences.showOnlineStatus = this.preferences.showOnlineStatus ?? defaults.showOnlineStatus
+      this.preferences.blockUnverifiedDevices =
+        this.preferences.blockUnverifiedDevices ?? defaults.blockUnverifiedDevices
+      this.preferences.strictUnverifiedRooms = normalizeStrictUnverifiedRooms(this.preferences.strictUnverifiedRooms)
     },
     migrateLegacyPreferenceSettings() {
       this.ensurePreferenceSettings()
@@ -399,6 +407,24 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     setShowOnlineStatusEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()
       this.preferences.showOnlineStatus = enabled
+    },
+    /**
+     * R-1：设置全局严格模式（不向未验证设备发送加密房间的密钥）。
+     *
+     * 这里**只写偏好**；把偏好施加到 SDK（`crypto.globalBlacklistUnverifiedDevices`）
+     * 由 `useRoomStrictness` / crypto 初始化后重放负责 —— 保持 store 无 SDK 依赖。
+     */
+    setBlockUnverifiedDevicesEnabled(enabled: boolean) {
+      this.ensurePreferenceSettings()
+      this.preferences.blockUnverifiedDevices = enabled
+    },
+    /** R-1：登记/取消某房间的严格模式覆盖（持久化用；施加到 SDK 由调用方负责） */
+    setRoomStrictUnverified(roomId: string, strict: boolean) {
+      this.ensurePreferenceSettings()
+      const current = this.preferences.strictUnverifiedRooms
+      const next = current.filter((id) => id !== roomId)
+      if (strict) next.push(roomId)
+      this.preferences.strictUnverifiedRooms = next
     },
     ensurePageSettings() {
       if (!this.page) {

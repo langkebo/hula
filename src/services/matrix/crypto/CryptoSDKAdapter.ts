@@ -145,6 +145,16 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
     return this.deviceAdapter.getDeviceVerificationStatus(userId, deviceId)
   }
 
+  /**
+   * 列出某房间内尚未验证的设备（加密房间警示用）。
+   *
+   * 唯一事实源见 {@link CryptoDeviceAdapter.getUnverifiedDevicesInRoom}：
+   * 空数组只表示"确实都已验证"，无法判定时抛出而不是返回空。
+   */
+  getUnverifiedDevicesInRoom(roomId: string): Promise<DeviceInfo[]> {
+    return this.deviceAdapter.getUnverifiedDevicesInRoom(roomId)
+  }
+
   requestDeviceVerification(userId: string, deviceId: string): Promise<VerificationRequest | null> {
     return this.deviceAdapter.requestDeviceVerification(userId, deviceId)
   }

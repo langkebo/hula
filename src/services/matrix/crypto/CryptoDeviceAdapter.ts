@@ -174,6 +174,50 @@ export class CryptoDeviceAdapter {
   }
 
   /**
+   * 列出某房间内**尚未验证**的设备（权威实现，唯一事实源）。
+   *
+   * 用途：加密房间的「存在未验证设备」警示。E2EE 规范 v1.18
+   * `#recommended-client-behaviour` 要求客户端 **SHOULD NOT** 向非交叉签名设备
+   * 发送加密 to-device（room key / secret）；要遵守它，客户端至少必须**知道**
+   * 房间里有哪些未验证设备。
+   *
+   * ⚠️ **空数组只能表示"确实没有未验证设备"**，不能表示"查不到"。
+   * 历史缺陷：`useEncryption.getUnverifiedDevicesInRoom` 是一个恒返回 `[]` 的桩，
+   * 于是任何依赖它的警示**永远不出现**（静默放行）。因此本方法在无法判定时**抛出**，
+   * 由调用方决定如何呈现，而不是返回空数组装作一切正常。
+   *
+   * 单个成员的设备列表拉取失败不阻断整体（记录日志后跳过），
+   * 因为"某个成员查不到设备"与"整个房间查不到"是不同程度的失败。
+   *
+   * @param roomId 房间 ID
+   * @returns 未验证设备列表（可能为空，但空一定意味着"都已验证"）
+   * @throws 房间不在本地 store
+   */
+  async getUnverifiedDevicesInRoom(roomId: string): Promise<DeviceInfo[]> {
+    const room = this.accessors.getClient().getRoom(roomId)
+    if (!room) {
+      throw new Error('无法列出房间内未验证设备：房间不在本地 store，不能当作「没有未验证设备」')
+    }
+
+    const result: DeviceInfo[] = []
+    for (const member of room.getJoinedMembers()) {
+      const userId = member.userId
+      let devices: DeviceInfo[]
+      try {
+        devices = await this.getDevices(userId)
+      } catch (err) {
+        logger.warn(`房间 ${roomId} 内 ${userId} 的设备列表拉取失败，跳过该成员: ${err}`)
+        continue
+      }
+      for (const device of devices) {
+        if (device.isVerified === true) continue
+        result.push(device)
+      }
+    }
+    return result
+  }
+
+  /**
    * 屏蔽设备。
    *
    * **当前客户端不支持该操作。** vendored matrix-js-sdk 没有设备屏蔽的写入 API

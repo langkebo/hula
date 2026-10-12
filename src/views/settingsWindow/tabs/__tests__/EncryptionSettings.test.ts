@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EncryptionSettings from '../EncryptionSettings.vue'
 
@@ -373,6 +374,9 @@ vi.mock('@/components/encryption/E2EEBootstrapWizard.vue', () => ({
 
 describe('EncryptionSettings', () => {
   beforeEach(() => {
+    // R-1 起本组件读取 `useSettingStore().blockUnverifiedDevicesEnabled`，
+    // 故渲染前必须有 active pinia。
+    setActivePinia(createPinia())
     vi.clearAllMocks()
     localStorage.clear()
     Object.defineProperty(navigator, 'clipboard', {

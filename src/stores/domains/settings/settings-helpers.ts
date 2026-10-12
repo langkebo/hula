@@ -31,13 +31,22 @@ export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
   spaceDefaultNotification: 'all_messages' as 'all_messages' | 'mentions_only' | 'none',
   sendReadReceipts: true,
   sendTypingNotifications: true,
-  showOnlineStatus: true
+  showOnlineStatus: true,
+  // R-1（2026-10-12）：默认**不**开启严格模式 —— 这是 SDK/Element 的互操作默认，
+  // 默认开启会让未验证设备（新设备 / 未完成交叉签名）完全收不到消息且无任何解释。
+  // 用户可通过加密房间内提示或加密设置页显式开启。
+  blockUnverifiedDevices: false,
+  strictUnverifiedRooms: []
 })
 
 export const normalizeNotificationVolume = (volume?: number) => {
   if (typeof volume !== 'number') return 80
   return Math.min(100, Math.max(0, Math.round(volume)))
 }
+
+/** R-1：逐房间严格模式列表的容错归一（非字符串 / 空串 / 非数组一律丢弃） */
+export const normalizeStrictUnverifiedRooms = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string' && id.length > 0) : []
 
 export const LEGACY_PREFERENCE_STORAGE_KEYS = {
   messageConfirm: 'tjg-message-confirm',

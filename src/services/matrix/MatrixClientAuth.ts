@@ -16,7 +16,7 @@ import { useI18nGlobal } from '@/services/i18n'
 import { persistRefreshedToken } from '@/services/matrix/matrixClientPlatform'
 import type { LoginResponse } from '@/services/matrix/sdk'
 import { clearSecretStorageKeys } from '@/services/matrix/secretStorageKeyVault'
-import { clearCryptoStoragePasswordCache, deleteCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
+import { clearCryptoStorageKeyCache, deleteCryptoStorageKey } from '@/services/secure/cryptoStorageKey'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
@@ -397,12 +397,12 @@ export class MatrixClientAuth {
       connectionManager.updateConnectionState('DISCONNECTED')
       // 重置启动守卫，确保登出后下次登录能正常 startClient
       startClientGuard.reset()
-      // ISSUE-08：清理 keychain 中的 crypto storagePassword，避免残留
+      // ISSUE-08：清理 keychain 中的 crypto storageKey，避免残留
       if (userId && deviceId) {
-        void deleteCryptoStoragePassword(userId, deviceId)
+        void deleteCryptoStorageKey(userId, deviceId)
       }
-      // 全量清理内存缓存中的 crypto storagePassword，防止切换账号时复用旧密码
-      clearCryptoStoragePasswordCache()
+      // 全量清理内存缓存中的 crypto storageKey，防止切换账号时复用旧密钥
+      clearCryptoStorageKeyCache()
       // 清空 SSSS 私钥内存保险箱，避免登出后残留（历史缺陷：sessionStorage 缓存从不清理）
       clearSecretStorageKeys()
       // 清除 IndexedDB crypto store 与 localStorage 记录，确保下次登录从干净状态开始

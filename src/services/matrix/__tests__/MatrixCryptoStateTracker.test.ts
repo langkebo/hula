@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getOrCreateCryptoStorageKey } from '@/services/secure/cryptoStorageKey'
 import { MatrixCryptoStateTracker } from '../MatrixCryptoStateTracker'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -8,8 +9,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 vi.mock('@/services/secure/cryptoStorageKey', () => ({
-  getOrCreateCryptoStoragePassword: vi.fn().mockResolvedValue(null),
-  deleteCryptoStoragePassword: vi.fn().mockResolvedValue(undefined)
+  getOrCreateCryptoStorageKey: vi.fn().mockResolvedValue(null),
+  deleteCryptoStorageKey: vi.fn().mockResolvedValue(undefined)
 }))
 
 /**
@@ -255,5 +256,128 @@ describe('MatrixCryptoStateTracker - initRustCrypto 失败清理重试', () => {
     expect(state.initialized).toBe(false)
     // 空对象 {} 应归一化为 [empty-object]，而非 [object Object]
     expect(state.error).toBe('[empty-object]')
+  })
+})
+
+/**
+ * storageKey 加密原语 + 可观测性回归（2026-10-12）
+ *
+ * 背景：
+ *   1. SDK 的 `initRustCrypto` 提供 `storageKey`（32 字节原始密钥）与
+ *      `storagePassword`（口令 → **故意慢**的 KDF）两条互斥路径；JSDoc 明确
+ *      "prefer to pass a `storageKey` directly where possible"。
+ *      本仓原先传的是**随机 32 字节**的 base64 当作 password ⇒ 白付一次 KDF。
+ *   2. keychain 不可用时 store 会**不加密**，而 SDK 只拒绝"未加密的**内存** store"，
+ *      不拒绝"未加密的 IndexedDB store" ⇒ 必须显式暴露为可观测状态，不能静默。
+ *   3. 加密原语不同 ⇒ 实际加密密钥不同。仅比较"是否加密"发现不了原语切换，
+ *      会把"换了密钥却继续打开旧 store"推迟到 initRustCrypto 失败才发现。
+ */
+describe('MatrixCryptoStateTracker - storageKey 原语与加密状态可观测性', () => {
+  let tracker: MatrixCryptoStateTracker
+  let deleteDbMock: ReturnType<typeof vi.fn>
+  const getOrCreateCryptoStorageKeyMock = vi.mocked(getOrCreateCryptoStorageKey)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    tracker = new MatrixCryptoStateTracker()
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
+
+    deleteDbMock = vi.fn().mockImplementation(() => {
+      const req = {
+        onsuccess: null as (() => void) | null,
+        onerror: null as (() => void) | null,
+        onblocked: null as (() => void) | null
+      }
+      setTimeout(() => req.onsuccess?.(), 0)
+      return req
+    })
+    Object.defineProperty(globalThis, 'indexedDB', {
+      value: { deleteDatabase: deleteDbMock, databases: vi.fn().mockResolvedValue([]) },
+      configurable: true,
+      writable: true
+    })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    localStorage.clear()
+  })
+
+  function createMockClient(userId: string, deviceId: string) {
+    const initRustCrypto = vi.fn().mockResolvedValue(undefined)
+    return {
+      client: {
+        getUserId: vi.fn().mockReturnValue(userId),
+        getDeviceId: vi.fn().mockReturnValue(deviceId),
+        getCrypto: vi.fn().mockReturnValue(null),
+        initRustCrypto
+      } as unknown as Parameters<MatrixCryptoStateTracker['ensureCrypto']>[0],
+      initRustCrypto
+    }
+  }
+
+  it('keychain 有密钥时以 32 字节 storageKey 初始化，且不得再传 storagePassword', async () => {
+    const key = new Uint8Array(32).fill(7)
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(key)
+    const { client, initRustCrypto } = createMockClient('@user:test.com', 'device-A')
+
+    await tracker.ensureCrypto(client, true)
+
+    expect(initRustCrypto).toHaveBeenCalledTimes(1)
+    const args = initRustCrypto.mock.calls[0][0] as Record<string, unknown>
+    expect(args.storageKey).toBe(key)
+    expect(args).not.toHaveProperty('storagePassword')
+    expect(tracker.getRustCryptoDebugState().storeEncrypted).toBe(true)
+  })
+
+  it('keychain 无密钥时不得传 storageKey，并把 storeEncrypted 标为 false（可见降级）', async () => {
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
+    const { client, initRustCrypto } = createMockClient('@user:test.com', 'device-A')
+
+    await tracker.ensureCrypto(client, true)
+
+    const args = initRustCrypto.mock.calls[0][0] as Record<string, unknown>
+    expect(args).toEqual({ useIndexedDB: true })
+    expect(args).not.toHaveProperty('storageKey')
+    expect(tracker.getRustCryptoDebugState().storeEncrypted).toBe(false)
+  })
+
+  it('原语标记写入 localStorage：有密钥 → k1，无密钥 → 0', async () => {
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(new Uint8Array(32))
+    const withKey = createMockClient('@user:test.com', 'device-A')
+    await tracker.ensureCrypto(withKey.client, true)
+    expect(localStorage.getItem('tjg.lastCryptoEncrypted')).toBe('k1')
+
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
+    const withoutKey = createMockClient('@user:test.com', 'device-B')
+    await tracker.ensureCrypto(withoutKey.client, true)
+    expect(localStorage.getItem('tjg.lastCryptoEncrypted')).toBe('0')
+  })
+
+  it('历史标记（storagePassword 时代的 "1"）必须触发提前清理，且一次初始化即成功', async () => {
+    // 模拟：上一版用 storagePassword，标记为 '1'；本次改用 storageKey（'k1'）
+    localStorage.setItem('tjg.lastCryptoUserId', '@user:test.com:device-A')
+    localStorage.setItem('tjg.lastCryptoEncrypted', '1')
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(new Uint8Array(32).fill(1))
+    const { client, initRustCrypto } = createMockClient('@user:test.com', 'device-A')
+
+    await tracker.ensureCrypto(client, true)
+
+    // 提前清理：不必经历"initRustCrypto 失败 → 清理 → 重试"
+    expect(deleteDbMock).toHaveBeenCalled()
+    expect(initRustCrypto).toHaveBeenCalledTimes(1)
+    expect(localStorage.getItem('tjg.lastCryptoEncrypted')).toBe('k1')
+  })
+
+  it('原语未变化时不触发清理', async () => {
+    localStorage.setItem('tjg.lastCryptoUserId', '@user:test.com:device-A')
+    localStorage.setItem('tjg.lastCryptoEncrypted', 'k1')
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(new Uint8Array(32))
+    const { client } = createMockClient('@user:test.com', 'device-A')
+
+    await tracker.ensureCrypto(client, true)
+
+    expect(deleteDbMock).not.toHaveBeenCalled()
   })
 })

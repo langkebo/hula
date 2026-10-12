@@ -19,6 +19,7 @@ const {
   mockCryptoSDKImportKeys,
   mockCryptoSDKBlockDevice,
   mockCryptoSDKUnblockDevice,
+  mockCryptoSDKGetUnverifiedDevicesInRoom,
   mockKeyBackupCheckKeyBackup,
   mockKeyBackupDeleteKeyBackupVersion,
   mockMatrixCryptoEnableEncryption,
@@ -52,6 +53,7 @@ const {
   mockCryptoSDKImportKeys: vi.fn(),
   mockCryptoSDKBlockDevice: vi.fn(),
   mockCryptoSDKUnblockDevice: vi.fn(),
+  mockCryptoSDKGetUnverifiedDevicesInRoom: vi.fn(),
   mockKeyBackupCheckKeyBackup: vi.fn(),
   mockKeyBackupDeleteKeyBackupVersion: vi.fn(),
   mockMatrixCryptoEnableEncryption: vi.fn(),
@@ -97,7 +99,8 @@ vi.mock('@/services/matrix/crypto/CryptoSDKAdapter', () => ({
     exportKeys: mockCryptoSDKExportKeys,
     importKeys: mockCryptoSDKImportKeys,
     blockDevice: mockCryptoSDKBlockDevice,
-    unblockDevice: mockCryptoSDKUnblockDevice
+    unblockDevice: mockCryptoSDKUnblockDevice,
+    getUnverifiedDevicesInRoom: mockCryptoSDKGetUnverifiedDevicesInRoom
   }
 }))
 
@@ -476,10 +479,25 @@ describe('useEncryption', () => {
       expect(mockCryptoSDKImportKeys).toHaveBeenCalledWith('{"keys":[]}')
     })
 
-    it('getUnverifiedDevicesInRoom returns empty array', async () => {
+    it('getUnverifiedDevicesInRoom 委托给唯一事实源并只返回 deviceId', async () => {
+      mockCryptoSDKGetUnverifiedDevicesInRoom.mockResolvedValueOnce([
+        { deviceId: 'DEV1', userId: '@alice:server', isVerified: false },
+        { deviceId: 'DEV2', userId: '@bob:server', isVerified: false }
+      ])
       const { getUnverifiedDevicesInRoom } = useEncryption()
+
       const result = await getUnverifiedDevicesInRoom('!room1')
-      expect(result).toEqual([])
+
+      expect(result).toEqual(['DEV1', 'DEV2'])
+      expect(mockCryptoSDKGetUnverifiedDevicesInRoom).toHaveBeenCalledWith('!room1')
+    })
+
+    it('查询失败必须抛错，不得吞成空数组（空 ≠ 查不到）', async () => {
+      // 回归守卫：历史实现恒返回 []，使「本房间存在未验证设备」的警示永不出现。
+      mockCryptoSDKGetUnverifiedDevicesInRoom.mockRejectedValueOnce(new Error('房间不在本地 store'))
+      const { getUnverifiedDevicesInRoom } = useEncryption()
+
+      await expect(getUnverifiedDevicesInRoom('!room1')).rejects.toThrow(/房间不在本地 store/)
     })
   })
 

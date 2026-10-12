@@ -311,9 +311,13 @@
             消息加密信任徽章。
             他人发送的加密消息上，徽章同时是「验证发送方设备」的可操作入口（方案 3.1）；
             自己的消息不做交互（自己设备的验证入口在设置页）。
+
+            ⚠️ 渲染条件必须包含 `risk`：`risk` 的语义是「**加密房间**里出现了明文消息」，
+            此时 `isEncryptedMessage` 恰好为 false —— 若只按它渲染，
+            红锁（唯一的"危险"提示）将永远显示不出来。
           -->
           <MessageLockBadge
-            v-if="isEncryptedMessage"
+            v-if="isEncryptedMessage || lockBadgeLevel === 'risk'"
             :trust-level="lockBadgeLevel"
             :title="t(trustDescriptionKey)"
             :interactive="canVerifySender"
@@ -340,7 +344,9 @@ import { refreshTrustLevel, useMessageTrust } from '@/composables/encryption/use
 import { MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
 import router from '@/router'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
+import { isRoomEncrypted } from '@/services/matrix/roomEncryption'
 import type { MessageBody, MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -438,8 +444,10 @@ const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarCl
 
 // 消息加密信任计算（getter 入参：列表复用组件实例时信任等级随 props 同步）
 // 传入 senderId：解锁真实设备验证查询（无 senderId 时安全默认 'unverified'）
+// 传入房间加密状态：用于识别「加密房间里的明文消息」（红锁 risk）
 const messageTrust = useMessageTrust(() => props.message?.message?.body?.hasEncryption === true, {
-  senderId: props.fromUser?.uid || props.message?.fromUser?.uid || ''
+  senderId: props.fromUser?.uid || props.message?.fromUser?.uid || '',
+  isEncrypted: () => isRoomEncrypted(matrixClientService.getClient(), props.message?.message?.roomId || '')
 })
 // lockBadgeLevel 已在 composable 内把 'plain' 收敛为 'unverified'，此处直接绑定保证类型安全
 const { isEncrypted: isEncryptedMessage, lockBadgeLevel, trustDescriptionKey } = messageTrust

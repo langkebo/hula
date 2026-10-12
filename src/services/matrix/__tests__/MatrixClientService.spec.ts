@@ -32,9 +32,9 @@ vi.mock('matrix-js-sdk/friend', () => ({
 
 // Mock cryptoStorageKey 以避免 ensureCrypto 触发真实的 keychain / IndexedDB 操作
 vi.mock('@/services/secure/cryptoStorageKey', () => ({
-  getOrCreateCryptoStoragePassword: vi.fn().mockResolvedValue(null),
-  clearCryptoStoragePasswordCache: vi.fn(),
-  deleteCryptoStoragePassword: vi.fn().mockResolvedValue(undefined)
+  getOrCreateCryptoStorageKey: vi.fn().mockResolvedValue(null),
+  clearCryptoStorageKeyCache: vi.fn(),
+  deleteCryptoStorageKey: vi.fn().mockResolvedValue(undefined)
 }))
 
 // Mock capability store 以避免 Pinia 未初始化时 assertCriticalExtensions 抛错

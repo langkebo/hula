@@ -9,6 +9,7 @@ import type { IDeviceUpdateRequest } from 'matrix-js-sdk'
 import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { cryptoSDKAdapter } from '../crypto/CryptoSDKAdapter'
 
 const logger = createLogger('MatrixDeviceService')
 
@@ -101,6 +102,8 @@ class MatrixDeviceService extends BaseMatrixService {
       // 字段 → 运行期 TypeError 被 catch 吞掉，好友设备列表恒为空。
       const deviceMap = (await this.getClient().getDeviceKeysManager().getUserDevices(userId)) ?? {}
       const rawDevices = Object.values(deviceMap) as Array<Record<string, unknown>>
+      // 逐设备查**本地 crypto store** 的验证状态（见 loadDeviceVerification 的说明）。
+      const verification = await this.loadDeviceVerification(userId, rawDevices)
       const devices: Device[] = rawDevices
         .map((content) => {
           // keys/query 返回的是设备密钥，display_name 通常位于 unsigned.device_display_name
@@ -111,14 +114,15 @@ class MatrixDeviceService extends BaseMatrixService {
               : typeof unsigned.device_display_name === 'string'
                 ? unsigned.device_display_name
                 : undefined
+          const deviceId = String(content.device_id ?? '')
           return {
-            device_id: String(content.device_id ?? ''),
+            device_id: deviceId,
             display_name: displayName,
             last_seen_ts: typeof content.last_seen_ts === 'number' ? content.last_seen_ts : undefined,
             last_seen_ip: typeof content.last_seen_ip === 'string' ? content.last_seen_ip : undefined,
             last_seen_user_agent:
               typeof content.last_seen_user_agent === 'string' ? content.last_seen_user_agent : undefined,
-            verified: typeof content.verified === 'boolean' ? content.verified : false
+            verified: verification.get(deviceId) ?? false
           }
         })
         .filter((device) => device.device_id)
@@ -128,6 +132,62 @@ class MatrixDeviceService extends BaseMatrixService {
       logger.error(`[DeviceService] 获取用户设备列表失败: userId=${userId}, ${err}`)
       return []
     }
+  }
+
+  /**
+   * 读取指定用户在**本地 crypto store** 中的逐设备验证状态。
+   *
+   * ## 为什么不能读 `/keys/query` 响应里的 `verified`
+   *
+   * `/keys/query` 返回的是 *device_keys*（`user_id` / `device_id` / `algorithms` /
+   * `keys` / `signatures` / `unsigned`）—— 其中**没有任何信任标记**。
+   * 「设备是否已验证」是**纯本地**状态：由客户端依据 cross-signing 信任链
+   * （master → self_signing → device）或本地显式验证在 crypto store 里推导。
+   * 服务端的 `GET /device_trust` 曾承载这一信息，但它随后端模块一起被删除，
+   * 调用必然 404（见 `E2EE_SPEC_COMPLIANCE.md` 对 T-2/T-5 的说明）。
+   *
+   * 历史缺陷：本方法曾写 `verified: typeof content.verified === 'boolean' ? content.verified : false`，
+   * 而该字段在响应中恒不存在 ⇒ `verified` **恒为 false** ⇒ 依赖它推导信任等级的上层
+   * （`useMessageTrust`）永远得到「未验证」⇒ 「已验证（绿锁）」不可达。
+   *
+   * 权威来源与 {@link CryptoDeviceAdapter} 一致：`CryptoApi.getDeviceVerificationStatus`。
+   * 查询失败按「未验证」处理并记录日志，**不**把失败伪装成「确实已验证」。
+   *
+   * @param userId 目标用户 MXID
+   * @param devices `/keys/query` 返回的原始设备内容
+   * @returns `deviceId → 是否已验证`（无法判定/查询失败时为 `false`）
+   */
+  private async loadDeviceVerification(
+    userId: string,
+    devices: Array<Record<string, unknown>>
+  ): Promise<Map<string, boolean>> {
+    const result = new Map<string, boolean>()
+    // ⚠️ 取 crypto 本身必须防御：客户端未初始化 / crypto 未启用时这里会抛错，
+    // 而"验证状态查不到"绝不能连带把**设备列表**也变成空数组
+    // （那会让"无设备"与"查询失败"再也分不开）。
+    let crypto: ReturnType<typeof cryptoSDKAdapter.getCrypto>
+    try {
+      crypto = cryptoSDKAdapter.getCrypto()
+    } catch (err) {
+      logger.warn(`[DeviceService] crypto 不可用，设备验证状态按未验证处理: ${err}`)
+      return result
+    }
+    if (!crypto) return result
+
+    await Promise.all(
+      devices.map(async (device) => {
+        const deviceId = String(device.device_id ?? '')
+        if (!deviceId) return
+        try {
+          const status = await crypto.getDeviceVerificationStatus(userId, deviceId)
+          result.set(deviceId, status?.isVerified() ?? false)
+        } catch (err) {
+          logger.warn(`[DeviceService] 设备 ${deviceId} 验证状态获取失败，按未验证处理: ${err}`)
+          result.set(deviceId, false)
+        }
+      })
+    )
+    return result
   }
 
   /**

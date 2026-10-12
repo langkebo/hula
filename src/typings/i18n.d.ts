@@ -1883,6 +1883,16 @@ export type I18nKeys = {
     "banner": {
       "title": "端到端加密",
       "desc": "本会话已启用端到端加密，服务器无法阅读消息内容"
+    },
+    "unverified": {
+      "title": "本房间有 {count} 台未验证设备",
+      "desc": "这些设备收不到本房间的加密消息。默认仍会向它们发送密钥（便于与 Element 等客户端互通）；你也可以只向已验证设备发送。",
+      "action_strict": "仅向已验证设备发送",
+      "strict_on_desc": "严格模式已开启：本房间的密钥只发给已验证设备，当前有 {count} 台设备收不到消息。此改动只影响之后发送的消息，已发出的密钥无法收回。",
+      "action_revert": "恢复默认",
+      "query_failed_title": "无法确认设备验证状态",
+      "query_failed_desc": "暂时读不到本房间的设备列表，因此无法判断是否存在未验证设备。",
+      "retry": "重试"
     }
   },
   "editor": {
@@ -6144,6 +6154,9 @@ export type I18nKeys = {
       "device_trust_label": "设备信任",
       "device_trust_desc": "管理已验证的设备与待处理的验证请求",
       "view": "查看",
+      "strict_section": "严格模式",
+      "strict_label": "不向未验证设备发送密钥",
+      "strict_desc": "默认关闭：仍会向未验证设备发送本房间密钥，便于与 Element 等客户端互通。开启后这些设备将收不到加密消息（只影响之后发送的消息）。",
       "info_section": "加密信息",
       "algorithm_label": "加密算法",
       "verified_devices_label": "已验证设备",
@@ -8380,6 +8393,14 @@ export type I18nKeyPaths =
   | "dm.create.no_recent"
   | "e2ee.banner.title"
   | "e2ee.banner.desc"
+  | "e2ee.unverified.title"
+  | "e2ee.unverified.desc"
+  | "e2ee.unverified.action_strict"
+  | "e2ee.unverified.strict_on_desc"
+  | "e2ee.unverified.action_revert"
+  | "e2ee.unverified.query_failed_title"
+  | "e2ee.unverified.query_failed_desc"
+  | "e2ee.unverified.retry"
   | "editor.menu.select_all"
   | "editor.menu.save_as"
   | "editor.menu.paste"
@@ -11678,6 +11699,9 @@ export type I18nKeyPaths =
   | "setting.encryption.device_trust_label"
   | "setting.encryption.device_trust_desc"
   | "setting.encryption.view"
+  | "setting.encryption.strict_section"
+  | "setting.encryption.strict_label"
+  | "setting.encryption.strict_desc"
   | "setting.encryption.info_section"
   | "setting.encryption.algorithm_label"
   | "setting.encryption.verified_devices_label"

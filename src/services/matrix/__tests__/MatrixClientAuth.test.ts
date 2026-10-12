@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { MatrixClientAuth, resolveStableDeviceId } from '@/services/matrix/MatrixClientAuth'
 import { loginByHttpFallback, tokenLoginByHttpFallback } from '@/services/matrix/MatrixClientAuthHttp'
 import { persistRefreshedToken } from '@/services/matrix/matrixClientPlatform'
-import { clearCryptoStoragePasswordCache, deleteCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
+import { clearCryptoStorageKeyCache, deleteCryptoStorageKey } from '@/services/secure/cryptoStorageKey'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 // ---- 依赖 mock（白盒：不依赖真实 SDK / 网络）-----------------------------------
@@ -26,8 +26,8 @@ vi.mock('@/services/matrix/matrixClientPlatform', () => ({
 }))
 
 vi.mock('@/services/secure/cryptoStorageKey', () => ({
-  clearCryptoStoragePasswordCache: vi.fn(),
-  deleteCryptoStoragePassword: vi.fn()
+  clearCryptoStorageKeyCache: vi.fn(),
+  deleteCryptoStorageKey: vi.fn()
 }))
 
 vi.mock('@/utils/AvatarUtils', () => ({
@@ -428,8 +428,8 @@ describe('MatrixClientAuth.logout', () => {
     expect(deps.connectionManager.setClient).toHaveBeenCalledWith(null)
     expect(deps.connectionManager.updateConnectionState).toHaveBeenCalledWith('DISCONNECTED')
     expect(deps.startClientGuard.reset).toHaveBeenCalled()
-    expect(deleteCryptoStoragePassword).toHaveBeenCalledWith('@alice:hs', 'DEV1')
-    expect(clearCryptoStoragePasswordCache).toHaveBeenCalled()
+    expect(deleteCryptoStorageKey).toHaveBeenCalledWith('@alice:hs', 'DEV1')
+    expect(clearCryptoStorageKeyCache).toHaveBeenCalled()
     expect(deps.cryptoTracker.clearCryptoStoreForLogout).toHaveBeenCalledWith('@alice:hs')
   })
 
@@ -443,6 +443,6 @@ describe('MatrixClientAuth.logout', () => {
     // finally 块仍执行清理
     expect(deps.connectionManager.updateConnectionState).toHaveBeenCalledWith('DISCONNECTED')
     expect(deps.startClientGuard.reset).toHaveBeenCalled()
-    expect(clearCryptoStoragePasswordCache).toHaveBeenCalled()
+    expect(clearCryptoStorageKeyCache).toHaveBeenCalled()
   })
 })

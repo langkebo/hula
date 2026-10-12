@@ -313,7 +313,9 @@ describe('SettingStore', () => {
         spaceDefaultNotification: undefined as never,
         sendReadReceipts: undefined as never,
         sendTypingNotifications: undefined as never,
-        showOnlineStatus: undefined as never
+        showOnlineStatus: undefined as never,
+        blockUnverifiedDevices: undefined as never,
+        strictUnverifiedRooms: undefined as never
       }
       store.ensurePreferenceSettings()
       expect(store.messageConfirmEnabled).toBe(false)
@@ -332,6 +334,9 @@ describe('SettingStore', () => {
       expect(store.sendReadReceiptsEnabled).toBe(true)
       expect(store.sendTypingNotificationsEnabled).toBe(true)
       expect(store.showOnlineStatusEnabled).toBe(true)
+      // R-1：严格模式默认关闭（互操作默认），房间覆盖列表默认空
+      expect(store.blockUnverifiedDevicesEnabled).toBe(false)
+      expect(store.strictUnverifiedRooms).toEqual([])
     })
 
     it('migrateLegacyPreferenceSettings migrates legacy localStorage keys once', () => {

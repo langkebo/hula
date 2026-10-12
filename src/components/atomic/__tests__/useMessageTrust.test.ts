@@ -163,4 +163,58 @@ describe('useMessageTrust', () => {
     await expect(refreshTrustLevel('@alice:server')).resolves.toBe('unverified')
     expect(result.trustLevel.value).toBe('unverified')
   })
+
+  // ---- 信任判定：必须是「全部设备已验证」（2026-10-12 修正）----
+
+  it('任一台设备未验证时不得给出已验证（防止"任一台即可"的假安全）', async () => {
+    mockGetUserDevices.mockResolvedValue([
+      { device_id: 'D1', verified: true },
+      { device_id: 'D2', verified: false }
+    ])
+    await expect(refreshTrustLevel('@mixed:server')).resolves.toBe('unverified')
+    expect(senderDeviceCache.get('@mixed:server')).toBe('unverified')
+  })
+
+  it('全部设备已验证 → verified', async () => {
+    mockGetUserDevices.mockResolvedValue([
+      { device_id: 'D1', verified: true },
+      { device_id: 'D2', verified: true }
+    ])
+    await expect(refreshTrustLevel('@all:server')).resolves.toBe('verified')
+  })
+
+  it('verified 字段缺失（undefined）不得被当作已验证', async () => {
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1' }])
+    await expect(refreshTrustLevel('@noverified:server')).resolves.toBe('unverified')
+  })
+
+  // ---- risk：加密房间中的明文消息（该分支此前不可达）----
+
+  it('加密房间中的明文消息 → risk（红锁）', () => {
+    const result = useMessageTrust(false, { isEncrypted: true, senderId: '@alice:server' })
+    expect(result.trustLevel.value).toBe('risk')
+    expect(result.lockBadgeLevel.value).toBe('risk')
+    expect(result.trustDescriptionKey.value).toBe('chat.encryption.risk_title')
+  })
+
+  it('未加密房间中的明文消息仍为 plain（不得误报风险）', () => {
+    expect(useMessageTrust(false, { isEncrypted: false }).trustLevel.value).toBe('plain')
+    // 房间信息缺失时保守地按 plain 处理（无证据表明房间要求加密）
+    expect(useMessageTrust(false).trustLevel.value).toBe('plain')
+  })
+
+  it('房间加密状态支持 getter：会话中启用加密后同步重算', async () => {
+    const roomEncrypted = ref(false)
+    const result = useMessageTrust(false, { isEncrypted: () => roomEncrypted.value })
+    expect(result.trustLevel.value).toBe('plain')
+
+    roomEncrypted.value = true
+    await nextTick()
+    expect(result.trustLevel.value).toBe('risk')
+  })
+
+  it('已加密消息不受"房间明文"判定影响（仍走设备验证路径）', () => {
+    const result = useMessageTrust(true, { isEncrypted: true, senderId: '@alice:server' })
+    expect(result.trustLevel.value).toBe('unverified')
+  })
 })

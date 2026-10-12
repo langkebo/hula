@@ -266,8 +266,23 @@ export function useEncryption(): UseEncryptionResult {
     return cryptoSDKAdapter.importKeys(keysJson)
   }
 
-  async function getUnverifiedDevicesInRoom(_roomId: string) {
-    return [] as string[]
+  /**
+   * 列出某房间内尚未验证设备的 deviceId。
+   *
+   * 历史缺陷：这里是一个恒返回 `[]` 的桩，于是任何"本房间存在未验证设备"的警示
+   * 永远不会触发（静默放行）。现委托给唯一事实源
+   * （`CryptoDeviceAdapter.getUnverifiedDevicesInRoom`）。
+   *
+   * ⚠️ 语义：空数组 = 房间内设备都已验证；**无法判定时抛错**，
+   * 调用方须把"抛错"与"空"区别对待，不能把失败当作"没有未验证设备"。
+   *
+   * @param roomId 房间 ID
+   * @returns 未验证设备的 deviceId 列表
+   * @throws 房间不在本地 store
+   */
+  async function getUnverifiedDevicesInRoom(roomId: string): Promise<string[]> {
+    const devices = await cryptoSDKAdapter.getUnverifiedDevicesInRoom(roomId)
+    return devices.map((device) => device.deviceId)
   }
 
   function getCurrentSessionContext() {

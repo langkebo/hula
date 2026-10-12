@@ -3,65 +3,138 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('CryptoStorageKey')
 
-const STORAGE_PASSWORD_KEY_PREFIX = 'tjg-crypto-storage-password'
+/**
+ * keychain 条目名前缀。**不可更改**：改名会让既有安装读不到原值而生成新密钥，
+ * 进而使已加密的 crypto store 无法解密（需要重建 store、重新从服务端取回密钥）。
+ * 名称里的 `password` 是历史遗留（见下方"加密原语迁移"），条目内容始终是
+ * 「32 随机字节的 base64」，不随原语变化。
+ *
+ * ## 命名约束（踩过的坑）
+ *
+ * 常量标识符里**不得出现连续的 `STORAGE_KEY`**（`*STORAGE_KEY*` 正是
+ * `scripts/check-settings-wiring.mjs` 用来识别 **web 持久化 key 声明**的启发式；
+ * 而本常量是 **Tauri keychain**（`invoke('set_secret')`）的条目名，不在其判据范围内）。
+ * 叫 `CRYPTO_STORAGE_KEY_PREFIX` 会被宽松扫描扫到、被精确发现器漏掉 ⇒ 触发
+ * 「漏报自检 FAIL」。`CRYPTO_KEYCHAIN_PREFIX` 既准确（它就是 keychain 前缀）
+ * 又不与该启发式冲突。
+ *
+ * 导出是**刻意的**：键名必须在测试里被引用，而不是在测试中再抄一遍字面量 ——
+ * 重复字面量会让"改名破坏兼容性"这类失误无人发现。
+ */
+export const CRYPTO_KEYCHAIN_PREFIX = 'tjg-crypto-storage-password'
+
+/** crypto store 加密密钥的长度（SDK 强制要求恰好 32 字节）。 */
+export const CRYPTO_STORAGE_KEY_BYTES = 32
 
 /**
- * 会话内内存缓存：userId:deviceId → password
+ * 会话内内存缓存：userId:deviceId → 密钥字节。
  *
  * 背景：macOS dev 模式下 keychain 可能不稳定（entry 存后立即读不到），
  * 而 MatrixClient 在启动时会被重建（配置变更），导致 ensureCrypto 被调用多次。
- * 若每次都从 keychain 读取失败后生成新密码，crypto store 会被不同密码加密，
+ * 若每次都从 keychain 读取失败后生成新密钥，crypto store 会被不同密钥加密，
  * 下次启动时解密失败（"An object failed to be decrypted while unpickling"）。
  *
- * 内存缓存保证：同一会话内同一 userId:deviceId 始终返回同一密码，
- * 即使 keychain 暂时不可用。登出时通过 clearCryptoStoragePasswordCache 清除。
+ * 内存缓存保证：同一会话内同一 userId:deviceId 始终返回同一密钥，
+ * 即使 keychain 暂时不可用。登出时通过 clearCryptoStorageKeyCache 清除。
  */
-const passwordCache = new Map<string, string>()
+const keyCache = new Map<string, Uint8Array>()
 
 function buildKey(userId: string, deviceId: string): string {
-  return `${STORAGE_PASSWORD_KEY_PREFIX}:${userId}:${deviceId}`
+  return `${CRYPTO_KEYCHAIN_PREFIX}:${userId}:${deviceId}`
 }
 
 function cacheKey(userId: string, deviceId: string): string {
   return `${userId}:${deviceId}`
 }
 
-/** 生成 32 字节随机密码，base64 编码为字符串 */
-function generateRandomPassword(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32))
-  return btoa(String.fromCharCode(...bytes))
+/**
+ * 生成 32 字节随机密钥并编码为 base64（keychain 只能存字符串）。
+ *
+ * **为什么是 base64 而不是十六进制/原始字符串**：keychain 层（Tauri store）以字符串
+ * 往返，base64 是 32 字节 → 字符串的**无损**编码；解码后必须仍是 32 字节，
+ * 否则 SDK 会以 "must be exactly 32 bytes" 拒绝。
+ */
+function generateRandomKey(): Uint8Array {
+  return crypto.getRandomValues(new Uint8Array(CRYPTO_STORAGE_KEY_BYTES))
+}
+
+/** 32 字节 → 标准 base64（带 padding，便于稳定往返比较）。 */
+function encodeKey(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary)
 }
 
 /**
- * 获取或创建 crypto store 的 storagePassword。
+ * base64 → 32 字节。
  *
- * ISSUE-08 对接点：从系统 keychain 派生 storagePassword，传给 SDK 的 initRustCrypto，
- * 使 IndexedDB crypto store 和待发事件队列（PendingEventsCipher）加密存储。
+ * @returns 恰好 32 字节的密钥；编码非法或长度不符时返回 `null`
+ *   （**不**返回"尽量解析"的结果——长度错的密钥会让 SDK 抛错，且掩盖 keychain 损坏）
+ */
+function decodeKey(encoded: string): Uint8Array | null {
+  let bytes: Uint8Array
+  try {
+    const binary = atob(encoded)
+    bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  } catch {
+    return null
+  }
+  return bytes.length === CRYPTO_STORAGE_KEY_BYTES ? bytes : null
+}
+
+/** 返回密钥副本，避免调用方（含 WASM）就地修改缓存内容。 */
+function copyKey(bytes: Uint8Array): Uint8Array {
+  return new Uint8Array(bytes)
+}
+
+/**
+ * 获取或创建 crypto store 的 **storageKey**（32 字节原始密钥）。
  *
- * 一致性原则（关键）：
- *   - storagePassword 必须跨会话稳定，否则下次启动时用新密码无法解密旧 store，
- *     导致 WASM `StoreHandle.open` 失败（错误对象常为 `{}`，非 Error 实例）。
- *   - 因此 keychain 不可用时**不生成随机密码**，而是返回 null 让 SDK 以不加密方式打开
- *     store（storePrefix 存在但 storePassphrase 为 undefined），保持跨会话可读。
+ * ## 加密原语迁移（2026-10-12）
+ *
+ * SDK 的 `initRustCrypto` 提供两条互斥路径（`client.d.ts` JSDoc 原文）：
+ *
+ * | 参数 | 语义 | 代价 |
+ * | --- | --- | --- |
+ * | `storageKey: Uint8Array` | **直接**用作密钥；必须恰好 32 字节、每次启动一致 | 无 |
+ * | `storagePassword: string` | 口令 → **故意慢**的 KDF 派生密钥 | 每次启动都付一次派生 |
+ *
+ * 本模块原先走 `storagePassword`，但传入的值**不是用户口令**，而是随机 32 字节的
+ * base64 —— 即"用慢 KDF 处理一个本就均匀随机的密钥"，纯粹是启动延迟；
+ * 而 SDK 文档明确要求「prefer to pass a `storageKey` directly where possible」。
+ * 现改为 `storageKey`（原始字节）。
+ *
+ * ⚠️ **兼容性**：两类原语派生出的实际加密密钥不同，切换后**旧 store 无法解密**。
+ * 因此密钥库初始化侧（`MatrixCryptoStateTracker`）会把加密原语一并写入本地标记
+ * （`k` / `p` / `0`），检测到原语变化时**提前**清理旧 store，避免"失败一次再重试"。
+ * 代价是本地 crypto store 重建（房间密钥重新从服务端备份/密钥请求取回），
+ * 不涉及私钥外泄。
+ *
+ * ## 一致性原则（关键）
+ *
+ * storageKey 必须跨会话稳定，否则下次启动用新密钥无法解密旧 store
+ * （WASM `StoreHandle.open` 失败，错误对象常为 `{}`）。因此 keychain 不可用时
+ * **不生成随机密钥**，而是返回 `null`（由调用方决定"不加密 store"这一降级），
+ * 保持跨会话可读。
  *
  * 行为：
- *   - 首次调用：生成随机密码并存入 keychain（keychain 可用时）
- *   - 后续调用：从 keychain 读取同一密码
- *   - keychain 不可用：返回 null（SDK 降级为不加密 store）
- *   - keychain 可用但写入失败：返回 null（避免随机密码只在内存中、下次丢失）
+ * - 首次调用：生成 32 随机字节并写入 keychain（keychain 可用时）
+ * - 后续调用：从 keychain 读取并解码
+ * - keychain 不可用 / 写入失败 / 值损坏：返回 `null`
  *
  * @param userId Matrix 用户 ID
  * @param deviceId Matrix 设备 ID
- * @returns storagePassword 字符串，或 null（keychain 不可用 / 写入失败）
+ * @returns 恰好 32 字节的 storageKey，或 `null`
  */
-export async function getOrCreateCryptoStoragePassword(userId: string, deviceId: string): Promise<string | null> {
+export async function getOrCreateCryptoStorageKey(userId: string, deviceId: string): Promise<Uint8Array | null> {
   const cKey = cacheKey(userId, deviceId)
 
-  // 1. 优先从内存缓存读取（避免 MatrixClient 重建时 keychain 暂时读不到导致生成新密码）
-  const cached = passwordCache.get(cKey)
+  // 1. 优先从内存缓存读取（避免 MatrixClient 重建时 keychain 暂时读不到导致换密钥）
+  const cached = keyCache.get(cKey)
   if (cached) {
-    logger.debug(`从内存缓存读取 crypto storage password: ${userId}/${deviceId}`)
-    return cached
+    logger.debug(`从内存缓存读取 crypto storageKey: ${userId}/${deviceId}`)
+    return copyKey(cached)
   }
 
   const key = buildKey(userId, deviceId)
@@ -70,73 +143,75 @@ export async function getOrCreateCryptoStoragePassword(userId: string, deviceId:
     // 2. 从 keychain 读取
     const existing = await getSecureSecret(key)
     if (existing) {
-      logger.debug(`从 keychain 读取 crypto storage password: ${userId}/${deviceId}`)
-      passwordCache.set(cKey, existing)
-      return existing
+      const decoded = decodeKey(existing)
+      if (decoded) {
+        logger.debug(`从 keychain 读取 crypto storageKey: ${userId}/${deviceId}`)
+        keyCache.set(cKey, decoded)
+        return copyKey(decoded)
+      }
+      // 值损坏（非 base64 / 长度不符）→ 不可用。删除并返回 null，
+      // **不**静默生成新密钥（会用新密钥打开旧 store，必然解密失败且难以诊断）。
+      logger.warn(`keychain 中的 crypto storageKey 损坏（非 32 字节 base64），已清除: ${userId}/${deviceId}`)
+      await deleteSecureSecret(key).catch(() => {})
+      return null
     }
 
-    // 3. keychain 中无记录 → 生成新密码并写入 keychain
-    //    若 keychain 不可用或写入失败，返回 null（让 SDK 以不加密方式打开 store），
-    //    **不**返回仅在内存中的随机密码——否则下次会话内存丢失后无法解密旧 store。
-    const password = generateRandomPassword()
-    const success = await setSecureSecret(key, password)
+    // 3. keychain 中无记录 → 生成新密钥并写入
+    const generated = generateRandomKey()
+    const success = await setSecureSecret(key, encodeKey(generated))
     if (!success) {
-      // keychain 不可用或写入失败：不加密 store，避免跨会话密码不一致
-      // 注意：返回 null 而非 undefined，因为调用方使用 `storagePassword ?? undefined`
-      logger.warn(`keychain 不可用或写入失败，crypto store 将不加密（保持跨会话可读）: ${userId}/${deviceId}`)
+      logger.warn(`keychain 不可用或写入失败，crypto store 将**不加密**（保持跨会话可读）: ${userId}/${deviceId}`)
       return null
     }
 
     // 4. 写入后立即读回验证
     //    Rust 端 SecureStore 采用双写策略（keychain + 加密文件 fallback），
     //    get_secret 会先读 keychain，失败后从文件 fallback 加载。
-    //    验证确保密码可跨会话稳定读取，避免 initRustCrypto 报
+    //    验证确保密钥可跨会话稳定读取，避免 initRustCrypto 报
     //    "An object failed to be decrypted while unpickling"。
-    //    验证失败时返回 null（不加密），保证跨会话一致性。
     const verifyRead = await getSecureSecret(key)
-    if (verifyRead !== password) {
+    if (verifyRead !== encodeKey(generated)) {
       logger.warn(
-        `storage password 写入后读回验证失败（keychain + 文件 fallback 均不可读），crypto store 将不加密: ${userId}/${deviceId}`
+        `crypto storageKey 写入后读回验证失败（keychain + 文件 fallback 均不可读），crypto store 将不加密: ${userId}/${deviceId}`
       )
-      // 尝试清理无效的 keychain 条目
       await deleteSecureSecret(key).catch(() => {})
       return null
     }
 
-    passwordCache.set(cKey, password)
-    logger.info(`生成并存储 crypto storage password（已验证可读回）: ${userId}/${deviceId}`)
-    return password
+    keyCache.set(cKey, generated)
+    logger.info(`生成并存储 crypto storageKey（已验证可读回）: ${userId}/${deviceId}`)
+    return copyKey(generated)
   } catch (err) {
-    logger.error(`获取 crypto storage password 失败: ${userId}/${deviceId}`, err)
+    logger.error(`获取 crypto storageKey 失败: ${userId}/${deviceId}`, err)
     return null
   }
 }
 
 /**
- * 删除 keychain 中的 crypto storagePassword。
+ * 删除 keychain 中的 crypto storageKey。
  *
- * 在用户登出或清除账号数据时调用，避免残留旧密码。
+ * 在用户登出或清除账号数据时调用，避免残留旧密钥。
  *
  * @param userId Matrix 用户 ID
  * @param deviceId Matrix 设备 ID
  */
-export async function deleteCryptoStoragePassword(userId: string, deviceId: string): Promise<void> {
+export async function deleteCryptoStorageKey(userId: string, deviceId: string): Promise<void> {
   const cKey = cacheKey(userId, deviceId)
-  passwordCache.delete(cKey)
+  keyCache.delete(cKey)
   const key = buildKey(userId, deviceId)
   try {
     await deleteSecureSecret(key)
-    logger.info(`已删除 crypto storage password: ${userId}/${deviceId}`)
+    logger.info(`已删除 crypto storageKey: ${userId}/${deviceId}`)
   } catch (err) {
-    logger.warn(`删除 crypto storage password 失败: ${userId}/${deviceId}`, err)
+    logger.warn(`删除 crypto storageKey 失败: ${userId}/${deviceId}`, err)
   }
 }
 
 /**
- * 清除所有内存缓存的 crypto storage password。
+ * 清除所有内存缓存的 crypto storageKey。
  *
- * 在用户登出时调用，确保下次登录不会复用旧会话的密码。
+ * 在用户登出时调用，确保下次登录不会复用旧会话的密钥。
  */
-export function clearCryptoStoragePasswordCache(): void {
-  passwordCache.clear()
+export function clearCryptoStorageKeyCache(): void {
+  keyCache.clear()
 }

@@ -3,6 +3,7 @@ import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import type { MatrixClientExtended } from '@/types/matrix-extensions'
+import { cryptoSDKAdapter } from '../../crypto/CryptoSDKAdapter'
 import matrixClientService from '../../MatrixClientService'
 import type { Device } from '../MatrixDeviceService'
 import { matrixDeviceService } from '../MatrixDeviceService'
@@ -165,6 +166,10 @@ describe('MatrixDeviceService', () => {
     }
 
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
+
+    // CryptoSDKAdapter 会把 getCrypto() 的结果缓存在实例上（跨测试共享）。
+    // 不失效会让上一个用例 stub 的 crypto 泄漏到下一个用例，制造假绿/假红。
+    cryptoSDKAdapter.invalidateCryptoCache()
   })
 
   describe('getDevices', () => {
@@ -275,7 +280,24 @@ describe('MatrixDeviceService', () => {
       return getUserDevices
     }
 
-    it('应该通过 SDK getDeviceKeysManager 获取目标用户设备并归一化字段', async () => {
+    /**
+     * 装配**本地 crypto store** 的逐设备验证状态。
+     *
+     * `/keys/query` 的响应里**没有** `verified` 字段 —— 设备信任是纯本地状态
+     * （由 cross-signing 信任链在客户端推导），因此验证状态只能来自
+     * `CryptoApi.getDeviceVerificationStatus`。未列入 statuses 的设备视为查询失败。
+     */
+    const stubVerification = (statuses: Record<string, boolean>) => {
+      const getDeviceVerificationStatus = vi.fn(async (_userId: string, deviceId: string) => {
+        const value = statuses[deviceId]
+        if (value === undefined) throw new Error('device not found in crypto store')
+        return { isVerified: () => value }
+      })
+      ;(mockClient as any).getCrypto = vi.fn(() => ({ getDeviceVerificationStatus }))
+      return getDeviceVerificationStatus
+    }
+
+    it('验证状态取自本地 crypto store，而非 keys/query 响应字段', async () => {
       // SDK 已把 `{ device_keys: { [userId]: {...} } }` 解包为 `{ [deviceId]: 设备密钥内容 }`
       const deviceMap = {
         DEV1: {
@@ -283,22 +305,22 @@ describe('MatrixDeviceService', () => {
           display_name: 'MacBook',
           last_seen_ts: 1000000,
           last_seen_ip: '192.168.1.1',
-          last_seen_user_agent: 'Mozilla/5.0',
-          verified: true
+          last_seen_user_agent: 'Mozilla/5.0'
         },
         DEV2: {
           device_id: 'DEV2',
           display_name: 'iPhone',
           last_seen_ts: 2000000,
-          last_seen_ip: '10.0.0.1',
-          verified: false
+          last_seen_ip: '10.0.0.1'
         }
       }
       const getUserDevices = stubDeviceKeysManager(deviceMap)
+      const getStatus = stubVerification({ DEV1: true, DEV2: false })
 
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
 
       expect(getUserDevices).toHaveBeenCalledWith('@alice:matrix.test')
+      expect(getStatus).toHaveBeenCalledWith('@alice:matrix.test', 'DEV1')
       expect(devices).toEqual([
         {
           device_id: 'DEV1',
@@ -316,6 +338,17 @@ describe('MatrixDeviceService', () => {
           verified: false
         }
       ])
+    })
+
+    it('不得把 keys/query 响应里伪造的 verified 当成验证状态（回归防护）', async () => {
+      // 该字段在 /keys/query 响应中恒不存在；历史缺陷正是读它 ⇒ verified 恒 false。
+      // 这里反过来注入一个伪造的 verified: true，断言输出仍以本地 crypto store 为准。
+      stubDeviceKeysManager({ DEV1: { device_id: 'DEV1', display_name: 'MacBook', verified: true } })
+      stubVerification({ DEV1: false })
+
+      const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+
+      expect(devices[0].verified).toBe(false)
     })
 
     it('应该在 SDK 返回空对象时返回空数组', async () => {
@@ -330,13 +363,14 @@ describe('MatrixDeviceService', () => {
       expect(devices).toEqual([])
     })
 
-    it('应该在 verified 字段缺失时默认为 false', async () => {
+    it('本地 crypto store 查不到该设备时按未验证处理', async () => {
       stubDeviceKeysManager({
         DEV1: {
           device_id: 'DEV1',
           display_name: 'MacBook'
         }
       })
+      stubVerification({})
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([
         {
@@ -347,20 +381,39 @@ describe('MatrixDeviceService', () => {
       ])
     })
 
+    it('crypto 不可用时设备列表仍可返回（不得连带清空列表）', async () => {
+      stubDeviceKeysManager({
+        DEV1: {
+          device_id: 'DEV1',
+          display_name: 'MacBook'
+        }
+      })
+      // getCrypto 抛错（客户端未初始化）—— 验证状态查询失败绝不能让设备列表变成空数组，
+      // 否则"没有设备"与"查不到验证状态"再也分不开。
+      ;(mockClient as any).getCrypto = vi.fn(() => {
+        throw new Error('Matrix client not initialized')
+      })
+
+      const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+
+      expect(devices).toEqual([{ device_id: 'DEV1', display_name: 'MacBook', verified: false }])
+    })
+
     it('应该过滤掉缺少 device_id 的条目', async () => {
       stubDeviceKeysManager({
         DEV1: {
           device_id: 'DEV1',
-          display_name: 'MacBook',
-          verified: true
+          display_name: 'MacBook'
         },
         BAD: {
           display_name: 'NoDeviceId'
         }
       })
+      stubVerification({ DEV1: true })
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toHaveLength(1)
       expect(devices[0].device_id).toBe('DEV1')
+      expect(devices[0].verified).toBe(true)
     })
 
     it('应该在 SDK 抛错时返回空数组（优雅降级，不抛出）', async () => {

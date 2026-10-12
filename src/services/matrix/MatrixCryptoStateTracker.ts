@@ -14,7 +14,8 @@
  * IndexedDB 清理重试 + crypto 状态机复杂实现
  */
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
-import { getOrCreateCryptoStoragePassword } from '@/services/secure/cryptoStorageKey'
+import { reapplyPersistedStrictness } from '@/services/matrix/crypto/strictDevicePolicyBootstrap'
+import { getOrCreateCryptoStorageKey } from '@/services/secure/cryptoStorageKey'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixCrypto')
@@ -25,6 +26,17 @@ export interface RustCryptoDebugState {
   skippedReason: string | null
   error: string | null
   usedIndexedDB: boolean | null
+  /**
+   * crypto store 是否以加密方式打开。
+   *
+   * `true` = 提供了 32 字节 storageKey；`false` = keychain 不可用，store 未加密
+   * （私钥与房间密钥将以明文落盘）；`null` = 未尝试。
+   *
+   * 之所以要显式暴露：SDK 只对「未加密的**内存** store」默认拒绝，
+   * 未加密的 **IndexedDB** store 是被静默允许的 —— 若不把它暴露出来，
+   * 生产环境的密钥库降级将没有任何可观测信号。
+   */
+  storeEncrypted: boolean | null
 }
 
 export interface EventDecryptedDebugState {
@@ -34,9 +46,22 @@ export interface EventDecryptedDebugState {
   lastError: string | null
 }
 
+/**
+ * 本文件对 `initRustCrypto` 的最小依赖面。
+ *
+ * 必须与 SDK 契约一致（`matrix-js-sdk/lib/client.d.ts` 的 `initRustCrypto(args?)`）：
+ * 历史缺陷是本类型只声明了 `{ useIndexedDB, storagePassword }`，于是**结构上**
+ * 无法传入被 SDK 文档首推的 `storageKey`，把"用慢 KDF 处理随机密钥"变成了唯一选项。
+ */
 type RustCryptoCapableClient = MatrixClient & {
   getCrypto?: () => unknown
-  initRustCrypto?: (args?: { useIndexedDB?: boolean; storagePassword?: string }) => Promise<void>
+  initRustCrypto?: (args?: {
+    useIndexedDB?: boolean
+    cryptoDatabasePrefix?: string
+    storageKey?: Uint8Array
+    storagePassword?: string
+    allowInMemoryStore?: boolean
+  }) => Promise<void>
 }
 
 /**
@@ -177,7 +202,8 @@ export class MatrixCryptoStateTracker {
     initialized: false,
     skippedReason: null,
     error: null,
-    usedIndexedDB: null
+    usedIndexedDB: null,
+    storeEncrypted: null
   }
 
   private eventDecryptedDebugState: EventDecryptedDebugState = {
@@ -208,7 +234,8 @@ export class MatrixCryptoStateTracker {
         initialized: false,
         skippedReason: 'missing-client-or-access-token',
         error: null,
-        usedIndexedDB: null
+        usedIndexedDB: null,
+        storeEncrypted: null
       }
       return
     }
@@ -221,8 +248,11 @@ export class MatrixCryptoStateTracker {
         initialized: true,
         skippedReason: 'crypto-already-available',
         error: null,
-        usedIndexedDB: null
+        usedIndexedDB: null,
+        storeEncrypted: null
       }
+      // R-1：crypto 已可用 ⇒ 立刻重放用户的严格模式决定（该偏好不随 client 持久化）
+      this.applyPersistedStrictness()
       return
     }
 
@@ -232,7 +262,8 @@ export class MatrixCryptoStateTracker {
         initialized: false,
         skippedReason: 'init-method-unavailable',
         error: null,
-        usedIndexedDB: null
+        usedIndexedDB: null,
+        storeEncrypted: null
       }
       return
     }
@@ -254,7 +285,8 @@ export class MatrixCryptoStateTracker {
               initialized: true,
               skippedReason: 'crypto-already-available-after-lock',
               error: null,
-              usedIndexedDB: null
+              usedIndexedDB: null,
+              storeEncrypted: null
             }
             return
           }
@@ -275,7 +307,8 @@ export class MatrixCryptoStateTracker {
                   initialized: true,
                   skippedReason: 'crypto-already-available-after-lock-retry',
                   error: null,
-                  usedIndexedDB: null
+                  usedIndexedDB: null,
+                  storeEncrypted: null
                 }
                 logger.info('后台等待锁后 crypto 已可用，跳过初始化')
                 return
@@ -301,6 +334,23 @@ export class MatrixCryptoStateTracker {
       })
       await Promise.race([cryptoTask, timeoutTask])
     }
+
+    // R-1：初始化路径走完后重放用户的严格模式决定。crypto 若仍未就绪，
+    // `reapplyPersistedStrictness` 内部会计为"暂不可应用"且不抛错 ——
+    // 房间内横幅（`useRoomStrictness`）在进入加密房间时还会再施加一次。
+    this.applyPersistedStrictness()
+  }
+
+  /**
+   * 重放持久化的「严格模式」偏好（R-1）。**尽力而为**：任何失败都不得影响
+   * crypto 初始化本身的结论，故整体吞错并只记日志。
+   */
+  private applyPersistedStrictness(): void {
+    try {
+      reapplyPersistedStrictness()
+    } catch (err) {
+      logger.warn(`严格模式偏好重放失败（不影响 crypto 初始化）: ${normalizeCryptoError(err)}`)
+    }
   }
 
   /**
@@ -319,7 +369,8 @@ export class MatrixCryptoStateTracker {
           initialized: true,
           skippedReason: 'crypto-initialized-by-other-window',
           error: null,
-          usedIndexedDB: null
+          usedIndexedDB: null,
+          storeEncrypted: null
         }
         logger.info('[Crypto] 其他窗口已完成 crypto 初始化，本窗口跳过')
         return
@@ -334,7 +385,8 @@ export class MatrixCryptoStateTracker {
         initialized: false,
         skippedReason: 'missing-user-or-device-id',
         error: null,
-        usedIndexedDB: null
+        usedIndexedDB: null,
+        storeEncrypted: null
       }
       logger.warn('缺少 userId 或 deviceId，跳过 Rust Crypto 初始化')
       return
@@ -351,17 +403,24 @@ export class MatrixCryptoStateTracker {
     const cryptoUserKey = `${userId}:${deviceId}`
     const lastCryptoUser = this.readLastCryptoUser()
 
-    // ISSUE-08 对接：从系统 keychain 派生 storagePassword，加密 IndexedDB crypto store
+    // ISSUE-08 对接：从系统 keychain 取 **32 字节 storageKey**，加密 IndexedDB crypto store
     // 和待发事件队列（PendingEventsCipher）。keychain 不可用时降级为不加密（dev/浏览器）。
-    const storagePassword = await getOrCreateCryptoStoragePassword(userId, deviceId)
-    const currentEncrypted = storagePassword ? '1' : '0'
+    //
+    // 加密原语标记（2026-10-12 迁移，见 cryptoStorageKey.ts）：
+    //   `k1` = storageKey（32 字节原始密钥，SDK 文档首推）
+    //   `p1` / `1` / `0` = 历史标记（`storagePassword` 或"无密钥"）
+    // 两类原语派生出的**实际加密密钥不同** ⇒ 只比较"是否加密"发现不了原语切换，
+    // 会把"密钥换了却继续打开旧 store"推迟到 initRustCrypto 失败才发现。故把原语编进标记。
+    const storageKey = await getOrCreateCryptoStorageKey(userId, deviceId)
+    const storeEncrypted = storageKey !== null
+    const currentEncrypted = storeEncrypted ? 'k1' : '0'
     const lastEncrypted = this.readLastCryptoEncrypted()
 
     // 提前清理：以下情况在 initRustCrypto 之前清理旧 store，避免第一次失败+重试耗时
     // 1. userId:deviceId 变化（换设备登录）
-    // 2. storagePassword 加密状态变化（上次不加密→这次加密，或反之）
+    // 2. 加密状态 / 加密原语变化（上次不加密→这次加密、或 storageKey↔storagePassword 切换）
     //    常见场景：macOS dev 模式 keychain 不稳定，上次 keychain 不可用（不加密），
-    //    这次 keychain 可用（有密码），用新密码打开旧不加密 store 会报
+    //    这次 keychain 可用（有密钥），用新密钥打开旧不加密 store 会报
     //    "An object failed to be decrypted while unpickling"
     const userChanged = lastCryptoUser !== cryptoUserKey
     const encryptedChanged =
@@ -369,7 +428,7 @@ export class MatrixCryptoStateTracker {
     if (useIndexedDB && (userChanged || encryptedChanged)) {
       const reason = userChanged
         ? `用户/设备变化（${lastCryptoUser} → ${cryptoUserKey}）`
-        : `加密状态变化（${lastEncrypted} → ${currentEncrypted}）`
+        : `加密状态/原语变化（${lastEncrypted} → ${currentEncrypted}）`
       logger.info(`检测到 crypto ${reason}，提前清理旧 crypto store 避免 initRustCrypto 失败`)
       await clearStaleCryptoStores(userId)
     }
@@ -378,10 +437,13 @@ export class MatrixCryptoStateTracker {
       this.writeLastCryptoEncrypted(currentEncrypted)
     }
 
-    if (storagePassword) {
-      logger.info(`已从 keychain 获取 crypto storagePassword: ${userId}/${deviceId}`)
+    if (storeEncrypted) {
+      logger.info(`已从 keychain 获取 crypto storageKey（32 字节），crypto store 将加密: ${userId}/${deviceId}`)
     } else {
-      logger.warn(`未获取到 crypto storagePassword，crypto store 将不加密: ${userId}/${deviceId}`)
+      // 不静默降级：未加密的 IndexedDB store 会把**设备私钥与房间密钥以明文落盘**。
+      // SDK 的 ISSUE-08b 默认拒绝只覆盖"未加密的**内存** store"，
+      // 不会拒绝"未加密的 IndexedDB store"（见 client.d.ts JSDoc）。
+      logger.error(`未获取到 crypto storageKey，crypto store 将不加密（私钥/房间密钥明文落盘）: ${userId}/${deviceId}`)
     }
 
     this.rustCryptoDebugState = {
@@ -389,20 +451,19 @@ export class MatrixCryptoStateTracker {
       initialized: false,
       skippedReason: null,
       error: null,
-      usedIndexedDB: useIndexedDB
+      usedIndexedDB: useIndexedDB,
+      storeEncrypted: storeEncrypted
     }
 
     try {
-      await cryptoClient.initRustCrypto({
-        useIndexedDB,
-        storagePassword: storagePassword ?? undefined
-      })
+      await cryptoClient.initRustCrypto(storageKey ? { useIndexedDB, storageKey } : { useIndexedDB })
       this.rustCryptoDebugState = {
         attempted: true,
         initialized: true,
         skippedReason: null,
         error: null,
-        usedIndexedDB: useIndexedDB
+        usedIndexedDB: useIndexedDB,
+        storeEncrypted: storeEncrypted
       }
       logger.info(`Rust Crypto 初始化完成: ${userId}/${deviceId}`)
       broadcastCryptoInitDone()
@@ -413,7 +474,7 @@ export class MatrixCryptoStateTracker {
       // 因此 initRustCrypto 失败且 IndexedDB 可用时，无条件清理旧 store 后重试一次。
       // 常见触发场景：
       //   - "account in the store doesn't match"（换设备登录，旧 store 残留）
-      //   - "An object failed to be decrypted while unpickling"（storagePassword 跨会话不一致）
+      //   - "An object failed to be decrypted while unpickling"（storageKey 跨会话不一致）
       //   - store 损坏 / 版本不兼容
       if (useIndexedDB) {
         logger.warn(`Rust Crypto 初始化失败（${errMsg}），尝试清除旧 crypto 数据后重试...`)
@@ -429,16 +490,14 @@ export class MatrixCryptoStateTracker {
             )
           }
           await new Promise((resolve) => setTimeout(resolve, waitMs))
-          await cryptoClient.initRustCrypto({
-            useIndexedDB,
-            storagePassword: storagePassword ?? undefined
-          })
+          await cryptoClient.initRustCrypto(storageKey ? { useIndexedDB, storageKey } : { useIndexedDB })
           this.rustCryptoDebugState = {
             attempted: true,
             initialized: true,
             skippedReason: null,
             error: null,
-            usedIndexedDB: useIndexedDB
+            usedIndexedDB: useIndexedDB,
+            storeEncrypted: storeEncrypted
           }
           logger.info(`Rust Crypto 重试初始化完成: ${userId}/${deviceId}`)
           broadcastCryptoInitDone()
@@ -450,7 +509,8 @@ export class MatrixCryptoStateTracker {
             initialized: false,
             skippedReason: null,
             error: retryMsg,
-            usedIndexedDB: useIndexedDB
+            usedIndexedDB: useIndexedDB,
+            storeEncrypted: storeEncrypted
           }
           logger.warn(`Rust Crypto 重试仍失败，继续以非加密模式启动: ${retryMsg}`)
           return
@@ -461,7 +521,8 @@ export class MatrixCryptoStateTracker {
         initialized: false,
         skippedReason: null,
         error: errMsg,
-        usedIndexedDB: useIndexedDB
+        usedIndexedDB: useIndexedDB,
+        storeEncrypted: storeEncrypted
       }
       logger.warn(`Rust Crypto 初始化失败，继续以非加密模式启动: ${errMsg}`)
     }
@@ -502,7 +563,8 @@ export class MatrixCryptoStateTracker {
       initialized: false,
       skippedReason: null,
       error: null,
-      usedIndexedDB: null
+      usedIndexedDB: null,
+      storeEncrypted: null
     }
     this.eventDecryptedDebugState = {
       count: 0,
@@ -552,13 +614,18 @@ export class MatrixCryptoStateTracker {
     globalThis.localStorage.setItem('tjg.lastCryptoUserId', value)
   }
 
-  /** 读取上次 storagePassword 加密状态（'1'=有密码, '0'=无密码, null=首次） */
+  /**
+   * 读取上次的「加密状态 + 加密原语」标记。
+   *
+   * @returns `'k1'` = storageKey（32 字节）；`'p1'` / `'1'` = 历史 storagePassword；
+   *   `'0'` = 无密钥（store 未加密）；`null` = 首次运行
+   */
   private readLastCryptoEncrypted(): string | null {
     if (typeof globalThis.localStorage === 'undefined') return null
     return globalThis.localStorage.getItem('tjg.lastCryptoEncrypted')
   }
 
-  /** 写入 storagePassword 加密状态 */
+  /** 写入「加密状态 + 加密原语」标记（取值见 {@link readLastCryptoEncrypted}） */
   private writeLastCryptoEncrypted(value: string): void {
     if (typeof globalThis.localStorage === 'undefined') return
     globalThis.localStorage.setItem('tjg.lastCryptoEncrypted', value)

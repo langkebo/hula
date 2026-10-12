@@ -282,4 +282,82 @@ describe('CryptoDeviceAdapter', () => {
       await expect(adapter.unblockDevice('@alice:matrix.org', 'DEV1')).rejects.toThrow(/不支持/)
     })
   })
+
+  describe('getUnverifiedDevicesInRoom', () => {
+    /** 造一个只有 getRoom(roomId).getJoinedMembers() 的 MatrixClient。 */
+    const makeRoomClient = (members: string[], opts: { roomExists?: boolean } = {}) =>
+      ({
+        getRoom: vi.fn(() =>
+          opts.roomExists === false ? null : { getJoinedMembers: () => members.map((userId) => ({ userId })) }
+        )
+      }) as unknown as MatrixClient
+
+    it('只返回未验证设备；已验证设备被排除', async () => {
+      const sdkDeviceKeysManager = {
+        getUserDevices: vi.fn(async (userId: string) =>
+          userId === '@alice:matrix.org'
+            ? { DEV1: { device_id: 'DEV1' }, DEV2: { device_id: 'DEV2' } }
+            : { DEV3: { device_id: 'DEV3' } }
+        )
+      }
+      const crypto = makeVerificationCrypto(['DEV1', 'DEV3'])
+      const adapter = new CryptoDeviceAdapter(
+        createMockAccessors({
+          crypto,
+          sdkDeviceKeysManager,
+          matrixClient: makeRoomClient(['@alice:matrix.org', '@bob:matrix.org'])
+        })
+      )
+
+      const result = await adapter.getUnverifiedDevicesInRoom('!room:matrix.org')
+
+      expect(result.map((d) => d.deviceId)).toEqual(['DEV2'])
+      expect(result[0].userId).toBe('@alice:matrix.org')
+      expect(result[0].isVerified).toBe(false)
+    })
+
+    it('房间内设备全部已验证时返回空数组（空 = 确实没有，而非查不到）', async () => {
+      const sdkDeviceKeysManager = makeDeviceKeysManager({ DEV1: { device_id: 'DEV1' } })
+      const adapter = new CryptoDeviceAdapter(
+        createMockAccessors({
+          crypto: makeVerificationCrypto(['DEV1']),
+          sdkDeviceKeysManager,
+          matrixClient: makeRoomClient(['@alice:matrix.org'])
+        })
+      )
+
+      await expect(adapter.getUnverifiedDevicesInRoom('!room:matrix.org')).resolves.toEqual([])
+    })
+
+    it('房间不在本地 store 时抛错，绝不能返回空数组冒充「没有未验证设备」', async () => {
+      // 回归守卫：历史实现（useEncryption.getUnverifiedDevicesInRoom）恒返回 []，
+      // 使「本房间存在未验证设备」的警示永远不会出现 —— 静默放行。
+      const adapter = new CryptoDeviceAdapter(
+        createMockAccessors({ matrixClient: makeRoomClient([], { roomExists: false }) })
+      )
+
+      await expect(adapter.getUnverifiedDevicesInRoom('!room:matrix.org')).rejects.toThrow(/不能当作/)
+    })
+
+    it('单个成员设备列表拉取失败时跳过该成员，不打断其余成员', async () => {
+      const sdkDeviceKeysManager = {
+        getUserDevices: vi.fn(async (userId: string) => {
+          if (userId === '@broken:matrix.org') throw new Error('network')
+          return { DEV1: { device_id: 'DEV1' } }
+        })
+      }
+      const adapter = new CryptoDeviceAdapter(
+        createMockAccessors({
+          crypto: makeVerificationCrypto([]),
+          sdkDeviceKeysManager,
+          matrixClient: makeRoomClient(['@broken:matrix.org', '@alice:matrix.org'])
+        })
+      )
+
+      const result = await adapter.getUnverifiedDevicesInRoom('!room:matrix.org')
+
+      expect(result.map((d) => d.deviceId)).toEqual(['DEV1'])
+      expect(result[0].userId).toBe('@alice:matrix.org')
+    })
+  })
 })

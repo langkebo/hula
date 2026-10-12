@@ -35,10 +35,18 @@ export const senderDeviceCache = new Map<string, MessageTrustLevel>()
 const cacheVersion = shallowRef(0)
 
 /**
- * 异步刷新信任等级（查设备列表 → 交叉签名 → 更新缓存）
+ * 异步刷新信任等级（查设备列表 → 判定设备验证状态 → 更新缓存）
  *
  * 典型用法：消息渲染组件在 `onMounted` / senderId 变化时调用，
  * 将同步的 `trustLevel` 从安全默认值 'unverified' 升级到真实状态。
+ *
+ * ## 判定规则（2026-10-12 修正）
+ *
+ * `verified` 的判据是「发送者的**全部**设备都已被验证」——**不是**「任意一台被验证」。
+ * 历史实现用 `devices.some(d => d.verified)`，于是「1 台已验证 + 3 台未验证」的发送者
+ * 会拿到**绿锁**（已验证），而他的消息完全可能来自那 3 台未验证设备 —— 这是假安全信号。
+ * 与 E2EE 规范对 cross-signing 的定位一致：信任应覆盖发送者的**设备集合**，
+ * 而不是集合里最容易满足的那一台。
  *
  * @returns 刷新后的信任等级；失败时保持缓存原值（不抛错）
  */
@@ -46,22 +54,12 @@ export async function refreshTrustLevel(senderId: string): Promise<MessageTrustL
   if (!senderId) return 'unverified'
   try {
     const devices = await matrixDeviceService.getUserDevices(senderId)
-    if (devices.length === 0) {
-      senderDeviceCache.set(senderId, 'unverified')
-      cacheVersion.value++
-      return 'unverified'
-    }
-    // 任一设备交叉签名已验证 → 整体视为 verified
-    const anyVerified = devices.some((d) => d.verified)
-    if (anyVerified) {
-      senderDeviceCache.set(senderId, 'verified')
-      cacheVersion.value++
-      return 'verified'
-    }
-    // 无交叉签名设备 → unverified（blocked 设备在 verified=false 时已落入此分支）
-    senderDeviceCache.set(senderId, 'unverified')
+    // 设备列表为空 ⇒ 无法证认任何设备 ⇒ 未验证（绝不能因为"没有反对证据"就给绿锁）
+    const level: MessageTrustLevel =
+      devices.length > 0 && devices.every((d) => d.verified === true) ? 'verified' : 'unverified'
+    senderDeviceCache.set(senderId, level)
     cacheVersion.value++
-    return 'unverified'
+    return level
   } catch {
     // 设备查询失败 → 保持安全默认值，不抛错干扰渲染
     cacheVersion.value++
@@ -89,7 +87,13 @@ export function useMessageTrust(
   isEncrypted: MaybeRefOrGetter<boolean>,
   room?: {
     getEncryptionAlgorithm?: () => string | null
-    isEncrypted?: boolean
+    /**
+     * **房间**是否启用了加密。支持 getter，以便房间状态变化时信任等级同步重算。
+     *
+     * 用途：识别「加密房间里的明文消息」—— 这是 `risk`（红锁）的唯一可达来源，
+     * 同时也是攻击面（有人把消息降级成明文以绕过 E2EE）。
+     */
+    isEncrypted?: MaybeRefOrGetter<boolean>
     senderId?: string
   }
 ) {
@@ -111,16 +115,21 @@ export function useMessageTrust(
    * 信任等级计算
    *
    * 分层策略：
-   * - 未加密 → 'plain'
-   * - 有 senderId → 返回缓存值（默认 'unverified'，异步刷新后更新为真实状态）
-   * - 无 senderId（无法定位发送者设备）→ 安全默认值 'unverified'
+   * - 房间**未**加密 + 消息未加密 → 'plain'（正常明文会话）
+   * - 房间**已**加密 + 消息未加密 → 'risk'（红锁）
+   *   —— 加密房间里的明文消息要么是攻击面（强行降级以绕过 E2EE），要么是发送端配置错误；
+   *   两者都必须对用户可见。历史实现恒回 'plain'，于是 `risk` 这一档**永远不可达**。
+   * - 已加密 + 有 senderId → 返回缓存值（默认 'unverified'，异步刷新后更新为真实状态）
+   * - 已加密 + 无 senderId（无法定位发送者设备）→ 安全默认值 'unverified'
    *   （旧实现恒回 'verified'，造成假安全信号——已修复）
    */
   const trustLevel = scope.run(() =>
     computed<MessageTrustLevel>(() => {
       // 依赖 cacheVersion：refreshTrustLevel 更新缓存后触发重算
       void cacheVersion.value
-      if (!isEncryptedEvent.value) return 'plain'
+      if (!isEncryptedEvent.value) {
+        return toValue(room?.isEncrypted) ? 'risk' : 'plain'
+      }
 
       const senderId = room?.senderId
       if (!senderId) return 'unverified'

@@ -2,5 +2,15 @@
   "banner": {
     "title": "End-to-End Encryption",
     "desc": "This conversation is end-to-end encrypted; the server cannot read its contents"
+  },
+  "unverified": {
+    "title": "{count} unverified device(s) in this room",
+    "desc": "These devices will not receive this room's encrypted messages. By default keys are still sent to them (for interoperability with clients such as Element); you can also send only to verified devices.",
+    "action_strict": "Send to verified devices only",
+    "strict_on_desc": "Strict mode is on: this room's keys are only sent to verified devices, so {count} device(s) currently receive nothing. This only affects messages sent from now on — keys already shared cannot be recalled.",
+    "action_revert": "Use default",
+    "query_failed_title": "Cannot confirm device verification status",
+    "query_failed_desc": "The device list for this room is temporarily unavailable, so it is unknown whether unverified devices exist.",
+    "retry": "Retry"
   }
 }

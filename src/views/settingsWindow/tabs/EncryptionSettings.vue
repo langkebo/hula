@@ -195,6 +195,24 @@
 
     <n-divider />
 
+    <!-- R-1：严格模式（默认关闭，保留与 Element 等客户端的互操作） -->
+    <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.encryption.strict_section') }}</h3>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.encryption.strict_label') }}</span>
+          <span class="setting-desc">{{ t('setting.encryption.strict_desc') }}</span>
+        </div>
+        <n-switch
+          data-testid="strict-unverified-switch"
+          :value="strictModeEnabled"
+          :disabled="!encryptionEnabled"
+          @update:value="handleStrictModeToggle" />
+      </div>
+    </div>
+
+    <n-divider />
+
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.encryption.info_section') }}</h3>
       <div class="encryption-info">
@@ -289,7 +307,9 @@ import {
   matrixVerificationService,
   type VerificationTransaction
 } from '@/services/matrix/crypto/MatrixVerificationService'
+import { applyGlobalStrict } from '@/services/matrix/crypto/strictDevicePolicy'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('EncryptionSettings')
@@ -302,6 +322,24 @@ const { showFeedback } = useActionFeedback()
 const { write: writeClipboard } = useClipboard()
 const { t } = useI18n()
 const encryptionStore = useEncryptionStore()
+const settingStore = useSettingStore()
+
+/**
+ * R-1 严格模式：全局偏好 → SDK 可写属性 `crypto.globalBlacklistUnverifiedDevices`。
+ *
+ * 注意本 fork **没有** `setGlobalBlacklistUnverifiedDevices()` 方法，
+ * 且该值随 client 重建归零 ⇒ 除在此即时施加外，登录/crypto 初始化后
+ * 还需由 `reapplyPersistedStrictness()` 重放（见该函数注释）。
+ */
+const strictModeEnabled = computed(() => settingStore.blockUnverifiedDevicesEnabled)
+
+function handleStrictModeToggle(enabled: boolean) {
+  settingStore.setBlockUnverifiedDevicesEnabled(enabled)
+  const applied = applyGlobalStrict(enabled)
+  if (!applied) {
+    logger.warn('crypto 未就绪，严格模式偏好已保存，将在加密初始化后生效')
+  }
+}
 
 const deviceKeyVisible = ref(false)
 const deviceFingerprint = ref('')

@@ -76,6 +76,21 @@ declare namespace STO {
       sendTypingNotifications: boolean
       /** 是否向他人展示在线状态 */
       showOnlineStatus: boolean
+      /**
+       * 全局严格模式：不向未验证设备发送加密房间的密钥（R-1）。
+       *
+       * 默认 `false` —— 这是 SDK/Element 的互操作默认：开启后未验证设备
+       * 会完全收不到消息，故必须由用户显式决定。
+       */
+      blockUnverifiedDevices: boolean
+      /**
+       * 逐房间启用严格模式的房间 ID 列表（R-1）。
+       *
+       * SDK 的 `Room.setBlacklistUnverifiedDevices` **不持久化**，故用户
+       * 在房间内做出的"仅向已验证设备发送"决定记录在此并在房间就绪时重放。
+       * 仅登记显式开启的房间，规模与用户操作次数同阶。
+       */
+      strictUnverifiedRooms: string[]
     }
     /** 聊天设置 */
     chat: {

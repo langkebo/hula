@@ -71,6 +71,19 @@ export interface DeviceVerificationStatus {
 }
 
 export interface CryptoApi {
+  /**
+   * 全局严格模式：不向未验证设备发送加密房间的密钥（R-1）。
+   *
+   * 真身是 vendored SDK 的 `CryptoApi.globalBlacklistUnverifiedDevices`
+   * （`lib/crypto-api/index.d.ts`，`RustCrypto` 中初始化为 `false`、
+   * 每次 `encryptEvent` / `prepareForEncryption` 时读取），是一个
+   * **可写属性**，本 fork **没有** `setGlobalBlacklistUnverifiedDevices()` 方法。
+   *
+   * ⚠️ 本接口是**手写**的 SDK 契约镜像，缺成员会被 `as unknown as` 掩盖成
+   * 运行时 `undefined`。新增用法时务必同时补齐这里（见仓库审计报告
+   * 「手写契约镜像」一类缺陷）。
+   */
+  globalBlacklistUnverifiedDevices: boolean
   requestDeviceVerification(userId: string, deviceId: string): Promise<VerificationRequest>
   getDeviceVerificationStatus(userId: string, deviceId: string): Promise<DeviceVerificationStatus | null>
   getOwnDeviceKeys(): Promise<{ ed25519: string; curve25519: string }>
