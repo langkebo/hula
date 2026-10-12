@@ -102,16 +102,6 @@
     "log:default",
     "log:allow-log",
     {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "name": "powershell",
-          "cmd": "powershell",
-          "args": false
-        }
-      ]
-    },
-    {
       "identifier": "fs:write-files",
       "allow": [
         {
