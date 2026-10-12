@@ -39,7 +39,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn()
 }))
 
-import { startWebVitalObserver, stopWebVitalObserver } from '../WebVitalsObserver'
+import { createWebVitalsObserver, startWebVitalObserver, stopWebVitalObserver } from '../WebVitalsObserver'
 
 describe('WebVitalsObserver — 单次执行守卫', () => {
   beforeEach(() => {
@@ -122,9 +122,53 @@ describe('WebVitalsObserver — 单次执行守卫', () => {
     vi.unstubAllGlobals()
   })
 
-  it('SSR 环境（无 window）start 不抛错', () => {
-    // window 在 jsdom 环境存在，此测试验证 hasStarted 守卫
-    // 已在 beforeEach 中 stop，hasStarted = false
-    expect(() => startWebVitalObserver()).not.toThrow()
+  it('无 window（SSR）环境下 start 直接返回且不注册回调', () => {
+    vi.stubGlobal('window', undefined)
+    const observer = createWebVitalsObserver()
+
+    expect(() => observer.start()).not.toThrow()
+    // start 在无 window 时提前返回，不应注册任何 web-vitals 回调
+    expect(mockOnCLS).not.toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
+  })
+
+  it('createWebVitalsObserver 两次调用互相隔离（各自独立注册与停止）', () => {
+    const observerA = createWebVitalsObserver()
+    const observerB = createWebVitalsObserver()
+
+    observerA.start()
+    expect(mockOnCLS).toHaveBeenCalledTimes(1)
+
+    // B 是独立实例，不受 A 已启动的影响
+    observerB.start()
+    expect(mockOnCLS).toHaveBeenCalledTimes(2)
+
+    // A 停止只影响自身，B 仍可再次启动（B 的 hasStarted 保持 false 后重置）
+    observerA.stop()
+    observerA.start()
+    expect(mockOnCLS).toHaveBeenCalledTimes(3)
+
+    observerB.stop()
+  })
+
+  it('两个实例的 SDK 请求统计定时器互相隔离', () => {
+    vi.useFakeTimers()
+    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval')
+
+    const observerA = createWebVitalsObserver()
+    const observerB = createWebVitalsObserver()
+
+    observerA.start({ prometheusEndpoint: 'http://localhost:9090' })
+    observerB.start({ prometheusEndpoint: 'http://localhost:9090' })
+
+    // 每个实例各自创建一个轮询定时器
+    expect(setIntervalSpy).toHaveBeenCalledTimes(2)
+
+    observerA.stop()
+    observerB.stop()
+
+    setIntervalSpy.mockRestore()
+    vi.useRealTimers()
   })
 })
