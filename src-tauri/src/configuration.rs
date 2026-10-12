@@ -182,8 +182,7 @@ impl DatabaseSettings {
         app_handle: &AppHandle,
         uid: Option<&str>,
     ) -> Result<DatabaseConnection, CommonError> {
-        let db_filename = Self::get_db_filename(uid);
-        // 数据库路径配置：
+        // 数据库路径配置：先确定目录，再在其中解析文件名（含一次性迁移，见 `resolve_db_filename`）。
         let db_dir = if cfg!(debug_assertions) && cfg!(desktop) {
             // 桌面端开发环境：使用项目根目录（src-tauri）
             PathBuf::from(env!("CARGO_MANIFEST_DIR"))
