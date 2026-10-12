@@ -14,7 +14,7 @@
  * IndexedDB 清理重试 + crypto 状态机复杂实现
  */
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
-import { reapplyPersistedStrictness } from '@/services/matrix/crypto/strictDevicePolicyBootstrap'
+import { replayPersistedStrictness } from '@/services/matrix/crypto/strictDevicePolicyReplay'
 import { getOrCreateCryptoStorageKey, logCryptoStorageKeyBackend } from '@/services/secure/cryptoStorageKey'
 import { createLogger } from '@/utils/Logger'
 
@@ -338,19 +338,15 @@ export class MatrixCryptoStateTracker {
     // R-1：初始化路径走完后重放用户的严格模式决定。crypto 若仍未就绪，
     // `reapplyPersistedStrictness` 内部会计为"暂不可应用"且不抛错 ——
     // 房间内横幅（`useRoomStrictness`）在进入加密房间时还会再施加一次。
-    this.applyPersistedStrictness()
+    await this.applyPersistedStrictness()
   }
 
   /**
-   * 重放持久化的「严格模式」偏好（R-1）。**尽力而为**：任何失败都不得影响
-   * crypto 初始化本身的结论，故整体吞错并只记日志。
+   * 重放持久化的「严格模式」偏好（R-1）。**尽力而为**：任何失败都不得影响 crypto 初始化
+   * 本身的结论。实现放在 `strictDevicePolicyReplay`（那里用动态 import 规避模块环，勿内联）。
    */
-  private applyPersistedStrictness(): void {
-    try {
-      reapplyPersistedStrictness()
-    } catch (err) {
-      logger.warn(`严格模式偏好重放失败（不影响 crypto 初始化）: ${normalizeCryptoError(err)}`)
-    }
+  private async applyPersistedStrictness(): Promise<void> {
+    await replayPersistedStrictness()
   }
 
   /**
