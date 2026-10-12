@@ -93,6 +93,69 @@ describe('Logger', () => {
     })
   })
 
+  describe('参数格式化（错误对象不得退化成 {}）', () => {
+    /**
+     * 取私有 `formatMessage` 的输出（与上面的 `sanitize` 用例同法：该方法是私有的，
+     * 但确实挂在原型上）。刻意绕过 `shouldLog`/去重，保证断言确定性。
+     */
+    function format(level: LogLevel, message: string, ...args: unknown[]): string {
+      const logger = createLogger('FormatProbe')
+      const proto = Object.getPrototypeOf(logger) as {
+        formatMessage: (level: LogLevel, message: string, ...args: unknown[]) => string
+      }
+      return proto.formatMessage.call(logger, level, message, ...args)
+    }
+
+    it('Error 参数保留 message（不再只剩 {}）', () => {
+      const text = format('warn', '读取服务端邀请策略失败', new Error('invite policy read failed'))
+      expect(text).toContain('invite policy read failed')
+      expect(text).not.toMatch(/: \{\}$/)
+    })
+
+    it('保留 SDK 的 errorCode / statusCode（排障的关键事实）', () => {
+      const error = Object.assign(new Error('url not allowed on the configured scope'), {
+        name: 'ApiError',
+        errorCode: 'M_FORBIDDEN',
+        statusCode: 403
+      })
+
+      const text = format('warn', 'Admin API 探测失败', error)
+
+      expect(text).toContain('M_FORBIDDEN')
+      expect(text).toContain('403')
+      expect(text).toContain('ApiError')
+    })
+
+    it('展开 cause 链', () => {
+      const inner = Object.assign(new Error('inner-cause'), { errorCode: 'M_UNKNOWN' })
+      const text = format('warn', 'outer', new Error('outer-msg', { cause: inner }))
+      expect(text).toContain('outer-msg')
+      expect(text).toContain('inner-cause')
+      expect(text).toContain('M_UNKNOWN')
+    })
+
+    it('Error 分支不得绕过脱敏（消息里的 token 仍被 REDACTED）', () => {
+      const text = format('warn', 'login failed', new Error('bad credential access_token=syt_abcdefghijklmnop'))
+      expect(text).toContain('[REDACTED]')
+      expect(text).not.toContain('syt_abcdefghijklmnop')
+    })
+
+    it('循环引用参数不抛错（日志调用不得污染调用点）', () => {
+      const circular: Record<string, unknown> = { kind: 'circular' }
+      circular.self = circular
+      expect(() => format('warn', 'circular arg', circular)).not.toThrow()
+    })
+
+    it('嵌套在对象里的 Error 同样被展开', () => {
+      const text = format('warn', 'nested', {
+        op: 'sync',
+        err: Object.assign(new Error('nested-boom'), { errorCode: 'M_X' })
+      })
+      expect(text).toContain('nested-boom')
+      expect(text).toContain('M_X')
+    })
+  })
+
   describe('level filtering', () => {
     it('setLevel returns this for chaining', () => {
       const logger = createLogger('Chain')

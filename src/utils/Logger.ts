@@ -1,4 +1,5 @@
 import { debug, error, info, trace, warn } from '@tauri-apps/plugin-log'
+import { serializeLogArg, toErrorDescriptor } from '@/utils/logArgSerialize'
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'off'
 
@@ -219,6 +220,8 @@ class Logger {
   private static redactObject(obj: unknown, depth = 0): unknown {
     if (depth > 5) return '[DEPTH_EXCEEDED]'
     if (!obj || typeof obj !== 'object') return obj
+    // Error 的 message/stack 非可枚举 ⇒ 直接走 Object.entries 会退化成 {}（见 logArgSerialize）
+    if (obj instanceof Error) return Logger.redactObject(toErrorDescriptor(obj), depth + 1)
     if (Array.isArray(obj)) return obj.map((item) => Logger.redactObject(item, depth + 1))
 
     const result: Record<string, unknown> = {}
@@ -269,10 +272,7 @@ class Logger {
   private formatMessage(level: LogLevel, message: string, ...args: unknown[]): string {
     const timestamp = new Date().toISOString()
     const redactedArgs = args.map((a) => Logger.redactObject(a))
-    const formattedArgs =
-      redactedArgs.length > 0
-        ? ` ${redactedArgs.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')}`
-        : ''
+    const formattedArgs = redactedArgs.length > 0 ? ` ${redactedArgs.map(serializeLogArg).join(' ')}` : ''
     const raw = `[${timestamp}] [${level.toUpperCase()}] [${this.context}] ${message}${formattedArgs}`
     return Logger.sanitize(raw)
   }
