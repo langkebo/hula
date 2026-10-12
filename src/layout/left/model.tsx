@@ -85,9 +85,15 @@ export const LockScreen = defineComponent(() => {
         {isMac() ? (
           <MacCloseButton onClick={() => (modalShow.value = false)} class="relative" />
         ) : (
-          <svg onClick={() => (modalShow.value = false)} class="w-12px h-12px ml-a cursor-pointer select-none">
-            <use href="#close"></use>
-          </svg>
+          <button
+            type="button"
+            aria-label={t('common.close')}
+            onClick={() => (modalShow.value = false)}
+            class="ml-a w-12px h-12px p-0 border-0 bg-transparent cursor-pointer select-none">
+            <svg aria-hidden="true" class="w-12px h-12px">
+              <use href="#close"></use>
+            </svg>
+          </button>
         )}
         <div class="flex flex-col gap-10px p-10px select-none">
           <NFlex vertical justify="center" align="center" size={20}>
@@ -291,9 +297,15 @@ export const CheckUpdate = defineComponent(() => {
         {isMac() ? (
           <MacCloseButton onClick={() => (modalShow.value = false)} class="relative" />
         ) : (
-          <svg onClick={() => (modalShow.value = false)} class="w-12px h-12px ml-a cursor-pointer select-none">
-            <use href="#close"></use>
-          </svg>
+          <button
+            type="button"
+            aria-label={t('common.close')}
+            onClick={() => (modalShow.value = false)}
+            class="ml-a w-12px h-12px p-0 border-0 bg-transparent cursor-pointer select-none">
+            <svg aria-hidden="true" class="w-12px h-12px">
+              <use href="#close"></use>
+            </svg>
+          </button>
         )}
         {loading.value ? (
           <NFlex vertical justify={'center'} size={10} class="mt-6px">
@@ -312,7 +324,7 @@ export const CheckUpdate = defineComponent(() => {
 
                 {newVersion.value ? (
                   <NFlex align={'center'} size={10} class="relative">
-                    <svg class="w-24px h-24px select-none text-[--tjg-text-disabled]">
+                    <svg aria-hidden="true" class="w-24px h-24px select-none text-[--tjg-text-disabled]">
                       <use href={'#RightArrow'}></use>
                     </svg>
 
@@ -362,7 +374,9 @@ export const CheckUpdate = defineComponent(() => {
 
                   <NFlex>
                     <NFlex vertical size={20}>
-                      <svg class="m-[4px_40px] w-24px h-24px select-none rotate-270 text-[--tjg-text-disabled]">
+                      <svg
+                        aria-hidden="true"
+                        class="m-[4px_40px] w-24px h-24px select-none rotate-270 text-[--tjg-text-disabled]">
                         <use href={'#RightArrow'}></use>
                       </svg>
 

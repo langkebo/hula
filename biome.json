@@ -36,10 +36,10 @@
     "rules": {
       "preset": "recommended",
       "a11y": {
-        "noStaticElementInteractions": "off",
-        "useKeyWithClickEvents": "off",
-        "noSvgWithoutTitle": "off",
-        "useAltText": "off"
+        "noStaticElementInteractions": "error",
+        "useKeyWithClickEvents": "error",
+        "noSvgWithoutTitle": "error",
+        "useAltText": "error"
       },
       "complexity": {
         "useOptionalChain": "error",
