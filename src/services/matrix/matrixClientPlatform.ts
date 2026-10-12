@@ -1,4 +1,5 @@
 import { createLogger } from '@/utils/Logger'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 
 const logger = createLogger('MatrixClient')
 
@@ -19,7 +20,7 @@ export async function logoutExpiredSession(): Promise<void> {
 }
 
 export function setupSystemResumeListener(onResume: () => void): void {
-  if (!(typeof window !== 'undefined' && '__TAURI__' in window)) {
+  if (!hasTauriRuntime()) {
     return
   }
 

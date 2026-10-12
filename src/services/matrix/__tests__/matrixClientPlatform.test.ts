@@ -40,23 +40,23 @@ describe('persistRefreshedToken', () => {
 })
 
 describe('setupSystemResumeListener', () => {
-  const originalTauriSymbol = (window as unknown as Record<string, unknown>).__TAURI__
+  const originalTauriSymbol = (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__
 
   beforeEach(() => {
     mockedListen.mockReset()
-    // Remove any pre-existing __TAURI__ flag to simulate the non-Tauri environment.
-    delete (window as unknown as Record<string, unknown>).__TAURI__
+    // Remove any pre-existing __TAURI_INTERNALS__ flag to simulate the non-Tauri environment.
+    delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__
   })
 
   afterEach(() => {
     if (originalTauriSymbol === undefined) {
-      delete (window as unknown as Record<string, unknown>).__TAURI__
+      delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__
     } else {
-      ;(window as unknown as Record<string, unknown>).__TAURI__ = originalTauriSymbol
+      ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = originalTauriSymbol
     }
   })
 
-  it('does nothing when running outside Tauri (no __TAURI__ on window)', () => {
+  it('does nothing when running outside Tauri (no __TAURI_INTERNALS__ on window)', () => {
     const onResume = vi.fn()
     setupSystemResumeListener(onResume)
     expect(mockedListen).not.toHaveBeenCalled()
@@ -69,7 +69,7 @@ describe('setupSystemResumeListener', () => {
       capturedHandler = handler
       return Promise.resolve(() => {})
     })
-    ;(window as unknown as Record<string, unknown>).__TAURI__ = {}
+    ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {}
 
     const onResume = vi.fn()
     setupSystemResumeListener(onResume)
@@ -83,7 +83,7 @@ describe('setupSystemResumeListener', () => {
 
   it('does not call onResume when listen rejects', async () => {
     mockedListen.mockRejectedValue(new Error('listen failed'))
-    ;(window as unknown as Record<string, unknown>).__TAURI__ = {}
+    ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {}
 
     const onResume = vi.fn()
     setupSystemResumeListener(onResume)

@@ -1,10 +1,10 @@
 // Global error capture - report via Tauri IPC
 var _errorReporting = false;
 var _report = function (tag, msg) {
-  if (window.__TAURI__ && !_errorReporting) {
+  if (window.__TAURI_INTERNALS__ && !_errorReporting) {
     _errorReporting = true;
     try {
-      var p = window.__TAURI__.core.invoke('set_complete', { task: tag + ': ' + String(msg).slice(0, 200) });
+      var p = window.__TAURI_INTERNALS__.invoke('set_complete', { task: tag + ': ' + String(msg).slice(0, 200) });
       if (p && typeof p.catch === 'function') p.catch(function () {});
     } catch (e) {} finally {
       _errorReporting = false;
