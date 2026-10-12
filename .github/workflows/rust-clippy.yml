@@ -40,23 +40,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
 
+      # P1-1⑤（2026-10-12）：`actions-rs/toolchain` 已归档弃用，改用社区维护的
+      # `dtolnay/rust-toolchain`（与本仓 release.yml / debug-build.yml 一致）。
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af #@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
           components: clippy
-          override: true
 
       - name: Install required cargo
         run: cargo install clippy-sarif sarif-fmt
 
+      # P1-1⑤（2026-10-12）：移除 continue-on-error，使 clippy 结果真正阻断（EG-06）。
+      # 管道默认取最后一个命令（sarif-fmt）的退出码，会吞掉 cargo clippy 的失败；
+      # 故用 `set -o pipefail` 让 cargo clippy 的非 0 退出向上传播（否则本步形同虚设）。
       - name: Run rust-clippy
-        run:
-          cargo clippy
-          --all-features
-          --message-format=json | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
-        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo clippy \
+            --all-features \
+            --message-format=json | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
 
       - name: Upload analysis results to GitHub
         uses: github/codeql-action/upload-sarif@v3

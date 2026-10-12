@@ -81,6 +81,9 @@ jobs:
           pnpm check:settings-wiring
           pnpm check:component-contracts
           pnpm check:i18n-dead-keys
+          # P1-1②（2026-10-12）：800 行红线此前只在脚本层存在、从未接入 CI（EG-04）。
+          # 基线见 meta/file-size-baseline.json（棘轮：存量不增长，新增 >400 即红）。
+          pnpm check:file-size
 
       - name: Upload contract judgment diff (C-1)
         if: always()
@@ -132,8 +135,16 @@ jobs:
       - name: Crypto Health Monitor Tests (Phase 3.4)
         run: pnpm test:crypto-health
 
+      # P1-1③（2026-10-12）：移除 continue-on-error，使 SDK pin 校验真正阻断（EG-02）。
+      #
+      # 降级策略由脚本内置（显式打印 SKIP banner，非静默通过）：
+      #   - Tjg-only CI 无 `../matrix-js-sdk` worktree / 无 `../synapse-rust` sibling，
+      #     且未设 TJG_SDK_DIR ⇒ sdk_commit freshness / contract-mirror binding /
+      #     route-freshness 三段判据走 SKIP（scripts/verify-sdk-pin.mjs L252/L309/L332）。
+      #   - 仍真实执行的判据 = tarball sha256 + `pin.sdk_lib_fingerprint` ↔ 已安装
+      #     `node_modules/matrix-js-sdk/lib` 指纹绑定（N-05，fail-closed）⇒ 保证
+      #     「pin ↔ tarball ↔ 已安装产物」一致，CI 中该步对核心不变量有效。
       - name: SDK Pin Verification
-        continue-on-error: true
         run: pnpm verify:sdk-pin
 
       - name: Build
