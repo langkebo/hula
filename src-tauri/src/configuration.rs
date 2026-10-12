@@ -1,7 +1,7 @@
 use crate::error::CommonError;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tracing::info;
@@ -67,14 +67,102 @@ pub enum Environment {
     Production,
 }
 
+/// Windows 文件名中非法、且可能影响路径层级的字符。
+///
+/// `:` 是 Matrix 用户 ID 的必需部分（`@localpart:domain`），但在 Windows 上非法 ⇒
+/// `db_@test1:matrix.test.sqlite` 在 Windows 建库直接失败（桌面端含 windows 目标）。
+/// 同时含路径分隔符，避免异常 uid 影响目录层级（路径穿越）。
+const ILLEGAL_FILENAME_CHARS: &[char] = &['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
+
+/// 把 uid 归一化为**跨平台合法**的文件名片段：非法字符与控制字符 → `_`。
+///
+/// 额外的两处 Windows 语义（不是所有非法字符都由 `ILLEGAL_FILENAME_CHARS` 覆盖）：
+/// - 尾随 `.` / 空格会被 Win32 静默剥离 ⇒ 会与"写进去的名字"不一致，故去掉；
+/// - 保留设备名（CON/PRN/AUX/NUL/COM1…）不可作文件名 —— Matrix ID 必以 `@` 开头，
+///   不会命中，故不额外处理（保留了 `@`，也就不会误伤合法 uid）。
+pub(crate) fn sanitize_uid_for_filename(uid: &str) -> String {
+    let sanitized: String = uid
+        .chars()
+        .map(|ch| {
+            if ILLEGAL_FILENAME_CHARS.contains(&ch) || ch.is_control() {
+                '_'
+            } else {
+                ch
+            }
+        })
+        .collect();
+
+    let trimmed = sanitized.trim_end_matches(['.', ' ']);
+    if trimmed.is_empty() {
+        // 全被剥掉（如 uid 全是点/空格）⇒ 退回占位，避免退化成 "db_.sqlite" 之外的异常名
+        "_".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
 impl DatabaseSettings {
     /// 根据用户ID生成数据库文件名
     /// 如果提供了用户ID，则生成 `db_{uid}.sqlite` 格式的文件名
     /// 否则使用默认的 `db.sqlite`
+    ///
+    /// uid 会先经 [`sanitize_uid_for_filename`] 归一化，使文件名在各平台合法。
     fn get_db_filename(uid: Option<&str>) -> String {
         match uid {
-            Some(id) if !id.is_empty() => format!("db_{}.sqlite", id),
+            Some(id) if !id.is_empty() => format!("db_{}.sqlite", sanitize_uid_for_filename(id)),
             _ => "db.sqlite".to_string(),
+        }
+    }
+
+    /// **历史**（未归一化）文件名 `db_{raw_uid}.sqlite`；仅在归一化确实改变了名字时才返回。
+    ///
+    /// 用于一次性迁移：既有安装（macOS/Linux）里数据库就叫 `db_@u:host.sqlite`，
+    /// 若改名后直接新建，本地消息缓存会被**静默丢弃**（服务端回填有限）。
+    fn get_legacy_db_filename(uid: Option<&str>) -> Option<String> {
+        match uid {
+            Some(id) if !id.is_empty() => {
+                let legacy = format!("db_{}.sqlite", id);
+                (legacy != Self::get_db_filename(uid)).then_some(legacy)
+            }
+            _ => None,
+        }
+    }
+
+    /// 解析实际使用的数据库文件名（含一次性迁移），目录为 `dir`。
+    ///
+    /// 迁移语义：
+    /// - 旧文件不存在 / 新文件已存在 ⇒ 直接用归一化名（幂等，不重复迁移）；
+    /// - 旧文件存在且新文件不存在 ⇒ `rename`；**失败时保留旧名**并告警 ——
+    ///   宁可文件名不归一，也不能因迁移失败而丢失本地数据。
+    fn resolve_db_filename(dir: &Path, uid: Option<&str>) -> String {
+        let current = Self::get_db_filename(uid);
+        let Some(legacy) = Self::get_legacy_db_filename(uid) else {
+            return current;
+        };
+
+        let legacy_path = dir.join(&legacy);
+        let current_path = dir.join(&current);
+        if !legacy_path.exists() || current_path.exists() {
+            return current;
+        }
+
+        match std::fs::rename(&legacy_path, &current_path) {
+            Ok(()) => {
+                info!(
+                    "Migrated legacy database filename to cross-platform safe name: {} -> {}",
+                    legacy, current
+                );
+                current
+            }
+            Err(err) => {
+                tracing::warn!(
+                    "Failed to migrate legacy database filename {} -> {}: {}. Continuing with the legacy name (functionality unaffected).",
+                    legacy,
+                    current,
+                    err
+                );
+                legacy
+            }
         }
     }
 
@@ -95,23 +183,17 @@ impl DatabaseSettings {
         uid: Option<&str>,
     ) -> Result<DatabaseConnection, CommonError> {
         let db_filename = Self::get_db_filename(uid);
-        info!("Database filename: {}", db_filename);
-
         // 数据库路径配置：
-        let db_path = if cfg!(debug_assertions) && cfg!(desktop) {
+        let db_dir = if cfg!(debug_assertions) && cfg!(desktop) {
             // 桌面端开发环境：使用项目根目录（src-tauri）
-            let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            path.push(&db_filename);
-            path
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         } else {
             match app_handle.path().app_data_dir() {
                 Ok(app_data_dir) => {
                     if let Err(create_err) = std::fs::create_dir_all(&app_data_dir) {
                         tracing::warn!("Failed to create app_data_dir: {}", create_err);
                     }
-                    let db_path = app_data_dir.join(&db_filename);
-                    info!("Using app_data_dir database path: {:?}", db_path);
-                    db_path
+                    app_data_dir
                 }
                 Err(e) => {
                     let error_msg = format!("Failed to get app_data_dir: {}", e);
@@ -120,6 +202,12 @@ impl DatabaseSettings {
                 }
             }
         };
+
+        // 文件名解析放在目录确定之后：若本机存在历史（含 `:` 等非法字符）数据库文件，
+        // 这里先做一次改名迁移，避免改用归一化名后把本地数据"留在旧文件里"。
+        let db_filename = Self::resolve_db_filename(&db_dir, uid);
+        info!("Database filename: {}", db_filename);
+        let db_path = db_dir.join(&db_filename);
         info!("Database path: {:?}", db_path);
 
         if db_path.exists() {
@@ -349,4 +437,145 @@ fn get_config_path_buf(
     println!("active_config: {:?}", active_config);
     let active_config_path_buf = dir.clone().join(active_config);
     Ok((base_path, active_config_path_buf))
+}
+
+#[cfg(test)]
+mod database_filename_tests {
+    use super::*;
+
+    /// 回归锁：Matrix ID 里的 `:` 在 Windows 文件名中非法 ⇒ 必须被归一化。
+    ///
+    /// 历史实现直接 `format!("db_{}.sqlite", id)`，实测日志出现
+    /// `Database filename: db_@test1:matrix.test.sqlite` —— 该名字在 macOS 可用，
+    /// 但桌面端同时发布 windows 目标，届时建库会失败。
+    #[test]
+    fn sanitizes_colon_in_matrix_user_id() {
+        assert_eq!(
+            sanitize_uid_for_filename("@test1:matrix.test"),
+            "@test1_matrix.test"
+        );
+        assert_eq!(
+            DatabaseSettings::get_db_filename(Some("@test1:matrix.test")),
+            "db_@test1_matrix.test.sqlite"
+        );
+    }
+
+    #[test]
+    fn sanitizes_windows_reserved_and_path_separators() {
+        for (input, expected) in [
+            ("a<b>c", "a_b_c"),
+            ("a/b\\c", "a_b_c"),
+            ("a|b?c*d", "a_b_c_d"),
+            ("a\"b", "a_b"),
+            ("@u:h/a\\b", "@u_h_a_b"),
+        ] {
+            assert_eq!(sanitize_uid_for_filename(input), expected, "input={input}");
+        }
+    }
+
+    #[test]
+    fn strips_windows_trailing_dot_and_space() {
+        assert_eq!(sanitize_uid_for_filename("@u:host. "), "@u_host");
+        assert_eq!(sanitize_uid_for_filename("   "), "_");
+    }
+
+    #[test]
+    fn replaces_control_characters() {
+        assert_eq!(sanitize_uid_for_filename("a\u{0}b\nc\td"), "a_b_c_d");
+    }
+
+    #[test]
+    fn only_path_illegal_characters_are_replaced() {
+        // 只替换非法字符，其余字符原样保留（不引入额外的编码/转义）
+        assert_eq!(
+            sanitize_uid_for_filename("@alice:example.org"),
+            "@alice_example.org"
+        );
+        assert_eq!(DatabaseSettings::get_db_filename(None), "db.sqlite");
+        assert_eq!(DatabaseSettings::get_db_filename(Some("")), "db.sqlite");
+        // 本地 part 无冒号（如 uid 只是 "@alice"）时，名字保持不变
+        assert_eq!(
+            DatabaseSettings::get_db_filename(Some("@alice")),
+            "db_@alice.sqlite"
+        );
+    }
+
+    #[test]
+    fn legacy_name_only_reported_when_normalization_changes_it() {
+        assert_eq!(
+            DatabaseSettings::get_legacy_db_filename(Some("@test1:matrix.test")).as_deref(),
+            Some("db_@test1:matrix.test.sqlite")
+        );
+        // 无需归一化 ⇒ 无"历史名"，不会被误判为待迁移
+        assert_eq!(
+            DatabaseSettings::get_legacy_db_filename(Some("@alice")),
+            None
+        );
+        assert_eq!(DatabaseSettings::get_legacy_db_filename(None), None);
+    }
+
+    fn temp_dir(suffix: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("tjg-db-filename-{suffix}"));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("create temp dir");
+        dir
+    }
+
+    #[test]
+    fn migrates_legacy_file_to_sanitized_name() {
+        let dir = temp_dir("migrate");
+        let legacy = dir.join("db_@u:host.sqlite");
+        std::fs::write(&legacy, b"SQLite format 3\0").expect("write legacy db");
+
+        let resolved = DatabaseSettings::resolve_db_filename(&dir, Some("@u:host"));
+
+        assert_eq!(resolved, "db_@u_host.sqlite");
+        assert!(!legacy.exists(), "迁移后旧文件不应残留");
+        assert!(dir.join("db_@u_host.sqlite").exists(), "内容应被搬到新名");
+        // 迁移是"搬运"而非"复制"：数据必须在
+        assert_eq!(
+            std::fs::read(dir.join("db_@u_host.sqlite")).unwrap(),
+            b"SQLite format 3\0"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn migration_is_idempotent_and_does_not_clobber_new_file() {
+        let dir = temp_dir("idempotent");
+        // 新文件已存在（如上次已迁移完）⇒ 不得再动旧文件、不得覆盖新文件
+        std::fs::write(dir.join("db_@u_host.sqlite"), b"NEW").expect("write new db");
+        std::fs::write(dir.join("db_@u:host.sqlite"), b"OLD").expect("write legacy db");
+
+        let resolved = DatabaseSettings::resolve_db_filename(&dir, Some("@u:host"));
+
+        assert_eq!(resolved, "db_@u_host.sqlite");
+        assert_eq!(
+            std::fs::read(dir.join("db_@u_host.sqlite")).unwrap(),
+            b"NEW"
+        );
+        assert!(dir.join("db_@u:host.sqlite").exists(), "旧文件不应被删除");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn no_legacy_file_uses_sanitized_name_directly() {
+        let dir = temp_dir("fresh");
+        let resolved = DatabaseSettings::resolve_db_filename(&dir, Some("@u:host"));
+        assert_eq!(resolved, "db_@u_host.sqlite");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn uid_without_illegal_chars_never_migrates() {
+        let dir = temp_dir("no-migration");
+        let plain = dir.join("db_@alice.sqlite");
+        std::fs::write(&plain, b"X").expect("write db");
+
+        let resolved = DatabaseSettings::resolve_db_filename(&dir, Some("@alice"));
+
+        assert_eq!(resolved, "db_@alice.sqlite");
+        assert!(plain.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
