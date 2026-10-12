@@ -43,7 +43,7 @@ The project supports:
 ## Development Workflow
 
 ### Prerequisites
-- Node.js (v20+ recommended)
+- Node.js (>=22.12.0 <25 recommended)
 - pnpm (v10+ recommended)
 - Rust (latest stable, edition 2024)
 - Android Studio / Xcode (for mobile development)
@@ -111,7 +111,7 @@ SDK iteration; never commit in link mode (`verify:sdk-pin` rejects it on release
 ### Directory Structure
 
 - **`src/`**: Frontend source code.
-  - **`views/`**: Page-level components (windows: `homeWindow`, `loginWindow`, `settingsWindow`, `adminWindow`, `openclaw`, etc.).
+  - **`views/`**: Page-level components (windows: `homeWindow`, `loginWindow`, `settingsWindow`, `adminWindow`, `trendradar`, etc.).
   - **`stores/domains/`**: Pinia stores organized by domain:
     - **`chat/`**: Room, message, contacts, badge, emoji, moderation, history, sync stores.
     - **`settings/`**: Config, guide, plugins, mobile, alwaysOnTop, menu stores.
@@ -141,12 +141,9 @@ SDK iteration; never commit in link mode (`verify:sdk-pin` rejects it on release
     - **`backend/`**: Backend config and HTTP client (`config.ts`, `endpoints.ts`, `types.ts`).
     - **`offline/`**: `OfflineQueueService` for queuing messages when disconnected.
     - **`performance/`**: `ChunkUploadService` for large file uploads.
-    - **`openclaw/`**: `OpenClawService` - OpenAI-compatible AI gateway (streaming, reconnect).
     - **`siliconflow/`**: `SiliconFlowService` - SiliconFlow AI provider.
     - **`trendradar/`**: `TrendRadarService` - trending news/content aggregation.
-    - **`ai-provider.ts`**: Unified AI provider abstraction (`AIProviderType`: `openclaw` | `trendradar` | `hula`).
   - **`composables/`**: Vue composables (`useXxx.ts`). Organized in subdirs for admin, space, widget.
-  - **`hooks/`**: Runtime hooks (chat, session, msgInput, common, webRtc).
   - **`components/`**: Reusable Vue components (atomic, business, dm, room, thread, voice, widget, etc.).
   - **`workers/`**: Web Workers:
     - `matrixSdk.worker.ts` - Matrix SDK in dedicated thread (keep main thread < 50ms).
@@ -203,7 +200,6 @@ TJG follows a three-layer architecture:
 - **永不白屏（乐观渲染）**：登录后立即用缓存数据渲染 UI，后台异步 `startClient()` + sync，成功后静默更新 store；失败显示连接状态横幅，仅在 access_token 401 且无缓存时才跳登录页。
 - 连接状态机：`DISCONNECTED → CONNECTING → CONNECTED → SYNCING → CATCHUP → SYNCED`，任一环节可进入 `ERROR` 并自动指数退避重连。
 - 单一数据源：统一用 Pinia store（持久化到 localStorage）；禁止 module-level ref；禁止 Web Worker 直接 fetch（一切 HTTP 走 SDK Manager）。
-- 详见 `docs/adr/ADR-003-tjg-greenfield-rewrite.md`。
 
 ### Communication Patterns
 - **Real-time Messaging:** Matrix Sliding Sync (frontend) / `tokio-tungstenite` WebSocket (Rust)
@@ -288,16 +284,15 @@ Theme tokens live in `src/styles/scss/global/variable.scss`, but prefer inline U
 - SDK type augmentations live in `src/types/matrix-js-sdk-augmentations.d.ts`; verify with `pnpm check:sdk-types`
 
 ### Type Augmentations Maintenance
-- **File**: `src/types/matrix-js-sdk-augmentations.d.ts` (1484 lines, 168 type definitions)
+- **File**: `src/types/matrix-js-sdk-augmentations.d.ts` (670 lines, ~43 type definitions)
 - **Purpose**: Extends matrix-js-sdk with missing type definitions
 - **Structure**: Single file using `declare module` pattern (required by TypeScript)
 - **Organization**: Divided into sections with `// ====` comments:
-  - Basic types (Method, ClientPrefix, Visibility, etc.)
-  - Interface supplements (ICreateRoomOpts, IPublicRoomsOpts, etc.)
-  - OIDC types
-  - Push notification types
-  - Event and Timeline types
-  - Voice/VoIP types
+  - SDK 类型补充（MatrixHttpApi 方法重载、SlidingSync 方法扩展、Room 属性扩展）
+  - 接口补充、OIDC、Push、Event 和 Timeline 类型、错误和存储
+  - 搜索/同步/分页/过滤器类型、事件关系/消息编辑/回复/线程类型
+  - 密钥备份/设备管理/用户目录/群组类型、第三方 API 类型
+  - SDK 子路径模块类型声明
 - **Important**: Do NOT split this file - TypeScript module augmentation requires all extensions in the same `declare module` block
 - **Maintenance**: Add new types in the appropriate section, keep comments updated
 
@@ -330,13 +325,12 @@ Theme tokens live in `src/styles/scss/global/variable.scss`, but prefer inline U
 
 ## AI Integration
 
-TJG integrates multiple AI providers via `src/services/ai-provider.ts`:
-- **OpenClaw** (`src/services/openclaw/`): OpenAI-compatible gateway with streaming and auto-reconnect
+The AI chat UI lives in `src/plugins/robot/` (route `/robot`, entry `index.vue`). AI providers are selected via `src/plugins/robot/composables/useAiProviderConfig.ts` (`AIProvider = 'tjg' | 'siliconflow' | 'trendradar'`):
 - **SiliconFlow** (`src/services/siliconflow/`): SiliconFlow AI provider
-- **TrendRadar** (`src/services/trendradar/`): Trending news and content aggregation
+- **TrendRadar** (`src/services/trendradar/`): Trending news/content aggregation; view at `src/views/trendradar/TrendRadarView.vue`
 - **Matrix AI** (`src/services/matrix/ai/`): AI features via Matrix protocol (conversations, models, roles, API keys)
 
-AI provider config is unified under `AIProviderType = ‘openclaw’ | ‘trendradar’ | ‘hula’`. The AI chat UI lives in `src/views/openclaw/OpenClawView.vue`.
+OpenClaw is deployed separately (see `scripts/deploy_openclaw.sh`) and consumed as an external service channel type (`src/services/matrix/admin/ExternalServiceService.ts`).
 
 ## Skill routing
 
@@ -373,6 +367,7 @@ AI provider config is unified under `AIProviderType = ‘openclaw’ | ‘trendr
 | `pnpm test:run` | 单元测试全部通过 |
 | `pnpm check:ratchet` | 硬编码颜色/样式守护（ratchet） |
 | `pnpm check:doc-coverage` | 文档覆盖守护 |
+| `pnpm check:doc-paths` | 文档路径存在性守护 |
 | `pnpm check:sdk-boundary` | SDK 边界守护 |
 | `pnpm quality:no-raw-fetch` | 禁止直接 fetch 守护 |
 | `pnpm check` | Biome lint + i18n 检查 |

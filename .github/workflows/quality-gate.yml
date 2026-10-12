@@ -73,6 +73,9 @@ jobs:
           pnpm check:sdk-aliases
           pnpm check:v-html
           pnpm check:doc-coverage
+          # P1-5④（2026-10-12）：文档路径存在性守护——提取 .rules 中反引号包裹的
+          # 仓库路径 token 并校验其存在，防止 AGENTS.md/CLAUDE.md 出现悬空引用。
+          pnpm check:doc-paths
           pnpm check:sdk-boundary
           pnpm check:bare-matrix-paths:report
           pnpm quality:no-raw-fetch

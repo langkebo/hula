@@ -15,7 +15,7 @@ const INSTALL_GUIDES = {
 // 更新指南
 const UPDATE_GUIDES = {
   Rust: '请运行 `rustup update` 命令更新 Rust 版本',
-  'Node.js': '请切换到 Node.js 20 LTS、22 LTS 或 24.x，暂时不要使用 25.x 及以上版本'
+  'Node.js': '请切换到 Node.js 22.12+ 或 24.x，暂时不要使用 25.x 及以上版本'
 }
 
 // Windows 特定的检查路径（只检查默认安装路径）
@@ -38,8 +38,8 @@ const checks = [
     name: 'Node.js',
     command: 'node --version',
     versionExtractor: (output) => output.replace('v', ''),
-    minVersion: '^20.19.0 || >=22.12.0',
-    displayVersion: '^20.19.0 || >=22.12.0 <25',
+    minVersion: '>=22.12.0',
+    displayVersion: '>=22.12.0 <25',
     maxMajorExclusive: 25,
     isRequired: true
   },
