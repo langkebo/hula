@@ -35,6 +35,8 @@ const srcRoot = path.join(repoRoot, 'src')
 const SOURCE_EXTENSIONS = new Set(['.ts', '.mts', '.cts', '.tsx', '.vue'])
 /** 样式相关计数器需覆盖 scss/css/输出文档（mdx） */
 const STYLE_EXTENSIONS = new Set([...SOURCE_EXTENSIONS, '.scss', '.css', '.mdx'])
+/** i18n 硬编码文案只统计 `.vue`（模板 + 脚本）中的中文 */
+const VUE_EXTENSIONS = new Set(['.vue'])
 
 function isTestPath(relPath) {
   return relPath.includes('__tests__') || /\.(test|spec)\.[cm]?tsx?$/.test(relPath) || relPath.endsWith('.stories.ts')
@@ -67,6 +69,17 @@ function stripCommentsAndSvgRefs(content) {
 /** 仅剥离注释（用于计数 `!important`：注释里提到它不应计入） */
 function stripCommentsOnly(content) {
   return content.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
+/**
+ * 剥离 JS 注释与 HTML 注释（`<!-- -->`）后再统计中文文案：
+ * 注释里的中文不是「用户可见文案」，不应计入 i18n 债务，否则一注释就永久抬高基线。
+ */
+function stripCommentsAndHtmlComments(content) {
+  return content
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\/[^\n]*/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
 }
 
 /**
@@ -138,6 +151,19 @@ const counters = {
     files: new Map(),
     strip: stripCommentsOnly,
     extensions: STYLE_EXTENSIONS
+  },
+  /**
+   * `.vue` 中的中文硬编码文案（非测试，剥离注释后按「连续汉字段」计）。
+   * 新文案必须走 `t('key')`（文案落 `locales/`）；存量按模块分批抽取，
+   * 因此该计数只能降不能升（P1-4 i18n ratchet 止血）。
+   */
+  zh_literal_vue: {
+    pattern: /[\u4e00-\u9fff]+/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsAndHtmlComments,
+    extensions: VUE_EXTENSIONS
   }
 }
 

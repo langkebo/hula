@@ -7,6 +7,7 @@
     "hardcoded_color": 31,
     "hardcoded_radius": 0,
     "inline_style": 5,
-    "important_css": 85
+    "important_css": 85,
+    "zh_literal_vue": 1244
   }
 }
