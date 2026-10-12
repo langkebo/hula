@@ -43,12 +43,7 @@ const ALLOWLIST = new Map([
   ],
   ['src/App.vue', 'apple.com favicon 可达性探测（no-cors）'],
   ['src/strategy/strategies/video.ts', 'blob: URL 必须用浏览器原生 fetch'],
-  ['src/composables/user/useAvatarUpload.ts', '头像上传读的是 webview 本地静态资源（/avatar/*.webp），非网络请求'],
-  [
-    'src/services/matrix/MatrixHttpClient.ts',
-    'SDK client 尚未初始化时的回退传输（MatrixHttpClient.ts:273，仅在 getMatrixClient() 为 null 时进入）；' +
-      '待批次 B-2/B-3 统一错误语义并迁移到 SDK 传输层后移除此白名单项 —— 见审计报告 P2-3 / P2-4'
-  ]
+  ['src/composables/user/useAvatarUpload.ts', '头像上传读的是 webview 本地静态资源（/avatar/*.webp），非网络请求']
 ])
 
 const EXT = /\.(ts|tsx|vue)$/

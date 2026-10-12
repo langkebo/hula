@@ -219,7 +219,14 @@ class MatrixHttpClient {
       return await requester.authedRequestWithPrefix<T>(method, requestPath, queryParams, requestOptions.body)
     }
 
-    // 回退到手动 fetch (用于 client 尚未初始化或非 authed 请求)
+    // 未鉴权回退传输（client 尚未初始化时进入）。
+    //
+    // 仅承载**登录前**的未认证请求（如新设备扫码登录的 `/_matrix/client/v3/login`
+    // 令牌交换，见 auth/qrLoginHelpers.postJson）。此路径不持有、也不注入 access token：
+    // accessor 的 token 与 client 同源（MatrixConnectionManager 注册
+    // `getAccessToken: () => this.client?.getAccessToken()`），client 为 null 时 token
+    // 必为 null，故显式标注为「未鉴权」语义；错误仍经 MatrixRequestHelper 的
+    // createMatrixTransportError 统一归一。
     const homeserverUrl = getMatrixHomeserverUrl() || resolveMatrixRuntimeEndpointConfig().homeserverUrl
     const baseUrl = homeserverUrl.replace(/\/$/, '')
     const fullUrl = requestPath.startsWith('http') ? requestPath : `${baseUrl}/${requestPath.replace(/^\//, '')}`
@@ -230,13 +237,9 @@ class MatrixHttpClient {
       urlWithParams = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}${searchParams.toString()}`
     }
 
-    const accessToken = getMatrixAccessToken()
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...requestOptions.headers
-    }
-    if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`
     }
 
     const runtimeFetch = getRuntimeAwareFetch()

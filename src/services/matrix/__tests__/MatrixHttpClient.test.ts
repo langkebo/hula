@@ -123,7 +123,7 @@ describe('MatrixHttpClient', () => {
     )
   })
 
-  it('falls back to runtime fetch when the Matrix client accessor has not been registered', async () => {
+  it('falls back to an unauthenticated runtime fetch when the Matrix client accessor has not been registered', async () => {
     getMatrixClientMock.mockReturnValueOnce(null)
 
     await expect(
@@ -133,11 +133,11 @@ describe('MatrixHttpClient', () => {
       })
     ).resolves.toEqual({})
 
+    // 回退路径语义为「未鉴权」：绝不携带 Authorization（token 与 client 同源，client 为 null 时必为 null）
     expect(runtimeFetchMock).toHaveBeenCalledWith('https://matrix.test/test?via=fallback', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer tok-abc'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ ok: true })
     })
