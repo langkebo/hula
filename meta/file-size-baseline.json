@@ -1,6 +1,6 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-10-12T05:03:50.582Z",
+  "updated_at": "2026-10-12T08:00:57.464Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
@@ -44,12 +44,12 @@
       "lines": 736
     },
     {
-      "file": "src/views/settingsWindow/tabs/EncryptionSettings.vue",
-      "lines": 720
-    },
-    {
       "file": "src/components/workbench/SpaceDetailsPane.vue",
       "lines": 714
+    },
+    {
+      "file": "src/views/settingsWindow/tabs/EncryptionSettings.vue",
+      "lines": 712
     },
     {
       "file": "src/components/encryption/SecureBackupDialog.vue",
@@ -193,7 +193,7 @@
     },
     {
       "file": "src/services/matrix/admin/RoomService.ts",
-      "lines": 529
+      "lines": 530
     },
     {
       "file": "src/components/rightBox/chatBox/ChatHeader/ChatHeaderRoot.vue",
@@ -269,7 +269,7 @@
     },
     {
       "file": "src/services/matrix/media/MatrixVoiceService.ts",
-      "lines": 488
+      "lines": 489
     },
     {
       "file": "src/components/space/SpaceChildrenPane.vue",
@@ -368,11 +368,11 @@
       "lines": 442
     },
     {
-      "file": "src/components/widget/WidgetDialogs.vue",
-      "lines": 440
+      "file": "src/services/matrix/crypto/CryptoKeyBackupAdapter.ts",
+      "lines": 441
     },
     {
-      "file": "src/services/matrix/crypto/CryptoKeyBackupAdapter.ts",
+      "file": "src/components/widget/WidgetDialogs.vue",
       "lines": 440
     },
     {
@@ -400,12 +400,12 @@
       "lines": 429
     },
     {
-      "file": "src/mobile/views/chat-room/MobileChatMain.vue",
-      "lines": 427
+      "file": "src/services/matrix/widget/MatrixWidgetService.ts",
+      "lines": 428
     },
     {
-      "file": "src/services/matrix/widget/MatrixWidgetService.ts",
-      "lines": 425
+      "file": "src/mobile/views/chat-room/MobileChatMain.vue",
+      "lines": 427
     },
     {
       "file": "src/services/matrix/MatrixSyncManager.ts",
@@ -484,15 +484,15 @@
       "lines": 408
     },
     {
+      "file": "src/services/matrix/auth/MatrixSessionService.ts",
+      "lines": 407
+    },
+    {
       "file": "src/components/rightBox/renderMessage/Voice.vue",
       "lines": 406
     },
     {
       "file": "src/mobile/components/login/MobileRegisterForm.vue",
-      "lines": 406
-    },
-    {
-      "file": "src/services/matrix/auth/MatrixSessionService.ts",
       "lines": 406
     },
     {

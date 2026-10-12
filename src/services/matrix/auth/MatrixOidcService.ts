@@ -1,5 +1,6 @@
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
+import { requireSubtleCrypto } from '@/utils/webCompat'
 import { matrixClientService } from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 
@@ -212,7 +213,7 @@ class MatrixOidcService {
   private async generateCodeChallengeMethodS256(codeVerifier: string): Promise<string> {
     const encoder = new TextEncoder()
     const data = encoder.encode(codeVerifier)
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashBuffer = await requireSubtleCrypto().digest('SHA-256', data)
     const hashArray = new Uint8Array(hashBuffer)
     return btoa(String.fromCharCode(...hashArray))
       .replace(/\+/g, '-')

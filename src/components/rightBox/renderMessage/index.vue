@@ -354,6 +354,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { isMobile } from '@/utils/PlatformConstants'
+import { arrayAt } from '@/utils/webCompat'
 import Emoji from './Emoji.vue'
 import Image from './Image.vue'
 import MessageActionBar from './MessageActionBar.vue'
@@ -510,7 +511,7 @@ const groupStore = useGroupStore()
 const chatStore = useChatStore()
 const isMultiSelectDisabled = computed(() => !isMessageMultiSelectEnabled(props.message.message.type))
 const isLastRoomMessage = computed(() => {
-  const lastMessage = chatStore.chatMessageList.at(-1)
+  const lastMessage = arrayAt(chatStore.chatMessageList, -1)
   return lastMessage?.message.id === props.message.message.id
 })
 const bubbleMaxWidth = computed(() => {

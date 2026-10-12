@@ -1,4 +1,5 @@
 import { createLogger } from '@/utils/Logger'
+import { requireSubtleCrypto } from '@/utils/webCompat'
 
 const logger = createLogger('SsssKeyDescription')
 
@@ -58,28 +59,23 @@ export async function buildSsssKeyDescription(
   }
 
   // 1. HKDF 派生 AES / HMAC key
-  const hkdfKey = await crypto.subtle.importKey('raw', privateKey, { name: 'HKDF' }, false, ['deriveBits'])
-  const bits = await crypto.subtle.deriveBits(
+  const subtle = requireSubtleCrypto()
+  const hkdfKey = await subtle.importKey('raw', privateKey, { name: 'HKDF' }, false, ['deriveBits'])
+  const bits = await subtle.deriveBits(
     { name: 'HKDF', salt: new Uint8Array(8), info: new TextEncoder().encode(name), hash: 'SHA-256' },
     hkdfKey,
     512
   )
-  const aesKey = await crypto.subtle.importKey('raw', bits.slice(0, 32), { name: 'AES-CTR' }, false, ['encrypt'])
-  const hmacKey = await crypto.subtle.importKey('raw', bits.slice(32), { name: 'HMAC', hash: 'SHA-256' }, false, [
-    'sign'
-  ])
+  const aesKey = await subtle.importKey('raw', bits.slice(0, 32), { name: 'AES-CTR' }, false, ['encrypt'])
+  const hmacKey = await subtle.importKey('raw', bits.slice(32), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
 
   // 2. 16 字节 IV，bit 63 清零
   const iv = crypto.getRandomValues(new Uint8Array(16))
   iv[8] &= 0x7f
 
   // 3. mac = HMAC(AES-CTR(32 个 0 字节, iv))
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-CTR', counter: iv, length: 64 },
-    aesKey,
-    new Uint8Array(32)
-  )
-  const mac = await crypto.subtle.sign({ name: 'HMAC' }, hmacKey, ciphertext)
+  const ciphertext = await subtle.encrypt({ name: 'AES-CTR', counter: iv, length: 64 }, aesKey, new Uint8Array(32))
+  const mac = await subtle.sign({ name: 'HMAC' }, hmacKey, ciphertext)
 
   logger.info(`已按规范计算 SSSS 密钥描述: name=${name}`)
 

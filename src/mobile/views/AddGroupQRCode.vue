@@ -42,6 +42,7 @@ import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.v
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { safeRandomUUID } from '@/utils/webCompat'
 
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -51,7 +52,7 @@ const userInfo = computed(() => {
   return userStore.userInfo
 })
 
-const randomStr = crypto.randomUUID().split('-')[0]
+const randomStr = safeRandomUUID().split('-')[0]
 
 const qrCodeValue = JSON.stringify({
   type: 'addFriend',

@@ -10,6 +10,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { getFilesMeta } from '@/utils/PathUtil'
+import { hasOwn } from '@/utils/webCompat'
 import { isMobile } from '../../../utils/PlatformConstants'
 
 const logger = createLogger('FileDownloadStore')
@@ -112,7 +113,7 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
     const absolutePath = await join(resourceDirPath, options.fileName)
 
     // 如果直接知道文件不存在，那就直接刷新，如果不知道则再做处理
-    if (Object.hasOwn(options, 'exists')) {
+    if (hasOwn(options, 'exists')) {
       if (options.exists && fileStatus?.isDownloaded) {
         logger.debug('匹配1')
         return

@@ -50,6 +50,7 @@ import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
+import { safeRandomUUID } from '@/utils/webCompat'
 
 const logger = createLogger('MyQRCode')
 
@@ -61,7 +62,7 @@ const userInfo = computed(() => {
   return userStore.userInfo
 })
 
-const randomStr = crypto.randomUUID().split('-')[0]
+const randomStr = safeRandomUUID().split('-')[0]
 
 const qrCodeValue = JSON.stringify({
   type: 'addFriend',

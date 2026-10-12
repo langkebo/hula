@@ -8,6 +8,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import type { GeneratedSecretStorageKey, MatrixAuthData } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
+import { safeRandomUUID } from '@/utils/webCompat'
 import { matrixClientService } from '../MatrixClientService'
 import { setSecretStorageKeyFromRecoveryKey } from '../secretStorageKeyVault'
 import type {
@@ -43,7 +44,7 @@ let setupInFlight: Promise<string> | null = null
  */
 async function uploadSsssKeyDirectly(client: MatrixClient, generatedKey: GeneratedSecretStorageKey): Promise<string> {
   // 生成唯一 keyId（与 SDK 的 secureRandomString(32) 对齐）
-  const keyId = crypto.randomUUID().replace(/-/g, '')
+  const keyId = safeRandomUUID().replace(/-/g, '')
 
   // 按规范从原始私钥本地计算 algorithm/iv/mac。
   // 重要：**不要**从 generatedKey.keyInfo 读取这三个字段——vendored SDK 的

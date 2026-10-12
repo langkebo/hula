@@ -24,6 +24,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
+import { hasOwn } from '@/utils/webCompat'
 
 const logger = createLogger('MyLayout')
 const timerManager = useTimerManager()
@@ -62,7 +63,7 @@ const userStore = useUserStore()
 
 const handleScanAddFriend = async (data: ScanData) => {
   logger.debug('尝试扫码添加好友')
-  if (!Object.hasOwn(data, 'uid')) {
+  if (!hasOwn(data, 'uid')) {
     showFeedback(t('mobile_qrcode.qr_no_uid'), 'warning')
     throw new Error(`登录二维码不存在uid: ${JSON.stringify(data)}`)
   }
@@ -90,8 +91,8 @@ const handleScanAddFriend = async (data: ScanData) => {
  * 扫码进群
  */
 const handleScanEnterGroup = async (data: ScanData) => {
-  logger.debug('尝试扫码加群', data, Object.hasOwn(data, 'roomId'))
-  if (!Object.hasOwn(data, 'roomId')) {
+  logger.debug('尝试扫码加群', data, hasOwn(data, 'roomId'))
+  if (!hasOwn(data, 'roomId')) {
     showFeedback(t('mobile_qrcode.group_qr_no_roomId'), 'warning')
     throw new Error(`加群二维码不存在roomId: ${JSON.stringify(data)}`)
   }
@@ -117,7 +118,7 @@ const handleScanEnterGroup = async (data: ScanData) => {
  * 监听事件扫码
  */
 useMitt.on(MittEnum.QR_SCAN_EVENT, async (data: ScanData) => {
-  if (!Object.hasOwn(data, 'type')) {
+  if (!hasOwn(data, 'type')) {
     showFeedback('识别不到正确的二维码', 'warning')
     throw new Error(`二维码缺少type字段: ${JSON.stringify(data)}`)
   }

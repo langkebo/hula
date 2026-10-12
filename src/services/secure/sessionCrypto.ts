@@ -1,4 +1,5 @@
 import { createLogger } from '@/utils/Logger'
+import { requireSubtleCrypto } from '@/utils/webCompat'
 
 const logger = createLogger('SessionCrypto')
 
@@ -84,8 +85,9 @@ function getOrCreateInstallSecret(): Uint8Array<ArrayBuffer> {
 }
 
 async function deriveKeyFromSecret(secret: Uint8Array<ArrayBuffer>, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
-  const baseKey = await crypto.subtle.importKey('raw', secret, { name: KDF_ALGORITHM }, false, ['deriveKey'])
-  return crypto.subtle.deriveKey(
+  const subtle = requireSubtleCrypto()
+  const baseKey = await subtle.importKey('raw', secret, { name: KDF_ALGORITHM }, false, ['deriveKey'])
+  return subtle.deriveKey(
     { name: KDF_ALGORITHM, salt, iterations: PBKDF2_ITERATIONS, hash: KDF_HASH },
     baseKey,
     { name: ALGORITHM, length: AES_KEY_BITS },
@@ -100,9 +102,10 @@ async function deriveKeyFromSecret(secret: Uint8Array<ArrayBuffer>, salt: Uint8A
  * 仅用于兼容迁移；解密失败即抛错，不返回原密文。
  */
 async function decryptLegacyV1(ciphertext: string): Promise<string> {
-  const legacyKey = await crypto.subtle.importKey(
+  const subtle = requireSubtleCrypto()
+  const legacyKey = await subtle.importKey(
     'raw',
-    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(LEGACY_KEY_MATERIAL_V1)),
+    await subtle.digest('SHA-256', new TextEncoder().encode(LEGACY_KEY_MATERIAL_V1)),
     { name: ALGORITHM },
     false,
     ['decrypt']
@@ -110,7 +113,7 @@ async function decryptLegacyV1(ciphertext: string): Promise<string> {
   const combined = base64ToBytes(ciphertext)
   const iv = combined.slice(0, LEGACY_IV_LENGTH)
   const data = combined.slice(LEGACY_IV_LENGTH)
-  const decrypted = await crypto.subtle.decrypt({ name: ALGORITHM, iv }, legacyKey, data)
+  const decrypted = await subtle.decrypt({ name: ALGORITHM, iv }, legacyKey, data)
   return new TextDecoder().decode(decrypted)
 }
 
@@ -129,7 +132,11 @@ export async function encryptForSession(plaintext: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES))
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES))
   const key = await deriveKeyFromSecret(secret, salt)
-  const encrypted = await crypto.subtle.encrypt({ name: ALGORITHM, iv }, key, new TextEncoder().encode(plaintext))
+  const encrypted = await requireSubtleCrypto().encrypt(
+    { name: ALGORITHM, iv },
+    key,
+    new TextEncoder().encode(plaintext)
+  )
 
   const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength)
   combined.set(salt, 0)
@@ -163,6 +170,6 @@ export async function decryptFromSession(ciphertext: string): Promise<string> {
   const data = combined.slice(SALT_BYTES + IV_BYTES)
   const secret = getOrCreateInstallSecret()
   const key = await deriveKeyFromSecret(secret, salt)
-  const decrypted = await crypto.subtle.decrypt({ name: ALGORITHM, iv }, key, data)
+  const decrypted = await requireSubtleCrypto().decrypt({ name: ALGORITHM, iv }, key, data)
   return new TextDecoder().decode(decrypted)
 }

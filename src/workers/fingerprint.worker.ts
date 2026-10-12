@@ -1,5 +1,6 @@
 // biome-ignore-all lint/suspicious/noConsole: Worker performance logging is intentionally kept in this worker.
 /// <reference lib="webworker" />
+import { requireSubtleCrypto } from '@/utils/webCompat'
 import { createWorkerLogger } from './workerLogger'
 
 const logger = createWorkerLogger('FingerprintWorker')
@@ -27,9 +28,7 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
     },
     audio: async () => {
       try {
-        return !!(
-          self.AudioContext || (self as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-        )
+        return !!(self.AudioContext || (self as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)
       } catch {
         return false
       }
@@ -79,7 +78,10 @@ const generateFingerprint = async (data: {
     })
 
     // 4. 使用 SHA-256 生成最终指纹
-    const fingerprintBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(combinedFingerprint))
+    const fingerprintBuffer = await requireSubtleCrypto().digest(
+      'SHA-256',
+      new TextEncoder().encode(combinedFingerprint)
+    )
 
     const fingerprint = Array.from(new Uint8Array(fingerprintBuffer))
       .map((b) => b.toString(16).padStart(2, '0'))

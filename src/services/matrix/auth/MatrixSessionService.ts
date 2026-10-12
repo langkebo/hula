@@ -3,6 +3,7 @@ import type { DmRoomInfo } from 'matrix-js-sdk/dm'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import { createLogger } from '@/utils/Logger'
 import { resolveDmIdentityKey } from '@/utils/userIdentity'
+import { hasOwn } from '@/utils/webCompat'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
 import { findDmCounterpart } from '../room/roomTypeUtils'
@@ -389,7 +390,7 @@ class MatrixSessionService extends BaseMatrixService {
   private isTopSession(room: Room): boolean {
     const accountData = room.getAccountData?.('m.tag')
     const content = accountData?.getContent() as SessionTagContent | undefined
-    return !!content?.tags && Object.hasOwn(content.tags, 'm.favourite')
+    return !!content?.tags && hasOwn(content.tags, 'm.favourite')
   }
 
   private getRoomNotificationSettings(room: Room): RoomNotificationSettings {
