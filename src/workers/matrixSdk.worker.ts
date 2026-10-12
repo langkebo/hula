@@ -11,13 +11,7 @@
  *   - workerState.ts          — 共享状态与工具函数
  */
 
-import type {
-  MatrixClientConfig,
-  SearchEventDoc,
-  SearchQueryPayload,
-  SearchRoomDoc,
-  WorkerMessage
-} from './matrixWorkerTypes'
+import type { MatrixClientConfig, SearchEventDoc, SearchQueryPayload, SearchRoomDoc } from './matrixWorkerTypes'
 import {
   handleClearStores,
   handleGetClient,
@@ -27,6 +21,7 @@ import {
   handleStartClient,
   handleStopClient
 } from './workerClientHandlers'
+import { validateWorkerMessage } from './workerMessageValidation'
 import {
   handleGetCapabilities,
   handleGetLoginFlows,
@@ -90,11 +85,19 @@ const messageHandlers: Record<string, HandlerFn> = {
   ping: () => ({ timestamp: Date.now() })
 }
 
-self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
-  const { type, id, payload } = event.data
+self.onmessage = async (event: MessageEvent<unknown>) => {
+  // 边界校验：拒绝格式非法的消息，避免 `as` 断言直接信任外部输入（SC-06）
+  const validation = validateWorkerMessage(event.data)
+  if (!validation.ok) {
+    await sendResponse(validation.type, validation.id, false, undefined, `Invalid worker message: ${validation.error}`)
+    return
+  }
+
+  const { payload } = validation.value
+  const { type, id } = validation.value.message
 
   try {
-    const handler = messageHandlers[type]
+    const handler: HandlerFn | undefined = messageHandlers[type]
     if (!handler) {
       await sendResponse(type, id, false, undefined, `Unknown message type: ${type}`)
       return
