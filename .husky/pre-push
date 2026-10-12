@@ -1,0 +1,11 @@
+#!/bin/sh
+# SC-09：推送前跑只读依赖审计（棘轮型，不写文件，exit 0/1/2）。
+#
+# 为何挂在 pre-push 而非 pre-commit：
+# 该审计需联网访问 npmjs registry（即便本机 .npmrc 指向镜像，脚本内强制走
+# npmjs），单跑约 2.7s。若挂 pre-commit，网络抖动/离线会以 exit 2 误阻断本地
+# 提交，损害提交流程；pre-push 在「共享前」拦截同样满足 SC-09「本地只读审计」
+# 的目标，且不与提交体验耦合。
+#
+# 禁止在钩子内使用 --update-baseline（那是写操作，须人工执行）。
+node scripts/check-dependency-audit.mjs
