@@ -28,6 +28,8 @@ const config: KnipConfig = {
     // matrix-js-sdk 源码（tarball）直接值导入的 CJS 小包。它们不在我们源码里被直接
     // import，但必须保留以配合 vite optimizeDeps.include（详见
     // build/config/vite.config.base.ts 的 2026-08-09 白屏事故注释），故作为基线忽略。
+    // 绑定关系与维护规则见 docs/baseline/dependency-vendor-runtime.md，
+    // 并由 scripts/check-vendor-runtime-deps.mjs 守卫。
     'content-type',
     'events',
     'loglevel',
