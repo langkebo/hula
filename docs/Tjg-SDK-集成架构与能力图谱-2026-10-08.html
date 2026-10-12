@@ -138,7 +138,7 @@
   <div class="wrap">
     <div class="pills">
       <span class="pill">TJG 天机阁</span>
-      <span class="pill">matrix-js-sdk 40.2.0-langkebo.5</span>
+      <span class="pill">matrix-js-sdk 40.2.0-langkebo.6</span>
       <span class="pill">synapse-rust @ 04dd417</span>
       <span class="pill">2026-10-08</span>
     </div>
@@ -661,8 +661,35 @@
   <div class="note"><b>⑫ 契约链是真正的护城河。</b>1159 条路由 / 46 个生成模块 / <code>meta/sdk-pin.json</code> 锁 commit+SHA256 / <code>friends.contract.test.ts</code> 等契约测试——这套机制让「后端改路由 → 前端编译失败」成为可能，是三仓库协同里最有价值的部分。</div>
 </section>
 
+<section>
+  <h2>8.5 现存问题清单（2026-10-13 实测）</h2>
+  <div class="note"><b>crypto 生命周期（实测依赖订正）。</b>
+  <code>client.stopClient()</code> 在 fork 里会 <b>一并停掉 crypto</b>：
+  <code>stopClientLifecycleServices()</code> → <code>cryptoBackend.stop()</code> →
+  <code>RustCrypto.stop()</code> → <code>olmMachine.close()</code>（IndexedDB 连接关闭）。
+  这是 login→home 交接能安全让出共享 store 的前提；但 <code>stopClient()</code> <b>不清空</b>
+  <code>cryptoBackend</code>，而 <code>initRustCrypto()</code> 见非空即 return、<code>getCrypto()</code> 仍真值
+  ⇒ <b>停止后的 crypto 仍"看起来可用"</b>，同一 client 的 crypto 是"一次性"的。
+  守门：<code>pnpm check:sdk-crypto-teardown</code>。</div>
+  <table>
+    <thead><tr><th>#</th><th>问题</th><th>证据</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>系统唤醒重连杀 crypto</b>：forceReconnect 先 stopClient（含停 crypto）再复用同一 client 重启 ⇒ 静默解不开新消息</td><td><code>MatrixClientLifecycle.ts</code> + SDK <code>client-lifecycle-stop.js</code>/<code>client.js</code></td><td>✅ 已修（解绑 + 重启前重新初始化）</td></tr>
+      <tr><td>2</td><td><b>跨窗口"已完成即跳过"是死代码</b>（BroadcastChannel 恒不可达 + 每次 init 白等 1s）</td><td><code>MatrixCryptoStateTracker.ts</code>（原 67-191 已删，commit <code>a41261fb</code>）</td><td>✅ 已修 + 门禁</td></tr>
+      <tr><td>3</td><td>stopClient 后同一 client 的 crypto 永久不可用（SDK 未清绑定、无重启 API）⇒ 未来"复用 client"的路径会再踩</td><td>依赖实测</td><td>⏳ 建议 fork 侧修</td></tr>
+      <tr><td>4</td><td>每个独立窗口各自完整 initRustCrypto（5–10s/份 OlmMachine），仅靠 Web Locks 串行化</td><td><code>MatrixCryptoStateTracker.ts</code> 锁范围</td><td>⏳ 架构限制</td></tr>
+      <tr><td>5</td><td>窗口名单与真实窗口集合无一致性校验（新增窗口忘登记 ⇒ 静默多跑一套运行时）</td><td><code>windowLabels.ts:13</code> + 9 处 <code>new WebviewWindow</code></td><td>⏳ 待决策（可加门禁）</td></tr>
+      <tr><td>6</td><td>设置窗口各页签假设不一致：仅「安全/会话」调 <code>ensureClientReady()</code>，推送/好友/忽略用户只 <code>waitForClientReady(10s)</code></td><td><code>SecuritySettings.vue:89,95,98</code> vs <code>PushSettings.vue:194</code> 等</td><td>⏳ 待决策</td></tr>
+      <tr><td>7</td><td>独立聊天窗口 <code>/window/chat/:roomId</code> 无任何会话恢复 ⇒ <code>getClient()</code> 恒 null，「独立窗口聊天」拿不到消息</td><td><code>windowChat/index.vue</code>、<code>routes/desktop.ts:202-204</code></td><td>⏳ 待确认是否未完成</td></tr>
+      <tr><td>8</td><td><code>MatrixCryptoStateTracker.ts</code> 616 行仍 &gt;500 警戒线（红线 800）</td><td><code>pnpm check:file-size</code></td><td>⏳ 既有技术债</td></tr>
+      <tr><td>9</td><td>crypto 生命周期失配只在日志可见，运行期无 UI 信号</td><td><code>releaseStoppedCryptoBinding</code> 仅 warn</td><td>⏳ 待决策</td></tr>
+      <tr><td>10</td><td>IndexedDB 删除被活连接阻塞（已有 300ms 重试 + 2s 超时降级）</td><td><code>deleteCryptoDbWithRetry</code></td><td>✅ 兜底已足够</td></tr>
+    </tbody>
+  </table>
+</section>
+
 <footer>
-  基于 Tjg @ 2026-10-08 · matrix-js-sdk 40.2.0-langkebo.5 (640cc44) · synapse-rust 04dd417 静态代码调研生成
+  基于 Tjg @ 2026-10-08 · matrix-js-sdk 40.2.0-langkebo.6（vendor tgz 实测；订正于 2026-10-13） · synapse-rust 04dd417 静态代码调研生成
 </footer>
 
 </div>

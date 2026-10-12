@@ -523,3 +523,104 @@ describe('MatrixCryptoStateTracker - 跨窗口语义（无跳过，仅串行化�
     expect(initRustCrypto).toHaveBeenCalledTimes(1)
   })
 })
+
+/**
+ * `releaseStoppedCryptoBinding` —— 复用同一 client 重启 sync 的前置条件。
+ *
+ * SDK 契约（fork 40.2.0-langkebo.6）：stopClient() 会 cryptoBackend.stop() →
+ * olmMachine.close()（IndexedDB 连接关闭），但不清空 client.cryptoBackend；
+ * initRustCrypto() 见 cryptoBackend 非空即 warn+return ⇒ 必须先解除绑定。
+ */
+describe('MatrixCryptoStateTracker - 解除已停止的 crypto 绑定（重启前置）', () => {
+  let tracker: MatrixCryptoStateTracker
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    tracker = new MatrixCryptoStateTracker()
+  })
+
+  /**
+   * 构造最小 client。**必须让 getCrypto() 读自身字段**（真实 SDK 就是 `return this.cryptoBackend`）——
+   * 闭包捕获入参会让"解除绑定"看起来无效，从而测不出真实语义。
+   */
+  function makeClient(cryptoBackend: unknown) {
+    const client = { cryptoBackend, getCrypto: (): unknown => client.cryptoBackend }
+    return client
+  }
+
+  /** 仅用于传参：测试替身与真实 MatrixClient 结构不同，需显式收窄 */
+  function asTrackerClient(client: ReturnType<typeof makeClient>) {
+    return client as unknown as Parameters<MatrixCryptoStateTracker['releaseStoppedCryptoBinding']>[0]
+  }
+
+  it('crypto 已停止（stopped=true）⇒ 解除绑定，getCrypto() 变为 undefined', () => {
+    const client = makeClient({ stopped: true })
+
+    expect(tracker.releaseStoppedCryptoBinding(asTrackerClient(client))).toBe(true)
+    expect(client.getCrypto()).toBeUndefined()
+  })
+
+  it('crypto 仍在运行（stopped=false）⇒ 拒绝解除并告警（否则泄漏 OlmMachine/连接）', () => {
+    const live = { stopped: false }
+    const client = makeClient(live)
+
+    expect(tracker.releaseStoppedCryptoBinding(asTrackerClient(client))).toBe(false)
+    expect(client.getCrypto()).toBe(live)
+  })
+
+  it('未初始化 crypto ⇒ 幂等返回 false，不抛错', () => {
+    const client = makeClient(undefined)
+    expect(tracker.releaseStoppedCryptoBinding(asTrackerClient(client))).toBe(false)
+  })
+
+  it('client 为 null ⇒ 返回 false', () => {
+    expect(tracker.releaseStoppedCryptoBinding(null)).toBe(false)
+  })
+
+  it('解除后再 ensureCrypto 必须真的重新 initRustCrypto（回归：否则 E2EE 永久静默失效）', async () => {
+    const fake: {
+      cryptoBackend: unknown
+      getUserId: () => string
+      getDeviceId: () => string
+      getCrypto: () => unknown
+      initRustCrypto: ReturnType<typeof vi.fn>
+    } = {
+      cryptoBackend: { stopped: true },
+      getUserId: () => '@user:test.com',
+      getDeviceId: () => 'device-F',
+      getCrypto: () => fake.cryptoBackend,
+      // 模拟 SDK：initRustCrypto 成功后把新 backend 挂到 client 上
+      initRustCrypto: vi.fn(async () => {
+        fake.cryptoBackend = { stopped: false }
+      })
+    }
+    const client = fake as unknown as Parameters<MatrixCryptoStateTracker['ensureCrypto']>[0]
+    Object.defineProperty(globalThis, 'indexedDB', {
+      value: {
+        // 首次登录（localStorage 无记录）会触发提前清理 ⇒ deleteDatabase 必须返回带回调的请求对象
+        deleteDatabase: vi.fn().mockImplementation(() => {
+          const req = {
+            onsuccess: null as (() => void) | null,
+            onerror: null as (() => void) | null,
+            onblocked: null as (() => void) | null
+          }
+          setTimeout(() => req.onsuccess?.(), 0)
+          return req
+        }),
+        databases: vi.fn().mockResolvedValue([])
+      },
+      configurable: true,
+      writable: true
+    })
+
+    // 未解除绑定：ensureCrypto 会把已停止的 crypto 误判为"已可用"而早退（缺陷形态）
+    await tracker.ensureCrypto(client, true)
+    expect(fake.initRustCrypto).not.toHaveBeenCalled()
+
+    tracker.releaseStoppedCryptoBinding(client)
+    await tracker.ensureCrypto(client, true)
+
+    expect(fake.initRustCrypto).toHaveBeenCalledTimes(1)
+    expect(tracker.getRustCryptoDebugState().initialized).toBe(true)
+  })
+})

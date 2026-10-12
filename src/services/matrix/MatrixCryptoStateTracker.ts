@@ -414,6 +414,47 @@ export class MatrixCryptoStateTracker {
     return { ...this.eventDecryptedDebugState }
   }
 
+  /**
+   * 解除「已停止的 crypto 绑定」，使**同一个 client** 能重新 `initRustCrypto`。
+   *
+   * 只在「复用同一 client 重启 sync」的路径上需要（当前唯一调用点：
+   * `MatrixClientLifecycle.forceReconnect`，系统唤醒时触发）。
+   *
+   * SDK 契约（实测 fork `40.2.0-langkebo.6`，不要凭上游印象改：
+   * - `client.stopClient()` → `stopClientLifecycleServices()` → `client.cryptoBackend.stop()`
+   *   → `RustCrypto.stop()`：置 `stopped = true`、停各 manager，并 `olmMachine.close()`
+   *   —— **IndexedDB 连接随之关闭**（这正是 login→home 交接能安全让出共享 store 的原因）；
+   * - 但 stopClient **不清空** `client.cryptoBackend`，而 `client.initRustCrypto()` 见到
+   *   `cryptoBackend` 非空就 `warn("Attempt to re-initialise e2e encryption")` 并 return；
+   * - `client-lifecycle-start`（start 侧）**不会**替调用方恢复 crypto；`getCrypto()` 只是
+   *   返回 `cryptoBackend`，因此停止后仍是真值 ⇒ `ensureCrypto` 会误判"已可用"而早退。
+   *
+   * 后果（未解除时）：系统唤醒 → forceReconnect → crypto 永久失效，静默解不开新消息。
+   *
+   * ⚠️ 只应在 `client.stopClient()` **之后**调用。若 crypto 仍在运行（`stopped !== true`），
+   * 本方法拒绝解除并告警 —— 否则会让活着的 OlmMachine / IndexedDB 连接泄漏。
+   *
+   * @returns 是否真的解除了绑定（便于调用方观测与测试）
+   */
+  releaseStoppedCryptoBinding(client: MatrixClient | null): boolean {
+    if (!client) return false
+
+    const candidate = client as { cryptoBackend?: unknown; getCrypto?: () => unknown }
+    const existing = typeof candidate.getCrypto === 'function' ? candidate.getCrypto() : undefined
+    if (!existing) return false
+
+    if ((existing as { stopped?: boolean }).stopped !== true) {
+      logger.warn(
+        'releaseStoppedCryptoBinding 在 crypto 未处于已停止状态时被调用，已跳过（只应在 stopClient 之后调用）'
+      )
+      return false
+    }
+
+    candidate.cryptoBackend = undefined
+    logger.info('已解除已停止的 crypto 绑定，允许同一 client 重新 initRustCrypto')
+    return true
+  }
+
   /** 重置加密状态追踪器
    */
   resetState(): void {

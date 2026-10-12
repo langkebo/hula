@@ -127,6 +127,7 @@ function makeLifecycle(overrides: Record<string, unknown> = {}) {
   const cryptoTracker = {
     resetState: vi.fn(),
     ensureCrypto: vi.fn(async () => undefined),
+    releaseStoppedCryptoBinding: vi.fn(() => true),
     handleEventDecrypted: vi.fn()
   }
   const tokenManager = { clear: vi.fn(), schedule: vi.fn() }
@@ -425,6 +426,45 @@ describe('MatrixClientLifecycle', () => {
       expect(syncManager.create).toHaveBeenCalled()
       expect(eventRouter.setup).toHaveBeenCalled()
       expect(client.startClient).toHaveBeenCalled()
+    })
+
+    /**
+     * SDK 契约（fork 40.2.0-langkebo.6，实测 node_modules/matrix-js-sdk/lib/client-lifecycle-stop.js）：
+     * client.stopClient() 会 `cryptoBackend.stop()` → `RustCrypto.stop()` → `olmMachine.close()`
+     * （IndexedDB 连接关闭），**但不清空** client.cryptoBackend；而 `initRustCrypto()` 见
+     * cryptoBackend 非空即 warn+return，`getCrypto()` 又只返回 cryptoBackend（停止后仍真值）。
+     * ⇒ 复用同一 client 重启时若不处理，crypto 永久失效：系统唤醒后解不开新消息（静默）。
+     */
+    it('复用 client 重启前必须：解除已停止的 crypto 绑定 → 重新初始化 → 再 startClient', async () => {
+      vi.useFakeTimers()
+      const made = makeLifecycle()
+      const { lifecycle, connectionManager, cryptoTracker } = made
+      const client = makeClient({ getCrypto: vi.fn(() => ({ stopped: true })), cryptoBackend: { stopped: true } })
+      connectionManager.client = client
+      connectionManager.config = { homeserverUrl: 'https://hs', accessToken: 'tok' }
+
+      const startPromise = lifecycle.startClient()
+      await vi.advanceTimersByTimeAsync(0)
+      await startPromise
+
+      // 只观察 forceReconnect 这一段（清掉 doStartClient 期间的调用）
+      vi.mocked(client.stopClient).mockClear()
+      vi.mocked(client.startClient).mockClear()
+      cryptoTracker.ensureCrypto.mockClear()
+      cryptoTracker.releaseStoppedCryptoBinding.mockClear()
+
+      const onResume = connectionManager.setupResumeListener.mock.calls[0][0] as () => void
+      onResume()
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(cryptoTracker.releaseStoppedCryptoBinding).toHaveBeenCalledWith(client)
+      expect(cryptoTracker.ensureCrypto).toHaveBeenCalledWith(client, true)
+
+      const orderOf = (mock: Mock) => mock.mock.invocationCallOrder[0] ?? Number.MAX_SAFE_INTEGER
+      expect(orderOf(vi.mocked(client.stopClient))).toBeLessThan(orderOf(cryptoTracker.releaseStoppedCryptoBinding))
+      expect(orderOf(cryptoTracker.releaseStoppedCryptoBinding)).toBeLessThan(orderOf(cryptoTracker.ensureCrypto))
+      expect(orderOf(cryptoTracker.ensureCrypto)).toBeLessThan(orderOf(vi.mocked(client.startClient)))
     })
   })
 })
