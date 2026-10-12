@@ -6,7 +6,6 @@
   "windows": ["*"],
   "permissions": [
     "core:default",
-    "core:webview:allow-internal-toggle-devtools",
     "http:allow-fetch",
     "http:allow-fetch-cancel",
     "http:allow-fetch-read-body",
