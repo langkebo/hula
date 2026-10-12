@@ -47,10 +47,10 @@ const storybookProject = {
       'src/components/workbench/RoomSessionList.stories.ts',
       'src/components/workbench/RoomSpaceWorkbench.stories.ts',
       'src/components/workbench/WorkbenchDetailPane.stories.ts',
-      'src/components/workbench/HulaSpaceTree.stories.ts',
+      'src/components/workbench/TjgSpaceTree.stories.ts',
       'src/components/workbench/SpaceListPane.stories.ts',
       'src/components/rightBox/MsgInput.stories.ts',
-      'src/components/rightBox/renderMessage/HulaMessageMeta.stories.ts'
+      'src/components/rightBox/renderMessage/TjgMessageMeta.stories.ts'
     ],
     browser: {
       enabled: true,
