@@ -47,6 +47,7 @@ export const sdkAliasEntries: SdkAliasEntry[] = [
   { alias: 'matrix-js-sdk/admin', segments: ['admin', 'index.ts'] },
   { alias: 'matrix-js-sdk/beacon', segments: ['beacon', 'index.ts'] },
   { alias: 'matrix-js-sdk/client', segments: ['client.ts'] },
+  { alias: 'matrix-js-sdk/contract', segments: ['contract', 'index.ts'] },
   { alias: 'matrix-js-sdk/sync', segments: ['sync.ts'] },
   { alias: 'matrix-js-sdk/models/room', segments: ['models', 'room.ts'] },
   { alias: 'matrix-js-sdk/models/room-state', segments: ['models', 'room-state.ts'] },

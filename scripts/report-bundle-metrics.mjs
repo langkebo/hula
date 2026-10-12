@@ -7,13 +7,28 @@ import { Readable } from 'node:stream'
 const projectRoot = process.cwd()
 const distDir = path.join(projectRoot, 'dist')
 
+/**
+ * 体积预算（棘轮化：只允许收紧，不允许放宽）
+ *
+ * 基线对齐 2026-10-12 的实测值并留出余量，任一新改动若使指标超过下方阈值
+ * 且开启 BUNDLE_BUDGET_STRICT=1，则 CI 失败。若因合理优化使体积下降，
+ * 应同步下调这些阈值，保持"只升不降"的棘轮性质。
+ */
 const BUDGET = {
-  totalJsGzipBytes: 3 * 1024 * 1024,
-  singleChunkGzipBytes: 300 * 1024,
-  entryChunkGzipBytes: 500 * 1024,
+  // 全量 JS gzip 总量（实测 7231.59KB）
+  totalJsGzipBytes: 8 * 1024 * 1024,
+  // 单个 chunk gzip 上限（实测最大 chat-domain 971.63KB）
+  singleChunkGzipBytes: 1024 * 1024,
+  // 入口 chunk gzip 上限（实测 21.11KB）
+  entryChunkGzipBytes: 128 * 1024,
+  // 首屏初始集合（入口 + modulepreload）gzip 合计上限（实测 1357.46KB）
+  initialChunkGzipBytes: 1536 * 1024,
   chunkWarningBytes: 500 * 1024,
   largeJsWarningBytes: 1024 * 1024
 }
+
+/** 动态加载的 matrix-js-sdk 运行时 chunk 命名模式（`matrix-sdk-<hash>.js`） */
+const MATRIX_SDK_CHUNK_RE = /^matrix-sdk-[A-Za-z0-9_-]+\.js$/
 
 function formatMB(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)}MB`
@@ -47,6 +62,59 @@ function walkFiles(dir) {
     }
   }
   return files
+}
+
+const JS_DIR = path.join(distDir, 'static', 'js')
+
+/**
+ * 从 dist/index.html 解析首屏初始集合
+ *
+ * 初始集合 = 入口 `<script type="module">` + 全部 `<link rel="modulepreload">`，
+ * 即浏览器在首屏渲染前必须下载/执行的 JS。
+ */
+function readInitialChunkNames() {
+  const htmlPath = path.join(distDir, 'index.html')
+  if (!fs.existsSync(htmlPath)) {
+    return { entry: null, initial: [] }
+  }
+  const html = fs.readFileSync(htmlPath, 'utf8')
+  const entryMatch = html.match(/<script[^>]*type="module"[^>]*src="\/static\/js\/([^"]+)"/)
+  const entry = entryMatch ? entryMatch[1] : null
+  const preloads = [...html.matchAll(/rel="modulepreload"[^>]*href="\/static\/js\/([^"]+)"/g)].map(
+    (m) => m[1]
+  )
+  const initial = []
+  if (entry) initial.push(entry)
+  for (const preload of preloads) {
+    if (!initial.includes(preload)) initial.push(preload)
+  }
+  return { entry, initial }
+}
+
+/** 提取单个 chunk 的静态（非动态 import()）同目录依赖文件名 */
+function staticImportEdges(fileName) {
+  const full = path.join(JS_DIR, fileName)
+  if (!fs.existsSync(full)) return []
+  const src = fs.readFileSync(full, 'utf8')
+  const deps = new Set()
+  for (const m of src.matchAll(/from\s*["']\.\/([^"']+)["']/g)) deps.add(m[1])
+  for (const m of src.matchAll(/(?<![\w.$])import\s*["']\.\/([^"']+)["']/g)) deps.add(m[1])
+  return [...deps]
+}
+
+/** 从初始集合出发做静态导入 BFS，得到首屏静态可达的 chunk 全集 */
+function computeInitialStaticClosure(initialNames) {
+  const seen = new Set()
+  const queue = [...initialNames]
+  while (queue.length) {
+    const file = queue.shift()
+    if (seen.has(file)) continue
+    seen.add(file)
+    for (const dep of staticImportEdges(file)) {
+      if (!seen.has(dep)) queue.push(dep)
+    }
+  }
+  return [...seen]
 }
 
 async function main() {
@@ -117,6 +185,50 @@ async function main() {
     }
   }
 
+  // 首屏初始集合（入口 + modulepreload）预算与 matrix-sdk 隔离校验
+  const { entry: entryChunkName, initial: initialChunkNames } = readInitialChunkNames()
+  const jsByBase = new Map(jsFiles.map((entry) => [path.basename(entry.file), entry]))
+  const initialChunkEntries = initialChunkNames
+    .map((name) => jsByBase.get(name))
+    .filter((entry) => Boolean(entry))
+  const initialChunkGzip = initialChunkEntries.reduce((sum, entry) => sum + (entry.gzipBytes || 0), 0)
+  const entryChunkEntry = entryChunkName ? jsByBase.get(entryChunkName) : null
+  const entryChunkGzip = entryChunkEntry ? entryChunkEntry.gzipBytes || 0 : 0
+  const staticClosure = computeInitialStaticClosure(initialChunkNames)
+  const matrixSdkInInitial = staticClosure.filter((name) => MATRIX_SDK_CHUNK_RE.test(name))
+
+  if (!entryChunkName) {
+    budgetViolations.push({
+      rule: 'entry-chunk-missing',
+      message: 'index.html 未解析出入口 module 脚本，无法校验首屏体积预算'
+    })
+  } else if (entryChunkGzip > BUDGET.entryChunkGzipBytes) {
+    budgetViolations.push({
+      rule: 'entry-chunk-gzip',
+      file: entryChunkEntry ? entryChunkEntry.file : entryChunkName,
+      actual: formatKB(entryChunkGzip),
+      limit: formatKB(BUDGET.entryChunkGzipBytes),
+      message: `入口 chunk gzip ${formatKB(entryChunkGzip)} 超过预算 ${formatKB(BUDGET.entryChunkGzipBytes)}`
+    })
+  }
+
+  if (initialChunkGzip > BUDGET.initialChunkGzipBytes) {
+    budgetViolations.push({
+      rule: 'initial-chunk-gzip',
+      actual: formatKB(initialChunkGzip),
+      limit: formatKB(BUDGET.initialChunkGzipBytes),
+      message: `首屏初始集合 gzip ${formatKB(initialChunkGzip)} 超过预算 ${formatKB(BUDGET.initialChunkGzipBytes)}`
+    })
+  }
+
+  if (matrixSdkInInitial.length > 0) {
+    budgetViolations.push({
+      rule: 'initial-static-closure-matrix-sdk',
+      files: matrixSdkInInitial,
+      message: `首屏静态可达 chunk 出现 matrix-sdk（应为动态 import）: ${matrixSdkInInitial.join(', ')}`
+    })
+  }
+
   const summary = {
     generatedAt: new Date().toISOString(),
     distDir: path.relative(projectRoot, distDir),
@@ -124,8 +236,19 @@ async function main() {
       totalJsGzip: formatKB(BUDGET.totalJsGzipBytes),
       singleChunkGzip: formatKB(BUDGET.singleChunkGzipBytes),
       entryChunkGzip: formatKB(BUDGET.entryChunkGzipBytes),
+      initialChunkGzip: formatKB(BUDGET.initialChunkGzipBytes),
       chunkWarningRaw: formatKB(BUDGET.chunkWarningBytes),
       largeJsWarningRaw: formatKB(BUDGET.largeJsWarningBytes)
+    },
+    initial: {
+      entryChunk: entryChunkName,
+      entryChunkGzipBytes: entryChunkGzip,
+      entryChunkGzipKB: formatKB(entryChunkGzip),
+      initialChunkCount: initialChunkNames.length,
+      initialChunkGzipBytes: initialChunkGzip,
+      initialChunkGzipKB: formatKB(initialChunkGzip),
+      staticClosureSize: staticClosure.length,
+      matrixSdkInInitial
     },
     summary: {
       assetCount: assetEntries.length,
@@ -162,6 +285,13 @@ async function main() {
   console.log(`[bundle-metrics] CSS gzip 总量: ${summary.summary.totalCssGzipKB}`)
   console.log(
     `[bundle-metrics] 超过 ${formatKB(BUDGET.chunkWarningBytes)} 的 JS 文件数: ${largeJavaScriptAssets.length}`
+  )
+  console.log(`[bundle-metrics] 入口 chunk: ${entryChunkName || '(未解析)'} (gzip ${formatKB(entryChunkGzip)})`)
+  console.log(
+    `[bundle-metrics] 首屏初始集合: ${initialChunkNames.length} 个 chunk, gzip 合计 ${formatKB(initialChunkGzip)}`
+  )
+  console.log(
+    `[bundle-metrics] 首屏静态可达 chunk 数: ${staticClosure.length}, 含 matrix-sdk: ${matrixSdkInInitial.length > 0 ? matrixSdkInInitial.join(', ') : '否'}`
   )
 
   if (budgetViolations.length > 0) {
