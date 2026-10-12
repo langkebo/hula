@@ -114,9 +114,11 @@ export class MatrixSyncManager {
       required_state: requiredState
     })
 
-    // §9.2 多列表订阅：好友/空间/DM 列表，使用最小 timeline_limit 减少首屏负载
+    // §9.2 多列表订阅：空间/DM 列表，使用最小 timeline_limit 减少首屏负载
+    // spec §5 P3-3：已移除 friends 列表。原过滤常量 im.hula.friend_list 与后端不符
+    // （后端好友列表房间 room_type 为 m.friends），该 list 恒空；且前端与 SDK 均无消费点
+    // （好友数据走 SDK FriendManager → REST /friends），好友列表房间仍由 default 列表覆盖。
     const extensionListFilters: Record<string, Record<string, unknown>> = {
-      friends: { room_types: ['im.hula.friend_list'] },
       spaces: { room_types: ['m.space'] },
       dms: { is_dm: true }
     }

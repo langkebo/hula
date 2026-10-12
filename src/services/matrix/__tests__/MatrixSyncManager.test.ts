@@ -512,13 +512,11 @@ describe('MatrixSyncManager', () => {
   })
 
   describe('multi-list subscription (§9.2)', () => {
-    it('registers a friends list filtered by im.hula.friend_list room type', () => {
+    it('does not register a friends list (removed per spec §5 P3-3: im.hula.friend_list never matched, no consumer)', () => {
       const manager = new MatrixSyncManager()
       const ss = manager.create(createMockClient(), defaultConfig)
 
-      const params = ss.getListParams('friends')
-      expect(params).not.toBeNull()
-      expect(params?.filters?.room_types).toEqual(['im.hula.friend_list'])
+      expect(ss.getListParams('friends')).toBeNull()
     })
 
     it('registers a spaces list filtered by m.space room type', () => {
@@ -543,7 +541,7 @@ describe('MatrixSyncManager', () => {
       const manager = new MatrixSyncManager()
       const ss = manager.create(createMockClient(), defaultConfig)
 
-      for (const key of ['friends', 'spaces', 'dms']) {
+      for (const key of ['spaces', 'dms']) {
         const params = ss.getListParams(key)
         expect(params?.timeline_limit).toBe(1)
       }
