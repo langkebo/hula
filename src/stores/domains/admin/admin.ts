@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { TauriCommand } from '@/enums'
 import { adminService } from '@/services/matrix/admin'
+import { describeAdminApiAvailability } from '@/services/matrix/admin/adminApiAvailability'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
@@ -26,9 +27,16 @@ export const useAdminStore = defineStore('admin', () => {
 
   async function checkAdminViaBackend(): Promise<boolean> {
     try {
-      const adminApiAvailable = await adminService.checkAdminApiAvailability()
-      if (!adminApiAvailable) {
-        logger.warn('后端 Admin API 不可用，无法验证管理员身份')
+      const availability = await adminService.apiProbe.probe()
+      if (availability.status !== 'available') {
+        // 按分类如实报告：403（无权限）**不是**"后端不可用"，
+        // 404 是"该 homeserver 没有 Admin API"，只有网络/5xx 才是无法判定。
+        const detail = describeAdminApiAvailability(availability)
+        if (availability.status === 'forbidden' || availability.status === 'unauthorized') {
+          logger.info(`无法通过 Admin API 验证管理员身份：${detail}`)
+        } else {
+          logger.warn(`无法通过 Admin API 验证管理员身份：${detail}`)
+        }
         return false
       }
 

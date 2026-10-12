@@ -3,6 +3,7 @@ import { TauriCommand } from '@/enums'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
+import { AdminApiProbeService } from './AdminApiProbeService'
 import { AdminFacadeOpsMethods } from './AdminFacadeOpsMethods'
 import { AdminModerationService } from './AdminModerationService'
 import type {
@@ -62,6 +63,9 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
   private readonly ADMIN_VERIFY_INTERVAL = 2 * 60 * 1000
   private cachedAdminStatus = false
 
+  /** Admin API 可用性探测（按错误分类；只许缩不许增的体积受管文件里，此处只保留一行字段）。 */
+  readonly apiProbe = new AdminApiProbeService(() => this.getClient())
+
   readonly registrationTokens = new AdminRegistrationTokensService(() => this.sdkAdmin())
   readonly users = new AdminUserService(
     () => this.sdkAdmin(),
@@ -99,17 +103,6 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
 
   initialize(): void {
     logger.info('[Admin] 服务已初始化')
-  }
-
-  async checkAdminApiAvailability(): Promise<boolean> {
-    try {
-      await this.getClient().getAdminManager().whoami()
-      return true
-    } catch (err) {
-      // R-14: log silent catch in checkAdminApiAvailability
-      logger.warn('checkAdminApiAvailability failed:', err)
-      return false
-    }
   }
 
   clearAdminApiCache(): void {

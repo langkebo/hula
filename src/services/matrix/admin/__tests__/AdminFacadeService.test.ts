@@ -962,11 +962,33 @@ describe('R-14: error logging', () => {
     } as unknown as MatrixClient)
   })
 
-  it('logs a warning when checkAdminApiAvailability throws and returns false', async () => {
-    const result = await adminService.checkAdminApiAvailability()
+  it('探测失败且无法判定时返回 false，并 warn 明说「无法判定」', async () => {
+    // beforeEach 的 client mock 没有 getAdminManager ⇒ whoami 调用抛 TypeError（无状态码）
+    const result = await adminService.apiProbe.isAvailable()
 
     expect(result).toBe(false)
     expect(loggerSpy.warn).toHaveBeenCalledTimes(1)
-    expect(loggerSpy.warn).toHaveBeenCalledWith('checkAdminApiAvailability failed:', expect.any(Error))
+    expect(String(loggerSpy.warn.mock.calls[0][0])).toContain('无法判定 Admin API 是否可用')
+  })
+
+  it('403（无权限）返回 false，但**不** warn、也不得说成「后端不可用」', async () => {
+    vi.mocked(matrixClientService.getClient).mockReturnValue({
+      getAdminManager: () => ({
+        whoami: vi
+          .fn()
+          .mockRejectedValue(Object.assign(new Error('forbidden'), { errorCode: 'M_FORBIDDEN', statusCode: 403 }))
+      })
+    } as unknown as MatrixClient)
+    loggerSpy.debug.mockClear()
+
+    const result = await adminService.apiProbe.isAvailable()
+
+    expect(result).toBe(false)
+    // 无权限是业务事实，不是异常
+    expect(loggerSpy.warn).not.toHaveBeenCalled()
+    const debugText = loggerSpy.debug.mock.calls.map(([msg]) => String(msg)).join('\n')
+    expect(debugText).toContain('可达')
+    expect(debugText).toContain('管理员权限')
+    expect(debugText).not.toContain('不可用')
   })
 })

@@ -5,9 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // 预期：前端校验通过时，即使 Tauri 不可用，isAdmin 也应为 true
 // 当前：RED — 因 backendResult(false) !== frontendResult(true) → isAdmin 被强制 false
 
-const { getUserMock, checkAdminApiAvailabilityMock } = vi.hoisted(() => ({
+const { getUserMock, probeAdminApiMock } = vi.hoisted(() => ({
   getUserMock: vi.fn(),
-  checkAdminApiAvailabilityMock: vi.fn(() => Promise.resolve(true))
+  // 浏览器模式下 checkAdminViaBackend 不会被调用；这里提供同形状的 mock 以免形状漂移
+  probeAdminApiMock: vi.fn(() =>
+    Promise.resolve({ status: 'available', statusCode: 200, errorCode: null, apiPresent: true, authorized: true })
+  )
 }))
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -31,7 +34,7 @@ vi.mock('@/utils/AppHarness', () => ({
 vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     getUser: getUserMock,
-    checkAdminApiAvailability: checkAdminApiAvailabilityMock
+    apiProbe: { probe: probeAdminApiMock }
   }
 }))
 
