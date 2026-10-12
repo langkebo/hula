@@ -421,7 +421,7 @@
     },
     {
       "file": "src/layout/left/model.tsx",
-      "lines": 421
+      "lines": 435
     },
     {
       "file": "src/services/matrix/admin/AdminFacadeOpsMethods.ts",
