@@ -69,15 +69,6 @@
         },
         {
           "path": "$APPCACHE/**"
-        },
-        {
-          "path": "$APPLOCALDATA/**"
-        },
-        {
-          "path": "$DOWNLOAD/**"
-        },
-        {
-          "path": "$TEMP/**"
         }
       ]
     },
@@ -86,15 +77,6 @@
       "allow": [
         {
           "path": "$APPDATA/**"
-        },
-        {
-          "path": "$APPLOCALDATA/**"
-        },
-        {
-          "path": "$DOWNLOAD/**"
-        },
-        {
-          "path": "$TEMP/**"
         }
       ]
     },
@@ -103,12 +85,6 @@
       "allow": [
         {
           "path": "$APPDATA/**"
-        },
-        {
-          "path": "$APPLOCALDATA/**"
-        },
-        {
-          "path": "$DOWNLOAD/**"
         },
         {
           "path": "$RESOURCE/**"
@@ -125,12 +101,6 @@
           "path": "$APPCACHE/**"
         },
         {
-          "path": "$APPLOCALDATA/**"
-        },
-        {
-          "path": "$DOWNLOAD/**"
-        },
-        {
           "path": "$RESOURCE/**"
         }
       ]
@@ -140,12 +110,6 @@
       "allow": [
         {
           "path": "$APPDATA/**"
-        },
-        {
-          "path": "$DOWNLOAD/**"
-        },
-        {
-          "path": "$TEMP/**"
         }
       ]
     },
@@ -154,9 +118,6 @@
       "allow": [
         {
           "path": "$APPDATA/**"
-        },
-        {
-          "path": "$DOWNLOAD/**"
         },
         {
           "path": "$RESOURCE/**"
