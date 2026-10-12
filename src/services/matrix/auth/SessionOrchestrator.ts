@@ -92,6 +92,9 @@ export function createSessionStorePort(): SessionStorePort {
       loginWithToken(accessToken, userId, refreshToken) {
         return matrixStore().loginWithToken(accessToken, userId, refreshToken)
       },
+      stopClient() {
+        return matrixStore().stopClient()
+      },
       logout() {
         return matrixStore().logout()
       }

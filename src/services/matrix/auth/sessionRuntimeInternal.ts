@@ -80,6 +80,7 @@ export interface SessionStorePort {
     login(username: string, password: string, deviceName?: string): Promise<boolean>
     completeSSOLogin(loginToken: string): Promise<boolean>
     loginWithToken(accessToken: string, userId: string, refreshToken?: string): Promise<boolean>
+    stopClient(): Promise<void>
     logout(): Promise<void>
   }
   user: {

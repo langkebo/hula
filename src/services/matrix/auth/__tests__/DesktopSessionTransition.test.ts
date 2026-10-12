@@ -55,6 +55,7 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): SessionRuntime
       login: vi.fn().mockResolvedValue(true),
       completeSSOLogin: vi.fn().mockResolvedValue(true),
       loginWithToken: vi.fn().mockResolvedValue(true),
+      stopClient: vi.fn().mockResolvedValue(undefined),
       logout: vi.fn().mockResolvedValue(undefined)
     },
     user: {
@@ -194,6 +195,7 @@ describe('DesktopSessionTransition', () => {
 
       expect(mockGetByLabel).toHaveBeenCalledWith('register')
       expect(registerWindow.close).toHaveBeenCalled()
+      expect(vi.mocked(host.port.matrix.stopClient)).toHaveBeenCalledTimes(1)
       expect(createWebviewWindow).toHaveBeenCalledWith(
         'Tjg',
         'home',
