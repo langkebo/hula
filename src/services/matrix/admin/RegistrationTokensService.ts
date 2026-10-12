@@ -7,6 +7,21 @@ const logger = createLogger('RegistrationTokensService')
 type SdkAdminGetter = () => Promise<AdminManager>
 
 /**
+ * Non-reversible short fingerprint of a secret (FNV-1a, 32-bit, hex).
+ * Used to correlate log lines about the same token without ever writing the
+ * credential itself to logs. Registration tokens are bearer credentials, so
+ * only length + fingerprint may be logged.
+ */
+function tokenFingerprint(token: string): string {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < token.length; i++) {
+    hash ^= token.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}
+
+/**
  * Admin Registration Tokens domain service.
  *
  * Extracted during the P0-5 admin domain split. The top-level admin facade
@@ -80,7 +95,7 @@ export class AdminRegistrationTokensService {
       if (updates.usesAllowed !== undefined) body.uses_allowed = updates.usesAllowed
       if (updates.expiryTime !== undefined) body.expiry_time = updates.expiryTime
       await admin.updateRegistrationToken(token, body)
-      logger.info(`[Admin] 注册令牌已更新: ${token}`)
+      logger.info(`[Admin] 注册令牌已更新 (长度=${token.length}, 指纹=${tokenFingerprint(token)})`)
       return this.get(token)
     } catch (err) {
       logger.error(`[Admin] 更新注册令牌失败: ${err}`)
@@ -92,7 +107,7 @@ export class AdminRegistrationTokensService {
     try {
       const admin = await this.sdkAdmin()
       await admin.deleteRegistrationToken(token)
-      logger.info(`[Admin] 注册令牌已删除: ${token}`)
+      logger.info(`[Admin] 注册令牌已删除 (长度=${token.length}, 指纹=${tokenFingerprint(token)})`)
     } catch (err) {
       logger.error(`[Admin] 删除注册令牌失败: ${err}`)
       throw err
