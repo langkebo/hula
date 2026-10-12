@@ -49,6 +49,13 @@
       "rangeStrategy": "replace"
     },
     {
+      "description": "GitHub Actions workflow updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "groupSlug": "github-actions",
+      "rangeStrategy": "replace"
+    },
+    {
       "matchUpdateTypes": ["patch", "digest", "pin"],
       "matchManagers": ["npm", "cargo"]
     },
@@ -62,6 +69,6 @@
       "rangeStrategy": "replace"
     }
   ],
-  "enabledManagers": ["npm", "cargo"],
+  "enabledManagers": ["npm", "cargo", "github-actions"],
   "updateInternalDeps": true
 }
