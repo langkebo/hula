@@ -68,7 +68,7 @@ class MatrixVoIPService extends BaseMatrixService {
         this.observedClient = null
       }
 
-      if ((client as unknown as { callEventHandler?: unknown }).callEventHandler) {
+      if ((client as { callEventHandler?: unknown }).callEventHandler) {
         if (this.observedClient === client) return
         this.setupCallHandlers(client)
         this.observedClient = client

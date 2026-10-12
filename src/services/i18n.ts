@@ -109,7 +109,7 @@ const fallbackComposer: FallbackComposer = {
 const getGlobalComposer = (): FallbackComposer => {
   const globalComposer = i18n?.global
   if (globalComposer) {
-    return globalComposer as unknown as FallbackComposer
+    return globalComposer as FallbackComposer
   }
   return fallbackComposer
 }

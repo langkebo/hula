@@ -106,7 +106,7 @@ export const vSafeHtml = {
     void sanitizeAsync(
       el,
       binding.value,
-      binding.arg ? undefined : (DEFAULT_CONFIG as unknown as Record<string, unknown>)
+      binding.arg ? undefined : (DEFAULT_CONFIG as Record<string, unknown>)
     )
   },
   updated(el: HTMLElement, binding: DirectiveBinding<string>) {
@@ -114,7 +114,7 @@ export const vSafeHtml = {
       void sanitizeAsync(
         el,
         binding.value,
-        binding.arg ? undefined : (DEFAULT_CONFIG as unknown as Record<string, unknown>)
+        binding.arg ? undefined : (DEFAULT_CONFIG as Record<string, unknown>)
       )
     }
   }

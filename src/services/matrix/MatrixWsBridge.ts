@@ -51,7 +51,7 @@ class MatrixWsBridge {
 
   private readonly onRedaction = (event: MatrixEvent, room: Room) => {
     const redactsId =
-      (event as unknown as { event?: { redacts?: string } }).event?.redacts ??
+      (event as { event?: { redacts?: string } }).event?.redacts ??
       (event.getContent() as { redacts?: string })?.redacts
     if (!redactsId) return
 

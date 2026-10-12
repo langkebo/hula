@@ -515,7 +515,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getAccountDetails(userId)
-      return (result as unknown as Record<string, unknown>) ?? null
+      return (result as Record<string, unknown>) ?? null
     } catch (err) {
       if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取账户详情失败: ${err}`)

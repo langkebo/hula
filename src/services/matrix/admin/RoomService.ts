@@ -1,6 +1,7 @@
 import type { MatrixClient } from '@/services/matrix/sdk'
 import { isValidMatrixRoomId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import type { RoomInfo, RoomState, ShutdownRoomResult } from './AdminTypes'
 
 const logger = createLogger('RoomService')
@@ -162,7 +163,7 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomMessages(roomId, { limit, from, dir })
       return {
-        chunk: (result?.chunk ?? []).map((msg) => msg as unknown as Record<string, unknown>),
+        chunk: (result?.chunk ?? []).map((msg) => unknownToObject(msg) ?? {}),
         start: result?.start,
         end: result?.end
       }
@@ -297,7 +298,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomStatsByRoom(roomId)
-      return result as unknown as Record<string, unknown>
+      return unknownToObject(result)
     } catch (err) {
       logger.error(`[Admin] 获取单房间统计失败: ${err}`)
       return null
@@ -308,7 +309,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomListings(roomId)
-      return result as unknown as Record<string, unknown>
+      return unknownToObject(result)
     } catch (err) {
       logger.error(`[Admin] 获取房间公开列表项失败: ${err}`)
       return null
@@ -330,7 +331,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomEventContext(roomId, eventId)
-      return result as unknown as Record<string, unknown>
+      return unknownToObject(result)
     } catch (err) {
       logger.error(`[Admin] 获取事件上下文失败: ${err}`)
       return null
@@ -349,7 +350,7 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.searchRoomEvents(roomId, { search_term: searchTerm, limit })
       return {
-        results: (result?.results ?? []).map((e) => e as unknown as Record<string, unknown>),
+        results: (result?.results ?? []).map((e) => unknownToObject(e) ?? {}),
         nextBatch: undefined
       }
     } catch (err) {
@@ -369,7 +370,7 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.searchRooms({ search_term: searchTerm })
       return {
-        rooms: (result?.results ?? []).map((e) => e as unknown as Record<string, unknown>),
+        rooms: (result?.results ?? []).map((e) => unknownToObject(e) ?? {}),
         nextBatch: result?.next_batch ?? undefined
       }
     } catch (err) {
@@ -382,7 +383,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomForwardExtremities(roomId)
-      if (Array.isArray(result)) return result as unknown as Array<Record<string, unknown>>
+      if (Array.isArray(result)) return result as Array<Record<string, unknown>>
       return []
     } catch (err) {
       logger.error(`[Admin] 获取房间前向极值失败: ${err}`)
@@ -401,7 +402,7 @@ export class AdminRoomService {
       const admin = await this.sdkAdmin()
       const result = await admin.listSpaces(from, limit)
       return {
-        spaces: (result?.spaces ?? []).map((s) => s as unknown as Record<string, unknown>),
+        spaces: (result?.spaces ?? []).map((s) => unknownToObject(s) ?? {}),
         next_batch: undefined
       }
     } catch (err) {
@@ -425,7 +426,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpace(spaceId)
-      return result as unknown as Record<string, unknown>
+      return unknownToObject(result)
     } catch (err) {
       logger.error(`[Admin] 获取空间详情失败: ${err}`)
       return null
@@ -458,7 +459,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpaceStats(spaceId)
-      return result as unknown as Record<string, unknown>
+      return unknownToObject(result)
     } catch (err) {
       logger.error(`[Admin] 获取空间统计失败: ${err}`)
       return null

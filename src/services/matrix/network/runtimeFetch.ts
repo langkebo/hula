@@ -104,7 +104,7 @@ function isTauriCancelError(error: unknown): boolean {
 
 function createAbortError(url: string): Error {
   if (typeof DOMException === 'function') {
-    return new DOMException(`Request aborted: ${url}`, 'AbortError') as unknown as Error
+    return new DOMException(`Request aborted: ${url}`, 'AbortError') as Error
   }
   const error = new Error(`Request aborted: ${url}`)
   error.name = 'AbortError'

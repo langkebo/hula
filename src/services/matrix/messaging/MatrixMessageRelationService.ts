@@ -249,7 +249,7 @@ class MatrixMessageRelationService extends BaseMatrixService {
     try {
       const result = await client.getRelationsManager().getAggregations(roomId, eventId, relType)
       logger.info(`[MessageRelation] 获取聚合数据成功: ${eventId}/${relType}`)
-      return result as unknown as AggregationsResponse
+      return result as AggregationsResponse
     } catch (err) {
       logger.error(`[MessageRelation] 获取聚合数据失败: ${err}`)
       return null

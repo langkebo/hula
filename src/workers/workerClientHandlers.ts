@@ -29,7 +29,7 @@ export async function handleInitialize(payload: MatrixClientConfig): Promise<voi
   }
 
   const SlidingSyncCtor = (
-    sdk as unknown as {
+    sdk as {
       SlidingSync?: new (
         homeserverUrl: string,
         lists: Map<string, unknown>,

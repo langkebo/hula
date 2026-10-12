@@ -24,7 +24,7 @@ export async function initSDK(): Promise<typeof import('matrix-js-sdk')> {
   if (state.sdk) return state.sdk
   const loaded = await import('matrix-js-sdk')
   state.sdk = loaded
-  const sdkModule = loaded as unknown as { initLogger?: () => void }
+  const sdkModule = loaded as { initLogger?: () => void }
   if (typeof sdkModule.initLogger === 'function') {
     sdkModule.initLogger()
   }

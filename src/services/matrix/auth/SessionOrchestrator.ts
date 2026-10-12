@@ -40,7 +40,7 @@ export function createSessionStorePort(): SessionStorePort {
   const settingStore = () => useSettingStore(pinia)
   const getRuntimeMatrixSession = () => {
     const sessionSnapshot = getMatrixSessionSnapshot()
-    const store = matrixStore() as unknown as {
+    const store = matrixStore() as {
       userId?: string | null
       accessToken?: string | null
       homeserverUrl?: string | null

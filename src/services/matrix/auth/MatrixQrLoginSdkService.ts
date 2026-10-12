@@ -108,8 +108,8 @@ export class MatrixQrLoginSdkService {
       })
       const channel = new MSC4108SecureChannel(session, undefined, onFailure)
 
-      this.session = session as unknown as RendezvousSessionInstance
-      this.channel = channel as unknown as SecureChannelInstance
+      this.session = session as RendezvousSessionInstance
+      this.channel = channel as SecureChannelInstance
 
       await session.send('')
 
@@ -210,11 +210,11 @@ export class MatrixQrLoginSdkService {
         client,
         fetchFn: getRuntimeAwareFetch(),
         onFailure
-      } as unknown as ConstructorParameters<typeof MSC4108RendezvousSession>[0])
+      } as ConstructorParameters<typeof MSC4108RendezvousSession>[0])
       const channel = new MSC4108SecureChannel(session, undefined, onFailure)
 
-      this.session = session as unknown as RendezvousSessionInstance
-      this.channel = channel as unknown as SecureChannelInstance
+      this.session = session as RendezvousSessionInstance
+      this.channel = channel as SecureChannelInstance
 
       await session.send('')
 
@@ -280,8 +280,8 @@ export class MatrixQrLoginSdkService {
       )
 
       const homeserverUrl = client.getHomeserverUrl()
-      const userId = (client as unknown as { getUserId(): string }).getUserId()
-      const deviceId = (client as unknown as { getDeviceId(): string | null }).getDeviceId() ?? ''
+      const userId = (client as { getUserId(): string }).getUserId()
+      const deviceId = (client as { getDeviceId(): string | null }).getDeviceId() ?? ''
 
       await this.channel.secureSend<LoginTokenPayload>({
         type: 'm.login.secrets',
@@ -362,8 +362,8 @@ export class MatrixQrLoginSdkService {
       })
       const channel = new MSC4108SecureChannel(session, theirPublicKey, onFailure)
 
-      this.session = session as unknown as RendezvousSessionInstance
-      this.channel = channel as unknown as SecureChannelInstance
+      this.session = session as RendezvousSessionInstance
+      this.channel = channel as SecureChannelInstance
 
       await channel.connect()
 

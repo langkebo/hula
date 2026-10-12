@@ -68,7 +68,7 @@ export function useAnnouncementBanner(
       if (data && data.records.length > 0) {
         const topNotice = data.records.find((item: Announcement) => item.top)
         const oldAnnouncement = topAnnouncement.value
-        topAnnouncement.value = (topNotice as unknown as AnnouncementData) || null
+        topAnnouncement.value = (topNotice as AnnouncementData) || null
 
         if (oldAnnouncement !== topAnnouncement.value) {
           const container = scrollContainerRef.value

@@ -47,7 +47,7 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
 
   const refreshPendingRequests = async (): Promise<void> => {
     try {
-      const list = (await matrixVerificationService.getPendingVerifications?.()) as unknown as PendingRequest[]
+      const list = (await matrixVerificationService.getPendingVerifications?.()) as PendingRequest[]
       pendingRequests.value = list ?? []
     } catch (err) {
       logger.warn('Failed to load pending verifications', err)

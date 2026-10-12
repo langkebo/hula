@@ -1,6 +1,7 @@
 import type { MatrixClient } from '@/services/matrix/sdk'
 import { VendorPrefix } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
 import endpointCapabilityService from '../EndpointCapabilityService'
 import matrixClientService from '../MatrixClientService'
@@ -107,7 +108,7 @@ class MatrixVoiceService extends BaseMatrixService {
    */
   private getVoiceMgr(): VoiceManagerInstance {
     const client = this.getClient()
-    const fn = (client as unknown as { getVoiceManager?: () => VoiceManagerInstance }).getVoiceManager
+    const fn = (client as { getVoiceManager?: () => VoiceManagerInstance }).getVoiceManager
     if (typeof fn !== 'function') {
       throw new Error('MatrixClient.getVoiceManager is not available; SDK 未初始化')
     }
@@ -266,7 +267,7 @@ class MatrixVoiceService extends BaseMatrixService {
     try {
       const mgr = this.getVoiceMgr()
       const result = roomId ? await mgr.getRoomVoiceStats(roomId, VendorPrefix) : await mgr.getVoiceStats(VendorPrefix)
-      const data = result as unknown as Record<string, unknown>
+      const data = unknownToObject(result) ?? {}
       return {
         totalDuration: (data.total_duration as number) ?? (data.total_duration_ms as number) ?? 0,
         totalMessages: (data.total_messages as number) ?? (data.message_count as number) ?? 0,
@@ -285,7 +286,7 @@ class MatrixVoiceService extends BaseMatrixService {
     this.requireNonEmpty(userId, 'userId')
     try {
       const result = await this.getVoiceMgr().getUserVoiceStats(userId, VendorPrefix)
-      const data = result as unknown as Record<string, unknown>
+      const data = unknownToObject(result) ?? {}
       return {
         totalDuration: (data.total_duration as number) ?? (data.total_duration_ms as number) ?? 0,
         totalMessages: (data.total_messages as number) ?? (data.message_count as number) ?? 0
@@ -307,7 +308,7 @@ class MatrixVoiceService extends BaseMatrixService {
         throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
       }
       const result = await this.getVoiceMgr().getVoiceConfig(VendorPrefix)
-      const data = result as unknown as Record<string, unknown>
+      const data = unknownToObject(result) ?? {}
       return {
         maxDuration: (data.max_duration as number) ?? 300,
         allowedFormats: (data.allowed_formats as string[]) ??
@@ -389,7 +390,7 @@ class MatrixVoiceService extends BaseMatrixService {
         return null
       }
       const result = await this.getVoiceMgr().getVoiceMessage(messageId, VendorPrefix)
-      return result as unknown as Record<string, unknown>
+      return unknownToObject(result)
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getVoiceContent failed: ${err}`)
       return null
@@ -406,7 +407,7 @@ class MatrixVoiceService extends BaseMatrixService {
       }
 
       const result = await this.getVoiceMgr().convertVoiceMessage(messageId, { format: targetFormat }, VendorPrefix)
-      const data = result as unknown as Record<string, unknown>
+      const data = result as Record<string, unknown>
       return { url: (data.url as string) ?? '', format: (data.format as string) ?? targetFormat }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] convertVoice failed: ${err}`)
@@ -427,7 +428,7 @@ class MatrixVoiceService extends BaseMatrixService {
       }
 
       const result = await this.getVoiceMgr().optimizeVoiceMessage(messageId, options ?? {}, VendorPrefix)
-      const data = result as unknown as Record<string, unknown>
+      const data = result as Record<string, unknown>
       return { url: (data.url as string) ?? '', size: (data.size as number) ?? 0 }
     } catch (err) {
       logger.warn(`[MatrixVoiceService] optimizeVoice failed: ${err}`)
@@ -448,7 +449,7 @@ class MatrixVoiceService extends BaseMatrixService {
 
       const options = lang ? { language: lang } : undefined
       const result = await this.getVoiceMgr().transcribeVoiceMessage(messageId, options, VendorPrefix)
-      const data = result as unknown as Record<string, unknown>
+      const data = result as Record<string, unknown>
       return {
         text: (data.text as string) ?? '',
         language: data.language as string | undefined,

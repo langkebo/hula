@@ -188,7 +188,7 @@ export const useEditorDom = (options: UseEditorDomOptions) => {
         const textNode = document.createTextNode(dom)
         range?.insertNode(textNode)
       } else {
-        range?.insertNode(dom as unknown as Node)
+        range?.insertNode(dom as Node)
       }
       range?.collapse(false)
     }

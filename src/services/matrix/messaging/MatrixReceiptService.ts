@@ -86,7 +86,7 @@ class MatrixReceiptService extends BaseMatrixService {
     if (typeof lastEvent.getId === 'function') {
       return (await this.sendReadReceipt(roomId, lastEvent)) !== undefined
     }
-    const eventId = (lastEvent as unknown as { event_id?: string }).event_id
+    const eventId = (lastEvent as { event_id?: string }).event_id
     if (eventId) {
       return (await this.sendReadReceiptByEventId(roomId, eventId)) !== undefined
     }
@@ -176,8 +176,8 @@ class MatrixReceiptService extends BaseMatrixService {
       const eventId =
         typeof event.getId === 'function'
           ? event.getId()
-          : ((event as unknown as { event_id?: string; id?: string }).event_id ??
-            (event as unknown as { event_id?: string; id?: string }).id)
+          : ((event as { event_id?: string; id?: string }).event_id ??
+            (event as { event_id?: string; id?: string }).id)
       if (!eventId) {
         throw new Error(this.t('matrix_error.messaging.receipt_event_id_missing'))
       }

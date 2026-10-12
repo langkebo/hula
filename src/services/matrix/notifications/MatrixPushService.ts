@@ -25,7 +25,7 @@ class MatrixPushService extends BaseMatrixService {
       try {
         // SDK 的 PushManager.getPushers 返回 lib/push 的 IPusher（data 可选），与对外
         // 顶层 IPusher 类型在 data/kind/device_id 上存在差异，此处做边界类型桥接。
-        return (await client.getPushManager().getPushers()) as unknown as IPusher[]
+        return (await client.getPushManager().getPushers()) as IPusher[]
       } catch (err) {
         logger.error(`[MatrixPush] 获取 pushers 失败: ${err}`)
         throw err

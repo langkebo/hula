@@ -23,7 +23,7 @@ export async function startRegistrationSession(): Promise<{
 }> {
   try {
     const result = await createTemporaryMatrixClient().registerRequest({})
-    const r = result as unknown as {
+    const r = result as {
       session?: string
       flows?: Array<{ type: string; stages?: string[] }>
     }

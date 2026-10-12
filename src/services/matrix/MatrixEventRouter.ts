@@ -80,7 +80,7 @@ export class MatrixEventRouter {
 
     updateRoom()
 
-    const roomAny = room as unknown as {
+    const roomAny = room as {
       on: (event: string, handler: (...args: unknown[]) => void) => void
       off: (event: string, handler: (...args: unknown[]) => void) => void
       setMaxListeners?: (n: number) => void
@@ -225,7 +225,7 @@ export class MatrixEventRouter {
 
     // client EventEmitter 监听器累积超过默认上限 10（7 个本路由 + VoIP/Push/Presence/SpecialFriend 等），
     // 提升实例级 maxListeners 至 50 以避免 MaxListenersExceededWarning。
-    const clientAny = client as unknown as { setMaxListeners?: (n: number) => void }
+    const clientAny = client as { setMaxListeners?: (n: number) => void }
     clientAny.setMaxListeners?.(50)
 
     client.on('sync', this.syncListener)
@@ -268,7 +268,7 @@ export class MatrixEventRouter {
    */
   detachRoomListeners(): void {
     for (const [, entry] of this.roomListeners) {
-      const roomAny = entry.room as unknown as {
+      const roomAny = entry.room as {
         off: (event: string, handler: (...args: unknown[]) => void) => void
       }
       if (typeof roomAny.off === 'function') {

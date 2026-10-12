@@ -290,7 +290,7 @@ function resolveAuthedRequest(client: unknown): MatrixAuthedRequestInvoker | nul
   if (!http || typeof http !== 'object') return null
   const authedRequest = (http as { authedRequest?: unknown }).authedRequest
   if (typeof authedRequest !== 'function') return null
-  return http as unknown as MatrixAuthedRequestInvoker
+  return http as MatrixAuthedRequestInvoker
 }
 
 function requireAuthedRequest(client: unknown): MatrixAuthedRequestInvoker {

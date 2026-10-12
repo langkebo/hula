@@ -19,7 +19,7 @@ const logger = createLogger('VoIPHelpers')
  * 此前代码误用 client.getCallHandler()（不存在），导致恒返回 undefined。
  */
 export function getCallById(callId: string, client: MatrixClient): VoIPCall | undefined {
-  const handler = (client as unknown as { callEventHandler?: { calls: Map<string, VoIPCall> } }).callEventHandler
+  const handler = (client as { callEventHandler?: { calls: Map<string, VoIPCall> } }).callEventHandler
   return handler?.calls?.get(callId)
 }
 
@@ -148,7 +148,7 @@ export async function checkVoipAvailability(client: MatrixClient): Promise<{
 }> {
   const turnStatus = await checkTurnAvailability(client)
 
-  if (!(client as unknown as { callEventHandler?: unknown }).callEventHandler) {
+  if (!(client as { callEventHandler?: unknown }).callEventHandler) {
     return { voipAvailable: false, turnAvailable: turnStatus.available, message: 'VoIP 模块不可用' }
   }
 

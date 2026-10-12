@@ -277,7 +277,7 @@ export class RoomOperations extends BaseMatrixService {
 
   private getInviteBlocklistMgr(): InviteBlocklistManagerInstance {
     const client = this.getClient()
-    const fn = (client as unknown as { getInviteBlocklistManager?: () => InviteBlocklistManagerInstance })
+    const fn = (client as { getInviteBlocklistManager?: () => InviteBlocklistManagerInstance })
       .getInviteBlocklistManager
     if (typeof fn !== 'function') {
       throw new Error('MatrixClient.getInviteBlocklistManager is not available; SDK 未初始化')
@@ -293,7 +293,7 @@ export class RoomOperations extends BaseMatrixService {
     const domain = client.getDomain()
     if (domain) return domain
 
-    const baseUrl = (client as unknown as { baseUrl?: string }).baseUrl
+    const baseUrl = (client as { baseUrl?: string }).baseUrl
     if (baseUrl) {
       try {
         const url = new URL(baseUrl)

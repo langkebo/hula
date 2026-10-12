@@ -341,7 +341,7 @@ export class MatrixConnectionManager {
   private tryUpdateAccessTokenInPlace(newToken: string): boolean {
     if (!this.client) return false
     try {
-      const setter = (this.client as unknown as { setAccessToken?: (token: string) => void }).setAccessToken
+      const setter = (this.client as { setAccessToken?: (token: string) => void }).setAccessToken
       if (typeof setter !== 'function') {
         logger.warn('MatrixClient 不支持 setAccessToken，无法原地更新 token')
         return false

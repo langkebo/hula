@@ -182,7 +182,7 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
         else if (options?.dir === 'f') opts.dir = Direction.Forward
         const result = await client.relations(roomId, eventId, null, null, opts)
         const response: RelationsResponse = {
-          chunk: result.events.map((e) => e.event as unknown as Record<string, unknown>)
+          chunk: result.events.map((e) => e.event as Record<string, unknown>)
         }
         if (result.nextBatch) response.next_batch = result.nextBatch
         if (result.prevBatch) response.prev_batch = result.prevBatch
@@ -211,7 +211,7 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
         else if (options?.dir === 'f') opts.dir = Direction.Forward
         const result = await client.relations(roomId, eventId, relType, null, opts)
         const response: RelationsResponse = {
-          chunk: result.events.map((e) => e.event as unknown as Record<string, unknown>)
+          chunk: result.events.map((e) => e.event as Record<string, unknown>)
         }
         if (result.nextBatch) response.next_batch = result.nextBatch
         if (result.prevBatch) response.prev_batch = result.prevBatch

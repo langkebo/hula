@@ -46,7 +46,7 @@ export class AdminModerationService {
 
   private async ensureModerationManager(throwOnMissing = true): Promise<ModerationManager | null> {
     const client = this.getClient()
-    const manager = (client as unknown as { moderationManager?: ModerationManager }).moderationManager ?? null
+    const manager = (client as { moderationManager?: ModerationManager }).moderationManager ?? null
     if (!manager) {
       if (throwOnMissing) {
         throw new Error('[AdminModeration] moderationManager 未初始化')

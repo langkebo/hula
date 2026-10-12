@@ -57,7 +57,7 @@ async function ensureLanguage(lang: string): Promise<void> {
     const loader = bundledLanguages[normalizedLang as keyof typeof bundledLanguages]
     if (loader) {
       const langModule = (await loader()) as { default?: LanguageRegistration | LanguageRegistration[] }
-      const langDefs = langModule.default || (langModule as unknown as LanguageRegistration | LanguageRegistration[])
+      const langDefs = langModule.default || (langModule as LanguageRegistration | LanguageRegistration[])
       const langs = Array.isArray(langDefs) ? langDefs : [langDefs]
       for (const langDef of langs) {
         await hl.loadLanguage(langDef)
@@ -78,7 +78,7 @@ async function ensureTheme(theme: string): Promise<void> {
     const loader = bundledThemes[theme as keyof typeof bundledThemes]
     if (loader) {
       const themeModule = (await loader()) as { default?: ThemeRegistration }
-      const themeDef = themeModule.default || (themeModule as unknown as ThemeRegistration)
+      const themeDef = themeModule.default || (themeModule as ThemeRegistration)
       await hl.loadTheme(themeDef)
       loadedThemes.add(theme)
     }
@@ -126,7 +126,7 @@ async function preloadCommon(): Promise<void> {
       const loader = bundledLanguages[lang as keyof typeof bundledLanguages]
       if (loader) {
         const langModule = (await loader()) as { default?: LanguageRegistration | LanguageRegistration[] }
-        const langDefs = langModule.default || (langModule as unknown as LanguageRegistration | LanguageRegistration[])
+        const langDefs = langModule.default || (langModule as LanguageRegistration | LanguageRegistration[])
         const langs = Array.isArray(langDefs) ? langDefs : [langDefs]
         for (const langDef of langs) {
           await hl.loadLanguage(langDef)
@@ -144,7 +144,7 @@ async function preloadCommon(): Promise<void> {
       const loader = bundledThemes[theme as keyof typeof bundledThemes]
       if (loader) {
         const themeModule = (await loader()) as { default?: ThemeRegistration }
-        const themeDef = themeModule.default || (themeModule as unknown as ThemeRegistration)
+        const themeDef = themeModule.default || (themeModule as ThemeRegistration)
         await hl.loadTheme(themeDef)
         loadedThemes.add(theme)
       }

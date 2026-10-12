@@ -316,7 +316,7 @@ export class CryptoKeyBackupAdapter {
       return generatedKey.encodedPrivateKey
     } else {
       log('分支 4: 调用 resetKeyBackup (bootstrapSecretStorage 不可用)')
-      await crypto.resetKeyBackup(authData as unknown as MatrixAuthData)
+      await crypto.resetKeyBackup(authData as MatrixAuthData)
       const key = generatedKey?.encodedPrivateKey || ''
       log('分支 4 完成: resetKeyBackup 成功')
       return key

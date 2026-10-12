@@ -6,8 +6,9 @@
  */
 
 import type { IDeviceUpdateRequest } from 'matrix-js-sdk'
-import type { AuthDict, MatrixClientExtended } from '@/types/matrix-extensions'
+import type { AuthDict, DeviceManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { cryptoSDKAdapter } from '../crypto/CryptoSDKAdapter'
 
@@ -59,17 +60,27 @@ interface DeviceListUpdatesRequest {
  */
 class MatrixDeviceService extends BaseMatrixService {
   /**
+   * 获取 DeviceManager（不存在时抛出）。
+   *
+   * 注：本地 `MatrixClientExtended` 与 SDK 的 `getKeyBackupManager` 签名不兼容，
+   * 无法直接 `as` 降级，故在此保留唯一的 unknown 桥接；调用方统一走本方法。
+   */
+  private requireDeviceManager(): DeviceManager {
+    const deviceManager = (this.getClient() as unknown as MatrixClientExtended).getDeviceManager?.()
+    if (!deviceManager) {
+      throw new Error('DeviceManager 不可用')
+    }
+    return deviceManager
+  }
+
+  /**
    * 获取当前用户的所有设备
    *
    * @returns 设备列表
    */
   async getDevices(): Promise<Device[]> {
     try {
-      const client = this.getClient()
-      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
-      if (!deviceManager) {
-        throw new Error('DeviceManager 不可用')
-      }
+      const deviceManager = this.requireDeviceManager()
 
       const devices = await deviceManager.getDevices()
       logger.info(`[DeviceService] 获取设备列表成功: ${devices.length} 个设备`)
@@ -198,11 +209,7 @@ class MatrixDeviceService extends BaseMatrixService {
    */
   async getDevice(deviceId: string): Promise<Device> {
     try {
-      const client = this.getClient()
-      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
-      if (!deviceManager) {
-        throw new Error('DeviceManager 不可用')
-      }
+      const deviceManager = this.requireDeviceManager()
 
       const device = await deviceManager.getDevice(deviceId)
       logger.info(`[DeviceService] 获取设备详情成功: ${deviceId}`)
@@ -227,11 +234,7 @@ class MatrixDeviceService extends BaseMatrixService {
         throw new Error(`设备名称不能超过 100 个字符（当前: ${displayName.length}）`)
       }
 
-      const client = this.getClient()
-      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
-      if (!deviceManager) {
-        throw new Error('DeviceManager 不可用')
-      }
+      const deviceManager = this.requireDeviceManager()
 
       // SDK-9: 适配 IDeviceUpdateRequest 对象签名
       const updates: IDeviceUpdateRequest = { display_name: displayName }
@@ -256,11 +259,7 @@ class MatrixDeviceService extends BaseMatrixService {
    */
   async deleteDevice(deviceId: string, auth?: AuthDict): Promise<void> {
     try {
-      const client = this.getClient()
-      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
-      if (!deviceManager) {
-        throw new Error('DeviceManager 不可用')
-      }
+      const deviceManager = this.requireDeviceManager()
 
       // DeviceManager 会自动保护当前设备
       await deviceManager.deleteDevice(deviceId, auth)
@@ -279,11 +278,7 @@ class MatrixDeviceService extends BaseMatrixService {
    */
   async deleteDevices(deviceIds: string[], auth?: AuthDict): Promise<void> {
     try {
-      const client = this.getClient()
-      const deviceManager = (client as unknown as MatrixClientExtended).getDeviceManager?.()
-      if (!deviceManager) {
-        throw new Error('DeviceManager 不可用')
-      }
+      const deviceManager = this.requireDeviceManager()
 
       // SDK 真实签名只接受一个参数，且仅对象形式会读取 auth。
       // 传第二个位置参数会被静默丢弃，导致 UIA 重试永远失败。
@@ -307,7 +302,7 @@ class MatrixDeviceService extends BaseMatrixService {
       const deviceManager = client.getDeviceManager()
       const updates = await deviceManager.getDeviceListUpdates(request.users)
       logger.info(`[DeviceService] 获取设备变更成功: ${request.users.length} 个用户`)
-      return updates as unknown as DeviceListUpdatesResponse
+      return updates as DeviceListUpdatesResponse
     } catch (err) {
       logger.error(`[DeviceService] 获取设备变更失败: ${err}`)
       throw err
@@ -347,7 +342,7 @@ class MatrixDeviceService extends BaseMatrixService {
       // 的是 GET /room_keys/request 的原始响应体 { requests: [...] }（Matrix 规范的包裹结构）。
       // 必须按真实结构解包，否则会把包裹对象当成数组返回，违反本函数声明的 Array 契约。
       const response = await client.getE2EEManager().listRoomKeyRequests()
-      const requests = (response as unknown as { requests?: Array<Record<string, unknown>> }).requests
+      const requests = unknownToObject<{ requests?: Array<Record<string, unknown>> }>(response)?.requests
       logger.info('[DeviceService] 获取密钥请求列表成功')
       return requests ?? []
     } catch (err) {

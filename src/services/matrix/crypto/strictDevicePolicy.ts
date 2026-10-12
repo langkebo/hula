@@ -75,7 +75,7 @@ export function applyRoomStrict(roomId: string, strict: boolean | null): boolean
   }
   // JSDoc 明确「null to use the global value for this room」，但 d.ts 只声明 boolean，
   // 故这里必须显式断言：传 null 才能在运行时表达"跟随全局"。
-  room.setBlacklistUnverifiedDevices((strict ?? null) as unknown as boolean)
+  room.setBlacklistUnverifiedDevices((strict ?? null) as boolean)
   logger.info(`房间严格模式覆盖 ${roomId} → ${strict === null ? '跟随全局' : strict}`)
   return true
 }

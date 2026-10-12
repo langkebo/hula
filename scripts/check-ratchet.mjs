@@ -185,6 +185,23 @@ const counters = {
     includeTests: false,
     total: 0,
     files: new Map()
+  },
+  /**
+   * 双重断言 `x as unknown as T`（非测试，剥注释后计）。
+   *
+   * 判据本意：`as unknown as` 会**同时绕过两端类型检查**（先把类型抹成 unknown，
+   * 再强扭为目标类型），是类型系统里的「静默逃生舱」——它让错误在编译期不可见、
+   * 在运行期才炸，且掩盖了真正的类型不匹配（P2-1 CQ-01）。
+   *
+   * 收敛策略（不批量重写）：新代码禁止再用 `as unknown as`，应改用正经类型定义、
+   * 类型守卫或泛型约束；存量优先在 `services/matrix` 热点文件就近替换，计数只降不升。
+   */
+  as_unknown_as: {
+    pattern: /as\s+unknown\s+as/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsOnly
   }
 }
 

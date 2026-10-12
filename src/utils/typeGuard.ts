@@ -178,7 +178,7 @@ export function merge<T extends object, U extends object>(target: T, source: U):
 
 export function deepClone<T>(value: T): T {
   if (value === null || value === undefined) return value
-  if (isArray(value)) return value.map((item) => deepClone(item)) as unknown as T
+  if (isArray(value)) return value.map((item) => deepClone(item)) as T
   if (isObject(value)) {
     const obj = value as Record<string, unknown>
     const result: Record<string, unknown> = {}

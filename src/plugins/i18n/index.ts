@@ -62,7 +62,7 @@ export const useTypedI18n = () => {
 
   // 唯一一次 `as unknown as`：vue-i18n 的 t 是重载接口，无法直接窄化首参，
   // 先收敛成 RawTranslate。
-  const rawTranslate = t as unknown as RawTranslate
+  const rawTranslate = t as RawTranslate
 
   // 依赖函数参数逆变（RawTranslate 收 string，TypedTranslate 只传 I18nKeyPaths 子集）
   // 把同一个实现标成两种出口类型，无需第二次断言。

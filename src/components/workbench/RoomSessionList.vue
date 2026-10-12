@@ -44,7 +44,7 @@
           @select="(e: any) => handleSelect(item as SessionItem, e)"
           @accept-invite="onAcceptInvite?.($event)"
           @reject-invite="onRejectInvite?.($event)"
-          @menu-show="onMenuShow as unknown as () => void" />
+          @menu-show="onMenuShow as () => void" />
       </RecycleScroller>
     </div>
 

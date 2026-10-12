@@ -93,7 +93,7 @@ export class InvitePolicyEnforcer {
       return
     }
 
-    this.client = client as unknown as EventTarget
+    this.client = client as EventTarget
     this.handler = (_event: unknown, member: InviteMemberLike) => {
       void this.handleMember(member)
     }
@@ -131,7 +131,7 @@ export class InvitePolicyEnforcer {
     this.declined.delete(roomId)
 
     try {
-      const client = matrixClientService.getClient() as unknown as AcceptingClient | null
+      const client = matrixClientService.getClient() as AcceptingClient | null
       if (!client?.joinRoom) {
         logger.error('撤回失败：客户端不支持 joinRoom')
         return false

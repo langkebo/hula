@@ -38,7 +38,7 @@ export class AdminReportService {
 
   private getReportingMgr(): ReportingManagerInstance {
     const client = this.getClient()
-    const fn = (client as unknown as { getReportingManager?: () => ReportingManagerInstance }).getReportingManager
+    const fn = (client as { getReportingManager?: () => ReportingManagerInstance }).getReportingManager
     if (typeof fn !== 'function') {
       throw new Error('MatrixClient.getReportingManager is not available; SDK 未初始化')
     }

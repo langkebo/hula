@@ -135,7 +135,7 @@ class MatrixProfileService extends BaseMatrixService {
       if (!response || typeof response !== 'object' || Array.isArray(response)) {
         return {}
       }
-      return response as unknown as MatrixExtendedProfile
+      return response as MatrixExtendedProfile
     } catch (err) {
       if (this.isUnsupportedExtendedProfileError(err)) {
         logger.info(`服务器不支持扩展资料接口，返回空对象: ${userId}`)

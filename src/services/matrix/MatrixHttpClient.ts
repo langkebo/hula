@@ -53,7 +53,7 @@ export async function authedRequestWithPath<T>(
   queryParams?: Record<string, string>,
   body?: object
 ): Promise<T> {
-  const requester = client.getRoomManager() as unknown as MatrixAuthedRequestWithPrefixInvoker
+  const requester = client.getRoomManager() as MatrixAuthedRequestWithPrefixInvoker
   return await requester.authedRequestWithPrefix<T>(
     method,
     fullPath,
@@ -215,7 +215,7 @@ class MatrixHttpClient {
     if (client) {
       // 经 SDK manager 统一入口：内部自动处理 accessToken / baseUrl，
       // 并按 KNOWN_PREFIXES 剥离路径中已有的完整前缀，避免二次拼接默认 v3 前缀。
-      const requester = client.getRoomManager() as unknown as MatrixAuthedRequestWithPrefixInvoker
+      const requester = client.getRoomManager() as MatrixAuthedRequestWithPrefixInvoker
       return await requester.authedRequestWithPrefix<T>(method, requestPath, queryParams, requestOptions.body)
     }
 

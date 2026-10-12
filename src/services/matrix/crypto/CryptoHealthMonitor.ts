@@ -106,7 +106,7 @@ export class CryptoHealthMonitor {
     try {
       const client = matrixClientService.getClient()
       if (!client) return false
-      const userId = (client as unknown as { getUserId?: () => string }).getUserId?.()
+      const userId = (client as { getUserId?: () => string }).getUserId?.()
       if (!userId) return false
       const devices = await matrixCryptoService.getDevices(userId)
       if (!Array.isArray(devices)) return false
@@ -137,7 +137,7 @@ export class CryptoHealthMonitor {
       const client = matrixClientService.getClient()
       if (!client) return false
       const crypto = (
-        client as unknown as { getCrypto?: () => { isCrossSigningReady?: () => Promise<boolean> } }
+        client as { getCrypto?: () => { isCrossSigningReady?: () => Promise<boolean> } }
       ).getCrypto?.()
       if (crypto?.isCrossSigningReady) {
         return await crypto.isCrossSigningReady()
@@ -183,7 +183,7 @@ export class CryptoHealthMonitor {
           if (content && (content as Record<string, unknown>).msgtype === 'm.bad.encrypted') {
             const wireContent = event.getWireContent()
             const sessionId = (wireContent as Record<string, unknown>).session_id as string | undefined
-            const roomId = (room as unknown as { roomId?: string }).roomId
+            const roomId = (room as { roomId?: string }).roomId
             if (sessionId && roomId) {
               try {
                 await matrixCryptoService.createRoomKeyRequest(roomId, sessionId, 'm.megolm.v1.aes-sha2', {})

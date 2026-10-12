@@ -83,7 +83,7 @@ class MatrixSearchService {
     if (!client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
-    const fn = (client as unknown as { getSearchManager?: () => SearchManagerInstance }).getSearchManager
+    const fn = (client as { getSearchManager?: () => SearchManagerInstance }).getSearchManager
     if (typeof fn !== 'function') {
       throw new Error('MatrixClient.getSearchManager is not available; SDK 未初始化')
     }
@@ -100,7 +100,7 @@ class MatrixSearchService {
       order_by_recency: true,
       include_state: true
     })
-    return this.parseSearchResults(response as unknown as MatrixSearchResponse)
+    return this.parseSearchResults(response as MatrixSearchResponse)
   }
 
   private mapWorkerMessageResults(results: SearchMessageHit[]): SearchResult[] {
@@ -247,7 +247,7 @@ class MatrixSearchService {
         order_by_recency: true
       })
 
-      const typed = response as unknown as MatrixSearchResponse
+      const typed = response as MatrixSearchResponse
       const results = this.parseSearchResults(typed)
       const roomEvents = typed.search_categories?.room_events
 

@@ -65,7 +65,7 @@ class ChunkUploadService {
 
   /** 获取 MediaManager——失败时抛错 */
   private getMedia(client: MatrixClient): MediaManagerInstance {
-    const fn = (client as unknown as { getMediaManager?: () => unknown }).getMediaManager
+    const fn = (client as { getMediaManager?: () => unknown }).getMediaManager
     if (typeof fn !== 'function') {
       throw new Error('MatrixClient.getMediaManager is not available; SDK 未初始化')
     }

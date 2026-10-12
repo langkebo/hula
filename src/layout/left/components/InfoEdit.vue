@@ -254,7 +254,7 @@ const openEditInfo = () => {
   badgeService
     .getBadgeList()
     .then((res) => {
-      editInfo.value.badgeList = res as unknown as typeof editInfo.value.badgeList
+      editInfo.value.badgeList = res as typeof editInfo.value.badgeList
     })
     .catch(() => {
       // F-2 修复：徽章列表获取失败时静默降级为空列表，避免 unhandledrejection

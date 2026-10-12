@@ -26,7 +26,7 @@ type AccountDataManagerInstance = ReturnType<NonNullable<MatrixClient['getAccoun
 export class MatrixRoomAccountDataService extends BaseMatrixService {
   private getAccountDataMgr(): AccountDataManagerInstance {
     const client = this.getClient()
-    const fn = (client as unknown as { getAccountDataManager?: () => AccountDataManagerInstance }).getAccountDataManager
+    const fn = (client as { getAccountDataManager?: () => AccountDataManagerInstance }).getAccountDataManager
     if (typeof fn !== 'function') {
       throw new Error('MatrixClient.getAccountDataManager is not available; SDK 未初始化')
     }
@@ -76,7 +76,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getRoomVaultData(roomId)
-      return (result ?? {}) as unknown as Record<string, unknown>
+      return (result ?? {}) as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取保险库数据失败: ${err}`)
       return {}
@@ -193,7 +193,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       const result = await client.getRoomSummaryManager().signRoomEvent(roomId, eventId)
       logger.info(`[MatrixRoom] 事件签名成功: ${roomId}/${eventId}`)
-      return result as unknown as Record<string, unknown>
+      return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 事件签名失败: ${err}`)
       throw err
@@ -222,7 +222,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getRoomMessageQueue(roomId)
-      return result as unknown as Record<string, unknown>
+      return result as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取消息队列失败: ${err}`)
       return {}

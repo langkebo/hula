@@ -51,7 +51,7 @@ export const SLIDING_SYNC_PRESETS: Record<NetworkType, SlidingSyncPreset> = {
  * On Android WebView (used by Tauri mobile), the API is well-supported.
  */
 export function detectNetworkType(): NetworkType {
-  const conn = (navigator as unknown as { connection?: { effectiveType?: string } }).connection
+  const conn = (navigator as { connection?: { effectiveType?: string } }).connection
   if (!conn?.effectiveType) return 'wifi'
   const type = conn.effectiveType
   if (type === '4g') return '4g'
@@ -252,7 +252,7 @@ export class MatrixSyncManager {
   private registerNetworkChangeListener(): void {
     this.unregisterNetworkChangeListener()
     const conn = (
-      navigator as unknown as { connection?: { addEventListener?: (type: string, handler: () => void) => void } }
+      navigator as { connection?: { addEventListener?: (type: string, handler: () => void) => void } }
     ).connection
     if (!conn?.addEventListener) return
 
@@ -266,7 +266,7 @@ export class MatrixSyncManager {
   private unregisterNetworkChangeListener(): void {
     if (!this.networkChangeHandler) return
     const conn = (
-      navigator as unknown as { connection?: { removeEventListener?: (type: string, handler: () => void) => void } }
+      navigator as { connection?: { removeEventListener?: (type: string, handler: () => void) => void } }
     ).connection
     conn?.removeEventListener?.('change', this.networkChangeHandler)
     this.networkChangeHandler = null

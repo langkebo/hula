@@ -99,7 +99,7 @@ const receipts = computed<ReceiptInfo[]>(() => {
 
 const senderPresence = computed(() => {
   const user = matrixClientService.getUser(props.senderId)
-  return (user as unknown as { presence?: string })?.presence
+  return (user as { presence?: string })?.presence
 })
 
 const senderPresenceText = computed(() => {

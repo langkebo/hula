@@ -126,7 +126,7 @@ export async function uploadContentWithChunkFallback(
   try {
     const uploadResponse = await getMedia().uploadContent(
       file,
-      opts as unknown as { name?: string; type?: string; progress?: (p: { loaded: number; total: number }) => void }
+      opts as { name?: string; type?: string; progress?: (p: { loaded: number; total: number }) => void }
     )
     return typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
   } catch (err) {

@@ -218,7 +218,7 @@ export class MatrixAuthService {
     try {
       const result = await createTemporaryMatrixClient().registerRequest({})
       return (
-        (result as unknown as { flows?: Array<{ type: string; stages?: string[]; [key: string]: unknown }> }).flows ??
+        (result as { flows?: Array<{ type: string; stages?: string[]; [key: string]: unknown }> }).flows ??
         []
       )
     } catch (err) {

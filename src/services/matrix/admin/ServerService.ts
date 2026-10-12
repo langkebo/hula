@@ -120,7 +120,7 @@ export class AdminServerService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getServerInfo()
-      return (result as unknown as Record<string, unknown>) ?? null
+      return (result as Record<string, unknown>) ?? null
     } catch (err) {
       logger.error(`[AdminServer] 获取管理端信息失败: ${err}`)
       return null

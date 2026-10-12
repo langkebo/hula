@@ -273,7 +273,7 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
 
     // SDK 的权威判据：房间状态里是否存在 m.room.encryption
     try {
-      const hasEncryptionStateEvent = (room as unknown as { hasEncryptionStateEvent?: () => boolean })
+      const hasEncryptionStateEvent = (room as { hasEncryptionStateEvent?: () => boolean })
         .hasEncryptionStateEvent
       if (typeof hasEncryptionStateEvent === 'function' && hasEncryptionStateEvent.call(room)) {
         return 'encrypted'

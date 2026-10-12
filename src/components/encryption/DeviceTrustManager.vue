@@ -347,7 +347,7 @@ async function handleRoomSelect(roomId: string | null) {
 async function handleRefresh() {
   try {
     const client = matrixEncryptionService['getClient']()
-    const userId = (client as unknown as { getUserId?: () => string }).getUserId?.()
+    const userId = (client as { getUserId?: () => string }).getUserId?.()
     if (userId) {
       await loadDevices(userId)
     }

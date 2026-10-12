@@ -28,9 +28,9 @@ export function getThreadingManager(): ThreadingManagerCompat | null {
   const client = matrixClientService.getClient()
   if (!client) return null
   // 优先走 SDK 暴露的 getThreadingManager() 方法；兼容宿主额外挂载的 threadingManager 属性。
-  const method = (client as unknown as { getThreadingManager?: () => ThreadingManagerCompat }).getThreadingManager
+  const method = (client as { getThreadingManager?: () => ThreadingManagerCompat }).getThreadingManager
   if (typeof method === 'function') return method.call(client)
-  return (client as unknown as { threadingManager?: ThreadingManagerCompat }).threadingManager ?? null
+  return (client as { threadingManager?: ThreadingManagerCompat }).threadingManager ?? null
 }
 
 /**

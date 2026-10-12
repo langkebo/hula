@@ -216,7 +216,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     targetRoomId: string,
     tempMsgId: string
   ): Promise<boolean> {
-    const voiceBody = messageBody as unknown as VoiceBody
+    const voiceBody = messageBody as VoiceBody
     const uploadResult = await uploadVoiceToMatrix(
       targetRoomId,
       msg.localPath as string,

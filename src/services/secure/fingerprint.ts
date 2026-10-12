@@ -40,7 +40,7 @@ export const getEnhancedFingerprint = async (): Promise<string> => {
         pixelRatio: window.devicePixelRatio,
         colorDepth: window.screen.colorDepth,
         hardwareConcurrency: navigator.hardwareConcurrency || undefined,
-        deviceMemory: (navigator as unknown as { deviceMemory?: number }).deviceMemory,
+        deviceMemory: (navigator as { deviceMemory?: number }).deviceMemory,
         language: navigator.language,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       }

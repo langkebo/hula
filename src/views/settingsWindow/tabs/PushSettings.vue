@@ -292,7 +292,7 @@ async function loadDndSettings() {
 
 function getRulesByKind(kind: string): IPushRule[] {
   if (!pushRules.value?.global) return []
-  const globalRules = pushRules.value.global as unknown as Record<string, IPushRule[] | undefined>
+  const globalRules = pushRules.value.global as Record<string, IPushRule[] | undefined>
   return globalRules[kind] ?? []
 }
 

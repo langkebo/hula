@@ -156,7 +156,7 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
         logger.warn('[SynapseRust] 响应 status=ok 但缺少 data 字段，尝试将整个响应作为数据返回')
         const { data: _, status: __, code: ___, message: ____, ...rest } = wrapped as Record<string, unknown>
         if (Object.keys(rest).length > 0) {
-          return rest as unknown as T
+          return rest as T
         }
         return undefined
       }

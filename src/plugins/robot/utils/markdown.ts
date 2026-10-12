@@ -57,7 +57,7 @@ export async function initMarkdownRenderer() {
   initPromise = (async () => {
     const { MarkdownCodeBlockNode, setCustomComponents } = await import('markstream-vue')
     const MarkdownCodeBlockNodeComponent =
-      MarkdownCodeBlockNode as unknown as DefineComponent<MarkdownCodeBlockNodeProps>
+      MarkdownCodeBlockNode as DefineComponent<MarkdownCodeBlockNodeProps>
 
     const RobotMarkdownCodeBlockNode = defineComponent({
       name: 'RobotMarkdownCodeBlockNode',

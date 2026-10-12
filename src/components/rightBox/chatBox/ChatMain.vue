@@ -398,8 +398,8 @@ const isLastPage = computed(() => chatStore.currentMessageOptions?.isLast ?? fal
 const isLoading = computed(() => chatStore.currentMessageOptions?.isLoading ?? false)
 
 const scrollManager = useChatScrollManager({
-  scrollContainer: scrollContainerRef as unknown as Ref<HTMLElement | null>,
-  messageListRef: messageListRef as unknown as Ref<HTMLElement | null>,
+  scrollContainer: scrollContainerRef as Ref<HTMLElement | null>,
+  messageListRef: messageListRef as Ref<HTMLElement | null>,
   onLoadMore: () => chatStore.loadMore(),
   isLastPage,
   isLoading,

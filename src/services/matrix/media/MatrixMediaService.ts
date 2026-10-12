@@ -43,7 +43,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   protected getMedia(): MediaManager {
     const client = this.getClient()
-    const fn = (client as unknown as { getMediaManager?: () => MediaManager }).getMediaManager
+    const fn = (client as { getMediaManager?: () => MediaManager }).getMediaManager
     if (typeof fn !== 'function') {
       throw new Error('MatrixClient.getMediaManager is not available; SDK 未初始化')
     }
@@ -104,7 +104,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     const client = this.getClient()
     try {
       const encryptedPayload = await matrixAttachmentEncryptionService.encryptAttachment(file)
-      const encryptedBlobFile = new File([encryptedPayload.encryptedData as unknown as BlobPart], file.name, {
+      const encryptedBlobFile = new File([encryptedPayload.encryptedData as BlobPart], file.name, {
         type: 'application/octet-stream'
       })
       const contentUri = await uploadContentWithChunkFallback(

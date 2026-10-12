@@ -28,7 +28,7 @@ const detectBrowserFeatures = async (): Promise<Record<string, boolean>> => {
     audio: async () => {
       try {
         return !!(
-          self.AudioContext || (self as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+          self.AudioContext || (self as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
         )
       } catch {
         return false

@@ -155,7 +155,7 @@ export class MatrixRoomCreationService {
       }
     }
 
-    const syncData = (room as unknown as { syncData?: SyncData }).syncData
+    const syncData = (room as { syncData?: SyncData }).syncData
     if (syncData?.unread_notifications) {
       unreadNotificationCount = syncData.unread_notifications.notification_count ?? 0
       highlightNotificationCount = syncData.unread_notifications.highlight_count ?? 0

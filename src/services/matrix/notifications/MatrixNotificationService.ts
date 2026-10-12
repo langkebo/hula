@@ -479,7 +479,7 @@ class MatrixNotificationService extends BaseMatrixService {
     const client = this.getNotificationClient()
     try {
       const result = await client.getPushManager().getPushers()
-      return result as unknown as IPusher[]
+      return result as IPusher[]
     } catch (err) {
       logger.error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
       throw err
