@@ -200,7 +200,15 @@ describe('MatrixE2EEBootstrapService', () => {
     })
 
     it('getCrossSigningStatus delegates to cryptoSDKAdapter', async () => {
-      const result = { privateKeysCached: true, crossSigningVerified: true, isSetup: true }
+      // R-2：类型现在要求三个独立事实（公钥在本机 / 私钥已入 4S / 私钥在本机可用）
+      const result = {
+        privateKeysCached: true,
+        crossSigningVerified: true,
+        isSetup: true,
+        publicKeysOnDevice: true,
+        privateKeysInSecretStorage: true,
+        privateKeysCachedLocally: true
+      }
       mockedSDKAdapter.getCrossSigningStatus.mockResolvedValue(result)
       await expect(matrixE2EEBootstrapService.getCrossSigningStatus()).resolves.toEqual(result)
     })

@@ -93,20 +93,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.encryption.cross_signing_section') }}</h3>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.encryption.cross_signing_status_label') }}</span>
-          <span class="setting-desc">
-            {{ crossSigningSetup ? t('setting.encryption.setup_complete') : t('setting.encryption.setup_incomplete') }}
-          </span>
-        </div>
-        <n-button size="small" @click="showCrossSigningDialog = true">
-          {{ crossSigningSetup ? t('setting.encryption.manage') : t('setting.encryption.setup_action') }}
-        </n-button>
-      </div>
-    </div>
+    <CrossSigningSection @manage="showCrossSigningDialog = true" @needs-setup="showSecurityKeyDialog = true" />
 
     <n-divider />
 
@@ -311,6 +298,7 @@ import { applyGlobalStrict } from '@/services/matrix/crypto/strictDevicePolicy'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
+import CrossSigningSection from './sections/CrossSigningSection.vue'
 
 const logger = createLogger('EncryptionSettings')
 
@@ -361,7 +349,6 @@ const verifyDialogMode = ref<'sas'>('sas')
 
 const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
 const securityKeySetup = computed(() => encryptionStore.securityKeyConfigured)
-const crossSigningSetup = computed(() => encryptionStore.crossSigningSetup)
 const backupEnabled = computed(() => encryptionStore.backupEnabled)
 const backupVersion = computed(() => encryptionStore.backupVersion)
 const needsRotation = computed(() => encryptionStore.needsRotation)
@@ -508,6 +495,9 @@ async function copyFingerprint() {
 function handleSecurityKeyCreated() {
   encryptionStore.markSecurityKeyConfigured()
   showFeedback(t('setting.encryption.security_key_created'), 'success')
+  // 该流程内部会 bootstrapSecretStorage（把已知的交叉签名私钥补存进 4S）⇒
+  // 必须重读状态，否则「私钥只在本机」的警告会一直挂着不消失。
+  void encryptionStore.loadCrossSigningStatus()
 }
 
 function handleOnboardingComplete() {
@@ -679,6 +669,8 @@ function handleE2EEBootstrapSkip() {
   justify-content: center;
 }
 
+/* R-2 的「私钥存储（4S）」行与其警示样式已抽到 ./sections/CrossSigningSection.vue：
+   本文件属 check:file-size 超限文件（baseline 720），棘轮只许缩不许增。 */
 .pending-verifications {
   display: flex;
   flex-direction: column;

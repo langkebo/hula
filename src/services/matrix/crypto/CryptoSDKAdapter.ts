@@ -33,7 +33,8 @@ import type {
   KeyBackupSetupResult,
   KeyExportResult,
   KeyImportResult,
-  RoomEncryptionState
+  RoomEncryptionState,
+  StoreCrossSigningKeysResult
 } from './cryptoAdapterTypes'
 
 // Re-export types for backward compatibility with existing consumers
@@ -44,7 +45,8 @@ export type {
   KeyBackupRestoreResult,
   KeyBackupSetupResult,
   KeyExportResult,
-  KeyImportResult
+  KeyImportResult,
+  StoreCrossSigningKeysResult
 }
 
 const logger = createLogger('CryptoSDKAdapter')
@@ -175,6 +177,26 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
 
   isCrossSigningReady(): Promise<boolean> {
     return this.securityAdapter.isCrossSigningReady()
+  }
+
+  /**
+   * 4S（服务端密钥存储）是否已就绪。
+   *
+   * 这是「能否安全补存交叉签名私钥」的前置判据：4S 不存在时调用 `bootstrapSecretStorage`
+   * 会让 SDK 顺手新建一个 4S 密钥，而那把密钥用户从未见过。
+   */
+  isSecretStorageReady(): Promise<boolean> {
+    return this.securityAdapter.isSecretStorageReady()
+  }
+
+  /**
+   * 把已知的交叉签名私钥补存进**既有** 4S（幂等）。
+   *
+   * @returns `'stored'` 本次写入 / `'already-stored'` 早已在 4S / `'needs-setup'`
+   * 4S 尚未配置（调用方应改走「安全密钥」设置流程，**不得**在此新建 4S）/ `'failed'` 真实错误
+   */
+  storeCrossSigningKeysInSecretStorage(): Promise<StoreCrossSigningKeysResult> {
+    return this.securityAdapter.storeCrossSigningKeysInSecretStorage()
   }
 
   setupCrossSigning(authParams?: { password?: string; authData?: unknown }): Promise<void> {

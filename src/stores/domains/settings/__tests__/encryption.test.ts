@@ -7,19 +7,22 @@ const {
   getCrossSigningStatusMock,
   checkKeyBackupMock,
   getKeyRotationStatusMock,
-  isDeviceVerifiedMock
+  isDeviceVerifiedMock,
+  storeCrossSigningKeysMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
   getCryptoStatusMock: vi.fn(),
   getCrossSigningStatusMock: vi.fn(),
   checkKeyBackupMock: vi.fn(),
   getKeyRotationStatusMock: vi.fn(),
-  isDeviceVerifiedMock: vi.fn()
+  isDeviceVerifiedMock: vi.fn(),
+  storeCrossSigningKeysMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix/crypto/CryptoSDKAdapter', () => ({
   cryptoSDKAdapter: {
-    getCrossSigningStatus: getCrossSigningStatusMock
+    getCrossSigningStatus: getCrossSigningStatusMock,
+    storeCrossSigningKeysInSecretStorage: storeCrossSigningKeysMock
   }
 }))
 
@@ -279,6 +282,55 @@ describe('useEncryptionStore · 子加载器', () => {
     expect(store.crossSigningSetup).toBe(false)
   })
 
+  /**
+   * R-2（2026-10-12）：「已建立交叉签名但私钥没进 4S」必须被单独识别出来，
+   * 否则 UI 无法给出「立即存入密钥存储」的可操作提示。
+   */
+  it('R-2：私钥只在本机 ⇒ crossSigningKeysLocalOnly=true', async () => {
+    getCrossSigningStatusMock.mockResolvedValue({
+      isSetup: false,
+      privateKeysInSecretStorage: false,
+      privateKeysCachedLocally: true
+    })
+    const store = useEncryptionStore()
+    await store.loadCrossSigningStatus()
+    expect(store.crossSigningKeysInSecretStorage).toBe(false)
+    expect(store.crossSigningKeysLocalOnly).toBe(true)
+  })
+
+  it('R-2：私钥已入 4S ⇒ crossSigningKeysLocalOnly=false（不误报）', async () => {
+    getCrossSigningStatusMock.mockResolvedValue({
+      isSetup: true,
+      privateKeysInSecretStorage: true,
+      privateKeysCachedLocally: true
+    })
+    const store = useEncryptionStore()
+    await store.loadCrossSigningStatus()
+    expect(store.crossSigningKeysInSecretStorage).toBe(true)
+    expect(store.crossSigningKeysLocalOnly).toBe(false)
+  })
+
+  it('R-2：本机没有私钥（从未建立交叉签名）⇒ 不提示', async () => {
+    getCrossSigningStatusMock.mockResolvedValue({
+      isSetup: false,
+      privateKeysInSecretStorage: false,
+      privateKeysCachedLocally: false
+    })
+    const store = useEncryptionStore()
+    await store.loadCrossSigningStatus()
+    expect(store.crossSigningKeysLocalOnly).toBe(false)
+  })
+
+  it('R-2：查询失败时三个字段一并降级为 false（不报假警报）', async () => {
+    getCrossSigningStatusMock.mockRejectedValue(new Error('x'))
+    const store = useEncryptionStore()
+    store.crossSigningKeysInSecretStorage = true
+    store.crossSigningKeysLocalOnly = true
+    await store.loadCrossSigningStatus()
+    expect(store.crossSigningKeysInSecretStorage).toBe(false)
+    expect(store.crossSigningKeysLocalOnly).toBe(false)
+  })
+
   it('loadBackupStatus 收到 backupInfo 时写入 version / count', async () => {
     checkKeyBackupMock.mockResolvedValue({ version: 'v9', count: 100 })
     const store = useEncryptionStore()
@@ -353,5 +405,60 @@ describe('useEncryptionStore · loadDeviceVerification', () => {
     store.deviceVerified = true
     await store.loadDeviceVerification()
     expect(store.deviceVerified).toBe(false)
+  })
+})
+
+describe('useEncryptionStore · R-2 storeCrossSigningKeysInSecretStorage', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('stored ⇒ 委托适配层并刷新交叉签名状态（否则警告会一直挂着）', async () => {
+    storeCrossSigningKeysMock.mockResolvedValue('stored')
+    getCrossSigningStatusMock.mockResolvedValue({
+      isSetup: true,
+      privateKeysInSecretStorage: true,
+      privateKeysCachedLocally: true
+    })
+    const store = useEncryptionStore()
+    store.crossSigningKeysLocalOnly = true
+
+    await expect(store.storeCrossSigningKeysInSecretStorage()).resolves.toBe('stored')
+
+    expect(getCrossSigningStatusMock).toHaveBeenCalled()
+    expect(store.crossSigningKeysInSecretStorage).toBe(true)
+    expect(store.crossSigningKeysLocalOnly).toBe(false)
+  })
+
+  it('already-stored ⇒ 同样刷新状态（幂等路径也要收敛警告）', async () => {
+    storeCrossSigningKeysMock.mockResolvedValue('already-stored')
+    getCrossSigningStatusMock.mockResolvedValue({
+      isSetup: true,
+      privateKeysInSecretStorage: true,
+      privateKeysCachedLocally: true
+    })
+    const store = useEncryptionStore()
+
+    await expect(store.storeCrossSigningKeysInSecretStorage()).resolves.toBe('already-stored')
+    expect(store.crossSigningKeysInSecretStorage).toBe(true)
+  })
+
+  it('needs-setup ⇒ 原样返回且不重读状态（4S 尚未建立，重读没有意义）', async () => {
+    storeCrossSigningKeysMock.mockResolvedValue('needs-setup')
+    const store = useEncryptionStore()
+
+    await expect(store.storeCrossSigningKeysInSecretStorage()).resolves.toBe('needs-setup')
+    expect(getCrossSigningStatusMock).not.toHaveBeenCalled()
+  })
+
+  it('failed ⇒ 原样返回，且不得把状态改成"已存入"', async () => {
+    storeCrossSigningKeysMock.mockResolvedValue('failed')
+    const store = useEncryptionStore()
+    store.crossSigningKeysInSecretStorage = false
+
+    await expect(store.storeCrossSigningKeysInSecretStorage()).resolves.toBe('failed')
+    expect(store.crossSigningKeysInSecretStorage).toBe(false)
+    expect(getCrossSigningStatusMock).not.toHaveBeenCalled()
   })
 })

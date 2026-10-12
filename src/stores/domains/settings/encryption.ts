@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
+import type { StoreCrossSigningKeysResult } from '@/services/matrix/crypto/cryptoAdapterTypes'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
@@ -16,6 +17,16 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
   const encryptionEnabled = ref(false)
   const securityKeyConfigured = ref(false)
   const crossSigningSetup = ref(false)
+  /** 交叉签名**私钥**已存入服务端密钥存储（4S）—— 决定换设备/清缓存后能否恢复 */
+  const crossSigningKeysInSecretStorage = ref(false)
+  /**
+   * 私钥**只在本机**（本机有私钥但未入 4S）⇒ 真实的可恢复性缺口。
+   *
+   * 与 `crossSigningSetup` 的区别：后者=「私钥已入 4S」，本值=「已建立交叉签名但没存进 4S」。
+   * 用 `publicKeysOnDevice` 之外的信息判定：只要本机能取到私钥且 4S 里没有，就该提示用户。
+   * 查询失败一律置 false（宁可漏提示，也不要在查不到时报警吓人）。
+   */
+  const crossSigningKeysLocalOnly = ref(false)
   const backupEnabled = ref(false)
   const backupVersion = ref('')
   const backupKeyCount = ref(0)
@@ -90,9 +101,28 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
     try {
       const crossSigningInfo = await cryptoSDKAdapter.getCrossSigningStatus()
       crossSigningSetup.value = crossSigningInfo.isSetup
+      crossSigningKeysInSecretStorage.value = crossSigningInfo.privateKeysInSecretStorage
+      crossSigningKeysLocalOnly.value =
+        crossSigningInfo.privateKeysCachedLocally && !crossSigningInfo.privateKeysInSecretStorage
     } catch {
       crossSigningSetup.value = false
+      crossSigningKeysInSecretStorage.value = false
+      crossSigningKeysLocalOnly.value = false
     }
+  }
+
+  /**
+   * 把已知的交叉签名私钥补存进既有 4S（幂等）。
+   *
+   * 返回 `'needs-setup'` 表示 4S 本身还不存在 —— 此时**不能**走这条路（SDK 会新建一个
+   * 用户从未见过的 4S 密钥），调用方应引导用户去「安全密钥/安全备份」设置流程。
+   */
+  async function storeCrossSigningKeysInSecretStorage(): Promise<StoreCrossSigningKeysResult> {
+    const result = await cryptoSDKAdapter.storeCrossSigningKeysInSecretStorage()
+    if (result === 'stored' || result === 'already-stored') {
+      await loadCrossSigningStatus()
+    }
+    return result
   }
 
   async function loadBackupStatus() {
@@ -176,6 +206,8 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
     encryptionEnabled,
     securityKeyConfigured,
     crossSigningSetup,
+    crossSigningKeysInSecretStorage,
+    crossSigningKeysLocalOnly,
     backupEnabled,
     backupVersion,
     backupKeyCount,
@@ -198,6 +230,7 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
     loadCryptoInitStatus,
     markSecurityKeyConfigured,
     markCrossSigningSetup,
+    storeCrossSigningKeysInSecretStorage,
     markBackupEnabled,
     markDeviceVerified
   }

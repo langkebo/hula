@@ -6130,6 +6130,14 @@ export type I18nKeys = {
       "restore_key_desc": "使用恢复密钥还原加密消息",
       "cross_signing_section": "交叉签名",
       "cross_signing_status_label": "交叉签名状态",
+      "cross_signing_storage_label": "私钥存储（4S）",
+      "cross_signing_storage_ok": "已存入密钥存储",
+      "cross_signing_storage_missing": "尚未存入密钥存储",
+      "cross_signing_store_action": "立即存入",
+      "cross_signing_local_only_hint": "交叉签名私钥目前只保存在本设备：更换设备或清除本机数据后，无法用恢复密钥找回它（将失去对已验证设备的信任判定）。建议立即存入密钥存储。",
+      "cross_signing_store_success": "交叉签名私钥已存入密钥存储",
+      "cross_signing_store_failed": "存入密钥存储失败，请稍后重试",
+      "cross_signing_store_needs_setup": "尚未配置密钥存储，请先完成安全密钥设置",
       "setup_complete": "已设置",
       "setup_incomplete": "未设置",
       "manage": "管理",
@@ -11675,6 +11683,14 @@ export type I18nKeyPaths =
   | "setting.encryption.restore_key_desc"
   | "setting.encryption.cross_signing_section"
   | "setting.encryption.cross_signing_status_label"
+  | "setting.encryption.cross_signing_storage_label"
+  | "setting.encryption.cross_signing_storage_ok"
+  | "setting.encryption.cross_signing_storage_missing"
+  | "setting.encryption.cross_signing_store_action"
+  | "setting.encryption.cross_signing_local_only_hint"
+  | "setting.encryption.cross_signing_store_success"
+  | "setting.encryption.cross_signing_store_failed"
+  | "setting.encryption.cross_signing_store_needs_setup"
   | "setting.encryption.setup_complete"
   | "setting.encryption.setup_incomplete"
   | "setting.encryption.manage"

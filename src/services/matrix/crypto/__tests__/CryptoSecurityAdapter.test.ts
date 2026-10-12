@@ -38,14 +38,21 @@ describe('CryptoSecurityAdapter', () => {
       await expect(adapter.getCrossSigningStatus()).resolves.toEqual({
         privateKeysCached: false,
         crossSigningVerified: false,
-        isSetup: false
+        isSetup: false,
+        publicKeysOnDevice: false,
+        privateKeysInSecretStorage: false,
+        privateKeysCachedLocally: false
       })
     })
 
     it('returns full status with keys and public keys', async () => {
       // 真实 API 是 getCrossSigningKeyId（不是幻影 crossSigningInfo.getId）
       const crypto = {
-        getCrossSigningStatus: vi.fn().mockResolvedValue({ privateKeysInSecretStorage: true }),
+        getCrossSigningStatus: vi.fn().mockResolvedValue({
+          publicKeysOnDevice: true,
+          privateKeysInSecretStorage: true,
+          privateKeysCachedLocally: { masterKey: true, selfSigningKey: true, userSigningKey: true }
+        }),
         isCrossSigningReady: vi.fn().mockResolvedValue(true),
         getCrossSigningKeyId: vi.fn(async (type?: string) => {
           if (type === 'self_signing') return 'self-pub'
@@ -61,6 +68,9 @@ describe('CryptoSecurityAdapter', () => {
         privateKeysCached: true,
         crossSigningVerified: true,
         isSetup: true,
+        publicKeysOnDevice: true,
+        privateKeysInSecretStorage: true,
+        privateKeysCachedLocally: true,
         masterPublicKey: 'master-pub',
         selfSigningPublicKey: 'self-pub',
         userSigningPublicKey: 'user-pub'
@@ -69,7 +79,11 @@ describe('CryptoSecurityAdapter', () => {
 
     it('在交叉签名未初始化时把密钥 ID 返回为 null', async () => {
       const crypto = {
-        getCrossSigningStatus: vi.fn().mockResolvedValue({ privateKeysInSecretStorage: false }),
+        getCrossSigningStatus: vi.fn().mockResolvedValue({
+          publicKeysOnDevice: false,
+          privateKeysInSecretStorage: false,
+          privateKeysCachedLocally: { masterKey: false, selfSigningKey: false, userSigningKey: false }
+        }),
         isCrossSigningReady: vi.fn().mockResolvedValue(false)
       } as unknown as CryptoApi
       const adapter = new CryptoSecurityAdapter(createMockAccessors({ crypto }))
@@ -79,6 +93,8 @@ describe('CryptoSecurityAdapter', () => {
       expect(result.privateKeysCached).toBe(false)
       expect(result.crossSigningVerified).toBe(false)
       expect(result.isSetup).toBe(false)
+      expect(result.publicKeysOnDevice).toBe(false)
+      expect(result.privateKeysCachedLocally).toBe(false)
       // SDK 未提供该能力时为 null（明确语义），而不是 undefined
       expect(result.masterPublicKey).toBeNull()
       expect(result.selfSigningPublicKey).toBeNull()
@@ -97,6 +113,141 @@ describe('CryptoSecurityAdapter', () => {
       expect(result.privateKeysCached).toBe(false)
       expect(result.crossSigningVerified).toBe(false)
       expect(result.isSetup).toBe(false)
+      expect(result.publicKeysOnDevice).toBe(false)
+      expect(result.privateKeysInSecretStorage).toBe(false)
+      expect(result.privateKeysCachedLocally).toBe(false)
+    })
+
+    /**
+     * R-2（2026-10-12）：把 SDK 的三个**互相独立**的事实分别暴露。
+     *
+     * 历史实现只取 `privateKeysInSecretStorage` 并命名为 `privateKeysCached`，
+     * 于是「已建立交叉签名但私钥未入 4S」与「从未建立交叉签名」对消费方完全同形，
+     * UI 也就无法给出「立即存入密钥存储」这类可操作提示。
+     */
+    it('R-2：私钥只在本机（已建立交叉签名但未入 4S）必须可区分', async () => {
+      const crypto = {
+        getCrossSigningStatus: vi.fn().mockResolvedValue({
+          publicKeysOnDevice: true,
+          privateKeysInSecretStorage: false,
+          privateKeysCachedLocally: { masterKey: true, selfSigningKey: true, userSigningKey: false }
+        }),
+        isCrossSigningReady: vi.fn().mockResolvedValue(true)
+      } as unknown as CryptoApi
+      const adapter = new CryptoSecurityAdapter(createMockAccessors({ crypto }))
+
+      const result = await adapter.getCrossSigningStatus()
+
+      expect(result.publicKeysOnDevice).toBe(true)
+      expect(result.privateKeysInSecretStorage).toBe(false)
+      // 逐密钥布尔按「任一为真」聚合
+      expect(result.privateKeysCachedLocally).toBe(true)
+      // 兼容字段仍跟随 4S 标记（语义未变，避免影响既有消费方）
+      expect(result.privateKeysCached).toBe(false)
+      expect(result.isSetup).toBe(false)
+    })
+
+    it('R-2：三把私钥都不在本机时聚合为 false', async () => {
+      const crypto = {
+        getCrossSigningStatus: vi.fn().mockResolvedValue({
+          publicKeysOnDevice: true,
+          privateKeysInSecretStorage: false,
+          privateKeysCachedLocally: { masterKey: false, selfSigningKey: false, userSigningKey: false }
+        }),
+        isCrossSigningReady: vi.fn().mockResolvedValue(false)
+      } as unknown as CryptoApi
+      const adapter = new CryptoSecurityAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.getCrossSigningStatus()).resolves.toMatchObject({
+        privateKeysCachedLocally: false
+      })
+    })
+
+    it('R-2：SDK 未提供 privateKeysCachedLocally 时按 false 处理（不抛错）', async () => {
+      const crypto = {
+        getCrossSigningStatus: vi.fn().mockResolvedValue({ privateKeysInSecretStorage: false }),
+        isCrossSigningReady: vi.fn().mockResolvedValue(false)
+      } as unknown as CryptoApi
+      const adapter = new CryptoSecurityAdapter(createMockAccessors({ crypto }))
+
+      const result = await adapter.getCrossSigningStatus()
+
+      expect(result.publicKeysOnDevice).toBe(false)
+      expect(result.privateKeysCachedLocally).toBe(false)
+    })
+  })
+
+  describe('R-2 isSecretStorageReady', () => {
+    it('就绪时返回 true', async () => {
+      const crypto = { isSecretStorageReady: vi.fn().mockResolvedValue(true) } as unknown as CryptoApi
+      await expect(new CryptoSecurityAdapter(createMockAccessors({ crypto })).isSecretStorageReady()).resolves.toBe(
+        true
+      )
+    })
+
+    it('crypto 缺失 / 成员缺失 / 抛错 一律 false（fail-closed，不假定就绪）', async () => {
+      await expect(new CryptoSecurityAdapter(createMockAccessors({})).isSecretStorageReady()).resolves.toBe(false)
+
+      const noMember = { isCrossSigningReady: vi.fn() } as unknown as CryptoApi
+      await expect(
+        new CryptoSecurityAdapter(createMockAccessors({ crypto: noMember })).isSecretStorageReady()
+      ).resolves.toBe(false)
+
+      const throwing = { isSecretStorageReady: vi.fn().mockRejectedValue(new Error('x')) } as unknown as CryptoApi
+      await expect(
+        new CryptoSecurityAdapter(createMockAccessors({ crypto: throwing })).isSecretStorageReady()
+      ).resolves.toBe(false)
+    })
+  })
+
+  describe('R-2 storeCrossSigningKeysInSecretStorage（把已知私钥补存进既有 4S）', () => {
+    function cryptoWith(opts: {
+      ready: boolean
+      alreadyStored?: boolean
+      bootstrap?: ReturnType<typeof vi.fn>
+    }): CryptoApi {
+      return {
+        isSecretStorageReady: vi.fn().mockResolvedValue(opts.ready),
+        getCrossSigningStatus: vi.fn().mockResolvedValue({ privateKeysInSecretStorage: opts.alreadyStored ?? false }),
+        bootstrapSecretStorage: opts.bootstrap ?? vi.fn().mockResolvedValue(undefined)
+      } as unknown as CryptoApi
+    }
+
+    it('4S 未就绪 ⇒ needs-setup，且**绝不**调用 bootstrapSecretStorage（否则会新建用户从未见过的 4S 密钥）', async () => {
+      const bootstrapSecretStorage = vi.fn().mockResolvedValue(undefined)
+      const crypto = cryptoWith({ ready: false, bootstrap: bootstrapSecretStorage })
+      const adapter = new CryptoSecurityAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.storeCrossSigningKeysInSecretStorage()).resolves.toBe('needs-setup')
+      expect(bootstrapSecretStorage).not.toHaveBeenCalled()
+    })
+
+    it('4S 就绪且私钥尚未存入 ⇒ stored，且以空参数调用（不得传 setupNewSecretStorage / createSecretStorageKey）', async () => {
+      const bootstrapSecretStorage = vi.fn().mockResolvedValue(undefined)
+      const crypto = cryptoWith({ ready: true, alreadyStored: false, bootstrap: bootstrapSecretStorage })
+      const adapter = new CryptoSecurityAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.storeCrossSigningKeysInSecretStorage()).resolves.toBe('stored')
+      expect(bootstrapSecretStorage).toHaveBeenCalledWith({})
+    })
+
+    it('4S 就绪且已存过 ⇒ already-stored（幂等，不谎报「刚存入」）', async () => {
+      const crypto = cryptoWith({ ready: true, alreadyStored: true })
+      const adapter = new CryptoSecurityAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.storeCrossSigningKeysInSecretStorage()).resolves.toBe('already-stored')
+    })
+
+    it('写入抛错 ⇒ failed（不得伪装成功）', async () => {
+      const crypto = cryptoWith({ ready: true, bootstrap: vi.fn().mockRejectedValue(new Error('boom')) })
+      const adapter = new CryptoSecurityAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.storeCrossSigningKeysInSecretStorage()).resolves.toBe('failed')
+    })
+
+    it('crypto 不可用 ⇒ failed', async () => {
+      const adapter = new CryptoSecurityAdapter(createMockAccessors({}))
+      await expect(adapter.storeCrossSigningKeysInSecretStorage()).resolves.toBe('failed')
     })
   })
 

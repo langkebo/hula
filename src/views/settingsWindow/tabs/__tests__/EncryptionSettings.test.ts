@@ -21,6 +21,15 @@ const translationMap: Record<string, string> = {
   'setting.encryption.setup_incomplete': '未设置',
   'setting.encryption.manage': '管理',
   'setting.encryption.setup_action': '设置',
+  // R-2（2026-10-12）
+  'setting.encryption.cross_signing_storage_label': '私钥存储（4S）',
+  'setting.encryption.cross_signing_storage_ok': '已存入密钥存储',
+  'setting.encryption.cross_signing_storage_missing': '尚未存入密钥存储',
+  'setting.encryption.cross_signing_store_action': '立即存入',
+  'setting.encryption.cross_signing_local_only_hint': '交叉签名私钥目前只保存在本设备，建议立即存入密钥存储。',
+  'setting.encryption.cross_signing_store_success': '交叉签名私钥已存入密钥存储',
+  'setting.encryption.cross_signing_store_failed': '存入密钥存储失败，请稍后重试',
+  'setting.encryption.cross_signing_store_needs_setup': '尚未配置密钥存储，请先完成安全密钥设置',
   'setting.encryption.rotation_section': '密钥轮换',
   'setting.encryption.rotation_status_label': '密钥轮换状态',
   'setting.encryption.rotation_needed': '需要轮换',
@@ -89,6 +98,9 @@ const {
     encryptionEnabled: true,
     securityKeyConfigured: true,
     crossSigningSetup: true,
+    // R-2：私钥存储（4S）状态；默认「未在 4S 且本机没有私钥」= 不提示
+    crossSigningKeysInSecretStorage: false,
+    crossSigningKeysLocalOnly: false,
     backupEnabled: true,
     backupVersion: '2',
     needsRotation: true,
@@ -108,7 +120,11 @@ const {
     },
     markSecurityKeyConfigured() {
       this.securityKeyConfigured = true
-    }
+    },
+    // R-2：安全密钥流程成功后组件会重读交叉签名状态（让警告收敛）
+    loadCrossSigningStatus: vi.fn(async () => undefined),
+    // R-2：默认「已存入」；需要走其他分支时用 mockResolvedValueOnce
+    storeCrossSigningKeysInSecretStorage: vi.fn(async () => 'stored')
   },
   messageSuccessMock: vi.fn(),
   messageWarningMock: vi.fn(),
@@ -394,6 +410,8 @@ describe('EncryptionSettings', () => {
     encryptionStoreState.encryptionEnabled = true
     encryptionStoreState.securityKeyConfigured = true
     encryptionStoreState.crossSigningSetup = true
+    encryptionStoreState.crossSigningKeysInSecretStorage = false
+    encryptionStoreState.crossSigningKeysLocalOnly = false
     encryptionStoreState.backupEnabled = true
     encryptionStoreState.backupVersion = '2'
     encryptionStoreState.needsRotation = true
@@ -580,5 +598,102 @@ describe('EncryptionSettings', () => {
 
     expect(getKeyRotationStatusMock).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('已是最新')
+  })
+
+  /**
+   * R-2（2026-10-12）：把「私钥只在本机、未进 4S」变成可操作提示。
+   *
+   * 断言的是**用户可见的差异**：警告文案 + 「立即存入」按钮是否存在，
+   * 以及点击后走向哪条分支（存入 / 4S 未配置 / 失败）。
+   */
+  describe('R-2 交叉签名私钥存储（4S）提示', () => {
+    const findStoreButton = (wrapper: ReturnType<typeof mountComponent>) =>
+      wrapper.findAll('button').find((b) => b.text().includes('立即存入'))
+
+    it('私钥只在本机 ⇒ 显示警告与「立即存入」按钮', async () => {
+      encryptionStoreState.crossSigningKeysInSecretStorage = false
+      encryptionStoreState.crossSigningKeysLocalOnly = true
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('尚未存入密钥存储')
+      expect(wrapper.text()).toContain('立即存入')
+      expect(wrapper.text()).toContain('交叉签名私钥目前只保存在本设备')
+    })
+
+    it('私钥已入 4S ⇒ 不显示警告也不显示按钮（不误报）', async () => {
+      encryptionStoreState.crossSigningKeysInSecretStorage = true
+      encryptionStoreState.crossSigningKeysLocalOnly = false
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('已存入密钥存储')
+      expect(wrapper.text()).not.toContain('立即存入')
+      expect(wrapper.text()).not.toContain('交叉签名私钥目前只保存在本设备')
+    })
+
+    it('本机没有私钥（从未建立交叉签名）⇒ 仍不显示按钮', async () => {
+      encryptionStoreState.crossSigningKeysInSecretStorage = false
+      encryptionStoreState.crossSigningKeysLocalOnly = false
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.text()).toContain('尚未存入密钥存储')
+      expect(findStoreButton(wrapper)).toBeUndefined()
+    })
+
+    it('点击「立即存入」并成功 ⇒ 成功反馈', async () => {
+      encryptionStoreState.crossSigningKeysLocalOnly = true
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      await findStoreButton(wrapper)!.trigger('click')
+      await flushPromises()
+
+      expect(messageSuccessMock).toHaveBeenCalledWith('交叉签名私钥已存入密钥存储')
+    })
+
+    it('4S 尚未配置 ⇒ 打开安全密钥流程并给警告（不得在此直接新建 4S）', async () => {
+      encryptionStoreState.crossSigningKeysLocalOnly = true
+      encryptionStoreState.storeCrossSigningKeysInSecretStorage.mockResolvedValueOnce('needs-setup')
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      await findStoreButton(wrapper)!.trigger('click')
+      await flushPromises()
+
+      expect(messageWarningMock).toHaveBeenCalledWith('尚未配置密钥存储，请先完成安全密钥设置')
+      expect((wrapper.vm as any).showSecurityKeyDialog).toBe(true)
+    })
+
+    it('存入失败 ⇒ 给出失败反馈且不打开任何弹窗', async () => {
+      encryptionStoreState.crossSigningKeysLocalOnly = true
+      encryptionStoreState.storeCrossSigningKeysInSecretStorage.mockResolvedValueOnce('failed')
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      await findStoreButton(wrapper)!.trigger('click')
+      await flushPromises()
+
+      expect(messageWarningMock).toHaveBeenCalledWith('存入密钥存储失败，请稍后重试')
+      expect((wrapper.vm as any).showSecurityKeyDialog).toBe(false)
+    })
+
+    it('安全密钥流程成功后续会重读交叉签名状态（让警告收敛）', async () => {
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      const callsBefore = encryptionStoreState.loadCrossSigningStatus.mock.calls.length
+      ;(wrapper.vm as any).handleSecurityKeyCreated()
+      await flushPromises()
+
+      expect(encryptionStoreState.loadCrossSigningStatus.mock.calls.length).toBe(callsBefore + 1)
+    })
   })
 })

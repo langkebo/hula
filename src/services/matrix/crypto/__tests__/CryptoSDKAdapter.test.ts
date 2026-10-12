@@ -385,10 +385,14 @@ describe('CryptoSDKAdapter', () => {
     it('should return default when no crypto', async () => {
       mockClient.getCrypto = vi.fn(() => null)
       const result = await cryptoSDKAdapter.getCrossSigningStatus()
+      // R-2：新增三个独立事实（公钥在本机 / 私钥已入 4S / 私钥在本机可用）
       expect(result).toEqual({
         privateKeysCached: false,
         crossSigningVerified: false,
-        isSetup: false
+        isSetup: false,
+        publicKeysOnDevice: false,
+        privateKeysInSecretStorage: false,
+        privateKeysCachedLocally: false
       })
     })
 
