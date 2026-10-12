@@ -17,6 +17,30 @@ export const formatBytes = (bytes: number): string => {
   return size + ' ' + units[unitIndex]
 }
 
+/** 时长格式化选项 */
+export interface FormatDurationOptions {
+  /** 是否对秒数四舍五入（默认 false，向下取整） */
+  round?: boolean
+  /** 是否将分钟补零到两位（默认 false） */
+  padMinutes?: boolean
+}
+
+/**
+ * 秒数格式化（秒 -> m:ss）
+ * 统一语音消息时长、媒体时长等重复实现。
+ * @param seconds 秒数
+ * @param options round: 四舍五入秒数；padMinutes: 分钟补零到两位
+ */
+export const formatDuration = (seconds: number, options: FormatDurationOptions = {}): string => {
+  const { round = false, padMinutes = false } = options
+  const safeSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 0
+  const total = round ? Math.round(safeSeconds) : Math.floor(safeSeconds)
+  const minutes = Math.floor(total / 60)
+  const remainingSeconds = total % 60
+  const minutesText = padMinutes ? minutes.toString().padStart(2, '0') : minutes.toString()
+  return `${minutesText}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
 /** 文件图标映射关系表 */
 const fileSuffixMap: Record<string, string> = {
   jpg: 'jpg',

@@ -4,6 +4,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { UploadSceneEnum } from '@/enums'
 import { useUserStore } from '@/stores/domains/user/user'
 import { calculateCompressionRatio, compressAudioToMp3, getAudioInfo } from '@/utils/AudioCompression'
+import { formatDuration } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 import { getImageCache } from '@/utils/PathUtil.ts'
 import { isMobile } from '@/utils/PlatformConstants'
@@ -275,12 +276,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
   }
 
   // 格式化录音时间
-  const formatTime = (seconds: number) => {
-    const roundedSeconds = Math.round(seconds)
-    const mins = Math.floor(roundedSeconds / 60)
-    const secs = roundedSeconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
+  const formatTime = (seconds: number) => formatDuration(seconds, { round: true, padMinutes: true })
 
   // 清理资源
   onUnmounted(() => {

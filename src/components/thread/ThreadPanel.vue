@@ -7,7 +7,7 @@
             <n-avatar :size="32" :src="AvatarUtils.getAvatarUrl(originalMessage?.senderAvatar)" round />
             <n-flex vertical :size="2">
               <span class="sender-name">{{ originalMessage?.senderName }}</span>
-              <span class="message-time">{{ formatTime(originalMessage?.timestamp) }}</span>
+              <span class="message-time">{{ formatChatTime(originalMessage?.timestamp ?? 0) }}</span>
             </n-flex>
           </div>
           <div class="message-body">
@@ -32,7 +32,7 @@
                   <n-flex vertical :size="4" class="flex-1">
                     <n-flex align="center" :size="8">
                       <span class="sender-name">{{ reply.senderName }}</span>
-                      <span class="message-time">{{ formatTime(reply.timestamp) }}</span>
+                      <span class="message-time">{{ formatChatTime(reply.timestamp) }}</span>
                     </n-flex>
                     <div class="reply-content">{{ reply.content }}</div>
                   </n-flex>
@@ -65,11 +65,11 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ThreadPanel')
@@ -96,11 +96,6 @@ const props = defineProps<{
 const replyContent = ref('')
 const sendingReply = ref(false)
 const threadReplies = ref<ThreadMessage[]>([])
-
-const formatTime = (timestamp?: number) => {
-  if (!timestamp) return ''
-  return dayjs(timestamp).format('MM-DD HH:mm')
-}
 
 const handleSendReply = async () => {
   const body = replyContent.value.trim()

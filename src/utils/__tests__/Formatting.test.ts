@@ -4,6 +4,7 @@ import {
   extractFileName,
   formatBottomText,
   formatBytes,
+  formatDuration,
   getFileSuffix,
   getMimeTypeFromExtension,
   removeTag
@@ -106,6 +107,38 @@ describe('Formatting', () => {
 
     it('replaces nbsp with regular space', () => {
       expect(removeTag('a&nbsp;b')).toBe('a b')
+    })
+  })
+
+  describe('formatDuration', () => {
+    it('默认向下取整，分钟不补零', () => {
+      expect(formatDuration(0)).toBe('0:00')
+      expect(formatDuration(5)).toBe('0:05')
+      expect(formatDuration(65)).toBe('1:05')
+      expect(formatDuration(65.9)).toBe('1:05')
+      expect(formatDuration(3661)).toBe('61:01')
+    })
+
+    it('round: true 时对秒数四舍五入', () => {
+      expect(formatDuration(59.6, { round: true })).toBe('1:00')
+      expect(formatDuration(65.4, { round: true })).toBe('1:05')
+    })
+
+    it('padMinutes: true 时分钟补零到两位', () => {
+      expect(formatDuration(5, { padMinutes: true })).toBe('00:05')
+      expect(formatDuration(65, { padMinutes: true })).toBe('01:05')
+      expect(formatDuration(3661, { padMinutes: true })).toBe('61:01')
+    })
+
+    it('round 与 padMinutes 组合', () => {
+      expect(formatDuration(65.6, { round: true, padMinutes: true })).toBe('01:06')
+    })
+
+    it('非有限或负数按 0 处理', () => {
+      expect(formatDuration(NaN)).toBe('0:00')
+      expect(formatDuration(-1)).toBe('0:00')
+      expect(formatDuration(Infinity)).toBe('0:00')
+      expect(formatDuration(NaN, { padMinutes: true })).toBe('00:00')
     })
   })
 

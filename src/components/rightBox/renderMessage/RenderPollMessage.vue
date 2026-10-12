@@ -28,7 +28,7 @@
     <div class="poll-footer">
       <span class="total-votes">{{ t('poll.message.votes', { count: pollData.totalVotes || 0 }) }}</span>
       <span v-if="isEnded" class="ended-badge">{{ t('poll.message.ended') }}</span>
-      <span v-else-if="endTime" class="end-time">{{ t('poll.message.ends_at') }} {{ formatTime(endTime) }}</span>
+      <span v-else-if="endTime" class="end-time">{{ t('poll.message.ends_at') }} {{ formatChatTime(endTime) }}</span>
     </div>
   </div>
 </template>
@@ -67,10 +67,6 @@ const selectedOption = ref<number | undefined>(props.votedOption)
 const getPercentage = (count?: number): number => {
   if (!count || !props.pollData.totalVotes) return 0
   return Math.round((count / props.pollData.totalVotes) * 100)
-}
-
-const formatTime = (timestamp: number) => {
-  return formatChatTime(timestamp)
 }
 
 const handleVote = (index: number) => {

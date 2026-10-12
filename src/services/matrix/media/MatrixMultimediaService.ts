@@ -1,4 +1,4 @@
-import { formatBytes } from '@/utils/Formatting'
+import { formatBytes, formatDuration } from '@/utils/Formatting'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -447,10 +447,7 @@ class MatrixMultimediaService extends BaseMatrixService {
   }
 
   formatDuration(ms: number): string {
-    const seconds = Math.floor(ms / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+    return formatDuration(ms / 1000)
   }
 }
 

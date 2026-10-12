@@ -51,13 +51,13 @@
           left: `${waveformRenderer.scanLinePosition.value}px`,
           ...timePreviewStyle
         }">
-        {{ formatTime(dragControl.previewTime.value) }}
+        {{ formatDuration(dragControl.previewTime.value) }}
       </div>
     </div>
 
     <!-- 语音时长 -->
     <div class="voice-second select-none cursor-pointer" :style="{ color: voiceIconColor }">
-      {{ formatTime(second) }}
+      {{ formatDuration(second) }}
     </div>
   </div>
 </template>
@@ -73,7 +73,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import type { MatrixEncryptedAttachmentLike } from '@/types/matrix-services'
-import { extractFileName } from '@/utils/Formatting'
+import { extractFileName, formatDuration } from '@/utils/Formatting'
 
 import { createLogger } from '@/utils/Logger'
 import { safeExistsPath } from '@/utils/PathUtil'
@@ -201,13 +201,6 @@ const getWaveformColors = () => {
   }
 
   return { playedColor, unplayedColor: baseColor }
-}
-
-// 格式化时间
-const formatTime = (seconds: number) => {
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
 // 点击波形跳转到指定位置

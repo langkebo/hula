@@ -117,6 +117,15 @@ vi.mock('@/utils/Formatting', () => ({
   extractFileName: (url: string) => {
     const segment = url.split('/').pop() || ''
     return segment.includes('.') ? segment : ''
+  },
+  formatDuration: (seconds: number, options: { round?: boolean; padMinutes?: boolean } = {}) => {
+    const { round = false, padMinutes = false } = options
+    const safeSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 0
+    const total = round ? Math.round(safeSeconds) : Math.floor(safeSeconds)
+    const minutes = Math.floor(total / 60)
+    const remainingSeconds = total % 60
+    const minutesText = padMinutes ? minutes.toString().padStart(2, '0') : minutes.toString()
+    return `${minutesText}:${remainingSeconds.toString().padStart(2, '0')}`
   }
 }))
 
