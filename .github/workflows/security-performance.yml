@@ -39,9 +39,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run npm audit
-        run: pnpm audit --audit-level=high
-        continue-on-error: true
+      - name: Run dependency audit (ratcheting)
+        run: node scripts/check-dependency-audit.mjs
 
       - name: Run Rust cargo audit
         if: hashFiles('src-tauri/Cargo.lock') != ''
