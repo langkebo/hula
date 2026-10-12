@@ -113,6 +113,8 @@
         { "url": "https://api.siliconflow.cn:**" },
         { "url": "https://translate.googleapis.com" },
         { "url": "https://translate.googleapis.com:**" },
+        { "url": "https://matrix.test" },
+        { "url": "https://matrix.test:**" },
         { "url": "https://localhost:**" },
         { "url": "http://localhost:**" },
         { "url": "https://127.0.0.1:**" },

@@ -7,7 +7,44 @@ const logger = createLogger('RuntimeFetch')
 const RELAXED_TLS_HOST_SUFFIXES = ['.test', '.localhost', '.local']
 const FETCH_RETRY_COUNT = 2
 const FETCH_RETRY_BASE_DELAY_MS = 200
+
+/**
+ * 原生通道异常按 host 聚合。
+ *
+ * 背景（2026-10-13 实测日志）：capability `http:default.allow` 缺 homeserver host 时，
+ * `tauri-plugin-http` 会**对每一个请求**抛出同一条
+ * `url not allowed on the configured scope`。homeserver 上跑着 /sync 长轮询与
+ * presence 心跳 ⇒ 该 WARN 每几十秒刷一条，把 `logToTauriPlugin` 通道淹掉，
+ * 真正的关键行反而看不见。scope 类错误是**配置性**的（同一 host 恒真），
+ * 按 host 聚合一次即可定位；重复出现只留 debug + 计数。
+ *
+ * 用 host（含端口）而不是 URL 作为键：同一 host 上不同路径的失败属同一根因。
+ */
+const nativeFetchFailureCounts = new Map<string, number>()
+const warnedNativeFetchHosts = new Set<string>()
 let hasWarnedNativeFetchFallback = false
+
+function nativeFetchHostKey(url: string): string {
+  try {
+    return new URL(url).host
+  } catch {
+    return url
+  }
+}
+
+function warnNativeFetchFailure(url: string, error: unknown): void {
+  const host = nativeFetchHostKey(url)
+  const count = (nativeFetchFailureCounts.get(host) ?? 0) + 1
+  nativeFetchFailureCounts.set(host, count)
+
+  if (warnedNativeFetchHosts.has(host)) {
+    logger.debug(`nativeFetch 抛出异常 for ${url} (host=${host} 累计 ${count} 次，已降为 debug): ${error}`)
+    return
+  }
+
+  warnedNativeFetchHosts.add(host)
+  logger.warn(`nativeFetch 抛出异常 for ${url}（同一 host 后续异常降为 debug）: ${error}`)
+}
 
 function withOmittedCredentials(init?: RequestInit): RequestInit {
   return {
@@ -207,11 +244,10 @@ function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
         throw createAbortError(url)
       }
 
-      logger.warn(`nativeFetch 抛出异常 for ${url}: ${error}`)
+      warnNativeFetchFailure(url, error)
       if (!shouldUseBrowserFallback(input)) {
         throw error
       }
-
       if (!hasWarnedNativeFetchFallback) {
         hasWarnedNativeFetchFallback = true
         logger.warn('Tauri native fetch failed, falling back to browser fetch', error)
@@ -251,4 +287,6 @@ export function getRuntimeAwareFetchFn(): typeof globalThis.fetch | undefined {
 
 export function __resetRuntimeFetchWarningForTests(): void {
   hasWarnedNativeFetchFallback = false
+  nativeFetchFailureCounts.clear()
+  warnedNativeFetchHosts.clear()
 }

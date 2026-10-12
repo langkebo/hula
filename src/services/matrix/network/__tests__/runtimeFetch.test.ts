@@ -2,8 +2,9 @@ import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { __resetRuntimeFetchWarningForTests, getRuntimeAwareFetch, getRuntimeAwareFetchFn } from '../runtimeFetch'
 
-const { warnMock } = vi.hoisted(() => ({
-  warnMock: vi.fn()
+const { warnMock, debugMock } = vi.hoisted(() => ({
+  warnMock: vi.fn(),
+  debugMock: vi.fn()
 }))
 
 vi.mock('@tauri-apps/plugin-http', () => ({
@@ -15,7 +16,7 @@ vi.mock('@/utils/Logger', () => ({
     warn: warnMock,
     error: vi.fn(),
     info: vi.fn(),
-    debug: vi.fn()
+    debug: debugMock
   })
 }))
 
@@ -100,19 +101,40 @@ describe('runtimeFetch', () => {
     expect(warnMock).toHaveBeenCalledTimes(2)
   })
 
-  it('warns only once for repeated native fetch fallback failures', async () => {
+  it('aggregates repeated native-fetch failures per host: warn once, then debug', async () => {
     vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
     const browserFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 })
     vi.stubGlobal('fetch', browserFetch)
-    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('native fetch failed'))
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('url not allowed on the configured scope')
+    )
 
     const runtimeFetch = getRuntimeAwareFetch()
     await runtimeFetch('https://matrix.test/_matrix/client/v3/login')
     await runtimeFetch('https://matrix.test/_matrix/client/v3/capabilities')
+    await runtimeFetch('https://matrix.test/_matrix/client/v3/keys/query')
 
-    expect(browserFetch).toHaveBeenCalledTimes(2)
-    // One warn per native fetch exception (2 calls) + one fallback warn (1 call) = 3 total
+    expect(browserFetch).toHaveBeenCalledTimes(3)
+    // 同一 host 的原生异常只 warn 1 次（首次）+ 1 次全局回退 warn = 2 条 WARN；
+    // 其余 2 次降级为 debug，避免 /sync 与 presence 心跳把日志刷屏。
+    expect(warnMock).toHaveBeenCalledTimes(2)
+    expect(debugMock).toHaveBeenCalledTimes(2)
+    expect(warnMock.mock.calls.some(([msg]) => String(msg).includes('同一 host 后续异常降为 debug'))).toBe(true)
+  })
+
+  it('warns once per distinct host when several hosts fail natively', async () => {
+    vi.stubGlobal('window', { __TAURI_INTERNALS__: {} } as Window & { __TAURI_INTERNALS__: unknown })
+    const browserFetch = vi.fn().mockResolvedValue({ ok: true, status: 200 })
+    vi.stubGlobal('fetch', browserFetch)
+    ;(nativeFetch as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('scope denied'))
+
+    const runtimeFetch = getRuntimeAwareFetch()
+    await runtimeFetch('https://matrix.test/_matrix/client/v3/login')
+    await runtimeFetch('https://hs.example.com/_matrix/client/v3/login')
+
+    // 2 个不同 host 各 warn 1 次原生异常 + 1 次全局回退 warn = 3 条 WARN，0 条 debug
     expect(warnMock).toHaveBeenCalledTimes(3)
+    expect(debugMock).not.toHaveBeenCalled()
   })
 
   it('does not fall back to browser fetch when the request signal is aborted', async () => {

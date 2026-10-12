@@ -147,6 +147,12 @@
           "url": "https://translate.googleapis.com:**"
         },
         {
+          "url": "https://matrix.test"
+        },
+        {
+          "url": "https://matrix.test:**"
+        },
+        {
           "url": "https://localhost:**"
         },
         {
