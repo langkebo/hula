@@ -16,6 +16,7 @@
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
 import { reapplyPersistedStrictness } from '@/services/matrix/crypto/strictDevicePolicyBootstrap'
 import { getOrCreateCryptoStorageKey } from '@/services/secure/cryptoStorageKey'
+import { describeSecureStorageBackend, getSecureStorageBackendInfo } from '@/services/secure/secureStorage'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixCrypto')
@@ -438,7 +439,19 @@ export class MatrixCryptoStateTracker {
     }
 
     if (storeEncrypted) {
-      logger.info(`已从 keychain 获取 crypto storageKey（32 字节），crypto store 将加密: ${userId}/${deviceId}`)
+      // 后端事实来自 Rust 侧实测：**降级时不得宣称 keychain**。
+      // 历史缺陷（2026-10-13）：这里无条件打印"已从 keychain 获取"，与同一 run 里
+      // Rust 侧的 `Keychain bug detected … Falling back to file storage` 直接矛盾 ⇒
+      // "密钥其实只在 master-key 加密的文件里"这一降级在两层日志中都不可见。
+      const backendInfo = await getSecureStorageBackendInfo()
+      const backendLabel = describeSecureStorageBackend(backendInfo)
+      if (backendInfo.degraded) {
+        logger.warn(
+          `crypto storageKey（32 字节）仅存于 ${backendLabel} —— 未受操作系统密钥库保护；crypto store 将加密: ${userId}/${deviceId}`
+        )
+      } else {
+        logger.info(`crypto storageKey（32 字节）存储于 ${backendLabel}，crypto store 将加密: ${userId}/${deviceId}`)
+      }
     } else {
       // 不静默降级：未加密的 IndexedDB store 会把**设备私钥与房间密钥以明文落盘**。
       // SDK 的 ISSUE-08b 默认拒绝只覆盖"未加密的**内存** store"，

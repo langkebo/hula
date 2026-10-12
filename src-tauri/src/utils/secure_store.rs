@@ -206,6 +206,121 @@ pub enum SecureStoreError {
     Other(String),
 }
 
+/// `SecureStore` 实际可用的存储后端。
+///
+/// 这两个后端**安全等级不同**，必须可区分：`NativeKeychain` 由操作系统密钥库保护，
+/// `EncryptedFileFallback` 只是 master-key 加密的本地文件（`~/.tjg/secure-storage/`）。
+/// 把两者混为一句 "keychain 可用" 会让「密钥其实落在文件里」这一降级对上层不可见
+/// （2026-10-13 实测：日志同时打印 `available=true, backend=macos_keychain` 与
+/// `Keychain bug detected … Falling back to file storage`）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StorageBackend {
+    /// 平台原生安全存储：macOS Keychain / Windows Credential Manager / Linux Secret Service
+    NativeKeychain,
+    /// master-key 加密的本地文件 fallback（权限 0600）
+    EncryptedFileFallback,
+}
+
+impl StorageBackend {
+    /// 面向 IPC 的稳定标识，前端据此判断是否处于降级状态。
+    pub fn id(&self) -> String {
+        match self {
+            StorageBackend::NativeKeychain => platform_native_backend_id(),
+            StorageBackend::EncryptedFileFallback => "encrypted_file_fallback".to_string(),
+        }
+    }
+}
+
+/// 平台原生密钥库的名称（**只在实测原生后端可用时才应作为 backend 上报**）。
+pub fn platform_native_backend_id() -> String {
+    #[cfg(target_os = "macos")]
+    {
+        "macos_keychain".to_string()
+    }
+    #[cfg(target_os = "windows")]
+    {
+        "windows_credential_manager".to_string()
+    }
+    #[cfg(all(target_os = "linux", not(target_os = "android")))]
+    {
+        "linux_secret_service".to_string()
+    }
+    #[cfg(not(any(
+        target_os = "macos",
+        target_os = "windows",
+        all(target_os = "linux", not(target_os = "android"))
+    )))]
+    {
+        "unknown".to_string()
+    }
+}
+
+/// 两个后端各自的**实测**可用性（各自写-读-删往返验证，非"接口存在即可用"）。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct BackendAvailability {
+    /// 平台原生密钥库实测可用
+    pub native_keychain: bool,
+    /// 加密文件 fallback 实测可用
+    pub encrypted_file_fallback: bool,
+}
+
+/// 面向 IPC 的可用性上报：把"实测结果"翻译成前端可依赖的事实。
+///
+/// 单独成类型（而不是在命令处理器里就地拼）是为了让**上报映射**可被单测覆盖：
+/// 2026-10-13 的实测缺陷恰恰发生在这层映射（`backend` 被按平台硬编码），
+/// 而只测 `StorageBackend::id()` 的用例抓不到它（变异逃逸已复现）。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BackendReport {
+    /// 至少一个后端可用
+    pub available: bool,
+    /// **实际生效**的后端标识（原生密钥库名 / `encrypted_file_fallback` / `unavailable`）
+    pub backend: String,
+    /// 平台原生密钥库实测可用
+    pub native_available: bool,
+    /// `available && !native_available`
+    pub degraded: bool,
+}
+
+impl BackendAvailability {
+    /// 至少一个后端可用
+    pub fn any(&self) -> bool {
+        self.native_keychain || self.encrypted_file_fallback
+    }
+
+    /// 实际生效的后端（优先级与 `SecureStore::set` 的双写策略一致：原生优先）
+    pub fn effective(&self) -> Option<StorageBackend> {
+        if self.native_keychain {
+            Some(StorageBackend::NativeKeychain)
+        } else if self.encrypted_file_fallback {
+            Some(StorageBackend::EncryptedFileFallback)
+        } else {
+            None
+        }
+    }
+
+    /// 可用、但**不是**原生密钥库 ⇒ secret 实际只受 master-key 加密的文件保护。
+    /// 两者都不可用时不算降级（那是"不可用"，不是"降级"）——避免把两种状态混报。
+    pub fn is_degraded(&self) -> bool {
+        self.any() && !self.native_keychain
+    }
+
+    /// 生成 IPC 上报。`backend` **必须**来自实测生效后端，不得按平台硬编码。
+    pub fn report(&self) -> BackendReport {
+        BackendReport {
+            available: self.any(),
+            backend: match self.effective() {
+                Some(StorageBackend::NativeKeychain) => StorageBackend::NativeKeychain.id(),
+                Some(StorageBackend::EncryptedFileFallback) => {
+                    StorageBackend::EncryptedFileFallback.id()
+                }
+                None => "unavailable".to_string(),
+            },
+            native_available: self.native_keychain,
+            degraded: self.is_degraded(),
+        }
+    }
+}
+
 pub struct SecureStore;
 
 impl SecureStore {
@@ -401,17 +516,24 @@ impl SecureStore {
         Ok(())
     }
 
+    /// 实测两个后端的可用性（各自一次写-读-删往返）。
+    ///
+    /// 供 IPC 层如实上报 `backend` / `degraded`：**不能**按平台硬编码后端名 ——
+    /// keychain 写失败而文件 fallback 成功时，硬编码会把"密钥落文件"报成"keychain 可用"。
+    pub fn check_backends() -> BackendAvailability {
+        BackendAvailability {
+            // keychain 可用性检查：必须实际写-读-删往返验证。
+            // `Entry::new(...).is_ok()` 几乎恒为 true，会导致可用性误报
+            //（日志中出现 available=true 但 set 仍失败）。
+            native_keychain: test_keychain_writable(),
+            // 文件 fallback 可用性检查：不能仅检查路径可计算（HOME 存在不代表可写），
+            // 必须实际尝试一次写-读-删往返来验证。
+            encrypted_file_fallback: get_fallback_dir().is_some() && test_fallback_writable(),
+        }
+    }
+
     pub fn is_available() -> bool {
-        // keychain 可用性检查：必须实际写-读-删往返验证。
-        // `Entry::new(...).is_ok()` 几乎恒为 true，会导致可用性误报
-        //（日志中出现 available=true 但 set 仍失败）。
-        let keychain_available = test_keychain_writable();
-
-        // 文件 fallback 可用性检查：不能仅检查路径可计算（HOME 存在不代表可写），
-        // 必须实际尝试一次写-读-删往返来验证。
-        let fallback_available = get_fallback_dir().is_some() && test_fallback_writable();
-
-        keychain_available || fallback_available
+        Self::check_backends().any()
     }
 }
 
@@ -1096,5 +1218,117 @@ mod tests {
             available,
             "is_available should return true in normal environment with valid HOME"
         );
+    }
+
+    /// 验证 `check_backends` 与 `is_available` 同源，且逐后端如实上报。
+    ///
+    /// 这是本文件 `available=true 但 backend=macos_keychain` 那次误报的回归锁：
+    /// `check_backends` 必须**分别**报告两个后端的实测结果，而不是把"任一可用"
+    /// 折算成"原生可用"。
+    #[test]
+    fn test_check_backends_reports_each_backend_honestly() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _env = TestEnv::new("check-backends");
+
+        let backends = SecureStore::check_backends();
+        assert!(
+            backends.encrypted_file_fallback,
+            "有效 HOME 下加密文件 fallback 应实测可用"
+        );
+        assert!(backends.any(), "至少一个后端可用");
+        assert!(
+            backends.effective().is_some(),
+            "至少一个后端可用时必有生效后端"
+        );
+        // 两条判据必须同源，避免 `is_available` 与 `check_backends` 漂移
+        assert_eq!(SecureStore::is_available(), backends.any());
+        // degraded 只在「可用但非原生」时成立
+        assert_eq!(
+            backends.is_degraded(),
+            !backends.native_keychain && backends.encrypted_file_fallback
+        );
+    }
+
+    /// 验证 HOME 缺失时文件 fallback 判为不可用（路径不可计算，不假装可用）
+    #[test]
+    fn test_check_backends_without_home_has_no_fallback() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let original_home = std::env::var("HOME").ok();
+        // SAFETY: TEST_LOCK 确保不会并行执行
+        unsafe { std::env::remove_var("HOME") };
+
+        let backends = SecureStore::check_backends();
+
+        // 恢复 HOME 必须在断言之前，避免断言 panic 导致环境未恢复
+        if let Some(home) = original_home {
+            unsafe { std::env::set_var("HOME", home) };
+        }
+
+        assert!(
+            !backends.encrypted_file_fallback,
+            "HOME 缺失时不应报告文件 fallback 可用"
+        );
+    }
+
+    /// 上报映射（`report()`）——**本文件最关键的回归锁**。
+    ///
+    /// 变异自证记录：只测 `StorageBackend::id()` 时，"命令处理器按平台硬编码 backend"
+    /// 这一变异**逃逸**（测试全绿）。因此上报映射必须自身可测。
+    #[test]
+    fn test_report_maps_degraded_state_honestly() {
+        let degraded = BackendAvailability {
+            native_keychain: false,
+            encrypted_file_fallback: true,
+        }
+        .report();
+
+        assert!(degraded.available);
+        assert!(!degraded.native_available);
+        assert!(degraded.degraded);
+        assert_eq!(degraded.backend, "encrypted_file_fallback");
+        assert_ne!(
+            degraded.backend,
+            platform_native_backend_id(),
+            "降级时 backend 不得是平台原生密钥库名"
+        );
+    }
+
+    #[test]
+    fn test_report_maps_native_state_honestly() {
+        let native = BackendAvailability {
+            native_keychain: true,
+            encrypted_file_fallback: false,
+        }
+        .report();
+
+        assert!(native.available);
+        assert!(native.native_available);
+        assert!(!native.degraded);
+        assert_eq!(native.backend, platform_native_backend_id());
+    }
+
+    #[test]
+    fn test_report_maps_unavailable_state_honestly() {
+        let unavailable = BackendAvailability::default().report();
+
+        assert!(!unavailable.available);
+        assert!(!unavailable.native_available);
+        // 不可用 ≠ 降级
+        assert!(!unavailable.degraded);
+        assert_eq!(unavailable.backend, "unavailable");
+    }
+
+    /// 两个后端都可用时仍按"原生优先"上报，且不算降级。
+    #[test]
+    fn test_report_prefers_native_when_both_available() {
+        let both = BackendAvailability {
+            native_keychain: true,
+            encrypted_file_fallback: true,
+        }
+        .report();
+
+        assert_eq!(both.backend, platform_native_backend_id());
+        assert!(both.native_available);
+        assert!(!both.degraded);
     }
 }

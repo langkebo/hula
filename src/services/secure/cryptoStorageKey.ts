@@ -1,4 +1,10 @@
-import { deleteSecureSecret, getSecureSecret, setSecureSecret } from '@/services/secure/secureStorage'
+import {
+  deleteSecureSecret,
+  describeSecureStorageBackend,
+  getSecureSecret,
+  getSecureStorageBackendInfo,
+  setSecureSecret
+} from '@/services/secure/secureStorage'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('CryptoStorageKey')
@@ -114,14 +120,17 @@ function copyKey(bytes: Uint8Array): Uint8Array {
  * ## 一致性原则（关键）
  *
  * storageKey 必须跨会话稳定，否则下次启动用新密钥无法解密旧 store
- * （WASM `StoreHandle.open` 失败，错误对象常为 `{}`）。因此 keychain 不可用时
+ * （WASM `StoreHandle.open` 失败，错误对象常为 `{}`）。因此安全存储不可用时
  * **不生成随机密钥**，而是返回 `null`（由调用方决定"不加密 store"这一降级），
  * 保持跨会话可读。
  *
  * 行为：
- * - 首次调用：生成 32 随机字节并写入 keychain（keychain 可用时）
- * - 后续调用：从 keychain 读取并解码
- * - keychain 不可用 / 写入失败 / 值损坏：返回 `null`
+ * - 首次调用：生成 32 随机字节并写入安全存储（至少一个后端可用时）
+ * - 后续调用：从安全存储读取并解码
+ * - 安全存储不可用 / 写入失败 / 值损坏：返回 `null`
+ *
+ * 存储后端由 Rust 侧实测决定（原生密钥库优先，失败则落 master-key 加密的文件 fallback），
+ * 日志经 `describeSecureStorageBackend()` 如实描述 —— **降级时不得出现 "keychain" 字样**。
  *
  * @param userId Matrix 用户 ID
  * @param deviceId Matrix 设备 ID
@@ -139,47 +148,58 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
 
   const key = buildKey(userId, deviceId)
 
+  // 后端事实（**不猜测**）：降级时密钥只受 master-key 加密的文件保护，
+  // 日志里不得再说 "keychain"（历史缺陷：无论实际后端为何都打印 keychain）。
+  const backendInfo = await getSecureStorageBackendInfo()
+  const backendLabel = describeSecureStorageBackend(backendInfo)
+
   try {
-    // 2. 从 keychain 读取
+    // 2. 从安全存储读取
     const existing = await getSecureSecret(key)
     if (existing) {
       const decoded = decodeKey(existing)
       if (decoded) {
-        logger.debug(`从 keychain 读取 crypto storageKey: ${userId}/${deviceId}`)
+        logger.debug(`从 ${backendLabel} 读取 crypto storageKey: ${userId}/${deviceId}`)
         keyCache.set(cKey, decoded)
         return copyKey(decoded)
       }
       // 值损坏（非 base64 / 长度不符）→ 不可用。删除并返回 null，
       // **不**静默生成新密钥（会用新密钥打开旧 store，必然解密失败且难以诊断）。
-      logger.warn(`keychain 中的 crypto storageKey 损坏（非 32 字节 base64），已清除: ${userId}/${deviceId}`)
+      logger.warn(`安全存储中的 crypto storageKey 损坏（非 32 字节 base64），已清除: ${userId}/${deviceId}`)
       await deleteSecureSecret(key).catch(() => {})
       return null
     }
 
-    // 3. keychain 中无记录 → 生成新密钥并写入
+    // 3. 安全存储中无记录 → 生成新密钥并写入
     const generated = generateRandomKey()
     const success = await setSecureSecret(key, encodeKey(generated))
     if (!success) {
-      logger.warn(`keychain 不可用或写入失败，crypto store 将**不加密**（保持跨会话可读）: ${userId}/${deviceId}`)
+      logger.warn(`安全存储不可用或写入失败，crypto store 将**不加密**（保持跨会话可读）: ${userId}/${deviceId}`)
       return null
     }
 
     // 4. 写入后立即读回验证
-    //    Rust 端 SecureStore 采用双写策略（keychain + 加密文件 fallback），
-    //    get_secret 会先读 keychain，失败后从文件 fallback 加载。
+    //    Rust 端 SecureStore 采用双写策略（原生密钥库 + 加密文件 fallback），
+    //    get_secret 会先读原生后端，失败后从文件 fallback 加载。
     //    验证确保密钥可跨会话稳定读取，避免 initRustCrypto 报
     //    "An object failed to be decrypted while unpickling"。
     const verifyRead = await getSecureSecret(key)
     if (verifyRead !== encodeKey(generated)) {
       logger.warn(
-        `crypto storageKey 写入后读回验证失败（keychain + 文件 fallback 均不可读），crypto store 将不加密: ${userId}/${deviceId}`
+        `crypto storageKey 写入后读回验证失败（安全存储各后端均不可读），crypto store 将不加密: ${userId}/${deviceId}`
       )
       await deleteSecureSecret(key).catch(() => {})
       return null
     }
 
     keyCache.set(cKey, generated)
-    logger.info(`生成并存储 crypto storageKey（已验证可读回）: ${userId}/${deviceId}`)
+    if (backendInfo.degraded) {
+      logger.warn(
+        `生成并存储 crypto storageKey（已验证可读回），但**系统密钥库不可用**，仅存于 ${backendLabel}: ${userId}/${deviceId}`
+      )
+    } else {
+      logger.info(`生成并存储 crypto storageKey（已验证可读回，存储于 ${backendLabel}）: ${userId}/${deviceId}`)
+    }
     return copyKey(generated)
   } catch (err) {
     logger.error(`获取 crypto storageKey 失败: ${userId}/${deviceId}`, err)

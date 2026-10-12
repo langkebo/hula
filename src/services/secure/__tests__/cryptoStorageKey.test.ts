@@ -25,14 +25,39 @@ const hoisted = vi.hoisted(() => {
     deleteSecureSecret: vi.fn(async (key: string): Promise<boolean> => {
       store.delete(key)
       return true
-    })
+    }),
+    // 后端事实默认"原生密钥库可用"；降级场景由单个用例覆写
+    getSecureStorageBackendInfo: vi.fn(async () => ({
+      available: true,
+      backend: 'macos_keychain',
+      nativeAvailable: true,
+      degraded: false
+    }))
   }
 })
 
-vi.mock('@/services/secure/secureStorage', () => ({
-  getSecureSecret: (...args: unknown[]) => hoisted.getSecureSecret(...(args as [string])),
-  setSecureSecret: (...args: unknown[]) => hoisted.setSecureSecret(...(args as [string, string])),
-  deleteSecureSecret: (...args: unknown[]) => hoisted.deleteSecureSecret(...(args as [string]))
+// 保留真实的 `describeSecureStorageBackend`（纯函数），只替换 IO 面 ——
+// 否则测试会断言不到真实文案，也就锁不住"降级时不得出现 keychain"这条契约。
+vi.mock('@/services/secure/secureStorage', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/secure/secureStorage')>()
+  return {
+    ...actual,
+    getSecureSecret: (...args: unknown[]) => hoisted.getSecureSecret(...(args as [string])),
+    setSecureSecret: (...args: unknown[]) => hoisted.setSecureSecret(...(args as [string, string])),
+    deleteSecureSecret: (...args: unknown[]) => hoisted.deleteSecureSecret(...(args as [string])),
+    getSecureStorageBackendInfo: () => hoisted.getSecureStorageBackendInfo()
+  }
+})
+
+const logSpies = vi.hoisted(() => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn()
+}))
+
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => logSpies
 }))
 
 import {
@@ -162,5 +187,68 @@ describe('cryptoStorageKey', () => {
 
     expect(Array.from(a!)).not.toEqual(Array.from(b!))
     expect(Array.from(a!)).not.toEqual(Array.from(c!))
+  })
+
+  describe('后端如实上报（降级可见）', () => {
+    beforeEach(() => {
+      // 显式回到"原生可用"基线：`clearAllMocks` 不清除已设置的实现
+      hoisted.getSecureStorageBackendInfo.mockResolvedValue({
+        available: true,
+        backend: 'macos_keychain',
+        nativeAvailable: true,
+        degraded: false
+      })
+    })
+
+    it('原生密钥库可用时走 info 且文案指明系统密钥库', async () => {
+      await getOrCreateCryptoStorageKey('@alice:hs', 'DEV1')
+
+      const infoCalls = logSpies.info.mock.calls.map(([msg]) => String(msg))
+      expect(infoCalls.some((msg) => msg.includes('系统密钥库'))).toBe(true)
+      expect(logSpies.warn).not.toHaveBeenCalledWith(expect.stringContaining('系统密钥库不可用'))
+    })
+
+    it('降级（仅加密文件 fallback）时走 warn，且**不得**出现 keychain 字样', async () => {
+      hoisted.getSecureStorageBackendInfo.mockResolvedValueOnce({
+        available: true,
+        backend: 'encrypted_file_fallback',
+        nativeAvailable: false,
+        degraded: true
+      })
+
+      const key = await getOrCreateCryptoStorageKey('@alice:hs', 'DEV1')
+
+      expect(key).toHaveLength(CRYPTO_STORAGE_KEY_BYTES)
+      const warnCalls = logSpies.warn.mock.calls.map(([msg]) => String(msg))
+      const degradedMsg = warnCalls.find((msg) => msg.includes('生成并存储 crypto storageKey'))
+      expect(degradedMsg).toBeDefined()
+      expect(degradedMsg).toContain('加密文件 fallback')
+      expect(degradedMsg).toContain('系统密钥库不可用')
+      expect(degradedMsg).not.toContain('keychain')
+      // 降级不得被记成 info
+      expect(logSpies.info.mock.calls.map(([msg]) => String(msg)).some((m) => m.includes('生成并存储'))).toBe(false)
+    })
+
+    it('读取既有密钥时的 debug 文案同样按后端描述（降级不含 keychain）', async () => {
+      // 先写入一条
+      await getOrCreateCryptoStorageKey('@alice:hs', 'DEV1')
+      clearCryptoStorageKeyCache()
+      logSpies.debug.mockClear()
+      hoisted.getSecureStorageBackendInfo.mockResolvedValue({
+        available: true,
+        backend: 'encrypted_file_fallback',
+        nativeAvailable: false,
+        degraded: true
+      })
+
+      await getOrCreateCryptoStorageKey('@alice:hs', 'DEV1')
+
+      const debugMsg = logSpies.debug.mock.calls
+        .map(([msg]) => String(msg))
+        .find((m) => m.includes('读取 crypto storageKey'))
+      expect(debugMsg).toBeDefined()
+      expect(debugMsg).toContain('加密文件 fallback')
+      expect(debugMsg).not.toContain('keychain')
+    })
   })
 })
