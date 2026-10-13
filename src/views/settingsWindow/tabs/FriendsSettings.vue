@@ -138,9 +138,9 @@ import { NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, NSwitch, us
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { matrixAccountService } from '@/services/matrix'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { DEFAULT_INVITE_POLICY, type InvitePolicy, normalizeInvitePolicy } from '@/services/matrix/user/invitePolicy'
 import { createLogger } from '@/utils/Logger'
 
@@ -153,6 +153,7 @@ defineOptions({
 const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t } = useI18n()
+const { ensureSessionReady } = useWindowSessionReady()
 
 interface FriendGroup {
   group_id: string
@@ -201,13 +202,12 @@ const editGroupName = ref('')
 const editingGroupId = ref('')
 
 onMounted(async () => {
-  // P0-#3：好友分组/请求依赖 MatrixClient，冷启动时客户端尚未就绪会导致
-  // 「Failed to load friend groups」等报错。好友请求策略存在 account data 上，
-  // 同样必须先等客户端就绪，否则读到的是归一化默认值而不是账号上的真实策略。
-  try {
-    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
-  } catch {
-    logger.warn('[FriendsSettings] 客户端未在超时内就绪，好友请求策略可能退回默认值')
+  // 好友分组/请求与好友请求策略都依赖 MatrixClient（策略存在 account data 上，必须先能读到
+  // 账号上的真实值，否则拿到的是归一化默认值）。恢复统一走 `useWindowSessionReady()`
+  // （幂等、每窗口一次），不再自带 waitForClientReady(10s) 白等。
+  const sessionState = await ensureSessionReady()
+  if (sessionState !== 'ready') {
+    logger.warn(`[FriendsSettings] 会话状态=${sessionState}，好友请求策略可能退回默认值`)
   }
   await loadSettings()
   await loadFriendGroups()

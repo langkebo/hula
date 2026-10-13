@@ -88,5 +88,9 @@
   "private_mode": {
     "burning": "私密模式：阅后即焚",
     "enabled": "私密模式已开启"
+  },
+  "window": {
+    "no_room_id": "未提供会话 ID",
+    "session_restore_failed": "会话恢复失败"
   }
 }

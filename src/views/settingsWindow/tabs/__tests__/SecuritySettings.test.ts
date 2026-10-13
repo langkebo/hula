@@ -198,6 +198,11 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
   }
 }))
 
+// Batch 2：会话恢复统一走 useWindowSessionReady（幂等入口）
+vi.mock('@/composables/common/useWindowSessionReady', () => ({
+  useWindowSessionReady: () => ({ ensureSessionReady: vi.fn().mockResolvedValue('ready') })
+}))
+
 vi.mock('@/stores/domains/settings/encryption', () => ({
   useEncryptionStore: () => ({
     get encryptionEnabled() {

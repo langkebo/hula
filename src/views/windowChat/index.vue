@@ -7,19 +7,53 @@
 
     <!-- 聊天主体（复用 ChatBox，独立 EventEmitter 订阅） -->
     <main class="window-chat-container__main">
-      <n-spin v-if="initializing" class="size-full" />
-      <ChatBox v-else-if="roomId" />
-      <n-empty v-else description="未提供 roomId" class="size-full" />
+      <!-- 路由缺失 roomId：先于会话恢复暴露，属窗口被错误创建（不是会话问题） -->
+      <n-empty
+        v-if="!roomId"
+        class="size-full"
+        :description="t('chat.window.no_room_id')"
+        data-test="window-chat-no-room-id" />
+
+      <!-- 会话恢复中 -->
+      <n-spin v-else-if="initializing" class="size-full" data-test="window-chat-initializing" />
+
+      <!-- 本地无可用会话：如实告知，不做「空聊天」假象 -->
+      <div
+        v-else-if="sessionState === 'no-session'"
+        class="window-chat-container__state"
+        data-test="window-chat-no-session">
+        <n-icon size="28" color="var(--tjg-text-tertiary)">
+          <svg><use href="#warning" /></svg>
+        </n-icon>
+        <p class="window-chat-container__state-text">{{ t('matrix_error.common.user_not_logged_in') }}</p>
+      </div>
+
+      <!-- 会话恢复失败：给出原因 + 重试（error 不落终态，重试真的会再跑一次） -->
+      <div
+        v-else-if="sessionState === 'error'"
+        class="window-chat-container__state"
+        data-test="window-chat-session-error">
+        <p class="window-chat-container__state-text">{{ t('chat.window.session_restore_failed') }}</p>
+        <p v-if="sessionError" class="window-chat-container__state-detail">{{ sessionError.message }}</p>
+        <n-button size="small" type="primary" data-test="window-chat-retry" @click="handleRetry">
+          {{ t('common.retry') }}
+        </n-button>
+      </div>
+
+      <ChatBox v-else />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
+import { NButton, NEmpty, NIcon, NSpin } from 'naive-ui'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import ChatBox from '@/components/rightBox/chatBox/index.vue'
 import { useIndependentChatWindow } from '@/composables/chat/useIndependentChatWindow'
 import { usePlatformClose } from '@/composables/common/usePlatformClose'
+import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
@@ -27,18 +61,35 @@ const logger = createLogger('WindowChatView')
 
 const route = useRoute()
 const globalStore = useGlobalStore()
+const { t } = useI18n()
 
-const initializing = ref(true)
 const roomId = computed(() => {
   const param = route.params.roomId
   if (Array.isArray(param)) return param[0] ?? ''
   return param ?? ''
 })
 
+// 独立聊天窗口此前完全不做会话恢复（图谱 §8.5 B3）：本窗口的 matrixClientService 是新实例，
+// getClient() 恒为 null，ChatBox 拿不到任何消息。现走统一入口（幂等、每窗口一次）。
+const {
+  state: sessionState,
+  error: sessionError,
+  pending: sessionPending,
+  ensureSessionReady
+} = useWindowSessionReady()
+
+const initializing = computed(() => sessionState.value === null || sessionPending.value)
+
 const { notifyUnreadUpdate, listenChatClosed } = useIndependentChatWindow()
 const { closeCurrentWindow } = usePlatformClose()
 
 let unlistenClosed: (() => void) | null = null
+
+/** error 态下重试会话恢复（成功后模板自动切到 ChatBox）。 */
+async function handleRetry(): Promise<void> {
+  const state = await ensureSessionReady()
+  logger.info(`独立聊天窗口重试会话恢复结果=${state}`)
+}
 
 onMounted(async () => {
   logger.info(`独立聊天窗口挂载，roomId=${roomId.value}`)
@@ -50,7 +101,8 @@ onMounted(async () => {
     globalStore.updateCurrentSessionRoomId(roomId.value)
   }
 
-  // 监听主窗口发来的关闭信号
+  // 监听主窗口发来的关闭信号：与会话恢复**并行**注册，
+  // 避免恢复过程较慢时窗口关闭按钮失效。
   const unlisten = await listenChatClosed(async ({ roomId: closedRoomId }) => {
     if (closedRoomId === roomId.value) {
       logger.info('收到主窗口关闭通知，关闭独立窗口')
@@ -59,10 +111,14 @@ onMounted(async () => {
   })
   unlistenClosed = unlisten
 
-  initializing.value = false
+  const sessionStateValue = await ensureSessionReady()
+  logger.info(`独立聊天窗口会话状态=${sessionStateValue}`)
 
-  // 附录 C.3：通知主窗口未读数清零（窗口已打开）
-  await notifyUnreadUpdate(roomId.value, 0)
+  // 附录 C.3：通知主窗口未读数清零（窗口已打开）。会话没就绪时不通知，
+  // 否则会在「窗口其实看不到消息」的情况下把未读清掉。
+  if (roomId.value && sessionStateValue === 'ready') {
+    await notifyUnreadUpdate(roomId.value, 0)
+  }
 })
 
 onUnmounted(() => {
@@ -95,5 +151,28 @@ onUnmounted(() => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+.window-chat-container__state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tjg-space-3);
+  padding: var(--tjg-space-6);
+  color: var(--tjg-text-secondary);
+  text-align: center;
+
+  &-text {
+    font-size: var(--tjg-font-size-md);
+  }
+
+  &-detail {
+    max-width: 420px;
+    font-size: var(--tjg-font-size-sm);
+    color: var(--tjg-text-tertiary);
+    word-break: break-all;
+  }
 }
 </style>

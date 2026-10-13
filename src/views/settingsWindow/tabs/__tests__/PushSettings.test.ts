@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 const {
-  waitForClientReadyMock,
+  ensureSessionReadyMock,
   getPushRulesMock,
   getPushersMock,
   getNotificationsMock,
@@ -11,7 +11,7 @@ const {
   setDndSettingsMock,
   setPushRuleEnabledMock
 } = vi.hoisted(() => ({
-  waitForClientReadyMock: vi.fn(),
+  ensureSessionReadyMock: vi.fn(),
   getPushRulesMock: vi.fn().mockResolvedValue({ global: {} }),
   getPushersMock: vi.fn().mockResolvedValue([]),
   getNotificationsMock: vi.fn().mockResolvedValue({ notifications: [] }),
@@ -24,13 +24,20 @@ const {
   setPushRuleEnabledMock: vi.fn().mockResolvedValue(undefined)
 }))
 
-// 关键：waitForClientReady 由组件 await，必须能由测试控制其 resolve 时机
-let resolveReady: () => void
-let readyPromise: Promise<void>
+// Batch 2：会话恢复由统一入口负责，必须能由测试控制其 resolve 时机
+let resolveReady: (state: 'ready' | 'no-session' | 'error') => void
+let readyPromise: Promise<'ready' | 'no-session' | 'error'>
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: { waitForClientReady: (...args: unknown[]) => waitForClientReadyMock(...args) },
-  default: { waitForClientReady: (...args: unknown[]) => waitForClientReadyMock(...args) }
+  matrixClientService: { waitForClientReady: vi.fn().mockResolvedValue(undefined), getClient: vi.fn(() => null) },
+  default: { waitForClientReady: vi.fn().mockResolvedValue(undefined), getClient: vi.fn(() => null) }
+}))
+
+// Batch 2：会话恢复统一走 useWindowSessionReady（幂等入口），测试需控制其 resolve 时机
+vi.mock('@/composables/common/useWindowSessionReady', () => ({
+  useWindowSessionReady: () => ({
+    ensureSessionReady: (...args: unknown[]) => ensureSessionReadyMock(...args)
+  })
 }))
 
 vi.mock('@/services/matrix/notifications/MatrixPushService', () => ({
@@ -81,7 +88,7 @@ describe('PushSettings — P0-#3 客户端就绪竞态', () => {
     getPushRulesMock.mockClear()
     getPushersMock.mockClear()
     getNotificationsMock.mockClear()
-    waitForClientReadyMock.mockClear()
+    ensureSessionReadyMock.mockClear()
     getDndSettingsMock.mockClear()
     setDndSettingsMock.mockClear()
     setPushRuleEnabledMock.mockClear()
@@ -89,10 +96,10 @@ describe('PushSettings — P0-#3 客户端就绪竞态', () => {
     getDndSettingsMock.mockReturnValue({ enabled: false, startTime: null, endTime: null })
     localStorage.clear()
 
-    readyPromise = new Promise<void>((resolve) => {
+    readyPromise = new Promise((resolve) => {
       resolveReady = resolve
     })
-    waitForClientReadyMock.mockReturnValue(readyPromise)
+    ensureSessionReadyMock.mockReturnValue(readyPromise)
   })
 
   /** 挂载并把客户端置为就绪，等待 onMounted 里的设置加载完成。 */
@@ -100,7 +107,7 @@ describe('PushSettings — P0-#3 客户端就绪竞态', () => {
     const wrapper = mount(PushSettings, {
       props: { embedded: true }
     })
-    resolveReady()
+    resolveReady('ready')
     await flushPromises()
     await nextTick()
     await flushPromises()
@@ -114,12 +121,12 @@ describe('PushSettings — P0-#3 客户端就绪竞态', () => {
     })
 
     // 就绪前不应抢跑发请求
-    expect(waitForClientReadyMock).toHaveBeenCalledTimes(1)
+    expect(ensureSessionReadyMock).toHaveBeenCalledTimes(1)
     expect(getPushRulesMock).not.toHaveBeenCalled()
     expect(getPushersMock).not.toHaveBeenCalled()
 
     // 客户端就绪后，拉取才真正发生
-    resolveReady()
+    resolveReady('ready')
     await flushPromises()
     await nextTick()
 
@@ -129,8 +136,8 @@ describe('PushSettings — P0-#3 客户端就绪竞态', () => {
     wrapper.unmount()
   })
 
-  it('客户端超时未就绪时不应让 onMounted 抛出未捕获错误', async () => {
-    waitForClientReadyMock.mockRejectedValueOnce(new Error('not ready'))
+  it('会话就绪失败（error）时不应让 onMounted 抛出未捕获错误', async () => {
+    ensureSessionReadyMock.mockResolvedValueOnce('error')
 
     const wrapper = mount(PushSettings, {
       props: { embedded: true }

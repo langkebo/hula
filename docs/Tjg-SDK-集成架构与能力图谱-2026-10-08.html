@@ -686,12 +686,18 @@
   <table>
     <thead><tr><th>#</th><th>问题</th><th>状态</th></tr></thead>
     <tbody>
-      <tr><td>B1</td><td><b>窗口名单与真实窗口集合无一致性校验</b>（NON_MATRIX 名单只挡 App.vue 4 处，窗口却由 tauri.conf + 9 处 new WebviewWindow 动态创建）</td><td>⏳ 待决策（可加门禁）</td></tr>
-      <tr><td>B2</td><td><b>设置窗口各页签假设不一致</b>：仅「安全/会话」调 <code>ensureClientReady()</code> 自行恢复，推送/好友/忽略用户只 <code>waitForClientReady(10s)</code></td><td>⏳ 待决策</td></tr>
-      <tr><td>B3</td><td><b>独立聊天窗口 <code>/window/chat/:roomId</code> 无任何会话恢复</b> ⇒ 该窗口 <code>getClient()</code> 恒 null</td><td>⏳ 待确认是否未完成</td></tr>
-      <tr><td>B4</td><td>非 home 窗口的"按需惰性恢复"是隐式约定（<code>ensureClientReady</code> 注释明写 standalone WebViews，但只有 2 个设置页签在用）</td><td>⏳ 待决策</td></tr>
+      <tr><td>B1</td><td><b>窗口名单与真实窗口集合无一致性校验</b>（NON_MATRIX 名单只挡 App.vue 4 处，窗口却由 tauri.conf + 9 处 new WebviewWindow 动态创建）</td><td>✅ 已加门禁（Batch 1，<code>check:window-registry</code>）</td></tr>
+      <tr><td>B2</td><td><b>设置窗口各页签假设不一致</b>：仅「安全/会话」自行恢复，推送/好友/忽略用户只 <code>waitForClientReady(10s)</code>（先开后者白等超时拿空数据）</td><td>✅ 已修（Batch 2）：5 处统一走 <code>useWindowSessionReady()</code>；门禁 <code>check:window-session-entry</code></td></tr>
+      <tr><td>B3</td><td><b>独立聊天窗口 <code>/window/chat/:roomId</code> 无任何会话恢复</b> ⇒ 该窗口 <code>getClient()</code> 恒 null、拿不到消息</td><td>✅ 已修（Batch 2）：接入统一入口 + 四态 UI（初始化/未登录/失败可重试/正常），未就绪不再误清未读</td></tr>
+      <tr><td>B4</td><td>非 home 窗口的"按需惰性恢复"是隐式约定（<code>ensureClientReady</code> 注释明写 standalone WebViews，但只有 2 个设置页签在用）</td><td>✅ 已统一为窗口层能力（Batch 2）：<code>src/composables/common/useWindowSessionReady.ts</code></td></tr>
     </tbody>
   </table>
+
+  <div class="note"><b>Batch 2 落地（2026-10-13）：</b>新增 <code>src/composables/common/useWindowSessionReady.ts</code>
+  作为<b>窗口级、幂等的</b>会话恢复入口（<code>ready</code> / <code>no-session</code> / <code>error</code> 三态；
+  并发调用复用同一 in-flight；<code>ready</code> 为终态、失败可重试）。设置窗口壳层挂载时抢跑，
+  各页签只 await 同一次；独立聊天窗口按三态渲染。守门 <code>pnpm check:window-session-entry</code>
+  （禁止两目录再裸调 <code>waitForClientReady</code> / <code>ensureClientReady</code>，并要求入口真的调用 <code>ensureSessionReady()</code>）。</div>
 
   <h3>C. 接入面与横切机制</h3>
   <table>

@@ -34,6 +34,7 @@ import { computed, defineAsyncComponent, onErrorCaptured, onMounted, onUnmounted
 import { useI18n } from 'vue-i18n'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import SkeletonSettings from '@/components/common/SkeletonSettings.vue'
+import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import {
   createSettingsDirtyRegistry,
   provideSettingsDirtyRegistry
@@ -69,6 +70,11 @@ const { t, tm } = useI18n()
 const router = useRouter()
 const dialog = useDialog()
 const SETTINGS_CONTENT_ID = 'settings-tab-panel'
+
+// 窗口级会话入口：设置窗口是独立 Tauri WebView，各页签的 MatrixClient 需要先恢复。
+// 这里在壳层挂载时**抢跑**一次（幂等，不 await 以免拖慢首帧），各页签随后调用
+// `ensureSessionReady()` 只会 await 同一次 in-flight。
+const { ensureSessionReady } = useWindowSessionReady()
 
 // ── 页面级错误兜底 ──
 // SettingsContent 内部已有 tab 级错误边界（onErrorCaptured 返回 false，错误不冒泡到此处）。
@@ -203,6 +209,8 @@ onBeforeRouteLeave(async () => {
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)
   window.addEventListener('keydown', handleShortcutKey)
+  // 入口调用：尽早启动会话恢复，避免页签各自等到 10s/15s 超时才发现没人触发恢复。
+  void ensureSessionReady()
 })
 
 onUnmounted(() => {

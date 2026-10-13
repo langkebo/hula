@@ -88,5 +88,9 @@
   "private_mode": {
     "burning": "Private Mode: Burn After Reading",
     "enabled": "Private Mode Enabled"
+  },
+  "window": {
+    "no_room_id": "No conversation ID provided",
+    "session_restore_failed": "Failed to restore session"
   }
 }

@@ -143,7 +143,7 @@ import { NButton, NDivider, NEmpty, NInput, NSpin, NSwitch, NTimePicker, useDial
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
 import type { IPusher, IPushRule, IPushRules, PushRuleKind } from '@/types/matrix-services'
@@ -168,6 +168,7 @@ defineOptions({
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
+const { ensureSessionReady } = useWindowSessionReady()
 
 const loading = ref(false)
 const rulesLoading = ref(false)
@@ -188,12 +189,11 @@ const showAddPusherModal = ref(false)
 const ruleKinds = ['override', 'content', 'room', 'sender', 'underride'] as const
 
 onMounted(async () => {
-  // P0-#3：设置类服务依赖 MatrixClient，冷启动时客户端尚未就绪会导致
-  // 「客户端未初始化 / 未就绪」批量报错。先等待客户端就绪再发请求。
-  try {
-    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
-  } catch {
-    logger.warn('[PushSettings] 客户端未在超时内就绪，使用本地缓存设置')
+  // 设置类服务依赖 MatrixClient。恢复统一走 `useWindowSessionReady()`（幂等、每窗口一次），
+  // 避免「冷启动直接进入本页签时没人触发恢复」⇒ 原先只能白等 waitForClientReady(10s) 拿默认值。
+  const sessionState = await ensureSessionReady()
+  if (sessionState !== 'ready') {
+    logger.warn(`[PushSettings] 会话状态=${sessionState}，推送设置可能显示本地默认值`)
   }
   await Promise.allSettled([fetchPushers(), fetchPushRules(), fetchNotifications()])
   await loadDndSettings()

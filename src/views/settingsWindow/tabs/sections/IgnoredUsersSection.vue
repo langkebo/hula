@@ -18,8 +18,8 @@ import { NButton, NEmpty, NSpin } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { useAccount } from '@/composables/user/useAccount'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { createLogger } from '@/utils/Logger'
 
 defineOptions({
@@ -31,17 +31,17 @@ const logger = createLogger('IgnoredUsersSection')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const { getIgnoredUsers, setIgnoredUsers } = useAccount()
+const { ensureSessionReady } = useWindowSessionReady()
 
 const loadingIgnored = ref(false)
 const ignoredUsers = ref<string[]>([])
 
 onMounted(async () => {
-  // 等待 Matrix 客户端就绪后再加载忽略用户列表
-  // （独立 WebView 会话恢复时，客户端由父组件 ensureClientReady 异步重建）
-  try {
-    await matrixClientService.waitForClientReady({ timeoutMs: 15000 })
-  } catch (err) {
-    logger.warn('waitForClientReady 超时，仍尝试加载忽略用户列表:', err)
+  // 等待会话就绪后再加载忽略用户列表。恢复统一走 `useWindowSessionReady()`
+  // （幂等：父组件 SecuritySettings 与 SettingsPage 已触发，这里只是 wait 同一次）。
+  const sessionState = await ensureSessionReady()
+  if (sessionState !== 'ready') {
+    logger.warn(`会话状态=${sessionState}，仍尝试加载忽略用户列表`)
   }
   await loadIgnoredUsers()
 })

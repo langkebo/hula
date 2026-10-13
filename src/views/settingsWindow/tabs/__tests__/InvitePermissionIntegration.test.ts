@@ -43,6 +43,11 @@ vi.mock('@/stores/domains/settings/encryption', () => ({
   })
 }))
 
+// Batch 2：SecuritySettings 的会话恢复走统一入口，这里直接置为 ready，避免拉起真实会话栈
+vi.mock('@/composables/common/useWindowSessionReady', () => ({
+  useWindowSessionReady: () => ({ ensureSessionReady: vi.fn().mockResolvedValue('ready') })
+}))
+
 import SecuritySettings from '../SecuritySettings.vue'
 
 describe('InvitePermissionPanel integration in SecuritySettings', () => {

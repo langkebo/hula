@@ -94,9 +94,8 @@ import { NButton, NDivider, NEmpty, NForm, NFormItem, NInput, NModal, NSpin, NTa
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { useAccount } from '@/composables/user/useAccount'
-import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { type DeviceInfo, matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { createLogger } from '@/utils/Logger'
@@ -112,6 +111,7 @@ const dialog = useDialog()
 const { t, locale } = useI18n()
 const { getDevices, deleteDevices } = useAccount()
 const matrixStore = useMatrixStore()
+const { ensureSessionReady } = useWindowSessionReady()
 
 const loading = ref(false)
 const renaming = ref(false)
@@ -149,15 +149,10 @@ function formatRelativeTime(timestamp: number): string {
 
 onMounted(async () => {
   // 独立 WebView 窗口需要先恢复 MatrixClient 实例，否则 getClient() 返回 null
-  // 导致 BaseMatrixService.getClient() 抛出 client_not_initialized 错误
-  logger.info('[SessionSettings] onMounted — 独立 WebView 会话恢复流程启动')
-  try {
-    await sessionOrchestrator.ensureClientReady()
-    await matrixClientService.waitForClientReady({ timeoutMs: 15000 })
-    logger.info('[SessionSettings] 会话恢复完成，开始加载设备列表')
-  } catch (err) {
-    logger.warn('[SessionSettings] 会话恢复失败:', err instanceof Error ? err.message : String(err))
-  }
+  // 导致 BaseMatrixService.getClient() 抛出 client_not_initialized 错误。
+  // 恢复统一走 `useWindowSessionReady()`（幂等、每窗口一次）。
+  const sessionState = await ensureSessionReady()
+  logger.info(`[SessionSettings] 会话状态=${sessionState}，开始加载设备列表`)
   await loadDevices()
 })
 

@@ -59,6 +59,16 @@
 
 ### Batch 2 —— 窗口与会话（P0，用户可见）
 
+> **状态：✅ 已完成（2026-10-13，commit 见 `fix(service): 窗口会话统一入口`）。**
+> 交付：`src/composables/common/useWindowSessionReady.ts`（窗口级幂等入口，三态 + 并发复用 in-flight）
+> + `SettingsPage.vue` 入口调用 + 5 处页签消费 + `windowChat/index.vue` 四态 UI
+> + 门禁 `pnpm check:window-session-entry`（含 15 例单测）
+> + `src/composables/common/__tests__/useWindowSessionReady.test.ts`（11 例）、
+> `src/views/windowChat/__tests__/index.test.ts`（6 例）。
+> 变异自证：M18（删掉入口调用，**首轮逃逸** → 判据改为只认「调用形态」后判红）、
+> M19/M19b（页签重新裸调 `waitForClientReady`、跨行写法）均判红并逐字节还原。
+
+
 | 步骤 | 内容 | 验收 |
 |---|---|---|
 | 2.1 | 新增 `src/composables/common/useWindowSessionReady.ts`：`ensureSessionReady()`（幂等、一次性、返回 `'ready' \| 'no-session' \| 'error'`），内部 `sessionOrchestrator.ensureClientReady()` + `waitForClientReady`，并暴露失败原因供 UI 空态 | 单测覆盖三态 + 幂等（重复调用只跑一次） |

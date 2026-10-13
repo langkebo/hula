@@ -50,10 +50,9 @@ import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import InvitePermissionPanel from '@/components/settings/InvitePermissionPanel.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { sessionOrchestrator } from '@/services/matrix/auth/SessionOrchestrator'
+import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 import BlockedUsersSection from './sections/BlockedUsersSection.vue'
@@ -71,6 +70,7 @@ defineOptions({
 const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const encryptionStore = useEncryptionStore()
+const { ensureSessionReady } = useWindowSessionReady()
 
 // 加密相关状态：弹窗可见性 + 备份信息（需传给 EncryptionStatusSection）
 const showBackupDialog = ref(false)
@@ -85,49 +85,14 @@ const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
 const securityKeyConfigured = computed(() => encryptionStore.securityKeyConfigured)
 
 onMounted(async () => {
-  // P0-#3：安全设置窗口是独立 Tauri WebView，MatrixClientService 为新实例。
-  // ensureClientReady() 从后端存储的 token 重建客户端，内部通过 store 的
-  // loginWithToken → settlePostLoginStartup → startClient 完成客户端启动
-  // （含 Rust Crypto 初始化）。必须 await 确保整个流程完成后再加载数据。
-  logger.info('[SecuritySettings] onMounted 开始 — 独立 WebView 会话恢复流程启动')
+  // 本页是独立 Tauri WebView 的一页，MatrixClient 需要先恢复才能读加密/备份状态。
+  // 恢复统一走 `useWindowSessionReady()`（幂等、每窗口一次）：入口在 SettingsPage，
+  // 此处只是 wait 同一次 in-flight，不再自带 waitForClientReady(15s)。
+  const sessionState = await ensureSessionReady()
+  logger.info(`[SecuritySettings] 会话状态=${sessionState}，开始加载加密状态与备份信息`)
 
-  // ── 步骤 1：ensureClientReady（从后端 token 重建客户端 + loginWithToken + startClient）──
-  logger.info('[SecuritySettings] 步骤 1/3: 调用 sessionOrchestrator.ensureClientReady()')
-  const t1 = Date.now()
-  try {
-    await sessionOrchestrator.ensureClientReady()
-    logger.info(`[SecuritySettings] 步骤 1/3 完成: ensureClientReady 成功 (${Date.now() - t1}ms)`)
-  } catch (err) {
-    logger.warn(
-      `[SecuritySettings] 步骤 1/3 失败: ensureClientReady 失败 (${Date.now() - t1}ms):`,
-      err instanceof Error ? err.message : String(err)
-    )
-  }
-
-  // ── 步骤 2：waitForClientReady（确保 MatrixClient 实例可用）──
-  logger.info('[SecuritySettings] 步骤 2/3: 调用 waitForClientReady({ timeoutMs: 15000 })')
-  const t2 = Date.now()
-  try {
-    await matrixClientService.waitForClientReady({ timeoutMs: 15000 })
-    const client = matrixClientService.getClient()
-    const userId = matrixClientService.getUserId()
-    const deviceId = client?.getDeviceId?.() ?? null
-    const cryptoReady = matrixClientService.isCryptoReady()
-    logger.info(
-      `[SecuritySettings] 步骤 2/3 完成: waitForClientReady 成功 (${Date.now() - t2}ms) — userId=${userId}, deviceId=${deviceId}, cryptoReady=${cryptoReady}`
-    )
-  } catch (err) {
-    logger.warn(
-      `[SecuritySettings] 步骤 2/3 失败: waitForClientReady 超时 (${Date.now() - t2}ms):`,
-      err instanceof Error ? err.message : String(err)
-    )
-  }
-
-  // ── 步骤 3：加载加密状态和备份信息（隐私/忽略/屏蔽/邀请列表由各子组件自行加载）──
-  logger.info('[SecuritySettings] 步骤 3/3: 加载加密状态与备份信息')
   await encryptionStore.loadEncryptionStatus()
   await loadBackupInfo()
-  logger.info('[SecuritySettings] onMounted 全部完成')
 })
 
 // 加载密钥备份信息（用于 EncryptionStatusSection 的备份状态展示）

@@ -1645,6 +1645,10 @@ export type I18nKeys = {
     "private_mode": {
       "burning": "私密模式：阅后即焚",
       "enabled": "私密模式已开启"
+    },
+    "window": {
+      "no_room_id": "未提供会话 ID",
+      "session_restore_failed": "会话恢复失败"
     }
   },
   "chatHistory": {
@@ -8219,6 +8223,8 @@ export type I18nKeyPaths =
   | "chat.encryption.plain_title"
   | "chat.private_mode.burning"
   | "chat.private_mode.enabled"
+  | "chat.window.no_room_id"
+  | "chat.window.session_restore_failed"
   | "chatHistory.search.placeholder"
   | "chatHistory.tabs.all"
   | "chatHistory.tabs.imageVideo"

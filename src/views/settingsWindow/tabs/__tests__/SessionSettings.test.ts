@@ -74,12 +74,10 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: { waitForClientReady: vi.fn().mockResolvedValue(undefined) }
-}))
-
-vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
-  sessionOrchestrator: { ensureClientReady: vi.fn().mockResolvedValue(undefined) }
+// Batch 2：会话恢复统一走 useWindowSessionReady（幂等入口），
+// 本页签不再各自调 sessionOrchestrator / waitForClientReady。
+vi.mock('@/composables/common/useWindowSessionReady', () => ({
+  useWindowSessionReady: () => ({ ensureSessionReady: vi.fn().mockResolvedValue('ready') })
 }))
 
 vi.mock('@/utils/Logger', () => ({

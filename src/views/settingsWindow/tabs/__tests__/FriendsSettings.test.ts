@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import { DEFAULT_INVITE_POLICY, type InvitePolicy } from '@/services/matrix/user/invitePolicy'
 
 const {
-  waitForClientReadyMock,
+  ensureSessionReadyMock,
   getFriendGroupsMock,
   getIncomingRequestsMock,
   getOutgoingRequestsMock,
@@ -13,7 +13,7 @@ const {
   setInvitePolicyMock,
   showFeedbackMock
 } = vi.hoisted(() => ({
-  waitForClientReadyMock: vi.fn(),
+  ensureSessionReadyMock: vi.fn(),
   getFriendGroupsMock: vi.fn().mockResolvedValue([]),
   getIncomingRequestsMock: vi.fn().mockResolvedValue([]),
   getOutgoingRequestsMock: vi.fn().mockResolvedValue([]),
@@ -23,12 +23,19 @@ const {
   showFeedbackMock: vi.fn()
 }))
 
-let resolveReady: () => void
-let readyPromise: Promise<void>
+let resolveReady: (state: 'ready' | 'no-session' | 'error') => void
+let readyPromise: Promise<'ready' | 'no-session' | 'error'>
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: { waitForClientReady: (...args: unknown[]) => waitForClientReadyMock(...args) },
-  default: { waitForClientReady: (...args: unknown[]) => waitForClientReadyMock(...args) }
+  matrixClientService: { waitForClientReady: vi.fn().mockResolvedValue(undefined), getClient: vi.fn(() => null) },
+  default: { waitForClientReady: vi.fn().mockResolvedValue(undefined), getClient: vi.fn(() => null) }
+}))
+
+// Batch 2：会话恢复统一走 useWindowSessionReady（幂等入口），测试需控制其 resolve 时机
+vi.mock('@/composables/common/useWindowSessionReady', () => ({
+  useWindowSessionReady: () => ({
+    ensureSessionReady: (...args: unknown[]) => ensureSessionReadyMock(...args)
+  })
 }))
 
 vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
@@ -94,10 +101,10 @@ function accountPolicy(overrides: Partial<InvitePolicy> = {}): InvitePolicy {
 }
 
 function primeReady() {
-  readyPromise = new Promise<void>((resolve) => {
+  readyPromise = new Promise((resolve) => {
     resolveReady = resolve
   })
-  waitForClientReadyMock.mockReturnValue(readyPromise)
+  ensureSessionReadyMock.mockReturnValue(readyPromise)
 }
 
 describe('FriendsSettings — P0-#3 客户端就绪竞态', () => {
@@ -105,7 +112,7 @@ describe('FriendsSettings — P0-#3 客户端就绪竞态', () => {
     getFriendGroupsMock.mockClear()
     getIncomingRequestsMock.mockClear()
     getOutgoingRequestsMock.mockClear()
-    waitForClientReadyMock.mockClear()
+    ensureSessionReadyMock.mockClear()
     getInvitePolicyMock.mockReset()
     getInvitePolicyStrictMock.mockReset()
     setInvitePolicyMock.mockReset()
@@ -121,12 +128,12 @@ describe('FriendsSettings — P0-#3 客户端就绪竞态', () => {
     const wrapper = mount(FriendsSettings)
 
     // 就绪前不应抢跑发请求
-    expect(waitForClientReadyMock).toHaveBeenCalledTimes(1)
+    expect(ensureSessionReadyMock).toHaveBeenCalledTimes(1)
     expect(getFriendGroupsMock).not.toHaveBeenCalled()
     expect(getIncomingRequestsMock).not.toHaveBeenCalled()
 
     // 客户端就绪后，拉取才真正发生
-    resolveReady()
+    resolveReady('ready')
     await flushPromises()
     await nextTick()
 
@@ -136,8 +143,8 @@ describe('FriendsSettings — P0-#3 客户端就绪竞态', () => {
     wrapper.unmount()
   })
 
-  it('客户端超时未就绪时不应让 onMounted 抛出未捕获错误', async () => {
-    waitForClientReadyMock.mockRejectedValueOnce(new Error('not ready'))
+  it('会话就绪失败（error）时不应让 onMounted 抛出未捕获错误', async () => {
+    ensureSessionReadyMock.mockResolvedValueOnce('error')
 
     const wrapper = mount(FriendsSettings)
     await flushPromises()
@@ -160,7 +167,7 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
     getFriendGroupsMock.mockClear()
     getIncomingRequestsMock.mockClear()
     getOutgoingRequestsMock.mockClear()
-    waitForClientReadyMock.mockClear()
+    ensureSessionReadyMock.mockClear()
     getInvitePolicyMock.mockReset()
     getInvitePolicyStrictMock.mockReset()
     setInvitePolicyMock.mockReset()
@@ -168,8 +175,8 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
     getInvitePolicyStrictMock.mockResolvedValue(accountPolicy())
     setInvitePolicyMock.mockResolvedValue(true)
     localStorage.clear()
-    // 本组关注策略读写，直接让客户端就绪，避免 readyPromise 悬挂挡住 onMounted 后续步骤
-    waitForClientReadyMock.mockResolvedValue(undefined)
+    // 本组关注策略读写，直接让会话就绪，避免 readyPromise 悬挂挡住 onMounted 后续步骤
+    ensureSessionReadyMock.mockResolvedValue('ready')
   })
 
   it('reads the three switches from InvitePolicy and never touches tjg-friend-settings', async () => {
