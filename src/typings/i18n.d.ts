@@ -4020,6 +4020,9 @@ export type I18nKeys = {
     "search_button": "搜索",
     "selected_count": "已选择 {count} 人",
     "create_group_failed": "创建群聊失败",
+    "create_group_success": "创建群聊成功",
+    "create_group_need_two": "两个人无法建群哦",
+    "search_contacts_hint": "搜索联系人~",
     "invite_button": "邀请",
     "select_friends_to_invite": "请选择要邀请的好友",
     "invite_failed": "邀请失败，请重试"
@@ -4033,6 +4036,11 @@ export type I18nKeys = {
       "search": "搜索"
     },
     "my_chat": "我的消息",
+    "avatar": {
+      "default": "头像",
+      "user": "用户头像",
+      "group": "群头像"
+    },
     "tab": {
       "contacts": "好友",
       "group": "群聊",
@@ -4077,7 +4085,27 @@ export type I18nKeys = {
     "delete_friend_confirm": "确定要删除该好友吗？此操作无法撤销。",
     "delete_friend_success": "好友已删除",
     "delete_friend_failed": "删除好友失败",
-    "deleting": "删除中..."
+    "deleting": "删除中...",
+    "account_label_ascii": "账号: {account}",
+    "group_account_label_ascii": "群号: {account}",
+    "add_friend": "添加好友",
+    "add_friend_message_placeholder": "输入几句话，对TA说些什么吧",
+    "add_friend_request_sent": "已发送好友申请",
+    "default_request_message": "我是{name}",
+    "join_group": "加入群聊",
+    "join_group_message_placeholder": "输入验证消息",
+    "apply_join_group": "申请加入",
+    "group_request_sent": "已发送群聊申请",
+    "friend_info": {
+      "title": "用户资料",
+      "basic_info": "基本信息",
+      "user_id": "用户ID",
+      "user_name": "用户名",
+      "unknown": "未知",
+      "moments": "动态",
+      "no_moments": "暂无动态内容",
+      "moments_unsupported": "Matrix 协议暂不支持朋友圈功能"
+    }
   },
   "mobile_deactivate": {
     "title": "注销账户",
@@ -10014,6 +10042,9 @@ export type I18nKeyPaths =
   | "mobile_chat_setting.search_button"
   | "mobile_chat_setting.selected_count"
   | "mobile_chat_setting.create_group_failed"
+  | "mobile_chat_setting.create_group_success"
+  | "mobile_chat_setting.create_group_need_two"
+  | "mobile_chat_setting.search_contacts_hint"
   | "mobile_chat_setting.invite_button"
   | "mobile_chat_setting.select_friends_to_invite"
   | "mobile_chat_setting.invite_failed"
@@ -10023,6 +10054,9 @@ export type I18nKeyPaths =
   | "mobile_contact.search_keyword_hint"
   | "mobile_contact.input.search"
   | "mobile_contact.my_chat"
+  | "mobile_contact.avatar.default"
+  | "mobile_contact.avatar.user"
+  | "mobile_contact.avatar.group"
   | "mobile_contact.tab.contacts"
   | "mobile_contact.tab.group"
   | "mobile_contact.tab.recommend"
@@ -10056,6 +10090,24 @@ export type I18nKeyPaths =
   | "mobile_contact.delete_friend_success"
   | "mobile_contact.delete_friend_failed"
   | "mobile_contact.deleting"
+  | "mobile_contact.account_label_ascii"
+  | "mobile_contact.group_account_label_ascii"
+  | "mobile_contact.add_friend"
+  | "mobile_contact.add_friend_message_placeholder"
+  | "mobile_contact.add_friend_request_sent"
+  | "mobile_contact.default_request_message"
+  | "mobile_contact.join_group"
+  | "mobile_contact.join_group_message_placeholder"
+  | "mobile_contact.apply_join_group"
+  | "mobile_contact.group_request_sent"
+  | "mobile_contact.friend_info.title"
+  | "mobile_contact.friend_info.basic_info"
+  | "mobile_contact.friend_info.user_id"
+  | "mobile_contact.friend_info.user_name"
+  | "mobile_contact.friend_info.unknown"
+  | "mobile_contact.friend_info.moments"
+  | "mobile_contact.friend_info.no_moments"
+  | "mobile_contact.friend_info.moments_unsupported"
   | "mobile_deactivate.title"
   | "mobile_deactivate.back"
   | "mobile_deactivate.success"

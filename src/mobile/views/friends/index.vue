@@ -63,7 +63,7 @@
           <img
             class="size-40px rounded-full object-cover"
             :src="AvatarUtils.getAvatarUrl(result.avatarUrl || '')"
-            alt="头像"
+            :alt="t('mobile_contact.avatar.default')"
             @error="($event.target as HTMLImageElement).src = '/logo.png'" />
           <div class="flex-1 min-w-0">
             <div class="text-14px font-medium truncate text-[--tjg-text-primary]">
@@ -155,7 +155,7 @@
                 <template #title>
                   <div class="flex items-center gap-8px">
                     <svg class="size-14px color-[--tjg-color-warning-500]"><use href="#star-fill"></use></svg>
-                    <span>{{ t('mobile_contact.group.special') || '特别关心' }}</span>
+                    <span>{{ t('mobile_contact.group.special') }}</span>
                   </div>
                 </template>
                 <template #value>
@@ -177,7 +177,7 @@
                         class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
                         :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                        alt="用户头像"
+                        :alt="t('mobile_contact.avatar.user')"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
@@ -185,7 +185,7 @@
                         </span>
                         <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
                           [
-                          <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
+                          <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') }}</template>
                           <template v-else-if="getUserState(item.uid)">
                             <img
                               class="size-12px rounded-50%"
@@ -204,8 +204,8 @@
                               }"></span>
                             {{
                               item.activeStatus === OnlineEnum.ONLINE
-                                ? t('mobile_contact.status.online') || '在线'
-                                : t('mobile_contact.status.offline') || '离线'
+                                ? t('mobile_contact.status.online')
+                                : t('mobile_contact.status.offline')
                             }}
                           </template>
                           ]
@@ -221,7 +221,7 @@
                 <template #title>
                   <div class="flex items-center gap-8px">
                     <svg class="size-14px color-[--tjg-text-secondary]"><use href="#friends"></use></svg>
-                    <span>{{ t('mobile_contact.group.normal') || '我的好友' }}</span>
+                    <span>{{ t('mobile_contact.group.normal') }}</span>
                   </div>
                 </template>
                 <template #value>
@@ -242,7 +242,7 @@
                           class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
                           :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
                           :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                          alt="用户头像"
+                          :alt="t('mobile_contact.avatar.user')"
                           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                         <div class="flex flex-col justify-between h-fit flex-1 truncate">
                           <span class="text-14px leading-tight flex-1 truncate">
@@ -250,7 +250,7 @@
                           </span>
                           <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
                             [
-                            <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') || '助手' }}</template>
+                            <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') }}</template>
                             <template v-else-if="getUserState(item.uid)">
                               <img
                                 class="size-12px rounded-50%"
@@ -269,8 +269,8 @@
                                 }"></span>
                               {{
                                 item.activeStatus === OnlineEnum.ONLINE
-                                  ? t('mobile_contact.status.online') || '在线'
-                                  : t('mobile_contact.status.offline') || '离线'
+                                  ? t('mobile_contact.status.online')
+                                  : t('mobile_contact.status.offline')
                               }}
                             </template>
                             ]
@@ -292,7 +292,7 @@
                 <template #title>
                   <div class="flex items-center gap-8px">
                     <svg class="size-14px color-[--tjg-text-tertiary]"><use href="#forbidden"></use></svg>
-                    <span>{{ t('mobile_contact.group.blocked') || '已屏蔽' }}</span>
+                    <span>{{ t('mobile_contact.group.blocked') }}</span>
                   </div>
                 </template>
                 <template #value>
@@ -311,14 +311,14 @@
                       <img
                         class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                        alt="用户头像"
-                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-                      <div class="flex flex-col justify-between h-fit flex-1 truncate">
-                        <span class="text-14px leading-tight flex-1 truncate">
-                          {{ groupStore.getUserInfo(item.uid)?.name }}
-                        </span>
-                        <div class="text leading-tight text-12px text-[--tjg-text-tertiary]">
-                          [{{ t('mobile_contact.status.blocked') || '已屏蔽' }}]
+                      :alt="t('mobile_contact.avatar.user')"
+                      @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                    <div class="flex flex-col justify-between h-fit flex-1 truncate">
+                      <span class="text-14px leading-tight flex-1 truncate">
+                        {{ groupStore.getUserInfo(item.uid)?.name }}
+                      </span>
+                      <div class="text leading-tight text-12px text-[--tjg-text-tertiary]">
+                        [{{ t('mobile_contact.status.blocked') }}]
                         </div>
                       </div>
                     </div>
@@ -344,7 +344,7 @@
                     <img
                       class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))"
                       :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                      alt="群头像"
+                      :alt="t('mobile_contact.avatar.group')"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <span class="text-14px leading-tight flex-1 truncate">{{ item.remark || item.groupName }}</span>
                   </div>
@@ -494,7 +494,7 @@ const toMessage = async () => {
     await Promise.all([contactStore.getApplyPage('friend', true, true), contactStore.getApplyPage('group', true, true)])
     await contactStore.getApplyUnReadCount()
   } catch (error) {
-    logger.error('刷新通知并标记已读失败', error)
+    logger.error('Failed to refresh notifications and mark as read', error)
     showFeedback(t('mobile_contact.refresh_notification_failed'), 'error')
   } finally {
     router.push('/mobile/mobileMy/myMessages')
@@ -601,7 +601,7 @@ onMounted(async () => {
     await contactStore.getContactList(true)
     await contactStore.getApplyPage('friend', false)
   } catch (error) {
-    logger.debug('请求好友申请列表失败')
+    logger.debug('Failed to request friend request list')
   }
 })
 

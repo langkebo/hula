@@ -6,7 +6,7 @@
         :hidden-right="true"
         :enable-default-background="false"
         :enable-shadow="false"
-        room-name="用户资料" />
+        :room-name="t('mobile_contact.friend_info.title')" />
     </template>
 
     <template #container>
@@ -23,25 +23,25 @@
             <div class="custom-rounded flex px-24px flex-col gap-4 z-1 p-10px mt-4 shadow">
               <div :style="{ height: tabHeight - 10 + 'px' }" class="flex flex-col">
                 <van-tabs v-model:active="activeTab" animated>
-                  <van-tab title="基本信息">
+                  <van-tab :title="t('mobile_contact.friend_info.basic_info')">
                     <div class="py-20px">
                       <div class="rounded-8px overflow-hidden border border-gray-200">
                         <div class="flex items-center px-16px py-12px border-b border-gray-200">
-                          <span class="text-14px text-[--tjg-text-secondary] w-80px">用户ID</span>
+                          <span class="text-14px text-[--tjg-text-secondary] w-80px">{{ t('mobile_contact.friend_info.user_id') }}</span>
                           <span class="text-14px">{{ uid }}</span>
                         </div>
                         <div class="flex items-center px-16px py-12px">
-                          <span class="text-14px text-[--tjg-text-secondary] w-80px">用户名</span>
-                          <span class="text-14px">{{ userInfo?.name || '未知' }}</span>
+                          <span class="text-14px text-[--tjg-text-secondary] w-80px">{{ t('mobile_contact.friend_info.user_name') }}</span>
+                          <span class="text-14px">{{ userInfo?.name || t('mobile_contact.friend_info.unknown') }}</span>
                         </div>
                       </div>
                     </div>
                   </van-tab>
-                  <van-tab title="动态">
+                  <van-tab :title="t('mobile_contact.friend_info.moments')">
                     <div class="py-20px text-center">
-                      <van-empty description="暂无动态内容">
+                      <van-empty :description="t('mobile_contact.friend_info.no_moments')">
                         <template #description>
-                          <span class="text-12px text-[--tjg-text-tertiary]">Matrix 协议暂不支持朋友圈功能</span>
+                          <span class="text-12px text-[--tjg-text-tertiary]">{{ t('mobile_contact.friend_info.moments_unsupported') }}</span>
                         </template>
                       </van-empty>
                     </div>
@@ -57,9 +57,11 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import PersonalInfo from '#/components/my/PersonalInfo.vue'
 import { useUserStore } from '@/stores/domains/user/user'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 
 const route = useRoute()

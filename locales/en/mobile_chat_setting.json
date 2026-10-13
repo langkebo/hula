@@ -61,6 +61,9 @@
   "search_button": "Search",
   "selected_count": "{count} selected",
   "create_group_failed": "Failed to create group",
+  "create_group_success": "Group created",
+  "create_group_need_two": "Cannot create a group with only two people",
+  "search_contacts_hint": "Search contacts~",
   "invite_button": "Invite",
   "select_friends_to_invite": "Please select friends to invite",
   "invite_failed": "Invitation failed. Please try again."

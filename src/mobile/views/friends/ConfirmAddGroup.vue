@@ -7,7 +7,7 @@
           :hidden-right="true"
           :enable-default-background="false"
           :enable-shadow="false"
-          room-name="加入群聊" />
+          :room-name="t('mobile_contact.join_group')" />
       </template>
 
       <template #container>
@@ -22,7 +22,9 @@
 
                 <div class="flex flex-col gap-10px">
                   <p class="text-[--tjg-text-primary]">{{ userInfo.name }}</p>
-                  <p class="text-(12px [--tjg-text-primary])">群号: {{ userInfo.account }}</p>
+                  <p class="text-(12px [--tjg-text-primary])">
+                    {{ t('mobile_contact.group_account_label_ascii', { account: userInfo.account }) }}
+                  </p>
                 </div>
               </div>
 
@@ -35,10 +37,12 @@
                 show-word-limit
                 :formatter="filterNoSideSpace"
                 format-trigger="onChange"
-                :placeholder="'输入验证消息'"
+                :placeholder="t('mobile_contact.join_group_message_placeholder')"
                 class="rounded-8px" />
 
-              <van-button block class="mt-120px gradient-button" @click="addFriend">申请加入</van-button>
+              <van-button block class="mt-120px gradient-button" @click="addFriend">
+                {{ t('mobile_contact.apply_join_group') }}
+              </van-button>
             </div>
           </div>
         </div>
@@ -48,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 import router from '@/router'
@@ -58,10 +63,11 @@ import { useTimerManager } from '@/utils/TimerManager'
 const logger = createLogger('ConfirmAddGroup')
 const timerManager = useTimerManager()
 const { showFeedback } = useActionFeedback()
+const { t } = useI18n()
 
 const userStore = useUserStore()
 const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequestConfirm(
-  computed(() => `我是${userStore.userInfo?.name ?? ''}`)
+  computed(() => t('mobile_contact.default_request_message', { name: userStore.userInfo?.name ?? '' }))
 )
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
@@ -69,7 +75,7 @@ const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
 const addFriend = async () => {
   const submitted = await submitRequest()
   if (!submitted) return
-  showFeedback('已发送群聊申请', 'success')
+  showFeedback(t('mobile_contact.group_request_sent'), 'success')
   timerManager.setTimeout(() => {
     router.push('/mobile/message')
   }, 2000)

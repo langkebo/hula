@@ -12,7 +12,7 @@
       <div class="flex-1 py-5px shrink-0">
         <van-field
           v-model="keyword"
-          placeholder="搜索联系人~"
+          :placeholder="t('mobile_chat_setting.search_contacts_hint')"
           clearable
           autocomplete="off"
           :spellcheck="false"
@@ -53,7 +53,7 @@
                   <img
                     :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)!.avatar!)"
                     class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))"
-                    alt="用户头像"
+                    :alt="t('mobile_contact.avatar.user')"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                   <div class="flex flex-col leading-tight truncate">
                     <span class="text-14px font-medium truncate">
@@ -97,8 +97,10 @@
     <!-- 底部操作栏 -->
     <div
       class="px-16px py-10px bg-[--tjg-surface-panel] border-t border-[--tjg-border-default] flex justify-between items-center">
-      <span class="text-14px">已选择 {{ selectedList.length }} 人</span>
-      <van-button type="primary" :disabled="selectedList.length === 0" @click="createGroup">发起群聊</van-button>
+      <span class="text-14px">{{ t('mobile_chat_setting.selected_count', { count: selectedList.length }) }}</span>
+      <van-button type="primary" :disabled="selectedList.length === 0" @click="createGroup">
+        {{ t('mobile_chat_setting.start_group_chat') }}
+      </van-button>
     </div>
   </div>
 </template>
@@ -168,7 +170,7 @@ const filteredContacts = computed(() => {
 
 const createGroup = async () => {
   if (selectedList.value.length < 2) {
-    showFeedback('两个人无法建群哦', 'warning')
+    showFeedback(t('mobile_chat_setting.create_group_need_two'), 'warning')
     return
   }
 
@@ -202,7 +204,7 @@ const createGroup = async () => {
     }
 
     resetCreateGroupState()
-    showFeedback('创建群聊成功', 'success')
+    showFeedback(t('mobile_chat_setting.create_group_success'), 'success')
   } catch (error) {
     showFeedback(t('mobile_chat_setting.create_group_failed'), 'error')
   }

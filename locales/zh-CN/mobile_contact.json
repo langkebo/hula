@@ -7,6 +7,11 @@
     "search": "搜索"
   },
   "my_chat": "我的消息",
+  "avatar": {
+    "default": "头像",
+    "user": "用户头像",
+    "group": "群头像"
+  },
   "tab": {
     "contacts": "好友",
     "group": "群聊",
@@ -51,5 +56,25 @@
   "delete_friend_confirm": "确定要删除该好友吗？此操作无法撤销。",
   "delete_friend_success": "好友已删除",
   "delete_friend_failed": "删除好友失败",
-  "deleting": "删除中..."
+  "deleting": "删除中...",
+  "account_label_ascii": "账号: {account}",
+  "group_account_label_ascii": "群号: {account}",
+  "add_friend": "添加好友",
+  "add_friend_message_placeholder": "输入几句话，对TA说些什么吧",
+  "add_friend_request_sent": "已发送好友申请",
+  "default_request_message": "我是{name}",
+  "join_group": "加入群聊",
+  "join_group_message_placeholder": "输入验证消息",
+  "apply_join_group": "申请加入",
+  "group_request_sent": "已发送群聊申请",
+  "friend_info": {
+    "title": "用户资料",
+    "basic_info": "基本信息",
+    "user_id": "用户ID",
+    "user_name": "用户名",
+    "unknown": "未知",
+    "moments": "动态",
+    "no_moments": "暂无动态内容",
+    "moments_unsupported": "Matrix 协议暂不支持朋友圈功能"
+  }
 }
