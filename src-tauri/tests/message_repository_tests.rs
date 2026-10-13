@@ -41,9 +41,7 @@ async fn setup_db() -> DatabaseConnection {
     repo::reset_table_initialization_flags();
     let mut opt = ConnectOptions::new("sqlite::memory:");
     opt.max_connections(1).min_connections(1);
-    let db = Database::connect(opt)
-        .await
-        .expect("连接内存 SQLite 失败");
+    let db = Database::connect(opt).await.expect("连接内存 SQLite 失败");
     Migrator::up(&db, None).await.expect("执行数据库迁移失败");
     db
 }
@@ -115,8 +113,7 @@ async fn fetch_thumbnail_path(db: &DatabaseConnection, id: &str) -> Option<Strin
         vec![Value::from(id.to_string()), Value::from(UID.to_string())],
     );
     let row = db.query_one(stmt).await.unwrap().expect("消息行应存在");
-    row.try_get::<Option<String>>("", "thumbnail_path")
-        .unwrap()
+    row.try_get::<Option<String>>("", "thumbnail_path").unwrap()
 }
 
 #[tokio::test]
@@ -205,16 +202,18 @@ async fn test_cursor_page_messages_orders_desc_and_paginates() {
     assert_eq!(message_ids(&page1), vec!["5", "4"]);
     assert_eq!(page1.cursor, "4");
 
-    let page2 = repo::cursor_page_messages(&db, ROOM.to_string(), page_param(2, &page1.cursor), UID)
-        .await
-        .expect("第二页查询失败");
+    let page2 =
+        repo::cursor_page_messages(&db, ROOM.to_string(), page_param(2, &page1.cursor), UID)
+            .await
+            .expect("第二页查询失败");
     assert!(!page2.is_last);
     assert_eq!(message_ids(&page2), vec!["3", "2"]);
     assert_eq!(page2.cursor, "2");
 
-    let page3 = repo::cursor_page_messages(&db, ROOM.to_string(), page_param(2, &page2.cursor), UID)
-        .await
-        .expect("第三页查询失败");
+    let page3 =
+        repo::cursor_page_messages(&db, ROOM.to_string(), page_param(2, &page2.cursor), UID)
+            .await
+            .expect("第三页查询失败");
     assert!(page3.is_last, "最后一页 is_last 应为 true");
     assert_eq!(message_ids(&page3), vec!["1"]);
     assert_eq!(page3.cursor, "");
