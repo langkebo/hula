@@ -21,8 +21,8 @@
                 align="center"
                 justify="center"
                 class="emoji-item"
-                v-for="(item, index) in [...new Set(emojiRef.historyList)].filter((emoji) => !isValidUrl(emoji))"
-                :key="index"
+                v-for="item in [...new Set(emojiRef.historyList)].filter((emoji) => !isValidUrl(emoji))"
+                :key="item"
                 @click.stop="chooseEmoji(item)">
                 {{ item }}
               </n-flex>
@@ -38,8 +38,8 @@
                   align="center"
                   justify="center"
                   class="emoji-item"
-                  v-for="(item, index) in items.value"
-                  :key="index"
+                  v-for="item in items.value"
+                  :key="item"
                   @click.stop="chooseEmoji(item)">
                   {{ item }}
                 </n-flex>
@@ -70,8 +70,8 @@
                   }">
                   <div
                     class="emoji-item emoji-item--image"
-                    v-for="(emojiItem, index) in item.emojis"
-                    :key="index"
+                    v-for="emojiItem in item.emojis"
+                    :key="emojiItem.url"
                     @click.stop="
                       chooseEmoji(
                         {
@@ -106,8 +106,8 @@
                 align="center"
                 justify="center"
                 class="emoji-item emoji-item--image py-4px"
-                v-for="(item, index) in displayFavoriteEmojis"
-                :key="index"
+                v-for="item in displayFavoriteEmojis"
+                :key="item.id"
                 @click.stop="
                   chooseEmoji(
                     {

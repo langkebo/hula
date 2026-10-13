@@ -103,7 +103,7 @@
               </span>
             </div>
             <n-list v-else size="small" bordered class="max-h-200px overflow-y-auto">
-              <n-list-item v-for="(msg, index) in messages" :key="index">
+              <n-list-item v-for="(msg, index) in messages" :key="`${index}-${msg.type}`">
                 <div class="message-item">
                   <Icon icon="mdi:email-outline" :width="16" class="color-[var(--tjg-text-tertiary)]" />
                   <span class="text-[var(--text-xs)] color-[var(--tjg-text-primary)] truncate flex-1">

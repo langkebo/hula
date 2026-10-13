@@ -359,8 +359,8 @@ export const CheckUpdate = defineComponent(() => {
                   </div>
 
                   <NTimeline class="p-16px box-border">
-                    {newCommitLog.value.map((log, index) => (
-                      <NTimelineItem key={index} content={log.message}>
+                    {newCommitLog.value.map((log) => (
+                      <NTimelineItem key={log.message} content={log.message}>
                         {{
                           icon: () => (
                             <NIcon size={32}>
@@ -389,8 +389,8 @@ export const CheckUpdate = defineComponent(() => {
               ) : null}
 
               <NTimeline class="p-16px box-border">
-                {commitLog.value.map((log, index) => (
-                  <NTimelineItem key={index} content={log.message}>
+                {commitLog.value.map((log) => (
+                  <NTimelineItem key={log.message} content={log.message}>
                     {{
                       icon: () => (
                         <NIcon size={32}>

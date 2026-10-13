@@ -6,7 +6,7 @@
       <n-avatar class="select-none" round :size="22" :src="getAvatarSrc(fromUserUid)" />
       <div
         v-for="(part, index) in parseMessage(body.content ?? '')"
-        :key="index"
+        :key="`part-${index}-${part.type}`"
         class="text-(12px [--tjg-color-warning-400]) leading-tight select-none cursor-default">
         <p v-if="part.type === 'text'">{{ part.text }}</p>
         <p v-else-if="part.type === 'bracket'" class="text-[--tjg-color-primary-500] truncate max-w-20">

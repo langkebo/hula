@@ -64,7 +64,7 @@
         "noAssignInExpressions": "off",
         "noImplicitAnyLet": "off",
         "noConfusingVoidType": "off",
-        "noArrayIndexKey": "off",
+        "noArrayIndexKey": "error",
         "useIterableCallbackReturn": "off",
         "noConsole": "error"
       }

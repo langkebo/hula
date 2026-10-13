@@ -25,7 +25,7 @@
         <span>{{ t('trendradar.no_results') }}</span>
       </div>
       <div v-else class="search-panel__list">
-        <NewsCard v-for="(news, index) in results" :key="index" :news="news" @click="handleNewsClick" />
+        <NewsCard v-for="news in results" :key="news.url" :news="news" @click="handleNewsClick" />
       </div>
     </div>
   </div>

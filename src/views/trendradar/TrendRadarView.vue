@@ -58,7 +58,7 @@
             <n-button size="small" @click="loadLatestNews">{{ t('trendradar.refresh') }}</n-button>
           </div>
           <div v-else class="trendradar-view__news-grid">
-            <NewsCard v-for="(news, index) in newsList" :key="index" :news="news" @click="handleNewsClick" />
+            <NewsCard v-for="news in newsList" :key="news.url" :news="news" @click="handleNewsClick" />
           </div>
         </div>
 
@@ -103,7 +103,7 @@
             <span>{{ t('trendradar.no_subscriptions') }}</span>
           </div>
           <div v-else class="trendradar-view__news-grid">
-            <NewsCard v-for="(item, index) in rssList" :key="index" :news="item" @click="handleNewsClick" />
+            <NewsCard v-for="item in rssList" :key="item.url" :news="item" @click="handleNewsClick" />
           </div>
         </div>
 

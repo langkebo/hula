@@ -5,7 +5,11 @@
       <span class="trending-panel__title">{{ t('trendradar.trending_topics') }}</span>
     </div>
     <div class="trending-panel__list">
-      <div v-for="(topic, index) in topics" :key="index" class="trending-panel__item" @click="handleTopicClick(topic)">
+      <div
+        v-for="(topic, index) in topics"
+        :key="topic.name || topic.topic || topic.title || index"
+        class="trending-panel__item"
+        @click="handleTopicClick(topic)">
         <div class="trending-panel__rank" :class="{ 'trending-panel__rank--hot': index < 3 }">
           {{ index + 1 }}
         </div>

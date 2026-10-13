@@ -25,8 +25,8 @@
 
             <div v-else class="grid grid-cols-4 gap-1">
               <div
-                v-for="(image, index) in allImages"
-                :key="index"
+                v-for="image in allImages"
+                :key="image.id"
                 class="overflow-hidden bg-gray-100 aspect-square cursor-pointer"
                 @click="handleImageClick(image)">
                 <img :src="image.displayUrl" class="w-full h-full object-cover" :alt="t('mobile_photo.image_alt')" />

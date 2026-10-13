@@ -101,6 +101,25 @@ const INLINE_STYLE_ALLOWLIST = new Map([
   ['src/layout/left/components/definePlugins/List.vue', 1] // 同上
 ])
 
+/**
+ * `hardcoded_color` 具名 allowlist —— **已裁定例外**（2026-10-13 CQ-05 收口时裁定，
+ * 与 INLINE_STYLE_ALLOWLIST 同机制）。这些字面量色值**无法**用 `--tjg-*` token 表达：
+ *
+ *  - `naiveTokenSource.ts`：`design-tokens.css` 的 TS 镜像，被 `naiveTokenSource.test.ts`
+ *    以 fs 读取 CSS 原文逐项锁定（漂移即失败），且 Naive UI 在 JS 侧做 rgba 色彩运算，
+ *    读不到 CSS 变量 —— 只能持具体色值。
+ *  - `Logger.ts` / `Console.ts`：浏览器 console 的 `%c` 样式串，运行期不解析 CSS 变量。
+ *
+ * 该表同时是**漂移守卫**：某文件一旦超出登记数量（含新增行）即 FAIL，
+ * 既防「悄悄新增」，也防「把例外删掉、同时加个新例外」。计数收敛时按实际值扣除，
+ * 使 ratchet 只反映**未登记**的硬编码色债务（目标基线 0）。
+ */
+const HARDCODED_COLOR_ALLOWLIST = new Map([
+  ['src/styles/naiveTokenSource.ts', 9], // design-tokens.css TS 镜像（同步测试锁定）
+  ['src/utils/Logger.ts', 5], // console %c 日志级别色
+  ['src/utils/Console.ts', 3] // console %c 品牌色
+])
+
 const counters = {
   /**
    * 判据本意是「**新的请求**必须走 MatrixHttpClient 网关 / 相对路径」，
@@ -223,6 +242,16 @@ for (const filePath of walk(srcRoot, STYLE_EXTENSIONS)) {
 
 const current = Object.fromEntries(Object.entries(counters).map(([name, c]) => [name, c.total]))
 
+/**
+ * 计数收敛：`hardcoded_color` 扣除具名 allowlist 已登记文件的**实际**出现数，
+ * 使 ratchet 反映「未登记」的硬编码色债务（目标基线 0）；
+ * 已登记文件本身仍受下方漂移守卫约束（超出登记数即 FAIL）。
+ */
+current.hardcoded_color -= [...HARDCODED_COLOR_ALLOWLIST.keys()].reduce(
+  (sum, file) => sum + (counters.hardcoded_color.files.get(file) ?? 0),
+  0
+)
+
 if (process.argv.includes('--update')) {
   const baseline = {
     comment:
@@ -268,9 +297,29 @@ let failed = false
   }
 }
 
+/**
+ * hardcoded_color 漂移守卫：具名 allowlist 之外的硬编码色一律视为新增 → FAIL。
+ * 收敛后的 `hardcoded_color` 基线为 0，总量比对发现不了
+ * 「把旧例外删掉、同时加个新例外」，故需逐个已登记文件比对。
+ */
+{
+  const unexpected = [...counters.hardcoded_color.files.entries()].filter(
+    ([file, count]) => count > (HARDCODED_COLOR_ALLOWLIST.get(file) ?? 0)
+  )
+  if (unexpected.length > 0) {
+    console.error(
+      'check-ratchet: FAIL hardcoded_color: 出现具名 allowlist 之外的硬编码色（TS 镜像 / console %c 样式是已裁定例外）：'
+    )
+    for (const [file, count] of unexpected) {
+      console.error(`    ${count}\t${file}（allowlist 登记 ${HARDCODED_COLOR_ALLOWLIST.get(file) ?? 0} 处）`)
+    }
+    failed = true
+  }
+}
+
 for (const [name, counter] of Object.entries(counters)) {
   const allowed = baseline.counters?.[name]
-  const actual = counter.total
+  const actual = current[name]
   if (typeof allowed !== 'number') {
     console.error(`check-ratchet: FAIL ${name}: no baseline entry; re-run with --update.`)
     failed = true
@@ -288,7 +337,12 @@ for (const [name, counter] of Object.entries(counters)) {
       `check-ratchet: OK ${name}: ${actual} (baseline ${allowed}) — tighten with \`node scripts/check-ratchet.mjs --update\`.`
     )
   } else {
-    const note = name === 'inline_style' ? ' —— 全部命中具名 allowlist（n-popover 组件参数，已裁定例外）' : ''
+    const note =
+      name === 'inline_style'
+        ? ' —— 全部命中具名 allowlist（n-popover 组件参数，已裁定例外）'
+        : name === 'hardcoded_color' && actual === 0
+          ? ' —— 剩余硬编码色全部命中具名 allowlist（TS 镜像 / console %c 样式，已裁定例外）'
+          : ''
     console.log(`check-ratchet: OK ${name}: ${actual} (baseline ${allowed})${note}`)
   }
 }

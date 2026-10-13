@@ -28,7 +28,7 @@
             v-resize="handleSize"
             v-if="(visibleMenu && visibleMenu.length > 0) || (visibleSpecialMenu && visibleSpecialMenu.length > 0)"
             class="menu-list">
-            <div v-for="(item, index) in visibleMenu" :key="index">
+            <div v-for="(item, index) in visibleMenu" :key="getMenuItemProp(item, 'label')">
               <!-- 禁止的菜单选项需要禁止点击事件  -->
               <div
                 v-if="item.disabled"
@@ -78,7 +78,7 @@
                 role="menuitem"
                 :tabindex="focusedIndex === visibleMenu.length + index ? 0 : -1"
                 v-for="(item, index) in visibleSpecialMenu"
-                :key="index">
+                :key="getMenuItemProp(item, 'label')">
                 <svg><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
                 <p class="h-24px">{{ getMenuItemProp(item, 'label') }}</p>
               </div>
@@ -105,8 +105,8 @@
               @click="handleClick(item)"
               @keydown.enter.prevent="handleClick(item)"
               @keydown.space.prevent="handleClick(item)"
-              v-for="(item, index) in visibleMenu"
-              :key="index"
+              v-for="item in visibleMenu"
+              :key="getMenuItemProp(item, 'label')"
               class="w-45px h-45px flex justify-center items-center">
               <div class="flex w-45px flex-col active:bg-[--tjg-menu-hover] justify-center items-center max-h-45px">
                 <svg class="w-18px w-18px"><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>

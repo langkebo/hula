@@ -10,7 +10,7 @@
     <div class="poll-options">
       <div
         v-for="(option, index) in pollData.options"
-        :key="index"
+        :key="option.text"
         class="poll-option"
         :class="{ selected: selectedOption === index, ended: isEnded }"
         @click="handleVote(index)">

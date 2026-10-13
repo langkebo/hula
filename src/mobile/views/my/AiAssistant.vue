@@ -99,8 +99,8 @@
 
             <div v-else class="flex flex-col gap-16px">
               <div
-                v-for="(message, index) in messages"
-                :key="index"
+                v-for="message in messages"
+                :key="message.id"
                 :class="['flex gap-12px', message.role === 'user' ? 'flex-row-reverse' : 'flex-row']">
                 <div
                   :class="[

@@ -8,8 +8,8 @@
       <div
         class="flex flex-wrap justify-center gap-8px font-mono text-[var(--text-lg)] font-bold tracking-wider color-[var(--tjg-text-primary)]">
         <div
-          v-for="(chunk, index) in fingerprintChunks"
-          :key="index"
+          v-for="chunk in fingerprintChunks"
+          :key="chunk"
           class="bg-[var(--tjg-surface-search)] px-8px py-4px rounded-6px">
           {{ chunk }}
         </div>

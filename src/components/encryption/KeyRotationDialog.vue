@@ -65,7 +65,7 @@
           <n-timeline>
             <n-timeline-item
               v-for="(record, index) in rotationHistory"
-              :key="index"
+              :key="`${record.keyId}-${record.rotatedAt}`"
               :type="index === 0 ? 'success' : 'default'"
               :title="formatKeyId(record.keyId)">
               <template #footer>

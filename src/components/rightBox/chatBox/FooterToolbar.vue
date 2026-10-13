@@ -27,8 +27,8 @@
               <div class="text-xs text-[--tjg-text-tertiary] mb-4px">{{ t('editor.recently_used') }}</div>
               <div class="flex flex-wrap gap-8px max-w-212px">
                 <div
-                  v-for="(emoji, index) in recentEmojis"
-                  :key="index"
+                  v-for="emoji in recentEmojis"
+                  :key="emoji"
                   class="emoji-item cursor-pointer flex-center"
                   @click="onEmojiClick(emoji)">
                   <img v-if="checkIsUrl(emoji)" :src="resolveRecentRenderUrl(emoji)" class="size-24px" alt="表情" />

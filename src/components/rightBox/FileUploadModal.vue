@@ -27,7 +27,7 @@
       <!-- 内容 -->
       <div class="p-10px">
         <div class="max-h-400px overflow-y-auto">
-          <div v-for="(file, index) in fileList" :key="index" class="flex-y-center p-12px">
+          <div v-for="(file, index) in fileList" :key="file.name" class="flex-y-center p-12px">
             <div class="flex-shrink-0 pr-12px">
               <img
                 :src="`/file/${getFileExtension(file.name)}.svg`"

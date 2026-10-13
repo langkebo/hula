@@ -1,6 +1,6 @@
 <template>
   <div :class="isMobileRef ? 'text-[length:var(--tjg-font-size-lg)]' : 'text-[length:var(--tjg-font-size-base)]'">
-    <template v-for="(item, index) in fragments" :key="index">
+    <template v-for="(item, index) in fragments" :key="`frag-${index}-${item}`">
       <n-popover
         trigger="click"
         placement="left"

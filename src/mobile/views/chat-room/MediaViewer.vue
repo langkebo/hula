@@ -11,8 +11,8 @@
     <div class="flex-1 p-16px overflow-auto">
       <div class="grid grid-cols-4 gap-4px">
         <div
-          v-for="(image, index) in imageList"
-          :key="index"
+          v-for="image in imageList"
+          :key="image.url"
           class="overflow-hidden bg-gray-100 aspect-square"
           @click="
             () => {

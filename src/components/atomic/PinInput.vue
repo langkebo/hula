@@ -3,7 +3,7 @@
     <div class="flex space-x-2">
       <input
         v-for="(_, index) in digits"
-        :key="index"
+        :key="`pin-${index}`"
         type="text"
         maxlength="1"
         spellCheck="false"

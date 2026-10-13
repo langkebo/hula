@@ -159,8 +159,8 @@
         </n-popover>
 
         <n-popover
-          v-for="(item, index) in otherFeatures"
-          :key="index"
+          v-for="item in otherFeatures"
+          :key="item.label"
           trigger="hover"
           :show-arrow="false"
           placement="top">

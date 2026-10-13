@@ -1,7 +1,7 @@
 <template>
   <div v-if="showMenu && emoji.length > 0" class="context-menu select-none h-fit" :style="menuPosition">
     <div class="emoji-container">
-      <div v-for="(item, index) in displayedEmojis" :key="index" class="p-4px">
+      <div v-for="item in displayedEmojis" :key="item.url" class="p-4px">
         <n-popover :delay="500" :duration="0" trigger="hover" :show-arrow="false" placement="top">
           <template #trigger>
             <div
