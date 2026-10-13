@@ -57,6 +57,24 @@ export const SDK_PIN = 'meta/sdk-pin.json'
 const SKIP_DIR = new Set(['node_modules', 'dist', 'coverage', '.worktrees'])
 
 /**
+ * 判定一条路由是否落在**私有命名空间**下。
+ *
+ * 图谱 §9 D 与 `private_routes` 指标共用这一口径；两侧必须一致，否则会得出互相矛盾的结论。
+ */
+export function isPrivatePath(path) {
+  const value = String(path ?? '')
+  return value.startsWith('/_matrix/vendor/') || value.startsWith('/_synapse/')
+}
+
+/**
+ * 「私有语义」关键词表 —— 用于度量「尚未迁到私有前缀、仍压在标准 Matrix 前缀上」的私有面。
+ *
+ * 这是**观测口径**，不是待办清单：某个关键词归零只说明那类私有语义已经迁完（好事），
+ * 因此不要为归零加断言。真正要防止的是**整张表与后端路由面脱节**（见 collectActual 的基数断言）。
+ */
+export const PRIVATE_SEMANTICS = ['friends', 'spaces', 'threads', 'summary', 'widgets', 'report', 'voice', 'sticky']
+
+/**
  * 纯函数：解析文档标记块里的 `key=value`。
  * @param {string} text
  * @returns {Record<string, string> | null} 找不到标记块返回 null
@@ -133,13 +151,28 @@ export function collectActual({ root = repoRoot, requireManifest = false } = {})
     if (entries.length === 0) throw new Error('契约台账 entries 为空（基数断言）')
 
     actual.backend_routes = entries.length
-    actual.private_routes = entries.filter(
-      (e) => String(e.path).startsWith('/_matrix/vendor/') || String(e.path).startsWith('/_synapse/')
-    ).length
+    actual.private_routes = entries.filter((e) => isPrivatePath(e.path)).length
     actual.route_modules = new Set(entries.map((e) => e.registered_by ?? '?')).size
     actual.ledger_schema = manifest.schema_version
     actual.synapse_rust_commit = String(manifest.synapse_rust_commit ?? '').slice(0, 9)
     actual.state_profile = manifest.state_profile
+
+    // —— 「私有语义仍压在标准前缀上」（2026-10-13 新增受管指标）——
+    //
+    // ⚠️ 口径固定为「命中关键词 **且** 路径不在 `/_matrix/vendor/` 或 `/_synapse/` 之下」。
+    // 旧稿（图谱 §9 D 第一版）用的是**全量路径子串**计数，会把 `/_matrix/vendor/v1/.../friends`
+    // 这类**已经迁移到位**的路由也算成"挂在标准前缀上"，数字比实际大一个数量级，
+    // 而且与"仍挂在标准前缀上"这句话自相矛盾。把口径钉死在门禁里，避免再退回去。
+    const keywordMatches = entries.filter((e) => PRIVATE_SEMANTICS.some((k) => String(e.path).includes(k))).length
+    // 基数断言：关键词若在后端路由里整体消失，说明关键词表已过期、指标失去意义 —— 不许静默全 0。
+    if (keywordMatches === 0) {
+      throw new Error(`关键词表与契约台账完全不相交（${PRIVATE_SEMANTICS.join('/')}）—— 请更新关键词表（基数断言）`)
+    }
+    for (const keyword of PRIVATE_SEMANTICS) {
+      actual[`private_on_std_${keyword}`] = entries.filter(
+        (e) => String(e.path).includes(keyword) && !isPrivatePath(e.path)
+      ).length
+    }
   }
 
   // —— pin 文件 ——
