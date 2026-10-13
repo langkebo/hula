@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import type { StickyEventInfo } from '@/composables/room/useStickyEvents'
+import type { StickyEventInfo } from '@/types/stickyEvent'
 import StickyEventBanner from '../StickyEventBanner.vue'
 
 function makeEvent(overrides: Partial<StickyEventInfo> = {}): StickyEventInfo {

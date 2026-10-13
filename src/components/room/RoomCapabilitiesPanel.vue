@@ -62,7 +62,6 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixRoomMetadataService } from '@/services/matrix/room/MetadataService'
-import { roomCapabilitiesService } from '@/services/matrix/room/RoomCapabilitiesService'
 
 interface RoomCapabilitiesPayload {
   room_id: string
@@ -93,8 +92,10 @@ const hasData = computed(() => {
 onMounted(async () => {
   loading.value = true
   try {
+    // 走 SDK 路径（`RoomManager.getRoomCapabilities`，自带按房间缓存）—— 本面板
+    // 原来自建 fetch + 5 分钟缓存，与 SDK 是同一条 vendor/v1 端点，已在 C2 收敛中删除。
     const [caps, perms] = await Promise.all([
-      roomCapabilitiesService.getCapabilities(props.roomId).catch(() => null),
+      matrixRoomMetadataService.getRoomCapabilities(props.roomId).catch(() => null),
       matrixRoomMetadataService.getRoomPermissions(props.roomId).catch(() => ({}))
     ])
     capabilities.value = caps as RoomCapabilitiesPayload | null

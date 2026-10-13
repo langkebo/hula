@@ -23,18 +23,15 @@ export interface MatrixRoomSummary {
   isPublic: boolean
 }
 
-export interface MatrixRoomLiteSummary {
-  name: string | null
-  topic: string | null
-  avatarUrl: string | null
-  memberCount: number
-}
-
 /**
  * Room summary domain service.
  *
- * Combines the synapse-rust `room_summary` extension with local
- * `Room` state fallback, plus a lite batched variant used by lists.
+ * 房间摘要的**唯一**实现：synapse-rust 的 `room_summary` 扩展（经 SDK
+ * `RoomSummaryManager`，见 `SynapseRoomSummaryService`）优先，取不到再回退到本地
+ * `Room` 状态。历史上有过第二份本地实现（`MatrixRoomSummaryService`）与一个批量
+ * 变体（`MatrixRoomLiteSummary` 版 `getRoomSummaries`），二者均零生产消费者，已在
+ * C2 收敛中删除 —— 需要摘要请只走本服务或 `matrixRoomReadFacade`。
+ *
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
 export class MatrixRoomSummaryAggregateService extends BaseMatrixService {
@@ -124,35 +121,6 @@ export class MatrixRoomSummaryAggregateService extends BaseMatrixService {
       const room = client.getRoom(roomId)
       return room ? this.toLocalRoomSummary(room) : null
     }
-  }
-
-  async getRoomSummaries(roomIds: string[]): Promise<Map<string, MatrixRoomLiteSummary>> {
-    this.getClient()
-    try {
-      return this.fallbackGetRoomSummaries(roomIds)
-    } catch (err) {
-      logger.error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
-      throw err
-    }
-  }
-
-  private async fallbackGetRoomSummaries(roomIds: string[]): Promise<Map<string, MatrixRoomLiteSummary>> {
-    const client = this.getClient()
-    const results = new Map<string, MatrixRoomLiteSummary>()
-
-    for (const roomId of roomIds) {
-      const room = client.getRoom(roomId)
-      if (room) {
-        results.set(roomId, {
-          name: room.name,
-          topic: this.getRoomTopic(room),
-          avatarUrl: room.getMxcAvatarUrl() ?? null,
-          memberCount: room.getJoinedMembers().length
-        })
-      }
-    }
-
-    return results
   }
 }
 

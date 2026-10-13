@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum } from '@/enums'
-import matrixRoomSummaryService from '@/services/matrix/room/MatrixRoomSummaryService'
 import { matrixRoomActionFacade, matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { useRoomStore } from '@/stores/domains/chat/room'
 
@@ -10,7 +9,6 @@ const {
   mockActionFacade,
   mockCreationService,
   mockRealtimeService,
-  mockRoomSummaryService,
   mockMatrixClientService,
   mockChatStore,
   mockLocationStore
@@ -69,10 +67,6 @@ const {
     onRoomAvatarChange: vi.fn(),
     onRoomMemberChange: vi.fn()
   },
-  mockRoomSummaryService: {
-    getRoomListSnapshot: vi.fn(),
-    getAllRoomListSnapshots: vi.fn()
-  },
   mockMatrixClientService: {
     getClient: vi.fn(),
     on: vi.fn(),
@@ -113,10 +107,6 @@ vi.mock('@/services/matrix/room/CreationService', () => ({
 
 vi.mock('@/services/matrix/room/RealtimeService', () => ({
   matrixRoomRealtimeService: mockRealtimeService
-}))
-
-vi.mock('@/services/matrix/room/MatrixRoomSummaryService', () => ({
-  default: mockRoomSummaryService
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
@@ -186,8 +176,6 @@ describe('RoomStore', () => {
     vi.clearAllMocks()
     mockLocationStore.restoreActiveBeacons.mockResolvedValue(undefined)
     mockMatrixClientService.getClient.mockReturnValue(null)
-    mockRoomSummaryService.getRoomListSnapshot.mockReturnValue(null)
-    mockRoomSummaryService.getAllRoomListSnapshots.mockReturnValue([])
   })
 
   afterEach(() => {
@@ -686,19 +674,6 @@ describe('RoomStore', () => {
     it('should create room and store room info', async () => {
       const room = createMockRoom({ roomId: '!new:room', name: 'New Room' })
       vi.mocked(matrixRoomActionFacade.createRoom).mockResolvedValue(room as any)
-      vi.mocked(matrixRoomSummaryService.getRoomListSnapshot).mockReturnValue({
-        roomId: '!new:room',
-        name: 'New Room',
-        avatarUrl: 'mxc://room/avatar',
-        isDirect: false,
-        isEncrypted: false,
-        unreadCount: 0,
-        highlightCount: 0,
-        notificationCount: 0,
-        lastMessage: 'hello',
-        lastMessageTime: 1000,
-        members: []
-      } as any)
 
       const store = useRoomStore()
       const result = await store.createRoom({ name: 'New Room', isEncrypted: true })

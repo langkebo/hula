@@ -217,30 +217,4 @@ describe('MatrixRoomSummaryAggregateService', () => {
       expect(await service.getRoomSummary('!r', false)).toBeNull()
     })
   })
-
-  describe('getRoomSummaries', () => {
-    it('throws when client is not initialized', async () => {
-      await expect(service.getRoomSummaries(['!r'])).rejects.toThrow('客户端未初始化')
-    })
-
-    it('returns a Map keyed by roomId with lite summaries from local Room', async () => {
-      const room = makeRoom()
-      vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getRoom: (id: string) => (id === '!r:e' ? room : null)
-      } as never)
-      const out = await service.getRoomSummaries(['!r:e', '!missing:e'])
-      expect(out.get('!r:e')).toEqual({
-        name: 'Room',
-        topic: 'topic',
-        avatarUrl: 'mxc://e/a',
-        memberCount: 3
-      })
-      expect(out.has('!missing:e')).toBe(false)
-    })
-
-    it('returns an empty Map when no roomIds resolve', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
-      expect(await service.getRoomSummaries(['!a', '!b'])).toEqual(new Map())
-    })
-  })
 })

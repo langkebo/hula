@@ -15,7 +15,6 @@ export { matrixVoiceService } from './media/MatrixVoiceService'
 export { matrixEventReportService } from './moderation/MatrixEventReportService'
 export { matrixRoomCreationService } from './room/CreationService'
 export { matrixDirectMessageService } from './room/MatrixDirectMessageService'
-export { matrixRoomSummaryService } from './room/MatrixRoomSummaryService'
 export { matrixSpaceService } from './room/MatrixSpaceService'
 
 export { matrixAccountService } from './user/MatrixAccountService'

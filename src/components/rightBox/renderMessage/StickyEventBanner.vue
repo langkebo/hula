@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { StickyEventInfo } from '@/composables/room/useStickyEvents'
+import type { StickyEventInfo } from '@/types/stickyEvent'
 
 defineOptions({ name: 'StickyEventBanner' })
 

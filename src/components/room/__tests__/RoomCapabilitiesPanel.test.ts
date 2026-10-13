@@ -9,14 +9,9 @@ vi.mock('vue-i18n', () => ({
 const fetchCapabilitiesMock = vi.fn()
 const getPermissionsMock = vi.fn()
 
-vi.mock('@/services/matrix/room/RoomCapabilitiesService', () => ({
-  roomCapabilitiesService: {
-    getCapabilities: (...args: unknown[]) => fetchCapabilitiesMock(...args)
-  }
-}))
-
 vi.mock('@/services/matrix/room/MetadataService', () => ({
   matrixRoomMetadataService: {
+    getRoomCapabilities: (...args: unknown[]) => fetchCapabilitiesMock(...args),
     getRoomPermissions: (...args: unknown[]) => getPermissionsMock(...args)
   }
 }))

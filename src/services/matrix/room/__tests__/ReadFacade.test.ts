@@ -28,8 +28,7 @@ const { accountDataServiceMock, metadataServiceMock, roomOperationsMock, summary
       getDirectRooms: vi.fn()
     },
     summaryServiceMock: {
-      getRoomSummary: vi.fn(),
-      getRoomSummaries: vi.fn()
+      getRoomSummary: vi.fn()
     },
     timelineServiceMock: {
       getEventContext: vi.fn(),
@@ -172,14 +171,6 @@ describe('matrixRoomReadFacade', () => {
       summaryServiceMock.getRoomSummary.mockResolvedValue(null)
       await matrixRoomReadFacade.getRoomSummary('!r:e')
       expect(summaryServiceMock.getRoomSummary).toHaveBeenCalledWith('!r:e', undefined)
-    })
-
-    it('getRoomSummaries 委托', async () => {
-      const map = new Map([['!r:e', { roomId: '!r:e' }]]) as never
-      summaryServiceMock.getRoomSummaries.mockResolvedValue(map)
-      const result = await matrixRoomReadFacade.getRoomSummaries(['!r:e'])
-      expect(summaryServiceMock.getRoomSummaries).toHaveBeenCalledWith(['!r:e'])
-      expect(result).toBe(map)
     })
   })
 

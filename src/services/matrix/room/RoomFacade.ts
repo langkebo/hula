@@ -11,7 +11,7 @@ import { matrixRoomMembershipService } from './MembershipService'
 import { matrixRoomMetadataService } from './MetadataService'
 import { matrixRoomQueryService } from './QueryService'
 import { roomOperations } from './RoomOperations'
-import type { MatrixRoomLiteSummary, MatrixRoomSummary } from './SummaryService'
+import type { MatrixRoomSummary } from './SummaryService'
 import { matrixRoomSummaryAggregateService } from './SummaryService'
 import { matrixRoomTimelineService } from './TimelineService'
 
@@ -185,7 +185,6 @@ interface MatrixRoomReadFacade {
 
   // --- Delegated to deeper services ---
   getRoomSummary(roomId: string, throwOnError?: boolean): Promise<MatrixRoomSummary | null>
-  getRoomSummaries(roomIds: string[]): Promise<Map<string, MatrixRoomLiteSummary>>
   getEventContext(
     roomId: string,
     eventId: string,
@@ -244,7 +243,6 @@ export const matrixRoomReadFacade: MatrixRoomReadFacade = {
 
   // Deep
   getRoomSummary: (roomId, throwOnError?) => matrixRoomSummaryAggregateService.getRoomSummary(roomId, throwOnError),
-  getRoomSummaries: (roomIds) => matrixRoomSummaryAggregateService.getRoomSummaries(roomIds),
   getEventContext: (roomId, eventId, limit?) => matrixRoomTimelineService.getEventContext(roomId, eventId, limit),
   getRoomVersion: (roomId) => matrixRoomMetadataService.getRoomVersion(roomId),
   getRoomCapabilities: (roomId) => matrixRoomMetadataService.getRoomCapabilities(roomId),

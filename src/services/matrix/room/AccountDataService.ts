@@ -2,7 +2,6 @@ import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixBurnAfterReadService } from '../messaging/MatrixBurnAfterReadService'
-import { matrixRoomSummaryService, type RoomSummary } from './MatrixRoomSummaryService'
 
 const logger = createLogger('AccountDataService')
 
@@ -111,7 +110,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     try {
       const result = await client.getExternalServiceManager().listServices()
       const services = result?.services
-      return Array.isArray(services) ? (services as unknown as Array<Record<string, unknown>>) : []
+      return Array.isArray(services) ? (services as typeof services & Array<Record<string, unknown>>) : []
     } catch (err) {
       logger.warn('Account data operation failed:', err)
       return []
@@ -154,15 +153,6 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
   }
 
   // ==================== Room Summary REST API ====================
-
-  async getRoomSummary(roomId: string): Promise<RoomSummary | null> {
-    try {
-      return await matrixRoomSummaryService.getRoomSummary(roomId)
-    } catch (err) {
-      logger.error(`[MatrixRoom] 获取房间摘要失败: ${err}`)
-      return null
-    }
-  }
 
   async getRoomSummaryMembers(roomId: string): Promise<unknown> {
     const client = this.getClient()

@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-11T10:32:29.447Z",
-  "count": 183,
+  "count": 181,
   "violations": [
     "src/composables/messaging/useMessageForward.ts::matrix-js-sdk",
     "src/composables/messaging/useMessageForward.ts::unknown-as-MatrixEvent#1",
@@ -138,7 +138,6 @@
     "src/services/matrix/room/MatrixDirectMessageService.ts::matrix-js-sdk",
     "src/services/matrix/room/MatrixDirectMessageService.ts::matrix-js-sdk/dm",
     "src/services/matrix/room/MatrixRoomStoreAdapter.ts::matrix-js-sdk",
-    "src/services/matrix/room/MatrixRoomSummaryService.ts::matrix-js-sdk",
     "src/services/matrix/room/MatrixSpaceService.ts::matrix-js-sdk",
     "src/services/matrix/room/MembershipService.ts::matrix-js-sdk",
     "src/services/matrix/room/QueryService.ts::matrix-js-sdk",
@@ -152,7 +151,6 @@
     "src/services/matrix/room/__tests__/MatrixDirectMessageService.test.ts::matrix-js-sdk",
     "src/services/matrix/room/__tests__/MatrixDirectMessageService.test.ts::matrix-js-sdk/dm",
     "src/services/matrix/room/__tests__/MatrixRoomStoreAdapter.test.ts::matrix-js-sdk",
-    "src/services/matrix/room/__tests__/MatrixRoomSummaryService.test.ts::matrix-js-sdk",
     "src/services/matrix/room/__tests__/MatrixSpaceService.browser-mode.test.ts::matrix-js-sdk",
     "src/services/matrix/room/__tests__/QueryService.test.ts::matrix-js-sdk",
     "src/services/matrix/room/__tests__/RealtimeService.test.ts::matrix-js-sdk",

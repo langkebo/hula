@@ -589,14 +589,14 @@ const DEFECT_HISTORY = {
   '/_matrix/client/v3/rooms/{p}/sticky_events': {
     tracking: 'L-D03',
     severity: 'live',
-    consumer: 'SynapseStickyEventService.getStickyEvents',
+    consumer: '原 SynapseStickyEventService.getStickyEvents（该类已于 C2 收敛删除，sticky events 统一走 SDK RoomManager）',
     reason:
       '正式形态 /_matrix/client/unstable/org.matrix.msc4354/rooms/{room_id}/sticky_events（synapse-rust derived_route_table_always.inc.rs:207）。v3 形态零命中 ⇒ 404。',
   },
   '/_matrix/client/v3/rooms/{p}/sticky_events/{p}': {
     tracking: 'L-D04',
     severity: 'live',
-    consumer: 'SynapseStickyEventService.setStickyEvent/clearStickyEvent',
+    consumer: '原 SynapseStickyEventService.setStickyEvent/clearStickyEvent（同上，已删除）',
     reason: '正式形态 .../msc4354/rooms/{room_id}/sticky_events/{event_type}（同 L-D03）。v3 形态零命中 ⇒ 404。',
   },
   '/_matrix/client/v3/rooms/{p}/summary': {

@@ -46,7 +46,7 @@ export const ROOM = {
   /** @deprecated Use PinsService methods instead */
   PINNED_EVENT_BY_ID: (roomId: string, eventId: string) =>
     `/rooms/${encodeURIComponent(roomId)}/pinned_events/${encodeURIComponent(eventId)}`,
-  /** @deprecated Use RoomCapabilitiesService methods instead */
+  /** @deprecated 房间能力统一走 SDK `client.getRoomManager().getRoomCapabilities()`（经 `MetadataService`） */
   CAPABILITIES: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/capabilities`,
   PERMISSIONS: (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/permissions`,
   /** @deprecated Use AliasesService methods instead */

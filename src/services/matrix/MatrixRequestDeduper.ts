@@ -27,7 +27,7 @@ const STALE_IN_FLIGHT_MS = 60_000
  *   这对 `unread_count` / `pushers` 这类必须实时的读取是必要的：若改成「窗口内返回旧结果」，
  *   用户读完消息后立刻取未读数就会拿到旧值。
  * - 因此本类**不做结果缓存**。确需 TTL 缓存的场景由各服务自带的显式缓存承担
- *   （例如 `RoomCapabilitiesService` 的 5 分钟 `cache`）。
+ *   （例如 SDK `RoomManager` 内部的按房间缓存）。
  *   也正因如此，本类**不提供** `windowMs` 参数 —— 那个参数既无法表达结果缓存，
  *   也无法表达「跨请求复用」，只会让调用方误以为自己在配 TTL。
  */
