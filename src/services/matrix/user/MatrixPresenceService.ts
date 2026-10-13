@@ -6,8 +6,8 @@
  */
 
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { IPresenceEvent } from 'matrix-js-sdk/presence'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
+import type { IPresenceEvent } from '@/services/matrix/sdk'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
