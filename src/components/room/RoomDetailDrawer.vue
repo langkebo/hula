@@ -183,6 +183,7 @@ import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group/types'
 import { truncateMiddle } from '@/utils/StringUtils'
+import { unknownToObject } from '@/utils/typeGuard'
 
 interface RoomDetail {
   name: string
@@ -278,11 +279,9 @@ const resolveLastMessage = () => {
   try {
     const room = matrixClientService.getRoom(props.roomId)
     if (!room) return
-    const timeline = (
-      room as unknown as {
-        getLiveTimeline?: () => { getEvents?: () => MatrixTimelineEvent[] }
-      }
-    ).getLiveTimeline?.()
+    const timeline = unknownToObject<{
+      getLiveTimeline?: () => { getEvents?: () => MatrixTimelineEvent[] }
+    }>(room)?.getLiveTimeline?.()
     const events = timeline?.getEvents?.() ?? []
     for (let i = events.length - 1; i >= 0; i--) {
       const event = events[i]
@@ -320,7 +319,7 @@ const buildRoomDetail = async (): Promise<RoomDetail | null> => {
       const members = await groupStore.getMembersByRoomId(props.roomId)
       memberCount = Math.max(memberCount, members?.length || 0)
       onlineCount =
-        members?.filter((m) => (m as unknown as Record<string, unknown>).activeStatus === OnlineEnum.ONLINE).length || 0
+        members?.filter((m) => m.activeStatus === OnlineEnum.ONLINE).length || 0
       roomMembers.value = (members as MatrixRoomMember[]) || []
     } catch {
       // member retrieval is best-effort

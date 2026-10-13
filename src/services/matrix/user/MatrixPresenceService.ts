@@ -6,9 +6,11 @@
  */
 
 import type { MatrixClient } from 'matrix-js-sdk'
+import type { IPresenceEvent } from 'matrix-js-sdk/presence'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import { recordSentPresence, resolveOutgoingPresence } from '@/utils/userStatus'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixClientService } from '../MatrixClientService'
@@ -253,11 +255,11 @@ class MatrixPresenceService extends BaseMatrixService {
       const client = this.getClient()
       const presenceManager = client.getPresenceManager()
 
-      const result = await presenceManager.subscribeToPresence(userIds)
+      const result = unknownToObject<{ presences?: PresenceInfo[] }>(await presenceManager.subscribeToPresence(userIds))
       logger.info(
         `[Presence] 订阅在线状态成功: ${userIds.length} 个用户${unsubscribeUserIds ? `, 取消订阅 ${unsubscribeUserIds.length} 个` : ''}`
       )
-      return result as unknown as PresenceListResponse
+      return { presences: result?.presences ?? [] }
     } catch (err) {
       logger.error(`[Presence] 订阅在线状态失败: ${formatMatrixError(err)}`)
       throw err
@@ -286,7 +288,7 @@ class MatrixPresenceService extends BaseMatrixService {
    *
    * @param userId 用户 ID（可选，默认为当前用户）
    */
-  async getPresenceList(userId?: string): Promise<PresenceListResponse> {
+  async getPresenceList(userId?: string): Promise<IPresenceEvent[]> {
     try {
       const client = this.getClient()
       const presenceManager = client.getPresenceManager()
@@ -298,7 +300,7 @@ class MatrixPresenceService extends BaseMatrixService {
 
       const result = await presenceManager.getPresenceList(targetUserId)
       logger.info(`[Presence] 获取在线状态列表成功: ${targetUserId}`)
-      return result as unknown as PresenceListResponse
+      return result
     } catch (err) {
       logger.error(`[Presence] 获取在线状态列表失败: ${formatMatrixError(err)}`)
       throw err

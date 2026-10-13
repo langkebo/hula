@@ -449,7 +449,7 @@ class MatrixNotificationService extends BaseMatrixService {
     try {
       await client
         .getPushManager()
-        .createPushRule(scope, kind as PushRuleKind, ruleId, body as unknown as ICreatePushRuleRequest)
+        .createPushRule(scope, kind as PushRuleKind, ruleId, body as Record<string, unknown> & ICreatePushRuleRequest)
       logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
@@ -503,7 +503,7 @@ class MatrixNotificationService extends BaseMatrixService {
 
     const client = this.getNotificationClient()
     try {
-      await client.getPushManager().setPusher(pusher as unknown as IPusherRequest)
+      await client.getPushManager().setPusher(pusher as Record<string, unknown> & IPusherRequest)
       logger.info('[MatrixNotification] 设置推送设备成功')
     } catch (err) {
       logger.error(`[MatrixNotification] 设置推送设备失败: ${err}`)

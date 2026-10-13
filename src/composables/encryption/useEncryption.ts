@@ -18,6 +18,7 @@ import {
   matrixVerificationService,
   type VerificationTransaction
 } from '@/services/matrix/crypto/MatrixVerificationService'
+import { unknownToObject } from '@/utils/typeGuard'
 
 export type { CryptoHealthStatus } from '@/services/matrix/crypto/CryptoHealthMonitor'
 
@@ -69,8 +70,8 @@ interface UseEncryptionResult {
     userId: string,
     deviceId: string,
     methods?: string[]
-  ) => Promise<CryptoVerificationRequest>
-  requestUserVerification: (userId: string, methods?: string[]) => Promise<CryptoVerificationRequest>
+  ) => Promise<CryptoVerificationRequest | null>
+  requestUserVerification: (userId: string, methods?: string[]) => Promise<string>
 
   startSasVerification: (userId: string, deviceId: string) => Promise<string>
   acceptVerification: (transactionId: string) => Promise<void>
@@ -247,14 +248,13 @@ export function useEncryption(): UseEncryptionResult {
   }
 
   async function requestDeviceVerification(userId: string, deviceId: string, _methods?: string[]) {
-    return matrixCryptoService.requestDeviceVerification(
-      userId,
-      deviceId
-    ) as unknown as Promise<CryptoVerificationRequest>
+    return unknownToObject<CryptoVerificationRequest>(
+      await matrixCryptoService.requestDeviceVerification(userId, deviceId)
+    )
   }
 
   async function requestUserVerification(userId: string, _methods?: string[]) {
-    return matrixVerificationService.startSasVerification(userId, '') as unknown as Promise<CryptoVerificationRequest>
+    return matrixVerificationService.startSasVerification(userId, '')
   }
 
   async function exportRoomKeys() {
