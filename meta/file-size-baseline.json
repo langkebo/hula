@@ -9,7 +9,7 @@
   "files": [
     {
       "file": "src/services/matrix/admin/AdminFacadeService.ts",
-      "lines": 796
+      "lines": 537
     },
     {
       "file": "src/mobile/views/my/AiAssistant.vue",
