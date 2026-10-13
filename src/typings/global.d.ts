@@ -15,7 +15,6 @@ declare global {
     __TJG_APP_READY__?: boolean
     __TJG_APP_READY_PHASE__?: 'booting' | 'mounted' | 'router-ready'
     __TJG_PINIA_READY__?: boolean
-    __tjg_cache_stats?: { size: number; maxSize: number; hitRate: number; hits: number; misses: number }
   }
 }
 

@@ -78,6 +78,19 @@
 
 ### Batch 3 —— 接入面收敛（逐子项独立提交）
 
+> **3.3 状态：✅ 已完成（2026-10-13）。** 先取证后动手，结论与方案原文略有修正：
+> - `MatrixCacheManager`（123 行）+ `createCachedFetcher`（17 行）+ 135 行测试 = **生产代码零调用**的假资产
+>   （唯一引用是 `main.ts` 挂的 `window.__tjg_cache_stats` 调试读取器，读的统计永不写入）
+>   ⇒ 选「整体删」而非「保留 getStats」：没有可保留的 `getStats` 消费者。删除含测试、main.ts import
+>   与挂点、`global.d.ts` 声明、doc-coverage 基线条目（981 → 963）。
+> - `MatrixRequestDeduper` 经核实**不是**死资产（3 处真实且语义正确的使用：房间能力 / 未读数 /
+>   pusher 列表），故不删；改为订正其误导语义（`dedupWindowMs` → `STALE_IN_FLIGHT_MS` 安全阀）
+>   并修掉一处真实缺陷（`finally` 无条件删条目会误删接替者）。
+> - 「未接入路径」（写操作）经评估**维持不去重**：写操作去重会吞掉用户真实的重复发送。
+> 测试：`MatrixRequestDeduper.test.ts` 新增 3 例语义边界（含安全阀与接替者两例）；变异自证 M25
+> （改回无条件删除 ⇒ 判红）并逐字节还原。
+
+
 > **3.2 状态：✅ 已完成（2026-10-13）。** 先调研后实施：取证报告
 > `OPS_ARTIFACTS/TJG_worker_client_forensics_2026-10-13.md` 确认 worker 侧 client 面**整体不可达**
 > 且搜索索引不依赖它 ⇒ 选定「删干净」（而非接通 —— 接通会让第二个 sync 挂同一份固定名 store）。

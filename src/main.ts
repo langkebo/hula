@@ -22,7 +22,6 @@ import { applyPerformanceTier } from '@/utils/performanceTier'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
-import { MatrixCacheManager } from '@/services/matrix/MatrixCacheManager'
 import { markTjgAppReady } from '@/utils/AppReady'
 import { createLogger } from '@/utils/Logger'
 
@@ -71,10 +70,6 @@ if (process.env.NODE_ENV === 'development') {
     window.tjgRouter = module.default
   })
   window.pinia = pinia
-
-  Object.defineProperty(window, '__tjg_cache_stats', {
-    get: () => MatrixCacheManager.getStats()
-  })
 
   if (isMobile()) {
     import('eruda').then((module) => {

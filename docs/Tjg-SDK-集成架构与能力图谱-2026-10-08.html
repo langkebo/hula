@@ -146,8 +146,8 @@
     <p class="sub">调用链解剖 · 能力图谱 · 四类 API 表面（标准 Matrix / Synapse Admin / vendor 私有 / AI 扩展）</p>
     <div class="kpis">
       <div class="kpi"><b>6</b><span>分层</span><i>UI → Store → Service → SDK → 传输 → 后端</i></div>
-      <div class="kpi"><b>215</b><span>个 Service 文件</span><i>12 个业务域，250 个测试文件（2026-10-13 实测）</i></div>
-      <div class="kpi"><b>98</b><span>个 SDK Manager 扩展</span><i>默认全量注册，按需 getXxxManager()</i></div>
+      <div class="kpi"><b>217</b><span>个 Service 文件</span><i>12 个业务域，250 个测试文件（2026-10-13 实测）</i></div>
+      <div class="kpi"><b>100</b><span>个 SDK Manager 扩展开关</span><i>默认全量注册，按需 getXxxManager()</i></div>
       <div class="kpi"><b>1027</b><span>条后端路由</span><i>私有面已过半（初版 1159）</i></div>
     </div>
   </div>
@@ -188,7 +188,7 @@
         <span class="chip">auth 19</span><span class="chip">room 21</span><span class="chip">messaging 21</span>
         <span class="chip">crypto 19</span><span class="chip">notifications 16</span><span class="chip">media 14</span>
         <span class="chip">user 11</span><span class="chip">admin 22</span><span class="chip">friends 6 · extensions 7</span>
-        <span class="chip">ai 5</span><span class="chip">extensions 6</span>
+        <span class="chip">ai 5</span>
       </div>
     </div>
     <div class="arrow">▼ 三条 SDK 接入方式</div>
@@ -650,14 +650,20 @@
   实测：<code>getList</code> 属于 <b><code>SlidingList</code></b> 类（<code>sliding-sync.ts:230</code>）而非 <code>SlidingSync</code>；
   其余三个在 <code>sliding-sync.ts</code> 全文 <b>0 命中</b>。全仓确认这 4 个方法<b>没有任何调用点</b>。
   对照：<code>setInitialPos</code> 是真实存在的 fork 方法（<code>:363</code>），且被正常使用。</div>
-  <div class="warn"><b>⑩ 去重器与缓存管理器基本是死资产。</b>
-  <code>MatrixRequestDeduper</code> 只在 3 处被手动包裹（房间能力、房间未读数、pusher 列表），
-  <b>发消息/建房间/上传都不去重</b>；<code>MatrixCacheManager</code> 在生产代码里只被读 stats，无任何 get/set 调用。</div>
-  <div class="warn"><b>⑪ XHR 旁路逃过守卫。</b>
-  <code>media/mediaUploadHelpers.ts:48-111</code> 用 <code>XMLHttpRequest</code> 直连
-  <code>POST /_matrix/media/v3/upload</code> 并手工带 token；<code>scripts/check-no-raw-fetch.mjs:13</code>
-  的正则 <code>\bfetch\(</code> 抓不到 XHR，该请求也不经过限流熔断器。同理 Worker 内 <code>fetch</code>
-  与 <code>App.vue</code>/<code>useAvatarUpload</code>/<code>video.ts</code> 的业务 fetch 也不受限流覆盖。</div>
+  <div class="note"><b>⑩ 去重器与缓存管理器（已修，Batch 3.3）。</b>
+  <code>MatrixCacheManager</code>（123 行 + 17 行 helper + 135 行测试）<b>生产代码零调用</b>——唯一引用是
+  <code>main.ts</code> 给 <code>window.__tjg_cache_stats</code> 挂的调试读取器，而它读的统计永不写入（恒为零）。
+  已<b>整体删除</b>（含测试、挂点、<code>global.d.ts</code> 声明），<code>doc-coverage</code> 基线随之收紧 981 → 963。
+  <code>MatrixRequestDeduper</code> <b>不是</b>死资产（3 处真实使用），但其 <code>dedupWindowMs</code> 参数名不副实
+  （实为「仅进行中合并」），已改为 <code>STALE_IN_FLIGHT_MS</code> 语义并修掉「无条件删条目会误删接替者」的真实缺陷。
+  <b>发消息/建房间/上传不去重属正确设计</b>（写操作去重会吞掉用户的真实重复发送）。</div>
+  <div class="warn"><b>⑪ 裸请求与守卫盲区（部分修复）。</b>
+  <b>已修（Batch 3.1）：</b><code>media/mediaUploadHelpers.ts</code> 原用 <code>XMLHttpRequest</code>
+  直连 <code>POST /_matrix/media/v3/upload</code> 并手工带 token，绕过限流熔断，而 <code>check-no-raw-fetch</code>
+  的正则 <code>\bfetch\(</code> 抓不到 XHR —— 现改走 <code>matrixHttpClient.uploadRaw</code> →
+  <code>MatrixRawUploadChannel.ts</code>（限流包装 fetch + dev 同源改写 + 统一错误归一化），
+  <code>xhr-bypass</code> 白名单<b>已清空</b>。<b>仍存在：</b>Worker 内 <code>fetch</code> 与
+  <code>App.vue</code>/<code>useAvatarUpload</code>/<code>video.ts</code> 的业务 fetch 仍仅在白名单内、不受限流覆盖。</div>
   <div class="note"><b>⑫ 契约链是真正的护城河。</b>1027 条路由 / 46 个生成模块 / <code>meta/sdk-pin.json</code> 锁 commit+SHA256 / <code>friends.contract.test.ts</code> 等契约测试——这套机制让「后端改路由 → 前端编译失败」成为可能，是三仓库协同里最有价值的部分。</div>
 </section>
 
@@ -667,7 +673,7 @@
   ① 已修复 ｜ ② <b>仍存在</b>（形态由"worker 无能力"变成"有能力但不可达"）｜ ③ <b>仍存在</b> ｜
   ③b <b>部分修复</b>（2 项改走真实 API，4 项残留）｜ ④ <b>已变化</b>（本地剥离表已删，改委托 SDK
   <code>KNOWN_PREFIXES</code> 21 条）｜ ⑤ 已修复 ｜ ⑥ 已修复（属实）｜ ⑦ 已修复（属实）｜
-  ⑧ <b>已修复</b>（文件 366 → 192 行，幻影接口清空）｜ ⑨ <b>已修复</b> ｜ ⑩ <b>仍存在</b> ｜ ⑪ <b>仍存在</b>。</div>
+  ⑧ <b>已修复</b>（文件 366 → 192 行，幻影接口清空）｜ ⑨ <b>已修复</b> ｜ ⑩ <b>已修复</b>（Batch 3.3）｜ ⑪ <b>部分修复</b>（Batch 3.1 清 XHR）。</div>
 
   <h3>A. crypto / 多窗口</h3>
   <table>
@@ -706,7 +712,7 @@
       <tr><td>C1</td><td><b>Worker 有能力但不可达</b>：主线程从不发 initialize/login/startClient ⇒ <code>state.client</code> 恒 null、<code>getStats()</code> 恒 null、<code>clearStores()</code> no-op，而 UI 正在调它们（移动端还弹「清理成功」；登出链路注释承诺清 store 却未发生）</td><td>✅ 已修（Batch 3.2）：worker 侧 client 死面整体删除（7 handler + state + initSDK + 内存看门狗）；三处假 UI/假成功与登出 no-op 一并移除；新门禁 <code>check:worker-client-boundary</code></td></tr>
       <tr><td>C2</td><td><b>同一后端能力多套并行实现</b>（自建缓存/deduper；SummaryService vs MatrixRoomSummaryService vs SynapseRoomSummaryService；契约测试仍 mock client=null）</td><td>⏳ 仍存在（§8 ③）</td></tr>
       <tr><td>C3</td><td><b>4 项静态残留</b>：<code>_unstable_getDelayedEvents</code>（messaging/MatrixDelayedEventsService.ts，SDK 全库 0 实现、无兜底）、直连 translate.googleapis.com（room/RoomOperations.ts:369）、incrementUnread 空存根（RoomOperations.ts:318 + 新 RoomFacade）、非标准 thread 事件（messaging/MatrixThreadState.ts）</td><td>⏳ 部分修复（§8 ③b）</td></tr>
-      <tr><td>C4</td><td><b>去重器与缓存管理器基本是死资产</b>（deduper 仅 3 处手动包裹；CacheManager 只被读 stats）</td><td>⏳ 仍存在（§8 ⑩）</td></tr>
+      <tr><td>C4</td><td><b>缓存管理器是零调用死资产</b>：<code>MatrixCacheManager</code>（123 行 + 17 行 helper + 135 行测试）生产代码零调用，唯一引用是 <code>main.ts</code> 挂的 <code>window.__tjg_cache_stats</code> 调试读取器（读的统计永不写入，恒为零）；<code>MatrixRequestDeduper</code> 的 <code>dedupWindowMs</code> 参数名不副实</td><td>✅ 已修（Batch 3.3）：死资产整体删除（含测试/挂点/声明，doc-coverage 基线收紧 981→963）；deduper 改为 <code>STALE_IN_FLIGHT_MS</code> 语义 + 条件删除</td></tr>
       <tr><td>C5</td><td><b>XHR 旁路逃过守卫</b>：media upload 用 XMLHttpRequest 直连 media v3 upload，绕过限流熔断，而 <code>check-no-raw-fetch</code> 的 <code>fetch(</code> 正则抓不到 XHR</td><td>✅ 已修（Batch 3.1）：改走 <code>matrixHttpClient.uploadRaw</code> → <code>MatrixRawUploadChannel.ts</code>（限流 fetch + dev 同源改写 + 统一错误归一化）；<code>xhr-bypass</code> 白名单已清空</td></tr>
     </tbody>
   </table>
