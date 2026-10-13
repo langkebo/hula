@@ -268,8 +268,8 @@ const lightThemeOverrides = createThemeOverrides('light')
 /** 深色模式的主题颜色 */
 const darkThemeOverrides = createThemeOverrides('dark')
 
-const createMutedMessageApi = (): MessageApi =>
-  ({
+const createMutedMessageApi = (): MessageApi => {
+  const api = {
     info: () => {},
     success: () => {},
     warning: () => {},
@@ -283,7 +283,9 @@ const createMutedMessageApi = (): MessageApi =>
       type: 'info'
     }),
     destroyAll: () => {}
-  }) as unknown as MessageApi
+  }
+  return api as typeof api & MessageApi
+}
 
 const resolveMessageApi = (messageApi: MessageApi): MessageApi => {
   if (!hasTauriRuntime()) {

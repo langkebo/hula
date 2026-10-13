@@ -50,5 +50,5 @@ export async function sendResponse(
  */
 export function extractClientConfig(): MatrixClientConfig | null {
   if (!state.client) return null
-  return state.client as unknown as MatrixClientConfig
+  return state.client as import('matrix-js-sdk').MatrixClient & MatrixClientConfig
 }

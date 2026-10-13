@@ -68,7 +68,7 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
   /** 获取扩展加密客户端实例
    */
   getExtendedClient(): MatrixClientExtended {
-    return matrixClientService.getClient() as unknown as MatrixClientExtended
+    return matrixClientService.getClient() as MatrixClient & MatrixClientExtended
   }
 
   /** 获取 Matrix 客户端实例

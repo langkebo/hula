@@ -197,7 +197,7 @@ export class AdminTelemetryService {
   async getHealth(): Promise<TelemetryHealthCheck | null> {
     try {
       const result = await this.getManager().getServerHealth()
-      return (result as unknown as TelemetryHealthCheck) ?? null
+      return (result as typeof result & TelemetryHealthCheck) ?? null
     } catch (err) {
       logger.error(`[AdminTelemetry] getHealth 失败: ${err}`)
       return null

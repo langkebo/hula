@@ -284,8 +284,9 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomStats(from, limit)
+      const stats = result ?? []
       return {
-        stats: (result ?? []) as unknown as Array<Record<string, unknown>>,
+        stats: stats as typeof stats & Array<Record<string, unknown>>,
         nextToken: undefined
       }
     } catch (err) {

@@ -314,7 +314,7 @@ export class SessionBootstrapService {
           sender: msg.fromUser?.uid ?? '',
           timestamp: msg.message.sendTime,
           msgtype: 'm.text',
-          body: msg.message.body as unknown as string
+          body: msg.message.body as typeof msg.message.body & string
         }))
       searchEventDocs.push(...roomEvents)
     }

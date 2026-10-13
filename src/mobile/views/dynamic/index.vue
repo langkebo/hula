@@ -194,7 +194,7 @@ async function fetchSpaces() {
   spaceLoading.value = true
   try {
     const spaces = await matrixSpaceService.getUserSpaces()
-    spaceList.value = (spaces || []) as unknown as SpaceItem[]
+    spaceList.value = (spaces || []) as typeof spaces & SpaceItem[]
   } catch (e) {
     logger.error('Failed to fetch spaces:', e)
     showFailToast(e instanceof Error ? e.message : String(e) || t('space.load_failed'))

@@ -69,7 +69,7 @@ import Card from './Card.vue'
 import List from './List.vue'
 
 /** 是否展示插件管理弹窗 */
-const isShow = defineModel() as unknown as boolean
+const isShow = defineModel<boolean>({ default: false })
 const { viewMode } = storeToRefs(usePluginsStore())
 const { t } = useI18n()
 </script>

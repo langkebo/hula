@@ -165,7 +165,8 @@ const handleVideoClick = async (videoUrl: string) => {
 const getAllMsg = async () => {
   const msgIds = choosedMsgs.value.map((msg) => msg.msgId)
   try {
-    msgs.value = (await matrixMessageService.getMsgListByIds({ msgIds })) as unknown as MessageType[]
+    const list = await matrixMessageService.getMsgListByIds({ msgIds })
+    msgs.value = list as typeof list & MessageType[]
   } catch (err) {
     logger.error('Failed to load messages by ids', err)
     feedback.showError(err as Error)

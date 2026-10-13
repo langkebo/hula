@@ -85,7 +85,9 @@ class AdminFacadeService extends AdminFacadeOpsMethods {
     () => this.getClient()
   )
   readonly applications = new AdminApplicationService(
-    async () => this.sdkAdmin() as unknown as import('./ApplicationService').ApplicationServiceAdmin
+    async () =>
+      (await this.sdkAdmin()) as import('matrix-js-sdk/admin').AdminManager &
+        import('./ApplicationService').ApplicationServiceAdmin
   )
   readonly reports = new AdminReportService(
     () => this.sdkAdmin(),
