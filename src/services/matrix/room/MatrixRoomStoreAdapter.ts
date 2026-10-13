@@ -25,10 +25,7 @@ function convertRoomToRoomInfo(room: Room, isEncrypted: boolean) {
   }
 
   const isSpaceRoom = typeof room.isSpaceRoom === 'function' ? (room.isSpaceRoom() as boolean) : false
-  const dmInviter =
-    typeof (room as unknown as Record<string, unknown>).getDMInviter === 'function'
-      ? ((room as unknown as { getDMInviter: () => string | undefined }).getDMInviter() as string | undefined)
-      : undefined
+  const dmInviter = (room as Room & { getDMInviter?: () => string | undefined }).getDMInviter?.()
 
   // 使用 SDK 内部方法获取未读计数
   const unreadCount = room.getUnreadNotificationCount?.(NotificationCountType.Total) || 0

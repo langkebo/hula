@@ -139,10 +139,12 @@ export class MatrixRoomCreationService {
     const client = matrixClientService.getClient()
     const isEncrypted = isRoomEncrypted(client, room.roomId)
 
-    const roomAsRecord = room as unknown as Record<string, unknown>
-    const isSpaceRoom = typeof roomAsRecord.isSpaceRoom === 'function' ? (roomAsRecord.isSpaceRoom() as boolean) : false
-    const dmInviter =
-      typeof roomAsRecord.getDMInviter === 'function' ? (roomAsRecord.getDMInviter() as string | undefined) : undefined
+    const roomWithExtras = room as Room & {
+      isSpaceRoom?: () => boolean
+      getDMInviter?: () => string | undefined
+    }
+    const isSpaceRoom = roomWithExtras.isSpaceRoom?.() ?? false
+    const dmInviter = roomWithExtras.getDMInviter?.()
 
     let unreadNotificationCount = 0
     let highlightNotificationCount = 0

@@ -31,10 +31,10 @@ export default {
       createRipple(el, e)
     }
     el.addEventListener('pointerdown', handler as EventListener)
-    ;(el as unknown as Record<symbol, RippleHandler>)[HANDLER_KEY] = handler
+    ;(el as HTMLElement & Record<symbol, RippleHandler>)[HANDLER_KEY] = handler
   },
   unmounted(el: HTMLElement) {
-    const handler = (el as unknown as Record<symbol, RippleHandler | undefined>)[HANDLER_KEY]
+    const handler = (el as HTMLElement & Record<symbol, RippleHandler | undefined>)[HANDLER_KEY]
     if (handler) {
       el.removeEventListener('pointerdown', handler as EventListener)
     }

@@ -381,7 +381,7 @@ class Logger {
   time(label: string): void {
     if (this.shouldLog('debug')) {
       const key = `__time_${this.context}_${label}`
-      ;(console as unknown as Record<string, unknown>)[key] = performance.now()
+      ;(console as Console & Record<string, unknown>)[key] = performance.now()
       if (Logger.logToConsole) {
         // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
         console.debug(`[${this.context}] ⏱ ${label} — start`)
@@ -392,14 +392,14 @@ class Logger {
   timeEnd(label: string): void {
     if (this.shouldLog('debug')) {
       const key = `__time_${this.context}_${label}`
-      const start = (console as unknown as Record<string, unknown>)[key] as number | undefined
+      const start = (console as Console & Record<string, unknown>)[key] as number | undefined
       if (start !== undefined) {
         const elapsed = (performance.now() - start).toFixed(1)
         if (Logger.logToConsole) {
           // biome-ignore lint/suspicious/noConsole: Logger is a logging utility
           console.debug(`[${this.context}] ⏱ ${label} — ${elapsed}ms`)
         }
-        delete (console as unknown as Record<string, unknown>)[key]
+        delete (console as Console & Record<string, unknown>)[key]
       }
     }
   }

@@ -151,8 +151,12 @@ export const createWebVitalsObserver = (): WebVitalsObserver => {
 
     if (
       'PerformanceObserver' in window &&
-      Array.isArray((PerformanceObserver as unknown as { supportedEntryTypes?: string[] }).supportedEntryTypes) &&
-      (PerformanceObserver as unknown as { supportedEntryTypes?: string[] }).supportedEntryTypes?.includes('longtask')
+      Array.isArray(
+        (PerformanceObserver as typeof PerformanceObserver & { supportedEntryTypes?: string[] }).supportedEntryTypes
+      ) &&
+      (
+        PerformanceObserver as typeof PerformanceObserver & { supportedEntryTypes?: string[] }
+      ).supportedEntryTypes?.includes('longtask')
     ) {
       const observer = new PerformanceObserver((entryList) => {
         for (const entry of entryList.getEntries()) {

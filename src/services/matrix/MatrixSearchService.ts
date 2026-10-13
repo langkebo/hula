@@ -1,5 +1,5 @@
 import { useI18nGlobal } from '@/services/i18n'
-import type { MatrixClient } from '@/services/matrix/sdk'
+import type { MatrixClient, Room } from '@/services/matrix/sdk'
 import type { SearchEventContext } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
 import type { SearchMessageHit } from '@/workers/matrixWorkerTypes'
@@ -312,10 +312,7 @@ class MatrixSearchService {
       .map((room) => {
         const member = room.getMember(myUserId || '')
         const isSpaceRoom = typeof room.isSpaceRoom === 'function' ? (room.isSpaceRoom() as boolean) : false
-        const dmInviter =
-          typeof (room as unknown as Record<string, unknown>).getDMInviter === 'function'
-            ? ((room as unknown as { getDMInviter: () => string | undefined }).getDMInviter() as string | undefined)
-            : undefined
+        const dmInviter = (room as Room & { getDMInviter?: () => string | undefined }).getDMInviter?.()
         return {
           roomId: room.roomId,
           roomName: room.name || room.roomId,

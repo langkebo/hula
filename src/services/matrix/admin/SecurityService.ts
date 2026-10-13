@@ -1,5 +1,6 @@
 import type { FeatureFlag, FederationDestination as SdkFederationDestination } from 'matrix-js-sdk/admin'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import type { FederationDestination } from './AdminTypes'
 
 const logger = createLogger('SecurityService')
@@ -118,7 +119,7 @@ export class AdminSecurityService {
       if (eventType) params.action = eventType
       const result = await admin.listAuditEvents(params)
       return {
-        logs: (result?.events ?? []).map((e) => e as unknown as Record<string, unknown>),
+        logs: (result?.events ?? []).map((e) => unknownToObject(e) ?? {}),
         next_batch: result?.next_batch != null ? String(result.next_batch) : undefined
       }
     } catch (err) {
@@ -269,7 +270,7 @@ export class AdminSecurityService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getFederationDestination(serverName, false)
-      return (result as unknown as Record<string, unknown>) ?? null
+      return unknownToObject(result)
     } catch (err) {
       logger.error(`[Admin] 获取联邦服务器状态失败: ${err}`)
       return null
@@ -291,7 +292,7 @@ export class AdminSecurityService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getAuditEvent(eventId)
-      return (result as unknown as Record<string, unknown>) ?? null
+      return unknownToObject(result)
     } catch (err) {
       logger.error(`[Admin] 获取审计事件详情失败: ${err}`)
       return null

@@ -15,7 +15,14 @@ import type { VoiceBody } from '@/services/types.ts'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { getStrategy } from '@/strategy/MessageStrategy.ts'
 import { createLogger } from '@/utils/Logger'
-import type { ChatStoreLike, GlobalStoreLike, GroupStoreLike, ReplyState, VoiceUploadResult } from './msgInputTypes'
+import type {
+  ChatStoreLike,
+  GlobalStoreLike,
+  GroupStoreLike,
+  ReplyState,
+  StrategyReplyArg,
+  VoiceUploadResult
+} from './msgInputTypes'
 
 const logger = createLogger('MsgInputDirectSend')
 
@@ -155,9 +162,9 @@ export function useMsgInputDirectSend(ctx: DirectSendContext) {
       const tempMsgId = 'T' + Date.now().toString()
       const messageStrategy = await getStrategy(msgType)
       const msg = (await Promise.resolve(
-        messageStrategy.getMsg(content, reply.value as unknown as MessageType)
+        messageStrategy.getMsg(content, reply.value as StrategyReplyArg)
       )) as Record<string, unknown>
-      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
+      const messageBody = messageStrategy.buildMessageBody(msg, reply.value as StrategyReplyArg)
 
       const tempMsg = await Promise.resolve(
         messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)

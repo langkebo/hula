@@ -17,14 +17,13 @@ import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAtt
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import type { VoiceBody } from '@/services/types.ts'
-import type { MessageType } from '@/stores/domains/chat/chat'
 import type { MessageStrategy } from '@/strategy/MessageStrategy'
 import { getStrategy } from '@/strategy/MessageStrategy.ts'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
 import { UploadProviderEnum, useUpload } from '../common/useUpload'
 import { extractAtUserIds } from './mentionParser'
-import type { UseMsgInputSendOptions } from './msgInputTypes'
+import type { StrategyReplyArg, UseMsgInputSendOptions } from './msgInputTypes'
 import { revokeBlobUrl } from './msgInputTypes'
 import { useMsgInputDirectSend } from './useMsgInputDirectSend'
 import { useMsgInputFileUpload } from './useMsgInputFileUpload'
@@ -64,12 +63,12 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       return
     }
 
-    const msg = await messageStrategy.getMsg(msgInput.value, reply.value as unknown as MessageType)
+    const msg = await messageStrategy.getMsg(msgInput.value, reply.value as StrategyReplyArg)
     const atUidList = extractAtUserIds(msgInput.value, groupStore.userList)
     const tempMsgId = 'T' + Date.now().toString()
 
     const messageBody = {
-      ...messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType),
+      ...messageStrategy.buildMessageBody(msg, reply.value as StrategyReplyArg),
       atUidList
     }
 

@@ -1,5 +1,6 @@
 import { type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
+import { unknownToObject } from '@/utils/typeGuard'
 
 export interface AuditEntryView {
   id: string
@@ -39,7 +40,9 @@ export function useAdminAudit(): UseAdminAuditResult {
     loading.value = true
     try {
       const result = await adminService.getAuditLog(filters?.limit ?? 50, filters?.from, filters?.userId, filters?.type)
-      logs.value = (result?.logs ?? []) as unknown as AuditEntryView[]
+      logs.value = (result?.logs ?? [])
+        .map((log) => unknownToObject<AuditEntryView>(log))
+        .filter((log): log is AuditEntryView => log !== null)
     } finally {
       loading.value = false
     }
@@ -49,7 +52,7 @@ export function useAdminAudit(): UseAdminAuditResult {
     loadingDetail.value = true
     try {
       const result = await adminService.getAuditEvent(eventId)
-      selected.value = (result as unknown as AuditEntryView) ?? null
+      selected.value = unknownToObject<AuditEntryView>(result)
       return selected.value
     } finally {
       loadingDetail.value = false

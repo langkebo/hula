@@ -1,5 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import type { RetentionPolicy, RoomRetention } from './AdminTypes'
 
 const logger = createLogger('RetentionService')
@@ -19,9 +20,9 @@ export class AdminRetentionService {
   ): Promise<{ policies: Array<Record<string, unknown>>; nextToken?: string }> {
     try {
       const admin = await this.sdkAdmin()
-      const policy = await admin.getRetentionPolicy()
+      const policy = unknownToObject(await admin.getRetentionPolicy())
       return {
-        policies: policy ? [policy as unknown as Record<string, unknown>] : [],
+        policies: policy ? [policy] : [],
         nextToken: undefined
       }
     } catch (err) {
@@ -34,7 +35,7 @@ export class AdminRetentionService {
     try {
       const admin = await this.sdkAdmin()
       const policy = await admin.getRoomRetentionPolicy(roomId)
-      return (policy as unknown as Record<string, unknown>) ?? null
+      return unknownToObject(policy)
     } catch (err) {
       logger.error(`[AdminRetention] 获取房间保留策略失败: ${err}`)
       return null
@@ -74,7 +75,7 @@ export class AdminRetentionService {
     try {
       const admin = await this.sdkAdmin()
       const status = await admin.getRetentionStatus()
-      return (status as unknown as Record<string, unknown>) ?? {}
+      return unknownToObject(status) ?? {}
     } catch (err) {
       logger.error(`[AdminRetention] 获取保留策略状态失败: ${err}`)
       return {}

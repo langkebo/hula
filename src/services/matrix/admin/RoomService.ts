@@ -437,7 +437,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpaceUsers(spaceId)
-      return (result?.users ?? []) as unknown as Array<Record<string, unknown>>
+      return (result?.users ?? []).map((u) => unknownToObject(u) ?? {})
     } catch (err) {
       logger.error(`[Admin] 获取空间用户失败: ${err}`)
       return []
@@ -448,7 +448,7 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getSpaceRooms(spaceId)
-      return (result?.rooms ?? []) as unknown as Array<Record<string, unknown>>
+      return (result?.rooms ?? []).map((r) => unknownToObject(r) ?? {})
     } catch (err) {
       logger.error(`[Admin] 获取空间房间失败: ${err}`)
       return []

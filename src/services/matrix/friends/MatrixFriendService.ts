@@ -1,6 +1,7 @@
 import type { Friend, FriendRequest } from '@/services/matrix/sdk'
 
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import { type SynapseDmInfo, synapseDmExtensionService } from '../extensions/SynapseDmExtensionService'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import matrixClientService from '../MatrixClientService'
@@ -366,7 +367,7 @@ class MatrixFriendService {
         const result = await friendManager.getFriendStatusInfo(userId)
         logger.info(`[MatrixFriend] 获取好友状态详情成功: ${userId}`)
         // SDK 返回 FriendStatusInfo（具体接口，无索引签名）；保持公开契约 Record<string, unknown> | null
-        return result as unknown as Record<string, unknown>
+        return unknownToObject(result)
       }
     } catch (err) {
       logger.error(`[MatrixFriend] FriendManager 获取好友状态详情失败: ${err}`)
@@ -383,9 +384,7 @@ class MatrixFriendService {
       const results = await synapseFriendExtensionService.searchFriends(query, options)
       return results.map((r) => ({
         user_id: r.user_id,
-        display_name:
-          ((r as unknown as Record<string, unknown>).display_name as string | undefined) ??
-          ((r as unknown as Record<string, unknown>).displayname as string | undefined),
+        display_name: (unknownToObject(r)?.display_name as string | undefined) ?? r.displayname,
         avatar_url: r.avatar_url
       }))
     } catch (err) {

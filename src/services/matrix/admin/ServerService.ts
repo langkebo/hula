@@ -1,4 +1,5 @@
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import type { ServerHealth, ServerStats, ServerStatus, ServerVersion } from './AdminTypes'
 
 const logger = createLogger('ServerService')
@@ -52,7 +53,7 @@ export class AdminServerService {
       // 但 synapse-rust 实际返回 { status: 'ok'|'error', database: 'ok'|'error' }，
       // 这里做归一化：healthy 优先取显式字段，否则由 status/database 推导，
       // 否则 result.healthy 恒为 undefined → 仪表盘永远显示"异常"。
-      const result = (await admin.getServerHealth()) as unknown as Record<string, unknown> | null
+      const result = unknownToObject(await admin.getServerHealth())
       if (!result) return null
 
       const rawHealthy = result.healthy
@@ -87,7 +88,7 @@ export class AdminServerService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getServerConfig(false)
-      return (result as unknown as Record<string, unknown>) ?? null
+      return unknownToObject(result)
     } catch (err) {
       logger.error(`[AdminServer] 获取服务器配置失败: ${err}`)
       return null

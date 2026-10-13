@@ -18,14 +18,19 @@ import { useI18nGlobal } from '@/services/i18n'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
-import type { MessageType } from '@/stores/domains/chat/chat'
 import type { MessageStrategy } from '@/strategy/MessageStrategy'
 import { getStrategy } from '@/strategy/MessageStrategy.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
 import { globalFileUploadQueue } from '../common/useFileUploadQueue'
 import { UploadProviderEnum } from '../common/useUpload'
-import { type ChatStoreLike, createRafProgressUpdater, type GlobalStoreLike, type ReplyState } from './msgInputTypes'
+import {
+  type ChatStoreLike,
+  createRafProgressUpdater,
+  type GlobalStoreLike,
+  type ReplyState,
+  type StrategyReplyArg
+} from './msgInputTypes'
 
 const logger = createLogger('MsgInputFileUpload')
 
@@ -46,8 +51,8 @@ async function processGenericFile(
   ctx: FileUploadContext
 ): Promise<void> {
   const { reply, globalStore, userUid, chatStore, sendWithTracking } = ctx
-  const msg = await messageStrategy.getMsg('', reply.value as unknown as MessageType, [file])
-  const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
+  const msg = await messageStrategy.getMsg('', reply.value as StrategyReplyArg, [file])
+  const messageBody = messageStrategy.buildMessageBody(msg, reply.value as StrategyReplyArg)
 
   const tempMsg = await Promise.resolve(
     messageStrategy.buildMessageType(tempMsgId, { ...messageBody, url: '' }, globalStore, userUid)
@@ -130,7 +135,7 @@ async function processGenericPathFile(
     reply: reply.value.content ? { content: reply.value.content, key: reply.value.key } : undefined
   }
 
-  const messageBody = messageStrategy.buildMessageBody(msg, reply.value as unknown as MessageType)
+  const messageBody = messageStrategy.buildMessageBody(msg, reply.value as StrategyReplyArg)
 
   const tempMsg = await Promise.resolve(
     messageStrategy.buildMessageType(tempMsgId, { ...messageBody, url: '' }, globalStore, userUid)

@@ -20,6 +20,13 @@ export interface ReplyState {
   imgCount: number
 }
 
+/**
+ * 策略层（getMsg/buildMessageBody）的 reply 形参声明为 `MessageType | null`，
+ * 而调用方持有的是 UI 侧的 `ReplyState`，二者结构不重叠。
+ * 该交集别名用于在调用点做单次类型断言，替代 `as unknown as`。
+ */
+export type StrategyReplyArg = ReplyState & MessageType
+
 export interface UserSummary {
   name?: string
   avatar?: string
