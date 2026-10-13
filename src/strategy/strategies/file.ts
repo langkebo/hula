@@ -1,4 +1,4 @@
-import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs'
+import { readFile, writeFile } from '@tauri-apps/plugin-fs'
 import type { Ref } from 'vue'
 import { AppException } from '@/common/exception.ts'
 import { parseInnerText } from '@/composables/common/useCommon'
@@ -6,7 +6,7 @@ import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables
 import { MsgEnum, UploadSceneEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { getMimeTypeFromExtension } from '@/utils/Formatting'
-import { isMobile } from '@/utils/PlatformConstants'
+import { getCacheBaseDir } from '@/utils/PathUtil'
 import { AbstractMessageStrategy, strategyLogger as logger, type ReplyRef } from './base'
 
 /**
@@ -49,7 +49,7 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
   private async getFileFromPath(path: string): Promise<File> {
     try {
       const normalizedPath = path.replace(/\\/g, '/')
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+      const baseDir = getCacheBaseDir()
       const fileData = await readFile(normalizedPath, { baseDir })
 
       const fileName = normalizedPath.split('/').pop() || 'unknown'
@@ -90,7 +90,7 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
     const tempPath = `temp-file-${Date.now()}-${validatedFile.name}`
 
     // 将文件保存到临时位置
-    const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+    const baseDir = getCacheBaseDir()
     await writeFile(tempPath, validatedFile.stream(), { baseDir })
 
     return {

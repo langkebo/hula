@@ -1,4 +1,4 @@
-import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs'
+import { readFile, writeFile } from '@tauri-apps/plugin-fs'
 import { AppException } from '@/common/exception.ts'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables/common/useUpload'
 import { MsgEnum, UploadSceneEnum } from '@/enums'
@@ -6,7 +6,7 @@ import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { fixFileMimeType } from '@/utils/FileType'
 import { getMimeTypeFromExtension } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
-import { isMobile } from '@/utils/PlatformConstants'
+import { getCacheBaseDir } from '@/utils/PathUtil'
 import { AbstractMessageStrategy, type ImageInfo, strategyLogger as logger, type ReplyRef } from './base'
 
 export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
@@ -125,7 +125,7 @@ export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
 
       // 将文件保存到缓存目录
       const tempPath = `temp-image-${Date.now()}-${file.name}`
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+      const baseDir = getCacheBaseDir()
       await writeFile(tempPath, file.stream(), { baseDir })
 
       return {
@@ -194,7 +194,7 @@ export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
     logger.debug('标准化路径:', normalizedPath)
 
     try {
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+      const baseDir = getCacheBaseDir()
       const fileData = await readFile(normalizedPath, { baseDir })
 
       const fileName = path.split('/').pop() || 'image.png'

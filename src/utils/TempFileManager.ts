@@ -1,6 +1,6 @@
-import { BaseDirectory, remove } from '@tauri-apps/plugin-fs'
+import { type BaseDirectory, remove } from '@tauri-apps/plugin-fs'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
+import { getCacheBaseDir } from '@/utils/PathUtil'
 
 const logger = createLogger('TempFileManager')
 
@@ -20,7 +20,7 @@ type RemoveTempFileOptions = {
   silent?: boolean
 }
 
-const getDefaultBaseDir = () => (isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache)
+const getDefaultBaseDir = () => getCacheBaseDir()
 
 const normalizeFsPath = (path: string) => path.replace(/\\/g, '/')
 

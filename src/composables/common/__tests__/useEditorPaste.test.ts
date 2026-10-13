@@ -1,17 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-const { existsMock, mkdirMock, createMock, readFileMock, writeMock, closeMock, getImageCacheMock, isMobileMock } =
-  vi.hoisted(() => ({
-    existsMock: vi.fn(async () => true),
-    mkdirMock: vi.fn(async () => undefined),
-    writeMock: vi.fn(async () => undefined),
-    closeMock: vi.fn(async () => undefined),
-    createMock: vi.fn(),
-    readFileMock: vi.fn(async () => new Uint8Array([1, 2, 3])),
-    getImageCacheMock: vi.fn((sub: string, _uid: string) => `/cache/${sub}/`),
-    isMobileMock: vi.fn(() => false)
-  }))
+const {
+  existsMock,
+  mkdirMock,
+  createMock,
+  readFileMock,
+  writeMock,
+  closeMock,
+  getImageCacheMock,
+  getCacheBaseDirMock,
+  isMobileMock
+} = vi.hoisted(() => ({
+  existsMock: vi.fn(async () => true),
+  mkdirMock: vi.fn(async () => undefined),
+  writeMock: vi.fn(async () => undefined),
+  closeMock: vi.fn(async () => undefined),
+  createMock: vi.fn(),
+  readFileMock: vi.fn(async () => new Uint8Array([1, 2, 3])),
+  getImageCacheMock: vi.fn((sub: string, _uid: string) => `/cache/${sub}/`),
+  getCacheBaseDirMock: vi.fn(() => (isMobileMock() ? 'AppData' : 'AppCache')),
+  isMobileMock: vi.fn(() => false)
+}))
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
   BaseDirectory: { AppCache: 'AppCache', AppData: 'AppData' },
@@ -21,7 +31,7 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   readFile: readFileMock
 }))
 
-vi.mock('@/utils/PathUtil.ts', () => ({ getImageCache: getImageCacheMock }))
+vi.mock('@/utils/PathUtil.ts', () => ({ getImageCache: getImageCacheMock, getCacheBaseDir: getCacheBaseDirMock }))
 vi.mock('@/utils/PlatformConstants', () => ({ isMobile: isMobileMock }))
 
 import { useEditorPaste } from '../useEditorPaste'
@@ -50,6 +60,7 @@ beforeEach(() => {
   createMock.mockReset().mockResolvedValue({ write: writeMock, close: closeMock })
   readFileMock.mockReset().mockResolvedValue(new Uint8Array([1, 2, 3]))
   getImageCacheMock.mockClear()
+  getCacheBaseDirMock.mockClear()
   isMobileMock.mockReset().mockReturnValue(false)
 })
 

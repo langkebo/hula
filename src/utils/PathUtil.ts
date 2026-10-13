@@ -32,6 +32,17 @@ export const getDownloadBaseDir = (): BaseDirectory => (isMobile() ? BaseDirecto
 export const getDownloadBaseDirPath = async (): Promise<string> =>
   isMobile() ? await appDataDir() : await resourceDir()
 
+/**
+ * 临时文件/缓存使用的存储基目录。
+ * 移动端仅有应用私有数据目录（AppData）可写，桌面端优先使用缓存目录（AppCache）。
+ */
+export const getCacheBaseDir = (): BaseDirectory => (isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache)
+
+/**
+ * 与 getCacheBaseDir 对应的基目录名字符串，供后端命令的 baseDir 参数使用。
+ */
+export const getCacheBaseDirName = (): string => (isMobile() ? 'AppData' : 'AppCache')
+
 // 获取 userData 根目录
 export const getUserDataRootAbsoluteDir = async (): Promise<string> => {
   await ensureUserDataRoot()

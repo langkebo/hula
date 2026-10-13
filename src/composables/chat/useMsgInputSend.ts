@@ -7,7 +7,7 @@
  *  - useMsgInputDirectSend: sendVoiceDirect, sendStructuredDirect, sendBeaconDirect, ...
  */
 
-import { BaseDirectory, readFile } from '@tauri-apps/plugin-fs'
+import { readFile } from '@tauri-apps/plugin-fs'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { LimitEnum, MessageStatusEnum, MittEnum, MsgEnum, UploadSceneEnum } from '@/enums'
@@ -20,7 +20,7 @@ import type { VoiceBody } from '@/services/types.ts'
 import type { MessageStrategy } from '@/strategy/MessageStrategy'
 import { getStrategy } from '@/strategy/MessageStrategy.ts'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
+import { getCacheBaseDir } from '@/utils/PathUtil'
 import { UploadProviderEnum, useUpload } from '../common/useUpload'
 import { extractAtUserIds } from './mentionParser'
 import type { StrategyReplyArg, UseMsgInputSendOptions } from './msgInputTypes'
@@ -118,7 +118,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
 
     if (isEncrypted) {
       const fileData = await readFile(msg.path as string, {
-        baseDir: isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+        baseDir: getCacheBaseDir()
       })
       const fileBlob = new File([fileData], (msg.fileName as string) || 'image.png', {
         type: (msg.mimeType as string) || 'image/png'
@@ -159,7 +159,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       }
 
       const fileData = await readFile(msg.path as string, {
-        baseDir: isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+        baseDir: getCacheBaseDir()
       })
       const fileBlob = new File([fileData], (msg.fileName as string) || 'video.mp4', {
         type: (msg.mimeType as string) || 'video/mp4'

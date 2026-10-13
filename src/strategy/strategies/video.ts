@@ -1,4 +1,4 @@
-import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs'
+import { readFile, writeFile } from '@tauri-apps/plugin-fs'
 import type { Ref } from 'vue'
 import { AppException } from '@/common/exception.ts'
 import { parseInnerText } from '@/composables/common/useCommon'
@@ -6,7 +6,7 @@ import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables
 import { MsgEnum, UploadSceneEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
 import { isVideoUrl } from '@/utils/FileType'
-import { isMobile } from '@/utils/PlatformConstants'
+import { getCacheBaseDir } from '@/utils/PathUtil'
 import { removeTempFile } from '@/utils/TempFileManager'
 import { generateVideoThumbnail } from '@/utils/VideoThumbnail'
 import { AbstractMessageStrategy, strategyLogger as logger, type ReplyRef } from './base'
@@ -73,7 +73,7 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
 
       // 将文件保存到缓存目录
       const tempPath = `temp-video-${Date.now()}-${file.name}`
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+      const baseDir = getCacheBaseDir()
       await writeFile(tempPath, validatedFile.stream(), { baseDir })
 
       return {
@@ -156,7 +156,7 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
     // 5. 处理合法字符串路径的情况
     try {
       const normalizedPath = videoFile.replace(/\\/g, '/')
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+      const baseDir = getCacheBaseDir()
       const fileData = await readFile(normalizedPath, {
         baseDir
       })
@@ -232,7 +232,7 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
       const tempPath = `temp-thumbnail-${Date.now()}-${thumbnailFile.name}`
 
       // 写入临时文件
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+      const baseDir = getCacheBaseDir()
       await writeFile(tempPath, thumbnailFile.stream(), { baseDir })
 
       const result = await this.uploadHook.doUpload(tempPath, uploadUrl, { ...options, enableDeduplication: true })

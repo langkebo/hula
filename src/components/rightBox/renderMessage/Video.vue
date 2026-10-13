@@ -137,8 +137,8 @@
 
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
-import { BaseDirectory, exists } from '@tauri-apps/plugin-fs'
+import { appDataDir, join } from '@tauri-apps/api/path'
+import { exists } from '@tauri-apps/plugin-fs'
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDownload } from '@/composables/common/useDownload'
@@ -155,7 +155,7 @@ import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/v
 import type { MatrixEncryptedAttachmentLike } from '@/types/matrix-services'
 import { extractFileName, formatBytes } from '@/utils/Formatting.ts'
 import { createLogger } from '@/utils/Logger'
-import { safeExistsPath } from '@/utils/PathUtil'
+import { getDownloadBaseDir, getDownloadBaseDirPath, safeExistsPath } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
@@ -486,13 +486,13 @@ const downloadVideo = async () => {
 
     const localPath = await getLocalVideoPath(props.body?.url)
     if (localPath) {
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
+      const baseDir = getDownloadBaseDir()
       await downloadFile(props.body.url, localPath, baseDir)
       isVideoDownloaded.value = await checkVideoDownloaded(props.body.url)
 
       // 下载完成后，更新videoViewer store中的视频路径
       if (isVideoDownloaded.value) {
-        const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
+        const baseDirPath = await getDownloadBaseDirPath()
         const path = await join(baseDirPath, localPath)
         videoViewerStore.updateVideoPath(props.body.url, path)
         void persistVideoLocalPath(path)

@@ -7,13 +7,12 @@
  * `insertNode`) and the current `userUid` are injected so this hook stays
  * decoupled from the wider `useCommon` returns.
  */
-import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
+import { create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import type { Ref } from 'vue'
 import { LimitEnum, MsgEnum } from '@/enums'
 import { getFileExtension, isPathUploadFile, SUPPORTED_IMAGE_EXTENSIONS, type UploadFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
-import { getImageCache } from '@/utils/PathUtil.ts'
-import { isMobile } from '@/utils/PlatformConstants'
+import { getCacheBaseDir, getImageCache } from '@/utils/PathUtil.ts'
 
 const logger = createLogger('Common:EditorPaste')
 
@@ -84,7 +83,7 @@ export const useEditorPaste = (options: UseEditorPasteOptions) => {
             reject(new Error('FileReader failed'))
             return
           }
-          const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+          const baseDir = getCacheBaseDir()
           const isExists = await exists(tempPath, { baseDir })
           if (!isExists) {
             await mkdir(tempPath, { baseDir, recursive: true })

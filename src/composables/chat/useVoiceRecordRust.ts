@@ -1,4 +1,4 @@
-import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
+import { create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import { startRecording, stopRecording } from 'tauri-plugin-mic-recorder-api'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { UploadSceneEnum } from '@/enums'
@@ -6,8 +6,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { calculateCompressionRatio, compressAudioToMp3, getAudioInfo } from '@/utils/AudioCompression'
 import { formatDuration } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
-import { getImageCache } from '@/utils/PathUtil.ts'
-import { isMobile } from '@/utils/PlatformConstants'
+import { getCacheBaseDir, getImageCache } from '@/utils/PathUtil.ts'
 import { removeTempFile } from '@/utils/TempFileManager'
 import { useUpload } from '../common/useUpload'
 
@@ -250,7 +249,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       const fullPath = cachePath + fileHashName
 
       // 确保目录存在
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+      const baseDir = getCacheBaseDir()
       const dirExists = await exists(cachePath, { baseDir })
       if (!dirExists) {
         await mkdir(cachePath, { baseDir, recursive: true })

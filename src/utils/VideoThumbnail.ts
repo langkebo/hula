@@ -1,7 +1,8 @@
 import { appCacheDir, join } from '@tauri-apps/api/path'
-import { BaseDirectory, writeFile } from '@tauri-apps/plugin-fs'
+import { writeFile } from '@tauri-apps/plugin-fs'
 import { AppException } from '@/common/exception'
 import { createLogger } from '@/utils/Logger'
+import { getCacheBaseDir } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { removeTempFile } from '@/utils/TempFileManager'
@@ -110,7 +111,7 @@ export const generateVideoThumbnail = async (file: File): Promise<File> => {
   const arrayBuffer = await file.arrayBuffer()
   const uint8Array = new Uint8Array(arrayBuffer)
 
-  const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+  const baseDir = getCacheBaseDir()
   await writeFile(tempPath, uint8Array, { baseDir })
   const fullPath = await join(await appCacheDir(), tempPath)
 

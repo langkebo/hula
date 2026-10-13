@@ -1,5 +1,5 @@
 import { Channel } from '@tauri-apps/api/core'
-import { BaseDirectory, stat, writeFile } from '@tauri-apps/plugin-fs'
+import { stat, writeFile } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { TauriCommand, type UploadSceneEnum } from '@/enums'
@@ -10,7 +10,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { extractFileName } from '@/utils/Formatting'
 import { getImageDimensions } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
+import { getCacheBaseDir, getCacheBaseDirName } from '@/utils/PathUtil'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { removeTempFile } from '@/utils/TempFileManager'
 
@@ -72,8 +72,8 @@ export const useUpload = () => {
   const onStart = createEventHook()
 
   const uploadFileWithTauriPut = async (targetUrl: string, file: File, contentType: string) => {
-    const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
-    const baseDirName = isMobile() ? 'AppData' : 'AppCache'
+    const baseDir = getCacheBaseDir()
+    const baseDirName = getCacheBaseDirName()
     const safeFileName = file.name.replace(/[\\/]/g, '_')
     const tempPath = `temp-upload-${Date.now()}-${safeFileName}`
 
@@ -354,8 +354,8 @@ export const useUpload = () => {
         throw new Error(t('hooks.upload.url_failed'))
       }
 
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
-      const baseDirName = isMobile() ? 'AppData' : 'AppCache'
+      const baseDir = getCacheBaseDir()
+      const baseDirName = getCacheBaseDirName()
       const fileStat = absolutePath ? await stat(path) : await stat(path, { baseDir })
 
       if (fileStat.size > MAX_FILE_SIZE) {

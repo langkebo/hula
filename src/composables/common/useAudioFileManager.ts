@@ -1,12 +1,12 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { join } from '@tauri-apps/api/path'
-import { BaseDirectory, create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
+import { create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import type { Ref } from 'vue'
 import type { FilesMeta } from '@/services/types'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
-import { getFilesMeta, getImageCache } from '@/utils/PathUtil'
-import { isMac, isMobile } from '@/utils/PlatformConstants'
+import { getCacheBaseDir, getFilesMeta, getImageCache } from '@/utils/PathUtil'
+import { isMac } from '@/utils/PlatformConstants'
 
 const logger = createLogger('AudioFileManager')
 
@@ -106,7 +106,7 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
     const fullPath = await join(cachePath, fileName)
 
     // 检查文件是否存在于本地缓存文件夹中
-    const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+    const baseDir = getCacheBaseDir()
     const fileExists = await exists(fullPath, { baseDir })
     if (!fileExists) {
       return {
@@ -138,7 +138,7 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
   const fetchAndDownloadAudioFile = async (cachePath: string, fileName: string, url: string): Promise<ArrayBuffer> => {
     // 用户/数据驱动的音频 URL（动态 host）
     const buffer = await HttpClient.downloadBytes(url, { allowDynamicHost: true })
-    const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+    const baseDir = getCacheBaseDir()
     const dirExists = await exists(cachePath, { baseDir })
 
     // 若目录不存在，则创建缓存目录
@@ -175,7 +175,7 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
     const cachePath = getImageCache(audioFolder, userId)
     const fullPath = await join(cachePath, fileMeta.name)
 
-    const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache
+    const baseDir = getCacheBaseDir()
     const fileExists = await exists(fullPath, { baseDir })
 
     return {
