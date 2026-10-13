@@ -29,7 +29,10 @@ vi.mock('@/services/backend', () => ({
 }))
 
 vi.mock('../network/runtimeFetch', () => ({
-  getRuntimeAwareFetch: () => runtimeFetchMock
+  getRuntimeAwareFetch: () => runtimeFetchMock,
+  // 原始 body 通道从本模块取 dev 同源改写（此处原样透传，其行为在
+  // MatrixRawUploadChannel.test.ts 里单独断言）
+  rewriteToDevProxyUrl: (url: string) => url
 }))
 
 vi.mock('@tauri-apps/plugin-log', () => ({

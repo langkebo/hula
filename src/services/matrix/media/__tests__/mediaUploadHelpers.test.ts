@@ -1,12 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { chunkUploadService } from '@/services/performance/ChunkUploadService'
-import type { MatrixClient, MediaManager } from '../../sdk'
+import type { MediaManager } from '../../sdk'
 import {
   createUploadOptions,
   isPayloadTooLarge,
   uploadContentWithChunkFallback,
-  uploadViaDirectFetch
+  uploadViaGateway
 } from '../mediaUploadHelpers'
+
+const { uploadRawMock } = vi.hoisted(() => ({ uploadRawMock: vi.fn() }))
 
 vi.mock('@/services/performance/ChunkUploadService', () => ({
   chunkUploadService: {
@@ -14,51 +16,11 @@ vi.mock('@/services/performance/ChunkUploadService', () => ({
   }
 }))
 
-/** 可控的 XMLHttpRequest 假实现 */
-class FakeXHR {
-  static DONE = 4
-  static instances: FakeXHR[] = []
-  status = 0
-  responseText = ''
-  readyState = 0
-  headers: Record<string, string> = {}
-  sent: unknown = null
-  aborted = false
-  method = ''
-  url = ''
-  onreadystatechange: (() => void) | null = null
-  onerror: (() => void) | null = null
-
-  open(method: string, url: string) {
-    this.method = method
-    this.url = url
-  }
-  setRequestHeader(k: string, v: string) {
-    this.headers[k] = v
-  }
-  send(body: unknown) {
-    this.sent = body
-    FakeXHR.instances.push(this)
-  }
-  abort() {
-    this.aborted = true
-  }
-  complete(status: number, responseText: string) {
-    this.status = status
-    this.responseText = responseText
-    this.readyState = 4
-    this.onreadystatechange?.()
-  }
-}
-
-const OriginalXHR = globalThis.XMLHttpRequest
-
-function createClient(overrides: { token?: string | null; homeserverUrl?: string } = {}) {
-  return {
-    getAccessToken: () => overrides.token ?? null,
-    getHomeserverUrl: () => overrides.homeserverUrl ?? 'https://hs.example.com'
-  } as unknown as MatrixClient
-}
+// 网关直传通道：这里只断言「调用形态 + 参数」；真实的 URL/鉴权/错误归一化语义
+// 在 src/services/matrix/__tests__/MatrixRawUploadChannel.test.ts 里单独覆盖。
+vi.mock('../../MatrixHttpClient', () => ({
+  matrixHttpClient: { uploadRaw: (...args: unknown[]) => uploadRawMock(...args) }
+}))
 
 describe('createUploadOptions', () => {
   it('should set type, name and includeFilename', () => {
@@ -115,52 +77,60 @@ describe('isPayloadTooLarge', () => {
   })
 })
 
-describe('uploadViaDirectFetch', () => {
+describe('uploadViaGateway（经 MatrixHttpClient，无自建 XHR）', () => {
   beforeEach(() => {
-    FakeXHR.instances = []
-    globalThis.XMLHttpRequest = FakeXHR as unknown as typeof XMLHttpRequest
+    uploadRawMock.mockReset()
+    uploadRawMock.mockResolvedValue({ content_uri: 'mxc://upload/x' })
   })
 
-  afterEach(() => {
-    globalThis.XMLHttpRequest = OriginalXHR
-  })
-
-  it('should POST to upload endpoint and resolve content_uri on 2xx', async () => {
-    const client = createClient({ token: 'tok' })
+  it('POST 到 media v3 upload，并把 filename / content_type 作为查询参数', async () => {
     const file = new File(['x'], 'a.txt', { type: 'text/plain' })
 
-    const promise = uploadViaDirectFetch(client, file, { type: 'text/plain' })
+    await expect(uploadViaGateway(file, { type: 'text/plain' })).resolves.toBe('mxc://upload/x')
 
-    const xhr = FakeXHR.instances[0]
-    expect(xhr.method).toBe('POST')
-    expect(xhr.url).toContain('/_matrix/media/v3/upload')
-    expect(xhr.url).toContain('filename=a.txt')
-    expect(xhr.headers['Content-Type']).toBe('text/plain')
-    expect(xhr.headers['Authorization']).toBe('Bearer tok')
-
-    xhr.complete(200, '{"content_uri":"mxc://upload/x"}')
-    await expect(promise).resolves.toBe('mxc://upload/x')
+    expect(uploadRawMock).toHaveBeenCalledTimes(1)
+    const [path, body, options] = uploadRawMock.mock.calls[0]
+    expect(path).toBe('_matrix/media/v3/upload')
+    expect(body).toBe(file)
+    expect(options).toMatchObject({
+      contentType: 'text/plain',
+      queryParams: { filename: 'a.txt', content_type: 'text/plain' }
+    })
+    // Authorization / dev 同源改写都归网关，调用点不再自己拼
+    expect(options.headers).toBeUndefined()
+    expect(options.signal).toBeUndefined()
   })
 
-  it('should default filename and mimetype when opts empty', async () => {
-    const client = createClient({ token: null })
+  it('opts 为空时回退到文件自身的 name / type', async () => {
     const file = new File(['x'], 'doc.pdf', { type: 'application/pdf' })
 
-    const promise = uploadViaDirectFetch(client, file, {})
-    const xhr = FakeXHR.instances[0]
-    expect(xhr.headers['Authorization']).toBeUndefined()
-    xhr.complete(200, '{"content_uri":"mxc://o"}')
-    await expect(promise).resolves.toBe('mxc://o')
+    await uploadViaGateway(file, {})
+
+    expect(uploadRawMock.mock.calls[0][2]).toMatchObject({
+      contentType: 'application/pdf',
+      queryParams: { filename: 'doc.pdf', content_type: 'application/pdf' }
+    })
   })
 
-  it('should reject on non-2xx status', async () => {
-    const client = createClient({ token: null })
-    const file = new File(['x'], 'a.txt', { type: 'text/plain' })
+  it('文件无类型时用 application/octet-stream 兜底', async () => {
+    const file = new File(['x'], 'blob.bin')
 
-    const promise = uploadViaDirectFetch(client, file, {})
-    const xhr = FakeXHR.instances[0]
-    xhr.complete(500, 'server error')
-    await expect(promise).rejects.toThrow('上传失败: 500')
+    await uploadViaGateway(file, {})
+
+    expect(uploadRawMock.mock.calls[0][2].contentType).toBe('application/octet-stream')
+  })
+
+  it('响应缺少 content_uri ⇒ 抛错（不静默返回 undefined）', async () => {
+    uploadRawMock.mockResolvedValue({})
+
+    await expect(uploadViaGateway(new File(['x'], 'a.txt'), {})).rejects.toThrow('上传响应缺少 content_uri')
+  })
+
+  it('网关抛出的错误原样冒泡（保留 httpStatus 供上层分流）', async () => {
+    const tooLarge = Object.assign(new Error('too big'), { httpStatus: 413, errcode: 'M_TOO_LARGE' })
+    uploadRawMock.mockRejectedValue(tooLarge)
+
+    await expect(uploadViaGateway(new File(['x'], 'a.txt'), {})).rejects.toBe(tooLarge)
   })
 })
 
@@ -169,60 +139,46 @@ describe('uploadContentWithChunkFallback', () => {
 
   beforeEach(() => {
     upload.mockReset()
+    uploadRawMock.mockReset()
   })
 
   it('should return content_uri from MediaManager upload', async () => {
     const getMedia = () =>
       ({ uploadContent: vi.fn().mockResolvedValue({ content_uri: 'mxc://ok' }) }) as unknown as MediaManager
-    const client = createClient()
 
-    const result = await uploadContentWithChunkFallback(getMedia, client, new File(['x'], 'a.txt'), {})
-
-    expect(result).toBe('mxc://ok')
+    await expect(uploadContentWithChunkFallback(getMedia, new File(['x'], 'a.txt'), {})).resolves.toBe('mxc://ok')
   })
 
   it('should handle string upload response', async () => {
     const getMedia = () => ({ uploadContent: vi.fn().mockResolvedValue('mxc://str') }) as unknown as MediaManager
-    const client = createClient()
 
-    const result = await uploadContentWithChunkFallback(getMedia, client, new File(['x'], 'a.txt'), {})
-
-    expect(result).toBe('mxc://str')
+    await expect(uploadContentWithChunkFallback(getMedia, new File(['x'], 'a.txt'), {})).resolves.toBe('mxc://str')
   })
 
   it('should fall back to chunk upload on 413', async () => {
     const getMedia = () =>
       ({ uploadContent: vi.fn().mockRejectedValue({ httpStatus: 413 }) }) as unknown as MediaManager
     upload.mockResolvedValue({ mxcUrl: 'mxc://chunk' })
-    const client = createClient()
 
-    const result = await uploadContentWithChunkFallback(getMedia, client, new File(['x'], 'a.txt'), {})
-
+    await expect(uploadContentWithChunkFallback(getMedia, new File(['x'], 'a.txt'), {})).resolves.toBe('mxc://chunk')
     expect(upload).toHaveBeenCalledTimes(1)
-    expect(result).toBe('mxc://chunk')
   })
 
-  it('should fall back to direct fetch on AbortError', async () => {
+  it('SDK 抛 AbortError ⇒ 回退到网关直传（不再自建 XHR）', async () => {
     const abortError = new Error('aborted')
     abortError.name = 'AbortError'
     const getMedia = () => ({ uploadContent: vi.fn().mockRejectedValue(abortError) }) as unknown as MediaManager
-    const client = createClient({ token: null, homeserverUrl: 'https://hs.example.com' })
+    uploadRawMock.mockResolvedValue({ content_uri: 'mxc://direct' })
 
-    FakeXHR.instances = []
-    globalThis.XMLHttpRequest = FakeXHR as unknown as typeof XMLHttpRequest
+    await expect(uploadContentWithChunkFallback(getMedia, new File(['x'], 'a.txt'), {})).resolves.toBe('mxc://direct')
 
-    const promise = uploadContentWithChunkFallback(getMedia, client, new File(['x'], 'a.txt'), {})
-    await vi.waitFor(() => expect(FakeXHR.instances.length).toBeGreaterThan(0))
-    FakeXHR.instances[0].complete(200, '{"content_uri":"mxc://direct"}')
-
-    await expect(promise).resolves.toBe('mxc://direct')
-    globalThis.XMLHttpRequest = OriginalXHR
+    expect(uploadRawMock).toHaveBeenCalledTimes(1)
+    expect(uploadRawMock.mock.calls[0][0]).toBe('_matrix/media/v3/upload')
   })
 
   it('should rethrow other errors', async () => {
     const getMedia = () => ({ uploadContent: vi.fn().mockRejectedValue(new Error('boom')) }) as unknown as MediaManager
-    const client = createClient()
 
-    await expect(uploadContentWithChunkFallback(getMedia, client, new File(['x'], 'a.txt'), {})).rejects.toThrow('boom')
+    await expect(uploadContentWithChunkFallback(getMedia, new File(['x'], 'a.txt'), {})).rejects.toThrow('boom')
   })
 })

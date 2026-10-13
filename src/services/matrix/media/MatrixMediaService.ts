@@ -50,6 +50,18 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     return fn.call(client)
   }
 
+  /**
+   * 上传前置校验：client 未初始化时**立即**失败。
+   *
+   * 必须是显式的一次调用：`upload*` 在真正上传前会先做压缩 / 元数据解析等昂贵工作，
+   * 若把「未初始化」留到 `getMedia()` 才暴露，`uploadVideo` / `uploadAudio` 会先白等
+   * 10s 元数据超时，错误信息也从「客户端未初始化」退化成「获取视频元数据超时」
+   * （实测被 `MatrixMediaService.test.ts` 的两条用例拦下）。
+   */
+  private assertClientReady(): void {
+    this.getClient()
+  }
+
   setCompressOptions(options: CompressOptions) {
     this.compressOptions = { ...DEFAULT_COMPRESS_OPTIONS, ...options }
   }
@@ -61,11 +73,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   // ── 上传 ──
 
   async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
-    const client = this.getClient()
+    this.assertClientReady()
     try {
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),
-        client,
         file,
         createUploadOptions(file.type, onProgress, file.name),
         onProgress
@@ -101,7 +112,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async uploadEncryptedFile(file: File, onProgress?: (progress: number) => void): Promise<EncryptedUploadResult> {
-    const client = this.getClient()
+    this.assertClientReady()
     try {
       const encryptedPayload = await matrixAttachmentEncryptionService.encryptAttachment(file)
       const encryptedBlobFile = new File([encryptedPayload.encryptedData as BlobPart], file.name, {
@@ -109,7 +120,6 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       })
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),
-        client,
         encryptedBlobFile,
         createUploadOptions('application/octet-stream', onProgress, file.name, false),
         onProgress
@@ -128,7 +138,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async uploadImage(file: File, onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
-    const client = this.getClient()
+    this.assertClientReady()
     try {
       logger.info(
         `[MatrixMedia][AVATAR_DEBUG] uploadImage start, size=${file.size} type=${file.type} name=${file.name}`
@@ -154,7 +164,6 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),
-        client,
         fileToUpload,
         createUploadOptions(fileToUpload.type, onProgress, fileToUpload.name),
         onProgress
@@ -183,12 +192,11 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async uploadVideo(file: File, onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
-    const client = this.getClient()
+    this.assertClientReady()
     try {
       const metadata = await getVideoMetadata(file)
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),
-        client,
         file,
         createUploadOptions(file.type, onProgress, file.name),
         onProgress
@@ -209,12 +217,11 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async uploadAudio(file: File, onProgress?: (progress: number) => void): Promise<UploadResult & MediaInfo> {
-    const client = this.getClient()
+    this.assertClientReady()
     try {
       const duration = await getAudioDuration(file)
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),
-        client,
         file,
         createUploadOptions(file.type, onProgress, file.name),
         onProgress
@@ -228,10 +235,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   }
 
   async uploadBlob(blob: Blob, filename: string, mimetype: string): Promise<UploadResult> {
-    const client = this.getClient()
+    this.assertClientReady()
     try {
       const opts = createUploadOptions(mimetype, undefined, filename)
-      const contentUri = await uploadContentWithChunkFallback(() => this.getMedia(), client, blob as File, opts)
+      const contentUri = await uploadContentWithChunkFallback(() => this.getMedia(), blob as File, opts)
       logger.info(`[MatrixMedia] Blob 上传成功: ${contentUri}`)
       return { contentUri, size: blob.size, mimetype }
     } catch (err) {

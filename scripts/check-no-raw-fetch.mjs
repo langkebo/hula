@@ -66,13 +66,10 @@ export const RULES = {
   },
   'xhr-bypass': {
     pattern: /new\s+XMLHttpRequest\s*\(/,
-    hint: '请迁移到 MatrixHttpClient（限流/重试/取消语义统一），见 docs/TJG_INTEGRATION_OPTIMIZATION_PLAN_2026-10-13.md Batch 3.1',
-    allowlist: new Map([
-      [
-        'src/services/matrix/media/mediaUploadHelpers.ts',
-        'TODO(Batch 3.1)：XHR 直连 POST /_matrix/media/v3/upload，绕过限流熔断 —— 迁移到 MatrixHttpClient 后**必须删除本条目**'
-      ]
-    ])
+    hint: '请迁移到 MatrixHttpClient（限流/重试/取消语义统一；原始 body 走 matrixHttpClient.uploadRaw）',
+    // Batch 3.1 已把唯一一处（mediaUploadHelpers 的 XHR 直传）迁到网关，白名单**必须保持为空**：
+    // 再出现任何 `new XMLHttpRequest(` 都应当判红，而不是再加回豁免条目。
+    allowlist: new Map()
   }
 }
 

@@ -78,6 +78,17 @@
 
 ### Batch 3 —— 接入面收敛（逐子项独立提交）
 
+> **3.1 状态：✅ 已完成（2026-10-13）。** 交付：`MatrixHttpClient.uploadRaw`（薄委托）
+> + 新通道 `MatrixRawUploadChannel.ts`（限流包装 fetch / dev 同源改写 / 统一错误归一化 / 超时取消）
+> + 抽出 `MatrixHttpClientAiGate.ts` 腾出 400 行额度（AI 端点闸门行为不变）；
+> `mediaUploadHelpers` 的 `uploadViaDirectFetch`(XHR) → `uploadViaGateway`；
+> `check-no-raw-fetch` 的 `xhr-bypass` 白名单已清空。
+> 测试：`MatrixRawUploadChannel.test.ts`（12 例）+ `mediaUploadHelpers.test.ts` 重写；
+> 变异自证 M20（写回 XHR ⇒ 门禁红）/ M21（丢 Authorization ⇒ 红）/ M22（丢 dev 改写 ⇒ 红）。
+> 附带修正：`uploadVideo/uploadAudio` 的「未初始化」失败顺序（原靠 `const client = getClient()` 提前抛出，
+> 迁移后一度退化成 10s 元数据超时）⇒ 补显式 `assertClientReady()`。
+
+
 | 步骤 | 内容 | 验收 |
 |---|---|---|
 | 3.1 | C5 第二步：`mediaUploadHelpers.ts` 的 upload 迁到 `MatrixHttpClient`（保留分片/进度语义），删 XHR；白名单条目移除 | 单测覆盖上传参数与错误映射；守卫不再白名单 |

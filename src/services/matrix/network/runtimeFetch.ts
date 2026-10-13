@@ -93,7 +93,13 @@ function shouldUseBrowserFallback(input: URL | RequestInfo): boolean {
   return /^https?:\/\//i.test(url) && typeof globalThis.fetch === 'function'
 }
 
-function rewriteToDevProxyUrl(url: string): string {
+/**
+ * 把 dev 域名的 `/_matrix/**` 绝对 URL 改写到同源 Vite proxy。
+ *
+ * 导出给 `MatrixHttpClient` 的原始 body 上传通道复用（浏览器 dev 下必须走 proxy，
+ * 否则跨域直接失败）；单一实现，避免各调用点再抄一份。
+ */
+export function rewriteToDevProxyUrl(url: string): string {
   // Tauri 桌面端 dev 模式下 nativeFetch 偶发失败（resource id invalid），
   // 回退到浏览器 fetch 时需要走 Vite proxy 避免 CORS/自签名证书问题
   if (!import.meta.env.DEV) return url

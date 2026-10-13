@@ -1,6 +1,7 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
+import { AI_EXTENSION_ENABLED, AIExtensionDisabledError, isAiExtensionEndpoint } from './MatrixHttpClientAiGate'
+import { buildAbsoluteEndpointUrl, type MatrixRawRequestOptions, performRawUpload } from './MatrixRawUploadChannel'
 import { createMatrixTransportError } from './MatrixRequestHelper'
 import { getMatrixAccessToken, getMatrixClient, getMatrixHomeserverUrl } from './matrixClientAccessor'
 import { getRuntimeAwareFetch } from './network/runtimeFetch'
@@ -62,73 +63,9 @@ export async function authedRequestWithPath<T>(
   )
 }
 
-const AI_EXTENSION_ENABLED = import.meta.env.VITE_AI_EXTENSION_ENABLED === 'true'
 const logger = createLogger('MatrixHttpClient')
-
-const AI_EXTENSION_ENDPOINTS = new Set<string>([
-  'getAssistantModelList',
-  'mapCoordTranslate',
-  'mapReverseGeocode',
-  'mapStatic',
-  'messageSendStream',
-  'messageSaveGeneratedContent',
-  'messageListByConversationId',
-  'messageDelete',
-  'messageDeleteByConversationId',
-  'conversationPage',
-  'conversationGetMy',
-  'conversationCreateMy',
-  'conversationUpdateMy',
-  'conversationDeleteMy',
-  'modelRemainingUsage',
-  'modelPage',
-  'modelUpdate',
-  'modelDelete',
-  'imageMyPage',
-  'imageMyListByIds',
-  'imageDraw',
-  'videoMyPage',
-  'videoMyListByIds',
-  'videoGenerate',
-  'audioMyPage',
-  'audioMyListByIds',
-  'audioGenerate',
-  'audioVoices',
-  'apiKeyPage',
-  'apiKeySimpleList',
-  'apiKeyCreate',
-  'apiKeyUpdate',
-  'apiKeyDelete',
-  'apiKeyBalance',
-  'platformList',
-  'platformAddModel',
-  'chatRolePage',
-  'chatRoleCategoryList',
-  'chatRoleCreate',
-  'chatRoleUpdate',
-  'chatRoleDelete'
-])
-
-class AIExtensionDisabledError extends Error {
-  constructor(endpoint: string) {
-    super(`AI extension endpoint disabled: ${endpoint}`)
-    this.name = 'AIExtensionDisabledError'
-  }
-}
-
-/**
- * 统一的 Matrix HTTP 客户端
- *
- * 相比通用的 HttpClient，它会自动处理 Matrix 认证、Homeserver URL 解析，
- * 并与 Matrix SDK 的请求逻辑保持一致。
- */
 class MatrixHttpClient {
   private hasWarnedAiDisabled = false
-
-  private isAiExtensionEndpoint(url: string): boolean {
-    const trimmed = url.replace(/^\/+/, '').split(/[?#]/)[0]
-    return AI_EXTENSION_ENDPOINTS.has(trimmed)
-  }
 
   /**
    * Issue an HTTP request through the Matrix SDK client.
@@ -199,7 +136,7 @@ class MatrixHttpClient {
     requestPath: string,
     requestOptions: Omit<MatrixHttpRequestOptions, 'throwOnError' | 'defaultValue'>
   ): Promise<T> {
-    if (!AI_EXTENSION_ENABLED && this.isAiExtensionEndpoint(requestPath)) {
+    if (!AI_EXTENSION_ENABLED && isAiExtensionEndpoint(requestPath)) {
       if (!this.hasWarnedAiDisabled) {
         this.hasWarnedAiDisabled = true
         logger.warn(`AI 扩展接口已禁用 (VITE_AI_EXTENSION_ENABLED=false)，跳过请求: ${requestPath}`)
@@ -227,15 +164,7 @@ class MatrixHttpClient {
     // `getAccessToken: () => this.client?.getAccessToken()`），client 为 null 时 token
     // 必为 null，故显式标注为「未鉴权」语义；错误仍经 MatrixRequestHelper 的
     // createMatrixTransportError 统一归一。
-    const homeserverUrl = getMatrixHomeserverUrl() || resolveMatrixRuntimeEndpointConfig().homeserverUrl
-    const baseUrl = homeserverUrl.replace(/\/$/, '')
-    const fullUrl = requestPath.startsWith('http') ? requestPath : `${baseUrl}/${requestPath.replace(/^\//, '')}`
-
-    let urlWithParams = fullUrl
-    if (queryParams) {
-      const searchParams = new URLSearchParams(queryParams)
-      urlWithParams = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}${searchParams.toString()}`
-    }
+    const urlWithParams = buildAbsoluteEndpointUrl(requestPath, queryParams)
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -293,6 +222,20 @@ class MatrixHttpClient {
       }
       return defaultValue as T | null
     }
+  }
+
+  /**
+   * 发送**原始 body**（`Blob` / `File` / `ArrayBuffer`）的请求。
+   *
+   * 与 {@link request} 的分工：`request` 会把 body `JSON.stringify` 并假定响应是 JSON；
+   * 媒体上传必须把文件字节原样发出、显式指定 `Content-Type`，故单列一条通道。
+   * 认证、URL 解析（含 dev 同源改写）、限流/重试与错误归一化都在通道模块里复用既有逻辑 ——
+   * 调用点不再需要自己 `new XMLHttpRequest`（那会绕过限流熔断，见图谱 §8.5 C5）。
+   *
+   * @throws {MatrixError} 非 2xx 时抛出（经 `createMatrixTransportError` 归一化，带 `httpStatus`）。
+   */
+  async uploadRaw<T>(path: string, body: BodyInit, options: MatrixRawRequestOptions = {}): Promise<T> {
+    return performRawUpload<T>(path, body, options)
   }
 
   /**
