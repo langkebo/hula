@@ -20,7 +20,12 @@
  *
  * @see https://github.com/matrix-org/matrix-spec-proposals/pull/4140
  */
-import type { DelayedEventInfo, SendDelayedEventRequestOpts, SendDelayedEventResponse } from 'matrix-js-sdk'
+import type {
+  DelayedEventInfo,
+  MatrixClient,
+  SendDelayedEventRequestOpts,
+  SendDelayedEventResponse
+} from 'matrix-js-sdk'
 
 export type { DelayedEventInfoItem } from 'matrix-js-sdk'
 
@@ -30,12 +35,14 @@ import matrixClientService from '../MatrixClientService'
 const logger = createLogger('MatrixDelayedEvents')
 
 /**
- * SDK MSC4140 不稳定方法的松类型视图。
+ * SDK MSC4140 发送方法的松类型视图。
  *
- * SDK 的 `_unstable_sendDelayedEvent` 等方法使用 `K extends keyof TimelineEvents`
- * 泛型约束事件类型，业务层只需以字符串 + 任意内容透传，因此定义此接口放宽泛型约束。
+ * SDK 的 `_unstable_sendDelayedEvent` 等方法使用 `K extends keyof TimelineEvents` /
+ * `K extends keyof StateEvents` 泛型约束事件类型，业务层只需以字符串 + 任意内容透传，
+ * 因此定义此接口放宽泛型约束。仅保留 SDK 真实存在的成员，使 `MatrixClient` 可单次
+ * 断言到本视图，避免 `as unknown as` 双重断言。
  */
-interface DelayedEventClient {
+interface DelayedEventSender {
   _unstable_sendDelayedEvent(
     roomId: string,
     delayOpts: SendDelayedEventRequestOpts,
@@ -60,11 +67,20 @@ interface DelayedEventClient {
     content: Record<string, unknown> & { msc4354_sticky_key?: string },
     txnId?: string
   ): Promise<SendDelayedEventResponse>
-  _unstable_getDelayedEvents(
+}
+
+/**
+ * 延迟事件列表查询视图。
+ *
+ * SDK d.ts 未声明 `_unstable_getDelayedEvents`（仅在内部 `assertDelayedEventsSupported`
+ * 的 apiName 联合中出现），故以可选成员叠加到 `MatrixClient` 上，保持单次断言。
+ */
+type DelayedEventsQueryView = MatrixClient & {
+  _unstable_getDelayedEvents?: (
     status?: DelayedEventStatus,
     delayId?: DelayedEventIdQuery,
     fromToken?: string
-  ): Promise<DelayedEventInfo>
+  ) => Promise<DelayedEventInfo>
 }
 
 /** 定时消息/可撤回消息发送的延迟选项，与 SDK `SendDelayedEventRequestOpts` 等价。 */
@@ -112,15 +128,8 @@ class MatrixDelayedEventsService {
     threadId: string | null = null,
     txnId?: string
   ): Promise<SendDelayedEventResponse> {
-    const client = this.requireClient()
-    const result = await (client as unknown as DelayedEventClient)._unstable_sendDelayedEvent(
-      roomId,
-      delayOpts,
-      threadId,
-      eventType,
-      content,
-      txnId
-    )
+    const client = this.requireClient() as DelayedEventSender
+    const result = await client._unstable_sendDelayedEvent(roomId, delayOpts, threadId, eventType, content, txnId)
     logger.info(`[sendDelayedEvent] roomId=${roomId} type=${eventType} delay_id=${result?.delay_id}`)
     return result
   }
@@ -141,14 +150,8 @@ class MatrixDelayedEventsService {
     delayOpts: DelayedEventOptions,
     stateKey = ''
   ): Promise<SendDelayedEventResponse> {
-    const client = this.requireClient()
-    const result = await (client as unknown as DelayedEventClient)._unstable_sendDelayedStateEvent(
-      roomId,
-      delayOpts,
-      eventType,
-      content,
-      stateKey
-    )
+    const client = this.requireClient() as DelayedEventSender
+    const result = await client._unstable_sendDelayedStateEvent(roomId, delayOpts, eventType, content, stateKey)
     logger.info(
       `[sendDelayedStateEvent] roomId=${roomId} type=${eventType} stateKey=${stateKey} delay_id=${result?.delay_id}`
     )
@@ -175,8 +178,8 @@ class MatrixDelayedEventsService {
     threadId: string | null = null,
     txnId?: string
   ): Promise<SendDelayedEventResponse> {
-    const client = this.requireClient()
-    const result = await (client as unknown as DelayedEventClient)._unstable_sendStickyDelayedEvent(
+    const client = this.requireClient() as DelayedEventSender
+    const result = await client._unstable_sendStickyDelayedEvent(
       roomId,
       stickDuration,
       delayOpts,
@@ -201,8 +204,8 @@ class MatrixDelayedEventsService {
     delayId?: DelayedEventIdQuery,
     fromToken?: string
   ): Promise<DelayedEventInfo> {
-    const client = this.requireClient() as unknown as DelayedEventClient
-    const result = await client._unstable_getDelayedEvents(status, delayId, fromToken)
+    const view = this.requireClient() as DelayedEventsQueryView
+    const result = await view._unstable_getDelayedEvents!(status, delayId, fromToken)
     const scheduledCount = result.scheduled?.length ?? 0
     const finalisedCount = result.finalised?.length ?? 0
     logger.info(`[getDelayedEvents] status=${status ?? 'all'} scheduled=${scheduledCount} finalised=${finalisedCount}`)

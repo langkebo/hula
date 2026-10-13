@@ -111,17 +111,18 @@ export interface ReportRequest {
   explanation?: string
 }
 
+// 与 SDK 权威形状（matrix-js-sdk/admin `AdminReport`，对照后端 report.rs::report_to_json）对齐。
 export interface AdminReport {
   id: number
-  received_ts: number
-  user_id: string
-  score: number
-  reason: string
-  name: string
-  canonical_alias?: string
-  sender: string
+  room_id: string
   event_id: string
-  event_json: Record<string, unknown>
+  user_id: string
+  reported_user_id: string | null
+  reason: string | null
+  content: string | null
+  status: string
+  score: number
+  received_ts: number
 }
 
 export interface ReportRoomResponse {

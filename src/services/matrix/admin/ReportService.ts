@@ -122,8 +122,13 @@ export class AdminReportService {
 
   async getScannerInfo(roomId: string, eventId: string, throwOnError = false): Promise<ScannerInfo | null> {
     try {
-      const result = await this.getReportingMgr().getScannerInfo(roomId, eventId)
-      return result as unknown as ScannerInfo
+      const raw = await this.getReportingMgr().getScannerInfo(roomId, eventId)
+      return {
+        scanner_id: String(raw.scanner_id ?? ''),
+        scan_result: String(raw.scan_result ?? ''),
+        confidence: Number(raw.confidence ?? 0),
+        scanned_at: Number(raw.scanned_at ?? 0)
+      }
     } catch (err) {
       logger.error(`[Admin] 获取扫描器信息失败: ${err}`)
       if (throwOnError) throw err
@@ -142,9 +147,12 @@ export class AdminReportService {
       const result = roomId
         ? await admin.listRoomReports(roomId, { from, limit })
         : await admin.listReports({ from, limit })
+      // SDK `AdminReportPage` 为 `{ reports, total }`；`next_batch` 为后端游标，
+      // 通过宽化赋值读取，避免 `as unknown as` 双重断言。
+      const page: { reports?: AdminReport[]; next_batch?: string } = result
       return {
-        reports: ((result as unknown as { reports?: AdminReport[] }).reports ?? []) as AdminReport[],
-        next_batch: (result as unknown as { next_batch?: string }).next_batch
+        reports: page.reports ?? [],
+        next_batch: page.next_batch
       }
     } catch (err) {
       logger.error(`[Admin] 获取管理端报表失败: ${err}`)
@@ -156,7 +164,7 @@ export class AdminReportService {
   async getAdminReport(reportId: string, throwOnError = false): Promise<AdminReport | null> {
     try {
       const admin = await this._sdkAdmin()
-      return (await admin.getReport(reportId)) as unknown as AdminReport
+      return await admin.getReport(reportId)
     } catch (err) {
       logger.error(`[Admin] 获取报表详情失败: ${err}`)
       if (throwOnError) throw err

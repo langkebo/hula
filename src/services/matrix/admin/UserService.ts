@@ -338,7 +338,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.whois(userId)
-      return result as unknown as Record<string, unknown> | null
+      return { ...result }
     } catch (err) {
       if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取 Whois 失败: ${err}`)
@@ -375,7 +375,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserStats(userId)
-      return (result as unknown as Record<string, unknown>) ?? null
+      return { ...result }
     } catch (err) {
       if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取用户统计失败: ${err}`)
@@ -391,7 +391,7 @@ export class AdminUserService {
       const admin = await this.sdkAdmin()
       const result = await admin.listUserStats()
       return {
-        stats: [result as unknown as Record<string, unknown>],
+        stats: [{ ...result }],
         nextToken: undefined
       }
     } catch (err) {
@@ -491,7 +491,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUserSession(userId)
-      return [result as unknown as Record<string, unknown>]
+      return [{ ...result }]
     } catch (err) {
       if (this.isPermissionDenied(err)) return []
       logger.error(`[Admin] 获取用户会话失败: ${err}`)
@@ -553,7 +553,7 @@ export class AdminUserService {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getAccountStatus(userId)
-      return (result as unknown as Record<string, unknown>) ?? null
+      return { ...result }
     } catch (err) {
       if (this.isPermissionDenied(err)) return null
       logger.error(`[Admin] 获取账户状态失败: ${err}`)
