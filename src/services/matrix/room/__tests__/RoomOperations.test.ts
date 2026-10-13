@@ -317,25 +317,6 @@ describe('RoomOperations', () => {
     })
   })
 
-  describe('incrementUnread', () => {
-    it('resolves silently when room exists', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => ({ roomId: '!r' }) } as never)
-      await expect(ops.incrementUnread('!r')).resolves.toBeUndefined()
-    })
-
-    it('swallows errors when room is missing', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => null } as never)
-      await expect(ops.incrementUnread('!r')).resolves.toBeUndefined()
-    })
-  })
-
-  describe('clearUnread', () => {
-    it('resolves silently when room exists', async () => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ getRoom: () => ({ roomId: '!r' }) } as never)
-      await expect(ops.clearUnread('!r')).resolves.toBeUndefined()
-    })
-  })
-
   // === Translate methods ===
 
   describe('translateText', () => {

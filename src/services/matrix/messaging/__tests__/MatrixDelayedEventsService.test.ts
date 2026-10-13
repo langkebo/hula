@@ -10,7 +10,6 @@ const mockClient = {
   _unstable_sendDelayedEvent: vi.fn(),
   _unstable_sendDelayedStateEvent: vi.fn(),
   _unstable_sendStickyDelayedEvent: vi.fn(),
-  _unstable_getDelayedEvents: vi.fn(),
   _unstable_cancelScheduledDelayedEvent: vi.fn(),
   _unstable_restartScheduledDelayedEvent: vi.fn(),
   _unstable_sendScheduledDelayedEvent: vi.fn()
@@ -96,16 +95,6 @@ describe('MatrixDelayedEventsService', () => {
         undefined
       )
       expect(result).toEqual({ delay_id: 'd3' })
-    })
-  })
-
-  describe('getDelayedEvents', () => {
-    it('forwards status/delayId/fromToken to SDK and returns DelayedEventInfo', async () => {
-      const info = { scheduled: [], finalised: [] }
-      mockClient._unstable_getDelayedEvents.mockResolvedValue(info)
-      const result = await matrixDelayedEventsService.getDelayedEvents('scheduled', 'd1', 'tok')
-      expect(mockClient._unstable_getDelayedEvents).toHaveBeenCalledWith('scheduled', 'd1', 'tok')
-      expect(result).toBe(info)
     })
   })
 

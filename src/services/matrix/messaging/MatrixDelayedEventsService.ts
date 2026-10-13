@@ -9,23 +9,21 @@
  *   - `_unstable_sendDelayedEvent`           定时发送 timeline 事件
  *   - `_unstable_sendDelayedStateEvent`      定时发送 state 事件
  *   - `_unstable_sendStickyDelayedEvent`     定时发送 sticky 事件
- *   - `_unstable_getDelayedEvents`           查询延迟事件（scheduled/finalised）
  *   - `_unstable_cancelScheduledDelayedEvent`   取消尚未送达的延迟事件
  *   - `_unstable_restartScheduledDelayedEvent`  重置延迟事件的计时
  *   - `_unstable_sendScheduledDelayedEvent`     立即触发延迟事件送达
  *
- * 后端对应：synapse-rust 的 `delayed_events` 路由
- *   `GET/PUT /_matrix/client/unstable/org.matrix.msc4140/delayed_events`
- *   `PUT /_matrix/client/unstable/org.matrix.msc4140/delayed_event/{delay_id}`
+ * 后端对应：synapse-rust 的 `delayed_events` 路由（实测 route-manifest）
+ *   `GET  /_matrix/client/unstable/org.matrix.msc4140/delayed_events/{delay_id}`
+ *   `POST /_matrix/client/unstable/org.matrix.msc4140/delayed_events/{delay_id}`（body `{action}`）
+ *
+ * ⚠️ 后端**没有**列表端点（仅单条 GET + action POST），SDK 也没有 `_unstable_getDelayedEvents`
+ * （其 `_unstable_*` 清单里只有 send/cancel/restart/update 系列）。原 `getDelayedEvents()`
+ * 调的是一个**双方都不存在**的方法，且全仓无调用方 —— Batch 3.4 已删除。
  *
  * @see https://github.com/matrix-org/matrix-spec-proposals/pull/4140
  */
-import type {
-  DelayedEventInfo,
-  MatrixClient,
-  SendDelayedEventRequestOpts,
-  SendDelayedEventResponse
-} from 'matrix-js-sdk'
+import type { SendDelayedEventRequestOpts, SendDelayedEventResponse } from 'matrix-js-sdk'
 
 export type { DelayedEventInfoItem } from 'matrix-js-sdk'
 
@@ -67,20 +65,6 @@ interface DelayedEventSender {
     content: Record<string, unknown> & { msc4354_sticky_key?: string },
     txnId?: string
   ): Promise<SendDelayedEventResponse>
-}
-
-/**
- * 延迟事件列表查询视图。
- *
- * SDK d.ts 未声明 `_unstable_getDelayedEvents`（仅在内部 `assertDelayedEventsSupported`
- * 的 apiName 联合中出现），故以可选成员叠加到 `MatrixClient` 上，保持单次断言。
- */
-type DelayedEventsQueryView = MatrixClient & {
-  _unstable_getDelayedEvents?: (
-    status?: DelayedEventStatus,
-    delayId?: DelayedEventIdQuery,
-    fromToken?: string
-  ) => Promise<DelayedEventInfo>
 }
 
 /** 定时消息/可撤回消息发送的延迟选项，与 SDK `SendDelayedEventRequestOpts` 等价。 */
@@ -189,26 +173,6 @@ class MatrixDelayedEventsService {
       txnId
     )
     logger.info(`[sendStickyDelayedEvent] roomId=${roomId} type=${eventType} delay_id=${result?.delay_id}`)
-    return result
-  }
-
-  /**
-   * 查询延迟事件列表。
-   *
-   * @param status 仅查询 `scheduled` 或 `finalised`；不传则查全部
-   * @param delayId 限定特定 delay_id（可传数组）
-   * @param fromToken 分页 token
-   */
-  async getDelayedEvents(
-    status?: DelayedEventStatus,
-    delayId?: DelayedEventIdQuery,
-    fromToken?: string
-  ): Promise<DelayedEventInfo> {
-    const view = this.requireClient() as DelayedEventsQueryView
-    const result = await view._unstable_getDelayedEvents!(status, delayId, fromToken)
-    const scheduledCount = result.scheduled?.length ?? 0
-    const finalisedCount = result.finalised?.length ?? 0
-    logger.info(`[getDelayedEvents] status=${status ?? 'all'} scheduled=${scheduledCount} finalised=${finalisedCount}`)
     return result
   }
 

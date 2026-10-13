@@ -42,7 +42,7 @@ describe('check-no-raw-fetch: evaluateBypasses（合成源码）', () => {
     expect(result.violations[0]).toMatchObject({ file: 'src/services/matrix/whatever.ts', ruleId: 'xhr-bypass' })
   })
 
-  it('已登记的 XHR 债务（mediaUploadHelpers）⇒ 不违规但可见', () => {
+  it('曾登记的 XHR 债务已清偿（Batch 3.1）⇒ 同一份源码现在必须判违规', () => {
     const result = evaluateBypasses([
       {
         path: 'src/services/matrix/media/mediaUploadHelpers.ts',
@@ -50,15 +50,23 @@ describe('check-no-raw-fetch: evaluateBypasses（合成源码）', () => {
       }
     ])
 
-    expect(result.violations).toEqual([])
-    expect(result.findings[0]).toMatchObject({ ruleId: 'xhr-bypass', approved: true })
+    // Batch 3.1 已把该文件迁到 matrixHttpClient.uploadRaw，并清空了 xhr-bypass 白名单。
+    // 若有人把 XHR 写回这里，必须判红 —— 而不是被历史白名单豁免。
+    expect(result.violations).toHaveLength(1)
+    expect(result.violations[0]).toMatchObject({
+      file: 'src/services/matrix/media/mediaUploadHelpers.ts',
+      ruleId: 'xhr-bypass'
+    })
   })
 
-  it('白名单条目不再命中 ⇒ 报 stale（提醒迁移完成后删除条目）', () => {
+  it('扫不到白名单文件 ⇒ 报 stale（提醒删条目）；xhr-bypass 侧已无条目故不参与', () => {
     const result = evaluateBypasses([{ path: 'src/App.vue', content: 'const x = 1' }])
+    const staleFiles = result.staleAllowlist.map((s) => s.file)
 
-    const stale = result.staleAllowlist.map((s) => s.file)
-    expect(stale).toContain('src/services/matrix/media/mediaUploadHelpers.ts')
+    // 既有语义：raw-fetch 白名单里的文件本次一个都没扫到 ⇒ 全部报 stale
+    expect(staleFiles.sort()).toEqual([...RULES['raw-fetch'].allowlist.keys()].sort())
+    // Batch 3.1 之后 xhr-bypass 白名单为空 ⇒ 不可能再出现它的历史条目
+    expect(staleFiles).not.toContain('src/services/matrix/media/mediaUploadHelpers.ts')
   })
 
   it('两条规则各自独立判定（fetch 白名单不豁免 XHR）', () => {
@@ -94,9 +102,9 @@ describe('check-no-raw-fetch: 真实仓库自洽', () => {
     expect(result.staleAllowlist).toEqual([])
   })
 
-  it('回归锁：XHR 债务条目带 TODO 且指向优化方案（迁完必须删）', () => {
-    const entry = RULES['xhr-bypass'].allowlist.get('src/services/matrix/media/mediaUploadHelpers.ts')
-    expect(entry).toBeTruthy()
-    expect(entry).toContain('TODO(Batch 3.1)')
+  it('回归锁：xhr-bypass 白名单必须保持为空（Batch 3.1 已清偿，不许再加回豁免）', () => {
+    // 这条锁的是「不许用加白名单的方式把 XHR 重新放行」：
+    // 需要 XHR 的场景应走 matrixHttpClient.uploadRaw（MatrixRawUploadChannel）。
+    expect(RULES['xhr-bypass'].allowlist.size).toBe(0)
   })
 })

@@ -315,26 +315,6 @@ export class RoomOperations extends BaseMatrixService {
     return result.replacement_room
   }
 
-  async incrementUnread(roomId: string, _highlight?: boolean): Promise<void> {
-    try {
-      const client = this.getClient()
-      const room = client.getRoom(roomId)
-      if (!room) throw new Error(`房间不存在: ${roomId}`)
-    } catch {
-      /* advisory counter; ignore all errors */
-    }
-  }
-
-  async clearUnread(roomId: string): Promise<void> {
-    try {
-      const client = this.getClient()
-      const room = client.getRoom(roomId)
-      if (!room) throw new Error(`房间不存在: ${roomId}`)
-    } catch {
-      /* advisory counter; ignore all errors */
-    }
-  }
-
   // --- Translate (was TranslateService) ---
 
   async translateText(text: string, targetLang?: string, throwOnErrorOrSource?: boolean | string): Promise<string> {
@@ -365,6 +345,16 @@ export class RoomOperations extends BaseMatrixService {
     return await client.getRoomManager().translateText(text, targetLang, sourceLang)
   }
 
+  /**
+   * 降级翻译：调用外部第三方 Google 翻译端点（后端 `translateText` 不可用时）。
+   *
+   * ⚠️ 两个须知（Batch 3.4 复核订正了本文档原先「直连、绕过管控」的表述）：
+   * 1. 它**不是**裸请求 —— 走 `@/utils/HttpClient`，而后者用 `getRuntimeAwareFetch()`
+   *    （即统一传输层 `runtimeFetch`，含限流包装）并带显式超时；目标域名
+   *    `translate.googleapis.com` 也已在 `utils/httpAllowlistConfig.ts` 的 allowlist 里显式登记。
+   * 2. 但它是**内容出境**：用户消息正文会被发送到 Google。仅在后端翻译失败时才会走到这里，
+   *    若后续要加强隐私，应在这里加用户级开关或直接删除该降级路径（属产品决策，本轮保留）。
+   */
   private async translateViaFallback(text: string, targetLang: string): Promise<string> {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`
     // biome-ignore lint/suspicious/noExplicitAny: Google Translate API response shape is unstructured

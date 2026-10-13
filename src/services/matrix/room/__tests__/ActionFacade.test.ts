@@ -39,9 +39,7 @@ const { creationServiceMock, membershipServiceMock, accountDataServiceMock, room
     removeTag: vi.fn(),
     setInviteBlocklist: vi.fn(),
     setInviteAllowlist: vi.fn(),
-    upgradeRoom: vi.fn(),
-    incrementUnread: vi.fn(),
-    clearUnread: vi.fn()
+    upgradeRoom: vi.fn()
   }
 }))
 
@@ -216,24 +214,6 @@ describe('matrixRoomActionFacade', () => {
       const result = await matrixRoomActionFacade.upgradeRoom('!r:e', '11')
       expect(roomOperationsMock.upgradeRoom).toHaveBeenCalledWith('!r:e', '11')
       expect(result).toBe('!new:e')
-    })
-
-    it('incrementUnread 委托（带 highlight）', async () => {
-      roomOperationsMock.incrementUnread.mockResolvedValue(undefined)
-      await matrixRoomActionFacade.incrementUnread('!r:e', true)
-      expect(roomOperationsMock.incrementUnread).toHaveBeenCalledWith('!r:e', true)
-    })
-
-    it('incrementUnread 委托（无 highlight）', async () => {
-      roomOperationsMock.incrementUnread.mockResolvedValue(undefined)
-      await matrixRoomActionFacade.incrementUnread('!r:e')
-      expect(roomOperationsMock.incrementUnread).toHaveBeenCalledWith('!r:e', undefined)
-    })
-
-    it('clearUnread 委托', async () => {
-      roomOperationsMock.clearUnread.mockResolvedValue(undefined)
-      await matrixRoomActionFacade.clearUnread('!r:e')
-      expect(roomOperationsMock.clearUnread).toHaveBeenCalledWith('!r:e')
     })
 
     it('透传 roomOperations 错误', async () => {

@@ -78,6 +78,25 @@
 
 ### Batch 3 —— 接入面收敛（逐子项独立提交）
 
+> **3.4 状态：✅ 已完成（2026-10-13）。** 四项分述（每项都先取证再动手，结论有两处与方案原文不同）：
+> - **① `_unstable_getDelayedEvents`**：不是「SDK 没实现、需要兜底」，而是**SDK 与后端双方都不存在**
+>   —— SDK 的 `_unstable_*` 清单里只有 send/cancel/restart/update 系列；后端实测只有
+>   `GET|POST /_matrix/client/unstable/org.matrix.msc4140/delayed_events/{delay_id}`，**没有列表端点**；
+>   且全仓无调用方 ⇒ **删除 `getDelayedEvents()`**，保留真实可用的 send/cancel/restart。
+> - **② `translate.googleapis.com`**：方案原文称「迁受控出口」，实测**它已经在受控出口里** ——
+>   经 `@/utils/HttpClient` → `getRuntimeAwareFetch()`（统一传输层、含限流包装）+ 显式超时，
+>   域名也已在 allowlist 显式登记。⇒ 不改行为，只**订正文档表述**并在代码里写明真正的风险是
+>   「内容出境」（属产品决策，本轮保留功能）。
+> - **③ `incrementUnread`**：连带 `clearUnread` 一起删 —— 两者是「只校验房间存在然后什么都不做」的空壳，
+>   且除 `RoomFacade` 自身转发外无调用方；`RoomFacade` 的接口与实现同步删除。
+> - **④ `m.thread_mute` / `m.thread_freeze`**：实测还有第三个 —— `m.thread_unfreeze`。三者构成一套
+>   **自造协议**（发普通消息事件当「状态」 + 扫 live timeline 读回），且在 synapse-rust 与 matrix-js-sdk
+>   里均 **0 命中**、无 UI 调用方 ⇒ **整组删除**（`MatrixThreadState` 5 个方法 + `MatrixThreadService`
+>   5 处转发）。线程静音/冻结的真实能力保留在 `MatrixThreadApi.*ViaApi`（SDK ThreadingManager）。
+> 测试同步：删 1 个 describe（delayed events）+ 5 个 describe（thread state）+ 2 个 describe
+> 与 3 个 it（unread）+ 2 个 mock 键；受影响 54 文件 / 967 例全绿。
+
+
 > **3.3 状态：✅ 已完成（2026-10-13）。** 先取证后动手，结论与方案原文略有修正：
 > - `MatrixCacheManager`（123 行）+ `createCachedFetcher`（17 行）+ 135 行测试 = **生产代码零调用**的假资产
 >   （唯一引用是 `main.ts` 挂的 `window.__tjg_cache_stats` 调试读取器，读的统计永不写入）

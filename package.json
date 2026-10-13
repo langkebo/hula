@@ -93,6 +93,7 @@
     "check:tauri-plugin-parity": "node scripts/check-tauri-plugin-parity.mjs",
     "check:crypto-cross-window": "node scripts/check-crypto-cross-window-coordination.mjs",
     "check:sdk-crypto-teardown": "node scripts/check-sdk-crypto-teardown-contract.mjs",
+    "check:sdk-unstable-methods": "node scripts/check-sdk-unstable-methods.mjs",
     "check:window-registry": "node scripts/check-window-label-registry.mjs",
     "check:window-session-entry": "node scripts/check-window-session-entry.mjs",
     "check:worker-client-boundary": "node scripts/check-worker-client-boundary.mjs",
@@ -102,7 +103,7 @@
     "test:e2e:mobile": "playwright test --project=mobile-chromium --project=mobile-safari",
     "test:e2e:dynamic": "playwright test e2e/dynamic-flow.spec.ts --project=mobile-chromium",
     "check:a11y": "node scripts/check-a11y.mjs",
-    "check:release": "pnpm check:ratchet && pnpm check:file-size && pnpm typecheck && pnpm check:sdk-types && pnpm check:sdk-aliases && pnpm check:v-html && pnpm check:doc-coverage && pnpm check:doc-paths && pnpm check:sdk-boundary && pnpm check:bare-matrix-paths && pnpm quality:no-raw-fetch && pnpm check:icon-colors && pnpm check:guard-patterns && pnpm check:settings-wiring && pnpm check:component-contracts && pnpm check:i18n-dead-keys && pnpm check:dependency-audit && pnpm check:vendor-runtime-deps && pnpm check:http-allowlist && pnpm check:tauri-permissions && pnpm check:tauri-plugin-parity && pnpm check:crypto-cross-window && pnpm check:tauri-window-coverage && pnpm check:sdk-crypto-teardown && pnpm check:window-registry && pnpm check:integration-map-freshness && pnpm check:window-session-entry && pnpm check:worker-client-boundary"
+    "check:release": "pnpm check:ratchet && pnpm check:file-size && pnpm typecheck && pnpm check:sdk-types && pnpm check:sdk-aliases && pnpm check:v-html && pnpm check:doc-coverage && pnpm check:doc-paths && pnpm check:sdk-boundary && pnpm check:bare-matrix-paths && pnpm quality:no-raw-fetch && pnpm check:icon-colors && pnpm check:guard-patterns && pnpm check:settings-wiring && pnpm check:component-contracts && pnpm check:i18n-dead-keys && pnpm check:dependency-audit && pnpm check:vendor-runtime-deps && pnpm check:http-allowlist && pnpm check:tauri-permissions && pnpm check:tauri-plugin-parity && pnpm check:crypto-cross-window && pnpm check:tauri-window-coverage && pnpm check:sdk-crypto-teardown && pnpm check:window-registry && pnpm check:integration-map-freshness && pnpm check:window-session-entry && pnpm check:worker-client-boundary && pnpm check:sdk-unstable-methods"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",

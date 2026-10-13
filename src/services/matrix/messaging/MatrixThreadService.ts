@@ -302,23 +302,8 @@ class MatrixThreadService extends BaseMatrixService {
   getThreadRootId(event: MatrixEvent) {
     return this.state.getThreadRootId(event)
   }
-  isThreadMuted(threadRootId: string) {
-    return this.state.isThreadMuted(threadRootId)
-  }
-  isThreadFrozen(threadRootId: string) {
-    return this.state.isThreadFrozen(threadRootId)
-  }
-  async freezeThread(roomId: string, threadRootId: string) {
-    return this.state.freezeThread(roomId, threadRootId)
-  }
-  async unfreezeThread(roomId: string, threadRootId: string) {
-    return this.state.unfreezeThread(roomId, threadRootId)
-  }
   async markThreadAsRead(roomId: string, threadRootId: string) {
     return this.state.markThreadAsRead(roomId, threadRootId)
-  }
-  async muteThread(roomId: string, threadRootId: string, mute: boolean) {
-    return this.state.muteThread(roomId, threadRootId, mute)
   }
   async getThreadNotificationCount(roomId: string, threadRootId: string) {
     return this.state.getThreadNotificationCount(roomId, threadRootId)

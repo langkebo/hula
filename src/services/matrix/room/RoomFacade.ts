@@ -43,8 +43,6 @@ export interface MatrixRoomActionFacade {
   setInviteBlocklist(roomId: string, blocked: string[]): Promise<void>
   setInviteAllowlist(roomId: string, allowed: string[]): Promise<void>
   upgradeRoom(roomId: string, newVersion: string): Promise<string>
-  incrementUnread(roomId: string, highlight?: boolean): Promise<void>
-  clearUnread(roomId: string): Promise<void>
   getHistoryVisibility(roomId: string): Promise<string>
   setHistoryVisibility(roomId: string, visibility: string): Promise<void>
   getPowerLevels(roomId: string): Promise<Record<string, unknown>>
@@ -97,8 +95,6 @@ export const matrixRoomActionFacade: MatrixRoomActionFacade = {
   setInviteBlocklist: (roomId, blocked) => roomOperations.setInviteBlocklist(roomId, blocked),
   setInviteAllowlist: (roomId, allowed) => roomOperations.setInviteAllowlist(roomId, allowed),
   upgradeRoom: (roomId, newVersion) => roomOperations.upgradeRoom(roomId, newVersion),
-  incrementUnread: (roomId, highlight?) => roomOperations.incrementUnread(roomId, highlight),
-  clearUnread: (roomId) => roomOperations.clearUnread(roomId),
   getHistoryVisibility: (roomId) => roomOperations.getHistoryVisibility(roomId),
   setHistoryVisibility: (roomId, visibility) => roomOperations.setHistoryVisibility(roomId, visibility),
   getPowerLevels: (roomId) => roomOperations.getPowerLevels(roomId),
@@ -116,7 +112,8 @@ export const matrixRoomActionFacade: MatrixRoomActionFacade = {
   unbanUser: (roomId, userId) => matrixRoomMembershipService.unbanUser(roomId, userId),
   forgetRoom: (roomId) => matrixRoomMembershipService.forgetRoom(roomId),
   knockRoom: (roomId, reason?, viaServers?) => matrixRoomMembershipService.knockRoom(roomId, reason, viaServers),
-  joinRoomByAlias: (roomIdOrAlias, serverName?) => matrixRoomMembershipService.joinRoomByAlias(roomIdOrAlias, serverName),
+  joinRoomByAlias: (roomIdOrAlias, serverName?) =>
+    matrixRoomMembershipService.joinRoomByAlias(roomIdOrAlias, serverName),
 
   // AccountData (deep)
   setRoomAccountData: (roomId, eventType, content) =>

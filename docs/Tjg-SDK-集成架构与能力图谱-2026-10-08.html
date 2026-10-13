@@ -610,12 +610,20 @@
   <div class="danger"><b>② Worker 名不副实。</b><code>MatrixWorkerHost</code> 只暴露 15 个方法（搜索索引、探测、store 统计），<b>未暴露</b> <code>initialize/login/startClient/syncOnce/getClient</code>；主线程从不发送这些消息。因此 Worker 内 <code>state.client</code> 永远是 null，<code>handleGetStats</code> 恒返回 null、<code>handleClearStores</code> 恒为 no-op。CLAUDE.md 中「Matrix SDK 运行在 Web Worker」目前是设计意图而非既成事实。</div>
   <div class="warn"><b>③ 四条接入路径并存，且同一后端路由常有多套实现。</b>service 层同时存在 <code>client.xxx()</code>（40 个服务）、<code>getXxxManager()</code>、<code>client.http.authedRequest()</code>（10 个服务）与 <code>SynapseExtensionHttpBase</code> 里的裸 <code>fetch</code>（4 个子类）。后两者绕过 SDK 的 Manager 层。<br/>
   实测的并行实现：<b>房间能力</b> —— <code>MetadataService.ts:32</code>（走 RoomManager）vs <code>RoomCapabilitiesService.ts:52</code>（走 <code>matrixHttpClient</code> + 自建 5min 缓存 + 去重）；<b>房间摘要</b> —— <code>SummaryService.ts:110</code> vs <code>MatrixRoomSummaryService.ts:221-366</code> vs <code>extensions/SynapseRoomSummaryService.ts</code>；<b>sticky events</b> —— <code>RoomOperations.ts:448/462</code> vs <code>SynapseStickyEventService.ts:24</code>。</div>
-  <div class="warn"><b>③b 其他静态可见风险。</b>
-  <code>RoomOperations.ts:318-336</code> 的 <code>incrementUnread</code>/<code>clearUnread</code> 是<b>空实现存根</b>（只 <code>getRoom()</code> 后吞异常）；
-  pin/unpin（<code>:427-442</code>）、<code>setDirectRoom</code>（<code>:223-234</code>）、pushRule 先删后建（<code>:570-595</code>）均为<b>非原子读改写且无并发保护</b>；
-  <code>MatrixMessageService.ts:169/189</code> 的 <code>sendHtmlMessage</code>/<code>sendEmote</code> 实参顺序存疑（<code>m&lt;timestamp&gt;</code> 型 txnId 不满足 SDK 的 <code>$</code>/null 前缀消解规则）；
-  <code>client.login()</code> 与 <code>client.oidcUserInfo()</code> 同样只有类型声明无实现，SSO 登录对 HTTP 回退形成隐性依赖（<code>MatrixClientAuth.ts:199</code>、<code>MatrixOidcService.ts:178</code>）；
-  <code>MatrixDelayedEventsService.ts:205</code> 调用的 <code>client._unstable_getDelayedEvents</code> 在 vendored 包中无实现。</div>
+  <div class="note"><b>③b 其他静态可见风险（Batch 3.4 已清除 4 项）。</b>
+  <b>本轮清除：</b>① <code>MatrixDelayedEventsService.getDelayedEvents()</code> 调用的
+  <code>_unstable_getDelayedEvents</code> 在 SDK 的 <code>_unstable_*</code> 清单里不存在、后端也没有列表端点
+  （实测仅 <code>GET|POST …/delayed_events/{delay_id}</code>）且全仓无调用方 ⇒ 删除；
+  ② <code>translate.googleapis.com</code> 实为经 <code>HttpClient</code>→<code>runtimeFetch</code>+allowlist+超时的
+  <b>受控</b>外部调用，原「直连绕过管控」表述已订正（真问题只是内容出境）；
+  ③ <code>RoomOperations</code> 的 <code>incrementUnread</code>/<code>clearUnread</code> 是空壳且无调用方 ⇒ 删除；
+  ④ <code>MatrixThreadState</code> 的 <code>isThreadMuted</code>/<code>isThreadFrozen</code>/<code>muteThread</code>/
+  <code>freezeThread</code>/<code>unfreezeThread</code> 整组删除 —— 它们靠往房间发
+  <code>m.thread_mute</code>/<code>m.thread_freeze</code>/<code>m.thread_unfreeze</code> 普通消息事件当「状态」，
+  这三个事件类型在 synapse-rust 与 matrix-js-sdk 里均 <b>0 命中</b>；真实能力保留在
+  <code>MatrixThreadApi.*ViaApi</code>（SDK ThreadingManager）。<br/>
+  <b>历史条目（本轮未复核，保留备查）：</b>pin/unpin、<code>setDirectRoom</code>、pushRule 先删后建的
+  非原子读改写；<code>sendHtmlMessage</code>/<code>sendEmote</code> 的实参顺序存疑；SSO 对 HTTP 回退的隐性依赖。</div>
   <div class="warn"><b>④ 前缀剥离补丁。</b><code>MatrixHttpClient.stripMatrixPrefix()</code> 存在的原因是「调用方传了完整前缀，SDK 又拼一次默认前缀」导致 URL 翻倍 404。这是路径常量与 SDK 默认前缀约定不一致的症状性修复。</div>
   <div class="warn"><b>⑤ 构建依赖 sibling 源码。</b><code>paths/sdk-paths.ts</code> 深度导入 <code>../../../../../matrix-js-sdk/src/…/__generated__/route-table</code>，绕过 SDK package exports；纯净的 tarball 消费模式下该路径并不存在。</div>
   <div class="warn"><b>⑥ Sliding Sync 好友列表过滤常量与后端不匹配（已修复 · §5 P3-3）。</b><code>MatrixSyncManager.ts</code> 曾用
@@ -671,7 +679,7 @@
   <h2>§8 复核 + 8.5 现存问题清单（2026-10-13 实测）</h2>
   <div class="note"><b>§8 十一条风险条目逐条复核：</b>
   ① 已修复 ｜ ② <b>仍存在</b>（形态由"worker 无能力"变成"有能力但不可达"）｜ ③ <b>仍存在</b> ｜
-  ③b <b>部分修复</b>（2 项改走真实 API，4 项残留）｜ ④ <b>已变化</b>（本地剥离表已删，改委托 SDK
+  ③b <b>已修复</b>（Batch 3.4：剩余 4 项全部清除）｜ ④ <b>已变化</b>（本地剥离表已删，改委托 SDK
   <code>KNOWN_PREFIXES</code> 21 条）｜ ⑤ 已修复 ｜ ⑥ 已修复（属实）｜ ⑦ 已修复（属实）｜
   ⑧ <b>已修复</b>（文件 366 → 192 行，幻影接口清空）｜ ⑨ <b>已修复</b> ｜ ⑩ <b>已修复</b>（Batch 3.3）｜ ⑪ <b>部分修复</b>（Batch 3.1 清 XHR）。</div>
 
@@ -711,7 +719,7 @@
     <tbody>
       <tr><td>C1</td><td><b>Worker 有能力但不可达</b>：主线程从不发 initialize/login/startClient ⇒ <code>state.client</code> 恒 null、<code>getStats()</code> 恒 null、<code>clearStores()</code> no-op，而 UI 正在调它们（移动端还弹「清理成功」；登出链路注释承诺清 store 却未发生）</td><td>✅ 已修（Batch 3.2）：worker 侧 client 死面整体删除（7 handler + state + initSDK + 内存看门狗）；三处假 UI/假成功与登出 no-op 一并移除；新门禁 <code>check:worker-client-boundary</code></td></tr>
       <tr><td>C2</td><td><b>同一后端能力多套并行实现</b>（自建缓存/deduper；SummaryService vs MatrixRoomSummaryService vs SynapseRoomSummaryService；契约测试仍 mock client=null）</td><td>⏳ 仍存在（§8 ③）</td></tr>
-      <tr><td>C3</td><td><b>4 项静态残留</b>：<code>_unstable_getDelayedEvents</code>（messaging/MatrixDelayedEventsService.ts，SDK 全库 0 实现、无兜底）、直连 translate.googleapis.com（room/RoomOperations.ts:369）、incrementUnread 空存根（RoomOperations.ts:318 + 新 RoomFacade）、非标准 thread 事件（messaging/MatrixThreadState.ts）</td><td>⏳ 部分修复（§8 ③b）</td></tr>
+      <tr><td>C3</td><td><b>4 项静态残留已全部清除（Batch 3.4）</b>：① <code>getDelayedEvents()</code> 调用的 <code>_unstable_getDelayedEvents</code> 在 SDK 与后端<b>双方都不存在</b>（后端无列表端点）且无调用方 ⇒ 删除；② <code>translate.googleapis.com</code> 实为经 <code>HttpClient</code>→<code>runtimeFetch</code>+allowlist 的受控外部调用，原「直连」表述已订正；③ <code>incrementUnread</code>/<code>clearUnread</code> 空壳且无调用方 ⇒ 删除；④ <code>m.thread_mute</code>/<code>m.thread_freeze</code>/<code>m.thread_unfreeze</code> 自造事件整组删除（后端与 SDK 均 0 命中），真实能力保留在 <code>MatrixThreadApi.*ViaApi</code></td><td>✅ 已修（Batch 3.4）</td></tr>
       <tr><td>C4</td><td><b>缓存管理器是零调用死资产</b>：<code>MatrixCacheManager</code>（123 行 + 17 行 helper + 135 行测试）生产代码零调用，唯一引用是 <code>main.ts</code> 挂的 <code>window.__tjg_cache_stats</code> 调试读取器（读的统计永不写入，恒为零）；<code>MatrixRequestDeduper</code> 的 <code>dedupWindowMs</code> 参数名不副实</td><td>✅ 已修（Batch 3.3）：死资产整体删除（含测试/挂点/声明，doc-coverage 基线收紧 981→963）；deduper 改为 <code>STALE_IN_FLIGHT_MS</code> 语义 + 条件删除</td></tr>
       <tr><td>C5</td><td><b>XHR 旁路逃过守卫</b>：media upload 用 XMLHttpRequest 直连 media v3 upload，绕过限流熔断，而 <code>check-no-raw-fetch</code> 的 <code>fetch(</code> 正则抓不到 XHR</td><td>✅ 已修（Batch 3.1）：改走 <code>matrixHttpClient.uploadRaw</code> → <code>MatrixRawUploadChannel.ts</code>（限流 fetch + dev 同源改写 + 统一错误归一化）；<code>xhr-bypass</code> 白名单已清空</td></tr>
     </tbody>

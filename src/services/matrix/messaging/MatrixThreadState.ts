@@ -1,6 +1,13 @@
 /**
  * MatrixThreadState — thread state predicates, notification counts and
- * local-state-mutating operations (mute / freeze / unfreeze / mark-read).
+ * local-state-mutating operations (mark-read).
+ *
+ * ⚠️ Batch 3.4：原 `isThreadMuted` / `isThreadFrozen` / `muteThread` / `freezeThread` /
+ * `unfreezeThread` 已删除 —— 它们构成一套**自造协议**：靠往房间发
+ * `m.thread_mute` / `m.thread_freeze` / `m.thread_unfreeze` 普通消息事件来当"状态"，
+ * 再靠扫描 live timeline 里那些消息的 `content.mute/frozen` 来读回状态。
+ * 这三个事件类型在 synapse-rust 与 matrix-js-sdk 里均 **0 命中**，且全仓无 UI 调用方。
+ * 线程静音/冻结的真实能力在 `MatrixThreadApi.*ViaApi`（走 SDK ThreadingManager → 后端私有 API）。
  *
  * Extracted from MatrixThreadService to keep the main service under the file
  * size guard. `fetchThreadReplies` is injected so this class can reuse the
@@ -8,7 +15,7 @@
  */
 
 import { MatrixContentField, MatrixRelType } from '@/common/matrixConstants'
-import type { EventType, MatrixEvent } from '@/services/matrix/sdk'
+import type { MatrixEvent } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
@@ -75,62 +82,6 @@ export class MatrixThreadState extends BaseMatrixService {
     return null
   }
 
-  /** 判断话题是否被静音
-   */
-  isThreadMuted(threadRootId: string): boolean {
-    const client = matrixClientService.getClient()
-    if (!client) return false
-
-    const rooms = client.getRooms()
-    for (const room of rooms) {
-      const timelineSet = room.getUnfilteredTimelineSet()
-      const events = timelineSet.getLiveTimeline().getEvents()
-
-      for (const event of events) {
-        const content = event.getContent() as MessageContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-
-        if (
-          relatesTo?.rel_type === MatrixRelType.THREAD &&
-          relatesTo.event_id === threadRootId &&
-          content.mute === true
-        ) {
-          return true
-        }
-      }
-    }
-
-    return false
-  }
-
-  /** 判断话题是否被冻结
-   */
-  isThreadFrozen(threadRootId: string): boolean {
-    const client = matrixClientService.getClient()
-    if (!client) return false
-
-    const rooms = client.getRooms()
-    for (const room of rooms) {
-      const timelineSet = room.getUnfilteredTimelineSet()
-      const events = timelineSet.getLiveTimeline().getEvents()
-
-      for (const event of events) {
-        const content = event.getContent() as MessageContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-
-        if (
-          relatesTo?.rel_type === MatrixRelType.THREAD &&
-          relatesTo.event_id === threadRootId &&
-          (content.frozen !== undefined || content.freeze !== undefined)
-        ) {
-          return true
-        }
-      }
-    }
-
-    return false
-  }
-
   /** 获取话题通知计数
    */
   async getThreadNotificationCount(roomId: string, threadRootId: string): Promise<number> {
@@ -166,73 +117,6 @@ export class MatrixThreadState extends BaseMatrixService {
     if (lastReply) {
       await matrixReceiptService.sendReadReceiptByEventId(roomId, lastReply.getId()!)
       logger.info(`[MatrixThread] 标记线程已读: ${threadRootId}`)
-    }
-  }
-
-  /** 静音话题
-   */
-  async muteThread(roomId: string, threadRootId: string, mute: boolean): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.sendEvent(roomId, 'm.thread_mute' as EventType, {
-        [MatrixContentField.RELATES_TO]: {
-          rel_type: MatrixRelType.THREAD,
-          event_id: threadRootId
-        },
-        mute: mute
-      })
-      logger.info(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程成功: ${threadRootId}`)
-    } catch (err) {
-      logger.error(`[MatrixThread] ${mute ? '静音' : '取消静音'}线程失败: ${err}`)
-      throw err
-    }
-  }
-
-  /** 冻结话题
-   */
-  async freezeThread(roomId: string, threadRootId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.sendEvent(roomId, 'm.thread_freeze' as EventType, {
-        [MatrixContentField.RELATES_TO]: {
-          rel_type: MatrixRelType.THREAD,
-          event_id: threadRootId
-        }
-      })
-      logger.info(`[MatrixThread] 冻结线程成功: ${threadRootId}`)
-    } catch (err) {
-      logger.error(`[MatrixThread] 冻结线程失败: ${err}`)
-      throw err
-    }
-  }
-
-  /** 解冻话题
-   */
-  async unfreezeThread(roomId: string, threadRootId: string): Promise<void> {
-    const client = matrixClientService.getClient()
-    if (!client) {
-      throw new Error(this.t('matrix_error.common.client_not_initialized'))
-    }
-
-    try {
-      await client.sendEvent(roomId, 'm.thread_unfreeze' as EventType, {
-        [MatrixContentField.RELATES_TO]: {
-          rel_type: MatrixRelType.THREAD,
-          event_id: threadRootId
-        }
-      })
-      logger.info(`[MatrixThread] 解冻线程成功: ${threadRootId}`)
-    } catch (err) {
-      logger.error(`[MatrixThread] 解冻线程失败: ${err}`)
-      throw err
     }
   }
 }
