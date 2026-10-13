@@ -11,7 +11,10 @@ import {
  * 门禁单测：SDK crypto 生命周期契约哨兵。
  *
  * 重要性：`MatrixClientLifecycle.forceReconnect` 复用 client 重启这条路，
- * 其正确性完全依赖 6 条 SDK 具体行为；SDK 变了不会有编译错误，只会静默毁掉 E2EE。
+ * 其正确性完全依赖若干条 SDK 具体行为；SDK 变了不会有编译错误，只会静默毁掉 E2EE。
+ *
+ * 2026-10-13（A3）：契约集已改写为「停 crypto **并清空绑定**」——旧集钉的是"只停不清"，
+ * 那是 Tjg 侧兜底存在的原因；fork 修好后，这条不变量改由 SDK 自己保证。
  */
 
 /** 依据真实 SDK 片段构造一份"契约成立"的合成源码 */
@@ -20,6 +23,7 @@ function conformingSources(): Record<string, string> {
     'lib/client-lifecycle-stop.js': [
       'export function stopClientLifecycleServices(client) {',
       '  client.cryptoBackend?.stop();',
+      '  client.cryptoBackend = undefined;',
       '  client.syncApi?.stop();',
       '}'
     ].join('\n'),
@@ -35,6 +39,11 @@ function conformingSources(): Record<string, string> {
     ].join('\n'),
     'lib/client.js': [
       'class MatrixClient {',
+      '  stopClient() {',
+      '    releaseCryptoBackend(this);',
+      '    if (!this.clientRunning) return;',
+      '    stopClientLifecycleServices(this);',
+      '  }',
       '  async initRustCrypto() {',
       '    if (this.cryptoBackend) {',
       '      this.logger.warn("Attempt to re-initialise e2e encryption on MatrixClient");',
@@ -67,7 +76,40 @@ describe('check-sdk-crypto-teardown-contract: evaluateSdkCryptoTeardownContract'
     const result = evaluateSdkCryptoTeardownContract(sources)
 
     expect(result.ok).toBe(false)
-    expect(result.violations.map((v) => v.id)).toContain('stopClient-stops-crypto')
+    expect(result.violations.map((v) => v.id)).toContain('lifecycle-stop-stops-crypto')
+  })
+
+  it('A3：停 crypto 却不清空绑定 ⇒ 判红（同一 client 的 crypto 重新变成"一次性"）', () => {
+    const sources = conformingSources()
+    sources['lib/client-lifecycle-stop.js'] = [
+      'export function stopClientLifecycleServices(client) {',
+      '  client.cryptoBackend?.stop();',
+      '  client.syncApi?.stop();',
+      '}'
+    ].join('\n')
+
+    const result = evaluateSdkCryptoTeardownContract(sources)
+
+    expect(result.ok).toBe(false)
+    expect(result.violations.map((v) => v.id)).toContain('lifecycle-stop-clears-crypto-binding')
+  })
+
+  it('A3：stopClient() 不再释放绑定 ⇒ 判红（未 start 过的客户端会漏掉释放）', () => {
+    const sources = conformingSources()
+    sources['lib/client.js'] = [
+      'class MatrixClient {',
+      '  stopClient() {',
+      '    if (!this.clientRunning) return;',
+      '    stopClientLifecycleServices(this);',
+      '  }',
+      '  getCrypto() { return this.cryptoBackend; }',
+      '}'
+    ].join('\n')
+
+    const result = evaluateSdkCryptoTeardownContract(sources)
+
+    expect(result.ok).toBe(false)
+    expect(result.violations.map((v) => v.id)).toContain('stopClient-also-releases-binding')
   })
 
   it('RustCrypto.stop() 不再关闭 OlmMachine ⇒ 判红（IndexedDB 连接不会释放）', () => {
@@ -83,14 +125,17 @@ describe('check-sdk-crypto-teardown-contract: evaluateSdkCryptoTeardownContract'
   it('取消 initRustCrypto 的重复初始化守卫 ⇒ 判红（解绑兜底的必要性变了）', () => {
     const sources = conformingSources()
     sources['lib/client.js'] = [
-      'async initRustCrypto() { this.cryptoBackend = await RustCrypto.initRustCrypto({}); }',
-      'getCrypto() { return this.cryptoBackend; }'
+      'class MatrixClient {',
+      '  stopClient() { releaseCryptoBackend(this); }',
+      '  async initRustCrypto() { this.cryptoBackend = await RustCrypto.initRustCrypto({}); }',
+      '  getCrypto() { return this.cryptoBackend; }',
+      '}'
     ].join('\n')
 
     const result = evaluateSdkCryptoTeardownContract(sources)
 
     expect(result.ok).toBe(false)
-    expect(result.violations.map((v) => v.id)).toContain('initRustCrypto-refuses-reinit')
+    expect(result.violations.map((v) => v.id)).toContain('initRustCrypto-refuses-reinit-while-bound')
   })
 
   it('start 侧开始自行初始化 crypto ⇒ 判红（我们的重启路径假设变了）', () => {

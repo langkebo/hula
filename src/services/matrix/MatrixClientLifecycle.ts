@@ -274,9 +274,10 @@ export class MatrixClientLifecycle {
     try {
       logger.info('[LIFECYCLE] Stopping current sync for reconnect')
       client.stopClient()
-      // SDK 契约：stopClient() 会一并停掉 crypto（olmMachine.close()，IndexedDB 连接关闭），
-      // 但不清空 client.cryptoBackend，且 initRustCrypto() 见到非空即 warn+return。
-      // 本路径复用同一个 client 重启 ⇒ 必须先解除该绑定，否则本窗口 E2EE 永久静默失效。
+      // SDK 契约（fork ≥ `0824bb23a`，A3）：`stopClient()` 会停掉 crypto（olmMachine.close()，
+      // IndexedDB 连接关闭）**并清空** `client.cryptoBackend` ⇒ 同一 client 可直接重新
+      // `initRustCrypto`。下面的解绑是**兜底**（SDK 若回退成"只停不清"仍能救回 E2EE），
+      // 正常时序下它看到 `getCrypto() === undefined`（no-crypto）而直接返回。
       cryptoTracker.releaseStoppedCryptoBinding(client)
       await new Promise((resolve) => setTimeout(resolve, 1000))
       connectionManager.updateConnectionState('RECONNECTING')
@@ -323,8 +324,8 @@ export class MatrixClientLifecycle {
       })
       eventRouter.setup(client, syncManager)
 
-      // crypto 已随 stopClient 停止 ⇒ 重启 sync 前必须重新初始化（否则解密/加密全失效，
-      // 且因 getCrypto() 仍真值而不会被别处补救）。传 accessToken 判据与 doStartClient 一致。
+      // crypto 已随 stopClient 停止（且绑定已被 SDK 清空）⇒ 重启 sync 前必须重新初始化，
+      // 否则解密/加密全失效。传 accessToken 判据与 doStartClient 一致。
       await cryptoTracker.ensureCrypto(client, !!config?.accessToken)
 
       // await！原实现不 await 会导致异步错误被静默吞没

@@ -7,9 +7,11 @@
  * 语义（勿回退）：
  * - 只在 `cryptoBackend.stopped === true` 时才允许置空 —— 也就是**只清理已经停掉的绑定**。
  *   仍在运行的 crypto 若被置空，OlmMachine 与 IndexedDB 连接会**泄漏**（无人再持有它去 close）。
- * - 之所以需要这个操作：fork 的 `client.stopClient()` 会 `cryptoBackend.stop()`（关掉 OlmMachine），
- *   但**不清空** `client.cryptoBackend`；而 `initRustCrypto()` 见该字段非空即直接 return
- *   ⇒ 同一 client 的 crypto 是"一次性"的，复用前必须先解绑。
+ * - ⚠️ **2026-10-13（A3）后本函数在生产路径上已降级为「兜底」**：fork `0824bb23a` 起，
+ *   `client.stopClient()` 会**自己**停止 crypto 并清空 `cryptoBackend`
+ *   （`releaseCryptoBackend`，见 `check:sdk-crypto-teardown` 的 8 条契约），所以正常时序下
+ *   本函数看到的是 `getCrypto() === undefined` ⇒ `no-crypto`，**这是正常路径，不是异常**。
+ *   保留它的价值：SDK 若回退成"只停不清"，这一层仍能把 E2EE 救回来。
  *
  * 不依赖 `matrix-js-sdk`（只做结构化访问），故不受 `check:sdk-boundary` 约束。
  */

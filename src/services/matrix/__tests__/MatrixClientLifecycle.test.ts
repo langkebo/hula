@@ -429,11 +429,13 @@ describe('MatrixClientLifecycle', () => {
     })
 
     /**
-     * SDK 契约（fork 40.2.0-langkebo.6，实测 node_modules/matrix-js-sdk/lib/client-lifecycle-stop.js）：
+     * SDK 契约（fork `0824bb23a`，实测 node_modules/matrix-js-sdk/lib/client-lifecycle-stop.js
+     * 与 lib/client.js）：
      * client.stopClient() 会 `cryptoBackend.stop()` → `RustCrypto.stop()` → `olmMachine.close()`
-     * （IndexedDB 连接关闭），**但不清空** client.cryptoBackend；而 `initRustCrypto()` 见
-     * cryptoBackend 非空即 warn+return，`getCrypto()` 又只返回 cryptoBackend（停止后仍真值）。
-     * ⇒ 复用同一 client 重启时若不处理，crypto 永久失效：系统唤醒后解不开新消息（静默）。
+     * （IndexedDB 连接关闭），**并清空** client.cryptoBackend（A3）；而 `initRustCrypto()` 见
+     * cryptoBackend 非空即 warn+return，`getCrypto()` 只返回该字段。
+     * ⇒ 复用同一 client 重启时必须重新初始化 crypto，否则 E2EE 静默失效（系统唤醒后解不开新消息）。
+     * 其中"解绑"一步（`releaseStoppedCryptoBinding`）自 A3 起是兜底，正常时序下是 no-op。
      */
     it('复用 client 重启前必须：解除已停止的 crypto 绑定 → 重新初始化 → 再 startClient', async () => {
       vi.useFakeTimers()

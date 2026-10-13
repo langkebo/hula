@@ -3,14 +3,19 @@
  * Guard — 钉住「Tjg 的 crypto 生命周期代码所依赖的 SDK 语义」。
  *
  * 为什么需要它：`MatrixClientLifecycle.forceReconnect()` 复用同一个 client 重启 sync，
- * 而我们的兜底（`MatrixCryptoStateTracker.releaseStoppedCryptoBinding`）**整套逻辑成立与否
- * 完全取决于 fork SDK 的 4 条具体行为**。SDK 一旦升级/回退改了其中任一条，我们的兜底会
- * 从"必要"变成"有害"或从"有效"变成"无效"，而这**不会**有任何编译错误 —— 只会表现为
- * 系统唤醒后 E2EE 静默失效、或 OlmMachine 泄漏。
+ * 而这条路径的正确性**完全取决于 fork SDK 的几个具体行为**。SDK 一旦升级/回退改了其中任一条，
+ * 我们的代码会从"必要"变成"有害"或从"有效"变成"无效"，而这**不会**有任何编译错误 ——
+ * 只会表现为系统唤醒后 E2EE 静默失效、或 OlmMachine 泄漏。
  *
- * 实测基准：`matrix-js-sdk@40.2.0-langkebo.6`（Tjg 经 `vendor/matrix-js-sdk.tgz` 消费）。
- * 断言对象是**已安装**的包（`node_modules/matrix-js-sdk/...`），因为门禁要检查的是
- * 真正被构建进去的那份代码；缺依赖 ⇒ EXIT=2（不当作通过）。
+ * ⚠️ **2026-10-13（A3）本契约集已随 fork 修订同步改写**：
+ * - 旧契约钉的是「SDK 只停止、**不**清空 cryptoBackend」⇒ Tjg 必须自己解绑；
+ * - 新契约钉的是「SDK 停止 crypto **并**清空绑定」⇒ 同一 client 可直接重新 `initRustCrypto`。
+ *   Tjg 的 `releaseStoppedCryptoBinding` 降级为**兜底**（SDK 若回退仍能救），
+ *   此时它会看到 `getCrypto() === undefined`（`no-crypto`），这属于正常路径、不是异常。
+ *
+ * 实测基准：`matrix-js-sdk@40.2.0-langkebo.6`（fork commit `0824bb23a`，Tjg 经
+ * `vendor/matrix-js-sdk.tgz` 消费）。断言对象是**已安装**的包（`node_modules/matrix-js-sdk/...`），
+ * 因为门禁要检查的是真正被构建进去的那份代码；缺依赖 ⇒ EXIT=2（不当作通过）。
  *
  * Usage:
  *   node scripts/check-sdk-crypto-teardown-contract.mjs
@@ -37,11 +42,26 @@ export const SDK_DIR = path.join(projectRoot, 'node_modules', 'matrix-js-sdk')
  */
 export const CONTRACT_REQUIREMENTS = [
   {
-    id: 'stopClient-stops-crypto',
+    id: 'lifecycle-stop-stops-crypto',
     file: 'lib/client-lifecycle-stop.js',
     // 允许可选链：源码侧是 `client.cryptoBackend?.stop()`，编译产物里则是 `_x.stop()` 形式
     pattern: /cryptoBackend\??\.stop\(\)/,
-    why: 'client.stopClient() 必须仍会停止 crypto（否则"停即释放"的前提不成立）'
+    why: 'stopClientLifecycleServices 必须仍会停止 crypto（否则"停即释放"的前提不成立）'
+  },
+  {
+    id: 'lifecycle-stop-clears-crypto-binding',
+    file: 'lib/client-lifecycle-stop.js',
+    // A3 新增：停之后必须置空。`undefined` / `void 0` 两种转译形态都接受。
+    pattern: /cryptoBackend\s*=\s*(?:undefined|void 0)/,
+    why:
+      'A3：停 crypto 后必须清空 cryptoBackend。若只停不清，initRustCrypto() 见字段非空即 return，' +
+      '同一 client 的 crypto 变成"一次性"⇒ 复用重启（系统唤醒重连）会带着已死的 crypto 跑起来，E2EE 静默失效'
+  },
+  {
+    id: 'stopClient-also-releases-binding',
+    file: 'lib/client.js',
+    pattern: /stopClient\(\)\s*\{[\s\S]{0,240}?releaseCryptoBackend\(\s*this\s*\)/,
+    why: 'stopClient() 的早退路径（client 从未 start）不经过 stopClientLifecycleServices ⇒ 那里也必须释放 crypto'
   },
   {
     id: 'rust-crypto-stop-closes-olm-machine',
@@ -53,19 +73,21 @@ export const CONTRACT_REQUIREMENTS = [
     id: 'rust-crypto-has-stopped-flag',
     file: 'lib/rust-crypto/rust-crypto.js',
     pattern: /"stopped",\s*false/,
-    why: '需要可判定的 stopped 标志：releaseStoppedCryptoBinding 据此确认"确已停止"才解绑'
+    why: '需要可判定的 stopped 标志：Tjg 的兜底（releaseStoppedCryptoBinding / A1 复发哨兵）据此确认"确已停止"'
   },
   {
-    id: 'initRustCrypto-refuses-reinit',
+    id: 'initRustCrypto-refuses-reinit-while-bound',
     file: 'lib/client.js',
     pattern: /cryptoBackend[^;]{0,80}?Attempt to re-initialise e2e encryption/,
-    why: 'initRustCrypto() 见 cryptoBackend 非空即 warn+return —— 这就是必须先解绑的原因'
+    why:
+      'initRustCrypto() 见 cryptoBackend 非空即 warn+return —— 这是整套契约的核心不变量：' +
+      '只要绑定还在，"重新初始化"就不可能发生（A3 正是靠清空绑定来解除这一限制）'
   },
   {
     id: 'getCrypto-returns-backend-only',
     file: 'lib/client.js',
     pattern: /getCrypto\(\)\s*\{[\s\S]{0,160}?return this\.cryptoBackend/,
-    why: 'getCrypto() 只返回 cryptoBackend ⇒ 停止后仍真值，ensureCrypto 会误判"已可用"而早退'
+    why: 'getCrypto() 只返回 cryptoBackend ⇒ 若停止后仍绑定，ensureCrypto 会误判"已可用"而早退'
   },
   {
     id: 'lifecycle-start-does-not-init-crypto',
