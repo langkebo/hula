@@ -730,6 +730,10 @@ export type I18nKeys = {
   },
   "agreement": {
     "privacy": {
+      "header": {
+        "title": "Tjg隐私保护指引",
+        "updatedAt": "更新时间：2025年9月3日"
+      },
       "sections": [
         {
           "title": "引言",
@@ -887,6 +891,10 @@ export type I18nKeys = {
       ]
     },
     "server": {
+      "header": {
+        "title": "Tjg服务协议",
+        "updatedAt": "更新时间：2025年9月3日"
+      },
       "sections": [
         {
           "title": "1. 服务条款的确认和接纳",
@@ -7643,7 +7651,11 @@ export type I18nKeyPaths =
   | "admin.modules.status_loaded"
   | "admin.modules.status_unloaded"
   | "admin.modules.title"
+  | "agreement.privacy.header.title"
+  | "agreement.privacy.header.updatedAt"
   | "agreement.privacy.sections"
+  | "agreement.server.header.title"
+  | "agreement.server.header.updatedAt"
   | "agreement.server.sections"
   | "ai_assistant.title"
   | "ai_assistant.welcome"
