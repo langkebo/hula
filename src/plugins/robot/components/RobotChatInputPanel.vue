@@ -133,7 +133,7 @@
           </template>
           <div class="max-w-300px">
             <div v-if="videoImagePreview" class="mb-8px">
-              <img :src="videoImagePreview" class="max-w-full rounded-4px" alt="视频预览" />
+              <img :src="videoImagePreview" class="max-w-full rounded-4px" :alt="t('ai_assistant.robot.video_preview')" />
             </div>
             <div class="text-12px text-[--tjg-text-tertiary]">
               <div v-if="isUploadingVideoImage" class="text-[--tjg-color-success-500]">

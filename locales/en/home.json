@@ -23,7 +23,8 @@
     },
     "badge": {
       "current": "Current badge:",
-      "wear": "Wear"
+      "wear": "Wear",
+      "image_alt": "Badge"
     },
     "avatar": {
       "change": "Change avatar",
@@ -257,6 +258,7 @@
     "favorite_short_title": "Favorites",
     "plugin": "Plugins",
     "plugin_manage": "Plugin Management",
+    "plugin_background": "Plugin background",
     "more": "More",
     "opened": "opened"
   },
@@ -338,7 +340,9 @@
   },
   "file_drop": {
     "title": "Release to send files",
-    "desc": "Drag and drop images or files, the current session will receive them"
+    "desc": "Drag and drop images or files, the current session will receive them",
+    "parse_failed": "Failed to parse dropped files",
+    "unrecognized": "Unrecognized dropped files"
   },
   "apply_list": {
     "friend_notice": "Friend Requests",

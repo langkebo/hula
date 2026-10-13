@@ -148,7 +148,7 @@ const runInitWithMode = (_block: boolean) => {
   // 路由守卫会在后续导航中处理未登录状态。
   // 此处仅记录错误，让异步组件能正常加载（可能显示空数据，但不白屏）。
   return p.catch((error) => {
-    logger.error('初始化失败（不阻塞异步组件加载）:', error)
+    logger.error('Initialization failed (async components not blocked):', error)
   })
 }
 
@@ -379,7 +379,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
               await home.requestUserAttention(UserAttentionType.Critical)
             }
           } catch (error) {
-            logger.warn('检查窗口状态失败:', error)
+            logger.warn('Failed to check window state:', error)
             shouldPlaySound = true
           }
         } else {
@@ -424,8 +424,8 @@ const buildPathUploadFiles = async (paths: string[]) => {
     const filesMeta = (await getFilesMeta<FilesMeta>(paths)) ?? []
     return await FileUtil.copyDroppedFilesToAppScope(paths, filesMeta)
   } catch (error) {
-    logger.error('解析拖拽文件元数据失败:', error)
-    showFeedback('解析拖拽文件失败', 'error')
+    logger.error('Failed to parse dropped file metadata:', error)
+    showFeedback(t('home.file_drop.parse_failed'), 'error')
     return []
   }
 }
@@ -437,10 +437,10 @@ const handleNativeFileDrop = async (paths: string[]) => {
     if (pathFiles.length > 0) {
       useMitt.emit(MittEnum.GLOBAL_FILES_DROP, pathFiles)
     } else {
-      showFeedback('无法识别拖拽的文件', 'error')
+      showFeedback(t('home.file_drop.unrecognized'), 'error')
     }
   } catch (error) {
-    logger.error('处理原生拖拽文件失败:', error)
+    logger.error('Failed to handle native file drop:', error)
   } finally {
     isDraggingFiles.value = false
   }
@@ -469,13 +469,13 @@ const setupNativeFileDropListeners = async () => {
     })
     tauriFileDropUnlisteners.push(unlisten)
   } catch (error) {
-    logger.error('注册原生文件拖拽监听失败:', error)
+    logger.error('Failed to register native file drop listener:', error)
   }
 }
 
 if (hasTauriRuntime()) {
   listen('relogin', async () => {
-    logger.info('收到重新登录事件')
+    logger.info('Received relogin event')
     await logout()
   })
 }
@@ -495,7 +495,7 @@ onBeforeMount(async () => {
       try {
         await groupStore.getGroupUserList(globalStore.currentSessionRoomId, true)
       } catch (error) {
-        logger.error('页面初始化：刷新群成员列表失败', error)
+        logger.error('Page init: failed to refresh group member list', error)
       }
     }
   }
@@ -520,7 +520,7 @@ onMounted(async () => {
             await emitTo('tray', 'home_focus', {})
             await emitTo('notify', 'home_focus', {})
           } catch (error) {
-            logger.warn('向其他窗口广播聚焦事件失败:', error)
+            logger.warn('Failed to broadcast focus event to other windows:', error)
           }
         })
 
@@ -529,7 +529,7 @@ onMounted(async () => {
             await emitTo('tray', 'home_blur', {})
             await emitTo('notify', 'home_blur', {})
           } catch (error) {
-            logger.warn('向其他窗口广播失焦事件失败:', error)
+            logger.warn('Failed to broadcast blur event to other windows:', error)
           }
         })
       }

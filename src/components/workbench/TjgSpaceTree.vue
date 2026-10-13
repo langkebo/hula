@@ -142,7 +142,7 @@ const loadHierarchy = async (options: {
   })
 
   return {
-    rooms: result.rooms as unknown as SpaceInfo[],
+    rooms: result.rooms as typeof result.rooms & SpaceInfo[],
     next_batch: result.next_batch
   }
 }
@@ -172,7 +172,7 @@ const loadData = async (from?: string) => {
     }
     nextBatch.value = result.next_batch
   } catch (err) {
-    logger.warn('加载空间房间列表失败:', err)
+    logger.warn('Failed to load space room list:', err)
   } finally {
     loading.value = false
     loadingMore.value = false

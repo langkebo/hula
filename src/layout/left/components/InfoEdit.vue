@@ -61,7 +61,7 @@
           </span>
           <n-popover trigger="hover">
             <template #trigger>
-              <img :src="currentBadge?.img" :alt="currentBadge?.describe || '徽章'" class="size-22px" />
+              <img :src="currentBadge?.img" :alt="currentBadge?.describe || t('home.profile_edit.badge.image_alt')" class="size-22px" />
             </template>
             <span>{{ currentBadge?.describe }}</span>
           </n-popover>

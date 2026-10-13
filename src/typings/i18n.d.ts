@@ -2691,7 +2691,8 @@ export type I18nKeys = {
       },
       "badge": {
         "current": "当前佩戴的徽章:",
-        "wear": "佩戴"
+        "wear": "佩戴",
+        "image_alt": "徽章"
       },
       "avatar": {
         "change": "更换头像",
@@ -2925,6 +2926,7 @@ export type I18nKeys = {
       "favorite_short_title": "收藏",
       "plugin": "插件",
       "plugin_manage": "插件管理",
+      "plugin_background": "插件背景",
       "more": "更多",
       "opened": "已打开"
     },
@@ -3006,7 +3008,9 @@ export type I18nKeys = {
     },
     "file_drop": {
       "title": "松开鼠标即可发送文件",
-      "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件"
+      "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件",
+      "parse_failed": "解析拖拽文件失败",
+      "unrecognized": "无法识别拖拽的文件"
     },
     "apply_list": {
       "friend_notice": "好友通知",
@@ -9054,6 +9058,7 @@ export type I18nKeyPaths =
   | "home.profile_edit.toast.save_failed"
   | "home.profile_edit.badge.current"
   | "home.profile_edit.badge.wear"
+  | "home.profile_edit.badge.image_alt"
   | "home.profile_edit.avatar.change"
   | "home.profile_edit.avatar.tips"
   | "home.profile_edit.avatar.choose_from_gallery"
@@ -9210,6 +9215,7 @@ export type I18nKeyPaths =
   | "home.action.favorite_short_title"
   | "home.action.plugin"
   | "home.action.plugin_manage"
+  | "home.action.plugin_background"
   | "home.action.more"
   | "home.action.opened"
   | "home.chat_details.single.empty_signature"
@@ -9258,6 +9264,8 @@ export type I18nKeyPaths =
   | "home.loading.right_panel"
   | "home.file_drop.title"
   | "home.file_drop.desc"
+  | "home.file_drop.parse_failed"
+  | "home.file_drop.unrecognized"
   | "home.apply_list.friend_notice"
   | "home.apply_list.group_notice"
   | "home.apply_list.you"

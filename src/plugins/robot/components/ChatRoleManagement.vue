@@ -233,6 +233,7 @@ import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
+import { CHAT_ROLE_CATEGORY_VALUES } from '@/plugins/robot/constants'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 import { chatRoleService } from '@/services/matrix/ai/ChatRoleService'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
@@ -278,7 +279,7 @@ const formData = ref({
   modelId: '',
   name: '',
   avatar: '',
-  category: 'AI助手',
+  category: CHAT_ROLE_CATEGORY_VALUES.aiAssistant as string,
   sort: 0,
   description: '',
   systemMessage: '',
@@ -290,16 +291,16 @@ type SelectOption = { label: string; value: string | number }
 
 // 类别选项（默认选项）
 const categoryOptions = ref<SelectOption[]>([
-  { label: t('ai_assistant.robot.category_ai_assistant'), value: 'AI助手' },
-  { label: t('ai_assistant.robot.category_writing'), value: '写作' },
-  { label: t('ai_assistant.robot.category_programming'), value: '编程开发' },
-  { label: t('ai_assistant.robot.category_education'), value: '学习教育' },
-  { label: t('ai_assistant.robot.category_entertainment'), value: '生活娱乐' },
-  { label: t('ai_assistant.robot.category_business'), value: '商务办公' },
-  { label: t('ai_assistant.robot.category_creative'), value: '创意设计' },
-  { label: t('ai_assistant.robot.category_data_analysis'), value: '数据分析' },
-  { label: t('ai_assistant.robot.category_translation'), value: '翻译' },
-  { label: t('ai_assistant.robot.category_other'), value: '其他' }
+  { label: t('ai_assistant.robot.category_ai_assistant'), value: CHAT_ROLE_CATEGORY_VALUES.aiAssistant },
+  { label: t('ai_assistant.robot.category_writing'), value: CHAT_ROLE_CATEGORY_VALUES.writing },
+  { label: t('ai_assistant.robot.category_programming'), value: CHAT_ROLE_CATEGORY_VALUES.programming },
+  { label: t('ai_assistant.robot.category_education'), value: CHAT_ROLE_CATEGORY_VALUES.education },
+  { label: t('ai_assistant.robot.category_entertainment'), value: CHAT_ROLE_CATEGORY_VALUES.entertainment },
+  { label: t('ai_assistant.robot.category_business'), value: CHAT_ROLE_CATEGORY_VALUES.business },
+  { label: t('ai_assistant.robot.category_creative'), value: CHAT_ROLE_CATEGORY_VALUES.creative },
+  { label: t('ai_assistant.robot.category_data_analysis'), value: CHAT_ROLE_CATEGORY_VALUES.dataAnalysis },
+  { label: t('ai_assistant.robot.category_translation'), value: CHAT_ROLE_CATEGORY_VALUES.translation },
+  { label: t('ai_assistant.robot.category_other'), value: CHAT_ROLE_CATEGORY_VALUES.other }
 ])
 
 // 模型选项
@@ -384,7 +385,7 @@ const loadCategoryList = async () => {
       categoryOptions.value = data
     }
   } catch (error) {
-    logger.error('加载角色类别列表失败:', error)
+    logger.error('Failed to load role categories:', error)
   }
 }
 
@@ -397,7 +398,7 @@ const loadModelList = async () => {
       value: item.id
     }))
   } catch (error) {
-    logger.error('加载模型列表失败:', error)
+    logger.error('Failed to load model list:', error)
     showFeedback(t('ai_assistant.robot.load_models_failed'), 'error')
   }
 }
@@ -413,7 +414,7 @@ const loadRoleList = async () => {
     roleList.value = data.list || []
     pagination.value.total = data.total || 0
   } catch (error) {
-    logger.error('加载角色列表失败:', error)
+    logger.error('Failed to load role list:', error)
     showFeedback(t('ai_assistant.robot.load_role_list_failed'), 'error')
   } finally {
     loading.value = false
@@ -494,7 +495,7 @@ const handleSubmit = async () => {
     if ((error as { errors?: unknown })?.errors) {
       return
     }
-    logger.error('保存角色失败:', error)
+    logger.error('Failed to save role:', error)
     showFeedback(t('ai_assistant.robot.save_role_failed'), 'error')
   } finally {
     submitting.value = false
@@ -528,7 +529,7 @@ const handleDelete = async (id: string) => {
     // 通知左侧刷新角色状态
     useMitt.emit('refresh-roles')
   } catch (error) {
-    logger.error('删除角色失败:', error)
+    logger.error('Failed to delete role:', error)
     showFeedback(t('ai_assistant.robot.delete_role_failed'), 'error')
   }
 }

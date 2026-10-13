@@ -78,7 +78,7 @@ const handleLogout = async () => {
   try {
     await logout()
   } catch (error) {
-    logger.error('[LeftAvatar] 退出登录失败:', error)
+    logger.error('[LeftAvatar] Failed to logout:', error)
     showFeedback(t('menu.sign_out_failed'), 'error')
   }
 }

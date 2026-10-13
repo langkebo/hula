@@ -169,7 +169,7 @@ const handleTypeFilter = (value: WorkbenchSessionTypeFilter) => {
   emit('update:sessionTypeFilter', props.sessionTypeFilter === value ? WORKBENCH_SESSION_TYPE_FILTERS.all : value)
 }
 
-const resolvedTitle = computed(() => props.title || t('home.action.message_short_title', '消息'))
+const resolvedTitle = computed(() => props.title || t('home.action.message_short_title'))
 
 const showSummaryBadge = computed(() => {
   return props.totalCount > 0 && props.filteredCount !== props.totalCount

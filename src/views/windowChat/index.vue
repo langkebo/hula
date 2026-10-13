@@ -88,11 +88,11 @@ let unlistenClosed: (() => void) | null = null
 /** error 态下重试会话恢复（成功后模板自动切到 ChatBox）。 */
 async function handleRetry(): Promise<void> {
   const state = await ensureSessionReady()
-  logger.info(`独立聊天窗口重试会话恢复结果=${state}`)
+  logger.info(`Standalone chat window retry session restore result=${state}`)
 }
 
 onMounted(async () => {
-  logger.info(`独立聊天窗口挂载，roomId=${roomId.value}`)
+  logger.info(`Standalone chat window mounted, roomId=${roomId.value}`)
 
   // 附录 C.2：独立窗口初始化时设置当前会话
   if (roomId.value) {
@@ -105,14 +105,14 @@ onMounted(async () => {
   // 避免恢复过程较慢时窗口关闭按钮失效。
   const unlisten = await listenChatClosed(async ({ roomId: closedRoomId }) => {
     if (closedRoomId === roomId.value) {
-      logger.info('收到主窗口关闭通知，关闭独立窗口')
+      logger.info('Received close notification from main window, closing standalone window')
       await closeCurrentWindow()
     }
   })
   unlistenClosed = unlisten
 
   const sessionStateValue = await ensureSessionReady()
-  logger.info(`独立聊天窗口会话状态=${sessionStateValue}`)
+  logger.info(`Standalone chat window session state=${sessionStateValue}`)
 
   // 附录 C.3：通知主窗口未读数清零（窗口已打开）。会话没就绪时不通知，
   // 否则会在「窗口其实看不到消息」的情况下把未读清掉。
@@ -122,7 +122,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  logger.info(`独立聊天窗口卸载，roomId=${roomId.value}`)
+  logger.info(`Standalone chat window unmounted, roomId=${roomId.value}`)
   // 通知主窗口已关闭（emit chat:closed 由 useIndependentChatWindow 的 destroyed 监听处理）
   unlistenClosed?.()
 })

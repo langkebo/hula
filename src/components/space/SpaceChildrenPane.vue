@@ -223,7 +223,7 @@ const handleSelectSpace = (space: SpaceInfo) => {
 const handleMemberClick = (userId: string) => {
   if (!userId) return
   void router.push({ path: `/friend/${encodeURIComponent(userId)}` }).catch((err) => {
-    logger.warn('跳转成员详情失败:', err)
+    logger.warn('Failed to navigate to member detail:', err)
   })
 }
 

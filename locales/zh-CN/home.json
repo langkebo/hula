@@ -23,7 +23,8 @@
     },
     "badge": {
       "current": "当前佩戴的徽章:",
-      "wear": "佩戴"
+      "wear": "佩戴",
+      "image_alt": "徽章"
     },
     "avatar": {
       "change": "更换头像",
@@ -257,6 +258,7 @@
     "favorite_short_title": "收藏",
     "plugin": "插件",
     "plugin_manage": "插件管理",
+    "plugin_background": "插件背景",
     "more": "更多",
     "opened": "已打开"
   },
@@ -338,7 +340,9 @@
   },
   "file_drop": {
     "title": "松开鼠标即可发送文件",
-    "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件"
+    "desc": "支持拖拽多张图片或文件，当前会话将收到这些文件",
+    "parse_failed": "解析拖拽文件失败",
+    "unrecognized": "无法识别拖拽的文件"
   },
   "apply_list": {
     "friend_notice": "好友通知",

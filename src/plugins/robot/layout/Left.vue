@@ -310,7 +310,7 @@ const fetchConversationList = async (isLoadMore = false) => {
       }
     }
   } catch (error) {
-    logger.error('获取会话列表失败:', error)
+    logger.error('Failed to fetch conversation list:', error)
     showFeedback(t('ai_assistant.robot.fetch_conversations_failed'), 'error')
   } finally {
     loading.value = false
@@ -358,7 +358,7 @@ const menuList = ref<OPT.RightMenu[]>([
     label: () => t('ai_assistant.robot.open_standalone_window'),
     icon: 'freezing-line-column',
     click: (item: ChatItem) => {
-      logger.debug('打开独立窗口:', item)
+      logger.debug('Open standalone window:', item)
     }
   },
   {
@@ -419,7 +419,7 @@ const checkHasRoles = async () => {
     // 保存第一个可用角色的ID
     firstAvailableRoleId.value = availableRoles.length > 0 ? availableRoles[0].id : null
   } catch (error) {
-    logger.error('检查角色失败:', error)
+    logger.error('Failed to check roles:', error)
     hasRoles.value = false
     firstAvailableRoleId.value = null
   }
@@ -482,7 +482,7 @@ const add = async () => {
       showFeedback(t('ai_assistant.robot.conversation_created'), 'success')
     }
   } catch (error) {
-    logger.error('创建会话失败:', error)
+    logger.error('Failed to create conversation:', error)
     showFeedback(t('ai_assistant.robot.create_conversation_failed'), 'error')
   }
 }
@@ -515,7 +515,7 @@ const deleteChat = async (item: ChatItem) => {
       showFeedback(t('ai_assistant.robot.conversation_deleted'), 'success')
     }
   } catch (error) {
-    logger.error('删除会话失败:', error)
+    logger.error('Failed to delete conversation:', error)
     showFeedback(t('ai_assistant.robot.delete_conversation_failed'), 'error')
   }
 }
@@ -542,7 +542,7 @@ const deleteAllChats = async () => {
 
     showFeedback(t('ai_assistant.robot.all_conversations_deleted'), 'success')
   } catch (error) {
-    logger.error('删除全部会话失败:', error)
+    logger.error('Failed to delete all conversations:', error)
     showFeedback(t('ai_assistant.robot.delete_all_failed'), 'error')
   }
 }
@@ -586,7 +586,7 @@ const handleBlur = async (item: ChatItem, index: number) => {
     useMitt.emit('left-chat-title', { id: item.id, title: nextTitle })
     useMitt.emit('update-chat-title', { id: item.id, title: nextTitle })
   } catch (error) {
-    logger.error('重命名会话失败:', error)
+    logger.error('Failed to rename conversation:', error)
     item.title = previousTitle
     chatList.value[index].title = previousTitle
     originalTitle.value = previousTitle

@@ -41,8 +41,8 @@
             <button
               type="button"
               class="flex-center size-28px rounded-6px hover:bg-[--tjg-surface-list-hover] color-[--tjg-text-secondary] cursor-pointer"
-              :aria-label="t('common.back', '返回')"
-              :title="t('common.back', '返回')"
+              :aria-label="t('common.back')"
+              :title="t('common.back')"
               @click="handleBack">
               <svg class="size-16px"><use href="#left-bar"></use></svg>
             </button>
@@ -71,7 +71,7 @@
         <div
           v-else
           class="flex-center size-full select-none flex-col gap-16px text-[var(--text-xs)] color-[--tjg-text-tertiary] bg-[--tjg-surface-panel]">
-          <n-empty :description="t('home.chat_sidebar.empty.no_chat_selected', '未选择会话')" size="huge">
+          <n-empty :description="t('home.chat_sidebar.empty.no_chat_selected')" size="huge">
             <template #icon>
               <svg class="size-60px opacity-50 color-[--tjg-text-quaternary]">
                 <use href="#chat"></use>
@@ -79,7 +79,7 @@
             </template>
             <template #extra>
               <n-text depth="3" class="text-[var(--text-xs)] mt-8px inline-block">
-                {{ t('home.chat_sidebar.empty.select_to_start', '选择一个会话或发起新聊天') }}
+                {{ t('home.chat_sidebar.empty.select_to_start') }}
               </n-text>
             </template>
           </n-empty>
@@ -163,23 +163,21 @@ const searchType = computed<'all' | 'space'>(() => (route.query.type === 'space'
 const viewTitle = computed(() => {
   switch (rightView.value) {
     case 'details':
-      return route.params.userId ? t('friend.detail.title', '好友详情') : t('room.detail.title', '房间详情')
+      return route.params.userId ? t('friend.detail.title') : t('room.detail.title')
     case 'applyList':
-      return applyListType.value === 'group'
-        ? t('home.apply_list.group_notice', '群申请通知')
-        : t('home.apply_list.friend_notice', '好友申请')
+      return applyListType.value === 'group' ? t('home.apply_list.group_notice') : t('home.apply_list.friend_notice')
     case 'addFriend':
-      return t('friend.add.title', '添加好友')
+      return t('friend.add.title')
     case 'createRoom':
-      return t('room.create.title', '创建房间')
+      return t('room.create.title')
     case 'joinRoom':
-      return t('room.join.title', '加入房间')
+      return t('room.join.title')
     case 'createSpace':
-      return t('space.create', '创建空间')
+      return t('space.create')
     case 'spaceChildren':
-      return t('space.detail_title', '空间详情')
+      return t('space.detail_title')
     case 'search':
-      return t('search.title', '全局搜索')
+      return t('search.title')
     default:
       return ''
   }

@@ -293,7 +293,7 @@ const loadApiKeyList = async () => {
     apiKeyList.value = data.list || []
     pagination.value.total = data.total || 0
   } catch (error) {
-    logger.error('加载 API 密钥列表失败:', error)
+    logger.error('Failed to load API key list:', error)
     showFeedback(t('ai_assistant.robot.load_keys_failed'), 'error')
   } finally {
     loading.value = false
@@ -370,7 +370,7 @@ const handleSubmit = async () => {
     if (hasValidationErrors(error)) {
       return
     }
-    logger.error('保存密钥失败:', error)
+    logger.error('Failed to save key:', error)
     showFeedback(t('ai_assistant.robot.save_key_failed'), 'error')
   } finally {
     submitting.value = false
@@ -385,7 +385,7 @@ const handleDelete = async (id: string) => {
     loadApiKeyList()
     emit('refresh')
   } catch (error) {
-    logger.error('删除密钥失败:', error)
+    logger.error('Failed to delete key:', error)
     showFeedback(t('ai_assistant.robot.delete_key_failed'), 'error')
   }
 }
@@ -398,7 +398,7 @@ const handleQueryBalance = async (id: string) => {
     balanceMap.value[id] = data
     showFeedback(t('ai_assistant.robot.balance_query_success'), 'success')
   } catch (error) {
-    logger.error('查询余额失败:', error)
+    logger.error('Failed to query balance:', error)
     showFeedback(t('ai_assistant.robot.balance_query_failed'), 'error')
   } finally {
     balanceLoadingMap.value[id] = false

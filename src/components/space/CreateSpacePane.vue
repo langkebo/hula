@@ -4,7 +4,7 @@
     <Transition name="hint-fade">
       <div v-if="showRestoredHint" class="create-space-pane__hint" role="status" aria-live="polite">
         <svg class="size-14px"><use href="#info"></use></svg>
-        <span>{{ t('common.draft_restored', '已恢复上次编辑内容') }}</span>
+        <span>{{ t('common.draft_restored') }}</span>
       </div>
     </Transition>
 
@@ -90,7 +90,7 @@ const handleAvatarUpload = async (options: UploadCustomRequestOptions) => {
     formData.avatarUrl = result.contentUri
     options.onFinish()
   } catch (error) {
-    logger.error('[CreateSpacePane] 上传头像失败:', error)
+    logger.error('[CreateSpacePane] Failed to upload avatar:', error)
     options.onError()
   }
 }
@@ -120,7 +120,7 @@ const handleSubmit = async (ignoreDuplicate = false) => {
     // 用户选择"仍然创建"后带 ignore_duplicate_name 重发（逃生阀）。
     const errMsg = error instanceof Error ? error.message : String(error)
     if (errMsg.includes('M_ROOM_IN_USE') || errMsg.includes('already in use')) {
-      logger.warn('检测到同名空间，等待用户确认:', formData.name)
+      logger.warn('Duplicate space name detected, awaiting user confirmation:', formData.name)
       loading.value = false
       dialog.warning({
         title: t('space.duplicate_name_title'),
@@ -133,7 +133,7 @@ const handleSubmit = async (ignoreDuplicate = false) => {
       })
       return
     }
-    logger.error('[CreateSpacePane] 创建空间失败:', error)
+    logger.error('[CreateSpacePane] Failed to create space:', error)
     showFeedback(t('space.create_failed'), 'error')
   } finally {
     loading.value = false
