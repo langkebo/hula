@@ -19,7 +19,7 @@
                   <img
                     class="absolute size-38px rounded-full object-cover centered-overlay"
                     :src="AvatarUtils.getAvatarUrl(activeItem?.avatar || '')"
-                    alt="群头像"
+                    :alt="t('mobile_contact.avatar.group')"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                 </div>
                 <input
@@ -83,7 +83,7 @@
                     <img
                       class="absolute z-3 size-36px rounded-full object-cover"
                       :src="avatarSrc(i.avatar)"
-                      alt="用户头像"
+                      :alt="t('mobile_contact.avatar.user')"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                   </div>
                   <div class="truncate max-w-full text-[--tjg-text-secondary]">{{ i.name }}</div>
@@ -405,7 +405,7 @@ const handleCrop = async (cropBlob: Blob) => {
 
 const handleCopy = (val: string) => {
   if (!val) return
-  void writeClipboard(val).catch((err) => logger.error('复制失败:', err))
+  void writeClipboard(val).catch((err) => logger.error('Copy failed:', err))
   showFeedback(t('mobile_chat_setting.copy_id', { id: val }), 'success')
 }
 
@@ -483,7 +483,7 @@ async function handleExit() {
       }
       router.push('/mobile/message')
     } catch (error) {
-      logger.error('操作失败:', error)
+      logger.error('Operation failed:', error)
     }
   } catch {
     // user cancelled
@@ -507,7 +507,7 @@ const handleLoadGroupAnnoun = async () => {
   try {
     const roomId = globalStore.currentSessionRoomId
     if (!roomId) {
-      logger.error('当前会话没有roomId')
+      logger.error('No roomId for current session')
       return
     }
     isAddAnnoun.value = isLord.value || isAdmin.value
@@ -526,7 +526,7 @@ const handleLoadGroupAnnoun = async () => {
       announError.value = false
     }
   } catch (error) {
-    logger.error('加载群公告失败:', error)
+    logger.error('Failed to load group announcements:', error)
     announError.value = true
   }
 }
@@ -620,7 +620,7 @@ const fetchGroupMembers = async (roomId: string) => {
 
     options.value = memberDetails
   } catch (error) {
-    logger.error('获取群成员失败:', error)
+    logger.error('Failed to fetch group members:', error)
   }
 }
 
@@ -709,7 +709,7 @@ onMounted(async () => {
         await fetchGroupMembers(roomId)
       }
     } catch (e: unknown) {
-      logger.error('获取群组详情失败:', e)
+      logger.error('Failed to fetch group details:', e)
     }
   } else {
     remarkValue.value = friend.value?.remark || ''

@@ -1,7 +1,7 @@
 <template>
   <AutoFixHeightPage :show-footer="false">
     <template #header>
-      <HeaderBar :isOfficial="false" border :hidden-right="true" room-name="群成员" />
+      <HeaderBar :isOfficial="false" border :hidden-right="true" :room-name="t('mobile_chat.members')" />
     </template>
 
     <template #container>
@@ -11,7 +11,7 @@
             <div class="flex flex-1">
               <van-field
                 v-model="formData.keyword"
-                placeholder="搜索"
+                :placeholder="t('mobile_contact.input.search')"
                 class="text-center border-none w-full rounded-10px"
                 :spellcheck="false" />
             </div>
@@ -20,7 +20,7 @@
           <div class="relative flex flex-1">
             <div ref="measure" class="flex absolute w-full h-full top-0 left-0 z-1"></div>
             <div class="absolute z-10 w-full overflow-y-auto" :style="{ height: virtualScrollerHeight + 'px' }">
-              <div v-if="filteredList.length === 0" class="flex w-full justify-center mt-20px">无数据</div>
+              <div v-if="filteredList.length === 0" class="flex w-full justify-center mt-20px">{{ t('mobile_chat.no_data') }}</div>
               <div v-else>
                 <div
                   v-for="item in filteredList"
@@ -31,7 +31,7 @@
                     <img
                       class="w-42px h-42px rounded-full object-cover flex-shrink-0"
                       :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                      alt="用户头像"
+                      :alt="t('mobile_contact.avatar.user')"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <span class="line-clamp-1">
                       {{ item.name }}
@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 import type { UserItem } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -56,6 +57,7 @@ import { createLogger } from '@/utils/Logger'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 
 const logger = createLogger('GroupChatMember')
+const { t } = useI18n()
 const measure = ref(null)
 
 const virtualScrollerHeight = ref(0)
@@ -79,7 +81,7 @@ onMounted(() => {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         virtualScrollerHeight.value = entry.contentRect.height
-        logger.debug('高度：', virtualScrollerHeight.value)
+        logger.debug('Height:', virtualScrollerHeight.value)
       }
     })
     observer.observe(measure.value)

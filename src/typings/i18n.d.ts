@@ -3937,6 +3937,13 @@ export type I18nKeys = {
     "voice": "语音",
     "keyboard": "键盘",
     "import_model": "导入模型",
+    "no_data": "无数据",
+    "media_viewer": {
+      "image_alt": "媒体图片",
+      "all": "图片与视频",
+      "image": "图片",
+      "video": "视频"
+    },
     "notice": {
       "title": "群公告",
       "publisher": "发布人:",
@@ -3954,7 +3961,11 @@ export type I18nKeys = {
       "fetch_failed": "获取公告详情失败，请重试",
       "unknown_user": "未知用户",
       "cancel": "取消",
-      "save": "保存"
+      "save": "保存",
+      "edit_group_notice": "编辑群公告",
+      "add_group_notice": "新增群公告",
+      "update_success": "公告修改成功",
+      "publish_success": "公告发布成功"
     }
   },
   "mobile_chat_setting": {
@@ -4025,7 +4036,9 @@ export type I18nKeys = {
     "search_contacts_hint": "搜索联系人~",
     "invite_button": "邀请",
     "select_friends_to_invite": "请选择要邀请的好友",
-    "invite_failed": "邀请失败，请重试"
+    "invite_failed": "邀请失败，请重试",
+    "invite_group_member_title": "邀请群友",
+    "invite_success": "成功邀请 {count} 位好友"
   },
   "mobile_contact": {
     "title": "联系人",
@@ -9973,6 +9986,11 @@ export type I18nKeyPaths =
   | "mobile_chat.voice"
   | "mobile_chat.keyboard"
   | "mobile_chat.import_model"
+  | "mobile_chat.no_data"
+  | "mobile_chat.media_viewer.image_alt"
+  | "mobile_chat.media_viewer.all"
+  | "mobile_chat.media_viewer.image"
+  | "mobile_chat.media_viewer.video"
   | "mobile_chat.notice.title"
   | "mobile_chat.notice.publisher"
   | "mobile_chat.notice.pinned"
@@ -9990,6 +10008,10 @@ export type I18nKeyPaths =
   | "mobile_chat.notice.unknown_user"
   | "mobile_chat.notice.cancel"
   | "mobile_chat.notice.save"
+  | "mobile_chat.notice.edit_group_notice"
+  | "mobile_chat.notice.add_group_notice"
+  | "mobile_chat.notice.update_success"
+  | "mobile_chat.notice.publish_success"
   | "mobile_chat_setting.title"
   | "mobile_chat_setting.type.group"
   | "mobile_chat_setting.type.single_chat"
@@ -10048,6 +10070,8 @@ export type I18nKeyPaths =
   | "mobile_chat_setting.invite_button"
   | "mobile_chat_setting.select_friends_to_invite"
   | "mobile_chat_setting.invite_failed"
+  | "mobile_chat_setting.invite_group_member_title"
+  | "mobile_chat_setting.invite_success"
   | "mobile_contact.title"
   | "mobile_contact.add_friends_group"
   | "mobile_contact.search_no_result"

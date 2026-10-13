@@ -103,7 +103,7 @@ const loadAnnouncementList = async () => {
   try {
     const roomId = globalStore.currentSessionRoomId
     if (!roomId) {
-      logger.error('当前会话没有roomId')
+      logger.error('No roomId for current session')
       return
     }
 
@@ -112,17 +112,17 @@ const loadAnnouncementList = async () => {
       announList.value = sortAnnouncements(data.records)
     }
   } catch (error) {
-    logger.error('加载群公告失败:', error)
+    logger.error('Failed to load group announcements:', error)
   }
 }
 
 const goToNoticeDetail = (id: string) => {
-  logger.debug(`跳转到公告详情页面，公告ID: ${id}`)
+  logger.debug('Navigate to notice detail page, notice ID:', id)
   router.push(`/mobile/chatRoom/notice/detail/${id}`)
 }
 
 const goToAddNotice = () => {
-  logger.debug('跳转到新增公告页面')
+  logger.debug('Navigate to add notice page')
   router.push('/mobile/chatRoom/notice/add')
 }
 

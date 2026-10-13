@@ -184,7 +184,7 @@ const loadSourceEvent = async (): Promise<void> => {
     sourceEvent.value = event
     flow.setSourceEvent(event)
   } catch (err) {
-    logger.error('加载源消息事件失败:', err)
+    logger.error('Failed to load source message event:', err)
     sourceEvent.value = null
     flow.setSourceEvent(null)
   } finally {

@@ -6,7 +6,7 @@
         class="bg-white"
         border
         :hidden-right="true"
-        :room-name="isEditMode ? '编辑群公告' : '新增群公告'" />
+        :room-name="isEditMode ? t('mobile_chat.notice.edit_group_notice') : t('mobile_chat.notice.add_group_notice')" />
     </template>
 
     <template #container>
@@ -99,7 +99,7 @@ const loadAnnouncementDetail = async () => {
     }
     logger.debug('announcementContent ', announcementContent)
   } catch (error) {
-    logger.error('加载公告详情失败:', error)
+    logger.error('Failed to load announcement details:', error)
   }
 }
 
@@ -129,7 +129,7 @@ const handleSubmit = async () => {
         content: announcementData.content,
         isPinned: announcementData.top
       })
-      showFeedback('公告修改成功', 'success')
+      showFeedback(t('mobile_chat.notice.update_success'), 'success')
       router.push({
         path: `/mobile/chatRoom/notice/detail/${announcementData.id}`
       })
@@ -144,11 +144,11 @@ const handleSubmit = async () => {
         content: announcementData.content,
         isPinned: announcementData.top
       })
-      showFeedback('公告发布成功', 'success')
+      showFeedback(t('mobile_chat.notice.publish_success'), 'success')
       router.back()
     }
   } catch (error) {
-    logger.error('保存公告失败:', error)
+    logger.error('Failed to save announcement:', error)
     showFeedback(t('mobile_chat.notice.save_failed'), 'error')
   } finally {
     submitting.value = false

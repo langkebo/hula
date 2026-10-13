@@ -11,6 +11,13 @@
   "voice": "语音",
   "keyboard": "键盘",
   "import_model": "导入模型",
+  "no_data": "无数据",
+  "media_viewer": {
+    "image_alt": "媒体图片",
+    "all": "图片与视频",
+    "image": "图片",
+    "video": "视频"
+  },
   "notice": {
     "title": "群公告",
     "publisher": "发布人:",
@@ -28,6 +35,10 @@
     "fetch_failed": "获取公告详情失败，请重试",
     "unknown_user": "未知用户",
     "cancel": "取消",
-    "save": "保存"
+    "save": "保存",
+    "edit_group_notice": "编辑群公告",
+    "add_group_notice": "新增群公告",
+    "update_success": "公告修改成功",
+    "publish_success": "公告发布成功"
   }
 }

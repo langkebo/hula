@@ -183,14 +183,14 @@ const formatPresetLabel = (preset: AssistantModelPreset) => {
 
 const selectedModelLabel = computed(() => {
   if (selectedModelKey.value === 'local') {
-    return '本地模型'
+    return t('ai_assistant.bot.local_model')
   }
   const preset = findPresetByKey(selectedModelKey.value)
   if (preset) {
     return formatPresetLabel(preset)
   }
   const first = assistantModelPresets.value[0]
-  return first ? formatPresetLabel(first) : '选择模型'
+  return first ? formatPresetLabel(first) : t('ai_assistant.bot.select_model')
 })
 
 const handleChatMainClick = () => {
@@ -309,8 +309,8 @@ const handleAssistantImport = async () => {
     selectedModelKey.value = 'local'
     customModelPath.value = filePath
   } catch (error) {
-    logger.error('选择模型文件失败:', error)
-    showFeedback('选择模型文件失败，请重试', 'error')
+    logger.error('Failed to select model file:', error)
+    showFeedback(t('ai_assistant.bot.select_model_failed'), 'error')
   }
 }
 
@@ -332,7 +332,7 @@ const forwardEventIds = ref<string[]>([])
 /** 子级组件（如 renderMessage/ContextMenu）通过 mitt 等通道直接触发各面板 */
 
 const handleReacted = (emoji: string) => {
-  logger.info('表情回应已添加:', emoji)
+  logger.info('Reaction added:', emoji)
   showReactionPicker.value = false
   // 清理状态
   reactionEventId.value = ''
@@ -362,7 +362,7 @@ const handleBatchForward = (payload: { eventId: string; roomId: string; eventIds
 const handleBatchExit = (): void => {
   // chat store 的 isMsgMultiChoose 已由 toolbar 内部清空
   // 此处仅记录日志,后续如需清理其他状态可在此扩展
-  logger.info('[MobileChatMain] 退出多选模式')
+  logger.info('[MobileChatMain] Exit multi-select mode')
 }
 </script>
 

@@ -316,7 +316,7 @@ const handleRemove = async () => {
     handleClose()
     return true
   } catch (error) {
-    logger.error('踢出失败:', error)
+    logger.error('Failed to remove member:', error)
     showFeedback(t('home.manage_group_member.remove_failed'), 'error')
     return false
   } finally {
@@ -360,7 +360,7 @@ onMounted(async () => {
       await groupStore.getGroupUserList(globalStore.currentSessionRoomId)
     }
   } catch (error) {
-    logger.error('加载成员列表失败:', error)
+    logger.error('Failed to load member list:', error)
   }
 
   if (isMobileView.value) {

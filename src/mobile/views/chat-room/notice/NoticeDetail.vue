@@ -98,7 +98,7 @@ const loadAnnouncementDetail = async () => {
       showFeedback(t('mobile_chat.notice.not_found'), 'warning')
     }
   } catch (error) {
-    logger.error('加载公告详情失败:', error)
+    logger.error('Failed to load announcement details:', error)
     announcement.value = null
     showFeedback(t('mobile_chat.notice.fetch_failed'), 'error')
   } finally {

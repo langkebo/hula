@@ -20,7 +20,7 @@
               showImagePreviewRef = true
             }
           ">
-          <img :src="image.url" class="w-full h-full" alt="媒体图片" />
+          <img :src="image.url" class="w-full h-full" :alt="t('mobile_chat.media_viewer.image_alt')" />
         </div>
       </div>
     </div>
@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
 import { useFileStore } from '@/stores/domains/widget/file'
@@ -43,6 +44,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 const ImagePreview = mobileOnlyAsyncComponent(() => import('@/mobile/components/ImagePreview.vue'))
 
 const router = useRouter()
+const { t } = useI18n()
 const fileStore = useFileStore()
 const globalStore = useGlobalStore()
 
@@ -51,9 +53,9 @@ const activeImage = ref<{ url: string }>()
 const mediaType = ref(0)
 
 const typeOptions = [
-  { text: '图片与视频', value: 0 },
-  { text: '图片', value: 1 },
-  { text: '视频', value: 2 }
+  { text: t('mobile_chat.media_viewer.all'), value: 0 },
+  { text: t('mobile_chat.media_viewer.image'), value: 1 },
+  { text: t('mobile_chat.media_viewer.video'), value: 2 }
 ]
 
 const imageList = ref<{ url: string }[]>([])

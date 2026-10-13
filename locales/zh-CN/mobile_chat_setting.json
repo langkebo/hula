@@ -66,5 +66,7 @@
   "search_contacts_hint": "搜索联系人~",
   "invite_button": "邀请",
   "select_friends_to_invite": "请选择要邀请的好友",
-  "invite_failed": "邀请失败，请重试"
+  "invite_failed": "邀请失败，请重试",
+  "invite_group_member_title": "邀请群友",
+  "invite_success": "成功邀请 {count} 位好友"
 }

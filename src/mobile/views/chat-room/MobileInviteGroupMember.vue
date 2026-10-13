@@ -6,7 +6,7 @@
         :hidden-right="true"
         :enable-default-background="false"
         :enable-shadow="false"
-        room-name="邀请群友" />
+        :room-name="t('mobile_chat_setting.invite_group_member_title')" />
     </template>
 
     <template #container>
@@ -15,7 +15,7 @@
         <div class="flex-1 shrink-0">
           <van-field
             v-model="keyword"
-            placeholder="搜索联系人~"
+            :placeholder="t('mobile_chat_setting.search_contacts_hint')"
             clearable
             autocomplete="off"
             :spellcheck="false"
@@ -56,7 +56,7 @@
                     <img
                       :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
                       class="size-44px rounded-full object-cover border-[1px] border-[--avatar-border-color]"
-                      alt="用户头像"
+                      :alt="t('mobile_contact.avatar.user')"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <div class="flex flex-col leading-tight truncate">
                       <span class="text-14px font-medium truncate">
@@ -71,7 +71,7 @@
                                 ? 'var(--tjg-status-online)'
                                 : 'var(--tjg-status-offline)'
                           }"></span>
-                        {{ item.activeStatus === OnlineEnum.ONLINE ? '在线' : '离线' }}
+                        {{ item.activeStatus === OnlineEnum.ONLINE ? t('mobile_contact.status.online') : t('mobile_contact.status.offline') }}
                       </div>
                     </div>
                   </div>
@@ -165,10 +165,10 @@ const handleInvite = async () => {
       )
     )
 
-    showFeedback(`成功邀请 ${selectedList.value.length} 位好友`, 'success')
+    showFeedback(t('mobile_chat_setting.invite_success', { count: selectedList.value.length }), 'success')
     router.back()
   } catch (error) {
-    logger.error('邀请失败:', error)
+    logger.error('Failed to invite:', error)
     showFeedback(t('mobile_chat_setting.invite_failed'), 'error')
   } finally {
     isLoading.value = false
@@ -197,7 +197,7 @@ onMounted(async () => {
         .map((session) => groupStore.getGroupUserList(session.roomId))
     )
   } catch (error) {
-    logger.error('加载用户信息失败:', error)
+    logger.error('Failed to load user info:', error)
   }
 
   calculateScrollHeight()

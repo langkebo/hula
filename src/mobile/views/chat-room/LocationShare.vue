@@ -205,7 +205,7 @@ const handleSendOnce = async () => {
     emit('sent')
     emit('update:show', false)
   } catch (err) {
-    logger.error('发送位置失败', err)
+    logger.error('Failed to send location', err)
     showFeedback(t('location_share.send_failed'), 'error')
   } finally {
     sending.value = false
@@ -267,7 +267,7 @@ const handleStartBeacon = async () => {
     startLiveWatch()
     showFeedback(t('location_share.start_success'), 'success')
   } catch (err) {
-    logger.error('开启位置共享失败', err)
+    logger.error('Failed to start location sharing', err)
     showFeedback(t('location_share.start_failed'), 'error')
   } finally {
     starting.value = false
@@ -286,7 +286,7 @@ const handleStopBeacon = async (opts?: { silent?: boolean }) => {
       showFeedback(t('location_share.stop_success'), 'success')
     }
   } catch (err) {
-    logger.error('停止位置共享失败', err)
+    logger.error('Failed to stop location sharing', err)
     if (!silent) {
       showFeedback(t('location_share.stop_failed'), 'error')
     }

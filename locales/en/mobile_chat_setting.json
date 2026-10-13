@@ -66,5 +66,7 @@
   "search_contacts_hint": "Search contacts~",
   "invite_button": "Invite",
   "select_friends_to_invite": "Please select friends to invite",
-  "invite_failed": "Invitation failed. Please try again."
+  "invite_failed": "Invitation failed. Please try again.",
+  "invite_group_member_title": "Invite Friends",
+  "invite_success": "Successfully invited {count} friend(s)"
 }

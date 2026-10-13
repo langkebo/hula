@@ -11,6 +11,13 @@
   "voice": "Voice",
   "keyboard": "Keyboard",
   "import_model": "Import Model",
+  "no_data": "No data",
+  "media_viewer": {
+    "image_alt": "Media image",
+    "all": "Images & Videos",
+    "image": "Images",
+    "video": "Videos"
+  },
   "notice": {
     "title": "Announcement",
     "publisher": "Publisher:",
@@ -28,6 +35,10 @@
     "fetch_failed": "Failed to load announcement. Please try again.",
     "unknown_user": "Unknown User",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "edit_group_notice": "Edit Announcement",
+    "add_group_notice": "New Announcement",
+    "update_success": "Announcement updated successfully",
+    "publish_success": "Announcement published successfully"
   }
 }
