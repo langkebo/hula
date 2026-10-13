@@ -1,6 +1,6 @@
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
+import { join } from '@tauri-apps/api/path'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { BaseDirectory, exists } from '@tauri-apps/plugin-fs'
+import { exists } from '@tauri-apps/plugin-fs'
 import { useWindow } from '@/composables/common/useWindow'
 import { MsgEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
@@ -8,7 +8,7 @@ import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
 import { createLogger } from '@/utils/Logger'
-import { safeExistsPath } from '@/utils/PathUtil'
+import { getDownloadBaseDir, getDownloadBaseDirPath, safeExistsPath } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('VideoViewer')
@@ -70,7 +70,7 @@ export const useVideoViewer = () => {
 
       const localPath = await getLocalVideoPath(url)
       if (localPath) {
-        const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
+        const baseDir = getDownloadBaseDir()
         return await exists(localPath, { baseDir })
       }
     } catch (error) {
@@ -90,7 +90,7 @@ export const useVideoViewer = () => {
     if (isDownloaded) {
       const localPath = await getLocalVideoPath(url)
       // 使用与下载时一致的基础目录
-      const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
+      const baseDirPath = await getDownloadBaseDirPath()
       return await join(baseDirPath, localPath)
     }
     return url

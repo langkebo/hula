@@ -1,6 +1,6 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
-import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
+import { join } from '@tauri-apps/api/path'
+import { type BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import pLimit from 'p-limit'
 import type { ComponentPublicInstance } from 'vue'
 import { type ComputedRef, type Ref, ref, watch } from 'vue'
@@ -10,8 +10,7 @@ import type { useUserStore } from '@/stores/domains/user/user'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { md5FromString } from '@/utils/Md5Util'
-import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
+import { detectRemoteFileType, getDownloadBaseDir, getDownloadBaseDirPath, getUserEmojiDir } from '@/utils/PathUtil'
 
 const logger = createLogger('EmojiLocalCache')
 
@@ -53,9 +52,6 @@ export const useEmojiLocalCache = ({ isFavoritesView, emojiStore, userStore }: U
   const emojiWorkerUrl = new URL('../../workers/imageDownloader.ts', import.meta.url)
   let emojiCacheWorker: Worker | null = null
   const downloadLimit = pLimit(3)
-
-  const getEmojiBaseDir = () => (isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource)
-  const getEmojiBaseDirPath = async () => (isMobile() ? await appDataDir() : await resourceDir())
 
   const getEmojiWorker = () => {
     if (!isFavoritesView.value) return null
@@ -132,8 +128,8 @@ export const useEmojiLocalCache = ({ isFavoritesView, emojiStore, userStore }: U
     if (!uid) return null
     if (emojiCacheEnv.value?.uid === uid) return emojiCacheEnv.value
     try {
-      const [emojiDir, baseDirPath] = await Promise.all([getUserEmojiDir(uid), getEmojiBaseDirPath()])
-      const env: EmojiCacheEnvironment = { uid, emojiDir, baseDir: getEmojiBaseDir(), baseDirPath }
+      const [emojiDir, baseDirPath] = await Promise.all([getUserEmojiDir(uid), getDownloadBaseDirPath()])
+      const env: EmojiCacheEnvironment = { uid, emojiDir, baseDir: getDownloadBaseDir(), baseDirPath }
       emojiCacheEnv.value = env
       return env
     } catch (error) {

@@ -1,9 +1,10 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
+import { appDataDir, join } from '@tauri-apps/api/path'
 import { readDir } from '@tauri-apps/plugin-fs'
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
 import { createLogger } from '@/utils/Logger'
+import { getDownloadBaseDirPath } from '@/utils/PathUtil'
 import { isMobile } from '@/utils/PlatformConstants'
 import { useUserStore } from '../user/user'
 
@@ -60,7 +61,7 @@ export const useFileStore = defineStore(StoresEnum.FILE, () => {
         } else {
           // 相对路径需要拼接基础目录的绝对路径
           // 移动端使用 AppData，PC 端使用 Resource
-          const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
+          const baseDirPath = await getDownloadBaseDirPath()
           const absolutePath = await join(baseDirPath, file.url)
           displayUrl = convertFileSrc(absolutePath)
         }

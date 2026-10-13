@@ -1,5 +1,5 @@
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
-import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
+import { join } from '@tauri-apps/api/path'
+import { exists, writeFile } from '@tauri-apps/plugin-fs'
 import { defineStore } from 'pinia'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { StoresEnum } from '@/enums'
@@ -9,9 +9,8 @@ import type { FilesMeta } from '@/services/types'
 import { useUserStore } from '@/stores/domains/user/user'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
-import { getFilesMeta } from '@/utils/PathUtil'
+import { getDownloadBaseDir, getDownloadBaseDirPath, getFilesMeta } from '@/utils/PathUtil'
 import { hasOwn } from '@/utils/webCompat'
-import { isMobile } from '../../../utils/PlatformConstants'
 
 const logger = createLogger('FileDownloadStore')
 
@@ -173,12 +172,12 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
       const downloadsDir = await userStore.getUserRoomDir()
       const filePath = await join(downloadsDir, fileName)
 
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
+      const baseDir = getDownloadBaseDir()
       const fileExists = await exists(filePath, { baseDir })
 
       if (fileExists) {
         // 文件存在，构建绝对路径并更新状态
-        const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
+        const baseDirPath = await getDownloadBaseDirPath()
         const absolutePath = await join(baseDirPath, filePath)
 
         // 保持原生路径格式用于文件操作，规范化路径用于显示
@@ -244,11 +243,11 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
       const fileData = new Uint8Array(buffer)
 
       // 写入文件
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
+      const baseDir = getDownloadBaseDir()
       await writeFile(filePath, fileData, { baseDir })
 
       // 构建绝对路径
-      const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
+      const baseDirPath = await getDownloadBaseDirPath()
       const absolutePath = await join(baseDirPath, filePath)
 
       finalizeSuccessfulWrite(fileUrl, fileName, absolutePath, filePath)
@@ -308,11 +307,11 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
     try {
       const downloadsDir = await userStore.getUserRoomDir()
       const filePath = await join(downloadsDir, fileName)
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
+      const baseDir = getDownloadBaseDir()
 
       await writeFile(filePath, data, { baseDir })
 
-      const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
+      const baseDirPath = await getDownloadBaseDirPath()
       const absolutePath = await join(baseDirPath, filePath)
 
       finalizeSuccessfulWrite(fileUrl, fileName, absolutePath, filePath)

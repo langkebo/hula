@@ -51,7 +51,9 @@ vi.mock('@/stores/domains/user/user', () => ({
 
 vi.mock('@/utils/PathUtil', () => ({
   getFilesMeta: vi.fn(() => Promise.resolve([{ exists: true, file_type: 'txt', mime_type: 'text/plain' }])),
-  detectRemoteFileType: vi.fn(() => Promise.resolve({ ext: 'txt', mime: 'text/plain' }))
+  detectRemoteFileType: vi.fn(() => Promise.resolve({ ext: 'txt', mime: 'text/plain' })),
+  getDownloadBaseDir: vi.fn(() => 2),
+  getDownloadBaseDirPath: vi.fn(() => Promise.resolve('/resource'))
 }))
 
 vi.mock('@/composables/common/useActionFeedback', () => ({

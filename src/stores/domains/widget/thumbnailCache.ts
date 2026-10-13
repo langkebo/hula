@@ -1,5 +1,5 @@
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
-import { BaseDirectory, exists, mkdir, remove, writeFile } from '@tauri-apps/plugin-fs'
+import { join } from '@tauri-apps/api/path'
+import { exists, mkdir, remove, writeFile } from '@tauri-apps/plugin-fs'
 import { defineStore } from 'pinia'
 import { MessageStatusEnum, StoresEnum, TauriCommand } from '@/enums'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -7,8 +7,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import type { CacheMetadata } from '@/stores/domains/widget/thumbnailCacheJanitor'
 import { ThumbnailCacheJanitor } from '@/stores/domains/widget/thumbnailCacheJanitor'
 import { md5FromString } from '@/utils/Md5Util'
-import { detectRemoteFileType } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
+import { detectRemoteFileType, getDownloadBaseDir, getDownloadBaseDirPath } from '@/utils/PathUtil'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 type TaskKind = 'image' | 'video' | 'emoji'
@@ -51,7 +50,7 @@ const saveMetadataToStorage = (metadata: Map<string, CacheMetadata>) => {
 
 const deleteThumbnailFile = async (relPath: string): Promise<boolean> => {
   try {
-    const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
+    const baseDir = getDownloadBaseDir()
     await remove(relPath, { baseDir })
     return true
   } catch {
@@ -112,7 +111,7 @@ export const useThumbnailCacheStore = defineStore(StoresEnum.THUMBNAIL_CACHE, ()
     const dir = await userStore.getUserRoomDir()
     const folder = kind === 'emoji' ? 'emojis' : 'thumbnails'
     const target = await join(dir, folder)
-    const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
+    const baseDir = getDownloadBaseDir()
     const ok = await exists(target, { baseDir })
     if (!ok) {
       await mkdir(target, { baseDir, recursive: true })
@@ -130,7 +129,7 @@ export const useThumbnailCacheStore = defineStore(StoresEnum.THUMBNAIL_CACHE, ()
   }
 
   const getAbsolute = async (relativePath: string) => {
-    const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
+    const baseDirPath = await getDownloadBaseDirPath()
     return await join(baseDirPath, relativePath)
   }
 

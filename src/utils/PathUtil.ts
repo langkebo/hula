@@ -19,6 +19,19 @@ const EMOJIS_DIR = 'emojis'
 // AI 生成资源目录名
 const AI_DIR = 'ai'
 
+/**
+ * 用户文件下载/缓存使用的存储基目录。
+ * 移动端为应用私有数据目录（AppData），桌面端为安装资源目录（Resource），
+ * 需与用户房间相对路径配合使用。
+ */
+export const getDownloadBaseDir = (): BaseDirectory => (isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource)
+
+/**
+ * 与 getDownloadBaseDir 对应的基目录绝对路径。
+ */
+export const getDownloadBaseDirPath = async (): Promise<string> =>
+  isMobile() ? await appDataDir() : await resourceDir()
+
 // 获取 userData 根目录
 export const getUserDataRootAbsoluteDir = async (): Promise<string> => {
   await ensureUserDataRoot()

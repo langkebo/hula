@@ -1,6 +1,6 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
-import { BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
+import { join } from '@tauri-apps/api/path'
+import { type BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import pLimit from 'p-limit'
 import { defineStore } from 'pinia'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -11,8 +11,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { md5FromString } from '@/utils/Md5Util'
-import { detectRemoteFileType, getUserEmojiDir } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
+import { detectRemoteFileType, getDownloadBaseDir, getDownloadBaseDirPath, getUserEmojiDir } from '@/utils/PathUtil'
 
 const logger = createLogger('EmojiStore')
 const SUPPORTED_EMOJI_MIME_TYPES = ['image/png', 'image/gif', 'image/webp'] as const
@@ -165,8 +164,8 @@ export const useEmojiStore = defineStore(StoresEnum.EMOJI, () => {
     isPrefetching.value = true
     try {
       const emojiDir = await getUserEmojiDir(uid)
-      const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
-      const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
+      const baseDir = getDownloadBaseDir()
+      const baseDirPath = await getDownloadBaseDirPath()
       const limit = pLimit(concurrency)
 
       await Promise.allSettled(

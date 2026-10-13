@@ -55,7 +55,9 @@ vi.mock('@/utils/Logger', () => ({
 
 vi.mock('@/utils/PathUtil', () => ({
   detectRemoteFileType: vi.fn(),
-  getUserEmojiDir: vi.fn()
+  getUserEmojiDir: vi.fn(),
+  getDownloadBaseDir: vi.fn(() => 'Resource'),
+  getDownloadBaseDirPath: vi.fn(() => Promise.resolve('/resource'))
 }))
 
 vi.mock('@/utils/Md5Util', () => ({

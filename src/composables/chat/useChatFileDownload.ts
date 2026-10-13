@@ -1,5 +1,5 @@
-import { appDataDir, join, resourceDir } from '@tauri-apps/api/path'
-import { BaseDirectory } from '@tauri-apps/plugin-fs'
+import { join } from '@tauri-apps/api/path'
+import type { BaseDirectory } from '@tauri-apps/plugin-fs'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import type { FileTypeResult } from 'file-type'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -11,8 +11,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
-import { detectRemoteFileType, getFilesMeta } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
+import { detectRemoteFileType, getDownloadBaseDir, getDownloadBaseDirPath, getFilesMeta } from '@/utils/PathUtil'
 
 const logger = createLogger('ChatFileDownload')
 
@@ -136,12 +135,12 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
       const isDownloaded = await checkVideoDownloaded(videoUrl)
 
       if (!isDownloaded) {
-        const baseDir = isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource
+        const baseDir = getDownloadBaseDir()
         await downloadFile(videoUrl, localPath, baseDir)
         useMitt.emit(MittEnum.VIDEO_DOWNLOAD_STATUS_UPDATED, { url: videoUrl, downloaded: true })
       }
 
-      const baseDirPath = isMobile() ? await appDataDir() : await resourceDir()
+      const baseDirPath = await getDownloadBaseDirPath()
       const absolutePath = await join(baseDirPath, localPath)
       await revealInDirSafely(absolutePath)
     } catch (error) {
