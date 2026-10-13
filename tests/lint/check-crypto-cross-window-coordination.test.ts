@@ -152,9 +152,16 @@ describe('check-crypto-cross-window-coordination: scanSources（合成源码）'
 })
 
 describe('check-crypto-cross-window-coordination: 真实仓库自洽', () => {
-  it('本仓 src/ 无跨窗口跳过机制，且 Web Locks 串行化在位', () => {
-    const files = collectSourceFiles(srcRoot)
-    const result = scanSources(files)
+  // 记忆化：src/ 全量遍历较重（1200+ 文件），每个测试文件只扫一次，避免并行跑 tests/lint 时抢资源超时
+  let cachedFiles: ReturnType<typeof collectSourceFiles> | null = null
+  const files = () => (cachedFiles ??= collectSourceFiles(srcRoot))
+
+  // 重型 real-repo 扫描（1200+ 文件）：全量并行跑 tests/lint 时会与其它重型用例抢资源，
+  // 故显式放宽超时（同仓 `MatrixClientLifecycle.test.ts` 对慢用例的先例）。
+  const SLOW_REAL_REPO_TIMEOUT_MS = 90_000
+
+  it('本仓 src/ 无跨窗口跳过机制，且 Web Locks 串行化在位', { timeout: SLOW_REAL_REPO_TIMEOUT_MS }, () => {
+    const result = scanSources(files())
 
     // 基数断言：确实扫到了一大批源码 + 目标文件在集合里（避免"空扫 = 通过"）
     expect(result.checkedFiles).toBeGreaterThan(500)
@@ -164,9 +171,10 @@ describe('check-crypto-cross-window-coordination: 真实仓库自洽', () => {
     expect(result.ok).toBe(true)
   })
 
-  it('回归锁：MatrixCryptoStateTracker 里已无跨窗口跳过令牌（取证 2026-10-13 删除）', () => {
-    const files = collectSourceFiles(srcRoot)
-    const target = files.find((f) => f.path === TARGET_FILE)
+  it('回归锁：MatrixCryptoStateTracker 里已无跨窗口跳过令牌（取证 2026-10-13 删除）', {
+    timeout: SLOW_REAL_REPO_TIMEOUT_MS
+  }, () => {
+    const target = files().find((f) => f.path === TARGET_FILE)
     expect(target).toBeTruthy()
 
     const content = target?.content ?? ''

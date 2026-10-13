@@ -39,7 +39,8 @@ export const CONTRACT_REQUIREMENTS = [
   {
     id: 'stopClient-stops-crypto',
     file: 'lib/client-lifecycle-stop.js',
-    pattern: /cryptoBackend\.stop\(\)/,
+    // 允许可选链：源码侧是 `client.cryptoBackend?.stop()`，编译产物里则是 `_x.stop()` 形式
+    pattern: /cryptoBackend\??\.stop\(\)/,
     why: 'client.stopClient() 必须仍会停止 crypto（否则"停即释放"的前提不成立）'
   },
   {
