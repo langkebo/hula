@@ -139,16 +139,16 @@
     <div class="pills">
       <span class="pill">TJG 天机阁</span>
       <span class="pill">matrix-js-sdk 40.2.0-langkebo.6</span>
-      <span class="pill">synapse-rust @ 04dd417</span>
+      <span class="pill">synapse-rust @ 122aaf109</span>
       <span class="pill">2026-10-08</span>
     </div>
     <h1>TJG 如何通过集成 SDK 与后端交互</h1>
     <p class="sub">调用链解剖 · 能力图谱 · 四类 API 表面（标准 Matrix / Synapse Admin / vendor 私有 / AI 扩展）</p>
     <div class="kpis">
       <div class="kpi"><b>6</b><span>分层</span><i>UI → Store → Service → SDK → 传输 → 后端</i></div>
-      <div class="kpi"><b>220</b><span>个 Service 文件</span><i>13 个业务域，253 个测试文件</i></div>
+      <div class="kpi"><b>215</b><span>个 Service 文件</span><i>12 个业务域，250 个测试文件（2026-10-13 实测）</i></div>
       <div class="kpi"><b>98</b><span>个 SDK Manager 扩展</span><i>默认全量注册，按需 getXxxManager()</i></div>
-      <div class="kpi"><b>1159</b><span>条后端路由</span><i>由 ledger 驱动 SDK 契约生成</i></div>
+      <div class="kpi"><b>1027</b><span>条后端路由</span><i>私有面已过半（初版 1159）</i></div>
     </div>
   </div>
 </div>
@@ -185,9 +185,9 @@
     <div class="layer l-svc">
       <div class="tag">服务层<small>src/services/matrix/</small></div>
       <div class="body">
-        <span class="chip">auth 19</span><span class="chip">room 23</span><span class="chip">messaging 21</span>
-        <span class="chip">crypto 16</span><span class="chip">notifications 16</span><span class="chip">media 13</span>
-        <span class="chip">user 11</span><span class="chip">admin 20</span><span class="chip">friends 6</span>
+        <span class="chip">auth 19</span><span class="chip">room 21</span><span class="chip">messaging 21</span>
+        <span class="chip">crypto 19</span><span class="chip">notifications 16</span><span class="chip">media 14</span>
+        <span class="chip">user 11</span><span class="chip">admin 22</span><span class="chip">friends 6 · extensions 7</span>
         <span class="chip">ai 5</span><span class="chip">extensions 6</span>
       </div>
     </div>
@@ -218,7 +218,7 @@
     <div class="layer l-be">
       <div class="tag">后端<small>synapse-rust</small></div>
       <div class="body">
-        <span class="chip">Axum 路由层 <code>src/web/routes/</code> · 1159 条</span>
+        <span class="chip">Axum 路由层 <code>src/web/routes/</code> · 1027 条</span>
         <span class="chip">service 层</span>
         <span class="chip">storage（PostgreSQL）</span>
         <span class="chip">Redis</span>
@@ -236,7 +236,7 @@
             <span class="chip">SQLite 消息历史</span>
             <span class="chip">系统钥匙串存 token / SSSS 密码</span>
             <span class="chip">文件管理 · 通知 · 托盘 · 更新</span>
-            <span class="chip">20 个 command 模块</span>
+            <span class="chip">18 个 command 模块</span>
           </div>
         </div>
       </div>
@@ -327,7 +327,7 @@
 
 <!-- ============ 3 ============ -->
 <section>
-  <h2><span class="idx">图 3</span>后端 API 表面：SDK 契约覆盖了 1159 条路由</h2>
+  <h2><span class="idx">图 3</span>后端 API 表面：SDK 契约覆盖了 1027 条路由（私有面 51.8%）</h2>
   <p class="lead">synapse-rust 用 route ledger 声明全部路由，SDK 通过 <code>pnpm contract:sync</code> + <code>contract:codegen</code> 生成 46 个 <code>__generated__</code> 模块的类型化路由表；TJG 再用契约测试强制前端路径与之对齐。</p>
 
   <h3>按命名空间分布</h3>
@@ -391,7 +391,7 @@
 <!-- ============ 4 ============ -->
 <section>
   <h2><span class="idx">图 4</span>冷启动与会话生命周期</h2>
-  <p class="lead">登录/恢复之后，SDK 侧发生的事：建 client → 注册 98 个 Manager 扩展 → 初始化 Rust Crypto → 探测 Sliding Sync → startClient。</p>
+  <p class="lead">登录/恢复之后，SDK 侧发生的事：建 client → 注册 100 个 Manager 扩展（暴露 110 个 <code>getXxxManager()</code>）→ 初始化 Rust Crypto → 探测 Sliding Sync → startClient。</p>
 
   <div class="flow">
     <div class="step"><div class="n ui">1</div><div class="c"><b>会话恢复 / 登录</b><span class="path">auth/SessionOrchestrator.ts → SessionRestoreService / SessionLoginService</span><div class="api mono">restoreWithAccessToken({ uid, accessToken, refreshToken, bootstrapAfterRestore: true })</div></div></div>
@@ -658,38 +658,71 @@
   <code>POST /_matrix/media/v3/upload</code> 并手工带 token；<code>scripts/check-no-raw-fetch.mjs:13</code>
   的正则 <code>\bfetch\(</code> 抓不到 XHR，该请求也不经过限流熔断器。同理 Worker 内 <code>fetch</code>
   与 <code>App.vue</code>/<code>useAvatarUpload</code>/<code>video.ts</code> 的业务 fetch 也不受限流覆盖。</div>
-  <div class="note"><b>⑫ 契约链是真正的护城河。</b>1159 条路由 / 46 个生成模块 / <code>meta/sdk-pin.json</code> 锁 commit+SHA256 / <code>friends.contract.test.ts</code> 等契约测试——这套机制让「后端改路由 → 前端编译失败」成为可能，是三仓库协同里最有价值的部分。</div>
+  <div class="note"><b>⑫ 契约链是真正的护城河。</b>1027 条路由 / 46 个生成模块 / <code>meta/sdk-pin.json</code> 锁 commit+SHA256 / <code>friends.contract.test.ts</code> 等契约测试——这套机制让「后端改路由 → 前端编译失败」成为可能，是三仓库协同里最有价值的部分。</div>
 </section>
 
 <section>
-  <h2>8.5 现存问题清单（2026-10-13 实测）</h2>
-  <div class="note"><b>crypto 生命周期（实测依赖订正）。</b>
-  <code>client.stopClient()</code> 在 fork 里会 <b>一并停掉 crypto</b>：
-  <code>stopClientLifecycleServices()</code> → <code>cryptoBackend.stop()</code> →
-  <code>RustCrypto.stop()</code> → <code>olmMachine.close()</code>（IndexedDB 连接关闭）。
-  这是 login→home 交接能安全让出共享 store 的前提；但 <code>stopClient()</code> <b>不清空</b>
-  <code>cryptoBackend</code>，而 <code>initRustCrypto()</code> 见非空即 return、<code>getCrypto()</code> 仍真值
-  ⇒ <b>停止后的 crypto 仍"看起来可用"</b>，同一 client 的 crypto 是"一次性"的。
-  守门：<code>pnpm check:sdk-crypto-teardown</code>。</div>
+  <h2>§8 复核 + 8.5 现存问题清单（2026-10-13 实测）</h2>
+  <div class="note"><b>§8 十一条风险条目逐条复核：</b>
+  ① 已修复 ｜ ② <b>仍存在</b>（形态由"worker 无能力"变成"有能力但不可达"）｜ ③ <b>仍存在</b> ｜
+  ③b <b>部分修复</b>（2 项改走真实 API，4 项残留）｜ ④ <b>已变化</b>（本地剥离表已删，改委托 SDK
+  <code>KNOWN_PREFIXES</code> 21 条）｜ ⑤ 已修复 ｜ ⑥ 已修复（属实）｜ ⑦ 已修复（属实）｜
+  ⑧ <b>已修复</b>（文件 366 → 192 行，幻影接口清空）｜ ⑨ <b>已修复</b> ｜ ⑩ <b>仍存在</b> ｜ ⑪ <b>仍存在</b>。</div>
+
+  <h3>A. crypto / 多窗口</h3>
   <table>
-    <thead><tr><th>#</th><th>问题</th><th>证据</th><th>状态</th></tr></thead>
+    <thead><tr><th>#</th><th>问题</th><th>状态</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td><b>系统唤醒重连杀 crypto</b>：forceReconnect 先 stopClient（含停 crypto）再复用同一 client 重启 ⇒ 静默解不开新消息</td><td><code>MatrixClientLifecycle.ts</code> + SDK <code>client-lifecycle-stop.js</code>/<code>client.js</code></td><td>✅ 已修（解绑 + 重启前重新初始化）</td></tr>
-      <tr><td>2</td><td><b>跨窗口"已完成即跳过"是死代码</b>（BroadcastChannel 恒不可达 + 每次 init 白等 1s）</td><td><code>MatrixCryptoStateTracker.ts</code>（原 67-191 已删，commit <code>a41261fb</code>）</td><td>✅ 已修 + 门禁</td></tr>
-      <tr><td>3</td><td>stopClient 后同一 client 的 crypto 永久不可用（SDK 未清绑定、无重启 API）⇒ 未来"复用 client"的路径会再踩</td><td>依赖实测</td><td>⏳ 建议 fork 侧修</td></tr>
-      <tr><td>4</td><td>每个独立窗口各自完整 initRustCrypto（5–10s/份 OlmMachine），仅靠 Web Locks 串行化</td><td><code>MatrixCryptoStateTracker.ts</code> 锁范围</td><td>⏳ 架构限制</td></tr>
-      <tr><td>5</td><td>窗口名单与真实窗口集合无一致性校验（新增窗口忘登记 ⇒ 静默多跑一套运行时）</td><td><code>windowLabels.ts:13</code> + 9 处 <code>new WebviewWindow</code></td><td>⏳ 待决策（可加门禁）</td></tr>
-      <tr><td>6</td><td>设置窗口各页签假设不一致：仅「安全/会话」调 <code>ensureClientReady()</code>，推送/好友/忽略用户只 <code>waitForClientReady(10s)</code></td><td><code>SecuritySettings.vue:89,95,98</code> vs <code>PushSettings.vue:194</code> 等</td><td>⏳ 待决策</td></tr>
-      <tr><td>7</td><td>独立聊天窗口 <code>/window/chat/:roomId</code> 无任何会话恢复 ⇒ <code>getClient()</code> 恒 null，「独立窗口聊天」拿不到消息</td><td><code>windowChat/index.vue</code>、<code>routes/desktop.ts:202-204</code></td><td>⏳ 待确认是否未完成</td></tr>
-      <tr><td>8</td><td><code>MatrixCryptoStateTracker.ts</code> 616 行仍 &gt;500 警戒线（红线 800）</td><td><code>pnpm check:file-size</code></td><td>⏳ 既有技术债</td></tr>
-      <tr><td>9</td><td>crypto 生命周期失配只在日志可见，运行期无 UI 信号</td><td><code>releaseStoppedCryptoBinding</code> 仅 warn</td><td>⏳ 待决策</td></tr>
-      <tr><td>10</td><td>IndexedDB 删除被活连接阻塞（已有 300ms 重试 + 2s 超时降级）</td><td><code>deleteCryptoDbWithRetry</code></td><td>✅ 兜底已足够</td></tr>
+      <tr><td>A1</td><td><b>系统唤醒重连杀 crypto</b>：forceReconnect 先 stopClient（含 cryptoBackend.stop → olmMachine.close）再复用同一 client 重启，而 cryptoBackend 未被清空、initRustCrypto 拒绝重建 ⇒ 静默解不开新消息</td><td>✅ 已修（releaseStoppedCryptoBinding + 重启前 ensureCrypto）；门禁 <code>check:sdk-crypto-teardown</code></td></tr>
+      <tr><td>A2</td><td><b>跨窗口"已完成即跳过"是死代码</b>（BroadcastChannel 恒不可达 + 每次 init 白等 1s）</td><td>✅ 已修（commit <code>a41261fb</code>）；门禁 <code>check:crypto-cross-window</code></td></tr>
+      <tr><td>A3</td><td>stopClient 后同一 client 的 crypto 永久不可用（SDK 未清绑定、无重启 API）⇒ 未来"复用 client"的路径会重踩 A1</td><td>⏳ 建议 fork 侧修</td></tr>
+      <tr><td>A4</td><td>每个独立窗口各自完整 initRustCrypto（5–10s / 一份 OlmMachine），仅靠 Web Locks 串行化</td><td>⏳ 架构限制</td></tr>
+      <tr><td>A5</td><td>crypto 生命周期失配只在日志可见，运行期无 UI 信号</td><td>⏳ 待决策</td></tr>
+      <tr><td>A6</td><td>IndexedDB 删除被活连接阻塞（已有 300ms 重试 + 2s 超时降级）</td><td>✅ 兜底已够</td></tr>
     </tbody>
   </table>
+
+  <h3>B. 窗口与会话</h3>
+  <table>
+    <thead><tr><th>#</th><th>问题</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>B1</td><td><b>窗口名单与真实窗口集合无一致性校验</b>（NON_MATRIX 名单只挡 App.vue 4 处，窗口却由 tauri.conf + 9 处 new WebviewWindow 动态创建）</td><td>⏳ 待决策（可加门禁）</td></tr>
+      <tr><td>B2</td><td><b>设置窗口各页签假设不一致</b>：仅「安全/会话」调 <code>ensureClientReady()</code> 自行恢复，推送/好友/忽略用户只 <code>waitForClientReady(10s)</code></td><td>⏳ 待决策</td></tr>
+      <tr><td>B3</td><td><b>独立聊天窗口 <code>/window/chat/:roomId</code> 无任何会话恢复</b> ⇒ 该窗口 <code>getClient()</code> 恒 null</td><td>⏳ 待确认是否未完成</td></tr>
+      <tr><td>B4</td><td>非 home 窗口的"按需惰性恢复"是隐式约定（<code>ensureClientReady</code> 注释明写 standalone WebViews，但只有 2 个设置页签在用）</td><td>⏳ 待决策</td></tr>
+    </tbody>
+  </table>
+
+  <h3>C. 接入面与横切机制</h3>
+  <table>
+    <thead><tr><th>#</th><th>问题</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>C1</td><td><b>Worker 有能力但不可达</b>：主线程 <code>MatrixWorkerHost</code> 从不发 initialize/login/startClient ⇒ <code>getStats()</code> 恒 null、<code>clearStores()</code> no-op，而 UI 正在调它们</td><td>⏳ 仍存在（§8 ②）</td></tr>
+      <tr><td>C2</td><td><b>同一后端能力多套并行实现</b>（自建缓存/deduper；SummaryService vs MatrixRoomSummaryService vs SynapseRoomSummaryService；契约测试仍 mock client=null）</td><td>⏳ 仍存在（§8 ③）</td></tr>
+      <tr><td>C3</td><td><b>4 项静态残留</b>：<code>_unstable_getDelayedEvents</code>（messaging/MatrixDelayedEventsService.ts，SDK 全库 0 实现、无兜底）、直连 translate.googleapis.com（room/RoomOperations.ts:369）、incrementUnread 空存根（RoomOperations.ts:318 + 新 RoomFacade）、非标准 thread 事件（messaging/MatrixThreadState.ts）</td><td>⏳ 部分修复（§8 ③b）</td></tr>
+      <tr><td>C4</td><td><b>去重器与缓存管理器基本是死资产</b>（deduper 仅 3 处手动包裹；CacheManager 只被读 stats）</td><td>⏳ 仍存在（§8 ⑩）</td></tr>
+      <tr><td>C5</td><td><b>XHR 旁路逃过守卫</b>：media upload 用 XMLHttpRequest 绕过限流，<code>check-no-raw-fetch</code> 正则抓不到 XHR</td><td>⏳ 仍存在（§8 ⑪）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>D. 文档自身与工程副作用</h3>
+  <table>
+    <thead><tr><th>#</th><th>问题</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>D1</td><td><b>文档数字/锚点会无声漂移</b>（初版 1159 路由、synapse-rust 04dd417、各域服务数、MatrixRoomSummaryService.ts:221 等全部失效），无门禁会红。<b>本轮实时复现</b>：核对期间并行落地 <code>84c462e8</code> 把 room 域 24→21、服务总数 218→215，同一天内漂移两次</td><td>✅ 已订正；⏳ 待决策：为契约数字加生成式校验</td></tr>
+      <tr><td>D2</td><td>并行写者会 sweep 你在盘的 <code>package.json</code>（本轮一度造成"脚本定义在、脚本文件未跟踪"的悬空引用）</td><td>✅ 已消除；纪律：编辑后尽快提交并核对 <code>git show --name-only HEAD</code></td></tr>
+      <tr><td>D3</td><td><code>MatrixCryptoStateTracker.ts</code> 616 行仍 &gt;500 警戒线（红线 800）</td><td>⏳ 既有技术债</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn"><b>数字口径提醒：</b>本页所有数字均为 <b>2026-10-13 实测</b>（初版为 2026-10-08）。
+  契约类数字（路由/模块/manifest）的权威来源是 <code>route-manifest.all.json</code> 的
+  <code>entry_count</code> / <code>generated_at</code> / <code>synapse_rust_commit</code>，
+  引用前请重跑，不要与本页人工摘要混用。</div>
 </section>
 
 <footer>
-  基于 Tjg @ 2026-10-08 · matrix-js-sdk 40.2.0-langkebo.6（vendor tgz 实测；订正于 2026-10-13） · synapse-rust 04dd417 静态代码调研生成
+  基于 Tjg @ 2026-10-13 实测（全文数字与锚点重测）· matrix-js-sdk 40.2.0-langkebo.6（commit 4748096a8）· synapse-rust 122aaf109 · 初版 2026-10-08
 </footer>
 
 </div>
