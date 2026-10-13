@@ -60,6 +60,106 @@ function gitCommit(repoPath) {
   }
 }
 
+// ── ledger 内容判据 ────────────────────────────────────────────────────────────
+//
+// 旧判据是 `git log <pin>..HEAD -- tests/unit/fixtures/ledger_export_sdk`：只要该区间
+// **有任何提交碰到这个目录**就判红。2026-10-13 实测到假阳性：后端 `ed09854e5` 只往该目录
+// **新增了 sidecar `manifest.json`**、三个 profile JSON 一字未改（`synapse-web/src/routes/**`
+// 的 `.route(` 增删 0 行），门禁却报「contract mirror is stale」。
+//
+// 真正的不变量是「pin 时 SDK 摄入的 ledger **内容** == 现在后端 HEAD 的 ledger **内容**」。
+// 于是改为内容比较：
+//   1. 主判据 = 三个 profile JSON（`all/default/worker.json`）的 sha256 —— 那正是 SDK 摄入的内容；
+//      **不**包括 sidecar `manifest.json`（它能在后续提交里被单独新增，本身不代表内容变化）；
+//   2. 任一侧连一个 profile JSON 都读不到 ⇒ 判红（拒绝在缺输入时通过），绝不静默放过；
+//   3. 后端 sidecar 的 `route_surface_sha256` 仅作为**诊断**附加到差异详情里，不参与判定
+//      （理由见 `compareLedgerSnapshots` 的注释：以它为准会放过"只改了易变字段"的重新生成，
+//       并与 SDK 侧判据产生口径分裂）。
+export const LEDGER_FIXTURE_DIR = 'tests/unit/fixtures/ledger_export_sdk'
+export const LEDGER_PROFILE_FILES = ['all', 'default', 'worker']
+export const LEDGER_SIDECAR_FILE = `${LEDGER_FIXTURE_DIR}/manifest.json`
+
+/**
+ * 读一份 rev 的 ledger 快照标识。
+ * @param readFile `(relPath) => string|null`，取不到时返回 null。
+ */
+export function readLedgerSnapshot(readFile) {
+  const fileHashes = {}
+  for (const profile of LEDGER_PROFILE_FILES) {
+    const text = readFile(`${LEDGER_FIXTURE_DIR}/${profile}.json`)
+    fileHashes[profile] = text == null ? null : crypto.createHash('sha256').update(text).digest('hex')
+  }
+
+  let sidecarFingerprints = null
+  const sidecarText = readFile(LEDGER_SIDECAR_FILE)
+  if (sidecarText != null) {
+    try {
+      const profiles = JSON.parse(sidecarText)?.profiles
+      if (profiles && typeof profiles === 'object') {
+        sidecarFingerprints = {}
+        for (const [profile, info] of Object.entries(profiles)) {
+          const sha = info?.route_surface_sha256
+          if (typeof sha === 'string' && sha) sidecarFingerprints[profile] = sha
+        }
+        // 空对象等价于「读不到 sidecar」，避免拿一个比对不出东西的 basis 假装比过了
+        if (Object.keys(sidecarFingerprints).length === 0) sidecarFingerprints = null
+      }
+    } catch {
+      sidecarFingerprints = null
+    }
+  }
+  return { fileHashes, sidecarFingerprints }
+}
+
+/**
+ * 比对两份 ledger 快照。
+ *
+ * **主判据 = 三个 profile JSON 的 sha256**：那正是 SDK 摄入的内容；后端 sidecar 的
+ * `route_surface_sha256` 只作为**诊断**附加在差异详情里，不参与判定。
+ *
+ * 为什么不用 sidecar 当判据：它会**放过**「只有易变字段（`generated_at` /
+ * `synapse_rust_commit`）变化」的重新生成，而那种情况下 SDK 镜像里的对应字段也会变、
+ * 同样需要重同步；两仓若一个用 sidecar 一个用文件哈希，就会出现「一边绿一边红」——
+ * 那正是本次要收敛掉的口径分裂。sidecar 的用途是**无 sibling 场景**（SDK-only CI、
+ * release pin）的内容绑定，不是有 sibling 时的替代判据。
+ *
+ * @returns `{ same, basis, changedProfiles, detail }`；`basis === 'unresolvable'` 表示
+ *          两边都拿不到可比对的输入 —— 调用方**必须**判红。
+ */
+export function compareLedgerSnapshots(before, after) {
+  const readable = (snapshot) => Object.values(snapshot.fileHashes ?? {}).some((hash) => hash != null)
+  if (!readable(before) || !readable(after)) {
+    return {
+      same: false,
+      basis: 'unresolvable',
+      changedProfiles: [],
+      detail: '    没有读到任何 profile JSON（缺输入 ⇒ 判红，不当通过）'
+    }
+  }
+
+  const changedProfiles = LEDGER_PROFILE_FILES.filter(
+    (profile) => before.fileHashes[profile] !== after.fileHashes[profile]
+  )
+  const bothSidecars = before.sidecarFingerprints != null && after.sidecarFingerprints != null
+
+  return {
+    same: changedProfiles.length === 0,
+    basis: bothSidecars ? 'files+sidecar' : 'files',
+    changedProfiles,
+    detail: changedProfiles
+      .map((profile) => {
+        const beforeFingerprint = before.sidecarFingerprints?.[profile]
+        const afterFingerprint = after.sidecarFingerprints?.[profile]
+        const fingerprintNote =
+          beforeFingerprint || afterFingerprint
+            ? `  [route_surface: ${beforeFingerprint ?? '(absent)'} → ${afterFingerprint ?? '(absent)'}]`
+            : ''
+        return `    ${profile}: ${before.fileHashes[profile] ?? '(absent)'} → ${after.fileHashes[profile] ?? '(absent)'}${fingerprintNote}`
+      })
+      .join('\n')
+  }
+}
+
 function validateAgainstSchema(pin, schema) {
   const errors = []
   for (const key of schema.required || []) {
@@ -297,14 +397,18 @@ async function main() {
   //      本仓同时存在 `matrix-js-sdk/`(develop) 与 `.wt-sdk-clean/`(release) 两个
   //      worktree，默认取 `../matrix-js-sdk` 会把 develop 的镜像误当成 pin 的来源，
   //      故未显式指定时**显式 SKIP**（打印 banner，不静默通过）。
-  //   B. **路由面新鲜度**（后端兄弟仓在场时始终执行）：自 `pin.synapse_rust_commit`
-  //      起，后端不得再有触碰 `synapse-web/src/routes/**` 或
-  //      `tests/unit/fixtures/ledger_export_sdk/**` 的提交；且该 commit 必须是后端
-  //      HEAD 的祖先。
+  //   B. **路由面新鲜度**（后端兄弟仓在场时始终执行）：`pin.synapse_rust_commit` 必须是后端
+  //      HEAD 的祖先；且**该 commit 与 HEAD 的 ledger 快照内容必须一致**
+  //      （比对 `tests/unit/fixtures/ledger_export_sdk/` 的 profile JSON 内容；后端 sidecar
+  //      的 `route_surface_sha256` 只作诊断）。内容一致 ⇒ 无需重钉，哪怕期间有提交碰过该目录。
   //
   // 为什么不再直接比「后端 HEAD」：任何一次纯文档提交都会移动 HEAD，pin 便永远追不上
   // （实测：记录 §13.23 的 docs 提交 `d0eb8306e` 让门禁第二次变红）。真正的不变量是
   // 「pin ↔ 契约快照一致」且「快照未落后于路由面」，而不是「等于 HEAD」。
+  //
+  // 为什么也不再比「区间内有没有提交碰过该目录」：那是**位置**判据，会把「只加了 sidecar
+  // `manifest.json`」这类内容无变化的提交报成落后（2026-10-13 实测假阳性，见
+  // `compareLedgerSnapshots` 的注释）。
   if (pin.synapse_rust_commit) {
     if (!sdkDirEnv) {
       process.stdout.write(
@@ -350,37 +454,41 @@ async function main() {
             `Re-pin against a commit that exists in the backend history.`
         )
       }
-      // 变异自证用逃生阀：允许把比对区间钉成任意 `A..B`（默认 `<pin>..HEAD`），
-      // 以便用**已存在的历史区间**证明「路由面落后 ⇒ 红」这一段真的能判红。
-      //
-      // 判据锚点是 **SDK 车道的 ledger 快照**（`tests/unit/fixtures/ledger_export_sdk/`），
-      // 不是 `synapse-web/src/routes/**`：后者会被「删一个未使用的 import」这类
-      // **非路由改动**推进而误报（实测 2026-10-09：`e2c8969ae` 仅删一行 import 就让门禁变红）。
-      // 后端自身的守卫要求「路由面变化 ⇒ 必须重生成 fixture」，所以 fixture 变动才是
-      // 「契约面真的变了」的可靠代理。
+      // 判据 = **内容**，不是「有没有提交碰过那个目录」（详见文件头的 compareLedgerSnapshots）。
+      // 变异自证用逃生阀：`SYNAPSE_PIN_RANGE=<A>..<B>` 可把比对区间钉成任意历史区间
+      // （默认 `<pin>..HEAD`），用来证明「内容真的变了 ⇒ 红」这一段仍然有效。
       const range = process.env.SYNAPSE_PIN_RANGE || `${pin.synapse_rust_commit}..${backendHead}`
-      const contractPaths = ['tests/unit/fixtures/ledger_export_sdk']
-      let changed = ''
-      try {
-        changed = execSync(`git log --oneline ${range} -- ${contractPaths.join(' ')}`, {
-          cwd: backendSibling
-        })
-          .toString()
-          .trim()
-      } catch {
-        die(1, `cannot resolve git range ${range} in ${backendSibling}; refusing to pass on a missing input.`)
+      const [rangeFrom, rangeTo] = range.split('..')
+      if (!rangeFrom || !rangeTo) {
+        die(1, `SYNAPSE_PIN_RANGE='${range}' is not a '<from>..<to>' pair; refusing to pass on a malformed input.`)
       }
-      if (changed) {
+      // 用 `git show <rev>:<path>` 取**已提交**内容：既对两端对称，也不受后端脏工作区影响。
+      const readAt = (rev) => (relPath) => {
+        try {
+          return execSync(`git show ${rev}:${relPath}`, {
+            cwd: backendSibling,
+            stdio: ['ignore', 'pipe', 'ignore']
+          }).toString()
+        } catch {
+          return null
+        }
+      }
+      const verdict = compareLedgerSnapshots(readLedgerSnapshot(readAt(rangeFrom)), readLedgerSnapshot(readAt(rangeTo)))
+      if (!verdict.same) {
+        const lead =
+          verdict.basis === 'unresolvable'
+            ? `cannot establish the ledger content identity in ${backendSibling} (${range}); refusing to pass on a missing input`
+            : `SDK contract mirror is stale — backend ledger content changed in ${range} (basis: ${verdict.basis}` +
+              `${verdict.changedProfiles.length > 0 ? `; changed: ${verdict.changedProfiles.join(', ')}` : ''})`
         die(
           1,
-          `SDK contract mirror is stale — backend has route/ledger commits after ${pin.synapse_rust_commit}:\n` +
-            changed
-              .split('\n')
-              .map((l) => `  ${l}`)
-              .join('\n') +
-            `\nRun \`pnpm contract:sync && pnpm contract:codegen\` in matrix-js-sdk, commit, then repack + refresh the pin.`
+          `${lead}:\n${verdict.detail ? `${verdict.detail}\n` : ''}` +
+            `Run \`pnpm contract:sync && pnpm contract:codegen\` in matrix-js-sdk, commit, then repack + refresh the pin.`
         )
       }
+      process.stdout.write(
+        `verify-sdk-pin: ledger content identity unchanged over ${range} (basis=${verdict.basis}) — no re-pin needed.\n`
+      )
     }
   }
   process.stdout.write(
@@ -388,4 +496,20 @@ async function main() {
   )
 }
 
-await main()
+// 入口守卫：被 tests/lint/ 导入时不得执行门禁本体（否则 import 即跑、测试没法跑）。
+// 判据取「进程入口就是这个文件」，两侧都用 realpath 解析：经符号链接调用时若只比字符串，
+// 会误判成「非直接执行」而**静默不跑**——那正是本仓最忌讳的 SKIP 形态。
+// 解析失败时回落到「当作直接执行」（fail-loud，宁可跑错也不静默放过）。
+function isDirectRun() {
+  const entry = process.argv[1]
+  if (!entry) return true
+  try {
+    return fs.realpathSync.native(entry) === fs.realpathSync.native(fileURLToPath(import.meta.url))
+  } catch {
+    return true
+  }
+}
+
+if (isDirectRun()) {
+  await main()
+}

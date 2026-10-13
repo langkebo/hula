@@ -117,9 +117,13 @@ jobs:
       #
       # 后果是实打实的：`contract-mirror binding`（把 `pin.synapse_rust_commit` 与
       # SDK worktree 里 `docs/api-contract/generated/index.json` 的 `synapse_rust_commit`
-      # 对死）是**唯一**能抓「契约镜像刷新了、pin 忘了刷」这类跨仓漂移的判据。
+      # 对死）与 `route-freshness binding`（比对后端 ledger 快照**内容**）是两处能抓
+      # 「契约镜像刷新了、pin 忘了刷」这类跨仓漂移的判据，且都只在给了 `TJG_SDK_DIR` /
+      # 后端 sibling 时才真跑。
       # 2026-10-12 实测正是栽在这里：SDK 侧镜像已随后端从 `14f892e3` 走到 `122aaf109`，
       # 而 pin 仍记旧值 —— 本地 `verify:sdk-pin` 判红，release 线却全绿。
+      # 2026-10-14：`route-freshness` 由「区间内有没有提交碰过 ledger 目录」改为
+      # 「两端 ledger 快照内容是否一致」，因此后端纯文档/sidecar 提交不会再误判为落后。
       - name: Verify SDK pin
         working-directory: hula
         env:
