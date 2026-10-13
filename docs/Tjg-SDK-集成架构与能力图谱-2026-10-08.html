@@ -609,7 +609,7 @@
   （<code>src/state-send/index.ts:59</code>）。</div>
   <div class="danger"><b>② Worker 名不副实。</b><code>MatrixWorkerHost</code> 只暴露 15 个方法（搜索索引、探测、store 统计），<b>未暴露</b> <code>initialize/login/startClient/syncOnce/getClient</code>；主线程从不发送这些消息。因此 Worker 内 <code>state.client</code> 永远是 null，<code>handleGetStats</code> 恒返回 null、<code>handleClearStores</code> 恒为 no-op。CLAUDE.md 中「Matrix SDK 运行在 Web Worker」目前是设计意图而非既成事实。</div>
   <div class="warn"><b>③ 四条接入路径并存，且同一后端路由常有多套实现。</b>service 层同时存在 <code>client.xxx()</code>（40 个服务）、<code>getXxxManager()</code>、<code>client.http.authedRequest()</code>（10 个服务）与 <code>SynapseExtensionHttpBase</code> 里的裸 <code>fetch</code>（4 个子类）。后两者绕过 SDK 的 Manager 层。<br/>
-  实测的并行实现：<b>房间能力</b> —— <code>MetadataService.ts:32</code>（走 RoomManager）vs <code>RoomCapabilitiesService.ts:52</code>（走 <code>matrixHttpClient</code> + 自建 5min 缓存 + 去重）；<b>房间摘要</b> —— <code>SummaryService.ts:110</code> vs <code>MatrixRoomSummaryService.ts:221-366</code> vs <code>extensions/SynapseRoomSummaryService.ts</code>；<b>sticky events</b> —— <code>RoomOperations.ts:448/462</code> vs <code>SynapseStickyEventService.ts:24</code>。</div>
+  实测的并行实现（<b>收敛前</b>快照；2026-10-13 <b>Batch 4.3 / C2 已逐组收敛到 SDK 路径</b>）：<b>房间能力</b> —— <code>MetadataService.ts</code>（走 <code>RoomManager</code>，<b>保留</b>）<s>vs <code>RoomCapabilitiesService.ts:52</code>（自建 5min 缓存 + 去重）</s>（<b>已删除</b>）；<b>房间摘要</b> —— <code>SummaryService.ts</code>（<b>保留</b>）<s>vs <code>MatrixRoomSummaryService.ts</code> vs <code>extensions/SynapseRoomSummaryService.ts</code></s>（<b>已删除</b>）；<b>sticky events</b> —— <code>RoomOperations.ts</code>（走 SDK <code>RoomManager</code>，<b>保留</b>）<s>vs <code>SynapseStickyEventService.ts:24</code></s>（<b>已删除</b>）。</div>
   <div class="note"><b>③b 其他静态可见风险（Batch 3.4 已清除 4 项）。</b>
   <b>本轮清除：</b>① <code>MatrixDelayedEventsService.getDelayedEvents()</code> 调用的
   <code>_unstable_getDelayedEvents</code> 在 SDK 的 <code>_unstable_*</code> 清单里不存在、后端也没有列表端点
@@ -639,8 +639,8 @@
   （<code>src/services/matrix/extensions/criticalExtensions.ts</code>）：<code>CRITICAL_EXTENSION_IDS</code>
   长度恒等于扩展清单长度，SDK 新增扩展自动纳入监控；非 FriendManager 扩展的降级聚合为一次
   <code>extension_degraded</code> 遥测事件，FriendManager 保留专用 <code>friend_manager_degraded</code> 事件。</div>
-  <div class="warn"><b>⑧ RoomSummaryManager 方法名 10 处不匹配（潜伏缺陷，当前无调用点）。</b>
-  <code>room/MatrixRoomSummaryService.ts:9-21</code> 声明了一个<b>本地</b> <code>interface RoomSummaryManager</code>；
+  <div class="note"><b>⑧ RoomSummaryManager 方法名 10 处不匹配 —— <b>已消失</b>（该文件已于 Batch 4.3 / C2 整体删除）。</b>
+  下述内容保留为<b>收敛前</b>的取证记录：<code>room/MatrixRoomSummaryService.ts:9-21</code> 曾声明一个<b>本地</b> <code>interface RoomSummaryManager</code>；
   其中 <code>createRoomSummary / updateRoomSummary / deleteRoomSummary / syncRoomSummary /
   batchWriteMemberSummaries / updateMemberSummary / deleteMemberSummary / recalculateStats /
   recalculateHeroes / clearUnread</code> 在 SDK fork 的 <code>RoomSummaryManager</code> 里
@@ -687,9 +687,9 @@
   <table>
     <thead><tr><th>#</th><th>问题</th><th>状态</th></tr></thead>
     <tbody>
-      <tr><td>A1</td><td><b>系统唤醒重连杀 crypto</b>：forceReconnect 先 stopClient（含 cryptoBackend.stop → olmMachine.close）再复用同一 client 重启，而 cryptoBackend 未被清空、initRustCrypto 拒绝重建 ⇒ 静默解不开新消息</td><td>✅ 已修（releaseStoppedCryptoBinding + 重启前 ensureCrypto）；门禁 <code>check:sdk-crypto-teardown</code></td></tr>
+      <tr><td>A1</td><td><b>系统唤醒重连杀 crypto</b>：forceReconnect 先 stopClient（含 cryptoBackend.stop → olmMachine.close）再复用同一 client 重启；<b>修复前</b> cryptoBackend 未被清空、initRustCrypto 拒绝重建 ⇒ 静默解不开新消息（<b>A3 之后该前提已消失</b>：绑定由 SDK 清空）</td><td>✅ 已修（releaseStoppedCryptoBinding + 重启前 ensureCrypto）；门禁 <code>check:sdk-crypto-teardown</code></td></tr>
       <tr><td>A2</td><td><b>跨窗口"已完成即跳过"是死代码</b>（BroadcastChannel 恒不可达 + 每次 init 白等 1s）</td><td>✅ 已修（commit <code>a41261fb</code>）；门禁 <code>check:crypto-cross-window</code></td></tr>
-      <tr><td>A3</td><td>stopClient 后同一 client 的 crypto 永久不可用（SDK 未清绑定、无重启 API）⇒ 未来"复用 client"的路径会重踩 A1</td><td>⏳ 建议 fork 侧修</td></tr>
+      <tr><td>A3</td><td>stopClient 后同一 client 的 crypto 永久不可用（SDK 只停不清绑定、无重启 API）⇒ 未来"复用 client"的路径会重踩 A1</td><td>✅ <b>已修（2026-10-13，跨仓）</b>：fork 新增 <code>releaseCryptoBackend()</code>，<code>stopClientLifecycleServices()</code> 与 <code>stopClient()</code> 都停 crypto <b>并清空绑定</b> ⇒ <code>initRustCrypto()</code> 可直接重入；<b>不新增</b> <code>restartCrypto()</code> 公开入口。Tjg 侧 tarball 重打 + pin 重钉（<code>sdk_commit 0824bb23a</code>），门禁 <code>check:sdk-crypto-teardown</code> 6→8 条</td></tr>
       <tr><td>A4</td><td>每个独立窗口各自完整 initRustCrypto（5–10s / 一份 OlmMachine），仅靠 Web Locks 串行化</td><td>⏳ 架构限制</td></tr>
       <tr><td>A5</td><td>crypto 生命周期失配只在日志可见，运行期无 UI 信号</td><td>✅ 已修（Batch 4.1）：新增 <code>CryptoLifecycleDiagnostics</code>（解绑被拒 / <b>已停止的 crypto 被复用</b>），经 <code>MatrixClientService.getCryptoLifecycleDiagnostics()</code> → <code>encryptionStore.cryptoLifecycleWarning</code> 到 store；后者是 <b>A1 的运行时复发哨兵</b></td></tr>
       <tr><td>A6</td><td>IndexedDB 删除被活连接阻塞（已有 300ms 重试 + 2s 超时降级）</td><td>✅ 兜底已够</td></tr>
@@ -718,7 +718,7 @@
     <thead><tr><th>#</th><th>问题</th><th>状态</th></tr></thead>
     <tbody>
       <tr><td>C1</td><td><b>Worker 有能力但不可达</b>：主线程从不发 initialize/login/startClient ⇒ <code>state.client</code> 恒 null、<code>getStats()</code> 恒 null、<code>clearStores()</code> no-op，而 UI 正在调它们（移动端还弹「清理成功」；登出链路注释承诺清 store 却未发生）</td><td>✅ 已修（Batch 3.2）：worker 侧 client 死面整体删除（7 handler + state + initSDK + 内存看门狗）；三处假 UI/假成功与登出 no-op 一并移除；新门禁 <code>check:worker-client-boundary</code></td></tr>
-      <tr><td>C2</td><td><b>同一后端能力多套并行实现</b>（自建缓存/deduper；SummaryService vs MatrixRoomSummaryService vs SynapseRoomSummaryService；契约测试仍 mock client=null）</td><td>⏳ 仍存在（§8 ③）</td></tr>
+      <tr><td>C2</td><td><b>同一后端能力多套并行实现</b>（自建缓存/deduper；SummaryService vs MatrixRoomSummaryService vs SynapseRoomSummaryService；契约测试仍 mock client=null）</td><td>✅ <b>已修（Batch 4.3）</b>：删 <code>MatrixRoomSummaryService</code> / <code>RoomCapabilitiesService</code> / <code>SynapseStickyEventService</code> / <code>useStickyEvents</code>，四组全部收敛到 SDK 路径；台账收紧（doc-coverage 963→953、sdk-boundary 183→181）</td></tr>
       <tr><td>C3</td><td><b>4 项静态残留已全部清除（Batch 3.4）</b>：① <code>getDelayedEvents()</code> 调用的 <code>_unstable_getDelayedEvents</code> 在 SDK 与后端<b>双方都不存在</b>（后端无列表端点）且无调用方 ⇒ 删除；② <code>translate.googleapis.com</code> 实为经 <code>HttpClient</code>→<code>runtimeFetch</code>+allowlist 的受控外部调用，原「直连」表述已订正；③ <code>incrementUnread</code>/<code>clearUnread</code> 空壳且无调用方 ⇒ 删除；④ <code>m.thread_mute</code>/<code>m.thread_freeze</code>/<code>m.thread_unfreeze</code> 自造事件整组删除（后端与 SDK 均 0 命中），真实能力保留在 <code>MatrixThreadApi.*ViaApi</code></td><td>✅ 已修（Batch 3.4）</td></tr>
       <tr><td>C4</td><td><b>缓存管理器是零调用死资产</b>：<code>MatrixCacheManager</code>（123 行 + 17 行 helper + 135 行测试）生产代码零调用，唯一引用是 <code>main.ts</code> 挂的 <code>window.__tjg_cache_stats</code> 调试读取器（读的统计永不写入，恒为零）；<code>MatrixRequestDeduper</code> 的 <code>dedupWindowMs</code> 参数名不副实</td><td>✅ 已修（Batch 3.3）：死资产整体删除（含测试/挂点/声明，doc-coverage 基线收紧 981→963）；deduper 改为 <code>STALE_IN_FLIGHT_MS</code> 语义 + 条件删除</td></tr>
       <tr><td>C5</td><td><b>XHR 旁路逃过守卫</b>：media upload 用 XMLHttpRequest 直连 media v3 upload，绕过限流熔断，而 <code>check-no-raw-fetch</code> 的 <code>fetch(</code> 正则抓不到 XHR</td><td>✅ 已修（Batch 3.1）：改走 <code>matrixHttpClient.uploadRaw</code> → <code>MatrixRawUploadChannel.ts</code>（限流 fetch + dev 同源改写 + 统一错误归一化）；<code>xhr-bypass</code> 白名单已清空</td></tr>

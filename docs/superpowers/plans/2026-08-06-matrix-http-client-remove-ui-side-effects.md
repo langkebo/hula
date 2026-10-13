@@ -1,5 +1,10 @@
 # MatrixHttpClient 移除 UI 副作用重构计划
 
+> **⚠️ 已过期（2026-10-14 标注）**：本计划是 **2026-08-06** 的一次性实施计划，早已执行完毕。
+> 其中唯一提及的生产调用方 `RoomCapabilitiesService` 已在 **Batch 4.3（C2 收敛）** 被**整体删除**
+> （自建 fetch + 5 分钟缓存收敛到 SDK `RoomManager`）。**不要把本文件当作现状依据**，
+> 现状请以 `docs/Tjg-SDK-集成架构与能力图谱-2026-10-08.md` 为准。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 将 `MatrixHttpClient` 中直接操作 `window.$loadingBar` 和 `window.$message` 的 UI 副作用代码完全移除，使 HTTP 客户端回归纯传输职责，UI 反馈交由调用方通过 `useActionFeedback` / `withErrorHandling` 显式处理。

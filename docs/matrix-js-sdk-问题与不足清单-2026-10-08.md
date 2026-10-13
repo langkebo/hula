@@ -5,6 +5,16 @@
 - **实际发布基线**：Tjg 锁定的 tarball `640cc444`（`40.2.0-langkebo.5`，pinned 2026-09-20）
 - 方法：静态代码检索 + 量化统计；每条结论附文件行号或可复现计数
 
+> **⚠️ 本文是 2026-10-08 的**历史快照**，基线已过期 —— 阅读时请先看这一节：**
+>
+> - 文中的「实际发布基线」`tarball 640cc444 / 40.2.0-langkebo.5（pinned 2026-09-20）`**已不是现行基线**。
+>   现行 pin：`sdk_commit=0824bb23adb3`、`40.2.0-langkebo.6`、`tarball sha256-bce405b5…`（pinned 2026-10-13）。
+> - 文中部分结论**已在后续批次落地或消失**（例如「幻影类型声明」经 `check:sdk-types` 棘轮治理；
+>   `MatrixRoomSummaryService` 等并行实现在 **Batch 4.3（C2）** 被删除）。逐条现状请以
+>   `docs/Tjg-SDK-集成架构与能力图谱-2026-10-08.md`（受 `check:integration-map-freshness` 机器校验）
+>   与 `OPS_ARTIFACTS/TJG_MAP_DRIVEN_BACKEND_SDK_AUDIT_2026-10-13.md` 为准。
+> - **本文件按「带日期的历史快照」保留**（与 `synapse-rust/docs/audit/**` 同约定），不再逐句订正。
+
 > 阅读提示：**仓库 HEAD 与 Tjg 实际构建的 tarball 已相差 149 个 commit**。
 > 下文「已在新版修复」标注表示该问题在 HEAD 上已解决，但 Tjg 当前发布版本仍然带着它。
 

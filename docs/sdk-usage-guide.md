@@ -1,7 +1,8 @@
 # Matrix SDK 前端使用指南
 
-> **版本**：40.2.0-langkebo.5  
+> **版本**：40.2.0-langkebo.6（pin `sdk_commit=0824bb23a`，tarball `sha256-bce405b5…`，pinned 2026-10-13）
 > **创建日期**：2026-09-24  
+> **最近订正**：2026-10-14（见 §三 的订正说明）  
 > **适用范围**：Tjg 前端（HuLa）+ matrix-js-sdk fork
 
 ---
@@ -17,9 +18,10 @@ import {
   matrixSpaceService,      // Space 空间管理
   matrixVoiceService,      // 语音消息管理
   matrixEventReportService,// 事件举报管理
-  matrixRoomSummaryService,// 房间统计管理
   matrixOidcService        // OIDC 认证管理
 } from '@/services/matrix'
+// ⚠️ 房间摘要不在本入口：`matrixRoomSummaryService` 已于 Batch 4.3 删除，
+//    请从 '@/services/matrix/room/RoomFacade' 取 `matrixRoomReadFacade`（见 §三）。
 
 // 可直接使用服务单例
 const spaceInfo = await matrixSpaceService.createSpace({ name: '测试空间' })
@@ -116,45 +118,38 @@ console.log(`空间数量：${mySpaces.length}`)
 
 ---
 
-## 三、Room Summary 房间统计管理
+## 三、Room Summary 房间摘要
 
-通过 `matrixRoomSummaryService` 访问，提供房间统计、未读标记等能力。
+> **⚠️ 本节于 2026-10-14 按代码订正。** 旧版描述的 `matrixRoomSummaryService`（及其
+> `getRoomStats` / `recalculateStats` / `clearUnreadSummary`）**已不存在**：该服务在
+> **Batch 4.3（C2 收敛）** 中作为冗余并行实现被删除，`@/services/matrix` 也不再 re-export 它。
+> 后两个方法名在 `src/` 里**零命中**；`getRoomStats` 只存在于 **admin 域**
+> （`src/services/matrix/admin/RoomService.ts`，管理端房间统计），与本节无关。
+
+**现行唯一路径**：`matrixRoomReadFacade.getRoomSummary(roomId, throwOnError?)`
+（从 `@/services/matrix/room/RoomFacade` 导入）。其内部 `SummaryService` 优先走 synapse-rust 的
+`room_summary` 扩展，失败时回退到本地 `Room` 状态（`toLocalRoomSummary`）。
 
 ### 3.1 核心功能
 
 | 方法 | 说明 |
 |------|------|
-| `getRoomSummary(roomId)` | 获取房间统计信息（如聊天消息统计） |
-| `getRoomStats(roomId)` | 获取房间高级统计（如成员活跃度、消息统计） |
-| `recalculateStats(roomId)` | 重新计算统计（管理员专用） |
-| `clearUnreadSummary(roomId)` | 清除房间未读标记 |
-
-> **注意**：Service 的方法命名与 SDK 保持一致，需仔细对照方法签名和参数类型。
+| `getRoomSummary(roomId, throwOnError?)` | 房间摘要：名称 / 主题 / 头像 / 成员数 / 加入规则 / 规范别名等。`throwOnError=false` 时失败返回 `null` |
 
 ### 3.2 使用示例
 
-#### 获取房间统计信息
+#### 获取房间摘要
 ```typescript
-import { matrixRoomSummaryService } from '@/services/matrix'
+import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 
-const stats = await matrixRoomSummaryService.getRoomStats('!room:example.com')
-console.log(`统计信息：`, stats)
+const summary = await matrixRoomReadFacade.getRoomSummary('!room:example.com')
+console.log(summary?.name, summary?.memberCount)
 ```
 
-#### 重新计算统计（管理员）
+#### 容错读取（失败不抛，UI 自行兜底）
 ```typescript
-import { matrixRoomSummaryService } from '@/services/matrix'
-
-await matrixRoomSummaryService.recalculateStats('!room:example.com')
-console.log('统计已重新计算')
-```
-
-#### 清除未读（用户操作后）
-```typescript
-import { matrixRoomSummaryService } from '@/services/matrix'
-
-await matrixRoomSummaryService.clearUnreadSummary('!room:example.com')
-console.log('未读已清除')
+const summary = await matrixRoomReadFacade.getRoomSummary('!room:example.com', false)
+if (!summary) logger.warn('房间摘要不可用')
 ```
 
 ---
@@ -357,7 +352,7 @@ try {
 // ✅ 推荐：并行获取数据
 const [spaces, stats, hierarchy] = await Promise.all([
   matrixSpaceService.getUserSpaces(),
-  matrixRoomSummaryService.getRoomStats('!room:example.com'),
+  matrixRoomReadFacade.getRoomSummary('!room:example.com'),
   matrixSpaceService.getSpaceHierarchy('!space:example.com'),
 ])
 
@@ -389,7 +384,7 @@ Service 为单例，全程驻留内存。无需手动释放。如需切换账号
 ### Q4: 服务之间如何协作？
 
 **答**：Service 间通过共享 `matrixClientService` 获取的底层 `MatrixClient` 实例进行协作，确保状态一致。例如：
-- `matrixSpaceService` 创建空间后，可通过 `matrixRoomSummaryService` 立即获取其统计
+- `matrixSpaceService` 创建空间后，可通过 `matrixRoomReadFacade.getRoomSummary()` 立即获取其摘要
 - 语音上传成功后，`matrixVoiceService` 会自动通知相关房间更新
 
 ---
@@ -403,7 +398,7 @@ Service 为单例，全程驻留内存。无需手动释放。如需切换账号
 | `matrixSpaceService` | `@/services/matrix` | Space 空间管理（CRUD、查询、成员、子房间、层级） |
 | `matrixVoiceService` | `@/services/matrix` | 语音消息管理（上传、列表、配置） |
 | `matrixEventReportService` | `@/services/matrix` | 事件举报管理（创建、查询、处理、升级） |
-| `matrixRoomSummaryService` | `@/services/matrix` | 房间统计管理（统计、未读、重算） |
+| `matrixRoomReadFacade` | `@/services/matrix/room/RoomFacade` | 房间读门面（摘要 `getRoomSummary`、事件上下文等） |
 | `matrixOidcService` | `@/services/matrix` | OIDC 认证管理（登录、注册、令牌、回调） |
 
 ### SDK 原始类型（按需导入）

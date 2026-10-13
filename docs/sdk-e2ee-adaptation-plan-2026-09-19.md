@@ -4,6 +4,12 @@
 **上游依据**: `synapse-rust/docs/2026-09-19-synapse-rust-e2ee-optimization-plan-v2.md`
 **复核方法**: 逐条以源码证据验证 v1.1 断言；后端以 `synapse-web/src/routes/**`、`synapse-services/src/**` 为事实源
 
+> **⚠️ 已过期（2026-10-14 标注）**：本文按日期保留为**历史方案**。SDK 基线已从
+> `40.2.0-langkebo.1/.2/.4` 走到 **`40.2.0-langkebo.6`**（`sdk_commit=0824bb23adb3`，pinned 2026-10-13），
+> 且 **A3 跨仓改造**已落地（`stopClient()` 停 crypto 后清空 `cryptoBackend`）⇒ 文中「必须先
+> `releaseStoppedCryptoBinding()` 解绑才能重新 `initRustCrypto`」的**前提已由 SDK 侧保证**，
+> Tjg 侧兜底降级为保险。现状请以 `docs/Tjg-SDK-集成架构与能力图谱-2026-10-08.md` 为准。
+
 ---
 
 ## 0. 复核摘要
