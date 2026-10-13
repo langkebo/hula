@@ -155,7 +155,7 @@ import { useContextMenuPosition } from '@/composables/common/useContextMenuPosit
 import { useContextMenuSubmenu } from '@/composables/common/useContextMenuSubmenu'
 import type { ContextMenuItem, MenuContent, ReactionEmoji } from '@/composables/common/useContextMenuTypes'
 import { useViewport } from '@/composables/common/useViewport'
-import { isMobile } from '@/utils/PlatformConstants'
+import { useIsMobile } from '@/composables/usePlatform'
 import ContextMenuEmoji from './ContextMenuEmoji.vue'
 
 type Props = {
@@ -172,7 +172,7 @@ const props = withDefaults(defineProps<Props>(), {
   specialMenu: () => []
 })
 
-const isMobileRef = computed(() => isMobile())
+const isMobileRef = useIsMobile()
 const showAllEmojis = ref(false)
 
 const visibleMenu = computed(() => {

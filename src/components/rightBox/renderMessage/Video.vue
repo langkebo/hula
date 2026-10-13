@@ -139,12 +139,13 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { appDataDir, join } from '@tauri-apps/api/path'
 import { exists } from '@tauri-apps/plugin-fs'
-import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDownload } from '@/composables/common/useDownload'
 import { useIntersectionTaskQueue } from '@/composables/common/useIntersectionTaskQueue'
 import { useMitt } from '@/composables/common/useMitt'
 import { useVideoViewer } from '@/composables/common/useVideoViewer'
+import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
 import { MessageStatusEnum, TauriCommand } from '@/enums'
 import { MittEnum, MsgEnum } from '@/enums/index'
 import type { MsgType, VideoBody } from '@/services/types'
@@ -161,7 +162,7 @@ import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('Video')
 const { openVideoViewer, getLocalVideoPath, checkVideoDownloaded } = useVideoViewer()
-const VideoPreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/VideoPreview.vue')) : void 0
+const VideoPreview = mobileOnlyAsyncComponent(() => import('@/mobile/components/VideoPreview.vue'))
 const videoViewerStore = useVideoViewerStore()
 const chatStore = useChatStore()
 const fileDownloadStore = useFileDownloadStore()

@@ -189,20 +189,20 @@ import type { HulaEmojiData } from 'hula-emojis'
 import type { ScrollbarInst, VirtualListInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useIsMobile } from '@/composables/usePlatform'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useHistoryStore } from '@/stores/domains/chat/history'
 import { useUserStore } from '@/stores/domains/user/user'
 import { getAllTypeEmojis } from '@/utils/Emoji.ts'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 import { isValidUrl } from '@/utils/StringUtils'
 import { useEmojiLocalCache } from './useEmojiLocalCache'
 import { useEmojiPagination } from './useEmojiPagination'
 
 const logger = createLogger('Emoticon')
 
-const isMobileRef = computed(() => isMobile())
+const isMobileRef = useIsMobile()
 
 type TabItem = {
   id: number

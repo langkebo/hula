@@ -34,13 +34,13 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { isMobile } from '@/utils/PlatformConstants'
 
-const ImagePreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/ImagePreview.vue')) : void 0
+const ImagePreview = mobileOnlyAsyncComponent(() => import('@/mobile/components/ImagePreview.vue'))
 
 const router = useRouter()
 const fileStore = useFileStore()

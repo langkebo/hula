@@ -16,8 +16,8 @@
 </template>
 
 <script setup lang="ts">
+import { useIsMobile } from '@/composables/usePlatform'
 import { useUserStore } from '@/stores/domains/user/user'
-import { isMobile } from '@/utils/PlatformConstants'
 
 const props = defineProps<{
   body: string
@@ -26,7 +26,7 @@ const props = defineProps<{
 
 const userStore = useUserStore()
 
-const isMobileRef = computed(() => isMobile())
+const isMobileRef = useIsMobile()
 
 // 判断是否是当前用户发送的消息
 const isCurrentUser = computed(() => {

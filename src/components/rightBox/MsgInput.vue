@@ -180,6 +180,7 @@ import { useCommon } from '@/composables/common/useCommon'
 import { useMitt } from '@/composables/common/useMitt'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useSendOptions } from '@/composables/settings/settingsOptions'
+import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
 import type { AIModel, UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -191,7 +192,6 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import type { UploadFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 import MsgInputMobileControls from './MsgInputMobileControls.vue'
 import MsgInputToolbar from './MsgInputToolbar.vue'
 
@@ -245,7 +245,7 @@ const onPrivateModeChanged = (isActive: boolean) => {
 }
 
 // ===== 移动端检测（消除模板内 isMobile() 调用） =====
-const isMobileRef = computed(() => isMobile())
+const isMobileRef = useIsMobile()
 
 const formClass = computed(() => (isMobileRef.value ? 'gap-10px ' : ''))
 const containerClass = computed(() =>

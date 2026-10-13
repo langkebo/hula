@@ -55,6 +55,7 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { exists } from '@tauri-apps/plugin-fs'
 import { useImageViewer } from '@/composables/common/useImageViewer'
+import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
 import { MsgEnum } from '@/enums/index'
 import type { EmojiBody, MsgType } from '@/services/types'
 import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
@@ -79,7 +80,7 @@ const showImagePreviewRef = ref(false)
 const thumbnailStore = useThumbnailCacheStore()
 const { openImageViewer } = useImageViewer()
 const EMOJI_AUTO_DOWNLOAD_LIMIT = 1024 * 1024 // 1MB
-const ImagePreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/ImagePreview.vue')) : void 0
+const ImagePreview = mobileOnlyAsyncComponent(() => import('@/mobile/components/ImagePreview.vue'))
 
 const displayEmojiSrc = computed(() => localEmojiSrc.value || props.body?.url || '')
 

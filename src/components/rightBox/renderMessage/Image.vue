@@ -72,6 +72,7 @@
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { useImageViewer } from '@/composables/common/useImageViewer'
+import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
 import { MessageStatusEnum, MsgEnum, TauriCommand } from '@/enums'
 import type { ImageBody, MsgType } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -85,7 +86,7 @@ import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('Image')
 
-const ImagePreview = isMobile() ? defineAsyncComponent(() => import('@/mobile/components/ImagePreview.vue')) : void 0
+const ImagePreview = mobileOnlyAsyncComponent(() => import('@/mobile/components/ImagePreview.vue'))
 
 const props = defineProps<{
   body: ImageBody

@@ -87,6 +87,7 @@ import { useGlobalShortcut } from '@/composables/common/useGlobalShortcut'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
+import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum } from '@/enums'
 import type { SessionItem } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -105,7 +106,7 @@ const logger = createLogger('ChatFooter')
 const privateModeActive = ref(false)
 const { t } = useI18n()
 
-const isMobileRef = computed(() => isMobile())
+const isMobileRef = useIsMobile()
 const { showFeedback } = useActionFeedback()
 
 const props = withDefaults(

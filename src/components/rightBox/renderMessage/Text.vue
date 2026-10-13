@@ -81,11 +81,11 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
+import { useIsMobile } from '@/composables/usePlatform'
 import type { TextBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { isMobile } from '@/utils/PlatformConstants'
 
-const isMobileRef = computed(() => isMobile())
+const isMobileRef = useIsMobile()
 
 // 标记结构用于描述需特殊渲染的片段区间
 type ContentMarker = {

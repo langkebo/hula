@@ -341,6 +341,7 @@ import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMai
 import { useMitt } from '@/composables/common/useMitt'
 import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
 import { refreshTrustLevel, useMessageTrust } from '@/composables/encryption/useMessageTrust'
+import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum, MsgEnum, ThemeEnum } from '@/enums'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
 import router from '@/router'
@@ -391,7 +392,7 @@ const isShowablePopover = (value: unknown): value is ShowablePopover => {
 
 const ThreadIndicator = computed(() => (isMobile() ? ThreadIndicatorMobile : ThreadIndicatorDesktop))
 
-const isMobileRef = computed(() => isMobile())
+const isMobileRef = useIsMobile()
 
 const props = withDefaults(
   defineProps<{
