@@ -76,21 +76,7 @@ jobs:
           echo "Running TypeScript type check..."
           pnpm exec vue-tsc --noEmit
 
-      # 以下两步是「建议项」，不是门禁：
-      # - 生产依赖审计依赖 registry 网络与 advisory 数据库，偶发性不可控；
-      # - depcheck 对别名/动态导入有已知误报。
-      # 2026-10-11：把原来的 `|| true`（会静默吞掉失败、在日志里看不出来）
-      # 换成显式的 continue-on-error，使「非阻断」这一事实在 GitHub UI 上可见。
-      - name: Audit production dependencies (advisory, non-blocking)
-        continue-on-error: true
-        run: |
-          echo "Auditing production dependencies..."
-          pnpm audit --production --audit-level=moderate
-          echo "Audit completed"
-
-      - name: Check for unused dependencies (advisory, non-blocking)
-        continue-on-error: true
-        run: |
-          echo "Checking for unused dependencies..."
-          npx depcheck --ignores="@types/*,@tauri-apps/*,@storybook/*"
-          echo "Dependency check completed"
+      # 2026-10-13：移除此前的「advisory」非阻断步骤（`pnpm audit` / `depcheck`）。
+      # 二者的职能均已被阻断式门禁取代，保留非阻断步骤会持续形成「全绿假象」（EG-02）：
+      # - 生产依赖审计 -> scripts/check-dependency-audit.mjs（security-performance.yml + .husky/pre-push）
+      # - 未用依赖检测 -> knip（quality-gate.yml，退出码语义已恢复）

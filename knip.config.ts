@@ -5,12 +5,8 @@ const config: KnipConfig = {
     // Storybook mocks are referenced via Vite resolve.alias in .storybook/aliases.ts,
     // not via static imports — knip cannot trace them.
     '.storybook/mocks/**',
-    // 已知无用文件基线（P2-3 / 冗余清理专题核实后删除）。
-    // 保留在此以免新引入的死文件被淹没，同时不放行新增项。
-    '.storybook/setup-file.ts',
-    'src/components/atomic/index.ts',
-    'src/services/backend/ConfigService.ts',
-    'src/stores/domains/chat/index.ts'
+    // vitest setupFiles 由 vitest.config.ts 引用，knip 无对应插件无法追踪。
+    '.storybook/setup-file.ts'
   ],
   entry: [
     // uno.config.ts 由 @unocss/vite 在构建期读取，knip 无对应插件需显式声明为入口；
@@ -39,7 +35,7 @@ const config: KnipConfig = {
     // UnoCSS 虚拟模块（由 @unocss/vite 在构建期提供）
     'uno.css'
   ],
-  ignoreBinaries: ['depcheck', 'adb', 'python3'],
+  ignoreBinaries: ['adb', 'python3'],
   // e2e 用例经 `/* @vite-ignore */` 动态 import 的 Vite dev-server 绝对路径
   // （运行时才解析，静态不可追踪）。传真正的 RegExp 字面量，避免被 knip 当作
   // 字符串再 new RegExp 导致 "Nothing to repeat" 崩溃。
