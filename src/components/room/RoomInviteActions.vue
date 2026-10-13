@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RoomInviteActions')

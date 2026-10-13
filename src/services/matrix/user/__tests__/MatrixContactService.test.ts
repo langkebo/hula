@@ -43,15 +43,9 @@ vi.mock('../../extensions/SynapseFriendExtensionService', () => ({
   synapseFriendExtensionService: mockSynapseExtensionsService
 }))
 
-vi.mock('../../room/ActionFacade', () => ({
-  matrixRoomActionFacade: mockRoomService
-}))
-
-vi.mock('../../room/QueryFacade', () => ({
-  matrixRoomQueryFacade: mockRoomService
-}))
-
-vi.mock('../../room/ReadFacade', () => ({
+vi.mock('../../room/RoomFacade', () => ({
+  matrixRoomActionFacade: mockRoomService,
+  matrixRoomQueryFacade: mockRoomService,
   matrixRoomReadFacade: mockRoomService
 }))
 

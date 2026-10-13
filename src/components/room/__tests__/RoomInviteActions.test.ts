@@ -13,7 +13,7 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
 }))
 
-vi.mock('@/services/matrix/room/ActionFacade', () => ({
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomActionFacade: {
     joinRoom: joinRoomMock,
     leaveRoom: leaveRoomMock

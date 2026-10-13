@@ -1,7 +1,7 @@
 import { type Ref, type ShallowRef, triggerRef } from 'vue'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
 import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import type { RoomInfo } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useLocationStore } from '@/stores/domains/chat/location'

@@ -83,7 +83,7 @@ const matrixRoomQueryFacadeMock = vi.hoisted(() => ({
   getRooms: vi.fn()
 }))
 
-vi.mock('@/services/matrix/room/QueryFacade', () => ({
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomQueryFacade: matrixRoomQueryFacadeMock
 }))
 

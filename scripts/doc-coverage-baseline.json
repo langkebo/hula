@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-10-09T16:46:49.466Z",
-  "count": 985,
+  "count": 981,
   "missing": [
     "src/services/backend/config.ts::clearMatrixSessionEndpointConfig",
     "src/services/backend/config.ts::getDefaultMatrixEndpointConfig",
@@ -15,10 +15,6 @@
     "src/services/backend/config.ts::saveMatrixSessionEndpointConfig",
     "src/services/backend/discovery.ts::discoverAndSaveMatrixEndpoints",
     "src/services/backend/discovery.ts::discoverMatrixEndpoints",
-    "src/services/discovery/adapters/consul.ts::discover",
-    "src/services/discovery/index.ts::resolve",
-    "src/services/discovery/index.ts::resolveUrl",
-    "src/services/discovery/loadBalancer.ts::select",
     "src/services/i18n.ts::applyLanguagePreference",
     "src/services/i18n.ts::loadLanguage",
     "src/services/matrix/EndpointCapabilityService.ts::check",

@@ -166,7 +166,7 @@ const getMatrixReactionService = createLazyLoader(
   'matrixReactionService'
 )
 const getMatrixRoomService = createLazyLoader(
-  () => import('@/services/matrix/room/ActionFacade'),
+  () => import('@/services/matrix/room/RoomFacade'),
   'matrixRoomActionFacade'
 )
 const getMatrixRoomCreationService = createLazyLoader(

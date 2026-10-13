@@ -1,6 +1,5 @@
 import { type ShallowRef, shallowRef } from 'vue'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
-import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
+import { matrixRoomActionFacade, matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import type { RoomInfo } from '@/services/types'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { createLogger } from '@/utils/Logger'

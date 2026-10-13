@@ -29,7 +29,7 @@ vi.mock('@/composables/chat/openMsgSession', () => ({
   openMsgSession: openMsgSessionMock
 }))
 
-vi.mock('@/services/matrix/room/ActionFacade', () => ({
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomActionFacade: { joinRoom: joinRoomMock }
 }))
 

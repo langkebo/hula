@@ -8,7 +8,7 @@ const { getPowerLevelsMock, setPowerLevelsMock, showFeedbackMock } = vi.hoisted(
   showFeedbackMock: vi.fn()
 }))
 
-vi.mock('@/services/matrix/room/ActionFacade', () => ({
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomActionFacade: {
     getPowerLevels: getPowerLevelsMock,
     setPowerLevels: setPowerLevelsMock

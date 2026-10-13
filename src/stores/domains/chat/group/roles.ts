@@ -1,5 +1,5 @@
 import { type ComputedRef, computed } from 'vue'
-import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
+import { matrixRoomMemberFacade } from '@/services/matrix/room/RoomFacade'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'

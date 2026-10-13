@@ -68,7 +68,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 
 interface StickyEventInfo {
   eventId: string

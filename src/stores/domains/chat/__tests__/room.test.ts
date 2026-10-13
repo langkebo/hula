@@ -1,9 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MsgEnum } from '@/enums'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
 import matrixRoomSummaryService from '@/services/matrix/room/MatrixRoomSummaryService'
-import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
+import { matrixRoomActionFacade, matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { useRoomStore } from '@/stores/domains/chat/room'
 
 const {
@@ -96,14 +95,11 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   warn: vi.fn()
 }))
 
-vi.mock('@/services/matrix/room/ReadFacade', () => ({
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomReadFacade: {
     ...mockReadFacade,
     getTags: vi.fn()
-  }
-}))
-
-vi.mock('@/services/matrix/room/ActionFacade', () => ({
+  },
   matrixRoomActionFacade: {
     ...mockActionFacade,
     setTag: vi.fn(),
@@ -1004,12 +1000,11 @@ describe('RoomStore', () => {
     }
 
     beforeEach(async () => {
-      const readFacade = await import('@/services/matrix/room/ReadFacade')
-      const actionFacade = await import('@/services/matrix/room/ActionFacade')
+      const roomFacade = await import('@/services/matrix/room/RoomFacade')
       tagsServiceMock = {
-        getTags: vi.mocked(readFacade.matrixRoomReadFacade.getTags),
-        setTag: vi.mocked(actionFacade.matrixRoomActionFacade.setTag),
-        removeTag: vi.mocked(actionFacade.matrixRoomActionFacade.removeTag)
+        getTags: vi.mocked(roomFacade.matrixRoomReadFacade.getTags),
+        setTag: vi.mocked(roomFacade.matrixRoomActionFacade.setTag),
+        removeTag: vi.mocked(roomFacade.matrixRoomActionFacade.removeTag)
       }
       tagsServiceMock.getTags.mockReset()
       tagsServiceMock.setTag.mockReset()

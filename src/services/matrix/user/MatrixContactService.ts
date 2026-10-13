@@ -5,10 +5,8 @@ import { normalizeMatrixUserId, toLocalpart } from '@/utils/userIdentity'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import { matrixFriendService } from '../friends/MatrixFriendService'
 import { matrixClientService } from '../MatrixClientService'
-import { matrixRoomActionFacade } from '../room/ActionFacade'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
-import { matrixRoomQueryFacade } from '../room/QueryFacade'
-import { matrixRoomReadFacade } from '../room/ReadFacade'
+import { matrixRoomActionFacade, matrixRoomQueryFacade, matrixRoomReadFacade } from '../room/RoomFacade'
 
 const logger = createLogger('MatrixContactService')
 

@@ -63,7 +63,7 @@ import { useI18n } from 'vue-i18n'
 import BaseRightDrawer from '@/components/common/BaseRightDrawer.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 

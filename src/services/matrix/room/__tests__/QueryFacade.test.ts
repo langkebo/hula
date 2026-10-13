@@ -12,7 +12,7 @@ vi.mock('../QueryService', () => ({
   matrixRoomQueryService: queryServiceMock
 }))
 
-import { matrixRoomQueryFacade } from '../QueryFacade'
+import { matrixRoomQueryFacade } from '../RoomFacade'
 
 describe('matrixRoomQueryFacade', () => {
   beforeEach(() => {

@@ -297,7 +297,7 @@ import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum } fr
 import router from '@/router'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import type { UserItem } from '@/services/types'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useChatStore } from '@/stores/domains/chat/chat'

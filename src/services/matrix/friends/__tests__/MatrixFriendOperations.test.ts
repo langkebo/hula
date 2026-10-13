@@ -15,7 +15,7 @@ vi.mock('../../extensions/SynapseFriendExtensionService', () => ({
   }
 }))
 
-vi.mock('../../room/ActionFacade', () => ({
+vi.mock('../../room/RoomFacade', () => ({
   matrixRoomActionFacade: {
     createDirectRoom: vi.fn()
   }
@@ -33,7 +33,7 @@ vi.mock('@/services/i18n', () => ({
 }))
 
 import { synapseFriendExtensionService } from '../../extensions/SynapseFriendExtensionService'
-import { matrixRoomActionFacade } from '../../room/ActionFacade'
+import { matrixRoomActionFacade } from '../../room/RoomFacade'
 import { matrixSpecialFriendService } from '../MatrixSpecialFriendService'
 
 const mockManager = {

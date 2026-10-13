@@ -2,7 +2,7 @@ import { type Ref, ref } from 'vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
-import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
+import { matrixRoomMemberFacade } from '@/services/matrix/room/RoomFacade'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { createLogger } from '@/utils/Logger'
 

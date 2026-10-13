@@ -7,7 +7,7 @@ vi.mock('@/stores/domains/widget/global', () => ({
   useGlobalStore: () => globalStoreMock
 }))
 
-vi.mock('@/services/matrix/room/QueryFacade', () => ({
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomQueryFacade: {
     getRoomMembers: vi.fn(),
     getRoom: vi.fn()

@@ -82,14 +82,13 @@
 
 ### 3.4 领域清零 (优先级)
 
-非 matrix 的 68 条基线记录属于小面积域，建议按以下优先级在 RC 前清零：
+非 matrix 的 59 条基线记录属于小面积域，建议按以下优先级在 RC 前清零：
 
 1. `src/services/backend` (13)
 2. `src/services/offline` (10)
 3. `src/services/trendradar` (10)
-4. `src/services/discovery` (9)
-5. `src/services/siliconflow` (9)
-6. `src/services/ai-provider.ts` 等顶层文件 (17)
+4. `src/services/siliconflow` (9)
+5. `src/services/ai-provider.ts` 等顶层文件 (17)
 
 matrix 子域按现有业务权重顺序推进 (room → admin → messaging → crypto → …)，
 由各子域负责人认领。

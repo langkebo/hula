@@ -102,7 +102,7 @@ vi.mock('../timerWorker', () => ({
   getTimerWorker: () => timerWorkerMock
 }))
 
-vi.mock('@/services/matrix/room/ActionFacade', () => ({
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomActionFacade: {
     getRoom: vi.fn()
   }

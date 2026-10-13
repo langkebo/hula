@@ -53,7 +53,7 @@ vi.mock('@/services/matrix/messaging/MatrixReactionService', () => ({
   matrixReactionService: { toggleReaction: toggleReactionMock }
 }))
 
-vi.mock('@/services/matrix/room/ActionFacade', () => ({
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomActionFacade: {
     pinEvent: pinEventMock,
     unpinEvent: unpinEventMock

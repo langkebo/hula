@@ -1,7 +1,6 @@
 import { computed, shallowReactive } from 'vue'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
-import { matrixRoomQueryFacade } from '@/services/matrix/room/QueryFacade'
+import { matrixRoomActionFacade, matrixRoomQueryFacade } from '@/services/matrix/room/RoomFacade'
 import { Direction, EventType } from '@/services/matrix/sdk'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'

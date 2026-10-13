@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-11T10:32:29.447Z",
-  "count": 184,
+  "count": 183,
   "violations": [
     "src/composables/messaging/useMessageForward.ts::matrix-js-sdk",
     "src/composables/messaging/useMessageForward.ts::unknown-as-MatrixEvent#1",
@@ -133,7 +133,6 @@
     "src/services/matrix/notifications/__tests__/MatrixPushService.test.ts::matrix-js-sdk",
     "src/services/matrix/notifications/__tests__/MatrixRoomNotificationService.test.ts::matrix-js-sdk",
     "src/services/matrix/notifications/__tests__/notifications.contract.test.ts::matrix-js-sdk",
-    "src/services/matrix/room/ActionFacade.ts::matrix-js-sdk",
     "src/services/matrix/room/CreationService.ts::matrix-js-sdk",
     "src/services/matrix/room/CreationService.ts::unknown-as-Room#1",
     "src/services/matrix/room/MatrixDirectMessageService.ts::matrix-js-sdk",
@@ -142,9 +141,9 @@
     "src/services/matrix/room/MatrixRoomSummaryService.ts::matrix-js-sdk",
     "src/services/matrix/room/MatrixSpaceService.ts::matrix-js-sdk",
     "src/services/matrix/room/MembershipService.ts::matrix-js-sdk",
-    "src/services/matrix/room/QueryFacade.ts::matrix-js-sdk",
     "src/services/matrix/room/QueryService.ts::matrix-js-sdk",
     "src/services/matrix/room/RealtimeService.ts::matrix-js-sdk",
+    "src/services/matrix/room/RoomFacade.ts::matrix-js-sdk",
     "src/services/matrix/room/RoomOperations.ts::matrix-js-sdk",
     "src/services/matrix/room/SummaryService.ts::matrix-js-sdk",
     "src/services/matrix/room/__tests__/CreationService.test.ts::matrix-js-sdk",

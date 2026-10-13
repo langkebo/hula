@@ -157,7 +157,7 @@ import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualLis
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
 import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
 import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
-import { matrixRoomQueryFacade } from '@/services/matrix/room/QueryFacade'
+import { matrixRoomQueryFacade } from '@/services/matrix/room/RoomFacade'
 import type { Room } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 

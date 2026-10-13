@@ -1,5 +1,5 @@
 import { type ShallowRef, triggerRef } from 'vue'
-import { matrixRoomReadFacade } from '@/services/matrix/room/ReadFacade'
+import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import type { RoomDetail, RoomInfo } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
 import { LRUCache } from '@/utils/LRUCache'

@@ -53,7 +53,7 @@ import { useI18n } from 'vue-i18n'
 import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { RoomTypeEnum } from '@/enums'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { useRightViewDraftStore } from '@/stores/domains/widget/rightViewDraft'
 import { createLogger } from '@/utils/Logger'
 

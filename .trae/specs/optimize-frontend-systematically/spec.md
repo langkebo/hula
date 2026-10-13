@@ -288,11 +288,10 @@ App.vue 中的所有事件监听器（mitt、window.addEventListener）SHALL 在
 **Migration**: 直接删除，无需迁移
 
 ### Requirement: 旧版服务发现层
-**当前状态**: 待收尾完善  
-**Reason**: 原始目标是移除 `services/discovery/` 并将 Static 配置内联到 `backend/config.ts`。  
-**实际情况**: 当前代码仍保留 discovery 目录及其调用链，尚未完成该项收尾。  
-**Migration**: 后续需在确认兼容性后再执行内联和删除工作。  
-**预计收尾时间**: `2026-05-23`
+**当前状态**: 已完成  
+**Reason**: 原始目标是移除 `services/discovery/` 并将最小 Consul 解析内联到 `backend/discovery.ts`。  
+**实际情况**: `services/discovery/` 目录（`ServiceDiscoverySDK` / `Registry` / `RoundRobinLoadBalancer` / `ConsulRegistry` 及其测试）已删除，最小 Consul 解析逻辑已内联进 `services/backend/discovery.ts`。  
+**Migration**: 已完成，无遗留调用链。
 
 ### Requirement: 旧版错误类型（TranslatedError）
 **当前状态**: 待收尾完善  

@@ -1,7 +1,5 @@
-import { ServiceDiscoverySDK } from '@/services/discovery'
-import { ConsulRegistry } from '@/services/discovery/adapters/consul'
-import { RoundRobinLoadBalancer } from '@/services/discovery/loadBalancer'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import {
   DEFAULT_MATRIX_IDENTITY_SERVER_URL,
@@ -15,31 +13,78 @@ import type { MatrixDiscoveryResult, MatrixEndpointConfig } from './types'
 const MATRIX_WELL_KNOWN_PATH = '/.well-known/matrix/client'
 const logger = createLogger('MatrixDiscovery')
 
-// 初始化 SDK 实例 (单例模式)
-let sdkInstance: ServiceDiscoverySDK | null = null
+interface ConsulServiceEntry {
+  Service: {
+    ID: string
+    Service: string
+    Address: string
+    Port: number
+    Weights?: {
+      Passing: number
+    }
+    Tags?: string[]
+    Meta: Record<string, string>
+  }
+  Node: {
+    Address: string
+  }
+}
 
-function getSDK(): ServiceDiscoverySDK | null {
-  // 在测试环境下，不使用 ServiceDiscoverySDK，以确保单元测试能够验证原有的发现逻辑
+interface ConsulResolvedInstance {
+  address: string
+  port: number
+  metadata: Record<string, string>
+}
+
+let roundRobinIndex = 0
+
+function getConsulUrl(): string | null {
+  // 在测试环境下不启用 Consul discovery，以确保单元测试能够验证原有的发现逻辑
   if (import.meta.env.MODE === 'test') {
     return null
   }
 
-  if (sdkInstance) return sdkInstance
-
-  // 只有配置了 VITE_CONSUL_URL 时才启用 SDK Discovery。
-  // 之前的 StaticRegistry fallback（localhost:8008）会覆盖用户输入的任意
-  // 服务器地址——因为 StaticRegistry.discover() 不检查 tags，总是返回
-  // default 实例，导致用户输入 https://matrix.example.com 也被强制重定向
-  // 到 http://localhost:8008。现在无 Consul 时返回 null，让调用方走
-  // explicit_url / .well-known 传统发现路径，正确尊重用户输入。
+  // 只有配置了 VITE_CONSUL_URL 时才启用 Consul discovery。
+  // 无 Consul 时返回 null，让调用方走 explicit_url / .well-known 传统发现路径，
+  // 正确尊重用户输入（避免把用户输入的任意地址强行重定向到默认 homeserver）。
   const consulUrl = import.meta.env.VITE_CONSUL_URL
-  if (!consulUrl) {
+  return consulUrl || null
+}
+
+async function resolveMatrixHomeserverFromConsul(
+  consulUrl: string,
+  tag: string
+): Promise<ConsulResolvedInstance | null> {
+  const baseUrl = consulUrl.replace(/\/+$/, '')
+  // Consul 支持 ?tag= 参数做服务端过滤（只支持单 tag）。
+  const params = new URLSearchParams()
+  params.set('passing', 'true')
+  params.set('tag', tag)
+  const url = `${baseUrl}/v1/health/service/matrix-homeserver?${params.toString()}`
+
+  try {
+    // Consul baseUrl 由 env/配置驱动（动态 host）
+    const entries = await HttpClient.get<ConsulServiceEntry[]>(url, { allowDynamicHost: true })
+    // 客户端二次过滤：实例必须包含请求的 tag（AND 语义），与 Consul 服务端过滤对齐。
+    const instances = entries
+      .filter((entry) => (entry.Service.Tags ?? []).includes(tag))
+      .map((entry) => ({
+        address: entry.Service.Address || entry.Node.Address,
+        port: entry.Service.Port,
+        metadata: entry.Service.Meta
+      }))
+
+    if (instances.length === 0) {
+      return null
+    }
+
+    const instance = instances[roundRobinIndex % instances.length]
+    roundRobinIndex = (roundRobinIndex + 1) % instances.length
+    return instance
+  } catch (error) {
+    logger.error('Failed to discover matrix-homeserver from Consul:', error)
     return null
   }
-
-  const registry = new ConsulRegistry(consulUrl)
-  sdkInstance = new ServiceDiscoverySDK(registry, new RoundRobinLoadBalancer())
-  return sdkInstance
 }
 
 type WellKnownDocument = {
@@ -122,29 +167,25 @@ export async function discoverMatrixEndpoints(
     throw new Error('缺少服务发现输入')
   }
 
-  // 优先尝试从 ServiceDiscoverySDK 解析 (ADR-002)
-  // 注意：只有用户输入的不是 explicit URL 时才尝试 SDK discovery。
+  // 优先尝试从 Consul 服务发现解析 (ADR-002)
+  // 注意：只有用户输入的不是 explicit URL 时才尝试 Consul discovery。
   // explicit URL（http://... 或 https://...）直接走 explicit_url 路径，
   // 避免把完整 URL 当作 Consul tag 传入。
   const isExplicitUrl = trimmedInput.startsWith('http://') || trimmedInput.startsWith('https://')
-  const sdk = getSDK()
-  if (sdk && !isExplicitUrl) {
-    try {
-      // 用 server_name（去协议、去路径、去尾部斜杠后的主机[:端口]）作为 tag，
-      // 与 Consul 中注册的 matrix-homeserver 实例 tags 匹配。
-      const serverNameTag = normalizeServerName(trimmedInput)
-      const instance = await sdk.resolve('matrix-homeserver', { tags: [serverNameTag] })
-      if (instance) {
-        const protocol = instance.metadata?.protocol || 'http'
-        return {
-          homeserverUrl: `${protocol}://${instance.address}:${instance.port}`,
-          identityServerUrl:
-            instance.metadata?.identity_url || normalizeOptionalHttpUrl(fallbackConfig?.identityServerUrl),
-          source: 'sdk_discovery'
-        }
+  const consulUrl = getConsulUrl()
+  if (consulUrl && !isExplicitUrl) {
+    // 用 server_name（去协议、去路径、去尾部斜杠后的主机[:端口]）作为 tag，
+    // 与 Consul 中注册的 matrix-homeserver 实例 tags 匹配。
+    const serverNameTag = normalizeServerName(trimmedInput)
+    const instance = await resolveMatrixHomeserverFromConsul(consulUrl, serverNameTag)
+    if (instance) {
+      const protocol = instance.metadata?.protocol || 'http'
+      return {
+        homeserverUrl: `${protocol}://${instance.address}:${instance.port}`,
+        identityServerUrl:
+          instance.metadata?.identity_url || normalizeOptionalHttpUrl(fallbackConfig?.identityServerUrl),
+        source: 'sdk_discovery'
       }
-    } catch (e) {
-      logger.warn('SDK Discovery failed, falling back to traditional method', e)
     }
   }
 

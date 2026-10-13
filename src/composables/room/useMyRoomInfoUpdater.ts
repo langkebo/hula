@@ -1,4 +1,4 @@
-import { matrixRoomMemberFacade } from '@/services/matrix/room/MemberFacade'
+import { matrixRoomMemberFacade } from '@/services/matrix/room/RoomFacade'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'

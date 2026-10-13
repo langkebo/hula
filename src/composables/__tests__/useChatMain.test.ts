@@ -159,7 +159,7 @@ vi.mock('@/services/matrix/admin', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/room/ActionFacade', () => ({
+vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomActionFacade: {
     kickUser: removeMemberMock
   }

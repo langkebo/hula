@@ -61,7 +61,7 @@ vi.mock('../TimelineService', () => ({
   matrixRoomTimelineService: timelineServiceMock
 }))
 
-import { matrixRoomReadFacade } from '../ReadFacade'
+import { matrixRoomReadFacade } from '../RoomFacade'
 
 describe('matrixRoomReadFacade', () => {
   beforeEach(() => {

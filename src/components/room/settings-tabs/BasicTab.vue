@@ -117,7 +117,7 @@ import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
-import { matrixRoomActionFacade } from '@/services/matrix/room/ActionFacade'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { useGroupStore } from '@/stores/domains/chat/group'
 
 const props = defineProps<{ roomId: string }>()

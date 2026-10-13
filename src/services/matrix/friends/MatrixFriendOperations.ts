@@ -3,7 +3,7 @@ import { createLogger } from '@/utils/Logger'
 
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import { isConnectionClassError } from '../MatrixRequestHelper'
-import { matrixRoomActionFacade } from '../room/ActionFacade'
+import { matrixRoomActionFacade } from '../room/RoomFacade'
 import { buildFriendRequestIdempotencyKey, type FriendManagerCompat, type FriendStatus } from './friendUtils'
 import type { MatrixFriendSync } from './MatrixFriendSync'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'

@@ -14,7 +14,7 @@ vi.mock('../RoomOperations', () => ({
   roomOperations: roomOperationsMock
 }))
 
-import { matrixRoomMemberFacade } from '../MemberFacade'
+import { matrixRoomMemberFacade } from '../RoomFacade'
 
 describe('matrixRoomMemberFacade', () => {
   beforeEach(() => {

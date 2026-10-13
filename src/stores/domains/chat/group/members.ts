@@ -1,6 +1,6 @@
 import { computed, reactive, shallowReactive, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum } from '@/enums'
-import { matrixRoomQueryFacade } from '@/services/matrix/room/QueryFacade'
+import { matrixRoomQueryFacade } from '@/services/matrix/room/RoomFacade'
 import type { RoomMember } from '@/services/matrix/sdk'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
