@@ -11,13 +11,6 @@
         </div>
 
         <template v-else>
-          <!-- 缓存统计 -->
-          <van-cell-group :title="t('mobile_storage.cache_section')" inset>
-            <van-cell :title="t('mobile_storage.hit_rate')" :value="hitRateText" />
-            <van-cell :title="t('mobile_storage.memory_usage')" :value="memoryUsageText" />
-            <van-cell :title="t('mobile_storage.cached_items')" :value="String(stats?.totalEntries ?? 0)" />
-          </van-cell-group>
-
           <!-- 浏览器存储用量 -->
           <van-cell-group :title="t('mobile_storage.usage_section')" inset>
             <van-cell :title="t('mobile_storage.used')" :value="usageText" />
@@ -30,15 +23,6 @@
               :aria-label="t('mobile_storage.used')"
               :pivot-text="`${usagePercent}%`" />
           </div>
-
-          <!-- 清理：破坏性操作独立分区 + 二次确认 -->
-          <div class="mt-16px flex flex-col gap-8px px-4px">
-            <div class="text-14px text-[--tjg-text-secondary]">{{ t('mobile_storage.danger_section') }}</div>
-            <div class="text-12px text-[--tjg-text-tertiary]">{{ t('mobile_storage.clear_desc') }}</div>
-            <van-button type="danger" block plain :loading="clearing" @click="handleClear">
-              {{ t('mobile_storage.clear') }}
-            </van-button>
-          </div>
         </template>
       </div>
     </template>
@@ -46,13 +30,10 @@
 </template>
 
 <script setup lang="ts">
-import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
-import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
-import type { StoreStats } from '@/services/matrix/sdk'
 import { formatBytes } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 
@@ -61,21 +42,11 @@ const logger = createLogger('MobileStorageSettings')
 const { t } = useI18n()
 
 const loading = ref(false)
-const clearing = ref(false)
-const stats = ref<StoreStats | null>(null)
 const usage = ref(0)
 const quota = ref(0)
 
-const hitRateText = computed(() => {
-  if (!stats.value) return '-'
-  return `${(stats.value.hitRate * 100).toFixed(1)}%`
-})
-
 const usageText = computed(() => formatBytes(usage.value))
 const quotaText = computed(() => formatBytes(quota.value))
-const memoryUsageText = computed(() =>
-  stats.value?.memoryUsageBytes == null ? '-' : formatBytes(stats.value.memoryUsageBytes)
-)
 
 /** 用量占比，封顶 100（配额未知时为 0） */
 const usagePercent = computed(() => {
@@ -84,10 +55,13 @@ const usagePercent = computed(() => {
 })
 
 async function loadStats(): Promise<void> {
+  // ⚠️ 这里曾展示「缓存命中率 / 内存占用 / 缓存条目」并调用矩阵 worker 的 getStats()。
+  // Batch 3.2 取证确认该消息在 worker 侧恒返回 null（worker 从不持有 client）⇒ 三项永远为
+  // 0 / `-`；同时「清理缓存」按钮调用的 clearStores() 是 no-op 却会弹「清理成功」。
+  // 两者已一并移除，不再用假数据与假成功欺骗用户。
+  // 浏览器存储用量是真实数据，保留。
   loading.value = true
   try {
-    stats.value = await matrixWorkerHost.getStats()
-    // 浏览器存储用量：非所有环境都提供，缺失时降级为 0 而不是抛错
     if (typeof navigator !== 'undefined' && navigator.storage?.estimate) {
       const estimate = await navigator.storage.estimate()
       usage.value = estimate.usage ?? 0
@@ -95,34 +69,8 @@ async function loadStats(): Promise<void> {
     }
   } catch (error) {
     logger.error('Failed to load storage stats', error)
-    showToast({ type: 'fail', message: t('mobile_storage.load_failed') })
   } finally {
     loading.value = false
-  }
-}
-
-async function handleClear(): Promise<void> {
-  try {
-    await showConfirmDialog({
-      title: t('mobile_storage.clear'),
-      message: t('mobile_storage.clear_confirm'),
-      confirmButtonText: t('mobile_storage.clear'),
-      cancelButtonText: t('common.cancel')
-    })
-  } catch {
-    return
-  }
-
-  clearing.value = true
-  try {
-    await matrixWorkerHost.clearStores()
-    showToast(t('mobile_storage.clear_success'))
-    await loadStats()
-  } catch (error) {
-    logger.error('Failed to clear stores', error)
-    showToast({ type: 'fail', message: t('mobile_storage.clear_failed') })
-  } finally {
-    clearing.value = false
   }
 }
 

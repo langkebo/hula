@@ -9,7 +9,6 @@ import type {
   WorkerMessage,
   WorkerResponse
 } from '@/workers/matrixWorkerTypes'
-import type { StoreStats } from './sdk'
 
 const logger = createLogger('MatrixWorkerHost')
 
@@ -164,21 +163,6 @@ export class MatrixWorkerHost {
 
   async resetSearchIndex(): Promise<void> {
     return this.request<void>('search.reset')
-  }
-
-  /**
-   * 清理 SDK 持久化存储（IndexedDB store + legacy crypto store + rust-crypto store）。
-   * 用于退出登录 / 切换账号时清除本地缓存数据，避免残留。
-   */
-  async clearStores(): Promise<void> {
-    return this.request<void>('clearStores')
-  }
-
-  /**
-   * 获取 SDK store 缓存统计（对齐后端 CacheStats）。
-   */
-  async getStats(): Promise<StoreStats | null> {
-    return this.request<StoreStats | null>('getStats')
   }
 
   async bootstrapSearchRooms(rooms: SearchRoomDoc[]): Promise<void> {

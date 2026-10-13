@@ -78,6 +78,18 @@
 
 ### Batch 3 —— 接入面收敛（逐子项独立提交）
 
+> **3.2 状态：✅ 已完成（2026-10-13）。** 先调研后实施：取证报告
+> `OPS_ARTIFACTS/TJG_worker_client_forensics_2026-10-13.md` 确认 worker 侧 client 面**整体不可达**
+> 且搜索索引不依赖它 ⇒ 选定「删干净」（而非接通 —— 接通会让第二个 sync 挂同一份固定名 store）。
+> 交付：删 `workerClientHandlers.ts` 整文件、`state.client/sdk/slidingSyncInstance`、`initSDK`、
+> `extractClientConfig`、worker 内存看门狗（唯一动作是恒早退的 room timeline 裁剪）、
+> `MatrixWorkerHost.clearStores/getStats`、`StorageSettings`/`MobileStorageSettings` 的假统计与
+> 「清理缓存」按钮（含移动端的假成功 toast）、登出链路指向 no-op 的调用、3 个死类型；
+> 新门禁 `pnpm check:worker-client-boundary`（含 15 例单测）。
+> 变异自证：M23（worker 写回 client 死面）/ M24（主线程重新发 clearStores）/ M24b（分发表重新登记
+> initialize）均判红并逐字节还原。
+
+
 > **3.1 状态：✅ 已完成（2026-10-13）。** 交付：`MatrixHttpClient.uploadRaw`（薄委托）
 > + 新通道 `MatrixRawUploadChannel.ts`（限流包装 fetch / dev 同源改写 / 统一错误归一化 / 超时取消）
 > + 抽出 `MatrixHttpClientAiGate.ts` 腾出 400 行额度（AI 端点闸门行为不变）；

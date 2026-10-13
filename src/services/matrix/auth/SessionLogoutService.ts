@@ -112,10 +112,14 @@ export class SessionLogoutService {
     // 清除会话检查缓存，下次导航重新走 IPC
     this.state.cachedHasSession = null
 
+    // ⚠️ 原先这里还会调 `matrixWorkerHost.clearStores()`，并注释承诺「清除 IndexedDB store /
+    // legacy crypto store / rust-crypto store」。Batch 3.2 取证确认该消息在 worker 侧是
+    // `if (state.client)` 的 no-op（worker 从不持有 client）⇒ 承诺从未兑现。**已删除该调用**，
+    // 不再用一个空操作冒充 store 清理；账号/设备切换时的真实 store 清理由
+    // `MatrixCryptoStateTracker`（按 userId+deviceId 判据）与 `resetLocalSessionState` 承担。
     const cleanupAndTerminate = async () => {
       try {
         await matrixWorkerHost.resetSearchIndex()
-        await matrixWorkerHost.clearStores()
       } catch (err) {
         logger.warn(`登出时清理本地数据失败: ${err}`)
       } finally {

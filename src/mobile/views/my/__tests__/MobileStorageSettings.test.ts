@@ -5,22 +5,24 @@ import MobileStorageSettings from '../MobileStorageSettings.vue'
 /**
  * 移动端存储管理（方案 5.1）。
  *
- * 缺口背景：桌面 `StorageSettings.vue` 展示缓存命中率 + 浏览器存储用量/配额，
- * 并提供清理缓存入口；移动端**没有任何存储可见性**，排查问题成本高。
+ * ⚠️ 2026-10-13 更新（Batch 3.2）：本页原先还展示「缓存命中率 / 内存占用 / 缓存条目」
+ * 并提供「清理缓存」按钮，二者都指向矩阵 worker 的 `getStats()` / `clearStores()`；
+ * 取证确认该 worker **从不持有 MatrixClient**，所以三个统计项恒为 0/`-`、清理是 no-op
+ * 却会弹「清理成功」。假数据与假成功已随 `workerClientHandlers` 一起删除。
+ * 本文件现在锁两件事：① 浏览器存储用量（真实数据）仍正常展示；② **死灰不得复燃** ——
+ * 页面不得再调用 worker 的这两个方法。
  */
 
 const getStatsMock = vi.fn()
 const clearStoresMock = vi.fn()
-const showToastMock = vi.fn()
-const showConfirmDialogMock = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('vant', async () => {
   const { defineComponent } = await import('vue')
   const passthrough = (name: string, tag = 'div') =>
     defineComponent({ name, inheritAttrs: false, template: `<${tag} v-bind="$attrs"><slot /></${tag}>` })
   return {
-    showToast: (...args: any[]) => showToastMock(...args),
-    showConfirmDialog: (...args: any[]) => showConfirmDialogMock(...args),
+    showToast: vi.fn(),
+    showConfirmDialog: vi.fn(),
     VanCellGroup: passthrough('VanCellGroup'),
     VanCell: passthrough('VanCell'),
     VanButton: passthrough('VanButton', 'button'),
@@ -33,10 +35,11 @@ vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }) }))
 vi.mock('@/router', () => ({ default: { push: vi.fn(), back: vi.fn(), replace: vi.fn() } }))
 
+// 保留 mock：若组件再度 import 并调用这两个方法，下面的断言会立刻判红
 vi.mock('@/services/matrix/MatrixWorkerHost', () => ({
   matrixWorkerHost: {
-    getStats: (...a: any[]) => getStatsMock(...a),
-    clearStores: (...a: any[]) => clearStoresMock(...a)
+    getStats: (...a: unknown[]) => getStatsMock(...a),
+    clearStores: (...a: unknown[]) => clearStoresMock(...a)
   }
 }))
 
@@ -50,16 +53,12 @@ vi.mock('@/mobile/components/chat-room/HeaderBar.vue', () => ({
 
 interface Vm {
   loading: boolean
-  clearing: boolean
-  stats: { hitRate: number; totalEntries: number } | null
   usage: number
   quota: number
-  hitRateText: string
+  usagePercent: number
   usageText: string
   quotaText: string
-  memoryUsageText: string
   loadStats: () => Promise<void>
-  handleClear: () => Promise<void>
 }
 
 const mountPage = () => mount(MobileStorageSettings)
@@ -68,15 +67,6 @@ const vmOf = (w: ReturnType<typeof mount>) => w.vm as unknown as Vm
 describe('MobileStorageSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getStatsMock.mockResolvedValue({
-      hitRate: 0.8,
-      totalEntries: 12,
-      memoryUsageBytes: 1024,
-      hits: 8,
-      misses: 2,
-      evictions: 0
-    })
-    clearStoresMock.mockResolvedValue(undefined)
     // jsdom 没有 navigator.storage，补一个
     Object.defineProperty(navigator, 'storage', {
       configurable: true,
@@ -84,40 +74,34 @@ describe('MobileStorageSettings', () => {
     })
   })
 
-  it('挂载时加载缓存统计与存储用量', async () => {
+  it('挂载时加载浏览器存储用量（真实数据）', async () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    expect(getStatsMock).toHaveBeenCalled()
     expect(vmOf(wrapper).usage).toBe(2048)
     expect(vmOf(wrapper).quota).toBe(4096)
-  })
-
-  it('缓存命中率格式化为百分比', async () => {
-    const wrapper = mountPage()
-    await flushPromises()
-
-    expect(vmOf(wrapper).hitRateText).toBe('80.0%')
+    expect(vmOf(wrapper).loading).toBe(false)
   })
 
   it('字节格式化统一到 Formatting.formatBytes（B / KB / MB 档位）', async () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    // stats.memoryUsageBytes = 1024 -> 1 KB
-    expect(vmOf(wrapper).memoryUsageText).toBe('1 KB')
-    // navigator.storage.estimate usage=2048 / quota=4096
     expect(vmOf(wrapper).usageText).toBe('2 KB')
     expect(vmOf(wrapper).quotaText).toBe('4 KB')
   })
 
-  it('统计缺失时内存用量显示占位符 -', async () => {
-    getStatsMock.mockRejectedValueOnce(new Error('boom'))
-
+  it('用量占比按 quota 计算，quota 未知时为 0', async () => {
     const wrapper = mountPage()
     await flushPromises()
+    expect(vmOf(wrapper).usagePercent).toBe(50)
 
-    expect(vmOf(wrapper).memoryUsageText).toBe('-')
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { estimate: vi.fn().mockResolvedValue({ usage: 100, quota: 0 }) }
+    })
+    await vmOf(wrapper).loadStats()
+    expect(vmOf(wrapper).usagePercent).toBe(0)
   })
 
   it('navigator.storage 不可用时不崩溃（降级为未知用量）', async () => {
@@ -130,40 +114,29 @@ describe('MobileStorageSettings', () => {
     expect(vmOf(wrapper).loading).toBe(false)
   })
 
-  it('清理缓存：二次确认后调用 clearStores 并刷新', async () => {
+  it('estimate 抛错时只记日志，不让 onMounted 抛未捕获错误', async () => {
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { estimate: vi.fn().mockRejectedValue(new Error('boom')) }
+    })
+
     const wrapper = mountPage()
     await flushPromises()
-    const vm = vmOf(wrapper)
 
-    await vm.handleClear()
-
-    expect(showConfirmDialogMock).toHaveBeenCalled()
-    expect(clearStoresMock).toHaveBeenCalled()
-    // 清理后再取一次统计
-    expect(getStatsMock).toHaveBeenCalledTimes(2)
+    expect(wrapper.exists()).toBe(true)
+    expect(vmOf(wrapper).loading).toBe(false)
   })
 
-  it('清理缓存：用户取消时不调用 clearStores', async () => {
-    showConfirmDialogMock.mockRejectedValueOnce('cancel')
+  it('回归锁：页面不得再碰 worker 的 getStats / clearStores（假数据与假成功已删）', async () => {
     const wrapper = mountPage()
     await flushPromises()
 
-    await vmOf(wrapper).handleClear()
-
+    expect(getStatsMock).not.toHaveBeenCalled()
     expect(clearStoresMock).not.toHaveBeenCalled()
-  })
-
-  it('清理失败时提示错误且 clearing 归位', async () => {
-    clearStoresMock.mockRejectedValueOnce(new Error('boom'))
-    const wrapper = mountPage()
-    await flushPromises()
-    const vm = vmOf(wrapper)
-
-    await vm.handleClear()
-
-    expect(vm.clearing).toBe(false)
-    expect(showToastMock).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'fail', message: 'mobile_storage.clear_failed' })
-    )
+    expect('handleClear' in vmOf(wrapper)).toBe(false)
+    // 假 UI 也不应回来
+    const html = wrapper.html()
+    expect(html).not.toContain('mobile_storage.cache_section')
+    expect(html).not.toContain('mobile_storage.clear')
   })
 })

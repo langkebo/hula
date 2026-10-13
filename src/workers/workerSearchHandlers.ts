@@ -26,14 +26,10 @@ import {
   saveRoomsToDB
 } from './searchIndexDb'
 import { createWorkerLogger } from './workerLogger'
-import { state } from './workerState'
 
 const logger = createWorkerLogger('MatrixWorker')
 
 // --- 内存与性能优化配置 ---
-const MAX_TIMELINE_SIZE = 100
-const MEMORY_CHECK_INTERVAL = 60 * 1000
-const MAX_MEMORY_MB = 400
 const MAX_INDEXED_EVENTS_PER_ROOM = 500
 const MAX_INDEXED_EVENTS_GLOBAL = 20000
 const MAX_SEARCH_BODY_LENGTH = 500
@@ -204,37 +200,12 @@ function scoreMessageHit(doc: IndexedSearchEventDoc, normalizedTerm: string): nu
 }
 
 // --- 内存管理 ---
-
-function checkMemoryUsage() {
-  if (self.performance?.memory) {
-    const used = self.performance.memory.usedJSHeapSize / 1024 / 1024
-    if (used > MAX_MEMORY_MB) {
-      trimRoomTimelines()
-    }
-  }
-}
-
-function trimRoomTimelines() {
-  if (!state.client) return
-  const rooms = state.client.getRooms()
-  for (const room of rooms) {
-    const events = room.getLiveTimeline().getEvents()
-    if (events.length <= MAX_TIMELINE_SIZE) continue
-    const excess = events.length - MAX_TIMELINE_SIZE
-    for (let i = 0; i < excess; i++) {
-      const event = events[i]
-      if (!event) break
-      const eventId = event.getId()
-      if (!eventId) continue
-      try {
-        room.removeEvent(eventId)
-      } catch {
-        events.splice(i, 1)
-        i--
-      }
-    }
-  }
-}
+//
+// 原 `checkMemoryUsage()` + `trimRoomTimelines()` 是「worker JS 堆超 400MB 时裁剪
+// SDK room timeline」的内存看门狗。Batch 3.2 取证确认 worker 侧**从不持有 MatrixClient**
+// ⇒ `trimRoomTimelines()` 的 `if (!state.client) return` 恒早退、且 worker 里也不存在 rooms，
+// 即整段看门狗从未有过任何动作；索引侧的内存上界由 `trimSearchIndexLimits()` 独立保证
+// （在 upsert 路径上生效）。故整体删除，而不是留一段看起来在兜底的死代码。
 
 // --- DB 加载 ---
 
@@ -374,19 +345,12 @@ export function handleSearchStats(): SearchIndexStats {
 // --- Worker 生命周期管理 ---
 
 /**
- * 初始化搜索索引（从 IndexedDB 加载 + 启动内存检查定时器）
+ * 初始化搜索索引（从 IndexedDB 加载本地搜索索引）
+ *
+ * 原先还会 `setInterval(checkMemoryUsage, 60s)`，随内存看门狗一并删除；索引本身的内存上界
+ * 由 `trimSearchIndexLimits()` 在写入路径上保证。worker 的生命周期由主线程
+ * `MatrixWorkerHost.terminate()` 结束（登出链路），无需在 worker 内自停。
  */
 export async function initSearchEngine(): Promise<void> {
   await loadSearchIndexFromDB()
-  state.memoryCheckIntervalId = setInterval(checkMemoryUsage, MEMORY_CHECK_INTERVAL)
-}
-
-/**
- * 停止内存检查定时器
- */
-export function stopSearchEngine(): void {
-  if (state.memoryCheckIntervalId !== null) {
-    clearInterval(state.memoryCheckIntervalId)
-    state.memoryCheckIntervalId = null
-  }
 }

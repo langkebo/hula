@@ -7,41 +7,6 @@
 
     <n-divider />
 
-    <!-- SDK store 缓存统计（对齐后端 CacheStats） -->
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.storage.sdk_store') }}</h3>
-      <n-spin :show="loadingStats">
-        <div class="stats-grid">
-          <div class="stat-item">
-            <span class="stat-label">{{ t('setting.storage.hit_rate') }}</span>
-            <span class="stat-value">{{ hitRateText }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">{{ t('setting.storage.hits') }}</span>
-            <span class="stat-value">{{ stats?.hits ?? '-' }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">{{ t('setting.storage.misses') }}</span>
-            <span class="stat-value">{{ stats?.misses ?? '-' }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">{{ t('setting.storage.evictions') }}</span>
-            <span class="stat-value">{{ stats?.evictions ?? '-' }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">{{ t('setting.storage.total_entries') }}</span>
-            <span class="stat-value">{{ stats?.totalEntries ?? '-' }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">{{ t('setting.storage.memory_usage') }}</span>
-            <span class="stat-value">{{ memoryUsageText }}</span>
-          </div>
-        </div>
-      </n-spin>
-    </div>
-
-    <n-divider />
-
     <!-- 浏览器存储占用 -->
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.storage.browser_storage') }}</h3>
@@ -56,70 +21,27 @@
         </div>
       </div>
     </div>
-
-    <n-divider />
-
-    <!-- 清理 -->
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.storage.cleanup') }}</h3>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.storage.clear_sdk') }}</span>
-          <span class="setting-desc">{{ t('setting.storage.clear_sdk_desc') }}</span>
-        </div>
-        <n-button size="small" type="error" :loading="clearing" @click="handleClear">
-          {{ t('setting.storage.clear') }}
-        </n-button>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
-import type { StoreStats } from '@/services/matrix/sdk'
 import { formatBytes } from '@/utils/Formatting'
 
 const { t } = useI18n()
 
-const stats = ref<StoreStats | null>(null)
-const loadingStats = ref(false)
-const clearing = ref(false)
 const usage = ref(0)
 const quota = ref(0)
 
-const hitRateText = computed(() => {
-  if (!stats.value) return '-'
-  return `${(stats.value.hitRate * 100).toFixed(1)}%`
-})
-
-const memoryUsageText = computed(() =>
-  stats.value?.memoryUsageBytes == null ? '-' : formatBytes(stats.value.memoryUsageBytes)
-)
-
 async function loadStats(): Promise<void> {
-  loadingStats.value = true
-  try {
-    stats.value = await matrixWorkerHost.getStats()
-    if (typeof navigator !== 'undefined' && navigator.storage?.estimate) {
-      const estimate = await navigator.storage.estimate()
-      usage.value = estimate.usage ?? 0
-      quota.value = estimate.quota ?? 0
-    }
-  } finally {
-    loadingStats.value = false
-  }
-}
-
-async function handleClear(): Promise<void> {
-  clearing.value = true
-  try {
-    await matrixWorkerHost.clearStores()
-  } finally {
-    clearing.value = false
-    await loadStats()
+  // ⚠️ 这里曾展示「SDK store 缓存命中率 / 内存占用」并调用矩阵 worker 的 getStats()。
+  // Batch 3.2 取证确认该消息在 worker 侧恒返回 null（worker 从不持有 client）⇒ 六个统计项
+  // 永远显示 `-`。已移除该段假数据；浏览器存储用量是真实数据，保留。
+  if (typeof navigator !== 'undefined' && navigator.storage?.estimate) {
+    const estimate = await navigator.storage.estimate()
+    usage.value = estimate.usage ?? 0
+    quota.value = estimate.quota ?? 0
   }
 }
 
@@ -129,7 +51,9 @@ onMounted(loadStats)
 <style scoped lang="scss">
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* 自适应列数：原先固定 3 列是为「SDK 缓存统计」的 6 项设计的；
+     该段（Batch 3.2）移除后只剩浏览器用量的 2 项，固定 3 列会留空位。 */
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
 }
 

@@ -1,31 +1,11 @@
 /**
  * Matrix Worker 类型定义
+ *
+ * ⚠️ Batch 3.2（2026-10-13）：`MatrixClientConfig` / `LoginResult` / `SyncOptions` 已删除 ——
+ * 它们只服务于 worker 侧的客户端生命周期（`workerClientHandlers.ts`），而该面**从不可达**
+ * （主线程从不发送 initialize/login/startClient）。见仓库外取证报告
+ * `OPS_ARTIFACTS/TJG_worker_client_forensics_2026-10-13.md`。
  */
-
-export interface MatrixClientConfig {
-  homeserverUrl: string
-  identityServerUrl?: string
-  deviceId?: string
-  accessToken?: string
-  userId?: string
-  allowInsecureHttp?: boolean
-}
-
-export interface LoginResult {
-  success: boolean
-  userId?: string
-  deviceId?: string
-  accessToken?: string
-  error?: string
-}
-
-export interface SyncOptions {
-  timeout?: number
-  cursor?: string
-  fullState?: boolean
-  limit?: number
-  filter?: unknown
-}
 
 export interface WorkerMessage {
   type: string

@@ -4903,20 +4903,9 @@ export type I18nKeys = {
   "mobile_storage": {
     "title": "存储管理",
     "loading": "加载中...",
-    "cache_section": "缓存统计",
-    "hit_rate": "缓存命中率",
-    "cached_items": "缓存条目数",
     "usage_section": "存储用量",
     "used": "已使用",
-    "quota": "可用配额",
-    "danger_section": "清理",
-    "clear": "清理缓存",
-    "clear_desc": "清理本地缓存后可释放空间，但离线消息需要重新同步。",
-    "clear_confirm": "确定清理本地缓存？离线期间的消息需要重新同步后才能查看。",
-    "clear_success": "缓存已清理",
-    "clear_failed": "清理缓存失败",
-    "load_failed": "获取存储信息失败",
-    "memory_usage": "内存占用"
+    "quota": "可用配额"
   },
   "mobile_tabbar": {
     "items": {
@@ -6421,20 +6410,9 @@ export type I18nKeys = {
     "storage": {
       "title": "存储",
       "desc": "查看并清理本地缓存数据，管理存储占用",
-      "sdk_store": "SDK 缓存统计",
-      "hit_rate": "命中率",
-      "hits": "命中次数",
-      "misses": "未命中次数",
-      "evictions": "淘汰条目数",
-      "total_entries": "缓存条目总数",
-      "memory_usage": "内存占用",
       "browser_storage": "浏览器存储占用",
       "browser_usage": "已用空间",
       "browser_quota": "配额上限",
-      "cleanup": "清理缓存",
-      "clear_sdk": "清理 SDK 缓存数据",
-      "clear_sdk_desc": "清除 Matrix SDK 的本地存储（房间数据、加密密钥等），不影响账号与服务器数据",
-      "clear": "立即清理",
       "processed_files": "已处理文件",
       "processed_files_unit": "{count} 个",
       "total_size": "累计大小",
@@ -10750,20 +10728,9 @@ export type I18nKeyPaths =
   | "mobile_status.status.offline"
   | "mobile_storage.title"
   | "mobile_storage.loading"
-  | "mobile_storage.cache_section"
-  | "mobile_storage.hit_rate"
-  | "mobile_storage.cached_items"
   | "mobile_storage.usage_section"
   | "mobile_storage.used"
   | "mobile_storage.quota"
-  | "mobile_storage.danger_section"
-  | "mobile_storage.clear"
-  | "mobile_storage.clear_desc"
-  | "mobile_storage.clear_confirm"
-  | "mobile_storage.clear_success"
-  | "mobile_storage.clear_failed"
-  | "mobile_storage.load_failed"
-  | "mobile_storage.memory_usage"
   | "mobile_tabbar.items.messages"
   | "mobile_tabbar.items.contacts"
   | "mobile_tabbar.items.rooms"
@@ -11948,20 +11915,9 @@ export type I18nKeyPaths =
   | "setting.voice_video.camera_access_failed"
   | "setting.storage.title"
   | "setting.storage.desc"
-  | "setting.storage.sdk_store"
-  | "setting.storage.hit_rate"
-  | "setting.storage.hits"
-  | "setting.storage.misses"
-  | "setting.storage.evictions"
-  | "setting.storage.total_entries"
-  | "setting.storage.memory_usage"
   | "setting.storage.browser_storage"
   | "setting.storage.browser_usage"
   | "setting.storage.browser_quota"
-  | "setting.storage.cleanup"
-  | "setting.storage.clear_sdk"
-  | "setting.storage.clear_sdk_desc"
-  | "setting.storage.clear"
   | "setting.storage.processed_files"
   | "setting.storage.processed_files_unit"
   | "setting.storage.total_size"

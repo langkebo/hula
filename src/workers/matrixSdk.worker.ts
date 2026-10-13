@@ -6,21 +6,16 @@
  *
  * 消息处理器按域拆分到独立模块：
  *   - workerSearchHandlers.ts — 搜索索引引擎
- *   - workerClientHandlers.ts — 客户端生命周期（init/login/start/stop/sync）
  *   - workerProbeHandlers.ts  — 服务器探测（versions/loginFlows/CORS/capabilities）
- *   - workerState.ts          — 共享状态与工具函数
+ *   - workerState.ts          — 响应发送工具
+ *
+ * ⚠️ 本 worker **不持有 MatrixClient**：Batch 3.2 取证确认主线程从不发送
+ * initialize/login/startClient/stopClient/getClient（详见仓库外
+ * `OPS_ARTIFACTS/TJG_worker_client_forensics_2026-10-13.md`），
+ * 原 `workerClientHandlers.ts` 是恒不可达的死面，已删。
  */
 
-import type { MatrixClientConfig, SearchEventDoc, SearchQueryPayload, SearchRoomDoc } from './matrixWorkerTypes'
-import {
-  handleClearStores,
-  handleGetClient,
-  handleGetStats,
-  handleInitialize,
-  handleLogin,
-  handleStartClient,
-  handleStopClient
-} from './workerClientHandlers'
+import type { SearchEventDoc, SearchQueryPayload, SearchRoomDoc } from './matrixWorkerTypes'
 import { validateWorkerMessage } from './workerMessageValidation'
 import {
   handleGetCapabilities,
@@ -39,8 +34,7 @@ import {
   handleSearchStats,
   handleSearchUpsertEvents,
   handleSearchUpsertRooms,
-  initSearchEngine,
-  stopSearchEngine
+  initSearchEngine
 } from './workerSearchHandlers'
 import { sendResponse } from './workerState'
 
@@ -53,15 +47,6 @@ import { sendResponse } from './workerState'
 type HandlerFn = (payload: unknown) => Promise<unknown> | unknown
 
 const messageHandlers: Record<string, HandlerFn> = {
-  // --- 客户端生命周期 ---
-  initialize: (payload) => handleInitialize(payload as MatrixClientConfig),
-  login: (payload) => handleLogin(payload as { username: string; password: string; deviceName?: string }),
-  startClient: () => handleStartClient(),
-  stopClient: () => handleStopClient(),
-  clearStores: () => handleClearStores(),
-  getStats: () => handleGetStats(),
-  getClient: () => handleGetClient(),
-
   // --- 服务器探测 ---
   getServerVersions: (payload) => handleGetServerVersions(payload as { baseUrl: string; accessToken?: string }),
   getLoginFlows: (payload) => handleGetLoginFlows(payload as { baseUrl: string }),
@@ -103,11 +88,6 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
       return
     }
 
-    // stopClient 需要额外停止搜索引擎
-    if (type === 'stopClient') {
-      stopSearchEngine()
-    }
-
     const result = await handler(payload)
     await sendResponse(type, id, true, result)
   } catch (error) {
@@ -116,7 +96,7 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
   }
 }
 
-// 初始化搜索引擎（从 IndexedDB 加载 + 启动内存检查定时器）
+// 初始化搜索引擎（从 IndexedDB 加载本地搜索索引）
 void initSearchEngine()
 
 self.postMessage({ type: 'ready', id: 'init', success: true })
