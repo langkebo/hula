@@ -11,6 +11,7 @@
  * 通过 deps 注入主类持有的协作模块（connectionManager / syncManager / cryptoTracker），
  * 不再让主类直接承载这些方法的实现细节。
  */
+import type { CryptoLifecycleDiagnostics } from '@/services/matrix/crypto/cryptoLifecycleDiagnostics'
 import type { EventDecryptedDebugState, RustCryptoDebugState } from '@/services/matrix/MatrixCryptoStateTracker'
 import { isRoomEncrypted } from '@/services/matrix/roomEncryption'
 import type { MatrixClient, SlidingSync, User } from '@/services/matrix/sdk'
@@ -70,6 +71,12 @@ export class MatrixClientState {
    */
   getEventDecryptedDebugState(): EventDecryptedDebugState {
     return this.deps.cryptoTracker.getEventDecryptedDebugState()
+  }
+
+  /** 获取 crypto 生命周期诊断（Batch 4.1）。
+   */
+  getCryptoLifecycleDiagnostics(): CryptoLifecycleDiagnostics {
+    return this.deps.cryptoTracker.getCryptoLifecycleDiagnostics()
   }
 
   /** 获取当前连接状态

@@ -3,6 +3,7 @@ import type { ICreateRoomOpts, MatrixClient, Room, SlidingSync, TelemetryManager
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { IdempotencyGuard } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
+import type { CryptoLifecycleDiagnostics } from './crypto/cryptoLifecycleDiagnostics'
 import { type LoginResult, MatrixClientAuth } from './MatrixClientAuth'
 import { MatrixClientLifecycle } from './MatrixClientLifecycle'
 import { MatrixClientRoom } from './MatrixClientRoom'
@@ -211,6 +212,17 @@ class MatrixClientService {
 
   getEventDecryptedDebugState(): EventDecryptedDebugState {
     return this.state.getEventDecryptedDebugState()
+  }
+
+  /**
+   * 获取 crypto 生命周期诊断（Batch 4.1）。
+   *
+   * 与 `getRustCryptoDebugState()` 的区别：后者只描述「本次初始化成功与否」，
+   * 前者描述**生命周期失配**（解绑被拒 / 已停止的 crypto 被复用）——
+   * 这两类事件此前只在日志里可见，没有运行期信号。
+   */
+  getCryptoLifecycleDiagnostics(): CryptoLifecycleDiagnostics {
+    return this.state.getCryptoLifecycleDiagnostics()
   }
 
   getConnectionState(): ConnectionState {

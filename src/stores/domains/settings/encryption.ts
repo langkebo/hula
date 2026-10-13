@@ -37,6 +37,14 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
   // Rust Crypto 初始化失败状态（登录后检查）
   const cryptoInitFailed = ref(false)
   const cryptoInitError = ref<string | null>(null)
+  /**
+   * crypto 生命周期失配（Batch 4.1）：解绑被拒 / 已停止的 crypto 被复用。
+   *
+   * 与 `cryptoInitFailed` 分开：后者是「本次初始化没成功」，本字段是「时序被破坏」——
+   * 前者会让用户发不出加密消息（需横幅提示），后者的 crypto 可能仍是好的，
+   * 但**同一 client 复用时**会静默失效，故只作为诊断/客服可见信号，不参与用户横幅判定。
+   */
+  const cryptoLifecycleWarning = ref<string | null>(null)
 
   // === Getters ===
   const e2eeFullySetup = computed(
@@ -191,6 +199,9 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
       const failed = state.attempted && !state.initialized
       cryptoInitFailed.value = failed
       cryptoInitError.value = failed ? (state.error ?? state.skippedReason ?? 'unknown') : null
+      // Batch 4.1：把生命周期失配也接到这个刷新点上（此前只在日志里可见）。
+      const lifecycle = matrixClientService.getCryptoLifecycleDiagnostics()
+      cryptoLifecycleWarning.value = lifecycle.staleCryptoReuseWarning ?? lifecycle.lastBindingReleaseRejection
       if (failed) {
         logger.warn(`[EncryptionStore] Crypto 初始化失败，加密房间将无法发送消息: ${cryptoInitError.value}`)
       }
@@ -198,6 +209,7 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
       logger.error('[EncryptionStore] 加载 Crypto 初始化状态失败:', err)
       cryptoInitFailed.value = false
       cryptoInitError.value = null
+      cryptoLifecycleWarning.value = null
     }
   }
 
@@ -216,6 +228,7 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
     loading,
     loaded,
     cryptoInitFailed,
+    cryptoLifecycleWarning,
     cryptoInitError,
     // Getters
     e2eeFullySetup,

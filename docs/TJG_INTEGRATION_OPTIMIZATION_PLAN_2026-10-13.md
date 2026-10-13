@@ -142,6 +142,25 @@
 
 ### Batch 4 —— 结构性 / 跨仓（高价值但要评估）
 
+> **4.1 / 4.2 状态：✅ 已完成（2026-10-13）；4.3 / 4.4 未做（见下）。**
+> - **4.1（A5）**：新增 `crypto/cryptoLifecycleDiagnostics.ts` 与 `crypto/cryptoBindingRelease.ts`，
+>   把两类此前**只在日志里可见**的事件收敛成结构化诊断：① 解绑被拒（`crypto-not-stopped`）；
+>   ② **已停止的 crypto 被复用**（`crypto-stopped-but-still-bound`，即 A1 的运行时复发哨兵 ——
+>   `ensureCrypto` 会把它当「已可用」早退，E2EE 静默失效）。
+>   经 `MatrixClientState` → `MatrixClientService.getCryptoLifecycleDiagnostics()` →
+>   `encryptionStore.cryptoLifecycleWarning` 到达 store（验收要求「store 状态可见」）。
+>   与 `cryptoInitFailed` **分开**：后者是「本次初始化没成功」（需横幅），前者是「时序被破坏」
+>   （crypto 本身可能是好的），故不参与用户横幅判定，只作诊断/客服可见信号。
+> - **4.2（D3）**：`MatrixCryptoStateTracker.ts` **658 → 497 行**（净降 24%）。抽出
+>   `cryptoStoreCleanup`（IndexedDB 删除+重试）/ `cryptoLocalState`（localStorage 判据）/
+>   `cryptoErrorNormalize` / `cryptoDebugStateTypes`（含初始状态工厂）/ `cryptoBindingRelease` /
+>   `cryptoLifecycleDiagnostics` 六个模块；`check:file-size` 基线条目由 **758 收紧到 497**
+>   （未跑 `--update`：那会把并行写者 9 个越界文件的天花板一并抬高）。
+> - **4.3（C2 并行实现收敛）未做**：涉及 `SummaryService` 三胞胎 / `RoomCapabilitiesService` /
+>   sticky events 的合并，需先决定保留哪一条路径（改契约测试 + 删实现），风险与决策成本高于 4.1/4.2。
+> - **4.4（A3 跨仓改 fork）未做**：需你决策是否动 fork（要重打 vendor tarball + 更新 `meta/sdk-pin.json`）。
+
+
 | 步骤 | 内容 | 验收 |
 |---|---|---|
 | 4.1 | A5：crypto 失配接 UI 告警面（复用 `encryptionStore.cryptoInitFailed` + 连接横幅） | 单测：解绑被拒/crypto 未就绪 ⇒ store 状态可见 |

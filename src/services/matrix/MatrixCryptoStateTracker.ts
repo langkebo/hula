@@ -14,37 +14,38 @@
  * IndexedDB 清理重试 + crypto 状态机复杂实现
  */
 import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk'
+import {
+  recordStaleCryptoReuseIfAny,
+  releaseStoppedCryptoBinding as releaseBinding
+} from '@/services/matrix/crypto/cryptoBindingRelease'
+import {
+  createInitialEventDecryptedDebugState,
+  createInitialRustCryptoDebugState,
+  type EventDecryptedDebugState,
+  type RustCryptoDebugState
+} from '@/services/matrix/crypto/cryptoDebugStateTypes'
+import { normalizeCryptoError } from '@/services/matrix/crypto/cryptoErrorNormalize'
+import {
+  type CryptoLifecycleDiagnostics,
+  CryptoLifecycleDiagnosticsTracker
+} from '@/services/matrix/crypto/cryptoLifecycleDiagnostics'
+import {
+  clearLastCryptoUser,
+  readLastCryptoEncrypted,
+  readLastCryptoUser,
+  writeLastCryptoEncrypted,
+  writeLastCryptoUser
+} from '@/services/matrix/crypto/cryptoLocalState'
+import { clearStaleCryptoStores } from '@/services/matrix/crypto/cryptoStoreCleanup'
 import { replayPersistedStrictness } from '@/services/matrix/crypto/strictDevicePolicyReplay'
 import { getOrCreateCryptoStorageKey, logCryptoStorageKeyBackend } from '@/services/secure/cryptoStorageKey'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixCrypto')
 
-export interface RustCryptoDebugState {
-  attempted: boolean
-  initialized: boolean
-  skippedReason: string | null
-  error: string | null
-  usedIndexedDB: boolean | null
-  /**
-   * crypto store 是否以加密方式打开。
-   *
-   * `true` = 提供了 32 字节 storageKey；`false` = keychain 不可用，store 未加密
-   * （私钥与房间密钥将以明文落盘）；`null` = 未尝试。
-   *
-   * 之所以要显式暴露：SDK 只对「未加密的**内存** store」默认拒绝，
-   * 未加密的 **IndexedDB** store 是被静默允许的 —— 若不把它暴露出来，
-   * 生产环境的密钥库降级将没有任何可观测信号。
-   */
-  storeEncrypted: boolean | null
-}
-
-export interface EventDecryptedDebugState {
-  count: number
-  lastEventId: string | null
-  lastRoomId: string | null
-  lastError: string | null
-}
+// 这两个状态类型已抽到 crypto/cryptoDebugStateTypes.ts（Batch 4.2）；
+// 此处 re-export 保持既有 import 点（MatrixClientService / MatrixClientState）不变。
+export type { EventDecryptedDebugState, RustCryptoDebugState } from './crypto/cryptoDebugStateTypes'
 
 /**
  * 本文件对 `initRustCrypto` 的最小依赖面。
@@ -114,6 +115,9 @@ export class MatrixCryptoStateTracker {
     lastError: null
   }
 
+  /** 生命周期诊断（Batch 4.1，详见 crypto/cryptoLifecycleDiagnostics.ts）：让失配在运行期可见。 */
+  private readonly lifecycle = new CryptoLifecycleDiagnosticsTracker()
+
   /**
    * 初始化 Rust Crypto
    *
@@ -142,6 +146,9 @@ export class MatrixCryptoStateTracker {
     }
 
     const cryptoClient = client as RustCryptoCapableClient
+
+    // A1 复发哨兵（Batch 4.1）：已停止的 crypto 仍被绑定 ⇒ 复用同一 client 会让 E2EE 静默失效。
+    recordStaleCryptoReuseIfAny(cryptoClient, this.lifecycle)
 
     if (typeof cryptoClient.getCrypto === 'function' && cryptoClient.getCrypto()) {
       // 唯一的"已可用即不重复初始化"判据：只看**本窗口本 client** 是否已就绪。
@@ -262,7 +269,7 @@ export class MatrixCryptoStateTracker {
     // 登录耗时 51s（crypto 重试循环 + 超时等待）。
     // 修复：localStorage 改为存储 userId:deviceId，换设备时触发清理。
     const cryptoUserKey = `${userId}:${deviceId}`
-    const lastCryptoUser = this.readLastCryptoUser()
+    const lastCryptoUser = readLastCryptoUser()
 
     // ISSUE-08 对接：从系统 keychain 取 **32 字节 storageKey**，加密 IndexedDB crypto store
     // 和待发事件队列（PendingEventsCipher）。keychain 不可用时降级为不加密（dev/浏览器）。
@@ -275,7 +282,7 @@ export class MatrixCryptoStateTracker {
     const storageKey = await getOrCreateCryptoStorageKey(userId, deviceId)
     const storeEncrypted = storageKey !== null
     const currentEncrypted = storeEncrypted ? 'k1' : '0'
-    const lastEncrypted = this.readLastCryptoEncrypted()
+    const lastEncrypted = readLastCryptoEncrypted()
 
     // 提前清理：以下情况在 initRustCrypto 之前清理旧 store，避免第一次失败+重试耗时
     // 1. userId:deviceId 变化（换设备登录）
@@ -294,8 +301,8 @@ export class MatrixCryptoStateTracker {
       await clearStaleCryptoStores(userId)
     }
     if (userChanged || encryptedChanged || lastEncrypted === null) {
-      this.writeLastCryptoUser(cryptoUserKey)
-      this.writeLastCryptoEncrypted(currentEncrypted)
+      writeLastCryptoUser(cryptoUserKey)
+      writeLastCryptoEncrypted(currentEncrypted)
     }
 
     if (storeEncrypted) {
@@ -418,18 +425,12 @@ export class MatrixCryptoStateTracker {
    * 解除「已停止的 crypto 绑定」，使**同一个 client** 能重新 `initRustCrypto`。
    *
    * 只在「复用同一 client 重启 sync」的路径上需要（当前唯一调用点：
-   * `MatrixClientLifecycle.forceReconnect`，系统唤醒时触发）。
-   *
-   * SDK 契约（实测 fork `40.2.0-langkebo.6`，不要凭上游印象改：
-   * - `client.stopClient()` → `stopClientLifecycleServices()` → `client.cryptoBackend.stop()`
-   *   → `RustCrypto.stop()`：置 `stopped = true`、停各 manager，并 `olmMachine.close()`
-   *   —— **IndexedDB 连接随之关闭**（这正是 login→home 交接能安全让出共享 store 的原因）；
-   * - 但 stopClient **不清空** `client.cryptoBackend`，而 `client.initRustCrypto()` 见到
-   *   `cryptoBackend` 非空就 `warn("Attempt to re-initialise e2e encryption")` 并 return；
-   * - `client-lifecycle-start`（start 侧）**不会**替调用方恢复 crypto；`getCrypto()` 只是
-   *   返回 `cryptoBackend`，因此停止后仍是真值 ⇒ `ensureCrypto` 会误判"已可用"而早退。
-   *
-   * 后果（未解除时）：系统唤醒 → forceReconnect → crypto 永久失效，静默解不开新消息。
+   * `MatrixClientLifecycle.forceReconnect`，系统唤醒时触发）。SDK 契约（实测 fork
+   * `40.2.0-langkebo.6`，不要凭上游印象改）：`stopClient()` → `cryptoBackend.stop()` →
+   * `RustCrypto.stop()` 会置 `stopped = true` 并 `olmMachine.close()`（IndexedDB 连接随之关闭，
+   * 这正是 login→home 交接能安全让出共享 store 的原因），但**不清空** `cryptoBackend`；
+   * 而 `initRustCrypto()` 见它非空即 warn + return、`getCrypto()` 仍返回真值
+   * ⇒ 停止后 `ensureCrypto` 会误判「已可用」而早退，表现为**静默解不开新消息**。
    *
    * ⚠️ 只应在 `client.stopClient()` **之后**调用。若 crypto 仍在运行（`stopped !== true`），
    * 本方法拒绝解除并告警 —— 否则会让活着的 OlmMachine / IndexedDB 连接泄漏。
@@ -437,41 +438,32 @@ export class MatrixCryptoStateTracker {
    * @returns 是否真的解除了绑定（便于调用方观测与测试）
    */
   releaseStoppedCryptoBinding(client: MatrixClient | null): boolean {
-    if (!client) return false
-
-    const candidate = client as { cryptoBackend?: unknown; getCrypto?: () => unknown }
-    const existing = typeof candidate.getCrypto === 'function' ? candidate.getCrypto() : undefined
-    if (!existing) return false
-
-    if ((existing as { stopped?: boolean }).stopped !== true) {
+    const outcome = releaseBinding(client as { cryptoBackend?: unknown; getCrypto?: () => unknown } | null)
+    if (outcome.ok) {
+      this.lifecycle.recordBindingReleased()
+      logger.info('已解除已停止的 crypto 绑定，允许同一 client 重新 initRustCrypto')
+      return true
+    }
+    if (outcome.reason === 'crypto-not-stopped') {
+      this.lifecycle.rejectBindingRelease(outcome.reason)
       logger.warn(
         'releaseStoppedCryptoBinding 在 crypto 未处于已停止状态时被调用，已跳过（只应在 stopClient 之后调用）'
       )
-      return false
     }
+    return false
+  }
 
-    candidate.cryptoBackend = undefined
-    logger.info('已解除已停止的 crypto 绑定，允许同一 client 重新 initRustCrypto')
-    return true
+  /** 取 crypto 生命周期诊断快照（Batch 4.1）：供 service → store 在运行期读取，使失配不再只在日志里可见。 */
+  getCryptoLifecycleDiagnostics(): CryptoLifecycleDiagnostics {
+    return this.lifecycle.snapshot()
   }
 
   /** 重置加密状态追踪器
    */
   resetState(): void {
-    this.rustCryptoDebugState = {
-      attempted: false,
-      initialized: false,
-      skippedReason: null,
-      error: null,
-      usedIndexedDB: null,
-      storeEncrypted: null
-    }
-    this.eventDecryptedDebugState = {
-      count: 0,
-      lastEventId: null,
-      lastRoomId: null,
-      lastError: null
-    }
+    this.rustCryptoDebugState = createInitialRustCryptoDebugState()
+    this.eventDecryptedDebugState = createInitialEventDecryptedDebugState()
+    this.lifecycle.reset()
   }
 
   /**
@@ -483,7 +475,7 @@ export class MatrixCryptoStateTracker {
    * @param userId 登出用户的 userId
    */
   async clearCryptoStoreForLogout(userId: string): Promise<void> {
-    this.clearLastCryptoUser()
+    clearLastCryptoUser()
     if (typeof globalThis.indexedDB !== 'undefined') {
       try {
         const result = await clearStaleCryptoStores(userId)
@@ -501,157 +493,4 @@ export class MatrixCryptoStateTracker {
       logger.info(`登出清理完成（无 IndexedDB）: ${userId}`)
     }
   }
-
-  /** 读取 localStorage 中的 lastCryptoUserId 记录 */
-  private readLastCryptoUser(): string | null {
-    if (typeof globalThis.localStorage === 'undefined') return null
-    return globalThis.localStorage.getItem('tjg.lastCryptoUserId')
-  }
-
-  /** 写入 localStorage 中的 lastCryptoUserId 记录 */
-  private writeLastCryptoUser(value: string): void {
-    if (typeof globalThis.localStorage === 'undefined') return
-    globalThis.localStorage.setItem('tjg.lastCryptoUserId', value)
-  }
-
-  /**
-   * 读取上次的「加密状态 + 加密原语」标记。
-   *
-   * @returns `'k1'` = storageKey（32 字节）；`'p1'` / `'1'` = 历史 storagePassword；
-   *   `'0'` = 无密钥（store 未加密）；`null` = 首次运行
-   */
-  private readLastCryptoEncrypted(): string | null {
-    if (typeof globalThis.localStorage === 'undefined') return null
-    return globalThis.localStorage.getItem('tjg.lastCryptoEncrypted')
-  }
-
-  /** 写入「加密状态 + 加密原语」标记（取值见 {@link readLastCryptoEncrypted}） */
-  private writeLastCryptoEncrypted(value: string): void {
-    if (typeof globalThis.localStorage === 'undefined') return
-    globalThis.localStorage.setItem('tjg.lastCryptoEncrypted', value)
-  }
-
-  /** 清除 localStorage 中的 lastCryptoUserId 和加密状态记录 */
-  private clearLastCryptoUser(): void {
-    if (typeof globalThis.localStorage === 'undefined') return
-    globalThis.localStorage.removeItem('tjg.lastCryptoUserId')
-    globalThis.localStorage.removeItem('tjg.lastCryptoEncrypted')
-  }
-}
-
-/**
- * 将 crypto 初始化抛出的错误对象归一化为字符串消息。
- *
- * 背景：WASM（@matrix-org/matrix-sdk-crypto-wasm）在 OlmMachine.initFromStore 或
- * StoreHandle.open 失败时，通过 wasm-bindgen 抛出的错误往往是**空对象 `{}`**，
- * 既不是 Error 实例，也没有 message 属性。直接 `String({})` 会得到 `"[object Object]"`，
- * 无法用于匹配具体的错误字符串（如 "account mismatch"）。
- *
- * 归一化策略：
- *   - Error 实例 → err.message
- *   - 非空对象 → JSON.stringify，失败则回退 String
- *   - 其他基本类型 → String(err)
- *
- * @param err catch 块捕获到的错误对象
- * @returns 可读的错误消息字符串（可能为空字符串）
- */
-function normalizeCryptoError(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message
-  }
-  if (typeof err === 'object' && err !== null) {
-    // 优先 JSON.stringify（可捕获空对象 {}、含字段的普通对象）
-    try {
-      const json = JSON.stringify(err)
-      // JSON.stringify({}) === "{}" 等空结构，仍返回以便上层匹配
-      return json && json !== '{}' ? json : '[empty-object]'
-    } catch {
-      return String(err)
-    }
-  }
-  return String(err)
-}
-
-/**
- * 清除 Matrix crypto 使用的 IndexedDB 数据库。
- *
- * Rust crypto 使用两个数据库（见 SDK client-store-cleanup.ts）：
- *   - matrix-js-sdk::matrix-sdk-crypto
- *   - matrix-js-sdk::matrix-sdk-crypto-meta
- * Legacy crypto store 使用：
- *   - matrix-js-sdk:crypto
- *
- * 这些名称是固定的，不包含 userId 后缀。直接按名称删除，
- * 不依赖 indexedDB.databases()（Safari/WKWebView 不支持该 API）。
- *
- * @returns 删除结果统计 { deleted, failed, blocked }
- */
-async function clearStaleCryptoStores(_userId: string): Promise<{ deleted: number; failed: number; blocked: number }> {
-  if (typeof globalThis.indexedDB === 'undefined') return { deleted: 0, failed: 0, blocked: 0 }
-  const dbNames = ['matrix-js-sdk::matrix-sdk-crypto', 'matrix-js-sdk::matrix-sdk-crypto-meta', 'matrix-js-sdk:crypto']
-  const results = await Promise.all(dbNames.map((dbName) => deleteCryptoDbWithRetry(dbName)))
-  return {
-    deleted: results.filter((r) => r === 'deleted').length,
-    failed: results.filter((r) => r === 'failed').length,
-    blocked: results.filter((r) => r === 'blocked').length
-  }
-}
-
-/**
- * 删除单个 IndexedDB 数据库，onblocked 时等待 300ms 后重试一次。
- *
- * 超时保护：2s 内无结果则 resolve('failed')，避免某些 WebView 环境下
- * deleteDatabase 对不存在的数据库既不触发 onsuccess 也不触发 onerror，
- * 导致 Promise 永久 pending 卡住 clearStaleCryptoStores → ensureCrypto。
- *
- * @returns 'deleted' | 'failed' | 'blocked'
- */
-function deleteCryptoDbWithRetry(dbName: string): Promise<'deleted' | 'failed' | 'blocked'> {
-  return new Promise((resolve) => {
-    let settled = false
-    const finish = (result: 'deleted' | 'failed' | 'blocked') => {
-      if (settled) return
-      settled = true
-      clearTimeout(timeoutHandle)
-      resolve(result)
-    }
-
-    logger.info(`删除 IndexedDB: ${dbName}`)
-    const req = globalThis.indexedDB.deleteDatabase(dbName)
-    req.onsuccess = () => {
-      logger.info(`已删除 IndexedDB: ${dbName}`)
-      finish('deleted')
-    }
-    req.onerror = () => {
-      logger.warn(`删除 IndexedDB 失败: ${dbName}`)
-      finish('failed')
-    }
-    req.onblocked = () => {
-      logger.info(`IndexedDB 被阻塞，300ms 后重试: ${dbName}`)
-      // 等待连接句柄释放后重试一次（与 ensureCrypto 重试策略一致的 300ms 等待）
-      setTimeout(() => {
-        const retryReq = globalThis.indexedDB.deleteDatabase(dbName)
-        retryReq.onsuccess = () => {
-          logger.info(`重试成功，已删除 IndexedDB: ${dbName}`)
-          finish('deleted')
-        }
-        retryReq.onerror = () => {
-          logger.warn(`重试删除 IndexedDB 失败: ${dbName}`)
-          finish('failed')
-        }
-        retryReq.onblocked = () => {
-          logger.warn(`IndexedDB 仍被阻塞，跳过: ${dbName}`)
-          finish('blocked')
-        }
-      }, 300)
-    }
-
-    // 超时保护：2s 内无结果则视为失败
-    const timeoutHandle = setTimeout(() => {
-      if (!settled) {
-        logger.warn(`删除 IndexedDB 超时 (2s)，跳过: ${dbName}`)
-        finish('failed')
-      }
-    }, 2_000)
-  })
 }

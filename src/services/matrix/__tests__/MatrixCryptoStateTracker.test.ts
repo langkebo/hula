@@ -624,3 +624,73 @@ describe('MatrixCryptoStateTracker - 解除已停止的 crypto 绑定（重启�
     expect(tracker.getRustCryptoDebugState().initialized).toBe(true)
   })
 })
+
+/**
+ * Batch 4.1（图谱 §8.5 A5）：crypto 生命周期失配此前**只在日志里可见**。
+ * 本组锁定「已进入结构化诊断」这一契约 —— 少了它，store 侧拿不到任何运行期信号。
+ */
+describe('MatrixCryptoStateTracker - 生命周期诊断（Batch 4.1）', () => {
+  let tracker: MatrixCryptoStateTracker
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    tracker = new MatrixCryptoStateTracker()
+  })
+
+  /** 最小 client：getCrypto() 读自身字段（与真实 SDK `return this.cryptoBackend` 一致） */
+  function makeClient(cryptoBackend: unknown) {
+    const client = { cryptoBackend, getCrypto: (): unknown => client.cryptoBackend }
+    return client as unknown as Parameters<MatrixCryptoStateTracker['releaseStoppedCryptoBinding']>[0]
+  }
+
+  it('初始：三项诊断均为空/零', () => {
+    expect(tracker.getCryptoLifecycleDiagnostics()).toEqual({
+      lastBindingReleaseRejection: null,
+      stoppedBindingReleased: 0,
+      staleCryptoReuseWarning: null
+    })
+  })
+
+  it('拒绝解绑（crypto 仍在运行）⇒ 诊断可见（此前只有一行 warn 日志）', () => {
+    expect(tracker.releaseStoppedCryptoBinding(makeClient({ stopped: false }))).toBe(false)
+
+    expect(tracker.getCryptoLifecycleDiagnostics().lastBindingReleaseRejection).toBe('crypto-not-stopped')
+  })
+
+  it('成功解绑 ⇒ 计数 +1 并清掉上一次的拒绝记录', () => {
+    tracker.releaseStoppedCryptoBinding(makeClient({ stopped: false }))
+    expect(tracker.getCryptoLifecycleDiagnostics().lastBindingReleaseRejection).toBe('crypto-not-stopped')
+
+    expect(tracker.releaseStoppedCryptoBinding(makeClient({ stopped: true }))).toBe(true)
+
+    const diagnostics = tracker.getCryptoLifecycleDiagnostics()
+    expect(diagnostics.stoppedBindingReleased).toBe(1)
+    expect(diagnostics.lastBindingReleaseRejection).toBeNull()
+  })
+
+  it('A1 复发哨兵：复用「已停止但未解绑」的 crypto ⇒ 记入诊断', async () => {
+    await tracker.ensureCrypto(makeClient({ stopped: true }), true)
+
+    // 未解绑 ⇒ ensureCrypto 把它当「已可用」早退，E2EE 静默失效；哨兵必须留下证据
+    expect(tracker.getCryptoLifecycleDiagnostics().staleCryptoReuseWarning).toBe('crypto-stopped-but-still-bound')
+  })
+
+  it('正常运行的 crypto 复用（stopped=false）⇒ 不误报哨兵', async () => {
+    await tracker.ensureCrypto(makeClient({ stopped: false }), true)
+
+    expect(tracker.getCryptoLifecycleDiagnostics().staleCryptoReuseWarning).toBeNull()
+  })
+
+  it('resetState 清空诊断（登出 / 切换账号）', () => {
+    tracker.releaseStoppedCryptoBinding(makeClient({ stopped: false }))
+    expect(tracker.getCryptoLifecycleDiagnostics().lastBindingReleaseRejection).not.toBeNull()
+
+    tracker.resetState()
+
+    expect(tracker.getCryptoLifecycleDiagnostics()).toEqual({
+      lastBindingReleaseRejection: null,
+      stoppedBindingReleased: 0,
+      staleCryptoReuseWarning: null
+    })
+  })
+})

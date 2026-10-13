@@ -29,7 +29,7 @@
     },
     {
       "file": "src/services/matrix/MatrixCryptoStateTracker.ts",
-      "lines": 758
+      "lines": 497
     },
     {
       "file": "src/plugins/robot/layout/Left.vue",

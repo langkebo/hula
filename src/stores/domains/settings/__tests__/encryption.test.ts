@@ -65,6 +65,19 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
+// Batch 4.1：crypto 生命周期诊断需要经 MatrixClientService 才能到达 store
+const { getRustCryptoDebugStateMock, getCryptoLifecycleDiagnosticsMock } = vi.hoisted(() => ({
+  getRustCryptoDebugStateMock: vi.fn(),
+  getCryptoLifecycleDiagnosticsMock: vi.fn()
+}))
+
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    getRustCryptoDebugState: getRustCryptoDebugStateMock,
+    getCryptoLifecycleDiagnostics: getCryptoLifecycleDiagnosticsMock
+  }
+}))
+
 import { useEncryptionStore } from '../encryption'
 
 describe('useEncryptionStore · 初始 state 与 getters', () => {
@@ -460,5 +473,93 @@ describe('useEncryptionStore · R-2 storeCrossSigningKeysInSecretStorage', () =>
     await expect(store.storeCrossSigningKeysInSecretStorage()).resolves.toBe('failed')
     expect(store.crossSigningKeysInSecretStorage).toBe(false)
     expect(getCrossSigningStatusMock).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Batch 4.1（图谱 §8.5 A5）：crypto 生命周期失配必须**在 store 层可见**，
+ * 而不是只在日志里。本组锁定该契约（验收：解绑被拒 / crypto 未就绪 ⇒ store 状态可见）。
+ */
+describe('useEncryptionStore · crypto 生命周期诊断（Batch 4.1）', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    getRustCryptoDebugStateMock.mockReturnValue({
+      attempted: false,
+      initialized: false,
+      skippedReason: null,
+      error: null,
+      usedIndexedDB: null,
+      storeEncrypted: null
+    })
+    getCryptoLifecycleDiagnosticsMock.mockReturnValue({
+      lastBindingReleaseRejection: null,
+      stoppedBindingReleased: 0,
+      staleCryptoReuseWarning: null
+    })
+  })
+
+  it('初始 cryptoLifecycleWarning 为 null', () => {
+    expect(useEncryptionStore().cryptoLifecycleWarning).toBeNull()
+  })
+
+  it('解绑被拒（lastBindingReleaseRejection）⇒ 可见（此前只在日志里）', () => {
+    getCryptoLifecycleDiagnosticsMock.mockReturnValue({
+      lastBindingReleaseRejection: 'crypto-not-stopped',
+      stoppedBindingReleased: 0,
+      staleCryptoReuseWarning: null
+    })
+
+    const store = useEncryptionStore()
+    store.loadCryptoInitStatus()
+
+    expect(store.cryptoLifecycleWarning).toBe('crypto-not-stopped')
+  })
+
+  it('A1 复发哨兵优先于拒绝记录（严重度更高：会静默失效）', () => {
+    getCryptoLifecycleDiagnosticsMock.mockReturnValue({
+      lastBindingReleaseRejection: 'crypto-not-stopped',
+      stoppedBindingReleased: 0,
+      staleCryptoReuseWarning: 'crypto-stopped-but-still-bound'
+    })
+
+    const store = useEncryptionStore()
+    store.loadCryptoInitStatus()
+
+    expect(store.cryptoLifecycleWarning).toBe('crypto-stopped-but-still-bound')
+  })
+
+  it('crypto 初始化失败仍走 cryptoInitFailed（两条告警面互不干扰）', () => {
+    getRustCryptoDebugStateMock.mockReturnValue({
+      attempted: true,
+      initialized: false,
+      skippedReason: null,
+      error: 'account mismatch',
+      usedIndexedDB: true,
+      storeEncrypted: null
+    })
+
+    const store = useEncryptionStore()
+    store.loadCryptoInitStatus()
+
+    expect(store.cryptoInitFailed).toBe(true)
+    expect(store.cryptoInitError).toBe('account mismatch')
+    // 生命周期诊断此时为空 ⇒ 不产生额外告警
+    expect(store.cryptoLifecycleWarning).toBeNull()
+  })
+
+  it('恢复正常后再次刷新 ⇒ 诊断清空（不留下过期告警）', () => {
+    getCryptoLifecycleDiagnosticsMock.mockReturnValueOnce({
+      lastBindingReleaseRejection: 'crypto-not-stopped',
+      stoppedBindingReleased: 0,
+      staleCryptoReuseWarning: null
+    })
+    const store = useEncryptionStore()
+    store.loadCryptoInitStatus()
+    expect(store.cryptoLifecycleWarning).toBe('crypto-not-stopped')
+
+    store.loadCryptoInitStatus()
+
+    expect(store.cryptoLifecycleWarning).toBeNull()
   })
 })

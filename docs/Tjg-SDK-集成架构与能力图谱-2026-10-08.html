@@ -691,7 +691,7 @@
       <tr><td>A2</td><td><b>跨窗口"已完成即跳过"是死代码</b>（BroadcastChannel 恒不可达 + 每次 init 白等 1s）</td><td>✅ 已修（commit <code>a41261fb</code>）；门禁 <code>check:crypto-cross-window</code></td></tr>
       <tr><td>A3</td><td>stopClient 后同一 client 的 crypto 永久不可用（SDK 未清绑定、无重启 API）⇒ 未来"复用 client"的路径会重踩 A1</td><td>⏳ 建议 fork 侧修</td></tr>
       <tr><td>A4</td><td>每个独立窗口各自完整 initRustCrypto（5–10s / 一份 OlmMachine），仅靠 Web Locks 串行化</td><td>⏳ 架构限制</td></tr>
-      <tr><td>A5</td><td>crypto 生命周期失配只在日志可见，运行期无 UI 信号</td><td>⏳ 待决策</td></tr>
+      <tr><td>A5</td><td>crypto 生命周期失配只在日志可见，运行期无 UI 信号</td><td>✅ 已修（Batch 4.1）：新增 <code>CryptoLifecycleDiagnostics</code>（解绑被拒 / <b>已停止的 crypto 被复用</b>），经 <code>MatrixClientService.getCryptoLifecycleDiagnostics()</code> → <code>encryptionStore.cryptoLifecycleWarning</code> 到 store；后者是 <b>A1 的运行时复发哨兵</b></td></tr>
       <tr><td>A6</td><td>IndexedDB 删除被活连接阻塞（已有 300ms 重试 + 2s 超时降级）</td><td>✅ 兜底已够</td></tr>
     </tbody>
   </table>
@@ -731,7 +731,7 @@
     <tbody>
       <tr><td>D1</td><td><b>文档数字/锚点会无声漂移</b>（初版 1159 路由、synapse-rust 04dd417、各域服务数、MatrixRoomSummaryService.ts:221 等全部失效），无门禁会红。<b>本轮实时复现</b>：核对期间并行落地 <code>84c462e8</code> 把 room 域 24→21、服务总数 218→215，同一天内漂移两次</td><td>✅ 已订正；⏳ 待决策：为契约数字加生成式校验</td></tr>
       <tr><td>D2</td><td>并行写者会 sweep 你在盘的 <code>package.json</code>（本轮一度造成"脚本定义在、脚本文件未跟踪"的悬空引用）</td><td>✅ 已消除；纪律：编辑后尽快提交并核对 <code>git show --name-only HEAD</code></td></tr>
-      <tr><td>D3</td><td><code>MatrixCryptoStateTracker.ts</code> 616 行仍 &gt;500 警戒线（红线 800）</td><td>⏳ 既有技术债</td></tr>
+      <tr><td>D3</td><td><code>MatrixCryptoStateTracker.ts</code> 曾 616 行 &gt;500 警戒线（红线 800）</td><td>✅ 已修（Batch 4.2）：658 → <b>497 行</b>（净降 24%）—— 抽出 6 个 <code>crypto/*</code> 模块，基线条目由 758 收紧到 497，并移出 oversized 名单</td></tr>
     </tbody>
   </table>
 
