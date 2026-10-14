@@ -148,12 +148,13 @@ import Validation from '@/components/common/Validation.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import router from '@/router'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
+import { acquireTimerWorker } from '@/services/timerWorkerHost'
 import { createLogger } from '@/utils/Logger'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
 const logger = createLogger('MobileForgetPassword')
 
-const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
+const timerWorker = acquireTimerWorker()
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -346,33 +347,34 @@ const submitNewPassword = async () => {
   }
 }
 
-timerWorker.onmessage = (e) => {
-  const { type, msgId, remainingTime } = e.data
+timerWorker.onMessage((event) => {
+  if (event.type === 'allTimersCompleted') return
+  const { msgId } = event
 
   if (msgId === EMAIL_TIMER_ID) {
-    if (type === 'debug') {
-      const secondsRemaining = Math.ceil(remainingTime / 1000)
+    if (event.type === 'debug') {
+      const secondsRemaining = Math.ceil(event.remainingTime / 1000)
       countDown.value = secondsRemaining
       emailCodeBtnText.value = t('mobile_forget_code.email_resend_in', { seconds: secondsRemaining })
-    } else if (type === 'timeout') {
+    } else {
       sendBtnDisabled.value = false
       emailCodeBtnText.value = t('mobile_forget_code.button.send_email_code')
     }
   } else if (msgId === CAPTCHA_TIMER_ID) {
-    if (type === 'debug') {
-      captchaCooldownRemaining.value = Math.ceil(remainingTime / 1000)
-    } else if (type === 'timeout') {
+    if (event.type === 'debug') {
+      captchaCooldownRemaining.value = Math.ceil(event.remainingTime / 1000)
+    } else {
       captchaInCooldown.value = false
       captchaCooldownRemaining.value = 0
     }
   }
-}
+})
 
-timerWorker.onerror = (error) => {
+timerWorker.onError((error) => {
   logger.error('Timer Worker Error', error)
   sendBtnDisabled.value = false
   emailCodeBtnText.value = t('mobile_forget_code.button.send_email_code')
-}
+})
 
 onMounted(async () => {
   getCaptchaImage()
@@ -389,7 +391,7 @@ onBeforeUnmount(() => {
     msgId: CAPTCHA_TIMER_ID
   })
 
-  timerWorker.terminate()
+  timerWorker.release()
 })
 </script>
 

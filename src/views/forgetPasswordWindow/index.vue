@@ -204,6 +204,7 @@ import Validation from '@/components/common/Validation.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { acquireTimerWorker } from '@/services/timerWorkerHost'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
@@ -215,8 +216,8 @@ const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTh
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
-// 导入Web Worker
-const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
+// 获取共享定时器 Worker 句柄
+const timerWorker = acquireTimerWorker()
 
 // 步骤状态
 const currentStep = ref(1)
@@ -483,40 +484,41 @@ const submitNewPassword = async () => {
 }
 
 // 监听 Worker 消息
-timerWorker.onmessage = (e) => {
-  const { type, msgId, remainingTime } = e.data
+timerWorker.onMessage((event) => {
+  if (event.type === 'allTimersCompleted') return
+  const { msgId } = event
 
   if (msgId === EMAIL_TIMER_ID) {
     // 邮箱验证码计时器消息处理
-    if (type === 'debug') {
+    if (event.type === 'debug') {
       // 更新倒计时显示
-      const secondsRemaining = Math.ceil(remainingTime / 1000)
+      const secondsRemaining = Math.ceil(event.remainingTime / 1000)
       countDown.value = secondsRemaining
       emailCodeBtnText.value = t('auth.forget.actions.retry_in', { seconds: secondsRemaining })
-    } else if (type === 'timeout') {
+    } else {
       // 计时结束
       sendBtnDisabled.value = false
       emailCodeBtnText.value = t('auth.forget.actions.resend')
     }
   } else if (msgId === CAPTCHA_TIMER_ID) {
     // 图片验证码冷却计时器消息处理
-    if (type === 'debug') {
+    if (event.type === 'debug') {
       // 更新剩余冷却时间，供用户点击时显示
-      captchaCooldownRemaining.value = Math.ceil(remainingTime / 1000)
-    } else if (type === 'timeout') {
+      captchaCooldownRemaining.value = Math.ceil(event.remainingTime / 1000)
+    } else {
       // 冷却结束
       captchaInCooldown.value = false
       captchaCooldownRemaining.value = 0
     }
   }
-}
+})
 
 // Worker 错误处理
-timerWorker.onerror = (error) => {
+timerWorker.onError((error) => {
   logger.error('Timer Worker Error', error)
   sendBtnDisabled.value = false
   emailCodeBtnText.value = t('auth.forget.actions.resend')
-}
+})
 
 // 页面加载时获取验证码
 onMounted(async () => {
@@ -540,8 +542,8 @@ onBeforeUnmount(() => {
     msgId: CAPTCHA_TIMER_ID
   })
 
-  // 可选：终止Worker (如果不需要在其他地方使用)
-  timerWorker.terminate()
+  // 释放共享 Worker 句柄
+  timerWorker.release()
 })
 </script>
 <style scoped lang="scss">
