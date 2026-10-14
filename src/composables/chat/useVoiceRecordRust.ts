@@ -2,6 +2,7 @@ import { create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import { startRecording, stopRecording } from 'tauri-plugin-mic-recorder-api'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { UploadSceneEnum } from '@/enums'
+import { acquireTimerWorker, type TimerWorkerHandle } from '@/services/timerWorkerHost'
 import { useUserStore } from '@/stores/domains/user/user'
 import { calculateCompressionRatio, compressAudioToMp3, getAudioInfo } from '@/utils/AudioCompression'
 import { formatDuration } from '@/utils/Formatting'
@@ -13,7 +14,7 @@ import { useUpload } from '../common/useUpload'
 const logger = createLogger('VoiceRecordRust')
 
 // 导入worker计时器
-let timerWorker: Worker | null = null
+let voiceTimerHandle: TimerWorkerHandle | null = null
 
 type VoiceRecordRustOptions = {
   onStart?: () => void
@@ -48,44 +49,40 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       startTime.value = Date.now()
       recordingTime.value = 0
 
-      // 初始化worker计时器
-      if (!timerWorker) {
-        timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
+      // 初始化 worker 计时器（module 级共享，行为与重构前一致）
+      if (!voiceTimerHandle) {
+        voiceTimerHandle = acquireTimerWorker()
+        voiceTimerHandle.onMessage((event) => {
+          if (event.type !== 'timeout' || event.msgId !== timerMsgId) return
 
-        // 监听worker消息
-        timerWorker.onmessage = (e) => {
-          const { type, msgId } = e.data
+          // 每秒更新录音时间
+          if (isRecording.value) {
+            const currentTime = Math.floor((Date.now() - startTime.value) / 1000)
+            recordingTime.value = currentTime
 
-          if (type === 'timeout' && msgId === timerMsgId) {
-            // 每秒更新录音时间
-            if (isRecording.value) {
-              const currentTime = Math.floor((Date.now() - startTime.value) / 1000)
-              recordingTime.value = currentTime
-
-              // 检查是否达到60秒限制
-              if (currentTime === 59) {
-                // 达到60秒，自动停止录音
-                stopRecordingAudio()
-                return
-              }
-
-              // 重新启动1秒定时器
-              timerWorker?.postMessage({
-                type: 'startTimer',
-                msgId: timerMsgId,
-                duration: 1000
-              })
+            // 检查是否达到60秒限制
+            if (currentTime === 59) {
+              // 达到60秒，自动停止录音
+              stopRecordingAudio()
+              return
             }
-          }
-        }
 
-        timerWorker.onerror = (error) => {
+            // 重新启动1秒定时器
+            voiceTimerHandle?.postMessage({
+              type: 'startTimer',
+              msgId: timerMsgId,
+              duration: 1000
+            })
+          }
+        })
+
+        voiceTimerHandle.onError((error) => {
           logger.error('Worker Error:', error)
-        }
+        })
       }
 
       // 开始worker计时
-      timerWorker.postMessage({
+      voiceTimerHandle.postMessage({
         type: 'startTimer',
         msgId: timerMsgId,
         duration: 1000
@@ -111,8 +108,8 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       const duration = (Date.now() - startTime.value) / 1000
 
       // 清理worker定时器
-      if (timerWorker) {
-        timerWorker.postMessage({
+      if (voiceTimerHandle) {
+        voiceTimerHandle.postMessage({
           type: 'clearTimer',
           msgId: timerMsgId
         })
@@ -171,8 +168,8 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       isRecording.value = false
 
       // 清理worker定时器
-      if (timerWorker) {
-        timerWorker.postMessage({
+      if (voiceTimerHandle) {
+        voiceTimerHandle.postMessage({
           type: 'clearTimer',
           msgId: timerMsgId
         })
@@ -198,8 +195,8 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       isRecording.value = false
 
       // 清理worker定时器
-      if (timerWorker) {
-        timerWorker.postMessage({
+      if (voiceTimerHandle) {
+        voiceTimerHandle.postMessage({
           type: 'clearTimer',
           msgId: timerMsgId
         })
@@ -280,14 +277,14 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
   // 清理资源
   onUnmounted(() => {
     cancelRecordingAudio()
-    // 清理worker
-    if (timerWorker) {
-      timerWorker.postMessage({
+    // 清理 worker
+    if (voiceTimerHandle) {
+      voiceTimerHandle.postMessage({
         type: 'clearTimer',
         msgId: timerMsgId
       })
-      timerWorker.terminate()
-      timerWorker = null
+      voiceTimerHandle.release()
+      voiceTimerHandle = null
     }
   })
 
