@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
 import { type DriverStepConfig, useDriver } from '@/composables/common/useDriver'
 import { useWindow } from '@/composables/common/useWindow'
+import { acquireTimerWorker } from '@/services/timerWorkerHost'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useGuideStore } from '@/stores/domains/settings/guide'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -192,18 +193,17 @@ export function useLoginOrchestrator() {
     reinitialize(steps, config)
   })
 
-  const timerWorker = new Worker(new URL('../../workers/timer.worker.ts', import.meta.url), { type: 'module' })
+  const timerWorker = acquireTimerWorker()
 
-  timerWorker.onerror = (error) => {
+  timerWorker.onError((error) => {
     logger.error('Worker Error', error)
-  }
+  })
 
-  timerWorker.onmessage = (e) => {
-    const { type } = e.data
-    if (type === 'timeout') {
+  timerWorker.onMessage((event) => {
+    if (event.type === 'timeout') {
       checkUpdate('login')
     }
-  }
+  })
 
   watchEffect(() => {
     if (uiState.value === 'auto') {
@@ -302,7 +302,7 @@ export function useLoginOrchestrator() {
       type: 'clearTimer',
       msgId: 'checkUpdate'
     })
-    timerWorker.terminate()
+    timerWorker.release()
   }
 
   return {

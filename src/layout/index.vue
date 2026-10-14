@@ -50,6 +50,7 @@ import { useOverlayController } from '@/composables/common/useOverlayController'
 import { useWindow } from '@/composables/common/useWindow'
 import { useSearchShortcut } from '@/composables/search/useSearchShortcut'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
+import { acquireTimerWorker } from '@/services/timerWorkerHost'
 import type { FilesMeta } from '@/services/types'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import type { MessageType } from '@/stores/domains/chat/chat'
@@ -227,20 +228,19 @@ const shrinkStatus = ref(false)
 const isDraggingFiles = ref(false)
 const tauriFileDropUnlisteners: UnlistenFn[] = []
 
-// 导入Web Worker
-const timerWorker = new Worker(new URL('../workers/timer.worker.ts', import.meta.url), { type: 'module' })
+// 共享定时器 Worker 宿主
+const timerWorker = acquireTimerWorker()
 
-timerWorker.onerror = (error) => {
+timerWorker.onError((error) => {
   logger.error('Worker Error', error)
-}
+})
 
 // 监听 Worker 消息
-timerWorker.onmessage = (e) => {
-  const { type } = e.data
-  if (type === 'timeout') {
+timerWorker.onMessage((event) => {
+  if (event.type === 'timeout') {
     checkUpdate('home')
   }
-}
+})
 
 watch(
   () => appWindow?.label === 'home',
@@ -481,12 +481,12 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupNativeFileDropListeners()
-  // 清除Web Worker计时器
+  // 清除共享计时器并释放本窗口 channel
   timerWorker.postMessage({
     type: 'clearTimer',
     msgId: 'checkUpdate'
   })
-  timerWorker.terminate()
+  timerWorker.release()
 })
 </script>
 
