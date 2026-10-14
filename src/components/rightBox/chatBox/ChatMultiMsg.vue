@@ -55,12 +55,12 @@ const getMsgBodyContent = (message: { message: { body: unknown } }): string => {
 // 计算聊天记录标题
 const chatRecordTitle = computed(() => {
   if (globalStore.currentSession?.type === RoomTypeEnum.GROUP) {
-    return '群聊的聊天记录'
+    return t('chat.multi_msg.group_title')
   } else {
     // 单聊显示好友名称和自己名称的拼接
     const friendName = globalStore.currentSession?.name || ''
     const myName = userStore.userInfo?.name || ''
-    return `${friendName}和${myName}的聊天记录`
+    return t('chat.multi_msg.dm_title', { friend: friendName, me: myName })
   }
 })
 
@@ -107,15 +107,27 @@ const openMultiMsgWindow = async () => {
   const label = msgId ? `${EventEnum.MULTI_MSG}${msgId}` : EventEnum.MULTI_MSG
   try {
     // 创建窗口
-    await createWebviewWindow('聊天记录', label, 600, 600, undefined, true, 600, 400, undefined, undefined, {
-      key: label
-    })
+    await createWebviewWindow(
+      t('chat.footer.chat_history'),
+      label,
+      600,
+      600,
+      undefined,
+      true,
+      600,
+      400,
+      undefined,
+      undefined,
+      {
+        key: label
+      }
+    )
 
     // 向窗口发送消息数据
     await sendWindowPayload(label, { msgIds })
   } catch (e) {
-    logger.error('创建聊天记录窗口失败:', e)
-    showFeedback('打开聊天记录失败', 'error')
+    logger.error('Failed to create chat history window:', e)
+    showFeedback(t('chat.multi_msg.open_failed'), 'error')
   }
 }
 </script>

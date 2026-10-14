@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BeaconBody } from '@/services/types'
+import { createI18nMock } from '~/tests/i18n-messages'
 import BeaconMessage from '../Beacon.vue'
 
 const {
@@ -20,6 +21,8 @@ const {
   clearIntervalMock: vi.fn(),
   wgs84ToGcj02Mock: vi.fn()
 }))
+
+vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({

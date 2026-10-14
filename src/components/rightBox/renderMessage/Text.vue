@@ -155,7 +155,7 @@ const processLongUrls = computed(() => {
     if (!urlMap[match] && url) {
       urlMap[match] = {
         title: url,
-        description: '链接',
+        description: t('common.link'),
         image: ''
       }
       // 动态添加到keys中

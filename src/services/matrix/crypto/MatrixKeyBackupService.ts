@@ -99,7 +99,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
   }
 
   private getKeyBackupManager(): KeyBackupManager | null {
-    const client = this.getClient() as unknown as MatrixClientExtended
+    const client: MatrixClientExtended = this.getClient() as MatrixClient & MatrixClientExtended
     return client.getKeyBackupManager?.() ?? null
   }
 

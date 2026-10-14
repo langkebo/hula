@@ -243,7 +243,7 @@ onMounted(async () => {
             localEncryptedAudioPath.value = props.body.localPath
           }
         } catch (error) {
-          logger.warn('检查加密语音本地文件失败:', error)
+          logger.warn('Failed to check encrypted voice local file:', error)
         }
       }
 
@@ -257,7 +257,7 @@ onMounted(async () => {
       }
 
       if (!localEncryptedAudioPath.value) {
-        throw new Error('加密语音下载失败')
+        throw new Error('Failed to download encrypted voice message')
       }
 
       waveformSource = localEncryptedAudioPath.value
@@ -274,7 +274,7 @@ onMounted(async () => {
     // 创建音频元素
     await audioPlayback.createAudioElement(audioSource, audioId, second.value)
   } catch (error) {
-    logger.error('组件初始化失败:', error)
+    logger.error('Component initialization failed:', error)
   }
 })
 onUnmounted(() => {

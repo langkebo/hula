@@ -54,13 +54,12 @@
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { useImageViewer } from '@/composables/common/useImageViewer'
-import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
+import { mobileOnlyAsyncComponent, useIsMobile } from '@/composables/usePlatform'
 import { MsgEnum } from '@/enums/index'
 import type { EmojiBody, MsgType } from '@/services/types'
 import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { createLogger } from '@/utils/Logger'
 import { getRemoteFileSize, safeExistsPath } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('Emoji')
 
@@ -83,22 +82,22 @@ const ImagePreview = mobileOnlyAsyncComponent(() => import('@/mobile/components/
 
 const displayEmojiSrc = computed(() => localEmojiSrc.value || props.body?.url || '')
 // 平台在运行期恒定：探测一次后复用
-const isMobilePlatform = isMobile()
+const isMobilePlatform = useIsMobile()
 
 const handleImageError = () => {
   isError.value = true
-  logger.error('表情包加载失败:', props.body.url)
+  logger.error('Failed to load emoji image:', props.body.url)
 }
 
 const handleOpenImage = () => {
-  if (!isMobilePlatform) return
+  if (!isMobilePlatform.value) return
   if (props.body?.url) {
     showImagePreviewRef.value = true
   }
 }
 
 const handleOpenImageViewer = () => {
-  if (isMobilePlatform) {
+  if (isMobilePlatform.value) {
     return
   }
   if (!props.body?.url) return
@@ -123,7 +122,7 @@ const ensureLocalEmoji = async () => {
       return
     }
   } catch (error) {
-    logger.warn('检查本地表情失败:', error)
+    logger.warn('Failed to check local emoji:', error)
   }
   localEmojiSrc.value = null
   await maybeDownloadEmoji()
@@ -146,7 +145,7 @@ const maybeDownloadEmoji = async () => {
       localEmojiSrc.value = convertFileSrc(path)
     }
   } catch (error) {
-    logger.warn('自动下载失败:', error)
+    logger.warn('Auto-download failed:', error)
   }
 }
 

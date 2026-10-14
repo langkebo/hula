@@ -88,7 +88,7 @@ const uiData = reactive({
   } as PayloadData,
 
   file: new File([], ''), // 只有在找到本地文件时才用它
-  fileBuffer: [] as unknown as ArrayBuffer,
+  fileBuffer: new ArrayBuffer(0),
   fileLoading: false
 })
 

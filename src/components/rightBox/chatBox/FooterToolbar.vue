@@ -31,7 +31,11 @@
                   :key="emoji"
                   class="emoji-item cursor-pointer flex-center"
                   @click="onEmojiClick(emoji)">
-                  <img v-if="checkIsUrl(emoji)" :src="resolveRecentRenderUrl(emoji)" class="size-24px" alt="表情" />
+                  <img
+                    v-if="checkIsUrl(emoji)"
+                    :src="resolveRecentRenderUrl(emoji)"
+                    class="size-24px"
+                    :alt="t('chat.footer.emoji')" />
                   <span v-else class="text-[length:var(--tjg-font-size-xl)]">{{ emoji }}</span>
                 </div>
               </div>

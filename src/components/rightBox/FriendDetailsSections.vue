@@ -150,7 +150,7 @@ const loadGroups = async () => {
     currentGroupIds.value = assignedIds
     selectedGroupIds.value = [...assignedIds]
   } catch (err) {
-    logger.error('加载好友分组失败', err)
+    logger.error('Failed to load friend groups', err)
     groupLoadError.value = t('friend.detail.group_load_error')
   } finally {
     loadingGroups.value = false
@@ -172,7 +172,7 @@ const handleGroupSelectionChange = async (next: string[]) => {
       showFeedback(t('friend.detail.group_assign_success'), 'success', 'polite')
     } catch (err) {
       hasFailure = true
-      logger.error('分配分组失败', err)
+      logger.error('Failed to assign group', err)
       showFeedback(t('friend.detail.group_assign_error'), 'error', 'assertive')
     }
   }
@@ -182,7 +182,7 @@ const handleGroupSelectionChange = async (next: string[]) => {
       showFeedback(t('friend.detail.group_remove_success'), 'success', 'polite')
     } catch (err) {
       hasFailure = true
-      logger.error('移出分组失败', err)
+      logger.error('Failed to remove from group', err)
       showFeedback(t('friend.detail.group_remove_error'), 'error', 'assertive')
     }
   }
@@ -213,7 +213,7 @@ const loadDevices = async () => {
   try {
     devices.value = await matrixDeviceService.getUserDevices(props.userId)
   } catch (err) {
-    logger.error('加载设备列表失败', err)
+    logger.error('Failed to load device list', err)
     deviceError.value = t('friend.detail.devices_load_error')
   } finally {
     loadingDevices.value = false

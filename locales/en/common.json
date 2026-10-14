@@ -103,6 +103,12 @@
   "load_more": "Load More",
   "saving": "Saving…",
   "unknownUser": "Unknown User",
+  "unknown": "Unknown",
+  "avatar_alt": "{name}'s avatar",
+  "account_with_value": "Account: {account}",
+  "link": "Link",
+  "map": "Map",
+  "celebration": "Celebration",
   "thread": {
     "load_failed": "Failed to load thread",
     "send": "Send",

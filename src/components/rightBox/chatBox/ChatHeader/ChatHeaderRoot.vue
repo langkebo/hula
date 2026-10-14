@@ -54,8 +54,8 @@
       preset="dialog"
       :title="t('common.tip')"
       :content="tips"
-      positive-text="确认"
-      negative-text="取消"
+      :positive-text="t('common.confirm')"
+      :negative-text="t('common.cancel')"
       @positive-click="handleModalConfirm"
       @negative-click="modalShow = false" />
 
@@ -236,7 +236,7 @@ const handleModalConfirm = async () => {
     modalShow.value = false
     sidebarShow.value = false
   } catch (error) {
-    logger.error('操作失败:', error)
+    logger.error('Operation failed:', error)
   }
 }
 
@@ -247,7 +247,7 @@ const handleDeleteRoom = async () => {
     chatStore.removeSession(currentSessionRoomId.value)
     globalStore.updateCurrentSessionRoomId('')
   } catch (error) {
-    logger.error('删除会话失败:', error)
+    logger.error('Failed to delete session:', error)
   }
 }
 
@@ -257,7 +257,7 @@ const handleDeleteFriend = async () => {
   try {
     await handleDeleteRoom()
   } catch (error) {
-    logger.error('删除好友失败:', error)
+    logger.error('Failed to delete friend:', error)
   }
 }
 
@@ -267,7 +267,7 @@ const handlePinRoom = async () => {
     const newPinStatus = !isPinned.value
     await matrixRoomActionFacade.setPushRule(currentSessionRoomId.value, newPinStatus)
   } catch (error) {
-    logger.error('置顶操作失败:', error)
+    logger.error('Failed to pin/unpin room:', error)
   }
 }
 
@@ -277,7 +277,7 @@ const handleMuteNotification = async (type: string) => {
     const shield = type === 'shield'
     await matrixRoomActionFacade.setPushRule(currentSessionRoomId.value, !shield)
   } catch (error) {
-    logger.error('消息设置失败:', error)
+    logger.error('Failed to update notification settings:', error)
   }
 }
 
@@ -286,7 +286,7 @@ const handleUpdateGroupName = async (name: string) => {
   try {
     await matrixRoomActionFacade.setRoomName(currentSessionRoomId.value, name.trim())
   } catch (error) {
-    logger.error('更新群名失败:', error)
+    logger.error('Failed to update group name:', error)
   }
 }
 
@@ -295,7 +295,7 @@ const handleUpdateMyName = async (name: string) => {
   try {
     await matrixRoomMemberFacade.setMemberDisplayName(currentSessionRoomId.value, name.trim())
   } catch (error) {
-    logger.error('更新昵称失败:', error)
+    logger.error('Failed to update display name:', error)
   }
 }
 
@@ -303,9 +303,9 @@ const handleUpdateRemark = async (remark: string) => {
   const targetUid = activeItem.value?.detailId
   if (!targetUid) return
   try {
-    logger.debug('更新备注:', targetUid, remark)
+    logger.debug('Update remark:', targetUid, remark)
   } catch (error) {
-    logger.error('更新备注失败:', error)
+    logger.error('Failed to update remark:', error)
   }
 }
 
@@ -321,7 +321,7 @@ const handleClearMessages = () => {
       try {
         chatStore.clearRoomMessages(currentSessionRoomId.value!)
       } catch (error) {
-        logger.error('清空消息失败:', error)
+        logger.error('Failed to clear messages:', error)
       }
     }
   })
@@ -336,13 +336,13 @@ const handleShowQRCode = async () => {
       const QRCode = (await import('qrcode')).default
       await QRCode.toCanvas(qrCanvasRef.value, `matrix:room/${currentSessionRoomId.value}`, { width: 200 })
     } catch (err) {
-      logger.error('生成二维码失败:', err)
+      logger.error('Failed to generate QR code:', err)
     }
   }
 }
 
 const handleShareQRCode = () => {
-  logger.debug('分享二维码')
+  logger.debug('Share QR code')
 }
 
 // 原型对齐项 #5：头部通话按钮接真实逻辑（复用项目既有 callWindow + CallView 独立窗口体系）
@@ -381,7 +381,7 @@ const handleScreenShare = async () => {
 // 附录 C.6：在新窗口打开当前聊天
 const handleOpenInNewWindow = async () => {
   if (!currentSessionRoomId.value) {
-    logger.warn('无法在新窗口打开：currentSessionRoomId 为空')
+    logger.warn('Cannot open in new window: currentSessionRoomId is empty')
     return
   }
   const { openInNewWindow } = useIndependentChatWindow()
@@ -422,9 +422,9 @@ const handleStartMeeting = async () => {
     )
 
     await openExternalUrl(meetingUrl)
-    logger.info('发起会议:', roomId, meetingUrl)
+    logger.info('Starting meeting:', roomId, meetingUrl)
   } catch (error) {
-    logger.error('发起会议失败:', error)
+    logger.error('Failed to start meeting:', error)
   } finally {
     meetingLoading.value = false
   }
@@ -461,7 +461,7 @@ watch(
       if (requestId !== encryptionStatusRequestId) {
         return
       }
-      logger.error('读取会话加密状态失败:', err)
+      logger.error('Failed to read room encryption status:', err)
       encryptionStatus.value = 'error'
     }
   },

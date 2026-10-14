@@ -3,6 +3,7 @@
   "welcome": "你好，我是 AI 助手",
   "welcome_desc": "我可以帮助你翻译文本、总结内容、编写代码等。请选择下方功能或直接输入问题。",
   "thinking": "思考中...",
+  "stop_thinking": "停止思考",
   "input_placeholder": "输入你的问题...",
   "error": "抱歉，发生了错误，请重试。",
   "provider": "AI 提供者",
@@ -64,7 +65,11 @@
     "select_model": "选择模型",
     "previewing_model": "正在预览模型",
     "select_model_failed": "选择模型文件失败，请重试",
-    "load_failed": "加载失败,请稍后重试"
+    "load_failed": "加载失败,请稍后重试",
+    "loading_start": "开始加载模型...",
+    "loading_progress": "模型加载中 {progress}%",
+    "compressed_unsupported": "暂不支持压缩后的 glb 模型，请选择原始模型文件",
+    "invalid_geometry": "模型没有几何数据或存在损坏，请检查后重新导入"
   },
   "robot": {
     "subtitle_desc": "建立一个属于自己AI",

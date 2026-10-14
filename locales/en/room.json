@@ -328,5 +328,12 @@
     "save_success": "Save Success",
     "subtitle": "Configure message retention policy",
     "title": "Message Retention"
+  },
+  "sticky": {
+    "title": "Sticky Event",
+    "set": "Set as Sticky Event",
+    "cancel": "Unpin",
+    "collapse": "Collapse",
+    "expand": "Expand {count}"
   }
 }

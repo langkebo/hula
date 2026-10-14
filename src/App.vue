@@ -40,6 +40,7 @@ import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
+import { useIsMobile } from '@/composables/usePlatform'
 import { useVoIPIncomingCall } from '@/composables/useVoIPIncomingCall'
 import { MittEnum, ThemeEnum } from '@/enums'
 import { createContactStateResolver } from '@/services/matrix/user/contactStateResolver'
@@ -53,7 +54,7 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 import { applyBubbleStyle, loadBubbleStyle } from '@/utils/bubbleStyle'
 import { applyFontScale, loadFontScale } from '@/utils/fontScale'
 import { createLogger } from '@/utils/Logger'
-import { isDesktop, isIOS, isMobile, isWindows10 } from '@/utils/PlatformConstants'
+import { isDesktop, isIOS, isWindows10 } from '@/utils/PlatformConstants'
 import { isNonMatrixWindow } from '@/utils/windowLabels'
 
 const logger = createLogger('App')
@@ -66,9 +67,9 @@ const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/Mem
 const SplashScreen = defineAsyncComponent(() => import('@/components/common/SplashScreen.vue'))
 
 // 平台在运行期恒定：探测一次后复用
-const isMobilePlatform = isMobile()
+const isMobilePlatform = useIsMobile()
 
-const mobileRtcCallFloatCell = isMobilePlatform
+const mobileRtcCallFloatCell = isMobilePlatform.value
   ? defineAsyncComponent(() => import('@/mobile/components/RtcCallFloatCell.vue'))
   : null
 
@@ -323,7 +324,7 @@ function initPlatformStyles() {
       .catch((e) => logger.warn('load simple styles failed:', e))
   }
 
-  if (isMobilePlatform) {
+  if (isMobilePlatform.value) {
     import('@/styles/scss/global/mobile.scss').catch((e) => logger.warn('load mobile styles failed:', e))
   }
 
@@ -369,7 +370,7 @@ const requestIOSNetworkPermission = async () => {
 
 // ========== Mobile re-login listener ==========
 const setupMobileReLoginListener = async () => {
-  if (!isMobilePlatform) return
+  if (!isMobilePlatform.value) return
   try {
     const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
     const { useTauriListener } = await import('@/composables/common/useTauriListener')
@@ -393,7 +394,7 @@ function setupThemeWatchers() {
   watch(
     () => settingStore.pageShadowEnabled,
     (val) => {
-      if (isMobilePlatform) {
+      if (isMobilePlatform.value) {
         document.documentElement.style.setProperty('--shadow-enabled', '1')
       } else {
         document.documentElement.style.setProperty('--shadow-enabled', val ? '0' : '1')

@@ -3,7 +3,7 @@
     <img
       v-if="displayImgSrc"
       :src="displayImgSrc"
-      alt="地图"
+      :alt="t('common.map')"
       class="size-full object-cover select-none"
       draggable="false" />
     <div
@@ -19,7 +19,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { getStaticMap } from '@/services/legacy/mapApi'
+
+const { t } = useI18n()
 
 type LocationData = { latitude: number; longitude: number }
 

@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoomTypeEnum } from '@/enums'
+import { createI18nMock } from '~/tests/i18n-messages'
 import Details from '../Details.vue'
 
 const openMsgSessionMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
@@ -15,35 +16,7 @@ const setFriendDisplayNameMock = vi.hoisted(() => vi.fn().mockResolvedValue(true
 const setFriendStatusMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 const removeFromContactsMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, string | number>) => {
-      if (key === 'home.chat_details.single.empty_signature') return '这个人很高冷，暂时没有留下什么'
-      if (key === 'home.chat_details.single.unknown') return '未知'
-      if (key === 'home.chat_details.single.region') return `地区：${params?.place ?? '未知'}`
-      if (key === 'home.chat_details.actions.message') return '发信息'
-      if (key === 'home.chat_details.single.footer.audio_call') return '打电话'
-      if (key === 'home.chat_details.single.footer.video_call') return '打视频'
-      if (key === 'home.chat_details.single.friend_info_missing') return '无法获取好友信息'
-      if (key === 'friend.detail.encrypted_chat') return '加密聊天'
-      if (key === 'friend.detail.note') return '备注'
-      if (key === 'friend.detail.note_section') return '修改备注'
-      if (key === 'friend.detail.note_placeholder') return '设置好友备注'
-      if (key === 'friend.detail.display_name') return '显示名称'
-      if (key === 'friend.detail.edit_display_name') return '修改显示名'
-      if (key === 'friend.detail.display_name_placeholder') return '设置好友显示名称'
-      if (key === 'friend.detail.status_section') return '设置状态'
-      if (key === 'friend.detail.remove_friend') return '删除好友'
-      if (key === 'friend.detail.last_seen') return '最后活跃'
-      if (key === 'friend.context.set_favorite') return '设为收藏'
-      if (key === 'friend.context.set_normal') return '设为普通'
-      if (key === 'friend.context.set_blocked') return '屏蔽好友'
-      if (key === 'common.confirm') return '确认'
-      if (key === 'common.cancel') return '取消'
-      return key
-    }
-  })
-}))
+vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('@/composables/common/useActionFeedback', () => ({
   useActionFeedback: () => ({

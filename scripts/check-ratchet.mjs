@@ -120,6 +120,26 @@ const HARDCODED_COLOR_ALLOWLIST = new Map([
   ['src/utils/Console.ts', 3] // console %c 品牌色
 ])
 
+/**
+ * `as_unknown_as` 具名 allowlist —— **已裁定例外**（2026-10-14 CQ-01 收口时裁定，
+ * 与 INLINE_STYLE_ALLOWLIST / HARDCODED_COLOR_ALLOWLIST 同机制）。下列两处用
+ * `x as unknown as T` 是**结构性**的，单次 `as` 因 comparability 不成立而无法通过：
+ *
+ *  - `matrixMocks.ts`：测试工厂，用普通对象字面量伪造 `MatrixClient` / `Room` /
+ *    `MatrixEvent`（SDK 类是重量级 class，字面量与其实例类型不能充分重叠），是
+ *    「SDK 形状漂移的单点封装」——集中一处好过散落 ~800 个内联 cast。
+ *  - `CreationService.ts`：离线占位伪造 `Room`，`createRoom` 的返回契约即
+ *    `Promise<Room>`，占位对象只实现 4 个字段，同样无法单次断言。
+ *
+ * 该表同时是**漂移守卫**：某文件一旦超出登记数量（含新增行）即 FAIL，
+ * 既防「悄悄新增」，也防「把例外删掉、同时加个新例外」。扣除已登记文件的实际
+ * 计数后，`as_unknown_as` 基线收敛到 0（只反映未登记的债务）。
+ */
+const AS_UNKNOWN_AS_ALLOWLIST = new Map([
+  ['src/test-helpers/matrixMocks.ts', 3], // createMockMatrixClient / createMockRoom / createMockMatrixEvent
+  ['src/services/matrix/room/CreationService.ts', 1] // 离线占位 Room
+])
+
 const counters = {
   /**
    * 判据本意是「**新的请求**必须走 MatrixHttpClient 网关 / 相对路径」，
@@ -214,6 +234,8 @@ const counters = {
    *
    * 收敛策略（不批量重写）：新代码禁止再用 `as unknown as`，应改用正经类型定义、
    * 类型守卫或泛型约束；存量优先在 `services/matrix` 热点文件就近替换，计数只降不升。
+   * 结构性例外（测试工厂 / 离线占位 Room）登记于下方 `AS_UNKNOWN_AS_ALLOWLIST`，
+   * 扣除后基线收敛到 0，并受对应漂移守卫约束。
    */
   as_unknown_as: {
     pattern: /as\s+unknown\s+as/g,
@@ -249,6 +271,16 @@ const current = Object.fromEntries(Object.entries(counters).map(([name, c]) => [
  */
 current.hardcoded_color -= [...HARDCODED_COLOR_ALLOWLIST.keys()].reduce(
   (sum, file) => sum + (counters.hardcoded_color.files.get(file) ?? 0),
+  0
+)
+
+/**
+ * 计数收敛：`as_unknown_as` 同样扣除具名 allowlist 已登记文件的**实际**出现数，
+ * 使 ratchet 只反映**未登记**的双重断言债务（目标基线 0）；
+ * 已登记文件本身仍受下方漂移守卫约束（超出登记数即 FAIL）。
+ */
+current.as_unknown_as -= [...AS_UNKNOWN_AS_ALLOWLIST.keys()].reduce(
+  (sum, file) => sum + (counters.as_unknown_as.files.get(file) ?? 0),
   0
 )
 
@@ -317,6 +349,26 @@ let failed = false
   }
 }
 
+/**
+ * as_unknown_as 漂移守卫：具名 allowlist 之外的双重断言一律视为新增 → FAIL。
+ * 收敛后的 `as_unknown_as` 基线为 0，总量比对发现不了
+ * 「把旧例外删掉、同时加个新例外」，故需逐个已登记文件比对。
+ */
+{
+  const unexpected = [...counters.as_unknown_as.files.entries()].filter(
+    ([file, count]) => count > (AS_UNKNOWN_AS_ALLOWLIST.get(file) ?? 0)
+  )
+  if (unexpected.length > 0) {
+    console.error(
+      'check-ratchet: FAIL as_unknown_as: 出现具名 allowlist 之外的双重断言（测试工厂 / 离线占位 Room 是已裁定例外）：'
+    )
+    for (const [file, count] of unexpected) {
+      console.error(`    ${count}\t${file}（allowlist 登记 ${AS_UNKNOWN_AS_ALLOWLIST.get(file) ?? 0} 处）`)
+    }
+    failed = true
+  }
+}
+
 for (const [name, counter] of Object.entries(counters)) {
   const allowed = baseline.counters?.[name]
   const actual = current[name]
@@ -342,7 +394,9 @@ for (const [name, counter] of Object.entries(counters)) {
         ? ' —— 全部命中具名 allowlist（n-popover 组件参数，已裁定例外）'
         : name === 'hardcoded_color' && actual === 0
           ? ' —— 剩余硬编码色全部命中具名 allowlist（TS 镜像 / console %c 样式，已裁定例外）'
-          : ''
+          : name === 'as_unknown_as' && actual === 0
+            ? ' —— 剩余双重断言全部命中具名 allowlist（测试工厂 / 离线占位 Room，已裁定例外）'
+            : ''
     console.log(`check-ratchet: OK ${name}: ${actual} (baseline ${allowed})${note}`)
   }
 }

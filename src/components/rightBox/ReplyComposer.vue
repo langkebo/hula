@@ -20,7 +20,7 @@
           </template>
           <template v-else-if="isImageReply(replyTo)">
             <div class="reply-image-preview">
-              <img :src="replyTo.thumbnailUrl || replyTo.contentPreview" alt="回复预览图" />
+              <img :src="replyTo.thumbnailUrl || replyTo.contentPreview" :alt="t('message.reply_preview_alt')" />
               <span class="reply-type-label">{{ t('editor.image') }}</span>
             </div>
           </template>

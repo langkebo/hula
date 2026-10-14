@@ -328,5 +328,12 @@
     "save_success": "保存成功",
     "subtitle": "配置消息保留策略",
     "title": "消息保留"
+  },
+  "sticky": {
+    "title": "粘性事件",
+    "set": "设为粘性事件",
+    "cancel": "取消置顶",
+    "collapse": "收起",
+    "expand": "展开 {count} 条"
   }
 }

@@ -96,7 +96,7 @@ const handleSave = useDebounceFn(async () => {
     emit('update:visible', false)
     showFeedback(t('message.edit_success'), 'success')
   } catch (error) {
-    logger.error('编辑消息失败:', error)
+    logger.error('Failed to edit message:', error)
     showFeedback(t('message.edit_failed'), 'error')
   } finally {
     saving.value = false

@@ -1,5 +1,5 @@
 import { type ComputedRef, computed, ref } from 'vue'
-import { isMobile } from '@/utils/PlatformConstants'
+import { useIsMobile } from '@/composables/usePlatform'
 
 interface UseEmojiPaginationOptions<TSeries> {
   isFavoritesView: ComputedRef<boolean>
@@ -25,12 +25,12 @@ export const useEmojiPagination = <TSeries>({
   const seriesLoadMoreLock = ref(false)
 
   // 平台在运行期恒定：探测一次后复用
-  const isMobilePlatform = isMobile()
+  const isMobilePlatform = useIsMobile()
 
-  const packColumns = computed(() => (isMobilePlatform ? 4 : 6))
+  const packColumns = computed(() => (isMobilePlatform.value ? 4 : 6))
   const seriesRowHeight = computed(() => SERIES_EMOJI_SIZE + SERIES_ROW_VERTICAL_PADDING)
-  const seriesViewportHeight = computed(() => (isMobilePlatform ? '240px' : '260px'))
-  const favoritesPageSize = computed(() => (isMobilePlatform ? 20 : 25))
+  const seriesViewportHeight = computed(() => (isMobilePlatform.value ? '240px' : '260px'))
+  const favoritesPageSize = computed(() => (isMobilePlatform.value ? 20 : 25))
 
   const isNearBottom = (target: HTMLElement) =>
     target.scrollTop + target.clientHeight >= target.scrollHeight - SCROLL_LOAD_MORE_THRESHOLD

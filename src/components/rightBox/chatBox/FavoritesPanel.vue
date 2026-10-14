@@ -13,7 +13,7 @@
           size="tiny"
           quaternary
           :disabled="totalCount === 0"
-          :title="t('home.chat_sidebar.favorites.export_md', '导出 Markdown')"
+          :title="t('home.chat_sidebar.favorites.export_md')"
           @click="handleExport('md')">
           <template #icon>
             <svg class="size-14px color-[--tjg-text-secondary]">
@@ -26,7 +26,7 @@
           size="tiny"
           quaternary
           :disabled="totalCount === 0"
-          :title="t('home.chat_sidebar.favorites.export_txt', '导出文本')"
+          :title="t('home.chat_sidebar.favorites.export_txt')"
           @click="handleExport('txt')">
           <template #icon>
             <svg class="size-14px color-[--tjg-text-secondary]">
@@ -43,7 +43,7 @@
       <n-input
         v-model:value="searchRef"
         clearable
-        :placeholder="t('home.chat_sidebar.favorites.search_placeholder', '搜索收藏消息')"
+        :placeholder="t('home.chat_sidebar.favorites.search_placeholder')"
         type="text"
         size="small"
         spellCheck="false"
@@ -74,7 +74,7 @@
         </div>
       </template>
       <div v-else class="flex-1 flex items-center justify-center h-full">
-        <n-empty :description="t('home.chat_sidebar.favorites.empty', '暂无收藏消息')">
+        <n-empty :description="t('home.chat_sidebar.favorites.empty')">
           <template #icon>
             <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
               <use href="#star"></use>

@@ -18,7 +18,7 @@
 
     <!-- 地址信息 -->
     <div class="text-(12px [--tjg-text-tertiary]) pb-8px leading-5 line-clamp-2">
-      {{ body?.address || '位置出错' }}
+      {{ body?.address || t('chat.location.error_short') }}
     </div>
 
     <!-- 地图预览区域 -->

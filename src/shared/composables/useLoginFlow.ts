@@ -13,6 +13,7 @@ import { useRouter } from 'vue-router'
 import { translateMatrixError } from '@/common/matrixErrorTranslator'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
+import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum } from '@/enums'
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
@@ -26,7 +27,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { createLogger } from '@/utils/Logger'
-import { isDesktop, isMobile } from '@/utils/PlatformConstants'
+import { isDesktop } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('useLoginFlow')
@@ -41,7 +42,7 @@ export const useLoginFlow = () => {
   const { showFeedback } = useActionFeedback()
 
   // 平台在运行期恒定：探测一次后复用，避免在多个分支中重复调用平台探测
-  const isMobilePlatform = isMobile()
+  const isMobilePlatform = useIsMobile()
 
   let router: ReturnType<typeof useRouter> | null = null
   try {
@@ -80,7 +81,7 @@ export const useLoginFlow = () => {
   const identityServerUrl = ref(matrixEndpointConfig.identityServerUrl)
 
   const setLoginState = async () => {
-    if (isMobilePlatform) {
+    if (isMobilePlatform.value) {
       return
     }
 
@@ -156,7 +157,7 @@ export const useLoginFlow = () => {
       uiState.value = 'manual'
       settingStore.setAutoLogin(false)
       logger.info('自动登录信息已失效，请手动登录')
-      if (isMobilePlatform) {
+      if (isMobilePlatform.value) {
         await returnToMobileLogin()
       }
       return
@@ -229,11 +230,11 @@ export const useLoginFlow = () => {
         loginTimeoutHandle = undefined
       }
 
-      if (!auto && isMobilePlatform) {
+      if (!auto && isMobilePlatform.value) {
         settingStore.setAutoLogin(true)
       }
 
-      if (isMobilePlatform) {
+      if (isMobilePlatform.value) {
         await invokeSilently('hide_splash_screen')
       }
 
@@ -277,7 +278,7 @@ export const useLoginFlow = () => {
           info.value.name = userStore.userInfo.name
           info.value.uid = userStore.userInfo.uid
         }
-        if (isMobilePlatform) {
+        if (isMobilePlatform.value) {
           await returnToMobileLogin()
         }
       }

@@ -11,7 +11,11 @@
         class="assistant-view__progress"
         type="line" />
       <span class="assistant-view__placeholder-text">
-        {{ loadingProgress === 0 ? '开始加载模型...' : `模型加载中 ${loadingProgress}%` }}
+        {{
+          loadingProgress === 0
+            ? t('ai_assistant.bot.loading_start')
+            : t('ai_assistant.bot.loading_progress', { progress: loadingProgress })
+        }}
       </span>
     </div>
   </div>
@@ -34,6 +38,7 @@ import type {
 } from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { useI18n } from 'vue-i18n'
 import { useAssistantModelPresets } from '@/composables/chat/useAssistantModelPresets'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
@@ -42,6 +47,7 @@ import { isDesktop } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('TjgAssistant')
+const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 // 动态导入 three.js 核心及插件
@@ -114,7 +120,7 @@ const resolveDracoDecoderPath = async () => {
       dracoDecoderBasePath = assetUrl.endsWith('/') ? assetUrl : `${assetUrl}/`
       return dracoDecoderBasePath
     } catch (error) {
-      logger.warn('获取 Draco 解码器资源路径失败, 回退 CDN', error)
+      logger.warn('Failed to resolve Draco decoder resource path, falling back to CDN', error)
     }
   }
   dracoDecoderBasePath = DRACO_DECODER_BASE_URL
@@ -136,7 +142,7 @@ const ensureDracoLoader = async () => {
       dracoLoader.preload()
     } catch (error) {
       if (decoderPath !== DRACO_DECODER_BASE_URL) {
-        logger.warn('预加载本地 Draco 解码器失败, 回退 CDN', error)
+        logger.warn('Failed to preload local Draco decoder, falling back to CDN', error)
         dracoDecoderBasePath = DRACO_DECODER_BASE_URL
         decoderPath = DRACO_DECODER_BASE_URL
         dracoLoader.setDecoderPath(decoderPath)
@@ -193,7 +199,7 @@ const initThree = async () => {
     isReady.value = true
     emit('ready')
   } catch (error) {
-    logger.error('初始化 Tjg 小管家失败', error)
+    logger.error('Failed to initialize Tjg assistant', error)
     emit('error', error)
   } finally {
     activating = false
@@ -223,7 +229,7 @@ const resolveModelSource = async () => {
           lastResolvedModelSource = localUrl
           return localUrl
         } catch (error) {
-          logger.warn('缓存远程模型失败, 回退为在线加载', error)
+          logger.warn('Failed to cache remote model, falling back to online loading', error)
         }
       }
     }
@@ -366,7 +372,7 @@ const adjustFraming = (scaledSize: Vector3, centerY: number) => {
 
 const loadModel = async () => {
   if (!scene || !ThreeModule) {
-    throw new Error('场景尚未初始化')
+    throw new Error('Assistant scene is not initialized')
   }
   loadingProgress.value = 0
   isReady.value = false
@@ -403,7 +409,7 @@ const loadModel = async () => {
         },
         (error) => {
           loadingProgress.value = 0
-          logger.error('模型加载失败', modelSource, error)
+          logger.error('Failed to load model', modelSource, error)
           reject(error)
         }
       )
@@ -415,7 +421,7 @@ const loadModel = async () => {
     currentCustomSource &&
     extensions.some((ext) => ['KHR_texture_basisu', 'EXT_meshopt_compression'].includes(ext))
   ) {
-    showFeedback('暂不支持压缩后的 glb 模型，请选择原始模型文件', 'warning')
+    showFeedback(t('ai_assistant.bot.compressed_unsupported'), 'warning')
     throw new Error('UNSUPPORTED_COMPRESSED_MODEL')
   }
 
@@ -431,7 +437,7 @@ const loadModel = async () => {
   const center = box.getCenter(new ThreeModule.Vector3())
   const hasInvalidBounds = isInvalidBounds(size, center)
   if (hasInvalidBounds) {
-    showFeedback('模型没有几何数据或存在损坏，请检查后重新导入', 'warning')
+    showFeedback(t('ai_assistant.bot.invalid_geometry'), 'warning')
     throw new Error('EMPTY_MODEL_GEOMETRY')
   }
   const maxAxis = Math.max(size.x, size.y, size.z) || 1
@@ -473,7 +479,7 @@ const loadModel = async () => {
     activeAction = mixer.clipAction(preferred)
     activeAction.reset().play()
   } else {
-    logger.debug('模型没有动画片段')
+    logger.debug('Model has no animation clips')
   }
   adjustFraming(scaledSize, centerY)
   loadingProgress.value = 100

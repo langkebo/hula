@@ -30,9 +30,10 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { MarkEnum } from '@/enums'
+import type { MarkEnum } from '@/enums'
 import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
 import { createLogger } from '@/utils/Logger'
+import { createQuickReactionEmojis, type QuickReactionEmoji } from './quickReactionEmojis'
 
 const logger = createLogger('ReactionPicker')
 const Emoticon = defineAsyncComponent(() => import('@/components/rightBox/emoticon/index.vue'))
@@ -50,31 +51,24 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const quickEmojis = [
-  { value: MarkEnum.LIKE, title: '点赞', url: '/emojis/like.png' },
-  { value: MarkEnum.HEART, title: '爱心', url: '/emojis/heart.png' },
-  { value: MarkEnum.LOL, title: '笑哭', url: '/emojis/lol.png' },
-  { value: MarkEnum.ANGRY, title: '愤怒', url: '/emojis/angry.png' },
-  { value: MarkEnum.ROCKET, title: '火箭', url: '/emojis/rocket.png' },
-  { value: MarkEnum.FLOWER, title: '鲜花', url: '/emojis/flower.png' }
-]
+const quickEmojis = computed(() => createQuickReactionEmojis(t))
 
 const hasReacted = (value: MarkEnum): boolean => {
   return props.userReactions?.[String(value)] ?? false
 }
 
-const handleReaction = async (emoji: { value: MarkEnum; title: string }) => {
+const handleReaction = async (emoji: QuickReactionEmoji) => {
   try {
     const hasExisting = hasReacted(emoji.value)
     if (hasExisting) {
-      await matrixReactionService.toggleReaction(props.roomId, props.eventId, emoji.title)
+      await matrixReactionService.toggleReaction(props.roomId, props.eventId, emoji.key)
       emit('reaction-removed', String(emoji.value))
     } else {
-      await matrixReactionService.addReaction(props.roomId, props.eventId, emoji.title)
+      await matrixReactionService.addReaction(props.roomId, props.eventId, emoji.key)
       emit('reaction-added', String(emoji.value))
     }
   } catch (error) {
-    logger.error('反应操作失败:', error)
+    logger.error('Reaction operation failed:', error)
   }
 }
 
@@ -88,7 +82,7 @@ const handleEmojiSelect = async (
       await matrixReactionService.addReaction(props.roomId, props.eventId, emojiUrl)
       emit('reaction-added', emojiUrl)
     } catch (error) {
-      logger.error('添加表情反应失败:', error)
+      logger.error('Failed to add emoji reaction:', error)
     }
   }
 }

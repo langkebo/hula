@@ -1,4 +1,4 @@
-import type { MediaManager } from 'matrix-js-sdk/media'
+import type { MediaManager, MediaQuotaAlert } from 'matrix-js-sdk/media'
 import {
   type EncryptedAttachmentFile,
   matrixAttachmentEncryptionService
@@ -322,11 +322,11 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
-  async getQuotaAlerts(): Promise<Array<Record<string, unknown>>> {
+  async getQuotaAlerts(): Promise<MediaQuotaAlert[]> {
     try {
       const response = await this.getMedia().getMediaQuotaAlerts()
       logger.info('[MatrixMedia] 获取配额告警成功')
-      return (response.alerts ?? []) as unknown as Array<Record<string, unknown>>
+      return response.alerts ?? []
     } catch (err) {
       logger.error(`[MatrixMedia] 获取配额告警失败: ${err}`)
       return []

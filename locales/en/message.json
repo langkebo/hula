@@ -10,7 +10,8 @@
       "missing_local": "Local file not found. Please download it first~",
       "reveal_fail": "Unable to reveal the file in folder",
       "download_open_fail": "File downloaded but cannot be opened or revealed. Please find it manually in your file manager.",
-      "download_failed": "Failed to download file: {reason}"
+      "download_failed": "Failed to download file: {reason}",
+      "drop_failed": "Failed to process dropped file"
     }
   },
   "video": {
@@ -229,7 +230,9 @@
     "share": "Share beacon",
     "stop": "Stop sharing",
     "started": "Beacon started",
-    "failed": "Failed to start beacon"
+    "failed": "Failed to start beacon",
+    "stop_success": "Stopped sharing",
+    "stop_failed": "Failed to stop sharing"
   },
   "update_window": {
     "updating": "Updating",
@@ -307,5 +310,14 @@
   "recall_confirm_title": "Recall Message",
   "recall_failed": "Recall Failed",
   "recall_success": "Recalled",
-  "unpin_success": "Unpinned"
+  "unpin_success": "Unpinned",
+  "empty_input": "Please enter a message",
+  "reply_preview_alt": "Reply preview image",
+  "reedit": "Re-edit",
+  "recall_notice": "recalled a message",
+  "action": {
+    "react": "React",
+    "reply": "Reply",
+    "forward": "Forward"
+  }
 }

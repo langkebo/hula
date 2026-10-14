@@ -74,12 +74,12 @@ const props = withDefaults(
 
 // 提取域名用于显示来源
 const domainName = computed(() => {
-  if (!props.body?.url) return '未知来源'
+  if (!props.body?.url) return t('chat.link_preview.unknown_source')
   try {
     const url = new URL(props.body.url)
     return url.hostname
   } catch (e) {
-    return '未知来源'
+    return t('chat.link_preview.unknown_source')
   }
 })
 

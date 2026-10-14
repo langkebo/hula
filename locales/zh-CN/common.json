@@ -103,6 +103,12 @@
   "load_more": "加载更多",
   "saving": "保存中…",
   "unknownUser": "未知用户",
+  "unknown": "未知",
+  "avatar_alt": "{name}的头像",
+  "account_with_value": "账号：{account}",
+  "link": "链接",
+  "map": "地图",
+  "celebration": "庆祝",
   "thread": {
     "load_failed": "加载讨论串失败",
     "send": "发送",

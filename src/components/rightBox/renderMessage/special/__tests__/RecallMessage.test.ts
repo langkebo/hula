@@ -1,7 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MittEnum, MsgEnum } from '@/enums'
+import { createI18nMock } from '~/tests/i18n-messages'
 import RecallMessage from '../RecallMessage.vue'
+
+vi.mock('vue-i18n', () => createI18nMock())
 
 const { emitMock, getMessageMock, getRecalledMessageMock } = vi.hoisted(() => ({
   emitMock: vi.fn(),

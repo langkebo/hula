@@ -72,7 +72,7 @@
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { useImageViewer } from '@/composables/common/useImageViewer'
-import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
+import { mobileOnlyAsyncComponent, useIsMobile } from '@/composables/usePlatform'
 import { MessageStatusEnum, MsgEnum, TauriCommand } from '@/enums'
 import type { ImageBody, MsgType } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -81,7 +81,6 @@ import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 import { safeExistsPath } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('Image')
@@ -94,10 +93,10 @@ const props = defineProps<{
   message: MsgType
 }>()
 // 平台在运行期恒定：探测一次后复用
-const isMobilePlatform = isMobile()
+const isMobilePlatform = useIsMobile()
 // 图片显示相关常量
 const MOBILE_MAX_WIDTH_RATIO = 0.7
-const MAX_WIDTH = isMobilePlatform
+const MAX_WIDTH = isMobilePlatform.value
   ? Math.round((typeof window !== 'undefined' ? window.innerWidth : 0) * MOBILE_MAX_WIDTH_RATIO) || 240
   : 320
 const MAX_HEIGHT = 240
@@ -214,7 +213,7 @@ const ensureEncryptedImageAvailable = async () => {
         return
       }
     } catch (error) {
-      logger.warn('检查加密图片本地文件失败:', error)
+      logger.warn('Failed to check encrypted image local file:', error)
     }
   }
 
@@ -239,12 +238,12 @@ const ensureEncryptedImageAvailable = async () => {
       await applyLocalImagePath(absolutePath)
     }
   } catch (error) {
-    logger.error('下载加密图片失败:', error)
+    logger.error('Failed to download encrypted image:', error)
   }
 }
 
 const handleOpenImage = async () => {
-  if (!isMobilePlatform) return // 非移动端直接返回
+  if (!isMobilePlatform.value) return // 非移动端直接返回
 
   if (hasEncryptedFile.value) {
     await ensureEncryptedImageAvailable()
@@ -263,7 +262,7 @@ const handleOpenImage = async () => {
 
 // 处理打开图片查看器
 const handleOpenImageViewer = async () => {
-  if (isMobilePlatform) {
+  if (isMobilePlatform.value) {
     return
   }
 
@@ -327,7 +326,7 @@ const ensureLocalThumbnail = async () => {
       return
     }
   } catch (error) {
-    logger.warn('检查缩略图文件失败:', error)
+    logger.warn('Failed to check thumbnail file:', error)
   }
   localThumbnailSrc.value = null
   thumbnailStore.invalidate(downloadKey.value)

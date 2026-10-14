@@ -114,7 +114,7 @@ const handleSubmit = async () => {
     emit('update:visible', false)
     showFeedback(t('message.edit_success'), 'success')
   } catch (err) {
-    logger.error('编辑消息失败:', err)
+    logger.error('Failed to edit message:', err)
     showFeedback(t('message.edit_failed'), 'error')
   } finally {
     submitting.value = false

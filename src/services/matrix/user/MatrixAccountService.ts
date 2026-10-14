@@ -1,5 +1,6 @@
 import { authedRequestWithPath } from '@/services/matrix/MatrixHttpClient'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
+import type { MatrixClient } from '@/services/matrix/sdk'
 import type { DeviceManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
@@ -100,7 +101,7 @@ class MatrixAccountService extends BaseMatrixService {
 
   private getDeviceMgr(): DeviceManager {
     logger.debug('[MatrixAccount] getDeviceMgr() 开始获取 DeviceManager')
-    const client = this.getClient() as unknown as MatrixClientExtended
+    const client: MatrixClientExtended = this.getClient() as MatrixClient & MatrixClientExtended
     logger.debug(
       `[MatrixAccount] getDeviceMgr() client 已获取, getDeviceManager 方法存在: ${typeof client.getDeviceManager === 'function'}`
     )

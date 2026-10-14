@@ -92,12 +92,12 @@
         class="chat-sidebar-tabs shrink-0"
         :tabs-padding="12"
         justify-content="space-evenly">
-        <n-tab-pane name="members" :tab="t('home.chat_sidebar.tabs.members', '成员')">
+        <n-tab-pane name="members" :tab="t('home.chat_sidebar.tabs.members')">
           <!-- 成员列表与搜索被迁移至此处内部，但为保持代码结构，我们利用 v-show 切换内容区域 -->
         </n-tab-pane>
-        <n-tab-pane name="files" :tab="t('home.chat_sidebar.tabs.files', '文件')"></n-tab-pane>
-        <n-tab-pane name="pins" :tab="t('home.chat_sidebar.tabs.pins', '置顶')"></n-tab-pane>
-        <n-tab-pane name="favorites" :tab="t('home.chat_sidebar.tabs.favorites', '收藏')"></n-tab-pane>
+        <n-tab-pane name="files" :tab="t('home.chat_sidebar.tabs.files')"></n-tab-pane>
+        <n-tab-pane name="pins" :tab="t('home.chat_sidebar.tabs.pins')"></n-tab-pane>
+        <n-tab-pane name="favorites" :tab="t('home.chat_sidebar.tabs.favorites')"></n-tab-pane>
       </n-tabs>
 
       <!-- 动态内容区域 -->
@@ -162,8 +162,8 @@
                 <span>
                   {{
                     item.group === 'online'
-                      ? t('home.chat_sidebar.groups.online', '在线')
-                      : t('home.chat_sidebar.groups.offline', '离线')
+                      ? t('home.chat_sidebar.groups.online')
+                      : t('home.chat_sidebar.groups.offline')
                   }}—{{ item.count }}
                 </span>
               </div>
@@ -257,7 +257,7 @@
           justify="space-between"
           class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
           <span class="text-[var(--text-xs)] font-medium color-[--tjg-text-tertiary]">
-            {{ t('home.chat_sidebar.quota.title', '空间配额') }}
+            {{ t('home.chat_sidebar.quota.title') }}
           </span>
           <span class="text-[var(--text-xs)] color-[--tjg-color-primary-500]">
             {{ '1.2 GB / 5.0 GB' }}
@@ -274,7 +274,7 @@
         </div>
 
         <div class="flex-1 flex items-center justify-center">
-          <n-empty :description="t('home.chat_sidebar.empty.files', '暂无群文件')">
+          <n-empty :description="t('home.chat_sidebar.empty.files')">
             <template #icon>
               <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
                 <use href="#folder"></use>
@@ -293,7 +293,7 @@
             :can-set-sticky="canSetSticky"
             @navigate="handleNavigateToMessage"
             @cancel-sticky="handleCancelSticky" />
-          <n-empty v-else :description="t('home.chat_sidebar.empty.pins', '暂无置顶消息')">
+          <n-empty v-else :description="t('home.chat_sidebar.empty.pins')">
             <template #icon>
               <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
                 <use href="#pin"></use>
@@ -443,14 +443,14 @@ watch(
     try {
       await announcementStore.loadGroupAnnouncements(roomId)
     } catch (error) {
-      logger.error('刷新群公告失败:', error)
+      logger.error('Failed to refresh group announcements:', error)
     }
   },
   { immediate: true }
 )
 
 const onClickMember = async (item: UserItem) => {
-  logger.debug('点击用户', item)
+  logger.debug('Click user', item)
   selectKey.value = item.uid
 
   // 获取用户的最新数据，并更新 pinia
@@ -578,7 +578,7 @@ const handleCancelSticky = async (eventId: string) => {
 /** 置顶消息变更（来自消息右键菜单的 pin/unpin）→ 刷新侧栏置顶列表 */
 const onPinnedEventsChanged = (payload: { roomId?: string } | undefined) => {
   if (payload?.roomId && payload.roomId === currentRoomId.value) {
-    pinnedMessageFlow.load().catch((e) => logger.error('刷新置顶消息失败:', e))
+    pinnedMessageFlow.load().catch((e) => logger.error('Failed to refresh pinned messages:', e))
   }
 }
 
@@ -586,7 +586,7 @@ const onPinnedEventsChanged = (payload: { roomId?: string } | undefined) => {
 watch(
   () => currentRoomId.value,
   () => {
-    pinnedMessageFlow.load().catch((e) => logger.error('加载置顶消息失败:', e))
+    pinnedMessageFlow.load().catch((e) => logger.error('Failed to load pinned messages:', e))
   },
   { immediate: true }
 )

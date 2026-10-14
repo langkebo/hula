@@ -134,7 +134,10 @@
                 class="AI-item">
                 <n-flex align="center" justify="space-between" class="w-full pr-6px">
                   <n-flex align="center">
-                    <img class="size-18px object-contain" :src="item.avatar" :alt="item.name + '的头像'" />
+                    <img
+                      class="size-18px object-contain"
+                      :src="item.avatar"
+                      :alt="t('common.avatar_alt', { name: item.name })" />
                     <p class="text-(14px [--tjg-text-primary])">{{ item.name }}</p>
                   </n-flex>
 
@@ -384,11 +387,11 @@ const handleBeaconClick = async () => {
   }
 
   try {
-    await locationStore.startLiveShare(currentSessionRoomId.value, '实时位置共享')
-    showFeedback(t('message.beacon.started') || '信标已启动', 'success')
+    await locationStore.startLiveShare(currentSessionRoomId.value, t('chat.beacon.live_location'))
+    showFeedback(t('message.beacon.started'), 'success')
   } catch (error) {
-    logger.error('启动 Beacon 失败:', error)
-    showFeedback(t('message.beacon.failed') || '信标启动失败', 'error')
+    logger.error('Failed to start Beacon:', error)
+    showFeedback(t('message.beacon.failed'), 'error')
   }
 }
 
@@ -398,10 +401,10 @@ const stopSharing = async () => {
 
   try {
     await locationStore.stopLiveShare(liveBeaconId)
-    showFeedback('已停止共享', 'success')
+    showFeedback(t('message.beacon.stop_success'), 'success')
   } catch (error) {
-    logger.error('停止 Beacon 失败:', error)
-    showFeedback('停止共享失败', 'error')
+    logger.error('Failed to stop Beacon:', error)
+    showFeedback(t('message.beacon.stop_failed'), 'error')
   }
 }
 
@@ -417,7 +420,7 @@ const handleFileConfirm = async (files: UploadFile[]) => {
   try {
     await sendFilesDirect(files)
   } catch (error) {
-    logger.error('弹窗发送文件失败:', error)
+    logger.error('Failed to send files from modal:', error)
   }
   showFileModal.value = false
   pendingFiles.value = []
@@ -433,8 +436,8 @@ const handleGlobalFilesDrop = async (files: UploadFile[]) => {
   try {
     await processFiles(files, messageInputDom.value, showFileModalCallback)
   } catch (error) {
-    logger.error('处理拖拽文件失败:', error)
-    showFeedback('处理拖拽文件失败', 'error')
+    logger.error('Failed to process dropped files:', error)
+    showFeedback(t('message.file.toast.drop_failed'), 'error')
   }
 }
 
@@ -442,8 +445,8 @@ const handleLocationSelected = async (locationData: LocationData) => {
   try {
     await sendLocationDirect(locationData)
   } catch (error) {
-    logger.error('发送位置失败:', error)
-    showFeedback(t('message.location.send_failed') || '发送位置失败', 'error')
+    logger.error('Failed to send location:', error)
+    showFeedback(t('message.location.send_failed'), 'error')
   }
 }
 
@@ -569,7 +572,7 @@ const clearInput = () => {
 const handleAISend = async () => {
   const content = getInputContent()
   if (!content.trim()) {
-    showFeedback('请输入消息内容', 'warning')
+    showFeedback(t('message.empty_input'), 'warning')
     return
   }
   selfEmitter('send-ai', { content })
@@ -702,7 +705,7 @@ onMounted(async () => {
             const file = new File([blob], 'screenshot.png', { type: e.payload.mimeType })
             await processFiles([file], messageInputDom.value, showFileModalCallback)
           } catch (error) {
-            logger.error('处理截图失败:', error)
+            logger.error('Failed to process screenshot:', error)
           }
         }
       }),

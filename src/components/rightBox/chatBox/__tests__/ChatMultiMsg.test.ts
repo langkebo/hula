@@ -2,7 +2,10 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 import { EventEnum, RoomTypeEnum } from '@/enums'
+import { createI18nMock } from '~/tests/i18n-messages'
 import ChatMultiMsg from '../ChatMultiMsg.vue'
+
+vi.mock('vue-i18n', () => createI18nMock())
 
 const { createWebviewWindowMock, sendWindowPayloadMock, showFeedbackMock, loggerErrorMock } = vi.hoisted(() => ({
   createWebviewWindowMock: vi.fn(),

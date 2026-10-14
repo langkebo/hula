@@ -199,7 +199,7 @@ const getGroupDetail = async (roomId: string) => {
       return groupInfo
     }
   } catch (error) {
-    logger.error('获取群组信息失败:', error)
+    logger.error('Failed to fetch group info:', error)
   } finally {
     loadingGroups.value.delete(roomId)
   }

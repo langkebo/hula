@@ -144,7 +144,7 @@ import { useDownload } from '@/composables/common/useDownload'
 import { useIntersectionTaskQueue } from '@/composables/common/useIntersectionTaskQueue'
 import { useMitt } from '@/composables/common/useMitt'
 import { useVideoViewer } from '@/composables/common/useVideoViewer'
-import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
+import { mobileOnlyAsyncComponent, useIsMobile } from '@/composables/usePlatform'
 import { MessageStatusEnum, TauriCommand } from '@/enums'
 import { MittEnum, MsgEnum } from '@/enums/index'
 import type { MsgType, VideoBody } from '@/services/types'
@@ -156,7 +156,6 @@ import type { MatrixEncryptedAttachmentLike } from '@/types/matrix-services'
 import { extractFileName, formatBytes } from '@/utils/Formatting.ts'
 import { createLogger } from '@/utils/Logger'
 import { getDownloadBaseDir, getDownloadBaseDirPath, safeExistsPath } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('Video')
@@ -178,9 +177,9 @@ const props = defineProps<{
 // 视频容器引用
 const videoContainerRef = ref<HTMLElement | null>(null)
 // 平台在运行期恒定，探测一次后复用，避免多处重复调用平台探测
-const isMobilePlatform = isMobile()
+const isMobilePlatform = useIsMobile()
 const MOBILE_MAX_WIDTH_RATIO = 0.7
-const MAX_WIDTH = isMobilePlatform
+const MAX_WIDTH = isMobilePlatform.value
   ? Math.round((typeof window !== 'undefined' ? window.innerWidth : 0) * MOBILE_MAX_WIDTH_RATIO) || 320
   : 400
 // 错误状态控制
@@ -225,7 +224,7 @@ const mobileVideoUrl = ref('')
 
 /** 移动端专用：把本地/可播放路径同步给内嵌预览组件（桌面端由 openVideoViewer 处理） */
 const applyMobileVideoUrl = (path: string) => {
-  if (isMobilePlatform) {
+  if (isMobilePlatform.value) {
     mobileVideoUrl.value = convertFileSrc(path)
   }
 }
@@ -291,11 +290,11 @@ const imageStyle = computed(() => {
   // 基础最大尺寸配置
   const BASE_MAX_WIDTH = MAX_WIDTH
   // 纵向视频固定尺寸（PC 高度再减 30px）
-  const VERTICAL_MAX_WIDTH = isMobilePlatform ? 170 : 150
-  const VERTICAL_MAX_HEIGHT = isMobilePlatform ? 300 : 290
+  const VERTICAL_MAX_WIDTH = isMobilePlatform.value ? 170 : 150
+  const VERTICAL_MAX_HEIGHT = isMobilePlatform.value ? 300 : 290
   // 横向视频固定尺寸（保持横向，不变成正方形或纵向）
-  const HORIZONTAL_FIXED_WIDTH = isMobilePlatform ? 350 : 320
-  const HORIZONTAL_FIXED_HEIGHT = isMobilePlatform ? 160 : 170
+  const HORIZONTAL_FIXED_WIDTH = isMobilePlatform.value ? 350 : 320
+  const HORIZONTAL_FIXED_HEIGHT = isMobilePlatform.value ? 160 : 170
 
   // 如果没有原始尺寸，使用默认尺寸
   if (!width || !height) {
@@ -370,7 +369,7 @@ const ensureLocalVideoThumbnail = async () => {
       }
       return
     } catch (error) {
-      logger.error('下载加密视频缩略图失败:', error)
+      logger.error('Failed to download encrypted video thumbnail:', error)
       localVideoThumbSrc.value = null
       return
     }
@@ -389,7 +388,7 @@ const ensureLocalVideoThumbnail = async () => {
       return
     }
   } catch (error) {
-    logger.warn('检查缩略图文件失败:', error)
+    logger.warn('Failed to check thumbnail file:', error)
   }
 
   localVideoThumbSrc.value = null
@@ -416,7 +415,7 @@ watch(
         applyMobileVideoUrl(path)
       }
     } catch (error) {
-      logger.warn('本地视频校验失败:', error)
+      logger.warn('Local video validation failed:', error)
     }
   },
   { immediate: true }
@@ -442,7 +441,7 @@ const checkDownloadStatusLazy = async () => {
         isVideoDownloaded.value = existsFlag
         return
       } catch (error) {
-        logger.warn('检查加密视频本地文件失败:', error)
+        logger.warn('Failed to check encrypted video local file:', error)
       }
     }
 
@@ -504,7 +503,7 @@ const downloadVideo = async () => {
       }
     }
   } catch (error) {
-    logger.error('下载视频失败:', error)
+    logger.error('Failed to download video:', error)
   }
 }
 
@@ -569,7 +568,7 @@ const handleOpenVideoViewer = async () => {
         const localExists = props.body.localPath ? await safeExistsPath(props.body.localPath) : false
         isVideoDownloaded.value = localExists
         if (!localExists) {
-          logger.error('加密视频下载失败，无法打开')
+          logger.error('Encrypted video download failed, cannot open')
           return
         }
       }
@@ -586,15 +585,15 @@ const handleOpenVideoViewer = async () => {
 
         // 如果下载失败，不继续打开视频
         if (!isVideoDownloaded.value) {
-          logger.error('视频下载失败，无法打开')
+          logger.error('Video download failed, cannot open')
           return
         }
       }
 
-      if (isMobilePlatform) {
+      if (isMobilePlatform.value) {
         const playableUrl = await resolveMobilePlayableUrl()
         if (!playableUrl) {
-          logger.error('未找到可播放的视频地址')
+          logger.error('No playable video URL found')
           return
         }
         mobileVideoUrl.value = playableUrl
@@ -604,7 +603,7 @@ const handleOpenVideoViewer = async () => {
 
       await openVideoViewer(props.body.url, [MsgEnum.VIDEO])
     } catch (error) {
-      logger.error('打开视频失败:', error)
+      logger.error('Failed to open video:', error)
     } finally {
       isOpening.value = false
     }

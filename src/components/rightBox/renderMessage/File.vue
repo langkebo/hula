@@ -201,7 +201,7 @@ const revealInDirSafely = async (targetPath?: string | null) => {
   try {
     await revealItemInDir(targetPath)
   } catch (error) {
-    logger.error('在文件夹中显示文件失败:', error)
+    logger.error('Failed to reveal file in folder:', error)
     showFeedback(t('message.file.toast.reveal_fail'), 'error')
   }
 }
@@ -243,7 +243,7 @@ watch(
       try {
         await fileDownloadStore.checkFileExists(newUrl, newFileName)
       } catch (error) {
-        logger.error('检查文件状态失败:', error)
+        logger.error('Failed to check file status:', error)
       }
     }
   },
@@ -333,17 +333,17 @@ const handleFileClick = async () => {
       try {
         await openPath(props.body.url)
       } catch (openError) {
-        logger.warn('无法直接打开文件，尝试在文件管理器中显示:', openError)
+        logger.warn('Cannot open file directly, trying to reveal in file manager:', openError)
         await revealInDirSafely(props.body.url)
       }
     }
   } catch (error) {
-    logger.error('打开文件失败:', error)
+    logger.error('Failed to open file:', error)
     const errorMessage = error instanceof Error ? error.message : t('message.file.unknown_error')
     if (errorMessage.includes('Not allowed to open path') || errorMessage.includes('revealItemInDir')) {
-      logger.error('无法打开或显示文件。请手动在文件管理器中找到并打开文件。')
+      logger.error('Cannot open or reveal file. Please manually locate and open it in the file manager.')
     } else {
-      logger.error(`打开文件失败: ${errorMessage}`)
+      logger.error(`Failed to open file: ${errorMessage}`)
     }
   } finally {
     const currentChatRoomId = globalStore.currentSessionRoomId // 这个id可能为群id可能为用户uid，所以不能只用用户uid
@@ -389,13 +389,13 @@ const downloadAndOpenFile = async () => {
       try {
         await openPath(absolutePath)
       } catch (openError) {
-        logger.warn('无法直接打开文件，尝试在文件管理器中显示:', openError)
+        logger.warn('Cannot open file directly, trying to reveal in file manager:', openError)
         await revealInDirSafely(absolutePath)
       }
     }
   } catch (error) {
-    logger.error('下载文件失败:', error)
-    const errorMessage = error instanceof Error ? error.message : '未知错误'
+    logger.error('Failed to download file:', error)
+    const errorMessage = error instanceof Error ? error.message : t('message.file.unknown_error')
     if (errorMessage.includes('Not allowed to open path') || errorMessage.includes('revealItemInDir')) {
       showFeedback(t('message.file.toast.download_open_fail'), 'error')
     } else {
@@ -415,7 +415,7 @@ const downloadFileOnly = async () => {
       void persistFileLocalPath(absolutePath)
     }
   } catch (error) {
-    logger.error('下载文件失败:', error)
+    logger.error('Failed to download file:', error)
   } finally {
     // 刷新文件状态
     const currentChatRoomId = globalStore.currentSessionRoomId
@@ -462,7 +462,7 @@ onMounted(async () => {
       // 检查文件是否已存在于本地
       await fileDownloadStore.checkFileExists(props.body.url, props.body.fileName)
     } catch (error) {
-      logger.error('检查文件状态失败:', error)
+      logger.error('Failed to check file status:', error)
     }
   }
 })

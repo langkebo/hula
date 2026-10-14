@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, ref, toRefs } from 'vue'
+import { createI18nMock } from '~/tests/i18n-messages'
 import MsgInput from '../MsgInput.vue'
 
 const {
@@ -62,13 +63,11 @@ vi.mock('pinia', () => ({
 }))
 
 vi.mock('vue-i18n', () => ({
+  ...createI18nMock(),
   I18nT: {
     name: 'I18nT',
     template: '<span><slot name="send" /><slot name="newline" /></span>'
-  },
-  useI18n: () => ({
-    t: (key: string) => key
-  })
+  }
 }))
 
 vi.mock('@/composables/chat/useTyping', () => ({
@@ -255,7 +254,7 @@ describe('MsgInput', () => {
     await flushPromises()
 
     expect(startLiveShareMock).toHaveBeenCalledWith('!room:example.com', '实时位置共享')
-    expect(showFeedbackMock).toHaveBeenCalledWith('message.beacon.started', 'success')
+    expect(showFeedbackMock).toHaveBeenCalledWith('信标已启动', 'success')
   })
 
   it('uses action feedback for beacon start failure', async () => {
@@ -266,7 +265,7 @@ describe('MsgInput', () => {
     await flushPromises()
 
     expect(loggerErrorMock).toHaveBeenCalled()
-    expect(showFeedbackMock).toHaveBeenCalledWith('message.beacon.failed', 'error')
+    expect(showFeedbackMock).toHaveBeenCalledWith('信标启动失败', 'error')
   })
 
   it('calls stopLiveShare and shows success feedback when already sharing', async () => {
@@ -311,7 +310,7 @@ describe('MsgInput', () => {
     })
     await flushPromises()
 
-    expect(showFeedbackMock).toHaveBeenCalledWith('message.location.send_failed', 'error')
+    expect(showFeedbackMock).toHaveBeenCalledWith('发送位置失败', 'error')
 
     const input = wrapper.find('#message-input')
     ;(input.element as HTMLDivElement).textContent = ''

@@ -1,7 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { MobilePanelStateEnum } from '@/enums'
+import { createI18nMock } from '~/tests/i18n-messages'
 import MsgInputMobileControls from '../MsgInputMobileControls.vue'
+
+vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('naive-ui', async () => {
   const { defineComponent, h } = await import('vue')
@@ -82,6 +85,6 @@ describe('rightBox/MsgInputMobileControls', () => {
 
   it('普通模式发送按钮文案来自 i18n key', () => {
     const wrapper = mountComponent({ isAIMode: false, hasInput: 'true' })
-    expect(wrapper.find('[data-test="NButton"]').text()).toBe('editor.send')
+    expect(wrapper.find('[data-test="NButton"]').text()).toBe('发送')
   })
 })

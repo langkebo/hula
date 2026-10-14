@@ -22,7 +22,7 @@
 
       <div class="single-details__meta">
         <span>{{ t('home.chat_details.single.region', { place: t('home.chat_details.single.unknown') }) }}</span>
-        <span>账号：{{ singleAccount }}</span>
+        <span>{{ t('common.account_with_value', { account: singleAccount }) }}</span>
       </div>
     </div>
 
@@ -59,7 +59,7 @@
         <span class="single-details__action-icon">
           <svg><use href="#expand" /></svg>
         </span>
-        <span class="single-details__action-label">{{ t('chat.header.open_in_new_window', '在新窗口打开') }}</span>
+        <span class="single-details__action-label">{{ t('chat.header.open_in_new_window') }}</span>
       </button>
     </div>
 
@@ -167,13 +167,13 @@ const contactInfo = computed<Partial<MatrixContact>>(() => {
   return contactStore.getContactByUserId(props.content.uid) ?? {}
 })
 
-const singleName = computed(() => contactInfo.value.name || contactInfo.value.displayName || '未知用户')
+const singleName = computed(() => contactInfo.value.name || contactInfo.value.displayName || t('common.unknownUser'))
 const singleUid = computed(() => contactInfo.value.uid || props.content.uid || '')
 
 // 阅后即焚设置作用于 DM 房间；好友尚未建立 DM（directRoomId 为空）时不显示设置区
 const directRoomId = computed(() => contactInfo.value.directRoomId || '')
 const singleAccount = computed(
-  () => contactInfo.value.account || singleUid.value.replace(/^@/, '').split(':')[0] || '未知'
+  () => contactInfo.value.account || singleUid.value.replace(/^@/, '').split(':')[0] || t('common.unknown')
 )
 const singleAvatar = computed(() => contactInfo.value.avatar || contactInfo.value.avatarUrl || '')
 const singleSignature = computed(() => contactInfo.value.statusMessage || t('home.chat_details.single.empty_signature'))
@@ -223,7 +223,7 @@ const lastSeenText = computed(() => {
 })
 
 const openImageViewer = () => {
-  logger.debug('打开图片查看器')
+  logger.debug('Open image viewer')
 }
 
 const handleEncryptedChat = async () => {

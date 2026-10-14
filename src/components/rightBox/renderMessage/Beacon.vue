@@ -17,14 +17,14 @@
         <p
           class="text-[length:var(--tjg-font-size-xs)]"
           :class="isActive ? 'color-[--tjg-color-primary-500]' : 'color-[--tjg-text-quaternary]'">
-          {{ isActive ? '共享中' : '已结束' }}
+          {{ isActive ? t('chat.beacon.status_active') : t('chat.beacon.status_finished') }}
         </p>
       </div>
     </n-flex>
 
     <!-- 描述信息 -->
     <div class="text-(12px [--tjg-text-tertiary]) pb-8px leading-5 line-clamp-2">
-      {{ body?.description || '发起了位置共享' }}
+      {{ body?.description || t('chat.beacon.description_default') }}
     </div>
 
     <!-- 状态面板 -->
@@ -170,19 +170,19 @@ const getLatestUri = (): string | undefined => {
  */
 const handleBeaconClick = () => {
   if (!isActive.value) {
-    showFeedback('位置共享已结束，无法查看', 'info')
+    showFeedback(t('chat.beacon.ended_cannot_view'), 'info')
     return
   }
 
   const uri = props.body?.uri ?? getLatestUri()
   if (!uri) {
-    showFeedback('无法获取位置信息', 'info')
+    showFeedback(t('chat.beacon.no_location'), 'info')
     return
   }
 
   const location = parseGeoUri(uri)
   if (!location) {
-    showFeedback('位置信息格式无效', 'info')
+    showFeedback(t('chat.beacon.invalid_format'), 'info')
     return
   }
 

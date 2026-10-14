@@ -7,12 +7,12 @@
     @update:show="(v: boolean) => emit('update:show', v)">
     <div class="pin-selector bg-[--tjg-surface-panel] h-full p-6px box-border flex flex-col">
       <div class="pin-selector__header">
-        <span class="pin-selector__title">{{ t('home.chat_sidebar.pins.selector_title', '选择要置顶的消息') }}</span>
+        <span class="pin-selector__title">{{ t('home.chat_sidebar.pins.selector_title') }}</span>
         <button
           type="button"
           class="pin-selector__close"
           data-testid="pin-selector-close"
-          :aria-label="t('common.close', '关闭')"
+          :aria-label="t('common.close')"
           @click="emit('update:show', false)">
           <svg class="size-12px">
             <use href="#close"></use>
@@ -21,7 +21,7 @@
       </div>
 
       <div v-if="selectableMessages.length === 0" class="pin-selector__empty">
-        <n-empty :description="t('home.chat_sidebar.pins.selector_empty', '暂无可置顶的消息')" />
+        <n-empty :description="t('home.chat_sidebar.pins.selector_empty')" />
       </div>
 
       <n-scrollbar v-else class="pin-selector__scroll">

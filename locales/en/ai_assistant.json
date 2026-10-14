@@ -3,6 +3,7 @@
   "welcome": "Hello, I'm your AI Assistant",
   "welcome_desc": "I can help you translate text, summarize content, write code, and more. Choose a feature below or just type your question.",
   "thinking": "Thinking...",
+  "stop_thinking": "Stop thinking",
   "input_placeholder": "Type your question...",
   "error": "Sorry, an error occurred. Please try again.",
   "provider": "AI Provider",
@@ -64,7 +65,11 @@
     "select_model": "Select Model",
     "previewing_model": "Previewing model",
     "select_model_failed": "Failed to select model file. Please try again.",
-    "load_failed": "Load failed. Please try again later."
+    "load_failed": "Load failed. Please try again later.",
+    "loading_start": "Starting to load model...",
+    "loading_progress": "Loading model {progress}%",
+    "compressed_unsupported": "Compressed glb models are not supported yet. Please select the original model file.",
+    "invalid_geometry": "The model has no geometry data or is corrupted. Please check and import again."
   },
   "robot": {
     "subtitle_desc": "Build your own AI",

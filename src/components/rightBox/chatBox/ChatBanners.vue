@@ -52,7 +52,7 @@
     <svg
       data-testid="private-lock-icon"
       class="size-16px flex-shrink-0 text-[--tjg-color-danger-500]"
-      aria-label="私密模式">
+      :aria-label="t('chat.header.private_mode')">
       <use href="#lock"></use>
     </svg>
   </div>

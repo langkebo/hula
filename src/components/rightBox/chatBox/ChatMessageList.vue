@@ -115,7 +115,7 @@ watch(
   () => chatStore.currentMessageOptions?.hasLoadedOnce,
   (hasLoadedOnce) => {
     logger.info(
-      `[ChatMessageList] currentMessageOptions.hasLoadedOnce 变化: ${hasLoadedOnce}, roomId=${globalStore.currentSessionRoomId}`
+      `[ChatMessageList] currentMessageOptions.hasLoadedOnce changed: ${hasLoadedOnce}, roomId=${globalStore.currentSessionRoomId}`
     )
   },
   { immediate: true }

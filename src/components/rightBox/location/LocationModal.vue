@@ -206,7 +206,7 @@ const getLocation = async () => {
 
     // 获取地址信息
     const geocodeResult = await reverseGeocode(result.transformed.lat, result.transformed.lng).catch((error) => {
-      logger.warn('逆地理编码失败:', error)
+      logger.warn('Reverse geocoding failed:', error)
       return null
     })
     const address =
@@ -228,7 +228,7 @@ const getLocation = async () => {
       timestamp: result.timestamp
     }
   } catch (error) {
-    logger.error('获取位置失败:', error)
+    logger.error('Failed to get location:', error)
   }
 }
 
@@ -266,7 +266,7 @@ const handleLocationChange = async (newLocation: { lat: number; lng: number }) =
 
   // 获取新位置的地址
   const geocodeResult = await reverseGeocode(newLocation.lat, newLocation.lng).catch((error) => {
-    logger.warn('逆地理编码失败:', error)
+    logger.warn('Reverse geocoding failed:', error)
     return null
   })
   const address =

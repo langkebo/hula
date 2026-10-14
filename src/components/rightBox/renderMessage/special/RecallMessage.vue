@@ -8,7 +8,7 @@
           v-if="canReEdit"
           class="text-(12px --tjg-color-primary-500) select-none cursor-pointer"
           @click="handleReEdit(message.id)">
-          重新编辑
+          {{ t('message.reedit') }}
         </p>
       </n-flex>
       <span
@@ -25,7 +25,7 @@
           v-if="canReEdit"
           class="text-(12px --tjg-color-primary-500) select-none cursor-pointer"
           @click="handleReEdit(message.id)">
-          重新编辑
+          {{ t('message.reedit') }}
         </p>
       </n-flex>
     </template>
@@ -33,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, MsgEnum } from '@/enums'
 import type { MessageBody, MsgType } from '@/services/types'
@@ -46,6 +47,7 @@ const props = defineProps<{
   body: MessageBody
 }>()
 
+const { t } = useI18n()
 const chatStore = useChatStore()
 const userStore = useUserStore()
 
@@ -55,7 +57,7 @@ const recallContent = computed(() => {
   if (body && typeof body === 'object' && 'content' in body && typeof body.content === 'string') {
     return body.content
   }
-  return '撤回了一条消息'
+  return t('message.recall_notice')
 })
 
 const recallText = computed(() => {
@@ -65,7 +67,7 @@ const recallText = computed(() => {
   } else if (props.body && typeof props.body === 'object' && 'content' in props.body) {
     return props.body.content
   }
-  return '撤回了一条消息'
+  return t('message.recall_notice')
 })
 
 // 直接访问 recalledMessages 以确保响应式依赖收集正常工作

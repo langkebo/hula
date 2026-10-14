@@ -9,9 +9,9 @@
       <div class="px-24px py-20px">
         <!-- 步骤条引导 -->
         <n-steps :current="currentStepIndex" class="mb-32px" size="small">
-          <n-step :title="t('setting.encryption.device_verify_dialog.step_intro', '确认设备')" />
-          <n-step :title="t('setting.encryption.device_verify_dialog.step_verify', '指纹核对')" />
-          <n-step :title="t('setting.encryption.device_verify_dialog.step_result', '完成')" />
+          <n-step :title="t('setting.encryption.device_verify_dialog.step_intro')" />
+          <n-step :title="t('setting.encryption.device_verify_dialog.step_verify')" />
+          <n-step :title="t('setting.encryption.device_verify_dialog.step_result')" />
         </n-steps>
 
         <!-- Step: Intro -->

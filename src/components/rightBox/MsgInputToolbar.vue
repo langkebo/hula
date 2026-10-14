@@ -12,7 +12,7 @@
           </template>
         </n-button>
       </template>
-      {{ t('message.location.share') || '位置共享' }}
+      {{ t('message.location.share') }}
     </n-tooltip>
 
     <!-- Beacon 信标（共享中显示为停止态） -->
@@ -40,7 +40,7 @@
           </template>
         </n-button>
       </template>
-      {{ t('editor.upload_file') || '上传文件' }}
+      {{ t('editor.upload_file') }}
     </n-tooltip>
   </div>
 
@@ -53,7 +53,7 @@
         :disabled="isAIMode && isAIStreaming ? false : disabledSend"
         class="w-65px"
         @click="$emit('handleDesktopSend')">
-        {{ isAIMode && isAIStreaming ? '停止思考' : t('editor.send') }}
+        {{ isAIMode && isAIStreaming ? t('ai_assistant.stop_thinking') : t('editor.send') }}
       </n-button>
       <n-button type="primary" class="p-[0_6px]">
         <template #icon>

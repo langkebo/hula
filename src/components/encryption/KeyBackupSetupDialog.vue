@@ -264,7 +264,7 @@ async function verifyKeyInput() {
       backupInfo = await encryption.getKeyBackupInfo()
       if (backupInfo) break
       if (attempt < 2) {
-        logger.info(`[KeyBackupSetup] 验证重试 ${attempt + 1}/3 — 备份尚未就绪，等待 1.5s`)
+        logger.info(`[KeyBackupSetup] verify retry ${attempt + 1}/3 — backup not ready, waiting 1.5s`)
         await new Promise((resolve) => setTimeout(resolve, 1500))
       }
     }

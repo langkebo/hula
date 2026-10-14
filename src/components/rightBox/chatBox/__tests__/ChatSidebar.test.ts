@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick, reactive, ref } from 'vue'
 import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import type { UserItem } from '@/services/types'
+import { createI18nMock } from '~/tests/i18n-messages'
 import ChatSidebar from '../ChatSidebar.vue'
 
 // 受控的 isGroup，通过 globalStore.currentSession.type 切换群聊/单聊
@@ -62,14 +63,7 @@ vi.mock('@vueuse/core', () => ({
   useDebounceFn: (fn: (...args: unknown[]) => unknown) => fn
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, defaultOrParams?: unknown) => {
-      if (typeof defaultOrParams === 'string') return defaultOrParams
-      return key
-    }
-  })
-}))
+vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('@/services/matrix/room/roomTypeUtils', () => ({
   isDirectMessageRoom: vi.fn(() => false)

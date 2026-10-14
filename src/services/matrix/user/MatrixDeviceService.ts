@@ -5,7 +5,7 @@
  * 参考 API 契约: device.md
  */
 
-import type { IDeviceUpdateRequest } from 'matrix-js-sdk'
+import type { IDeviceUpdateRequest, MatrixClient } from 'matrix-js-sdk'
 import type { AuthDict, DeviceManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
@@ -62,11 +62,14 @@ class MatrixDeviceService extends BaseMatrixService {
   /**
    * 获取 DeviceManager（不存在时抛出）。
    *
-   * 注：本地 `MatrixClientExtended` 与 SDK 的 `getKeyBackupManager` 签名不兼容，
-   * 无法直接 `as` 降级，故在此保留唯一的 unknown 桥接；调用方统一走本方法。
+   * 本地 `MatrixClientExtended` 的部分成员（如 `getKeyBackupManager`）以不同签名遮蔽了
+   * SDK `MatrixClient`，导致单次 `as MatrixClientExtended` 因 comparability 失败；
+   * 故先用交叉类型断言再显式注解（`as MatrixClient & MatrixClientExtended`），
+   * 使成员访问回归本地契约签名。
    */
   private requireDeviceManager(): DeviceManager {
-    const deviceManager = (this.getClient() as unknown as MatrixClientExtended).getDeviceManager?.()
+    const client: MatrixClientExtended = this.getClient() as MatrixClient & MatrixClientExtended
+    const deviceManager = client.getDeviceManager?.()
     if (!deviceManager) {
       throw new Error('DeviceManager 不可用')
     }

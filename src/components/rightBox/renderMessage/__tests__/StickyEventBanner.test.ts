@@ -1,7 +1,10 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { StickyEventInfo } from '@/types/stickyEvent'
+import { createI18nMock } from '~/tests/i18n-messages'
 import StickyEventBanner from '../StickyEventBanner.vue'
+
+vi.mock('vue-i18n', () => createI18nMock())
 
 function makeEvent(overrides: Partial<StickyEventInfo> = {}): StickyEventInfo {
   return {

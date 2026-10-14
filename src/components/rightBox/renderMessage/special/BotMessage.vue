@@ -14,12 +14,13 @@
         </p>
         <p v-else-if="part.type === 'number'" class="text-[--tjg-color-warning-500]">{{ part.text }}</p>
       </div>
-      <img class="size-18px" src="/emoji/party-popper.webp" alt="庆祝" />
+      <img class="size-18px" src="/emoji/party-popper.webp" :alt="t('common.celebration')" />
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -31,6 +32,7 @@ interface Props {
 
 defineProps<Props>()
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const groupStore = useGroupStore()
 

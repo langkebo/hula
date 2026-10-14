@@ -14,7 +14,7 @@
         <path d="M12 2v8M12 2L8 6M12 2l4 4" />
         <rect x="4" y="10" width="16" height="12" rx="2" />
       </svg>
-      <span class="sticky-banner__title">粘性事件</span>
+      <span class="sticky-banner__title">{{ t('room.sticky.title') }}</span>
       <button
         v-if="events.length > 1"
         type="button"
@@ -30,7 +30,7 @@
         class="sticky-banner__set"
         data-testid="sticky-set-btn"
         @click="$emit('set-sticky')">
-        设为粘性事件
+        {{ t('room.sticky.set') }}
       </button>
     </div>
     <div class="sticky-banner__list">
@@ -50,7 +50,7 @@
           type="button"
           class="sticky-banner__cancel"
           data-testid="sticky-cancel-btn"
-          aria-label="取消置顶"
+          :aria-label="t('room.sticky.cancel')"
           @click.stop="$emit('cancel-sticky', event.eventId)">
           <svg
             width="14"
@@ -71,6 +71,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { StickyEventInfo } from '@/types/stickyEvent'
 
 defineOptions({ name: 'StickyEventBanner' })
@@ -91,6 +92,8 @@ defineEmits<{
   (e: 'cancel-sticky', eventId: string): void
 }>()
 
+const { t } = useI18n()
+
 const MAX_VISIBLE_EXPANDED = 3
 
 const expanded = ref(false)
@@ -105,7 +108,9 @@ const visibleEvents = computed<StickyEventInfo[]>(() => {
 
 const remainingCount = computed<number>(() => Math.max(0, props.events.length - 1))
 
-const toggleLabel = computed<string>(() => (expanded.value ? '收起' : `展开 ${remainingCount.value} 条`))
+const toggleLabel = computed<string>(() =>
+  expanded.value ? t('room.sticky.collapse') : t('room.sticky.expand', { count: remainingCount.value })
+)
 
 const toggleExpand = (): void => {
   expanded.value = !expanded.value

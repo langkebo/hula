@@ -97,7 +97,6 @@ import type { LocationData } from '@/types/common'
 import FileUtil from '@/utils/FileUtil'
 import { extractFileName, getMimeTypeFromExtension } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 import FooterOverlays from './FooterOverlays.vue'
 import FooterToolbar from './FooterToolbar.vue'
 import MobilePanel from './MobilePanel.vue'
@@ -269,7 +268,7 @@ const handleLocationSelected = async (locationData: LocationData) => {
     await MsgInputRef.value?.handleLocationSelected(locationData)
     showLocationModal.value = false
   } catch (error) {
-    logger.error('发送位置消息失败:', error)
+    logger.error('Failed to send location message:', error)
   }
 }
 
@@ -288,9 +287,21 @@ const toggleBurnAfterRead = async () => {
 
 const openChatHistory = async () => {
   const currentRoomId = globalStore.currentSessionRoomId
-  await createWebviewWindow('聊天记录', 'chat-history', 800, 600, undefined, true, 600, 400, false, false, {
-    roomId: currentRoomId
-  })
+  await createWebviewWindow(
+    t('chat.footer.chat_history'),
+    'chat-history',
+    800,
+    600,
+    undefined,
+    true,
+    600,
+    400,
+    false,
+    false,
+    {
+      roomId: currentRoomId
+    }
+  )
 }
 
 // ===== 私密模式监听 =====
@@ -298,12 +309,9 @@ const onPrivateModeChanged = (isActive: boolean) => {
   privateModeActive.value = isActive
 }
 
-// 平台在运行期恒定：探测一次后复用
-const isMobilePlatform = isMobile()
-
 // ===== 生命周期 =====
 onMounted(async () => {
-  if (isMobilePlatform) {
+  if (isMobileRef.value) {
     listenMobileClosePanel()
   }
   useMitt.on(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
@@ -317,7 +325,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (isMobilePlatform) {
+  if (isMobileRef.value) {
     removeMobileClosePanel()
   }
   useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)

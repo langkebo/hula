@@ -374,7 +374,7 @@ const deleteMyEmoji = async (id: string) => {
     localUrlCache.clear()
     emojiUrlToLocalMap.clear()
   } catch (error) {
-    logger.error('删除表情失败:', error)
+    logger.error('Failed to delete emoji:', error)
     showFeedback(t('emoticon.favorites.deleteFail'), 'error')
   }
 }

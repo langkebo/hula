@@ -1,6 +1,6 @@
 import { computed, onMounted, onUnmounted, type Ref } from 'vue'
+import { useIsMobile } from '@/composables/usePlatform'
 import { createMacContextSelectionGuard } from '@/utils/MacSelectionGuard'
-import { isMobile } from '@/utils/PlatformConstants'
 
 type UseMessageContextMenuOptions = {
   activeBubble: Ref<string>
@@ -20,13 +20,13 @@ export const useMessageContextMenu = (options: UseMessageContextMenuOptions) => 
   }
 
   // 平台在运行期恒定：探测一次后复用
-  const isMobilePlatform = isMobile()
+  const isMobilePlatform = useIsMobile()
 
   const longPressOption = computed(() => ({
     delay: 700,
     modifiers: {
-      prevent: isMobilePlatform,
-      stop: isMobilePlatform
+      prevent: isMobilePlatform.value,
+      stop: isMobilePlatform.value
     },
     reset: true,
     windowResize: true,
@@ -36,7 +36,7 @@ export const useMessageContextMenu = (options: UseMessageContextMenuOptions) => 
   }))
 
   const handleLongPress = (e: PointerEvent, _menu: unknown) => {
-    if (!isMobilePlatform) return
+    if (!isMobilePlatform.value) return
 
     e.preventDefault()
     e.stopPropagation()

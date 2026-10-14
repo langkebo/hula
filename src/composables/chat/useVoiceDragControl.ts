@@ -1,7 +1,7 @@
 import { useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
+import { useIsMobile } from '@/composables/usePlatform'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('VoiceDragControl')
 
@@ -50,7 +50,7 @@ export const useVoiceDragControl = (
   const wasPlayingBeforeDrag = ref(false)
 
   const dragThreshold = 5 // 拖拽触发的最小移动距离（像素）
-  const isMobileDevice = isMobile()
+  const isMobileDevice = useIsMobile()
 
   /**
    * 增强的边界处理
@@ -68,7 +68,7 @@ export const useVoiceDragControl = (
    * 恢复移动端页面状态
    */
   const restoreMobilePageState = () => {
-    if (isMobileDevice) {
+    if (isMobileDevice.value) {
       const scrollY = parseInt(document.body.dataset.scrollY || '0', 10)
 
       document.body.style.overflow = ''
@@ -110,7 +110,7 @@ export const useVoiceDragControl = (
       event.stopPropagation()
 
       // 移动端防止页面滚动
-      if (isMobileDevice) {
+      if (isMobileDevice.value) {
         const currentScrollY = window.scrollY
 
         document.body.style.overflow = 'hidden'
@@ -134,7 +134,7 @@ export const useVoiceDragControl = (
       wasPlayingBeforeDrag.value = isPlaying.value
 
       // 绑定移动和结束事件
-      if (isMobileDevice || 'ontouchstart' in window) {
+      if (isMobileDevice.value || 'ontouchstart' in window) {
         document.addEventListener('touchmove', handleDragMove, { passive: false })
         document.addEventListener('touchend', handleDragEnd, { passive: false })
         document.addEventListener('touchcancel', handleDragEnd, { passive: false })

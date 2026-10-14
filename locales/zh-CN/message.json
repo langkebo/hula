@@ -10,7 +10,8 @@
       "missing_local": "暂时找不到本地文件，请先下载后再试",
       "reveal_fail": "无法在文件夹中显示该文件",
       "download_open_fail": "文件下载成功，但无法打开或显示文件。请手动在文件管理器中查找下载的文件。",
-      "download_failed": "下载文件失败: {reason}"
+      "download_failed": "下载文件失败: {reason}",
+      "drop_failed": "处理拖拽文件失败"
     }
   },
   "video": {
@@ -229,7 +230,9 @@
     "share": "发送信标",
     "stop": "停止共享",
     "started": "信标已启动",
-    "failed": "信标启动失败"
+    "failed": "信标启动失败",
+    "stop_success": "已停止共享",
+    "stop_failed": "停止共享失败"
   },
   "update_window": {
     "updating": "更新中",
@@ -307,5 +310,14 @@
   "recall_confirm_title": "撤回消息",
   "recall_failed": "撤回失败",
   "recall_success": "已撤回",
-  "unpin_success": "已取消固定"
+  "unpin_success": "已取消固定",
+  "empty_input": "请输入消息内容",
+  "reply_preview_alt": "回复预览图",
+  "reedit": "重新编辑",
+  "recall_notice": "撤回了一条消息",
+  "action": {
+    "react": "表情回应",
+    "reply": "回复",
+    "forward": "转发"
+  }
 }

@@ -55,7 +55,7 @@ export class AdminQuotaService {
 
   async getQuotaAlerts(): Promise<QuotaAlert[]> {
     const alerts = await matrixMediaService.getQuotaAlerts()
-    return alerts as typeof alerts & QuotaAlert[]
+    return alerts
   }
 
   /** 服务端总配额（`GET /_synapse/admin/v1/media/quota`） */

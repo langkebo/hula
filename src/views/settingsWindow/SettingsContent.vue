@@ -56,7 +56,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { NButton, NIcon, NSpin } from 'naive-ui'
-import type { Component } from 'vue'
+import type { Component, PropType } from 'vue'
 import { computed, defineAsyncComponent, defineComponent, h, onErrorCaptured, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getSettingsTabLabel, type SettingsTabType } from '@/stores/domains/settings/settingsTab'
@@ -95,12 +95,12 @@ const LoadingFallback = defineComponent({
 // 错误边界：单个 tab 组件动态导入失败时显示明确报错，而不是静默空白整面板。
 const TabErrorFallback = defineComponent({
   props: {
-    error: { type: null as unknown as () => Error | null, required: false, default: null },
+    error: { type: Object as PropType<Error | null>, required: false, default: null },
     tabKey: { type: String, required: false, default: '' }
   },
   setup(props) {
     const message = computed(() => {
-      const err = props.error as Error | null
+      const err = props.error
       return err?.message || String(err ?? '') || '组件运行时异常，请查看控制台获取堆栈。'
     })
     return () =>

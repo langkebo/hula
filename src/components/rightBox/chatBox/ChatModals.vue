@@ -79,7 +79,9 @@
   <!-- 私密模式确认对话框 -->
   <n-modal v-model:show="showPrivateConfirm" class="w-360px border-rd-8px" role="dialog" aria-modal="true">
     <div class="bg-[--tjg-surface-panel] w-360px p-24px box-border flex flex-col gap-16px">
-      <span class="text-[var(--text-base)] text-[--tjg-text-primary] font-500">进入私密模式</span>
+      <span class="text-[var(--text-base)] text-[--tjg-text-primary] font-500">
+        {{ t('chat.header.private_mode_enter') }}
+      </span>
       <div class="flex flex-col gap-8px" data-testid="private-confirm-features">
         <div
           v-for="feature in privateModeFeatures"
@@ -89,10 +91,12 @@
           <span>{{ feature.title }}：{{ feature.description }}</span>
         </div>
       </div>
-      <p class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">确定要进入私密模式吗？</p>
+      <p class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">
+        {{ t('chat.header.private_mode_confirm_question') }}
+      </p>
       <n-flex justify="end" :size="12">
-        <n-button @click="$emit('cancelPrivateMode')" secondary>取消</n-button>
-        <n-button type="primary" @click="$emit('confirmPrivateMode')">确认</n-button>
+        <n-button @click="$emit('cancelPrivateMode')" secondary>{{ t('common.cancel') }}</n-button>
+        <n-button type="primary" @click="$emit('confirmPrivateMode')">{{ t('common.confirm') }}</n-button>
       </n-flex>
     </div>
   </n-modal>

@@ -246,7 +246,7 @@ const handleCopy = async () => {
     chatStore.resetSessionSelection()
     chatStore.setMsgMultiChoose(false)
   } catch (error) {
-    logger.error('批量复制消息失败:', error)
+    logger.error('Failed to batch copy messages:', error)
     showFeedback(t('message.multi_choose.copy_failed'), 'error')
   }
 }
@@ -302,7 +302,7 @@ const handleSaveToPc = async () => {
     await writeTextFile(filePath, content)
     showFeedback(t('message.multi_choose.save_success'), 'success')
   } catch (error) {
-    logger.error('保存消息到电脑失败:', error)
+    logger.error('Failed to save messages to computer:', error)
     showFeedback(t('message.multi_choose.save_failed'), 'error')
   }
 }
@@ -343,7 +343,7 @@ const handleBatchDelete = async () => {
     useMitt.emit(MittEnum.UPDATE_SESSION_LAST_MSG, { roomId })
     showDeleteConfirm.value = false
   } catch (error) {
-    logger.error('批量删除消息失败:', error)
+    logger.error('Failed to batch delete messages:', error)
     showFeedback(t('message.multi_choose.delete_failed_retry'), 'error')
   } finally {
     isDeleting.value = false
@@ -483,7 +483,7 @@ const sendMsg = async () => {
     }
     showFeedback(t('message.multi_choose.forward_success'), 'success')
   } catch (error) {
-    logger.error('消息转发失败', error)
+    logger.error('Failed to forward messages', error)
     showFeedback(t('message.multi_choose.forward_failed'), 'error')
   } finally {
     isForwarding.value = false

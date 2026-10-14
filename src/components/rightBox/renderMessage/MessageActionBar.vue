@@ -21,6 +21,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { MsgEnum } from '@/enums'
 
 interface ActionItem {
@@ -45,38 +46,40 @@ const emit = defineEmits<{
   (e: 'delete'): void
 }>()
 
+const { t } = useI18n()
+
 const actions = computed<ActionItem[]>(() => [
   {
     key: 'react',
-    label: '表情回应',
+    label: t('message.action.react'),
     icon: 'smiling-face',
     visible: true,
     handler: () => emit('react')
   },
   {
     key: 'reply',
-    label: '回复',
+    label: t('message.action.reply'),
     icon: 'reply',
     visible: true,
     handler: () => emit('reply')
   },
   {
     key: 'forward',
-    label: '转发',
+    label: t('message.action.forward'),
     icon: 'forward',
     visible: isForwardable(props.messageType),
     handler: () => emit('forward')
   },
   {
     key: 'copy',
-    label: '复制',
+    label: t('common.copy'),
     icon: 'copy',
     visible: isCopyable(props.messageType),
     handler: () => emit('copy')
   },
   {
     key: 'delete',
-    label: '删除',
+    label: t('common.delete'),
     // icon.js sprite 中无 trash 符号，使用语义等价的 delete 符号（均走 currentColor）
     icon: 'delete',
     visible: true,

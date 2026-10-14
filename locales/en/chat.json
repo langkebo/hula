@@ -29,11 +29,13 @@
       "close": "Close"
     },
     "open_in_new_window": "Open in New Window",
+    "private_mode": "Private Mode",
     "private_mode_toggle": "Toggle Private Mode",
     "private_mode_enter": "Enter Private Mode",
     "private_mode_exit": "Exit Private Mode",
     "private_mode_confirm_title": "Switch to Private Mode",
     "private_mode_confirm_desc": "In private mode:",
+    "private_mode_confirm_question": "Are you sure you want to enter private mode?",
     "private_mode_feature_e2ee": "Messages will be end-to-end encrypted",
     "private_mode_feature_burn": "Burn-after-read supported",
     "private_mode_feature_screenshot": "Screenshot protection enabled",
@@ -50,16 +52,24 @@
   },
   "location": {
     "title": "Location",
-    "cannot_display": "Cannot display"
+    "cannot_display": "Cannot display",
+    "error_short": "Location error"
   },
   "link_preview": {
-    "unknown_link": "Unknown link"
+    "unknown_link": "Unknown link",
+    "unknown_source": "Unknown source"
   },
   "beacon": {
     "live_location": "Live Location Sharing",
     "remaining_time": "Remaining time:",
     "view_location": "View Location",
-    "ended": "This location sharing has ended"
+    "ended": "This location sharing has ended",
+    "status_active": "Sharing",
+    "status_finished": "Ended",
+    "description_default": "started location sharing",
+    "ended_cannot_view": "Location sharing has ended and cannot be viewed",
+    "no_location": "Unable to get location information",
+    "invalid_format": "Invalid location information format"
   },
   "text": {
     "copy_url": "Copy URL"
@@ -69,7 +79,10 @@
     "screenshot_detected_notice": "Screenshot activity has been recorded"
   },
   "multi_msg": {
-    "view_forwarded": "View {count} forwarded messages"
+    "view_forwarded": "View {count} forwarded messages",
+    "group_title": "Group chat history",
+    "dm_title": "Chat history between {friend} and {me}",
+    "open_failed": "Failed to open chat history"
   },
   "crypto_unavailable": {
     "message": "Encryption is not ready. Messages in this room cannot be sent. Please re-login or contact the administrator."
@@ -94,5 +107,13 @@
   "window": {
     "no_room_id": "No conversation ID provided",
     "session_restore_failed": "Failed to restore session"
+  },
+  "reaction": {
+    "like": "Like",
+    "heart": "Heart",
+    "lol": "LOL",
+    "angry": "Angry",
+    "rocket": "Rocket",
+    "flower": "Flower"
   }
 }

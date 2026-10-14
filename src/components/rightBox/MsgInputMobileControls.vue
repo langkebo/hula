@@ -25,7 +25,7 @@
           :disabled="isAIMode && isAIStreaming ? false : disabledSend"
           class="w-3rem h-full"
           @click="$emit('handleMobileSend')">
-          {{ isAIMode && isAIStreaming ? '停止思考' : t('editor.send') }}
+          {{ isAIMode && isAIStreaming ? t('ai_assistant.stop_thinking') : t('editor.send') }}
         </n-button>
       </n-button-group>
     </div>

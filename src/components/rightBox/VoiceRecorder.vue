@@ -193,10 +193,10 @@ const {
   formatTime
 } = useVoiceRecordRust({
   onStart: () => {
-    logger.debug('开始录音')
+    logger.debug('Start recording')
   },
   onStop: (blob, duration, localPath) => {
-    logger.debug('录音结束', duration, '本地路径:', localPath)
+    logger.debug('Recording ended', duration, 'local path:', localPath)
     audioBlob.value = blob
     recordingDuration.value = duration
     localAudioPath.value = localPath
@@ -281,7 +281,7 @@ const togglePlayback = () => {
 // 发送语音
 const handleSend = async () => {
   if (!audioBlob.value || !localAudioPath.value) {
-    logger.debug('缺少音频数据，退出发送')
+    logger.debug('Missing audio data, abort sending')
     return
   }
 
@@ -298,13 +298,13 @@ const handleSend = async () => {
       type: 'audio/mp3'
     }
 
-    logger.debug('发送语音数据:', voiceData)
+    logger.debug('Sending voice data:', voiceData)
     emit('send', voiceData)
 
     // 发送后立即重置状态，避免下次打开时还显示这条录音
     resetRecordingState()
   } catch (error) {
-    logger.error('发送语音失败:', error)
+    logger.error('Failed to send voice:', error)
   } finally {
     sending.value = false
   }

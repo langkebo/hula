@@ -168,6 +168,7 @@ import { useWindow } from '@/composables/common/useWindow'
 import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
+import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -177,7 +178,6 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 import { useTimerManager } from '@/utils/TimerManager'
 import ChatBanners from './ChatBanners.vue'
 import ChatMessageList from './ChatMessageList.vue'
@@ -343,7 +343,7 @@ defineExpose({
   canSetSticky
 })
 
-const isMobileRef = ref(isMobile())
+const isMobileRef = useIsMobile()
 
 const isGroup = computed<boolean>(() => chatStore.isGroup)
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
@@ -356,7 +356,7 @@ watch(
   currentRoomId,
   (newId) => {
     if (newId) {
-      pinnedMessageFlow.load().catch((e) => logger.error('加载置顶消息失败:', e))
+      pinnedMessageFlow.load().catch((e) => logger.error('Failed to load pinned messages:', e))
     }
   },
   { immediate: true }
@@ -365,7 +365,7 @@ watch(
 // 监听置顶消息变更事件（来自消息右键菜单的 pin/unpin）
 const onPinnedEventsChanged = (payload: { roomId?: string } | undefined) => {
   if (payload?.roomId && payload.roomId === currentRoomId.value) {
-    pinnedMessageFlow.load().catch((e) => logger.error('刷新置顶消息失败:', e))
+    pinnedMessageFlow.load().catch((e) => logger.error('Failed to refresh pinned messages:', e))
   }
 }
 useMitt.on(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)

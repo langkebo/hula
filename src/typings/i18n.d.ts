@@ -995,6 +995,7 @@ export type I18nKeys = {
     "welcome": "你好，我是 AI 助手",
     "welcome_desc": "我可以帮助你翻译文本、总结内容、编写代码等。请选择下方功能或直接输入问题。",
     "thinking": "思考中...",
+    "stop_thinking": "停止思考",
     "input_placeholder": "输入你的问题...",
     "error": "抱歉，发生了错误，请重试。",
     "provider": "AI 提供者",
@@ -1056,7 +1057,11 @@ export type I18nKeys = {
       "select_model": "选择模型",
       "previewing_model": "正在预览模型",
       "select_model_failed": "选择模型文件失败，请重试",
-      "load_failed": "加载失败,请稍后重试"
+      "load_failed": "加载失败,请稍后重试",
+      "loading_start": "开始加载模型...",
+      "loading_progress": "模型加载中 {progress}%",
+      "compressed_unsupported": "暂不支持压缩后的 glb 模型，请选择原始模型文件",
+      "invalid_geometry": "模型没有几何数据或存在损坏，请检查后重新导入"
     },
     "robot": {
       "subtitle_desc": "建立一个属于自己AI",
@@ -1594,11 +1599,13 @@ export type I18nKeys = {
         "close": "关闭"
       },
       "open_in_new_window": "在新窗口打开",
+      "private_mode": "私密模式",
       "private_mode_toggle": "切换到私密模式",
       "private_mode_enter": "进入私密模式",
       "private_mode_exit": "退出私密模式",
       "private_mode_confirm_title": "切换到私密模式",
       "private_mode_confirm_desc": "私密模式下：",
+      "private_mode_confirm_question": "确定要进入私密模式吗？",
       "private_mode_feature_e2ee": "消息将启用端到端加密",
       "private_mode_feature_burn": "支持阅后即焚功能",
       "private_mode_feature_screenshot": "启用防截屏保护",
@@ -1615,16 +1622,24 @@ export type I18nKeys = {
     },
     "location": {
       "title": "位置",
-      "cannot_display": "无法展示"
+      "cannot_display": "无法展示",
+      "error_short": "位置出错"
     },
     "link_preview": {
-      "unknown_link": "未知链接"
+      "unknown_link": "未知链接",
+      "unknown_source": "未知来源"
     },
     "beacon": {
       "live_location": "实时位置共享",
       "remaining_time": "剩余时间:",
       "view_location": "查看位置",
-      "ended": "本次位置共享已结束"
+      "ended": "本次位置共享已结束",
+      "status_active": "共享中",
+      "status_finished": "已结束",
+      "description_default": "发起了位置共享",
+      "ended_cannot_view": "位置共享已结束，无法查看",
+      "no_location": "无法获取位置信息",
+      "invalid_format": "位置信息格式无效"
     },
     "text": {
       "copy_url": "复制网址"
@@ -1634,7 +1649,10 @@ export type I18nKeys = {
       "screenshot_detected_notice": "截屏行为已被记录"
     },
     "multi_msg": {
-      "view_forwarded": "查看 {count} 条转发消息"
+      "view_forwarded": "查看 {count} 条转发消息",
+      "group_title": "群聊的聊天记录",
+      "dm_title": "{friend}和{me}的聊天记录",
+      "open_failed": "打开聊天记录失败"
     },
     "crypto_unavailable": {
       "message": "加密功能未就绪，此房间的消息无法发送。请重新登录或联系管理员。"
@@ -1659,6 +1677,14 @@ export type I18nKeys = {
     "window": {
       "no_room_id": "未提供会话 ID",
       "session_restore_failed": "会话恢复失败"
+    },
+    "reaction": {
+      "like": "点赞",
+      "heart": "爱心",
+      "lol": "笑哭",
+      "angry": "愤怒",
+      "rocket": "火箭",
+      "flower": "鲜花"
     }
   },
   "chatHistory": {
@@ -1784,6 +1810,12 @@ export type I18nKeys = {
     "load_more": "加载更多",
     "saving": "保存中…",
     "unknownUser": "未知用户",
+    "unknown": "未知",
+    "avatar_alt": "{name}的头像",
+    "account_with_value": "账号：{account}",
+    "link": "链接",
+    "map": "地图",
+    "celebration": "庆祝",
     "thread": {
       "load_failed": "加载讨论串失败",
       "send": "发送",
@@ -3587,7 +3619,8 @@ export type I18nKeys = {
         "missing_local": "暂时找不到本地文件，请先下载后再试",
         "reveal_fail": "无法在文件夹中显示该文件",
         "download_open_fail": "文件下载成功，但无法打开或显示文件。请手动在文件管理器中查找下载的文件。",
-        "download_failed": "下载文件失败: {reason}"
+        "download_failed": "下载文件失败: {reason}",
+        "drop_failed": "处理拖拽文件失败"
       }
     },
     "video": {
@@ -3806,7 +3839,9 @@ export type I18nKeys = {
       "share": "发送信标",
       "stop": "停止共享",
       "started": "信标已启动",
-      "failed": "信标启动失败"
+      "failed": "信标启动失败",
+      "stop_success": "已停止共享",
+      "stop_failed": "停止共享失败"
     },
     "update_window": {
       "updating": "更新中",
@@ -3884,7 +3919,16 @@ export type I18nKeys = {
     "recall_confirm_title": "撤回消息",
     "recall_failed": "撤回失败",
     "recall_success": "已撤回",
-    "unpin_success": "已取消固定"
+    "unpin_success": "已取消固定",
+    "empty_input": "请输入消息内容",
+    "reply_preview_alt": "回复预览图",
+    "reedit": "重新编辑",
+    "recall_notice": "撤回了一条消息",
+    "action": {
+      "react": "表情回应",
+      "reply": "回复",
+      "forward": "转发"
+    }
   },
   "message_container": {
     "resend_failed": "消息重发失败，请重试",
@@ -5567,6 +5611,13 @@ export type I18nKeys = {
       "save_success": "保存成功",
       "subtitle": "配置消息保留策略",
       "title": "消息保留"
+    },
+    "sticky": {
+      "title": "粘性事件",
+      "set": "设为粘性事件",
+      "cancel": "取消置顶",
+      "collapse": "收起",
+      "expand": "展开 {count} 条"
     }
   },
   "room_advanced": {
@@ -7746,6 +7797,7 @@ export type I18nKeyPaths =
   | "ai_assistant.welcome"
   | "ai_assistant.welcome_desc"
   | "ai_assistant.thinking"
+  | "ai_assistant.stop_thinking"
   | "ai_assistant.input_placeholder"
   | "ai_assistant.error"
   | "ai_assistant.provider"
@@ -7803,6 +7855,10 @@ export type I18nKeyPaths =
   | "ai_assistant.bot.previewing_model"
   | "ai_assistant.bot.select_model_failed"
   | "ai_assistant.bot.load_failed"
+  | "ai_assistant.bot.loading_start"
+  | "ai_assistant.bot.loading_progress"
+  | "ai_assistant.bot.compressed_unsupported"
+  | "ai_assistant.bot.invalid_geometry"
   | "ai_assistant.robot.subtitle_desc"
   | "ai_assistant.robot.expire_days"
   | "ai_assistant.robot.loading"
@@ -8261,11 +8317,13 @@ export type I18nKeyPaths =
   | "chat.header.search.jump_hint"
   | "chat.header.search.close"
   | "chat.header.open_in_new_window"
+  | "chat.header.private_mode"
   | "chat.header.private_mode_toggle"
   | "chat.header.private_mode_enter"
   | "chat.header.private_mode_exit"
   | "chat.header.private_mode_confirm_title"
   | "chat.header.private_mode_confirm_desc"
+  | "chat.header.private_mode_confirm_question"
   | "chat.header.private_mode_feature_e2ee"
   | "chat.header.private_mode_feature_burn"
   | "chat.header.private_mode_feature_screenshot"
@@ -8279,15 +8337,26 @@ export type I18nKeyPaths =
   | "chat.burn.toggle_title"
   | "chat.location.title"
   | "chat.location.cannot_display"
+  | "chat.location.error_short"
   | "chat.link_preview.unknown_link"
+  | "chat.link_preview.unknown_source"
   | "chat.beacon.live_location"
   | "chat.beacon.remaining_time"
   | "chat.beacon.view_location"
   | "chat.beacon.ended"
+  | "chat.beacon.status_active"
+  | "chat.beacon.status_finished"
+  | "chat.beacon.description_default"
+  | "chat.beacon.ended_cannot_view"
+  | "chat.beacon.no_location"
+  | "chat.beacon.invalid_format"
   | "chat.text.copy_url"
   | "chat.privacy.screenshot_protected"
   | "chat.privacy.screenshot_detected_notice"
   | "chat.multi_msg.view_forwarded"
+  | "chat.multi_msg.group_title"
+  | "chat.multi_msg.dm_title"
+  | "chat.multi_msg.open_failed"
   | "chat.crypto_unavailable.message"
   | "chat.connection.connecting"
   | "chat.connection.catchup"
@@ -8302,6 +8371,12 @@ export type I18nKeyPaths =
   | "chat.private_mode.enabled"
   | "chat.window.no_room_id"
   | "chat.window.session_restore_failed"
+  | "chat.reaction.like"
+  | "chat.reaction.heart"
+  | "chat.reaction.lol"
+  | "chat.reaction.angry"
+  | "chat.reaction.rocket"
+  | "chat.reaction.flower"
   | "chatHistory.search.placeholder"
   | "chatHistory.tabs.all"
   | "chatHistory.tabs.imageVideo"
@@ -8410,6 +8485,12 @@ export type I18nKeyPaths =
   | "common.load_more"
   | "common.saving"
   | "common.unknownUser"
+  | "common.unknown"
+  | "common.avatar_alt"
+  | "common.account_with_value"
+  | "common.link"
+  | "common.map"
+  | "common.celebration"
   | "common.thread.load_failed"
   | "common.thread.send"
   | "common.thread.send_failed"
@@ -9747,6 +9828,7 @@ export type I18nKeyPaths =
   | "message.file.toast.reveal_fail"
   | "message.file.toast.download_open_fail"
   | "message.file.toast.download_failed"
+  | "message.file.toast.drop_failed"
   | "message.video.unknown_video"
   | "message.video.uploading"
   | "message.video.opening"
@@ -9915,6 +9997,8 @@ export type I18nKeyPaths =
   | "message.beacon.stop"
   | "message.beacon.started"
   | "message.beacon.failed"
+  | "message.beacon.stop_success"
+  | "message.beacon.stop_failed"
   | "message.update_window.updating"
   | "message.update_window.fetch_commit_failed"
   | "message.update_window.fetch_release_error"
@@ -9984,6 +10068,13 @@ export type I18nKeyPaths =
   | "message.recall_failed"
   | "message.recall_success"
   | "message.unpin_success"
+  | "message.empty_input"
+  | "message.reply_preview_alt"
+  | "message.reedit"
+  | "message.recall_notice"
+  | "message.action.react"
+  | "message.action.reply"
+  | "message.action.forward"
   | "message_container.resend_failed"
   | "message_container.emoji_already_marked"
   | "message_container.copy_translation"
@@ -11370,6 +11461,11 @@ export type I18nKeyPaths =
   | "room.retention.save_success"
   | "room.retention.subtitle"
   | "room.retention.title"
+  | "room.sticky.title"
+  | "room.sticky.set"
+  | "room.sticky.cancel"
+  | "room.sticky.collapse"
+  | "room.sticky.expand"
   | "room_advanced.room_upgrade.title"
   | "room_advanced.room_upgrade.description"
   | "room_advanced.room_upgrade.current_version"

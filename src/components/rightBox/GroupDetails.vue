@@ -55,7 +55,7 @@
         <span class="single-details__action-icon">
           <svg><use href="#expand" /></svg>
         </span>
-        <span class="single-details__action-label">{{ t('chat.header.open_in_new_window', '在新窗口打开') }}</span>
+        <span class="single-details__action-label">{{ t('chat.header.open_in_new_window') }}</span>
       </button>
     </div>
 
@@ -156,7 +156,7 @@ watch(
       item.value = (response as typeof item.value) || {}
       await fetchAnnouncement(uid)
     } catch (error) {
-      logger.error('获取群组详情失败:', error)
+      logger.error('Failed to load group details:', error)
       item.value = {}
       announcementContent.value = ''
     }
@@ -176,12 +176,12 @@ const handleOpenAnnouncement = () => {
 const handleMemberClick = (userId: string) => {
   if (!userId) return
   void router.push({ path: `/friend/${encodeURIComponent(userId)}` }).catch((err) => {
-    logger.warn('跳转成员详情失败:', err)
+    logger.warn('Failed to navigate to member details:', err)
   })
 }
 
 const openImageViewer = () => {
-  logger.debug('打开图片查看器')
+  logger.debug('Open image viewer')
 }
 
 const handleSaveRoomName = async (newValue: string) => {
@@ -222,7 +222,7 @@ const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
       showFeedback(t('room.detail.avatar_update_failed'), 'error', 'assertive')
     }
   } catch (err) {
-    logger.error('上传房间头像失败:', err)
+    logger.error('Failed to upload room avatar:', err)
     showFeedback(t('room.detail.avatar_update_failed'), 'error', 'assertive')
   } finally {
     uploadingAvatar.value = false
