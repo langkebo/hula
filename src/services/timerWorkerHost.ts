@@ -97,18 +97,22 @@ export function acquireTimerWorker(): TimerWorkerHandle {
   let released = false
 
   return {
+    /** {@inheritDoc TimerWorkerHandle.postMessage} */
     postMessage(request) {
       if (released) return
       instance.postMessage({ ...request, msgId: `${channelId}${CHANNEL_SEP}${request.msgId}` })
     },
+    /** {@inheritDoc TimerWorkerHandle.onMessage} */
     onMessage(handler) {
       channel.messageHandlers.add(handler)
       return () => channel.messageHandlers.delete(handler)
     },
+    /** {@inheritDoc TimerWorkerHandle.onError} */
     onError(handler) {
       channel.errorHandlers.add(handler)
       return () => channel.errorHandlers.delete(handler)
     },
+    /** {@inheritDoc TimerWorkerHandle.release} */
     release() {
       if (released) return
       released = true
