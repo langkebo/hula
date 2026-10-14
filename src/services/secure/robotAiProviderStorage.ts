@@ -31,26 +31,6 @@ function normalizeString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function _normalizeBoolean(value: unknown, fallback: boolean): boolean {
-  return typeof value === 'boolean' ? value : fallback
-}
-
-function _normalizePositiveInteger(value: unknown, fallback: number, minimum = 1): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return fallback
-  }
-
-  return Math.max(minimum, Math.round(value))
-}
-
-function _normalizeNumberInRange(value: unknown, fallback: number, minimum: number, maximum: number): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return fallback
-  }
-
-  return Math.min(maximum, Math.max(minimum, Number(value.toFixed(2))))
-}
-
 function resolveScopeId(options?: RobotStorageScopeOptions): string | null {
   if (!options) {
     return null

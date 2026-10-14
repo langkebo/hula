@@ -66,7 +66,7 @@ import type { UserState } from '@/services/types'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 
 const userStatusStore = useUserStatusStore()
-const { stateList, stateId } = storeToRefs(userStatusStore)
+const { stateList } = storeToRefs(userStatusStore)
 const { currentState, statusIcon, statusTitle, statusBgColor, hasCustomState } = useOnlineStatus()
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()

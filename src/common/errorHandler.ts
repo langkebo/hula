@@ -113,8 +113,8 @@ class GlobalErrorHandler {
     message: string,
     type: ErrorType,
     options?: {
-      code?: number
-      details?: Record<string, unknown>
+      code?: number | undefined
+      details?: Record<string, unknown> | undefined
       showError?: boolean
     }
   ): AppException {

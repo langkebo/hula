@@ -46,7 +46,7 @@ export const useAiRoleManagement = ({ currentChat }: UseAiRoleManagementOptions)
         await conversationService.update({
           id: currentChat.value.id,
           roleId: role.id,
-          modelId: role.modelId || undefined
+          ...(role.modelId ? { modelId: role.modelId } : {})
         })
       } else {
         showFeedback(t('ai_assistant.robot.role_selected', { name: role.name }), 'success')

@@ -292,7 +292,7 @@ interface LocalConversation {
   title: string
   provider: string
   modelId: string
-  characterId?: string
+  characterId?: string | undefined
   createdAt: number
   updatedAt: number
 }

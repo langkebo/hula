@@ -227,9 +227,9 @@ const fileContextMenu = computed<OPT.RightMenu<FileItem>[]>(() => [
       const defaultName = targetFile.fileName ? String(targetFile.fileName) : undefined
       const isVideo = targetFile.fileType === 'video'
       const saveParams = {
-        url: downloadUrl,
+        ...(downloadUrl ? { url: downloadUrl } : {}),
         downloadFile,
-        defaultFileName: defaultName,
+        ...(defaultName ? { defaultFileName: defaultName } : {}),
         successMessage: isVideo
           ? t('fileManager.notifications.saveVideoSuccess')
           : t('fileManager.notifications.saveFileSuccess'),

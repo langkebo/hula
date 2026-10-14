@@ -86,12 +86,12 @@ const selectedUsers = ref<string[]>([])
 const manualUserId = ref('')
 const inviting = ref(false)
 type SearchUserResult = {
-  user_id?: string
-  userId?: string
-  display_name?: string
-  displayName?: string
-  avatar_url?: string
-  avatarUrl?: string
+  user_id?: string | undefined
+  userId?: string | undefined
+  display_name?: string | undefined
+  displayName?: string | undefined
+  avatar_url?: string | undefined
+  avatarUrl?: string | undefined
 }
 
 const searchResults = ref<SearchUserResult[]>([])

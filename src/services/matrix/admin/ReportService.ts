@@ -141,12 +141,12 @@ export class AdminReportService {
     limit: number = 50,
     from?: string,
     throwOnError = false
-  ): Promise<{ reports: AdminReport[]; next_batch?: string }> {
+  ): Promise<{ reports: AdminReport[]; next_batch?: string | undefined }> {
     try {
       const admin = await this._sdkAdmin()
       const result = roomId
-        ? await admin.listRoomReports(roomId, { from, limit })
-        : await admin.listReports({ from, limit })
+        ? await admin.listRoomReports(roomId, { ...(from !== undefined ? { from } : {}), limit })
+        : await admin.listReports({ ...(from !== undefined ? { from } : {}), limit })
       // SDK `AdminReportPage` 为 `{ reports, total }`；`next_batch` 为后端游标，
       // 通过宽化赋值读取，避免 `as unknown as` 双重断言。
       const page: { reports?: AdminReport[]; next_batch?: string } = result

@@ -1,6 +1,6 @@
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HttpClient, HttpClientBlockedError, HttpClientError } from '@/utils/HttpClient'
 
 const server = setupServer()
@@ -9,6 +9,16 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => server.close())
 
 describe('HttpClient', () => {
+  // 传输层用例以生产语义（fail-closed enforce）运行，故显式放行测试域名；
+  // host allowlist 套件在各自用例内覆盖这些 env。
+  beforeEach(() => {
+    vi.stubEnv('VITE_HTTP_ALLOWLIST_MODE', 'enforce')
+    vi.stubEnv('VITE_HTTP_ALLOWLIST_DEV', 'https://example.test')
+    vi.stubEnv('VITE_HTTP_ALLOWLIST_PROD', 'https://example.test')
+    vi.stubEnv('VITE_HOMESERVER_URL', '')
+  })
+  afterEach(() => vi.unstubAllEnvs())
+
   describe('get', () => {
     it('returns parsed JSON for a 200 response', async () => {
       server.use(http.get('https://example.test/api/data', () => HttpResponse.json({ ok: true })))
@@ -102,8 +112,19 @@ describe('HttpClient', () => {
       expect(data.ok).toBe(true)
     })
 
-    it('observes but does not block an unknown host by default (report)', async () => {
+    it('rejects and sends no request for an unknown host by default (fail-closed enforce)', async () => {
       vi.stubEnv('VITE_HTTP_ALLOWLIST_MODE', '')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_DEV', 'https://allowed.test')
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_PROD', 'https://allowed.test')
+      vi.stubEnv('VITE_HOMESERVER_URL', '')
+      const fetchSpy = vi.spyOn(globalThis, 'fetch')
+
+      await expect(HttpClient.get('https://unknown.test/api')).rejects.toThrow(HttpClientBlockedError)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it('observes but does not block an unknown host when mode is report', async () => {
+      vi.stubEnv('VITE_HTTP_ALLOWLIST_MODE', 'report')
       vi.stubEnv('VITE_HTTP_ALLOWLIST_DEV', 'https://allowed.test')
       vi.stubEnv('VITE_HTTP_ALLOWLIST_PROD', 'https://allowed.test')
       vi.stubEnv('VITE_HOMESERVER_URL', '')

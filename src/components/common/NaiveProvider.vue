@@ -6,8 +6,8 @@
     :date-locale="currentNaiveDateLocale">
     <n-loading-bar-provider>
       <n-dialog-provider>
-        <n-notification-provider :max="notificMax">
-          <n-message-provider :max="messageMax">
+        <n-notification-provider v-bind="notificMax !== undefined ? { max: notificMax } : {}">
+          <n-message-provider v-bind="messageMax !== undefined ? { max: messageMax } : {}">
             <n-modal-provider>
               <slot></slot>
               <naive-provider-content />

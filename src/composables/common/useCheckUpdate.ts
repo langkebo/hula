@@ -1,11 +1,8 @@
-import { useSettingStore } from '@/stores/domains/settings/setting'
-
 /**
  * 检查更新
  * 注意：自动更新功能已禁用
  */
 export const useCheckUpdate = () => {
-  const _settingStore = useSettingStore()
   // 检查更新周期
   const CHECK_UPDATE_TIME = 30 * 60 * 1000
   // 在未登录情况下缩短检查周期

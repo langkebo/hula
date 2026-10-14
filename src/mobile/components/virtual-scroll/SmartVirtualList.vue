@@ -24,11 +24,11 @@
   </div>
 </template>
 
-<script setup lang="ts" generic="T extends { id?: string | number; [key: string]: any }">
+<script setup lang="ts" generic="T extends { id?: string | number | undefined; [key: string]: any }">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-type ListItem = { id?: string | number; [key: string]: unknown }
+type ListItem = { id?: string | number | undefined; [key: string]: unknown }
 
 type VisibleItem<TItem extends ListItem> = TItem & {
   _index: number

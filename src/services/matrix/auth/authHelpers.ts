@@ -142,10 +142,11 @@ export function resolveMatrixClientUrl(path: string): string {
  */
 export function createTemporaryMatrixClient() {
   const { homeserverUrl } = resolveMatrixRuntimeEndpointConfig()
+  const fetchFn = getRuntimeAwareFetchFn()
   return createClient({
     baseUrl: homeserverUrl,
     allowInsecureHttp: homeserverUrl.startsWith('http://'),
-    fetchFn: getRuntimeAwareFetchFn()
+    ...(fetchFn !== undefined ? { fetchFn } : {})
   })
 }
 

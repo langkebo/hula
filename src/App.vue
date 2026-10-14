@@ -11,7 +11,7 @@
         :percentage="bootstrapProgress"
         :loading-text="bootstrapMessage"
         :show-error="!!bootstrapError"
-        :error-message="bootstrapError || undefined"
+        v-bind="bootstrapError ? { errorMessage: bootstrapError } : {}"
         :retryable="true"
         @retry="handleBootstrapRetry" />
       <div v-else-if="!isLock" class="h-full">
@@ -29,7 +29,6 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { exit } from '@tauri-apps/plugin-process'
 import { showDialog } from 'vant'
-import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useInvitePolicyEnforcement } from '@/composables/app/useInvitePolicyEnforcement'
 import { useOfflineQueueReplay } from '@/composables/app/useOfflineQueueReplay'
@@ -49,7 +48,6 @@ import { createInvitePolicyEnforcer } from '@/services/matrix/user/invitePolicyE
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { applyBubbleStyle, loadBubbleStyle } from '@/utils/bubbleStyle'
@@ -67,7 +65,10 @@ const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
 const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
 const SplashScreen = defineAsyncComponent(() => import('@/components/common/SplashScreen.vue'))
 
-const mobileRtcCallFloatCell = isMobile()
+// 平台在运行期恒定：探测一次后复用
+const isMobilePlatform = isMobile()
+
+const mobileRtcCallFloatCell = isMobilePlatform
   ? defineAsyncComponent(() => import('@/mobile/components/RtcCallFloatCell.vue'))
   : null
 
@@ -98,7 +99,6 @@ const handleBootstrapRetry = async () => {
 const settingStore = useSettingStore()
 const globalStore = useGlobalStore()
 const sessionStore = useSessionStore()
-const userStore = useUserStore()
 const { lockScreen } = storeToRefs(settingStore)
 const router = useRouter()
 
@@ -323,7 +323,7 @@ function initPlatformStyles() {
       .catch((e) => logger.warn('load simple styles failed:', e))
   }
 
-  if (isMobile()) {
+  if (isMobilePlatform) {
     import('@/styles/scss/global/mobile.scss').catch((e) => logger.warn('load mobile styles failed:', e))
   }
 
@@ -369,7 +369,7 @@ const requestIOSNetworkPermission = async () => {
 
 // ========== Mobile re-login listener ==========
 const setupMobileReLoginListener = async () => {
-  if (!isMobile()) return
+  if (!isMobilePlatform) return
   try {
     const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
     const { useTauriListener } = await import('@/composables/common/useTauriListener')
@@ -393,7 +393,7 @@ function setupThemeWatchers() {
   watch(
     () => settingStore.pageShadowEnabled,
     (val) => {
-      if (isMobile()) {
+      if (isMobilePlatform) {
         document.documentElement.style.setProperty('--shadow-enabled', '1')
       } else {
         document.documentElement.style.setProperty('--shadow-enabled', val ? '0' : '1')
@@ -424,39 +424,6 @@ function setupThemeWatchers() {
       void import('@/services/i18n').then(({ loadLanguage }) => loadLanguage(lang))
     }
   )
-}
-
-// ========== Session change watcher ==========
-async function setupSessionWatch() {
-  try {
-    const { MittEnum, RoomTypeEnum } = await import('@/enums')
-    let sessionWatchStop: WatchStopHandle | null = null
-    useMitt.on(MittEnum.MSG_INIT, async () => {
-      const { useAnnouncementStore } = await import('@/stores/domains/chat/announcement')
-      const { useGroupStore } = await import('@/stores/domains/chat/group')
-      const announcementStore = useAnnouncementStore()
-      const groupStore = useGroupStore()
-
-      sessionWatchStop?.()
-      sessionWatchStop = watch(
-        () => [globalStore.currentSessionRoomId, globalStore.currentSession?.type] as const,
-        async ([sessionRoomId, sessionType]) => {
-          if (!sessionRoomId || sessionType !== RoomTypeEnum.GROUP) return
-          try {
-            const result = await groupStore.switchSession({ roomId: sessionRoomId })
-            if (result?.success) {
-              await announcementStore.loadGroupAnnouncements()
-            }
-          } catch (error) {
-            logger.error('session switch failed:', error)
-          }
-        },
-        { immediate: true }
-      )
-    })
-  } catch (e) {
-    logger.warn('setupSessionWatch failed:', e)
-  }
 }
 
 /**

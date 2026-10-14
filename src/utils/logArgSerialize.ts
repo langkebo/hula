@@ -51,7 +51,7 @@ export function toErrorDescriptor(error: Error, depth = 0): Record<string, unkno
     message: error.message
   }
 
-  const source = error as unknown as Record<string, unknown>
+  const source = error as Error & Record<string, unknown>
   for (const key of ERROR_FACT_KEYS) {
     const value = source[key]
     if (value !== undefined && value !== null) {

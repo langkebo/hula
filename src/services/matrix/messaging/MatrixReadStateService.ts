@@ -10,7 +10,7 @@ export interface ReadReceipt {
   userId: string
   eventId: string
   timestamp: number
-  avatarUrl?: string
+  avatarUrl?: string | undefined
   displayName?: string
 }
 
@@ -144,4 +144,3 @@ class MatrixReadStateService {
 }
 
 export const matrixReadStateService = new MatrixReadStateService()
-export default matrixReadStateService

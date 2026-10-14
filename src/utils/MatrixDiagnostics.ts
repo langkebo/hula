@@ -212,5 +212,5 @@ async function runMatrixDiagnostics(homeserverUrl: string): Promise<void> {
 }
 
 if (typeof window !== 'undefined') {
-  ;(window as unknown as Record<string, unknown>).runMatrixDiagnostics = runMatrixDiagnostics
+  Object.assign(window, { runMatrixDiagnostics })
 }

@@ -176,8 +176,7 @@ class MatrixReceiptService extends BaseMatrixService {
       const eventId =
         typeof event.getId === 'function'
           ? event.getId()
-          : ((event as { event_id?: string; id?: string }).event_id ??
-            (event as { event_id?: string; id?: string }).id)
+          : ((event as { event_id?: string; id?: string }).event_id ?? (event as { event_id?: string; id?: string }).id)
       if (!eventId) {
         throw new Error(this.t('matrix_error.messaging.receipt_event_id_missing'))
       }
@@ -311,4 +310,3 @@ class MatrixReceiptService extends BaseMatrixService {
 }
 
 export const matrixReceiptService = new MatrixReceiptService()
-export default matrixReceiptService

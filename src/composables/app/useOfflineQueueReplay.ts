@@ -266,7 +266,12 @@ export function useOfflineQueueReplay(deps: {
             data?: Record<string, unknown>
           }
           if (widgetService) {
-            await widgetService.createWidget(roomId, { widgetType, url, name, data })
+            await widgetService.createWidget(roomId, {
+              widgetType,
+              url,
+              name,
+              ...(data === undefined ? {} : { data })
+            })
           }
           break
         }

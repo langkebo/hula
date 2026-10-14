@@ -72,7 +72,7 @@ describe('AdminReportService', () => {
         const response = await fetch(url.toString(), {
           method,
           headers,
-          body: body ? JSON.stringify(body) : undefined
+          ...(body ? { body: JSON.stringify(body) } : {})
         })
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`)

@@ -125,7 +125,6 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('MobileInvitePermission')
 
 const { t } = useI18n()
-const INVITE_PERMISSION_MODES = INVITE_POLICY_MODES
 
 const loading = ref(true)
 const saving = ref(false)

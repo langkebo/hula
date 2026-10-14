@@ -71,8 +71,8 @@ const baseMembers: SpaceMember[] = [
 ]
 
 const baseRooms: SpaceChildRoom[] = [
-  { roomId: '!room-1:server', name: 'General', avatarUrl: undefined },
-  { roomId: '!room-2:server', name: 'Random', avatarUrl: undefined }
+  { roomId: '!room-1:server', name: 'General' },
+  { roomId: '!room-2:server', name: 'Random' }
 ]
 
 describe('SpaceDetailsPane', () => {

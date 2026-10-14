@@ -57,6 +57,7 @@ import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixBeaconService } from '@/services/matrix/media/MatrixBeaconService'
 import { matrixLocationService } from '@/services/matrix/media/MatrixLocationService'
 import type { BeaconBody } from '@/services/types'
+import { padZero } from '@/utils/StringUtils'
 import { useTimerManager } from '@/utils/TimerManager'
 
 defineOptions({
@@ -91,10 +92,7 @@ const props = withDefaults(
       roomId: string
     }
   }>(),
-  {
-    body: undefined,
-    message: undefined
-  }
+  {}
 )
 
 /**
@@ -134,9 +132,9 @@ const remainingTimeText = computed(() => {
   const s = diff % 60
 
   if (h > 0) {
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    return `${padZero(h)}:${padZero(m)}:${padZero(s)}`
   }
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  return `${padZero(m)}:${padZero(s)}`
 })
 
 /**

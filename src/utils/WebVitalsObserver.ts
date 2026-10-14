@@ -21,9 +21,9 @@ interface PerformanceMetric {
   value: number
   delta?: number
   id?: string
-  rating?: 'good' | 'needs-improvement' | 'poor'
+  rating?: 'good' | 'needs-improvement' | 'poor' | undefined
   entries?: PerformanceEntry[]
-  attribution?: Record<string, unknown>
+  attribution?: Record<string, unknown> | undefined
   duration?: number
 }
 

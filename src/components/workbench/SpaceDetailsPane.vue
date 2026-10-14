@@ -134,7 +134,7 @@
           <n-form label-placement="top" :show-feedback="false" class="space-details-pane__manage-form">
             <n-form-item v-if="manageMode === 'invite'" :label="t('space.invite')">
               <n-input
-                :value="inviteUserId"
+                v-bind="inviteUserId !== undefined ? { value: inviteUserId } : {}"
                 :placeholder="t('space.invite_user_placeholder')"
                 @update:value="emit('update:inviteUserId', $event)" />
             </n-form-item>
@@ -142,7 +142,7 @@
             <template v-else-if="manageMode === 'add-room'">
               <n-form-item :label="t('space.add_room')">
                 <n-input
-                  :value="addRoomId"
+                  v-bind="addRoomId !== undefined ? { value: addRoomId } : {}"
                   :placeholder="t('space.add_room_placeholder')"
                   @update:value="emit('update:addRoomId', $event)" />
               </n-form-item>

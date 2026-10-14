@@ -140,6 +140,7 @@ export function useMobileSessionList() {
 
 /** useMobileSessionList 派生的会话列表项(在 SessionItem 基础上附加 lastMsg/lastMsgTime/isAtMe 等展示字段) */
 export type MobileSessionListItem = SessionItem & {
+  avatar?: string | undefined
   lastMsg: string
   lastMsgTime: string
   isAtMe: boolean

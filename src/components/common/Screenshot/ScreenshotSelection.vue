@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { DrawToolType, ScreenConfig, SelectionAreaStyle } from './types'
 
@@ -77,9 +77,7 @@ const updateBorderRadiusControllerPosition = () => {
   if (!selectionAreaRef.value) return
 
   const controllerHeight = 35
-  const controllerWidth = 120
 
-  const selectionLeft = parseFloat(props.selectionAreaStyle.left)
   const selectionTop = parseFloat(props.selectionAreaStyle.top)
 
   let left = 0

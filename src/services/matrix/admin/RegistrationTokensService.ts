@@ -1,5 +1,6 @@
 import type { AdminManager } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
+import { padZero } from '@/utils/StringUtils'
 import type { RegistrationToken } from './AdminTypes'
 
 const logger = createLogger('RegistrationTokensService')
@@ -18,7 +19,7 @@ function tokenFingerprint(token: string): string {
     hash ^= token.charCodeAt(i)
     hash = Math.imul(hash, 0x01000193)
   }
-  return (hash >>> 0).toString(16).padStart(8, '0')
+  return padZero((hash >>> 0).toString(16), 8)
 }
 
 /**
@@ -68,8 +69,8 @@ export class AdminRegistrationTokensService {
       const admin = await this.sdkAdmin()
       const result = await admin.createRegistrationToken({
         token: options?.token ?? `tjg_${Date.now()}`,
-        uses_allowed: options?.usesAllowed,
-        expiry_time: options?.expiryTime
+        ...(options?.usesAllowed !== undefined ? { uses_allowed: options.usesAllowed } : {}),
+        ...(options?.expiryTime !== undefined ? { expiry_time: options.expiryTime } : {})
       })
       logger.info('[Admin] 注册令牌已创建')
       return {

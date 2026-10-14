@@ -390,7 +390,7 @@ async function handleBlockIp() {
   blockIpLoading.value = true
   try {
     const result = await adminService.blockIp(blockIpForm.ip, {
-      reason: blockIpForm.reason || undefined
+      ...(blockIpForm.reason ? { reason: blockIpForm.reason } : {})
     })
     if (result) {
       showFeedback(t('admin.security.ip_blocked'), 'success')

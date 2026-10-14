@@ -57,13 +57,13 @@ export type QrLoginStatus =
 
 export interface QrCodeData {
   qrCodeBase64: string
-  checkCode?: string
-  rendezvousUrl?: string
+  checkCode?: string | undefined
+  rendezvousUrl?: string | undefined
 }
 
 export interface ScannedSessionInfo {
-  serverName?: string
-  checkCode?: string
+  serverName?: string | undefined
+  checkCode?: string | undefined
 }
 
 export interface NewDeviceLoginResult {

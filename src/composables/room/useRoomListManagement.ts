@@ -10,9 +10,9 @@ const logger = createLogger('useRoomListManagement')
 
 interface ListMember {
   userId: string
-  name?: string
-  avatarUrl?: string
-  reason?: string
+  name?: string | undefined
+  avatarUrl?: string | undefined
+  reason?: string | undefined
   membership: string
 }
 
@@ -46,7 +46,7 @@ export function useRoomListManagement(options: UseRoomListManagementOptions) {
 
   const toListMember = (m: RoomMember): ListMember => {
     const banEvent = (
-      m as unknown as { events?: { sender?: string; replacedByUser?: string; content?: { reason?: string } }[] }
+      m as typeof m & { events?: { sender?: string; replacedByUser?: string; content?: { reason?: string } }[] }
     ).events
     const reason = banEvent?.find((e) => e?.content?.reason)?.content?.reason
     // SDK 的 RoomMember 没有 `avatarUrl` 属性（旧代码读它恒为 undefined）；

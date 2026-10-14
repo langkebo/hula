@@ -244,7 +244,7 @@ const onPrivateModeChanged = (isActive: boolean) => {
   privateModeActive.value = isActive
 }
 
-// ===== 移动端检测（消除模板内 isMobile() 调用） =====
+// ===== 移动端检测（收敛模板内平台判定） =====
 const isMobileRef = useIsMobile()
 
 const formClass = computed(() => (isMobileRef.value ? 'gap-10px ' : ''))

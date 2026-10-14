@@ -251,9 +251,8 @@ export class MatrixSyncManager {
    */
   private registerNetworkChangeListener(): void {
     this.unregisterNetworkChangeListener()
-    const conn = (
-      navigator as { connection?: { addEventListener?: (type: string, handler: () => void) => void } }
-    ).connection
+    const conn = (navigator as { connection?: { addEventListener?: (type: string, handler: () => void) => void } })
+      .connection
     if (!conn?.addEventListener) return
 
     this.networkChangeHandler = () => this.adaptToNetwork()
@@ -265,9 +264,8 @@ export class MatrixSyncManager {
    */
   private unregisterNetworkChangeListener(): void {
     if (!this.networkChangeHandler) return
-    const conn = (
-      navigator as { connection?: { removeEventListener?: (type: string, handler: () => void) => void } }
-    ).connection
+    const conn = (navigator as { connection?: { removeEventListener?: (type: string, handler: () => void) => void } })
+      .connection
     conn?.removeEventListener?.('change', this.networkChangeHandler)
     this.networkChangeHandler = null
   }

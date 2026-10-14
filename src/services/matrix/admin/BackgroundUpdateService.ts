@@ -117,7 +117,9 @@ export class AdminBackgroundUpdateService {
   /**
    * 获取后台更新任务列表。
    */
-  async listUpdates(params: ListUpdatesParams = {}): Promise<{ updates: BackgroundUpdate[]; next_batch?: string }> {
+  async listUpdates(
+    params: ListUpdatesParams = {}
+  ): Promise<{ updates: BackgroundUpdate[]; next_batch?: string | undefined }> {
     try {
       const result = await this.getManager().listBackgroundUpdates({
         limit: params.limit ?? 100,

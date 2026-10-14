@@ -111,7 +111,7 @@ const { showFeedback } = useActionFeedback()
 
 const props = withDefaults(
   defineProps<{
-    detailId?: SessionItem['detailId']
+    detailId?: SessionItem['detailId'] | undefined
   }>(),
   {
     detailId: ''
@@ -298,9 +298,12 @@ const onPrivateModeChanged = (isActive: boolean) => {
   privateModeActive.value = isActive
 }
 
+// 平台在运行期恒定：探测一次后复用
+const isMobilePlatform = isMobile()
+
 // ===== 生命周期 =====
 onMounted(async () => {
-  if (isMobile()) {
+  if (isMobilePlatform) {
     listenMobileClosePanel()
   }
   useMitt.on(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
@@ -314,7 +317,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (isMobile()) {
+  if (isMobilePlatform) {
     removeMobileClosePanel()
   }
   useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)

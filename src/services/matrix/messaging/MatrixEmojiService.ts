@@ -21,7 +21,7 @@ export interface EmojiItem {
 export interface EmojiPack {
   id: string
   name: string
-  iconUrl?: string
+  iconUrl?: string | undefined
   items: EmojiItem[]
   createdTs: number
   updatedTs: number
@@ -53,7 +53,7 @@ interface RawEmojiData {
 
 interface RawEmojiPackData {
   name?: string
-  icon_url?: string
+  icon_url?: string | undefined
   emoticons?: Record<string, RawEmojiData>
   created_at?: number
   updated_at?: number

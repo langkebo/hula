@@ -58,10 +58,10 @@ export class MatrixRoomCreationService {
   async createGroupRoom(options: CreateGroupRoomOptions): Promise<Room> {
     const createOpts: ICreateRoomOpts = {
       name: options.name,
-      topic: options.topic,
+      ...(options.topic !== undefined ? { topic: options.topic } : {}),
       visibility: options.isPublic ? Visibility.Public : Visibility.Private,
       preset: options.isPublic ? Preset.PublicChat : Preset.PrivateChat,
-      room_alias_name: options.alias || undefined,
+      ...(options.alias ? { room_alias_name: options.alias } : {}),
       initial_state: []
     }
 
@@ -179,14 +179,15 @@ export class MatrixRoomCreationService {
       notificationCount: notificationNotificationCount,
       lastMessage,
       lastMessageTime,
-      members: room.getJoinedMembers().map(
-        (member: RoomMember): RoomMemberInfo => ({
+      members: room.getJoinedMembers().map((member: RoomMember): RoomMemberInfo => {
+        const avatarUrl = member.getMxcAvatarUrl?.() ?? undefined
+        return {
           userId: member.userId,
           name: member.name || member.userId,
-          avatarUrl: member.getMxcAvatarUrl?.() ?? undefined,
+          ...(avatarUrl !== undefined ? { avatarUrl } : {}),
           powerLevel: member.powerLevel
-        })
-      )
+        }
+      })
     }
   }
 

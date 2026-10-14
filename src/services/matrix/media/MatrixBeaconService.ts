@@ -14,8 +14,8 @@ interface BeaconInfo {
   event_id: string
   room_id: string
   user_id: string
-  description?: string
-  timeout?: number
+  description?: string | undefined
+  timeout?: number | undefined
   is_live: boolean
   last_updated: number
 }
@@ -26,10 +26,10 @@ interface BeaconLocation {
   timestamp: number
   latitude: number
   longitude: number
-  uncertainty?: number
-  altitude?: number
-  speed?: number
-  bearing?: number
+  uncertainty?: number | undefined
+  altitude?: number | undefined
+  speed?: number | undefined
+  bearing?: number | undefined
 }
 
 interface CreateBeaconParams {

@@ -1,6 +1,5 @@
 import { MsgEnum } from '@/enums'
 import type { MessageStrategy } from './base'
-import { strategyLogger } from './base'
 import { TextMessageStrategyImpl } from './text'
 import { UnsupportedMessageStrategyImpl } from './unsupported'
 
@@ -74,31 +73,3 @@ export async function getStrategy(type: MsgEnum): Promise<MessageStrategy> {
   strategyCache.set(type, s)
   return s
 }
-
-const _messageStrategyMap: Record<MsgEnum, MessageStrategy> = new Proxy({} as Record<MsgEnum, MessageStrategy>, {
-  get(_target, prop: string) {
-    const key = Number(prop) as MsgEnum
-    const cached = strategyCache.get(key)
-    if (cached) return cached
-
-    if (UNSUPPORTED_KEYS.includes(key)) return getUnsupportedStrategy()
-    if (key === MsgEnum.TEXT) {
-      const s = new TextMessageStrategyImpl()
-      strategyCache.set(key, s)
-      return s
-    }
-
-    const loader = lazyStrategies[key]
-    if (loader) {
-      strategyLogger.warn(`同步访问懒加载策略 MsgEnum.${key} 会触发 eager 加载，建议使用 await getStrategy() 代替`)
-      let resolved: MessageStrategy | undefined
-      loader().then((mod) => {
-        resolved = new mod.default()
-        strategyCache.set(key, resolved)
-      })
-      return getUnsupportedStrategy()
-    }
-
-    return getUnsupportedStrategy()
-  }
-})

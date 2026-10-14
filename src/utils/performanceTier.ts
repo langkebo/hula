@@ -32,9 +32,9 @@ export const MIN_DEVICE_MEMORY_GB = 4
 /** 判级所依据的原始信号 */
 export interface PerformanceSignals {
   /** `navigator.hardwareConcurrency`；环境不支持时为 undefined */
-  hardwareConcurrency?: number
+  hardwareConcurrency?: number | undefined
   /** `navigator.deviceMemory`（GB，非标准，仅 Chromium 系可用）；不支持时为 undefined */
-  deviceMemory?: number
+  deviceMemory?: number | undefined
   /** 粗指针（触屏）设备 */
   coarsePointer: boolean
   /** 用户要求减少透明（`prefers-reduced-transparency: reduce`） */

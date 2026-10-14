@@ -19,8 +19,10 @@ const logger = createLogger('VoIPHelpers')
  * 此前代码误用 client.getCallHandler()（不存在），导致恒返回 undefined。
  */
 export function getCallById(callId: string, client: MatrixClient): VoIPCall | undefined {
-  const handler = (client as { callEventHandler?: { calls: Map<string, VoIPCall> } }).callEventHandler
-  return handler?.calls?.get(callId)
+  const rawHandler = (client as { callEventHandler?: unknown }).callEventHandler
+  if (!rawHandler || typeof rawHandler !== 'object') return undefined
+  const calls = (rawHandler as { calls?: Map<string, VoIPCall> }).calls
+  return calls?.get(callId)
 }
 
 /** 从 PeerConnection 获取通话统计信息

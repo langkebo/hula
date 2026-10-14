@@ -101,8 +101,8 @@ const dialog = useDialog()
 const guestInfo = ref<{
   guestCount: number
   activeGuestCount: number
-  latestGuestUserId?: string
-  latestGuestCreatedAt?: number
+  latestGuestUserId?: string | undefined
+  latestGuestCreatedAt?: number | undefined
 } | null>(null)
 const guestInfoLoading = ref(false)
 
@@ -153,7 +153,7 @@ function handleRefreshGuestInfo() {
 interface GuestAccountRow {
   userId: string
   displayName: string
-  createdAt?: number
+  createdAt?: number | undefined
   isDeactivated: boolean
 }
 

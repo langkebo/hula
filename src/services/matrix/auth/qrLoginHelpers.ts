@@ -8,6 +8,7 @@
 import { resolveMatrixRuntimeEndpointConfig } from '@/services/backend/config'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import { createLogger } from '@/utils/Logger'
+import { bytesToHex } from '@/utils/StringUtils'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import { PREFIX_V3 } from '../paths'
 import type { SdkRendezvousModule } from './qrLoginTypes'
@@ -53,10 +54,7 @@ export function base64ToBytes(b64: string): Uint8Array {
  */
 export function generateDeviceId(): string {
   const random = crypto.getRandomValues(new Uint8Array(8))
-  return Array.from(random)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-    .toUpperCase()
+  return bytesToHex(random).toUpperCase()
 }
 
 export { getRuntimeAwareFetch, logger, resolveMatrixRuntimeEndpointConfig }

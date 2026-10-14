@@ -137,8 +137,6 @@ const {
   renderedMarkdown,
   isViewingLink,
   currentUrl,
-  markdownContainer,
-  webviewContainer,
   canGoBack,
   isAssistantView,
   customModelPath,

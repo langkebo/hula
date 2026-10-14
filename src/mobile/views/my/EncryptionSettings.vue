@@ -169,10 +169,12 @@
       <!-- 设备详情弹出层 -->
       <van-action-sheet
         v-model:show="showDeviceSheet"
-        :title="selectedDevice?.display_name || selectedDevice?.device_id">
+        :title="(selectedDevice?.display_name || selectedDevice?.device_id) ?? ''">
         <div class="device-detail">
           <van-cell-group>
-            <van-cell :title="t('setting.encryption.device_id')" :value="selectedDevice?.device_id" />
+            <van-cell
+              :title="t('setting.encryption.device_id')"
+              v-bind="selectedDevice?.device_id !== undefined ? { value: selectedDevice.device_id } : {}" />
             <van-cell
               v-if="selectedDevice?.last_seen_ts"
               :title="t('setting.encryption.last_seen')"
@@ -233,7 +235,6 @@ import MobileDehydratedDeviceDialog from '@/mobile/components/encryption/MobileD
 import MobileDeviceTrustManager from '@/mobile/components/encryption/MobileDeviceTrustManager.vue'
 import MobileKeyBackupDialog from '@/mobile/components/encryption/MobileKeyBackupDialog.vue'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
-import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
 import type { Device } from '@/services/matrix/user/MatrixDeviceService'

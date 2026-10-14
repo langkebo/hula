@@ -71,7 +71,6 @@ const sampleRoom: RoomCardData = {
   name: 'Matrix Chat',
   topic: 'A place to discuss Matrix protocol',
   numJoinedMembers: 42,
-  avatarUrl: undefined,
   isFederated: true
 }
 

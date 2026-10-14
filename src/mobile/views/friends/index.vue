@@ -311,14 +311,14 @@
                       <img
                         class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
                         :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                      :alt="t('mobile_contact.avatar.user')"
-                      @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-                    <div class="flex flex-col justify-between h-fit flex-1 truncate">
-                      <span class="text-14px leading-tight flex-1 truncate">
-                        {{ groupStore.getUserInfo(item.uid)?.name }}
-                      </span>
-                      <div class="text leading-tight text-12px text-[--tjg-text-tertiary]">
-                        [{{ t('mobile_contact.status.blocked') }}]
+                        :alt="t('mobile_contact.avatar.user')"
+                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                      <div class="flex flex-col justify-between h-fit flex-1 truncate">
+                        <span class="text-14px leading-tight flex-1 truncate">
+                          {{ groupStore.getUserInfo(item.uid)?.name }}
+                        </span>
+                        <div class="text leading-tight text-12px text-[--tjg-text-tertiary]">
+                          [{{ t('mobile_contact.status.blocked') }}]
                         </div>
                       </div>
                     </div>
@@ -407,8 +407,8 @@ import { useTimerManager } from '@/utils/TimerManager'
 
 interface UserSearchResult {
   userId: string
-  avatarUrl?: string
-  displayName?: string
+  avatarUrl?: string | undefined
+  displayName?: string | undefined
 }
 
 const { t } = useI18n()

@@ -39,7 +39,7 @@ export interface MatrixTransportError extends Error {
 export interface MatrixTransportErrorInput {
   /** HTTP 状态码；非 HTTP 失败传 0。 */
   status: number
-  statusText?: string
+  statusText?: string | undefined
   /** 已解析的响应体（若调用方已经解析过）。 */
   body?: unknown
   /** 原始响应体文本（未解析时由此解析 JSON）。 */
@@ -47,11 +47,11 @@ export interface MatrixTransportErrorInput {
   /** 响应头（真实 `Headers` 或带 `get()` 的形状）。 */
   headers?: unknown
   /** 显式覆盖最终 `message`（如本地化文案）。 */
-  message?: string
+  message?: string | undefined
   /** 兜底文案：仅在响应体与原文都给不出 message 时使用（优先级低于 `message`）。 */
-  fallbackMessage?: string
+  fallbackMessage?: string | undefined
   /** 响应体与状态码都无法给出 errcode 时的兜底 errcode。 */
-  fallbackErrcode?: string
+  fallbackErrcode?: string | undefined
   method?: string
   url?: string
 }
@@ -266,7 +266,7 @@ const CONNECTION_ERROR_MESSAGE_PATTERNS = [
 export function isConnectionClassError(err: unknown): boolean {
   if (!(err instanceof Error)) return false
 
-  const record = err as unknown as Record<string, unknown>
+  const record = err as Error & Record<string, unknown>
   const data = (record.data && typeof record.data === 'object' ? record.data : {}) as Record<string, unknown>
   const httpStatus = toFiniteNumber(record.httpStatus) ?? toFiniteNumber(data.httpStatus)
   if (httpStatus !== undefined && httpStatus > 0) return false

@@ -49,7 +49,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useOverlayController } from '@/composables/common/useOverlayController'
 import { useWindow } from '@/composables/common/useWindow'
 import { useSearchShortcut } from '@/composables/search/useSearchShortcut'
-import { MittEnum, MsgEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
+import { MittEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
 import type { FilesMeta } from '@/services/types'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import type { MessageType } from '@/stores/domains/chat/chat'
@@ -58,13 +58,12 @@ import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useInitialSyncStore } from '@/stores/domains/chat/initialSync'
 import { useUserStore } from '@/stores/domains/user/user'
-import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime, shouldBypassAuthForE2E } from '@/utils/AppHarness'
 import FileUtil from '@/utils/FileUtil'
 import { createLogger } from '@/utils/Logger'
 import { getFilesMeta } from '@/utils/PathUtil'
-import { isMobile, isWindows } from '@/utils/PlatformConstants'
+import { isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('Layout')
@@ -76,7 +75,6 @@ const isRoomListRoute = computed(() => route.name === 'room')
 const userStore = useUserStore()
 const chatStore = useChatStore()
 const groupStore = useGroupStore()
-const fileStore = useFileStore()
 // 负责记录哪些账号已经完成过首次同步的全局 store，避免多账号串数据
 const initialSyncStore = useInitialSyncStore()
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
@@ -275,62 +273,6 @@ useMitt.on(MittEnum.SHRINK_WINDOW, (event: boolean) => {
 // 播放消息音效
 const { playMessageSound } = useMessageSound()
 
-/**
- * 从消息中提取文件信息并添加到 file store
- */
-const addFileToStore = (data: MessageType) => {
-  const { message } = data
-  const { type, body, roomId, id } = message
-
-  // 只处理图片和视频类型
-  if (type !== MsgEnum.IMAGE && type !== MsgEnum.VIDEO) {
-    return
-  }
-
-  // 提取文件信息
-  const fileUrl = body.url
-  if (!fileUrl) {
-    return
-  }
-
-  // 从 URL 中提取文件名
-  let fileName = ''
-  try {
-    const urlObj = new URL(fileUrl)
-    const pathname = urlObj.pathname
-    fileName = pathname.substring(pathname.lastIndexOf('/') + 1)
-  } catch (e) {
-    // 如果不是有效的 URL，直接使用消息 ID 作为文件名
-    fileName = `${id}.${type === MsgEnum.IMAGE ? 'jpg' : 'mp4'}`
-  }
-
-  // 从文件名中提取后缀
-  const suffix = fileName.includes('.')
-    ? fileName.substring(fileName.lastIndexOf('.') + 1)
-    : type === MsgEnum.IMAGE
-      ? 'jpg'
-      : 'mp4'
-
-  // 确定 MIME 类型
-  let mimeType = ''
-  if (type === MsgEnum.IMAGE) {
-    mimeType = `image/${suffix === 'jpg' ? 'jpeg' : suffix}`
-  } else if (type === MsgEnum.VIDEO) {
-    mimeType = `video/${suffix}`
-  }
-
-  // 添加到 file store
-  fileStore.addFile({
-    id,
-    roomId,
-    fileName,
-    type: type === MsgEnum.IMAGE ? 'image' : 'video',
-    url: fileUrl,
-    suffix,
-    mimeType
-  })
-}
-
 useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
   if (chatStore.checkMsgExist(data.message.roomId, data.message.id)) {
     return
@@ -346,11 +288,6 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
   await invokeSilently(TauriCommand.SAVE_MSG, {
     data
   })
-
-  // 如果是图片或视频消息，添加到 file store（仅移动端需要）
-  if (isMobile()) {
-    addFileToStore(data)
-  }
 
   const currentUid = userUid.value
   // 不是自己发的消息才通知

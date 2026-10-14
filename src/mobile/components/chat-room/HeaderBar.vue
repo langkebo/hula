@@ -36,7 +36,9 @@
           type="button"
           class="private-toggle-btn-mobile"
           :class="{ 'private-toggle-btn-mobile--active': props.privateModeActive }"
-          :aria-label="props.privateModeActive ? '退出私密模式' : '进入私密模式'"
+          :aria-label="
+            props.privateModeActive ? t('chat.header.private_mode_exit') : t('chat.header.private_mode_enter')
+          "
           @click="emits('togglePrivateMode')">
           <span class="private-toggle-btn-mobile__letter">S</span>
         </button>
@@ -50,24 +52,27 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import FederationBadge from '@/components/atomic/FederationBadge.vue'
 import RoomHomeserverLabel from '@/components/room/RoomHomeserverLabel.vue'
 import router from '@/router'
 
+const { t } = useI18n()
+
 interface HeaderBarProps {
-  msgCount?: number
-  isOfficial?: boolean
-  isGroup?: boolean
-  hiddenRight?: boolean
-  enableDefaultBackground?: boolean
-  enableShadow?: boolean
-  roomName?: string | false
-  border?: boolean
-  privateModeActive?: boolean
+  msgCount?: number | undefined
+  isOfficial?: boolean | undefined
+  isGroup?: boolean | undefined
+  hiddenRight?: boolean | undefined
+  enableDefaultBackground?: boolean | undefined
+  enableShadow?: boolean | undefined
+  roomName?: string | false | undefined
+  border?: boolean | undefined
+  privateModeActive?: boolean | undefined
   /** 联邦服务器域名（非空即显示联邦图标徽章） */
-  federationServer?: string
+  federationServer?: string | undefined
   /** 当前房间的 homeserver 域名（非空即常显域名 chip，与是否联邦无关） */
-  roomServer?: string
+  roomServer?: string | undefined
 }
 
 const props = withDefaults(defineProps<HeaderBarProps>(), {

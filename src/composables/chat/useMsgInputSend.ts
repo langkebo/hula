@@ -226,18 +226,28 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     if (uploadResult.encryptedFile) {
       voiceBody.encryptedFile = uploadResult.encryptedFile
       voiceBody.url = ''
-      voiceBody.mxcUrl = undefined
+      delete voiceBody.mxcUrl
     } else {
       voiceBody.url = uploadResult.httpUrl || uploadResult.mxcUrl || voiceBody.url
-      voiceBody.mxcUrl = uploadResult.mxcUrl || undefined
+      if (uploadResult.mxcUrl) {
+        voiceBody.mxcUrl = uploadResult.mxcUrl
+      } else {
+        delete voiceBody.mxcUrl
+      }
     }
-    voiceBody.fileName = voiceBody.fileName || uploadResult.filename
+    const voiceFileName = voiceBody.fileName || uploadResult.filename
+    if (voiceFileName === undefined) {
+      delete voiceBody.fileName
+    } else {
+      voiceBody.fileName = voiceFileName
+    }
 
+    const newMsgId = uploadResult.eventId
     chatStore.updateMsg({
       msgId: tempMsgId,
       body: { ...voiceBody },
-      status: uploadResult.eventId ? MessageStatusEnum.SUCCESS : MessageStatusEnum.SENDING,
-      newMsgId: uploadResult.eventId,
+      status: newMsgId ? MessageStatusEnum.SUCCESS : MessageStatusEnum.SENDING,
+      ...(newMsgId === undefined ? {} : { newMsgId }),
       timeBlock: Date.now()
     })
 

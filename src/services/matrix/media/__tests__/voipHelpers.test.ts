@@ -126,7 +126,7 @@ describe('voipHelpers', () => {
 
   describe('getCallStatsFromPeerConn', () => {
     it('没有 peerConn 时应返回 null', async () => {
-      const call = createMockCall({ peerConn: undefined })
+      const call = createMockCall()
 
       const result = await getCallStatsFromPeerConn(call)
 

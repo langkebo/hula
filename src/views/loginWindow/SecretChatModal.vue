@@ -66,7 +66,6 @@ const { t } = useI18n()
 const settingStore = useSettingStore()
 const naiveTheme = computed(() => (settingStore.themeContent === 'dark' ? darkTheme : lightTheme))
 
-const formRef = ref()
 const loading = ref(false)
 const errorMsg = ref('')
 const formValue = reactive({

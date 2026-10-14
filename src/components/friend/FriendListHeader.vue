@@ -45,7 +45,7 @@
         <div class="friend-request-preview__list">
           <FriendRequestCard
             v-for="request in previewRequests"
-            :key="request.userId"
+            :key="request.userId ?? ''"
             :request="request"
             :processing="processingRequest === request.userId"
             @accept="$emit('quick-accept', $event)"

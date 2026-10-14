@@ -68,7 +68,6 @@ const props = withDefaults(
     showUrl?: boolean
   }>(),
   {
-    body: undefined,
     showUrl: true
   }
 )

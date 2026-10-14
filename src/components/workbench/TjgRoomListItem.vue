@@ -103,6 +103,7 @@ import { useRoomStore } from '@/stores/domains/chat/room'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { padZero } from '@/utils/StringUtils'
 
 const props = defineProps<{
   item: SessionItem & {
@@ -185,9 +186,9 @@ const timeText = computed(() => {
   if (new Date(now.getTime() - 86400000).toDateString() === date.toDateString())
     return t('home.plugins.room_detail.yesterday')
   if (date.getFullYear() === now.getFullYear()) {
-    return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
+    return `${padZero(date.getMonth() + 1)}/${padZero(date.getDate())}`
   }
-  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
+  return `${date.getFullYear()}/${padZero(date.getMonth() + 1)}/${padZero(date.getDate())}`
 })
 
 const lastMessageText = computed(() => {

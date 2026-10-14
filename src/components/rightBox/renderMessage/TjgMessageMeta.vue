@@ -66,7 +66,7 @@ const props = defineProps<{
   senderId: string
   timestamp: number
   isMe: boolean
-  status?: MessageStatusEnum
+  status?: MessageStatusEnum | undefined
   isLastMessage?: boolean
 }>()
 const emit = defineEmits<{ retry: [] }>()

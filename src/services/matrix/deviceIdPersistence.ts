@@ -8,6 +8,8 @@
  * 为什么用 localStorage 而非后端：密码/SSO 登录前尚无 access token，无法走
  * whoami 预解析（whoami 仅对 token 登录有效），只能依赖本地持久化的 deviceId。
  */
+import { bytesToHex } from '@/utils/StringUtils'
+
 const KEY_PREFIX = 'tjg.persistedDeviceId:'
 
 /**
@@ -48,12 +50,9 @@ export function persistDeviceId(identifier: string, deviceId: string): void {
  * ensureCrypto 会因「缺少 userId 或 deviceId」跳过 Rust Crypto 初始化（E2EE 失效）。
  *
  * 与 qrLoginHelpers.generateDeviceId 同源（crypto.getRandomValues 8 字节），
- * 独立在此实现以保持 deviceIdPersistence 零依赖，避免引入 QR 登录模块的重依赖链。
+ * 共用 DOM-free 的 bytesToHex 助手，避免引入 QR 登录模块的重依赖链。
  */
 export function generateDeviceId(): string {
   const random = crypto.getRandomValues(new Uint8Array(8))
-  return Array.from(random)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-    .toUpperCase()
+  return bytesToHex(random).toUpperCase()
 }

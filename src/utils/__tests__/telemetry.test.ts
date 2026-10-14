@@ -9,7 +9,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 import { errorTracker } from '@/utils/ErrorTracker'
-import { type TelemetryEvent, track } from '@/utils/telemetry'
+import { track } from '@/utils/telemetry'
 
 describe('telemetry 事件总线 (O2)', () => {
   beforeEach(() => {
@@ -70,14 +70,6 @@ describe('telemetry 事件总线 (O2)', () => {
       track({ kind: 'health', name: 'info_event', severity: 'info' })
 
       expect(spy).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('perf 事件分发', () => {
-    it('不抛异常（预留接口）', () => {
-      const event: TelemetryEvent = { kind: 'perf', name: 'startup', durationMs: 1200 }
-
-      expect(() => track(event)).not.toThrow()
     })
   })
 

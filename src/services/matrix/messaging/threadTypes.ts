@@ -36,12 +36,14 @@ export interface Thread {
   rootEventId: string
   roomId: string
   replyCount: number
-  lastReply?: {
-    eventId: string
-    sender: string
-    timestamp: number
-    content: IContent
-  }
+  lastReply?:
+    | {
+        eventId: string
+        sender: string
+        timestamp: number
+        content: IContent
+      }
+    | undefined
   participants: string[]
 }
 
@@ -50,17 +52,17 @@ export interface ThreadMessage {
   sender: string
   content: IContent
   timestamp: number
-  inReplyTo?: string
+  inReplyTo?: string | undefined
 }
 
 export interface ThreadDisplayMessage {
   eventId: string
   sender: string
   senderName: string
-  avatarUrl?: string
+  avatarUrl?: string | undefined
   content: string
   timestamp: number
-  inReplyTo?: string
+  inReplyTo?: string | undefined
 }
 
 export interface ThreadViewData {
@@ -93,9 +95,9 @@ export interface ThreadStatistics {
   totalParticipants: number
   totalEdits: number
   totalRedactions: number
-  firstReplyTs?: number
-  lastReplyTs?: number
-  avgReplyTimeMs?: number
+  firstReplyTs?: number | undefined
+  lastReplyTs?: number | undefined
+  avgReplyTimeMs?: number | undefined
 }
 
 export interface ThreadSubscription {
@@ -271,7 +273,7 @@ export interface ThreadStatisticsResponse {
 /** 列表查询参数（SDK ThreadListQuery）。 */
 export interface ThreadListQuery {
   limit?: number
-  from?: string
+  from?: string | undefined
   includeAll?: boolean
 }
 
@@ -283,7 +285,7 @@ export interface ThreadSearchQuery {
 
 /** 回复列表查询参数（SDK ThreadRepliesQuery）。 */
 export interface ThreadRepliesQuery {
-  limit?: number
+  limit?: number | undefined
   from?: string
 }
 
@@ -297,7 +299,7 @@ export interface ThreadDetailQuery {
 export interface ThreadCreateParams {
   roomId?: string
   rootEventId: string
-  content?: IContent
+  content?: IContent | undefined
   originServerTs?: number
 }
 
@@ -306,7 +308,7 @@ export interface ThreadReplyCreateParams {
   eventId: string
   rootEventId: string
   content: IContent
-  inReplyToEventId?: string
+  inReplyToEventId?: string | undefined
   originServerTs?: number
 }
 

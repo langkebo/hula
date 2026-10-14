@@ -14,8 +14,8 @@ import type { SettingsTabType } from '@/stores/domains/settings/settingsSchema'
 
 interface SettingsDirtyConfirmOptions {
   scope: 'close' | 'switch'
-  tabId?: SettingsTabType
-  currentTabLabel?: string
+  tabId?: SettingsTabType | undefined
+  currentTabLabel?: string | undefined
   dirtyTabs: SettingsTabType[]
 }
 

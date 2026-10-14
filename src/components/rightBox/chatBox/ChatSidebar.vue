@@ -325,7 +325,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useWindow } from '@/composables/common/useWindow'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
-import { MittEnum, OnlineEnum, RoleEnum, RoomTypeEnum, ThemeEnum, WsResponseMessageType } from '@/enums'
+import { MittEnum, OnlineEnum, RoleEnum, ThemeEnum, WsResponseMessageType } from '@/enums'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { UserItem } from '@/services/types'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
@@ -349,7 +349,7 @@ const { addListener } = useTauriListener()
 // 收集其 cleanup 函数，onUnmounted 时统一移除，避免组件反复进出会话累积回调。
 const mittCleanups: Array<() => void> = []
 const emit = defineEmits<(e: 'ready') => void>()
-const { createWebviewWindow } = useWindow()
+useWindow()
 const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
@@ -657,8 +657,8 @@ onMounted(async () => {
         activeStatus: u.activeStatus,
         roleId: u.roleId ?? 0,
         lastOptTime: u.lastOptTime,
-        myName: u.myName,
-        userStateId: u.userStateId
+        ...(u.myName !== undefined ? { myName: u.myName } : {}),
+        ...(u.userStateId !== undefined ? { userStateId: u.userStateId } : {})
       }))
       groupStore.updateMemberCache(currentRoom, matrixMembers)
     }

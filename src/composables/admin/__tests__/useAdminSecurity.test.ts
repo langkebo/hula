@@ -38,7 +38,7 @@ describe('useAdminSecurity', () => {
     const c = useAdminSecurity()
     vi.mocked(adminService.security.getAuditLog)
       .mockResolvedValueOnce({ logs: [{ id: 'e1' }], next_batch: 'tok1' })
-      .mockResolvedValueOnce({ logs: [{ id: 'e2' }], next_batch: undefined })
+      .mockResolvedValueOnce({ logs: [{ id: 'e2' }] })
     await c.loadAuditLogs()
     await c.loadAuditLogs(50, 'tok1')
     expect(c.auditLogs.value).toEqual([{ id: 'e1' }, { id: 'e2' }])

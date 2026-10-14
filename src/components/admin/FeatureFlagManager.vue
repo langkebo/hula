@@ -45,8 +45,8 @@
         <n-form :model="formData" label-placement="left" label-width="120">
           <n-form-item
             :label="t('admin.feature_flags.flag_key')"
-            :validation-status="flagKeyError ? 'error' : undefined"
-            :feedback="flagKeyError">
+            :feedback="flagKeyError"
+            v-bind="flagKeyError ? { validationStatus: 'error' as const } : {}">
             <n-input
               v-model:value="formData.flagKey"
               :disabled="isEditing"
@@ -382,12 +382,13 @@ async function handleSubmit() {
     return
   }
 
+  const reason = formData.value.reason?.trim() || formData.value.description?.trim() || undefined
   const input: AdminFeatureFlagInput = {
     flagKey: formData.value.flagKey.trim(),
     targetScope: formData.value.targetScope,
     rolloutPercent: formData.value.rolloutPercent,
     expiresAt: formData.value.expiresAt,
-    reason: formData.value.reason?.trim() || formData.value.description?.trim() || undefined,
+    ...(reason !== undefined ? { reason } : {}),
     targets: formData.value.targets
       .filter((target) => target.subjectType.trim() && target.subjectId.trim())
       .map((target) => ({

@@ -36,11 +36,13 @@ export interface ThreadInfo {
   rootEventId: string
   replyCount: number
   participants: string[]
-  lastReply?: {
-    eventId: string
-    sender: string
-    timestamp: number
-  }
+  lastReply?:
+    | {
+        eventId: string
+        sender: string
+        timestamp: number
+      }
+    | undefined
 }
 
 export interface RelationsResponse {

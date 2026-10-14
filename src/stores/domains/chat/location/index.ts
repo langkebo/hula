@@ -14,12 +14,12 @@ const EXPIRY_STOP_RETRY_DELAY_MS = 5000
 export interface ActiveBeacon {
   roomId: string
   owner: string
-  description?: string
-  timeout?: number
+  description?: string | undefined
+  timeout?: number | undefined
   /** beacon 起始时间戳（m.ts），用于计算到期时间 */
   timestamp: number
   isLive: boolean
-  latestUri?: string
+  latestUri?: string | undefined
 }
 
 /**
@@ -92,7 +92,11 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
    * 返回 beacon_info 事件 ID（供后续 publishLocation / stopLiveShare 使用）。
    */
   async function startLiveShare(roomId: string, description?: string, timeout?: number): Promise<string> {
-    const beacon = await matrixBeaconService.createBeacon({ roomId, description, timeout })
+    const beacon = await matrixBeaconService.createBeacon({
+      roomId,
+      ...(description !== undefined ? { description } : {}),
+      ...(timeout !== undefined ? { timeout } : {})
+    })
 
     // 本地会话以开启时刻为起始时间（服务端 m.ts 即创建时刻，二者相差毫秒级），
     // 与 SDK checkLiveness 的「timestamp + timeout」口径一致。
@@ -139,7 +143,7 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
       beaconInfoEventId,
       latitude: loc.latitude,
       longitude: loc.longitude,
-      uncertainty: loc.accuracy
+      ...(loc.accuracy !== undefined ? { uncertainty: loc.accuracy } : {})
     })
 
     const latestUri = `geo:${loc.latitude},${loc.longitude}`

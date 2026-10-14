@@ -164,7 +164,7 @@ const props = withDefaults(
   defineProps<{
     inboundRequest?: VerificationTransaction | null
     deviceId?: string
-    deviceName?: string
+    deviceName?: string | undefined
     pendingVerifications: VerificationTransaction[]
     /** 目标用户 MXID（跨用户验证时展示） */
     targetUserId?: string
@@ -177,12 +177,8 @@ const props = withDefaults(
   }>(),
   {
     inboundRequest: null,
-    deviceId: undefined,
-    deviceName: undefined,
-    targetUserId: undefined,
     isOtherUser: false,
-    deviceOptions: () => [],
-    selectedDeviceId: undefined
+    deviceOptions: () => []
   }
 )
 

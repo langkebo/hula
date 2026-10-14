@@ -109,7 +109,7 @@ describe('MatrixRoomCreationService', () => {
       )
     })
 
-    it('uses Private visibility + PrivateChat preset by default; empty alias → undefined', async () => {
+    it('uses Private visibility + PrivateChat preset by default; empty alias omits the key', async () => {
       vi.mocked(matrixClientService.createRoom).mockResolvedValueOnce(makeRoom() as never)
       await service.createGroupRoom({ name: 'G', alias: '' })
       expect(matrixClientService.createRoom).toHaveBeenCalledWith(
@@ -118,9 +118,13 @@ describe('MatrixRoomCreationService', () => {
           preset: Preset.PrivateChat
         })
       )
-      expect(matrixClientService.createRoom).toHaveBeenCalledWith(
-        expect.objectContaining({ room_alias_name: undefined })
-      )
+      // 空 alias 时实现通过条件展开省略 room_alias_name 键（exactOptionalPropertyTypes），
+      // 而不是显式传 undefined，因此断言该键不存在。
+      const createRoomOptions = vi.mocked(matrixClientService.createRoom).mock.calls.at(-1)?.[0] as Record<
+        string,
+        unknown
+      >
+      expect(createRoomOptions).not.toHaveProperty('room_alias_name')
     })
 
     it('pushes m.room.avatar into initial_state when avatarUrl is provided', async () => {

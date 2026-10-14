@@ -8,9 +8,9 @@ export interface MatrixContact {
   userId: string
   displayName: string | null
   avatarUrl: string | null
-  presence?: string
-  statusMessage?: string
-  directRoomId?: string
+  presence?: string | undefined
+  statusMessage?: string | undefined
+  directRoomId?: string | undefined
   uid: string
   name: string
   account: string
@@ -20,9 +20,9 @@ export interface MatrixContact {
   lastOptTime: number
   hideMyPosts: boolean
   hideTheirPosts: boolean
-  friendStatus?: FriendStatus
-  since?: number
-  note?: string
+  friendStatus?: FriendStatus | undefined
+  since?: number | undefined
+  note?: string | undefined
 }
 
 export interface ContactInvite {
@@ -34,12 +34,12 @@ export interface ContactInvite {
 }
 
 export interface FriendRequestItem {
-  userId?: string
-  displayName?: string
-  avatarUrl?: string
-  message?: string
-  timestamp?: number
-  direction?: 'incoming' | 'outgoing'
+  userId?: string | undefined
+  displayName?: string | undefined
+  avatarUrl?: string | undefined
+  message?: string | undefined
+  timestamp?: number | undefined
+  direction?: 'incoming' | 'outgoing' | undefined
   type?: string | number
   roomId?: string
   applyId: string

@@ -1,6 +1,6 @@
 <template>
-  <!-- 视频通话-桌面端 -->
-  <div v-if="callType === CallTypeEnum.VIDEO && !isMobileDevice" class="relative z-10">
+  <!-- 视频通话 -->
+  <div v-if="callType === CallTypeEnum.VIDEO" class="relative z-10">
     <div class="py-14px flex-center gap-32px">
       <!-- 静音按钮 -->
       <div class="flex-col-x-center gap-8px w-80px">
@@ -74,8 +74,8 @@
   </div>
 
   <!-- 语音通话 -->
-  <div v-else-if="callType !== CallTypeEnum.VIDEO" class="relative z-10">
-    <div :class="isMobileDevice ? 'pb-120px' : 'pb-30px'" class="flex-col-x-center">
+  <div v-else class="relative z-10">
+    <div class="flex-col-x-center pb-30px">
       <!-- 上排按钮：静音、扬声器 -->
       <div class="flex-center gap-40px mb-32px">
         <!-- 静音按钮 -->
@@ -92,7 +92,7 @@
               <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
             </svg>
           </div>
-          <div v-if="!isMobileDevice" class="text-12px text-[--tjg-text-quaternary] text-center">
+          <div class="text-12px text-[--tjg-text-quaternary] text-center">
             {{ !isMuted ? t('message.call_window.mic_on') : t('message.call_window.mic_off') }}
           </div>
         </div>
@@ -111,7 +111,7 @@
               <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
             </svg>
           </div>
-          <div v-if="!isMobileDevice" class="text-12px text-[--tjg-text-quaternary] text-center">
+          <div class="text-12px text-[--tjg-text-quaternary] text-center">
             {{ isSpeakerOn ? t('message.call_window.speaker_on') : t('message.call_window.speaker_off') }}
           </div>
         </div>
@@ -138,7 +138,6 @@ import { CallTypeEnum } from '@/enums'
 
 defineProps<{
   callType: CallTypeEnum
-  isMobileDevice: boolean
   isMuted: boolean
   isSpeakerOn: boolean
   isVideoEnabled: boolean

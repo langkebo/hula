@@ -9,14 +9,9 @@
     @click="emit('click')"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false">
-    <n-badge :dot="item.isPinned" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
+    <n-badge :dot="item.isPinned ?? false" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
       <div class="space-card__avatar">
-        <n-avatar
-          v-if="item.avatarUrl"
-          :size="compact ? 36 : 40"
-          :src="item.avatarUrl"
-          round
-          class="space-card__img" />
+        <n-avatar v-if="item.avatarUrl" :size="compact ? 36 : 40" :src="item.avatarUrl" round class="space-card__img" />
         <div v-else class="space-card__initials" :style="{ background: avatarColor }">
           {{ initials }}
         </div>

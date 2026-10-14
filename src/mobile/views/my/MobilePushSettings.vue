@@ -24,7 +24,7 @@
               v-for="pusher in pushers"
               :key="`${pusher.app_id}:${pusher.pushkey}`"
               :title="getPusherDisplayName(pusher, t('mobile_push.unknown_device'))"
-              :label="getPusherSubtitle(pusher) || undefined"
+              v-bind="getPusherSubtitle(pusher) ? { label: getPusherSubtitle(pusher) } : {}"
               data-testid="push-device">
               <template #value>
                 <span class="text-12px text-[--tjg-text-tertiary]" data-testid="push-device-key">
@@ -49,7 +49,7 @@
               v-for="rule in groupedRules[kind]"
               :key="rule.rule_id"
               :title="formatPushRuleId(rule.rule_id)"
-              :label="rule.pattern || undefined"
+              v-bind="rule.pattern ? { label: rule.pattern } : {}"
               data-testid="push-rule">
               <template #right-icon>
                 <van-switch

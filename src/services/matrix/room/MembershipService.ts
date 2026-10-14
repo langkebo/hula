@@ -131,7 +131,10 @@ export class MatrixRoomMembershipService {
   async knockRoom(roomId: string, reason?: string, viaServers?: string[]): Promise<{ room_id: string }> {
     const client = this.getClient()
     try {
-      const result = await client.knockRoom(roomId, { reason, viaServers })
+      const result = await client.knockRoom(roomId, {
+        ...(reason !== undefined ? { reason } : {}),
+        ...(viaServers !== undefined ? { viaServers } : {})
+      })
       logger.info(`[MatrixRoom] 敲门房间成功: ${roomId}`)
       return result
     } catch (err) {

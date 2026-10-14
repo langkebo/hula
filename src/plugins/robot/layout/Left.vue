@@ -236,12 +236,12 @@ const total = ref(0)
 // 会话列表数据
 interface ChatItem {
   id: string
-  title?: string
+  title: string
   createTime: number
-  messageCount?: number
-  isPinned?: boolean
-  roleId?: string | number
-  modelId?: string | number
+  messageCount?: number | undefined
+  isPinned?: boolean | undefined
+  roleId?: string | number | undefined
+  modelId?: string | number | undefined
 }
 
 const chatList = ref<ChatItem[]>([])
@@ -452,7 +452,6 @@ const add = async () => {
   try {
     const data = await conversationService.create({
       roleId: firstAvailableRoleId.value,
-      knowledgeId: undefined,
       title: t('ai_assistant.robot.new_conversation_title')
     })
 
@@ -654,7 +653,7 @@ onMounted(async () => {
           const rawCreateTime = Number(newChat.createTime)
           const normalizedChat: ChatItem = {
             id: newChat.id,
-            title: newChat.title,
+            title: newChat.title ?? '',
             createTime: Number.isFinite(rawCreateTime) ? rawCreateTime : Date.now(),
             messageCount: newChat.messageCount || 0,
             isPinned: newChat.isPinned || false,

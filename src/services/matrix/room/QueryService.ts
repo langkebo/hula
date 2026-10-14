@@ -7,7 +7,7 @@ const logger = createLogger('RoomQueryService')
 export interface GroupSearchResult {
   account: string
   name: string
-  avatar?: string
+  avatar?: string | undefined
   deleteStatus?: boolean
   extJson?: string
   roomId: string

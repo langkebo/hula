@@ -34,7 +34,6 @@ const meta = {
   args: {
     trustLevel: 'verified',
     showLabel: true,
-    label: undefined,
     title: '端到端加密已验证'
   }
 } satisfies Meta<typeof MessageLockBadge>

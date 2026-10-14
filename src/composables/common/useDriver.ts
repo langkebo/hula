@@ -96,17 +96,22 @@ export const useDriver = (steps: DriverStepConfig[], config: DriverConfig = {}):
    * @returns 处理后的步骤配置
    */
   const processStep = (step: DriverStepConfig): DriveStep => {
+    const stepPopover = step.popover
     const processedStep: DriveStep = {
       element: step.element,
-      disableActiveInteraction: step.disableActiveInteraction,
-      popover: step.popover
-        ? {
-            title: step.popover.title,
-            description: step.popover.description,
-            side: step.popover.side,
-            align: step.popover.align
-          }
-        : undefined
+      ...(step.disableActiveInteraction === undefined
+        ? {}
+        : { disableActiveInteraction: step.disableActiveInteraction }),
+      ...(stepPopover === undefined
+        ? {}
+        : {
+            popover: {
+              ...(stepPopover.title === undefined ? {} : { title: stepPopover.title }),
+              ...(stepPopover.description === undefined ? {} : { description: stepPopover.description }),
+              ...(stepPopover.side === undefined ? {} : { side: stepPopover.side }),
+              ...(stepPopover.align === undefined ? {} : { align: stepPopover.align })
+            }
+          })
     }
 
     // 处理自定义点击事件

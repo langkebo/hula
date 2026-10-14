@@ -65,7 +65,6 @@ const { showFeedback } = useActionFeedback()
 const registrationTokens = useAdminRegistrationTokens()
 const loading = registrationTokens.loading
 const tokens = registrationTokens.tokens
-const creating = registrationTokens.creating
 
 const showDialog = ref(false)
 const isEditing = ref(false)

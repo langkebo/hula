@@ -24,7 +24,7 @@
             :show-indicator="false"
             :color="'var(--tjg-color-primary-500)'"
             :rail-color="'var(--tjg-color-primary-300-alpha)'"
-            :percentage="percentage" />
+            v-bind="percentage !== undefined ? { percentage } : {}" />
           <n-flex justify="center" align="center" :gap="12">
             <n-spin :size="12" :color="'var(--tjg-color-primary-500)'" />
             <span class="loading-text">{{ loadingText }}</span>

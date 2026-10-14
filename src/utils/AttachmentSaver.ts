@@ -47,7 +47,7 @@ const saveAttachmentAs = async ({
   try {
     const savePath = await save({
       defaultPath: filename,
-      filters
+      ...(filters !== undefined ? { filters } : {})
     })
 
     if (!savePath) return

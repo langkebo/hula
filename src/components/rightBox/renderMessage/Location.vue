@@ -63,9 +63,7 @@ const props = withDefaults(
   defineProps<{
     body?: LocationBody
   }>(),
-  {
-    body: undefined
-  }
+  {}
 )
 
 // 响应式状态

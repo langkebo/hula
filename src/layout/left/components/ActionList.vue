@@ -21,7 +21,7 @@
         <!-- 已经打开窗口时展示 -->
         <n-popover :show-arrow="false" v-if="openWindowsList.has(item.url)" trigger="hover" placement="right">
           <template #trigger>
-            <n-badge :max="99" :value="item.badge">
+            <n-badge :max="99" v-bind="badgeProps(item.badge)">
               <svg class="size-22px" @click="tipShow = false" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
@@ -33,7 +33,7 @@
         <!-- 该选项有提示时展示 -->
         <n-popover class="p-12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
           <template #trigger>
-            <n-badge :max="99" :value="item.badge" dot :show="item.dot">
+            <n-badge :max="99" dot v-bind="badgeProps(item.badge, item.dot)">
               <svg class="size-22px" @click="handleTipShow(item)" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
@@ -48,7 +48,7 @@
           </n-flex>
         </n-popover>
         <!-- 该选项无提示时展示 -->
-        <n-badge v-else :max="99" :value="getMenuBadgeValue(item.url)" :show="getMenuBadgeShow(item.url)">
+        <n-badge v-else :max="99" v-bind="badgeProps(getMenuBadgeValue(item.url), getMenuBadgeShow(item.url))">
           <svg class="size-22px" aria-hidden="true">
             <use
               :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
@@ -82,7 +82,7 @@
           @click="pageJumps(item.url, item.title, item.size, item.window)">
           <span class="workspace-entry__indicator" aria-hidden="true"></span>
           <span class="workspace-entry__surface">
-            <n-badge class="workspace-entry__badge" :max="99" :value="item.badge" :show="(item.badge ?? 0) > 0">
+            <n-badge class="workspace-entry__badge" :max="99" v-bind="badgeProps(item.badge, (item.badge ?? 0) > 0)">
               <svg class="workspace-entry__icon">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
@@ -114,7 +114,7 @@
         <!-- 已经打开窗口时展示 -->
         <n-popover :show-arrow="false" v-if="openWindowsList.has(item.url)" trigger="hover" placement="right">
           <template #trigger>
-            <n-badge :max="99" :value="item.badge">
+            <n-badge :max="99" v-bind="badgeProps(item.badge)">
               <svg class="size-22px" @click="tipShow = false" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
@@ -126,7 +126,7 @@
         <!-- 该选项有提示时展示 -->
         <n-popover class="p-12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
           <template #trigger>
-            <n-badge :max="99" :value="item.badge" dot :show="item.dot">
+            <n-badge :max="99" dot v-bind="badgeProps(item.badge, item.dot)">
               <svg class="size-22px" @click="handleTipShow(item)" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
@@ -143,7 +143,7 @@
         <!-- 该选项无提示时展示 -->
         <n-popover v-else :show-arrow="false" trigger="hover" placement="right">
           <template #trigger>
-            <n-badge :max="99" :value="item.badge" :show="(item.badge ?? 0) > 0">
+            <n-badge :max="99" v-bind="badgeProps(item.badge, (item.badge ?? 0) > 0)">
               <svg class="size-22px" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
@@ -221,7 +221,7 @@
         <!-- 已经打开窗口时展示 -->
         <n-popover :show-arrow="false" v-if="openWindowsList.has(item.url)" trigger="hover" placement="right">
           <template #trigger>
-            <n-badge :max="99" :value="item.badge">
+            <n-badge :max="99" v-bind="badgeProps(item.badge)">
               <svg class="size-22px" @click="tipShow = false" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
@@ -233,7 +233,7 @@
         <!-- 该选项有提示时展示 -->
         <n-popover class="p-12px" v-else-if="item.tip" trigger="manual" v-model:show="tipShow" placement="right">
           <template #trigger>
-            <n-badge :max="99" :value="item.badge">
+            <n-badge :max="99" v-bind="badgeProps(item.badge)">
               <svg class="size-22px" @click="tipShow = false" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
@@ -248,7 +248,7 @@
           </n-flex>
         </n-popover>
         <!-- 该选项无提示时展示 -->
-        <n-badge v-else :max="99" :value="item.badge">
+        <n-badge v-else :max="99" v-bind="badgeProps(item.badge)">
           <svg class="size-22px" aria-hidden="true">
             <use
               :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction : item.icon}`"></use>
@@ -405,6 +405,14 @@ const getMenuBadgeShow = (url: string) => {
   if (url === 'message') return messageUnreadCount.value > 0
   if (url === 'friendsList') return unreadApplyCount.value > 0
   return false
+}
+
+// n-badge 的 value/show 不接受显式 undefined，按需省略对应键
+const badgeProps = (value?: number, show?: boolean) => {
+  return {
+    ...(value === undefined ? {} : { value }),
+    ...(show === undefined ? {} : { show })
+  }
 }
 
 const startResize = () => {

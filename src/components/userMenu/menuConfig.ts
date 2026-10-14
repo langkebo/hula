@@ -27,7 +27,7 @@ interface MenuItem {
 
 interface MenuSection {
   id: string
-  title?: string
+  title?: string | undefined
   titleKey?: string
   items: MenuItem[]
 }
@@ -37,10 +37,6 @@ let routerInstance: ReturnType<typeof useRouter> | null = null
 
 export function setLogoutCallback(callback: () => Promise<void>): void {
   logoutCallback = callback
-}
-
-function _getLogoutCallback(): (() => Promise<void>) | null {
-  return logoutCallback
 }
 
 export function setRouterInstance(router: ReturnType<typeof useRouter>): void {
@@ -303,18 +299,6 @@ const MENU_SECTIONS: MenuSection[] = [
   }
 ]
 
-function _getAllMenuItems(): MenuItem[] {
-  const items: MenuItem[] = []
-  for (const section of MENU_SECTIONS) {
-    items.push(...section.items.filter((item) => !item.divider))
-  }
-  return items
-}
-
-function _getMenuSections(): MenuSection[] {
-  return MENU_SECTIONS
-}
-
 function translateMenuItem(item: MenuItem, t: MenuTranslator): MenuItem {
   if (item.divider || !item.labelKey) {
     return item
@@ -353,17 +337,4 @@ export function findMenuItemById(id: string): MenuItem | undefined {
     if (item) return item
   }
   return undefined
-}
-
-function _getFilteredMenuItems(isDesktop: boolean, t: MenuTranslator = translateMenu): MenuItem[] {
-  const sections = getFilteredSections(isDesktop, t)
-  const items: MenuItem[] = []
-  for (const section of sections) {
-    for (const item of section.items) {
-      if (!item.divider) {
-        items.push(item)
-      }
-    }
-  }
-  return items
 }

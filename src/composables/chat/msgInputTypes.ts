@@ -58,11 +58,11 @@ export interface ChatStoreLike {
 }
 
 export interface VoiceUploadResult {
-  httpUrl?: string
-  mxcUrl?: string
-  filename?: string
-  eventId?: string
-  encryptedFile?: EncryptedAttachmentFile
+  httpUrl?: string | undefined
+  mxcUrl?: string | undefined
+  filename?: string | undefined
+  eventId?: string | undefined
+  encryptedFile?: EncryptedAttachmentFile | undefined
 }
 
 export interface UseMsgInputSendOptions {

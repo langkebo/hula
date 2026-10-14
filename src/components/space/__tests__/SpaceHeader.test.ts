@@ -12,7 +12,6 @@ const sampleSpace = {
   spaceId: '!space-1:server',
   name: 'Design Team',
   topic: 'Design collaboration space',
-  avatarUrl: undefined,
   memberCount: 12,
   childCount: 5
 }

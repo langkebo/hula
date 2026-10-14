@@ -73,7 +73,6 @@ export const useAiConversationLifecycle = ({
     try {
       const data = await conversationService.create({
         roleId,
-        knowledgeId: undefined,
         title: roleName
       })
 

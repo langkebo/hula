@@ -15,22 +15,6 @@ export function getTask(name: string): WorkerTaskDefinition | undefined {
   return taskRegistry.get(name)
 }
 
-async function _executeTask<I, O>(name: string, input: I): Promise<O> {
-  const task = taskRegistry.get(name)
-  if (!task) {
-    throw new Error(`[WorkerRegistry] 未注册的任务: ${name}`)
-  }
-  return task.handler(input) as Promise<O>
-}
-
-function _listTasks(): string[] {
-  return Array.from(taskRegistry.keys())
-}
-
-function _clearTasks(): void {
-  taskRegistry.clear()
-}
-
 export function createTask<I, O>(name: string, handler: (input: I) => Promise<O> | O): WorkerTaskDefinition<I, O> {
   return { name, handler }
 }

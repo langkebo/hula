@@ -41,13 +41,13 @@ interface SafeBody {
   text?: string
   fileName?: string
   size?: number
-  width?: number
-  height?: number
+  width?: number | undefined
+  height?: number | undefined
   mimetype?: string
   duration?: number
   filename?: string
   thumbnail?: string
-  thumbnailInfo?: { w?: number; h?: number; size?: number }
+  thumbnailInfo?: { w?: number; h?: number; size?: number } | undefined
 }
 
 /**
@@ -86,54 +86,6 @@ export function getBodyContent(body: unknown): string {
 export function getBodyUrl(body: unknown): string {
   const msgBody = toMessageBody(body)
   return msgBody.url || ''
-}
-
-/**
- * 安全获取 body.text
- */
-function _getBodyText(body: unknown): string {
-  const msgBody = toMessageBody(body)
-  return msgBody.text || ''
-}
-
-/**
- * 安全获取 body.fileName
- */
-function _getBodyFileName(body: unknown): string {
-  const msgBody = toMessageBody(body)
-  return msgBody.fileName || ''
-}
-
-/**
- * 安全获取 body.size
- */
-function _getBodySize(body: unknown): number {
-  const msgBody = toMessageBody(body)
-  return msgBody.size || 0
-}
-
-/**
- * 安全获取 body.width
- */
-function _getBodyWidth(body: unknown): number {
-  const msgBody = toMessageBody(body)
-  return Number(msgBody.w || msgBody.width || 0)
-}
-
-/**
- * 安全获取 body.height
- */
-function _getBodyHeight(body: unknown): number {
-  const msgBody = toMessageBody(body)
-  return Number(msgBody.h || msgBody.height || 0)
-}
-
-/**
- * 安全获取 body.mimetype
- */
-function _getBodyMimeType(body: unknown): string {
-  const msgBody = toMessageBody(body)
-  return msgBody.mimetype || ''
 }
 
 /**

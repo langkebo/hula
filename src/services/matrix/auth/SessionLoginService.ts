@@ -46,7 +46,7 @@ export class SessionLoginService {
       saveMatrixSessionEndpointConfig({ homeserverUrl, identityServerUrl: identityServerUrl || '' })
       await port.matrix.initialize({
         homeserverUrl,
-        identityServerUrl,
+        ...(identityServerUrl !== undefined ? { identityServerUrl } : {}),
         allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 

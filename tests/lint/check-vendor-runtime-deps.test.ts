@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  VENDOR_RUNTIME_DEPS,
   evaluateVendorRuntimeDeps,
-  extractOptimizeDepsInclude
+  extractOptimizeDepsInclude,
+  VENDOR_RUNTIME_DEPS
 } from '../../scripts/check-vendor-runtime-deps.mjs'
 
 const projectRoot = join(__dirname, '..', '..')

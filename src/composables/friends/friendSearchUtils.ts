@@ -24,7 +24,7 @@ export type GroupSearchViewItem = BaseSearchResult & {
   roomId: string
   uid?: string
   deleteStatus?: number | boolean
-  extJson?: string
+  extJson?: string | undefined
 }
 
 export type FriendSearchResult = UserSearchResult | GroupSearchViewItem

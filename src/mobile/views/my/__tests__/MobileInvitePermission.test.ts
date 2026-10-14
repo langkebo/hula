@@ -451,7 +451,7 @@ describe('MobileInvitePermission', () => {
 
   it('surfaces a toast when loading fails', async () => {
     getConfigMock.mockRejectedValue(new Error('boom'))
-    const _wrapper = mountPage()
+    mountPage()
     await flushPromises()
     expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
   })

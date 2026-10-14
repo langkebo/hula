@@ -136,7 +136,6 @@ const sampleRooms: RoomData[] = [
     name: 'Matrix Chat',
     topic: 'A place to discuss Matrix protocol',
     numJoinedMembers: 42,
-    avatarUrl: undefined,
     isFederated: false
   },
   {
@@ -144,7 +143,6 @@ const sampleRooms: RoomData[] = [
     name: 'Vue Fans',
     topic: 'Vue.js enthusiasts',
     numJoinedMembers: 128,
-    avatarUrl: undefined,
     isFederated: true
   }
 ]

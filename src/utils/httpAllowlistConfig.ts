@@ -27,11 +27,15 @@ function homeserverEntry(url?: string): string | null {
 /**
  * 纯函数：由原始配置 + homeserver + mode 推导规则集。
  * raw 为空时回退内置默认集（dev/prod 各一份）；homeserver host 始终追加。
+ *
+ * `mode` 采用 fail-closed 语义：**缺省为 `enforce`（拒绝未命中 host）**，
+ * 仅当显式传 `report` 时才降级为「仅记录不拦截」（用于观察/排障）。
+ * 任何非 `report` 的取值（含空值、拼写错误）一律按 `enforce` 处理。
  */
 export function resolveAllowlistConfig(input: {
-  raw?: string
-  homeserverUrl?: string
-  mode?: string
+  raw?: string | undefined
+  homeserverUrl?: string | undefined
+  mode?: string | undefined
   env: Env
 }): AllowlistConfig {
   const fallback = input.env === 'dev' ? DEFAULT_ALLOWLIST_DEV : DEFAULT_ALLOWLIST
@@ -39,7 +43,7 @@ export function resolveAllowlistConfig(input: {
   const hostEntry = homeserverEntry(input.homeserverUrl)
   const combined = hostEntry ? `${raw},${hostEntry}` : raw
   const { rules, warnings } = parseAllowRules(combined)
-  return { rules, mode: input.mode === 'enforce' ? 'enforce' : 'report', warnings }
+  return { rules, mode: input.mode === 'report' ? 'report' : 'enforce', warnings }
 }
 
 export function currentEnv(): Env {
@@ -49,7 +53,7 @@ export function currentEnv(): Env {
 /**
  * 运行时读取 env 配置：
  * - `VITE_HTTP_ALLOWLIST_DEV` / `VITE_HTTP_ALLOWLIST_PROD` 优先，回退 `VITE_HTTP_ALLOWLIST`，再回退内置默认集。
- * - `VITE_HTTP_ALLOWLIST_MODE` = `enforce` 时强制拒绝未命中 host，否则默认 `report`（仅记录，不拦截）。
+ * - `VITE_HTTP_ALLOWLIST_MODE` 缺省为 `enforce`（拒绝未命中 host）；仅显式设为 `report` 时才降级为「仅记录不拦截」。
  */
 export function getAllowlistConfig(env: Env = currentEnv()): AllowlistConfig {
   const raw: string | undefined =

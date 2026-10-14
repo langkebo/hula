@@ -34,10 +34,10 @@ export class AdminMediaService {
       mediaType: string
       contentUri: string
       createdAt: number
-      uploadName?: string
-      mediaLength?: number
+      uploadName?: string | undefined
+      mediaLength?: number | undefined
     }>
-    nextToken?: string
+    nextToken?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()

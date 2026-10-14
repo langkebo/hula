@@ -23,20 +23,10 @@
     <div class="absolute inset-0 bg-black/20"></div>
 
     <!-- 窗口控制栏 -->
-    <ActionBar
-      v-if="!isMobileDevice"
-      ref="actionBarRef"
-      class="relative z-10"
-      :top-win-label="currentWindowLabel"
-      :shrink="false" />
+    <ActionBar ref="actionBarRef" class="relative z-10" :top-win-label="currentWindowLabel" :shrink="false" />
 
     <!-- 主要内容区域 -->
-    <div
-      :class="[
-        'relative z-10 flex flex-col min-h-0 flex-1',
-        isMobileDevice ? 'p-0' : 'px-8px pt-6px',
-        !isMobileDevice || callType !== CallTypeEnum.VIDEO ? 'items-center justify-center' : ''
-      ]">
+    <div class="relative z-10 flex flex-col min-h-0 flex-1 px-8px pt-6px items-center justify-center">
       <!-- 视频通话时显示视频 -->
       <CallVideoStage
         v-if="callType === CallTypeEnum.VIDEO && localStream && (isVideoEnabled || hasRemoteVideo)"
@@ -44,30 +34,20 @@
         :remote-stream="remoteStream"
         :is-video-enabled="isVideoEnabled"
         :is-speaker-on="isSpeakerOn"
-        :is-muted="isMuted"
-        :call-type="callType"
         :connection-status="connectionStatus"
         :call-status-text="callStatusText"
-        :formatted-call-duration="formattedCallDuration"
-        :is-mobile-device="isMobileDevice"
-        :pip-video-size-class="pipVideoSizeClass"
-        @toggle-mute="toggleMute"
-        @toggle-speaker="toggleSpeaker"
-        @switch-camera="handleSwitchCamera"
-        @toggle-video="handleToggleVideo"
-        @hangup="handleHangup()" />
+        :pip-video-size-class="pipVideoSizeClass" />
 
       <!-- 语音通话或其他状态时显示头像 -->
       <CallAvatarStage
         v-else
         :avatar-src="avatarSrc"
         :remote-user-name="remoteUserInfo?.name || ''"
-        :call-status-text="callStatusText"
-        :should-center="shouldCenterPreparingAvatar" />
+        :call-status-text="callStatusText" />
 
       <!-- 通话时长 -->
       <div
-        v-if="connectionStatus === RTCCallStatus.ACCEPT && (!isMobileDevice || callType !== CallTypeEnum.VIDEO)"
+        v-if="connectionStatus === RTCCallStatus.ACCEPT"
         class="inline-block rounded-full bg-black/50 px-16px py-6px text-16px text-gray-300 my-12px text-center">
         {{ formattedCallDuration }}
       </div>
@@ -76,7 +56,6 @@
     <!-- 底部控制栏 -->
     <CallControlsBar
       :call-type="callType"
-      :is-mobile-device="isMobileDevice"
       :is-muted="isMuted"
       :is-speaker-on="isSpeakerOn"
       :is-video-enabled="isVideoEnabled"
@@ -94,10 +73,9 @@ import { LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize } from '@t
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { primaryMonitor } from '@tauri-apps/api/window'
 
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useVoIPCallFlow } from '@/composables/useVoIPCallFlow'
 import { CallTypeEnum, RTCCallStatus } from '@/enums'
-import router from '@/router'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMac, isWindows } from '@/utils/PlatformConstants'
@@ -112,20 +90,14 @@ const timerManager = useTimerManager()
 
 // 1. 解析路由
 const routeInfo = parseCallRoute()
-const { remoteUserId, roomId, callType, isReceiver, shouldAutoAccept, isMobileDevice } = routeInfo
-
-if ((!roomId || !remoteUserId) && isMobileDevice) {
-  router.replace('/mobile/message')
-}
+const { roomId, callType, isReceiver } = routeInfo
 
 // 2. Matrix VoIP 通话流程
 const {
   callInfo,
-  isAudioMuted,
   isVideoEnabled,
   isSpeakerOn,
   state,
-  toggleMute: voipToggleMute,
   toggleVideo: voipToggleVideo,
   toggleSpeaker,
   startCall,
@@ -191,20 +163,17 @@ const {
   isMuted,
   isVideoOn,
   currentWindowLabel,
-  actionBarRef,
   callStatusText,
   formattedCallDuration,
   hasRemoteVideo,
-  pipVideoSizeClass,
-  shouldCenterPreparingAvatar
+  pipVideoSizeClass
 } = useCallState({ ...routeInfo, localStream, remoteStream, isVideoEnabled, callDuration, connectionStatus })
 
 // 4. 通话控制（简化版，去掉 WebRTC 专属参数）
-const { toggleMute, hangUp } = useCallControls({
+const { toggleMute } = useCallControls({
   isMuted,
   isCallAccepted,
-  connectionStatus,
-  isMobileDevice
+  connectionStatus
 })
 
 // ── 铃声管理 ──
@@ -276,28 +245,6 @@ const handleToggleVideo = async () => {
   isVideoOn.value = isVideoEnabled.value
 }
 
-const handleSwitchCamera = async () => {
-  if (!localStream.value) return
-  try {
-    const videoTrack = localStream.value.getVideoTracks()[0]
-    if (videoTrack) {
-      videoTrack.stop()
-      localStream.value.removeTrack(videoTrack)
-    }
-    const facingMode = localStream.value.getVideoTracks().length > 0 ? 'environment' : 'user'
-    const newStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: facingMode === 'user' ? 'environment' : 'user' },
-      audio: false
-    })
-    const newVideoTrack = newStream.getVideoTracks()[0]
-    if (newVideoTrack) {
-      localStream.value.addTrack(newVideoTrack)
-    }
-  } catch (err) {
-    logger.error('摄像头切换失败:', err)
-  }
-}
-
 // ── 接听通话 ──
 const handleAcceptCall = async () => {
   stopBell()
@@ -327,24 +274,10 @@ const handleAcceptCall = async () => {
 const handleReject = async () => {
   stopBell()
   await rejectCall()
-  if (isMobileDevice && window.history.length > 1) {
-    router.back()
-  }
 }
 
 const handleHangup = async () => {
   stopBell()
-  if (isMobileDevice) {
-    if (router.currentRoute.value.path === '/mobile/rtcCall') {
-      if (window.history.length > 1) {
-        router.back()
-      } else {
-        router.replace('/mobile/message')
-      }
-    } else {
-      router.back()
-    }
-  }
   await voipHangup()
 }
 
@@ -392,14 +325,6 @@ watch(
 
 // 生命周期
 onMounted(async () => {
-  if (isMobileDevice) {
-    if (shouldAutoAccept && isReceiver && !isCallAccepted.value) {
-      await nextTick()
-      await handleAcceptCall()
-    }
-    return
-  }
-
   await setupCloseListener()
 
   if (isDesktop()) {

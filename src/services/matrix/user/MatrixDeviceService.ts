@@ -19,10 +19,10 @@ const logger = createLogger('MatrixDeviceService')
  */
 export interface Device {
   device_id: string
-  display_name?: string
-  last_seen_ts?: number
-  last_seen_ip?: string
-  last_seen_user_agent?: string
+  display_name?: string | undefined
+  last_seen_ts?: number | undefined
+  last_seen_ip?: string | undefined
+  last_seen_user_agent?: string | undefined
   verified?: boolean
 }
 

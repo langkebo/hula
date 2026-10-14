@@ -8,8 +8,8 @@ const logger = createLogger('MatrixLocationService')
 export interface LocationData {
   latitude: number
   longitude: number
-  accuracy?: number
-  description?: string
+  accuracy?: number | undefined
+  description?: string | undefined
   timestamp: number
 }
 

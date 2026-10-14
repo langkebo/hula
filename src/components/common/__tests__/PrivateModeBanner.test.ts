@@ -16,7 +16,7 @@ describe('PrivateModeBanner', () => {
 
   it('hides banner when burn is disabled', () => {
     const wrapper = mount(PrivateModeBanner, {
-      props: { burnEnabled: false, remainingSeconds: undefined }
+      props: { burnEnabled: false }
     })
     expect(wrapper.find('[data-test="private-mode-banner"]').exists()).toBe(false)
   })

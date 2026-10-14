@@ -23,7 +23,7 @@ export interface DndAccountDataWriter {
  */
 export async function pushDndToAccountData(client: DndAccountDataWriter, settings: DndWindow): Promise<void> {
   try {
-    await client.setAccountData(DND_ACCOUNT_DATA_TYPE, settings as unknown as Record<string, unknown>)
+    await client.setAccountData(DND_ACCOUNT_DATA_TYPE, { ...settings })
     logger.info('[MatrixNotification] DND 设置已同步到服务端')
   } catch (err) {
     logger.error(`[MatrixNotification] 同步 DND 设置到服务端失败: ${err}`)

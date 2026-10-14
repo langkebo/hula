@@ -62,8 +62,7 @@ const props = withDefaults(
   }>(),
   {
     processing: false,
-    dir: 'ltr',
-    now: undefined
+    dir: 'ltr'
   }
 )
 

@@ -29,7 +29,7 @@
                 ? avatarSrc(getUserInfo(item)?.avatar || '')
                 : avatarSrc(groupDetailsMap[item.roomId ?? '']?.avatar || '/default-group-avatar.png')
             "
-            alt="用户头像" />
+            :alt="t('mobile_contact.avatar.user')" />
         </div>
         <div class="flex-1 flex flex-col gap-10px min-w-0">
           <div
@@ -127,7 +127,6 @@
 <script setup lang="ts">
 import { uniq } from 'es-toolkit'
 import { useI18n } from 'vue-i18n'
-import type { NoticeItem } from '@/services/types.ts'
 import { NoticeType, RequestNoticeAgreeStatus } from '@/services/types.ts'
 import type { FriendRequestItem } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -148,7 +147,6 @@ const groupStore = useGroupStore()
 const currentUserId = ref('0')
 const loadingMap = ref<Record<string, boolean>>({})
 const isLoadingMore = ref(false)
-const scrollRef = ref<HTMLElement>()
 const props = defineProps<{
   type: 'friend' | 'group'
   customHeight?: number
@@ -191,7 +189,7 @@ const getGroupDetail = async (roomId: string) => {
       return groupInfo
     }
   } catch (error) {
-    logger.error('获取群组信息失败:', error)
+    logger.error('Failed to get group info:', error)
   } finally {
     loadingGroups.value.delete(roomId)
   }
@@ -300,8 +298,8 @@ const handleAgree = async (item: FriendRequestItem) => {
     await contactStore.onHandleInvite({
       applyId,
       state: RequestNoticeAgreeStatus.ACCEPTED,
-      roomId: item.roomId,
-      type: item.type,
+      ...(item.roomId !== undefined ? { roomId: item.roomId } : {}),
+      ...(item.type !== undefined ? { type: item.type } : {}),
       applyType: props.type,
       markAsRead: true
     })

@@ -12,7 +12,7 @@ import type { CryptoApi, KeyBackupManager, MatrixClientExtended, SecureBackupMan
 export interface DeviceInfo {
   deviceId: string
   userId: string
-  displayName?: string
+  displayName?: string | undefined
   lastSeenTs?: number
   lastSeenIp?: string
   isVerified?: boolean

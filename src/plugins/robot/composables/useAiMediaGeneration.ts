@@ -17,9 +17,9 @@ const logger = createLogger('AiMediaGeneration')
 interface MediaGenerationMessage {
   type: 'user' | 'assistant'
   content: string
-  msgType?: AiMsgContentTypeEnum
-  createTime?: number
-  isGenerating?: boolean
+  msgType?: AiMsgContentTypeEnum | undefined
+  createTime?: number | undefined
+  isGenerating?: boolean | undefined
 }
 
 interface ConversationRef {

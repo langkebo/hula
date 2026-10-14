@@ -17,7 +17,7 @@ export class AdminRetentionService {
   async getRetentionPolicies(
     _limit = 50,
     _from?: string
-  ): Promise<{ policies: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ policies: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     try {
       const admin = await this.sdkAdmin()
       const policy = unknownToObject(await admin.getRetentionPolicy())

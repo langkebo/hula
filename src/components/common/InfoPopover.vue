@@ -179,6 +179,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { padZero } from '@/utils/StringUtils'
 import { toLocalpart } from '@/utils/userIdentity'
 import { mapUserStateToPresence } from '@/utils/userStatus'
 
@@ -187,16 +188,16 @@ type PresenceKey = 'online' | 'away' | 'busy' | 'offline'
 type FetchedProfile = {
   displayName?: string | null
   avatarUrl?: string | null
-  sex?: number
-  resume?: string
-  region?: string
-  birthday?: string
+  sex?: number | undefined
+  resume?: string | undefined
+  region?: string | undefined
+  birthday?: string | undefined
   displayBirthdayTag?: boolean
   displayAge?: boolean
   displayConstellation?: boolean
-  presence?: PresenceState
+  presence?: PresenceState | undefined
   statusMessage?: string | null
-  lastActiveAgo?: number
+  lastActiveAgo?: number | undefined
 }
 
 const { t } = useI18n()
@@ -403,8 +404,8 @@ const birthdayDisplay = computed(() => {
   const valid = !Number.isNaN(d.getTime())
   const segs: string[] = []
   if (f.displayBirthdayTag && valid) {
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const dd = String(d.getDate()).padStart(2, '0')
+    const mm = padZero(d.getMonth() + 1)
+    const dd = padZero(d.getDate())
     segs.push(`${d.getFullYear()}-${mm}-${dd}`)
   }
   if (f.displayAge && valid) {
@@ -417,8 +418,8 @@ const birthdayDisplay = computed(() => {
   }
   // 没有任何展示开关时，至少展示日期（用户已设置生日）
   if (segs.length === 0 && valid) {
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const dd = String(d.getDate()).padStart(2, '0')
+    const mm = padZero(d.getMonth() + 1)
+    const dd = padZero(d.getDate())
     segs.push(`${d.getFullYear()}-${mm}-${dd}`)
   }
   return segs.join(' · ')

@@ -14,7 +14,7 @@ export interface EncryptionSettings {
 export interface KeyRotationStatus {
   enabled: boolean
   intervalMs: number
-  lastRotation?: number
+  lastRotation?: number | undefined
   needsRotation: boolean
 }
 

@@ -121,9 +121,9 @@ export function useEncryption(): UseEncryptionResult {
     const status = await cryptoSDKAdapter.getCrossSigningStatus()
     return {
       isSetup: status.isSetup,
-      masterPublicKey: status.masterPublicKey,
-      selfSigningPublicKey: status.selfSigningPublicKey,
-      userSigningPublicKey: status.userSigningPublicKey
+      ...(status.masterPublicKey === undefined ? {} : { masterPublicKey: status.masterPublicKey }),
+      ...(status.selfSigningPublicKey === undefined ? {} : { selfSigningPublicKey: status.selfSigningPublicKey }),
+      ...(status.userSigningPublicKey === undefined ? {} : { userSigningPublicKey: status.userSigningPublicKey })
     } satisfies CrossSigningInfo
   }
 

@@ -5,7 +5,7 @@
     <!-- 功能模块 -->
     <div class="flex items-start gap-14px">
       <div class="flex flex-col items-center gap-14px w-64px" v-for="opt in toolOptions">
-        <n-button :disabled="opt.disabled" secondary circle @click="opt.click" class="size-46px mx-auto">
+        <n-button :disabled="opt.disabled ?? false" secondary circle @click="opt.click" class="size-46px mx-auto">
           <template #icon>
             <svg class="size-22px">
               <use :href="opt.icon"></use>

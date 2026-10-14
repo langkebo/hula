@@ -15,8 +15,8 @@ export interface BackupVersion {
   version: string
   algorithm: string
   auth_data: Record<string, unknown>
-  count?: number
-  etag?: string
+  count?: number | undefined
+  etag?: string | undefined
 }
 
 interface RoomKeyBackup {
@@ -112,8 +112,8 @@ class MatrixKeyBackupService extends BaseMatrixService {
         version: info.version,
         algorithm: info.algorithm,
         auth_data: info.auth_data as Record<string, unknown>,
-        count: info.count,
-        etag: info.etag
+        ...(info.count !== undefined ? { count: info.count } : {}),
+        ...(info.etag !== undefined ? { etag: info.etag } : {})
       }
     } catch (err: unknown) {
       const matrixError = err as MatrixHttpErrorLike

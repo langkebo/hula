@@ -9,7 +9,7 @@
  * 通过 deps 注入主类持有的协作模块（connectionManager）。
  * TelemetryManager 实例由本类持有，主类在 initialize 后调用 setTelemetryManager。
  */
-import type { TelemetryManager } from '@/services/matrix/sdk'
+import type { MatrixClient, TelemetryManager } from '@/services/matrix/sdk'
 import type { MatrixConnectionManager } from './MatrixConnectionManager'
 
 /** 单个 manager 的请求统计快照 */
@@ -64,7 +64,7 @@ export class MatrixClientTelemetry {
     const getterNames = this.extractManagerGetterNames(client)
 
     for (const getterName of getterNames) {
-      const getter: unknown = (client as unknown as Record<string, unknown>)[getterName]
+      const getter: unknown = (client as MatrixClient & Record<string, unknown>)[getterName]
       if (typeof getter !== 'function') continue
       try {
         const manager = (getter as () => unknown).call(client)

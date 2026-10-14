@@ -55,9 +55,10 @@ export function useVoiceInput(): VoiceInputHook {
       await matrixVoiceService.registerEncryptedVoice(roomId, mediaId, durationMs, result.size, result.mimetype)
 
       // 返回兼容 VoiceUploadResult 的格式
+      const httpUrl = matrixMediaService.getMediaUrl(result.contentUri)
       return {
         mxcUrl: result.contentUri,
-        httpUrl: matrixMediaService.getMediaUrl(result.contentUri) || undefined,
+        ...(httpUrl ? { httpUrl } : {}),
         filename,
         encryptedFile: result.encryptedFile
       }

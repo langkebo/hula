@@ -135,7 +135,7 @@ export class AdminNotificationService {
   async getSystemNotifications(
     limit = 50,
     from?: string
-  ): Promise<{ notifications: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ notifications: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.listNotifications?.(from, limit)

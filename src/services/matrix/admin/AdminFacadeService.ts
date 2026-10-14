@@ -230,7 +230,7 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
     from?: string,
     name?: string,
     _guests?: boolean
-  ): Promise<{ users: UserInfo[]; nextToken?: string }> {
+  ): Promise<{ users: UserInfo[]; nextToken?: string | undefined }> {
     return this.users.getUsers(limit, from, name, _guests)
   }
 
@@ -306,7 +306,11 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
 
   // ==================== Room Management ====================
 
-  async getRooms(limit = 100, from?: string, searchTerm?: string): Promise<{ rooms: RoomInfo[]; nextToken?: string }> {
+  async getRooms(
+    limit = 100,
+    from?: string,
+    searchTerm?: string
+  ): Promise<{ rooms: RoomInfo[]; nextToken?: string | undefined }> {
     return this.rooms.getRooms(limit, from, searchTerm)
   }
 
@@ -442,7 +446,7 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
     roomId?: string,
     limit: number = 50,
     from?: string
-  ): Promise<{ reports: AdminReport[]; next_batch?: string }> {
+  ): Promise<{ reports: AdminReport[]; next_batch?: string | undefined }> {
     return this.reports.getAdminReports(roomId, limit, from)
   }
 

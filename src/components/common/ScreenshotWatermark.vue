@@ -1,9 +1,5 @@
 <template>
-  <div
-    v-if="enabled"
-    data-test="screenshot-watermark"
-    class="screenshot-watermark"
-    aria-hidden="true">
+  <div v-if="enabled" data-test="screenshot-watermark" class="screenshot-watermark" aria-hidden="true">
     <svg class="screenshot-watermark__pattern" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <pattern
@@ -14,20 +10,10 @@
           height="120"
           patternUnits="userSpaceOnUse"
           patternTransform="rotate(-30)">
-          <text
-            x="20"
-            y="60"
-            font-size="12"
-            fill="currentColor"
-            opacity="0.08">
+          <text x="20" y="60" font-size="12" fill="currentColor" opacity="0.08">
             {{ watermarkText }}
           </text>
-          <text
-            x="20"
-            y="100"
-            font-size="10"
-            fill="currentColor"
-            opacity="0.06">
+          <text x="20" y="100" font-size="10" fill="currentColor" opacity="0.06">
             {{ timestamp }}
           </text>
         </pattern>
@@ -39,6 +25,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { padZero } from '@/utils/StringUtils'
 
 const props = defineProps<{
   userId: string
@@ -55,7 +42,7 @@ onMounted(() => {
 
 function updateTimestamp() {
   const now = new Date()
-  timestamp.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  timestamp.value = `${now.getFullYear()}-${padZero(now.getMonth() + 1)}-${padZero(now.getDate())}`
 }
 
 const watermarkText = computed(() => `${props.userName} · ${props.userId}`)

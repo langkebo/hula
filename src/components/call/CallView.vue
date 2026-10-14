@@ -20,7 +20,11 @@
       </template>
       <template v-else>
         <div class="voice-container">
-          <n-avatar round :size="120" :src="remoteUser?.avatarUrl" :fallback-src="defaultAvatar" />
+          <n-avatar
+            round
+            :size="120"
+            v-bind="remoteUser?.avatarUrl ? { src: remoteUser.avatarUrl } : {}"
+            :fallback-src="defaultAvatar" />
           <span class="user-name">{{ remoteUser?.displayName || remoteUser?.userId }}</span>
         </div>
       </template>
@@ -84,6 +88,7 @@ import { useI18n } from 'vue-i18n'
 import { useVoIPCallFlow } from '@/composables/useVoIPCallFlow'
 import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { createLogger } from '@/utils/Logger'
+import { padZero } from '@/utils/StringUtils'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const logger = createLogger('CallView')
@@ -149,7 +154,7 @@ let durationTimer: number | null = null
 const formatDuration = (seconds: number): string => {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  return `${padZero(mins)}:${padZero(secs)}`
 }
 
 const getStatusText = (): string => {

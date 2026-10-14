@@ -110,7 +110,7 @@ export class MatrixFriendSync {
   }
 
   private getFriendManager(client: MatrixClient): FriendManagerCompat | null {
-    const clientWithMethods = client as unknown as Record<string, unknown>
+    const clientWithMethods = client as MatrixClient & Record<string, unknown>
 
     // SDK 通过 initializeManagerExtensions() 把 getFriendManager 挂到
     // MatrixClient.prototype 上（幂等，且在 createClient 之前已 await 完成），

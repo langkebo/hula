@@ -175,9 +175,9 @@ interface RoomItem {
 
 interface PublicRoomResult {
   roomId: string
-  roomName?: string
-  avatarUrl?: string
-  memberCount?: number
+  roomName?: string | undefined
+  avatarUrl?: string | undefined
+  memberCount?: number | undefined
 }
 
 const { t } = useI18n()

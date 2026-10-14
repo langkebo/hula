@@ -5,7 +5,6 @@ import { MittEnum } from '@/enums'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
@@ -28,7 +27,6 @@ export function useMessageUser(
   const { selectKey } = options
   const userStore = useUserStore()
   const groupStore = useGroupStore()
-  const _settingStore = useSettingStore()
   const resolvingUserSet = new Set<string>()
   const currentUserUid = computed(() => userStore.userInfo?.uid ?? '')
   const senderUid = computed(() => props.fromUser?.uid || props.message?.fromUser?.uid || '')

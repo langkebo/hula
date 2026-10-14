@@ -11,7 +11,7 @@
             <button
               class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleClose"
-              aria-label="返回">
+              :aria-label="t('common.back')">
               <svg class="size-22px text-white rotate-180">
                 <use href="#right"></use>
               </svg>
@@ -30,14 +30,14 @@
               v-if="showSave"
               class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleSave"
-              aria-label="保存">
+              :aria-label="t('common.save')">
               <svg class="size-22px text-white"><use href="#Importing"></use></svg>
             </button>
             <button
               v-if="showMore"
               class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleMore"
-              aria-label="更多">
+              :aria-label="t('menu.ctx_menu_more')">
               <svg class="size-22px text-white"><use href="#more"></use></svg>
             </button>
           </div>
@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import type { MsgType } from '@/services/types'
@@ -57,9 +58,9 @@ import { useFileStore } from '@/stores/domains/widget/file'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
 import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('VideoPreview')
+const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 interface Props {
@@ -149,45 +150,40 @@ const handleSave = async () => {
     if (result && props.message) {
       const roomId = getCurrentRoomId()
       if (roomId) {
+        const suffix = fileName.split('.').pop()?.toLowerCase()
         const fileInfo = {
           id: props.message.id,
           roomId,
           fileName,
           type: 'video' as const,
           url: result,
-          suffix: fileName.split('.').pop()?.toLowerCase()
+          ...(suffix !== undefined ? { suffix } : {})
         }
         fileStore.addFile(fileInfo)
       }
     }
-    showFeedback('视频已保存', 'success')
+    showFeedback(t('mobile_chat.preview.video_saved'), 'success')
   } catch (error) {
-    logger.error('保存视频失败:', error)
-    showFeedback('保存失败', 'error')
+    logger.error('Failed to save video:', error)
+    showFeedback(t('mobile_chat.preview.save_failed'), 'error')
   }
 }
 
 const handleMore = () => {
-  showFeedback('更多功能暂未实现', 'warning')
+  showFeedback(t('mobile_chat.preview.more_coming_soon'), 'warning')
 }
 
 watch(
   () => props.visible,
   (visible) => {
     if (!visible) return
-    if (isMobile()) {
-      updateSafeAreaInsets()
-    } else {
-      safeAreaInsets.value = { top: 0, bottom: 0, left: 0, right: 0 }
-    }
+    updateSafeAreaInsets()
   },
   { immediate: true }
 )
 
 onMounted(() => {
-  if (isMobile()) {
-    updateSafeAreaInsets()
-  }
+  updateSafeAreaInsets()
 })
 </script>
 

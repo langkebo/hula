@@ -13,13 +13,13 @@ async function sanitizeAsync(el: HTMLElement, html: string, config?: DOMPurifyCo
   }
 
   try {
-    const { result } = await renderWorker.execute<{ html: string; config?: DOMPurifyConfig }, { result: string }>(
-      'sanitize-html',
-      {
-        html,
-        config
-      }
-    )
+    const { result } = await renderWorker.execute<
+      { html: string; config?: DOMPurifyConfig | undefined },
+      { result: string }
+    >('sanitize-html', {
+      html,
+      config
+    })
     el.innerHTML = result
   } catch {
     // 降级使用主线程清洗

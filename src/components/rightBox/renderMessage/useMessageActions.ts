@@ -48,8 +48,8 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
             eventId = await matrixEventService.sendImageMessage(roomId, msgBody.url, {
               size: msgBody.size || 0,
               mimetype: msgBody.mimetype || 'image/png',
-              width: msgBody.width,
-              height: msgBody.height
+              ...(msgBody.width !== undefined ? { width: msgBody.width } : {}),
+              ...(msgBody.height !== undefined ? { height: msgBody.height } : {})
             })
           } else {
             throw new Error('图片URL不存在')
@@ -63,8 +63,8 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
               {
                 size: msgBody.size || 0,
                 mimetype: msgBody.mimetype || 'video/mp4',
-                width: msgBody.width,
-                height: msgBody.height
+                ...(msgBody.width !== undefined ? { width: msgBody.width } : {}),
+                ...(msgBody.height !== undefined ? { height: msgBody.height } : {})
               },
               msgBody.filename,
               msgBody.thumbnail,
@@ -86,7 +86,7 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
               {
                 size: msgBody.size || 0,
                 mimetype: msgBody.mimetype || 'audio/ogg',
-                duration: msgBody.duration
+                ...(msgBody.duration !== undefined ? { duration: msgBody.duration } : {})
               },
               msgBody.filename
             )

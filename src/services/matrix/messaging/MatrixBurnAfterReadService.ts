@@ -189,8 +189,8 @@ class MatrixBurnAfterReadService {
       const result = await manager.sendMessage({
         room_id: roomId,
         content,
-        expires_in: expiresIn,
-        encrypt
+        ...(expiresIn !== undefined ? { expires_in: expiresIn } : {}),
+        ...(encrypt !== undefined ? { encrypt } : {})
       })
       logger.info(`阅后即焚消息已发送: eventId=${result.event_id}, expiresIn=${result.expires_in}ms`)
       return {
@@ -235,4 +235,3 @@ class MatrixBurnAfterReadService {
 }
 
 export const matrixBurnAfterReadService = new MatrixBurnAfterReadService()
-export default matrixBurnAfterReadService

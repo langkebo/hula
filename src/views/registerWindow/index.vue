@@ -279,6 +279,7 @@ import router from '@/router'
 import type { RegisterUserReq } from '@/services/types.ts'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
+import { padZero } from '@/utils/StringUtils'
 import {
   validateAlphaNumeric,
   validatePasswordMinLength,
@@ -338,7 +339,7 @@ const commonEmailDomains = computed(() => {
 /** 验证码倒计时消息ID */
 const EMAIL_TIMER_ID = 'register_window_email_timer'
 /** 发送验证码冷却时间(秒) — 委托给共享 useCountdown */
-const { countdown: sendCodeCooldown, start: startCountdown, stop: stopCountdown } = useCountdown(EMAIL_TIMER_ID)
+const { countdown: sendCodeCooldown, start: startCountdown } = useCountdown(EMAIL_TIMER_ID)
 /** 发送验证码按钮文本 */
 const btnText = computed(() => {
   if (loading.value) {
@@ -587,7 +588,7 @@ const startSendCodeCountdown = () => {
 /** 生成随机头像 */
 const generateRandomAvatar = () => {
   const avatarNum = Math.floor(Math.random() * 21) + 1
-  return avatarNum.toString().padStart(3, '0')
+  return padZero(avatarNum, 3)
 }
 
 /** 无邮箱直接注册 */

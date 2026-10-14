@@ -240,7 +240,7 @@ const reportColumns: DataTableColumns<Report> = [
 
 async function fetchReports() {
   await moderationStore.fetchReports({
-    status: statusFilter.value as 'open' | 'resolved' | 'dismissed' | undefined
+    ...(statusFilter.value != null ? { status: statusFilter.value as 'open' | 'resolved' | 'dismissed' } : {})
   })
 }
 

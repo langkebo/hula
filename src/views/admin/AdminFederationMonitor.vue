@@ -88,9 +88,9 @@ const { showFeedback } = useActionFeedback()
 interface FederationServer {
   serverName: string
   status: 'online' | 'degraded' | 'offline'
-  lastContact?: number
-  retryInterval?: number
-  failureCount?: number
+  lastContact?: number | undefined
+  retryInterval?: number | undefined
+  failureCount?: number | undefined
 }
 
 const loading = ref(false)

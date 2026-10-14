@@ -32,7 +32,7 @@
 
       <div v-else class="rs-tab__member-list">
         <div v-for="member in sortedMembers" :key="member.userId" class="rs-tab__member-row" data-testid="members-row">
-          <n-avatar :size="32" :src="member.avatar || undefined" round>
+          <n-avatar :size="32" v-bind="member.avatar ? { src: member.avatar } : {}" round>
             {{ avatarPlaceholder(member) }}
           </n-avatar>
 

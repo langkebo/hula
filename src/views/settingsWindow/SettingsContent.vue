@@ -48,10 +48,7 @@
       <div v-if="!renderError" class="settings-tab-wrap" :key="activeTab">
         <component :is="currentTabComponent" />
       </div>
-      <TabErrorFallback
-        v-else
-        :tab-key="renderError.tab"
-        :error="renderError.error" />
+      <TabErrorFallback v-else :tab-key="renderError.tab" :error="renderError.error" />
     </div>
   </main>
 </template>
@@ -60,7 +57,7 @@
 import { Icon } from '@iconify/vue'
 import { NButton, NIcon, NSpin } from 'naive-ui'
 import type { Component } from 'vue'
-import { computed, defineAsyncComponent, defineComponent, h, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, defineComponent, h, onErrorCaptured, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getSettingsTabLabel, type SettingsTabType } from '@/stores/domains/settings/settingsTab'
 import { SETTINGS_TAB_COMPONENT_LOADERS } from './tabComponentLoaders'
@@ -114,10 +111,7 @@ const TabErrorFallback = defineComponent({
           style:
             'padding:24px;color:var(--tjg-color-danger-600);font-size:13px;line-height:1.6;display:flex;flex-direction:column;gap:8px'
         },
-        [
-          h('strong', { style: 'font-size:14px' }, `「${props.tabKey}」设置页加载失败`),
-          h('span', {}, message.value)
-        ]
+        [h('strong', { style: 'font-size:14px' }, `「${props.tabKey}」设置页加载失败`), h('span', {}, message.value)]
       )
   }
 })
@@ -158,8 +152,7 @@ const renderError = ref<{ tab: SettingsTabType; error: Error } | null>(null)
 function captureRenderError(tab: SettingsTabType, err: unknown) {
   // 防止 onError / onErrorCaptured 互相级联触发导致同 tab 多次重渲染
   if (renderError.value?.tab === tab) return
-  const wrapped =
-    err instanceof Error ? err : new Error(typeof err === 'string' ? err : '组件渲染时发生未知异常')
+  const wrapped = err instanceof Error ? err : new Error(typeof err === 'string' ? err : '组件渲染时发生未知异常')
   renderError.value = { tab, error: wrapped }
 }
 
@@ -282,7 +275,6 @@ onErrorCaptured((err) => {
     padding: var(--tjg-space-4);
   }
 }
-
 
 .settings-tab-wrap {
   position: relative;

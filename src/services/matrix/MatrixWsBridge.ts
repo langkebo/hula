@@ -55,10 +55,11 @@ class MatrixWsBridge {
       (event.getContent() as { redacts?: string })?.redacts
     if (!redactsId) return
 
+    const recallUid = event.getSender() ?? undefined
     const payload: RevokedMsgType = {
       msgId: redactsId,
       roomId: room.roomId,
-      recallUid: event.getSender() ?? undefined
+      ...(recallUid !== undefined ? { recallUid } : {})
     }
     useMitt.emit(WsResponseMessageType.MSG_RECALL, payload)
   }

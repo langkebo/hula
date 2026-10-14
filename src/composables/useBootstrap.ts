@@ -5,7 +5,7 @@ import { updateSettings } from '@/services/backend/tauriCommand'
 import { applyLanguagePreference } from '@/services/i18n'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
-import { initializePlatform, isDesktop, isMobile } from '@/utils/PlatformConstants'
+import { initializePlatform, isDesktop } from '@/utils/PlatformConstants'
 import { parseStoredProxySettings } from '@/utils/proxySettings'
 
 const logger = createLogger('Bootstrap')
@@ -141,7 +141,7 @@ const useSharedBootstrap = createSharedComposable(() => {
       if (isDesktop()) {
         import('@/views/homeWindow/message/index.vue')
         import('@/layout/index.vue')
-      } else if (isMobile()) {
+      } else {
         import('@/mobile/views/message/index.vue')
       }
     })

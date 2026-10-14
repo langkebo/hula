@@ -3,7 +3,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ApplicationService')
 
 export interface ApplicationServiceAdmin {
-  listApplicationServices(params: { limit: number; from?: string }): Promise<{
+  listApplicationServices(params: { limit: number; from?: string | undefined }): Promise<{
     services: Array<Record<string, unknown>>
     next_token?: string
   }>
@@ -25,7 +25,7 @@ export class AdminApplicationService {
   async getApplicationServices(
     limit = 50,
     from?: string
-  ): Promise<{ services: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ services: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.listApplicationServices({ limit, from })
@@ -83,7 +83,7 @@ export class AdminApplicationService {
     }
   }
 
-  async pingApplicationService(serviceId: string): Promise<{ ok: boolean; durationMs?: number }> {
+  async pingApplicationService(serviceId: string): Promise<{ ok: boolean; durationMs?: number | undefined }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.pingApplicationService(serviceId)

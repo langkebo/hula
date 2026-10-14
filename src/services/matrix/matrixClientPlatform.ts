@@ -1,5 +1,5 @@
-import { createLogger } from '@/utils/Logger'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixClient')
 

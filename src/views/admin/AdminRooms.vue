@@ -279,7 +279,6 @@ const { handleAdminError } = useAdminErrorHandler()
 const admin = useAdminRooms()
 
 // Alias composable refs so the template bindings keep working
-const rooms = admin.rooms
 const loading = admin.loading
 const searchQuery = admin.searchQuery
 const filteredRooms = admin.filteredRooms

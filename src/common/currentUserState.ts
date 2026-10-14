@@ -12,13 +12,6 @@ interface MatrixUserProfile {
 const userInfo = ref<UserInfoType | undefined>()
 const matrixProfile = ref<MatrixUserProfile | null>(null)
 
-function _useCurrentUserState() {
-  return {
-    userInfo,
-    matrixProfile
-  }
-}
-
 export function getCurrentUserInfo(): UserInfoType | undefined {
   return userInfo.value
 }
@@ -43,16 +36,7 @@ export function patchCurrentUserInfoFields(
   return userInfo.value
 }
 
-function _setCurrentMatrixProfile(profile: MatrixUserProfile | null): MatrixUserProfile | null {
-  matrixProfile.value = profile
-  return matrixProfile.value
-}
-
 export function clearCurrentUserState(): void {
   userInfo.value = undefined
   matrixProfile.value = null
-}
-
-function _resetCurrentUserStateForTests(): void {
-  clearCurrentUserState()
 }

@@ -9,8 +9,8 @@
         :key="action.key"
         :type="action.type ?? 'default'"
         :size="action.size ?? 'small'"
-        :disabled="action.disabled"
-        :loading="action.loading"
+        :disabled="action.disabled ?? false"
+        :loading="action.loading ?? false"
         @click="handleAction(action)">
         <template v-if="action.icon" #icon>
           <span class="admin-bulk-action-bar__action-icon">

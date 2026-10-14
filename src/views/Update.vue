@@ -40,7 +40,6 @@
 import { relaunch } from '@tauri-apps/plugin-process'
 import { check } from '@tauri-apps/plugin-updater'
 import { NCarousel, NCarouselItem } from 'naive-ui'
-import { changeColor } from 'seemly'
 import { useI18n } from 'vue-i18n'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'

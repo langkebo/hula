@@ -37,8 +37,8 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 export interface UnreadLedgerEntry {
   count: number
   updatedAt: number
-  settledServerCount?: number
-  observedServerCount?: number
+  settledServerCount?: number | undefined
+  observedServerCount?: number | undefined
 }
 
 type UnreadCache = Record<string, UnreadLedgerEntry>

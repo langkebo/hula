@@ -24,7 +24,7 @@ class MatrixChatRoleService {
     return matrixHttpClient.request<{ list: ChatRole[]; total: number }>(
       {
         url: matrixExtensionEndpoints.CHAT_ROLE_PAGE,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixChatRole' }

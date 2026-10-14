@@ -40,11 +40,20 @@ export const useLoginFlow = () => {
   const { t } = useI18nGlobal()
   const { showFeedback } = useActionFeedback()
 
+  // 平台在运行期恒定：探测一次后复用，避免在多个分支中重复调用平台探测
+  const isMobilePlatform = isMobile()
+
   let router: ReturnType<typeof useRouter> | null = null
   try {
     router = useRouter()
   } catch {
     void logger.info('[useLoginFlow] 无法获取 router 实例,可能不在组件上下文中')
+  }
+
+  /** 移动端专用：隐藏启动屏并跳回移动端登录页（自动登录失效/失败时复用） */
+  const returnToMobileLogin = async () => {
+    await invokeSilently('hide_splash_screen')
+    router?.replace('/mobile/login')
   }
 
   const { isOnline } = useNetwork()
@@ -71,7 +80,7 @@ export const useLoginFlow = () => {
   const identityServerUrl = ref(matrixEndpointConfig.identityServerUrl)
 
   const setLoginState = async () => {
-    if (isMobile()) {
+    if (isMobilePlatform) {
       return
     }
 
@@ -147,9 +156,8 @@ export const useLoginFlow = () => {
       uiState.value = 'manual'
       settingStore.setAutoLogin(false)
       logger.info('自动登录信息已失效，请手动登录')
-      if (isMobile()) {
-        await invokeSilently('hide_splash_screen')
-        router?.replace('/mobile/login')
+      if (isMobilePlatform) {
+        await returnToMobileLogin()
       }
       return
     }
@@ -221,11 +229,11 @@ export const useLoginFlow = () => {
         loginTimeoutHandle = undefined
       }
 
-      if (!auto && isMobile()) {
+      if (!auto && isMobilePlatform) {
         settingStore.setAutoLogin(true)
       }
 
-      if (isMobile()) {
+      if (isMobilePlatform) {
         await invokeSilently('hide_splash_screen')
       }
 
@@ -269,9 +277,8 @@ export const useLoginFlow = () => {
           info.value.name = userStore.userInfo.name
           info.value.uid = userStore.userInfo.uid
         }
-        if (isMobile()) {
-          await invokeSilently('hide_splash_screen')
-          router?.replace('/mobile/login')
+        if (isMobilePlatform) {
+          await returnToMobileLogin()
         }
       }
     }

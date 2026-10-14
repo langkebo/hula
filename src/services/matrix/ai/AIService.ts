@@ -106,7 +106,7 @@ class MatrixAIService {
     return matrixHttpClient.request<AIConversation[]>(
       {
         url: matrixExtensionEndpoints.CONVERSATION_GET_MY,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixAI' }
@@ -401,7 +401,7 @@ class MatrixAIService {
     return matrixHttpClient.request<AIModelListResponse>(
       {
         url: matrixExtensionEndpoints.MODEL_PAGE,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixAI' }
@@ -424,7 +424,7 @@ class MatrixAIService {
     return matrixHttpClient.request<AIImageListResponse>(
       {
         url: matrixExtensionEndpoints.IMAGE_MY_PAGE,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixAI' }
@@ -446,7 +446,7 @@ class MatrixAIService {
     return matrixHttpClient.request<AIVideoListResponse>(
       {
         url: matrixExtensionEndpoints.VIDEO_MY_PAGE,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixAI' }
@@ -480,7 +480,7 @@ class MatrixAIService {
     return matrixHttpClient.request<AIAudioListResponse>(
       {
         url: matrixExtensionEndpoints.AUDIO_MY_PAGE,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixAI' }
@@ -550,7 +550,7 @@ class MatrixAIService {
     return matrixHttpClient.request<AIChatRoleListResponse>(
       {
         url: matrixExtensionEndpoints.CHAT_ROLE_PAGE,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixAI' }

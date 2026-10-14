@@ -3,12 +3,12 @@ import { adminService } from '@/services/matrix/admin'
 
 export interface AppServiceInfo {
   id: string
-  url?: string
-  asToken?: string
-  hsToken?: string
-  senderLocalpart?: string
-  rateLimited?: boolean
-  enabled?: boolean
+  url?: string | undefined
+  asToken?: string | undefined
+  hsToken?: string | undefined
+  senderLocalpart?: string | undefined
+  rateLimited?: boolean | undefined
+  enabled?: boolean | undefined
   [key: string]: unknown
 }
 
@@ -33,7 +33,7 @@ interface UseAdminAppServicesResult {
   servicesLoading: Ref<boolean>
   selectedService: Ref<AppServiceDetail | null>
   detailLoading: Ref<boolean>
-  pingResult: Ref<{ ok: boolean; durationMs?: number } | null>
+  pingResult: Ref<{ ok: boolean; durationMs?: number | undefined } | null>
   pingLoading: Ref<boolean>
 
   loadServices: () => Promise<void>
@@ -50,7 +50,7 @@ export function useAdminAppServices(): UseAdminAppServicesResult {
 
   const selectedService = ref<AppServiceDetail | null>(null)
   const detailLoading = ref(false)
-  const pingResult = ref<{ ok: boolean; durationMs?: number } | null>(null)
+  const pingResult = ref<{ ok: boolean; durationMs?: number | undefined } | null>(null)
   const pingLoading = ref(false)
 
   async function loadServices() {

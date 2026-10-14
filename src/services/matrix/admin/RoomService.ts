@@ -15,10 +15,18 @@ export class AdminRoomService {
     private readonly getClient: RoomDomainClientGetter
   ) {}
 
-  async getRooms(limit = 100, from?: string, searchTerm?: string): Promise<{ rooms: RoomInfo[]; nextToken?: string }> {
+  async getRooms(
+    limit = 100,
+    from?: string,
+    searchTerm?: string
+  ): Promise<{ rooms: RoomInfo[]; nextToken?: string | undefined }> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.getRoomsPaginated({ from, limit, search: searchTerm })
+      const result = await admin.getRoomsPaginated({
+        limit,
+        ...(from !== undefined ? { from } : {}),
+        ...(searchTerm !== undefined ? { search: searchTerm } : {})
+      })
       return {
         rooms: (result.items ?? []).map((room) => this.mapRoomInfo(room)),
         nextToken: result.nextToken
@@ -161,7 +169,11 @@ export class AdminRoomService {
   }> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.getRoomMessages(roomId, { limit, from, dir })
+      const result = await admin.getRoomMessages(roomId, {
+        limit,
+        dir,
+        ...(from !== undefined ? { from } : {})
+      })
       return {
         chunk: (result?.chunk ?? []).map((msg) => unknownToObject(msg) ?? {}),
         start: result?.start,
@@ -249,8 +261,8 @@ export class AdminRoomService {
     try {
       const admin = await this.sdkAdmin()
       const payload: import('matrix-js-sdk/admin').PurgeHistoryPayload = {
-        purge_up_to_ts: options?.purgeUpToTs,
-        dry_run: options?.dryRun
+        ...(options?.purgeUpToTs !== undefined ? { purge_up_to_ts: options.purgeUpToTs } : {}),
+        ...(options?.dryRun !== undefined ? { dry_run: options.dryRun } : {})
       }
       const result = await admin.purgeRoomHistory(roomId, payload)
       const deletedEvents = result?.deleted_events ?? 0
@@ -280,7 +292,7 @@ export class AdminRoomService {
   async getRoomStats(
     limit = 100,
     from?: string
-  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomStats(from, limit)
@@ -345,7 +357,7 @@ export class AdminRoomService {
     limit = 50
   ): Promise<{
     results: Array<Record<string, unknown>>
-    nextBatch?: string
+    nextBatch?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()
@@ -365,7 +377,7 @@ export class AdminRoomService {
     _limit = 50
   ): Promise<{
     rooms: Array<Record<string, unknown>>
-    nextBatch?: string
+    nextBatch?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()
@@ -397,7 +409,7 @@ export class AdminRoomService {
     from?: string
   ): Promise<{
     spaces: Array<Record<string, unknown>>
-    next_batch?: string
+    next_batch?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()
@@ -477,17 +489,17 @@ export class AdminRoomService {
       message?: string
       block?: boolean
     }
-  ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; newRoomId?: string }> {
+  ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; newRoomId?: string | undefined }> {
     if (!isValidMatrixRoomId(roomId)) throw new Error(`Invalid room ID: ${roomId}`)
     try {
       const admin = await this.sdkAdmin()
       // deleteRoomAdmin 返回 void，需要使用 deleteRoom 来获取详细结果
       // 或者调用 shutdownRoom 后再 purgeRoom
       await admin.deleteRoom(roomId, {
-        block: options?.block,
-        purge: options?.purge,
-        force_purge: options?.force,
-        reason: options?.message
+        ...(options?.block !== undefined ? { block: options.block } : {}),
+        ...(options?.purge !== undefined ? { purge: options.purge } : {}),
+        ...(options?.force !== undefined ? { force_purge: options.force } : {}),
+        ...(options?.message !== undefined ? { reason: options.message } : {})
       })
       logger.info(`[Admin] 房间已删除: ${roomId}`)
       return {

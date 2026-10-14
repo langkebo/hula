@@ -67,7 +67,7 @@
 import { NModal, NSpin } from 'naive-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useDeviceVerifyDialog } from '@/composables/encryption/useDeviceVerifyDialog'
+import { type DeviceVerifyDialogProps, useDeviceVerifyDialog } from '@/composables/encryption/useDeviceVerifyDialog'
 import type { VerificationTransaction } from '@/services/matrix/crypto/MatrixVerificationService'
 import DeviceVerifyFingerprintStep from './DeviceVerifyFingerprintStep.vue'
 import DeviceVerifyIntroStep from './DeviceVerifyIntroStep.vue'
@@ -81,9 +81,9 @@ defineOptions({
 const props = defineProps<{
   show: boolean
   /** 目标用户 MXID；缺省表示验证本账号的其它设备 */
-  userId?: string
-  deviceId?: string
-  deviceName?: string
+  userId?: string | undefined
+  deviceId?: string | undefined
+  deviceName?: string | undefined
   inboundRequest?: VerificationTransaction | null
   initialMode?: 'sas'
 }>()
@@ -100,11 +100,37 @@ const visible = computed({
   set: (val) => emit('update:show', val)
 })
 
+/**
+ * composable 的入参类型 `DeviceVerifyDialogProps` 将可选属性声明为不接受 `undefined`
+ * （`userId?: string`），而本组件的 defineProps 经 Volar 归一化后其值类型含 `undefined`，
+ * 两者在 exactOptionalPropertyTypes 下不兼容。此处在调用点构造一个带 getter 的适配对象：
+ * getter 保持对 props 的响应式追踪，`?? 默认值` 与原逻辑（`props.x || 兜底`）语义等价。
+ */
+const dialogProps: DeviceVerifyDialogProps = {
+  get show() {
+    return props.show
+  },
+  get userId() {
+    return props.userId ?? ''
+  },
+  get deviceId() {
+    return props.deviceId ?? ''
+  },
+  get deviceName() {
+    return props.deviceName ?? ''
+  },
+  get inboundRequest() {
+    return props.inboundRequest ?? null
+  },
+  get initialMode() {
+    return props.initialMode ?? 'sas'
+  }
+}
+
 const {
   // state (exposed on vm for tests)
   step,
   loading,
-  fingerprint,
   cancelReason,
   showCancelReason,
   pendingVerifications,
@@ -129,7 +155,7 @@ const {
   startVerification,
   handleConfirm,
   handleReject
-} = useDeviceVerifyDialog({ props, emit, visible })
+} = useDeviceVerifyDialog({ props: dialogProps, emit, visible })
 
 /**
  * 设备选择框的双向绑定。

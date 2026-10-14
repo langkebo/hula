@@ -20,9 +20,9 @@ interface NativeFetchResponseLike {
 interface MessageLike {
   type: string
   content: string
-  imageUrl?: string
-  videoUrl?: string
-  audioUrl?: string
+  imageUrl?: string | undefined
+  videoUrl?: string | undefined
+  audioUrl?: string | undefined
 }
 
 interface ConversationLike {

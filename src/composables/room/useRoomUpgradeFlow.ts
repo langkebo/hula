@@ -10,7 +10,7 @@ const logger = createLogger('useRoomUpgradeFlow')
 
 interface RoomVersionInfo {
   version: string
-  status?: string
+  status?: string | undefined
 }
 
 interface UseRoomUpgradeFlowOptions {

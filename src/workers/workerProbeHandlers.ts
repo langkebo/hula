@@ -17,7 +17,7 @@ interface GetServerVersionsPayload {
 
 interface ServerVersionsResult {
   versions: string[]
-  unstable_features?: Record<string, boolean>
+  unstable_features?: Record<string, boolean> | undefined
 }
 
 export async function handleGetServerVersions(payload: GetServerVersionsPayload): Promise<ServerVersionsResult> {

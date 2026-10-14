@@ -44,7 +44,7 @@ export class MatrixThreadApi extends BaseMatrixService {
   async getGlobalThreadListViaApi(
     limit = 50,
     from?: string
-  ): Promise<{ threads: ThreadSummaryResponse[]; nextBatch?: string; total: number }> {
+  ): Promise<{ threads: ThreadSummaryResponse[]; nextBatch?: string | undefined; total: number }> {
     const manager = getThreadingManager()
     if (!manager?.getGlobalThreadList) return { threads: [], total: 0 }
     try {
@@ -129,7 +129,7 @@ export class MatrixThreadApi extends BaseMatrixService {
     limit = 50,
     from?: string,
     includeAll = false
-  ): Promise<{ threads: ThreadSummaryResponse[]; nextBatch?: string }> {
+  ): Promise<{ threads: ThreadSummaryResponse[]; nextBatch?: string | undefined }> {
     const manager = getThreadingManager()
     if (!manager?.getRoomThreadList) return { threads: [] }
     try {
@@ -382,7 +382,7 @@ export class MatrixThreadApi extends BaseMatrixService {
     limit = 50,
     from?: string,
     includeAll = false
-  ): Promise<{ chunk: ThreadLegacyChunkItem[]; nextBatch?: string }> {
+  ): Promise<{ chunk: ThreadLegacyChunkItem[]; nextBatch?: string | undefined }> {
     const manager = getThreadingManager()
     if (!manager?.getLegacyRoomThreadList) return { chunk: [] }
     try {

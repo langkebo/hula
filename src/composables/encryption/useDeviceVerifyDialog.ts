@@ -14,7 +14,7 @@ export type DeviceVerifyStep = 'intro' | 'pendingList' | 'showKey' | 'success' |
 /** 供 UI 选择的目标设备（跨用户验证时由 keys/query 拉取） */
 export interface DeviceOption {
   deviceId: string
-  displayName?: string
+  displayName?: string | undefined
 }
 
 export interface DeviceVerifyDialogProps {

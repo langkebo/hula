@@ -445,5 +445,3 @@ export function configureLogger(options: { level?: LogLevel; logToConsole?: bool
 }
 
 export const createLogger = (context: string): Logger => new Logger(context)
-
-const _logger = new Logger('App')

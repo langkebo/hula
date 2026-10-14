@@ -9,7 +9,7 @@ const logger = createLogger('useSpaceRooms')
 export interface SpaceChildRoom {
   roomId: string
   name: string
-  avatarUrl?: string
+  avatarUrl?: string | undefined
   memberCount?: number
   onlineCount?: number
   /**
@@ -153,10 +153,12 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
       const visibility = resolveVisibility(id)
       const { room_id } = await client.createRoom({
         name: input.name,
-        topic: input.topic,
-        visibility
+        visibility,
+        ...(input.topic === undefined ? {} : { topic: input.topic })
       })
-      await matrixSpaceService.addChildToSpace(id, room_id, { suggested: input.suggested })
+      await matrixSpaceService.addChildToSpace(id, room_id, {
+        ...(input.suggested === undefined ? {} : { suggested: input.suggested })
+      })
       await load()
       return room_id
     } catch (err) {

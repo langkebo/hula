@@ -32,6 +32,7 @@ const { showFeedback } = useActionFeedback()
 applyPerformanceTier()
 
 // Pre-emptively hide splash screen on mobile to reduce perceived startup time
+// 注意：此处早于下方 initializePlatform()，平台尚未探测，须保持原始调用
 if (isMobile() && hasTauriRuntime()) {
   invokeSilently('hide_splash_screen').catch(() => {})
 }
@@ -39,8 +40,11 @@ if (isMobile() && hasTauriRuntime()) {
 performance.mark('tjg-init-start')
 
 initializePlatform()
+// 平台在运行期恒定：初始化后探测一次复用
+const isMobilePlatform = isMobile()
+const prometheusEndpoint = import.meta.env.VITE_PROMETHEUS_ENDPOINT
 startWebVitalObserver({
-  prometheusEndpoint: import.meta.env.VITE_PROMETHEUS_ENDPOINT,
+  ...(prometheusEndpoint === undefined ? {} : { prometheusEndpoint }),
   debug: import.meta.env.DEV
 })
 errorTracker.initialize()
@@ -71,7 +75,7 @@ if (process.env.NODE_ENV === 'development') {
   })
   window.pinia = pinia
 
-  if (isMobile()) {
+  if (isMobilePlatform) {
     import('eruda').then((module) => {
       const eruda = 'default' in module ? module.default : module
       eruda.init()
@@ -79,7 +83,7 @@ if (process.env.NODE_ENV === 'development') {
   }
 }
 
-if (isMobile()) {
+if (isMobilePlatform) {
   if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', setup)
   } else {
@@ -122,8 +126,9 @@ markTjgAppReady('mounted')
 
 app.config.errorHandler = (err, instance, info) => {
   if (err instanceof Error) {
+    const component = instance?.$options?.name ?? instance?.$options?.__name
     errorTracker.trackVueError(err, {
-      component: instance?.$options?.name ?? instance?.$options?.__name ?? undefined,
+      ...(component === undefined ? {} : { component }),
       action: info ?? undefined
     })
   }

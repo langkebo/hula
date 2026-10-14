@@ -127,7 +127,6 @@ const props = withDefaults(
     description: '',
     compact: false,
     variant: 'default',
-    illustration: undefined,
     actionText: ''
   }
 )

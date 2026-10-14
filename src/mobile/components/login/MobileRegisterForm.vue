@@ -168,6 +168,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSessionActions } from '@/composables/user/useSessionActions'
 import type { RegisterUserReq } from '@/services/types'
 import { createLogger } from '@/utils/Logger'
+import { padZero } from '@/utils/StringUtils'
 import {
   validateAlphaNumeric,
   validatePasswordMinLength,
@@ -363,7 +364,7 @@ const handleRegisterComplete = async () => {
     registerInfo.value.code = registerInfo.value.code.trim()
     registerInfo.value.systemType = GENERAL_USER_SYSTEM_TYPE
     const avatarNum = Math.floor(Math.random() * 21) + 1
-    registerInfo.value.avatar = avatarNum.toString().padStart(3, '0')
+    registerInfo.value.avatar = padZero(avatarNum, 3)
 
     if (emailSessionId.value && emailClientSecret.value && registerInfo.value.code) {
       await submitEmailToken(registerInfo.value.code, emailClientSecret.value, emailSessionId.value)
@@ -382,7 +383,7 @@ const handleRegisterComplete = async () => {
     emit('registered', registerInfo.value.nickName || registerInfo.value.email)
   } catch (error) {
     showFeedback(error instanceof Error && error.message ? error.message : t('login.mobile.register_fail'), 'error')
-    logger.error('注册失败:', error)
+    logger.error('Registration failed:', error)
   } finally {
     registerLoading.value = false
   }

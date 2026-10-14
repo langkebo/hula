@@ -18,31 +18,31 @@ export type AppErrorAuth = {
   code: string
   recoverable: boolean
   message: string
-  i18nKey?: string
+  i18nKey?: string | undefined
 }
 
 export type AppErrorValidation = {
   kind: 'validation'
-  field?: string
+  field?: string | undefined
   code: string
   message: string
-  i18nKey?: string
+  i18nKey?: string | undefined
 }
 
 export type AppErrorNotFound = {
   kind: 'not_found'
   resource: string
   message: string
-  i18nKey?: string
+  i18nKey?: string | undefined
 }
 
 export type AppErrorRetryable = {
   kind: 'retryable'
-  retryAfterMs?: number
+  retryAfterMs?: number | undefined
   message: string
   /** Source code (M_LIMIT_EXCEEDED, NetworkError, TimeoutError, …) for telemetry. */
   code?: string
-  i18nKey?: string
+  i18nKey?: string | undefined
 }
 
 export type AppErrorFatal = {
@@ -50,7 +50,7 @@ export type AppErrorFatal = {
   code: string
   message: string
   correlationId: string
-  i18nKey?: string
+  i18nKey?: string | undefined
 }
 
 export type AppError = AppErrorAuth | AppErrorValidation | AppErrorNotFound | AppErrorRetryable | AppErrorFatal

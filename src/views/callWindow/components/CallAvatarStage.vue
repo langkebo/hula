@@ -1,5 +1,5 @@
 <template>
-  <div :class="['mb-24px flex flex-col items-center', shouldCenter ? 'absolute-center' : 'relative']">
+  <div class="mb-24px flex flex-col items-center relative">
     <n-avatar
       :size="140"
       :src="avatarSrc"
@@ -26,6 +26,5 @@ defineProps<{
   avatarSrc: string
   remoteUserName: string
   callStatusText: string
-  shouldCenter: boolean
 }>()
 </script>

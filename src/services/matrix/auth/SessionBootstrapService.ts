@@ -169,6 +169,8 @@ export class SessionBootstrapService {
         port.global.updateCurrentSessionRoomId(port.chat.getSessionListValue()[0].roomId)
       }
 
+      const homeserverUrl = port.matrix.getHomeserverUrl()
+      const identityServerUrl = resolveMatrixSessionEndpointConfig().identityServerUrl
       const account: UserInfoType = {
         uid,
         name: this.host.resolveDisplayName(uid, options.displayName, options.account),
@@ -181,8 +183,8 @@ export class SessionBootstrapService {
         avatarUpdateTime: 0,
         client: options.client || (isDesktop() ? 'PC' : 'MOBILE'),
         resume: '',
-        homeserverUrl: port.matrix.getHomeserverUrl() || undefined,
-        identityServerUrl: resolveMatrixSessionEndpointConfig().identityServerUrl || undefined
+        ...(homeserverUrl ? { homeserverUrl } : {}),
+        ...(identityServerUrl ? { identityServerUrl } : {})
       }
 
       port.user.setUserInfo(account)
@@ -290,11 +292,13 @@ export class SessionBootstrapService {
 
     const searchRoomDocs: SearchRoomDoc[] = allRooms.map((roomInfo: RoomInfo) => {
       const room = client.getRoom(roomInfo.roomId)
+      const avatarUrl = roomInfo.avatarUrl || undefined
+      const memberCount = roomInfo.detail?.joinedCount || room?.getJoinedMembers().length || undefined
       return {
         roomId: roomInfo.roomId,
         name: roomInfo.name,
-        avatarUrl: roomInfo.avatarUrl || undefined,
-        memberCount: roomInfo.detail?.joinedCount || room?.getJoinedMembers().length || undefined
+        ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+        ...(memberCount !== undefined ? { memberCount } : {})
       }
     })
 

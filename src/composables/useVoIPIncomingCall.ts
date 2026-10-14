@@ -13,12 +13,9 @@ const logger = createLogger('VoIPIncomingCall')
  * 在 App 层级调用一次即可。
  */
 export function useVoIPIncomingCall(deps?: {
-  createRtcCallWindow?: (
-    isIncoming: boolean,
-    remoteUserId: string,
-    roomId: string,
-    callType: CallTypeEnum
-  ) => Promise<void>
+  createRtcCallWindow?:
+    | ((isIncoming: boolean, remoteUserId: string, roomId: string, callType: CallTypeEnum) => Promise<void>)
+    | undefined
 }) {
   const handleIncomingCall = async (callInfo: CallInfo) => {
     const callerUserId = callInfo.participants?.[0]?.userId ?? ''

@@ -136,27 +136,27 @@ describe('SecuritySettings', () => {
 
   it('loads device count on mount', async () => {
     getDevicesMock.mockResolvedValue([{ device_id: 'd1' }, { device_id: 'd2' }])
-    const _wrapper = mountSecuritySettings()
+    mountSecuritySettings()
     await vi.dynamicImportSettled()
     expect(getDevicesMock).toHaveBeenCalled()
   })
 
   it('loads ignored users count on mount', async () => {
     getIgnoredUsersMock.mockResolvedValue(['@user1:test.com'])
-    const _wrapper = mountSecuritySettings()
+    mountSecuritySettings()
     await vi.dynamicImportSettled()
     expect(getIgnoredUsersMock).toHaveBeenCalled()
   })
 
   it('loads crypto status on mount', async () => {
     getCryptoStatusMock.mockResolvedValue({ crossSigningReady: true, keyBackupEnabled: false })
-    const _wrapper = mountSecuritySettings()
+    mountSecuritySettings()
     await vi.dynamicImportSettled()
     expect(getCryptoStatusMock).toHaveBeenCalled()
   })
 
   it('navigates to devices page', async () => {
-    const _wrapper = mountSecuritySettings()
+    mountSecuritySettings()
     await vi.dynamicImportSettled()
     routerPushMock('/mobile/mobileMy/devices')
     expect(routerPushMock).toHaveBeenCalledWith('/mobile/mobileMy/devices')

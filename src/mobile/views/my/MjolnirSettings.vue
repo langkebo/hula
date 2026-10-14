@@ -121,7 +121,6 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showDialog, showToast } from 'vant'
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

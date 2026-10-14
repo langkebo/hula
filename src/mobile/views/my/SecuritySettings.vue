@@ -234,7 +234,7 @@ const logger = createLogger('SecuritySettings')
 
 const { t } = useI18n()
 const router = useRouter()
-const { logout } = useLoginFlow()
+useLoginFlow()
 
 const deviceCount = ref('0')
 const ignoredUsersCount = ref('0')

@@ -87,23 +87,25 @@ import UserItem from './UserItem.vue'
 
 const logger = createLogger('UserList')
 
-type FileManagerContactItem = MatrixContact & {
+type UndefinedProps<T> = { [K in keyof T]: T[K] | undefined }
+
+type FileManagerContactItem = UndefinedProps<MatrixContact> & {
   avatar: string
 }
 
-type FileManagerGroupItem = MatrixGroupInfo & {
+type FileManagerGroupItem = UndefinedProps<MatrixGroupInfo> & {
   avatar: string
 }
 
 type FileManagerOptionItem = {
-  id?: string
-  uid?: string
-  roomId?: string
-  directRoomId?: string
-  name?: string
-  roomName?: string
-  groupName?: string
-  nickname?: string
+  id?: string | undefined
+  uid?: string | undefined
+  roomId?: string | undefined
+  directRoomId?: string | undefined
+  name?: string | undefined
+  roomName?: string | undefined
+  groupName?: string | undefined
+  nickname?: string | undefined
   avatar: string
 }
 

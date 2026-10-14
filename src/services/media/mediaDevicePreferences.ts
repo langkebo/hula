@@ -77,7 +77,9 @@ function normalizeBoolean(value: unknown, fallback: boolean): boolean {
 /**
  * 把任意（可能残缺、可能越界的）偏好补全并收敛为完整合法值。
  */
-export function normalizeMediaDevicePreferences(partial: Partial<MediaDevicePreferences> = {}): MediaDevicePreferences {
+export function normalizeMediaDevicePreferences(
+  partial: { [K in keyof MediaDevicePreferences]?: MediaDevicePreferences[K] | undefined } = {}
+): MediaDevicePreferences {
   return {
     audioInputId: normalizeDeviceId(partial.audioInputId, DEFAULT_MEDIA_DEVICE_PREFERENCES.audioInputId),
     videoInputId: normalizeDeviceId(partial.videoInputId, DEFAULT_MEDIA_DEVICE_PREFERENCES.videoInputId),

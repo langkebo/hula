@@ -168,7 +168,12 @@ export function createSessionStorePort(): SessionStorePort {
     contact: {
       updateContactPresence(userId, patch) {
         if (typeof contactStore().updateContactPresence === 'function') {
-          contactStore().updateContactPresence(userId, patch)
+          contactStore().updateContactPresence(userId, {
+            activeStatus: patch.activeStatus,
+            lastOptTime: patch.lastOptTime,
+            ...(patch.presence !== undefined ? { presence: patch.presence } : {}),
+            ...(patch.statusMessage !== undefined ? { statusMessage: patch.statusMessage } : {})
+          })
         }
       }
     },

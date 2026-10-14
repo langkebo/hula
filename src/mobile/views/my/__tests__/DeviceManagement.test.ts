@@ -111,7 +111,7 @@ describe('DeviceManagement', () => {
   })
 
   it('loads devices on mount', async () => {
-    const _wrapper = mount(DeviceManagement)
+    mount(DeviceManagement)
     await vi.dynamicImportSettled()
     expect(adapterDevicesMock).toHaveBeenCalled()
     expect(getCurrentDeviceIdMock).toHaveBeenCalled()
@@ -160,46 +160,17 @@ describe('DeviceManagement', () => {
     expect((wrapper.vm as any).formatDeviceLabel({})).toBeTruthy()
   })
 
-  it('deletes device after confirmation', async () => {
-    deleteDeviceMock.mockResolvedValue(undefined)
-    const wrapper = mount(DeviceManagement)
-    await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    await vm.handleDeleteDevice({ deviceId: 'OTHER', displayName: 'Phone' })
-    expect(showConfirmDialogMock).toHaveBeenCalled()
-    expect(deleteDeviceMock).toHaveBeenCalledWith('OTHER')
-  })
-
-  it('shows error on delete failure', async () => {
+  it('登出单设备失败时提示错误', async () => {
+    getDevicesMock.mockResolvedValue([{ deviceId: 'OTHER', displayName: 'Phone' }])
     deleteDeviceMock.mockRejectedValue(new Error('fail'))
     const wrapper = mount(DeviceManagement)
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
-    await vm.handleDeleteDevice({ deviceId: 'OTHER', displayName: 'Phone' })
-    expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
-  })
 
-  it('deletes other devices after confirmation', async () => {
-    getDevicesMock.mockResolvedValue([
-      { deviceId: 'CURRENT', displayName: 'Current' },
-      { deviceId: 'OTHER1', displayName: 'Other 1' },
-      { deviceId: 'OTHER2', displayName: 'Other 2' }
-    ])
-    deleteDevicesMock.mockResolvedValue(undefined)
-    const wrapper = mount(DeviceManagement)
-    await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    await vm.handleDeleteOtherDevices()
-    expect(deleteDevicesMock).toHaveBeenCalledWith(['OTHER1', 'OTHER2'])
-  })
+    vm.openDeviceActions({ deviceId: 'OTHER', displayName: 'Phone' })
+    await vm.handleActionSelect({ name: 'logout' })
 
-  it('shows toast when no other devices', async () => {
-    getDevicesMock.mockResolvedValue([{ deviceId: 'CURRENT', displayName: 'Current' }])
-    const wrapper = mount(DeviceManagement)
-    await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    await vm.handleDeleteOtherDevices()
-    expect(showToastMock).toHaveBeenCalled()
+    expect(showToastMock).toHaveBeenCalledWith('mobile_devices.logout_failed')
   })
 
   it('非本机设备的操作项含重命名与登出，且不含必失败的屏蔽', async () => {

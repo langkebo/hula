@@ -3,19 +3,19 @@
     <div class="px-15px pt-15px pb-20px flex flex-wrap justify-around gap-4">
       <div
         v-for="item in options"
-        :key="item.label"
+        :key="item.type"
         v-show="item.isShow()"
         class="flex flex-col gap-8px items-center justify-center w-16"
         @click="handleClickIcon(item)">
         <!-- 文件：原生选择器 -->
-        <van-uploader v-if="item.label === '文件'" accept="*/*" multiple :after-read="afterReadFile">
+        <van-uploader v-if="item.type === 'file'" accept="*/*" multiple :after-read="afterReadFile">
           <svg class="h-24px w-24px iconpark-icon">
             <use :href="`#${item.icon}`"></use>
           </svg>
         </van-uploader>
 
         <!-- 图片：原生选择器 -->
-        <van-uploader v-else-if="item.label === '图片'" accept="image/*" multiple :after-read="afterReadImage">
+        <van-uploader v-else-if="item.type === 'image'" accept="image/*" multiple :after-read="afterReadImage">
           <svg class="h-24px w-24px iconpark-icon">
             <use :href="`#${item.icon}`"></use>
           </svg>
@@ -26,15 +26,15 @@
           <use :href="`#${item.icon}`"></use>
         </svg>
 
-        <div class="text-10px">{{ item.label }}</div>
+        <div class="text-10px">{{ t(item.labelKey) }}</div>
       </div>
     </div>
 
     <van-popup v-model:show="pickRtcCall" position="bottom">
       <div class="flex flex-col items-center justify-center">
-        <div class="w-full text-center py-3" @click="startVideoCall">视频通话</div>
-        <div class="w-full text-center py-3" @click="startAudioCall">语音通话</div>
-        <div class="w-full text-center py-3" @click="pickRtcCall = false">取消</div>
+        <div class="w-full text-center py-3" @click="startVideoCall">{{ t('mobile_chat.input_panel.video_call') }}</div>
+        <div class="w-full text-center py-3" @click="startAudioCall">{{ t('mobile_chat.input_panel.audio_call') }}</div>
+        <div class="w-full text-center py-3" @click="pickRtcCall = false">{{ t('common.cancel') }}</div>
       </div>
     </van-popup>
   </div>
@@ -42,6 +42,7 @@
 
 <script setup lang="ts">
 import type { UploaderFileListItem } from 'vant'
+import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { CallTypeEnum } from '@/enums'
 import { CallTypeEnum as CallTypeEnumValue } from '@/enums'
@@ -50,6 +51,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('More')
+const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 const globalStore = useGlobalStore()
@@ -58,10 +60,11 @@ const pickRtcCall = ref(false)
 
 // 对齐原型《移动端聊天输入栏》九宫格：图片 / 文件 / 语音 / 视频 / 位置
 const options = ref([
-  { label: '图片', icon: 'photo', onClick: () => {}, isShow: () => true },
-  { label: '文件', icon: 'file', onClick: () => {}, isShow: () => true },
+  { type: 'image', labelKey: 'mobile_chat.input_panel.image', icon: 'photo', onClick: () => {}, isShow: () => true },
+  { type: 'file', labelKey: 'mobile_chat.input_panel.file', icon: 'file', onClick: () => {}, isShow: () => true },
   {
-    label: '语音',
+    type: 'voice',
+    labelKey: 'mobile_chat.input_panel.voice',
     icon: 'voice',
     onClick: () => {
       pickRtcCall.value = true
@@ -69,7 +72,8 @@ const options = ref([
     isShow: () => true
   },
   {
-    label: '视频',
+    type: 'video',
+    labelKey: 'mobile_chat.input_panel.video',
     icon: 'video-one',
     onClick: () => {
       pickRtcCall.value = true
@@ -77,7 +81,8 @@ const options = ref([
     isShow: () => true
   },
   {
-    label: '位置',
+    type: 'location',
+    labelKey: 'mobile_chat.input_panel.location',
     icon: 'location',
     onClick: () => {
       emit('location')
@@ -135,18 +140,18 @@ const afterReadFile = (fileList: UploaderFileListItem | UploaderFileListItem[]) 
   const imageTypes = ['image/jpeg', 'image/png', 'image/gif']
   const files = Array.isArray(fileList) ? fileList : [fileList]
 
-  logger.debug('选择的文件：', files)
+  logger.debug('Selected files:', files)
 
   for (const file of files) {
     const rawFile = file.file
 
     if (!rawFile) {
-      logger.debug('文件不存在:', file)
+      logger.debug('File not found:', file)
       continue
     }
 
     if (imageTypes.includes(rawFile.type)) {
-      logger.debug('已过滤图片文件:', file)
+      logger.debug('Filtered image file:', file)
       continue
     }
 
@@ -154,10 +159,10 @@ const afterReadFile = (fileList: UploaderFileListItem | UploaderFileListItem[]) 
     uploadFileList.value.push({
       url: file.url as string,
       status: 'done',
-      message: '待上传（非图片）'
+      message: 'pending-upload-non-image'
     })
 
-    logger.debug('已选择文件：', file)
+    logger.debug('Selected file:', file)
   }
 
   if (selectedFiles.value.length > 0) {
@@ -171,20 +176,20 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
   const validTypes = ['image/jpeg', 'image/png', 'image/gif']
   const files = Array.isArray(fileList) ? fileList : [fileList]
 
-  logger.debug('选择的文件：', files)
+  logger.debug('Selected files:', files)
 
   for (const file of files) {
     const rawFile = file.file
 
     if (!rawFile) {
-      logger.debug('文件不存在:', file)
+      logger.debug('File not found:', file)
       continue
     }
 
     if (!validTypes.includes(rawFile.type)) {
-      logger.debug('已过滤非图片文件:', file)
+      logger.debug('Filtered non-image file:', file)
       if (!Array.isArray(fileList)) {
-        showFeedback('只能选择图片哦~', 'warning')
+        showFeedback(t('mobile_chat.input_panel.only_image'), 'warning')
       }
       continue
     }
@@ -193,10 +198,10 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
     uploadFileList.value.push({
       url: file.url as string,
       status: 'done',
-      message: '待上传'
+      message: 'pending-upload'
     })
 
-    logger.debug('已添加文件：', file)
+    logger.debug('Added file:', file)
   }
 
   if (selectedFiles.value.length > 0) {

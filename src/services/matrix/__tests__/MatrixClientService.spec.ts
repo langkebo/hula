@@ -550,7 +550,7 @@ describe('MatrixClientService', () => {
 
       // 模拟扩展缺失：initializeManagerExtensions 失败时 getFriendManager 访问器根本不存在
       const sharedClient = sdk.createClient({ baseUrl: '' }) as unknown as {
-        getFriendManager?: ReturnType<typeof vi.fn>
+        getFriendManager?: ReturnType<typeof vi.fn> | undefined
       }
       sharedClient.getFriendManager = undefined
       vi.mocked(errorTracker).trackManual.mockClear()

@@ -24,10 +24,10 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
       mediaType: string
       contentUri: string
       createdAt: number
-      uploadName?: string
-      mediaLength?: number
+      uploadName?: string | undefined
+      mediaLength?: number | undefined
     }>
-    nextToken?: string
+    nextToken?: string | undefined
   }> {
     return this.media.getMediaList(limit, from, orderBy, search)
   }
@@ -40,7 +40,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
   async adminGetSpaces(
     limit = 50,
     from?: string
-  ): Promise<{ spaces: Array<Record<string, unknown>>; next_batch?: string }> {
+  ): Promise<{ spaces: Array<Record<string, unknown>>; next_batch?: string | undefined }> {
     return this.rooms.adminGetSpaces(limit, from)
   }
 
@@ -54,7 +54,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
     from?: string,
     userId?: string,
     eventType?: string
-  ): Promise<{ logs: Array<Record<string, unknown>>; next_batch?: string }> {
+  ): Promise<{ logs: Array<Record<string, unknown>>; next_batch?: string | undefined }> {
     return this.security.getAuditLog(limit, from, userId, eventType)
   }
 
@@ -96,7 +96,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
   async getUserStatsList(
     limit = 100,
     from?: string
-  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.users.getUserStatsList(limit, from)
   }
 
@@ -164,7 +164,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
   async getLoginFailures(
     limit = 50,
     from?: string
-  ): Promise<{ failures: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ failures: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.users.getLoginFailures(limit, from)
   }
 
@@ -221,7 +221,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
   async getRoomStats(
     limit = 100,
     from?: string
-  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.rooms.getRoomStats(limit, from)
   }
 
@@ -249,14 +249,14 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
     roomId: string,
     searchTerm: string,
     limit = 50
-  ): Promise<{ results: Array<Record<string, unknown>>; nextBatch?: string }> {
+  ): Promise<{ results: Array<Record<string, unknown>>; nextBatch?: string | undefined }> {
     return this.rooms.searchInRoom(roomId, searchTerm, limit)
   }
 
   async searchRooms(
     searchTerm: string,
     limit = 50
-  ): Promise<{ rooms: Array<Record<string, unknown>>; nextBatch?: string }> {
+  ): Promise<{ rooms: Array<Record<string, unknown>>; nextBatch?: string | undefined }> {
     return this.rooms.searchRooms(searchTerm, limit)
   }
 
@@ -275,7 +275,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
       message?: string
       block?: boolean
     }
-  ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; newRoomId?: string }> {
+  ): Promise<{ kickedUsers: string[]; failedToKickUsers: string[]; newRoomId?: string | undefined }> {
     return this.rooms.deleteRoom(roomId, options)
   }
 

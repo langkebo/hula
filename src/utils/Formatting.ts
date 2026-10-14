@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify'
 import { compact } from 'es-toolkit'
+import { padZero } from '@/utils/StringUtils'
 
 /**
  * 文件大小格式化
@@ -37,8 +38,8 @@ export const formatDuration = (seconds: number, options: FormatDurationOptions =
   const total = round ? Math.round(safeSeconds) : Math.floor(safeSeconds)
   const minutes = Math.floor(total / 60)
   const remainingSeconds = total % 60
-  const minutesText = padMinutes ? minutes.toString().padStart(2, '0') : minutes.toString()
-  return `${minutesText}:${remainingSeconds.toString().padStart(2, '0')}`
+  const minutesText = padMinutes ? padZero(minutes) : minutes.toString()
+  return `${minutesText}:${padZero(remainingSeconds)}`
 }
 
 /** 文件图标映射关系表 */

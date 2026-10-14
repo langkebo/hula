@@ -38,10 +38,10 @@ interface MatrixUserProfile {
   userId: string
   displayName: string | null
   avatarUrl: string | null
-  sex?: number
-  resume?: string
-  presence?: string
-  statusMessage?: string
+  sex?: number | undefined
+  resume?: string | undefined
+  presence?: string | undefined
+  statusMessage?: string | undefined
 }
 
 export const useUserStore = defineStore(

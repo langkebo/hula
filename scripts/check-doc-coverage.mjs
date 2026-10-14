@@ -73,16 +73,38 @@ function isReportable(name) {
   return true
 }
 
-function hasJsDocAbove(lines, idx) {
+// 判据：上方必须存在一段**真正的 JSDoc 块**（`/** ... */`）且正文非空。
+// 早期实现仅检测紧邻上方一行是否以 `*/` 结尾，会把普通块注释 `/* ... */`
+// 甚至空 JSDoc 也判为"已文档化"，与本脚本声明的"non-empty summary"不符。
+export function hasJsDocAbove(lines, idx) {
   let i = idx - 1
   while (i >= 0 && lines[i].trim() === '') i--
   if (i < 0) return false
-  const trimmed = lines[i].trimStart()
-  // 多行 JSDoc 结尾：*/
-  if (trimmed.startsWith('*/')) return true
+  const closing = lines[i].trim()
+
   // 单行 JSDoc：/** ... */
-  if (trimmed.startsWith('/**') && trimmed.endsWith('*/')) return true
-  return false
+  if (closing.startsWith('/**') && closing.endsWith('*/')) {
+    return stripJsDocNoise(closing.slice(3, -2)).length > 0
+  }
+
+  // 多行块注释结尾：回溯到最近的「行首」注释开头，必须为 `/**` 且正文非空
+  if (!closing.startsWith('*/')) return false
+  let open = i - 1
+  while (open >= 0 && !lines[open].trimStart().startsWith('/*')) open--
+  if (open < 0) return false
+  const opener = lines[open].trim()
+  if (!opener.startsWith('/**')) return false
+
+  const body = [opener.slice(opener.indexOf('/**') + 3), ...lines.slice(open + 1, i)].join('\n')
+  return stripJsDocNoise(body).length > 0
+}
+
+// 去掉 JSDoc 标记符（`/**`、`*/`、行首 `*`）与空白，用于判断正文是否真正非空。
+export function stripJsDocNoise(text) {
+  return text
+    .replace(/\/\*\*|\*\//g, '')
+    .replace(/^\s*\*\s?/gm, '')
+    .trim()
 }
 
 async function scanFile(file) {
@@ -262,7 +284,11 @@ async function main() {
   process.exit(regressed.length === 0 ? 0 : 1)
 }
 
-main().catch((err) => {
-  console.error('[doc-coverage] unexpected error', err)
-  process.exit(2)
-})
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error('[doc-coverage] unexpected error', err)
+    process.exit(2)
+  })
+}

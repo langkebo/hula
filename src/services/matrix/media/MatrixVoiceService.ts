@@ -16,8 +16,8 @@ interface VoiceTranscriptionParams {
 
 interface VoiceTranscriptionResult {
   text: string
-  language?: string
-  segments?: Array<{ start: number; end: number; text: string }>
+  language?: string | undefined
+  segments?: Array<{ start: number; end: number; text: string }> | undefined
 }
 
 interface MxcHttpClient extends MxcResolverClient {
@@ -49,7 +49,7 @@ interface VoiceMessageResult {
   url?: string
   filename: string
   mxcUrl?: string
-  httpUrl?: string
+  httpUrl?: string | undefined
   encryptedFile?: EncryptedAttachmentFile
   duration?: number
   size?: number
@@ -439,7 +439,7 @@ class MatrixVoiceService extends BaseMatrixService {
   async transcribeVoiceViaApi(
     messageId: string,
     lang?: string
-  ): Promise<{ text: string; language?: string; confidence?: number } | null> {
+  ): Promise<{ text: string; language?: string | undefined; confidence?: number | undefined } | null> {
     try {
       const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.TRANSCRIPTION)
       if (!available) {

@@ -131,14 +131,13 @@
       v-if="VideoPreview"
       v-model:visible="showVideoPreviewRef"
       :video-url="mobileVideoUrl"
-      :message="message" />
+      v-bind="message !== undefined ? { message } : {}" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { appDataDir, join } from '@tauri-apps/api/path'
-import { exists } from '@tauri-apps/plugin-fs'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDownload } from '@/composables/common/useDownload'
@@ -178,8 +177,10 @@ const props = defineProps<{
 
 // 视频容器引用
 const videoContainerRef = ref<HTMLElement | null>(null)
+// 平台在运行期恒定，探测一次后复用，避免多处重复调用平台探测
+const isMobilePlatform = isMobile()
 const MOBILE_MAX_WIDTH_RATIO = 0.7
-const MAX_WIDTH = isMobile()
+const MAX_WIDTH = isMobilePlatform
   ? Math.round((typeof window !== 'undefined' ? window.innerWidth : 0) * MOBILE_MAX_WIDTH_RATIO) || 320
   : 400
 // 错误状态控制
@@ -221,6 +222,13 @@ const { observe: observeVideoVisibility, disconnect: disconnectVideoVisibility }
 })
 const showVideoPreviewRef = ref(false)
 const mobileVideoUrl = ref('')
+
+/** 移动端专用：把本地/可播放路径同步给内嵌预览组件（桌面端由 openVideoViewer 处理） */
+const applyMobileVideoUrl = (path: string) => {
+  if (isMobilePlatform) {
+    mobileVideoUrl.value = convertFileSrc(path)
+  }
+}
 
 const hasEncryptedFile = computed(() => {
   const encryptedFile = props.body?.encryptedFile
@@ -283,11 +291,11 @@ const imageStyle = computed(() => {
   // 基础最大尺寸配置
   const BASE_MAX_WIDTH = MAX_WIDTH
   // 纵向视频固定尺寸（PC 高度再减 30px）
-  const VERTICAL_MAX_WIDTH = isMobile() ? 170 : 150
-  const VERTICAL_MAX_HEIGHT = isMobile() ? 300 : 290
+  const VERTICAL_MAX_WIDTH = isMobilePlatform ? 170 : 150
+  const VERTICAL_MAX_HEIGHT = isMobilePlatform ? 300 : 290
   // 横向视频固定尺寸（保持横向，不变成正方形或纵向）
-  const HORIZONTAL_FIXED_WIDTH = isMobile() ? 350 : 320
-  const HORIZONTAL_FIXED_HEIGHT = isMobile() ? 160 : 170
+  const HORIZONTAL_FIXED_WIDTH = isMobilePlatform ? 350 : 320
+  const HORIZONTAL_FIXED_HEIGHT = isMobilePlatform ? 160 : 170
 
   // 如果没有原始尺寸，使用默认尺寸
   if (!width || !height) {
@@ -405,9 +413,7 @@ watch(
       const existsFlag = await safeExistsPath(path)
       if (existsFlag) {
         isVideoDownloaded.value = true
-        if (isMobile()) {
-          mobileVideoUrl.value = convertFileSrc(path)
-        }
+        applyMobileVideoUrl(path)
       }
     } catch (error) {
       logger.warn('本地视频校验失败:', error)
@@ -478,9 +484,7 @@ const downloadVideo = async () => {
       if (absolutePath) {
         videoViewerStore.updateVideoPath(props.body.url, absolutePath)
         await persistVideoLocalPath(absolutePath)
-        if (isMobile()) {
-          mobileVideoUrl.value = convertFileSrc(absolutePath)
-        }
+        applyMobileVideoUrl(absolutePath)
       }
       return
     }
@@ -587,7 +591,7 @@ const handleOpenVideoViewer = async () => {
         }
       }
 
-      if (isMobile()) {
+      if (isMobilePlatform) {
         const playableUrl = await resolveMobilePlayableUrl()
         if (!playableUrl) {
           logger.error('未找到可播放的视频地址')

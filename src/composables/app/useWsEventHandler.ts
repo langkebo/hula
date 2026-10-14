@@ -45,6 +45,8 @@ export function useWsEventHandler() {
   const { createRtcCallWindow, sendWindowPayload } = useWindow()
 
   const userUid = computed(() => userStore.userInfo?.uid ?? '')
+  // 平台在运行期恒定：探测一次后复用
+  const isMobilePlatform = isMobile()
 
   let wsEventUnlisten: UnlistenFn | null = null
 
@@ -63,7 +65,7 @@ export function useWsEventHandler() {
       logger.info(`收到通话请求：${JSON.stringify(event)}`)
       const remoteUid = event.callerUid
       const callType = event.isVideo ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
-      if (isMobile()) {
+      if (isMobilePlatform) {
         useMitt.emit(MittEnum.MOBILE_RTC_CALL_REQUEST, {
           ...event,
           callerUid: remoteUid
@@ -142,7 +144,7 @@ export function useWsEventHandler() {
       if (data?.markList && Array.isArray(data.markList)) {
         await chatStore.updateMarkCount(data.markList)
       } else if (data && !Array.isArray(data)) {
-        await chatStore.updateMarkCount([data as unknown as MarkItemType])
+        await chatStore.updateMarkCount([data as typeof data & MarkItemType])
       }
     })
 
@@ -167,7 +169,7 @@ export function useWsEventHandler() {
       ) {
         const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
         const { logout } = useLoginFlow()
-        if (isMobile()) {
+        if (isMobilePlatform) {
           try {
             await logout()
             settingStore.toggleLogin(false, false)
@@ -302,7 +304,7 @@ export function useWsEventHandler() {
     watch(
       () =>
         collectTrackedPresenceUserIds({
-          currentUserId: userStore.userInfo?.uid,
+          currentUserId: userStore.userInfo?.uid ?? null,
           contacts: contactStore.contactsList,
           members: groupStore.allUserInfo
         }).join('|'),

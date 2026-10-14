@@ -10,7 +10,7 @@
         <img
           class="size-64px rounded-full object-cover"
           :src="AvatarUtils.getAvatarUrl(userDetailInfo?.avatar || '')"
-          alt="用户头像"
+          :alt="t('mobile_contact.avatar.user')"
           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
       </div>
 
@@ -38,7 +38,10 @@
         <div class="flex flex-warp gap-2 items-center">
           <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo?.account }}</span>
           <span v-if="isMyPage" @click="toMyQRCode" class="pe-15px">
-            <img class="w-14px h-14px dark:invert" src="@/assets/mobile/my/qr-code.webp" alt="二维码" />
+            <img
+              class="w-14px h-14px dark:invert"
+              src="@/assets/mobile/my/qr-code.webp"
+              :alt="t('mobile_personal_info.qr_code')" />
           </span>
         </div>
       </div>
@@ -189,7 +192,7 @@ const toChatRoom = async () => {
   try {
     const res = await matrixSessionService.getSessionDetailWithFriends(uid)
     if (!res) {
-      logger.error('获取会话详情失败')
+      logger.error('Failed to get session detail')
       return
     }
     const existingSession = chatStore.getSession(res.roomId)
@@ -200,7 +203,7 @@ const toChatRoom = async () => {
     await preloadChatRoom(res.roomId)
     router.push(`/mobile/chatRoom/chatMain`)
   } catch (error) {
-    logger.error('私聊尝试进入聊天室失败:', error)
+    logger.error('Failed to enter chat room for direct chat:', error)
   }
 }
 
@@ -293,7 +296,7 @@ const handleDelete = () => {
           router.back()
         } catch (error) {
           showFeedback(t('mobile_personal_info.delete_user.failed'), 'warning')
-          logger.error('删除好友失败：', error)
+          logger.error('Failed to delete friend:', error)
         } finally {
           loading.value = false
         }

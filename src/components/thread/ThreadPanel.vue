@@ -88,7 +88,7 @@ interface ThreadMessage {
 const visible = defineModel<boolean>('show', { default: false })
 
 const props = defineProps<{
-  originalMessage?: ThreadMessage
+  originalMessage?: ThreadMessage | undefined
   threadId?: string
   roomId?: string
 }>()

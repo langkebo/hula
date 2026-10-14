@@ -272,13 +272,11 @@ const admin = useAdminUsers()
 // View-only local state (UI affordances, not business data)
 const showCreateDialog = ref(false)
 const creating = ref(false)
-const createFormRef = ref()
 const showUserDetail = ref(false)
 const showRateLimitDialog = ref(false)
 const settingRateLimit = ref(false)
 
 // Alias refs from composable so existing template bindings keep working
-const users = admin.users
 const loading = admin.loading
 const searchQuery = admin.searchQuery
 const filterRole = admin.filterRole
@@ -296,7 +294,6 @@ const sessionsLoading = admin.sessionsLoading
 const userStats = admin.userStats
 const statsLoading = admin.statsLoading
 const accountStatus = admin.accountStatus
-const accountStatusLoading = admin.accountStatusLoading
 const selectedUserIds = admin.selectedUserIds
 
 const createForm = ref({

@@ -207,4 +207,3 @@ class MatrixReactionService extends BaseMatrixService {
 }
 
 export const matrixReactionService = new MatrixReactionService()
-export default matrixReactionService

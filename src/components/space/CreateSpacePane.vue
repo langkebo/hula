@@ -30,7 +30,7 @@
 
         <n-form-item :label="t('space.avatar')" path="avatarUrl">
           <n-upload :max="1" accept="image/*" :custom-request="handleAvatarUpload" :show-file-list="false">
-            <n-avatar round :size="64" :src="formData.avatarUrl || undefined" />
+            <n-avatar round :size="64" v-bind="formData.avatarUrl ? { src: formData.avatarUrl } : {}" />
           </n-upload>
         </n-form-item>
       </n-form>

@@ -49,7 +49,7 @@ const mockAuthedRequest = vi
     const response = await fetch(url.toString(), {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined
+      ...(body ? { body: JSON.stringify(body) } : {})
     })
     if (!response.ok) {
       // 还原真实 SDK 的 MatrixError 形状：HTTP 错误必须携带 httpStatus，

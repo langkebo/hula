@@ -85,8 +85,8 @@ vi.mock('naive-ui', async () => {
 const mountBeacon = (body?: BeaconBody, message?: { id: string; roomId: string }) =>
   mount(BeaconMessage, {
     props: {
-      body,
-      message
+      ...(body !== undefined ? { body } : {}),
+      ...(message !== undefined ? { message } : {})
     }
   })
 

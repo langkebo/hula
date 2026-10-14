@@ -92,7 +92,6 @@ describe('LocationMessage（移动端位置消息渲染）', () => {
   it('无 body 时显示无法展示占位', async () => {
     const LocationMessage = (await import('../LocationMessage.vue')).default
     const wrapper = mount(LocationMessage, {
-      props: { body: undefined },
       global: { stubs: { 'van-tag': VanTagStub } }
     })
 

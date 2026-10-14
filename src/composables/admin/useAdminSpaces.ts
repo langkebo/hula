@@ -3,11 +3,11 @@ import { adminService } from '@/services/matrix/admin'
 
 export interface SpaceInfo {
   spaceId: string
-  name?: string
-  creator?: string
-  memberCount?: number
-  roomCount?: number
-  createdAt?: number
+  name?: string | undefined
+  creator?: string | undefined
+  memberCount?: number | undefined
+  roomCount?: number | undefined
+  createdAt?: number | undefined
   [key: string]: unknown
 }
 

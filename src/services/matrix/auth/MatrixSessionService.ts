@@ -30,9 +30,9 @@ interface SessionInfo {
   top: boolean
   shield: boolean
   muteNotification: NotificationTypeEnum
-  detailId?: string
+  detailId?: string | undefined
   remark?: string
-  account?: string
+  account?: string | undefined
   text?: string
   isFavorite?: boolean
 }
@@ -100,7 +100,10 @@ class MatrixSessionService extends BaseMatrixService {
           seen.set(session.roomId, session)
           continue
         }
-        const identityKey = resolveDmIdentityKey(session)
+        const identityKey = resolveDmIdentityKey({
+          detailId: session.detailId ?? null,
+          account: session.account ?? null
+        })
         const counterpartId = identityKey || session.roomId
         const existing = seen.get(counterpartId)
         if (!existing) {

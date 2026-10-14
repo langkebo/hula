@@ -23,11 +23,11 @@ import RobotCard from '../RobotCard.vue'
 interface RobotData {
   id: string
   name: string
-  avatar?: string
-  model?: string
-  online?: boolean
-  messageCount?: number
-  time?: string
+  avatar?: string | undefined
+  model?: string | undefined
+  online?: boolean | undefined
+  messageCount?: number | undefined
+  time?: string | undefined
 }
 
 const sampleRobot: RobotData = {

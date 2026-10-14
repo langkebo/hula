@@ -15,7 +15,7 @@ export interface ErrorContext {
 interface TrackedError {
   type: 'unhandled' | 'promise' | 'vue' | 'manual'
   message: string
-  stack?: string
+  stack?: string | undefined
   context: ErrorContext
   timestamp: number
   fingerprint: string

@@ -13,7 +13,7 @@ vi.mock('../MatrixReceiptService', () => ({
 
 type EventOverrides = {
   id?: string
-  sender?: string
+  sender?: string | undefined
   ts?: number
   roomId?: string
   content?: Record<string, unknown>

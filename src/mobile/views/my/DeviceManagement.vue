@@ -97,17 +97,7 @@ const logger = createLogger('DeviceManagement')
 const { t } = useI18n()
 
 // Use the unified device trust composable (keys/query based)
-const {
-  loading,
-  devices: trustDevices,
-  unverifiedDevices,
-  blockedDevices,
-  loadDevices: loadTrustDevices,
-  trustDevice,
-  untrustDevice,
-  blockDevice,
-  unblockDevice
-} = useDeviceTrust()
+const { loading, devices: trustDevices, loadDevices: loadTrustDevices, trustDevice, untrustDevice } = useDeviceTrust()
 
 const currentDeviceId = ref<string>('')
 const showDeviceActionSheet = ref(false)
@@ -291,67 +281,6 @@ async function handleLogoutOtherDevices(): Promise<void> {
     if (error !== 'cancel') {
       logger.error('Failed to log out other devices', error)
       showToast({ type: 'fail', message: t('mobile_devices.logout_other_failed') })
-    }
-  }
-}
-
-async function handleDeleteDevice(device: DeviceTrustInfo) {
-  try {
-    await showConfirmDialog({
-      title: t('mobile_devices.delete_confirm.title'),
-      message: t('mobile_devices.delete_confirm.message', {
-        name: device.displayName || t('mobile_devices.unnamed_device')
-      }),
-      confirmButtonText: t('mobile_devices.delete_confirm.confirm'),
-      cancelButtonText: t('mobile_devices.delete_confirm.cancel')
-    })
-
-    await matrixDeviceService.deleteDevice(device.deviceId)
-    showToast({
-      type: 'success',
-      message: t('mobile_devices.delete_success')
-    })
-    await loadDevices()
-  } catch (error) {
-    if (error !== 'cancel') {
-      logger.error('Failed to delete device', error)
-      showToast({
-        type: 'fail',
-        message: t('mobile_devices.delete_failed')
-      })
-    }
-  }
-}
-
-async function handleDeleteOtherDevices() {
-  const otherDevices = devices.value.filter((d) => !isCurrentDevice(d.deviceId))
-  if (otherDevices.length === 0) {
-    showToast(t('mobile_devices.no_other_devices'))
-    return
-  }
-
-  try {
-    await showConfirmDialog({
-      title: t('mobile_devices.delete_other_confirm.title'),
-      message: t('mobile_devices.delete_other_confirm.message', { count: otherDevices.length }),
-      confirmButtonText: t('mobile_devices.delete_other_confirm.confirm'),
-      cancelButtonText: t('mobile_devices.delete_other_confirm.cancel')
-    })
-
-    const deviceIds = otherDevices.map((d) => d.deviceId)
-    await matrixDeviceService.deleteDevices(deviceIds)
-    showToast({
-      type: 'success',
-      message: t('mobile_devices.delete_success')
-    })
-    await loadDevices()
-  } catch (error) {
-    if (error !== 'cancel') {
-      logger.error('Failed to delete devices in batch', error)
-      showToast({
-        type: 'fail',
-        message: t('mobile_devices.delete_failed')
-      })
     }
   }
 }

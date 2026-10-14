@@ -11,10 +11,10 @@ const logger = createLogger('DehydratedDevice')
 export interface DehydratedDevice {
   deviceId: string
   userId: string
-  initialDeviceDisplayName?: string
-  deviceData?: Record<string, unknown>
+  initialDeviceDisplayName?: string | undefined
+  deviceData?: Record<string, unknown> | undefined
   createdAt: number
-  expiresAt?: number
+  expiresAt?: number | undefined
 }
 
 export interface CreateDehydratedDeviceParams {
@@ -43,7 +43,7 @@ class MatrixDehydratedDeviceService {
     try {
       const response = await client.getDehydratedDeviceManager().createDevice({
         device_data: (deviceData || {}) as { algorithm: string; account: string },
-        initial_device_display_name: initialDeviceDisplayName
+        ...(initialDeviceDisplayName !== undefined ? { initial_device_display_name: initialDeviceDisplayName } : {})
       })
 
       return {

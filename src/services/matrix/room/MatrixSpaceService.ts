@@ -30,8 +30,8 @@ export interface SpaceOptions {
 export interface SpaceInfo {
   spaceId: string
   name: string
-  topic?: string
-  avatarUrl?: string
+  topic?: string | undefined
+  avatarUrl?: string | undefined
   memberCount: number
   childCount: number
 }
@@ -82,10 +82,10 @@ class SpaceService extends BaseMatrixService {
 
       const { room_id } = await client.createRoom({
         name: options.name,
-        topic: options.topic,
-        visibility: options.visibility,
+        ...(options.topic !== undefined ? { topic: options.topic } : {}),
+        ...(options.visibility !== undefined ? { visibility: options.visibility } : {}),
         room_types: ['m.space'],
-        ignore_duplicate_name: options.ignoreDuplicateName,
+        ...(options.ignoreDuplicateName !== undefined ? { ignore_duplicate_name: options.ignoreDuplicateName } : {}),
         initial_state: [
           ...(options.avatarUrl ? [{ type: 'm.room.avatar', state_key: '', content: { url: options.avatarUrl } }] : [])
         ]
@@ -95,8 +95,8 @@ class SpaceService extends BaseMatrixService {
         await this.getSpaceManager().lifecycle.createSpace({
           room_id,
           name: options.name,
-          topic: options.topic,
-          avatar_url: options.avatarUrl,
+          ...(options.topic !== undefined ? { topic: options.topic } : {}),
+          ...(options.avatarUrl !== undefined ? { avatar_url: options.avatarUrl } : {}),
           visibility: options.visibility === 'public' ? 'public' : 'private'
         })
         logger.info(`[Space] Space 已注册到后端: ${room_id}`)
@@ -160,12 +160,12 @@ class SpaceService extends BaseMatrixService {
 
     try {
       await this.getSpaceManager().lifecycle.updateSpace(spaceId, {
-        name: options.name,
-        topic: options.topic,
-        avatar_url: options.avatarUrl,
-        join_rule: options.joinRule,
-        visibility,
-        is_public: options.isPublic
+        ...(options.name !== undefined ? { name: options.name } : {}),
+        ...(options.topic !== undefined ? { topic: options.topic } : {}),
+        ...(options.avatarUrl !== undefined ? { avatar_url: options.avatarUrl } : {}),
+        ...(options.joinRule !== undefined ? { join_rule: options.joinRule } : {}),
+        ...(visibility !== undefined ? { visibility } : {}),
+        ...(options.isPublic !== undefined ? { is_public: options.isPublic } : {})
       })
       logger.info(`[Space] Space 已更新: ${spaceId}`)
     } catch (err) {
@@ -413,7 +413,11 @@ class SpaceService extends BaseMatrixService {
   async getSpaceRooms(spaceId: string): Promise<Array<{ roomId: string; name: string; avatarUrl?: string }>> {
     try {
       const spaces = await this.getSpaceManager().child.getSpaceRooms(spaceId)
-      return spaces.map((s) => ({ roomId: s.room_id, name: s.name || '', avatarUrl: s.avatar_url || undefined }))
+      return spaces.map((s) => ({
+        roomId: s.room_id,
+        name: s.name || '',
+        ...(s.avatar_url ? { avatarUrl: s.avatar_url } : {})
+      }))
     } catch (err) {
       logger.error(`[Space] SpaceManager 获取 Space 房间列表失败，回退: ${err}`)
       try {
@@ -423,10 +427,11 @@ class SpaceService extends BaseMatrixService {
         for (const childId of childIds) {
           const childRoom = this.getClient().getRoom(childId)
           if (childRoom) {
+            const avatarUrl = childRoom.getMxcAvatarUrl() || undefined
             rooms.push({
               roomId: childId,
               name: childRoom.name || '',
-              avatarUrl: childRoom.getMxcAvatarUrl() || undefined
+              ...(avatarUrl !== undefined ? { avatarUrl } : {})
             })
           }
         }
@@ -446,10 +451,10 @@ class SpaceService extends BaseMatrixService {
   ): Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }> {
     try {
       return (await this.getSpaceManager().hierarchy.getSpaceHierarchyPage(spaceId, {
-        from: options?.from,
-        limit: options?.limit,
-        max_depth: options?.maxDepth,
-        suggested_only: options?.suggestedOnly
+        ...(options?.from !== undefined ? { from: options.from } : {}),
+        ...(options?.limit !== undefined ? { limit: options.limit } : {}),
+        ...(options?.maxDepth !== undefined ? { max_depth: options.maxDepth } : {}),
+        ...(options?.suggestedOnly !== undefined ? { suggested_only: options.suggestedOnly } : {})
       })) as { rooms: Array<Record<string, unknown>>; next_batch?: string }
     } catch (err) {
       logger.error(`[Space] 获取空间层级失败: ${spaceId}, ${err}`)

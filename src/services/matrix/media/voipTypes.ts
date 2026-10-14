@@ -42,8 +42,8 @@ export interface CallInfo {
 
 export interface CallParticipant {
   userId: string
-  displayName?: string
-  avatarUrl?: string
+  displayName?: string | undefined
+  avatarUrl?: string | undefined
   isMuted: boolean
   isVideoMuted: boolean
   isSpeaking: boolean

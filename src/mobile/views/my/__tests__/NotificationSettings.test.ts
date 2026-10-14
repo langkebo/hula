@@ -138,7 +138,7 @@ describe('NotificationSettings', () => {
   })
 
   it('loads push rules on mount', async () => {
-    const _wrapper = mountComponent()
+    mountComponent()
     await vi.dynamicImportSettled()
     expect(getPushRulesMock).toHaveBeenCalled()
   })

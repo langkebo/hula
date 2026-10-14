@@ -35,7 +35,7 @@ class MatrixApiKeyService {
     return matrixHttpClient.request<{ list: ApiKey[]; total: number }>(
       {
         url: matrixExtensionEndpoints.API_KEY_PAGE,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixApiKey' }

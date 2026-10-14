@@ -9,8 +9,8 @@ import { BaseMatrixService } from '../BaseMatrixService'
 
 interface MatrixProfile {
   userId: string
-  displayname?: string
-  avatarUrl?: string
+  displayname?: string | undefined
+  avatarUrl?: string | undefined
 }
 
 interface MatrixExtendedProfile {
@@ -308,5 +308,3 @@ export function useProfile(): UseProfileResult {
     uploadAvatar
   }
 }
-
-export default profileService

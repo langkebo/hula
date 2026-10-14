@@ -1,6 +1,5 @@
 import { computed, effectScope, type MaybeRefOrGetter, onScopeDispose, shallowRef, toValue } from 'vue'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
-import { createLogger } from '@/utils/Logger'
 
 /**
  * 消息级 E2EE 信任状态
@@ -20,8 +19,6 @@ export type MessageTrustLevel = 'verified' | 'unverified' | 'risk' | 'plain'
  * 收敛逻辑集中在此处，避免组件内联做锁态映射。
  */
 export type LockBadgeLevel = 'verified' | 'unverified' | 'risk'
-
-const _logger = createLogger('useMessageTrust')
 
 /**
  * 发送者设备验证状态缓存（模块级，避免每次消息渲染都去查设备列表）

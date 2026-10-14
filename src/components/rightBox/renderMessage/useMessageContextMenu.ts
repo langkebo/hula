@@ -19,11 +19,14 @@ export const useMessageContextMenu = (options: UseMessageContextMenuOptions) => 
     }
   }
 
+  // 平台在运行期恒定：探测一次后复用
+  const isMobilePlatform = isMobile()
+
   const longPressOption = computed(() => ({
     delay: 700,
     modifiers: {
-      prevent: isMobile(),
-      stop: isMobile()
+      prevent: isMobilePlatform,
+      stop: isMobilePlatform
     },
     reset: true,
     windowResize: true,
@@ -33,7 +36,7 @@ export const useMessageContextMenu = (options: UseMessageContextMenuOptions) => 
   }))
 
   const handleLongPress = (e: PointerEvent, _menu: unknown) => {
-    if (!isMobile()) return
+    if (!isMobilePlatform) return
 
     e.preventDefault()
     e.stopPropagation()

@@ -49,7 +49,7 @@ export async function downloadFileBytes(
   if (accessToken && downloadUrl.startsWith(client.getHomeserverUrl())) {
     try {
       const buffer = await HttpClient.downloadBytes(downloadUrl, {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        ...(accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {}),
         // homeserver 由 env/用户配置（动态 host）
         allowDynamicHost: true
       })

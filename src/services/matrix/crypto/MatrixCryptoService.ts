@@ -8,10 +8,10 @@ const logger = createLogger('MatrixCryptoService')
 interface DeviceInfo {
   deviceId: string
   userId: string
-  displayName?: string
-  lastSeenTs?: number
-  lastSeenIp?: string
-  isVerified?: boolean
+  displayName?: string | undefined
+  lastSeenTs?: number | undefined
+  lastSeenIp?: string | undefined
+  isVerified?: boolean | undefined
 }
 
 interface VerificationStatus {

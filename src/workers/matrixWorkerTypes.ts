@@ -18,7 +18,7 @@ export interface WorkerResponse {
   id: string
   success: boolean
   data?: unknown
-  error?: string
+  error?: string | undefined
 }
 
 export interface SearchRoomDoc {

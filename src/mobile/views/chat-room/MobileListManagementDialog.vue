@@ -29,7 +29,7 @@
             <div v-if="flow.allowlist.value.length > 0" class="member-list">
               <van-swipe-cell v-for="m in flow.allowlist.value" :key="m.userId">
                 <div class="member-item">
-                  <van-image round :width="36" :height="36" :src="m.avatarUrl" />
+                  <van-image round :width="36" :height="36" :src="m.avatarUrl ?? ''" />
                   <div class="member-info">
                     <div class="member-name">{{ m.name }}</div>
                     <div class="member-id">{{ m.userId }}</div>
@@ -73,7 +73,7 @@
             <div v-if="flow.denylist.value.length > 0" class="member-list">
               <van-swipe-cell v-for="m in flow.denylist.value" :key="m.userId">
                 <div class="member-item">
-                  <van-image round :width="36" :height="36" :src="m.avatarUrl" />
+                  <van-image round :width="36" :height="36" :src="m.avatarUrl ?? ''" />
                   <div class="member-info">
                     <div class="member-name">{{ m.name }}</div>
                     <div class="member-id">

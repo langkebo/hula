@@ -28,9 +28,9 @@ describe('resolveAllowlistConfig', () => {
     expect(hosts).toContain('hs.example.com')
   })
 
-  it('defaults mode to report and only honors the exact enforce value', () => {
-    expect(resolveAllowlistConfig({ env: 'prod' }).mode).toBe('report')
-    expect(resolveAllowlistConfig({ env: 'prod', mode: 'enforce' }).mode).toBe('enforce')
-    expect(resolveAllowlistConfig({ env: 'prod', mode: 'nonsense' }).mode).toBe('report')
+  it('defaults mode to enforce and only honors the exact report value', () => {
+    expect(resolveAllowlistConfig({ env: 'prod' }).mode).toBe('enforce')
+    expect(resolveAllowlistConfig({ env: 'prod', mode: 'report' }).mode).toBe('report')
+    expect(resolveAllowlistConfig({ env: 'prod', mode: 'nonsense' }).mode).toBe('enforce')
   })
 })

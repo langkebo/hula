@@ -399,7 +399,10 @@ class MatrixNotificationService extends BaseMatrixService {
   }> {
     const client = this.getNotificationClient()
     try {
-      const result = await client.getNotificationsManager().getNotifications({ from, limit })
+      const result = await client.getNotificationsManager().getNotifications({
+        ...(from !== undefined ? { from } : {}),
+        limit
+      })
       return result as { notifications: Array<Record<string, unknown>>; next_token?: string }
     } catch (err) {
       logger.error(`[MatrixNotification] 获取通知列表失败: ${err}`)

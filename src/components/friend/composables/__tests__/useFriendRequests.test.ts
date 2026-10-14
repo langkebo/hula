@@ -144,7 +144,7 @@ describe('useFriendRequests', () => {
 
     it('returns early when request has no userId', async () => {
       const { handleQuickAccept } = useFriendRequestsScoped()
-      const request = makeRequest({ userId: undefined })
+      const request = makeRequest({ userId: '' })
 
       await handleQuickAccept(request)
 
@@ -176,7 +176,7 @@ describe('useFriendRequests', () => {
 
     it('returns early when request has no userId', async () => {
       const { handleQuickReject } = useFriendRequestsScoped()
-      const request = makeRequest({ userId: undefined })
+      const request = makeRequest({ userId: '' })
 
       await handleQuickReject(request)
 

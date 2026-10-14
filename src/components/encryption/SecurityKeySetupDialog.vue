@@ -281,11 +281,7 @@ async function startSetup(mode: SetupMode) {
     await matrixClientService.waitForClientReady({ timeoutMs: 30000 })
     const client = matrixClientService.getClient()
     const crypto = cryptoSDKAdapter.getCrypto()
-    const cryptoMethods = crypto
-      ? Object.keys(crypto as object).filter(
-          (k) => typeof (crypto as unknown as Record<string, unknown>)[k] === 'function'
-        )
-      : []
+
     logger.info(
       `[SecurityKeySetup] 步骤 B 完成: waitForClientReady 成功 (${Date.now() - tB}ms) — userId=${client?.getUserId?.()}, deviceId=${client?.getDeviceId?.()}, crypto=${crypto ? '可用' : '不可用'}`
     )

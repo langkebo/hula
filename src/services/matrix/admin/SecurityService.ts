@@ -106,7 +106,7 @@ export class AdminSecurityService {
     eventType?: string
   ): Promise<{
     logs: Array<Record<string, unknown>>
-    next_batch?: string
+    next_batch?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()
@@ -304,11 +304,11 @@ export class AdminSecurityService {
     from?: string
   ): Promise<{
     mappings: Array<Record<string, unknown>>
-    nextToken?: string
+    nextToken?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.listSamlMappings({ limit, from })
+      const result = await admin.listSamlMappings({ limit, ...(from !== undefined ? { from } : {}) })
       return {
         mappings: result?.mappings ?? [],
         nextToken: result?.next_token
@@ -366,7 +366,7 @@ export class AdminSecurityService {
     limit = 100,
     from?: string,
     filters?: Record<string, unknown>
-  ): Promise<{ events: Array<Record<string, unknown>>; nextToken?: string } | null> {
+  ): Promise<{ events: Array<Record<string, unknown>>; nextToken?: string | undefined } | null> {
     try {
       const admin = await this.sdkAdmin()
       const params: Record<string, unknown> = { limit }

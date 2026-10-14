@@ -20,15 +20,17 @@
     </div>
 
     <van-popup v-model:show="active" position="bottom" :style="{ height: '30%' }">
-      <div class="text-center py-20px text-16px">分享至</div>
+      <div class="text-center py-20px text-16px">{{ t('mobile_my.share_to') }}</div>
     </van-popup>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import router from '@/router'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
+const { t } = useI18n()
 const active = ref(false)
 const globalStore = useGlobalStore()
 

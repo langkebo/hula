@@ -14,7 +14,7 @@ export const SUGGESTED_TAGS: string[] = ['favorite', 'work', 'personal', 'todo',
 
 interface RoomTag {
   name: string
-  order?: number
+  order?: number | undefined
 }
 
 interface UseRoomTagsOptions {

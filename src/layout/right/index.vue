@@ -27,7 +27,7 @@
       :style="{ background: shouldShowChat ? 'var(--right-theme-bg-color)' : '' }"
       data-tauri-drag-region
       class="flex-1 flex flex-col min-h-0">
-      <ActionBar :current-label="appWindow?.label" />
+      <ActionBar v-bind="appWindow ? { currentLabel: appWindow.label } : {}" />
 
       <!-- 阶段 2/4：右侧栏视图状态机，路由为单一真相源 -->
       <div class="flex-1 min-h-0 flex flex-col">

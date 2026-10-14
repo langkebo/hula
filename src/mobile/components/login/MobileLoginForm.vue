@@ -69,7 +69,7 @@
           <div class="flex-between-center">
             <img
               :src="AvatarUtils.getAvatarUrl(item.avatar)"
-              alt="用户头像"
+              :alt="t('mobile_contact.avatar.user')"
               class="size-28px bg-[--tjg-text-disabled] rounded-50% object-cover" />
             <p class="text-14px color-[--chat-text-color]">{{ item.account }}</p>
             <svg @click.stop="emit('delete-account', item)" class="w-12px h-12px">
@@ -171,7 +171,7 @@ const mobileStore = useMobileStore()
 const safeArea = computed(() => mobileStore.safeArea)
 
 const protocol = defineModel<boolean>('protocol', { default: true })
-const homeserverUrl = defineModel<string>('homeserverUrl')
+const homeserverUrl = defineModel<string>('homeserverUrl', { default: '' })
 
 const accountPH = ref(t('login.mobile.input.account_placeholder'))
 const passwordPH = ref(t('login.mobile.input.code_placeholder'))

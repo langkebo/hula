@@ -3,8 +3,8 @@ import { adminService } from '@/services/matrix/admin'
 
 export interface RetentionPolicyView {
   roomId: string
-  minLifetime?: number
-  maxLifetime?: number
+  minLifetime?: number | undefined
+  maxLifetime?: number | undefined
 }
 
 interface UseAdminRetentionResult {

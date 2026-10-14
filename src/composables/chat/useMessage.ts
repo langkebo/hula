@@ -11,10 +11,8 @@ import { useChatSession } from '@/shared/composables/useChatSession'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
-import { useGroupStore } from '@/stores/domains/chat/group'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
@@ -43,9 +41,7 @@ export const useMessage = () => {
   const chatStore = useChatStore()
   const settingStore = useSettingStore()
   const contactStore = useContactStore()
-  const _groupStore = useGroupStore()
   const roomStore = useRoomStore()
-  const _userStore = useUserStore()
   const BOT_ALLOWED_MENU_INDEXES = new Set([0, 1, 2, 3])
 
   // 确保监听器只注册一次

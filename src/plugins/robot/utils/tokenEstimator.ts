@@ -1,6 +1,6 @@
 interface TokenEstimable {
-  content?: string
-  reasoningContent?: string
+  content?: string | undefined
+  reasoningContent?: string | undefined
 }
 
 /**

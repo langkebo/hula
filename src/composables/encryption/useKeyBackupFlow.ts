@@ -132,7 +132,7 @@ export function useKeyBackupFlow(options: UseKeyBackupFlowOptions = {}) {
     errorMessage.value = null
     try {
       const result = await matrixKeyBackupService.restoreKeyBackup(targetVersion)
-      lastImportResult.value = result as unknown as ImportResult
+      lastImportResult.value = result as typeof result & ImportResult
       step.value = 'success'
       const imported = (result as { imported?: number })?.imported ?? 0
       const total = (result as { total?: number })?.total ?? 0

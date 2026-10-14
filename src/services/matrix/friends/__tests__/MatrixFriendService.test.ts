@@ -100,14 +100,15 @@ vi.mock('@/services/matrix/MatrixHttpClient', async () => {
     authedRequestWithPath: vi.fn(async (_client: unknown, method: string, path: string, body?: unknown) => {
       const url = `${TEST_BASE_URL}${path}`
       const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' }
-      const response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined })
+      const bodyInit = body ? JSON.stringify(body) : undefined
+      const response = await fetch(url, { method, headers, ...(bodyInit !== undefined ? { body: bodyInit } : {}) })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       return response.json()
     })
   }
 })
 
-const { default: matrixFriendService } = await import('../MatrixFriendService')
+const { matrixFriendService } = await import('../MatrixFriendService')
 const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
 const { synapseFriendExtensionService } = await import('../../extensions/SynapseFriendExtensionService')
 
@@ -286,11 +287,8 @@ describe('MatrixFriendService', () => {
           username: 'ljf',
           presence: 'online',
           online: true,
-          avatar_url: undefined,
           since: 1777851081179,
-          status: 'normal',
-          dm_room_id: undefined,
-          note: undefined
+          status: 'normal'
         }
       ])
 

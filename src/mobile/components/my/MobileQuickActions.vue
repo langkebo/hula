@@ -4,7 +4,7 @@
       <div class="m-quick-icon">
         <Icon :icon="item.icon" :width="22" :height="22" />
       </div>
-      <span>{{ item.label }}</span>
+      <span>{{ t(item.labelKey) }}</span>
     </div>
   </div>
 </template>
@@ -12,13 +12,15 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+const { t } = useI18n()
 const router = useRouter()
 
 interface QuickAction {
   key: string
-  label: string
+  labelKey: string
   icon: string
   /** 已接入的路由；留空则给出开发占位提示 */
   route?: string
@@ -26,11 +28,11 @@ interface QuickAction {
 
 // 对齐原型《移动端我的页》快捷入口：扫一扫 / 钱包 / 收藏 / 文件 / 摇一摇
 const actions: QuickAction[] = [
-  { key: 'scan', label: '扫一扫', icon: 'mdi:qrcode-scan', route: '/mobile/myQRCode' },
-  { key: 'wallet', label: '钱包', icon: 'mdi:wallet' },
-  { key: 'favorite', label: '收藏', icon: 'mdi:star-outline' },
-  { key: 'file', label: '文件', icon: 'mdi:file-document-outline' },
-  { key: 'shake', label: '摇一摇', icon: 'mdi:shuffle-variant' }
+  { key: 'scan', labelKey: 'mobile_quick_actions.scan', icon: 'mdi:qrcode-scan', route: '/mobile/myQRCode' },
+  { key: 'wallet', labelKey: 'mobile_quick_actions.wallet', icon: 'mdi:wallet' },
+  { key: 'favorite', labelKey: 'mobile_quick_actions.favorite', icon: 'mdi:star-outline' },
+  { key: 'file', labelKey: 'mobile_quick_actions.file', icon: 'mdi:file-document-outline' },
+  { key: 'shake', labelKey: 'mobile_quick_actions.shake', icon: 'mdi:shuffle-variant' }
 ]
 
 function handleClick(item: QuickAction) {
@@ -38,7 +40,7 @@ function handleClick(item: QuickAction) {
     router.push(item.route)
     return
   }
-  showToast(`「${item.label}」功能开发中`)
+  showToast(t('mobile_quick_actions.developing', { name: t(item.labelKey) }))
 }
 </script>
 

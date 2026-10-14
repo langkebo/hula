@@ -18,7 +18,7 @@ interface BuildVideoGenerationRequestOptions {
   size: string
   duration: number
   conversationId: string
-  image?: string | null
+  image?: string | null | undefined
 }
 
 interface BuildAudioGenerationRequestOptions {

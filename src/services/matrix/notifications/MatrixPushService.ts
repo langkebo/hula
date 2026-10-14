@@ -108,7 +108,7 @@ class MatrixPushService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const deviceId = client.getDeviceId()
-      const pusherData = pusher as unknown as Record<string, unknown>
+      const pusherData = pusher as IPusher & Record<string, unknown>
 
       // 使用 SDK PushManager（SDK-7: device_id 必填化）
       // SDK 的 IPusherRequest 通过 Omit 移除了 device_id 字段（由 SDK 自动注入当前 device_id），

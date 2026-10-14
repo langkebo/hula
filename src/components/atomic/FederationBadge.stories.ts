@@ -45,7 +45,6 @@ const meta = {
     isLocal: false,
     showIcon: true,
     showLabel: true,
-    label: undefined,
     title: '来自远端服务器'
   }
 } satisfies Meta<typeof FederationBadge>

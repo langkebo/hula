@@ -179,8 +179,8 @@ export type SpaceListItem = {
   spaceId: string
   name: string
   childCount: number
-  avatarUrl?: string
-  topic?: string
+  avatarUrl?: string | undefined
+  topic?: string | undefined
   memberCount?: number
   isPinned?: boolean
   isLowPriority?: boolean

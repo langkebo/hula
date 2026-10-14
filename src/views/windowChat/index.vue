@@ -47,7 +47,7 @@
 
 <script setup lang="ts">
 import { NButton, NEmpty, NIcon, NSpin } from 'naive-ui'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import ChatBox from '@/components/rightBox/chatBox/index.vue'

@@ -1,6 +1,8 @@
 /**
  * 用于处理头像相关操作的实用类
  */
+import { padZero } from '@/utils/StringUtils'
+
 export class AvatarUtils {
   private static readonly DEFAULT_AVATAR_RANGE = {
     start: '001',
@@ -102,7 +104,7 @@ export class AvatarUtils {
   public static getRandomDefaultAvatar(): string {
     const range = AvatarUtils.RANGE_END - AvatarUtils.RANGE_START + 1
     const num = Math.floor(Math.random() * range) + AvatarUtils.RANGE_START
-    return String(num).padStart(3, '0')
+    return padZero(num, 3)
   }
 
   private static resolveAvatarUrl(avatar: string, size?: number): string {

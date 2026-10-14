@@ -72,7 +72,7 @@ export const CRITICAL_EXTENSION_IDS: readonly string[] = deriveExtensionAccessor
  */
 export function isExtensionRegistered(client: MatrixClient | null, accessor: string): boolean {
   if (!client) return false
-  const candidate = client as unknown as Record<string, unknown>
+  const candidate = client as MatrixClient & Record<string, unknown>
   return typeof candidate[accessor] === 'function'
 }
 

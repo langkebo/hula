@@ -166,8 +166,6 @@ const showQRCodeModal = ref(false)
 const tips = ref('')
 const optionsType = ref<number | undefined>(undefined)
 
-const isEditingGroupName = ref(false)
-const editingGroupName = ref('')
 const localMyName = ref('')
 const localRemark = ref('')
 

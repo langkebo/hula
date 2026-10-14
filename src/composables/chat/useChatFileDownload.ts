@@ -72,7 +72,7 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
   const downloadAndRevealFile = async (params: {
     fileUrl: string
     fileName: string
-    encryptedFile?: MatrixEncryptedAttachmentLike
+    encryptedFile?: MatrixEncryptedAttachmentLike | undefined
     i18nKeys: {
       downloadPrompt: string
       success: string
@@ -118,8 +118,8 @@ export const useChatFileDownload = (options: UseChatFileDownloadOptions) => {
 
   const downloadAndRevealVideo = async (params: {
     videoUrl: string
-    fileName?: string
-    encryptedFile?: MatrixEncryptedAttachmentLike
+    fileName?: string | undefined
+    encryptedFile?: MatrixEncryptedAttachmentLike | undefined
   }) => {
     try {
       const { videoUrl, fileName, encryptedFile } = params

@@ -247,9 +247,10 @@ async function beforeCloseCreateSpace(action: string): Promise<boolean> {
 
   try {
     showToast({ type: 'loading', message: t('mobile_rooms.creating'), forbidClick: true })
+    const topic = newSpaceTopic.value.trim()
     await matrixSpaceService.createSpace({
       name,
-      topic: newSpaceTopic.value.trim() || undefined
+      ...(topic ? { topic } : {})
     })
     showToast({ type: 'success', message: t('space.create_success') })
     showCreateSpaceDialog.value = false

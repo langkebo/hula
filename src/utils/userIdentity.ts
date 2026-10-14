@@ -148,6 +148,9 @@ export function normalizeMatrixUserId(value?: string | null, currentUserId?: str
  *
  * @returns 归一化 localpart；两者皆缺失返回 ''（调用方应回退其他兜底键，如 roomId）
  */
-export function resolveDmIdentityKey(identity: { detailId?: string | null; account?: string | null }): string {
+export function resolveDmIdentityKey(identity: {
+  detailId?: string | null | undefined
+  account?: string | null | undefined
+}): string {
   return toLocalpart(identity.detailId) || toLocalpart(identity.account)
 }

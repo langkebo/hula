@@ -159,8 +159,8 @@ function showDetail(entry: AuditEntry) {
 async function loadAuditLogs() {
   try {
     await audit.loadLogs({
-      userId: filterUserId.value.trim() || undefined,
-      type: filterType.value || undefined
+      ...(filterUserId.value.trim() ? { userId: filterUserId.value.trim() } : {}),
+      ...(filterType.value ? { type: filterType.value } : {})
     })
   } catch (err) {
     logger.error('加载审计日志失败:', err)

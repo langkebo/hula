@@ -39,7 +39,8 @@
           <div class="rounded-16px bg-[--tjg-surface-panel] overflow-hidden">
             <van-form @submit="saveEditInfo">
               <van-field
-                v-model="localUserInfo.name"
+                :model-value="localUserInfo.name ?? ''"
+                @update:model-value="localUserInfo.name = $event"
                 :label="t('mobile_edit_profile.nickname')"
                 :placeholder="t('mobile_edit_profile.placeholder.nickname')"
                 readonly
@@ -81,7 +82,8 @@
               <div class="mx-16px border-b border-[--tjg-border-default]"></div>
 
               <van-field
-                v-model="localUserInfo.phone"
+                :model-value="localUserInfo.phone ?? ''"
+                @update:model-value="localUserInfo.phone = $event"
                 :label="t('mobile_edit_profile.phone')"
                 :placeholder="t('mobile_edit_profile.placeholder.phone')"
                 readonly
@@ -91,7 +93,8 @@
               <div class="mx-16px border-b border-[--tjg-border-default]"></div>
 
               <van-field
-                v-model="localUserInfo.resume"
+                :model-value="localUserInfo.resume ?? ''"
+                @update:model-value="localUserInfo.resume = $event"
                 :label="t('mobile_edit_profile.bio')"
                 :placeholder="t('mobile_edit_profile.placeholder.bio')"
                 type="textarea"
@@ -244,7 +247,7 @@ const toEditBio = () => {
 const updateCurrentUserCache = (key: 'name' | 'avatar', value: string) => {
   const currentUser = (userStore.userInfo?.uid ?? '') && groupStore.getUserInfo(userStore.userInfo?.uid ?? '')
   if (currentUser) {
-    ;(currentUser as unknown as Record<string, unknown>)[key] = value
+    currentUser[key] = value
   }
 }
 
@@ -293,7 +296,7 @@ const saveEditInfo = async () => {
 
     try {
       await profileService.updateOwnExtendedProfile({
-        sex: localUserInfo.value.sex,
+        ...(localUserInfo.value.sex !== undefined ? { sex: localUserInfo.value.sex } : {}),
         resume: userStore.userInfo?.resume ?? localUserInfo.value.resume ?? '',
         region: region.value,
         birthday: birthday.value

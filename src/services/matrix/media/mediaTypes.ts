@@ -40,8 +40,8 @@ export const DEFAULT_COMPRESS_OPTIONS: CompressOptions = {
 
 /** 上传选项（内部用于 MediaManager.uploadContent / http.uploadContent） */
 export interface UploadOpts {
-  type?: string
-  name?: string
+  type?: string | undefined
+  name?: string | undefined
   includeFilename?: boolean
-  progressHandler?: (progress: { loaded: number; total: number }) => void
+  progressHandler?: ((progress: { loaded: number; total: number }) => void) | undefined
 }

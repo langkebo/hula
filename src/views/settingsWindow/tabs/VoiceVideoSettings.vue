@@ -235,7 +235,7 @@ async function startAudioTest() {
   try {
     const constraints: MediaStreamConstraints = {
       audio: {
-        deviceId: audioInputId.value ? { exact: audioInputId.value } : undefined,
+        ...(audioInputId.value ? { deviceId: { exact: audioInputId.value } } : {}),
         echoCancellation: echoCancellation.value,
         noiseSuppression: noiseSuppression.value,
         autoGainControl: autoGainControl.value
@@ -303,7 +303,7 @@ async function startPreview() {
   try {
     const constraints: MediaStreamConstraints = {
       video: {
-        deviceId: videoInputId.value ? { exact: videoInputId.value } : undefined
+        ...(videoInputId.value ? { deviceId: { exact: videoInputId.value } } : {})
       }
     }
 

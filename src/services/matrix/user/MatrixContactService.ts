@@ -12,8 +12,8 @@ const logger = createLogger('MatrixContactService')
 
 export interface UserProfile {
   userId: string
-  displayName?: string
-  avatarUrl?: string
+  displayName?: string | undefined
+  avatarUrl?: string | undefined
 }
 
 export interface UserItem {
@@ -288,8 +288,8 @@ class MatrixContactService {
             this.toUserItem(
               {
                 userId: profile.userId,
-                displayName: profile.displayName,
-                avatarUrl: profile.avatarUrl
+                ...(profile.displayName !== undefined ? { displayName: profile.displayName } : {}),
+                ...(profile.avatarUrl !== undefined ? { avatarUrl: profile.avatarUrl } : {})
               },
               uid
             )

@@ -16,7 +16,7 @@ interface LongtaskMetric {
   name: 'longtask'
   startTime: number
   duration: number
-  attribution?: Record<string, unknown>
+  attribution?: Record<string, unknown> | undefined
 }
 
 interface WebVitalMetric {
@@ -37,7 +37,7 @@ interface PageRenderMetric {
   value: number
   threshold: number
   rating: MetricRating
-  meta?: Record<string, string>
+  meta?: Record<string, string> | undefined
 }
 
 interface SdkRequestMetric {
@@ -48,7 +48,7 @@ interface SdkRequestMetric {
   successful: number
   failed: number
   retried: number
-  meta?: Record<string, string>
+  meta?: Record<string, string> | undefined
 }
 
 type PerformanceMetric = LongtaskMetric | WebVitalMetric | PageRenderMetric | SdkRequestMetric

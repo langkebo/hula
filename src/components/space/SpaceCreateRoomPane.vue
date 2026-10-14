@@ -116,7 +116,7 @@ const handleSubmit = async () => {
   try {
     const roomId = await createRoomInSpace({
       name: formData.name.trim(),
-      topic: formData.topic.trim() || undefined,
+      ...(formData.topic.trim() ? { topic: formData.topic.trim() } : {}),
       suggested: formData.suggested
     })
     if (!roomId) {

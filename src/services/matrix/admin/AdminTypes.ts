@@ -22,44 +22,44 @@ export interface ServerVersion {
 
 export interface UserInfo {
   userId: string
-  name?: string
-  avatarUrl?: string
-  admin?: boolean
-  deactivated?: boolean
-  isGuest?: boolean
-  createdTs?: number
-  displayname?: string
+  name?: string | undefined
+  avatarUrl?: string | undefined
+  admin?: boolean | undefined
+  deactivated?: boolean | undefined
+  isGuest?: boolean | undefined
+  createdTs?: number | undefined
+  displayname?: string | undefined
 }
 
 export interface UserDevice {
   deviceId: string
-  displayName?: string
-  lastSeenIp?: string
-  lastSeenTs?: number
-  userAgent?: string
+  displayName?: string | undefined
+  lastSeenIp?: string | undefined
+  lastSeenTs?: number | undefined
+  userAgent?: string | undefined
 }
 
 export interface RateLimit {
-  messagesPerSecond?: number
-  burstCount?: number
+  messagesPerSecond?: number | undefined
+  burstCount?: number | undefined
 }
 
 export interface ShadowBanStatus {
   banned: boolean
-  bannedAt?: number
+  bannedAt?: number | undefined
 }
 
 export interface RoomInfo {
   roomId: string
-  name?: string
-  topic?: string
+  name?: string | undefined
+  topic?: string | undefined
   joinedMembers: number
   joinedLocalMembers: number
   invitedMembers: number
   invitedLocalMembers: number
-  createTime?: number
-  creator?: string
-  public?: boolean
+  createTime?: number | undefined
+  creator?: string | undefined
+  public?: boolean | undefined
 }
 
 export interface RoomState {
@@ -73,42 +73,42 @@ export interface ShutdownRoomResult {
 
 export interface FederationDestination {
   destination: string
-  retryLastTs?: number
-  retryInterval?: number
-  failureTs?: number
-  lastSuccessfulTs?: number
+  retryLastTs?: number | undefined
+  retryInterval?: number | undefined
+  failureTs?: number | undefined
+  lastSuccessfulTs?: number | undefined
 }
 
 export interface FederationBlacklistEntry {
   domain: string
-  reason?: string
-  addedBy?: string
+  reason?: string | undefined
+  addedBy?: string | undefined
   addedAt?: number
 }
 
 export interface ServerNoticeResult {
-  eventId?: string
+  eventId?: string | undefined
 }
 
 export interface ServerNoticeInfo {
   userId: string
-  sentTs?: number
-  content?: Record<string, unknown>
+  sentTs?: number | undefined
+  content?: Record<string, unknown> | undefined
 }
 
 export interface RegistrationToken {
   token: string
-  usesAllowed?: number
+  usesAllowed?: number | undefined
   pending: number
   completed: number
-  expiryTime?: number
+  expiryTime?: number | undefined
 }
 
 export interface ReportRequest {
   roomId: string
   eventId: string
   reason: string
-  explanation?: string
+  explanation?: string | undefined
 }
 
 // 与 SDK 权威形状（matrix-js-sdk/admin `AdminReport`，对照后端 report.rs::report_to_json）对齐。
@@ -238,13 +238,13 @@ export interface ServerQuota {
 }
 
 export interface RetentionPolicy {
-  min_lifetime?: number
-  max_lifetime?: number
+  min_lifetime?: number | undefined
+  max_lifetime?: number | undefined
 }
 
 export interface RoomRetention {
   roomId: string
-  policy?: RetentionPolicy
+  policy?: RetentionPolicy | undefined
 }
 
 export interface EventReport {

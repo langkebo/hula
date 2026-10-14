@@ -121,10 +121,14 @@
       </div>
 
       <!-- 设备详情弹出层 -->
-      <van-action-sheet v-model:show="showDeviceSheet" :title="selectedDevice?.displayName || selectedDevice?.deviceId">
+      <van-action-sheet
+        v-model:show="showDeviceSheet"
+        :title="(selectedDevice?.displayName || selectedDevice?.deviceId) ?? ''">
         <div class="device-detail-sheet">
           <van-cell-group>
-            <van-cell :title="t('setting.encryption.device_id')" :value="selectedDevice?.deviceId" />
+            <van-cell
+              :title="t('setting.encryption.device_id')"
+              v-bind="selectedDevice?.deviceId !== undefined ? { value: selectedDevice.deviceId } : {}" />
             <van-cell
               :title="t('encryption.device_trust.current_device')"
               :value="
@@ -185,9 +189,6 @@ import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.v
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('MobileDeviceTrustManager')
 
 const { t } = useI18n()
 

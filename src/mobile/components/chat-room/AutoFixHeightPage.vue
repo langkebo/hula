@@ -3,7 +3,7 @@
     <img
       v-if="bgmURL"
       :src="bgmURL as string"
-      alt="聊天背景"
+      :alt="t('mobile_chat.chat_background')"
       class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
     <!-- 页面容器 -->
     <div class="flex w-full items-start flex-col flex-1 min-h-0 z-1">
@@ -21,7 +21,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import bgImg from '@/assets/mobile/chat-home/background.webp'
+
+const { t } = useI18n()
 
 const { showFooter = true, background = true } = defineProps<{ showFooter?: boolean; background?: string | boolean }>()
 

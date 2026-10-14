@@ -109,8 +109,6 @@ describe('MatrixRoomSummaryAggregateService', () => {
       const summary: SynapseRoomSummary = {
         room_id: '!r:e',
         name: 'Server Name',
-        topic: undefined,
-        avatar_url: undefined,
         member_count: 7,
         joined_member_count: 5,
         heroes: [
@@ -134,11 +132,7 @@ describe('MatrixRoomSummaryAggregateService', () => {
     it('falls back to heroes.length when member_count is missing', () => {
       const summary: SynapseRoomSummary = {
         room_id: '!r',
-        name: undefined,
-        topic: undefined,
-        avatar_url: undefined,
-        heroes: [{ user_id: '@a:e' }, { user_id: '@b:e' }],
-        canonical_alias: undefined
+        heroes: [{ user_id: '@a:e' }, { user_id: '@b:e' }]
       }
       const s = service.toServerRoomSummary(summary, null)
       expect(s.memberCount).toBe(2)
@@ -150,11 +144,7 @@ describe('MatrixRoomSummaryAggregateService', () => {
       const room = makeRoom({ getJoinRule: () => JoinRule.Knock })
       const summary: SynapseRoomSummary = {
         room_id: '!r',
-        name: undefined,
-        topic: undefined,
-        avatar_url: undefined,
-        heroes: [],
-        canonical_alias: undefined
+        heroes: []
       }
       expect(service.toServerRoomSummary(summary, room).joinRule).toBe('knock')
     })

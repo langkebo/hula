@@ -56,21 +56,23 @@ export function createRoomLifecycle(ctx: RoomLifecycleContext) {
   }): Promise<RoomInfo> {
     try {
       const room = await matrixRoomActionFacade.createRoom({
-        name: options.name,
-        topic: options.topic,
-        invite: options.invite,
-        is_direct: options.isDirect,
-        initial_state: options.isEncrypted
-          ? [
-              {
-                type: 'm.room.encryption',
-                state_key: '',
-                content: {
-                  algorithm: 'm.megolm.v1.aes-sha2'
+        ...(options.name !== undefined ? { name: options.name } : {}),
+        ...(options.topic !== undefined ? { topic: options.topic } : {}),
+        ...(options.invite !== undefined ? { invite: options.invite } : {}),
+        ...(options.isDirect !== undefined ? { is_direct: options.isDirect } : {}),
+        ...(options.isEncrypted
+          ? {
+              initial_state: [
+                {
+                  type: 'm.room.encryption',
+                  state_key: '',
+                  content: {
+                    algorithm: 'm.megolm.v1.aes-sha2'
+                  }
                 }
-              }
-            ]
-          : undefined
+              ]
+            }
+          : {})
       })
 
       const roomInfo: RoomInfo = {

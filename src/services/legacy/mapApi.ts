@@ -6,12 +6,6 @@
 
 import { matrixExtensionEndpoints } from '@/services/backend'
 import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
-import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
-
-type TransformedCoordinate = {
-  lat: number
-  lng: number
-}
 
 type AddressComponent = {
   province: string
@@ -35,23 +29,6 @@ type ReverseGeocodeResult = {
   }
 }
 // 使用后端代理，不再需要 JSONP
-
-// 坐标系转换（WGS84 -> GCJ-02）
-const _transformCoordinates = async (lat: number, lng: number): Promise<TransformedCoordinate> => {
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) throw new Error('坐标范围无效')
-  try {
-    const data = await matrixHttpClient.requestResult<{ lat: number; lng: number }>({
-      url: matrixExtensionEndpoints.MAP_COORD_TRANSLATE,
-      params: { lat, lng }
-    })
-    if (data.ok && data.data) {
-      return { lat: data.data.lat, lng: data.data.lng }
-    }
-    return wgs84ToGcj02(lat, lng)
-  } catch {
-    return wgs84ToGcj02(lat, lng)
-  }
-}
 
 // 逆地理编码（获取地址信息）
 export const reverseGeocode = async (lat: number, lng: number): Promise<ReverseGeocodeResult | null> => {

@@ -68,7 +68,7 @@ const membersRef = ref<Array<{ space_id: string; user_id: string; membership?: s
 ])
 
 const roomsRef = ref<Array<{ roomId: string; name: string; avatarUrl?: string }>>([
-  { roomId: '!room-1:server', name: 'General', avatarUrl: undefined }
+  { roomId: '!room-1:server', name: 'General' }
 ])
 
 // 路由参数可变 mock
@@ -223,7 +223,7 @@ describe('SpaceChildrenPane', () => {
     routeRef.value = { params: { spaceId: '!space-1:server' }, path: '/space/!space-1:server', query: {} }
     selectedSpaceDetailRef.value = { name: 'Design Team', topic: 'Design collaboration space' }
     membersRef.value = [{ space_id: '!space-1:server', user_id: '@alice:server', membership: 'join' }]
-    roomsRef.value = [{ roomId: '!room-1:server', name: 'General', avatarUrl: undefined }]
+    roomsRef.value = [{ roomId: '!room-1:server', name: 'General' }]
     roomHasTagMock.mockReturnValue(false)
     canManageSpaceMock.mockReturnValue(true)
     loadSpacesMock.mockResolvedValue(undefined)

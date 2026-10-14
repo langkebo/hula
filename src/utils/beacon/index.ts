@@ -1,4 +1,5 @@
 import type { BeaconBody } from '@/services/types'
+import { padZero } from '@/utils/StringUtils'
 
 /**
  * Beacon（MSC3672 实时位置共享）状态判定与剩余时长格式化工具。
@@ -36,7 +37,7 @@ export function formatBeaconRemainingTime(body: BeaconBody | undefined, now: num
   const s = diff % 60
 
   if (h > 0) {
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    return `${padZero(h)}:${padZero(m)}:${padZero(s)}`
   }
-  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  return `${padZero(m)}:${padZero(s)}`
 }

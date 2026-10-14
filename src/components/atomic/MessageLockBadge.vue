@@ -106,10 +106,7 @@ const props = withDefaults(
   {
     trustLevel: 'unverified',
     showLabel: false,
-    label: undefined,
-    title: undefined,
-    interactive: false,
-    ariaLabel: undefined
+    interactive: false
   }
 )
 

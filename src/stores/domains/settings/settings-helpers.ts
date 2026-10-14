@@ -1,5 +1,6 @@
 import { ThemeEnum } from '@/enums'
 import { isMac } from '@/utils/PlatformConstants'
+import { bytesToHex } from '@/utils/StringUtils'
 import { requireSubtleCrypto } from '@/utils/webCompat'
 
 // 获取平台对应的默认快捷键
@@ -145,8 +146,7 @@ export async function hashPasswordWithSHA256(password: string): Promise<string> 
   const encoder = new TextEncoder()
   const data = encoder.encode(password)
   const hashBuffer = await requireSubtleCrypto().digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+  const hashHex = bytesToHex(hashBuffer)
   return `${SHA256_PREFIX}${hashHex}`
 }
 

@@ -17,11 +17,11 @@ export interface StoredMatrixTokens {
 export interface RestoreMatrixRuntimeSessionOptions {
   uid: string
   accessToken: string
-  refreshToken?: string
-  displayName?: string
-  account?: string
-  avatar?: string
-  client?: 'PC' | 'MOBILE'
+  refreshToken?: string | undefined
+  displayName?: string | undefined
+  account?: string | undefined
+  avatar?: string | undefined
+  client?: 'PC' | 'MOBILE' | undefined
   persistTokens?: boolean
   persistUserInfo?: boolean
   switchDatabase?: boolean
@@ -29,10 +29,10 @@ export interface RestoreMatrixRuntimeSessionOptions {
 }
 
 export interface MatrixPostLoginBootstrapOptions {
-  account?: string
-  displayName?: string
-  avatar?: string
-  client?: 'PC' | 'MOBILE'
+  account?: string | undefined
+  displayName?: string | undefined
+  avatar?: string | undefined
+  client?: 'PC' | 'MOBILE' | undefined
 }
 
 export interface MatrixPasswordLoginOptions extends MatrixPostLoginBootstrapOptions {
@@ -88,7 +88,7 @@ export interface SessionStorePort {
     initUserInfo(uid: string, displayName: string): void
     setUserInfo(info: UserInfoType): void
     clearUser(): void
-    fetchUserProfile(uid: string): Promise<{ displayName?: string; avatarUrl?: string } | null>
+    fetchUserProfile(uid: string): Promise<{ displayName?: string | undefined; avatarUrl?: string | undefined } | null>
     updateProfileFields(fields: Partial<Pick<UserInfoType, 'name' | 'avatar' | 'activeStatus' | 'lastOptTime'>>): void
   }
   room: {
@@ -108,7 +108,10 @@ export interface SessionStorePort {
     updateUserPresence(userId: string, presence: PresenceUpdate): void
   }
   contact: {
-    updateContactPresence(userId: string, patch: PresenceUpdate & { presence?: string; statusMessage?: string }): void
+    updateContactPresence(
+      userId: string,
+      patch: PresenceUpdate & { presence?: string | undefined; statusMessage?: string | undefined }
+    ): void
   }
   global: {
     getCurrentSessionRoomId(): string | undefined

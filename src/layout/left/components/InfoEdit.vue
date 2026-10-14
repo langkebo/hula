@@ -34,8 +34,8 @@
               <div class="avatar-wrapper relative" @click="openAvatarCropper">
                 <n-avatar
                   :size="80"
-                  :src="editInfo.content?.avatar ? AvatarUtils.getAvatarUrl(editInfo.content.avatar) : undefined"
-                  round />
+                  round
+                  v-bind="editInfo.content?.avatar ? { src: AvatarUtils.getAvatarUrl(editInfo.content.avatar) } : {}" />
                 <div class="avatar-hover absolute size-full rounded-50% flex-center">
                   <span class="text-[var(--text-sm)] color-[--tjg-text-secondary]">
                     {{ t('home.profile_edit.avatar.change') }}
@@ -61,7 +61,10 @@
           </span>
           <n-popover trigger="hover">
             <template #trigger>
-              <img :src="currentBadge?.img" :alt="currentBadge?.describe || t('home.profile_edit.badge.image_alt')" class="size-22px" />
+              <img
+                :src="currentBadge?.img"
+                :alt="currentBadge?.describe || t('home.profile_edit.badge.image_alt')"
+                class="size-22px" />
             </template>
             <span>{{ currentBadge?.describe }}</span>
           </n-popover>
@@ -72,9 +75,10 @@
           <template #trigger>
             <n-input
               ref="inputInstRef"
-              v-model:value="localUserInfo.name"
               :count-graphemes="countGraphemes"
-              :default-value="localUserInfo.name"
+              v-bind="
+                localUserInfo.name !== undefined ? { value: localUserInfo.name, defaultValue: localUserInfo.name } : {}
+              "
               :maxlength="8"
               :passively-activated="true"
               class="rounded-6px"
@@ -86,7 +90,8 @@
               :allow-input="noSideSpace"
               :placeholder="t('home.profile_edit.form.nickname.placeholder')"
               show-count
-              type="text">
+              type="text"
+              @update:value="localUserInfo.name = $event">
               <template #prefix>
                 <span class="pr-6px text-[--tjg-text-tertiary]">
                   {{ t('home.profile_edit.form.nickname.label') }}
@@ -193,11 +198,9 @@ const loginHistoriesStore = useLoginHistoriesStore()
 const { editInfo, currentBadge, updateCurrentUserCache, saveEditInfo, toggleWarningBadge } = leftHook()
 // 使用自定义hook处理头像上传
 const {
-  fileInput,
   localImageUrl,
   showCropper,
   showGallery,
-  cropperRef,
   openAvatarCropper,
   handleFileChange,
   handleGallerySelect,

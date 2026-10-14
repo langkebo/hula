@@ -85,8 +85,7 @@ export function useUserMenu() {
   }
 
   function openSettings(tab?: SettingsTabType): void {
-    const query = tab ? { tab } : undefined
-    router.push({ path: '/settings', query })
+    router.push({ path: '/settings', ...(tab ? { query: { tab } } : {}) })
     closeMenu()
   }
 

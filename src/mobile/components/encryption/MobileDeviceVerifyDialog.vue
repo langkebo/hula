@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeviceVerifyFlow } from '@/composables/encryption/useDeviceVerifyFlow'
 import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
@@ -103,8 +103,7 @@ const {
   confirmSas,
   cancelVerification,
   acceptVerification,
-  refreshPendingRequests,
-  reset
+  refreshPendingRequests
 } = useDeviceVerifyFlow({ userId: props.userId, deviceId: props.deviceId })
 
 const dialogTitle = computed(() => {

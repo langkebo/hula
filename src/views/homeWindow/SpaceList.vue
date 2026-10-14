@@ -150,7 +150,7 @@ const spaceSwitcherItems = computed(() =>
   spaces.value.map((space) => ({
     spaceId: space.spaceId,
     name: space.name,
-    avatarUrl: space.avatarUrl,
+    ...(space.avatarUrl === undefined ? {} : { avatarUrl: space.avatarUrl }),
     childCount: space.childCount,
     memberCount: space.memberCount
   }))
@@ -166,8 +166,8 @@ const spaceTreeNodes = computed<SpaceTreeNode[]>(() =>
   spaces.value.map((space) => ({
     spaceId: space.spaceId,
     name: space.name,
-    avatarUrl: space.avatarUrl,
-    topic: space.topic,
+    ...(space.avatarUrl === undefined ? {} : { avatarUrl: space.avatarUrl }),
+    ...(space.topic === undefined ? {} : { topic: space.topic }),
     memberCount: space.memberCount,
     childCount: space.childCount
   }))

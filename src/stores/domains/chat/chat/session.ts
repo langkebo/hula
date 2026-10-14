@@ -22,25 +22,25 @@ interface UnreadDetail {
 }
 
 export interface SessionItem {
-  id?: string
+  id?: string | undefined
   roomId: string
   name: string
-  avatar?: string
+  avatar?: string | undefined
   type: RoomTypeEnum
   unreadCount: number
   activeTime: number
-  text?: string
-  muteNotification?: NotificationTypeEnum
-  isCheck?: boolean
-  remark?: string
-  top?: boolean
-  shield?: boolean
-  hotFlag?: number
-  account?: string
-  detailId?: string
-  operate?: number
-  hide?: boolean
-  isFavorite?: boolean
+  text?: string | undefined
+  muteNotification?: NotificationTypeEnum | undefined
+  isCheck?: boolean | undefined
+  remark?: string | undefined
+  top?: boolean | undefined
+  shield?: boolean | undefined
+  hotFlag?: number | undefined
+  account?: string | undefined
+  detailId?: string | undefined
+  operate?: number | undefined
+  hide?: boolean | undefined
+  isFavorite?: boolean | undefined
 }
 
 export const useSessionStore = defineStore(StoresEnum.SESSION, () => {

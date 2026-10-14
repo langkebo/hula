@@ -158,16 +158,16 @@ export class MatrixConnectionManager {
 
       const clientOpts: ICreateClientOpts = {
         baseUrl: config.homeserverUrl,
-        deviceId: config.deviceId,
-        accessToken: config.accessToken,
-        userId: config.userId,
         useAuthorizationHeader: true,
-        allowInsecureHttp: config.allowInsecureHttp,
-        fetchFn,
         cryptoCallbacks,
         // W2 优化：注入 IndexedDBStore 实现持久化（重启后房间列表/时间线立即可见）
         // storeFactory 失败时退到 MemoryStore（createMatrixStore 内部 try-catch）
-        store: await createMatrixStore(config.userId)
+        store: await createMatrixStore(config.userId),
+        ...(config.deviceId !== undefined ? { deviceId: config.deviceId } : {}),
+        ...(config.accessToken !== undefined ? { accessToken: config.accessToken } : {}),
+        ...(config.userId !== undefined ? { userId: config.userId } : {}),
+        ...(config.allowInsecureHttp !== undefined ? { allowInsecureHttp: config.allowInsecureHttp } : {}),
+        ...(fetchFn !== undefined ? { fetchFn } : {})
       }
 
       if (config.identityServerUrl) {

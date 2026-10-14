@@ -28,7 +28,7 @@ class MatrixConversationService {
     return matrixHttpClient.request<{ list: Conversation[]; total: number }>(
       {
         url: matrixExtensionEndpoints.CONVERSATION_PAGE,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixConversation' }

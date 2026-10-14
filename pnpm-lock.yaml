@@ -318,9 +318,6 @@ importers:
       sdp-transform:
         specifier: ^3.0.0
         version: 3.0.0
-      seemly:
-        specifier: ^0.3.10
-        version: 0.3.10
       shiki:
         specifier: ^4.4.3
         version: 4.4.3

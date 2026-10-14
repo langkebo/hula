@@ -9,8 +9,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 
+const { t } = useI18n()
 const { state } = useConnectionStatus()
 
 const visible = computed(() => state.value !== 'online' && state.value !== 'idle')
@@ -20,15 +22,15 @@ const spinner = computed(() => ['connecting', 'reconnecting', 'syncing'].include
 const text = computed(() => {
   switch (state.value) {
     case 'connecting':
-      return '正在连接…'
+      return t('mobile_connection.connecting')
     case 'reconnecting':
-      return '连接已断开，正在重连…'
+      return t('mobile_connection.reconnecting')
     case 'syncing':
-      return '正在同步消息…'
+      return t('mobile_connection.syncing')
     case 'offline':
-      return '网络已断开'
+      return t('mobile_connection.offline')
     case 'error':
-      return '连接失败，请稍后重试'
+      return t('mobile_connection.error')
     default:
       return ''
   }

@@ -35,7 +35,7 @@
     <div class="flex flex-col h-full">
       <!-- 空状态:会话列表为空时显示 -->
       <div v-if="filteredSessionList.length === 0" class="flex-1 flex items-center justify-center min-h-200px">
-        <van-empty description="暂无会话" />
+        <van-empty :description="t('mobile_home.empty_session')" />
       </div>
       <SmartVirtualList
         v-else
@@ -47,7 +47,7 @@
         @scroll="emit('scroll', $event)">
         <template #default="{ item, index }">
           <!-- 置顶分组标签：仅在首个置顶项前显示 -->
-          <div v-if="isFirstPinned(item, index)" class="pinned-group-label">置顶</div>
+          <div v-if="isFirstPinned(item, index)" class="pinned-group-label">{{ t('mobile_home.chat.pintop') }}</div>
           <van-swipe-cell
             @open="emit('swipe-open')"
             @close="emit('swipe-close')"

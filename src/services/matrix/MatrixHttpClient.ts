@@ -8,15 +8,15 @@ import { getRuntimeAwareFetch } from './network/runtimeFetch'
 import { PREFIX_V3 } from './paths/prefixes'
 
 interface MatrixHttpRequestOptions {
-  queryParams?: Record<string, string | number>
-  body?: Record<string, unknown>
-  headers?: Record<string, string>
-  throwOnError?: boolean
-  logPrefix?: string
+  queryParams?: Record<string, string | number> | undefined
+  body?: Record<string, unknown> | undefined
+  headers?: Record<string, string> | undefined
+  throwOnError?: boolean | undefined
+  logPrefix?: string | undefined
   defaultValue?: unknown
-  quiet?: boolean
-  retries?: number
-  retryDelay?: number
+  quiet?: boolean | undefined
+  retries?: number | undefined
+  retryDelay?: number | undefined
 }
 
 type MatrixHttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS'
@@ -172,10 +172,11 @@ class MatrixHttpClient {
     }
 
     const runtimeFetch = getRuntimeAwareFetch()
+    const bodyInit = requestOptions.body ? JSON.stringify(requestOptions.body) : undefined
     const response = await runtimeFetch(urlWithParams, {
       method,
       headers,
-      body: requestOptions.body ? JSON.stringify(requestOptions.body) : undefined
+      ...(bodyInit !== undefined ? { body: bodyInit } : {})
     })
 
     if (!response.ok) {

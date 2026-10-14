@@ -10,7 +10,7 @@
     <!-- 根消息 -->
     <div v-if="rootMessage" class="root-message">
       <div class="message-header">
-        <van-image :src="rootMessage.avatarUrl" round width="40" height="40" fit="cover" />
+        <van-image :src="rootMessage.avatarUrl ?? ''" round width="40" height="40" fit="cover" />
         <div class="message-info">
           <div class="sender-name">{{ rootMessage.senderName }}</div>
           <div class="timestamp">{{ formatTime(rootMessage.timestamp) }}</div>
@@ -33,7 +33,7 @@
         </div>
         <div v-else class="message-list">
           <div v-for="msg in messages" :key="msg.eventId" class="thread-message">
-            <van-image :src="msg.avatarUrl" round width="32" height="32" fit="cover" />
+            <van-image :src="msg.avatarUrl ?? ''" round width="32" height="32" fit="cover" />
             <div class="message-body">
               <div class="message-header">
                 <span class="sender-name">{{ msg.senderName }}</span>
@@ -99,7 +99,7 @@ const loadThread = async () => {
     thread.value = viewData.thread
     rootMessage.value = viewData.rootMessage
   } catch (error) {
-    logger.error('[MobileThreadView] 加载线程失败:', error)
+    logger.error('[MobileThreadView] Failed to load thread:', error)
     showToast(t('common.thread.load_failed'))
   }
 }
@@ -113,7 +113,7 @@ const loadMessages = async () => {
     messages.value = viewData.replies
     finished.value = true
   } catch (error) {
-    logger.error('[MobileThreadView] 加载消息失败:', error)
+    logger.error('[MobileThreadView] Failed to load messages:', error)
     showToast(t('common.thread.load_failed'))
   } finally {
     loading.value = false
@@ -146,7 +146,7 @@ const handleSendReply = async () => {
     finished.value = false
     await loadMessages()
   } catch (error) {
-    logger.error('[MobileThreadView] 发送回复失败:', error)
+    logger.error('[MobileThreadView] Failed to send reply:', error)
     showToast(t('common.thread.send_failed'))
   } finally {
     sending.value = false

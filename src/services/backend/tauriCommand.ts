@@ -5,45 +5,9 @@ import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 import { useMatrixStore } from '../../stores/domains/chat/matrix'
 import { useUserStore } from '../../stores/domains/user/user'
 
-type Settings = {
-  database: {
-    sqlite_file: string
-  }
-  backend: {
-    base_url: string
-    ws_url: string
-  }
-  youdao?: {
-    app_key: string
-    app_secret: string
-  }
-  tencent?: {
-    api_key: string
-    secret_id: string
-    map_key: string
-  }
-  minio?: {
-    endpoint: string
-    bucket: string
-    access_key: string
-    secret_key: string
-    region: string
-    download_domain: string
-  }
-  ice_server?: {
-    urls: string[]
-    username: string
-    credential: string
-  }
-}
-
 type UpdateSettingsParams = {
   baseUrl: string
   wsUrl: string
-}
-
-const _getSettings = async (): Promise<Settings> => {
-  return await invokeWithErrorHandler('get_settings')
 }
 
 export const updateSettings = async (settings: UpdateSettingsParams) => {

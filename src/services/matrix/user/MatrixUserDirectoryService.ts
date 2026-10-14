@@ -18,9 +18,9 @@ export interface UserDirectorySearchResult {
   /** 用户 ID */
   userId: string
   /** 显示名 */
-  displayName?: string
+  displayName?: string | undefined
   /** 头像 URL */
-  avatarUrl?: string
+  avatarUrl?: string | undefined
 }
 
 interface MatrixDirectoryUser {
@@ -109,7 +109,7 @@ class UserDirectoryService extends BaseMatrixService {
     from?: string
   ): Promise<{
     users: UserDirectorySearchResult[]
-    next_batch?: string
+    next_batch?: string | undefined
   }> {
     const client = this.getClient()
     try {

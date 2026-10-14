@@ -22,7 +22,7 @@ import type { useGlobalStore } from '@/stores/domains/widget/global'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
-import { isMac, isMobile } from '@/utils/PlatformConstants'
+import { isMac } from '@/utils/PlatformConstants'
 import type { ContextMenuHelpers } from './contextMenuHelpers'
 
 const logger = createLogger('ChatContextMenus')
@@ -80,7 +80,7 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
     groupRoleGuard
   } = deps
   const { downloadAndRevealFile, downloadAndRevealVideo, previewFile } = fileDownload
-  const { checkFriendRelation, handleForward, shouldHideCopy, isNoticeMessage, showComingSoon } = helpers
+  const { checkFriendRelation, handleForward, shouldHideCopy, isNoticeMessage, requireDesktop } = helpers
   const {
     userUid,
     isGroupManagementContext,
@@ -118,10 +118,7 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       label: () => t('menu.forward'),
       icon: 'share',
       click: (item: MessageType) => {
-        if (isMobile()) {
-          showComingSoon()
-          return
-        }
+        if (!requireDesktop()) return
         handleForward(item)
       },
       visible: (item: MessageType) => !isNoticeMessage(item)
@@ -150,7 +147,7 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
           recallUid: userStore.userInfo?.uid ?? '',
           msg,
           originalType,
-          originalContent
+          ...(originalContent === undefined ? {} : { originalContent })
         })
         await chatStore.updateRecallMsg({
           recallUid: userStore.userInfo?.uid ?? '',
@@ -166,10 +163,7 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       label: () => t('menu.copy'),
       icon: 'copy',
       click: (item: MessageType) => {
-        if (isMobile()) {
-          showComingSoon()
-          return
-        }
+        if (!requireDesktop()) return
         handleCopy(item.message.body.url, true, item.message.id)
       }
     },
@@ -178,19 +172,19 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       label: () => t('menu.save_as'),
       icon: 'Importing',
       click: async (item: MessageType) => {
-        if (isMobile()) {
-          showComingSoon()
-          return
-        }
+        if (!requireDesktop()) return
         const bodyRecord = item.message.body as Record<string, unknown>
+        const url = item.message.body.url
+        const encryptedFile = bodyRecord.encryptedFile as Record<string, unknown> | undefined
+        const defaultFileName =
+          (typeof bodyRecord.fileName === 'string' && bodyRecord.fileName) ||
+          (typeof bodyRecord.filename === 'string' && bodyRecord.filename) ||
+          undefined
         await saveVideoAttachmentAs({
-          url: item.message.body.url,
           downloadFile,
-          encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
-          defaultFileName:
-            (typeof bodyRecord.fileName === 'string' && bodyRecord.fileName) ||
-            (typeof bodyRecord.filename === 'string' && bodyRecord.filename) ||
-            undefined
+          ...(url === undefined ? {} : { url }),
+          ...(encryptedFile === undefined ? {} : { encryptedFile }),
+          ...(defaultFileName === undefined ? {} : { defaultFileName })
         })
       }
     },
@@ -200,13 +194,14 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       icon: 'file2',
       click: async (item: MessageType) => {
         const bodyRecord = item.message.body as Record<string, unknown>
+        const encryptedFile = bodyRecord.encryptedFile as Record<string, unknown> | undefined
         await downloadAndRevealVideo({
           videoUrl: item.message.body.url || '',
           fileName:
             (typeof bodyRecord.fileName === 'string' && bodyRecord.fileName) ||
             (typeof bodyRecord.filename === 'string' && bodyRecord.filename) ||
             extractFileName(String(item.message.body.url || '')),
-          encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined
+          ...(encryptedFile === undefined ? {} : { encryptedFile })
         })
       }
     }
@@ -300,26 +295,24 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
               label: () => t('menu.save_as'),
               icon: 'Importing',
               click: async (item: MessageType) => {
-                if (isMobile()) {
-                  showComingSoon()
-                  return
-                }
+                if (!requireDesktop()) return
                 const fileUrl = item.message.body.url
                 const fileName = item.message.body.fileName
                 const bodyRecord = item.message.body as Record<string, unknown>
+                const encryptedFile = bodyRecord.encryptedFile as Record<string, unknown> | undefined
                 if (item.message.type === MsgEnum.VIDEO) {
                   await saveVideoAttachmentAs({
-                    url: fileUrl,
                     downloadFile,
-                    encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
-                    defaultFileName: fileName
+                    ...(fileUrl === undefined ? {} : { url: fileUrl }),
+                    ...(encryptedFile === undefined ? {} : { encryptedFile }),
+                    ...(fileName === undefined ? {} : { defaultFileName: fileName })
                   })
                 } else {
                   await saveFileAttachmentAs({
-                    url: fileUrl,
                     downloadFile,
-                    encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
-                    defaultFileName: fileName
+                    ...(fileUrl === undefined ? {} : { url: fileUrl }),
+                    ...(encryptedFile === undefined ? {} : { encryptedFile }),
+                    ...(fileName === undefined ? {} : { defaultFileName: fileName })
                   })
                 }
               }
@@ -379,16 +372,14 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       label: () => t('menu.save_as'),
       icon: 'Importing',
       click: async (item: RightMouseMessageItem) => {
-        if (isMobile()) {
-          showComingSoon()
-          return
-        }
+        if (!requireDesktop()) return
         const bodyRecord = item.message.body as Record<string, unknown>
+        const encryptedFile = bodyRecord.encryptedFile as Record<string, unknown> | undefined
         await saveFileAttachmentAs({
-          url: item.message.body.url,
           downloadFile,
-          encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
-          defaultFileName: item.message.body.fileName
+          ...(item.message.body.url === undefined ? {} : { url: item.message.body.url }),
+          ...(encryptedFile === undefined ? {} : { encryptedFile }),
+          ...(item.message.body.fileName === undefined ? {} : { defaultFileName: item.message.body.fileName })
         })
       }
     },
@@ -429,18 +420,16 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       label: () => t('menu.save_as'),
       icon: 'Importing',
       click: async (item: MessageType) => {
-        if (isMobile()) {
-          showComingSoon()
-          return
-        }
+        if (!requireDesktop()) return
         try {
           const imageUrl = item.message.body.url
           if (!imageUrl) return
           const bodyRecord = item.message.body as Record<string, unknown>
+          const encryptedFile = bodyRecord.encryptedFile as Record<string, unknown> | undefined
           await saveFileAttachmentAs({
             url: imageUrl,
             downloadFile,
-            encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
+            ...(encryptedFile === undefined ? {} : { encryptedFile }),
             defaultFileName: item.message.body.fileName || extractFileName(imageUrl) || 'image.png',
             filters: [
               {

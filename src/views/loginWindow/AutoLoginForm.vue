@@ -44,7 +44,7 @@ defineProps<{
   loading: boolean
   loginDisabled: boolean
   loginText: string
-  userInfo?: UserInfoType
+  userInfo?: UserInfoType | undefined
 }>()
 
 const emit = defineEmits<{

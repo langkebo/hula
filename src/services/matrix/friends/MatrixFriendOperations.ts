@@ -25,7 +25,7 @@ const FRIEND_CONFLICT_ERRCODES: ReadonlySet<string> = new Set([
  */
 function isFriendRequestConflict(err: unknown): boolean {
   if (!(err instanceof Error)) return false
-  const record = err as unknown as Record<string, unknown>
+  const record = err as Error & Record<string, unknown>
   const data = (record.data && typeof record.data === 'object' ? record.data : {}) as Record<string, unknown>
   const errcode =
     typeof record.errcode === 'string' ? record.errcode : typeof data.errcode === 'string' ? data.errcode : ''

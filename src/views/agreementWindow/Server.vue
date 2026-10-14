@@ -6,8 +6,8 @@
     <!-- 协议内容 -->
     <div class="agreement-content">
       <div class="agreement-header">
-        <h1>{{ serverHeader.title }}</h1>
-        <p class="update-time">{{ serverHeader.updatedAt }}</p>
+        <h1>{{ t('agreement.server.header.title') }}</h1>
+        <p class="update-time">{{ t('agreement.server.header.updatedAt') }}</p>
       </div>
 
       <div class="agreement-body">
@@ -34,15 +34,9 @@ type AgreementSection = {
   paragraphs?: string[]
 }
 
-type AgreementHeader = {
-  title: string
-  updatedAt: string
-}
-
-const { tm } = useI18n()
+const { t, tm } = useI18n()
 
 const currentWindowLabel = computed(() => (hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''))
-const serverHeader = computed(() => tm('agreement.server.header') as AgreementHeader)
 const serverSections = computed(() => tm('agreement.server.sections') as AgreementSection[])
 
 onMounted(async () => {

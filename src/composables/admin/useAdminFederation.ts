@@ -6,9 +6,9 @@ export type { FederationDestination } from '@/services/matrix/admin'
 
 export interface FederationBlacklistView {
   domain: string
-  reason?: string
-  addedBy?: string
-  addedAt?: number
+  reason?: string | undefined
+  addedBy?: string | undefined
+  addedAt?: number | undefined
 }
 
 interface UseAdminFederationResult {

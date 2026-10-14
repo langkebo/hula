@@ -28,9 +28,9 @@ export type PresenceState = 'online' | 'offline' | 'unavailable'
 export interface PresenceInfo {
   user_id: string
   presence: PresenceState
-  status_msg?: string | null
-  last_active_ago?: number
-  currently_active?: boolean
+  status_msg?: string | null | undefined
+  last_active_ago?: number | undefined
+  currently_active?: boolean | undefined
   /** 用户不存在（服务端返回 M_NOT_FOUND，已被删除/停用），用于联系人列表过滤幽灵账号 */
   notFound?: boolean
 }
@@ -411,5 +411,3 @@ class MatrixPresenceService extends BaseMatrixService {
  * 单例实例
  */
 export const matrixPresenceService = new MatrixPresenceService()
-
-export default matrixPresenceService

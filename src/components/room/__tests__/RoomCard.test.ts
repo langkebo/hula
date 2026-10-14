@@ -45,7 +45,6 @@ const sampleRoom: RoomData = {
   name: 'Matrix Chat',
   topic: 'A place to discuss Matrix protocol',
   numJoinedMembers: 42,
-  avatarUrl: undefined,
   isFederated: false
 }
 
@@ -128,7 +127,9 @@ describe('RoomCard', () => {
   })
 
   it('does not render topic element when topic is absent', () => {
-    const wrapper = mountCard({ item: { ...sampleRoom, topic: undefined } })
+    const itemWithoutTopic: RoomData = { ...sampleRoom }
+    delete itemWithoutTopic.topic
+    const wrapper = mountCard({ item: itemWithoutTopic })
     expect(wrapper.find('[data-testid="room-topic"]').exists()).toBe(false)
   })
 })

@@ -160,9 +160,9 @@ import ContextMenuEmoji from './ContextMenuEmoji.vue'
 
 type Props = {
   content?: MenuContent
-  menu?: ContextMenuItem[]
+  menu?: ContextMenuItem[] | undefined
   emoji?: ReactionEmoji[]
-  specialMenu?: ContextMenuItem[]
+  specialMenu?: ContextMenuItem[] | undefined
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -250,7 +250,7 @@ const {
   resetSubmenu
 } = useContextMenuSubmenu({ content: contentRef, vw, vh })
 
-const { focusedIndex, menuRef, handleMenuKeydown, focusMenu, resetNavigation } = useContextMenuNavigation({
+const { focusedIndex, handleMenuKeydown, focusMenu, resetNavigation } = useContextMenuNavigation({
   visibleMenu,
   visibleSpecialMenu,
   showMenu,

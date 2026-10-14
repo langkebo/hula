@@ -40,10 +40,12 @@ type TrendRadarAnalysisResult = string | Record<string, unknown> | unknown[]
 interface McpRpcRequest {
   jsonrpc: '2.0'
   method: string
-  params?: {
-    name?: string
-    arguments?: Record<string, unknown>
-  }
+  params?:
+    | {
+        name?: string | undefined
+        arguments?: Record<string, unknown> | undefined
+      }
+    | undefined
   id: number | string
 }
 

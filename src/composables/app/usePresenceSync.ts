@@ -56,7 +56,7 @@ export function usePresenceSync(deps: {
 
   const applyPresenceToStores = async () => {
     const trackedUserIds = collectTrackedPresenceUserIds({
-      currentUserId: userStore.userInfo?.uid,
+      currentUserId: userStore.userInfo?.uid ?? null,
       contacts: contactStore.contactsList,
       members: groupStore.allUserInfo
     })
@@ -78,7 +78,13 @@ export function usePresenceSync(deps: {
 
     presences.forEach((presence: PresenceInfo) => {
       const patch = buildPresenceStorePatch(presence, now)
-      contactStore.updateContactPresence(presence.user_id, patch)
+      const statusMessage = patch.statusMessage
+      contactStore.updateContactPresence(presence.user_id, {
+        activeStatus: patch.activeStatus,
+        lastOptTime: patch.lastOptTime,
+        presence: patch.presence,
+        ...(statusMessage === undefined ? {} : { statusMessage })
+      })
       groupStore.updateUserPresence(presence.user_id, {
         activeStatus: patch.activeStatus,
         lastOptTime: patch.lastOptTime
@@ -116,7 +122,7 @@ export function usePresenceSync(deps: {
     stopPresenceWatch = watch(
       () =>
         collectTrackedPresenceUserIds({
-          currentUserId: userStore.userInfo?.uid,
+          currentUserId: userStore.userInfo?.uid ?? null,
           contacts: contactStore.contactsList,
           members: groupStore.allUserInfo
         }).join('|'),

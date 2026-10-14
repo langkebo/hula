@@ -125,10 +125,12 @@ export const useSessionListState = () => {
       // 身份字段（detailId/account）取两者中非空者，避免保留条目缺 counterpart 影响头像/去重。
       const base = item.activeTime > existing.activeTime ? item : existing
       const other = item.activeTime > existing.activeTime ? existing : item
+      const detailId = base.detailId || other.detailId
+      const account = base.account || other.account
       const merged: SessionItem = {
         ...base,
-        detailId: base.detailId || other.detailId,
-        account: base.account || other.account,
+        ...(detailId === undefined ? {} : { detailId }),
+        ...(account === undefined ? {} : { account }),
         unreadCount: (base.unreadCount || 0) + (other.unreadCount || 0)
       }
       dmSeen.set(counterpartKey, merged)

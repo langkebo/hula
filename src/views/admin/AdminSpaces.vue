@@ -91,10 +91,10 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NPopconfirm, NSpace, NTag } from 'naive-ui'
+import { NButton, NPopconfirm, NSpace } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type SpaceInfo, type SpaceStats, useAdminSpaces } from '@/composables/admin'
+import { type SpaceInfo, useAdminSpaces } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'

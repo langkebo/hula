@@ -36,15 +36,15 @@ export interface LoginResult {
   /** 是否成功 */
   success: boolean
   /** 用户 ID */
-  userId?: string
+  userId?: string | undefined
   /** 设备 ID */
-  deviceId?: string
+  deviceId?: string | undefined
   /** 访问令牌 */
-  accessToken?: string
+  accessToken?: string | undefined
   /** 刷新令牌（用于自动续期） */
-  refreshToken?: string
+  refreshToken?: string | undefined
   /** 错误信息 */
-  error?: string
+  error?: string | undefined
 }
 
 /** Auth 子服务依赖的主类协作模块集合 */
@@ -327,9 +327,7 @@ export class MatrixClientAuth {
               const newRefreshToken = refreshResult.refresh_token
               let newExpiresInMs = refreshResult.expires_in_ms
               // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
-              const expiresInSec = (refreshResult as unknown as Record<string, unknown>).expires_in as
-                | number
-                | undefined
+              const expiresInSec = (refreshResult as typeof refreshResult & { expires_in?: number }).expires_in
               if (!newExpiresInMs && expiresInSec) {
                 newExpiresInMs = expiresInSec * 1000
               }

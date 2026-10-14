@@ -376,7 +376,7 @@ export async function detectRemoteFileType(options: {
       const rangeEnd = shouldUseRange ? byteLength - 1 : void 0
 
       const buffer = await HttpClient.downloadBytes(url, {
-        headers: shouldUseRange ? { Range: `bytes=0-${rangeEnd}` } : undefined,
+        ...(shouldUseRange ? { headers: { Range: `bytes=0-${rangeEnd}` } } : {}),
         allowDynamicHost: true
       })
 

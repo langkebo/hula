@@ -279,14 +279,14 @@ const handleLocationChange = async (newLocation: { lat: number; lng: number }) =
     ...selectedLocation.value,
     latitude: newLocation.lat,
     longitude: newLocation.lng,
-    address,
+    ...(address !== undefined ? { address } : {}),
     timestamp: Date.now()
   }
   originalLocation.value = {
     ...originalLocation.value,
     latitude: wgs.lat,
     longitude: wgs.lng,
-    address,
+    ...(address !== undefined ? { address } : {}),
     timestamp: Date.now()
   }
 }

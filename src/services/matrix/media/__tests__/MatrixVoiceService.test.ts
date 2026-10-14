@@ -63,10 +63,11 @@ const authedRequestMock = vi
       const headers: Record<string, string> = {
         Authorization: 'Bearer test-access-token'
       }
+      const bodyInit = body instanceof FormData ? body : body ? JSON.stringify(body) : undefined
       const response = await fetch(url, {
         method,
         headers,
-        body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined
+        ...(bodyInit !== undefined ? { body: bodyInit } : {})
       })
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)

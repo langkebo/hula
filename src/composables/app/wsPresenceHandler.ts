@@ -61,7 +61,7 @@ export function createPresenceHandler(deps: PresenceHandlerDeps) {
 
   const applyPresenceToStores = async () => {
     const trackedUserIds = collectTrackedPresenceUserIds({
-      currentUserId: userStore.userInfo?.uid,
+      currentUserId: userStore.userInfo?.uid ?? null,
       contacts: contactStore.contactsList,
       members: groupStore.allUserInfo
     })
@@ -87,7 +87,13 @@ export function createPresenceHandler(deps: PresenceHandlerDeps) {
 
     presences.forEach((presence) => {
       const patch = buildPresenceStorePatch(presence, now)
-      contactStore.updateContactPresence(presence.user_id, patch)
+      const statusMessage = patch.statusMessage
+      contactStore.updateContactPresence(presence.user_id, {
+        activeStatus: patch.activeStatus,
+        lastOptTime: patch.lastOptTime,
+        presence: patch.presence,
+        ...(statusMessage === undefined ? {} : { statusMessage })
+      })
       groupStore.updateUserPresence(presence.user_id, {
         activeStatus: patch.activeStatus,
         lastOptTime: patch.lastOptTime
@@ -152,7 +158,13 @@ export function createPresenceHandler(deps: PresenceHandlerDeps) {
       if (!unsubscribePresenceListener) {
         unsubscribePresenceListener = presenceService.onPresenceChange((presence: PresenceInfo) => {
           const patch = buildPresenceStorePatch(presence)
-          contactStore.updateContactPresence(presence.user_id, patch)
+          const statusMessage = patch.statusMessage
+          contactStore.updateContactPresence(presence.user_id, {
+            activeStatus: patch.activeStatus,
+            lastOptTime: patch.lastOptTime,
+            presence: patch.presence,
+            ...(statusMessage === undefined ? {} : { statusMessage })
+          })
           groupStore.updateUserPresence(presence.user_id, {
             activeStatus: patch.activeStatus,
             lastOptTime: patch.lastOptTime

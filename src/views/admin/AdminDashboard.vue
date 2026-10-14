@@ -234,7 +234,7 @@ import { useAdminErrorHandler } from './useAdminError'
 const logger = createLogger('AdminDashboard')
 const { t } = useI18n()
 const adminStore = useAdminStore()
-const { handleAdminError } = useAdminErrorHandler()
+useAdminErrorHandler()
 
 const stats = ref<ServerStats | null>(null)
 const serverHealth = ref<ServerHealth | null>(null)

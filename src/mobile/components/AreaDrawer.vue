@@ -33,8 +33,8 @@ interface Events {
 
 type Props = AreaProps & Events
 
-const showModel = defineModel<boolean>('show')
-const valueModel = defineModel<string>('value')
+const showModel = defineModel<boolean>('show', { default: false })
+const valueModel = defineModel<string>('value', { default: '' })
 
 const { areaList = list } = defineProps<Props>()
 

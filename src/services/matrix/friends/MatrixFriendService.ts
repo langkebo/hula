@@ -379,7 +379,7 @@ class MatrixFriendService {
   async searchFriendsViaApi(
     query: string,
     options?: { mode?: 'fuzzy' | 'exact'; limit?: number }
-  ): Promise<Array<{ user_id: string; display_name?: string; avatar_url?: string }>> {
+  ): Promise<Array<{ user_id: string; display_name?: string | undefined; avatar_url?: string | undefined }>> {
     try {
       const results = await synapseFriendExtensionService.searchFriends(query, options)
       return results.map((r) => ({
@@ -395,4 +395,3 @@ class MatrixFriendService {
 }
 
 export const matrixFriendService = new MatrixFriendService()
-export default matrixFriendService

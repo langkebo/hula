@@ -20,20 +20,3 @@ export enum CallResponseStatus {
   DROPPED = 2,
   CANCEL = 3
 }
-
-const CallResponseStatusDesc: Record<CallResponseStatus, string> = {
-  [CallResponseStatus.TIMEOUT]: '超时未接听',
-  [CallResponseStatus.REJECTED]: '已拒绝',
-  [CallResponseStatus.ACCEPTED]: '已接听',
-  [CallResponseStatus.DROPPED]: '已挂断',
-  [CallResponseStatus.CANCEL]: '已取消'
-}
-
-function getCallResponseStatus(code: number): CallResponseStatus | undefined {
-  return Object.values(CallResponseStatus).includes(code) ? (code as CallResponseStatus) : undefined
-}
-
-function _getCallResponseStatusDesc(code: number): string {
-  const status = getCallResponseStatus(code)
-  return status !== undefined ? CallResponseStatusDesc[status] : '未知状态'
-}

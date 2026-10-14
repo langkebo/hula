@@ -51,7 +51,10 @@ export const useModerationStore = defineStore(StoresEnum.MODERATION, () => {
     loading.value = true
     errorState.value = null
     try {
-      await adminService.resolveModerationReport(reportId, { action, notes })
+      await adminService.resolveModerationReport(reportId, {
+        action,
+        ...(notes !== undefined ? { notes } : {})
+      })
       const index = reports.value.findIndex((r) => r.id === reportId)
       if (index !== -1) {
         reports.value[index].status = 'resolved'

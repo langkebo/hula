@@ -76,14 +76,9 @@ defineOptions({
 
 const { t } = useI18n()
 
-const props = withDefaults(
-  defineProps<{
-    body?: LocationBody
-  }>(),
-  {
-    body: undefined
-  }
-)
+const props = defineProps<{
+  body?: LocationBody
+}>()
 
 // 收到的 geo URI 存 WGS-84，腾讯地图显示前转 GCJ-02（仅中国境内坐标会被转换）
 const locationData = computed(() => toGcj02LocationData(props.body))

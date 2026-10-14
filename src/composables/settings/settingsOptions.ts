@@ -21,34 +21,6 @@ export function useSendOptions() {
   ])
 }
 
-function _useTranslateOptions() {
-  const { t } = useI18n()
-  return computed(() => [
-    {
-      label: t('setting.general.chat.translate_options.tencent'),
-      value: 'tencent'
-    },
-    {
-      label: t('setting.general.chat.translate_options.youdao'),
-      value: 'youdao'
-    }
-  ])
-}
-
-function _useFontOptions() {
-  const { t } = useI18n()
-  return computed(() => [
-    {
-      label: t('setting.general.ui.font_options.PingFang'),
-      value: 'PingFang'
-    },
-    {
-      label: t('setting.general.ui.font_options.AliFangYuan'),
-      value: 'AliFangYuan'
-    }
-  ])
-}
-
 export function useLanguageOptions() {
   const { t } = useI18n()
   return computed(() => [

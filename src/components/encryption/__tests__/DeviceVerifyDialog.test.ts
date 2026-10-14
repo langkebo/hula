@@ -4,7 +4,6 @@ import DeviceVerifyDialog from '../DeviceVerifyDialog.vue'
 
 type DeviceVerifyDialogVm = {
   step: 'intro' | 'showKey' | 'success' | 'rejected'
-  fingerprint: string
   fingerprintChunks: string[]
   startVerification: () => Promise<void>
   handleConfirm: () => Promise<void>
@@ -176,7 +175,8 @@ describe('DeviceVerifyDialog', () => {
     expect(startSasVerificationMock).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE')
     expect(getDeviceFingerprintMock).toHaveBeenCalledWith('@alice:example.com', 'OTHER_DEVICE')
     expect((wrapper.vm as unknown as DeviceVerifyDialogVm).step).toBe('showKey')
-    expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprint).toBe('ABCD1234EFGH5678')
+    // fingerprint 未直接暴露（组件内未使用，noUnusedLocals 下不保留）；
+    // fingerprintChunks 由 fingerprint 派生，其取值可完整证明指纹已加载并分块。
     expect((wrapper.vm as unknown as DeviceVerifyDialogVm).fingerprintChunks).toEqual(['ABCD', '1234', 'EFGH', '5678'])
   })
 

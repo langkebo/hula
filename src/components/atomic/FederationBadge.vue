@@ -63,10 +63,8 @@ const props = withDefaults(
   {
     size: 'sm',
     isLocal: false,
-    label: undefined,
     showIcon: true,
-    showLabel: true,
-    title: undefined
+    showLabel: true
   }
 )
 

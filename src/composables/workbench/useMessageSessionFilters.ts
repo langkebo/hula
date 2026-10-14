@@ -13,13 +13,13 @@ type FilterableSession = {
   roomId: string
   name: string
   type: RoomTypeEnum
-  top?: boolean
-  lastMsg?: string
-  remark?: string
-  account?: string
-  unreadCount?: number
-  highlightCount?: number
-  isInvite?: boolean
+  top?: boolean | undefined
+  lastMsg?: string | undefined
+  remark?: string | undefined
+  account?: string | undefined
+  unreadCount?: number | undefined
+  highlightCount?: number | undefined
+  isInvite?: boolean | undefined
 }
 
 const matchesKeyword = (session: FilterableSession, keyword: string) => {

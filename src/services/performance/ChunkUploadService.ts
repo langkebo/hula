@@ -50,11 +50,11 @@ interface ChunkUploadContext {
   uploadedSize: number
   startTime: number
   aborted: boolean
-  paused?: boolean
-  onProgress?: (progress: UploadProgress) => void
-  onChunkComplete?: (chunkIndex: number, total: number) => void
-  onComplete?: (result: UploadResult) => void
-  onError?: (error: Error) => void
+  paused?: boolean | undefined
+  onProgress?: ((progress: UploadProgress) => void) | undefined
+  onChunkComplete?: ((chunkIndex: number, total: number) => void) | undefined
+  onComplete?: ((result: UploadResult) => void) | undefined
+  onError?: ((error: Error) => void) | undefined
 }
 
 // Type alias for the MediaManager instance returned by client.getMediaManager()

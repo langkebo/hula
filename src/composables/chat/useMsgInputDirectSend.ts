@@ -112,10 +112,14 @@ export function useMsgInputDirectSend(ctx: DirectSendContext) {
         if (uploadResult.encryptedFile) {
           messageBody.encryptedFile = uploadResult.encryptedFile
           messageBody.url = ''
-          messageBody.mxcUrl = undefined
+          delete messageBody.mxcUrl
         } else {
           messageBody.url = uploadResult.httpUrl || uploadResult.mxcUrl || msg.url
-          messageBody.mxcUrl = uploadResult.mxcUrl || undefined
+          if (uploadResult.mxcUrl) {
+            messageBody.mxcUrl = uploadResult.mxcUrl
+          } else {
+            delete messageBody.mxcUrl
+          }
         }
 
         if (uploadResult.eventId) {
@@ -161,9 +165,10 @@ export function useMsgInputDirectSend(ctx: DirectSendContext) {
     try {
       const tempMsgId = 'T' + Date.now().toString()
       const messageStrategy = await getStrategy(msgType)
-      const msg = (await Promise.resolve(
-        messageStrategy.getMsg(content, reply.value as StrategyReplyArg)
-      )) as Record<string, unknown>
+      const msg = (await Promise.resolve(messageStrategy.getMsg(content, reply.value as StrategyReplyArg))) as Record<
+        string,
+        unknown
+      >
       const messageBody = messageStrategy.buildMessageBody(msg, reply.value as StrategyReplyArg)
 
       const tempMsg = await Promise.resolve(

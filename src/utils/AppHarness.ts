@@ -12,7 +12,7 @@ interface RenderSampleRecord {
   duration: number
   thresholdMs: number
   status: RenderSampleStatus
-  meta?: Record<string, string>
+  meta?: Record<string, string> | undefined
 }
 
 interface RenderSampleStartOptions {
@@ -27,7 +27,7 @@ interface ActiveRenderSample {
   startedAt: number
   route: string
   thresholdMs: number
-  meta?: Record<string, string>
+  meta?: Record<string, string> | undefined
 }
 
 const PLATFORM_QUERY_KEY = 'platform'
@@ -165,12 +165,4 @@ export const completeRenderSampleOnNextFrame = (name: string, options: RenderSam
       completeRenderSample(name, options)
     })
   })
-}
-
-const _resetRenderSamples = (): void => {
-  activeSamples.clear()
-  const samples = ensureRenderSampleStore()
-  if (samples) {
-    samples.length = 0
-  }
 }

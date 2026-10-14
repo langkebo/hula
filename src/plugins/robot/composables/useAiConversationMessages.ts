@@ -14,19 +14,19 @@ const logger = createLogger('AiConversationMessages')
 const MAX_MESSAGE_COUNT = 40
 
 interface AIConversationMessage {
-  id?: string
-  type?: 'user' | 'assistant'
-  role?: 'user' | 'assistant' | 'system'
-  content?: string
-  reasoningContent?: string
-  msgType?: AiMsgContentTypeEnum
-  createTime?: number
-  createdAt?: number
-  replyId?: string | null
-  model?: string
-  imageUrl?: string
-  videoUrl?: string
-  audioUrl?: string
+  id?: string | undefined
+  type?: 'user' | 'assistant' | undefined
+  role?: 'user' | 'assistant' | 'system' | undefined
+  content?: string | undefined
+  reasoningContent?: string | undefined
+  msgType?: AiMsgContentTypeEnum | undefined
+  createTime?: number | undefined
+  createdAt?: number | undefined
+  replyId?: string | null | undefined
+  model?: string | undefined
+  imageUrl?: string | undefined
+  videoUrl?: string | undefined
+  audioUrl?: string | undefined
 }
 
 interface ConversationUsage extends AIConversation {
@@ -99,11 +99,24 @@ export const useAiConversationMessages = ({
 
     try {
       loadingMessages.value = true
-      const data = (await aiService.messageListByConversationId({
+      const rawMessages = await aiService.messageListByConversationId({
         conversationId,
         pageNo: 1,
         pageSize: 100
-      })) as AIConversationMessage[]
+      })
+      const data: AIConversationMessage[] = rawMessages.map((msg) => ({
+        id: msg.id,
+        type: msg.type === 'user' || msg.type === 'assistant' ? msg.type : undefined,
+        role: msg.role,
+        content: msg.content,
+        reasoningContent: msg.reasoningContent,
+        msgType: toAiMsgContentType(msg.msgType),
+        createTime: msg.createTime,
+        createdAt: msg.createdAt,
+        replyId: msg.replyId,
+        model: msg.model,
+        imageUrl: msg.imageUrl
+      }))
 
       if (Array.isArray(data) && data.length > 0) {
         messageList.value = []

@@ -149,10 +149,7 @@ const props = withDefaults(
     allowlist?: string[]
   }>(),
   {
-    visible: true,
-    mode: undefined,
-    blocklist: undefined,
-    allowlist: undefined
+    visible: true
   }
 )
 

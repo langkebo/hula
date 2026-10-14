@@ -192,7 +192,7 @@ describe('AdminAudit', () => {
     mountComponent()
     await flushPromises()
 
-    expect(loadLogsMock).toHaveBeenCalledWith({ userId: undefined, type: undefined })
+    expect(loadLogsMock).toHaveBeenCalledWith({})
   })
 
   it('渲染日志数据到表格', async () => {

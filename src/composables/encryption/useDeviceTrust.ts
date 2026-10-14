@@ -9,9 +9,9 @@ const logger = createLogger('useDeviceTrust')
 export interface DeviceTrustInfo {
   deviceId: string
   userId: string
-  displayName?: string
-  lastSeenTs?: number
-  lastSeenIp?: string
+  displayName?: string | undefined
+  lastSeenTs?: number | undefined
+  lastSeenIp?: string | undefined
   isVerified: boolean
   isCrossSigningVerified: boolean
   isBlocked: boolean

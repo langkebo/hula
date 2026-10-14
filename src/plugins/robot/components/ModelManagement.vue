@@ -56,7 +56,6 @@ const {
   showEditModal,
   editingModel,
   submitting,
-  formRef,
   formData,
   statusOptions,
   formRules,

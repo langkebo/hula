@@ -91,7 +91,7 @@ describe('FriendGroups', () => {
   })
 
   it('挂载时加载分组列表', async () => {
-    const _wrapper = mountPage()
+    mountPage()
     await flushPromises()
 
     expect(getFriendGroupsMock).toHaveBeenCalled()

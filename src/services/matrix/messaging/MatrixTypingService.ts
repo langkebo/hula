@@ -9,7 +9,7 @@ const logger = createLogger('MatrixTypingService')
 export interface TypingUser {
   userId: string
   displayName?: string
-  avatarUrl?: string
+  avatarUrl?: string | undefined
   lastTyped: number
 }
 

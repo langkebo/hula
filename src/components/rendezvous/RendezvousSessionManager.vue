@@ -186,7 +186,7 @@ import { NAlert, NButton, NFlex, NInput, NList, NListItem, NModal, NQrCode, NSpi
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { type SessionPhase, useRendezvous } from '@/composables/rendezvous'
+import { useRendezvous } from '@/composables/rendezvous'
 import type { RendezvousMessage } from '@/services/matrix/rendezvous/MatrixRendezvousService'
 import { createLogger } from '@/utils/Logger'
 

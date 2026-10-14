@@ -106,8 +106,7 @@ const {
   info: userInfo,
   homeserverUrl,
   selectAccount,
-  deleteAccountHistory,
-  lastLoginError
+  deleteAccountHistory
 } = useLoginFlow()
 
 watchEffect(() => {

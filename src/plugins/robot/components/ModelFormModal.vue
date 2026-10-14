@@ -244,16 +244,15 @@ const { showFeedback } = useActionFeedback()
 const formRef = ref<FormInst>()
 
 // 头像上传（裁剪成功后写回表单 avatar 字段）
-const { localImageUrl, showCropper, cropperRef, fileInput, openAvatarCropper, handleFileChange, handleCrop } =
-  useAvatarUpload({
-    onSuccess: async (mxcUrl) => {
-      props.formData.avatar = ''
-      await nextTick()
-      props.formData.avatar = mxcUrl
-      await nextTick()
-      showFeedback(t('ai_assistant.robot.avatar_upload_success'), 'success')
-    }
-  })
+const { localImageUrl, showCropper, openAvatarCropper, handleFileChange, handleCrop } = useAvatarUpload({
+  onSuccess: async (mxcUrl) => {
+    props.formData.avatar = ''
+    await nextTick()
+    props.formData.avatar = mxcUrl
+    await nextTick()
+    showFeedback(t('ai_assistant.robot.avatar_upload_success'), 'success')
+  }
+})
 
 // 暴露表单校验入口给父组件（useModelForm.handleSubmit 使用）
 const validate = () => formRef.value?.validate()

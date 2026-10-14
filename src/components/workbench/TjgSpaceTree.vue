@@ -41,7 +41,7 @@
           <n-avatar
             round
             :size="24"
-            :src="room.avatarUrl"
+            v-bind="room.avatarUrl ? { src: room.avatarUrl } : {}"
             :fallback-src="fallbackAvatar"
             class="tjg-space-tree__item-avatar" />
 
@@ -93,15 +93,17 @@ const props = defineProps<{
   spaceId?: string
   depth?: number
   nested?: boolean
-  selectedSpaceId?: string
-  suggestedOnly?: boolean
-  loader?: (options: {
-    spaceId: string
-    from?: string
-    limit?: number
-    maxDepth?: number
-    suggestedOnly?: boolean
-  }) => Promise<{ rooms: SpaceInfo[]; next_batch?: string }>
+  selectedSpaceId?: string | undefined
+  suggestedOnly?: boolean | undefined
+  loader?:
+    | ((options: {
+        spaceId: string
+        from?: string
+        limit?: number
+        maxDepth?: number
+        suggestedOnly?: boolean
+      }) => Promise<{ rooms: SpaceInfo[]; next_batch?: string }>)
+    | undefined
 }>()
 
 const emit = defineEmits<{
@@ -129,17 +131,12 @@ const loadHierarchy = async (options: {
   limit?: number
   maxDepth?: number
   suggestedOnly?: boolean
-}): Promise<{ rooms: SpaceInfo[]; next_batch?: string }> => {
+}): Promise<{ rooms: SpaceInfo[]; next_batch?: string | undefined }> => {
   if (props.loader) {
     return await props.loader(options)
   }
 
-  const result = await getHierarchy({
-    from: options.from,
-    limit: options.limit,
-    maxDepth: options.maxDepth,
-    suggestedOnly: options.suggestedOnly
-  })
+  const result = await getHierarchy(options)
 
   return {
     rooms: result.rooms as typeof result.rooms & SpaceInfo[],
@@ -160,7 +157,7 @@ const loadData = async (from?: string) => {
     const result = await loadHierarchy({
       spaceId: props.spaceId,
       limit: 20,
-      from,
+      ...(from !== undefined ? { from } : {}),
       maxDepth: 1,
       suggestedOnly: props.suggestedOnly
     })

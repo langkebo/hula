@@ -8,7 +8,7 @@
     <template #trigger>
       <!-- 头像 -->
       <div class="relative size-34px rounded-50% cursor-pointer" @contextmenu="handleAvatarContextMenu">
-        <TjgAvatar :src="userStore.userInfo?.avatar" :size="34" :name="userStore.userInfo?.name" round />
+        <TjgAvatar :size="34" round v-bind="avatarProps" />
 
         <div
           v-if="isOnline"
@@ -69,10 +69,10 @@ const { isOnline, statusTitle } = useOnlineStatus()
 
 const { isOpen: isMenuOpen, position: menuPosition, openMenu, closeMenu, handleMenuItemClick } = useUserMenu()
 
-/** 关闭本人资料卡 */
-const close = () => {
-  infoShow.value = false
-}
+const avatarProps = computed(() => ({
+  ...(userStore.userInfo?.avatar === undefined ? {} : { src: userStore.userInfo.avatar }),
+  ...(userStore.userInfo?.name === undefined ? {} : { name: userStore.userInfo.name })
+}))
 
 const handleLogout = async () => {
   try {

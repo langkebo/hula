@@ -93,15 +93,16 @@ const props = defineProps<{
   onImageClick?: (url: string) => void
   message: MsgType
 }>()
+// 平台在运行期恒定：探测一次后复用
+const isMobilePlatform = isMobile()
 // 图片显示相关常量
 const MOBILE_MAX_WIDTH_RATIO = 0.7
-const MAX_WIDTH = isMobile()
+const MAX_WIDTH = isMobilePlatform
   ? Math.round((typeof window !== 'undefined' ? window.innerWidth : 0) * MOBILE_MAX_WIDTH_RATIO) || 240
   : 320
 const MAX_HEIGHT = 240
 const MIN_WIDTH = 60
 const MIN_HEIGHT = 60
-const THUMB_QUALITY = 60
 // 错误状态控制
 const isError = ref(false)
 // 使用图片查看器hook
@@ -243,7 +244,7 @@ const ensureEncryptedImageAvailable = async () => {
 }
 
 const handleOpenImage = async () => {
-  if (!isMobile()) return // 非移动端直接返回
+  if (!isMobilePlatform) return // 非移动端直接返回
 
   if (hasEncryptedFile.value) {
     await ensureEncryptedImageAvailable()
@@ -262,7 +263,7 @@ const handleOpenImage = async () => {
 
 // 处理打开图片查看器
 const handleOpenImageViewer = async () => {
-  if (isMobile()) {
+  if (isMobilePlatform) {
     return
   }
 

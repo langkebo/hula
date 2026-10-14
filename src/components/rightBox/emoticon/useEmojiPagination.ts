@@ -24,10 +24,13 @@ export const useEmojiPagination = <TSeries>({
   const favoritesLoadMoreLock = ref(false)
   const seriesLoadMoreLock = ref(false)
 
-  const packColumns = computed(() => (isMobile() ? 4 : 6))
+  // 平台在运行期恒定：探测一次后复用
+  const isMobilePlatform = isMobile()
+
+  const packColumns = computed(() => (isMobilePlatform ? 4 : 6))
   const seriesRowHeight = computed(() => SERIES_EMOJI_SIZE + SERIES_ROW_VERTICAL_PADDING)
-  const seriesViewportHeight = computed(() => (isMobile() ? '240px' : '260px'))
-  const favoritesPageSize = computed(() => (isMobile() ? 20 : 25))
+  const seriesViewportHeight = computed(() => (isMobilePlatform ? '240px' : '260px'))
+  const favoritesPageSize = computed(() => (isMobilePlatform ? 20 : 25))
 
   const isNearBottom = (target: HTMLElement) =>
     target.scrollTop + target.clientHeight >= target.scrollHeight - SCROLL_LOAD_MORE_THRESHOLD

@@ -69,8 +69,6 @@ export const useWindow = () => {
 
     const monitor = await primaryMonitor()
     const clampedSize = clampSizeToMonitor(width, height, monitor)
-    const _clampedMinWidth = Math.min(minW, clampedSize.width)
-    const _clampedMinHeight = Math.min(minH, clampedSize.height)
 
     // 原生窗口的 minWidth/minHeight 不应小于请求的 width/height；
     // 否则 Tauri 可能在窗口创建后立即将尺寸压缩到 min 值，导致实际渲染尺寸小于预期。

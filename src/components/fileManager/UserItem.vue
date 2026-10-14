@@ -26,17 +26,19 @@ import { useI18n } from 'vue-i18n'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 
-type FileManagerListItem = Partial<MatrixContact & MatrixGroupInfo> & {
-  id?: string
-  roomName?: string
-  roomAvatar?: string
-  groupName?: string
-  nickname?: string
-  userName?: string
-  isOnline?: boolean
-  memberCount?: number
-  unreadCount?: number
-  lastMessage?: string
+type UndefinedProps<T> = { [K in keyof T]: T[K] | undefined }
+
+type FileManagerListItem = Partial<UndefinedProps<MatrixContact & MatrixGroupInfo>> & {
+  id?: string | undefined
+  roomName?: string | undefined
+  roomAvatar?: string | undefined
+  groupName?: string | undefined
+  nickname?: string | undefined
+  userName?: string | undefined
+  isOnline?: boolean | undefined
+  memberCount?: number | undefined
+  unreadCount?: number | undefined
+  lastMessage?: string | undefined
 }
 
 type DisplayFileManagerItem = FileManagerListItem & {
@@ -44,7 +46,7 @@ type DisplayFileManagerItem = FileManagerListItem & {
   avatar: string
   isOnline: boolean
   subtitle: string
-  count?: number
+  count?: number | undefined
 }
 
 type Emits = (e: 'click', item: DisplayFileManagerItem) => void
@@ -67,6 +69,7 @@ const itemData = computed<DisplayFileManagerItem>(() => {
   const item = props.item || {}
 
   return {
+    ...item,
     name:
       item.name ||
       item.roomName ||
@@ -78,8 +81,7 @@ const itemData = computed<DisplayFileManagerItem>(() => {
     avatar: item.avatar || item.roomAvatar || '',
     isOnline: item.isOnline || item.activeStatus === 1,
     subtitle: getSubtitle(item),
-    count: item.memberCount || item.unreadCount,
-    ...item
+    count: item.memberCount || item.unreadCount
   }
 })
 

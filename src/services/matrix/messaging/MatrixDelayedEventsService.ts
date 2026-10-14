@@ -228,4 +228,3 @@ class MatrixDelayedEventsService {
 }
 
 export const matrixDelayedEventsService = new MatrixDelayedEventsService()
-export default matrixDelayedEventsService

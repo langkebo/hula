@@ -64,13 +64,15 @@ const { t } = useI18n()
 const globalStore = useGlobalStore()
 const route = useRoute()
 const router = useRouter()
+// 平台在运行期恒定：探测一次后复用
+const isMobilePlatform = isMobile()
 
 const showDetailButton = computed(() => {
   const routeName = route.name?.toString()
   return routeName !== 'chat-history' && routeName !== 'multiMsg'
 })
 
-const cardStyle = computed(() => (isMobile() ? { width: '60vw' } : { width: '240px' }))
+const cardStyle = computed(() => (isMobilePlatform ? { width: '60vw' } : { width: '240px' }))
 
 const openAnnouncementDetail = async () => {
   const roomId = globalStore.currentSessionRoomId
@@ -78,7 +80,7 @@ const openAnnouncementDetail = async () => {
     return
   }
 
-  if (isMobile()) {
+  if (isMobilePlatform) {
     router.push(`/mobile/chatRoom/notice/detail/${props.body.id}`)
   } else {
     useMitt.emit(MittEnum.OPEN_ANNOUNCEMENT_PANEL, { roomId })

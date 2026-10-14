@@ -66,7 +66,12 @@ async function focusSessionRoom(roomId: string) {
         ? matrixSessionService.buildSessionFromRoomPublic(client, null)
         : await matrixSessionService.getSessionDetailWithFriends({ id: roomId, roomType: RoomTypeEnum.GROUP })
       if (detail) {
-        chatStore.addSession?.(detail)
+        const { detailId, account, ...sessionBase } = detail
+        chatStore.addSession?.({
+          ...sessionBase,
+          ...(detailId === undefined ? {} : { detailId }),
+          ...(account === undefined ? {} : { account })
+        })
         existingSession = chatStore.getSession(roomId)
       }
     } catch (err) {
@@ -145,7 +150,12 @@ export const openMsgSession = async (uid: string, type: number = 2) => {
 
   const chatStore = useChatStore()
   if (!chatStore.getSession(res.roomId)) {
-    chatStore.addSession?.(res)
+    const { detailId, account, ...sessionBase } = res
+    chatStore.addSession?.({
+      ...sessionBase,
+      ...(detailId === undefined ? {} : { detailId }),
+      ...(account === undefined ? {} : { account })
+    })
   }
 
   await focusSessionRoom(res.roomId)

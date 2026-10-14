@@ -3,7 +3,12 @@ import { useSpaceRooms } from '../useSpaceRooms'
 
 // === Mocks ===
 type MockSpaceRoom = { roomId: string; name: string; suggested?: boolean }
-type MockSpaceChild = { room_id: string; via_servers: string[]; order?: string; is_suggested?: boolean }
+type MockSpaceChild = {
+  room_id: string
+  via_servers: string[]
+  order?: string | undefined
+  is_suggested?: boolean
+}
 
 const {
   getSpaceRoomsMock,

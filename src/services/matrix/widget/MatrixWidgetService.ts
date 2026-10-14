@@ -10,8 +10,8 @@ export interface Widget {
   id: string
   type: string
   url: string
-  name?: string
-  data?: Record<string, unknown>
+  name?: string | undefined
+  data?: Record<string, unknown> | undefined
 }
 
 interface WidgetSessionOptions {
@@ -123,7 +123,7 @@ class MatrixWidgetService {
 
   async createWidget(
     roomId: string,
-    body: { widgetType: string; url: string; name: string; data?: Record<string, unknown> },
+    body: { widgetType: string; url: string; name: string; data?: Record<string, unknown> | undefined },
     throwOnError = true
   ): Promise<Widget | null> {
     const manager = this.getManager()
@@ -137,7 +137,7 @@ class MatrixWidgetService {
         widget_type: body.widgetType,
         url: body.url,
         name: body.name,
-        data: body.data
+        ...(body.data !== undefined ? { data: body.data } : {})
       })
       logger.info(`[MatrixWidgetService] Created widget ${response.widget.widget_id} in room ${roomId}`)
       return this.toFacade(response.widget)
@@ -214,9 +214,9 @@ class MatrixWidgetService {
     }
     try {
       const response = await manager.updateWidget(widgetId, {
-        url: updates.url,
-        name: updates.name,
-        data: updates.data
+        ...(updates.url !== undefined ? { url: updates.url } : {}),
+        ...(updates.name !== undefined ? { name: updates.name } : {}),
+        ...(updates.data !== undefined ? { data: updates.data } : {})
       })
       return this.toFacade(response.widget)
     } catch (err) {
@@ -323,8 +323,8 @@ class MatrixWidgetService {
     try {
       return unknownToObject<SessionApiData>(
         await manager.createWidgetSession(widgetId, {
-          device_id: options?.deviceId,
-          expires_in_ms: options?.expiresInMs
+          ...(options?.deviceId !== undefined ? { device_id: options.deviceId } : {}),
+          ...(options?.expiresInMs !== undefined ? { expires_in_ms: options.expiresInMs } : {})
         })
       )
     } catch (err) {

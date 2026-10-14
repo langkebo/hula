@@ -14,7 +14,6 @@ const sampleRoom: RoomCardViewModel = {
   memberCount: 2032,
   onlineCount: 892,
   unreadCount: 5,
-  avatar: undefined,
   isFederated: true,
   isEncrypted: true,
   isPinned: false
@@ -38,7 +37,9 @@ describe('RoomCardItem', () => {
   })
 
   it('does not render topic element when topic is absent', () => {
-    const wrapper = mountCard({ item: { ...sampleRoom, topic: undefined } })
+    const itemWithoutTopic: RoomCardViewModel = { ...sampleRoom }
+    delete itemWithoutTopic.topic
+    const wrapper = mountCard({ item: itemWithoutTopic })
     expect(wrapper.find('[data-testid="room-card-topic"]').exists()).toBe(false)
   })
 

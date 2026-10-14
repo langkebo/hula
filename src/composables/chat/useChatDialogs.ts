@@ -4,7 +4,6 @@ import { MittEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useRoomStore } from '@/stores/domains/chat/room'
-import { createLogger } from '@/utils/Logger'
 
 interface ThreadOriginalMessage {
   id: string
@@ -16,7 +15,6 @@ interface ThreadOriginalMessage {
 }
 
 export function useChatDialogs(getMessageSenderUid: (msg: MessageType) => string) {
-  const _logger = createLogger('useChatDialogs')
   const chatStore = useChatStore()
 
   // Thread panel state

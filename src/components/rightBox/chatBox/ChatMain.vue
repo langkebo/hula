@@ -146,25 +146,13 @@
 </template>
 
 <script setup lang="ts">
-import type { UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useEventListener } from '@vueuse/core'
-import {
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  provide,
-  type Ref,
-  reactive,
-  ref,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide, type Ref, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
 import SyncStatusBar from '@/components/connection/SyncStatusBar.vue'
-import { type AnnouncementData, useAnnouncementBanner } from '@/composables/chat/useAnnouncementBanner'
+import { useAnnouncementBanner } from '@/composables/chat/useAnnouncementBanner'
 import { useAvatarPreloader } from '@/composables/chat/useAvatarPreloader'
 import { useChatDialogs } from '@/composables/chat/useChatDialogs'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
@@ -219,14 +207,13 @@ const userStore = useUserStore()
 const matrixStore = useMatrixStore()
 const networkStatus = useNetworkStatus()
 // const { footerHeight } = useChatLayoutGlobal() // 已移除，不再需要
-const { createWebviewWindow } = useWindow()
+useWindow()
 const chatMainContext = useChatMain(false, { enableGroupNicknameModal: true })
 provide(chatMainInjectionKey, chatMainContext)
 const {
   handleConfirm,
   tips,
   modalShow,
-  selectKey,
   groupNicknameModalVisible,
   groupNicknameValue,
   groupNicknameError,
@@ -347,7 +334,14 @@ function handleDeviceVerifySuccess() {
   closeDeviceVerify()
 }
 
-defineExpose({ threadPanelVisible, threadOriginalMessage, activeThreadId, activeThreadRoomId, stickyEvents, canSetSticky })
+defineExpose({
+  threadPanelVisible,
+  threadOriginalMessage,
+  activeThreadId,
+  activeThreadRoomId,
+  stickyEvents,
+  canSetSticky
+})
 
 const isMobileRef = ref(isMobile())
 
@@ -409,13 +403,10 @@ const scrollManager = useChatScrollManager({
 })
 
 const {
-  isAtBottom,
   isLoadingMore,
-  scrollTop,
   scrollToBottom,
   scrollToIndex,
   handleScroll: scrollManagerHandleScroll,
-  loadMore,
   shouldShowFloatButton
 } = scrollManager
 

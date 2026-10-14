@@ -47,10 +47,7 @@
         <span class="robot-card__name truncate" :title="robot.name" data-testid="robot-card-name">
           {{ robot.name }}
         </span>
-        <span
-          v-if="robot.model"
-          class="robot-card__model shrink-0"
-          data-testid="robot-card-model">
+        <span v-if="robot.model" class="robot-card__model shrink-0" data-testid="robot-card-model">
           {{ robot.model }}
         </span>
       </div>
@@ -79,11 +76,11 @@ import { useI18n } from 'vue-i18n'
 export interface RobotCardData {
   id: string
   name: string
-  avatar?: string
-  model?: string
-  online?: boolean
-  messageCount?: number
-  time?: string
+  avatar?: string | undefined
+  model?: string | undefined
+  online?: boolean | undefined
+  messageCount?: number | undefined
+  time?: string | undefined
 }
 
 const props = withDefaults(

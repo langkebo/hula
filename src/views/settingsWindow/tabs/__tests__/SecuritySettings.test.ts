@@ -289,12 +289,18 @@ vi.mock('vue-i18n', () => ({
 
 describe('SecuritySettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as SecuritySettingsVm
-  const getBlockedVm = (wrapper: ReturnType<typeof mount>) =>
-    wrapper.findComponent(BlockedUsersSection).vm as BlockedUsersVm
-  const getPrivacyVm = (wrapper: ReturnType<typeof mount>) =>
-    wrapper.findComponent(PrivacySettingsSection).vm as PrivacySettingsVm
-  const getPrivateChatVm = (wrapper: ReturnType<typeof mount>) =>
-    wrapper.findComponent(PrivateChatSection).vm as PrivateChatVm
+  const getBlockedVm = (wrapper: ReturnType<typeof mount>) => {
+    const vm: ComponentPublicInstance = wrapper.findComponent(BlockedUsersSection).vm
+    return vm as BlockedUsersVm
+  }
+  const getPrivacyVm = (wrapper: ReturnType<typeof mount>) => {
+    const vm: ComponentPublicInstance = wrapper.findComponent(PrivacySettingsSection).vm
+    return vm as PrivacySettingsVm
+  }
+  const getPrivateChatVm = (wrapper: ReturnType<typeof mount>) => {
+    const vm: ComponentPublicInstance = wrapper.findComponent(PrivateChatSection).vm
+    return vm as PrivateChatVm
+  }
 
   beforeEach(() => {
     setActivePinia(createPinia())

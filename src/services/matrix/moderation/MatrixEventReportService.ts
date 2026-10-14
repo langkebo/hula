@@ -24,7 +24,7 @@ class MatrixEventReportService extends BaseMatrixService {
   private observedClient: MatrixClient | null = null
 
   private getEventReportManager(client: MatrixClient): EventReportManagerCompat | null {
-    const clientWithMethods = client as unknown as Record<string, unknown>
+    const clientWithMethods = client as MatrixClient & Record<string, unknown>
     if (typeof clientWithMethods.getEventReportManager === 'function') {
       try {
         const manager = clientWithMethods.getEventReportManager()

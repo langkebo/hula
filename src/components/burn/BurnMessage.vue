@@ -38,9 +38,9 @@ const props = defineProps<{
   msgId: string
   burnAfterRead?: boolean
   burnDuration?: number
-  remainingSeconds?: number
-  isBurning?: boolean
-  isBurned?: boolean
+  remainingSeconds?: number | undefined
+  isBurning?: boolean | undefined
+  isBurned?: boolean | undefined
   roomId?: string
   eventId?: string
   senderId?: string

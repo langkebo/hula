@@ -12,7 +12,11 @@
       </n-flex>
 
       <!-- 步骤条 -->
-      <n-steps size="small" class="w-full px-40px mt-20px" :current="currentStep" :status="stepStatus">
+      <n-steps
+        size="small"
+        class="w-full px-40px mt-20px"
+        :current="currentStep"
+        v-bind="stepStatus !== undefined ? { status: stepStatus } : {}">
         <n-step :title="t('auth.forget.steps.verify.title')" :description="t('auth.forget.steps.verify.desc')" />
         <n-step :title="t('auth.forget.steps.reset.title')" :description="t('auth.forget.steps.reset.desc')" />
         <n-step :title="t('auth.forget.steps.done.title')" :description="t('auth.forget.steps.done.desc')" />

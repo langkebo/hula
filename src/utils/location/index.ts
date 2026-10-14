@@ -14,7 +14,7 @@ export interface GeoUriResult {
   /** 经度 */
   longitude: number
   /** 定位精度（米），来自 geo URI 的 `;u=` 参数 */
-  uncertainty?: number
+  uncertainty?: number | undefined
 }
 
 const GEO_URI_PATTERN = /^geo:([-+]?\d+(?:\.\d+)?),([-+]?\d+(?:\.\d+)?)(?:;u=(\d+(?:\.\d+)?))?/i
@@ -58,7 +58,7 @@ export function locationEventGeoUri(content: Record<string, unknown>): string | 
 export interface Gcj02LocationData {
   latitude: number
   longitude: number
-  address?: string
+  address?: string | undefined
   timestamp: number
 }
 

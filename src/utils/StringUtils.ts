@@ -31,3 +31,20 @@ export const isValidUrl = (value: string): boolean => {
     return false
   }
 }
+
+/**
+ * 左侧补零到指定宽度（时间/编号等展示补零的统一入口）。
+ * @param value 待补零的值
+ * @param width 目标宽度，默认为 2
+ */
+export const padZero = (value: string | number, width = 2): string => String(value).padStart(width, '0')
+
+/**
+ * 将字节序列编码为小写十六进制字符串。
+ * 保持 DOM-free，可安全用于 Web Worker。
+ * @param bytes `ArrayBuffer` 或类数组字节序列
+ */
+export const bytesToHex = (bytes: ArrayBuffer | ArrayLike<number>): string => {
+  const view = bytes instanceof ArrayBuffer ? new Uint8Array(bytes) : bytes
+  return Array.from(view, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}

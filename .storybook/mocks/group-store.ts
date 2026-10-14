@@ -71,7 +71,7 @@ export const resetGroupStoreMock = () => {
 }
 
 export const configureGroupStoreMock = (options: {
-  detail?: GroupDetail | null
+  detail?: GroupDetail | null | undefined
   members?: GroupMember[]
 }) => {
   detailState.value = options.detail ? { ...options.detail } : null

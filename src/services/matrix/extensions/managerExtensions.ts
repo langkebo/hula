@@ -13,7 +13,7 @@ import type { MatrixClient } from '@/services/matrix/sdk'
  */
 export function isFriendManagerRegistered(client: MatrixClient | null): boolean {
   if (!client) return false
-  const c = client as unknown as Record<string, unknown>
+  const c = client as MatrixClient & Record<string, unknown>
   return (
     typeof c.getFriendManager === 'function' ||
     (c.friendManager != null && typeof (c.friendManager as Record<string, unknown>).start === 'function')

@@ -85,27 +85,6 @@ export function usePlatform(): PlatformInfo {
   }
 }
 
-function _usePlatformAsync(): {
-  platform: PlatformInfo
-  isReady: boolean
-} {
-  const isReady = ref(false)
-  const platform = detectPlatform()
-
-  if (typeof window !== 'undefined') {
-    isReady.value = true
-  }
-
-  return {
-    platform,
-    isReady: isReady.value
-  }
-}
-
-function _getPlatform(): Platform {
-  return detectPlatform().platform
-}
-
 export function isDesktop(): boolean {
   return detectPlatform().isDesktop
 }

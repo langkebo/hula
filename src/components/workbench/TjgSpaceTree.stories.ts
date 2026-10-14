@@ -47,7 +47,7 @@ const loader = async ({
 
   return {
     rooms: page.initial,
-    next_batch: page.more?.length ? 'page-2' : undefined
+    ...(page.more?.length ? { next_batch: 'page-2' } : {})
   }
 }
 

@@ -78,8 +78,8 @@ export class MatrixAuthService {
           type: 'm.login.password',
           user: username,
           password,
-          device_id: deviceId,
-          initial_display_name: deviceName
+          ...(deviceId !== undefined ? { device_id: deviceId } : {}),
+          ...(deviceName !== undefined ? { initial_display_name: deviceName } : {})
         }),
       () => matrixLogin(username, password, deviceId, deviceName),
       '登录失败'
@@ -99,11 +99,11 @@ export class MatrixAuthService {
       () =>
         createTemporaryMatrixClient().registerRequest({
           type: 'm.login.dummy',
-          session,
           username,
           password,
           initial_device_display_name: 'Tjg Desktop',
-          auth
+          ...(session !== undefined ? { session } : {}),
+          ...(auth !== undefined ? { auth } : {})
         }),
       () => matrixRegister(username, password, session, authType, authToken, clientSecret),
       '注册失败'
@@ -159,7 +159,7 @@ export class MatrixAuthService {
    * @throws {MatrixError} M_USER_DEACTIVATED — account deactivated
    * @throws {MatrixError} M_LIMIT_EXCEEDED — rate limited, retry after `retry_after_ms`
    */
-  static async whoami(): Promise<{ userId: string; deviceId?: string }> {
+  static async whoami(): Promise<{ userId: string; deviceId?: string | undefined }> {
     const client = matrixClientService.getClient()
     if (!client) {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
@@ -217,10 +217,7 @@ export class MatrixAuthService {
   static async getRegisterFlows(): Promise<Array<{ type: string; stages?: string[]; [key: string]: unknown }>> {
     try {
       const result = await createTemporaryMatrixClient().registerRequest({})
-      return (
-        (result as { flows?: Array<{ type: string; stages?: string[]; [key: string]: unknown }> }).flows ??
-        []
-      )
+      return (result as { flows?: Array<{ type: string; stages?: string[]; [key: string]: unknown }> }).flows ?? []
     } catch (err) {
       const matrixErr = err as {
         errcode?: string

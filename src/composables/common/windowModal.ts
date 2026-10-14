@@ -63,8 +63,6 @@ export function createModalWindowFactory(deps: ModalWindowDeps) {
     // 创建新窗口
     const monitor = await primaryMonitor()
     const clampedSize = clampSizeToMonitor(width, height, monitor)
-    const _clampedMinWidth = Math.min(options?.minWidth ?? 500, clampedSize.width)
-    const _clampedMinHeight = Math.min(options?.minHeight ?? 500, clampedSize.height)
 
     const effectiveMinWidth = Math.max(options?.minWidth ?? 500, clampedSize.width)
     const effectiveMinHeight = Math.max(options?.minHeight ?? 500, clampedSize.height)

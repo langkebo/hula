@@ -23,7 +23,7 @@ const hoisted = vi.hoisted(() => {
       const response = await fetch(url, {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined
+        ...(body ? { body: JSON.stringify(body) } : {})
       })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       return response.json()
@@ -120,7 +120,7 @@ describe('MatrixDeviceService', () => {
       const response = await fetch(url, {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined
+        ...(body ? { body: JSON.stringify(body) } : {})
       })
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)

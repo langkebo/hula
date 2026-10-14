@@ -21,12 +21,9 @@
 </template>
 
 <script setup lang="ts">
-import { emitTo } from '@tauri-apps/api/event'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useRoute } from 'vue-router'
 import { useMessageSound } from '@/composables/common/useMessageSound'
 import { useMitt } from '@/composables/common/useMitt'
-import { useWindow } from '@/composables/common/useWindow'
 import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum, WsResponseMessageType } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -34,9 +31,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
-import { isMobile, isWindows } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('MobileLayout')
@@ -59,7 +54,6 @@ const fileStore = useFileStore()
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
-const { ensureNotifyWindow } = useWindow()
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const { playMessageSound } = useMessageSound()
 
@@ -153,7 +147,7 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
   if (chatStore.checkMsgExist(data.message.roomId, data.message.id)) {
     return
   }
-  logger.debug('[mobile/layout] 收到的消息：', data)
+  logger.debug('[mobile/layout] Received message:', data)
   // 只有在聊天室页面且当前选中的会话就是消息来源的会话时，才不增加未读数
   chatStore.pushMsg(data, {
     isActiveChatView:
@@ -171,52 +165,9 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
     // 获取该消息的会话信息
     const session = chatStore.sessionList.find((s) => s.roomId === data.message.roomId)
 
-    // 只有非免打扰的会话才发送通知和触发图标闪烁
+    // 只有非免打扰的会话才播放消息音效
     if (session && session.muteNotification !== NotificationTypeEnum.NOT_DISTURB) {
-      let shouldPlaySound = isMobile()
-
-      if (!isMobile() && hasTauriRuntime()) {
-        try {
-          const home = await WebviewWindow.getByLabel('mobile-home')
-
-          if (home) {
-            const isVisible = await home.isVisible()
-            const isMinimized = await home.isMinimized()
-            const isFocused = await home.isFocused()
-
-            // 如果窗口不可见、被最小化或未聚焦，则播放音效
-            shouldPlaySound = !isVisible || isMinimized || !isFocused
-          } else {
-            // 如果找不到home 窗口，播放音效
-            shouldPlaySound = true
-          }
-        } catch (error) {
-          logger.warn('检查窗口状态失败:', error)
-          shouldPlaySound = true
-        }
-      }
-
-      // 播放消息音效
-      if (shouldPlaySound) {
-        await playMessageSound()
-      }
-
-      // 设置图标闪烁
-      // useMitt.emit(MittEnum.MESSAGE_ANIMATION, data)
-      // session.unreadCount++
-      // 在windows系统下才发送通知
-      if (!isMobile() && isWindows()) {
-        globalStore.setTipVisible(true)
-      }
-
-      if (!isMobile() && hasTauriRuntime()) {
-        const currentWindow = WebviewWindow.getCurrent()
-
-        if (currentWindow.label === 'mobile-home') {
-          await ensureNotifyWindow()
-          await emitTo('notify', 'notify_content', data)
-        }
-      }
+      await playMessageSound()
     }
   }
 

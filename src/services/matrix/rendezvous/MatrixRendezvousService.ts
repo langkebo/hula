@@ -5,6 +5,7 @@
  * 对应后端: synapse-web/src/routes/rendezvous.rs
  */
 
+import type { MatrixClient } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 
@@ -95,7 +96,7 @@ class MatrixRendezvousService {
       throw new Error('Matrix client not initialized')
     }
 
-    const clientWithMethods = client as unknown as Record<string, unknown>
+    const clientWithMethods = client as MatrixClient & Record<string, unknown>
     if (typeof clientWithMethods.getRendezvousManager === 'function') {
       return clientWithMethods.getRendezvousManager() as RendezvousManagerLike
     }

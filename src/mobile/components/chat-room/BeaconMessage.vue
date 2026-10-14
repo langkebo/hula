@@ -80,20 +80,14 @@ defineOptions({
 
 const { t } = useI18n()
 
-const props = withDefaults(
-  defineProps<{
-    body?: BeaconBody
-    /** 消息元数据（roomId + beacon_info 事件 id），用于「查看位置」时聚合最新实时位置兜底 */
-    message?: {
-      id: string
-      roomId: string
-    }
-  }>(),
-  {
-    body: undefined,
-    message: undefined
+const props = defineProps<{
+  body?: BeaconBody
+  /** 消息元数据（roomId + beacon_info 事件 id），用于「查看位置」时聚合最新实时位置兜底 */
+  message?: {
+    id: string
+    roomId: string
   }
-)
+}>()
 
 const now = ref(Date.now())
 let timer: number | undefined

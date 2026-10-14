@@ -295,7 +295,9 @@ const saveImage = async () => {
   await saveFileAttachmentAs({
     url: originalUrl,
     downloadFile,
-    encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> | undefined,
+    ...(bodyRecord.encryptedFile !== undefined
+      ? { encryptedFile: bodyRecord.encryptedFile as Record<string, unknown> }
+      : {}),
     defaultFileName:
       (typeof bodyRecord.fileName === 'string' && bodyRecord.fileName) || extractFileName(originalUrl) || 'image.png',
     filters: [

@@ -6,8 +6,8 @@
     :pagination="pagination"
     :bordered="bordered"
     :striped="striped"
-    :row-key="rowKey"
-    :remote="remote">
+    :remote="remote"
+    v-bind="rowKey ? { rowKey } : {}">
     <template v-if="!loading && data.length === 0" #empty>
       <slot name="empty">
         <div class="admin-table__empty">{{ t('admin.common.noData') }}</div>
@@ -44,7 +44,6 @@ withDefaults(
     pagination: () => ({ pageSize: 20 }),
     bordered: false,
     striped: true,
-    rowKey: undefined,
     remote: false
   }
 )

@@ -40,7 +40,9 @@ export const Default: Story = {
         announcements: ANNOUNCEMENT_MOCKS.slice(0, 3)
       })
       configureGlobalStoreMock({
-        currentSessionRoomId: GROUP_DETAIL_MOCKS.private.roomId,
+        ...(GROUP_DETAIL_MOCKS.private.roomId !== undefined
+          ? { currentSessionRoomId: GROUP_DETAIL_MOCKS.private.roomId }
+          : {}),
         roomType: RoomTypeEnum.GROUP
       })
       return {}
@@ -52,6 +54,6 @@ export const Default: Story = {
 }
 
 export const AnnouncementFlow: Story = {
-  loaders: Default.loaders,
-  args: Default.args
+  ...(Default.loaders ? { loaders: Default.loaders } : {}),
+  ...(Default.args ? { args: Default.args } : {})
 }

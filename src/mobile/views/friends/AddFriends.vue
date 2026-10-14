@@ -114,7 +114,6 @@
 
 <script setup lang="ts">
 import { emitTo } from '@tauri-apps/api/event'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -126,7 +125,6 @@ import router from '@/router'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { isMobile } from '@/utils/PlatformConstants'
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -219,11 +217,7 @@ const handleAddFriend = async (item: FriendSearchResult) => {
   }
 }
 
-const handleEditProfile = async () => {
-  if (!isMobile()) {
-    const homeWindow = await WebviewWindow.getByLabel('home')
-    await homeWindow?.setFocus()
-  }
+const handleEditProfile = () => {
   emitTo('home', 'open_edit_info')
 }
 

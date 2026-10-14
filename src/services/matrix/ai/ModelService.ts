@@ -27,7 +27,7 @@ class MatrixModelService {
     return matrixHttpClient.request<{ list: AIModel[]; total: number }>(
       {
         url: matrixExtensionEndpoints.MODEL_PAGE,
-        params
+        ...(params !== undefined ? { params } : {})
       },
       undefined,
       { logPrefix: 'MatrixModel' }

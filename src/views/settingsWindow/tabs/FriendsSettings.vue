@@ -286,7 +286,7 @@ async function loadFriendRequests() {
     const outgoing = outgoingResult.status === 'fulfilled' ? outgoingResult.value : []
     incomingRequests.value = (incoming || []).map((r) => ({
       user_id: r.user_id,
-      message: r.message
+      ...(r.message === undefined ? {} : { message: r.message })
     }))
     outgoingRequests.value = (outgoing || []).map((r) => ({
       user_id: r.user_id

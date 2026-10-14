@@ -154,7 +154,6 @@
     "pinia-plugin-persistedstate": "^4.7.1",
     "qrcode": "^1.5.4",
     "sdp-transform": "^3.0.0",
-    "seemly": "^0.3.10",
     "shiki": "^4.4.3",
     "tauri-plugin-mic-recorder-api": "^2.0.0",
     "three": "^0.185.1",

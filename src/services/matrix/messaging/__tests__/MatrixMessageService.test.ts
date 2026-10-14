@@ -72,7 +72,11 @@ describe('MatrixMessageService', () => {
           'Content-Type': 'application/json',
           Authorization: 'Bearer test-access-token'
         }
-        const response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined })
+        const response = await fetch(url, {
+          method,
+          headers,
+          ...(body ? { body: JSON.stringify(body) } : {})
+        })
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
         return response.json()
       }

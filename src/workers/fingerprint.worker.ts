@@ -1,5 +1,6 @@
 // biome-ignore-all lint/suspicious/noConsole: Worker performance logging is intentionally kept in this worker.
 /// <reference lib="webworker" />
+import { bytesToHex } from '@/utils/StringUtils'
 import { requireSubtleCrypto } from '@/utils/webCompat'
 import { createWorkerLogger } from './workerLogger'
 
@@ -83,9 +84,7 @@ const generateFingerprint = async (data: {
       new TextEncoder().encode(combinedFingerprint)
     )
 
-    const fingerprint = Array.from(new Uint8Array(fingerprintBuffer))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
+    const fingerprint = bytesToHex(fingerprintBuffer)
     const hashTime = performance.now() - hashStart
     logger.info(`SHA-256计算耗时: ${hashTime.toFixed(2)}ms`)
 

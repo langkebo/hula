@@ -1,5 +1,6 @@
 import type { MatrixEvent } from 'matrix-js-sdk'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
+import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import type {
   BeaconBody,
   FileBody,
@@ -107,7 +108,7 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
       thumbnail_file?: Record<string, unknown>
       [key: string]: unknown
     }
-    const encryptedFile = content.file as Record<string, unknown> | undefined
+    const encryptedFile = content.file as EncryptedAttachmentFile | undefined
     const mediaUrl = ((content.url as string | undefined) || (encryptedFile?.url as string | undefined) || '') as string
 
     switch (msgType) {
@@ -137,7 +138,7 @@ export const matrixMessageAdapter: MatrixMessageAdapter = {
             (typeof info.thumbnail_url === 'string' && info.thumbnail_url) ||
             (typeof info.thumbnail_file?.url === 'string' && info.thumbnail_file.url) ||
             '',
-          thumbnailEncryptedFile: info.thumbnail_file,
+          thumbnailEncryptedFile: info.thumbnail_file as EncryptedAttachmentFile | undefined,
           filename: (content.body as string) || '',
           encryptedFile
         } as VideoBody

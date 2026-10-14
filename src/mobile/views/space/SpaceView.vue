@@ -83,7 +83,7 @@
       </van-action-sheet>
 
       <!-- 空间详情弹出层 -->
-      <van-action-sheet v-model:show="showDetailSheet" :title="selectedSpace?.name">
+      <van-action-sheet v-model:show="showDetailSheet" :title="selectedSpace?.name ?? ''">
         <div v-if="selectedSpace" class="space-detail">
           <div class="detail-header">
             <div class="detail-cover">
@@ -226,7 +226,7 @@ const showAddRoomSheet = ref(false)
 const showSettingsSheet = ref(false)
 const selectedSpace = ref<SpaceInfo | null>(null)
 
-const formData = reactive<SpaceOptions>({
+const formData = reactive({
   name: '',
   topic: '',
   visibility: Visibility.Private

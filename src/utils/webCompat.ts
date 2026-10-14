@@ -12,6 +12,8 @@
  *   - `Array.prototype.at`：Safari 15.4+（`arrayAt` 回退手工索引）
  */
 
+import { bytesToHex } from '@/utils/StringUtils'
+
 /** 判断当前环境是否提供 WebCrypto 的 SubtleCrypto 实现。 */
 export function hasSubtleCrypto(): boolean {
   return typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.subtle !== 'undefined'
@@ -45,7 +47,7 @@ export function safeRandomUUID(): string {
   // 按 RFC 4122 设置版本号（4）与变体位（10xx）
   bytes[6] = (bytes[6] & 0x0f) | 0x40
   bytes[8] = (bytes[8] & 0x3f) | 0x80
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  const hex = bytesToHex(bytes)
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 

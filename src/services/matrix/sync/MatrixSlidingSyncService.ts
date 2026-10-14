@@ -26,11 +26,11 @@ class MatrixSlidingSyncService {
   private roomCache: Map<
     string,
     {
-      notification_count?: number
-      highlight_count?: number
-      timeline?: unknown[]
+      notification_count?: number | undefined
+      highlight_count?: number | undefined
+      timeline?: unknown[] | undefined
       /** SDK 的 roomData 字段（旧代码误写为 state: Record<string,unknown>，恒为 undefined） */
-      required_state?: unknown[]
+      required_state?: unknown[] | undefined
     }
   > = new Map()
   private readonly lifecycleListener = (

@@ -137,10 +137,8 @@ const avatarUrl = ref('')
 const memberCount = ref(0)
 
 const {
-  fileInput: avatarFileInput,
   localImageUrl: avatarLocalImageUrl,
   showCropper: avatarCropperVisible,
-  cropperRef: avatarCropperRef,
   openAvatarCropper,
   handleFileChange: handleAvatarFileChange,
   handleCrop: onAvatarCrop

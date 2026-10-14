@@ -50,16 +50,19 @@ export const usePluginsStore = defineStore(
 
         if (!existing) return builtin
 
+        const size = builtin.size ? { ...existing.size, ...builtin.size } : existing.size
+        const window = builtin.window ? { ...existing.window, ...builtin.window } : existing.window
+
         return {
           ...existing,
           icon: builtin.icon,
-          iconAction: builtin.iconAction,
           state: builtin.state,
-          title: builtin.title,
-          shortTitle: builtin.shortTitle,
-          tip: builtin.tip,
-          size: builtin.size ? { ...existing.size, ...builtin.size } : existing.size,
-          window: builtin.window ? { ...existing.window, ...builtin.window } : existing.window
+          ...(builtin.iconAction !== undefined ? { iconAction: builtin.iconAction } : {}),
+          ...(builtin.title !== undefined ? { title: builtin.title } : {}),
+          ...(builtin.shortTitle !== undefined ? { shortTitle: builtin.shortTitle } : {}),
+          ...(builtin.tip !== undefined ? { tip: builtin.tip } : {}),
+          ...(size !== undefined ? { size } : {}),
+          ...(window !== undefined ? { window } : {})
         }
       })
 

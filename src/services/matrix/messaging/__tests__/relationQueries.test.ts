@@ -5,7 +5,7 @@ import { createRelationQueries } from '../relationQueries'
 
 type EventOverrides = {
   id?: string
-  sender?: string
+  sender?: string | undefined
   ts?: number
   content?: Record<string, unknown>
 }

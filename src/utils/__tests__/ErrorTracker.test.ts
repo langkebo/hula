@@ -29,7 +29,6 @@ describe('ErrorTracker', () => {
 
     it('does not re-initialize if already initialized', () => {
       errorTracker.initialize({ enableGlobalHandlers: false })
-      const _initialTime = Date.now()
       errorTracker.initialize({ enableGlobalHandlers: false })
       // Should not throw and should keep working
       expect(errorTracker.getErrors()).toEqual([])

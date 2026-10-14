@@ -77,8 +77,8 @@ export function useRendezvous(): UseRendezvousResult {
       const response = await matrixRendezvousService.createSession({
         intent: options?.intent ?? 'login.start',
         transport: options?.transport ?? 'http.v1',
-        transport_data: options?.transport_data,
-        expires_in_ms: options?.expires_in_ms
+        ...(options?.transport_data === undefined ? {} : { transport_data: options.transport_data }),
+        ...(options?.expires_in_ms === undefined ? {} : { expires_in_ms: options.expires_in_ms })
       })
       createSessionResponse.value = response
       sessionStatus.value = 'active'

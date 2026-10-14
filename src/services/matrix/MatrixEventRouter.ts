@@ -64,13 +64,14 @@ export class MatrixEventRouter {
     const homeserverUrl = this.observedClient?.getHomeserverUrl() || ''
 
     const updateRoom = () => {
+      const avatarUrl = room.getAvatarUrl(homeserverUrl, 48, 48, 'crop') || undefined
       void matrixWorkerHost
         .upsertSearchRooms([
           {
             roomId: room.roomId,
             name: room.name,
-            avatarUrl: room.getAvatarUrl(homeserverUrl, 48, 48, 'crop') || undefined,
-            memberCount: room.getJoinedMemberCount()
+            memberCount: room.getJoinedMemberCount(),
+            ...(avatarUrl !== undefined ? { avatarUrl } : {})
           }
         ])
         .catch(() => {

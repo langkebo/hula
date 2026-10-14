@@ -13,7 +13,7 @@ export class VideoCallMessageStrategyImpl extends AbstractMessageStrategy {
   }
 
   getMsg(_msgInputValue: string, _replyValue: MessageType | null, _fileList?: File[]): Record<string, unknown> {
-    const callInfo = _replyValue as unknown as CallInfo
+    const callInfo = _replyValue as MessageType & CallInfo
     return {
       type: this.msgType,
       duration: callInfo.duration,

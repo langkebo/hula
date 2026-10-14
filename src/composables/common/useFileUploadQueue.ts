@@ -8,8 +8,8 @@ type FileUploadItem = {
   type: string
   status: 'pending' | 'uploading' | 'completed' | 'failed'
   progress: number
-  startTime?: number
-  endTime?: number
+  startTime?: number | undefined
+  endTime?: number | undefined
 }
 
 type FileUploadQueue = {
@@ -18,8 +18,8 @@ type FileUploadQueue = {
   completedFiles: number
   failedFiles: number
   isActive: boolean
-  startTime?: number
-  endTime?: number
+  startTime?: number | undefined
+  endTime?: number | undefined
 }
 
 /**

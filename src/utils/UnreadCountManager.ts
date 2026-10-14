@@ -3,11 +3,8 @@ import { useDebounceFn } from '@vueuse/core'
 import { sumBy } from 'es-toolkit'
 import { NotificationTypeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
-import { createLogger } from '@/utils/Logger'
 import { isIOS, isMac } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
-
-const _logger = createLogger('UnreadCountManager')
 
 /**
  * 统一的未读计数管理器

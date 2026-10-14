@@ -75,7 +75,7 @@ export class MatrixTokenManager {
       const newRefreshToken = result.refresh_token
       let newExpiresInMs = result.expires_in_ms
       // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
-      const expiresInSec = (result as unknown as Record<string, unknown>).expires_in as number | undefined
+      const expiresInSec = (result as typeof result & { expires_in?: number }).expires_in
       if (!newExpiresInMs && expiresInSec) {
         newExpiresInMs = expiresInSec * 1000
       }

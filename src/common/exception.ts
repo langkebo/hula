@@ -16,8 +16,8 @@ export enum ErrorType {
 
 interface ErrorDetails {
   type: ErrorType
-  code?: number
-  details?: Record<string, unknown>
+  code?: number | undefined
+  details?: Record<string, unknown> | undefined
   showError?: boolean
   isRetryError?: boolean
 }
@@ -40,8 +40,8 @@ function getShowFeedback() {
 
 export class AppException extends Error {
   public readonly type: ErrorType
-  public readonly code?: number
-  public readonly details?: Record<string, unknown>
+  public readonly code?: number | undefined
+  public readonly details?: Record<string, unknown> | undefined
   private static hasShownError = false
 
   constructor(message: string, errorDetails?: Partial<ErrorDetails>) {

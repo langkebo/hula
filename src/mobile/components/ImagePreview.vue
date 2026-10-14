@@ -27,7 +27,7 @@
               v-if="showForward"
               class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleForward"
-              aria-label="转发">
+              :aria-label="t('mobile_files.actions.forward')">
               <svg class="size-22px text-white">
                 <use href="#share"></use>
               </svg>
@@ -36,7 +36,7 @@
               v-if="showSave"
               class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleSave"
-              aria-label="保存">
+              :aria-label="t('common.save')">
               <svg class="size-22px text-white">
                 <use href="#Importing"></use>
               </svg>
@@ -45,7 +45,7 @@
               v-if="showMore"
               class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
               @click.stop="handleMore"
-              aria-label="更多">
+              :aria-label="t('menu.ctx_menu_more')">
               <svg class="size-22px text-white">
                 <use href="#more"></use>
               </svg>
@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { MergeMessageType, MittEnum } from '@/enums'
@@ -71,6 +72,7 @@ import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ImagePreview')
+const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 interface Props {
@@ -129,12 +131,12 @@ const handleClose = () => {
 const handleForward = () => {
   const msgId = props.message?.id
   if (!msgId) {
-    showFeedback('无法转发：消息ID缺失', 'warning')
+    showFeedback(t('mobile_chat.preview.forward_no_id'), 'warning')
     return
   }
   const target = chatStore.getMessage(msgId)
   if (!target) {
-    showFeedback('未找到可转发的消息', 'warning')
+    showFeedback(t('mobile_chat.preview.forward_not_found'), 'warning')
     return
   }
   chatStore.clearMsgCheck()
@@ -147,14 +149,14 @@ const handleForward = () => {
 
 const handleSave = async () => {
   if (!props.message?.body) {
-    showFeedback('无法保存：图片地址缺失', 'warning')
+    showFeedback(t('mobile_chat.preview.save_no_url'), 'warning')
     return
   }
   try {
     const bodyRecord = props.message.body as Record<string, unknown>
     const sourceUrl = (typeof bodyRecord.url === 'string' && bodyRecord.url) || props.imageUrl
     if (!sourceUrl) {
-      showFeedback('无法保存：图片地址缺失', 'warning')
+      showFeedback(t('mobile_chat.preview.save_no_url'), 'warning')
       return
     }
 
@@ -175,36 +177,37 @@ const handleSave = async () => {
     }
 
     if (result) {
-      logger.debug('图片保存路径:', result)
-      showFeedback('图片已保存', 'success')
+      logger.debug('Image saved path:', result)
+      showFeedback(t('mobile_chat.preview.image_saved'), 'success')
 
       const roomId = getCurrentRoomId()
       if (roomId) {
         const fileStatus = fileDownloadStore.getFileStatus(sourceUrl)
         const localPath = fileStatus.localPath || result
 
+        const suffix = fileName.split('.').pop()?.toLowerCase()
         const fileInfo = {
           id: props.message!.id,
           roomId,
           fileName,
           type: 'image' as const,
           url: localPath,
-          suffix: fileName.split('.').pop()?.toLowerCase()
+          ...(suffix !== undefined ? { suffix } : {})
         }
         fileStore.addFile(fileInfo)
-        logger.debug('保存文件信息到 fileStore:', fileInfo)
+        logger.debug('Save file info to fileStore:', fileInfo)
       }
     }
   } catch (e) {
-    logger.error('保存图片失败:', e)
-    showFeedback('保存失败', 'error')
+    logger.error('Failed to save image:', e)
+    showFeedback(t('mobile_chat.preview.save_failed'), 'error')
   }
 
   emit('save')
 }
 
 const handleMore = () => {
-  showFeedback('更多功能暂未实现', 'warning')
+  showFeedback(t('mobile_chat.preview.more_coming_soon'), 'warning')
 
   emit('more')
 }

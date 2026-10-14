@@ -206,13 +206,13 @@ export function useAdminRooms(): UseAdminRoomsResult {
       const result = await adminService.searchRooms(query)
       searchResults.value = (result.rooms ?? []).map((r) => ({
         roomId: (r.room_id as string) ?? '',
-        name: r.name as string | undefined,
         joinedMembers: (r.joined_members as number) ?? 0,
         joinedLocalMembers: (r.joined_local_members as number) ?? 0,
         invitedMembers: 0,
         invitedLocalMembers: 0,
-        creator: r.creator as string | undefined,
-        public: r.public as boolean | undefined
+        ...(r.name !== undefined ? { name: r.name as string } : {}),
+        ...(r.creator !== undefined ? { creator: r.creator as string } : {}),
+        ...(r.public !== undefined ? { public: r.public as boolean } : {})
       }))
     } finally {
       searchLoading.value = false

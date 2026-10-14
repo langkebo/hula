@@ -101,7 +101,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   async getRetentionPolicies(
     limit = 50,
     from?: string
-  ): Promise<{ policies: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ policies: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.retention.getRetentionPolicies(limit, from)
   }
 
@@ -187,7 +187,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   async getSamlMappings(
     limit = 50,
     from?: string
-  ): Promise<{ mappings: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ mappings: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.security.getSamlMappings(limit, from)
   }
 
@@ -265,7 +265,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   async getApplicationServices(
     limit = 50,
     from?: string
-  ): Promise<{ services: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ services: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.applications.getApplicationServices(limit, from)
   }
 
@@ -310,7 +310,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    * @param serviceId 应用服务 ID。
    * @returns 探测结果（是否可达及耗时）。
    */
-  async pingApplicationService(serviceId: string): Promise<{ ok: boolean; durationMs?: number }> {
+  async pingApplicationService(serviceId: string): Promise<{ ok: boolean; durationMs?: number | undefined }> {
     return this.applications.pingApplicationService(serviceId)
   }
 
@@ -325,7 +325,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   async getSystemNotifications(
     limit = 50,
     from?: string
-  ): Promise<{ notifications: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ notifications: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.notifications.getSystemNotifications(limit, from)
   }
 
@@ -367,7 +367,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
     limit = 100,
     from?: string,
     filters?: Record<string, unknown>
-  ): Promise<{ events: Array<Record<string, unknown>>; nextToken?: string } | null> {
+  ): Promise<{ events: Array<Record<string, unknown>>; nextToken?: string | undefined } | null> {
     return this.security.getSecurityEvents(limit, from, filters)
   }
 

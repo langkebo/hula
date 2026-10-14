@@ -74,7 +74,7 @@ describe('userIdentity', () => {
 
     it('detailId 优先，缺失时回退 account', () => {
       expect(resolveDmIdentityKey({ detailId: '@a:matrix.test', account: 'b' })).toBe('a')
-      expect(resolveDmIdentityKey({ detailId: undefined, account: '@b:matrix.test' })).toBe('b')
+      expect(resolveDmIdentityKey({ account: '@b:matrix.test' })).toBe('b')
       expect(resolveDmIdentityKey({ account: 'b' })).toBe('b')
     })
 

@@ -224,15 +224,6 @@ onMounted(() => {
   if (savedSendKey) sendKey.value = savedSendKey
 })
 
-function loadSetting(key: string, refVal: { value: boolean }) {
-  const saved = localStorage.getItem(key)
-  if (saved !== null) refVal.value = saved === 'true'
-}
-
-function handleToggle(key: string, val: boolean) {
-  localStorage.setItem(key, val.toString())
-}
-
 function handleMessageConfirmChange(value: boolean) {
   settingStore.setMessageConfirmEnabled(value)
 }

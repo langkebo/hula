@@ -14,7 +14,7 @@ export interface IntegrationCatalogItem {
   name: string
   description: string
   version: string
-  icon?: string
+  icon?: string | undefined
 }
 
 export interface Integration extends IntegrationCatalogItem {

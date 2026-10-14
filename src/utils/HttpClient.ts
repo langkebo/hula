@@ -129,7 +129,11 @@ export class HttpClient {
   static async get<T = unknown>(url: string, config?: HttpClientConfig): Promise<T> {
     const response = await fetchWithTimeout(
       url,
-      { method: 'GET', headers: config?.headers, keepalive: config?.keepalive },
+      {
+        method: 'GET',
+        ...(config?.headers !== undefined ? { headers: config.headers } : {}),
+        ...(config?.keepalive !== undefined ? { keepalive: config.keepalive } : {})
+      },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal,
       config?.allowDynamicHost
@@ -164,8 +168,8 @@ export class HttpClient {
       {
         method: 'POST',
         headers,
-        body: rawBody ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined,
-        keepalive: config?.keepalive
+        ...(rawBody || body !== undefined ? { body: rawBody ? (body as BodyInit) : JSON.stringify(body) } : {}),
+        ...(config?.keepalive !== undefined ? { keepalive: config.keepalive } : {})
       },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal,
@@ -180,7 +184,11 @@ export class HttpClient {
   static async head(url: string, config?: HttpClientConfig): Promise<Response> {
     const response = await fetchWithTimeout(
       url,
-      { method: 'HEAD', headers: config?.headers, keepalive: config?.keepalive },
+      {
+        method: 'HEAD',
+        ...(config?.headers !== undefined ? { headers: config.headers } : {}),
+        ...(config?.keepalive !== undefined ? { keepalive: config.keepalive } : {})
+      },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal,
       config?.allowDynamicHost
@@ -194,7 +202,11 @@ export class HttpClient {
   static async downloadBytes(url: string, config?: HttpClientConfig): Promise<ArrayBuffer> {
     const response = await fetchWithTimeout(
       url,
-      { method: 'GET', headers: config?.headers, keepalive: config?.keepalive },
+      {
+        method: 'GET',
+        ...(config?.headers !== undefined ? { headers: config.headers } : {}),
+        ...(config?.keepalive !== undefined ? { keepalive: config.keepalive } : {})
+      },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal,
       config?.allowDynamicHost
@@ -216,7 +228,7 @@ export class HttpClient {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
-        keepalive: config?.keepalive
+        ...(config?.keepalive !== undefined ? { keepalive: config.keepalive } : {})
       },
       config?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       config?.signal,

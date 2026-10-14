@@ -54,7 +54,10 @@ export function isPayloadTooLarge(err: unknown): boolean {
  *
  * 该分支**不支持进度回调**（与迁移前一致；进度只在 SDK 主路径的 `progressHandler` 上）。
  */
-export async function uploadViaGateway(file: File, opts: { type?: string; name?: string }): Promise<string> {
+export async function uploadViaGateway(
+  file: File,
+  opts: { type?: string | undefined; name?: string | undefined }
+): Promise<string> {
   const filename = opts.name || file.name || 'upload'
   const mimetype = opts.type || file.type || 'application/octet-stream'
 

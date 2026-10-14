@@ -89,7 +89,8 @@ class MatrixEventService extends BaseMatrixService {
     }
 
     const client = this.getClient()
-    const uploadOptions = source.type || mimetype ? { type: source.type || mimetype } : undefined
+    const uploadType = source.type || mimetype
+    const uploadOptions = uploadType ? { type: uploadType } : undefined
     const response = await client.uploadContent(source, uploadOptions)
     return this.extractContentUri(response)
   }
@@ -333,6 +334,8 @@ class MatrixEventService extends BaseMatrixService {
       body.threadId = threadId
     }
 
+    const avatarUrl = member?.getMxcAvatarUrl?.() ?? undefined
+
     return {
       clientKey: event.getId() || '',
       message: {
@@ -343,14 +346,14 @@ class MatrixEventService extends BaseMatrixService {
         body,
         status: MessageStatusEnum.SUCCESS,
         burnAfterRead,
-        burnRemainingSeconds,
         isBurning: false,
-        isBurned: false
+        isBurned: false,
+        ...(burnRemainingSeconds !== undefined ? { burnRemainingSeconds } : {})
       },
       fromUser: {
         uid: sender || '',
         username: member?.name || sender || '',
-        avatar: member?.getMxcAvatarUrl?.() ?? undefined
+        ...(avatarUrl !== undefined ? { avatar: avatarUrl } : {})
       }
     }
   }

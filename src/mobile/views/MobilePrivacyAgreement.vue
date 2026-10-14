@@ -11,8 +11,8 @@
       <!-- 协议内容 -->
       <div class="agreement-content">
         <div class="agreement-header">
-          <h1>{{ privacyHeader.title }}</h1>
-          <p class="update-time">{{ privacyHeader.updatedAt }}</p>
+          <h1>{{ t('agreement.privacy.header.title') }}</h1>
+          <p class="update-time">{{ t('agreement.privacy.header.updatedAt') }}</p>
         </div>
 
         <div class="agreement-body">
@@ -51,14 +51,8 @@ type AgreementSection = {
   subSections?: AgreementSubSection[]
 }
 
-type AgreementHeader = {
-  title: string
-  updatedAt: string
-}
-
 const { t, tm } = useI18n()
 
-const privacyHeader = computed(() => tm('agreement.privacy.header') as AgreementHeader)
 const privacySections = computed(() => tm('agreement.privacy.sections') as AgreementSection[])
 </script>
 

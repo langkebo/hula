@@ -196,7 +196,7 @@ async function fetchServerMessages(
       dir === 'f' ? Direction.Forward : Direction.Backward
     )
     const chunk = response?.chunk
-    return Array.isArray(chunk) ? (chunk as unknown as MatrixEvent[]) : []
+    return Array.isArray(chunk) ? (chunk as typeof chunk & MatrixEvent[]) : []
   } catch (err) {
     logger.error(`[MatrixMessage] Failed to fetch server messages: ${err}`)
     return []

@@ -44,9 +44,9 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getRoomTimeline(roomId, {
-        from: options?.from,
-        limit: options?.limit,
-        dir: options?.dir
+        ...(options?.from !== undefined ? { from: options.from } : {}),
+        ...(options?.limit !== undefined ? { limit: options.limit } : {}),
+        ...(options?.dir !== undefined ? { dir: options.dir } : {})
       })
       return result as { chunk: unknown[]; start: string; end: string }
     } catch (err) {
@@ -94,10 +94,10 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getRoomNotifications(roomId, {
-        from: params?.from,
-        limit: params?.limit
+        ...(params?.from !== undefined ? { from: params.from } : {}),
+        ...(params?.limit !== undefined ? { limit: params.limit } : {})
       })
-      return result as unknown as { notifications: Array<Record<string, unknown>>; next_token?: string }
+      return result as typeof result & { notifications: Array<Record<string, unknown>>; next_token?: string }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取房间通知失败: ${err}`)
       return { notifications: [] }

@@ -116,7 +116,7 @@ async function handleSubmit() {
       event_id: props.eventId,
       room_id: props.roomId,
       reason: form.reason,
-      description: form.comment || undefined
+      ...(form.comment ? { description: form.comment } : {})
     })
     showFeedback(t('moderation.report.success'), 'success')
     visible.value = false

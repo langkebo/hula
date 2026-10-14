@@ -15,7 +15,7 @@
       v-show="isShrink"
       :shrink-status="!isShrink"
       :max-w="false"
-      :current-label="appWindow?.label" />
+      v-bind="appWindow ? { currentLabel: appWindow.label } : {}" />
 
     <!-- 列表 -->
     <div id="centerList" class="h-full" :class="{ 'shadow-inner': settingStore.pageShadowEnabled }">

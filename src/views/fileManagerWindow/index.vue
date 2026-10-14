@@ -52,9 +52,7 @@ const queryFilesAction = async () => {
 
     const queryParam: FileQueryParam = {
       navigationType: activeNavigation.value,
-      selectedUser: undefined,
-      searchKeyword: searchKeyword.value || undefined,
-      roomId: undefined,
+      ...(searchKeyword.value ? { searchKeyword: searchKeyword.value } : {}),
       page: 1,
       pageSize: 50
     }
@@ -63,11 +61,11 @@ const queryFilesAction = async () => {
       case 'myFiles':
         break
       case 'senders':
-        queryParam.selectedUser = selectedUser.value || undefined
+        if (selectedUser.value) queryParam.selectedUser = selectedUser.value
         break
       case 'sessions':
       case 'groups':
-        queryParam.roomId = selectedRoom.value || undefined
+        if (selectedRoom.value) queryParam.roomId = selectedRoom.value
         break
     }
 

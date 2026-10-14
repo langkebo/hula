@@ -10,8 +10,8 @@ const logger = createLogger('MatrixSearchService')
 
 export interface UserSearchResult {
   userId: string
-  displayName?: string
-  avatarUrl?: string
+  displayName?: string | undefined
+  avatarUrl?: string | undefined
 }
 
 export interface SearchResult {
@@ -20,14 +20,14 @@ export interface SearchResult {
   sender: string
   content: Record<string, unknown>
   timestamp: number
-  roomName?: string
-  context?: SearchEventContext
+  roomName?: string | undefined
+  context?: SearchEventContext | undefined
 }
 
 export interface RoomSearchResult {
   roomId: string
   roomName: string
-  avatarUrl?: string
+  avatarUrl?: string | undefined
   memberCount: number
   isJoined: boolean
   isDirect: boolean
@@ -93,7 +93,7 @@ class MatrixSearchService {
   private async searchMessagesRemote(query: string, options?: SearchMessagesOptions): Promise<SearchResult[]> {
     const response = await this.getSearchMgr().searchMessageText({
       term: query,
-      room_id: options?.roomId,
+      ...(options?.roomId !== undefined ? { room_id: options.roomId } : {}),
       limit: options?.limit || 20,
       before_limit: options?.beforeLimit || 3,
       after_limit: options?.afterLimit || 3,
@@ -127,7 +127,7 @@ class MatrixSearchService {
     const response = await matrixWorkerHost.querySearchIndex({
       term: query,
       scope: 'messages',
-      roomId: options?.roomId,
+      ...(options?.roomId !== undefined ? { roomId: options.roomId } : {}),
       limit: options?.limit || 20,
       offset: 0
     })
@@ -146,7 +146,12 @@ class MatrixSearchService {
   }
 
   private toRoomSearchResults(
-    rooms: Array<{ room_id: string; name?: string; avatar_url?: string; joined_members: number }>
+    rooms: Array<{
+      room_id: string
+      name?: string | undefined
+      avatar_url?: string | undefined
+      joined_members: number
+    }>
   ): RoomSearchResult[] {
     return rooms.map((room) => ({
       roomId: room.room_id,
@@ -337,7 +342,7 @@ class MatrixSearchService {
 
     try {
       const response = await client.publicRooms({
-        server,
+        ...(server !== undefined ? { server } : {}),
         filter: {
           generic_search_term: query
         }

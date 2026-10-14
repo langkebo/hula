@@ -17,7 +17,6 @@ import { describe, expect, it } from 'vitest'
 const ROOT = resolve(__dirname, '..', '..', '..', '..')
 const THREAD_PANEL_PATH = resolve(ROOT, 'src/components/thread/ThreadPanel.vue')
 const BOT_PATH = resolve(ROOT, 'src/components/rightBox/chatBox/Bot.vue')
-const _SRC_DIR = resolve(ROOT, 'src')
 
 function readSource(p: string): string {
   return readFileSync(p, 'utf-8')

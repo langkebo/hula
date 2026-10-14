@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type Ref, ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { MagnifierConfig, ScreenConfig } from './types'
 
 const props = defineProps<{

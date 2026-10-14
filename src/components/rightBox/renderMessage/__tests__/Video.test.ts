@@ -206,7 +206,7 @@ describe('renderMessage/Video', () => {
   })
 
   it('挂载时按 thumbUrl 入队缩略图下载', async () => {
-    const _wrapper = mountComponent({ message: { id: 'm1', roomId: '!room:server' } as never })
+    mountComponent({ message: { id: 'm1', roomId: '!room:server' } as never })
     await flushPromises()
     expect(enqueueThumbnailMock).toHaveBeenCalledWith(
       expect.objectContaining({

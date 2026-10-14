@@ -47,13 +47,12 @@
       v-if="ImagePreview"
       v-model:visible="showImagePreviewRef"
       :image-url="displayEmojiSrc"
-      :message="message" />
+      v-bind="message !== undefined ? { message } : {}" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { exists } from '@tauri-apps/plugin-fs'
 import { useImageViewer } from '@/composables/common/useImageViewer'
 import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
 import { MsgEnum } from '@/enums/index'
@@ -83,6 +82,8 @@ const EMOJI_AUTO_DOWNLOAD_LIMIT = 1024 * 1024 // 1MB
 const ImagePreview = mobileOnlyAsyncComponent(() => import('@/mobile/components/ImagePreview.vue'))
 
 const displayEmojiSrc = computed(() => localEmojiSrc.value || props.body?.url || '')
+// 平台在运行期恒定：探测一次后复用
+const isMobilePlatform = isMobile()
 
 const handleImageError = () => {
   isError.value = true
@@ -90,14 +91,14 @@ const handleImageError = () => {
 }
 
 const handleOpenImage = () => {
-  if (!isMobile()) return
+  if (!isMobilePlatform) return
   if (props.body?.url) {
     showImagePreviewRef.value = true
   }
 }
 
 const handleOpenImageViewer = () => {
-  if (isMobile()) {
+  if (isMobilePlatform) {
     return
   }
   if (!props.body?.url) return

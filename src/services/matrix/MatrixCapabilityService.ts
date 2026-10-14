@@ -11,7 +11,7 @@ import { matrixAccountService } from './user/MatrixAccountService'
 const logger = createLogger('MatrixCapabilityService')
 
 type MatrixVersionsResponse = {
-  unstable_features?: Record<string, boolean>
+  unstable_features?: Record<string, boolean> | undefined
 }
 
 type MatrixCapabilitiesResponse = {

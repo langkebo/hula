@@ -17,8 +17,8 @@ export type FriendStatus = FriendRequestStatus | FriendRelationStatus
 export interface FriendGroup {
   group_id: string
   name: string
-  member_count?: number
-  created_at?: number
+  member_count?: number | undefined
+  created_at?: number | undefined
 }
 
 export interface FriendSyncState {
@@ -61,7 +61,7 @@ export function normalizeSynapseFriendRequest(
   // outgoing: 本方发起，user_id 取 recipient
   return {
     user_id: direction === 'incoming' ? req.requester : req.recipient,
-    message: req.message,
+    ...(req.message !== undefined ? { message: req.message } : {}),
     status: req.status === 'declined' ? 'rejected' : req.status,
     timestamp: req.created_ts,
     direction

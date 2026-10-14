@@ -89,7 +89,6 @@ const props = withDefaults(
   {
     placeholder: '',
     editAriaLabel: '',
-    maxlength: undefined,
     trim: true,
     loading: false,
     multiline: false,

@@ -31,7 +31,7 @@ export async function pushConfigToAccountData(
   config: NotificationConfig
 ): Promise<void> {
   try {
-    await client.setAccountData(NOTIFICATION_CONFIG_ACCOUNT_DATA_TYPE, config as unknown as Record<string, unknown>)
+    await client.setAccountData(NOTIFICATION_CONFIG_ACCOUNT_DATA_TYPE, { ...config })
     logger.info('[MatrixNotification] 通知配置已同步到服务端')
   } catch (err) {
     logger.error(`[MatrixNotification] 同步通知配置到服务端失败: ${err}`)

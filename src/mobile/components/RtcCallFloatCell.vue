@@ -35,7 +35,6 @@
 import { useI18n } from 'vue-i18n'
 import { useMitt } from '@/composables/common/useMitt'
 import { CallTypeEnum, MittEnum } from '@/enums'
-import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useMobileStore } from '@/stores/domains/settings/mobile'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -86,7 +85,7 @@ const isVisible = computed(() => currentCall.value !== null)
 
 const avatarUrl = computed(() => currentCall.value?.avatar ?? AvatarUtils.getAvatarUrl(''))
 
-const displayName = computed(() => currentCall.value?.displayName || '未知用户')
+const displayName = computed(() => currentCall.value?.displayName || t('mobile_voice_video.unknown_user'))
 
 const callMessage = computed(() => {
   if (!currentCall.value) return ''
@@ -170,7 +169,7 @@ const handleReject = async () => {
       accepted: 'rejected'
     })
   } catch (error) {
-    logger.error('发送拒绝响应失败:', error)
+    logger.error('Failed to send reject response:', error)
   } finally {
     clearCall()
   }
@@ -191,7 +190,7 @@ const handleAccept = async () => {
   try {
     await router.push({ path: '/mobile/rtcCall', query })
   } catch (error) {
-    logger.error('跳转通话页面失败:', error)
+    logger.error('Failed to navigate to call page:', error)
   } finally {
     clearCall()
   }

@@ -136,9 +136,7 @@ export class CryptoHealthMonitor {
     try {
       const client = matrixClientService.getClient()
       if (!client) return false
-      const crypto = (
-        client as { getCrypto?: () => { isCrossSigningReady?: () => Promise<boolean> } }
-      ).getCrypto?.()
+      const crypto = (client as { getCrypto?: () => { isCrossSigningReady?: () => Promise<boolean> } }).getCrypto?.()
       if (crypto?.isCrossSigningReady) {
         return await crypto.isCrossSigningReady()
       }

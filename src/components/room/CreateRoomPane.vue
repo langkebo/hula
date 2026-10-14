@@ -218,9 +218,9 @@ const handleCreate = async (ignoreDuplicate = false) => {
     const room = await matrixRoomActionFacade.createGroupRoom({
       name: formData.name,
       topic: formData.topic,
-      avatarUrl: formData.avatarUrl || undefined,
+      ...(formData.avatarUrl ? { avatarUrl: formData.avatarUrl } : {}),
       isPublic: formData.roomType === 'room',
-      alias: formData.alias || undefined,
+      ...(formData.alias ? { alias: formData.alias } : {}),
       isEncrypted: formData.isEncrypted,
       historyVisibility: formData.historyVisibility,
       joinRule: formData.joinRule,

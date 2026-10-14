@@ -26,7 +26,7 @@ const REAL_KEY: I18nKeyPaths = 'common.done'
  * 命名空间且文案为字面量类型；测试夹具只装 2 个命名空间、JSON 导入也被 widen 成 string，
  * 因此对「夹具」做一次断言。被验证的生产代码（`useTypedI18n`）不含任何断言。
  */
-const FIXTURE_MESSAGES = { 'zh-CN': { admin, common } } as unknown as I18nOptions['messages']
+const FIXTURE_MESSAGES = { 'zh-CN': { admin, common } } as unknown as NonNullable<I18nOptions['messages']>
 
 const setupWrapper = () => {
   const i18n = createI18n({

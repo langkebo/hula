@@ -37,7 +37,7 @@ type UnreadMarkState = {
 
 type AddFriendModalState = {
   show: boolean
-  uid?: string
+  uid?: string | undefined
 }
 
 type AddGroupModalState = {

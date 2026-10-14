@@ -40,10 +40,10 @@ export class AdminUserService {
     from?: string,
     _name?: string,
     guests?: boolean
-  ): Promise<{ users: UserInfo[]; nextToken?: string }> {
+  ): Promise<{ users: UserInfo[]; nextToken?: string | undefined }> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.getUsersPaginated({ from, limit })
+      const result = await admin.getUsersPaginated({ limit, ...(from !== undefined ? { from } : {}) })
       const users = (result?.items ?? []).map((user) => this.mapUserInfo(user))
       const filteredUsers =
         typeof guests === 'boolean' ? users.filter((user) => Boolean(user.isGuest) === guests) : users
@@ -100,8 +100,8 @@ export class AdminUserService {
       const user = await admin.createUser(userId, {
         password,
         admin: options?.admin || false,
-        displayname: options?.displayname,
-        deactivated: options?.deactivated
+        ...(options?.displayname !== undefined ? { displayname: options.displayname } : {}),
+        ...(options?.deactivated !== undefined ? { deactivated: options.deactivated } : {})
       })
       logger.info(`[Admin] 用户已创建: ${username}`)
       return {
@@ -386,7 +386,7 @@ export class AdminUserService {
   async getUserStatsList(
     _limit = 100,
     _from?: string
-  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string }> {
+  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.listUserStats()
@@ -415,7 +415,7 @@ export class AdminUserService {
         users: users.map((user) => ({
           username: user.username,
           password: user.password,
-          displayname: user.displayname,
+          ...(user.displayname !== undefined ? { displayname: user.displayname } : {}),
           admin: user.admin || false
         }))
       }
@@ -566,11 +566,11 @@ export class AdminUserService {
     from?: string
   ): Promise<{
     failures: Array<Record<string, unknown>>
-    nextToken?: string
+    nextToken?: string | undefined
   }> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.listLoginFailures({ limit, from })
+      const result = await admin.listLoginFailures({ limit, ...(from !== undefined ? { from } : {}) })
       return {
         failures: result?.failures ?? [],
         nextToken: result?.next_token

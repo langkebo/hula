@@ -332,7 +332,7 @@
 <script setup lang="ts">
 import { vOnLongPress } from '@vueuse/components'
 import type { Component } from 'vue'
-import { defineAsyncComponent, onMounted, onUnmounted, watchEffect } from 'vue'
+import { defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MessageLockBadge from '@/components/atomic/MessageLockBadge.vue'
 import BurnMessage from '@/components/burn/BurnMessage.vue'
@@ -354,7 +354,6 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
-import { isMobile } from '@/utils/PlatformConstants'
 import { arrayAt } from '@/utils/webCompat'
 import Emoji from './Emoji.vue'
 import Image from './Image.vue'
@@ -390,9 +389,9 @@ const isShowablePopover = (value: unknown): value is ShowablePopover => {
   return typeof value === 'object' && value !== null && 'setShow' in value && typeof value.setShow === 'function'
 }
 
-const ThreadIndicator = computed(() => (isMobile() ? ThreadIndicatorMobile : ThreadIndicatorDesktop))
-
 const isMobileRef = useIsMobile()
+
+const ThreadIndicator = computed(() => (isMobileRef.value ? ThreadIndicatorMobile : ThreadIndicatorDesktop))
 
 const props = withDefaults(
   defineProps<{
@@ -433,7 +432,7 @@ const setInfoPopoverRef = (messageId: string, el: unknown) => {
 
 const messageUserInput: Parameters<typeof useMessageUser>[0] = {
   message: props.message,
-  fromUser: props.fromUser,
+  ...(props.fromUser !== undefined ? { fromUser: props.fromUser } : {}),
   isGroup: props.isGroup
 }
 
@@ -516,7 +515,7 @@ const isLastRoomMessage = computed(() => {
   return lastMessage?.message.id === props.message.message.id
 })
 const bubbleMaxWidth = computed(() => {
-  if (isMobile()) {
+  if (isMobileRef.value) {
     return '84%'
   }
   return props.isGroup ? '32vw' : '50vw'
@@ -572,7 +571,7 @@ const isThreadReply = computed(() => {
 })
 
 const handleOpenThread = (eventId: string) => {
-  if (isMobile()) {
+  if (isMobileRef.value) {
     const roomId = props.message?.message?.roomId || globalStore.currentSessionRoomId
     router.push(`/mobile/chatRoom/thread/${roomId}/${eventId}`)
   } else {
@@ -583,9 +582,9 @@ const handleOpenThread = (eventId: string) => {
 defineExpose({ isThreadReply, handleOpenThread })
 
 // 移动端/桌面端位置与 beacon 渲染组件选择收拢到单一 computed（平台常量，运行时不变），
-// 与上方 ThreadIndicator 的移动端覆盖模式一致，避免在 componentMap 里散落 isMobile() 内联分支。
-const LocationComponent = computed(() => (isMobile() ? LocationMobile : Location))
-const BeaconComponent = computed(() => (isMobile() ? BeaconMobile : Beacon))
+// 与上方 ThreadIndicator 的移动端覆盖模式一致，避免在 componentMap 里散落平台内联分支。
+const LocationComponent = computed(() => (isMobileRef.value ? LocationMobile : Location))
+const BeaconComponent = computed(() => (isMobileRef.value ? BeaconMobile : Beacon))
 
 const componentMap = computed<Partial<Record<MsgEnum, Component>>>(() => ({
   [MsgEnum.TEXT]: Text,

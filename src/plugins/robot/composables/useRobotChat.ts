@@ -21,9 +21,6 @@ import { useI18nGlobal } from '@/services/i18n'
 import { aiService } from '@/services/matrix/ai/AIService'
 import { useUserStore } from '@/stores/domains/user/user'
 import type { AIAudio, AIImage, AIVideo } from '@/types/matrix-api'
-import { createLogger } from '@/utils/Logger'
-
-const _logger = createLogger('RobotChat')
 
 export interface ConversationMeta {
   id: string
@@ -35,35 +32,41 @@ export interface ConversationMeta {
 export interface Message {
   type: 'user' | 'assistant'
   content: string
-  reasoningContent?: string
-  streaming?: boolean
-  createTime?: number
-  id?: string
-  replyId?: string | null
-  model?: string
-  isGenerating?: boolean
-  msgType?: AiMsgContentTypeEnum
-  imageUrl?: string
-  imageInfo?: {
-    prompt: string
-    width: number
-    height: number
-    model: string
-  }
-  videoUrl?: string
-  videoInfo?: {
-    prompt: string
-    width: number
-    height: number
-    model: string
-  }
-  audioUrl?: string
-  audioInfo?: {
-    prompt: string
-    voice: string
-    model: string
-    speed: number
-  }
+  reasoningContent?: string | undefined
+  streaming?: boolean | undefined
+  createTime?: number | undefined
+  id?: string | undefined
+  replyId?: string | null | undefined
+  model?: string | undefined
+  isGenerating?: boolean | undefined
+  msgType?: AiMsgContentTypeEnum | undefined
+  imageUrl?: string | undefined
+  imageInfo?:
+    | {
+        prompt: string
+        width: number
+        height: number
+        model: string
+      }
+    | undefined
+  videoUrl?: string | undefined
+  videoInfo?:
+    | {
+        prompt: string
+        width: number
+        height: number
+        model: string
+      }
+    | undefined
+  audioUrl?: string | undefined
+  audioInfo?:
+    | {
+        prompt: string
+        voice: string
+        model: string
+        speed: number
+      }
+    | undefined
 }
 
 export type HistoryItem = (AIImage | AIVideo | AIAudio) & {

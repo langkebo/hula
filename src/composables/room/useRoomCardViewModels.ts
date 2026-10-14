@@ -10,9 +10,9 @@ interface UseRoomCardViewModelsOptions {
 interface SessionLike {
   roomId: string
   name: string
-  avatar?: string
+  avatar?: string | undefined
   unreadCount: number
-  top?: boolean
+  top?: boolean | undefined
   type: number
 }
 
@@ -32,8 +32,8 @@ export function useRoomCardViewModels(
     const memberCount = groupInfo?.memberCount ?? groupInfo?.memberNum ?? 0
     const onlineCount = groupInfo?.onlineCount ?? 0
     const topic = groupInfo?.topic ?? undefined
+    const avatar = groupInfo?.avatar || session.avatar
     const isEncrypted = groupInfo?.isEncrypted ?? false
-    const _isPublic = groupInfo?.isPublic ?? true
     const creator = groupInfo?.creator ?? null
 
     const isFederated = checkFederated(session.roomId, creator)
@@ -41,8 +41,8 @@ export function useRoomCardViewModels(
     return {
       roomId: session.roomId,
       name: groupInfo?.name || session.name,
-      avatar: groupInfo?.avatar || session.avatar,
-      topic,
+      ...(avatar === undefined ? {} : { avatar }),
+      ...(topic === undefined ? {} : { topic }),
       memberCount,
       onlineCount,
       unreadCount: session.unreadCount ?? 0,

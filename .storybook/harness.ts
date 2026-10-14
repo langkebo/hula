@@ -47,7 +47,7 @@ export const configureChatSidebarMocks = (options: {
 }) => {
   configureGroupStoreMock({
     detail: options.detail,
-    members: options.members,
+    ...(options.members === undefined ? {} : { members: options.members }),
   })
   configureAnnouncementStoreMock({
     announcementContent: options.announcements?.[0]?.content ?? '',

@@ -17,7 +17,7 @@
         type="button"
         class="ml-auto rounded-full border border-[--tjg-color-danger-500] bg-transparent px-10px py-2px text-[var(--text-xs)] leading-tight color-[--tjg-color-danger-500] transition-opacity hover:opacity-80"
         data-test="network-retry"
-        @click="onRetryNetwork">
+        @click="() => onRetryNetwork?.()">
         {{ t('common.retry') }}
       </button>
     </div>
