@@ -1,15 +1,16 @@
-import { createLogger } from '@/utils/Logger'
+import { acquireTimerWorker, type TimerWorkerHandle } from '@/services/timerWorkerHost'
 
-const logger = createLogger('TimerWorker')
+let handle: TimerWorkerHandle | null = null
 
-let timerWorker: Worker | null = null
-
-export const getTimerWorker = (): Worker => {
-  if (!timerWorker) {
-    timerWorker = new Worker(new URL('@/workers/timer.worker.ts', import.meta.url), { type: 'module' })
-    timerWorker.onerror = (err) => {
-      logger.error('Worker Error', err)
-    }
+/**
+ * 取得聊天域共享的定时器 Worker 句柄。
+ *
+ * 进程内单例、永不释放（与重构前的 module 级单例生命周期一致）；实际 Worker 实例由
+ * `timerWorkerHost` 统一持有，与其他消费者共享。
+ */
+export const getTimerWorker = (): TimerWorkerHandle => {
+  if (!handle) {
+    handle = acquireTimerWorker()
   }
-  return timerWorker
+  return handle
 }

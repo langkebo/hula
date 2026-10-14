@@ -6,7 +6,6 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useSessionStore } from './session'
-import { getTimerWorker } from './timerWorker'
 import type { CustomForwardTask, MessageBody, MessageType, RecalledMessage } from './types'
 
 export type { MessageBody, MessageType }
@@ -417,7 +416,6 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     clearOtherRoomsMessages,
     clearRoomMessagesExceptTransient,
     convertEventToMessage: matrixEventService.convertEventToMessage.bind(matrixEventService),
-    getMessageIndexByRoomId,
-    terminateWorker: () => getTimerWorker().terminate()
+    getMessageIndexByRoomId
   }
 })

@@ -3,42 +3,54 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MessageStatusEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 
-const { globalStoreMock, timerWorkerMock, sessionStoreMock, windowLabelRef, groupUserRef, isPermissionGrantedMock } =
-  vi.hoisted(() => ({
-    globalStoreMock: {
-      currentSessionRoomId: 'room-1',
-      currentSession: null as null | { type?: number }
-    },
-    // 群成员信息解析结果，决定桌面通知标题/头像的来源（null 表示群缓存冷，回退到消息自带发送者）
-    groupUserRef: { value: null as null | { name: string; avatar: string } },
-    timerWorkerMock: {
-      postMessage: vi.fn(),
-      terminate: vi.fn(),
-      onmessage: null as null | ((event: { data: { type: string; msgId?: string } }) => void)
-    },
-    // 可变窗口 label，便于按用例切换 home / message（独立聊天窗口）进行回归
-    windowLabelRef: { value: 'home' },
-    // 系统通知权限门：发送路径在派发前调用 canSendSystemNotification → isPermissionGranted
-    isPermissionGrantedMock: vi.fn(),
-    sessionStoreMock: {
-      sessionList: [],
-      sessionOptions: {},
-      syncLoading: false,
-      getSession: vi.fn(() => undefined),
-      getSessionList: vi.fn(() => []),
-      updateSession: vi.fn(),
-      updateSessionLastActiveTime: vi.fn(),
-      setUnreadCount: vi.fn(),
-      markSessionRead: vi.fn(),
-      updateTotalUnreadCount: vi.fn(),
-      requestUnreadCountUpdate: vi.fn(),
-      clearUnreadCount: vi.fn(),
-      getGroupSessions: vi.fn(() => []),
-      resetSessionSelection: vi.fn(),
-      addSession: vi.fn(),
-      removeSession: vi.fn()
-    }
-  }))
+const {
+  globalStoreMock,
+  timerWorkerMock,
+  messageHandlerRef,
+  sessionStoreMock,
+  windowLabelRef,
+  groupUserRef,
+  isPermissionGrantedMock
+} = vi.hoisted(() => ({
+  globalStoreMock: {
+    currentSessionRoomId: 'room-1',
+    currentSession: null as null | { type?: number }
+  },
+  // 群成员信息解析结果，决定桌面通知标题/头像的来源（null 表示群缓存冷，回退到消息自带发送者）
+  groupUserRef: { value: null as null | { name: string; avatar: string } },
+  timerWorkerMock: {
+    postMessage: vi.fn(),
+    onMessage: vi.fn((handler: (event: { type: string; msgId?: string }) => void) => {
+      messageHandlerRef.value = handler
+      return () => {}
+    }),
+    onError: vi.fn(),
+    release: vi.fn()
+  },
+  messageHandlerRef: { value: null as null | ((event: { type: string; msgId?: string }) => void) },
+  // 可变窗口 label，便于按用例切换 home / message（独立聊天窗口）进行回归
+  windowLabelRef: { value: 'home' },
+  // 系统通知权限门：发送路径在派发前调用 canSendSystemNotification → isPermissionGranted
+  isPermissionGrantedMock: vi.fn(),
+  sessionStoreMock: {
+    sessionList: [],
+    sessionOptions: {},
+    syncLoading: false,
+    getSession: vi.fn(() => undefined),
+    getSessionList: vi.fn(() => []),
+    updateSession: vi.fn(),
+    updateSessionLastActiveTime: vi.fn(),
+    setUnreadCount: vi.fn(),
+    markSessionRead: vi.fn(),
+    updateTotalUnreadCount: vi.fn(),
+    requestUnreadCountUpdate: vi.fn(),
+    clearUnreadCount: vi.fn(),
+    getGroupSessions: vi.fn(() => []),
+    resetSessionSelection: vi.fn(),
+    addSession: vi.fn(),
+    removeSession: vi.fn()
+  }
+}))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
@@ -185,8 +197,8 @@ describe('ChatMessageStore', () => {
     globalStoreMock.currentSessionRoomId = 'room-1'
     globalStoreMock.currentSession = null
     timerWorkerMock.postMessage.mockClear()
-    timerWorkerMock.terminate.mockClear()
-    timerWorkerMock.onmessage = null
+    timerWorkerMock.release.mockClear()
+    messageHandlerRef.value = null
   })
 
   it('should return message index based on sorted message keys', async () => {
@@ -339,14 +351,12 @@ describe('ChatMessageStore', () => {
       msg: createMessage('50')
     })
 
-    timerWorkerMock.onmessage?.({
-      data: {
-        type: 'allTimersCompleted'
-      }
+    messageHandlerRef.value?.({
+      type: 'allTimersCompleted'
     })
 
     expect(store.getRecalledMessage('50')).toBeDefined()
-    expect(timerWorkerMock.terminate).not.toHaveBeenCalled()
+    expect(timerWorkerMock.release).not.toHaveBeenCalled()
   })
 
   it('should update message in another room without passing roomId', async () => {

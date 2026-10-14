@@ -13,22 +13,19 @@ const logger = createLogger('RecallManager')
 export function createRecallManager() {
   const recalledMessages = reactive<Record<string, RecalledMessage>>({})
   const expirationTimers: Record<string, boolean> = {}
-  let timerWorkerListenerAttached = false
+  let unsubscribeTimerWorker: (() => void) | null = null
 
   const ensureTimerWorkerListener = () => {
-    if (timerWorkerListenerAttached) return
-    timerWorkerListenerAttached = true
-    getTimerWorker().onmessage = (e) => {
-      const { type, msgId } = e.data
-
-      if (type === 'timeout') {
-        logger.debug(`消息ID: ${msgId} 已过期`)
-        delete recalledMessages[msgId]
-        delete expirationTimers[msgId]
-      } else if (type === 'allTimersCompleted') {
+    if (unsubscribeTimerWorker) return
+    unsubscribeTimerWorker = getTimerWorker().onMessage((event) => {
+      if (event.type === 'timeout') {
+        logger.debug(`消息ID: ${event.msgId} 已过期`)
+        delete recalledMessages[event.msgId]
+        delete expirationTimers[event.msgId]
+      } else if (event.type === 'allTimersCompleted') {
         logger.debug('撤回消息计时器已全部结束')
       }
-    }
+    })
   }
 
   const recordRecallMsg = (data: { messageId: string; content: string; originalType: number; isSelf: boolean }) => {

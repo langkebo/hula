@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockPostMessage = vi.fn()
+let capturedHandler: ((event: { type: string; msgId?: string }) => void) | null = null
+const mockOnMessage = vi.fn((handler: (event: { type: string; msgId?: string }) => void) => {
+  capturedHandler = handler
+  return () => {}
+})
 const mockWorker = {
   postMessage: mockPostMessage,
-  onmessage: null as ((e: { data: Record<string, unknown> }) => void) | null
+  onMessage: mockOnMessage
 }
 
 vi.mock('../timerWorker', () => ({
@@ -33,7 +38,7 @@ import { RECALL_EXPIRATION_TIME } from '../types'
 describe('recallManager', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockWorker.onmessage = null
+    capturedHandler = null
   })
 
   it('creates manager with empty state', () => {
@@ -138,10 +143,8 @@ describe('recallManager', () => {
     const manager = createRecallManager()
     manager.recordRecallMsg({ messageId: 'msg1', content: 'test', originalType: 1, isSelf: true })
 
-    // Simulate the timer worker firing a timeout
-    if (mockWorker.onmessage) {
-      mockWorker.onmessage({ data: { type: 'timeout', msgId: 'msg1' } })
-    }
+    // 模拟宿主把 worker 的 timeout 路由回本 channel（msgId 已还原）
+    capturedHandler?.({ type: 'timeout', msgId: 'msg1' })
 
     expect(manager.getRecalledMessage('msg1')).toBeUndefined()
   })
