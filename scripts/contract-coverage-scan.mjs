@@ -33,13 +33,18 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(__dirname, '..')
 const servicesRoot = path.join(projectRoot, 'src', 'services')
-const outFile = path.join(projectRoot, 'scripts', 'contract-coverage-map.json')
+const DEFAULT_OUT_FILE = path.join(projectRoot, 'scripts', 'contract-coverage-map.json')
 
 const args = process.argv.slice(2)
 const argSet = new Set(args)
 const checkMode = argSet.has('--check')
 const ledgerOverrideIdx = args.indexOf('--ledger')
 const ledgerOverride = ledgerOverrideIdx >= 0 ? args[ledgerOverrideIdx + 1] : null
+// 输出路径可覆盖：门禁（`contract-codegen-check.mjs`）必须写**临时文件**再比对，
+// 否则每次跑门禁都会把提交进仓的 map 就地重写（只有 `generatedAt` 变），
+// 于是 `check:release` 每跑一次工作区就脏一次 —— 那是纯噪声，还会诱导人提交时间戳 churn。
+const outOverrideIdx = args.indexOf('--out')
+const outFile = outOverrideIdx >= 0 ? path.resolve(args[outOverrideIdx + 1]) : DEFAULT_OUT_FILE
 const DEFAULT_LEDGER_PATH = path.resolve(
   projectRoot,
   '..',

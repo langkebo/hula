@@ -22,7 +22,8 @@
  *   node scripts/contract-codegen-check.mjs
  */
 
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -60,23 +61,29 @@ async function main() {
     process.exit(1)
   }
 
-  const result = spawnSync(process.execPath, [scanScript], {
-    cwd: projectRoot,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8'
-  })
-  if (result.status !== 0) {
-    process.stderr.write(result.stderr ?? '')
-    console.error('[contract-codegen-check] FAIL — contract coverage scan exited non-zero')
-    process.exit(2)
-  }
+  // 扫描到**临时文件**再比对，绝不就地把提交进仓的 map 重写：否则每跑一次门禁
+  // 只有 `generatedAt` 变、工作区就脏一次，`check:release` 会天天制造时间戳噪声。
+  const scratchDir = await mkdtemp(path.join(tmpdir(), 'tjg-contract-coverage-'))
+  const scratchMap = path.join(scratchDir, 'contract-coverage-map.json')
 
   let regenerated
   try {
-    regenerated = JSON.parse(await readFile(mapPath, 'utf8'))
+    const result = spawnSync(process.execPath, [scanScript, '--out', scratchMap], {
+      cwd: projectRoot,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8'
+    })
+    if (result.status !== 0) {
+      process.stderr.write(result.stderr ?? '')
+      console.error('[contract-codegen-check] FAIL — contract coverage scan exited non-zero')
+      process.exit(2)
+    }
+    regenerated = JSON.parse(await readFile(scratchMap, 'utf8'))
   } catch (err) {
     console.error(`[contract-codegen-check] FAIL — could not read regenerated map: ${err.message}`)
     process.exit(2)
+  } finally {
+    await rm(scratchDir, { recursive: true, force: true })
   }
 
   const a = normalize(committed)
