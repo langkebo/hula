@@ -26,6 +26,7 @@
  */
 
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { realpathSync as fsRealpathSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -54,21 +55,35 @@ const SKIP_PATTERN = /(^|\/)__tests__(\/|$)|\.test\.ts$|\.spec\.ts$|\.d\.ts$/
 /**
  * Tokens whose presence in a file marks it as a contract-touching service.
  * Used for the call-site census; URL extraction is handled separately.
+ *
+ * ⚠️ 这张表必须与**代码里真正在用的辅助函数名**同步：实测漏了 `postMatrixJson`
+ * 与 `authedRequestWith*`，于是 `auth/` 域的裸调在普查里只记了 1 次（实际 8+ 次）。
+ * `tests/lint/contract-coverage-scan.test.ts` 用「仓库里真实出现过的调用名」反向校验本表，
+ * 防止再次漂移。
  */
-const CALL_PROBES = [
+export const CALL_PROBES = [
   { kind: 'sdk', pattern: /matrixClientService\.getClient\(\)/g },
   { kind: 'sdk', pattern: /matrixSdkBridge\./g },
   { kind: 'http', pattern: /runtimeFetch\s*\(/g },
+  { kind: 'http', pattern: /getRuntimeAwareFetch\s*\(\s*\)\s*\(/g },
   { kind: 'http', pattern: /HttpClient\.(?:get|post|put|delete|patch)\s*\(/g },
   { kind: 'http', pattern: /\bapiRequest\s*\(/g },
+  { kind: 'http', pattern: /\bpost(?:Matrix)?Json\s*(?:<[^<>()]{0,120}>)?\s*\(/g },
+  { kind: 'http', pattern: /\bauthedRequestWith(?:Path|Prefix)\s*(?:<[^<>()]{0,120}>)?\s*\(/g },
   { kind: 'tauri', pattern: /\binvoke\s*\(/g }
 ]
 
 /**
  * URL-literal extractors. Each captures the path-like first argument; the
  * matched group is passed through `normalizeUrlLiteral` before ledger lookup.
+ *
+ * ⚠️ 已知边界（**不是 bug，是设计边界**，勿照"能匹配更多"改）：
+ * `authedRequestWithPath<T>(client, 'GET', '/register/captcha/status')` 的路径在
+ * **第 3 个参数**且是**相对 SDK 前缀**的，本文件的命名空间过滤（必须 `/_matrix|/_synapse`）
+ * 天然不收录这类值 —— 它们出现在 `callCount`（普查）里，不出现在 `urlCount`（字面量）里。
+ * 硬套一个前缀假设会把这个 artifact 变成猜的，不如保持边界清晰。
  */
-const URL_EXTRACTORS = [
+export const URL_EXTRACTORS = [
   // apiRequest('/path', ...)  /  apiRequest("/path", ...)
   /\bapiRequest\s*\(\s*(['"])([^'"]+)\1/g,
   // apiRequest(`/path/${x}/more`, ...)
@@ -77,9 +92,15 @@ const URL_EXTRACTORS = [
   /\bruntimeFetch\s*\(\s*(['"])([^'"]+)\1/g,
   // runtimeFetch(`/path/${x}`, ...)
   /\bruntimeFetch\s*\(\s*`([^`]+)`/g,
+  // getRuntimeAwareFetch()('/path', ...)
+  /\bgetRuntimeAwareFetch\s*\(\s*\)\s*\(\s*(['"])([^'"]+)\1/g,
+  /\bgetRuntimeAwareFetch\s*\(\s*\)\s*\(\s*`([^`]+)`/g,
   // HttpClient.get('/path', ...)
   /\bHttpClient\.(?:get|post|put|delete|patch)\s*\(\s*(['"])([^'"]+)\1/g,
-  /\bHttpClient\.(?:get|post|put|delete|patch)\s*\(\s*`([^`]+)`/g
+  /\bHttpClient\.(?:get|post|put|delete|patch)\s*\(\s*`([^`]+)`/g,
+  // postMatrixJson<T>('/path', ...) / postJson<T>(`${PREFIX_V3}/path`, ...)
+  /\bpost(?:Matrix)?Json\s*(?:<[^<>()]{0,120}>)?\s*\(\s*(['"])([^'"]+)\1/g,
+  /\bpost(?:Matrix)?Json\s*(?:<[^<>()]{0,120}>)?\s*\(\s*`([^`]+)`/g
 ]
 
 async function* walk(dir) {
@@ -113,11 +134,46 @@ function classify(text) {
 }
 
 /**
+ * 收集「简单字符串常量」：`const NAME = '<literal>'` / `export const NAME = "<literal>"`。
+ *
+ * 为什么需要：扫描面里大量裸调写成 `` `${PREFIX_V3}/register/captcha/send` ``（实测 35 处），
+ * 而 `normalizeUrlLiteral` 会把插值替换成 `{PREFIX_V3}`，随后「从第一个 `/` 切片」得到
+ * `/register/captcha/send` —— **不匹配 `^/(_matrix|_synapse|\.well-known)` 命名空间过滤 ⇒ 整条被丢弃**。
+ * 结果是 map 报 `totalUrls: 0`，看起来「已经没有裸调」，实际是**检测盲区**。
+ * （这与本函数上方注释自述的意图矛盾：注释说会保留 "a template with such a segment"。）
+ *
+ * 只收**字面量赋值**；计算值/跨文件再导出的一律不收（收不到就退回原行为，不会更差）。
+ */
+export function collectStringConsts(text, into = new Map()) {
+  const re = /(?:^|\n)\s*(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*=\s*(['"])([^'"\n]*)\2/g
+  let m
+  while ((m = re.exec(text)) !== null) into.set(m[1], m[3])
+  return into
+}
+
+/**
+ * 把模板里的 `${IDENT}` 就地替换为常量字面量（最多迭代 3 轮，支持
+ * `const A = '/x'; const B = \`${A}/y\`` 这类一层引用）。查不到的标识符原样保留，
+ * 交给 `normalizeUrlLiteral` 的后备逻辑（从第一个 `/` 切片）。
+ */
+export function expandConsts(raw, consts) {
+  let out = raw
+  for (let i = 0; i < 3; i += 1) {
+    const next = out.replace(/\$\{([A-Za-z_$][\w$]*)\}/g, (whole, name) =>
+      consts.has(name) ? consts.get(name) : whole
+    )
+    if (next === out) break
+    out = next
+  }
+  return out
+}
+
+/**
  * Extracts ledger-eligible URL literals from a file's source. Strings that
  * don't look like Matrix/Synapse paths (no leading `/_matrix`, `/_synapse`,
  * or a template with such a segment) are dropped to keep the output tight.
  */
-function extractUrls(text) {
+export function extractUrls(text, consts = new Map()) {
   const found = new Set()
   for (const re of URL_EXTRACTORS) {
     re.lastIndex = 0
@@ -125,7 +181,7 @@ function extractUrls(text) {
     while ((m = re.exec(text)) !== null) {
       const raw = m[2] ?? m[1]
       if (!raw) continue
-      const normalized = normalizeUrlLiteral(raw)
+      const normalized = normalizeUrlLiteral(raw, consts)
       if (!normalized) continue
       found.add(normalized)
     }
@@ -133,9 +189,11 @@ function extractUrls(text) {
   return [...found]
 }
 
-function normalizeUrlLiteral(raw) {
+export function normalizeUrlLiteral(raw, consts = new Map()) {
+  // 先解析常量前缀（`${PREFIX_V3}/x` → `/_matrix/client/v3/x`），再处理运行时插值。
+  const resolved = consts.size > 0 ? expandConsts(raw, consts) : raw
   // Template interpolations → {name}; anonymous interpolations → {param}.
-  const templated = raw.replace(/\$\{([^}]+)\}/g, (_, expr) => {
+  const templated = resolved.replace(/\$\{([^}]+)\}/g, (_, expr) => {
     const ident = expr.trim().match(/^[A-Za-z_$][\w$]*$/)
     return ident ? `{${ident[0]}}` : '{param}'
   })
@@ -183,11 +241,18 @@ async function main() {
   const urlHitCount = new Map()
   const unmatchedUrls = new Map()
 
+  // 预扫描一遍，收全仓「简单字符串常量」（前缀常量集中定义在
+  // `src/services/matrix/paths/prefixes.ts`，但使用点在其它文件 ⇒ 必须全仓收集）。
+  const consts = new Map()
+  for await (const file of walk(servicesRoot)) {
+    collectStringConsts(await readFile(file, 'utf8'), consts)
+  }
+
   for await (const file of walk(servicesRoot)) {
     scanned++
     const text = await readFile(file, 'utf8')
     const hits = classify(text)
-    const urls = extractUrls(text)
+    const urls = extractUrls(text, consts)
     if (hits.length === 0 && urls.length === 0) continue
 
     const ledgerRoutes = []
@@ -262,8 +327,22 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error('[contract-coverage] unexpected error', err)
-  process.exit(2)
-})
+// 入口守卫（本仓门禁脚本惯例）：被 tests/lint/ 导入时不得执行扫描本体。
+// 两侧都用 realpath 解析 —— 只比字符串时，经符号链接调用会被误判成「非直接执行」而**静默不跑**。
+function isDirectRun() {
+  const entry = process.argv[1]
+  if (!entry) return true
+  try {
+    return fsRealpathSync.native(entry) === fsRealpathSync.native(fileURLToPath(import.meta.url))
+  } catch {
+    return true
+  }
+}
+
+if (isDirectRun()) {
+  main().catch((err) => {
+    console.error('[contract-coverage] unexpected error', err)
+    process.exit(2)
+  })
+}
 
