@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 /**
  * 消息加密信任状态徽章
@@ -115,12 +116,14 @@ const emit = defineEmits<{
   (e: 'verify'): void
 }>()
 
+const { t } = useI18n()
+
 const label = computed(() => {
   if (props.label) return props.label
-  const labels = {
-    verified: 'E2E 已验证',
-    unverified: '未验证',
-    risk: '存在风险'
+  const labels: Record<TrustLevel, string> = {
+    verified: t('components.messageLockBadge.verified'),
+    unverified: t('components.messageLockBadge.unverified'),
+    risk: t('components.messageLockBadge.risk')
   }
   return labels[props.trustLevel]
 })

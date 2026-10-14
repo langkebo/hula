@@ -55,5 +55,17 @@
     "unencryptedTooltip": "当前会话未启用端到端加密，传输链路外的服务可能可见消息内容。",
     "unknownTooltip": "正在确认当前会话的加密能力，请稍后查看最终状态。",
     "errorTooltip": "读取当前会话加密状态失败，请检查网络或重新进入会话。"
+  },
+  "messageLockBadge": {
+    "verified": "E2E 已验证",
+    "unverified": "未验证",
+    "risk": "存在风险"
+  },
+  "syncStatusBar": {
+    "retry": "重试",
+    "reconnect_detail": "（第 {count} 次）",
+    "progress_detail": "（{progress}%）",
+    "aria_reconnecting": "{base}，第 {count} 次尝试",
+    "aria_progress": "{base}，同步进度 {progress}%"
   }
 }

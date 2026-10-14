@@ -244,7 +244,7 @@ const fileContextMenu = computed<OPT.RightMenu<FileItem>[]>(() => [
           await saveFileAttachmentAs(saveParams)
         }
       } catch (error) {
-        logger.error('文件另存为失败:', error)
+        logger.error('Failed to save file as:', error)
       }
     }
   }
@@ -258,7 +258,7 @@ const handleFileMenuSelect = async (menuItem: OPT.RightMenu<FileItem>, file: Fil
   try {
     await menuItem.click(file)
   } catch (error) {
-    logger.error('执行文件菜单操作失败:', error)
+    logger.error('Failed to execute file menu action:', error)
   }
 }
 

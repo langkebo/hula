@@ -370,7 +370,7 @@ async function openEditDialog(flag: AdminFeatureFlag, event?: MouseEvent) {
     }
     showFormDialog.value = true
   } catch (err) {
-    logger.error('加载特性标志详情失败:', err)
+    logger.error('Failed to load feature flag detail:', err)
     showFeedback(t('admin.feature_flags.load_detail_failed'), 'error')
   }
 }
@@ -405,7 +405,7 @@ async function handleSubmit() {
     )
     showFormDialog.value = false
   } catch (err) {
-    logger.error('保存特性标志失败:', err)
+    logger.error('Failed to save feature flag:', err)
     showFeedback(
       isEditing.value ? t('admin.feature_flags.update_failed') : t('admin.feature_flags.create_failed'),
       'error'
@@ -418,7 +418,7 @@ async function handleDelete(flagKey: string) {
     await maintenance.deleteFeatureFlag(flagKey)
     showFeedback(t('admin.feature_flags.delete_success'), 'success')
   } catch (err) {
-    logger.error('删除特性标志失败:', err)
+    logger.error('Failed to delete feature flag:', err)
     showFeedback(t('admin.feature_flags.delete_failed'), 'error')
   }
 }
@@ -427,7 +427,7 @@ async function loadData() {
   try {
     await maintenance.loadFeatureFlags()
   } catch (err) {
-    logger.error('加载特性标志失败:', err)
+    logger.error('Failed to load feature flags:', err)
     showFeedback(t('admin.feature_flags.load_failed'), 'error')
   }
 }

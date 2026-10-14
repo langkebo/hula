@@ -55,3 +55,14 @@ export function mapUserStateToPresence(state: Pick<UserState, 'id' | 'title'>): 
 
   return 'unavailable'
 }
+
+/**
+ * 判断自定义状态标题是否表达「忙碌」。
+ *
+ * 标题来自服务端下发的用户自定义状态文案（中/英文），属于数据匹配字面量而非展示文案，
+ * 无法走 i18n；集中于此避免散落在 `.vue` 中抬高中文硬编码 ratchet。
+ */
+export function isBusyUserStateTitle(title: string): boolean {
+  const normalized = title.trim().toLowerCase()
+  return normalized.includes('busy') || normalized.includes('忙碌')
+}

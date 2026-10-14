@@ -183,7 +183,7 @@ const loadAnnouncements = async () => {
       })
     }
   } catch (err) {
-    logger.error(`加载公告失败: ${err}`)
+    logger.error(`Failed to load announcements: ${err}`)
   } finally {
     loading.value = false
   }
@@ -243,7 +243,7 @@ const handlePublish = async () => {
       topAnnouncement: topItem || null
     })
   } catch (err) {
-    logger.error(`发布公告失败: ${err}`)
+    logger.error(`Failed to publish announcement: ${err}`)
     showFeedback(editingId.value ? t('announcement.toast.editFail') : t('announcement.toast.createFail'), 'error')
   } finally {
     publishing.value = false
@@ -265,7 +265,7 @@ const handleDelete = async (item: Announcement) => {
       topAnnouncement: topItem || null
     })
   } catch (err) {
-    logger.error(`删除公告失败: ${err}`)
+    logger.error(`Failed to delete announcement: ${err}`)
   }
 }
 

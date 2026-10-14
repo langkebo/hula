@@ -244,7 +244,7 @@ async function handleSubmitAddWidget() {
     await formRef.value?.validate()
     emit('add-widget', { name: formData.name, type: formData.type, url: formData.url })
   } catch (error) {
-    logger.error('[WidgetDialogs] 添加 Widget 表单验证失败:', error)
+    logger.error('[WidgetDialogs] Failed to validate add widget form:', error)
   }
 }
 

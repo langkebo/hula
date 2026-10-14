@@ -163,7 +163,7 @@ async function loadAuditLogs() {
       ...(filterType.value ? { type: filterType.value } : {})
     })
   } catch (err) {
-    logger.error('加载审计日志失败:', err)
+    logger.error('Failed to load audit logs:', err)
   }
 }
 
@@ -217,7 +217,7 @@ function exportCsv() {
     triggerDownload(lines.join('\n'), `audit-logs-${ts}.csv`, 'text/csv;charset=utf-8;')
     showFeedback(t('admin.audit.export_success'), 'success')
   } catch (err) {
-    logger.error('导出 CSV 失败:', err)
+    logger.error('Failed to export CSV:', err)
     showFeedback(t('admin.audit.export_failed'), 'error')
   }
 }
@@ -238,7 +238,7 @@ function exportJson() {
     triggerDownload(JSON.stringify(payload, null, 2), `audit-logs-${ts}.json`, 'application/json;charset=utf-8;')
     showFeedback(t('admin.audit.export_success'), 'success')
   } catch (err) {
-    logger.error('导出 JSON 失败:', err)
+    logger.error('Failed to export JSON:', err)
     showFeedback(t('admin.audit.export_failed'), 'error')
   }
 }

@@ -33,5 +33,11 @@
   "hours_ago": "{hours}h ago",
   "days_ago": "{days}d ago",
   "billion": "B",
-  "ten_thousand": "K"
+  "ten_thousand": "K",
+  "tags": {
+    "ai": "AI",
+    "tech": "Tech",
+    "finance": "Finance",
+    "entertainment": "Entertainment"
+  }
 }

@@ -145,7 +145,7 @@ async function loadWidgetConfig() {
     const result = await matrixWidgetService.getWidgetConfig(props.widget.id, false)
     widgetConfig.value = result ?? {}
   } catch (e) {
-    logger.error('加载Widget配置失败', e)
+    logger.error('Failed to load widget config', e)
     widgetConfig.value = {}
   } finally {
     configLoading.value = false
@@ -163,7 +163,7 @@ async function loadCapabilities() {
     const result = await matrixWidgetService.getWidgetCapabilities(props.roomId, props.widget.id, false)
     capabilities.value = result?.capabilities ?? []
   } catch (e) {
-    logger.error('加载Widget能力失败', e)
+    logger.error('Failed to load widget capabilities', e)
     capabilities.value = []
   } finally {
     capabilitiesLoading.value = false
@@ -199,7 +199,7 @@ async function loadSessions() {
       sessions.value = []
     }
   } catch (e) {
-    logger.error('加载Widget会话失败', e)
+    logger.error('Failed to load widget sessions', e)
     sessions.value = []
   } finally {
     sessionsLoading.value = false
@@ -216,7 +216,7 @@ async function handleTerminateSession(sessionId: string) {
       showFeedback(t('common.widget.session_terminate_failed'), 'error')
     }
   } catch (e) {
-    logger.error('终止Widget会话失败', e)
+    logger.error('Failed to terminate widget session', e)
     showFeedback(t('common.widget.session_terminate_failed'), 'error')
   }
 }

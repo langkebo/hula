@@ -391,13 +391,13 @@ onMounted(async () => {
   // 监听 home 窗口的关闭事件
   if (appWindow.label === 'home') {
     appWindow.onCloseRequested((event) => {
-      logger.info('[ActionBar]监听[home]窗口关闭事件')
+      logger.info('[ActionBar] Listening for [home] window close event')
       if (isProgrammaticClose) {
         // 清理监听器
-        logger.info('[ActionBar]清理[home]窗口的监听器')
+        logger.info('[ActionBar] Cleaning up [home] window listener')
         exit(0)
       }
-      logger.info('[ActionBar]阻止[home]窗口关闭事件')
+      logger.info('[ActionBar] Preventing [home] window close event')
       event.preventDefault()
       appWindow.hide()
     })

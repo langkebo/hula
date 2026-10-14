@@ -132,7 +132,7 @@ async function loadData() {
   try {
     await retention.loadAll()
   } catch (err) {
-    logger.error('加载保留策略失败:', err)
+    logger.error('Failed to load retention policy:', err)
   }
 }
 
@@ -147,7 +147,7 @@ async function savePolicy() {
     showFeedback(t('admin.retention.save_success'), 'success')
     editVisible.value = false
   } catch (err) {
-    logger.error('保存保留策略失败:', err)
+    logger.error('Failed to save retention policy:', err)
     showFeedback(t('admin.retention.save_failed'), 'error')
   } finally {
     saveLoading.value = false
@@ -159,7 +159,7 @@ async function deletePolicy(roomId: string) {
     await retention.deletePolicy(roomId)
     showFeedback(t('admin.retention.delete_success'), 'success')
   } catch (err) {
-    logger.error('删除保留策略失败:', err)
+    logger.error('Failed to delete retention policy:', err)
     showFeedback(t('admin.retention.delete_failed'), 'error')
   }
 }
@@ -169,7 +169,7 @@ async function handleRunTask() {
     await retention.runTask()
     showFeedback(t('admin.retention.task_started'), 'success')
   } catch (err) {
-    logger.error('启动保留任务失败:', err)
+    logger.error('Failed to start retention task:', err)
     showFeedback(t('admin.retention.task_failed'), 'error')
   }
 }

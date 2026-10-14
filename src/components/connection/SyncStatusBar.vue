@@ -24,16 +24,16 @@
       <div class="sync-status-bar__text">
         <span class="sync-status-bar__label">{{ statusLabel }}</span>
         <span v-if="reconnectCount > 0 && connectionState === CS.RECONNECTING" class="sync-status-bar__detail">
-          （第 {{ reconnectCount }} 次）
+          {{ t('components.syncStatusBar.reconnect_detail', { count: reconnectCount }) }}
         </span>
         <span v-if="syncProgress && connectionState === CS.CATCHUP" class="sync-status-bar__detail">
-          （{{ syncProgress }}%）
+          {{ t('components.syncStatusBar.progress_detail', { progress: syncProgress }) }}
         </span>
       </div>
 
       <!-- 重试按钮（错误状态） -->
       <n-button v-if="connectionState === CS.ERROR" size="tiny" secondary :disabled="isRetrying" @click="handleRetry">
-        重试
+        {{ t('components.syncStatusBar.retry') }}
       </n-button>
     </div>
   </Transition>
@@ -151,10 +151,10 @@ const statusLabel = computed(() => {
 const ariaLabel = computed(() => {
   const base = statusLabel.value
   if (props.reconnectCount > 0 && props.connectionState === CS.RECONNECTING) {
-    return `${base}，第 ${props.reconnectCount} 次尝试`
+    return t('components.syncStatusBar.aria_reconnecting', { base, count: props.reconnectCount })
   }
   if (props.syncProgress !== null && props.connectionState === CS.CATCHUP) {
-    return `${base}，同步进度 ${props.syncProgress}%`
+    return t('components.syncStatusBar.aria_progress', { base, progress: props.syncProgress })
   }
   return base
 })

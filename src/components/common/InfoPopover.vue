@@ -181,9 +181,23 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { padZero } from '@/utils/StringUtils'
 import { toLocalpart } from '@/utils/userIdentity'
-import { mapUserStateToPresence } from '@/utils/userStatus'
+import { isBusyUserStateTitle, mapUserStateToPresence } from '@/utils/userStatus'
 
 type PresenceKey = 'online' | 'away' | 'busy' | 'offline'
+
+type ConstellationKey =
+  | 'capricorn'
+  | 'aquarius'
+  | 'pisces'
+  | 'aries'
+  | 'taurus'
+  | 'gemini'
+  | 'cancer'
+  | 'leo'
+  | 'virgo'
+  | 'libra'
+  | 'scorpio'
+  | 'sagittarius'
 
 type FetchedProfile = {
   displayName?: string | null
@@ -300,8 +314,7 @@ const presenceKey = computed<PresenceKey>(() => {
   if (userStateId && userStateId !== '1') {
     const state = stateList.value.find((s: { id: string }) => s.id === userStateId)
     if (state) {
-      const title = (state.title || '').toLowerCase()
-      if (title.includes('busy') || title.includes('忙碌')) return 'busy'
+      if (isBusyUserStateTitle(state.title || '')) return 'busy'
       const mapped = mapUserStateToPresence(state)
       if (mapped === 'unavailable') return 'away'
       if (mapped === 'online') return 'online'
@@ -410,11 +423,11 @@ const birthdayDisplay = computed(() => {
   }
   if (f.displayAge && valid) {
     const age = computeAge(d)
-    if (age != null) segs.push(`${age}岁`)
+    if (age != null) segs.push(t('home.profile_card.labels.age', { age }))
   }
   if (f.displayConstellation && valid) {
     const c = computeConstellation(d)
-    if (c) segs.push(c)
+    if (c) segs.push(constellationLabel(c))
   }
   // 没有任何展示开关时，至少展示日期（用户已设置生日）
   if (segs.length === 0 && valid) {
@@ -443,28 +456,58 @@ function computeAge(d: Date): number | null {
   return age >= 0 && age < 150 ? age : null
 }
 
-function computeConstellation(d: Date): string | null {
+function computeConstellation(d: Date): ConstellationKey | null {
   const month = d.getMonth() + 1
   const day = d.getDate()
-  const table: [number, number, string][] = [
-    [1, 19, '摩羯座'],
-    [2, 18, '水瓶座'],
-    [3, 20, '双鱼座'],
-    [4, 19, '白羊座'],
-    [5, 20, '金牛座'],
-    [6, 21, '双子座'],
-    [7, 22, '巨蟹座'],
-    [8, 22, '狮子座'],
-    [9, 22, '处女座'],
-    [10, 23, '天秤座'],
-    [11, 22, '天蝎座'],
-    [12, 21, '射手座'],
-    [12, 31, '摩羯座']
+  const table: [number, number, ConstellationKey][] = [
+    [1, 19, 'capricorn'],
+    [2, 18, 'aquarius'],
+    [3, 20, 'pisces'],
+    [4, 19, 'aries'],
+    [5, 20, 'taurus'],
+    [6, 21, 'gemini'],
+    [7, 22, 'cancer'],
+    [8, 22, 'leo'],
+    [9, 22, 'virgo'],
+    [10, 23, 'libra'],
+    [11, 22, 'scorpio'],
+    [12, 21, 'sagittarius'],
+    [12, 31, 'capricorn']
   ]
-  for (const [m, lastDay, name] of table) {
-    if (month === m && day <= lastDay) return name
+  for (const [m, lastDay, key] of table) {
+    if (month === m && day <= lastDay) return key
   }
   return null
+}
+
+/** 星座本地化文案（静态键 switch，避免动态 key 绕过 i18n 引用守卫） */
+function constellationLabel(key: ConstellationKey): string {
+  switch (key) {
+    case 'capricorn':
+      return t('home.profile_card.constellations.capricorn')
+    case 'aquarius':
+      return t('home.profile_card.constellations.aquarius')
+    case 'pisces':
+      return t('home.profile_card.constellations.pisces')
+    case 'aries':
+      return t('home.profile_card.constellations.aries')
+    case 'taurus':
+      return t('home.profile_card.constellations.taurus')
+    case 'gemini':
+      return t('home.profile_card.constellations.gemini')
+    case 'cancer':
+      return t('home.profile_card.constellations.cancer')
+    case 'leo':
+      return t('home.profile_card.constellations.leo')
+    case 'virgo':
+      return t('home.profile_card.constellations.virgo')
+    case 'libra':
+      return t('home.profile_card.constellations.libra')
+    case 'scorpio':
+      return t('home.profile_card.constellations.scorpio')
+    case 'sagittarius':
+      return t('home.profile_card.constellations.sagittarius')
+  }
 }
 
 /* ----------------------------- 是否为好友 / 操作 ----------------------------- */

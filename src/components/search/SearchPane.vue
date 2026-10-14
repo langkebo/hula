@@ -265,7 +265,7 @@ const executeSpaceSearch = useDebounceFn(async (rawQuery: string) => {
     const result = await matrixSpaceService.searchSpaces(trimmed, 20)
     // 检查请求是否已被取消（过期）
     if (signal.aborted || myEpoch !== spaceRequestEpoch) {
-      logger.debug(`[SearchPane] 空间搜索请求已被取消，丢弃结果: "${trimmed}"`)
+      logger.debug(`[SearchPane] Space search request was cancelled, discarding result: "${trimmed}"`)
       return
     }
     spaces.value = result

@@ -99,9 +99,10 @@ const TabErrorFallback = defineComponent({
     tabKey: { type: String, required: false, default: '' }
   },
   setup(props) {
+    const { t } = useI18n()
     const message = computed(() => {
       const err = props.error
-      return err?.message || String(err ?? '') || '组件运行时异常，请查看控制台获取堆栈。'
+      return err?.message || String(err ?? '') || t('setting.dialog.tab_runtime_error')
     })
     return () =>
       h(
@@ -111,7 +112,10 @@ const TabErrorFallback = defineComponent({
           style:
             'padding:24px;color:var(--tjg-color-danger-600);font-size:13px;line-height:1.6;display:flex;flex-direction:column;gap:8px'
         },
-        [h('strong', { style: 'font-size:14px' }, `「${props.tabKey}」设置页加载失败`), h('span', {}, message.value)]
+        [
+          h('strong', { style: 'font-size:14px' }, t('setting.dialog.tab_load_failed', { tab: props.tabKey })),
+          h('span', {}, message.value)
+        ]
       )
   }
 })
@@ -152,7 +156,8 @@ const renderError = ref<{ tab: SettingsTabType; error: Error } | null>(null)
 function captureRenderError(tab: SettingsTabType, err: unknown) {
   // 防止 onError / onErrorCaptured 互相级联触发导致同 tab 多次重渲染
   if (renderError.value?.tab === tab) return
-  const wrapped = err instanceof Error ? err : new Error(typeof err === 'string' ? err : '组件渲染时发生未知异常')
+  const wrapped =
+    err instanceof Error ? err : new Error(typeof err === 'string' ? err : t('setting.dialog.tab_render_error'))
   renderError.value = { tab, error: wrapped }
 }
 

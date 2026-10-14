@@ -161,7 +161,11 @@
     "replay_success_rate": "Replay Success Rate",
     "retry_rate": "Retry Rate",
     "retry_rate_abnormal_title": "Retry Rate Abnormal",
-    "retry_rate_abnormal_desc": "Network instability detected, current retry rate is {rate}%"
+    "retry_rate_abnormal_desc": "Network instability detected, current retry rate is {rate}%",
+    "extension_degraded_title": "Extension Degraded",
+    "extension_degraded_desc": "{id}: degraded (feature falls back to REST API)",
+    "extension_ok_title": "Extensions Healthy",
+    "extension_ok_desc": "All critical extensions are registered"
   },
   "push": {
     "invite": {
@@ -346,7 +350,11 @@
     "leave_confirm": "Leave",
     "leave_cancel": "Keep Editing",
     "shell_error_title": "Settings failed to load",
+    "shell_error_default": "Settings shell error",
     "shell_retry": "Retry",
+    "tab_load_failed": "Failed to load \"{tab}\" settings page",
+    "tab_runtime_error": "Component runtime error. Check the console for the stack trace.",
+    "tab_render_error": "Unknown error while rendering the component",
     "tabs": {
       "account": "Account",
       "sessions": "Session Management",

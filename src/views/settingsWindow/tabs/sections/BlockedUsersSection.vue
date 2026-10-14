@@ -70,7 +70,7 @@ async function loadBlockedUsers() {
   try {
     policy.value = await matrixAccountService.getInvitePolicy()
   } catch (error) {
-    logger.warn('加载屏蔽名单失败:', error)
+    logger.warn('Failed to load block list:', error)
   } finally {
     loadingBlocked.value = false
   }
@@ -115,7 +115,7 @@ async function handleAddBlocked() {
     await updateBlocklist((current) => (current.includes(userId) ? current : [...current, userId]))
     showFeedback(t('setting.security.blocked_user_added'), 'success')
   } catch (error) {
-    logger.error('添加屏蔽用户失败:', error)
+    logger.error('Failed to add blocked user:', error)
     showFeedback(t('setting.security.operation_failed'), 'error')
   }
   return true
@@ -126,7 +126,7 @@ async function handleUnblock(userId: string) {
     await updateBlocklist((current) => current.filter((u) => u !== userId))
     showFeedback(t('setting.security.blocked_user_removed'), 'success')
   } catch (error) {
-    logger.error('取消屏蔽失败:', error)
+    logger.error('Failed to unblock user:', error)
     showFeedback(t('setting.security.operation_failed'), 'error')
   }
 }

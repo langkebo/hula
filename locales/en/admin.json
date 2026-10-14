@@ -444,7 +444,15 @@
   },
   "logs": {
     "title": "Server Logs",
-    "subtitle": "View server runtime logs"
+    "subtitle": "View server runtime logs",
+    "panel_notice": "This page has been switched to a server status panel, directly consuming the backend's implemented status, health, version and statistics APIs.",
+    "runtime_status": "Runtime Status",
+    "status": "Status",
+    "health_check": "Health Check",
+    "health_status": "Health Status",
+    "checks": "Checks",
+    "version_info": "Version Info",
+    "stats_info": "Statistics"
   },
   "federation_monitor": {
     "title": "Federation Monitor",
@@ -553,7 +561,9 @@
       "title": "Translation",
       "enabled": "Translation Enabled",
       "provider": "Translation Provider",
-      "target_language": "Target Language"
+      "target_language": "Target Language",
+      "lang_zh": "中文",
+      "lang_ja": "日本語"
     },
     "push": {
       "title": "Push Notifications",

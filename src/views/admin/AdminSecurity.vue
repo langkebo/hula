@@ -374,7 +374,7 @@ async function loadIpBlocks() {
     const result = await adminService.getIpBlocks()
     ipBlocks.value = result ?? []
   } catch (e) {
-    logger.error('加载IP封禁列表失败', e)
+    logger.error('Failed to load IP block list', e)
     ipBlocks.value = []
   } finally {
     ipBlocksLoading.value = false
@@ -402,7 +402,7 @@ async function handleBlockIp() {
       showFeedback(t('admin.security.block_failed'), 'error')
     }
   } catch (e) {
-    logger.error('封禁IP失败', e)
+    logger.error('Failed to block IP', e)
     showFeedback(t('admin.security.block_failed'), 'error')
   } finally {
     blockIpLoading.value = false
@@ -415,7 +415,7 @@ async function handleUnblockIp(ip: string) {
     showFeedback(t('admin.security.ip_unblocked'), 'success')
     await loadIpBlocks()
   } catch (e) {
-    logger.error('解封IP失败', e)
+    logger.error('Failed to unblock IP', e)
     showFeedback(t('admin.security.unblock_failed'), 'error')
   }
 }
@@ -481,7 +481,7 @@ async function loadSecurityEvents() {
     )
     securityEvents.value = result?.events ?? []
   } catch (e) {
-    logger.error('加载安全事件失败', e)
+    logger.error('Failed to load security events', e)
     securityEvents.value = []
   } finally {
     securityEventsLoading.value = false
@@ -533,7 +533,7 @@ async function loadLoginFailures() {
     const result = await adminService.getLoginFailures(100)
     loginFailures.value = result?.failures ?? []
   } catch (e) {
-    logger.error('加载登录失败记录失败', e)
+    logger.error('Failed to load login failures', e)
     loginFailures.value = []
   } finally {
     loginFailuresLoading.value = false
@@ -556,7 +556,7 @@ async function loadRegistrationPolicy() {
     else if (enabled) registrationPolicy.value = 'open'
     else registrationPolicy.value = 'closed'
   } catch (e) {
-    logger.error('加载注册策略失败', e)
+    logger.error('Failed to load registration policy', e)
   } finally {
     registrationLoading.value = false
   }
@@ -573,7 +573,7 @@ async function saveRegistrationPolicy() {
     })
     showFeedback(t('admin.security.registration_policy_saved'), 'success')
   } catch (e) {
-    logger.error('保存注册策略失败', e)
+    logger.error('Failed to save registration policy', e)
     showFeedback(t('admin.security.registration_policy_failed'), 'error')
   } finally {
     registrationSaving.value = false
@@ -600,7 +600,7 @@ async function loadFederationPolicy() {
     const allow = cfg?.federation_allow_list
     federationAllowList.value = Array.isArray(allow) ? (allow as string[]).join('\n') : ''
   } catch (e) {
-    logger.error('加载联邦策略失败', e)
+    logger.error('Failed to load federation policy', e)
   } finally {
     federationLoading.value = false
   }
@@ -638,7 +638,7 @@ async function saveFederationPolicy() {
     }
     showFeedback(t('admin.security.federation_policy_saved'), 'success')
   } catch (e) {
-    logger.error('保存联邦策略失败', e)
+    logger.error('Failed to save federation policy', e)
     showFeedback(t('admin.security.federation_policy_failed'), 'error')
   } finally {
     federationSaving.value = false
@@ -670,7 +670,7 @@ async function loadPasswordPolicy() {
     passwordPolicy.requireSymbol = Boolean(policy.require_symbol)
     passwordPolicy.expiryDays = Number(policy.expiry_days ?? 0)
   } catch (e) {
-    logger.error('加载密码策略失败', e)
+    logger.error('Failed to load password policy', e)
   } finally {
     passwordLoading.value = false
   }
@@ -691,7 +691,7 @@ async function savePasswordPolicy() {
     })
     showFeedback(t('admin.security.password_policy_saved'), 'success')
   } catch (e) {
-    logger.error('保存密码策略失败', e)
+    logger.error('Failed to save password policy', e)
     showFeedback(t('admin.security.password_policy_failed'), 'error')
   } finally {
     passwordSaving.value = false

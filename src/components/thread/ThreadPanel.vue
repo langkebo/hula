@@ -111,7 +111,7 @@ const handleSendReply = async () => {
     replyContent.value = ''
     await loadThreadReplies()
   } catch (err) {
-    logger.error(`发送线程回复失败: ${err}`)
+    logger.error(`Failed to send thread reply: ${err}`)
     showFeedback(t('thread.send_failed'), 'error')
   } finally {
     sendingReply.value = false
@@ -136,7 +136,7 @@ const loadThreadReplies = async () => {
       timestamp: reply.origin_server_ts
     }))
   } catch (err) {
-    logger.error(`加载线程回复失败: ${err}`)
+    logger.error(`Failed to load thread replies: ${err}`)
     showFeedback(t('thread.load_failed'), 'error')
   }
 }

@@ -189,7 +189,7 @@ const displayAvatarUrl = computed(() => {
     try {
       return matrixMediaService.getMediaUrl(userAvatar.value, 160, 160) || userAvatar.value
     } catch (err) {
-      logger.warn('解析头像 mxc URL 失败:', err)
+      logger.warn('Failed to resolve avatar mxc URL:', err)
       return userAvatar.value
     }
   }
@@ -253,7 +253,7 @@ async function openAvatarCropperViaTauri() {
       showCropper.value = true
     })
   } catch (error) {
-    logger.error('打开文件选择器失败:', error)
+    logger.error('Failed to open file picker:', error)
   }
 }
 

@@ -121,7 +121,7 @@ const searchUsers = async (query: string) => {
     const results = await matrixSearchService.searchUsers(query)
     searchResults.value = results
   } catch (error) {
-    logger.error('搜索用户失败:', error)
+    logger.error('Failed to search users:', error)
   }
 }
 
@@ -160,7 +160,7 @@ const handleInvite = async () => {
     emit('update:show', false)
     selectedUsers.value = []
   } catch (error) {
-    logger.error('邀请失败:', error)
+    logger.error('Failed to invite:', error)
     showFeedback(t('room.invite.failed'), 'error')
   } finally {
     inviting.value = false

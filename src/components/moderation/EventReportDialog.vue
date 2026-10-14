@@ -122,7 +122,7 @@ async function handleSubmit() {
     visible.value = false
     emit('reported')
   } catch (e) {
-    logger.error('举报事件失败', e)
+    logger.error('Failed to report event', e)
     showFeedback(t('moderation.report.failed'), 'error')
   } finally {
     submitting.value = false

@@ -325,7 +325,7 @@ function handleStrictModeToggle(enabled: boolean) {
   settingStore.setBlockUnverifiedDevicesEnabled(enabled)
   const applied = applyGlobalStrict(enabled)
   if (!applied) {
-    logger.warn('crypto 未就绪，严格模式偏好已保存，将在加密初始化后生效')
+    logger.warn('crypto not ready; strict-mode preference saved and will take effect after crypto init')
   }
 }
 
@@ -487,7 +487,7 @@ function handleShowDeviceKey() {
 
 async function copyFingerprint() {
   await writeClipboard(deviceFingerprint.value.replace(/\s/g, '')).catch((err) =>
-    logger.error('复制设备指纹失败:', err)
+    logger.error('Failed to copy device fingerprint:', err)
   )
   showFeedback(t('setting.encryption.copied'), 'success')
 }

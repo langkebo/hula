@@ -15,7 +15,7 @@
         <path
           d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
       </svg>
-      <span class="pinned-banner__title">{{ t('home.chat_sidebar.pins.title', '置顶消息') }}</span>
+      <span class="pinned-banner__title">{{ t('home.chat_sidebar.pins.title') }}</span>
       <span class="pinned-banner__count">{{ events.length }}</span>
     </div>
     <div class="pinned-banner__list">
@@ -38,7 +38,7 @@
           type="button"
           class="pinned-banner__cancel"
           data-testid="pinned-cancel-btn"
-          :aria-label="t('home.chat_sidebar.pins.cancel', '取消置顶')"
+          :aria-label="t('home.chat_sidebar.pins.cancel')"
           @click.stop="$emit('cancel-sticky', event.eventId)">
           <svg
             width="14"

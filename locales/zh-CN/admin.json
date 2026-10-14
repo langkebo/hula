@@ -444,7 +444,15 @@
   },
   "logs": {
     "title": "服务器日志",
-    "subtitle": "查看服务器运行日志"
+    "subtitle": "查看服务器运行日志",
+    "panel_notice": "此页已切换为服务器状态面板，直接消费后端已实现的状态、健康、版本与统计接口。",
+    "runtime_status": "运行状态",
+    "status": "状态",
+    "health_check": "健康检查",
+    "health_status": "健康状态",
+    "checks": "检查项",
+    "version_info": "版本信息",
+    "stats_info": "统计信息"
   },
   "federation_monitor": {
     "title": "联邦监控",
@@ -553,7 +561,9 @@
       "title": "翻译设置",
       "enabled": "启用翻译",
       "provider": "翻译服务",
-      "target_language": "目标语言"
+      "target_language": "目标语言",
+      "lang_zh": "中文",
+      "lang_ja": "日本語"
     },
     "push": {
       "title": "推送通知",

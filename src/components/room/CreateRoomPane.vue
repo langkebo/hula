@@ -13,7 +13,7 @@
     <Transition name="hint-fade">
       <div v-if="showRestoredHint" class="create-room-pane__hint" role="status" aria-live="polite">
         <svg class="size-14px"><use href="#info"></use></svg>
-        <span>{{ t('common.draft_restored', '已恢复上次编辑内容') }}</span>
+        <span>{{ t('common.draft_restored') }}</span>
       </div>
     </Transition>
 
@@ -188,7 +188,7 @@ const loadServerDomain = async () => {
   try {
     serverDomain.value = await matrixRoomReadFacade.getServerDomain()
   } catch (error) {
-    logger.error('获取 homeserver 域名失败:', error)
+    logger.error('Failed to get homeserver domain:', error)
     serverDomain.value = 'matrix.org'
   }
 }
@@ -201,7 +201,7 @@ const handleAvatarUpload = async ({ file }: UploadCustomRequestOptions) => {
     const result = await matrixMediaService.uploadFile(uploadFile)
     formData.avatarUrl = result.contentUri
   } catch (error) {
-    logger.error('上传头像失败:', error)
+    logger.error('Failed to upload avatar:', error)
     showFeedback(t('room.create.avatar_upload_failed'), 'error')
   }
 }
@@ -238,7 +238,7 @@ const handleCreate = async (ignoreDuplicate = false) => {
     // 用户选择"仍然创建"后带 ignore_duplicate_name 重发（逃生阀）。
     const errMsg = error instanceof Error ? error.message : String(error)
     if (errMsg.includes('M_ROOM_IN_USE') || errMsg.includes('already in use')) {
-      logger.warn('检测到同名群，等待用户确认:', formData.name)
+      logger.warn('Detected duplicate room name, waiting for user confirmation:', formData.name)
       creating.value = false
       dialog.warning({
         title: t('room.create.duplicate_name_title'),
@@ -251,7 +251,7 @@ const handleCreate = async (ignoreDuplicate = false) => {
       })
       return
     }
-    logger.error('创建房间失败:', errMsg)
+    logger.error('Failed to create room:', errMsg)
     showFeedback(t('room.create.failed'), 'error')
   } finally {
     creating.value = false
@@ -285,7 +285,7 @@ const handleInvite = async () => {
     }
     showFeedback(t('room.create.invite_success'), 'success')
   } catch (error) {
-    logger.error('邀请成员失败:', error instanceof Error ? error.message : String(error))
+    logger.error('Failed to invite members:', error instanceof Error ? error.message : String(error))
     showFeedback(t('room.create.invite_failed'), 'error')
   } finally {
     inviting.value = false

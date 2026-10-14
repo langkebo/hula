@@ -161,7 +161,11 @@
     "replay_success_rate": "离线回放成功率",
     "retry_rate": "重试触发率",
     "retry_rate_abnormal_title": "重试率异常",
-    "retry_rate_abnormal_desc": "网络不稳定，当前重试率为 {rate}%"
+    "retry_rate_abnormal_desc": "网络不稳定，当前重试率为 {rate}%",
+    "extension_degraded_title": "扩展降级",
+    "extension_degraded_desc": "{id}: 降级（功能回退到 REST API）",
+    "extension_ok_title": "扩展状态正常",
+    "extension_ok_desc": "所有关键扩展已注册"
   },
   "push": {
     "invite": {
@@ -346,7 +350,11 @@
     "leave_confirm": "继续离开",
     "leave_cancel": "继续编辑",
     "shell_error_title": "设置页面加载失败",
+    "shell_error_default": "设置页面壳层异常",
     "shell_retry": "重试",
+    "tab_load_failed": "「{tab}」设置页加载失败",
+    "tab_runtime_error": "组件运行时异常，请查看控制台获取堆栈。",
+    "tab_render_error": "组件渲染时发生未知异常",
     "tabs": {
       "account": "账户",
       "sessions": "会话管理",

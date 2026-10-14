@@ -207,7 +207,7 @@ onMounted(async () => {
   // （幂等、每窗口一次），不再自带 waitForClientReady(10s) 白等。
   const sessionState = await ensureSessionReady()
   if (sessionState !== 'ready') {
-    logger.warn(`[FriendsSettings] 会话状态=${sessionState}，好友请求策略可能退回默认值`)
+    logger.warn(`[FriendsSettings] session state=${sessionState}; friend request policy may fall back to defaults`)
   }
   await loadSettings()
   await loadFriendGroups()
@@ -226,7 +226,7 @@ async function loadSettings() {
       requireFriendRequestMessage: policy.requireFriendRequestMessage
     }
   } catch (error) {
-    logger.warn('加载好友请求策略失败:', error)
+    logger.warn('Failed to load friend request policy:', error)
   }
 }
 
@@ -303,7 +303,7 @@ async function handleToggle() {
     await saveSettings()
     showFeedback(t('setting.friends.feedback.settings_updated'), 'success')
   } catch (error) {
-    logger.error('保存好友请求策略失败:', error)
+    logger.error('Failed to save friend request policy:', error)
     // 保存没有成功：把开关回滚到最近一次确认过的值，不显示成已生效
     allowFriendRequests.value = persistedFlags.value.allowFriendRequests
     autoAcceptFriends.value = persistedFlags.value.autoAcceptFriends

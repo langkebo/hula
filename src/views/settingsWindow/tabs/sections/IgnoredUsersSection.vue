@@ -41,7 +41,7 @@ onMounted(async () => {
   // （幂等：父组件 SecuritySettings 与 SettingsPage 已触发，这里只是 wait 同一次）。
   const sessionState = await ensureSessionReady()
   if (sessionState !== 'ready') {
-    logger.warn(`会话状态=${sessionState}，仍尝试加载忽略用户列表`)
+    logger.warn(`session state=${sessionState}; attempting to load ignored users list anyway`)
   }
   await loadIgnoredUsers()
 })

@@ -450,7 +450,15 @@ export type I18nKeys = {
     },
     "logs": {
       "title": "服务器日志",
-      "subtitle": "查看服务器运行日志"
+      "subtitle": "查看服务器运行日志",
+      "panel_notice": "此页已切换为服务器状态面板，直接消费后端已实现的状态、健康、版本与统计接口。",
+      "runtime_status": "运行状态",
+      "status": "状态",
+      "health_check": "健康检查",
+      "health_status": "健康状态",
+      "checks": "检查项",
+      "version_info": "版本信息",
+      "stats_info": "统计信息"
     },
     "federation_monitor": {
       "title": "联邦监控",
@@ -559,7 +567,9 @@ export type I18nKeys = {
         "title": "翻译设置",
         "enabled": "启用翻译",
         "provider": "翻译服务",
-        "target_language": "目标语言"
+        "target_language": "目标语言",
+        "lang_zh": "中文",
+        "lang_ja": "日本語"
       },
       "push": {
         "title": "推送通知",
@@ -1881,6 +1891,18 @@ export type I18nKeys = {
       "unencryptedTooltip": "当前会话未启用端到端加密，传输链路外的服务可能可见消息内容。",
       "unknownTooltip": "正在确认当前会话的加密能力，请稍后查看最终状态。",
       "errorTooltip": "读取当前会话加密状态失败，请检查网络或重新进入会话。"
+    },
+    "messageLockBadge": {
+      "verified": "E2E 已验证",
+      "unverified": "未验证",
+      "risk": "存在风险"
+    },
+    "syncStatusBar": {
+      "retry": "重试",
+      "reconnect_detail": "（第 {count} 次）",
+      "progress_detail": "（{progress}%）",
+      "aria_reconnecting": "{base}，第 {count} 次尝试",
+      "aria_progress": "{base}，同步进度 {progress}%"
     }
   },
   "connection": {
@@ -3002,7 +3024,22 @@ export type I18nKeys = {
         "region": "地区",
         "birthday": "生日",
         "male": "男",
-        "female": "女"
+        "female": "女",
+        "age": "{age}岁"
+      },
+      "constellations": {
+        "capricorn": "摩羯座",
+        "aquarius": "水瓶座",
+        "pisces": "双鱼座",
+        "aries": "白羊座",
+        "taurus": "金牛座",
+        "gemini": "双子座",
+        "cancer": "巨蟹座",
+        "leo": "狮子座",
+        "virgo": "处女座",
+        "libra": "天秤座",
+        "scorpio": "天蝎座",
+        "sagittarius": "射手座"
       },
       "tooltip": {
         "copy_account": "复制账号"
@@ -5876,7 +5913,11 @@ export type I18nKeys = {
       "replay_success_rate": "离线回放成功率",
       "retry_rate": "重试触发率",
       "retry_rate_abnormal_title": "重试率异常",
-      "retry_rate_abnormal_desc": "网络不稳定，当前重试率为 {rate}%"
+      "retry_rate_abnormal_desc": "网络不稳定，当前重试率为 {rate}%",
+      "extension_degraded_title": "扩展降级",
+      "extension_degraded_desc": "{id}: 降级（功能回退到 REST API）",
+      "extension_ok_title": "扩展状态正常",
+      "extension_ok_desc": "所有关键扩展已注册"
     },
     "push": {
       "invite": {
@@ -6061,7 +6102,11 @@ export type I18nKeys = {
       "leave_confirm": "继续离开",
       "leave_cancel": "继续编辑",
       "shell_error_title": "设置页面加载失败",
+      "shell_error_default": "设置页面壳层异常",
       "shell_retry": "重试",
+      "tab_load_failed": "「{tab}」设置页加载失败",
+      "tab_runtime_error": "组件运行时异常，请查看控制台获取堆栈。",
+      "tab_render_error": "组件渲染时发生未知异常",
       "tabs": {
         "account": "账户",
         "sessions": "会话管理",
@@ -7039,7 +7084,13 @@ export type I18nKeys = {
     "hours_ago": "{hours}小时前",
     "days_ago": "{days}天前",
     "billion": "亿",
-    "ten_thousand": "万"
+    "ten_thousand": "万",
+    "tags": {
+      "ai": "AI",
+      "tech": "科技",
+      "finance": "财经",
+      "entertainment": "娱乐"
+    }
   },
   "utils": {
     "download_link_not_found": "未找到下载链接",
@@ -7546,6 +7597,14 @@ export type I18nKeyPaths =
   | "admin.retention.task_failed"
   | "admin.logs.title"
   | "admin.logs.subtitle"
+  | "admin.logs.panel_notice"
+  | "admin.logs.runtime_status"
+  | "admin.logs.status"
+  | "admin.logs.health_check"
+  | "admin.logs.health_status"
+  | "admin.logs.checks"
+  | "admin.logs.version_info"
+  | "admin.logs.stats_info"
   | "admin.federation_monitor.title"
   | "admin.federation_monitor.subtitle"
   | "admin.federation_monitor.total_servers"
@@ -7638,6 +7697,8 @@ export type I18nKeyPaths =
   | "admin.server_config.translation.enabled"
   | "admin.server_config.translation.provider"
   | "admin.server_config.translation.target_language"
+  | "admin.server_config.translation.lang_zh"
+  | "admin.server_config.translation.lang_ja"
   | "admin.server_config.push.title"
   | "admin.server_config.push.enabled"
   | "admin.server_config.push.apns_status"
@@ -8531,6 +8592,14 @@ export type I18nKeyPaths =
   | "components.encryptionStatus.unencryptedTooltip"
   | "components.encryptionStatus.unknownTooltip"
   | "components.encryptionStatus.errorTooltip"
+  | "components.messageLockBadge.verified"
+  | "components.messageLockBadge.unverified"
+  | "components.messageLockBadge.risk"
+  | "components.syncStatusBar.retry"
+  | "components.syncStatusBar.reconnect_detail"
+  | "components.syncStatusBar.progress_detail"
+  | "components.syncStatusBar.aria_reconnecting"
+  | "components.syncStatusBar.aria_progress"
   | "connection.offline"
   | "connection.reconnecting"
   | "connection.reconnecting_attempt"
@@ -9405,6 +9474,19 @@ export type I18nKeyPaths =
   | "home.profile_card.labels.birthday"
   | "home.profile_card.labels.male"
   | "home.profile_card.labels.female"
+  | "home.profile_card.labels.age"
+  | "home.profile_card.constellations.capricorn"
+  | "home.profile_card.constellations.aquarius"
+  | "home.profile_card.constellations.pisces"
+  | "home.profile_card.constellations.aries"
+  | "home.profile_card.constellations.taurus"
+  | "home.profile_card.constellations.gemini"
+  | "home.profile_card.constellations.cancer"
+  | "home.profile_card.constellations.leo"
+  | "home.profile_card.constellations.virgo"
+  | "home.profile_card.constellations.libra"
+  | "home.profile_card.constellations.scorpio"
+  | "home.profile_card.constellations.sagittarius"
   | "home.profile_card.tooltip.copy_account"
   | "home.profile_card.buttons.edit"
   | "home.profile_card.buttons.message"
@@ -11682,6 +11764,10 @@ export type I18nKeyPaths =
   | "setting.diagnostics.retry_rate"
   | "setting.diagnostics.retry_rate_abnormal_title"
   | "setting.diagnostics.retry_rate_abnormal_desc"
+  | "setting.diagnostics.extension_degraded_title"
+  | "setting.diagnostics.extension_degraded_desc"
+  | "setting.diagnostics.extension_ok_title"
+  | "setting.diagnostics.extension_ok_desc"
   | "setting.push.invite.label"
   | "setting.push.invite.desc"
   | "setting.push.dnd.title"
@@ -11826,7 +11912,11 @@ export type I18nKeyPaths =
   | "setting.dialog.leave_confirm"
   | "setting.dialog.leave_cancel"
   | "setting.dialog.shell_error_title"
+  | "setting.dialog.shell_error_default"
   | "setting.dialog.shell_retry"
+  | "setting.dialog.tab_load_failed"
+  | "setting.dialog.tab_runtime_error"
+  | "setting.dialog.tab_render_error"
   | "setting.dialog.tabs.account"
   | "setting.dialog.tabs.sessions"
   | "setting.dialog.tabs.appearance"
@@ -12618,6 +12708,10 @@ export type I18nKeyPaths =
   | "trendradar.days_ago"
   | "trendradar.billion"
   | "trendradar.ten_thousand"
+  | "trendradar.tags.ai"
+  | "trendradar.tags.tech"
+  | "trendradar.tags.finance"
+  | "trendradar.tags.entertainment"
   | "utils.download_link_not_found"
   | "utils.video_save_success"
   | "utils.video_save_failed"

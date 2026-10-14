@@ -152,7 +152,7 @@ onMounted(async () => {
   // 导致 BaseMatrixService.getClient() 抛出 client_not_initialized 错误。
   // 恢复统一走 `useWindowSessionReady()`（幂等、每窗口一次）。
   const sessionState = await ensureSessionReady()
-  logger.info(`[SessionSettings] 会话状态=${sessionState}，开始加载设备列表`)
+  logger.info(`[SessionSettings] session state=${sessionState}; loading device list`)
   await loadDevices()
 })
 
@@ -162,7 +162,7 @@ async function loadDevices() {
     devices.value = await getDevices()
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
-    logger.error('[SessionSettings] 获取设备列表失败:', msg)
+    logger.error('[SessionSettings] Failed to load device list:', msg)
     showFeedback(t('setting.sessions.fetch_failed'), 'error')
   } finally {
     loading.value = false

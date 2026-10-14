@@ -193,7 +193,7 @@ onMounted(async () => {
   // 避免「冷启动直接进入本页签时没人触发恢复」⇒ 原先只能白等 waitForClientReady(10s) 拿默认值。
   const sessionState = await ensureSessionReady()
   if (sessionState !== 'ready') {
-    logger.warn(`[PushSettings] 会话状态=${sessionState}，推送设置可能显示本地默认值`)
+    logger.warn(`[PushSettings] session state=${sessionState}; push settings may show local defaults`)
   }
   await Promise.allSettled([fetchPushers(), fetchPushRules(), fetchNotifications()])
   await loadDndSettings()

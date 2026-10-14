@@ -317,7 +317,7 @@ async function handleCreateSession() {
     })
     showFeedback(t('rendezvous.create_success'), 'success')
   } catch (err) {
-    logger.error('创建会话失败:', err)
+    logger.error('Failed to create session:', err)
     showFeedback(t('rendezvous.create_failed'), 'error')
   }
 }
@@ -327,7 +327,7 @@ async function handleRefreshMessages() {
   try {
     await getMessages(sessionId.value)
   } catch (err) {
-    logger.error('获取消息失败:', err)
+    logger.error('Failed to get messages:', err)
     showFeedback(t('rendezvous.get_messages_failed'), 'error')
   }
 }
@@ -342,7 +342,7 @@ async function handleSendMessage() {
     showFeedback(t('rendezvous.send_success'), 'success')
     await handleRefreshMessages()
   } catch (err) {
-    logger.error('发送消息失败:', err)
+    logger.error('Failed to send message:', err)
     showFeedback(t('rendezvous.send_failed'), 'error')
   }
 }
@@ -355,7 +355,7 @@ async function handleCompleteSession() {
       showFeedback(t('rendezvous.complete_success'), 'success')
     }
   } catch (err) {
-    logger.error('完成会话失败:', err)
+    logger.error('Failed to complete session:', err)
     showFeedback(t('rendezvous.complete_failed'), 'error')
   }
 }
@@ -366,7 +366,7 @@ async function handleDeleteSession() {
     await deleteSession(sessionId.value)
     showFeedback(t('rendezvous.delete_success'), 'success')
   } catch (err) {
-    logger.error('删除会话失败:', err)
+    logger.error('Failed to delete session:', err)
     showFeedback(t('rendezvous.delete_failed'), 'error')
   }
 }

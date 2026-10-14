@@ -137,7 +137,7 @@ async function loadGuestInfo() {
       latestGuestCreatedAt: latestGuest?.createdAt
     }
   } catch (e) {
-    logger.error('获取访客信息失败', e)
+    logger.error('Failed to fetch guest info', e)
     guestInfo.value = null
     guestAccounts.value = []
   } finally {
@@ -165,7 +165,7 @@ async function handleLoadGuestAccounts() {
   try {
     guestAccounts.value = await fetchGuestAccounts()
   } catch (e) {
-    logger.error('获取访客账户失败', e)
+    logger.error('Failed to fetch guest accounts', e)
     guestAccounts.value = []
     showFeedback(t('admin.guests.load_accounts_failed'), 'error')
   } finally {
@@ -209,7 +209,7 @@ async function handleLoadRoomAccess() {
 
     guestRooms.value = roomRows.flat()
   } catch (e) {
-    logger.error('获取访客房间访问失败', e)
+    logger.error('Failed to fetch guest room access', e)
     guestRooms.value = []
     showFeedback(t('admin.guests.load_rooms_failed'), 'error')
   } finally {
@@ -296,7 +296,7 @@ function handleDeactivateGuest(account: GuestAccountRow) {
         showFeedback(t('admin.guests.deactivated_success'), 'success')
         void handleLoadGuestAccounts()
       } catch (e) {
-        logger.error('停用访客账户失败', e)
+        logger.error('Failed to deactivate guest account', e)
         showFeedback(t('admin.guests.deactivate_failed'), 'error')
       }
     }

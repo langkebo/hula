@@ -89,7 +89,7 @@ onMounted(async () => {
   // 恢复统一走 `useWindowSessionReady()`（幂等、每窗口一次）：入口在 SettingsPage，
   // 此处只是 wait 同一次 in-flight，不再自带 waitForClientReady(15s)。
   const sessionState = await ensureSessionReady()
-  logger.info(`[SecuritySettings] 会话状态=${sessionState}，开始加载加密状态与备份信息`)
+  logger.info(`[SecuritySettings] session state=${sessionState}; loading encryption status and backup info`)
 
   await encryptionStore.loadEncryptionStatus()
   await loadBackupInfo()

@@ -192,7 +192,7 @@ const toggleScreenShare = async () => {
       isScreenSharing.value = true
     }
   } catch (error) {
-    logger.error('屏幕共享失败:', error)
+    logger.error('Failed to toggle screen share:', error)
   }
 }
 
@@ -221,9 +221,9 @@ const handleSwitchCamera = async () => {
     stream.addTrack(newVideoTrack)
     cameraFacingMode.value = newFacingMode
 
-    logger.info(`摄像头切换至: ${newFacingMode}`)
+    logger.info(`Camera switched to: ${newFacingMode}`)
   } catch (err) {
-    logger.error('摄像头切换失败:', err)
+    logger.error('Failed to switch camera:', err)
   }
 }
 

@@ -10,7 +10,7 @@
     <p v-if="news.summary" class="news-card__summary">{{ news.summary }}</p>
     <div class="news-card__footer">
       <n-tag v-for="tag in tags" :key="tag" size="tiny" class="news-card__tag">
-        {{ tag }}
+        {{ tagLabel(tag) }}
       </n-tag>
       <div class="news-card__action">
         <span class="news-card__link">{{ t('trendradar.view_details') }}</span>
@@ -24,6 +24,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { TrendRadarNews } from '@/services/trendradar'
+import { extractNewsTags, type NewsTagKey, resolveNewsPlatformType } from './newsCardRules'
 
 const { t } = useI18n()
 
@@ -33,13 +34,7 @@ const props = defineProps<{
 
 const emit = defineEmits<(event: 'click', news: TrendRadarNews) => void>()
 
-const platformType = computed(() => {
-  const platform = props.news.platform?.toLowerCase() || ''
-  if (platform.includes('知乎')) return 'info'
-  if (platform.includes('头条') || platform.includes('微博')) return 'warning'
-  if (platform.includes('百度')) return 'success'
-  return 'default'
-})
+const platformType = computed(() => resolveNewsPlatformType(props.news.platform))
 
 const formattedTime = computed(() => {
   if (!props.news.publishTime) return ''
@@ -54,16 +49,20 @@ const formattedTime = computed(() => {
   return date.toLocaleDateString()
 })
 
-const tags = computed(() => {
-  if (!props.news.title) return []
-  const title = props.news.title
-  const tagList: string[] = []
-  if (title.includes('AI') || title.includes('人工智能')) tagList.push('AI')
-  if (title.includes('科技')) tagList.push('科技')
-  if (title.includes('财经') || title.includes('金融')) tagList.push('财经')
-  if (title.includes('娱乐')) tagList.push('娱乐')
-  return tagList.slice(0, 3)
-})
+const tags = computed<NewsTagKey[]>(() => (props.news.title ? extractNewsTags(props.news.title) : []))
+
+function tagLabel(key: NewsTagKey): string {
+  switch (key) {
+    case 'ai':
+      return t('trendradar.tags.ai')
+    case 'tech':
+      return t('trendradar.tags.tech')
+    case 'finance':
+      return t('trendradar.tags.finance')
+    case 'entertainment':
+      return t('trendradar.tags.entertainment')
+  }
+}
 
 const handleClick = () => {
   emit('click', props.news)

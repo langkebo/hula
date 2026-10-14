@@ -231,9 +231,9 @@ const translationProviderOptions = computed(() => [
 ])
 
 const targetLanguageOptions = computed(() => [
-  { label: '中文', value: 'zh' },
+  { label: t('admin.server_config.translation.lang_zh'), value: 'zh' },
   { label: 'English', value: 'en' },
-  { label: '日本語', value: 'ja' },
+  { label: t('admin.server_config.translation.lang_ja'), value: 'ja' },
   { label: '한국어', value: 'ko' },
   { label: 'Français', value: 'fr' },
   { label: 'Deutsch', value: 'de' },

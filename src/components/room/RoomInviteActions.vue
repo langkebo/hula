@@ -39,7 +39,7 @@ const handleAccept = async () => {
     await matrixRoomActionFacade.joinRoom(props.roomId)
     emit('accepted', props.roomId)
   } catch (err) {
-    logger.error(`接受邀请失败: ${err}`)
+    logger.error(`Failed to accept invite: ${err}`)
     showFeedback(t('room.invite.accept_failed'), 'error')
   } finally {
     accepting.value = false
@@ -53,7 +53,7 @@ const handleReject = async () => {
     await matrixRoomActionFacade.leaveRoom(props.roomId)
     emit('rejected', props.roomId)
   } catch (err) {
-    logger.error(`拒绝邀请失败: ${err}`)
+    logger.error(`Failed to reject invite: ${err}`)
     showFeedback(t('room.invite.reject_failed'), 'error')
   } finally {
     rejecting.value = false

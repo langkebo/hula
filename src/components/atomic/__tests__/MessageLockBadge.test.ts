@@ -1,6 +1,10 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { createI18nMock } from '~/tests/i18n-messages'
 import MessageLockBadge, { type TrustLevel } from '../MessageLockBadge.vue'
+
+// 真实语言表驱动，而非手写文案 stub —— 见 `~/tests/i18n-messages`。
+vi.mock('vue-i18n', () => createI18nMock())
 
 // Simple test wrapper
 const createWrapper = (component: any, props = {}) => {

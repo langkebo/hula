@@ -4,7 +4,7 @@
     <Transition name="hint-fade">
       <div v-if="showRestoredHint" class="add-friend-pane__hint" role="status" aria-live="polite">
         <svg class="size-14px"><use href="#info"></use></svg>
-        <span>{{ t('common.draft_restored', '已恢复上次编辑内容') }}</span>
+        <span>{{ t('common.draft_restored') }}</span>
       </div>
     </Transition>
 

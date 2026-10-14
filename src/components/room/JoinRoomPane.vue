@@ -4,7 +4,7 @@
     <Transition name="hint-fade">
       <div v-if="showRestoredHint" class="join-room-pane__hint" role="status" aria-live="polite">
         <svg class="size-14px"><use href="#info"></use></svg>
-        <span>{{ t('common.draft_restored', '已恢复上次编辑内容') }}</span>
+        <span>{{ t('common.draft_restored') }}</span>
       </div>
     </Transition>
 
@@ -98,7 +98,7 @@ const handleJoin = async () => {
     const { default: router } = await import('@/router')
     void router.back()
   } catch (error: unknown) {
-    logger.error('加入房间失败:', error)
+    logger.error('Failed to join room:', error)
     const err = error as { errcode?: string; error?: string }
     if (err?.errcode === 'M_NOT_FOUND') {
       showFeedback(t('room.join.not_found'), 'error')

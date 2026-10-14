@@ -61,10 +61,10 @@
         data-testid="extension-degraded-warning"
         type="warning"
         class="diagnostics-alert"
-        title="扩展降级">
+        :title="t('setting.diagnostics.extension_degraded_title')">
         <div v-for="id in degradedExtensionIds" :key="id" class="extension-health-item">
           <Icon icon="mdi:alert-circle-outline" :width="16" />
-          <span>{{ id }}: 降级（功能回退到 REST API）</span>
+          <span>{{ t('setting.diagnostics.extension_degraded_desc', { id }) }}</span>
         </div>
       </n-alert>
       <n-alert
@@ -72,8 +72,8 @@
         data-testid="extension-healthy-info"
         type="success"
         class="diagnostics-alert"
-        title="扩展状态正常">
-        所有关键扩展已注册
+        :title="t('setting.diagnostics.extension_ok_title')">
+        {{ t('setting.diagnostics.extension_ok_desc') }}
       </n-alert>
 
       <div class="diagnostics-actions">

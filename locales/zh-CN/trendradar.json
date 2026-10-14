@@ -33,5 +33,11 @@
   "hours_ago": "{hours}小时前",
   "days_ago": "{days}天前",
   "billion": "亿",
-  "ten_thousand": "万"
+  "ten_thousand": "万",
+  "tags": {
+    "ai": "AI",
+    "tech": "科技",
+    "finance": "财经",
+    "entertainment": "娱乐"
+  }
 }

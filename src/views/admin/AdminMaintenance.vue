@@ -128,7 +128,7 @@ async function loadData() {
   try {
     await maintenance.loadAll()
   } catch (err) {
-    logger.error('加载维护信息失败:', err)
+    logger.error('Failed to load maintenance info:', err)
     showFeedback(t('admin.maintenance.load_failed'), 'error')
   }
 }
@@ -138,7 +138,7 @@ async function handlePurge() {
     const result = await maintenance.purgeMediaCache(purgeBeforeTs.value ?? undefined)
     showFeedback(t('admin.maintenance.purge_success', { count: result.deleted }), 'success')
   } catch (err) {
-    logger.error('清理媒体缓存失败:', err)
+    logger.error('Failed to purge media cache:', err)
     showFeedback(t('admin.maintenance.purge_failed'), 'error')
   }
 }
@@ -148,7 +148,7 @@ async function handleToggleFeature(feature: string, enabled: boolean) {
     await maintenance.setExperimentalFeature(feature, enabled)
     showFeedback(t('admin.maintenance.feature_updated'), 'success')
   } catch (err) {
-    logger.error('设置实验特性失败:', err)
+    logger.error('Failed to set experimental feature:', err)
     showFeedback(t('admin.maintenance.feature_failed'), 'error')
   }
 }

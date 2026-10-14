@@ -207,7 +207,7 @@ async function handleSearchWidgetById() {
       showFeedback(t('common.widget.search_not_found'), 'warning')
     }
   } catch (e) {
-    logger.error('搜索Widget失败', e)
+    logger.error('Failed to search widget', e)
     showFeedback(t('common.widget.search_failed'), 'error')
     searchedWidget.value = null
   } finally {
@@ -249,7 +249,7 @@ const handleAddWidget = async (data: { name: string; type: string; url: string }
     showAddDialog.value = false
     dialogsRef.value?.resetAddWidgetForm()
   } catch (error) {
-    logger.error('[WidgetManager] 添加 Widget 失败:', error)
+    logger.error('[WidgetManager] Failed to add widget:', error)
     showFeedback(t('common.widget.add_failed'), 'error')
   }
 }
@@ -341,7 +341,7 @@ async function handleSaveConfig(data: { name: string; url: string }) {
       showFeedback(t('common.widget.config_save_failed'), 'error')
     }
   } catch (e) {
-    logger.error('保存Widget配置失败', e)
+    logger.error('Failed to save widget config', e)
     showFeedback(t('common.widget.config_save_failed'), 'error')
   } finally {
     savingConfig.value = false
@@ -361,7 +361,7 @@ async function handleSaveCapabilities(caps: string[]) {
       showFeedback(t('common.widget.capabilities_save_failed'), 'error')
     }
   } catch (e) {
-    logger.error('保存Widget能力失败', e)
+    logger.error('Failed to save widget capabilities', e)
     showFeedback(t('common.widget.capabilities_save_failed'), 'error')
   } finally {
     savingCapabilities.value = false

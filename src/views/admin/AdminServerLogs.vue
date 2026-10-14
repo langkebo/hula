@@ -9,33 +9,33 @@
     </n-page-header>
 
     <n-alert type="info" class="my-12px">
-      此页已切换为服务器状态面板，直接消费后端已实现的状态、健康、版本与统计接口。
+      {{ t('admin.logs.panel_notice') }}
     </n-alert>
 
     <n-spin :show="loading">
       <div class="panel-grid">
-        <n-card title="运行状态" size="small">
+        <n-card :title="t('admin.logs.runtime_status')" size="small">
           <n-descriptions bordered :column="1" label-placement="left">
-            <n-descriptions-item label="状态">
+            <n-descriptions-item :label="t('admin.logs.status')">
               <n-tag :type="statusTagType">{{ statusLabel }}</n-tag>
             </n-descriptions-item>
           </n-descriptions>
         </n-card>
 
-        <n-card title="健康检查" size="small">
+        <n-card :title="t('admin.logs.health_check')" size="small">
           <n-descriptions bordered :column="1" label-placement="left">
-            <n-descriptions-item label="健康状态">
+            <n-descriptions-item :label="t('admin.logs.health_status')">
               <n-tag :type="health?.healthy ? 'success' : 'error'">
                 {{ health?.healthy ? 'Healthy' : 'Unhealthy' }}
               </n-tag>
             </n-descriptions-item>
-            <n-descriptions-item label="检查项">
+            <n-descriptions-item :label="t('admin.logs.checks')">
               <pre class="panel-pre">{{ JSON.stringify(health?.checks ?? {}, null, 2) }}</pre>
             </n-descriptions-item>
           </n-descriptions>
         </n-card>
 
-        <n-card title="版本信息" size="small">
+        <n-card :title="t('admin.logs.version_info')" size="small">
           <n-descriptions bordered :column="1" label-placement="left">
             <n-descriptions-item label="Server">
               {{ version?.serverVersion || '-' }}
@@ -46,7 +46,7 @@
           </n-descriptions>
         </n-card>
 
-        <n-card title="统计信息" size="small">
+        <n-card :title="t('admin.logs.stats_info')" size="small">
           <n-descriptions bordered :column="1" label-placement="left">
             <n-descriptions-item :label="t('admin.total_users')">
               {{ stats?.userCount ?? '-' }}

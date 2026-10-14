@@ -150,7 +150,7 @@ async function reconnect(serverName: string) {
     showFeedback(t('admin.federation_monitor.reconnect_success'), 'success')
     await loadData()
   } catch (err) {
-    logger.error('重连联邦服务器失败:', err)
+    logger.error('Failed to reconnect federation server:', err)
     showFeedback(t('admin.federation_monitor.reconnect_failed'), 'error')
   }
 }
@@ -189,7 +189,7 @@ async function loadData() {
 
     serverList.value = servers
   } catch (err) {
-    logger.error('加载联邦服务器列表失败:', err)
+    logger.error('Failed to load federation server list:', err)
   } finally {
     loading.value = false
   }

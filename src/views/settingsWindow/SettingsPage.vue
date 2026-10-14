@@ -84,7 +84,8 @@ const shellError = ref<Error | null>(null)
 const logger = createLogger('SettingsPage')
 
 onErrorCaptured((err) => {
-  shellError.value = err instanceof Error ? err : new Error(typeof err === 'string' ? err : '设置页面壳层异常')
+  shellError.value =
+    err instanceof Error ? err : new Error(typeof err === 'string' ? err : t('setting.dialog.shell_error_default'))
   logger.error('[SettingsPage] 壳层组件渲染异常:', err)
   // 返回 false：阻止继续冒泡，由本页 fallback 承接
   return false

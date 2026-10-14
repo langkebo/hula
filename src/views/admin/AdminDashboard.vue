@@ -430,7 +430,7 @@ async function loadData() {
     if (versionResult.status === 'fulfilled') serverVersion.value = versionResult.value
   } catch (err) {
     // 静默处理错误，仪表盘数据加载失败不应阻断用户操作
-    logger.warn('仪表盘数据加载失败:', err)
+    logger.warn('Failed to load dashboard data:', err)
   } finally {
     loading.value = false
   }
