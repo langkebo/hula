@@ -1595,6 +1595,8 @@ export type I18nKeys = {
       },
       "open_in_new_window": "在新窗口打开",
       "private_mode_toggle": "切换到私密模式",
+      "private_mode_enter": "进入私密模式",
+      "private_mode_exit": "退出私密模式",
       "private_mode_confirm_title": "切换到私密模式",
       "private_mode_confirm_desc": "私密模式下：",
       "private_mode_feature_e2ee": "消息将启用端到端加密",
@@ -3938,6 +3940,26 @@ export type I18nKeys = {
     "keyboard": "键盘",
     "import_model": "导入模型",
     "no_data": "无数据",
+    "chat_background": "聊天背景",
+    "input_panel": {
+      "video_call": "视频通话",
+      "audio_call": "语音通话",
+      "image": "图片",
+      "file": "文件",
+      "voice": "语音",
+      "video": "视频",
+      "location": "位置",
+      "only_image": "只能选择图片哦~"
+    },
+    "preview": {
+      "forward_no_id": "无法转发：消息ID缺失",
+      "forward_not_found": "未找到可转发的消息",
+      "save_no_url": "无法保存：图片地址缺失",
+      "image_saved": "图片已保存",
+      "video_saved": "视频已保存",
+      "save_failed": "保存失败",
+      "more_coming_soon": "更多功能暂未实现"
+    },
     "media_viewer": {
       "image_alt": "媒体图片",
       "all": "图片与视频",
@@ -4039,6 +4061,13 @@ export type I18nKeys = {
     "invite_failed": "邀请失败，请重试",
     "invite_group_member_title": "邀请群友",
     "invite_success": "成功邀请 {count} 位好友"
+  },
+  "mobile_connection": {
+    "connecting": "正在连接…",
+    "reconnecting": "连接已断开，正在重连…",
+    "syncing": "正在同步消息…",
+    "offline": "网络已断开",
+    "error": "连接失败，请稍后重试"
   },
   "mobile_contact": {
     "title": "联系人",
@@ -4437,6 +4466,7 @@ export type I18nKeys = {
     },
     "noname": "无名",
     "china": "中国",
+    "empty_session": "暂无会话",
     "chat": {
       "unpin": "取消置顶",
       "pintop": "置顶",
@@ -4565,7 +4595,8 @@ export type I18nKeys = {
     "display_name_placeholder": "请输入新的显示名称",
     "save_display_name_success": "显示名称已更新",
     "save_display_name_failed": "更新显示名称失败",
-    "saving": "保存中..."
+    "saving": "保存中...",
+    "share_to": "分享至"
   },
   "mobile_mymessage": {
     "title": "消息",
@@ -4677,6 +4708,7 @@ export type I18nKeys = {
     "add_friend": "添加好友",
     "open_bot": "打开助手",
     "chat": "聊天",
+    "qr_code": "二维码",
     "delete_user": {
       "success": "删除好友成功",
       "failed": "删除好友失败"
@@ -4756,6 +4788,14 @@ export type I18nKeys = {
     "qr_no_uid": "登录二维码不存在uid",
     "group_qr_no_roomId": "加群二维码不存在roomId",
     "invalid_qr_code": "识别不到正确的二维码"
+  },
+  "mobile_quick_actions": {
+    "scan": "扫一扫",
+    "wallet": "钱包",
+    "favorite": "收藏",
+    "file": "文件",
+    "shake": "摇一摇",
+    "developing": "「{name}」功能开发中"
   },
   "mobile_rooms": {
     "search_placeholder": "搜索房间",
@@ -8222,6 +8262,8 @@ export type I18nKeyPaths =
   | "chat.header.search.close"
   | "chat.header.open_in_new_window"
   | "chat.header.private_mode_toggle"
+  | "chat.header.private_mode_enter"
+  | "chat.header.private_mode_exit"
   | "chat.header.private_mode_confirm_title"
   | "chat.header.private_mode_confirm_desc"
   | "chat.header.private_mode_feature_e2ee"
@@ -9987,6 +10029,22 @@ export type I18nKeyPaths =
   | "mobile_chat.keyboard"
   | "mobile_chat.import_model"
   | "mobile_chat.no_data"
+  | "mobile_chat.chat_background"
+  | "mobile_chat.input_panel.video_call"
+  | "mobile_chat.input_panel.audio_call"
+  | "mobile_chat.input_panel.image"
+  | "mobile_chat.input_panel.file"
+  | "mobile_chat.input_panel.voice"
+  | "mobile_chat.input_panel.video"
+  | "mobile_chat.input_panel.location"
+  | "mobile_chat.input_panel.only_image"
+  | "mobile_chat.preview.forward_no_id"
+  | "mobile_chat.preview.forward_not_found"
+  | "mobile_chat.preview.save_no_url"
+  | "mobile_chat.preview.image_saved"
+  | "mobile_chat.preview.video_saved"
+  | "mobile_chat.preview.save_failed"
+  | "mobile_chat.preview.more_coming_soon"
   | "mobile_chat.media_viewer.image_alt"
   | "mobile_chat.media_viewer.all"
   | "mobile_chat.media_viewer.image"
@@ -10072,6 +10130,11 @@ export type I18nKeyPaths =
   | "mobile_chat_setting.invite_failed"
   | "mobile_chat_setting.invite_group_member_title"
   | "mobile_chat_setting.invite_success"
+  | "mobile_connection.connecting"
+  | "mobile_connection.reconnecting"
+  | "mobile_connection.syncing"
+  | "mobile_connection.offline"
+  | "mobile_connection.error"
   | "mobile_contact.title"
   | "mobile_contact.add_friends_group"
   | "mobile_contact.search_no_result"
@@ -10382,6 +10445,7 @@ export type I18nKeyPaths =
   | "mobile_home.input.search"
   | "mobile_home.noname"
   | "mobile_home.china"
+  | "mobile_home.empty_session"
   | "mobile_home.chat.unpin"
   | "mobile_home.chat.pintop"
   | "mobile_home.chat.mark_as_read"
@@ -10493,6 +10557,7 @@ export type I18nKeyPaths =
   | "mobile_my.save_display_name_success"
   | "mobile_my.save_display_name_failed"
   | "mobile_my.saving"
+  | "mobile_my.share_to"
   | "mobile_mymessage.title"
   | "mobile_mymessage.accept"
   | "mobile_mymessage.approved"
@@ -10586,6 +10651,7 @@ export type I18nKeyPaths =
   | "mobile_personal_info.add_friend"
   | "mobile_personal_info.open_bot"
   | "mobile_personal_info.chat"
+  | "mobile_personal_info.qr_code"
   | "mobile_personal_info.delete_user.success"
   | "mobile_personal_info.delete_user.failed"
   | "mobile_personal_info.not_found"
@@ -10648,6 +10714,12 @@ export type I18nKeyPaths =
   | "mobile_qrcode.qr_no_uid"
   | "mobile_qrcode.group_qr_no_roomId"
   | "mobile_qrcode.invalid_qr_code"
+  | "mobile_quick_actions.scan"
+  | "mobile_quick_actions.wallet"
+  | "mobile_quick_actions.favorite"
+  | "mobile_quick_actions.file"
+  | "mobile_quick_actions.shake"
+  | "mobile_quick_actions.developing"
   | "mobile_rooms.search_placeholder"
   | "mobile_rooms.no_rooms"
   | "mobile_rooms.no_search_result"

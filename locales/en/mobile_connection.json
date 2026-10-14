@@ -1,0 +1,7 @@
+{
+  "connecting": "Connecting...",
+  "reconnecting": "Connection lost, reconnecting...",
+  "syncing": "Syncing messages...",
+  "offline": "Network disconnected",
+  "error": "Connection failed, please try again later"
+}

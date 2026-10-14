@@ -9,5 +9,6 @@
   "display_name_placeholder": "Enter new display name",
   "save_display_name_success": "Display name updated",
   "save_display_name_failed": "Failed to update display name",
-  "saving": "Saving..."
+  "saving": "Saving...",
+  "share_to": "Share to"
 }

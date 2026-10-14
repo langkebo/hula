@@ -12,6 +12,26 @@
   "keyboard": "Keyboard",
   "import_model": "Import Model",
   "no_data": "No data",
+  "chat_background": "Chat Background",
+  "input_panel": {
+    "video_call": "Video Call",
+    "audio_call": "Voice Call",
+    "image": "Image",
+    "file": "File",
+    "voice": "Voice",
+    "video": "Video",
+    "location": "Location",
+    "only_image": "Only images can be selected"
+  },
+  "preview": {
+    "forward_no_id": "Cannot forward: message ID is missing",
+    "forward_not_found": "No forwardable message found",
+    "save_no_url": "Cannot save: image URL is missing",
+    "image_saved": "Image saved",
+    "video_saved": "Video saved",
+    "save_failed": "Save failed",
+    "more_coming_soon": "More features coming soon"
+  },
   "media_viewer": {
     "image_alt": "Media image",
     "all": "Images & Videos",

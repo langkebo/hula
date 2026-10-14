@@ -8,6 +8,7 @@
   "add_friend": "添加好友",
   "open_bot": "打开助手",
   "chat": "聊天",
+  "qr_code": "二维码",
   "delete_user": {
     "success": "删除好友成功",
     "failed": "删除好友失败"

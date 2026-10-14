@@ -12,6 +12,26 @@
   "keyboard": "键盘",
   "import_model": "导入模型",
   "no_data": "无数据",
+  "chat_background": "聊天背景",
+  "input_panel": {
+    "video_call": "视频通话",
+    "audio_call": "语音通话",
+    "image": "图片",
+    "file": "文件",
+    "voice": "语音",
+    "video": "视频",
+    "location": "位置",
+    "only_image": "只能选择图片哦~"
+  },
+  "preview": {
+    "forward_no_id": "无法转发：消息ID缺失",
+    "forward_not_found": "未找到可转发的消息",
+    "save_no_url": "无法保存：图片地址缺失",
+    "image_saved": "图片已保存",
+    "video_saved": "视频已保存",
+    "save_failed": "保存失败",
+    "more_coming_soon": "更多功能暂未实现"
+  },
   "media_viewer": {
     "image_alt": "媒体图片",
     "all": "图片与视频",

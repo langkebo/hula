@@ -13,6 +13,7 @@
   },
   "noname": "No Name",
   "china": "China",
+  "empty_session": "No sessions",
   "chat": {
     "unpin": "Unpin",
     "pintop": "Pin Top",

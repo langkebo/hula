@@ -8,6 +8,7 @@
   "add_friend": "Add friend",
   "open_bot": "Open Bot",
   "chat": "Chat",
+  "qr_code": "QR Code",
   "delete_user": {
     "success": "Friend deleted successfully",
     "failed": "Failed to delete friend"
