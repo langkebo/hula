@@ -111,10 +111,8 @@ const props = withDefaults(
   }
 )
 
-const emit = defineEmits<{
-  /** 用户点击锁徽章，请求发起设备验证 */
-  (e: 'verify'): void
-}>()
+/** 用户点击锁徽章，请求发起设备验证 */
+const emit = defineEmits<(e: 'verify') => void>()
 
 const { t } = useI18n()
 
