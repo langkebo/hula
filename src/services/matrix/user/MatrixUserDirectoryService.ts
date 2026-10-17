@@ -126,6 +126,10 @@ class UserDirectoryService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取用户目录中某个用户的资料（昵称 + 头像）。
+   * 查询失败或用户不存在时返回 null。
+   */
   async getUserDirectoryProfile(userId: string): Promise<UserDirectorySearchResult | null> {
     const client = this.getClient()
     try {

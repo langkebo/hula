@@ -397,6 +397,14 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 分页查询可用 AI 模型列表。
+   *
+   * @param params - 分页参数
+   * @param params.pageNo - 页码
+   * @param params.pageSize - 每页数量
+   * @returns 模型列表与总数
+   */
   async modelPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIModelListResponse> {
     return matrixHttpClient.request<AIModelListResponse>(
       {
@@ -408,6 +416,15 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 查询指定模型的剩余可用额度。
+   *
+   * 兼容后端返回数字或 `{ remainingUsage }` 两种形态，统一归一化为数字。
+   *
+   * @param params - 查询参数
+   * @param params.modelId - 模型 ID
+   * @returns 剩余额度
+   */
   async getModelRemainingUsage(params: { modelId: string }): Promise<number> {
     const result = await matrixHttpClient.request<number | AIModelRemainingUsageResponse>(
       {
@@ -420,6 +437,14 @@ class MatrixAIService {
     return typeof result === 'number' ? result : result.remainingUsage
   }
 
+  /**
+   * 分页查询当前用户的图片生成记录。
+   *
+   * @param params - 分页参数
+   * @param params.pageNo - 页码
+   * @param params.pageSize - 每页数量
+   * @returns 图片列表与总数
+   */
   async imageMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIImageListResponse> {
     return matrixHttpClient.request<AIImageListResponse>(
       {
@@ -431,6 +456,13 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 按 ID 列表批量查询当前用户的图片记录。
+   *
+   * @param params - 查询参数
+   * @param params.ids - 逗号分隔的图片 ID 串
+   * @returns 图片列表
+   */
   async imageMyListByIds(params: { ids: string }): Promise<AIImage[]> {
     return matrixHttpClient.request<AIImage[]>(
       {
@@ -442,6 +474,14 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 分页查询当前用户的视频生成记录。
+   *
+   * @param params - 分页参数
+   * @param params.pageNo - 页码
+   * @param params.pageSize - 每页数量
+   * @returns 视频列表与总数
+   */
   async videoMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIVideoListResponse> {
     return matrixHttpClient.request<AIVideoListResponse>(
       {
@@ -453,6 +493,13 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 按 ID 列表批量查询当前用户的视频记录。
+   *
+   * @param params - 查询参数
+   * @param params.ids - 逗号分隔的视频 ID 串
+   * @returns 视频列表
+   */
   async videoMyListByIds(params: { ids: string }): Promise<AIVideo[]> {
     return matrixHttpClient.request<AIVideo[]>(
       {
@@ -464,6 +511,14 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 发起视频生成任务。
+   *
+   * 返回异步任务信息，结果需另行轮询查询。
+   *
+   * @param body - 视频生成参数
+   * @returns 异步任务响应
+   */
   async videoGenerate(body: VideoGenerationRequest): Promise<AIAsyncGenerationResponse> {
     return matrixHttpClient.request<AIAsyncGenerationResponse>(
       {
@@ -476,6 +531,14 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 分页查询当前用户的音频生成记录。
+   *
+   * @param params - 分页参数
+   * @param params.pageNo - 页码
+   * @param params.pageSize - 每页数量
+   * @returns 音频列表与总数
+   */
   async audioMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIAudioListResponse> {
     return matrixHttpClient.request<AIAudioListResponse>(
       {
@@ -487,6 +550,13 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 按 ID 列表批量查询当前用户的音频记录。
+   *
+   * @param params - 查询参数
+   * @param params.ids - 逗号分隔的音频 ID 串
+   * @returns 音频列表
+   */
   async audioMyListByIds(params: { ids: string }): Promise<AIAudio[]> {
     return matrixHttpClient.request<AIAudio[]>(
       {
@@ -498,6 +568,14 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 发起音频生成任务。
+   *
+   * 返回异步任务信息，结果需另行轮询查询。
+   *
+   * @param body - 音频生成参数
+   * @returns 异步任务响应
+   */
   async audioGenerate(body: AudioGenerationRequest): Promise<AIAsyncGenerationResponse> {
     return matrixHttpClient.request<AIAsyncGenerationResponse>(
       {
@@ -510,6 +588,13 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 查询指定模型支持的音色列表。
+   *
+   * @param params - 查询参数
+   * @param params.model - 模型 ID
+   * @returns 音色列表
+   */
   async audioGetVoices(params: { model: string }): Promise<AIVoice[]> {
     return matrixHttpClient.request<AIVoice[]>(
       {
@@ -521,6 +606,13 @@ class MatrixAIService {
     )
   }
 
+  /**
+   * 删除单条 AI 消息。
+   *
+   * @param params - 删除参数
+   * @param params.id - 消息 ID
+   * @returns 删除成功返回 true
+   */
   async messageDelete(params: { id: string }): Promise<boolean> {
     await matrixHttpClient.request(
       {
@@ -533,6 +625,13 @@ class MatrixAIService {
     return true
   }
 
+  /**
+   * 按对话 ID 列表批量删除其下的 AI 消息。
+   *
+   * @param params - 删除参数
+   * @param params.conversationIdList - 待删除消息所属的对话 ID 列表
+   * @returns 删除成功返回 true
+   */
   async messageDeleteByConversationId(params: { conversationIdList: string[] }): Promise<boolean> {
     await matrixHttpClient.request(
       {
@@ -546,6 +645,14 @@ class MatrixAIService {
     return true
   }
 
+  /**
+   * 分页查询 AI 聊天角色列表。
+   *
+   * @param params - 分页参数
+   * @param params.pageNo - 页码
+   * @param params.pageSize - 每页数量
+   * @returns 聊天角色列表与总数
+   */
   async chatRolePage(params?: { pageNo?: number; pageSize?: number }): Promise<AIChatRoleListResponse> {
     return matrixHttpClient.request<AIChatRoleListResponse>(
       {

@@ -256,6 +256,9 @@ class MatrixNotificationService extends BaseMatrixService {
     return allRules
   }
 
+  /**
+   * 初始化通知服务：拉取并缓存当前账号的全部推送规则。
+   */
   async initialize(): Promise<void> {
     try {
       const client = this.getNotificationClient()
@@ -268,6 +271,9 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 在 global 作用域下新增或更新一条推送规则。
+   */
   async setPushRule(rule: NotificationRule): Promise<void> {
     const client = this.getNotificationClient()
     try {
@@ -281,6 +287,9 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 删除指定推送规则；未显式给出 kind 时先自动探测其所属分类。
+   */
   async deletePushRule(ruleId: string, kind?: PushRuleKind): Promise<void> {
     const client = this.getNotificationClient()
     try {
@@ -317,6 +326,9 @@ class MatrixNotificationService extends BaseMatrixService {
     return PushRuleKind.Override
   }
 
+  /**
+   * 设置（注册或更新）当前设备的推送配置。
+   */
   async setPusher(pusher: IPusherRequest): Promise<void> {
     const client = this.getNotificationClient()
     try {
@@ -328,11 +340,17 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 返回缓存中的推送规则；读取前会同步客户端状态，换号时自动清空缓存。
+   */
   getPushRules(): IPushRule[] {
     this.syncClientState()
     return this.pushRules
   }
 
+  /**
+   * 按 ruleId 从缓存中查找单条推送规则。
+   */
   getPushRule(ruleId: string): IPushRule | undefined {
     this.syncClientState()
     return this.pushRules.find((rule) => rule.rule_id === ruleId)
@@ -351,8 +369,12 @@ class MatrixNotificationService extends BaseMatrixService {
     this.syncConfigToAccountData()
   }
 
+  /**
+   * 读取当前通知展示配置。
+   *
+   * 每次都从持久化存储刷新，跨窗口改动无需重启即可生效。
+   */
   getConfig(): NotificationConfig {
-    // 每次读取都从持久化存储刷新，跨窗口改动无需重启即可生效
     this.loadConfig()
     return this.configStore.getConfig()
   }
@@ -410,6 +432,9 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 确认（ack）一条通知，返回是否成功。
+   */
   async ackNotification(notificationId: string): Promise<boolean> {
     return postNotificationAck(notificationId)
   }
@@ -514,6 +539,9 @@ class MatrixNotificationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 清空通知 ack 端点探测缓存。
+   */
   clearAckCache(): void {
     clearAckEndpointCache()
   }

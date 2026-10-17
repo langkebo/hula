@@ -53,6 +53,11 @@ class MatrixRoomNotificationService extends BaseMatrixService {
     await client.setRoomAccountData(roomId, ROOM_NOTIFICATION_SETTINGS_EVENT, nextSettings as Record<string, unknown>)
   }
 
+  /**
+   * 设置房间的通知类型。
+   *
+   * 勿扰类型会静音该房间，其余类型取消静音，并写入房间级账号数据。
+   */
   async setRoomNotification(roomId: string, type: NotificationTypeEnum): Promise<void> {
     if (type === NotificationTypeEnum.NOT_DISTURB) {
       await matrixPushService.muteRoom(roomId)
@@ -67,6 +72,9 @@ class MatrixRoomNotificationService extends BaseMatrixService {
     logger.info('房间通知设置已更新:', roomId, type)
   }
 
+  /**
+   * 设置房间的通知屏蔽标记，写入房间级账号数据。
+   */
   async setRoomShield(roomId: string, shield: boolean): Promise<void> {
     await this.saveRoomSettings(roomId, { shield })
     logger.info('房间屏蔽状态已更新:', roomId, shield)

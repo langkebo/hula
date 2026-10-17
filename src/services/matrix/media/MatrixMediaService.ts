@@ -62,10 +62,16 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     this.getClient()
   }
 
+  /**
+   * 设置媒体压缩选项（与默认值合并）。
+   */
   setCompressOptions(options: CompressOptions) {
     this.compressOptions = { ...DEFAULT_COMPRESS_OPTIONS, ...options }
   }
 
+  /**
+   * 开启或关闭上传前自动压缩。
+   */
   setEnableCompression(enable: boolean) {
     this.enableCompression = enable
   }
@@ -234,6 +240,9 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
+  /**
+   * 上传内存中的 Blob（按 mimetype 推断，不解析元数据）。
+   */
   async uploadBlob(blob: Blob, filename: string, mimetype: string): Promise<UploadResult> {
     this.assertClientReady()
     try {
@@ -267,17 +276,28 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   // ── URL 解析 ──
 
+  /**
+   * 将 mxc:// 地址解析为 HTTP 地址，可选指定缩略图尺寸。
+   * 解析失败时返回 null。
+   */
   getMediaUrl(mxcUrl: string, width?: number, height?: number): string | null {
     // 统一走 resolveMxcToHttp（SDK 的 mxcUrlToHttp 在 ProfileManager 上，不在 MatrixClient 上）
     return resolveMxcToHttp(this.getClient(), mxcUrl, width, height)
   }
 
+  /**
+   * 将 mxc:// 地址解析为指定尺寸的缩略图 HTTP 地址。
+   * 解析失败时返回 null。
+   */
   getThumbnailUrl(mxcUrl: string, width: number, height: number): string | null {
     return resolveMxcToHttp(this.getClient(), mxcUrl, width, height)
   }
 
   // ── 下载（委托 mediaDownloadHelpers）──
 
+  /**
+   * 下载（未加密）媒体为字节数组。
+   */
   async downloadFileBytes(mediaUrl: string): Promise<Uint8Array> {
     const client = this.getClient()
     return dlFileBytes(
@@ -288,6 +308,9 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     )
   }
 
+  /**
+   * 下载并解密加密媒体为字节数组。
+   */
   async downloadEncryptedFileBytes(encryptedFile: Parameters<typeof dlEncryptedFileBytes>[1]): Promise<Uint8Array> {
     const client = this.getClient()
     return dlEncryptedFileBytes(
@@ -300,6 +323,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   // ── 媒体配置 & 配额 ──
 
+  /**
+   * 获取媒体上传配置（含 `m.upload.size` 上限）。
+   * 请求失败时抛出异常。
+   */
   async getMediaConfig(): Promise<{ 'm.upload.size'?: number; [key: string]: unknown }> {
     try {
       const result = await this.getMedia().getMediaConfig(false)
@@ -311,6 +338,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
+  /**
+   * 删除指定服务器上的媒体。
+   * 成功返回 true，失败时抛出异常。
+   */
   async deleteMedia(serverName: string, mediaId: string): Promise<boolean> {
     try {
       await this.getMedia().deleteMedia(serverName, mediaId)
@@ -322,6 +353,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取媒体配额告警列表。
+   * 请求失败时返回空数组。
+   */
   async getQuotaAlerts(): Promise<MediaQuotaAlert[]> {
     try {
       const response = await this.getMedia().getMediaQuotaAlerts()
@@ -333,6 +368,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
+  /**
+   * 检查媒体配额（上限/已用/剩余）。
+   * 请求失败时返回 null。
+   */
   async checkQuota(): Promise<{ limit: number; used: number; remaining: number } | null> {
     try {
       const result = await this.getMedia().checkMediaQuota()
@@ -343,6 +382,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取媒体配额统计（存储字节/媒体数/上限字节）。
+   * 请求失败时返回 null。
+   */
   async getQuotaStats(): Promise<{ storageBytes: number; mediaCount: number; limitBytes: number } | null> {
     try {
       const result = await this.getMedia().getMediaQuotaStats()
@@ -357,6 +400,10 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取认证媒体配置（是否启用 authenticated_media）。
+   * 请求失败时返回 null。
+   */
   async getAuthenticatedMediaConfig(): Promise<{ authenticated_media: boolean; [key: string]: unknown } | null> {
     try {
       const result = (await this.getMedia().getMediaConfig(true)) as Record<string, unknown>

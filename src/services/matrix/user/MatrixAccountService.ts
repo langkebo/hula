@@ -42,6 +42,7 @@ interface AuthData {
 }
 
 class MatrixAccountService extends BaseMatrixService {
+  /** 更新当前账号的全局显示名称。 */
   async updateDisplayName(displayName: string): Promise<boolean> {
     const client = this.getClient()
 
@@ -55,6 +56,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 更新当前账号的全局头像 URL。 */
   async updateAvatar(avatarUrl: string): Promise<boolean> {
     const client = this.getClient()
 
@@ -68,6 +70,10 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 修改账号密码（旧密码 + 新密码，可选登出其它设备）。
+   * 依赖 UIA，失败时原样抛出异常，以便上层发起交互式认证。
+   */
   async changePassword(oldPassword: string, newPassword: string, logoutDevices: boolean = false): Promise<boolean> {
     const client = this.getClient()
     logger.debug(`[MatrixAccount] changePassword() 开始: logoutDevices=${logoutDevices}`)
@@ -116,6 +122,7 @@ class MatrixAccountService extends BaseMatrixService {
     return deviceManager
   }
 
+  /** 获取当前账号的全部设备列表（含最后活动时间 / IP 等展示字段）。 */
   async getDevices(): Promise<DeviceInfo[]> {
     const client = this.getClient()
     logger.debug('[MatrixAccount] getDevices() 开始获取设备列表')
@@ -147,6 +154,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 获取指定设备的详情；设备不存在时抛错。 */
   async getDevice(deviceId: string): Promise<DeviceInfo> {
     const client = this.getClient()
     logger.debug(`[MatrixAccount] getDevice() 开始获取设备: deviceId=${deviceId}`)
@@ -175,6 +183,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 设置指定设备的显示名称。 */
   async setDeviceName(deviceId: string, displayName: string): Promise<boolean> {
     logger.debug(`[MatrixAccount] setDeviceName() 开始: deviceId=${deviceId}, displayName=${displayName}`)
     try {
@@ -189,6 +198,10 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 删除指定设备。
+   * UIA 挑战（401 / M_FORBIDDEN）由上层处理交互式认证，本方法原样抛出异常。
+   */
   async deleteDevice(deviceId: string, authData?: AuthData): Promise<boolean> {
     logger.debug(`[MatrixAccount] deleteDevice() 开始: deviceId=${deviceId}, hasAuth=${!!authData}`)
     try {
@@ -207,6 +220,10 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 批量删除多个设备。
+   * 以对象形式传递 `devices` + `auth`——SDK 的位置参数形式会静默丢弃第二位 auth。
+   */
   async deleteDevices(deviceIds: string[], authData?: AuthData): Promise<boolean> {
     logger.debug(
       `[MatrixAccount] deleteDevices() 开始: count=${deviceIds.length}, ids=[${deviceIds.join(', ')}], hasAuth=${!!authData}`
@@ -226,6 +243,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 获取账号已绑定的第三方标识（3PID）列表；`pending3pids` 当前恒为空。 */
   async getThreePids(): Promise<{
     threepids: Array<{
       medium: string
@@ -255,6 +273,10 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 添加第三方标识（3PID）。
+   * `bind` 为历史遗留参数：后端 add/bind 同 handler，仅消费 sid + clientSecret，此处已忽略。
+   */
   async addThreePid(sid: string, clientSecret: string, _bind?: boolean): Promise<void> {
     const client = this.getClient()
 
@@ -268,6 +290,10 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 绑定第三方标识（3PID）。
+   * 后端 add/bind 同 handler，仅消费 sid + clientSecret；medium/address 仅用于日志。
+   */
   async bindThreePid(sid: string, clientSecret: string, medium: string, address: string): Promise<void> {
     const client = this.getClient()
 
@@ -281,6 +307,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 删除已绑定的第三方标识（3PID）。 */
   async deleteThreePid(medium: string, address: string): Promise<void> {
     const client = this.getClient()
 
@@ -293,6 +320,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 解绑已绑定的第三方标识（3PID）。 */
   async unbindThreePid(medium: string, address: string): Promise<void> {
     const client = this.getClient()
 
@@ -317,6 +345,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 写入账号级 account data 并异步同步到服务器。 */
   async setAccountData(eventType: string, content: unknown): Promise<void> {
     const client = this.getClient()
 
@@ -329,6 +358,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 注销当前账号（`erase` 为 true 时抹除全部内容）；依赖 UIA。 */
   async deactivateAccount(authData?: AuthData, erase: boolean = false): Promise<void> {
     const client = this.getClient()
 
@@ -341,6 +371,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 获取账号的忽略用户列表（`m.ignored_user_list`）；失败时返回空数组。 */
   async getIgnoredUsers(): Promise<string[]> {
     const client = this.getClient()
 
@@ -355,6 +386,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 覆盖写入账号的忽略用户列表（`m.ignored_user_list`）。 */
   async setIgnoredUsers(userIds: string[]): Promise<boolean> {
     const client = this.getClient()
 
@@ -448,6 +480,10 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取 homeserver 能力表。
+   * 优先经 Worker 线程单次请求以避免阻塞主线程，失败降级到 SDK（拼回 capabilities + unstable_features）。
+   */
   async getCapabilities(): Promise<Record<string, unknown>> {
     const client = this.getClient()
     logger.debug(`[MatrixAccount] getCapabilities() 开始: workerStarted=${matrixWorkerHost.isStarted}`)
@@ -487,6 +523,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 获取 homeserver 支持的第三方协议（身份服务器等）；失败返回空对象。 */
   async getThirdPartyProtocols(): Promise<Record<string, unknown>> {
     const client = this.getClient()
 
@@ -537,6 +574,7 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
+  /** 拉取 `/events` 事件流（长轮询，带 timeout）；失败返回空对象。 */
   async getEventStream(from?: string, timeout: number = 30000): Promise<Record<string, unknown>> {
     const client = this.getClient()
 

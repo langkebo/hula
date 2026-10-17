@@ -20,6 +20,14 @@ export interface ChatRole {
 }
 
 class MatrixChatRoleService {
+  /**
+   * 分页查询当前用户的聊天角色列表。
+   *
+   * @param params - 分页参数
+   * @param params.pageNo - 页码
+   * @param params.pageSize - 每页数量
+   * @returns 列表与总数
+   */
   async page(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: ChatRole[]; total: number }> {
     return matrixHttpClient.request<{ list: ChatRole[]; total: number }>(
       {
@@ -31,6 +39,11 @@ class MatrixChatRoleService {
     )
   }
 
+  /**
+   * 查询聊天角色分类列表。
+   *
+   * 返回用于筛选/分组的 `label` 与 `value` 选项。
+   */
   async categoryList(): Promise<Array<{ label: string; value: string }>> {
     return matrixHttpClient.request<Array<{ label: string; value: string }>>(
       {
@@ -90,6 +103,13 @@ class MatrixChatRoleService {
     )
   }
 
+  /**
+   * 删除指定聊天角色。
+   *
+   * @param params - 删除参数
+   * @param params.id - 聊天角色 ID
+   * @returns 删除成功返回 true
+   */
   async delete(params: { id: string }): Promise<boolean> {
     await matrixHttpClient.request(
       {

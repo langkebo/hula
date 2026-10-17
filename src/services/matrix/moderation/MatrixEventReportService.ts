@@ -59,6 +59,11 @@ class MatrixEventReportService extends BaseMatrixService {
     return manager
   }
 
+  /**
+   * 创建一条事件举报。
+   *
+   * 返回后端生成的举报记录，供后续查询与处理。
+   */
   async createReport(body: CreateReportBody): Promise<ReportResponse> {
     try {
       const manager = await this.requireEventReportManager()
@@ -71,6 +76,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 查询举报列表，支持分页等查询参数。
+   */
   async listReports(params?: QueryParams): Promise<ReportResponse[]> {
     try {
       const manager = await this.requireEventReportManager()
@@ -83,6 +91,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取全部举报，不受分页限制。
+   */
   async getAllReports(params?: QueryParams): Promise<ReportResponse[]> {
     try {
       const manager = await this.requireEventReportManager()
@@ -95,6 +106,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取举报总条数。
+   */
   async getReportsCount(): Promise<EventReportCountResponse> {
     try {
       const manager = await this.requireEventReportManager()
@@ -107,6 +121,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 按 id 获取单条举报详情。
+   */
   async getReport(id: number): Promise<ReportResponse> {
     try {
       const manager = await this.requireEventReportManager()
@@ -119,6 +136,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 按事件 id 查询相关举报。
+   */
   async getReportsByEvent(eventId: string): Promise<ReportResponse[]> {
     try {
       const manager = await this.requireEventReportManager()
@@ -131,6 +151,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 按房间 id 查询举报。
+   */
   async getReportsByRoom(roomId: string, params?: QueryParams): Promise<ReportResponse[]> {
     try {
       const manager = await this.requireEventReportManager()
@@ -143,6 +166,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 按举报人查询其提交的举报。
+   */
   async getReportsByReporter(reporterUserId: string, params?: QueryParams): Promise<ReportResponse[]> {
     try {
       const manager = await this.requireEventReportManager()
@@ -155,6 +181,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 按处理状态查询举报。
+   */
   async getReportsByStatus(status: ReportResponse['status'], params?: QueryParams): Promise<ReportResponse[]> {
     try {
       const manager = await this.requireEventReportManager()
@@ -167,6 +196,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取指定状态的举报计数。
+   */
   async getStatusCount(status: ReportResponse['status']): Promise<StatusCountResponse> {
     try {
       const manager = await this.requireEventReportManager()
@@ -179,6 +211,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 更新举报内容。
+   */
   async updateReport(id: number, body: UpdateReportBody): Promise<ReportResponse> {
     try {
       const manager = await this.requireEventReportManager()
@@ -191,6 +226,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 将举报标记为已解决。
+   */
   async resolveReport(id: number, body?: ResolveReportBody): Promise<ReportResponse> {
     try {
       const manager = await this.requireEventReportManager()
@@ -203,6 +241,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 驳回举报。
+   */
   async dismissReport(id: number, body?: DismissReportBody): Promise<ReportResponse> {
     try {
       const manager = await this.requireEventReportManager()
@@ -215,6 +256,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 升级举报，上报至更高处理层级。
+   */
   async escalateReport(id: number, body?: EscalateReportBody): Promise<ReportResponse> {
     try {
       const manager = await this.requireEventReportManager()
@@ -227,6 +271,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 删除举报。
+   */
   async deleteReport(id: number): Promise<void> {
     try {
       const manager = await this.requireEventReportManager()
@@ -238,6 +285,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取举报统计概览。
+   */
   async getStats(): Promise<StatsResponse> {
     try {
       const manager = await this.requireEventReportManager()
@@ -264,6 +314,11 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 封禁用户在指定时间点前的举报权限。
+   *
+   * `blockedUntil` 为封禁截止时间戳，`reason` 记录封禁原因。
+   */
   async blockUser(userId: string, blockedUntil: number, reason: string): Promise<void> {
     try {
       const manager = await this.requireEventReportManager()
@@ -275,6 +330,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 解除对用户举报频率的封禁。
+   */
   async unblockUser(userId: string): Promise<void> {
     try {
       const manager = await this.requireEventReportManager()
@@ -286,6 +344,9 @@ class MatrixEventReportService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 停止服务并清空缓存的 manager 与 client 引用。
+   */
   stop(): void {
     this.eventReportManager = null
     this.observedClient = null

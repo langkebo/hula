@@ -56,11 +56,19 @@ class MatrixProfileService extends BaseMatrixService {
     return httpStatus === 404 || errcode === 'M_NOT_FOUND' || String(err).includes('404')
   }
 
+  /**
+   * 注入 Matrix 客户端并完成服务初始化。
+   * 仅作为回退客户端使用，真正的客户端由基类优先解析。
+   */
   initialize(client: MatrixClient): void {
     this.setFallbackClient(client)
     logger.info('服务已初始化')
   }
 
+  /**
+   * 获取指定用户的基础资料（昵称 + 头像）。
+   * 用户或资料不存在（404 / M_NOT_FOUND）属常见情况，降级为 warn 后仍原样抛错。
+   */
   async getProfile(userId: string): Promise<MatrixProfile> {
     try {
       const client = this.getClient()
@@ -81,6 +89,9 @@ class MatrixProfileService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取用户昵称，失败时返回 undefined 而不抛出。
+   */
   async getDisplayName(userId: string): Promise<string | undefined> {
     try {
       const profile = await this.getProfile(userId)
@@ -91,6 +102,9 @@ class MatrixProfileService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取用户头像 URL，失败时返回 undefined 而不抛出。
+   */
   async getAvatarUrl(userId: string): Promise<string | undefined> {
     try {
       const profile = await this.getProfile(userId)
@@ -101,6 +115,10 @@ class MatrixProfileService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 设置当前账号的显示名称。
+   * `AbortError` 视为主动中止，仅记录 warn；其余错误记录 error 后抛出。
+   */
   async setDisplayName(displayName: string): Promise<void> {
     try {
       const client = this.getClient()
@@ -116,6 +134,9 @@ class MatrixProfileService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 设置当前账号的头像 URL（需为已上传的 mxc:// URI）。
+   */
   async setAvatarUrl(avatarUrl: string): Promise<void> {
     try {
       const client = this.getClient()
@@ -127,6 +148,10 @@ class MatrixProfileService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取用户扩展资料（个性签名、地区、生日等自定义字段）。
+   * 服务器未实现该接口或资料不存在时统一返回空对象，不抛出。
+   */
   async getExtendedProfile(userId: string): Promise<MatrixExtendedProfile> {
     try {
       const client = this.getClient()
@@ -150,6 +175,10 @@ class MatrixProfileService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 设置目标用户的单个扩展资料字段。
+   * 服务器不支持该接口时抛出 ExtendedProfileUnsupportedError，供上层降级。
+   */
   async setExtendedProfileField(userId: string, keyName: string, value: unknown): Promise<void> {
     try {
       const client = this.getClient()
@@ -165,6 +194,10 @@ class MatrixProfileService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 删除目标用户的单个扩展资料字段。
+   * 字段本就不存在时视为成功（幂等）；服务器不支持时抛 ExtendedProfileUnsupportedError。
+   */
   async deleteExtendedProfileField(userId: string, keyName: string): Promise<void> {
     try {
       const client = this.getClient()
@@ -184,6 +217,10 @@ class MatrixProfileService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 批量更新当前账号的扩展资料。
+   * 值为 undefined/null/空串的字段走删除，其余走写入，最后回读并返回最新资料。
+   */
   async updateOwnExtendedProfile(fields: Partial<MatrixExtendedProfile>): Promise<MatrixExtendedProfile> {
     const client = this.getClient()
     const userId = client.getUserId()
@@ -205,6 +242,10 @@ class MatrixProfileService extends BaseMatrixService {
     return await this.getExtendedProfile(userId)
   }
 
+  /**
+   * 上传头像文件并立即设置为当前账号头像。
+   * 返回上传得到的 mxc:// content URI。
+   */
   async uploadAndSetAvatar(file: Blob | File): Promise<string> {
     try {
       const client = this.getClient()
@@ -235,6 +276,10 @@ interface UseProfileResult {
   uploadAvatar: (file: Blob | File) => Promise<string>
 }
 
+/**
+ * 资料编辑组合式函数。
+ * 在 profileService 之上维护 loading / error 状态，并在写入成功后同步本地 profile 缓存。
+ */
 export function useProfile(): UseProfileResult {
   const profile = ref<MatrixProfile | null>(null)
   const isLoading = ref(false)

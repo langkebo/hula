@@ -53,10 +53,16 @@ class MatrixContactService {
     }
   }
 
+  /** 按关键字搜索好友（委托 `searchUsers`）。 */
   async searchFriend(query: string, limit = 10): Promise<UserProfile[]> {
     return this.searchUsers(query, limit)
   }
 
+  /**
+   * 按关键字搜索用户。
+   * 优先经 synapse-rust 好友扩展做精确匹配，其次模糊匹配，再退回用户目录搜索；
+   * 对 `@user:domain` 或 localpart 形式输入还会做一次 profile 兜底查询。
+   */
   async searchUsers(query: string, limit = 10): Promise<UserProfile[]> {
     const trimmedQuery = query.trim()
     if (!trimmedQuery) {
@@ -164,6 +170,7 @@ class MatrixContactService {
     }
   }
 
+  /** 获取指定用户的资料（显示名 + 头像）；失败返回 null。 */
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
       const client = matrixClientService.getClient()
@@ -183,6 +190,7 @@ class MatrixContactService {
     }
   }
 
+  /** 获取或创建与指定用户的私聊房间，返回房间 ID。 */
   async getOrCreateDirectChat(userId: string): Promise<DirectChatResult> {
     try {
       const roomId = await matrixDirectMessageService.getOrCreateDmRoom(userId)
@@ -194,6 +202,7 @@ class MatrixContactService {
     }
   }
 
+  /** 获取当前账号的全部私聊房间 ID 列表。 */
   async getDMRooms(): Promise<string[]> {
     try {
       const rooms = await matrixDirectMessageService.getDMRooms(false)
@@ -204,6 +213,7 @@ class MatrixContactService {
     }
   }
 
+  /** 邀请用户加入房间。 */
   async inviteUser(roomId: string, userId: string): Promise<void> {
     try {
       await matrixRoomActionFacade.inviteUser(roomId, userId)
@@ -214,6 +224,7 @@ class MatrixContactService {
     }
   }
 
+  /** 将用户踢出房间（可选原因）。 */
   async kickUser(roomId: string, userId: string, reason?: string): Promise<void> {
     try {
       await matrixRoomActionFacade.kickUser(roomId, userId, reason)
@@ -224,6 +235,7 @@ class MatrixContactService {
     }
   }
 
+  /** 封禁房间成员（可选原因）。 */
   async banUser(roomId: string, userId: string, reason?: string): Promise<void> {
     try {
       await matrixRoomActionFacade.banUser(roomId, userId, reason)
@@ -234,6 +246,7 @@ class MatrixContactService {
     }
   }
 
+  /** 解除房间成员封禁。 */
   async unbanUser(roomId: string, userId: string): Promise<void> {
     try {
       await matrixRoomActionFacade.unbanUser(roomId, userId)
@@ -244,6 +257,7 @@ class MatrixContactService {
     }
   }
 
+  /** 获取房间的成员列表。 */
   async getRoomMembers(roomId: string): Promise<RoomMember[]> {
     try {
       return await matrixRoomQueryFacade.getMembers(roomId)
@@ -253,6 +267,7 @@ class MatrixContactService {
     }
   }
 
+  /** 获取房间状态事件；`eventType` 为 `*` 时返回全部，否则按类型过滤。 */
   async getRoomState(roomId: string, eventType: string): Promise<MatrixEvent[]> {
     try {
       const stateEvents = await matrixRoomReadFacade.getRoomState(roomId)
@@ -267,6 +282,7 @@ class MatrixContactService {
     }
   }
 
+  /** 批量按用户 ID 获取展示项（本地已缓存用户优先，未命中再查 profile）。 */
   async getUserByIds(uidList: string[]): Promise<UserItem[]> {
     try {
       const client = matrixClientService.getClient()
@@ -303,10 +319,12 @@ class MatrixContactService {
     }
   }
 
+  /** 添加好友（等价于获取或创建与该用户的私聊）。 */
   async addFriend(userId: string): Promise<DirectChatResult> {
     return this.getOrCreateDirectChat(userId)
   }
 
+  /** 发送好友请求，并返回与目标用户的私聊房间 ID。 */
   async sendAddFriendRequest(userId: string, reason?: string): Promise<DirectChatResult> {
     try {
       const normalizedUserId = this.normalizeTargetUserId(userId)

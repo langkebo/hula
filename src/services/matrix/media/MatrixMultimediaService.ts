@@ -61,6 +61,10 @@ class MatrixMultimediaService extends BaseMatrixService {
     mimeType: 'audio/ogg;codecs=opus'
   }
 
+  /**
+   * 开始语音录制。
+   * 采集麦克风并建立 AnalyserNode 用于实时音量反馈；配置项与默认值合并。
+   */
   async startVoiceRecording(config: Partial<VoiceMessageConfig> = {}): Promise<void> {
     const finalConfig = { ...this.defaultVoiceConfig, ...config }
 
@@ -93,6 +97,10 @@ class MatrixMultimediaService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 结束语音录制并返回音频 Blob 与实际时长（毫秒）。
+   * 无进行中的录制时抛出异常。
+   */
   async stopVoiceRecording(): Promise<{ blob: Blob; duration: number }> {
     if (!this.mediaRecorder) {
       throw new Error(this.t('matrix_error.media.no_active_recording'))
@@ -118,6 +126,9 @@ class MatrixMultimediaService extends BaseMatrixService {
     })
   }
 
+  /**
+   * 取消当前语音录制并释放采集资源（丢弃已录制数据）。
+   */
   cancelVoiceRecording(): void {
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop()
@@ -140,6 +151,9 @@ class MatrixMultimediaService extends BaseMatrixService {
     this.analyser = null
   }
 
+  /**
+   * 获取当前音量等级（0-255 的频域均值），无分析器时返回 0。
+   */
   getAudioLevel(): number {
     if (!this.analyser) return 0
 
@@ -153,15 +167,25 @@ class MatrixMultimediaService extends BaseMatrixService {
     return Math.round(sum / dataArray.length)
   }
 
+  /**
+   * 获取当前录制的已进行时长（毫秒），未开始录制时返回 0。
+   */
   getRecordingDuration(): number {
     if (!this.recordingStartTime) return 0
     return Date.now() - this.recordingStartTime
   }
 
+  /**
+   * 是否正在录音。
+   */
   isRecording(): boolean {
     return this.mediaRecorder?.state === 'recording'
   }
 
+  /**
+   * 为图片文件生成等比缩放缩略图。
+   * 非图片类型返回 null；加载失败时 reject。
+   */
   async generateThumbnail(file: File, maxWidth: number = 320, maxHeight: number = 240): Promise<ImageThumbnail | null> {
     if (!file.type.startsWith('image/')) {
       return null
@@ -282,6 +306,10 @@ class MatrixMultimediaService extends BaseMatrixService {
     })
   }
 
+  /**
+   * 下载媒体并还原为 Blob。
+   * 先经 resolveMxcToHttp 将 mxc:// 转为 HTTP 地址，再按文件扩展名推断 MIME。
+   */
   async downloadMedia(mxcUrl: string, filename: string): Promise<Blob> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -306,6 +334,9 @@ class MatrixMultimediaService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 下载媒体并触发浏览器保存（创建临时 a 标签下载）。
+   */
   async downloadAndSave(mxcUrl: string, filename: string): Promise<void> {
     const blob = await this.downloadMedia(mxcUrl, filename)
 
@@ -321,6 +352,10 @@ class MatrixMultimediaService extends BaseMatrixService {
     logger.info(`[Multimedia] 保存文件成功: ${filename}`)
   }
 
+  /**
+   * 获取图片或视频的原始宽高。
+   * 不支持的类型或加载失败时 reject。
+   */
   getMediaDimensions(file: File): Promise<{ width: number; height: number }> {
     return new Promise((resolve, reject) => {
       if (file.type.startsWith('image/')) {
@@ -352,6 +387,10 @@ class MatrixMultimediaService extends BaseMatrixService {
     })
   }
 
+  /**
+   * 获取音视频文件的时长（毫秒）。
+   * 不支持的类型或加载失败时 reject。
+   */
   getMediaDuration(file: File): Promise<number> {
     return new Promise((resolve, reject) => {
       if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
@@ -429,6 +468,9 @@ class MatrixMultimediaService extends BaseMatrixService {
     })
   }
 
+  /**
+   * 按 MIME 类型映射到文件图标语义键（image/video/audio/pdf 等）。
+   */
   getFileIcon(mimetype: string): string {
     if (mimetype.startsWith('image/')) return 'image'
     if (mimetype.startsWith('video/')) return 'video'
@@ -442,10 +484,16 @@ class MatrixMultimediaService extends BaseMatrixService {
     return 'file'
   }
 
+  /**
+   * 将字节数格式化为可读文件大小。
+   */
   formatFileSize(bytes: number): string {
     return formatBytes(bytes)
   }
 
+  /**
+   * 将毫秒时长格式化为可读文本。
+   */
   formatDuration(ms: number): string {
     return formatDuration(ms / 1000)
   }

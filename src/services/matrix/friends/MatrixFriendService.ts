@@ -52,6 +52,7 @@ class MatrixFriendService {
 
   // ===== 事件系统 =====
 
+  /** 注册好友服务事件监听器（同一事件可注册多个回调）。 */
   on(event: string, callback: FriendServiceEventHandler): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set())
@@ -59,6 +60,7 @@ class MatrixFriendService {
     this.eventListeners.get(event)?.add(callback)
   }
 
+  /** 移除某一事件的监听器。 */
   off(event: string, callback: FriendServiceEventHandler): void {
     this.eventListeners.get(event)?.delete(callback)
   }
@@ -69,14 +71,17 @@ class MatrixFriendService {
 
   // ===== 生命周期（委托 sync） =====
 
+  /** 初始化好友服务：建立 FriendManager 并挂载同步监听。 */
   async initialize(): Promise<void> {
     return this.friendSync.initialize()
   }
 
+  /** 触发一次好友数据同步。 */
   async sync(): Promise<void> {
     return this.friendSync.sync()
   }
 
+  /** 停止好友服务并清空所有事件监听器。 */
   stop(): void {
     this.friendSync.stop()
     this.eventListeners.clear()
@@ -84,68 +89,84 @@ class MatrixFriendService {
 
   // ===== 好友操作（委托 operations） =====
 
+  /** 向指定用户发送好友请求，可附可选理由。 */
   async sendFriendRequest(userId: string, reason?: string): Promise<void> {
     return this.operations.sendFriendRequest(userId, reason)
   }
 
+  /** 接受来自指定用户的好友请求。 */
   async acceptFriendRequest(userId: string): Promise<void> {
     return this.operations.acceptFriendRequest(userId)
   }
 
+  /** 取消已向指定用户发出的好友请求。 */
   async cancelFriendRequest(userId: string): Promise<void> {
     return this.operations.cancelFriendRequest(userId)
   }
 
+  /** 拒绝来自指定用户的好友请求。 */
   async rejectFriendRequest(userId: string): Promise<void> {
     return this.operations.rejectFriendRequest(userId)
   }
 
+  /** 解除与指定用户的好友关系。 */
   async removeFriend(userId: string): Promise<void> {
     return this.operations.removeFriend(userId)
   }
 
+  /** 设置指定好友的显示名称（本地备注名）。 */
   async setFriendDisplayName(userId: string, displayName: string): Promise<void> {
     return this.operations.setFriendDisplayName(userId, displayName)
   }
 
+  /** 设置指定好友的备注信息。 */
   async setFriendNote(userId: string, note: string): Promise<void> {
     return this.operations.setFriendNote(userId, note)
   }
 
+  /** 设置指定好友的关系状态。 */
   async setFriendStatus(userId: string, status: FriendStatus): Promise<void> {
     return this.operations.setFriendStatus(userId, status)
   }
 
   // ===== 好友分组（委托 groups） =====
 
+  /** 获取当前用户的全部分组。 */
   async getFriendGroups(): Promise<FriendGroup[]> {
     return this.groups.getFriendGroups()
   }
 
+  /** 新建好友分组并返回其结构。 */
   async createFriendGroup(name: string): Promise<FriendGroup> {
     return this.groups.createFriendGroup(name)
   }
 
+  /** 删除指定好友分组。 */
   async deleteFriendGroup(groupId: string): Promise<void> {
     return this.groups.deleteFriendGroup(groupId)
   }
 
+  /** 重命名指定好友分组。 */
   async renameFriendGroup(groupId: string, name: string): Promise<void> {
     return this.groups.renameFriendGroup(groupId, name)
   }
 
+  /** 将好友加入指定分组。 */
   async addFriendToGroup(groupId: string, userId: string): Promise<void> {
     return this.groups.addFriendToGroup(groupId, userId)
   }
 
+  /** 将好友移出指定分组。 */
   async removeFriendFromGroup(groupId: string, userId: string): Promise<void> {
     return this.groups.removeFriendFromGroup(groupId, userId)
   }
 
+  /** 获取指定分组内的好友列表。 */
   async getFriendsInGroup(groupId: string): Promise<Friend[]> {
     return this.groups.getFriendsInGroup(groupId)
   }
 
+  /** 获取指定好友所属的分组列表。 */
   async getFriendGroupsByUser(userId: string): Promise<FriendGroup[]> {
     return this.groups.getFriendGroupsByUser(userId)
   }
@@ -162,6 +183,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 获取好友列表：优先 FriendManager，为空或不可用时回退 REST API。 */
   async getFriends(): Promise<Friend[]> {
     try {
       const manager = await this.friendSync.ensureFriendManager(false)
@@ -181,6 +203,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 按用户 ID 获取单个好友，未命中返回 undefined。 */
   async getFriend(userId: string): Promise<Friend | undefined> {
     try {
       const friends = await this.getFriends()
@@ -191,6 +214,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 判断指定用户是否为好友：优先 FriendManager，不可用时回退 REST API。 */
   async isFriend(userId: string): Promise<boolean> {
     const manager = await this.friendSync.ensureFriendManager(false)
 
@@ -216,6 +240,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 获取好友数量，失败时返回 0。 */
   async getFriendCount(): Promise<number> {
     try {
       const friends = await this.getFriends()
@@ -226,6 +251,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 获取收到的待处理好友请求：优先 FriendManager，不可用时回退 REST API。 */
   async getIncomingRequests(): Promise<FriendRequest[]> {
     const manager = await this.friendSync.ensureFriendManager(false)
 
@@ -247,6 +273,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 获取已发出的待处理好友请求：优先 FriendManager，不可用时回退 REST API。 */
   async getOutgoingRequests(): Promise<FriendRequest[]> {
     const manager = await this.friendSync.ensureFriendManager(false)
 
@@ -268,6 +295,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 刷新并返回好友同步状态。 */
   async getSyncState(): Promise<FriendSyncState> {
     try {
       await this.friendSync.updateSyncState()
@@ -283,6 +311,7 @@ class MatrixFriendService {
     return this.friendSync.getSyncStateValue()
   }
 
+  /** 获取特别关注好友的用户 ID 列表。 */
   async getSpecialFriends(): Promise<string[]> {
     try {
       return matrixSpecialFriendService.getSpecialFriends()
@@ -292,6 +321,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 获取指定好友的详细信息，失败时抛出异常。 */
   async getFriendInfo(userId: string): Promise<Friend | undefined> {
     const manager = await this.friendSync.requireFriendManager()
 
@@ -317,6 +347,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 获取好友推荐列表；FriendManager 不支持时返回空数组。 */
   async getFriendSuggestions(): Promise<
     Array<{ user_id: string; display_name?: string; avatar_url?: string; reason?: string }>
   > {
@@ -336,6 +367,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 获取与指定用户的好友关系状态，未知或失败时返回 null。 */
   async getFriendStatus(userId: string): Promise<FriendStatus | null> {
     const manager = await this.friendSync.ensureFriendManager(false)
 
@@ -358,6 +390,7 @@ class MatrixFriendService {
     }
   }
 
+  /** 获取指定好友的状态详情，客户端或接口不可用时返回 null。 */
   async getFriendStatusInfo(userId: string): Promise<Record<string, unknown> | null> {
     const client = matrixClientService.getClient()
     if (!client) return null

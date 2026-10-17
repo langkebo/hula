@@ -33,6 +33,10 @@ interface LocationContent extends IContent {
 }
 
 class MatrixLocationService {
+  /**
+   * 获取设备当前位置（高精度，10s 超时，60s 缓存）。
+   * 浏览器不支持或获取失败时 reject。
+   */
   async getCurrentPosition(): Promise<LocationData> {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -62,6 +66,10 @@ class MatrixLocationService {
     })
   }
 
+  /**
+   * 向房间发送位置事件（m.location）。
+   * 客户端未初始化时抛出异常；成功返回事件 ID。
+   */
   async sendLocation(roomId: string, location: LocationData): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) {
@@ -88,6 +96,10 @@ class MatrixLocationService {
     }
   }
 
+  /**
+   * 从 Matrix 事件解析位置数据。
+   * 非 m.location 或解析失败时返回 null。
+   */
   parseLocationEvent(event: MatrixEvent): LocationData | null {
     try {
       const content = event.getContent() as LocationContent
@@ -112,10 +124,16 @@ class MatrixLocationService {
     }
   }
 
+  /**
+   * 生成该位置的 Google Maps 链接。
+   */
   getGoogleMapsUrl(location: LocationData): string {
     return `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
   }
 
+  /**
+   * 生成该位置的 OpenStreetMap 链接。
+   */
   getOpenStreetMapUrl(location: LocationData): string {
     return `https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=15/${location.latitude}/${location.longitude}`
   }

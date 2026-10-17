@@ -338,6 +338,11 @@ class MatrixDeviceService extends BaseMatrixService {
     return currentDeviceId === deviceId
   }
 
+  /**
+   * 获取当前账号收到的房间密钥请求列表。
+   * SDK 返回的是 Matrix 规范的包裹结构 `{ requests: [...] }`，此处按真实结构解包；
+   * 失败时记录 error 并返回空数组。
+   */
   async getRoomKeyRequests(): Promise<Array<Record<string, unknown>>> {
     const client = this.getClient()
     try {
@@ -354,6 +359,10 @@ class MatrixDeviceService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 删除指定的房间密钥请求。
+   * 成功返回 true，失败记录 error 并返回 false。
+   */
   async deleteRoomKeyRequest(requestId: string): Promise<boolean> {
     const client = this.getClient()
     try {

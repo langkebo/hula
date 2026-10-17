@@ -24,6 +24,14 @@ interface Message {
 }
 
 class MatrixConversationService {
+  /**
+   * 分页查询当前用户的 AI 对话列表。
+   *
+   * @param params - 分页参数
+   * @param params.pageNo - 页码
+   * @param params.pageSize - 每页数量
+   * @returns 列表与总数
+   */
   async page(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: Conversation[]; total: number }> {
     return matrixHttpClient.request<{ list: Conversation[]; total: number }>(
       {
@@ -71,6 +79,13 @@ class MatrixConversationService {
     )
   }
 
+  /**
+   * 按对话 ID 列表批量删除当前用户的对话。
+   *
+   * @param params - 删除参数
+   * @param params.conversationIdList - 待删除的对话 ID 列表
+   * @returns 删除成功返回 true
+   */
   async delete(params: { conversationIdList: string[] }): Promise<boolean> {
     await matrixHttpClient.request(
       {
@@ -84,6 +99,13 @@ class MatrixConversationService {
     return true
   }
 
+  /**
+   * 查询指定对话下的历史消息。
+   *
+   * @param params - 查询参数
+   * @param params.conversationId - 对话 ID
+   * @returns 消息列表
+   */
   async messageListByConversationId(params: { conversationId: string }): Promise<Message[]> {
     return matrixHttpClient.request<Message[]>(
       {
@@ -95,6 +117,13 @@ class MatrixConversationService {
     )
   }
 
+  /**
+   * 删除单条消息。
+   *
+   * @param params - 删除参数
+   * @param params.id - 消息 ID
+   * @returns 删除成功返回 true
+   */
   async messageDelete(params: { id: string }): Promise<boolean> {
     await matrixHttpClient.request(
       {
@@ -107,6 +136,13 @@ class MatrixConversationService {
     return true
   }
 
+  /**
+   * 删除指定对话下的全部消息。
+   *
+   * @param params - 删除参数
+   * @param params.conversationId - 对话 ID
+   * @returns 删除成功返回 true
+   */
   async messageDeleteByConversationId(params: { conversationId: string }): Promise<boolean> {
     await matrixHttpClient.request(
       {

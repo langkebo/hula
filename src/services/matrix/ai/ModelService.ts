@@ -23,6 +23,14 @@ export interface AIModel {
 }
 
 class MatrixModelService {
+  /**
+   * 分页查询当前用户的 AI 模型列表。
+   *
+   * @param params - 分页参数
+   * @param params.pageNo - 页码
+   * @param params.pageSize - 每页数量
+   * @returns 列表与总数
+   */
   async page(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: AIModel[]; total: number }> {
     return matrixHttpClient.request<{ list: AIModel[]; total: number }>(
       {
@@ -60,6 +68,13 @@ class MatrixModelService {
     )
   }
 
+  /**
+   * 删除指定 AI 模型。
+   *
+   * @param params - 删除参数
+   * @param params.id - 模型 ID
+   * @returns 删除成功返回 true
+   */
   async delete(params: { id: string }): Promise<boolean> {
     await matrixHttpClient.request(
       {

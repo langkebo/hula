@@ -18,6 +18,11 @@ const logger = createLogger('MatrixPushService')
 type PushRuleScope = 'global' | string
 
 class MatrixPushService extends BaseMatrixService {
+  /**
+   * 获取当前账号已注册的全部推送设备（pusher）。
+   *
+   * 高频读取，经 `MatrixRequestDeduper` 并发去重，避免重复 HTTP 请求。
+   */
   async getPushers(): Promise<IPusher[]> {
     // FT-132: 高频读取请求并发去重，避免并发调用发送多次 HTTP 请求
     return MatrixRequestDeduper.dedupe('pushers:list', async () => {
@@ -33,6 +38,9 @@ class MatrixPushService extends BaseMatrixService {
     })
   }
 
+  /**
+   * 获取当前账号的完整推送规则集合。
+   */
   async getPushRules(): Promise<IPushRules> {
     const client = this.getClient()
     try {
@@ -43,6 +51,11 @@ class MatrixPushService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 注销指定的推送设备。
+   *
+   * 按 pushkey + appId 删除，并携带当前 device_id 以匹配 SDK 契约。
+   */
   async unregisterPusher(pushkey: string, appId: string): Promise<void> {
     const client = this.getClient()
     try {
@@ -55,6 +68,9 @@ class MatrixPushService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 启用或停用指定作用域下的单条推送规则。
+   */
   async setPushRuleEnabled(scope: PushRuleScope, kind: PushRuleKind | string, ruleId: string, enabled: boolean) {
     const client = this.getClient()
     try {
@@ -82,6 +98,9 @@ class MatrixPushService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 静音指定房间（新增 room 级 mute 推送规则）。
+   */
   async muteRoom(roomId: string): Promise<void> {
     const client = this.getClient()
     try {
@@ -93,6 +112,9 @@ class MatrixPushService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 取消指定房间的静音状态。
+   */
   async unmuteRoom(roomId: string): Promise<void> {
     const client = this.getClient()
     try {
@@ -104,6 +126,11 @@ class MatrixPushService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 注册一个推送设备。
+   *
+   * 显式控制 device_id（SDK 默认由自身注入），故对请求体做字段扩展后再提交。
+   */
   async registerPusher(pusher: IPusher): Promise<void> {
     const client = this.getClient()
     try {
@@ -157,6 +184,9 @@ class MatrixPushService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 删除指定作用域下的单条推送规则。
+   */
   async deletePushRule(scope: PushRuleScope, kind: PushRuleKind | string, ruleId: string): Promise<void> {
     const client = this.getClient()
     try {
@@ -168,6 +198,11 @@ class MatrixPushService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 判断指定房间是否处于静音状态。
+   *
+   * 不吞掉 `getPushRules` 的错误：鉴权/网络异常应抛出，仅「成功获取但无匹配规则」才返回 false。
+   */
   async isRoomMuted(roomId: string): Promise<boolean> {
     // FT-124: 不吞掉 getPushRules 的错误。鉴权失败/网络错误应抛出，
     // 仅当 push rules 成功获取但无匹配规则时返回 false。
@@ -197,24 +232,41 @@ class MatrixPushService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 切换全局主开关（`.m.rule.master`）。
+   *
+   * 注意入参语义取反：传入 `true` 表示启用通知，对应停用 master 拦截规则。
+   */
   async setMasterRuleEnabled(enabled: boolean): Promise<void> {
     await this.setPushRuleEnabled('global', PushRuleKind.Override, '.m.rule.master', !enabled)
   }
 
+  /**
+   * 设置指定房间规则的提示音（通过 sound tweak 的 `default` / `none` 切换）。
+   */
   async setRoomSoundEnabled(ruleId: string, enabled: boolean): Promise<void> {
     await this.setPushRuleActions('global', PushRuleKind.RoomSpecific, ruleId, [
       { set_tweak: TweakName.Sound, value: enabled ? 'default' : 'none' }
     ])
   }
 
+  /**
+   * 启用或停用指定房间级推送规则。
+   */
   async setRoomRuleEnabled(ruleId: string, enabled: boolean): Promise<void> {
     await this.setPushRuleEnabled('global', PushRuleKind.RoomSpecific, ruleId, enabled)
   }
 
+  /**
+   * 从推送规则集合中提取 override 类规则。
+   */
   getOverrideRules(rules: IPushRules): IPushRule[] {
     return rules.global?.override ?? []
   }
 
+  /**
+   * 从推送规则集合中提取 room 类规则。
+   */
   getRoomRules(rules: IPushRules): IPushRule[] {
     return rules.global?.room ?? []
   }

@@ -124,6 +124,10 @@ class MatrixVoiceService extends BaseMatrixService {
     return resolveMxcToHttp(client, mxcUrl) ?? undefined
   }
 
+  /**
+   * 将 mxc:// 语音地址解析为可播放的 HTTP 地址。
+   * 非 mxc 输入原样返回；解析失败时回退到 fallbackUrl 或原始地址。
+   */
   getPlayableUrl(mxcUrl?: string, fallbackUrl?: string): string {
     const sourceUrl = mxcUrl || fallbackUrl
     if (!sourceUrl) {
@@ -242,6 +246,10 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 将语音消息转写为文字。
+   * 委托 transcribeVoiceViaApi；端点不可用时抛出异常。
+   */
   async transcribeVoice(params: VoiceTranscriptionParams): Promise<VoiceTranscriptionResult> {
     try {
       const result = await this.transcribeVoiceViaApi(params.eventId, params.lang)
@@ -259,6 +267,10 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取语音统计（总时长/总条数/平均时长）。
+   * 传入 roomId 时统计房间维度，否则统计全局；失败时返回全 0。
+   */
   async getVoiceStats(roomId?: string): Promise<{
     totalDuration: number
     totalMessages: number
@@ -279,6 +291,10 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取指定用户的语音统计（总时长/总条数）。
+   * 失败时返回全 0。
+   */
   async getUserVoiceStats(userId: string): Promise<{
     totalDuration: number
     totalMessages: number
@@ -297,6 +313,10 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取语音能力配置（最大时长/允许格式/自动转写）。
+   * 端点不可用时抛出异常；字段缺失时回退到内置默认值。
+   */
   async getVoiceConfig(): Promise<{
     maxDuration: number
     allowedFormats: string[]
@@ -321,6 +341,10 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 删除指定语音消息。
+   * 端点不可用时抛出异常。
+   */
   async deleteVoice(messageId: string): Promise<void> {
     this.requireNonEmpty(messageId, 'messageId')
     try {
@@ -382,6 +406,10 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 获取语音消息的原始内容。
+   * 端点不可用或读取失败时返回 null。
+   */
   async getVoiceContent(messageId: string): Promise<Record<string, unknown> | null> {
     this.requireNonEmpty(messageId, 'messageId')
     try {
@@ -397,6 +425,10 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 将语音消息转换为目标格式。
+   * 端点不可用或转换失败时返回 null。
+   */
   async convertVoice(messageId: string, targetFormat: string): Promise<{ url: string; format: string } | null> {
     this.requireNonEmpty(messageId, 'messageId')
     try {
@@ -481,6 +513,9 @@ class MatrixVoiceService extends BaseMatrixService {
 
 export const matrixVoiceService = new MatrixVoiceService()
 
+/**
+ * 类型守卫：判定未知值是否为语音消息结果（含 filename 字段）。
+ */
 export function isVoiceMessageResult(value: unknown): value is VoiceMessageResult {
   return isObject(value) && typeof value.filename === 'string'
 }

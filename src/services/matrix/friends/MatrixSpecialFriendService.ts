@@ -75,6 +75,7 @@ class MatrixSpecialFriendService extends BaseMatrixService {
     return content.special_friends.filter((userId): userId is string => typeof userId === 'string')
   }
 
+  /** 获取特别关注好友的用户 ID 列表（读 account data，带缓存）。 */
   async getSpecialFriends(): Promise<string[]> {
     try {
       const client = this.getClient()
@@ -101,6 +102,7 @@ class MatrixSpecialFriendService extends BaseMatrixService {
     }
   }
 
+  /** 将指定用户加入特别关注列表（幂等，已存在则直接返回）。 */
   async addSpecialFriend(userId: string): Promise<void> {
     try {
       const client = this.getClient()
@@ -125,6 +127,7 @@ class MatrixSpecialFriendService extends BaseMatrixService {
     }
   }
 
+  /** 将指定用户移出特别关注列表（幂等，不在列表中则直接返回）。 */
   async removeSpecialFriend(userId: string): Promise<void> {
     try {
       const client = this.getClient()
@@ -149,11 +152,13 @@ class MatrixSpecialFriendService extends BaseMatrixService {
     }
   }
 
+  /** 判断指定用户是否在特别关注列表中。 */
   async isSpecialFriend(userId: string): Promise<boolean> {
     const list = await this.getSpecialFriends()
     return list.includes(userId)
   }
 
+  /** 切换特别关注状态，返回切换后是否处于关注中。 */
   async toggleSpecialFriend(userId: string): Promise<boolean> {
     const isSpecial = await this.isSpecialFriend(userId)
     if (isSpecial) {
@@ -165,6 +170,7 @@ class MatrixSpecialFriendService extends BaseMatrixService {
     }
   }
 
+  /** 批量查询多个用户的特别关注状态，返回 userId 到布尔值的映射。 */
   async getSpecialFriendStatus(userIds: string[]): Promise<Map<string, boolean>> {
     const specialFriends = await this.getSpecialFriends()
     const result = new Map<string, boolean>()
@@ -183,6 +189,7 @@ class MatrixSpecialFriendService extends BaseMatrixService {
     }
   }
 
+  /** 清除特别关注列表缓存，强制下次读取重新拉取。 */
   clearCache(): void {
     this.cache = null
     this.hasWarnedBeforeClientReady = false

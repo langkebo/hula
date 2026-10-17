@@ -31,6 +31,14 @@ export interface ApiKeyBalance {
 }
 
 class MatrixApiKeyService {
+  /**
+   * 分页查询当前用户的 API Key 列表。
+   *
+   * @param params - 分页参数
+   * @param params.pageNo - 页码
+   * @param params.pageSize - 每页数量
+   * @returns 列表与总数
+   */
   async page(params?: { pageNo?: number; pageSize?: number }): Promise<{ list: ApiKey[]; total: number }> {
     return matrixHttpClient.request<{ list: ApiKey[]; total: number }>(
       {
@@ -42,6 +50,11 @@ class MatrixApiKeyService {
     )
   }
 
+  /**
+   * 查询当前用户的 API Key 精简列表。
+   *
+   * 仅返回用于下拉选择的核心字段，不分页。
+   */
   async simpleList(): Promise<ApiKey[]> {
     return matrixHttpClient.request<ApiKey[]>(
       {
@@ -89,6 +102,13 @@ class MatrixApiKeyService {
     )
   }
 
+  /**
+   * 删除指定 API Key。
+   *
+   * @param params - 删除参数
+   * @param params.id - API Key ID
+   * @returns 删除成功返回 true
+   */
   async delete(params: { id: string }): Promise<boolean> {
     await matrixHttpClient.request(
       {
@@ -101,6 +121,13 @@ class MatrixApiKeyService {
     return true
   }
 
+  /**
+   * 查询指定 API Key 的余额信息。
+   *
+   * @param params - 查询参数
+   * @param params.id - API Key ID
+   * @returns 余额信息
+   */
   async balance(params: { id: string }): Promise<ApiKeyBalance> {
     return matrixHttpClient.request<ApiKeyBalance>(
       {
@@ -112,6 +139,11 @@ class MatrixApiKeyService {
     )
   }
 
+  /**
+   * 查询支持的平台列表。
+   *
+   * 用于 API Key 创建/编辑时的平台选择。
+   */
   async platformList(): Promise<Platform[]> {
     return matrixHttpClient.request<Platform[]>(
       {
@@ -122,6 +154,13 @@ class MatrixApiKeyService {
     )
   }
 
+  /**
+   * 为指定平台登记可用模型。
+   *
+   * @param platform - 平台标识
+   * @param model - 模型名称
+   * @returns 登记成功返回 true
+   */
   async addPlatformModel(platform: string, model: string): Promise<boolean> {
     await matrixHttpClient.request(
       {
