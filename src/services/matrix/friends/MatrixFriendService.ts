@@ -5,18 +5,15 @@ import { unknownToObject } from '@/utils/typeGuard'
 import { type SynapseDmInfo, synapseDmExtensionService } from '../extensions/SynapseDmExtensionService'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import matrixClientService from '../MatrixClientService'
+import { friendEventBus } from './friendEvents'
 import {
-  type FriendGroup,
-  type FriendServiceEventHandler,
   type FriendStatus,
   type FriendSyncState,
   getFriendUserId,
   normalizeFriend,
   normalizeSynapseFriendRequest
 } from './friendUtils'
-import { MatrixFriendGroups } from './MatrixFriendGroups'
-import { MatrixFriendOperations } from './MatrixFriendOperations'
-import { MatrixFriendSync } from './MatrixFriendSync'
+import { matrixFriendSync } from './MatrixFriendSync'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
 
 export type {
@@ -32,146 +29,35 @@ export type { Friend, FriendRequest }
 const logger = createLogger('MatrixFriendService')
 
 /**
- * 好友服务门面：保留全部对外 API，内部拆分为三个协作子服务：
- *  - MatrixFriendSync：FriendManager 生命周期、同步、轮询、事件监听
- *  - MatrixFriendOperations：好友请求/备注/状态等写操作
- *  - MatrixFriendGroups：好友分组管理
- * 纯函数工具（normalize/getRequestUserId 等）位于 ./friendUtils。
+ * 好友查询门面：只保留**有实际逻辑**的读取路径（FriendManager 优先 → REST 回退、
+ * 错误归一、日志）。纯 1:1 转发的方法已移出，调用方直接使用对应单例：
+ *
+ * | 能力 | 使用 |
+ * |---|---|
+ * | 生命周期 initialize / sync / stop | `matrixFriendSync` |
+ * | 写操作（请求收发、解除关系、备注/状态） | `matrixFriendOperations` |
+ * | 分组增删改查 | `matrixFriendGroups` |
+ * | 事件订阅 on / off | 本门面的 `on` / `off`（转发 `friendEventBus`） |
+ *
+ * 这样拆分后每个文件都低于 400 行护栏，且不再有「门面方法只是换个名字再调一次」
+ * 的空转层。
  */
 class MatrixFriendService {
-  private readonly friendSync: MatrixFriendSync
-  private readonly operations: MatrixFriendOperations
-  private readonly groups: MatrixFriendGroups
-  private eventListeners: Map<string, Set<FriendServiceEventHandler>> = new Map()
-
-  constructor() {
-    this.friendSync = new MatrixFriendSync((event, data) => this.emit(event, data))
-    this.operations = new MatrixFriendOperations(this.friendSync)
-    this.groups = new MatrixFriendGroups(this.friendSync)
-  }
-
-  // ===== 事件系统 =====
-
   /** 注册好友服务事件监听器（同一事件可注册多个回调）。 */
-  on(event: string, callback: FriendServiceEventHandler): void {
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, new Set())
-    }
-    this.eventListeners.get(event)?.add(callback)
+  on(event: string, callback: (data?: unknown) => void): void {
+    friendEventBus.on(event, callback)
   }
 
   /** 移除某一事件的监听器。 */
-  off(event: string, callback: FriendServiceEventHandler): void {
-    this.eventListeners.get(event)?.delete(callback)
-  }
-
-  private emit(event: string, data?: unknown): void {
-    this.eventListeners.get(event)?.forEach((callback) => callback(data))
-  }
-
-  // ===== 生命周期（委托 sync） =====
-
-  /** 初始化好友服务：建立 FriendManager 并挂载同步监听。 */
-  async initialize(): Promise<void> {
-    return this.friendSync.initialize()
-  }
-
-  /** 触发一次好友数据同步。 */
-  async sync(): Promise<void> {
-    return this.friendSync.sync()
+  off(event: string, callback: (data?: unknown) => void): void {
+    friendEventBus.off(event, callback)
   }
 
   /** 停止好友服务并清空所有事件监听器。 */
   stop(): void {
-    this.friendSync.stop()
-    this.eventListeners.clear()
+    matrixFriendSync.stop()
+    friendEventBus.clear()
   }
-
-  // ===== 好友操作（委托 operations） =====
-
-  /** 向指定用户发送好友请求，可附可选理由。 */
-  async sendFriendRequest(userId: string, reason?: string): Promise<void> {
-    return this.operations.sendFriendRequest(userId, reason)
-  }
-
-  /** 接受来自指定用户的好友请求。 */
-  async acceptFriendRequest(userId: string): Promise<void> {
-    return this.operations.acceptFriendRequest(userId)
-  }
-
-  /** 取消已向指定用户发出的好友请求。 */
-  async cancelFriendRequest(userId: string): Promise<void> {
-    return this.operations.cancelFriendRequest(userId)
-  }
-
-  /** 拒绝来自指定用户的好友请求。 */
-  async rejectFriendRequest(userId: string): Promise<void> {
-    return this.operations.rejectFriendRequest(userId)
-  }
-
-  /** 解除与指定用户的好友关系。 */
-  async removeFriend(userId: string): Promise<void> {
-    return this.operations.removeFriend(userId)
-  }
-
-  /** 设置指定好友的显示名称（本地备注名）。 */
-  async setFriendDisplayName(userId: string, displayName: string): Promise<void> {
-    return this.operations.setFriendDisplayName(userId, displayName)
-  }
-
-  /** 设置指定好友的备注信息。 */
-  async setFriendNote(userId: string, note: string): Promise<void> {
-    return this.operations.setFriendNote(userId, note)
-  }
-
-  /** 设置指定好友的关系状态。 */
-  async setFriendStatus(userId: string, status: FriendStatus): Promise<void> {
-    return this.operations.setFriendStatus(userId, status)
-  }
-
-  // ===== 好友分组（委托 groups） =====
-
-  /** 获取当前用户的全部分组。 */
-  async getFriendGroups(): Promise<FriendGroup[]> {
-    return this.groups.getFriendGroups()
-  }
-
-  /** 新建好友分组并返回其结构。 */
-  async createFriendGroup(name: string): Promise<FriendGroup> {
-    return this.groups.createFriendGroup(name)
-  }
-
-  /** 删除指定好友分组。 */
-  async deleteFriendGroup(groupId: string): Promise<void> {
-    return this.groups.deleteFriendGroup(groupId)
-  }
-
-  /** 重命名指定好友分组。 */
-  async renameFriendGroup(groupId: string, name: string): Promise<void> {
-    return this.groups.renameFriendGroup(groupId, name)
-  }
-
-  /** 将好友加入指定分组。 */
-  async addFriendToGroup(groupId: string, userId: string): Promise<void> {
-    return this.groups.addFriendToGroup(groupId, userId)
-  }
-
-  /** 将好友移出指定分组。 */
-  async removeFriendFromGroup(groupId: string, userId: string): Promise<void> {
-    return this.groups.removeFriendFromGroup(groupId, userId)
-  }
-
-  /** 获取指定分组内的好友列表。 */
-  async getFriendsInGroup(groupId: string): Promise<Friend[]> {
-    return this.groups.getFriendsInGroup(groupId)
-  }
-
-  /** 获取指定好友所属的分组列表。 */
-  async getFriendGroupsByUser(userId: string): Promise<FriendGroup[]> {
-    return this.groups.getFriendGroupsByUser(userId)
-  }
-
-  // ===== 查询方法 =====
 
   private async getFriendsByFallbackApi(): Promise<Friend[]> {
     try {
@@ -186,7 +72,7 @@ class MatrixFriendService {
   /** 获取好友列表：优先 FriendManager，为空或不可用时回退 REST API。 */
   async getFriends(): Promise<Friend[]> {
     try {
-      const manager = await this.friendSync.ensureFriendManager(false)
+      const manager = await matrixFriendSync.ensureFriendManager(false)
       if (manager) {
         const friends = await manager.getFriends()
         if (friends.length > 0) {
@@ -216,7 +102,7 @@ class MatrixFriendService {
 
   /** 判断指定用户是否为好友：优先 FriendManager，不可用时回退 REST API。 */
   async isFriend(userId: string): Promise<boolean> {
-    const manager = await this.friendSync.ensureFriendManager(false)
+    const manager = await matrixFriendSync.ensureFriendManager(false)
 
     try {
       if (manager) {
@@ -253,7 +139,7 @@ class MatrixFriendService {
 
   /** 获取收到的待处理好友请求：优先 FriendManager，不可用时回退 REST API。 */
   async getIncomingRequests(): Promise<FriendRequest[]> {
-    const manager = await this.friendSync.ensureFriendManager(false)
+    const manager = await matrixFriendSync.ensureFriendManager(false)
 
     try {
       if (manager) {
@@ -275,7 +161,7 @@ class MatrixFriendService {
 
   /** 获取已发出的待处理好友请求：优先 FriendManager，不可用时回退 REST API。 */
   async getOutgoingRequests(): Promise<FriendRequest[]> {
-    const manager = await this.friendSync.ensureFriendManager(false)
+    const manager = await matrixFriendSync.ensureFriendManager(false)
 
     try {
       if (manager) {
@@ -298,17 +184,17 @@ class MatrixFriendService {
   /** 刷新并返回好友同步状态。 */
   async getSyncState(): Promise<FriendSyncState> {
     try {
-      await this.friendSync.updateSyncState()
-      return this.friendSync.getSyncStateValue()
+      await matrixFriendSync.updateSyncState()
+      return matrixFriendSync.getSyncStateValue()
     } catch (err) {
       logger.error(`[MatrixFriend] 获取同步状态失败: ${err}`)
-      return this.friendSync.getSyncStateValue()
+      return matrixFriendSync.getSyncStateValue()
     }
   }
 
   /** 同步获取缓存的 FriendSyncState（不发 HTTP 请求） */
   getSyncStateValue(): FriendSyncState {
-    return this.friendSync.getSyncStateValue()
+    return matrixFriendSync.getSyncStateValue()
   }
 
   /** 获取特别关注好友的用户 ID 列表。 */
@@ -323,7 +209,7 @@ class MatrixFriendService {
 
   /** 获取指定好友的详细信息，失败时抛出异常。 */
   async getFriendInfo(userId: string): Promise<Friend | undefined> {
-    const manager = await this.friendSync.requireFriendManager()
+    const manager = await matrixFriendSync.requireFriendManager()
 
     try {
       const friend = await manager.getFriendInfo(userId)
@@ -351,7 +237,7 @@ class MatrixFriendService {
   async getFriendSuggestions(): Promise<
     Array<{ user_id: string; display_name?: string; avatar_url?: string; reason?: string }>
   > {
-    const manager = await this.friendSync.requireFriendManager()
+    const manager = await matrixFriendSync.requireFriendManager()
 
     try {
       if (typeof manager.getFriendSuggestions !== 'function') {
@@ -369,7 +255,7 @@ class MatrixFriendService {
 
   /** 获取与指定用户的好友关系状态，未知或失败时返回 null。 */
   async getFriendStatus(userId: string): Promise<FriendStatus | null> {
-    const manager = await this.friendSync.ensureFriendManager(false)
+    const manager = await matrixFriendSync.ensureFriendManager(false)
 
     try {
       if (manager && typeof manager.getFriendStatus === 'function') {
@@ -428,3 +314,9 @@ class MatrixFriendService {
 }
 
 export const matrixFriendService = new MatrixFriendService()
+
+// 好友域聚合入口：调用方从这里取「查询门面 + 三个能力单例」，无需关心内部文件划分。
+export { friendEventBus } from './friendEvents'
+export { matrixFriendGroups } from './MatrixFriendGroups'
+export { matrixFriendOperations } from './MatrixFriendOperations'
+export { matrixFriendSync } from './MatrixFriendSync'

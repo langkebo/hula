@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { OnlineEnum } from '@/enums'
-import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { matrixFriendOperations, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useContactStore } from '../contacts'
@@ -43,14 +43,18 @@ vi.mock('@/stores/domains/widget/global', () => ({
 
 vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
   matrixFriendService: {
-    initialize: vi.fn(),
     on: vi.fn(),
     stop: vi.fn(),
     getFriends: vi.fn(),
     getSpecialFriends: vi.fn(),
     getIncomingRequests: vi.fn(),
     getOutgoingRequests: vi.fn(),
-    isFriend: vi.fn(),
+    isFriend: vi.fn()
+  },
+  matrixFriendSync: {
+    initialize: vi.fn()
+  },
+  matrixFriendOperations: {
     acceptFriendRequest: vi.fn(),
     rejectFriendRequest: vi.fn(),
     cancelFriendRequest: vi.fn(),
@@ -200,7 +204,7 @@ describe('acceptFriendRequest', () => {
   })
 
   it('accepts request, creates DM via roomId, and opens session', async () => {
-    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixFriendOperations.acceptFriendRequest).mockResolvedValueOnce(undefined)
     vi.mocked(matrixDirectMessageService.createDm).mockResolvedValueOnce('!dm-room:matrix.org')
 
     const store = useContactStore()
@@ -208,7 +212,7 @@ describe('acceptFriendRequest', () => {
     await new Promise((r) => setTimeout(r, 0))
 
     expect(result).toBe(true)
-    expect(matrixFriendService.acceptFriendRequest).toHaveBeenCalledWith('@bob:matrix.org')
+    expect(matrixFriendOperations.acceptFriendRequest).toHaveBeenCalledWith('@bob:matrix.org')
     expect(matrixDirectMessageService.createDm).toHaveBeenCalledWith('@bob:matrix.org', {
       userIds: ['@bob:matrix.org'],
       isEncrypted: false
@@ -217,7 +221,7 @@ describe('acceptFriendRequest', () => {
   })
 
   it('m.direct 已有 DM 房间时复用而不重复创建（根因 A）', async () => {
-    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixFriendOperations.acceptFriendRequest).mockResolvedValueOnce(undefined)
     // m.direct 账号数据已存在该用户的 DM 房间 → startDirectRoom 应复用，不再 createDm
     vi.mocked(matrixDirectMessageService.getDmForUser).mockResolvedValueOnce('!existing-dm:matrix.org')
 
@@ -232,7 +236,7 @@ describe('acceptFriendRequest', () => {
   })
 
   it('removes the accepted request from incoming list', async () => {
-    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixFriendOperations.acceptFriendRequest).mockResolvedValueOnce(undefined)
     vi.mocked(matrixDirectMessageService.createDm).mockResolvedValueOnce('!dm-carol:matrix.org')
 
     const store = useContactStore()
@@ -251,7 +255,7 @@ describe('acceptFriendRequest', () => {
   })
 
   it('decrements friend unread count after acceptance', async () => {
-    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixFriendOperations.acceptFriendRequest).mockResolvedValueOnce(undefined)
     vi.mocked(matrixDirectMessageService.createDm).mockResolvedValueOnce('!dm-dave:matrix.org')
 
     const store = useContactStore()
@@ -261,7 +265,7 @@ describe('acceptFriendRequest', () => {
   })
 
   it('loads contacts after acceptance', async () => {
-    vi.mocked(matrixFriendService.acceptFriendRequest).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixFriendOperations.acceptFriendRequest).mockResolvedValueOnce(undefined)
     vi.mocked(matrixDirectMessageService.createDm).mockResolvedValueOnce('!dm-eve:matrix.org')
     vi.mocked(matrixFriendService.getFriends).mockResolvedValue([])
 
@@ -280,7 +284,7 @@ describe('setFriendStatus', () => {
   })
 
   it('normal 动作写回 accepted 时，列表展示口径仍归一为 normal', async () => {
-    vi.mocked(matrixFriendService.setFriendStatus).mockResolvedValueOnce(undefined)
+    vi.mocked(matrixFriendOperations.setFriendStatus).mockResolvedValueOnce(undefined)
 
     const store = useContactStore()
     store.contactsList = [

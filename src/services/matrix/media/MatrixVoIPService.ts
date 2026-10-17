@@ -6,28 +6,13 @@ import {
 } from '@/services/media/mediaDevicePreferences'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import {
-  checkMediaPermissions as checkMediaPerms,
-  checkTurnAvailability as checkTurn,
-  checkVoipAvailability as checkVoip,
-  getCallById,
-  getCallStatsFromPeerConn,
-  getMediaDeviceList,
-  getTurnServerConfig
-} from './voipHelpers'
+import * as voipDiag from './voipDiagnostics'
+import { getCallById } from './voipHelpers'
 import type { CallInfo, CallOptions, CallState, VoIPCall, VoIPCallFeed } from './voipTypes'
 
 const logger = createLogger('MatrixVoIP')
 
-/**
- * Matrix VoIP 服务 — 通话管理、媒体控制、设备检测。
- *
- * 实现已拆分为两个子模块：
- * - voipTypes：通话/媒体流/参与者/统计等类型定义
- * - voipHelpers：通话查找、统计提取、设备检测、TURN 配置等纯函数
- *
- * 本文件保留：通话生命周期管理、事件处理、媒体控制、状态订阅。
- */
+/** Matrix VoIP 服务 — 通话生命周期、事件处理、媒体控制、状态订阅。类型见 voipTypes，纯函数见 voipHelpers/voipDiagnostics。 */
 class MatrixVoIPService extends BaseMatrixService {
   private calls: Map<string, CallInfo> = new Map()
   private callHandlers: Map<string, Set<(call: CallInfo) => void>> = new Map()
@@ -52,10 +37,7 @@ class MatrixVoIPService extends BaseMatrixService {
 
   // ── 初始化 ──
 
-  /**
-   * 绑定 Matrix 客户端的通话事件（Call.incoming / Call.hangup / Call.replaced）。
-   * 客户端变更时先解绑旧客户端并重置运行时状态；未启用呼叫模块时记录 warn 后跳过。
-   */
+  /** 绑定客户端的通话事件；客户端变更时先解绑旧客户端并重置运行时状态。 */
   async initialize(): Promise<void> {
     let client: MatrixClient
     try {
@@ -159,8 +141,7 @@ class MatrixVoIPService extends BaseMatrixService {
   // ── 通话操作 ──
 
   /**
-   * 向指定房间发起通话。
-   * `placeCall(audio, video)` 由 SDK 内部采集本地媒体，切勿传入 MediaStream；
+   * 向指定房间发起通话；`placeCall(audio, video)` 由 SDK 内部采集本地媒体，切勿传入 MediaStream。
    * 成功返回新建通话的 callId。
    */
   async startCall(roomId: string, options: CallOptions): Promise<string> {
@@ -192,8 +173,7 @@ class MatrixVoIPService extends BaseMatrixService {
   }
 
   /**
-   * 接听来电。
-   * `answer(audio, video)` 由 SDK 内部采集本地媒体；通话不存在时抛出异常。
+   * 接听来电；`answer(audio, video)` 由 SDK 内部采集本地媒体，通话不存在时抛出异常。
    */
   async answerCall(callId: string, options: CallOptions = { audio: true, video: false }): Promise<void> {
     const client = this.getClient()
@@ -290,16 +270,11 @@ class MatrixVoIPService extends BaseMatrixService {
   }
 
   /**
-   * 把用户保存的音质偏好施加到 SDK 采集的本地音轨上。
+   * 把用户保存的音质偏好施加到 SDK 采集的本地音轨上（本地音轨唯一可达的接缝：
+   * 服务层不自己 `getUserMedia`，避免与 SDK 竞争设备）。
    *
-   * 这是本地音轨唯一可达的接缝：服务层不自己 `getUserMedia`（避免与 SDK 采集竞争设备），
-   * 本地轨道只在 `feeds_changed` 里随 SDK 的 feed 出现。
-   *
-   * 幂等：偏好每次通话只读一次并缓存（`feeds_changed` 会反复触发），
-   * 每条轨道只施加一次（`WeakSet`）；SDK 重建轨道后新轨对象不在集合里，会重新施加。
-   *
-   * 只对 `kind === 'audio'` 的轨道施加——把音频约束喂给视频轨道会 reject；
-   * 逐轨道 try/catch，单条轨道失败不影响通话。
+   * 幂等：偏好每次通话只读一次并缓存，每条轨道只施加一次（`WeakSet`）。只对
+   * `kind === 'audio'` 施加（音频约束喂给视频轨道会 reject）；逐轨道 try/catch。
    */
   private applyLocalAudioQualityPreferences(callId: string, localStream: MediaStream): void {
     const audioTracks = localStream.getTracks().filter((track) => track.kind === 'audio')
@@ -341,9 +316,7 @@ class MatrixVoIPService extends BaseMatrixService {
   // ── 媒体控制 ──
 
   /**
-   * 切换麦克风静音状态。
-   * 通过 SDK `setMicrophoneMuted` 作用于真实发送轨道；通话不存在时返回 false。
-   * 返回切换后的静音状态（true 表示已静音）。
+   * 切换麦克风静音（经 SDK `setMicrophoneMuted` 作用于真实发送轨道）；通话不存在返回 false。
    */
   async toggleMute(callId: string): Promise<boolean> {
     const call = getCallById(callId, this.getClient())
@@ -359,9 +332,7 @@ class MatrixVoIPService extends BaseMatrixService {
   }
 
   /**
-   * 切换本地视频开关。
-   * 通过 SDK `setLocalVideoMuted` 作用于真实发送轨道；通话不存在时返回 false。
-   * 返回切换后的关闭状态（true 表示视频已关闭）。
+   * 切换本地视频（经 SDK `setLocalVideoMuted` 作用于真实发送轨道）；通话不存在返回 false。
    */
   async toggleVideo(callId: string): Promise<boolean> {
     const call = getCallById(callId, this.getClient())
@@ -377,8 +348,7 @@ class MatrixVoIPService extends BaseMatrixService {
   }
 
   /**
-   * 开始屏幕共享。
-   * 屏幕流由本服务通过 `getDisplayMedia` 持有（需自行释放），随后经 SDK 开启共享。
+   * 开始屏幕共享：屏幕流由本服务通过 `getDisplayMedia` 持有（需自行释放），随后经 SDK 开启共享。
    */
   async startScreenshare(callId: string): Promise<void> {
     try {
@@ -394,9 +364,7 @@ class MatrixVoIPService extends BaseMatrixService {
     }
   }
 
-  /**
-   * 停止屏幕共享并释放本服务持有的屏幕流轨道。
-   */
+  /** 停止屏幕共享并释放本服务持有的屏幕流轨道。 */
   async stopScreenshare(callId: string): Promise<void> {
     const call = getCallById(callId, this.getClient())
     if (call) await call.setScreensharingEnabled(false)
@@ -407,9 +375,7 @@ class MatrixVoIPService extends BaseMatrixService {
 
   // ── 通话信息 & 订阅 ──
 
-  /**
-   * 获取本地缓存的通话信息，不存在时返回 undefined。
-   */
+  /** 获取本地缓存的通话信息，不存在时返回 undefined。 */
   getCall(callId: string): CallInfo | undefined {
     return this.calls.get(callId)
   }
@@ -433,73 +399,36 @@ class MatrixVoIPService extends BaseMatrixService {
     this.callHandlers.get(callId)?.forEach((handler) => handler(callInfo))
   }
 
-  // ── 统计 & 设备 & TURN（委托 voipHelpers）──
+  // ── 统计 & 设备 & TURN（实现在 voipDiagnostics）──
 
-  /**
-   * 获取通话的 WebRTC 统计（经 voipHelpers 从 PeerConnection 提取）。
-   * 客户端未初始化或通话不存在时返回 null。
-   */
+  /** 获取通话的 WebRTC 统计；客户端未初始化或通话不存在时返回 null。 */
   async getCallStats(callId: string) {
-    let client: MatrixClient
-    try {
-      client = this.getClient()
-    } catch (err) {
-      logger.warn('getCallStats getClient failed:', err)
-      return null
-    }
-    const call = getCallById(callId, client)
-    return call ? getCallStatsFromPeerConn(call) : null
+    return voipDiag.fetchCallStats(() => this.getClient(), callId)
   }
 
-  /**
-   * 检测摄像头 / 麦克风权限状态。
-   */
+  /** 检测摄像头 / 麦克风权限状态。 */
   async checkMediaPermissions() {
-    return checkMediaPerms()
+    return voipDiag.checkMediaPermissions()
   }
 
-  /**
-   * 枚举可用的音视频输入设备。
-   */
+  /** 枚举可用的音视频输入设备。 */
   async getMediaDevices() {
-    return getMediaDeviceList()
+    return voipDiag.listMediaDevices()
   }
 
-  /**
-   * 获取当前可用的 TURN 服务器配置。
-   */
+  /** 获取当前可用的 TURN 服务器配置。 */
   async getTurnServer() {
-    return getTurnServerConfig(this.getClient())
+    return voipDiag.fetchTurnServer(() => this.getClient())
   }
 
-  /**
-   * 检测 TURN 服务是否可用。
-   * 客户端未初始化时返回 `{ available: false }`。
-   */
+  /** 检测 TURN 服务是否可用；客户端未初始化时返回 `{ available: false }`。 */
   async checkTurnAvailability() {
-    let client: MatrixClient
-    try {
-      client = this.getClient()
-    } catch (err) {
-      logger.warn('checkTurnAvailability getClient failed:', err)
-      return { available: false, reason: '客户端未初始化' }
-    }
-    return checkTurn(client)
+    return voipDiag.checkTurnAvailability(() => this.getClient())
   }
 
-  /**
-   * 检测 VoIP 与 TURN 的整体可用性。
-   * 客户端未初始化时返回全 false 的降级结果。
-   */
+  /** 检测 VoIP 与 TURN 的整体可用性；客户端未初始化时返回全 false 的降级结果。 */
   async checkVoipAvailability() {
-    let client: MatrixClient
-    try {
-      client = this.getClient()
-    } catch (err) {
-      logger.warn('checkVoipAvailability getClient failed:', err)
-      return { voipAvailable: false, turnAvailable: false, message: '客户端未初始化' }
-    }
-    return checkVoip(client)
+    return voipDiag.checkVoipAvailability(() => this.getClient())
   }
 }
 

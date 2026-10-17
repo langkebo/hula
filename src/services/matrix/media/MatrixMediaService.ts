@@ -10,6 +10,14 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import {
+  deleteMediaById,
+  fetchAuthenticatedMediaConfig,
+  fetchMediaConfig,
+  fetchQuotaAlerts,
+  fetchQuotaStats,
+  fetchQuotaUsage
+} from './mediaConfigOps'
+import {
   downloadEncryptedFileBytes as dlEncryptedFileBytes,
   downloadFileBytes as dlFileBytes
 } from './mediaDownloadHelpers'
@@ -321,98 +329,36 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     )
   }
 
-  // ── 媒体配置 & 配额 ──
+  // ── 媒体配置 & 配额（实现在 mediaConfigOps，本类只做访问器绑定）──
 
-  /**
-   * 获取媒体上传配置（含 `m.upload.size` 上限）。
-   * 请求失败时抛出异常。
-   */
+  /** 获取媒体上传配置（含 `m.upload.size` 上限）；失败抛出。 */
   async getMediaConfig(): Promise<{ 'm.upload.size'?: number; [key: string]: unknown }> {
-    try {
-      const result = await this.getMedia().getMediaConfig(false)
-      logger.info('[MatrixMedia] 获取上传配置成功')
-      return result as { 'm.upload.size'?: number; [key: string]: unknown }
-    } catch (err) {
-      logger.error(`[MatrixMedia] 获取上传配置失败: ${err}`)
-      throw err
-    }
+    return fetchMediaConfig(() => this.getMedia())
   }
 
-  /**
-   * 删除指定服务器上的媒体。
-   * 成功返回 true，失败时抛出异常。
-   */
+  /** 删除指定服务器上的媒体；成功返回 true，失败抛出。 */
   async deleteMedia(serverName: string, mediaId: string): Promise<boolean> {
-    try {
-      await this.getMedia().deleteMedia(serverName, mediaId)
-      logger.info(`[MatrixMedia] 媒体删除成功: ${serverName}/${mediaId}`)
-      return true
-    } catch (err) {
-      logger.error(`[MatrixMedia] 媒体删除失败: ${serverName}/${mediaId}, ${err}`)
-      throw err
-    }
+    return deleteMediaById(() => this.getMedia(), serverName, mediaId)
   }
 
-  /**
-   * 获取媒体配额告警列表。
-   * 请求失败时返回空数组。
-   */
+  /** 获取媒体配额告警列表；失败返回空数组。 */
   async getQuotaAlerts(): Promise<MediaQuotaAlert[]> {
-    try {
-      const response = await this.getMedia().getMediaQuotaAlerts()
-      logger.info('[MatrixMedia] 获取配额告警成功')
-      return response.alerts ?? []
-    } catch (err) {
-      logger.error(`[MatrixMedia] 获取配额告警失败: ${err}`)
-      return []
-    }
+    return fetchQuotaAlerts(() => this.getMedia())
   }
 
-  /**
-   * 检查媒体配额（上限/已用/剩余）。
-   * 请求失败时返回 null。
-   */
+  /** 检查媒体配额（上限/已用/剩余）；失败返回 null。 */
   async checkQuota(): Promise<{ limit: number; used: number; remaining: number } | null> {
-    try {
-      const result = await this.getMedia().checkMediaQuota()
-      return { limit: result.limit ?? 0, used: result.used ?? 0, remaining: result.remaining ?? 0 }
-    } catch (err) {
-      logger.error(`[MatrixMedia] 配额检查失败: ${err}`)
-      return null
-    }
+    return fetchQuotaUsage(() => this.getMedia())
   }
 
-  /**
-   * 获取媒体配额统计（存储字节/媒体数/上限字节）。
-   * 请求失败时返回 null。
-   */
+  /** 获取媒体配额统计（存储字节/媒体数/上限字节）；失败返回 null。 */
   async getQuotaStats(): Promise<{ storageBytes: number; mediaCount: number; limitBytes: number } | null> {
-    try {
-      const result = await this.getMedia().getMediaQuotaStats()
-      return {
-        storageBytes: result.storage_bytes ?? 0,
-        mediaCount: result.media_count ?? 0,
-        limitBytes: result.limit_bytes ?? 0
-      }
-    } catch (err) {
-      logger.error(`[MatrixMedia] 获取配额统计失败: ${err}`)
-      return null
-    }
+    return fetchQuotaStats(() => this.getMedia())
   }
 
-  /**
-   * 获取认证媒体配置（是否启用 authenticated_media）。
-   * 请求失败时返回 null。
-   */
+  /** 获取认证媒体配置（是否启用 authenticated_media）；失败返回 null。 */
   async getAuthenticatedMediaConfig(): Promise<{ authenticated_media: boolean; [key: string]: unknown } | null> {
-    try {
-      const result = (await this.getMedia().getMediaConfig(true)) as Record<string, unknown>
-      logger.info('[MatrixMedia] 获取认证媒体配置成功')
-      return { authenticated_media: (result.authenticated_media as boolean) ?? false, ...result }
-    } catch (err) {
-      logger.error(`[MatrixMedia] 获取认证媒体配置失败: ${err}`)
-      return null
-    }
+    return fetchAuthenticatedMediaConfig(() => this.getMedia())
   }
 }
 

@@ -41,6 +41,7 @@ interface RoomLike {
 }
 
 import type { EncryptedAttachmentFile } from '../crypto/MatrixAttachmentEncryptionService'
+import { fetchUserVoiceStats, fetchVoiceConfig, fetchVoiceStats } from './voiceStatsOps'
 
 const logger = createLogger('MatrixVoiceService')
 
@@ -267,78 +268,37 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
-  /**
-   * 获取语音统计（总时长/总条数/平均时长）。
-   * 传入 roomId 时统计房间维度，否则统计全局；失败时返回全 0。
-   */
+  /** 获取语音统计（传入 roomId 时统计房间维度，否则全局）；失败返回全 0。 */
   async getVoiceStats(roomId?: string): Promise<{
     totalDuration: number
     totalMessages: number
     averageDuration: number
   }> {
-    try {
-      const mgr = this.getVoiceMgr()
-      const result = roomId ? await mgr.getRoomVoiceStats(roomId, VendorPrefix) : await mgr.getVoiceStats(VendorPrefix)
-      const data = unknownToObject(result) ?? {}
-      return {
-        totalDuration: (data.total_duration as number) ?? (data.total_duration_ms as number) ?? 0,
-        totalMessages: (data.total_messages as number) ?? (data.message_count as number) ?? 0,
-        averageDuration: (data.average_duration as number) ?? (data.average_duration_ms as number) ?? 0
-      }
-    } catch (err) {
-      logger.warn(`[MatrixVoiceService] getVoiceStats failed: ${err}`)
-      return { totalDuration: 0, totalMessages: 0, averageDuration: 0 }
-    }
+    return fetchVoiceStats(() => this.getVoiceMgr(), roomId)
   }
 
-  /**
-   * 获取指定用户的语音统计（总时长/总条数）。
-   * 失败时返回全 0。
-   */
+  /** 获取指定用户的语音统计（总时长/总条数）；失败返回全 0。 */
   async getUserVoiceStats(userId: string): Promise<{
     totalDuration: number
     totalMessages: number
   }> {
-    this.requireNonEmpty(userId, 'userId')
-    try {
-      const result = await this.getVoiceMgr().getUserVoiceStats(userId, VendorPrefix)
-      const data = unknownToObject(result) ?? {}
-      return {
-        totalDuration: (data.total_duration as number) ?? (data.total_duration_ms as number) ?? 0,
-        totalMessages: (data.total_messages as number) ?? (data.message_count as number) ?? 0
-      }
-    } catch (err) {
-      logger.warn(`[MatrixVoiceService] getUserVoiceStats failed: ${err}`)
-      return { totalDuration: 0, totalMessages: 0 }
-    }
+    return fetchUserVoiceStats(
+      () => this.getVoiceMgr(),
+      (value, name) => this.requireNonEmpty(value, name),
+      userId
+    )
   }
 
-  /**
-   * 获取语音能力配置（最大时长/允许格式/自动转写）。
-   * 端点不可用时抛出异常；字段缺失时回退到内置默认值。
-   */
+  /** 获取语音能力配置；端点不可用时抛出，字段缺失回退内置默认值。 */
   async getVoiceConfig(): Promise<{
     maxDuration: number
     allowedFormats: string[]
     autoTranscribe: boolean
   }> {
-    try {
-      const available = await endpointCapabilityService.check('GET', MATRIX_PATHS.VOICE.CONFIG)
-      if (!available) {
-        throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
-      }
-      const result = await this.getVoiceMgr().getVoiceConfig(VendorPrefix)
-      const data = unknownToObject(result) ?? {}
-      return {
-        maxDuration: (data.max_duration as number) ?? 300,
-        allowedFormats: (data.allowed_formats as string[]) ??
-          (data.allowed_content_types as string[]) ?? ['audio/webm', 'audio/ogg', 'audio/mp4'],
-        autoTranscribe: (data.auto_transcribe as boolean) ?? false
-      }
-    } catch (err) {
-      logger.error(`[MatrixVoiceService] 获取语音配置失败: ${err}`)
-      throw err
-    }
+    return fetchVoiceConfig(
+      () => this.getVoiceMgr(),
+      (key) => this.t(key)
+    )
   }
 
   /**

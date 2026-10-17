@@ -1,6 +1,11 @@
 import { computed, ref, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum } from '@/enums'
-import { type Friend, type FriendStatus, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import {
+  type Friend,
+  type FriendStatus,
+  matrixFriendOperations,
+  matrixFriendService
+} from '@/services/matrix/friends/MatrixFriendService'
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { createLogger } from '@/utils/Logger'
@@ -235,7 +240,7 @@ export function createContactsList(ctx: ContactsListContext) {
   async function removeFromContacts(userId: string): Promise<boolean> {
     try {
       if (await matrixFriendService.isFriend(userId)) {
-        await matrixFriendService.removeFriend(userId)
+        await matrixFriendOperations.removeFriend(userId)
       }
       contactsList.value = contactsList.value.filter((c) => c.userId !== userId)
       logger.info(`[ContactStore] 移除联系人成功: ${userId}`)
@@ -252,7 +257,7 @@ export function createContactsList(ctx: ContactsListContext) {
 
   async function setFriendNote(userId: string, note: string): Promise<boolean> {
     try {
-      await matrixFriendService.setFriendNote(userId, note)
+      await matrixFriendOperations.setFriendNote(userId, note)
       const contact = contactsList.value.find((c) => c.userId === userId)
       if (contact) {
         contact.remark = note
@@ -269,7 +274,7 @@ export function createContactsList(ctx: ContactsListContext) {
 
   async function setFriendDisplayName(userId: string, displayName: string): Promise<boolean> {
     try {
-      await matrixFriendService.setFriendDisplayName(userId, displayName)
+      await matrixFriendOperations.setFriendDisplayName(userId, displayName)
       const contact = contactsList.value.find((c) => c.userId === userId)
       if (contact) {
         contact.remark = displayName
@@ -285,7 +290,7 @@ export function createContactsList(ctx: ContactsListContext) {
 
   async function setFriendStatus(userId: string, status: FriendStatus): Promise<boolean> {
     try {
-      await matrixFriendService.setFriendStatus(userId, status)
+      await matrixFriendOperations.setFriendStatus(userId, status)
       const contact = contactsList.value.find((c) => c.userId === userId)
       if (contact) {
         contact.friendStatus = normalizeFriendStatus(status)

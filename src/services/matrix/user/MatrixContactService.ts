@@ -3,7 +3,7 @@ import { ERROR_CLIENT_NOT_INITIALIZED_EN } from '@/common/matrixConstants'
 import { createLogger } from '@/utils/Logger'
 import { normalizeMatrixUserId, toLocalpart } from '@/utils/userIdentity'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
-import { matrixFriendService } from '../friends/MatrixFriendService'
+import { matrixFriendOperations } from '../friends/MatrixFriendService'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
 import { matrixRoomActionFacade, matrixRoomQueryFacade, matrixRoomReadFacade } from '../room/RoomFacade'
@@ -328,7 +328,7 @@ class MatrixContactService {
   async sendAddFriendRequest(userId: string, reason?: string): Promise<DirectChatResult> {
     try {
       const normalizedUserId = this.normalizeTargetUserId(userId)
-      await matrixFriendService.sendFriendRequest(normalizedUserId, reason)
+      await matrixFriendOperations.sendFriendRequest(normalizedUserId, reason)
       const roomId = (await matrixDirectMessageService.getDmForUser(normalizedUserId, false)) ?? ''
       return { roomId }
     } catch (err) {

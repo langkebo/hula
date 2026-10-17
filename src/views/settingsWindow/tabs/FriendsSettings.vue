@@ -139,7 +139,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
-import { matrixAccountService } from '@/services/matrix'
+import { matrixAccountService, matrixFriendGroups, matrixFriendOperations } from '@/services/matrix'
 import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { DEFAULT_INVITE_POLICY, type InvitePolicy, normalizeInvitePolicy } from '@/services/matrix/user/invitePolicy'
 import { createLogger } from '@/utils/Logger'
@@ -261,7 +261,7 @@ async function saveSettings() {
 async function loadFriendGroups() {
   loadingGroups.value = true
   try {
-    const groups = await matrixFriendService.getFriendGroups()
+    const groups = await matrixFriendGroups.getFriendGroups()
     friendGroups.value = (groups || []).map((g) => ({
       group_id: g.group_id,
       name: g.name,
@@ -318,7 +318,7 @@ async function handleCreateGroup() {
     return false
   }
   try {
-    await matrixFriendService.createFriendGroup(newGroupName.value.trim())
+    await matrixFriendGroups.createFriendGroup(newGroupName.value.trim())
     newGroupName.value = ''
     showFeedback(t('setting.friends.groups.create_success'), 'success')
     await loadFriendGroups()
@@ -339,7 +339,7 @@ async function handleSaveGroup() {
     return false
   }
   try {
-    await matrixFriendService.renameFriendGroup(editingGroupId.value, editGroupName.value.trim())
+    await matrixFriendGroups.renameFriendGroup(editingGroupId.value, editGroupName.value.trim())
     showFeedback(t('setting.friends.groups.rename_success'), 'success')
     showEditGroup.value = false
     await loadFriendGroups()
@@ -356,7 +356,7 @@ function handleDeleteGroup(group: FriendGroup) {
     negativeText: t('setting.common.cancel'),
     onPositiveClick: async () => {
       try {
-        await matrixFriendService.deleteFriendGroup(group.group_id)
+        await matrixFriendGroups.deleteFriendGroup(group.group_id)
         showFeedback(t('setting.friends.groups.delete_success'), 'success')
         await loadFriendGroups()
       } catch {
@@ -368,7 +368,7 @@ function handleDeleteGroup(group: FriendGroup) {
 
 async function handleAcceptRequest(req: FriendRequest) {
   try {
-    await matrixFriendService.acceptFriendRequest(req.user_id)
+    await matrixFriendOperations.acceptFriendRequest(req.user_id)
     showFeedback(t('setting.friends.pending.accept_success'), 'success')
     await loadFriendRequests()
   } catch {
@@ -378,7 +378,7 @@ async function handleAcceptRequest(req: FriendRequest) {
 
 async function handleRejectRequest(req: FriendRequest) {
   try {
-    await matrixFriendService.rejectFriendRequest(req.user_id)
+    await matrixFriendOperations.rejectFriendRequest(req.user_id)
     showFeedback(t('setting.friends.pending.reject_success'), 'success')
     await loadFriendRequests()
   } catch {
@@ -388,7 +388,7 @@ async function handleRejectRequest(req: FriendRequest) {
 
 async function handleCancelRequest(req: FriendRequest) {
   try {
-    await matrixFriendService.cancelFriendRequest(req.user_id)
+    await matrixFriendOperations.cancelFriendRequest(req.user_id)
     showFeedback(t('setting.friends.pending.cancel_success'), 'success')
     await loadFriendRequests()
   } catch {

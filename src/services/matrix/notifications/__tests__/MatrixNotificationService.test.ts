@@ -1,4 +1,4 @@
-import type { IPusher, IPusherRequest, MatrixClient } from 'matrix-js-sdk'
+import type { IPusherRequest, MatrixClient } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useI18nGlobal } from '@/services/i18n'
 import matrixClientService from '../../MatrixClientService'
@@ -1046,64 +1046,6 @@ describe('MatrixNotificationService', () => {
 
       expect(result).toEqual({ success: true, method: 'receipt' })
       expect(sendReceiptForce).toHaveBeenCalledWith('!room:test', 'm.read', '$event-2')
-    })
-  })
-
-  // FT-116: setPushRuleByScope 必须使用 SDK 的 client.addPushRule，
-  // 不能绕过 SDK 直接走 matrixHttpClient（同文件 line 211 已用 client.setPushRule，
-  // SDK 提供了 addPushRule，"SDK 无 addPushRule" 的注释是错误的）。
-  describe('setPushRuleByScope (FT-116: use SDK addPushRule)', () => {
-    beforeEach(() => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
-    })
-
-    it('调用 SDK client.addPushRule 而非 matrixHttpClient.request', async () => {
-      mockPushManager.createPushRule.mockResolvedValueOnce(undefined)
-
-      const body = { actions: ['notify'], conditions: [] }
-      await matrixNotificationService.setPushRuleByScope('global', 'override', 'rule-1', body)
-
-      expect(mockPushManager.createPushRule).toHaveBeenCalledWith('global', 'override', 'rule-1', body)
-      expect(matrixHttpClientRequestMock).not.toHaveBeenCalled()
-    })
-
-    it('SDK 调用失败时抛出异常', async () => {
-      mockPushManager.createPushRule.mockRejectedValueOnce(new Error('boom'))
-
-      await expect(
-        matrixNotificationService.setPushRuleByScope('global', 'override', 'rule-1', { actions: [] })
-      ).rejects.toThrow('boom')
-      expect(matrixHttpClientRequestMock).not.toHaveBeenCalled()
-    })
-  })
-
-  // FT-128: fetchPushers 应返回 IPusher[] 而非类型擦除的 Array<Record<string, unknown>>
-  describe('fetchPushers (FT-128: return typed IPusher[])', () => {
-    beforeEach(() => {
-      vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)
-    })
-
-    it('返回 SDK getPushers 的 pushers 数组，保留 IPusher 类型', async () => {
-      const pushers: IPusher[] = [
-        { pushkey: 'k1', app_id: 'a1', kind: 'http' } as IPusher,
-        { pushkey: 'k2', app_id: 'a2', kind: 'email' } as IPusher
-      ]
-      mockPushManager.getPushers.mockResolvedValueOnce(pushers)
-
-      const result = await matrixNotificationService.fetchPushers()
-
-      expect(result).toHaveLength(2)
-      expect(result[0].pushkey).toBe('k1')
-      expect(result[0].app_id).toBe('a1')
-      expect(mockPushManager.getPushers).toHaveBeenCalled()
-    })
-
-    it('pushers 为空时返回空数组', async () => {
-      mockPushManager.getPushers.mockResolvedValueOnce([])
-
-      const result = await matrixNotificationService.fetchPushers()
-
-      expect(result).toEqual([])
     })
   })
 

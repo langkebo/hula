@@ -13,6 +13,22 @@ import type {
 } from '@/types/matrix-api'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
+import * as aiMedia from './aiMediaApi'
+import type {
+  AIAsyncGenerationResponse,
+  AudioGenerationRequest,
+  ImageGenerationRequest,
+  ImageGenerationResult,
+  VideoGenerationRequest
+} from './aiMediaTypes'
+
+export type {
+  AIAsyncGenerationResponse,
+  AudioGenerationRequest,
+  ImageGenerationRequest,
+  ImageGenerationResult,
+  VideoGenerationRequest
+} from './aiMediaTypes'
 
 const logger = createLogger('MatrixAI')
 
@@ -46,46 +62,9 @@ interface AIMessage {
   reasoningContent?: string
 }
 
-interface ImageGenerationRequest {
-  modelId: string
-  prompt: string
-  width?: number
-  height?: number
-  conversationId?: string
-  options?: Record<string, unknown>
-  [key: string]: unknown
-}
-
-interface ImageGenerationResult {
-  id: string
-  url?: string
-  status?: number
-}
-
 interface AIModelRemainingUsageResponse {
   remainingUsage: number
 }
-
-export interface VideoGenerationRequest {
-  modelId?: string
-  prompt: string
-  width?: number
-  height?: number
-  duration?: number
-  conversationId?: string
-  options?: Record<string, unknown>
-  [key: string]: unknown
-}
-
-interface AudioGenerationRequest {
-  modelId?: string | number
-  prompt: string
-  conversationId?: string
-  options?: Record<string, unknown>
-  [key: string]: unknown
-}
-
-export type AIAsyncGenerationResponse = number | string | { id?: number | string; url?: string; status?: number }
 
 interface StreamCallbacks {
   onChunk?: (chunk: string) => void
@@ -361,27 +340,6 @@ class MatrixAIService {
    * @param request.options - 其他选项
    * @returns 图片生成结果
    */
-  async generateImage(request: ImageGenerationRequest): Promise<ImageGenerationResult | number | string> {
-    return matrixHttpClient.request<ImageGenerationResult | number | string>(
-      {
-        url: matrixExtensionEndpoints.IMAGE_DRAW,
-        method: 'POST',
-        body: request
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
-
-  /**
-   * 获取对话消息列表
-   *
-   * @param params - 查询参数
-   * @param params.conversationId - 对话 ID
-   * @param params.pageNo - 页码
-   * @param params.pageSize - 每页数量
-   * @returns 消息列表
-   */
   async messageListByConversationId(params: {
     conversationId: string
     pageNo?: number
@@ -445,166 +403,6 @@ class MatrixAIService {
    * @param params.pageSize - 每页数量
    * @returns 图片列表与总数
    */
-  async imageMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIImageListResponse> {
-    return matrixHttpClient.request<AIImageListResponse>(
-      {
-        url: matrixExtensionEndpoints.IMAGE_MY_PAGE,
-        ...(params !== undefined ? { params } : {})
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
-
-  /**
-   * 按 ID 列表批量查询当前用户的图片记录。
-   *
-   * @param params - 查询参数
-   * @param params.ids - 逗号分隔的图片 ID 串
-   * @returns 图片列表
-   */
-  async imageMyListByIds(params: { ids: string }): Promise<AIImage[]> {
-    return matrixHttpClient.request<AIImage[]>(
-      {
-        url: matrixExtensionEndpoints.IMAGE_MY_LIST_BY_IDS,
-        params
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
-
-  /**
-   * 分页查询当前用户的视频生成记录。
-   *
-   * @param params - 分页参数
-   * @param params.pageNo - 页码
-   * @param params.pageSize - 每页数量
-   * @returns 视频列表与总数
-   */
-  async videoMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIVideoListResponse> {
-    return matrixHttpClient.request<AIVideoListResponse>(
-      {
-        url: matrixExtensionEndpoints.VIDEO_MY_PAGE,
-        ...(params !== undefined ? { params } : {})
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
-
-  /**
-   * 按 ID 列表批量查询当前用户的视频记录。
-   *
-   * @param params - 查询参数
-   * @param params.ids - 逗号分隔的视频 ID 串
-   * @returns 视频列表
-   */
-  async videoMyListByIds(params: { ids: string }): Promise<AIVideo[]> {
-    return matrixHttpClient.request<AIVideo[]>(
-      {
-        url: matrixExtensionEndpoints.VIDEO_MY_LIST_BY_IDS,
-        params
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
-
-  /**
-   * 发起视频生成任务。
-   *
-   * 返回异步任务信息，结果需另行轮询查询。
-   *
-   * @param body - 视频生成参数
-   * @returns 异步任务响应
-   */
-  async videoGenerate(body: VideoGenerationRequest): Promise<AIAsyncGenerationResponse> {
-    return matrixHttpClient.request<AIAsyncGenerationResponse>(
-      {
-        url: matrixExtensionEndpoints.VIDEO_GENERATE,
-        method: 'POST',
-        body
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
-
-  /**
-   * 分页查询当前用户的音频生成记录。
-   *
-   * @param params - 分页参数
-   * @param params.pageNo - 页码
-   * @param params.pageSize - 每页数量
-   * @returns 音频列表与总数
-   */
-  async audioMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIAudioListResponse> {
-    return matrixHttpClient.request<AIAudioListResponse>(
-      {
-        url: matrixExtensionEndpoints.AUDIO_MY_PAGE,
-        ...(params !== undefined ? { params } : {})
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
-
-  /**
-   * 按 ID 列表批量查询当前用户的音频记录。
-   *
-   * @param params - 查询参数
-   * @param params.ids - 逗号分隔的音频 ID 串
-   * @returns 音频列表
-   */
-  async audioMyListByIds(params: { ids: string }): Promise<AIAudio[]> {
-    return matrixHttpClient.request<AIAudio[]>(
-      {
-        url: matrixExtensionEndpoints.AUDIO_MY_LIST_BY_IDS,
-        params
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
-
-  /**
-   * 发起音频生成任务。
-   *
-   * 返回异步任务信息，结果需另行轮询查询。
-   *
-   * @param body - 音频生成参数
-   * @returns 异步任务响应
-   */
-  async audioGenerate(body: AudioGenerationRequest): Promise<AIAsyncGenerationResponse> {
-    return matrixHttpClient.request<AIAsyncGenerationResponse>(
-      {
-        url: matrixExtensionEndpoints.AUDIO_GENERATE,
-        method: 'POST',
-        body
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
-
-  /**
-   * 查询指定模型支持的音色列表。
-   *
-   * @param params - 查询参数
-   * @param params.model - 模型 ID
-   * @returns 音色列表
-   */
-  async audioGetVoices(params: { model: string }): Promise<AIVoice[]> {
-    return matrixHttpClient.request<AIVoice[]>(
-      {
-        url: matrixExtensionEndpoints.AUDIO_VOICES,
-        params
-      },
-      undefined,
-      { logPrefix: 'MatrixAI' }
-    )
-  }
 
   /**
    * 删除单条 AI 消息。
@@ -662,6 +460,57 @@ class MatrixAIService {
       undefined,
       { logPrefix: 'MatrixAI' }
     )
+  }
+  // ── 媒体生成（实现在 aiMediaApi，本类只做转发，保持对外 API 不变）──
+
+  /** 文生图：返回生成结果或任务 ID。 */
+  async generateImage(request: ImageGenerationRequest): Promise<ImageGenerationResult | number | string> {
+    return aiMedia.generateImage(request)
+  }
+
+  /** 分页查询当前用户的 AI 图片。 */
+  async imageMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIImageListResponse> {
+    return aiMedia.imageMyPage(params)
+  }
+
+  /** 按 ID 批量查询 AI 图片。 */
+  async imageMyListByIds(params: { ids: string }): Promise<AIImage[]> {
+    return aiMedia.imageMyListByIds(params)
+  }
+
+  /** 分页查询当前用户的 AI 视频。 */
+  async videoMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIVideoListResponse> {
+    return aiMedia.videoMyPage(params)
+  }
+
+  /** 按 ID 批量查询 AI 视频。 */
+  async videoMyListByIds(params: { ids: string }): Promise<AIVideo[]> {
+    return aiMedia.videoMyListByIds(params)
+  }
+
+  /** 提交视频生成任务。 */
+  async videoGenerate(body: VideoGenerationRequest): Promise<AIAsyncGenerationResponse> {
+    return aiMedia.videoGenerate(body)
+  }
+
+  /** 分页查询当前用户的 AI 音频。 */
+  async audioMyPage(params?: { pageNo?: number; pageSize?: number }): Promise<AIAudioListResponse> {
+    return aiMedia.audioMyPage(params)
+  }
+
+  /** 按 ID 批量查询 AI 音频。 */
+  async audioMyListByIds(params: { ids: string }): Promise<AIAudio[]> {
+    return aiMedia.audioMyListByIds(params)
+  }
+
+  /** 提交音频生成任务。 */
+  async audioGenerate(body: AudioGenerationRequest): Promise<AIAsyncGenerationResponse> {
+    return aiMedia.audioGenerate(body)
+  }
+
+  /** 查询指定模型支持的音色列表。 */
+  async audioGetVoices(params: { model: string }): Promise<AIVoice[]> {
+    return aiMedia.audioGetVoices(params)
   }
 }
 

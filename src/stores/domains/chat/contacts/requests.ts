@@ -1,5 +1,9 @@
 import { computed, ref, shallowRef, triggerRef } from 'vue'
-import { type FriendRequest, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import {
+  type FriendRequest,
+  matrixFriendOperations,
+  matrixFriendService
+} from '@/services/matrix/friends/MatrixFriendService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 import type { FriendRequestItem } from './types'
@@ -82,7 +86,7 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
 
   async function sendFriendRequest(userId: string, message?: string): Promise<boolean> {
     try {
-      await matrixFriendService.sendFriendRequest(userId, message)
+      await matrixFriendOperations.sendFriendRequest(userId, message)
       logger.info(`[ContactStore] 发送好友请求成功: ${userId}`)
       return true
     } catch (err) {
@@ -96,7 +100,7 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
     if (pendingAccepts.has(userId)) return false
     pendingAccepts.add(userId)
     try {
-      await matrixFriendService.acceptFriendRequest(userId)
+      await matrixFriendOperations.acceptFriendRequest(userId)
       requestFriendsList.value = requestFriendsList.value.filter(
         (r) => !(r.userId === userId && r.direction === 'incoming')
       )
@@ -123,7 +127,7 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
 
   async function rejectFriendRequest(userId: string): Promise<boolean> {
     try {
-      await matrixFriendService.rejectFriendRequest(userId)
+      await matrixFriendOperations.rejectFriendRequest(userId)
       requestFriendsList.value = requestFriendsList.value.filter(
         (r) => !(r.userId === userId && r.direction === 'incoming')
       )
@@ -138,7 +142,7 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
 
   async function cancelFriendRequest(userId: string): Promise<boolean> {
     try {
-      await matrixFriendService.cancelFriendRequest(userId)
+      await matrixFriendOperations.cancelFriendRequest(userId)
       requestFriendsList.value = requestFriendsList.value.filter(
         (r) => !(r.userId === userId && r.direction === 'outgoing')
       )

@@ -91,7 +91,7 @@ import { useI18n } from 'vue-i18n'
 import UserIdentity from '@/components/common/UserIdentity.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
-import { matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import { matrixFriendGroups } from '@/services/matrix/friends/MatrixFriendService'
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import type { Device } from '@/services/matrix/user/MatrixDeviceService'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
@@ -142,8 +142,8 @@ const loadGroups = async () => {
   groupLoadError.value = ''
   try {
     const [all, assigned] = await Promise.all([
-      matrixFriendService.getFriendGroups(),
-      matrixFriendService.getFriendGroupsByUser(props.userId)
+      matrixFriendGroups.getFriendGroups(),
+      matrixFriendGroups.getFriendGroupsByUser(props.userId)
     ])
     availableGroups.value = all
     const assignedIds = assigned.map((g) => g.group_id)
@@ -168,7 +168,7 @@ const handleGroupSelectionChange = async (next: string[]) => {
   let hasFailure = false
   for (const groupId of toAdd) {
     try {
-      await matrixFriendService.addFriendToGroup(groupId, props.userId)
+      await matrixFriendGroups.addFriendToGroup(groupId, props.userId)
       showFeedback(t('friend.detail.group_assign_success'), 'success', 'polite')
     } catch (err) {
       hasFailure = true
@@ -178,7 +178,7 @@ const handleGroupSelectionChange = async (next: string[]) => {
   }
   for (const groupId of toRemove) {
     try {
-      await matrixFriendService.removeFriendFromGroup(groupId, props.userId)
+      await matrixFriendGroups.removeFriendFromGroup(groupId, props.userId)
       showFeedback(t('friend.detail.group_remove_success'), 'success', 'polite')
     } catch (err) {
       hasFailure = true

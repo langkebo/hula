@@ -9,7 +9,13 @@ export { matrixClientService } from './MatrixClientService'
 export { matrixOidcService } from './auth/MatrixOidcService'
 // Key Backup 服务
 export { matrixKeyBackupService } from './crypto/MatrixKeyBackupService'
-export { matrixFriendService } from './friends/MatrixFriendService'
+export {
+  friendEventBus,
+  matrixFriendGroups,
+  matrixFriendOperations,
+  matrixFriendService,
+  matrixFriendSync
+} from './friends/MatrixFriendService'
 // 新增：核心服务导出（文档对齐）
 export { matrixVoiceService } from './media/MatrixVoiceService'
 export { matrixEventReportService } from './moderation/MatrixEventReportService'

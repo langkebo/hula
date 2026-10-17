@@ -1,7 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { StoresEnum } from '@/enums'
-import { type FriendServiceEventHandler, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
+import {
+  type FriendServiceEventHandler,
+  matrixFriendService,
+  matrixFriendSync
+} from '@/services/matrix/friends/MatrixFriendService'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { createLogger } from '@/utils/Logger'
 import { createContactDm } from './dm'
@@ -36,7 +40,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
       return
     }
 
-    await matrixFriendService.initialize()
+    await matrixFriendSync.initialize()
     await matrixDirectMessageService.initialize()
 
     matrixFriendService.on('sync', handleFriendSync as FriendServiceEventHandler)

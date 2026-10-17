@@ -6,6 +6,14 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { PREFIX_VENDOR_V1 } from '../paths/prefixes'
 import {
+  addThreePid,
+  bindThreePid,
+  deleteThreePid,
+  fetchThreePids,
+  type ThreePidsResponse,
+  unbindThreePid
+} from './accountThreePids'
+import {
   cacheInvitePolicy,
   INVITE_POLICY_ACCOUNT_DATA_TYPE,
   type InvitePolicy,
@@ -243,94 +251,29 @@ class MatrixAccountService extends BaseMatrixService {
     }
   }
 
-  /** 获取账号已绑定的第三方标识（3PID）列表；`pending3pids` 当前恒为空。 */
-  async getThreePids(): Promise<{
-    threepids: Array<{
-      medium: string
-      address: string
-      validated_at: number
-      added_at: number
-    }>
-    pending3pids: Array<{
-      medium: string
-      address: string
-      validated_at: number
-      added_at: number
-    }>
-  }> {
-    const client = this.getClient()
-
-    try {
-      const accountData = await client.getThreePidsManager().getThreePids()
-      logger.info('[MatrixAccount] 获取 3PID 列表成功')
-      return {
-        threepids: accountData.threepids || [],
-        pending3pids: []
-      }
-    } catch (err) {
-      logger.error(`[MatrixAccount] 获取 3PID 列表失败: ${err}`)
-      throw err
-    }
+  /** 获取已绑定的第三方标识（3PID）列表；`pending3pids` 当前恒为空。 */
+  async getThreePids(): Promise<ThreePidsResponse> {
+    return fetchThreePids(() => this.getClient())
   }
 
-  /**
-   * 添加第三方标识（3PID）。
-   * `bind` 为历史遗留参数：后端 add/bind 同 handler，仅消费 sid + clientSecret，此处已忽略。
-   */
+  /** 添加第三方标识（3PID）；`_bind` 为历史遗留参数，后端 add/bind 同 handler，已忽略。 */
   async addThreePid(sid: string, clientSecret: string, _bind?: boolean): Promise<void> {
-    const client = this.getClient()
-
-    try {
-      // 后端 /account/3pid/add 只读 sid+client_secret；bind 参数历史遗留（add/bind 同 handler），已忽略
-      await client.getThreePidsManager().addThreePidOnly(clientSecret, sid)
-      logger.info(`[MatrixAccount] 添加 3PID 成功: ${sid}`)
-    } catch (err) {
-      logger.error(`[MatrixAccount] 添加 3PID 失败: ${err}`)
-      throw err
-    }
+    return addThreePid(() => this.getClient(), sid, clientSecret)
   }
 
-  /**
-   * 绑定第三方标识（3PID）。
-   * 后端 add/bind 同 handler，仅消费 sid + clientSecret；medium/address 仅用于日志。
-   */
+  /** 绑定第三方标识（3PID）；后端与 add 同 handler，medium/address 仅用于日志。 */
   async bindThreePid(sid: string, clientSecret: string, medium: string, address: string): Promise<void> {
-    const client = this.getClient()
-
-    try {
-      // 后端 /account/3pid/bind 与 /add 同一 handler，只读 sid+client_secret；medium/address 仅用于日志
-      await client.getThreePidsManager().addThreePidOnly(clientSecret, sid)
-      logger.info(`[MatrixAccount] 绑定 3PID 成功: ${medium}:${address}`)
-    } catch (err) {
-      logger.error(`[MatrixAccount] 绑定 3PID 失败: ${err}`)
-      throw err
-    }
+    return bindThreePid(() => this.getClient(), sid, clientSecret, medium, address)
   }
 
   /** 删除已绑定的第三方标识（3PID）。 */
   async deleteThreePid(medium: string, address: string): Promise<void> {
-    const client = this.getClient()
-
-    try {
-      await client.getThreePidsManager().deleteThreePid(medium, address)
-      logger.info(`[MatrixAccount] 删除 3PID 成功: ${medium}:${address}`)
-    } catch (err) {
-      logger.error(`[MatrixAccount] 删除 3PID 失败: ${err}`)
-      throw err
-    }
+    return deleteThreePid(() => this.getClient(), medium, address)
   }
 
   /** 解绑已绑定的第三方标识（3PID）。 */
   async unbindThreePid(medium: string, address: string): Promise<void> {
-    const client = this.getClient()
-
-    try {
-      await client.getThreePidsManager().unbindThreePid(medium, address)
-      logger.info(`[MatrixAccount] 解绑 3PID 成功: ${medium}:${address}`)
-    } catch (err) {
-      logger.error(`[MatrixAccount] 解绑 3PID 失败: ${err}`)
-      throw err
-    }
+    return unbindThreePid(() => this.getClient(), medium, address)
   }
 
   async getAccountData<T = Record<string, unknown>>(eventType: string): Promise<T | null> {

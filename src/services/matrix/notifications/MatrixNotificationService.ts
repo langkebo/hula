@@ -1,6 +1,4 @@
 import {
-  type ICreatePushRuleRequest,
-  type IPusher,
   type IPusherRequest,
   type IPushRule,
   type IPushRules,
@@ -454,64 +452,6 @@ class MatrixNotificationService extends BaseMatrixService {
     method: 'ack' | 'receipt'
   }> {
     return postNotificationAckWithFallback(() => this.getNotificationClient(), notificationId, roomId, eventId)
-  }
-
-  /**
-   * 从服务端获取完整推送规则 (async, 使用 SDK 高层方法)
-   */
-  async fetchPushRules(): Promise<IPushRules> {
-    const client = this.getNotificationClient()
-    try {
-      return await client.getPushManager().getPushRules()
-    } catch (err) {
-      logger.error(`[MatrixNotification] 获取推送规则失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 设置推送规则 (使用 SDK PushManager.createPushRule)
-   */
-  async setPushRuleByScope(scope: string, kind: string, ruleId: string, body: Record<string, unknown>): Promise<void> {
-    const client = this.getNotificationClient()
-    try {
-      await client
-        .getPushManager()
-        .createPushRule(scope, kind as PushRuleKind, ruleId, body as Record<string, unknown> & ICreatePushRuleRequest)
-      logger.info(`[MatrixNotification] 设置推送规则成功: ${scope}/${kind}/${ruleId}`)
-    } catch (err) {
-      logger.error(`[MatrixNotification] 设置推送规则失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 删除推送规则 (使用 SDK PushManager.deletePushRule)
-   */
-  async deletePushRuleByScope(scope: string, kind: string, ruleId: string): Promise<void> {
-    const client = this.getNotificationClient()
-    try {
-      await client.getPushManager().deletePushRule(scope, kind as PushRuleKind, ruleId)
-      logger.info(`[MatrixNotification] 删除推送规则成功: ${scope}/${kind}/${ruleId}`)
-    } catch (err) {
-      logger.error(`[MatrixNotification] 删除推送规则失败: ${err}`)
-      throw err
-    }
-  }
-
-  /**
-   * 获取推送设备列表 (使用 SDK 高层方法)
-   * FT-128: 返回 IPusher[] 而非类型擦除的 Array<Record<string, unknown>>
-   */
-  async fetchPushers(): Promise<IPusher[]> {
-    const client = this.getNotificationClient()
-    try {
-      const result = await client.getPushManager().getPushers()
-      return result as IPusher[]
-    } catch (err) {
-      logger.error(`[MatrixNotification] 获取推送设备列表失败: ${err}`)
-      throw err
-    }
   }
 
   /**

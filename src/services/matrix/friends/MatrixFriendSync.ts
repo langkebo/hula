@@ -5,6 +5,7 @@ import { createLogger } from '@/utils/Logger'
 import { isFriendManagerRegistered } from '../extensions/managerExtensions'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import matrixClientService from '../MatrixClientService'
+import { friendEventBus } from './friendEvents'
 import {
   type FriendManagerCompat,
   type FriendSyncState,
@@ -17,10 +18,8 @@ import {
 const logger = createLogger('MatrixFriendSync')
 
 /**
- * FriendManager 获取结果（区分「客户端尚未创建」与「扩展真实缺失」）：
- * - no-client：client 尚未创建（未登录 / 身份变更重建窗口），属瞬时态，不应判为降级。
- * - missing：client 存在但 getFriendManager() 返回无效对象/抛错，属真实降级，回退 REST。
- * - ready：manager 可用。
+ * FriendManager 获取结果：no-client = 客户端尚未创建（瞬时态，不算降级）；
+ * missing = getFriendManager() 无效/抛错（真实降级，回退 REST）；ready = 可用。
  */
 type FriendManagerResolution =
   | { status: 'no-client' }
@@ -59,11 +58,7 @@ export class MatrixFriendSync {
 
   constructor(private readonly emit: (event: string, data?: unknown) => void) {}
 
-  /** 初始化好友同步
-   *
-   * 注册连接状态监听器，在客户端重建后自动重试获取 FriendManager。
-   * 解决客户端身份变更（重新登录）后 FriendManager 扩展丢失的问题。
-   */
+  /** 初始化好友同步：注册连接状态监听，客户端重建后自动重试获取 FriendManager。 */
   async initialize(): Promise<void> {
     try {
       const resolution = this.syncFriendManager()
@@ -494,3 +489,8 @@ export class MatrixFriendSync {
     logger.info('[MatrixFriend] FriendService 已停止')
   }
 }
+
+/**
+ * 好友同步服务单例。事件经 `friendEventBus` 派发，无需门面注入 emit 回调。
+ */
+export const matrixFriendSync = new MatrixFriendSync((event, data) => friendEventBus.emit(event, data))

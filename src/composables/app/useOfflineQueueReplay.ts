@@ -74,7 +74,8 @@ export function useOfflineQueueReplay(deps: {
   getMatrixRoomService: () => Promise<RoomServiceDeps>
   getMatrixRoomCreationService: () => Promise<RoomCreationServiceDeps>
   getRoomOperations: () => Promise<RoomOperationsDeps>
-  getMatrixFriendService?: () => Promise<FriendServiceDeps>
+  /** 好友写操作单例（`matrixFriendOperations`）：离线队列只重放收发请求类操作。 */
+  getFriendOperations?: () => Promise<FriendServiceDeps>
   getMatrixBurnAfterReadService?: () => Promise<BurnAfterReadServiceDeps>
   getMatrixWidgetService?: () => Promise<WidgetServiceDeps>
 }) {
@@ -88,7 +89,7 @@ export function useOfflineQueueReplay(deps: {
       const roomService = await deps.getMatrixRoomService()
       const roomCreationService = await deps.getMatrixRoomCreationService()
       const roomOps = await deps.getRoomOperations()
-      const friendService = deps.getMatrixFriendService ? await deps.getMatrixFriendService() : null
+      const friendService = deps.getFriendOperations ? await deps.getFriendOperations() : null
       const burnService = deps.getMatrixBurnAfterReadService ? await deps.getMatrixBurnAfterReadService() : null
       const widgetService = deps.getMatrixWidgetService ? await deps.getMatrixWidgetService() : null
 

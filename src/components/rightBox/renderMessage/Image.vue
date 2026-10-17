@@ -283,9 +283,7 @@ const handleOpenImageViewer = async () => {
   }
 }
 
-/**
- * 计算图片样式
- */
+/** 计算图片样式 */
 const remoteThumbnailSrc = computed(() => {
   if (hasEncryptedFile.value) return ''
   const originalUrl = props.body?.url

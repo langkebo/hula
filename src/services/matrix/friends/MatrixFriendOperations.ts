@@ -5,7 +5,7 @@ import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtens
 import { isConnectionClassError } from '../MatrixRequestHelper'
 import { matrixRoomActionFacade } from '../room/RoomFacade'
 import { buildFriendRequestIdempotencyKey, type FriendManagerCompat, type FriendStatus } from './friendUtils'
-import type { MatrixFriendSync } from './MatrixFriendSync'
+import { type MatrixFriendSync, matrixFriendSync } from './MatrixFriendSync'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
 
 const logger = createLogger('MatrixFriendOperations')
@@ -282,3 +282,6 @@ export class MatrixFriendOperations {
     }
   }
 }
+
+/** 好友写操作单例（请求收发、解除关系、备注/显示名/状态）。 */
+export const matrixFriendOperations = new MatrixFriendOperations(matrixFriendSync)

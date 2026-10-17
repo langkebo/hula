@@ -161,29 +161,23 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { computed, nextTick, onMounted, type Ref, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { openMsgSession } from '@/composables/chat/openMsgSession'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
 import { useMitt } from '@/composables/common/useMitt'
-import { MittEnum, OnlineEnum, SexEnum, ThemeEnum } from '@/enums/index.ts'
-import { matrixPresenceService, type PresenceState } from '@/services/matrix/user/MatrixPresenceService'
-import { profileService } from '@/services/matrix/user/MatrixProfileService'
+import { useUserCardPresence } from '@/composables/user/useUserCardPresence'
+import { MittEnum, type OnlineEnum, SexEnum, ThemeEnum } from '@/enums/index.ts'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
-import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { padZero } from '@/utils/StringUtils'
 import { toLocalpart } from '@/utils/userIdentity'
-import { isBusyUserStateTitle, mapUserStateToPresence } from '@/utils/userStatus'
-
-type PresenceKey = 'online' | 'away' | 'busy' | 'offline'
 
 type ConstellationKey =
   | 'capricorn'
@@ -198,21 +192,6 @@ type ConstellationKey =
   | 'libra'
   | 'scorpio'
   | 'sagittarius'
-
-type FetchedProfile = {
-  displayName?: string | null
-  avatarUrl?: string | null
-  sex?: number | undefined
-  resume?: string | undefined
-  region?: string | undefined
-  birthday?: string | undefined
-  displayBirthdayTag?: boolean
-  displayAge?: boolean
-  displayConstellation?: boolean
-  presence?: PresenceState | undefined
-  statusMessage?: string | null
-  lastActiveAgo?: number | undefined
-}
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -229,7 +208,6 @@ const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
 const contactStore = useContactStore()
-const userStatusStore = useUserStatusStore()
 const userStore = useUserStore()
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
 
@@ -262,123 +240,13 @@ const displayName = computed(() => {
 })
 const displayAccount = computed(() => resolvedUserInfo.value?.account || toLocalpart(uid) || uid)
 
-/* ----------------------------- 实时拉取（P0-2） ----------------------------- */
-const isLoading = ref(false)
-const fetchError = ref(false)
-const fetched = ref<FetchedProfile | null>(null)
-
-async function loadProfile() {
-  isLoading.value = true
-  fetchError.value = false
-  try {
-    const [baseRes, extRes, presenceRes] = await Promise.allSettled([
-      profileService.getProfile(uid),
-      profileService.getExtendedProfile(uid),
-      matrixPresenceService.getPresence(uid)
-    ])
-    const base = baseRes.status === 'fulfilled' ? baseRes.value : null
-    const ext = (extRes.status === 'fulfilled' ? extRes.value : null) as Record<string, unknown> | null
-    const presence = presenceRes.status === 'fulfilled' ? presenceRes.value : null
-
-    fetched.value = {
-      displayName: base?.displayname ?? null,
-      avatarUrl: base?.avatarUrl ?? null,
-      sex: typeof ext?.sex === 'number' ? ext.sex : undefined,
-      resume: typeof ext?.resume === 'string' ? ext.resume : undefined,
-      region: typeof ext?.region === 'string' ? ext.region : undefined,
-      birthday: typeof ext?.birthday === 'string' ? ext.birthday : undefined,
-      displayBirthdayTag: ext?.displayBirthdayTag === true,
-      displayAge: ext?.displayAge === true,
-      displayConstellation: ext?.displayConstellation === true,
-      presence: presence?.presence ?? undefined,
-      statusMessage: presence?.status_msg ?? null,
-      lastActiveAgo: typeof presence?.last_active_ago === 'number' ? presence.last_active_ago : undefined
-    }
-
-    const allFailed = baseRes.status === 'rejected' && extRes.status === 'rejected' && presenceRes.status === 'rejected'
-    fetchError.value = allFailed
-  } catch {
-    fetchError.value = true
-  } finally {
-    isLoading.value = false
-  }
-}
-
-/* ----------------------------- 在线状态（P0-3） ----------------------------- */
-const { stateList } = storeToRefs(userStatusStore)
-
-const presenceKey = computed<PresenceKey>(() => {
-  const info = resolvedUserInfo.value as { userStateId?: string; activeStatus?: OnlineEnum } | null
-  const userStateId = info?.userStateId
-
-  if (userStateId && userStateId !== '1') {
-    const state = stateList.value.find((s: { id: string }) => s.id === userStateId)
-    if (state) {
-      if (isBusyUserStateTitle(state.title || '')) return 'busy'
-      const mapped = mapUserStateToPresence(state)
-      if (mapped === 'unavailable') return 'away'
-      if (mapped === 'online') return 'online'
-      return 'offline'
-    }
-  }
-
-  const p = fetched.value?.presence
-  if (p === 'online') return 'online'
-  if (p === 'unavailable') return 'away'
-
-  const fallback = info?.activeStatus ?? activeStatus
-  return fallback === OnlineEnum.ONLINE ? 'online' : 'offline'
-})
-
-const presenceMeta = computed(() => {
-  switch (presenceKey.value) {
-    case 'online':
-      return { colorClass: 'bg-[--tjg-color-primary-500]', label: t('home.profile_card.status.online') }
-    case 'away':
-      return { colorClass: 'bg-[--tjg-color-warning-400]', label: t('home.profile_card.status.away') }
-    case 'busy':
-      return { colorClass: 'bg-[--tjg-color-danger-500]', label: t('home.profile_card.status.busy') }
-    default:
-      return { colorClass: 'bg-[--tjg-text-tertiary]', label: t('home.profile_card.status.offline') }
-  }
-})
-
-const statusMessage = computed(() => {
-  const f = fetched.value?.statusMessage
-  if (f) return f
-  const contact = contactStore.getContactByUserId?.(uid)
-  return (contact?.statusMessage as string | undefined) ?? null
-})
-
-/** 最近活跃时间戳（毫秒），用于展示"X 分钟前活跃" */
-const lastActiveAgoMs = computed<number | undefined>(() => {
-  const f = fetched.value
-  if (typeof f?.lastActiveAgo === 'number' && f.lastActiveAgo > 0) return f.lastActiveAgo
-  const lot = (resolvedUserInfo.value as { lastOptTime?: number } | null)?.lastOptTime
-  if (typeof lot === 'number' && lot > 0) return Math.max(0, Date.now() - lot)
-  return undefined
-})
-
-const lastActiveText = computed(() => {
-  if (presenceKey.value === 'online') return ''
-  const ago = lastActiveAgoMs.value
-  if (!ago) return ''
-  if (ago < 60_000) return t('home.profile_card.presence.activeNow')
-  if (ago < 3_600_000) return t('home.profile_card.presence.activeMinutes', { minutes: Math.floor(ago / 60_000) })
-  if (ago < 86_400_000) return t('home.profile_card.presence.activeHours', { hours: Math.floor(ago / 3_600_000) })
-  return t('home.profile_card.presence.activeDays', { days: Math.floor(ago / 86_400_000) })
-})
-
-/* ----------------------------- 自定义状态图标 ----------------------------- */
-const statusIcon = computed(() => {
-  const userStateId = (resolvedUserInfo.value as { userStateId?: string } | null)?.userStateId
-  if (userStateId && userStateId !== '1') {
-    const state = stateList.value.find((s: { id: string }) => s.id === userStateId)
-    if (state?.url) return state.url
-  }
-  return null
-})
-
+/* ------------------- 实时拉取 + 在线状态（useUserCardPresence） ------------------- */
+const { isLoading, fetchError, fetched, loadProfile, presenceMeta, statusMessage, lastActiveText, statusIcon } =
+  useUserCardPresence({
+    uid,
+    resolvedUserInfo: computed(() => resolvedUserInfo.value),
+    activeStatus
+  })
 /* ----------------------------- 群角色（P1-4） ----------------------------- */
 const isGroupChat = computed<boolean>(() => chatStore.isGroup)
 const currentRoomId = computed(() => globalStore.currentSessionRoomId)

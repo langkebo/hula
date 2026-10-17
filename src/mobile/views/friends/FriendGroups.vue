@@ -85,7 +85,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
-import { matrixFriendService } from '@/services/matrix'
+import { matrixFriendGroups } from '@/services/matrix'
 import type { FriendGroup } from '@/services/matrix/friends/friendUtils'
 import type { Friend } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
@@ -113,7 +113,7 @@ function membersOf(groupId: string): Friend[] {
 async function loadGroups(): Promise<void> {
   loading.value = true
   try {
-    groups.value = await matrixFriendService.getFriendGroups()
+    groups.value = await matrixFriendGroups.getFriendGroups()
   } catch (error) {
     logger.error('Failed to load friend groups', error)
     showToast({ type: 'fail', message: t('mobile_friend_groups.load_failed') })
@@ -126,7 +126,7 @@ async function loadGroups(): Promise<void> {
 async function loadMembers(groupId: string): Promise<void> {
   if (membersByGroup.value[groupId]) return
   try {
-    const friends = await matrixFriendService.getFriendsInGroup(groupId)
+    const friends = await matrixFriendGroups.getFriendsInGroup(groupId)
     membersByGroup.value = { ...membersByGroup.value, [groupId]: friends }
   } catch (error) {
     logger.error(`Failed to load members for group ${groupId}`, error)
@@ -140,7 +140,7 @@ async function handleCreate(): Promise<void> {
     return
   }
   try {
-    await matrixFriendService.createFriendGroup(name)
+    await matrixFriendGroups.createFriendGroup(name)
     newGroupName.value = ''
     showToast(t('mobile_friend_groups.create_success'))
     await loadGroups()
@@ -165,7 +165,7 @@ async function handleRename(): Promise<void> {
     return
   }
   try {
-    await matrixFriendService.renameFriendGroup(group.group_id, name)
+    await matrixFriendGroups.renameFriendGroup(group.group_id, name)
     showRenameDialog.value = false
     showToast(t('mobile_friend_groups.rename_success'))
     await loadGroups()
@@ -192,7 +192,7 @@ async function handleDelete(groupId: string): Promise<void> {
   }
 
   try {
-    await matrixFriendService.deleteFriendGroup(groupId)
+    await matrixFriendGroups.deleteFriendGroup(groupId)
     showToast(t('mobile_friend_groups.delete_success'))
     await loadGroups()
   } catch (error) {

@@ -397,7 +397,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useFriends } from '@/composables/useFriends'
 import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
 import router from '@/router'
-import { matrixFriendService, userDirectoryService } from '@/services/matrix'
+import { matrixFriendOperations, userDirectoryService } from '@/services/matrix'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -557,7 +557,7 @@ const onUserSearch = useDebounceFn(async (value: string) => {
 async function handleAddFriendBySearch(userId: string) {
   addingFriend.value = userId
   try {
-    await matrixFriendService.sendFriendRequest(userId)
+    await matrixFriendOperations.sendFriendRequest(userId)
     showToast({ type: 'success', message: t('mobile_contact.add_friend_success') })
   } catch (e) {
     logger.error('Send friend request failed:', e)
@@ -575,7 +575,7 @@ async function handleDeleteContact(uid: string) {
       message: t('mobile_contact.delete_friend_confirm')
     })
     showToast({ type: 'loading', message: t('mobile_contact.deleting'), forbidClick: true })
-    await matrixFriendService.removeFriend(uid)
+    await matrixFriendOperations.removeFriend(uid)
     showToast({ type: 'success', message: t('mobile_contact.delete_friend_success') })
     await contactStore.getContactList(true)
   } catch (e) {

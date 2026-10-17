@@ -43,7 +43,7 @@ describe('useOfflineQueueReplay — friend operations', () => {
       getMatrixRoomService: vi.fn().mockResolvedValue({}),
       getMatrixRoomCreationService: vi.fn().mockResolvedValue({}),
       getRoomOperations: vi.fn().mockResolvedValue({}),
-      getMatrixFriendService: vi.fn().mockResolvedValue({ acceptFriendRequest })
+      getFriendOperations: vi.fn().mockResolvedValue({ acceptFriendRequest })
     })
 
     await initOfflineQueue()
@@ -73,7 +73,7 @@ describe('useOfflineQueueReplay — friend operations', () => {
       getMatrixRoomService: vi.fn().mockResolvedValue({}),
       getMatrixRoomCreationService: vi.fn().mockResolvedValue({}),
       getRoomOperations: vi.fn().mockResolvedValue({}),
-      getMatrixFriendService: vi.fn().mockResolvedValue({ rejectFriendRequest })
+      getFriendOperations: vi.fn().mockResolvedValue({ rejectFriendRequest })
     })
 
     await initOfflineQueue()
@@ -101,7 +101,7 @@ describe('useOfflineQueueReplay — friend operations', () => {
       getMatrixRoomService: vi.fn().mockResolvedValue({}),
       getMatrixRoomCreationService: vi.fn().mockResolvedValue({}),
       getRoomOperations: vi.fn().mockResolvedValue({}),
-      getMatrixFriendService: vi.fn().mockResolvedValue({ cancelFriendRequest })
+      getFriendOperations: vi.fn().mockResolvedValue({ cancelFriendRequest })
     })
 
     await initOfflineQueue()

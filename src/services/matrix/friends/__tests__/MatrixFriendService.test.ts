@@ -108,7 +108,9 @@ vi.mock('@/services/matrix/MatrixHttpClient', async () => {
   }
 })
 
-const { matrixFriendService } = await import('../MatrixFriendService')
+const { matrixFriendGroups, matrixFriendOperations, matrixFriendService, matrixFriendSync } = await import(
+  '../MatrixFriendService'
+)
 const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
 const { synapseFriendExtensionService } = await import('../../extensions/SynapseFriendExtensionService')
 
@@ -192,7 +194,7 @@ describe('MatrixFriendService', () => {
       }
       vi.mocked(matrixClientService.getClient).mockReturnValue({ friendManager: manager } as unknown as MatrixClient)
 
-      await matrixFriendService.setFriendNote('@alice:example.org', 'new note')
+      await matrixFriendOperations.setFriendNote('@alice:example.org', 'new note')
 
       expect(updateFriendNote).toHaveBeenCalledWith('@alice:example.org', 'new note')
       expect(setFriendNote).not.toHaveBeenCalled()
@@ -201,7 +203,7 @@ describe('MatrixFriendService', () => {
     it('should delegate favorite status to special friend service only', async () => {
       ;(matrixFriendService as unknown as { friendManager: unknown }).friendManager = mockFriendManager
 
-      await matrixFriendService.setFriendStatus('@alice:example.org', 'favorite')
+      await matrixFriendOperations.setFriendStatus('@alice:example.org', 'favorite')
 
       expect(matrixSpecialFriendService.addSpecialFriend).toHaveBeenCalledWith('@alice:example.org')
       expect(mockFriendManager.setFriendStatus).not.toHaveBeenCalled()
@@ -210,7 +212,7 @@ describe('MatrixFriendService', () => {
     it('should remove special friend when restoring normal status', async () => {
       ;(matrixFriendService as unknown as { friendManager: unknown }).friendManager = mockFriendManager
 
-      await matrixFriendService.setFriendStatus('@alice:example.org', 'accepted')
+      await matrixFriendOperations.setFriendStatus('@alice:example.org', 'accepted')
 
       expect(matrixSpecialFriendService.removeSpecialFriend).toHaveBeenCalledWith('@alice:example.org')
       expect(mockFriendManager.setFriendStatus).not.toHaveBeenCalled()
@@ -221,7 +223,7 @@ describe('MatrixFriendService', () => {
         friendManager: mockFriendManager
       } as unknown as MatrixClient)
 
-      await matrixFriendService.setFriendStatus('@alice:example.org', 'blocked')
+      await matrixFriendOperations.setFriendStatus('@alice:example.org', 'blocked')
 
       expect(matrixSpecialFriendService.removeSpecialFriend).toHaveBeenCalledWith('@alice:example.org')
       expect(mockFriendManager.setFriendStatus).toHaveBeenCalledWith('@alice:example.org', 'blocked')
@@ -259,7 +261,7 @@ describe('MatrixFriendService', () => {
         .mockReturnValueOnce({ friendManager: oldManager } as unknown as MatrixClient)
         .mockReturnValue({ friendManager: newManager } as unknown as MatrixClient)
 
-      await matrixFriendService.initialize()
+      await matrixFriendSync.initialize()
       const friends = await matrixFriendService.getFriends()
 
       expect(oldManager.start).toHaveBeenCalledTimes(1)
@@ -323,7 +325,7 @@ describe('MatrixFriendService', () => {
         }
       } as unknown as MatrixClient)
 
-      const result = await matrixFriendService.getFriendGroups()
+      const result = await matrixFriendGroups.getFriendGroups()
 
       expect(result).toHaveLength(2)
       expect(result[0].group_id).toBe('g1')
@@ -339,7 +341,7 @@ describe('MatrixFriendService', () => {
         }
       } as unknown as MatrixClient)
 
-      const result = await matrixFriendService.getFriendGroups()
+      const result = await matrixFriendGroups.getFriendGroups()
 
       expect(result).toEqual([])
     })

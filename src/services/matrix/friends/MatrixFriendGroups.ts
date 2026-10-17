@@ -3,7 +3,7 @@ import type { Friend } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 
 import type { FriendGroup, FriendManagerCompat } from './friendUtils'
-import type { MatrixFriendSync } from './MatrixFriendSync'
+import { type MatrixFriendSync, matrixFriendSync } from './MatrixFriendSync'
 
 const logger = createLogger('MatrixFriendGroups')
 
@@ -177,3 +177,6 @@ export class MatrixFriendGroups {
     }
   }
 }
+
+/** 好友分组管理单例。 */
+export const matrixFriendGroups = new MatrixFriendGroups(matrixFriendSync)

@@ -175,10 +175,9 @@ const getMatrixRoomCreationService = createLazyLoader(
   'matrixRoomCreationService'
 )
 const getRoomOperations = createLazyLoader(() => import('@/services/matrix/room/RoomOperations'), 'roomOperations')
-const getMatrixFriendService = createLazyLoader(
-  () => import('@/services/matrix/friends/MatrixFriendService'),
-  'matrixFriendService'
-)
+const friendModule = () => import('@/services/matrix/friends/MatrixFriendService')
+const getMatrixFriendService = createLazyLoader(friendModule, 'matrixFriendService')
+const getMatrixFriendOperations = createLazyLoader(friendModule, 'matrixFriendOperations')
 const getMatrixBurnAfterReadService = createLazyLoader(
   () => import('@/services/matrix/messaging/MatrixBurnAfterReadService'),
   'matrixBurnAfterReadService'
@@ -197,7 +196,7 @@ const { initOfflineQueue } = useOfflineQueueReplay({
   getMatrixRoomService,
   getMatrixRoomCreationService,
   getRoomOperations,
-  getMatrixFriendService,
+  getFriendOperations: getMatrixFriendOperations,
   getMatrixBurnAfterReadService,
   getMatrixWidgetService
 })
@@ -427,11 +426,7 @@ function setupThemeWatchers() {
   )
 }
 
-/**
- * 预热联系人状态缓存。
- *
- * 后台任务：好友列表加载失败不影响启动（缓存为空只会退化为逐个查询 + fail-open）。
- */
+/** 预热联系人状态缓存：后台任务，好友列表加载失败不影响启动（缓存为空只会退化为逐个查询 + fail-open）。 */
 async function seedContactStateCache(): Promise<void> {
   try {
     const friendService = await getMatrixFriendService()
