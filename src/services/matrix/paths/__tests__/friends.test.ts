@@ -18,6 +18,10 @@ describe('FRIENDS', () => {
     expect(FRIENDS.NOTE('@u:server')).toBe('/_matrix/vendor/v1/friends/@u:server/note')
     expect(FRIENDS.CHECK('@u:server')).toBe('/_matrix/vendor/v1/friends/check/@u:server')
     expect(FRIENDS.DM('@u:server')).toBe('/_matrix/vendor/v1/friends/dm/@u:server')
-    expect(FRIENDS.STATUS('@u:server')).toBe('/_matrix/vendor/v1/friends/@u:server/status')
+  })
+
+  // 2026-10-17 Batch C-0：STATUS 生产零引用（好友状态走 FriendManager），已删除。
+  it('不再包含生产零引用的 STATUS 常量', () => {
+    expect(FRIENDS).not.toHaveProperty('STATUS')
   })
 })

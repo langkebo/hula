@@ -12,6 +12,5 @@ export const FRIENDS = {
   REMOVE: (userId: string) => `${PREFIX_VENDOR_V1}/friends/${userId}`,
   NOTE: (userId: string) => `${PREFIX_VENDOR_V1}/friends/${userId}/note`,
   CHECK: (userId: string) => `${PREFIX_VENDOR_V1}/friends/check/${userId}`,
-  DM: (userId: string) => `${PREFIX_VENDOR_V1}/friends/dm/${userId}`,
-  STATUS: (userId: string) => `${PREFIX_VENDOR_V1}/friends/${userId}/status`
+  DM: (userId: string) => `${PREFIX_VENDOR_V1}/friends/dm/${userId}`
 } as const

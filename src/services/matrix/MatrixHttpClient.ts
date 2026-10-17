@@ -38,7 +38,7 @@ interface MatrixAuthedRequestWithPrefixInvoker {
 /**
  * 使用 SDK BaseManager.authedRequestWithPrefix 发送带完整前缀的 Matrix 请求。
  *
- * 用于 path 含完整前缀（如 MATRIX_PATHS.SPACE.HIERARCHY，含 PREFIX_V1）的场景：
+ * 用于 path 含完整前缀（如 MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO，含 PREFIX_VENDOR_V1）的场景：
  * SDK 内部按 `KNOWN_PREFIXES`（21 条，长前缀优先）单遍剥离路径中已有的
  * `/_matrix/...` 完整前缀，并以命中前缀作为请求 `prefix`，避免默认 v3 前缀二次
  * 拼接导致 URL 翻倍（双前缀 → 404）。相比旧的本地 12 条前缀表，SDK 表额外覆盖

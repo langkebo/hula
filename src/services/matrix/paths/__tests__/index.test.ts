@@ -10,7 +10,6 @@ describe('paths/index aggregate', () => {
     expect(MATRIX_PATHS.AUTH).toBeDefined()
     expect(MATRIX_PATHS.ROOM).toBeDefined()
     expect(MATRIX_PATHS.FRIENDS).toBeDefined()
-    expect(MATRIX_PATHS.SPACE).toBeDefined()
     expect(MATRIX_PATHS.SYNC).toBeDefined()
     expect(MATRIX_PATHS.NOTIFICATION).toBeDefined()
     expect(MATRIX_PATHS.VOICE).toBeDefined()
@@ -31,7 +30,9 @@ describe('paths/index aggregate', () => {
       'ACCOUNT_DATA',
       'WIDGET',
       'GUEST',
-      'MEDIA'
+      'MEDIA',
+      // 2026-10-17 Batch C-0：SPACE 全 19 键生产零引用，命名空间整体移除
+      'SPACE'
     ]) {
       expect(MATRIX_PATHS).not.toHaveProperty(dead)
     }

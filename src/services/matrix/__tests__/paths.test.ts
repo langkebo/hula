@@ -7,6 +7,8 @@ describe('paths.ts top-level re-export', () => {
   })
 
   it('re-exports MATRIX_PATHS with ROOM group', () => {
-    expect(MATRIX_PATHS.ROOM.CREATE).toBe('/createRoom')
+    expect(MATRIX_PATHS.ROOM.REPORT_SCANNER_INFO('!r', '$e')).toBe(
+      '/_matrix/vendor/v1/rooms/!r/report/%24e/scanner_info'
+    )
   })
 })

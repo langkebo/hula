@@ -93,8 +93,8 @@ describe('§9.1 路径常量单一事实源 — friends 模块', () => {
     }
   })
 
-  it('FRIENDS.STATUS(userId) 匹配 SDK route-table', () => {
-    expectPathMatchesSdk(FRIENDS.STATUS('@alice:server'))
+  it('FRIENDS.STATUS 已删除（生产零引用，好友状态走 FriendManager）', () => {
+    expect(FRIENDS).not.toHaveProperty('STATUS')
   })
 
   it('SDK route-table 的 v1 路径只落在私有规范前缀 PREFIX_VENDOR_V1 上', () => {

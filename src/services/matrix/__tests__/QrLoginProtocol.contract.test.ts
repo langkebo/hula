@@ -243,16 +243,17 @@ describe('QR 登录协议一致性（MSC4108）', () => {
     })
   })
 
-  describe('前端 MatrixQrLoginSdkService 使用 MSC4108 路径', () => {
-    it('前端 paths 常量包含 MSC4108 rendezvous 路径，不包含 MSC4388 路径', async () => {
+  describe('前端路径常量的 MSC4108 收敛（Batch C-0）', () => {
+    it('rendezvous 路径常量已移除，仅保留 SDK 未覆盖的 qr_token', async () => {
       const { AUTH } = await import('../paths/auth')
 
-      // MSC4108 paths should exist
-      expect(AUTH.MSC4108_CREATE_RENDEZVOUS).toContain('org.matrix.msc4108')
-      expect(AUTH.MSC4108_CREATE_RENDEZVOUS).toContain('rendezvous')
-      expect(AUTH.MSC4108_RENDEZVOUS_SESSION('test-session')).toContain('test-session')
+      // 2026-10-17 Batch C-0：Tjg 不再维护 MSC4108 rendezvous 路径常量 ——
+      // rendezvous 传输由 SDK `MSC4108RendezvousSession` 内部实现，
+      // Tjg 的路径常量不可能被 SDK 内部消费（旧注释的说法不成立）。
+      expect(AUTH).not.toHaveProperty('MSC4108_CREATE_RENDEZVOUS')
+      expect(AUTH).not.toHaveProperty('MSC4108_RENDEZVOUS_SESSION')
 
-      // MSC4108 qr_token path
+      // MSC4108 qr_token path（Tjg 侧仍需要，SDK 无对应）
       expect(AUTH.QR_GENERATE_TOKEN).toContain('login/qr_token')
 
       // MSC4388 paths should NOT exist (removed in step 1.4 RED-2)

@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-11T10:32:29.447Z",
-  "count": 181,
+  "count": 179,
   "violations": [
     "src/composables/messaging/useMessageForward.ts::matrix-js-sdk",
     "src/composables/messaging/useMessageForward.ts::unknown-as-MatrixEvent#1",
@@ -101,7 +101,6 @@
     "src/services/matrix/media/__tests__/MatrixMediaService.test.ts::matrix-js-sdk",
     "src/services/matrix/media/__tests__/MatrixMediaService.test.ts::matrix-js-sdk/media",
     "src/services/matrix/media/__tests__/MatrixMediaService.test.ts::matrix-js-sdk/telemetry",
-    "src/services/matrix/media/__tests__/MatrixMultimediaService.test.ts::matrix-js-sdk",
     "src/services/matrix/media/__tests__/MatrixVoiceService.test.ts::matrix-js-sdk",
     "src/services/matrix/media/__tests__/media.contract.test.ts::matrix-js-sdk",
     "src/services/matrix/media/__tests__/voice.contract.test.ts::matrix-js-sdk",
@@ -183,5 +182,5 @@
     "src/types/matrix-extensions.d.ts::matrix-js-sdk/key-backup::dynamic",
     "src/types/matrix-extensions.d.ts::matrix-js-sdk/key-verification::dynamic"
   ],
-  "updated_at": "2026-09-20T00:00:00.000Z"
+  "updated_at": "2026-10-17T02:04:43.658Z"
 }

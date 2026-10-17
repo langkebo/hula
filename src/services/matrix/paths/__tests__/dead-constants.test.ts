@@ -29,10 +29,11 @@ function expectKeys(obj: object, expectedKeys: string[]): void {
 describe('FT-120: 无死路径常量', () => {
   describe('AUTH 模块仅保留被 L2 服务引用的常量', () => {
     // MatrixQrLoginSdkService.reciprocateLogin → AUTH.QR_GENERATE_TOKEN
-    // MSC4108_CREATE_RENDEZVOUS / MSC4108_RENDEZVOUS_SESSION 由 SDK 内部 rendezvous 传输使用，
-    // 并被 QrLoginProtocol.contract.test.ts 契约校验，保留。
-    it('AUTH 仅包含 QR_GENERATE_TOKEN 与 MSC4108 路径', () => {
-      expectKeys(AUTH, ['QR_GENERATE_TOKEN', 'MSC4108_CREATE_RENDEZVOUS', 'MSC4108_RENDEZVOUS_SESSION'])
+    // 2026-10-17 Batch C-0：MSC4108_CREATE_RENDEZVOUS / MSC4108_RENDEZVOUS_SESSION 已删除。
+    // 原注释称其「由 SDK 内部 rendezvous 传输使用」不成立 —— Tjg 的路径常量不可能被 SDK
+    // 内部消费；QR 登录的 rendezvous 由 SDK `MSC4108RendezvousSession` 自行实现。
+    it('AUTH 仅包含 QR_GENERATE_TOKEN', () => {
+      expectKeys(AUTH, ['QR_GENERATE_TOKEN'])
     })
 
     it('AUTH 不再包含已废弃的字符串常量', () => {
@@ -68,9 +69,10 @@ describe('FT-120: 无死路径常量', () => {
     // MatrixVoiceService.convertVoice → VOICE.CONVERT (endpointCapabilityService.check)
     // MatrixVoiceService.optimizeVoice → VOICE.OPTIMIZE (endpointCapabilityService.check)
     // MatrixVoiceService.transcribeVoiceViaApi → VOICE.TRANSCRIPTION (capability)
-    // MatrixVoiceService.getRtcTransports → VOICE.RTC_TRANSPORTS (authedRequest, MSC4143)
+    // 2026-10-17 Batch C-0：VOICE.RTC_TRANSPORTS 已删除 —— getRtcTransports 实测已改调
+    // SDK `client.getVoiceManager().getRtcTransports()`（旧注释称其使用路径常量，已过期）。
     // VOICE.STATS / ROOM_STATS / USER_STATS 已迁移到 VoiceManager，不再需要路径常量。
-    it('VOICE 仅包含被 L2 服务引用的 9 个常量', () => {
+    it('VOICE 仅包含被 L2 服务引用的 8 个常量', () => {
       expectKeys(VOICE, [
         'CONFIG',
         'UPLOAD',
@@ -79,8 +81,7 @@ describe('FT-120: 无死路径常量', () => {
         'CONTENT',
         'CONVERT',
         'OPTIMIZE',
-        'TRANSCRIPTION',
-        'RTC_TRANSPORTS'
+        'TRANSCRIPTION'
       ])
     })
 

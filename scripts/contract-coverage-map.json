@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-10-17T00:07:44.179Z",
-  "scanned": 251,
-  "callerFiles": 61,
-  "totalCalls": 158,
+  "generatedAt": "2026-10-17T02:04:53.755Z",
+  "scanned": 249,
+  "callerFiles": 60,
+  "totalCalls": 157,
   "totalUrls": 8,
   "ledger": {
     "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.default.json",
@@ -1120,14 +1120,6 @@
     },
     {
       "file": "src/services/matrix/media/MatrixLocationService.ts",
-      "callCount": 1,
-      "kinds": ["sdk"],
-      "urlCount": 0,
-      "ledgerRoutes": [],
-      "unmatchedUrls": []
-    },
-    {
-      "file": "src/services/matrix/media/MatrixMultimediaService.ts",
       "callCount": 1,
       "kinds": ["sdk"],
       "urlCount": 0,

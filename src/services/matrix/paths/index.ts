@@ -4,7 +4,6 @@ import { CLIENT_CONFIG } from './clientConfig'
 import { FRIENDS } from './friends'
 import { NOTIFICATION } from './notification'
 import { ROOM } from './room'
-import { SPACE } from './space'
 import { SYNC } from './sync'
 import { VOICE } from './voice'
 import { WELL_KNOWN } from './wellKnown'
@@ -28,7 +27,6 @@ export const MATRIX_PATHS = {
   AUTH,
   ROOM,
   FRIENDS,
-  SPACE,
   SYNC,
   NOTIFICATION,
   VOICE,

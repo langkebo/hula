@@ -16,7 +16,9 @@ describe('VOICE', () => {
     expect(VOICE.CONTENT('m1')).toBe('/_matrix/vendor/v1/voice/m1')
   })
 
-  it('MSC4143 RTC transports', () => {
-    expect(VOICE.RTC_TRANSPORTS).toBe('/_matrix/client/unstable/org.matrix.msc4143/rtc/transports')
+  // 2026-10-17 Batch C-0：getRtcTransports 实测已改调 SDK VoiceManager，
+  // 路径常量生产零引用，已删除。此处锁定删除结果。
+  it('不再包含已迁移到 VoiceManager 的 MSC4143 路径常量', () => {
+    expect(VOICE).not.toHaveProperty('RTC_TRANSPORTS')
   })
 })
