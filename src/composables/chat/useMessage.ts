@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
+import { usePrivateRoomActions } from '@/composables/secretChat/usePrivateRoomActions'
 import { CallTypeEnum, MittEnum, NotificationTypeEnum, RoomTypeEnum, SessionOperateEnum, UserType } from '@/enums'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
@@ -14,7 +15,6 @@ import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
 const msgBoxShow = ref(false)
 const shrinkStatus = ref(false)
@@ -42,6 +42,7 @@ export const useMessage = () => {
   const settingStore = useSettingStore()
   const contactStore = useContactStore()
   const roomStore = useRoomStore()
+  const { isRoomPrivate, togglePrivateRoom } = usePrivateRoomActions()
   const BOT_ALLOWED_MENU_INDEXES = new Set([0, 1, 2, 3])
 
   // 确保监听器只注册一次
@@ -250,18 +251,16 @@ export const useMessage = () => {
       }
     },
     {
-      label: (item: SessionItem) => (item.hide ? t('menu.secret_chat_cancel') : t('menu.secret_chat')),
-      icon: (item: SessionItem) => (item.hide ? 'eye' : 'eye-close'),
+      // 私密房间是**房间级**标记（privateRoomRegistry），不再是 session.hide 展示态。
+      // 标记前强制校验「已设密码 + 已解锁」，否则私密只是给谁都能点开的房间贴标签。
+      label: (item: SessionItem) =>
+        isRoomPrivate(item.roomId) ? t('home.secret_chat.unmark_private') : t('home.secret_chat.mark_private'),
+      icon: (item: SessionItem) => (isRoomPrivate(item.roomId) ? 'eye' : 'eye-close'),
       click: async (item: SessionItem) => {
-        const newHideState = !item.hide
-        try {
-          await invokeWithErrorHandler('hide_contact_command', { data: { roomId: item.roomId, hide: newHideState } })
-          chatStore.updateSession(item.roomId, { hide: newHideState })
-          showFeedback(newHideState ? t('menu.secret_chat_success') : t('menu.secret_chat_cancel'), 'success')
-        } catch (e) {
-          showFeedback(String(e), 'error')
-        }
-      }
+        await togglePrivateRoom(item)
+      },
+      // 群聊成员不可控，标成私密会产生假承诺
+      visible: (item: SessionItem) => item.type === RoomTypeEnum.SINGLE
     },
     {
       label: (item: SessionItem) => {

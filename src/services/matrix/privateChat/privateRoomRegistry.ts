@@ -163,6 +163,35 @@ export async function loadPrivateRoomRegistry(): Promise<void> {
   }
 }
 
+let readyPromise: Promise<void> | null = null
+
+/**
+ * 确保登记表已按**当前账号**加载完毕（幂等，路由守卫冷启动深链时使用）。
+ *
+ * 冷启动时 `localStorage` 里的缓存可能还是上一个账号或空的，若此时直接判定私密房，
+ * 会把私密房当普通房放行。因此这里等客户端就绪后再拉一次 account data。
+ * 失败时**清空 promise**，让后续导航可以重试（一次性失败不该永久失去门禁）。
+ */
+export function ensurePrivateRoomRegistryReady(): Promise<void> {
+  if (readyPromise) return readyPromise
+  readyPromise = (async () => {
+    let settled = false
+    try {
+      if (!matrixClientService.getClient()) {
+        await matrixClientService.waitForClientReady({ timeoutMs: 8000 })
+      }
+      await loadPrivateRoomRegistry()
+      settled = matrixClientService.getUserId() !== null
+    } catch (err) {
+      logger.warn('确保私密房间登记表就绪失败，沿用本地缓存:', err)
+    }
+    if (!settled) {
+      readyPromise = null
+    }
+  })()
+  return readyPromise
+}
+
 /**
  * 一次性迁移：把历史上被 `session.hide` 标记的会话写入登记表。
  *
@@ -187,4 +216,5 @@ export function resetPrivateRoomRegistryForTest(): void {
   cachedUserId = null
   cachedRoomIds = new Set()
   loaded = false
+  readyPromise = null
 }

@@ -128,7 +128,12 @@
     "hidden_sessions_list": "隐藏会话列表",
     "no_hidden_sessions": "暂无隐藏会话",
     "no_messages": "暂无消息",
-    "hidden_sessions": "已隐藏的会话"
+    "hidden_sessions": "已隐藏的会话",
+    "single_only": "私密聊天仅支持单聊会话",
+    "locked_hint": "私密聊天已锁定，请先解锁",
+    "mark_private": "设为私密聊天",
+    "unmark_private": "移出私密聊天",
+    "unmark_confirm": "移出后该会话将回到普通列表，确认移出？"
   },
   "chat_sidebar": {
     "actions": {

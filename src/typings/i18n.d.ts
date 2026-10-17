@@ -2852,7 +2852,12 @@ export type I18nKeys = {
       "hidden_sessions_list": "隐藏会话列表",
       "no_hidden_sessions": "暂无隐藏会话",
       "no_messages": "暂无消息",
-      "hidden_sessions": "已隐藏的会话"
+      "hidden_sessions": "已隐藏的会话",
+      "single_only": "私密聊天仅支持单聊会话",
+      "locked_hint": "私密聊天已锁定，请先解锁",
+      "mark_private": "设为私密聊天",
+      "unmark_private": "移出私密聊天",
+      "unmark_confirm": "移出后该会话将回到普通列表，确认移出？"
     },
     "chat_sidebar": {
       "actions": {
@@ -3415,7 +3420,9 @@ export type I18nKeys = {
       "confirm": "确认",
       "password_required": "请输入密码",
       "password_incorrect": "密码错误",
-      "verify_failed": "验证失败"
+      "verify_failed": "验证失败",
+      "unlock_description": "私密聊天已加锁。请输入密码解锁；密码仅用于本机派生密钥，不上传服务器。",
+      "password_incorrect_retry": "密码错误（已连续多次失败）。密码无法找回，请确认后重试。"
     },
     "service_agreement_title": "服务协议",
     "privacy_policy_title": "隐私保护指引"
@@ -9363,6 +9370,11 @@ export type I18nKeyPaths =
   | "home.secret_chat.no_hidden_sessions"
   | "home.secret_chat.no_messages"
   | "home.secret_chat.hidden_sessions"
+  | "home.secret_chat.single_only"
+  | "home.secret_chat.locked_hint"
+  | "home.secret_chat.mark_private"
+  | "home.secret_chat.unmark_private"
+  | "home.secret_chat.unmark_confirm"
   | "home.chat_sidebar.actions.retry"
   | "home.chat_sidebar.search.placeholder"
   | "home.chat_sidebar.quota.title"
@@ -9726,6 +9738,8 @@ export type I18nKeyPaths =
   | "login.secret_chat.password_required"
   | "login.secret_chat.password_incorrect"
   | "login.secret_chat.verify_failed"
+  | "login.secret_chat.unlock_description"
+  | "login.secret_chat.password_incorrect_retry"
   | "login.service_agreement_title"
   | "login.privacy_policy_title"
   | "matrix_error.common.client_not_initialized"

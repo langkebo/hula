@@ -88,6 +88,13 @@
   普通列表（桌面 `useMessageSessionFilters` / 移动 `useMobileSessionList`）必须排除私密房。
 - **解锁态刻意不用 pinia**（`secretChatSession.ts` 是模块级单例 + ref）：dbKey 不能进 devtools / 持久化快照
 - **密码即密钥**：PBKDF2-SHA256 600k 派生 32B，前 16B `verifier` 落盘、后 16B `dbKey` 仅内存，锁定 `fill(0)`
+- **门禁必须挂在「具体房间」路由上，不是只挂 `/secretChat`**（`router/secretChatGuard.ts`）：
+  好友发消息 / 搜索 / 通知 / 独立窗口 / 手输 URL 全汇到 `/message/:roomId` 与 `/window/chat/:roomId`。
+  ⚠️ 按 **route name 白名单**（`message`/`windowChat`）取 roomId —— `/room/:roomId` 是目录详情页，拦错。
+  ⚠️ **`/chat/:roomId` 在本仓不存在**（`/chat` 是无参机器人路由），跳它会落 notFound；正确是 `{name:'message',params:{roomId}}`。
+  ⚠️ 冷启动深链要先 `ensurePrivateRoomRegistryReady()`，否则 `getUserId()` 为 null 时读 anonymous 缓存 → 私密房被放行。
+- **私密标记只允许单聊**（`usePrivateRoomActions`）：群聊成员不可控，标私密=假承诺；写登记表后再同步
+  `session.hide` + Tauri `hide_contact_command` 作兼容镜像。私密会话**与好友 DM 共用房间**（取消标记内容回普通 DM）。
 
 ## 好友域结构（2026-10-17 起）
 - `MatrixFriendService` 已瘦身为**查询门面**（16 个方法，FriendManager→REST 回退 + 错误归一 + 日志）

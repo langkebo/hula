@@ -50,6 +50,18 @@
             <span class="unread-count" v-if="session.unreadCount > 0" :aria-label="`${session.unreadCount}条未读`">
               {{ session.unreadCount }}
             </span>
+            <!-- 私密会话已被普通列表过滤，这里必须提供「移出私密」出口，否则标记后无法退出 -->
+            <button
+              type="button"
+              class="session-unmark"
+              :aria-label="t('home.secret_chat.unmark_private')"
+              :title="t('home.secret_chat.unmark_private')"
+              @click.stop="handleUnmark(session)">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path
+                  d="M12 3a9 9 0 0 0-9 9 9.75 9.75 0 0 0 5.5 8.38l-1.15 1.15a1 1 0 0 0 1.37 1.37l1.15-1.15A9.75 9.75 0 0 0 21 12a9 9 0 0 0-9-9zm-5 9a5 5 0 1 1 10 0 5 5 0 0 1-10 0z" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -67,10 +79,14 @@ import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate
 import {
   isPrivateRoom,
   loadPrivateRoomRegistry,
-  migrateFromHiddenSessions
+  migrateFromHiddenSessions,
+  unmarkRoomPrivate
 } from '@/services/matrix/privateChat/privateRoomRegistry'
 import { type SessionItem, useSessionStore } from '@/stores/domains/chat/chat/session'
 import { isSecretChatUnlocked, onSecretChatLocked } from '@/stores/domains/settings/secretChatSession'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('SecretChatPage')
 
 defineOptions({
   name: 'SecretChatPage'
@@ -87,12 +103,31 @@ const hiddenSessions = computed(() => {
 })
 
 const handleSessionClick = async (session: SessionItem) => {
-  // 不清除私密标记：房间仍是私密房，只是进入查看
-  router.push(`/chat/${session.roomId}`)
+  // 不清除私密标记：房间仍是私密房，只是进入查看。
+  // 路由名必须是 `message`——`/chat/:roomId` 在本仓不存在（`/chat` 是机器人插件路由且无参数），
+  // 之前跳到那里会落到 notFound。
+  await router.push({ name: 'message', params: { roomId: session.roomId } })
 }
 
 const handleClose = () => {
   router.back()
+}
+
+/** 移出私密：取消房间标记，会话回到普通列表（可逆操作，需二次确认）。 */
+const handleUnmark = (session: SessionItem) => {
+  window.$dialog?.create({
+    title: t('home.secret_chat.unmark_private'),
+    content: t('home.secret_chat.unmark_confirm'),
+    positiveText: t('common.confirm'),
+    negativeText: t('common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        await unmarkRoomPrivate(session.roomId)
+      } catch (err) {
+        logger.error('unmark private room failed:', err)
+      }
+    }
+  })
 }
 
 /**
@@ -219,6 +254,23 @@ onUnmounted(() => {
 .session-meta {
   flex-shrink: 0;
   margin-left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-unmark {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--tjg-text-secondary);
+  cursor: pointer;
+}
+
+.session-unmark:hover {
+  color: var(--tjg-color-primary-500);
 }
 
 .unread-count {

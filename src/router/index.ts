@@ -9,6 +9,7 @@ import { createAuthGuard } from '@/router/authGuard'
 import { getCommonRoutes } from '@/router/routes/common'
 import { getDesktopRoutes } from '@/router/routes/desktop'
 import { getMobileRoutes } from '@/router/routes/mobile'
+import { createSecretChatGuard } from '@/router/secretChatGuard'
 import { detectAppPlatform, shouldBypassAuthForE2E } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
@@ -47,6 +48,41 @@ const authGuard = createAuthGuard({
   shouldBypassAuth: () => shouldBypassAuthForE2E()
 })
 
+/**
+ * 私密聊天门禁（方案 P0-0-c）。所有依赖走动态导入，避免把设置/加密模块拖进首屏。
+ */
+const secretChatGuard = createSecretChatGuard({
+  logger,
+  fallbackPath: isMobile ? '/mobile/message' : '/message',
+  isConfigured: async () => {
+    const { useSettingStore } = await import('@/stores/domains/settings/setting')
+    return useSettingStore().isSecretChatConfigured()
+  },
+  isUnlocked: async () => {
+    const { isSecretChatUnlocked } = await import('@/stores/domains/settings/secretChatSession')
+    return isSecretChatUnlocked()
+  },
+  isPrivateRoom: async (roomId) => {
+    const { isPrivateRoom } = await import('@/services/matrix/privateChat/privateRoomRegistry')
+    return isPrivateRoom(roomId)
+  },
+  ensureRegistryReady: async () => {
+    const { ensurePrivateRoomRegistryReady } = await import('@/services/matrix/privateChat/privateRoomRegistry')
+    await ensurePrivateRoomRegistryReady()
+  },
+  openUnlock: async (pendingPath) => {
+    const { openSecretChatUnlock } = await import('@/composables/secretChat/useSecretChatGate')
+    openSecretChatUnlock(pendingPath)
+  },
+  warnNotConfigured: async () => {
+    const [{ useI18nGlobal }, { useActionFeedback }] = await Promise.all([
+      import('@/services/i18n'),
+      import('@/composables/common/useActionFeedback')
+    ])
+    useActionFeedback().showFeedback(useI18nGlobal().t('home.secret_chat.no_password'), 'warning')
+  }
+})
+
 router.beforeEach(async (to: RouteLocationNormalized) => {
   const title = to.meta.title as string | undefined
   if (title) {
@@ -56,32 +92,8 @@ router.beforeEach(async (to: RouteLocationNormalized) => {
   if (authResult !== true) {
     return authResult
   }
-
-  // 私密聊天硬门禁（方案 P0-0-c）：
-  // 未配置密码 → 引导设置并挡回消息页；已配置未解锁 → 记录意图、弹解锁框、挡回消息页。
-  // 守卫不阻塞等待用户输入，解锁成功后由对话框按 pendingPath 回跳。
-  if (to.path === '/secretChat' || to.path.startsWith('/secretChat/')) {
-    const [{ useSettingStore }, { isSecretChatUnlocked }, { openSecretChatUnlock }] = await Promise.all([
-      import('@/stores/domains/settings/setting'),
-      import('@/stores/domains/settings/secretChatSession'),
-      import('@/composables/secretChat/useSecretChatGate')
-    ])
-    const settingStore = useSettingStore()
-    if (!settingStore.isSecretChatConfigured()) {
-      logger.warn('私密聊天未配置密码，已拦截访问')
-      const { useI18nGlobal } = await import('@/services/i18n')
-      const { useActionFeedback } = await import('@/composables/common/useActionFeedback')
-      useActionFeedback().showFeedback(useI18nGlobal().t('home.secret_chat.no_password'), 'warning')
-      return '/message'
-    }
-    if (!isSecretChatUnlocked()) {
-      logger.warn('私密聊天处于锁定态，已请求解锁')
-      openSecretChatUnlock(to.fullPath)
-      return '/message'
-    }
-  }
-
-  return true
+  // 认证之后才判私密门禁：未登录时先去登录页，不要先弹解锁框
+  return secretChatGuard(to)
 })
 
 export default router
