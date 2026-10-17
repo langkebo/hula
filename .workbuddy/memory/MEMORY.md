@@ -62,6 +62,22 @@
 - `scripts/contract-coverage-map.json` 重扫后是多行格式，biome 要求单行 ⇒ 必须 `biome check --write`，
   否则 `pnpm lint` 红但 `check:contract-coverage` 仍绿（易误判）
 
+## 私密聊天 / 隐私域铁律（2026-10-17 审计后）
+- **后端 burn 永不 redact**（只登记 per-user 时间，物理删除归 retention）⇒ 前端「已焚毁」只能是本地遮罩，
+  文案不得暗示服务端已删。依据：`burn_after_read_service.rs:110-119`、commit `57edb25b0`
+- **「服务端不留存」只能靠 to-device 兑现**（`get_and_delete_messages` 读后即删 + Olm 双棘轮），
+  房间事件永久存储且 Megolm 无 break-in recovery ⇒ 私密消息通道必须建在 to-device 上
+- **`retention` 只在 `/_synapse/admin/v1`**，普通用户/房管无法设房间 TTL ⇒ 私密房间承诺「N 天后消失」
+  必须先加 vendor 端点
+- **设备信任的唯一事实源是本地 crypto store**（`getDeviceVerificationStatus`），`/keys/query` 响应没有信任字段
+- **验证流程禁止降级**：取不到 SAS 时必须失败，不得回退到「设备指纹」（`getDeviceFingerprint` 只对本机返回值，
+  对他人设备恒 null，用它做跨设备验证 = 假安全信号）
+- **`senderDeviceCache` 必须带账号维度并在登出清理**，否则换账号后绿锁残留
+- **Matrix 协议不可达**（不得写进产品承诺）：无全局标识符、服务端不可见社交图、房间消息真删除、
+  阻止截屏、跨服匿名
+- 三端契约一致性坑：DM 判定 SDK 有「2 人房即 DM」启发式而后端只看 `m.direct`；
+  `is_private` 参数前端发、SDK 不发、后端不读（死参数）
+
 ## 好友域结构（2026-10-17 起）
 - `MatrixFriendService` 已瘦身为**查询门面**（16 个方法，FriendManager→REST 回退 + 错误归一 + 日志）
 - 纯转发已删，改走三个单例（均从 `friends/MatrixFriendService.ts` 重导出，也可从 `services/matrix` 桶取）：
