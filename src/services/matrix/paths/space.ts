@@ -25,16 +25,6 @@ export const SPACE = {
     `/spaces/${encodeURIComponent(spaceId)}/children/${encodeURIComponent(roomId)}`,
   MEMBERS: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/members`,
   ROOMS: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/rooms`,
-  /** @deprecated Use MatrixSpaceService.getState() instead */
-  STATE: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/state`,
-  /** @deprecated Use MembershipService.invite() instead */
-  INVITE: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/invite`,
-  /** @deprecated Use MembershipService.join() instead */
-  JOIN: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/join`,
-  /** @deprecated Use MembershipService.leave() instead */
-  LEAVE: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/leave`,
-  /** @deprecated Use MatrixSpaceService.getSummary() instead */
-  SUMMARY: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/summary`,
   SUMMARY_WITH_CHILDREN: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/summary/with_children`,
   TREE_PATH: (spaceId: string) => `/spaces/${encodeURIComponent(spaceId)}/tree_path`,
   PARENTS: (roomId: string) => `/spaces/room/${encodeURIComponent(roomId)}/parents`
