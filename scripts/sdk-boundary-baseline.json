@@ -106,7 +106,6 @@
     "src/services/matrix/media/__tests__/media.contract.test.ts::matrix-js-sdk",
     "src/services/matrix/media/__tests__/voice.contract.test.ts::matrix-js-sdk",
     "src/services/matrix/media/__tests__/voip.contract.test.ts::matrix-js-sdk",
-    "src/services/matrix/messaging/MatrixDelayedEventsService.ts::matrix-js-sdk",
     "src/services/matrix/messaging/MatrixForwardService.ts::matrix-js-sdk",
     "src/services/matrix/messaging/MatrixMessageAdapter.ts::matrix-js-sdk",
     "src/services/matrix/messaging/MatrixMessageRelationService.ts::matrix-js-sdk",
