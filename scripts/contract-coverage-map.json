@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-17T14:44:54.885Z",
+  "generatedAt": "2026-10-17T14:54:13.206Z",
   "scanned": 259,
   "callerFiles": 61,
   "totalCalls": 160,
@@ -7,10 +7,10 @@
   "ledger": {
     "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.default.json",
     "schemaVersion": "4",
-    "synapseRustCommit": "c7c9116db5c462b49f5dae5abbf5e606f3244d21",
-    "entryCount": 1017,
+    "synapseRustCommit": "2946e19ebbdaadaccbabc8cc847c0283a46b4b5e",
+    "entryCount": 1019,
     "matchedPathCount": 7,
-    "uncoveredPathCount": 795
+    "uncoveredPathCount": 797
   },
   "unmatchedUrls": [],
   "uncoveredLedger": [
@@ -27,6 +27,7 @@
     "/_matrix/app/v1/transactions/{as_id}/{txn_id}",
     "/_matrix/app/v1/users/{user_id}",
     "/_matrix/app/v1/{as_id}",
+    "/_matrix/client/unstable/io.element.msc4512/appservice/fed_proxy",
     "/_matrix/client/unstable/org.matrix.msc2965/auth_metadata",
     "/_matrix/client/unstable/org.matrix.msc3575/sync",
     "/_matrix/client/unstable/org.matrix.msc3720/account_status",
@@ -60,6 +61,7 @@
     "/_matrix/client/v1/account/password/email/requestToken",
     "/_matrix/client/v1/account/password/email/submitToken",
     "/_matrix/client/v1/account/whoami",
+    "/_matrix/client/v1/appservice/fed_proxy",
     "/_matrix/client/v1/auth_metadata",
     "/_matrix/client/v1/config/client",
     "/_matrix/client/v1/keys/changes",
