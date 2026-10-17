@@ -176,4 +176,3 @@ interface DecryptBatchResult {
 }
 
 export const matrixAttachmentDecryptionService = new MatrixAttachmentDecryptionService()
-export default matrixAttachmentDecryptionService

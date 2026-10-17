@@ -203,5 +203,3 @@ export function useMessageTrust(
     encryptionAlgorithm
   }
 }
-
-export default useMessageTrust

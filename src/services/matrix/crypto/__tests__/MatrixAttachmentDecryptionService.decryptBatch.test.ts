@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import matrixAttachmentDecryptionService, {
-  type MatrixEncryptedAttachmentLike
+import {
+  type MatrixEncryptedAttachmentLike,
+  matrixAttachmentDecryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 
 describe('MatrixAttachmentDecryptionService.decryptBatch — 并行解密 (§9.4.4)', () => {
