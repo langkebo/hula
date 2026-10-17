@@ -51,3 +51,25 @@
 - 设置页 `onMounted` 先 `await matrixClientService.waitForClientReady({timeoutMs:10000})`
 - `loginWithToken` 须在首次 initialize 前定好 deviceId；createRoom 的 Space 需 `room_types:['m.space']`
 - **未完成任务与 UI 优化进度明细见 `UI-OPTIMIZATION-PLAN.md`**
+
+## check:file-size 判据（易误解）
+- 约束是「**不得超出基线**」，**不是**「一律 ≤400」：基线内文件只需回到基线，仅**新文件**才是 400 硬限
+  （还有 800 红线 / 1000 临界，以及 `CRITICAL_EXEMPTIONS` 白名单）
+- 因此为凑行数把文件切碎是错的；只在「职责内聚 + 能整块搬走」时才抽模块，否则压冗余注释即可
+- **lint-staged 的 prettier/biome 会二次改行数**（实测 509→517、496→487）⇒ 门禁必须在**提交后**再复核一次
+- 新模块直接 `import from 'matrix-js-sdk/<subpath>'` 会被 `check:sdk-boundary` 判**新增违规**
+  ⇒ 先把类型补进 `src/services/matrix/sdk.ts` 桶，再从 `../sdk` 导入
+- `scripts/contract-coverage-map.json` 重扫后是多行格式，biome 要求单行 ⇒ 必须 `biome check --write`，
+  否则 `pnpm lint` 红但 `check:contract-coverage` 仍绿（易误判）
+
+## 好友域结构（2026-10-17 起）
+- `MatrixFriendService` 已瘦身为**查询门面**（16 个方法，FriendManager→REST 回退 + 错误归一 + 日志）
+- 纯转发已删，改走三个单例（均从 `friends/MatrixFriendService.ts` 重导出，也可从 `services/matrix` 桶取）：
+  - `matrixFriendSync` — `initialize`/`sync`/`stop`
+  - `matrixFriendOperations` — 请求收发 / 解除关系 / 备注 / 显示名 / 状态
+  - `matrixFriendGroups` — 分组增删改查
+  - `on`/`off` 仍在门面，内部转发 `friendEventBus`
+- `App.vue` 的 offlineQueue deps 键：`getFriendOperations`（原名 `getMatrixFriendService` 已改）
+- 通知域：`MatrixNotificationService` 不再有 push rules/pushers 的 REST 封装，
+  一律走 `MatrixPushService`（`getPushRules`/`deletePushRule`/`getPushers`/`addPushRule`）；
+  仅 `setPusherByBody` 留在 Notification（含必填校验）
