@@ -94,7 +94,8 @@ const handleConfirm = async () => {
     loading.value = true
     errorMsg.value = ''
 
-    const success = await settingStore.verifySecretChatPassword(formValue.password)
+    // 校验并解锁：成功后内存态持有 dbKey，父窗口可据此进入私密聊天
+    const success = await settingStore.unlockSecretChat(formValue.password)
     if (success) {
       await currentWindow?.close()
       parentWindow?.emit('secret-chat-unlocked')

@@ -77,14 +77,17 @@
   阻止截屏、跨服匿名
 - 三端契约一致性坑：DM 判定 SDK 有「2 人房即 DM」启发式而后端只看 `m.direct`；
   `is_private` 参数前端发、SDK 不发、后端不读（死参数）
-- **私密聊天密码门：部件齐全但三处断裂，别再误判为"没做"**
-  ① `setting.ts:84` 把 `secretChat.passwordHash` 放进 `persist.omit` → 重启后为空 →
-  `isSecretChatConfigured()` 恒 false（用户设过密码也会被提示"请先设置"）
-  ② `/secretChat` 路由无 `beforeEnter`、无全局守卫（`routes/desktop.ts:186`）→ 手动导航可进入
-  ③ `SecretChatModal` 的 `secret-chat-unlocked` 事件**全仓无监听**（孤儿事件）→ 解锁状态不存在
-  另：`setSecretChatEnabled` 不校验密码；`hashPasswordWithSHA256` 是单次 SHA-256（无盐无拉伸，不能派生密钥）
-- **私密房间当前只是 `session.hide` 布尔**（`SecretChatPage.vue:77-84`），不是房间属性；
-  点击还会 `hide:false` 还原成普通会话。要做房间分离必须引入 `privateRoomRegistry`（见方案 P0-0）
+- **私密聊天密码门：已修复（2026-10-17 执行 P0-0），历史缺陷供回溯**
+  历史三处断裂：① `passwordHash` 被 `persist.omit` 排除导致重启失效；② `/secretChat` 无路由守卫；
+  ③ `secret-chat-unlocked` 是孤儿事件。**现均已修**：
+  - 哈希持久化（PBKDF2 verifier，可落盘）；dbKey 仅内存
+  - `router.beforeEach` 里做私密门禁：未配置→提示挡回；未解锁→记 `pendingPath` + 弹 `SecretChatUnlockDialog`
+  - `unlockSecretChat()` 直接写内存态 `secretChatSession`，不再依赖事件
+- **私密房间 = `privateRoomRegistry`（account data `com.hula.private_rooms`）**，不是 `session.hide`；
+  `isPrivateRoom()` 同步读 localStorage 缓存（`registryVersion` ref 驱动 computed 重算）。
+  普通列表（桌面 `useMessageSessionFilters` / 移动 `useMobileSessionList`）必须排除私密房。
+- **解锁态刻意不用 pinia**（`secretChatSession.ts` 是模块级单例 + ref）：dbKey 不能进 devtools / 持久化快照
+- **密码即密钥**：PBKDF2-SHA256 600k 派生 32B，前 16B `verifier` 落盘、后 16B `dbKey` 仅内存，锁定 `fill(0)`
 
 ## 好友域结构（2026-10-17 起）
 - `MatrixFriendService` 已瘦身为**查询门面**（16 个方法，FriendManager→REST 回退 + 错误归一 + 日志）

@@ -3,10 +3,19 @@ import type { Theme } from '@tauri-apps/api/window'
 import { defineStore } from 'pinia'
 import { CloseBxEnum, ShowModeEnum, StoresEnum, ThemeEnum } from '@/enums'
 import {
+  applySecretChatAutoLock,
+  applySecretChatEnabled,
+  applySecretChatHideSessions,
+  applySecretChatLockTimeout,
+  applySecretChatPassword,
+  resetSecretChatPassword,
+  unlockSecretChatWithPassword,
+  verifySecretChatPasswordOnly
+} from './secretChatActions'
+import {
   getDefaultNotificationSettings,
   getDefaultPreferenceSettings,
   getDefaultShortcuts,
-  hashPasswordWithSHA256,
   LEGACY_PREFERENCE_STORAGE_KEYS,
   normalizeBurnDefaultDuration,
   normalizeEmojiSize,
@@ -18,8 +27,7 @@ import {
   readLegacyBooleanPreference,
   resolveOsTheme,
   setDocumentTheme,
-  stripLegacyThemeVariant,
-  verifyPasswordHash
+  stripLegacyThemeVariant
 } from './settings-helpers'
 
 // 缓存方案：使用 Pinia + localStorage 分账号存储
@@ -81,7 +89,9 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     }
   }),
   persist: {
-    omit: ['lockScreen.password', 'secretChat.passwordHash']
+    // 注意：`secretChat.passwordHash` 必须持久化，否则重启后 `isSecretChatConfigured()` 恒 false，
+    // 用户会看到「已设置过密码却提示请先设置」。哈希本身是 PBKDF2 verifier，不含可用于解密的密钥。
+    omit: ['lockScreen.password']
   },
   getters: {
     screenshotShortcut: (state: STO.Setting) => state.shortcuts?.screenshot ?? getDefaultShortcuts().screenshot,
@@ -572,55 +582,34 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.secretChat.autoLock = this.secretChat.autoLock ?? false
       this.secretChat.lockTimeout = Math.max(1, Math.round(this.secretChat.lockTimeout ?? 5))
     },
-    /** 设置私密聊天密码 */
+    /** 设置密码：PBKDF2 派生 verifier 落盘，dbKey 当场清零（解锁时再派生）。 */
     async setSecretChatPassword(password: string) {
-      this.ensureSecretChatSettings()
-      this.secretChat.enabled = true
-      this.secretChat.passwordHash = await hashPasswordWithSHA256(password)
+      return applySecretChatPassword(this, password)
     },
+    /** 开启/关闭私密聊天；未设密码时抛 `SECRET_CHAT_PASSWORD_REQUIRED`。 */
     setSecretChatEnabled(enabled: boolean) {
-      this.ensureSecretChatSettings()
-      this.secretChat.enabled = enabled
-      if (!enabled) {
-        this.secretChat.hideSessions = false
-        this.secretChat.autoLock = false
-      }
+      return applySecretChatEnabled(this, enabled)
     },
     setSecretChatHideSessions(enabled: boolean) {
-      this.ensureSecretChatSettings()
-      this.secretChat.hideSessions = enabled
+      return applySecretChatHideSessions(this, enabled)
     },
     setSecretChatAutoLock(enabled: boolean) {
-      this.ensureSecretChatSettings()
-      this.secretChat.autoLock = enabled
-      if (!enabled) {
-        this.secretChat.lockTimeout = 5
-      }
+      return applySecretChatAutoLock(this, enabled)
     },
     setSecretChatLockTimeout(minutes: number) {
-      this.ensureSecretChatSettings()
-      this.secretChat.lockTimeout = Math.max(1, Math.round(minutes))
+      return applySecretChatLockTimeout(this, minutes)
     },
-    /** 验证私密聊天密码 */
+    /** 仅校验密码（不改解锁态），用于「修改密码前验证旧密码」。 */
     async verifySecretChatPassword(password: string): Promise<boolean> {
-      this.ensureSecretChatSettings()
-      if (!this.secretChat.enabled) {
-        return false
-      }
-      const result = await verifyPasswordHash(password, this.secretChat.passwordHash)
-      if (result.upgradedHash) {
-        this.secretChat.passwordHash = result.upgradedHash
-      }
-      return result.valid
+      return verifySecretChatPasswordOnly(this, password)
     },
-    /** 清除私密聊天密码 */
+    /** 校验密码并解锁：成功时把 dbKey 写入内存态解锁会话。 */
+    async unlockSecretChat(password: string): Promise<boolean> {
+      return unlockSecretChatWithPassword(this, password)
+    },
+    /** 清除私密聊天密码（同时上锁）。 */
     clearSecretChatPassword() {
-      this.ensureSecretChatSettings()
-      this.secretChat.enabled = false
-      this.secretChat.passwordHash = ''
-      this.secretChat.hideSessions = false
-      this.secretChat.autoLock = false
-      this.secretChat.lockTimeout = 5
+      return resetSecretChatPassword(this)
     },
     /** 检查私密聊天是否已设置 */
     isSecretChatConfigured(): boolean {

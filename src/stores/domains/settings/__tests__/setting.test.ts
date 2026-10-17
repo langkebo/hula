@@ -565,8 +565,15 @@ describe('SettingStore', () => {
       expect(store.isSecretChatConfigured()).toBe(true)
     })
 
-    it('updates secret chat privacy settings', () => {
+    it('refuses to enable secret chat before a password is configured', () => {
       const store = useSettingStore()
+      expect(() => store.setSecretChatEnabled(true)).toThrow('SECRET_CHAT_PASSWORD_REQUIRED')
+      expect(store.secretChatEnabled).toBe(false)
+    })
+
+    it('updates secret chat privacy settings', async () => {
+      const store = useSettingStore()
+      await store.setSecretChatPassword('pass')
       store.setSecretChatEnabled(true)
       store.setSecretChatHideSessions(true)
       store.setSecretChatAutoLock(true)

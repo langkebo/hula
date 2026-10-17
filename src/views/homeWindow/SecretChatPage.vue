@@ -59,11 +59,18 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
+import {
+  isPrivateRoom,
+  loadPrivateRoomRegistry,
+  migrateFromHiddenSessions
+} from '@/services/matrix/privateChat/privateRoomRegistry'
 import { type SessionItem, useSessionStore } from '@/stores/domains/chat/chat/session'
+import { isSecretChatUnlocked, onSecretChatLocked } from '@/stores/domains/settings/secretChatSession'
 
 defineOptions({
   name: 'SecretChatPage'
@@ -75,17 +82,43 @@ const sessionStore = useSessionStore()
 const { sessionList: sessions } = storeToRefs(sessionStore)
 
 const hiddenSessions = computed(() => {
-  return sessions.value.filter((s: SessionItem) => s.hide)
+  // 数据源改为房间级登记表（不再依赖 session.hide —— 那只代表展示态）
+  return sessions.value.filter((s: SessionItem) => isPrivateRoom(s.roomId))
 })
 
 const handleSessionClick = async (session: SessionItem) => {
-  sessionStore.updateSession(session.roomId, { hide: false })
+  // 不清除私密标记：房间仍是私密房，只是进入查看
   router.push(`/chat/${session.roomId}`)
 }
 
 const handleClose = () => {
   router.back()
 }
+
+/**
+ * 锁定兜底：路由守卫已挡住「进入时未解锁」，但页面停留期间可能触发自动锁
+ * （空闲 / 切后台）。此时必须立刻离开并清空列表视图，避免已渲染的会话名/头像残留。
+ */
+let offLocked: (() => void) | null = null
+
+onMounted(() => {
+  if (!isSecretChatUnlocked()) {
+    void router.replace('/message')
+    openSecretChatUnlock('/secretChat')
+    return
+  }
+  // 刷新登记表并把历史 hide 会话一次性迁入（幂等）
+  void loadPrivateRoomRegistry()
+  void migrateFromHiddenSessions(sessions.value.filter((s: SessionItem) => s.hide).map((s: SessionItem) => s.roomId))
+  offLocked = onSecretChatLocked(() => {
+    void router.replace('/message')
+  })
+})
+
+onUnmounted(() => {
+  offLocked?.()
+  offLocked = null
+})
 </script>
 
 <style scoped>

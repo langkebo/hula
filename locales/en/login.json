@@ -230,7 +230,9 @@
     "confirm": "Confirm",
     "password_required": "Please enter your password",
     "password_incorrect": "Incorrect password",
-    "verify_failed": "Verification failed"
+    "verify_failed": "Verification failed",
+    "unlock_description": "Secret chat is locked. Enter your password to unlock. It is only used to derive keys on this device and is never uploaded.",
+    "password_incorrect_retry": "Incorrect password (multiple failures). The password cannot be recovered."
   },
   "service_agreement_title": "Terms of Service",
   "privacy_policy_title": "Privacy Policy"

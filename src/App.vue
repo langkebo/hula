@@ -18,6 +18,7 @@
         <router-view />
       </div>
       <LockScreen v-else />
+      <SecretChatUnlockDialog />
       <GlobalAriaLive />
     </NaiveProvider>
     <MemoryMonitor v-if="isDev && showMemoryMonitor && isHomeDesktopWindow" />
@@ -65,6 +66,7 @@ const matrixStore = useMatrixStore()
 const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
 const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
 const SplashScreen = defineAsyncComponent(() => import('@/components/common/SplashScreen.vue'))
+const SecretChatUnlockDialog = defineAsyncComponent(() => import('@/components/secretChat/SecretChatUnlockDialog.vue'))
 
 // 平台在运行期恒定：探测一次后复用
 const isMobilePlatform = useIsMobile()
@@ -224,10 +226,7 @@ const invitePolicyEnforcement = useInvitePolicyEnforcement({
   getCurrentUserId: () => matrixStore.userId ?? undefined,
   // 缓存按 userId 隔离；早期还没拿到 user id 时返回默认策略（不会读到别人的缓存）
   getPolicy: () => loadInvitePolicy(matrixStore.userId ?? undefined),
-  /**
-   * 写路径的严格重读：`syncContacts()` 只拥有 `contacts`，其余字段必须来自服务端。
-   * 抛错（读取失败）会被 composable 捕获并跳过写入，绝不回落默认值整对象覆盖。
-   */
+  /** 写路径严格重读：`syncContacts()` 只有 `contacts`，其余字段必须来自服务端；读取失败则跳过写入。 */
   getPolicyStrict: async () => {
     const account = await import('@/services/matrix/user/MatrixAccountService')
     return account.matrixAccountService.getInvitePolicyStrict()

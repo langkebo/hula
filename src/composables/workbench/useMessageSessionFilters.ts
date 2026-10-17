@@ -8,6 +8,7 @@ import {
   type WorkbenchSessionSort,
   type WorkbenchSessionTypeFilter
 } from '@/router/spaceNavigation'
+import { isPrivateRoom } from '@/services/matrix/privateChat/privateRoomRegistry'
 
 type FilterableSession = {
   roomId: string
@@ -67,6 +68,11 @@ export function useMessageSessionFilters<T extends FilterableSession>(sourceSess
 
   const filteredSessionList = computed(() => {
     const filteredSessions = toValue(sourceSessions).filter((session) => {
+      // 私密房间与普通会话彻底分离：不进入普通列表（方案 P0-0-a）
+      if (isPrivateRoom(session.roomId)) {
+        return false
+      }
+
       if (!matchesSessionType(session)) {
         return false
       }

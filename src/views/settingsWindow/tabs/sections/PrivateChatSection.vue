@@ -104,7 +104,15 @@ const settingStore = useSettingStore()
 const secretChatConfigured = computed(() => settingStore.isSecretChatConfigured())
 const secretChatEnabled = computed({
   get: () => settingStore.secretChatEnabled,
-  set: (value: boolean) => settingStore.setSecretChatEnabled(value)
+  // 开启前必须先设置密码：未配置时直接引导到「设置密码」对话框，并保持开关关闭
+  set: (value: boolean) => {
+    if (value && !settingStore.isSecretChatConfigured()) {
+      showFeedback(t('setting.security.private_chat_password_not_configured'), 'warning')
+      showSecretChatDialog.value = true
+      return
+    }
+    settingStore.setSecretChatEnabled(value)
+  }
 })
 const secretChatHideSessions = computed({
   get: () => settingStore.secretChatHideSessions,

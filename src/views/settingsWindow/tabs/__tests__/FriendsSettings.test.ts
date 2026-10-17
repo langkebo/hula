@@ -39,14 +39,26 @@ vi.mock('@/composables/common/useWindowSessionReady', () => ({
 }))
 
 vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
+  // 分组操作已从门面移到 matrixFriendGroups 单例（Batch D），两处都提供以兼容查询/写路径
+  matrixFriendGroups: {
+    getFriendGroups: (...args: unknown[]) => getFriendGroupsMock(...args)
+  },
   matrixFriendService: {
-    getFriendGroups: (...args: unknown[]) => getFriendGroupsMock(...args),
     getIncomingRequests: (...args: unknown[]) => getIncomingRequestsMock(...args),
     getOutgoingRequests: (...args: unknown[]) => getOutgoingRequestsMock(...args)
   }
 }))
 
 vi.mock('@/services/matrix', () => ({
+  // 组件从桶导入 matrixFriendGroups（分组查询已从门面移出）
+  matrixFriendGroups: {
+    getFriendGroups: (...args: unknown[]) => getFriendGroupsMock(...args)
+  },
+  matrixFriendOperations: {
+    acceptFriendRequest: vi.fn().mockResolvedValue(undefined),
+    rejectFriendRequest: vi.fn().mockResolvedValue(undefined),
+    cancelFriendRequest: vi.fn().mockResolvedValue(undefined)
+  },
   matrixAccountService: {
     getInvitePolicy: () => getInvitePolicyMock(),
     getInvitePolicyStrict: () => getInvitePolicyStrictMock(),

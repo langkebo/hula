@@ -2,6 +2,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useReplaceMsg } from '@/composables/chat/useReplaceMsg'
 import { MsgEnum, RoomTypeEnum } from '@/enums'
+import { isPrivateRoom } from '@/services/matrix/privateChat/privateRoomRegistry'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group'
@@ -109,11 +110,13 @@ export function useMobileSessionList() {
   })
 
   const filteredSessionList = computed(() => {
+    // 私密房间与普通会话分离：不进入普通列表（方案 P0-0-a）
+    const visible = sessionList.value.filter((item) => !isPrivateRoom(item.roomId))
     if (!searchText.value.trim()) {
-      return sessionList.value
+      return visible
     }
     const query = searchText.value.trim().toLowerCase()
-    return sessionList.value.filter((item) => item.name?.toLowerCase().includes(query))
+    return visible.filter((item) => item.name?.toLowerCase().includes(query))
   })
 
   // 会话被移除时清理对应的消息缓存

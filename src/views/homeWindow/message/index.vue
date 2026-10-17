@@ -48,19 +48,25 @@ import { useMessage } from '@/composables/chat/useMessage'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useTauriListener } from '@/composables/common/useTauriListener'
+import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
 import { useMessageSessionFilters } from '@/composables/workbench/useMessageSessionFilters'
 import { useSessionListState } from '@/composables/workbench/useSessionListState'
 import { useWorkbenchSessionQuerySync } from '@/composables/workbench/useWorkbenchSessionQuerySync'
 import { MittEnum, RoomTypeEnum } from '@/enums' // Removed MsgEnum, UserType
 import { WORKBENCH_SESSION_ENGAGEMENT_FILTERS, WORKBENCH_SESSION_TYPE_FILTERS } from '@/router/spaceNavigation'
+import { loadPrivateRoomRegistry, migrateFromHiddenSessions } from '@/services/matrix/privateChat/privateRoomRegistry'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useRoomStore } from '@/stores/domains/chat/room'
+import { isSecretChatUnlocked } from '@/stores/domains/settings/secretChatSession'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
+
+const logger = createLogger('MessageList')
 
 const { t } = useI18n()
 const timerManager = useTimerManager()
@@ -118,11 +124,34 @@ let clearUnreadTimer: number | null = null // Moved this up
 // 因此直接从源头统计，与 SecretChatPage 的数据口径一致。
 const hiddenSessionCount = computed(() => sessionList.value.filter((item) => item.hide).length)
 
-// 方案B：隐藏会话入口统一收口到消息列表。未配置密码时提示先设置，
-// 与原好友页入口行为一致；已配置则进入密码校验页 /secretChat。
+// 房间分离同步：把历史 hide 会话一次性迁入私密房间登记表，之后普通列表据此排除。
+// 只需跑一次（迁移幂等），避免每次会话变动都打 account data。
+let privateRoomsSynced = false
+watch(
+  () => sessionList.value.length,
+  async (length) => {
+    if (length === 0 || privateRoomsSynced) return
+    privateRoomsSynced = true
+    try {
+      await loadPrivateRoomRegistry()
+      await migrateFromHiddenSessions(sessionList.value.filter((item) => item.hide).map((item) => item.roomId))
+    } catch (err) {
+      privateRoomsSynced = false
+      logger.warn('sync private room registry failed (will retry on next session change):', err)
+    }
+  },
+  { immediate: true }
+)
+
+// 方案B：隐藏会话入口统一收口到消息列表。未配置密码时提示先设置；
+// 已配置但未解锁时先弹解锁框（不跳转），已解锁才进入 /secretChat。
 const handleOpenHiddenSessions = () => {
   if (!settingStore.isSecretChatConfigured()) {
     showFeedback(t('home.secret_chat.no_password'), 'warning')
+    return
+  }
+  if (!isSecretChatUnlocked()) {
+    openSecretChatUnlock('/secretChat')
     return
   }
   void router.push('/secretChat')

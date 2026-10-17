@@ -52,7 +52,36 @@ router.beforeEach(async (to: RouteLocationNormalized) => {
   if (title) {
     document.title = `${title} - Tjg`
   }
-  return authGuard(to)
+  const authResult = await authGuard(to)
+  if (authResult !== true) {
+    return authResult
+  }
+
+  // 私密聊天硬门禁（方案 P0-0-c）：
+  // 未配置密码 → 引导设置并挡回消息页；已配置未解锁 → 记录意图、弹解锁框、挡回消息页。
+  // 守卫不阻塞等待用户输入，解锁成功后由对话框按 pendingPath 回跳。
+  if (to.path === '/secretChat' || to.path.startsWith('/secretChat/')) {
+    const [{ useSettingStore }, { isSecretChatUnlocked }, { openSecretChatUnlock }] = await Promise.all([
+      import('@/stores/domains/settings/setting'),
+      import('@/stores/domains/settings/secretChatSession'),
+      import('@/composables/secretChat/useSecretChatGate')
+    ])
+    const settingStore = useSettingStore()
+    if (!settingStore.isSecretChatConfigured()) {
+      logger.warn('私密聊天未配置密码，已拦截访问')
+      const { useI18nGlobal } = await import('@/services/i18n')
+      const { useActionFeedback } = await import('@/composables/common/useActionFeedback')
+      useActionFeedback().showFeedback(useI18nGlobal().t('home.secret_chat.no_password'), 'warning')
+      return '/message'
+    }
+    if (!isSecretChatUnlocked()) {
+      logger.warn('私密聊天处于锁定态，已请求解锁')
+      openSecretChatUnlock(to.fullPath)
+      return '/message'
+    }
+  }
+
+  return true
 })
 
 export default router
