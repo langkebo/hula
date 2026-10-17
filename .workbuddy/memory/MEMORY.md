@@ -77,6 +77,14 @@
   阻止截屏、跨服匿名
 - 三端契约一致性坑：DM 判定 SDK 有「2 人房即 DM」启发式而后端只看 `m.direct`；
   `is_private` 参数前端发、SDK 不发、后端不读（死参数）
+- **私密聊天密码门：部件齐全但三处断裂，别再误判为"没做"**
+  ① `setting.ts:84` 把 `secretChat.passwordHash` 放进 `persist.omit` → 重启后为空 →
+  `isSecretChatConfigured()` 恒 false（用户设过密码也会被提示"请先设置"）
+  ② `/secretChat` 路由无 `beforeEnter`、无全局守卫（`routes/desktop.ts:186`）→ 手动导航可进入
+  ③ `SecretChatModal` 的 `secret-chat-unlocked` 事件**全仓无监听**（孤儿事件）→ 解锁状态不存在
+  另：`setSecretChatEnabled` 不校验密码；`hashPasswordWithSHA256` 是单次 SHA-256（无盐无拉伸，不能派生密钥）
+- **私密房间当前只是 `session.hide` 布尔**（`SecretChatPage.vue:77-84`），不是房间属性；
+  点击还会 `hide:false` 还原成普通会话。要做房间分离必须引入 `privateRoomRegistry`（见方案 P0-0）
 
 ## 好友域结构（2026-10-17 起）
 - `MatrixFriendService` 已瘦身为**查询门面**（16 个方法，FriendManager→REST 回退 + 错误归一 + 日志）
