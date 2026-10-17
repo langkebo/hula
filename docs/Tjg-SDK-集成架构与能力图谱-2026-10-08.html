@@ -139,7 +139,7 @@
     <div class="pills">
       <span class="pill">TJG 天机阁</span>
       <span class="pill">matrix-js-sdk 40.2.0-langkebo.6</span>
-      <span class="pill">synapse-rust @ 122aaf109</span>
+      <span class="pill">synapse-rust @ c7c9116db</span>
       <span class="pill">2026-10-08</span>
     </div>
     <h1>TJG 如何通过集成 SDK 与后端交互</h1>
@@ -148,7 +148,7 @@
       <div class="kpi"><b>6</b><span>分层</span><i>UI → Store → Service → SDK → 传输 → 后端</i></div>
       <div class="kpi"><b>215</b><span>个 Service 文件</span><i>17 个业务域，242 个测试文件（2026-10-17 实测）</i></div>
       <div class="kpi"><b>100</b><span>个 SDK Manager 扩展开关</span><i>默认全量注册，按需 getXxxManager()</i></div>
-      <div class="kpi"><b>1027</b><span>条后端路由</span><i>私有面已过半（初版 1159）</i></div>
+      <div class="kpi"><b>1036</b><span>条后端路由</span><i>私有面已过半（初版 1159）</i></div>
     </div>
   </div>
 </div>
@@ -218,7 +218,7 @@
     <div class="layer l-be">
       <div class="tag">后端<small>synapse-rust</small></div>
       <div class="body">
-        <span class="chip">Axum 路由层 <code>src/web/routes/</code> · 1027 条</span>
+        <span class="chip">Axum 路由层 <code>src/web/routes/</code> · 1036 条</span>
         <span class="chip">service 层</span>
         <span class="chip">storage（PostgreSQL）</span>
         <span class="chip">Redis</span>
@@ -327,7 +327,7 @@
 
 <!-- ============ 3 ============ -->
 <section>
-  <h2><span class="idx">图 3</span>后端 API 表面：SDK 契约覆盖了 1027 条路由（私有面 51.8%）</h2>
+  <h2><span class="idx">图 3</span>后端 API 表面：SDK 契约覆盖了 1036 条路由（私有面 51.6%）</h2>
   <p class="lead">synapse-rust 用 route ledger 声明全部路由，SDK 通过 <code>pnpm contract:sync</code> + <code>contract:codegen</code> 生成 46 个 <code>__generated__</code> 模块的类型化路由表；TJG 再用契约测试强制前端路径与之对齐。</p>
 
   <h3>按命名空间分布</h3>
@@ -672,7 +672,7 @@
   <code>MatrixRawUploadChannel.ts</code>（限流包装 fetch + dev 同源改写 + 统一错误归一化），
   <code>xhr-bypass</code> 白名单<b>已清空</b>。<b>仍存在：</b>Worker 内 <code>fetch</code> 与
   <code>App.vue</code>/<code>useAvatarUpload</code>/<code>video.ts</code> 的业务 fetch 仍仅在白名单内、不受限流覆盖。</div>
-  <div class="note"><b>⑫ 契约链是真正的护城河。</b>1027 条路由 / 46 个生成模块 / <code>meta/sdk-pin.json</code> 锁 commit+SHA256 / <code>friends.contract.test.ts</code> 等契约测试——这套机制让「后端改路由 → 前端编译失败」成为可能，是三仓库协同里最有价值的部分。</div>
+  <div class="note"><b>⑫ 契约链是真正的护城河。</b>1036 条路由 / 46 个生成模块 / <code>meta/sdk-pin.json</code> 锁 commit+SHA256 / <code>friends.contract.test.ts</code> 等契约测试——这套机制让「后端改路由 → 前端编译失败」成为可能，是三仓库协同里最有价值的部分。</div>
 </section>
 
 <section>
@@ -689,7 +689,7 @@
     <tbody>
       <tr><td>A1</td><td><b>系统唤醒重连杀 crypto</b>：forceReconnect 先 stopClient（含 cryptoBackend.stop → olmMachine.close）再复用同一 client 重启；<b>修复前</b> cryptoBackend 未被清空、initRustCrypto 拒绝重建 ⇒ 静默解不开新消息（<b>A3 之后该前提已消失</b>：绑定由 SDK 清空）</td><td>✅ 已修（releaseStoppedCryptoBinding + 重启前 ensureCrypto）；门禁 <code>check:sdk-crypto-teardown</code></td></tr>
       <tr><td>A2</td><td><b>跨窗口"已完成即跳过"是死代码</b>（BroadcastChannel 恒不可达 + 每次 init 白等 1s）</td><td>✅ 已修（commit <code>a41261fb</code>）；门禁 <code>check:crypto-cross-window</code></td></tr>
-      <tr><td>A3</td><td>stopClient 后同一 client 的 crypto 永久不可用（SDK 只停不清绑定、无重启 API）⇒ 未来"复用 client"的路径会重踩 A1</td><td>✅ <b>已修（2026-10-13，跨仓）</b>：fork 新增 <code>releaseCryptoBackend()</code>，<code>stopClientLifecycleServices()</code> 与 <code>stopClient()</code> 都停 crypto <b>并清空绑定</b> ⇒ <code>initRustCrypto()</code> 可直接重入；<b>不新增</b> <code>restartCrypto()</code> 公开入口。Tjg 侧 tarball 重打 + pin 重钉（<code>sdk_commit 0824bb23a</code>），门禁 <code>check:sdk-crypto-teardown</code> 6→8 条</td></tr>
+      <tr><td>A3</td><td>stopClient 后同一 client 的 crypto 永久不可用（SDK 只停不清绑定、无重启 API）⇒ 未来"复用 client"的路径会重踩 A1</td><td>✅ <b>已修（2026-10-13，跨仓）</b>：fork 新增 <code>releaseCryptoBackend()</code>，<code>stopClientLifecycleServices()</code> 与 <code>stopClient()</code> 都停 crypto <b>并清空绑定</b> ⇒ <code>initRustCrypto()</code> 可直接重入；<b>不新增</b> <code>restartCrypto()</code> 公开入口。Tjg 侧 tarball 重打 + pin 重钉（<code>sdk_commit 72a6c9b29</code>），门禁 <code>check:sdk-crypto-teardown</code> 6→8 条</td></tr>
       <tr><td>A4</td><td>每个独立窗口各自完整 initRustCrypto（5–10s / 一份 OlmMachine），仅靠 Web Locks 串行化</td><td>⏳ 架构限制</td></tr>
       <tr><td>A5</td><td>crypto 生命周期失配只在日志可见，运行期无 UI 信号</td><td>✅ 已修（Batch 4.1）：新增 <code>CryptoLifecycleDiagnostics</code>（解绑被拒 / <b>已停止的 crypto 被复用</b>），经 <code>MatrixClientService.getCryptoLifecycleDiagnostics()</code> → <code>encryptionStore.cryptoLifecycleWarning</code> 到 store；后者是 <b>A1 的运行时复发哨兵</b></td></tr>
       <tr><td>A6</td><td>IndexedDB 删除被活连接阻塞（已有 300ms 重试 + 2s 超时降级）</td><td>✅ 兜底已够</td></tr>
@@ -742,7 +742,7 @@
 </section>
 
 <footer>
-  基于 Tjg @ 2026-10-13 实测（全文数字与锚点重测）· matrix-js-sdk 40.2.0-langkebo.6（commit 0824bb23a）· synapse-rust 122aaf109 · 初版 2026-10-08
+  基于 Tjg @ 2026-10-13 实测（全文数字与锚点重测）· matrix-js-sdk 40.2.0-langkebo.6（commit 72a6c9b29）· synapse-rust c7c9116db · 初版 2026-10-08
 </footer>
 
 </div>

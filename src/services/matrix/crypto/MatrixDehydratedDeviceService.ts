@@ -170,22 +170,6 @@ class MatrixDehydratedDeviceService {
       return false
     }
   }
-
-  /**
-   * 获取设备事件
-   */
-  async getDeviceEvent(deviceId: string): Promise<Record<string, unknown> | null> {
-    const client = this.getClient()
-    if (!client) return null
-    try {
-      const response = await client.getDehydratedDeviceManager().getDeviceEvent(deviceId)
-
-      return response
-    } catch (error) {
-      logger.error('获取设备事件失败:', error)
-      return null
-    }
-  }
 }
 
 export const matrixDehydratedDeviceService = new MatrixDehydratedDeviceService()

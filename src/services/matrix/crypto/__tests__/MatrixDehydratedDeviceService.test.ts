@@ -8,8 +8,7 @@ const mockManager = {
   getDevices: vi.fn(),
   claimDevice: vi.fn(),
   updateDeviceData: vi.fn(),
-  deleteDevice: vi.fn(),
-  getDeviceEvent: vi.fn()
+  deleteDevice: vi.fn()
 }
 
 describe('MatrixDehydratedDeviceService', () => {
@@ -149,26 +148,6 @@ describe('MatrixDehydratedDeviceService', () => {
       const result = await matrixDehydratedDeviceService.deleteDevice('DEVID123')
 
       expect(result).toBe(false)
-    })
-  })
-
-  describe('getDeviceEvent', () => {
-    it('should get device event', async () => {
-      mockManager.getDeviceEvent.mockResolvedValueOnce({
-        events: ['event1', 'event2']
-      })
-
-      const result = await matrixDehydratedDeviceService.getDeviceEvent('DEVID123')
-
-      expect(result).toBeTruthy()
-    })
-
-    it('should return null on error', async () => {
-      mockManager.getDeviceEvent.mockRejectedValueOnce(new Error('Network error'))
-
-      const result = await matrixDehydratedDeviceService.getDeviceEvent('DEVID123')
-
-      expect(result).toBeNull()
     })
   })
 })
