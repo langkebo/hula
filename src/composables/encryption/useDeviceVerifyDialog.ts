@@ -2,6 +2,7 @@ import { computed, ref, type WritableComputedRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useEncryption } from '@/composables/encryption'
+import { useDeviceVerifySasState } from '@/composables/encryption/useDeviceVerifySasState'
 import type { VerificationTransaction } from '@/services/matrix/crypto/MatrixVerificationService'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 import { createLogger } from '@/utils/Logger'
@@ -55,12 +56,18 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
 
   const step = ref<DeviceVerifyStep>('intro')
   const loading = ref(false)
-  const fingerprint = ref('')
+  const sas = useDeviceVerifySasState({
+    waitForSasView: (transactionId, options) => encryption.waitForSasView(transactionId, options),
+    onUnavailable: () => {
+      logger.error('SAS unavailable; abort (no fingerprint fallback)')
+      showFeedback(t('setting.encryption.device_verify_dialog.sas_unavailable'), 'error')
+      step.value = 'rejected'
+    }
+  })
+  const { sasReady, sasEmojis, sasDecimal, sasConfirmed } = sas
   const transactionId = ref<string | null>(null)
   const targetUserId = ref<string>('')
   const targetDeviceId = ref<string>('')
-  const qrCodeData = ref('')
-  const qrCodeToScan = ref('')
   const cancelReason = ref('')
   const showCancelReason = ref(false)
   const pendingVerifications = ref<VerificationTransaction[]>([])
@@ -95,17 +102,10 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     }
   })
 
-  const fingerprintChunks = computed(() => {
-    if (!fingerprint.value) return []
-    return fingerprint.value.match(/.{1,4}/g) || []
-  })
-
   function resetState(initialInboundRequest: VerificationTransaction | null = null) {
     step.value = 'intro'
-    fingerprint.value = ''
+    sas.reset()
     loading.value = false
-    qrCodeData.value = ''
-    qrCodeToScan.value = ''
     cancelReason.value = ''
     showCancelReason.value = false
     pendingVerifications.value = []
@@ -148,13 +148,8 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
   )
 
   /**
-   * 拉取目标用户的设备列表。
-   *
-   * 仅跨用户验证需要：本账号设备由调用方直接给出 `deviceId`（设备管理页）。
-   * 走 `matrixDeviceService.getUserDevices`（`keys/query`）而不是 `GET /devices` ——
-   * 后者没有 `{user_id}` 路径段，只能查自己，会把他人设备列表查成空。
-   *
-   * 恰好一台设备时自动选中，省掉一次无意义的选择；多台时留空强制用户显式选择。
+   * 拉取目标用户的设备列表（仅跨用户需要）。必须走 `keys/query`：`GET /devices` 无 `{user_id}` 段，查他人恒空。
+   * 恰好一台自动选中，多台留空强制显式选择。
    */
   async function loadTargetDevices() {
     targetDevices.value = []
@@ -202,9 +197,6 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
       transactionId.value = req.transactionId
       targetUserId.value = req.userId
       targetDeviceId.value = req.deviceId
-      fingerprint.value =
-        (await encryption.getDeviceFingerprint(req.userId, req.deviceId)) ||
-        t('setting.encryption.device_verify_dialog.fingerprint_unavailable')
       step.value = 'showKey'
       showFeedback(t('setting.encryption.device_verify_dialog.accepted_success'), 'success')
       await loadPendingVerifications()
@@ -213,6 +205,10 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
       showFeedback(t('setting.encryption.device_verify_dialog.accepted_failed'), 'error')
     } finally {
       loading.value = false
+    }
+    if (step.value === 'showKey' && transactionId.value) {
+      const txId = transactionId.value
+      await sas.load(txId, () => transactionId.value === txId)
     }
   }
 
@@ -288,12 +284,7 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     resetState()
   }
 
-  /**
-   * 本机是否具备可用的会话上下文。
-   *
-   * 用来区分两类失败：「目标设备没选」与「crypto/会话未就绪」。后者更根本，
-   * 不能被前者的提示掩盖，因此设备守卫只在本函数为真时才生效。
-   */
+  /** 本机会话上下文是否可用（区分「没选设备」与「crypto 未就绪」，设备守卫仅在前者生效）。 */
   function hasLocalDeviceContext(): boolean {
     try {
       const sessionContext = encryption.getCurrentSessionContext()
@@ -322,21 +313,14 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
         throw new Error('Device context unavailable')
       }
 
-      // If it's an inbound request, accept it and get the fingerprint
       if (transactionId.value) {
+        // 入站请求：接受后才有 SAS
         await encryption.acceptVerification(transactionId.value)
-        fingerprint.value =
-          (await encryption.getDeviceFingerprint(targetUserId.value, targetDeviceId.value)) ||
-          t('setting.encryption.device_verify_dialog.fingerprint_unavailable')
-        step.value = 'showKey'
       } else {
-        const txId = await encryption.startSasVerification(targetUserId.value, targetDeviceId.value)
-        transactionId.value = txId
-        fingerprint.value =
-          (await encryption.getDeviceFingerprint(targetUserId.value, targetDeviceId.value)) ||
-          t('setting.encryption.device_verify_dialog.fingerprint_unavailable')
-        step.value = 'showKey'
+        // 出站请求：`startSasVerification` 只是发出请求，SAS 要等对端接受
+        transactionId.value = await encryption.startSasVerification(targetUserId.value, targetDeviceId.value)
       }
+      step.value = 'showKey'
     } catch (error) {
       logger.warn('Failed to start/accept verification:', error)
       showFeedback(t('setting.encryption.device_verify_dialog.load_fingerprint_failed'), 'error')
@@ -344,9 +328,22 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     } finally {
       loading.value = false
     }
+
+    // 等待 SAS 不占 loading：让用户在等待期间看到「等待对方接受」并能取消
+    if (step.value === 'showKey' && transactionId.value) {
+      const txId = transactionId.value
+      await sas.load(txId, () => transactionId.value === txId)
+    }
   }
 
   async function handleConfirm() {
+    // 唯一的安全信号：用户明确勾选过「emoji 一致」且 SAS 确实已就绪。
+    // 缺任一条件直接拒绝，绝不发送确认（历史实现无此守卫，无比对也能完成验证）。
+    if (!sasReady.value || !sasConfirmed.value) {
+      logger.warn('忽略确认请求：SAS 未就绪或用户未勾选一致性')
+      return
+    }
+
     loading.value = true
 
     try {
@@ -377,19 +374,19 @@ export function useDeviceVerifyDialog({ props, emit, visible }: UseDeviceVerifyD
     // state
     step,
     loading,
-    fingerprint,
+    sasReady,
+    sasEmojis,
+    sasDecimal,
+    sasConfirmed,
     transactionId,
     targetUserId,
     targetDeviceId,
-    qrCodeData,
-    qrCodeToScan,
     cancelReason,
     showCancelReason,
     pendingVerifications,
     targetDevices,
     // getters
     currentStepIndex,
-    fingerprintChunks,
     isVerifyingOtherUser,
     // actions
     resetState,

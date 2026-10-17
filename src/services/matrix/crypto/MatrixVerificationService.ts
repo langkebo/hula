@@ -238,6 +238,42 @@ export class VerificationService extends BaseMatrixService {
   }
 
   /**
+   * 等待 SAS 就绪后再返回。
+   *
+   * 为什么必须等：`startSasVerification` 只是**发出请求**，SAS 要等对端接受后才产生。
+   * 若发完立刻读 SAS，只能拿到 null —— 这正是历史上 PC 端「没有 emoji 也比对成功」的成因。
+   * SDK 没有对外暴露「SAS 可用」事件，因此只能轮询。
+   *
+   * @param transactionId 事务 id
+   * @param options.timeoutMs 最长等待（默认 120s，需覆盖对端人工点接受的时间）
+   * @param options.intervalMs 轮询间隔（默认 500ms）
+   * @param options.shouldAbort 返回 true 时立即中止（用户取消/关闭对话框），抛错由调用方忽略
+   */
+  async waitForSasView(
+    transactionId: string,
+    options: { timeoutMs?: number; intervalMs?: number; shouldAbort?: () => boolean } = {}
+  ): Promise<SasVerificationView> {
+    const timeoutMs = options.timeoutMs ?? 120_000
+    const intervalMs = options.intervalMs ?? 500
+    const deadline = Date.now() + timeoutMs
+    let lastError: unknown = null
+
+    while (Date.now() < deadline) {
+      if (options.shouldAbort?.()) {
+        throw new Error(`SAS wait aborted: ${transactionId}`)
+      }
+      try {
+        return await this.getSasView(transactionId)
+      } catch (err) {
+        lastError = err
+      }
+      await new Promise((resolve) => setTimeout(resolve, intervalMs))
+    }
+
+    throw lastError instanceof Error ? lastError : new Error(`Timed out waiting for SAS: ${transactionId}`)
+  }
+
+  /**
    * 用户确认 SAS 匹配。
    *
    * 必须调用 `ShowSasCallbacks.confirm()`——SDK 的 `Verifier.verify()` 只等待

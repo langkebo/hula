@@ -87,7 +87,10 @@ describe('MobileDeviceVerifyDialog', () => {
     mockEmojis.value = []
     mockPendingRequests.value = []
     mockErrorMessage.value = null
+    // 默认确认成功：P0-2 之后 match() 会检查返回值，默认 undefined 会被判为失败
+    mockConfirmSas.mockResolvedValue(true)
     vi.clearAllMocks()
+    mockConfirmSas.mockResolvedValue(true)
   })
 
   it('renders intro state with the SAS action button', () => {
@@ -133,6 +136,18 @@ describe('MobileDeviceVerifyDialog', () => {
     await matchButton!.trigger('click')
     expect(wrapper.emitted('verified')).toBeTruthy()
     expect(mockConfirmSas).toHaveBeenCalledWith(true)
+  })
+
+  it('confirmSas 失败时不得 emit verified（P0-2 回归）', async () => {
+    mockStep.value = 'showKey'
+    mockConfirmSas.mockResolvedValue(false)
+    const wrapper = createWrapper()
+    const buttons = wrapper.findAll('.van-button-stub')
+    const matchButton = buttons.find((b) => b.text().includes('verification.sas.match'))
+    expect(matchButton).toBeTruthy()
+    await matchButton!.trigger('click')
+    expect(mockConfirmSas).toHaveBeenCalledWith(true)
+    expect(wrapper.emitted('verified')).toBeFalsy()
   })
 
   it('calls confirmSas(false) when mismatch button is clicked', async () => {

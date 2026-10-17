@@ -26,7 +26,7 @@ type DialogVm = {
 
 const {
   getCurrentSessionContextMock,
-  getDeviceFingerprintMock,
+  waitForSasViewMock,
   startSasVerificationMock,
   acceptVerificationMock,
   getPendingVerificationsMock,
@@ -34,7 +34,7 @@ const {
   showFeedbackMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
-  getDeviceFingerprintMock: vi.fn(),
+  waitForSasViewMock: vi.fn(),
   startSasVerificationMock: vi.fn(),
   acceptVerificationMock: vi.fn(),
   getPendingVerificationsMock: vi.fn(),
@@ -137,7 +137,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 vi.mock('@/composables/encryption', () => ({
   useEncryption: () => ({
     getCurrentSessionContext: getCurrentSessionContextMock,
-    getDeviceFingerprint: getDeviceFingerprintMock,
+    waitForSasView: waitForSasViewMock,
     startSasVerification: startSasVerificationMock,
     acceptVerification: acceptVerificationMock,
     getPendingVerifications: getPendingVerificationsMock
@@ -187,7 +187,7 @@ describe('DeviceVerifyDialog 跨用户验证', () => {
       deviceId: SELF_DEVICE,
       isCryptoEnabled: true
     })
-    getDeviceFingerprintMock.mockResolvedValue('ABCD1234EFGH5678')
+    waitForSasViewMock.mockResolvedValue({ emoji: [['🐶', 'Dog']], decimal: null })
     startSasVerificationMock.mockResolvedValue('txn-123')
     acceptVerificationMock.mockResolvedValue(undefined)
     getPendingVerificationsMock.mockResolvedValue([])
@@ -229,7 +229,7 @@ describe('DeviceVerifyDialog 跨用户验证', () => {
     await vmOf(wrapper).startVerification()
 
     expect(startSasVerificationMock).toHaveBeenCalledWith(PEER_USER, 'BOB_PHONE')
-    expect(getDeviceFingerprintMock).toHaveBeenCalledWith(PEER_USER, 'BOB_PHONE')
+    expect(waitForSasViewMock).toHaveBeenCalledWith('txn-123', expect.any(Object))
   })
 
   it('对方多台设备且未选择时阻断发起，避免空 deviceId 请求', async () => {
@@ -256,7 +256,7 @@ describe('DeviceVerifyDialog 跨用户验证', () => {
     await vmOf(wrapper).startVerification()
 
     expect(startSasVerificationMock).toHaveBeenCalledWith(PEER_USER, 'BOB_DESKTOP')
-    expect(getDeviceFingerprintMock).toHaveBeenCalledWith(PEER_USER, 'BOB_DESKTOP')
+    expect(waitForSasViewMock).toHaveBeenCalledWith('txn-123', expect.any(Object))
     expect(vmOf(wrapper).step).toBe('showKey')
   })
 

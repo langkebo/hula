@@ -581,7 +581,13 @@
       "view_pending": "View Pending Requests",
       "step_intro": "Confirm Device",
       "step_verify": "Fingerprint Check",
-      "step_result": "Done"
+      "step_result": "Done",
+      "sas_label": "Compare these 7 emoji with the other device (same order)",
+      "sas_decimal_label": "Or compare these numbers",
+      "sas_waiting": "Waiting for the other device to accept…",
+      "sas_confirm_checkbox": "These emoji match the other device exactly",
+      "sas_unavailable": "No comparison code available; verification aborted (no fingerprint fallback)",
+      "sas_none": "The other device did not provide comparable emoji"
     },
     "security_key_section": "Security Key",
     "security_key_label": "Security Key",

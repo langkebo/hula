@@ -78,6 +78,18 @@ interface UseEncryptionResult {
   confirmSas: (transactionId: string) => Promise<void>
   cancelVerification: (transactionId: string, reason: string) => Promise<void>
   getPendingVerifications: () => Promise<VerificationTransaction[]>
+  /** 读取当前事务的 SAS（emoji / decimal）；事务未进入 Started 阶段时抛错。 */
+  getSasView: (
+    transactionId: string
+  ) => Promise<import('@/services/matrix/crypto/MatrixVerificationService').SasVerificationView>
+  /**
+   * 等待 SAS 就绪（对端接受后才产生）。**不要用 getSasView 代替**：
+   * 发完请求立刻读只会拿到错误，UI 会退化成「没有可比对内容也让用户确认」。
+   */
+  waitForSasView: (
+    transactionId: string,
+    options?: { shouldAbort?: () => boolean }
+  ) => Promise<import('@/services/matrix/crypto/MatrixVerificationService').SasVerificationView>
 
   exportRoomKeys: () => Promise<string>
   importRoomKeys: (keysJson: string) => Promise<{ imported: number; total: number }>
@@ -342,11 +354,16 @@ export function useEncryption(): UseEncryptionResult {
     getDeviceTrustLevel,
     requestDeviceVerification,
     requestUserVerification,
-    startSasVerification: matrixVerificationService.startSasVerification,
-    acceptVerification: matrixVerificationService.acceptVerification,
-    confirmSas: matrixVerificationService.confirmSas,
-    cancelVerification: matrixVerificationService.cancelVerification,
-    getPendingVerifications: matrixVerificationService.getPendingVerifications,
+    startSasVerification: (userId: string, deviceId: string) =>
+      matrixVerificationService.startSasVerification(userId, deviceId),
+    acceptVerification: (transactionId: string) => matrixVerificationService.acceptVerification(transactionId),
+    confirmSas: (transactionId: string) => matrixVerificationService.confirmSas(transactionId),
+    cancelVerification: (transactionId: string, reason: string) =>
+      matrixVerificationService.cancelVerification(transactionId, reason),
+    getPendingVerifications: () => matrixVerificationService.getPendingVerifications(),
+    getSasView: (transactionId: string) => matrixVerificationService.getSasView(transactionId),
+    waitForSasView: (transactionId: string, options?: { shouldAbort?: () => boolean }) =>
+      matrixVerificationService.waitForSasView(transactionId, options),
     exportRoomKeys,
     importRoomKeys,
     getUnverifiedDevicesInRoom,

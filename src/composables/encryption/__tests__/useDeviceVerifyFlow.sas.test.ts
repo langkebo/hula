@@ -9,6 +9,7 @@ vi.mock('@/utils/Logger', () => ({
 const svc = vi.hoisted(() => ({
   acceptVerification: vi.fn(),
   getSasView: vi.fn(),
+  waitForSasView: vi.fn(),
   confirmSas: vi.fn(),
   mismatchSas: vi.fn(),
   cancelVerification: vi.fn(),
@@ -40,7 +41,7 @@ describe('useDeviceVerifyFlow SAS 生命周期', () => {
   })
 
   it('接受验证请求后载入可展示的 SAS（emoji + decimal）', async () => {
-    svc.getSasView.mockResolvedValue({
+    svc.waitForSasView.mockResolvedValue({
       emoji: [
         ['🐶', 'Dog'],
         ['🐱', 'Cat']
@@ -51,7 +52,7 @@ describe('useDeviceVerifyFlow SAS 生命周期', () => {
     const flow = useDeviceVerifyFlow()
     await flow.acceptVerification('txn-1')
 
-    expect(svc.getSasView).toHaveBeenCalledWith('txn-1')
+    expect(svc.waitForSasView.mock.calls[0][0]).toBe('txn-1')
     expect(flow.emojis.value).toHaveLength(2)
     // MobileDeviceVerifyDialog 读取的是 description 字段
     expect(flow.emojis.value[0]).toEqual({ emoji: '🐶', description: 'Dog' })
@@ -59,7 +60,7 @@ describe('useDeviceVerifyFlow SAS 生命周期', () => {
   })
 
   it('SDK 无 SAS 可展示时进入失败态，不得让用户确认空白 SAS', async () => {
-    svc.getSasView.mockRejectedValue(new Error('no SAS yet'))
+    svc.waitForSasView.mockRejectedValue(new Error('no SAS yet'))
 
     const flow = useDeviceVerifyFlow()
     const ok = await flow.acceptVerification('txn-1')
@@ -70,7 +71,7 @@ describe('useDeviceVerifyFlow SAS 生命周期', () => {
   })
 
   it('用户判定不匹配时走 mismatchSas（发送 m.mismatched_sas），而非普通取消', async () => {
-    svc.getSasView.mockResolvedValue({ emoji: [['🐶', 'Dog']], decimal: null })
+    svc.waitForSasView.mockResolvedValue({ emoji: [['🐶', 'Dog']], decimal: null })
 
     const flow = useDeviceVerifyFlow()
     await flow.acceptVerification('txn-1')
@@ -81,7 +82,7 @@ describe('useDeviceVerifyFlow SAS 生命周期', () => {
   })
 
   it('用户确认匹配时调用 confirmSas 并进入成功态', async () => {
-    svc.getSasView.mockResolvedValue({ emoji: [['🐶', 'Dog']], decimal: null })
+    svc.waitForSasView.mockResolvedValue({ emoji: [['🐶', 'Dog']], decimal: null })
 
     const flow = useDeviceVerifyFlow()
     await flow.acceptVerification('txn-1')

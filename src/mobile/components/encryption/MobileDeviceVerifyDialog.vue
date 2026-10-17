@@ -120,7 +120,10 @@ const dialogTitle = computed(() => {
 })
 
 async function match() {
-  await confirmSas(true)
+  // 必须检查返回值：confirmSas 失败（无 SAS / 网络 / SDK 拒绝）时**不得** emit verified，
+  // 否则父组件会弹出"验证成功"，而设备实际未被信任。
+  const ok = await confirmSas(true)
+  if (!ok) return
   emit('verified')
   visible.value = false
 }

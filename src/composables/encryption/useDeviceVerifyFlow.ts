@@ -54,6 +54,34 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     }
   }
 
+  /**
+   * 等待并载入 SAS。
+   *
+   * 必须等：`startSasVerification` 只发出请求，SAS 要等对端接受后才产生。
+   * 历史实现发完请求就进 `showKey`，此时 emojis 为空 —— 用户对着空网格点「匹配」，
+   * 就是最典型的假安全信号。
+   */
+  const loadSas = async (transactionId: string): Promise<boolean> => {
+    try {
+      const sas = await matrixVerificationService.waitForSasView(transactionId, {
+        shouldAbort: () => currentTransactionId.value !== transactionId
+      })
+      if (currentTransactionId.value !== transactionId) return false
+      // 消费方（MobileDeviceVerifyDialog）读取 emoji.description，保持该字段名
+      emojis.value = sas.emoji.map(([emoji, name]) => ({ emoji, description: name }))
+      sasDecimal.value = sas.decimal ? [...sas.decimal] : []
+      step.value = 'showKey'
+      return true
+    } catch (err) {
+      if (currentTransactionId.value !== transactionId) return false
+      logger.error('loadSas failed', err)
+      errorMessage.value = t('verification.errors.accept_failed')
+      step.value = 'failed'
+      showFeedback(errorMessage.value, 'error')
+      return false
+    }
+  }
+
   const startSas = async (userId?: string, deviceId?: string): Promise<boolean> => {
     const uid = userId ?? targetUserId.value
     const did = deviceId ?? targetDeviceId.value
@@ -67,13 +95,12 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     step.value = 'pending'
     errorMessage.value = null
 
+    let txnId: string | null = null
     try {
-      const txnId = await matrixVerificationService.startSasVerification(uid, did)
+      txnId = await matrixVerificationService.startSasVerification(uid, did)
       currentTransactionId.value = txnId
       targetUserId.value = uid
       targetDeviceId.value = did
-      step.value = 'showKey'
-      return true
     } catch (err) {
       logger.error('startSas failed', err)
       errorMessage.value = t('verification.errors.start_failed')
@@ -83,6 +110,9 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     } finally {
       loading.value = false
     }
+
+    // 保持 `pending`（等待对方接受）直到 SAS 真正就绪
+    return txnId ? loadSas(txnId) : false
   }
 
   const acceptVerification = async (transactionId: string): Promise<boolean> => {
@@ -91,16 +121,6 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     try {
       await matrixVerificationService.acceptVerification(transactionId)
       currentTransactionId.value = transactionId
-
-      // 载入真实 SAS：没有可展示的 SAS 时绝不能进入 showKey，
-      // 否则用户会对着空白网格点"匹配"，形成假的安全信号。
-      const sas = await matrixVerificationService.getSasView(transactionId)
-      // 消费方（MobileDeviceVerifyDialog）读取 emoji.description，保持该字段名
-      emojis.value = sas.emoji.map(([emoji, name]) => ({ emoji, description: name }))
-      sasDecimal.value = sas.decimal ? [...sas.decimal] : []
-
-      step.value = 'showKey'
-      return true
     } catch (err) {
       logger.error('acceptVerification failed', err)
       showFeedback(t('verification.errors.accept_failed'), 'error')
@@ -109,6 +129,9 @@ export function useDeviceVerifyFlow(options: UseDeviceVerifyFlowOptions = {}) {
     } finally {
       loading.value = false
     }
+
+    // 没有可展示的 SAS 时绝不能进入 showKey
+    return loadSas(transactionId)
   }
 
   const confirmSas = async (match: boolean): Promise<boolean> => {

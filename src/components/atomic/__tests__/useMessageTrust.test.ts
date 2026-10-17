@@ -1,12 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { refreshTrustLevel, senderDeviceCache, useMessageTrust } from '@/composables/encryption/useMessageTrust'
+import {
+  clearSenderDeviceCache,
+  refreshTrustLevel,
+  senderCacheKey,
+  senderDeviceCache,
+  useMessageTrust
+} from '@/composables/encryption/useMessageTrust'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 
 vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
   matrixDeviceService: {
     getUserDevices: vi.fn()
   }
+}))
+
+// 账号维度：缓存 key 必须随当前账号变化
+const account = vi.hoisted(() => ({ userId: '@me:server' }))
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  default: { getUserId: () => account.userId }
 }))
 
 const mockGetUserDevices = vi.mocked(matrixDeviceService.getUserDevices)
@@ -172,7 +184,7 @@ describe('useMessageTrust', () => {
       { device_id: 'D2', verified: false }
     ])
     await expect(refreshTrustLevel('@mixed:server')).resolves.toBe('unverified')
-    expect(senderDeviceCache.get('@mixed:server')).toBe('unverified')
+    expect(senderDeviceCache.get(senderCacheKey('@mixed:server'))).toBe('unverified')
   })
 
   it('全部设备已验证 → verified', async () => {
@@ -216,5 +228,38 @@ describe('useMessageTrust', () => {
   it('已加密消息不受"房间明文"判定影响（仍走设备验证路径）', () => {
     const result = useMessageTrust(true, { isEncrypted: true, senderId: '@alice:server' })
     expect(result.trustLevel.value).toBe('unverified')
+  })
+
+  // ---- P0-3：缓存必须带账号维度，且登出可清空 ----
+
+  it('换账号后不复用上一账号的绿锁判定', async () => {
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true }])
+
+    account.userId = '@account-a:server'
+    await expect(refreshTrustLevel('@friend:server')).resolves.toBe('verified')
+    expect(senderDeviceCache.get(senderCacheKey('@friend:server'))).toBe('verified')
+
+    // 切到另一个账号：同一发送者必须重新判定，不得直接命中上面的 verified
+    account.userId = '@account-b:server'
+    const result = useMessageTrust(true, { senderId: '@friend:server' })
+    expect(result.trustLevel.value).toBe('unverified')
+
+    // 等异步刷新完成后仍是真实判据（此账号下设备确实全验证，故为 verified，
+    // 关键是它来自本账号的一次真实查询，而不是跨账号命中）
+    await refreshTrustLevel('@friend:server')
+    expect(senderDeviceCache.get(senderCacheKey('@friend:server'))).toBe('verified')
+    expect(senderDeviceCache.has('@account-a:server:@friend:server')).toBe(true)
+  })
+
+  it('clearSenderDeviceCache 清空全部账号维度的缓存（登出调用）', async () => {
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true }])
+    account.userId = '@account-a:server'
+    await refreshTrustLevel('@friend:server')
+    expect(senderDeviceCache.size).toBeGreaterThan(0)
+
+    clearSenderDeviceCache()
+
+    expect(senderDeviceCache.size).toBe(0)
+    expect(useMessageTrust(true, { senderId: '@friend:server' }).trustLevel.value).toBe('unverified')
   })
 })

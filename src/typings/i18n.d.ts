@@ -6417,7 +6417,13 @@ export type I18nKeys = {
         "view_pending": "查看待处理请求",
         "step_intro": "确认设备",
         "step_verify": "指纹核对",
-        "step_result": "完成"
+        "step_result": "完成",
+        "sas_label": "请在对方设备上核对以下 7 个 emoji（顺序必须一致）",
+        "sas_decimal_label": "或核对这组数字",
+        "sas_waiting": "等待对方接受验证…",
+        "sas_confirm_checkbox": "以上 emoji 与对方设备完全一致",
+        "sas_unavailable": "无法获取比对码，验证已中止（不会退回指纹比对）",
+        "sas_none": "对方设备未提供可比对的 emoji"
       },
       "security_key_section": "安全密钥",
       "security_key_label": "安全密钥",
@@ -12122,6 +12128,12 @@ export type I18nKeyPaths =
   | "setting.encryption.device_verify_dialog.step_intro"
   | "setting.encryption.device_verify_dialog.step_verify"
   | "setting.encryption.device_verify_dialog.step_result"
+  | "setting.encryption.device_verify_dialog.sas_label"
+  | "setting.encryption.device_verify_dialog.sas_decimal_label"
+  | "setting.encryption.device_verify_dialog.sas_waiting"
+  | "setting.encryption.device_verify_dialog.sas_confirm_checkbox"
+  | "setting.encryption.device_verify_dialog.sas_unavailable"
+  | "setting.encryption.device_verify_dialog.sas_none"
   | "setting.encryption.security_key_section"
   | "setting.encryption.security_key_label"
   | "setting.encryption.security_key_configured"

@@ -70,6 +70,14 @@
 - **`retention` 只在 `/_synapse/admin/v1`**，普通用户/房管无法设房间 TTL ⇒ 私密房间承诺「N 天后消失」
   必须先加 vendor 端点
 - **设备信任的唯一事实源是本地 crypto store**（`getDeviceVerificationStatus`），`/keys/query` 响应没有信任字段
+- **设备验证的唯一可比对内容是 SAS（emoji/decimal），不是设备指纹**：
+  `getDeviceFingerprint` 只对本机设备有值、对他人恒 `null` ⇒ 用它做跨设备验证=假安全。
+  ⚠️ **SAS 要等对端接受才产生**（`startSasVerification` 只发请求）⇒ 必须用
+  `MatrixVerificationService.waitForSasView(txId, {shouldAbort})` 轮询等待，拿不到就失败、**不降级**。
+  ⚠️ `useEncryption` 里**禁止** `xxx: matrixVerificationService.method` 这种解构（丢 `this`，
+  那些方法内部都调 `this.getVerificationClient()`）⇒ 一律箭头包装。
+- **消息信任缓存必须带账号维度**（`messageTrustCache.senderCacheKey` = `${accountUserId}:${senderId}`），
+  登出调 `clearSenderDeviceCache()`；缓存模块**不得 import 任何矩阵服务**（否则 auth→composable→client→auth 循环）。
 - **验证流程禁止降级**：取不到 SAS 时必须失败，不得回退到「设备指纹」（`getDeviceFingerprint` 只对本机返回值，
   对他人设备恒 null，用它做跨设备验证 = 假安全信号）
 - **`senderDeviceCache` 必须带账号维度并在登出清理**，否则换账号后绿锁残留

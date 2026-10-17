@@ -1,16 +1,15 @@
-import { computed, effectScope, type MaybeRefOrGetter, onScopeDispose, shallowRef, toValue } from 'vue'
+import { computed, effectScope, type MaybeRefOrGetter, onScopeDispose, toValue } from 'vue'
+import {
+  bumpTrustCacheVersion,
+  type MessageTrustLevel,
+  senderDeviceCache,
+  trustCacheVersion
+} from '@/services/matrix/crypto/messageTrustCache'
+import matrixClientService from '@/services/matrix/MatrixClientService'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 
-/**
- * 消息级 E2EE 信任状态
- *
- * 基于 Matrix 事件加密状态推导消息级信任等级：
- * - `verified`: 已验证的端到端加密消息（绿锁）
- * - `unverified`: 未完全验证的加密消息（灰锁）
- * - `risk`: 存在安全风险的加密消息（红锁）
- * - `plain`: 未加密消息
- */
-export type MessageTrustLevel = 'verified' | 'unverified' | 'risk' | 'plain'
+export type { MessageTrustLevel } from '@/services/matrix/crypto/messageTrustCache'
+export { clearSenderDeviceCache, senderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'
 
 /**
  * 锁徽章等级（不含 `plain`）
@@ -20,16 +19,16 @@ export type MessageTrustLevel = 'verified' | 'unverified' | 'risk' | 'plain'
  */
 export type LockBadgeLevel = 'verified' | 'unverified' | 'risk'
 
-/**
- * 发送者设备验证状态缓存（模块级，避免每次消息渲染都去查设备列表）
- * key = senderId, value = 'verified' | 'unverified' | 'risk'
- *
- * 注意：测试代码可直接访问此导出用于缓存清理
- */
-export const senderDeviceCache = new Map<string, MessageTrustLevel>()
-
-/** 缓存版本计数器（用于触发 computed 重算） */
-const cacheVersion = shallowRef(0)
+/** 计算缓存键（**账号维度**，避免换账号后沿用上一账号的绿锁判定）。 */
+export function senderCacheKey(senderId: string): string {
+  let accountUserId = 'anonymous'
+  try {
+    accountUserId = matrixClientService.getUserId() ?? 'anonymous'
+  } catch {
+    // 客户端未初始化：保持 anonymous，不与任何真实账号混用
+  }
+  return `${accountUserId}:${senderId}`
+}
 
 /**
  * 异步刷新信任等级（查设备列表 → 判定设备验证状态 → 更新缓存）
@@ -49,18 +48,19 @@ const cacheVersion = shallowRef(0)
  */
 export async function refreshTrustLevel(senderId: string): Promise<MessageTrustLevel> {
   if (!senderId) return 'unverified'
+  const key = senderCacheKey(senderId)
   try {
     const devices = await matrixDeviceService.getUserDevices(senderId)
     // 设备列表为空 ⇒ 无法证认任何设备 ⇒ 未验证（绝不能因为"没有反对证据"就给绿锁）
     const level: MessageTrustLevel =
       devices.length > 0 && devices.every((d) => d.verified === true) ? 'verified' : 'unverified'
-    senderDeviceCache.set(senderId, level)
-    cacheVersion.value++
+    senderDeviceCache.set(key, level)
+    bumpTrustCacheVersion()
     return level
   } catch {
     // 设备查询失败 → 保持安全默认值，不抛错干扰渲染
-    cacheVersion.value++
-    return senderDeviceCache.get(senderId) ?? 'unverified'
+    bumpTrustCacheVersion()
+    return senderDeviceCache.get(key) ?? 'unverified'
   }
 }
 
@@ -123,7 +123,7 @@ export function useMessageTrust(
   const trustLevel = scope.run(() =>
     computed<MessageTrustLevel>(() => {
       // 依赖 cacheVersion：refreshTrustLevel 更新缓存后触发重算
-      void cacheVersion.value
+      void trustCacheVersion.value
       if (!isEncryptedEvent.value) {
         return toValue(room?.isEncrypted) ? 'risk' : 'plain'
       }
@@ -132,7 +132,8 @@ export function useMessageTrust(
       if (!senderId) return 'unverified'
 
       // 优先使用缓存（虚拟列表复用实例时缓存仍有效，senderId 不变则信任等级不变）
-      if (senderDeviceCache.has(senderId)) return senderDeviceCache.get(senderId)!
+      const key = senderCacheKey(senderId)
+      if (senderDeviceCache.has(key)) return senderDeviceCache.get(key)!
 
       // 无缓存 → 安全默认值 'unverified'（异步刷新会在 effect 中更新缓存）
       return 'unverified'

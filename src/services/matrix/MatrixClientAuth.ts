@@ -13,6 +13,7 @@
  */
 
 import { useI18nGlobal } from '@/services/i18n'
+import { clearSenderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'
 import { persistRefreshedToken } from '@/services/matrix/matrixClientPlatform'
 import type { LoginResponse } from '@/services/matrix/sdk'
 import { clearSecretStorageKeys } from '@/services/matrix/secretStorageKeyVault'
@@ -393,8 +394,7 @@ export class MatrixClientAuth {
       AvatarUtils.setMxcResolver(null)
       connectionManager.setClient(null)
       connectionManager.updateConnectionState('DISCONNECTED')
-      // 重置启动守卫，确保登出后下次登录能正常 startClient
-      startClientGuard.reset()
+      startClientGuard.reset() // 重置启动守卫，保证登出后下次登录能 startClient
       // ISSUE-08：清理 keychain 中的 crypto storageKey，避免残留
       if (userId && deviceId) {
         void deleteCryptoStorageKey(userId, deviceId)
@@ -403,15 +403,15 @@ export class MatrixClientAuth {
       clearCryptoStorageKeyCache()
       // 清空 SSSS 私钥内存保险箱，避免登出后残留（历史缺陷：sessionStorage 缓存从不清理）
       clearSecretStorageKeys()
+      // 清空消息信任缓存（key 含账号维度，登出仍须释放，避免重登首帧沿用旧判定）
+      clearSenderDeviceCache()
       // 清除 IndexedDB crypto store 与 localStorage 记录，确保下次登录从干净状态开始
       if (userId) {
         cryptoTracker.clearCryptoStoreForLogout(userId).catch((err) => {
           logger.warn(`清理 crypto store 失败 (userId=${userId}):`, err)
         })
       }
-      // eventRouter 引用保留以保持 deps 形状完整（logout 本身不直接使用 eventRouter），
-      // 实际监听器清理已由 lifecycle.stopClient → eventRouter.detach 完成。
-      void eventRouter
+      void eventRouter // 保留仅为 deps 形状完整（监听器清理已由 lifecycle.stopClient 完成）
     }
   }
 }

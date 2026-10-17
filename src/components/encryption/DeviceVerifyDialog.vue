@@ -41,17 +41,20 @@
           @accept-pending="acceptPendingRequest"
           @decline-pending="declinePendingRequest" />
 
-        <!-- Step: Show Key (SAS) -->
-        <DeviceVerifyFingerprintStep
+        <!-- Step: Show SAS（emoji 比对；无 SAS 时只显示等待，绝不退回指纹） -->
+        <DeviceVerifySasStep
           v-else-if="step === 'showKey'"
-          :fingerprint-chunks="fingerprintChunks"
+          :sas-ready="sasReady"
+          :emojis="sasEmojis"
+          :decimal="sasDecimal"
+          :sas-confirmed="sasConfirmed"
           v-model:show-cancel-reason="showCancelReason"
           v-model:cancel-reason="cancelReason"
+          @update:sas-confirmed="sasConfirmed = $event"
           @hide-cancel-reason="hideCancelReason"
           @cancel-with-reason="handleCancelWithReason"
           @reject="handleReject"
-          @confirm="handleConfirm"
-          @cancel="handleCancel" />
+          @confirm="handleConfirm" />
 
         <!-- Step: Success / Rejected -->
         <DeviceVerifyResultStep
@@ -69,10 +72,10 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type DeviceVerifyDialogProps, useDeviceVerifyDialog } from '@/composables/encryption/useDeviceVerifyDialog'
 import type { VerificationTransaction } from '@/services/matrix/crypto/MatrixVerificationService'
-import DeviceVerifyFingerprintStep from './DeviceVerifyFingerprintStep.vue'
 import DeviceVerifyIntroStep from './DeviceVerifyIntroStep.vue'
 import DeviceVerifyPendingStep from './DeviceVerifyPendingStep.vue'
 import DeviceVerifyResultStep from './DeviceVerifyResultStep.vue'
+import DeviceVerifySasStep from './DeviceVerifySasStep.vue'
 
 defineOptions({
   name: 'DeviceVerifyDialog'
@@ -131,6 +134,10 @@ const {
   // state (exposed on vm for tests)
   step,
   loading,
+  sasReady,
+  sasEmojis,
+  sasDecimal,
+  sasConfirmed,
   cancelReason,
   showCancelReason,
   pendingVerifications,
@@ -139,7 +146,6 @@ const {
   targetDevices,
   // getters
   currentStepIndex,
-  fingerprintChunks,
   isVerifyingOtherUser,
   // actions
   loadPendingVerifications,
