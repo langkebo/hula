@@ -39,6 +39,7 @@ import { useGlobalShortcut } from '@/composables/common/useGlobalShortcut'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
+import { useLocalStorePlaintextWarning } from '@/composables/secure/useLocalStorePlaintextWarning'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useIsMobile } from '@/composables/usePlatform'
@@ -463,6 +464,8 @@ onMounted(async () => {
   // 气泡样式同理：读一次存储写到根元素 data 属性，由 render-message.scss 消费
   applyBubbleStyle(loadBubbleStyle())
   if (!skipMatrixInit) {
+    // F-4：本机密钥库若未加密，一次性告知（不阻断；持续状态见设置页状态卡）
+    void useLocalStorePlaintextWarning().warnIfNeeded()
     wsEventHandler.registerHandlers()
     presenceSync.startPresenceWatch()
     invitePolicyEnforcement.start()
