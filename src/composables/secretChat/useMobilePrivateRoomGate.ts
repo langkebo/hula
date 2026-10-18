@@ -39,7 +39,7 @@ export function useMobilePrivateRoomGate() {
     return session?.roomId ?? null
   }
 
-  // 收「已翻译文案」而不是 key：key 必须在调用点以 t('...') 形式出现，
+  // 收「已翻译文案」而不是 key：key 必须在调用点以「t + 字面量键」的形式出现，
   // 否则 `check:i18n-dead-keys` 看不到引用，会把活文案判成孤儿（本仓已踩过）。
   const notify = (message: string) => {
     useActionFeedback().showFeedback(message, 'warning')
