@@ -233,6 +233,42 @@ class MatrixFriendService {
     }
   }
 
+  /**
+   * 创建（或复用）与指定好友的 DM 房间（POST /friends/dm/{uid}）。
+   *
+   * 为什么走服务端而不是客户端的 `startDirectRoom`：只有这条路径会让**服务端**
+   * 决定加密与轮换 → 房间一定带 `m.room.encryption`（B-1）与 1 天 / 50 条的
+   * Megolm 轮换参数（B-6）。客户端 `createRoom` 走的是 SDK 默认值，可能两头都缺。
+   *
+   * `isPrivate: true` 时后端还会写 `com.hula.privacy` 标记
+   * （`{"action":"block_screenshot","is_private":true}`）并把
+   * `history_visibility` 固定为 `invited`，前端据此启用防截屏提示（F-2）。
+   *
+   * ⚠️ `synapseDmExtensionService.createPrivateDm` 的默认值是 `isPrivate = true`，
+   * 这里必须**显式传 false** —— 否则普通「发消息」也会被打上私密标记。
+   *
+   * @returns 房间 ID；失败返回 `null`（由调用方回落到客户端的本地建 DM）。
+   */
+  async createFriendDmRoom(userId: string, options: { isPrivate?: boolean } = {}): Promise<string | null> {
+    const isPrivate = options.isPrivate ?? false
+    try {
+      const result = await synapseDmExtensionService.createPrivateDm(userId, isPrivate)
+      if (!result.room_id) {
+        logger.warn(`[MatrixFriend] 服务端未返回 DM 房间: userId=${userId}, isPrivate=${isPrivate}`)
+        return null
+      }
+      logger.info(
+        `[MatrixFriend] 服务端创建 DM 房间: userId=${userId}, isPrivate=${isPrivate}, roomId=${result.room_id}`
+      )
+      return result.room_id
+    } catch (err) {
+      // 服务端端点不可用（旧后端 / 4xx）时不能让「发消息」整体失败：
+      // 返回 null 让调用方回落，与 getFriendDmRoom 的 fail-soft 保持一致。
+      logger.error(`[MatrixFriend] 服务端创建 DM 房间失败: userId=${userId}, isPrivate=${isPrivate}, err=${err}`)
+      return null
+    }
+  }
+
   /** 获取好友推荐列表；FriendManager 不支持时返回空数组。 */
   async getFriendSuggestions(): Promise<
     Array<{ user_id: string; display_name?: string; avatar_url?: string; reason?: string }>

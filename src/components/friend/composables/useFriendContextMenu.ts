@@ -9,6 +9,9 @@ import { matrixSpecialFriendService } from '@/services/matrix/friends/MatrixSpec
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('FriendContextMenu')
 
 interface UseFriendContextMenuOptions {
   /** ContextMenu 组件的模板引用，需暴露 show(event) 方法 */
@@ -70,12 +73,45 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
     if (dmInfo.room_id && isJoinedRoom(dmInfo.room_id)) {
       const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
       await openMsgSessionByRoomId(dmInfo.room_id)
-    } else {
-      const roomId = await contactStore.startDirectRoom(friend.userId, false)
-      if (roomId) {
-        const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
-        await openMsgSessionByRoomId(roomId)
-      }
+      return
+    }
+
+    // 新建优先走**服务端**端点：只有它会让服务端写 m.room.encryption（B-1）
+    // 与 Megolm 轮换参数（B-6）；客户端 startDirectRoom 用的是 SDK 默认值。
+    // 普通「发消息」不是私密会话，必须显式 isPrivate: false（见 createFriendDmRoom 注释）。
+    const serverRoomId = await matrixFriendService.createFriendDmRoom(friend.userId, { isPrivate: false })
+    if (serverRoomId) {
+      // 服务端可能返回「本端尚未加入」的房间（邀请态），openMsgSessionByRoomId
+      // 负责后续 join；不要在这里再判 isJoinedRoom 决定是否打开。
+      const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
+      await openMsgSessionByRoomId(serverRoomId)
+      return
+    }
+
+    // 服务端端点不可用时的回落：保持原有客户端建 DM 行为。
+    const roomId = await contactStore.startDirectRoom(friend.userId, false)
+    if (roomId) {
+      const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
+      await openMsgSessionByRoomId(roomId)
+    }
+  }
+
+  // 共享：发起私密 DM（写 com.hula.privacy 标记 + history_visibility=invited）
+  const performPrivateChat = async (friend: MatrixContact) => {
+    const serverRoomId = await matrixFriendService.createFriendDmRoom(friend.userId, { isPrivate: true })
+    if (serverRoomId) {
+      const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
+      await openMsgSessionByRoomId(serverRoomId)
+      return
+    }
+
+    // 回落：客户端建加密房（至少保证 m.room.encryption 存在），
+    // 但没有 com.hula.privacy 标记 —— F-2 的防截屏提示在这种房间上不会生效。
+    logger.warn('[FriendContextMenu] 私密 DM 走回落路径，本次会话不带 com.hula.privacy 标记')
+    const roomId = await contactStore.startDirectRoom(friend.userId, true)
+    if (roomId) {
+      const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
+      await openMsgSessionByRoomId(roomId)
     }
   }
 
@@ -191,14 +227,9 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
       case t('friend.context.video_call'):
         await performCall(friend, CallTypeEnum.VIDEO)
         break
-      case t('friend.context.encrypted_chat'): {
-        const roomId = await contactStore.startDirectRoom(friend.userId, true)
-        if (roomId) {
-          const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
-          await openMsgSessionByRoomId(roomId)
-        }
+      case t('friend.context.encrypted_chat'):
+        await performPrivateChat(friend)
         break
-      }
       case t('friend.context.secret_chat'):
         await handleSetSecretFriend(friend)
         break
@@ -231,6 +262,7 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
     handleContextMenu,
     handleContextMenuSelect,
     performSendMessage,
+    performPrivateChat,
     performRemoveFriend,
     handleSendMessage,
     handleRemoveFriend,

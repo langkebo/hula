@@ -108,6 +108,7 @@ vi.mock('@/services/matrix/MatrixHttpClient', async () => {
   }
 })
 
+const { synapseDmExtensionService } = await import('../../extensions/SynapseDmExtensionService')
 const { matrixFriendGroups, matrixFriendOperations, matrixFriendService, matrixFriendSync } = await import(
   '../MatrixFriendService'
 )
@@ -362,5 +363,39 @@ describe('MatrixFriendService', () => {
       expect(logWarn).toHaveBeenCalled()
       expect(vi.mocked(logWarn).mock.calls[0][0]).toContain('getFriendManager')
     })
+  })
+})
+
+describe('MatrixFriendService.createFriendDmRoom (B-2)', () => {
+  const createPrivateDmSpy = vi.spyOn(synapseDmExtensionService, 'createPrivateDm')
+
+  beforeEach(() => {
+    createPrivateDmSpy.mockReset()
+    createPrivateDmSpy.mockResolvedValue({ room_id: '!dm:example.com', created: true })
+  })
+
+  it('默认显式传 isPrivate=false（普通发消息不能被误标为私密会话）', async () => {
+    const roomId = await matrixFriendService.createFriendDmRoom('@bob:example.com')
+
+    expect(roomId).toBe('!dm:example.com')
+    // createPrivateDm 的默认参数是 isPrivate=true，漏传就会把普通 DM 打成私密
+    expect(createPrivateDmSpy).toHaveBeenCalledWith('@bob:example.com', false)
+  })
+
+  it('isPrivate: true 时传 true', async () => {
+    await matrixFriendService.createFriendDmRoom('@bob:example.com', { isPrivate: true })
+    expect(createPrivateDmSpy).toHaveBeenCalledWith('@bob:example.com', true)
+  })
+
+  it('服务端不可用时返回 null，由调用方回落而不抛给 UI', async () => {
+    createPrivateDmSpy.mockRejectedValue(new Error('M_UNRECOGNIZED'))
+
+    await expect(matrixFriendService.createFriendDmRoom('@bob:example.com')).resolves.toBeNull()
+  })
+
+  it('服务端返回空 room_id 时同样返回 null', async () => {
+    createPrivateDmSpy.mockResolvedValue({ room_id: '', created: false })
+
+    await expect(matrixFriendService.createFriendDmRoom('@bob:example.com')).resolves.toBeNull()
   })
 })

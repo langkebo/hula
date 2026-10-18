@@ -8,6 +8,7 @@ const {
   showFeedbackMock,
   addSpecialFriendMock,
   getFriendDmRoomMock,
+  createFriendDmRoomMock,
   getRoomMock,
   openMsgSessionByRoomIdMock,
   contextMenuShowMock,
@@ -29,6 +30,7 @@ const {
   showFeedbackMock: vi.fn(),
   addSpecialFriendMock: vi.fn(),
   getFriendDmRoomMock: vi.fn(),
+  createFriendDmRoomMock: vi.fn(),
   getRoomMock: vi.fn(),
   openMsgSessionByRoomIdMock: vi.fn(),
   contextMenuShowMock: vi.fn(),
@@ -48,7 +50,8 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 
 vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
   matrixFriendService: {
-    getFriendDmRoom: getFriendDmRoomMock
+    getFriendDmRoom: getFriendDmRoomMock,
+    createFriendDmRoom: createFriendDmRoomMock
   }
 }))
 
@@ -107,6 +110,8 @@ describe('useFriendContextMenu', () => {
     getFriendDmRoomMock.mockResolvedValue({ room_id: '', exists: false })
     getRoomMock.mockReturnValue(null)
     contactStoreMock.startDirectRoom.mockResolvedValue('@new-room:example.com')
+    // 默认：服务端端点不可用 → 各用例覆盖的是「回落」路径
+    createFriendDmRoomMock.mockResolvedValue(null)
   })
 
   describe('contextMenuItems', () => {
@@ -182,6 +187,36 @@ describe('useFriendContextMenu', () => {
 
       expect(contactStoreMock.startDirectRoom).toHaveBeenCalledWith(friend.userId, false)
       expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@new-room:example.com')
+    })
+
+    // B-2：服务端端点可用时必须优先走服务端 —— 只有它会让服务端写
+    // m.room.encryption（B-1）与 Megolm 轮换参数（B-6）。
+    it('creates the DM through the server endpoint and opens it', async () => {
+      getFriendDmRoomMock.mockResolvedValue({ room_id: '', exists: false })
+      createFriendDmRoomMock.mockResolvedValue('@server-dm:example.com')
+      const { menu } = setupMenu()
+      const friend = makeFriend()
+
+      await menu.performSendMessage(friend)
+
+      // 普通「发消息」不是私密会话：必须显式 false
+      // （createPrivateDm 的默认参数是 true，漏传就会误打私密标记）
+      expect(createFriendDmRoomMock).toHaveBeenCalledWith(friend.userId, { isPrivate: false })
+      expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@server-dm:example.com')
+      expect(contactStoreMock.startDirectRoom).not.toHaveBeenCalled()
+    })
+
+    // 服务端返回了房间但本地尚未 joined（邀请态）：仍应打开它，由打开流程完成 join。
+    it('opens a server-created room even when it is not joined locally yet', async () => {
+      getFriendDmRoomMock.mockResolvedValue({ room_id: '', exists: false })
+      getRoomMock.mockReturnValue(null)
+      createFriendDmRoomMock.mockResolvedValue('@pending-dm:example.com')
+      const { menu } = setupMenu()
+
+      await menu.performSendMessage(makeFriend())
+
+      expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@pending-dm:example.com')
+      expect(contactStoreMock.startDirectRoom).not.toHaveBeenCalled()
     })
 
     it('creates a new DM room when no existing room_id', async () => {
@@ -314,15 +349,30 @@ describe('useFriendContextMenu', () => {
       expect(contactStoreMock.setFriendStatus).toHaveBeenCalledWith(friend.userId, 'blocked')
     })
 
-    it('dispatches encrypted_chat to startDirectRoom(encrypted=true)', async () => {
+    it('dispatches encrypted_chat to the server-side private DM, falling back to startDirectRoom(encrypted=true)', async () => {
       const { menu } = setupMenu()
       const friend = makeFriend()
       menu.selectedFriend.value = friend
 
       await menu.handleContextMenuSelect({ label: 'friend.context.encrypted_chat' })
 
+      // 私密会话必须显式 isPrivate: true（后端据此写 com.hula.privacy + history_visibility=invited）
+      expect(createFriendDmRoomMock).toHaveBeenCalledWith(friend.userId, { isPrivate: true })
       expect(contactStoreMock.startDirectRoom).toHaveBeenCalledWith(friend.userId, true)
       expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@new-room:example.com')
+    })
+
+    it('opens the server-side private DM room when available', async () => {
+      createFriendDmRoomMock.mockResolvedValue('@private-dm:example.com')
+      const { menu } = setupMenu()
+      const friend = makeFriend()
+      menu.selectedFriend.value = friend
+
+      await menu.handleContextMenuSelect({ label: 'friend.context.encrypted_chat' })
+
+      expect(createFriendDmRoomMock).toHaveBeenCalledWith(friend.userId, { isPrivate: true })
+      expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('@private-dm:example.com')
+      expect(contactStoreMock.startDirectRoom).not.toHaveBeenCalled()
     })
 
     it('dispatches voice_call to open session then startRtcCall(AUDIO)', async () => {
