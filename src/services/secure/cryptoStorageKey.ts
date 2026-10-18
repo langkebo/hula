@@ -6,6 +6,7 @@ import {
   setSecureSecret
 } from '@/services/secure/secureStorage'
 import { createLogger } from '@/utils/Logger'
+import { getLocalUnlockStorageKey } from './localUnlockKey'
 
 const logger = createLogger('CryptoStorageKey')
 
@@ -136,6 +137,28 @@ function copyKey(bytes: Uint8Array): Uint8Array {
  * @param deviceId Matrix 设备 ID
  * @returns 恰好 32 字节的 storageKey，或 `null`
  */
+
+/**
+ * 安全存储不可用时，退到「本地解锁密码派生的 storageKey」（F-4 / B2）。
+ *
+ * 顺序刻意如此：
+ * 1. 安全存储（原生或加密文件 fallback）—— 首选，用户无感；
+ * 2. 本地解锁密钥 —— 仅在**本次会话已解锁**时可用（密钥只在内存）；
+ * 3. 都没有 → 返回 null，由调用方决定 fail-closed（**不得**默认明文落盘）。
+ *
+ * 返回 null 不等于"允许不加密"：那是调用方（crypto 初始化）的决策点。
+ */
+function resolveLocalUnlockKey(): Uint8Array | null {
+  const key = getLocalUnlockStorageKey()
+  if (!key) return null
+  if (key.length !== 32) {
+    // 长度不对宁可不用，也不要拿一把错长度的密钥去打开 store
+    key.fill(0)
+    return null
+  }
+  return key
+}
+
 export async function getOrCreateCryptoStorageKey(userId: string, deviceId: string): Promise<Uint8Array | null> {
   const cKey = cacheKey(userId, deviceId)
 
@@ -167,15 +190,15 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
       // **不**静默生成新密钥（会用新密钥打开旧 store，必然解密失败且难以诊断）。
       logger.warn(`安全存储中的 crypto storageKey 损坏（非 32 字节 base64），已清除: ${userId}/${deviceId}`)
       await deleteSecureSecret(key).catch(() => {})
-      return null
+      return resolveLocalUnlockKey()
     }
 
     // 3. 安全存储中无记录 → 生成新密钥并写入
     const generated = generateRandomKey()
     const success = await setSecureSecret(key, encodeKey(generated))
     if (!success) {
-      logger.warn(`安全存储不可用或写入失败，crypto store 将**不加密**（保持跨会话可读）: ${userId}/${deviceId}`)
-      return null
+      logger.warn(`安全存储不可用或写入失败，尝试本地解锁密钥: ${userId}/${deviceId}`)
+      return resolveLocalUnlockKey()
     }
 
     // 4. 写入后立即读回验证
@@ -189,7 +212,7 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
         `crypto storageKey 写入后读回验证失败（安全存储各后端均不可读），crypto store 将不加密: ${userId}/${deviceId}`
       )
       await deleteSecureSecret(key).catch(() => {})
-      return null
+      return resolveLocalUnlockKey()
     }
 
     keyCache.set(cKey, generated)
@@ -202,8 +225,9 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
     }
     return copyKey(generated)
   } catch (err) {
+    // 安全存储本身抛错（IPC 失败 / 后端崩溃）也算「不可用」，不能直接落回明文
     logger.error(`获取 crypto storageKey 失败: ${userId}/${deviceId}`, err)
-    return null
+    return resolveLocalUnlockKey()
   }
 }
 

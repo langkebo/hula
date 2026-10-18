@@ -27,12 +27,20 @@ const hoisted = vi.hoisted(() => {
       return true
     }),
     // 后端事实默认"原生密钥库可用"；降级场景由单个用例覆写
-    getSecureStorageBackendInfo: vi.fn(async () => ({
-      available: true,
-      backend: 'macos_keychain',
-      nativeAvailable: true,
-      degraded: false
-    }))
+    // 显式标注返回类型：可用场景 backend 是字符串，不可用场景是 null
+    getSecureStorageBackendInfo: vi.fn(
+      async (): Promise<{
+        available: boolean
+        backend: string | null
+        nativeAvailable: boolean
+        degraded: boolean
+      }> => ({
+        available: true,
+        backend: 'macos_keychain',
+        nativeAvailable: true,
+        degraded: false
+      })
+    )
   }
 })
 
@@ -250,5 +258,52 @@ describe('cryptoStorageKey', () => {
       expect(debugMsg).toContain('加密文件 fallback')
       expect(debugMsg).not.toContain('keychain')
     })
+  })
+})
+
+// F-4 / B2：安全存储完全不可用时，退到「本地解锁密码」派生的密钥。
+// 意义：没有系统密钥库的机器（如 Linux 无 Secret Service）不再只能在
+// 「明文落盘」与「不能用 E2EE」之间二选一。
+describe('cryptoStorageKey · 本地解锁兜底（F-4/B2）', () => {
+  beforeEach(async () => {
+    clearCryptoStorageKeyCache()
+    hoisted.store.clear()
+    const { clearLocalUnlock } = await import('../localUnlockKey')
+    clearLocalUnlock()
+  })
+
+  it('安全存储不可用且已解锁本地密码时，返回那把 32B 密钥', async () => {
+    const { configureLocalUnlock, getLocalUnlockStorageKey } = await import('../localUnlockKey')
+    await configureLocalUnlock('local-pass')
+    const expected = getLocalUnlockStorageKey()!
+
+    // 安全存储彻底不可用：写入失败
+    hoisted.setSecureSecret.mockResolvedValueOnce(false)
+    hoisted.getSecureStorageBackendInfo.mockResolvedValue({
+      available: false,
+      backend: null,
+      nativeAvailable: false,
+      degraded: false
+    })
+
+    const key = await getOrCreateCryptoStorageKey('@bob:hs', 'DEV9')
+
+    expect(key).not.toBeNull()
+    expect(key!.length).toBe(32)
+    expect(Array.from(key!)).toEqual(Array.from(expected))
+  })
+
+  it('安全存储不可用且未解锁时返回 null（交由调用方 fail-closed，绝不默认明文）', async () => {
+    hoisted.setSecureSecret.mockResolvedValueOnce(false)
+    hoisted.getSecureStorageBackendInfo.mockResolvedValue({
+      available: false,
+      backend: null,
+      nativeAvailable: false,
+      degraded: false
+    })
+
+    const key = await getOrCreateCryptoStorageKey('@carol:hs', 'DEV8')
+
+    expect(key).toBeNull()
   })
 })
