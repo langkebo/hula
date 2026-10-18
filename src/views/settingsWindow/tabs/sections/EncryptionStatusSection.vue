@@ -27,6 +27,23 @@
     </div>
   </div>
 
+  <!-- F-4：本地密钥库加密状态。三档而非两档 —— degraded 仍然加密，
+       不能把「原生密钥库不可用」误报成「明文落盘」（错误告警会训练用户忽略告警）。 -->
+  <div class="settings-section">
+    <h3 class="section-title">{{ t('setting.security.local_store_status') }}</h3>
+    <div class="local-store-status" :class="`local-store-status--${localStoreLevelKey}`">
+      <span class="local-store-status__dot" aria-hidden="true"></span>
+      <div class="local-store-status__body">
+        <span class="local-store-status__title">
+          {{ t(`setting.security.local_store_${localStoreLevelKey}_title`) }}
+        </span>
+        <span class="local-store-status__desc">
+          {{ t(`setting.security.local_store_${localStoreLevelKey}_desc`) }}
+        </span>
+      </div>
+    </div>
+  </div>
+
   <n-divider />
 
   <div class="settings-section">
@@ -79,8 +96,9 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { NButton, NDivider } from 'naive-ui'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 
 defineOptions({
   name: 'EncryptionStatusSection'
@@ -108,6 +126,24 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const encryptionStore = useEncryptionStore()
+
+/**
+ * 把 store 的四档等级映射成 i18n key 片段。
+ * `unknown` 也要有自己的文案：未登录时不能显示「未加密」（那是误报）。
+ */
+const localStoreLevelKey = computed(() => {
+  const level = encryptionStore.localStoreEncryption
+  if (level === 'encrypted-native') return 'native'
+  if (level === 'encrypted-degraded') return 'degraded'
+  if (level === 'plaintext') return 'plaintext'
+  return 'unknown'
+})
+
+onMounted(() => {
+  void encryptionStore.loadLocalStoreEncryptionStatus()
+})
 
 // 备份状态文案：根据加密开关与备份信息计算
 const backupStatusText = computed(() => {

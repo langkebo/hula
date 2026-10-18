@@ -6643,6 +6643,15 @@ export type I18nKeys = {
     },
     "security": {
       "encryption_status": "加密状态",
+      "local_store_status": "本地密钥库",
+      "local_store_native_title": "已加密（系统密钥库）",
+      "local_store_native_desc": "消息密钥保存在系统密钥库中，磁盘上的副本已加密。",
+      "local_store_degraded_title": "已加密（降级：密钥文件）",
+      "local_store_degraded_desc": "系统密钥库不可用，已退化为「受主密钥保护的文件」。密钥仍加密，只是保管强度低一档。",
+      "local_store_plaintext_title": "未加密（明文落盘）",
+      "local_store_plaintext_desc": "安全存储不可用，本机消息密钥与房间密钥以明文保存。任何能读取本机文件的人都能取走它们。",
+      "local_store_unknown_title": "未知",
+      "local_store_unknown_desc": "加密尚未初始化，暂时无法判断本地密钥库状态。",
       "encryption_enabled_title": "端到端加密已启用",
       "encryption_disabled_title": "端到端加密未启用",
       "encryption_enabled_desc": "您的消息受到端到端加密保护",
@@ -12328,6 +12337,15 @@ export type I18nKeyPaths =
   | "setting.storage.select_directory_title"
   | "setting.storage.select_directory_error"
   | "setting.security.encryption_status"
+  | "setting.security.local_store_status"
+  | "setting.security.local_store_native_title"
+  | "setting.security.local_store_native_desc"
+  | "setting.security.local_store_degraded_title"
+  | "setting.security.local_store_degraded_desc"
+  | "setting.security.local_store_plaintext_title"
+  | "setting.security.local_store_plaintext_desc"
+  | "setting.security.local_store_unknown_title"
+  | "setting.security.local_store_unknown_desc"
   | "setting.security.encryption_enabled_title"
   | "setting.security.encryption_disabled_title"
   | "setting.security.encryption_enabled_desc"

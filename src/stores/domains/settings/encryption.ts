@@ -8,6 +8,11 @@ import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixE
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import {
+  deriveLocalStoreEncryptionLevel,
+  type LocalStoreEncryptionLevel
+} from '@/services/secure/localStoreEncryptionStatus'
+import { getSecureStorageBackendInfo, type SecureStorageBackendInfo } from '@/services/secure/secureStorage'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('EncryptionStore')
@@ -37,6 +42,15 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
   // Rust Crypto 初始化失败状态（登录后检查）
   const cryptoInitFailed = ref(false)
   const cryptoInitError = ref<string | null>(null)
+  /**
+   * F-4：本地密钥库加密状态（三级，见 localStoreEncryptionStatus.ts）。
+   *
+   * 之所以要显式暴露：SDK 只拒绝「未加密的**内存** store」，未加密的 IndexedDB store
+   * 是被静默允许的 —— 不接出来，密钥库降级在生产环境没有任何可观测信号。
+   */
+  const localStoreEncryption = ref<LocalStoreEncryptionLevel>('unknown')
+  /** 安全存储后端事实（未检测为 null，不猜） */
+  const secureStorageBackend = ref<SecureStorageBackendInfo | null>(null)
   /**
    * crypto 生命周期失配（Batch 4.1）：解绑被拒 / 已停止的 crypto 被复用。
    *
@@ -213,6 +227,34 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
     }
   }
 
+  /**
+   * F-4：加载本地密钥库加密状态。
+   *
+   * 与 `loadCryptoInitStatus` 分开是因为安全存储后端信息需要一次异步 IPC；
+   * 判定逻辑放在纯函数里（可单测），这里只做取值与兜底。
+   */
+  async function loadLocalStoreEncryptionStatus(): Promise<void> {
+    let storeEncrypted: boolean | null = null
+    try {
+      storeEncrypted = matrixClientService.getRustCryptoDebugState().storeEncrypted
+    } catch (err) {
+      logger.warn('[EncryptionStore] 读取 crypto store 加密状态失败:', err)
+    }
+
+    let info: SecureStorageBackendInfo | null = null
+    try {
+      info = await getSecureStorageBackendInfo()
+    } catch (err) {
+      logger.warn('[EncryptionStore] 读取安全存储后端信息失败:', err)
+    }
+
+    secureStorageBackend.value = info
+    localStoreEncryption.value = deriveLocalStoreEncryptionLevel(storeEncrypted, info)
+    if (localStoreEncryption.value === 'plaintext') {
+      logger.error('[EncryptionStore] 本地密钥库未加密：私钥与房间密钥将以明文落盘')
+    }
+  }
+
   return {
     // State
     encryptionEnabled,
@@ -230,6 +272,9 @@ export const useEncryptionStore = defineStore(StoresEnum.ENCRYPTION, () => {
     cryptoInitFailed,
     cryptoLifecycleWarning,
     cryptoInitError,
+    localStoreEncryption,
+    secureStorageBackend,
+    loadLocalStoreEncryptionStatus,
     // Getters
     e2eeFullySetup,
     setupProgress,

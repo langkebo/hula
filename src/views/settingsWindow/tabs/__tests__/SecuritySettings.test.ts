@@ -209,6 +209,10 @@ vi.mock('@/stores/domains/settings/encryption', () => ({
       return _encryptionEnabled
     },
     securityKeyConfigured: false,
+    // F-4：本地密钥库状态卡会读这两个字段 + 触发一次刷新
+    localStoreEncryption: 'unknown',
+    secureStorageBackend: null,
+    loadLocalStoreEncryptionStatus: vi.fn().mockResolvedValue(undefined),
     loadEncryptionStatus: vi.fn(),
     markSecurityKeyConfigured: vi.fn()
   })
