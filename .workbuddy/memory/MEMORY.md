@@ -62,8 +62,7 @@
 - `scripts/contract-coverage-map.json` 重扫后是多行格式，biome 要求单行 ⇒ 必须 `biome check --write`，
   否则 `pnpm lint` 红但 `check:contract-coverage` 仍绿（易误判）
 
-## 私密聊天 / 隐私域铁律（2026-10-17 审计后）
-- **后端 burn 永不 redact**（只登记 per-user 时间，物理删除归 retention）⇒ 前端「已焚毁」只能是本地遮罩，
+## 私密聊天 / 隐私域铁律（2026-10-17 审计后）- **后端 burn 永不 redact**（只登记 per-user 时间，物理删除归 retention）⇒ 前端「已焚毁」只能是本地遮罩，
   文案不得暗示服务端已删。依据：`burn_after_read_service.rs:110-119`、commit `57edb25b0`
 - **「服务端不留存」只能靠 to-device 兑现**（`get_and_delete_messages` 读后即删 + Olm 双棘轮），
   房间事件永久存储且 Megolm 无 break-in recovery ⇒ 私密消息通道必须建在 to-device 上
@@ -101,8 +100,13 @@
   ⚠️ 按 **route name 白名单**（`message`/`windowChat`）取 roomId —— `/room/:roomId` 是目录详情页，拦错。
   ⚠️ **`/chat/:roomId` 在本仓不存在**（`/chat` 是无参机器人路由），跳它会落 notFound；正确是 `{name:'message',params:{roomId}}`。
   ⚠️ 冷启动深链要先 `ensurePrivateRoomRegistryReady()`，否则 `getUserId()` 为 null 时读 anonymous 缓存 → 私密房被放行。
-- **私密标记只允许单聊**（`usePrivateRoomActions`）：群聊成员不可控，标私密=假承诺；写登记表后再同步
-  `session.hide` + Tauri `hide_contact_command` 作兼容镜像。私密会话**与好友 DM 共用房间**（取消标记内容回普通 DM）。
+- **私密标记只允许单聊**（`usePrivateRoomActions`）：群聊成员不可控，标私密=假承诺；写登记表后再同步  `session.hide` + Tauri `hide_contact_command` 作兼容镜像。私密会话**与好友 DM 共用房间**（取消标记内容回普通 DM）。
+- **隐私能力文案只能写已实现行为**（P0-4/5 审计结论）：曾宣称「服务器不存储消息」「防截屏」，两者零实现。
+  现状：私密模式清单 3 条（房间级 E2EE / 倒计时仅本机移除 / 截屏提示但**不能阻止**），
+  文案统一走 i18n key（`privateModeFeatures` 返回 `textKey`，禁止在 composable 里硬编码中文）。
+  焚毁文案同理：「已销毁」→「已在本机移除」（后端永不 redact）。
+- **阅后即焚判定必须同时看两处**：房间级 state **或** `settingStore.burnDefaultEnabled`，
+  逻辑在 `composables/chat/burnPolicy.ts`（纯函数，已单测）。历史上只读房间级 → 设置开关只写不读。
 
 ## 好友域结构（2026-10-17 起）
 - `MatrixFriendService` 已瘦身为**查询门面**（16 个方法，FriendManager→REST 回退 + 错误归一 + 日志）
@@ -112,6 +116,9 @@
   - `matrixFriendGroups` — 分组增删改查
   - `on`/`off` 仍在门面，内部转发 `friendEventBus`
 - `App.vue` 的 offlineQueue deps 键：`getFriendOperations`（原名 `getMatrixFriendService` 已改）
+- ⚠️ **Batch D 删了门面纯转发方法后，凡 mock `matrixFriendService` 的测试都要复查**（已 3 例静默失败：
+  FriendsSettings / MatrixContactService / FriendDetailsSections+SingleDetails）。组件改走 `matrixFriendGroups`
+  后仍 mock 门面 → 真实单例被调用、断言不报错但目标函数从未被调用。
 - 通知域：`MatrixNotificationService` 不再有 push rules/pushers 的 REST 封装，
   一律走 `MatrixPushService`（`getPushRules`/`deletePushRule`/`getPushers`/`addPushRule`）；
   仅 `setPusherByBody` 留在 Notification（含必填校验）

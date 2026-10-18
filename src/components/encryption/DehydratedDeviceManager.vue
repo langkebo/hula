@@ -37,7 +37,21 @@
             </n-descriptions>
           </div>
           <div class="device-actions">
-            <n-button size="small" type="primary" @click="handleClaim(device.deviceId)">
+            <!-- P0-10：认领必须带「当前设备的签名公钥」。此前 claimKeyInput 没有任何输入框绑定，
+                 handleClaim 永远传空串，认领 100% 失败且用户无从输入。 -->
+            <n-input
+              :value="claimKeyInput[device.deviceId] || ''"
+              size="small"
+              class="claim-key-input"
+              data-testid="dehydrated-claim-key"
+              :placeholder="t('encryption.dehydrated_device.claim_key_placeholder')"
+              @update:value="setClaimKey(device.deviceId, $event)" />
+            <n-button
+              size="small"
+              type="primary"
+              data-testid="dehydrated-claim-button"
+              :disabled="!(claimKeyInput[device.deviceId] || '').trim()"
+              @click="handleClaim(device.deviceId)">
               <template #icon><Icon icon="mdi:key-variant" :width="16" /></template>
               {{ t('encryption.dehydrated_device.claim') }}
             </n-button>
@@ -61,7 +75,11 @@
           <template #icon><Icon icon="mdi:refresh" :width="16" /></template>
           {{ t('encryption.dehydrated_device.refresh') }}
         </n-button>
-        <n-button type="primary" @click="handleCreate">
+        <n-button
+          type="primary"
+          :disabled="!supported"
+          :title="supported ? '' : t('encryption.dehydrated_device.unsupported')"
+          @click="handleCreate">
           <template #icon><Icon icon="mdi:plus" :width="16" /></template>
           {{ t('encryption.dehydrated_device.create') }}
         </n-button>
@@ -72,7 +90,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDescriptions, NDescriptionsItem, NModal, NPopconfirm, NSpin, NTag } from 'naive-ui'
+import { NButton, NDescriptions, NDescriptionsItem, NInput, NModal, NPopconfirm, NSpin, NTag } from 'naive-ui'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -84,6 +102,7 @@ const { showFeedback } = useActionFeedback()
 const {
   devices,
   loading,
+  isSupported,
   loadDehydratedDevices,
   createDehydratedDevice,
   claimDehydratedDevice,
@@ -102,8 +121,11 @@ const visible = computed({
 })
 
 const claimKeyInput = ref<Record<string, string>>({})
+/** 能力探测结果：不支持时「创建」置灰并给出原因，而不是等用户点了才抛 TypeError。 */
+const supported = ref(false)
 
 onMounted(() => {
+  supported.value = isSupported()
   if (props.show) {
     loadDehydratedDevices()
   }
@@ -113,6 +135,7 @@ watch(
   () => props.show,
   (val) => {
     if (val) {
+      supported.value = isSupported()
       loadDehydratedDevices()
     }
   }
@@ -157,8 +180,18 @@ async function handleCreate() {
   }
 }
 
+/** 记录某台设备的签名公钥（按 deviceId 隔离，避免多设备串值）。 */
+function setClaimKey(deviceId: string, value: string) {
+  claimKeyInput.value = { ...claimKeyInput.value, [deviceId]: value }
+}
+
 async function handleClaim(deviceId: string) {
-  const signingPubKey = claimKeyInput.value[deviceId] || ''
+  const signingPubKey = (claimKeyInput.value[deviceId] || '').trim()
+  // 空公钥必然认领失败：在发请求前拦下，并说明为什么
+  if (!signingPubKey) {
+    showFeedback(t('encryption.dehydrated_device.claim_key_required'), 'warning')
+    return
+  }
   const result = await claimDehydratedDevice(deviceId, signingPubKey)
   if (result) {
     showFeedback(t('encryption.dehydrated_device.claim_success'), 'success')
@@ -178,6 +211,10 @@ async function handleDelete(deviceId: string): Promise<void> {
 </script>
 
 <style scoped lang="scss">
+.claim-key-input {
+  width: 240px;
+}
+
 .device-list {
   display: flex;
   flex-direction: column;

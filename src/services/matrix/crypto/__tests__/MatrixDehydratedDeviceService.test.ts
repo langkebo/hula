@@ -150,4 +150,42 @@ describe('MatrixDehydratedDeviceService', () => {
       expect(result).toBe(false)
     })
   })
+
+  // P0-10：入口必须在渲染前探测能力，而不是等用户点「创建」才抛 TypeError
+  describe('isSupported', () => {
+    it('crypto 未就绪时不支持', () => {
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+        getUserId: vi.fn(() => '@test:example.com'),
+        getCrypto: vi.fn(() => null),
+        getDehydratedDeviceManager: vi.fn(() => mockManager)
+      } as never)
+
+      expect(matrixDehydratedDeviceService.isSupported()).toBe(false)
+    })
+
+    it('SDK 上没有 getDehydratedDeviceManager 时不支持', () => {
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+        getUserId: vi.fn(() => '@test:example.com'),
+        getCrypto: vi.fn(() => ({}))
+      } as never)
+
+      expect(matrixDehydratedDeviceService.isSupported()).toBe(false)
+    })
+
+    it('客户端未初始化时不支持', () => {
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null as never)
+
+      expect(matrixDehydratedDeviceService.isSupported()).toBe(false)
+    })
+
+    it('crypto 就绪且存在 manager 时支持', () => {
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
+        getUserId: vi.fn(() => '@test:example.com'),
+        getCrypto: vi.fn(() => ({})),
+        getDehydratedDeviceManager: vi.fn(() => mockManager)
+      } as never)
+
+      expect(matrixDehydratedDeviceService.isSupported()).toBe(true)
+    })
+  })
 })

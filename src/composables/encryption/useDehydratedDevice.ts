@@ -8,6 +8,8 @@ import {
 interface UseDehydratedDeviceResult {
   devices: Ref<DehydratedDevice[]>
   loading: Ref<boolean>
+  /** 当前加密后端是否支持脱水设备；UI 据此决定是否渲染入口。 */
+  isSupported: () => boolean
   loadDehydratedDevices: () => Promise<DehydratedDevice[]>
   createDehydratedDevice: (params?: CreateDehydratedDeviceParams) => Promise<DehydratedDevice | null>
   claimDehydratedDevice: (
@@ -84,6 +86,7 @@ export function useDehydratedDevice(): UseDehydratedDeviceResult {
   return {
     devices,
     loading,
+    isSupported: () => matrixDehydratedDeviceService.isSupported(),
     loadDehydratedDevices,
     createDehydratedDevice,
     claimDehydratedDevice,

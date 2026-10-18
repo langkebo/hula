@@ -14,30 +14,24 @@ const currentRoomId = ref<string>('')
 // 截屏检测实例仅在模块加载时创建一次，确保全局唯一。
 const { startWatch, stopWatch } = useScreenshotDetection()
 
+/**
+ * 私密模式的能力清单。
+ *
+ * ⚠️ 这里每条都必须**只描述已实现的行为**：
+ * 早先版本宣称「服务器不存储消息内容，仅传输」与「防截屏」，两者都无任何实现——
+ * 后端从不因该模式删除消息（房间消息按保留策略存储），截屏检测在 Rust 侧仍是
+ * 始终返回 false 的占位实现。假承诺比没有承诺更糟，故整条移除并改写措辞。
+ *
+ * 返回 i18n key 而非文案：composable 层没有可靠的响应式 i18n 上下文，
+ * 硬编码中文会在英文界面漏出中文（与 `useMessageTrust` 的处理一致）。
+ */
 const privateModeFeatures = computed(() => [
+  { textKey: 'chat.header.private_mode_feature_e2ee', icon: '#lock', iconClass: 'text-[--tjg-color-primary-500]' },
+  { textKey: 'chat.header.private_mode_feature_burn', icon: '#fire', iconClass: 'text-[--tjg-color-danger-500]' },
   {
-    title: '端到端加密',
-    description: '消息在发送端加密，仅收件人可解密',
-    icon: '#lock',
-    iconClass: 'text-[--tjg-color-primary-500]'
-  },
-  {
-    title: '阅后即焚',
-    description: '消息可设为自动销毁，阅读后即删除',
-    icon: '#fire',
-    iconClass: 'text-[--tjg-color-danger-500]'
-  },
-  {
-    title: '防截屏',
-    description: '启用截屏水印与防截屏保护',
+    textKey: 'chat.header.private_mode_feature_screenshot',
     icon: '#shield',
     iconClass: 'text-[--tjg-color-warning-500]'
-  },
-  {
-    title: '不留存',
-    description: '服务器不存储消息内容，仅传输',
-    icon: '#delete',
-    iconClass: 'text-[--tjg-text-tertiary]'
   }
 ])
 

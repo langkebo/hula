@@ -85,10 +85,10 @@
       <div class="flex flex-col gap-8px" data-testid="private-confirm-features">
         <div
           v-for="feature in privateModeFeatures"
-          :key="feature.title"
+          :key="feature.textKey"
           class="flex items-center gap-8px text-[var(--text-sm)] text-[--tjg-text-secondary]">
           <svg class="size-16px flex-shrink-0" :class="feature.iconClass"><use :href="feature.icon"></use></svg>
-          <span>{{ feature.title }}：{{ feature.description }}</span>
+          <span>{{ t(feature.textKey) }}</span>
         </div>
       </div>
       <p class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">
@@ -115,8 +115,8 @@ import { isMac, isWindows } from '@/utils/PlatformConstants'
 const { t } = useI18n()
 
 interface PrivateModeFeature {
-  title: string
-  description: string
+  /** i18n key（composable 不持有文案，避免英文界面漏出中文）。 */
+  textKey: string
   icon: string
   iconClass: string
 }

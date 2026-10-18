@@ -70,6 +70,14 @@ vi.mock('@/services/matrix/friends/MatrixFriendService', () => ({
     getFriendGroupsByUser: getFriendGroupsByUserMock,
     addFriendToGroup: addFriendToGroupMock,
     removeFriendFromGroup: removeFriendFromGroupMock
+  },
+  // Batch D 之后组件改走分组单例（门面的纯转发方法已删）；
+  // 只 mock 门面会让真实单例被调用，断言静默失败。
+  matrixFriendGroups: {
+    getFriendGroups: getFriendGroupsMock,
+    getFriendGroupsByUser: getFriendGroupsByUserMock,
+    addFriendToGroup: addFriendToGroupMock,
+    removeFriendFromGroup: removeFriendFromGroupMock
   }
 }))
 

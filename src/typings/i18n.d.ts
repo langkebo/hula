@@ -1614,19 +1614,18 @@ export type I18nKeys = {
       "private_mode_enter": "进入私密模式",
       "private_mode_exit": "退出私密模式",
       "private_mode_confirm_title": "切换到私密模式",
-      "private_mode_confirm_desc": "私密模式下：",
+      "private_mode_confirm_desc": "私密模式将启用以下能力。服务端仍按保留策略保存消息，不会因本模式而删除。",
       "private_mode_confirm_question": "确定要进入私密模式吗？",
-      "private_mode_feature_e2ee": "消息将启用端到端加密",
-      "private_mode_feature_burn": "支持阅后即焚功能",
-      "private_mode_feature_screenshot": "启用防截屏保护",
-      "private_mode_feature_no_retention": "消息不留存于服务器",
+      "private_mode_feature_e2ee": "消息由端到端加密保护（仅房间成员可解密）",
+      "private_mode_feature_burn": "可为消息设置倒计时，到期仅在本机移除显示",
+      "private_mode_feature_screenshot": "桌面端检测到截屏时提示并发送房间提醒（不能阻止截屏）",
       "private_mode_active": "私密模式已启用",
       "private_mode_cancel": "取消",
       "private_mode_confirm": "确认切换"
     },
     "burn": {
-      "message_destroyed": "此消息已销毁",
-      "destroyed": "已销毁",
+      "message_destroyed": "此消息已在本机移除",
+      "destroyed": "本机已移除",
       "waiting_read": "等待阅读",
       "toggle_title": "阅后即焚"
     },
@@ -2287,7 +2286,11 @@ export type I18nKeys = {
       "refresh_success": "脱水设备列表已刷新",
       "create": "创建",
       "create_success": "脱水设备创建成功",
-      "create_failed": "创建脱水设备失败"
+      "create_failed": "创建脱水设备失败",
+      "claim_key_label": "当前设备的签名公钥",
+      "claim_key_placeholder": "粘贴当前设备的 Ed25519 签名公钥（base64）",
+      "claim_key_required": "请先填写当前设备的签名公钥，否则认领请求会失败",
+      "unsupported": "当前加密后端不支持脱水设备，入口已禁用"
     },
     "cross_signing": {
       "password_required": "请输入账号密码以完成认证",
@@ -8401,7 +8404,6 @@ export type I18nKeyPaths =
   | "chat.header.private_mode_feature_e2ee"
   | "chat.header.private_mode_feature_burn"
   | "chat.header.private_mode_feature_screenshot"
-  | "chat.header.private_mode_feature_no_retention"
   | "chat.header.private_mode_active"
   | "chat.header.private_mode_cancel"
   | "chat.header.private_mode_confirm"
@@ -8942,6 +8944,10 @@ export type I18nKeyPaths =
   | "encryption.dehydrated_device.create"
   | "encryption.dehydrated_device.create_success"
   | "encryption.dehydrated_device.create_failed"
+  | "encryption.dehydrated_device.claim_key_label"
+  | "encryption.dehydrated_device.claim_key_placeholder"
+  | "encryption.dehydrated_device.claim_key_required"
+  | "encryption.dehydrated_device.unsupported"
   | "encryption.cross_signing.password_required"
   | "encryption.cross_signing.password_placeholder"
   | "encryption.cross_signing.actions"

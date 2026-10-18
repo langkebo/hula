@@ -97,6 +97,14 @@ class MatrixDirectMessageService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 创建一个**已启用加密**的私聊房间。
+   *
+   * ⚠️ 名称里的 "Trusted" 只表示「房间开了 E2EE」，**不代表对端设备已验证**：
+   * 这里只传 `isEncrypted: true`，不查询、也不要求对端任何一台设备处于已验证状态。
+   * 对端设备是否可信，必须由设备验证（SAS）流程单独建立，UI 不能据此显示「已验证」。
+   * 保留旧名称是因为改名会波及 3 个调用点，收益不抵破坏面（见方案 P0-9）。
+   */
   async createTrustedDm(userId: string): Promise<string> {
     const manager = this.requireManager()
 

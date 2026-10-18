@@ -33,6 +33,19 @@ class MatrixDehydratedDeviceService {
   }
 
   /**
+   * 当前客户端是否支持脱水设备（MSC3814）。
+   *
+   * 判据是「crypto 已就绪 + client 上确有 `getDehydratedDeviceManager`」——
+   * SDK 版本差异下该 API 可能不存在，直接调用会抛 TypeError，
+   * 因此入口必须在渲染前探测，而不是等用户点了「创建」再报错。
+   */
+  isSupported(): boolean {
+    const client = this.getClient()
+    if (!client?.getCrypto()) return false
+    return typeof (client as { getDehydratedDeviceManager?: unknown }).getDehydratedDeviceManager === 'function'
+  }
+
+  /**
    * 创建脱水设备
    */
   async createDevice(params: CreateDehydratedDeviceParams): Promise<DehydratedDevice | null> {

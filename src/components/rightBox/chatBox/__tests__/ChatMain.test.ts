@@ -511,17 +511,21 @@ describe('ChatMain private mode', () => {
     expect((wrapper.vm as unknown as { showPrivateConfirm: boolean }).showPrivateConfirm).toBe(true)
   })
 
-  it('shows 4 privacy feature descriptions in confirmation dialog', () => {
+  // P0-4：清单只列已实现能力。原先第 4 条「不留存（服务器不存储消息内容）」无任何实现，已删除；
+  // 截屏一项也从「防截屏」改为「提示截屏」，因为 Rust 侧检测仍是占位实现、且客户端无法阻止截屏。
+  it('列出 3 项真实能力，且不再宣称「不留存 / 防截屏」', () => {
     const wrapper = mountComponent()
     const vm = wrapper.vm as unknown as {
-      privateModeFeatures: Array<{ title: string; description: string }>
+      privateModeFeatures: Array<{ textKey: string }>
     }
-    expect(vm.privateModeFeatures).toHaveLength(4)
-    const titles = vm.privateModeFeatures.map((f) => f.title)
-    expect(titles).toContain('端到端加密')
-    expect(titles).toContain('阅后即焚')
-    expect(titles).toContain('防截屏')
-    expect(titles).toContain('不留存')
+    expect(vm.privateModeFeatures).toHaveLength(3)
+    const keys = vm.privateModeFeatures.map((f) => f.textKey)
+    expect(keys).toEqual([
+      'chat.header.private_mode_feature_e2ee',
+      'chat.header.private_mode_feature_burn',
+      'chat.header.private_mode_feature_screenshot'
+    ])
+    expect(keys.some((k) => k.includes('no_retention'))).toBe(false)
   })
 
   it('activates private mode after confirmation and renders BurnAfterReadToggle', async () => {

@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import { computed, nextTick, ref, watchEffect } from 'vue'
+import { resolveBurnAfterRead } from '@/composables/chat/burnPolicy'
 import { useMessageSender } from '@/composables/chat/useMessageSender'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import type { AIModel } from '@/services/types.ts'
@@ -199,7 +200,16 @@ export const useMsgInput = (messageInputDom: Ref) => {
 
   const { sendWithTracking } = useMessageSender()
   const burnAfterRead = useBurnAfterRead()
-  const isBurnAfterRead = computed(() => burnAfterRead.isRoomBurnEnabled())
+  /**
+   * 是否以「阅后即焚」发送。
+   *
+   * P0-7：房间级 state **或** 账号级默认开关——此前只读房间级，
+   * 设置页那个「默认开启阅后即焚」的开关只写不读（用户打开后行为毫无变化）。
+   * 判定抽到 `burnPolicy` 的纯函数里，便于单测锁住「两个来源都要看」。
+   */
+  const isBurnAfterRead = computed(() =>
+    resolveBurnAfterRead(burnAfterRead.isRoomBurnEnabled(), settingStore.burnDefaultEnabled)
+  )
   const burnDuration = computed(() => burnAfterRead.getRoomBurnDuration())
   const { uploadVoiceToMatrix } = useVoiceInput()
   const {

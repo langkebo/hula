@@ -8,14 +8,11 @@
     @confirm="handleConfirm"
     @cancel="handleCancel">
     <div class="px-16px py-12px">
-      <div v-for="feature in privateModeFeatures" :key="feature.title" class="flex items-start gap-8px py-6px">
+      <div v-for="feature in privateModeFeatures" :key="feature.textKey" class="flex items-start gap-8px py-6px">
         <svg class="w-20px h-20px flex-shrink-0" :class="feature.iconClass">
           <use :href="feature.icon"></use>
         </svg>
-        <div>
-          <div class="text-14px font-medium text-[--tjg-text-primary]">{{ feature.title }}</div>
-          <div class="text-12px text-[--tjg-text-tertiary]">{{ feature.description }}</div>
-        </div>
+        <div class="text-12px text-[--tjg-text-secondary]">{{ t(feature.textKey) }}</div>
       </div>
     </div>
   </van-dialog>
