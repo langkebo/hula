@@ -6645,6 +6645,18 @@ export type I18nKeys = {
       "local_store_plaintext_toast": "本机安全存储不可用，消息密钥正以明文保存在磁盘上。详情见「设置 → 安全 → 本地密钥库」。",
       "local_store_unknown_title": "未知",
       "local_store_unknown_desc": "加密尚未初始化，暂时无法判断本地密钥库状态。",
+      "local_unlock_setup_title": "设置本地解锁密码",
+      "local_unlock_setup_desc": "这台设备无法访问系统密钥库，因此需要用一个本地密码来加密保存在磁盘上的消息密钥。不设置的话，本次会话将无法解密加密消息（我们不会把密钥以明文写入磁盘）。",
+      "local_unlock_title": "输入本地解锁密码",
+      "local_unlock_desc": "这台设备无法访问系统密钥库，消息密钥由本地密码保护。请输入密码以继续。",
+      "local_unlock_placeholder": "本地解锁密码",
+      "local_unlock_setup_action": "设置并继续",
+      "local_unlock_action": "解锁",
+      "local_unlock_later": "稍后",
+      "local_unlock_too_short": "密码至少 6 位",
+      "local_unlock_wrong_password": "密码不正确",
+      "local_unlock_failed": "解锁失败，请重试",
+      "local_unlock_forgot_hint": "忘记密码将无法恢复本机历史消息。这不影响服务端密钥备份（若已启用）。",
       "encryption_enabled_title": "端到端加密已启用",
       "encryption_disabled_title": "端到端加密未启用",
       "encryption_enabled_desc": "您的消息受到端到端加密保护",
@@ -12332,6 +12344,18 @@ export type I18nKeyPaths =
   | "setting.security.local_store_plaintext_toast"
   | "setting.security.local_store_unknown_title"
   | "setting.security.local_store_unknown_desc"
+  | "setting.security.local_unlock_setup_title"
+  | "setting.security.local_unlock_setup_desc"
+  | "setting.security.local_unlock_title"
+  | "setting.security.local_unlock_desc"
+  | "setting.security.local_unlock_placeholder"
+  | "setting.security.local_unlock_setup_action"
+  | "setting.security.local_unlock_action"
+  | "setting.security.local_unlock_later"
+  | "setting.security.local_unlock_too_short"
+  | "setting.security.local_unlock_wrong_password"
+  | "setting.security.local_unlock_failed"
+  | "setting.security.local_unlock_forgot_hint"
   | "setting.security.encryption_enabled_title"
   | "setting.security.encryption_disabled_title"
   | "setting.security.encryption_enabled_desc"

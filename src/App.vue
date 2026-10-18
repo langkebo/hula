@@ -19,6 +19,7 @@
       </div>
       <LockScreen v-else />
       <SecretChatUnlockDialog />
+      <LocalUnlockDialog />
       <GlobalAriaLive />
     </NaiveProvider>
     <MemoryMonitor v-if="isDev && showMemoryMonitor && isHomeDesktopWindow" />
@@ -31,6 +32,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { exit } from '@tauri-apps/plugin-process'
 import { showDialog } from 'vant'
 import { useI18n } from 'vue-i18n'
+import LocalUnlockDialog from '@/components/secure/LocalUnlockDialog.vue'
 import { useInvitePolicyEnforcement } from '@/composables/app/useInvitePolicyEnforcement'
 import { useOfflineQueueReplay } from '@/composables/app/useOfflineQueueReplay'
 import { usePresenceSync } from '@/composables/app/usePresenceSync'
@@ -40,6 +42,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
 import { useLocalStorePlaintextWarning } from '@/composables/secure/useLocalStorePlaintextWarning'
+import { useLocalUnlockGate } from '@/composables/secure/useLocalUnlockGate'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useIsMobile } from '@/composables/usePlatform'
@@ -441,6 +444,10 @@ async function seedContactStateCache(): Promise<void> {
 onMounted(async () => {
   // bootstrap 内部失败会 re-throw，必须 catch 避免未处理 rejection 中断后续初始化。
   // bootstrap 内部已将错误存入 state.error，SplashScreen 会展示重试入口。
+  // F-4 / B1：本地解锁门禁必须在 crypto 初始化**之前** —— 解锁后密钥已在内存，
+  // 初始化即可加密打开 store，无需「解锁后重新 init」。
+  // 用户选择「稍后」时返回 false：启动继续，但 crypto 会 fail-closed（不写明文）。
+  await useLocalUnlockGate().ensureReady()
   try {
     await bootstrap()
   } catch (err) {

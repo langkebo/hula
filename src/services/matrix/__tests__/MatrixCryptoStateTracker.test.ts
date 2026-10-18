@@ -9,11 +9,20 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 vi.mock('@/services/secure/cryptoStorageKey', () => ({
-  getOrCreateCryptoStorageKey: vi.fn().mockResolvedValue(null),
+  // F-4/B1 之后：无密钥会拒绝初始化（fail-closed），故默认给一把 32B 密钥，
+  // 让关心「跨窗口 / 生命周期」的用例仍走加密路径；fail-closed 由专测覆盖。
+  getOrCreateCryptoStorageKey: vi.fn().mockResolvedValue(new Uint8Array(32).fill(5)),
   deleteCryptoStorageKey: vi.fn().mockResolvedValue(undefined),
   // 密钥存放后端的日志（本文件不关心其内容，但 mock 必须与模块导出同形）
   logCryptoStorageKeyBackend: vi.fn().mockResolvedValue(undefined)
 }))
+
+// 每个用例默认给一把 32B 密钥：F-4/B1 之后无密钥会 fail-closed，
+// 而本文件多数用例关心的是跨窗口 / 生命周期语义，不是加密状态。
+// 需要验证 fail-closed 的用例自行覆写为 null（且不会污染后续用例）。
+beforeEach(() => {
+  vi.mocked(getOrCreateCryptoStorageKey).mockResolvedValue(new Uint8Array(32).fill(5))
+})
 
 /**
  * H1 回归测试：同一用户换设备登录时，ensureCrypto 必须触发主动清理。
@@ -283,7 +292,7 @@ describe('MatrixCryptoStateTracker - storageKey 原语与加密状态可观测�
     vi.clearAllMocks()
     localStorage.clear()
     tracker = new MatrixCryptoStateTracker()
-    getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(new Uint8Array(32).fill(5))
 
     deleteDbMock = vi.fn().mockImplementation(() => {
       const req = {
@@ -333,16 +342,20 @@ describe('MatrixCryptoStateTracker - storageKey 原语与加密状态可观测�
     expect(tracker.getRustCryptoDebugState().storeEncrypted).toBe(true)
   })
 
-  it('keychain 无密钥时不得传 storageKey，并把 storeEncrypted 标为 false（可见降级）', async () => {
+  // F-4 / B1：fail-closed。历史行为是「没密钥就用不加密的 store 继续初始化」，
+  // 而 SDK 对未加密的 IndexedDB store 是静默允许的 ⇒ 私钥明文落盘。
+  it('无密钥时拒绝初始化 crypto（fail-closed），并给出 local-unlock-required 原因', async () => {
     getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
     const { client, initRustCrypto } = createMockClient('@user:test.com', 'device-A')
 
     await tracker.ensureCrypto(client, true)
 
-    const args = initRustCrypto.mock.calls[0][0] as Record<string, unknown>
-    expect(args).toEqual({ useIndexedDB: true })
-    expect(args).not.toHaveProperty('storageKey')
-    expect(tracker.getRustCryptoDebugState().storeEncrypted).toBe(false)
+    expect(initRustCrypto).not.toHaveBeenCalled()
+    const state = tracker.getRustCryptoDebugState()
+    expect(state.attempted).toBe(true)
+    expect(state.initialized).toBe(false)
+    expect(state.skippedReason).toBe('local-unlock-required')
+    expect(state.storeEncrypted).toBe(false)
   })
 
   it('原语标记写入 localStorage：有密钥 → k1，无密钥 → 0', async () => {
@@ -401,7 +414,8 @@ describe('MatrixCryptoStateTracker - 跨窗口语义（无跳过，仅串行化�
     vi.clearAllMocks()
     localStorage.clear()
     tracker = new MatrixCryptoStateTracker()
-    vi.mocked(getOrCreateCryptoStorageKey).mockResolvedValue(null)
+    // F-4/B1：无密钥会 fail-closed，跨窗口用例需走加密路径
+    vi.mocked(getOrCreateCryptoStorageKey).mockResolvedValue(new Uint8Array(32).fill(5))
     Object.defineProperty(globalThis, 'indexedDB', {
       value: {
         deleteDatabase: vi.fn().mockImplementation(() => {
