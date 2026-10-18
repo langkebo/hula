@@ -161,6 +161,17 @@ class MatrixDirectMessageService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 该房间是否 DM。
+   *
+   * 口径与后端 `GET /rooms/{roomId}/dm` 一致：**只看 `m.direct`**（`getDmRoomInfo` 即
+   * 从 account data 解析）。后端查不到就 404，从不看成员数。
+   *
+   * ⚠️ SDK 侧曾有「2 人房即 DM」的启发式，且默认启用（S-1）。普通 1:1 群成员数也是 2，
+   * 于是前端当私聊、后端当群。现在 SDK 默认关闭该启发式，
+   * 需要兜底时必须显式 `classifyRoomAsDm(roomId, { allowTwoMemberHeuristic: true })`
+   * 并检查返回的 `source` —— 启发式结果**不能**用于私密会话等安全判断。
+   */
   async checkRoomIsDm(roomId: string): Promise<boolean> {
     const roomInfo = await this.getDmRoomInfo(roomId)
     return !!roomInfo
