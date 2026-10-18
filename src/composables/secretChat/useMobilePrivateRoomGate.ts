@@ -39,8 +39,10 @@ export function useMobilePrivateRoomGate() {
     return session?.roomId ?? null
   }
 
-  const notify = (key: string) => {
-    useActionFeedback().showFeedback(useI18nGlobal().t(key), 'warning')
+  // 收「已翻译文案」而不是 key：key 必须在调用点以 t('...') 形式出现，
+  // 否则 `check:i18n-dead-keys` 看不到引用，会把活文案判成孤儿（本仓已踩过）。
+  const notify = (message: string) => {
+    useActionFeedback().showFeedback(message, 'warning')
   }
 
   /**
@@ -57,7 +59,7 @@ export function useMobilePrivateRoomGate() {
       // 无法判定是否私密房时**不放行**：宁可拦错也不能漏。
       // 但必须给提示，否则用户只看到「点了又弹回列表」，像 bug。
       logger.error('加载私密房登记表失败，阻止进入房间:', err)
-      notify('home.secret_chat.registry_unavailable')
+      notify(useI18nGlobal().t('home.secret_chat.registry_unavailable'))
       await router.replace(MOBILE_MESSAGE_LIST)
       return false
     }
@@ -73,7 +75,7 @@ export function useMobilePrivateRoomGate() {
     // 不放行，否则私密房会退化成普通房。
     if (!settingStore.isSecretChatConfigured()) {
       logger.warn(`私密房间 ${privateRoomId} 无可用密码配置，已拦截进入`)
-      notify('home.secret_chat.no_password')
+      notify(useI18nGlobal().t('home.secret_chat.no_password'))
       await router.replace(MOBILE_MESSAGE_LIST)
       return false
     }

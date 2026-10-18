@@ -248,7 +248,6 @@
     "create": "创建",
     "create_success": "脱水设备创建成功",
     "create_failed": "创建脱水设备失败",
-    "claim_key_label": "当前设备的签名公钥",
     "claim_key_placeholder": "粘贴当前设备的 Ed25519 签名公钥（base64）",
     "claim_key_required": "请先填写当前设备的签名公钥，否则认领请求会失败",
     "unsupported": "当前加密后端不支持脱水设备，入口已禁用"

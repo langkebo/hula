@@ -47,9 +47,7 @@
     "voip_call_creation_failed": "Cannot create call",
     "voip_call_not_found": "Call not found: {callId}",
     "url_parse_failed": "Cannot parse media URL: {mediaUrl}",
-    "voice_message_manager_unavailable": "Voice service unavailable",
-    "no_active_recording": "No active recording",
-    "invalid_mxc_url": "Invalid MXC URL"
+    "voice_message_manager_unavailable": "Voice service unavailable"
   },
   "messaging": {
     "event_id_missing": "Event send failed: no event ID returned",

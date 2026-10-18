@@ -35,10 +35,10 @@
       <span class="local-store-status__dot" aria-hidden="true"></span>
       <div class="local-store-status__body">
         <span class="local-store-status__title">
-          {{ t(`setting.security.local_store_${localStoreLevelKey}_title`) }}
+          {{ t(localStoreTitleKey) }}
         </span>
         <span class="local-store-status__desc">
-          {{ t(`setting.security.local_store_${localStoreLevelKey}_desc`) }}
+          {{ t(localStoreDescKey) }}
         </span>
       </div>
     </div>
@@ -133,6 +133,36 @@ const encryptionStore = useEncryptionStore()
  * 把 store 的四档等级映射成 i18n key 片段。
  * `unknown` 也要有自己的文案：未登录时不能显示「未加密」（那是误报）。
  */
+/**
+ * 四档文案的**静态** key 映射。
+ *
+ * 刻意不用 `t(\`setting.security.local_store_${level}_title\`)`：
+ * 动态拼接会让 `check:i18n-dead-keys` 无法静态判活，这些 key 会被归入
+ * 「动态族」，每加一档就多一条 delta（还可能顺手把真孤儿洗掉）。
+ */
+const LOCAL_STORE_KEYS = {
+  native: {
+    title: 'setting.security.local_store_native_title',
+    desc: 'setting.security.local_store_native_desc'
+  },
+  degraded: {
+    title: 'setting.security.local_store_degraded_title',
+    desc: 'setting.security.local_store_degraded_desc'
+  },
+  plaintext: {
+    title: 'setting.security.local_store_plaintext_title',
+    desc: 'setting.security.local_store_plaintext_desc'
+  },
+  unknown: {
+    title: 'setting.security.local_store_unknown_title',
+    desc: 'setting.security.local_store_unknown_desc'
+  }
+} as const
+
+const localStoreKeySet = computed(() => LOCAL_STORE_KEYS[localStoreLevelKey.value])
+const localStoreTitleKey = computed(() => localStoreKeySet.value.title)
+const localStoreDescKey = computed(() => localStoreKeySet.value.desc)
+
 const localStoreLevelKey = computed(() => {
   const level = encryptionStore.localStoreEncryption
   if (level === 'encrypted-native') return 'native'

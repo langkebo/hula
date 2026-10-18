@@ -248,7 +248,6 @@
     "create": "Create",
     "create_success": "Dehydrated device created successfully",
     "create_failed": "Failed to create dehydrated device",
-    "claim_key_label": "This device's signing public key",
     "claim_key_placeholder": "Paste this device's Ed25519 signing public key (base64)",
     "claim_key_required": "Fill in this device's signing public key first; an empty key always fails",
     "unsupported": "The current crypto backend does not support dehydrated devices"

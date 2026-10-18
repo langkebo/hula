@@ -47,9 +47,7 @@
     "voip_call_creation_failed": "无法创建通话",
     "voip_call_not_found": "通话不存在: {callId}",
     "url_parse_failed": "无法解析媒体地址: {mediaUrl}",
-    "voice_message_manager_unavailable": "语音服务不可用",
-    "no_active_recording": "没有正在进行的录制",
-    "invalid_mxc_url": "无效的 MXC URL"
+    "voice_message_manager_unavailable": "语音服务不可用"
   },
   "messaging": {
     "event_id_missing": "事件发送失败: 未返回事件 ID",

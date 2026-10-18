@@ -2289,7 +2289,6 @@ export type I18nKeys = {
       "create": "创建",
       "create_success": "脱水设备创建成功",
       "create_failed": "创建脱水设备失败",
-      "claim_key_label": "当前设备的签名公钥",
       "claim_key_placeholder": "粘贴当前设备的 Ed25519 签名公钥（base64）",
       "claim_key_required": "请先填写当前设备的签名公钥，否则认领请求会失败",
       "unsupported": "当前加密后端不支持脱水设备，入口已禁用"
@@ -3490,9 +3489,7 @@ export type I18nKeys = {
       "voip_call_creation_failed": "无法创建通话",
       "voip_call_not_found": "通话不存在: {callId}",
       "url_parse_failed": "无法解析媒体地址: {mediaUrl}",
-      "voice_message_manager_unavailable": "语音服务不可用",
-      "no_active_recording": "没有正在进行的录制",
-      "invalid_mxc_url": "无效的 MXC URL"
+      "voice_message_manager_unavailable": "语音服务不可用"
     },
     "messaging": {
       "event_id_missing": "事件发送失败: 未返回事件 ID",
@@ -3596,7 +3593,6 @@ export type I18nKeys = {
     "block_user_messages": "屏蔽此人消息",
     "unblock_user_messages": "取消屏蔽消息",
     "remove_from_list": "删除会话",
-    "secret_chat": "私密聊天",
     "secret_chat_success": "已设置为私密聊天",
     "secret_chat_cancel": "已取消私密聊天",
     "delete_friend": "删除好友",
@@ -6400,9 +6396,6 @@ export type I18nKeys = {
         "start_verification": "开始验证",
         "accept_request": "接受请求",
         "inbound_request_hint": "检测到来自另一台设备的验证请求，请先接受再核对指纹。",
-        "fingerprint_label": "设备密钥指纹",
-        "fingerprint_hint": "请确认此指纹与您其他设备上显示的指纹一致",
-        "match_question": "此指纹是否与您其他设备上显示的一致？",
         "mismatch": "不匹配",
         "confirm_match": "确认匹配",
         "success_title": "设备验证成功！",
@@ -6410,7 +6403,6 @@ export type I18nKeys = {
         "rejected_title": "验证失败",
         "rejected_desc": "指纹不匹配，此设备可能不是您的设备。",
         "rejected_hint": "建议您检查设备或联系支持。",
-        "fingerprint_unavailable": "无法获取指纹",
         "load_fingerprint_failed": "获取设备密钥失败",
         "verify_failed": "验证失败",
         "decline_request": "拒绝",
@@ -8956,7 +8948,6 @@ export type I18nKeyPaths =
   | "encryption.dehydrated_device.create"
   | "encryption.dehydrated_device.create_success"
   | "encryption.dehydrated_device.create_failed"
-  | "encryption.dehydrated_device.claim_key_label"
   | "encryption.dehydrated_device.claim_key_placeholder"
   | "encryption.dehydrated_device.claim_key_required"
   | "encryption.dehydrated_device.unsupported"
@@ -9813,8 +9804,6 @@ export type I18nKeyPaths =
   | "matrix_error.media.voip_call_not_found"
   | "matrix_error.media.url_parse_failed"
   | "matrix_error.media.voice_message_manager_unavailable"
-  | "matrix_error.media.no_active_recording"
-  | "matrix_error.media.invalid_mxc_url"
   | "matrix_error.messaging.event_id_missing"
   | "matrix_error.messaging.media_uri_missing"
   | "matrix_error.messaging.other_user_emoji_unsupported"
@@ -9899,7 +9888,6 @@ export type I18nKeyPaths =
   | "menu.block_user_messages"
   | "menu.unblock_user_messages"
   | "menu.remove_from_list"
-  | "menu.secret_chat"
   | "menu.secret_chat_success"
   | "menu.secret_chat_cancel"
   | "menu.delete_friend"
@@ -12123,9 +12111,6 @@ export type I18nKeyPaths =
   | "setting.encryption.device_verify_dialog.start_verification"
   | "setting.encryption.device_verify_dialog.accept_request"
   | "setting.encryption.device_verify_dialog.inbound_request_hint"
-  | "setting.encryption.device_verify_dialog.fingerprint_label"
-  | "setting.encryption.device_verify_dialog.fingerprint_hint"
-  | "setting.encryption.device_verify_dialog.match_question"
   | "setting.encryption.device_verify_dialog.mismatch"
   | "setting.encryption.device_verify_dialog.confirm_match"
   | "setting.encryption.device_verify_dialog.success_title"
@@ -12133,7 +12118,6 @@ export type I18nKeyPaths =
   | "setting.encryption.device_verify_dialog.rejected_title"
   | "setting.encryption.device_verify_dialog.rejected_desc"
   | "setting.encryption.device_verify_dialog.rejected_hint"
-  | "setting.encryption.device_verify_dialog.fingerprint_unavailable"
   | "setting.encryption.device_verify_dialog.load_fingerprint_failed"
   | "setting.encryption.device_verify_dialog.verify_failed"
   | "setting.encryption.device_verify_dialog.decline_request"
