@@ -57,7 +57,9 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     chat: {
       sendKey: 'Enter',
       isDouble: true,
-      translate: 'youdao'
+      translate: 'youdao',
+      // F-1：严格模式下「未验证/风险」消息默认模糊，点击才展开（默认关，避免打扰）
+      trustGateStrict: false
     },
     shortcuts: getDefaultShortcuts(),
     page: {
@@ -112,6 +114,8 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     sendMessageShortcut: (state: STO.Setting) => state.chat?.sendKey ?? 'Enter',
     messageDoubleClickEnabled: (state: STO.Setting) => state.chat?.isDouble ?? true,
     chatTranslateProvider: (state: STO.Setting) => state.chat?.translate ?? 'youdao',
+    /** F-1 严格信任门禁：未验证/风险消息默认模糊 */
+    trustGateStrictEnabled: (state: STO.Setting) => state.chat?.trustGateStrict ?? false,
     globalShortcutEnabled: (state: STO.Setting) => state.shortcuts?.globalEnabled ?? false,
     screenshotConcealEnabled: (state: STO.Setting) => state.screenshot?.isConceal ?? false,
     messageSoundEnabled: (state: STO.Setting) => state.notification?.messageSound ?? true,
@@ -413,6 +417,16 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     setSendTypingNotificationsEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()
       this.preferences.sendTypingNotifications = enabled
+    },
+    /**
+     * F-1：信任门禁严格模式（未验证 / 风险消息默认模糊，点击展开）。
+     *
+     * 这是**视觉降级**：内容早已解密进入 DOM，模糊只降低肩窥成本，不是访问控制。
+     * 默认关闭，避免策略上线就改变所有既有会话的观感。
+     */
+    setTrustGateStrict(enabled: boolean) {
+      this.chat = this.chat || { sendKey: 'Enter', isDouble: true, translate: 'youdao' }
+      this.chat.trustGateStrict = enabled
     },
     setShowOnlineStatusEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()

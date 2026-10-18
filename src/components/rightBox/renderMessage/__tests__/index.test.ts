@@ -42,10 +42,20 @@ describe('renderMessage/index.vue - MessageLockBadge 绑定契约', () => {
     expect(source).toMatch(/useMessageTrust\(\s*\(\)\s*=>/)
   })
 
-  it('trust-level 必须绑定 lockBadgeLevel，而非直接绑定 trustLevel', () => {
-    // trustLevel 含 'plain'，与 MessageLockBadge 的三态 prop 不兼容
-    expect(source).toMatch(/:trust-level="lockBadgeLevel"/)
-    expect(source).not.toMatch(/:trust-level="trustLevel"/)
+  it('徽章 trust-level 必须绑定 lockBadgeLevel，而非直接绑定 trustLevel', () => {
+    // trustLevel 含 'plain'，与 MessageLockBadge 的三态 prop 不兼容。
+    //
+    // ⚠️ 断言必须**限定在徽章块内**：F-1 的 MessageTrustGate 接收的正是含 plain 的
+    // 四态 trustLevel（它自己做分级），若用文件级否定断言，会把合法用法一起判红。
+    const badge = source.match(/<MessageLockBadge[\s\S]*?\/>/)?.[0] ?? ''
+    expect(badge).not.toBe('')
+    expect(badge).toMatch(/:trust-level="lockBadgeLevel"/)
+    expect(badge).not.toMatch(/:trust-level="trustLevel"/)
+  })
+
+  it('F-1：信任门禁接收四态 trustLevel（分级由 gate 自己完成）', () => {
+    const gate = source.match(/<MessageTrustGate[\s\S]*?>/)?.[0] ?? ''
+    expect(gate).toMatch(/:trust-level="trustLevel"/)
   })
 
   it('显隐守卫必须同时覆盖「已加密」与「加密房间里的明文（risk）」', () => {

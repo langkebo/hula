@@ -155,31 +155,32 @@
                 :search-keyword="searchKeyword"
                 :history-mode="historyMode" />
             </BurnMessage>
-            <component
-              v-else
-              :class="[
-                message.message.type === MsgEnum.VOICE ? 'select-none cursor-pointer' : 'select-text cursor-text',
-                !isSpecialMsgType(message.message.type) ? (isMe ? 'bubble-oneself' : 'bubble') : '',
-                {
-                  active:
-                    activeBubble === message.message.id &&
-                    !isSpecialMsgType(message.message.type) &&
-                    message.message.type !== MsgEnum.VOICE &&
-                    !isMobileRef
-                }
-              ]"
-              :is="componentMap[message.message.type]"
-              :body="message.message.body"
-              :message-status="message.message.status"
-              :upload-progress="uploadProgress"
-              :from-user-uid="senderUid"
-              :message="message.message"
-              :data-message-id="message.message.id"
-              :is-group="isGroup"
-              :on-image-click="onImageClick"
-              :onVideoClick="onVideoClick"
-              :search-keyword="searchKeyword"
-              :history-mode="historyMode" />
+            <MessageTrustGate v-else :trust-level="trustLevel">
+              <component
+                :class="[
+                  message.message.type === MsgEnum.VOICE ? 'select-none cursor-pointer' : 'select-text cursor-text',
+                  !isSpecialMsgType(message.message.type) ? (isMe ? 'bubble-oneself' : 'bubble') : '',
+                  {
+                    active:
+                      activeBubble === message.message.id &&
+                      !isSpecialMsgType(message.message.type) &&
+                      message.message.type !== MsgEnum.VOICE &&
+                      !isMobileRef
+                  }
+                ]"
+                :is="componentMap[message.message.type]"
+                :body="message.message.body"
+                :message-status="message.message.status"
+                :upload-progress="uploadProgress"
+                :from-user-uid="senderUid"
+                :message="message.message"
+                :data-message-id="message.message.id"
+                :is-group="isGroup"
+                :on-image-click="onImageClick"
+                :onVideoClick="onVideoClick"
+                :search-keyword="searchKeyword"
+                :history-mode="historyMode" />
+            </MessageTrustGate>
 
             <MessageActionBar
               :visible="!chatStore.isMsgMultiChoose"
@@ -336,6 +337,7 @@ import { defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MessageLockBadge from '@/components/atomic/MessageLockBadge.vue'
 import BurnMessage from '@/components/burn/BurnMessage.vue'
+import MessageTrustGate from '@/components/chat/MessageTrustGate.vue'
 import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useMitt } from '@/composables/common/useMitt'
@@ -451,7 +453,7 @@ const messageTrust = useMessageTrust(() => props.message?.message?.body?.hasEncr
   isEncrypted: () => isRoomEncrypted(matrixClientService.getClient(), props.message?.message?.roomId || '')
 })
 // lockBadgeLevel 已在 composable 内把 'plain' 收敛为 'unverified'，此处直接绑定保证类型安全
-const { isEncrypted: isEncryptedMessage, lockBadgeLevel, trustDescriptionKey } = messageTrust
+const { isEncrypted: isEncryptedMessage, lockBadgeLevel, trustDescriptionKey, trustLevel } = messageTrust
 
 // ===== 设备验证状态刷新（挂载 + senderUid 变化时异步升级锁色）=====
 let trustRefreshTimer: ReturnType<typeof setInterval> | null = null

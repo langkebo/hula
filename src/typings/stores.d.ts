@@ -100,6 +100,8 @@ declare namespace STO {
       isDouble: boolean
       /** 翻译提供商 */
       translate: 'youdao' | 'tencent'
+      /** F-1 严格信任门禁：未验证/风险消息默认模糊，点击展开 */
+      trustGateStrict?: boolean
     }
     /** 快捷键设置 */
     shortcuts: {

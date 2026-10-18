@@ -97,7 +97,9 @@
     "verified_title": "端到端加密已验证",
     "unverified_title": "端到端加密未完全验证",
     "risk_title": "端到端加密存在安全风险",
-    "plain_title": "消息未加密"
+    "plain_title": "消息未加密",
+    "trust_gate_reveal": "点击显示内容",
+    "trust_gate_plaintext_in_encrypted_room": "这条消息在本应加密的房间里是明文"
   },
   "private_mode": {
     "burning": "私密模式：阅后即焚",

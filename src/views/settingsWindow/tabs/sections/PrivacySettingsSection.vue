@@ -22,6 +22,15 @@
       </div>
       <n-switch v-model:value="sendReadReceipts" @update:value="handleReadReceiptsChange" />
     </div>
+
+    <!-- F-1：信任门禁。文案只说「点击显示」，不说「已保护」——模糊不是访问控制。 -->
+    <div class="setting-item">
+      <div class="setting-info">
+        <span class="setting-label">{{ t('setting.security.trust_gate_strict') }}</span>
+        <span class="setting-desc">{{ t('setting.security.trust_gate_strict_desc') }}</span>
+      </div>
+      <n-switch v-model:value="trustGateStrict" @update:value="handleTrustGateStrictChange" />
+    </div>
   </div>
 </template>
 
@@ -56,6 +65,11 @@ const sendReadReceipts = computed({
   set: (value: boolean) => settingStore.setSendReadReceiptsEnabled(value)
 })
 
+const trustGateStrict = computed({
+  get: () => settingStore.trustGateStrictEnabled,
+  set: (value: boolean) => settingStore.setTrustGateStrict(value)
+})
+
 onMounted(() => {
   // 遗留的 localStorage key 由 store 迁移逻辑读取一次并 removeItem，组件本身不碰 localStorage
   settingStore.migrateLegacyPreferenceSettings()
@@ -65,6 +79,14 @@ function handleOnlineStatusChange(value: boolean) {
   settingStore.setShowOnlineStatusEnabled(value)
   showFeedback(
     value ? t('setting.security.online_status_shown') : t('setting.security.online_status_hidden'),
+    'success'
+  )
+}
+
+function handleTrustGateStrictChange(value: boolean) {
+  settingStore.setTrustGateStrict(value)
+  showFeedback(
+    value ? t('setting.security.trust_gate_strict_enabled') : t('setting.security.trust_gate_strict_disabled'),
     'success'
   )
 }

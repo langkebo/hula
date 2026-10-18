@@ -1677,7 +1677,9 @@ export type I18nKeys = {
       "verified_title": "端到端加密已验证",
       "unverified_title": "端到端加密未完全验证",
       "risk_title": "端到端加密存在安全风险",
-      "plain_title": "消息未加密"
+      "plain_title": "消息未加密",
+      "trust_gate_reveal": "点击显示内容",
+      "trust_gate_plaintext_in_encrypted_room": "这条消息在本应加密的房间里是明文"
     },
     "private_mode": {
       "burning": "私密模式：阅后即焚",
@@ -6659,6 +6661,10 @@ export type I18nKeys = {
       "show_typing_status_desc": "允许其他用户看到您正在输入",
       "send_read_receipts": "显示已读回执",
       "send_read_receipts_desc": "发送消息已读回执",
+      "trust_gate_strict": "未验证消息默认模糊",
+      "trust_gate_strict_desc": "未验证或存在风险的消息默认显示为模糊，点击后才展开。这只是减少误读与旁观，不能阻止对方截图，也不改变消息本身已在你设备上解密的事实。",
+      "trust_gate_strict_enabled": "已开启：未验证消息默认模糊",
+      "trust_gate_strict_disabled": "已关闭：消息正常显示",
       "ignored_users": "被忽略的用户",
       "no_ignored_users": "没有忽略的用户",
       "unignore": "取消忽略",
@@ -8438,6 +8444,8 @@ export type I18nKeyPaths =
   | "chat.encryption.unverified_title"
   | "chat.encryption.risk_title"
   | "chat.encryption.plain_title"
+  | "chat.encryption.trust_gate_reveal"
+  | "chat.encryption.trust_gate_plaintext_in_encrypted_room"
   | "chat.private_mode.burning"
   | "chat.private_mode.enabled"
   | "chat.window.no_room_id"
@@ -12338,6 +12346,10 @@ export type I18nKeyPaths =
   | "setting.security.show_typing_status_desc"
   | "setting.security.send_read_receipts"
   | "setting.security.send_read_receipts_desc"
+  | "setting.security.trust_gate_strict"
+  | "setting.security.trust_gate_strict_desc"
+  | "setting.security.trust_gate_strict_enabled"
+  | "setting.security.trust_gate_strict_disabled"
   | "setting.security.ignored_users"
   | "setting.security.no_ignored_users"
   | "setting.security.unignore"

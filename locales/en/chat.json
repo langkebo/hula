@@ -97,7 +97,9 @@
     "verified_title": "End-to-end encryption verified",
     "unverified_title": "End-to-end encryption not fully verified",
     "risk_title": "End-to-end encryption risk detected",
-    "plain_title": "Message not encrypted"
+    "plain_title": "Message not encrypted",
+    "trust_gate_reveal": "Click to show",
+    "trust_gate_plaintext_in_encrypted_room": "This message is unencrypted although the room should be encrypted"
   },
   "private_mode": {
     "burning": "Private Mode: Burn After Reading",
