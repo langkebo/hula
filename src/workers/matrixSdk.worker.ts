@@ -31,6 +31,7 @@ import {
   handleSearchRedactEvent,
   handleSearchRemoveRoom,
   handleSearchReset,
+  handleSearchSetKey,
   handleSearchStats,
   handleSearchUpsertEvents,
   handleSearchUpsertRooms,
@@ -57,6 +58,7 @@ const messageHandlers: Record<string, HandlerFn> = {
 
   // --- 搜索索引 ---
   'search.reset': () => handleSearchReset(),
+  'search.setKey': (payload) => handleSearchSetKey(payload as { key?: string | null }),
   'search.bootstrapRooms': (payload) => handleSearchBootstrapRooms(payload as { rooms?: SearchRoomDoc[] }),
   'search.upsertRooms': (payload) => handleSearchUpsertRooms(payload as { rooms?: SearchRoomDoc[] }),
   'search.bootstrapEvents': (payload) => handleSearchBootstrapEvents(payload as { events?: SearchEventDoc[] }),

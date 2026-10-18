@@ -7,6 +7,8 @@ import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { matrixPresenceService, type PresenceState } from '@/services/matrix/user/MatrixPresenceService'
+import { getOrCreateCryptoStorageKey } from '@/services/secure/cryptoStorageKey'
+import { deriveSearchIndexKey } from '@/services/secure/searchIndexCrypto'
 import type { RoomInfo, UserInfoType } from '@/services/types'
 import type { MessageType } from '@/types/message'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -280,6 +282,36 @@ export class SessionBootstrapService {
     }
   }
 
+  /**
+   * 把 crypto storageKey 派生出的搜索索引密钥交给 worker（F-4 / D3）。
+   *
+   * 派生用 HKDF（`info` 区分用途），不复用主密钥本身，避免跨用途密钥重用。
+   * 失败一律传 null：宁可不落盘，也不写明文。
+   */
+  private async configureSearchIndexKey(): Promise<void> {
+    try {
+      const userId = matrixClientService.getUserId()
+      const deviceId = matrixClientService.getDeviceId()
+      if (!userId || !deviceId) {
+        await matrixWorkerHost.setSearchIndexKey(null)
+        return
+      }
+
+      const storageKey = await getOrCreateCryptoStorageKey(userId, deviceId)
+      if (!storageKey) {
+        await matrixWorkerHost.setSearchIndexKey(null)
+        return
+      }
+
+      const searchKey = await deriveSearchIndexKey(storageKey)
+      await matrixWorkerHost.setSearchIndexKey(searchKey)
+      searchKey.fill(0)
+    } catch (err) {
+      logger.warn('[bootstrapSearchIndex] 配置索引加密密钥失败，索引将不落盘:', err)
+      await matrixWorkerHost.setSearchIndexKey(null).catch(() => {})
+    }
+  }
+
   private async bootstrapSearchIndex(_uid: string): Promise<void> {
     const port = this.host.port
     const client = matrixClientService.getClient()
@@ -288,6 +320,10 @@ export class SessionBootstrapService {
       return
     }
 
+    // F-4 / D3：索引落盘前必须先给出加密密钥。
+    // 拿不到 storageKey（安全存储不可用且未设置本地解锁密码）时传 null ——
+    // worker 侧会**停止落盘**并清掉旧的明文库，而不是退回明文。
+    await this.configureSearchIndexKey()
     const allRooms = port.room.getRoomList()
 
     const searchRoomDocs: SearchRoomDoc[] = allRooms.map((roomInfo: RoomInfo) => {

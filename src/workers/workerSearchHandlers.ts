@@ -23,9 +23,18 @@ import {
   loadEventsFromDB,
   loadRoomsFromDB,
   saveEventsToDB,
-  saveRoomsToDB
+  saveRoomsToDB,
+  setSearchIndexKey
 } from './searchIndexDb'
 import { createWorkerLogger } from './workerLogger'
+
+/** base64 → 字节（worker 环境有 atob） */
+function fromBase64(encoded: string): Uint8Array {
+  const binary = atob(encoded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
 
 const logger = createWorkerLogger('MatrixWorker')
 
@@ -252,6 +261,20 @@ export function handleSearchUpsertRooms(payload: { rooms?: SearchRoomDoc[] }): v
     searchRoomNames.set(room.roomId, normalizeSearchText(room.name || room.roomId))
   }
   void saveRoomsToDB(rooms)
+}
+
+/**
+ * 设置搜索索引的加密密钥（F-4 / D3）。
+ *
+ * `key = null` 时**清空**索引库：D3 之前写入的是明文记录，不能留在磁盘上。
+ * 清空后索引退化为内存态，下次登录提供密钥时会重建。
+ */
+export function handleSearchSetKey(payload: { key?: string | null }): void {
+  const key = typeof payload?.key === 'string' && payload.key.length > 0 ? fromBase64(payload.key) : null
+  setSearchIndexKey(key)
+  if (!key) {
+    void clearAllSearchData()
+  }
 }
 
 export function handleSearchBootstrapRooms(payload: { rooms?: SearchRoomDoc[] }): void {

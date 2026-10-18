@@ -10,6 +10,13 @@ import type {
   WorkerResponse
 } from '@/workers/matrixWorkerTypes'
 
+/** 字节 → base64（跨 worker 传输密钥用） */
+function toBase64(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary)
+}
+
 const logger = createLogger('MatrixWorkerHost')
 
 /**
@@ -159,6 +166,15 @@ export class MatrixWorkerHost {
    */
   async getCapabilities(baseUrl: string, accessToken: string): Promise<Record<string, unknown>> {
     return this.request<Record<string, unknown>>('getCapabilities', { baseUrl, accessToken })
+  }
+
+  /**
+   * 设置搜索索引的加密密钥（F-4 / D3）。
+   *
+   * `key = null` 会清空索引库（旧明文记录不能留在磁盘上）。
+   */
+  async setSearchIndexKey(key: Uint8Array | null): Promise<void> {
+    return this.request<void>('search.setKey', { key: key ? toBase64(key) : null })
   }
 
   async resetSearchIndex(): Promise<void> {

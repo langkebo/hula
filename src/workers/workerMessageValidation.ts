@@ -130,6 +130,14 @@ const payloadValidators: Record<string, (payload: unknown) => string | null> = {
     if (!isNonEmptyString(record.accessToken)) return 'accessToken must be a non-empty string'
     return null
   },
+  // F-4 / D3：索引加密密钥（base64 32B），null 表示「不落盘」
+  'search.setKey': (payload) => {
+    const record = asRecord(payload)
+    if (!record) return 'payload must be an object'
+    if (record.key === null || record.key === undefined) return null
+    if (typeof record.key !== 'string') return 'key must be a string or null'
+    return null
+  },
   'search.bootstrapRooms': validateRoomsPayload,
   'search.upsertRooms': validateRoomsPayload,
   'search.bootstrapEvents': validateEventsPayload,
