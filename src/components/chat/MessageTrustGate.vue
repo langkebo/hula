@@ -96,6 +96,13 @@ function reveal(): void {
   position: absolute;
   right: 8px;
   bottom: 8px;
+  /* 移动端气泡很窄（默认 max-width 32vw）——按钮必须能收缩，不能溢出气泡外 */
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  /* 压在模糊层之上（模糊层是 sibling，同层叠上下文里靠 z-index 取胜） */
+  z-index: 1;
   padding: 4px 10px;
   border: 1px solid var(--tjg-border-default);
   border-radius: 999px;
