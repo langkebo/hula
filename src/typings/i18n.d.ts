@@ -6745,20 +6745,6 @@ export type I18nKeys = {
       },
       "warning": "阅后即焚不能保证对方未截图或保存消息。服务器会在消息到期后删除，但无法控制客户端行为。"
     },
-    "general": {
-      "chat": {
-        "translate_options": {
-          "tencent": "腾讯云翻译",
-          "youdao": "有道云翻译"
-        }
-      },
-      "ui": {
-        "font_options": {
-          "PingFang": "苹方",
-          "AliFangYuan": "阿里妈妈方圆体"
-        }
-      }
-    },
     "preferences": {
       "language_section": "语言",
       "interface_language_label": "界面语言",
@@ -12423,10 +12409,6 @@ export type I18nKeyPaths =
   | "setting.burn_after_read.feedback.duration_changed"
   | "setting.burn_after_read.feedback.settings_updated"
   | "setting.burn_after_read.warning"
-  | "setting.general.chat.translate_options.tencent"
-  | "setting.general.chat.translate_options.youdao"
-  | "setting.general.ui.font_options.PingFang"
-  | "setting.general.ui.font_options.AliFangYuan"
   | "setting.preferences.language_section"
   | "setting.preferences.interface_language_label"
   | "setting.preferences.interface_language_desc"

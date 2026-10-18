@@ -897,20 +897,6 @@
     },
     "warning": "Burn after reading cannot guarantee the other party did not take screenshots or save messages. The server deletes messages after expiration, but client behavior cannot be controlled."
   },
-  "general": {
-    "chat": {
-      "translate_options": {
-        "tencent": "Tencent Cloud Translate",
-        "youdao": "Youdao Translate"
-      }
-    },
-    "ui": {
-      "font_options": {
-        "PingFang": "PingFang",
-        "AliFangYuan": "Alibaba Rounded"
-      }
-    }
-  },
   "preferences": {
     "language_section": "Language",
     "interface_language_label": "Interface Language",
