@@ -374,7 +374,7 @@ export class RoomOperations extends BaseMatrixService {
   }
 
   /**
-   * 判断当前用户是否有权限发送 m.room.pinned_events state event（置顶/取消置顶）。
+   * 判断当前用户是否有权限发送 `m.room.pinned_events` state event（置顶/取消置顶）。
    *
    * 权限层级（MSC4354 / Matrix spec）：
    * - 用户 power = power_levels.users[userId] ?? power_levels.users_default ?? 0
@@ -382,6 +382,18 @@ export class RoomOperations extends BaseMatrixService {
    * - 可置顶当且仅当 userPower >= requiredPower
    */
   canPinEvents(roomId: string): boolean {
+    return this.canWriteStateEvent(roomId, 'm.room.pinned_events')
+  }
+
+  /**
+   * 判断当前用户能否写某个 state event（房间级设置的通用权限判定）。
+   *
+   * 与服务端 `verify_state_event_write` 同一套规则：用户 power 对比
+   * `power_levels.events[eventType]`，缺省回落到 `state_default`（再缺省 50）。
+   * UI 用它决定「隐藏还是禁用」——目前统一选择**隐藏**，因为展示一个必定 403
+   * 的开关只会制造困惑。
+   */
+  canWriteStateEvent(roomId: string, eventType: string): boolean {
     const client = matrixClientService.getClient()
     if (!client) return false
     const userId = client.getUserId()
@@ -396,8 +408,18 @@ export class RoomOperations extends BaseMatrixService {
     const events = (content.events as Record<string, number> | undefined) ?? {}
     const stateDefault = (content.state_default as number | undefined) ?? 50
     const userPower = users[userId] ?? usersDefault
-    const requiredPower = events['m.room.pinned_events'] ?? stateDefault
+    const requiredPower = events[eventType] ?? stateDefault
     return userPower >= requiredPower
+  }
+
+  /**
+   * 能否切换房间级「防截屏」标记（`com.hula.privacy` 状态事件）。
+   *
+   * 服务端 `PUT /rooms/{id}/anti_screenshot` 写的是房间状态事件，所以要求
+   * 该事件类型的 state 写权限；普通成员（PL 0）达不到 state_default，会被 403。
+   */
+  canManageAntiScreenshot(roomId: string): boolean {
+    return this.canWriteStateEvent(roomId, 'com.hula.privacy')
   }
 
   async setPinnedEvents(roomId: string, eventIds: string[]): Promise<void> {

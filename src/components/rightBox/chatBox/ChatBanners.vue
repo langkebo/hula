@@ -57,12 +57,12 @@
     </svg>
   </div>
 
-  <!-- ScreenshotWatermark (private mode) -->
+  <!-- ScreenshotWatermark：私密模式或房间显式开启防截屏标记时显示水印 -->
   <ScreenshotWatermark
-    v-if="privateModeActive"
+    v-if="privateModeActive || antiScreenshotEnabled"
     :user-id="currentUserId"
     :user-name="currentUserName"
-    :enabled="privateModeActive" />
+    :enabled="privateModeActive || antiScreenshotEnabled" />
 
   <!-- 粘性事件横幅 -->
   <StickyEventBanner
@@ -74,12 +74,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import E2EEBanner from '@/components/chat/E2EEBanner.vue'
 import PrivateModeBanner from '@/components/common/PrivateModeBanner.vue'
 import ScreenshotWatermark from '@/components/common/ScreenshotWatermark.vue'
 import StickyEventBanner from '@/components/rightBox/renderMessage/StickyEventBanner.vue'
+import { useRoomAntiScreenshot } from '@/composables/chat/useRoomAntiScreenshot'
 
 const { t } = useI18n()
 const isAnnouncementHover = ref<boolean>(false)
@@ -91,7 +92,7 @@ interface StickyEventItem {
   timestamp: number
 }
 
-defineProps<{
+const props = defineProps<{
   networkBannerText: string | null
   isAnnouncementLoading: boolean
   isGroup: boolean
@@ -111,4 +112,8 @@ defineEmits<{
   cancelSticky: [eventId: string]
   viewStickyEvent: [eventId: string]
 }>()
+
+// F-2：房间级防截屏标记。私密 DM 由服务端（B-2）写入 `com.hula.privacy`，
+// 这里读出来驱动水印 —— 只是「警示」，不阻止任何截屏工具。
+const { enabled: antiScreenshotEnabled } = useRoomAntiScreenshot(toRef(props, 'currentRoomId'))
 </script>

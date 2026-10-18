@@ -2948,6 +2948,9 @@ export type I18nKeys = {
       "clear_messages": "清除消息",
       "delete_room_confirm": "确定删除该房间？",
       "pin_room": "固定房间",
+      "anti_screenshot": "防截屏水印",
+      "anti_screenshot_hint": "开启后聊天区域会显示带昵称与日期的水印。它不能阻止截屏或录屏，只用于威慑与事后追溯。",
+      "anti_screenshot_failed": "防截屏设置失败，请稍后重试",
       "member_count": "{count} 位成员",
       "clear_messages_confirm_message": "确定清除所有消息？",
       "federated_tooltip": "联邦房间 · 由 {server} 提供服务",
@@ -9452,6 +9455,9 @@ export type I18nKeyPaths =
   | "home.chat_header.clear_messages"
   | "home.chat_header.delete_room_confirm"
   | "home.chat_header.pin_room"
+  | "home.chat_header.anti_screenshot"
+  | "home.chat_header.anti_screenshot_hint"
+  | "home.chat_header.anti_screenshot_failed"
   | "home.chat_header.member_count"
   | "home.chat_header.clear_messages_confirm_message"
   | "home.chat_header.federated_tooltip"

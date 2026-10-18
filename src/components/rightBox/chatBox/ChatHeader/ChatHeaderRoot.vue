@@ -40,6 +40,7 @@
       :is-pinned="isPinned"
       :show-delete-friend="shouldShowDeleteFriend"
       :message-options="messageSettingOptions"
+      :room-id="currentSessionRoomId"
       @update-name="handleUpdateGroupName"
       @update-my-name="handleUpdateMyName"
       @update-remark="handleUpdateRemark"

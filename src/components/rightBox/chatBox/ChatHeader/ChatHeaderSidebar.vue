@@ -81,6 +81,8 @@
             <n-switch :value="isPinned" size="small" />
           </div>
 
+          <AntiScreenshotSetting :room-id="roomId ?? null" />
+
           <div class="setting-item">
             <span class="setting-label">{{ t('home.chat_header.sidebar.group.message_settings.title') }}</span>
             <n-select
@@ -118,6 +120,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { UserItem } from '@/services/types'
+import AntiScreenshotSetting from './AntiScreenshotSetting.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -130,6 +133,8 @@ const props = defineProps<{
   isPinned: boolean
   showDeleteFriend: boolean
   messageOptions: Array<{ label: string; value: string }>
+  /** 当前房间；为空时房间级设置（如防截屏）不渲染 */
+  roomId?: string | null
 }>()
 
 const emit = defineEmits<{
