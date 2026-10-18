@@ -133,7 +133,12 @@
     "locked_hint": "Secret chat is locked. Unlock it first.",
     "mark_private": "Move to secret chat",
     "unmark_private": "Remove from secret chat",
-    "unmark_confirm": "This session will return to the normal list. Remove it from secret chat?"
+    "unmark_confirm": "This session will return to the normal list. Remove it from secret chat?",
+    "subtitle": "Decrypted on this device; messages are still stored per the server retention policy",
+    "locked_title": "Secret sessions are locked",
+    "unlock_action": "Enter password to continue",
+    "unread_badge": "{count} unread",
+    "avatar_alt": "{name} avatar"
   },
   "chat_sidebar": {
     "actions": {

@@ -2860,7 +2860,12 @@ export type I18nKeys = {
       "locked_hint": "私密聊天已锁定，请先解锁",
       "mark_private": "设为私密聊天",
       "unmark_private": "移出私密聊天",
-      "unmark_confirm": "移出后该会话将回到普通列表，确认移出？"
+      "unmark_confirm": "移出后该会话将回到普通列表，确认移出？",
+      "subtitle": "本机加密显示；服务端仍按保留策略保存消息",
+      "locked_title": "私密会话已锁定",
+      "unlock_action": "输入密码继续",
+      "unread_badge": "{count} 条未读",
+      "avatar_alt": "{name} 的头像"
     },
     "chat_sidebar": {
       "actions": {
@@ -9387,6 +9392,11 @@ export type I18nKeyPaths =
   | "home.secret_chat.mark_private"
   | "home.secret_chat.unmark_private"
   | "home.secret_chat.unmark_confirm"
+  | "home.secret_chat.subtitle"
+  | "home.secret_chat.locked_title"
+  | "home.secret_chat.unlock_action"
+  | "home.secret_chat.unread_badge"
+  | "home.secret_chat.avatar_alt"
   | "home.chat_sidebar.actions.retry"
   | "home.chat_sidebar.search.placeholder"
   | "home.chat_sidebar.quota.title"
