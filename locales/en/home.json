@@ -138,7 +138,8 @@
     "locked_title": "Secret sessions are locked",
     "unlock_action": "Enter password to continue",
     "unread_badge": "{count} unread",
-    "avatar_alt": "{name} avatar"
+    "avatar_alt": "{name} avatar",
+    "registry_unavailable": "Cannot verify secret-session state, please retry later"
   },
   "chat_sidebar": {
     "actions": {

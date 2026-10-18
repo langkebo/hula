@@ -100,6 +100,10 @@
   ⚠️ 按 **route name 白名单**（`message`/`windowChat`）取 roomId —— `/room/:roomId` 是目录详情页，拦错。
   ⚠️ **`/chat/:roomId` 在本仓不存在**（`/chat` 是无参机器人路由），跳它会落 notFound；正确是 `{name:'message',params:{roomId}}`。
   ⚠️ 冷启动深链要先 `ensurePrivateRoomRegistryReady()`，否则 `getUserId()` 为 null 时读 anonymous 缓存 → 私密房被放行。
+  ⚠️ **移动端另有一条独立门禁**：`/mobile/chatRoom/chatMain/:uid` 参数是**对端 uid**，桌面 `extractRoomId`
+  只认 `message`/`windowChat` 的 `:roomId` ⇒ 整条路径绕过。改在布局层 `ChatRoomLayout` 调
+  `useMobilePrivateRoomGate().assertAccess(uid)`；候选房间要 **currentSessionRoomId 与 uid 反查都看**
+  （通知点击时前者可能还停在上一个普通房）。登记表加载失败时**不放行**。
 - **私密标记只允许单聊**（`usePrivateRoomActions`）：群聊成员不可控，标私密=假承诺；写登记表后再同步  `session.hide` + Tauri `hide_contact_command` 作兼容镜像。私密会话**与好友 DM 共用房间**（取消标记内容回普通 DM）。
 - **隐私能力文案只能写已实现行为**（P0-4/5 审计结论）：曾宣称「服务器不存储消息」「防截屏」，两者零实现。
   现状：私密模式清单 3 条（房间级 E2EE / 倒计时仅本机移除 / 截屏提示但**不能阻止**），

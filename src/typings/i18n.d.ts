@@ -2865,7 +2865,8 @@ export type I18nKeys = {
       "locked_title": "私密会话已锁定",
       "unlock_action": "输入密码继续",
       "unread_badge": "{count} 条未读",
-      "avatar_alt": "{name} 的头像"
+      "avatar_alt": "{name} 的头像",
+      "registry_unavailable": "无法校验私密会话状态，请稍后重试"
     },
     "chat_sidebar": {
       "actions": {
@@ -9397,6 +9398,7 @@ export type I18nKeyPaths =
   | "home.secret_chat.unlock_action"
   | "home.secret_chat.unread_badge"
   | "home.secret_chat.avatar_alt"
+  | "home.secret_chat.registry_unavailable"
   | "home.chat_sidebar.actions.retry"
   | "home.chat_sidebar.search.placeholder"
   | "home.chat_sidebar.quota.title"

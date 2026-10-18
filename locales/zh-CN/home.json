@@ -138,7 +138,8 @@
     "locked_title": "私密会话已锁定",
     "unlock_action": "输入密码继续",
     "unread_badge": "{count} 条未读",
-    "avatar_alt": "{name} 的头像"
+    "avatar_alt": "{name} 的头像",
+    "registry_unavailable": "无法校验私密会话状态，请稍后重试"
   },
   "chat_sidebar": {
     "actions": {
