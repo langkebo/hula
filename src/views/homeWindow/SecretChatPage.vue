@@ -279,7 +279,6 @@ watch(isUnlocked, (value) => {
   font-size: 12px;
   color: var(--tjg-text-secondary);
 }
-
 .locked-view__action {
   margin-top: 8px;
   padding: 8px 20px;
