@@ -161,11 +161,43 @@ export const openMsgSession = async (uid: string, type: number = 2) => {
   await focusSessionRoom(res.roomId)
 }
 
+/**
+ * F-6：进入会话时补投别名。
+ *
+ * 挂在这里而不是「建 DM 之后」的原因：DM 可能由**服务端**创建、由通知点击进入、
+ * 由搜索/深链打开 —— 建 DM 的入口有四五处，而"进入会话"只有一个共同出口。
+ * 一个钩子覆盖全部路径，也不会漏掉"服务端已经建好房间"的情况。
+ *
+ * fire-and-forget：别名投递失败不该挡住会话打开。
+ */
+async function syncContactAliasForRoom(roomId: string): Promise<void> {
+  try {
+    const client = matrixClientService.getClient()
+    const myUserId = matrixClientService.getUserId()
+    if (!client || !myUserId) return
+
+    const room = client.getRoom(roomId)
+    const members = room?.getJoinedMembers() ?? []
+    if (members.length !== 2) return
+    const peer = members.find((m) => m.userId !== myUserId)
+    if (!peer) return
+
+    const { applyAliasToDmRoom } = await import('@/services/matrix/aliases/applyContactAlias')
+    const { hasContactAlias, loadContactAliases } = await import('@/services/matrix/aliases/contactAliasRegistry')
+    await loadContactAliases()
+    if (!hasContactAlias(peer.userId)) return
+    await applyAliasToDmRoom(peer.userId)
+  } catch (err) {
+    logger.warn('补投联系人别名失败（忽略）:', err)
+  }
+}
+
 export const openMsgSessionByRoomId = async (roomId: string) => {
   if (!roomId) {
     return
   }
 
   logger.info(`按 roomId 打开消息会话: ${roomId}`)
+  void syncContactAliasForRoom(roomId)
   await focusSessionRoom(roomId)
 }

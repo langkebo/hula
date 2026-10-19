@@ -23,7 +23,8 @@
   "input": {
     "group_name": "Enter the group nickname",
     "group_alias": "Enter the group alias",
-    "remark": "The name is only visible to you."
+    "remark": "The name is only visible to you.",
+    "alias": "e.g. Old classmate"
   },
   "group_alias": "My Alias in Group",
   "remark": "Remark",
@@ -68,5 +69,11 @@
   "select_friends_to_invite": "Please select friends to invite",
   "invite_failed": "Invitation failed. Please try again.",
   "invite_group_member_title": "Invite Friends",
-  "invite_success": "Successfully invited {count} friend(s)"
+  "invite_success": "Successfully invited {count} friend(s)",
+  "alias": "How they see me",
+  "alias_visible": "(this is what they see)",
+  "alias_saved": "This alias is now what they see",
+  "alias_saved_pending": "Saved — takes effect next time they open the chat",
+  "alias_cleared": "Reverted to your account name",
+  "alias_invalid": "Invalid name (1–64 characters)"
 }

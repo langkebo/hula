@@ -4145,7 +4145,8 @@ export type I18nKeys = {
     "input": {
       "group_name": "请输入群名称",
       "group_alias": "请输入群内昵称",
-      "remark": "该名称仅自己可见"
+      "remark": "该名称仅自己可见",
+      "alias": "例如：老同学"
     },
     "group_alias": "我在群里的昵称",
     "remark": "备注",
@@ -4190,7 +4191,13 @@ export type I18nKeys = {
     "select_friends_to_invite": "请选择要邀请的好友",
     "invite_failed": "邀请失败，请重试",
     "invite_group_member_title": "邀请群友",
-    "invite_success": "成功邀请 {count} 位好友"
+    "invite_success": "成功邀请 {count} 位好友",
+    "alias": "对方看到的我",
+    "alias_visible": "（对方会看到这个名字）",
+    "alias_saved": "对方现在看到的是这个别名",
+    "alias_saved_pending": "已保存，对方下次进入会话后生效",
+    "alias_cleared": "已恢复为你的账号昵称",
+    "alias_invalid": "名字不合法（1–64 字）"
   },
   "mobile_connection": {
     "connecting": "正在连接…",
@@ -10369,6 +10376,7 @@ export type I18nKeyPaths =
   | "mobile_chat_setting.input.group_name"
   | "mobile_chat_setting.input.group_alias"
   | "mobile_chat_setting.input.remark"
+  | "mobile_chat_setting.input.alias"
   | "mobile_chat_setting.group_alias"
   | "mobile_chat_setting.remark"
   | "mobile_chat_setting.remar_kprivate_visible"
@@ -10413,6 +10421,12 @@ export type I18nKeyPaths =
   | "mobile_chat_setting.invite_failed"
   | "mobile_chat_setting.invite_group_member_title"
   | "mobile_chat_setting.invite_success"
+  | "mobile_chat_setting.alias"
+  | "mobile_chat_setting.alias_visible"
+  | "mobile_chat_setting.alias_saved"
+  | "mobile_chat_setting.alias_saved_pending"
+  | "mobile_chat_setting.alias_cleared"
+  | "mobile_chat_setting.alias_invalid"
   | "mobile_connection.connecting"
   | "mobile_connection.reconnecting"
   | "mobile_connection.syncing"
