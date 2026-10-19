@@ -522,6 +522,18 @@
       "consumers": ["src/components/friend/FriendGroupView.vue", "src/composables/common/useRecentSearchHistory.ts"],
       "kind": "cache",
       "note": "好友分组视图的最近搜索词；FriendGroupView 传给 useRecentSearchHistory 读写"
+    },
+    "tjg-local-store-plaintext-warned-v1": {
+      "owner": "src/composables/secure/useLocalStorePlaintextWarning.ts",
+      "consumers": ["src/composables/secure/useLocalStorePlaintextWarning.ts"],
+      "kind": "flag",
+      "note": "F-4/D1：仅记录「已提示过明文存储风险」的本地标记，避免每次启动重复弹窗；无敏感内容"
+    },
+    "tjg-local-unlock-verifier-v1": {
+      "owner": "src/services/secure/localUnlockKey.ts",
+      "consumers": ["src/services/secure/localUnlockKey.ts", "src/composables/secure/useLocalUnlockGate.ts"],
+      "kind": "credential",
+      "note": "F-4/B1：本地解锁密码的 PBKDF2 verifier（可落盘，非密钥本身）。dbKey 后 16B 只存内存，绝不落盘"
     }
   }
 }

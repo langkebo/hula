@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-10-17T14:54:13.206Z",
-  "scanned": 259,
-  "callerFiles": 61,
-  "totalCalls": 160,
+  "generatedAt": "2026-10-19T14:35:16.928Z",
+  "scanned": 267,
+  "callerFiles": 63,
+  "totalCalls": 165,
   "totalUrls": 8,
   "ledger": {
     "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.default.json",
     "schemaVersion": "4",
-    "synapseRustCommit": "2946e19ebbdaadaccbabc8cc847c0283a46b4b5e",
-    "entryCount": 1019,
+    "synapseRustCommit": "8072be84c626bb15e87a24addd193e8bf40aeee2",
+    "entryCount": 1027,
     "matchedPathCount": 7,
-    "uncoveredPathCount": 797
+    "uncoveredPathCount": 801
   },
   "unmatchedUrls": [],
   "uncoveredLedger": [
@@ -72,6 +72,7 @@
     "/_matrix/client/v1/keys/signatures/upload",
     "/_matrix/client/v1/keys/upload",
     "/_matrix/client/v1/keys/upload/{device_id}",
+    "/_matrix/client/v1/login/get_token",
     "/_matrix/client/v1/login/qr_token",
     "/_matrix/client/v1/media/config",
     "/_matrix/client/v1/media/download/{server_name}/{media_id}",
@@ -414,6 +415,8 @@
     "/_matrix/vendor/v1/friends/{user_id}/info",
     "/_matrix/vendor/v1/friends/{user_id}/note",
     "/_matrix/vendor/v1/friends/{user_id}/status",
+    "/_matrix/vendor/v1/invites/claim",
+    "/_matrix/vendor/v1/invites/one-time",
     "/_matrix/vendor/v1/keys/rotation/check",
     "/_matrix/vendor/v1/keys/rotation/config",
     "/_matrix/vendor/v1/keys/rotation/history/{device_id}",
@@ -636,6 +639,7 @@
     "/_synapse/admin/v1/invite/blocklist",
     "/_synapse/admin/v1/invite/blocklist/{user_id}",
     "/_synapse/admin/v1/jitsi/config",
+    "/_synapse/admin/v1/join/{room_id_or_alias}",
     "/_synapse/admin/v1/media",
     "/_synapse/admin/v1/media/delete",
     "/_synapse/admin/v1/media/protect/{media_id}",
@@ -905,6 +909,22 @@
       "file": "src/services/matrix/ai/AIService.ts",
       "callCount": 3,
       "kinds": ["sdk", "tauri"],
+      "urlCount": 0,
+      "ledgerRoutes": [],
+      "unmatchedUrls": []
+    },
+    {
+      "file": "src/services/matrix/aliases/applyContactAlias.ts",
+      "callCount": 4,
+      "kinds": ["sdk"],
+      "urlCount": 0,
+      "ledgerRoutes": [],
+      "unmatchedUrls": []
+    },
+    {
+      "file": "src/services/matrix/aliases/contactAliasRegistry.ts",
+      "callCount": 1,
+      "kinds": ["sdk"],
       "urlCount": 0,
       "ledgerRoutes": [],
       "unmatchedUrls": []

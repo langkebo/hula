@@ -1,18 +1,9 @@
 {
-  "generatedAt": "2026-10-12T00:49:46.174Z",
-  "routeSources": ["sdk-contract(installed): 729", "backend-authority(sibling-manifest): 814（并入判据面 +235）"],
+  "generatedAt": "2026-10-19T14:34:38.561Z",
+  "routeSources": ["sdk-contract(installed): 986", "backend-authority(sibling-manifest): 826（并入判据面 +56）"],
   "note": "knownDefects = 当前未修的裸调 404 缺陷（须为 0 或显式登记；--strict 时失败）。history = 已修缺陷沿革（仅记录，不参与豁免）。",
   "defectEvidence": "每条缺陷已回源 synapse-rust 后端源码/守卫测试复核（证据见各条 reason 字段）。",
   "inventory": {
-    "/_matrix/client/unstable/org.matrix.msc4108/rendezvous": {
-      "files": ["src/services/matrix/paths/auth.ts"]
-    },
-    "/_matrix/client/unstable/org.matrix.msc4108/rendezvous/{p}": {
-      "files": ["src/services/matrix/paths/auth.ts"]
-    },
-    "/_matrix/client/unstable/org.matrix.msc4143/rtc/transports": {
-      "files": ["src/services/matrix/paths/voice.ts"]
-    },
     "/_matrix/client/unstable/org.matrix.simplified_msc3575/sync": {
       "files": ["src/services/matrix/paths/sync.ts"]
     },
@@ -21,18 +12,6 @@
     },
     "/_matrix/client/v1/login/qr_token": {
       "files": ["src/services/matrix/paths/auth.ts"]
-    },
-    "/_matrix/client/v1/rooms/{p}/hierarchy": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/_matrix/client/v1/rooms/{p}/timestamp_to_event": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/_matrix/client/v1/spaces/{p}/hierarchy": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/_matrix/client/v1/spaces/{p}/hierarchy/v1": {
-      "files": ["src/services/matrix/paths/space.ts"]
     },
     "/_matrix/client/v3/account/password": {
       "files": ["src/services/matrix/auth/authHelpers.ts"]
@@ -92,9 +71,6 @@
         "src/workers/workerProbeHandlers.ts"
       ]
     },
-    "/_matrix/media/v3/upload": {
-      "files": ["src/services/matrix/media/mediaUploadHelpers.ts"]
-    },
     "/_matrix/vendor/v1/friends": {
       "files": ["src/services/matrix/paths/friends.ts"]
     },
@@ -102,9 +78,6 @@
       "files": ["src/services/matrix/paths/friends.ts"]
     },
     "/_matrix/vendor/v1/friends/{p}/note": {
-      "files": ["src/services/matrix/paths/friends.ts"]
-    },
-    "/_matrix/vendor/v1/friends/{p}/status": {
       "files": ["src/services/matrix/paths/friends.ts"]
     },
     "/_matrix/vendor/v1/friends/check/{p}": {
@@ -133,6 +106,12 @@
     },
     "/_matrix/vendor/v1/friends/search": {
       "files": ["src/services/matrix/paths/friends.ts"]
+    },
+    "/_matrix/vendor/v1/invites/claim": {
+      "files": ["src/services/matrix/paths/invites.ts"]
+    },
+    "/_matrix/vendor/v1/invites/one-time": {
+      "files": ["src/services/matrix/paths/invites.ts"]
     },
     "/_matrix/vendor/v1/my_rooms": {
       "files": ["src/services/matrix/user/MatrixAccountService.ts"]
@@ -173,9 +152,6 @@
     "/config/client": {
       "files": ["src/services/matrix/paths/clientConfig.ts"]
     },
-    "/createRoom": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
     "/friends": {
       "files": ["src/services/matrix/paths/friends.ts"]
     },
@@ -191,179 +167,8 @@
     "/friends/search": {
       "files": ["src/services/matrix/paths/friends.ts"]
     },
-    "/join/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/knock/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/notifications": {
-      "files": ["src/services/matrix/paths/notification.ts"]
-    },
     "/notifications/{p}/ack": {
       "files": ["src/services/matrix/paths/notification.ts"]
-    },
-    "/pushers": {
-      "files": ["src/services/matrix/paths/notification.ts"]
-    },
-    "/pushers/set": {
-      "files": ["src/services/matrix/paths/notification.ts"]
-    },
-    "/pushrules/": {
-      "files": ["src/services/matrix/paths/notification.ts"]
-    },
-    "/rooms/{p}/aliases": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/call/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/capabilities": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/context/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/encrypted_events": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/invite": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/join": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/leave": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/members": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/message_queue": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/messages": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/metadata": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/notifications": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/permissions": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/pinned_events": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/pinned_events/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/read_markers": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/receipt/{p}/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/redact/{p}/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/send/{p}/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/sign/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/state": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/summary/members": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/summary/state": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/sync": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/timeline": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/turn_server": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/typing/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/unread_count": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/upgrade": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/rooms/{p}/verify/{p}": {
-      "files": ["src/services/matrix/paths/room.ts"]
-    },
-    "/spaces": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/children": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/children/{p}": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/invite": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/join": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/leave": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/members": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/rooms": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/state": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/summary": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/summary/with_children": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/{p}/tree_path": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/public": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/room/{p}": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/room/{p}/parents": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/search": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/statistics": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/spaces/user": {
-      "files": ["src/services/matrix/paths/space.ts"]
-    },
-    "/user/{p}/rooms/{p}/tags": {
-      "files": ["src/services/matrix/paths/room.ts"]
     },
     "/voice/config": {
       "files": ["src/services/matrix/paths/voice.ts"]
@@ -473,21 +278,20 @@
   "prefixRoots": [
     ".m.rule.",
     "/_matrix/",
-    "/_matrix/admin/v1",
     "/_matrix/client/unstable",
-    "/_matrix/client/unstable/org.matrix.msc4108",
-    "/_matrix/client/unstable/org.matrix.msc4354",
     "/_matrix/client/v1",
     "/_matrix/client/v3",
     "/_matrix/vendor/v1",
-    "/_synapse/admin/v1",
-    "/_synapse/admin/v2",
     "/mobile/mobileMy",
     "https://api.siliconflow.cn",
     "matrix-js-sdk::sync::",
+    "pbkdf2-sha256",
+    "pbkdf2-sha256-64",
     "sha256:",
     "tjg-crypto-storage-password",
     "tjg.persistedDeviceId:",
+    "tjg:privateRooms:",
+    "tjg:v2:",
     "windowChat--"
   ],
   "unresolved": []

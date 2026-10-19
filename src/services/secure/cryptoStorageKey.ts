@@ -159,6 +159,15 @@ function resolveLocalUnlockKey(): Uint8Array | null {
   return key
 }
 
+/**
+ * 取出（或首次派生）用于加密本地 crypto store 的 32 字节 storageKey。
+ *
+ * 密钥来源是「本地解锁密码」派生：密码经 PBKDF2 派生 32B，前 16B 落盘作 verifier，
+ * 后 16B 仅在解锁后留在内存。**未解锁时返回 null**，调用方必须据此 fail-closed
+ * （不传 storageKey 给 SDK 会让设备私钥与房间密钥明文落盘）。
+ *
+ * @returns 32 字节密钥；本地解锁未设置/未解锁/长度非法时为 null
+ */
 export async function getOrCreateCryptoStorageKey(userId: string, deviceId: string): Promise<Uint8Array | null> {
   const cKey = cacheKey(userId, deviceId)
 

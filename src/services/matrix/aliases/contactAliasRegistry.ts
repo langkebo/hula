@@ -49,6 +49,12 @@ let loaded = false
 /** 响应式版本号：别名变更后驱动 computed 重算（沿用 privateRoomRegistry 的做法） */
 const aliasVersion = ref(0)
 
+/**
+ * 当前别名表版本号。
+ *
+ * 别名存在模块级缓存里（不是 pinia store），UI 在 computed 里读它即可建立响应式依赖，
+ * 别名变更后相关 computed 会重算；`contactAliasVersion` 是同一个 ref 的直出形式。
+ */
 export function getContactAliasVersion(): number {
   return aliasVersion.value
 }
@@ -133,6 +139,12 @@ export function hasContactAlias(userId: string): boolean {
   return Boolean(cached.aliases[userId])
 }
 
+/**
+ * 列出全部别名（浅拷贝）。
+ *
+ * 返回副本而不是内部对象：调用方拿到就改不会污染缓存，也不会绕过
+ * `saveContactAlias` 的校验与 account data 持久化。
+ */
 export function listContactAliases(): Record<string, ContactAlias> {
   return { ...cached.aliases }
 }
