@@ -2724,6 +2724,26 @@ export type I18nKeys = {
       "new_request_announcement": "收到 {count} 条新的好友请求",
       "pending_requests": "{count} 条待处理好友请求",
       "view_all": "查看全部"
+    },
+    "one_time_invite": {
+      "title": "一次性邀请链接",
+      "boundary": "链接只能用一次、有有效期，适合在公开渠道分享。注意：对方领取后，房间成员列表里仍然能看到双方账号 —— 这不是匿名聊天。",
+      "generate": "生成邀请链接",
+      "regenerate": "重新生成",
+      "copy": "复制",
+      "copied": "已复制",
+      "copy_failed": "复制失败，请手动选中链接",
+      "remaining_hm": "剩余 {hours} 小时 {minutes} 分",
+      "remaining_m": "剩余 {minutes} 分",
+      "expired": "已过期，请重新生成",
+      "share_hint": "把链接发给对方，让对方在「添加好友」里粘贴并确认。直接点开链接不会生效（防止被链接预览消耗掉）。",
+      "claim_label": "收到别人的邀请？粘贴链接领取",
+      "claim_placeholder": "粘贴邀请链接",
+      "claim_action": "领取",
+      "invalid_link": "链接无效，请检查是否完整",
+      "claim_success": "已领取，正在打开会话",
+      "claim_failed": "领取失败，链接可能已被使用或已过期",
+      "create_failed": "生成失败，请稍后重试"
     }
   },
   "home": {
@@ -6122,6 +6142,7 @@ export type I18nKeys = {
       "shell_error_default": "设置页面壳层异常",
       "shell_retry": "重试",
       "tab_load_failed": "「{tab}」设置页加载失败",
+      "tab_unavailable": "「{tab}」在当前服务器不可用，已切换到偏好设置",
       "tab_runtime_error": "组件运行时异常，请查看控制台获取堆栈。",
       "tab_render_error": "组件渲染时发生未知异常",
       "tabs": {
@@ -6271,6 +6292,7 @@ export type I18nKeys = {
     },
     "encryption": {
       "title": "加密设置",
+      "server_unsupported": "当前服务器未启用端到端加密，本页为只读。",
       "status": "加密状态",
       "encryption_enabled": "端到端加密",
       "encryption_enabled_desc": "您的消息已启用端到端加密保护",
@@ -9311,6 +9333,24 @@ export type I18nKeyPaths =
   | "friend.list.new_request_announcement"
   | "friend.list.pending_requests"
   | "friend.list.view_all"
+  | "friend.one_time_invite.title"
+  | "friend.one_time_invite.boundary"
+  | "friend.one_time_invite.generate"
+  | "friend.one_time_invite.regenerate"
+  | "friend.one_time_invite.copy"
+  | "friend.one_time_invite.copied"
+  | "friend.one_time_invite.copy_failed"
+  | "friend.one_time_invite.remaining_hm"
+  | "friend.one_time_invite.remaining_m"
+  | "friend.one_time_invite.expired"
+  | "friend.one_time_invite.share_hint"
+  | "friend.one_time_invite.claim_label"
+  | "friend.one_time_invite.claim_placeholder"
+  | "friend.one_time_invite.claim_action"
+  | "friend.one_time_invite.invalid_link"
+  | "friend.one_time_invite.claim_success"
+  | "friend.one_time_invite.claim_failed"
+  | "friend.one_time_invite.create_failed"
   | "home.profile_edit.actions.save"
   | "home.profile_edit.title"
   | "home.profile_edit.form.nickname.label"
@@ -11963,6 +12003,7 @@ export type I18nKeyPaths =
   | "setting.dialog.shell_error_default"
   | "setting.dialog.shell_retry"
   | "setting.dialog.tab_load_failed"
+  | "setting.dialog.tab_unavailable"
   | "setting.dialog.tab_runtime_error"
   | "setting.dialog.tab_render_error"
   | "setting.dialog.tabs.account"
@@ -12000,6 +12041,7 @@ export type I18nKeyPaths =
   | "setting.dialog.groups.advanced"
   | "setting.dialog.groups.other"
   | "setting.encryption.title"
+  | "setting.encryption.server_unsupported"
   | "setting.encryption.status"
   | "setting.encryption.encryption_enabled"
   | "setting.encryption.encryption_enabled_desc"

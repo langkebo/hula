@@ -156,5 +156,25 @@
     "new_request_announcement": "收到 {count} 条新的好友请求",
     "pending_requests": "{count} 条待处理好友请求",
     "view_all": "查看全部"
+  },
+  "one_time_invite": {
+    "title": "一次性邀请链接",
+    "boundary": "链接只能用一次、有有效期，适合在公开渠道分享。注意：对方领取后，房间成员列表里仍然能看到双方账号 —— 这不是匿名聊天。",
+    "generate": "生成邀请链接",
+    "regenerate": "重新生成",
+    "copy": "复制",
+    "copied": "已复制",
+    "copy_failed": "复制失败，请手动选中链接",
+    "remaining_hm": "剩余 {hours} 小时 {minutes} 分",
+    "remaining_m": "剩余 {minutes} 分",
+    "expired": "已过期，请重新生成",
+    "share_hint": "把链接发给对方，让对方在「添加好友」里粘贴并确认。直接点开链接不会生效（防止被链接预览消耗掉）。",
+    "claim_label": "收到别人的邀请？粘贴链接领取",
+    "claim_placeholder": "粘贴邀请链接",
+    "claim_action": "领取",
+    "invalid_link": "链接无效，请检查是否完整",
+    "claim_success": "已领取，正在打开会话",
+    "claim_failed": "领取失败，链接可能已被使用或已过期",
+    "create_failed": "生成失败，请稍后重试"
   }
 }

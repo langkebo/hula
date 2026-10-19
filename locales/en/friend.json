@@ -156,5 +156,25 @@
     "new_request_announcement": "Received {count} new friend requests",
     "pending_requests": "{count} pending friend requests",
     "view_all": "View all"
+  },
+  "one_time_invite": {
+    "title": "One-time invite link",
+    "boundary": "The link works once and expires, so it is safe to share publicly. Note: after it is claimed, the room member list still shows both accounts — this is not anonymous chat.",
+    "generate": "Generate invite link",
+    "regenerate": "Generate a new one",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copy_failed": "Copy failed — please select the link manually",
+    "remaining_hm": "{hours}h {minutes}m left",
+    "remaining_m": "{minutes}m left",
+    "expired": "Expired — generate a new one",
+    "share_hint": "Send the link to the other person and ask them to paste it in \"Add friend\". Opening the link directly does nothing (that prevents link previews from burning it).",
+    "claim_label": "Got an invite? Paste the link to claim it",
+    "claim_placeholder": "Paste invite link",
+    "claim_action": "Claim",
+    "invalid_link": "Invalid link — please check it is complete",
+    "claim_success": "Claimed — opening the conversation",
+    "claim_failed": "Could not claim: the link may be used or expired",
+    "create_failed": "Failed to generate, please retry"
   }
 }

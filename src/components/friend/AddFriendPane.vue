@@ -23,6 +23,14 @@
         <n-select v-model:value="searchMode" :options="searchModeOptions" size="large" class="w-[100px]" />
       </n-flex>
 
+      <!-- F-5：一次性邀请（B-9）。能兑现「单次 + 带外 + 时效」，
+          不能兑现「发起者不知道对方身份」（claim 后成员表仍暴露双方 MXID）。 -->
+      <div class="add-friend-pane__invite-entry">
+        <n-button text type="primary" size="small" data-test="open-one-time-invite" @click="showOneTimeInvite = true">
+          {{ t('friend.one_time_invite.title') }}
+        </n-button>
+      </div>
+
       <div v-if="showSearchSummary" class="add-friend-pane__search-summary">
         <span>{{ searchSummaryText }}</span>
         <button
@@ -127,11 +135,14 @@
       </div>
     </n-scrollbar>
   </div>
+
+  <OneTimeInviteDialog v-model:show="showOneTimeInvite" @claimed="handleInviteClaimed" />
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import OneTimeInviteDialog from '@/components/friend/OneTimeInviteDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
@@ -149,6 +160,19 @@ const ADD_FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'tjg-add-friend-search-history'
 const RESTORED_HINT_DURATION = 3000
 
 const { t } = useI18n()
+
+/** F-5：一次性邀请对话框 */
+const showOneTimeInvite = ref(false)
+
+/**
+ * 领取成功后跳转会话。claim 已由服务端建房并邀请当前用户；
+ * room_id 缺失时不跳转（跳到不存在的房间只会 notFound，比停在原地更糟）。
+ */
+async function handleInviteClaimed(roomId: string | null): Promise<void> {
+  if (!roomId) return
+  const { default: router } = await import('@/router')
+  void router.push({ name: 'message', params: { roomId } })
+}
 const route = useRoute()
 const { announce } = useAriaLive()
 const { showFeedback } = useActionFeedback()
