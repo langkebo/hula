@@ -2,6 +2,7 @@ import { startPresenceHeartbeat } from '@/composables/user/usePresenceHeartbeat'
 import { MsgEnum, SexEnum } from '@/enums'
 import { resolveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { useI18nGlobal } from '@/services/i18n'
+import { reconcileContactAliases } from '@/services/matrix/aliases/applyContactAlias'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
@@ -288,6 +289,18 @@ export class SessionBootstrapService {
    * 派生用 HKDF（`info` 区分用途），不复用主密钥本身，避免跨用途密钥重用。
    * 失败一律传 null：宁可不落盘，也不写明文。
    */
+  /**
+   * F-6：登录后重放别名（房间级 m.room.member 不随账号数据同步）。
+   * 单个联系人失败不影响登录，整体 try/catch。
+   */
+  private async reconcileContactAliasesBestEffort(): Promise<void> {
+    try {
+      await reconcileContactAliases()
+    } catch (err) {
+      logger.warn('[bootstrap] 重放联系人别名失败（忽略）:', err)
+    }
+  }
+
   private async configureSearchIndexKey(): Promise<void> {
     try {
       const userId = matrixClientService.getUserId()
@@ -324,6 +337,7 @@ export class SessionBootstrapService {
     // 拿不到 storageKey（安全存储不可用且未设置本地解锁密码）时传 null ——
     // worker 侧会**停止落盘**并清掉旧的明文库，而不是退回明文。
     await this.configureSearchIndexKey()
+    await this.reconcileContactAliasesBestEffort()
     const allRooms = port.room.getRoomList()
 
     const searchRoomDocs: SearchRoomDoc[] = allRooms.map((roomInfo: RoomInfo) => {

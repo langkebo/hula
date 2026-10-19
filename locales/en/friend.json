@@ -176,5 +176,17 @@
     "claim_success": "Claimed — opening the conversation",
     "claim_failed": "Could not claim: the link may be used or expired",
     "create_failed": "Failed to generate, please retry"
+  },
+  "alias": {
+    "label": "How they see me",
+    "placeholder": "e.g. Old classmate",
+    "hint": "The alias applies only to this one-to-one chat and is what the other person sees. Note: the two fields above are names YOU gave them — only you can see those.",
+    "edit_aria": "Edit the name shown to this contact",
+    "saved": "This alias is now what they see",
+    "saved_pending_room": "Saved — it takes effect once you start chatting",
+    "invalid": "Invalid name (must be 1–64 characters)",
+    "cleared": "Reverted to your account display name",
+    "clear_failed": "Failed to clear, please retry",
+    "clear": "Revert to account name"
   }
 }

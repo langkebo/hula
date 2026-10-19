@@ -2744,6 +2744,18 @@ export type I18nKeys = {
       "claim_success": "已领取，正在打开会话",
       "claim_failed": "领取失败，链接可能已被使用或已过期",
       "create_failed": "生成失败，请稍后重试"
+    },
+    "alias": {
+      "label": "对方看到的我",
+      "placeholder": "例如：老同学",
+      "hint": "别名只对这一个单聊生效，对方会看到这个名字。注意：上面两条是「我给对方起的名」，只有你自己看得见。",
+      "edit_aria": "编辑对方看到的我的名字",
+      "saved": "对方现在看到的是这个别名",
+      "saved_pending_room": "已保存，和对方开始聊天后生效",
+      "invalid": "名字不合法（不能为空，最多 64 字）",
+      "cleared": "已恢复为你的账号昵称",
+      "clear_failed": "清除失败，请重试",
+      "clear": "恢复账号昵称"
     }
   },
   "home": {
@@ -9351,6 +9363,16 @@ export type I18nKeyPaths =
   | "friend.one_time_invite.claim_success"
   | "friend.one_time_invite.claim_failed"
   | "friend.one_time_invite.create_failed"
+  | "friend.alias.label"
+  | "friend.alias.placeholder"
+  | "friend.alias.hint"
+  | "friend.alias.edit_aria"
+  | "friend.alias.saved"
+  | "friend.alias.saved_pending_room"
+  | "friend.alias.invalid"
+  | "friend.alias.cleared"
+  | "friend.alias.clear_failed"
+  | "friend.alias.clear"
   | "home.profile_edit.actions.save"
   | "home.profile_edit.title"
   | "home.profile_edit.form.nickname.label"

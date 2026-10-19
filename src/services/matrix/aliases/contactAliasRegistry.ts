@@ -53,6 +53,9 @@ export function getContactAliasVersion(): number {
   return aliasVersion.value
 }
 
+/** 响应式版本号本体：UI 在 computed 里读它即可建立依赖 */
+export const contactAliasVersion = aliasVersion
+
 /**
  * 规范化显示名。
  *

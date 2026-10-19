@@ -84,6 +84,26 @@
         :maxlength="100"
         @submit="handleSaveDisplayName" />
 
+      <!-- F-6：别名。方向与上面两条**相反**（对方看我），文案必须说清 -->
+      <InlineEdit
+        class="management-section"
+        :label="t('friend.alias.label')"
+        :value="aliasName"
+        :placeholder="t('friend.alias.placeholder')"
+        :loading="savingAlias"
+        :edit-aria-label="t('friend.alias.edit_aria')"
+        :maxlength="64"
+        @submit="handleSaveAlias" />
+      <p class="single-details__alias-hint">{{ t('friend.alias.hint') }}</p>
+      <button
+        v-if="aliasName"
+        type="button"
+        class="single-details__alias-clear"
+        data-test="clear-contact-alias"
+        @click="handleClearAlias">
+        {{ t('friend.alias.clear') }}
+      </button>
+
       <div class="management-section">
         <div class="management-header">
           <span class="management-label">{{ t('friend.detail.status_section') }}</span>
@@ -134,6 +154,15 @@ import RoomBurnSettings from '@/components/room/RoomBurnSettings.vue'
 import { useDetailsActions } from '@/composables/chat/useDetailsActions'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum, RoomTypeEnum, UserType } from '@/enums'
+import { applyAliasToDmRoom, clearAliasFromDmRoom } from '@/services/matrix/aliases/applyContactAlias'
+import {
+  contactAliasVersion,
+  getContactAlias,
+  hasContactAlias,
+  loadContactAliases,
+  removeContactAlias,
+  saveContactAlias
+} from '@/services/matrix/aliases/contactAliasRegistry'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -144,6 +173,58 @@ const { t } = useI18n()
 const router = useRouter()
 const { showFeedback } = useActionFeedback()
 const contactStore = useContactStore()
+
+/**
+ * F-6 别名编辑器。
+ *
+ * ⚠️ 与上方「备注」方向相反，UI 必须说清：
+ * - 备注（note）：**我**给对方起的名，只有我看得见；
+ * - 别名（alias）：**对方**看我的名字，靠房间级 m.room.member 生效。
+ */
+const savingAlias = ref(false)
+
+// 幂等加载（内部已判 loaded）：本组件没有 onMounted，在 setup 顶层触发即可
+void loadContactAliases()
+
+const aliasName = computed(() => {
+  // 读版本号建立响应式依赖（别名是模块级缓存，不是 store）
+  void contactAliasVersion.value
+  const uid = singleUid.value
+  return uid ? (getContactAlias(uid)?.displayName ?? '') : ''
+})
+
+async function handleSaveAlias(value: string): Promise<void> {
+  const uid = singleUid.value
+  if (!uid) return
+  savingAlias.value = true
+  try {
+    await saveContactAlias(uid, { displayName: value })
+    const applied = await applyAliasToDmRoom(uid)
+    // 没有单聊房间时别名只存在于账号数据里，等建会话后自动生效 —— 不能谎报"已生效"
+    showFeedback(applied ? t('friend.alias.saved') : t('friend.alias.saved_pending_room'), 'success', 'polite')
+  } catch {
+    showFeedback(t('friend.alias.invalid'), 'error', 'assertive')
+  } finally {
+    savingAlias.value = false
+  }
+}
+
+async function handleClearAlias(): Promise<void> {
+  const uid = singleUid.value
+  if (!uid) return
+  savingAlias.value = true
+  try {
+    // 先清房间级状态（对方立刻看到回落），再删本地记录。
+    // 顺序反了会出现"本地已清、对方仍看我旧名字"。
+    await clearAliasFromDmRoom(uid)
+    await removeContactAlias(uid)
+    showFeedback(t('friend.alias.cleared'), 'success', 'polite')
+  } catch {
+    showFeedback(t('friend.alias.clear_failed'), 'error', 'assertive')
+  } finally {
+    savingAlias.value = false
+  }
+}
 
 const props = defineProps({
   content: {
@@ -215,6 +296,12 @@ const formatDate = (ts: number): string => {
 
 const lastSeenText = computed(() => {
   if (!contactInfo.value) return ''
+  // F-6：设了别名后不再展示对方在线状态。
+  // ⚠️ 这只是**本机不显示**（presence 是账号级广播，房间级资料管不到对方），
+  // 文案不得写成"对方看不到你在线"。
+  void contactAliasVersion.value
+  const uid = singleUid.value
+  if (uid && hasContactAlias(uid)) return ''
   if (contactInfo.value.activeStatus === OnlineEnum.ONLINE) return t('friend.list.online')
   if (contactInfo.value.lastOptTime && contactInfo.value.lastOptTime > 0) {
     return formatDate(contactInfo.value.lastOptTime)
@@ -446,6 +533,23 @@ const handleRemoveFriend = async () => {
 
 .single-details__action-icon--encrypted {
   background: var(--tjg-color-success-500);
+}
+
+.single-details__alias-hint {
+  margin: -4px 0 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--tjg-text-tertiary);
+}
+
+.single-details__alias-clear {
+  margin-bottom: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: var(--tjg-color-danger-500);
+  cursor: pointer;
 }
 
 .single-details__management {
