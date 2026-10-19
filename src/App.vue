@@ -42,7 +42,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
 import { useLocalStorePlaintextWarning } from '@/composables/secure/useLocalStorePlaintextWarning'
-import { useLocalUnlockGate } from '@/composables/secure/useLocalUnlockGate'
+import { runLocalUnlockPreflight } from '@/composables/secure/useLocalUnlockGate'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useIsMobile } from '@/composables/usePlatform'
@@ -98,9 +98,7 @@ const {
 const { state: connectionState, retryCount: connectionRetryCount, retry: handleConnectionRetry } = useConnectionStatus()
 const showSplash = computed(() => bootstrapState.value === 'initializing' || bootstrapState.value === 'idle')
 
-const handleBootstrapRetry = async () => {
-  await bootstrap()
-}
+const handleBootstrapRetry = () => void bootstrap()
 
 // ========== Stores ==========
 const settingStore = useSettingStore()
@@ -444,10 +442,7 @@ async function seedContactStateCache(): Promise<void> {
 onMounted(async () => {
   // bootstrap 内部失败会 re-throw，必须 catch 避免未处理 rejection 中断后续初始化。
   // bootstrap 内部已将错误存入 state.error，SplashScreen 会展示重试入口。
-  // F-4 / B1：本地解锁门禁必须在 crypto 初始化**之前** —— 解锁后密钥已在内存，
-  // 初始化即可加密打开 store，无需「解锁后重新 init」。
-  // 用户选择「稍后」时返回 false：启动继续，但 crypto 会 fail-closed（不写明文）。
-  await useLocalUnlockGate().ensureReady()
+  await runLocalUnlockPreflight()
   try {
     await bootstrap()
   } catch (err) {

@@ -64,70 +64,27 @@
     </div>
 
     <div v-if="!isBotUser" class="single-details__management">
-      <InlineEdit
-        class="management-section"
-        :label="t('friend.detail.note')"
-        :value="contactInfo.note || contactInfo.remark || ''"
-        :placeholder="t('friend.detail.note_placeholder')"
-        :loading="savingNote"
-        :edit-aria-label="t('friend.detail.note_section')"
-        :maxlength="200"
-        @submit="handleSaveNote" />
+      <ContactProfileEditors v-if="singleUid" :user-id="singleUid" :contact-info="contactInfo" />
 
-      <InlineEdit
-        class="management-section"
-        :label="t('friend.detail.display_name')"
-        :value="contactInfo.remark || contactInfo.displayName || ''"
-        :placeholder="t('friend.detail.display_name_placeholder')"
-        :loading="savingDisplayName"
-        :edit-aria-label="t('friend.detail.edit_display_name')"
-        :maxlength="100"
-        @submit="handleSaveDisplayName" />
-
-      <!-- F-6：别名。方向与上面两条**相反**（对方看我），文案必须说清 -->
-      <InlineEdit
-        class="management-section"
-        :label="t('friend.alias.label')"
-        :value="aliasName"
-        :placeholder="t('friend.alias.placeholder')"
-        :loading="savingAlias"
-        :edit-aria-label="t('friend.alias.edit_aria')"
-        :maxlength="64"
-        @submit="handleSaveAlias" />
-      <p class="single-details__alias-hint">{{ t('friend.alias.hint') }}</p>
-      <button
-        v-if="aliasName"
-        type="button"
-        class="single-details__alias-clear"
-        data-test="clear-contact-alias"
-        @click="handleClearAlias">
-        {{ t('friend.alias.clear') }}
-      </button>
-
-      <div class="management-section">
-        <div class="management-header">
-          <span class="management-label">{{ t('friend.detail.status_section') }}</span>
-        </div>
-        <div class="management-actions">
-          <n-button
-            size="small"
-            :type="contactInfo.friendStatus === 'favorite' ? 'warning' : 'default'"
-            @click="handleSetFavorite">
-            {{ t('friend.context.set_favorite') }}
-          </n-button>
-          <n-button
-            size="small"
-            :type="!contactInfo.friendStatus || contactInfo.friendStatus === 'normal' ? 'info' : 'default'"
-            @click="handleSetNormal">
-            {{ t('friend.context.set_normal') }}
-          </n-button>
-          <n-button
-            size="small"
-            :type="contactInfo.friendStatus === 'blocked' ? 'error' : 'default'"
-            @click="handleSetBlocked">
-            {{ t('friend.context.set_blocked') }}
-          </n-button>
-        </div>
+      <div class="management-actions">
+        <n-button
+          size="small"
+          :type="contactInfo.friendStatus === 'favorite' ? 'warning' : 'default'"
+          @click="handleSetFavorite">
+          {{ t('friend.context.set_favorite') }}
+        </n-button>
+        <n-button
+          size="small"
+          :type="!contactInfo.friendStatus || contactInfo.friendStatus === 'normal' ? 'info' : 'default'"
+          @click="handleSetNormal">
+          {{ t('friend.context.set_normal') }}
+        </n-button>
+        <n-button
+          size="small"
+          :type="contactInfo.friendStatus === 'blocked' ? 'error' : 'default'"
+          @click="handleSetBlocked">
+          {{ t('friend.context.set_blocked') }}
+        </n-button>
       </div>
 
       <RoomBurnSettings v-if="directRoomId" :room-id="directRoomId" />
@@ -145,24 +102,16 @@
 
 <script setup lang="ts">
 import type { PropType } from 'vue'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import InlineEdit from '@/components/atomic/InlineEdit.vue'
+import ContactProfileEditors from '@/components/friend/ContactProfileEditors.vue'
 import FriendDetailsSections from '@/components/rightBox/FriendDetailsSections.vue'
 import RoomBurnSettings from '@/components/room/RoomBurnSettings.vue'
 import { useDetailsActions } from '@/composables/chat/useDetailsActions'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum, RoomTypeEnum, UserType } from '@/enums'
-import { applyAliasToDmRoom, clearAliasFromDmRoom } from '@/services/matrix/aliases/applyContactAlias'
-import {
-  contactAliasVersion,
-  getContactAlias,
-  hasContactAlias,
-  loadContactAliases,
-  removeContactAlias,
-  saveContactAlias
-} from '@/services/matrix/aliases/contactAliasRegistry'
+import { contactAliasVersion, hasContactAlias } from '@/services/matrix/aliases/contactAliasRegistry'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -173,58 +122,6 @@ const { t } = useI18n()
 const router = useRouter()
 const { showFeedback } = useActionFeedback()
 const contactStore = useContactStore()
-
-/**
- * F-6 别名编辑器。
- *
- * ⚠️ 与上方「备注」方向相反，UI 必须说清：
- * - 备注（note）：**我**给对方起的名，只有我看得见；
- * - 别名（alias）：**对方**看我的名字，靠房间级 m.room.member 生效。
- */
-const savingAlias = ref(false)
-
-// 幂等加载（内部已判 loaded）：本组件没有 onMounted，在 setup 顶层触发即可
-void loadContactAliases()
-
-const aliasName = computed(() => {
-  // 读版本号建立响应式依赖（别名是模块级缓存，不是 store）
-  void contactAliasVersion.value
-  const uid = singleUid.value
-  return uid ? (getContactAlias(uid)?.displayName ?? '') : ''
-})
-
-async function handleSaveAlias(value: string): Promise<void> {
-  const uid = singleUid.value
-  if (!uid) return
-  savingAlias.value = true
-  try {
-    await saveContactAlias(uid, { displayName: value })
-    const applied = await applyAliasToDmRoom(uid)
-    // 没有单聊房间时别名只存在于账号数据里，等建会话后自动生效 —— 不能谎报"已生效"
-    showFeedback(applied ? t('friend.alias.saved') : t('friend.alias.saved_pending_room'), 'success', 'polite')
-  } catch {
-    showFeedback(t('friend.alias.invalid'), 'error', 'assertive')
-  } finally {
-    savingAlias.value = false
-  }
-}
-
-async function handleClearAlias(): Promise<void> {
-  const uid = singleUid.value
-  if (!uid) return
-  savingAlias.value = true
-  try {
-    // 先清房间级状态（对方立刻看到回落），再删本地记录。
-    // 顺序反了会出现"本地已清、对方仍看我旧名字"。
-    await clearAliasFromDmRoom(uid)
-    await removeContactAlias(uid)
-    showFeedback(t('friend.alias.cleared'), 'success', 'polite')
-  } catch {
-    showFeedback(t('friend.alias.clear_failed'), 'error', 'assertive')
-  } finally {
-    savingAlias.value = false
-  }
-}
 
 const props = defineProps({
   content: {
@@ -237,9 +134,6 @@ const props = defineProps({
 const { isMobile, handleSendMessage, handleVoiceCall, handleVideoCall, handleOpenInNewWindow } = useDetailsActions(
   props.content
 )
-
-const savingNote = ref(false)
-const savingDisplayName = ref(false)
 
 const contactInfo = computed<Partial<MatrixContact>>(() => {
   if (props.content.type !== RoomTypeEnum.SINGLE || !props.content.uid) {
@@ -325,36 +219,6 @@ const handleEncryptedChat = async () => {
     }
   } catch {
     showFeedback(t('friend.detail.chat_error'), 'error', 'assertive')
-  }
-}
-
-const handleSaveNote = async (newValue: string) => {
-  if (!singleUid.value || !newValue) return
-  savingNote.value = true
-  try {
-    const success = await contactStore.setFriendNote(singleUid.value, newValue)
-    if (success) {
-      showFeedback(t('friend.detail.note_saved'), 'success', 'polite')
-    }
-  } catch {
-    showFeedback(t('friend.detail.note_error'), 'error', 'assertive')
-  } finally {
-    savingNote.value = false
-  }
-}
-
-const handleSaveDisplayName = async (newValue: string) => {
-  if (!singleUid.value || !newValue) return
-  savingDisplayName.value = true
-  try {
-    const success = await contactStore.setFriendDisplayName(singleUid.value, newValue)
-    if (success) {
-      showFeedback(t('friend.detail.display_name_saved'), 'success', 'polite')
-    }
-  } catch {
-    showFeedback(t('friend.detail.display_name_error'), 'error', 'assertive')
-  } finally {
-    savingDisplayName.value = false
   }
 }
 

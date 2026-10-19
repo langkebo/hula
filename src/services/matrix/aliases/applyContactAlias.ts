@@ -20,13 +20,9 @@ const logger = createLogger('ContactAliasApply')
  * 所以这里在写之前硬校验成员构成，不满足直接返回 false，绝不"尽力而为"。
  */
 
-/** 房间最小依赖面：只需要 joined members 的 userId 列表 */
-interface RoomMemberLike {
-  userId: string
-}
-
-interface RoomLike {
-  getJoinedMembers: () => RoomMemberLike[]
+/** 房间最小依赖面：只需要已加入成员的 userId 列表（SDK `Room` 结构上可赋值给它） */
+export interface RoomMembersView {
+  getJoinedMembers: () => Array<{ userId: string }>
 }
 
 /**
@@ -34,8 +30,15 @@ interface RoomLike {
  *
  * 判据用**已加入成员**而不是 `m.direct`：`m.direct` 是客户端账本，可能没写、
  * 可能写错；成员构成是服务端事实。两者不一致时以事实为准。
+ *
+ * 参数用**结构化**视图（只要求 `getJoinedMembers`）：SDK `Room` 与测试里的对象字面量都能
+ * 直接传入，不需要任何类型断言 —— 双重断言在 ratchet 里是零容忍项。
  */
-export function isOneToOneRoom(room: RoomLike | null | undefined, myUserId: string, peerUserId: string): boolean {
+export function isOneToOneRoom(
+  room: RoomMembersView | null | undefined,
+  myUserId: string,
+  peerUserId: string
+): boolean {
   if (!room) return false
   const members = room.getJoinedMembers()
   if (members.length !== 2) return false
@@ -66,7 +69,7 @@ export async function applyAliasToDmRoom(peerUserId: string): Promise<boolean> {
     return false
   }
 
-  const room = matrixClient.getRoom(roomId) as RoomLike | null
+  const room = matrixClient.getRoom(roomId)
   if (!isOneToOneRoom(room, myUserId, peerUserId)) {
     // 群聊/多人房一律不写：会让所有成员都看到别名
     logger.warn(`房间 ${roomId} 不是与 ${peerUserId} 的一对一房间，拒绝写别名`)
@@ -101,7 +104,7 @@ export async function clearAliasFromDmRoom(peerUserId: string): Promise<boolean>
   const roomId = resolveDmRoomId(peerUserId)
   if (!roomId) return false
 
-  const room = matrixClient.getRoom(roomId) as RoomLike | null
+  const room = matrixClient.getRoom(roomId)
   if (!isOneToOneRoom(room, myUserId, peerUserId)) return false
 
   await matrixClient.sendStateEvent(
@@ -140,8 +143,8 @@ export function resolveDmRoomId(peerUserId: string): string | null {
   const myUserId = matrixClientService.getUserId()
   if (!myUserId) return null
   for (const room of matrixClient.getRooms() ?? []) {
-    if (isOneToOneRoom(room as unknown as RoomLike, myUserId, peerUserId)) {
-      const roomId = (room as { roomId?: string }).roomId
+    if (isOneToOneRoom(room, myUserId, peerUserId)) {
+      const roomId = room.roomId
       if (roomId) return roomId
     }
   }
@@ -163,7 +166,7 @@ export async function reconcileContactAliases(): Promise<void> {
   if (!myUserId) return
 
   for (const room of matrixClient.getRooms() ?? []) {
-    const members = (room as unknown as RoomLike).getJoinedMembers?.() ?? []
+    const members = room.getJoinedMembers?.() ?? []
     if (members.length !== 2) continue
     const peer = members.find((m) => m.userId !== myUserId)
     if (!peer) continue

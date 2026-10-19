@@ -173,38 +173,10 @@
             </div>
           </div>
 
-          <!-- 备注 -->
-          <div class="w-full flex flex-col gap-15px rounded-10px">
-            <div class="ps-15px text-14px">
-              <span class="dark:text-white">{{ t('mobile_chat_setting.remark') }}</span>
-              <span class="text-[--tjg-text-secondary] ml-1">
-                {{ t('mobile_chat_setting.remar_kprivate_visible') }}
-              </span>
-            </div>
-            <van-field
-              v-model="remarkValue"
-              :placeholder="t('mobile_chat_setting.input.remark')"
-              @blur="handleInfoUpdate"
-              class="rounded-10px" />
-          </div>
-
-          <!-- F-6：别名（对方看我的名字）。方向与上面「备注」相反，副标题必须说清 -->
-          <div v-if="!isGroup" class="w-full flex flex-col gap-15px rounded-10px">
-            <div class="ps-15px text-14px">
-              <span class="dark:text-white">{{ t('mobile_chat_setting.alias') }}</span>
-              <span class="text-[--tjg-text-secondary] ml-1">
-                {{ t('mobile_chat_setting.alias_visible') }}
-              </span>
-            </div>
-            <van-field
-              v-model="aliasValue"
-              :placeholder="t('mobile_chat_setting.input.alias')"
-              @blur="handleAliasUpdate"
-              data-test="mobile-contact-alias"
-              class="rounded-10px" />
-          </div>
-
+          <ChatRemarkField v-model="remarkValue" @blur="handleInfoUpdate" />
+          <ContactAliasField v-if="!isGroup && friend?.userId" :user-id="friend.userId" />
           <!-- 设置 -->
+
           <div class="bg-[--tjg-surface-panel] rounded-10px">
             <div class="p-15px text-14px font-medium">
               {{ t('mobile_chat_setting.setting_type', { t: title }) }}
@@ -310,14 +282,9 @@ import { useRoomListManagement } from '@/composables/room/useRoomListManagement'
 import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum } from '@/enums'
+import ChatRemarkField from '@/mobile/components/chat-room/ChatRemarkField.vue'
+import ContactAliasField from '@/mobile/components/chat-room/ContactAliasField.vue'
 import router from '@/router'
-import { applyAliasToDmRoom, clearAliasFromDmRoom } from '@/services/matrix/aliases/applyContactAlias'
-import {
-  getContactAlias,
-  loadContactAliases,
-  removeContactAlias,
-  saveContactAlias
-} from '@/services/matrix/aliases/contactAliasRegistry'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
@@ -399,14 +366,6 @@ const isAddAnnoun = ref(false)
 const announList = ref<GroupAnnouncementListItem[]>([])
 const remarkValue = ref('')
 
-/**
- * F-6 别名：**对方**看我的名字（与 remark 方向相反）。
- *
- * 只有单聊可设 —— 群聊里写房间级 m.room.member 会让所有成员都看到别名，
- * 那不是"对某个联系人的别名"。模板用 `v-if="!isGroup"` 限制。
- */
-const aliasValue = ref('')
-const aliasSaving = ref(false)
 const groupInfo = ref<MatrixGroupInfo | null>(null)
 const nameValue = ref('')
 const avatarValue = ref('')
@@ -746,51 +705,8 @@ onMounted(async () => {
   } else {
     remarkValue.value = friend.value?.remark || ''
     initialRemarkValue.value = remarkValue.value
-
-    // 别名是账号数据（不是好友资料），单独加载后回填
-    await loadContactAliases()
-    const peerUid = friend.value?.userId
-    aliasValue.value = peerUid ? (getContactAlias(peerUid)?.displayName ?? '') : ''
   }
 })
-
-/**
- * 别名 blur 保存。**清空即清除**（回落账号昵称）。
- *
- * 清除顺序：先清房间级状态、再删本地记录 —— 反了会出现
- * "本地已清、对方仍看我旧名字"。
- */
-async function handleAliasUpdate(): Promise<void> {
-  const uid = friend.value?.userId
-  if (!uid || aliasSaving.value) return
-
-  const next = aliasValue.value.trim()
-  const current = getContactAlias(uid)?.displayName ?? ''
-  if (next === current) return
-
-  aliasSaving.value = true
-  try {
-    if (!next) {
-      await clearAliasFromDmRoom(uid)
-      await removeContactAlias(uid)
-      aliasValue.value = ''
-      showFeedback(t('mobile_chat_setting.alias_cleared'), 'success')
-      return
-    }
-
-    await saveContactAlias(uid, { displayName: next })
-    const applied = await applyAliasToDmRoom(uid)
-    // 没有单聊房间时不能谎报"对方已看到"
-    showFeedback(
-      applied ? t('mobile_chat_setting.alias_saved') : t('mobile_chat_setting.alias_saved_pending'),
-      'success'
-    )
-  } catch {
-    showFeedback(t('mobile_chat_setting.alias_invalid'), 'error')
-  } finally {
-    aliasSaving.value = false
-  }
-}
 </script>
 
 <style scoped lang="scss">

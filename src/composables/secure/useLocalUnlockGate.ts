@@ -129,3 +129,18 @@ export function resetLocalUnlockGateForTest(): void {
   errorKey.value = null
   resolvePending = null
 }
+
+/**
+ * 启动前置：本地解锁门禁。
+ *
+ * **必须在 crypto 初始化之前**调用 —— 解锁后密钥已在内存，初始化即可加密打开 store，
+ * 因此不需要「解锁后再重新 init」（那条路要绕 crypto 生命周期守卫，风险高得多）。
+ *
+ * 用户选择「稍后」时返回 false：启动继续，但 MatrixCryptoStateTracker 会 fail-closed
+ * （不写明文），代价是本次会话 E2EE 不可用。
+ *
+ * @returns 是否已就绪（false = 用户选择稍后 / 安全存储不可用且未设置密码）
+ */
+export async function runLocalUnlockPreflight(): Promise<boolean> {
+  return useLocalUnlockGate().ensureReady()
+}
