@@ -26,7 +26,7 @@ const logger = createLogger('ContactAliasRegistry')
  * 兑现：对方看不到我的昵称/头像。
  * 不兑现：对方仍能看到我的 MXID（协议决定）、服务端仍可见、presence 仍按账号广播。
  */
-export const CONTACT_ALIAS_ACCOUNT_DATA = 'com.hula.contact_alias'
+const CONTACT_ALIAS_ACCOUNT_DATA = 'com.hula.contact_alias'
 
 /** 别名显示名长度上限（与全局 profile 的常见限制对齐，避免超长破坏气泡布局） */
 export const CONTACT_ALIAS_MAX_NAME_LENGTH = 64
@@ -48,16 +48,6 @@ let loaded = false
 
 /** 响应式版本号：别名变更后驱动 computed 重算（沿用 privateRoomRegistry 的做法） */
 const aliasVersion = ref(0)
-
-/**
- * 当前别名表版本号。
- *
- * 别名存在模块级缓存里（不是 pinia store），UI 在 computed 里读它即可建立响应式依赖，
- * 别名变更后相关 computed 会重算；`contactAliasVersion` 是同一个 ref 的直出形式。
- */
-export function getContactAliasVersion(): number {
-  return aliasVersion.value
-}
 
 /** 响应式版本号本体：UI 在 computed 里读它即可建立依赖 */
 export const contactAliasVersion = aliasVersion
@@ -137,16 +127,6 @@ export function getContactAlias(userId: string): ContactAlias | null {
 /** 是否已为该联系人设了别名（用于列表/详情页标记与 UI 区分） */
 export function hasContactAlias(userId: string): boolean {
   return Boolean(cached.aliases[userId])
-}
-
-/**
- * 列出全部别名（浅拷贝）。
- *
- * 返回副本而不是内部对象：调用方拿到就改不会污染缓存，也不会绕过
- * `saveContactAlias` 的校验与 account data 持久化。
- */
-export function listContactAliases(): Record<string, ContactAlias> {
-  return { ...cached.aliases }
 }
 
 /**
