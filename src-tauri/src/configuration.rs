@@ -4,7 +4,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
-use tracing::info;
+use tracing::{info, warn};
 
 // 应用程序设置结构体
 #[derive(serde::Deserialize, serde::Serialize, Clone, Debug)]
@@ -210,18 +210,33 @@ impl DatabaseSettings {
         info!("Database path: {:?}", db_path);
 
         if db_path.exists() {
-            let mut header = [0u8; 16];
-            let need_repair = match std::fs::File::open(&db_path) {
-                Ok(mut f) => {
-                    let _ = f.read(&mut header);
-                    header != *b"SQLite format 3\0"
+            match probe_db_header(&db_path) {
+                DbHeaderVerdict::Sqlite => {}
+                DbHeaderVerdict::NotSqlite => {
+                    let backup = db_path.with_extension("corrupted");
+                    match std::fs::rename(&db_path, &backup) {
+                        Ok(()) => warn!(
+                            "数据库文件头不是 SQLite，已备份为 {:?}（原文件不再使用）",
+                            backup
+                        ),
+                        Err(rename_err) => {
+                            // rename 失败再删：两步都失败时必须让人知道，否则下次启动会继续读到同一坏文件
+                            match std::fs::remove_file(&db_path) {
+                                Ok(()) => {
+                                    warn!("备份失败（{}），已删除损坏的数据库文件", rename_err)
+                                }
+                                Err(remove_err) => warn!(
+                                    "损坏的数据库文件既无法备份也无法删除（{} / {}），下次启动会再次失败",
+                                    rename_err, remove_err
+                                ),
+                            }
+                        }
+                    }
                 }
-                Err(_) => false,
-            };
-            if need_repair {
-                let backup = db_path.with_extension("corrupted");
-                let _ =
-                    std::fs::rename(&db_path, &backup).or_else(|_| std::fs::remove_file(&db_path));
+                DbHeaderVerdict::Unknown => warn!(
+                    "无法读取数据库文件头，按「未知」处理并保留原文件（不判定为损坏）: {:?}",
+                    db_path
+                ),
             }
         }
 
@@ -438,6 +453,50 @@ fn get_config_path_buf(
     Ok((base_path, active_config_path_buf))
 }
 
+/// 数据库文件头判定结果。
+///
+/// ⚠️ **三态而不是 bool**：读失败 ≠ 文件损坏。
+///
+/// 历史实现是：
+/// ```ignore
+/// let mut header = [0u8; 16];
+/// let _ = f.read(&mut header);          // 读失败被吞掉
+/// header != *b"SQLite format 3\0"       // header 仍是全零 ⇒ 判为「非 SQLite」
+/// ```
+/// 于是一次瞬时 IO 错误（或短读）就会把**用户真实的数据库**改名成 `.corrupted`，
+/// rename 再失败就 `remove_file` 删掉，然后静默建一个空库 —— 本地数据全丢且无提示。
+#[derive(Debug, PartialEq, Eq)]
+enum DbHeaderVerdict {
+    /// 文件头是合法的 SQLite 魔数
+    Sqlite,
+    /// 读到了完整的 16 字节，但不是 SQLite 魔数（确实不是数据库）
+    NotSqlite,
+    /// 打不开、读不满 16 字节、IO 错误 —— **不判定**，保持原文件
+    Unknown,
+}
+
+const SQLITE_HEADER: &[u8; 16] = b"SQLite format 3\0";
+
+/// 探测数据库文件头。任何读取异常都返回 `Unknown`，绝不在读不到的情况下判定损坏。
+fn probe_db_header(path: &Path) -> DbHeaderVerdict {
+    let mut file = match std::fs::File::open(path) {
+        Ok(f) => f,
+        Err(_) => return DbHeaderVerdict::Unknown,
+    };
+    let mut header = [0u8; 16];
+    match file.read_exact(&mut header) {
+        Ok(()) => {
+            if &header == SQLITE_HEADER {
+                DbHeaderVerdict::Sqlite
+            } else {
+                DbHeaderVerdict::NotSqlite
+            }
+        }
+        // 短读（文件 <16 字节）与 IO 错误都走这里：不判损坏
+        Err(_) => DbHeaderVerdict::Unknown,
+    }
+}
+
 #[cfg(test)]
 mod database_filename_tests {
     use super::*;
@@ -576,5 +635,61 @@ mod database_filename_tests {
         assert_eq!(resolved, "db_@alice.sqlite");
         assert!(plain.exists());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod db_header_tests {
+    use super::*;
+    use std::io::Write;
+
+    fn temp_file(tag: &str, bytes: &[u8]) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("tjg-dbheader-{tag}-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("probe.sqlite");
+        let mut f = std::fs::File::create(&path).expect("create temp db");
+        f.write_all(bytes).expect("write temp db");
+        path
+    }
+
+    #[test]
+    fn valid_sqlite_header_is_sqlite() {
+        let path = temp_file("valid", b"SQLite format 3\0rest-of-page");
+        assert_eq!(probe_db_header(&path), DbHeaderVerdict::Sqlite);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn sixteen_bytes_of_garbage_is_not_sqlite() {
+        let path = temp_file("garbage", b"not-a-database!!");
+        assert_eq!(path.metadata().unwrap().len(), 16);
+        assert_eq!(probe_db_header(&path), DbHeaderVerdict::NotSqlite);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    /// 回归锁（判据 2：失败被静默吸收）。
+    ///
+    /// 旧实现 `let _ = f.read(&mut header)` 在读不满时留下全零 header，
+    /// 于是把「读不完整」判成「不是 SQLite」→ 重命名/删除用户的数据库。
+    /// 短读必须落到 Unknown，绝不能落到 NotSqlite。
+    #[test]
+    fn short_read_is_unknown_never_not_sqlite() {
+        let path = temp_file("short", b"SQLi");
+        assert_eq!(probe_db_header(&path), DbHeaderVerdict::Unknown);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn empty_file_is_unknown_not_corrupted() {
+        let path = temp_file("empty", b"");
+        assert_eq!(probe_db_header(&path), DbHeaderVerdict::Unknown);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn missing_file_is_unknown() {
+        let path = std::env::temp_dir().join("tjg-dbheader-missing-does-not-exist.sqlite");
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(probe_db_header(&path), DbHeaderVerdict::Unknown);
     }
 }
