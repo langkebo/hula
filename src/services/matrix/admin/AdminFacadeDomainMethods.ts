@@ -1,3 +1,4 @@
+import type { RoomStatsOverview } from '@/services/matrix/sdk'
 import { AdminFacadeOpsMethods } from './AdminFacadeOpsMethods'
 import type { AdminRoomService } from './RoomService'
 
@@ -218,11 +219,8 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
     return this.rooms.purgeRoom(roomId)
   }
 
-  async getRoomStats(
-    limit = 100,
-    from?: string
-  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
-    return this.rooms.getRoomStats(limit, from)
+  async getRoomStats(): Promise<RoomStatsOverview> {
+    return this.rooms.getRoomStats()
   }
 
   /** 获取单个房间的统计信息。 */

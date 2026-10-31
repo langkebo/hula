@@ -455,10 +455,8 @@ async function confirmAction() {
   }
   const { type, reportId, reason } = actionDialog.value
   if (type === 'resolve') {
-    // 适配：SDK DTO 将 resolve 请求体声明为 resolution_reason，但后端契约（event_report.rs）实际读取 reason
-    const body = { reason } as Parameters<typeof matrixEventReportService.resolveReport>[1]
     try {
-      await matrixEventReportService.resolveReport(reportId, body)
+      await matrixEventReportService.resolveReport(reportId, { reason })
       showFeedback(t('moderation.event_reports.toast.resolveSuccess'), 'success')
       actionDialog.value = { ...actionDialog.value, show: false }
       loadEventReports()

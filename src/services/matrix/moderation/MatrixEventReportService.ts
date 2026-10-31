@@ -229,7 +229,7 @@ class MatrixEventReportService extends BaseMatrixService {
   /**
    * 将举报标记为已解决。
    */
-  async resolveReport(id: number, body?: ResolveReportBody): Promise<ReportResponse> {
+  async resolveReport(id: number, body: ResolveReportBody): Promise<ReportResponse> {
     try {
       const manager = await this.requireEventReportManager()
       const result = await manager.resolveReport(id, body)
@@ -244,7 +244,7 @@ class MatrixEventReportService extends BaseMatrixService {
   /**
    * 驳回举报。
    */
-  async dismissReport(id: number, body?: DismissReportBody): Promise<ReportResponse> {
+  async dismissReport(id: number, body: DismissReportBody): Promise<ReportResponse> {
     try {
       const manager = await this.requireEventReportManager()
       const result = await manager.dismissReport(id, body)

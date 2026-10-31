@@ -250,7 +250,7 @@ class SpaceService extends BaseMatrixService {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        await this.getSpaceManager().member.joinSpace(spaceId, { via_servers: viaServers })
+        await this.getSpaceManager().member.joinSpace(spaceId)
         logger.info(`[Space] 加入 Space 成功: ${spaceId} (尝试 ${attempt + 1})`)
         return
       } catch (err) {

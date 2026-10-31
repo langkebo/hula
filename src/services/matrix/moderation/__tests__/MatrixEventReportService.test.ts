@@ -87,12 +87,12 @@ describe('MatrixEventReportService', () => {
     })
 
     it('resolve/dismiss/escalate/delete 均走 manager，不触发 authedRequest', async () => {
-      await matrixEventReportService.resolveReport(1, { resolution_reason: 'ok' })
+      await matrixEventReportService.resolveReport(1, { reason: 'ok' })
       await matrixEventReportService.dismissReport(1, { reason: 'no' })
       await matrixEventReportService.escalateReport(1)
       await matrixEventReportService.deleteReport(1)
 
-      expect(manager.resolveReport).toHaveBeenCalledWith(1, { resolution_reason: 'ok' })
+      expect(manager.resolveReport).toHaveBeenCalledWith(1, { reason: 'ok' })
       expect(manager.dismissReport).toHaveBeenCalledWith(1, { reason: 'no' })
       expect(manager.escalateReport).toHaveBeenCalledWith(1, undefined)
       expect(manager.deleteReport).toHaveBeenCalledWith(1)

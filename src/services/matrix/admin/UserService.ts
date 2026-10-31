@@ -323,9 +323,9 @@ export class AdminUserService {
       const admin = await this.sdkAdmin()
       const result = await admin.getShadowBanStatus(userId)
       if (!result) return null
+      // 后端 GET /users/{user_id}/shadow_ban 只返回 { shadow_banned }，没有封禁时间
       return {
-        banned: result.banned ?? false,
-        bannedAt: result.banned_at
+        banned: result.shadow_banned ?? false
       }
     } catch (err) {
       if (this.isPermissionDenied(err)) return null

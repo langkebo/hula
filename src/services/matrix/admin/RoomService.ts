@@ -1,4 +1,4 @@
-import type { MatrixClient } from '@/services/matrix/sdk'
+import type { MatrixClient, RoomStatsOverview } from '@/services/matrix/sdk'
 import { isValidMatrixRoomId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
@@ -289,21 +289,13 @@ export class AdminRoomService {
     }
   }
 
-  async getRoomStats(
-    limit = 100,
-    from?: string
-  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+  async getRoomStats(): Promise<RoomStatsOverview> {
     try {
       const admin = await this.sdkAdmin()
-      const result = await admin.getRoomStats(from, limit)
-      const stats = result ?? []
-      return {
-        stats: stats as typeof stats & Array<Record<string, unknown>>,
-        nextToken: undefined
-      }
+      return await admin.getRoomStats()
     } catch (err) {
       logger.error(`[Admin] 获取房间统计失败: ${err}`)
-      return { stats: [] }
+      throw err
     }
   }
 

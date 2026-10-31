@@ -146,8 +146,8 @@ class MatrixEncryptionService extends BaseMatrixService {
       logger.info('[Encryption] 密钥轮换成功')
       return {
         success: response.success,
-        keyId: response.key_id ?? '',
-        rotatedAt: response.rotated_at ?? Date.now()
+        keyId: '',
+        rotatedAt: Date.now()
       }
     } catch (err) {
       if (this.isForbiddenError(err)) {

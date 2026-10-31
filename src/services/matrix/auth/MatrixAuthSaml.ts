@@ -59,7 +59,7 @@ export async function handleSamlCallback(samlResponse: string, relayState?: stri
 
 /** SAML 登出
  */
-export async function samlLogout(redirectUrl?: string): Promise<string | null> {
+export async function samlLogout(): Promise<string | null> {
   const client = matrixClientService.getClient()
   if (!client) {
     throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
@@ -67,7 +67,7 @@ export async function samlLogout(redirectUrl?: string): Promise<string | null> {
 
   try {
     const manager = client.getSamlAuthManager()
-    const result = await manager.logout(redirectUrl)
+    const result = await manager.logout()
     return result.redirect_url ?? null
   } catch (err) {
     throw normalizeSdkMatrixError(err, 'SAML 登出失败')

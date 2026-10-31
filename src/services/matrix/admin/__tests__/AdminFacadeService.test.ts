@@ -131,7 +131,15 @@ describe('adminService facade', () => {
       purgeRoomHistory: vi.fn().mockResolvedValue({ purge_id: 'p1' }),
       purgeHistoryGlobal: vi.fn().mockResolvedValue({ purge_id: '' }),
       listRoomStats: vi.fn().mockResolvedValue({ room_stats: [], next_token: undefined }),
-      getRoomStats: vi.fn().mockResolvedValue({ room_stats: [], next_token: undefined }),
+      getRoomStats: vi.fn().mockResolvedValue({
+        total_rooms: 0,
+        encrypted_rooms: 0,
+        public_rooms: 0,
+        total_messages: 0,
+        total_members: 0,
+        active_rooms: 0,
+        average_messages_per_room: 0
+      }),
       getRoomStatsByRoom: vi.fn().mockResolvedValue(null),
       getRoomListings: vi.fn().mockResolvedValue(null),
       setRoomPublicListing: vi.fn().mockResolvedValue(undefined),
@@ -409,10 +417,7 @@ describe('adminService facade', () => {
     })
 
     it('should manage shadow ban status and whois via legacy facade delegators', async () => {
-      mockAdminManager.getShadowBanStatus.mockResolvedValue({
-        banned: true,
-        banned_at: 123456
-      })
+      mockAdminManager.getShadowBanStatus.mockResolvedValue({ shadow_banned: true })
       mockAdminManager.whois.mockResolvedValue({
         user_id: '@user:server',
         devices: { dev1: { sessions: [] } }
@@ -425,10 +430,7 @@ describe('adminService facade', () => {
       expect(mockAdminManager.unshadowBanUser).toHaveBeenCalledWith('@user:server')
 
       const shadowBanStatus = await adminService.getShadowBanStatus('@user:server')
-      expect(shadowBanStatus).toEqual({
-        banned: true,
-        bannedAt: 123456
-      })
+      expect(shadowBanStatus).toEqual({ banned: true })
       expect(mockAdminManager.getShadowBanStatus).toHaveBeenCalledWith('@user:server')
 
       const whois = await adminService.getWhois('@user:server')
@@ -591,12 +593,20 @@ describe('adminService facade', () => {
       expect(mockAdminManager.purgeRoom).toHaveBeenCalledWith({ room_id: '!room:server' })
     })
 
-    it('should get room stats via SDK list', async () => {
-      mockAdminManager.getRoomStats.mockResolvedValue([{ joined_members: 5 }])
-      const result = await adminService.getRoomStats(50, 'f')
-      expect(result.stats).toHaveLength(1)
-      expect(result.nextToken).toBeUndefined()
-      expect(mockAdminManager.getRoomStats).toHaveBeenCalledWith('f', 50)
+    it('should get room stats overview via SDK', async () => {
+      const overview = {
+        total_rooms: 10,
+        encrypted_rooms: 2,
+        public_rooms: 4,
+        total_messages: 100,
+        total_members: 50,
+        active_rooms: 3,
+        average_messages_per_room: 10
+      }
+      mockAdminManager.getRoomStats.mockResolvedValue(overview)
+      const result = await adminService.getRoomStats()
+      expect(result).toEqual(overview)
+      expect(mockAdminManager.getRoomStats).toHaveBeenCalledWith()
     })
 
     it('should search in room via SDK', async () => {

@@ -45,7 +45,8 @@ export {
 export type {
   AdminManager,
   AdminShutdownRoomResult,
-  FederationDestination as SdkFederationDestination
+  FederationDestination as SdkFederationDestination,
+  RoomStatsOverview
 } from 'matrix-js-sdk/admin'
 export { ClientEvent } from 'matrix-js-sdk/client'
 export type { SdkContractModule, SdkContractRoute } from 'matrix-js-sdk/contract'

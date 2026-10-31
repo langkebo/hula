@@ -126,9 +126,9 @@ describe('samlLogout', () => {
 
   it('returns the redirect_url after logout', async () => {
     mockSamlManager.logout.mockResolvedValue({ redirect_url: 'https://saml.example/done' })
-    const result = await samlLogout('https://cb.example')
+    const result = await samlLogout()
     expect(result).toBe('https://saml.example/done')
-    expect(mockSamlManager.logout).toHaveBeenCalledWith('https://cb.example')
+    expect(mockSamlManager.logout).toHaveBeenCalledWith()
   })
 
   it('returns null when no redirect_url is present', async () => {

@@ -190,7 +190,9 @@ class MatrixOidcService {
       logger.info(`[MatrixOidcService] Logging out via OIDC`)
 
       const client = await matrixClientService.waitForClientReady()
-      await client.getOidcManager().logout()
+      // SDK 要求以 refresh_token 或 device_id 标识要吊销的会话（RP-Initiated Logout 字段不参与会话识别）
+      const deviceId = client.getDeviceId()
+      await client.getOidcManager().logout(deviceId ? { device_id: deviceId } : {})
 
       logger.info(`[MatrixOidcService] OIDC logout successful`)
       return true
