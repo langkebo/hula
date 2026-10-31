@@ -5,6 +5,7 @@ import { matrixFriendOperations, matrixFriendService } from '@/services/matrix/f
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { useContactStore } from '../contacts'
+import { createContactsList } from '../contacts/list'
 
 const { matrixClientServiceMock, getClientMock, getUserIdMock } = vi.hoisted(() => {
   const waitForClientReadyMock = vi.fn()
@@ -309,5 +310,116 @@ describe('setFriendStatus', () => {
 
     expect(result).toBe(true)
     expect(store.contactsList[0]?.friendStatus).toBe('normal')
+  })
+})
+
+describe('contacts presence preservation on friend sync', () => {
+  const createList = () => createContactsList({ ensureFriendServicesReady: async () => {} })
+
+  const contact = {
+    userId: '@test1:matrix.org',
+    uid: '@test1:matrix.org',
+    displayName: 'test1',
+    name: 'test1',
+    avatarUrl: null,
+    avatar: '',
+    account: 'test1',
+    activeStatus: OnlineEnum.ONLINE,
+    presence: 'online',
+    lastOptTime: 111,
+    remark: '',
+    hideMyPosts: false,
+    hideTheirPosts: false
+  }
+
+  const friend = {
+    user_id: '@test1:matrix.org',
+    display_name: 'test1',
+    avatar_url: null,
+    note: '',
+    since: 222
+  } as never
+
+  it('updateContactsFromFriends 不把已在线好友刷回离线', () => {
+    const list = createList()
+    list.contactsList.value = [{ ...contact }]
+
+    list.updateContactsFromFriends([friend])
+
+    expect(list.contactsList.value[0]).toMatchObject({
+      activeStatus: OnlineEnum.ONLINE,
+      presence: 'online',
+      lastOptTime: 111
+    })
+  })
+
+  it('handleFriendUpdated 只更新资料字段，保留在线状态', () => {
+    const list = createList()
+    list.contactsList.value = [{ ...contact }]
+
+    list.handleFriendUpdated(friend)
+
+    expect(list.contactsList.value[0]).toMatchObject({
+      activeStatus: OnlineEnum.ONLINE,
+      presence: 'online',
+      lastOptTime: 111
+    })
+  })
+})
+
+describe('联系人「备注名 / 笔记」的字段归属（判据 1）', () => {
+  const createList = () => createContactsList({ ensureFriendServicesReady: async () => {} })
+
+  const baseContact = {
+    userId: '@bob:matrix.org',
+    uid: '@bob:matrix.org',
+    displayName: 'Bob',
+    name: 'Bob',
+    avatarUrl: null,
+    avatar: '',
+    account: 'bob',
+    activeStatus: OnlineEnum.OFFLINE,
+    remark: '',
+    note: '',
+    lastOptTime: 1,
+    hideMyPosts: false,
+    hideTheirPosts: false
+  }
+
+  /**
+   * 回归锁：`remark` 是「我给他的备注名」，来源必须是 `Friend.display_name`。
+   * 历史映射把 `remark` 也取自 `Friend.note`，导致「设备注名 → 刷新后变成笔记内容」。
+   */
+  it('好友快照的 display_name 落到 remark，note 与 remark 各自独立', () => {
+    const list = createList()
+    list.contactsList.value = [{ ...baseContact }]
+
+    list.updateContactsFromFriends([
+      {
+        user_id: '@bob:matrix.org',
+        display_name: '王总',
+        avatar_url: null,
+        note: '老王',
+        since: 2
+      } as never
+    ])
+
+    const contact = list.contactsList.value[0]!
+    expect(contact.remark).toBe('王总')
+    expect(contact.note).toBe('老王')
+  })
+
+  /**
+   * 回归锁：写笔记只动 `note`，不能把备注名一起改掉。
+   */
+  it('setFriendNote 只写 note，不覆盖 remark', async () => {
+    const list = createList()
+    list.contactsList.value = [{ ...baseContact, remark: '王总', note: '老王' }]
+
+    await list.setFriendNote('@bob:matrix.org', '新的笔记')
+
+    const contact = list.contactsList.value[0]!
+    expect(contact.note).toBe('新的笔记')
+    expect(contact.remark).toBe('王总')
   })
 })

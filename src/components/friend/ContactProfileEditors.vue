@@ -3,7 +3,7 @@
     <InlineEdit
       class="management-section"
       :label="t('friend.detail.note')"
-      :value="contactInfo.note || contactInfo.remark || ''"
+      :value="contactInfo.note || ''"
       :placeholder="t('friend.detail.note_placeholder')"
       :loading="savingNote"
       :edit-aria-label="t('friend.detail.note_section')"

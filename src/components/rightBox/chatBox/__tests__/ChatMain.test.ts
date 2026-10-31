@@ -1,8 +1,10 @@
 import { flushPromises, shallowMount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive, ref } from 'vue'
 import { usePrivateMode } from '@/composables/chat/usePrivateMode'
+import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
+import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import ChatMain from '../ChatMain.vue'
 
 /**
@@ -13,6 +15,13 @@ import ChatMain from '../ChatMain.vue'
  * matrix store 本身：它的 setup 只建 ref / computed，不触碰 MatrixClientService）。
  */
 const pinia = createPinia()
+setActivePinia(pinia)
+registerCapabilityStoreResolver(() => useCapabilityStore())
+// ChatMain 的焚毁开关经 PermissionGuard 做 `burn-after-read` 能力门控（fail-closed），
+// 未授予能力时入口整体不渲染；这些用例测的是入口渲染后的行为。
+useCapabilityStore().setCapabilities({
+  capabilities: { 'io.hula.burn_after_read': { enabled: true } }
+})
 
 const pinnedMessagesRef = ref<unknown[]>([])
 const canSetStickyRef = ref(false)
@@ -325,6 +334,12 @@ const mountComponent = () =>
     global: {
       plugins: [pinia],
       stubs: {
+        // shallowMount 默认不渲染子组件插槽；PermissionGuard 只是能力门控包装，
+        // 需把插槽透传出来，焚毁开关等被测入口才会出现在 DOM 中。
+        PermissionGuard: { template: '<div><slot /></div>' },
+        // 焚毁条已抽成独立组件（ChatMain 行数基线所迫）：shallowMount 默认会把它打桩，
+        // 这里显式渲染真实组件，否则内部的切换按钮不会出现在 DOM 里。
+        BurnAfterReadBar: false,
         RenderMessage: true,
         FileUploadProgress: true,
         ThreadPanel: true,

@@ -9,6 +9,7 @@ import {
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import { createLogger } from '@/utils/Logger'
+import { mergeContactListPreservingPresence, mergeContactPreservingPresence } from './presenceMerge'
 import type { FriendListErrorState, MatrixContact } from './types'
 
 const logger = createLogger('ContactStore.List')
@@ -72,7 +73,7 @@ export function createContactsList(ctx: ContactsListContext) {
     const contact = friendToContact(friend)
 
     if (existingIndex >= 0) {
-      contactsList.value[existingIndex] = { ...contactsList.value[existingIndex], ...contact }
+      contactsList.value[existingIndex] = mergeContactPreservingPresence(contactsList.value[existingIndex], contact)
       triggerRef(contactsList)
     } else {
       contactsList.value.push(contact)
@@ -88,7 +89,7 @@ export function createContactsList(ctx: ContactsListContext) {
     const index = contactsList.value.findIndex((c) => c.userId === friend.user_id)
     if (index >= 0) {
       const contact = friendToContact(friend)
-      contactsList.value[index] = { ...contactsList.value[index], ...contact }
+      contactsList.value[index] = mergeContactPreservingPresence(contactsList.value[index], contact)
       triggerRef(contactsList)
     }
   }
@@ -119,7 +120,8 @@ export function createContactsList(ctx: ContactsListContext) {
       avatar: friend.avatar_url ?? '',
       account: friend.user_id.split(':')[0].replace(/^@/, ''),
       activeStatus,
-      remark: friend.note ?? '',
+      // 备注名 = 我给他起的名字（后端 display_name）；note 是独立的自由文本，不能混用
+      remark: friend.display_name ?? '',
       lastOptTime,
       hideMyPosts: false,
       hideTheirPosts: false,
@@ -217,7 +219,7 @@ export function createContactsList(ctx: ContactsListContext) {
         }
       }
 
-      contactsList.value = contacts
+      contactsList.value = mergeContactListPreservingPresence(contactsList.value, contacts)
       logger.info(`[ContactStore] 加载联系人成功: ${contacts.length} 个`)
     } catch (err) {
       logger.error(`[ContactStore] 加载联系人失败: ${err}`)
@@ -260,7 +262,7 @@ export function createContactsList(ctx: ContactsListContext) {
       await matrixFriendOperations.setFriendNote(userId, note)
       const contact = contactsList.value.find((c) => c.userId === userId)
       if (contact) {
-        contact.remark = note
+        // 只写 note：remark 是备注名，改笔记不该把它覆盖掉
         contact.note = note
         triggerRef(contactsList)
       }
@@ -342,7 +344,7 @@ export function createContactsList(ctx: ContactsListContext) {
     for (const friend of friends) {
       const contact = friendToContact(friend)
       const existing = existingMap.get(friend.user_id)
-      updated.push(existing ? { ...existing, ...contact } : contact)
+      updated.push(existing ? mergeContactPreservingPresence(existing, contact) : contact)
       seenIds.add(friend.user_id)
     }
 

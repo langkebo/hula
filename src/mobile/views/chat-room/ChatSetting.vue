@@ -568,7 +568,8 @@ const handleInfoUpdate = async () => {
     await contactStore.setFriendNote(detailId, remarkValue.value)
 
     if (friend.value) {
-      friend.value.remark = remarkValue.value
+      // 「备注」输入框写的是 note，本地镜像也必须写 note，不能写 remark（那是备注名）
+      friend.value.note = remarkValue.value
     }
     initialRemarkValue.value = remarkValue.value
   }
