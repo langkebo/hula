@@ -83,6 +83,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { OnlineEnum, ThemeEnum } from '@/enums'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
+import { getContactDisplayName } from '@/stores/domains/chat/contacts/contactDisplay'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { escapeHtml } from '@/utils/escapeHtml'
@@ -112,7 +113,7 @@ defineEmits<{
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const isRtl = computed(() => props.dir === 'rtl')
-const displayName = computed(() => props.item.remark || props.item.displayName || props.item.name)
+const displayName = computed(() => props.item.remark || getContactDisplayName(props.item))
 const ariaLabel = computed(() => `${displayName.value} ${props.item.userId}`)
 
 const highlightText = (value?: string | null) => {

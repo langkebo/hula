@@ -68,7 +68,6 @@ const makeContact = (overrides: Partial<MatrixContact> = {}): MatrixContact => (
   userId: '@user:example.com',
   displayName: 'User',
   avatarUrl: null,
-  name: 'user',
   account: 'user',
   activeStatus: OnlineEnum.OFFLINE,
   remark: '',

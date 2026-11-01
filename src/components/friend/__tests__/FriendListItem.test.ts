@@ -25,7 +25,6 @@ vi.mock('@/utils/AvatarUtils', () => ({
 const mockFriend: MatrixContact = {
   userId: '@alice:example.com',
   displayName: 'Alice',
-  name: 'Alice',
   avatarUrl: 'mxc://example.com/alice',
   friendStatus: 'normal',
   activeStatus: OnlineEnum.ONLINE,

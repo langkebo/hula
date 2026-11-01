@@ -4,6 +4,7 @@ import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
 import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedbackSummary'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
+import { getContactDisplayName } from '@/stores/domains/chat/contacts/contactDisplay'
 import type { FriendStatus } from '@/types/matrix-services'
 
 const FRIEND_SEARCH_HISTORY_STORAGE_KEY = 'tjg-friend-search-history'
@@ -61,7 +62,7 @@ export function useFriendSearch({ filteredFriends, currentFilter, showStatePanel
       (f) =>
         f.userId.toLowerCase().includes(query) ||
         f.displayName?.toLowerCase().includes(query) ||
-        f.name.toLowerCase().includes(query) ||
+        getContactDisplayName(f).toLowerCase().includes(query) ||
         f.remark?.toLowerCase().includes(query)
     )
   })

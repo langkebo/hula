@@ -292,7 +292,6 @@ describe('setFriendStatus', () => {
       {
         userId: '@alice:matrix.org',
         displayName: 'Alice',
-        name: 'Alice',
         avatarUrl: null,
         account: 'alice',
         activeStatus: OnlineEnum.OFFLINE,

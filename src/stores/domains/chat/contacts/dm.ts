@@ -23,7 +23,6 @@ export function createContactDm(ctx: ContactDmContext) {
       return {
         userId,
         displayName: profile.displayname || null,
-        name: profile.displayname || userId.split(':')[0],
         avatarUrl: profile.avatarUrl || null,
         account: userId.split(':')[0],
         activeStatus: OnlineEnum.OFFLINE,
@@ -68,7 +67,6 @@ export function createContactDm(ctx: ContactDmContext) {
         contactsList.value.push({
           userId,
           displayName: null,
-          name: userId.split(':')[0],
           avatarUrl: null,
           directRoomId: roomId,
           account: userId.split(':')[0],

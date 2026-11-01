@@ -114,7 +114,6 @@ export function createContactsList(ctx: ContactsListContext) {
     return {
       userId: friend.user_id,
       displayName,
-      name: displayName ?? friend.user_id.split(':')[0].replace(/^@/, ''),
       avatarUrl: friend.avatar_url ?? null,
       account: friend.user_id.split(':')[0].replace(/^@/, ''),
       activeStatus,
@@ -175,7 +174,6 @@ export function createContactsList(ctx: ContactsListContext) {
             contacts.push({
               userId: partnerId,
               displayName: dmRoom.name ?? null,
-              name: dmRoom.name ?? partnerId.split(':')[0],
               avatarUrl: dmRoom.avatarUrl ?? null,
               account: partnerId.split(':')[0],
               activeStatus: OnlineEnum.OFFLINE,

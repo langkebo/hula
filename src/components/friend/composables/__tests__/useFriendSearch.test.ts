@@ -44,7 +44,6 @@ const makeContact = (overrides: Partial<MatrixContact> = {}): MatrixContact => (
   userId: '@user:example.com',
   displayName: 'User',
   avatarUrl: null,
-  name: 'user',
   account: 'user',
   activeStatus: OnlineEnum.OFFLINE,
   remark: '',
@@ -202,8 +201,8 @@ describe('useFriendSearch', () => {
 
     it('filters by userId', () => {
       const contacts = [
-        makeContact({ userId: '@alice:ex.com', name: 'a', displayName: 'A' }),
-        makeContact({ userId: '@bob:ex.com', name: 'b', displayName: 'B' })
+        makeContact({ userId: '@alice:ex.com', displayName: 'A' }),
+        makeContact({ userId: '@bob:ex.com', displayName: 'B' })
       ]
       const { search } = setupSearch(contacts)
       search.applySearch('alice')
@@ -213,8 +212,8 @@ describe('useFriendSearch', () => {
 
     it('filters by displayName (case-insensitive)', () => {
       const contacts = [
-        makeContact({ userId: '@a:ex.com', name: 'a', displayName: 'Alice Wonderland' }),
-        makeContact({ userId: '@b:ex.com', name: 'b', displayName: 'Bob' })
+        makeContact({ userId: '@a:ex.com', displayName: 'Alice Wonderland' }),
+        makeContact({ userId: '@b:ex.com', displayName: 'Bob' })
       ]
       const { search } = setupSearch(contacts)
       search.applySearch('WONDER')
@@ -222,10 +221,11 @@ describe('useFriendSearch', () => {
       expect(search.displayedFriends.value[0]?.userId).toBe('@a:ex.com')
     })
 
-    it('filters by name', () => {
+    it('filters by display name', () => {
+      // 搜索口径是「展示名」（displayName → localpart 兜底），不再有独立的 name 字段
       const contacts = [
-        makeContact({ userId: '@a:ex.com', name: 'alice', displayName: 'A' }),
-        makeContact({ userId: '@b:ex.com', name: 'bob', displayName: 'B' })
+        makeContact({ userId: '@a:ex.com', displayName: 'alice' }),
+        makeContact({ userId: '@b:ex.com', displayName: 'bob' })
       ]
       const { search } = setupSearch(contacts)
       search.applySearch('alice')
@@ -234,8 +234,8 @@ describe('useFriendSearch', () => {
 
     it('filters by remark', () => {
       const contacts = [
-        makeContact({ userId: '@a:ex.com', name: 'a', displayName: 'A', remark: 'best friend' }),
-        makeContact({ userId: '@b:ex.com', name: 'b', displayName: 'B', remark: '' })
+        makeContact({ userId: '@a:ex.com', displayName: 'A', remark: 'best friend' }),
+        makeContact({ userId: '@b:ex.com', displayName: 'B', remark: '' })
       ]
       const { search } = setupSearch(contacts)
       search.applySearch('best')
@@ -244,7 +244,7 @@ describe('useFriendSearch', () => {
     })
 
     it('returns empty when no match', () => {
-      const contacts = [makeContact({ userId: '@a:ex.com', name: 'a', displayName: 'A' })]
+      const contacts = [makeContact({ userId: '@a:ex.com', displayName: 'A' })]
       const { search } = setupSearch(contacts)
       search.applySearch('nonexistent')
       expect(search.displayedFriends.value).toHaveLength(0)

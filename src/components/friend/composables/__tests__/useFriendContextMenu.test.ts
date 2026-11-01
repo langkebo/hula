@@ -83,7 +83,6 @@ const makeFriend = (overrides: Partial<MatrixContact> = {}): MatrixContact => ({
   userId: '@alice:example.com',
   displayName: 'Alice',
   avatarUrl: null,
-  name: 'alice',
   account: 'alice',
   activeStatus: OnlineEnum.ONLINE,
   remark: '',

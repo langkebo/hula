@@ -13,7 +13,6 @@ const meta = {
       userId: '@alice:example.com',
       displayName: 'Alice',
       avatarUrl: '',
-      name: 'Alice',
       account: 'alice',
       activeStatus: OnlineEnum.ONLINE,
       remark: '产品 Alice',

@@ -11,7 +11,6 @@ export interface MatrixContact {
   presence?: string | undefined
   statusMessage?: string | undefined
   directRoomId?: string | undefined
-  name: string
   account: string
   activeStatus: OnlineEnum
   remark: string

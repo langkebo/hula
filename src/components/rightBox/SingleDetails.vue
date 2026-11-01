@@ -114,6 +114,7 @@ import { OnlineEnum, RoomTypeEnum, UserType } from '@/enums'
 import { contactAliasVersion, hasContactAlias } from '@/services/matrix/aliases/contactAliasRegistry'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
+import { getContactDisplayName } from '@/stores/domains/chat/contacts/contactDisplay'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
@@ -142,7 +143,7 @@ const contactInfo = computed<Partial<MatrixContact>>(() => {
   return contactStore.getContactByUserId(props.content.uid) ?? {}
 })
 
-const singleName = computed(() => contactInfo.value.name || contactInfo.value.displayName || t('common.unknownUser'))
+const singleName = computed(() => getContactDisplayName(contactInfo.value) || t('common.unknownUser'))
 const singleUid = computed(() => contactInfo.value.userId || props.content.uid || '')
 
 // 阅后即焚设置作用于 DM 房间；好友尚未建立 DM（directRoomId 为空）时不显示设置区

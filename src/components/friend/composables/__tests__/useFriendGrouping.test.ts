@@ -39,7 +39,6 @@ const makeContact = (overrides: Partial<MatrixContact> = {}): MatrixContact => (
   userId: '@user:example.com',
   displayName: 'User',
   avatarUrl: null,
-  name: 'user',
   account: 'user',
   activeStatus: OnlineEnum.OFFLINE,
   remark: '',
@@ -110,8 +109,8 @@ describe('useFriendGrouping', () => {
 
     it('places favorite friends in a dedicated section at top', async () => {
       const friends = [
-        makeContact({ userId: '@alice:example.com', name: 'Alice', friendStatus: 'favorite' }),
-        makeContact({ userId: '@dave:example.com', name: 'Dave', friendStatus: 'normal' })
+        makeContact({ userId: '@alice:example.com', friendStatus: 'favorite' }),
+        makeContact({ userId: '@dave:example.com', friendStatus: 'normal' })
       ]
 
       const { loadGroups, groupFriends } = useFriendGrouping()
@@ -127,8 +126,8 @@ describe('useFriendGrouping', () => {
 
     it('assigns non-favorite friends to their custom groups', async () => {
       const friends = [
-        makeContact({ userId: '@alice:example.com', name: 'Alice', friendStatus: 'normal' }),
-        makeContact({ userId: '@charlie:example.com', name: 'Charlie', friendStatus: 'normal' })
+        makeContact({ userId: '@alice:example.com', friendStatus: 'normal' }),
+        makeContact({ userId: '@charlie:example.com', friendStatus: 'normal' })
       ]
 
       const { loadGroups, groupFriends } = useFriendGrouping()
@@ -149,8 +148,8 @@ describe('useFriendGrouping', () => {
 
     it('puts non-favorite friends without a group into ungrouped section', async () => {
       const friends = [
-        makeContact({ userId: '@alice:example.com', name: 'Alice', friendStatus: 'normal' }),
-        makeContact({ userId: '@eve:example.com', name: 'Eve', friendStatus: 'normal' })
+        makeContact({ userId: '@alice:example.com', friendStatus: 'normal' }),
+        makeContact({ userId: '@eve:example.com', friendStatus: 'normal' })
       ]
 
       const { loadGroups, groupFriends } = useFriendGrouping()
@@ -167,10 +166,10 @@ describe('useFriendGrouping', () => {
 
     it('favorite section always appears first, then custom groups, then ungrouped', async () => {
       const friends = [
-        makeContact({ userId: '@eve:example.com', name: 'Eve', friendStatus: 'normal' }),
-        makeContact({ userId: '@alice:example.com', name: 'Alice', friendStatus: 'favorite' }),
-        makeContact({ userId: '@charlie:example.com', name: 'Charlie', friendStatus: 'normal' }),
-        makeContact({ userId: '@bob:example.com', name: 'Bob', friendStatus: 'normal' })
+        makeContact({ userId: '@eve:example.com', friendStatus: 'normal' }),
+        makeContact({ userId: '@alice:example.com', friendStatus: 'favorite' }),
+        makeContact({ userId: '@charlie:example.com', friendStatus: 'normal' }),
+        makeContact({ userId: '@bob:example.com', friendStatus: 'normal' })
       ]
 
       const { loadGroups, groupFriends } = useFriendGrouping()
@@ -191,7 +190,7 @@ describe('useFriendGrouping', () => {
     })
 
     it('excludes favorite friends from custom groups to avoid duplication', async () => {
-      const friends = [makeContact({ userId: '@alice:example.com', name: 'Alice', friendStatus: 'favorite' })]
+      const friends = [makeContact({ userId: '@alice:example.com', friendStatus: 'favorite' })]
 
       const { loadGroups, groupFriends } = useFriendGrouping()
       await loadGroups()
@@ -206,7 +205,7 @@ describe('useFriendGrouping', () => {
     })
 
     it('does not include empty sections', async () => {
-      const friends = [makeContact({ userId: '@alice:example.com', name: 'Alice', friendStatus: 'normal' })]
+      const friends = [makeContact({ userId: '@alice:example.com', friendStatus: 'normal' })]
 
       const { loadGroups, groupFriends } = useFriendGrouping()
       await loadGroups()
@@ -281,9 +280,9 @@ describe('useFriendGrouping', () => {
   describe('groupedSections computed', () => {
     it('provides reactive grouped sections from a friends ref', async () => {
       const friends = ref<MatrixContact[]>([
-        makeContact({ userId: '@alice:example.com', name: 'Alice', friendStatus: 'favorite' }),
-        makeContact({ userId: '@bob:example.com', name: 'Bob', friendStatus: 'normal' }),
-        makeContact({ userId: '@eve:example.com', name: 'Eve', friendStatus: 'normal' })
+        makeContact({ userId: '@alice:example.com', friendStatus: 'favorite' }),
+        makeContact({ userId: '@bob:example.com', friendStatus: 'normal' }),
+        makeContact({ userId: '@eve:example.com', friendStatus: 'normal' })
       ])
 
       const { loadGroups, groupedSections } = useFriendGrouping({ friends })
@@ -298,16 +297,14 @@ describe('useFriendGrouping', () => {
     })
 
     it('updates sections reactively when friends list changes', async () => {
-      const friends = ref<MatrixContact[]>([
-        makeContact({ userId: '@alice:example.com', name: 'Alice', friendStatus: 'favorite' })
-      ])
+      const friends = ref<MatrixContact[]>([makeContact({ userId: '@alice:example.com', friendStatus: 'favorite' })])
 
       const { loadGroups, groupedSections } = useFriendGrouping({ friends })
       await loadGroups()
 
       expect(groupedSections.value[0]?.friends).toHaveLength(1)
 
-      friends.value.push(makeContact({ userId: '@bob:example.com', name: 'Bob', friendStatus: 'favorite' }))
+      friends.value.push(makeContact({ userId: '@bob:example.com', friendStatus: 'favorite' }))
       expect(groupedSections.value[0]?.friends).toHaveLength(2)
     })
   })

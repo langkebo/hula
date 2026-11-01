@@ -24,7 +24,6 @@ const makeContact = (overrides: Partial<MatrixContact> = {}): MatrixContact => (
   userId: '@user:example.com',
   displayName: 'User',
   avatarUrl: null,
-  name: 'user',
   account: 'user',
   activeStatus: OnlineEnum.OFFLINE,
   remark: '',
@@ -115,8 +114,8 @@ describe('useFriendFilters', () => {
 
     it('sorts favorite friends before others', () => {
       contactStoreMock.contactsList = [
-        makeContact({ userId: '@a:ex.com', name: 'a', friendStatus: 'normal', activeStatus: OnlineEnum.ONLINE }),
-        makeContact({ userId: '@b:ex.com', name: 'b', friendStatus: 'favorite', activeStatus: OnlineEnum.OFFLINE })
+        makeContact({ userId: '@a:ex.com', friendStatus: 'normal', activeStatus: OnlineEnum.ONLINE }),
+        makeContact({ userId: '@b:ex.com', friendStatus: 'favorite', activeStatus: OnlineEnum.OFFLINE })
       ]
       const { filteredFriends } = useFriendFilters()
 
