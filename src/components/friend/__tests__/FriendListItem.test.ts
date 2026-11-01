@@ -31,7 +31,6 @@ const mockFriend: MatrixContact = {
   activeStatus: OnlineEnum.ONLINE,
   statusMessage: 'Available',
   account: '@alice:example.com',
-  avatar: 'mxc://example.com/alice',
   remark: '',
   lastOptTime: Date.now(),
   hideMyPosts: false,

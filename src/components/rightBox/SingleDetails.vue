@@ -150,7 +150,7 @@ const directRoomId = computed(() => contactInfo.value.directRoomId || '')
 const singleAccount = computed(
   () => contactInfo.value.account || singleUid.value.replace(/^@/, '').split(':')[0] || t('common.unknown')
 )
-const singleAvatar = computed(() => contactInfo.value.avatar || contactInfo.value.avatarUrl || '')
+const singleAvatar = computed(() => contactInfo.value.avatarUrl || '')
 const singleSignature = computed(() => contactInfo.value.statusMessage || t('home.chat_details.single.empty_signature'))
 
 const isBotUser = computed(() => {

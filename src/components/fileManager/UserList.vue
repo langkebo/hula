@@ -187,7 +187,7 @@ const groupChatList = computed(() => {
   return [...groupStore.groupDetails]
     .map((item) => ({
       ...item,
-      avatar: AvatarUtils.getAvatarUrl(item.avatar)
+      avatar: AvatarUtils.getAvatarUrl(item.avatarUrl)
     }))
     .sort((a, b) => {
       // 将roomId为'1'的群聊排在最前面
@@ -314,7 +314,7 @@ const loadSessions = async () => {
     loading.value = true
     sessionList.value = contactStore.contactsList.map((item) => ({
       ...item,
-      avatar: AvatarUtils.getAvatarUrl(item.avatar)
+      avatar: AvatarUtils.getAvatarUrl(item.avatarUrl)
     }))
   } catch (error) {
     logger.error('Failed to load sessions:', error)

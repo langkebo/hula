@@ -13,7 +13,6 @@ export interface MatrixContact {
   directRoomId?: string | undefined
   name: string
   account: string
-  avatar: string
   activeStatus: OnlineEnum
   remark: string
   lastOptTime: number

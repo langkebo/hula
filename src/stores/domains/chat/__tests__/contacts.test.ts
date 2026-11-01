@@ -291,11 +291,9 @@ describe('setFriendStatus', () => {
     store.contactsList = [
       {
         userId: '@alice:matrix.org',
-        uid: '@alice:matrix.org',
         displayName: 'Alice',
         name: 'Alice',
         avatarUrl: null,
-        avatar: '',
         account: 'alice',
         activeStatus: OnlineEnum.OFFLINE,
         remark: '',

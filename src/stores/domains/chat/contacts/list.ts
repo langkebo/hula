@@ -116,7 +116,6 @@ export function createContactsList(ctx: ContactsListContext) {
       displayName,
       name: displayName ?? friend.user_id.split(':')[0].replace(/^@/, ''),
       avatarUrl: friend.avatar_url ?? null,
-      avatar: friend.avatar_url ?? '',
       account: friend.user_id.split(':')[0].replace(/^@/, ''),
       activeStatus,
       // 备注名 = 我给他起的名字（后端 display_name）；note 是独立的自由文本，不能混用
@@ -178,7 +177,6 @@ export function createContactsList(ctx: ContactsListContext) {
               displayName: dmRoom.name ?? null,
               name: dmRoom.name ?? partnerId.split(':')[0],
               avatarUrl: dmRoom.avatarUrl ?? null,
-              avatar: dmRoom.avatarUrl ?? '',
               account: partnerId.split(':')[0],
               activeStatus: OnlineEnum.OFFLINE,
               remark: '',

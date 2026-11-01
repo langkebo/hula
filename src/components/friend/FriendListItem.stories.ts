@@ -15,7 +15,6 @@ const meta = {
       avatarUrl: '',
       name: 'Alice',
       account: 'alice',
-      avatar: '',
       activeStatus: OnlineEnum.ONLINE,
       remark: '产品 Alice',
       lastOptTime: Date.now(),
