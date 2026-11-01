@@ -33,7 +33,7 @@ export const createContextMenuHelpers = (deps: ContextMenuHelperDeps) => {
    */
   const checkFriendRelation = (uid: string, type: 'friend' | 'all' = 'all') => {
     const myUid = userStore.userInfo?.uid ?? ''
-    const isFriend = contactStore.contactsList.some((item) => item.uid === uid)
+    const isFriend = contactStore.contactsList.some((item) => item.userId === uid)
     return type === 'friend' ? isFriend && uid !== myUid : isFriend || uid === myUid
   }
 

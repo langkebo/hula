@@ -65,7 +65,7 @@ export function useFriends(options?: { defaultRequestMessage?: MaybeRefOrGetter<
   const selectedItem = ref('')
   const requestMsg = ref('')
 
-  const friendIds = computed(() => new Set(contactStore.contactsList.map((contact) => String(contact.uid))))
+  const friendIds = computed(() => new Set(contactStore.contactsList.map((contact) => String(contact.userId))))
   const joinedGroupIds = computed(() => new Set(groupStore.groupDetails.map((group) => String(group.roomId))))
   const currentUserId = computed(() => String(userStore.userInfo?.uid || ''))
 

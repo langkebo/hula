@@ -11,7 +11,6 @@ export interface MatrixContact {
   presence?: string | undefined
   statusMessage?: string | undefined
   directRoomId?: string | undefined
-  uid: string
   name: string
   account: string
   avatar: string

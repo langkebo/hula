@@ -143,7 +143,7 @@ const contactInfo = computed<Partial<MatrixContact>>(() => {
 })
 
 const singleName = computed(() => contactInfo.value.name || contactInfo.value.displayName || t('common.unknownUser'))
-const singleUid = computed(() => contactInfo.value.uid || props.content.uid || '')
+const singleUid = computed(() => contactInfo.value.userId || props.content.uid || '')
 
 // 阅后即焚设置作用于 DM 房间；好友尚未建立 DM（directRoomId 为空）时不显示设置区
 const directRoomId = computed(() => contactInfo.value.directRoomId || '')
@@ -154,7 +154,7 @@ const singleAvatar = computed(() => contactInfo.value.avatar || contactInfo.valu
 const singleSignature = computed(() => contactInfo.value.statusMessage || t('home.chat_details.single.empty_signature'))
 
 const isBotUser = computed(() => {
-  if (props.content.type !== RoomTypeEnum.SINGLE || !contactInfo.value.uid) return false
+  if (props.content.type !== RoomTypeEnum.SINGLE || !contactInfo.value.userId) return false
   return contactInfo.value.account === UserType.BOT
 })
 

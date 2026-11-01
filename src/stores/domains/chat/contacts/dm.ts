@@ -22,7 +22,6 @@ export function createContactDm(ctx: ContactDmContext) {
       const profile = await profileService.getProfile(userId)
       return {
         userId,
-        uid: userId,
         displayName: profile.displayname || null,
         name: profile.displayname || userId.split(':')[0],
         avatarUrl: profile.avatarUrl || null,
@@ -69,7 +68,6 @@ export function createContactDm(ctx: ContactDmContext) {
       } else {
         contactsList.value.push({
           userId,
-          uid: userId,
           displayName: null,
           name: userId.split(':')[0],
           avatarUrl: null,

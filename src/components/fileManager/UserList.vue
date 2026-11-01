@@ -172,7 +172,7 @@ const getItemKey = (item: FileManagerListItem) => {
 // 丰富好友数据
 const enrichedContactsList = computed(() => {
   return contactStore.contactsList.map((item) => {
-    const userInfo = groupStore.getUserInfo(item.uid)
+    const userInfo = groupStore.getUserInfo(item.userId)
     return {
       ...item,
       name: userInfo?.name || item.remark || t('fileManager.common.unknownUser'),

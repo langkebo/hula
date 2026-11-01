@@ -36,36 +36,36 @@
         <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
           <div
             v-for="item in filteredContacts"
-            :key="item.uid"
+            :key="item.userId"
             class="rounded-10px border border-[--tjg-border-default] overflow-hidden">
             <van-checkbox
-              :name="item.uid"
+              :name="item.userId"
               shape="square"
               class="w-full flex items-center px-5px"
               :class="[
                 'cursor-pointer select-none transition-colors duration-150',
-                selectedList.includes(item.uid)
+                selectedList.includes(item.userId)
                   ? 'bg-[--tjg-surface-panel-muted] border-blue-300'
                   : 'hover:bg-[--tjg-surface-panel-muted] border-[--tjg-border-default]'
               ]">
               <template #default>
                 <div class="flex items-center gap-10px px-8px py-10px">
                   <img
-                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)!.avatar!)"
+                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)!.avatar!)"
                     class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))"
                     :alt="t('mobile_contact.avatar.user')"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                   <div class="flex flex-col leading-tight truncate">
                     <span class="text-14px font-medium truncate">
-                      {{ groupStore.getUserInfo(item.uid)!.name }}
+                      {{ groupStore.getUserInfo(item.userId)!.name }}
                     </span>
                     <div class="text-12px text-[--tjg-text-tertiary] flex items-center gap-4px truncate">
-                      <template v-if="getUserState(item.uid)">
+                      <template v-if="getUserState(item.userId)">
                         <img
                           class="size-12px rounded-50%"
-                          :src="getUserState(item.uid)?.url"
-                          :alt="getUserState(item.uid)?.title" />
-                        <span>{{ getUserState(item.uid)?.title }}</span>
+                          :src="getUserState(item.userId)?.url"
+                          :alt="getUserState(item.userId)?.title" />
+                        <span>{{ getUserState(item.userId)?.title }}</span>
                       </template>
                       <template v-else>
                         <span
@@ -152,7 +152,7 @@ const doSearch = () => {}
 
 const filteredContacts = computed(() => {
   const contactsList = contactStore.contactsList.filter((c) => {
-    if (c.uid === '1') {
+    if (c.userId === '1') {
       return false
     }
     return true
@@ -160,7 +160,7 @@ const filteredContacts = computed(() => {
 
   if (!keyword.value) return contactsList
   return contactsList.filter((c) => {
-    const name = groupStore.getUserInfo(c.uid)!.name
+    const name = groupStore.getUserInfo(c.userId)!.name
     if (name) {
       return name.includes(keyword.value)
     }

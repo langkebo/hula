@@ -164,8 +164,8 @@ export function sortBlockedContactsByTime<T extends Pick<MatrixContact, 'lastOpt
 
 export function sortNormalContacts(contacts: MatrixContact[], isBotUser: (uid: string) => boolean): MatrixContact[] {
   return [...contacts].sort((a, b) => {
-    const aIsBot = isBotUser(a.uid)
-    const bIsBot = isBotUser(b.uid)
+    const aIsBot = isBotUser(a.userId)
+    const bIsBot = isBotUser(b.userId)
     if (aIsBot && !bIsBot) return -1
     if (!aIsBot && bIsBot) return 1
     if (a.activeStatus === OnlineEnum.ONLINE && b.activeStatus !== OnlineEnum.ONLINE) return -1
@@ -180,10 +180,10 @@ export function buildNormalContacts(
   blockedContacts: MatrixContact[],
   isBotUser: (uid: string) => boolean
 ): MatrixContact[] {
-  const specialIds = new Set(specialContacts.map((contact) => contact.uid))
-  const blockedIds = new Set(blockedContacts.map((contact) => contact.uid))
+  const specialIds = new Set(specialContacts.map((contact) => contact.userId))
+  const blockedIds = new Set(blockedContacts.map((contact) => contact.userId))
   return sortNormalContacts(
-    contacts.filter((contact) => !specialIds.has(contact.uid) && !blockedIds.has(contact.uid)),
+    contacts.filter((contact) => !specialIds.has(contact.userId) && !blockedIds.has(contact.userId)),
     isBotUser
   )
 }

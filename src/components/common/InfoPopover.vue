@@ -379,7 +379,7 @@ function constellationLabel(key: ConstellationKey): string {
 }
 
 /* ----------------------------- 是否为好友 / 操作 ----------------------------- */
-const isMyFriend = computed(() => !!contactStore.contactsList.find((item) => item.uid === uid))
+const isMyFriend = computed(() => !!contactStore.contactsList.find((item) => item.userId === uid))
 
 const openEditInfo = () => {
   if (isCurrentUserUid.value) {

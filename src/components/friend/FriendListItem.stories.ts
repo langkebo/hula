@@ -13,7 +13,6 @@ const meta = {
       userId: '@alice:example.com',
       displayName: 'Alice',
       avatarUrl: '',
-      uid: '@alice:example.com',
       name: 'Alice',
       account: 'alice',
       avatar: '',

@@ -30,7 +30,6 @@ const mockFriend: MatrixContact = {
   friendStatus: 'normal',
   activeStatus: OnlineEnum.ONLINE,
   statusMessage: 'Available',
-  uid: '@alice:example.com',
   account: '@alice:example.com',
   avatar: 'mxc://example.com/alice',
   remark: '',

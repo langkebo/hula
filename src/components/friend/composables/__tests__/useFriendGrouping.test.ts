@@ -39,7 +39,6 @@ const makeContact = (overrides: Partial<MatrixContact> = {}): MatrixContact => (
   userId: '@user:example.com',
   displayName: 'User',
   avatarUrl: null,
-  uid: '@user:example.com',
   name: 'user',
   account: 'user',
   avatar: '',

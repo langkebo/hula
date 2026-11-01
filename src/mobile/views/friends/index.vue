@@ -22,7 +22,7 @@
           @select="onAddActionSelect"
           placement="bottom-end">
           <template #reference>
-            <van-button round plain size="small">
+            <van-button round plain size="small" :aria-label="t('common.add')">
               <svg class="w-16px h-16px"><use href="#plus"></use></svg>
             </van-button>
           </template>
@@ -167,31 +167,31 @@
                   <div @contextmenu.stop="$event.preventDefault()">
                     <div
                       v-for="item in specialContacts"
-                      :key="item.uid"
-                      @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
+                      :key="item.userId"
+                      @click="handleClick(item.userId, RoomTypeEnum.SINGLE)"
                       :class="[
-                        { active: activeItem === item.uid },
+                        { active: activeItem === item.userId },
                         'item-box w-full h-75px mb-5px flex items-center gap-10px'
                       ]">
                       <img
                         class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
-                        :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
-                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                        :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.userId) }"
+                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!)"
                         :alt="t('mobile_contact.avatar.user')"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
-                          {{ groupStore.getUserInfo(item.uid)?.name }}
+                          {{ groupStore.getUserInfo(item.userId)?.name }}
                         </span>
                         <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
                           [
-                          <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') }}</template>
-                          <template v-else-if="getUserState(item.uid)">
+                          <template v-if="isBotUser(item.userId)">{{ t('mobile_contact.bot_tag') }}</template>
+                          <template v-else-if="getUserState(item.userId)">
                             <img
                               class="size-12px rounded-50%"
-                              :src="getUserState(item.uid)?.url"
-                              :alt="translateStateTitle(getUserState(item.uid)?.title)" />
-                            {{ translateStateTitle(getUserState(item.uid)?.title) }}
+                              :src="getUserState(item.userId)?.url"
+                              :alt="translateStateTitle(getUserState(item.userId)?.title)" />
+                            {{ translateStateTitle(getUserState(item.userId)?.title) }}
                           </template>
                           <template v-else>
                             <span
@@ -231,32 +231,32 @@
                 </template>
                 <div class="max-h-[calc(100vh_-_calc(340px_var(--safe-area-inset-top)))] overflow-y-auto">
                   <div @contextmenu.stop="$event.preventDefault()">
-                    <van-swipe-cell v-for="item in normalContacts" :key="item.uid">
+                    <van-swipe-cell v-for="item in normalContacts" :key="item.userId">
                       <div
-                        @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
+                        @click="handleClick(item.userId, RoomTypeEnum.SINGLE)"
                         :class="[
-                          { active: activeItem === item.uid },
+                          { active: activeItem === item.userId },
                           'item-box w-full h-75px mb-5px flex items-center gap-10px'
                         ]">
                         <img
                           class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
-                          :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.uid) }"
-                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                          :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.userId) }"
+                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!)"
                           :alt="t('mobile_contact.avatar.user')"
                           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                         <div class="flex flex-col justify-between h-fit flex-1 truncate">
                           <span class="text-14px leading-tight flex-1 truncate">
-                            {{ groupStore.getUserInfo(item.uid)?.name }}
+                            {{ groupStore.getUserInfo(item.userId)?.name }}
                           </span>
                           <div class="text leading-tight text-12px flex-y-center gap-4px flex-1 truncate">
                             [
-                            <template v-if="isBotUser(item.uid)">{{ t('mobile_contact.bot_tag') }}</template>
-                            <template v-else-if="getUserState(item.uid)">
+                            <template v-if="isBotUser(item.userId)">{{ t('mobile_contact.bot_tag') }}</template>
+                            <template v-else-if="getUserState(item.userId)">
                               <img
                                 class="size-12px rounded-50%"
-                                :src="getUserState(item.uid)?.url"
-                                :alt="translateStateTitle(getUserState(item.uid)?.title)" />
-                              {{ translateStateTitle(getUserState(item.uid)?.title) }}
+                                :src="getUserState(item.userId)?.url"
+                                :alt="translateStateTitle(getUserState(item.userId)?.title)" />
+                              {{ translateStateTitle(getUserState(item.userId)?.title) }}
                             </template>
                             <template v-else>
                               <span
@@ -278,7 +278,7 @@
                         </div>
                       </div>
                       <template #right>
-                        <van-button square type="danger" class="h-full" @click="handleDeleteContact(item.uid)">
+                        <van-button square type="danger" class="h-full" @click="handleDeleteContact(item.userId)">
                           {{ t('common.delete') }}
                         </van-button>
                       </template>
@@ -302,20 +302,20 @@
                   <div @contextmenu.stop="$event.preventDefault()">
                     <div
                       v-for="item in blockedContacts"
-                      :key="item.uid"
-                      @click="handleClick(item.uid, RoomTypeEnum.SINGLE)"
+                      :key="item.userId"
+                      @click="handleClick(item.userId, RoomTypeEnum.SINGLE)"
                       :class="[
-                        { active: activeItem === item.uid },
+                        { active: activeItem === item.userId },
                         'item-box w-full h-75px mb-5px opacity-60 flex items-center gap-10px'
                       ]">
                       <img
                         class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
-                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!)"
                         :alt="t('mobile_contact.avatar.user')"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
                         <span class="text-14px leading-tight flex-1 truncate">
-                          {{ groupStore.getUserInfo(item.uid)?.name }}
+                          {{ groupStore.getUserInfo(item.userId)?.name }}
                         </span>
                         <div class="text leading-tight text-12px text-[--tjg-text-tertiary]">
                           [{{ t('mobile_contact.status.blocked') }}]

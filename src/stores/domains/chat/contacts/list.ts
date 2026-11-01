@@ -113,7 +113,6 @@ export function createContactsList(ctx: ContactsListContext) {
 
     return {
       userId: friend.user_id,
-      uid: friend.user_id,
       displayName,
       name: displayName ?? friend.user_id.split(':')[0].replace(/^@/, ''),
       avatarUrl: friend.avatar_url ?? null,
@@ -176,7 +175,6 @@ export function createContactsList(ctx: ContactsListContext) {
             const isSpecial = specialFriends.includes(partnerId)
             contacts.push({
               userId: partnerId,
-              uid: partnerId,
               displayName: dmRoom.name ?? null,
               name: dmRoom.name ?? partnerId.split(':')[0],
               avatarUrl: dmRoom.avatarUrl ?? null,
@@ -307,7 +305,7 @@ export function createContactsList(ctx: ContactsListContext) {
   }
 
   function getContactByUserId(userId: string): MatrixContact | undefined {
-    return contactsList.value.find((c) => c.userId === userId || c.uid === userId)
+    return contactsList.value.find((c) => c.userId === userId || c.userId === userId)
   }
 
   function updateContactPresence(
@@ -315,7 +313,7 @@ export function createContactsList(ctx: ContactsListContext) {
     updates: Pick<MatrixContact, 'activeStatus' | 'lastOptTime'> &
       Partial<Pick<MatrixContact, 'presence' | 'statusMessage'>>
   ): boolean {
-    const index = contactsList.value.findIndex((c) => c.userId === userId || c.uid === userId)
+    const index = contactsList.value.findIndex((c) => c.userId === userId || c.userId === userId)
     if (index === -1) {
       return false
     }

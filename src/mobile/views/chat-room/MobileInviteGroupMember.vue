@@ -39,28 +39,28 @@
           <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
             <div
               v-for="item in filteredContacts"
-              :key="item.uid"
+              :key="item.userId"
               class="rounded-10px border border-[--tjg-border-default] overflow-hidden">
               <van-checkbox
-                :name="item.uid"
+                :name="item.userId"
                 shape="square"
                 class="w-full flex items-center px-5px"
                 :class="[
                   'cursor-pointer select-none transition-colors duration-150',
-                  selectedList.includes(item.uid)
+                  selectedList.includes(item.userId)
                     ? 'bg-[--tjg-color-primary-100] text-[--tjg-color-primary-600] dark:bg-[--tjg-color-primary-100] dark:text-[--tjg-color-primary-400]'
                     : 'hover:bg-[--tjg-color-primary-100] dark:hover:bg-[--tjg-color-primary-100]'
                 ]">
                 <template #default>
                   <div class="flex items-center gap-10px px-8px py-10px">
                     <img
-                      :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                      :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!)"
                       class="size-44px rounded-full object-cover border-[1px] border-[--avatar-border-color]"
                       :alt="t('mobile_contact.avatar.user')"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <div class="flex flex-col leading-tight truncate">
                       <span class="text-14px font-medium truncate">
-                        {{ groupStore.getUserInfo(item.uid)?.name }}
+                        {{ groupStore.getUserInfo(item.userId)?.name }}
                       </span>
                       <div class="text-12px text-[--tjg-text-tertiary] flex items-center gap-4px truncate">
                         <span
@@ -71,7 +71,11 @@
                                 ? 'var(--tjg-status-online)'
                                 : 'var(--tjg-status-offline)'
                           }"></span>
-                        {{ item.activeStatus === OnlineEnum.ONLINE ? t('mobile_contact.status.online') : t('mobile_contact.status.offline') }}
+                        {{
+                          item.activeStatus === OnlineEnum.ONLINE
+                            ? t('mobile_contact.status.online')
+                            : t('mobile_contact.status.offline')
+                        }}
                       </div>
                     </div>
                   </div>
@@ -128,10 +132,10 @@ const scrollArea = ref<HTMLElement>()
 
 const allContacts = computed(() => {
   return contactStore.contactsList.filter((item) => {
-    if (item.uid === '1') {
+    if (item.userId === '1') {
       return false
     }
-    const isInGroup = groupStore.memberList.some((member) => member.uid === item.uid)
+    const isInGroup = groupStore.memberList.some((member) => member.uid === item.userId)
     return !isInGroup
   })
 })
@@ -143,7 +147,7 @@ const filteredContacts = computed(() => {
 
   const searchKeyword = keyword.value.toLowerCase()
   return allContacts.value.filter((item) => {
-    const userInfo = groupStore.getUserInfo(item.uid)
+    const userInfo = groupStore.getUserInfo(item.userId)
     if (!userInfo) return false
     return userInfo.name.toLowerCase().includes(searchKeyword) || userInfo.account.toLowerCase().includes(searchKeyword)
   })

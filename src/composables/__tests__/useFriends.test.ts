@@ -287,24 +287,24 @@ describe('sortBlockedContactsByTime', () => {
 describe('sortNormalContacts', () => {
   it('places bot users first, then online users', () => {
     const contacts = [
-      { uid: 'user1', activeStatus: OnlineEnum.ONLINE },
-      { uid: 'bot1', activeStatus: OnlineEnum.OFFLINE },
-      { uid: 'user2', activeStatus: OnlineEnum.OFFLINE }
+      { userId: 'user1', activeStatus: OnlineEnum.ONLINE },
+      { userId: 'bot1', activeStatus: OnlineEnum.OFFLINE },
+      { userId: 'user2', activeStatus: OnlineEnum.OFFLINE }
     ]
     const isBotUser = (uid: string) => uid === 'bot1'
     const sorted = sortNormalContacts(contacts as never[], isBotUser)
-    expect(sorted[0].uid).toBe('bot1')
-    expect(sorted[1].uid).toBe('user1')
-    expect(sorted[2].uid).toBe('user2')
+    expect(sorted[0].userId).toBe('bot1')
+    expect(sorted[1].userId).toBe('user1')
+    expect(sorted[2].userId).toBe('user2')
   })
 
   it('does not mutate the original array', () => {
     const contacts = [
-      { uid: 'a', activeStatus: OnlineEnum.OFFLINE },
-      { uid: 'b', activeStatus: OnlineEnum.ONLINE }
+      { userId: 'a', activeStatus: OnlineEnum.OFFLINE },
+      { userId: 'b', activeStatus: OnlineEnum.ONLINE }
     ]
     sortNormalContacts(contacts as never[], () => false)
-    expect(contacts[0].uid).toBe('a')
+    expect(contacts[0].userId).toBe('a')
   })
 })
 
@@ -315,33 +315,33 @@ describe('sortNormalContacts', () => {
 describe('buildNormalContacts', () => {
   it('excludes special and blocked contacts', () => {
     const contacts = [
-      { uid: 'normal1', activeStatus: OnlineEnum.OFFLINE },
-      { uid: 'special1', activeStatus: OnlineEnum.ONLINE },
-      { uid: 'blocked1', activeStatus: OnlineEnum.OFFLINE }
+      { userId: 'normal1', activeStatus: OnlineEnum.OFFLINE },
+      { userId: 'special1', activeStatus: OnlineEnum.ONLINE },
+      { userId: 'blocked1', activeStatus: OnlineEnum.OFFLINE }
     ]
-    const special = [{ uid: 'special1', activeStatus: OnlineEnum.ONLINE }]
-    const blocked = [{ uid: 'blocked1', activeStatus: OnlineEnum.OFFLINE }]
+    const special = [{ userId: 'special1', activeStatus: OnlineEnum.ONLINE }]
+    const blocked = [{ userId: 'blocked1', activeStatus: OnlineEnum.OFFLINE }]
     const result = buildNormalContacts(contacts as never[], special as never[], blocked as never[], () => false)
-    expect(result.map((c) => c.uid)).toEqual(['normal1'])
+    expect(result.map((c) => c.userId)).toEqual(['normal1'])
   })
 
   it('sorts remaining contacts (bot first, then online)', () => {
     const contacts = [
-      { uid: 'user1', activeStatus: OnlineEnum.ONLINE },
-      { uid: 'bot1', activeStatus: OnlineEnum.OFFLINE }
+      { userId: 'user1', activeStatus: OnlineEnum.ONLINE },
+      { userId: 'bot1', activeStatus: OnlineEnum.OFFLINE }
     ]
     const isBotUser = (uid: string) => uid === 'bot1'
     const result = buildNormalContacts(contacts as never[], [], [] as never[], isBotUser)
-    expect(result.map((c) => c.uid)).toEqual(['bot1', 'user1'])
+    expect(result.map((c) => c.userId)).toEqual(['bot1', 'user1'])
   })
 
   it('returns empty array when all contacts are special or blocked', () => {
     const contacts = [
-      { uid: 'special1', activeStatus: OnlineEnum.OFFLINE },
-      { uid: 'blocked1', activeStatus: OnlineEnum.OFFLINE }
+      { userId: 'special1', activeStatus: OnlineEnum.OFFLINE },
+      { userId: 'blocked1', activeStatus: OnlineEnum.OFFLINE }
     ]
-    const special = [{ uid: 'special1', activeStatus: OnlineEnum.OFFLINE }]
-    const blocked = [{ uid: 'blocked1', activeStatus: OnlineEnum.OFFLINE }]
+    const special = [{ userId: 'special1', activeStatus: OnlineEnum.OFFLINE }]
+    const blocked = [{ userId: 'blocked1', activeStatus: OnlineEnum.OFFLINE }]
     const result = buildNormalContacts(contacts as never[], special as never[], blocked as never[], () => false)
     expect(result).toEqual([])
   })

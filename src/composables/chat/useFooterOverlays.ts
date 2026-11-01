@@ -1,7 +1,6 @@
 import { computed, type Ref } from 'vue'
 import { RoomTypeEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import type { FriendItem } from '@/services/types'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
@@ -26,7 +25,7 @@ export function useFooterOverlays(detailId: Ref<string>) {
     if (!isSingleChat.value) return true
     const target = detailId.value
     if (!target) return true
-    return contactStore.contactsList.some((contact: FriendItem) => contact.uid === target)
+    return contactStore.contactsList.some((contact) => contact.userId === target)
   })
 
   const isRoomReadonly = computed(() => {
