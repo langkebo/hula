@@ -191,8 +191,7 @@ const formatDate = (ts: number): string => {
 
 const lastSeenText = computed(() => {
   if (!contactInfo.value) return ''
-  // F-6：设了别名后不再展示对方在线状态。
-  // ⚠️ 这只是**本机不显示**（presence 是账号级广播，房间级资料管不到对方），
+  // F-6：设了别名后不再展示对方在线状态。⚠️ 这只是**本机不显示**（presence 是账号级广播），
   // 文案不得写成"对方看不到你在线"。
   void contactAliasVersion.value
   const uid = singleUid.value

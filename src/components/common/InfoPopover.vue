@@ -176,6 +176,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { pickAvatarFromUserInfo } from '@/utils/avatarSource'
 import { padZero } from '@/utils/StringUtils'
 import { toLocalpart } from '@/utils/userIdentity'
 
@@ -226,26 +227,9 @@ const resolvedUserInfo = computed(() => {
   return contactStore.getContactByUserId?.(uid) ?? null
 })
 
-/**
- * 从异构的用户信息里取头像地址。
- *
- * 三个来源字段名不同：`UserInfoType` / `MatrixRoomMember` 用 `avatar`，
- * `MatrixContact` 已统一为 `avatarUrl`（`uid`/`avatar` 别名已删）。
- * 用结构化取值而非类型断言：任何来源缺字段时返回空串，交给 AvatarUtils 兜底。
- */
-function pickAvatar(info: unknown): string {
-  if (!info || typeof info !== 'object') return ''
-  const record = info as { avatar?: unknown; avatarUrl?: unknown }
-  if (typeof record.avatarUrl === 'string' && record.avatarUrl) return record.avatarUrl
-  if (typeof record.avatar === 'string' && record.avatar) return record.avatar
-  return ''
-}
-
 const avatarSrc = computed(() => {
   const f = fetched.value
-  // 三处来源的字段名不同：群成员/用户信息用 `avatar`，联系人已统一为 `avatarUrl`。
-  // 这里做结构化取值而不是类型断言：没有该字段时返回 ''，不会因为某个来源缺失而报错。
-  const storeAvatar = pickAvatar(resolvedUserInfo.value)
+  const storeAvatar = pickAvatarFromUserInfo(resolvedUserInfo.value)
   const url = f?.avatarUrl || storeAvatar
   return AvatarUtils.getAvatarUrl(url)
 })
@@ -364,7 +348,6 @@ function computeConstellation(d: Date): ConstellationKey | null {
   }
   return null
 }
-
 /** 星座本地化文案（静态键 switch，避免动态 key 绕过 i18n 引用守卫） */
 function constellationLabel(key: ConstellationKey): string {
   switch (key) {
