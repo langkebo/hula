@@ -52,8 +52,7 @@ async function waitForStorybook(url, ms) {
 
 async function runAxe(url) {
   const { chromium } = await import('playwright')
-  const { default: axe } = await import('@axe-core/playwright')
-
+  const { AxeBuilder } = await import('@axe-core/playwright')
   const browser = await chromium.launch({ headless: true })
   const context = await browser.newContext()
   const page = await context.newPage()
@@ -64,12 +63,9 @@ async function runAxe(url) {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 })
     await wait(3000)
 
-    const scanResults = await axe(page, {
-      runOnly: {
-        type: 'tag',
-        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']
-      }
-    })
+    const scanResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
+      .analyze()
 
     results.violations = scanResults.violations || []
     results.passes = scanResults.passes?.length || 0
