@@ -37,6 +37,7 @@
     }
   },
   "register": "Register Account",
+  "guest": "Continue as Guest",
   "third_party": {
     "gitee": "Login with Gitee",
     "github": "Login with GitHub"

@@ -48,6 +48,13 @@
             class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px p-8px">
             {{ t('login.option.items.network_setting') }}
           </div>
+          <div
+            v-if="guestSupported"
+            data-test="guest-login-btn"
+            class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px p-8px"
+            @click="emit('guest-login')">
+            {{ t('login.guest') }}
+          </div>
         </n-flex>
       </n-popover>
     </div>
@@ -61,6 +68,8 @@ import { isCompatibility, isMac } from '@/utils/PlatformConstants'
 
 defineProps<{
   mode: 'manual' | 'auto'
+  /** 服务端支持访客注册时才渲染入口 */
+  guestSupported?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -70,6 +79,7 @@ const emit = defineEmits<{
   'open-register': []
   'open-forget-password': []
   'open-server-config': []
+  'guest-login': []
 }>()
 
 const { t } = useI18n()

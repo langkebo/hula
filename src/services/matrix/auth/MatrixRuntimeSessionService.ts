@@ -7,6 +7,8 @@ import { SessionLogoutService } from './SessionLogoutService'
 import { SessionRestoreService } from './SessionRestoreService'
 import {
   type LogoutMatrixRuntimeSessionOptions,
+  type MatrixGuestLoginOptions,
+  type MatrixGuestUpgradeOptions,
   type MatrixPasswordLoginOptions,
   type MatrixPostLoginBootstrapOptions,
   type MatrixSsoLoginOptions,
@@ -130,6 +132,18 @@ class MatrixRuntimeSessionService {
    */
   async loginWithSsoToken(options: MatrixSsoLoginOptions): Promise<{ uid: string; accessToken: string }> {
     return this.loginService.loginWithSsoToken(options)
+  }
+
+  /** 访客注册并登录
+   */
+  async loginAsGuest(options: MatrixGuestLoginOptions = {}): Promise<{ uid: string; accessToken: string }> {
+    return this.loginService.loginAsGuest(options)
+  }
+
+  /** 访客升级为正式账号后同步本地会话
+   */
+  async applyGuestUpgrade(options: MatrixGuestUpgradeOptions): Promise<void> {
+    return this.loginService.applyGuestUpgrade(options)
   }
 
   /** 确保客户端已就绪

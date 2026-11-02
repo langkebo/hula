@@ -162,6 +162,11 @@ class MatrixClientService {
     return this.auth.login(username, password, deviceName)
   }
 
+  /** 注册并登录访客账号 */
+  async registerGuest(deviceName?: string): Promise<LoginResult> {
+    return this.auth.registerGuest(deviceName)
+  }
+
   async getSSOLoginUrl(): Promise<string> {
     return this.auth.getSSOLoginUrl()
   }

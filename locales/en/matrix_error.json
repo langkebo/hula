@@ -21,6 +21,8 @@
     "sso_not_supported": "Server does not support SSO login",
     "login_failed_with_status": "Login failed ({status})",
     "login_failed_check_network": "Login failed, please check network connection or server configuration",
+    "guest_login_failed": "Guest login failed, please try again later",
+    "guest_upgrade_failed": "Guest account upgrade failed, please try again later",
     "register_no_valid_session": "Registration service did not return a valid session, please contact admin to check server configuration",
     "register_no_session": "Registration service did not return a valid session",
     "verification_service_unavailable": "Verification code service temporarily unavailable, please try again later or contact admin (server not ready)",

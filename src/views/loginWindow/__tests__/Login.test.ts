@@ -162,6 +162,13 @@ vi.mock('@/services/backend', () => ({
   saveMatrixIdentityServerUrl: vi.fn((value: string) => value)
 }))
 
+vi.mock('@/services/matrix/auth/MatrixAuthService', () => ({
+  MatrixAuthService: {
+    // 登录页挂载时会做访客能力探测；单测不建立真实 SDK 依赖链
+    getGuestSupport: vi.fn().mockResolvedValue(false)
+  }
+}))
+
 vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
   sessionOrchestrator: {
     loginWithSsoToken: loginWithSsoTokenMock,

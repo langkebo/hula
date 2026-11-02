@@ -1,10 +1,11 @@
 <template>
   <div class="h-100vh w-100vw">
-    <NaiveProvider :message-max="3" :notific-max="3" class="h-full">
+    <NaiveProvider :message-max="3" :notific-max="3" class="h-full flex flex-col">
       <ConnectionStatusBanner
         :state="connectionState"
         :retry-count="connectionRetryCount"
         @retry="handleConnectionRetry" />
+      <GuestModeBanner v-if="matrixStore.isGuest" @upgrade="showGuestUpgrade = true" />
       <SplashScreen
         v-if="showSplash"
         :visible="showSplash"
@@ -14,12 +15,13 @@
         :error-message="bootstrapError ?? undefined"
         :retryable="true"
         @retry="handleBootstrapRetry" />
-      <div v-else-if="!isLock" class="h-full">
+      <div v-else-if="!isLock" class="flex-1 min-h-0">
         <router-view />
       </div>
       <LockScreen v-else />
       <SecretChatUnlockDialog />
       <LocalUnlockDialog />
+      <GuestUpgradeModal v-model:show="showGuestUpgrade" />
       <GlobalAriaLive />
     </NaiveProvider>
     <MemoryMonitor v-if="isDev && showMemoryMonitor && isHomeDesktopWindow" />
@@ -32,6 +34,8 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { exit } from '@tauri-apps/plugin-process'
 import { showDialog } from 'vant'
 import { useI18n } from 'vue-i18n'
+import GuestModeBanner from '@/components/common/GuestModeBanner.vue'
+import GuestUpgradeModal from '@/components/common/GuestUpgradeModal.vue'
 import LocalUnlockDialog from '@/components/secure/LocalUnlockDialog.vue'
 import { useInvitePolicyEnforcement } from '@/composables/app/useInvitePolicyEnforcement'
 import { useOfflineQueueReplay } from '@/composables/app/useOfflineQueueReplay'
@@ -63,6 +67,7 @@ const logger = createLogger('App')
 
 const { t } = useI18n()
 const matrixStore = useMatrixStore()
+const showGuestUpgrade = ref(false)
 
 const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
 const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))

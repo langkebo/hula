@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
 import { type DriverStepConfig, useDriver } from '@/composables/common/useDriver'
 import { useWindow } from '@/composables/common/useWindow'
+import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { acquireTimerWorker } from '@/services/timerWorkerHost'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useGuideStore } from '@/stores/domains/settings/guide'
@@ -38,6 +39,7 @@ export function useLoginOrchestrator() {
 
   const {
     normalLogin,
+    guestLogin,
     retryLogin,
     selectAccount: giveAccount,
     loading,
@@ -55,6 +57,17 @@ export function useLoginOrchestrator() {
   const showServerConfig = ref(false)
   const isJumpDirectly = ref(false)
   const isDesktopClient = isDesktop()
+  /** 服务端是否支持访客注册（探测通过才渲染入口，避免死按钮） */
+  const guestSupported = ref(false)
+
+  const detectGuestSupport = async () => {
+    try {
+      guestSupported.value = await MatrixAuthService.getGuestSupport()
+    } catch (error) {
+      logger.info('访客能力探测失败，隐藏入口:', error)
+      guestSupported.value = false
+    }
+  }
 
   const { startAutoLoginCountdown, cancelAutoLogin, clearAutoLoginTimer, handleAutoLoginActivity, triggerAutoLogin } =
     useAutoLogin({
@@ -259,6 +272,9 @@ export function useLoginOrchestrator() {
       startTour()
     }
 
+    // 能力探测不阻塞登录页展示；探测未完成/失败时入口保持隐藏
+    void detectGuestSupport()
+
     if (hasTauriRuntime()) {
       const currentWindow = getCurrentWebviewWindow()
       if (!isJumpDirectly.value && currentWindow.label === 'login') {
@@ -307,6 +323,8 @@ export function useLoginOrchestrator() {
 
   return {
     normalLogin,
+    guestLogin,
+    guestSupported,
     retryLogin,
     loading,
     loginText,

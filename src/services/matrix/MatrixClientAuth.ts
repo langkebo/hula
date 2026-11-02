@@ -155,6 +155,60 @@ export class MatrixClientAuth {
     }
   }
 
+  /**
+   * 注册并登录访客账号（POST /register/guest）。
+   *
+   * 与密码登录一致：登录成功后重建/复用 client、持久化 deviceId、安排 token 续期。
+   * 访客能力是否可用由调用方通过 `MatrixAuthService.getGuestSupport()` 预先探测。
+   *
+   * @throws Never throws (returns { success: false, error } on failure).
+   */
+  async registerGuest(deviceName?: string): Promise<LoginResult> {
+    const { connectionManager, tokenManager, lifecycle } = this.deps
+    const client = connectionManager.getClient()
+    if (!client) {
+      return { success: false, error: '客户端未初始化' }
+    }
+
+    try {
+      connectionManager.updateConnectionState('CONNECTING')
+      const response = await client.getGuestManager().registerGuestOnServer(undefined, deviceName || 'Tjg Client Guest')
+
+      await lifecycle.initialize({
+        ...connectionManager.getConfig()!,
+        accessToken: response.access_token,
+        userId: response.user_id,
+        deviceId: response.device_id ?? generateDeviceId()
+      })
+
+      if (response.user_id && response.device_id) {
+        persistDeviceId(response.user_id, response.device_id)
+      }
+
+      connectionManager.updateConnectionState('CONNECTED')
+      const expiresInMs = (response.expires_in ?? 0) * 1000
+      if (response.refresh_token && expiresInMs > 0) {
+        tokenManager.schedule(connectionManager.getClient()!, response.refresh_token, expiresInMs)
+      }
+
+      return {
+        success: true,
+        userId: response.user_id,
+        deviceId: response.device_id,
+        accessToken: response.access_token,
+        refreshToken: response.refresh_token
+      }
+    } catch (err) {
+      connectionManager.updateConnectionState('ERROR')
+      const errorMessage = err instanceof Error ? err.message : '访客登录失败'
+      logger.error(`访客登录失败: ${errorMessage}`)
+      return {
+        success: false,
+        error: errorMessage
+      }
+    }
+  }
+
   /** 获取 SSO 登录 URL
    *
    * W-06 收口（2026-10-10）：`client.getSsoLoginUrl()` 已删除 `idpId` 形参、且第二参是

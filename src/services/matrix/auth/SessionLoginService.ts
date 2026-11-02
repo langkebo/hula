@@ -8,7 +8,14 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
-import type { MatrixPasswordLoginOptions, MatrixSsoLoginOptions, SessionRuntimeHost } from './sessionRuntimeInternal'
+import { toLocalpart } from '@/utils/userIdentity'
+import type {
+  MatrixGuestLoginOptions,
+  MatrixGuestUpgradeOptions,
+  MatrixPasswordLoginOptions,
+  MatrixSsoLoginOptions,
+  SessionRuntimeHost
+} from './sessionRuntimeInternal'
 
 const logger = createLogger('SessionLoginService')
 
@@ -113,6 +120,141 @@ export class SessionLoginService {
         logger.warn('登录失败后清理 client 异常:', cleanupErr)
       }
       throw err
+    }
+  }
+
+  /**
+   * 注册并登录访客账号，然后执行登录后 bootstrap。
+   *
+   * 访客能力已由调用方（登录页）预先探测；本方法只负责会话建立与持久化。
+   *
+   * @throws {Error} if guest registration fails or session info is incomplete.
+   */
+  async loginAsGuest(options: MatrixGuestLoginOptions = {}): Promise<{ uid: string; accessToken: string }> {
+    const port = this.host.port
+    try {
+      const {
+        deviceName,
+        account,
+        displayName,
+        avatar,
+        client,
+        persistTokens = true,
+        persistUserInfo = true,
+        switchDatabase = true
+      } = options
+
+      const { homeserverUrl, identityServerUrl } = resolveMatrixSessionEndpointConfig()
+
+      await ensureAppStateReady()
+      await port.matrix.initialize({
+        homeserverUrl,
+        identityServerUrl,
+        allowInsecureHttp: homeserverUrl.startsWith('http://')
+      })
+
+      const success = await port.matrix.registerGuest(deviceName)
+      if (!success) {
+        throw new Error(port.matrix.getLastError() || useI18nGlobal().t('matrix_error.auth.guest_login_failed'))
+      }
+
+      const uid = port.matrix.getUserId()
+      const accessToken = port.matrix.getAccessToken()
+      if (!uid || !accessToken) {
+        throw new Error(useI18nGlobal().t('matrix_error.auth.session_info_incomplete'))
+      }
+
+      const refreshToken = port.matrix.getRefreshToken() ?? ''
+      patchMatrixSessionSnapshot({
+        userId: uid,
+        deviceId: this.host.getCurrentClientDeviceId(),
+        accessToken,
+        homeserverUrl
+      })
+
+      if (switchDatabase) {
+        await switchUserDatabase(uid)
+      }
+
+      if (persistTokens && hasTauriRuntime()) {
+        await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
+          req: {
+            uid,
+            token: accessToken,
+            refreshToken
+          }
+        })
+      }
+
+      if (persistUserInfo && hasTauriRuntime()) {
+        await invokeWithErrorHandler(TauriCommand.SAVE_USER_INFO, {
+          userInfo: {
+            uid
+          }
+        })
+      }
+
+      await this.host.bootstrapPostLoginState({
+        account: account || toLocalpart(uid),
+        displayName,
+        avatar,
+        client,
+        isGuest: true
+      })
+
+      return { uid, accessToken }
+    } catch (err) {
+      logger.error(`访客登录失败: ${err}`)
+      try {
+        await matrixClientService.stopClient()
+      } catch (cleanupErr) {
+        logger.warn('访客登录失败后清理 client 异常:', cleanupErr)
+      }
+      throw err
+    }
+  }
+
+  /**
+   * 访客升级为正式账号后，把新身份与新 token 写回本地会话（不重启 client）。
+   *
+   * 升级接口已在 MatrixAuthService 中完成 token 切换；这里负责快照、本地用户信息
+   * 与 Tauri 持久化，保证重启后不会回落到访客身份。
+   */
+  async applyGuestUpgrade(options: MatrixGuestUpgradeOptions): Promise<void> {
+    const port = this.host.port
+    const { userId, accessToken } = options
+
+    patchMatrixSessionSnapshot({
+      userId,
+      deviceId: this.host.getCurrentClientDeviceId(),
+      accessToken,
+      homeserverUrl: port.matrix.getHomeserverUrl() ?? null
+    })
+    port.matrix.applyGuestUpgrade(userId, accessToken)
+
+    const currentInfo = port.user.getUserInfo()
+    if (currentInfo) {
+      port.user.setUserInfo({
+        ...currentInfo,
+        uid: userId,
+        account: toLocalpart(userId),
+        isGuest: false
+      })
+    }
+
+    if (hasTauriRuntime()) {
+      await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
+        req: {
+          uid: userId,
+          token: accessToken,
+          refreshToken: ''
+        }
+      })
+      await invokeWithErrorHandler(TauriCommand.SAVE_USER_INFO, {
+        userInfo: {
+          uid: userId
+        }
+      })
     }
   }
 

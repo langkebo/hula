@@ -93,6 +93,8 @@ export type UserInfoType = {
   linkedGithub?: boolean
   /** 已绑定的 OAuth 提供商 */
   oauthProviders?: ('gitee' | 'github')[]
+  /** 是否为访客账号（访客升级为正式账号后置为 false） */
+  isGuest?: boolean
 }
 
 export type BadgeType = {

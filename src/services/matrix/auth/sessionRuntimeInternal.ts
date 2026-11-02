@@ -32,6 +32,20 @@ export interface MatrixPostLoginBootstrapOptions {
   displayName?: string | undefined
   avatar?: string | undefined
   client?: 'PC' | 'MOBILE' | undefined
+  /** 访客登录：写入 UserInfoType.isGuest，供全局访客横幅使用 */
+  isGuest?: boolean | undefined
+}
+
+export interface MatrixGuestLoginOptions extends MatrixPostLoginBootstrapOptions {
+  deviceName?: string | undefined
+  persistTokens?: boolean
+  persistUserInfo?: boolean
+  switchDatabase?: boolean
+}
+
+export interface MatrixGuestUpgradeOptions {
+  userId: string
+  accessToken: string
 }
 
 export interface MatrixPasswordLoginOptions extends MatrixPostLoginBootstrapOptions {
@@ -72,6 +86,8 @@ export interface SessionStorePort {
     getHomeserverUrl(): string | undefined
     initialize(config: MatrixClientConfig): Promise<void>
     login(username: string, password: string, deviceName?: string): Promise<boolean>
+    registerGuest(deviceName?: string): Promise<boolean>
+    applyGuestUpgrade(userId: string, accessToken: string): void
     completeSSOLogin(loginToken: string): Promise<boolean>
     loginWithToken(accessToken: string, userId: string, refreshToken?: string): Promise<boolean>
     stopClient(): Promise<void>

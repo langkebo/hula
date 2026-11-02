@@ -1,11 +1,11 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-02T12:26:22.490Z",
+  "updated_at": "2026-11-02T13:21:47.344Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
   "critical_limit": 1000,
-  "total_oversized_files": 118,
+  "total_oversized_files": 119,
   "files": [
     {
       "file": "src/views/admin/AdminUsers.vue",
@@ -25,7 +25,7 @@
     },
     {
       "file": "src/typings/components.d.ts",
-      "lines": 730
+      "lines": 734
     },
     {
       "file": "src/mobile/views/chat-room/ChatSetting.vue",
@@ -224,6 +224,10 @@
       "lines": 501
     },
     {
+      "file": "src/App.vue",
+      "lines": 499
+    },
+    {
       "file": "src/services/matrix/MatrixCryptoStateTracker.ts",
       "lines": 497
     },
@@ -234,10 +238,6 @@
     {
       "file": "src/components/workbench/SpaceListPane.vue",
       "lines": 496
-    },
-    {
-      "file": "src/App.vue",
-      "lines": 494
     },
     {
       "file": "src/components/widget/WidgetManager.vue",
@@ -282,6 +282,10 @@
     {
       "file": "src/utils/PerformanceReporter.ts",
       "lines": 478
+    },
+    {
+      "file": "src/services/matrix/MatrixClientAuth.ts",
+      "lines": 472
     },
     {
       "file": "src/plugins/robot/components/ApiKeyManagement.vue",
@@ -360,6 +364,10 @@
       "lines": 437
     },
     {
+      "file": "src/shared/composables/useLoginFlow.ts",
+      "lines": 437
+    },
+    {
       "file": "src/layout/left/model.tsx",
       "lines": 435
     },
@@ -398,10 +406,6 @@
     {
       "file": "src/services/siliconflow/SiliconFlowService.ts",
       "lines": 419
-    },
-    {
-      "file": "src/services/matrix/MatrixClientAuth.ts",
-      "lines": 418
     },
     {
       "file": "src/services/matrix/admin/AdminFacadeOpsMethods.ts",

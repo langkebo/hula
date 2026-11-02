@@ -666,6 +666,108 @@ describe('MatrixAuthService', () => {
       })
     })
 
+    describe('guest account', () => {
+      describe('getGuestSupport', () => {
+        it('returns true when the guest info endpoint responds', async () => {
+          const getGuestInfoFromServer = vi.fn().mockResolvedValue({ user_id: '@guest:matrix.org' })
+          vi.mocked(sdk.createClient).mockReturnValue({
+            getGuestManager: () => ({ getGuestInfoFromServer })
+          } as unknown as MatrixClient)
+
+          await expect(MatrixAuthService.getGuestSupport()).resolves.toBe(true)
+          expect(getGuestInfoFromServer).toHaveBeenCalledTimes(1)
+        })
+
+        it('returns true when the endpoint rejects with a missing token error', async () => {
+          const getGuestInfoFromServer = vi.fn().mockRejectedValue(
+            Object.assign(new Error('Missing access token'), {
+              errcode: 'M_MISSING_TOKEN',
+              httpStatus: 401
+            })
+          )
+          vi.mocked(sdk.createClient).mockReturnValue({
+            getGuestManager: () => ({ getGuestInfoFromServer })
+          } as unknown as MatrixClient)
+
+          await expect(MatrixAuthService.getGuestSupport()).resolves.toBe(true)
+        })
+
+        it('returns false when the homeserver does not implement the endpoint', async () => {
+          const getGuestInfoFromServer = vi.fn().mockRejectedValue(
+            Object.assign(new Error('Unrecognized request'), {
+              errcode: 'M_UNRECOGNIZED',
+              httpStatus: 404
+            })
+          )
+          vi.mocked(sdk.createClient).mockReturnValue({
+            getGuestManager: () => ({ getGuestInfoFromServer })
+          } as unknown as MatrixClient)
+
+          await expect(MatrixAuthService.getGuestSupport()).resolves.toBe(false)
+        })
+
+        it('returns false when the SDK does not expose a guest manager', async () => {
+          vi.mocked(sdk.createClient).mockReturnValue({} as unknown as MatrixClient)
+
+          await expect(MatrixAuthService.getGuestSupport()).resolves.toBe(false)
+        })
+
+        it('returns false on unexpected failures and logs the reason', async () => {
+          const getGuestInfoFromServer = vi.fn().mockRejectedValue(new Error('network down'))
+          vi.mocked(sdk.createClient).mockReturnValue({
+            getGuestManager: () => ({ getGuestInfoFromServer })
+          } as unknown as MatrixClient)
+
+          await expect(MatrixAuthService.getGuestSupport()).resolves.toBe(false)
+          expect(loggerSpy.info).toHaveBeenCalledWith(expect.stringContaining('访客能力探测失败'))
+        })
+      })
+
+      describe('upgradeGuestAccount', () => {
+        it('switches the client credentials to the upgraded account', async () => {
+          const upgradeGuestAccountOnServer = vi.fn().mockResolvedValue({
+            success: true,
+            user_id: '@alice:matrix.org',
+            access_token: 'new-token'
+          })
+          const setAccessToken = vi.fn()
+          const setGuest = vi.fn()
+          const credentials = { userId: '@guest:matrix.org' }
+          vi.mocked(matrixClientService.getClient).mockReturnValue({
+            getGuestManager: () => ({ upgradeGuestAccountOnServer }),
+            setAccessToken,
+            setGuest,
+            credentials
+          } as unknown as MatrixClient)
+
+          const result = await MatrixAuthService.upgradeGuestAccount('alice', 'secret')
+
+          expect(upgradeGuestAccountOnServer).toHaveBeenCalledWith({ username: 'alice', password: 'secret' })
+          expect(setAccessToken).toHaveBeenCalledWith('new-token')
+          expect(setGuest).toHaveBeenCalledWith(false)
+          expect(credentials.userId).toBe('@alice:matrix.org')
+          expect(result).toEqual({ userId: '@alice:matrix.org', accessToken: 'new-token' })
+        })
+
+        it('throws when the homeserver reports an unsuccessful upgrade', async () => {
+          const upgradeGuestAccountOnServer = vi.fn().mockResolvedValue({ success: false })
+          vi.mocked(matrixClientService.getClient).mockReturnValue({
+            getGuestManager: () => ({ upgradeGuestAccountOnServer })
+          } as unknown as MatrixClient)
+
+          await expect(MatrixAuthService.upgradeGuestAccount('alice', 'secret')).rejects.toThrow(
+            '访客账号升级失败，请稍后重试'
+          )
+        })
+
+        it('throws when the client is not initialized', async () => {
+          vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+          await expect(MatrixAuthService.upgradeGuestAccount('alice', 'secret')).rejects.toThrow('客户端未初始化')
+        })
+      })
+    })
+
     it('should show readable invalid email error from homeserver', async () => {
       const requestRegisterEmailToken = vi.fn().mockRejectedValue(new Error('sdk bootstrap failed'))
       vi.spyOn(sdk, 'createClient').mockReturnValue({

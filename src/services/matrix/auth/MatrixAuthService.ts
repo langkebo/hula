@@ -214,6 +214,77 @@ export class MatrixAuthService {
     }
   }
 
+  /**
+   * 探测服务端是否支持访客（guest）注册。
+   *
+   * 走 SDK `GuestManager.getGuestInfoFromServer()`（GET /account/guest）：
+   * 未鉴权客户端访问该端点时返回 401 系列错误即代表端点存在；
+   * `M_UNRECOGNIZED` / 404 代表服务端未实现，应隐藏入口而不是渲染死按钮。
+   * 探测失败不抛出，登录页据此决定是否渲染「以访客身份继续」。
+   */
+  static async getGuestSupport(): Promise<boolean> {
+    try {
+      await initializeManagerExtensions()
+    } catch {
+      // 扩展初始化失败时仍尝试调用，失败会落到下方分类逻辑
+    }
+
+    try {
+      const client = createTemporaryMatrixClient()
+      const guestManager = client.getGuestManager?.()
+      if (!guestManager) {
+        return false
+      }
+      await guestManager.getGuestInfoFromServer()
+      // 未鉴权探测能成功返回，说明端点存在
+      return true
+    } catch (err) {
+      const matrixErr = err as { errcode?: string; httpStatus?: number }
+      const errcode = matrixErr.errcode
+      if (errcode === 'M_MISSING_TOKEN' || errcode === 'M_UNKNOWN_TOKEN') {
+        return true
+      }
+      if (errcode === 'M_UNRECOGNIZED' || matrixErr.httpStatus === 404) {
+        return false
+      }
+      if (errcode === 'M_FORBIDDEN' || matrixErr.httpStatus === 401 || matrixErr.httpStatus === 403) {
+        return true
+      }
+      logger.info(`[MatrixAuth] 访客能力探测失败，按不支持处理: ${err instanceof Error ? err.message : String(err)}`)
+      return false
+    }
+  }
+
+  /**
+   * 将当前访客账号升级为正式账号。
+   *
+   * @throws {MatrixError} 用户名为空、账号不是访客、用户名被占用或服务端拒绝时抛出
+   */
+  static async upgradeGuestAccount(
+    username: string,
+    password: string
+  ): Promise<{ userId: string; accessToken: string }> {
+    const client = matrixClientService.getClient()
+    if (!client) {
+      throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
+    }
+
+    try {
+      const response = await client.getGuestManager().upgradeGuestAccountOnServer({ username, password })
+      if (response.success === false || !response.user_id || !response.access_token) {
+        throw new Error(useI18nGlobal().t('matrix_error.auth.guest_upgrade_failed'))
+      }
+      // 升级后服务端会返回新的 access token 与 user_id，客户端需立即切换，避免后续请求失败。
+      // SDK 未提供 setUserId，但 credentials 是 public 字段：不重建 client 才能保留当前会话与数据。
+      client.setAccessToken(response.access_token)
+      client.credentials.userId = response.user_id
+      client.setGuest(false)
+      return { userId: response.user_id, accessToken: response.access_token }
+    } catch (err) {
+      throw normalizeSdkMatrixError(err, '访客账号升级失败')
+    }
+  }
+
   static async getRegisterFlows(): Promise<Array<{ type: string; stages?: string[]; [key: string]: unknown }>> {
     try {
       const result = await createTemporaryMatrixClient().registerRequest({})

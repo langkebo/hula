@@ -37,6 +37,7 @@
     }
   },
   "register": "注册账号",
+  "guest": "以访客身份继续",
   "third_party": {
     "gitee": "使用 Gitee 登录",
     "github": "使用 GitHub 登录"

@@ -1,0 +1,21 @@
+{
+  "banner": {
+    "text": "You are in guest mode. Some features are limited.",
+    "upgrade": "Upgrade to a full account"
+  },
+  "upgrade": {
+    "title": "Upgrade to a full account",
+    "description": "Set a username and password to upgrade. Your current session and data stay intact.",
+    "username": "Username",
+    "username_placeholder": "e.g. alice",
+    "password": "Password",
+    "password_placeholder": "Enter password",
+    "hint": "Upgrading does not sign you out. If it fails, you can retry without losing the guest session.",
+    "submit": "Upgrade now",
+    "submitting": "Upgrading...",
+    "cancel": "Later",
+    "success": "Upgraded to a full account",
+    "username_required": "Please enter a username",
+    "password_required": "Please enter a password"
+  }
+}

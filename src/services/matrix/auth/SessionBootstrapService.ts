@@ -189,6 +189,7 @@ export class SessionBootstrapService {
         avatarUpdateTime: 0,
         client: options.client || (isDesktop() ? 'PC' : 'MOBILE'),
         resume: '',
+        ...(options.isGuest ? { isGuest: true } : {}),
         ...(homeserverUrl ? { homeserverUrl } : {}),
         ...(identityServerUrl ? { identityServerUrl } : {})
       }

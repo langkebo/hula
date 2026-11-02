@@ -84,6 +84,12 @@ export function createSessionStorePort(): SessionStorePort {
       login(username, password, deviceName) {
         return matrixStore().login(username, password, deviceName)
       },
+      registerGuest(deviceName) {
+        return matrixStore().registerGuest(deviceName)
+      },
+      applyGuestUpgrade(userId, accessToken) {
+        matrixStore().applyGuestUpgrade(userId, accessToken)
+      },
       completeSSOLogin(loginToken) {
         return matrixStore().completeSSOLogin(loginToken)
       },

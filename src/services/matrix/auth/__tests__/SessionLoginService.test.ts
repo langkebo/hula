@@ -73,6 +73,8 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
   const mocks = {
     initialize: vi.fn().mockResolvedValue(undefined),
     login: vi.fn().mockResolvedValue(true),
+    registerGuest: vi.fn().mockResolvedValue(true),
+    applyGuestUpgrade: vi.fn(),
     completeSSOLogin: vi.fn().mockResolvedValue(true),
     getUserId: vi.fn().mockReturnValue('@alice:test'),
     getAccessToken: vi.fn().mockReturnValue('access-token'),
@@ -94,6 +96,8 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
       getHomeserverUrl: vi.fn().mockReturnValue('https://matrix.test'),
       initialize: mocks.initialize,
       login: mocks.login,
+      registerGuest: mocks.registerGuest,
+      applyGuestUpgrade: mocks.applyGuestUpgrade,
       completeSSOLogin: mocks.completeSSOLogin,
       loginWithToken: vi.fn().mockResolvedValue(true),
       logout: vi.fn().mockResolvedValue(undefined)
@@ -415,5 +419,81 @@ describe('SessionLoginService.loginWithSsoToken', () => {
 
     const service = new SessionLoginService(host)
     await expect(service.loginWithSsoToken({ loginToken: 'sso-token' })).rejects.toThrow('sso down')
+  })
+})
+
+describe('SessionLoginService guest session', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // 上一个测试套件会把运行时探测改为 false 且 clearAllMocks 不会还原实现，这里显式复位。
+    hasTauriRuntimeMock.mockReturnValue(true)
+  })
+
+  it('registers a guest and bootstraps the session with the guest flag', async () => {
+    const { host, mocks } = createMockHost()
+    const service = new SessionLoginService(host)
+
+    const result = await service.loginAsGuest({ deviceName: 'Guest Device', client: 'PC' })
+
+    expect(result).toEqual({ uid: '@alice:test', accessToken: 'access-token' })
+    expect(mocks.initialize).toHaveBeenCalled()
+    expect(mocks.registerGuest).toHaveBeenCalledWith('Guest Device')
+    expect(mocks.bootstrapPostLoginState).toHaveBeenCalledWith({
+      account: 'alice',
+      displayName: undefined,
+      avatar: undefined,
+      client: 'PC',
+      isGuest: true
+    })
+    expect(invokeWithErrorHandlerMock).toHaveBeenCalledWith(
+      TauriCommand.UPDATE_TOKEN,
+      expect.objectContaining({ req: expect.objectContaining({ uid: '@alice:test' }) })
+    )
+  })
+
+  it('throws and stops the client when guest registration fails', async () => {
+    const { host, mocks } = createMockHost()
+    mocks.registerGuest.mockResolvedValue(false)
+
+    const service = new SessionLoginService(host)
+    await expect(service.loginAsGuest()).rejects.toThrow('matrix_error.auth.guest_login_failed')
+    expect(stopClientMock).toHaveBeenCalled()
+  })
+
+  it('throws when the guest session info is incomplete', async () => {
+    const { host, mocks } = createMockHost()
+    mocks.getAccessToken.mockReturnValue(null)
+
+    const service = new SessionLoginService(host)
+    await expect(service.loginAsGuest()).rejects.toThrow('matrix_error.auth.session_info_incomplete')
+    expect(stopClientMock).toHaveBeenCalled()
+  })
+
+  it('applies a guest upgrade to snapshot, store, and persistence', async () => {
+    const { host, mocks } = createMockHost()
+    const service = new SessionLoginService(host)
+    const userPort = host.port.user as unknown as {
+      getUserInfo: ReturnType<typeof vi.fn>
+      setUserInfo: ReturnType<typeof vi.fn>
+    }
+    userPort.getUserInfo.mockReturnValue({ uid: '@alice:test', account: 'alice' })
+
+    await service.applyGuestUpgrade({ userId: '@bob:test', accessToken: 'new-token' })
+
+    expect(patchMatrixSessionSnapshotMock).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: '@bob:test', accessToken: 'new-token' })
+    )
+    expect(mocks.applyGuestUpgrade).toHaveBeenCalledWith('@bob:test', 'new-token')
+    expect(userPort.setUserInfo).toHaveBeenCalledWith(
+      expect.objectContaining({ uid: '@bob:test', account: 'bob', isGuest: false })
+    )
+    expect(invokeWithErrorHandlerMock).toHaveBeenCalledWith(
+      TauriCommand.UPDATE_TOKEN,
+      expect.objectContaining({ req: expect.objectContaining({ uid: '@bob:test', token: 'new-token' }) })
+    )
+    expect(invokeWithErrorHandlerMock).toHaveBeenCalledWith(
+      TauriCommand.SAVE_USER_INFO,
+      expect.objectContaining({ userInfo: { uid: '@bob:test' } })
+    )
   })
 })

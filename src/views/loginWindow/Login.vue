@@ -35,12 +35,14 @@
         <LoginBottomBar
           class="shrink-0 w-full login-divider"
           :mode="uiState"
+          :guest-supported="guestSupported"
           @switch-to-qr="router.push('/qrCode')"
           @cancel-auto-login="cancelAutoLoginAndShowManual"
           @remove-account="removeStoredAccount"
           @open-register="router.push('/register')"
           @open-forget-password="createWebviewWindow(t('login.option.items.forget'), 'forgetPassword', 600, 600)"
-          @open-server-config="showServerConfig = true" />
+          @open-server-config="showServerConfig = true"
+          @guest-login="guestLogin" />
       </div>
 
       <ServerConfigModal
@@ -80,6 +82,8 @@ const { createWebviewWindow } = useWindow()
 
 const {
   normalLogin,
+  guestLogin,
+  guestSupported,
   retryLogin,
   loading,
   loginText,

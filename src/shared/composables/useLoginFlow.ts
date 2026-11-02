@@ -120,15 +120,15 @@ export const useLoginFlow = () => {
     }
   }
 
-  /**
-   * 登录执行体：只允许由 normalLogin 的重入锁包裹后调用。
-   * 拆成独立函数是为了让锁的 try/finally 覆盖所有提前 return 分支。
-   */
-  const performLogin = async (
-    _deviceType: 'PC' | 'MOBILE',
-    _syncRecentMessages: boolean,
-    auto: boolean = settingStore.autoLoginEnabled
-  ) => {
+  const clearLoginTimeout = () => {
+    if (loginTimeoutHandle) {
+      clearTimeout(loginTimeoutHandle)
+      loginTimeoutHandle = undefined
+    }
+  }
+
+  /** 统一登录起点：重置 UI 状态并挂整体超时保护 */
+  const beginLoginAttempt = () => {
     loading.value = true
     loginText.value = t('login.status.logging_in')
     loginDisabled.value = true
@@ -155,6 +155,75 @@ export const useLoginFlow = () => {
         showFeedback(t('login.status.timeout'), 'error')
       }
     }, LOGIN_TIMEOUT_MS)
+  }
+
+  const markLoginSuccess = () => {
+    loginDisabled.value = true
+    loading.value = false
+    loginText.value = t('login.status.success_redirect')
+    loginStatus.value = 'success'
+    clearLoginTimeout()
+  }
+
+  /** 统一登录失败处理：复位 UI/连接状态并清理底层 client */
+  const handleLoginFailure = async (err: unknown) => {
+    loading.value = false
+    loginDisabled.value = false
+    loginText.value = t('login.button.login.default')
+    loginStatus.value = 'failed'
+    clearLoginTimeout()
+    // 登录失败时重置连接状态，避免 ConnectionStatusBanner 一直显示"正在重新连接"
+    // matrixStore.connectionState 可能在 login()/startClient() 过程中被设为
+    // 'CONNECTING' 或因 SDK sync 事件变为 'RECONNECTING'，失败后必须复位
+    matrixStore.connectionState = 'DISCONNECTED'
+    // 重置 isInitialized：initialize() 会设为 true，但 login 失败后客户端不可用，
+    // 不重置会导致后续 checkSession/waitForReady 等误判客户端已就绪
+    matrixStore.isInitialized = false
+    const matrixErr = err as Error & { errcode?: string; httpStatus?: number; message?: string }
+    const translated = translateMatrixError(matrixErr, { context: 'login' })
+    // 429 可能只带 httpStatus（SDK 未透出 errcode），两种形态都要识别为限流。
+    const isRateLimited = matrixErr.errcode === 'M_LIMIT_EXCEEDED' || matrixErr.httpStatus === 429
+    if (isRateLimited) {
+      // 长限流（>60s）由 MatrixClientAuthHttp 直接上抛，不再重试；这里只负责提示，
+      // 并按服务端 retry_after_ms 告知用户需要等待的时长（写在日志里便于排查）。
+      logger.warn(`登录被限流，retryAfterMs=${translated.retryAfterMs ?? 'unknown'}`)
+    }
+    const userMessage = isRateLimited
+      ? t('error.matrix.rate_limited')
+      : translated.userMessage !== 'error.matrix.unknown'
+        ? t(translated.userMessage)
+        : matrixErr.message || t('matrix_error.auth.login_failed_check_network')
+    lastLoginError.value = userMessage
+    showFeedback(userMessage, 'error')
+    // 失败路径必须 teardown：initialize()/login() 可能已创建并启动 client，
+    // 不清理会让下次登录复用半初始化实例，或残留 sync 连接。
+    try {
+      await matrixClientService.stopClient()
+    } catch (cleanupErr) {
+      logger.warn('登录失败后清理 client 异常:', cleanupErr)
+    }
+  }
+
+  const transitionToHome = async () => {
+    useMitt.emit(MittEnum.MSG_INIT)
+
+    if (isDesktop() && hasTauriRuntime()) {
+      await sessionOrchestrator.completeDesktopLoginTransition()
+    } else {
+      await routerOrOpenHomeWindow()
+    }
+  }
+
+  /**
+   * 登录执行体：只允许由 normalLogin 的重入锁包裹后调用。
+   * 拆成独立函数是为了让锁的 try/finally 覆盖所有提前 return 分支。
+   */
+  const performLogin = async (
+    _deviceType: 'PC' | 'MOBILE',
+    _syncRecentMessages: boolean,
+    auto: boolean = settingStore.autoLoginEnabled
+  ) => {
+    beginLoginAttempt()
     const loginInfo = auto && userStore.userInfo ? (userStore.userInfo as UserInfoType) : info.value
     const account = loginInfo?.account
     const password = loginInfo?.password ?? info.value.password
@@ -231,14 +300,7 @@ export const useLoginFlow = () => {
         })
       }
 
-      loginDisabled.value = true
-      loading.value = false
-      loginText.value = t('login.status.success_redirect')
-      loginStatus.value = 'success'
-      if (loginTimeoutHandle) {
-        clearTimeout(loginTimeoutHandle)
-        loginTimeoutHandle = undefined
-      }
+      markLoginSuccess()
 
       if (!auto && isMobilePlatform.value) {
         settingStore.setAutoLogin(true)
@@ -248,52 +310,9 @@ export const useLoginFlow = () => {
         await invokeSilently('hide_splash_screen')
       }
 
-      useMitt.emit(MittEnum.MSG_INIT)
-
-      if (isDesktop() && hasTauriRuntime()) {
-        await sessionOrchestrator.completeDesktopLoginTransition()
-      } else {
-        await routerOrOpenHomeWindow()
-      }
+      await transitionToHome()
     } catch (err: unknown) {
-      loading.value = false
-      loginDisabled.value = false
-      loginText.value = t('login.button.login.default')
-      loginStatus.value = 'failed'
-      if (loginTimeoutHandle) {
-        clearTimeout(loginTimeoutHandle)
-        loginTimeoutHandle = undefined
-      }
-      // 登录失败时重置连接状态，避免 ConnectionStatusBanner 一直显示"正在重新连接"
-      // matrixStore.connectionState 可能在 login()/startClient() 过程中被设为
-      // 'CONNECTING' 或因 SDK sync 事件变为 'RECONNECTING'，失败后必须复位
-      matrixStore.connectionState = 'DISCONNECTED'
-      // 重置 isInitialized：initialize() 会设为 true，但 login 失败后客户端不可用，
-      // 不重置会导致后续 checkSession/waitForReady 等误判客户端已就绪
-      matrixStore.isInitialized = false
-      const matrixErr = err as Error & { errcode?: string; httpStatus?: number; message?: string }
-      const translated = translateMatrixError(matrixErr, { context: 'login' })
-      // 429 可能只带 httpStatus（SDK 未透出 errcode），两种形态都要识别为限流。
-      const isRateLimited = matrixErr.errcode === 'M_LIMIT_EXCEEDED' || matrixErr.httpStatus === 429
-      if (isRateLimited) {
-        // 长限流（>60s）由 MatrixClientAuthHttp 直接上抛，不再重试；这里只负责提示，
-        // 并按服务端 retry_after_ms 告知用户需要等待的时长（写在日志里便于排查）。
-        logger.warn(`登录被限流，retryAfterMs=${translated.retryAfterMs ?? 'unknown'}`)
-      }
-      const userMessage = isRateLimited
-        ? t('error.matrix.rate_limited')
-        : translated.userMessage !== 'error.matrix.unknown'
-          ? t(translated.userMessage)
-          : matrixErr.message || t('matrix_error.auth.login_failed_check_network')
-      lastLoginError.value = userMessage
-      showFeedback(userMessage, 'error')
-      // 失败路径必须 teardown：initialize()/login() 可能已创建并启动 client，
-      // 不清理会让下次登录复用半初始化实例，或残留 sync 连接。
-      try {
-        await matrixClientService.stopClient()
-      } catch (cleanupErr) {
-        logger.warn('登录失败后清理 client 异常:', cleanupErr)
-      }
+      await handleLoginFailure(err)
       if (auto) {
         uiState.value = 'manual'
         settingStore.setAutoLogin(false)
@@ -340,6 +359,32 @@ export const useLoginFlow = () => {
   }
 
   /**
+   * 以访客身份继续。
+   * 入口是否渲染由登录页的能力探测决定；本方法只在探测通过后被调用。
+   */
+  const guestLogin = async () => {
+    if (loginInFlight) {
+      logger.info('登录已在进行中，忽略重复访客登录')
+      return
+    }
+    loginInFlight = true
+    try {
+      beginLoginAttempt()
+      await ensureAppStateReady()
+      await sessionOrchestrator.loginAsGuest({
+        deviceName: 'Tjg Client Guest',
+        client: isDesktop() ? 'PC' : 'MOBILE'
+      })
+      markLoginSuccess()
+      await transitionToHome()
+    } catch (err) {
+      await handleLoginFailure(err)
+    } finally {
+      loginInFlight = false
+    }
+  }
+
+  /**
    * 选择历史账号并填充登录表单。
    * 桌面端和移动端共用此逻辑。
    */
@@ -373,6 +418,7 @@ export const useLoginFlow = () => {
   return {
     logout,
     normalLogin,
+    guestLogin,
     retryLogin,
     selectAccount,
     deleteAccountHistory,

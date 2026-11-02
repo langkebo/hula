@@ -41,6 +41,8 @@ export const useMatrixStore = defineStore(
     const lastError = ref<string | null>(null)
     const isInitialized = ref(false)
     const syncState = ref<string | null>(null)
+    /** 当前会话是否为访客账号（升级为正式账号后置 false） */
+    const isGuest = ref(false)
 
     const isLoggedIn = computed(() => !!userId.value && !!accessToken.value)
     const isConnected = computed(() => connectionState.value === 'CONNECTED')
@@ -139,6 +141,7 @@ export const useMatrixStore = defineStore(
           accessToken.value = result.accessToken ?? null
           refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
+          isGuest.value = false
 
           await settlePostLoginStartup()
           return true
@@ -177,6 +180,7 @@ export const useMatrixStore = defineStore(
           accessToken.value = result.accessToken ?? null
           refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
+          isGuest.value = false
 
           await settlePostLoginStartup()
           return true
@@ -223,6 +227,47 @@ export const useMatrixStore = defineStore(
       }
     }
 
+    /**
+     * 注册并登录访客账号。
+     * 仅有服务端支持访客注册时由登录页调用（入口门控见 MatrixAuthService.getGuestSupport）。
+     */
+    async function registerGuest(deviceName?: string): Promise<boolean> {
+      try {
+        lastError.value = null
+        connectionState.value = 'CONNECTING'
+        const result = await matrixClientService.registerGuest(deviceName)
+
+        if (result.success) {
+          userId.value = result.userId ?? null
+          deviceId.value = result.deviceId ?? null
+          accessToken.value = result.accessToken ?? null
+          refreshToken.value = result.refreshToken ?? null
+          connectionState.value = 'CONNECTED'
+          isGuest.value = true
+
+          await settlePostLoginStartup()
+          return true
+        }
+
+        connectionState.value = 'ERROR'
+        lastError.value = result.error ?? '访客登录失败'
+        logger.error('访客登录失败:', result.error)
+        return false
+      } catch (error) {
+        connectionState.value = 'ERROR'
+        lastError.value = error instanceof Error ? error.message : '访客登录失败'
+        logger.error('访客登录异常:', error)
+        return false
+      }
+    }
+
+    /** 访客升级为正式账号后同步本地会话身份（client 的 token 已由 MatrixAuthService 切换） */
+    function applyGuestUpgrade(uid: string, token: string): void {
+      userId.value = uid
+      accessToken.value = token
+      isGuest.value = false
+    }
+
     async function logout(): Promise<void> {
       try {
         await matrixClientService.logout()
@@ -237,6 +282,7 @@ export const useMatrixStore = defineStore(
         syncState.value = null
         lastError.value = null
         isInitialized.value = false
+        isGuest.value = false
 
         const { resetAdminState } = await import('@/stores/domains/admin/bridge')
         await resetAdminState()
@@ -278,11 +324,14 @@ export const useMatrixStore = defineStore(
       lastError,
       isInitialized,
       syncState,
+      isGuest,
       isLoggedIn,
       isConnected,
       initialize,
       login,
       loginWithToken,
+      registerGuest,
+      applyGuestUpgrade,
       getSSOLoginUrl,
       completeSSOLogin,
       logout,
@@ -295,7 +344,7 @@ export const useMatrixStore = defineStore(
     persist: {
       // accessToken 需要持久化以便 WEB 端页面刷新后恢复会话
       // 桌面端通过 Tauri SQLite 安全存储，WEB 端使用 localStorage（开发环境）
-      pick: ['userId', 'deviceId', 'homeserverUrl', 'accessToken']
+      pick: ['userId', 'deviceId', 'homeserverUrl', 'accessToken', 'isGuest']
     }
   }
 )

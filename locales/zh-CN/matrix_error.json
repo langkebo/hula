@@ -21,6 +21,8 @@
     "sso_not_supported": "服务器不支持 SSO 登录",
     "login_failed_with_status": "登录失败 ({status})",
     "login_failed_check_network": "登录失败，请检查网络连接或服务器配置",
+    "guest_login_failed": "访客登录失败，请稍后重试",
+    "guest_upgrade_failed": "访客账号升级失败，请稍后重试",
     "register_no_valid_session": "注册服务未返回有效会话，请联系管理员检查服务器配置",
     "register_no_session": "注册服务未返回有效会话",
     "verification_service_unavailable": "验证码服务暂不可用，请稍后重试或联系管理员 (服务器未就绪)",

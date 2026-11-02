@@ -2802,6 +2802,27 @@ export type I18nKeys = {
       "clear": "恢复账号昵称"
     }
   },
+  "guest": {
+    "banner": {
+      "text": "当前为访客模式，部分功能受限",
+      "upgrade": "升级为正式账号"
+    },
+    "upgrade": {
+      "title": "升级为正式账号",
+      "description": "设置用户名与密码即可升级，当前会话与数据保持不变。",
+      "username": "用户名",
+      "username_placeholder": "例如 alice",
+      "password": "密码",
+      "password_placeholder": "请输入密码",
+      "hint": "升级不会退出登录；失败可重试，访客会话不受影响。",
+      "submit": "立即升级",
+      "submitting": "升级中...",
+      "cancel": "稍后再说",
+      "success": "已升级为正式账号",
+      "username_required": "请输入用户名",
+      "password_required": "请输入密码"
+    }
+  },
   "home": {
     "profile_edit": {
       "actions": {
@@ -3320,6 +3341,7 @@ export type I18nKeys = {
       }
     },
     "register": "注册账号",
+    "guest": "以访客身份继续",
     "third_party": {
       "gitee": "使用 Gitee 登录",
       "github": "使用 GitHub 登录"
@@ -3543,6 +3565,8 @@ export type I18nKeys = {
       "sso_not_supported": "服务器不支持 SSO 登录",
       "login_failed_with_status": "登录失败 ({status})",
       "login_failed_check_network": "登录失败，请检查网络连接或服务器配置",
+      "guest_login_failed": "访客登录失败，请稍后重试",
+      "guest_upgrade_failed": "访客账号升级失败，请稍后重试",
       "register_no_valid_session": "注册服务未返回有效会话，请联系管理员检查服务器配置",
       "register_no_session": "注册服务未返回有效会话",
       "verification_service_unavailable": "验证码服务暂不可用，请稍后重试或联系管理员 (服务器未就绪)",
@@ -9553,6 +9577,21 @@ export type I18nKeyPaths =
   | "friend.alias.cleared"
   | "friend.alias.clear_failed"
   | "friend.alias.clear"
+  | "guest.banner.text"
+  | "guest.banner.upgrade"
+  | "guest.upgrade.title"
+  | "guest.upgrade.description"
+  | "guest.upgrade.username"
+  | "guest.upgrade.username_placeholder"
+  | "guest.upgrade.password"
+  | "guest.upgrade.password_placeholder"
+  | "guest.upgrade.hint"
+  | "guest.upgrade.submit"
+  | "guest.upgrade.submitting"
+  | "guest.upgrade.cancel"
+  | "guest.upgrade.success"
+  | "guest.upgrade.username_required"
+  | "guest.upgrade.password_required"
   | "home.profile_edit.actions.save"
   | "home.profile_edit.title"
   | "home.profile_edit.form.nickname.label"
@@ -9894,6 +9933,7 @@ export type I18nKeyPaths =
   | "login.term.checkout.text3"
   | "login.term.checkout.text4"
   | "login.register"
+  | "login.guest"
   | "login.third_party.gitee"
   | "login.third_party.github"
   | "login.sso.unavailable_feature"
@@ -10042,6 +10082,8 @@ export type I18nKeyPaths =
   | "matrix_error.auth.sso_not_supported"
   | "matrix_error.auth.login_failed_with_status"
   | "matrix_error.auth.login_failed_check_network"
+  | "matrix_error.auth.guest_login_failed"
+  | "matrix_error.auth.guest_upgrade_failed"
   | "matrix_error.auth.register_no_valid_session"
   | "matrix_error.auth.register_no_session"
   | "matrix_error.auth.verification_service_unavailable"
