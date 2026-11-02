@@ -67,7 +67,8 @@ vi.mock('@/services/matrix/crypto/CryptoSDKAdapter', () => ({
 
 vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
   matrixMediaService: {
-    uploadEncryptedFile: uploadEncryptedFileMock
+    uploadEncryptedFile: uploadEncryptedFileMock,
+    checkQuota: vi.fn().mockResolvedValue(null)
   }
 }))
 

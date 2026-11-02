@@ -21,7 +21,7 @@ vi.mock('naive-ui', async () => {
     name: 'NButton',
     inheritAttrs: true,
     setup(_, { slots, attrs }) {
-      return () => h('button', attrs, slots.default?.())
+      return () => h('button', attrs, [slots.icon?.(), slots.default?.()])
     }
   })
 
@@ -96,5 +96,18 @@ describe('ChatHeaderToolbar 群聊隐藏通话按钮 (P2-1)', () => {
     })
 
     expect(wrapper.find('[aria-label="chat.header.private_mode_toggle"]').exists()).toBe(false)
+  })
+
+  it('私密模式图标使用 1.5px 线宽路径而非文本字形', () => {
+    const wrapper = mount(ChatHeaderToolbar, {
+      props: { roomType: RoomTypeEnum.SINGLE }
+    })
+
+    const icon = wrapper.find('[aria-label="chat.header.private_mode_toggle"] svg')
+    expect(icon.exists()).toBe(true)
+    expect(icon.attributes('stroke-width')).toBe('1.5')
+    expect(icon.find('text').exists()).toBe(false)
+    expect(icon.findAll('path')).toHaveLength(1)
+    expect(icon.findAll('rect')).toHaveLength(1)
   })
 })

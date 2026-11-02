@@ -130,16 +130,17 @@
             :aria-label="t('chat.header.private_mode_toggle')"
             @click="handleTogglePrivateMode">
             <template #icon>
-              <svg width="20" height="20" viewBox="0 0 24 24">
-                <text
-                  x="12"
-                  y="17"
-                  text-anchor="middle"
-                  font-size="16"
-                  font-weight="700"
-                  :fill="privateModeActive ? 'var(--tjg-color-danger-500)' : 'currentColor'">
-                  S
-                </text>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="4.5" y="10.5" width="15" height="10" rx="2" />
+                <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
               </svg>
             </template>
           </n-button>

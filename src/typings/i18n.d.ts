@@ -294,6 +294,11 @@ export type I18nKeys = {
       "title": "维护与特性开关",
       "subtitle": "查看媒体缓存与 Feature Flags，并执行完整管理操作",
       "media_cache": "媒体缓存",
+      "server_quota": "服务端媒体配额",
+      "server_total_size": "已用容量",
+      "server_total_count": "媒体总数",
+      "server_size_limit": "默认单文件上限",
+      "server_count_limit": "默认数量上限",
       "no_stats": "暂无统计数据",
       "purge_before": "清理此时间之前的媒体",
       "purge": "清理缓存",
@@ -6685,6 +6690,19 @@ export type I18nKeys = {
       "browser_storage": "浏览器存储占用",
       "browser_usage": "已用空间",
       "browser_quota": "配额上限",
+      "media_quota": "媒体配额",
+      "media_quota_desc": "服务端媒体存储用量、上限与告警",
+      "quota_loading": "正在读取配额...",
+      "quota_unavailable": "配额信息暂不可用",
+      "quota_used": "已用",
+      "quota_limit": "配额上限",
+      "quota_remaining": "剩余",
+      "quota_media_count": "媒体数量",
+      "quota_exceeded": "媒体配额已用尽，上传可能失败",
+      "quota_alerts": "配额告警",
+      "quota_no_alerts": "暂无告警",
+      "quota_alert_threshold": "阈值 {threshold}%",
+      "quota_exceeded_upload": "媒体配额不足，无法发送文件",
       "processed_files": "已处理文件",
       "processed_files_unit": "{count} 个",
       "total_size": "累计大小",
@@ -7212,7 +7230,19 @@ export type I18nKeys = {
     "no_replies": "暂无回复",
     "reply_placeholder": "输入回复内容...",
     "send_failed": "发送回复失败",
-    "load_failed": "加载回复失败"
+    "load_failed": "加载回复失败",
+    "freeze": "冻结线程",
+    "unfreeze": "解冻线程",
+    "mute": "静音线程",
+    "unmute": "取消静音",
+    "frozen": "已冻结",
+    "muted": "已静音",
+    "frozen_reason": "线程已冻结，只能查看不能回复",
+    "freeze_success": "线程已冻结",
+    "unfreeze_success": "线程已解冻",
+    "mute_success": "线程已静音",
+    "unmute_success": "已取消静音",
+    "action_failed": "操作失败，请稍后重试"
   },
   "trendradar": {
     "title": "TrendRadar 资讯助手",
@@ -7608,6 +7638,11 @@ export type I18nKeyPaths =
   | "admin.maintenance.title"
   | "admin.maintenance.subtitle"
   | "admin.maintenance.media_cache"
+  | "admin.maintenance.server_quota"
+  | "admin.maintenance.server_total_size"
+  | "admin.maintenance.server_total_count"
+  | "admin.maintenance.server_size_limit"
+  | "admin.maintenance.server_count_limit"
   | "admin.maintenance.no_stats"
   | "admin.maintenance.purge_before"
   | "admin.maintenance.purge"
@@ -12502,6 +12537,19 @@ export type I18nKeyPaths =
   | "setting.storage.browser_storage"
   | "setting.storage.browser_usage"
   | "setting.storage.browser_quota"
+  | "setting.storage.media_quota"
+  | "setting.storage.media_quota_desc"
+  | "setting.storage.quota_loading"
+  | "setting.storage.quota_unavailable"
+  | "setting.storage.quota_used"
+  | "setting.storage.quota_limit"
+  | "setting.storage.quota_remaining"
+  | "setting.storage.quota_media_count"
+  | "setting.storage.quota_exceeded"
+  | "setting.storage.quota_alerts"
+  | "setting.storage.quota_no_alerts"
+  | "setting.storage.quota_alert_threshold"
+  | "setting.storage.quota_exceeded_upload"
   | "setting.storage.processed_files"
   | "setting.storage.processed_files_unit"
   | "setting.storage.total_size"
@@ -12980,6 +13028,18 @@ export type I18nKeyPaths =
   | "thread.reply_placeholder"
   | "thread.send_failed"
   | "thread.load_failed"
+  | "thread.freeze"
+  | "thread.unfreeze"
+  | "thread.mute"
+  | "thread.unmute"
+  | "thread.frozen"
+  | "thread.muted"
+  | "thread.frozen_reason"
+  | "thread.freeze_success"
+  | "thread.unfreeze_success"
+  | "thread.mute_success"
+  | "thread.unmute_success"
+  | "thread.action_failed"
   | "trendradar.title"
   | "trendradar.connected"
   | "trendradar.disconnected"

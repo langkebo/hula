@@ -206,6 +206,16 @@ export function useMsgInputFileUpload(
   const sendFilesDirect = async (files: UploadFile[]) => {
     const targetRoomId = globalStore.currentSessionRoomId
 
+    // 上传前配额预检：接口不可用时 checkQuota 返回 null，直接放行，不阻断上传主链。
+    const quota = await matrixMediaService.checkQuota()
+    if (quota && quota.limit > 0) {
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0)
+      if (quota.remaining < totalSize) {
+        showFeedback(t('setting.storage.quota_exceeded_upload'), 'warning')
+        return
+      }
+    }
+
     globalFileUploadQueue.initQueue(files)
 
     const baseTempId = Date.now()

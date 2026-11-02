@@ -1,5 +1,6 @@
 import { type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
+import type { ServerQuota } from '@/services/matrix/admin/AdminTypes'
 
 export interface AdminFeatureFlagTarget {
   subjectType: string
@@ -34,6 +35,7 @@ interface UseAdminMaintenanceResult {
   experimentalFeatures: Ref<Record<string, unknown>>
   featureFlags: Ref<AdminFeatureFlag[]>
   mediaStats: Ref<Record<string, unknown> | null>
+  serverQuota: Ref<ServerQuota | null>
   loading: Ref<boolean>
   purging: Ref<boolean>
   featureMutating: Ref<boolean>
@@ -43,6 +45,7 @@ interface UseAdminMaintenanceResult {
   loadExperimentalFeatures: () => Promise<void>
   loadFeatureFlags: () => Promise<void>
   loadMediaStats: () => Promise<void>
+  loadServerQuota: () => Promise<void>
   loadAll: () => Promise<void>
   purgeMediaCache: (beforeTs?: number) => Promise<{ deleted: number }>
   setExperimentalFeature: (feature: string, enabled: boolean) => Promise<void>
@@ -63,6 +66,7 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
   const experimentalFeatures = ref<Record<string, unknown>>({})
   const featureFlags = ref<AdminFeatureFlag[]>([])
   const mediaStats = ref<Record<string, unknown> | null>(null)
+  const serverQuota = ref<ServerQuota | null>(null)
   const loading = ref(false)
   const purging = ref(false)
   const featureMutating = ref(false)
@@ -99,10 +103,14 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
     mediaStats.value = await adminService.getMediaStats()
   }
 
+  async function loadServerQuota() {
+    serverQuota.value = await adminService.getServerQuota()
+  }
+
   async function loadAll() {
     loading.value = true
     try {
-      await Promise.allSettled([loadExperimentalFeatures(), loadMediaStats()])
+      await Promise.allSettled([loadExperimentalFeatures(), loadMediaStats(), loadServerQuota()])
     } finally {
       loading.value = false
     }
@@ -158,6 +166,7 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
     experimentalFeatures,
     featureFlags,
     mediaStats,
+    serverQuota,
     loading,
     purging,
     featureMutating,
@@ -166,6 +175,7 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
     loadExperimentalFeatures,
     loadFeatureFlags,
     loadMediaStats,
+    loadServerQuota,
     loadAll,
     purgeMediaCache,
     setExperimentalFeature,

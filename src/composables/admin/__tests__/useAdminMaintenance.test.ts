@@ -5,6 +5,12 @@ vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     listFeatureFlagsDetailed: vi.fn().mockResolvedValue([]),
     getMediaStats: vi.fn().mockResolvedValue(null),
+    getServerQuota: vi.fn().mockResolvedValue({
+      totalSize: 0,
+      totalCount: 0,
+      defaultSizeLimit: 0,
+      defaultCountLimit: 0
+    }),
     purgeMediaCache: vi.fn().mockResolvedValue({ deleted: 0 }),
     setExperimentalFeature: vi.fn().mockResolvedValue(undefined),
     getFeatureFlagDetail: vi.fn().mockResolvedValue(null),
@@ -33,7 +39,7 @@ describe('useAdminMaintenance', () => {
     vi.clearAllMocks()
   })
 
-  it('loadAll fans out to features/stats in parallel', async () => {
+  it('loadAll fans out to features/stats/quota in parallel', async () => {
     vi.mocked(adminService.listFeatureFlagsDetailed).mockResolvedValueOnce([
       {
         flagKey: 'foo',
@@ -51,6 +57,12 @@ describe('useAdminMaintenance', () => {
       }
     ])
     vi.mocked(adminService.getMediaStats).mockResolvedValueOnce({ total: 10 })
+    vi.mocked(adminService.getServerQuota).mockResolvedValueOnce({
+      totalSize: 2048,
+      totalCount: 4,
+      defaultSizeLimit: 1024,
+      defaultCountLimit: 100
+    })
 
     const c = useAdminMaintenance()
     await c.loadAll()
@@ -60,8 +72,32 @@ describe('useAdminMaintenance', () => {
       expect.objectContaining({ enabled: true, status: 'enabled', targetScope: 'global' })
     )
     expect(c.mediaStats.value).toEqual({ total: 10 })
+    expect(c.serverQuota.value).toEqual({
+      totalSize: 2048,
+      totalCount: 4,
+      defaultSizeLimit: 1024,
+      defaultCountLimit: 100
+    })
     expect(adminService.listFeatureFlagsDetailed).toHaveBeenCalledTimes(1)
     expect(adminService.getMediaStats).toHaveBeenCalledTimes(1)
+    expect(adminService.getServerQuota).toHaveBeenCalledTimes(1)
+  })
+
+  it('loadServerQuota 单独加载服务端配额', async () => {
+    const c = useAdminMaintenance()
+    await c.loadServerQuota()
+
+    expect(adminService.getServerQuota).toHaveBeenCalledTimes(1)
+    expect(c.serverQuota.value).not.toBeNull()
+  })
+
+  it('服务端配额接口失败时保持 null 且不抛出', async () => {
+    vi.mocked(adminService.getServerQuota).mockRejectedValueOnce(new Error('quota-fail'))
+
+    const c = useAdminMaintenance()
+    await expect(c.loadAll()).resolves.toBeUndefined()
+
+    expect(c.serverQuota.value).toBeNull()
   })
 
   it('purgeMediaCache reloads media stats on success', async () => {

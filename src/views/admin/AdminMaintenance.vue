@@ -31,6 +31,26 @@
         </n-card>
       </n-gi>
 
+      <n-gi span="2 m:1">
+        <n-card :title="t('admin.maintenance.server_quota')" size="small">
+          <n-descriptions v-if="serverQuota" :column="2" size="small" bordered>
+            <n-descriptions-item :label="t('admin.maintenance.server_total_size')">
+              {{ formatBytes(serverQuota.totalSize) }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.maintenance.server_total_count')">
+              {{ serverQuota.totalCount }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.maintenance.server_size_limit')">
+              {{ formatBytes(serverQuota.defaultSizeLimit) }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.maintenance.server_count_limit')">
+              {{ serverQuota.defaultCountLimit }}
+            </n-descriptions-item>
+          </n-descriptions>
+          <n-empty v-else :description="t('admin.maintenance.no_stats')" size="small" />
+        </n-card>
+      </n-gi>
+
       <n-gi span="2">
         <n-card size="small">
           <n-tabs v-model:value="featureTab" type="line" animated>
@@ -85,6 +105,7 @@ import { useI18n } from 'vue-i18n'
 import FeatureFlagManager from '@/components/admin/FeatureFlagManager.vue'
 import { useAdminMaintenance } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { formatBytes } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AdminMaintenance')
@@ -93,6 +114,7 @@ const { showFeedback } = useActionFeedback()
 
 const maintenance = useAdminMaintenance()
 const mediaStats = maintenance.mediaStats
+const serverQuota = maintenance.serverQuota
 const experimentalFeatures = maintenance.experimentalFeatures
 const loading = maintenance.loading
 const purging = maintenance.purging

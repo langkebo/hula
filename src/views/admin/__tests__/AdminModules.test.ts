@@ -169,17 +169,18 @@ describe('AdminModules', () => {
     expect(wrapper.findAll('[data-testid="module-item"]')).toHaveLength(3)
   })
 
-  it('模块状态使用三色标识（online=已加载/busy=加载中/offline=加载失败）', () => {
+  it('模块状态使用三色类名标识（online=已加载/busy=加载中/offline=加载失败），不写内联样式', () => {
     const wrapper = mountComponent()
 
     const loadedDot = wrapper.find('[data-status="loaded"] .status-dot')
-    expect(loadedDot.attributes('style')).toContain('--tjg-status-online')
+    expect(loadedDot.classes()).toContain('status-dot--loaded')
+    expect(loadedDot.attributes('style')).toBeUndefined()
 
     const unloadedDot = wrapper.find('[data-status="unloaded"] .status-dot')
-    expect(unloadedDot.attributes('style')).toContain('--tjg-status-busy')
+    expect(unloadedDot.classes()).toContain('status-dot--unloaded')
 
     const failedDot = wrapper.find('[data-status="failed"] .status-dot')
-    expect(failedDot.attributes('style')).toContain('--tjg-status-offline')
+    expect(failedDot.classes()).toContain('status-dot--failed')
   })
 
   it('点击模块项触发 view-detail 事件', async () => {

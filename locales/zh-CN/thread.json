@@ -4,5 +4,17 @@
   "no_replies": "暂无回复",
   "reply_placeholder": "输入回复内容...",
   "send_failed": "发送回复失败",
-  "load_failed": "加载回复失败"
+  "load_failed": "加载回复失败",
+  "freeze": "冻结线程",
+  "unfreeze": "解冻线程",
+  "mute": "静音线程",
+  "unmute": "取消静音",
+  "frozen": "已冻结",
+  "muted": "已静音",
+  "frozen_reason": "线程已冻结，只能查看不能回复",
+  "freeze_success": "线程已冻结",
+  "unfreeze_success": "线程已解冻",
+  "mute_success": "线程已静音",
+  "unmute_success": "已取消静音",
+  "action_failed": "操作失败，请稍后重试"
 }

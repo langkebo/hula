@@ -4,5 +4,17 @@
   "no_replies": "No replies yet",
   "reply_placeholder": "Type a reply...",
   "send_failed": "Failed to send the reply",
-  "load_failed": "Failed to load replies"
+  "load_failed": "Failed to load replies",
+  "freeze": "Freeze thread",
+  "unfreeze": "Unfreeze thread",
+  "mute": "Mute thread",
+  "unmute": "Unmute thread",
+  "frozen": "Frozen",
+  "muted": "Muted",
+  "frozen_reason": "This thread is frozen and can only be viewed",
+  "freeze_success": "Thread frozen",
+  "unfreeze_success": "Thread unfrozen",
+  "mute_success": "Thread muted",
+  "unmute_success": "Thread unmuted",
+  "action_failed": "Action failed, please try again later"
 }

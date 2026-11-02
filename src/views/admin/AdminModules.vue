@@ -28,7 +28,7 @@
               <span class="module-name">{{ module.name }}</span>
               <span class="module-version">v{{ module.version }}</span>
               <n-tag :type="statusTagType(module.status)" size="small" round :data-status="module.status">
-                <span class="status-dot" :style="{ backgroundColor: statusColor(module.status) }" />
+                <span class="status-dot" :class="`status-dot--${module.status}`" />
                 {{ statusLabel(module.status) }}
               </n-tag>
             </div>
@@ -87,17 +87,6 @@ const filteredModules = computed(() => {
   if (statusFilter.value === 'all') return modules
   return modules.filter((module) => module.status === statusFilter.value)
 })
-
-function statusColor(status: ModuleStatus): string {
-  switch (status) {
-    case 'loaded':
-      return 'var(--tjg-status-online)'
-    case 'unloaded':
-      return 'var(--tjg-status-busy)'
-    case 'failed':
-      return 'var(--tjg-status-offline)'
-  }
-}
 
 function statusTagType(status: ModuleStatus): 'success' | 'warning' | 'error' {
   switch (status) {
@@ -212,6 +201,18 @@ function handleViewDetail(moduleName: string) {
   border-radius: 50%;
   margin-right: 6px;
   vertical-align: middle;
+
+  &--loaded {
+    background-color: var(--tjg-status-online);
+  }
+
+  &--unloaded {
+    background-color: var(--tjg-status-busy);
+  }
+
+  &--failed {
+    background-color: var(--tjg-status-offline);
+  }
 }
 
 @include responsive.respond-to-max('md') {
