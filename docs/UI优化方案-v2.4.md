@@ -50,7 +50,7 @@
 2. **能力降级与探测基建已完成闭环**：`SettingsTab` 的 `requiredCapability` / `capabilityFallback`、壳层过滤、深链回退、组件级 `PermissionGuard`、管理后台 `useAdminNav` 五态均已接线（UI-P1-01/02 关闭）。
 3. **P1 已清零**：① 设置搜索锚点定位（UI-P1-05）；② 断点单一来源与聊天主壳四档（UI-P1-07）；③ Presence 第二写入点消除（UI-P1-03）——三项均已在 HEAD 落地，回归约束见 §5.2 / §5.4 / §5.6。
 4. **仍有一类是「后端/服务层已完备、UI 缺入口」**：线程冻结与静音、媒体配额、延迟事件、CAS、访客、vendor 房间扩展共 6 项在服务层或后端存在，界面无任何可达路径。G-01 遥测与 G-02 后台更新已在阶段 B 补上管理页（`/admin/telemetry`、`/admin/background-updates`），剩余 6 项待后续阶段。
-5. **视觉规范仍在收敛中**：硬编码颜色实测 0 处（ratchet 基线 0）；`NModal` 实测 119 处 / 36 文件（上一轮 298 处 / 101 文件，设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119），方向正确但未完成；`src/**/*.vue` 已无超过 800 行的文件（最大 `AdminUsers.vue` 770 行），组件体量红线达标。
+5. **视觉规范仍在收敛中**：硬编码颜色实测 0 处（ratchet 基线 0）；`NModal` 实测 111 处 / 35 文件（上一轮 298 处 / 101 文件，设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111），方向正确但未完成；`src/**/*.vue` 已无超过 800 行的文件（最大 `AdminUsers.vue` 770 行），组件体量红线达标。
 
 ### 0.3 阅读约定（编号 / 状态 / 取证）
 
@@ -219,7 +219,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 编号 | 问题 | 实测（2026-11-01） | 证据 |
 |---|---|---|---|
 | UI-P2-02 | 硬编码颜色 | `hardcoded_color: 0`（baseline 0，已收敛） | `pnpm check:ratchet` |
-| UI-P2-03 | 弹窗未收敛 | `NModal` / `n-modal` 合计 **119 处 / 36 文件**（上一轮 298 / 101；设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119） | `rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx"` |
+| UI-P2-03 | 弹窗未收敛 | `NModal` / `n-modal` 合计 **111 处 / 35 文件**（上一轮 298 / 101；设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111） | `rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx"` |
 | UI-P2-10 | 组件内联样式上色 | 模块状态点用 `:style="{ backgroundColor: statusColor(...) }"` 上色，绕过令牌 | `AdminModules.vue:31` |
 | UI-P2-11 | 图标规范不一致 | 私密模式图标用 `<svg><text>` 字形，非 1.5px 线宽路径图标 | `components/rightBox/chatBox/ChatHeader/ChatHeaderToolbar.vue:134` |
 
@@ -259,7 +259,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 | 编号 | 问题 | 证据 |
 |---|---|---|
-| A-01 | `NModal` 119 处中未逐一确认焦点陷阱与 `aria-modal` | 需在 Storybook 启动后跑 `pnpm check:a11y`（脚本设计为 Storybook 不可达即 `exit 2`，**不得据此下结论**） |
+| A-01 | `NModal` 111 处中未逐一确认焦点陷阱与 `aria-modal` | 需在 Storybook 启动后跑 `pnpm check:a11y`（脚本设计为 Storybook 不可达即 `exit 2`，**不得据此下结论**） |
 | A-02 | 右侧栏拖拽把手无可访问名称与键盘替代 | `layout/right/index.vue` 把手为指针事件，无 `role`/`tabindex`/方向键处理 |
 | A-03 | 管理后台移动端菜单按钮有 `aria-expanded`，但侧栏收起按钮无同等待遇 | `AdminLayout.vue` 头部 `aria-expanded` 已有；`sidebarCollapsed` 无对应控件 |
 
@@ -280,7 +280,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | UI-P1-07 | P1 | 断点体系分裂、主壳未适配 | **已修复** | `useResponsiveBreakpoint.DEFAULT_BREAKPOINTS`（1200/992/768）与 `responsive.scss` 同源；`useChatSidebar` 四档 |
 | UI-P2-01 | P2 | 缺 240px 可折叠信息面板 | **已修复** | `useChatSidebar.ts`（折叠/抽屉/隐藏）、`useRightPaneWidth.ts`（`DEFAULT_MIN = 240`）、`layout/right/index.vue`（弹性主区） |
 | UI-P2-02 | P2 | 硬编码颜色 24 处 | **已修复** | `pnpm check:ratchet`：hardcoded_color 24 → 0（`simple.scss`、`code-block.scss` 改用 `color-mix` + `--tjg-*`） |
-| UI-P2-03 | P2 | 弹窗 119 处 / 36 文件 | 仍成立（分批进行中：设置、好友、空间、管理后台、房间批次已完成） | `rg -e NModal -e n-modal src` |
+| UI-P2-03 | P2 | 弹窗 111 处 / 35 文件 | 仍成立（分批进行中：设置、好友、空间、管理后台、房间、widget 批次已完成） | `rg -e NModal -e n-modal src` |
 | UI-P2-04 | P2 | 文档-代码核对机制缺失 | **已修复** | `docs/文档-代码核对清单.md`；`docs/UI界面需求文档.md` §5.7 / §10.2 / §10.3 已按代码校正 |
 | UI-P2-05 | P2 | 解密失败无提示与重试 | **已修复** | `renderMessage/DecryptionFailureCard.vue`；`MatrixMessageService.retryDecryptMessage`（SDK `attemptDecryption(isRetry)`）；`sync.ts` 原地替换 |
 | UI-P2-06 | P2 | 空间空态不区分场景 | **已修复** | `components/space/SpaceRoomGrid.vue`（`no-rooms` / `no-results`）；`EmptyState.vue` 6 类插图 |
@@ -569,9 +569,9 @@ pnpm test:run tests/lint/design-baseline.test.ts
 
 ---
 
-### 6.3 UI-P2-03 弹窗收敛为抽屉【进行中：设置/好友/空间/管理后台/房间批次已落地】
+### 6.3 UI-P2-03 弹窗收敛为抽屉【进行中：设置/好友/空间/管理后台/房间/widget 批次已落地】
 
-**现状**：119 处 / 36 文件（上一轮 298 / 101；设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119）。
+**现状**：111 处 / 35 文件（上一轮 298 / 101；设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111）。
 
 **已完成批次（2026-11-02）**
 
@@ -606,6 +606,11 @@ pnpm test:run tests/lint/design-baseline.test.ts
 | `components/rightBox/chatBox/PinMessageSelector.vue` | 未改：置顶消息选择器 | 保留 Modal |
 | `components/rightBox/FileUploadModal.vue` | 未改：待发送文件列表为一次性发送确认 | 保留 Modal |
 | `components/rightBox/location/LocationModal.vue` | 未改：地图选点与地址预览查看器 | 保留 Modal |
+| `components/widget/WidgetDialogs.vue` | 添加 Widget / 权限编辑 / Capabilities 编辑 / Config 编辑 → 右栏抽屉（420/520/420/420） | — |
+| `components/encryption/*` 共 11 文件 | 未改：密钥备份/恢复、安全短语、密钥轮换、设备验证、交叉签名、脱水设备均为多步安全向导或状态展示，强中断与居中焦点更合适 | 保留 Modal |
+| `components/secure/LocalUnlockDialog.vue` | 未改：本地解锁口令校验为前置认证 | 保留 Modal |
+| `components/rendezvous/RendezvousSessionManager.vue` | 未改：会话状态管理为查看/操作面板 | 保留 Modal |
+| `components/windows/ActionBar.vue` | 未改：更新提示/操作栏 | 保留 Modal |
 
 **修改方案**
 
@@ -823,7 +828,7 @@ pnpm verify:sdk-pin
 **完成定义（Definition of Done）**
 
 1. P1 清零：UI-P1-05、UI-P1-07 关闭 + UI-P1-03 的第二写入点消除，且各项有对应单测/断言（UI-P1-01/02/04/06 已关闭，只需回归守住）。
-2. P2 收敛：`hardcoded_color` 已降到 0 并锁定基线；`NModal` 计数继续单调下降（当前 119，设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119），每批完成后同步下调记录基线。
+2. P2 收敛：`hardcoded_color` 已降到 0 并锁定基线；`NModal` 计数继续单调下降（当前 111，设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111），每批完成后同步下调记录基线。
 3. 能力缺口：G-01、G-02、G-03、G-07 已落地并有测试；G-05、G-06 待补入口；G-04 / G-08 待产品结论。
 4. 残留清理：`SyncStatusBar.vue` 与其实测已删除，`typings/` 无该符号。
 5. 未取证项清零：Worker 管理面、第三方 3PID、媒体子项三项补齐取证后再更新 §1.3；A-01 在 Storybook 可达后单独补测。
@@ -885,7 +890,7 @@ node scripts/verify-sdk-pin.mjs
 node scripts/check-file-size.mjs
 
 # 本轮新增/复核用的取证
-rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx" --count-matches | awk -F: '{s+=$2} END {print s}'     # 119（36 文件）
+rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx" --count-matches | awk -F: '{s+=$2} END {print s}'     # 111（35 文件）
 grep -rEl "respond-to-max" src | wc -l                                      # 16
 grep -rn "SyncStatusBar" src --include=*.vue --include=*.ts | grep -v typings/   # 空
 grep -rn "updateContactPresence\|updateUserPresence" src | grep -v __tests__     # 仅 wsPresenceHandler

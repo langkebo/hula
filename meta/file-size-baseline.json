@@ -1,6 +1,6 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-02T09:25:00.000Z",
+  "updated_at": "2026-11-02T09:56:07.142Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
@@ -8,12 +8,12 @@
   "total_oversized_files": 118,
   "files": [
     {
-      "file": "src/views/admin/AdminSecurity.vue",
-      "lines": 767
-    },
-    {
       "file": "src/views/admin/AdminUsers.vue",
       "lines": 770
+    },
+    {
+      "file": "src/views/admin/AdminSecurity.vue",
+      "lines": 767
     },
     {
       "file": "src/plugins/robot/layout/Left.vue",
@@ -56,12 +56,12 @@
       "lines": 673
     },
     {
-      "file": "src/views/settingsWindow/tabs/PushSettings.vue",
-      "lines": 659
-    },
-    {
       "file": "src/views/admin/AdminRooms.vue",
       "lines": 664
+    },
+    {
+      "file": "src/views/settingsWindow/tabs/PushSettings.vue",
+      "lines": 659
     },
     {
       "file": "src/components/rightBox/renderMessage/Video.vue",
@@ -136,12 +136,12 @@
       "lines": 567
     },
     {
-      "file": "src/views/forgetPasswordWindow/index.vue",
-      "lines": 558
-    },
-    {
       "file": "src/views/settingsWindow/tabs/FriendsSettings.vue",
       "lines": 566
+    },
+    {
+      "file": "src/views/forgetPasswordWindow/index.vue",
+      "lines": 558
     },
     {
       "file": "src/components/encryption/KeyRotationDialog.vue",
@@ -336,12 +336,12 @@
       "lines": 447
     },
     {
-      "file": "src/components/windows/ActionBar.vue",
-      "lines": 442
+      "file": "src/components/widget/WidgetDialogs.vue",
+      "lines": 445
     },
     {
-      "file": "src/components/widget/WidgetDialogs.vue",
-      "lines": 441
+      "file": "src/components/windows/ActionBar.vue",
+      "lines": 442
     },
     {
       "file": "src/services/matrix/crypto/CryptoKeyBackupAdapter.ts",

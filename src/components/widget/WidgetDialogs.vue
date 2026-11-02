@@ -1,172 +1,172 @@
 <template>
-  <!-- 添加 Widget 对话框 -->
-  <n-modal
-    :show="showAddDialog"
-    preset="card"
-    :title="t('common.widget.add')"
-    class="w-[600px]"
-    @update:show="emit('update:showAddDialog', $event)">
-    <n-form ref="formRef" :model="formData" :rules="rules">
-      <n-form-item :label="t('common.widget.name')" path="name">
-        <n-input v-model:value="formData.name" :placeholder="t('common.widget.name_placeholder')" />
-      </n-form-item>
-      <n-form-item :label="t('common.widget.type')" path="type">
-        <n-select v-model:value="formData.type" :options="widgetTypeOptions" />
-      </n-form-item>
-      <n-form-item :label="t('common.widget.url')" path="url">
-        <n-input v-model:value="formData.url" :placeholder="t('common.widget.url_placeholder')" />
-      </n-form-item>
-    </n-form>
-    <template #footer>
-      <div class="dialog-footer">
-        <n-button @click="emit('update:showAddDialog', false)">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="adding" @click="handleSubmitAddWidget">
-          {{ t('common.confirm') }}
-        </n-button>
-      </div>
-    </template>
-  </n-modal>
-
-  <!-- Widget 权限对话框 -->
-  <n-modal
-    :show="showPermissionsDialog"
-    preset="card"
-    :title="t('common.widget.permissions')"
-    class="w-[560px]"
-    @update:show="emit('update:showPermissionsDialog', $event)">
-    <div v-if="selectedWidget" class="permissions-content">
-      <div class="widget-info-header">
-        <strong>{{ selectedWidget.name || selectedWidget.id }}</strong>
-      </div>
-      <n-divider />
-
-      <n-spin :show="permissionsLoading">
-        <div class="permissions-list">
-          <div v-if="permissionRows.length === 0" class="empty-row">
-            <n-empty size="small" :description="t('common.widget.no_permissions')" />
-          </div>
-          <div v-for="row in permissionRows" :key="row.userId" class="permission-row">
-            <div class="permission-user">
-              <n-icon size="18"><Icon icon="mdi:account" /></n-icon>
-              <span class="user-id">{{ row.userId }}</span>
-            </div>
-            <div class="permission-tags">
-              <n-tag v-for="p in row.permissions" :key="p" size="small" type="info">{{ p }}</n-tag>
-            </div>
-            <n-button
-              text
-              type="error"
-              size="small"
-              :disabled="savingPermissions"
-              :aria-label="t('common.remove')"
-              @click="emit('remove-permission', row)">
-              <template #icon>
-                <n-icon><Icon icon="mdi:close" /></n-icon>
-              </template>
-            </n-button>
-          </div>
+  <!-- 添加 Widget：编辑表单走右栏抽屉 -->
+  <n-drawer :show="showAddDialog" placement="right" :width="420" @update:show="emit('update:showAddDialog', $event)">
+    <n-drawer-content :title="t('common.widget.add')" closable>
+      <n-form ref="formRef" :model="formData" :rules="rules">
+        <n-form-item :label="t('common.widget.name')" path="name">
+          <n-input v-model:value="formData.name" :placeholder="t('common.widget.name_placeholder')" />
+        </n-form-item>
+        <n-form-item :label="t('common.widget.type')" path="type">
+          <n-select v-model:value="formData.type" :options="widgetTypeOptions" />
+        </n-form-item>
+        <n-form-item :label="t('common.widget.url')" path="url">
+          <n-input v-model:value="formData.url" :placeholder="t('common.widget.url_placeholder')" />
+        </n-form-item>
+      </n-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <n-button @click="emit('update:showAddDialog', false)">{{ t('common.cancel') }}</n-button>
+          <n-button type="primary" :loading="adding" @click="handleSubmitAddWidget">
+            {{ t('common.confirm') }}
+          </n-button>
         </div>
-      </n-spin>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 
-      <n-divider />
-
-      <div class="add-permission-form">
-        <n-input
-          v-model:value="newPermission.userId"
-          :placeholder="t('common.widget.permission_user_placeholder')"
-          size="small"
-          class="flex-1" />
-        <n-select
-          v-model:value="newPermission.permissions"
-          :options="permissionPresetOptions"
-          multiple
-          size="small"
-          class="w-[200px]" />
-        <n-button type="primary" size="small" :loading="savingPermissions" @click="handleSubmitAddPermission">
-          {{ t('common.add') }}
-        </n-button>
-      </div>
-    </div>
-    <template #footer>
-      <div class="dialog-footer">
-        <n-button @click="emit('update:showPermissionsDialog', false)">{{ t('common.close') }}</n-button>
-      </div>
-    </template>
-  </n-modal>
-
-  <!-- 编辑 Capabilities 对话框 -->
-  <n-modal
-    :show="showCapabilitiesDialog"
-    preset="card"
-    :title="t('common.widget.edit_capabilities')"
-    class="w-[520px]"
-    @update:show="emit('update:showCapabilitiesDialog', $event)">
-    <div v-if="selectedWidget" class="capabilities-dialog-content">
-      <n-spin :show="capabilitiesLoading">
-        <div class="capabilities-toggle-list">
-          <n-checkbox
-            v-for="cap in availableCapabilities"
-            :key="cap"
-            :checked="editingCapabilities.includes(cap)"
-            @update:checked="(checked: boolean) => toggleCapability(cap, checked)">
-            {{ cap }}
-          </n-checkbox>
+  <!-- Widget 权限：编辑表单走右栏抽屉 -->
+  <n-drawer
+    :show="showPermissionsDialog"
+    placement="right"
+    :width="520"
+    @update:show="emit('update:showPermissionsDialog', $event)">
+    <n-drawer-content :title="t('common.widget.permissions')" closable>
+      <div v-if="selectedWidget" class="permissions-content">
+        <div class="widget-info-header">
+          <strong>{{ selectedWidget.name || selectedWidget.id }}</strong>
         </div>
         <n-divider />
-        <div class="custom-capability-row">
+
+        <n-spin :show="permissionsLoading">
+          <div class="permissions-list">
+            <div v-if="permissionRows.length === 0" class="empty-row">
+              <n-empty size="small" :description="t('common.widget.no_permissions')" />
+            </div>
+            <div v-for="row in permissionRows" :key="row.userId" class="permission-row">
+              <div class="permission-user">
+                <n-icon size="18"><Icon icon="mdi:account" /></n-icon>
+                <span class="user-id">{{ row.userId }}</span>
+              </div>
+              <div class="permission-tags">
+                <n-tag v-for="p in row.permissions" :key="p" size="small" type="info">{{ p }}</n-tag>
+              </div>
+              <n-button
+                text
+                type="error"
+                size="small"
+                :disabled="savingPermissions"
+                :aria-label="t('common.remove')"
+                @click="emit('remove-permission', row)">
+                <template #icon>
+                  <n-icon><Icon icon="mdi:close" /></n-icon>
+                </template>
+              </n-button>
+            </div>
+          </div>
+        </n-spin>
+
+        <n-divider />
+
+        <div class="add-permission-form">
           <n-input
-            v-model:value="customCapability"
-            :placeholder="t('common.widget.custom_capability_placeholder')"
+            v-model:value="newPermission.userId"
+            :placeholder="t('common.widget.permission_user_placeholder')"
             size="small"
-            class="flex-1"
-            @keyup.enter="addCustomCapability" />
-          <n-button size="small" @click="addCustomCapability">
+            class="flex-1" />
+          <n-select
+            v-model:value="newPermission.permissions"
+            :options="permissionPresetOptions"
+            multiple
+            size="small"
+            class="w-[200px]" />
+          <n-button type="primary" size="small" :loading="savingPermissions" @click="handleSubmitAddPermission">
             {{ t('common.add') }}
           </n-button>
         </div>
-      </n-spin>
-    </div>
-    <template #footer>
-      <div class="dialog-footer">
-        <n-button @click="emit('update:showCapabilitiesDialog', false)">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="savingCapabilities" @click="handleSubmitSaveCapabilities">
-          {{ t('common.save') }}
-        </n-button>
       </div>
-    </template>
-  </n-modal>
+      <template #footer>
+        <div class="dialog-footer">
+          <n-button @click="emit('update:showPermissionsDialog', false)">{{ t('common.close') }}</n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 
-  <!-- 编辑 Config 对话框 -->
-  <n-modal
-    :show="showConfigDialog"
-    preset="card"
-    :title="t('common.widget.edit_config')"
-    class="w-[600px]"
-    @update:show="emit('update:showConfigDialog', $event)">
-    <div v-if="selectedWidget" class="config-dialog-content">
-      <n-spin :show="savingConfig">
-        <n-form :model="configFormData">
-          <n-form-item :label="t('common.widget.name')">
-            <n-input v-model:value="configFormData.name" />
-          </n-form-item>
-          <n-form-item :label="t('common.widget.url')">
-            <n-input v-model:value="configFormData.url" />
-          </n-form-item>
-          <n-form-item :label="t('common.widget.type')">
-            <n-input v-model:value="configFormData.type" disabled />
-          </n-form-item>
-        </n-form>
-      </n-spin>
-    </div>
-    <template #footer>
-      <div class="dialog-footer">
-        <n-button @click="emit('update:showConfigDialog', false)">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="savingConfig" @click="handleSubmitSaveConfig">
-          {{ t('common.save') }}
-        </n-button>
+  <!-- 编辑 Capabilities：编辑表单走右栏抽屉 -->
+  <n-drawer
+    :show="showCapabilitiesDialog"
+    placement="right"
+    :width="420"
+    @update:show="emit('update:showCapabilitiesDialog', $event)">
+    <n-drawer-content :title="t('common.widget.edit_capabilities')" closable>
+      <div v-if="selectedWidget" class="capabilities-dialog-content">
+        <n-spin :show="capabilitiesLoading">
+          <div class="capabilities-toggle-list">
+            <n-checkbox
+              v-for="cap in availableCapabilities"
+              :key="cap"
+              :checked="editingCapabilities.includes(cap)"
+              @update:checked="(checked: boolean) => toggleCapability(cap, checked)">
+              {{ cap }}
+            </n-checkbox>
+          </div>
+          <n-divider />
+          <div class="custom-capability-row">
+            <n-input
+              v-model:value="customCapability"
+              :placeholder="t('common.widget.custom_capability_placeholder')"
+              size="small"
+              class="flex-1"
+              @keyup.enter="addCustomCapability" />
+            <n-button size="small" @click="addCustomCapability">
+              {{ t('common.add') }}
+            </n-button>
+          </div>
+        </n-spin>
       </div>
-    </template>
-  </n-modal>
+      <template #footer>
+        <div class="dialog-footer">
+          <n-button @click="emit('update:showCapabilitiesDialog', false)">{{ t('common.cancel') }}</n-button>
+          <n-button type="primary" :loading="savingCapabilities" @click="handleSubmitSaveCapabilities">
+            {{ t('common.save') }}
+          </n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
+
+  <!-- 编辑 Config：编辑表单走右栏抽屉 -->
+  <n-drawer
+    :show="showConfigDialog"
+    placement="right"
+    :width="420"
+    @update:show="emit('update:showConfigDialog', $event)">
+    <n-drawer-content :title="t('common.widget.edit_config')" closable>
+      <div v-if="selectedWidget" class="config-dialog-content">
+        <n-spin :show="savingConfig">
+          <n-form :model="configFormData">
+            <n-form-item :label="t('common.widget.name')">
+              <n-input v-model:value="configFormData.name" />
+            </n-form-item>
+            <n-form-item :label="t('common.widget.url')">
+              <n-input v-model:value="configFormData.url" />
+            </n-form-item>
+            <n-form-item :label="t('common.widget.type')">
+              <n-input v-model:value="configFormData.type" disabled />
+            </n-form-item>
+          </n-form>
+        </n-spin>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <n-button @click="emit('update:showConfigDialog', false)">{{ t('common.cancel') }}</n-button>
+          <n-button type="primary" :loading="savingConfig" @click="handleSubmitSaveConfig">
+            {{ t('common.save') }}
+          </n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
