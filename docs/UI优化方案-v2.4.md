@@ -7,7 +7,7 @@
 > 审计方式：契约条款 → 代码取证（Read/Grep/脚本实测）→ 覆盖结论；本轮为**第二轮全量复核**，上一轮（2026-10-19，基线「1041 条」）的结论已逐条复核
 > 结论日期：2026-11-01
 > 文档修订：2026-11-01（在结论复核基础上做了**结构重排与表述校准**：上一轮 4 项 P1 误判经复核为「3 项已修复 + 1 项部分修复」、响应式证据重取、问题总表按 ID 排序、术语与复核命令统一。**优化目标、技术方案与版本号未变**）
-> 阶段回写：2026-11-02（阶段 B 落地 G-01 遥测页与 G-02 后台更新页，阶段 C 核验 UI-P2-01 已修复；阶段 D 落地 UI-P2-05/06/08/09，阶段 E 落地 UI-P2-02/10/11 与 G-03/G-07，阶段 F 落地 UI-P2-04 文档-代码核对清单；阶段 G 复核：A-01/A-02/A-03 闭环、G-05 经取证判定为**后端阻塞**；状态同步至 §0、§1.3、§2、§4、§5、§6、§7、§8、§9）
+> 阶段回写：2026-11-02（阶段 B 落地 G-01 遥测页与 G-02 后台更新页，阶段 C 核验 UI-P2-01 已修复；阶段 D 落地 UI-P2-05/06/08/09，阶段 E 落地 UI-P2-02/10/11 与 G-03/G-07，阶段 F 落地 UI-P2-04 文档-代码核对清单；阶段 G 复核：A-01/A-02/A-03 闭环、G-05 经取证判定为**后端阻塞**、G-04/G-06/G-08 经产品确认**需要**；状态同步至 §0、§1.3、§2、§4、§5、§6、§7、§8、§9）
 
 ---
 
@@ -27,7 +27,7 @@
 | 阶段 G 修复（P2） | 1 | UI-P2-03（编辑类弹窗全部抽屉化，残留 105 处均为确认/向导/选择器/查看器并已登记） |
 | 无障碍取证（阶段 G） | 2 | A-01（Storybook 可达，`check:a11y` 基线 0 serious/critical，逐故事扫描待补）、A-02（右侧栏拖拽把手补齐分隔条语义、可访问名称与键盘调整） |
 | 无障碍澄清（不成立） | 1 | A-03（管理后台无手动侧栏收起控件，宽度收缩由断点驱动，无 `aria-expanded` 可挂点） |
-| 能力缺口 | 3 | G-04、G-06、G-08（G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地） |
+| 能力缺口（已确认需要，待排期） | 3 | G-04、G-06、G-08（2026-11-02 产品确认均需要；G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地） |
 | 能力缺口（后端阻塞） | 1 | G-05（CAS 客户端链路不闭环：302 到无处理器的根路径 `/login?service=`，且无 ticket→access_token 兑换，见 §2） |
 
 > 计数口径说明：`上一轮已修复` 指上一轮登记时即已关闭；`本轮复核确认已修复` 指上一轮被误记为「仍成立」的项。两类分开列，便于追溯审计质量（上一轮 4 项 P1 误判均为「修复已落地或部分落地，但状态未回写」）。
@@ -41,7 +41,7 @@
 | P2（待做） | 0 | — |
 | P2（已修复） | 11 | UI-P2-01、02、03、04、05、06、07、08、09、10、11 |
 | 无障碍（已取证 / 已修复 / 澄清） | 3 | A-01（已取证基线，逐故事扫描待补）、A-02（已修复）、A-03（经取证不成立） |
-| 能力缺口 | 3 | G-04、G-06、G-08（G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地，见 §1.3 / §7） |
+| 能力缺口（已确认需要，待排期） | 3 | G-04、G-06、G-08（2026-11-02 产品确认均需要；G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地，见 §1.3 / §7） |
 | 能力缺口（后端阻塞） | 1 | G-05（CAS 客户端链路不闭环，见 §2 / §7） |
 
 > ⚠️ 上一版本表在 P1 处写「5」但列出了 6 项、§4 注又写「6 项」，三处口径不一致。本节改为「按级别 × 按状态」交叉计数（7 个 P1 编号、10+1=11 个 P2 编号），此后不得再出现裸数字。
@@ -145,7 +145,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 密钥轮转 | 9 | 已覆盖 | — | `KeyRotationDialog.vue` + `EncryptionSettings.vue` |
 | Widget | 16 | 已覆盖 | — | `MatrixWidgetService`（`private_on_std_widgets=0`，全走私有路由） |
 | AppService | 41 | 已覆盖 | — | `AdminAppServices.vue`、`ApplicationService` |
-| 延迟事件（MSC4140） | 7 | **未覆盖** | G-04 | `msc4140` / `delayed_event` 全仓 0 命中，仅 i18n 空命名空间 `delayed_events` |
+| 延迟事件（MSC4140） | 7 | **未覆盖（已确认需要）** | G-04 | `msc4140` / `delayed_event` 全仓 0 命中，仅 i18n 空命名空间 `delayed_events`；2026-11-02 产品确认需要 |
 | 房间 | 114 | 已覆盖 | — | `src/services/matrix/room/`（21 个非测试文件） |
 | 推送 | 25 | 已覆盖 | — | `MatrixPushService`、`MatrixRoomNotificationService` |
 | 搜索 | 5 | 已覆盖 | — | `MatrixSearchService`、`ChatRoomSearch.vue` |
@@ -161,7 +161,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 联邦 | 70 | 已覆盖 | — | `FederationService`、`AdminFederation.vue`、`AdminFederationMonitor.vue` |
 | 装配 | 89 | 不适用 | — | 服务端装配期路由 |
 | 设备 | 13 | 已覆盖 | — | `MatrixDeviceService` |
-| 访客 | 3 | **未覆盖** | G-06 | `register/guest`、`account/guest/upgrade` 全仓 0 命中；仅 admin 只读展示 `is_guest` |
+| 访客 | 3 | **未覆盖（已确认需要）** | G-06 | `register/guest`、`account/guest/upgrade` 全仓 0 命中；仅 admin 只读展示 `is_guest`；2026-11-02 产品确认需要 |
 | 语音 | 13 | 部分覆盖 | — | `paths/voice.ts` 已定义 config/upload/room/user/content；`convert`/`optimize`/`transcription` 属 by-design unsupported（见 §3.4 注） |
 | 账户 | 15 | 已覆盖 | — | `MatrixAccountService` |
 | 输入状态 | 5 | 已覆盖 | — | `MatrixTypingService` |
@@ -184,11 +184,11 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | G-01 | P1 | 服务端遥测与告警 | 6 条 `/_synapse/admin/v1/telemetry/*` | **已落地**：路由 `/admin/telemetry`，导航与能力降级齐备 | `AdminTelemetry.vue`、`useAdminTelemetry`、`admin.nav.telemetry`；服务方法经 `AdminFacadeService.telemetry` |
 | G-02 | P1 | 后台更新任务 | 19 条 `/_synapse/admin/v1/background_updates/*` | **已落地**：路由 `/admin/background-updates`，含可停轮询 | `AdminBackgroundUpdates.vue`、`useAdminBackgroundUpdates`、`admin.nav.backgroundUpdates` |
 | G-03 | P2 | 线程冻结 / 解冻 / 静音 | thread 21 条中的 3 个动作 | **已落地**：`ThreadPanel.vue` 头部状态标签 + 冻结/静音操作，冻结时 footer 只读 | `MatrixThreadApi`：`freezeThreadViaApi` / `unfreezeThreadViaApi` / `muteThreadViaApi`；`getRoomThreadViaApi` 读状态 |
-| G-04 | P2 | 延迟事件（MSC4140） | 7 条 `unstable/org.matrix.msc4140/delayed_events` 系列 | **零对接** | `msc4140` / `delayed_event` 全仓 0 命中；仅 `i18n.d.ts` 有空命名空间 `delayed_events: {}` |
+| G-04 | P2 | 延迟事件（MSC4140） | 7 条 `unstable/org.matrix.msc4140/delayed_events` 系列 | **已确认需要（2026-11-02），待排期**；当前零对接 | `msc4140` / `delayed_event` 全仓 0 命中；仅 `i18n.d.ts` 有空命名空间 `delayed_events: {}` |
 | G-05 | P2 | CAS 单点登录 | 12 条 | **后端阻塞（2026-11-02 取证）**：客户端面 302 到根路径 `/login?service=`，该路径在 synapse-web 无处理器；`POST /login` 不接受 `m.login.cas`，无 ticket→access_token 兑换；前端不落死入口 | `synapse-web/src/routes/cas.rs::cas_sso_redirect`（302 `/login?service=`）、`auth_compat.rs::SUPPORTED_LOGIN_TYPES`（无 `m.login.cas`）、`cas.rs::service_validate`（仅返回纯文本 user id，非换票面） |
-| G-06 | P2 | 访客注册与升级 | 3 条（`register/guest`、`account/guest`、`account/guest/upgrade`） | **零对接** | 仅 admin `UserService` 只读展示 `is_guest` |
+| G-06 | P2 | 访客注册与升级 | 3 条（`register/guest`、`account/guest`、`account/guest/upgrade`） | **已确认需要（2026-11-02），待排期**；当前零对接 | 仅 admin `UserService` 只读展示 `is_guest` |
 | G-07 | P2 | 媒体配额（告警 / 检查 / 统计） | **4 条**：`GET /_matrix/media/v1/quota/{alerts,check,stats}` + `GET /_synapse/admin/v1/media/quota` | **已落地**：设置页三态配额卡片 + 上传前预检 + admin 服务端全局配额卡 | `MatrixMediaService` 三方法；`StorageSettings.vue`、`useMsgInputFileUpload.sendFilesDirect`、`useAdminMaintenance.loadServerQuota` |
-| G-08 | P2 | vendor 房间扩展字段 | `event_perspective`、`external_ids` 各 1 条路由 | **零对接** | 两关键字在 `src/` 全仓 0 命中 |
+| G-08 | P2 | vendor 房间扩展字段 | `event_perspective`、`external_ids` 各 1 条路由 | **已确认需要（2026-11-02），待排期**；当前零对接 | 两关键字在 `src/` 全仓 0 命中 |
 
 > **G-07 修正**：上一版写「3 条 `/_matrix/media/v1/quota/*`」，实际是 **4 条**——除 client 侧三条外还有 admin 侧 `GET /_synapse/admin/v1/media/quota`。页面设计时应把「用户配额」与「管理员全局配额」分开呈现。
 
@@ -196,8 +196,8 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 1. G-01 / G-02 是「管理后台已有 300 条端点、但有两块功能没有页面」，管理员此前只能靠 API 直调；阶段 B 已补页面，回归约束见 §7 与 §8。
 2. G-03 / G-07 是「有服务层无入口」，实现成本最低，已在阶段 E 与 P2 视觉收敛同批落地；回归约束见 §7。
-3. G-04 / G-06 涉及协议流程与新页面，必须先确认产品是否需要，再排期；未确认前不进开发队列。G-05 经 2026-11-02 取证判定为**后端阻塞**：CAS 客户端链路 302 到无处理器的根路径 `/login?service=`，且无 ticket→access_token 兑换，前端不得先做死入口，待 synapse-rust 补齐后再排期。
-4. G-08 需要先确认 synapse-rust 侧字段语义与展示规则，属于体验增强，放最后。
+3. G-04 / G-06 已于 2026-11-02 经产品确认**需要**，进入开发队列（G-04 消息定时发送、G-06 访客模式与升级）；G-05 经 2026-11-02 取证判定为**后端阻塞**：CAS 客户端链路 302 到无处理器的根路径 `/login?service=`，且无 ticket→access_token 兑换，前端不得先做死入口，待 synapse-rust 补齐后再排期。
+4. G-08 已于 2026-11-02 经产品确认**需要**；字段语义已取证：`external_ids` 返回房间别名映射（`{"type":"room_alias","value":...}`），`event_perspective` 必须带 `event_id` 且返回该事件前 99 条窗口统计。属于体验增强，排期在 G-04 / G-06 之后。
 
 ---
 
@@ -296,14 +296,14 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | A-03 | — | 侧栏收起按钮缺 `aria-expanded` | 不成立（已澄清） | 全局无 `sidebarCollapsed` 控件；`AdminSidebar.vue` 断点驱动收缩；`AdminLayout.vue` 头部 `aria-expanded` 已有 |
 | G-01 / G-02 | P1 | 遥测、后台更新无页面 | **已落地** | `AdminTelemetry.vue`、`AdminBackgroundUpdates.vue`（`useAdminNav` 已登记） |
 | G-03 / G-07 | P1 | 线程冻结/静音、媒体配额无入口 | **已落地** | `ThreadPanel.vue`；`StorageSettings.vue` + `useMsgInputFileUpload.sendFilesDirect` + `AdminMaintenance.vue`（详见 §7） |
-| G-04 ~ G-06 / G-08 | — | 后端能力前端无入口 | 仍成立 | 见 §2 |
+| G-04 ~ G-06 / G-08 | — | 后端能力前端无入口 | 产品已确认需要（2026-11-02），待排期 | 见 §2 |
 
 > **计数（按编号 × 状态，不混算）**
 >
 > - P1 共 7 个编号：已修复 7（UI-P1-01/02/03/04/05/06/07），无遗留。
 > - P2 共 11 个编号：已修复 11（UI-P2-01、02、03、04、05、06、07、08、09、10、11），无遗留。
 > - 无障碍 3 个编号：已取证 1（A-01，逐故事扫描待补）、已修复 1（A-02）、澄清不成立 1（A-03）。
-> - 能力缺口 8 个编号（G-01 ~ G-08），不计入 UI 缺陷总数：已落地 4（G-01、G-02、G-03、G-07）、仍成立 4（G-04 ~ G-06、G-08）。
+> - 能力缺口 8 个编号（G-01 ~ G-08），不计入 UI 缺陷总数：已落地 4（G-01、G-02、G-03、G-07）、已确认需要待排期 3（G-04、G-06、G-08）、后端阻塞 1（G-05）。
 
 ---
 
@@ -738,11 +738,11 @@ pnpm test:run tests/lint/design-baseline.test.ts
 | G-01 | 新增 `/admin/telemetry` 页 | 复用 `AdminFacadeService.telemetry` 的 6 方法：状态卡（`getStatus` + `getHealth`）、指标摘要（`getMetricsSummary`）、告警列表（`listAlerts` + `acknowledgeAlert`）、资源属性（`getResourceAttributes`） | `unsupported` 时显示"未启用"而非报错；告警确认需二次确认与失败回滚 | 页面可查看状态/指标/告警，告警可确认；空态与错误态齐备 |
 | G-02 | 新增 `/admin/background-updates` 页 | 复用 `backgroundUpdates`：任务列表、进度、触发与中止 | 中止为不可逆操作，需二次确认；进度轮询需可停 | 列表可见进度与状态；操作有结果回执 |
 | G-03 | 线程详情增加「冻结 / 解冻 / 静音」 | `freezeThreadViaApi` / `unfreezeThreadViaApi` / `muteThreadViaApi`；状态回写线程头 | 冻结后输入框必须禁用并给出原因；静音沿用房间静音的可发现性模式 | 冻结后线程只读并可解冻；静音状态持久化且线程列表有标识 |
-| G-04 | 消息定时发送 | 需先确认产品需求；确认后按 MSC4140 7 条端点接 `send/delay/cancel/update/restart` 语义 | 离线时不得假装成功；取消失败要保留原任务并提示 | 定时消息可取消、可改期；失败有明确错误 |
+| G-04 | **已确认需要（2026-11-02）**：消息定时发送 | 按 MSC4140 7 条端点接 `send/delay/cancel/update/restart` 语义；输入区定时入口 + 待发消息列表 | 离线时不得假装成功；取消失败要保留原任务并提示 | 定时消息可取消、可改期；失败有明确错误 |
 | G-05 | **后端阻塞（2026-11-02 取证）** | 原方案：仅在 flows 含 `m.login.cas` 时渲染，URL 经 SDK `getCasLoginUrl(同源路径)` 生成 | 前端不得先做「点击后无法完成会话」的死入口 | 阻塞成立：`cas_sso_redirect` 302 → 根路径 `/login?service=`（无处理器）；`POST /login` 无 `m.login.cas`；无 ticket→token 兑换。待后端补齐「CAS 回调 → loginToken → 应用回跳」后，再按 flows 驱动落地 |
-| G-06 | 访客模式入口与升级 | `register/guest`、`account/guest`、`account/guest/upgrade` | 升级失败需可重试且不丢会话；访客受限能力要显式标注 | 访客可受限使用；升级后会话与数据保持 |
+| G-06 | **已确认需要（2026-11-02）**：访客模式入口与升级 | `register/guest`、`account/guest`、`account/guest/upgrade` | 升级失败需可重试且不丢会话；访客受限能力要显式标注 | 访客可受限使用；升级后会话与数据保持 |
 | G-07 | 存储设置增加配额卡片 | `getQuotaAlerts` / `checkQuota` / `getQuotaStats`；admin 侧 `GET /_synapse/admin/v1/media/quota` 单独做全局视图 | 超限提示必须在上传前触发；配额接口失败不得阻断上传主链 | 展示已用/上限/告警；超限时上传前提示 |
-| G-08 | 房间扩展字段展示 | `event_perspective`、`external_ids`；先确认字段语义 | 字段缺失时整块不渲染（不留空占位） | 字段存在时展示，缺失时无痕迹 |
+| G-08 | **已确认需要（2026-11-02）**：房间扩展字段展示 | `external_ids`（房间别名映射）展示在房间信息面板；`event_perspective`（需 `event_id`，前 99 条窗口统计）作为消息视角浮层 | 字段缺失时整块不渲染（不留空占位） | 字段存在时展示，缺失时无痕迹 |
 
 **共同约束**：全部新增入口必须具备能力探测与 `unsupported` 降级，禁止「渲染一个必然失败的按钮」。降级语义与需求文档 7.8 的三态一致（加载中 / 可用 / 不可用），不得自创第四种。
 
@@ -753,6 +753,7 @@ pnpm test:run tests/lint/design-baseline.test.ts
 - G-03 已落地：`components/thread/ThreadPanel.vue` 头部新增冻结/静音状态标签与操作按钮（图标用 Iconify，非字形），状态经 `getRoomThreadViaApi` 读取 `detail.summary.is_frozen` / `detail.user_subscription.is_muted`；冻结时 footer 输入区降级为只读并给出原因，发送入口双重守卫；操作失败保留原状态并回执错误。测试：`ThreadPanel.test.ts`（10 例）。
 - G-07 已落地：三处接线——① `views/settingsWindow/tabs/StorageSettings.vue` 新增服务端媒体配额三态卡片（loading / available / unavailable），展示已用/上限/剩余/媒体数量与告警列表；② `composables/chat/useMsgInputFileUpload.sendFilesDirect` 在上传前批量预检 `checkQuota()`，仅当 `limit > 0 && remaining < 总大小` 时提示并中止（不建队列、不插占位消息）；③ `views/admin/AdminMaintenance.vue` 新增服务端全局配额卡（`getServerQuota()`）。配额接口失败时 `checkQuota` 返回 `null` 直接放行，`getQuotaStats` / `getQuotaAlerts` 各自降级，不阻断上传主链。测试：`StorageSettings.test.ts`（8 例）、`useMsgInputFileUpload.test.ts`（4 例）、`useAdminMaintenance.test.ts`（9 例）。
 - G-05 判定为后端阻塞（2026-11-02）：取证链为「`GET /_matrix/client/v3/login` 的 flows 可含 `m.login.cas`」→「`GET /_matrix/client/v3/login/sso/redirect/cas?redirect_after=` 返回 302 `Location: /login?service=`」→「根路径 `/login` 在 synapse-web 无任何处理器（部署 nginx `location /` 直通 synapse-app）」→「`POST /login` 的 `SUPPORTED_LOGIN_TYPES` 仅 password/token/application_service，无 CAS」→「`/_synapse/cas/serviceValidate` 只返回纯文本 user id，不是客户端换票面」。结论：前端没有可完成会话的回跳路径，按「禁止渲染必然失败的按钮」不落入口；待后端补齐 CAS 回调换票后再排期。
+- G-04 / G-06 / G-08 产品确认（2026-11-02）：三项均确认**需要**，进入开发队列，建议顺序 G-08（只读展示、成本最低）→ G-06（登录/注册流程与权限标注）→ G-04（定时发送状态机与离线一致性）。G-04 / G-08 的字段与端点语义已取证（见 §2 处理原则 3/4），可直接进入排期。
 - 回归约束：G-03 不得移除冻结只读降级与发送守卫；G-07 不得把配额预检改成抛错阻断，也不得在 7 个 `upload*` 方法内逐个加检查（会造成每次上传额外请求）。
 - 回归约束：两页不得删除 `unsupported` 降级与二次确认；后台更新轮询不得改为不可停的默认轮询。
 - 测试：`useAdminTelemetry.test.ts`、`useAdminBackgroundUpdates.test.ts`、`AdminTelemetry.test.ts`、`AdminBackgroundUpdates.test.ts`。
@@ -791,7 +792,7 @@ pnpm test:run tests/lint/design-baseline.test.ts
 
 10. 【已完成 2026-11-02】UI-P2-02（令牌替换，`hardcoded_color` 基线 24 → 0）、UI-P2-10、UI-P2-11。
 11. 【G-03 / G-07 已完成 2026-11-02】线程冻结/静音、媒体配额三处接线；【UI-P2-03 已完成 2026-11-02】编辑类弹窗全部改为右栏抽屉，残留 105 处非编辑语义弹窗已逐文件登记。
-12. G-04 / G-06 / G-08——需产品确认，确认后单独排期；G-05 经取证判定为后端阻塞（CAS 回调不闭环、无换票端点），不进前端开发队列。
+12. G-04 / G-06 / G-08——2026-11-02 经产品确认均**需要**，进入开发队列，建议顺序 G-08 → G-06 → G-04；G-05 经取证判定为后端阻塞（CAS 回调不闭环、无换票端点），不进前端开发队列。
 
 **阶段 F：文档与守卫**
 
@@ -845,7 +846,7 @@ pnpm verify:sdk-pin
 
 1. P1 清零：UI-P1-05、UI-P1-07 关闭 + UI-P1-03 的第二写入点消除，且各项有对应单测/断言（UI-P1-01/02/04/06 已关闭，只需回归守住）。
 2. P2 收敛：`hardcoded_color` 已降到 0 并锁定基线；`NModal` 已完成分类收敛（当前 105，设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105；残留均为确认/向导/选择器/查看器/前置认证并逐文件登记）。
-3. 能力缺口：G-01、G-02、G-03、G-07 已落地并有测试；G-06 待补入口；G-05 经取证判定为后端阻塞（CAS 回调不闭环、无换票端点）；G-04 / G-08 待产品结论。
+3. 能力缺口：G-01、G-02、G-03、G-07 已落地并有测试；G-04 / G-06 / G-08 已于 2026-11-02 经产品确认需要、待排期；G-05 经取证判定为后端阻塞（CAS 回调不闭环、无换票端点）。
 4. 残留清理：`SyncStatusBar.vue` 与其实测已删除，`typings/` 无该符号。
 5. 未取证项清零：Worker 管理面、第三方 3PID、媒体子项三项补齐取证后再更新 §1.3；A-01 已在 Storybook 可达后跑通 `check:a11y`（0 serious/critical）并修复 `FileUploadModal` 的 `trap-focus=false`，逐故事扫描待补；A-02 已修复（`role="separator"` + `aria-label` + 方向键，回归测试覆盖）、A-03 经取证不成立（无手动收起控件）。
 6. 门禁全绿：`test:run`、`typecheck`、`check:ratchet`、`check-file-size`、`check-integration-map-freshness`、`verify:sdk-pin` 无失败。
