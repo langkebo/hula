@@ -1,21 +1,14 @@
 <template>
   <main
+    :style="panelStyle"
     class="flex-shrink-0 flex flex-col transition-all duration-300 h-full"
-    :class="[
-      isGroup
-        ? isCollapsed
-          ? 'w-0 border-none'
-          : 'w-240px border-l border-[--tjg-border-default] bg-[--tjg-surface-panel] shadow-sm'
-        : 'w-0 border-none',
-      'relative'
-    ]">
-    <!-- 收缩按钮：默认折叠，点击展开/收起 -->
+    :class="[panelClass, 'relative']">
     <div
-      v-show="isGroup"
+      v-show="isGroup && !isHidden"
       role="button"
       :aria-label="isCollapsed ? t('home.chat_sidebar.toggle.expand') : t('home.chat_sidebar.toggle.collapse')"
       :aria-expanded="!isCollapsed"
-      @click.stop="isCollapsed = !isCollapsed"
+      @click.stop="toggle"
       class="absolute top-1/2 -left-14px -translate-y-1/2 cursor-pointer bg-[--tjg-surface-sidebar-selected] h-48px w-14px rounded-l-12px flex items-center justify-center opacity-100 hover:opacity-80 transition-opacity z-10 shadow-sm border border-r-0 border-[--tjg-border-default]">
       <svg
         :class="isCollapsed ? 'rotate-180' : 'rotate-0'"
@@ -24,7 +17,15 @@
       </svg>
     </div>
 
-    <div v-if="isGroup && !isCollapsed" class="flex flex-col h-full overflow-hidden">
+    <div v-if="isDrawerOpen" :class="backdropClass" data-testid="chat-sidebar-backdrop" @click="collapse" />
+
+    <div
+      v-if="isGroup && !isCollapsed && !isHidden && !isDrawer"
+      data-testid="chat-sidebar-resize"
+      class="absolute left-0 top-0 bottom-0 w-6px z-20 cursor-col-resize"
+      @pointerdown="startDrag" />
+
+    <div v-if="isGroup && !isCollapsed && !isHidden" class="relative z-10 flex flex-col h-full overflow-hidden">
       <!-- 公告面板 (MW-ANNOUNCEMENT-002: 替代独立窗口) -->
       <AnnouncementPanel v-if="showAnnouncementPanel" :room-id="currentRoomId" @close="showAnnouncementPanel = false" />
 
@@ -85,20 +86,30 @@
       </n-flex>
 
       <!-- Tab 选项卡机制 -->
-      <n-tabs
-        v-model:value="activeTab"
-        type="line"
-        size="small"
-        class="chat-sidebar-tabs shrink-0"
-        :tabs-padding="12"
-        justify-content="space-evenly">
-        <n-tab-pane name="members" :tab="t('home.chat_sidebar.tabs.members')">
-          <!-- 成员列表与搜索被迁移至此处内部，但为保持代码结构，我们利用 v-show 切换内容区域 -->
-        </n-tab-pane>
-        <n-tab-pane name="files" :tab="t('home.chat_sidebar.tabs.files')"></n-tab-pane>
-        <n-tab-pane name="pins" :tab="t('home.chat_sidebar.tabs.pins')"></n-tab-pane>
-        <n-tab-pane name="favorites" :tab="t('home.chat_sidebar.tabs.favorites')"></n-tab-pane>
-      </n-tabs>
+      <div class="flex items-center shrink-0 pr-8px">
+        <n-tabs
+          v-model:value="activeTab"
+          type="line"
+          size="small"
+          class="chat-sidebar-tabs flex-1 min-w-0"
+          :tabs-padding="12"
+          justify-content="space-evenly">
+          <n-tab-pane name="members" :tab="t('home.chat_sidebar.tabs.members')"></n-tab-pane>
+          <n-tab-pane name="files" :tab="t('home.chat_sidebar.tabs.files')"></n-tab-pane>
+          <n-tab-pane name="pins" :tab="t('home.chat_sidebar.tabs.pins')"></n-tab-pane>
+          <n-tab-pane name="favorites" :tab="t('home.chat_sidebar.tabs.favorites')"></n-tab-pane>
+        </n-tabs>
+        <n-button
+          size="tiny"
+          quaternary
+          circle
+          :aria-label="t('chat.header.search_messages')"
+          @click="openMessageSearch">
+          <template #icon>
+            <svg class="size-14px color-[--tjg-text-secondary]"><use href="#search"></use></svg>
+          </template>
+        </n-button>
+      </div>
 
       <!-- 动态内容区域 -->
       <div v-show="activeTab === 'members'" class="flex flex-col flex-1 min-h-0">
@@ -129,11 +140,15 @@
               </svg>
             </template>
           </n-input>
-          <n-button v-if="!isSearch" size="tiny" quaternary circle @click="handleSelect">
+          <n-button
+            v-if="!isSearch"
+            size="tiny"
+            quaternary
+            circle
+            :aria-label="t('common.search')"
+            @click="handleSelect">
             <template #icon>
-              <svg class="size-14px color-[--tjg-text-secondary]">
-                <use href="#search"></use>
-              </svg>
+              <svg class="size-14px color-[--tjg-text-secondary]"><use href="#search"></use></svg>
             </template>
           </n-button>
         </n-flex>
@@ -319,6 +334,7 @@ import { useI18n } from 'vue-i18n'
 import AnnouncementPanel from '@/components/room/AnnouncementPanel.vue'
 import PinnedMessageBanner from '@/components/room/PinnedMessageBanner.vue'
 import { useChatMain } from '@/composables/chat/useChatMain'
+import { useChatSidebar } from '@/composables/chat/useChatSidebar'
 import { useRoomType } from '@/composables/chat/useRoomType'
 import { useLinkSegments } from '@/composables/common/useLinkSegments'
 import { useMitt } from '@/composables/common/useMitt'
@@ -377,7 +393,11 @@ const searchRequestId = ref(0)
 /** List中的Popover组件实例 */
 const infoPopoverRefs = ref<Record<string, { setShow: (show: boolean) => void } | null>>({})
 const inputInstRef = ref<InputInst | null>(null)
-const isCollapsed = ref(true)
+const sidebar = useChatSidebar({ isGroup })
+const { isCollapsed, isDrawer, isDrawerOpen, isHidden, panelClass, toggle, collapse } = sidebar
+const { backdropClass, panelStyle, startDrag } = sidebar
+/** 打开消息搜索面板 */
+const openMessageSearch = () => useMitt.emit(MittEnum.OPEN_ROOM_SEARCH)
 const { optionsList, report, selectKey } = useChatMain()
 
 // 用于稳定展示的用户列表

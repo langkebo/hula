@@ -9,10 +9,10 @@
       'right-pane-animated': transitionEnabled,
       'flex-1 w-full': isRightPaneFullscreen
     }"
-    :style="isRightPaneFullscreen ? undefined : { minWidth: `${paneWidth}px`, flex: '1 1 auto' }">
-    <!-- Step 2.3：左边缘拖拽分隔条（14px，hover 显示拖拽图标） -->
+    :style="paneStyle">
+    <!-- Step 2.3：左边缘拖拽分隔条（14px，hover 显示拖拽图标）；聊天视图改由信息面板左缘拖拽 -->
     <div
-      v-if="!isRightPaneFullscreen"
+      v-if="!isRightPaneFullscreen && !isElasticPane"
       class="right-pane-drag-handle"
       data-test="right-pane-drag-handle"
       @pointerdown="startDrag">
@@ -119,6 +119,14 @@ const { isRightPaneFullscreen, isShrink } = useResponsiveBreakpoint()
 
 // Step 2.3：视图驱动动态宽度 + 拖拽 + localStorage 持久化
 const { width: paneWidth, isDragging, transitionEnabled, startDrag } = useRightPaneWidth({ rightView })
+
+// UI-P2-01：聊天视图为弹性主区，宽度由信息面板拖拽控制，不参与右侧栏固定宽度表
+const isElasticPane = computed(() => rightView.value === 'chat')
+const paneStyle = computed(() => {
+  if (isRightPaneFullscreen.value) return undefined
+  if (isElasticPane.value) return { flex: '1 1 auto', minWidth: '0' }
+  return { minWidth: `${paneWidth.value}px`, flex: '1 1 auto' }
+})
 
 // 兼容旧代码：发射 SHRINK_WINDOW 事件通知左侧栏和消息列表
 watchEffect(() => {

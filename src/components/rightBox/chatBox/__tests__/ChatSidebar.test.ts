@@ -63,6 +63,21 @@ vi.mock('@vueuse/core', () => ({
   useDebounceFn: (fn: (...args: unknown[]) => unknown) => fn
 }))
 
+// 断点模式由用例控制：默认 normal（非宽屏，面板默认折叠）
+const { breakpointState } = vi.hoisted(() => ({
+  breakpointState: { mode: 'normal' as 'wide' | 'normal' | 'shrink' | 'single' }
+}))
+
+vi.mock('@/composables/layout/useResponsiveBreakpoint', () => ({
+  DEFAULT_BREAKPOINTS: { wide: 1200, normal: 992, shrink: 768 },
+  useResponsiveBreakpoint: () => ({
+    mode: computed(() => breakpointState.mode),
+    centerWidth: computed(() => 240),
+    isRightPaneFullscreen: computed(() => breakpointState.mode === 'shrink' || breakpointState.mode === 'single'),
+    isShrink: computed(() => breakpointState.mode === 'shrink' || breakpointState.mode === 'single')
+  })
+}))
+
 vi.mock('vue-i18n', () => createI18nMock())
 
 vi.mock('@/services/matrix/room/roomTypeUtils', () => ({
@@ -216,6 +231,8 @@ const mountComponent = () =>
 describe('ChatSidebar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    window.localStorage.clear()
+    breakpointState.mode = 'normal'
 
     globalStore = reactive({
       currentSessionRoomId: '!room:example.com',
@@ -293,6 +310,73 @@ describe('ChatSidebar', () => {
     expect(toggle.exists()).toBe(true)
     // v-show 在好友/单聊下隐藏交互把手（display:none）
     expect(toggle.attributes('style')).toContain('display: none')
+  })
+
+  it('remembers the expanded state across remounts', async () => {
+    const first = mountComponent()
+    await first.find('[role="button"]').trigger('click')
+    await flushPromises()
+    expect(first.find('main').classes()).toContain('w-240px')
+
+    // 非宽屏断点下仍按持久化记录展开
+    const second = mountComponent()
+    await flushPromises()
+    expect(second.find('main').classes()).toContain('w-240px')
+    expect(second.find('[role="button"]').attributes('aria-expanded')).toBe('true')
+  })
+
+  it('renders a dismissible backdrop when the drawer is open in shrink mode', async () => {
+    breakpointState.mode = 'shrink'
+    const wrapper = mountComponent()
+
+    expect(wrapper.find('[data-testid="chat-sidebar-backdrop"]').exists()).toBe(false)
+
+    await wrapper.find('[role="button"]').trigger('click')
+    await flushPromises()
+
+    const main = wrapper.find('main')
+    expect(main.classes()).toContain('fixed')
+    expect(main.classes()).toContain('w-240px')
+
+    const backdrop = wrapper.find('[data-testid="chat-sidebar-backdrop"]')
+    expect(backdrop.exists()).toBe(true)
+    expect(backdrop.classes()).toContain('fixed')
+
+    await backdrop.trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="chat-sidebar-backdrop"]').exists()).toBe(false)
+    expect(wrapper.find('main').classes()).toContain('w-0')
+  })
+
+  it('renders the resize handle only when the panel is expanded on desktop', async () => {
+    const wrapper = mountComponent()
+    expect(wrapper.find('[data-testid="chat-sidebar-resize"]').exists()).toBe(false)
+
+    await wrapper.find('[role="button"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="chat-sidebar-resize"]').exists()).toBe(true)
+    expect(wrapper.find('main').attributes('style')).toContain('width: 240px')
+  })
+
+  it('hides the resize handle in drawer mode', async () => {
+    breakpointState.mode = 'shrink'
+    const wrapper = mountComponent()
+
+    await wrapper.find('[role="button"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="chat-sidebar-resize"]').exists()).toBe(false)
+  })
+
+  it('does not render panel content in single-column mode', async () => {
+    breakpointState.mode = 'single'
+    const wrapper = mountComponent()
+
+    await wrapper.find('[role="button"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('main').classes()).toContain('w-0')
+    expect(wrapper.find('[data-testid="chat-sidebar-resize"]').exists()).toBe(false)
+    expect(wrapper.find('[role="button"]').attributes('style')).toContain('display: none')
   })
 
   // ---- P0-1: 成员列表按 presence 分在线/离线两组 ----

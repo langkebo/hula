@@ -102,4 +102,13 @@ describe('layout/right — pane close wiring', () => {
 
     expect(routerPushMock).toHaveBeenCalledWith('/room')
   })
+
+  // UI-P2-01：聊天视图改为弹性主区，宽度拖拽交给信息面板左缘
+  it('makes the chat view elastic and hides the pane drag handle', () => {
+    currentRoute.value = { path: '/message/!room:example.com', params: { roomId: '!room:example.com' }, query: {} }
+    const wrapper = mountPane()
+
+    expect(wrapper.find('[data-test="right-pane-drag-handle"]').exists()).toBe(false)
+    expect(wrapper.find('#chat-main').attributes('style')).toContain('min-width: 0')
+  })
 })

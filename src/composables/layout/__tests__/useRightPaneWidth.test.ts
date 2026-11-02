@@ -53,7 +53,8 @@ describe('useRightPaneWidth', () => {
       { view: 'createSpace', expected: 460 },
       { view: 'applyList', expected: 400 },
       { view: 'spaceChildren', expected: 440 },
-      { view: 'chat', expected: 620 }
+      // chat 为弹性视图，不参与固定宽度表，回退到 min
+      { view: 'chat', expected: 240 }
     ]
     for (const { view, expected } of cases) {
       rightView.value = view
@@ -79,7 +80,7 @@ describe('useRightPaneWidth', () => {
     storage.set('tjg.rightPaneWidth', JSON.stringify({ chat: 100 }))
     const rightView = ref<RightViewType>('chat')
     const { width } = useRightPaneWidth({ rightView })
-    expect(width.value).toBe(360) // min
+    expect(width.value).toBe(240) // min
   })
 
   it('updates width when view changes', () => {
@@ -88,7 +89,7 @@ describe('useRightPaneWidth', () => {
     expect(width.value).toBe(360)
 
     rightView.value = 'chat'
-    expect(width.value).toBe(620)
+    expect(width.value).toBe(240)
   })
 
   it('disables transition while dragging', () => {
@@ -109,7 +110,7 @@ describe('useRightPaneWidth', () => {
   })
 
   it('adjusts width during drag and clamps to range', () => {
-    const rightView = ref<RightViewType>('chat') // default 620
+    const rightView = ref<RightViewType>('search') // default 440
     const { width, startDrag } = useRightPaneWidth({ rightView })
 
     // 模拟拖拽：startX=600，向左移动到 clientX=500（delta=100，宽度+100）
@@ -122,15 +123,15 @@ describe('useRightPaneWidth', () => {
     expect(moveHandler).toBeDefined()
 
     moveHandler(createPointerEvent(500))
-    expect(width.value).toBe(720) // 620 + 100
+    expect(width.value).toBe(540) // 440 + 100
 
     // 超过 max 钳制
-    moveHandler(createPointerEvent(0)) // delta=600, 620+600=1220 -> 800
+    moveHandler(createPointerEvent(0)) // delta=600, 440+600=1040 -> 800
     expect(width.value).toBe(800)
 
     // 低于 min 钳制
-    moveHandler(createPointerEvent(2000)) // delta=-1400, 620-1400=-780 -> 360
-    expect(width.value).toBe(360)
+    moveHandler(createPointerEvent(2000)) // delta=-1400, 440-1400=-960 -> 240
+    expect(width.value).toBe(240)
   })
 
   it('persists width to localStorage on drag end', () => {
@@ -142,14 +143,32 @@ describe('useRightPaneWidth', () => {
     const moveHandler = vi
       .spyOn(document, 'addEventListener')
       .mock.calls.find(([event]) => event === 'pointermove')?.[1] as (e: PointerEvent) => void
-    moveHandler(createPointerEvent(500)) // 宽度变为 720
+    moveHandler(createPointerEvent(500)) // 宽度变为 340
 
     const upHandler = vi
       .spyOn(document, 'addEventListener')
       .mock.calls.find(([event]) => event === 'pointerup')?.[1] as () => void
     upHandler()
 
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('tjg.rightPaneWidth', JSON.stringify({ chat: 720 }))
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('tjg.rightPaneWidth', JSON.stringify({ chat: 340 }))
+  })
+
+  it('merges with persisted widths of other views on drag end', () => {
+    storage.set('tjg.rightPaneWidth', JSON.stringify({ empty: 400 }))
+    const rightView = ref<RightViewType>('chat')
+    const { startDrag } = useRightPaneWidth({ rightView })
+
+    startDrag(createPointerEvent(600))
+    const moveHandler = vi
+      .spyOn(document, 'addEventListener')
+      .mock.calls.find(([event]) => event === 'pointermove')?.[1] as (e: PointerEvent) => void
+    moveHandler(createPointerEvent(500))
+    const upHandler = vi
+      .spyOn(document, 'addEventListener')
+      .mock.calls.find(([event]) => event === 'pointerup')?.[1] as () => void
+    upHandler()
+
+    expect(storage.get('tjg.rightPaneWidth')).toBe(JSON.stringify({ empty: 400, chat: 340 }))
   })
 
   it('re-enables transition after drag ends', () => {
@@ -177,7 +196,7 @@ describe('useRightPaneWidth', () => {
     expect(width.value).toBe(700)
 
     resetWidth()
-    expect(width.value).toBe(620) // default
+    expect(width.value).toBe(240) // default
     expect(storage.get('tjg.rightPaneWidth')).toBeUndefined()
   })
 

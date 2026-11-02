@@ -1,11 +1,13 @@
-import { type ComputedRef, computed, onScopeDispose, type Ref, ref, watch } from 'vue'
+import { type ComputedRef, computed, getCurrentScope, onScopeDispose, type Ref, ref, watch } from 'vue'
 import type { RightViewType } from '@/layout/right/types'
 
 /**
  * 右侧栏各视图默认宽度（px）
  * 需求文档 §3.3.4
+ *
+ * `chat` 视图为弹性布局（主区随窗口伸缩），不在固定宽度表中，回退到 min。
  */
-export const VIEW_WIDTH_MAP: Record<RightViewType, number> = {
+export const VIEW_WIDTH_MAP: Partial<Record<RightViewType, number>> = {
   empty: 360,
   details: 380,
   search: 440,
@@ -14,12 +16,11 @@ export const VIEW_WIDTH_MAP: Record<RightViewType, number> = {
   joinRoom: 420,
   createSpace: 460,
   applyList: 400,
-  spaceChildren: 440,
-  chat: 620
+  spaceChildren: 440
 }
 
 /** 拖拽宽度范围 */
-const DEFAULT_MIN = 360
+const DEFAULT_MIN = 240
 const DEFAULT_MAX = 800
 const DEFAULT_STORAGE_KEY = 'tjg.rightPaneWidth'
 
@@ -28,7 +29,7 @@ export interface UseRightPaneWidthOptions {
   rightView: Ref<RightViewType>
   /** localStorage 持久化 key，默认 'tjg.rightPaneWidth' */
   storageKey?: string
-  /** 最小宽度，默认 360 */
+  /** 最小宽度，默认 240 */
   min?: number
   /** 最大宽度，默认 800 */
   max?: number
@@ -106,13 +107,22 @@ export function useRightPaneWidth(options: UseRightPaneWidthOptions): UseRightPa
     }
   )
 
-  const persistWidths = () => {
+  /**
+   * 写入持久化；写入前与磁盘现值合并，避免多个面板实例共用同一 key 时相互覆盖。
+   * `patch` 为本次确认写入的视图宽度（优先级最高），`removedKey` 为本次清除的视图。
+   */
+  const persistWidths = ({ patch, removedKey }: { patch?: Record<string, number>; removedKey?: string } = {}) => {
     try {
-      const entries = Object.keys(persistedWidths.value)
-      if (entries.length === 0) {
+      const merged: Record<string, number> = {
+        ...persistedWidths.value,
+        ...loadPersistedWidths(),
+        ...patch
+      }
+      if (removedKey) delete merged[removedKey]
+      if (Object.keys(merged).length === 0) {
         window.localStorage.removeItem(storageKey)
       } else {
-        window.localStorage.setItem(storageKey, JSON.stringify(persistedWidths.value))
+        window.localStorage.setItem(storageKey, JSON.stringify(merged))
       }
     } catch {
       // 静默失败：localStorage 不可用时仅丢失持久化
@@ -133,11 +143,10 @@ export function useRightPaneWidth(options: UseRightPaneWidthOptions): UseRightPa
     isDragging.value = false
 
     if (userWidth.value !== null) {
-      persistedWidths.value = {
-        ...persistedWidths.value,
-        [rightView.value]: userWidth.value
-      }
-      persistWidths()
+      const view = rightView.value
+      const widthValue = userWidth.value
+      persistedWidths.value = { ...persistedWidths.value, [view]: widthValue }
+      persistWidths({ patch: { [view]: widthValue } })
     }
   }
 
@@ -155,24 +164,27 @@ export function useRightPaneWidth(options: UseRightPaneWidthOptions): UseRightPa
 
   const resetWidth = () => {
     userWidth.value = null
-    if (persistedWidths.value[rightView.value] !== undefined) {
+    const view = rightView.value
+    if (persistedWidths.value[view] !== undefined) {
       const next = { ...persistedWidths.value }
-      delete next[rightView.value]
+      delete next[view]
       persistedWidths.value = next
-      persistWidths()
+      persistWidths({ removedKey: view })
     }
   }
 
-  // 清理：拖拽中卸载组件时移除监听
-  onScopeDispose(() => {
-    if (isDragging.value) {
-      document.removeEventListener('pointermove', doDrag)
-      document.removeEventListener('pointerup', stopDrag)
-      document.body.style.userSelect = ''
-      document.body.style.cursor = ''
-      isDragging.value = false
-    }
-  })
+  // 清理：拖拽中卸载组件时移除监听（无组件作用域时跳过，避免测试环境告警）
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      if (isDragging.value) {
+        document.removeEventListener('pointermove', doDrag)
+        document.removeEventListener('pointerup', stopDrag)
+        document.body.style.userSelect = ''
+        document.body.style.cursor = ''
+        isDragging.value = false
+      }
+    })
+  }
 
   return {
     width,
