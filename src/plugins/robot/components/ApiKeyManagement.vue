@@ -124,55 +124,53 @@
     </n-flex>
   </n-modal>
 
-  <!-- 新增/编辑密钥弹窗 -->
-  <n-modal
-    v-model:show="showEditModal"
-    preset="card"
-    :title="editingApiKey ? t('ai_assistant.robot.edit_api_key') : t('ai_assistant.robot.new_api_key')"
-    class="w-[600px]"
-    :bordered="false"
-    :segmented="{ content: 'soft', footer: 'soft' }">
-    <n-form ref="formRef" :model="formData" :rules="formRules" label-placement="left" label-width="100px">
-      <n-form-item :label="t('ai_assistant.robot.key_name')" path="name">
-        <n-input v-model:value="formData.name" :placeholder="t('ai_assistant.robot.key_name_placeholder')" />
-      </n-form-item>
+  <!-- 新增/编辑密钥：编辑表单走右栏抽屉 -->
+  <n-drawer v-model:show="showEditModal" placement="right" :width="420">
+    <n-drawer-content
+      :title="editingApiKey ? t('ai_assistant.robot.edit_api_key') : t('ai_assistant.robot.new_api_key')"
+      closable>
+      <n-form ref="formRef" :model="formData" :rules="formRules" label-placement="top">
+        <n-form-item :label="t('ai_assistant.robot.key_name')" path="name">
+          <n-input v-model:value="formData.name" :placeholder="t('ai_assistant.robot.key_name_placeholder')" />
+        </n-form-item>
 
-      <n-form-item :label="t('ai_assistant.robot.api_key_input')" path="apiKey">
-        <n-input
-          v-model:value="formData.apiKey"
-          type="password"
-          show-password-on="click"
-          :placeholder="t('ai_assistant.robot.api_key_input_placeholder')" />
-      </n-form-item>
+        <n-form-item :label="t('ai_assistant.robot.api_key_input')" path="apiKey">
+          <n-input
+            v-model:value="formData.apiKey"
+            type="password"
+            show-password-on="click"
+            :placeholder="t('ai_assistant.robot.api_key_input_placeholder')" />
+        </n-form-item>
 
-      <n-form-item :label="t('ai_assistant.robot.platform_label_select')" path="platform">
-        <n-select
-          v-model:value="formData.platform"
-          :options="platformOptions"
-          :placeholder="t('ai_assistant.robot.select_platform')" />
-      </n-form-item>
+        <n-form-item :label="t('ai_assistant.robot.platform_label_select')" path="platform">
+          <n-select
+            v-model:value="formData.platform"
+            :options="platformOptions"
+            :placeholder="t('ai_assistant.robot.select_platform')" />
+        </n-form-item>
 
-      <n-form-item :label="t('ai_assistant.robot.api_address')" path="url">
-        <n-input v-model:value="formData.url" :placeholder="t('ai_assistant.robot.api_address_placeholder')" />
-      </n-form-item>
+        <n-form-item :label="t('ai_assistant.robot.api_address')" path="url">
+          <n-input v-model:value="formData.url" :placeholder="t('ai_assistant.robot.api_address_placeholder')" />
+        </n-form-item>
 
-      <n-form-item :label="t('ai_assistant.robot.status_label')" path="status">
-        <n-select
-          v-model:value="formData.status"
-          :options="statusOptions"
-          :placeholder="t('ai_assistant.robot.select_status')" />
-      </n-form-item>
-    </n-form>
+        <n-form-item :label="t('ai_assistant.robot.status_label')" path="status">
+          <n-select
+            v-model:value="formData.status"
+            :options="statusOptions"
+            :placeholder="t('ai_assistant.robot.select_status')" />
+        </n-form-item>
+      </n-form>
 
-    <template #footer>
-      <n-flex justify="end" :size="12">
-        <n-button @click="showEditModal = false">{{ t('ai_assistant.robot.cancel') }}</n-button>
-        <n-button type="primary" @click="handleSubmit" :loading="submitting">
-          {{ editingApiKey ? t('ai_assistant.robot.save') : t('ai_assistant.robot.create') }}
-        </n-button>
-      </n-flex>
-    </template>
-  </n-modal>
+      <template #footer>
+        <div class="flex justify-end gap-12px">
+          <n-button @click="showEditModal = false">{{ t('ai_assistant.robot.cancel') }}</n-button>
+          <n-button type="primary" @click="handleSubmit" :loading="submitting">
+            {{ editingApiKey ? t('ai_assistant.robot.save') : t('ai_assistant.robot.create') }}
+          </n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">

@@ -106,21 +106,12 @@
     </n-scrollbar>
   </n-modal>
 
-  <n-modal
-    v-model:show="showEditModal"
-    preset="card"
-    :title="editingRole ? t('ai_assistant.robot.edit_role') : t('ai_assistant.robot.add_role')"
-    class="w-[700px]"
-    :bordered="false"
-    :segmented="{ content: 'soft', footer: 'soft' }">
-    <n-scrollbar class="max-h-[calc(80vh-140px)]">
-      <n-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-placement="left"
-        label-width="100px"
-        class="pr-12px">
+  <!-- 角色新增/编辑：编辑表单走右栏抽屉 -->
+  <n-drawer v-model:show="showEditModal" placement="right" :width="480">
+    <n-drawer-content
+      :title="editingRole ? t('ai_assistant.robot.edit_role') : t('ai_assistant.robot.add_role')"
+      closable>
+      <n-form ref="formRef" :model="formData" :rules="formRules" label-placement="top">
         <n-form-item :label="t('ai_assistant.robot.role_name')" path="name">
           <n-input v-model:value="formData.name" :placeholder="t('ai_assistant.robot.role_name_placeholder')" />
         </n-form-item>
@@ -209,17 +200,17 @@
             :placeholder="t('ai_assistant.robot.role_setting_placeholder')" />
         </n-form-item>
       </n-form>
-    </n-scrollbar>
 
-    <template #footer>
-      <n-flex justify="end" :size="12">
-        <n-button @click="showEditModal = false">{{ t('ai_assistant.robot.cancel') }}</n-button>
-        <n-button type="primary" @click="handleSubmit" :loading="submitting">
-          {{ editingRole ? t('ai_assistant.robot.save') : t('ai_assistant.robot.create') }}
-        </n-button>
-      </n-flex>
-    </template>
-  </n-modal>
+      <template #footer>
+        <div class="flex justify-end gap-12px">
+          <n-button @click="showEditModal = false">{{ t('ai_assistant.robot.cancel') }}</n-button>
+          <n-button type="primary" @click="handleSubmit" :loading="submitting">
+            {{ editingRole ? t('ai_assistant.robot.save') : t('ai_assistant.robot.create') }}
+          </n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 
   <!-- 头像裁剪组件 -->
   <AvatarCropper ref="cropperRef" v-model:show="showCropper" :image-url="localImageUrl" @crop="handleCrop" />
