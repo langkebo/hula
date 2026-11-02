@@ -151,4 +151,20 @@ export function buildMatrixContent(msgType: MsgEnum, body: unknown): Record<stri
   return content
 }
 
+/** 构建待发送消息的完整 content：在协议内容体之上补齐阅后即焚扩展字段。 */
+export function buildSendContent(payload: {
+  msgType: MsgEnum
+  body: unknown
+  burnAfterRead?: boolean
+  burnExpiresInMs?: number
+}): Record<string, unknown> {
+  const content = buildMatrixContent(payload.msgType, payload.body)
+  if (payload.burnAfterRead) {
+    content['m.burn_after_read'] = {
+      expires_in: payload.burnExpiresInMs || MatrixBurnDuration.DEFAULT_MS
+    }
+  }
+  return content
+}
+
 export { MatrixBurnDuration }

@@ -1,1 +1,42 @@
-{}
+{
+  "entry": "Schedule send",
+  "title": "Scheduled messages",
+  "schedule_title": "Schedule the current message",
+  "schedule_hint": "Type the text you want to send first",
+  "presets": {
+    "minutes_5": "In 5 minutes",
+    "minutes_30": "In 30 minutes",
+    "minutes_60": "In 1 hour",
+    "minutes_180": "In 3 hours"
+  },
+  "pending": {
+    "title": "Pending messages",
+    "empty": "No pending messages",
+    "refresh": "Refresh pending messages",
+    "unknown_room": "Unknown room"
+  },
+  "actions": {
+    "send_now": "Send now",
+    "reschedule": "Reschedule",
+    "cancel": "Cancel"
+  },
+  "feedback": {
+    "scheduled": "Message scheduled",
+    "list_failed": "Failed to load pending messages: {reason}",
+    "schedule_failed": "Failed to schedule message: {reason}",
+    "cancelled": "Scheduled message cancelled",
+    "cancel_failed": "Cancel failed, the task is still pending: {reason}",
+    "sent_now": "Message sent now",
+    "send_now_failed": "Failed to send immediately: {reason}",
+    "rescheduled": "Message rescheduled",
+    "reschedule_failed": "Failed to reschedule: {reason}",
+    "text_only": "Only text messages can be scheduled"
+  },
+  "errors": {
+    "offline": "Network is offline",
+    "unsupported": "Server does not support scheduled messages",
+    "invalid_delay": "Invalid schedule time",
+    "not_found": "Task not found or already sent",
+    "unknown": "Unknown error"
+  }
+}

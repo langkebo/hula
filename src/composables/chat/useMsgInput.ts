@@ -15,6 +15,7 @@ import { useTrigger } from '../common/useTrigger'
 import { parseHtmlSafely } from './mentionParser'
 import { useClipboardPaste } from './useClipboardPaste'
 import { useCursorManager } from './useCursorManager'
+import { useDelayedMessages } from './useDelayedMessages'
 import { useInputShortcuts } from './useInputShortcuts'
 import { useMentionState } from './useMentionState'
 import { useMsgInputEvents } from './useMsgInputEvents'
@@ -212,8 +213,10 @@ export const useMsgInput = (messageInputDom: Ref) => {
   )
   const burnDuration = computed(() => burnAfterRead.getRoomBurnDuration())
   const { uploadVoiceToMatrix } = useVoiceInput()
+  const delayedMessages = useDelayedMessages()
   const {
     send: sendCore,
+    scheduleDelayedMessage,
     sendFilesDirect,
     sendVoiceDirect,
     sendBeaconDirect,
@@ -231,6 +234,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
     getMessageContentType,
     resetInput,
     sendWithTracking,
+    onScheduleDelayedMessage: delayedMessages.schedule,
     uploadVoiceToMatrix,
     isBurnAfterRead,
     burnDuration
@@ -278,6 +282,8 @@ export const useMsgInput = (messageInputDom: Ref) => {
     handleAI,
     handleInput,
     send,
+    scheduleDelayedMessage,
+    delayedMessages,
     stripHtml,
     sendLocationDirect,
     sendFilesDirect,

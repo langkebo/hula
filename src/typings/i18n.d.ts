@@ -1963,7 +1963,48 @@ export type I18nKeys = {
     "diagnose_no_homeserver": "未配置 Homeserver，无法自检",
     "diagnose_failed": "自检执行失败：{message}"
   },
-  "delayed_events": {},
+  "delayed_events": {
+    "entry": "定时发送",
+    "title": "定时消息",
+    "schedule_title": "定时发送当前消息",
+    "schedule_hint": "请先输入要发送的文本内容",
+    "presets": {
+      "minutes_5": "5 分钟后",
+      "minutes_30": "30 分钟后",
+      "minutes_60": "1 小时后",
+      "minutes_180": "3 小时后"
+    },
+    "pending": {
+      "title": "待发消息",
+      "empty": "暂无待发消息",
+      "refresh": "刷新待发消息",
+      "unknown_room": "未知会话"
+    },
+    "actions": {
+      "send_now": "立即发送",
+      "reschedule": "改期",
+      "cancel": "取消"
+    },
+    "feedback": {
+      "scheduled": "已安排定时发送",
+      "list_failed": "待发消息加载失败：{reason}",
+      "schedule_failed": "定时发送失败：{reason}",
+      "cancelled": "已取消定时消息",
+      "cancel_failed": "取消失败，任务仍保留：{reason}",
+      "sent_now": "已立即发送",
+      "send_now_failed": "立即发送失败：{reason}",
+      "rescheduled": "已改期",
+      "reschedule_failed": "改期失败：{reason}",
+      "text_only": "仅支持文本消息定时发送"
+    },
+    "errors": {
+      "offline": "网络未连接",
+      "unsupported": "服务器不支持定时消息",
+      "invalid_delay": "定时时间不合法",
+      "not_found": "任务不存在或已发送",
+      "unknown": "未知错误"
+    }
+  },
   "diagnostics": {
     "versions_supported": "支持的版本: {versions}",
     "versions_not_found": "未找到支持的 API 版本",
@@ -8881,6 +8922,36 @@ export type I18nKeyPaths =
   | "connection.diagnose_title"
   | "connection.diagnose_no_homeserver"
   | "connection.diagnose_failed"
+  | "delayed_events.entry"
+  | "delayed_events.title"
+  | "delayed_events.schedule_title"
+  | "delayed_events.schedule_hint"
+  | "delayed_events.presets.minutes_5"
+  | "delayed_events.presets.minutes_30"
+  | "delayed_events.presets.minutes_60"
+  | "delayed_events.presets.minutes_180"
+  | "delayed_events.pending.title"
+  | "delayed_events.pending.empty"
+  | "delayed_events.pending.refresh"
+  | "delayed_events.pending.unknown_room"
+  | "delayed_events.actions.send_now"
+  | "delayed_events.actions.reschedule"
+  | "delayed_events.actions.cancel"
+  | "delayed_events.feedback.scheduled"
+  | "delayed_events.feedback.list_failed"
+  | "delayed_events.feedback.schedule_failed"
+  | "delayed_events.feedback.cancelled"
+  | "delayed_events.feedback.cancel_failed"
+  | "delayed_events.feedback.sent_now"
+  | "delayed_events.feedback.send_now_failed"
+  | "delayed_events.feedback.rescheduled"
+  | "delayed_events.feedback.reschedule_failed"
+  | "delayed_events.feedback.text_only"
+  | "delayed_events.errors.offline"
+  | "delayed_events.errors.unsupported"
+  | "delayed_events.errors.invalid_delay"
+  | "delayed_events.errors.not_found"
+  | "delayed_events.errors.unknown"
   | "diagnostics.versions_supported"
   | "diagnostics.versions_not_found"
   | "diagnostics.connection_failed"

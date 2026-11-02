@@ -1,5 +1,5 @@
 import type { ISendEventResponse, MatrixEvent } from 'matrix-js-sdk'
-import { MatrixBurnDuration, MatrixEventType, MatrixFormat, MatrixMsgType } from '@/common/matrixConstants'
+import { MatrixEventType, MatrixFormat, MatrixMsgType } from '@/common/matrixConstants'
 import type { MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { createLogger } from '@/utils/Logger'
@@ -8,7 +8,7 @@ import { matrixEventService } from '../MatrixEventService'
 import { matrixMessageRelationService } from './MatrixMessageRelationService'
 import { matrixReactionService } from './MatrixReactionService'
 import { matrixReceiptService } from './MatrixReceiptService'
-import { buildMatrixContent } from './messageContentBuilder'
+import { buildSendContent } from './messageContentBuilder'
 import type { MessageListOptions, MessageListResult, MessageSearchOptions } from './messageQueryHelpers'
 import {
   getMessageEvents,
@@ -118,12 +118,7 @@ class MatrixMessageService extends BaseMatrixService {
   }
 
   async sendStructuredMessage(payload: SendMessagePayload): Promise<ISendEventResponse> {
-    const content = buildMatrixContent(payload.msgType, payload.body)
-    if (payload.burnAfterRead) {
-      content['m.burn_after_read'] = {
-        expires_in: payload.burnExpiresInMs || MatrixBurnDuration.DEFAULT_MS
-      }
-    }
+    const content = buildSendContent(payload)
 
     // H-9：与普通消息保持一致，离线时统一走离线队列，而不是直接抛网络错误。
     if (!navigator.onLine) {

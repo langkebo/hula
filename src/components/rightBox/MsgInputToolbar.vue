@@ -34,6 +34,21 @@
       {{ isSharing ? t('message.beacon.stop') : t('message.beacon.share') }}
     </n-tooltip>
 
+    <!-- 定时发送（服务端不支持 MSC4140 时不渲染） -->
+    <n-tooltip v-if="delayedSupported" trigger="hover">
+      <template #trigger>
+        <n-button quaternary size="small" :aria-label="t('delayed_events.entry')" @click="$emit('openDelayedModal')">
+          <template #icon>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-18px h-18px">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 2" />
+            </svg>
+          </template>
+        </n-button>
+      </template>
+      {{ t('delayed_events.entry') }}
+    </n-tooltip>
+
     <!-- 文件上传 -->
     <n-tooltip trigger="hover">
       <template #trigger>
@@ -117,6 +132,7 @@ const props = defineProps<{
   isAIMode: boolean
   isAIStreaming: boolean
   isSharing: boolean
+  delayedSupported: boolean
   arrow: boolean
   chatKey: string
   sendOptions: { label: string; value: string }[]
@@ -129,6 +145,7 @@ const emit = defineEmits<{
   (event: 'handleBeaconClick'): void
   (event: 'handleFileUploadClick'): void
   (event: 'handleDesktopSend'): void
+  (event: 'openDelayedModal'): void
 }>()
 
 const { t } = useI18n()

@@ -70,11 +70,13 @@
           :isAIMode="props.isAIMode"
           :isAIStreaming="props.isAIStreaming"
           :is-sharing="sharing"
+          :delayed-supported="delayedSupported"
           :send-options="sendOptions"
           @show-location-modal="showLocationModal = true"
           @handle-beacon-click="handleBeaconClick"
           @handle-file-upload-click="handleFileUploadClick"
-          @handle-desktop-send="handleDesktopSend" />
+          @handle-desktop-send="handleDesktopSend"
+          @open-delayed-modal="openDelayedModal" />
 
         <!-- @提及框 -->
         <div v-if="ait && activeItem?.type === RoomTypeEnum.GROUP && personList.length > 0" class="ait-options">
@@ -164,6 +166,20 @@
       :files="pendingFiles"
       @confirm="handleFileConfirm"
       @cancel="handleFileCancel" />
+
+    <!-- 定时消息：定时入口与待发列表 -->
+    <DelayedMessagesModal
+      v-if="delayedSupported"
+      v-model:show="showDelayedModal"
+      :items="delayedItems"
+      :loading="delayedLoading"
+      :draft-available="!disabledSend"
+      :room-names="delayedRoomNames"
+      @schedule="handleScheduleDelayed"
+      @cancel="cancelDelayed"
+      @send-now="sendDelayedNow"
+      @reschedule="rescheduleDelayed"
+      @refresh="refreshDelayed" />
   </div>
 </template>
 
@@ -174,8 +190,10 @@ import type { VirtualListInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DelayedMessagesModal from '@/components/rightBox/DelayedMessagesModal.vue'
 import type { ReplyToInfo } from '@/components/rightBox/ReplyComposer.vue'
 import ReplyComposer from '@/components/rightBox/ReplyComposer.vue'
+import { useDelayedMessageEntry } from '@/composables/chat/useDelayedMessageEntry'
 import { useMsgInput } from '@/composables/chat/useMsgInput'
 import { useTyping } from '@/composables/chat/useTyping'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -286,8 +304,25 @@ const {
   updateSelectionRange,
   focusOn,
   getCursorSelectionRange,
-  reply
+  reply,
+  scheduleDelayedMessage,
+  delayedMessages
 } = useMsgInput(messageInputDom)
+
+// ===== 定时消息（MSC4140）=====
+const {
+  showDelayedModal,
+  delayedSupported,
+  delayedItems,
+  delayedLoading,
+  delayedRoomNames,
+  openDelayedModal,
+  handleScheduleDelayed,
+  cancelDelayed,
+  sendDelayedNow,
+  rescheduleDelayed,
+  refreshDelayed
+} = useDelayedMessageEntry({ roomId: currentSessionRoomId, delayedMessages, scheduleDelayedMessage })
 
 // 原型对齐项 #3：回复预览条改用 ReplyComposer.vue（绑定 reply ref），替换原内联 #replyDiv DOM 注入
 const replyToInfo = computed<ReplyToInfo | null>(() => {

@@ -76,6 +76,8 @@ export interface UseMsgInputSendOptions {
   getMessageContentType: (messageInputDom: Ref<HTMLElement>) => MsgEnum
   resetInput: () => void
   sendWithTracking: (options: { tempMsgId: string; payload: SendMessagePayload }) => Promise<unknown>
+  /** 定时发送委托：返回 true 表示服务端已排期成功。 */
+  onScheduleDelayedMessage: (payload: SendMessagePayload, delayMs: number) => Promise<boolean>
   uploadVoiceToMatrix: (
     roomId: string,
     localPath: string,

@@ -150,6 +150,7 @@ describe('useMsgInputSend', () => {
       getMessageContentType: vi.fn(() => MsgEnum.TEXT),
       resetInput: vi.fn(),
       sendWithTracking: vi.fn().mockResolvedValue(undefined),
+      onScheduleDelayedMessage: vi.fn().mockResolvedValue(false),
       uploadVoiceToMatrix: vi.fn(),
       isBurnAfterRead: computed(() => false),
       burnDuration: computed(() => 0)
@@ -225,5 +226,42 @@ describe('useMsgInputSend', () => {
       'error'
     )
     expect(updateFileStatusMock).toHaveBeenCalledWith('file-1', 'failed', 0)
+  })
+
+  it('scheduleDelayedMessage 仅对文本与通知草稿生效', async () => {
+    const options = createOptions()
+    options.getMessageContentType.mockReturnValue(MsgEnum.IMAGE)
+    const sender = useMsgInputSend(options)
+
+    const scheduled = await sender.scheduleDelayedMessage(300_000)
+
+    expect(scheduled).toBe(false)
+    expect(options.onScheduleDelayedMessage).not.toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('delayed_events.feedback.text_only', 'warning')
+  })
+
+  it('scheduleDelayedMessage 成功后按延迟排期并重置输入', async () => {
+    const options = createOptions()
+    const onScheduleDelayedMessage = vi.fn().mockResolvedValue(true)
+    options.onScheduleDelayedMessage = onScheduleDelayedMessage
+    options.msgInput.value = 'later'
+    getStrategyMock.mockResolvedValue({
+      getMsg: vi.fn(async () => ({ text: 'later' })),
+      buildMessageBody: vi.fn(() => ({ content: 'later' }))
+    })
+    const sender = useMsgInputSend(options)
+
+    const scheduled = await sender.scheduleDelayedMessage(300_000)
+
+    expect(scheduled).toBe(true)
+    expect(onScheduleDelayedMessage).toHaveBeenCalledWith(
+      {
+        roomId: '!room:example.com',
+        msgType: MsgEnum.TEXT,
+        body: { content: 'later', atUidList: [] }
+      },
+      300_000
+    )
+    expect(options.resetInput).toHaveBeenCalledTimes(1)
   })
 })

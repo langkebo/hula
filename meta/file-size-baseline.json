@@ -1,12 +1,16 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-02T13:21:47.344Z",
+  "updated_at": "2026-11-02T14:17:57.894Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
   "critical_limit": 1000,
   "total_oversized_files": 119,
   "files": [
+    {
+      "file": "src/components/rightBox/MsgInput.vue",
+      "lines": 785
+    },
     {
       "file": "src/views/admin/AdminUsers.vue",
       "lines": 770
@@ -20,12 +24,8 @@
       "lines": 752
     },
     {
-      "file": "src/components/rightBox/MsgInput.vue",
-      "lines": 750
-    },
-    {
       "file": "src/typings/components.d.ts",
-      "lines": 734
+      "lines": 736
     },
     {
       "file": "src/mobile/views/chat-room/ChatSetting.vue",

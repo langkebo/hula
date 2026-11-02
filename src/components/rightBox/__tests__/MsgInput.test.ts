@@ -105,6 +105,19 @@ vi.mock('@/composables/common/useMitt', () => ({
 vi.mock('@/composables/chat/useMsgInput', () => ({
   useMsgInput: () => ({
     inputKeyDown: vi.fn(),
+    scheduleDelayedMessage: vi.fn(() => Promise.resolve(false)),
+    delayedMessages: {
+      supported: ref(false),
+      probed: ref(true),
+      items: ref([]),
+      loading: ref(false),
+      probeSupport: vi.fn(() => Promise.resolve(false)),
+      refresh: vi.fn(() => Promise.resolve()),
+      schedule: vi.fn(() => Promise.resolve(false)),
+      cancel: vi.fn(() => Promise.resolve(false)),
+      sendNow: vi.fn(() => Promise.resolve(false)),
+      reschedule: vi.fn(() => Promise.resolve(false))
+    },
     handleAit: vi.fn(),
     handleAI: vi.fn(),
     handleInput: vi.fn(),
@@ -132,6 +145,19 @@ vi.mock('@/composables/chat/useMsgInput', () => ({
 
 vi.mock('@/stores/domains/chat/location', () => ({
   useLocationStore: () => mockLocationStore
+}))
+
+vi.mock('@/stores/domains/chat/room', () => ({
+  useRoomStore: () => ({
+    roomList: []
+  })
+}))
+
+vi.mock('../DelayedMessagesModal.vue', () => ({
+  default: {
+    name: 'DelayedMessagesModal',
+    template: '<div />'
+  }
 }))
 
 vi.mock('../location/LocationModal.vue', () => ({

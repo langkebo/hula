@@ -42,6 +42,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     getMessageContentType,
     resetInput,
     sendWithTracking,
+    onScheduleDelayedMessage,
     uploadVoiceToMatrix,
     isBurnAfterRead,
     burnDuration
@@ -105,6 +106,43 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
       chatStore.updateMsg({ msgId: tempMsgId, status: MessageStatusEnum.FAILED })
       cleanupBlobUrls(msg, messageBody)
     }
+  }
+
+  /**
+   * 定时发送当前草稿：仅支持文本/通知消息（媒体消息需要先完成上传，
+   * 不能仅凭本地路径排期）。成功后才清空输入框。
+   */
+  const scheduleDelayedMessage = async (delayMs: number): Promise<boolean> => {
+    const targetRoomId = globalStore.currentSessionRoomId
+    if (!targetRoomId) return false
+
+    const contentType = getMessageContentType(messageInputDom) as MsgEnum
+    if (contentType !== MsgEnum.TEXT && contentType !== MsgEnum.NOTICE) {
+      showFeedback(t('delayed_events.feedback.text_only'), 'warning')
+      return false
+    }
+
+    const messageStrategy = await getStrategy(contentType)
+    if (!messageStrategy) {
+      showFeedback(t('hooks.msg_input.type_not_supported'), 'warning')
+      return false
+    }
+
+    const msg = await messageStrategy.getMsg(msgInput.value, reply.value as StrategyReplyArg)
+    const atUidList = extractAtUserIds(msgInput.value, groupStore.userList)
+    const messageBody = {
+      ...messageStrategy.buildMessageBody(msg, reply.value as StrategyReplyArg),
+      atUidList
+    }
+    const payload: SendMessagePayload = { roomId: targetRoomId, msgType: contentType, body: messageBody }
+    if (isBurnAfterRead.value) {
+      payload.burnAfterRead = true
+      payload.burnExpiresInMs = burnDuration.value * 1000
+    }
+
+    const scheduled = await onScheduleDelayedMessage(payload, delayMs)
+    if (scheduled) resetInput()
+    return scheduled
   }
 
   async function handleImageMessage(
@@ -312,6 +350,7 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
 
   return {
     send,
+    scheduleDelayedMessage,
     sendFilesDirect,
     sendVoiceDirect,
     sendBeaconDirect,

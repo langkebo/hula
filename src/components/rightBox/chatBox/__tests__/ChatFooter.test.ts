@@ -113,12 +113,13 @@ vi.mock('@/composables/common/useWindow', () => ({
   })
 }))
 
-vi.mock('@/services/matrix/MatrixClientService', () => ({
-  matrixClientService: {
+vi.mock('@/services/matrix/MatrixClientService', () => {
+  const matrixClientService = {
     getClient: vi.fn(),
     getRoom: vi.fn(() => null)
   }
-}))
+  return { matrixClientService, default: matrixClientService }
+})
 
 vi.mock('@/stores/domains/chat/chat', () => ({
   useChatStore: () => chatStore
