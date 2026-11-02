@@ -1,4 +1,3 @@
-import type { OnlineEnum } from '@/enums'
 import type { MatrixClientConfig } from '@/services/matrix/MatrixClientService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import type { RoomInfo, UserInfoType } from '@/services/types'
@@ -61,11 +60,6 @@ export interface LogoutMatrixRuntimeSessionOptions extends ResetMatrixRuntimeSes
   resetLocalState?: boolean
 }
 
-export interface PresenceUpdate {
-  activeStatus: OnlineEnum
-  lastOptTime: number
-}
-
 export interface SessionStorePort {
   matrix: {
     getClient(): unknown
@@ -105,13 +99,6 @@ export interface SessionStorePort {
   group: {
     clearGroupDetails(): void
     clearMembersMap(): void
-    updateUserPresence(userId: string, presence: PresenceUpdate): void
-  }
-  contact: {
-    updateContactPresence(
-      userId: string,
-      patch: PresenceUpdate & { presence?: string | undefined; statusMessage?: string | undefined }
-    ): void
   }
   global: {
     getCurrentSessionRoomId(): string | undefined
@@ -153,13 +140,11 @@ export interface SessionRuntimeHost {
 /**
  * Shared mutable runtime state accessed by multiple sub-services.
  * - `bootstrapGuard` is used by SessionBootstrapService and reset by SessionLogoutService.
- * - `presenceChangeCleanup` is registered by SessionBootstrapService and cleared by SessionLogoutService.
  * - `beforeUnloadRegistered` / `onBeforeUnload` follow the same lifecycle.
  * - `cachedHasSession` is managed by SessionRestoreService and cleared by SessionLogoutService.
  */
 export class SessionRuntimeState {
   readonly bootstrapGuard = new IdempotencyGuard()
-  presenceChangeCleanup: (() => void) | null = null
   beforeUnloadRegistered = false
   cachedHasSession: boolean | null = null
   readonly onBeforeUnload = () => {

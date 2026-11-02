@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import type { MatrixClient, RoomStatsOverview } from '@/services/matrix/sdk'
 import { isValidMatrixRoomId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
@@ -16,7 +17,7 @@ export class AdminRoomService {
   ) {}
 
   async getRooms(
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
     searchTerm?: string
   ): Promise<{ rooms: RoomInfo[]; nextToken?: string | undefined }> {
@@ -159,7 +160,7 @@ export class AdminRoomService {
 
   async getRoomMessages(
     roomId: string,
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
     dir: 'b' | 'f' = 'b'
   ): Promise<{
@@ -289,6 +290,7 @@ export class AdminRoomService {
     }
   }
 
+  /** 房间总览统计（总数、活跃数等）。 */
   async getRoomStats(): Promise<RoomStatsOverview> {
     try {
       const admin = await this.sdkAdmin()
@@ -346,7 +348,7 @@ export class AdminRoomService {
   async searchInRoom(
     roomId: string,
     searchTerm: string,
-    limit = 50
+    limit = DEFAULT_PAGE_LIMIT
   ): Promise<{
     results: Array<Record<string, unknown>>
     nextBatch?: string | undefined
@@ -364,10 +366,8 @@ export class AdminRoomService {
     }
   }
 
-  async searchRooms(
-    searchTerm: string,
-    _limit = 50
-  ): Promise<{
+  /** 按关键词搜索房间。 */
+  async searchRooms(searchTerm: string): Promise<{
     rooms: Array<Record<string, unknown>>
     nextBatch?: string | undefined
   }> {

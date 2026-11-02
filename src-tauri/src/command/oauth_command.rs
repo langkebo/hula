@@ -1,10 +1,15 @@
+use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::async_runtime::JoinHandle;
 use tauri::{AppHandle, Emitter, Runtime, State};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
-// 定义状态以管理 OAuth 服务器任务
+/// OAuth `state` 参数的最小/最大长度。
+const MIN_STATE_LEN: usize = 16;
+const MAX_STATE_LEN: usize = 128;
+
+/// 定义状态以管理 OAuth 服务器任务
 pub struct OauthServerState {
     pub handle: Mutex<Option<JoinHandle<()>>>,
 }
@@ -17,11 +22,51 @@ impl Default for OauthServerState {
     }
 }
 
+/// 校验调用方生成的 `state`：长度受限 + 仅允许 URL 安全字符。
+///
+/// 回调监听器只接受与之一致的 `state`，用于阻断授权码注入 / 会话固定。
+fn validate_expected_state(state: &str) -> Result<(), String> {
+    if !(MIN_STATE_LEN..=MAX_STATE_LEN).contains(&state.len()) {
+        return Err(format!(
+            "OAuth state 长度必须在 {MIN_STATE_LEN}-{MAX_STATE_LEN} 之间"
+        ));
+    }
+    let allowed = state
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~'));
+    if !allowed {
+        return Err("OAuth state 只能包含 URL 安全字符（字母/数字/-/_/./~）".to_string());
+    }
+    Ok(())
+}
+
+/// 从 HTTP 请求行中提取查询参数（`GET /callback?code=...&state=... HTTP/1.1`）。
+///
+/// 相比在整段请求里做子串查找，按 `&` 与首个 `=` 切分可避免 `xstate=` 之类的误匹配。
+fn request_query_params(request: &str) -> HashMap<String, String> {
+    let request_line = request.lines().next().unwrap_or("");
+    let path = request_line.split_whitespace().nth(1).unwrap_or("");
+    let query = path.split_once('?').map(|(_, q)| q).unwrap_or("");
+    query
+        .split('&')
+        .filter(|pair| !pair.is_empty())
+        .filter_map(|pair| pair.split_once('='))
+        .map(|(key, value)| (key.to_string(), value.to_string()))
+        .collect()
+}
+
+const SUCCESS_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>登录成功</h1><p>您可以关闭此窗口返回应用。</p></div><script>setTimeout(function(){window.close()}, 2000);</script>";
+const INVALID_STATE_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>授权校验失败</h1><p>state 参数缺失或不匹配，请重新发起登录。</p></div>";
+const MISSING_CODE_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>授权失败</h1><p>回调缺少授权码。</p></div>";
+
 #[tauri::command]
 pub async fn start_oauth_server<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, OauthServerState>,
+    expected_state: String,
 ) -> Result<u16, String> {
+    validate_expected_state(&expected_state)?;
+
     // 1. 尝试终止旧任务
     {
         let mut handle_lock = state.handle.lock().map_err(|e| e.to_string())?;
@@ -52,54 +97,48 @@ pub async fn start_oauth_server<R: Runtime>(
 
     // 3. 启动新任务
     let handle = tauri::async_runtime::spawn(async move {
+        // 一次性消费：首次成功回调后，任何后续请求（含重复 state）都被拒绝，
+        // 防止同一授权码被重放。
+        let mut consumed = false;
         while let Ok((mut stream, _)) = listener.accept().await {
             let mut buffer = [0; 1024];
-            if let Ok(n) = stream.read(&mut buffer).await {
-                let request = String::from_utf8_lossy(&buffer[..n]);
-                let mut emitted = false;
-                if let Some(ts) = request.find("token=") {
-                    let rest = &request[ts + 6..];
-                    let end_amp = rest.find('&').unwrap_or(rest.len());
-                    let end_space = rest.find(' ').unwrap_or(rest.len());
-                    let end = std::cmp::min(end_amp, end_space);
-                    let token = &rest[..end];
-                    let mut refresh = "";
-                    if let Some(rs) = request.find("refreshToken=") {
-                        let rrest = &request[rs + 13..];
-                        let rend_amp = rrest.find('&').unwrap_or(rrest.len());
-                        let rend_space = rrest.find(' ').unwrap_or(rrest.len());
-                        let rend = std::cmp::min(rend_amp, rend_space);
-                        refresh = &rrest[..rend];
-                    }
-                    let mut uid = "";
-                    if let Some(us) = request.find("uid=") {
-                        let urest = &request[us + 4..];
-                        let uend_amp = urest.find('&').unwrap_or(urest.len());
-                        let uend_space = urest.find(' ').unwrap_or(urest.len());
-                        let uend = std::cmp::min(uend_amp, uend_space);
-                        uid = &urest[..uend];
-                    }
-                    let payload = format!("token={}&refreshToken={}&uid={}", token, refresh, uid);
-                    let _ = app.emit("oauth-token", payload);
-                    emitted = true;
-                }
-                if !emitted && let Some(start) = request.find("code=") {
-                    let rest = &request[start + 5..];
-                    let end_amp = rest.find('&').unwrap_or(rest.len());
-                    let end_space = rest.find(' ').unwrap_or(rest.len());
-                    let end = std::cmp::min(end_amp, end_space);
-                    let code = &rest[..end];
-                    let _ = app.emit("gitee-auth-code", code);
-                    emitted = true;
-                }
-                let response = if emitted {
-                    "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>登录成功</h1><p>您可以关闭此窗口返回应用。</p></div><script>setTimeout(function(){window.close()}, 2000);</script>"
-                } else {
-                    "HTTP/1.1 200 OK\r\n\r\n"
-                };
-                let _ = stream.write_all(response.as_bytes()).await;
-                let _ = stream.flush().await;
+            let Ok(n) = stream.read(&mut buffer).await else {
+                continue;
+            };
+            let request = String::from_utf8_lossy(&buffer[..n]);
+            let params = request_query_params(&request);
+
+            let state_matches = !consumed
+                && params
+                    .get("state")
+                    .is_some_and(|value| value == &expected_state);
+
+            let (status_line, body, emitted) = if !state_matches {
+                ("HTTP/1.1 400 Bad Request", INVALID_STATE_BODY, false)
+            } else if let Some(token) = params.get("token") {
+                let refresh = params.get("refreshToken").map(String::as_str).unwrap_or("");
+                let uid = params.get("uid").map(String::as_str).unwrap_or("");
+                let payload = format!("token={}&refreshToken={}&uid={}", token, refresh, uid);
+                let _ = app.emit("oauth-token", payload);
+                ("HTTP/1.1 200 OK", SUCCESS_BODY, true)
+            } else if let Some(code) = params.get("code") {
+                let _ = app.emit("gitee-auth-code", code.clone());
+                ("HTTP/1.1 200 OK", SUCCESS_BODY, true)
+            } else {
+                ("HTTP/1.1 400 Bad Request", MISSING_CODE_BODY, false)
+            };
+
+            if emitted {
+                consumed = true;
             }
+
+            let response = format!(
+                "{status_line}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes()).await;
+            let _ = stream.flush().await;
         }
     });
 
@@ -110,4 +149,41 @@ pub async fn start_oauth_server<R: Runtime>(
     }
 
     Ok(port)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validate_expected_state_accepts_url_safe_value() {
+        assert!(validate_expected_state("abcdefghijklmnop-_.~123").is_ok());
+        assert!(validate_expected_state(&"a".repeat(MIN_STATE_LEN)).is_ok());
+        assert!(validate_expected_state(&"a".repeat(MAX_STATE_LEN)).is_ok());
+    }
+
+    #[test]
+    fn validate_expected_state_rejects_too_short_long_or_unsafe() {
+        assert!(validate_expected_state("short").is_err());
+        assert!(validate_expected_state(&"a".repeat(MAX_STATE_LEN + 1)).is_err());
+        assert!(validate_expected_state("abcdefghijklmnop&admin=true").is_err());
+        assert!(validate_expected_state("abcdefghijklmnop state").is_err());
+    }
+
+    #[test]
+    fn request_query_params_parses_first_line_only() {
+        let request = "GET /callback?code=abc&state=xyz&xstate=evil HTTP/1.1\r\nHost: localhost\r\n\r\nstate=body";
+        let params = request_query_params(request);
+
+        assert_eq!(params.get("code").map(String::as_str), Some("abc"));
+        assert_eq!(params.get("state").map(String::as_str), Some("xyz"));
+        assert_eq!(params.get("xstate").map(String::as_str), Some("evil"));
+        assert_eq!(params.len(), 3);
+    }
+
+    #[test]
+    fn request_query_params_returns_empty_without_query() {
+        assert!(request_query_params("GET / HTTP/1.1\r\n\r\n").is_empty());
+        assert!(request_query_params("").is_empty());
+    }
 }

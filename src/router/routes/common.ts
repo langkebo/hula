@@ -89,11 +89,6 @@ export const getCommonRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/loginWindow/OidcCallback.vue')
   },
   {
-    path: '/403',
-    name: 'forbidden',
-    component: () => import('@/views/admin/Forbidden.vue')
-  },
-  {
     path: '/:pathMatch(.*)*',
     name: 'notFound',
     component: () => import('@/views/NotFound.vue')

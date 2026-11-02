@@ -1,6 +1,6 @@
 <template>
   <div class="preferences-settings">
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="preferences-language">
       <h3 class="section-title">{{ t('setting.preferences.language_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -17,7 +17,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="preferences-startup-storage">
       <h3 class="section-title">{{ t('setting.preferences.startup_storage_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -83,7 +83,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="preferences-messaging">
       <h3 class="section-title">{{ t('setting.preferences.messaging_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -114,7 +114,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="preferences-link-preview">
       <h3 class="section-title">{{ t('setting.preferences.link_preview_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -127,7 +127,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="preferences-emoji">
       <h3 class="section-title">{{ t('setting.preferences.emoji_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -151,7 +151,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="preferences-burn-defaults">
       <h3 class="section-title">{{ t('setting.preferences.burn_defaults_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -182,7 +182,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="preferences-thread">
       <h3 class="section-title">{{ t('setting.preferences.thread_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -213,7 +213,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="preferences-space">
       <h3 class="section-title">{{ t('setting.preferences.space_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -244,7 +244,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="preferences-privacy">
       <h3 class="section-title">{{ t('setting.preferences.privacy_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">

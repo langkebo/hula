@@ -81,7 +81,7 @@ export async function initMarkdownRenderer() {
                 theme: theme || (props.isDark ? 'vitesse-dark' : 'vitesse-light')
               })
               highlightedHtml.value = html
-            } catch (_error) {
+            } catch {
               highlightedHtml.value = `<pre><code>${props.node.code}</code></pre>`
             } finally {
               isLoading.value = false

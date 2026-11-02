@@ -1,0 +1,96 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "storage-capability",
+  "description": "文件系统读写能力：仅授予会落盘（消息附件、头像、语音、缓存、导出）的窗口，托盘/通知/更新等纯展示窗口不授予。",
+  "platforms": ["macOS", "windows", "linux"],
+  "windows": [
+    "home",
+    "login",
+    "about",
+    "forgetPassword",
+    "register",
+    "onlineStatus",
+    "capture",
+    "rtcCall",
+    "imageViewer",
+    "videoViewer",
+    "previewFile",
+    "chat-history",
+    "fileManager",
+    "mail",
+    "modal-remoteLogin",
+    "modal-serviceAgreement",
+    "modal-privacyAgreement",
+    "modal-secretChat",
+    "settings",
+    "lockScreen",
+    "multiMsg*",
+    "windowChat--*",
+    "alone*"
+  ],
+  "permissions": [
+    {
+      "identifier": "fs:write-files",
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:read-dirs",
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$RESOURCE/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:read-files",
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$APPCACHE/**"
+        },
+        {
+          "path": "$RESOURCE/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-copy-file",
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        },
+        {
+          "path": "$RESOURCE/**"
+        }
+      ]
+    }
+  ]
+}

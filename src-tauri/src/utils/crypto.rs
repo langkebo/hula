@@ -5,16 +5,29 @@ use aes_gcm::{
 use base64::{Engine, engine::general_purpose::STANDARD};
 use keyring::Entry;
 use pbkdf2::pbkdf2_hmac;
-use rand::{Rng, distributions::Alphanumeric};
+use rand::{RngCore, rngs::OsRng};
 use sha2::Sha256;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 const SERVICE_NAME: &str = "hula-messenger";
 const KEY_NAME: &str = "token-encryption-key";
-const SALT: &[u8] = b"hula-secure-salt-2026"; // 静态盐值，用于派生主密钥
+
+/// 密文版本前缀。
+///
+/// v2 起：每份密文自带随机盐，真正的 AES 密钥由「主密钥 + 盐」经 PBKDF2 派生。
+/// 无前缀的旧密文（nonce|ciphertext，密钥即主密钥）走只读兼容路径。
+const CIPHERTEXT_PREFIX_V2: &str = "tjg:v2:";
+/// 每份密文的随机盐长度（字节）。
+const SALT_LEN: usize = 16;
+/// AES-GCM nonce 长度（字节）。
+const NONCE_LEN: usize = 12;
+/// 主密钥长度（字节）。
+const MASTER_KEY_LEN: usize = 32;
+/// 盐派生迭代次数（主密钥已是 256 位均匀随机，无需 Argon2id 那种抗暴力参数）。
+const KDF_ITERATIONS: u32 = 10_000;
 
 static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 
@@ -25,15 +38,15 @@ fn get_key_file_path() -> Option<PathBuf> {
         .map(|home| PathBuf::from(home).join(".tjg").join("master-key"))
 }
 
-/// 从文件加载密钥（dev 模式 keyring 失效时的 fallback）
+/// 从文件加载密钥（dev 模式 keyring 失效时的 fallback，且仅用于迁移旧安装）。
 fn load_key_from_file() -> Option<[u8; 32]> {
     let path = get_key_file_path()?;
     let content = fs::read_to_string(&path).ok()?;
     let key_bytes = STANDARD.decode(content.trim()).ok()?;
-    if key_bytes.len() != 32 {
+    if key_bytes.len() != MASTER_KEY_LEN {
         return None;
     }
-    let mut key = [0u8; 32];
+    let mut key = [0u8; MASTER_KEY_LEN];
     key.copy_from_slice(&key_bytes);
     Some(key)
 }
@@ -71,123 +84,204 @@ fn save_key_to_file(key: &[u8; 32]) {
     info!("Saved encryption key to file fallback: {:?}", path);
 }
 
-/// 获取或生成主加密密钥
+/// 从系统钥匙串读取主密钥。
+fn load_key_from_keychain() -> Option<[u8; 32]> {
+    let entry = match Entry::new(SERVICE_NAME, KEY_NAME) {
+        Ok(entry) => entry,
+        Err(e) => {
+            warn!("Failed to create keyring entry: {:?}", e);
+            return None;
+        }
+    };
+
+    match entry.get_password() {
+        Ok(key_base64) => match STANDARD.decode(&key_base64) {
+            Ok(key_bytes) if key_bytes.len() == MASTER_KEY_LEN => {
+                let mut key = [0u8; MASTER_KEY_LEN];
+                key.copy_from_slice(&key_bytes);
+                info!("Successfully retrieved encryption key from system keyring");
+                Some(key)
+            }
+            _ => {
+                warn!("Keyring key exists but format invalid, trying file fallback");
+                None
+            }
+        },
+        Err(keyring::Error::NoEntry) => {
+            // 首次运行或 macOS dev mode 签名变化的正常情况
+            debug!("Keyring entry not found (first run or macOS dev mode)");
+            None
+        }
+        Err(e) => {
+            warn!(
+                "Keyring get_password failed (likely macOS dev mode signature change): {:?}",
+                e
+            );
+            None
+        }
+    }
+}
+
+/// 把主密钥写入系统钥匙串，并用**新 Entry** 读回验证。
 ///
-/// 优先级：系统 Keyring > 文件 fallback > 生成新密钥
-/// macOS dev 模式下每次重建 binary 签名变化，Keychain 会拒绝访问旧条目，
-/// 因此文件 fallback 确保密钥在重建后仍可恢复。
-fn get_master_key() -> &'static [u8; 32] {
-    MASTER_KEY.get_or_init(|| {
-        // 1. 尝试从系统 Keyring 获取
-        match Entry::new(SERVICE_NAME, KEY_NAME) {
-            Ok(entry) => match entry.get_password() {
-                Ok(key_base64) => {
-                    if let Ok(key_bytes) = STANDARD.decode(&key_base64)
-                        && let Ok(key) = key_bytes.try_into()
-                    {
-                        info!("Successfully retrieved encryption key from system keyring");
-                        return key;
-                    }
-                    warn!("Keyring key exists but format invalid, trying file fallback");
-                }
-                Err(e) => {
-                    // NoEntry 是正常情况（首次运行或 macOS dev mode 签名变化），
-                    // 后续会回退到文件加载，不需要 WARN 级别日志
-                    if matches!(e, keyring::Error::NoEntry) {
-                        tracing::debug!(
-                            "Keyring entry not found (first run or macOS dev mode), will try file fallback"
-                        );
-                    } else {
-                        // 其他错误（如 errSecAuthFailed）需要关注
-                        warn!(
-                            "Keyring get_password failed (likely macOS dev mode signature change): {:?}",
-                            e
-                        );
-                    }
-                }
-            },
-            Err(e) => {
-                warn!("Failed to create keyring entry: {:?}", e);
+/// macOS dev 模式下存在「set_password 返回 Ok 但读不到」的 ACL 问题。
+/// 若不验证就认为已托管成功（并删除文件 fallback），下次启动会生成新主密钥，
+/// 导致既有密文（token / secure-storage）全部无法解密。因此只有读回一致才算成功。
+fn store_key_in_keychain(key: &[u8; 32]) -> bool {
+    let encoded = STANDARD.encode(key);
+
+    match Entry::new(SERVICE_NAME, KEY_NAME) {
+        Ok(entry) => {
+            if let Err(e) = entry.set_password(&encoded) {
+                warn!("Failed to save encryption key to keyring: {:?}", e);
+                return false;
             }
         }
+        Err(e) => {
+            warn!("Failed to create keyring entry for saving: {:?}", e);
+            return false;
+        }
+    }
 
-        // 2. Keyring 不可用，尝试从文件加载（dev 模式 fallback）
-        if let Some(key) = load_key_from_file() {
-            info!("Successfully retrieved encryption key from file fallback");
+    let verified = Entry::new(SERVICE_NAME, KEY_NAME)
+        .ok()
+        .and_then(|entry| entry.get_password().ok())
+        .is_some_and(|stored| stored == encoded);
+    if verified {
+        info!("Saved new encryption key to system keyring (verified)");
+    } else {
+        warn!("Keyring write could not be verified (macOS dev mode ACL), keeping file fallback");
+    }
+    verified
+}
+
+/// 删除旧版明文密钥文件（仅在钥匙串已完成托管后调用）。
+fn remove_key_file() {
+    let Some(path) = get_key_file_path() else {
+        return;
+    };
+    match fs::remove_file(&path) {
+        Ok(()) => info!("Migrated master key into keyring and removed legacy file"),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => warn!("Failed to remove legacy master-key file: {:?}", e),
+    }
+}
+
+/// 获取或生成主加密密钥
+///
+/// 优先级：系统钥匙串 > 旧版文件 fallback（读取后迁移进钥匙串）> 新生成随机密钥。
+///
+/// 2026-10-31 修复（审计 H-4）：
+/// - 不再使用硬编码盐，也不再以低熵随机串做 PBKDF2 派生 —— 直接用 `OsRng`
+///   生成 256 位均匀随机主密钥；
+/// - 主密钥首选钥匙串托管，旧版 `~/.tjg/master-key` 明文文件在迁移成功后删除；
+/// - 只有钥匙串写入且读回验证失败时，才保留 0600 文件作为降级（否则会丢密钥）。
+fn get_master_key() -> &'static [u8; 32] {
+    MASTER_KEY.get_or_init(|| {
+        // 1. 系统钥匙串优先
+        if let Some(key) = load_key_from_keychain() {
             return key;
         }
 
-        // 3. 都不可用，生成新密钥
-        warn!("No encryption key found in keyring or file, generating new key");
-        let mut rng = rand::thread_rng();
-        let random_str: String = (0..32).map(|_| rng.sample(Alphanumeric) as char).collect();
-
-        let mut key = [0u8; 32];
-        pbkdf2_hmac::<Sha256>(random_str.as_bytes(), SALT, 100_000, &mut key);
-
-        // 4. 尝试保存到 Keyring（生产环境优先）
-        match Entry::new(SERVICE_NAME, KEY_NAME) {
-            Ok(entry) => {
-                let key_base64 = STANDARD.encode(key);
-                match entry.set_password(&key_base64) {
-                    Ok(()) => info!("Saved new encryption key to system keyring"),
-                    Err(e) => {
-                        warn!(
-                            "Failed to save encryption key to keyring (file fallback will be used): {:?}",
-                            e
-                        );
-                    }
-                }
+        // 2. 旧版文件 fallback：读到后立即迁入钥匙串并删除明文文件
+        if let Some(key) = load_key_from_file() {
+            info!("Successfully retrieved encryption key from file fallback");
+            if store_key_in_keychain(&key) {
+                remove_key_file();
+            } else {
+                warn!(
+                    "Master key remains in legacy file fallback because keyring is unavailable; \
+                     it will be migrated on the next start once the keyring works"
+                );
             }
-            Err(e) => {
-                warn!("Failed to create keyring entry for saving: {:?}", e);
-            }
+            return key;
         }
 
-        // 5. 同时保存到文件（确保 dev 模式重建后仍可恢复）
-        save_key_to_file(&key);
+        // 3. 首次运行：CSPRNG 生成 256 位随机主密钥
+        warn!("No encryption key found in keyring or file, generating new key");
+        let mut key = [0u8; MASTER_KEY_LEN];
+        OsRng.fill_bytes(&mut key);
+
+        if !store_key_in_keychain(&key) {
+            warn!("Keyring unavailable: master key is degraded to 0600 file fallback");
+            save_key_to_file(&key);
+        }
 
         key
     })
 }
 
-/// 加密字符串
-pub fn encrypt(plaintext: &str) -> anyhow::Result<String> {
-    let key = get_master_key();
-    let cipher = Aes256Gcm::new(key.into());
+/// 由主密钥与随机盐派生单份密文的 AES 密钥。
+fn derive_cipher_key(master: &[u8; 32], salt: &[u8]) -> [u8; 32] {
+    let mut key = [0u8; 32];
+    pbkdf2_hmac::<Sha256>(master, salt, KDF_ITERATIONS, &mut key);
+    key
+}
 
-    // 生成 12 字节的随机 Nonce
-    let mut nonce_bytes = [0u8; 12];
-    rand::thread_rng().fill(&mut nonce_bytes);
+/// 加密字符串
+///
+/// 输出格式：`tjg:v2:` + base64(`salt(16) | nonce(12) | ciphertext`)。
+pub fn encrypt(plaintext: &str) -> anyhow::Result<String> {
+    let master = get_master_key();
+
+    let mut salt = [0u8; SALT_LEN];
+    OsRng.fill_bytes(&mut salt);
+    let cipher = Aes256Gcm::new((&derive_cipher_key(master, &salt)).into());
+
+    let mut nonce_bytes = [0u8; NONCE_LEN];
+    OsRng.fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from(nonce_bytes);
 
-    // 执行加密
     let ciphertext = cipher
         .encrypt(&nonce, plaintext.as_bytes())
         .map_err(|e| anyhow::anyhow!("Encryption failed: {:?}", e))?;
 
-    // 组合 Nonce + Ciphertext 并进行 Base64 编码
-    let mut combined = nonce_bytes.to_vec();
+    let mut combined = Vec::with_capacity(SALT_LEN + NONCE_LEN + ciphertext.len());
+    combined.extend_from_slice(&salt);
+    combined.extend_from_slice(&nonce_bytes);
     combined.extend_from_slice(&ciphertext);
 
-    Ok(STANDARD.encode(combined))
+    Ok(format!(
+        "{}{}",
+        CIPHERTEXT_PREFIX_V2,
+        STANDARD.encode(combined)
+    ))
 }
 
 /// 解密字符串
+///
+/// 兼容两种格式：
+/// - `tjg:v2:` 前缀：base64(`salt(16) | nonce(12) | ciphertext`)，密钥由主密钥 + 盐派生；
+/// - 无前缀（历史 v1）：base64(`nonce(12) | ciphertext`)，密钥即主密钥（只读兼容）。
 pub fn decrypt(encrypted_base64: &str) -> anyhow::Result<String> {
-    let key = get_master_key();
-    let cipher = Aes256Gcm::new(key.into());
+    let master = get_master_key();
 
-    let combined = STANDARD
-        .decode(encrypted_base64)
-        .map_err(|e| anyhow::anyhow!("Invalid base64: {:?}", e))?;
+    let (cipher, combined) = match encrypted_base64.strip_prefix(CIPHERTEXT_PREFIX_V2) {
+        Some(body) => {
+            let combined = STANDARD
+                .decode(body)
+                .map_err(|e| anyhow::anyhow!("Invalid base64: {:?}", e))?;
+            if combined.len() <= SALT_LEN + NONCE_LEN {
+                return Err(anyhow::anyhow!("Invalid encrypted data: too short"));
+            }
+            let (salt, rest) = combined.split_at(SALT_LEN);
+            let key = derive_cipher_key(master, salt);
+            (Aes256Gcm::new((&key).into()), rest.to_vec())
+        }
+        None => (
+            Aes256Gcm::new(master.into()),
+            STANDARD
+                .decode(encrypted_base64)
+                .map_err(|e| anyhow::anyhow!("Invalid base64: {:?}", e))?,
+        ),
+    };
 
-    if combined.len() < 12 {
+    if combined.len() < NONCE_LEN {
         return Err(anyhow::anyhow!("Invalid encrypted data: too short"));
     }
 
-    let (nonce_bytes, ciphertext) = combined.split_at(12);
-    let mut nonce_array = [0u8; 12];
+    let (nonce_bytes, ciphertext) = combined.split_at(NONCE_LEN);
+    let mut nonce_array = [0u8; NONCE_LEN];
     nonce_array.copy_from_slice(nonce_bytes);
     let nonce = Nonce::from(nonce_array);
 
@@ -246,6 +340,66 @@ mod tests {
 
         let decrypted = decrypt(&encrypted).expect("Decryption failed");
         assert_eq!(original, decrypted);
+    }
+
+    /// 新密文必须带 v2 前缀，且每份密文使用不同随机盐（盐随密文存储）。
+    #[test]
+    fn test_encrypt_uses_v2_prefix_with_random_salt() {
+        let first = encrypt("same").expect("Encryption failed");
+        let second = encrypt("same").expect("Encryption failed");
+
+        assert!(first.starts_with(CIPHERTEXT_PREFIX_V2));
+        assert!(second.starts_with(CIPHERTEXT_PREFIX_V2));
+
+        let body = |value: &str| {
+            STANDARD
+                .decode(value.strip_prefix(CIPHERTEXT_PREFIX_V2).unwrap())
+                .expect("valid base64 body")
+        };
+        let first_body = body(&first);
+        let second_body = body(&second);
+        assert_ne!(
+            &first_body[..SALT_LEN],
+            &second_body[..SALT_LEN],
+            "每份密文必须携带不同的随机盐"
+        );
+
+        assert_eq!(decrypt(&first).unwrap(), "same");
+        assert_eq!(decrypt(&second).unwrap(), "same");
+    }
+
+    /// 历史 v1 密文（无前缀，密钥即主密钥）必须仍可解密。
+    #[test]
+    fn test_decrypt_legacy_ciphertext_without_prefix() {
+        let master = get_master_key();
+        let cipher = Aes256Gcm::new(master.into());
+
+        let mut nonce_bytes = [0u8; NONCE_LEN];
+        OsRng.fill_bytes(&mut nonce_bytes);
+        let nonce = Nonce::from(nonce_bytes);
+        let ciphertext = cipher
+            .encrypt(&nonce, b"legacy-token".as_ref())
+            .expect("legacy encryption");
+
+        let mut combined = nonce_bytes.to_vec();
+        combined.extend_from_slice(&ciphertext);
+        let legacy = STANDARD.encode(combined);
+
+        assert!(!legacy.starts_with(CIPHERTEXT_PREFIX_V2));
+        assert_eq!(decrypt(&legacy).unwrap(), "legacy-token");
+    }
+
+    /// 篡改 v2 密文必须解密失败（fail-closed，绝不返回明文猜测）。
+    #[test]
+    fn test_v2_ciphertext_tamper_detected() {
+        let encrypted = encrypt("tamper").expect("Encryption failed");
+        let body = encrypted.strip_prefix(CIPHERTEXT_PREFIX_V2).unwrap();
+        let mut combined = STANDARD.decode(body).expect("valid base64 body");
+        let last = combined.len() - 1;
+        combined[last] ^= 0xFF;
+
+        let tampered = format!("{}{}", CIPHERTEXT_PREFIX_V2, STANDARD.encode(combined));
+        assert!(decrypt(&tampered).is_err());
     }
 
     /// 验证文件 fallback 的保存和加载往返
@@ -325,7 +479,7 @@ mod tests {
         let plaintext = "sensitive_token_abc123";
 
         let mut nonce_bytes = [0u8; 12];
-        rand::thread_rng().fill(&mut nonce_bytes);
+        OsRng.fill_bytes(&mut nonce_bytes);
         let nonce = Nonce::from(nonce_bytes);
 
         let ciphertext = cipher
@@ -387,7 +541,7 @@ mod tests {
         let cipher1 = Aes256Gcm::new(&key_run1.into());
         let plaintext = "persisted_token_xyz";
         let mut nonce_bytes = [0u8; 12];
-        rand::thread_rng().fill(&mut nonce_bytes);
+        OsRng.fill_bytes(&mut nonce_bytes);
         let nonce = Nonce::from(nonce_bytes);
         let ciphertext = cipher1.encrypt(&nonce, plaintext.as_bytes()).unwrap();
 

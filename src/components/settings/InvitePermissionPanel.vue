@@ -31,7 +31,11 @@
           <n-list-item v-for="userId in blocklist" :key="userId" class="invite-permission-panel__list-item">
             <div class="invite-permission-panel__user-row">
               <n-tag size="small">{{ userId }}</n-tag>
-              <n-button size="tiny" quaternary @click="handleRemoveUser('blocklist', userId)">
+              <n-button
+                size="tiny"
+                quaternary
+                :aria-label="t('common.remove')"
+                @click="handleRemoveUser('blocklist', userId)">
                 <template #icon>
                   <svg class="invite-permission-panel__remove-icon" aria-hidden="true">
                     <use href="#close"></use>
@@ -60,7 +64,11 @@
           <n-list-item v-for="userId in allowlist" :key="userId" class="invite-permission-panel__list-item">
             <div class="invite-permission-panel__user-row">
               <n-tag size="small">{{ userId }}</n-tag>
-              <n-button size="tiny" quaternary @click="handleRemoveUser('allowlist', userId)">
+              <n-button
+                size="tiny"
+                quaternary
+                :aria-label="t('common.remove')"
+                @click="handleRemoveUser('allowlist', userId)">
                 <template #icon>
                   <svg class="invite-permission-panel__remove-icon" aria-hidden="true">
                     <use href="#close"></use>

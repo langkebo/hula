@@ -53,7 +53,9 @@ function resolveEnvLogLevel(): LogLevel {
         }
       }
     }
-  } catch {}
+  } catch {
+    /* import.meta.env 不可用（非 Vite 运行时）时静默回退，避免日志设施记录自身初始化失败 */
+  }
 
   envLogLevel = 'info'
   return envLogLevel
@@ -67,7 +69,9 @@ function resolveDefaultLevel(): LogLevel {
     if (typeof import.meta !== 'undefined' && import.meta.env?.PROD) {
       return 'warn'
     }
-  } catch {}
+  } catch {
+    // 探测 PROD 标记失败时按 info 处理，避免递归调用日志
+  }
 
   return 'info'
 }
@@ -150,9 +154,7 @@ class Logger {
     if (existing) {
       if (now - existing.time < windowMs) {
         existing.count++
-        if (existing.count === 2 || existing.count % 50 === 0) {
-          return false
-        }
+        if (existing.count === 2 || existing.count % 50 === 0) return false
         return true
       }
       existing.time = now
@@ -161,9 +163,7 @@ class Logger {
     }
 
     Logger.dedupCache.unshift({ hash, time: now, count: 1 })
-    if (Logger.dedupCache.length > DEDUP_CACHE_SIZE) {
-      Logger.dedupCache.length = DEDUP_CACHE_SIZE
-    }
+    if (Logger.dedupCache.length > DEDUP_CACHE_SIZE) Logger.dedupCache.length = DEDUP_CACHE_SIZE
     return false
   }
 
@@ -180,9 +180,7 @@ class Logger {
       return false
     }
 
-    if (tracker.count >= THROTTLE_BURST) {
-      return true
-    }
+    if (tracker.count >= THROTTLE_BURST) return true
 
     tracker.count++
     return false
@@ -331,7 +329,9 @@ class Logger {
           await error(formattedMessage)
           break
       }
-    } catch {}
+    } catch {
+      // Tauri 日志插件不可用（浏览器直跑 / 插件未注册）时忽略：控制台输出已在上一步完成
+    }
   }
 
   private logWithLevel(level: LogLevel, message: string, ...args: unknown[]): void {

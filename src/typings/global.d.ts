@@ -16,6 +16,9 @@ declare global {
     __TJG_APP_READY_PHASE__?: 'booting' | 'mounted' | 'router-ready'
     __TJG_PINIA_READY__?: boolean
   }
+
+  /** 移动端生产构建标记：由 vite.config.ts 的 define 注入，用于构建期裁剪桌面专属模块 */
+  const __TJG_MOBILE_BUILD__: boolean
 }
 
 interface ViewTransition {

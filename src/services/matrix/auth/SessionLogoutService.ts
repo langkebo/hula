@@ -103,12 +103,6 @@ export class SessionLogoutService {
     stopPresenceHeartbeat()
     matrixWsBridge.stop()
 
-    // 清理 presence 变化回调，避免登出后残留监听器导致重复处理
-    if (this.state.presenceChangeCleanup) {
-      this.state.presenceChangeCleanup()
-      this.state.presenceChangeCleanup = null
-    }
-
     // 清除会话检查缓存，下次导航重新走 IPC
     this.state.cachedHasSession = null
 
@@ -150,7 +144,7 @@ export class SessionLogoutService {
     if (isDesktop()) {
       port.global.setTrayMenuShow(false)
       try {
-        await createWebviewWindow('登录', 'login', 420, 640, undefined, false, 420, 640)
+        await createWebviewWindow('登录', 'login', 420, 580, undefined, false, 420, 580)
         await emit(EventEnum.LOGOUT)
         await resizeWindow('tray', 130, 44)
       } catch (error) {

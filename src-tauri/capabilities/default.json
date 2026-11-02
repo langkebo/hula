@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default-capability",
-  "description": "Capability for the main window",
+  "description": "基础窗口能力：所有桌面窗口共用的窗口/Webview 操作、系统信息、剪贴板、通知、日志等低危权限。文件系统、网络白名单、更新器、开机自启等高危能力按窗口拆分到独立 capability。",
   "platforms": ["macOS", "windows", "linux"],
   "windows": [
     "home",
@@ -52,6 +52,9 @@
     "core:window:allow-set-fullscreen",
     "core:window:allow-request-user-attention",
     "core:window:allow-set-enabled",
+    "core:window:allow-set-resizable",
+    "core:window:allow-set-badge-count",
+    "core:app:allow-set-app-theme",
     "core:webview:allow-create-webview",
     "core:webview:allow-create-webview-window",
     "core:webview:allow-set-webview-size",
@@ -67,13 +70,8 @@
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-image",
     "clipboard-manager:allow-write-text",
-    "http:allow-fetch",
-    "http:allow-fetch-cancel",
-    "http:allow-fetch-read-body",
-    "http:allow-fetch-send",
-    "autostart:allow-enable",
-    "autostart:allow-disable",
-    "autostart:allow-is-enabled",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
     "dialog:default",
     "dialog:allow-open",
     "dialog:allow-confirm",
@@ -88,110 +86,6 @@
     "opener:allow-open-path",
     "mic-recorder:default",
     "log:default",
-    "log:allow-log",
-    {
-      "identifier": "fs:write-files",
-      "allow": [
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$APPCACHE/**"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-mkdir",
-      "allow": [
-        {
-          "path": "$APPDATA/**"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:read-dirs",
-      "allow": [
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$RESOURCE/**"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:read-files",
-      "allow": [
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$APPCACHE/**"
-        },
-        {
-          "path": "$RESOURCE/**"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-copy-file",
-      "allow": [
-        {
-          "path": "$APPDATA/**"
-        }
-      ]
-    },
-    {
-      "identifier": "fs:allow-read-text-file",
-      "allow": [
-        {
-          "path": "$APPDATA/**"
-        },
-        {
-          "path": "$RESOURCE/**"
-        }
-      ]
-    },
-    {
-      "identifier": "http:default",
-      "allow": [
-        {
-          "url": "https://gitee.com"
-        },
-        {
-          "url": "https://gitee.com:**"
-        },
-        {
-          "url": "https://api.siliconflow.cn"
-        },
-        {
-          "url": "https://api.siliconflow.cn:**"
-        },
-        {
-          "url": "https://translate.googleapis.com"
-        },
-        {
-          "url": "https://translate.googleapis.com:**"
-        },
-        {
-          "url": "https://matrix.test"
-        },
-        {
-          "url": "https://matrix.test:**"
-        },
-        {
-          "url": "https://localhost:**"
-        },
-        {
-          "url": "http://localhost:**"
-        },
-        {
-          "url": "https://127.0.0.1:**"
-        },
-        {
-          "url": "http://127.0.0.1:**"
-        }
-      ]
-    }
+    "log:allow-log"
   ]
 }

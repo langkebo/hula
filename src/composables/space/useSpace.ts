@@ -95,10 +95,7 @@ export function useSpace(spaceId: () => string): UseSpaceResult {
   }
 
   const getHierarchy = async (options?: {
-    from?: string
-    limit?: number
     maxDepth?: number
-    suggestedOnly?: boolean
   }): Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }> => {
     const id = spaceId()
     if (!id) return { rooms: [] }

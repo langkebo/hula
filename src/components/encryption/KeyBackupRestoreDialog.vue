@@ -53,7 +53,7 @@
               <div v-if="fileName" class="file-info">
                 <Icon icon="mdi:file-check-outline" :width="18" class="file-icon" />
                 <span class="file-name">{{ fileName }}</span>
-                <n-button text size="tiny" @click="clearFile">
+                <n-button text size="tiny" :aria-label="t('common.remove')" @click="clearFile">
                   <template #icon>
                     <Icon icon="mdi:close" :width="16" />
                   </template>

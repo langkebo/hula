@@ -91,4 +91,48 @@ describe('setupSystemResumeListener', () => {
     await vi.waitFor(() => expect(mockedListen).toHaveBeenCalledTimes(1))
     expect(onResume).not.toHaveBeenCalled()
   })
+
+  it('unsubscribes the listener when the returned cleanup is called', async () => {
+    const unlisten = vi.fn()
+    let capturedHandler: ((event: Event<unknown>) => void) | undefined
+    mockedListen.mockImplementation((_event: string, handler: (event: Event<unknown>) => void) => {
+      capturedHandler = handler
+      return Promise.resolve(unlisten)
+    })
+    ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {}
+
+    const onResume = vi.fn()
+    const cleanup = setupSystemResumeListener(onResume)
+
+    await vi.waitFor(() => expect(mockedListen).toHaveBeenCalledTimes(1))
+    cleanup()
+
+    expect(unlisten).toHaveBeenCalledTimes(1)
+
+    // 注销后即使事件仍然到达，也不能再触发重连
+    capturedHandler?.({} as Event<unknown>)
+    expect(onResume).not.toHaveBeenCalled()
+  })
+
+  it('unsubscribes immediately when cleanup runs before listen resolves', async () => {
+    const unlisten = vi.fn()
+    let resolveListen: ((fn: () => void) => void) | undefined
+    mockedListen.mockImplementation(
+      () =>
+        new Promise<() => void>((resolve) => {
+          resolveListen = resolve
+        })
+    )
+    ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {}
+
+    const onResume = vi.fn()
+    const cleanup = setupSystemResumeListener(onResume)
+
+    await vi.waitFor(() => expect(mockedListen).toHaveBeenCalledTimes(1))
+    cleanup()
+    resolveListen?.(unlisten)
+
+    await vi.waitFor(() => expect(unlisten).toHaveBeenCalledTimes(1))
+    expect(onResume).not.toHaveBeenCalled()
+  })
 })

@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "updater-capability",
+  "description": "自动更新能力：仅主窗口（左栏入口）与更新相关窗口可检查/下载/安装更新。",
+  "platforms": ["macOS", "windows", "linux"],
+  "windows": ["home", "checkupdate", "update"],
+  "permissions": [
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download",
+    "updater:allow-install"
+  ]
+}

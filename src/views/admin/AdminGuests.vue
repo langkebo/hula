@@ -116,7 +116,7 @@ function mapGuestAccount(user: UserInfo): GuestAccountRow {
 }
 
 async function fetchGuestAccounts(limit = 200): Promise<GuestAccountRow[]> {
-  const result = await adminService.getUsers(limit, undefined, undefined, true)
+  const result = await adminService.getUsers(limit, undefined, true)
   const users = Array.isArray(result.users) ? result.users : []
   return users.map(mapGuestAccount)
 }

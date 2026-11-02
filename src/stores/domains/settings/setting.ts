@@ -418,12 +418,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.ensurePreferenceSettings()
       this.preferences.sendTypingNotifications = enabled
     },
-    /**
-     * F-1：信任门禁严格模式（未验证 / 风险消息默认模糊，点击展开）。
-     *
-     * 这是**视觉降级**：内容早已解密进入 DOM，模糊只降低肩窥成本，不是访问控制。
-     * 默认关闭，避免策略上线就改变所有既有会话的观感。
-     */
+    /** F-1：信任门禁严格模式。**视觉降级**——内容早已进 DOM，模糊只降低肩窥成本，不是访问控制 */
     setTrustGateStrict(enabled: boolean) {
       this.chat = this.chat || { sendKey: 'Enter', isDouble: true, translate: 'youdao' }
       this.chat.trustGateStrict = enabled

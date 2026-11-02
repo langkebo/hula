@@ -23,7 +23,7 @@ vi.mock('@/services/i18n', () => ({
 
 vi.mock('@/services/matrix/matrixClientPlatform', () => ({
   persistRefreshedToken: vi.fn(),
-  setupSystemResumeListener: vi.fn()
+  setupSystemResumeListener: vi.fn(() => vi.fn())
 }))
 
 vi.mock('@/types/matrix-js-sdk', () => ({
@@ -64,6 +64,7 @@ function makeConnectionManager() {
     shouldReuse: vi.fn(() => false),
     initialize: vi.fn(async () => undefined),
     setupResumeListener: vi.fn(),
+    cleanupResumeListener: vi.fn(),
     getConnectionState: vi.fn(() => 'CONNECTED'),
     updateConnectionState: vi.fn(),
     mapSyncState: vi.fn(() => ({ connectionState: undefined, isReady: false })),
@@ -467,6 +468,98 @@ describe('MatrixClientLifecycle', () => {
       expect(orderOf(vi.mocked(client.stopClient))).toBeLessThan(orderOf(cryptoTracker.releaseStoppedCryptoBinding))
       expect(orderOf(cryptoTracker.releaseStoppedCryptoBinding)).toBeLessThan(orderOf(cryptoTracker.ensureCrypto))
       expect(orderOf(cryptoTracker.ensureCrypto)).toBeLessThan(orderOf(vi.mocked(client.startClient)))
+    })
+
+    it('并发唤醒只触发一次重连（single-flight，H-11）', async () => {
+      vi.useFakeTimers()
+      const made = makeLifecycle()
+      const { lifecycle, connectionManager, syncManager } = made
+      const client = makeClient()
+      connectionManager.client = client
+      connectionManager.config = { homeserverUrl: 'https://hs', accessToken: 'tok' }
+
+      const startPromise = lifecycle.startClient()
+      await vi.advanceTimersByTimeAsync(0)
+      await startPromise
+
+      vi.mocked(client.stopClient).mockClear()
+      vi.mocked(client.startClient).mockClear()
+      syncManager.create.mockClear()
+
+      const onResume = connectionManager.setupResumeListener.mock.calls[0][0] as () => void
+      // 系统唤醒可能同时触发多个监听器回调
+      onResume()
+      onResume()
+      onResume()
+
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(client.stopClient).toHaveBeenCalledTimes(1)
+      expect(client.startClient).toHaveBeenCalledTimes(1)
+      expect(syncManager.create).toHaveBeenCalledTimes(1)
+    })
+
+    it('连续重连失败按指数退避（1s → 2s，H-11）', async () => {
+      vi.useFakeTimers()
+      const made = makeLifecycle()
+      const { lifecycle, connectionManager } = made
+      const client = makeClient()
+      connectionManager.client = client
+      connectionManager.config = { homeserverUrl: 'https://hs', accessToken: 'tok' }
+
+      const startPromise = lifecycle.startClient()
+      await vi.advanceTimersByTimeAsync(0)
+      await startPromise
+
+      vi.mocked(client.startClient).mockReset()
+      vi.mocked(client.startClient).mockRejectedValue(new Error('boom'))
+
+      const onResume = connectionManager.setupResumeListener.mock.calls[0][0] as () => void
+
+      // 首次重连：等待 1000ms
+      onResume()
+      await vi.advanceTimersByTimeAsync(999)
+      expect(client.startClient).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(client.startClient).toHaveBeenCalledTimes(1)
+
+      // 第二次重连（首次失败后计数未归零）：退避翻倍到 2000ms
+      onResume()
+      await vi.advanceTimersByTimeAsync(1999)
+      expect(client.startClient).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(client.startClient).toHaveBeenCalledTimes(2)
+    })
+
+    it('退避期间客户端已被替换时放弃本次重连（H-11）', async () => {
+      vi.useFakeTimers()
+      const made = makeLifecycle()
+      const { lifecycle, connectionManager, eventRouter, syncManager } = made
+      const client = makeClient()
+      connectionManager.client = client
+      connectionManager.config = { homeserverUrl: 'https://hs', accessToken: 'tok' }
+
+      const startPromise = lifecycle.startClient()
+      await vi.advanceTimersByTimeAsync(0)
+      await startPromise
+
+      vi.mocked(client.stopClient).mockClear()
+      vi.mocked(client.startClient).mockClear()
+      eventRouter.detach.mockClear()
+
+      const onResume = connectionManager.setupResumeListener.mock.calls[0][0] as () => void
+      onResume()
+      // 退避等待期间客户端被替换（如登出后重新登录）
+      connectionManager.client = makeClient()
+
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(client.startClient).not.toHaveBeenCalled()
+      expect(eventRouter.detach).not.toHaveBeenCalledWith(client, syncManager)
     })
   })
 })

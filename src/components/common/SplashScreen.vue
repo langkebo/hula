@@ -52,7 +52,7 @@ defineProps<{
   loadingText?: string
   minimal?: boolean
   showError?: boolean
-  errorMessage?: string
+  errorMessage?: string | undefined
   retryable?: boolean
 }>()
 
@@ -63,7 +63,9 @@ defineEmits<{
 const { t } = useI18n()
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
+
 .splash-screen {
   position: fixed;
   inset: 0;
@@ -98,7 +100,8 @@ const { t } = useI18n()
   align-items: center;
 }
 
-@media screen and (max-width: 480px) {
+// 小屏档位统一走 sm 断点（<576px），不再单列 480px 魔法值
+@include responsive.respond-to-max('sm') {
   .logo-container {
     width: 160px;
     height: 76px;

@@ -21,6 +21,7 @@ vi.mock('@/utils/PlatformConstants', () => ({
 
 import { ShowModeEnum, ThemeEnum } from '@/enums'
 import { useSettingStore } from '../setting'
+import { getDefaultShortcuts } from '../settings-helpers'
 
 describe('SettingStore', () => {
   beforeEach(() => {
@@ -445,8 +446,9 @@ describe('SettingStore', () => {
       const store = useSettingStore()
       store.shortcuts = { screenshot: '', openMainPanel: '', globalEnabled: undefined as never }
       store.ensureShortcuts()
-      expect(store.screenshotShortcut).toBeTruthy()
-      expect(store.openMainPanelShortcut).toBeTruthy()
+      const defaults = getDefaultShortcuts()
+      expect(store.screenshotShortcut).toBe(defaults.screenshot)
+      expect(store.openMainPanelShortcut).toBe(defaults.openMainPanel)
       expect(store.globalShortcutEnabled).toBe(false)
     })
 

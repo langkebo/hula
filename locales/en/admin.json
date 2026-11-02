@@ -1,5 +1,6 @@
 {
   "title": "Administration",
+  "panel": "Admin Panel",
   "common": {
     "refresh": "Refresh",
     "cancel": "Cancel",
@@ -238,13 +239,47 @@
     "audit": "Audit",
     "moderation": "Moderation",
     "guests": "Guests",
+    "telemetry": "Telemetry",
+    "backgroundUpdates": "Background Updates",
     "modules": "Modules"
   },
   "status": {
     "admin": "Admin",
     "user": "User"
   },
+  "availability": {
+    "loading": {
+      "title": "Checking admin service",
+      "description": "Confirming whether this server exposes the admin API, please wait."
+    },
+    "forbidden": {
+      "title": "No access to administration",
+      "description": "The admin API is reachable, but this account has no administrator privileges. Ask an administrator to grant access and try again."
+    },
+    "unauthorized": {
+      "title": "Session credentials expired",
+      "description": "The admin API is reachable, but the current credentials are invalid or expired. Sign in again and retry."
+    },
+    "unsupported": {
+      "title": "Admin API is not enabled on this server",
+      "description": "This homeserver does not expose the admin API, so the administration menu is unavailable."
+    },
+    "unavailable": {
+      "title": "Cannot reach the admin service",
+      "description": "A network or server error prevented the admin API from being detected. Try again later."
+    },
+    "retry": "Retry detection",
+    "retrying": "Retrying",
+    "tag": {
+      "loading": "Checking",
+      "forbidden": "Forbidden",
+      "unauthorized": "Expired",
+      "unsupported": "Not enabled",
+      "unavailable": "Unreachable"
+    }
+  },
   "backToApp": "Back to App",
+  "menuToggle": "Toggle menu",
   "total_users": "Total Users",
   "total_rooms": "Total Rooms",
   "active_users": "Active Users",
@@ -437,8 +472,6 @@
     "ms_unit": "milliseconds",
     "save_success": "Saved",
     "save_failed": "Save failed",
-    "delete_success": "Deleted",
-    "delete_failed": "Delete failed",
     "task_started": "Cleanup task started",
     "task_failed": "Failed to start cleanup task"
   },

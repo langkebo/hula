@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { requireSubtleCrypto } from '@/utils/webCompat'
 
@@ -8,19 +10,23 @@ const logger = createLogger('SessionCrypto')
  *
  * v1（无前缀，裸 base64）为历史格式，仅供**只读迁移**；
  * v2 起携带随机盐并用 PBKDF2 派生密钥，格式为 `<前缀><base64(salt|iv|ciphertext)>`。
+ *
+ * 注意：Rust 侧 `utils::crypto::encrypt` 产出的也是同一前缀 + 同一布局，
+ * 但密钥来自「系统钥匙串托管的主密钥」。前端不再持有任何长期密钥。
  */
 const CIPHERTEXT_VERSION_PREFIX = 'tjg:v2:'
 
 /**
- * per-install 随机密钥的持久化位（localStorage）。
+ * 非 Tauri 运行时（浏览器调试 / 单测）使用的进程内临时密钥。
  *
- * 仅在平台安全存储（Tauri keychain）不可用、需要退回 sessionStorage 时使用；
- * 首次调用生成 32 随机字节并写入，后续复用同一密钥，保证跨刷新可解密。
- * 名称含 `STORAGE_KEY` 以被 `scripts/check-settings-wiring.mjs` 纳管为持久化 key。
+ * 审计 H-3：历史实现把 per-install 密钥明文写入 localStorage，
+ * 任何能读 localStorage 的脚本都能解出 sessionStorage 里的密文。
+ * 现在**绝不落盘**：只在当前进程内存中存活，进程退出即失效
+ * （非 Tauri 环境本就只用于开发调试，不做跨刷新持久化承诺）。
  */
-export const SESSION_CRYPTO_SECRET_STORAGE_KEY = 'tjg-session-crypto-secret-v2'
+let ephemeralSecret: Uint8Array<ArrayBuffer> | null = null
 
-/** 随机 install 密钥长度（字节）。 */
+/** 随机临时密钥长度（字节）。 */
 const SECRET_BYTES = 32
 /** PBKDF2 盐长度（字节）。 */
 const SALT_BYTES = 16
@@ -55,33 +61,13 @@ function base64ToBytes(encoded: string): Uint8Array<ArrayBuffer> {
   return bytes
 }
 
-/**
- * 读取（或首次生成）per-install 随机密钥。
- *
- * @returns 恰好 {@link SECRET_BYTES} 字节的随机密钥
- * @throws localStorage 不可用时抛错（fail-closed，绝不退化为可预测的固定密钥）
- */
-function getOrCreateInstallSecret(): Uint8Array<ArrayBuffer> {
-  if (typeof localStorage === 'undefined') {
-    throw new Error('localStorage 不可用，无法获取会话加密密钥')
+/** 获取（首次调用时生成）进程内临时密钥。 */
+function getEphemeralSecret(): Uint8Array<ArrayBuffer> {
+  if (!ephemeralSecret) {
+    ephemeralSecret = crypto.getRandomValues(new Uint8Array(SECRET_BYTES))
+    logger.debug('生成进程内临时会话密钥（非 Tauri 运行时，不落盘）')
   }
-
-  const existing = localStorage.getItem(SESSION_CRYPTO_SECRET_STORAGE_KEY)
-  if (existing) {
-    try {
-      const decoded = base64ToBytes(existing)
-      if (decoded.length === SECRET_BYTES) {
-        return decoded
-      }
-      logger.warn('已存储的会话加密密钥长度非法，将重新生成')
-    } catch (error) {
-      logger.warn('已存储的会话加密密钥无法解析，将重新生成', error)
-    }
-  }
-
-  const secret = crypto.getRandomValues(new Uint8Array(SECRET_BYTES))
-  localStorage.setItem(SESSION_CRYPTO_SECRET_STORAGE_KEY, bytesToBase64(secret))
-  return secret
+  return ephemeralSecret
 }
 
 async function deriveKeyFromSecret(secret: Uint8Array<ArrayBuffer>, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
@@ -100,6 +86,7 @@ async function deriveKeyFromSecret(secret: Uint8Array<ArrayBuffer>, salt: Uint8A
  * 解密 v1 历史密文（无前缀、裸 SHA-256 派生密钥）。
  *
  * 仅用于兼容迁移；解密失败即抛错，不返回原密文。
+ * v1 密文由旧版前端用固定密钥材料加密，与运行时无关，因此两个运行环境都需支持。
  */
 async function decryptLegacyV1(ciphertext: string): Promise<string> {
   const subtle = requireSubtleCrypto()
@@ -120,15 +107,21 @@ async function decryptLegacyV1(ciphertext: string): Promise<string> {
 /**
  * 加密会话级敏感值。
  *
- * 使用 per-install 随机密钥 + 随机盐经 PBKDF2 派生 AES-GCM 密钥，
- * 依次拼接 `salt | iv | ciphertext` 并以 base64 编码、加 v2 版本前缀。
+ * - Tauri 运行时：委托 Rust `session_secret_encrypt`，密钥由系统钥匙串托管的主密钥派生，
+ *   前端零密钥；
+ * - 非 Tauri 运行时：进程内临时密钥 + 随机盐经 PBKDF2 派生 AES-GCM 密钥，
+ *   依次拼接 `salt | iv | ciphertext` 并以 base64 编码、加 v2 版本前缀。
  *
  * @param plaintext 待加密明文
  * @returns 带 `tjg:v2:` 前缀的密文
  * @throws 加密过程中任一步失败即抛错（fail-closed，绝不回退为明文写入）
  */
 export async function encryptForSession(plaintext: string): Promise<string> {
-  const secret = getOrCreateInstallSecret()
+  if (hasTauriRuntime()) {
+    return invoke<string>('session_secret_encrypt', { plaintext })
+  }
+
+  const secret = getEphemeralSecret()
   const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES))
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES))
   const key = await deriveKeyFromSecret(secret, salt)
@@ -148,7 +141,7 @@ export async function encryptForSession(plaintext: string): Promise<string> {
 /**
  * 解密会话级敏感值。
  *
- * 以 {@link CIPHERTEXT_VERSION_PREFIX} 分流：v2 走带盐派生路径，
+ * 以 {@link CIPHERTEXT_VERSION_PREFIX} 分流：v2 走 Rust（Tauri）或临时密钥派生路径，
  * 无前缀的旧值走 {@link decryptLegacyV1} 只读迁移。
  *
  * @param ciphertext 待解密密文（v2 带前缀或 v1 裸 base64）
@@ -160,6 +153,10 @@ export async function decryptFromSession(ciphertext: string): Promise<string> {
     return decryptLegacyV1(ciphertext)
   }
 
+  if (hasTauriRuntime()) {
+    return invoke<string>('session_secret_decrypt', { ciphertext })
+  }
+
   const combined = base64ToBytes(ciphertext.slice(CIPHERTEXT_VERSION_PREFIX.length))
   if (combined.length <= SALT_BYTES + IV_BYTES) {
     throw new Error('会话密文长度非法，无法解密')
@@ -168,8 +165,7 @@ export async function decryptFromSession(ciphertext: string): Promise<string> {
   const salt = combined.slice(0, SALT_BYTES)
   const iv = combined.slice(SALT_BYTES, SALT_BYTES + IV_BYTES)
   const data = combined.slice(SALT_BYTES + IV_BYTES)
-  const secret = getOrCreateInstallSecret()
-  const key = await deriveKeyFromSecret(secret, salt)
+  const key = await deriveKeyFromSecret(getEphemeralSecret(), salt)
   const decrypted = await requireSubtleCrypto().decrypt({ name: ALGORITHM, iv }, key, data)
   return new TextDecoder().decode(decrypted)
 }

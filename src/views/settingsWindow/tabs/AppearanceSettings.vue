@@ -1,6 +1,6 @@
 <template>
   <div class="appearance-settings">
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="appearance-theme">
       <h3 class="section-title">{{ t('setting.appearance.theme_section') }}</h3>
       <ThemeSwitcher :model-value="currentTheme" />
       <AppearancePreview class="appearance-settings__preview" />
@@ -8,7 +8,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="appearance-font">
       <h3 class="section-title">{{ t('setting.appearance.font_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -36,7 +36,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="appearance-effects">
       <h3 class="section-title">{{ t('setting.appearance.effects_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -56,7 +56,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="appearance-bubble">
       <h3 class="section-title">{{ t('setting.appearance.bubble_section') }}</h3>
       <div class="setting-item">
         <div class="setting-info">

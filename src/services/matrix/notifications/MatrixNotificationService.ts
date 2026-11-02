@@ -6,6 +6,7 @@ import {
   type PushRuleAction,
   PushRuleKind
 } from 'matrix-js-sdk'
+import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
@@ -91,7 +92,7 @@ class MatrixNotificationService extends BaseMatrixService {
    */
   async syncConfigToAccountData(): Promise<void> {
     try {
-      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+      await matrixClientService.waitForClientReady({ timeoutMs: CLIENT_READY_TIMEOUT_MS })
       await pushConfigToAccountData(this.getNotificationClient(), this.configStore.getConfig())
     } catch (err) {
       logger.error(`[MatrixNotification] 同步通知配置到服务端失败: ${err}`)
@@ -107,7 +108,7 @@ class MatrixNotificationService extends BaseMatrixService {
    */
   async syncConfigFromAccountData(): Promise<boolean> {
     try {
-      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+      await matrixClientService.waitForClientReady({ timeoutMs: CLIENT_READY_TIMEOUT_MS })
       const pulled = await pullConfigFromAccountData(this.getNotificationClient(), this.configStore)
       this.warnAboutCorruptConfigOnce()
       return pulled
@@ -126,7 +127,7 @@ class MatrixNotificationService extends BaseMatrixService {
    */
   async syncDndToAccountData(settings: DndWindow): Promise<void> {
     try {
-      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+      await matrixClientService.waitForClientReady({ timeoutMs: CLIENT_READY_TIMEOUT_MS })
       await pushDndToAccountData(this.getNotificationClient(), settings)
     } catch (err) {
       logger.error(`[MatrixNotification] 同步 DND 设置到服务端失败: ${err}`)
@@ -142,7 +143,7 @@ class MatrixNotificationService extends BaseMatrixService {
    */
   async syncDndFromAccountData(): Promise<DndWindow | null> {
     try {
-      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+      await matrixClientService.waitForClientReady({ timeoutMs: CLIENT_READY_TIMEOUT_MS })
       const client = this.getNotificationClient()
       const event = client.getAccountData(DND_ACCOUNT_DATA_TYPE)
       if (!event) {
@@ -168,8 +169,7 @@ class MatrixNotificationService extends BaseMatrixService {
       }
 
       const applied = this.dndStore.replace(normalized)
-      // 回写本地镜像：否则冷启动时 DND 不水合，用户会被静默重新打开通知，
-      // 或在设置页看到一份与账号数据不一致的本地状态。
+      // 回写本地镜像：否则冷启动时 DND 不水合，用户会被静默重新打开通知，或在设置页看到与账号数据不一致的本地状态。
       this.dndStore.writeMirror(this.resolveMirrorUserId())
       logger.info('[MatrixNotification] 从服务端同步 DND 设置成功')
       return applied

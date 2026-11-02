@@ -19,7 +19,7 @@ type AudioPlaybackReturn = {
 
   // 方法
   togglePlayback: () => Promise<void>
-  createAudioElement: (audioUrl: string, audioId: string, duration: number) => Promise<void>
+  createAudioElement: (audioUrl: string, duration: number) => Promise<void>
   seekToTime: (time: number) => void
   cleanup: () => void
 }
@@ -76,10 +76,9 @@ export const useAudioPlayback = (
   /**
    * 创建音频元素并设置事件监听
    * @param audioUrl 音频URL
-   * @param id 音频ID
    * @param duration 音频时长
    */
-  const createAudioElement = async (audioUrl: string, _id: string, duration: number) => {
+  const createAudioElement = async (audioUrl: string, duration: number) => {
     if (audioElement.value) return
 
     audioElement.value = new Audio(audioUrl)

@@ -97,12 +97,7 @@
           <n-tab-pane name="aliases" :tab="t('admin.rooms.aliases')">
             <n-spin :show="aliasesLoading">
               <div v-if="roomAliases.length > 0">
-                <n-tag
-                  v-for="alias in roomAliases"
-                  :key="alias"
-                  closable
-                  class="m-4px"
-                  @close="handleRemoveAlias(alias)">
+                <n-tag v-for="alias in roomAliases" :key="alias" closable class="m-4px" @close="handleRemoveAlias()">
                   {{ alias }}
                 </n-tag>
               </div>
@@ -570,7 +565,7 @@ async function handleDeleteRoom() {
   })
 }
 
-function handleRemoveAlias(_alias: string) {
+function handleRemoveAlias() {
   // Alias removal requires server-side API not currently exposed;
   // show informational feedback
   showFeedback(t('admin.rooms.aliasRemoveNotSupported'), 'warning')
@@ -629,6 +624,7 @@ watch(searchQuery, (val) => {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
 .admin-rooms {
   max-width: 1200px;
 }
@@ -642,7 +638,7 @@ watch(searchQuery, (val) => {
   gap: 12px;
 }
 
-@media (max-width: 768px) {
+@include responsive.respond-to-max('md') {
   .admin-rooms-header {
     flex-direction: column;
     align-items: stretch;

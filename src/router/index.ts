@@ -10,6 +10,7 @@ import { getCommonRoutes } from '@/router/routes/common'
 import { getDesktopRoutes } from '@/router/routes/desktop'
 import { getMobileRoutes } from '@/router/routes/mobile'
 import { createSecretChatGuard } from '@/router/secretChatGuard'
+import { verifyAdminAccess } from '@/stores/domains/admin/bridge'
 import { detectAppPlatform, shouldBypassAuthForE2E } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
@@ -17,21 +18,22 @@ const logger = createLogger('RouterGuard')
 
 const { BASE_URL } = import.meta.env
 
-const appPlatform = detectAppPlatform()
-const isMobile = appPlatform === 'mobile'
+// 移动端产物在构建期即裁剪桌面装配（含 admin 路由与 admin store）：
+// __TJG_MOBILE_BUILD__ 由 vite.config.ts 在 android/ios 生产构建中替换为 true，
+// 常量折叠后桌面分支整体消失，admin 代码不进入移动端产物。
+// 开发态（含浏览器 E2E）保留运行时分派，兼容 ?platform=mobile 覆盖。
+const isMobileBuild = typeof __TJG_MOBILE_BUILD__ === 'boolean' ? __TJG_MOBILE_BUILD__ : false
+const isMobile = isMobileBuild || detectAppPlatform() === 'mobile'
 
-const getAllRoutes = (): Array<RouteRecordRaw> => {
-  const commonRoutes = getCommonRoutes()
-  if (isMobile) {
-    return [...commonRoutes, ...getMobileRoutes()]
-  } else {
-    return [...commonRoutes, ...getDesktopRoutes()]
-  }
-}
+const getPlatformRoutes: () => Array<RouteRecordRaw> = isMobileBuild
+  ? getMobileRoutes
+  : isMobile
+    ? getMobileRoutes
+    : getDesktopRoutes
 
 const router: Router = createRouter({
   history: createWebHistory(BASE_URL),
-  routes: getAllRoutes()
+  routes: [...getCommonRoutes(), ...getPlatformRoutes()]
 })
 
 const authGuard = createAuthGuard({
@@ -40,10 +42,7 @@ const authGuard = createAuthGuard({
     const { sessionOrchestrator } = await import('@/services/matrix/auth/SessionOrchestrator')
     return sessionOrchestrator.hasAuthenticatedSession()
   },
-  verifyAdminAccess: async () => {
-    const { useAdminStore } = await import('@/stores/domains/admin/admin')
-    return useAdminStore().verifyAdminAccess()
-  },
+  verifyAdminAccess,
   logger,
   shouldBypassAuth: () => shouldBypassAuthForE2E()
 })

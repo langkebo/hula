@@ -24,6 +24,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { DEFAULT_BREAKPOINTS } from '../../composables/layout/useResponsiveBreakpoint'
 
 const ROOT = resolve(__dirname, '..', '..', '..')
 const SRC = resolve(ROOT, 'src')
@@ -243,6 +244,25 @@ describe('配套约束', () => {
     expect(sources.length).toBeGreaterThan(100)
     expect(sources.some((source) => source.path.includes('__tests__'))).toBe(false)
     expect(existsSync(BASELINE_PATH)).toBe(true)
+  })
+})
+
+describe('响应式断点单一来源（UI-P1-07）', () => {
+  const responsiveScss = readFileSync(resolve(SRC, 'styles/scss/global/responsive.scss'), 'utf-8')
+  /** 读取 `$breakpoints` 映射中指定键的像素值 */
+  const readScssBreakpoint = (name: string) => {
+    const matched = responsiveScss.match(new RegExp(`'${name}':\\s*(\\d+)px`))
+    return matched ? Number(matched[1]) : Number.NaN
+  }
+
+  it('responsive.scss 的 md / lg / xl 与 useResponsiveBreakpoint 完全一致', () => {
+    expect(readScssBreakpoint('md')).toBe(DEFAULT_BREAKPOINTS.shrink)
+    expect(readScssBreakpoint('lg')).toBe(DEFAULT_BREAKPOINTS.normal)
+    expect(readScssBreakpoint('xl')).toBe(DEFAULT_BREAKPOINTS.wide)
+  })
+
+  it('断点数值固定为需求 8.2 的 768 / 992 / 1200', () => {
+    expect(DEFAULT_BREAKPOINTS).toEqual({ wide: 1200, normal: 992, shrink: 768 })
   })
 })
 

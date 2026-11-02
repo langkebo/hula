@@ -25,7 +25,8 @@ interface AuthGuardLogger {
 interface CreateAuthGuardOptions {
   isMobile: boolean
   hasAuthenticatedSession: () => Promise<boolean>
-  verifyAdminAccess: () => Promise<boolean>
+  /** 仅桌面端提供；移动端裁剪 admin 后不注入，requiresAdmin 路由一律拒绝 */
+  verifyAdminAccess?: (() => Promise<boolean>) | undefined
   logger: AuthGuardLogger
   shouldBypassAuth?: (to: RouteLocationNormalized) => boolean
 }
@@ -62,7 +63,7 @@ export const createAuthGuard = ({
 
       const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
       if (requiresAdmin) {
-        const isAdmin = await verifyAdminAccess()
+        const isAdmin = verifyAdminAccess ? await verifyAdminAccess() : false
         if (!isAdmin) {
           logger.warn(`非管理员尝试访问受限路径: ${to.path}`)
           const i18n = useI18nGlobal()

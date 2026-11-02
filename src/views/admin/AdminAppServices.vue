@@ -278,6 +278,8 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
+
 .admin-app-services {
   max-width: 1200px;
 }
@@ -291,7 +293,7 @@ onMounted(() => {
   gap: 12px;
 }
 
-@media (max-width: 768px) {
+@include responsive.respond-to-max('md') {
   .tab-header {
     flex-direction: column;
     align-items: stretch;

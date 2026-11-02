@@ -28,11 +28,6 @@ describe('SessionRuntimeState', () => {
     expect(state.bootstrapGuard).toBeInstanceOf(IdempotencyGuard)
   })
 
-  it('initializes presenceChangeCleanup to null', () => {
-    const state = new SessionRuntimeState()
-    expect(state.presenceChangeCleanup).toBeNull()
-  })
-
   it('initializes beforeUnloadRegistered to false', () => {
     const state = new SessionRuntimeState()
     expect(state.beforeUnloadRegistered).toBe(false)
@@ -45,12 +40,9 @@ describe('SessionRuntimeState', () => {
 
   it('allows the mutable fields to be reassigned after initialization', () => {
     const state = new SessionRuntimeState()
-    const cleanup = () => {}
-    state.presenceChangeCleanup = cleanup
     state.beforeUnloadRegistered = true
     state.cachedHasSession = true
 
-    expect(state.presenceChangeCleanup).toBe(cleanup)
     expect(state.beforeUnloadRegistered).toBe(true)
     expect(state.cachedHasSession).toBe(true)
   })

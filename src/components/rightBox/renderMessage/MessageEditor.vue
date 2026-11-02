@@ -2,7 +2,7 @@
   <div v-if="visible" class="message-editor">
     <div class="editor-header">
       <span class="edit-label">{{ t('message.editing') }}</span>
-      <n-button text @click="handleCancel">
+      <n-button text :aria-label="t('common.cancel')" @click="handleCancel">
         <template #icon>
           <svg class="size-16px">
             <use href="#close"></use>

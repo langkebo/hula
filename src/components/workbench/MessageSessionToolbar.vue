@@ -26,14 +26,26 @@
               </template>
             </n-button>
           </n-badge>
-          <n-button v-if="showJoinAction" quaternary circle size="small" @click="emit('joinRoom')">
+          <n-button
+            v-if="showJoinAction"
+            quaternary
+            circle
+            size="small"
+            :aria-label="t('room.join.title')"
+            @click="emit('joinRoom')">
             <template #icon>
               <n-icon>
                 <svg><use href="#add-user" /></svg>
               </n-icon>
             </template>
           </n-button>
-          <n-button v-if="showCreateAction" quaternary circle size="small" @click="emit('createRoom')">
+          <n-button
+            v-if="showCreateAction"
+            quaternary
+            circle
+            size="small"
+            :aria-label="t('space.create_room')"
+            @click="emit('createRoom')">
             <template #icon>
               <n-icon>
                 <svg><use href="#plus" /></svg>

@@ -1,3 +1,4 @@
+import { LARGE_PAGE_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import type { ServerHealth, ServerStats, ServerStatus, ServerVersion } from './AdminTypes'
@@ -130,7 +131,7 @@ export class AdminServerService {
 
   async getServerLogs(
     level?: 'debug' | 'info' | 'warn' | 'error',
-    limit = 100
+    limit = LARGE_PAGE_LIMIT
   ): Promise<Array<Record<string, unknown>> | null> {
     try {
       const admin = await this.sdkAdmin()

@@ -16,6 +16,7 @@
  * @see codebase-design DEEPENING.md — 接受依赖，不创建依赖
  */
 
+import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import { resolveMatrixRuntimeHomeserverUrl } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
 import {
@@ -294,8 +295,7 @@ export class MatrixConnectionManager {
     }
   }
 
-  /** 等待客户端就绪
-   */
+  /** 等待客户端就绪 */
   async waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
     const client = await this.waitForClientInstance(opts)
     // createClient 同步返回时仅核心 manager 可用；私有 manager 异步挂载，用 getXxxManager() 前必须等挂载完成。
@@ -305,7 +305,7 @@ export class MatrixConnectionManager {
 
   private async waitForClientInstance(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
     if (this.client) return this.client
-    const timeoutMs = opts?.timeoutMs ?? 5000
+    const timeoutMs = opts?.timeoutMs ?? CLIENT_READY_TIMEOUT_MS
     const intervalMs = opts?.intervalMs ?? 50
     const deadline = Date.now() + timeoutMs
     while (Date.now() < deadline) {

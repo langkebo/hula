@@ -23,6 +23,7 @@ import { createLogger } from '@/utils/Logger'
 import type { MatrixClientConfig, MatrixConnectionManager } from './MatrixConnectionManager'
 import type { MatrixCryptoStateTracker } from './MatrixCryptoStateTracker'
 import type { MatrixEventRouter } from './MatrixEventRouter'
+import { MatrixReconnectCoordinator } from './MatrixReconnectCoordinator'
 import type { MatrixSyncManager } from './MatrixSyncManager'
 import type { MatrixTokenManager } from './MatrixTokenManager'
 import { PREFIX_V3 } from './paths'
@@ -32,7 +33,7 @@ const logger = createLogger('MatrixClient')
 type StartClientOptions = Parameters<MatrixClient['startClient']>[0]
 
 /** Sliding Sync 端点探测超时（ms）：探测挂起时降级到传统 /sync，避免 startClient 卡死 */
-const SLIDING_SYNC_PROBE_TIMEOUT_MS = 5000
+const SLIDING_SYNC_PROBE_TIMEOUT_MS = 5_000
 
 /** Lifecycle 子服务依赖的主类协作模块集合 */
 export interface MatrixClientLifecycleDeps {
@@ -51,7 +52,14 @@ export interface MatrixClientLifecycleDeps {
  * 由 MatrixClientService 单例保证全局唯一性。
  */
 export class MatrixClientLifecycle {
-  constructor(private readonly deps: MatrixClientLifecycleDeps) {}
+  /** 系统唤醒重连协调器（single-flight + 指数退避，H-11）。 */
+  private readonly reconnectCoordinator: MatrixReconnectCoordinator
+
+  constructor(private readonly deps: MatrixClientLifecycleDeps) {
+    // 必须在构造函数体内构造：字段初始化器会早于参数属性赋值执行，
+    // 此时 `this.deps` 仍为 undefined。
+    this.reconnectCoordinator = new MatrixReconnectCoordinator(deps)
+  }
 
   /**
    * Initialize the Matrix client with the provided config.
@@ -157,19 +165,17 @@ export class MatrixClientLifecycle {
       throw new Error(useI18nGlobal().t('matrix_error.common.client_not_initialized'))
     }
 
-    // setupSystemResumeListener 返回 void（不提供取消订阅 API），
-    // 用 wrapper 适配 ConnectionManager.setupResumeListener 要求的 `() => () => void` 契约。
+    // setupSystemResumeListener 返回取消订阅函数，直接满足
+    // ConnectionManager.setupResumeListener 的 `() => () => void` 契约；
+    // 重复调用会先清理旧监听器，避免系统唤醒触发 N 次重连。
     connectionManager.setupResumeListener(
       () => {
         const currentClient = connectionManager.getClient()
         if (currentClient && connectionManager.getConnectionState() === 'CONNECTED') {
-          this.forceReconnect()
+          this.reconnectCoordinator.forceReconnect()
         }
       },
-      (cb: () => void) => {
-        setupSystemResumeListener(cb)
-        return () => {}
-      }
+      (cb: () => void) => setupSystemResumeListener(cb)
     )
 
     try {
@@ -249,6 +255,8 @@ export class MatrixClientLifecycle {
     const { connectionManager, eventRouter, syncManager, tokenManager, startClientGuard } = this.deps
     try {
       tokenManager.clear()
+      // 必须先注销系统唤醒监听器，否则下次 startClient 会叠加新的监听器。
+      connectionManager.cleanupResumeListener()
       const client = connectionManager.getClient()
       if (client) {
         eventRouter.detach(client, syncManager)
@@ -263,77 +271,6 @@ export class MatrixClientLifecycle {
     } catch (err) {
       logger.error('停止客户端失败:', err)
       throw err
-    }
-  }
-
-  private async forceReconnect(): Promise<void> {
-    const { connectionManager, eventRouter, syncManager, cryptoTracker } = this.deps
-    const client = connectionManager.getClient()
-    if (!client) return
-
-    try {
-      logger.info('[LIFECYCLE] Stopping current sync for reconnect')
-      client.stopClient()
-      // SDK 契约（fork ≥ `0824bb23a`，A3）：`stopClient()` 会停掉 crypto（olmMachine.close()，
-      // IndexedDB 连接关闭）**并清空** `client.cryptoBackend` ⇒ 同一 client 可直接重新
-      // `initRustCrypto`。下面的解绑是**兜底**（SDK 若回退成"只停不清"仍能救回 E2EE），
-      // 正常时序下它看到 `getCrypto() === undefined`（no-crypto）而直接返回。
-      cryptoTracker.releaseStoppedCryptoBinding(client)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      connectionManager.updateConnectionState('RECONNECTING')
-
-      // 关键修复：必须先 detach 旧监听器 + 销毁 terminated SlidingSync 实例，
-      // 否则 slidingSync.stop() 设置的 terminated=true 会导致新 start() 立即退出，
-      // sync 永不重启；同时 removeAllListeners 会让事件监听器全部丢失。
-      eventRouter.detach(client, syncManager)
-      syncManager.stop()
-
-      const startOpts: StartClientOptions = {
-        initialSyncLimit: 10,
-        pendingEventOrdering: PendingEventOrdering.Detached
-      }
-
-      const config = connectionManager.getConfig()
-      if (config?.accessToken) {
-        // 探测 Sliding Sync 端点（与 startClient 保持一致）
-        let slidingSyncSupported = true
-        try {
-          slidingSyncSupported = await client.isSlidingSyncSupported()
-        } catch (probeErr) {
-          logger.warn('[LIFECYCLE] Sliding Sync 探测失败，降级到 /sync:', probeErr)
-          slidingSyncSupported = false
-        }
-
-        if (slidingSyncSupported) {
-          // 创建全新的 SlidingSync 实例（terminated=false，监听器干净）
-          syncManager.create(client, config)
-          syncManager.resetReady()
-          startOpts.slidingSync = syncManager.get()!
-        }
-      }
-
-      // 重新注册所有 handler（与 startClient 一致）
-      eventRouter.setSyncStateHandler((state, prevState, data) => {
-        const result = connectionManager.mapSyncState(state, prevState, data)
-        if (result.connectionState) {
-          connectionManager.updateConnectionState(result.connectionState)
-        }
-        if (result.isReady) {
-          syncManager.markReady()
-        }
-      })
-      eventRouter.setup(client, syncManager)
-
-      // crypto 已随 stopClient 停止（且绑定已被 SDK 清空）⇒ 重启 sync 前必须重新初始化，
-      // 否则解密/加密全失效。传 accessToken 判据与 doStartClient 一致。
-      await cryptoTracker.ensureCrypto(client, !!config?.accessToken)
-
-      // await！原实现不 await 会导致异步错误被静默吞没
-      await client.startClient(startOpts)
-      logger.info('[LIFECYCLE] Sync restarted after system resume')
-    } catch (error) {
-      logger.error('[LIFECYCLE] Failed to reconnect Matrix sync:', error)
-      connectionManager.updateConnectionState('ERROR')
     }
   }
 
@@ -367,8 +304,8 @@ export class MatrixClientLifecycle {
         logger.warn(`whoami 预解析 deviceId 失败 (status=${response.status})，回退 SDK 默认设备`)
         return undefined
       }
-      const data = (await response.json()) as { device_id?: string | null; user_id?: string | null }
-      return data.device_id ?? undefined
+      const whoami = (await response.json()) as { device_id?: string | null; user_id?: string | null }
+      return whoami.device_id ?? undefined
     } catch (err) {
       logger.warn('whoami 预解析 deviceId 异常，回退 SDK 默认设备', err)
       return undefined

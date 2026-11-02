@@ -9,9 +9,11 @@
  *    instead of full-path literals (double-prefix bug source, see G2).
  *  - ts_expect_error: `@ts-expect-error` in src. strict: true is a hard red
  *    line (G1); per-line escapes are allowed but the count must not grow.
- *  - hardcoded_color: literal hex/rgb colors in src (non-test, excluding
- *    SVG `<use href="#...">` refs and comments). New colors should use
- *    `--tjg-*` design tokens instead of raw literals.
+ *  - hardcoded_color: literal hex/rgb/hsl colors in src (non-test, covering
+ *    `.ts`/`.vue`/`.scss`/`.css`, excluding SVG `<use href="#...">` refs and
+ *    comments). New colors must use `--tjg-*` design tokens instead of raw
+ *    literals. The token source (`design-tokens.css`) and the decorative
+ *    gradient asset (`login-bg.scss`) are excluded by path.
  *  - hardcoded_radius: `border-radius` with a raw 16–29px value (non-test).
  *    Large radii must use `--tjg-radius-*` (16px 起的大圆角是产品规格）。
  *  - inline_style: static `style="..."` attributes in .vue (non-test).
@@ -62,7 +64,9 @@ function stripCommentsAndSvgRefs(content) {
   return content
     .replace(/\/\/[^\n]*/g, '') // 行注释
     .replace(/\/\*[\s\S]*?\*\//g, '') // 块注释
-    .replace(/href\s*=\s*["']#[^"']*["']/g, '') // SVG use href
+    .replace(/(?:xlink:)?href\s*=\s*"[^"]*"/g, '') // SVG use href（含 :href 绑定，值内可含单引号）
+    .replace(/(?:xlink:)?href\s*=\s*'[^']*'/g, '')
+    .replace(/\bicon:\s*['"]#[^'"]*['"]/g, '') // 图标 id 参数（如 #face），不是颜色
     .replace(/var\([^)]*\)/g, '') // CSS var(...) 表达式（含 fallback 色，属安全模式）
 }
 
@@ -156,12 +160,25 @@ const counters = {
     strip: stripCommentsOnly
   },
   ts_expect_error: { pattern: /@ts-expect-error/g, includeTests: true, total: 0, files: new Map() },
+  /**
+   * 全仓字面量颜色（非测试）。2026-10-31 审计 S-3 修复：此前该计数只扫
+   * `.ts`/`.vue`（`extensions` 缺省为 SOURCE_EXTENSIONS），`.scss`/`.css`
+   * 完全在盲区内；正则也漏了 4 位 hex 与 `hsl()`。两者补上后，
+   * `simple.scss` / `code-block.scss` 中的存量色值才第一次被看见。
+   */
   hardcoded_color: {
-    pattern: /#[0-9a-fA-F]{3}\b|#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{8}\b|rgba?\(\s*[0-9]/g,
+    pattern: /#[0-9a-fA-F]{8}\b|#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3,4}\b|rgba?\(\s*[0-9]|hsla?\(\s*[0-9]/g,
     includeTests: false,
     total: 0,
     files: new Map(),
-    strip: stripCommentsAndSvgRefs
+    strip: stripCommentsAndSvgRefs,
+    extensions: STYLE_EXTENSIONS,
+    excludePaths: new Set([
+      // token 唯一来源，本身必须持有色值
+      'src/styles/css/design-tokens.css',
+      // 品牌装饰渐变资源，无对应语义 token
+      'src/styles/scss/global/login-bg.scss'
+    ])
   },
   /**
    * 大圆角必须走 `--tjg-radius-*`；16px 及以上属产品规格，不接受字面量。
@@ -253,6 +270,7 @@ for (const filePath of walk(srcRoot, STYLE_EXTENSIONS)) {
     if (!counter.includeTests && isTestPath(relPath)) continue
     const extensions = counter.extensions ?? SOURCE_EXTENSIONS
     if (!extensions.has(path.extname(filePath))) continue
+    if (counter.excludePaths?.has(relPath)) continue
     const text = counter.strip ? counter.strip(content) : content
     const count = countOccurrences(text, counter.pattern)
     if (count > 0) {
@@ -330,13 +348,16 @@ let failed = false
 }
 
 /**
- * hardcoded_color 漂移守卫：具名 allowlist 之外的硬编码色一律视为新增 → FAIL。
- * 收敛后的 `hardcoded_color` 基线为 0，总量比对发现不了
- * 「把旧例外删掉、同时加个新例外」，故需逐个已登记文件比对。
+ * hardcoded_color 漂移守卫：**已登记例外文件**一旦超出登记数量即 FAIL。
+ *
+ * 具名 allowlist 之外的文件不再在此逐文件判红 —— 它们的存量由 `hardcoded_color`
+ * 总量基线看住（多写一处即抬高总量 → FAIL）。两者分工：
+ *  - 总量基线：看住「未登记债务」只减不增；
+ *  - 逐文件守卫：看住「已裁定例外被悄悄扩大」（总量比对看不见这种偷换）。
  */
 {
   const unexpected = [...counters.hardcoded_color.files.entries()].filter(
-    ([file, count]) => count > (HARDCODED_COLOR_ALLOWLIST.get(file) ?? 0)
+    ([file, count]) => HARDCODED_COLOR_ALLOWLIST.has(file) && count > HARDCODED_COLOR_ALLOWLIST.get(file)
   )
   if (unexpected.length > 0) {
     console.error(

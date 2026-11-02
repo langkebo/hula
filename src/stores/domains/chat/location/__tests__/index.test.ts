@@ -450,6 +450,27 @@ describe('useLocationStore', () => {
       expect(store.activeBeacons.size).toBe(1)
       expect(store.sharing).toBe(false)
     })
+
+    it('异步返回时已切到其它房间则丢弃本次恢复结果（H-10）', async () => {
+      vi.mocked(matrixBeaconService.getActiveBeacons).mockResolvedValue([
+        {
+          event_id: '$beacon-a',
+          room_id: '!room:a',
+          user_id: '@alice:example.com',
+          description: 'A',
+          timeout: 60000,
+          is_live: true,
+          last_updated: Date.now()
+        }
+      ])
+
+      const store = useLocationStore()
+      await store.restoreActiveBeacons('!room:a', () => true)
+
+      // 过期结果不得写入 activeBeacons / sharing
+      expect(store.activeBeacons.size).toBe(0)
+      expect(store.sharing).toBe(false)
+    })
   })
 
   describe('reset', () => {

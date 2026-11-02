@@ -70,7 +70,7 @@ function openFriendManagementDialog(): void {
   }
 }
 
-async function setFriendStatus(_status: 'favorite' | 'accepted' | 'blocked'): Promise<void> {
+async function setFriendStatus(): Promise<void> {
   const dialog = useDialog()
   const router = useRouter()
 
@@ -88,15 +88,15 @@ async function setFriendStatus(_status: 'favorite' | 'accepted' | 'blocked'): Pr
 }
 
 async function handleSetFavorite(): Promise<void> {
-  await setFriendStatus('favorite')
+  await setFriendStatus()
 }
 
 async function handleSetNormal(): Promise<void> {
-  await setFriendStatus('accepted')
+  await setFriendStatus()
 }
 
 async function handleSetBlocked(): Promise<void> {
-  await setFriendStatus('blocked')
+  await setFriendStatus()
 }
 
 async function handleRemoveFriend(): Promise<void> {

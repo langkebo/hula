@@ -10,7 +10,7 @@ describe('useWorkbenchOverlay', () => {
     api.overlayState.historyRoomId = '!history:server'
     api.overlayState.mergedMsgIds = ['$a', '$b']
 
-    api.handleOverlayForwarded(['!room:server'])
+    api.handleOverlayForwarded()
 
     expect(api.overlayState).toMatchObject({
       mode: null,
@@ -26,7 +26,7 @@ describe('useWorkbenchOverlay', () => {
     const api = useWorkbenchOverlay({ onSessionSelected })
     api.overlayState.mode = 'search'
 
-    await api.handleOverlayMessageSelected('!room:server', '$event')
+    await api.handleOverlayMessageSelected('!room:server')
     expect(onSessionSelected).toHaveBeenCalledWith('!room:server')
     expect(api.overlayState.mode).toBeNull()
 

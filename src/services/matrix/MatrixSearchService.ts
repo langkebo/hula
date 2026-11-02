@@ -1,3 +1,4 @@
+import { DEFAULT_SEARCH_LIMIT } from '@/common/constants'
 import { useI18nGlobal } from '@/services/i18n'
 import type { MatrixClient, Room } from '@/services/matrix/sdk'
 import type { SearchEventContext } from '@/types/matrix-api'
@@ -248,7 +249,7 @@ class MatrixSearchService {
       const response = await this.getSearchMgr().searchMessageText({
         term: query,
         room_id: roomId,
-        limit: 20,
+        limit: DEFAULT_SEARCH_LIMIT,
         order_by_recency: true
       })
 

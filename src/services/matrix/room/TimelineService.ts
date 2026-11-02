@@ -25,7 +25,7 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
     const client = this.getClient()
     try {
       const result = await client.getEventContext(roomId, eventId, { limit })
-      logger.info(`[MatrixRoom] 获取事件上下文成功: ${roomId}/${eventId}`)
+      logger.debug(`[MatrixRoom] 获取事件上下文成功: ${roomId}/${eventId}`)
       return result as { event: unknown; events_before: unknown[]; events_after: unknown[]; state: unknown[] }
     } catch (err) {
       logger.error(`[MatrixRoom] 获取事件上下文失败: ${err}`)

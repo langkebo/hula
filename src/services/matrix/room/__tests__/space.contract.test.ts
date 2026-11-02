@@ -54,12 +54,12 @@ describe('Space service URL construction contract (real SDK + msw)', () => {
   })
 
   it('getSpaceHierarchy hits /_matrix/client/v3/spaces/:spaceId/hierarchy via SpaceManager', async () => {
-    const result = await matrixSpaceService.getSpaceHierarchy('!space:hs', { limit: 10, maxDepth: 3 })
+    const result = await matrixSpaceService.getSpaceHierarchy('!space:hs', { maxDepth: 3 })
 
     const calls = seenUrls.filter((u) => u.url.includes('/spaces/!space%3Ahs/hierarchy'))
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v3/spaces/!space%3Ahs/hierarchy?limit=10&max_depth=3`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v3/spaces/!space%3Ahs/hierarchy?max_depth=3`)
     expect(result.rooms).toHaveLength(1)
     expect(result.next_batch).toBe('nb')
   })

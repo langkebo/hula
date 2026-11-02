@@ -11,7 +11,7 @@
         :percentage="bootstrapProgress"
         :loading-text="bootstrapMessage"
         :show-error="!!bootstrapError"
-        v-bind="bootstrapError ? { errorMessage: bootstrapError } : {}"
+        :error-message="bootstrapError ?? undefined"
         :retryable="true"
         @retry="handleBootstrapRetry" />
       <div v-else-if="!isLock" class="h-full">
@@ -35,7 +35,6 @@ import { useI18n } from 'vue-i18n'
 import LocalUnlockDialog from '@/components/secure/LocalUnlockDialog.vue'
 import { useInvitePolicyEnforcement } from '@/composables/app/useInvitePolicyEnforcement'
 import { useOfflineQueueReplay } from '@/composables/app/useOfflineQueueReplay'
-import { usePresenceSync } from '@/composables/app/usePresenceSync'
 import { useWsEventHandler } from '@/composables/app/useWsEventHandler'
 import { useGlobalShortcut } from '@/composables/common/useGlobalShortcut'
 import { useMitt } from '@/composables/common/useMitt'
@@ -51,10 +50,8 @@ import { MittEnum, ThemeEnum } from '@/enums'
 import { createContactStateResolver } from '@/services/matrix/user/contactStateResolver'
 import { loadInvitePolicy } from '@/services/matrix/user/invitePolicy'
 import { createInvitePolicyEnforcer } from '@/services/matrix/user/invitePolicyEnforcer'
-import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { applyBubbleStyle, loadBubbleStyle } from '@/utils/bubbleStyle'
 import { applyFontScale, loadFontScale } from '@/utils/fontScale'
@@ -102,8 +99,6 @@ const handleBootstrapRetry = () => void bootstrap()
 
 // ========== Stores ==========
 const settingStore = useSettingStore()
-const globalStore = useGlobalStore()
-const sessionStore = useSessionStore()
 const { lockScreen } = storeToRefs(settingStore)
 const router = useRouter()
 
@@ -153,10 +148,6 @@ function createLazyLoader<T, K extends keyof T>(importFn: () => Promise<T>, key:
 const getMatrixClientService = createLazyLoader(
   () => import('@/services/matrix/MatrixClientService'),
   'matrixClientService'
-)
-const getMatrixPresenceService = createLazyLoader(
-  () => import('@/services/matrix/user/MatrixPresenceService'),
-  'matrixPresenceService'
 )
 const getMatrixMessageService = createLazyLoader(
   () => import('@/services/matrix/messaging/MatrixMessageService'),
@@ -266,15 +257,7 @@ const invitePolicyEnforcement = useInvitePolicyEnforcement({
   }
 })
 
-// ========== Presence sync (delegates to composable) ==========
-const presenceSync = usePresenceSync({
-  getMatrixClientService,
-  getMatrixPresenceService,
-  globalStore,
-  sessionStore
-})
-
-// ========== WS event handler ==========
+// ========== WS event handler（含 Presence 单一管线） ==========
 const wsEventHandler = useWsEventHandler()
 
 // ========== Network status (desktop) ==========
@@ -469,7 +452,6 @@ onMounted(async () => {
     // F-4：本机密钥库若未加密，一次性告知（不阻断；持续状态见设置页状态卡）
     void useLocalStorePlaintextWarning().warnIfNeeded()
     wsEventHandler.registerHandlers()
-    presenceSync.startPresenceWatch()
     invitePolicyEnforcement.start()
     await invitePolicyEnforcement.syncContacts()
     // 用同一份好友列表预热联系人状态缓存，省掉逐个查询
@@ -481,7 +463,6 @@ onUnmounted(async () => {
   wsEventHandler.cleanup()
   invitePolicyEnforcement.stop()
   contactStateResolver.clear()
-  presenceSync.cleanup()
   uninstallSecurityListeners()
   if (isDesktop() && appWindow?.label === 'home') {
     await cleanupGlobalShortcut()

@@ -1,14 +1,15 @@
 import { Channel } from '@tauri-apps/api/core'
 import { stat, writeFile } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
+import { probeAudioDuration, probeImageDimensions } from '@/composables/common/mediaFileProbe'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useTempObjectUrls } from '@/composables/common/useTempObjectUrls'
 import { TauriCommand, type UploadSceneEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
 import { uploadService } from '@/services/performance/UploadService'
 import { renderWorker } from '@/services/renderWorker'
 import { useUserStore } from '@/stores/domains/user/user'
 import { extractFileName } from '@/utils/Formatting'
-import { getImageDimensions } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
 import { getCacheBaseDir, getCacheBaseDirName } from '@/utils/PathUtil'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
@@ -70,6 +71,9 @@ export const useUpload = () => {
 
   const { on: onChange, trigger } = createEventHook()
   const onStart = createEventHook()
+
+  // 图片/音频预览临时 URL：替换与 scope 销毁时统一释放
+  const tempUrls = useTempObjectUrls()
 
   const uploadFileWithTauriPut = async (targetUrl: string, file: File, contentType: string) => {
     const baseDir = getCacheBaseDir()
@@ -168,8 +172,9 @@ export const useUpload = () => {
     }
 
     try {
-      const res = await uploadService.getUploadProvider()
-      currentProvider.value = res?.provider === 'minio' ? UploadProviderEnum.MINIO : UploadProviderEnum.DEFAULT
+      const providerConfig = await uploadService.getUploadProvider()
+      currentProvider.value =
+        providerConfig?.provider === 'minio' ? UploadProviderEnum.MINIO : UploadProviderEnum.DEFAULT
     } catch {
       currentProvider.value = UploadProviderEnum.DEFAULT
     }
@@ -195,45 +200,12 @@ export const useUpload = () => {
   /**
    * 获取图片宽高
    */
-  const getImgWH = async (file: File) => {
-    try {
-      const result = await getImageDimensions(file, { includePreviewUrl: true })
-      return {
-        width: result.width,
-        height: result.height,
-        tempUrl: result.previewUrl!
-      }
-    } catch {
-      return { width: 0, height: 0, url: null }
-    }
-  }
+  const getImgWH = (file: File) => probeImageDimensions(file, tempUrls)
 
   /**
    * 获取音频时长
    */
-  const getAudioDuration = (file: File) => {
-    return new Promise((resolve, reject) => {
-      const audio = new Audio()
-      const tempUrl = URL.createObjectURL(file)
-      audio.src = tempUrl
-      // 计算音频的时长
-      const countAudioTime = async () => {
-        while (isNaN(audio.duration) || audio.duration === Infinity) {
-          // 防止浏览器卡死
-          await new Promise((resolve) => setTimeout(resolve, 100))
-          // 随机进度条位置
-          audio.currentTime = 100000 * Math.random()
-        }
-        // 取整
-        const second = Math.round(audio.duration || 0)
-        resolve({ second, tempUrl })
-      }
-      countAudioTime()
-      audio.onerror = () => {
-        reject({ second: 0, tempUrl })
-      }
-    })
-  }
+  const getAudioDuration = (file: File) => probeAudioDuration(file, tempUrls)
 
   /**
    * 解析文件

@@ -1,4 +1,6 @@
 import { Visibility } from 'matrix-js-sdk'
+import { SPACE_SEARCH_LIMIT } from '@/common/constants'
+import { Direction } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import type {
@@ -314,7 +316,7 @@ class SpaceService extends BaseMatrixService {
       try {
         const room = this.getClient().getRoom(spaceId)
         if (!room) return []
-        const childEvents = room.currentState.getStateEvents('m.space.child')
+        const childEvents = room.getLiveTimeline().getState(Direction.Forward)?.getStateEvents('m.space.child') ?? []
         return childEvents
           .map((e) => {
             const key = e.getStateKey()
@@ -392,7 +394,7 @@ class SpaceService extends BaseMatrixService {
     return this.queries.getRoomParentSpaces(roomId)
   }
 
-  async searchSpaces(query: string, limit = 10): Promise<SpaceInfo[]> {
+  async searchSpaces(query: string, limit = SPACE_SEARCH_LIMIT): Promise<SpaceInfo[]> {
     return this.queries.searchSpaces(query, limit)
   }
 
@@ -447,14 +449,12 @@ class SpaceService extends BaseMatrixService {
 
   async getSpaceHierarchy(
     spaceId: string,
-    options?: { from?: string; limit?: number; maxDepth?: number; suggestedOnly?: boolean }
+    options?: { maxDepth?: number }
   ): Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }> {
     try {
+      // 后端 HierarchyQuery 只声明 max_depth 且 deny_unknown_fields，传 limit/from/suggested_only 会直接 400
       return (await this.getSpaceManager().hierarchy.getSpaceHierarchyPage(spaceId, {
-        ...(options?.from !== undefined ? { from: options.from } : {}),
-        ...(options?.limit !== undefined ? { limit: options.limit } : {}),
-        ...(options?.maxDepth !== undefined ? { max_depth: options.maxDepth } : {}),
-        ...(options?.suggestedOnly !== undefined ? { suggested_only: options.suggestedOnly } : {})
+        ...(options?.maxDepth !== undefined ? { max_depth: options.maxDepth } : {})
       })) as { rooms: Array<Record<string, unknown>>; next_batch?: string }
     } catch (err) {
       logger.error(`[Space] 获取空间层级失败: ${spaceId}, ${err}`)

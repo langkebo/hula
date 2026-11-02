@@ -14,6 +14,10 @@ const testComponentsDtsPath = getComponentsDtsPath(testPlatform)
 const testComponentsGlobs = getComponentsGlobs(testPlatform)
 
 export const baseVitestConfig: UserConfig = {
+  define: {
+    // 测试环境按桌面态编译，避免 __TJG_MOBILE_BUILD__ 未定义
+    __TJG_MOBILE_BUILD__: 'false'
+  },
   plugins: [
     vue(),
     vueJsx(),

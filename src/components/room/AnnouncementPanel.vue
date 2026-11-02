@@ -8,7 +8,7 @@
         <n-button v-if="isAdmin && !isEditing" size="tiny" secondary @click="startNew">
           {{ t('announcement.form.actions.new') }}
         </n-button>
-        <n-button size="tiny" quaternary @click="$emit('close')">
+        <n-button size="tiny" quaternary :aria-label="t('common.close')" @click="$emit('close')">
           <template #icon>
             <svg class="size-14px"><use href="#close"></use></svg>
           </template>
@@ -77,14 +77,14 @@
                   class="px-4px py-1px bg-[--tjg-color-primary-100] text-(10px [--tjg-color-primary-600]) rounded-3px">
                   {{ t('announcement.form.pinned') }}
                 </span>
-                <n-button v-if="isAdmin" size="tiny" quaternary @click="startEdit(item)">
+                <n-button v-if="isAdmin" size="tiny" quaternary :aria-label="t('common.edit')" @click="startEdit(item)">
                   <template #icon>
                     <svg class="size-12px"><use href="#edit"></use></svg>
                   </template>
                 </n-button>
                 <n-popconfirm v-if="isAdmin" @positive-click="handleDelete(item)">
                   <template #trigger>
-                    <n-button size="tiny" quaternary>
+                    <n-button size="tiny" quaternary :aria-label="t('common.delete')">
                       <template #icon>
                         <svg class="size-12px"><use href="#delete"></use></svg>
                       </template>

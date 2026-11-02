@@ -134,7 +134,7 @@ describe('useMsgInputMentionActions', () => {
       const ctx = setup({ textNodeValue: '/ask', endOffset: 4 })
       ctx.isChinese.value = true
 
-      ctx.actions.handleAI({})
+      ctx.actions.handleAI()
 
       expect(showFeedbackMock).not.toHaveBeenCalled()
     })
@@ -142,7 +142,7 @@ describe('useMsgInputMentionActions', () => {
     it('shows the pending message, closes AI dialog, and deletes the / trigger text', () => {
       const ctx = setup({ textNodeValue: 'hi /ask', endOffset: 7 })
 
-      ctx.actions.handleAI({})
+      ctx.actions.handleAI()
 
       expect(showFeedbackMock).toHaveBeenCalledWith('当前ai正在对接，敬请期待', 'info')
       expect(ctx.aiDialogVisible.value).toBe(false)
@@ -155,7 +155,7 @@ describe('useMsgInputMentionActions', () => {
     it('exits early when editor range is missing', () => {
       const ctx = setup({ editorRange: null })
 
-      ctx.actions.handleAI({})
+      ctx.actions.handleAI()
 
       expect(showFeedbackMock).toHaveBeenCalledWith('当前ai正在对接，敬请期待', 'info')
       expect(ctx.aiDialogVisible.value).toBe(false)

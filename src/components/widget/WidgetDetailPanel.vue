@@ -3,7 +3,7 @@
     <n-divider />
     <div class="detail-header">
       <h4>{{ widget.name || widget.id }}</h4>
-      <n-button text @click="emit('close')">
+      <n-button text :aria-label="t('common.close')" @click="emit('close')">
         <template #icon>
           <n-icon><Icon icon="mdi:close" /></n-icon>
         </template>

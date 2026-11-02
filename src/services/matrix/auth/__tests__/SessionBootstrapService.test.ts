@@ -33,8 +33,16 @@ vi.mock('@/services/backend/config', () => ({
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
     getClient: vi.fn().mockReturnValue(null),
-    waitForClientReady: vi.fn().mockResolvedValue({})
+    waitForClientReady: vi.fn().mockResolvedValue({}),
+    getUserId: vi.fn().mockReturnValue('@alice:matrix.test'),
+    getDeviceId: vi.fn().mockReturnValue('DEV1')
   }
+}))
+
+// 搜索索引加密密钥依赖安全存储（IPC）；测试环境无 keychain，返回 null 让
+// configureSearchIndexKey 走「不落盘」分支，避免真实 invoke 干扰用例。
+vi.mock('@/services/secure/cryptoStorageKey', () => ({
+  getOrCreateCryptoStorageKey: vi.fn().mockResolvedValue(null)
 }))
 
 const { syncDndFromAccountDataMock } = vi.hoisted(() => ({
@@ -51,7 +59,8 @@ vi.mock('@/services/matrix/MatrixWorkerHost', () => ({
   matrixWorkerHost: {
     start: vi.fn().mockResolvedValue(undefined),
     bootstrapSearchRooms: vi.fn().mockResolvedValue(undefined),
-    bootstrapSearchEvents: vi.fn().mockResolvedValue(undefined)
+    bootstrapSearchEvents: vi.fn().mockResolvedValue(undefined),
+    setSearchIndexKey: vi.fn().mockResolvedValue(undefined)
   }
 }))
 

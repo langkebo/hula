@@ -1,5 +1,6 @@
 {
   "title": "管理",
+  "panel": "管理后台",
   "common": {
     "refresh": "刷新",
     "cancel": "取消",
@@ -238,13 +239,47 @@
     "audit": "审计日志",
     "moderation": "审核管理",
     "guests": "访客管理",
+    "telemetry": "遥测监控",
+    "backgroundUpdates": "后台更新",
     "modules": "模块管理"
   },
   "status": {
     "admin": "管理员",
     "user": "普通用户"
   },
+  "availability": {
+    "loading": {
+      "title": "正在检测后台服务",
+      "description": "正在确认当前服务器是否提供管理接口，请稍候。"
+    },
+    "forbidden": {
+      "title": "无权访问后台",
+      "description": "Admin API 可达，但当前账号没有管理员权限，请联系管理员开通后再试。"
+    },
+    "unauthorized": {
+      "title": "登录凭证已失效",
+      "description": "Admin API 可达，但当前登录凭证无效或已过期，请重新登录后重试。"
+    },
+    "unsupported": {
+      "title": "当前服务器未启用 Admin API",
+      "description": "该 homeserver 没有提供管理接口，因此后台菜单不可用。"
+    },
+    "unavailable": {
+      "title": "无法连接后台服务",
+      "description": "网络异常或服务端暂时不可用，无法判定管理接口状态，请稍后重试。"
+    },
+    "retry": "重试探测",
+    "retrying": "正在重试",
+    "tag": {
+      "loading": "检测中",
+      "forbidden": "无权限",
+      "unauthorized": "凭证失效",
+      "unsupported": "未启用",
+      "unavailable": "连接异常"
+    }
+  },
   "backToApp": "返回应用",
+  "menuToggle": "切换菜单",
   "total_users": "总用户数",
   "total_rooms": "总房间数",
   "active_users": "活跃用户",
@@ -437,8 +472,6 @@
     "ms_unit": "毫秒",
     "save_success": "保存成功",
     "save_failed": "保存失败",
-    "delete_success": "删除成功",
-    "delete_failed": "删除失败",
     "task_started": "清理任务已启动",
     "task_failed": "启动清理任务失败"
   },

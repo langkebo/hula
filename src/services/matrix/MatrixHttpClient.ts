@@ -250,12 +250,12 @@ class MatrixHttpClient {
     headers?: Record<string, string>
   }): Promise<{ ok: boolean; data?: T; error?: string }> {
     try {
-      const data = await this.request<T>(options.method || 'GET', options.url, {
+      const responseBody = await this.request<T>(options.method || 'GET', options.url, {
         body: options.body,
         queryParams: options.params,
         headers: options.headers
       })
-      return { ok: true, data }
+      return { ok: true, data: responseBody }
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
     }

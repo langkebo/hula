@@ -1,10 +1,12 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { ConditionKind, Preset, PushRuleActionName, PushRuleKind, TweakName, Visibility } from 'matrix-js-sdk'
+import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { canWriteStateEventInRoom } from './roomPowerLevels'
 
 const logger = createLogger('RoomOperations')
 
@@ -288,7 +290,7 @@ export class RoomOperations extends BaseMatrixService {
   // --- Lifecycle (was LifecycleService) ---
 
   async getServerDomain(): Promise<string> {
-    await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+    await matrixClientService.waitForClientReady({ timeoutMs: CLIENT_READY_TIMEOUT_MS })
     const client = this.getClient()
     const domain = client.getDomain()
     if (domain) return domain
@@ -358,8 +360,8 @@ export class RoomOperations extends BaseMatrixService {
   private async translateViaFallback(text: string, targetLang: string): Promise<string> {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`
     // biome-ignore lint/suspicious/noExplicitAny: Google Translate API response shape is unstructured
-    const data = await HttpClient.get<any>(url)
-    if (data?.[0]) return data[0].map((item: unknown[]) => item[0]).join('')
+    const translationPayload = await HttpClient.get<any>(url)
+    if (translationPayload?.[0]) return translationPayload[0].map((item: unknown[]) => item[0]).join('')
     return text
   }
 
@@ -374,12 +376,7 @@ export class RoomOperations extends BaseMatrixService {
   }
 
   /**
-   * 判断当前用户是否有权限发送 `m.room.pinned_events` state event（置顶/取消置顶）。
-   *
-   * 权限层级（MSC4354 / Matrix spec）：
-   * - 用户 power = power_levels.users[userId] ?? power_levels.users_default ?? 0
-   * - 所需 power = power_levels.events['m.room.pinned_events'] ?? power_levels.state_default ?? 50
-   * - 可置顶当且仅当 userPower >= requiredPower
+   * 能否发送 `m.room.pinned_events`（置顶/取消置顶）。权限规则见 `roomPowerLevels.ts`。
    */
   canPinEvents(roomId: string): boolean {
     return this.canWriteStateEvent(roomId, 'm.room.pinned_events')
@@ -388,35 +385,16 @@ export class RoomOperations extends BaseMatrixService {
   /**
    * 判断当前用户能否写某个 state event（房间级设置的通用权限判定）。
    *
-   * 与服务端 `verify_state_event_write` 同一套规则：用户 power 对比
-   * `power_levels.events[eventType]`，缺省回落到 `state_default`（再缺省 50）。
-   * UI 用它决定「隐藏还是禁用」——目前统一选择**隐藏**，因为展示一个必定 403
-   * 的开关只会制造困惑。
+   * 规则与缺省值见 `roomPowerLevels.ts`（纯函数，已单测）：与服务端
+   * `verify_state_event_write` 一致。
    */
   canWriteStateEvent(roomId: string, eventType: string): boolean {
-    const client = matrixClientService.getClient()
-    if (!client) return false
-    const userId = client.getUserId()
-    if (!userId) return false
-    const room = client.getRoom(roomId)
-    if (!room) return false
-    const powerEvent = room.currentState.getStateEvents('m.room.power_levels', '')
-    if (!powerEvent) return false
-    const content = powerEvent.getContent() as Record<string, unknown>
-    const users = (content.users as Record<string, number> | undefined) ?? {}
-    const usersDefault = (content.users_default as number | undefined) ?? 0
-    const events = (content.events as Record<string, number> | undefined) ?? {}
-    const stateDefault = (content.state_default as number | undefined) ?? 50
-    const userPower = users[userId] ?? usersDefault
-    const requiredPower = events[eventType] ?? stateDefault
-    return userPower >= requiredPower
+    return canWriteStateEventInRoom(matrixClientService.getClient(), roomId, eventType)
   }
 
   /**
-   * 能否切换房间级「防截屏」标记（`com.hula.privacy` 状态事件）。
-   *
-   * 服务端 `PUT /rooms/{id}/anti_screenshot` 写的是房间状态事件，所以要求
-   * 该事件类型的 state 写权限；普通成员（PL 0）达不到 state_default，会被 403。
+   * 能否切换房间级「防截屏」标记（`com.hula.privacy`）：服务端写的是状态事件，
+   * 因此要求该类型的 state 写权限；普通成员（PL 0）会被 403。
    */
   canManageAntiScreenshot(roomId: string): boolean {
     return this.canWriteStateEvent(roomId, 'com.hula.privacy')

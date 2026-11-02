@@ -148,7 +148,7 @@ const second = computed(() => props.body.second || 0)
 // 音频文件管理
 const fileManager = useAudioFileManager(userStore.userInfo?.uid as string)
 // 音频播放控制
-const audioPlayback = useAudioPlayback(audioId, (_currentTime: number, _progress: number) => {
+const audioPlayback = useAudioPlayback(audioId, () => {
   // 时间更新回调，用于重绘波形
   waveformRenderer.drawWaveformThrottled()
 })
@@ -272,7 +272,7 @@ onMounted(async () => {
     await waveformRenderer.generateWaveformData(audioBuffer)
 
     // 创建音频元素
-    await audioPlayback.createAudioElement(audioSource, audioId, second.value)
+    await audioPlayback.createAudioElement(audioSource, second.value)
   } catch (error) {
     logger.error('Component initialization failed:', error)
   }

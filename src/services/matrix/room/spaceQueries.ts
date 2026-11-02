@@ -5,6 +5,7 @@
  * 采用工厂模式，接收 getClient/getSpaceManager 依赖。
  */
 
+import { SPACE_SEARCH_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 import type { IPublicRoomsChunkRoom, MatrixClient, Room } from '../sdk'
@@ -33,7 +34,7 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
 
     /** 搜索空间
      */
-    async searchSpaces(query: string, limit = 10): Promise<SpaceInfo[]> {
+    async searchSpaces(query: string, limit = SPACE_SEARCH_LIMIT): Promise<SpaceInfo[]> {
       if (!query.trim()) return []
       try {
         const manager = getSpaceManager()

@@ -177,7 +177,9 @@ describe('MatrixBurnAfterReadService', () => {
 
   describe('getPendingBurns', () => {
     it('should call SDK getPendingBurns and map results', async () => {
-      mockManager.getPendingBurns.mockResolvedValueOnce([{ event_id: '$ev1', created_at: 1000, delete_at: 61000 }])
+      mockManager.getPendingBurns.mockResolvedValueOnce([
+        { event_id: '$ev1', created_at: 1000, delete_ts: 61000, is_processed: false, is_dead_letter: false }
+      ])
       const result = await matrixBurnAfterReadService.getPendingBurns('!room:test')
       expect(result).toEqual([{ eventId: '$ev1', createdAt: 1000, deleteAt: 61000 }])
     })

@@ -169,16 +169,6 @@
                 </div>
               </template>
             </van-cell>
-
-            <van-cell :title="t('mobile_setting.mjolnir')" is-link @click="router.push('/mobile/mobileMy/mjolnir')">
-              <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.mjolnir">
-                  <Icon icon="mdi:block-helper" :width="20" color="var(--tjg-color-danger-500)" />
-                </div>
-              </template>
-            </van-cell>
           </van-cell-group>
 
           <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
@@ -288,7 +278,6 @@ const iconShellStyles = {
   language: { backgroundColor: 'var(--tjg-color-info-100)' },
   preferences: { backgroundColor: 'var(--tjg-color-info-100)' },
   burnAfterRead: { backgroundColor: 'var(--tjg-color-warning-100)' },
-  mjolnir: { backgroundColor: 'var(--tjg-color-danger-100)' },
   help: { backgroundColor: 'var(--tjg-color-info-100)' }
 } as const
 

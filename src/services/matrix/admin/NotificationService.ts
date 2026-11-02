@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import type { ServerNoticeInfo, ServerNoticeResult } from './AdminTypes'
 
@@ -50,7 +51,7 @@ export class AdminNotificationService {
     }
   }
 
-  async getServerNotices(limit = 50): Promise<{ notices: ServerNoticeInfo[] } | null> {
+  async getServerNotices(limit = DEFAULT_PAGE_LIMIT): Promise<{ notices: ServerNoticeInfo[] } | null> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getServerNotices?.(undefined, limit)
@@ -133,7 +134,7 @@ export class AdminNotificationService {
   }
 
   async getSystemNotifications(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{ notifications: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     try {

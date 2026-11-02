@@ -440,6 +440,7 @@ onMounted(loadData)
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
 .admin-dashboard {
   max-width: 1200px;
 }
@@ -604,7 +605,7 @@ onMounted(loadData)
   color: var(--tjg-text-tertiary);
 }
 
-@media (max-width: 1024px) {
+@include responsive.respond-to-max('lg') {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -618,7 +619,7 @@ onMounted(loadData)
   }
 }
 
-@media (max-width: 640px) {
+@include responsive.respond-to-max('md') {
   .stats-grid {
     grid-template-columns: 1fr;
   }

@@ -141,14 +141,30 @@ vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/MatrixClientService', () => ({
-  default: {
-    getClient: () => ({
-      getDomain: () => 'matrix.test',
-      getHomeserverUrl: () => 'https://matrix.test'
-    }),
-    getServerDomain: () => 'matrix.test'
+vi.mock('@/services/matrix/MatrixClientService', () => {
+  const getClient = () => ({
+    getDomain: () => 'matrix.test',
+    getHomeserverUrl: () => 'https://matrix.test',
+    getAccountData: () => undefined
+  })
+  const getServerDomain = () => 'matrix.test'
+  return {
+    default: { getClient, getServerDomain },
+    // ContactAliasSection 经 contactAliasRegistry 使用具名导出；
+    // 只 mock default 会让 client() 抛 "No matrixClientService export" 未捕获异常。
+    matrixClientService: { getClient, getServerDomain }
   }
+})
+
+vi.mock('@/composables/useBurnAfterRead', () => ({
+  useBurnAfterRead: () => ({
+    refreshBurnSettings: vi.fn(async () => undefined),
+    isRoomBurnEnabled: vi.fn(() => false),
+    getRoomBurnDuration: vi.fn(() => 60000),
+    getPendingBurns: vi.fn(async () => []),
+    enableBurn: vi.fn(async () => true),
+    disableBurn: vi.fn(async () => true)
+  })
 }))
 
 describe('SingleDetails', () => {
@@ -270,17 +286,6 @@ describe('SingleDetails', () => {
   })
 
   describe('阅后即焚设置区（RoomBurnSettings 接入）', () => {
-    vi.mock('@/composables/useBurnAfterRead', () => ({
-      useBurnAfterRead: () => ({
-        refreshBurnSettings: vi.fn(async () => undefined),
-        isRoomBurnEnabled: vi.fn(() => false),
-        getRoomBurnDuration: vi.fn(() => 60000),
-        getPendingBurns: vi.fn(async () => []),
-        enableBurn: vi.fn(async () => true),
-        disableBurn: vi.fn(async () => true)
-      })
-    }))
-
     it('好友有 directRoomId 时渲染阅后即焚设置区', async () => {
       const wrapper = mountComponent('@kevins:matrix.test')
       await flushPromises()

@@ -127,6 +127,15 @@ function collectSourceFiles(dir: string, acc: string[] = []): string[] {
   return acc
 }
 
+/** 全仓源码只读一次：多个不变量共用同一份扫描结果，避免重复遍历拖慢守卫。 */
+let cachedSources: Array<{ file: string; code: string }> | undefined
+function getSources(): Array<{ file: string; code: string }> {
+  if (!cachedSources) {
+    cachedSources = collectSourceFiles(SRC_ROOT).map((file) => ({ file, code: readFileSync(file, 'utf8') }))
+  }
+  return cachedSources
+}
+
 /** 在剥掉注释/字符串后的源码里找出所有裸写（解构绕过、非门控接收者、无来源裸调）。 */
 function findRawWrites(source: string): string[] {
   const code = stripCommentsAndStrings(source)
@@ -170,18 +179,41 @@ function findRawWrites(source: string): string[] {
 
 describe('presence 唯一写入点', () => {
   it('除 MatrixPresenceService / useAccount 委托外没有任何源码直接写 presence', () => {
-    const files = collectSourceFiles(SRC_ROOT)
+    const files = getSources()
     const offenders: string[] = []
 
-    for (const file of files) {
+    for (const { file, code } of files) {
       if (file === SINGLE_WRITER) continue
-      for (const hit of findRawWrites(readFileSync(file, 'utf8'))) {
+      for (const hit of findRawWrites(code)) {
         offenders.push(`${relative(REPO_ROOT, file)}: ${hit}`)
       }
     }
 
     // 防止「扫描目录为空所以永远通过」的假绿
     expect(files.length).toBeGreaterThan(100)
+    expect(offenders).toEqual([])
+  })
+
+  it('contact/group store 的 presence 写入只允许出现在 wsPresenceHandler 写入口', () => {
+    const STORE_WRITER = join(SRC_ROOT, 'composables/app/wsPresenceHandler.ts')
+    const STORE_WRITE = /\b(?:contactStore|groupStore)\s*\.\s*(?:updateContactPresence|updateUserPresence)\b/g
+    const sources = getSources()
+    expect(sources.length).toBeGreaterThan(100)
+
+    const offenders: string[] = []
+    for (const { file, code } of sources) {
+      if (file === STORE_WRITER) continue
+      const stripped = stripCommentsAndStrings(code)
+      for (const match of stripped.matchAll(STORE_WRITE)) {
+        const index = match.index ?? 0
+        offenders.push(
+          `${relative(REPO_ROOT, file)}: line ${stripped.slice(0, index).split('\n').length}: ${stripped
+            .slice(index, index + 60)
+            .split('\n')[0]
+            .trim()}`
+        )
+      }
+    }
     expect(offenders).toEqual([])
   })
 

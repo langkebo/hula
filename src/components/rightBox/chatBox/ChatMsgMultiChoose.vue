@@ -5,7 +5,13 @@
     <!-- 功能模块 -->
     <div class="flex items-start gap-14px">
       <div class="flex flex-col items-center gap-14px w-64px" v-for="opt in toolOptions">
-        <n-button :disabled="opt.disabled ?? false" secondary circle @click="opt.click" class="size-46px mx-auto">
+        <n-button
+          :disabled="opt.disabled ?? false"
+          secondary
+          circle
+          :aria-label="opt.text"
+          @click="opt.click"
+          class="size-46px mx-auto">
           <template #icon>
             <svg class="size-22px">
               <use :href="opt.icon"></use>
@@ -69,7 +75,13 @@
                 <n-flex align="center" class="p-8px">
                   <n-avatar class="rounded-8px" :size="30" :src="AvatarUtils.getAvatarUrl(session.avatar)" />
                   <p class="text-(12px [--tjg-text-primary])">{{ session.remark ? session.remark : session.name }}</p>
-                  <n-button quaternary circle size="small" class="ml-auto" @click="handleRemoveSession(session.roomId)">
+                  <n-button
+                    quaternary
+                    circle
+                    size="small"
+                    class="ml-auto"
+                    :aria-label="t('common.remove')"
+                    @click="handleRemoveSession(session.roomId)">
                     <template #icon>
                       <n-icon size="14">
                         <svg class="w-14px h-14px">

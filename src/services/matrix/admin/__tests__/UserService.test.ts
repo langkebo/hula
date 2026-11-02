@@ -111,7 +111,7 @@ describe('AdminUserService', () => {
       nextToken: undefined
     })
 
-    const result = await service.getUsers(100, undefined, undefined, true)
+    const result = await service.getUsers(100, undefined, true)
 
     expect(result.users).toEqual([
       expect.objectContaining({

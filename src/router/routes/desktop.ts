@@ -150,7 +150,7 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
   },
   {
     path: '/sidebar',
-    redirect: '/settings?tab=sidebar'
+    redirect: '/settings?tab=appearance'
   },
   {
     path: '/voiceVideo',
@@ -328,6 +328,18 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         meta: { requiresAdmin: true }
       },
       {
+        path: 'telemetry',
+        name: 'adminTelemetry',
+        component: () => import('@/views/admin/AdminTelemetry.vue'),
+        meta: { requiresAdmin: true }
+      },
+      {
+        path: 'background-updates',
+        name: 'adminBackgroundUpdates',
+        component: () => import('@/views/admin/AdminBackgroundUpdates.vue'),
+        meta: { requiresAdmin: true }
+      },
+      {
         path: 'moderation',
         name: 'adminModeration',
         component: () => import('@/views/admin/ModerationPanel.vue'),
@@ -340,5 +352,11 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         meta: { title: '功能模块', requiresAdmin: true }
       }
     ]
+  },
+  // 403 页仅供后台管理使用，随 admin 一起裁剪，不进入移动端产物
+  {
+    path: '/403',
+    name: 'forbidden',
+    component: () => import('@/views/admin/Forbidden.vue')
   }
 ]

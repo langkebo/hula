@@ -68,7 +68,12 @@ const translationMap: Record<string, string> = {
   'setting.encryption.copied': '已复制到剪贴板',
   'setting.encryption.device_verify_dialog.show_qr': '显示二维码',
   'setting.encryption.device_verify_dialog.scan_qr': '扫描二维码',
-  'setting.encryption.device_verify_dialog.accept_request': '接受请求'
+  'setting.encryption.device_verify_dialog.accept_request': '接受请求',
+  'setting.encryption.server_unsupported': '当前服务器未启用端到端加密，本页为只读。',
+  'setting.encryption.dehydrated_device_section': '脱水设备',
+  'setting.encryption.dehydrated_device_label': '脱水设备',
+  'setting.encryption.dehydrated_device_desc': '管理用于离线密钥存储的脱水设备',
+  'encryption.dehydrated_device.unsupported': '当前加密后端不支持脱水设备，入口已禁用'
 }
 
 const {
@@ -84,7 +89,9 @@ const {
   messageSuccessMock,
   messageWarningMock,
   loggerErrorMock,
-  writeTextMock
+  writeTextMock,
+  capabilityState,
+  isDehydratedSupportedMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
   getCurrentDeviceFingerprintMock: vi.fn(),
@@ -129,7 +136,12 @@ const {
   messageSuccessMock: vi.fn(),
   messageWarningMock: vi.fn(),
   loggerErrorMock: vi.fn(),
-  writeTextMock: vi.fn()
+  writeTextMock: vi.fn(),
+  capabilityState: {
+    loaded: false,
+    e2ee: true
+  },
+  isDehydratedSupportedMock: vi.fn(() => true)
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -151,6 +163,21 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
     getCurrentSessionContext: getCurrentSessionContextMock,
     getCurrentDeviceFingerprint: getCurrentDeviceFingerprintMock
+  }
+}))
+
+// 能力门控：加密页在服务端未启用 E2EE 时降级为只读
+vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
+  useServerCapability: () => ({
+    isLoaded: { value: capabilityState.loaded },
+    canUseE2EE: { value: capabilityState.e2ee }
+  })
+}))
+
+// 脱水设备入口按 isSupported() 决定是否渲染
+vi.mock('@/services/matrix/crypto/MatrixDehydratedDeviceService', () => ({
+  matrixDehydratedDeviceService: {
+    isSupported: isDehydratedSupportedMock
   }
 }))
 
@@ -438,6 +465,9 @@ describe('EncryptionSettings', () => {
       }
     ])
     cancelVerificationMock.mockResolvedValue(undefined)
+    capabilityState.loaded = false
+    capabilityState.e2ee = true
+    isDehydratedSupportedMock.mockReturnValue(true)
   })
 
   const mountComponent = () => mount(EncryptionSettings)
@@ -694,6 +724,75 @@ describe('EncryptionSettings', () => {
       await flushPromises()
 
       expect(encryptionStoreState.loadCrossSigningStatus.mock.calls.length).toBe(callsBefore + 1)
+    })
+  })
+
+  /**
+   * UI-P2-08：服务端未声明 E2EE 能力时，加密页保留（settingsSchema 的 readonly 降级），
+   * 但整页进入只读，阻断可能失败的操作。
+   * 判定必须以能力探测完成为前提，避免登录初期把整页误锁。
+   */
+  describe('E2EE 能力降级（只读）', () => {
+    it('能力探测完成且服务端不支持 E2EE ⇒ 显示只读提示并 inert 阻断交互', async () => {
+      capabilityState.loaded = true
+      capabilityState.e2ee = false
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="e2ee-unsupported"]').exists()).toBe(true)
+      expect(wrapper.find('.encryption-settings').element.hasAttribute('inert')).toBe(true)
+    })
+
+    it('服务端支持 E2EE ⇒ 不显示只读提示，也不阻断交互', async () => {
+      capabilityState.loaded = true
+      capabilityState.e2ee = true
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="e2ee-unsupported"]').exists()).toBe(false)
+      expect(wrapper.find('.encryption-settings').element.hasAttribute('inert')).toBe(false)
+    })
+
+    it('能力探测未完成 ⇒ 不进入只读', async () => {
+      capabilityState.loaded = false
+      capabilityState.e2ee = false
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="e2ee-unsupported"]').exists()).toBe(false)
+      expect(wrapper.find('.encryption-settings').element.hasAttribute('inert')).toBe(false)
+    })
+  })
+
+  describe('脱水设备入口（加密后端能力）', () => {
+    const findSection = (wrapper: ReturnType<typeof mountComponent>) =>
+      wrapper.findAll('.settings-section').find((item) => item.text().includes('脱水设备'))
+
+    it('加密后端不支持脱水设备 ⇒ 只显示说明，不渲染管理入口', async () => {
+      isDehydratedSupportedMock.mockReturnValue(false)
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      const section = findSection(wrapper)
+      expect(section).toBeDefined()
+      expect(section!.text()).toContain('当前加密后端不支持脱水设备')
+      expect(section!.find('button').exists()).toBe(false)
+      expect(wrapper.find('[data-test="dehydrated-device-manager"]').exists()).toBe(false)
+    })
+
+    it('加密后端支持脱水设备 ⇒ 渲染管理入口', async () => {
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      const section = findSection(wrapper)
+      expect(section).toBeDefined()
+      expect(section!.text()).not.toContain('当前加密后端不支持脱水设备')
+      expect(section!.find('button').exists()).toBe(true)
+      expect(wrapper.find('[data-test="dehydrated-device-manager"]').exists()).toBe(true)
     })
   })
 })

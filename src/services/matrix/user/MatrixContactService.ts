@@ -1,4 +1,5 @@
 import type { MatrixEvent, RoomMember, User } from 'matrix-js-sdk'
+import { DIRECTORY_SEARCH_LIMIT } from '@/common/constants'
 import { ERROR_CLIENT_NOT_INITIALIZED_EN } from '@/common/matrixConstants'
 import { createLogger } from '@/utils/Logger'
 import { normalizeMatrixUserId, toLocalpart } from '@/utils/userIdentity'
@@ -54,7 +55,7 @@ class MatrixContactService {
   }
 
   /** 按关键字搜索好友（委托 `searchUsers`）。 */
-  async searchFriend(query: string, limit = 10): Promise<UserProfile[]> {
+  async searchFriend(query: string, limit = DIRECTORY_SEARCH_LIMIT): Promise<UserProfile[]> {
     return this.searchUsers(query, limit)
   }
 
@@ -63,7 +64,7 @@ class MatrixContactService {
    * 优先经 synapse-rust 好友扩展做精确匹配，其次模糊匹配，再退回用户目录搜索；
    * 对 `@user:domain` 或 localpart 形式输入还会做一次 profile 兜底查询。
    */
-  async searchUsers(query: string, limit = 10): Promise<UserProfile[]> {
+  async searchUsers(query: string, limit = DIRECTORY_SEARCH_LIMIT): Promise<UserProfile[]> {
     const trimmedQuery = query.trim()
     if (!trimmedQuery) {
       return []

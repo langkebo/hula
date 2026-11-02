@@ -357,6 +357,37 @@ OpenClaw is deployed separately (see `scripts/deploy_openclaw.sh`) and consumed 
 - 动效必须尊重 `prefers-reduced-motion`。
 - 语义色/状态色用 token（`--tjg-status-*`），不依赖颜色传达状态。
 
+## 硬性约束：SDK 优先与移动端裁剪
+
+以下两条为全流程硬性约束，新功能开发、版本迭代、代码合并前必须逐项校验，违反者一律退回，不得以「后续清理」为由合并。
+
+### R1 SDK 优先实现（禁止重复造轮子）
+
+- 任何功能若 `matrix-js-sdk`（含本项目 vendored fork 的 manager extensions）、`synapse-rust` 或现有服务层已提供能力，必须优先采用 SDK / 服务层集成方案实现，禁止独立开发同类功能。
+- 禁止在 `src/services/matrix/**` 之外另起平行实现：自建 HTTP 请求、自写协议状态机、自写同步/加密/媒体/管理接口，均属违规。
+- 判定顺序：先查 `matrix-js-sdk` 导出 → 再查 `src/services/matrix/**` 封装 → 再查 `src/types/matrix-js-sdk-augmentations.d.ts` 类型补充；三步均无，方可自研，并在提交说明中写明「已检索的 SDK API 与不可复用原因」。
+- 禁止示例：组件/store 内直接 `fetch` Matrix 端点；复制 SDK 已实现的排序、分页、加密逻辑；为单个页面新建平行 API 客户端。
+- 已有守门命令：`pnpm check:sdk-boundary`、`pnpm quality:no-raw-fetch`。
+
+### R2 移动端功能裁剪（admin / AI 零残留）
+
+- 移动端（`TAURI_ENV_PLATFORM` 为 `android` / `ios`，含 `src/mobile/**` 与 `#/` 别名覆盖的代码）**完全移除**以下两类功能，不得保留任何残留实现：
+  - 后台管理（admin）全部模块：`src/views/admin/**`、`src/services/matrix/admin/**` 的移动端引用、admin 路由、admin 菜单入口、admin store 动作与文案挂载。
+  - AI 能力全部入口与逻辑：`src/plugins/robot/**`（含 `/robot` 路由）、`src/services/matrix/ai/**`、`src/services/siliconflow/**`、`src/services/trendradar/**`（含 `TrendRadarView`），以及相关菜单项、快捷键、设置项、机器人插件。
+- 禁止以运行时 `isMobile()` 判断隐藏代替裁剪：必须在路由注册期、菜单构建期、模块装配期即不存在，相关代码不得进入移动端产物。
+- 桌面端（`windows` / `darwin` / `linux`）保持现状，可继续保留上述模块。
+- 校验方式：`src/mobile/**` 内不得 import `@/views/admin`、`@/plugins/robot`、`@/services/matrix/ai`、`@/services/siliconflow`、`@/services/trendradar`；移动端构建产物中不得出现 admin / AI 路由名与入口。
+
+### R3 落地校验清单
+
+每次提交 / PR 必须逐项回答并留存结论：
+
+1. 该功能能否复用现有 SDK / 服务层能力？是否新增了平行实现？
+2. 该改动是否引入了移动端可见的 admin 或 AI 入口与代码？
+3. 移动端构建是否仍可正常产出（Android / iOS 目标或对应前端分支构建）？
+
+上述三项与下方「重构验收命令」同等强制。
+
 ## 重构验收命令
 
 每次改动后必须跑以下守门命令：

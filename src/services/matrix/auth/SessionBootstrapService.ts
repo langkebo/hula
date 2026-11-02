@@ -1,3 +1,4 @@
+import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import { startPresenceHeartbeat } from '@/composables/user/usePresenceHeartbeat'
 import { MsgEnum, SexEnum } from '@/enums'
 import { resolveMatrixSessionEndpointConfig } from '@/services/backend/config'
@@ -16,12 +17,15 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { reportExtensionDegradationToUi } from '@/utils/extensionHealth'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
-import { buildPresenceStorePatch, mapPresenceToOnlineStatus } from '@/utils/presenceStatus'
+import { mapPresenceToOnlineStatus } from '@/utils/presenceStatus'
 import { toLocalpart } from '@/utils/userIdentity'
 import type { SearchEventDoc, SearchRoomDoc } from '@/workers/matrixWorkerTypes'
 import type { MatrixPostLoginBootstrapOptions, SessionRuntimeHost, SessionRuntimeState } from './sessionRuntimeInternal'
 
 const logger = createLogger('SessionBootstrapService')
+
+/** 登录后 bootstrap 整体超时，同时用于等待 client 就绪（登录后 SDK 异步初始化，需比默认 10s 更宽） */
+const BOOTSTRAP_TIMEOUT_MS = 30_000
 
 /**
  * Post-login bootstrap: ensure client ready, wait for sync, set up rooms / presence /
@@ -52,7 +56,6 @@ export class SessionBootstrapService {
    * @throws {Error} if the user id is missing or any sub-step fails.
    */
   async bootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions = {}): Promise<void> {
-    const BOOTSTRAP_TIMEOUT_MS = 30_000
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined
 
     // bootstrapTask 完成时才标记 settled（超时/失败不标记，允许后续重试）
@@ -150,7 +153,7 @@ export class SessionBootstrapService {
       // ensureClientReadyForBootstrap 仅创建 client + loginWithToken，但 client 可能在异步
       // 初始化过程中；waitForClientReady 轮询确认 client 实例可用，避免 waitSyncPrepared
       // 等待一个永远不到的 sync 事件。
-      await matrixClientService.waitForClientReady({ timeoutMs: 30_000 })
+      await matrixClientService.waitForClientReady({ timeoutMs: BOOTSTRAP_TIMEOUT_MS })
       await this.host.waitSyncPrepared()
 
       // 仅勿扰时段跨设备：账号数据此时已同步（读取走本地账号数据存储，不发网络请求），
@@ -201,7 +204,7 @@ export class SessionBootstrapService {
         logger.warn(`[login] MatrixWorkerHost 启动失败: ${err}`)
       })
 
-      await this.bootstrapSearchIndex(uid).catch((err) => {
+      await this.bootstrapSearchIndex().catch((err) => {
         logger.warn(`[login] 初始化 Worker 搜索索引失败: ${err}`)
       })
 
@@ -245,7 +248,7 @@ export class SessionBootstrapService {
 
     try {
       // 确保 client 就绪后再设置 presence，避免登录时序竞态导致 "客户端未初始化"
-      await matrixClientService.waitForClientReady({ timeoutMs: 10000 })
+      await matrixClientService.waitForClientReady({ timeoutMs: CLIENT_READY_TIMEOUT_MS })
       effective = await matrixPresenceService.setPresence('online')
     } catch (err) {
       logger.warn(`setPresence(online) 失败：${err}`)
@@ -256,24 +259,9 @@ export class SessionBootstrapService {
       lastOptTime: Date.now()
     })
 
-    // 捕获 onPresenceChange 返回的清理函数，登出时调用避免回调残留
-    if (this.state.presenceChangeCleanup) {
-      this.state.presenceChangeCleanup()
-    }
-    this.state.presenceChangeCleanup = matrixPresenceService.onPresenceChange((presence) => {
-      const patch = buildPresenceStorePatch(presence)
-      if (presence.user_id === uid) {
-        port.user.updateProfileFields({
-          activeStatus: patch.activeStatus,
-          lastOptTime: patch.lastOptTime
-        })
-      }
-      port.group.updateUserPresence(presence.user_id, {
-        activeStatus: patch.activeStatus,
-        lastOptTime: patch.lastOptTime
-      })
-      port.contact.updateContactPresence(presence.user_id, patch)
-    })
+    // 实时 presence 变更的 store 写入由 app 层 `wsPresenceHandler` 的
+    // `writePresenceToStores` 单管线负责（见 UI 优化方案 §5.2），
+    // 本服务只负责首帧 online 上报与本地用户镜像，不再注册第二条写 store 的监听。
 
     startPresenceHeartbeat()
 
@@ -325,7 +313,7 @@ export class SessionBootstrapService {
     }
   }
 
-  private async bootstrapSearchIndex(_uid: string): Promise<void> {
+  private async bootstrapSearchIndex(): Promise<void> {
     const port = this.host.port
     const client = matrixClientService.getClient()
     if (!client) {

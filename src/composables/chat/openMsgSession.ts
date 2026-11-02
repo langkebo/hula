@@ -131,8 +131,8 @@ export const openMsgSession = async (uid: string, type: number = 2) => {
   const { showFeedback } = useActionFeedback()
 
   logger.info('打开消息会话')
-  const res = await matrixSessionService.getSessionDetailWithFriends({ id: uid, roomType: type })
-  if (!res) {
+  const sessionDetail = await matrixSessionService.getSessionDetailWithFriends({ id: uid, roomType: type })
+  if (!sessionDetail) {
     showFeedback(t('hooks.session.detail_failed'), 'error')
     return
   }
@@ -141,16 +141,16 @@ export const openMsgSession = async (uid: string, type: number = 2) => {
   // 非 Tauri 环境下跳过此步骤，不影响后续会话打开流程
   if (hasTauriRuntime()) {
     try {
-      await invokeWithErrorHandler('hide_contact_command', { data: { roomId: res.roomId, hide: false } })
+      await invokeWithErrorHandler('hide_contact_command', { data: { roomId: sessionDetail.roomId, hide: false } })
     } catch {
       // hide_contact_command 失败不阻止会话打开，降级为 warn
-      logger.warn(`hide_contact_command 失败，但不影响会话打开: ${res.roomId}`)
+      logger.warn(`hide_contact_command 失败，但不影响会话打开: ${sessionDetail.roomId}`)
     }
   }
 
   const chatStore = useChatStore()
-  if (!chatStore.getSession(res.roomId)) {
-    const { detailId, account, ...sessionBase } = res
+  if (!chatStore.getSession(sessionDetail.roomId)) {
+    const { detailId, account, ...sessionBase } = sessionDetail
     chatStore.addSession?.({
       ...sessionBase,
       ...(detailId === undefined ? {} : { detailId }),
@@ -158,7 +158,7 @@ export const openMsgSession = async (uid: string, type: number = 2) => {
     })
   }
 
-  await focusSessionRoom(res.roomId)
+  await focusSessionRoom(sessionDetail.roomId)
 }
 
 /**

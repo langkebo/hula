@@ -1,5 +1,6 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { downloadImageWithWorker } from '@/composables/common/imageDownloadWorkerBridge'
 import { useWindow } from '@/composables/common/useWindow'
 import { MsgEnum } from '@/enums'
 import type { FilesMeta } from '@/services/types'
@@ -11,79 +12,6 @@ import { createLogger } from '@/utils/Logger'
 import { getFilesMeta } from '@/utils/PathUtil'
 
 const logger = createLogger('ImageViewer')
-
-type WorkerResponse = {
-  success: boolean
-  url: string
-  buffer?: ArrayBuffer
-  error?: string
-}
-
-type WorkerRequest = {
-  resolve: (value: string | null) => void
-  reject: (reason?: unknown) => void
-  fileName: string
-}
-
-const workerRequests = new Map<string, WorkerRequest>()
-let imageDownloadWorker: Worker | null = null
-const imageDownloaderWorkerUrl = new URL('../../workers/imageDownloader.ts', import.meta.url)
-
-const ensureWorker = () => {
-  if (imageDownloadWorker || typeof window === 'undefined') return
-  imageDownloadWorker = new Worker(imageDownloaderWorkerUrl, { type: 'module' })
-  imageDownloadWorker.onmessage = async (event: MessageEvent<WorkerResponse>) => {
-    const { success, url, buffer, error } = event.data
-    const request = workerRequests.get(url)
-    if (!request) {
-      return
-    }
-    workerRequests.delete(url)
-
-    if (!success || !buffer) {
-      request.reject(new Error(error || '下载失败'))
-      return
-    }
-
-    try {
-      const fileDownloadStore = useFileDownloadStore()
-      const absolutePath = await fileDownloadStore.saveFileFromBytes(url, request.fileName, new Uint8Array(buffer))
-      request.resolve(absolutePath)
-    } catch (err) {
-      request.reject(err)
-    }
-  }
-}
-
-const downloadImageWithWorker = (url: string, fileName: string) => {
-  ensureWorker()
-  if (!imageDownloadWorker) {
-    return Promise.reject(new Error('Web Worker 不可用'))
-  }
-
-  const existing = workerRequests.get(url)
-  if (existing) {
-    return new Promise<string | null>((resolve, reject) => {
-      const prevResolve = existing.resolve
-      const prevReject = existing.reject
-      existing.resolve = (value) => {
-        prevResolve(value)
-        resolve(value)
-      }
-      existing.reject = (reason) => {
-        prevReject(reason)
-        reject(reason)
-      }
-    })
-  }
-
-  const promise = new Promise<string | null>((resolve, reject) => {
-    workerRequests.set(url, { resolve, reject, fileName })
-    imageDownloadWorker!.postMessage({ url })
-  })
-
-  return promise
-}
 
 const deduplicateList = (list: string[]) => {
   const uniqueList: string[] = []

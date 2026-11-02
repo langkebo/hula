@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { classifyAdminApiProbe, describeAdminApiAvailability } from '../adminApiAvailability'
+import {
+  type AdminApiAvailability,
+  classifyAdminApiProbe,
+  describeAdminApiAvailability,
+  filterAdminNavGroups,
+  readOptionalCapabilityFlag,
+  resolveAdminNavState
+} from '../adminApiAvailability'
 
 /** 线上真实错误形状（来自 2026-10-13 `pnpm td` 日志的 `dumps()`） */
 const FORBIDDEN_403 = Object.assign(new Error('Admin API forbidden'), {
@@ -101,5 +108,83 @@ describe('describeAdminApiAvailability', () => {
 
   it('available 文案简洁', () => {
     expect(describeAdminApiAvailability(classifyAdminApiProbe(null))).toBe('Admin API 可用')
+  })
+})
+
+function availability(status: AdminApiAvailability['status']): AdminApiAvailability {
+  return { status, statusCode: null, errorCode: null, apiPresent: null, authorized: status === 'available' }
+}
+
+describe('resolveAdminNavState', () => {
+  it('尚未探测完成 ⇒ loading（不是 unavailable）', () => {
+    expect(resolveAdminNavState(null, false)).toBe('loading')
+    expect(resolveAdminNavState(availability('available'), false)).toBe('loading')
+  })
+
+  it('探测完成但无结果 ⇒ unavailable', () => {
+    expect(resolveAdminNavState(null, true)).toBe('unavailable')
+    expect(resolveAdminNavState(undefined, true)).toBe('unavailable')
+  })
+
+  it('available 映射为 ready，其余状态原样透出', () => {
+    expect(resolveAdminNavState(availability('available'), true)).toBe('ready')
+    expect(resolveAdminNavState(availability('forbidden'), true)).toBe('forbidden')
+    expect(resolveAdminNavState(availability('unauthorized'), true)).toBe('unauthorized')
+    expect(resolveAdminNavState(availability('unsupported'), true)).toBe('unsupported')
+    expect(resolveAdminNavState(availability('unavailable'), true)).toBe('unavailable')
+  })
+})
+
+describe('readOptionalCapabilityFlag', () => {
+  it('unstable_features 缺失 ⇒ null（未知，调用方保留可见）', () => {
+    expect(readOptionalCapabilityFlag('saml', null)).toBeNull()
+    expect(readOptionalCapabilityFlag('saml', undefined)).toBeNull()
+  })
+
+  it('标志未发布 ⇒ null，不得当成 false', () => {
+    expect(readOptionalCapabilityFlag('saml', { 'io.hula.oidc': true })).toBeNull()
+  })
+
+  it('标志明确发布时以标志为准', () => {
+    expect(readOptionalCapabilityFlag('saml', { 'io.hula.saml': true })).toBe(true)
+    expect(readOptionalCapabilityFlag('saml', { 'io.hula.saml': false })).toBe(false)
+    expect(readOptionalCapabilityFlag('modules', { 'io.hula.modules': false })).toBe(false)
+  })
+})
+
+interface TestItem {
+  path: string
+  optionalCapability?: 'saml' | 'oidc' | 'worker' | 'modules'
+}
+
+describe('filterAdminNavGroups', () => {
+  const groups = [
+    { label: 'core', items: [{ path: '/admin/users' }, { path: '/admin/rooms' }] as TestItem[] },
+    {
+      label: 'ext',
+      items: [{ path: '/admin/saml', optionalCapability: 'saml' } as TestItem]
+    }
+  ]
+
+  it('非 ready 状态一律返回空（不渲染菜单）', () => {
+    for (const state of ['loading', 'forbidden', 'unauthorized', 'unsupported', 'unavailable'] as const) {
+      expect(filterAdminNavGroups(groups, state, () => true)).toEqual([])
+    }
+  })
+
+  it('ready 时保留全部条目', () => {
+    const result = filterAdminNavGroups(groups, 'ready', () => true)
+    expect(result.map((group) => group.label)).toEqual(['core', 'ext'])
+    expect(result[1].items).toHaveLength(1)
+  })
+
+  it('可选能力明确关闭时剔除该条目，空分组整组隐藏', () => {
+    const result = filterAdminNavGroups(groups, 'ready', () => false)
+    expect(result.map((group) => group.label)).toEqual(['core'])
+  })
+
+  it('可选能力未知（null）时保留条目', () => {
+    const result = filterAdminNavGroups(groups, 'ready', () => null)
+    expect(result.map((group) => group.label)).toEqual(['core', 'ext'])
   })
 })

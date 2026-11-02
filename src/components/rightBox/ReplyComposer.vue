@@ -6,7 +6,7 @@
         <div class="reply-header">
           <n-avatar round :size="20" :src="getAvatarUrl(replyTo.senderAvatar)" :fallback-src="defaultAvatar" />
           <span class="reply-sender">{{ replyTo.senderName }}</span>
-          <n-button text size="tiny" @click="handleCancel">
+          <n-button text size="tiny" :aria-label="t('common.cancel')" @click="handleCancel">
             <template #icon>
               <svg class="size-14px">
                 <use href="#close"></use>

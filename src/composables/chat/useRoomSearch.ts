@@ -35,9 +35,9 @@ export function useRoomSearch(roomId: Ref<string>) {
 
     loading.value = true
     try {
-      const res = await matrixSearchService.searchRoomMessages(roomId.value, term)
-      results.value = res.results
-      activeIndex.value = res.results.length > 0 ? 0 : -1
+      const searchResult = await matrixSearchService.searchRoomMessages(roomId.value, term)
+      results.value = searchResult.results
+      activeIndex.value = searchResult.results.length > 0 ? 0 : -1
     } catch (err) {
       logger.error('房间内搜索失败:', err)
       results.value = []

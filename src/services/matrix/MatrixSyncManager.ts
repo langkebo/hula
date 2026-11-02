@@ -1,4 +1,5 @@
 import { type MatrixClient, SlidingSync, SlidingSyncEvent, SlidingSyncState } from 'matrix-js-sdk'
+import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import { resolveMatrixRuntimeHomeserverUrl } from '@/services/backend'
 import { createLogger } from '@/utils/Logger'
 import type { MatrixClientConfig } from './MatrixClientService'
@@ -405,7 +406,7 @@ export class MatrixSyncManager {
    * silently returning true — callers would proceed as if sync is ready
    * when in fact nothing has been initialised.
    */
-  async waitForReady(timeoutMs: number = 10000): Promise<boolean> {
+  async waitForReady(timeoutMs: number = CLIENT_READY_TIMEOUT_MS): Promise<boolean> {
     if (!this.instance) return false
     if (!this.readyPromise) return false
     try {

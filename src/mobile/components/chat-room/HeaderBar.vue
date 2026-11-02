@@ -32,7 +32,7 @@
     <div class="w-full h-full flex items-center">
       <div v-if="!props.hiddenRight" class="w-full justify-end flex pe-16px items-center gap-8px">
         <button
-          v-if="!props.isGroup"
+          v-if="!props.isGroup && canUseBurnAfterRead"
           type="button"
           class="private-toggle-btn-mobile"
           :class="{ 'private-toggle-btn-mobile--active': props.privateModeActive }"
@@ -56,8 +56,10 @@ import { useI18n } from 'vue-i18n'
 import FederationBadge from '@/components/atomic/FederationBadge.vue'
 import RoomHomeserverLabel from '@/components/room/RoomHomeserverLabel.vue'
 import router from '@/router'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 
 const { t } = useI18n()
+const canUseBurnAfterRead = useServerCapability().canUseBurnAfterRead
 
 interface HeaderBarProps {
   msgCount?: number | undefined

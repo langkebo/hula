@@ -2,7 +2,7 @@ import type { UnlistenFn } from '@tauri-apps/api/event'
 import { listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useExtensionEventBridge } from '@/composables/app/useExtensionEventBridge'
 import { createCallHandler } from '@/composables/app/wsCallHandler'
@@ -23,7 +23,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import { isMobile } from '@/utils/PlatformConstants'
-import { collectTrackedPresenceUserIds } from '@/utils/presenceStatus'
+import { normalizeMatrixUserId } from '@/utils/userIdentity'
 
 const logger = createLogger('WsEventHandler')
 
@@ -61,6 +61,16 @@ export function useWsEventHandler() {
   })
 
   const registerHandlers = () => {
+    /**
+     * WS 上下线事件只携带 activeStatus 与 lastOptTime，写入统一转发到
+     * presenceHandler 的写入口（见 UI 优化方案 §5.2），禁止在此直接写 store。
+     */
+    const applyUserPresence = (uid: string, activeStatus: OnlineEnum, lastOptTime: number) => {
+      if (!uid) return
+      const normalizedUid = normalizeMatrixUserId(uid, userStore.userInfo?.uid) || uid
+      presenceHandler.applyPresenceStatus(normalizedUid, activeStatus, lastOptTime)
+    }
+
     useMitt.on<VideoCallRequestPayload>(WsResponseMessageType.VideoCallRequest, (event) => {
       logger.info(`收到通话请求：${JSON.stringify(event)}`)
       const remoteUid = event.callerUid
@@ -208,12 +218,9 @@ export function useWsEventHandler() {
     useMitt.on(WsResponseMessageType.ONLINE, async (onStatusChangeType: OnStatusChangeType) => {
       logger.debug('收到用户上线通知')
       if (onStatusChangeType.type === 1) {
-        groupStore.updateOnlineNum({ roomId: onStatusChangeType.roomId, isAdd: true })
-        groupStore.updateUserItem(
-          onStatusChangeType.uid,
-          { activeStatus: OnlineEnum.ONLINE, lastOptTime: onStatusChangeType.lastOptTime },
-          onStatusChangeType.roomId
-        )
+        const { uid, roomId, lastOptTime } = onStatusChangeType
+        groupStore.updateOnlineNum({ roomId, isAdd: true })
+        applyUserPresence(uid, OnlineEnum.ONLINE, lastOptTime)
       }
     })
 
@@ -242,12 +249,9 @@ export function useWsEventHandler() {
     useMitt.on(WsResponseMessageType.OFFLINE, async (onStatusChangeType: OnStatusChangeType) => {
       logger.debug('收到用户下线通知', onStatusChangeType)
       if (onStatusChangeType.type === 1) {
-        groupStore.updateOnlineNum({ roomId: onStatusChangeType.roomId, isAdd: false })
-        groupStore.updateUserItem(
-          onStatusChangeType.uid,
-          { activeStatus: OnlineEnum.OFFLINE, lastOptTime: onStatusChangeType.lastOptTime },
-          onStatusChangeType.roomId
-        )
+        const { uid, roomId, lastOptTime } = onStatusChangeType
+        groupStore.updateOnlineNum({ roomId, isAdd: false })
+        applyUserPresence(uid, OnlineEnum.OFFLINE, lastOptTime)
       }
     })
 
@@ -301,20 +305,8 @@ export function useWsEventHandler() {
       })
     }
 
-    watch(
-      () =>
-        collectTrackedPresenceUserIds({
-          currentUserId: userStore.userInfo?.uid ?? null,
-          contacts: contactStore.contactsList,
-          members: groupStore.allUserInfo
-        }).join('|'),
-      () => {
-        void presenceHandler.syncAvatarPresence()
-      },
-      {
-        immediate: true
-      }
-    )
+    // Presence 唯一入口：关注用户集合变化由 presenceHandler 内部统一监听与写入
+    presenceHandler.startPresenceWatch()
   }
 
   const cleanup = () => {

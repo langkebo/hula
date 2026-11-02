@@ -60,7 +60,6 @@ import {
   NInputNumber,
   NModal,
   NPageHeader,
-  NSpace,
   NTag
 } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
@@ -111,11 +110,7 @@ const columns: DataTableColumns<RetentionPolicy> = [
     title: t('admin.retention.col_actions'),
     key: 'actions',
     width: 160,
-    render: (row) =>
-      h(NSpace, () => [
-        h(NButton, { size: 'small', onClick: () => openEdit(row) }, () => t('common.edit')),
-        h(NButton, { size: 'small', type: 'error', onClick: () => deletePolicy(row.roomId) }, () => t('common.delete'))
-      ])
+    render: (row) => h(NButton, { size: 'small', onClick: () => openEdit(row) }, () => t('common.edit'))
   }
 ]
 
@@ -151,16 +146,6 @@ async function savePolicy() {
     showFeedback(t('admin.retention.save_failed'), 'error')
   } finally {
     saveLoading.value = false
-  }
-}
-
-async function deletePolicy(roomId: string) {
-  try {
-    await retention.deletePolicy(roomId)
-    showFeedback(t('admin.retention.delete_success'), 'success')
-  } catch (err) {
-    logger.error('Failed to delete retention policy:', err)
-    showFeedback(t('admin.retention.delete_failed'), 'error')
   }
 }
 

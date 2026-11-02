@@ -1,3 +1,4 @@
+import { GEOLOCATION_MAX_AGE_MS, GEOLOCATION_TIMEOUT_MS } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import matrixClientService from '../MatrixClientService'
 import type { EventType, IContent, MatrixEvent } from '../sdk'
@@ -59,8 +60,8 @@ class MatrixLocationService {
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000
+          timeout: GEOLOCATION_TIMEOUT_MS,
+          maximumAge: GEOLOCATION_MAX_AGE_MS
         }
       )
     })

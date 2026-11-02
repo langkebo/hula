@@ -58,6 +58,7 @@
               type="error"
               size="small"
               :disabled="savingPermissions"
+              :aria-label="t('common.remove')"
               @click="emit('remove-permission', row)">
               <template #icon>
                 <n-icon><Icon icon="mdi:close" /></n-icon>

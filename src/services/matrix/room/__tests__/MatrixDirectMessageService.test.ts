@@ -1,6 +1,5 @@
-import type { MatrixClient, Room } from 'matrix-js-sdk'
-import type { DirectMessageManager } from 'matrix-js-sdk/dm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { DirectMessageManager, MatrixClient, Room } from '@/services/matrix/sdk'
 import matrixClientService from '../../MatrixClientService'
 import { matrixDirectMessageService } from '../MatrixDirectMessageService'
 

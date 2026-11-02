@@ -68,7 +68,7 @@
                     :title="device.displayName || device.deviceId"
                     :label="`${device.userId} / ${device.deviceId}`"
                     is-link
-                    @click="handleVerifyClick(device)">
+                    @click="handleVerifyClick()">
                     <template #icon>
                       <div class="device-icon-cell">
                         <Icon icon="mdi:shield-alert" :width="20" color="var(--tjg-color-warning-500)" />
@@ -224,7 +224,7 @@ function handleDeviceClick(device: DeviceTrustInfo) {
   showDeviceSheet.value = true
 }
 
-function handleVerifyClick(_device: DeviceTrustInfo) {
+function handleVerifyClick() {
   // 跳转到设备验证流程
   showToast(t('mobile_devices.verification_started'))
 }

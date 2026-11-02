@@ -221,6 +221,8 @@ async function handleDeletePusher(pusher: Record<string, unknown>) {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
+
 .admin-notifications {
   max-width: 1200px;
 }
@@ -261,7 +263,7 @@ async function handleDeletePusher(pusher: Record<string, unknown>) {
   color: var(--n-text-color);
 }
 
-@media (max-width: 768px) {
+@include responsive.respond-to-max('md') {
   .tab-header {
     flex-direction: column;
     align-items: stretch;

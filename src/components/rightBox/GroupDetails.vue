@@ -154,7 +154,7 @@ watch(
     try {
       const response = await groupStore.loadGroupInfo(uid)
       item.value = (response as typeof item.value) || {}
-      await fetchAnnouncement(uid)
+      await fetchAnnouncement()
     } catch (error) {
       logger.error('Failed to load group details:', error)
       item.value = {}
@@ -164,7 +164,7 @@ watch(
   { immediate: true }
 )
 
-const fetchAnnouncement = async (_roomId: string) => {
+const fetchAnnouncement = async () => {
   announcementContent.value = ''
 }
 

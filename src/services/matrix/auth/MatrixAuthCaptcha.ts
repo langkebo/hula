@@ -66,7 +66,7 @@ export async function getCaptchaStatus(session: string): Promise<{ verified: boo
       session
     })
     return result
-  } catch (_err) {
+  } catch {
     throw new Error(useI18nGlobal().t('matrix_error.auth.query_code_status_failed'))
   }
 }

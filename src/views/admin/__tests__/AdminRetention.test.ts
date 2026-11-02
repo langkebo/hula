@@ -3,10 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import AdminRetention from '../AdminRetention.vue'
 
-const { loadAllMock, setPolicyMock, deletePolicyMock, runTaskMock, showFeedbackMock, state } = vi.hoisted(() => ({
+const { loadAllMock, setPolicyMock, runTaskMock, showFeedbackMock, state } = vi.hoisted(() => ({
   loadAllMock: vi.fn(),
   setPolicyMock: vi.fn(),
-  deletePolicyMock: vi.fn(),
   runTaskMock: vi.fn(),
   showFeedbackMock: vi.fn(),
   state: {
@@ -25,7 +24,6 @@ vi.mock('@/composables/admin', () => ({
     taskLoading: ref(state.taskLoading),
     loadAll: loadAllMock,
     setPolicy: setPolicyMock,
-    deletePolicy: deletePolicyMock,
     runTask: runTaskMock
   })
 }))
@@ -143,7 +141,6 @@ describe('AdminRetention', () => {
     state.taskLoading = false
     loadAllMock.mockResolvedValue(undefined)
     setPolicyMock.mockResolvedValue(undefined)
-    deletePolicyMock.mockResolvedValue(undefined)
     runTaskMock.mockResolvedValue(undefined)
   })
 

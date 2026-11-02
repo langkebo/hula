@@ -10,8 +10,13 @@
   "call": {
     "hangup": "挂断",
     "mute": "静音",
+    "unmute": "取消静音",
     "speaker": "扬声器",
-    "switch_camera": "翻转摄像头"
+    "switch_camera": "翻转摄像头",
+    "video_on": "开启视频",
+    "video_off": "关闭视频",
+    "screen_share": "共享屏幕",
+    "stop_screen_share": "停止共享"
   },
   "errors": {
     "voip_unavailable": "VoIP 服务不可用",

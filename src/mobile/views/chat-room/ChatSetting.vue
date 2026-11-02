@@ -372,7 +372,7 @@ const avatarValue = ref('')
 const nicknameValue = ref('')
 const options = ref<Array<{ name: string; src: string }>>([])
 const { currentSession: activeItem } = storeToRefs(globalStore)
-const friend = computed(() => contactStore.contactsList.find((item) => item.uid === activeItem.value?.detailId))
+const friend = computed(() => contactStore.contactsList.find((item) => item.userId === activeItem.value?.detailId))
 
 const initialRemarkValue = ref('')
 const initialNicknameValue = ref('')

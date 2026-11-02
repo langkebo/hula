@@ -201,4 +201,81 @@ describe('AdminStore', () => {
       expect(store.isAdmin).toBe(false)
     })
   })
+
+  describe('Admin API 五态与入口判定', () => {
+    it('探测结果写入 store，并标记已加载', async () => {
+      probeAdminApiMock.mockResolvedValue({
+        status: 'forbidden',
+        statusCode: 403,
+        errorCode: 'M_FORBIDDEN',
+        apiPresent: true,
+        authorized: false
+      })
+      getUserMock.mockResolvedValue({ userId: '@admin:example.com', admin: false })
+
+      const store = useAdminStore()
+      await store.checkAdminStatus()
+
+      expect(store.apiAvailability?.status).toBe('forbidden')
+      expect(store.availabilityLoaded).toBe(true)
+    })
+
+    it('available 且为管理员时展示入口', async () => {
+      const store = useAdminStore()
+      await store.checkAdminStatus()
+      expect(store.isAdmin).toBe(true)
+      expect(store.canShowAdminEntry).toBe(true)
+    })
+
+    it('unsupported（homeserver 无 Admin API）时隐藏入口', async () => {
+      const store = useAdminStore()
+      await store.checkAdminStatus()
+      expect(store.canShowAdminEntry).toBe(true)
+
+      store.apiAvailability = {
+        status: 'unsupported',
+        statusCode: 404,
+        errorCode: 'M_UNRECOGNIZED',
+        apiPresent: false,
+        authorized: false
+      }
+      expect(store.canShowAdminEntry).toBe(false)
+    })
+
+    it('unavailable 时保留入口，便于进入后台重试探测', async () => {
+      const store = useAdminStore()
+      await store.checkAdminStatus()
+
+      store.apiAvailability = {
+        status: 'unavailable',
+        statusCode: null,
+        errorCode: null,
+        apiPresent: null,
+        authorized: false
+      }
+      expect(store.canShowAdminEntry).toBe(true)
+    })
+
+    it('retryApiProbe() 清缓存并重新探测', async () => {
+      const store = useAdminStore()
+      await store.checkAdminStatus()
+      expect(probeAdminApiMock).toHaveBeenCalledTimes(1)
+
+      await store.checkAdminStatus()
+      expect(probeAdminApiMock).toHaveBeenCalledTimes(1)
+
+      await store.retryApiProbe()
+      expect(probeAdminApiMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('clearAdminState() 同时重置探测状态', async () => {
+      const store = useAdminStore()
+      await store.checkAdminStatus()
+      expect(store.availabilityLoaded).toBe(true)
+
+      store.clearAdminState()
+      expect(store.apiAvailability).toBeNull()
+      expect(store.availabilityLoaded).toBe(false)
+    })
+  })
 })

@@ -1,1 +1,53 @@
-{}
+{
+  "title": "Background Updates",
+  "subtitle": "Inspect background job progress, start, cancel or retry as needed",
+  "actions": {
+    "retry_failed": "Retry Failed",
+    "cleanup_locks": "Clean Up Locks",
+    "start": "Start",
+    "cancel": "Cancel"
+  },
+  "current": "Current Job",
+  "auto_refresh": "Auto Refresh",
+  "section": {
+    "summary": "Job Summary"
+  },
+  "summary": {
+    "pending": "Pending",
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed",
+    "total": "Total"
+  },
+  "empty": "No background update jobs",
+  "col_job": "Job",
+  "col_type": "Job Type",
+  "col_status": "Status",
+  "col_progress": "Progress",
+  "col_created": "Created At",
+  "col_actions": "Actions",
+  "start_confirm_title": "Start Background Update",
+  "start_confirm_content": "Are you sure you want to start job {job}?",
+  "cancel_confirm_title": "Cancel Background Update",
+  "cancel_confirm_content": "Are you sure you want to cancel job {job}? Processed progress will be kept.",
+  "retry_confirm_title": "Retry Failed Jobs",
+  "retry_confirm_content": "All failed background update jobs will be queued again. Continue?",
+  "cleanup_confirm_title": "Clean Up Stale Locks",
+  "cleanup_confirm_content": "Unreleased background update locks will be cleaned up. Continue?",
+  "started_success": "Job started",
+  "start_failed": "Failed to start job",
+  "cancelled_success": "Job cancelled",
+  "cancel_failed": "Failed to cancel job",
+  "retried_success": "Retried {count} jobs",
+  "retried_error": "Failed to retry jobs",
+  "cleaned_success": "Cleaned up {count} locks",
+  "cleaned_error": "Failed to clean up locks",
+  "status": {
+    "pending": "Pending",
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "unknown": "Unknown"
+  }
+}

@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import { BaseMatrixService } from '../BaseMatrixService'
 import type { AdminApplicationService } from './ApplicationService'
 import type { AdminMediaService } from './MediaService'
@@ -98,11 +99,15 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
     return this.security.reconnectFederation(serverName)
   }
 
-  async getRetentionPolicies(
-    limit = 50,
-    from?: string
-  ): Promise<{ policies: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
-    return this.retention.getRetentionPolicies(limit, from)
+  /**
+   * 获取保留策略列表。
+   * @returns 策略数组（服务端当前最多返回一条）与可选分页 token。
+   */
+  async getRetentionPolicies(): Promise<{
+    policies: Array<Record<string, unknown>>
+    nextToken?: string | undefined
+  }> {
+    return this.retention.getRetentionPolicies()
   }
 
   /**
@@ -122,15 +127,6 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
    */
   async setRetentionPolicy(roomId: string, maxLifetime?: number, minLifetime?: number): Promise<void> {
     return this.retention.setRetentionPolicy(roomId, maxLifetime, minLifetime)
-  }
-
-  /**
-   * 删除房间的保留策略。
-   * 注意：后端不支持删除保留策略，此方法为空操作（no-op）。
-   * @param roomId 房间 ID。
-   */
-  async deleteRetentionPolicy(roomId: string): Promise<void> {
-    return this.retention.deleteRetentionPolicy(roomId)
   }
 
   /**
@@ -185,7 +181,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   }
 
   async getSamlMappings(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{ mappings: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.security.getSamlMappings(limit, from)
@@ -263,7 +259,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   }
 
   async getApplicationServices(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{ services: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.applications.getApplicationServices(limit, from)
@@ -323,7 +319,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   }
 
   async getSystemNotifications(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{ notifications: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.notifications.getSystemNotifications(limit, from)
@@ -364,7 +360,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   }
 
   async getSecurityEvents(
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
     filters?: Record<string, unknown>
   ): Promise<{ events: Array<Record<string, unknown>>; nextToken?: string | undefined } | null> {
@@ -405,7 +401,7 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
 
   async getServerLogs(
     level?: 'debug' | 'info' | 'warn' | 'error',
-    limit = 100
+    limit = LARGE_PAGE_LIMIT
   ): Promise<Array<Record<string, unknown>> | null> {
     return this.server.getServerLogs(level, limit)
   }

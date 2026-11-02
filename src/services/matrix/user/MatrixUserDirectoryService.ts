@@ -4,6 +4,7 @@
  * 提供用户搜索和目录功能
  */
 
+import { DIRECTORY_SEARCH_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixUserDirectory')
@@ -44,7 +45,7 @@ class UserDirectoryService extends BaseMatrixService {
   /**
    * 搜索用户
    */
-  async searchUsers(query: string, limit = 10): Promise<UserDirectorySearchResult[]> {
+  async searchUsers(query: string, limit = DIRECTORY_SEARCH_LIMIT): Promise<UserDirectorySearchResult[]> {
     const client = this.getClient()
     try {
       const result = await client.searchUserDirectory({

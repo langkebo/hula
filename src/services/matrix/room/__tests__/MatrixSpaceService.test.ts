@@ -163,13 +163,10 @@ describe('MatrixSpaceService', () => {
         asMatrixClient({ getSpaceManager: () => ({ hierarchy: { getSpaceHierarchyPage } }) })
       )
 
-      const result = await matrixSpaceService.getSpaceHierarchy('!space:server', { limit: 10, maxDepth: 3 })
+      const result = await matrixSpaceService.getSpaceHierarchy('!space:server', { maxDepth: 3 })
 
       expect(getSpaceHierarchyPage).toHaveBeenCalledWith('!space:server', {
-        from: undefined,
-        limit: 10,
-        max_depth: 3,
-        suggested_only: undefined
+        max_depth: 3
       })
       expect(result.rooms).toHaveLength(1)
       expect(result.next_batch).toBe('batch_token')

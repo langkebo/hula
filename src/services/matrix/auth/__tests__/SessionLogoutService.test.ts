@@ -338,8 +338,6 @@ describe('SessionLogoutService.logoutCurrentSession', () => {
   it('stops presence and ws, clears state, and logs out on desktop', async () => {
     const { host, mocks } = createMockHost()
     const state = new SessionRuntimeState()
-    const cleanup = vi.fn()
-    state.presenceChangeCleanup = cleanup
     state.cachedHasSession = true
     const service = new SessionLogoutService(host, state)
 
@@ -347,8 +345,6 @@ describe('SessionLogoutService.logoutCurrentSession', () => {
 
     expect(stopPresenceHeartbeatMock).toHaveBeenCalled()
     expect(matrixWsBridgeStopMock).toHaveBeenCalled()
-    expect(cleanup).toHaveBeenCalled()
-    expect(state.presenceChangeCleanup).toBeNull()
     expect(state.cachedHasSession).toBeNull()
     expect(resetSearchIndexMock).toHaveBeenCalled()
     expect(matrixWorkerTerminateMock).toHaveBeenCalledWith('logout')
@@ -384,7 +380,7 @@ describe('SessionLogoutService.logoutCurrentSession', () => {
 
     await service.logoutCurrentSession()
 
-    expect(createWebviewWindow).toHaveBeenCalledWith('登录', 'login', 420, 640, undefined, false, 420, 640)
+    expect(createWebviewWindow).toHaveBeenCalledWith('登录', 'login', 420, 580, undefined, false, 420, 580)
     expect(emitMock).toHaveBeenCalledWith(EventEnum.LOGOUT)
     expect(resizeWindow).toHaveBeenCalledWith('tray', 130, 44)
   })

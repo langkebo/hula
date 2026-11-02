@@ -3,6 +3,7 @@
  * 位置信标功能
  */
 
+import { BEACON_DEFAULT_TIMEOUT_MS } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { matrixClientService } from '../MatrixClientService'
 import type { MBeaconEventContent } from '../sdk'
@@ -64,7 +65,7 @@ class MatrixBeaconService {
    * 迁移 2026-08-11: 从 client.sendEvent (timeline event) 改为 SDK BeaconManager.createLiveBeacon (state event)
    */
   async createBeacon(params: CreateBeaconParams): Promise<BeaconInfo> {
-    const { roomId, description, timeout = 3600000 } = params
+    const { roomId, description, timeout = BEACON_DEFAULT_TIMEOUT_MS } = params
     const client = this.getClient()
     if (!client) throw new Error('Matrix client not initialized')
 

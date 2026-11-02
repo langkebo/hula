@@ -4,8 +4,9 @@
     Usage:
       <PermissionGuard :require="'voip'"> ... </PermissionGuard>
       <PermissionGuard :require="['admin-api', 'friend-list']" mode="hide"> ... </PermissionGuard>
-    `mode="gray"` (default) keeps affordance discoverable but non-interactive.
-    `mode="hide"` removes the slot entirely; use this only for admin-only UI.
+    `mode="hide"` (default) removes the slot entirely when the capability is
+    unavailable — per product requirement, unusable entries must not be shown.
+    `mode="gray"` keeps the affordance discoverable but non-interactive.
   -->
   <slot v-if="granted" />
   <template v-else-if="mode === 'gray'">
@@ -27,7 +28,7 @@ const props = withDefaults(
     require: TjgCapability | TjgCapability[]
     mode?: 'gray' | 'hide'
   }>(),
-  { mode: 'gray' }
+  { mode: 'hide' }
 )
 
 const emit = defineEmits<{

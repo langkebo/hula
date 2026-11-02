@@ -5,6 +5,7 @@ import type {
   BatchDeactivateUsersRequest,
   DeviceInfo
 } from 'matrix-js-sdk/admin'
+import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import { isNonEmptyString, isValidMatrixUserId } from '@/utils/inputValidation'
 import { createLogger } from '@/utils/Logger'
 import type { RateLimit, ShadowBanStatus, UserDevice, UserInfo } from './AdminTypes'
@@ -36,9 +37,8 @@ export class AdminUserService {
   }
 
   async getUsers(
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
-    _name?: string,
     guests?: boolean
   ): Promise<{ users: UserInfo[]; nextToken?: string | undefined }> {
     try {
@@ -383,10 +383,8 @@ export class AdminUserService {
     }
   }
 
-  async getUserStatsList(
-    _limit = 100,
-    _from?: string
-  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+  /** 获取用户统计列表。 */
+  async getUserStatsList(): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.listUserStats()
@@ -562,7 +560,7 @@ export class AdminUserService {
   }
 
   async getLoginFailures(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{
     failures: Array<Record<string, unknown>>

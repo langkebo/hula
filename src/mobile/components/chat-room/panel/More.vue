@@ -47,6 +47,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { CallTypeEnum } from '@/enums'
 import { CallTypeEnum as CallTypeEnumValue } from '@/enums'
 import router from '@/router'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
@@ -55,6 +56,9 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 const globalStore = useGlobalStore()
+
+// 语音/视频通话入口依赖服务端 voip 能力
+const canUseVoip = useServerCapability().canUseVoip
 
 const pickRtcCall = ref(false)
 
@@ -69,7 +73,7 @@ const options = ref([
     onClick: () => {
       pickRtcCall.value = true
     },
-    isShow: () => true
+    isShow: () => canUseVoip.value
   },
   {
     type: 'video',
@@ -78,7 +82,7 @@ const options = ref([
     onClick: () => {
       pickRtcCall.value = true
     },
-    isShow: () => true
+    isShow: () => canUseVoip.value
   },
   {
     type: 'location',

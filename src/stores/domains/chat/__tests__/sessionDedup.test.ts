@@ -96,7 +96,7 @@ describe('SessionStore DM 身份回填（去重数据层收口）', () => {
     const store = useSessionStore()
     store.addSession(makeSession({ roomId: '!stranger:matrix.test' }) as never)
 
-    expect(store.getSession('!stranger:matrix.test')).toBeTruthy()
+    expect(store.getSession('!stranger:matrix.test')?.roomId).toBe('!stranger:matrix.test')
     expect(store.getSession('!stranger:matrix.test')?.detailId).toBeUndefined()
   })
 })

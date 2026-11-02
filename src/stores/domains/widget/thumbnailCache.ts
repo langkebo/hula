@@ -27,6 +27,8 @@ type Task = {
 const METADATA_STORAGE_KEY = 'tjg:thumbnail-cache-metadata'
 /** 每多少次入队触发一次 TTL 清理 */
 const CLEANUP_INTERVAL = 100
+/** 单次缩略图下载的超时时间（ms）：Worker 卡死时避免任务永挂。 */
+const DOWNLOAD_TIMEOUT_MS = 30_000
 
 const loadMetadataFromStorage = (): Map<string, CacheMetadata> => {
   try {
@@ -66,8 +68,63 @@ export const useThumbnailCacheStore = defineStore(StoresEnum.THUMBNAIL_CACHE, ()
   const queue: Task[] = []
   let active = 0
   const statusMap = shallowRef<Record<string, Task>>({})
-  const worker = new Worker(new URL('@/workers/imageDownloader.ts', import.meta.url), { type: 'module' })
+  let worker: Worker | null = null
   const waiterMap = new Map<string, Array<(path: string | null) => void>>()
+
+  /** 懒创建下载 Worker；崩溃后由 resetWorker 置空，下次任务自动重建。 */
+  const getWorker = () => {
+    if (!worker) {
+      worker = new Worker(new URL('@/workers/imageDownloader.ts', import.meta.url), { type: 'module' })
+    }
+    return worker
+  }
+
+  /** 丢弃已崩溃的 Worker，避免后续任务复用一个失效实例。 */
+  const resetWorker = () => {
+    worker?.terminate()
+    worker = null
+  }
+
+  /**
+   * 通过 Worker 下载单个资源。
+   * 监听 message/error 并带超时，保证 Worker 崩溃或无响应时 Promise 一定落地。
+   */
+  const downloadWithWorker = (url: string): Promise<ArrayBuffer> => {
+    return new Promise((resolve, reject) => {
+      const activeWorker = getWorker()
+      const cleanup = () => {
+        clearTimeout(timer)
+        activeWorker.removeEventListener('message', handleMessage as EventListener)
+        activeWorker.removeEventListener('error', handleError as EventListener)
+      }
+      const handleMessage = (e: MessageEvent<unknown>) => {
+        const data = e.data as Record<string, unknown>
+        if (data?.url !== url) return
+        cleanup()
+        if (data.success) resolve(data.buffer as ArrayBuffer)
+        else reject(new Error((data.error as string) || 'download failed'))
+      }
+      const handleError = (event: Event) => {
+        cleanup()
+        resetWorker()
+        reject(new Error((event as ErrorEvent)?.message || '缩略图下载 Worker 异常'))
+      }
+      const timer = setTimeout(() => {
+        cleanup()
+        reject(new Error(`缩略图下载超时（${DOWNLOAD_TIMEOUT_MS}ms）`))
+      }, DOWNLOAD_TIMEOUT_MS)
+      ;(timer as { unref?: () => void }).unref?.()
+
+      activeWorker.addEventListener('message', handleMessage as EventListener)
+      activeWorker.addEventListener('error', handleError as EventListener)
+      try {
+        activeWorker.postMessage({ url })
+      } catch (err) {
+        cleanup()
+        reject(err instanceof Error ? err : new Error(String(err)))
+      }
+    })
+  }
 
   // 缓存清理器：7 天 TTL + 500MB LRU 淘汰
   const janitor = new ThumbnailCacheJanitor({
@@ -172,17 +229,7 @@ export const useThumbnailCacheStore = defineStore(StoresEnum.THUMBNAIL_CACHE, ()
         await deleteThumbnailFile(relPath)
       }
 
-      const buffer: ArrayBuffer = await new Promise((resolve, reject) => {
-        const handler = (e: MessageEvent<unknown>) => {
-          const data = e.data as Record<string, unknown>
-          if (data?.url !== task.url) return
-          worker.removeEventListener('message', handler as EventListener)
-          if (data.success) resolve(data.buffer as ArrayBuffer)
-          else reject(new Error(((data as Record<string, unknown>).error as string) || 'download failed'))
-        }
-        worker.addEventListener('message', handler as EventListener)
-        worker.postMessage({ url: task.url })
-      })
+      const buffer: ArrayBuffer = await downloadWithWorker(task.url)
 
       const bytes = new Uint8Array(buffer)
       await writeFile(relPath, bytes, { baseDir })

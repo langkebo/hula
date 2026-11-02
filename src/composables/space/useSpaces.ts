@@ -69,7 +69,7 @@ export function useSpaces(): UseSpacesResult {
 
   const getSpaceHierarchy = async (
     spaceId: string,
-    options?: { from?: string; limit?: number; maxDepth?: number; suggestedOnly?: boolean }
+    options?: { maxDepth?: number }
   ): Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }> => {
     return await matrixSpaceService.getSpaceHierarchy(spaceId, options)
   }

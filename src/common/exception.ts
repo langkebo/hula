@@ -30,12 +30,12 @@ const logRetryError = (message: string, details?: Record<string, unknown>) => {
 }
 
 // 延迟初始化 showFeedback，避免模块加载阶段调用 composable 触发测试 mock TDZ 问题
-let _showFeedback: ((message: string, type: 'error') => void) | null = null
+let showFeedbackRef: ((message: string, type: 'error') => void) | null = null
 function getShowFeedback() {
-  if (_showFeedback === null) {
-    _showFeedback = useActionFeedback().showFeedback as (message: string, type: 'error') => void
+  if (showFeedbackRef === null) {
+    showFeedbackRef = useActionFeedback().showFeedback as (message: string, type: 'error') => void
   }
-  return _showFeedback
+  return showFeedbackRef
 }
 
 export class AppException extends Error {

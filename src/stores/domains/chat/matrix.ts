@@ -238,8 +238,8 @@ export const useMatrixStore = defineStore(
         lastError.value = null
         isInitialized.value = false
 
-        const { useAdminStore } = await import('../admin/admin')
-        useAdminStore().clearAdminState()
+        const { resetAdminState } = await import('@/stores/domains/admin/bridge')
+        await resetAdminState()
       }
     }
 

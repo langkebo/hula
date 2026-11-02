@@ -72,6 +72,8 @@ use crate::command::room_member_command::update_my_room_info;
 use crate::command::secure_storage::check_secure_storage_available;
 use crate::command::secure_storage::delete_secret;
 use crate::command::secure_storage::get_secret;
+use crate::command::secure_storage::session_secret_decrypt;
+use crate::command::secure_storage::session_secret_encrypt;
 use crate::command::secure_storage::set_secret;
 use crate::command::setting_command::get_settings;
 use crate::command::setting_command::update_settings;
@@ -638,6 +640,8 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         set_secret,
         delete_secret,
         check_secure_storage_available,
+        session_secret_encrypt,
+        session_secret_decrypt,
     ]
 }
 

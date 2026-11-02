@@ -11,7 +11,11 @@
       </div>
       <div
         class="flex items-center justify-center py-4px border-t border-[--tjg-border-default] bg-[--tjg-surface-panel]">
-        <button class="footer-bar-action" data-testid="location-btn" @click="emit('location')">
+        <button
+          class="footer-bar-action"
+          data-testid="location-btn"
+          :aria-label="t('location_share.title')"
+          @click="emit('location')">
           <svg class="w-22px h-22px iconpark-icon">
             <use href="#location"></use>
           </svg>
@@ -47,7 +51,7 @@ const emit = defineEmits(['updateHeight', 'location'])
 
 const showVoicePanel = ref(false)
 
-const handleVoiceSend = async (_voiceData: unknown) => {
+const handleVoiceSend = async () => {
   showVoicePanel.value = false
 }
 

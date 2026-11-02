@@ -266,7 +266,7 @@ onMounted(() => {
     }
   }
 
-  const foundedFriend = contactStore.contactsList.find((item) => item.uid === uid)
+  const foundedFriend = contactStore.contactsList.find((item) => item.userId === uid)
 
   if (foundedFriend) {
     isMyFriendState.value = true

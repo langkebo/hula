@@ -37,7 +37,6 @@ const HomeserverSettings = () => import('@/mobile/views/my/HomeserverSettings.vu
 const MyMessages = () => import('#/views/my/MyMessages.vue')
 const Share = () => import('#/views/my/Share.vue')
 const SimpleBio = () => import('#/views/my/SimpleBio.vue')
-const AiAssistant = () => import('#/views/my/AiAssistant.vue')
 const MyAlbum = () => import('#/views/my/MyAlbum.vue')
 const StatusSettings = () => import('#/views/my/StatusSettings.vue')
 const SecuritySettings = () => import('#/views/my/SecuritySettings.vue')
@@ -55,7 +54,6 @@ const VoiceVideoSettings = () => import('#/views/my/VoiceVideoSettings.vue')
 const LabsSettings = () => import('#/views/my/LabsSettings.vue')
 const IntegrationsSettings = () => import('#/views/my/IntegrationsSettings.vue')
 const BurnAfterReadSettings = () => import('#/views/my/BurnAfterReadSettings.vue')
-const MjolnirSettings = () => import('#/views/my/MjolnirSettings.vue')
 const PreferencesSettings = () => import('#/views/my/PreferencesSettings.vue')
 const Files = () => import('#/views/my/Files.vue')
 const ConfirmQRLogin = () => import('#/views/ConfirmQRLogin.vue')
@@ -156,11 +154,6 @@ const MOBILE_MY_SETTINGS_CHILD_ROUTES: RouteRecordRaw[] = [
     path: 'burnAfterRead',
     name: 'mobileBurnAfterReadSettings',
     component: BurnAfterReadSettings
-  },
-  {
-    path: 'mjolnir',
-    name: 'mobileMjolnirSettings',
-    component: MjolnirSettings
   },
   {
     path: 'preferences',
@@ -392,11 +385,6 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'SimpleBio',
         name: 'mobileSimpleBio',
         component: SimpleBio
-      },
-      {
-        path: 'aiAssistant',
-        name: 'mobileAiAssistant',
-        component: AiAssistant
       },
       {
         path: 'myAlbum',

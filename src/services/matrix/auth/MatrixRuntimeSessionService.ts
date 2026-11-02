@@ -19,7 +19,7 @@ import {
 } from './sessionRuntimeInternal'
 
 // Re-export public types for backwards compatibility (SessionOrchestrator + tests import these)
-export type { PresenceUpdate, SessionStorePort } from './sessionRuntimeInternal'
+export type { SessionStorePort } from './sessionRuntimeInternal'
 
 const logger = createLogger('MatrixRuntimeSessionService')
 

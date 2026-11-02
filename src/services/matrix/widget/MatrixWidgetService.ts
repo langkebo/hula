@@ -183,10 +183,8 @@ class MatrixWidgetService {
     }
   }
 
-  /**
-   * 兼容旧 (roomId, widgetId) 签名；新 SDK 只需 widgetId。
-   */
-  async removeWidget(_roomId: string, widgetId: string, throwOnError = true): Promise<boolean> {
+  /** `deleteWidget` 的别名，保留给既有调用方。 */
+  async removeWidget(widgetId: string, throwOnError = true): Promise<boolean> {
     return this.deleteWidget(widgetId, throwOnError)
   }
 

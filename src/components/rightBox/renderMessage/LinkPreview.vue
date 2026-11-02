@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { THUMBNAIL_SIZE_LINK_PREVIEW } from '@/common/constants'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { LinkPreviewBody } from '@/services/types'
@@ -88,7 +89,10 @@ const avatarUrl = computed(() => {
   if (!props.body?.imageUrl) return ''
 
   if (props.body.imageUrl.startsWith('mxc://')) {
-    return matrixMediaService.getMediaUrl(props.body.imageUrl, 90, 90) || ''
+    return (
+      matrixMediaService.getMediaUrl(props.body.imageUrl, THUMBNAIL_SIZE_LINK_PREVIEW, THUMBNAIL_SIZE_LINK_PREVIEW) ||
+      ''
+    )
   }
 
   return props.body.imageUrl

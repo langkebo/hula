@@ -101,16 +101,29 @@ const MAX_CORE_MEMBERS = 6
 
 const { t } = useI18n()
 
+const compareMembers = (a: MatrixRoomMember, b: MatrixRoomMember): number => {
+  // 在线优先
+  const aOnline = a.activeStatus === OnlineEnum.ONLINE ? 1 : 0
+  const bOnline = b.activeStatus === OnlineEnum.ONLINE ? 1 : 0
+  if (aOnline !== bOnline) return bOnline - aOnline
+  // power level 降序
+  return b.powerLevel - a.powerLevel
+}
+
+// 只取前 MAX_CORE_MEMBERS 名：大房间里对全量成员排序是 O(N log N) 的纯开销，
+// 这里用 O(N·K) 的有序插入代替，结果与「全量稳定排序后 slice」完全一致。
 const coreMembers = computed<MatrixRoomMember[]>(() => {
-  const sorted = [...props.members].sort((a, b) => {
-    // 在线优先
-    const aOnline = a.activeStatus === OnlineEnum.ONLINE ? 1 : 0
-    const bOnline = b.activeStatus === OnlineEnum.ONLINE ? 1 : 0
-    if (aOnline !== bOnline) return bOnline - aOnline
-    // power level 降序
-    return b.powerLevel - a.powerLevel
-  })
-  return sorted.slice(0, MAX_CORE_MEMBERS)
+  const selected: MatrixRoomMember[] = []
+  for (const member of props.members) {
+    const insertAt = selected.findIndex((existing) => compareMembers(member, existing) < 0)
+    if (insertAt === -1) {
+      if (selected.length < MAX_CORE_MEMBERS) selected.push(member)
+      continue
+    }
+    selected.splice(insertAt, 0, member)
+    if (selected.length > MAX_CORE_MEMBERS) selected.pop()
+  }
+  return selected
 })
 
 const isOnline = (member: MatrixRoomMember) => member.activeStatus === OnlineEnum.ONLINE

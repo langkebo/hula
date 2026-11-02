@@ -11,7 +11,6 @@ import { getMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
 import type { UserInfoType } from '@/services/types'
 import { pinia } from '@/stores'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
@@ -34,7 +33,6 @@ export function createSessionStorePort(): SessionStorePort {
   const roomStore = () => useRoomStore(pinia)
   const chatStore = () => useChatStore(pinia)
   const groupStore = () => useGroupStore(pinia)
-  const contactStore = () => useContactStore(pinia)
   const loginHistoryStore = () => useLoginHistoriesStore(pinia)
   const emojiStore = () => useEmojiStore(pinia)
   const settingStore = () => useSettingStore(pinia)
@@ -157,23 +155,6 @@ export function createSessionStorePort(): SessionStorePort {
         const store = groupStore()
         for (const key of Object.keys(store.membersMap)) {
           delete store.membersMap[key]
-        }
-      },
-      updateUserPresence(userId, presence) {
-        if (typeof groupStore().updateUserPresence === 'function') {
-          groupStore().updateUserPresence(userId, presence)
-        }
-      }
-    },
-    contact: {
-      updateContactPresence(userId, patch) {
-        if (typeof contactStore().updateContactPresence === 'function') {
-          contactStore().updateContactPresence(userId, {
-            activeStatus: patch.activeStatus,
-            lastOptTime: patch.lastOptTime,
-            ...(patch.presence !== undefined ? { presence: patch.presence } : {}),
-            ...(patch.statusMessage !== undefined ? { statusMessage: patch.statusMessage } : {})
-          })
         }
       }
     },

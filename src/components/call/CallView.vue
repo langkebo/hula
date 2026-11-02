@@ -31,7 +31,11 @@
     </div>
 
     <div class="call-controls">
-      <n-button circle :type="isMuted ? 'error' : 'default'" @click="toggleMute">
+      <n-button
+        circle
+        :type="isMuted ? 'error' : 'default'"
+        :aria-label="isMuted ? t('voip.call.unmute') : t('voip.call.mute')"
+        @click="toggleMute">
         <template #icon>
           <svg class="size-20px">
             <use :href="isMuted ? '#mic-off' : '#mic'"></use>
@@ -39,7 +43,11 @@
         </template>
       </n-button>
 
-      <n-button circle :type="isSpeakerOn ? 'default' : 'warning'" @click="handleToggleSpeaker">
+      <n-button
+        circle
+        :type="isSpeakerOn ? 'default' : 'warning'"
+        :aria-label="t('voip.call.speaker')"
+        @click="handleToggleSpeaker">
         <template #icon>
           <svg class="size-20px">
             <use :href="isSpeakerOn ? '#volume-up' : '#volume-off'"></use>
@@ -47,7 +55,12 @@
         </template>
       </n-button>
 
-      <n-button v-if="isVideo" circle :type="isVideoMuted ? 'error' : 'default'" @click="toggleVideo">
+      <n-button
+        v-if="isVideo"
+        circle
+        :type="isVideoMuted ? 'error' : 'default'"
+        :aria-label="isVideoMuted ? t('voip.call.video_on') : t('voip.call.video_off')"
+        @click="toggleVideo">
         <template #icon>
           <svg class="size-20px">
             <use :href="isVideoMuted ? '#video-off' : '#video'"></use>
@@ -55,7 +68,7 @@
         </template>
       </n-button>
 
-      <n-button v-if="isVideo" circle @click="handleSwitchCamera">
+      <n-button v-if="isVideo" circle :aria-label="t('voip.call.switch_camera')" @click="handleSwitchCamera">
         <template #icon>
           <svg class="size-20px">
             <use href="#camera-reverse"></use>
@@ -63,7 +76,7 @@
         </template>
       </n-button>
 
-      <n-button circle type="error" size="large" @click="handleHangup">
+      <n-button circle type="error" size="large" :aria-label="t('voip.call.hangup')" @click="handleHangup">
         <template #icon>
           <svg class="size-24px">
             <use href="#phone-off"></use>
@@ -71,7 +84,12 @@
         </template>
       </n-button>
 
-      <n-button v-if="isVideo" circle :type="isScreenSharing ? 'primary' : 'default'" @click="toggleScreenShare">
+      <n-button
+        v-if="isVideo"
+        circle
+        :type="isScreenSharing ? 'primary' : 'default'"
+        :aria-label="isScreenSharing ? t('voip.call.stop_screen_share') : t('voip.call.screen_share')"
+        @click="toggleScreenShare">
         <template #icon>
           <svg class="size-20px">
             <use href="#screen-share"></use>

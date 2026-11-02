@@ -41,8 +41,12 @@ import { DEFAULT_HOMESERVER_URL } from './updater-config.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const projectRoot = path.resolve(__dirname, '..')
 
-/** 需要两端一致的 capability 文件（相对仓库根） */
-export const CAPABILITY_FILES = ['src-tauri/capabilities/default.json', 'src-tauri/capabilities/mobile.json']
+/** 需要保持 allow 集合一致的 capability 文件（相对仓库根）；无 `http:default.allow` 的文件在加载时跳过 */
+export const CAPABILITY_FILES = [
+  'src-tauri/capabilities/default.json',
+  'src-tauri/capabilities/mobile.json',
+  'src-tauri/capabilities/network.json'
+]
 
 /** homeserver 环境变量键 */
 export const HOMESERVER_ENV_KEY = 'VITE_HOMESERVER_URL'

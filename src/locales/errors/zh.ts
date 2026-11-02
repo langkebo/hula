@@ -12,6 +12,7 @@ export const errorMessagesZh: Record<string, string> = {
   UNAUTHORIZED: '会话已过期，请重新登录',
   FORBIDDEN: '权限不足，无法执行此操作',
   M_GUEST_ACCESS_FORBIDDEN: '访客无法执行此操作，请注册或登录',
+  M_USER_DEACTIVATED: '账号已被停用，请联系管理员',
 
   // 限流类
   M_LIMIT_EXCEEDED: '请求过于频繁，请稍后重试',

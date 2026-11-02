@@ -1,5 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk'
 import { logoutExpiredSession, persistRefreshedToken } from '@/services/matrix/matrixClientPlatform'
+import { computeBackoffDelay } from '@/utils/backoff'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('TokenManager')
@@ -113,7 +114,7 @@ export class MatrixTokenManager {
           return
         }
         // Exponential backoff: 30s, 60s, 120s, 240s, 480s
-        const backoffMs = RETRY_INTERVAL_MS * 2 ** (this.retryCount - 1)
+        const backoffMs = computeBackoffDelay({ baseDelayMs: RETRY_INTERVAL_MS, attempt: this.retryCount - 1 })
         // Respect retry_after_ms header if present (429 only)
         const retryAfterMs = (err as { data?: { retry_after_ms?: number } })?.data?.retry_after_ms
         const delay = retryAfterMs ? Math.max(retryAfterMs, RETRY_INTERVAL_MS) : backoffMs

@@ -34,7 +34,7 @@
           :placeholder="t('room.invite.user_id_placeholder')"
           @keydown.enter="addManualUser">
           <template #suffix>
-            <n-button text size="small" @click="addManualUser">
+            <n-button text size="small" :aria-label="t('common.add')" @click="addManualUser">
               <template #icon>
                 <svg class="size-16px">
                   <use href="#add"></use>

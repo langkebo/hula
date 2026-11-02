@@ -127,6 +127,8 @@ function handleViewDetail(moduleName: string) {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
+
 .admin-modules {
   display: flex;
   flex-direction: column;
@@ -212,7 +214,7 @@ function handleViewDetail(moduleName: string) {
   vertical-align: middle;
 }
 
-@media (max-width: 768px) {
+@include responsive.respond-to-max('md') {
   .section-header {
     flex-direction: column;
     align-items: stretch;

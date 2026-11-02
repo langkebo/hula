@@ -1,9 +1,11 @@
-import { computed, effectScope, type MaybeRefOrGetter, onScopeDispose, toValue } from 'vue'
+import { computed, effectScope, type MaybeRefOrGetter, onScopeDispose, toValue, watch } from 'vue'
 import {
   bumpTrustCacheVersion,
   type MessageTrustLevel,
   senderDeviceCache,
-  trustCacheVersion
+  subscribeTrustTick,
+  trustCacheVersion,
+  trustTickVersion
 } from '@/services/matrix/crypto/messageTrustCache'
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
@@ -179,16 +181,17 @@ export function useMessageTrust(
   if (senderId) {
     const stopWatch = scope.run(() => {
       const refreshEffect = () => {
-        refreshTrustLevel(senderId)
-          .then(() => {
-            // 缓存更新后，trustLevel computed 自动重算（因为 senderDeviceCache 被读取）
-          })
-          .catch(() => {})
+        void refreshTrustLevel(senderId).catch(() => {})
       }
       refreshEffect()
-      // 定期刷新（每 30 秒），设备验证状态可能变化
-      const timer = setInterval(refreshEffect, 30000)
-      return () => clearInterval(timer)
+      // 定期刷新（设备验证状态可能变化）：订阅**全局共享节拍**，
+      // 而不是每条加密消息各起一个 setInterval。
+      const stopTick = subscribeTrustTick()
+      const stopTickWatch = watch(trustTickVersion, refreshEffect)
+      return () => {
+        stopTickWatch()
+        stopTick()
+      }
     })
     if (stopWatch) scope.run(() => onScopeDispose(stopWatch))
   }

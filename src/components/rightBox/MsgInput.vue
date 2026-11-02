@@ -129,7 +129,7 @@
               <n-flex
                 @mouseover="() => (selectedAIKey = item.uid)"
                 :class="{ active: selectedAIKey === item.uid }"
-                @click="handleAI(item)"
+                @click="handleAI()"
                 align="center"
                 class="AI-item">
                 <n-flex align="center" justify="space-between" class="w-full pr-6px">

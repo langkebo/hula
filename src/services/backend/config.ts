@@ -5,7 +5,17 @@ export const MATRIX_HOMESERVER_STORAGE_KEY = 'tjg-homeserver-url'
 export const MATRIX_IDENTITY_SERVER_STORAGE_KEY = 'tjg-identity-server-url'
 export const MATRIX_SESSION_HOMESERVER_STORAGE_KEY = 'tjg-session-homeserver-url'
 export const MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY = 'tjg-session-identity-server-url'
-export const DEFAULT_MATRIX_HOMESERVER_URL = 'http://localhost:8008'
+/**
+ * 本机开发兜底 homeserver 地址（M-3）。
+ *
+ * 仅当构建期未注入 `VITE_HOMESERVER_URL` 且处于 dev 时才使用；
+ * 生产包不再静默回退到 localhost，避免缺省配置下误连本机地址。
+ */
+const LOCAL_DEV_HOMESERVER_URL = 'http://localhost:8008'
+
+/** 默认 homeserver 地址：优先构建期注入的环境变量。 */
+export const DEFAULT_MATRIX_HOMESERVER_URL =
+  import.meta.env.VITE_HOMESERVER_URL || (import.meta.env.DEV ? LOCAL_DEV_HOMESERVER_URL : '')
 export const DEFAULT_MATRIX_IDENTITY_SERVER_URL = ''
 const MATRIX_DEV_PROXY_PORT = '6130'
 const MATRIX_DEV_PROXY_TARGET_PORT = '8008'
@@ -79,7 +89,7 @@ export function isPotentialHomeserverInput(value: string): boolean {
 
 export function getDefaultMatrixEndpointConfig(): MatrixEndpointConfig {
   return {
-    homeserverUrl: import.meta.env.VITE_HOMESERVER_URL || DEFAULT_MATRIX_HOMESERVER_URL,
+    homeserverUrl: DEFAULT_MATRIX_HOMESERVER_URL,
     identityServerUrl: import.meta.env.VITE_IDENTITY_SERVER_URL || DEFAULT_MATRIX_IDENTITY_SERVER_URL
   }
 }

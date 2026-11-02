@@ -76,6 +76,8 @@ function handleAction(action: BulkAction) {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
+
 .admin-bulk-action-bar {
   display: flex;
   align-items: center;
@@ -115,7 +117,7 @@ function handleAction(action: BulkAction) {
   }
 }
 
-@media (max-width: 640px) {
+@include responsive.respond-to-max('md') {
   .admin-bulk-action-bar {
     flex-direction: column;
     align-items: stretch;

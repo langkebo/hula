@@ -74,7 +74,7 @@ describe('OfflineQueueService', () => {
     expect(parsed[0].payload.payload.body).toBe('[redacted]')
   })
 
-  it('嵌套载荷被脱敏的操作在 restore 后不得残留为 pending', () => {
+  it('嵌套载荷被脱敏的操作在 restore 后标记为 failed 且不可重试（H-8）', () => {
     service.enqueue('message', '!room:test', {
       roomId: '!room:test',
       eventType: 'm.room.message',
@@ -84,16 +84,63 @@ describe('OfflineQueueService', () => {
     const restored = new OfflineQueueService()
     // 内容已丢失，无法 replay：必须按失败处理而不是留在 pending
     expect(restored.getPendingCount()).toBe(0)
-    expect(restored.getQueue().length).toBe(0)
+    // 但记录不能静默消失，否则用户以为消息已发出
+    expect(restored.getFailedCount()).toBe(1)
+    expect(restored.getQueue()[0].status).toBe('failed')
+    expect(restored.getQueue()[0].payloadRedacted).toBe(true)
+    // 脱敏记录不允许重发（会把 [redacted] 当正文发出去）
+    expect(restored.retryFailed()).toBe(0)
   })
 
   it('marks redacted message operations as failed on restore (F-13)', () => {
     service.enqueue('message', '!room:test', { text: 'hello' })
     const restored = new OfflineQueueService()
-    // 被脱敏的操作无法 replay，应被标记为 failed 并从 pending 队列中移除
+    // 被脱敏的操作无法 replay，应被标记为 failed 并保留在队列中供 UI 提示
     expect(restored.getPendingCount()).toBe(0)
-    const queue = restored.getQueue()
-    expect(queue.length).toBe(0) // failed operations are filtered out on restore
+    expect(restored.getFailedCount()).toBe(1)
+    expect(restored.getQueue()[0].status).toBe('failed')
+  })
+
+  it('persists failed operations across restarts（H-8）', async () => {
+    service.setReplayFn(async () => {
+      throw new Error('fail')
+    })
+    service.enqueue('receipt', '!room:test', { eventId: '$event:1' })
+    await service.replayAll()
+    expect(service.getFailedCount()).toBe(1)
+
+    const restored = new OfflineQueueService()
+    expect(restored.getFailedCount()).toBe(1)
+    expect(restored.getPendingCount()).toBe(0)
+  })
+
+  it('retryFailed 将 failed 重置为 pending 并可重新投递（H-8）', async () => {
+    service.setReplayFn(async () => {
+      throw new Error('fail')
+    })
+    service.enqueue('receipt', '!room:test', { eventId: '$event:1' })
+    await service.replayAll()
+    expect(service.getFailedCount()).toBe(1)
+
+    const reset = service.retryFailed()
+    expect(reset).toBe(1)
+    expect(service.getPendingCount()).toBe(1)
+    expect(service.getQueue()[0].retryCount).toBe(0)
+
+    service.setReplayFn(async () => {})
+    const result = await service.replayAll()
+    expect(result.succeeded).toBe(1)
+    expect(service.getQueue().length).toBe(0)
+  })
+
+  it('队列超过上限时淘汰最旧的操作（H-8）', () => {
+    for (let i = 0; i < 205; i++) {
+      service.enqueue('receipt', `!room:${i}`, { eventId: `$event:${i}` })
+    }
+
+    expect(service.getQueue().length).toBe(200)
+    // 最旧的 5 个被淘汰，队首应为第 6 个入队的操作
+    expect(service.getQueue()[0].roomId).toBe('!room:5')
   })
 
   it('replays operations in order', async () => {

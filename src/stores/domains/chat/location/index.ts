@@ -175,8 +175,15 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
    * 重连 / 重启后调用（app 就绪或进入房间时），并为仍 live 的信标重建到期定时器。
    * 采用合并语义：只替换该房间的信标，不覆盖其它房间仍在共享的信标及其到期定时器。
    */
-  async function restoreActiveBeacons(roomId: string): Promise<void> {
+  async function restoreActiveBeacons(roomId: string, isStale?: () => boolean): Promise<void> {
     const beacons = await matrixBeaconService.getActiveBeacons(roomId)
+
+    // 异步返回后先做一次失效判定：调用方若已切到别的房间，丢弃本次结果，
+    // 避免旧房间的恢复结果覆盖新房间的信标与共享状态（H-10）。
+    if (isStale?.()) {
+      logger.info(`[LocationStore] 房间已切换，丢弃过期的信标恢复结果: ${roomId}`)
+      return
+    }
 
     // 合并语义：仅清除该房间下的旧信标及其到期定时器，不触碰其它房间的信标。
     for (const [beaconInfoEventId, beacon] of activeBeacons.value) {

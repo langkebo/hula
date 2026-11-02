@@ -4,7 +4,7 @@
     <!-- 位置共享 -->
     <n-tooltip trigger="hover">
       <template #trigger>
-        <n-button quaternary size="small" @click="$emit('showLocationModal')">
+        <n-button quaternary size="small" :aria-label="t('message.location.share')" @click="$emit('showLocationModal')">
           <template #icon>
             <svg class="w-18px h-18px">
               <use href="#location"></use>
@@ -18,7 +18,12 @@
     <!-- Beacon 信标（共享中显示为停止态） -->
     <n-tooltip trigger="hover">
       <template #trigger>
-        <n-button quaternary size="small" :type="isSharing ? 'error' : 'default'" @click="$emit('handleBeaconClick')">
+        <n-button
+          quaternary
+          size="small"
+          :type="isSharing ? 'error' : 'default'"
+          :aria-label="isSharing ? t('message.beacon.stop') : t('message.beacon.share')"
+          @click="$emit('handleBeaconClick')">
           <template #icon>
             <svg class="w-18px h-18px" :class="isSharing ? 'color-[--tjg-color-danger-500]' : ''">
               <use href="#signal"></use>
@@ -32,7 +37,7 @@
     <!-- 文件上传 -->
     <n-tooltip trigger="hover">
       <template #trigger>
-        <n-button quaternary size="small" @click="$emit('handleFileUploadClick')">
+        <n-button quaternary size="small" :aria-label="t('editor.upload_file')" @click="$emit('handleFileUploadClick')">
           <template #icon>
             <svg class="w-18px h-18px">
               <use href="#image"></use>

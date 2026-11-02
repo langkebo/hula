@@ -3,7 +3,12 @@
     <n-flex vertical :size="12" class="p-12px">
       <n-flex align="center" justify="space-between">
         <span class="text-[length:var(--tjg-font-size-lg)] font-semibold">{{ t('friend.group.title') }}</span>
-        <n-button quaternary circle size="small" @click="showCreateDialog = true">
+        <n-button
+          quaternary
+          circle
+          size="small"
+          :aria-label="t('friend.group.create')"
+          @click="showCreateDialog = true">
           <template #icon>
             <n-icon>
               <svg><use href="#plus" /></svg>

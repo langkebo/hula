@@ -97,13 +97,6 @@ const options = ref([
     onClick: () => {
       router.push('/mobile/mobileMy/settings')
     }
-  },
-  {
-    icon: 'robot',
-    label: t('mobile_my.intelligent'),
-    onClick: () => {
-      router.push('/mobile/mobileMy/aiAssistant')
-    }
   }
 ])
 

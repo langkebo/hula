@@ -711,10 +711,6 @@ describe('adminService facade', () => {
       })
     })
 
-    it('should delete retention policy', async () => {
-      await expect(adminService.deleteRetentionPolicy('!room:server')).resolves.toBeUndefined()
-    })
-
     it('should run retention task', async () => {
       await expect(adminService.runRetentionTask()).resolves.toBeUndefined()
       expect(mockAdminManager.runRetention).toHaveBeenCalled()

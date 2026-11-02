@@ -33,7 +33,7 @@ type WaveformRendererReturn = {
   drawWaveform: () => void
   drawWaveformThrottled: () => void
   drawWaveformImmediate: () => void
-  updateColors: (colors: WaveformColors) => void
+  updateColors: () => void
 
   // 配置
   setDimensions: (width: number, height: number) => void
@@ -325,10 +325,9 @@ export const useWaveformRenderer = (
   }
 
   /**
-   * 更新颜色配置并重绘
-   * @param colors 新的颜色配置
+   * 强制刷新缓存并重绘（颜色由 `getColors` 实时提供）
    */
-  const updateColors = (_colors: WaveformColors) => {
+  const updateColors = () => {
     shouldUpdateCache.value = true
     drawWaveform()
   }

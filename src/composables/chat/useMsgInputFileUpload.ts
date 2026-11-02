@@ -68,16 +68,15 @@ async function processGenericFile(
 
   try {
     const updateProgress = createRafProgressUpdater(chatStore, tempMsgId)
-    const _progressCallback = (pct: number) => {
+    const progressCallback = (pct: number) => {
       if (!isProgressActive) return
       updateProgress(pct)
     }
-    void _progressCallback
 
     const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
     if (isEncrypted) {
-      const result = await matrixMediaService.uploadEncryptedFile(file, _progressCallback)
+      const result = await matrixMediaService.uploadEncryptedFile(file, progressCallback)
       cleanup()
       messageBody.encryptedFile = result.encryptedFile
       delete (messageBody as Record<string, unknown>).url
@@ -151,11 +150,10 @@ async function processGenericPathFile(
 
   try {
     const updateProgress = createRafProgressUpdater(chatStore, tempMsgId)
-    const _progressCallback = (pct: number) => {
+    const progressCallback = (pct: number) => {
       if (!isProgressActive) return
       updateProgress(pct)
     }
-    void _progressCallback
 
     const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
@@ -165,7 +163,7 @@ async function processGenericPathFile(
       //  2. 拖拽路径 —— 已由 FileUtil.copyDroppedFilesToAppScope 复制到 $APPDATA/userData/dropped。
       const fileData = await readFile(file.path)
       const fileBlob = new File([fileData], file.name, { type: file.type })
-      const result = await matrixMediaService.uploadEncryptedFile(fileBlob, _progressCallback)
+      const result = await matrixMediaService.uploadEncryptedFile(fileBlob, progressCallback)
       cleanup()
       messageBody.encryptedFile = result.encryptedFile
       delete (messageBody as Record<string, unknown>).url

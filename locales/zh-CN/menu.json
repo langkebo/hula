@@ -6,7 +6,6 @@
   "sign_out": "退出登录",
   "sign_out_failed": "退出登录失败，请重试",
   "homeserver": "设置服务器",
-  "admin_panel": "管理后台",
   "homeserver_url": "服务器地址",
   "homeserver_placeholder": "请输入 Matrix 服务器地址",
   "homeserver_hint": "设置 Matrix Homeserver 地址以连接到不同的服务器",
@@ -75,6 +74,7 @@
       "offline": "隐身",
       "updated": "状态已更新"
     },
+    "theme_toggle": "切换主题",
     "sections": {
       "quick_actions": "快捷操作",
       "friend_management": "好友管理",

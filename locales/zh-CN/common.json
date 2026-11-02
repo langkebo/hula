@@ -12,6 +12,9 @@
   "create": "创建",
   "refresh": "刷新",
   "close": "关闭",
+  "search": "搜索",
+  "send": "发送",
+  "remove": "移除",
   "back": "返回",
   "retry": "重试",
   "error": "操作失败",
@@ -30,6 +33,7 @@
   "widget": {
     "title": "小组件",
     "add": "添加小组件",
+    "open": "打开",
     "no_widgets": "暂无小组件",
     "name": "名称",
     "name_placeholder": "请输入小组件名称",

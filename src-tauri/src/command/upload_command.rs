@@ -1,3 +1,4 @@
+use crate::common::path_guard::path_is_within;
 use bytes::Bytes;
 use futures_util::stream::try_unfold;
 use serde::Serialize;
@@ -6,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{AppHandle, Manager, ipc::Channel, path::BaseDirectory};
 use tokio::{fs::File, io::AsyncReadExt};
+use url::Url;
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -24,37 +26,183 @@ pub async fn upload_file_put(
     on_progress: Channel<UploadProgressPayload>,
 ) -> Result<(), String> {
     let file_path = resolve_upload_path(&app_handle, &path, base_dir.as_deref())?;
-    upload_put(url, file_path, headers.unwrap_or_default(), on_progress).await
+    validate_upload_url(&url)?;
+    let headers = headers.unwrap_or_default();
+    for (key, value) in &headers {
+        validate_upload_header(key, value)?;
+    }
+    upload_put(url, file_path, headers, on_progress).await
 }
 
+/// 上传命令允许读取的根目录：应用数据目录与应用缓存目录。
+///
+/// 目录不存在时尽力创建，保证后续 `path_is_within` 的 `canonicalize` 能正常比对。
+fn allowed_upload_roots(app_handle: &AppHandle) -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    if let Ok(dir) = app_handle.path().app_data_dir() {
+        let _ = std::fs::create_dir_all(&dir);
+        roots.push(dir);
+    }
+    if let Ok(dir) = app_handle.path().app_cache_dir() {
+        let _ = std::fs::create_dir_all(&dir);
+        roots.push(dir);
+    }
+    roots
+}
+
+/// 解析上传源文件路径，并强制其落在应用作用域目录内。
+///
+/// 安全：绝对路径不再被直接放行，必须通过 `path_is_within`（含 `canonicalize`，
+/// 可解析符号链接与 `..`）校验；相对路径统一以 `AppData` 为基准，避免依赖进程 CWD。
 fn resolve_upload_path(
     app_handle: &AppHandle,
     path: &str,
     base_dir: Option<&str>,
 ) -> Result<PathBuf, String> {
-    let path_buf = PathBuf::from(path);
-    if path_buf.is_absolute() {
-        return Ok(path_buf);
+    let resolved = match base_dir {
+        Some(base_dir) => {
+            let base_dir = match base_dir {
+                "AppCache" | "appCache" | "app_cache" => BaseDirectory::AppCache,
+                "AppData" | "appData" | "app_data" => BaseDirectory::AppData,
+                _ => {
+                    return Err(format!(
+                        "Unsupported baseDir: {base_dir}, expected AppCache/AppData"
+                    ));
+                }
+            };
+            app_handle
+                .path()
+                .resolve(path, base_dir)
+                .map_err(|e| format!("Failed to resolve file path: {e}"))?
+        }
+        None if PathBuf::from(path).is_absolute() => PathBuf::from(path),
+        None => app_handle
+            .path()
+            .resolve(path, BaseDirectory::AppData)
+            .map_err(|e| format!("Failed to resolve file path: {e}"))?,
+    };
+
+    if !resolved.is_file() {
+        return Err(format!("上传源文件不存在: {}", resolved.display()));
     }
 
-    let Some(base_dir) = base_dir else {
-        return Ok(path_buf);
-    };
+    let roots = allowed_upload_roots(app_handle);
+    if !roots.iter().any(|root| path_is_within(&resolved, root)) {
+        return Err(format!("拒绝读取应用数据目录之外的文件: {path}"));
+    }
 
-    let base_dir = match base_dir {
-        "AppCache" | "appCache" | "app_cache" => BaseDirectory::AppCache,
-        "AppData" | "appData" | "app_data" => BaseDirectory::AppData,
-        _ => {
-            return Err(format!(
-                "Unsupported baseDir: {base_dir}, expected AppCache/AppData"
-            ));
+    Ok(resolved)
+}
+
+/// 上传目标地址白名单：仅允许 http(s)，且拒绝回环 / 私网 / 链路本地 / 云元数据地址。
+///
+/// 目的是阻断「本地文件 → 任意 URL」的数据外泄链路，以及 SSRF。
+fn validate_upload_url(url: &str) -> Result<(), String> {
+    let parsed = Url::parse(url).map_err(|e| format!("上传地址非法: {e}"))?;
+
+    if !matches!(parsed.scheme(), "http" | "https") {
+        return Err(format!("拒绝非 http(s) 上传地址: {url}"));
+    }
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err(format!("拒绝携带用户信息的 URL: {url}"));
+    }
+
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| format!("上传地址缺少主机名: {url}"))?;
+    if is_forbidden_upload_host(host) {
+        return Err(format!("拒绝向内网或回环地址上传: {url}"));
+    }
+
+    Ok(())
+}
+
+fn is_forbidden_upload_host(host: &str) -> bool {
+    let normalized = host.trim_end_matches('.').to_ascii_lowercase();
+    // IPv6 字面量在 URL 里带方括号（`[::1]`），剥掉后才能交给 IpAddr::parse；
+    // 否则 `http://[::1]/` 会被误判成域名而放行。
+    let host = normalized
+        .strip_prefix('[')
+        .and_then(|h| h.strip_suffix(']'))
+        .unwrap_or(&normalized);
+    if host == "localhost" || host.ends_with(".localhost") {
+        return true;
+    }
+    match host.parse::<std::net::IpAddr>() {
+        Ok(addr) => is_forbidden_upload_ip(addr),
+        // 域名本身无法在此解析，交由 DNS 层；至少拦截字面量 IP 与 localhost。
+        Err(_) => false,
+    }
+}
+
+fn is_forbidden_upload_ip(addr: std::net::IpAddr) -> bool {
+    use std::net::IpAddr;
+
+    match addr {
+        IpAddr::V4(v4) => {
+            v4.is_loopback()
+                || v4.is_private()
+                || v4.is_link_local()
+                || v4.is_unspecified()
+                || v4.is_broadcast()
+                || v4.is_multicast()
         }
-    };
+        IpAddr::V6(v6) => {
+            if let Some(v4) = v6.to_ipv4_mapped() {
+                return is_forbidden_upload_ip(IpAddr::V4(v4));
+            }
+            let first_segment = v6.segments()[0];
+            v6.is_loopback()
+                || v6.is_unspecified()
+                || v6.is_multicast()
+                // fc00::/7 唯一本地地址
+                || (first_segment & 0xfe00) == 0xfc00
+                // fe80::/10 链路本地地址
+                || (first_segment & 0xffc0) == 0xfe80
+        }
+    }
+}
 
-    app_handle
-        .path()
-        .resolve(path, base_dir)
-        .map_err(|e| format!("Failed to resolve file path: {e}"))
+/// 上传 header 白名单校验：拒绝 hop-by-hop 头、凭据混淆头与 CRLF 注入。
+fn validate_upload_header(key: &str, value: &str) -> Result<(), String> {
+    let normalized = key.trim().to_ascii_lowercase();
+    if normalized.is_empty() {
+        return Err("上传 header 名称不能为空".to_string());
+    }
+    if !normalized
+        .bytes()
+        .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+    {
+        return Err(format!("上传 header 名称非法: {key}"));
+    }
+    if value.contains('\r') || value.contains('\n') {
+        return Err(format!("上传 header 值包含非法换行: {key}"));
+    }
+
+    const FORBIDDEN_HEADERS: &[&str] = &[
+        "host",
+        "cookie",
+        "content-length",
+        "transfer-encoding",
+        "connection",
+        "keep-alive",
+        "upgrade",
+        "proxy-authorization",
+        "proxy-authenticate",
+        "te",
+        "trailer",
+        "expect",
+        "forwarded",
+        "x-forwarded-for",
+        "x-forwarded-host",
+        "x-forwarded-proto",
+        "x-real-ip",
+    ];
+    if FORBIDDEN_HEADERS.contains(&normalized.as_str()) {
+        return Err(format!("拒绝透传 header: {key}"));
+    }
+
+    Ok(())
 }
 
 /// 将拖拽/选择的文件复制到应用作用域目录（`$APPDATA/userData/dropped`），
@@ -110,20 +258,6 @@ pub async fn copy_file_to_app_scope(
     std::fs::copy(&source, &dest_path).map_err(|e| format!("复制文件失败: {e}"))?;
 
     Ok(dest_path.to_string_lossy().to_string())
-}
-
-/// 判断规范化后的 `source` 是否位于 `base` 目录之内（含 `base` 本身）。
-///
-/// 使用 `canonicalize` 解析符号链接与 `..`，防止 `~/../etc/passwd` 这类路径绕过白名单。
-/// 任一侧无法规范化时返回 `false`（保守拒绝）。
-fn path_is_within(source: &Path, base: &Path) -> bool {
-    let Ok(source) = source.canonicalize() else {
-        return false;
-    };
-    let Ok(base) = base.canonicalize() else {
-        return false;
-    };
-    source.starts_with(&base)
 }
 
 /// dropped 目录文件数上限：超过后按修改时间删除最旧的文件（尽力而为）。
@@ -251,60 +385,6 @@ mod tests {
     }
 
     #[test]
-    fn path_is_within_accepts_home_dir_file() {
-        let home = temp_home_dir("accept-home");
-        let inside = home.join("dropped.txt");
-        std::fs::write(&inside, b"x").unwrap();
-
-        assert!(path_is_within(&inside, &home));
-
-        let _ = std::fs::remove_dir_all(&home);
-    }
-
-    #[test]
-    fn path_is_within_rejects_file_outside_home() {
-        let home = temp_home_dir("reject-home");
-        let outside_base = temp_home_dir("reject-outside");
-        let outside = outside_base.join("secret.txt");
-        std::fs::write(&outside, b"x").unwrap();
-
-        assert!(!path_is_within(&outside, &home));
-
-        let _ = std::fs::remove_dir_all(&home);
-        let _ = std::fs::remove_dir_all(&outside_base);
-    }
-
-    #[test]
-    fn path_is_within_rejects_dotdot_traversal() {
-        // `home/../<sibling>/secret.txt` 经 `..` 解析后位于 home 之外，必须被拒绝，
-        // 防止 `~/../etc/passwd` 这类路径绕过白名单。
-        let home = temp_home_dir("traversal-home");
-        let sibling = temp_home_dir("traversal-sibling");
-        let secret = sibling.join("secret.txt");
-        std::fs::write(&secret, b"x").unwrap();
-
-        let sibling_name = sibling.file_name().unwrap();
-        let traversal = home.join("..").join(sibling_name).join("secret.txt");
-        assert!(traversal.is_file());
-        assert!(!path_is_within(&traversal, &home));
-
-        let _ = std::fs::remove_dir_all(&home);
-        let _ = std::fs::remove_dir_all(&sibling);
-    }
-
-    #[test]
-    fn path_is_within_rejects_etc_passwd() {
-        // 系统敏感路径（存在时）必须被拒绝，即使它确实是一个文件。
-        let home = temp_home_dir("etc-home");
-        let etc_passwd = Path::new("/etc/passwd");
-        if etc_passwd.is_file() {
-            assert!(!path_is_within(etc_passwd, &home));
-        }
-
-        let _ = std::fs::remove_dir_all(&home);
-    }
-
-    #[test]
     fn cleanup_dropped_dir_removes_oldest_when_over_cap() {
         let dir = temp_home_dir("dropped");
         // 写入 MAX_DROPPED_FILES + 5 个文件
@@ -323,5 +403,76 @@ mod tests {
         assert_eq!(remaining, MAX_DROPPED_FILES);
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn validate_upload_url_accepts_public_https() {
+        assert!(validate_upload_url("https://matrix.example.com/_matrix/media/v3/upload").is_ok());
+        assert!(validate_upload_url("http://example.com:8008/upload").is_ok());
+    }
+
+    #[test]
+    fn validate_upload_url_rejects_non_http_schemes() {
+        for url in [
+            "file:///etc/passwd",
+            "ftp://example.com/x",
+            "data:text/plain,hello",
+        ] {
+            assert!(
+                validate_upload_url(url).is_err(),
+                "{url} should be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn validate_upload_url_rejects_loopback_private_and_metadata_hosts() {
+        for url in [
+            "http://localhost:8008/upload",
+            "http://api.localhost/upload",
+            "http://127.0.0.1/upload",
+            "http://[::1]/upload",
+            "http://169.254.169.254/latest/meta-data/",
+            "http://10.0.0.1/upload",
+            "http://172.16.0.1/upload",
+            "http://192.168.1.2/upload",
+            "http://[::ffff:127.0.0.1]/upload",
+        ] {
+            assert!(
+                validate_upload_url(url).is_err(),
+                "{url} should be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn validate_upload_url_rejects_embedded_credentials() {
+        assert!(validate_upload_url("https://user:pass@example.com/upload").is_err());
+    }
+
+    #[test]
+    fn validate_upload_header_allows_business_headers() {
+        assert!(validate_upload_header("Authorization", "Bearer token").is_ok());
+        assert!(validate_upload_header("Content-Type", "application/octet-stream").is_ok());
+        assert!(validate_upload_header("X-Trace-Id", "abc-123").is_ok());
+    }
+
+    #[test]
+    fn validate_upload_header_rejects_forbidden_and_injected_headers() {
+        for key in [
+            "Host",
+            "Cookie",
+            "Content-Length",
+            "Transfer-Encoding",
+            "Connection",
+        ] {
+            assert!(
+                validate_upload_header(key, "value").is_err(),
+                "{key} should be rejected"
+            );
+        }
+        assert!(validate_upload_header("X-Trace", "a\r\nHost: evil").is_err());
+        assert!(validate_upload_header("Bad Key", "value").is_err());
+        assert!(validate_upload_header("", "value").is_err());
     }
 }

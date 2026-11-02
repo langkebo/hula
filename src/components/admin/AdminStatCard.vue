@@ -88,6 +88,8 @@ const trendArrowPath = computed(() => {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
+
 .admin-stat-card {
   display: flex;
   align-items: center;
@@ -167,7 +169,7 @@ const trendArrowPath = computed(() => {
   color: var(--tjg-text-quaternary);
 }
 
-@media (max-width: 640px) {
+@include responsive.respond-to-max('md') {
   .admin-stat-card {
     padding: var(--tjg-space-4);
   }

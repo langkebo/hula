@@ -6,7 +6,7 @@ import { BaseMatrixService } from '../BaseMatrixService'
 
 const logger = createLogger('MatrixReceiptService')
 
-const ROOM_READY_TIMEOUT_MS = 3000
+const ROOM_READY_TIMEOUT_MS = 3_000
 const ROOM_READY_POLL_INTERVAL_MS = 100
 const DEFERRED_READ_RETRY_INTERVAL_MS = 1000
 const DEFERRED_READ_MAX_AGE_MS = 15000

@@ -216,7 +216,7 @@ describe('MatrixWidgetService', () => {
     mockWidgetManager.deleteWidget.mockResolvedValueOnce(undefined)
 
     expect(await matrixWidgetService.deleteWidget('widget-1')).toBe(true)
-    expect(await matrixWidgetService.removeWidget('!room:example.com', 'widget-1')).toBe(true)
+    expect(await matrixWidgetService.removeWidget('widget-1')).toBe(true)
 
     expect(mockWidgetManager.deleteWidget).toHaveBeenNthCalledWith(1, 'widget-1')
     expect(mockWidgetManager.deleteWidget).toHaveBeenNthCalledWith(2, 'widget-1')

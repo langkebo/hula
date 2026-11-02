@@ -1,1 +1,70 @@
-{}
+{
+  "title": "Telemetry",
+  "subtitle": "OpenTelemetry runtime status, metric summary and alerts",
+  "unavailable": {
+    "title": "Telemetry is not enabled",
+    "description": "This server does not expose telemetry endpoints, so status and metrics cannot be read. Retry after enabling it."
+  },
+  "section": {
+    "status": "Runtime Status",
+    "metrics": "Metric Summary",
+    "scheduler": "AppService Scheduler",
+    "alerts": "Alerts",
+    "attributes": "Resource Attributes"
+  },
+  "status": {
+    "enabled": "Telemetry",
+    "health": "Health",
+    "trace": "Tracing",
+    "metrics": "Metrics",
+    "service": "Service Name",
+    "version": "Service Version",
+    "sampling": "Sampling Ratio",
+    "batch": "Batch Export",
+    "otlp": "OTLP Endpoint",
+    "prometheus": "Prometheus",
+    "on": "Enabled",
+    "off": "Disabled",
+    "none": "Not configured"
+  },
+  "metrics": {
+    "total": "Total Metrics",
+    "counters": "Counters",
+    "gauges": "Gauges",
+    "histograms": "Histograms",
+    "rendered": "Rendered Bytes",
+    "snapshot": "Snapshot Time",
+    "services": "Services",
+    "schedulerAvailable": "Scheduler Available",
+    "backoff": "In Backoff",
+    "pendingEvents": "Pending Events",
+    "pendingTransactions": "Pending Transactions",
+    "success": "Success Count",
+    "failure": "Failure Count"
+  },
+  "alerts": {
+    "col_rule": "Rule",
+    "col_severity": "Severity",
+    "col_status": "Status",
+    "col_message": "Message",
+    "col_triggered": "Triggered At",
+    "col_actions": "Actions",
+    "ack": "Acknowledge",
+    "ack_title": "Acknowledge Alert",
+    "ack_content": "The alert will be marked as handled after acknowledging. Continue?",
+    "ack_success": "Alert acknowledged",
+    "ack_failed": "Failed to acknowledge alert"
+  },
+  "severity": {
+    "info": "Info",
+    "warning": "Warning",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "alert_status": {
+    "firing": "Firing",
+    "acknowledged": "Acknowledged",
+    "recovered": "Recovered",
+    "closed": "Closed"
+  }
+}

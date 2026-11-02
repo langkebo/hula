@@ -28,6 +28,12 @@ const ERROR_MAP: Record<string, TranslatedError> = {
     recoverable: true,
     action: 'relogin'
   },
+  M_USER_DEACTIVATED: {
+    userMessage: 'error.matrix.user_deactivated',
+    level: 'dialog',
+    recoverable: false,
+    action: 'none'
+  },
   M_MISSING_TOKEN: {
     userMessage: 'error.matrix.missing_token',
     level: 'dialog',

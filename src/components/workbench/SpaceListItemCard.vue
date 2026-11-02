@@ -27,7 +27,11 @@
         <n-flex v-if="hovered && !active" :size="2" align="center" class="space-card__quick-actions" @click.stop>
           <n-tooltip trigger="hover">
             <template #trigger>
-              <button type="button" class="space-card__action-btn" @click.stop="emit('pin', item.spaceId)">
+              <button
+                type="button"
+                class="space-card__action-btn"
+                :aria-label="item.isPinned ? t('space.unpin_space') : t('space.pin_space')"
+                @click.stop="emit('pin', item.spaceId)">
                 <svg class="size-12px">
                   <use :href="item.isPinned ? '#unpin' : '#pin'" />
                 </svg>
@@ -37,7 +41,11 @@
           </n-tooltip>
           <n-tooltip trigger="hover">
             <template #trigger>
-              <button type="button" class="space-card__action-btn" @click.stop="emit('settings', item.spaceId)">
+              <button
+                type="button"
+                class="space-card__action-btn"
+                :aria-label="t('space.settings')"
+                @click.stop="emit('settings', item.spaceId)">
                 <svg class="size-12px">
                   <use href="#settings" />
                 </svg>
@@ -47,7 +55,11 @@
           </n-tooltip>
           <n-tooltip trigger="hover">
             <template #trigger>
-              <button type="button" class="space-card__action-btn" @click.stop="emit('leave', item.spaceId)">
+              <button
+                type="button"
+                class="space-card__action-btn"
+                :aria-label="t('space.leave_space')"
+                @click.stop="emit('leave', item.spaceId)">
                 <svg class="size-12px">
                   <use href="#logout" />
                 </svg>
@@ -60,6 +72,7 @@
               <button
                 type="button"
                 class="space-card__action-btn space-card__action-btn--danger"
+                :aria-label="t('space.delete_space')"
                 @click.stop="emit('delete', item.spaceId)">
                 <svg class="size-12px">
                   <use href="#delete" />

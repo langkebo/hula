@@ -6,7 +6,6 @@
   "sign_out": "Sign Out",
   "sign_out_failed": "Failed to sign out, please retry",
   "homeserver": "Server Settings",
-  "admin_panel": "Admin Panel",
   "homeserver_url": "Server URL",
   "homeserver_placeholder": "Enter Matrix server URL",
   "homeserver_hint": "Set the Matrix Homeserver URL to connect to a different server",
@@ -75,6 +74,7 @@
       "offline": "Invisible",
       "updated": "Status updated"
     },
+    "theme_toggle": "Toggle theme",
     "sections": {
       "quick_actions": "Quick Actions",
       "friend_management": "Friend Management",

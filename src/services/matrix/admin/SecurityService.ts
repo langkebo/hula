@@ -1,4 +1,5 @@
 import type { FeatureFlag, FederationDestination as SdkFederationDestination } from 'matrix-js-sdk/admin'
+import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import type { FederationDestination } from './AdminTypes'
@@ -100,7 +101,7 @@ export class AdminSecurityService {
   }
 
   async getAuditLog(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string,
     userId?: string,
     eventType?: string
@@ -300,7 +301,7 @@ export class AdminSecurityService {
   }
 
   async getSamlMappings(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{
     mappings: Array<Record<string, unknown>>
@@ -363,7 +364,7 @@ export class AdminSecurityService {
   }
 
   async getSecurityEvents(
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
     filters?: Record<string, unknown>
   ): Promise<{ events: Array<Record<string, unknown>>; nextToken?: string | undefined } | null> {

@@ -1,76 +1,84 @@
 <template>
   <div class="chat-header-toolbar">
-    <n-tooltip v-if="!isGroup" trigger="hover" :delay="500">
-      <template #trigger>
-        <n-button quaternary circle size="small" :aria-label="t('chat.header.video_call')" @click="handleVideoCall">
-          <template #icon>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path
-                d="M17 10.5V7a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"
-                fill="currentColor"
-                stroke="none" />
-            </svg>
-          </template>
-        </n-button>
-      </template>
-      {{ t('chat.header.video_call') }}
-    </n-tooltip>
+    <!-- 通话/会议/共享入口依赖服务端 voip 能力；不可用时整体不渲染 -->
+    <PermissionGuard :require="'voip'">
+      <n-tooltip v-if="!isGroup" trigger="hover" :delay="500">
+        <template #trigger>
+          <n-button quaternary circle size="small" :aria-label="t('chat.header.video_call')" @click="handleVideoCall">
+            <template #icon>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path
+                  d="M17 10.5V7a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"
+                  fill="currentColor"
+                  stroke="none" />
+              </svg>
+            </template>
+          </n-button>
+        </template>
+        {{ t('chat.header.video_call') }}
+      </n-tooltip>
 
-    <n-tooltip v-if="!isGroup" trigger="hover" :delay="500">
-      <template #trigger>
-        <n-button quaternary circle size="small" :aria-label="t('chat.header.voice_call')" @click="handleVoiceCall">
-          <template #icon>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path
-                d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.28-.28.67-.36 1.02-.25 1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"
-                fill="currentColor"
-                stroke="none" />
-            </svg>
-          </template>
-        </n-button>
-      </template>
-      {{ t('chat.header.voice_call') }}
-    </n-tooltip>
+      <n-tooltip v-if="!isGroup" trigger="hover" :delay="500">
+        <template #trigger>
+          <n-button quaternary circle size="small" :aria-label="t('chat.header.voice_call')" @click="handleVoiceCall">
+            <template #icon>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path
+                  d="M6.62 10.79c1.44 2.83 3.76 5.15 6.59 6.59l2.2-2.2c.28-.28.67-.36 1.02-.25 1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"
+                  fill="currentColor"
+                  stroke="none" />
+              </svg>
+            </template>
+          </n-button>
+        </template>
+        {{ t('chat.header.voice_call') }}
+      </n-tooltip>
 
-    <n-tooltip trigger="hover" :delay="500">
-      <template #trigger>
-        <n-button
-          quaternary
-          circle
-          size="small"
-          :aria-label="t('chat.header.start_meeting')"
-          :loading="meetingLoading"
-          @click="handleStartMeeting">
-          <template #icon>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path
-                d="M17 10.5V7a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"
-                fill="currentColor"
-                stroke="none" />
-              <path d="M12 9v2h3v2h-3v2h-2v-2H7v-2h3V9h2z" fill="var(--tjg-surface-panel)" stroke="none" />
-            </svg>
-          </template>
-        </n-button>
-      </template>
-      {{ t('chat.header.start_meeting') }}
-    </n-tooltip>
+      <n-tooltip trigger="hover" :delay="500">
+        <template #trigger>
+          <n-button
+            quaternary
+            circle
+            size="small"
+            :aria-label="t('chat.header.start_meeting')"
+            :loading="meetingLoading"
+            @click="handleStartMeeting">
+            <template #icon>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path
+                  d="M17 10.5V7a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-3.5l4 4v-11l-4 4z"
+                  fill="currentColor"
+                  stroke="none" />
+                <path d="M12 9v2h3v2h-3v2h-2v-2H7v-2h3V9h2z" fill="var(--tjg-surface-panel)" stroke="none" />
+              </svg>
+            </template>
+          </n-button>
+        </template>
+        {{ t('chat.header.start_meeting') }}
+      </n-tooltip>
 
-    <n-tooltip v-if="!isMobile" trigger="hover" :delay="500">
-      <template #trigger>
-        <n-button quaternary circle size="small" :aria-label="t('chat.header.screen_share')" @click="handleScreenShare">
-          <template #icon>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path
-                d="M21 16V4H3v12h18zm0-14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-7v2h3v2H7v-2h3v-2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h18z"
-                fill="currentColor"
-                stroke="none" />
-              <path d="M12 7l4 4h-3v4h-2v-4H8l4-4z" fill="var(--tjg-surface-panel)" stroke="none" />
-            </svg>
-          </template>
-        </n-button>
-      </template>
-      {{ t('chat.header.screen_share') }}
-    </n-tooltip>
+      <n-tooltip v-if="!isMobile" trigger="hover" :delay="500">
+        <template #trigger>
+          <n-button
+            quaternary
+            circle
+            size="small"
+            :aria-label="t('chat.header.screen_share')"
+            @click="handleScreenShare">
+            <template #icon>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path
+                  d="M21 16V4H3v12h18zm0-14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-7v2h3v2H7v-2h3v-2H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h18z"
+                  fill="currentColor"
+                  stroke="none" />
+                <path d="M12 7l4 4h-3v4h-2v-4H8l4-4z" fill="var(--tjg-surface-panel)" stroke="none" />
+              </svg>
+            </template>
+          </n-button>
+        </template>
+        {{ t('chat.header.screen_share') }}
+      </n-tooltip>
+    </PermissionGuard>
 
     <!-- 附录 C.6：在新窗口打开（仅桌面端显示） -->
     <n-tooltip v-if="!isMobile" trigger="hover" :delay="500">
@@ -110,32 +118,35 @@
       {{ t('chat.header.group_qr_code') }}
     </n-tooltip>
 
-    <n-tooltip trigger="hover" :delay="500">
-      <template #trigger>
-        <n-button
-          quaternary
-          circle
-          size="small"
-          :class="{ 'private-mode-active': privateModeActive }"
-          :aria-label="t('chat.header.private_mode_toggle')"
-          @click="handleTogglePrivateMode">
-          <template #icon>
-            <svg width="20" height="20" viewBox="0 0 24 24">
-              <text
-                x="12"
-                y="17"
-                text-anchor="middle"
-                font-size="16"
-                font-weight="700"
-                :fill="privateModeActive ? 'var(--tjg-color-danger-500)' : 'currentColor'">
-                S
-              </text>
-            </svg>
-          </template>
-        </n-button>
-      </template>
-      {{ privateModeActive ? t('chat.header.private_mode_active') : t('chat.header.private_mode_toggle') }}
-    </n-tooltip>
+    <!-- 私密模式（阅后即焚）入口依赖服务端能力 -->
+    <PermissionGuard :require="'burn-after-read'">
+      <n-tooltip trigger="hover" :delay="500">
+        <template #trigger>
+          <n-button
+            quaternary
+            circle
+            size="small"
+            :class="{ 'private-mode-active': privateModeActive }"
+            :aria-label="t('chat.header.private_mode_toggle')"
+            @click="handleTogglePrivateMode">
+            <template #icon>
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <text
+                  x="12"
+                  y="17"
+                  text-anchor="middle"
+                  font-size="16"
+                  font-weight="700"
+                  :fill="privateModeActive ? 'var(--tjg-color-danger-500)' : 'currentColor'">
+                  S
+                </text>
+              </svg>
+            </template>
+          </n-button>
+        </template>
+        {{ privateModeActive ? t('chat.header.private_mode_active') : t('chat.header.private_mode_toggle') }}
+      </n-tooltip>
+    </PermissionGuard>
 
     <n-tooltip v-if="!isMobile" trigger="hover" :delay="500">
       <template #trigger>
@@ -181,6 +192,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import PermissionGuard from '@/components/common/PermissionGuard.vue'
 import { RoomTypeEnum } from '@/enums'
 import { isMobile } from '@/utils/PlatformConstants'
 

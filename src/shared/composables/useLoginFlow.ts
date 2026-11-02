@@ -32,6 +32,12 @@ import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('useLoginFlow')
 
+/**
+ * 登录重入锁（模块级）：桌面端按钮点击 + 回车键、自动登录 + 手动重试都可能并发触发。
+ * 放在模块级而非 composable 内，确保不同组件实例（桌面 orchestrator / 移动端 login.vue）之间也互斥。
+ */
+let loginInFlight = false
+
 export const useLoginFlow = () => {
   const settingStore = useSettingStore()
   const userStore = useUserStore()
@@ -114,7 +120,11 @@ export const useLoginFlow = () => {
     }
   }
 
-  const normalLogin = async (
+  /**
+   * 登录执行体：只允许由 normalLogin 的重入锁包裹后调用。
+   * 拆成独立函数是为了让锁的 try/finally 覆盖所有提前 return 分支。
+   */
+  const performLogin = async (
     _deviceType: 'PC' | 'MOBILE',
     _syncRecentMessages: boolean,
     auto: boolean = settingStore.autoLoginEnabled
@@ -166,7 +176,7 @@ export const useLoginFlow = () => {
     if (!auto && !account) {
       loading.value = false
       loginDisabled.value = false
-      loginText.value = isOnline.value ? '登录' : '网络异常'
+      loginText.value = isOnline.value ? t('login.button.login.default') : t('login.button.login.network_error')
       logger.info('账号信息缺失，请重新输入')
       return
     }
@@ -263,12 +273,27 @@ export const useLoginFlow = () => {
       matrixStore.isInitialized = false
       const matrixErr = err as Error & { errcode?: string; httpStatus?: number; message?: string }
       const translated = translateMatrixError(matrixErr, { context: 'login' })
-      const userMessage =
-        translated.userMessage !== 'error.matrix.unknown'
+      // 429 可能只带 httpStatus（SDK 未透出 errcode），两种形态都要识别为限流。
+      const isRateLimited = matrixErr.errcode === 'M_LIMIT_EXCEEDED' || matrixErr.httpStatus === 429
+      if (isRateLimited) {
+        // 长限流（>60s）由 MatrixClientAuthHttp 直接上抛，不再重试；这里只负责提示，
+        // 并按服务端 retry_after_ms 告知用户需要等待的时长（写在日志里便于排查）。
+        logger.warn(`登录被限流，retryAfterMs=${translated.retryAfterMs ?? 'unknown'}`)
+      }
+      const userMessage = isRateLimited
+        ? t('error.matrix.rate_limited')
+        : translated.userMessage !== 'error.matrix.unknown'
           ? t(translated.userMessage)
           : matrixErr.message || t('matrix_error.auth.login_failed_check_network')
       lastLoginError.value = userMessage
       showFeedback(userMessage, 'error')
+      // 失败路径必须 teardown：initialize()/login() 可能已创建并启动 client，
+      // 不清理会让下次登录复用半初始化实例，或残留 sync 连接。
+      try {
+        await matrixClientService.stopClient()
+      } catch (cleanupErr) {
+        logger.warn('登录失败后清理 client 异常:', cleanupErr)
+      }
       if (auto) {
         uiState.value = 'manual'
         settingStore.setAutoLogin(false)
@@ -282,6 +307,27 @@ export const useLoginFlow = () => {
           await returnToMobileLogin()
         }
       }
+    }
+  }
+
+  /**
+   * 登录入口：重入锁保证同一时刻只有一次 login/startClient 在跑。
+   * 连点按钮、回车键与自动登录同时触发时，后续调用直接忽略。
+   */
+  const normalLogin = async (
+    _deviceType: 'PC' | 'MOBILE',
+    _syncRecentMessages: boolean,
+    auto: boolean = settingStore.autoLoginEnabled
+  ) => {
+    if (loginInFlight) {
+      logger.info('登录已在进行中，忽略重复触发')
+      return
+    }
+    loginInFlight = true
+    try {
+      await performLogin(_deviceType, _syncRecentMessages, auto)
+    } finally {
+      loginInFlight = false
     }
   }
 

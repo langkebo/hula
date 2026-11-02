@@ -111,6 +111,7 @@
                 size="tiny"
                 circle
                 type="error"
+                :aria-label="t('ai_assistant.robot.clear')"
                 @click="emit('clear-video-image')"
                 class="close-btn-overlay">
                 <template #icon>
@@ -133,7 +134,10 @@
           </template>
           <div class="max-w-300px">
             <div v-if="videoImagePreview" class="mb-8px">
-              <img :src="videoImagePreview" class="max-w-full rounded-4px" :alt="t('ai_assistant.robot.video_preview')" />
+              <img
+                :src="videoImagePreview"
+                class="max-w-full rounded-4px"
+                :alt="t('ai_assistant.robot.video_preview')" />
             </div>
             <div class="text-12px text-[--tjg-text-tertiary]">
               <div v-if="isUploadingVideoImage" class="text-[--tjg-color-success-500]">
@@ -158,12 +162,7 @@
           </div>
         </n-popover>
 
-        <n-popover
-          v-for="item in otherFeatures"
-          :key="item.label"
-          trigger="hover"
-          :show-arrow="false"
-          placement="top">
+        <n-popover v-for="item in otherFeatures" :key="item.label" trigger="hover" :show-arrow="false" placement="top">
           <template #trigger>
             <svg><use :href="`#${item.icon}`"></use></svg>
           </template>

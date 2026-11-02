@@ -213,7 +213,8 @@ export async function discoverMatrixEndpoints(
 
     const document = (await response.json()) as WellKnownDocument
     return parseWellKnownEndpoint(document, serverName) ?? fallbackResult
-  } catch {
+  } catch (err) {
+    logger.debug(`well-known 发现失败，回退默认端点 (${serverName}): ${err}`)
     return fallbackResult
   }
 }

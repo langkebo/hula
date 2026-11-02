@@ -4,7 +4,7 @@
     <div
       class="pane-header flex items-center justify-between px-20px py-12px border-b border-[--tjg-border-layout-divider]">
       <span class="pane-title">{{ t('room.create.title') }}</span>
-      <n-button text @click="handleClose">
+      <n-button text :aria-label="t('common.close')" @click="handleClose">
         <svg class="size-16px"><use href="#close"></use></svg>
       </n-button>
     </div>

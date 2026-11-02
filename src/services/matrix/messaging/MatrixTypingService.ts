@@ -21,7 +21,7 @@ class MatrixTypingService extends BaseMatrixService {
   private cachedClient: MatrixClient | null = null
   private cachedManager: TypingManager | null = null
   private activeTypingRooms = new Set<string>()
-  private readonly DEFAULT_TIMEOUT = 30000
+  private readonly DEFAULT_TIMEOUT = 30_000
 
   private getTypingManager(): TypingManager {
     const client = matrixClientService.getClient()

@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { decryptFromSession, encryptForSession, SESSION_CRYPTO_SECRET_STORAGE_KEY } from '../sessionCrypto'
+
+const { invokeMock, hasTauriRuntimeMock } = vi.hoisted(() => ({
+  invokeMock: vi.fn(),
+  hasTauriRuntimeMock: vi.fn(() => false)
+}))
+
+vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }))
+vi.mock('@/utils/AppHarness', () => ({ hasTauriRuntime: hasTauriRuntimeMock }))
+
+import { decryptFromSession, encryptForSession } from '../sessionCrypto'
 
 const CIPHERTEXT_VERSION_PREFIX = 'tjg:v2:'
 
@@ -20,8 +29,10 @@ async function makeLegacyV1Ciphertext(plaintext: string): Promise<string> {
 
 describe('sessionCrypto', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
+    hasTauriRuntimeMock.mockReturnValue(false)
     window.localStorage.clear()
-    vi.restoreAllMocks()
+    window.sessionStorage.clear()
   })
 
   it('roundtrips plaintext through encrypt/decrypt with a v2 prefix', async () => {
@@ -40,23 +51,12 @@ describe('sessionCrypto', () => {
     expect(first).not.toBe(second)
   })
 
-  it('reuses a stable per-install secret across calls', async () => {
-    await encryptForSession('a')
-    const secretAfterFirst = window.localStorage.getItem(SESSION_CRYPTO_SECRET_STORAGE_KEY)
-    await encryptForSession('b')
-    const secretAfterSecond = window.localStorage.getItem(SESSION_CRYPTO_SECRET_STORAGE_KEY)
+  it('never persists key material to localStorage', async () => {
+    const ciphertext = await encryptForSession('no-disk-key')
+    await decryptFromSession(ciphertext)
 
-    expect(secretAfterFirst).toBeTruthy()
-    expect(secretAfterSecond).toBe(secretAfterFirst)
-  })
-
-  it('cross-session roundtrip: ciphertext written earlier still decrypts after secret reload', async () => {
-    const ciphertext = await encryptForSession('persisted-value')
-    const persistedSecret = window.localStorage.getItem(SESSION_CRYPTO_SECRET_STORAGE_KEY)
-
-    // 模拟刷新后再解密：仅保留 per-install 密钥，密文来自“上一次会话”
-    window.localStorage.setItem(SESSION_CRYPTO_SECRET_STORAGE_KEY, persistedSecret as string)
-    await expect(decryptFromSession(ciphertext)).resolves.toBe('persisted-value')
+    expect(window.localStorage.length).toBe(0)
+    expect(window.sessionStorage.length).toBe(0)
   })
 
   it('throws when the ciphertext is tampered with', async () => {
@@ -65,18 +65,6 @@ describe('sessionCrypto', () => {
     const tampered = `${CIPHERTEXT_VERSION_PREFIX}${body.slice(0, -4)}AAAA`
 
     await expect(decryptFromSession(tampered)).rejects.toThrow()
-  })
-
-  it('throws when decryption key material is unavailable (localStorage disabled)', async () => {
-    const ciphertext = await encryptForSession('needs-storage')
-    window.localStorage.clear()
-    const original = Object.getOwnPropertyDescriptor(window, 'localStorage')
-    Object.defineProperty(window, 'localStorage', { configurable: true, value: undefined })
-    try {
-      await expect(decryptFromSession(ciphertext)).rejects.toThrow()
-    } finally {
-      if (original) Object.defineProperty(window, 'localStorage', original)
-    }
   })
 
   it('throws instead of falling back to plaintext when encryption fails', async () => {
@@ -95,5 +83,42 @@ describe('sessionCrypto', () => {
 
   it('throws on malformed legacy ciphertext instead of returning it verbatim', async () => {
     await expect(decryptFromSession('not-a-valid-ciphertext')).rejects.toThrow()
+  })
+
+  describe('Tauri runtime', () => {
+    beforeEach(() => {
+      hasTauriRuntimeMock.mockReturnValue(true)
+    })
+
+    it('delegates encryption to the Rust keychain-backed command', async () => {
+      invokeMock.mockResolvedValue(`${CIPHERTEXT_VERSION_PREFIX}ciphertext`)
+
+      await expect(encryptForSession('delegated')).resolves.toBe(`${CIPHERTEXT_VERSION_PREFIX}ciphertext`)
+      expect(invokeMock).toHaveBeenCalledWith('session_secret_encrypt', { plaintext: 'delegated' })
+      expect(window.localStorage.length).toBe(0)
+    })
+
+    it('delegates decryption to the Rust keychain-backed command', async () => {
+      invokeMock.mockResolvedValue('decrypted-value')
+
+      await expect(decryptFromSession(`${CIPHERTEXT_VERSION_PREFIX}ciphertext`)).resolves.toBe('decrypted-value')
+      expect(invokeMock).toHaveBeenCalledWith('session_secret_decrypt', {
+        ciphertext: `${CIPHERTEXT_VERSION_PREFIX}ciphertext`
+      })
+    })
+
+    it('does not use WebCrypto for v2 ciphertext', async () => {
+      invokeMock.mockResolvedValue('plain')
+      const encryptSpy = vi.spyOn(crypto.subtle, 'encrypt')
+      const decryptSpy = vi.spyOn(crypto.subtle, 'decrypt')
+
+      await encryptForSession('plain')
+      await decryptFromSession(`${CIPHERTEXT_VERSION_PREFIX}ciphertext`)
+
+      expect(encryptSpy).not.toHaveBeenCalled()
+      expect(decryptSpy).not.toHaveBeenCalled()
+      encryptSpy.mockRestore()
+      decryptSpy.mockRestore()
+    })
   })
 })

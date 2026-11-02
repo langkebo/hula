@@ -31,7 +31,7 @@
       <n-divider />
       <div class="detail-header">
         <h4>{{ t('common.widget.search_result') }}</h4>
-        <n-button text @click="searchedWidget = null">
+        <n-button text :aria-label="t('common.close')" @click="searchedWidget = null">
           <template #icon>
             <n-icon><Icon icon="mdi:close" /></n-icon>
           </template>
@@ -68,17 +68,17 @@
             </div>
           </div>
           <div class="widget-actions" @click.stop>
-            <n-button text @click="handleOpenWidget(widget)">
+            <n-button text :aria-label="t('common.widget.open')" @click="handleOpenWidget(widget)">
               <template #icon>
                 <n-icon><Icon icon="mdi:open-in-new" /></n-icon>
               </template>
             </n-button>
-            <n-button text @click="handleEditPermissions(widget)">
+            <n-button text :aria-label="t('common.widget.permissions')" @click="handleEditPermissions(widget)">
               <template #icon>
                 <n-icon><Icon icon="mdi:shield-account" /></n-icon>
               </template>
             </n-button>
-            <n-button text type="error" @click="handleRemoveWidget(widget)">
+            <n-button text type="error" :aria-label="t('common.delete')" @click="handleRemoveWidget(widget)">
               <template #icon>
                 <n-icon><Icon icon="mdi:delete" /></n-icon>
               </template>

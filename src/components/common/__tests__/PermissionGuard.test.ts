@@ -41,9 +41,9 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
     expect(wrapper.emitted('granted')).toBeTruthy()
   })
 
-  it('grays out (default mode) when capability is missing, emits denied', async () => {
+  it('grays out when mode="gray" and capability is missing, emits denied', async () => {
     const wrapper = mount(PermissionGuard, {
-      props: { require: 'voip' },
+      props: { require: 'voip', mode: 'gray' },
       slots: { default: '<button class="real">Call</button>' }
     })
     await flushPromises()
@@ -51,6 +51,18 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
     expect(wrapper.find('.tjg-permission-gate').exists()).toBe(true)
     expect(wrapper.find('.real').exists()).toBe(true) // still present, but grayed
     expect(wrapper.emitted('denied')?.[0]).toEqual([['voip']])
+  })
+
+  it('hides the slot by default when capability is missing', async () => {
+    const wrapper = mount(PermissionGuard, {
+      props: { require: 'burn-after-read' },
+      slots: { default: '<button class="real">Burn</button>' }
+    })
+    await flushPromises()
+
+    expect(wrapper.find('.real').exists()).toBe(false)
+    expect(wrapper.find('.tjg-permission-gate').exists()).toBe(false)
+    expect(wrapper.emitted('denied')?.[0]).toEqual([['burn-after-read']])
   })
 
   it('hides the slot entirely when mode="hide"', async () => {
@@ -67,7 +79,7 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
 
   it('blocks interaction on the grayed-out affordance', async () => {
     const wrapper = mount(PermissionGuard, {
-      props: { require: 'voip' },
+      props: { require: 'voip', mode: 'gray' },
       slots: { default: '<button class="real">Call</button>' }
     })
     await flushPromises()
@@ -84,7 +96,7 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
     store.setCapabilities({ capabilities: { 'io.hula.admin': true } })
 
     const wrapper = mount(PermissionGuard, {
-      props: { require: ['admin-api', 'friend-list'] },
+      props: { require: ['admin-api', 'friend-list'], mode: 'gray' },
       slots: { default: '<button class="real">X</button>' }
     })
     await flushPromises()

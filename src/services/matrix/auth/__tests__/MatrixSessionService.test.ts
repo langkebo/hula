@@ -1,6 +1,6 @@
-import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
+import type { MatrixClient, Room } from '@/services/matrix/sdk'
 
 const mockDirectMessageService = {
   getDMRooms: vi.fn(),

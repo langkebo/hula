@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "autostart-capability",
+  "description": "开机自启能力：仅设置窗口的偏好设置页会读写自启状态。",
+  "platforms": ["macOS", "windows", "linux"],
+  "windows": ["settings"],
+  "permissions": ["autostart:allow-enable", "autostart:allow-disable", "autostart:allow-is-enabled"]
+}

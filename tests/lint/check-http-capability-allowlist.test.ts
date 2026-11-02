@@ -213,7 +213,7 @@ describe('check-http-capability-allowlist: 真实仓库自洽', () => {
     CAPABILITY_FILES.map((rel) => [
       rel,
       extractHttpAllowEntries(JSON.parse(readFileSync(join(projectRoot, rel), 'utf8')))
-    ])
+    ]).filter(([, entries]) => (entries as string[]).length > 0)
   )
   const trackedEntries = Object.values(capabilityAllowLists).flat()
   const envExampleText = readFileSync(join(projectRoot, '.env.example'), 'utf8')

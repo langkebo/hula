@@ -203,6 +203,13 @@ export class SessionLoginService {
       }
     } catch (err) {
       logger.error(`SSO 登录失败: ${err}`)
+      // 与密码登录保持一致：initialize()/completeSSOLogin() 可能已创建并启动 client，
+      // 失败后必须 teardown，否则残留 sync 会污染下一次登录。
+      try {
+        await matrixClientService.stopClient()
+      } catch (cleanupErr) {
+        logger.warn('SSO 登录失败后清理 client 异常:', cleanupErr)
+      }
       throw err
     }
   }

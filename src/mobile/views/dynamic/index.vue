@@ -9,7 +9,7 @@
         <span>{{ t('space.title') }}</span>
       </template>
       <template #right>
-        <van-button round plain size="small" @click="showCreateSpaceDialog = true">
+        <van-button round plain size="small" :aria-label="t('space.create')" @click="showCreateSpaceDialog = true">
           <svg class="w-16px h-16px"><use href="#plus"></use></svg>
         </van-button>
       </template>

@@ -1,6 +1,7 @@
 import { type ClientOptions, fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import { createRateLimitedFetch } from '@/services/matrix/MatrixRateLimitInterceptor'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { computeBackoffDelay, sleep } from '@/utils/backoff'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RuntimeFetch')
@@ -173,8 +174,6 @@ function isRetryableNetworkError(error: unknown): boolean {
   )
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
 /**
  * 带重试的 fetch 包装器：仅对网络级错误重试，HTTP 4xx/5xx 不重试
  */
@@ -199,7 +198,7 @@ async function fetchWithRetry(
         throw createAbortError(resolveRequestUrl(input))
       }
       if (attempt < retries && isRetryableNetworkError(error)) {
-        const delay = FETCH_RETRY_BASE_DELAY_MS * 2 ** attempt
+        const delay = computeBackoffDelay({ baseDelayMs: FETCH_RETRY_BASE_DELAY_MS, attempt })
         logger.warn(`fetch 失败，${delay}ms 后重试 (${attempt + 1}/${retries}): ${resolveRequestUrl(input)}`)
         await sleep(delay)
         continue

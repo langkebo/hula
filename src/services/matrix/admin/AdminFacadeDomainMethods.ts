@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import type { RoomStatsOverview } from '@/services/matrix/sdk'
 import { AdminFacadeOpsMethods } from './AdminFacadeOpsMethods'
 import type { AdminRoomService } from './RoomService'
@@ -15,7 +16,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
   // ==================== Domain Methods ====================
 
   async getMediaList(
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
     orderBy?: string,
     search?: string
@@ -39,7 +40,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
   }
 
   async adminGetSpaces(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{ spaces: Array<Record<string, unknown>>; next_batch?: string | undefined }> {
     return this.rooms.adminGetSpaces(limit, from)
@@ -51,7 +52,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
   }
 
   async getAuditLog(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string,
     userId?: string,
     eventType?: string
@@ -94,11 +95,9 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
     return this.users.getUserStats(userId)
   }
 
-  async getUserStatsList(
-    limit = 100,
-    from?: string
-  ): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
-    return this.users.getUserStatsList(limit, from)
+  /** 获取用户统计列表。 */
+  async getUserStatsList(): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+    return this.users.getUserStatsList()
   }
 
   async batchCreateUsers(
@@ -163,7 +162,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
   }
 
   async getLoginFailures(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{ failures: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.users.getLoginFailures(limit, from)
@@ -171,7 +170,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
 
   async getRoomMessages(
     roomId: string,
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
     dir: 'b' | 'f' = 'b'
   ): Promise<{
@@ -219,6 +218,7 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
     return this.rooms.purgeRoom(roomId)
   }
 
+  /** 房间总览统计（总数、活跃数等）。 */
   async getRoomStats(): Promise<RoomStatsOverview> {
     return this.rooms.getRoomStats()
   }
@@ -246,16 +246,15 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeOpsMethods {
   async searchInRoom(
     roomId: string,
     searchTerm: string,
-    limit = 50
+    limit = DEFAULT_PAGE_LIMIT
   ): Promise<{ results: Array<Record<string, unknown>>; nextBatch?: string | undefined }> {
     return this.rooms.searchInRoom(roomId, searchTerm, limit)
   }
 
   async searchRooms(
-    searchTerm: string,
-    limit = 50
+    searchTerm: string
   ): Promise<{ rooms: Array<Record<string, unknown>>; nextBatch?: string | undefined }> {
-    return this.rooms.searchRooms(searchTerm, limit)
+    return this.rooms.searchRooms(searchTerm)
   }
 
   /** 获取房间的前向极值（forward extremities）。 */

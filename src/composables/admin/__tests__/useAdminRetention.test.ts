@@ -6,7 +6,6 @@ vi.mock('@/services/matrix/admin', () => ({
     getRetentionPolicies: vi.fn().mockResolvedValue({ policies: [] }),
     getRetentionStatus: vi.fn().mockResolvedValue({}),
     setRetentionPolicy: vi.fn().mockResolvedValue(undefined),
-    deleteRetentionPolicy: vi.fn().mockResolvedValue(undefined),
     runRetentionTask: vi.fn().mockResolvedValue(undefined)
   }
 }))
@@ -36,13 +35,6 @@ describe('useAdminRetention', () => {
     const c = useAdminRetention()
     await c.setPolicy('!r:s', 1000, 500)
     expect(adminService.setRetentionPolicy).toHaveBeenCalledWith('!r:s', 1000, 500)
-    expect(adminService.getRetentionPolicies).toHaveBeenCalledTimes(1)
-  })
-
-  it('deletePolicy delegates (even though backend no-ops) and reloads', async () => {
-    const c = useAdminRetention()
-    await c.deletePolicy('!r:s')
-    expect(adminService.deleteRetentionPolicy).toHaveBeenCalledWith('!r:s')
     expect(adminService.getRetentionPolicies).toHaveBeenCalledTimes(1)
   })
 

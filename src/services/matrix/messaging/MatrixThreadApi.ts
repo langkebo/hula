@@ -22,6 +22,7 @@
  * 展示层需要 `ThreadListItem` 时请用 `threadUtils.toThreadListItem()`。
  */
 
+import { DEFAULT_PAGE_LIMIT, DEFAULT_SEARCH_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import type {
@@ -42,7 +43,7 @@ const logger = createLogger('MatrixThreadApi')
 export class MatrixThreadApi extends BaseMatrixService {
   /** 获取全局线程列表（MSC4267 实现的 /sync 增量 state token） */
   async getGlobalThreadListViaApi(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{ threads: ThreadSummaryResponse[]; nextBatch?: string | undefined; total: number }> {
     const manager = getThreadingManager()
@@ -126,7 +127,7 @@ export class MatrixThreadApi extends BaseMatrixService {
   /** 获取房间线程列表（keyset 分页：limit + nextBatch） */
   async getRoomThreadListViaApi(
     roomId: string,
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string,
     includeAll = false
   ): Promise<{ threads: ThreadSummaryResponse[]; nextBatch?: string | undefined }> {
@@ -147,7 +148,11 @@ export class MatrixThreadApi extends BaseMatrixService {
    * @param query 搜索关键词
    * @param limit 最大返回数量（默认 20）
    */
-  async searchRoomThreadsViaApi(roomId: string, query: string, limit = 20): Promise<ThreadSummaryResponse[]> {
+  async searchRoomThreadsViaApi(
+    roomId: string,
+    query: string,
+    limit = DEFAULT_SEARCH_LIMIT
+  ): Promise<ThreadSummaryResponse[]> {
     const manager = getThreadingManager()
     if (!manager?.searchRoomThreads) return []
     try {
@@ -189,8 +194,7 @@ export class MatrixThreadApi extends BaseMatrixService {
     }
   }
 
-  /** 通过 API 删除房间话题
-   */
+  /** 通过 API 删除房间话题 */
   async deleteRoomThreadViaApi(roomId: string, threadId: string): Promise<void> {
     const manager = getThreadingManager()
     if (!manager?.deleteRoomThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
@@ -202,8 +206,7 @@ export class MatrixThreadApi extends BaseMatrixService {
     }
   }
 
-  /** 通过 API 冻结话题
-   */
+  /** 通过 API 冻结话题 */
   async freezeThreadViaApi(roomId: string, threadId: string): Promise<void> {
     const manager = getThreadingManager()
     if (!manager?.freezeThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
@@ -215,8 +218,7 @@ export class MatrixThreadApi extends BaseMatrixService {
     }
   }
 
-  /** 通过 API 解冻话题
-   */
+  /** 通过 API 解冻话题 */
   async unfreezeThreadViaApi(roomId: string, threadId: string): Promise<void> {
     const manager = getThreadingManager()
     if (!manager?.unfreezeThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
@@ -293,8 +295,7 @@ export class MatrixThreadApi extends BaseMatrixService {
     }
   }
 
-  /** 通过 API 取消订阅话题
-   */
+  /** 通过 API 取消订阅话题 */
   async unsubscribeFromThreadViaApi(roomId: string, threadId: string): Promise<void> {
     const manager = getThreadingManager()
     if (!manager?.unsubscribeFromThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
@@ -363,8 +364,7 @@ export class MatrixThreadApi extends BaseMatrixService {
     }
   }
 
-  /** 通过 API 撤回话题回复
-   */
+  /** 通过 API 撤回话题回复 */
   async redactThreadReplyViaApi(roomId: string, eventId: string): Promise<void> {
     const manager = getThreadingManager()
     if (!manager?.redactThreadReply) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
@@ -379,7 +379,7 @@ export class MatrixThreadApi extends BaseMatrixService {
   async getLegacyRoomThreadList(
     userId: string,
     roomId: string,
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string,
     includeAll = false
   ): Promise<{ chunk: ThreadLegacyChunkItem[]; nextBatch?: string | undefined }> {

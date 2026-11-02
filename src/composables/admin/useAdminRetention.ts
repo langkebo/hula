@@ -17,8 +17,6 @@ interface UseAdminRetentionResult {
   loadStatus: () => Promise<void>
   loadAll: () => Promise<void>
   setPolicy: (roomId: string, maxLifetime?: number, minLifetime?: number) => Promise<void>
-  /** @deprecated backend has no DELETE route; composable no-op. */
-  deletePolicy: (roomId: string) => Promise<void>
   runTask: () => Promise<void>
 }
 
@@ -69,11 +67,6 @@ export function useAdminRetention(): UseAdminRetentionResult {
     await loadPolicies()
   }
 
-  async function deletePolicy(roomId: string) {
-    await adminService.deleteRetentionPolicy(roomId)
-    await loadPolicies()
-  }
-
   async function runTask() {
     taskLoading.value = true
     try {
@@ -92,7 +85,6 @@ export function useAdminRetention(): UseAdminRetentionResult {
     loadStatus,
     loadAll,
     setPolicy,
-    deletePolicy,
     runTask
   }
 }

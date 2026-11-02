@@ -154,6 +154,9 @@ describe('MatrixDeviceService', () => {
 
     mockClient = {
       http: mockHttp as unknown as MatrixClient['http'],
+      // 设备缓存会绑定 CryptoEvent.DevicesUpdated；测试里只需 stub 出 on/off
+      on: vi.fn(),
+      off: vi.fn(),
       getDeviceManager: vi.fn(
         () => mockDeviceManager as unknown as MatrixClientExtended['getDeviceManager'] extends () => infer T ? T : never
       ),
@@ -422,6 +425,85 @@ describe('MatrixDeviceService', () => {
       }))
       const devices = await matrixDeviceService.getUserDevices('@alice:matrix.test')
       expect(devices).toEqual([])
+    })
+
+    // ---- H-12：设备列表 TTL 缓存 + 事件失效 ----
+
+    it('TTL 内重复查询复用缓存（不重复打 /keys/query）', async () => {
+      const getUserDevices = stubDeviceKeysManager({ DEV1: { device_id: 'DEV1', display_name: 'MacBook' } })
+      stubVerification({ DEV1: true })
+
+      const first = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+      const second = await matrixDeviceService.getUserDevices('@alice:matrix.test')
+
+      expect(first).toEqual(second)
+      expect(getUserDevices).toHaveBeenCalledTimes(1)
+    })
+
+    it('并发查询合并为一次请求（in-flight 去重）', async () => {
+      const getUserDevices = stubDeviceKeysManager({ DEV1: { device_id: 'DEV1' } })
+      stubVerification({ DEV1: false })
+
+      const [a, b] = await Promise.all([
+        matrixDeviceService.getUserDevices('@bob:matrix.test'),
+        matrixDeviceService.getUserDevices('@bob:matrix.test')
+      ])
+
+      expect(a).toEqual(b)
+      expect(getUserDevices).toHaveBeenCalledTimes(1)
+      matrixDeviceService.invalidateUserDevicesCache('@bob:matrix.test')
+    })
+
+    it('invalidateUserDevicesCache 后重新查询', async () => {
+      const firstStub = stubDeviceKeysManager({ DEV1: { device_id: 'DEV1' } })
+      stubVerification({ DEV1: false })
+      await matrixDeviceService.getUserDevices('@carol:matrix.test')
+
+      matrixDeviceService.invalidateUserDevicesCache('@carol:matrix.test')
+      const secondStub = stubDeviceKeysManager({ DEV1: { device_id: 'DEV1' } })
+      await matrixDeviceService.getUserDevices('@carol:matrix.test')
+
+      expect(firstStub).toHaveBeenCalledTimes(1)
+      expect(secondStub).toHaveBeenCalledTimes(1)
+    })
+
+    it('CryptoEvent.DevicesUpdated 触发对应用户缓存失效', async () => {
+      const firstStub = stubDeviceKeysManager({ DEV1: { device_id: 'DEV1' } })
+      stubVerification({ DEV1: false })
+      await matrixDeviceService.getUserDevices('@dave:matrix.test')
+
+      // 取出绑定的 DevicesUpdated 处理器并触发
+      const onMock = mockClient.on as unknown as ReturnType<typeof vi.fn>
+      const handler = onMock.mock.calls.at(-1)?.[1] as ((userIds: string[]) => void) | undefined
+      expect(handler).toBeTypeOf('function')
+      handler?.(['@dave:matrix.test'])
+
+      const secondStub = stubDeviceKeysManager({ DEV1: { device_id: 'DEV1' } })
+      await matrixDeviceService.getUserDevices('@dave:matrix.test')
+
+      expect(firstStub).toHaveBeenCalledTimes(1)
+      expect(secondStub).toHaveBeenCalledTimes(1)
+    })
+
+    it('客户端实例被替换后不复用上一账号的缓存', async () => {
+      const firstStub = stubDeviceKeysManager({ DEV1: { device_id: 'DEV1' } })
+      stubVerification({ DEV1: false })
+      await matrixDeviceService.getUserDevices('@erin:matrix.test')
+
+      const nextClient = {
+        ...mockClient,
+        on: vi.fn(),
+        off: vi.fn(),
+        getDeviceKeysManager: vi.fn(() => ({
+          getUserDevices: vi.fn().mockResolvedValue({ DEV2: { device_id: 'DEV2' } })
+        }))
+      }
+      vi.spyOn(matrixClientService, 'getClient').mockReturnValue(nextClient as unknown as MatrixClient)
+
+      const devices = await matrixDeviceService.getUserDevices('@erin:matrix.test')
+
+      expect(firstStub).toHaveBeenCalledTimes(1)
+      expect(devices.map((d) => d.device_id)).toEqual(['DEV2'])
     })
   })
 

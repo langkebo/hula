@@ -1,6 +1,6 @@
 <template>
   <div class="account-settings">
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="account-profile">
       <h3 class="section-title">{{ t('setting.account.profile') }}</h3>
 
       <div class="profile-section">
@@ -76,7 +76,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="account-security">
       <h3 class="section-title">{{ t('setting.account.security') }}</h3>
 
       <n-form ref="passwordFormRef" :model="passwordForm" label-placement="left" label-width="100">
@@ -120,7 +120,7 @@
 
     <n-divider />
 
-    <div class="settings-section danger-zone">
+    <div class="settings-section danger-zone" data-settings-anchor="account-danger">
       <h3 class="section-title">{{ t('setting.account.danger_zone') }}</h3>
       <n-button type="error" @click="handleDeactivateAccount">{{ t('setting.account.deactivate_account') }}</n-button>
     </div>
@@ -136,6 +136,7 @@ import { NAvatar, NButton, NCheckbox, NDivider, NForm, NFormItem, NInput, NSelec
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import defaultAvatarImg from '@/assets/img/win.png'
+import { THUMBNAIL_SIZE_LARGE } from '@/common/constants'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import type { AvatarCropperInstance } from '@/components/common/AvatarCropper.vue'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
@@ -183,11 +184,12 @@ const supportsExtendedProfile = computed(() => hasUnstable('uk.tcpip.msc4133'))
 
 const displayAvatarUrl = computed(() => {
   if (userAvatar.value?.startsWith('mxc://')) {
-    // 解析统一由 matrixMediaService.getMediaUrl → media/mxcUrl 的 resolveMxcToHttp 承担
-    // （SDK 的 mxcUrlToHttp 在 ProfileManager 上；此前误调 client.mxcUrlToHttp 导致静默失效）。
+    // 解析统一由 matrixMediaService.getMediaUrl → media/mxcUrl 的 resolveMxcToHttp 承担（SDK 的 mxcUrlToHttp 在 ProfileManager 上，此前误调导致静默失效）。
     // 这里保留 try/catch 兜底：失败时返回 mxc 原值，naive-avatar 会降级到 placeholder。
     try {
-      return matrixMediaService.getMediaUrl(userAvatar.value, 160, 160) || userAvatar.value
+      return (
+        matrixMediaService.getMediaUrl(userAvatar.value, THUMBNAIL_SIZE_LARGE, THUMBNAIL_SIZE_LARGE) || userAvatar.value
+      )
     } catch (err) {
       logger.warn('Failed to resolve avatar mxc URL:', err)
       return userAvatar.value

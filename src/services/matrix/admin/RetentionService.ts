@@ -14,10 +14,14 @@ export class AdminRetentionService {
     private readonly getClient?: GetClientGetter
   ) {}
 
-  async getRetentionPolicies(
-    _limit = 50,
-    _from?: string
-  ): Promise<{ policies: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
+  /**
+   * 获取保留策略列表。
+   * @returns 策略数组（服务端当前最多返回一条）与可选分页 token；失败时返回空列表。
+   */
+  async getRetentionPolicies(): Promise<{
+    policies: Array<Record<string, unknown>>
+    nextToken?: string | undefined
+  }> {
     try {
       const admin = await this.sdkAdmin()
       const policy = unknownToObject(await admin.getRetentionPolicy())
@@ -54,10 +58,6 @@ export class AdminRetentionService {
       logger.error(`[AdminRetention] 设置保留策略失败: ${err}`)
       throw err
     }
-  }
-
-  async deleteRetentionPolicy(_roomId: string): Promise<void> {
-    logger.warn('[AdminRetention] deleteRetentionPolicy: backend does not support deleting a retention policy; no-op.')
   }
 
   async runRetentionTask(): Promise<void> {

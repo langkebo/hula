@@ -81,7 +81,7 @@ export const useMsgInputMentionActions = ({
     ait.value = false
   }
 
-  const handleAI = (_item: unknown) => {
+  const handleAI = () => {
     if (isChinese.value) return
 
     showFeedback(t('hooks.mention.ai_coming_soon'), 'info')

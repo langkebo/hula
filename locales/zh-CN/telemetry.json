@@ -1,1 +1,70 @@
-{}
+{
+  "title": "遥测监控",
+  "subtitle": "查看 OpenTelemetry 运行状态、指标摘要与告警",
+  "unavailable": {
+    "title": "遥测能力未启用",
+    "description": "当前服务器未开放遥测接口，无法读取运行状态与指标。启用后点击重试。"
+  },
+  "section": {
+    "status": "运行状态",
+    "metrics": "指标摘要",
+    "scheduler": "AppService 调度器",
+    "alerts": "告警",
+    "attributes": "资源属性"
+  },
+  "status": {
+    "enabled": "遥测开关",
+    "health": "健康状态",
+    "trace": "链路追踪",
+    "metrics": "指标采集",
+    "service": "服务名称",
+    "version": "服务版本",
+    "sampling": "采样率",
+    "batch": "批量导出",
+    "otlp": "OTLP 端点",
+    "prometheus": "Prometheus",
+    "on": "已开启",
+    "off": "已关闭",
+    "none": "未配置"
+  },
+  "metrics": {
+    "total": "指标总数",
+    "counters": "计数器",
+    "gauges": "仪表盘",
+    "histograms": "直方图",
+    "rendered": "渲染字节数",
+    "snapshot": "快照时间",
+    "services": "服务总数",
+    "schedulerAvailable": "调度可用",
+    "backoff": "退避服务",
+    "pendingEvents": "待处理事件",
+    "pendingTransactions": "待处理事务",
+    "success": "成功次数",
+    "failure": "失败次数"
+  },
+  "alerts": {
+    "col_rule": "规则",
+    "col_severity": "级别",
+    "col_status": "状态",
+    "col_message": "描述",
+    "col_triggered": "触发时间",
+    "col_actions": "操作",
+    "ack": "确认",
+    "ack_title": "确认告警",
+    "ack_content": "确认后该告警将标记为已处理，确定继续吗？",
+    "ack_success": "告警已确认",
+    "ack_failed": "确认告警失败"
+  },
+  "severity": {
+    "info": "提示",
+    "warning": "警告",
+    "high": "高",
+    "critical": "严重"
+  },
+  "alert_status": {
+    "firing": "触发中",
+    "acknowledged": "已确认",
+    "recovered": "已恢复",
+    "closed": "已关闭"
+  }
+}

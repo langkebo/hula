@@ -21,7 +21,13 @@
                 :placeholder="t('home.chat_header.input_group_name')"
                 @blur="handleUpdateName"
                 @keyup.enter="handleUpdateName" />
-              <n-button v-if="!isEditingName && isGroupOwner" quaternary circle size="tiny" @click="startEditName">
+              <n-button
+                v-if="!isEditingName && isGroupOwner"
+                quaternary
+                circle
+                size="tiny"
+                :aria-label="t('common.edit')"
+                @click="startEditName">
                 <template #icon>
                   <n-icon size="14">
                     <svg><use href="#edit"></use></svg>

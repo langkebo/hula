@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
+import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import { findFirstMatchingSettingsTab, useSettingsShell } from '../useSettingsShell'
 
 const translationMap: Record<string, string> = {
@@ -72,7 +75,8 @@ describe('useSettingsShell', () => {
     const shell = useSettingsShell({ isDesktop: true, initialQuery: '隐私', resolveSearchKeywords })
 
     expect(shell.hasSearchQuery.value).toBe(true)
-    expect(shell.filteredTabs.value.map((tab) => tab.id)).toEqual(['securityPrivacy'])
+    // 二级索引启用后，「隐私」同时命中偏好设置的隐私分区与安全隐私页签
+    expect(shell.filteredTabs.value.map((tab) => tab.id)).toEqual(['preferences', 'securityPrivacy'])
 
     shell.clearSearch()
     expect(shell.hasSearchQuery.value).toBe(false)
@@ -89,5 +93,73 @@ describe('useSettingsShell', () => {
 
     expect(shell.visibleTabs.value.find((tab) => tab.id === 'account')?.label).toBe('Account')
     expect(findFirstMatchingSettingsTab('voicevideo', true, translate, resolveSearchKeywords)).toBe('voiceVideo')
+  })
+})
+
+describe('useSettingsShell 能力过滤', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    registerCapabilityStoreResolver(() => useCapabilityStore())
+  })
+
+  it('能力探测未完成时 fail-open，保持全部页签可见', () => {
+    const shell = useSettingsShell({ isDesktop: true })
+
+    expect(shell.isCapabilityLoaded.value).toBe(false)
+    expect(shell.visibleTabs.value).toHaveLength(14)
+  })
+
+  it('探测完成后隐藏缺失能力的页签，加密页保留并降级为只读', () => {
+    useCapabilityStore().setCapabilities({
+      capabilities: {
+        'm.room.encryption': { enabled: false }
+      }
+    })
+
+    const shell = useSettingsShell({ isDesktop: true })
+    const ids = shell.visibleTabs.value.map((tab) => tab.id)
+
+    expect(shell.isCapabilityLoaded.value).toBe(true)
+    expect(ids).not.toContain('voiceVideo')
+    expect(ids).not.toContain('friends')
+    expect(ids).not.toContain('burnAfterRead')
+    expect(ids).not.toContain('mjolnir')
+    expect(ids).toContain('encryption')
+
+    const encryptionTab = shell.visibleTabs.value.find((tab) => tab.id === 'encryption')
+    expect(encryptionTab).toBeDefined()
+    expect(shell.isTabReadOnly(encryptionTab!)).toBe(true)
+  })
+
+  it('能力齐备时保留全部页签，加密页可编辑', () => {
+    useCapabilityStore().setCapabilities({
+      capabilities: {
+        'm.room.encryption': { enabled: true },
+        'io.hula.voice_extended': { enabled: true },
+        'io.hula.friends': { enabled: true },
+        'io.hula.burn_after_read': { enabled: true },
+        'io.hula.admin': { enabled: true }
+      }
+    })
+
+    const shell = useSettingsShell({ isDesktop: true })
+
+    expect(shell.visibleTabs.value).toHaveLength(14)
+    const encryptionTab = shell.visibleTabs.value.find((tab) => tab.id === 'encryption')
+    expect(encryptionTab).toBeDefined()
+    expect(shell.isTabReadOnly(encryptionTab!)).toBe(false)
+  })
+
+  it('深链查找跳过当前不可用的页签', () => {
+    useCapabilityStore().setCapabilities({ capabilities: {} })
+
+    const shell = useSettingsShell({ isDesktop: true })
+
+    expect(
+      findFirstMatchingSettingsTab('voicevideo', true, undefined, resolveSearchKeywords, shell.isTabAvailable)
+    ).toBeUndefined()
+    expect(
+      findFirstMatchingSettingsTab('encryption', true, undefined, resolveSearchKeywords, shell.isTabAvailable)
+    ).toBe('encryption')
   })
 })

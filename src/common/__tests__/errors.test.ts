@@ -94,7 +94,9 @@ describe('errors', () => {
       const result = toAppError(undefined)
       expect(result.kind).toBe('fatal')
       expect((result as AppErrorFatal).code).toBe('UNKNOWN')
-      expect((result as AppErrorFatal).correlationId).toBeTruthy()
+      expect((result as AppErrorFatal).correlationId).toMatch(
+        /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|corr-\d+-[0-9a-f]+)$/
+      )
     })
 
     it('returns same AppError if already an AppError (idempotent)', () => {
@@ -266,7 +268,9 @@ describe('errors', () => {
       const result = toAppError(err)
       expect(translateMatrixError).toHaveBeenCalled()
       expect(result.kind).toBe('fatal')
-      expect((result as AppErrorFatal).correlationId).toBeTruthy()
+      expect((result as AppErrorFatal).correlationId).toMatch(
+        /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|corr-\d+-[0-9a-f]+)$/
+      )
     })
 
     it('falls back to retryable when translateMatrixError says recoverable', () => {
@@ -288,7 +292,7 @@ describe('errors', () => {
     it('sets i18nKey for known matrix errors', () => {
       const err = Object.assign(new Error('token unknown'), { errcode: 'M_UNKNOWN_TOKEN' })
       const result = toAppError(err)
-      expect((result as AppErrorAuth).i18nKey).toBeTruthy()
+      expect((result as AppErrorAuth).i18nKey).toBe('error.matrix.unknown_token')
     })
 
     it('does not store a non-key sentence in i18nKey on the fallback path', () => {

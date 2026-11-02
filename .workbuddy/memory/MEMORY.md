@@ -62,6 +62,11 @@
 - `scripts/contract-coverage-map.json` 重扫后是多行格式，biome 要求单行 ⇒ 必须 `biome check --write`，
   否则 `pnpm lint` 红但 `check:contract-coverage` 仍绿（易误判）
 
+- **好友 DM 创建必须走 `createFriendDmRoom`（服务端 `POST /friends/dm/{uid}`）**：
+  只有服务端会写 `m.room.encryption`（B-1）与 Megolm 轮换参数（B-6），客户端 `startDirectRoom` 用的是 SDK 默认值。
+  ⚠️ `createPrivateDm` 的默认参数是 `isPrivate = true` ⇒ 普通「发消息」必须显式传 `false`，
+  否则会被打成私密会话（多写 `com.hula.privacy` + `history_visibility=invited`）。
+
 ## 私密聊天 / 隐私域铁律（2026-10-17 审计后）- **后端 burn 永不 redact**（只登记 per-user 时间，物理删除归 retention）⇒ 前端「已焚毁」只能是本地遮罩，
   文案不得暗示服务端已删。依据：`burn_after_read_service.rs:110-119`、commit `57edb25b0`
 - **「服务端不留存」只能靠 to-device 兑现**（`get_and_delete_messages` 读后即删 + Olm 双棘轮），

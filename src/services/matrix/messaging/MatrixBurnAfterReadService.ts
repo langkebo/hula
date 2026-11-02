@@ -105,10 +105,10 @@ class MatrixBurnAfterReadService {
       const manager = this.getManager()
       if (!manager) return []
       const events = await manager.getPendingBurns(roomId)
-      return events.map((e: { event_id: string; created_at: number; delete_at: number }) => ({
+      return events.map((e) => ({
         eventId: e.event_id,
         createdAt: e.created_at,
-        deleteAt: e.delete_at
+        deleteAt: e.delete_ts
       }))
     } catch (error) {
       logger.error(`获取待焚毁消息失败: ${error}`)

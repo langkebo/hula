@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('ApplicationService')
@@ -23,7 +24,7 @@ export class AdminApplicationService {
   constructor(private readonly sdkAdmin: ApplicationDomainSdkGetter) {}
 
   async getApplicationServices(
-    limit = 50,
+    limit = DEFAULT_PAGE_LIMIT,
     from?: string
   ): Promise<{ services: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     try {

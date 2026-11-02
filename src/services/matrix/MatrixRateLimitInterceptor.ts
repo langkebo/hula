@@ -1,3 +1,4 @@
+import { computeBackoffDelay, sleep } from '@/utils/backoff'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RateLimitInterceptor')
@@ -30,7 +31,7 @@ function calculateDelay(attempt: number, retryAfterMs?: number): number {
   if (retryAfterMs && retryAfterMs > 0) {
     return Math.min(retryAfterMs, MAX_DELAY_MS)
   }
-  const delay = BASE_DELAY_MS * 2 ** attempt
+  const delay = computeBackoffDelay({ baseDelayMs: BASE_DELAY_MS, attempt })
   const jitter = delay * 0.1 * Math.random()
   return Math.min(delay + jitter, MAX_DELAY_MS)
 }
@@ -132,7 +133,11 @@ function recordCircuitResult(key: string, status: number, now: number): void {
   const consecutiveFailures = (state?.consecutiveFailures ?? 0) + 1
   if (consecutiveFailures >= CIRCUIT_THRESHOLD) {
     const exponent = consecutiveFailures - CIRCUIT_THRESHOLD
-    const cooldown = Math.min(CIRCUIT_BASE_COOLDOWN_MS * 2 ** exponent, CIRCUIT_MAX_COOLDOWN_MS)
+    const cooldown = computeBackoffDelay({
+      baseDelayMs: CIRCUIT_BASE_COOLDOWN_MS,
+      maxDelayMs: CIRCUIT_MAX_COOLDOWN_MS,
+      attempt: exponent
+    })
     circuitByEndpoint.set(key, { consecutiveFailures, openUntil: now + cooldown })
     logger.warn(
       `端点连续 429 x${consecutiveFailures}，熔断 ${Math.round(cooldown / 1000)}s: ${key}（请检查服务端限流配置/限流器健康）`
@@ -192,7 +197,11 @@ function recordGlobal429(now: number): void {
   globalCircuit.recent429Timestamps.push(now)
   if (globalCircuit.recent429Timestamps.length >= GLOBAL_CIRCUIT_THRESHOLD) {
     const exponent = globalCircuit.consecutiveOpenCount
-    const cooldown = Math.min(GLOBAL_CIRCUIT_BASE_COOLDOWN_MS * 2 ** exponent, GLOBAL_CIRCUIT_MAX_COOLDOWN_MS)
+    const cooldown = computeBackoffDelay({
+      baseDelayMs: GLOBAL_CIRCUIT_BASE_COOLDOWN_MS,
+      maxDelayMs: GLOBAL_CIRCUIT_MAX_COOLDOWN_MS,
+      attempt: exponent
+    })
     globalCircuit.openUntil = now + cooldown
     globalCircuit.consecutiveOpenCount++
     globalCircuit.recent429Timestamps = []
@@ -271,7 +280,7 @@ async function fetchWithRetry(
   const delay = calculateDelay(retryCount, retryAfterMs)
   logger.warn(`Rate limited (429), retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`)
 
-  await new Promise((resolve) => setTimeout(resolve, delay))
+  await sleep(delay)
   return fetchWithRetry(baseFetch, input, init, retryCount + 1)
 }
 

@@ -71,7 +71,7 @@
             </n-flex>
 
             <n-flex justify="end" :size="12" class="mt-16px">
-              <n-button type="primary" :loading="sending" @click="handleSendRequest">
+              <n-button type="primary" :loading="sending" data-test="add-friend-send" @click="handleSendRequest">
                 {{ t('friend.add.send') }}
               </n-button>
             </n-flex>

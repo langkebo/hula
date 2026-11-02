@@ -48,7 +48,7 @@ vi.mock('@/router', () => ({ default: { push: vi.fn(), replace: vi.fn(), back: v
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }) }))
 
 vi.mock('@/services/matrix', () => ({
-  matrixFriendService: {
+  matrixFriendGroups: {
     getFriendGroups: (...a: any[]) => getFriendGroupsMock(...a),
     createFriendGroup: (...a: any[]) => createFriendGroupMock(...a),
     renameFriendGroup: (...a: any[]) => renameFriendGroupMock(...a),

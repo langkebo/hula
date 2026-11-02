@@ -28,7 +28,7 @@
           @select="onAddActionSelect"
           placement="bottom-end">
           <template #reference>
-            <van-button round plain size="small">
+            <van-button round plain size="small" :aria-label="t('common.add')">
               <svg class="w-16px h-16px"><use href="#plus"></use></svg>
             </van-button>
           </template>

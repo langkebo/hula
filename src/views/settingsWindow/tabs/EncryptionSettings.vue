@@ -1,5 +1,11 @@
 <template>
-  <div class="encryption-settings">
+  <!-- 服务端未启用 E2EE 时整页只读：提示 + inert 阻断所有交互 -->
+  <div class="encryption-settings" :inert="isReadOnly ? true : undefined">
+    <div v-if="isReadOnly" class="e2ee-onboarding-hint" data-testid="e2ee-unsupported">
+      <Icon icon="mdi:shield-off" :width="18" />
+      <span>{{ t('setting.encryption.server_unsupported') }}</span>
+    </div>
+
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.encryption.key_section') }}</h3>
       <div class="key-status" :class="encryptionEnabled ? 'key-status-active' : 'key-status-inactive'">
@@ -112,18 +118,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.encryption.dehydrated_device_section') }}</h3>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.encryption.dehydrated_device_label') }}</span>
-          <span class="setting-desc">{{ t('setting.encryption.dehydrated_device_desc') }}</span>
-        </div>
-        <n-button size="small" @click="showDehydratedDeviceManager = true">
-          {{ t('setting.encryption.manage') }}
-        </n-button>
-      </div>
-    </div>
+    <DehydratedDeviceSection />
 
     <n-divider />
 
@@ -250,8 +245,6 @@
 
     <DeviceTrustManager v-model:show="showDeviceTrustManager" />
 
-    <DehydratedDeviceManager v-model:show="showDehydratedDeviceManager" />
-
     <E2EEBootstrapWizard
       v-model:show="showE2EEBootstrapWizard"
       @complete="handleE2EEBootstrapComplete"
@@ -277,7 +270,6 @@ import { NButton, NDivider, NModal, NSwitch, NTag } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CrossSigningDialog from '@/components/encryption/CrossSigningDialog.vue'
-import DehydratedDeviceManager from '@/components/encryption/DehydratedDeviceManager.vue'
 import DeviceTrustManager from '@/components/encryption/DeviceTrustManager.vue'
 import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
 import E2EEBootstrapWizard from '@/components/encryption/E2EEBootstrapWizard.vue'
@@ -295,10 +287,12 @@ import {
   type VerificationTransaction
 } from '@/services/matrix/crypto/MatrixVerificationService'
 import { applyGlobalStrict } from '@/services/matrix/crypto/strictDevicePolicy'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 import CrossSigningSection from './sections/CrossSigningSection.vue'
+import DehydratedDeviceSection from './sections/DehydratedDeviceSection.vue'
 
 const logger = createLogger('EncryptionSettings')
 
@@ -311,6 +305,11 @@ const { write: writeClipboard } = useClipboard()
 const { t } = useI18n()
 const encryptionStore = useEncryptionStore()
 const settingStore = useSettingStore()
+
+// 服务端未声明 E2EE 能力时降级为只读（页签本身保留，见 settingsSchema 的 readonly fallback）。
+// 能力探测未完成前不做判定，避免登录初期误判导致整页不可用。
+const capability = useServerCapability()
+const isReadOnly = computed(() => capability.isLoaded.value && !capability.canUseE2EE.value)
 
 /**
  * R-1 严格模式：全局偏好 → SDK 可写属性 `crypto.globalBlacklistUnverifiedDevices`。
@@ -340,7 +339,6 @@ const showSecurityKeyDialog = ref(false)
 const showSecureBackupDialog = ref(false)
 const showOnboardingDialog = ref(false)
 const showDeviceTrustManager = ref(false)
-const showDehydratedDeviceManager = ref(false)
 const showE2EEBootstrapWizard = ref(false)
 const createBackupLoading = ref(false)
 const pendingVerifications = ref<VerificationTransaction[]>([])

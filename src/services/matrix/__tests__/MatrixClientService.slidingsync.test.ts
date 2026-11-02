@@ -71,6 +71,13 @@ vi.mock('@/services/matrix/network/runtimeFetch', () => ({
   getRuntimeAwareFetchFn: vi.fn(() => undefined)
 }))
 
+// Mock crypto storage key：测试环境无 keychain / 本地解锁密钥，真实实现会 fail-closed
+// 直接跳过 initRustCrypto（不落明文）。此处返回稳定 32 字节密钥以覆盖初始化路径。
+vi.mock('@/services/secure/cryptoStorageKey', () => ({
+  getOrCreateCryptoStorageKey: vi.fn(async () => new Uint8Array(32)),
+  logCryptoStorageKeyBackend: vi.fn(async () => undefined)
+}))
+
 describe('MatrixClientService - SlidingSync 初始化修复', () => {
   type RustCryptoCapableClient = MatrixClient & {
     initRustCrypto?: ReturnType<typeof vi.fn>
@@ -148,9 +155,12 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
 
       const client = matrixClientService.getClient() as RustCryptoCapableClient | null
       expect(client?.initRustCrypto).toHaveBeenCalledTimes(1)
-      expect(client?.initRustCrypto).toHaveBeenCalledWith({
-        useIndexedDB: typeof globalThis.indexedDB !== 'undefined'
-      })
+      expect(client?.initRustCrypto).toHaveBeenCalledWith(
+        expect.objectContaining({
+          useIndexedDB: typeof globalThis.indexedDB !== 'undefined',
+          storageKey: expect.any(Uint8Array)
+        })
+      )
     })
 
     it('应该在缺少 deviceId 时跳过 Rust Crypto 初始化但继续启动', async () => {

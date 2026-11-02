@@ -137,7 +137,7 @@ const markInitialSyncCompleted = () => {
   requiresInitialSync.value = false
 }
 
-const runInitWithMode = (_block: boolean) => {
+const runInitWithMode = () => {
   const p = init().then(() => {
     markInitialSyncCompleted()
   })
@@ -152,14 +152,14 @@ const runInitWithMode = (_block: boolean) => {
 }
 
 // 确保初始化流程只触发一次
-const ensureInitStarted = (blockInit: boolean) => {
+const ensureInitStarted = () => {
   if (!initPromise) {
     if (shouldBypassAuthForE2E()) {
       logger.info('E2E mock-auth mode detected, skipping Matrix bootstrap')
       initPromise = Promise.resolve()
       return initPromise
     }
-    initPromise = runInitWithMode(blockInit)
+    initPromise = runInitWithMode()
   }
   return initPromise
 }
@@ -168,7 +168,7 @@ const ensureInitStarted = (blockInit: boolean) => {
 const AsyncLeft = defineAsyncComponent({
   loader: async () => {
     const blockInit = shouldBlockInitialRender.value
-    const initTask = ensureInitStarted(blockInit)
+    const initTask = ensureInitStarted()
     await maybeDelayForInitialRender()
     loadingText.value = t('home.loading.left_panel')
     const comp = await import('./left/index.vue')
@@ -184,7 +184,7 @@ const AsyncLeft = defineAsyncComponent({
 const AsyncCenter = defineAsyncComponent({
   loader: async () => {
     const blockInit = shouldBlockInitialRender.value
-    const initTask = ensureInitStarted(blockInit)
+    const initTask = ensureInitStarted()
     await import('./left/index.vue')
     loadingText.value = t('home.loading.data')
     const comp = await import('./center/index.vue')
@@ -200,7 +200,7 @@ const AsyncCenter = defineAsyncComponent({
 const AsyncRight = defineAsyncComponent({
   loader: async () => {
     const blockInit = shouldBlockInitialRender.value
-    const initTask = ensureInitStarted(blockInit)
+    const initTask = ensureInitStarted()
     await maybeDelayForInitialRender()
     await import('./center/index.vue')
     loadingText.value = t('home.loading.right_panel')
@@ -238,7 +238,7 @@ timerWorker.onError((error) => {
 // 监听 Worker 消息
 timerWorker.onMessage((event) => {
   if (event.type === 'timeout') {
-    checkUpdate('home')
+    checkUpdate()
   }
 })
 

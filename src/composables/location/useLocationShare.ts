@@ -12,7 +12,7 @@ interface UseLocationShareOptions {
 }
 
 /** 实时共享默认时长:1 小时 */
-const DEFAULT_BEACON_TIMEOUT = 3600000
+const DEFAULT_BEACON_TIMEOUT = 3_600_000
 
 /**
  * 跨端位置共享 composable

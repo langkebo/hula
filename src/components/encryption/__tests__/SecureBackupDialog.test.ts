@@ -22,6 +22,14 @@ const {
   verifyBackupMock: vi.fn()
 }))
 
+vi.mock('@iconify/vue', () => ({
+  Icon: {
+    name: 'Icon',
+    template: '<i data-test="icon" />',
+    props: ['icon', 'width', 'color']
+  }
+}))
+
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string, params?: Record<string, unknown>) => (params ? `${key}:${JSON.stringify(params)}` : key)

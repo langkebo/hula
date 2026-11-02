@@ -12,6 +12,7 @@ export const errorMessagesEn: Record<string, string> = {
   UNAUTHORIZED: 'Your session has expired, please log in again',
   FORBIDDEN: 'You do not have permission to perform this action',
   M_GUEST_ACCESS_FORBIDDEN: 'Guests cannot perform this action, please register or log in',
+  M_USER_DEACTIVATED: 'Account deactivated, please contact the administrator',
 
   // Rate limiting
   M_LIMIT_EXCEEDED: 'Too many requests, please try again later',

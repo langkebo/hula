@@ -329,7 +329,9 @@ async function loadBaseline() {
 }
 
 async function writeBaseline(violations) {
-  const sorted = [...violations.map(keyOf)].sort()
+  // 与门禁比较口径一致：按 key 去重后再落盘，否则同一文件内重复命中会把 count 撑大，
+  // 基线数字与实际违规数不符，也会削弱 countRegression 的预警能力。
+  const sorted = [...dedupeViolations(violations).map(keyOf)].sort()
   const payload = {
     generatedAt: new Date().toISOString(),
     count: sorted.length,

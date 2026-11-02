@@ -23,7 +23,7 @@
               @click="openDeviceActions(device)">
               <template #icon>
                 <div class="w-40px h-40px rounded-full bg-gray-100 mr-12px flex items-center justify-center">
-                  <Icon :icon="getDeviceIcon(device)" :width="20" color="var(--tjg-text-secondary)" />
+                  <Icon :icon="getDeviceIcon()" :width="20" color="var(--tjg-text-secondary)" />
                 </div>
               </template>
               <template #right-icon>
@@ -163,7 +163,7 @@ function isCurrentDevice(deviceId: string): boolean {
  * `mobile`/`ipad`，恒不命中而永远返回笔记本图标。`DeviceTrustInfo` 当前没有
  * UA 字段（`keys/query` 不返回），因此这里返回中性图标而不是臆测设备类型。
  */
-function getDeviceIcon(_device: DeviceTrustInfo): string {
+function getDeviceIcon(): string {
   return 'mdi:devices'
 }
 

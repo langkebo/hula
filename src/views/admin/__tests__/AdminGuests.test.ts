@@ -130,7 +130,7 @@ describe('AdminGuests', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
-    expect(getUsersMock).toHaveBeenCalledWith(200, undefined, undefined, true)
+    expect(getUsersMock).toHaveBeenCalledWith(200, undefined, true)
     expect(wrapper.text()).toContain('2')
     expect(wrapper.text()).toContain('@guest2:server.test')
   })

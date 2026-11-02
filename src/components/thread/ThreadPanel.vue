@@ -51,7 +51,12 @@
             :placeholder="t('thread.reply_placeholder')"
             :autosize="{ minRows: 1, maxRows: 4 }"
             @keydown.enter.ctrl="handleSendReply" />
-          <n-button type="primary" :disabled="!replyContent.trim()" :loading="sendingReply" @click="handleSendReply">
+          <n-button
+            type="primary"
+            :disabled="!replyContent.trim()"
+            :loading="sendingReply"
+            :aria-label="t('common.send')"
+            @click="handleSendReply">
             <template #icon>
               <n-icon>
                 <svg><use href="#send" /></svg>

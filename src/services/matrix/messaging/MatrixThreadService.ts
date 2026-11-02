@@ -1,6 +1,7 @@
 /** MatrixThreadService — orchestrator for the thread subsystem. Delegates *ViaApi to MatrixThreadApi, state to MatrixThreadState. */
 
 import type { EventType, MatrixEvent } from 'matrix-js-sdk'
+import { DEFAULT_PAGE_LIMIT, DEFAULT_SEARCH_LIMIT } from '@/common/constants'
 import {
   MatrixContentField,
   MatrixEventType,
@@ -309,9 +310,8 @@ class MatrixThreadService extends BaseMatrixService {
     return this.state.getThreadNotificationCount(roomId, threadRootId)
   }
 
-  /** 通过 API 获取全局话题列表
-   */
-  async getGlobalThreadListViaApi(limit = 50, from?: string) {
+  /** 通过 API 获取全局话题列表 */
+  async getGlobalThreadListViaApi(limit = DEFAULT_PAGE_LIMIT, from?: string) {
     return this.api.getGlobalThreadListViaApi(limit, from)
   }
   async getSubscribedThreadsViaApi() {
@@ -347,27 +347,23 @@ class MatrixThreadService extends BaseMatrixService {
   async unsubscribeFromThreadViaApi(roomId: string, threadId: string) {
     return this.api.unsubscribeFromThreadViaApi(roomId, threadId)
   }
-  /** 通过 API 创建全局话题
-   */
+  /** 通过 API 创建全局话题 */
   async createGlobalThreadViaApi(roomId: string, rootEventId: string, content?: Record<string, unknown>) {
     return this.api.createGlobalThreadViaApi(roomId, rootEventId, content)
   }
-  /** 通过 API 创建房间话题
-   */
+  /** 通过 API 创建房间话题 */
   async createRoomThreadViaApi(roomId: string, rootEventId: string, content?: Record<string, unknown>) {
     return this.api.createRoomThreadViaApi(roomId, rootEventId, content)
   }
-  async searchRoomThreadsViaApi(roomId: string, query: string, limit = 20) {
+  async searchRoomThreadsViaApi(roomId: string, query: string, limit = DEFAULT_SEARCH_LIMIT) {
     return this.api.searchRoomThreadsViaApi(roomId, query, limit)
   }
-  /** 通过 API 获取房间话题详情
-   */
+  /** 通过 API 获取房间话题详情 */
   async getRoomThreadViaApi(roomId: string, threadId: string, includeReplies = true, replyLimit = 50) {
     return this.api.getRoomThreadViaApi(roomId, threadId, includeReplies, replyLimit)
   }
-  /** 通过 API 获取房间话题列表
-   */
-  async getRoomThreadListViaApi(roomId: string, limit = 50, from?: string, includeAll = false) {
+  /** 通过 API 获取房间话题列表 */
+  async getRoomThreadListViaApi(roomId: string, limit = DEFAULT_PAGE_LIMIT, from?: string, includeAll = false) {
     return this.api.getRoomThreadListViaApi(roomId, limit, from, includeAll)
   }
   async addThreadReplyViaApi(
@@ -378,19 +374,22 @@ class MatrixThreadService extends BaseMatrixService {
   ) {
     return this.api.addThreadReplyViaApi(roomId, threadId, content, inReplyToEventId)
   }
-  /** 通过 API 订阅话题
-   */
+  /** 通过 API 订阅话题 */
   async subscribeToThreadViaApi(roomId: string, threadId: string, notificationLevel = 'all') {
     return this.api.subscribeToThreadViaApi(roomId, threadId, notificationLevel)
   }
-  /** 通过 API 标记话题为已读
-   */
+  /** 通过 API 标记话题为已读 */
   async markThreadReadViaApi(roomId: string, threadId: string, eventId: string, originServerTs: number) {
     return this.api.markThreadReadViaApi(roomId, threadId, eventId, originServerTs)
   }
-  /** 获取旧版房间话题列表
-   */
-  async getLegacyRoomThreadList(userId: string, roomId: string, limit = 50, from?: string, includeAll = false) {
+  /** 获取旧版房间话题列表 */
+  async getLegacyRoomThreadList(
+    userId: string,
+    roomId: string,
+    limit = DEFAULT_PAGE_LIMIT,
+    from?: string,
+    includeAll = false
+  ) {
     return this.api.getLegacyRoomThreadList(userId, roomId, limit, from, includeAll)
   }
 }

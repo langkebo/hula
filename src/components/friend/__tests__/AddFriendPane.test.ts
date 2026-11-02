@@ -99,7 +99,8 @@ vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({ themeContent: 'light' })
 }))
 
-vi.mock('@/enums', () => ({
+vi.mock('@/enums', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/enums')>()),
   ThemeEnum: { LIGHT: 'light', DARK: 'dark' }
 }))
 
@@ -265,7 +266,14 @@ vi.mock('naive-ui', () => {
       }
     }),
     NDivider: stub('Divider'),
-    NIcon: stub('Icon')
+    NIcon: stub('Icon'),
+    NModal: defineComponent({
+      name: 'NModal',
+      props: { show: Boolean },
+      setup(props, { slots }) {
+        return () => (props.show ? h('div', { class: 'n-modal' }, [slots.default?.()]) : null)
+      }
+    })
   }
 })
 
@@ -383,7 +391,7 @@ describe('AddFriendPane', () => {
     await flushPromises()
 
     // 点击发送按钮
-    const sendBtn = wrapper.find('button.n-button--primary')
+    const sendBtn = wrapper.get('[data-test="add-friend-send"]')
     await sendBtn.trigger('click')
     await flushPromises()
 
@@ -402,7 +410,7 @@ describe('AddFriendPane', () => {
     await wrapper.find('.friend-search-bar-stub__search').trigger('click')
     await flushPromises()
 
-    await wrapper.find('button.n-button--primary').trigger('click')
+    await wrapper.get('[data-test="add-friend-send"]').trigger('click')
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('friend.add.success', 'success', 'polite')
@@ -423,7 +431,7 @@ describe('AddFriendPane', () => {
     await wrapper.find('.friend-search-bar-stub__search').trigger('click')
     await flushPromises()
 
-    await wrapper.find('button.n-button--primary').trigger('click')
+    await wrapper.get('[data-test="add-friend-send"]').trigger('click')
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('network error', 'error', 'assertive')
@@ -441,7 +449,7 @@ describe('AddFriendPane', () => {
     await wrapper.find('.friend-search-bar-stub__search').trigger('click')
     await flushPromises()
 
-    await wrapper.find('button.n-button--primary').trigger('click')
+    await wrapper.get('[data-test="add-friend-send"]').trigger('click')
     await flushPromises()
 
     expect(sendFriendRequestMock).not.toHaveBeenCalled()
@@ -462,7 +470,7 @@ describe('AddFriendPane', () => {
     await wrapper.find('.friend-search-bar-stub__search').trigger('click')
     await flushPromises()
 
-    await wrapper.find('button.n-button--primary').trigger('click')
+    await wrapper.get('[data-test="add-friend-send"]').trigger('click')
     await flushPromises()
 
     expect(sendFriendRequestMock).not.toHaveBeenCalled()
@@ -480,7 +488,7 @@ describe('AddFriendPane', () => {
     await wrapper.find('.friend-search-bar-stub__search').trigger('click')
     await flushPromises()
 
-    await wrapper.find('button.n-button--primary').trigger('click')
+    await wrapper.get('[data-test="add-friend-send"]').trigger('click')
     await flushPromises()
 
     // 返回 false 时不显示 success toast（无 success feedback）
@@ -575,7 +583,7 @@ describe('AddFriendPane', () => {
     await messageTextarea.setValue('x'.repeat(501))
     await wrapper.vm.$nextTick()
 
-    await wrapper.find('button.n-button--primary').trigger('click')
+    await wrapper.get('[data-test="add-friend-send"]').trigger('click')
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('friend.add.message_too_long', 'warning', 'assertive')

@@ -10,7 +10,8 @@ import type { AuthDict, DeviceManager, MatrixClientExtended } from '@/types/matr
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import { BaseMatrixService } from '../BaseMatrixService'
-import { cryptoSDKAdapter } from '../crypto/CryptoSDKAdapter'
+import { loadDeviceVerification } from './deviceVerification'
+import { UserDevicesCache } from './userDevicesCache'
 
 const logger = createLogger('MatrixDeviceService')
 
@@ -59,6 +60,14 @@ interface DeviceListUpdatesRequest {
  * 设备管理服务
  */
 class MatrixDeviceService extends BaseMatrixService {
+  /** 设备列表 TTL 缓存 + 并发去重 + `DevicesUpdated` 失效（H-12）。 */
+  private readonly userDevicesCache = new UserDevicesCache((userId) => this.fetchUserDevices(userId))
+
+  /** 失效设备列表缓存；省略 userId 时清空全部（登出 / 切换账号）。 */
+  invalidateUserDevicesCache(userId?: string): void {
+    this.userDevicesCache.invalidate(userId)
+  }
+
   /**
    * 获取 DeviceManager（不存在时抛出）。
    *
@@ -110,14 +119,29 @@ class MatrixDeviceService extends BaseMatrixService {
    * @returns 设备列表（失败时返回空数组，不抛出异常）
    */
   async getUserDevices(userId: string): Promise<Device[]> {
+    let client: MatrixClient
     try {
       // ⚠️ 必须走 `this.getClient()`（BaseMatrixService 的 provider 取 client）。
       // 上一版收口写成 `this.client.getDeviceKeysManager()`，而本类没有 `client`
       // 字段 → 运行期 TypeError 被 catch 吞掉，好友设备列表恒为空。
+      client = this.getClient()
+    } catch (err) {
+      logger.error(`[DeviceService] 获取用户设备列表失败: userId=${userId}, ${err}`)
+      return []
+    }
+    return this.userDevicesCache.get(userId, client)
+  }
+
+  /**
+   * 真正打 `POST /keys/query` 并读本地 crypto store 的实现（失败降级为空数组）。
+   * 缓存与并发去重由 {@link getUserDevices} 负责。
+   */
+  private async fetchUserDevices(userId: string): Promise<Device[]> {
+    try {
       const deviceMap = (await this.getClient().getDeviceKeysManager().getUserDevices(userId)) ?? {}
       const rawDevices = Object.values(deviceMap) as Array<Record<string, unknown>>
       // 逐设备查**本地 crypto store** 的验证状态（见 loadDeviceVerification 的说明）。
-      const verification = await this.loadDeviceVerification(userId, rawDevices)
+      const verification = await loadDeviceVerification(userId, rawDevices)
       const devices: Device[] = rawDevices
         .map((content) => {
           // keys/query 返回的是设备密钥，display_name 通常位于 unsigned.device_display_name
@@ -146,62 +170,6 @@ class MatrixDeviceService extends BaseMatrixService {
       logger.error(`[DeviceService] 获取用户设备列表失败: userId=${userId}, ${err}`)
       return []
     }
-  }
-
-  /**
-   * 读取指定用户在**本地 crypto store** 中的逐设备验证状态。
-   *
-   * ## 为什么不能读 `/keys/query` 响应里的 `verified`
-   *
-   * `/keys/query` 返回的是 *device_keys*（`user_id` / `device_id` / `algorithms` /
-   * `keys` / `signatures` / `unsigned`）—— 其中**没有任何信任标记**。
-   * 「设备是否已验证」是**纯本地**状态：由客户端依据 cross-signing 信任链
-   * （master → self_signing → device）或本地显式验证在 crypto store 里推导。
-   * 服务端的 `GET /device_trust` 曾承载这一信息，但它随后端模块一起被删除，
-   * 调用必然 404（见 `E2EE_SPEC_COMPLIANCE.md` 对 T-2/T-5 的说明）。
-   *
-   * 历史缺陷：本方法曾写 `verified: typeof content.verified === 'boolean' ? content.verified : false`，
-   * 而该字段在响应中恒不存在 ⇒ `verified` **恒为 false** ⇒ 依赖它推导信任等级的上层
-   * （`useMessageTrust`）永远得到「未验证」⇒ 「已验证（绿锁）」不可达。
-   *
-   * 权威来源与 {@link CryptoDeviceAdapter} 一致：`CryptoApi.getDeviceVerificationStatus`。
-   * 查询失败按「未验证」处理并记录日志，**不**把失败伪装成「确实已验证」。
-   *
-   * @param userId 目标用户 MXID
-   * @param devices `/keys/query` 返回的原始设备内容
-   * @returns `deviceId → 是否已验证`（无法判定/查询失败时为 `false`）
-   */
-  private async loadDeviceVerification(
-    userId: string,
-    devices: Array<Record<string, unknown>>
-  ): Promise<Map<string, boolean>> {
-    const result = new Map<string, boolean>()
-    // ⚠️ 取 crypto 本身必须防御：客户端未初始化 / crypto 未启用时这里会抛错，
-    // 而"验证状态查不到"绝不能连带把**设备列表**也变成空数组
-    // （那会让"无设备"与"查询失败"再也分不开）。
-    let crypto: ReturnType<typeof cryptoSDKAdapter.getCrypto>
-    try {
-      crypto = cryptoSDKAdapter.getCrypto()
-    } catch (err) {
-      logger.warn(`[DeviceService] crypto 不可用，设备验证状态按未验证处理: ${err}`)
-      return result
-    }
-    if (!crypto) return result
-
-    await Promise.all(
-      devices.map(async (device) => {
-        const deviceId = String(device.device_id ?? '')
-        if (!deviceId) return
-        try {
-          const status = await crypto.getDeviceVerificationStatus(userId, deviceId)
-          result.set(deviceId, status?.isVerified() ?? false)
-        } catch (err) {
-          logger.warn(`[DeviceService] 设备 ${deviceId} 验证状态获取失败，按未验证处理: ${err}`)
-          result.set(deviceId, false)
-        }
-      })
-    )
-    return result
   }
 
   /**

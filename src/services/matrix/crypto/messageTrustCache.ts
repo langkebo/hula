@@ -34,3 +34,47 @@ export function clearSenderDeviceCache(): void {
   senderDeviceCache.clear()
   bumpTrustCacheVersion()
 }
+
+// ---- 全局信任刷新节拍 --------------------------------------------------------
+
+/** 信任状态刷新间隔（ms）：设备验证状态可能在会话期间变化。 */
+const TRUST_REFRESH_TICK_MS = 30_000
+
+/** 全局节拍版本号：每次 tick 递增，订阅方 `watch` 它来触发刷新。 */
+export const trustTickVersion = shallowRef(0)
+
+let trustTickSubscribers = 0
+let trustTickTimer: ReturnType<typeof setInterval> | null = null
+
+/**
+ * 订阅全局信任刷新节拍。
+ *
+ * 历史实现是「每条加密消息一个 `setInterval`」，聊天页 200 条加密消息就会常驻
+ * 200 个 30s 定时器 + 200 份重复的 `/keys/query`。改为全局共享节拍后：
+ * 首个订阅者启动定时器，最后一个退订时停止。
+ *
+ * @returns 取消订阅函数（幂等）
+ */
+export function subscribeTrustTick(): () => void {
+  trustTickSubscribers += 1
+  if (!trustTickTimer) {
+    trustTickTimer = setInterval(() => {
+      trustTickVersion.value += 1
+    }, TRUST_REFRESH_TICK_MS)
+    // Node 测试环境不应被该定时器阻止退出（浏览器无 unref，故可选调用）
+    ;(trustTickTimer as { unref?: () => void }).unref?.()
+  }
+
+  let active = true
+  return () => {
+    if (!active) return
+    active = false
+    trustTickSubscribers -= 1
+    if (trustTickSubscribers > 0) return
+    if (trustTickTimer) {
+      clearInterval(trustTickTimer)
+      trustTickTimer = null
+    }
+    trustTickSubscribers = 0
+  }
+}

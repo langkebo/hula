@@ -265,39 +265,7 @@
       </div>
 
       <!-- 文件 Tab 占位 -->
-      <div v-show="activeTab === 'files'" class="flex-1 min-h-0 flex flex-col">
-        <!-- 头部空间配额统计 -->
-        <n-flex
-          align="center"
-          justify="space-between"
-          class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
-          <span class="text-[var(--text-xs)] font-medium color-[--tjg-text-tertiary]">
-            {{ t('home.chat_sidebar.quota.title') }}
-          </span>
-          <span class="text-[var(--text-xs)] color-[--tjg-color-primary-500]">
-            {{ '1.2 GB / 5.0 GB' }}
-          </span>
-        </n-flex>
-        <!-- 进度条占位 -->
-        <div class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
-          <n-progress
-            type="line"
-            :percentage="24"
-            :height="4"
-            :show-indicator="false"
-            color="var(--tjg-color-primary-500)" />
-        </div>
-
-        <div class="flex-1 flex items-center justify-center">
-          <n-empty :description="t('home.chat_sidebar.empty.files')">
-            <template #icon>
-              <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
-                <use href="#folder"></use>
-              </svg>
-            </template>
-          </n-empty>
-        </div>
-      </div>
+      <ChatSidebarFiles :active="activeTab === 'files'" />
 
       <!-- 置顶 Tab：PinnedMessageBanner 列表 -->
       <div v-show="activeTab === 'pins'" class="flex-1 min-h-0 flex flex-col">
@@ -352,6 +320,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
+import ChatSidebarFiles from './ChatSidebarFiles.vue'
 import FavoritesPanel from './FavoritesPanel.vue'
 
 const logger = createLogger('ChatSidebar')

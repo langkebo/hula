@@ -55,9 +55,7 @@ describe('contract-coverage-scan: URL 字面量提取', () => {
 
   it('纯字符串字面量照旧可提取（含 vendor 前缀）', () => {
     expect(extractUrls("apiRequest('/_matrix/vendor/v1/friends', {})")).toEqual(['/_matrix/vendor/v1/friends'])
-    expect(extractUrls('authedRequest(`${PREFIX_VENDOR_V1}/rooms`, {})', PREFIXES)).toEqual([
-      '/_matrix/vendor/v1/rooms'
-    ])
+    expect(extractUrls('apiRequest(`${PREFIX_VENDOR_V1}/rooms`, {})', PREFIXES)).toEqual(['/_matrix/vendor/v1/rooms'])
   })
 
   it('未知标识符不崩，退回"从第一个 / 切片"的行为', () => {
@@ -130,7 +128,7 @@ describe('contract-coverage-scan: 探针表与仓库真实调用名同步', () =
   /** 仓库里被当作路径首参使用的调用名（排除 paths/ 路径构造器目录）。 */
   function usedPathCallNames(): string[] {
     const names = new Set<string>()
-    const re = /([A-Za-z_$][\w$]*)\s*(?:<[^<>()]{0,120}>)?\s*\(\s*`\$\{PREFIX_[A-Z0-9_]+\}/
+    const re = /([A-Za-z_$][\w$]*)\s*(?:<[^<>()]{0,120}>)?\s*\(\s*`\$\{PREFIX_[A-Z0-9_]+\}/g
     for (const file of walk(SERVICES_ROOT)) {
       if (file.includes(`${join('src', 'services', 'matrix', 'paths')}`)) continue
       const text = readFileSync(file, 'utf8')

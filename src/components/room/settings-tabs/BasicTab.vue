@@ -113,6 +113,7 @@
 import { useClipboard } from '@vueuse/core'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { THUMBNAIL_SIZE_SMALL } from '@/common/constants'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
@@ -152,7 +153,7 @@ const {
 
 const avatarHttpUrl = computed(() => {
   if (!avatarUrl.value) return ''
-  return matrixMediaService.getThumbnailUrl(avatarUrl.value, 64, 64) ?? ''
+  return matrixMediaService.getThumbnailUrl(avatarUrl.value, THUMBNAIL_SIZE_SMALL, THUMBNAIL_SIZE_SMALL) ?? ''
 })
 
 const truncatedRoomId = computed(() => {

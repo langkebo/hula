@@ -201,7 +201,7 @@ export function useLoginOrchestrator() {
 
   timerWorker.onMessage((event) => {
     if (event.type === 'timeout') {
-      checkUpdate('login')
+      checkUpdate()
     }
   })
 
@@ -283,7 +283,7 @@ export function useLoginOrchestrator() {
       window.addEventListener('pointerdown', handleAutoLoginActivity, true)
       window.addEventListener('keydown', handleAutoLoginActivity, true)
     }
-    await checkUpdate('login', true)
+    await checkUpdate()
     timerWorker.postMessage({
       type: 'startTimer',
       msgId: 'checkUpdate',

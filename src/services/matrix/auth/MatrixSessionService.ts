@@ -1,6 +1,5 @@
-import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk'
-import type { DmRoomInfo } from 'matrix-js-sdk/dm'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
+import type { DmRoomInfo, MatrixClient, MatrixEvent, Room } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { resolveDmIdentityKey } from '@/utils/userIdentity'
 import { hasOwn } from '@/utils/webCompat'
@@ -50,7 +49,7 @@ type MatrixClientWithTags = MatrixClient & {
   removeRoomTag?: (roomId: string, tagName: string) => Promise<unknown>
 }
 
-const DIRECT_ROOM_READY_TIMEOUT_MS = 3000
+const DIRECT_ROOM_READY_TIMEOUT_MS = 3_000
 const DIRECT_ROOM_READY_POLL_INTERVAL_MS = 100
 
 class MatrixSessionService extends BaseMatrixService {

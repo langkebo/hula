@@ -1,6 +1,6 @@
 <template>
   <div class="notification-settings">
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="notifications-desktop">
       <h3 class="section-title">{{ t('setting.notification.desktop.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -36,7 +36,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="notifications-content">
       <h3 class="section-title">{{ t('setting.notification.content.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -56,7 +56,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="notifications-keyword">
       <h3 class="section-title">{{ t('setting.notification.keyword.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -85,7 +85,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="notifications-thread">
       <h3 class="section-title">{{ t('setting.notification.thread.title') }}</h3>
       <div class="setting-item">
         <div class="setting-info">
@@ -98,7 +98,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
+    <div class="settings-section" data-settings-anchor="notifications-push">
       <h3 class="section-title">{{ t('setting.notification.push_section.title') }}</h3>
       <p class="section-desc">{{ t('setting.notification.push_section.desc') }}</p>
       <PushSettings embedded />

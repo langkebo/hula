@@ -516,7 +516,7 @@ describe('MatrixRuntimeSessionService', () => {
     expect(mockPort.user.clearUser).toHaveBeenCalledTimes(1)
     expect(mockPort.global.updateCurrentSessionRoomId).toHaveBeenCalledWith('')
     expect(mockPort.matrix.logout).toHaveBeenCalledTimes(1)
-    expect(mockCreateWebviewWindow).toHaveBeenCalledWith('登录', 'login', 420, 640, undefined, false, 420, 640)
+    expect(mockCreateWebviewWindow).toHaveBeenCalledWith('登录', 'login', 420, 580, undefined, false, 420, 580)
     expect(mockEmit).toHaveBeenCalledWith('logout')
     expect(mockResizeWindow).toHaveBeenCalledWith('tray', 130, 44)
     expect(mockSetBadgeCount).toHaveBeenCalledWith(undefined)

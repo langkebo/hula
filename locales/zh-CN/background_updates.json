@@ -1,1 +1,53 @@
-{}
+{
+  "title": "后台更新",
+  "subtitle": "查看后台任务进度，按需启动、中止或重试",
+  "actions": {
+    "retry_failed": "重试失败任务",
+    "cleanup_locks": "清理过期锁",
+    "start": "启动",
+    "cancel": "中止"
+  },
+  "current": "当前任务",
+  "auto_refresh": "自动刷新",
+  "section": {
+    "summary": "任务汇总"
+  },
+  "summary": {
+    "pending": "等待中",
+    "running": "运行中",
+    "completed": "已完成",
+    "failed": "失败",
+    "total": "总计"
+  },
+  "empty": "暂无后台更新任务",
+  "col_job": "任务名",
+  "col_type": "任务类型",
+  "col_status": "状态",
+  "col_progress": "进度",
+  "col_created": "创建时间",
+  "col_actions": "操作",
+  "start_confirm_title": "启动后台更新",
+  "start_confirm_content": "确定要启动任务 {job} 吗？",
+  "cancel_confirm_title": "中止后台更新",
+  "cancel_confirm_content": "确定要中止任务 {job} 吗？已处理的进度会被保留。",
+  "retry_confirm_title": "重试失败任务",
+  "retry_confirm_content": "将重新排队所有失败的后台更新任务，确定继续吗？",
+  "cleanup_confirm_title": "清理过期锁",
+  "cleanup_confirm_content": "将清理未释放的后台更新锁，确定继续吗？",
+  "started_success": "任务已启动",
+  "start_failed": "启动任务失败",
+  "cancelled_success": "任务已中止",
+  "cancel_failed": "中止任务失败",
+  "retried_success": "已重试 {count} 个任务",
+  "retried_error": "重试失败任务失败",
+  "cleaned_success": "已清理 {count} 个锁",
+  "cleaned_error": "清理锁失败",
+  "status": {
+    "pending": "等待中",
+    "running": "运行中",
+    "completed": "已完成",
+    "failed": "失败",
+    "cancelled": "已中止",
+    "unknown": "未知"
+  }
+}

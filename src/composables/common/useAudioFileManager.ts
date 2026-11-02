@@ -1,7 +1,7 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { join } from '@tauri-apps/api/path'
 import { create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
-import type { Ref } from 'vue'
+import { getCurrentScope, onScopeDispose, type Ref } from 'vue'
 import type { FilesMeta } from '@/services/types'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
@@ -68,6 +68,23 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
   const isFileReady = ref(false)
   const audioBuffer = ref<ArrayBuffer | null>(null)
   const isMacOS = isMac()
+
+  // 播放用的 Blob URL：组件卸载或主动清理时统一释放，避免跨消息累积
+  const objectUrls = new Set<string>()
+
+  const revokeObjectUrls = () => {
+    objectUrls.forEach((url) => URL.revokeObjectURL(url))
+    objectUrls.clear()
+  }
+
+  const rememberObjectUrl = (url: string) => {
+    objectUrls.add(url)
+    return url
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(revokeObjectUrls)
+  }
 
   const isAbsoluteLocalPath = (path: string) => {
     return path.startsWith('/') || /^[A-Za-z]:[\\/]/.test(path)
@@ -212,7 +229,7 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
       } else {
         // 确保 fileBuffer 是 ArrayBuffer 类型
         const arrayBuffer = fileData.fileBuffer
-        return URL.createObjectURL(new Blob([new Uint8Array(arrayBuffer)], { type: mimeType }))
+        return rememberObjectUrl(URL.createObjectURL(new Blob([new Uint8Array(arrayBuffer)], { type: mimeType })))
       }
     }
 
@@ -281,6 +298,7 @@ export const useAudioFileManager = (userId: string): AudioFileManagerReturn => {
   const cleanup = () => {
     audioBuffer.value = null
     isFileReady.value = false
+    revokeObjectUrls()
   }
 
   return {

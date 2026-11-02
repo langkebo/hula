@@ -17,9 +17,6 @@
       @cancel-sticky="handleCancelSticky"
       @view-sticky-event="handleViewStickyEvent" />
 
-    <!-- 同步状态条 -->
-    <SyncStatusBar :connection-state="matrixStore.connectionState" @retry="matrixStore.reconnect()" />
-
     <!-- 房间内消息搜索面板（F2） -->
     <ChatRoomSearch
       :is-open="searchIsOpen"
@@ -95,18 +92,12 @@
     <!-- 文件上传进度条 -->
     <FileUploadProgress />
 
-    <!-- 阅后即焚切换（私密模式激活时） -->
-    <div
+    <!-- 阅后即焚切换（私密模式激活且服务端支持该能力时） -->
+    <BurnAfterReadBar
       v-if="privateModeActive"
-      class="flex-shrink-0 px-12px py-4px flex items-center gap-8px border-t border-[--tjg-border-default]">
-      <BurnAfterReadToggle
-        :enabled="burnEnabled"
-        @update:enabled="handleBurnToggle"
-        @select-duration="handleBurnDurationChange" />
-      <span class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">
-        {{ burnEnabled ? t('editor.burn_after_read_enabled') : t('editor.burn_after_read_disabled') }}
-      </span>
-    </div>
+      :enabled="burnEnabled"
+      @update:enabled="handleBurnToggle"
+      @select-duration="handleBurnDurationChange" />
   </div>
 
   <ChatModals
@@ -150,8 +141,6 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, provide, type Ref, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import BurnAfterReadToggle from '@/components/burn/BurnAfterReadToggle.vue'
-import SyncStatusBar from '@/components/connection/SyncStatusBar.vue'
 import { useAnnouncementBanner } from '@/composables/chat/useAnnouncementBanner'
 import { useAvatarPreloader } from '@/composables/chat/useAvatarPreloader'
 import { useChatDialogs } from '@/composables/chat/useChatDialogs'
@@ -170,15 +159,16 @@ import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum } from '@/enums'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
-import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { audioManager } from '@/utils/AudioManager'
 import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
+import BurnAfterReadBar from './BurnAfterReadBar.vue'
 import ChatBanners from './ChatBanners.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import ChatModals from './ChatModals.vue'
@@ -204,7 +194,6 @@ const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
 const userStore = useUserStore()
-const matrixStore = useMatrixStore()
 const networkStatus = useNetworkStatus()
 // const { footerHeight } = useChatLayoutGlobal() // 已移除，不再需要
 useWindow()
@@ -241,6 +230,7 @@ const {
 } = usePrivateMode()
 
 const burnAfterRead = useBurnAfterRead()
+const capability = useServerCapability()
 
 const handleBurnToggle = async (val: boolean) => {
   const roomId = globalStore.currentSessionRoomId
@@ -270,6 +260,8 @@ const handleBurnDurationChange = async (seconds: number) => {
 }
 
 const onPrivateModeToggleRequest = (payload?: { confirmed: boolean }) => {
+  // 服务端不支持阅后即焚时忽略切换请求，避免进入无法工作的私密模式
+  if (!capability.canUseBurnAfterRead.value) return
   if (payload?.confirmed) {
     // 移动端已确认，直接进入私密模式（不弹 PC 对话框）
     confirmPrivateMode()

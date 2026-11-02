@@ -62,8 +62,7 @@ describe('Paths single source of truth', () => {
       FRIENDS.INCOMING_REQUESTS,
       FRIENDS.OUTGOING_REQUESTS,
       FRIENDS.ACCEPT('@alice:server'),
-      FRIENDS.REJECT('@alice:server'),
-      FRIENDS.STATUS('@alice:server')
+      FRIENDS.REJECT('@alice:server')
     ]
     const matched = candidates.filter(validateTjgPath)
     expect(matched.length).toBeGreaterThanOrEqual(3)

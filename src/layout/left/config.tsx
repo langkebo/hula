@@ -4,7 +4,6 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
 import { MittEnum, ModalEnum, PluginEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
-import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { createLogger } from '@/utils/Logger'
@@ -81,7 +80,6 @@ const useMoreList = () => {
     handleHomeserverSave,
     moreList: computed<OPT.L.MoreList[]>(() => {
       const adminStore = useAdminStore()
-      const hasAdminApi = matrixCapabilityService.hasCapability('admin-api')
       const items: OPT.L.MoreList[] = [
         {
           label: t('menu.homeserver'),
@@ -90,9 +88,9 @@ const useMoreList = () => {
         }
       ]
 
-      if (hasAdminApi && adminStore.canAccessAdmin) {
+      if (adminStore.canShowAdminEntry) {
         items.push({
-          label: t('menu.admin_panel'),
+          label: t('admin.panel'),
           icon: 'wrench',
           click: () => {
             router.push('/admin')

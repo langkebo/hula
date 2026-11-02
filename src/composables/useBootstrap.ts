@@ -138,12 +138,13 @@ const useSharedBootstrap = createSharedComposable(() => {
         : (callback: IdleRequestCallback) => window.setTimeout(() => callback({} as IdleDeadline), 1)
 
     scheduleIdleWork(() => {
-      if (isDesktop()) {
-        import('@/views/homeWindow/message/index.vue')
-        import('@/layout/index.vue')
-      } else {
+      // 移动端生产构建在此处即确定分支，桌面布局与其 admin 菜单不会进入产物
+      if (__TJG_MOBILE_BUILD__ || !isDesktop()) {
         import('@/mobile/views/message/index.vue')
+        return
       }
+      import('@/views/homeWindow/message/index.vue')
+      import('@/layout/index.vue')
     })
   }
 

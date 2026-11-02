@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { TauriCommand } from '@/enums'
 import { adminService } from '@/services/matrix/admin'
+import type { AdminApiAvailability } from '@/services/matrix/admin/adminApiAvailability'
 import { describeAdminApiAvailability } from '@/services/matrix/admin/adminApiAvailability'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
@@ -23,11 +24,29 @@ export const useAdminStore = defineStore('admin', () => {
   const lastCheckedAt = ref<number>(0)
   const ADMIN_CHECK_INTERVAL = 5 * 60 * 1000
 
+  /** 最近一次 Admin API 探测结果（五态），供后台导航与入口判定使用 */
+  const apiAvailability = ref<AdminApiAvailability | null>(null)
+  /** 是否已完成过至少一次探测；与 `apiAvailability === null`（探测失败）区分 */
+  const availabilityLoaded = ref(false)
+
   const canAccessAdmin = computed(() => isAdmin.value && matrixStore.isLoggedIn)
 
-  async function checkAdminViaBackend(): Promise<boolean> {
+  /**
+   * 是否展示后台入口。
+   * `unsupported`（该 homeserver 没有 Admin API）时隐藏；`unavailable` 保留入口，
+   * 以便用户进入后台后触发「重试探测」。
+   */
+  const canShowAdminEntry = computed(() => canAccessAdmin.value && apiAvailability.value?.status !== 'unsupported')
+
+  async function probeApiAvailability(): Promise<AdminApiAvailability> {
+    const availability = await adminService.apiProbe.probe()
+    apiAvailability.value = availability
+    availabilityLoaded.value = true
+    return availability
+  }
+
+  async function checkAdminViaBackend(availability: AdminApiAvailability): Promise<boolean> {
     try {
-      const availability = await adminService.apiProbe.probe()
       if (availability.status !== 'available') {
         // 按分类如实报告：403（无权限）**不是**"后端不可用"，
         // 404 是"该 homeserver 没有 Admin API"，只有网络/5xx 才是无法判定。
@@ -85,6 +104,8 @@ export const useAdminStore = defineStore('admin', () => {
   async function checkAdminStatus(): Promise<boolean> {
     if (!matrixStore.isLoggedIn) {
       isAdmin.value = false
+      apiAvailability.value = null
+      availabilityLoaded.value = false
       return false
     }
 
@@ -102,6 +123,8 @@ export const useAdminStore = defineStore('admin', () => {
 
     isCheckingAdmin.value = true
     try {
+      // 先探测一次，五态结果供导航与入口使用；后端校验复用同一结果，避免重复请求
+      const availability = await probeApiAvailability()
       const frontendResult = await checkAdminViaFrontend()
 
       // 浏览器 dev 模式（无 Tauri runtime）下跳过后端校验，仅依赖前端校验
@@ -112,7 +135,7 @@ export const useAdminStore = defineStore('admin', () => {
         return isAdmin.value
       }
 
-      const backendResult = await checkAdminViaBackend()
+      const backendResult = await checkAdminViaBackend(availability)
 
       isAdmin.value = backendResult && frontendResult
 
@@ -127,10 +150,18 @@ export const useAdminStore = defineStore('admin', () => {
     } catch (err) {
       logger.error(`管理员状态检查失败: ${err}`)
       isAdmin.value = false
+      // 避免探测异常把导航永久卡在 loading
+      availabilityLoaded.value = true
       return false
     } finally {
       isCheckingAdmin.value = false
     }
+  }
+
+  /** 清空检查缓存并重新探测（后台「重试探测」按钮使用） */
+  async function retryApiProbe(): Promise<boolean> {
+    lastCheckedAt.value = 0
+    return checkAdminStatus()
   }
 
   async function verifyAdminAccess(): Promise<boolean> {
@@ -141,13 +172,19 @@ export const useAdminStore = defineStore('admin', () => {
   function clearAdminState() {
     isAdmin.value = false
     lastCheckedAt.value = 0
+    apiAvailability.value = null
+    availabilityLoaded.value = false
   }
 
   return {
     isAdmin,
     isCheckingAdmin,
     canAccessAdmin,
+    canShowAdminEntry,
+    apiAvailability,
+    availabilityLoaded,
     checkAdminStatus,
+    retryApiProbe,
     verifyAdminAccess,
     clearAdminState
   }

@@ -200,7 +200,7 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
     }
   }
 
-  const finalizeSuccessfulWrite = (fileUrl: string, _fileName: string, absolutePath: string, localPath: string) => {
+  const finalizeSuccessfulWrite = (fileUrl: string, absolutePath: string, localPath: string) => {
     const normalizedPath = absolutePath.replace(/\\/g, '/')
     updateFileStatus(fileUrl, {
       isDownloaded: true,
@@ -250,7 +250,7 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
       const baseDirPath = await getDownloadBaseDirPath()
       const absolutePath = await join(baseDirPath, filePath)
 
-      finalizeSuccessfulWrite(fileUrl, fileName, absolutePath, filePath)
+      finalizeSuccessfulWrite(fileUrl, absolutePath, filePath)
       return absolutePath
     } catch (error) {
       logger.error('文件下载失败:', error)
@@ -314,7 +314,7 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
       const baseDirPath = await getDownloadBaseDirPath()
       const absolutePath = await join(baseDirPath, filePath)
 
-      finalizeSuccessfulWrite(fileUrl, fileName, absolutePath, filePath)
+      finalizeSuccessfulWrite(fileUrl, absolutePath, filePath)
       return absolutePath
     } catch (error) {
       logger.error('保存文件失败:', error)

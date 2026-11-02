@@ -34,6 +34,22 @@ pub async fn delete_secret(key: String) -> Result<(), String> {
     SecureStore::delete(&key).map_err(|e| e.to_string())
 }
 
+/// 用系统钥匙串托管的主密钥加密会话级敏感值。
+///
+/// 历史缺陷（审计 H-3）：前端把 per-install 密钥明文写进 localStorage，
+/// 任何能读 localStorage 的脚本都能解出 sessionStorage 里的密文。
+/// 现改为前端不持有任何密钥，密文由 Rust 侧主密钥（钥匙串）加密。
+#[tauri::command]
+pub async fn session_secret_encrypt(plaintext: String) -> Result<String, String> {
+    crate::utils::crypto::encrypt(&plaintext).map_err(|e| e.to_string())
+}
+
+/// 解密 {@link session_secret_encrypt} 产出的密文（兼容历史格式由 crypto 层处理）。
+#[tauri::command]
+pub async fn session_secret_decrypt(ciphertext: String) -> Result<String, String> {
+    crate::utils::crypto::decrypt(&ciphertext).map_err(|e| e.to_string())
+}
+
 /// 上报 secure storage 的**实测**可用性。
 ///
 /// 历史缺陷（2026-10-13 修复）：`backend` 按平台**硬编码**为 `macos_keychain`，

@@ -1,15 +1,16 @@
-import type { Room } from 'matrix-js-sdk'
 import type {
   CreateDmOptions,
   DirectMessageManager,
   DmPartnerResponse,
   DmRoomInfo,
-  IDirectRoomsMap
-} from 'matrix-js-sdk/dm'
+  IDirectRoomsMap,
+  Room
+} from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 import { loadDmPrivacyPreferences, resolveDmEncryption } from '../user/dmPrivacyPreferences'
+import { DmRoomsCache } from './dmRoomsCache'
 
 const logger = createLogger('MatrixDirectMessageService')
 
@@ -18,7 +19,7 @@ export type { DmRoomInfo }
 class MatrixDirectMessageService extends BaseMatrixService {
   private dmManager: DirectMessageManager | null = null
   private observedClient: ReturnType<typeof matrixClientService.getClient> | null = null
-  private dmRoomsCache: Map<string, DmRoomInfo[]> = new Map()
+  private dmRoomsCache = new DmRoomsCache()
 
   private getManager(): DirectMessageManager | null {
     const client = matrixClientService.getClient()
@@ -331,22 +332,15 @@ class MatrixDirectMessageService extends BaseMatrixService {
   }
 
   getCachedDmRooms(userId: string): DmRoomInfo[] {
-    return this.dmRoomsCache.get(userId) ?? []
+    return this.dmRoomsCache.getByUser(userId)
   }
 
   getCachedDmRoomInfoByRoomId(roomId: string): DmRoomInfo | null {
-    for (const roomInfos of this.dmRoomsCache.values()) {
-      const roomInfo = roomInfos.find((item) => item.roomId === roomId)
-      if (roomInfo) {
-        return roomInfo
-      }
-    }
-
-    return null
+    return this.dmRoomsCache.getByRoomId(roomId)
   }
 
   getAllCachedDmRooms(): Map<string, DmRoomInfo[]> {
-    return new Map(this.dmRoomsCache)
+    return this.dmRoomsCache.snapshot()
   }
 
   /**
@@ -391,8 +385,7 @@ class MatrixDirectMessageService extends BaseMatrixService {
   }
 
   async getTotalUnreadCount(): Promise<number> {
-    const roomInfos = await this.getDMRooms()
-    return roomInfos.reduce((sum, room) => sum + (room.unreadCount ?? 0), 0)
+    return (await this.getDMRooms()).reduce((sum, room) => sum + (room.unreadCount ?? 0), 0)
   }
 
   stop(): void {

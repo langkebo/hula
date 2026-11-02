@@ -1,6 +1,12 @@
 <template>
   <Transition name="connection-banner">
-    <div v-if="showBanner" class="connection-status-banner" :class="`connection-status-banner--${state}`">
+    <div
+      v-if="showBanner"
+      class="connection-status-banner"
+      :class="`connection-status-banner--${state}`"
+      :role="state === 'error' ? 'alert' : 'status'"
+      :aria-live="state === 'error' ? 'assertive' : 'polite'"
+      aria-atomic="true">
       <div class="connection-status-banner__content">
         <div class="connection-status-banner__icon">
           <n-spin v-if="state === 'reconnecting' || state === 'connecting' || state === 'syncing'" :size="14" />

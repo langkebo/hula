@@ -10,8 +10,13 @@
   "call": {
     "hangup": "Hang Up",
     "mute": "Mute",
+    "unmute": "Unmute",
     "speaker": "Speaker",
-    "switch_camera": "Switch Camera"
+    "switch_camera": "Switch Camera",
+    "video_on": "Turn on video",
+    "video_off": "Turn off video",
+    "screen_share": "Share screen",
+    "stop_screen_share": "Stop sharing"
   },
   "errors": {
     "voip_unavailable": "VoIP service unavailable",

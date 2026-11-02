@@ -1,3 +1,4 @@
+import { computeBackoffDelay, sleep } from '@/utils/backoff'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('OfflineQueue')
@@ -33,6 +34,11 @@ interface QueuedOperation {
   retryCount: number
   maxRetries: number
   status: 'pending' | 'processing' | 'failed'
+  /**
+   * payload 已因持久化脱敏而丢失内容，进程重启后无法再 replay。
+   * 这类 failed 操作保留在队列里只为让 UI 提示「需要重新输入」，`retryFailed()` 会跳过它们。
+   */
+  payloadRedacted?: boolean
 }
 
 /**
@@ -95,6 +101,11 @@ const STORAGE_KEY = 'tjg-offline-queue'
 const MAX_RETRIES = 3
 const BASE_DELAY = 1000
 const MAX_DELAY = 30000
+/**
+ * 队列容量上限（H-8）：长离线或对端长期不可用时队列会无界增长，
+ * 既撑爆 localStorage 又让重放循环越拖越久。超出后按「最旧优先」淘汰。
+ */
+const MAX_QUEUE_SIZE = 200
 
 export class OfflineQueueService {
   private queue: QueuedOperation[] = []
@@ -123,6 +134,7 @@ export class OfflineQueueService {
       status: 'pending'
     }
     this.queue.push(op)
+    this.enforceCapacity()
     this.persistQueue()
     logger.info(`操作入队: ${type} for ${roomId} (id: ${id})`)
     return id
@@ -134,6 +146,56 @@ export class OfflineQueueService {
 
   getPendingCount(): number {
     return this.queue.filter((op) => op.status === 'pending').length
+  }
+
+  /** 失败操作数（含重启后因脱敏而不可重试的记录） */
+  getFailedCount(): number {
+    return this.queue.filter((op) => op.status === 'failed').length
+  }
+
+  /**
+   * 手动重发失败操作：failed → pending 并重置重试计数，交由 `replayAll()` 重新投递。
+   *
+   * 因持久化脱敏而丢失内容（`payloadRedacted`）的操作会被跳过——重放它们只会把
+   * `[redacted]` 当成正文发出去。
+   *
+   * @returns 被重置为 pending 的操作数
+   */
+  retryFailed(): number {
+    let reset = 0
+    for (const op of this.queue) {
+      if (op.status !== 'failed' || op.payloadRedacted) continue
+      op.status = 'pending'
+      op.retryCount = 0
+      reset++
+    }
+    if (reset > 0) {
+      this.persistQueue()
+      logger.info(`重置 ${reset} 个失败操作为待重放`)
+    }
+    return reset
+  }
+
+  /**
+   * 容量控制（H-8）：超出上限时淘汰最旧的 pending，其次淘汰最旧的 failed。
+   * processing 中的操作正在投递，不参与淘汰。
+   */
+  private enforceCapacity(): void {
+    if (this.queue.length <= MAX_QUEUE_SIZE) return
+
+    const overflow = this.queue.length - MAX_QUEUE_SIZE
+    const victims = new Set<string>()
+    for (const status of ['pending', 'failed'] as const) {
+      for (const op of this.queue) {
+        if (victims.size >= overflow) break
+        if (op.status === status) victims.add(op.id)
+      }
+      if (victims.size >= overflow) break
+    }
+    if (victims.size === 0) return
+
+    this.queue = this.queue.filter((op) => !victims.has(op.id))
+    logger.warn(`离线队列超过上限 ${MAX_QUEUE_SIZE}，淘汰 ${victims.size} 个最旧操作`)
   }
 
   async replayAll(): Promise<{ succeeded: number; failed: number }> {
@@ -154,9 +216,9 @@ export class OfflineQueueService {
 
       for (let attempt = 0; attempt < op.maxRetries && !success; attempt++) {
         if (attempt > 0) {
-          const delay = Math.min(BASE_DELAY * 2 ** (attempt - 1), MAX_DELAY)
+          const delay = computeBackoffDelay({ baseDelayMs: BASE_DELAY, maxDelayMs: MAX_DELAY, attempt: attempt - 1 })
           logger.info(`操作 ${op.id} 等待 ${delay}ms 后重试 (第 ${attempt} 次)`)
-          await new Promise((resolve) => setTimeout(resolve, delay))
+          await sleep(delay)
         }
 
         try {
@@ -242,23 +304,23 @@ export class OfflineQueueService {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored) as QueuedOperation[]
-        this.queue = parsed
-          .map((op) => {
-            // F-13 修复：脱敏的操作无法 replay（内容已丢失），标记为 failed
-            // 并记录 warn；其余操作恢复原状。
-            const sensitiveFields = SENSITIVE_PAYLOAD_FIELDS[op.type]
-            if (sensitiveFields?.length && hasRedactedField(op.payload, sensitiveFields)) {
-              logger.warn(`操作 ${op.id} (type=${op.type}) payload 已脱敏，无法 replay，标记为失败`)
-              return { ...op, status: 'failed' as const }
-            }
-            return {
-              ...op,
-              status: op.status === 'processing' ? 'pending' : op.status
-            }
-          })
-          .filter((op) => op.status !== 'failed')
+        // H-8：failed 不再丢弃——静默消失会让用户误以为消息已发出。
+        // 保留在队列里，由 UI 通过 getFailedCount()/retryFailed()/clearFailed() 处理。
+        // 因脱敏而无法 replay 的记录额外打上 payloadRedacted，避免重发时把占位符当正文。
+        this.queue = parsed.map((op) => {
+          const sensitiveFields = SENSITIVE_PAYLOAD_FIELDS[op.type]
+          if (sensitiveFields?.length && hasRedactedField(op.payload, sensitiveFields)) {
+            logger.warn(`操作 ${op.id} (type=${op.type}) payload 已脱敏，无法 replay，标记为失败`)
+            return { ...op, status: 'failed' as const, payloadRedacted: true }
+          }
+          return {
+            ...op,
+            status: op.status === 'processing' ? 'pending' : op.status
+          }
+        })
+        this.enforceCapacity()
         if (this.queue.length > 0) {
-          logger.info(`恢复 ${this.queue.length} 个离线操作`)
+          logger.info(`恢复 ${this.queue.length} 个离线操作（失败 ${this.getFailedCount()} 个）`)
         }
       }
     } catch (err) {

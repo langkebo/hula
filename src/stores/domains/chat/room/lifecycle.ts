@@ -22,6 +22,13 @@ export type RoomLifecycleContext = {
 export function createRoomLifecycle(ctx: RoomLifecycleContext) {
   const { rooms, currentRoomId, isLoading, clearRoomDetailCache } = ctx
 
+  /**
+   * 房间切换令牌（H-10）：每次切换自增，异步任务返回后比对。
+   * 令牌不一致说明用户已切到别的房间，旧房间的异步结果必须丢弃，
+   * 否则会出现「旧房间结果覆盖新房间」导致的状态串台。
+   */
+  let switchToken = 0
+
   async function loadRooms(): Promise<boolean> {
     // 返回 boolean
     isLoading.value = true
@@ -128,11 +135,12 @@ export function createRoomLifecycle(ctx: RoomLifecycleContext) {
   }
 
   function setCurrentRoom(roomId: string | null): void {
+    const token = ++switchToken
     currentRoomId.value = roomId
     // 进入房间时恢复该房间的活跃位置信标（会话恢复接线点）。
     if (roomId) {
       void useLocationStore()
-        .restoreActiveBeacons(roomId)
+        .restoreActiveBeacons(roomId, () => token !== switchToken || currentRoomId.value !== roomId)
         .catch((error) => {
           logger.warn(`[RoomStore] 恢复房间位置信标失败: ${roomId}`, error)
         })
@@ -148,6 +156,8 @@ export function createRoomLifecycle(ctx: RoomLifecycleContext) {
   }
 
   function resetState(): void {
+    // 让所有在途的异步恢复任务判定为过期（H-10）。
+    switchToken += 1
     rooms.value = new Map()
     currentRoomId.value = null
     isLoading.value = false

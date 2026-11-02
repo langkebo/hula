@@ -261,13 +261,13 @@
 
       <!-- 管理员按钮（仅管理员显示，对接管理后台） -->
       <div
-        v-if="adminStore.canAccessAdmin"
+        v-if="adminStore.canShowAdminEntry"
         :class="[{ active: activeUrl === 'admin' }, 'bottom-action flex-col-center']"
         class="text-center"
         role="button"
         tabindex="0"
-        :aria-label="t('menu.admin_panel')"
-        :title="t('menu.admin_panel')"
+        :aria-label="t('admin.panel')"
+        :title="t('admin.panel')"
         @click="router.push('/admin')"
         @keydown.enter="router.push('/admin')"
         @keydown.space.prevent="router.push('/admin')">
@@ -275,7 +275,7 @@
           <use href="#wrench"></use>
         </svg>
         <p v-if="showMode === ShowModeEnum.TEXT" class="menu-text text-[var(--text-xs)] text-center">
-          {{ t('menu.admin_panel') }}
+          {{ t('admin.panel') }}
         </p>
       </div>
 

@@ -457,11 +457,9 @@ const sessionColumns = computed(() => [
     title: t('admin.common.actions'),
     key: 'actions',
     width: 100,
-    render(row: UserSession) {
-      return h(
-        NButton,
-        { size: 'small', type: 'warning', onClick: () => handleInvalidateSingleSession(row.deviceId) },
-        () => t('admin.users.invalidateSession')
+    render() {
+      return h(NButton, { size: 'small', type: 'warning', onClick: () => handleInvalidateSingleSession() }, () =>
+        t('admin.users.invalidateSession')
       )
     }
   }
@@ -667,7 +665,7 @@ async function handleInvalidateSession() {
   }
 }
 
-async function handleInvalidateSingleSession(_deviceId: string) {
+async function handleInvalidateSingleSession() {
   if (!selectedUser.value) return
   // invalidateUserSession invalidates all sessions for the user
   dialog.warning({
@@ -723,6 +721,7 @@ onMounted(loadUsers)
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/global/responsive.scss' as responsive;
 .admin-users {
   max-width: 1200px;
 }
@@ -753,7 +752,7 @@ onMounted(loadUsers)
   color: var(--tjg-text-tertiary);
 }
 
-@media (max-width: 768px) {
+@include responsive.respond-to-max('md') {
   .admin-users-header {
     flex-direction: column;
     align-items: stretch;

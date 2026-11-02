@@ -136,3 +136,83 @@ export function describeAdminApiAvailability(availability: AdminApiAvailability)
         : `无法判定 Admin API 是否可用${detail}`
   }
 }
+
+/**
+ * 后台可选能力：只有当 homeserver 通过 `unstable_features` **明确发布**对应标志时，
+ * 才能确定该能力可用。未发布视为"未知"，继续保留菜单（避免把现有页面整体隐藏）。
+ */
+export type AdminOptionalCapability = 'saml' | 'oidc' | 'worker' | 'modules'
+
+export const ADMIN_OPTIONAL_CAPABILITY_FLAGS: Record<AdminOptionalCapability, string> = {
+  saml: 'io.hula.saml',
+  oidc: 'io.hula.oidc',
+  worker: 'io.hula.worker',
+  modules: 'io.hula.modules'
+}
+
+/** 后台导航的五态 + 首次探测中 */
+export type AdminNavState = 'loading' | 'ready' | 'forbidden' | 'unauthorized' | 'unsupported' | 'unavailable'
+
+/** 导航项的能力门控声明 */
+export interface AdminNavItemGate {
+  /** 依赖 Admin API 本身；未提供时由 `AdminNavState` 统一拦截 */
+  requires?: 'admin-api'
+  /** 依赖某个可选能力；服务端明确关闭时隐藏 */
+  optionalCapability?: AdminOptionalCapability
+}
+
+/**
+ * 由探测结果派生导航状态。
+ * `loaded=false`（尚未探测完成）为 `loading`，与 `unavailable`（探测失败）严格区分。
+ */
+export function resolveAdminNavState(
+  availability: AdminApiAvailability | null | undefined,
+  loaded: boolean
+): AdminNavState {
+  if (!loaded) return 'loading'
+  if (!availability) return 'unavailable'
+  return availability.status === 'available' ? 'ready' : availability.status
+}
+
+/**
+ * 读取可选能力标志。
+ * 返回 `null` 表示服务端未发布该标志（未知），调用方应保留菜单而不是隐藏。
+ */
+export function readOptionalCapabilityFlag(
+  capability: AdminOptionalCapability,
+  unstableFeatures: Record<string, boolean> | null | undefined
+): boolean | null {
+  if (!unstableFeatures) return null
+  const flag = ADMIN_OPTIONAL_CAPABILITY_FLAGS[capability]
+  if (!Object.hasOwn(unstableFeatures, flag)) return null
+  return unstableFeatures[flag] === true
+}
+
+export interface AdminNavGroupLike<T> {
+  label: string
+  items: T[]
+}
+
+/**
+ * 按导航状态与可选能力过滤菜单分组。
+ * - 非 `ready` 状态不渲染任何业务菜单（由视图层展示空态/骨架）；
+ * - 可选能力被明确关闭（`false`）的项移除；
+ * - 过滤后为空的分组整组隐藏。
+ */
+export function filterAdminNavGroups<T extends AdminNavItemGate>(
+  groups: ReadonlyArray<AdminNavGroupLike<T>>,
+  state: AdminNavState,
+  isCapabilityEnabled: (capability: AdminOptionalCapability) => boolean | null
+): AdminNavGroupLike<T>[] {
+  if (state !== 'ready') return []
+
+  return groups
+    .map((group) => ({
+      label: group.label,
+      items: group.items.filter((item) => {
+        if (item.optionalCapability === undefined) return true
+        return isCapabilityEnabled(item.optionalCapability) !== false
+      })
+    }))
+    .filter((group) => group.items.length > 0)
+}

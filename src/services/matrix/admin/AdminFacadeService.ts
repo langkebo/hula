@@ -1,4 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
+import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import { TauriCommand } from '@/enums'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
@@ -226,12 +227,11 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
   // ==================== User Management ====================
 
   async getUsers(
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
-    name?: string,
-    _guests?: boolean
+    guests?: boolean
   ): Promise<{ users: UserInfo[]; nextToken?: string | undefined }> {
-    return this.users.getUsers(limit, from, name, _guests)
+    return this.users.getUsers(limit, from, guests)
   }
 
   async getUser(userId: string): Promise<UserInfo | null> {
@@ -307,7 +307,7 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
   // ==================== Room Management ====================
 
   async getRooms(
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
     searchTerm?: string
   ): Promise<{ rooms: RoomInfo[]; nextToken?: string | undefined }> {
@@ -386,13 +386,13 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
     return this.notifications.sendServerNotice(userId, content)
   }
 
-  async getServerNotices(limit = 50): Promise<{ notices: ServerNoticeInfo[] } | null> {
+  async getServerNotices(limit = DEFAULT_PAGE_LIMIT): Promise<{ notices: ServerNoticeInfo[] } | null> {
     return this.notifications.getServerNotices(limit)
   }
 
   // ==================== Registration Token Management ====================
 
-  async getRegistrationTokens(_valid?: boolean): Promise<RegistrationToken[]> {
+  async getRegistrationTokens(): Promise<RegistrationToken[]> {
     return this.registrationTokens.list()
   }
 

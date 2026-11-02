@@ -37,11 +37,11 @@ export const useWorkbenchOverlay = <OverlayMode extends string = WorkbenchOverla
     closeOverlay()
   }
 
-  const handleOverlayForwarded = (_roomIds: string[]) => {
+  const handleOverlayForwarded = () => {
     closeOverlay()
   }
 
-  const handleOverlayMessageSelected = async (roomId: string, _eventId: string) => {
+  const handleOverlayMessageSelected = async (roomId: string) => {
     await options.onSessionSelected?.(roomId)
     closeOverlay()
   }
@@ -51,7 +51,7 @@ export const useWorkbenchOverlay = <OverlayMode extends string = WorkbenchOverla
     closeOverlay()
   }
 
-  const handleOverlayUserSelected = (_userId: string) => {
+  const handleOverlayUserSelected = () => {
     closeOverlay()
   }
 

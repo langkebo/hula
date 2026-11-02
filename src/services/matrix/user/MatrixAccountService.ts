@@ -282,7 +282,7 @@ class MatrixAccountService extends BaseMatrixService {
     try {
       const event = client.getAccountData(eventType)
       return (event?.getContent() as T) ?? null
-    } catch (_err) {
+    } catch {
       logger.error(`[MatrixAccount] 获取账户数据失败: ${eventType}`)
       return null
     }

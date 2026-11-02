@@ -12,6 +12,9 @@
   "create": "Create",
   "refresh": "Refresh",
   "close": "Close",
+  "search": "Search",
+  "send": "Send",
+  "remove": "Remove",
   "back": "Back",
   "retry": "Retry",
   "error": "Operation failed",
@@ -30,6 +33,7 @@
   "widget": {
     "title": "Widgets",
     "add": "Add Widget",
+    "open": "Open",
     "no_widgets": "No widgets",
     "name": "Name",
     "name_placeholder": "Enter widget name",

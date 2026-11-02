@@ -1,3 +1,5 @@
+import type { TjgCapability } from '@/services/matrix/MatrixCapabilityService'
+
 export const SETTINGS_TAB_IDS = [
   'account',
   'sessions',
@@ -28,6 +30,14 @@ export interface SettingsTab {
   group: SettingsTabGroup
   desktopOnly?: boolean
   mobileOnly?: boolean
+  /** 该页签依赖的服务端能力；缺一即视为不可用 */
+  requiredCapability?: TjgCapability | TjgCapability[]
+  /**
+   * 能力缺失时的降级方式：
+   * - `hide`（默认）：从导航中隐藏该页签
+   * - `readonly`：保留页签，但内容只读
+   */
+  capabilityFallback?: 'hide' | 'readonly'
 }
 
 export type SettingsTabTranslator = (key: string) => string
@@ -55,13 +65,32 @@ export const SETTINGS_TABS: SettingsTab[] = [
   { id: 'notifications', label: 'Notifications', icon: 'bell', group: 'general' },
   { id: 'preferences', label: 'Preferences', icon: 'settings', group: 'general' },
   { id: 'keyboard', label: 'Keyboard', icon: 'keyboard', group: 'general', desktopOnly: true },
-  { id: 'voiceVideo', label: 'Voice & Video', icon: 'microphone', group: 'communication' },
+  { id: 'voiceVideo', label: 'Voice & Video', icon: 'microphone', group: 'communication', requiredCapability: 'voip' },
   { id: 'securityPrivacy', label: 'Security & Privacy', icon: 'shield', group: 'security' },
-  { id: 'encryption', label: 'Encryption', icon: 'key', group: 'security' },
-  { id: 'mjolnir', label: 'Moderation', icon: 'block-helper', group: 'advanced' },
+  {
+    id: 'encryption',
+    label: 'Encryption',
+    icon: 'key',
+    group: 'security',
+    requiredCapability: 'e2ee',
+    capabilityFallback: 'readonly'
+  },
+  {
+    id: 'mjolnir',
+    label: 'Moderation',
+    icon: 'block-helper',
+    group: 'advanced',
+    requiredCapability: 'admin-api'
+  },
   { id: 'helpAbout', label: 'Help & About', icon: 'help-circle', group: 'other' },
-  { id: 'friends', label: 'Friends', icon: 'account-group', group: 'communication' },
-  { id: 'burnAfterRead', label: 'Burn After Read', icon: 'timer-outline', group: 'communication' },
+  { id: 'friends', label: 'Friends', icon: 'account-group', group: 'communication', requiredCapability: 'friend-list' },
+  {
+    id: 'burnAfterRead',
+    label: 'Burn After Read',
+    icon: 'timer-outline',
+    group: 'communication',
+    requiredCapability: 'burn-after-read'
+  },
   { id: 'storage', label: 'Storage', icon: 'file', group: 'advanced' }
 ]
 
@@ -116,6 +145,12 @@ export function getSettingsTabs(t?: SettingsTabTranslator): SettingsTab[] {
     ...tab,
     label: getSettingsTabLabel(tab.id, t)
   }))
+}
+
+/** 归一化页签的服务端能力依赖为数组 */
+export function getSettingsTabRequiredCapabilities(tab: SettingsTab): TjgCapability[] {
+  if (!tab.requiredCapability) return []
+  return Array.isArray(tab.requiredCapability) ? tab.requiredCapability : [tab.requiredCapability]
 }
 
 export function normalizeSettingsTab(tab?: SettingsTabInput): SettingsTabType | undefined {

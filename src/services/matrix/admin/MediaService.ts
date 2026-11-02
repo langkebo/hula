@@ -1,3 +1,4 @@
+import { LARGE_PAGE_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MediaService')
@@ -24,7 +25,7 @@ export class AdminMediaService {
   constructor(private readonly sdkAdmin: MediaDomainSdkGetter) {}
 
   async getMediaList(
-    limit = 100,
+    limit = LARGE_PAGE_LIMIT,
     from?: string,
     _orderBy?: string,
     _search?: string

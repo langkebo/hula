@@ -41,7 +41,7 @@ function fromBase64(encoded: string): Uint8Array<ArrayBuffer> {
  */
 export async function deriveSearchIndexKey(storageKey: Uint8Array): Promise<Uint8Array> {
   const subtle = requireSubtleCrypto()
-  const material = await subtle.importKey('raw', storageKey as unknown as BufferSource, 'HKDF', false, ['deriveBits'])
+  const material = await subtle.importKey('raw', new Uint8Array(storageKey), 'HKDF', false, ['deriveBits'])
   const bits = await subtle.deriveBits(
     {
       name: 'HKDF',
@@ -57,7 +57,7 @@ export async function deriveSearchIndexKey(storageKey: Uint8Array): Promise<Uint
 
 async function importAesKey(key: Uint8Array): Promise<CryptoKey> {
   const subtle = requireSubtleCrypto()
-  return subtle.importKey('raw', key as unknown as BufferSource, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+  return subtle.importKey('raw', new Uint8Array(key), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
 }
 
 /**

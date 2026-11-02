@@ -40,6 +40,21 @@ interface PendingRequest {
   resolve: (value: unknown) => void
   reject: (reason?: unknown) => void
   type: string
+  /** 单请求超时定时器，响应/超时/销毁时统一清理（H-13）。 */
+  timer: ReturnType<typeof setTimeout>
+}
+
+/** 单个 worker 请求的默认超时（ms）：worker 卡死时调用方 Promise 不会永挂。 */
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
+
+/** worker 首次 ready 信号的等待上限（ms）。 */
+const DEFAULT_READY_TIMEOUT_MS = 30_000
+
+/** 创建不阻止进程退出的定时器（Node 测试环境支持 unref）。 */
+function createUnrefTimer(fn: () => void, ms: number): ReturnType<typeof setTimeout> {
+  const timer = setTimeout(fn, ms)
+  ;(timer as { unref?: () => void }).unref?.()
+  return timer
 }
 
 const defaultFactory: WorkerFactory = () =>
@@ -55,6 +70,8 @@ export class MatrixWorkerHost {
   private readyPromise: Promise<void> | null = null
   private readyResolve: (() => void) | null = null
   private readyReject: ((err: Error) => void) | null = null
+  /** ready 超时兜底定时器（H-13）：worker 加载卡死时避免 start() 永挂。 */
+  private readyTimer: ReturnType<typeof setTimeout> | null = null
   private readonly factory: WorkerFactory
   private readonly onWorkerError = (event: Event) => {
     const message = (event as ErrorEvent)?.message || 'worker error'
@@ -93,6 +110,9 @@ export class MatrixWorkerHost {
       this.readyResolve = resolve
       this.readyReject = reject
     })
+    this.readyTimer = createUnrefTimer(() => {
+      this.disposeWorker(new Error(`[MatrixWorkerHost] worker ready timeout after ${DEFAULT_READY_TIMEOUT_MS}ms`))
+    }, DEFAULT_READY_TIMEOUT_MS)
     return this.readyPromise
   }
 
@@ -225,9 +245,14 @@ export class MatrixWorkerHost {
       this.worker = null
     }
     for (const pending of this.pending.values()) {
+      clearTimeout(pending.timer)
       pending.reject(err)
     }
     this.pending.clear()
+    if (this.readyTimer) {
+      clearTimeout(this.readyTimer)
+      this.readyTimer = null
+    }
     this.readyReject?.(err)
     this.readyPromise = null
     this.readyResolve = null
@@ -246,7 +271,7 @@ export class MatrixWorkerHost {
    * 通用消息转发。给 `type` 生成自增 id，登记 pending，把消息 postMessage
    * 进 worker，等同 id 的响应回来再 resolve / reject。
    */
-  protected async request<T>(type: string, payload?: unknown): Promise<T> {
+  protected async request<T>(type: string, payload?: unknown, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS): Promise<T> {
     const worker = this.worker
     if (!worker) {
       throw new Error(useI18nGlobal().t('matrix_error.worker.not_started'))
@@ -256,14 +281,23 @@ export class MatrixWorkerHost {
     const message: WorkerMessage = { type, id, payload }
 
     return new Promise<T>((resolve, reject) => {
+      // 超时兜底：worker 卡死（未回消息）时拒绝请求并清理 pending，
+      // 避免调用方的 Promise 永挂与 Map 条目泄漏（H-13）。
+      const timer = createUnrefTimer(() => {
+        if (!this.pending.delete(id)) return
+        reject(new Error(`worker request '${type}' timed out after ${timeoutMs}ms`))
+      }, timeoutMs)
+
       this.pending.set(id, {
         resolve: resolve as (value: unknown) => void,
         reject,
-        type
+        type,
+        timer
       })
       try {
         worker.postMessage(message)
       } catch (err) {
+        clearTimeout(timer)
         this.pending.delete(id)
         reject(err)
       }
@@ -272,6 +306,10 @@ export class MatrixWorkerHost {
 
   private handleMessage(response: WorkerResponse): void {
     if (response.type === 'ready' && response.id === 'init') {
+      if (this.readyTimer) {
+        clearTimeout(this.readyTimer)
+        this.readyTimer = null
+      }
       this.readyResolve?.()
       this.readyResolve = null
       this.readyReject = null
@@ -283,6 +321,7 @@ export class MatrixWorkerHost {
       logger.warn(`收到未登记的 worker 响应: ${response.type}#${response.id}`)
       return
     }
+    clearTimeout(pending.timer)
     this.pending.delete(response.id)
 
     if (response.success) {

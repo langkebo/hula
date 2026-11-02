@@ -93,7 +93,7 @@
             <div class="section-header">
               <Icon icon="mdi:message-text" :width="18" class="color-[var(--tjg-color-primary-500)]" />
               <span class="section-title">{{ t('rendezvous.messages') }}</span>
-              <n-button text size="small" @click="handleRefreshMessages">
+              <n-button text size="small" :aria-label="t('common.refresh')" @click="handleRefreshMessages">
                 <Icon icon="mdi:refresh" :width="16" />
               </n-button>
             </div>
@@ -122,7 +122,12 @@
                 size="small"
                 :placeholder="t('rendezvous.message_placeholder')"
                 @keyup.enter="handleSendMessage" />
-              <n-button size="small" type="primary" :disabled="!messageInput.trim()" @click="handleSendMessage">
+              <n-button
+                size="small"
+                type="primary"
+                :disabled="!messageInput.trim()"
+                :aria-label="t('common.send')"
+                @click="handleSendMessage">
                 <Icon icon="mdi:send" :width="16" />
               </n-button>
             </div>

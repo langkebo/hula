@@ -15,7 +15,7 @@
     <div class="header-actions">
       <n-popover trigger="click" placement="bottom-end" :show-arrow="false">
         <template #trigger>
-          <n-button quaternary circle size="small">
+          <n-button quaternary circle size="small" :aria-label="t('menu.user_menu.status.title')">
             <template #icon>
               <Icon :icon="statusIcon" :width="18" />
             </template>
@@ -34,7 +34,12 @@
           </div>
         </div>
       </n-popover>
-      <n-button quaternary circle size="small" @click="handleThemeToggle">
+      <n-button
+        quaternary
+        circle
+        size="small"
+        :aria-label="t('menu.user_menu.theme_toggle')"
+        @click="handleThemeToggle">
         <template #icon>
           <Icon :icon="themeIcon" :width="18" />
         </template>

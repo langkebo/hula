@@ -171,7 +171,7 @@ describe('renderMessage/Voice', () => {
     await flushPromises()
 
     expect(loadAudioWaveformMock).toHaveBeenCalledWith('mxc://server/voice')
-    expect(createAudioElementMock).toHaveBeenCalledWith('mxc://server/voice', 'mxc://server/voice', 65)
+    expect(createAudioElementMock).toHaveBeenCalledWith('mxc://server/voice', 65)
   })
 
   it('格式化语音时长为分:秒', async () => {

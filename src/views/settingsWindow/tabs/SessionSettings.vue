@@ -14,7 +14,7 @@
         </div>
         <div class="device-actions">
           <n-button size="small" @click="showRenameDialog(currentDevice)">{{ t('setting.sessions.rename') }}</n-button>
-          <n-button size="small" @click="loadDevices">
+          <n-button size="small" :aria-label="t('common.refresh')" @click="loadDevices">
             <template #icon><Icon icon="mdi:refresh" :width="16" /></template>
           </n-button>
         </div>
