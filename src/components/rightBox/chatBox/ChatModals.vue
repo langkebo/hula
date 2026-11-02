@@ -20,47 +20,33 @@
     </div>
   </n-modal>
 
-  <n-modal
-    v-model:show="groupNicknameModalVisible"
-    class="w-360px border-rd-8px"
-    :mask-closable="false"
-    role="dialog"
-    aria-modal="true">
-    <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
-      <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="groupNicknameModalVisible = false" />
-
-      <svg
-        v-if="isWindows()"
-        @click="groupNicknameModalVisible = false"
-        class="w-12px h-12px ml-a cursor-pointer select-none">
-        <use href="#close"></use>
-      </svg>
-      <div class="flex flex-col gap-20px p-[22px_10px_10px_22px] select-none">
-        <span class="text-[var(--text-base)] text-[--tjg-text-primary] font-500">
-          {{ t('home.chat_main.group_nickname.title') }}
-        </span>
+  <!-- 编辑类：群昵称编辑走右栏抽屉 -->
+  <n-drawer v-model:show="groupNicknameModalVisible" placement="right" :width="380">
+    <n-drawer-content :title="t('home.chat_main.group_nickname.title')" closable>
+      <div class="flex flex-col gap-20px select-none">
         <n-input
           v-model:value="groupNicknameValue"
           :placeholder="t('home.chat_main.group_nickname.placeholder')"
           :maxlength="12"
-          class="border-(1px solid color-mix(in srgb, var(--tjg-text-tertiary) 80%, transparent))"
           :disabled="groupNicknameSubmitting"
           clearable
           @keydown.enter.prevent="$emit('groupNicknameConfirm')" />
         <p v-if="groupNicknameError" class="text-[var(--text-sm)] text-[--tjg-color-danger-500]">
           {{ groupNicknameError }}
         </p>
-        <n-flex justify="end" :size="12">
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-12px">
           <n-button @click="groupNicknameModalVisible = false" :disabled="groupNicknameSubmitting" secondary>
             {{ t('home.chat_main.cancel') }}
           </n-button>
           <n-button type="primary" :loading="groupNicknameSubmitting" @click="$emit('groupNicknameConfirm')">
             {{ t('home.chat_main.confirm') }}
           </n-button>
-        </n-flex>
-      </div>
-    </div>
-  </n-modal>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 
   <!-- 线程面板 -->
   <ThreadPanel
