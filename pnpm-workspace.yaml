@@ -21,6 +21,14 @@ overrides:
   # peer ^7.1.3，而锁文件仍停留在 commitlint 允许的 7.1.2；统一提升到 7.1.3
   # （同时满足 @commitlint/parse 的 ^7.0.0），消除 peer 不满足告警。
   conventional-commits-parser@<7.1.3: ^7.1.3
+  # 依赖审计（scripts/check-dependency-audit.mjs）新增 high/blocking 告警的传递依赖，
+  # 上游尚未发版或不在直接依赖清单内，只能在此抬到修复版本：
+  #   @modelcontextprotocol/server（经 devframe → @devframes/* 引入）
+  #   zod（经 @modelcontextprotocol/*、@devframes/json-render、knip 引入）
+  #   undici（经 cheerio / jsdom / release-it 引入）
+  '@modelcontextprotocol/server@<2.3.0': '>=2.3.0'
+  zod@<4.6.6: ^4.6.7
+  undici@<7.30.1: ^7.30.1
 
 # 依赖安装脚本的审批清单。pnpm 11 起 `onlyBuiltDependencies` /
 # `ignoredBuiltDependencies` 已被本设置取代，且不再读取 package.json 的 `pnpm` 字段，
