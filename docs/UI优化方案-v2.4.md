@@ -50,7 +50,7 @@
 2. **能力降级与探测基建已完成闭环**：`SettingsTab` 的 `requiredCapability` / `capabilityFallback`、壳层过滤、深链回退、组件级 `PermissionGuard`、管理后台 `useAdminNav` 五态均已接线（UI-P1-01/02 关闭）。
 3. **P1 已清零**：① 设置搜索锚点定位（UI-P1-05）；② 断点单一来源与聊天主壳四档（UI-P1-07）；③ Presence 第二写入点消除（UI-P1-03）——三项均已在 HEAD 落地，回归约束见 §5.2 / §5.4 / §5.6。
 4. **仍有一类是「后端/服务层已完备、UI 缺入口」**：线程冻结与静音、媒体配额、延迟事件、CAS、访客、vendor 房间扩展共 6 项在服务层或后端存在，界面无任何可达路径。G-01 遥测与 G-02 后台更新已在阶段 B 补上管理页（`/admin/telemetry`、`/admin/background-updates`），剩余 6 项待后续阶段。
-5. **视觉规范仍在收敛中**：硬编码颜色实测 0 处（ratchet 基线 0）；`NModal` 实测 107 处 / 35 文件（上一轮 298 处 / 101 文件，设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107），方向正确但未完成；`src/**/*.vue` 已无超过 800 行的文件（最大 `AdminUsers.vue` 770 行），组件体量红线达标。
+5. **视觉规范仍在收敛中**：硬编码颜色实测 0 处（ratchet 基线 0）；`NModal` 实测 105 处 / 34 文件（上一轮 298 处 / 101 文件，设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105），方向正确但未完成；`src/**/*.vue` 已无超过 800 行的文件（最大 `AdminUsers.vue` 770 行），组件体量红线达标。
 
 ### 0.3 阅读约定（编号 / 状态 / 取证）
 
@@ -219,7 +219,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 编号 | 问题 | 实测（2026-11-01） | 证据 |
 |---|---|---|---|
 | UI-P2-02 | 硬编码颜色 | `hardcoded_color: 0`（baseline 0，已收敛） | `pnpm check:ratchet` |
-| UI-P2-03 | 弹窗未收敛 | `NModal` / `n-modal` 合计 **107 处 / 35 文件**（上一轮 298 / 101；设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107） | `rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx"` |
+| UI-P2-03 | 弹窗未收敛 | `NModal` / `n-modal` 合计 **105 处 / 34 文件**（上一轮 298 / 101；设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105） | `rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx"` |
 | UI-P2-10 | 组件内联样式上色 | 模块状态点用 `:style="{ backgroundColor: statusColor(...) }"` 上色，绕过令牌 | `AdminModules.vue:31` |
 | UI-P2-11 | 图标规范不一致 | 私密模式图标用 `<svg><text>` 字形，非 1.5px 线宽路径图标 | `components/rightBox/chatBox/ChatHeader/ChatHeaderToolbar.vue:134` |
 
@@ -259,7 +259,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 | 编号 | 问题 | 证据 |
 |---|---|---|
-| A-01 | `NModal` 107 处中未逐一确认焦点陷阱与 `aria-modal` | 需在 Storybook 启动后跑 `pnpm check:a11y`（脚本设计为 Storybook 不可达即 `exit 2`，**不得据此下结论**） |
+| A-01 | `NModal` 105 处中未逐一确认焦点陷阱与 `aria-modal` | 需在 Storybook 启动后跑 `pnpm check:a11y`（脚本设计为 Storybook 不可达即 `exit 2`，**不得据此下结论**） |
 | A-02 | 右侧栏拖拽把手无可访问名称与键盘替代 | `layout/right/index.vue` 把手为指针事件，无 `role`/`tabindex`/方向键处理 |
 | A-03 | 管理后台移动端菜单按钮有 `aria-expanded`，但侧栏收起按钮无同等待遇 | `AdminLayout.vue` 头部 `aria-expanded` 已有；`sidebarCollapsed` 无对应控件 |
 
@@ -280,7 +280,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | UI-P1-07 | P1 | 断点体系分裂、主壳未适配 | **已修复** | `useResponsiveBreakpoint.DEFAULT_BREAKPOINTS`（1200/992/768）与 `responsive.scss` 同源；`useChatSidebar` 四档 |
 | UI-P2-01 | P2 | 缺 240px 可折叠信息面板 | **已修复** | `useChatSidebar.ts`（折叠/抽屉/隐藏）、`useRightPaneWidth.ts`（`DEFAULT_MIN = 240`）、`layout/right/index.vue`（弹性主区） |
 | UI-P2-02 | P2 | 硬编码颜色 24 处 | **已修复** | `pnpm check:ratchet`：hardcoded_color 24 → 0（`simple.scss`、`code-block.scss` 改用 `color-mix` + `--tjg-*`） |
-| UI-P2-03 | P2 | 弹窗 107 处 / 35 文件 | 仍成立（分批进行中：设置、好友、空间、管理后台、房间、widget、robot 批次已完成） | `rg -e NModal -e n-modal src` |
+| UI-P2-03 | P2 | 弹窗 105 处 / 34 文件 | 仍成立（分批进行中：设置、好友、空间、管理后台、房间、widget、robot、layout/left 批次已完成） | `rg -e NModal -e n-modal src` |
 | UI-P2-04 | P2 | 文档-代码核对机制缺失 | **已修复** | `docs/文档-代码核对清单.md`；`docs/UI界面需求文档.md` §5.7 / §10.2 / §10.3 已按代码校正 |
 | UI-P2-05 | P2 | 解密失败无提示与重试 | **已修复** | `renderMessage/DecryptionFailureCard.vue`；`MatrixMessageService.retryDecryptMessage`（SDK `attemptDecryption(isRetry)`）；`sync.ts` 原地替换 |
 | UI-P2-06 | P2 | 空间空态不区分场景 | **已修复** | `components/space/SpaceRoomGrid.vue`（`no-rooms` / `no-results`）；`EmptyState.vue` 6 类插图 |
@@ -569,9 +569,9 @@ pnpm test:run tests/lint/design-baseline.test.ts
 
 ---
 
-### 6.3 UI-P2-03 弹窗收敛为抽屉【进行中：设置/好友/空间/管理后台/房间/widget/robot 批次已落地】
+### 6.3 UI-P2-03 弹窗收敛为抽屉【进行中：设置/好友/空间/管理后台/房间/widget/robot/layout-left 批次已落地】
 
-**现状**：107 处 / 35 文件（上一轮 298 / 101；设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107）。
+**现状**：105 处 / 34 文件（上一轮 298 / 101；设置模块第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105）。
 
 **已完成批次（2026-11-02）**
 
@@ -614,6 +614,14 @@ pnpm test:run tests/lint/design-baseline.test.ts
 | `plugins/robot/components/ChatRoleManagement.vue` | 角色新增/编辑 → 右栏抽屉 480 | 角色列表管理（1000px 列表 + 头部新增）保留 Modal |
 | `plugins/robot/components/ApiKeyManagement.vue` | 新增/编辑密钥 → 右栏抽屉 420 | 密钥列表管理保留 Modal |
 | `plugins/robot/views/Chat.vue` | 未改：生成历史、图片预览、视频预览均为查看器 | 保留 Modal |
+| `layout/left/components/InfoEdit.vue` | 资料编辑（头像 / 昵称 / 徽章）→ 右栏抽屉 420 | — |
+| `layout/left/model.tsx` | 未改：锁屏口令校验为前置认证；检查更新为版本日志查看 + 下载进度 | 保留 Modal |
+| `layout/left/components/definePlugins/index.vue` | 未改：插件管理为卡片 / 列表双视图管理面板 | 保留 Modal |
+| `views/registerWindow/RegisterEmailCodeModal.vue` | 未改：注册邮箱验证码为注册流程中的小窗校验步骤 | 保留 Modal |
+| `components/common/AvatarCropper.vue` | 未改：裁剪画布需 560px 工作区 + 实时预览，抽屉窄栏不适用 | 保留 Modal |
+| `components/common/AvatarGallery.vue` | 未改：头像图库为选择器 | 保留 Modal |
+| `components/common/NaiveProvider.vue` | 未改：`n-modal-provider` 为全局 provider 装配，非业务弹窗 | 保留 Modal |
+| `components/secretChat/SecretChatUnlockDialog.vue` | 未改：秘密聊天解锁为前置认证 | 保留 Modal |
 
 **修改方案**
 
@@ -831,7 +839,7 @@ pnpm verify:sdk-pin
 **完成定义（Definition of Done）**
 
 1. P1 清零：UI-P1-05、UI-P1-07 关闭 + UI-P1-03 的第二写入点消除，且各项有对应单测/断言（UI-P1-01/02/04/06 已关闭，只需回归守住）。
-2. P2 收敛：`hardcoded_color` 已降到 0 并锁定基线；`NModal` 计数继续单调下降（当前 107，设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107），每批完成后同步下调记录基线。
+2. P2 收敛：`hardcoded_color` 已降到 0 并锁定基线；`NModal` 计数继续单调下降（当前 105，设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105），每批完成后同步下调记录基线。
 3. 能力缺口：G-01、G-02、G-03、G-07 已落地并有测试；G-05、G-06 待补入口；G-04 / G-08 待产品结论。
 4. 残留清理：`SyncStatusBar.vue` 与其实测已删除，`typings/` 无该符号。
 5. 未取证项清零：Worker 管理面、第三方 3PID、媒体子项三项补齐取证后再更新 §1.3；A-01 在 Storybook 可达后单独补测。
@@ -893,7 +901,7 @@ node scripts/verify-sdk-pin.mjs
 node scripts/check-file-size.mjs
 
 # 本轮新增/复核用的取证
-rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx" --count-matches | awk -F: '{s+=$2} END {print s}'     # 107（35 文件）
+rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx" --count-matches | awk -F: '{s+=$2} END {print s}'     # 105（34 文件）
 grep -rEl "respond-to-max" src | wc -l                                      # 16
 grep -rn "SyncStatusBar" src --include=*.vue --include=*.ts | grep -v typings/   # 空
 grep -rn "updateContactPresence\|updateUserPresence" src | grep -v __tests__     # 仅 wsPresenceHandler

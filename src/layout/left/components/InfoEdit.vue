@@ -1,32 +1,8 @@
 <template>
-  <n-modal
-    v-model:show="editInfo.show"
-    :mask-closable="false"
-    class="rounded-8px"
-    transform-origin="center"
-    role="dialog"
-    aria-modal="true">
-    <div class="bg-[--tjg-border-muted] w-480px h-fit box-border flex flex-col">
-      <n-flex :size="6" vertical>
-        <MacCloseButton
-          v-if="isMac()"
-          color="primary"
-          class="mt-6px absolute left-6px"
-          @click="editInfo.show = false" />
-
-        <n-flex class="text-[var(--text-sm)] text-[--tjg-text-primary] select-none pt-6px" justify="center">
-          {{ t('home.profile_edit.title') }}
-        </n-flex>
-
-        <svg
-          v-if="isWindows()"
-          class="size-14px cursor-pointer pt-6px select-none absolute right-6px"
-          @click="editInfo.show = false">
-          <use href="#close"></use>
-        </svg>
-        <span class="h-1px w-full bg-[--tjg-border-default]"></span>
-      </n-flex>
-      <n-flex :size="20" class="p-22px select-none" vertical>
+  <!-- 编辑类：资料编辑走右栏抽屉 -->
+  <n-drawer v-model:show="editInfo.show" placement="right" :width="420">
+    <n-drawer-content :title="t('home.profile_edit.title')" closable>
+      <n-flex :size="20" class="select-none" vertical>
         <!-- 头像 -->
         <n-flex justify="center">
           <n-popover trigger="hover" :delay="300" :duration="300" placement="bottom">
@@ -144,17 +120,19 @@
           </template>
         </n-flex>
       </n-flex>
-      <n-flex class="p-12px" align="center" justify="center">
-        <n-button
-          class="text-[--tjg-text-inverse]"
-          :disabled="editInfo.content.name === localUserInfo.name"
-          type="primary"
-          @click="saveEditInfo(localUserInfo as ModifyUserInfoType)">
-          {{ t('home.profile_edit.actions.save') }}
-        </n-button>
-      </n-flex>
-    </div>
-  </n-modal>
+      <template #footer>
+        <div class="flex justify-end">
+          <n-button
+            class="text-[--tjg-text-inverse]"
+            :disabled="editInfo.content.name === localUserInfo.name"
+            type="primary"
+            @click="saveEditInfo(localUserInfo as ModifyUserInfoType)">
+            {{ t('home.profile_edit.actions.save') }}
+          </n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
   <!-- 添加裁剪组件 -->
   <input
     ref="fileInput"
@@ -169,7 +147,6 @@
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import AvatarGallery from '@/components/common/AvatarGallery.vue'
-import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { countGraphemes } from '@/composables/common/useCommon'
 import { useMitt } from '@/composables/common/useMitt'
@@ -185,7 +162,6 @@ import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { isMac, isWindows } from '@/utils/PlatformConstants'
 
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 const { t } = useTypedI18n()
