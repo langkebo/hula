@@ -731,7 +731,7 @@ Tab 清单以 `src/stores/domains/settings/settingsSchema.ts` 的 `SETTINGS_TABS
 移动端设置子页挂在 `/mobile/mobileMy/` 下，清单有**两个来源、必须同时维护**：
 
 - `src/mobile/views/my/settingsRoutes.ts` 的 `MOBILE_SETTINGS_RELATIVE_PATHS`：`securityPrivacy`、`password`、`ignoredUsers`、`simpleBio`、`securityKey`、`storage`、`pushSettings`、`invitePermission`、`devices`、`deactivateAccount`、`helpAbout`、`labs`、`labs/integrations`。
-- `src/router/routes/mobile.ts` 中的内联子路由：`notifications`、`voiceVideo`、`homeserver`、`files`、`burnAfterRead`、`mjolnir`、`preferences`。
+- `src/router/routes/mobile.ts` 中的内联字面量子路由（6 项）：`notifications`、`voiceVideo`、`homeserver`、`files`、`burnAfterRead`、`preferences`；此前登记的 `mjolnir` 已随移动端 admin 能力裁剪移除。
 
 > ⚠️ **跨端与同端不一致（已登记为收敛项）**：① 桌面端用 kebab-case（`security-privacy`、`help-about`），移动端复用 `SETTINGS_CANONICAL_ROUTE_SEGMENTS` 得到 camelCase 段名；② 移动端子路由分散在两个文件里，新增页面容易只改一处。新增设置子页时必须同时更新这两处，并在本表登记。
 
@@ -764,6 +764,7 @@ Tab 清单以 `src/stores/domains/settings/settingsSchema.ts` 的 `SETTINGS_TABS
 | SAML | `/admin/saml` | SAML 身份提供方配置与元数据查看；`saml_enabled=false` 时显示禁用说明而不是报错 |
 | 应用服务与维护 | `/admin/app-services`、`/admin/maintenance`、`/admin/server-config` | 应用服务、服务器配置和维护工具 |
 | 访客与空间 | `/admin/guests`、`/admin/spaces` | 访客账号与空间治理 |
+| 遥测与后台更新 | `/admin/telemetry`、`/admin/background-updates` | 服务端遥测状态/告警与后台更新任务进度 |
 
 能力依据与降级：
 
@@ -1200,6 +1201,8 @@ Tauri 能力包括文件系统、窗口、托盘、截图、系统通知、深�
 | `/admin/app-services` | 应用服务 |
 | `/admin/moderation` | 审核工作台 |
 | `/admin/modules` | 功能模块管理 |
+| `/admin/telemetry` | 服务端遥测与告警 |
+| `/admin/background-updates` | 后台更新任务 |
 
 ### 10.4 移动主路由
 

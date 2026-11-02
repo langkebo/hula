@@ -7,7 +7,7 @@
 > 审计方式：契约条款 → 代码取证（Read/Grep/脚本实测）→ 覆盖结论；本轮为**第二轮全量复核**，上一轮（2026-10-19，基线「1041 条」）的结论已逐条复核
 > 结论日期：2026-11-01
 > 文档修订：2026-11-01（在结论复核基础上做了**结构重排与表述校准**：上一轮 4 项 P1 误判经复核为「3 项已修复 + 1 项部分修复」、响应式证据重取、问题总表按 ID 排序、术语与复核命令统一。**优化目标、技术方案与版本号未变**）
-> 阶段回写：2026-11-02（阶段 B 落地 G-01 遥测页与 G-02 后台更新页，阶段 C 核验 UI-P2-01 已修复；状态同步至 §0、§1.3、§2、§4、§6.1、§7、§8、§9）
+> 阶段回写：2026-11-02（阶段 B 落地 G-01 遥测页与 G-02 后台更新页，阶段 C 核验 UI-P2-01 已修复；阶段 D 落地 UI-P2-05/06/08/09，阶段 E 落地 UI-P2-02/10/11 与 G-03/G-07，阶段 F 落地 UI-P2-04 文档-代码核对清单；状态同步至 §0、§1.3、§2、§4、§5、§6、§7、§8、§9）
 
 ---
 
@@ -23,7 +23,8 @@
 | 阶段 C 修复（P2） | 1 | UI-P2-01（240px 信息面板、断点折叠与弹性主区） |
 | 阶段 D 修复（P2） | 4 | UI-P2-09（设置侧栏骨架占位）、UI-P2-06（空间空态区分）、UI-P2-08（Mjolnir 能力收尾）、UI-P2-05（解密失败卡片与重试） |
 | 阶段 E 修复（P2 + 能力缺口） | 5 | UI-P2-02（硬编码颜色 24 → 0）、UI-P2-10（后台状态点走 token）、UI-P2-11（私密图标线宽路径）、G-03（线程冻结/静音）、G-07（媒体配额三处接线） |
-| 仍成立 | 2 | UI-P2-03、UI-P2-04 |
+| 阶段 F 修复（P2） | 1 | UI-P2-04（固定文档-代码核对清单 + `numbers` 块统一口径） |
+| 仍成立 | 1 | UI-P2-03 |
 | 未取证 | 1 | A-01（Modal 焦点陷阱，需 Storybook 可达后跑 `check:a11y`） |
 | 无障碍仍待补 | 2 | A-02、A-03 |
 | 能力缺口 | 4 | G-04、G-05、G-06、G-08（G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地） |
@@ -36,12 +37,12 @@
 |---|---|---|
 | P0 | 0 | 未发现阻断登录、消息收发或造成数据错误的缺陷 |
 | P1（已修复，保留回归约束） | 7 | UI-P1-01/02/03/04/05/06/07 |
-| P2（待做） | 2 | UI-P2-03、04 |
-| P2（已修复） | 9 | UI-P2-01、02、05、06、07、08、09、10、11 |
+| P2（待做） | 1 | UI-P2-03 |
+| P2（已修复） | 10 | UI-P2-01、02、04、05、06、07、08、09、10、11 |
 | 无障碍（待补 / 未取证） | 3 | A-01（未取证）、A-02、A-03 |
 | 能力缺口 | 4 | G-04、G-05、G-06、G-08（G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地，见 §1.3 / §7） |
 
-> ⚠️ 上一版本表在 P1 处写「5」但列出了 6 项、§4 注又写「6 项」，三处口径不一致。本节改为「按级别 × 按状态」交叉计数（7 个 P1 编号、9+2=11 个 P2 编号），此后不得再出现裸数字。
+> ⚠️ 上一版本表在 P1 处写「5」但列出了 6 项、§4 注又写「6 项」，三处口径不一致。本节改为「按级别 × 按状态」交叉计数（7 个 P1 编号、10+1=11 个 P2 编号），此后不得再出现裸数字。
 
 总体判断：
 
@@ -244,7 +245,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | UI-P2-05 | 解密失败无提示与重试 | **已修复** | `MatrixEventService` 写入 `isBadEncrypted`；`renderMessage/DecryptionFailureCard.vue`（重试 + 查看原始事件）；`MatrixMessageService.retryDecryptMessage` / `getRawMessageJson`；`sync.ts` 同事件 ID 原地替换 |
 | UI-P2-06 | 空间空态不区分「空」与「搜不到」 | **已修复** | `SpaceRoomGrid.vue` 按 `searchQuery.trim()` 二选一；`EmptyState.vue` 新增 `no-rooms`（第 6 类插图） |
 | UI-P2-08 | Mjolnir 设置无 Admin 能力判定 | **已修复** | `MjolnirSettings.vue` 根节点内包 `<PermissionGuard :require="'admin-api'">`，覆盖全部操作区与弹窗 |
-| UI-P2-04 | 需求文档与实现缺少核对机制 | 仍成立 | 上一轮修了 3 处笔误后未建立机制；本轮已重算契约数字，仍需固定核对清单（§7 之外的单列项） |
+| UI-P2-04 | 需求文档与实现缺少核对机制 | **已修复** | 新增 `docs/文档-代码核对清单.md`（章节 → 代码唯一来源 → 核对方法 → 结论）；契约数字统一由 `node scripts/check-integration-map-freshness.mjs --print` 重算 |
 
 > **两条与本方案相邻但不单列的已知问题**（来自基准文档 v2.5，属于契约层，不计入本文档的 UI 缺陷口径）：
 > 1. `MatrixKeyBackupService.verifyBackup` 打的是 by-design 404 端点，**移动端 `MobileSecureBackupDialog` 仍可触发**——修法见 v2.5 §2.4.9，不属 UI 布局范畴。
@@ -280,7 +281,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | UI-P2-01 | P2 | 缺 240px 可折叠信息面板 | **已修复** | `useChatSidebar.ts`（折叠/抽屉/隐藏）、`useRightPaneWidth.ts`（`DEFAULT_MIN = 240`）、`layout/right/index.vue`（弹性主区） |
 | UI-P2-02 | P2 | 硬编码颜色 24 处 | **已修复** | `pnpm check:ratchet`：hardcoded_color 24 → 0（`simple.scss`、`code-block.scss` 改用 `color-mix` + `--tjg-*`） |
 | UI-P2-03 | P2 | 弹窗 121 处 / 36 文件 | 仍成立（分批进行中：设置、好友、空间、管理后台批次已完成） | `rg -e NModal -e n-modal src` |
-| UI-P2-04 | P2 | 文档-代码核对机制缺失 | 仍成立 | 本文档 §1 |
+| UI-P2-04 | P2 | 文档-代码核对机制缺失 | **已修复** | `docs/文档-代码核对清单.md`；`docs/UI界面需求文档.md` §5.7 / §10.2 / §10.3 已按代码校正 |
 | UI-P2-05 | P2 | 解密失败无提示与重试 | **已修复** | `renderMessage/DecryptionFailureCard.vue`；`MatrixMessageService.retryDecryptMessage`（SDK `attemptDecryption(isRetry)`）；`sync.ts` 原地替换 |
 | UI-P2-06 | P2 | 空间空态不区分场景 | **已修复** | `components/space/SpaceRoomGrid.vue`（`no-rooms` / `no-results`）；`EmptyState.vue` 6 类插图 |
 | UI-P2-07 | P2 | 私密模式 / 阅后即焚 / 语音 / 通话入口未做能力门控 | **已修复** | `ChatHeader/ChatHeaderToolbar.vue`（voip / burn-after-read 区块）、`BurnAfterReadBar.vue` |
@@ -298,7 +299,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 > **计数（按编号 × 状态，不混算）**
 >
 > - P1 共 7 个编号：已修复 7（UI-P1-01/02/03/04/05/06/07），无遗留。
-> - P2 共 11 个编号：已修复 9（UI-P2-01、02、05、06、07、08、09、10、11）、仍成立 2（UI-P2-03、04）。
+> - P2 共 11 个编号：已修复 10（UI-P2-01、02、04、05、06、07、08、09、10、11）、仍成立 1（UI-P2-03）。
 > - 无障碍 3 个编号：未取证 1（A-01）、仍成立 2（A-02、A-03）。
 > - 能力缺口 8 个编号（G-01 ~ G-08），不计入 UI 缺陷总数：已落地 4（G-01、G-02、G-03、G-07）、仍成立 4（G-04 ~ G-06、G-08）。
 
@@ -611,13 +612,14 @@ pnpm test:run tests/lint/design-baseline.test.ts
 
 ---
 
-### 6.4 UI-P2-04 文档-代码一致性维护【仍成立】
+### 6.4 UI-P2-04 文档-代码一致性维护【已落地 2026-11-02】
 
-**剩余工作**
+**落地实现**
 
-1. 需求文档 10.2 路由表与 `src/router/routes/*.ts` 全量逐条核对。**注意**：10.2 已按实测校正为 `/message`、`/friend`、`/room`、`/space`、`/federation`（子路由为绝对路径），核对时以文档 v2.5 为准，不要按旧的 `/home/*` 写法反推代码。
-2. 10.3 管理后台路由与 `useAdminNav.rawNavGroups` 的 7 组核对（`/admin/guests`、`/admin/spaces` 分组归属）；`AdminLayout.vue` 已拆出 `AdminSidebar.vue`，核对对象是 `rawNavGroups` 而非模板。
-3. 固定一份「文档-代码核对清单」，路由或设置项变更时同步更新；契约数字统一由 `check-integration-map-freshness.mjs` 的 `numbers` 块现场重算。
+1. 新增 `docs/文档-代码核对清单.md`，固定「需求文档章节 → 代码唯一来源 → 核对方法 → 结论」的对应关系，并写入必须更新的时机与变更流程。
+2. 本轮逐条核对结果：§10.2 与 `src/router/routes/desktop.ts`（78 条路由记录）零差异；§10.3 与 `/admin` 子路由（22 个页面路由）及 `useAdminNav.rawNavGroups`（7 组 22 项）零差异；§5.7 桌面 `SETTINGS_TABS` 14 项与分组 6/3/2/2/1 一致；`§10.1` 公共路由 18 条一致。
+3. 核对中修正两处文档漂移：§10.3 补入 `/admin/telemetry`、`/admin/background-updates`；§5.7 移动端内联子路由删去已裁剪的 `mjolnir`（现 6 项）。
+4. 契约数字统一由 `node scripts/check-integration-map-freshness.mjs --print` 现场重算，快照写入核对清单 §3。
 
 **验收标准**：10.2 / 10.3 与路由表零差异；5.7 / 5.8 的分组数量与代码一致。
 
@@ -766,7 +768,7 @@ pnpm test:run tests/lint/design-baseline.test.ts
 
 **阶段 F：文档与守卫**
 
-13. UI-P2-04（文档核对清单 + `numbers` 块机制）。
+13. 【已完成 2026-11-02】UI-P2-04（固定 `docs/文档-代码核对清单.md`，契约数字由 `numbers` 块统一重算）。
 
 **状态对照（便于跟踪）**
 
@@ -778,7 +780,7 @@ pnpm test:run tests/lint/design-baseline.test.ts
 | C | UI-P2-01（已完成 2026-11-02） | 阶段 A 的断点常量 |
 | D | UI-P2-05/06/08/09（已完成 2026-11-02） | 无 |
 | E | UI-P2-02/10/11、G-03/G-07（已完成 2026-11-02）；UI-P2-03 待做 | 无 |
-| F | UI-P2-04 | 其余阶段完成后统一核对 |
+| F | UI-P2-04（已完成 2026-11-02） | 其余阶段完成后统一核对 |
 
 ---
 
