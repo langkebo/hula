@@ -190,6 +190,10 @@
       "load_failed": "公告加载失败，请重试",
       "default": "请不要把重要信息发到该群，网络不是法外之地，请遵守网络规范，否则直接删除。"
     },
+    "external_ids": {
+      "title": "外部关联",
+      "type_room_alias": "房间别名"
+    },
     "pins": {
       "title": "置顶消息",
       "cancel": "取消置顶",

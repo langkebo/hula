@@ -190,6 +190,10 @@
       "load_failed": "Failed to load announcement, please retry",
       "default": "Please avoid sharing sensitive information. Follow internet regulations or the message will be removed."
     },
+    "external_ids": {
+      "title": "External links",
+      "type_room_alias": "Room alias"
+    },
     "pins": {
       "title": "Pinned Messages",
       "cancel": "Unpin",

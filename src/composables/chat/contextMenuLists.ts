@@ -343,13 +343,22 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
 
         return baseMenus
       } else {
-        // 正常聊天模式：只显示删除
+        // 正常聊天模式：删除 + 消息视角（G-08，只读统计浮层）
         return [
           {
             label: () => t('menu.del'),
             icon: 'delete',
             click: (item: MessageType) => {
               openDeleteConfirm(item)
+            }
+          },
+          {
+            label: () => t('menu.event_perspective'),
+            icon: 'info',
+            click: (item: MessageType) => {
+              const roomId = item.message.roomId || globalStore.currentSessionRoomId
+              if (!roomId) return
+              useMitt.emit(MittEnum.OPEN_EVENT_PERSPECTIVE, { roomId, eventId: item.message.id })
             }
           }
         ]

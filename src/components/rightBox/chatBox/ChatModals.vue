@@ -62,6 +62,9 @@
     :room-id="eventReportData.roomId"
     :event-content="eventReportData.eventContent" />
 
+  <!-- 消息视角浮层（G-08）：组件自行订阅 mitt，无 props -->
+  <MessagePerspectiveOverlay />
+
   <!-- 私密模式确认对话框 -->
   <n-modal v-model:show="showPrivateConfirm" class="w-360px border-rd-8px" role="dialog" aria-modal="true">
     <div class="bg-[--tjg-surface-panel] w-360px p-24px box-border flex flex-col gap-16px">
@@ -94,6 +97,9 @@ import { useI18n } from 'vue-i18n'
 // 异步加载非首屏或重型组件
 const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/ThreadPanel.vue'))
 const EventReportDialog = defineAsyncComponent(() => import('@/components/moderation/EventReportDialog.vue'))
+const MessagePerspectiveOverlay = defineAsyncComponent(
+  () => import('@/components/rightBox/chatBox/MessagePerspectiveOverlay.vue')
+)
 
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { isMac, isWindows } from '@/utils/PlatformConstants'

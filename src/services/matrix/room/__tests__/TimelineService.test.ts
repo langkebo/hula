@@ -13,6 +13,7 @@ const timestampToEventMock = vi.fn()
 const getRoomTimelineMock = vi.fn()
 const getRoomNotificationsMock = vi.fn()
 const getRoomCallMock = vi.fn()
+const getRoomEventPerspectiveMock = vi.fn()
 
 describe('MatrixRoomTimelineService', () => {
   let service: InstanceType<typeof MatrixRoomTimelineService>
@@ -25,6 +26,7 @@ describe('MatrixRoomTimelineService', () => {
     getRoomSummaryManager: () => {
       getRoomTimeline: typeof getRoomTimelineMock
       getRoomNotifications: typeof getRoomNotificationsMock
+      eventOps: { getRoomEventPerspective: typeof getRoomEventPerspectiveMock }
     }
     timestampToEvent: typeof timestampToEventMock
   }
@@ -40,7 +42,8 @@ describe('MatrixRoomTimelineService', () => {
       }),
       getRoomSummaryManager: () => ({
         getRoomTimeline: getRoomTimelineMock,
-        getRoomNotifications: getRoomNotificationsMock
+        getRoomNotifications: getRoomNotificationsMock,
+        eventOps: { getRoomEventPerspective: getRoomEventPerspectiveMock }
       }),
       timestampToEvent: timestampToEventMock
     }
@@ -169,6 +172,68 @@ describe('MatrixRoomTimelineService', () => {
     it('swallows errors and returns null', async () => {
       getRoomCallMock.mockRejectedValue(new Error('boom'))
       expect(await service.getRoomCall('!r', 'c-1')).toBeNull()
+    })
+  })
+
+  describe('getRoomEventPerspective', () => {
+    it('delegates to eventOps and normalizes sorted stats', async () => {
+      getRoomEventPerspectiveMock.mockResolvedValue({
+        event_id: '$anchor',
+        perspective: {
+          event_count: 100,
+          latest_event_id: '$latest',
+          sender_activity: { '@a:e': 40, '@b:e': 60 },
+          event_types: { 'm.room.message': 90, 'm.reaction': 9, 'm.bad': 'x' }
+        }
+      })
+      const result = await service.getRoomEventPerspective('!r:e', '$anchor')
+      expect(getRoomEventPerspectiveMock).toHaveBeenCalledWith('!r:e', '$anchor')
+      expect(result).toEqual({
+        status: 'ok',
+        stats: {
+          eventCount: 100,
+          latestEventId: '$latest',
+          senderActivity: [
+            { userId: '@b:e', count: 60 },
+            { userId: '@a:e', count: 40 }
+          ],
+          eventTypes: [
+            { type: 'm.room.message', count: 90 },
+            { type: 'm.reaction', count: 9 }
+          ]
+        }
+      })
+    })
+
+    it('returns empty when the response lacks the perspective field', async () => {
+      getRoomEventPerspectiveMock.mockResolvedValue({ event_id: '$anchor' })
+      expect(await service.getRoomEventPerspective('!r:e', '$anchor')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomEventPerspectiveMock.mockRejectedValue(
+        Object.assign(new Error('not found'), { errcode: 'M_UNRECOGNIZED' })
+      )
+      expect(await service.getRoomEventPerspective('!r:e', '$anchor')).toEqual({ status: 'unsupported' })
+    })
+
+    it('extracts errcode from the error message JSON', async () => {
+      getRoomEventPerspectiveMock.mockRejectedValue(
+        new Error('Error: {"errcode":"M_UNRECOGNIZED","error":"Unrecognized endpoint"}')
+      )
+      expect(await service.getRoomEventPerspective('!r:e', '$anchor')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures (e.g. anchor not visible) as error', async () => {
+      getRoomEventPerspectiveMock.mockRejectedValue(
+        Object.assign(new Error('not found'), { errcode: 'M_NOT_FOUND', httpStatus: 404 })
+      )
+      expect(await service.getRoomEventPerspective('!r:e', '$anchor')).toEqual({ status: 'error' })
+    })
+
+    it('classifies an uninitialized client as error instead of throwing', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null as never)
+      expect(await service.getRoomEventPerspective('!r:e', '$anchor')).toEqual({ status: 'error' })
     })
   })
 })

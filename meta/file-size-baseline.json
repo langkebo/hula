@@ -1,6 +1,6 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-02T09:56:07.142Z",
+  "updated_at": "2026-11-02T12:26:22.490Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
@@ -24,12 +24,12 @@
       "lines": 750
     },
     {
-      "file": "src/mobile/views/chat-room/ChatSetting.vue",
-      "lines": 728
+      "file": "src/typings/components.d.ts",
+      "lines": 730
     },
     {
-      "file": "src/typings/components.d.ts",
-      "lines": 726
+      "file": "src/mobile/views/chat-room/ChatSetting.vue",
+      "lines": 728
     },
     {
       "file": "src/components/workbench/SpaceDetailsPane.vue",
@@ -45,11 +45,11 @@
     },
     {
       "file": "src/composables/chat/contextMenuLists.ts",
-      "lines": 685
+      "lines": 694
     },
     {
       "file": "src/components/rightBox/chatBox/ChatSidebar.vue",
-      "lines": 684
+      "lines": 688
     },
     {
       "file": "src/layout/left/components/ActionList.vue",
@@ -97,7 +97,7 @@
     },
     {
       "file": "src/plugins/robot/components/ChatRoleManagement.vue",
-      "lines": 610
+      "lines": 601
     },
     {
       "file": "src/services/matrix/admin/UserService.ts",
@@ -285,7 +285,7 @@
     },
     {
       "file": "src/plugins/robot/components/ApiKeyManagement.vue",
-      "lines": 472
+      "lines": 470
     },
     {
       "file": "src/services/matrix/messaging/MatrixEmojiService.ts",
@@ -336,12 +336,12 @@
       "lines": 447
     },
     {
-      "file": "src/components/widget/WidgetDialogs.vue",
-      "lines": 445
-    },
-    {
       "file": "src/components/windows/ActionBar.vue",
       "lines": 442
+    },
+    {
+      "file": "src/components/widget/WidgetDialogs.vue",
+      "lines": 441
     },
     {
       "file": "src/services/matrix/crypto/CryptoKeyBackupAdapter.ts",

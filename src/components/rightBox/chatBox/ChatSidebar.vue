@@ -85,6 +85,9 @@
         </div>
       </n-flex>
 
+      <!-- 房间外部关联（G-08）：无数据时组件内部整块不渲染 -->
+      <RoomExternalIds v-if="currentRoomId" :room-id="currentRoomId" />
+
       <!-- Tab 选项卡机制 -->
       <div class="flex items-center shrink-0 pr-8px">
         <n-tabs
@@ -322,6 +325,7 @@ import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import ChatSidebarFiles from './ChatSidebarFiles.vue'
 import FavoritesPanel from './FavoritesPanel.vue'
+import RoomExternalIds from './RoomExternalIds.vue'
 
 const logger = createLogger('ChatSidebar')
 

@@ -5,6 +5,86 @@ import { BaseMatrixService } from '../BaseMatrixService'
 const logger = createLogger('TimelineService')
 
 /**
+ * 消息视角统计（G-08）。
+ *
+ * 后端 `GET /_matrix/vendor/v1/rooms/{roomId}/event_perspective` 在 anchor 事件外
+ * 附带 `perspective`：anchor 前 99 条 + anchor 的窗口统计。SDK 类型声明里没有
+ * 该字段，因此在此归一化。
+ */
+export interface RoomEventPerspectiveStats {
+  /** 窗口内事件总数 */
+  eventCount: number
+  /** 窗口内最新事件 ID */
+  latestEventId: string | null
+  /** 发送者活跃度（按条数降序） */
+  senderActivity: Array<{ userId: string; count: number }>
+  /** 事件类型分布（按条数降序） */
+  eventTypes: Array<{ type: string; count: number }>
+}
+
+export type RoomEventPerspectiveOutcome =
+  /** 端点存在且返回了 perspective */
+  | { status: 'ok'; stats: RoomEventPerspectiveStats }
+  /** 端点存在，但响应里没有 perspective 字段 */
+  | { status: 'empty' }
+  /** 端点不存在（该 homeserver 不支持） */
+  | { status: 'unsupported' }
+  /** 端点存在但本次读取失败（如 anchor 不可见、网络错误） */
+  | { status: 'error' }
+
+function toCountMap(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  const entries = Object.entries(value as Record<string, unknown>)
+  return Object.fromEntries(
+    entries.filter(([, count]) => typeof count === 'number' && Number.isFinite(count) && count > 0)
+  ) as Record<string, number>
+}
+
+function toSortedCountRows(map: Record<string, number>): Array<[string, number]> {
+  return Object.entries(map).sort(([, a], [, b]) => b - a)
+}
+
+function normalizePerspective(raw: unknown): RoomEventPerspectiveStats | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const perspective = (raw as Record<string, unknown>).perspective
+  if (typeof perspective !== 'object' || perspective === null) return null
+  const record = perspective as Record<string, unknown>
+
+  const senderActivity = toSortedCountRows(toCountMap(record.sender_activity)).map(([userId, count]) => ({
+    userId,
+    count
+  }))
+  const eventTypes = toSortedCountRows(toCountMap(record.event_types)).map(([type, count]) => ({ type, count }))
+
+  return {
+    eventCount: typeof record.event_count === 'number' && Number.isFinite(record.event_count) ? record.event_count : 0,
+    latestEventId: typeof record.latest_event_id === 'string' ? record.latest_event_id : null,
+    senderActivity,
+    eventTypes
+  }
+}
+
+/** 从 SDK 抛出的错误中提取 Matrix errcode（部分错误把 errcode 塞在 message 的 JSON 里）。 */
+function readErrcode(err: unknown): string | null {
+  if (typeof err !== 'object' || err === null) return null
+  const record = err as { errcode?: unknown; code?: unknown; message?: unknown }
+  if (typeof record.errcode === 'string') return record.errcode
+  if (typeof record.code === 'string') return record.code
+  if (typeof record.message === 'string') {
+    const jsonMatch = record.message.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]) as { errcode?: unknown }
+        if (typeof parsed.errcode === 'string') return parsed.errcode
+      } catch {
+        return null
+      }
+    }
+  }
+  return null
+}
+
+/**
  * Room timeline / context domain service.
  *
  * Covers `/context`, `/timeline`, `/timestamp_to_event`, `/unread_count`,
@@ -122,6 +202,28 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
     } catch (err) {
       logger.error(`[MatrixRoom] 获取通话会话失败: ${err}`)
       return null
+    }
+  }
+
+  /**
+   * 获取消息视角统计（G-08，只读）。
+   *
+   * 端点缺失（`M_UNRECOGNIZED`）归为 `unsupported`；其余错误归为 `error`，
+   * 由浮层展示明确状态，避免出现必然失败的死按钮。
+   */
+  async getRoomEventPerspective(roomId: string, eventId: string): Promise<RoomEventPerspectiveOutcome> {
+    try {
+      const client = this.getClient()
+      const result = await client.getRoomSummaryManager().eventOps.getRoomEventPerspective(roomId, eventId)
+      const stats = normalizePerspective(result)
+      return stats ? { status: 'ok', stats } : { status: 'empty' }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持消息视角统计: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取消息视角统计失败: ${err}`)
+      return { status: 'error' }
     }
   }
 }

@@ -11,6 +11,7 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 const getRoomTurnServerMock = vi.fn()
 const getRoomSyncMock = vi.fn()
 const getRoomPermissionsMock = vi.fn()
+const getRoomExternalIdsMock = vi.fn()
 
 const makeRoomManager = () => ({
   getRoomCapabilities: vi.fn(() => Promise.resolve({ 'm.room_versions': { default: '11' } })),
@@ -20,7 +21,8 @@ const makeRoomManager = () => ({
 const makeRoomSummaryManager = () => ({
   getRoomTurnServer: getRoomTurnServerMock,
   getRoomSync: getRoomSyncMock,
-  getRoomPermissions: getRoomPermissionsMock
+  getRoomPermissions: getRoomPermissionsMock,
+  eventOps: { getRoomExternalIds: getRoomExternalIdsMock }
 })
 
 const makeHttpClient = () => ({
@@ -144,6 +146,46 @@ describe('MatrixRoomMetadataService', () => {
       getRoomPermissionsMock.mockRejectedValue(new Error('boom'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomPermissions('!r')).toEqual({})
+    })
+  })
+
+  describe('getRoomExternalIds', () => {
+    it('unwraps the backend external_ids envelope', async () => {
+      getRoomExternalIdsMock.mockResolvedValue({
+        room_id: '!r:e',
+        external_ids: [{ type: 'room_alias', value: '#alias:e' }]
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomExternalIds('!r:e')).toEqual([{ type: 'room_alias', value: '#alias:e' }])
+      expect(getRoomExternalIdsMock).toHaveBeenCalledWith('!r:e')
+    })
+
+    it('accepts the SDK-declared provider/external_id shape', async () => {
+      getRoomExternalIdsMock.mockResolvedValue([{ provider: 'room_alias', external_id: '#alias:e' }])
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomExternalIds('!r:e')).toEqual([{ type: 'room_alias', value: '#alias:e' }])
+    })
+
+    it('drops malformed entries and returns [] when the payload is empty', async () => {
+      getRoomExternalIdsMock.mockResolvedValue({ room_id: '!r:e', external_ids: [{ type: 'room_alias' }, null, 'x'] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomExternalIds('!r:e')).toEqual([])
+
+      getRoomExternalIdsMock.mockResolvedValue({ room_id: '!r:e' })
+      expect(await service.getRoomExternalIds('!r:e')).toEqual([])
+    })
+
+    it('returns [] when the endpoint is missing or the request fails', async () => {
+      getRoomExternalIdsMock.mockRejectedValue(Object.assign(new Error('not found'), { errcode: 'M_UNRECOGNIZED' }))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomExternalIds('!r:e')).toEqual([])
+    })
+
+    it('returns [] when the client is not initialized', async () => {
+      vi.mocked(matrixClientService.getClient).mockImplementation(() => {
+        throw new Error('客户端未初始化')
+      })
+      expect(await service.getRoomExternalIds('!r:e')).toEqual([])
     })
   })
 })

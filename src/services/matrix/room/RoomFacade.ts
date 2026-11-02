@@ -8,11 +8,13 @@ import { matrixRoomAccountDataService } from './AccountDataService'
 import type { CreateGroupRoomOptions } from './CreationService'
 import { matrixRoomCreationService } from './CreationService'
 import { matrixRoomMembershipService } from './MembershipService'
+import type { RoomExternalId } from './MetadataService'
 import { matrixRoomMetadataService } from './MetadataService'
 import { matrixRoomQueryService } from './QueryService'
 import { roomOperations } from './RoomOperations'
 import type { MatrixRoomSummary } from './SummaryService'
 import { matrixRoomSummaryAggregateService } from './SummaryService'
+import type { RoomEventPerspectiveOutcome } from './TimelineService'
 import { matrixRoomTimelineService } from './TimelineService'
 
 export interface MatrixRoomActionFacade {
@@ -226,6 +228,8 @@ interface MatrixRoomReadFacade {
     params?: { from?: string; limit?: number }
   ): Promise<{ notifications: Array<Record<string, unknown>>; next_token?: string }>
   getRoomPermissions(roomId: string): Promise<Record<string, unknown>>
+  getRoomExternalIds(roomId: string): Promise<RoomExternalId[]>
+  getRoomEventPerspective(roomId: string, eventId: string): Promise<RoomEventPerspectiveOutcome>
 }
 
 export const matrixRoomReadFacade: MatrixRoomReadFacade = {
@@ -257,5 +261,7 @@ export const matrixRoomReadFacade: MatrixRoomReadFacade = {
   getReportScannerInfo: (roomId, eventId) => matrixRoomAccountDataService.getReportScannerInfo(roomId, eventId),
   getExternalServices: () => matrixRoomAccountDataService.getExternalServices(),
   getRoomNotifications: (roomId, params?) => matrixRoomTimelineService.getRoomNotifications(roomId, params),
-  getRoomPermissions: (roomId) => matrixRoomMetadataService.getRoomPermissions(roomId)
+  getRoomPermissions: (roomId) => matrixRoomMetadataService.getRoomPermissions(roomId),
+  getRoomExternalIds: (roomId) => matrixRoomMetadataService.getRoomExternalIds(roomId),
+  getRoomEventPerspective: (roomId, eventId) => matrixRoomTimelineService.getRoomEventPerspective(roomId, eventId)
 }

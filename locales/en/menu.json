@@ -31,6 +31,7 @@
   "modify_group_nickname": "Modify nickname",
   "add_friend": "Add Friend",
   "report": "Report",
+  "event_perspective": "Message perspective",
   "ctx_menu_more": "More",
   "set_admin": "Make admin",
   "set_admin_success": "Admin added",

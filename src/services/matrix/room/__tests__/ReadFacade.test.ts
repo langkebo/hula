@@ -13,7 +13,8 @@ const { accountDataServiceMock, metadataServiceMock, roomOperationsMock, summary
       getRoomMetadata: vi.fn(),
       getRoomTurnServer: vi.fn(),
       getRoomSync: vi.fn(),
-      getRoomPermissions: vi.fn()
+      getRoomPermissions: vi.fn(),
+      getRoomExternalIds: vi.fn()
     },
     roomOperationsMock: {
       getRoomState: vi.fn(),
@@ -36,7 +37,8 @@ const { accountDataServiceMock, metadataServiceMock, roomOperationsMock, summary
       getRoomUnreadCount: vi.fn(),
       timestampToEvent: vi.fn(),
       getRoomCall: vi.fn(),
-      getRoomNotifications: vi.fn()
+      getRoomNotifications: vi.fn(),
+      getRoomEventPerspective: vi.fn()
     }
   }))
 
@@ -249,6 +251,14 @@ describe('matrixRoomReadFacade', () => {
       expect(timelineServiceMock.getRoomNotifications).toHaveBeenCalledWith('!r:e', undefined)
     })
 
+    it('getRoomEventPerspective 委托', async () => {
+      const outcome = { status: 'empty' } as never
+      timelineServiceMock.getRoomEventPerspective.mockResolvedValue(outcome)
+      const result = await matrixRoomReadFacade.getRoomEventPerspective('!r:e', '$e')
+      expect(timelineServiceMock.getRoomEventPerspective).toHaveBeenCalledWith('!r:e', '$e')
+      expect(result).toBe(outcome)
+    })
+
     it('透传 timeline 错误', async () => {
       timelineServiceMock.getRoomTimeline.mockRejectedValue(new Error('403'))
       await expect(matrixRoomReadFacade.getRoomTimeline('!r:e')).rejects.toThrow('403')
@@ -301,6 +311,14 @@ describe('matrixRoomReadFacade', () => {
       const result = await matrixRoomReadFacade.getRoomPermissions('!r:e')
       expect(metadataServiceMock.getRoomPermissions).toHaveBeenCalledWith('!r:e')
       expect(result).toBe(perms)
+    })
+
+    it('getRoomExternalIds 委托', async () => {
+      const ids = [{ type: 'room_alias', value: '#a:e' }] as never
+      metadataServiceMock.getRoomExternalIds.mockResolvedValue(ids)
+      const result = await matrixRoomReadFacade.getRoomExternalIds('!r:e')
+      expect(metadataServiceMock.getRoomExternalIds).toHaveBeenCalledWith('!r:e')
+      expect(result).toBe(ids)
     })
 
     it('透传 metadata 错误', async () => {

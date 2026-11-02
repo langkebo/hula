@@ -2994,6 +2994,10 @@ export type I18nKeys = {
         "load_failed": "公告加载失败，请重试",
         "default": "请不要把重要信息发到该群，网络不是法外之地，请遵守网络规范，否则直接删除。"
       },
+      "external_ids": {
+        "title": "外部关联",
+        "type_room_alias": "房间别名"
+      },
       "pins": {
         "title": "置顶消息",
         "cancel": "取消置顶",
@@ -3643,6 +3647,7 @@ export type I18nKeys = {
     "modify_group_nickname": "修改群昵称",
     "add_friend": "添加好友",
     "report": "举报",
+    "event_perspective": "消息视角",
     "ctx_menu_more": "更多",
     "set_admin": "设为管理员",
     "set_admin_success": "设置管理员成功",
@@ -4040,6 +4045,20 @@ export type I18nKeys = {
     "edit_placeholder": "输入内容…",
     "edit_success": "编辑成功",
     "editing": "编辑中",
+    "event_perspective": {
+      "title": "消息视角",
+      "subtitle": "统计该消息前 99 条消息的窗口",
+      "loading": "正在统计…",
+      "unsupported": "当前服务器不支持消息视角统计",
+      "error": "无法读取该消息的视角数据",
+      "empty": "暂无视角数据",
+      "event_count": "窗口消息数",
+      "latest_event_id": "最近事件",
+      "sender_activity": "活跃发送者",
+      "event_types": "消息类型分布",
+      "sender_row": "{userId} 发送 {count} 条",
+      "type_row": "{type} 共 {count} 条"
+    },
     "load_messages_failed": "加载消息失败",
     "mark_failed": "标记失败",
     "no_actions": "暂无操作",
@@ -9660,6 +9679,8 @@ export type I18nKeyPaths =
   | "home.chat_sidebar.announcement.title"
   | "home.chat_sidebar.announcement.load_failed"
   | "home.chat_sidebar.announcement.default"
+  | "home.chat_sidebar.external_ids.title"
+  | "home.chat_sidebar.external_ids.type_room_alias"
   | "home.chat_sidebar.pins.title"
   | "home.chat_sidebar.pins.cancel"
   | "home.chat_sidebar.pins.selector_empty"
@@ -10098,6 +10119,7 @@ export type I18nKeyPaths =
   | "menu.modify_group_nickname"
   | "menu.add_friend"
   | "menu.report"
+  | "menu.event_perspective"
   | "menu.ctx_menu_more"
   | "menu.set_admin"
   | "menu.set_admin_success"
@@ -10411,6 +10433,18 @@ export type I18nKeyPaths =
   | "message.edit_placeholder"
   | "message.edit_success"
   | "message.editing"
+  | "message.event_perspective.title"
+  | "message.event_perspective.subtitle"
+  | "message.event_perspective.loading"
+  | "message.event_perspective.unsupported"
+  | "message.event_perspective.error"
+  | "message.event_perspective.empty"
+  | "message.event_perspective.event_count"
+  | "message.event_perspective.latest_event_id"
+  | "message.event_perspective.sender_activity"
+  | "message.event_perspective.event_types"
+  | "message.event_perspective.sender_row"
+  | "message.event_perspective.type_row"
   | "message.load_messages_failed"
   | "message.mark_failed"
   | "message.no_actions"

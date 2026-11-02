@@ -120,7 +120,9 @@ export enum MittEnum {
   /** 置顶消息变更（pin/unpin 后刷新横幅） */
   PINNED_EVENTS_CHANGED = 'pinnedEventsChanged',
   /** 跳转到指定消息（侧栏置顶/收藏点击 → ChatMain 滚动定位） */
-  NAVIGATE_TO_MESSAGE = 'navigateToMessage'
+  NAVIGATE_TO_MESSAGE = 'navigateToMessage',
+  /** 打开消息视角浮层（G-08） */
+  OPEN_EVENT_PERSPECTIVE = 'openEventPerspective'
 }
 
 /**
