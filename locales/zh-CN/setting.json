@@ -339,6 +339,9 @@
     "nav_empty_desc": "试试更换关键词，或清除搜索查看全部设置项。",
     "nav_clear_search": "清除搜索",
     "nav_aria_label": "设置导航",
+    "search_root": "设置",
+    "search_result_unavailable": "「{tab}」在当前服务器不支持，无法跳转",
+    "search_result_unavailable_badge": "当前服务器不支持",
     "dirty_status": "有未保存的更改",
     "close_title": "关闭设置",
     "close_aria_label": "关闭设置窗口",
@@ -353,6 +356,7 @@
     "shell_error_default": "设置页面壳层异常",
     "shell_retry": "重试",
     "tab_load_failed": "「{tab}」设置页加载失败",
+    "tab_unavailable": "「{tab}」在当前服务器不可用，已切换到偏好设置",
     "tab_runtime_error": "组件运行时异常，请查看控制台获取堆栈。",
     "tab_render_error": "组件渲染时发生未知异常",
     "tabs": {
@@ -425,6 +429,7 @@
   },
   "encryption": {
     "title": "加密设置",
+    "server_unsupported": "当前服务器未启用端到端加密，本页为只读。",
     "status": "加密状态",
     "encryption_enabled": "端到端加密",
     "encryption_enabled_desc": "您的消息已启用端到端加密保护",

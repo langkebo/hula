@@ -18,5 +18,14 @@
   },
   "resend_success": "Message resent successfully",
   "copy_success": "Copied successfully",
-  "verify_sender_device": "Verify sender's device"
+  "verify_sender_device": "Verify sender's device",
+  "decrypt_failed": {
+    "title": "This message can't be decrypted",
+    "desc": "The key needed to decrypt this message is missing on this device. Retrying may succeed after the key is restored from backup.",
+    "retrying": "Retrying",
+    "retry_failed": "Retry failed. The key may still be missing on this device.",
+    "view_raw": "View raw event",
+    "hide_raw": "Hide raw event",
+    "raw_unavailable": "Unable to read the raw event"
+  }
 }

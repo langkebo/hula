@@ -1,10 +1,12 @@
 /**
- * Matrix SDK re-exports
+ * Matrix SDK re-exports（SDK 唯一咽喉点）
  *
- * This file provides a single entry point for matrix-js-sdk symbols
- * while avoiding the main services barrel file.
+ * 本文件是 matrix-js-sdk 的唯一转发入口，调用方不得直接 import 子路径；
+ * 边界由 `scripts/check-sdk-boundary.mjs` 守护（本文件为其白名单）。
+ * 分节顺序：核心 → 扩展管理器与子模块（含契约路由表）。
  */
 
+// ---- 核心 ----
 export type {
   IContent,
   ICreateRoomOpts,
@@ -42,6 +44,7 @@ export {
   TweakName,
   Visibility
 } from 'matrix-js-sdk'
+// ---- 扩展管理器与子模块 ----
 export type {
   AdminManager,
   AdminShutdownRoomResult,
@@ -59,9 +62,17 @@ export {
   SDK_CONTRACT_ROUTE_TABLES,
   SDK_CONTRACT_ROUTES
 } from 'matrix-js-sdk/contract'
-export type { CryptoCallbacks } from 'matrix-js-sdk/crypto'
-export { decodeRecoveryKey, encodeRecoveryKey } from 'matrix-js-sdk/crypto'
+export type { CryptoApi, CryptoCallbacks } from 'matrix-js-sdk/crypto'
+export { CryptoEvent, decodeRecoveryKey, encodeRecoveryKey } from 'matrix-js-sdk/crypto'
 export type { DeviceKeysManager } from 'matrix-js-sdk/device-keys'
+export type {
+  CreateDmOptions,
+  DirectMessageManager,
+  DmPartnerResponse,
+  DmRoomInfo,
+  IDirectRoomsMap
+} from 'matrix-js-sdk/dm'
+export type { ReportResponse } from 'matrix-js-sdk/event-report'
 export type { Friend, FriendManager, FriendRequest } from 'matrix-js-sdk/friend'
 export { FriendEvent } from 'matrix-js-sdk/friend'
 export { ClientPrefix, VendorPrefix } from 'matrix-js-sdk/http-api'

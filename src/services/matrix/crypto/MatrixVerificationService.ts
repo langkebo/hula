@@ -348,7 +348,7 @@ export class VerificationService extends BaseMatrixService {
   async isDeviceVerified(userId: string, deviceId: string): Promise<boolean> {
     const client = this.getVerificationClient()
     try {
-      const crypto: CryptoApi | null = client.getCrypto()
+      const crypto: CryptoApi | undefined = client.getCrypto()
       if (!crypto) {
         return false
       }

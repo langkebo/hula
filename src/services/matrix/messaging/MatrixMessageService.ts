@@ -15,8 +15,10 @@ import {
   getMessageList,
   getMsgList,
   getMsgListByIds,
+  getRawMessageJson,
   getRoomMessage,
-  getUnreadMessages
+  getUnreadMessages,
+  retryDecryptMessage
 } from './messageQueryHelpers'
 
 const logger = createLogger('MatrixMessageService')
@@ -116,13 +118,25 @@ class MatrixMessageService extends BaseMatrixService {
   }
 
   async sendStructuredMessage(payload: SendMessagePayload): Promise<ISendEventResponse> {
-    return this.sendWithRetry(async () => {
-      const content = buildMatrixContent(payload.msgType, payload.body)
-      if (payload.burnAfterRead) {
-        content['m.burn_after_read'] = {
-          expires_in: payload.burnExpiresInMs || MatrixBurnDuration.DEFAULT_MS
-        }
+    const content = buildMatrixContent(payload.msgType, payload.body)
+    if (payload.burnAfterRead) {
+      content['m.burn_after_read'] = {
+        expires_in: payload.burnExpiresInMs || MatrixBurnDuration.DEFAULT_MS
       }
+    }
+
+    // H-9：与普通消息保持一致，离线时统一走离线队列，而不是直接抛网络错误。
+    if (!navigator.onLine) {
+      const id = offlineQueueService.enqueue('message', payload.roomId, {
+        roomId: payload.roomId,
+        eventType: MatrixEventType.ROOM_MESSAGE,
+        content
+      })
+      logger.info(`[MatrixMessage] 离线状态，已将结构化消息入队: ${payload.roomId} (queueId: ${id})`)
+      return { event_id: `local-${id}` } as ISendEventResponse
+    }
+
+    return this.sendWithRetry(async () => {
       const eventId = await matrixEventService.sendEvent(payload.roomId, MatrixEventType.ROOM_MESSAGE, content)
       if (payload.id && this.isLocalEventId(payload.id)) {
         this.registerSentMessage(payload.id, eventId)
@@ -264,6 +278,15 @@ class MatrixMessageService extends BaseMatrixService {
 
   async getRoomMessage(roomId: string, eventId: string): Promise<MatrixEvent | null> {
     return getRoomMessage(this.getClient(), roomId, eventId)
+  }
+  /** 重试解密 UTD 事件（SDK `attemptDecryption({ isRetry: true })`，实现见 messageQueryHelpers）；失败返回 false。 */
+  async retryDecryptMessage(roomId: string, eventId: string): Promise<boolean> {
+    return retryDecryptMessage(this.getClient(), roomId, eventId)
+  }
+
+  /** 读取事件的线格式原始 JSON，供「查看原始事件」使用；事件不存在时返回 null。 */
+  async getRawMessageJson(roomId: string, eventId: string): Promise<string | null> {
+    return getRawMessageJson(this.getClient(), roomId, eventId)
   }
 
   async getUnreadMessages(roomId: string): Promise<MatrixEvent[]> {

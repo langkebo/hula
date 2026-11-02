@@ -151,10 +151,15 @@
                 :data-message-id="message.message.id"
                 :is-group="isGroup"
                 :on-image-click="onImageClick"
-                :onVideoClick="onVideoClick"
+                :on-video-click="onVideoClick"
                 :search-keyword="searchKeyword"
                 :history-mode="historyMode" />
             </BurnMessage>
+            <!-- 解密失败（UTD）：卡片放在信任门禁之外，保证「重试 / 查看原始事件」始终可点 -->
+            <DecryptionFailureCard
+              v-else-if="isDecryptionFailure"
+              :room-id="message.message.roomId"
+              :event-id="message.message.id" />
             <MessageTrustGate v-else :trust-level="trustLevel">
               <component
                 :class="[
@@ -357,6 +362,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { arrayAt } from '@/utils/webCompat'
+import DecryptionFailureCard from './DecryptionFailureCard.vue'
 import Emoji from './Emoji.vue'
 import Image from './Image.vue'
 import MessageActionBar from './MessageActionBar.vue'
@@ -426,6 +432,9 @@ const messageBody = computed((): MessageBody => {
   return { content: String(body || '') }
 })
 
+// 解密失败（UTD）：SDK 已把 clearEvent 置为 m.bad.encrypted，卡片不依赖正文内容
+const isDecryptionFailure = computed(() => props.message?.message?.isBadEncrypted === true)
+
 const selectKey = ref(senderUid.value || props.message.message.id)
 const infoPopoverRefs = reactive<Record<string, ShowablePopover | null>>({})
 const setInfoPopoverRef = (messageId: string, el: unknown) => {
@@ -445,9 +454,7 @@ const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarCl
   }
 )
 
-// 消息加密信任计算（getter 入参：列表复用组件实例时信任等级随 props 同步）
-// 传入 senderId：解锁真实设备验证查询（无 senderId 时安全默认 'unverified'）
-// 传入房间加密状态：用于识别「加密房间里的明文消息」（红锁 risk）
+// 消息加密信任：getter 随 props 同步；房间加密状态用于识别「加密房间里的明文消息」→ 红锁 risk
 const messageTrust = useMessageTrust(() => props.message?.message?.body?.hasEncryption === true, {
   senderId: props.fromUser?.uid || props.message?.fromUser?.uid || '',
   isEncrypted: () => isRoomEncrypted(matrixClientService.getClient(), props.message?.message?.roomId || '')

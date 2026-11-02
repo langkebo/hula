@@ -81,6 +81,23 @@
         <circle cx="12" cy="33" r="1.5" fill="currentColor" stroke="none" />
         <line x1="6" y1="6" x2="42" y2="42" />
       </svg>
+      <svg
+        v-else-if="illustration === 'no-rooms'"
+        data-illustration="no-rooms"
+        data-testid="illustration-no-rooms"
+        width="48"
+        height="48"
+        viewBox="0 0 48 48"
+        fill="none"
+        stroke="var(--tjg-text-quaternary)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
+        <rect x="8" y="8" width="32" height="32" rx="3" />
+        <line x1="16" y1="18" x2="32" y2="18" />
+        <line x1="16" y1="24" x2="32" y2="24" />
+        <line x1="16" y1="30" x2="26" y2="30" />
+      </svg>
       <Icon v-else :icon="icon" />
     </div>
     <p v-if="title" class="empty-state__title">{{ title }}</p>
@@ -117,7 +134,7 @@ const props = withDefaults(
     compact?: boolean
     variant?: 'default' | 'welcome' | 'subtle'
     /** 内联 SVG 插图类型（优先于 icon 属性） */
-    illustration?: 'no-conversations' | 'no-friends' | 'no-spaces' | 'no-results' | 'server-unavailable'
+    illustration?: 'no-conversations' | 'no-friends' | 'no-spaces' | 'no-rooms' | 'no-results' | 'server-unavailable'
     /** 引导按钮文案，提供时渲染按钮并在点击时 emit action */
     actionText?: string
   }>(),

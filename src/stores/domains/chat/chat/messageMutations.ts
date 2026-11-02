@@ -289,6 +289,8 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     status,
     newMsgId,
     body,
+    type,
+    isBadEncrypted,
     uploadProgress,
     timeBlock,
     roomId,
@@ -300,6 +302,8 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     status?: MessageStatusEnum
     newMsgId?: string
     body?: Record<string, unknown>
+    type?: MsgEnum
+    isBadEncrypted?: boolean
     uploadProgress?: number
     timeBlock?: number
     roomId?: string
@@ -339,6 +343,14 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     }
     if (body) {
       msg.message.body = body
+    }
+    // 解密成功回填：类型可能从 TEXT 变为图片/文件等真实类型，需同步更新
+    if (type !== undefined) {
+      msg.message.type = type
+    }
+    // 解密失败标记：重试成功后置 false，渲染层据此移出「无法解密」卡片
+    if (isBadEncrypted !== undefined) {
+      msg.message.isBadEncrypted = isBadEncrypted
     }
 
     const nextMsgId = newMsgId ?? msg.message.id

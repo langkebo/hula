@@ -6,6 +6,7 @@
 export type I18nKeys = {
   "admin": {
     "title": "管理",
+    "panel": "管理后台",
     "common": {
       "refresh": "刷新",
       "cancel": "取消",
@@ -244,13 +245,47 @@ export type I18nKeys = {
       "audit": "审计日志",
       "moderation": "审核管理",
       "guests": "访客管理",
+      "telemetry": "遥测监控",
+      "backgroundUpdates": "后台更新",
       "modules": "模块管理"
     },
     "status": {
       "admin": "管理员",
       "user": "普通用户"
     },
+    "availability": {
+      "loading": {
+        "title": "正在检测后台服务",
+        "description": "正在确认当前服务器是否提供管理接口，请稍候。"
+      },
+      "forbidden": {
+        "title": "无权访问后台",
+        "description": "Admin API 可达，但当前账号没有管理员权限，请联系管理员开通后再试。"
+      },
+      "unauthorized": {
+        "title": "登录凭证已失效",
+        "description": "Admin API 可达，但当前登录凭证无效或已过期，请重新登录后重试。"
+      },
+      "unsupported": {
+        "title": "当前服务器未启用 Admin API",
+        "description": "该 homeserver 没有提供管理接口，因此后台菜单不可用。"
+      },
+      "unavailable": {
+        "title": "无法连接后台服务",
+        "description": "网络异常或服务端暂时不可用，无法判定管理接口状态，请稍后重试。"
+      },
+      "retry": "重试探测",
+      "retrying": "正在重试",
+      "tag": {
+        "loading": "检测中",
+        "forbidden": "无权限",
+        "unauthorized": "凭证失效",
+        "unsupported": "未启用",
+        "unavailable": "连接异常"
+      }
+    },
     "backToApp": "返回应用",
+    "menuToggle": "切换菜单",
     "total_users": "总用户数",
     "total_rooms": "总房间数",
     "active_users": "活跃用户",
@@ -443,8 +478,6 @@ export type I18nKeys = {
       "ms_unit": "毫秒",
       "save_success": "保存成功",
       "save_failed": "保存失败",
-      "delete_success": "删除成功",
-      "delete_failed": "删除失败",
       "task_started": "清理任务已启动",
       "task_failed": "启动清理任务失败"
     },
@@ -1001,60 +1034,7 @@ export type I18nKeys = {
     }
   },
   "ai_assistant": {
-    "title": "AI 助手",
-    "welcome": "你好，我是 AI 助手",
-    "welcome_desc": "我可以帮助你翻译文本、总结内容、编写代码等。请选择下方功能或直接输入问题。",
-    "thinking": "思考中...",
     "stop_thinking": "停止思考",
-    "input_placeholder": "输入你的问题...",
-    "error": "抱歉，发生了错误，请重试。",
-    "provider": "AI 提供者",
-    "character": "角色",
-    "settings": "设置",
-    "api_key_settings": "API 设置",
-    "base_url": "Base URL",
-    "base_url_placeholder": "请输入 API 地址",
-    "api_key": "API Key",
-    "api_key_placeholder": "请输入 API Key",
-    "test_connection": "测试连接",
-    "character_management": "角色管理",
-    "add_character": "添加角色",
-    "edit_character": "编辑角色",
-    "character_name": "角色名称",
-    "character_name_placeholder": "请输入角色名称",
-    "character_desc": "角色描述",
-    "character_desc_placeholder": "请输入角色描述",
-    "character_prompt": "系统提示词",
-    "character_prompt_placeholder": "请输入系统提示词",
-    "save_character": "保存角色",
-    "no_characters": "暂无角色",
-    "character_deleted": "角色已删除",
-    "character_name_required": "角色名称不能为空",
-    "status": {
-      "connected": "已连接",
-      "disconnected": "未连接",
-      "connecting": "连接中..."
-    },
-    "please_configure_api": "请先配置 API 设置",
-    "base_url_required": "请输入 Base URL",
-    "connection_success": "连接成功",
-    "connection_failed": "连接失败",
-    "new_conversation": "新的对话",
-    "empty_response": "收到响应，但内容为空",
-    "suggestions": {
-      "translate": "翻译文本",
-      "translate_desc": "将文本翻译成其他语言",
-      "translate_prompt": "请帮我翻译以下内容：",
-      "summarize": "总结内容",
-      "summarize_desc": "提取文本的关键信息",
-      "summarize_prompt": "请帮我总结以下内容：",
-      "code": "编写代码",
-      "code_desc": "帮你编写或解释代码",
-      "code_prompt": "请帮我编写代码：",
-      "chat": "自由对话",
-      "chat_desc": "与 AI 进行自由交流",
-      "chat_prompt": "你好，我想和你聊聊天"
-    },
     "bot": {
       "back": "返回",
       "import_model": "导入模型",
@@ -1557,7 +1537,59 @@ export type I18nKeys = {
       }
     }
   },
-  "background_updates": {},
+  "background_updates": {
+    "title": "后台更新",
+    "subtitle": "查看后台任务进度，按需启动、中止或重试",
+    "actions": {
+      "retry_failed": "重试失败任务",
+      "cleanup_locks": "清理过期锁",
+      "start": "启动",
+      "cancel": "中止"
+    },
+    "current": "当前任务",
+    "auto_refresh": "自动刷新",
+    "section": {
+      "summary": "任务汇总"
+    },
+    "summary": {
+      "pending": "等待中",
+      "running": "运行中",
+      "completed": "已完成",
+      "failed": "失败",
+      "total": "总计"
+    },
+    "empty": "暂无后台更新任务",
+    "col_job": "任务名",
+    "col_type": "任务类型",
+    "col_status": "状态",
+    "col_progress": "进度",
+    "col_created": "创建时间",
+    "col_actions": "操作",
+    "start_confirm_title": "启动后台更新",
+    "start_confirm_content": "确定要启动任务 {job} 吗？",
+    "cancel_confirm_title": "中止后台更新",
+    "cancel_confirm_content": "确定要中止任务 {job} 吗？已处理的进度会被保留。",
+    "retry_confirm_title": "重试失败任务",
+    "retry_confirm_content": "将重新排队所有失败的后台更新任务，确定继续吗？",
+    "cleanup_confirm_title": "清理过期锁",
+    "cleanup_confirm_content": "将清理未释放的后台更新锁，确定继续吗？",
+    "started_success": "任务已启动",
+    "start_failed": "启动任务失败",
+    "cancelled_success": "任务已中止",
+    "cancel_failed": "中止任务失败",
+    "retried_success": "已重试 {count} 个任务",
+    "retried_error": "重试失败任务失败",
+    "cleaned_success": "已清理 {count} 个锁",
+    "cleaned_error": "清理锁失败",
+    "status": {
+      "pending": "等待中",
+      "running": "运行中",
+      "completed": "已完成",
+      "failed": "失败",
+      "cancelled": "已中止",
+      "unknown": "未知"
+    }
+  },
   "call": {
     "video_call": "视频通话",
     "voice_call": "语音通话",
@@ -1730,6 +1762,9 @@ export type I18nKeys = {
     "create": "创建",
     "refresh": "刷新",
     "close": "关闭",
+    "search": "搜索",
+    "send": "发送",
+    "remove": "移除",
     "back": "返回",
     "retry": "重试",
     "error": "操作失败",
@@ -1748,6 +1783,7 @@ export type I18nKeys = {
     "widget": {
       "title": "小组件",
       "add": "添加小组件",
+      "open": "打开",
       "no_widgets": "暂无小组件",
       "name": "名称",
       "name_placeholder": "请输入小组件名称",
@@ -2441,6 +2477,7 @@ export type I18nKeys = {
       "forbidden": "权限不足，无法执行此操作",
       "invalid_credentials": "用户名或密码错误，请重新输入",
       "unknown_token": "会话已过期，请重新登录",
+      "user_deactivated": "账号已被停用，请联系管理员",
       "missing_token": "未登录或会话丢失，请重新登录",
       "rate_limited": "请求过于频繁，请稍后重试",
       "not_found": "请求的资源不存在",
@@ -2676,7 +2713,6 @@ export type I18nKeys = {
       "display_name_placeholder": "设置好友显示名称",
       "display_name_saved": "显示名已保存",
       "display_name_error": "保存显示名失败",
-      "status_section": "设置状态",
       "encrypted_chat": "加密聊天",
       "remove_friend": "删除好友",
       "chat_error": "创建聊天失败",
@@ -3574,7 +3610,6 @@ export type I18nKeys = {
     "sign_out": "退出登录",
     "sign_out_failed": "退出登录失败，请重试",
     "homeserver": "设置服务器",
-    "admin_panel": "管理后台",
     "homeserver_url": "服务器地址",
     "homeserver_placeholder": "请输入 Matrix 服务器地址",
     "homeserver_hint": "设置 Matrix Homeserver 地址以连接到不同的服务器",
@@ -3643,6 +3678,7 @@ export type I18nKeys = {
         "offline": "隐身",
         "updated": "状态已更新"
       },
+      "theme_toggle": "切换主题",
       "sections": {
         "quick_actions": "快捷操作",
         "friend_management": "好友管理",
@@ -4036,7 +4072,16 @@ export type I18nKeys = {
     },
     "resend_success": "消息重发成功",
     "copy_success": "复制成功",
-    "verify_sender_device": "验证发送方设备"
+    "verify_sender_device": "验证发送方设备",
+    "decrypt_failed": {
+      "title": "无法解密这条消息",
+      "desc": "设备上缺少解密所需的密钥，重试可能从备份恢复密钥后成功。",
+      "retrying": "正在重试",
+      "retry_failed": "重试失败，密钥可能仍未同步到本设备。",
+      "view_raw": "查看原始事件",
+      "hide_raw": "收起原始事件",
+      "raw_unavailable": "无法读取原始事件"
+    }
   },
   "mobile_burn": {
     "title": "阅后即焚",
@@ -4068,7 +4113,6 @@ export type I18nKeys = {
     "audio": "音频",
     "voice": "语音",
     "keyboard": "键盘",
-    "import_model": "导入模型",
     "no_data": "无数据",
     "chat_background": "聊天背景",
     "input_panel": {
@@ -4699,33 +4743,10 @@ export type I18nKeys = {
     "title": "实验功能",
     "description": "这些功能正在开发中，可能不稳定。启用后请谨慎使用。"
   },
-  "mobile_mjolnir": {
-    "title": "屏蔽管理",
-    "room_bans": "房间屏蔽",
-    "user_bans": "用户屏蔽",
-    "server_bans": "服务器屏蔽",
-    "empty": "暂无屏蔽项",
-    "add_room_ban": "添加房间屏蔽",
-    "add_user_ban": "添加用户屏蔽",
-    "add_server_ban": "添加服务器屏蔽",
-    "entity": "目标",
-    "reason": "原因",
-    "reason_placeholder": "请输入屏蔽原因（可选）",
-    "no_reason": "无原因",
-    "remove": "移除",
-    "cancel": "取消",
-    "add": "添加",
-    "entity_required": "请输入屏蔽目标",
-    "added": "已添加",
-    "removed": "已移除",
-    "confirm_remove": "确认移除",
-    "confirm_remove_message": "确定要移除此屏蔽项吗？"
-  },
   "mobile_my": {
     "photos": "相册",
     "files": "文件",
     "appearance": "个性装扮",
-    "intelligent": "AI助手",
     "default_bio": "用户很懒没写简介~",
     "online": "在线",
     "edit_display_name": "显示名称",
@@ -5109,7 +5130,6 @@ export type I18nKeys = {
     "privacy_section": "隐私与偏好",
     "preferences": "通用偏好",
     "burn_after_read": "阅后即焚",
-    "mjolnir": "屏蔽管理",
     "change_password": "修改密码",
     "social_section": "社交",
     "friend_groups": "好友分组",
@@ -6147,6 +6167,9 @@ export type I18nKeys = {
       "nav_empty_desc": "试试更换关键词，或清除搜索查看全部设置项。",
       "nav_clear_search": "清除搜索",
       "nav_aria_label": "设置导航",
+      "search_root": "设置",
+      "search_result_unavailable": "「{tab}」在当前服务器不支持，无法跳转",
+      "search_result_unavailable_badge": "当前服务器不支持",
       "dirty_status": "有未保存的更改",
       "close_title": "关闭设置",
       "close_aria_label": "关闭设置窗口",
@@ -6986,7 +7009,8 @@ export type I18nKeys = {
     "member_count_value": "{count} 成员",
     "room_count_value": "{count} 房间",
     "no_spaces_yet": "还没有空间，去创建吧",
-    "no_rooms": "暂无房间",
+    "no_rooms": "该空间还没有房间",
+    "no_matching_rooms": "没有匹配的房间",
     "danger_zone": "危险操作",
     "create_space_action": "创建空间",
     "discover_spaces_action": "发现空间",
@@ -7111,7 +7135,76 @@ export type I18nKeys = {
     "topic_saved": "已保存",
     "detail_title": "空间详情"
   },
-  "telemetry": {},
+  "telemetry": {
+    "title": "遥测监控",
+    "subtitle": "查看 OpenTelemetry 运行状态、指标摘要与告警",
+    "unavailable": {
+      "title": "遥测能力未启用",
+      "description": "当前服务器未开放遥测接口，无法读取运行状态与指标。启用后点击重试。"
+    },
+    "section": {
+      "status": "运行状态",
+      "metrics": "指标摘要",
+      "scheduler": "AppService 调度器",
+      "alerts": "告警",
+      "attributes": "资源属性"
+    },
+    "status": {
+      "enabled": "遥测开关",
+      "health": "健康状态",
+      "trace": "链路追踪",
+      "metrics": "指标采集",
+      "service": "服务名称",
+      "version": "服务版本",
+      "sampling": "采样率",
+      "batch": "批量导出",
+      "otlp": "OTLP 端点",
+      "prometheus": "Prometheus",
+      "on": "已开启",
+      "off": "已关闭",
+      "none": "未配置"
+    },
+    "metrics": {
+      "total": "指标总数",
+      "counters": "计数器",
+      "gauges": "仪表盘",
+      "histograms": "直方图",
+      "rendered": "渲染字节数",
+      "snapshot": "快照时间",
+      "services": "服务总数",
+      "schedulerAvailable": "调度可用",
+      "backoff": "退避服务",
+      "pendingEvents": "待处理事件",
+      "pendingTransactions": "待处理事务",
+      "success": "成功次数",
+      "failure": "失败次数"
+    },
+    "alerts": {
+      "col_rule": "规则",
+      "col_severity": "级别",
+      "col_status": "状态",
+      "col_message": "描述",
+      "col_triggered": "触发时间",
+      "col_actions": "操作",
+      "ack": "确认",
+      "ack_title": "确认告警",
+      "ack_content": "确认后该告警将标记为已处理，确定继续吗？",
+      "ack_success": "告警已确认",
+      "ack_failed": "确认告警失败"
+    },
+    "severity": {
+      "info": "提示",
+      "warning": "警告",
+      "high": "高",
+      "critical": "严重"
+    },
+    "alert_status": {
+      "firing": "触发中",
+      "acknowledged": "已确认",
+      "recovered": "已恢复",
+      "closed": "已关闭"
+    }
+  },
   "thirdparty": {},
   "thread": {
     "title": "消息线程",
@@ -7218,8 +7311,13 @@ export type I18nKeys = {
     "call": {
       "hangup": "挂断",
       "mute": "静音",
+      "unmute": "取消静音",
       "speaker": "扬声器",
-      "switch_camera": "翻转摄像头"
+      "switch_camera": "翻转摄像头",
+      "video_on": "开启视频",
+      "video_off": "关闭视频",
+      "screen_share": "共享屏幕",
+      "stop_screen_share": "停止共享"
     },
     "errors": {
       "voip_unavailable": "VoIP 服务不可用",
@@ -7251,6 +7349,7 @@ export type I18nKeys = {
  */
 export type I18nKeyPaths =
   | "admin.title"
+  | "admin.panel"
   | "admin.common.refresh"
   | "admin.common.cancel"
   | "admin.common.confirm"
@@ -7478,10 +7577,30 @@ export type I18nKeyPaths =
   | "admin.nav.audit"
   | "admin.nav.moderation"
   | "admin.nav.guests"
+  | "admin.nav.telemetry"
+  | "admin.nav.backgroundUpdates"
   | "admin.nav.modules"
   | "admin.status.admin"
   | "admin.status.user"
+  | "admin.availability.loading.title"
+  | "admin.availability.loading.description"
+  | "admin.availability.forbidden.title"
+  | "admin.availability.forbidden.description"
+  | "admin.availability.unauthorized.title"
+  | "admin.availability.unauthorized.description"
+  | "admin.availability.unsupported.title"
+  | "admin.availability.unsupported.description"
+  | "admin.availability.unavailable.title"
+  | "admin.availability.unavailable.description"
+  | "admin.availability.retry"
+  | "admin.availability.retrying"
+  | "admin.availability.tag.loading"
+  | "admin.availability.tag.forbidden"
+  | "admin.availability.tag.unauthorized"
+  | "admin.availability.tag.unsupported"
+  | "admin.availability.tag.unavailable"
   | "admin.backToApp"
+  | "admin.menuToggle"
   | "admin.total_users"
   | "admin.total_rooms"
   | "admin.active_users"
@@ -7663,8 +7782,6 @@ export type I18nKeyPaths =
   | "admin.retention.ms_unit"
   | "admin.retention.save_success"
   | "admin.retention.save_failed"
-  | "admin.retention.delete_success"
-  | "admin.retention.delete_failed"
   | "admin.retention.task_started"
   | "admin.retention.task_failed"
   | "admin.logs.title"
@@ -7926,56 +8043,7 @@ export type I18nKeyPaths =
   | "agreement.server.header.title"
   | "agreement.server.header.updatedAt"
   | "agreement.server.sections"
-  | "ai_assistant.title"
-  | "ai_assistant.welcome"
-  | "ai_assistant.welcome_desc"
-  | "ai_assistant.thinking"
   | "ai_assistant.stop_thinking"
-  | "ai_assistant.input_placeholder"
-  | "ai_assistant.error"
-  | "ai_assistant.provider"
-  | "ai_assistant.character"
-  | "ai_assistant.settings"
-  | "ai_assistant.api_key_settings"
-  | "ai_assistant.base_url"
-  | "ai_assistant.base_url_placeholder"
-  | "ai_assistant.api_key"
-  | "ai_assistant.api_key_placeholder"
-  | "ai_assistant.test_connection"
-  | "ai_assistant.character_management"
-  | "ai_assistant.add_character"
-  | "ai_assistant.edit_character"
-  | "ai_assistant.character_name"
-  | "ai_assistant.character_name_placeholder"
-  | "ai_assistant.character_desc"
-  | "ai_assistant.character_desc_placeholder"
-  | "ai_assistant.character_prompt"
-  | "ai_assistant.character_prompt_placeholder"
-  | "ai_assistant.save_character"
-  | "ai_assistant.no_characters"
-  | "ai_assistant.character_deleted"
-  | "ai_assistant.character_name_required"
-  | "ai_assistant.status.connected"
-  | "ai_assistant.status.disconnected"
-  | "ai_assistant.status.connecting"
-  | "ai_assistant.please_configure_api"
-  | "ai_assistant.base_url_required"
-  | "ai_assistant.connection_success"
-  | "ai_assistant.connection_failed"
-  | "ai_assistant.new_conversation"
-  | "ai_assistant.empty_response"
-  | "ai_assistant.suggestions.translate"
-  | "ai_assistant.suggestions.translate_desc"
-  | "ai_assistant.suggestions.translate_prompt"
-  | "ai_assistant.suggestions.summarize"
-  | "ai_assistant.suggestions.summarize_desc"
-  | "ai_assistant.suggestions.summarize_prompt"
-  | "ai_assistant.suggestions.code"
-  | "ai_assistant.suggestions.code_desc"
-  | "ai_assistant.suggestions.code_prompt"
-  | "ai_assistant.suggestions.chat"
-  | "ai_assistant.suggestions.chat_desc"
-  | "ai_assistant.suggestions.chat_prompt"
   | "ai_assistant.bot.back"
   | "ai_assistant.bot.import_model"
   | "ai_assistant.bot.lang_zh"
@@ -8409,6 +8477,49 @@ export type I18nKeyPaths =
   | "auth.forget.rules.confirm_mismatch"
   | "auth.forget.success.title"
   | "auth.forget.success.desc"
+  | "background_updates.title"
+  | "background_updates.subtitle"
+  | "background_updates.actions.retry_failed"
+  | "background_updates.actions.cleanup_locks"
+  | "background_updates.actions.start"
+  | "background_updates.actions.cancel"
+  | "background_updates.current"
+  | "background_updates.auto_refresh"
+  | "background_updates.section.summary"
+  | "background_updates.summary.pending"
+  | "background_updates.summary.running"
+  | "background_updates.summary.completed"
+  | "background_updates.summary.failed"
+  | "background_updates.summary.total"
+  | "background_updates.empty"
+  | "background_updates.col_job"
+  | "background_updates.col_type"
+  | "background_updates.col_status"
+  | "background_updates.col_progress"
+  | "background_updates.col_created"
+  | "background_updates.col_actions"
+  | "background_updates.start_confirm_title"
+  | "background_updates.start_confirm_content"
+  | "background_updates.cancel_confirm_title"
+  | "background_updates.cancel_confirm_content"
+  | "background_updates.retry_confirm_title"
+  | "background_updates.retry_confirm_content"
+  | "background_updates.cleanup_confirm_title"
+  | "background_updates.cleanup_confirm_content"
+  | "background_updates.started_success"
+  | "background_updates.start_failed"
+  | "background_updates.cancelled_success"
+  | "background_updates.cancel_failed"
+  | "background_updates.retried_success"
+  | "background_updates.retried_error"
+  | "background_updates.cleaned_success"
+  | "background_updates.cleaned_error"
+  | "background_updates.status.pending"
+  | "background_updates.status.running"
+  | "background_updates.status.completed"
+  | "background_updates.status.failed"
+  | "background_updates.status.cancelled"
+  | "background_updates.status.unknown"
   | "call.video_call"
   | "call.voice_call"
   | "call.ringing"
@@ -8532,6 +8643,9 @@ export type I18nKeyPaths =
   | "common.create"
   | "common.refresh"
   | "common.close"
+  | "common.search"
+  | "common.send"
+  | "common.remove"
   | "common.back"
   | "common.retry"
   | "common.error"
@@ -8549,6 +8663,7 @@ export type I18nKeyPaths =
   | "common.minutes_ago"
   | "common.widget.title"
   | "common.widget.add"
+  | "common.widget.open"
   | "common.widget.no_widgets"
   | "common.widget.name"
   | "common.widget.name_placeholder"
@@ -9142,6 +9257,7 @@ export type I18nKeyPaths =
   | "error.matrix.forbidden"
   | "error.matrix.invalid_credentials"
   | "error.matrix.unknown_token"
+  | "error.matrix.user_deactivated"
   | "error.matrix.missing_token"
   | "error.matrix.rate_limited"
   | "error.matrix.not_found"
@@ -9310,7 +9426,6 @@ export type I18nKeyPaths =
   | "friend.detail.display_name_placeholder"
   | "friend.detail.display_name_saved"
   | "friend.detail.display_name_error"
-  | "friend.detail.status_section"
   | "friend.detail.encrypted_chat"
   | "friend.detail.remove_friend"
   | "friend.detail.chat_error"
@@ -9919,7 +10034,6 @@ export type I18nKeyPaths =
   | "menu.sign_out"
   | "menu.sign_out_failed"
   | "menu.homeserver"
-  | "menu.admin_panel"
   | "menu.homeserver_url"
   | "menu.homeserver_placeholder"
   | "menu.homeserver_hint"
@@ -9985,6 +10099,7 @@ export type I18nKeyPaths =
   | "menu.user_menu.status.busy"
   | "menu.user_menu.status.offline"
   | "menu.user_menu.status.updated"
+  | "menu.user_menu.theme_toggle"
   | "menu.user_menu.sections.quick_actions"
   | "menu.user_menu.sections.friend_management"
   | "menu.user_menu.sections.settings"
@@ -10290,6 +10405,13 @@ export type I18nKeyPaths =
   | "message_container.resend_success"
   | "message_container.copy_success"
   | "message_container.verify_sender_device"
+  | "message_container.decrypt_failed.title"
+  | "message_container.decrypt_failed.desc"
+  | "message_container.decrypt_failed.retrying"
+  | "message_container.decrypt_failed.retry_failed"
+  | "message_container.decrypt_failed.view_raw"
+  | "message_container.decrypt_failed.hide_raw"
+  | "message_container.decrypt_failed.raw_unavailable"
   | "mobile_burn.title"
   | "mobile_burn.global_section"
   | "mobile_burn.global_enable"
@@ -10317,7 +10439,6 @@ export type I18nKeyPaths =
   | "mobile_chat.audio"
   | "mobile_chat.voice"
   | "mobile_chat.keyboard"
-  | "mobile_chat.import_model"
   | "mobile_chat.no_data"
   | "mobile_chat.chat_background"
   | "mobile_chat.input_panel.video_call"
@@ -10823,30 +10944,9 @@ export type I18nKeyPaths =
   | "mobile_invite_permission.user_id_placeholder"
   | "mobile_labs.title"
   | "mobile_labs.description"
-  | "mobile_mjolnir.title"
-  | "mobile_mjolnir.room_bans"
-  | "mobile_mjolnir.user_bans"
-  | "mobile_mjolnir.server_bans"
-  | "mobile_mjolnir.empty"
-  | "mobile_mjolnir.add_room_ban"
-  | "mobile_mjolnir.add_user_ban"
-  | "mobile_mjolnir.add_server_ban"
-  | "mobile_mjolnir.entity"
-  | "mobile_mjolnir.reason"
-  | "mobile_mjolnir.reason_placeholder"
-  | "mobile_mjolnir.no_reason"
-  | "mobile_mjolnir.remove"
-  | "mobile_mjolnir.cancel"
-  | "mobile_mjolnir.add"
-  | "mobile_mjolnir.entity_required"
-  | "mobile_mjolnir.added"
-  | "mobile_mjolnir.removed"
-  | "mobile_mjolnir.confirm_remove"
-  | "mobile_mjolnir.confirm_remove_message"
   | "mobile_my.photos"
   | "mobile_my.files"
   | "mobile_my.appearance"
-  | "mobile_my.intelligent"
   | "mobile_my.default_bio"
   | "mobile_my.online"
   | "mobile_my.edit_display_name"
@@ -11175,7 +11275,6 @@ export type I18nKeyPaths =
   | "mobile_setting.privacy_section"
   | "mobile_setting.preferences"
   | "mobile_setting.burn_after_read"
-  | "mobile_setting.mjolnir"
   | "mobile_setting.change_password"
   | "mobile_setting.social_section"
   | "mobile_setting.friend_groups"
@@ -12025,6 +12124,9 @@ export type I18nKeyPaths =
   | "setting.dialog.nav_empty_desc"
   | "setting.dialog.nav_clear_search"
   | "setting.dialog.nav_aria_label"
+  | "setting.dialog.search_root"
+  | "setting.dialog.search_result_unavailable"
+  | "setting.dialog.search_result_unavailable_badge"
   | "setting.dialog.dirty_status"
   | "setting.dialog.close_title"
   | "setting.dialog.close_aria_label"
@@ -12696,6 +12798,7 @@ export type I18nKeyPaths =
   | "space.room_count_value"
   | "space.no_spaces_yet"
   | "space.no_rooms"
+  | "space.no_matching_rooms"
   | "space.danger_zone"
   | "space.create_space_action"
   | "space.discover_spaces_action"
@@ -12817,6 +12920,60 @@ export type I18nKeyPaths =
   | "space.topic_label"
   | "space.topic_saved"
   | "space.detail_title"
+  | "telemetry.title"
+  | "telemetry.subtitle"
+  | "telemetry.unavailable.title"
+  | "telemetry.unavailable.description"
+  | "telemetry.section.status"
+  | "telemetry.section.metrics"
+  | "telemetry.section.scheduler"
+  | "telemetry.section.alerts"
+  | "telemetry.section.attributes"
+  | "telemetry.status.enabled"
+  | "telemetry.status.health"
+  | "telemetry.status.trace"
+  | "telemetry.status.metrics"
+  | "telemetry.status.service"
+  | "telemetry.status.version"
+  | "telemetry.status.sampling"
+  | "telemetry.status.batch"
+  | "telemetry.status.otlp"
+  | "telemetry.status.prometheus"
+  | "telemetry.status.on"
+  | "telemetry.status.off"
+  | "telemetry.status.none"
+  | "telemetry.metrics.total"
+  | "telemetry.metrics.counters"
+  | "telemetry.metrics.gauges"
+  | "telemetry.metrics.histograms"
+  | "telemetry.metrics.rendered"
+  | "telemetry.metrics.snapshot"
+  | "telemetry.metrics.services"
+  | "telemetry.metrics.schedulerAvailable"
+  | "telemetry.metrics.backoff"
+  | "telemetry.metrics.pendingEvents"
+  | "telemetry.metrics.pendingTransactions"
+  | "telemetry.metrics.success"
+  | "telemetry.metrics.failure"
+  | "telemetry.alerts.col_rule"
+  | "telemetry.alerts.col_severity"
+  | "telemetry.alerts.col_status"
+  | "telemetry.alerts.col_message"
+  | "telemetry.alerts.col_triggered"
+  | "telemetry.alerts.col_actions"
+  | "telemetry.alerts.ack"
+  | "telemetry.alerts.ack_title"
+  | "telemetry.alerts.ack_content"
+  | "telemetry.alerts.ack_success"
+  | "telemetry.alerts.ack_failed"
+  | "telemetry.severity.info"
+  | "telemetry.severity.warning"
+  | "telemetry.severity.high"
+  | "telemetry.severity.critical"
+  | "telemetry.alert_status.firing"
+  | "telemetry.alert_status.acknowledged"
+  | "telemetry.alert_status.recovered"
+  | "telemetry.alert_status.closed"
   | "thread.title"
   | "thread.replies"
   | "thread.no_replies"
@@ -12889,8 +13046,13 @@ export type I18nKeyPaths =
   | "voip.unknown"
   | "voip.call.hangup"
   | "voip.call.mute"
+  | "voip.call.unmute"
   | "voip.call.speaker"
   | "voip.call.switch_camera"
+  | "voip.call.video_on"
+  | "voip.call.video_off"
+  | "voip.call.screen_share"
+  | "voip.call.stop_screen_share"
   | "voip.errors.voip_unavailable"
   | "voip.errors.turn_unavailable"
   | "voip.errors.start_failed"

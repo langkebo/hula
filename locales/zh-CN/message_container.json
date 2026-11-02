@@ -18,5 +18,14 @@
   },
   "resend_success": "消息重发成功",
   "copy_success": "复制成功",
-  "verify_sender_device": "验证发送方设备"
+  "verify_sender_device": "验证发送方设备",
+  "decrypt_failed": {
+    "title": "无法解密这条消息",
+    "desc": "设备上缺少解密所需的密钥，重试可能从备份恢复密钥后成功。",
+    "retrying": "正在重试",
+    "retry_failed": "重试失败，密钥可能仍未同步到本设备。",
+    "view_raw": "查看原始事件",
+    "hide_raw": "收起原始事件",
+    "raw_unavailable": "无法读取原始事件"
+  }
 }

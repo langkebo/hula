@@ -165,7 +165,8 @@ export function createRoomSync(ctx: RoomSyncContext) {
             body,
             sendTime: (event.origin_server_ts as number | null) ?? 0,
             messageMarks: {},
-            status: MessageStatusEnum.SUCCESS
+            status: MessageStatusEnum.SUCCESS,
+            ...(isBadEncrypted ? { isBadEncrypted: true } : {})
           },
           sendTime: (event.origin_server_ts as number | null) ?? 0
         }
@@ -242,11 +243,15 @@ export function createRoomSync(ctx: RoomSyncContext) {
       const body = normalizeMessageBody(message.message.body)
 
       if (chatStore.checkMsgExist(roomId, message.message.id)) {
+        // 解密成功：以同一事件 ID 原地替换正文，同时同步类型并清除解密失败标记，
+        // 避免重建消息破坏排序与已读回执。
         chatStore.updateMsg({
           msgId: message.message.id,
           roomId,
           status: MessageStatusEnum.SUCCESS,
-          body
+          body,
+          type: message.message.type,
+          isBadEncrypted: false
         })
       } else {
         chatStore.pushMsg(message)

@@ -1,3 +1,4 @@
+import { DEFAULT_SEARCH_LIMIT } from '@/common/constants'
 import { MatrixEventType } from '@/common/matrixConstants'
 import { createLogger } from '@/utils/Logger'
 import type { MatrixClient, MatrixEvent } from '../sdk'
@@ -51,7 +52,7 @@ export async function getMessageEvents(
   options?: MessageSearchOptions
 ): Promise<MatrixEvent[]> {
   try {
-    const { limit = 20, sender } = options || {}
+    const { limit = DEFAULT_SEARCH_LIMIT, sender } = options || {}
 
     const response = (await client.getRoom(roomId)?.timeline) ?? []
     let events = response
@@ -80,6 +81,40 @@ export async function getRoomMessage(
   } catch (err) {
     logger.error(`[MatrixMessage] Failed to get room message: ${err}`)
     throw err
+  }
+}
+
+/**
+ * 重试解密一条解密失败（UTD）的加密事件。
+ *
+ * SDK 对 UTD 事件会把 clearEvent 置为 `m.bad.encrypted` 并标记 `_decryptionFailureReason`，
+ * 因此 `decryptEventIfNeeded` 的门禁不会再触发，只能显式调用 `attemptDecryption({ isRetry: true })`。
+ * SDK 内部用 `decryptionPromise` 保证同一事件并发只解密一次；成功会 emit `Event.decrypted`，
+ * 由 room store 以同一事件 ID 原地替换，调用方无需写回。
+ */
+export async function retryDecryptMessage(client: MatrixClient, roomId: string, eventId: string): Promise<boolean> {
+  try {
+    const crypto = client.getCrypto()
+    if (!crypto) return false
+    const event = await getRoomMessage(client, roomId, eventId)
+    if (!event?.isEncrypted() || !event.isDecryptionFailure()) return false
+    await event.attemptDecryption(crypto, { isRetry: true })
+    return !event.isDecryptionFailure()
+  } catch (err) {
+    logger.error(`[MatrixMessage] Failed to retry decrypt ${roomId}/${eventId}: ${err}`)
+    return false
+  }
+}
+
+/** 读取事件的线格式原始 JSON（不含明文）；事件不存在或读取失败返回 null。 */
+export async function getRawMessageJson(client: MatrixClient, roomId: string, eventId: string): Promise<string | null> {
+  try {
+    const event = await getRoomMessage(client, roomId, eventId)
+    if (!event) return null
+    return JSON.stringify(event.getEffectiveEvent(), null, 2)
+  } catch (err) {
+    logger.error(`[MatrixMessage] Failed to get raw event ${roomId}/${eventId}: ${err}`)
+    return null
   }
 }
 
@@ -116,7 +151,7 @@ export async function getUnreadMessages(client: MatrixClient, roomId: string): P
  */
 export async function getMessageList(options: MessageListOptions, client: MatrixClient): Promise<MessageListResult> {
   try {
-    const { roomId, limit = 20, before, after, type, sender, threadId } = options
+    const { roomId, limit = DEFAULT_SEARCH_LIMIT, before, after, type, sender, threadId } = options
 
     const room = client.getRoom(roomId)
     if (!room) {

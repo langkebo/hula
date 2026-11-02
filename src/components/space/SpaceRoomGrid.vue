@@ -11,9 +11,9 @@
       </div>
     </div>
 
-    <!-- 空状态 -->
+    <!-- 空状态：区分「该空间还没有房间」与「搜索无匹配」 -->
     <div v-else-if="rooms.length === 0" class="space-room-grid__empty">
-      <EmptyState illustration="no-results" :title="t('space.no_rooms')" />
+      <EmptyState :illustration="emptyIllustration" :title="emptyTitle" />
     </div>
 
     <!-- 房间列表（列表样式，符合原型 SP5 规范） -->
@@ -111,6 +111,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EmptyState from '@/components/common/EmptyState.vue'
 import SkeletonBase from '@/components/common/SkeletonBase.vue'
@@ -120,11 +121,13 @@ defineOptions({ name: 'SpaceRoomGrid' })
 
 const SKELETON_COUNT = 5
 
-defineProps<{
+const props = defineProps<{
   rooms: SpaceChildRoom[]
   loading?: boolean
   /** 当前用户是否为空间创建者（决定是否显示建议标记按钮） */
   canManage?: boolean
+  /** 房间搜索词；非空时空态切换为「没有匹配的房间」 */
+  searchQuery?: string
 }>()
 
 const emit = defineEmits<{
@@ -134,6 +137,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const hasSearchQuery = computed(() => (props.searchQuery ?? '').trim().length > 0)
+const emptyIllustration = computed(() => (hasSearchQuery.value ? 'no-results' : 'no-rooms'))
+const emptyTitle = computed(() => (hasSearchQuery.value ? t('space.no_matching_rooms') : t('space.no_rooms')))
 
 const getInitial = (name: string): string => {
   return name?.charAt(0)?.toUpperCase() || '?'

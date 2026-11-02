@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
+import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import MjolnirSettings from '../MjolnirSettings.vue'
 
 const messageSuccessMock = vi.fn()
@@ -38,6 +40,14 @@ vi.mock('@/services/matrix', () => ({
   matrixAccountService: {}
 }))
 
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: { getClient: vi.fn(() => null) }
+}))
+
+vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
+  matrixAccountService: { getCapabilities: vi.fn().mockResolvedValue({}) }
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }))
 }))
@@ -51,6 +61,8 @@ vi.mock('vue-i18n', () => ({
 describe('MjolnirSettings', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    registerCapabilityStoreResolver(() => useCapabilityStore())
+    useCapabilityStore().setCapabilities({ capabilities: { 'io.hula.admin': { enabled: true } } })
     vi.clearAllMocks()
     ;(window as any).$message = { success: messageSuccessMock, warning: messageWarningMock }
     localStorage.clear()
@@ -152,5 +164,15 @@ describe('MjolnirSettings', () => {
     vm.handleAddServerBan()
     expect((wrapper.vm as any).serverBanList).toHaveLength(1)
     expect(messageSuccessMock).toHaveBeenCalledWith('已添加服务器屏蔽规则')
+  })
+
+  it('does not render the ban operation area when admin-api is unavailable', () => {
+    useCapabilityStore().capabilities = {}
+    const wrapper = mount(MjolnirSettings)
+
+    expect(wrapper.find('.mjolnir-settings').exists()).toBe(true)
+    expect(wrapper.find('.settings-section').exists()).toBe(false)
+    expect(wrapper.findAll('button')).toHaveLength(0)
+    expect(wrapper.text()).not.toContain('房间屏蔽列表')
   })
 })

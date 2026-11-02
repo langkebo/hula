@@ -90,11 +90,26 @@ describe('SpaceRoomGrid', () => {
     expect(wrapper.findAll('.space-room-grid__item')).toHaveLength(0)
   })
 
-  it('renders EmptyState with no-results illustration when rooms empty and not loading', () => {
+  it('renders EmptyState with no-rooms illustration when rooms empty and not loading', () => {
     const wrapper = mountGrid({ rooms: [], loading: false })
     const empty = wrapper.find('[data-testid="empty-state-stub"]')
     expect(empty.exists()).toBe(true)
+    expect(empty.attributes('data-illustration')).toBe('no-rooms')
+    expect(empty.text()).toBe('space.no_rooms')
+  })
+
+  it('renders no-results illustration when empty with a search query', () => {
+    const wrapper = mountGrid({ rooms: [], loading: false, searchQuery: 'design' })
+    const empty = wrapper.find('[data-testid="empty-state-stub"]')
     expect(empty.attributes('data-illustration')).toBe('no-results')
+    expect(empty.text()).toBe('space.no_matching_rooms')
+  })
+
+  it('treats whitespace-only search query as no search', () => {
+    const wrapper = mountGrid({ rooms: [], loading: false, searchQuery: '   ' })
+    const empty = wrapper.find('[data-testid="empty-state-stub"]')
+    expect(empty.attributes('data-illustration')).toBe('no-rooms')
+    expect(empty.text()).toBe('space.no_rooms')
   })
 
   it('does not render EmptyState when rooms present', () => {

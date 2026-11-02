@@ -70,6 +70,8 @@ export interface MessageType {
     isBurning?: boolean
     isBurned?: boolean
     encrypted?: boolean
+    /** 解密失败（SDK 以 `m.bad.encrypted` 作为 clearEvent 占位），渲染层据此展示重试卡片 */
+    isBadEncrypted?: boolean
   }
   fromUser: {
     uid: string

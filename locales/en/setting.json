@@ -339,6 +339,9 @@
     "nav_empty_desc": "Try a different keyword, or clear the search to see all settings.",
     "nav_clear_search": "Clear search",
     "nav_aria_label": "Settings navigation",
+    "search_root": "Settings",
+    "search_result_unavailable": "\"{tab}\" is not supported by this server.",
+    "search_result_unavailable_badge": "Not supported by this server",
     "dirty_status": "Unsaved changes",
     "close_title": "Close Settings",
     "close_aria_label": "Close settings window",
@@ -353,6 +356,7 @@
     "shell_error_default": "Settings shell error",
     "shell_retry": "Retry",
     "tab_load_failed": "Failed to load \"{tab}\" settings page",
+    "tab_unavailable": "\"{tab}\" is unavailable on this server. Switched to Preferences.",
     "tab_runtime_error": "Component runtime error. Check the console for the stack trace.",
     "tab_render_error": "Unknown error while rendering the component",
     "tabs": {
@@ -425,6 +429,7 @@
   },
   "encryption": {
     "title": "Encryption Settings",
+    "server_unsupported": "End-to-end encryption is not enabled on this server. This page is read-only.",
     "status": "Encryption Status",
     "encryption_enabled": "End-to-End Encryption",
     "encryption_enabled_desc": "Your messages are protected with end-to-end encryption",

@@ -1,134 +1,137 @@
 <template>
   <div class="mjolnir-settings">
-    <div class="settings-section">
-      <n-alert type="info" :show-icon="true" class="mjolnir-alert">
-        {{ t('setting.mjolnir.alert_info') }}
-      </n-alert>
-    </div>
+    <!-- 二次门控：即使深链或其他入口绕过壳层过滤，admin-api 不可用时也不渲染操作区 -->
+    <PermissionGuard :require="'admin-api'">
+      <div class="settings-section">
+        <n-alert type="info" :show-icon="true" class="mjolnir-alert">
+          {{ t('setting.mjolnir.alert_info') }}
+        </n-alert>
+      </div>
 
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.mjolnir.room_bans') }}</h3>
-      <n-spin :show="loadingRooms">
-        <div v-if="roomBanList.length === 0" class="empty-list">
-          <span class="empty-text">{{ t('setting.mjolnir.no_room_bans') }}</span>
-        </div>
-        <div v-else class="ban-list">
-          <div v-for="item in roomBanList" :key="item.entity" class="ban-item">
-            <div class="ban-info">
-              <span class="ban-entity">{{ item.entity }}</span>
-              <span v-if="item.reason" class="ban-reason">{{ t('setting.mjolnir.reason') }}: {{ item.reason }}</span>
-            </div>
-            <n-button size="small" type="error" quaternary @click="handleRemoveRoomBan(item)">
-              {{ t('setting.mjolnir.remove') }}
-            </n-button>
+      <div class="settings-section">
+        <h3 class="section-title">{{ t('setting.mjolnir.room_bans') }}</h3>
+        <n-spin :show="loadingRooms">
+          <div v-if="roomBanList.length === 0" class="empty-list">
+            <span class="empty-text">{{ t('setting.mjolnir.no_room_bans') }}</span>
           </div>
-        </div>
-      </n-spin>
-      <n-button size="small" class="add-ban-button" @click="showAddRoomBan = true">
-        + {{ t('setting.mjolnir.add_room') }}
-      </n-button>
-    </div>
-
-    <n-divider />
-
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.mjolnir.user_bans') }}</h3>
-      <n-spin :show="loadingUsers">
-        <div v-if="userBanList.length === 0" class="empty-list">
-          <span class="empty-text">{{ t('setting.mjolnir.no_user_bans') }}</span>
-        </div>
-        <div v-else class="ban-list">
-          <div v-for="item in userBanList" :key="item.entity" class="ban-item">
-            <div class="ban-info">
-              <span class="ban-entity">{{ item.entity }}</span>
-              <span v-if="item.reason" class="ban-reason">{{ t('setting.mjolnir.reason') }}: {{ item.reason }}</span>
+          <div v-else class="ban-list">
+            <div v-for="item in roomBanList" :key="item.entity" class="ban-item">
+              <div class="ban-info">
+                <span class="ban-entity">{{ item.entity }}</span>
+                <span v-if="item.reason" class="ban-reason">{{ t('setting.mjolnir.reason') }}: {{ item.reason }}</span>
+              </div>
+              <n-button size="small" type="error" quaternary @click="handleRemoveRoomBan(item)">
+                {{ t('setting.mjolnir.remove') }}
+              </n-button>
             </div>
-            <n-button size="small" type="error" quaternary @click="handleRemoveUserBan(item)">
-              {{ t('setting.mjolnir.remove') }}
-            </n-button>
           </div>
-        </div>
-      </n-spin>
-      <n-button size="small" class="add-ban-button" @click="showAddUserBan = true">
-        + {{ t('setting.mjolnir.add_user') }}
-      </n-button>
-    </div>
+        </n-spin>
+        <n-button size="small" class="add-ban-button" @click="showAddRoomBan = true">
+          + {{ t('setting.mjolnir.add_room') }}
+        </n-button>
+      </div>
 
-    <n-divider />
+      <n-divider />
 
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.mjolnir.server_bans') }}</h3>
-      <n-spin :show="loadingServers">
-        <div v-if="serverBanList.length === 0" class="empty-list">
-          <span class="empty-text">{{ t('setting.mjolnir.no_server_bans') }}</span>
-        </div>
-        <div v-else class="ban-list">
-          <div v-for="item in serverBanList" :key="item.entity" class="ban-item">
-            <div class="ban-info">
-              <span class="ban-entity">{{ item.entity }}</span>
-              <span v-if="item.reason" class="ban-reason">{{ t('setting.mjolnir.reason') }}: {{ item.reason }}</span>
+      <div class="settings-section">
+        <h3 class="section-title">{{ t('setting.mjolnir.user_bans') }}</h3>
+        <n-spin :show="loadingUsers">
+          <div v-if="userBanList.length === 0" class="empty-list">
+            <span class="empty-text">{{ t('setting.mjolnir.no_user_bans') }}</span>
+          </div>
+          <div v-else class="ban-list">
+            <div v-for="item in userBanList" :key="item.entity" class="ban-item">
+              <div class="ban-info">
+                <span class="ban-entity">{{ item.entity }}</span>
+                <span v-if="item.reason" class="ban-reason">{{ t('setting.mjolnir.reason') }}: {{ item.reason }}</span>
+              </div>
+              <n-button size="small" type="error" quaternary @click="handleRemoveUserBan(item)">
+                {{ t('setting.mjolnir.remove') }}
+              </n-button>
             </div>
-            <n-button size="small" type="error" quaternary @click="handleRemoveServerBan(item)">
-              {{ t('setting.mjolnir.remove') }}
-            </n-button>
           </div>
-        </div>
-      </n-spin>
-      <n-button size="small" class="add-ban-button" @click="showAddServerBan = true">
-        + {{ t('setting.mjolnir.add_server') }}
-      </n-button>
-    </div>
+        </n-spin>
+        <n-button size="small" class="add-ban-button" @click="showAddUserBan = true">
+          + {{ t('setting.mjolnir.add_user') }}
+        </n-button>
+      </div>
 
-    <n-modal
-      v-model:show="showAddRoomBan"
-      preset="dialog"
-      :title="t('setting.mjolnir.add_room_rule')"
-      :positive-text="t('setting.mjolnir.add')"
-      :negative-text="t('setting.mjolnir.cancel')"
-      @positive-click="handleAddRoomBan">
-      <n-form ref="roomBanFormRef">
-        <n-form-item :label="t('setting.mjolnir.room_id')">
-          <n-input v-model:value="newRoomBan.entity" placeholder="#room:example.com" />
-        </n-form-item>
-        <n-form-item :label="t('setting.mjolnir.reason')">
-          <n-input v-model:value="newRoomBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
-        </n-form-item>
-      </n-form>
-    </n-modal>
+      <n-divider />
 
-    <n-modal
-      v-model:show="showAddUserBan"
-      preset="dialog"
-      :title="t('setting.mjolnir.add_user_rule')"
-      :positive-text="t('setting.mjolnir.add')"
-      :negative-text="t('setting.mjolnir.cancel')"
-      @positive-click="handleAddUserBan">
-      <n-form ref="userBanFormRef">
-        <n-form-item :label="t('setting.mjolnir.user_id')">
-          <n-input v-model:value="newUserBan.entity" placeholder="@user:example.com" />
-        </n-form-item>
-        <n-form-item :label="t('setting.mjolnir.reason')">
-          <n-input v-model:value="newUserBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
-        </n-form-item>
-      </n-form>
-    </n-modal>
+      <div class="settings-section">
+        <h3 class="section-title">{{ t('setting.mjolnir.server_bans') }}</h3>
+        <n-spin :show="loadingServers">
+          <div v-if="serverBanList.length === 0" class="empty-list">
+            <span class="empty-text">{{ t('setting.mjolnir.no_server_bans') }}</span>
+          </div>
+          <div v-else class="ban-list">
+            <div v-for="item in serverBanList" :key="item.entity" class="ban-item">
+              <div class="ban-info">
+                <span class="ban-entity">{{ item.entity }}</span>
+                <span v-if="item.reason" class="ban-reason">{{ t('setting.mjolnir.reason') }}: {{ item.reason }}</span>
+              </div>
+              <n-button size="small" type="error" quaternary @click="handleRemoveServerBan(item)">
+                {{ t('setting.mjolnir.remove') }}
+              </n-button>
+            </div>
+          </div>
+        </n-spin>
+        <n-button size="small" class="add-ban-button" @click="showAddServerBan = true">
+          + {{ t('setting.mjolnir.add_server') }}
+        </n-button>
+      </div>
 
-    <n-modal
-      v-model:show="showAddServerBan"
-      preset="dialog"
-      :title="t('setting.mjolnir.add_server_rule')"
-      :positive-text="t('setting.mjolnir.add')"
-      :negative-text="t('setting.mjolnir.cancel')"
-      @positive-click="handleAddServerBan">
-      <n-form ref="serverBanFormRef">
-        <n-form-item :label="t('setting.mjolnir.server_name')">
-          <n-input v-model:value="newServerBan.entity" placeholder="example.com" />
-        </n-form-item>
-        <n-form-item :label="t('setting.mjolnir.reason')">
-          <n-input v-model:value="newServerBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
-        </n-form-item>
-      </n-form>
-    </n-modal>
+      <n-modal
+        v-model:show="showAddRoomBan"
+        preset="dialog"
+        :title="t('setting.mjolnir.add_room_rule')"
+        :positive-text="t('setting.mjolnir.add')"
+        :negative-text="t('setting.mjolnir.cancel')"
+        @positive-click="handleAddRoomBan">
+        <n-form ref="roomBanFormRef">
+          <n-form-item :label="t('setting.mjolnir.room_id')">
+            <n-input v-model:value="newRoomBan.entity" placeholder="#room:example.com" />
+          </n-form-item>
+          <n-form-item :label="t('setting.mjolnir.reason')">
+            <n-input v-model:value="newRoomBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
+          </n-form-item>
+        </n-form>
+      </n-modal>
+
+      <n-modal
+        v-model:show="showAddUserBan"
+        preset="dialog"
+        :title="t('setting.mjolnir.add_user_rule')"
+        :positive-text="t('setting.mjolnir.add')"
+        :negative-text="t('setting.mjolnir.cancel')"
+        @positive-click="handleAddUserBan">
+        <n-form ref="userBanFormRef">
+          <n-form-item :label="t('setting.mjolnir.user_id')">
+            <n-input v-model:value="newUserBan.entity" placeholder="@user:example.com" />
+          </n-form-item>
+          <n-form-item :label="t('setting.mjolnir.reason')">
+            <n-input v-model:value="newUserBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
+          </n-form-item>
+        </n-form>
+      </n-modal>
+
+      <n-modal
+        v-model:show="showAddServerBan"
+        preset="dialog"
+        :title="t('setting.mjolnir.add_server_rule')"
+        :positive-text="t('setting.mjolnir.add')"
+        :negative-text="t('setting.mjolnir.cancel')"
+        @positive-click="handleAddServerBan">
+        <n-form ref="serverBanFormRef">
+          <n-form-item :label="t('setting.mjolnir.server_name')">
+            <n-input v-model:value="newServerBan.entity" placeholder="example.com" />
+          </n-form-item>
+          <n-form-item :label="t('setting.mjolnir.reason')">
+            <n-input v-model:value="newServerBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
+          </n-form-item>
+        </n-form>
+      </n-modal>
+    </PermissionGuard>
   </div>
 </template>
 
@@ -136,6 +139,7 @@
 import { NAlert, NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, useDialog } from 'naive-ui'
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import PermissionGuard from '@/components/common/PermissionGuard.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 
 defineOptions({

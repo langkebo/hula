@@ -249,7 +249,53 @@ describe('RoomStore', () => {
       store.setCurrentRoom('!room:id')
 
       expect(store.currentRoomId).toBe('!room:id')
-      expect(mockLocationStore.restoreActiveBeacons).toHaveBeenCalledWith('!room:id')
+      expect(mockLocationStore.restoreActiveBeacons).toHaveBeenCalledWith('!room:id', expect.any(Function))
+    })
+
+    it('快速切换房间后，旧房间的信标恢复结果应判定为过期（H-10）', () => {
+      const store = useRoomStore()
+      const staleChecks: Array<() => boolean> = []
+      mockLocationStore.restoreActiveBeacons.mockImplementation((_roomId: string, isStale: () => boolean) => {
+        staleChecks.push(isStale)
+        return Promise.resolve()
+      })
+
+      store.setCurrentRoom('!room:a')
+      store.setCurrentRoom('!room:b')
+
+      expect(staleChecks).toHaveLength(2)
+      // A 的结果已过期（令牌已被 B 递增覆盖 + 当前房间已不是 A）
+      expect(staleChecks[0]()).toBe(true)
+      // B 仍是最新一次切换，结果可用
+      expect(staleChecks[1]()).toBe(false)
+    })
+
+    it('切到空房间后，先前在途的信标恢复结果应判定为过期（H-10）', () => {
+      const store = useRoomStore()
+      const staleChecks: Array<() => boolean> = []
+      mockLocationStore.restoreActiveBeacons.mockImplementation((_roomId: string, isStale: () => boolean) => {
+        staleChecks.push(isStale)
+        return Promise.resolve()
+      })
+
+      store.setCurrentRoom('!room:a')
+      store.setCurrentRoom(null)
+
+      expect(staleChecks[0]()).toBe(true)
+    })
+
+    it('resetState 后，在途的信标恢复结果应判定为过期（H-10）', () => {
+      const store = useRoomStore()
+      const staleChecks: Array<() => boolean> = []
+      mockLocationStore.restoreActiveBeacons.mockImplementation((_roomId: string, isStale: () => boolean) => {
+        staleChecks.push(isStale)
+        return Promise.resolve()
+      })
+
+      store.setCurrentRoom('!room:a')
+      store.resetState()
+
+      expect(staleChecks[0]()).toBe(true)
     })
   })
 
@@ -897,7 +943,10 @@ describe('RoomStore', () => {
         msgId: '$new',
         roomId: '!room:id',
         status: 'success',
-        body: { content: 'decrypted hello' }
+        body: { content: 'decrypted hello' },
+        // 解密成功回填：同步真实类型并清除解密失败标记（UI-P2-05）
+        type: MsgEnum.TEXT,
+        isBadEncrypted: false
       })
     })
 

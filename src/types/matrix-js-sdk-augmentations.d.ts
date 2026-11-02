@@ -10,7 +10,8 @@
 // 一直能编译。删掉那条幻影声明后，`Room` 变成不可解析，`client.getRoom()` 的返回类型**静默塌成
 // `any`**，连带 6 处 `.map((m) => …)` 回调退化为隐式 any（strict 下报 TS7006）。
 // 教训：augmentation 里引用 SDK 类型必须走 import，不能依赖本地同名声明的「巧合」。
-import type { Body, IHttpOpts, IRequestOpts, MatrixEvent, QueryDict, Room, RoomMember } from 'matrix-js-sdk'
+import type { Body, IHttpOpts, IRequestOpts, QueryDict, Room, RoomMember } from 'matrix-js-sdk'
+import type { CryptoApi } from 'matrix-js-sdk/crypto'
 
 declare module 'matrix-js-sdk' {
   // ==================== MatrixHttpApi 方法重载 ====================
@@ -140,6 +141,21 @@ declare module 'matrix-js-sdk' {
   // ==================== Event 和 Timeline 类型 ====================
   // 这些类型已在 SDK 中正确定义，此处提供补充
 
+  // 解密重试：SDK 的 `attemptDecryption(crypto: CryptoBackend, …)` 形参类型 `CryptoBackend`
+  // 是 `@internal` 且未从主入口导出，而调用方（服务层）只能拿到 `client.getCrypto()`
+  // 返回的 `CryptoApi`（更窄的公开接口）。此处追加一条以 `CryptoApi` 为形参的重载，
+  // 避免调用侧使用 `as any` / `as unknown as` 绕过类型检查。
+  interface MatrixEvent {
+    attemptDecryption(
+      crypto: CryptoApi,
+      options?: {
+        /** 是否 emit `MatrixEventEvent.Decrypted`，默认 true —— 重试后 store 依赖该事件回填 */
+        emit?: boolean
+        isRetry?: boolean
+      }
+    ): Promise<void>
+  }
+
   // synapse-rust 特有：输入状态管理器扩展
   // 官方 matrix-js-sdk 不包含此管理器接口
 
@@ -173,10 +189,11 @@ declare module 'matrix-js-sdk' {
     // SDK 已声明 callEventHandler?: CallEventHandler（client.d.ts:354），
     // 此处不再重复声明 voipHandler / getCallHandler（SDK 中不存在，是幻影声明）。
     createCall(roomId: string, threadId?: string, opts?: { audio: boolean; video: boolean }): MatrixCall | null
-    getCrypto(): CryptoApi | null
     // 说明：SDK 没有 `client.crypto` 属性（只有 getCrypto()），
     // 也没有 getCrossSigningInfo / getStoredDevice / getUserDevices / getKeyBackupEnabled。
     // 这些幻影声明已移除——保留会让 vue-tsc 通过而运行时 undefined。
+    // `getCrypto()` 不再重复声明：SDK 已声明 `getCrypto(): CryptoApi | undefined`；
+    // 曾误写为 `| null`（CryptoApi 未导入时被 any 掩盖），导入后暴露为返回值重载冲突（TS2322）。
     createFilter(filter: unknown): Promise<unknown>
     getRoom(roomId: string): Room | null
     getRooms(): Room[]

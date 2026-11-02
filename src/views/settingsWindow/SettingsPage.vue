@@ -12,12 +12,15 @@
     <LeftNav v-if="!standalone" class="settings-page-left" />
     <SettingsSidebar
       :tabs="filteredTabs"
+      :search-results="searchResults"
       :active-tab="activeTab"
       :search-query="searchQuery"
       :content-id="SETTINGS_CONTENT_ID"
+      :capabilities-loaded="isCapabilityLoaded"
       @change="handleTabChange"
       @update:search-query="searchQuery = $event"
-      @search-enter="handleSearchEnter" />
+      @search-enter="handleSearchEnter"
+      @select-result="handleSearchResultSelect" />
     <SettingsContent
       :active-tab="activeTab"
       :has-dirty-tabs="hasDirtyTabs"
@@ -30,22 +33,26 @@
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useDialog } from 'naive-ui'
-import { computed, defineAsyncComponent, onErrorCaptured, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onErrorCaptured, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import SkeletonSettings from '@/components/common/SkeletonSettings.vue'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
+import { locateSettingsAnchor } from '@/composables/settings/settingsAnchorNavigation'
+import { findSettingsSearchResults, type SettingsSearchResult } from '@/composables/settings/settingsSearchIndex'
 import {
   createSettingsDirtyRegistry,
   provideSettingsDirtyRegistry
 } from '@/composables/settings/useSettingsDirtyRegistry'
-import { findFirstMatchingSettingsTab, useSettingsShell } from '@/composables/settings/useSettingsShell'
+import { useSettingsShell } from '@/composables/settings/useSettingsShell'
 import { usePlatform } from '@/composables/usePlatform'
+import { SETTINGS_TABS } from '@/stores/domains/settings/settingsSchema'
 import { getSettingsTabLabel, type SettingsTabType, useSettingsTabStore } from '@/stores/domains/settings/settingsTab'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 import SettingsContent from './SettingsContent.vue'
 import SettingsSidebar from './SettingsSidebar.vue'
+import { SETTINGS_TAB_COMPONENT_LOADERS } from './tabComponentLoaders'
 
 defineOptions({
   name: 'SettingsPage'
@@ -96,13 +103,33 @@ const resolveSearchKeywords = (tabId: SettingsTabType): string[] => {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
 
-const { searchQuery, filteredTabs } = useSettingsShell({
+const { searchQuery, filteredTabs, isCapabilityLoaded, isTabAvailable } = useSettingsShell({
   isDesktop,
   translate: t,
   resolveSearchKeywords
 })
 
+const searchResults = computed(() =>
+  findSettingsSearchResults(searchQuery.value, t, resolveSearchKeywords, isTabAvailable)
+)
+
 const activeTab = computed(() => settingsTabStore.activeTab)
+
+// 能力探测完成后，若深链指向的页签在当前服务器不可用，回退到偏好设置并提示。
+// 探测未完成（isCapabilityLoaded=false）时不做判断，避免登录初期误回退。
+watch(
+  [activeTab, isCapabilityLoaded],
+  ([tabId, capabilityLoaded]) => {
+    if (!capabilityLoaded) return
+    const tab = SETTINGS_TABS.find((item) => item.id === tabId)
+    if (!tab || isTabAvailable(tab)) return
+
+    settingsTabStore.setActiveTab('preferences')
+    router.replace({ path: '/settings', query: { tab: 'preferences' } })
+    window.$message?.warning?.(t('setting.dialog.tab_unavailable', { tab: getSettingsTabLabel(tabId, t) }))
+  },
+  { immediate: true }
+)
 
 const dirtyRegistry = createSettingsDirtyRegistry(async ({ scope, currentTabLabel: label }) => {
   return await new Promise<boolean>((resolve) => {
@@ -169,10 +196,39 @@ async function handleClose() {
   }
 }
 
+async function handleSearchResultSelect(result: SettingsSearchResult) {
+  const tab = SETTINGS_TABS.find((item) => item.id === result.tabId)
+  if (!tab || !isTabAvailable(tab)) {
+    window.$message?.warning?.(
+      t('setting.dialog.search_result_unavailable', { tab: getSettingsTabLabel(result.tabId, t) })
+    )
+    return
+  }
+
+  if (result.tabId !== activeTab.value) {
+    // 先预取目标页签组件，避免切换后异步挂载尚未完成导致锚点两次查询全部落空
+    try {
+      await SETTINGS_TAB_COMPONENT_LOADERS[result.tabId]()
+    } catch {
+      logger.warn('[SettingsPage] failed to preload settings tab:', result.tabId)
+    }
+    await handleTabChange(result.tabId)
+    // 用户取消离开（存在未保存更改）时不再定位锚点
+    if (activeTab.value !== result.tabId) return
+  }
+
+  if (!result.anchorId) return
+
+  await nextTick()
+  if (!(await locateSettingsAnchor(result.anchorId))) {
+    logger.warn('[SettingsPage] settings anchor missed twice, fallback to tab switch:', result.anchorId)
+  }
+}
+
 async function handleSearchEnter() {
-  const matchId = findFirstMatchingSettingsTab(searchQuery.value, isDesktop, t, resolveSearchKeywords)
-  if (!matchId) return
-  await handleTabChange(matchId)
+  const firstResult = searchResults.value[0]
+  if (!firstResult) return
+  await handleSearchResultSelect(firstResult)
 }
 
 function focusSettingsSearch() {
@@ -264,6 +320,35 @@ onUnmounted(() => {
     font-size: var(--tjg-font-size-sm);
     color: var(--tjg-text-secondary);
     word-break: break-all;
+  }
+}
+</style>
+
+<style lang="scss">
+/* 搜索锚点：滚动定位时避开吸顶头部，并给出短暂高亮（见 UI 优化方案 §5.4） */
+[data-settings-anchor] {
+  scroll-margin-top: calc(var(--tjg-settings-header-height, 56px) + var(--tjg-space-3));
+}
+
+[data-settings-anchor].settings-anchor-highlight {
+  outline: 2px solid var(--tjg-color-primary-500);
+  outline-offset: 4px;
+  border-radius: var(--tjg-radius-md);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-settings-anchor].settings-anchor-highlight {
+    animation: settings-anchor-ring var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
+  }
+}
+
+@keyframes settings-anchor-ring {
+  from {
+    outline-offset: 12px;
+  }
+
+  to {
+    outline-offset: 4px;
   }
 }
 </style>

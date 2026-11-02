@@ -52,6 +52,7 @@ vi.mock('@/services/offline/OfflineQueueService', () => ({
 
 import { MsgEnum } from '@/enums'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
+import { createMockMatrixClient, createMockMatrixEvent, createMockRoom } from '@/test-helpers/matrixMocks'
 import { matrixClientService } from '../../MatrixClientService'
 import { matrixEventService } from '../../MatrixEventService'
 import { matrixMessageRelationService } from '../MatrixMessageRelationService'
@@ -409,5 +410,155 @@ describe('MatrixMessageService', () => {
     expect(response.event_id).toBe('local-q-4')
 
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+  })
+
+  it('sendStructuredMessage 在离线时应将操作入队（H-9）', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    vi.mocked(offlineQueueService.enqueue).mockReturnValue('q-5')
+
+    const response = await matrixMessageService.sendStructuredMessage({
+      roomId: '!room:id',
+      msgType: MsgEnum.TEXT,
+      body: 'hello'
+    })
+
+    expect(offlineQueueService.enqueue).toHaveBeenCalledWith('message', '!room:id', {
+      roomId: '!room:id',
+      eventType: 'm.room.message',
+      content: {
+        msgtype: 'm.text',
+        body: 'hello'
+      }
+    })
+    // 离线分支不应尝试直接发送
+    expect(matrixEventService.sendEvent).not.toHaveBeenCalled()
+    expect(response.event_id).toBe('local-q-5')
+
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+  })
+
+  describe('retryDecryptMessage', () => {
+    const crypto = { decryptEvent: vi.fn() }
+
+    const setClient = (event: unknown | null) => {
+      const room = createMockRoom('!room:id', {
+        findEventById: vi.fn(() => event)
+      })
+      const client = createMockMatrixClient({
+        getCrypto: vi.fn(() => crypto),
+        getRoom: vi.fn(() => room)
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(client)
+      return client
+    }
+
+    const setFailureEvent = (isDecryptionFailure: boolean) =>
+      createMockMatrixEvent(
+        { msgtype: 'm.bad.encrypted' },
+        {
+          isEncrypted: vi.fn(() => true),
+          isDecryptionFailure: vi.fn(() => isDecryptionFailure),
+          attemptDecryption: vi.fn(async () => undefined)
+        }
+      )
+
+    it('crypto 未就绪时返回 false 且不触发解密', async () => {
+      const client = createMockMatrixClient({
+        getCrypto: vi.fn(() => null),
+        getRoom: vi.fn(() => createMockRoom('!room:id'))
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(client)
+
+      await expect(matrixMessageService.retryDecryptMessage('!room:id', '$bad')).resolves.toBe(false)
+    })
+
+    it('事件不存在时返回 false', async () => {
+      setClient(null)
+
+      await expect(matrixMessageService.retryDecryptMessage('!room:id', '$missing')).resolves.toBe(false)
+    })
+
+    it('非加密事件不触发解密并返回 false', async () => {
+      const event = setFailureEvent(true)
+      vi.mocked(event.isEncrypted).mockReturnValue(false)
+      setClient(event)
+
+      await expect(matrixMessageService.retryDecryptMessage('!room:id', '$plain')).resolves.toBe(false)
+      expect(event.attemptDecryption).not.toHaveBeenCalled()
+    })
+
+    it('已解密成功的事件不重复解密并返回 false', async () => {
+      const event = setFailureEvent(false)
+      setClient(event)
+
+      await expect(matrixMessageService.retryDecryptMessage('!room:id', '$ok')).resolves.toBe(false)
+      expect(event.attemptDecryption).not.toHaveBeenCalled()
+    })
+
+    it('解密失败状态下以 isRetry 调用 SDK 解密入口，成功后返回 true', async () => {
+      const event = setFailureEvent(true)
+      const attempt = vi.mocked(event.attemptDecryption).mockImplementation(async () => {
+        vi.mocked(event.isDecryptionFailure).mockReturnValue(false)
+      })
+      setClient(event)
+
+      await expect(matrixMessageService.retryDecryptMessage('!room:id', '$bad')).resolves.toBe(true)
+      expect(attempt).toHaveBeenCalledWith(crypto, { isRetry: true })
+    })
+
+    it('重试后仍解密失败时返回 false', async () => {
+      const event = setFailureEvent(true)
+      setClient(event)
+
+      await expect(matrixMessageService.retryDecryptMessage('!room:id', '$bad')).resolves.toBe(false)
+      expect(event.attemptDecryption).toHaveBeenCalledTimes(1)
+    })
+
+    it('SDK 抛错时吞掉异常并返回 false', async () => {
+      const event = setFailureEvent(true)
+      vi.mocked(event.attemptDecryption).mockRejectedValue(new Error('key missing'))
+      setClient(event)
+
+      await expect(matrixMessageService.retryDecryptMessage('!room:id', '$bad')).resolves.toBe(false)
+    })
+  })
+
+  describe('getRawMessageJson', () => {
+    it('返回事件线格式 JSON', async () => {
+      const event = createMockMatrixEvent(
+        {},
+        {
+          getEffectiveEvent: vi.fn(() => ({ event_id: '$raw', type: 'm.room.encrypted' }))
+        }
+      )
+      const room = createMockRoom('!room:id', { findEventById: vi.fn(() => event) })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(createMockMatrixClient({ getRoom: vi.fn(() => room) }))
+
+      const json = await matrixMessageService.getRawMessageJson('!room:id', '$raw')
+
+      expect(JSON.parse(json as string)).toEqual({ event_id: '$raw', type: 'm.room.encrypted' })
+    })
+
+    it('事件不存在时返回 null', async () => {
+      const room = createMockRoom('!room:id', { findEventById: vi.fn(() => null) })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(createMockMatrixClient({ getRoom: vi.fn(() => room) }))
+
+      await expect(matrixMessageService.getRawMessageJson('!room:id', '$missing')).resolves.toBeNull()
+    })
+
+    it('读取线格式失败时返回 null', async () => {
+      const event = createMockMatrixEvent(
+        {},
+        {
+          getEffectiveEvent: vi.fn(() => {
+            throw new Error('boom')
+          })
+        }
+      )
+      const room = createMockRoom('!room:id', { findEventById: vi.fn(() => event) })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(createMockMatrixClient({ getRoom: vi.fn(() => room) }))
+
+      await expect(matrixMessageService.getRawMessageJson('!room:id', '$raw')).resolves.toBeNull()
+    })
   })
 })

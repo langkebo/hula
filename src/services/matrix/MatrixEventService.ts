@@ -35,8 +35,8 @@ type EventContent = Record<string, unknown>
 type MessageSendSource = File | string
 
 // scrollback / 反向分页的超时保护：避免 SlidingSync 下 scrollback 挂起导致 UI 永久卡在骨架屏。
-const SCROLLBACK_TIMEOUT_MS = 15000
-const PAGINATE_TIMEOUT_MS = 15000
+const SCROLLBACK_TIMEOUT_MS = 15_000
+const PAGINATE_TIMEOUT_MS = 15_000
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -122,7 +122,7 @@ class MatrixEventService extends BaseMatrixService {
     try {
       const response = await client.sendEvent(roomId, eventType, content)
       const eventId = this.extractEventId(response)
-      logger.info(`发送事件成功: ${roomId}/${eventType}/${eventId}`)
+      logger.debug(`发送事件成功: ${roomId}/${eventType}/${eventId}`)
       return eventId
     } catch (err) {
       logger.error(`发送事件失败: ${err}`)
@@ -295,7 +295,8 @@ class MatrixEventService extends BaseMatrixService {
         body: { content: isBadEncrypted ? '[无法解密的消息]' : (content.body as string) },
         sendTime: event.getTs(),
         messageMarks: {},
-        status: MessageStatusEnum.SUCCESS
+        status: MessageStatusEnum.SUCCESS,
+        ...(isBadEncrypted ? { isBadEncrypted: true } : {})
       },
       sendTime: event.getTs()
     }
@@ -307,6 +308,9 @@ class MatrixEventService extends BaseMatrixService {
     const member = room.getMember(sender || '')
     const resolvedMsgType = matrixMessageAdapter.getMsgTypeFromMatrixEvent(event)
     const msgType = resolvedMsgType === MsgEnum.UNKNOWN ? MsgEnum.TEXT : resolvedMsgType
+    // SDK 解密失败时会把 clearEvent 置为 `{ msgtype: 'm.bad.encrypted' }` 占位，
+    // 渲染层据此展示「无法解密 + 重试」卡片（不依赖正文内容）。
+    const isBadEncrypted = content?.msgtype === 'm.bad.encrypted'
 
     const burnAfterReadMeta = content?.['m.burn_after_read'] as { expires_in?: number } | undefined
     const burnAfterRead = !!burnAfterReadMeta
@@ -348,6 +352,7 @@ class MatrixEventService extends BaseMatrixService {
         burnAfterRead,
         isBurning: false,
         isBurned: false,
+        ...(isBadEncrypted ? { isBadEncrypted: true } : {}),
         ...(burnRemainingSeconds !== undefined ? { burnRemainingSeconds } : {})
       },
       fromUser: {
