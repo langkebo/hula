@@ -21,6 +21,9 @@
       "no_prompt": "下次不出现此提示"
     }
   },
+  "rightPane": {
+    "resize_handle": "调整右侧栏宽度，使用左右方向键"
+  },
   "avatarCropper": {
     "title": "裁剪头像",
     "preview": {

@@ -26,7 +26,8 @@
 | 阶段 F 修复（P2） | 1 | UI-P2-04（固定文档-代码核对清单 + `numbers` 块统一口径） |
 | 阶段 G 修复（P2） | 1 | UI-P2-03（编辑类弹窗全部抽屉化，残留 105 处均为确认/向导/选择器/查看器并已登记） |
 | 未取证 | 1 | A-01（Modal 焦点陷阱，需 Storybook 可达后跑 `check:a11y`） |
-| 无障碍仍待补 | 2 | A-02、A-03 |
+| 无障碍修复（阶段 G） | 1 | A-02（右侧栏拖拽把手补齐分隔条语义、可访问名称与键盘调整） |
+| 无障碍澄清（不成立） | 1 | A-03（管理后台无手动侧栏收起控件，宽度收缩由断点驱动，无 `aria-expanded` 可挂点） |
 | 能力缺口 | 4 | G-04、G-05、G-06、G-08（G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地） |
 
 > 计数口径说明：`上一轮已修复` 指上一轮登记时即已关闭；`本轮复核确认已修复` 指上一轮被误记为「仍成立」的项。两类分开列，便于追溯审计质量（上一轮 4 项 P1 误判均为「修复已落地或部分落地，但状态未回写」）。
@@ -39,7 +40,7 @@
 | P1（已修复，保留回归约束） | 7 | UI-P1-01/02/03/04/05/06/07 |
 | P2（待做） | 0 | — |
 | P2（已修复） | 11 | UI-P2-01、02、03、04、05、06、07、08、09、10、11 |
-| 无障碍（待补 / 未取证） | 3 | A-01（未取证）、A-02、A-03 |
+| 无障碍（未取证 / 已修复 / 澄清） | 3 | A-01（未取证）、A-02（已修复）、A-03（经取证不成立） |
 | 能力缺口 | 4 | G-04、G-05、G-06、G-08（G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地，见 §1.3 / §7） |
 
 > ⚠️ 上一版本表在 P1 处写「5」但列出了 6 项、§4 注又写「6 项」，三处口径不一致。本节改为「按级别 × 按状态」交叉计数（7 个 P1 编号、10+1=11 个 P2 编号），此后不得再出现裸数字。
@@ -260,8 +261,8 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 编号 | 问题 | 证据 |
 |---|---|---|
 | A-01 | `NModal` 105 处中未逐一确认焦点陷阱与 `aria-modal` | 需在 Storybook 启动后跑 `pnpm check:a11y`（脚本设计为 Storybook 不可达即 `exit 2`，**不得据此下结论**） |
-| A-02 | 右侧栏拖拽把手无可访问名称与键盘替代 | `layout/right/index.vue` 把手为指针事件，无 `role`/`tabindex`/方向键处理 |
-| A-03 | 管理后台移动端菜单按钮有 `aria-expanded`，但侧栏收起按钮无同等待遇 | `AdminLayout.vue` 头部 `aria-expanded` 已有；`sidebarCollapsed` 无对应控件 |
+| A-02 | 右侧栏拖拽把手无可访问名称与键盘替代 | **已修复**（`layout/right/index.vue` 把手补 `role="separator"`、`aria-orientation="vertical"`、`aria-label`（i18n `components.rightPane.resize_handle`）、`tabindex="0"` 与左右方向键 → `useRightPaneWidth.nudgeWidth(±16)`，即时持久化；回归 `rightPane.test.ts`、`useRightPaneWidth.test.ts`） |
+| A-03 | 管理后台移动端菜单按钮有 `aria-expanded`，但侧栏收起按钮无同等待遇 | **不成立**（取证：全局 `rg sidebarCollapsed\|sidebar-collapsed\|admin-sidebar-collapsed` 无命中；`AdminSidebar.vue` 宽度收缩由 `responsive.respond-to('md')` + `respond-to-max('lg')` 断点驱动，无手动收起按钮；`AdminLayout.vue` 的 `admin-menu-toggle` 已带 `aria-label` 与 `aria-expanded`） |
 
 ---
 
@@ -290,8 +291,8 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | UI-P2-10 | P2 | 内联样式上色绕过令牌 | **已修复** | `AdminModules.vue` 状态点改 `status-dot--<status>` 类，映射 `--tjg-status-*` |
 | UI-P2-11 | P2 | 私密模式图标非线宽路径图标 | **已修复** | `ChatHeader/ChatHeaderToolbar.vue` 锁形路径（`stroke-width: 1.5`，无字形文本） |
 | A-01 | — | Modal 焦点陷阱未逐一确认 | 未取证 | `pnpm check:a11y`（需 Storybook） |
-| A-02 | — | 拖拽把手无可访问名称 | 仍成立 | `layout/right/index.vue` |
-| A-03 | — | 侧栏收起按钮缺 `aria-expanded` | 仍成立 | `AdminLayout.vue` 头部 |
+| A-02 | — | 拖拽把手无可访问名称 | **已修复** | `layout/right/index.vue`（`role="separator"` / `aria-label` / `tabindex="0"` / `@keydown`）；`useRightPaneWidth.nudgeWidth` |
+| A-03 | — | 侧栏收起按钮缺 `aria-expanded` | 不成立（已澄清） | 全局无 `sidebarCollapsed` 控件；`AdminSidebar.vue` 断点驱动收缩；`AdminLayout.vue` 头部 `aria-expanded` 已有 |
 | G-01 / G-02 | P1 | 遥测、后台更新无页面 | **已落地** | `AdminTelemetry.vue`、`AdminBackgroundUpdates.vue`（`useAdminNav` 已登记） |
 | G-03 / G-07 | P1 | 线程冻结/静音、媒体配额无入口 | **已落地** | `ThreadPanel.vue`；`StorageSettings.vue` + `useMsgInputFileUpload.sendFilesDirect` + `AdminMaintenance.vue`（详见 §7） |
 | G-04 ~ G-06 / G-08 | — | 后端能力前端无入口 | 仍成立 | 见 §2 |
@@ -300,7 +301,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 >
 > - P1 共 7 个编号：已修复 7（UI-P1-01/02/03/04/05/06/07），无遗留。
 > - P2 共 11 个编号：已修复 11（UI-P2-01、02、03、04、05、06、07、08、09、10、11），无遗留。
-> - 无障碍 3 个编号：未取证 1（A-01）、仍成立 2（A-02、A-03）。
+> - 无障碍 3 个编号：未取证 1（A-01）、已修复 1（A-02）、澄清不成立 1（A-03）。
 > - 能力缺口 8 个编号（G-01 ~ G-08），不计入 UI 缺陷总数：已落地 4（G-01、G-02、G-03、G-07）、仍成立 4（G-04 ~ G-06、G-08）。
 
 ---
@@ -844,7 +845,7 @@ pnpm verify:sdk-pin
 2. P2 收敛：`hardcoded_color` 已降到 0 并锁定基线；`NModal` 已完成分类收敛（当前 105，设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105；残留均为确认/向导/选择器/查看器/前置认证并逐文件登记）。
 3. 能力缺口：G-01、G-02、G-03、G-07 已落地并有测试；G-05、G-06 待补入口；G-04 / G-08 待产品结论。
 4. 残留清理：`SyncStatusBar.vue` 与其实测已删除，`typings/` 无该符号。
-5. 未取证项清零：Worker 管理面、第三方 3PID、媒体子项三项补齐取证后再更新 §1.3；A-01 在 Storybook 可达后单独补测。
+5. 未取证项清零：Worker 管理面、第三方 3PID、媒体子项三项补齐取证后再更新 §1.3；A-01 在 Storybook 可达后单独补测；A-02 已修复（`role="separator"` + `aria-label` + 方向键，回归测试覆盖）、A-03 经取证不成立（无手动收起控件）。
 6. 门禁全绿：`test:run`、`typecheck`、`check:ratchet`、`check-file-size`、`check-integration-map-freshness`、`verify:sdk-pin` 无失败。
 
 ---

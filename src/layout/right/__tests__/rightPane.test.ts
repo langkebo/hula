@@ -35,12 +35,15 @@ vi.mock('@/composables/layout/useResponsiveBreakpoint', () => ({
   useResponsiveBreakpoint: () => ({ isRightPaneFullscreen: ref(false), isShrink: ref(false) })
 }))
 
+const nudgeWidthMock = vi.fn()
+
 vi.mock('@/composables/layout/useRightPaneWidth', () => ({
   useRightPaneWidth: () => ({
     width: ref(320),
     isDragging: ref(false),
     transitionEnabled: ref(false),
-    startDrag: vi.fn()
+    startDrag: vi.fn(),
+    nudgeWidth: nudgeWidthMock
   })
 }))
 
@@ -110,5 +113,22 @@ describe('layout/right — pane close wiring', () => {
 
     expect(wrapper.find('[data-test="right-pane-drag-handle"]').exists()).toBe(false)
     expect(wrapper.find('#chat-main').attributes('style')).toContain('min-width: 0')
+  })
+
+  // A-02：拖拽把手必须具备可访问名称、分隔条语义与键盘替代
+  it('exposes an accessible resize separator with keyboard support', async () => {
+    const wrapper = mountPane()
+    const handle = wrapper.get('[data-test="right-pane-drag-handle"]')
+
+    expect(handle.attributes('role')).toBe('separator')
+    expect(handle.attributes('aria-orientation')).toBe('vertical')
+    expect(handle.attributes('aria-label')).toBe('components.rightPane.resize_handle')
+    expect(handle.attributes('tabindex')).toBe('0')
+
+    await handle.trigger('keydown', { key: 'ArrowLeft' })
+    expect(nudgeWidthMock).toHaveBeenLastCalledWith(16)
+
+    await handle.trigger('keydown', { key: 'ArrowRight' })
+    expect(nudgeWidthMock).toHaveBeenLastCalledWith(-16)
   })
 })

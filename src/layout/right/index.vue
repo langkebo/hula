@@ -15,7 +15,12 @@
       v-if="!isRightPaneFullscreen && !isElasticPane"
       class="right-pane-drag-handle"
       data-test="right-pane-drag-handle"
-      @pointerdown="startDrag">
+      role="separator"
+      aria-orientation="vertical"
+      :aria-label="t('components.rightPane.resize_handle')"
+      tabindex="0"
+      @pointerdown="startDrag"
+      @keydown="handleResizeKeydown">
       <div class="drag-icon" :class="{ 'drag-icon--active': isDragging }">
         <svg class="size-16px">
           <use href="#sliding"></use>
@@ -118,7 +123,27 @@ const { rightView } = useRightView()
 const { isRightPaneFullscreen, isShrink } = useResponsiveBreakpoint()
 
 // Step 2.3：视图驱动动态宽度 + 拖拽 + localStorage 持久化
-const { width: paneWidth, isDragging, transitionEnabled, startDrag } = useRightPaneWidth({ rightView })
+const {
+  width: paneWidth,
+  isDragging,
+  transitionEnabled,
+  startDrag,
+  nudgeWidth
+} = useRightPaneWidth({
+  rightView
+})
+
+/** 键盘微调：左方向键增大宽度（与向左拖拽一致），右方向键减小 */
+const KEYBOARD_RESIZE_STEP = 16
+const handleResizeKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    nudgeWidth(KEYBOARD_RESIZE_STEP)
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    nudgeWidth(-KEYBOARD_RESIZE_STEP)
+  }
+}
 
 // UI-P2-01：聊天视图为弹性主区，宽度由信息面板拖拽控制，不参与右侧栏固定宽度表
 const isElasticPane = computed(() => rightView.value === 'chat')

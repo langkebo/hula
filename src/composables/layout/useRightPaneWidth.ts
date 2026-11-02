@@ -46,6 +46,8 @@ export interface UseRightPaneWidthReturn {
   transitionEnabled: ComputedRef<boolean>
   /** 开始拖拽（绑定到拖拽分隔条 pointerdown） */
   startDrag: (e: PointerEvent) => void
+  /** 键盘微调宽度（正值增大，负值减小），并持久化 */
+  nudgeWidth: (delta: number) => void
   /** 重置当前视图宽度到默认值 */
   resetWidth: () => void
 }
@@ -162,6 +164,14 @@ export function useRightPaneWidth(options: UseRightPaneWidthOptions): UseRightPa
     document.addEventListener('pointerup', stopDrag)
   }
 
+  const nudgeWidth = (delta: number) => {
+    const next = clamp(width.value + delta)
+    const view = rightView.value
+    userWidth.value = next
+    persistedWidths.value = { ...persistedWidths.value, [view]: next }
+    persistWidths({ patch: { [view]: next } })
+  }
+
   const resetWidth = () => {
     userWidth.value = null
     const view = rightView.value
@@ -192,6 +202,7 @@ export function useRightPaneWidth(options: UseRightPaneWidthOptions): UseRightPa
     isDragging,
     transitionEnabled,
     startDrag,
+    nudgeWidth,
     resetWidth
   }
 }

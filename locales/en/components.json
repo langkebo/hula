@@ -21,6 +21,9 @@
       "no_prompt": "Don't show this again"
     }
   },
+  "rightPane": {
+    "resize_handle": "Resize the right pane width with the arrow keys"
+  },
   "avatarCropper": {
     "title": "Crop Avatar",
     "preview": {

@@ -188,6 +188,30 @@ describe('useRightPaneWidth', () => {
     expect(transitionEnabled.value).toBe(true)
   })
 
+  it('nudgeWidth adjusts width and persists immediately', () => {
+    const rightView = ref<RightViewType>('search') // default 440
+    const { width, nudgeWidth } = useRightPaneWidth({ rightView })
+
+    nudgeWidth(16)
+    expect(width.value).toBe(456)
+    expect(storage.get('tjg.rightPaneWidth')).toBe(JSON.stringify({ search: 456 }))
+
+    nudgeWidth(-32)
+    expect(width.value).toBe(424)
+    expect(storage.get('tjg.rightPaneWidth')).toBe(JSON.stringify({ search: 424 }))
+  })
+
+  it('nudgeWidth clamps to min/max', () => {
+    const rightView = ref<RightViewType>('search')
+    const { width, nudgeWidth } = useRightPaneWidth({ rightView })
+
+    nudgeWidth(1000)
+    expect(width.value).toBe(800) // max
+
+    nudgeWidth(-1000)
+    expect(width.value).toBe(240) // min
+  })
+
   it('resetWidth restores default width and clears persisted value', () => {
     storage.set('tjg.rightPaneWidth', JSON.stringify({ chat: 700 }))
     const rightView = ref<RightViewType>('chat')

@@ -1899,6 +1899,9 @@ export type I18nKeys = {
         "no_prompt": "下次不出现此提示"
       }
     },
+    "rightPane": {
+      "resize_handle": "调整右侧栏宽度，使用左右方向键"
+    },
     "avatarCropper": {
       "title": "裁剪头像",
       "preview": {
@@ -8794,6 +8797,7 @@ export type I18nKeyPaths =
   | "components.actionBar.close_prompt.hide_to_tray"
   | "components.actionBar.close_prompt.exit_app"
   | "components.actionBar.close_prompt.no_prompt"
+  | "components.rightPane.resize_handle"
   | "components.avatarCropper.title"
   | "components.avatarCropper.preview.round"
   | "components.avatarCropper.preview.square"
