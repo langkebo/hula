@@ -1,38 +1,42 @@
 <template>
-  <n-modal v-model:show="visible" preset="dialog" :title="t('setting.push.add_pusher.title')">
-    <n-form label-placement="left" label-width="auto">
-      <n-form-item :label="t('setting.push.add_pusher.kind_label')">
-        <n-select v-model:value="newPusher.kind" :options="pusherKindOptions" />
-      </n-form-item>
-      <n-form-item :label="t('setting.push.add_pusher.app_id_label')">
-        <n-input v-model:value="newPusher.app_id" :placeholder="t('setting.push.add_pusher.app_id_placeholder')" />
-      </n-form-item>
-      <n-form-item :label="t('setting.push.add_pusher.app_display_name_label')">
-        <n-input
-          v-model:value="newPusher.app_display_name"
-          :placeholder="t('setting.push.add_pusher.app_display_name_placeholder')" />
-      </n-form-item>
-      <n-form-item :label="t('setting.push.add_pusher.device_display_name_label')">
-        <n-input
-          v-model:value="newPusher.device_display_name"
-          :placeholder="t('setting.push.add_pusher.device_display_name_placeholder')" />
-      </n-form-item>
-      <n-form-item :label="t('setting.push.add_pusher.pushkey_label')">
-        <n-input v-model:value="newPusher.pushkey" :placeholder="t('setting.push.add_pusher.pushkey_placeholder')" />
-      </n-form-item>
-      <n-form-item :label="t('setting.push.add_pusher.lang_label')">
-        <n-input v-model:value="newPusher.lang" placeholder="en" />
-      </n-form-item>
-    </n-form>
-    <template #action>
-      <n-button @click="visible = false">{{ t('setting.push.add_pusher.cancel') }}</n-button>
-      <n-button type="primary" @click="handleAddPusher">{{ t('setting.push.add_pusher.confirm') }}</n-button>
-    </template>
-  </n-modal>
+  <n-drawer v-model:show="visible" placement="right" :width="380">
+    <n-drawer-content :title="t('setting.push.add_pusher.title')" closable>
+      <n-form label-placement="top">
+        <n-form-item :label="t('setting.push.add_pusher.kind_label')">
+          <n-select v-model:value="newPusher.kind" :options="pusherKindOptions" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.app_id_label')">
+          <n-input v-model:value="newPusher.app_id" :placeholder="t('setting.push.add_pusher.app_id_placeholder')" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.app_display_name_label')">
+          <n-input
+            v-model:value="newPusher.app_display_name"
+            :placeholder="t('setting.push.add_pusher.app_display_name_placeholder')" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.device_display_name_label')">
+          <n-input
+            v-model:value="newPusher.device_display_name"
+            :placeholder="t('setting.push.add_pusher.device_display_name_placeholder')" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.pushkey_label')">
+          <n-input v-model:value="newPusher.pushkey" :placeholder="t('setting.push.add_pusher.pushkey_placeholder')" />
+        </n-form-item>
+        <n-form-item :label="t('setting.push.add_pusher.lang_label')">
+          <n-input v-model:value="newPusher.lang" placeholder="en" />
+        </n-form-item>
+      </n-form>
+      <template #footer>
+        <div class="flex justify-end gap-12px">
+          <n-button @click="visible = false">{{ t('setting.push.add_pusher.cancel') }}</n-button>
+          <n-button type="primary" @click="handleAddPusher">{{ t('setting.push.add_pusher.confirm') }}</n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
-import { NButton, NForm, NFormItem, NInput, NModal, NSelect } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NSelect } from 'naive-ui'
 import { reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'

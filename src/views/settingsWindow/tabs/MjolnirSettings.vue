@@ -81,62 +81,79 @@
         </n-button>
       </div>
 
-      <n-modal
-        v-model:show="showAddRoomBan"
-        preset="dialog"
-        :title="t('setting.mjolnir.add_room_rule')"
-        :positive-text="t('setting.mjolnir.add')"
-        :negative-text="t('setting.mjolnir.cancel')"
-        @positive-click="handleAddRoomBan">
-        <n-form ref="roomBanFormRef">
-          <n-form-item :label="t('setting.mjolnir.room_id')">
-            <n-input v-model:value="newRoomBan.entity" placeholder="#room:example.com" />
-          </n-form-item>
-          <n-form-item :label="t('setting.mjolnir.reason')">
-            <n-input v-model:value="newRoomBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
-          </n-form-item>
-        </n-form>
-      </n-modal>
+      <n-drawer v-model:show="showAddRoomBan" placement="right" :width="380">
+        <n-drawer-content :title="t('setting.mjolnir.add_room_rule')" closable>
+          <n-form ref="roomBanFormRef">
+            <n-form-item :label="t('setting.mjolnir.room_id')">
+              <n-input v-model:value="newRoomBan.entity" placeholder="#room:example.com" />
+            </n-form-item>
+            <n-form-item :label="t('setting.mjolnir.reason')">
+              <n-input v-model:value="newRoomBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
+            </n-form-item>
+          </n-form>
+          <template #footer>
+            <div class="flex justify-end gap-12px">
+              <n-button @click="showAddRoomBan = false">{{ t('setting.mjolnir.cancel') }}</n-button>
+              <n-button type="primary" @click="submitRoomBan">{{ t('setting.mjolnir.add') }}</n-button>
+            </div>
+          </template>
+        </n-drawer-content>
+      </n-drawer>
 
-      <n-modal
-        v-model:show="showAddUserBan"
-        preset="dialog"
-        :title="t('setting.mjolnir.add_user_rule')"
-        :positive-text="t('setting.mjolnir.add')"
-        :negative-text="t('setting.mjolnir.cancel')"
-        @positive-click="handleAddUserBan">
-        <n-form ref="userBanFormRef">
-          <n-form-item :label="t('setting.mjolnir.user_id')">
-            <n-input v-model:value="newUserBan.entity" placeholder="@user:example.com" />
-          </n-form-item>
-          <n-form-item :label="t('setting.mjolnir.reason')">
-            <n-input v-model:value="newUserBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
-          </n-form-item>
-        </n-form>
-      </n-modal>
+      <n-drawer v-model:show="showAddUserBan" placement="right" :width="380">
+        <n-drawer-content :title="t('setting.mjolnir.add_user_rule')" closable>
+          <n-form ref="userBanFormRef">
+            <n-form-item :label="t('setting.mjolnir.user_id')">
+              <n-input v-model:value="newUserBan.entity" placeholder="@user:example.com" />
+            </n-form-item>
+            <n-form-item :label="t('setting.mjolnir.reason')">
+              <n-input v-model:value="newUserBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
+            </n-form-item>
+          </n-form>
+          <template #footer>
+            <div class="flex justify-end gap-12px">
+              <n-button @click="showAddUserBan = false">{{ t('setting.mjolnir.cancel') }}</n-button>
+              <n-button type="primary" @click="submitUserBan">{{ t('setting.mjolnir.add') }}</n-button>
+            </div>
+          </template>
+        </n-drawer-content>
+      </n-drawer>
 
-      <n-modal
-        v-model:show="showAddServerBan"
-        preset="dialog"
-        :title="t('setting.mjolnir.add_server_rule')"
-        :positive-text="t('setting.mjolnir.add')"
-        :negative-text="t('setting.mjolnir.cancel')"
-        @positive-click="handleAddServerBan">
-        <n-form ref="serverBanFormRef">
-          <n-form-item :label="t('setting.mjolnir.server_name')">
-            <n-input v-model:value="newServerBan.entity" placeholder="example.com" />
-          </n-form-item>
-          <n-form-item :label="t('setting.mjolnir.reason')">
-            <n-input v-model:value="newServerBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
-          </n-form-item>
-        </n-form>
-      </n-modal>
+      <n-drawer v-model:show="showAddServerBan" placement="right" :width="380">
+        <n-drawer-content :title="t('setting.mjolnir.add_server_rule')" closable>
+          <n-form ref="serverBanFormRef">
+            <n-form-item :label="t('setting.mjolnir.server_name')">
+              <n-input v-model:value="newServerBan.entity" placeholder="example.com" />
+            </n-form-item>
+            <n-form-item :label="t('setting.mjolnir.reason')">
+              <n-input v-model:value="newServerBan.reason" :placeholder="t('setting.mjolnir.reason_optional')" />
+            </n-form-item>
+          </n-form>
+          <template #footer>
+            <div class="flex justify-end gap-12px">
+              <n-button @click="showAddServerBan = false">{{ t('setting.mjolnir.cancel') }}</n-button>
+              <n-button type="primary" @click="submitServerBan">{{ t('setting.mjolnir.add') }}</n-button>
+            </div>
+          </template>
+        </n-drawer-content>
+      </n-drawer>
     </PermissionGuard>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NAlert, NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, useDialog } from 'naive-ui'
+import {
+  NAlert,
+  NButton,
+  NDivider,
+  NDrawer,
+  NDrawerContent,
+  NForm,
+  NFormItem,
+  NInput,
+  NSpin,
+  useDialog
+} from 'naive-ui'
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PermissionGuard from '@/components/common/PermissionGuard.vue'
@@ -241,6 +258,21 @@ function handleAddServerBan() {
   newServerBan.reason = ''
   saveBanLists()
   showFeedback(t('setting.mjolnir.added_server_rule'), 'success')
+}
+
+function submitRoomBan() {
+  if (handleAddRoomBan() === false) return
+  showAddRoomBan.value = false
+}
+
+function submitUserBan() {
+  if (handleAddUserBan() === false) return
+  showAddUserBan.value = false
+}
+
+function submitServerBan() {
+  if (handleAddServerBan() === false) return
+  showAddServerBan.value = false
 }
 
 function handleRemoveRoomBan(item: BanItem) {

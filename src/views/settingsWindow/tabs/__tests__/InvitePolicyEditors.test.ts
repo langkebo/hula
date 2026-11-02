@@ -80,6 +80,8 @@ vi.mock('naive-ui', async () => {
     NForm: passthrough('NForm'),
     NFormItem: passthrough('NFormItem'),
     NModal: passthrough('NModal'),
+    NDrawer: passthrough('NDrawer'),
+    NDrawerContent: passthrough('NDrawerContent'),
     NSpin: passthrough('NSpin'),
     NRadio: passthrough('NRadio'),
     NList: passthrough('NList'),

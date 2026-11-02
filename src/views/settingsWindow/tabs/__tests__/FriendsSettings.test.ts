@@ -77,6 +77,8 @@ vi.mock('naive-ui', () => ({
   NFormItem: { name: 'NFormItem', template: '<div><slot /></div>' },
   NInput: { name: 'NInput', template: '<input />' },
   NModal: { name: 'NModal', template: '<div><slot /></div>' },
+  NDrawer: { name: 'NDrawer', template: '<div><slot /></div>' },
+  NDrawerContent: { name: 'NDrawerContent', template: '<div><slot /><slot name="footer" /></div>' },
   NSpin: { name: 'NSpin', template: '<div><slot /></div>' },
   NSwitch: { name: 'NSwitch', template: '<div />' },
   useDialog: () => ({ warning: vi.fn() })

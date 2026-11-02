@@ -22,10 +22,11 @@
 | 阶段 B 修复（能力缺口） | 2 | G-01（遥测页）、G-02（后台更新页） |
 | 阶段 C 修复（P2） | 1 | UI-P2-01（240px 信息面板、断点折叠与弹性主区） |
 | 阶段 D 修复（P2） | 4 | UI-P2-09（设置侧栏骨架占位）、UI-P2-06（空间空态区分）、UI-P2-08（Mjolnir 能力收尾）、UI-P2-05（解密失败卡片与重试） |
-| 仍成立 | 5 | UI-P2-02、UI-P2-03、UI-P2-04、UI-P2-10、UI-P2-11 |
+| 阶段 E 修复（P2 + 能力缺口） | 5 | UI-P2-02（硬编码颜色 24 → 0）、UI-P2-10（后台状态点走 token）、UI-P2-11（私密图标线宽路径）、G-03（线程冻结/静音）、G-07（媒体配额三处接线） |
+| 仍成立 | 2 | UI-P2-03、UI-P2-04 |
 | 未取证 | 1 | A-01（Modal 焦点陷阱，需 Storybook 可达后跑 `check:a11y`） |
 | 无障碍仍待补 | 2 | A-02、A-03 |
-| 能力缺口 | 8 | G-01 ~ G-08（其中 G-01 遥测页、G-02 后台更新页已于阶段 B 落地，剩余 6 项） |
+| 能力缺口 | 4 | G-04、G-05、G-06、G-08（G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地） |
 
 > 计数口径说明：`上一轮已修复` 指上一轮登记时即已关闭；`本轮复核确认已修复` 指上一轮被误记为「仍成立」的项。两类分开列，便于追溯审计质量（上一轮 4 项 P1 误判均为「修复已落地或部分落地，但状态未回写」）。
 
@@ -35,10 +36,10 @@
 |---|---|---|
 | P0 | 0 | 未发现阻断登录、消息收发或造成数据错误的缺陷 |
 | P1（已修复，保留回归约束） | 7 | UI-P1-01/02/03/04/05/06/07 |
-| P2（待做） | 5 | UI-P2-02、03、04、10、11 |
-| P2（已修复） | 6 | UI-P2-01、05、06、07、08、09 |
+| P2（待做） | 2 | UI-P2-03、04 |
+| P2（已修复） | 9 | UI-P2-01、02、05、06、07、08、09、10、11 |
 | 无障碍（待补 / 未取证） | 3 | A-01（未取证）、A-02、A-03 |
-| 能力缺口 | 6 | G-03 ~ G-08（G-01/G-02 已落地，见 §1.3 / §7） |
+| 能力缺口 | 4 | G-04、G-05、G-06、G-08（G-01/G-02 阶段 B、G-03/G-07 阶段 E 已落地，见 §1.3 / §7） |
 
 > ⚠️ 上一版本表在 P1 处写「5」但列出了 6 项、§4 注又写「6 项」，三处口径不一致。本节改为「按级别 × 按状态」交叉计数（7 个 P1 编号、9+2=11 个 P2 编号），此后不得再出现裸数字。
 
@@ -48,7 +49,7 @@
 2. **能力降级与探测基建已完成闭环**：`SettingsTab` 的 `requiredCapability` / `capabilityFallback`、壳层过滤、深链回退、组件级 `PermissionGuard`、管理后台 `useAdminNav` 五态均已接线（UI-P1-01/02 关闭）。
 3. **P1 已清零**：① 设置搜索锚点定位（UI-P1-05）；② 断点单一来源与聊天主壳四档（UI-P1-07）；③ Presence 第二写入点消除（UI-P1-03）——三项均已在 HEAD 落地，回归约束见 §5.2 / §5.4 / §5.6。
 4. **仍有一类是「后端/服务层已完备、UI 缺入口」**：线程冻结与静音、媒体配额、延迟事件、CAS、访客、vendor 房间扩展共 6 项在服务层或后端存在，界面无任何可达路径。G-01 遥测与 G-02 后台更新已在阶段 B 补上管理页（`/admin/telemetry`、`/admin/background-updates`），剩余 6 项待后续阶段。
-5. **视觉规范仍在收敛中**：硬编码颜色实测 24 处（ratchet 基线 24，未反弹也未下降）；`NModal` 实测 197 处 / 57 文件（上一轮 298 处 / 101 文件），方向正确但未完成；`src/**/*.vue` 已无超过 800 行的文件（最大 `AdminSecurity.vue` 763 行），组件体量红线达标。
+5. **视觉规范仍在收敛中**：硬编码颜色实测 0 处（ratchet 基线 0）；`NModal` 实测 170 处 / 50 文件（上一轮 298 处 / 101 文件，设置模块第一批 197 → 170），方向正确但未完成；`src/**/*.vue` 已无超过 800 行的文件（最大 `AdminSecurity.vue` 763 行），组件体量红线达标。
 
 ### 0.3 阅读约定（编号 / 状态 / 取证）
 
@@ -133,10 +134,10 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | Worker | 26（11 条门控） | 未取证 | — | 本轮未逐条核对 worker 管理面 |
 | 事件举报 | 18 | 已覆盖 | — | `ModerationEventReportTab.vue`、`AdminModerationService` |
 | Relations / Reactions | 9 / 1 | 已覆盖 | — | `MatrixMessageRelationService`、`MatrixReactionService` |
-| 线程 | 21 | **部分覆盖** | G-03 | 冻结/解冻/静音已封装于 `MatrixThreadApi`（`freezeThreadViaApi` / `unfreezeThreadViaApi` / `muteThreadViaApi`），UI 无入口 |
+| 线程 | 21 | **已覆盖** | ~~G-03~~（已落地） | `MatrixThreadApi` 三方法已接线：`ThreadPanel.vue` 头部冻结/静音入口 + footer 只读降级 |
 | 外部服务 | 11 | 已覆盖 | — | `ExternalServiceService`、`ExternalServiceManager.vue` |
 | 好友 | 28 | 已覆盖 | — | `src/services/matrix/friends/` |
-| 媒体 | 60 | **部分覆盖** | G-07 | 主链可用；配额 4 条端点仅服务层与测试 |
+| 媒体 | 60 | **部分覆盖** | ~~G-07~~（已落地） | 主链可用；客户端配额三接口 + admin 全局配额均已接线（`StorageSettings.vue`、`AdminMaintenance.vue`） |
 | Key Backup | 33 | 已覆盖 | — | `MatrixKeyBackupService`（含 1 条走不通的 `verifyBackup`，见 §3.4 注） |
 | 密钥轮转 | 9 | 已覆盖 | — | `KeyRotationDialog.vue` + `EncryptionSettings.vue` |
 | Widget | 16 | 已覆盖 | — | `MatrixWidgetService`（`private_on_std_widgets=0`，全走私有路由） |
@@ -173,17 +174,17 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 ## 2. 后端能力 vs 前端覆盖（能力缺口清单）
 
-以下 6 项（G-03 ~ G-08）的共同特征：**后端路由存在，且多数已有服务层封装，但用户在界面上没有任何可达路径**。这与「UI 缺陷」不同，是功能覆盖缺口，单列成 G 编号；落地方式见 §7。G-01、G-02 已于阶段 B 落地，保留在表中供回归核对。
+以下 6 项（G-03 ~ G-08）的共同特征：**后端路由存在，且多数已有服务层封装，但用户在界面上没有任何可达路径**。这与「UI 缺陷」不同，是功能覆盖缺口，单列成 G 编号；落地方式见 §7。G-01、G-02 已于阶段 B 落地，G-03、G-07 已于阶段 E 落地，保留在表中供回归核对。
 
 | ID | 级别 | 能力 | 后端规模 | 前端现状 | 证据（符号名） |
 |---|---|---|---|---|---|
 | G-01 | P1 | 服务端遥测与告警 | 6 条 `/_synapse/admin/v1/telemetry/*` | **已落地**：路由 `/admin/telemetry`，导航与能力降级齐备 | `AdminTelemetry.vue`、`useAdminTelemetry`、`admin.nav.telemetry`；服务方法经 `AdminFacadeService.telemetry` |
 | G-02 | P1 | 后台更新任务 | 19 条 `/_synapse/admin/v1/background_updates/*` | **已落地**：路由 `/admin/background-updates`，含可停轮询 | `AdminBackgroundUpdates.vue`、`useAdminBackgroundUpdates`、`admin.nav.backgroundUpdates` |
-| G-03 | P2 | 线程冻结 / 解冻 / 静音 | thread 21 条中的 3 个动作 | 服务层 3 方法齐备，**UI 无入口** | `MatrixThreadApi`：`freezeThreadViaApi` / `unfreezeThreadViaApi` / `muteThreadViaApi` |
+| G-03 | P2 | 线程冻结 / 解冻 / 静音 | thread 21 条中的 3 个动作 | **已落地**：`ThreadPanel.vue` 头部状态标签 + 冻结/静音操作，冻结时 footer 只读 | `MatrixThreadApi`：`freezeThreadViaApi` / `unfreezeThreadViaApi` / `muteThreadViaApi`；`getRoomThreadViaApi` 读状态 |
 | G-04 | P2 | 延迟事件（MSC4140） | 7 条 `unstable/org.matrix.msc4140/delayed_events` 系列 | **零对接** | `msc4140` / `delayed_event` 全仓 0 命中；仅 `i18n.d.ts` 有空命名空间 `delayed_events: {}` |
 | G-05 | P2 | CAS 单点登录 | 12 条 | **零对接** | `cas_login` / `login/cas` / `sso/cas` 0 命中 |
 | G-06 | P2 | 访客注册与升级 | 3 条（`register/guest`、`account/guest`、`account/guest/upgrade`） | **零对接** | 仅 admin `UserService` 只读展示 `is_guest` |
-| G-07 | P2 | 媒体配额（告警 / 检查 / 统计） | **4 条**：`GET /_matrix/media/v1/quota/{alerts,check,stats}` + `GET /_synapse/admin/v1/media/quota` | 服务层 3 方法齐备，**UI 无引用** | `MatrixMediaService` 配额三方法；全仓除服务层与测试外 0 引用 |
+| G-07 | P2 | 媒体配额（告警 / 检查 / 统计） | **4 条**：`GET /_matrix/media/v1/quota/{alerts,check,stats}` + `GET /_synapse/admin/v1/media/quota` | **已落地**：设置页三态配额卡片 + 上传前预检 + admin 服务端全局配额卡 | `MatrixMediaService` 三方法；`StorageSettings.vue`、`useMsgInputFileUpload.sendFilesDirect`、`useAdminMaintenance.loadServerQuota` |
 | G-08 | P2 | vendor 房间扩展字段 | `event_perspective`、`external_ids` 各 1 条路由 | **零对接** | 两关键字在 `src/` 全仓 0 命中 |
 
 > **G-07 修正**：上一版写「3 条 `/_matrix/media/v1/quota/*`」，实际是 **4 条**——除 client 侧三条外还有 admin 侧 `GET /_synapse/admin/v1/media/quota`。页面设计时应把「用户配额」与「管理员全局配额」分开呈现。
@@ -191,7 +192,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 **处理原则**
 
 1. G-01 / G-02 是「管理后台已有 300 条端点、但有两块功能没有页面」，管理员此前只能靠 API 直调；阶段 B 已补页面，回归约束见 §7 与 §8。
-2. G-03 / G-07 是「有服务层无入口」，实现成本最低，适合与 P2 视觉收敛同批完成。
+2. G-03 / G-07 是「有服务层无入口」，实现成本最低，已在阶段 E 与 P2 视觉收敛同批落地；回归约束见 §7。
 3. G-04 / G-05 / G-06 涉及协议流程与新页面，必须先确认产品是否需要，再排期；未确认前不进开发队列。
 4. G-08 需要先确认 synapse-rust 侧字段语义与展示规则，属于体验增强，放最后。
 
@@ -216,8 +217,8 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 | 编号 | 问题 | 实测（2026-11-01） | 证据 |
 |---|---|---|---|
-| UI-P2-02 | 硬编码颜色 | `hardcoded_color: 24`（baseline 24，未反弹未下降） | `pnpm check:ratchet` |
-| UI-P2-03 | 弹窗未收敛 | `NModal` / `n-modal` 合计 **197 处 / 57 文件**（上一轮 298 / 101） | `rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx"` |
+| UI-P2-02 | 硬编码颜色 | `hardcoded_color: 0`（baseline 0，已收敛） | `pnpm check:ratchet` |
+| UI-P2-03 | 弹窗未收敛 | `NModal` / `n-modal` 合计 **170 处 / 50 文件**（上一轮 298 / 101；设置模块第一批 197 → 170） | `rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx"` |
 | UI-P2-10 | 组件内联样式上色 | 模块状态点用 `:style="{ backgroundColor: statusColor(...) }"` 上色，绕过令牌 | `AdminModules.vue:31` |
 | UI-P2-11 | 图标规范不一致 | 私密模式图标用 `<svg><text>` 字形，非 1.5px 线宽路径图标 | `components/rightBox/chatBox/ChatHeader/ChatHeaderToolbar.vue:134` |
 
@@ -257,7 +258,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 | 编号 | 问题 | 证据 |
 |---|---|---|
-| A-01 | `NModal` 197 处中未逐一确认焦点陷阱与 `aria-modal` | 需在 Storybook 启动后跑 `pnpm check:a11y`（脚本设计为 Storybook 不可达即 `exit 2`，**不得据此下结论**） |
+| A-01 | `NModal` 170 处中未逐一确认焦点陷阱与 `aria-modal` | 需在 Storybook 启动后跑 `pnpm check:a11y`（脚本设计为 Storybook 不可达即 `exit 2`，**不得据此下结论**） |
 | A-02 | 右侧栏拖拽把手无可访问名称与键盘替代 | `layout/right/index.vue` 把手为指针事件，无 `role`/`tabindex`/方向键处理 |
 | A-03 | 管理后台移动端菜单按钮有 `aria-expanded`，但侧栏收起按钮无同等待遇 | `AdminLayout.vue` 头部 `aria-expanded` 已有；`sidebarCollapsed` 无对应控件 |
 
@@ -277,28 +278,29 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | UI-P1-06 | P1 | 连接状态双横幅 | **已修复** | `ChatMain.vue` 顶部 `ChatBanners`；`SyncStatusBar.vue` 已无真实引用 |
 | UI-P1-07 | P1 | 断点体系分裂、主壳未适配 | **已修复** | `useResponsiveBreakpoint.DEFAULT_BREAKPOINTS`（1200/992/768）与 `responsive.scss` 同源；`useChatSidebar` 四档 |
 | UI-P2-01 | P2 | 缺 240px 可折叠信息面板 | **已修复** | `useChatSidebar.ts`（折叠/抽屉/隐藏）、`useRightPaneWidth.ts`（`DEFAULT_MIN = 240`）、`layout/right/index.vue`（弹性主区） |
-| UI-P2-02 | P2 | 硬编码颜色 24 处 | 仍成立 | `pnpm check:ratchet` |
-| UI-P2-03 | P2 | 弹窗 197 处 / 57 文件 | 仍成立（已下降） | `rg -e NModal -e n-modal src` |
+| UI-P2-02 | P2 | 硬编码颜色 24 处 | **已修复** | `pnpm check:ratchet`：hardcoded_color 24 → 0（`simple.scss`、`code-block.scss` 改用 `color-mix` + `--tjg-*`） |
+| UI-P2-03 | P2 | 弹窗 170 处 / 50 文件 | 仍成立（分批进行中：设置模块第一批已完成） | `rg -e NModal -e n-modal src` |
 | UI-P2-04 | P2 | 文档-代码核对机制缺失 | 仍成立 | 本文档 §1 |
 | UI-P2-05 | P2 | 解密失败无提示与重试 | **已修复** | `renderMessage/DecryptionFailureCard.vue`；`MatrixMessageService.retryDecryptMessage`（SDK `attemptDecryption(isRetry)`）；`sync.ts` 原地替换 |
 | UI-P2-06 | P2 | 空间空态不区分场景 | **已修复** | `components/space/SpaceRoomGrid.vue`（`no-rooms` / `no-results`）；`EmptyState.vue` 6 类插图 |
 | UI-P2-07 | P2 | 私密模式 / 阅后即焚 / 语音 / 通话入口未做能力门控 | **已修复** | `ChatHeader/ChatHeaderToolbar.vue`（voip / burn-after-read 区块）、`BurnAfterReadBar.vue` |
 | UI-P2-08 | P2 | 脱水设备 fail-closed；Mjolnir 未按 Admin 能力隐藏 | **已修复** | `DehydratedDeviceSection.vue`；`MjolnirSettings.vue` 的 `PermissionGuard :require="'admin-api'"` |
 | UI-P2-09 | P2 | 能力未加载时 Tab 闪烁 | **已修复** | `SettingsSidebar.vue` 的 `capabilitiesLoaded` 骨架 + 搜索禁用 |
-| UI-P2-10 | P2 | 内联样式上色绕过令牌 | 仍成立 | `AdminModules.vue:31` |
-| UI-P2-11 | P2 | 私密模式图标非线宽路径图标 | 仍成立 | `ChatHeader/ChatHeaderToolbar.vue:134` |
+| UI-P2-10 | P2 | 内联样式上色绕过令牌 | **已修复** | `AdminModules.vue` 状态点改 `status-dot--<status>` 类，映射 `--tjg-status-*` |
+| UI-P2-11 | P2 | 私密模式图标非线宽路径图标 | **已修复** | `ChatHeader/ChatHeaderToolbar.vue` 锁形路径（`stroke-width: 1.5`，无字形文本） |
 | A-01 | — | Modal 焦点陷阱未逐一确认 | 未取证 | `pnpm check:a11y`（需 Storybook） |
 | A-02 | — | 拖拽把手无可访问名称 | 仍成立 | `layout/right/index.vue` |
 | A-03 | — | 侧栏收起按钮缺 `aria-expanded` | 仍成立 | `AdminLayout.vue` 头部 |
 | G-01 / G-02 | P1 | 遥测、后台更新无页面 | **已落地** | `AdminTelemetry.vue`、`AdminBackgroundUpdates.vue`（`useAdminNav` 已登记） |
-| G-03 ~ G-08 | — | 后端能力前端无入口 | 仍成立 | 见 §2 |
+| G-03 / G-07 | P1 | 线程冻结/静音、媒体配额无入口 | **已落地** | `ThreadPanel.vue`；`StorageSettings.vue` + `useMsgInputFileUpload.sendFilesDirect` + `AdminMaintenance.vue`（详见 §7） |
+| G-04 ~ G-06 / G-08 | — | 后端能力前端无入口 | 仍成立 | 见 §2 |
 
 > **计数（按编号 × 状态，不混算）**
 >
 > - P1 共 7 个编号：已修复 7（UI-P1-01/02/03/04/05/06/07），无遗留。
-> - P2 共 11 个编号：已修复 6（UI-P2-01、05、06、07、08、09）、仍成立 5（UI-P2-02/03/04/10/11）。
+> - P2 共 11 个编号：已修复 9（UI-P2-01、02、05、06、07、08、09、10、11）、仍成立 2（UI-P2-03、04）。
 > - 无障碍 3 个编号：未取证 1（A-01）、仍成立 2（A-02、A-03）。
-> - 能力缺口 8 个编号（G-01 ~ G-08），不计入 UI 缺陷总数：已落地 2（G-01、G-02）、仍成立 6（G-03 ~ G-08）。
+> - 能力缺口 8 个编号（G-01 ~ G-08），不计入 UI 缺陷总数：已落地 4（G-01、G-02、G-03、G-07）、仍成立 4（G-04 ~ G-06、G-08）。
 
 ---
 
@@ -553,27 +555,42 @@ pnpm test:run tests/lint/design-baseline.test.ts
 
 ---
 
-### 6.2 UI-P2-02 硬编码颜色收敛【仍成立】
+### 6.2 UI-P2-02 硬编码颜色收敛【已落地 2026-11-02】
 
-**现状**：`pnpm check:ratchet` ⇒ `hardcoded_color: 24`（baseline 24）。
+**现状**：`pnpm check:ratchet` ⇒ `hardcoded_color: 0`（baseline 0，已从 24 下调至 0）。
 
-**修改方案**
+**已落地实现**
 
-1. 逐处替换为 `design-tokens.css` 已有令牌，缺失的先补令牌（含暗色值）。
-2. ratchet 基线从 24 逐步下调，每批替换后同步改基线，**禁止只改代码不改基线**。
+1. 逐处替换为 `design-tokens.css` 已有令牌（含暗色值）；透明叠色统一改用 `color-mix(in srgb, var(--tjg-*) N%, transparent)`。
+2. ratchet 基线同步下调至 0，`pnpm check:ratchet` 与基线一致。
 
-**验收标准**：`hardcoded_color` 单调下降至 0；亮/暗两套视觉回归无突变。
+**回归约束**：新增代码不得再引入 `#xxx` / `rgb()` / `rgba()` 字面值；`hardcoded_color` 基线只能保持 0 或继续下降。
 
 ---
 
-### 6.3 UI-P2-03 弹窗收敛为抽屉【仍成立】
+### 6.3 UI-P2-03 弹窗收敛为抽屉【进行中：设置模块第一批已落地】
 
-**现状**：197 处 / 57 文件（上一轮 298 / 101，已下降约 34%）。
+**现状**：170 处 / 50 文件（上一轮 298 / 101，本批 197 → 170）。
+
+**已完成批次（2026-11-02，设置模块第一批）**
+
+| 文件 | 改动 | 保留 Modal 的部分 |
+| :--- | :--- | :--- |
+| `settingsWindow/tabs/MjolnirSettings.vue` | 3 个添加规则弹窗（房间/用户/服务器）→ 右栏抽屉 380 | 删除规则仍用 `dialog.warning` |
+| `settingsWindow/tabs/FriendsSettings.vue` | 新建分组 / 编辑分组 → 抽屉 | 删除分组用 `dialog.warning` |
+| `settingsWindow/tabs/KeyboardSettings.vue` | 快捷键编辑（只读展示）→ 抽屉 | — |
+| `settingsWindow/tabs/SessionSettings.vue` | 重命名设备 → 抽屉 | 删除会话用 `dialog.warning` |
+| `settingsWindow/tabs/sections/BlockedUsersSection.vue` | 添加屏蔽用户 → 抽屉 | 取消屏蔽直接执行 |
+| `settingsWindow/tabs/sections/PrivateChatSection.vue` | 设置密码 → 抽屉 | — |
+| `settingsWindow/tabs/AddPusherDialog.vue` | 整卡改抽屉，表单标签改 `top` 适配窄栏 | — |
+| `settingsWindow/tabs/EncryptionSettings.vue` | 未改：设备密钥指纹为只读信息展示 | 保留 Modal |
 
 **修改方案**
 
 1. 分类：编辑类（设置、房间信息、好友资料）→ 右栏抽屉；确认类（删除、封禁、退出）→ 保留 Modal；一次性提示 → Toast/Dialog。
 2. 按模块分批：设置 → 房间 → 好友 → 空间 → 管理后台，每批更新基线计数。
+3. 统一写法：`<n-drawer placement="right" :width="380">` + `<n-drawer-content :title closable>`，底部按钮进 `#footer`（UnoCSS `flex justify-end gap-12px`，不新增内联样式）。
+4. 语义保持：原 `preset="dialog"` 的 `@positive-click` 返回 `false` 不关闭 → 抽屉侧用 `submitX` 包装器判断 `=== false` 后显式关闭；handler 自身已关闭的不再重复包装。
 
 **验收标准**：计数继续单调下降；关键编辑路径不再打开居中大弹窗。
 
@@ -655,15 +672,19 @@ pnpm test:run tests/lint/design-baseline.test.ts
 
 ---
 
-### 6.9 UI-P2-10 移除内联样式上色【仍成立】
+### 6.9 UI-P2-10 移除内联样式上色【已落地 2026-11-02】
 
-`AdminModules.vue:31` 的 `statusColor()` 内联 `backgroundColor` 改为状态类 + `--tjg-status-*` 令牌，`statusTagType` 保持语义映射。
+`AdminModules.vue` 的 `statusColor()` 内联 `backgroundColor` 已改为 `status-dot--{status}` 状态类 + `--tjg-status-*` 令牌，`statusTagType` 保持语义映射。
+
+**回归约束**：`AdminModules.test.ts` 断言状态点无内联 `style`、只带状态类名，防止回退。
 
 ---
 
-### 6.10 UI-P2-11 私密模式图标改为线宽路径图标【仍成立】
+### 6.10 UI-P2-11 私密模式图标改为线宽路径图标【已落地 2026-11-02】
 
-`ChatHeader/ChatHeaderToolbar.vue:134` 的 `<svg><text>S</text>` 改为 24×24、`stroke-width="1.5"` 的锁形路径；激活态用 `--tjg-color-danger-500`。
+`ChatHeader/ChatHeaderToolbar.vue` 的 `<svg><text>S</text>` 已改为 24×24、`stroke-width="1.5"` 的锁形路径（`rect` 锁体 + `path` 锁梁），颜色随 `currentColor`，激活态由按钮自身 token 控制。
+
+**回归约束**：`ChatHeaderToolbar.test.ts` 断言图标为路径绘制且不含 `<text>` 字形节点。
 
 ---
 
@@ -686,6 +707,9 @@ pnpm test:run tests/lint/design-baseline.test.ts
 
 - G-01 已落地：`views/admin/AdminTelemetry.vue` + `composables/admin/useAdminTelemetry.ts`，路由 `adminTelemetry`（`/admin/telemetry`），导航项 `admin.nav.telemetry`；`status` 与 `metrics` 同时为空时降级为「能力未启用」，告警确认走二次确认对话框并 `refresh=false` 重拉。
 - G-02 已落地：`views/admin/AdminBackgroundUpdates.vue` + `composables/admin/useAdminBackgroundUpdates.ts`，路由 `adminBackgroundUpdates`（`/admin/background-updates`），导航项 `admin.nav.backgroundUpdates`；启动/中止/重试/清锁均二次确认，自动刷新为显式开关（`AUTO_REFRESH_INTERVAL_MS = 15_000`），卸载时 `stopAutoRefresh` 停表。
+- G-03 已落地：`components/thread/ThreadPanel.vue` 头部新增冻结/静音状态标签与操作按钮（图标用 Iconify，非字形），状态经 `getRoomThreadViaApi` 读取 `detail.summary.is_frozen` / `detail.user_subscription.is_muted`；冻结时 footer 输入区降级为只读并给出原因，发送入口双重守卫；操作失败保留原状态并回执错误。测试：`ThreadPanel.test.ts`（10 例）。
+- G-07 已落地：三处接线——① `views/settingsWindow/tabs/StorageSettings.vue` 新增服务端媒体配额三态卡片（loading / available / unavailable），展示已用/上限/剩余/媒体数量与告警列表；② `composables/chat/useMsgInputFileUpload.sendFilesDirect` 在上传前批量预检 `checkQuota()`，仅当 `limit > 0 && remaining < 总大小` 时提示并中止（不建队列、不插占位消息）；③ `views/admin/AdminMaintenance.vue` 新增服务端全局配额卡（`getServerQuota()`）。配额接口失败时 `checkQuota` 返回 `null` 直接放行，`getQuotaStats` / `getQuotaAlerts` 各自降级，不阻断上传主链。测试：`StorageSettings.test.ts`（8 例）、`useMsgInputFileUpload.test.ts`（4 例）、`useAdminMaintenance.test.ts`（9 例）。
+- 回归约束：G-03 不得移除冻结只读降级与发送守卫；G-07 不得把配额预检改成抛错阻断，也不得在 7 个 `upload*` 方法内逐个加检查（会造成每次上传额外请求）。
 - 回归约束：两页不得删除 `unsupported` 降级与二次确认；后台更新轮询不得改为不可停的默认轮询。
 - 测试：`useAdminTelemetry.test.ts`、`useAdminBackgroundUpdates.test.ts`、`AdminTelemetry.test.ts`、`AdminBackgroundUpdates.test.ts`。
 
@@ -721,8 +745,8 @@ pnpm test:run tests/lint/design-baseline.test.ts
 
 **阶段 E：视觉与低风险能力（P2）**
 
-10. UI-P2-02（令牌替换，基线同步下调）、UI-P2-10、UI-P2-11。
-11. UI-P2-03（弹窗分批）、G-03、G-07。
+10. 【已完成 2026-11-02】UI-P2-02（令牌替换，`hardcoded_color` 基线 24 → 0）、UI-P2-10、UI-P2-11。
+11. 【G-03 / G-07 已完成 2026-11-02】线程冻结/静音、媒体配额三处接线；UI-P2-03（弹窗分批）仍待做。
 12. G-04 / G-05 / G-06 / G-08——需产品确认，确认后单独排期。
 
 **阶段 F：文档与守卫**
@@ -738,7 +762,7 @@ pnpm test:run tests/lint/design-baseline.test.ts
 | B | G-01、G-02（已完成 2026-11-02） | `useAdminNav` 基础（已具备） |
 | C | UI-P2-01（已完成 2026-11-02） | 阶段 A 的断点常量 |
 | D | UI-P2-05/06/08/09（已完成 2026-11-02） | 无 |
-| E | UI-P2-02/03/10/11、G-03/G-07 | 无 |
+| E | UI-P2-02/10/11、G-03/G-07（已完成 2026-11-02）；UI-P2-03 待做 | 无 |
 | F | UI-P2-04 | 其余阶段完成后统一核对 |
 
 ---
@@ -776,8 +800,8 @@ pnpm verify:sdk-pin
 **完成定义（Definition of Done）**
 
 1. P1 清零：UI-P1-05、UI-P1-07 关闭 + UI-P1-03 的第二写入点消除，且各项有对应单测/断言（UI-P1-01/02/04/06 已关闭，只需回归守住）。
-2. P2 收敛：`hardcoded_color` 与 `NModal` 计数均低于本文件记录的基线（24 / 197），且基线已同步下调。
-3. 能力缺口：G-01、G-02 已落地并有测试；G-03、G-05 ~ G-07 待补入口；G-04 / G-08 待产品结论。
+2. P2 收敛：`hardcoded_color` 已降到 0 并锁定基线；`NModal` 计数继续单调下降（当前 170，设置模块第一批 197 → 170），每批完成后同步下调记录基线。
+3. 能力缺口：G-01、G-02、G-03、G-07 已落地并有测试；G-05、G-06 待补入口；G-04 / G-08 待产品结论。
 4. 残留清理：`SyncStatusBar.vue` 与其实测已删除，`typings/` 无该符号。
 5. 未取证项清零：Worker 管理面、第三方 3PID、媒体子项三项补齐取证后再更新 §1.3；A-01 在 Storybook 可达后单独补测。
 6. 门禁全绿：`test:run`、`typecheck`、`check:ratchet`、`check-file-size`、`check-integration-map-freshness`、`verify:sdk-pin` 无失败。
@@ -838,7 +862,7 @@ node scripts/verify-sdk-pin.mjs
 node scripts/check-file-size.mjs
 
 # 本轮新增/复核用的取证
-rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx" --count-matches | wc -l     # 197
+rg -e NModal -e n-modal src --glob "*.vue" --glob "*.tsx" --count-matches | wc -l     # 170
 grep -rEl "respond-to-max" src | wc -l                                      # 16
 grep -rn "SyncStatusBar" src --include=*.vue --include=*.ts | grep -v typings/   # 空
 grep -rn "updateContactPresence\|updateUserPresence" src | grep -v __tests__     # 仅 wsPresenceHandler

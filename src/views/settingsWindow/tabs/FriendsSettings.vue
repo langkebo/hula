@@ -103,38 +103,55 @@
       </n-spin>
     </div>
 
-    <n-modal
-      v-model:show="showCreateGroup"
-      preset="dialog"
-      :title="t('setting.friends.groups.create_title')"
-      :positive-text="t('setting.friends.groups.create_confirm')"
-      :negative-text="t('setting.common.cancel')"
-      @positive-click="handleCreateGroup">
-      <n-form>
-        <n-form-item :label="t('setting.friends.groups.name_label')">
-          <n-input v-model:value="newGroupName" :placeholder="t('setting.friends.groups.name_placeholder')" />
-        </n-form-item>
-      </n-form>
-    </n-modal>
+    <n-drawer v-model:show="showCreateGroup" placement="right" :width="380">
+      <n-drawer-content :title="t('setting.friends.groups.create_title')" closable>
+        <n-form>
+          <n-form-item :label="t('setting.friends.groups.name_label')">
+            <n-input v-model:value="newGroupName" :placeholder="t('setting.friends.groups.name_placeholder')" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showCreateGroup = false">{{ t('setting.common.cancel') }}</n-button>
+            <n-button type="primary" @click="handleCreateGroup">
+              {{ t('setting.friends.groups.create_confirm') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
 
-    <n-modal
-      v-model:show="showEditGroup"
-      preset="dialog"
-      :title="t('setting.friends.groups.edit_title')"
-      :positive-text="t('setting.common.save')"
-      :negative-text="t('setting.common.cancel')"
-      @positive-click="handleSaveGroup">
-      <n-form>
-        <n-form-item :label="t('setting.friends.groups.name_label')">
-          <n-input v-model:value="editGroupName" :placeholder="t('setting.friends.groups.edit_placeholder')" />
-        </n-form-item>
-      </n-form>
-    </n-modal>
+    <n-drawer v-model:show="showEditGroup" placement="right" :width="380">
+      <n-drawer-content :title="t('setting.friends.groups.edit_title')" closable>
+        <n-form>
+          <n-form-item :label="t('setting.friends.groups.name_label')">
+            <n-input v-model:value="editGroupName" :placeholder="t('setting.friends.groups.edit_placeholder')" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showEditGroup = false">{{ t('setting.common.cancel') }}</n-button>
+            <n-button type="primary" @click="handleSaveGroup">{{ t('setting.common.save') }}</n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NButton, NDivider, NForm, NFormItem, NInput, NModal, NSpin, NSwitch, useDialog } from 'naive-ui'
+import {
+  NButton,
+  NDivider,
+  NDrawer,
+  NDrawerContent,
+  NForm,
+  NFormItem,
+  NInput,
+  NSpin,
+  NSwitch,
+  useDialog
+} from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -325,6 +342,7 @@ async function handleCreateGroup() {
   } catch {
     showFeedback(t('setting.friends.groups.create_failed'), 'error')
   }
+  showCreateGroup.value = false
 }
 
 function handleEditGroup(group: FriendGroup) {

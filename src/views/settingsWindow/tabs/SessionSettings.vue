@@ -73,24 +73,40 @@
     </div>
   </div>
 
-  <n-modal v-model:show="renameDialogVisible" preset="dialog" :title="t('setting.sessions.rename_device_title')">
-    <n-form>
-      <n-form-item :label="t('setting.sessions.device_name')">
-        <n-input v-model:value="newDeviceName" :placeholder="t('setting.sessions.device_name_placeholder')" />
-      </n-form-item>
-    </n-form>
-    <template #action>
-      <n-button @click="renameDialogVisible = false">{{ t('setting.common.cancel') }}</n-button>
-      <n-button type="primary" @click="handleRenameDevice" :loading="renaming">
-        {{ t('setting.common.confirm') }}
-      </n-button>
-    </template>
-  </n-modal>
+  <n-drawer v-model:show="renameDialogVisible" placement="right" :width="380">
+    <n-drawer-content :title="t('setting.sessions.rename_device_title')" closable>
+      <n-form>
+        <n-form-item :label="t('setting.sessions.device_name')">
+          <n-input v-model:value="newDeviceName" :placeholder="t('setting.sessions.device_name_placeholder')" />
+        </n-form-item>
+      </n-form>
+      <template #footer>
+        <div class="flex justify-end gap-12px">
+          <n-button @click="renameDialogVisible = false">{{ t('setting.common.cancel') }}</n-button>
+          <n-button type="primary" @click="handleRenameDevice" :loading="renaming">
+            {{ t('setting.common.confirm') }}
+          </n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDivider, NEmpty, NForm, NFormItem, NInput, NModal, NSpin, NTag, useDialog } from 'naive-ui'
+import {
+  NButton,
+  NDivider,
+  NDrawer,
+  NDrawerContent,
+  NEmpty,
+  NForm,
+  NFormItem,
+  NInput,
+  NSpin,
+  NTag,
+  useDialog
+} from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'

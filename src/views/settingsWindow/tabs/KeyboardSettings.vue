@@ -60,18 +60,20 @@
     </div>
   </div>
 
-  <n-modal v-model:show="editingShortcut" preset="dialog" :title="t('setting.keyboard.edit_title')">
-    <div class="shortcut-editor">
-      <p>{{ t('setting.keyboard.edit_hint') }}</p>
-      <div class="current-keys">
-        <kbd v-for="key in currentEditingKeys" :key="key" class="key">{{ key }}</kbd>
+  <n-drawer v-model:show="editingShortcut" placement="right" :width="380">
+    <n-drawer-content :title="t('setting.keyboard.edit_title')" closable>
+      <div class="shortcut-editor">
+        <p>{{ t('setting.keyboard.edit_hint') }}</p>
+        <div class="current-keys">
+          <kbd v-for="key in currentEditingKeys" :key="key" class="key">{{ key }}</kbd>
+        </div>
       </div>
-    </div>
-  </n-modal>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
-import { NButton, NDivider, NInput, NModal, NSwitch } from 'naive-ui'
+import { NButton, NDivider, NDrawer, NDrawerContent, NInput, NSwitch } from 'naive-ui'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'

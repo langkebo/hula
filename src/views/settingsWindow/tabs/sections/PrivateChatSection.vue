@@ -53,40 +53,40 @@
     </div>
   </div>
 
-  <n-modal
-    v-model:show="showSecretChatDialog"
-    preset="card"
-    :title="t('setting.private_chat.set_password')"
-    class="w-400px">
-    <div class="secret-chat-form">
-      <n-form :model="secretChatForm" :rules="secretChatRules">
-        <n-form-item path="password" :label="t('setting.private_chat.password')">
-          <n-input
-            v-model:value="secretChatForm.password"
-            type="password"
-            :placeholder="t('setting.private_chat.password_placeholder')"
-            show-password-on="click" />
-        </n-form-item>
-        <n-form-item path="confirmPassword" :label="t('setting.private_chat.confirm_password')">
-          <n-input
-            v-model:value="secretChatForm.confirmPassword"
-            type="password"
-            :placeholder="t('setting.private_chat.confirm_password_placeholder')"
-            show-password-on="click" />
-        </n-form-item>
-      </n-form>
-      <div class="dialog-footer">
-        <n-button @click="showSecretChatDialog = false">{{ t('setting.common.cancel') }}</n-button>
-        <n-button type="primary" @click="handleSaveSecretChat" :loading="savingSecretChat">
-          {{ t('setting.common.save') }}
-        </n-button>
+  <n-drawer v-model:show="showSecretChatDialog" placement="right" :width="380">
+    <n-drawer-content :title="t('setting.private_chat.set_password')" closable>
+      <div class="secret-chat-form">
+        <n-form :model="secretChatForm" :rules="secretChatRules">
+          <n-form-item path="password" :label="t('setting.private_chat.password')">
+            <n-input
+              v-model:value="secretChatForm.password"
+              type="password"
+              :placeholder="t('setting.private_chat.password_placeholder')"
+              show-password-on="click" />
+          </n-form-item>
+          <n-form-item path="confirmPassword" :label="t('setting.private_chat.confirm_password')">
+            <n-input
+              v-model:value="secretChatForm.confirmPassword"
+              type="password"
+              :placeholder="t('setting.private_chat.confirm_password_placeholder')"
+              show-password-on="click" />
+          </n-form-item>
+        </n-form>
       </div>
-    </div>
-  </n-modal>
+      <template #footer>
+        <div class="flex justify-end gap-12px">
+          <n-button @click="showSecretChatDialog = false">{{ t('setting.common.cancel') }}</n-button>
+          <n-button type="primary" @click="handleSaveSecretChat" :loading="savingSecretChat">
+            {{ t('setting.common.save') }}
+          </n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
-import { NButton, NForm, NFormItem, NInput, NModal, NSelect, NSwitch, useDialog } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NSelect, NSwitch, useDialog } from 'naive-ui'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'

@@ -1,6 +1,6 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-02T08:04:28.609Z",
+  "updated_at": "2026-11-02T09:02:03.065Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
@@ -13,7 +13,7 @@
     },
     {
       "file": "src/views/admin/AdminUsers.vue",
-      "lines": 764
+      "lines": 762
     },
     {
       "file": "src/plugins/robot/layout/Left.vue",
@@ -61,7 +61,7 @@
     },
     {
       "file": "src/views/admin/AdminRooms.vue",
-      "lines": 653
+      "lines": 648
     },
     {
       "file": "src/components/rightBox/renderMessage/Video.vue",
@@ -141,7 +141,7 @@
     },
     {
       "file": "src/views/settingsWindow/tabs/FriendsSettings.vue",
-      "lines": 548
+      "lines": 555
     },
     {
       "file": "src/components/encryption/KeyRotationDialog.vue",
@@ -173,7 +173,7 @@
     },
     {
       "file": "src/views/settingsWindow/tabs/AccountSettings.vue",
-      "lines": 526
+      "lines": 528
     },
     {
       "file": "src/components/encryption/E2EEOnboardingDialog.vue",

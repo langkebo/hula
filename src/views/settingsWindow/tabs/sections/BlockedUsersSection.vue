@@ -15,23 +15,25 @@
     </div>
   </div>
 
-  <n-modal
-    v-model:show="showAddBlocked"
-    preset="dialog"
-    :title="t('setting.security.add_blocked_user_title')"
-    :positive-text="t('setting.security.add')"
-    :negative-text="t('setting.common.cancel')"
-    @positive-click="handleAddBlocked">
-    <n-form>
-      <n-form-item :label="t('setting.security.user_id_label')">
-        <n-input v-model:value="newBlockedUser" :placeholder="t('setting.security.user_id_placeholder')" />
-      </n-form-item>
-    </n-form>
-  </n-modal>
+  <n-drawer v-model:show="showAddBlocked" placement="right" :width="380">
+    <n-drawer-content :title="t('setting.security.add_blocked_user_title')" closable>
+      <n-form>
+        <n-form-item :label="t('setting.security.user_id_label')">
+          <n-input v-model:value="newBlockedUser" :placeholder="t('setting.security.user_id_placeholder')" />
+        </n-form-item>
+      </n-form>
+      <template #footer>
+        <div class="flex justify-end gap-12px">
+          <n-button @click="showAddBlocked = false">{{ t('setting.common.cancel') }}</n-button>
+          <n-button type="primary" @click="submitAddBlocked">{{ t('setting.security.add') }}</n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
-import { NButton, NEmpty, NForm, NFormItem, NInput, NModal, NSpin } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NEmpty, NForm, NFormItem, NInput, NSpin } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -119,6 +121,11 @@ async function handleAddBlocked() {
     showFeedback(t('setting.security.operation_failed'), 'error')
   }
   return true
+}
+
+async function submitAddBlocked() {
+  if ((await handleAddBlocked()) === false) return
+  showAddBlocked.value = false
 }
 
 async function handleUnblock(userId: string) {

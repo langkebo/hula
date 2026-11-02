@@ -28,6 +28,12 @@ vi.mock('naive-ui', () => ({
   NDivider: { name: 'NDivider', template: '<hr />' },
   NSpin: { name: 'NSpin', template: '<div><slot /></div>', props: ['show'] },
   NModal: { name: 'NModal', template: '<div v-if="show"><slot /></div>', props: ['show'] },
+  NDrawer: { name: 'NDrawer', template: '<div><slot /></div>', props: ['show'] },
+  NDrawerContent: {
+    name: 'NDrawerContent',
+    template: '<div><slot /><slot name="footer" /></div>',
+    props: ['title']
+  },
   NForm: { name: 'NForm', template: '<form><slot /></form>' },
   NFormItem: { name: 'NFormItem', template: '<div><slot /></div>', props: ['label'] },
   NInput: { name: 'NInput', template: '<input />', props: ['value', 'placeholder'] },

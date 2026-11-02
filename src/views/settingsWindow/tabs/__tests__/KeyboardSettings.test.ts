@@ -75,6 +75,12 @@ vi.mock('naive-ui', () => ({
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
   NInput: { name: 'NInput', template: '<input />', props: ['value', 'readonly'] },
   NModal: { name: 'NModal', template: '<div class="n-modal"><slot /></div>', props: ['show', 'preset', 'title'] },
+  NDrawer: { name: 'NDrawer', template: '<div><slot /></div>', props: ['show'] },
+  NDrawerContent: {
+    name: 'NDrawerContent',
+    template: '<div><slot /><slot name="footer" /></div>',
+    props: ['title']
+  },
   useMessage: () => ({ success: messageSuccessMock })
 }))
 

@@ -155,6 +155,12 @@ vi.mock('naive-ui', () => ({
   NEmpty: { name: 'NEmpty', template: '<div class="n-empty" />', props: ['description'] },
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
   NModal: { name: 'NModal', template: '<div class="n-modal"><slot /></div>', props: ['show'] },
+  NDrawer: { name: 'NDrawer', template: '<div><slot /></div>', props: ['show'] },
+  NDrawerContent: {
+    name: 'NDrawerContent',
+    template: '<div><slot /><slot name="footer" /></div>',
+    props: ['title']
+  },
   NForm: { name: 'NForm', template: '<form><slot /></form>', props: ['model', 'rules'] },
   NFormItem: { name: 'NFormItem', template: '<div><slot /></div>', props: ['path', 'label'] },
   NInput: { name: 'NInput', template: '<input />', props: ['value', 'type', 'placeholder'] },
