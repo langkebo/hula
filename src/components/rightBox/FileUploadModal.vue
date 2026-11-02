@@ -1,6 +1,5 @@
 <template>
   <n-modal
-    :trap-focus="false"
     v-model:show="visible"
     :mask-closable="false"
     class="rounded-8px"
