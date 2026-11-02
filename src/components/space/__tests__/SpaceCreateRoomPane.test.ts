@@ -39,14 +39,21 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ warn: vi.fn(), error: vi.fn(), info: vi.fn() })
 }))
 
-// Mock naive-ui：NModal 渲染 default + footer 插槽；NForm 暴露 validate()；NInput/NSwitch 受控
+// Mock naive-ui：NDrawer 渲染 default + footer 插槽；NForm 暴露 validate()；NInput/NSwitch 受控
 vi.mock('naive-ui', () => {
   return {
-    NModal: defineComponent({
-      name: 'NModal',
+    NDrawer: defineComponent({
+      name: 'NDrawer',
       props: { show: Boolean },
       setup(_, { slots }) {
-        return () => h('div', { class: 'n-modal' }, [slots.default?.(), slots.footer?.()])
+        return () => h('div', { class: 'n-drawer' }, [slots.default?.()])
+      }
+    }),
+    NDrawerContent: defineComponent({
+      name: 'NDrawerContent',
+      props: { title: String },
+      setup(_, { slots }) {
+        return () => h('div', { class: 'n-drawer-content' }, [slots.default?.(), slots.footer?.()])
       }
     }),
     NForm: defineComponent({
@@ -140,7 +147,7 @@ describe('SpaceCreateRoomPane', () => {
   // (a) 渲染
   it('renders the create room form with name, topic and suggested fields', () => {
     const wrapper = mountPane()
-    expect(wrapper.find('.n-modal').exists()).toBe(true)
+    expect(wrapper.find('.n-drawer').exists()).toBe(true)
     expect(wrapper.findAll('.n-form-item')).toHaveLength(3)
     expect(wrapper.find('button.n-button--primary').exists()).toBe(true)
   })

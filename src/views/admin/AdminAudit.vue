@@ -42,20 +42,22 @@
       striped
       class="mt-16px" />
 
-    <n-modal v-model:show="detailVisible" preset="card" :title="t('admin.audit.detail_title')" class="w-[600px]">
-      <n-descriptions :column="1" bordered label-placement="left" v-if="selectedEntry">
-        <n-descriptions-item :label="t('admin.audit.col_id')">{{ selectedEntry.id }}</n-descriptions-item>
-        <n-descriptions-item :label="t('admin.audit.col_type')">{{ selectedEntry.type }}</n-descriptions-item>
-        <n-descriptions-item :label="t('admin.audit.col_user')">{{ selectedEntry.user_id }}</n-descriptions-item>
-        <n-descriptions-item :label="t('admin.audit.col_target')">{{ selectedEntry.target }}</n-descriptions-item>
-        <n-descriptions-item :label="t('admin.audit.col_time')">
-          {{ new Date(selectedEntry.timestamp).toLocaleString() }}
-        </n-descriptions-item>
-        <n-descriptions-item :label="t('admin.audit.col_details')">
-          <n-code :code="JSON.stringify(selectedEntry.details, null, 2)" language="json" />
-        </n-descriptions-item>
-      </n-descriptions>
-    </n-modal>
+    <n-drawer v-model:show="detailVisible" placement="right" :width="520">
+      <n-drawer-content :title="t('admin.audit.detail_title')" closable>
+        <n-descriptions :column="1" bordered label-placement="left" v-if="selectedEntry">
+          <n-descriptions-item :label="t('admin.audit.col_id')">{{ selectedEntry.id }}</n-descriptions-item>
+          <n-descriptions-item :label="t('admin.audit.col_type')">{{ selectedEntry.type }}</n-descriptions-item>
+          <n-descriptions-item :label="t('admin.audit.col_user')">{{ selectedEntry.user_id }}</n-descriptions-item>
+          <n-descriptions-item :label="t('admin.audit.col_target')">{{ selectedEntry.target }}</n-descriptions-item>
+          <n-descriptions-item :label="t('admin.audit.col_time')">
+            {{ new Date(selectedEntry.timestamp).toLocaleString() }}
+          </n-descriptions-item>
+          <n-descriptions-item :label="t('admin.audit.col_details')">
+            <n-code :code="JSON.stringify(selectedEntry.details, null, 2)" language="json" />
+          </n-descriptions-item>
+        </n-descriptions>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
@@ -68,8 +70,9 @@ import {
   NDatePicker,
   NDescriptions,
   NDescriptionsItem,
+  NDrawer,
+  NDrawerContent,
   NInput,
-  NModal,
   NPageHeader,
   NSelect,
   NSpace,

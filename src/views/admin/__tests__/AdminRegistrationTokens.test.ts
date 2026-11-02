@@ -132,11 +132,18 @@ vi.mock('naive-ui', async () => {
           })
       }
     }),
-    NModal: defineComponent({
-      name: 'NModal',
-      props: ['show', 'preset', 'title'],
+    NDrawer: defineComponent({
+      name: 'NDrawer',
+      props: ['show'],
       setup(props, { slots }) {
-        return () => (props.show ? h('div', { 'data-test': 'NModal' }, [slots.default?.(), slots.action?.()]) : null)
+        return () => (props.show ? h('div', { 'data-test': 'NDrawer' }, slots.default?.()) : null)
+      }
+    }),
+    NDrawerContent: defineComponent({
+      name: 'NDrawerContent',
+      props: ['title'],
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': 'NDrawerContent' }, [slots.default?.(), slots.footer?.()])
       }
     }),
     NPopconfirm: defineComponent({
@@ -211,7 +218,7 @@ describe('AdminRegistrationTokens', () => {
     await createButton!.trigger('click')
     await flushPromises()
 
-    const modal = wrapper.findComponent({ name: 'NModal' })
+    const modal = wrapper.findComponent({ name: 'NDrawer' })
     expect(modal.exists()).toBe(true)
   })
 

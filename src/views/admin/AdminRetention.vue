@@ -26,25 +26,27 @@
       :row-key="(row: RetentionPolicy) => row.roomId"
       striped />
 
-    <n-modal v-model:show="editVisible" preset="dialog" :title="t('admin.retention.edit_title')">
-      <n-form :model="editForm" label-placement="left" label-width="120px">
-        <n-form-item :label="t('admin.retention.col_room')">
-          <n-input v-model:value="editForm.roomId" disabled />
-        </n-form-item>
-        <n-form-item :label="t('admin.retention.min_lifetime')">
-          <n-input-number v-model:value="editForm.minLifetime" :min="0" :placeholder="t('admin.retention.ms_unit')" />
-        </n-form-item>
-        <n-form-item :label="t('admin.retention.max_lifetime')">
-          <n-input-number v-model:value="editForm.maxLifetime" :min="0" :placeholder="t('admin.retention.ms_unit')" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-space>
-          <n-button @click="editVisible = false">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" @click="savePolicy" :loading="saveLoading">{{ t('common.save') }}</n-button>
-        </n-space>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="editVisible" placement="right" :width="380">
+      <n-drawer-content :title="t('admin.retention.edit_title')" closable>
+        <n-form :model="editForm" label-placement="left" label-width="120px">
+          <n-form-item :label="t('admin.retention.col_room')">
+            <n-input v-model:value="editForm.roomId" disabled />
+          </n-form-item>
+          <n-form-item :label="t('admin.retention.min_lifetime')">
+            <n-input-number v-model:value="editForm.minLifetime" :min="0" :placeholder="t('admin.retention.ms_unit')" />
+          </n-form-item>
+          <n-form-item :label="t('admin.retention.max_lifetime')">
+            <n-input-number v-model:value="editForm.maxLifetime" :min="0" :placeholder="t('admin.retention.ms_unit')" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="editVisible = false">{{ t('common.cancel') }}</n-button>
+            <n-button type="primary" @click="savePolicy" :loading="saveLoading">{{ t('common.save') }}</n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
@@ -54,11 +56,12 @@ import {
   NAlert,
   NButton,
   NDataTable,
+  NDrawer,
+  NDrawerContent,
   NForm,
   NFormItem,
   NInput,
   NInputNumber,
-  NModal,
   NPageHeader,
   NTag
 } from 'naive-ui'

@@ -17,43 +17,44 @@
         size="small" />
     </n-flex>
 
-    <!-- Create / Edit Token Dialog -->
-    <n-modal
-      v-model:show="showDialog"
-      :title="isEditing ? t('admin.registration_tokens.edit_title') : t('admin.registration_tokens.create_title')"
-      preset="dialog">
-      <n-form :model="dialogForm" label-placement="left" label-width="100">
-        <n-form-item :label="t('admin.registration_tokens.token')">
-          <n-input
-            v-model:value="dialogForm.token"
-            :placeholder="t('admin.registration_tokens.token_auto')"
-            :disabled="isEditing" />
-        </n-form-item>
-        <n-form-item :label="t('admin.registration_tokens.uses_allowed')">
-          <n-input-number
-            v-model:value="dialogForm.usesAllowed"
-            :min="0"
-            :placeholder="t('admin.registration_tokens.unlimited')"
-            class="w-full" />
-        </n-form-item>
-        <n-form-item :label="t('admin.registration_tokens.expiry_time')">
-          <n-date-picker v-model:value="dialogForm.expiryTime" type="datetime" clearable class="w-full" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-flex justify="end" :size="12">
-          <n-button @click="showDialog = false">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" :loading="submitting" @click="handleSubmit">
-            {{ t('common.confirm') }}
-          </n-button>
-        </n-flex>
-      </template>
-    </n-modal>
+    <!-- Create / Edit Token Drawer -->
+    <n-drawer v-model:show="showDialog" placement="right" :width="380">
+      <n-drawer-content
+        :title="isEditing ? t('admin.registration_tokens.edit_title') : t('admin.registration_tokens.create_title')"
+        closable>
+        <n-form :model="dialogForm" label-placement="left" label-width="100">
+          <n-form-item :label="t('admin.registration_tokens.token')">
+            <n-input
+              v-model:value="dialogForm.token"
+              :placeholder="t('admin.registration_tokens.token_auto')"
+              :disabled="isEditing" />
+          </n-form-item>
+          <n-form-item :label="t('admin.registration_tokens.uses_allowed')">
+            <n-input-number
+              v-model:value="dialogForm.usesAllowed"
+              :min="0"
+              :placeholder="t('admin.registration_tokens.unlimited')"
+              class="w-full" />
+          </n-form-item>
+          <n-form-item :label="t('admin.registration_tokens.expiry_time')">
+            <n-date-picker v-model:value="dialogForm.expiryTime" type="datetime" clearable class="w-full" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showDialog = false">{{ t('common.cancel') }}</n-button>
+            <n-button type="primary" :loading="submitting" @click="handleSubmit">
+              {{ t('common.confirm') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NButton, NPopconfirm, NSpace, NTag } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NPopconfirm, NSpace, NTag } from 'naive-ui'
 import { h, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type RegistrationToken, useAdminRegistrationTokens } from '@/composables/admin'

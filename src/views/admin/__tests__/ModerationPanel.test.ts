@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { h } from 'vue'
+import { defineComponent, h } from 'vue'
 import ModerationPanel from '../ModerationPanel.vue'
 
 vi.mock('vue-i18n', () => ({
@@ -25,6 +25,21 @@ vi.mock('naive-ui', async (importOriginal) => {
   const actual = await importOriginal<typeof import('naive-ui')>()
   return {
     ...actual,
+    // 抽屉在 jsdom 下会 teleport 到 body，桩掉以便直接断言内容与底部按钮
+    NDrawer: defineComponent({
+      name: 'NDrawer',
+      props: ['show'],
+      setup(props, { slots }) {
+        return () => (props.show ? h('div', { class: 'n-drawer' }, slots.default?.()) : null)
+      }
+    }),
+    NDrawerContent: defineComponent({
+      name: 'NDrawerContent',
+      props: ['title'],
+      setup(_, { slots }) {
+        return () => h('div', { class: 'n-drawer-content' }, [slots.default?.(), slots.footer?.()])
+      }
+    }),
     useDialog: () => ({
       warning: (opts: { onPositiveClick?: () => void }) => {
         if (confirmState.value) {
@@ -333,7 +348,7 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await wrapper.find('[data-testid="event-report-action-resolve"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('.n-modal').exists()).toBe(true)
+    expect(wrapper.find('.n-drawer').exists()).toBe(true)
     await wrapper.find('[data-testid="event-report-action-reason"]').setValue('resolved by admin')
     await wrapper.find('[data-testid="event-report-action-confirm"]').trigger('click')
     await flushPromises()

@@ -79,7 +79,30 @@ vi.mock('naive-ui', () => {
         return () => h('div', { 'data-test': 'NEmpty', 'data-description': props.description })
       }
     }),
-    NModal: passthrough('NModal'),
+    NDrawer: defineComponent({
+      name: 'NDrawer',
+      props: {
+        show: {
+          type: Boolean,
+          default: false
+        }
+      },
+      setup(props, { slots }) {
+        return () => (props.show ? h('div', { 'data-test': 'NDrawer' }, slots.default?.()) : null)
+      }
+    }),
+    NDrawerContent: defineComponent({
+      name: 'NDrawerContent',
+      props: {
+        title: {
+          type: String,
+          default: ''
+        }
+      },
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': 'NDrawerContent' }, [slots.default?.(), slots.footer?.()])
+      }
+    }),
     NInput: defineComponent({
       name: 'NInput',
       props: {
@@ -186,5 +209,29 @@ describe('FriendGroupView', () => {
 
     expect(wrapper.text()).toContain('Backend Guild')
     expect(wrapper.text()).not.toContain('Design Team')
+  })
+
+  it('opens the create-group drawer and submits the new group name', async () => {
+    useFriendsMock.createFriendGroup.mockResolvedValue(undefined)
+
+    const wrapper = mount(FriendGroupView)
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="NDrawer"]').exists()).toBe(false)
+
+    await wrapper.get('[aria-label="friend.group.create"]').trigger('click')
+
+    const drawer = wrapper.get('[data-test="NDrawer"]')
+    expect(drawer.find('[data-test="NDrawerContent"]').exists()).toBe(true)
+
+    await drawer.get('input').setValue('New Team')
+
+    const confirmButton = drawer.findAll('button').find((button) => button.text() === 'common.confirm')
+    expect(confirmButton).toBeTruthy()
+    await confirmButton?.trigger('click')
+    await flushPromises()
+
+    expect(useFriendsMock.createFriendGroup).toHaveBeenCalledWith('New Team')
+    expect(wrapper.find('[data-test="NDrawer"]').exists()).toBe(false)
   })
 })

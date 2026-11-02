@@ -33,24 +33,26 @@
       :row-key="(row: EventReport) => row.id" />
   </n-space>
 
-  <n-modal :show="actionDialog.show" preset="dialog" :title="actionDialogTitle">
-    <n-input
-      data-testid="event-report-action-reason"
-      v-model:value="actionDialog.reason"
-      type="textarea"
-      :rows="3"
-      :placeholder="t('moderation.event_reports.dialog.reasonPlaceholder')" />
-    <template #action>
-      <n-space>
-        <n-button data-testid="event-report-action-cancel" @click="closeActionDialog">
-          {{ t('common.cancel') }}
-        </n-button>
-        <n-button data-testid="event-report-action-confirm" type="primary" @click="confirmAction">
-          {{ t('common.confirm') }}
-        </n-button>
-      </n-space>
-    </template>
-  </n-modal>
+  <n-drawer v-model:show="actionDialog.show" placement="right" :width="380">
+    <n-drawer-content :title="actionDialogTitle" closable>
+      <n-input
+        data-testid="event-report-action-reason"
+        v-model:value="actionDialog.reason"
+        type="textarea"
+        :rows="3"
+        :placeholder="t('moderation.event_reports.dialog.reasonPlaceholder')" />
+      <template #footer>
+        <div class="flex justify-end gap-12px">
+          <n-button data-testid="event-report-action-cancel" @click="closeActionDialog">
+            {{ t('common.cancel') }}
+          </n-button>
+          <n-button data-testid="event-report-action-confirm" type="primary" @click="confirmAction">
+            {{ t('common.confirm') }}
+          </n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
@@ -59,8 +61,9 @@ import {
   type DataTableColumns,
   NButton,
   NDataTable,
+  NDrawer,
+  NDrawerContent,
   NInput,
-  NModal,
   NSelect,
   NSpace,
   NStatistic,

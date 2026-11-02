@@ -63,25 +63,27 @@
       </n-tabs>
     </n-card>
 
-    <n-modal v-model:show="showAddFilterModal" preset="dialog" :title="t('moderation.addFilter')">
-      <n-form ref="formRef" :model="filterForm" label-placement="left">
-        <n-form-item :label="t('moderation.filterType')" path="type">
-          <n-select v-model:value="filterForm.type" :options="filterTypeOptions" />
-        </n-form-item>
-        <n-form-item :label="t('moderation.filterPattern')" path="pattern">
-          <n-input v-model:value="filterForm.pattern" :placeholder="t('moderation.filterPatternPlaceholder')" />
-        </n-form-item>
-        <n-form-item :label="t('moderation.filterAction')" path="action">
-          <n-select v-model:value="filterForm.action" :options="filterActionOptions" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-space>
-          <n-button @click="showAddFilterModal = false">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" @click="handleAddFilter">{{ t('common.add') }}</n-button>
-        </n-space>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="showAddFilterModal" placement="right" :width="380">
+      <n-drawer-content :title="t('moderation.addFilter')" closable>
+        <n-form ref="formRef" :model="filterForm" label-placement="left">
+          <n-form-item :label="t('moderation.filterType')" path="type">
+            <n-select v-model:value="filterForm.type" :options="filterTypeOptions" />
+          </n-form-item>
+          <n-form-item :label="t('moderation.filterPattern')" path="pattern">
+            <n-input v-model:value="filterForm.pattern" :placeholder="t('moderation.filterPatternPlaceholder')" />
+          </n-form-item>
+          <n-form-item :label="t('moderation.filterAction')" path="action">
+            <n-select v-model:value="filterForm.action" :options="filterActionOptions" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showAddFilterModal = false">{{ t('common.cancel') }}</n-button>
+            <n-button type="primary" @click="handleAddFilter">{{ t('common.add') }}</n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
@@ -92,12 +94,13 @@ import {
   NButton,
   NCard,
   NDataTable,
+  NDrawer,
+  NDrawerContent,
   NForm,
   NFormItem,
   NInput,
   NList,
   NListItem,
-  NModal,
   NSelect,
   NSpace,
   NTabPane,

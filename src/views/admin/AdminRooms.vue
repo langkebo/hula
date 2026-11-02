@@ -23,240 +23,256 @@
       :pagination="{ pageSize: 20 }"
       :row-key="(row: RoomInfo) => row.roomId" />
 
-    <n-modal v-model:show="showRoomDetail" :title="t('admin.rooms.roomDetail')" preset="dialog" class="w-[800px]">
-      <template v-if="selectedRoom">
-        <n-descriptions bordered :column="2" label-placement="left" class="mb-16px">
-          <n-descriptions-item :label="t('admin.rooms.roomId')" :span="2">
-            {{ selectedRoom.roomId }}
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.rooms.name')">{{ selectedRoom.name || '-' }}</n-descriptions-item>
-          <n-descriptions-item :label="t('admin.rooms.creator')">{{ selectedRoom.creator || '-' }}</n-descriptions-item>
-          <n-descriptions-item :label="t('admin.rooms.members')">{{ selectedRoom.joinedMembers }}</n-descriptions-item>
-          <n-descriptions-item :label="t('admin.rooms.localMembers')">
-            {{ selectedRoom.joinedLocalMembers }}
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.rooms.visibility')">
-            <n-tag :type="selectedRoom.public ? 'info' : 'default'" size="small">
-              {{ selectedRoom.public ? t('admin.rooms.public') : t('admin.rooms.private') }}
-            </n-tag>
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.rooms.createdAt')">
-            {{ selectedRoom.createTime ? new Date(selectedRoom.createTime).toLocaleString() : '-' }}
-          </n-descriptions-item>
-        </n-descriptions>
+    <n-drawer v-model:show="showRoomDetail" placement="right" :width="560">
+      <n-drawer-content :title="t('admin.rooms.roomDetail')" closable>
+        <template v-if="selectedRoom">
+          <n-descriptions bordered :column="2" label-placement="left" class="mb-16px">
+            <n-descriptions-item :label="t('admin.rooms.roomId')" :span="2">
+              {{ selectedRoom.roomId }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.rooms.name')">{{ selectedRoom.name || '-' }}</n-descriptions-item>
+            <n-descriptions-item :label="t('admin.rooms.creator')">
+              {{ selectedRoom.creator || '-' }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.rooms.members')">
+              {{ selectedRoom.joinedMembers }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.rooms.localMembers')">
+              {{ selectedRoom.joinedLocalMembers }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.rooms.visibility')">
+              <n-tag :type="selectedRoom.public ? 'info' : 'default'" size="small">
+                {{ selectedRoom.public ? t('admin.rooms.public') : t('admin.rooms.private') }}
+              </n-tag>
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.rooms.createdAt')">
+              {{ selectedRoom.createTime ? new Date(selectedRoom.createTime).toLocaleString() : '-' }}
+            </n-descriptions-item>
+          </n-descriptions>
 
-        <n-tabs type="line" animated>
-          <!-- Members Tab -->
-          <n-tab-pane name="members" :tab="t('admin.rooms.members')">
-            <n-spin :show="membersLoading">
-              <n-data-table
-                v-if="roomMembers.length > 0"
-                :columns="memberColumns"
-                :data="roomMembers"
-                :bordered="false"
-                size="small"
-                :pagination="{ pageSize: 10 }" />
-              <n-empty v-else :description="t('admin.rooms.noMembers')" class="py-24px" />
-            </n-spin>
-          </n-tab-pane>
+          <n-tabs type="line" animated>
+            <!-- Members Tab -->
+            <n-tab-pane name="members" :tab="t('admin.rooms.members')">
+              <n-spin :show="membersLoading">
+                <n-data-table
+                  v-if="roomMembers.length > 0"
+                  :columns="memberColumns"
+                  :data="roomMembers"
+                  :bordered="false"
+                  size="small"
+                  :pagination="{ pageSize: 10 }" />
+                <n-empty v-else :description="t('admin.rooms.noMembers')" class="py-24px" />
+              </n-spin>
+            </n-tab-pane>
 
-          <!-- Messages Tab -->
-          <n-tab-pane name="messages" :tab="t('admin.rooms.messages')">
-            <n-spin :show="messagesLoading">
-              <n-data-table
-                v-if="roomMessages.length > 0"
-                :columns="messageColumns"
-                :data="roomMessages"
-                :bordered="false"
-                size="small"
-                :pagination="{ pageSize: 10 }" />
-              <n-empty v-else :description="t('admin.rooms.noMessages')" class="py-24px" />
-              <div v-if="messagesPaginationToken" class="text-center mt-12px">
-                <n-button size="small" :loading="messagesLoading" @click="loadMoreMessages">
-                  {{ t('admin.rooms.loadMore') }}
-                </n-button>
-              </div>
-            </n-spin>
-          </n-tab-pane>
-
-          <!-- State Tab -->
-          <n-tab-pane name="state" :tab="t('admin.rooms.state')">
-            <n-spin :show="stateLoading">
-              <n-data-table
-                v-if="roomState.length > 0"
-                :columns="stateColumns"
-                :data="roomState"
-                :bordered="false"
-                size="small"
-                :pagination="{ pageSize: 10 }" />
-              <n-empty v-else :description="t('admin.rooms.noState')" class="py-24px" />
-            </n-spin>
-          </n-tab-pane>
-
-          <!-- Aliases Tab -->
-          <n-tab-pane name="aliases" :tab="t('admin.rooms.aliases')">
-            <n-spin :show="aliasesLoading">
-              <div v-if="roomAliases.length > 0">
-                <n-tag v-for="alias in roomAliases" :key="alias" closable class="m-4px" @close="handleRemoveAlias()">
-                  {{ alias }}
-                </n-tag>
-              </div>
-              <n-empty v-else :description="t('admin.rooms.noAliases')" class="py-24px" />
-            </n-spin>
-          </n-tab-pane>
-
-          <!-- Statistics Tab -->
-          <n-tab-pane name="statistics" :tab="t('admin.rooms.statistics')">
-            <n-spin :show="statsLoading">
-              <template v-if="roomStats">
-                <n-grid :cols="3" :x-gap="12" :y-gap="12">
-                  <n-gi>
-                    <n-card size="small">
-                      <n-statistic :label="t('admin.rooms.statsJoinedMembers')">
-                        {{ roomStats.joined_members ?? roomStats.joinedMembers ?? '-' }}
-                      </n-statistic>
-                    </n-card>
-                  </n-gi>
-                  <n-gi>
-                    <n-card size="small">
-                      <n-statistic :label="t('admin.rooms.statsJoinedLocalMembers')">
-                        {{ roomStats.joined_local_members ?? roomStats.joinedLocalMembers ?? '-' }}
-                      </n-statistic>
-                    </n-card>
-                  </n-gi>
-                  <n-gi>
-                    <n-card size="small">
-                      <n-statistic :label="t('admin.rooms.statsInvitedMembers')">
-                        {{ roomStats.invited_members ?? roomStats.invitedMembers ?? '-' }}
-                      </n-statistic>
-                    </n-card>
-                  </n-gi>
-                </n-grid>
-                <n-grid :cols="3" :x-gap="12" :y-gap="12" class="mt-12px">
-                  <n-gi>
-                    <n-card size="small">
-                      <n-statistic :label="t('admin.rooms.statsStateEvents')">
-                        {{ roomStats.state_events ?? roomStats.stateEvents ?? '-' }}
-                      </n-statistic>
-                    </n-card>
-                  </n-gi>
-                  <n-gi>
-                    <n-card size="small">
-                      <n-statistic :label="t('admin.rooms.statsVersion')">
-                        {{ roomStats.room_version ?? roomStats.roomVersion ?? '-' }}
-                      </n-statistic>
-                    </n-card>
-                  </n-gi>
-                  <n-gi>
-                    <n-card size="small">
-                      <n-statistic :label="t('admin.rooms.statsDepth')">
-                        {{ roomStats.depth ?? '-' }}
-                      </n-statistic>
-                    </n-card>
-                  </n-gi>
-                </n-grid>
-              </template>
-              <n-empty v-else :description="t('admin.rooms.noStats')" class="py-24px" />
-            </n-spin>
-          </n-tab-pane>
-
-          <!-- Actions Tab -->
-          <n-tab-pane name="actions" :tab="t('admin.rooms.actions')">
-            <n-space vertical>
-              <!-- Make Room Admin -->
-              <n-card size="small" :title="t('admin.rooms.makeAdmin')">
-                <n-space align="center">
-                  <n-input
-                    v-model:value="makeAdminUserId"
-                    :placeholder="t('admin.rooms.makeAdminPlaceholder')"
-                    class="w-[300px]" />
-                  <n-button size="small" type="primary" :loading="makeAdminLoading" @click="handleMakeAdmin">
-                    {{ t('admin.rooms.makeAdminBtn') }}
+            <!-- Messages Tab -->
+            <n-tab-pane name="messages" :tab="t('admin.rooms.messages')">
+              <n-spin :show="messagesLoading">
+                <n-data-table
+                  v-if="roomMessages.length > 0"
+                  :columns="messageColumns"
+                  :data="roomMessages"
+                  :bordered="false"
+                  size="small"
+                  :pagination="{ pageSize: 10 }" />
+                <n-empty v-else :description="t('admin.rooms.noMessages')" class="py-24px" />
+                <div v-if="messagesPaginationToken" class="text-center mt-12px">
+                  <n-button size="small" :loading="messagesLoading" @click="loadMoreMessages">
+                    {{ t('admin.rooms.loadMore') }}
                   </n-button>
-                </n-space>
-              </n-card>
+                </div>
+              </n-spin>
+            </n-tab-pane>
 
-              <!-- Force Join / Leave -->
-              <n-card size="small" :title="t('admin.rooms.forceActions')">
-                <n-space>
-                  <n-button size="small" type="primary" @click="showForceJoinDialog = true">
-                    {{ t('admin.rooms.forceJoin') }}
+            <!-- State Tab -->
+            <n-tab-pane name="state" :tab="t('admin.rooms.state')">
+              <n-spin :show="stateLoading">
+                <n-data-table
+                  v-if="roomState.length > 0"
+                  :columns="stateColumns"
+                  :data="roomState"
+                  :bordered="false"
+                  size="small"
+                  :pagination="{ pageSize: 10 }" />
+                <n-empty v-else :description="t('admin.rooms.noState')" class="py-24px" />
+              </n-spin>
+            </n-tab-pane>
+
+            <!-- Aliases Tab -->
+            <n-tab-pane name="aliases" :tab="t('admin.rooms.aliases')">
+              <n-spin :show="aliasesLoading">
+                <div v-if="roomAliases.length > 0">
+                  <n-tag v-for="alias in roomAliases" :key="alias" closable class="m-4px" @close="handleRemoveAlias()">
+                    {{ alias }}
+                  </n-tag>
+                </div>
+                <n-empty v-else :description="t('admin.rooms.noAliases')" class="py-24px" />
+              </n-spin>
+            </n-tab-pane>
+
+            <!-- Statistics Tab -->
+            <n-tab-pane name="statistics" :tab="t('admin.rooms.statistics')">
+              <n-spin :show="statsLoading">
+                <template v-if="roomStats">
+                  <n-grid :cols="3" :x-gap="12" :y-gap="12">
+                    <n-gi>
+                      <n-card size="small">
+                        <n-statistic :label="t('admin.rooms.statsJoinedMembers')">
+                          {{ roomStats.joined_members ?? roomStats.joinedMembers ?? '-' }}
+                        </n-statistic>
+                      </n-card>
+                    </n-gi>
+                    <n-gi>
+                      <n-card size="small">
+                        <n-statistic :label="t('admin.rooms.statsJoinedLocalMembers')">
+                          {{ roomStats.joined_local_members ?? roomStats.joinedLocalMembers ?? '-' }}
+                        </n-statistic>
+                      </n-card>
+                    </n-gi>
+                    <n-gi>
+                      <n-card size="small">
+                        <n-statistic :label="t('admin.rooms.statsInvitedMembers')">
+                          {{ roomStats.invited_members ?? roomStats.invitedMembers ?? '-' }}
+                        </n-statistic>
+                      </n-card>
+                    </n-gi>
+                  </n-grid>
+                  <n-grid :cols="3" :x-gap="12" :y-gap="12" class="mt-12px">
+                    <n-gi>
+                      <n-card size="small">
+                        <n-statistic :label="t('admin.rooms.statsStateEvents')">
+                          {{ roomStats.state_events ?? roomStats.stateEvents ?? '-' }}
+                        </n-statistic>
+                      </n-card>
+                    </n-gi>
+                    <n-gi>
+                      <n-card size="small">
+                        <n-statistic :label="t('admin.rooms.statsVersion')">
+                          {{ roomStats.room_version ?? roomStats.roomVersion ?? '-' }}
+                        </n-statistic>
+                      </n-card>
+                    </n-gi>
+                    <n-gi>
+                      <n-card size="small">
+                        <n-statistic :label="t('admin.rooms.statsDepth')">
+                          {{ roomStats.depth ?? '-' }}
+                        </n-statistic>
+                      </n-card>
+                    </n-gi>
+                  </n-grid>
+                </template>
+                <n-empty v-else :description="t('admin.rooms.noStats')" class="py-24px" />
+              </n-spin>
+            </n-tab-pane>
+
+            <!-- Actions Tab -->
+            <n-tab-pane name="actions" :tab="t('admin.rooms.actions')">
+              <n-space vertical>
+                <!-- Make Room Admin -->
+                <n-card size="small" :title="t('admin.rooms.makeAdmin')">
+                  <n-space align="center">
+                    <n-input
+                      v-model:value="makeAdminUserId"
+                      :placeholder="t('admin.rooms.makeAdminPlaceholder')"
+                      class="w-[300px]" />
+                    <n-button size="small" type="primary" :loading="makeAdminLoading" @click="handleMakeAdmin">
+                      {{ t('admin.rooms.makeAdminBtn') }}
+                    </n-button>
+                  </n-space>
+                </n-card>
+
+                <!-- Force Join / Leave -->
+                <n-card size="small" :title="t('admin.rooms.forceActions')">
+                  <n-space>
+                    <n-button size="small" type="primary" @click="showForceJoinDialog = true">
+                      {{ t('admin.rooms.forceJoin') }}
+                    </n-button>
+                    <n-button size="small" type="warning" @click="showForceLeaveDialog = true">
+                      {{ t('admin.rooms.forceLeave') }}
+                    </n-button>
+                  </n-space>
+                </n-card>
+
+                <!-- Block / Unblock -->
+                <n-card size="small" :title="t('admin.rooms.blockActions')">
+                  <n-button size="small" :type="roomBlocked ? 'success' : 'error'" @click="handleToggleBlock">
+                    {{ roomBlocked ? t('admin.rooms.unblock') : t('admin.rooms.block') }}
                   </n-button>
-                  <n-button size="small" type="warning" @click="showForceLeaveDialog = true">
-                    {{ t('admin.rooms.forceLeave') }}
-                  </n-button>
-                </n-space>
-              </n-card>
+                </n-card>
 
-              <!-- Block / Unblock -->
-              <n-card size="small" :title="t('admin.rooms.blockActions')">
-                <n-button size="small" :type="roomBlocked ? 'success' : 'error'" @click="handleToggleBlock">
-                  {{ roomBlocked ? t('admin.rooms.unblock') : t('admin.rooms.block') }}
-                </n-button>
-              </n-card>
+                <!-- Danger Zone -->
+                <n-card size="small" :title="t('admin.rooms.dangerZone')" class="border-[var(--n-error-color)]">
+                  <n-space vertical>
+                    <n-popconfirm @positive-click="handlePurgeHistory">
+                      <template #trigger>
+                        <n-button size="small" type="error">
+                          {{ t('admin.rooms.purgeHistory') }}
+                        </n-button>
+                      </template>
+                      {{ t('admin.rooms.purgeHistoryConfirm') }}
+                    </n-popconfirm>
 
-              <!-- Danger Zone -->
-              <n-card size="small" :title="t('admin.rooms.dangerZone')" class="border-[var(--n-error-color)]">
-                <n-space vertical>
-                  <n-popconfirm @positive-click="handlePurgeHistory">
-                    <template #trigger>
-                      <n-button size="small" type="error">
-                        {{ t('admin.rooms.purgeHistory') }}
-                      </n-button>
-                    </template>
-                    {{ t('admin.rooms.purgeHistoryConfirm') }}
-                  </n-popconfirm>
+                    <n-button size="small" type="error" @click="handleShutdownRoom">
+                      {{ t('admin.rooms.shutdown') }}
+                    </n-button>
+                    <n-button size="small" type="error" ghost @click="handleDeleteRoom">
+                      {{ t('admin.rooms.delete') }}
+                    </n-button>
+                  </n-space>
+                </n-card>
+              </n-space>
+            </n-tab-pane>
+          </n-tabs>
+        </template>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showRoomDetail = false">{{ t('admin.common.close') }}</n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
 
-                  <n-button size="small" type="error" @click="handleShutdownRoom">
-                    {{ t('admin.rooms.shutdown') }}
-                  </n-button>
-                  <n-button size="small" type="error" ghost @click="handleDeleteRoom">
-                    {{ t('admin.rooms.delete') }}
-                  </n-button>
-                </n-space>
-              </n-card>
-            </n-space>
-          </n-tab-pane>
-        </n-tabs>
-      </template>
-      <template #action>
-        <n-button @click="showRoomDetail = false">{{ t('admin.common.close') }}</n-button>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="showForceJoinDialog" placement="right" :width="380">
+      <n-drawer-content :title="t('admin.rooms.forceJoin')" closable>
+        <n-form :model="forceJoinForm">
+          <n-form-item :label="t('admin.rooms.targetUserId')">
+            <n-input v-model:value="forceJoinForm.userId" placeholder="@user:example.com" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showForceJoinDialog = false">{{ t('admin.common.cancel') }}</n-button>
+            <n-button type="primary" :loading="forceJoinLoading" @click="handleForceJoin">
+              {{ t('admin.common.confirm') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
 
-    <n-modal v-model:show="showForceJoinDialog" :title="t('admin.rooms.forceJoin')" preset="dialog" class="w-[400px]">
-      <n-form :model="forceJoinForm">
-        <n-form-item :label="t('admin.rooms.targetUserId')">
-          <n-input v-model:value="forceJoinForm.userId" placeholder="@user:example.com" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showForceJoinDialog = false">{{ t('admin.common.cancel') }}</n-button>
-        <n-button type="primary" :loading="forceJoinLoading" @click="handleForceJoin">
-          {{ t('admin.common.confirm') }}
-        </n-button>
-      </template>
-    </n-modal>
-
-    <n-modal v-model:show="showForceLeaveDialog" :title="t('admin.rooms.forceLeave')" preset="dialog" class="w-[400px]">
-      <n-form :model="forceLeaveForm">
-        <n-form-item :label="t('admin.rooms.targetUserId')">
-          <n-input v-model:value="forceLeaveForm.userId" placeholder="@user:example.com" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showForceLeaveDialog = false">{{ t('admin.common.cancel') }}</n-button>
-        <n-button type="primary" :loading="forceLeaveLoading" @click="handleForceLeave">
-          {{ t('admin.common.confirm') }}
-        </n-button>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="showForceLeaveDialog" placement="right" :width="380">
+      <n-drawer-content :title="t('admin.rooms.forceLeave')" closable>
+        <n-form :model="forceLeaveForm">
+          <n-form-item :label="t('admin.rooms.targetUserId')">
+            <n-input v-model:value="forceLeaveForm.userId" placeholder="@user:example.com" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showForceLeaveDialog = false">{{ t('admin.common.cancel') }}</n-button>
+            <n-button type="primary" :loading="forceLeaveLoading" @click="handleForceLeave">
+              {{ t('admin.common.confirm') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NPopconfirm, NSpace, NStatistic, NTag, useDialog } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NPopconfirm, NSpace, NStatistic, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminTable from '@/components/admin/AdminTable.vue'

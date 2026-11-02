@@ -176,29 +176,31 @@
       </n-tab-pane>
     </n-tabs>
 
-    <!-- 封禁 IP 对话框 -->
-    <n-modal v-model:show="showBlockIpDialog" preset="card" :title="t('admin.security.block_ip')" class="w-[480px]">
-      <n-form ref="blockIpFormRef" :model="blockIpForm" :rules="blockIpRules">
-        <n-form-item :label="t('admin.security.ip_placeholder')" path="ip">
-          <n-input v-model:value="blockIpForm.ip" :placeholder="t('admin.security.ip_placeholder')" />
-        </n-form-item>
-        <n-form-item :label="t('admin.security.col_reason')" path="reason">
-          <n-input
-            v-model:value="blockIpForm.reason"
-            type="textarea"
-            :placeholder="t('admin.security.reason_placeholder')"
-            :rows="3" />
-        </n-form-item>
-      </n-form>
-      <template #footer>
-        <div class="dialog-footer">
-          <n-button @click="showBlockIpDialog = false">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" :loading="blockIpLoading" @click="handleBlockIp">
-            {{ t('admin.security.block_ip') }}
-          </n-button>
-        </div>
-      </template>
-    </n-modal>
+    <!-- 封禁 IP 抽屉 -->
+    <n-drawer v-model:show="showBlockIpDialog" placement="right" :width="380">
+      <n-drawer-content :title="t('admin.security.block_ip')" closable>
+        <n-form ref="blockIpFormRef" :model="blockIpForm" :rules="blockIpRules">
+          <n-form-item :label="t('admin.security.ip_placeholder')" path="ip">
+            <n-input v-model:value="blockIpForm.ip" :placeholder="t('admin.security.ip_placeholder')" />
+          </n-form-item>
+          <n-form-item :label="t('admin.security.col_reason')" path="reason">
+            <n-input
+              v-model:value="blockIpForm.reason"
+              type="textarea"
+              :placeholder="t('admin.security.reason_placeholder')"
+              :rows="3" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="dialog-footer">
+            <n-button @click="showBlockIpDialog = false">{{ t('common.cancel') }}</n-button>
+            <n-button type="primary" :loading="blockIpLoading" @click="handleBlockIp">
+              {{ t('admin.security.block_ip') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
@@ -210,13 +212,14 @@ import {
   NAlert,
   NButton,
   NDataTable,
+  NDrawer,
+  NDrawerContent,
   NEmpty,
   NForm,
   NFormItem,
   NIcon,
   NInput,
   NInputNumber,
-  NModal,
   NPageHeader,
   NPopconfirm,
   NRadio,

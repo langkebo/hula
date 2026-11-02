@@ -69,29 +69,33 @@
       </n-scrollbar>
     </n-spin>
 
-    <n-modal v-model:show="showCreateDialog" :title="t('friend.group.create')" preset="dialog">
-      <n-input v-model:value="newGroupName" :placeholder="t('friend.group.name_placeholder')" />
-      <template #action>
-        <n-flex justify="end" :size="12">
-          <n-button @click="showCreateDialog = false">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" :loading="creating" :disabled="!newGroupName.trim()" @click="handleCreateGroup">
-            {{ t('common.confirm') }}
-          </n-button>
-        </n-flex>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="showCreateDialog" placement="right" :width="380">
+      <n-drawer-content :title="t('friend.group.create')" closable>
+        <n-input v-model:value="newGroupName" :placeholder="t('friend.group.name_placeholder')" />
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showCreateDialog = false">{{ t('common.cancel') }}</n-button>
+            <n-button type="primary" :loading="creating" :disabled="!newGroupName.trim()" @click="handleCreateGroup">
+              {{ t('common.confirm') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
 
-    <n-modal v-model:show="showRenameDialog" :title="t('friend.group.rename')" preset="dialog">
-      <n-input v-model:value="renameValue" :placeholder="t('friend.group.name_placeholder')" />
-      <template #action>
-        <n-flex justify="end" :size="12">
-          <n-button @click="showRenameDialog = false">{{ t('common.cancel') }}</n-button>
-          <n-button type="primary" :loading="renaming" :disabled="!renameValue.trim()" @click="handleRenameGroup">
-            {{ t('common.confirm') }}
-          </n-button>
-        </n-flex>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="showRenameDialog" placement="right" :width="380">
+      <n-drawer-content :title="t('friend.group.rename')" closable>
+        <n-input v-model:value="renameValue" :placeholder="t('friend.group.name_placeholder')" />
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showRenameDialog = false">{{ t('common.cancel') }}</n-button>
+            <n-button type="primary" :loading="renaming" :disabled="!renameValue.trim()" @click="handleRenameGroup">
+              {{ t('common.confirm') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
 
     <n-dropdown
       :x="contextMenuX"
@@ -105,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { NIcon } from 'naive-ui'
+import { NDrawer, NDrawerContent, NIcon } from 'naive-ui'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'

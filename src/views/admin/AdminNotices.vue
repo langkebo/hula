@@ -22,24 +22,28 @@
       striped
       class="mt-16px" />
 
-    <n-modal v-model:show="showSendDialog" preset="dialog" :title="t('admin.notices.send_title')">
-      <n-form :model="sendForm" label-placement="left" label-width="100px">
-        <n-form-item :label="t('admin.notices.target_user')">
-          <n-input v-model:value="sendForm.userId" :placeholder="t('admin.notices.user_placeholder')" />
-        </n-form-item>
-        <n-form-item :label="t('admin.notices.content')">
-          <n-input
-            v-model:value="sendForm.body"
-            type="textarea"
-            :rows="4"
-            :placeholder="t('admin.notices.content_placeholder')" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showSendDialog = false">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="sendLoading" @click="handleSend">{{ t('common.confirm') }}</n-button>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="showSendDialog" placement="right" :width="380">
+      <n-drawer-content :title="t('admin.notices.send_title')" closable>
+        <n-form :model="sendForm" label-placement="left" label-width="100px">
+          <n-form-item :label="t('admin.notices.target_user')">
+            <n-input v-model:value="sendForm.userId" :placeholder="t('admin.notices.user_placeholder')" />
+          </n-form-item>
+          <n-form-item :label="t('admin.notices.content')">
+            <n-input
+              v-model:value="sendForm.body"
+              type="textarea"
+              :rows="4"
+              :placeholder="t('admin.notices.content_placeholder')" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showSendDialog = false">{{ t('common.cancel') }}</n-button>
+            <n-button type="primary" :loading="sendLoading" @click="handleSend">{{ t('common.confirm') }}</n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
@@ -48,10 +52,11 @@ import {
   type DataTableColumns,
   NButton,
   NDataTable,
+  NDrawer,
+  NDrawerContent,
   NForm,
   NFormItem,
   NInput,
-  NModal,
   NPageHeader,
   NSpace
 } from 'naive-ui'

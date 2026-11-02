@@ -36,87 +36,87 @@
         size="small"
         :row-key="(row: AdminFeatureFlag) => row.flagKey" />
 
-      <!-- Create / Edit Modal -->
-      <n-modal
-        v-model:show="showFormDialog"
-        :title="isEditing ? t('admin.feature_flags.edit_title') : t('admin.feature_flags.create_title')"
-        preset="dialog"
-        class="w-[560px]">
-        <n-form :model="formData" label-placement="left" label-width="120">
-          <n-form-item
-            :label="t('admin.feature_flags.flag_key')"
-            :feedback="flagKeyError"
-            v-bind="flagKeyError ? { validationStatus: 'error' as const } : {}">
-            <n-input
-              v-model:value="formData.flagKey"
-              :disabled="isEditing"
-              :placeholder="t('admin.feature_flags.flag_key_placeholder')" />
-          </n-form-item>
-          <n-form-item :label="t('admin.feature_flags.description')">
-            <n-input
-              v-model:value="formData.description"
-              type="textarea"
-              :rows="3"
-              :placeholder="t('admin.feature_flags.description_placeholder')" />
-          </n-form-item>
-          <n-form-item :label="t('admin.feature_flags.enabled')">
-            <n-switch v-model:value="formData.enabled" />
-          </n-form-item>
-          <n-form-item :label="t('admin.feature_flags.target_scope')">
-            <n-select
-              v-model:value="formData.targetScope"
-              :options="scopeOptions"
-              :placeholder="t('admin.feature_flags.scope_placeholder')" />
-          </n-form-item>
-          <n-form-item :label="t('admin.feature_flags.rollout_percent')">
-            <n-input-number
-              v-model:value="formData.rolloutPercent"
-              :min="0"
-              :max="100"
-              class="w-full"
-              :placeholder="t('admin.feature_flags.rollout_placeholder')" />
-          </n-form-item>
-          <n-form-item :label="t('admin.feature_flags.expires_at')">
-            <n-date-picker v-model:value="formData.expiresAt" type="datetime" clearable class="w-full" />
-          </n-form-item>
-          <n-form-item :label="t('admin.feature_flags.reason')">
-            <n-input v-model:value="formData.reason" :placeholder="t('admin.feature_flags.reason_placeholder')" />
-          </n-form-item>
-          <n-form-item :label="t('admin.feature_flags.targets')">
-            <div class="w-full flex flex-col gap-12px">
-              <div class="text-12px op-60">{{ t('admin.feature_flags.targets_hint') }}</div>
-              <div
-                v-for="(target, index) in formData.targets"
-                :key="`${target.subjectType}-${target.subjectId}-${index}`"
-                class="target-row">
-                <n-select
-                  v-model:value="target.subjectType"
-                  :options="targetTypeOptions"
-                  class="target-type-select"
-                  :placeholder="t('admin.feature_flags.subject_type')" />
-                <n-input
-                  v-model:value="target.subjectId"
-                  class="flex-1"
-                  :placeholder="t('admin.feature_flags.subject_id_placeholder')" />
-                <n-button quaternary @click="removeTarget(index)">
-                  {{ t('admin.feature_flags.remove_target') }}
+      <!-- Create / Edit Drawer -->
+      <n-drawer v-model:show="showFormDialog" placement="right" :width="380">
+        <n-drawer-content
+          :title="isEditing ? t('admin.feature_flags.edit_title') : t('admin.feature_flags.create_title')"
+          closable>
+          <n-form :model="formData" label-placement="left" label-width="120">
+            <n-form-item
+              :label="t('admin.feature_flags.flag_key')"
+              :feedback="flagKeyError"
+              v-bind="flagKeyError ? { validationStatus: 'error' as const } : {}">
+              <n-input
+                v-model:value="formData.flagKey"
+                :disabled="isEditing"
+                :placeholder="t('admin.feature_flags.flag_key_placeholder')" />
+            </n-form-item>
+            <n-form-item :label="t('admin.feature_flags.description')">
+              <n-input
+                v-model:value="formData.description"
+                type="textarea"
+                :rows="3"
+                :placeholder="t('admin.feature_flags.description_placeholder')" />
+            </n-form-item>
+            <n-form-item :label="t('admin.feature_flags.enabled')">
+              <n-switch v-model:value="formData.enabled" />
+            </n-form-item>
+            <n-form-item :label="t('admin.feature_flags.target_scope')">
+              <n-select
+                v-model:value="formData.targetScope"
+                :options="scopeOptions"
+                :placeholder="t('admin.feature_flags.scope_placeholder')" />
+            </n-form-item>
+            <n-form-item :label="t('admin.feature_flags.rollout_percent')">
+              <n-input-number
+                v-model:value="formData.rolloutPercent"
+                :min="0"
+                :max="100"
+                class="w-full"
+                :placeholder="t('admin.feature_flags.rollout_placeholder')" />
+            </n-form-item>
+            <n-form-item :label="t('admin.feature_flags.expires_at')">
+              <n-date-picker v-model:value="formData.expiresAt" type="datetime" clearable class="w-full" />
+            </n-form-item>
+            <n-form-item :label="t('admin.feature_flags.reason')">
+              <n-input v-model:value="formData.reason" :placeholder="t('admin.feature_flags.reason_placeholder')" />
+            </n-form-item>
+            <n-form-item :label="t('admin.feature_flags.targets')">
+              <div class="w-full flex flex-col gap-12px">
+                <div class="text-12px op-60">{{ t('admin.feature_flags.targets_hint') }}</div>
+                <div
+                  v-for="(target, index) in formData.targets"
+                  :key="`${target.subjectType}-${target.subjectId}-${index}`"
+                  class="target-row">
+                  <n-select
+                    v-model:value="target.subjectType"
+                    :options="targetTypeOptions"
+                    class="target-type-select"
+                    :placeholder="t('admin.feature_flags.subject_type')" />
+                  <n-input
+                    v-model:value="target.subjectId"
+                    class="flex-1"
+                    :placeholder="t('admin.feature_flags.subject_id_placeholder')" />
+                  <n-button quaternary @click="removeTarget(index)">
+                    {{ t('admin.feature_flags.remove_target') }}
+                  </n-button>
+                </div>
+                <n-button dashed @click="addTarget">
+                  {{ t('admin.feature_flags.add_target') }}
                 </n-button>
               </div>
-              <n-button dashed @click="addTarget">
-                {{ t('admin.feature_flags.add_target') }}
+            </n-form-item>
+          </n-form>
+          <template #footer>
+            <div class="flex justify-end gap-12px">
+              <n-button @click="showFormDialog = false">{{ t('common.cancel') }}</n-button>
+              <n-button type="primary" :loading="saving" @click="handleSubmit">
+                {{ t('common.confirm') }}
               </n-button>
             </div>
-          </n-form-item>
-        </n-form>
-        <template #action>
-          <n-flex justify="end" :size="12">
-            <n-button @click="showFormDialog = false">{{ t('common.cancel') }}</n-button>
-            <n-button type="primary" :loading="saving" @click="handleSubmit">
-              {{ t('common.confirm') }}
-            </n-button>
-          </n-flex>
-        </template>
-      </n-modal>
+          </template>
+        </n-drawer-content>
+      </n-drawer>
     </n-flex>
   </div>
 </template>
@@ -130,12 +130,13 @@ import {
   NDatePicker,
   NDescriptions,
   NDescriptionsItem,
+  NDrawer,
+  NDrawerContent,
   NFlex,
   NForm,
   NFormItem,
   NInput,
   NInputNumber,
-  NModal,
   NPopconfirm,
   NSelect,
   NSpace,

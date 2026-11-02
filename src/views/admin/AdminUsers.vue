@@ -43,216 +43,224 @@
       :pagination="{ pageSize: 20 }"
       :row-key="(row: UserInfo) => row.userId" />
 
-    <n-modal v-model:show="showCreateDialog" :title="t('admin.users.createUser')" preset="dialog" class="w-[500px]">
-      <n-form ref="createFormRef" :model="createForm" :rules="createRules">
-        <n-form-item :label="t('admin.users.username')" path="username">
-          <n-input v-model:value="createForm.username" />
-        </n-form-item>
-        <n-form-item :label="t('admin.users.password')" path="password">
-          <n-input v-model:value="createForm.password" type="password" show-password-on="click" />
-        </n-form-item>
-        <n-form-item :label="t('admin.users.displayName')" path="displayName">
-          <n-input v-model:value="createForm.displayName" />
-        </n-form-item>
-        <n-form-item :label="t('admin.users.isAdmin')" path="isAdmin">
-          <n-switch v-model:value="createForm.isAdmin" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showCreateDialog = false">{{ t('admin.common.cancel') }}</n-button>
-        <n-button type="primary" :loading="creating" @click="handleCreateUser">
-          {{ t('admin.common.confirm') }}
-        </n-button>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="showCreateDialog" placement="right" :width="380">
+      <n-drawer-content :title="t('admin.users.createUser')" closable>
+        <n-form ref="createFormRef" :model="createForm" :rules="createRules">
+          <n-form-item :label="t('admin.users.username')" path="username">
+            <n-input v-model:value="createForm.username" />
+          </n-form-item>
+          <n-form-item :label="t('admin.users.password')" path="password">
+            <n-input v-model:value="createForm.password" type="password" show-password-on="click" />
+          </n-form-item>
+          <n-form-item :label="t('admin.users.displayName')" path="displayName">
+            <n-input v-model:value="createForm.displayName" />
+          </n-form-item>
+          <n-form-item :label="t('admin.users.isAdmin')" path="isAdmin">
+            <n-switch v-model:value="createForm.isAdmin" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showCreateDialog = false">{{ t('admin.common.cancel') }}</n-button>
+            <n-button type="primary" :loading="creating" @click="handleCreateUser">
+              {{ t('admin.common.confirm') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
 
-    <n-modal v-model:show="showUserDetail" :title="t('admin.users.userDetail')" preset="dialog" class="w-[700px]">
-      <template v-if="selectedUser">
-        <n-descriptions bordered :column="2" label-placement="left" class="mb-16px">
-          <n-descriptions-item :label="t('admin.users.userId')">{{ selectedUser.userId }}</n-descriptions-item>
-          <n-descriptions-item :label="t('admin.users.displayName')">
-            {{ selectedUser.displayname || '-' }}
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.users.status')">
-            <n-tag :type="selectedUser.deactivated ? 'error' : 'success'" size="small">
-              {{ selectedUser.deactivated ? t('admin.users.deactivated') : t('admin.users.active') }}
-            </n-tag>
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.users.role')">
-            <n-space align="center" :size="8">
-              <n-tag :type="selectedUser.admin ? 'warning' : 'default'" size="small">
-                {{ selectedUser.admin ? t('admin.users.adminRole') : t('admin.users.userRole') }}
+    <n-drawer v-model:show="showUserDetail" placement="right" :width="520">
+      <n-drawer-content :title="t('admin.users.userDetail')" closable>
+        <template v-if="selectedUser">
+          <n-descriptions bordered :column="2" label-placement="left" class="mb-16px">
+            <n-descriptions-item :label="t('admin.users.userId')">{{ selectedUser.userId }}</n-descriptions-item>
+            <n-descriptions-item :label="t('admin.users.displayName')">
+              {{ selectedUser.displayname || '-' }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.users.status')">
+              <n-tag :type="selectedUser.deactivated ? 'error' : 'success'" size="small">
+                {{ selectedUser.deactivated ? t('admin.users.deactivated') : t('admin.users.active') }}
               </n-tag>
-              <n-switch
-                :value="!!selectedUser.admin"
-                size="small"
-                @update:value="(val: boolean) => handleToggleAdminSwitch(val)">
-                <template #checked>{{ t('admin.users.adminRole') }}</template>
-                <template #unchecked>{{ t('admin.users.userRole') }}</template>
-              </n-switch>
-            </n-space>
-          </n-descriptions-item>
-          <n-descriptions-item v-if="accountStatusData" :label="t('admin.users.accountStatus')" :span="2">
-            <n-space :size="8">
-              <n-tag :type="accountStatusTagType" size="small">
-                {{ accountStatusLabel }}
-              </n-tag>
-              <span v-if="accountStatusData.suspended" class="account-detail">
-                {{ t('admin.users.suspended') }}
-              </span>
-            </n-space>
-          </n-descriptions-item>
-        </n-descriptions>
-
-        <n-tabs type="line" animated>
-          <n-tab-pane name="devices" :tab="t('admin.users.devices')">
-            <n-spin :show="devicesLoading">
-              <n-data-table
-                v-if="userDevices.length > 0"
-                :columns="deviceColumns"
-                :data="userDevices"
-                :bordered="false"
-                size="small"
-                :row-key="(row: UserDevice) => row.deviceId" />
-              <n-empty v-else :description="t('admin.users.noDevices')" class="py-24px" />
-            </n-spin>
-          </n-tab-pane>
-
-          <n-tab-pane name="sessions" :tab="t('admin.users.sessions')">
-            <n-spin :show="sessionsLoading">
-              <n-data-table
-                v-if="userSessions.length > 0"
-                :columns="sessionColumns"
-                :data="userSessions"
-                :bordered="false"
-                size="small"
-                :row-key="(row: UserSession) => row.deviceId" />
-              <n-empty v-else :description="t('admin.users.noSessions')" class="py-24px" />
-            </n-spin>
-          </n-tab-pane>
-
-          <n-tab-pane name="statistics" :tab="t('admin.users.statistics')">
-            <n-spin :show="statsLoading">
-              <template v-if="userStats">
-                <n-space :size="24" class="py-16px">
-                  <n-statistic
-                    :label="t('admin.users.roomsJoined')"
-                    :value="userStats.joined_rooms ?? userStats.joinedRooms ?? '-'" />
-                  <n-statistic
-                    :label="t('admin.users.messagesSent')"
-                    :value="userStats.messages_sent ?? userStats.messagesSent ?? '-'" />
-                  <n-statistic
-                    :label="t('admin.users.mediaUploaded')"
-                    :value="userStats.media_uploaded ?? userStats.mediaUploaded ?? '-'" />
-                  <n-statistic
-                    :label="t('admin.users.invitesSent')"
-                    :value="userStats.invites_sent ?? userStats.invitesSent ?? '-'" />
-                </n-space>
-                <n-descriptions v-if="hasExtraStats" bordered :column="2" label-placement="left" size="small">
-                  <n-descriptions-item v-for="(value, key) in extraStats" :key="String(key)" :label="String(key)">
-                    {{ value }}
-                  </n-descriptions-item>
-                </n-descriptions>
-              </template>
-              <n-empty v-else :description="t('admin.users.noStats')" class="py-24px" />
-            </n-spin>
-          </n-tab-pane>
-
-          <n-tab-pane name="rateLimit" :tab="t('admin.users.rateLimit')">
-            <n-spin :show="rateLimitLoading">
-              <n-space vertical>
-                <n-descriptions bordered :column="2" label-placement="left">
-                  <n-descriptions-item :label="t('admin.users.messagesPerSecond')">
-                    {{ rateLimit?.messagesPerSecond ?? t('admin.users.default') }}
-                  </n-descriptions-item>
-                  <n-descriptions-item :label="t('admin.users.burstCount')">
-                    {{ rateLimit?.burstCount ?? t('admin.users.default') }}
-                  </n-descriptions-item>
-                </n-descriptions>
-                <n-space>
-                  <n-button size="small" @click="showRateLimitDialog = true">
-                    {{ t('admin.users.overrideUserRateLimit') }}
-                  </n-button>
-                  <n-button size="small" type="error" @click="handleDeleteRateLimit">
-                    {{ t('admin.users.deleteRateLimit') }}
-                  </n-button>
-                </n-space>
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.users.role')">
+              <n-space align="center" :size="8">
+                <n-tag :type="selectedUser.admin ? 'warning' : 'default'" size="small">
+                  {{ selectedUser.admin ? t('admin.users.adminRole') : t('admin.users.userRole') }}
+                </n-tag>
+                <n-switch
+                  :value="!!selectedUser.admin"
+                  size="small"
+                  @update:value="(val: boolean) => handleToggleAdminSwitch(val)">
+                  <template #checked>{{ t('admin.users.adminRole') }}</template>
+                  <template #unchecked>{{ t('admin.users.userRole') }}</template>
+                </n-switch>
               </n-space>
-            </n-spin>
-          </n-tab-pane>
-
-          <n-tab-pane name="shadowBan" :tab="t('admin.users.shadowBan')">
-            <n-spin :show="shadowBanLoading">
-              <n-space vertical>
-                <div class="shadow-ban-status">
-                  <n-tag :type="shadowBanStatus?.banned ? 'error' : 'success'" size="medium">
-                    {{ shadowBanStatus?.banned ? t('admin.users.shadowBanned') : t('admin.users.notShadowBanned') }}
-                  </n-tag>
-                  <span v-if="shadowBanStatus?.bannedAt" class="ban-time">
-                    {{ t('admin.users.bannedAt') }}: {{ new Date(shadowBanStatus.bannedAt).toLocaleString() }}
-                  </span>
-                </div>
-                <n-space>
-                  <n-button v-if="!shadowBanStatus?.banned" size="small" type="error" @click="handleShadowBan">
-                    {{ t('admin.users.shadowBan') }}
-                  </n-button>
-                  <n-button v-else size="small" type="success" @click="handleUnshadowBan">
-                    {{ t('admin.users.unshadowBan') }}
-                  </n-button>
-                </n-space>
+            </n-descriptions-item>
+            <n-descriptions-item v-if="accountStatusData" :label="t('admin.users.accountStatus')" :span="2">
+              <n-space :size="8">
+                <n-tag :type="accountStatusTagType" size="small">
+                  {{ accountStatusLabel }}
+                </n-tag>
+                <span v-if="accountStatusData.suspended" class="account-detail">
+                  {{ t('admin.users.suspended') }}
+                </span>
               </n-space>
-            </n-spin>
-          </n-tab-pane>
+            </n-descriptions-item>
+          </n-descriptions>
 
-          <n-tab-pane name="actions" :tab="t('admin.users.quickActions')">
-            <n-space vertical>
-              <n-button size="small" @click="handleResetPassword(selectedUser!.userId)">
-                {{ t('admin.users.resetPassword') }}
-              </n-button>
-              <n-button size="small" @click="handleToggleAdmin(selectedUser!)">
-                {{ selectedUser!.admin ? t('admin.users.removeAdmin') : t('admin.users.grantAdmin') }}
-              </n-button>
-              <n-button
-                size="small"
-                :type="selectedUser!.deactivated ? 'success' : 'error'"
-                @click="handleToggleDeactivate(selectedUser!)">
-                {{ selectedUser!.deactivated ? t('admin.users.reactivate') : t('admin.users.deactivate') }}
-              </n-button>
-              <n-popconfirm @positive-click="handleInvalidateSession">
-                <template #trigger>
-                  <n-button size="small" type="warning">
-                    {{ t('admin.users.invalidateAllSessions') }}
-                  </n-button>
+          <n-tabs type="line" animated>
+            <n-tab-pane name="devices" :tab="t('admin.users.devices')">
+              <n-spin :show="devicesLoading">
+                <n-data-table
+                  v-if="userDevices.length > 0"
+                  :columns="deviceColumns"
+                  :data="userDevices"
+                  :bordered="false"
+                  size="small"
+                  :row-key="(row: UserDevice) => row.deviceId" />
+                <n-empty v-else :description="t('admin.users.noDevices')" class="py-24px" />
+              </n-spin>
+            </n-tab-pane>
+
+            <n-tab-pane name="sessions" :tab="t('admin.users.sessions')">
+              <n-spin :show="sessionsLoading">
+                <n-data-table
+                  v-if="userSessions.length > 0"
+                  :columns="sessionColumns"
+                  :data="userSessions"
+                  :bordered="false"
+                  size="small"
+                  :row-key="(row: UserSession) => row.deviceId" />
+                <n-empty v-else :description="t('admin.users.noSessions')" class="py-24px" />
+              </n-spin>
+            </n-tab-pane>
+
+            <n-tab-pane name="statistics" :tab="t('admin.users.statistics')">
+              <n-spin :show="statsLoading">
+                <template v-if="userStats">
+                  <n-space :size="24" class="py-16px">
+                    <n-statistic
+                      :label="t('admin.users.roomsJoined')"
+                      :value="userStats.joined_rooms ?? userStats.joinedRooms ?? '-'" />
+                    <n-statistic
+                      :label="t('admin.users.messagesSent')"
+                      :value="userStats.messages_sent ?? userStats.messagesSent ?? '-'" />
+                    <n-statistic
+                      :label="t('admin.users.mediaUploaded')"
+                      :value="userStats.media_uploaded ?? userStats.mediaUploaded ?? '-'" />
+                    <n-statistic
+                      :label="t('admin.users.invitesSent')"
+                      :value="userStats.invites_sent ?? userStats.invitesSent ?? '-'" />
+                  </n-space>
+                  <n-descriptions v-if="hasExtraStats" bordered :column="2" label-placement="left" size="small">
+                    <n-descriptions-item v-for="(value, key) in extraStats" :key="String(key)" :label="String(key)">
+                      {{ value }}
+                    </n-descriptions-item>
+                  </n-descriptions>
                 </template>
-                {{ t('admin.users.invalidateSessionConfirm') }}
-              </n-popconfirm>
-            </n-space>
-          </n-tab-pane>
-        </n-tabs>
-      </template>
-      <template #action>
-        <n-button @click="showUserDetail = false">{{ t('admin.common.close') }}</n-button>
-      </template>
-    </n-modal>
+                <n-empty v-else :description="t('admin.users.noStats')" class="py-24px" />
+              </n-spin>
+            </n-tab-pane>
 
-    <n-modal
-      v-model:show="showRateLimitDialog"
-      :title="t('admin.users.overrideUserRateLimit')"
-      preset="dialog"
-      class="w-[400px]">
-      <span>{{ t('admin.users.overrideRateLimitConfirm') }}</span>
-      <template #action>
-        <n-button @click="showRateLimitDialog = false">{{ t('admin.common.cancel') }}</n-button>
-        <n-button type="warning" :loading="settingRateLimit" @click="handleOverrideRateLimit">
-          {{ t('admin.common.confirm') }}
-        </n-button>
-      </template>
-    </n-modal>
+            <n-tab-pane name="rateLimit" :tab="t('admin.users.rateLimit')">
+              <n-spin :show="rateLimitLoading">
+                <n-space vertical>
+                  <n-descriptions bordered :column="2" label-placement="left">
+                    <n-descriptions-item :label="t('admin.users.messagesPerSecond')">
+                      {{ rateLimit?.messagesPerSecond ?? t('admin.users.default') }}
+                    </n-descriptions-item>
+                    <n-descriptions-item :label="t('admin.users.burstCount')">
+                      {{ rateLimit?.burstCount ?? t('admin.users.default') }}
+                    </n-descriptions-item>
+                  </n-descriptions>
+                  <n-space>
+                    <n-button size="small" @click="showRateLimitDialog = true">
+                      {{ t('admin.users.overrideUserRateLimit') }}
+                    </n-button>
+                    <n-button size="small" type="error" @click="handleDeleteRateLimit">
+                      {{ t('admin.users.deleteRateLimit') }}
+                    </n-button>
+                  </n-space>
+                </n-space>
+              </n-spin>
+            </n-tab-pane>
+
+            <n-tab-pane name="shadowBan" :tab="t('admin.users.shadowBan')">
+              <n-spin :show="shadowBanLoading">
+                <n-space vertical>
+                  <div class="shadow-ban-status">
+                    <n-tag :type="shadowBanStatus?.banned ? 'error' : 'success'" size="medium">
+                      {{ shadowBanStatus?.banned ? t('admin.users.shadowBanned') : t('admin.users.notShadowBanned') }}
+                    </n-tag>
+                    <span v-if="shadowBanStatus?.bannedAt" class="ban-time">
+                      {{ t('admin.users.bannedAt') }}: {{ new Date(shadowBanStatus.bannedAt).toLocaleString() }}
+                    </span>
+                  </div>
+                  <n-space>
+                    <n-button v-if="!shadowBanStatus?.banned" size="small" type="error" @click="handleShadowBan">
+                      {{ t('admin.users.shadowBan') }}
+                    </n-button>
+                    <n-button v-else size="small" type="success" @click="handleUnshadowBan">
+                      {{ t('admin.users.unshadowBan') }}
+                    </n-button>
+                  </n-space>
+                </n-space>
+              </n-spin>
+            </n-tab-pane>
+
+            <n-tab-pane name="actions" :tab="t('admin.users.quickActions')">
+              <n-space vertical>
+                <n-button size="small" @click="handleResetPassword(selectedUser!.userId)">
+                  {{ t('admin.users.resetPassword') }}
+                </n-button>
+                <n-button size="small" @click="handleToggleAdmin(selectedUser!)">
+                  {{ selectedUser!.admin ? t('admin.users.removeAdmin') : t('admin.users.grantAdmin') }}
+                </n-button>
+                <n-button
+                  size="small"
+                  :type="selectedUser!.deactivated ? 'success' : 'error'"
+                  @click="handleToggleDeactivate(selectedUser!)">
+                  {{ selectedUser!.deactivated ? t('admin.users.reactivate') : t('admin.users.deactivate') }}
+                </n-button>
+                <n-popconfirm @positive-click="handleInvalidateSession">
+                  <template #trigger>
+                    <n-button size="small" type="warning">
+                      {{ t('admin.users.invalidateAllSessions') }}
+                    </n-button>
+                  </template>
+                  {{ t('admin.users.invalidateSessionConfirm') }}
+                </n-popconfirm>
+              </n-space>
+            </n-tab-pane>
+          </n-tabs>
+        </template>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showUserDetail = false">{{ t('admin.common.close') }}</n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
+
+    <n-drawer v-model:show="showRateLimitDialog" placement="right" :width="380">
+      <n-drawer-content :title="t('admin.users.overrideUserRateLimit')" closable>
+        <span>{{ t('admin.users.overrideRateLimitConfirm') }}</span>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showRateLimitDialog = false">{{ t('admin.common.cancel') }}</n-button>
+            <n-button type="warning" :loading="settingRateLimit" @click="handleOverrideRateLimit">
+              {{ t('admin.common.confirm') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NButton, NCheckbox, NSpace, NSwitch, NTag, useDialog } from 'naive-ui'
+import { NButton, NCheckbox, NDrawer, NDrawerContent, NSpace, NSwitch, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminBulkActionBar from '@/components/admin/AdminBulkActionBar.vue'

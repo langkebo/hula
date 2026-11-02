@@ -67,71 +67,71 @@
       </n-tab-pane>
     </n-tabs>
 
-    <n-modal
-      v-model:show="showAddBlacklistDialog"
-      :title="t('admin.federation.addToBlacklist')"
-      preset="dialog"
-      class="w-[400px]">
-      <n-form :model="addBlacklistForm">
-        <n-form-item :label="t('admin.federation.domain')" path="domain">
-          <n-input v-model:value="addBlacklistForm.domain" placeholder="spam-server.com" />
-        </n-form-item>
-        <n-form-item :label="t('admin.federation.reason')" path="reason">
-          <n-input
-            v-model:value="addBlacklistForm.reason"
-            type="textarea"
-            :placeholder="t('admin.federation.reasonPlaceholder')" />
-        </n-form-item>
-      </n-form>
-      <template #action>
-        <n-button @click="showAddBlacklistDialog = false">{{ t('admin.common.cancel') }}</n-button>
-        <n-button type="primary" :loading="addingBlacklist" @click="handleAddToBlacklist">
-          {{ t('admin.common.confirm') }}
-        </n-button>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="showAddBlacklistDialog" placement="right" :width="380">
+      <n-drawer-content :title="t('admin.federation.addToBlacklist')" closable>
+        <n-form :model="addBlacklistForm">
+          <n-form-item :label="t('admin.federation.domain')" path="domain">
+            <n-input v-model:value="addBlacklistForm.domain" placeholder="spam-server.com" />
+          </n-form-item>
+          <n-form-item :label="t('admin.federation.reason')" path="reason">
+            <n-input
+              v-model:value="addBlacklistForm.reason"
+              type="textarea"
+              :placeholder="t('admin.federation.reasonPlaceholder')" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showAddBlacklistDialog = false">{{ t('admin.common.cancel') }}</n-button>
+            <n-button type="primary" :loading="addingBlacklist" @click="handleAddToBlacklist">
+              {{ t('admin.common.confirm') }}
+            </n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
 
-    <n-modal
-      v-model:show="showDestDetail"
-      :title="t('admin.federation.destinationDetail')"
-      preset="dialog"
-      class="w-[500px]">
-      <template v-if="selectedDest">
-        <n-descriptions bordered :column="1" label-placement="left">
-          <n-descriptions-item :label="t('admin.federation.destination')">
-            {{ selectedDest.destination }}
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.federation.retryLastTs')">
-            {{ selectedDest.retryLastTs ? new Date(selectedDest.retryLastTs).toLocaleString() : '-' }}
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.federation.retryInterval')">
-            {{ selectedDest.retryInterval ? `${selectedDest.retryInterval}ms` : '-' }}
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.federation.failureTs')">
-            {{ selectedDest.failureTs ? new Date(selectedDest.failureTs).toLocaleString() : '-' }}
-          </n-descriptions-item>
-          <n-descriptions-item :label="t('admin.federation.lastSuccessfulTs')">
-            {{ selectedDest.lastSuccessfulTs ? new Date(selectedDest.lastSuccessfulTs).toLocaleString() : '-' }}
-          </n-descriptions-item>
-        </n-descriptions>
-        <n-space class="mt-16px">
-          <n-button size="small" type="primary" @click="handleResetConnection(selectedDest.destination)">
-            {{ t('admin.federation.resetConnection') }}
-          </n-button>
-          <n-button size="small" type="error" @click="handleDisconnect(selectedDest.destination)">
-            {{ t('admin.federation.disconnect') }}
-          </n-button>
-        </n-space>
-      </template>
-      <template #action>
-        <n-button @click="showDestDetail = false">{{ t('admin.common.close') }}</n-button>
-      </template>
-    </n-modal>
+    <n-drawer v-model:show="showDestDetail" placement="right" :width="520">
+      <n-drawer-content :title="t('admin.federation.destinationDetail')" closable>
+        <template v-if="selectedDest">
+          <n-descriptions bordered :column="1" label-placement="left">
+            <n-descriptions-item :label="t('admin.federation.destination')">
+              {{ selectedDest.destination }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.federation.retryLastTs')">
+              {{ selectedDest.retryLastTs ? new Date(selectedDest.retryLastTs).toLocaleString() : '-' }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.federation.retryInterval')">
+              {{ selectedDest.retryInterval ? `${selectedDest.retryInterval}ms` : '-' }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.federation.failureTs')">
+              {{ selectedDest.failureTs ? new Date(selectedDest.failureTs).toLocaleString() : '-' }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('admin.federation.lastSuccessfulTs')">
+              {{ selectedDest.lastSuccessfulTs ? new Date(selectedDest.lastSuccessfulTs).toLocaleString() : '-' }}
+            </n-descriptions-item>
+          </n-descriptions>
+          <n-space class="mt-16px">
+            <n-button size="small" type="primary" @click="handleResetConnection(selectedDest.destination)">
+              {{ t('admin.federation.resetConnection') }}
+            </n-button>
+            <n-button size="small" type="error" @click="handleDisconnect(selectedDest.destination)">
+              {{ t('admin.federation.disconnect') }}
+            </n-button>
+          </n-space>
+        </template>
+        <template #footer>
+          <div class="flex justify-end gap-12px">
+            <n-button @click="showDestDetail = false">{{ t('admin.common.close') }}</n-button>
+          </div>
+        </template>
+      </n-drawer-content>
+    </n-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { NButton, NSpace, NTag, useDialog } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type FederationBlacklistView, type FederationDestination, useAdminFederation } from '@/composables/admin'

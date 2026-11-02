@@ -113,11 +113,18 @@ vi.mock('naive-ui', async () => {
           })
       }
     }),
-    NModal: defineComponent({
-      name: 'NModal',
-      props: ['show', 'preset', 'title'],
+    NDrawer: defineComponent({
+      name: 'NDrawer',
+      props: ['show'],
       setup(props, { slots }) {
-        return () => (props.show ? h('div', { 'data-test': 'NModal' }, [slots.default?.(), slots.action?.()]) : null)
+        return () => (props.show ? h('div', { 'data-test': 'NDrawer' }, slots.default?.()) : null)
+      }
+    }),
+    NDrawerContent: defineComponent({
+      name: 'NDrawerContent',
+      props: ['title'],
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': 'NDrawerContent' }, [slots.default?.(), slots.footer?.()])
       }
     }),
     NPageHeader: passthrough('NPageHeader'),

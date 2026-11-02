@@ -142,12 +142,19 @@ vi.mock('naive-ui', async () => {
     NFormItem: passthrough('NFormItem'),
     NInput: passthrough('NInput'),
     NInputNumber: passthrough('NInputNumber'),
-    NModal: defineComponent({
-      name: 'NModal',
-      props: ['show', 'title'],
+    NDrawer: defineComponent({
+      name: 'NDrawer',
+      props: ['show'],
       emits: ['update:show'],
       setup(props, { slots }) {
-        return () => ((props as any).show ? h('div', { 'data-test': 'modal' }, slots.default?.()) : null)
+        return () => (props.show ? h('div', { 'data-test': 'drawer' }, slots.default?.()) : null)
+      }
+    }),
+    NDrawerContent: defineComponent({
+      name: 'NDrawerContent',
+      props: ['title'],
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': 'drawer-content' }, [slots.default?.(), slots.footer?.()])
       }
     }),
     NPopconfirm: passthrough('NPopconfirm'),

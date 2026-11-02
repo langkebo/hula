@@ -59,25 +59,27 @@
             class="mt-16px" />
         </n-spin>
 
-        <!-- Edit Mapping Modal -->
-        <n-modal v-model:show="showEditMappingDialog" :title="t('admin.saml.edit_mapping')" preset="dialog">
-          <n-form label-placement="left" label-width="100">
-            <n-form-item :label="t('admin.saml.col_user')">
-              <n-input v-model:value="editMappingForm.userId" />
-            </n-form-item>
-            <n-form-item :label="t('admin.saml.col_display_name')">
-              <n-input v-model:value="editMappingForm.displayName" />
-            </n-form-item>
-          </n-form>
-          <template #action>
-            <n-flex justify="end" :size="12">
-              <n-button @click="showEditMappingDialog = false">{{ t('common.cancel') }}</n-button>
-              <n-button type="primary" :loading="editMappingSaving" @click="handleSaveMapping">
-                {{ t('common.confirm') }}
-              </n-button>
-            </n-flex>
-          </template>
-        </n-modal>
+        <!-- Edit Mapping Drawer -->
+        <n-drawer v-model:show="showEditMappingDialog" placement="right" :width="380">
+          <n-drawer-content :title="t('admin.saml.edit_mapping')" closable>
+            <n-form label-placement="left" label-width="100">
+              <n-form-item :label="t('admin.saml.col_user')">
+                <n-input v-model:value="editMappingForm.userId" />
+              </n-form-item>
+              <n-form-item :label="t('admin.saml.col_display_name')">
+                <n-input v-model:value="editMappingForm.displayName" />
+              </n-form-item>
+            </n-form>
+            <template #footer>
+              <div class="flex justify-end gap-12px">
+                <n-button @click="showEditMappingDialog = false">{{ t('common.cancel') }}</n-button>
+                <n-button type="primary" :loading="editMappingSaving" @click="handleSaveMapping">
+                  {{ t('common.confirm') }}
+                </n-button>
+              </div>
+            </template>
+          </n-drawer-content>
+        </n-drawer>
       </n-tab-pane>
 
       <!-- IdP Metadata Tab -->
@@ -129,12 +131,12 @@ import {
   NDataTable,
   NDescriptions,
   NDescriptionsItem,
+  NDrawer,
+  NDrawerContent,
   NEmpty,
-  NFlex,
   NForm,
   NFormItem,
   NInput,
-  NModal,
   NPageHeader,
   NPopconfirm,
   NSpace,

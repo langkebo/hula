@@ -110,11 +110,18 @@ vi.mock('naive-ui', async () => {
           })
       }
     }),
-    NModal: defineComponent({
-      name: 'NModal',
-      props: ['show', 'preset', 'title'],
+    NDrawer: defineComponent({
+      name: 'NDrawer',
+      props: ['show'],
       setup(props, { slots }) {
-        return () => (props.show ? h('div', { 'data-test': 'NModal' }, [slots.default?.(), slots.action?.()]) : null)
+        return () => (props.show ? h('div', { 'data-test': 'NDrawer' }, slots.default?.()) : null)
+      }
+    }),
+    NDrawerContent: defineComponent({
+      name: 'NDrawerContent',
+      props: ['title'],
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': 'NDrawerContent' }, [slots.default?.(), slots.footer?.()])
       }
     }),
     NPageHeader: passthrough('NPageHeader'),
@@ -175,7 +182,7 @@ describe('AdminNotices', () => {
     await flushPromises()
 
     // 直接点击确认（表单为空）
-    const modal = wrapper.findComponent({ name: 'NModal' })
+    const modal = wrapper.findComponent({ name: 'NDrawer' })
     expect(modal.exists()).toBe(true)
     const confirmButton = wrapper.findAll('button').find((b) => b.text().includes('common.confirm'))
     await confirmButton!.trigger('click')

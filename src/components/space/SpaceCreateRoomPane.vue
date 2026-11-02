@@ -1,53 +1,50 @@
 <template>
-  <n-modal
-    v-model:show="visible"
-    preset="card"
-    :title="t('space.create_room_title')"
-    :auto-focus="false"
-    class="w-[440px] max-w-[calc(100vw-32px)]">
-    <n-form
-      ref="formRef"
-      :model="formData"
-      :rules="rules"
-      label-placement="left"
-      label-width="84"
-      class="space-create-room-pane__form">
-      <n-form-item :label="t('space.name')" path="name">
-        <n-input
-          v-model:value="formData.name"
-          :placeholder="t('space.create_room_name_placeholder')"
-          :maxlength="255"
-          show-count
-          @keydown.enter.prevent="handleSubmit" />
-      </n-form-item>
+  <n-drawer v-model:show="visible" placement="right" :width="440">
+    <n-drawer-content :title="t('space.create_room_title')" closable>
+      <n-form
+        ref="formRef"
+        :model="formData"
+        :rules="rules"
+        label-placement="left"
+        label-width="84"
+        class="space-create-room-pane__form">
+        <n-form-item :label="t('space.name')" path="name">
+          <n-input
+            v-model:value="formData.name"
+            :placeholder="t('space.create_room_name_placeholder')"
+            :maxlength="255"
+            show-count
+            @keydown.enter.prevent="handleSubmit" />
+        </n-form-item>
 
-      <n-form-item :label="t('space.topic')" path="topic">
-        <n-input
-          v-model:value="formData.topic"
-          type="textarea"
-          :autosize="{ minRows: 2, maxRows: 4 }"
-          :placeholder="t('space.create_room_topic_placeholder')"
-          :maxlength="4096"
-          show-count />
-      </n-form-item>
+        <n-form-item :label="t('space.topic')" path="topic">
+          <n-input
+            v-model:value="formData.topic"
+            type="textarea"
+            :autosize="{ minRows: 2, maxRows: 4 }"
+            :placeholder="t('space.create_room_topic_placeholder')"
+            :maxlength="4096"
+            show-count />
+        </n-form-item>
 
-      <n-form-item :label="t('space.create_room_suggested')" path="suggested">
-        <n-switch v-model:value="formData.suggested" />
-      </n-form-item>
-    </n-form>
+        <n-form-item :label="t('space.create_room_suggested')" path="suggested">
+          <n-switch v-model:value="formData.suggested" />
+        </n-form-item>
+      </n-form>
 
-    <template #footer>
-      <div class="space-create-room-pane__footer">
-        <n-button tertiary @click="visible = false">{{ t('common.cancel') }}</n-button>
-        <n-button type="primary" :loading="submitting" @click="handleSubmit">{{ t('common.create') }}</n-button>
-      </div>
-    </template>
-  </n-modal>
+      <template #footer>
+        <div class="space-create-room-pane__footer">
+          <n-button tertiary @click="visible = false">{{ t('common.cancel') }}</n-button>
+          <n-button type="primary" :loading="submitting" @click="handleSubmit">{{ t('common.create') }}</n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
 </template>
 
 <script setup lang="ts">
 import type { FormInst } from 'naive-ui'
-import { NButton, NForm, NFormItem, NInput, NModal, NSwitch } from 'naive-ui'
+import { NButton, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NSwitch } from 'naive-ui'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { openMsgSessionByRoomId } from '@/composables/chat/openMsgSession'
