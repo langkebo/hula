@@ -61,7 +61,7 @@
     },
     {
       "file": "src/views/admin/AdminRooms.vue",
-      "lines": 660
+      "lines": 664
     },
     {
       "file": "src/components/rightBox/renderMessage/Video.vue",
