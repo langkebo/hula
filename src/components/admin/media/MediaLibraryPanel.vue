@@ -9,6 +9,7 @@ import {
   NDrawer,
   NDrawerContent,
   NEmpty,
+  NInput,
   NInputNumber,
   NModal,
   NPopconfirm,
@@ -38,11 +39,13 @@ const {
   loadLibrary,
   loadMoreLibrary,
   openMediaDetail,
+  openMediaDetailByServer,
   closeMediaDetail,
   loadMediaQuarantineHistory,
   quarantine,
   unquarantine,
   protect,
+  protectById,
   unprotect,
   deleteOne,
   deleteByPolicy
@@ -55,6 +58,9 @@ const policyBeforeTs = ref<number | null>(null)
 const policyMaxSize = ref<number | null>(null)
 /** 两个条件均为空时不设置任何过滤条件，确认按钮需禁用并提示风险。 */
 const policyEmpty = computed(() => !policyBeforeTs.value && !policyMaxSize.value)
+/** 按「服务器名 + 媒体 ID」直查：用于媒体库列表未覆盖跨服务器场景。 */
+const queryServerName = ref(matrixClientService.getClient()?.getDomain() ?? '')
+const queryMediaId = ref('')
 
 const formatDateTime = (timestamp?: number): string =>
   typeof timestamp === 'number' && timestamp > 0 ? new Date(timestamp).toLocaleString() : '-'
@@ -124,9 +130,28 @@ const handleUnquarantine = (row: MediaLibraryItem): Promise<boolean> => {
 }
 
 const handleProtect = (row: MediaLibraryItem): Promise<boolean> => {
-  const serverName = requireServerName(row.mediaId)
-  if (!serverName) return Promise.resolve(false)
-  return runAction(() => protect(serverName, row.mediaId), t('admin.media.feedback.protect_success'))
+  const serverName = resolveServerName(row.mediaId)
+  // 媒体 ID 无服务器名前缀且当前客户端无域名时，回退到按 ID 保护。
+  return runAction(
+    () => (serverName ? protect(serverName, row.mediaId) : protectById(row.mediaId)),
+    t('admin.media.feedback.protect_success')
+  )
+}
+
+const handleQueryByServer = async (): Promise<void> => {
+  const serverName = queryServerName.value.trim()
+  const mediaId = queryMediaId.value.trim()
+  if (!serverName || !mediaId) return
+  detailVisible.value = true
+  try {
+    await openMediaDetailByServer(serverName, mediaId)
+    history.value = await loadMediaQuarantineHistory(mediaId)
+  } catch (error) {
+    logger.error('load media detail by server failed', {
+      error: error instanceof Error ? error.message : String(error)
+    })
+    showFeedback(t('admin.media.feedback.failed'), 'error')
+  }
 }
 
 const handleUnprotect = (row: MediaLibraryItem): Promise<boolean> =>
@@ -247,6 +272,11 @@ onMounted(() => {
     <n-space class="mb-12px" align="center">
       <n-button type="primary" @click="openPolicyModal">{{ t('admin.media.action.policyDelete') }}</n-button>
       <n-button :loading="libraryLoading" @click="refresh">{{ t('admin.common.refresh') }}</n-button>
+      <n-input v-model:value="queryServerName" :placeholder="t('admin.media.field.serverName')" class="max-w-200px" />
+      <n-input v-model:value="queryMediaId" :placeholder="t('admin.media.field.mediaId')" class="max-w-200px" />
+      <n-button :loading="detailLoading" @click="handleQueryByServer">
+        {{ t('admin.media.action.queryByServer') }}
+      </n-button>
     </n-space>
 
     <n-data-table

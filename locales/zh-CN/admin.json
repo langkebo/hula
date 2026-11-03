@@ -797,9 +797,12 @@
       "delete": "删除",
       "deleteConfirm": "确定要删除该媒体吗？此操作无法撤销。",
       "policyDelete": "按策略批量删除",
+      "queryByServer": "按服务器查询",
       "quarantineRoom": "隔离本房间媒体",
       "unquarantineRoom": "解除本房间隔离",
       "quarantineUser": "隔离该用户全部媒体",
+      "deleteUserMedia": "删除该用户全部媒体",
+      "deleteUserMediaConfirm": "将删除该用户上传的全部媒体且不可恢复，确认继续？",
       "loadMore": "加载更多"
     },
     "detail": {
@@ -813,7 +816,9 @@
       "policyHint": "两个条件都留空时不会附加任何过滤条件，将删除全部早于当前时间的本地媒体，请谨慎操作。",
       "roomId": "房间 ID",
       "userId": "用户 ID",
-      "userIdOptional": "用户 ID（可选）"
+      "userIdOptional": "用户 ID（可选）",
+      "serverName": "服务器名",
+      "mediaId": "媒体 ID"
     },
     "room": {
       "title": "房间媒体"
@@ -834,6 +839,7 @@
       "protect_success": "媒体已保护",
       "unprotect_success": "媒体已取消保护",
       "delete_success": "媒体已删除",
+      "delete_user_success": "已删除该用户全部媒体",
       "policy_deleted": "已按策略删除 {count} 个媒体"
     }
   }

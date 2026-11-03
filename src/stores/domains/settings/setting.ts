@@ -24,6 +24,7 @@ import {
   normalizeStrictUnverifiedRooms,
   normalizeTheme,
   normalizeThreadNotificationLevel,
+  normalizeUploadCompressQuality,
   readLegacyBooleanPreference,
   resolveOsTheme,
   setDocumentTheme,
@@ -137,6 +138,10 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     sendReadReceiptsEnabled: (state: STO.Setting) => state.preferences?.sendReadReceipts ?? true,
     sendTypingNotificationsEnabled: (state: STO.Setting) => state.preferences?.sendTypingNotifications ?? true,
     showOnlineStatusEnabled: (state: STO.Setting) => state.preferences?.showOnlineStatus ?? true,
+    uploadCompressEnabled: (state: STO.Setting) => state.preferences?.uploadCompressEnabled ?? true,
+    uploadCompressQuality: (state: STO.Setting) =>
+      normalizeUploadCompressQuality(state.preferences?.uploadCompressQuality),
+    uploadChunkEnabled: (state: STO.Setting) => state.preferences?.uploadChunkEnabled ?? true,
     /** R-1：全局严格模式（不向未验证设备发送加密房间密钥） */
     blockUnverifiedDevicesEnabled: (state: STO.Setting) => state.preferences?.blockUnverifiedDevices ?? false,
     /** R-1：逐房间严格模式列表 */
@@ -251,6 +256,9 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.preferences.sendTypingNotifications =
         this.preferences.sendTypingNotifications ?? defaults.sendTypingNotifications
       this.preferences.showOnlineStatus = this.preferences.showOnlineStatus ?? defaults.showOnlineStatus
+      this.preferences.uploadCompressEnabled = this.preferences.uploadCompressEnabled ?? defaults.uploadCompressEnabled
+      this.preferences.uploadCompressQuality = normalizeUploadCompressQuality(this.preferences.uploadCompressQuality)
+      this.preferences.uploadChunkEnabled = this.preferences.uploadChunkEnabled ?? defaults.uploadChunkEnabled
       this.preferences.blockUnverifiedDevices =
         this.preferences.blockUnverifiedDevices ?? defaults.blockUnverifiedDevices
       this.preferences.strictUnverifiedRooms = normalizeStrictUnverifiedRooms(this.preferences.strictUnverifiedRooms)
@@ -425,6 +433,18 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     setShowOnlineStatusEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()
       this.preferences.showOnlineStatus = enabled
+    },
+    setUploadCompressEnabled(enabled: boolean) {
+      this.ensurePreferenceSettings()
+      this.preferences.uploadCompressEnabled = enabled
+    },
+    setUploadCompressQuality(quality: 0.6 | 0.8 | 0.9) {
+      this.ensurePreferenceSettings()
+      this.preferences.uploadCompressQuality = normalizeUploadCompressQuality(quality)
+    },
+    setUploadChunkEnabled(enabled: boolean) {
+      this.ensurePreferenceSettings()
+      this.preferences.uploadChunkEnabled = enabled
     },
     /**
      * R-1：设置全局严格模式（不向未验证设备发送加密房间的密钥）。

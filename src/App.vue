@@ -52,6 +52,7 @@ import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useIsMobile } from '@/composables/usePlatform'
 import { useVoIPIncomingCall } from '@/composables/useVoIPIncomingCall'
 import { MittEnum, ThemeEnum } from '@/enums'
+import { applyMediaUploadPreferences } from '@/services/matrix/media/mediaUploadPreferences'
 import { createContactStateResolver } from '@/services/matrix/user/contactStateResolver'
 import { loadInvitePolicy } from '@/services/matrix/user/invitePolicy'
 import { createInvitePolicyEnforcer } from '@/services/matrix/user/invitePolicyEnforcer'
@@ -449,6 +450,8 @@ onMounted(async () => {
   applyFontScale(loadFontScale())
   // 气泡样式同理：读一次存储写到根元素 data 属性，由 render-message.scss 消费
   applyBubbleStyle(loadBubbleStyle())
+  // 媒体上传偏好（压缩/质量/分块）同步到服务层，设置页修改后也会即时重放
+  applyMediaUploadPreferences()
   if (!skipMatrixInit) {
     // F-4：本机密钥库若未加密，一次性告知（不阻断；持续状态见设置页状态卡）
     void useLocalStorePlaintextWarning().warnIfNeeded()

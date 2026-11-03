@@ -68,18 +68,26 @@ export function useAdminMedia(): UseAdminMedia {
     await loadLibrary(false)
   }
 
-  async function openMediaDetail(mediaId: string) {
+  async function loadMediaDetail(label: string, fetcher: () => Promise<MediaInfo | null>) {
     detailLoading.value = true
     try {
-      const info = await adminService.getMediaInfo(mediaId)
+      const info = await fetcher()
       selectedMedia.value = info
-      if (!info) logger.error(`加载媒体详情失败: ${mediaId}`)
+      if (!info) logger.error(`加载媒体详情失败: ${label}`)
     } catch (e) {
-      logger.error(`加载媒体详情失败: ${mediaId}`, e)
+      logger.error(`加载媒体详情失败: ${label}`, e)
       selectedMedia.value = null
     } finally {
       detailLoading.value = false
     }
+  }
+
+  function openMediaDetail(mediaId: string) {
+    return loadMediaDetail(mediaId, () => adminService.getMediaInfo(mediaId))
+  }
+
+  function openMediaDetailByServer(serverName: string, mediaId: string) {
+    return loadMediaDetail(`${serverName}/${mediaId}`, () => adminService.getMediaInfoByServer(serverName, mediaId))
   }
 
   function closeMediaDetail() {
@@ -221,30 +229,29 @@ export function useAdminMedia(): UseAdminMedia {
     }
   }
 
-  async function protect(serverName: string, mediaId: string) {
+  async function runProtect(mediaId: string, request: () => Promise<unknown>, message = '保护媒体失败') {
     mutating.value = true
     try {
-      const result = await adminService.protectMedia(serverName, mediaId)
+      const result = await request()
       if (!result) {
-        logger.warn(`保护媒体失败: ${mediaId}`)
-        throw new Error(`保护媒体失败: ${mediaId}`)
+        logger.warn(`${message}: ${mediaId}`)
+        throw new Error(`${message}: ${mediaId}`)
       }
     } finally {
       mutating.value = false
     }
   }
 
+  async function protect(serverName: string, mediaId: string) {
+    await runProtect(mediaId, () => adminService.protectMedia(serverName, mediaId))
+  }
+
+  async function protectById(mediaId: string) {
+    await runProtect(mediaId, () => adminService.protectMediaById(mediaId))
+  }
+
   async function unprotect(mediaId: string) {
-    mutating.value = true
-    try {
-      const result = await adminService.unprotectMedia(mediaId)
-      if (!result) {
-        logger.warn(`取消保护媒体失败: ${mediaId}`)
-        throw new Error(`取消保护媒体失败: ${mediaId}`)
-      }
-    } finally {
-      mutating.value = false
-    }
+    await runProtect(mediaId, () => adminService.unprotectMedia(mediaId), '取消保护媒体失败')
   }
 
   async function deleteOne(serverName: string | null, mediaId: string) {
@@ -362,6 +369,7 @@ export function useAdminMedia(): UseAdminMedia {
     loadLibrary,
     loadMoreLibrary,
     openMediaDetail,
+    openMediaDetailByServer,
     closeMediaDetail,
     loadQuarantineChanges,
     loadMoreQuarantineChanges,
@@ -372,6 +380,7 @@ export function useAdminMedia(): UseAdminMedia {
     quarantine,
     unquarantine,
     protect,
+    protectById,
     unprotect,
     deleteOne,
     deleteRoomOne,

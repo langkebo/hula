@@ -26,6 +26,7 @@ import {
   type CompressOptions,
   DEFAULT_COMPRESS_OPTIONS,
   type EncryptedUploadResult,
+  MEDIA_CHUNK_UPLOAD_THRESHOLD_BYTES,
   type MediaInfo,
   type UploadResult
 } from './mediaTypes'
@@ -48,6 +49,7 @@ const logger = createLogger('MatrixMediaService')
 class MatrixMediaServiceClass extends BaseMatrixService {
   private compressOptions: CompressOptions = { ...DEFAULT_COMPRESS_OPTIONS }
   private enableCompression = true
+  private enableChunkUpload = true
 
   protected getMedia(): MediaManager {
     const client = this.getClient()
@@ -84,10 +86,23 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     this.enableCompression = enable
   }
 
+  /**
+   * 开启或关闭大文件主动分块上传。
+   *
+   * 仅作用于未加密的 `uploadFile`：加密附件走 `uploadEncryptedFile`，
+   * 其密文大小与原文件不同，不能按原文件阈值分流。
+   */
+  setEnableChunkUpload(enable: boolean) {
+    this.enableChunkUpload = enable
+  }
+
   // ── 上传 ──
 
   async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
     this.assertClientReady()
+    if (this.enableChunkUpload && file.size >= MEDIA_CHUNK_UPLOAD_THRESHOLD_BYTES) {
+      return this.uploadLargeFile(file, onProgress)
+    }
     try {
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),

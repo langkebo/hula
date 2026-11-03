@@ -803,9 +803,12 @@ export type I18nKeys = {
         "delete": "删除",
         "deleteConfirm": "确定要删除该媒体吗？此操作无法撤销。",
         "policyDelete": "按策略批量删除",
+        "queryByServer": "按服务器查询",
         "quarantineRoom": "隔离本房间媒体",
         "unquarantineRoom": "解除本房间隔离",
         "quarantineUser": "隔离该用户全部媒体",
+        "deleteUserMedia": "删除该用户全部媒体",
+        "deleteUserMediaConfirm": "将删除该用户上传的全部媒体且不可恢复，确认继续？",
         "loadMore": "加载更多"
       },
       "detail": {
@@ -819,7 +822,9 @@ export type I18nKeys = {
         "policyHint": "两个条件都留空时不会附加任何过滤条件，将删除全部早于当前时间的本地媒体，请谨慎操作。",
         "roomId": "房间 ID",
         "userId": "用户 ID",
-        "userIdOptional": "用户 ID（可选）"
+        "userIdOptional": "用户 ID（可选）",
+        "serverName": "服务器名",
+        "mediaId": "媒体 ID"
       },
       "room": {
         "title": "房间媒体"
@@ -840,6 +845,7 @@ export type I18nKeys = {
         "protect_success": "媒体已保护",
         "unprotect_success": "媒体已取消保护",
         "delete_success": "媒体已删除",
+        "delete_user_success": "已删除该用户全部媒体",
         "policy_deleted": "已按策略删除 {count} 个媒体"
       }
     }
@@ -6844,6 +6850,24 @@ export type I18nKeys = {
       "quota_alerts": "配额告警",
       "quota_no_alerts": "暂无告警",
       "quota_alert_threshold": "阈值 {threshold}%",
+      "media_server_config": "媒体服务配置",
+      "media_server_config_desc": "读取服务端媒体上传上限与认证媒体开关",
+      "config_loading": "正在读取媒体配置...",
+      "config_unavailable": "媒体配置暂不可用",
+      "max_upload_size": "单文件上传上限",
+      "unlimited": "不限制",
+      "authenticated_media": "认证媒体",
+      "auth_enabled": "已启用",
+      "auth_disabled": "未启用",
+      "upload_settings": "上传策略",
+      "upload_settings_desc": "控制图片压缩与大文件分块上传，设置会立即生效",
+      "compress_enabled": "上传前压缩图片",
+      "compress_quality": "压缩质量",
+      "quality_small": "小体积（0.6）",
+      "quality_standard": "标准（0.8）",
+      "quality_high": "高质量（0.9）",
+      "chunk_enabled": "大文件分块上传",
+      "chunk_hint": "超过 10MB 的文件自动分块上传（仅未加密媒体）",
       "quota_exceeded_upload": "媒体配额不足，无法发送文件",
       "processed_files": "已处理文件",
       "processed_files_unit": "{count} 个",
@@ -8236,9 +8260,12 @@ export type I18nKeyPaths =
   | "admin.media.action.delete"
   | "admin.media.action.deleteConfirm"
   | "admin.media.action.policyDelete"
+  | "admin.media.action.queryByServer"
   | "admin.media.action.quarantineRoom"
   | "admin.media.action.unquarantineRoom"
   | "admin.media.action.quarantineUser"
+  | "admin.media.action.deleteUserMedia"
+  | "admin.media.action.deleteUserMediaConfirm"
   | "admin.media.action.loadMore"
   | "admin.media.detail.title"
   | "admin.media.detail.history"
@@ -8249,6 +8276,8 @@ export type I18nKeyPaths =
   | "admin.media.field.roomId"
   | "admin.media.field.userId"
   | "admin.media.field.userIdOptional"
+  | "admin.media.field.serverName"
+  | "admin.media.field.mediaId"
   | "admin.media.room.title"
   | "admin.media.user.title"
   | "admin.media.empty.library"
@@ -8261,6 +8290,7 @@ export type I18nKeyPaths =
   | "admin.media.feedback.protect_success"
   | "admin.media.feedback.unprotect_success"
   | "admin.media.feedback.delete_success"
+  | "admin.media.feedback.delete_user_success"
   | "admin.media.feedback.policy_deleted"
   | "agreement.privacy.header.title"
   | "agreement.privacy.header.updatedAt"
@@ -12792,6 +12822,24 @@ export type I18nKeyPaths =
   | "setting.storage.quota_alerts"
   | "setting.storage.quota_no_alerts"
   | "setting.storage.quota_alert_threshold"
+  | "setting.storage.media_server_config"
+  | "setting.storage.media_server_config_desc"
+  | "setting.storage.config_loading"
+  | "setting.storage.config_unavailable"
+  | "setting.storage.max_upload_size"
+  | "setting.storage.unlimited"
+  | "setting.storage.authenticated_media"
+  | "setting.storage.auth_enabled"
+  | "setting.storage.auth_disabled"
+  | "setting.storage.upload_settings"
+  | "setting.storage.upload_settings_desc"
+  | "setting.storage.compress_enabled"
+  | "setting.storage.compress_quality"
+  | "setting.storage.quality_small"
+  | "setting.storage.quality_standard"
+  | "setting.storage.quality_high"
+  | "setting.storage.chunk_enabled"
+  | "setting.storage.chunk_hint"
   | "setting.storage.quota_exceeded_upload"
   | "setting.storage.processed_files"
   | "setting.storage.processed_files_unit"

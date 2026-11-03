@@ -1,19 +1,36 @@
 import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import StorageSettings from '../StorageSettings.vue'
 
-const { checkQuotaMock, getQuotaStatsMock, getQuotaAlertsMock } = vi.hoisted(() => ({
+const {
+  checkQuotaMock,
+  getQuotaStatsMock,
+  getQuotaAlertsMock,
+  getMediaConfigMock,
+  getAuthenticatedMediaConfigMock,
+  applyMediaUploadPreferencesMock
+} = vi.hoisted(() => ({
   checkQuotaMock: vi.fn(),
   getQuotaStatsMock: vi.fn(),
-  getQuotaAlertsMock: vi.fn()
+  getQuotaAlertsMock: vi.fn(),
+  getMediaConfigMock: vi.fn(),
+  getAuthenticatedMediaConfigMock: vi.fn(),
+  applyMediaUploadPreferencesMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
   matrixMediaService: {
     checkQuota: checkQuotaMock,
     getQuotaStats: getQuotaStatsMock,
-    getQuotaAlerts: getQuotaAlertsMock
+    getQuotaAlerts: getQuotaAlertsMock,
+    getMediaConfig: getMediaConfigMock,
+    getAuthenticatedMediaConfig: getAuthenticatedMediaConfigMock
   }
+}))
+
+vi.mock('@/services/matrix/media/mediaUploadPreferences', () => ({
+  applyMediaUploadPreferences: applyMediaUploadPreferencesMock
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -25,6 +42,7 @@ vi.mock('vue-i18n', () => ({
 const mountTab = () =>
   mount(StorageSettings, {
     global: {
+      plugins: [createPinia()],
       stubs: { NDivider: true }
     }
   })
@@ -36,9 +54,12 @@ const usageOf = (used: number, limit: number) => ({ used, limit, remaining: Math
 describe('StorageSettings 媒体配额', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
     checkQuotaMock.mockResolvedValue(usageOf(512, 1024))
     getQuotaStatsMock.mockResolvedValue({ storageBytes: 512, mediaCount: 3, limitBytes: 0 })
     getQuotaAlertsMock.mockResolvedValue([])
+    getMediaConfigMock.mockResolvedValue({ 'm.upload.size': 2048 })
+    getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: false })
   })
 
   it('配额读取完成前展示 loading 三态', async () => {
@@ -141,5 +162,53 @@ describe('StorageSettings 媒体配额', () => {
     const stats = wrapper.find('[data-test="quota-stats"]')
     expect(stats.exists()).toBe(true)
     expect(stats.text()).toContain('0')
+  })
+})
+
+describe('StorageSettings 媒体服务配置与上传策略', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    checkQuotaMock.mockResolvedValue(usageOf(512, 1024))
+    getQuotaStatsMock.mockResolvedValue({ storageBytes: 512, mediaCount: 3, limitBytes: 0 })
+    getQuotaAlertsMock.mockResolvedValue([])
+    getMediaConfigMock.mockResolvedValue({ 'm.upload.size': 2048 })
+    getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: false })
+  })
+
+  it('展示服务端上传上限与认证媒体状态', async () => {
+    const wrapper = mountTab()
+    await flush()
+
+    expect(wrapper.find('[data-test="media-upload-limit"]').text()).toContain('2 KB')
+    expect(wrapper.find('[data-test="media-auth-status"]').text()).toContain('setting.storage.auth_disabled')
+  })
+
+  it('认证媒体开启时展示已启用', async () => {
+    getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: true })
+
+    const wrapper = mountTab()
+    await flush()
+
+    expect(wrapper.find('[data-test="media-auth-status"]').text()).toContain('setting.storage.auth_enabled')
+  })
+
+  it('读取不到媒体配置时降级为不可用', async () => {
+    getMediaConfigMock.mockRejectedValue(new Error('media-config-fail'))
+
+    const wrapper = mountTab()
+    await flush()
+
+    expect(wrapper.find('[data-test="media-config-unavailable"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="media-upload-limit"]').exists()).toBe(false)
+  })
+
+  it('渲染压缩与分块上传开关', async () => {
+    const wrapper = mountTab()
+    await flush()
+
+    expect(wrapper.find('[data-test="upload-compress-switch"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="upload-chunk-switch"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="upload-quality-select"]').exists()).toBe(true)
   })
 })

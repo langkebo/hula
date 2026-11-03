@@ -74,13 +74,85 @@
         </div>
       </template>
     </div>
+
+    <n-divider />
+
+    <!-- 媒体服务配置 -->
+    <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.storage.media_server_config') }}</h3>
+      <p class="section-desc">{{ t('setting.storage.media_server_config_desc') }}</p>
+
+      <div v-if="mediaConfigState === 'loading'" data-test="media-config-loading" class="quota-hint">
+        {{ t('setting.storage.config_loading') }}
+      </div>
+      <div v-else-if="mediaConfigState === 'unavailable'" data-test="media-config-unavailable" class="quota-hint">
+        {{ t('setting.storage.config_unavailable') }}
+      </div>
+      <div v-else class="stats-grid">
+        <div data-test="media-upload-limit" class="stat-item">
+          <span class="stat-label">{{ t('setting.storage.max_upload_size') }}</span>
+          <span class="stat-value">
+            {{ maxUploadSize > 0 ? formatBytes(maxUploadSize) : t('setting.storage.unlimited') }}
+          </span>
+        </div>
+        <div data-test="media-auth-status" class="stat-item">
+          <span class="stat-label">{{ t('setting.storage.authenticated_media') }}</span>
+          <span class="stat-value">
+            {{ authenticatedMedia ? t('setting.storage.auth_enabled') : t('setting.storage.auth_disabled') }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <n-divider />
+
+    <!-- 上传策略 -->
+    <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.storage.upload_settings') }}</h3>
+      <p class="section-desc">{{ t('setting.storage.upload_settings_desc') }}</p>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.storage.compress_enabled') }}</span>
+        </div>
+        <n-switch
+          :value="uploadCompressEnabled"
+          data-test="upload-compress-switch"
+          @update:value="updateCompressEnabled" />
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.storage.compress_quality') }}</span>
+        </div>
+        <n-select
+          :value="uploadCompressQuality"
+          data-test="upload-quality-select"
+          class="quality-select"
+          :options="qualityOptions"
+          :disabled="!uploadCompressEnabled"
+          @update:value="updateCompressQuality" />
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.storage.chunk_enabled') }}</span>
+          <span class="setting-desc">{{ t('setting.storage.chunk_hint') }}</span>
+        </div>
+        <n-switch :value="uploadChunkEnabled" data-test="upload-chunk-switch" @update:value="updateChunkEnabled" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { NDivider, NSelect, NSwitch } from 'naive-ui'
+import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { applyMediaUploadPreferences } from '@/services/matrix/media/mediaUploadPreferences'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { formatBytes } from '@/utils/Formatting'
 
 const { t } = useI18n()
@@ -98,6 +170,54 @@ const quotaMediaCount = ref(0)
 const quotaAlerts = ref<Awaited<ReturnType<typeof matrixMediaService.getQuotaAlerts>>>([])
 
 const quotaExceeded = computed(() => quotaLimit.value > 0 && quotaRemaining.value <= 0)
+
+type MediaConfigState = 'loading' | 'available' | 'unavailable'
+
+const mediaConfigState = ref<MediaConfigState>('loading')
+const maxUploadSize = ref(0)
+const authenticatedMedia = ref(false)
+
+const settingStore = useSettingStore()
+const { uploadCompressEnabled, uploadCompressQuality, uploadChunkEnabled } = storeToRefs(settingStore)
+
+const qualityOptions = computed(() => [
+  { label: t('setting.storage.quality_small'), value: 0.6 },
+  { label: t('setting.storage.quality_standard'), value: 0.8 },
+  { label: t('setting.storage.quality_high'), value: 0.9 }
+])
+
+async function loadMediaConfig(): Promise<void> {
+  mediaConfigState.value = 'loading'
+  // 上传上限与认证媒体开关各自独立降级：认证配置读取失败不影响上传上限展示。
+  const [configResult, authResult] = await Promise.allSettled([
+    matrixMediaService.getMediaConfig(),
+    matrixMediaService.getAuthenticatedMediaConfig()
+  ])
+
+  if (configResult.status === 'fulfilled' && configResult.value) {
+    maxUploadSize.value = Number(configResult.value['m.upload.size'] ?? 0)
+    mediaConfigState.value = 'available'
+  } else {
+    mediaConfigState.value = 'unavailable'
+  }
+
+  authenticatedMedia.value = authResult.status === 'fulfilled' && Boolean(authResult.value?.authenticated_media)
+}
+
+function updateCompressEnabled(value: boolean): void {
+  settingStore.setUploadCompressEnabled(value)
+  applyMediaUploadPreferences()
+}
+
+function updateCompressQuality(value: number): void {
+  settingStore.setUploadCompressQuality(value === 0.6 || value === 0.9 ? value : 0.8)
+  applyMediaUploadPreferences()
+}
+
+function updateChunkEnabled(value: boolean): void {
+  settingStore.setUploadChunkEnabled(value)
+  applyMediaUploadPreferences()
+}
 
 async function loadStats(): Promise<void> {
   // ⚠️ 这里曾展示「SDK store 缓存命中率 / 内存占用」并调用矩阵 worker 的 getStats()。
@@ -141,10 +261,45 @@ async function loadQuota(): Promise<void> {
 onMounted(() => {
   void loadStats()
   void loadQuota()
+  void loadMediaConfig()
 })
 </script>
 
 <style scoped lang="scss">
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--tjg-border-muted);
+}
+
+.setting-row:last-child {
+  border-bottom: none;
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.setting-label {
+  font-size: var(--tjg-font-size-base, 14px);
+  color: var(--tjg-text-primary);
+}
+
+.setting-desc {
+  font-size: var(--tjg-font-size-xs, 12px);
+  color: var(--tjg-text-secondary);
+}
+
+.quality-select {
+  width: 160px;
+}
+
 .stats-grid {
   display: grid;
   /* 自适应列数：原先固定 3 列是为「SDK 缓存统计」的 6 项设计的；

@@ -797,9 +797,12 @@
       "delete": "Delete",
       "deleteConfirm": "Delete this media? This action cannot be undone.",
       "policyDelete": "Batch Delete by Policy",
+      "queryByServer": "Query by Server",
       "quarantineRoom": "Quarantine Room Media",
       "unquarantineRoom": "Unquarantine Room Media",
       "quarantineUser": "Quarantine All User Media",
+      "deleteUserMedia": "Delete All User Media",
+      "deleteUserMediaConfirm": "This permanently deletes all media uploaded by this user. Continue?",
       "loadMore": "Load More"
     },
     "detail": {
@@ -813,7 +816,9 @@
       "policyHint": "Leaving both fields empty applies no filter and deletes all local media older than now. Proceed with caution.",
       "roomId": "Room ID",
       "userId": "User ID",
-      "userIdOptional": "User ID (optional)"
+      "userIdOptional": "User ID (optional)",
+      "serverName": "Server name",
+      "mediaId": "Media ID"
     },
     "room": {
       "title": "Room Media"
@@ -834,6 +839,7 @@
       "protect_success": "Media protected",
       "unprotect_success": "Media unprotected",
       "delete_success": "Media deleted",
+      "delete_user_success": "All media of this user deleted",
       "policy_deleted": "Deleted {count} media by policy"
     }
   }

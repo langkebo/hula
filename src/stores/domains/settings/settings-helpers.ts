@@ -34,6 +34,9 @@ export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
   sendReadReceipts: true,
   sendTypingNotifications: true,
   showOnlineStatus: true,
+  uploadCompressEnabled: true,
+  uploadCompressQuality: 0.8 as 0.6 | 0.8 | 0.9,
+  uploadChunkEnabled: true,
   // R-1（2026-10-12）：默认**不**开启严格模式 —— 这是 SDK/Element 的互操作默认，
   // 默认开启会让未验证设备（新设备 / 未完成交叉签名）完全收不到消息且无任何解释。
   // 用户可通过加密房间内提示或加密设置页显式开启。
@@ -49,6 +52,12 @@ export const normalizeNotificationVolume = (volume?: number) => {
 /** R-1：逐房间严格模式列表的容错归一（非字符串 / 空串 / 非数组一律丢弃） */
 export const normalizeStrictUnverifiedRooms = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string' && id.length > 0) : []
+
+/** 图片压缩质量只接受 0.6 / 0.8 / 0.9，其余（含缺失）回落到标准 0.8 */
+export const normalizeUploadCompressQuality = (value?: number): 0.6 | 0.8 | 0.9 => {
+  if (value === 0.6 || value === 0.9) return value
+  return 0.8
+}
 
 export const LEGACY_PREFERENCE_STORAGE_KEYS = {
   messageConfirm: 'tjg-message-confirm',

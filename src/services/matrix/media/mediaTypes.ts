@@ -38,6 +38,9 @@ export const DEFAULT_COMPRESS_OPTIONS: CompressOptions = {
   maxSizeKB: 1024
 }
 
+/** 触发主动分块上传的文件大小阈值（10MB）。 */
+export const MEDIA_CHUNK_UPLOAD_THRESHOLD_BYTES = 10 * 1024 * 1024
+
 /** 上传选项（内部用于 MediaManager.uploadContent / http.uploadContent） */
 export interface UploadOpts {
   type?: string | undefined

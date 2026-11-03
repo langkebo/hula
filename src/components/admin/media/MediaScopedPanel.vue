@@ -27,6 +27,7 @@ const {
   loadUserMedia,
   deleteRoomOne,
   deleteOne,
+  deleteUserAll,
   quarantineRoom,
   unquarantineRoom,
   quarantineUser
@@ -37,6 +38,7 @@ const roomUserId = ref('')
 const userId = ref('')
 const roomLoaded = ref(false)
 const userLoaded = ref(false)
+const deleteUserAllVisible = ref(false)
 
 const formatDateTime = (timestamp?: number): string =>
   typeof timestamp === 'number' && timestamp > 0 ? new Date(timestamp).toLocaleString() : '-'
@@ -110,6 +112,16 @@ const handleQuarantineUser = async (): Promise<boolean> => {
     await loadUserMedia(id)
   }
   return ok
+}
+
+const handleDeleteUserAll = async (): Promise<void> => {
+  const id = userMediaUserId.value
+  if (!id) return
+  const ok = await runAction(() => deleteUserAll(id), t('admin.media.feedback.delete_user_success'))
+  deleteUserAllVisible.value = false
+  if (ok) {
+    await loadUserMedia(id)
+  }
 }
 
 const renderDeleteAction = (onDelete: () => void, disabled: boolean) =>
@@ -225,9 +237,19 @@ const userColumns = computed<DataTableColumns<UserMediaItem>>(() => [
             :description="t('admin.media.empty.userMedia')" />
 
           <div class="flex justify-end">
-            <n-button :disabled="mutating" @click="handleQuarantineUser">
-              {{ t('admin.media.action.quarantineUser') }}
-            </n-button>
+            <n-space align="center">
+              <n-popconfirm v-model:show="deleteUserAllVisible" @positive-click="handleDeleteUserAll">
+                <template #trigger>
+                  <n-button type="error" ghost :disabled="mutating">
+                    {{ t('admin.media.action.deleteUserMedia') }}
+                  </n-button>
+                </template>
+                {{ t('admin.media.action.deleteUserMediaConfirm') }}
+              </n-popconfirm>
+              <n-button :disabled="mutating" @click="handleQuarantineUser">
+                {{ t('admin.media.action.quarantineUser') }}
+              </n-button>
+            </n-space>
           </div>
         </n-space>
       </n-card>

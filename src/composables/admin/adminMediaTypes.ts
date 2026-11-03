@@ -33,6 +33,7 @@ export interface UseAdminMedia {
   loadLibrary: (reset?: boolean) => Promise<void>
   loadMoreLibrary: () => Promise<void>
   openMediaDetail: (mediaId: string) => Promise<void>
+  openMediaDetailByServer: (serverName: string, mediaId: string) => Promise<void>
   closeMediaDetail: () => void
   loadQuarantineChanges: (reset?: boolean) => Promise<void>
   loadMoreQuarantineChanges: () => Promise<void>
@@ -43,6 +44,7 @@ export interface UseAdminMedia {
   quarantine: (serverName: string, mediaId: string) => Promise<void>
   unquarantine: (serverName: string, mediaId: string) => Promise<void>
   protect: (serverName: string, mediaId: string) => Promise<void>
+  protectById: (mediaId: string) => Promise<void>
   unprotect: (mediaId: string) => Promise<void>
   deleteOne: (serverName: string | null, mediaId: string) => Promise<void>
   deleteRoomOne: (roomId: string, mediaId: string) => Promise<void>

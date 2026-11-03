@@ -68,6 +68,43 @@ describe('MatrixMediaService 413 分片回退', () => {
   })
 })
 
+describe('MatrixMediaService uploadFile 阈值分块', () => {
+  const bigEnoughFile = () =>
+    new File([new Uint8Array(10 * 1024 * 1024)], 'big.bin', { type: 'application/octet-stream' })
+
+  beforeEach(() => {
+    mediaUploadMock.mockReset()
+    chunkUploadMock.mockReset()
+    matrixMediaService.setEnableChunkUpload(true)
+  })
+
+  it('达到阈值且开关开启时直接走分块上传', async () => {
+    chunkUploadMock.mockResolvedValueOnce({
+      mxcUrl: 'mxc://hs/threshold',
+      filename: 'big.bin',
+      size: 10 * 1024 * 1024,
+      mimeType: 'application/octet-stream'
+    })
+
+    const result = await matrixMediaService.uploadFile(bigEnoughFile())
+
+    expect(chunkUploadMock).toHaveBeenCalledTimes(1)
+    expect(mediaUploadMock).not.toHaveBeenCalled()
+    expect(result.contentUri).toBe('mxc://hs/threshold')
+  })
+
+  it('关闭分块时达到阈值仍走普通上传', async () => {
+    mediaUploadMock.mockResolvedValueOnce('mxc://hs/normal')
+    matrixMediaService.setEnableChunkUpload(false)
+
+    const result = await matrixMediaService.uploadFile(bigEnoughFile())
+
+    expect(chunkUploadMock).not.toHaveBeenCalled()
+    expect(mediaUploadMock).toHaveBeenCalledTimes(1)
+    expect(result.contentUri).toBe('mxc://hs/normal')
+  })
+})
+
 describe('MatrixMediaService uploadLargeFile 主动分块上传 (§9.4.1)', () => {
   beforeEach(() => {
     mediaUploadMock.mockReset()

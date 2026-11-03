@@ -296,6 +296,19 @@ describe('SettingStore', () => {
       expect(store.showOnlineStatusEnabled).toBe(false)
     })
 
+    it('上传压缩与分块偏好可写入并归一化质量', () => {
+      const store = useSettingStore()
+      store.setUploadCompressEnabled(false)
+      store.setUploadChunkEnabled(false)
+      expect(store.uploadCompressEnabled).toBe(false)
+      expect(store.uploadChunkEnabled).toBe(false)
+
+      store.setUploadCompressQuality(0.6)
+      expect(store.uploadCompressQuality).toBe(0.6)
+      store.setUploadCompressQuality(0.5 as 0.6 | 0.8 | 0.9)
+      expect(store.uploadCompressQuality).toBe(0.8)
+    })
+
     it('ensurePreferenceSettings repairs missing preference fields with defaults', () => {
       const store = useSettingStore()
       store.preferences = {
@@ -315,6 +328,9 @@ describe('SettingStore', () => {
         sendReadReceipts: undefined as never,
         sendTypingNotifications: undefined as never,
         showOnlineStatus: undefined as never,
+        uploadCompressEnabled: undefined as never,
+        uploadCompressQuality: undefined as never,
+        uploadChunkEnabled: undefined as never,
         blockUnverifiedDevices: undefined as never,
         strictUnverifiedRooms: undefined as never
       }
@@ -335,6 +351,9 @@ describe('SettingStore', () => {
       expect(store.sendReadReceiptsEnabled).toBe(true)
       expect(store.sendTypingNotificationsEnabled).toBe(true)
       expect(store.showOnlineStatusEnabled).toBe(true)
+      expect(store.uploadCompressEnabled).toBe(true)
+      expect(store.uploadCompressQuality).toBe(0.8)
+      expect(store.uploadChunkEnabled).toBe(true)
       // R-1：严格模式默认关闭（互操作默认），房间覆盖列表默认空
       expect(store.blockUnverifiedDevicesEnabled).toBe(false)
       expect(store.strictUnverifiedRooms).toEqual([])

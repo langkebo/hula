@@ -1,6 +1,6 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-03T08:36:53.082Z",
+  "updated_at": "2026-11-03T18:40:02.809Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
@@ -64,6 +64,10 @@
       "lines": 659
     },
     {
+      "file": "src/stores/domains/settings/setting.ts",
+      "lines": 656
+    },
+    {
       "file": "src/components/rightBox/renderMessage/Video.vue",
       "lines": 645
     },
@@ -86,10 +90,6 @@
     {
       "file": "src/mobile/views/friends/index.vue",
       "lines": 638
-    },
-    {
-      "file": "src/stores/domains/settings/setting.ts",
-      "lines": 636
     },
     {
       "file": "src/components/rightBox/renderMessage/File.vue",
@@ -224,6 +224,10 @@
       "lines": 501
     },
     {
+      "file": "src/App.vue",
+      "lines": 498
+    },
+    {
       "file": "src/services/matrix/MatrixCryptoStateTracker.ts",
       "lines": 497
     },
@@ -234,10 +238,6 @@
     {
       "file": "src/components/workbench/SpaceListPane.vue",
       "lines": 496
-    },
-    {
-      "file": "src/App.vue",
-      "lines": 495
     },
     {
       "file": "src/components/widget/WidgetManager.vue",

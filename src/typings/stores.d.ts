@@ -76,6 +76,12 @@ declare namespace STO {
       sendTypingNotifications: boolean
       /** 是否向他人展示在线状态 */
       showOnlineStatus: boolean
+      /** 上传前是否自动压缩图片 */
+      uploadCompressEnabled: boolean
+      /** 图片压缩质量（0.6 省流 / 0.8 标准 / 0.9 高清） */
+      uploadCompressQuality: 0.6 | 0.8 | 0.9
+      /** 是否对超过阈值的文件启用主动分块上传 */
+      uploadChunkEnabled: boolean
       /**
        * 全局严格模式：不向未验证设备发送加密房间的密钥（R-1）。
        *

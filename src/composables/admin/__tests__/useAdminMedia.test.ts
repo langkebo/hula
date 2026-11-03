@@ -4,6 +4,7 @@ vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     getMediaList: vi.fn(),
     getMediaInfo: vi.fn(),
+    getMediaInfoByServer: vi.fn(),
     getGlobalQuarantineChanges: vi.fn(),
     getMediaQuarantineChanges: vi.fn(),
     getRoomMedia: vi.fn(),
@@ -14,6 +15,7 @@ vi.mock('@/services/matrix/admin', () => ({
     quarantineMedia: vi.fn(),
     unquarantineMedia: vi.fn(),
     protectMedia: vi.fn(),
+    protectMediaById: vi.fn(),
     unprotectMedia: vi.fn(),
     deleteRoomMedia: vi.fn(),
     quarantineRoomMedia: vi.fn(),
@@ -112,6 +114,34 @@ describe('useAdminMedia', () => {
     vi.mocked(adminService.getMediaInfo).mockResolvedValueOnce(null)
     await c.openMediaDetail('m2')
     expect(c.selectedMedia.value).toBeNull()
+  })
+
+  it('openMediaDetailByServer 走按服务器查询并写入详情', async () => {
+    vi.mocked(adminService.getMediaInfoByServer).mockResolvedValueOnce({
+      media_id: 'm1',
+      media_type: 'image/png'
+    })
+
+    const c = useAdminMedia()
+    await c.openMediaDetailByServer('hs.example', 'm1')
+
+    expect(adminService.getMediaInfoByServer).toHaveBeenCalledWith('hs.example', 'm1')
+    expect(c.selectedMedia.value).toEqual({ media_id: 'm1', media_type: 'image/png' })
+    expect(c.detailLoading.value).toBe(false)
+
+    vi.mocked(adminService.getMediaInfoByServer).mockResolvedValueOnce(null)
+    await c.openMediaDetailByServer('hs.example', 'm2')
+    expect(c.selectedMedia.value).toBeNull()
+  })
+
+  it('openMediaDetailByServer 抛错时清空详情', async () => {
+    vi.mocked(adminService.getMediaInfoByServer).mockRejectedValueOnce(new Error('boom'))
+
+    const c = useAdminMedia()
+    await c.openMediaDetailByServer('hs.example', 'm1')
+
+    expect(c.selectedMedia.value).toBeNull()
+    expect(c.detailLoading.value).toBe(false)
   })
 
   it('closeMediaDetail 清空详情', async () => {
@@ -327,6 +357,7 @@ describe('useAdminMedia', () => {
 
   it('返回值写方法服务层返回 null 时抛出中文错误', async () => {
     vi.mocked(adminService.protectMedia).mockResolvedValueOnce(null)
+    vi.mocked(adminService.protectMediaById).mockResolvedValueOnce(null)
     vi.mocked(adminService.unprotectMedia).mockResolvedValueOnce(null)
     vi.mocked(adminService.quarantineRoomMedia).mockResolvedValueOnce(null)
     vi.mocked(adminService.unquarantineRoomMedia).mockResolvedValueOnce(null)
@@ -335,6 +366,7 @@ describe('useAdminMedia', () => {
 
     const c = useAdminMedia()
     await expect(c.protect('a.example', 'm1')).rejects.toThrow('保护媒体失败: m1')
+    await expect(c.protectById('m2')).rejects.toThrow('保护媒体失败: m2')
     await expect(c.unprotect('m1')).rejects.toThrow('取消保护媒体失败: m1')
     await expect(c.quarantineRoom('!r:a.example', '@u:a.example')).rejects.toThrow('隔离房间媒体失败: !r:a.example')
     await expect(c.unquarantineRoom('!r:a.example')).rejects.toThrow('取消隔离房间媒体失败: !r:a.example')
