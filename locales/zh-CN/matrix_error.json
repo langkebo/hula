@@ -68,8 +68,7 @@
     "pack_not_found": "消息包未找到"
   },
   "admin": {
-    "sdk_manager_unavailable": "SDK AdminManager 不可用",
-    "score_range_invalid": "评分必须在 -100 到 0 之间"
+    "sdk_manager_unavailable": "SDK AdminManager 不可用"
   },
   "friends": {
     "manager_not_initialized": "FriendManager 未初始化",

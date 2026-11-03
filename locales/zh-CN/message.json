@@ -311,9 +311,7 @@
     "event_count": "窗口消息数",
     "latest_event_id": "最近事件",
     "sender_activity": "活跃发送者",
-    "event_types": "消息类型分布",
-    "sender_row": "{userId} 发送 {count} 条",
-    "type_row": "{type} 共 {count} 条"
+    "event_types": "消息类型分布"
   },
   "load_messages_failed": "加载消息失败",
   "mark_failed": "标记失败",

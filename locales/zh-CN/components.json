@@ -63,12 +63,5 @@
     "verified": "E2E 已验证",
     "unverified": "未验证",
     "risk": "存在风险"
-  },
-  "syncStatusBar": {
-    "retry": "重试",
-    "reconnect_detail": "（第 {count} 次）",
-    "progress_detail": "（{progress}%）",
-    "aria_reconnecting": "{base}，第 {count} 次尝试",
-    "aria_progress": "{base}，同步进度 {progress}%"
   }
 }

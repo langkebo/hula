@@ -1,7 +1,7 @@
 {
   "deadKeys": 0,
   "deadKeyNames": [],
-  "dynamicKeys": 158,
+  "dynamicKeys": 167,
   "dynamicKeyNames": [
     "admin.dashboard.healthy",
     "admin.dashboard.unhealthy",
@@ -37,6 +37,15 @@
     "auth.onlineStatus.states.追剧中",
     "auth.onlineStatus.states.隐身",
     "auth.onlineStatus.states.难得糊涂",
+    "delayed_events.errors.invalid_delay",
+    "delayed_events.errors.not_found",
+    "delayed_events.errors.offline",
+    "delayed_events.errors.unknown",
+    "delayed_events.errors.unsupported",
+    "delayed_events.presets.minutes_180",
+    "delayed_events.presets.minutes_30",
+    "delayed_events.presets.minutes_5",
+    "delayed_events.presets.minutes_60",
     "login.qr.load_text.auth_pending",
     "login.qr.load_text.loading",
     "login.qr.load_text.login",
@@ -165,6 +174,8 @@
   "dynamicPrefixes": [
     "admin.dashboard.",
     "auth.onlineStatus.states.",
+    "delayed_events.errors.",
+    "delayed_events.presets.",
     "friend.filter.",
     "login.qr.load_text.",
     "login.qr.overlay.",

@@ -311,9 +311,7 @@
     "event_count": "Messages in window",
     "latest_event_id": "Latest event",
     "sender_activity": "Active senders",
-    "event_types": "Event type breakdown",
-    "sender_row": "{userId} · {count} messages",
-    "type_row": "{type} · {count} events"
+    "event_types": "Event type breakdown"
   },
   "load_messages_failed": "Failed to load messages",
   "mark_failed": "Mark Failed",

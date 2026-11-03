@@ -63,12 +63,5 @@
     "verified": "E2E verified",
     "unverified": "Unverified",
     "risk": "At risk"
-  },
-  "syncStatusBar": {
-    "retry": "Retry",
-    "reconnect_detail": " (attempt {count})",
-    "progress_detail": " ({progress}%)",
-    "aria_reconnecting": "{base}, attempt {count}",
-    "aria_progress": "{base}, sync progress {progress}%"
   }
 }

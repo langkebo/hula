@@ -86,13 +86,6 @@
   "crypto_unavailable": {
     "message": "Encryption is not ready. Messages in this room cannot be sent. Please re-login or contact the administrator."
   },
-  "connection": {
-    "connecting": "Connecting...",
-    "catchup": "Syncing history",
-    "reconnecting": "Reconnecting",
-    "error": "Connection error",
-    "connected": "Connected"
-  },
   "encryption": {
     "verified_title": "End-to-end encryption verified",
     "unverified_title": "End-to-end encryption not fully verified",

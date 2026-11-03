@@ -1703,13 +1703,6 @@ export type I18nKeys = {
     "crypto_unavailable": {
       "message": "加密功能未就绪，此房间的消息无法发送。请重新登录或联系管理员。"
     },
-    "connection": {
-      "connecting": "正在连接...",
-      "catchup": "正在同步历史消息",
-      "reconnecting": "重连中",
-      "error": "连接错误",
-      "connected": "已连接"
-    },
     "encryption": {
       "verified_title": "端到端加密已验证",
       "unverified_title": "端到端加密未完全验证",
@@ -1941,13 +1934,6 @@ export type I18nKeys = {
       "verified": "E2E 已验证",
       "unverified": "未验证",
       "risk": "存在风险"
-    },
-    "syncStatusBar": {
-      "retry": "重试",
-      "reconnect_detail": "（第 {count} 次）",
-      "progress_detail": "（{progress}%）",
-      "aria_reconnecting": "{base}，第 {count} 次尝试",
-      "aria_progress": "{base}，同步进度 {progress}%"
     }
   },
   "connection": {
@@ -3657,8 +3643,7 @@ export type I18nKeys = {
       "pack_not_found": "消息包未找到"
     },
     "admin": {
-      "sdk_manager_unavailable": "SDK AdminManager 不可用",
-      "score_range_invalid": "评分必须在 -100 到 0 之间"
+      "sdk_manager_unavailable": "SDK AdminManager 不可用"
     },
     "friends": {
       "manager_not_initialized": "FriendManager 未初始化",
@@ -4124,9 +4109,7 @@ export type I18nKeys = {
       "event_count": "窗口消息数",
       "latest_event_id": "最近事件",
       "sender_activity": "活跃发送者",
-      "event_types": "消息类型分布",
-      "sender_row": "{userId} 发送 {count} 条",
-      "type_row": "{type} 共 {count} 条"
+      "event_types": "消息类型分布"
     },
     "load_messages_failed": "加载消息失败",
     "mark_failed": "标记失败",
@@ -8727,11 +8710,6 @@ export type I18nKeyPaths =
   | "chat.multi_msg.dm_title"
   | "chat.multi_msg.open_failed"
   | "chat.crypto_unavailable.message"
-  | "chat.connection.connecting"
-  | "chat.connection.catchup"
-  | "chat.connection.reconnecting"
-  | "chat.connection.error"
-  | "chat.connection.connected"
   | "chat.encryption.verified_title"
   | "chat.encryption.unverified_title"
   | "chat.encryption.risk_title"
@@ -8910,11 +8888,6 @@ export type I18nKeyPaths =
   | "components.messageLockBadge.verified"
   | "components.messageLockBadge.unverified"
   | "components.messageLockBadge.risk"
-  | "components.syncStatusBar.retry"
-  | "components.syncStatusBar.reconnect_detail"
-  | "components.syncStatusBar.progress_detail"
-  | "components.syncStatusBar.aria_reconnecting"
-  | "components.syncStatusBar.aria_progress"
   | "connection.offline"
   | "connection.reconnecting"
   | "connection.reconnecting_attempt"
@@ -10195,7 +10168,6 @@ export type I18nKeyPaths =
   | "matrix_error.messaging.threading_manager_unavailable"
   | "matrix_error.messaging.pack_not_found"
   | "matrix_error.admin.sdk_manager_unavailable"
-  | "matrix_error.admin.score_range_invalid"
   | "matrix_error.friends.manager_not_initialized"
   | "matrix_error.friends.remark_update_unsupported"
   | "matrix_error.friends.status_update_unsupported"
@@ -10562,8 +10534,6 @@ export type I18nKeyPaths =
   | "message.event_perspective.latest_event_id"
   | "message.event_perspective.sender_activity"
   | "message.event_perspective.event_types"
-  | "message.event_perspective.sender_row"
-  | "message.event_perspective.type_row"
   | "message.load_messages_failed"
   | "message.mark_failed"
   | "message.no_actions"
