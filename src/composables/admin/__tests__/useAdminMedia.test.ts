@@ -259,6 +259,7 @@ describe('useAdminMedia', () => {
     await c.loadRoomMedia('!r:a.example')
     expect(c.roomMedia.value).toHaveLength(1)
     expect(c.roomMediaNextBatch.value).toBe('room-cursor-2')
+    expect(c.roomMediaRoomId.value).toBe('!r:a.example')
 
     await c.loadMoreRoomMedia()
     expect(c.roomMedia.value).toHaveLength(2)
@@ -283,6 +284,7 @@ describe('useAdminMedia', () => {
     await c.loadUserMedia('@u:a.example')
     expect(c.userMedia.value).toHaveLength(1)
     expect(c.userMediaLoading.value).toBe(false)
+    expect(c.userMediaUserId.value).toBe('@u:a.example')
     expect(adminService.getUserMedia).toHaveBeenCalledWith('@u:a.example')
 
     vi.mocked(adminService.getUserMedia).mockResolvedValueOnce(null)

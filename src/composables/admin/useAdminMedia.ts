@@ -35,11 +35,13 @@ export function useAdminMedia(): UseAdminMedia {
   const roomMedia = ref<RoomMediaItem[]>([])
   const roomMediaNextBatch = ref<string | null>(null)
   const roomMediaLoading = ref(false)
-  // 记录当前房间，供 loadMoreRoomMedia 复用；不对外暴露。
+  // 记录当前房间，供 loadMoreRoomMedia 与破坏性操作复用。
   const roomMediaRoomId = ref<string | null>(null)
 
   const userMedia = ref<MediaInfo[]>([])
   const userMediaLoading = ref(false)
+  // 记录当前用户，供用户媒体的破坏性操作与刷新复用。
+  const userMediaUserId = ref<string | null>(null)
 
   const mutating = ref(false)
 
@@ -176,6 +178,7 @@ export function useAdminMedia(): UseAdminMedia {
   }
 
   async function loadUserMedia(userId: string) {
+    userMediaUserId.value = userId
     userMediaLoading.value = true
     try {
       const result = await adminService.getUserMedia(userId)
@@ -351,8 +354,10 @@ export function useAdminMedia(): UseAdminMedia {
     roomMedia,
     roomMediaNextBatch,
     roomMediaLoading,
+    roomMediaRoomId,
     userMedia,
     userMediaLoading,
+    userMediaUserId,
     mutating,
     loadLibrary,
     loadMoreLibrary,

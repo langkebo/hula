@@ -40,6 +40,7 @@ vi.mock('@/utils/AppHarness', () => ({
 
 describe('adminService facade', () => {
   let mockAdminManager: Record<string, ReturnType<typeof vi.fn>>
+  let mockMediaAdmin: { deleteUserMedia: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -99,7 +100,6 @@ describe('adminService facade', () => {
       quarantineRoomMedia: vi.fn().mockResolvedValue({ room_id: '!r:a', quarantined: true }),
       unquarantineRoomMedia: vi.fn().mockResolvedValue({ room_id: '!r:a', quarantined: false }),
       getUserMedia: vi.fn().mockResolvedValue({ media: [], total: 0 }),
-      deleteUserMedia: vi.fn().mockResolvedValue({ deleted: 3 }),
       quarantineUserMedia: vi.fn().mockResolvedValue({ user_id: '@u:a', quarantined: true }),
       listAuditEvents: vi.fn().mockResolvedValue({ events: [], next_batch: undefined }),
       getAuditEvent: vi.fn().mockResolvedValue(null),
@@ -207,6 +207,8 @@ describe('adminService facade', () => {
       overrideRateLimit: vi.fn().mockResolvedValue(undefined),
       deleteRateLimitOverride: vi.fn().mockResolvedValue(undefined)
     }
+    mockMediaAdmin = { deleteUserMedia: vi.fn().mockResolvedValue({ deleted: 3 }) }
+    mockAdminManager.media = mockMediaAdmin as unknown as ReturnType<typeof vi.fn>
     vi.mocked(matrixClientService.getClient).mockReturnValue({
       getUserId: vi.fn(() => '@admin:server.com'),
       getAccessToken: vi.fn(() => 'token'),
@@ -974,10 +976,10 @@ describe('adminService facade', () => {
     })
 
     it('should delete user media via SDK', async () => {
-      mockAdminManager.deleteUserMedia.mockResolvedValue({ deleted: 3 })
+      mockMediaAdmin.deleteUserMedia.mockResolvedValue({ deleted: 3 })
       const result = await adminService.deleteUserMedia('@u:a')
       expect(result).toEqual({ deleted: 3 })
-      expect(mockAdminManager.deleteUserMedia).toHaveBeenCalledWith('@u:a')
+      expect(mockMediaAdmin.deleteUserMedia).toHaveBeenCalledWith('@u:a')
     })
 
     it('should quarantine user media via SDK', async () => {

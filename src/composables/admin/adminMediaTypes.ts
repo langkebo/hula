@@ -25,8 +25,10 @@ export interface UseAdminMedia {
   roomMedia: Ref<RoomMediaItem[]>
   roomMediaNextBatch: Ref<string | null>
   roomMediaLoading: Ref<boolean>
+  roomMediaRoomId: Ref<string | null>
   userMedia: Ref<MediaInfo[]>
   userMediaLoading: Ref<boolean>
+  userMediaUserId: Ref<string | null>
   mutating: Ref<boolean>
   loadLibrary: (reset?: boolean) => Promise<void>
   loadMoreLibrary: () => Promise<void>

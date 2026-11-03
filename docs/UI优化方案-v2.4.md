@@ -141,7 +141,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 线程 | 21 | **已覆盖** | ~~G-03~~（已落地） | `MatrixThreadApi` 三方法已接线：`ThreadPanel.vue` 头部冻结/静音入口 + footer 只读降级 |
 | 外部服务 | 11 | 已覆盖 | — | `ExternalServiceService`、`ExternalServiceManager.vue` |
 | 好友 | 28 | 已覆盖 | — | `src/services/matrix/friends/` |
-| 媒体 | 60 | **部分覆盖（2026-11-03 回写：已覆盖 44 / 服务层已封 UI 未接 10 / 未覆盖 6）** | ~~G-07~~（已落地）；admin 媒体 18 条已由 `/admin/media` 页面覆盖（含 2 条别名形态随主形态调用）；未覆盖剩 `preview_url` 4 条、`download_signed` 2 条 | 主链 `MatrixMediaService` + `MatrixMultimediaService` + `ChunkUploadService`；配额三接口与 admin 全局配额已在 `StorageSettings.vue`、`AdminMaintenance.vue` 接线；媒体管理页 `views/admin/AdminMedia.vue` + `composables/admin/useAdminMedia.ts`（路由 `adminMedia`） |
+| 媒体 | 60 | **部分覆盖（2026-11-03 回写：已覆盖 44 / 服务层已封 UI 未接 10 / 未覆盖 6）** | ~~G-07~~（已落地）；admin 媒体 22 条中 `/admin/media` 可直接触达 17 条（quota 3 条与 purge 在 `AdminMaintenance.vue` 接线；`getMediaInfoByServer`、`protectMediaById`、`deleteUserMedia` 3 条仅有服务层封装、暂无页面入口）；未覆盖剩 `preview_url` 4 条、`download_signed` 2 条 | 主链 `MatrixMediaService` + `MatrixMultimediaService` + `ChunkUploadService`；配额三接口与 admin 全局配额已在 `StorageSettings.vue`、`AdminMaintenance.vue` 接线；媒体管理页 `views/admin/AdminMedia.vue` + `composables/admin/useAdminMedia.ts`（路由 `adminMedia`） |
 | Key Backup | 33 | 已覆盖 | — | `MatrixKeyBackupService`（含 1 条走不通的 `verifyBackup`，见 §3.4 注） |
 | 密钥轮转 | 9 | 已覆盖 | — | `KeyRotationDialog.vue` + `EncryptionSettings.vue` |
 | Widget | 16 | 已覆盖 | — | `MatrixWidgetService`（`private_on_std_widgets=0`，全走私有路由） |
@@ -158,7 +158,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 空间 | 26 | 已覆盖 | — | `MatrixSpaceService`、`AdminSpaces.vue` |
 | E2EE | 22 | 已覆盖 | — | `src/services/matrix/crypto/`（26 个非测试文件） |
 | 第三方（3PID） | 6 | **未覆盖（2026-11-03 取证：服务层已封 UI 未接 1 / 未覆盖 5）** | `location`、`user` 4 条后端恒 404（无 bridge/identity）；`protocol/{protocol}` 可支撑但无消费 | `/thirdparty/protocols` 由 `MatrixAccountService.getThirdPartyProtocols` → `useAccount` 导出，无 `.vue` 调用；`src/` 无 3PID 路径常量（仅测试命中）；`InviteDialog.vue` 仅目录搜索 + 手填 MXID，`AccountSettings.vue` 无 3PID 绑定 |
-| 管理 | 300 | **部分覆盖** | —（G-01/G-02 已落地：`AdminTelemetry.vue`、`AdminBackgroundUpdates.vue`；媒体子域逐模块 22 条中 20 条已于 2026-11-03 由 `/admin/media` 覆盖，quota 与 purge 已接（命名空间口径为 23，见上方口径注），见 §3.4 注） | 23 个 admin 服务、25 个 admin 视图；遥测与后台更新均已接线 |
+| 管理 | 300 | **部分覆盖** | —（G-01/G-02 已落地：`AdminTelemetry.vue`、`AdminBackgroundUpdates.vue`；媒体子域逐模块 22 条中 `/admin/media` 可直接触达 17 条，quota 3 条与 purge 在 `AdminMaintenance.vue` 接线，其余 3 条仅服务层封装无页面入口，见 §3.4 注） | 23 个 admin 服务、25 个 admin 视图；遥测与后台更新均已接线 |
 | 联邦 | 70 | 已覆盖 | — | `FederationService`、`AdminFederation.vue`、`AdminFederationMonitor.vue` |
 | 装配 | 89 | 不适用 | — | 服务端装配期路由 |
 | 设备 | 13 | 已覆盖 | — | `MatrixDeviceService` |
@@ -172,7 +172,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 > **管理族规模口径修正**：上一版写「管理 150」，那是**逐模块口径**（`ROUTE_CONTRACT.md` 的「管理 (Admin) 150 条」）。命名空间口径下 `/_synapse/admin` 实为 **300** 条（用户 76 / 服务器 62 / 房间 59 / 安全 58 / 媒体 23 / 联邦 22）。两个口径不可相加，本表统一用**逐模块口径**，与 §1.1 的 300 只是分类方式不同。
 >
-> **三个模块族已于 2026-11-03 完成取证**（判据见 §1.3 口径）：Worker 26 条 = 未覆盖 15 + 不适用 11；第三方 3PID 6 条 = 服务层已封 UI 未接 1 + 未覆盖 5；媒体 60 条 = 已覆盖 44（含 2026-11-03 由 `/admin/media` 覆盖的 admin 媒体 18 条）/ 服务层已封 UI 未接 10 / 未覆盖 6。未覆盖项均不按「已覆盖」计入完成率。
+> **三个模块族已于 2026-11-03 完成取证**（判据见 §1.3 口径）：Worker 26 条 = 未覆盖 15 + 不适用 11；第三方 3PID 6 条 = 服务层已封 UI 未接 1 + 未覆盖 5；媒体 60 条 = 已覆盖 44（含 admin 媒体 22 条中 17 条可由 `/admin/media` 页面触达）/ 服务层已封 UI 未接 10 / 未覆盖 6。未覆盖项均不按「已覆盖」计入完成率。
 
 ---
 
@@ -252,7 +252,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 > **两条与本方案相邻但不单列的已知问题**（来自基准文档 v2.5，属于契约层，不计入本文档的 UI 缺陷口径）：
 > 1. `MatrixKeyBackupService.verifyBackup` 打的是 by-design 404 端点，**移动端 `MobileSecureBackupDialog` 仍可触发**——修法见 v2.5 §2.4.9，不属 UI 布局范畴。
-> 2. Admin 媒体子域按逐模块口径为 22 条（`admin/media.rs`），其中 20 条已于 2026-11-03 由 `/admin/media` 覆盖（含 2 条仅作为别名形态 `getMediaInfoByServer` / `deleteMediaByServer` 随主形态调用）（quota 与 purge_media_cache 已在 `AdminMaintenance.vue` 接线）；§1.3 口径注中的「媒体 23」是 `/_synapse/admin` 命名空间口径，两者分类方式不同、不可相加。此前「23 条无页面」混用了两个口径，经 2026-11-03 复核更正。该缺口与 G-01/G-02 同源（管理面「有端点无页面」），媒体页已于 2026-11-03 随阶段 B 同源补入。另 `AdminMediaService.getMediaStats` 调用的 SDK 方法不存在，属幽灵方法，不对应任何路由，已于 2026-11-03 从服务层、facade、composable 与视图全链删除。
+> 2. Admin 媒体子域按逐模块口径为 22 条（`admin/media.rs`）：quota 3 条与 purge 在 `AdminMaintenance.vue` 接线，`/admin/media` 页面可直接触达 17 条；19 条已有页面或维护页入口，3 条仅服务层封装无页面入口（`getMediaInfoByServer`、`protectMediaById`、`deleteUserMedia`）。`deleteMediaByServer` 由 `deleteOne(serverName)` 路径可达，不属于「仅别名」形态；§1.3 口径注中的「媒体 23」是 `/_synapse/admin` 命名空间口径，两者分类方式不同、不可相加。此前「23 条无页面」混用了两个口径，经 2026-11-03 复核更正。该缺口与 G-01/G-02 同源（管理面「有端点无页面」），媒体页已于 2026-11-03 随阶段 B 同源补入。另 `AdminMediaService.getMediaStats` 调用的 SDK 方法不存在，属幽灵方法，不对应任何路由，已于 2026-11-03 从服务层、facade、composable 与视图全链删除。
 
 ### 3.5 无障碍
 
@@ -785,7 +785,7 @@ pnpm test:run tests/lint/design-baseline.test.ts
 **阶段 B：管理后台与能力入口（P1）**
 
 6. 【已完成 2026-11-02】G-01、G-02（遥测页、后台更新页）——与 `useAdminNav` 的能力探测基建共用。
-7. 【已完成 2026-11-03】Admin 媒体子域页面（逐模块 22 条中 20 条已覆盖，路由 `/admin/media`）—— 见 §3.4 注 2。
+7. 【已完成 2026-11-03】Admin 媒体子域页面（逐模块 22 条中 `/admin/media` 可直接触达 17 条；quota 3 条与 purge 在 `AdminMaintenance.vue` 接线；`getMediaInfoByServer`、`protectMediaById`、`deleteUserMedia` 3 条仅服务层封装、暂无页面入口，路由 `/admin/media`）—— 见 §3.4 注 2。
 
 **阶段 C：布局（P2）**
 
@@ -856,8 +856,8 @@ pnpm verify:sdk-pin
 2. P2 收敛：`hardcoded_color` 保持 0 并锁定基线；`NModal` 已完成分类收敛并**冻结在 105**（设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105）；残留均为确认/向导/选择器/查看器/前置认证并逐文件登记，**验收口径为「计数不再上升」**，非编辑语义弹窗不再纳入收敛范围。
 3. 能力缺口：G-01、G-02、G-03、G-04、G-06、G-07、G-08 已落地并有测试；G-05 已于 2026-11-03 落地并有测试（后端内置 CAS 登录页 + loginToken 回调，前端 Tauri 子窗口 + `m.login.token`）。
 4. 残留清理：`SyncStatusBar.vue` 与其实测已删除，`typings/` 无该符号。
-5. 未取证项已于 2026-11-03 清零并回写 §1.3：Worker 15 未覆盖 + 11 不适用、3PID 1 服务层已封 UI 未接 + 5 未覆盖、媒体 44 已覆盖（含 admin 媒体 18 条经 `/admin/media` 覆盖）/ 10 服务层已封 / 6 未覆盖；A-01 已在 Storybook 可达后跑通 `check:a11y`（0 serious/critical）并修复 `FileUploadModal` 的 `trap-focus=false`，逐故事扫描待补；A-02 已修复（`role="separator"` + `aria-label` + 方向键，回归测试覆盖）、A-03 经取证不成立（无手动收起控件）。
-6. 门禁全绿：`test:run`、`typecheck`、`check:ratchet`、`check-file-size`、`check-integration-map-freshness`、`verify:sdk-pin` 无失败。
+5. 未取证项已于 2026-11-03 清零并回写 §1.3：Worker 15 未覆盖 + 11 不适用、3PID 1 服务层已封 UI 未接 + 5 未覆盖、媒体 44 已覆盖（含 admin 媒体 22 条中 17 条经 `/admin/media` 页面触达）/ 10 服务层已封 / 6 未覆盖；A-01 已在 Storybook 可达后跑通 `check:a11y`（0 serious/critical）并修复 `FileUploadModal` 的 `trap-focus=false`，逐故事扫描待补；A-02 已修复（`role="separator"` + `aria-label` + 方向键，回归测试覆盖）、A-03 经取证不成立（无手动收起控件）。
+6. 门禁全绿（2026-11-03 实际执行）：`vue-tsc --noEmit` 0 错误、`test:run` 全量通过、`check:ratchet` 全部持平基线、`check:doc-coverage` 无回退、`check:doc-paths` 路径全部存在、`check:sdk-boundary` 无回退、`quality:no-raw-fetch` 裸请求均在白名单内、`check`（Biome + i18n）通过、`check:file-size` 超限文件数等于基线 118、`check:i18n-dead-keys` 孤儿 key 0（基线 0）。
 
 ---
 

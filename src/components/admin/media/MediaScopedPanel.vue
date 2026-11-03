@@ -17,8 +17,10 @@ const {
   roomMedia,
   roomMediaNextBatch,
   roomMediaLoading,
+  roomMediaRoomId,
   userMedia,
   userMediaLoading,
+  userMediaUserId,
   mutating,
   loadRoomMedia,
   loadMoreRoomMedia,
@@ -39,10 +41,10 @@ const userLoaded = ref(false)
 const formatDateTime = (timestamp?: number): string =>
   typeof timestamp === 'number' && timestamp > 0 ? new Date(timestamp).toLocaleString() : '-'
 
-const runAction = async (action: () => Promise<unknown>, successKey: string): Promise<boolean> => {
+const runAction = async (action: () => Promise<unknown>, successMessage: string): Promise<boolean> => {
   try {
     await action()
-    showFeedback(t(successKey), 'success')
+    showFeedback(successMessage, 'success')
     return true
   } catch (error) {
     logger.error('media action failed', { error: error instanceof Error ? error.message : String(error) })
@@ -66,44 +68,44 @@ const handleLoadUser = async (): Promise<void> => {
 }
 
 const handleDeleteRoomMedia = async (row: RoomMediaItem): Promise<void> => {
-  const id = roomId.value.trim()
+  const id = roomMediaRoomId.value
   if (!id) return
-  const deleted = await runAction(() => deleteRoomOne(id, row.media_id), 'admin.media.feedback.delete_success')
+  const deleted = await runAction(() => deleteRoomOne(id, row.media_id), t('admin.media.feedback.delete_success'))
   if (deleted) {
     await loadRoomMedia(id)
   }
 }
 
 const handleDeleteUserMedia = async (row: UserMediaItem): Promise<void> => {
-  const id = userId.value.trim()
-  const deleted = await runAction(() => deleteOne(null, row.media_id), 'admin.media.feedback.delete_success')
+  const id = userMediaUserId.value
+  const deleted = await runAction(() => deleteOne(null, row.media_id), t('admin.media.feedback.delete_success'))
   if (deleted && id) {
     await loadUserMedia(id)
   }
 }
 
 const handleQuarantineRoom = (): Promise<boolean> => {
-  const id = roomId.value.trim()
+  const id = roomMediaRoomId.value
   if (!id) return Promise.resolve(false)
   return runAction(
     () => quarantineRoom(id, roomUserId.value.trim() || undefined),
-    'admin.media.feedback.quarantine_success'
+    t('admin.media.feedback.quarantine_success')
   )
 }
 
 const handleUnquarantineRoom = (): Promise<boolean> => {
-  const id = roomId.value.trim()
+  const id = roomMediaRoomId.value
   if (!id) return Promise.resolve(false)
   return runAction(
     () => unquarantineRoom(id, roomUserId.value.trim() || undefined),
-    'admin.media.feedback.unquarantine_success'
+    t('admin.media.feedback.unquarantine_success')
   )
 }
 
 const handleQuarantineUser = (): Promise<boolean> => {
   const id = userId.value.trim()
   if (!id) return Promise.resolve(false)
-  return runAction(() => quarantineUser(id), 'admin.media.feedback.quarantine_success')
+  return runAction(() => quarantineUser(id), t('admin.media.feedback.quarantine_success'))
 }
 
 const renderDeleteAction = (onDelete: () => void, disabled: boolean) =>

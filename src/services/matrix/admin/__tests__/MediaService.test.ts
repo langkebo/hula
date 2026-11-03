@@ -42,7 +42,9 @@ function makeAdmin(overrides: Record<string, unknown> = {}) {
     quarantineRoomMedia: vi.fn().mockResolvedValue({ room_id: '!r:a', quarantined: true }),
     unquarantineRoomMedia: vi.fn().mockResolvedValue({ room_id: '!r:a', quarantined: false }),
     getUserMedia: vi.fn().mockResolvedValue({ media: [], total: 0 }),
-    deleteUserMedia: vi.fn().mockResolvedValue({ deleted: 0 }),
+    media: {
+      deleteUserMedia: vi.fn().mockResolvedValue({ deleted: 0 })
+    },
     quarantineUserMedia: vi.fn().mockResolvedValue({ user_id: '@u:a', quarantined: true }),
     ...overrides
   }
@@ -211,9 +213,14 @@ describe('AdminMediaService', () => {
   })
 
   it('deleteUserMedia 成功时透传 deleted', async () => {
-    admin.deleteUserMedia.mockResolvedValueOnce({ deleted: 7 })
+    admin.media.deleteUserMedia.mockResolvedValueOnce({ deleted: 7 })
     await expect(service.deleteUserMedia('@u:a')).resolves.toEqual({ deleted: 7 })
-    expect(admin.deleteUserMedia).toHaveBeenCalledWith('@u:a')
+    expect(admin.media.deleteUserMedia).toHaveBeenCalledWith('@u:a')
+  })
+
+  it('deleteUserMedia 抛错时返回 null', async () => {
+    admin.media.deleteUserMedia.mockRejectedValueOnce(new Error('boom'))
+    await expect(service.deleteUserMedia('@u:a')).resolves.toBeNull()
   })
 
   it('getMediaQuarantineChanges 透传 from 与 limit', async () => {

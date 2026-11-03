@@ -72,8 +72,10 @@ const {
       roomMedia: [] as Array<Record<string, unknown>>,
       roomMediaNextBatch: null as string | null,
       roomMediaLoading: false,
+      roomMediaRoomId: null as string | null,
       userMedia: [] as Array<Record<string, unknown>>,
       userMediaLoading: false,
+      userMediaUserId: null as string | null,
       mutating: false
     }
   }
@@ -92,8 +94,10 @@ vi.mock('@/composables/admin', () => ({
     roomMedia: ref(state.roomMedia),
     roomMediaNextBatch: ref(state.roomMediaNextBatch),
     roomMediaLoading: ref(state.roomMediaLoading),
+    roomMediaRoomId: ref(state.roomMediaRoomId),
     userMedia: ref(state.userMedia),
     userMediaLoading: ref(state.userMediaLoading),
+    userMediaUserId: ref(state.userMediaUserId),
     mutating: ref(state.mutating),
     loadLibrary: loadLibraryMock,
     loadMoreLibrary: loadMoreLibraryMock,

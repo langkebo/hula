@@ -71,10 +71,10 @@ const resolveServerName = (mediaId: string): string => {
   return matrixClientService.getClient()?.getDomain() ?? ''
 }
 
-const runAction = async (action: () => Promise<unknown>, successKey: string): Promise<boolean> => {
+const runAction = async (action: () => Promise<unknown>, successMessage: string): Promise<boolean> => {
   try {
     await action()
-    showFeedback(t(successKey), 'success')
+    showFeedback(successMessage, 'success')
     return true
   } catch (error) {
     logger.error('media action failed', { error: error instanceof Error ? error.message : String(error) })
@@ -114,28 +114,28 @@ const handleDetailVisibleChange = (visible: boolean): void => {
 const handleQuarantine = (row: MediaLibraryItem): Promise<boolean> => {
   const serverName = requireServerName(row.mediaId)
   if (!serverName) return Promise.resolve(false)
-  return runAction(() => quarantine(serverName, row.mediaId), 'admin.media.feedback.quarantine_success')
+  return runAction(() => quarantine(serverName, row.mediaId), t('admin.media.feedback.quarantine_success'))
 }
 
 const handleUnquarantine = (row: MediaLibraryItem): Promise<boolean> => {
   const serverName = requireServerName(row.mediaId)
   if (!serverName) return Promise.resolve(false)
-  return runAction(() => unquarantine(serverName, row.mediaId), 'admin.media.feedback.unquarantine_success')
+  return runAction(() => unquarantine(serverName, row.mediaId), t('admin.media.feedback.unquarantine_success'))
 }
 
 const handleProtect = (row: MediaLibraryItem): Promise<boolean> => {
   const serverName = requireServerName(row.mediaId)
   if (!serverName) return Promise.resolve(false)
-  return runAction(() => protect(serverName, row.mediaId), 'admin.media.feedback.protect_success')
+  return runAction(() => protect(serverName, row.mediaId), t('admin.media.feedback.protect_success'))
 }
 
 const handleUnprotect = (row: MediaLibraryItem): Promise<boolean> =>
-  runAction(() => unprotect(row.mediaId), 'admin.media.feedback.unprotect_success')
+  runAction(() => unprotect(row.mediaId), t('admin.media.feedback.unprotect_success'))
 
 const handleDelete = async (row: MediaLibraryItem): Promise<void> => {
   const deleted = await runAction(
     () => deleteOne(resolveServerName(row.mediaId) || null, row.mediaId),
-    'admin.media.feedback.delete_success'
+    t('admin.media.feedback.delete_success')
   )
   if (deleted) {
     await loadLibrary()

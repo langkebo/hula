@@ -1,9 +1,7 @@
 import { LARGE_PAGE_LIMIT } from '@/common/constants'
 import type {
-  AdminManager,
   GlobalMediaQuarantineChangesResponse,
   MediaInfo,
-  MediaPage,
   MediaProtectionResponse,
   MediaQuarantineChangesResponse,
   MediaUnprotectionResponse,
@@ -14,51 +12,9 @@ import type {
   UserMediaQuarantineResponse
 } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
+import type { LegacyMediaResult, MediaDomainSdkGetter } from './mediaServiceTypes'
 
 const logger = createLogger('MediaService')
-
-type MediaAdminSdk = Pick<
-  AdminManager,
-  | 'getMedia'
-  | 'getMediaInfo'
-  | 'getMediaInfoByServer'
-  | 'deleteMedia'
-  | 'deleteMediaByServer'
-  | 'purgeMediaCache'
-  | 'deleteMediaByPolicy'
-  | 'quarantineMedia'
-  | 'unquarantineMedia'
-  | 'protectMedia'
-  | 'protectMediaById'
-  | 'unprotectMedia'
-  | 'getGlobalMediaQuarantineChanges'
-  | 'getMediaQuarantineChanges'
-  | 'getRoomMedia'
-  | 'deleteRoomMedia'
-  | 'quarantineRoomMedia'
-  | 'unquarantineRoomMedia'
-  | 'getUserMedia'
-  | 'deleteUserMedia'
-  | 'quarantineUserMedia'
->
-
-type MediaDomainSdkGetter = () => Promise<MediaAdminSdk>
-
-// 后端媒体列表并未返回 `content_uri`，历史适配层仍保留该字段（缺省空串）；
-// 分页游标同时兼容 SDK 的 `next_batch` 与旧的 `next_token`。
-type LegacyMediaResult = Omit<MediaPage, 'media'> & {
-  media?: Array<MediaInfo & { content_uri?: string }>
-  next_token?: string
-}
-
-// 扁平 AdminManager 将 deleteUserMedia 声明为 Promise<void>，但运行时实际返回 { deleted: number }
-// （见 admin-media-manager.d.ts 的 deleteUserMedia）；此处按运行时形状窄化读取，
-// 形状缺失时与失败语义一致降级为 null。
-type DeleteUserMediaResult = { deleted: number }
-
-function isDeleteUserMediaResult(value: unknown): value is DeleteUserMediaResult {
-  return typeof value === 'object' && value !== null && 'deleted' in value && typeof value.deleted === 'number'
-}
 
 export class AdminMediaService {
   constructor(private readonly sdkAdmin: MediaDomainSdkGetter) {}
@@ -381,16 +337,12 @@ export class AdminMediaService {
   /**
    * 删除用户媒体。
    * @param userId 用户 ID。
-   * @returns 删除条数；响应形状缺失或失败时返回 null。
+   * @returns 删除条数；失败时返回 null。
    */
   async deleteUserMedia(userId: string): Promise<{ deleted: number } | null> {
     try {
       const admin = await this.sdkAdmin()
-      const result: unknown = await admin.deleteUserMedia(userId)
-      if (!isDeleteUserMediaResult(result)) {
-        logger.warn(`[AdminMedia] 删除用户媒体未返回删除条数: ${userId}`)
-        return null
-      }
+      const result = await admin.media.deleteUserMedia(userId)
       logger.info(`[AdminMedia] 已删除用户媒体: ${userId} (${result.deleted}个)`)
       return { deleted: result.deleted }
     } catch (err) {
