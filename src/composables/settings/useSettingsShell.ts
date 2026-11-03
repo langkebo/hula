@@ -66,8 +66,7 @@ export function useSettingsShell(options: UseSettingsShellOptions = {}): UseSett
     voip: () => capability.canUseVoip.value,
     'friend-list': () => capability.canUseFriendList.value,
     'admin-api': () => capability.canUseAdminApi.value,
-    'burn-after-read': () => capability.canUseBurnAfterRead.value,
-    openclaw: () => capability.canUseOpenclaw.value
+    'burn-after-read': () => capability.canUseBurnAfterRead.value
   }
   const isCapabilityAvailable = (capabilityId: TjgCapability): boolean => capabilityCheckers[capabilityId]()
 

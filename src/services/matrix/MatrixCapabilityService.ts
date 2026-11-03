@@ -30,14 +30,7 @@ type MatrixCapabilitiesResponse = {
  * - The `useServerCapability()` composable bridges service + store at the
  *   consumption layer (no circular import at the service definition level).
  */
-export type TjgCapability =
-  | 'sliding-sync'
-  | 'e2ee'
-  | 'voip'
-  | 'friend-list'
-  | 'admin-api'
-  | 'burn-after-read'
-  | 'openclaw'
+export type TjgCapability = 'sliding-sync' | 'e2ee' | 'voip' | 'friend-list' | 'admin-api' | 'burn-after-read'
 
 const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capabilities: string[] }> = {
   'sliding-sync': {
@@ -63,10 +56,6 @@ const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capab
   'burn-after-read': {
     unstable: ['io.hula.burn_after_read'],
     capabilities: ['io.hula.burn_after_read']
-  },
-  openclaw: {
-    unstable: ['openclaw'],
-    capabilities: ['openclaw']
   }
 }
 
@@ -179,12 +168,6 @@ class MatrixCapabilityService {
    */
   canUseBurnAfterRead(): boolean {
     return this.hasCapability('burn-after-read')
-  }
-
-  /** 检测是否支持 OpenClaw 能力
-   */
-  canUseOpenClaw(): boolean {
-    return this.hasCapability('openclaw')
   }
 
   canUseThreads(): boolean {
@@ -340,7 +323,6 @@ export function useServerCapability() {
     canUseSlidingSync: computed(() => service.canUseSlidingSync()),
     canUseE2EE: computed(() => service.canUseE2EE()),
     canUseVoip: computed(() => service.canUseVoip()),
-    canUseBurnAfterRead: computed(() => service.canUseBurnAfterRead()),
-    canUseOpenclaw: computed(() => service.canUseOpenClaw())
+    canUseBurnAfterRead: computed(() => service.canUseBurnAfterRead())
   }
 }

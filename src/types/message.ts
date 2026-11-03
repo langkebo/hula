@@ -130,8 +130,6 @@ export interface SynapseRustCapabilities {
   'io.hula.voice_extended'?: SynapseRustCapability
   /** Matrix 标准语音（与 io.hula.voice_extended 别名等价） */
   'm.voice'?: SynapseRustCapability
-  /** OpenClaw 路由（openclaw-routes feature） */
-  openclaw?: SynapseRustCapability
 }
 
 export interface MatrixCapabilities {
