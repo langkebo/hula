@@ -359,22 +359,20 @@ export const useLoginFlow = () => {
   }
 
   /**
-   * 以访客身份继续。
+   * 无密码的令牌类登录共用编排（访客 / CAS SSO）：
+   * 重入锁 → 统一登录起点 → 等服务就绪 → 换会话 → 成功跳转，失败统一收口。
    * 入口是否渲染由登录页的能力探测决定；本方法只在探测通过后被调用。
    */
-  const guestLogin = async () => {
+  const runTokenLogin = async (label: string, run: () => Promise<unknown>) => {
     if (loginInFlight) {
-      logger.info('登录已在进行中，忽略重复访客登录')
+      logger.info(`登录已在进行中，忽略重复${label}登录`)
       return
     }
     loginInFlight = true
     try {
       beginLoginAttempt()
       await ensureAppStateReady()
-      await sessionOrchestrator.loginAsGuest({
-        deviceName: 'Tjg Client Guest',
-        client: isDesktop() ? 'PC' : 'MOBILE'
-      })
+      await run()
       markLoginSuccess()
       await transitionToHome()
     } catch (err) {
@@ -384,31 +382,23 @@ export const useLoginFlow = () => {
     }
   }
 
-  /**
-   * 以 CAS 单点登录拿到的 loginToken 完成登录。
-   * 入口是否渲染由登录页的能力探测决定；本方法只在拿到 token 后调用。
-   */
-  const ssoLogin = async (loginToken: string) => {
-    if (loginInFlight) {
-      logger.info('登录已在进行中，忽略重复 SSO 登录')
-      return
-    }
-    loginInFlight = true
-    try {
-      beginLoginAttempt()
-      await ensureAppStateReady()
-      await sessionOrchestrator.loginWithSsoToken({
+  /** 以访客身份继续 */
+  const guestLogin = () =>
+    runTokenLogin('访客', () =>
+      sessionOrchestrator.loginAsGuest({
+        deviceName: 'Tjg Client Guest',
+        client: isDesktop() ? 'PC' : 'MOBILE'
+      })
+    )
+
+  /** 以 CAS 单点登录拿到的 loginToken 完成登录 */
+  const ssoLogin = (loginToken: string) =>
+    runTokenLogin('SSO', () =>
+      sessionOrchestrator.loginWithSsoToken({
         loginToken,
         client: isDesktop() ? 'PC' : 'MOBILE'
       })
-      markLoginSuccess()
-      await transitionToHome()
-    } catch (err) {
-      await handleLoginFailure(err)
-    } finally {
-      loginInFlight = false
-    }
-  }
+    )
 
   /**
    * 选择历史账号并填充登录表单。
