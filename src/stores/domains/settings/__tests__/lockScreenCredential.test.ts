@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { createLockScreenVerifier, verifyLockScreenVerifier } from '../lockScreenCredential'
+import { createLockScreenVerifier, setLockScreenPassword, verifyLockScreenVerifier } from '../lockScreenCredential'
 
 describe('lockScreenCredential', () => {
+  it('设置密码写入 verifier 并开启锁屏', async () => {
+    const state = { enable: false, passwordHash: '' }
+    await setLockScreenPassword(state, 'pass-123456')
+
+    expect(state.enable).toBe(true)
+    expect(state.passwordHash.startsWith('lock-screen:')).toBe(true)
+    await expect(verifyLockScreenVerifier('pass-123456', state.passwordHash)).resolves.toBe(true)
+  })
+
   it('创建的凭据带 lock-screen 前缀且不包含明文密码', async () => {
     const encoded = await createLockScreenVerifier('pass-123456')
     expect(encoded.startsWith('lock-screen:')).toBe(true)

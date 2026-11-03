@@ -18,6 +18,15 @@ export async function createLockScreenVerifier(password: string): Promise<string
   return `${LOCK_SCREEN_PREFIX}${encodedVerifier}`
 }
 
+/** 设置锁屏密码：写入 verifier 并同时开启锁屏。 */
+export async function setLockScreenPassword(
+  state: { enable: boolean; passwordHash: string },
+  password: string
+): Promise<void> {
+  state.passwordHash = await createLockScreenVerifier(password)
+  state.enable = true
+}
+
 /** 校验锁屏密码；凭据缺失、前缀不符或载荷损坏一律返回 false，不抛异常。 */
 export async function verifyLockScreenVerifier(password: string, encoded: string): Promise<boolean> {
   if (!encoded.startsWith(LOCK_SCREEN_PREFIX)) return false

@@ -25,7 +25,7 @@ import { relaunch } from '@tauri-apps/plugin-process'
 import { check } from '@tauri-apps/plugin-updater'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { createLockScreenVerifier } from '@/stores/domains/settings/lockScreenCredential'
+import { setLockScreenPassword } from '@/stores/domains/settings/lockScreenCredential'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -58,9 +58,7 @@ const lock = ref({
     formRef.value?.validate(async (errors) => {
       if (errors) return
       lock.value.loading = true
-      /** 只持久化 PBKDF2 verifier，明文口令用完即弃 */
-      lockScreen.value.passwordHash = await createLockScreenVerifier(formValue.value.lockPassword)
-      lockScreen.value.enable = true
+      await setLockScreenPassword(lockScreen.value, formValue.value.lockPassword)
       timerManager.setTimeout(async () => {
         /** 发送锁屏事件，当打开的窗口接受到后会自动锁屏 */
         if (hasTauriRuntime()) {
