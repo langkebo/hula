@@ -3390,6 +3390,10 @@ export type I18nKeys = {
     "sso": {
       "unavailable_feature": "第三方登录功能暂未开放，请使用账号密码登录"
     },
+    "cas": {
+      "label": "CAS 单点登录",
+      "failed": "CAS 登录失败，请重试"
+    },
     "oidc": {
       "processing": "正在处理 OIDC 登录...",
       "error_title": "登录失败",
@@ -10008,6 +10012,8 @@ export type I18nKeyPaths =
   | "login.third_party.gitee"
   | "login.third_party.github"
   | "login.sso.unavailable_feature"
+  | "login.cas.label"
+  | "login.cas.failed"
   | "login.oidc.processing"
   | "login.oidc.error_title"
   | "login.oidc.success_title"

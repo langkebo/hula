@@ -40,6 +40,7 @@ export function useLoginOrchestrator() {
   const {
     normalLogin,
     guestLogin,
+    ssoLogin,
     retryLogin,
     selectAccount: giveAccount,
     loading,
@@ -324,6 +325,7 @@ export function useLoginOrchestrator() {
   return {
     normalLogin,
     guestLogin,
+    ssoLogin,
     guestSupported,
     retryLogin,
     loading,

@@ -45,9 +45,13 @@ const props = withDefaults(
   defineProps<{
     extraDisabled?: boolean
     loginContext?: ThirdPartyLoginContext
+    /** 仅桌面端 CAS 能力探测通过时由登录页传入 */
+    casEnabled?: boolean
+    casLogin?: () => void
   }>(),
   {
-    extraDisabled: false
+    extraDisabled: false,
+    casEnabled: false
   }
 )
 
@@ -66,21 +70,33 @@ const noop = () => {
   showFeedback(t('login.sso.unavailable_feature'), 'info')
 }
 
-// 企业 SSO（OIDC/SAML/CAS）入口已下线，仅保留 Gitee/GitHub 第三方登录
-const ssoOptions = computed(() => [
-  {
-    key: 'gitee',
-    label: t('login.third_party.gitee'),
-    icon: '#gitee-login',
-    style: 'color-[--tjg-color-danger-500] dark:color-[--tjg-color-danger-500]80',
-    action: resolvedContext.giteeLogin || noop
-  },
-  {
-    key: 'github',
-    label: t('login.third_party.github'),
-    icon: '#github-login',
-    style: 'text-[--tjg-text-primary]',
-    action: resolvedContext.githubLogin || noop
+// 第三方入口：Gitee/GitHub 常驻；CAS 仅在服务端支持且桌面端具备 Tauri 运行时后渲染
+const ssoOptions = computed(() => {
+  const options = [
+    {
+      key: 'gitee',
+      label: t('login.third_party.gitee'),
+      icon: '#gitee-login',
+      style: 'color-[--tjg-color-danger-500] dark:color-[--tjg-color-danger-500]80',
+      action: resolvedContext.giteeLogin || noop
+    },
+    {
+      key: 'github',
+      label: t('login.third_party.github'),
+      icon: '#github-login',
+      style: 'text-[--tjg-text-primary]',
+      action: resolvedContext.githubLogin || noop
+    }
+  ]
+  if (props.casEnabled) {
+    options.push({
+      key: 'cas',
+      label: t('login.cas.label'),
+      icon: '#cas-login',
+      style: 'text-[--tjg-text-primary]',
+      action: props.casLogin || noop
+    })
   }
-])
+  return options
+})
 </script>

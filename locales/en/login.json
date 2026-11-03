@@ -45,6 +45,10 @@
   "sso": {
     "unavailable_feature": "Third-party sign-in is not available yet. Please use your account and password."
   },
+  "cas": {
+    "label": "CAS Single Sign-On",
+    "failed": "CAS login failed, please try again"
+  },
   "oidc": {
     "processing": "Processing OIDC login...",
     "error_title": "Login Failed",
