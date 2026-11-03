@@ -12,6 +12,8 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     path: '/home',
     name: 'home',
     component: () => import('@/layout/index.vue'),
+    // 根路径默认落在消息列表：首页无独立视图，避免 /home 渲染空白布局
+    redirect: '/message',
     children: [
       // /friend 系列 - 中间栏始终渲染 FriendsList，右侧栏根据子路由切换
       { path: '/friend', name: 'friend', component: FriendsList },
@@ -36,7 +38,7 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
       // /message 系列 - 渲染消息列表，:roomId 可选
       { path: '/message/:roomId?', name: 'message', component: Message },
 
-      // /search - 全局搜索（阶段 9 替换为独立 SearchView）
+      // /search - 全局搜索：当前复用 FriendsList 的搜索态，暂未拆独立视图
       { path: '/search', name: 'search', component: FriendsList },
 
       // 旧路径 redirect（向后兼容）

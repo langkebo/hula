@@ -122,7 +122,6 @@ const REPAIRED_FILES = [
   'src/components/widget/WidgetDetailPanel.vue',
   'src/components/widget/WidgetDialogs.vue',
   'src/components/common/ErrorBoundary.vue',
-  'src/components/connection/SyncStatusBar.vue',
   'src/components/common/MemoryMonitor.vue',
   'src/mobile/components/thread/ThreadView.vue',
   'src/components/thread/ThreadIndicator.vue',
