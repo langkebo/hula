@@ -215,6 +215,23 @@ export class MatrixAuthService {
   }
 
   /**
+   * 探测服务端是否支持 CAS 登录。探测失败按不支持处理，避免登录页渲染死按钮。
+   */
+  static async hasCasLoginFlow(): Promise<boolean> {
+    try {
+      const flows = await MatrixAuthService.getLoginFlows()
+      return flows.some((flow) => flow.type === 'm.login.cas')
+    } catch {
+      return false
+    }
+  }
+
+  static async getCasLoginUrl(redirectAfter = '/'): Promise<string> {
+    const client = createTemporaryMatrixClient()
+    return client.getAccountManager().getCasLoginUrl(redirectAfter)
+  }
+
+  /**
    * 探测服务端是否支持访客（guest）注册。
    *
    * 走 SDK `GuestManager.getGuestInfoFromServer()`（GET /account/guest）：
