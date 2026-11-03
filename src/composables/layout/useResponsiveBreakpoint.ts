@@ -46,8 +46,8 @@ export const DEFAULT_BREAKPOINTS: BreakpointConfig = {
   shrink: 768
 }
 
-/** 各模式对应的中间栏宽度 */
-const CENTER_WIDTH_MAP: Record<BreakpointMode, number> = {
+/** 各模式对应的中间栏宽度（像素值必须与 design-tokens.css 的 --tjg-layout-center-* 一致） */
+export const CENTER_WIDTH_MAP: Record<BreakpointMode, number> = {
   wide: 280,
   normal: 240,
   shrink: 64,

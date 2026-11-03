@@ -73,9 +73,9 @@ const centerStyle = computed(() => {
   if (isShrink.value) {
     return {
       flex: '1 1 auto',
-      width: '64px',
+      width: 'var(--tjg-layout-center-shrink)',
       minWidth: '0',
-      maxWidth: '64px'
+      maxWidth: 'var(--tjg-layout-center-shrink)'
     }
   }
   // 房间列表页：中间栏扩展填满可用空间（右侧栏已隐藏）

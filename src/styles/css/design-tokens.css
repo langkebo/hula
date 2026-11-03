@@ -104,6 +104,14 @@
   --tjg-status-busy: #ff4d4f;
   --tjg-status-away: #faad14;
 
+  /* 布局尺寸（与 src/composables/layout/useResponsiveBreakpoint.ts 的 CENTER_WIDTH_MAP 保持一致） */
+  --tjg-layout-left-min: 64px;
+  /* macOS 26 左侧栏最小宽度（含标题栏按钮留白） */
+  --tjg-layout-left-min-mac: 68px;
+  --tjg-layout-center-wide: 280px;
+  --tjg-layout-center-normal: 240px;
+  --tjg-layout-center-shrink: 64px;
+
   /* 字体 */
   --tjg-font-family:
     'PingFang',

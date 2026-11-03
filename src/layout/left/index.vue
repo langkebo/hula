@@ -38,7 +38,9 @@ const componentMapping: Record<number, Component> = {
   [ModalEnum.CHECK_UPDATE]: CheckUpdate
 }
 
-const leftMinWidthClass = computed(() => (isMac26() ? 'min-w-68px' : 'min-w-64px'))
+const leftMinWidthClass = computed(() =>
+  isMac26() ? 'min-w-[--tjg-layout-left-min-mac]' : 'min-w-[--tjg-layout-left-min]'
+)
 
 onMounted(() => {
   useMitt.on(MittEnum.LEFT_MODAL_SHOW, (event: { type: ModalEnum; props?: Record<string, unknown> }) => {

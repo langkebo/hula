@@ -118,12 +118,12 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
     wrapper.unmount()
   })
 
-  it('shrink 模式中间栏宽度为 64px', async () => {
+  it('shrink 模式中间栏宽度取 --tjg-layout-center-shrink 令牌', async () => {
     isShrinkRef.value = true
     const wrapper = await mountCenter()
     const center = wrapper.find('#center')
     const style = center.attributes('style') || ''
-    expect(style).toContain('64px')
+    expect(style).toContain('var(--tjg-layout-center-shrink)')
     wrapper.unmount()
   })
 
@@ -162,7 +162,7 @@ describe('CenterLayout — Step 2.3 响应式断点', () => {
 
     isShrinkRef.value = true
     await nextTick()
-    expect(wrapper.find('#center').attributes('style') || '').toContain('64px')
+    expect(wrapper.find('#center').attributes('style') || '').toContain('var(--tjg-layout-center-shrink)')
 
     wrapper.unmount()
   })
