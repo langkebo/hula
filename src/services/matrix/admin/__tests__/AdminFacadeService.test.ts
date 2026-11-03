@@ -83,6 +83,24 @@ describe('adminService facade', () => {
       getMedia: vi.fn().mockResolvedValue({ media: [], next_token: undefined }),
       deleteMedia: vi.fn().mockResolvedValue(undefined),
       purgeMediaCache: vi.fn().mockResolvedValue({ deleted: 0 }),
+      getMediaInfo: vi.fn().mockResolvedValue({ media_id: 'm1' }),
+      getMediaInfoByServer: vi.fn().mockResolvedValue({ media_id: 'm1' }),
+      deleteMediaByServer: vi.fn().mockResolvedValue(undefined),
+      deleteMediaByPolicy: vi.fn().mockResolvedValue({ deleted: 2 }),
+      quarantineMedia: vi.fn().mockResolvedValue(undefined),
+      unquarantineMedia: vi.fn().mockResolvedValue(undefined),
+      protectMedia: vi.fn().mockResolvedValue({ stream_id: 1, protected: true }),
+      protectMediaById: vi.fn().mockResolvedValue({ stream_id: 1, protected: true }),
+      unprotectMedia: vi.fn().mockResolvedValue({ stream_id: 1, unprotected: true }),
+      getGlobalMediaQuarantineChanges: vi.fn().mockResolvedValue({ next_batch: 0, changes: [] }),
+      getMediaQuarantineChanges: vi.fn().mockResolvedValue({ changes: [], total: 0 }),
+      getRoomMedia: vi.fn().mockResolvedValue({ media: [], total: 0, next_batch: null }),
+      deleteRoomMedia: vi.fn().mockResolvedValue(undefined),
+      quarantineRoomMedia: vi.fn().mockResolvedValue({ room_id: '!r:a', quarantined: true }),
+      unquarantineRoomMedia: vi.fn().mockResolvedValue({ room_id: '!r:a', quarantined: false }),
+      getUserMedia: vi.fn().mockResolvedValue({ media: [], total: 0 }),
+      deleteUserMedia: vi.fn().mockResolvedValue({ deleted: 3 }),
+      quarantineUserMedia: vi.fn().mockResolvedValue({ user_id: '@u:a', quarantined: true }),
       listAuditEvents: vi.fn().mockResolvedValue({ events: [], next_batch: undefined }),
       getAuditEvent: vi.fn().mockResolvedValue(null),
       listSamlMappings: vi.fn().mockResolvedValue({ mappings: [], next_token: undefined }),
@@ -858,6 +876,113 @@ describe('adminService facade', () => {
       const result = await adminService.purgeMediaCache(123456)
       expect(result.deleted).toBe(42)
       expect(mockAdminManager.purgeMediaCache).toHaveBeenCalledWith(123456)
+    })
+
+    it('should get media info via SDK', async () => {
+      mockAdminManager.getMediaInfo.mockResolvedValue({ media_id: 'm1', media_type: 'image/png' })
+      const result = await adminService.getMediaInfo('m1')
+      expect(result?.media_id).toBe('m1')
+      expect(mockAdminManager.getMediaInfo).toHaveBeenCalledWith('m1')
+    })
+
+    it('should return null when media info fails', async () => {
+      mockAdminManager.getMediaInfo.mockRejectedValueOnce(new Error('boom'))
+      expect(await adminService.getMediaInfo('m1')).toBeNull()
+    })
+
+    it('should get media info by server via SDK', async () => {
+      await adminService.getMediaInfoByServer('a.example', 'm1')
+      expect(mockAdminManager.getMediaInfoByServer).toHaveBeenCalledWith('a.example', 'm1')
+    })
+
+    it('should delete media by server via SDK', async () => {
+      await adminService.deleteMediaByServer('a.example', 'm1')
+      expect(mockAdminManager.deleteMediaByServer).toHaveBeenCalledWith('a.example', 'm1')
+    })
+
+    it('should delete media by policy via SDK', async () => {
+      mockAdminManager.deleteMediaByPolicy.mockResolvedValue({ deleted: 2 })
+      const result = await adminService.deleteMediaByPolicy({ beforeTs: 1000, maxSize: 2048 })
+      expect(result).toEqual({ deleted: 2 })
+      expect(mockAdminManager.deleteMediaByPolicy).toHaveBeenCalledWith({ beforeTs: 1000, maxSize: 2048 })
+    })
+
+    it('should quarantine media via SDK', async () => {
+      await adminService.quarantineMedia('a.example', 'm1')
+      expect(mockAdminManager.quarantineMedia).toHaveBeenCalledWith('a.example', 'm1')
+    })
+
+    it('should unquarantine media via SDK', async () => {
+      await adminService.unquarantineMedia('a.example', 'm1')
+      expect(mockAdminManager.unquarantineMedia).toHaveBeenCalledWith('a.example', 'm1')
+    })
+
+    it('should protect media via SDK', async () => {
+      mockAdminManager.protectMedia.mockResolvedValue({ stream_id: 1, protected: true })
+      const result = await adminService.protectMedia('a.example', 'm1')
+      expect(result).toEqual({ stream_id: 1, protected: true })
+      expect(mockAdminManager.protectMedia).toHaveBeenCalledWith('a.example', 'm1')
+    })
+
+    it('should protect media by id via SDK', async () => {
+      await adminService.protectMediaById('m1')
+      expect(mockAdminManager.protectMediaById).toHaveBeenCalledWith('m1')
+    })
+
+    it('should unprotect media via SDK', async () => {
+      mockAdminManager.unprotectMedia.mockResolvedValue({ stream_id: 1, unprotected: true })
+      const result = await adminService.unprotectMedia('m1')
+      expect(result).toEqual({ stream_id: 1, unprotected: true })
+      expect(mockAdminManager.unprotectMedia).toHaveBeenCalledWith('m1')
+    })
+
+    it('should get global quarantine changes via SDK', async () => {
+      await adminService.getGlobalQuarantineChanges(5)
+      expect(mockAdminManager.getGlobalMediaQuarantineChanges).toHaveBeenCalledWith({ from: 5 })
+    })
+
+    it('should get media quarantine changes via SDK', async () => {
+      await adminService.getMediaQuarantineChanges('m1', { from: 'sid-3', limit: 50 })
+      expect(mockAdminManager.getMediaQuarantineChanges).toHaveBeenCalledWith('m1', { from: 'sid-3', limit: 50 })
+    })
+
+    it('should get room media via SDK', async () => {
+      await adminService.getRoomMedia('!r:a', 'from-1', 20)
+      expect(mockAdminManager.getRoomMedia).toHaveBeenCalledWith('!r:a', { from: 'from-1', limit: 20 })
+    })
+
+    it('should delete room media via SDK', async () => {
+      await adminService.deleteRoomMedia('!r:a', 'm1')
+      expect(mockAdminManager.deleteRoomMedia).toHaveBeenCalledWith('!r:a', 'm1')
+    })
+
+    it('should quarantine room media via SDK', async () => {
+      await adminService.quarantineRoomMedia('!r:a', '@u:a')
+      expect(mockAdminManager.quarantineRoomMedia).toHaveBeenCalledWith('!r:a', { userId: '@u:a' })
+    })
+
+    it('should unquarantine room media via SDK', async () => {
+      await adminService.unquarantineRoomMedia('!r:a', '@u:a')
+      expect(mockAdminManager.unquarantineRoomMedia).toHaveBeenCalledWith('!r:a', { userId: '@u:a' })
+    })
+
+    it('should get user media via SDK', async () => {
+      mockAdminManager.getUserMedia.mockResolvedValue({ media: [], total: 0 })
+      const result = await adminService.getUserMedia('@u:a')
+      expect(result).toEqual({ media: [], total: 0 })
+      expect(mockAdminManager.getUserMedia).toHaveBeenCalledWith('@u:a')
+    })
+
+    it('should delete user media via SDK', async () => {
+      mockAdminManager.deleteUserMedia.mockResolvedValue({ deleted: 3 })
+      const result = await adminService.deleteUserMedia('@u:a')
+      expect(result).toEqual({ deleted: 3 })
+      expect(mockAdminManager.deleteUserMedia).toHaveBeenCalledWith('@u:a')
+    })
+
+    it('should quarantine user media via SDK', async () => {
+      await adminService.quarantineUserMedia('@u:a')
+      expect(mockAdminManager.quarantineUserMedia).toHaveBeenCalledWith('@u:a')
     })
   })
 
