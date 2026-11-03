@@ -135,13 +135,13 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | OIDC | 10 | 已覆盖 | — | `MatrixOidcService` |
 | MSC4108 / Rendezvous | 4 | 已覆盖 | — | `MatrixRendezvousService`、`useRendezvous`、`RendezvousSessionManager` |
 | SAML | 16 | 已覆盖 | — | `MatrixAuthSaml`、`AdminSaml.vue`、`useAdminSaml` |
-| Worker | 26（11 条门控） | 未取证 | — | 本轮未逐条核对 worker 管理面 |
+| Worker | 26（11 条门控） | **未覆盖（2026-11-03 取证）** | 15 条管理面端点无前端封装与 UI；11 条 worker-profile-only 归「不适用」 | `src/` 全量检索 `worker/v1`、`WorkerAdmin`、`worker_id` 命中 0；仅 `adminApiAvailability.ts` 残留未被导航引用的 `'worker'` 可选能力位。SDK 已有 `WorkerAdminManager`（15 方法）/ `WorkerBodyManager`（11 方法），若纳入产品范围可直接复用 |
 | 事件举报 | 18 | 已覆盖 | — | `ModerationEventReportTab.vue`、`AdminModerationService` |
 | Relations / Reactions | 9 / 1 | 已覆盖 | — | `MatrixMessageRelationService`、`MatrixReactionService` |
 | 线程 | 21 | **已覆盖** | ~~G-03~~（已落地） | `MatrixThreadApi` 三方法已接线：`ThreadPanel.vue` 头部冻结/静音入口 + footer 只读降级 |
 | 外部服务 | 11 | 已覆盖 | — | `ExternalServiceService`、`ExternalServiceManager.vue` |
 | 好友 | 28 | 已覆盖 | — | `src/services/matrix/friends/` |
-| 媒体 | 60 | **部分覆盖** | ~~G-07~~（已落地） | 主链可用；客户端配额三接口 + admin 全局配额均已接线（`StorageSettings.vue`、`AdminMaintenance.vue`） |
+| 媒体 | 60 | **部分覆盖（2026-11-03 取证：已覆盖 26 / 服务层已封 UI 未接 10 / 未覆盖 24）** | ~~G-07~~（已落地）；未覆盖含 `preview_url` 4 条、`download_signed` 2 条、admin 媒体 18 条 | 主链 `MatrixMediaService` + `MatrixMultimediaService` + `ChunkUploadService`；配额三接口与 admin 全局配额已在 `StorageSettings.vue`、`AdminMaintenance.vue` 接线 |
 | Key Backup | 33 | 已覆盖 | — | `MatrixKeyBackupService`（含 1 条走不通的 `verifyBackup`，见 §3.4 注） |
 | 密钥轮转 | 9 | 已覆盖 | — | `KeyRotationDialog.vue` + `EncryptionSettings.vue` |
 | Widget | 16 | 已覆盖 | — | `MatrixWidgetService`（`private_on_std_widgets=0`，全走私有路由） |
@@ -157,8 +157,8 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 私聊 | 5 | 已覆盖 | — | `src/services/matrix/privateChat/` |
 | 空间 | 26 | 已覆盖 | — | `MatrixSpaceService`、`AdminSpaces.vue` |
 | E2EE | 22 | 已覆盖 | — | `src/services/matrix/crypto/`（26 个非测试文件） |
-| 第三方（3PID） | 6 | 未取证 | — | 本轮未逐条核对 |
-| 管理 | 300 | **部分覆盖** | —（G-01/G-02 已落地：`AdminTelemetry.vue`、`AdminBackgroundUpdates.vue`；媒体子域 23 条仍无页面，见 §3.4 注） | 23 个 admin 服务、25 个 admin 视图；遥测与后台更新均已接线 |
+| 第三方（3PID） | 6 | **未覆盖（2026-11-03 取证：服务层已封 UI 未接 1 / 未覆盖 5）** | `location`、`user` 4 条后端恒 404（无 bridge/identity）；`protocol/{protocol}` 可支撑但无消费 | `/thirdparty/protocols` 由 `MatrixAccountService.getThirdPartyProtocols` → `useAccount` 导出，无 `.vue` 调用；`src/` 无 3PID 路径常量（仅测试命中）；`InviteDialog.vue` 仅目录搜索 + 手填 MXID，`AccountSettings.vue` 无 3PID 绑定 |
+| 管理 | 300 | **部分覆盖** | —（G-01/G-02 已落地：`AdminTelemetry.vue`、`AdminBackgroundUpdates.vue`；媒体子域逐模块 22 条中 20 条仍无页面，quota 与 purge 已接（命名空间口径为 23，见上方口径注），见 §3.4 注） | 23 个 admin 服务、25 个 admin 视图；遥测与后台更新均已接线 |
 | 联邦 | 70 | 已覆盖 | — | `FederationService`、`AdminFederation.vue`、`AdminFederationMonitor.vue` |
 | 装配 | 89 | 不适用 | — | 服务端装配期路由 |
 | 设备 | 13 | 已覆盖 | — | `MatrixDeviceService` |
@@ -172,7 +172,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 > **管理族规模口径修正**：上一版写「管理 150」，那是**逐模块口径**（`ROUTE_CONTRACT.md` 的「管理 (Admin) 150 条」）。命名空间口径下 `/_synapse/admin` 实为 **300** 条（用户 76 / 服务器 62 / 房间 59 / 安全 58 / 媒体 23 / 联邦 22）。两个口径不可相加，本表统一用**逐模块口径**，与 §1.1 的 300 只是分类方式不同。
 >
-> 未取证的 3 个模块族（Worker 管理面、第三方 3PID、媒体部分子项）在验收前必须补齐取证，不得按「已覆盖」计入完成率。
+> **三个模块族已于 2026-11-03 完成取证**（判据见 §1.3 口径）：Worker 26 条 = 未覆盖 15 + 不适用 11；第三方 3PID 6 条 = 服务层已封 UI 未接 1 + 未覆盖 5；媒体 60 条 = 已覆盖 26 / 服务层已封 UI 未接 10 / 未覆盖 24。未覆盖项均不按「已覆盖」计入完成率；是否补 UI 属产品范围决策，不由本文档单方面判定。
 
 ---
 
@@ -252,7 +252,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 > **两条与本方案相邻但不单列的已知问题**（来自基准文档 v2.5，属于契约层，不计入本文档的 UI 缺陷口径）：
 > 1. `MatrixKeyBackupService.verifyBackup` 打的是 by-design 404 端点，**移动端 `MobileSecureBackupDialog` 仍可触发**——修法见 v2.5 §2.4.9，不属 UI 布局范畴。
-> 2. Admin 媒体子域 23 条端点无页面——与 G-01/G-02 同源（管理面「有端点无页面」），若与 G-01 同批做，可把媒体页并入阶段 B。
+> 2. Admin 媒体子域按逐模块口径为 22 条（`admin/media.rs`），其中 20 条无页面（quota 与 purge_media_cache 已在 `AdminMaintenance.vue` 接线）；§1.3 口径注中的「媒体 23」是 `/_synapse/admin` 命名空间口径，两者分类方式不同、不可相加。此前「23 条无页面」混用了两个口径，经 2026-11-03 复核更正。该缺口与 G-01/G-02 同源（管理面「有端点无页面」），若与 G-01 同批做，可把媒体页并入阶段 B。另 `AdminMediaService.getMediaStats` 调用的 SDK 方法不存在，属幽灵方法，不对应任何路由。
 
 ### 3.5 无障碍
 
@@ -785,7 +785,7 @@ pnpm test:run tests/lint/design-baseline.test.ts
 **阶段 B：管理后台与能力入口（P1）**
 
 6. 【已完成 2026-11-02】G-01、G-02（遥测页、后台更新页）——与 `useAdminNav` 的能力探测基建共用。
-7. （可选，若与 G-01 同批）Admin 媒体子域页面 —— 见 §3.4 注 2。
+7. （可选，若与 G-01 同批）Admin 媒体子域页面（逐模块 22 条中 20 条无页面）—— 见 §3.4 注 2。
 
 **阶段 C：布局（P2）**
 
@@ -856,7 +856,7 @@ pnpm verify:sdk-pin
 2. P2 收敛：`hardcoded_color` 保持 0 并锁定基线；`NModal` 已完成分类收敛并**冻结在 105**（设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105）；残留均为确认/向导/选择器/查看器/前置认证并逐文件登记，**验收口径为「计数不再上升」**，非编辑语义弹窗不再纳入收敛范围。
 3. 能力缺口：G-01、G-02、G-03、G-04、G-06、G-07、G-08 已落地并有测试；G-05 已于 2026-11-03 落地并有测试（后端内置 CAS 登录页 + loginToken 回调，前端 Tauri 子窗口 + `m.login.token`）。
 4. 残留清理：`SyncStatusBar.vue` 与其实测已删除，`typings/` 无该符号。
-5. 未取证项清零：Worker 管理面、第三方 3PID、媒体子项三项补齐取证后再更新 §1.3；A-01 已在 Storybook 可达后跑通 `check:a11y`（0 serious/critical）并修复 `FileUploadModal` 的 `trap-focus=false`，逐故事扫描待补；A-02 已修复（`role="separator"` + `aria-label` + 方向键，回归测试覆盖）、A-03 经取证不成立（无手动收起控件）。
+5. 未取证项已于 2026-11-03 清零并回写 §1.3：Worker 15 未覆盖 + 11 不适用、3PID 1 服务层已封 UI 未接 + 5 未覆盖、媒体 26 已覆盖 / 10 服务层已封 / 24 未覆盖；A-01 已在 Storybook 可达后跑通 `check:a11y`（0 serious/critical）并修复 `FileUploadModal` 的 `trap-focus=false`，逐故事扫描待补；A-02 已修复（`role="separator"` + `aria-label` + 方向键，回归测试覆盖）、A-03 经取证不成立（无手动收起控件）。
 6. 门禁全绿：`test:run`、`typecheck`、`check:ratchet`、`check-file-size`、`check-integration-map-freshness`、`verify:sdk-pin` 无失败。
 
 ---
@@ -967,7 +967,7 @@ as_unknown_as: 0 (baseline 0) —— 剩余双重断言全部命中具名 allowl
 1. `route_modules=75` 与 ROUTE_CONTRACT 正文的「67 个含路由注册模块」统计粒度不同（前者按注册元数据聚合，后者按源码模块去重）。本文件 §1.1 同时列出，不做合并。
 2. `private_routes=545` 与 `private_on_std_*` 是 Tjg 侧私有扩展路由的口径，不能与 980 直接相加或相减。
 3. `scripts/contract-coverage-map.json` 的 `uncoveredPathCount` **不得**作为「前端未覆盖数」使用：该文件上次生成于 2026-10-19（ledger 1027 / commit `8072be84c`），已与当前契约不一致，且 801 条未覆盖中包含联邦、AppService、装配等非客户端可消费路由。本报告的能力覆盖结论一律来自 §1.3 的逐族取证。
-4. 未取证项（Worker 管理面、第三方 3PID、媒体部分子项、`check:a11y` 结果）在补齐前不计入「已覆盖」与「已完成」。
+4. `check:a11y` 结果在补齐前不计入「已覆盖」与「已完成」；三个模块族的取证已于 2026-11-03 清零，未覆盖项已如实计入 §1.3。
 
 ---
 
