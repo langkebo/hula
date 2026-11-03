@@ -51,9 +51,21 @@ type LegacyMediaResult = Omit<MediaPage, 'media'> & {
   next_token?: string
 }
 
+// 扁平 AdminManager 将 deleteUserMedia 声明为 Promise<void>，但运行时实际返回 { deleted: number }
+// （见 admin-media-manager.d.ts 的 deleteUserMedia）；此处按运行时形状窄化读取，
+// 形状缺失时与失败语义一致降级为 null。
+type DeleteUserMediaResult = { deleted: number }
+
+function isDeleteUserMediaResult(value: unknown): value is DeleteUserMediaResult {
+  return typeof value === 'object' && value !== null && 'deleted' in value && typeof value.deleted === 'number'
+}
+
 export class AdminMediaService {
   constructor(private readonly sdkAdmin: MediaDomainSdkGetter) {}
 
+  // 媒体方法错误语义：
+  // - void 写方法（delete/quarantine/unquarantine 等）失败时记录日志并 rethrow，由调用方反馈；
+  // - 有返回值的方法失败时降级返回 null（不抛出），调用方必须先判空。
   async getMediaList(
     limit = LARGE_PAGE_LIMIT,
     from?: string,
@@ -213,10 +225,12 @@ export class AdminMediaService {
     }
   }
 
-  async getMediaQuarantineChanges(mediaId: string, since?: number): Promise<MediaQuarantineChangesResponse | null> {
+  async getMediaQuarantineChanges(
+    mediaId: string,
+    options?: { from?: string; limit?: number }
+  ): Promise<MediaQuarantineChangesResponse | null> {
     try {
       const admin = await this.sdkAdmin()
-      const options = since === undefined ? undefined : { from: String(since) }
       return await admin.getMediaQuarantineChanges(mediaId, options)
     } catch (err) {
       logger.error(`[AdminMedia] 获取媒体隔离变更失败: ${err}`)
@@ -277,13 +291,19 @@ export class AdminMediaService {
     }
   }
 
-  async deleteUserMedia(userId: string): Promise<void> {
+  async deleteUserMedia(userId: string): Promise<{ deleted: number } | null> {
     try {
       const admin = await this.sdkAdmin()
-      await admin.deleteUserMedia(userId)
+      const result: unknown = await admin.deleteUserMedia(userId)
+      if (!isDeleteUserMediaResult(result)) {
+        logger.warn(`[AdminMedia] 删除用户媒体未返回删除条数: ${userId}`)
+        return null
+      }
+      logger.info(`[AdminMedia] 已删除用户媒体: ${userId} (${result.deleted}个)`)
+      return { deleted: result.deleted }
     } catch (err) {
       logger.error(`[AdminMedia] 删除用户媒体失败: ${err}`)
-      throw err
+      return null
     }
   }
 
