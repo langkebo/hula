@@ -79,6 +79,7 @@ export class AdminMediaService {
       createdAt: number
       uploadName?: string | undefined
       mediaLength?: number | undefined
+      quarantined?: boolean | undefined
     }>
     nextToken?: string | undefined
   }> {
@@ -92,7 +93,8 @@ export class AdminMediaService {
           contentUri: m.content_uri ?? '',
           createdAt: m.created_ts ?? 0,
           uploadName: m.upload_name,
-          mediaLength: m.media_length
+          mediaLength: m.media_length,
+          quarantined: m.quarantined
         })),
         nextToken: result?.next_batch ?? result?.next_token
       }

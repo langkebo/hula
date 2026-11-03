@@ -35,6 +35,7 @@ const {
     createdAt: number
     uploadName: string
     mediaLength: number
+    quarantined?: boolean
   }
   return {
     loadLibraryMock: vi.fn(),
@@ -189,8 +190,13 @@ vi.mock('naive-ui', async () => {
       name: 'NButton',
       props: ['loading', 'type', 'size', 'disabled', 'text', 'quaternary'],
       emits: ['click'],
-      setup(_, { slots, emit }) {
-        return () => h('button', { type: 'button', onClick: () => emit('click') }, slots.default?.())
+      setup(props, { slots, emit }) {
+        return () =>
+          h(
+            'button',
+            { type: 'button', disabled: props.disabled ? true : undefined, onClick: () => emit('click') },
+            slots.default?.()
+          )
       }
     }),
     NCard: passthrough('NCard'),
@@ -249,7 +255,14 @@ vi.mock('naive-ui', async () => {
           ])
       }
     }),
-    NDrawer: passthrough('NDrawer'),
+    NDrawer: defineComponent({
+      name: 'NDrawer',
+      props: ['show', 'width', 'placement'],
+      setup(props, { slots }) {
+        return () =>
+          h('div', { 'data-test': 'NDrawer', 'data-show': String(props.show) }, props.show ? slots.default?.() : [])
+      }
+    }),
     NDrawerContent: passthrough('NDrawerContent'),
     NEmpty: passthrough('NEmpty'),
     NInput: defineComponent({
@@ -279,7 +292,24 @@ vi.mock('naive-ui', async () => {
           })
       }
     }),
-    NModal: passthrough('NModal'),
+    NModal: defineComponent({
+      name: 'NModal',
+      props: ['show', 'title', 'preset'],
+      setup(props, { slots }) {
+        return () =>
+          h(
+            'div',
+            { 'data-test': 'NModal', 'data-show': String(props.show) },
+            props.show
+              ? [
+                  props.title ? h('span', { 'data-test': 'NModal-title' }, String(props.title)) : null,
+                  slots.default?.(),
+                  slots.footer?.()
+                ]
+              : []
+          )
+      }
+    }),
     NPageHeader: passthrough('NPageHeader'),
     NPopconfirm: defineComponent({
       name: 'NPopconfirm',
@@ -420,6 +450,196 @@ describe('AdminMedia', () => {
     const wrapper = mountComponent()
     await flushPromises()
 
+    expect(loadQuarantineChangesMock).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('admin.media.empty.changes')
+  })
+
+  it('隔离变更流加载后展示记录并支持加载更多', async () => {
+    state.quarantineChanges = [{ origin: 'b.example', media_id: 'q1', quarantined: true }]
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(loadQuarantineChangesMock).toHaveBeenCalledTimes(1)
+    const panel = wrapper.find('.media-quarantine-changes-panel')
+    expect(panel.text()).toContain('q1')
+    expect(panel.text()).toContain('admin.media.column.quarantined')
+
+    const loadMore = panel.findAll('button').find((button) => button.text().includes('admin.media.action.loadMore'))
+    expect(loadMore).toBeTruthy()
+    await loadMore!.trigger('click')
+    expect(loadMoreQuarantineChangesMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('媒体库展示隔离状态列', async () => {
+    state.library = [
+      {
+        mediaId: 'm1',
+        mediaType: 'image/png',
+        contentUri: 'mxc://a.example/m1',
+        createdAt: 1700000000000,
+        uploadName: 'media_id_value',
+        mediaLength: 2048,
+        quarantined: true
+      }
+    ]
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const quarantinedCell = wrapper.find('[data-test="NDataTable-cell-quarantined"]')
+    expect(quarantinedCell.text()).toContain('admin.media.column.quarantined')
+  })
+
+  it('点击详情打开抽屉并加载隔离历史', async () => {
+    state.selectedMedia = {
+      media_id: 'm1',
+      media_type: 'image/png',
+      upload_name: 'media_id_value',
+      media_length: 2048,
+      created_ts: 1700000000000,
+      quarantined: true
+    }
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const drawer = wrapper.find('[data-test="NDrawer"]')
+    expect(drawer.attributes('data-show')).toBe('false')
+
+    const button = findButton(wrapper, 'admin.media.action.detail')
+    await button!.trigger('click')
+    await flushPromises()
+
+    expect(openMediaDetailMock).toHaveBeenCalledWith('m1')
+    expect(loadMediaQuarantineHistoryMock).toHaveBeenCalledWith('m1')
+    expect(wrapper.find('[data-test="NDrawer"]').attributes('data-show')).toBe('true')
+    expect(wrapper.find('[data-test="NDrawer"]').text()).toContain('m1')
+  })
+
+  it('删除成功后重新加载媒体库', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+    expect(loadLibraryMock).toHaveBeenCalledTimes(1)
+
+    await wrapper.find('[data-test="NPopconfirm-positive"]').trigger('click')
+    await flushPromises()
+
+    expect(deleteOneMock).toHaveBeenCalledWith('a.example', 'm1')
+    expect(loadLibraryMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('策略删除两个条件为空时禁用确认并提示风险', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    await findButton(wrapper, 'admin.media.action.policyDelete')!.trigger('click')
+    const modal = wrapper.find('[data-test="NModal"]')
+    expect(modal.attributes('data-show')).toBe('true')
+    expect(modal.text()).toContain('admin.media.field.policyHint')
+
+    const confirm = modal.findAll('button').find((button) => button.text().includes('admin.common.confirm'))
+    expect(confirm!.attributes('disabled')).toBeDefined()
+
+    await modal.find('input[data-test="NDatePicker"]').setValue('1700000000000')
+    expect(confirm!.attributes('disabled')).toBeUndefined()
+    expect(modal.text()).not.toContain('admin.media.field.policyHint')
+  })
+
+  it('策略删除成功时按条件调用并提示数量', async () => {
+    deleteByPolicyMock.mockResolvedValue(3)
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    await findButton(wrapper, 'admin.media.action.policyDelete')!.trigger('click')
+    const modal = wrapper.find('[data-test="NModal"]')
+    await modal.find('input[data-test="NInputNumber"]').setValue('4096')
+    const confirm = modal.findAll('button').find((button) => button.text().includes('admin.common.confirm'))
+    await confirm!.trigger('click')
+    await flushPromises()
+
+    expect(deleteByPolicyMock).toHaveBeenCalledWith({ maxSize: 4096 })
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.media.feedback.policy_deleted', 'success')
+    expect(loadLibraryMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('策略删除失败时展示失败反馈而非成功', async () => {
+    deleteByPolicyMock.mockRejectedValue(new Error('policy delete failed'))
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    await findButton(wrapper, 'admin.media.action.policyDelete')!.trigger('click')
+    const modal = wrapper.find('[data-test="NModal"]')
+    await modal.find('input[data-test="NInputNumber"]').setValue('4096')
+    const confirm = modal.findAll('button').find((button) => button.text().includes('admin.common.confirm'))
+    await confirm!.trigger('click')
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.media.feedback.failed', 'error')
+    expect(showFeedbackMock).not.toHaveBeenCalledWith('admin.media.feedback.policy_deleted', 'success')
+  })
+
+  it('房间媒体按房间 ID 查询并支持加载更多', async () => {
+    state.roomMedia = [
+      {
+        media_id: 'r1',
+        upload_name: 'room.png',
+        media_type: 'image/png',
+        media_length: 10,
+        created_ts: 1700000000000
+      }
+    ]
+    state.roomMediaNextBatch = 'room-next'
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const roomCard = wrapper.findAll('[data-test="NCard"]')[0]
+    await roomCard.find('input[data-test="NInput"]').setValue('!room:a.example')
+    const refresh = roomCard.findAll('button').find((button) => button.text().includes('admin.common.refresh'))
+    await refresh!.trigger('click')
+    await flushPromises()
+
+    expect(loadRoomMediaMock).toHaveBeenCalledWith('!room:a.example')
+    expect(roomCard.text()).toContain('room.png')
+
+    const loadMore = roomCard.findAll('button').find((button) => button.text().includes('admin.media.action.loadMore'))
+    expect(loadMore).toBeTruthy()
+    await loadMore!.trigger('click')
+    expect(loadMoreRoomMediaMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('用户媒体按用户 ID 查询', async () => {
+    state.userMedia = [
+      {
+        media_id: 'u1m',
+        upload_name: 'user.png',
+        media_type: 'image/png',
+        media_length: 20,
+        created_ts: 1700000000000
+      }
+    ]
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const userCard = wrapper.findAll('[data-test="NCard"]')[1]
+    await userCard.find('input[data-test="NInput"]').setValue('@u1:a.example')
+    const refresh = userCard.findAll('button').find((button) => button.text().includes('admin.common.refresh'))
+    await refresh!.trigger('click')
+    await flushPromises()
+
+    expect(loadUserMediaMock).toHaveBeenCalledWith('@u1:a.example')
+    expect(userCard.text()).toContain('user.png')
+  })
+
+  it('mutating 时禁用行操作与隔离按钮', async () => {
+    state.mutating = true
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const quarantine = findButton(wrapper, 'admin.media.action.quarantine')
+    expect(quarantine!.attributes('disabled')).toBeDefined()
+
+    const roomCard = wrapper.findAll('[data-test="NCard"]')[0]
+    const quarantineRoom = roomCard
+      .findAll('button')
+      .find((button) => button.text().includes('admin.media.action.quarantineRoom'))
+    expect(quarantineRoom!.attributes('disabled')).toBeDefined()
   })
 })

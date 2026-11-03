@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type DataTableColumns, NButton, NCard, NDataTable, NEmpty, NInput, NPopconfirm, NSpace } from 'naive-ui'
-import { h, ref } from 'vue'
+import { computed, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type UseAdminMedia, useAdminMedia } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -19,6 +19,7 @@ const {
   roomMediaLoading,
   userMedia,
   userMediaLoading,
+  mutating,
   loadRoomMedia,
   loadMoreRoomMedia,
   loadUserMedia,
@@ -38,13 +39,15 @@ const userLoaded = ref(false)
 const formatDateTime = (timestamp?: number): string =>
   typeof timestamp === 'number' && timestamp > 0 ? new Date(timestamp).toLocaleString() : '-'
 
-const runAction = async (action: () => Promise<unknown>, successKey: string): Promise<void> => {
+const runAction = async (action: () => Promise<unknown>, successKey: string): Promise<boolean> => {
   try {
     await action()
     showFeedback(t(successKey), 'success')
+    return true
   } catch (error) {
     logger.error('media action failed', { error: error instanceof Error ? error.message : String(error) })
     showFeedback(t('admin.media.feedback.failed'), 'error')
+    return false
   }
 }
 
@@ -62,50 +65,59 @@ const handleLoadUser = async (): Promise<void> => {
   userLoaded.value = true
 }
 
-const handleDeleteRoomMedia = (row: RoomMediaItem): Promise<void> => {
+const handleDeleteRoomMedia = async (row: RoomMediaItem): Promise<void> => {
   const id = roomId.value.trim()
-  if (!id) return Promise.resolve()
-  return runAction(() => deleteRoomOne(id, row.media_id), 'admin.media.feedback.delete_success')
+  if (!id) return
+  const deleted = await runAction(() => deleteRoomOne(id, row.media_id), 'admin.media.feedback.delete_success')
+  if (deleted) {
+    await loadRoomMedia(id)
+  }
 }
 
-const handleDeleteUserMedia = (row: UserMediaItem): Promise<void> =>
-  runAction(() => deleteOne(null, row.media_id), 'admin.media.feedback.delete_success')
+const handleDeleteUserMedia = async (row: UserMediaItem): Promise<void> => {
+  const id = userId.value.trim()
+  const deleted = await runAction(() => deleteOne(null, row.media_id), 'admin.media.feedback.delete_success')
+  if (deleted && id) {
+    await loadUserMedia(id)
+  }
+}
 
-const handleQuarantineRoom = (): Promise<void> => {
+const handleQuarantineRoom = (): Promise<boolean> => {
   const id = roomId.value.trim()
-  if (!id) return Promise.resolve()
+  if (!id) return Promise.resolve(false)
   return runAction(
     () => quarantineRoom(id, roomUserId.value.trim() || undefined),
     'admin.media.feedback.quarantine_success'
   )
 }
 
-const handleUnquarantineRoom = (): Promise<void> => {
+const handleUnquarantineRoom = (): Promise<boolean> => {
   const id = roomId.value.trim()
-  if (!id) return Promise.resolve()
+  if (!id) return Promise.resolve(false)
   return runAction(
     () => unquarantineRoom(id, roomUserId.value.trim() || undefined),
     'admin.media.feedback.unquarantine_success'
   )
 }
 
-const handleQuarantineUser = (): Promise<void> => {
+const handleQuarantineUser = (): Promise<boolean> => {
   const id = userId.value.trim()
-  if (!id) return Promise.resolve()
+  if (!id) return Promise.resolve(false)
   return runAction(() => quarantineUser(id), 'admin.media.feedback.quarantine_success')
 }
 
-const renderDeleteAction = (onDelete: () => void) =>
+const renderDeleteAction = (onDelete: () => void, disabled: boolean) =>
   h(
     NPopconfirm,
     { onPositiveClick: onDelete },
     {
-      trigger: () => h(NButton, { size: 'small', text: true, type: 'error' }, () => t('admin.media.action.delete')),
+      trigger: () =>
+        h(NButton, { size: 'small', text: true, type: 'error', disabled }, () => t('admin.media.action.delete')),
       default: () => t('admin.media.action.deleteConfirm')
     }
   )
 
-const roomColumns: DataTableColumns<RoomMediaItem> = [
+const roomColumns = computed<DataTableColumns<RoomMediaItem>>(() => [
   { title: t('admin.media.column.mediaId'), key: 'media_id', width: 200, ellipsis: { tooltip: true } },
   { title: t('admin.media.column.name'), key: 'upload_name', width: 180, ellipsis: { tooltip: true } },
   { title: t('admin.media.column.type'), key: 'media_type', width: 130 },
@@ -125,11 +137,11 @@ const roomColumns: DataTableColumns<RoomMediaItem> = [
     title: t('admin.media.column.actions'),
     key: 'actions',
     width: 100,
-    render: (row) => renderDeleteAction(() => void handleDeleteRoomMedia(row))
+    render: (row) => renderDeleteAction(() => void handleDeleteRoomMedia(row), mutating.value)
   }
-]
+])
 
-const userColumns: DataTableColumns<UserMediaItem> = [
+const userColumns = computed<DataTableColumns<UserMediaItem>>(() => [
   { title: t('admin.media.column.mediaId'), key: 'media_id', width: 200, ellipsis: { tooltip: true } },
   { title: t('admin.media.column.name'), key: 'upload_name', width: 180, ellipsis: { tooltip: true } },
   { title: t('admin.media.column.type'), key: 'media_type', width: 130 },
@@ -149,9 +161,9 @@ const userColumns: DataTableColumns<UserMediaItem> = [
     title: t('admin.media.column.actions'),
     key: 'actions',
     width: 100,
-    render: (row) => renderDeleteAction(() => void handleDeleteUserMedia(row))
+    render: (row) => renderDeleteAction(() => void handleDeleteUserMedia(row), mutating.value)
   }
-]
+])
 </script>
 
 <template>
@@ -182,8 +194,12 @@ const userColumns: DataTableColumns<UserMediaItem> = [
               v-model:value="roomUserId"
               :placeholder="t('admin.media.field.userIdOptional')"
               class="max-w-280px" />
-            <n-button @click="handleQuarantineRoom">{{ t('admin.media.action.quarantineRoom') }}</n-button>
-            <n-button @click="handleUnquarantineRoom">{{ t('admin.media.action.unquarantineRoom') }}</n-button>
+            <n-button :disabled="mutating" @click="handleQuarantineRoom">
+              {{ t('admin.media.action.quarantineRoom') }}
+            </n-button>
+            <n-button :disabled="mutating" @click="handleUnquarantineRoom">
+              {{ t('admin.media.action.unquarantineRoom') }}
+            </n-button>
           </n-space>
         </n-space>
       </n-card>
@@ -203,7 +219,9 @@ const userColumns: DataTableColumns<UserMediaItem> = [
             :description="t('admin.media.empty.userMedia')" />
 
           <div class="flex justify-end">
-            <n-button @click="handleQuarantineUser">{{ t('admin.media.action.quarantineUser') }}</n-button>
+            <n-button :disabled="mutating" @click="handleQuarantineUser">
+              {{ t('admin.media.action.quarantineUser') }}
+            </n-button>
           </div>
         </n-space>
       </n-card>

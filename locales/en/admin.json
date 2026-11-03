@@ -808,7 +808,9 @@
     },
     "field": {
       "before": "Before",
-      "maxSize": "Max Count",
+      "maxSize": "Larger than (bytes)",
+      "maxSizePlaceholder": "Bytes, e.g. 1048576 (1 MB)",
+      "policyHint": "Leaving both fields empty applies no filter and deletes all local media older than now. Proceed with caution.",
       "roomId": "Room ID",
       "userId": "User ID",
       "userIdOptional": "User ID (optional)"

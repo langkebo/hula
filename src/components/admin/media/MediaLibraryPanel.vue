@@ -15,7 +15,7 @@ import {
   NSpace,
   NTag
 } from 'naive-ui'
-import { h, onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type MediaLibraryItem, type UseAdminMedia, useAdminMedia } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -53,6 +53,8 @@ const history = ref<MediaHistoryEntry[]>([])
 const policyVisible = ref(false)
 const policyBeforeTs = ref<number | null>(null)
 const policyMaxSize = ref<number | null>(null)
+/** 两个条件均为空时不设置任何过滤条件，确认按钮需禁用并提示风险。 */
+const policyEmpty = computed(() => !policyBeforeTs.value && !policyMaxSize.value)
 
 const formatDateTime = (timestamp?: number): string =>
   typeof timestamp === 'number' && timestamp > 0 ? new Date(timestamp).toLocaleString() : '-'
@@ -69,13 +71,15 @@ const resolveServerName = (mediaId: string): string => {
   return matrixClientService.getClient()?.getDomain() ?? ''
 }
 
-const runAction = async (action: () => Promise<unknown>, successKey: string): Promise<void> => {
+const runAction = async (action: () => Promise<unknown>, successKey: string): Promise<boolean> => {
   try {
     await action()
     showFeedback(t(successKey), 'success')
+    return true
   } catch (error) {
     logger.error('media action failed', { error: error instanceof Error ? error.message : String(error) })
     showFeedback(t('admin.media.feedback.failed'), 'error')
+    return false
   }
 }
 
@@ -107,29 +111,36 @@ const handleDetailVisibleChange = (visible: boolean): void => {
   }
 }
 
-const handleQuarantine = (row: MediaLibraryItem): Promise<void> => {
+const handleQuarantine = (row: MediaLibraryItem): Promise<boolean> => {
   const serverName = requireServerName(row.mediaId)
-  if (!serverName) return Promise.resolve()
+  if (!serverName) return Promise.resolve(false)
   return runAction(() => quarantine(serverName, row.mediaId), 'admin.media.feedback.quarantine_success')
 }
 
-const handleUnquarantine = (row: MediaLibraryItem): Promise<void> => {
+const handleUnquarantine = (row: MediaLibraryItem): Promise<boolean> => {
   const serverName = requireServerName(row.mediaId)
-  if (!serverName) return Promise.resolve()
+  if (!serverName) return Promise.resolve(false)
   return runAction(() => unquarantine(serverName, row.mediaId), 'admin.media.feedback.unquarantine_success')
 }
 
-const handleProtect = (row: MediaLibraryItem): Promise<void> => {
+const handleProtect = (row: MediaLibraryItem): Promise<boolean> => {
   const serverName = requireServerName(row.mediaId)
-  if (!serverName) return Promise.resolve()
+  if (!serverName) return Promise.resolve(false)
   return runAction(() => protect(serverName, row.mediaId), 'admin.media.feedback.protect_success')
 }
 
-const handleUnprotect = (row: MediaLibraryItem): Promise<void> =>
+const handleUnprotect = (row: MediaLibraryItem): Promise<boolean> =>
   runAction(() => unprotect(row.mediaId), 'admin.media.feedback.unprotect_success')
 
-const handleDelete = (row: MediaLibraryItem): Promise<void> =>
-  runAction(() => deleteOne(resolveServerName(row.mediaId) || null, row.mediaId), 'admin.media.feedback.delete_success')
+const handleDelete = async (row: MediaLibraryItem): Promise<void> => {
+  const deleted = await runAction(
+    () => deleteOne(resolveServerName(row.mediaId) || null, row.mediaId),
+    'admin.media.feedback.delete_success'
+  )
+  if (deleted) {
+    await loadLibrary()
+  }
+}
 
 const refresh = (): Promise<void> => loadLibrary()
 
@@ -140,6 +151,7 @@ const openPolicyModal = (): void => {
 }
 
 const handlePolicyDelete = async (): Promise<void> => {
+  if (policyEmpty.value) return
   const options: { beforeTs?: number; maxSize?: number } = {}
   if (policyBeforeTs.value) options.beforeTs = policyBeforeTs.value
   if (policyMaxSize.value) options.maxSize = policyMaxSize.value
@@ -159,29 +171,34 @@ const renderActions = (row: MediaLibraryItem) =>
     h(NButton, { size: 'small', text: true, onClick: () => void handleDetail(row) }, () =>
       t('admin.media.action.detail')
     ),
-    h(NButton, { size: 'small', text: true, onClick: () => void handleQuarantine(row) }, () =>
+    h(NButton, { size: 'small', text: true, disabled: mutating.value, onClick: () => void handleQuarantine(row) }, () =>
       t('admin.media.action.quarantine')
     ),
-    h(NButton, { size: 'small', text: true, onClick: () => void handleUnquarantine(row) }, () =>
-      t('admin.media.action.unquarantine')
+    h(
+      NButton,
+      { size: 'small', text: true, disabled: mutating.value, onClick: () => void handleUnquarantine(row) },
+      () => t('admin.media.action.unquarantine')
     ),
-    h(NButton, { size: 'small', text: true, onClick: () => void handleProtect(row) }, () =>
+    h(NButton, { size: 'small', text: true, disabled: mutating.value, onClick: () => void handleProtect(row) }, () =>
       t('admin.media.action.protect')
     ),
-    h(NButton, { size: 'small', text: true, onClick: () => void handleUnprotect(row) }, () =>
+    h(NButton, { size: 'small', text: true, disabled: mutating.value, onClick: () => void handleUnprotect(row) }, () =>
       t('admin.media.action.unprotect')
     ),
     h(
       NPopconfirm,
       { onPositiveClick: () => void handleDelete(row) },
       {
-        trigger: () => h(NButton, { size: 'small', text: true, type: 'error' }, () => t('admin.media.action.delete')),
+        trigger: () =>
+          h(NButton, { size: 'small', text: true, type: 'error', disabled: mutating.value }, () =>
+            t('admin.media.action.delete')
+          ),
         default: () => t('admin.media.action.deleteConfirm')
       }
     )
   ])
 
-const columns: DataTableColumns<MediaLibraryItem> = [
+const columns = computed<DataTableColumns<MediaLibraryItem>>(() => [
   { title: t('admin.media.column.mediaId'), key: 'mediaId', width: 200, ellipsis: { tooltip: true } },
   { title: t('admin.media.column.type'), key: 'mediaType', width: 140 },
   { title: t('admin.media.column.name'), key: 'uploadName', width: 180, ellipsis: { tooltip: true } },
@@ -197,8 +214,17 @@ const columns: DataTableColumns<MediaLibraryItem> = [
     width: 180,
     render: (row) => formatDateTime(row.createdAt)
   },
+  {
+    title: t('admin.media.column.quarantined'),
+    key: 'quarantined',
+    width: 110,
+    render: (row) =>
+      h(NTag, { size: 'small', type: row.quarantined ? 'warning' : 'default' }, () =>
+        row.quarantined ? t('admin.media.column.quarantined') : '-'
+      )
+  },
   { title: t('admin.media.column.actions'), key: 'actions', width: 360, render: renderActions }
-]
+])
 
 const historyColumns: DataTableColumns<MediaHistoryEntry> = [
   {
@@ -283,13 +309,18 @@ onMounted(() => {
         </div>
         <div>
           <div class="mb-4px text-12px">{{ t('admin.media.field.maxSize') }}</div>
-          <n-input-number v-model:value="policyMaxSize" :min="0" class="w-full" />
+          <n-input-number
+            v-model:value="policyMaxSize"
+            :min="0"
+            :placeholder="t('admin.media.field.maxSizePlaceholder')"
+            class="w-full" />
         </div>
+        <div v-if="policyEmpty" class="text-12px">{{ t('admin.media.field.policyHint') }}</div>
       </n-space>
       <template #footer>
         <div class="flex justify-end gap-12px">
           <n-button @click="policyVisible = false">{{ t('admin.common.cancel') }}</n-button>
-          <n-button type="error" :loading="mutating" @click="handlePolicyDelete">
+          <n-button type="error" :loading="mutating" :disabled="policyEmpty" @click="handlePolicyDelete">
             {{ t('admin.common.confirm') }}
           </n-button>
         </div>

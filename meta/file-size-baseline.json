@@ -1,11 +1,11 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-03T08:22:31.884Z",
+  "updated_at": "2026-11-03T08:36:53.082Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
   "critical_limit": 1000,
-  "total_oversized_files": 120,
+  "total_oversized_files": 118,
   "files": [
     {
       "file": "src/components/rightBox/MsgInput.vue",
@@ -400,10 +400,6 @@
       "lines": 421
     },
     {
-      "file": "src/composables/admin/useAdminMedia.ts",
-      "lines": 420
-    },
-    {
       "file": "src/services/siliconflow/SiliconFlowService.ts",
       "lines": 419
     },
@@ -469,10 +465,6 @@
     },
     {
       "file": "src/composables/common/useGlobalShortcut.ts",
-      "lines": 404
-    },
-    {
-      "file": "src/services/matrix/admin/AdminFacadeDomainMethods.ts",
       "lines": 404
     },
     {

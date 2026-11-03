@@ -814,7 +814,9 @@ export type I18nKeys = {
       },
       "field": {
         "before": "早于该时间",
-        "maxSize": "最大数量",
+        "maxSize": "大小超过（字节）",
+        "maxSizePlaceholder": "字节数，例如 1048576（1 MB）",
+        "policyHint": "两个条件都留空时不会附加任何过滤条件，将删除全部早于当前时间的本地媒体，请谨慎操作。",
         "roomId": "房间 ID",
         "userId": "用户 ID",
         "userIdOptional": "用户 ID（可选）"
@@ -8242,6 +8244,8 @@ export type I18nKeyPaths =
   | "admin.media.detail.history"
   | "admin.media.field.before"
   | "admin.media.field.maxSize"
+  | "admin.media.field.maxSizePlaceholder"
+  | "admin.media.field.policyHint"
   | "admin.media.field.roomId"
   | "admin.media.field.userId"
   | "admin.media.field.userIdOptional"

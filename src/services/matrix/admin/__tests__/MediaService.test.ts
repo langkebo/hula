@@ -93,7 +93,8 @@ describe('AdminMediaService', () => {
           content_uri: 'mxc://hs/m1',
           created_ts: 100,
           upload_name: 'a.png',
-          media_length: 2048
+          media_length: 2048,
+          quarantined: true
         }
       ],
       next_token: 'tok'
@@ -107,7 +108,8 @@ describe('AdminMediaService', () => {
           contentUri: 'mxc://hs/m1',
           createdAt: 100,
           uploadName: 'a.png',
-          mediaLength: 2048
+          mediaLength: 2048,
+          quarantined: true
         }
       ],
       nextToken: 'tok'

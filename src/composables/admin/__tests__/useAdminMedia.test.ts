@@ -312,14 +312,15 @@ describe('useAdminMedia', () => {
     expect(c.mutating.value).toBe(false)
   })
 
-  it('deleteByPolicy 返回删除条数，失败时为 0', async () => {
+  it('deleteByPolicy 返回删除条数，服务层为 null 时抛出且复位 mutating', async () => {
     vi.mocked(adminService.deleteMediaByPolicy).mockResolvedValueOnce({ deleted: 5 })
 
     const c = useAdminMedia()
     await expect(c.deleteByPolicy({ beforeTs: 1234 })).resolves.toBe(5)
 
     vi.mocked(adminService.deleteMediaByPolicy).mockResolvedValueOnce(null)
-    await expect(c.deleteByPolicy({ maxSize: 1024 })).resolves.toBe(0)
+    await expect(c.deleteByPolicy({ maxSize: 1024 })).rejects.toThrow('按策略删除媒体失败')
+    expect(c.mutating.value).toBe(false)
   })
 
   it('返回值写方法服务层返回 null 时抛出中文错误', async () => {

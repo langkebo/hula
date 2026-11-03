@@ -79,11 +79,6 @@ export function useAdminNav() {
           path: '/admin/spaces',
           label: t('admin.nav.spaces'),
           icon: 'spaces'
-        },
-        {
-          path: '/admin/media',
-          label: t('admin.nav.media'),
-          icon: 'media'
         }
       ]
     },
@@ -180,6 +175,11 @@ export function useAdminNav() {
           path: '/admin/background-updates',
           label: t('admin.nav.backgroundUpdates'),
           icon: 'backgroundUpdates'
+        },
+        {
+          path: '/admin/media',
+          label: t('admin.nav.media'),
+          icon: 'media'
         },
         {
           path: '/admin/modules',
