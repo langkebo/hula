@@ -110,6 +110,8 @@ export enum EventEnum {
   /** 共享屏幕 */
   /** 锁屏 */
   LOCK_SCREEN = 'lockScreen',
+  /** 解锁（跨窗口同步） */
+  UNLOCK_SCREEN = 'unlockScreen',
   /** 多窗口 */
   MULTI_MSG = 'multiMsg'
 }

@@ -104,13 +104,16 @@
   </div>
 </template>
 <script setup lang="ts">
+import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { onKeyStroke } from '@vueuse/core'
 import dayjs from 'dayjs'
 import type { InputInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { EventEnum } from '@/enums'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
+import { verifyLockScreenVerifier } from '@/stores/domains/settings/lockScreenCredential'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -166,24 +169,36 @@ watch(isWrongPassword, (val) => {
   }
 })
 
-/** 解锁 */
-const unlock = () => {
+/** 解锁：校验 PBKDF2 verifier，成功后广播跨窗口解锁 */
+const unlock = async () => {
   if (password.value === '') {
     showFeedback(t('message.lock_screen.toast_empty_password'), 'warning')
     return
   }
 
-  isLogining.value = true
-  if (password.value === lockScreen.value.password) {
-    timerManager.setTimeout(() => {
-      lockScreen.value.enable = false
-      isLogining.value = false
-    }, 1000)
-  } else {
-    timerManager.setTimeout(() => {
-      isWrongPassword.value = true
-    }, 300)
+  /** 无可用凭据时直接放行，避免渲染无法解锁的锁定层 */
+  if (lockScreen.value.passwordHash === '') {
+    lockScreen.value.enable = false
+    return
   }
+
+  isLogining.value = true
+  const passed = await verifyLockScreenVerifier(password.value, lockScreen.value.passwordHash)
+  timerManager.setTimeout(
+    async () => {
+      if (passed) {
+        lockScreen.value.enable = false
+        isLogining.value = false
+        if (hasTauriRuntime()) {
+          await emit(EventEnum.UNLOCK_SCREEN)
+        }
+        return
+      }
+      isLogining.value = false
+      isWrongPassword.value = true
+    },
+    passed ? 1000 : 300
+  )
 }
 
 /** 重置登录状态 */

@@ -32,8 +32,8 @@ declare namespace STO {
     lockScreen: {
       /** 是否启用锁屏 */
       enable: boolean
-      /** 锁屏密码 */
-      password: string
+      /** 锁屏密码的 PBKDF2 verifier（禁止存明文密码） */
+      passwordHash: string
     }
     /** 登录设置 */
     login: {

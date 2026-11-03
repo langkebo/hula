@@ -46,6 +46,7 @@ import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
 import { useLocalStorePlaintextWarning } from '@/composables/secure/useLocalStorePlaintextWarning'
 import { runLocalUnlockPreflight } from '@/composables/secure/useLocalUnlockGate'
+import { useLockScreenSync } from '@/composables/settings/useLockScreenSync'
 import { useBootstrap } from '@/composables/useBootstrap'
 import { useConnectionStatus } from '@/composables/useConnectionStatus'
 import { useIsMobile } from '@/composables/usePlatform'
@@ -108,9 +109,13 @@ const { lockScreen } = storeToRefs(settingStore)
 const router = useRouter()
 
 // ========== Lock screen ==========
+useLockScreenSync()
 const LockExclusion = new Set(['/login', '/tray', '/qrCode', '/about', '/onlineStatus', '/capture'])
 const isLock = computed(() => {
-  return !LockExclusion.has(router.currentRoute.value.path) && lockScreen.value.enable
+  /** 无密码凭据时不得进入锁定层：否则历史数据（enable=true / passwordHash 缺失）会自锁死 */
+  return (
+    !LockExclusion.has(router.currentRoute.value.path) && lockScreen.value.enable && !!lockScreen.value.passwordHash
+  )
 })
 
 // ========== Window & global shortcuts (desktop only) ==========

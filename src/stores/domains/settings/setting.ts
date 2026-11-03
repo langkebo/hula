@@ -43,7 +43,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     showMode: ShowModeEnum.ICON,
     lockScreen: {
       enable: false,
-      password: ''
+      passwordHash: ''
     },
     tips: {
       type: CloseBxEnum.HIDE,
@@ -90,11 +90,10 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       right: 320
     }
   }),
-  persist: {
-    // 注意：`secretChat.passwordHash` 必须持久化，否则重启后 `isSecretChatConfigured()` 恒 false，
-    // 用户会看到「已设置过密码却提示请先设置」。哈希本身是 PBKDF2 verifier，不含可用于解密的密钥。
-    omit: ['lockScreen.password']
-  },
+  // 注意：`secretChat.passwordHash` 与 `lockScreen.passwordHash` 都必须持久化。
+  // 前者缺失会让重启后 `isSecretChatConfigured()` 恒 false；后者缺失会让锁屏无法解锁。
+  // 两者都是 PBKDF2 verifier，不含可用于解密的密钥，落盘不构成明文口令泄露。
+  persist: true,
   getters: {
     screenshotShortcut: (state: STO.Setting) => state.shortcuts?.screenshot ?? getDefaultShortcuts().screenshot,
     openMainPanelShortcut: (state: STO.Setting) =>
