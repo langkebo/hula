@@ -434,10 +434,6 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
     return this.reports.reportRoom(roomId, reason, description)
   }
 
-  async scoreReport(roomId: string, eventId: string, score: number): Promise<void> {
-    return this.reports.scoreReport(roomId, eventId, score)
-  }
-
   async getScannerInfo(roomId: string, eventId: string): Promise<ScannerInfo | null> {
     return this.reports.getScannerInfo(roomId, eventId)
   }

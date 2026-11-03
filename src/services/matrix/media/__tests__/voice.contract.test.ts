@@ -8,8 +8,10 @@
  *
  * Covers every voice call site in MatrixVoiceService at the HTTP boundary:
  * uploadVoice, getVoiceStats, getUserVoiceStats, getVoiceConfig,
- * deleteVoice, getRoomVoiceList, getUserVoiceList, getVoiceContent,
- * convertVoice, optimizeVoice, transcribeVoiceViaApi.
+ * deleteVoice, getRoomVoiceList, getUserVoiceList, getVoiceContent.
+ *
+ * 转换/优化/转写三个端点由后端 by-design 关闭（404 M_UNRECOGNIZED），
+ * 对应服务方法与路径常量已一并删除，不再有契约用例。
  *
  * 全部走 SDK `VoiceManager`（`getVoiceManager()`），SDK 内部统一用 VendorPrefix
  * 命中同一批 V1 端点。MatrixVoiceService 已不再直接调用 `authedRequestWithPath`：
@@ -51,8 +53,6 @@ vi.mock('@/services/i18n', () => ({
 }))
 
 // MSW handlers at FULL V1-prefixed URLs.
-// VoiceManager uses REST-style paths: /voice/{mediaId}/convert (not /voice/convert).
-// Backend (synapse-web/src/routes/voice.rs) registers the same pattern.
 // Specific paths registered before the :messageId wildcard so /voice/config etc. don't get swallowed.
 setupMswServer(
   http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/upload`, ({ request }) => {
@@ -126,19 +126,6 @@ setupMswServer(
       ],
       next_batch: 42
     })
-  }),
-  // VoiceManager REST-style paths: /voice/{mediaId}/convert|optimize|transcription
-  http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/:mediaId/convert`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ url: 'mxc://hs.voice-contract.test/conv1', format: 'mp3' })
-  }),
-  http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/:mediaId/optimize`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ url: 'mxc://hs.voice-contract.test/opt1', size: 1024 })
-  }),
-  http.post(`${HOMESERVER}/_matrix/vendor/v1/voice/:mediaId/transcription`, ({ request }) => {
-    seenUrls.push({ method: request.method, url: request.url })
-    return HttpResponse.json({ text: 'hello', language: 'en', confidence: 0.95 })
   }),
   // Wildcard :messageId routes last (DELETE + GET)
   http.delete(`${HOMESERVER}/_matrix/vendor/v1/voice/:messageId`, ({ request }) => {
@@ -279,41 +266,5 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
     expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/%24msg-2`)
     expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
     expect(result?.body).toBe('voice-bytes')
-  })
-
-  it('convertVoice hits POST /voice/:mediaId/convert via VoiceManager (no V1 double-prefix)', async () => {
-    const result = await matrixVoiceService.convertVoice('$msg-3', 'mp3')
-
-    const calls = seenUrls.filter((u) => u.url.includes('/convert'))
-    expect(calls).toHaveLength(1)
-    expect(calls[0].method).toBe('POST')
-    // VoiceManager uses REST-style: /voice/{mediaId}/convert
-    // encodeURIComponent('$msg-3') = '%24msg-3'
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/%24msg-3/convert`)
-    expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
-    expect(result?.format).toBe('mp3')
-  })
-
-  it('optimizeVoice hits POST /voice/:mediaId/optimize via VoiceManager (no V1 double-prefix)', async () => {
-    const result = await matrixVoiceService.optimizeVoice('$msg-4', { bitrate: 128 })
-
-    const calls = seenUrls.filter((u) => u.url.includes('/optimize'))
-    expect(calls).toHaveLength(1)
-    expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/%24msg-4/optimize`)
-    expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
-    expect(result?.size).toBe(1024)
-  })
-
-  it('transcribeVoiceViaApi hits POST /voice/:mediaId/transcription via VoiceManager (no V1 double-prefix)', async () => {
-    const result = await matrixVoiceService.transcribeVoiceViaApi('$msg-5', 'en')
-
-    const calls = seenUrls.filter((u) => u.url.includes('/transcription'))
-    expect(calls).toHaveLength(1)
-    expect(calls[0].method).toBe('POST')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/voice/%24msg-5/transcription`)
-    expect(calls[0].url).not.toMatch(V1_DOUBLE_PREFIX)
-    expect(result?.text).toBe('hello')
-    expect(result?.language).toBe('en')
   })
 })

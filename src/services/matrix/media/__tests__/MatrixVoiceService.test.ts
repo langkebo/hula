@@ -76,7 +76,6 @@ const authedRequestMock = vi
     }
   )
 
-const transcribeVoiceMessageMock = vi.fn()
 // 后端真实响应形状：synapse-services/src/voice_service.rs:130-136
 // `{ content_uri, content, content_type, duration_ms, size }` —— 没有 message_id / url。
 const uploadVoiceMessageMultipartMock = vi.fn().mockResolvedValue({
@@ -88,7 +87,6 @@ const uploadVoiceMessageMultipartMock = vi.fn().mockResolvedValue({
 })
 
 const voiceMgr = {
-  transcribeVoiceMessage: transcribeVoiceMessageMock,
   uploadVoiceMessageMultipart: uploadVoiceMessageMultipartMock
 }
 
@@ -199,31 +197,6 @@ describe('MatrixVoiceService', () => {
     expect(matrixVoiceService.getPlayableUrl()).toBe('')
   })
 
-  it('should transcribe voice through the voice transcription endpoint', async () => {
-    transcribeVoiceMessageMock.mockResolvedValueOnce({
-      text: 'hello world',
-      language: 'en'
-    })
-
-    const result = await matrixVoiceService.transcribeVoice({
-      roomId: '!room:example.org',
-      eventId: '$voice-event'
-    })
-
-    expect(result).toEqual({
-      text: 'hello world',
-      language: 'en'
-    })
-    expect(endpointCheckMock).toHaveBeenCalledWith('POST', '/_matrix/vendor/v1/voice/transcription')
-    expect(transcribeVoiceMessageMock).toHaveBeenCalledWith(
-      '$voice-event',
-      undefined,
-      // ClientPrefix.V1
-      expect.anything()
-    )
-    expect(authedRequestMock).not.toHaveBeenCalled()
-  })
-
   it('returns endpoint-unavailable error when upload api is disabled', async () => {
     endpointCheckMock.mockResolvedValueOnce(false)
 
@@ -231,17 +204,6 @@ describe('MatrixVoiceService', () => {
       '语音服务不可用'
     )
     expect(authedRequestMock).not.toHaveBeenCalled()
-  })
-
-  it('returns null when transcription endpoint is unavailable', async () => {
-    endpointCheckMock.mockResolvedValueOnce(false)
-
-    await expect(
-      matrixVoiceService.transcribeVoice({
-        roomId: '!room:example.org',
-        eventId: '$voice-event'
-      })
-    ).rejects.toThrow('语音服务不可用')
   })
 
   it('should fall back to original mxc url when client is unavailable', () => {
@@ -288,14 +250,6 @@ describe('MatrixVoiceService', () => {
 
     it('getVoiceContent 空 messageId 抛出错误', async () => {
       await expect(matrixVoiceService.getVoiceContent('')).rejects.toThrow()
-    })
-
-    it('convertVoice 空 messageId 抛出错误', async () => {
-      await expect(matrixVoiceService.convertVoice('', 'mp3')).rejects.toThrow()
-    })
-
-    it('optimizeVoice 空 messageId 抛出错误', async () => {
-      await expect(matrixVoiceService.optimizeVoice('', {})).rejects.toThrow()
     })
   })
 })

@@ -66,28 +66,33 @@ describe('FT-120: 无死路径常量', () => {
     // MatrixVoiceService.deleteVoice/getVoiceContent → VOICE.CONTENT (capability + path)
     // MatrixVoiceService.getRoomVoiceList → VOICE.ROOM_LIST (authedRequestWithPath)
     // MatrixVoiceService.getUserVoiceList → VOICE.USER_LIST (authedRequestWithPath)
-    // MatrixVoiceService.convertVoice → VOICE.CONVERT (endpointCapabilityService.check)
-    // MatrixVoiceService.optimizeVoice → VOICE.OPTIMIZE (endpointCapabilityService.check)
-    // MatrixVoiceService.transcribeVoiceViaApi → VOICE.TRANSCRIPTION (capability)
     // 2026-10-17 Batch C-0：VOICE.RTC_TRANSPORTS 已删除 —— getRtcTransports 实测已改调
     // SDK `client.getVoiceManager().getRtcTransports()`（旧注释称其使用路径常量，已过期）。
     // VOICE.STATS / ROOM_STATS / USER_STATS 已迁移到 VoiceManager，不再需要路径常量。
-    it('VOICE 仅包含被 L2 服务引用的 8 个常量', () => {
-      expectKeys(VOICE, [
-        'CONFIG',
-        'UPLOAD',
-        'ROOM_LIST',
-        'USER_LIST',
-        'CONTENT',
-        'CONVERT',
-        'OPTIMIZE',
-        'TRANSCRIPTION'
-      ])
+    it('VOICE 仅包含被 L2 服务引用的 5 个常量', () => {
+      expectKeys(VOICE, ['CONFIG', 'UPLOAD', 'ROOM_LIST', 'USER_LIST', 'CONTENT'])
     })
 
     it('VOICE 不再包含已迁移到 VoiceManager 的死常量', () => {
       for (const dead of ['STATS', 'ROOM_STATS', 'USER_STATS']) {
         expect(VOICE).not.toHaveProperty(dead)
+      }
+    })
+
+    // 二级判据：仅「被 L2 引用」不足以证明常量可用 —— L2 方法本身可能没有 UI 调用方。
+    // 转换/优化/转写三个端点由后端 by-design 返回 404 M_UNRECOGNIZED，曾因服务方法互相
+    // 引用（transcribeVoice → transcribeVoiceViaApi）而被本用例误判为"活常量"。
+    // 这里锁定这类 by-design 不支持端点：常量、服务方法都不得回潮。
+    it('VOICE 不再包含 by-design 不支持的转换/优化/转写常量', () => {
+      for (const dead of ['CONVERT', 'OPTIMIZE', 'TRANSCRIPTION']) {
+        expect(VOICE).not.toHaveProperty(dead)
+      }
+    })
+
+    it('MatrixVoiceService 不再暴露 by-design 不支持的方法', async () => {
+      const { matrixVoiceService } = await import('../../media/MatrixVoiceService')
+      for (const dead of ['convertVoice', 'optimizeVoice', 'transcribeVoiceViaApi', 'transcribeVoice']) {
+        expect(matrixVoiceService).not.toHaveProperty(dead)
       }
     })
   })

@@ -8,18 +8,6 @@ import matrixClientService from '../MatrixClientService'
 import { MATRIX_PATHS } from '../paths'
 import { type MxcResolverClient, resolveMxcToHttp } from './mxcUrl'
 
-interface VoiceTranscriptionParams {
-  roomId: string
-  eventId: string
-  lang?: string
-}
-
-interface VoiceTranscriptionResult {
-  text: string
-  language?: string | undefined
-  segments?: Array<{ start: number; end: number; text: string }> | undefined
-}
-
 interface MxcHttpClient extends MxcResolverClient {
   getRoom(roomId: string): RoomLike | null
 }
@@ -247,27 +235,6 @@ class MatrixVoiceService extends BaseMatrixService {
     }
   }
 
-  /**
-   * 将语音消息转写为文字。
-   * 委托 transcribeVoiceViaApi；端点不可用时抛出异常。
-   */
-  async transcribeVoice(params: VoiceTranscriptionParams): Promise<VoiceTranscriptionResult> {
-    try {
-      const result = await this.transcribeVoiceViaApi(params.eventId, params.lang)
-      if (!result) {
-        throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
-      }
-      return {
-        text: result.text,
-        language: result.language,
-        segments: undefined
-      }
-    } catch (err) {
-      logger.error(`[MatrixVoiceService] 语音转文字失败: ${params.eventId} ${err}`)
-      throw err
-    }
-  }
-
   /** 获取语音统计（传入 roomId 时统计房间维度，否则全局）；失败返回全 0。 */
   async getVoiceStats(roomId?: string): Promise<{
     totalDuration: number
@@ -381,74 +348,6 @@ class MatrixVoiceService extends BaseMatrixService {
       return unknownToObject(result)
     } catch (err) {
       logger.warn(`[MatrixVoiceService] getVoiceContent failed: ${err}`)
-      return null
-    }
-  }
-
-  /**
-   * 将语音消息转换为目标格式。
-   * 端点不可用或转换失败时返回 null。
-   */
-  async convertVoice(messageId: string, targetFormat: string): Promise<{ url: string; format: string } | null> {
-    this.requireNonEmpty(messageId, 'messageId')
-    try {
-      const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.CONVERT)
-      if (!available) {
-        logger.warn('[MatrixVoiceService] 语音转换端点不可用')
-        return null
-      }
-
-      const result = await this.getVoiceMgr().convertVoiceMessage(messageId, { format: targetFormat }, VendorPrefix)
-      const data = result as Record<string, unknown>
-      return { url: (data.url as string) ?? '', format: (data.format as string) ?? targetFormat }
-    } catch (err) {
-      logger.warn(`[MatrixVoiceService] convertVoice failed: ${err}`)
-      return null
-    }
-  }
-
-  async optimizeVoice(
-    messageId: string,
-    options?: { bitrate?: number; sample_rate?: number }
-  ): Promise<{ url: string; size: number } | null> {
-    this.requireNonEmpty(messageId, 'messageId')
-    try {
-      const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.OPTIMIZE)
-      if (!available) {
-        logger.warn('[MatrixVoiceService] 语音优化端点不可用')
-        return null
-      }
-
-      const result = await this.getVoiceMgr().optimizeVoiceMessage(messageId, options ?? {}, VendorPrefix)
-      const data = result as Record<string, unknown>
-      return { url: (data.url as string) ?? '', size: (data.size as number) ?? 0 }
-    } catch (err) {
-      logger.warn(`[MatrixVoiceService] optimizeVoice failed: ${err}`)
-      return null
-    }
-  }
-
-  async transcribeVoiceViaApi(
-    messageId: string,
-    lang?: string
-  ): Promise<{ text: string; language?: string | undefined; confidence?: number | undefined } | null> {
-    try {
-      const available = await endpointCapabilityService.check('POST', MATRIX_PATHS.VOICE.TRANSCRIPTION)
-      if (!available) {
-        logger.warn('[MatrixVoiceService] 语音转文字端点不可用')
-        return null
-      }
-
-      const options = lang ? { language: lang } : undefined
-      const result = await this.getVoiceMgr().transcribeVoiceMessage(messageId, options, VendorPrefix)
-      const data = result as Record<string, unknown>
-      return {
-        text: (data.text as string) ?? '',
-        language: data.language as string | undefined,
-        confidence: data.confidence as number | undefined
-      }
-    } catch (err) {
-      logger.warn(`[MatrixVoiceService] transcribeVoiceViaApi failed: ${err}`)
       return null
     }
   }
