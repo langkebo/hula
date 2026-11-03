@@ -79,6 +79,11 @@ export function useAdminNav() {
           path: '/admin/spaces',
           label: t('admin.nav.spaces'),
           icon: 'spaces'
+        },
+        {
+          path: '/admin/media',
+          label: t('admin.nav.media'),
+          icon: 'media'
         }
       ]
     },

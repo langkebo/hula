@@ -1,11 +1,11 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-02T14:17:57.894Z",
+  "updated_at": "2026-11-03T08:22:31.884Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
   "critical_limit": 1000,
-  "total_oversized_files": 119,
+  "total_oversized_files": 120,
   "files": [
     {
       "file": "src/components/rightBox/MsgInput.vue",
@@ -25,7 +25,7 @@
     },
     {
       "file": "src/typings/components.d.ts",
-      "lines": 736
+      "lines": 742
     },
     {
       "file": "src/mobile/views/chat-room/ChatSetting.vue",
@@ -89,7 +89,7 @@
     },
     {
       "file": "src/stores/domains/settings/setting.ts",
-      "lines": 637
+      "lines": 636
     },
     {
       "file": "src/components/rightBox/renderMessage/File.vue",
@@ -156,12 +156,12 @@
       "lines": 541
     },
     {
-      "file": "src/services/matrix/admin/AdminFacadeService.ts",
-      "lines": 541
-    },
-    {
       "file": "src/components/rendezvous/RendezvousSessionManager.vue",
       "lines": 539
+    },
+    {
+      "file": "src/services/matrix/admin/AdminFacadeService.ts",
+      "lines": 537
     },
     {
       "file": "src/services/matrix/user/MatrixAccountService.ts",
@@ -224,10 +224,6 @@
       "lines": 501
     },
     {
-      "file": "src/App.vue",
-      "lines": 499
-    },
-    {
       "file": "src/services/matrix/MatrixCryptoStateTracker.ts",
       "lines": 497
     },
@@ -238,6 +234,10 @@
     {
       "file": "src/components/workbench/SpaceListPane.vue",
       "lines": 496
+    },
+    {
+      "file": "src/App.vue",
+      "lines": 495
     },
     {
       "file": "src/components/widget/WidgetManager.vue",
@@ -254,10 +254,6 @@
     {
       "file": "src/components/space/SpaceChildrenPane.vue",
       "lines": 485
-    },
-    {
-      "file": "src/services/matrix/media/MatrixVoiceService.ts",
-      "lines": 484
     },
     {
       "file": "src/components/rightBox/VoiceRecorder.vue",
@@ -332,6 +328,10 @@
       "lines": 454
     },
     {
+      "file": "src/shared/composables/useLoginFlow.ts",
+      "lines": 454
+    },
+    {
       "file": "src/utils/Logger.ts",
       "lines": 448
     },
@@ -362,10 +362,6 @@
     {
       "file": "src/services/matrix/media/MatrixVoIPService.ts",
       "lines": 437
-    },
-    {
-      "file": "src/shared/composables/useLoginFlow.ts",
-      "lines": 454
     },
     {
       "file": "src/layout/left/model.tsx",
@@ -404,12 +400,12 @@
       "lines": 421
     },
     {
-      "file": "src/services/siliconflow/SiliconFlowService.ts",
-      "lines": 419
+      "file": "src/composables/admin/useAdminMedia.ts",
+      "lines": 420
     },
     {
-      "file": "src/services/matrix/admin/AdminFacadeOpsMethods.ts",
-      "lines": 417
+      "file": "src/services/siliconflow/SiliconFlowService.ts",
+      "lines": 419
     },
     {
       "file": "src/components/space/SpaceTree.vue",
@@ -444,6 +440,10 @@
       "lines": 409
     },
     {
+      "file": "src/services/matrix/admin/AdminFacadeOpsMethods.ts",
+      "lines": 409
+    },
+    {
       "file": "src/services/matrix/auth/MatrixSessionService.ts",
       "lines": 409
     },
@@ -469,6 +469,10 @@
     },
     {
       "file": "src/composables/common/useGlobalShortcut.ts",
+      "lines": 404
+    },
+    {
+      "file": "src/services/matrix/admin/AdminFacadeDomainMethods.ts",
       "lines": 404
     },
     {

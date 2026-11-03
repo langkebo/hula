@@ -224,6 +224,7 @@
     "users": "Users",
     "registrationTokens": "Registration Tokens",
     "rooms": "Rooms",
+    "media": "Media",
     "federation": "Federation",
     "federationMonitor": "Federation Monitor",
     "notices": "Server Notices",
@@ -768,5 +769,70 @@
     "status_loaded": "Loaded",
     "status_unloaded": "Not Loaded",
     "title": "Modules"
+  },
+  "media": {
+    "title": "Media Management",
+    "description": "Inspect server media, manage media by room or user, and handle media quarantine policies",
+    "tab": {
+      "library": "Media Library",
+      "scoped": "Room & User Media",
+      "quarantine": "Global Quarantine Changes"
+    },
+    "column": {
+      "mediaId": "Media ID",
+      "type": "Media Type",
+      "name": "File Name",
+      "size": "Size",
+      "created": "Created At",
+      "quarantined": "Quarantined",
+      "origin": "Origin Server",
+      "actions": "Actions"
+    },
+    "action": {
+      "detail": "Details",
+      "quarantine": "Quarantine",
+      "unquarantine": "Unquarantine",
+      "protect": "Protect",
+      "unprotect": "Unprotect",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this media? This action cannot be undone.",
+      "policyDelete": "Batch Delete by Policy",
+      "quarantineRoom": "Quarantine Room Media",
+      "unquarantineRoom": "Unquarantine Room Media",
+      "quarantineUser": "Quarantine All User Media",
+      "loadMore": "Load More"
+    },
+    "detail": {
+      "title": "Media Details",
+      "history": "Quarantine History"
+    },
+    "field": {
+      "before": "Before",
+      "maxSize": "Max Count",
+      "roomId": "Room ID",
+      "userId": "User ID",
+      "userIdOptional": "User ID (optional)"
+    },
+    "room": {
+      "title": "Room Media"
+    },
+    "user": {
+      "title": "User Media"
+    },
+    "empty": {
+      "library": "No media",
+      "roomMedia": "No media in this room",
+      "userMedia": "No media for this user",
+      "changes": "No quarantine changes"
+    },
+    "feedback": {
+      "failed": "Operation failed",
+      "quarantine_success": "Media quarantined",
+      "unquarantine_success": "Media unquarantined",
+      "protect_success": "Media protected",
+      "unprotect_success": "Media unprotected",
+      "delete_success": "Media deleted",
+      "policy_deleted": "Deleted {count} media by policy"
+    }
   }
 }

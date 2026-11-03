@@ -342,6 +342,12 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         meta: { requiresAdmin: true }
       },
       {
+        path: 'media',
+        name: 'adminMedia',
+        component: () => import('@/views/admin/AdminMedia.vue'),
+        meta: { requiresAdmin: true }
+      },
+      {
         path: 'moderation',
         name: 'adminModeration',
         component: () => import('@/views/admin/ModerationPanel.vue'),

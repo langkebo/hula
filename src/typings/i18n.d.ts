@@ -230,6 +230,7 @@ export type I18nKeys = {
       "users": "用户管理",
       "registrationTokens": "注册令牌",
       "rooms": "房间管理",
+      "media": "媒体管理",
       "federation": "联邦管理",
       "federationMonitor": "联邦监控",
       "notices": "服务器通知",
@@ -774,6 +775,71 @@ export type I18nKeys = {
       "status_loaded": "已加载",
       "status_unloaded": "未加载",
       "title": "模块管理"
+    },
+    "media": {
+      "title": "媒体管理",
+      "description": "查看服务器媒体、按房间或用户管理媒体，并处理媒体隔离策略",
+      "tab": {
+        "library": "媒体库",
+        "scoped": "房间与用户媒体",
+        "quarantine": "全局隔离变更"
+      },
+      "column": {
+        "mediaId": "媒体 ID",
+        "type": "媒体类型",
+        "name": "文件名",
+        "size": "大小",
+        "created": "创建时间",
+        "quarantined": "已隔离",
+        "origin": "来源服务器",
+        "actions": "操作"
+      },
+      "action": {
+        "detail": "详情",
+        "quarantine": "隔离",
+        "unquarantine": "取消隔离",
+        "protect": "保护",
+        "unprotect": "取消保护",
+        "delete": "删除",
+        "deleteConfirm": "确定要删除该媒体吗？此操作无法撤销。",
+        "policyDelete": "按策略批量删除",
+        "quarantineRoom": "隔离本房间媒体",
+        "unquarantineRoom": "解除本房间隔离",
+        "quarantineUser": "隔离该用户全部媒体",
+        "loadMore": "加载更多"
+      },
+      "detail": {
+        "title": "媒体详情",
+        "history": "隔离历史"
+      },
+      "field": {
+        "before": "早于该时间",
+        "maxSize": "最大数量",
+        "roomId": "房间 ID",
+        "userId": "用户 ID",
+        "userIdOptional": "用户 ID（可选）"
+      },
+      "room": {
+        "title": "房间媒体"
+      },
+      "user": {
+        "title": "用户媒体"
+      },
+      "empty": {
+        "library": "暂无媒体",
+        "roomMedia": "该房间暂无媒体",
+        "userMedia": "该用户暂无媒体",
+        "changes": "暂无隔离变更"
+      },
+      "feedback": {
+        "failed": "操作失败",
+        "quarantine_success": "媒体已隔离",
+        "unquarantine_success": "媒体已取消隔离",
+        "protect_success": "媒体已保护",
+        "unprotect_success": "媒体已取消保护",
+        "delete_success": "媒体已删除",
+        "policy_deleted": "已按策略删除 {count} 个媒体"
+      }
     }
   },
   "agreement": {
@@ -7666,6 +7732,7 @@ export type I18nKeyPaths =
   | "admin.nav.users"
   | "admin.nav.registrationTokens"
   | "admin.nav.rooms"
+  | "admin.nav.media"
   | "admin.nav.federation"
   | "admin.nav.federationMonitor"
   | "admin.nav.notices"
@@ -8146,6 +8213,51 @@ export type I18nKeyPaths =
   | "admin.modules.status_loaded"
   | "admin.modules.status_unloaded"
   | "admin.modules.title"
+  | "admin.media.title"
+  | "admin.media.description"
+  | "admin.media.tab.library"
+  | "admin.media.tab.scoped"
+  | "admin.media.tab.quarantine"
+  | "admin.media.column.mediaId"
+  | "admin.media.column.type"
+  | "admin.media.column.name"
+  | "admin.media.column.size"
+  | "admin.media.column.created"
+  | "admin.media.column.quarantined"
+  | "admin.media.column.origin"
+  | "admin.media.column.actions"
+  | "admin.media.action.detail"
+  | "admin.media.action.quarantine"
+  | "admin.media.action.unquarantine"
+  | "admin.media.action.protect"
+  | "admin.media.action.unprotect"
+  | "admin.media.action.delete"
+  | "admin.media.action.deleteConfirm"
+  | "admin.media.action.policyDelete"
+  | "admin.media.action.quarantineRoom"
+  | "admin.media.action.unquarantineRoom"
+  | "admin.media.action.quarantineUser"
+  | "admin.media.action.loadMore"
+  | "admin.media.detail.title"
+  | "admin.media.detail.history"
+  | "admin.media.field.before"
+  | "admin.media.field.maxSize"
+  | "admin.media.field.roomId"
+  | "admin.media.field.userId"
+  | "admin.media.field.userIdOptional"
+  | "admin.media.room.title"
+  | "admin.media.user.title"
+  | "admin.media.empty.library"
+  | "admin.media.empty.roomMedia"
+  | "admin.media.empty.userMedia"
+  | "admin.media.empty.changes"
+  | "admin.media.feedback.failed"
+  | "admin.media.feedback.quarantine_success"
+  | "admin.media.feedback.unquarantine_success"
+  | "admin.media.feedback.protect_success"
+  | "admin.media.feedback.unprotect_success"
+  | "admin.media.feedback.delete_success"
+  | "admin.media.feedback.policy_deleted"
   | "agreement.privacy.header.title"
   | "agreement.privacy.header.updatedAt"
   | "agreement.privacy.sections"
