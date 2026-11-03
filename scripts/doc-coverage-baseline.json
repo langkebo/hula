@@ -164,7 +164,6 @@
     "src/services/matrix/admin/FederationService.ts::removeFromFederationBlacklist",
     "src/services/matrix/admin/FederationService.ts::resetFederationConnection",
     "src/services/matrix/admin/MediaService.ts::deleteMedia",
-    "src/services/matrix/admin/MediaService.ts::getMediaStats",
     "src/services/matrix/admin/MediaService.ts::purgeMediaCache",
     "src/services/matrix/admin/NotificationService.ts::deleteSystemNotification",
     "src/services/matrix/admin/NotificationService.ts::deleteUserPusher",

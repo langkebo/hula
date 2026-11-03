@@ -405,12 +405,4 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
   ): Promise<Array<Record<string, unknown>> | null> {
     return this.server.getServerLogs(level, limit)
   }
-
-  /**
-   * 获取媒体存储统计信息。
-   * @returns 媒体统计信息，不存在时返回 null。
-   */
-  async getMediaStats(): Promise<Record<string, unknown> | null> {
-    return this.media.getMediaStats()
-  }
 }

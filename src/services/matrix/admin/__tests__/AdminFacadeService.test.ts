@@ -120,7 +120,6 @@ describe('adminService facade', () => {
       getIpReputation: vi.fn().mockResolvedValue({}),
       restartServer: vi.fn().mockResolvedValue(undefined),
       getServerLogs: vi.fn().mockResolvedValue([]),
-      getMediaStats: vi.fn().mockResolvedValue({ total: 0 }),
       getRoomMessages: vi.fn().mockResolvedValue({ chunk: [] }),
       getRoomAliases: vi.fn().mockResolvedValue({ aliases: [] }),
       getRoomVersion: vi.fn().mockResolvedValue('9'),
@@ -941,13 +940,6 @@ describe('adminService facade', () => {
       const result = await adminService.getServerLogs('warn', 10)
       expect(result).toHaveLength(1)
       expect(mockAdminManager.getServerLogs).toHaveBeenCalledWith({ level: 'warn', limit: 10 })
-    })
-
-    it('should get media stats via SDK', async () => {
-      mockAdminManager.getMediaStats.mockResolvedValue({ total: 42 })
-      const result = await adminService.getMediaStats()
-      expect(result?.total).toBe(42)
-      expect(mockAdminManager.getMediaStats).toHaveBeenCalled()
     })
   })
 })

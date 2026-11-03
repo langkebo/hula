@@ -16,7 +16,6 @@ type MediaAdminSdk = {
   getMedia(limit: number, from?: string): Promise<{ media?: RawMediaItem[]; next_token?: string }>
   deleteMedia(mediaId: string): Promise<void>
   purgeMediaCache?(beforeTs?: number): Promise<{ deleted?: number }>
-  getMediaStats?(): Promise<Record<string, unknown>>
 }
 
 type MediaDomainSdkGetter = () => Promise<MediaAdminSdk>
@@ -80,16 +79,6 @@ export class AdminMediaService {
     } catch (err) {
       logger.error(`[AdminMedia] 清理媒体缓存失败: ${err}`)
       throw err
-    }
-  }
-
-  async getMediaStats(): Promise<Record<string, unknown> | null> {
-    try {
-      const admin = await this.sdkAdmin()
-      return (await admin.getMediaStats?.()) ?? null
-    } catch (err) {
-      logger.error(`[AdminMedia] 获取媒体统计失败: ${err}`)
-      return null
     }
   }
 }

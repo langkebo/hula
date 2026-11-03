@@ -4,7 +4,6 @@ import { useAdminMaintenance } from '../useAdminMaintenance'
 vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     listFeatureFlagsDetailed: vi.fn().mockResolvedValue([]),
-    getMediaStats: vi.fn().mockResolvedValue(null),
     getServerQuota: vi.fn().mockResolvedValue({
       totalSize: 0,
       totalCount: 0,
@@ -39,7 +38,7 @@ describe('useAdminMaintenance', () => {
     vi.clearAllMocks()
   })
 
-  it('loadAll fans out to features/stats/quota in parallel', async () => {
+  it('loadAll fans out to features/quota in parallel', async () => {
     vi.mocked(adminService.listFeatureFlagsDetailed).mockResolvedValueOnce([
       {
         flagKey: 'foo',
@@ -56,7 +55,6 @@ describe('useAdminMaintenance', () => {
         targets: []
       }
     ])
-    vi.mocked(adminService.getMediaStats).mockResolvedValueOnce({ total: 10 })
     vi.mocked(adminService.getServerQuota).mockResolvedValueOnce({
       totalSize: 2048,
       totalCount: 4,
@@ -71,7 +69,6 @@ describe('useAdminMaintenance', () => {
     expect(c.experimentalFeatures.value.foo).toEqual(
       expect.objectContaining({ enabled: true, status: 'enabled', targetScope: 'global' })
     )
-    expect(c.mediaStats.value).toEqual({ total: 10 })
     expect(c.serverQuota.value).toEqual({
       totalSize: 2048,
       totalCount: 4,
@@ -79,7 +76,6 @@ describe('useAdminMaintenance', () => {
       defaultCountLimit: 100
     })
     expect(adminService.listFeatureFlagsDetailed).toHaveBeenCalledTimes(1)
-    expect(adminService.getMediaStats).toHaveBeenCalledTimes(1)
     expect(adminService.getServerQuota).toHaveBeenCalledTimes(1)
   })
 
@@ -100,13 +96,12 @@ describe('useAdminMaintenance', () => {
     expect(c.serverQuota.value).toBeNull()
   })
 
-  it('purgeMediaCache reloads media stats on success', async () => {
+  it('purgeMediaCache forwards beforeTs and returns deleted count', async () => {
     vi.mocked(adminService.purgeMediaCache).mockResolvedValueOnce({ deleted: 7 })
     const c = useAdminMaintenance()
     const r = await c.purgeMediaCache(1234)
     expect(r.deleted).toBe(7)
     expect(adminService.purgeMediaCache).toHaveBeenCalledWith(1234)
-    expect(adminService.getMediaStats).toHaveBeenCalledTimes(1)
   })
 
   it('purging flag toggles around purgeMediaCache', async () => {

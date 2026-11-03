@@ -252,7 +252,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 > **两条与本方案相邻但不单列的已知问题**（来自基准文档 v2.5，属于契约层，不计入本文档的 UI 缺陷口径）：
 > 1. `MatrixKeyBackupService.verifyBackup` 打的是 by-design 404 端点，**移动端 `MobileSecureBackupDialog` 仍可触发**——修法见 v2.5 §2.4.9，不属 UI 布局范畴。
-> 2. Admin 媒体子域按逐模块口径为 22 条（`admin/media.rs`），其中 20 条无页面（quota 与 purge_media_cache 已在 `AdminMaintenance.vue` 接线）；§1.3 口径注中的「媒体 23」是 `/_synapse/admin` 命名空间口径，两者分类方式不同、不可相加。此前「23 条无页面」混用了两个口径，经 2026-11-03 复核更正。该缺口与 G-01/G-02 同源（管理面「有端点无页面」），若与 G-01 同批做，可把媒体页并入阶段 B。另 `AdminMediaService.getMediaStats` 调用的 SDK 方法不存在，属幽灵方法，不对应任何路由。
+> 2. Admin 媒体子域按逐模块口径为 22 条（`admin/media.rs`），其中 20 条无页面（quota 与 purge_media_cache 已在 `AdminMaintenance.vue` 接线）；§1.3 口径注中的「媒体 23」是 `/_synapse/admin` 命名空间口径，两者分类方式不同、不可相加。此前「23 条无页面」混用了两个口径，经 2026-11-03 复核更正。该缺口与 G-01/G-02 同源（管理面「有端点无页面」），若与 G-01 同批做，可把媒体页并入阶段 B。另 `AdminMediaService.getMediaStats` 调用的 SDK 方法不存在，属幽灵方法，不对应任何路由，已于 2026-11-03 从服务层、facade、composable 与视图全链删除。
 
 ### 3.5 无障碍
 

@@ -34,7 +34,6 @@ export interface AdminFeatureFlagInput {
 interface UseAdminMaintenanceResult {
   experimentalFeatures: Ref<Record<string, unknown>>
   featureFlags: Ref<AdminFeatureFlag[]>
-  mediaStats: Ref<Record<string, unknown> | null>
   serverQuota: Ref<ServerQuota | null>
   loading: Ref<boolean>
   purging: Ref<boolean>
@@ -44,7 +43,6 @@ interface UseAdminMaintenanceResult {
 
   loadExperimentalFeatures: () => Promise<void>
   loadFeatureFlags: () => Promise<void>
-  loadMediaStats: () => Promise<void>
   loadServerQuota: () => Promise<void>
   loadAll: () => Promise<void>
   purgeMediaCache: (beforeTs?: number) => Promise<{ deleted: number }>
@@ -58,14 +56,13 @@ interface UseAdminMaintenanceResult {
  * Admin maintenance composable.
  *
  * Owns state + orchestration for the Phase E maintenance surface
- * (media cache purge, experimental feature flags, media stats). Views are
+ * (media cache purge, experimental feature flags, server quota). Views are
  * render-only and delegate mutation orchestration here so desktop and mobile
  * share the same behavior.
  */
 export function useAdminMaintenance(): UseAdminMaintenanceResult {
   const experimentalFeatures = ref<Record<string, unknown>>({})
   const featureFlags = ref<AdminFeatureFlag[]>([])
-  const mediaStats = ref<Record<string, unknown> | null>(null)
   const serverQuota = ref<ServerQuota | null>(null)
   const loading = ref(false)
   const purging = ref(false)
@@ -99,10 +96,6 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
     await loadExperimentalFeatures()
   }
 
-  async function loadMediaStats() {
-    mediaStats.value = await adminService.getMediaStats()
-  }
-
   async function loadServerQuota() {
     serverQuota.value = await adminService.getServerQuota()
   }
@@ -110,7 +103,7 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
   async function loadAll() {
     loading.value = true
     try {
-      await Promise.allSettled([loadExperimentalFeatures(), loadMediaStats(), loadServerQuota()])
+      await Promise.allSettled([loadExperimentalFeatures(), loadServerQuota()])
     } finally {
       loading.value = false
     }
@@ -120,7 +113,6 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
     purging.value = true
     try {
       const result = await adminService.purgeMediaCache(beforeTs)
-      await loadMediaStats()
       return result
     } finally {
       purging.value = false
@@ -165,7 +157,6 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
   return {
     experimentalFeatures,
     featureFlags,
-    mediaStats,
     serverQuota,
     loading,
     purging,
@@ -174,7 +165,6 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
     featureDeleting,
     loadExperimentalFeatures,
     loadFeatureFlags,
-    loadMediaStats,
     loadServerQuota,
     loadAll,
     purgeMediaCache,

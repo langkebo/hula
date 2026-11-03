@@ -9,25 +9,17 @@
     <n-grid :cols="2" :x-gap="16" :y-gap="16" responsive="screen" item-responsive class="mt-16px">
       <n-gi span="2 m:1">
         <n-card :title="t('admin.maintenance.media_cache')" size="small">
-          <n-descriptions v-if="mediaStats" :column="2" size="small" bordered>
-            <n-descriptions-item v-for="(value, key) in mediaStats" :key="key" :label="String(key)">
-              {{ String(value) }}
-            </n-descriptions-item>
-          </n-descriptions>
-          <n-empty v-else :description="t('admin.maintenance.no_stats')" size="small" />
-          <template #action>
-            <n-space align="center" :size="8">
-              <n-date-picker
-                v-model:value="purgeBeforeTs"
-                type="datetime"
-                clearable
-                :placeholder="t('admin.maintenance.purge_before')"
-                class="w-[220px]" />
-              <n-button type="warning" :loading="purging" @click="handlePurge">
-                {{ t('admin.maintenance.purge') }}
-              </n-button>
-            </n-space>
-          </template>
+          <n-space align="center" :size="8">
+            <n-date-picker
+              v-model:value="purgeBeforeTs"
+              type="datetime"
+              clearable
+              :placeholder="t('admin.maintenance.purge_before')"
+              class="w-[220px]" />
+            <n-button type="warning" :loading="purging" @click="handlePurge">
+              {{ t('admin.maintenance.purge') }}
+            </n-button>
+          </n-space>
         </n-card>
       </n-gi>
 
@@ -113,7 +105,6 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 const maintenance = useAdminMaintenance()
-const mediaStats = maintenance.mediaStats
 const serverQuota = maintenance.serverQuota
 const experimentalFeatures = maintenance.experimentalFeatures
 const loading = maintenance.loading

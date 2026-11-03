@@ -9,7 +9,6 @@ const { loadAllMock, purgeMediaCacheMock, setExperimentalFeatureMock, showFeedba
   setExperimentalFeatureMock: vi.fn(),
   showFeedbackMock: vi.fn(),
   state: {
-    mediaStats: null as Record<string, unknown> | null,
     experimentalFeatures: {} as Record<string, unknown>,
     loading: false,
     purging: false,
@@ -19,7 +18,6 @@ const { loadAllMock, purgeMediaCacheMock, setExperimentalFeatureMock, showFeedba
 
 vi.mock('@/composables/admin', () => ({
   useAdminMaintenance: () => ({
-    mediaStats: ref(state.mediaStats),
     experimentalFeatures: ref(state.experimentalFeatures),
     loading: ref(state.loading),
     purging: ref(state.purging),
@@ -167,7 +165,6 @@ vi.mock('naive-ui', async () => {
 describe('AdminMaintenance', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    state.mediaStats = { cacheSize: '2.4GB', fileCount: 1200 }
     state.experimentalFeatures = {
       'labs.feature_a': true,
       'labs.feature_b': { enabled: false, description: 'Feature B desc' }
@@ -187,14 +184,6 @@ describe('AdminMaintenance', () => {
     await flushPromises()
 
     expect(loadAllMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('渲染媒体缓存统计', async () => {
-    const wrapper = mountComponent()
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('cacheSize')
-    expect(wrapper.text()).toContain('2.4GB')
   })
 
   it('切换到简单特性页签时渲染实验特性列表', async () => {

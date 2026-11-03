@@ -24,8 +24,7 @@ const authedRequestImpl = vi.fn()
 const makeAdmin = () => ({
   getMedia: vi.fn(),
   deleteMedia: vi.fn(),
-  purgeMediaCache: vi.fn(),
-  getMediaStats: vi.fn()
+  purgeMediaCache: vi.fn()
 })
 
 describe('AdminMediaService', () => {
@@ -109,10 +108,5 @@ describe('AdminMediaService', () => {
     admin.purgeMediaCache.mockResolvedValueOnce({})
     await expect(service.purgeMediaCache(123)).resolves.toEqual({ deleted: 0 })
     expect(admin.purgeMediaCache).toHaveBeenCalledWith(123)
-  })
-
-  it('getMediaStats 出错时返回 null', async () => {
-    admin.getMediaStats.mockRejectedValueOnce(new Error('boom'))
-    await expect(service.getMediaStats()).resolves.toBeNull()
   })
 })
