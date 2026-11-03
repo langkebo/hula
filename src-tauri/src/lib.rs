@@ -577,6 +577,8 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         screenshot_watch::start_screenshot_watch,
         #[cfg(desktop)]
         screenshot_watch::stop_screenshot_watch,
+        #[cfg(desktop)]
+        crate::desktops::cas_login::open_cas_login_window,
         get_files_meta,
         #[cfg(desktop)]
         get_directory_usage_info_with_progress,

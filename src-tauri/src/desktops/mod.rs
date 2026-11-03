@@ -1,4 +1,5 @@
 pub mod app_event;
+pub mod cas_login;
 pub mod common_cmd;
 pub mod directory_scanner;
 pub mod init;
