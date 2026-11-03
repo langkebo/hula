@@ -49,7 +49,21 @@ export type {
   AdminManager,
   AdminShutdownRoomResult,
   FederationDestination as SdkFederationDestination,
-  RoomStatsOverview
+  GlobalMediaQuarantineChange,
+  GlobalMediaQuarantineChangesResponse,
+  MediaInfo,
+  MediaPage,
+  MediaProtectionResponse,
+  MediaQuarantineChange,
+  MediaQuarantineChangesResponse,
+  MediaUnprotectionResponse,
+  RoomMediaItem,
+  RoomMediaPage,
+  RoomMediaQuarantineResponse,
+  RoomMediaUnquarantineResponse,
+  RoomStatsOverview,
+  UserMediaList,
+  UserMediaQuarantineResponse
 } from 'matrix-js-sdk/admin'
 export { ClientEvent } from 'matrix-js-sdk/client'
 export type { SdkContractModule, SdkContractRoute } from 'matrix-js-sdk/contract'

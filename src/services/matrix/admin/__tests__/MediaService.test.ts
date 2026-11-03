@@ -21,11 +21,33 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 
 const authedRequestImpl = vi.fn()
 
-const makeAdmin = () => ({
-  getMedia: vi.fn(),
-  deleteMedia: vi.fn(),
-  purgeMediaCache: vi.fn()
-})
+function makeAdmin(overrides: Record<string, unknown> = {}) {
+  return {
+    getMedia: vi.fn().mockResolvedValue({ media: [], total: 0, next_batch: null }),
+    getMediaInfo: vi.fn().mockResolvedValue({ media_id: 'm1', media_type: 'image/png' }),
+    getMediaInfoByServer: vi.fn().mockResolvedValue({ media_id: 'm1' }),
+    deleteMedia: vi.fn().mockResolvedValue(undefined),
+    deleteMediaByServer: vi.fn().mockResolvedValue(undefined),
+    getMediaQuota: vi.fn().mockResolvedValue({}),
+    purgeMediaCache: vi.fn().mockResolvedValue({ deleted: 0 }),
+    deleteMediaByPolicy: vi.fn().mockResolvedValue({ deleted: 3 }),
+    quarantineMedia: vi.fn().mockResolvedValue(undefined),
+    unquarantineMedia: vi.fn().mockResolvedValue(undefined),
+    protectMedia: vi.fn().mockResolvedValue({ stream_id: 1, protected: true }),
+    protectMediaById: vi.fn().mockResolvedValue({ stream_id: 1, protected: true }),
+    unprotectMedia: vi.fn().mockResolvedValue({ stream_id: 1, unprotected: true }),
+    getGlobalMediaQuarantineChanges: vi.fn().mockResolvedValue({ next_batch: 0, changes: [] }),
+    getMediaQuarantineChanges: vi.fn().mockResolvedValue({ changes: [], total: 0 }),
+    getRoomMedia: vi.fn().mockResolvedValue({ media: [], total: 0, next_batch: null }),
+    deleteRoomMedia: vi.fn().mockResolvedValue(undefined),
+    quarantineRoomMedia: vi.fn().mockResolvedValue({ room_id: '!r:a', quarantined: true }),
+    unquarantineRoomMedia: vi.fn().mockResolvedValue({ room_id: '!r:a', quarantined: false }),
+    getUserMedia: vi.fn().mockResolvedValue({ media: [], total: 0 }),
+    deleteUserMedia: vi.fn().mockResolvedValue(undefined),
+    quarantineUserMedia: vi.fn().mockResolvedValue({ user_id: '@u:a', quarantined: true }),
+    ...overrides
+  }
+}
 
 describe('AdminMediaService', () => {
   let admin: ReturnType<typeof makeAdmin>
@@ -109,4 +131,37 @@ describe('AdminMediaService', () => {
     await expect(service.purgeMediaCache(123)).resolves.toEqual({ deleted: 0 })
     expect(admin.purgeMediaCache).toHaveBeenCalledWith(123)
   })
+})
+
+it('getMediaInfo 出错时返回 null', async () => {
+  const admin = makeAdmin({ getMediaInfo: vi.fn().mockRejectedValue(new Error('boom')) })
+  const svc = new AdminMediaService(() => admin as never)
+  expect(await svc.getMediaInfo('m1')).toBeNull()
+})
+
+it('quarantineMedia 透传 serverName 与 mediaId', async () => {
+  const admin = makeAdmin()
+  const svc = new AdminMediaService(() => admin as never)
+  await svc.quarantineMedia('a.example', 'm1')
+  expect(admin.quarantineMedia).toHaveBeenCalledWith('a.example', 'm1')
+})
+
+it('deleteMediaByPolicy 透传过滤条件', async () => {
+  const admin = makeAdmin()
+  const svc = new AdminMediaService(() => admin as never)
+  expect(await svc.deleteMediaByPolicy({ beforeTs: 1000, maxSize: 2048 })).toEqual({ deleted: 3 })
+  expect(admin.deleteMediaByPolicy).toHaveBeenCalledWith({ beforeTs: 1000, maxSize: 2048 })
+})
+
+it('getGlobalQuarantineChanges 默认游标为 0', async () => {
+  const admin = makeAdmin()
+  const svc = new AdminMediaService(() => admin as never)
+  await svc.getGlobalQuarantineChanges()
+  expect(admin.getGlobalMediaQuarantineChanges).toHaveBeenCalledWith({ from: 0 })
+})
+
+it('getUserMedia 出错时返回 null', async () => {
+  const admin = makeAdmin({ getUserMedia: vi.fn().mockRejectedValue(new Error('boom')) })
+  const svc = new AdminMediaService(() => admin as never)
+  expect(await svc.getUserMedia('@u:a')).toBeNull()
 })
