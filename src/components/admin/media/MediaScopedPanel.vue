@@ -102,10 +102,14 @@ const handleUnquarantineRoom = (): Promise<boolean> => {
   )
 }
 
-const handleQuarantineUser = (): Promise<boolean> => {
-  const id = userId.value.trim()
-  if (!id) return Promise.resolve(false)
-  return runAction(() => quarantineUser(id), t('admin.media.feedback.quarantine_success'))
+const handleQuarantineUser = async (): Promise<boolean> => {
+  const id = userMediaUserId.value
+  if (!id) return false
+  const ok = await runAction(() => quarantineUser(id), t('admin.media.feedback.quarantine_success'))
+  if (ok) {
+    await loadUserMedia(id)
+  }
+  return ok
 }
 
 const renderDeleteAction = (onDelete: () => void, disabled: boolean) =>

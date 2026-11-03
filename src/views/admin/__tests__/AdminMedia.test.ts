@@ -646,4 +646,53 @@ describe('AdminMedia', () => {
       .find((button) => button.text().includes('admin.media.action.quarantineRoom'))
     expect(quarantineRoom!.attributes('disabled')).toBeDefined()
   })
+
+  it('房间媒体删除使用列表加载时的房间 ID 而非输入框当前值', async () => {
+    state.roomMedia = [
+      {
+        media_id: 'r1',
+        upload_name: 'room.png',
+        media_type: 'image/png',
+        media_length: 10,
+        created_ts: 1700000000000
+      }
+    ]
+    state.roomMediaRoomId = '!loaded:a.example'
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const roomCard = wrapper.findAll('[data-test="NCard"]')[0]
+    await roomCard.find('input[data-test="NInput"]').setValue('!other:b.example')
+    await roomCard.find('[data-test="NPopconfirm-positive"]').trigger('click')
+    await flushPromises()
+
+    expect(deleteRoomOneMock).toHaveBeenCalledWith('!loaded:a.example', 'r1')
+    expect(loadRoomMediaMock).toHaveBeenCalledWith('!loaded:a.example')
+  })
+
+  it('用户媒体隔离使用列表加载时的用户 ID 而非输入框当前值', async () => {
+    state.userMedia = [
+      {
+        media_id: 'u1m',
+        upload_name: 'user.png',
+        media_type: 'image/png',
+        media_length: 20,
+        created_ts: 1700000000000
+      }
+    ]
+    state.userMediaUserId = '@loaded:a.example'
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const userCard = wrapper.findAll('[data-test="NCard"]')[1]
+    await userCard.find('input[data-test="NInput"]').setValue('@other:b.example')
+    const quarantine = userCard
+      .findAll('button')
+      .find((button) => button.text().includes('admin.media.action.quarantineUser'))
+    await quarantine!.trigger('click')
+    await flushPromises()
+
+    expect(quarantineUserMock).toHaveBeenCalledWith('@loaded:a.example')
+    expect(loadUserMediaMock).toHaveBeenCalledWith('@loaded:a.example')
+  })
 })
