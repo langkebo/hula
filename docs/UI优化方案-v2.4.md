@@ -209,13 +209,13 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 编号 | 问题 | 状态 | 后果 | 证据（符号名） |
 |---|---|---|---|---|
 | UI-P1-02 | 管理后台菜单无探测过滤、无五态 | **已修复** | — | `useAdminNav.ts`：`navState`（loading/ready/forbidden/unauthorized/unsupported/unavailable）、`visibleNavGroups`、`showSkeleton`、`retryProbe`；`AdminSidebar.vue` 消费；`AdminLayout.vue:23` `v-if="navState === 'ready'"` |
-| UI-P1-03 | Presence 双管线并行 | **部分修复** | 双 composable 已合并，但 store 写入点仍有 2 处 | `usePresenceSync` 文件已删除；`wsPresenceHandler.applyPresencePatch` 是主写入点；**但 `useWsEventHandler.applyUserPresence`（`:67-75`）仍直接写 `contactStore` / `groupStore`**，且只写 `activeStatus` + `lastOptTime`，比 `applyPresencePatch` 少写 `presence` 与 `statusMessage` |
+| UI-P1-03 | Presence 双管线并行 | **已修复（2026-11-03 复核）** | — | `usePresenceSync` 文件已删除；`wsPresenceHandler.applyPresencePatch` 为唯一写入点；`useWsEventHandler.applyUserPresence` 已改为仅转发 `presenceHandler.applyPresenceStatus`（`syncPresenceFields: false`），不再直接写 `contactStore` / `groupStore`；不变量由 `presenceSingleWriter.test.ts` 守住 |
 | UI-P1-04 | 订阅失败阻断批量查询 | **已修复** | — | `wsPresenceHandler.applyPresenceToStores`：订阅包在 try/catch 内，失败仅 `logger.warn` 后继续 `getBatchPresence` |
-| UI-P1-05 | 设置搜索只有 Tab 级 | 仍成立 | 搜索「主题」只切 Tab，不定位控件 | `composables/settings/settingsSearchIndex.ts` 的 `SettingsSearchEntry` 仅 `{ id, terms }`；全仓无 `data-settings-anchor`、无 `scrollIntoView` |
+| UI-P1-05 | 设置搜索只有 Tab 级 | **已修复（2026-11-03 复核）** | — | `settingsSearchIndex.ts` 已升级为两级索引（Tab + 控件锚点）；`SettingsPage.vue` 消费 `data-settings-anchor` 并高亮命中段；定位逻辑集中在 `composables/settings/settingsAnchorNavigation.ts`（`scrollIntoView` + 尊重 `prefers-reduced-motion`），回归 `settingsSearchIndex.test.ts`、`settingsAnchorNavigation.test.ts` |
 | UI-P1-06 | 连接状态双横幅 | **已修复** | — | `ChatMain.vue` 顶部改为 `ChatBanners`（只含网络提示 + E2EE/私密/水印/粘性事件）；`components/connection/SyncStatusBar.vue` 已无真实引用，仅存在于自动生成的 `typings/components*.d.ts` |
 | UI-P2-09 | 能力未加载时先显示后消失 | **已修复** | — | `SettingsSidebar.vue` 新增 `capabilitiesLoaded` prop：未加载时渲染 `settings-sidebar-skeleton` 骨架并禁用搜索，不渲染真实 Tab；壳层 `matchesCapability` 保持「未加载返回 true」以避免空白 |
 
-> **本轮重要订正**：上一版把 UI-P1-02/03/04/06 全部记为「仍成立」，共 4 项误判。经取证，其中 **3 项已落地**（`useAdminNav` 五态、try/catch + 同款注释、`SyncStatusBar` 退化为死组件），**UI-P1-03 只完成了一半**：`usePresenceSync` 已删除，但 `useWsEventHandler.applyUserPresence` 仍在直接写 store，且 `wsPresenceHandler` 里"在线状态唯一写入口"的注释与事实不符。**UI-P1-04 的代码注释与上一版方案文本几乎一字不差**，说明该方案当时已被采纳但未被回写状态——这是「审计结论不回写」造成的典型漂移，应对办法见 §0.3 的复核约定。
+> **本轮重要订正**：上一版把 UI-P1-02/03/04/06 全部记为「仍成立」，共 4 项误判。经取证，其中 **3 项已落地**（`useAdminNav` 五态、try/catch + 同款注释、`SyncStatusBar` 退化为死组件），**UI-P1-03 当时只完成了一半**（`usePresenceSync` 已删除，但 `useWsEventHandler.applyUserPresence` 仍直接写 store），已于 **2026-11-03 收尾**——改为转发唯一写入口 `applyPresenceStatus`，本表状态同步更新。**UI-P1-04 的代码注释与上一版方案文本几乎一字不差**，说明该方案当时已被采纳但未被回写状态——这是「审计结论不回写」造成的典型漂移，应对办法见 §0.3 的复核约定。
 
 ### 3.2 视觉一致性
 
@@ -236,10 +236,10 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 | 编号 | 问题 | 状态 | 证据（本轮重取） |
 |---|---|---|---|
-| UI-P1-07 | 断点体系分裂，聊天主壳未适配 | 仍成立 | ① `styles/scss/global/responsive.scss` 定义 md 768 / lg 992 / xl 1200，并导出 `respond-to`（min-width）与 `respond-to-max`（max-width）两个 mixin；② **`respond-to-max('md')` 已被 15 个文件采纳**（10 个 admin 视图 + 2 个 admin 组件 + 2 个设置页 + `layout/left/style.scss`；定义文件本身不计），但**只用 `md` 一档**，`lg` / `xl` 零采纳；③ TS 侧 `useResponsiveBreakpoint` 的断点是 **1440 / 1024**，与 SCSS 的 768/992/1200 不同源，且仅 `layout/center` 与 `layout/right` 两处消费；④ 聊天主壳（`layout/center`、`components/rightBox/chatBox/ChatMain.vue`）没有宽度适配，`ChatMain` 仅用 `useIsMobile()` 做布尔分支 |
-| UI-P2-01 | 缺 240px 可折叠信息面板 | 部分修复 | `composables/layout/useRightPaneWidth.ts`：`VIEW_WIDTH_MAP.chat = 620`、`DEFAULT_MIN = 360`、`DEFAULT_MAX = 800`——最小宽度 360 与「240px 面板」目标冲突；`layout/right/index.vue` 已改 `flex: 1 1 auto`（上一轮的「非 flex-1」已消除） |
+| UI-P1-07 | 断点体系分裂，聊天主壳未适配 | **已修复（2026-11-03 复核）** | ① `responsive.scss` 的 md 768 / lg 992 / xl 1200 仍是 SCSS 唯一来源；② `useResponsiveBreakpoint` 的 `DEFAULT_BREAKPOINTS` 已改为 **wide 1200 / normal 992 / shrink 768**，与 SCSS 同源，`design-baseline.test.ts` 断言两侧一致；③ 聊天主壳按 `CENTER_WIDTH_MAP`（280 / 240 / 64）三档接线，`layout/left` 最小宽度消费 `--tjg-layout-left-min(-mac)`；④ `respond-to-max` 采纳 16 个文件，原生 `@media (max-width…)` 已清零（仅 `responsive.scss` 的 mixin 定义保留）；⑤ 手工五档验收仍未执行，见 §5.6 |
+| UI-P2-01 | 缺 240px 可折叠信息面板 | **已修复（2026-11-03 复核）** | `composables/layout/useRightPaneWidth.ts`：`DEFAULT_MIN = 240`、`DEFAULT_MAX = 800`；`layout/right/index.vue` 为 `flex: 1 1 auto`，拖拽把手带 `role="separator"`、`aria-label`、`tabindex="0"`，支持左右方向键 16px 步长微调并即时持久化 |
 
-> **证据订正（重要）**：上一版写「`@include respond-to` **全仓采纳 0 次**」与「媒体查询只有 13 个文件」。本轮重取：`respond-to` 系列**已采纳 16 个文件**（主要是 `respond-to-max`），原生 `@media (max-width…)` 仅 **3 个文件**（其余 `@media` 是 `prefers-reduced-motion` 等无宽度断点）。结论方向不变（两套断点不同源、主壳未适配），但原证据是错的，必须替换，否则方案会被误判为「从零开始」。
+> **证据订正（重要）**：上一版写「`@include respond-to` **全仓采纳 0 次**」与「媒体查询只有 13 个文件」。v2.4 重取：`respond-to` 系列**已采纳 16 个文件**（主要是 `respond-to-max`），原生 `@media (max-width…)` 仅 **3 个文件**（其余 `@media` 是 `prefers-reduced-motion` 等无宽度断点）。**2026-11-03 复核**：原生宽度媒体查询已全部替换为 mixin，两套断点已同源，聊天主壳已适配，本节状态改为「已修复」；仅剩手工五档验收（§5.6）。
 
 ### 3.4 用户体验
 
@@ -508,7 +508,7 @@ grep -rn "SyncStatusBar" src --include=*.vue --include=*.ts | grep -v "typings/"
 1. **确定唯一断点源**：以需求文档 8.1 的 768 / 992 / 1200 为准，改写 `useResponsiveBreakpoint` 的 `DEFAULT_BREAKPOINTS`（`wide: 1200`、`normal: 992`、`shrink: 768`），并让 `CENTER_WIDTH_MAP` 与之对应。
 2. `responsive.scss` 的 `$breakpoints` 与 TS 常量共用同一组数值，在 `design-baseline.test.ts` 中断言两者相等（读取 SCSS 源文件文本 + TS 常量对比），防止再次漂移。
 3. 聊天主壳按统一断点驱动：`<768` 单栏、`768–991` 双栏 + 抽屉、`992–1199` 轻四栏、`>=1200` 四栏（与 §6.1 的 240px 面板方案共用同一套断点）。
-4. 存量 `respond-to-max('md')` **不强制改写**（已是统一源），只补 `lg`/`xl` 缺失档；原生 `@media (max-width…)` 仅 3 个文件，逐文件替换为 mixin。
+4. 存量 `respond-to-max('md')` **不强制改写**（已是统一源），只补 `lg`/`xl` 缺失档；原生 `@media (max-width…)` 仅 3 个文件，逐文件替换为 mixin。**2026-11-03 复核：原生宽度媒体查询已清零（仅 `responsive.scss` 保留 mixin 定义）；`lg` 已采纳 2 个管理后台文件，`xl` 仍为 0，口径见下方验收标准。**
 
 **异常与边界**
 
@@ -522,9 +522,9 @@ grep -rn "SyncStatusBar" src --include=*.vue --include=*.ts | grep -v "typings/"
 **验收标准**
 
 - 断点常量在 SCSS 与 TS 两侧断言一致（`design-baseline.test.ts` 红/绿自证）。
-- 1280 / 1024 / 900 / 768 / 480 五档手工检查通过，无横向滚动、无控件溢出。
+- 1280 / 1024 / 900 / 768 / 480 五档手工检查通过，无横向滚动、无控件溢出（**2026-11-03：尚未执行，列为发布前阻塞项**）。
 - 聊天主壳在 4 档断点下分别呈现单栏/双栏+抽屉/轻四栏/四栏。
-- `respond-to-max` 的采纳文件数只增不减，且新增必须带 `lg`/`xl` 用例。
+- `respond-to-max` 的采纳文件数只增不减；**新增断点分支必须带 `lg`/`xl` 用例**。现状：`lg` 已有 2 个管理后台文件采纳，`xl` 仍为 0——超宽屏行为由 TS 断点统一驱动，`xl` 无独立 `max-width` 分支需求，故不设硬性采纳下限；一旦新增 `xl` 分支即须补对应用例。
 
 **复核命令**
 
@@ -833,7 +833,7 @@ pnpm test:run tests/lint/design-baseline.test.ts
 | 7.6 在线状态判定 | 单管线、订阅失败不阻断批量、保持上次状态 | `wsPresenceHandler.test.ts`、`presenceSingleWriter.test.ts` |
 | 7.8 能力未就绪态 | 三态渲染一致，无无限 spinner | 能力组合测试 + 慢网快照 |
 | 8.1 断点 | 四档行为；240px 面板；断点常量两端一致 | `design-baseline.test.ts`、`useResponsiveBreakpoint.test.ts` + 1280/1024/900/768/480 手工检查 |
-| 11 后续收敛项 | 搜索命中路径 + 定位；弹窗计数下降；硬编码颜色下降 | `settingsSearchIndex.test.ts`、`settingsAnchorNavigation.test.ts`、ratchet 基线 |
+| 11 后续收敛项 | 搜索命中路径 + 定位；弹窗计数**冻结不再上升**（105）；硬编码颜色保持 0 | `settingsSearchIndex.test.ts`、`settingsAnchorNavigation.test.ts`、ratchet 基线 |
 | 本文档 §2 | G-01/G-02 已有可达入口与 `unsupported` 降级；G-08 有可达入口与「字段缺失整块不渲染」；G-06 有可达访客入口与「探测不支持不渲染」；G-04 有可达定时入口与「能力不支持不渲染、失败不乐观删除」 | 两页测试 + 能力不可用快照 + `RoomExternalIds` / `MessagePerspectiveOverlay` / `GuestModeBanner` / `GuestUpgradeModal` / `DelayedMessagesModal` / `MatrixDelayedEventsService` 测试 |
 
 **统一回归命令**
@@ -852,8 +852,8 @@ pnpm verify:sdk-pin
 
 **完成定义（Definition of Done）**
 
-1. P1 清零：UI-P1-05、UI-P1-07 关闭 + UI-P1-03 的第二写入点消除，且各项有对应单测/断言（UI-P1-01/02/04/06 已关闭，只需回归守住）。
-2. P2 收敛：`hardcoded_color` 已降到 0 并锁定基线；`NModal` 已完成分类收敛（当前 105，设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105；残留均为确认/向导/选择器/查看器/前置认证并逐文件登记）。
+1. P1 清零（2026-11-03 复核通过）：UI-P1-05、UI-P1-07 关闭 + UI-P1-03 的第二写入点消除，且各项有对应单测/断言（UI-P1-01/02/04/06 已关闭，只需回归守住）。
+2. P2 收敛：`hardcoded_color` 保持 0 并锁定基线；`NModal` 已完成分类收敛并**冻结在 105**（设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105）；残留均为确认/向导/选择器/查看器/前置认证并逐文件登记，**验收口径为「计数不再上升」**，非编辑语义弹窗不再纳入收敛范围。
 3. 能力缺口：G-01、G-02、G-03、G-04、G-06、G-07、G-08 已落地并有测试；G-05 已于 2026-11-03 落地并有测试（后端内置 CAS 登录页 + loginToken 回调，前端 Tauri 子窗口 + `m.login.token`）。
 4. 残留清理：`SyncStatusBar.vue` 与其实测已删除，`typings/` 无该符号。
 5. 未取证项清零：Worker 管理面、第三方 3PID、媒体子项三项补齐取证后再更新 §1.3；A-01 已在 Storybook 可达后跑通 `check:a11y`（0 serious/critical）并修复 `FileUploadModal` 的 `trap-focus=false`，逐故事扫描待补；A-02 已修复（`role="separator"` + `aria-label` + 方向键，回归测试覆盖）、A-03 经取证不成立（无手动收起控件）。
@@ -866,13 +866,13 @@ pnpm verify:sdk-pin
 | 风险 | 影响 | 缓解 |
 |---|---|---|
 | 能力过滤导致入口「消失」引发困惑 | 中 | 深链命中被隐藏 Tab 时一次性回退 + 说明；设置页提供「能力诊断」入口 |
-| Presence 管线合并引入回归 | 高（**主体已落地，收尾未完成**） | 已删除 `usePresenceSync`；剩余 `useWsEventHandler.applyUserPresence` 第二写入点需并入 `applyPresencePatch`，并以不变量单测守住「写入点唯一」 |
+| Presence 管线合并引入回归 | 中（**已收尾，转为回归约束**） | 已删除 `usePresenceSync`；`useWsEventHandler.applyUserPresence` 已改为转发 `applyPresenceStatus`，唯一写入点收敛到 `writePresenceToStores`，由 `presenceSingleWriter.test.ts` 守住「写入点唯一」 |
 | 断点统一改动面大 | 高 | 先统一常量并加两端一致性断言，再逐壳替换；每壳独立提交 |
 | 四栏改造影响拖拽持久化 | 中 | 先加面板、后改弹性宽度；旧宽度配置读取时做一次迁移 |
 | 硬编码颜色替换导致暗色偏差 | 中 | 先补令牌再替换；逐文件亮/暗双检；基线随替换同步下调 |
 | 弹窗批量改造范围过大 | 中 | 按模块分批，每批独立评审；确认类弹窗不动 |
 | 新增管理页面对 300 条端点理解偏差 | 中 | 以 `ROUTE_CONTRACT.md` 的请求/响应结构为准，先写契约测试再接 UI |
-| 审计结论再次漂移（本轮已发生 4 次） | 高 | 每项必须带复核命令与取证日期；状态变更必须回写 §4 与 §0.2 两处 |
+| 审计结论再次漂移（本轮已发生 4 次；2026-11-03 复核又发现 §3.1/§3.3 四处状态过期） | 高 | 每项必须带复核命令与取证日期；状态变更必须在同一提交内回写 §3、§4、§9、§10 与 §0.2 |
 
 **回滚策略**：每项按 ID 独立提交，回滚按阶段 F → 0 逆序 revert；不涉及数据迁移与契约变更，回滚后仅需重跑统一回归命令。已落地项（UI-P1-02/03/04/06）如需回滚，注意 UI-P1-06 已产生死组件清理，回滚时要一并恢复 `SyncStatusBar.vue`。
 
@@ -882,7 +882,7 @@ pnpm verify:sdk-pin
 
 - **能力降级基础设施已达标**：`SettingsTab` 具备 `desktopOnly` / `requiredCapability` / `capabilityFallback`；能力 Tab 已声明依赖（`voiceVideo→voip`、`encryption→e2ee`（readonly）、`mjolnir→admin-api`、`friends→friend-list`、`burnAfterRead→burn-after-read`）；壳层过滤、`isTabReadOnly`、深链回退均已接线。
 - **管理后台探测与五态已达标**：`useAdminNav` 提供六态 `navState`、`visibleNavGroups`、`showSkeleton`、`retryProbe`；`AdminSidebar` 消费；`AdminLayout` 仅在 `ready` 渲染业务路由。
-- **Presence 单管线已基本达标（差收尾）**：`usePresenceSync` 已删除、订阅失败不阻断批量查询已修；仍存 `useWsEventHandler.applyUserPresence` 第二写入点，见 §5.2。
+- **Presence 单管线已达标（2026-11-03 收尾）**：`usePresenceSync` 已删除、订阅失败不阻断批量查询已修；`useWsEventHandler.applyUserPresence` 已改为转发唯一写入口 `applyPresenceStatus`，见 §5.2。
 - **连接状态单横幅已达标**：`ChatBanners` 不含连接状态，全局 `ConnectionStatusBanner` 唯一。
 - **组件级能力门控已达标**：`ChatHeader/ChatHeaderToolbar.vue` 的 voip 区块与 burn-after-read 区块、`BurnAfterReadBar.vue` 均使用 `PermissionGuard`（默认 hide）。
 - **脱水设备 fail-closed 已达标**：`DehydratedDeviceSection.vue` 以 `isSupported()` 决定是否渲染按钮与管理器。
