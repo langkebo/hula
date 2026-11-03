@@ -96,7 +96,7 @@ export type { KeyBackupManager as SDKKeyBackupManager } from 'matrix-js-sdk/key-
 // 「SDK 只有一个咽喉点」的边界约定（scripts/check-sdk-boundary.mjs 只放行本文件）。
 export type { ManagerExtensionsOptions } from 'matrix-js-sdk/manager-extensions'
 export { DEFAULT_CORE_EXTENSIONS } from 'matrix-js-sdk/manager-extensions'
-export type { MediaManager, MediaQuotaAlert } from 'matrix-js-sdk/media'
+export type { MediaManager, MediaQuotaAlert, UrlPreview } from 'matrix-js-sdk/media'
 export { RoomEvent } from 'matrix-js-sdk/models/room'
 export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'
 export type { IPresenceEvent } from 'matrix-js-sdk/presence'

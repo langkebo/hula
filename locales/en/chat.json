@@ -6,6 +6,7 @@
     "send_file": "Send File",
     "send_image": "Send Image",
     "voice_message": "Voice Message",
+    "link_preview": "Link Preview",
     "location": "Location",
     "burn_after_read": "Burn After Read",
     "chat_history": "Chat History"
@@ -56,7 +57,16 @@
   },
   "link_preview": {
     "unknown_link": "Unknown link",
-    "unknown_source": "Unknown source"
+    "unknown_source": "Unknown source",
+    "title": "Send Link Preview",
+    "url_placeholder": "Paste or enter a link, e.g. https://example.com",
+    "fetch": "Fetch Preview",
+    "fetching": "Fetching preview...",
+    "fetch_failed": "No preview available, the link can still be sent",
+    "hint": "Enter a link to fetch its title and summary; on failure the raw link is sent",
+    "send": "Send",
+    "send_failed": "Failed to send link preview",
+    "disabled": "Link preview is disabled in settings. Enable it in preferences to use it."
   },
   "beacon": {
     "live_location": "Live Location Sharing",

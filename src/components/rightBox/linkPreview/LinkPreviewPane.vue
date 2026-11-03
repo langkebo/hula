@@ -1,0 +1,241 @@
+<template>
+  <n-drawer :show="show" :width="440" placement="right" @update:show="emit('update:show', $event)">
+    <n-drawer-content :title="t('chat.link_preview.title')" closable>
+      <div
+        v-if="!settingStore.linkPreviewEnabled"
+        class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-secondary]">
+        {{ t('chat.link_preview.disabled') }}
+      </div>
+
+      <div v-else class="flex flex-col gap-12px">
+        <n-input
+          v-model:value="url"
+          clearable
+          data-test="link-preview-url"
+          :placeholder="t('chat.link_preview.url_placeholder')"
+          @blur="handleBlur"
+          @keydown.enter.prevent="handleFetch" />
+
+        <div class="flex items-center gap-8px min-h-22px">
+          <n-button
+            size="small"
+            data-test="link-preview-fetch"
+            :loading="fetching"
+            :disabled="!isValidUrl"
+            @click="handleFetch">
+            {{ t('chat.link_preview.fetch') }}
+          </n-button>
+          <span v-if="statusText" class="text-[length:var(--tjg-font-size-xs)] color-[--tjg-text-tertiary]">
+            {{ statusText }}
+          </span>
+        </div>
+
+        <div v-if="preview" class="link-preview-card" data-test="link-preview-card">
+          <div v-if="thumbnailUrl" class="link-preview-card__thumb">
+            <img :src="thumbnailUrl" :alt="preview.title" />
+          </div>
+          <div class="link-preview-card__meta">
+            <div class="link-preview-card__title">{{ preview.title }}</div>
+            <div v-if="preview.description" class="link-preview-card__desc">{{ preview.description }}</div>
+            <div class="link-preview-card__host">{{ preview.siteName || host }}</div>
+          </div>
+        </div>
+
+        <p v-else class="m-0 text-[length:var(--tjg-font-size-xs)] color-[--tjg-text-quaternary]">
+          {{ t('chat.link_preview.hint') }}
+        </p>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-8px">
+          <n-button tertiary @click="emit('update:show', false)">{{ t('common.cancel') }}</n-button>
+          <n-button
+            type="primary"
+            data-test="link-preview-send"
+            :disabled="!isValidUrl || !settingStore.linkPreviewEnabled"
+            :loading="submitting"
+            @click="handleSubmit">
+            {{ t('chat.link_preview.send') }}
+          </n-button>
+        </div>
+      </template>
+    </n-drawer-content>
+  </n-drawer>
+</template>
+
+<script setup lang="ts">
+import { NButton, NDrawer, NDrawerContent, NInput } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
+import { THUMBNAIL_SIZE_LINK_PREVIEW } from '@/common/constants'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import type { MediaUrlPreview } from '@/services/matrix/media/mediaTypes'
+import { useSettingStore } from '@/stores/domains/settings/setting'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('LinkPreviewPane')
+
+const props = defineProps<{ show: boolean }>()
+
+const emit = defineEmits<{
+  'update:show': [value: boolean]
+  submit: [payload: MediaUrlPreview]
+}>()
+
+const { t } = useI18n()
+const settingStore = useSettingStore()
+
+const url = ref('')
+const preview = ref<MediaUrlPreview | null>(null)
+const fetching = ref(false)
+const submitting = ref(false)
+const fetchFailed = ref(false)
+
+/** 补全协议并校验，非法时返回空串。 */
+const normalizedUrl = computed(() => {
+  const raw = url.value.trim()
+  if (!raw) return ''
+  const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  try {
+    const parsed = new URL(candidate)
+    if (!parsed.hostname.includes('.')) return ''
+    return parsed.toString()
+  } catch {
+    return ''
+  }
+})
+
+const isValidUrl = computed(() => normalizedUrl.value !== '')
+
+const host = computed(() => {
+  try {
+    return new URL(normalizedUrl.value).hostname
+  } catch {
+    return ''
+  }
+})
+
+/** 渲染侧统一处理 mxc://，这里只做展示用的 HTTP 转换。 */
+const thumbnailUrl = computed(() => {
+  const imageUrl = preview.value?.imageUrl
+  if (!imageUrl) return ''
+  if (!imageUrl.startsWith('mxc://')) return imageUrl
+  return matrixMediaService.getMediaUrl(imageUrl, THUMBNAIL_SIZE_LINK_PREVIEW, THUMBNAIL_SIZE_LINK_PREVIEW) || ''
+})
+
+const statusText = computed(() => {
+  if (fetching.value) return t('chat.link_preview.fetching')
+  if (fetchFailed.value) return t('chat.link_preview.fetch_failed')
+  return ''
+})
+
+/** 拉取预览；失败返回 null，由调用方决定降级策略。 */
+const fetchPreview = async (target: string): Promise<MediaUrlPreview | null> => {
+  fetching.value = true
+  try {
+    const result = await matrixMediaService.getUrlPreview(target)
+    preview.value = result
+    fetchFailed.value = !result
+    return result
+  } catch (err) {
+    logger.warn(`[LinkPreview] failed to fetch preview: ${err}`)
+    preview.value = null
+    fetchFailed.value = true
+    return null
+  } finally {
+    fetching.value = false
+  }
+}
+
+const handleFetch = async () => {
+  if (!isValidUrl.value || fetching.value) return
+  await fetchPreview(normalizedUrl.value)
+}
+
+const handleBlur = () => {
+  if (isValidUrl.value && !preview.value && !fetching.value) {
+    void handleFetch()
+  }
+}
+
+const reset = () => {
+  url.value = ''
+  preview.value = null
+  fetchFailed.value = false
+}
+
+watch(
+  () => props.show,
+  (visible) => {
+    if (!visible) reset()
+  }
+)
+
+const handleSubmit = async () => {
+  if (!isValidUrl.value || submitting.value) return
+  submitting.value = true
+  try {
+    const target = normalizedUrl.value
+    const payload = preview.value ?? (await fetchPreview(target))
+    emit('submit', payload ?? { url: target, title: target })
+    emit('update:show', false)
+  } finally {
+    submitting.value = false
+  }
+}
+</script>
+
+<style scoped lang="scss">
+.link-preview-card {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--tjg-border-default);
+  border-radius: 8px;
+  background: var(--tjg-surface-muted);
+
+  &__thumb {
+    width: 96px;
+    flex-shrink: 0;
+    background: var(--tjg-surface-app);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 10px;
+  }
+
+  &__title {
+    font-size: var(--tjg-font-size-base);
+    font-weight: 500;
+    color: var(--tjg-text-primary);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  &__desc {
+    font-size: var(--tjg-font-size-sm);
+    color: var(--tjg-text-secondary);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+
+  &__host {
+    margin-top: auto;
+    font-size: var(--tjg-font-size-2xs);
+    color: var(--tjg-text-quaternary);
+  }
+}
+</style>

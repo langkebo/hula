@@ -120,6 +120,18 @@
         </template>
         <span>{{ t('editor.voice') }}</span>
       </n-popover>
+      <n-popover v-if="linkPreviewEnabled" trigger="hover" :show-arrow="false" placement="bottom">
+        <template #trigger>
+          <svg
+            @click="$emit('showLinkPreviewModal')"
+            class="mr-18px"
+            role="button"
+            :aria-label="t('chat.footer.link_preview')">
+            <use href="#link"></use>
+          </svg>
+        </template>
+        <span>{{ t('editor.link_preview') }}</span>
+      </n-popover>
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
         <template #trigger>
           <svg
@@ -175,6 +187,7 @@ const props = defineProps<{
   recentlyTip: boolean
   recentEmojis: string[]
   burnAfterReadEnabled: boolean
+  linkPreviewEnabled: boolean
   isConceal: boolean
   screenshotShortcut: string
   disabled: boolean
@@ -192,6 +205,7 @@ const emit = defineEmits<{
   (event: 'handleImageOpen'): void
   (event: 'handleVoiceRecord'): void
   (event: 'showLocationModal'): void
+  (event: 'showLinkPreviewModal'): void
   (event: 'toggleBurnAfterRead'): void
   (event: 'openChatHistory'): void
 }>()

@@ -6,6 +6,7 @@
     "send_file": "发送文件",
     "send_image": "发送图片",
     "voice_message": "语音消息",
+    "link_preview": "链接预览",
     "location": "位置",
     "burn_after_read": "阅后即焚",
     "chat_history": "聊天记录"
@@ -56,7 +57,16 @@
   },
   "link_preview": {
     "unknown_link": "未知链接",
-    "unknown_source": "未知来源"
+    "unknown_source": "未知来源",
+    "title": "发送链接预览",
+    "url_placeholder": "粘贴或输入链接，例如 https://example.com",
+    "fetch": "获取预览",
+    "fetching": "正在获取预览...",
+    "fetch_failed": "未获取到预览，仍可直接发送链接",
+    "hint": "输入链接后可获取标题与摘要，获取失败时以纯链接发送",
+    "send": "发送",
+    "send_failed": "链接预览发送失败",
+    "disabled": "链接预览已在设置中关闭，可在偏好设置中重新开启"
   },
   "beacon": {
     "live_location": "实时位置共享",

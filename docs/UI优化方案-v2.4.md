@@ -141,7 +141,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 | 线程 | 21 | **已覆盖** | ~~G-03~~（已落地） | `MatrixThreadApi` 三方法已接线：`ThreadPanel.vue` 头部冻结/静音入口 + footer 只读降级 |
 | 外部服务 | 11 | 已覆盖 | — | `ExternalServiceService`、`ExternalServiceManager.vue` |
 | 好友 | 28 | 已覆盖 | — | `src/services/matrix/friends/` |
-| 媒体 | 60 | **部分覆盖（2026-11-03 回写：已覆盖 52 / 无 UI 承载 2 / 未覆盖 6）** | ~~G-07~~（已落地）；admin 媒体 22 条已于 2026-11-03 全部页面化（含按 server+mediaId 查询、按 ID 保护、删除用户全部媒体）；客户端上传压缩/分块偏好与媒体服务配置已在设置→存储接线；`deleteMedia` 无合适 UX、`uploadContentWithId` 无自然用户场景，登记为无 UI 承载；未覆盖剩 `preview_url` 4 条、`download_signed` 2 条 | 主链 `MatrixMediaService` + `MatrixMultimediaService` + `ChunkUploadService`；配额三接口、媒体配置（`getMediaConfig` / `getAuthenticatedMediaConfig`）与上传策略已在 `StorageSettings.vue` 接线；媒体管理页 `views/admin/AdminMedia.vue` + `composables/admin/useAdminMedia.ts`（路由 `adminMedia`） |
+| 媒体 | 60 | **部分覆盖（2026-11-04 回写：已覆盖 56 / 无 UI 承载 4 / 未覆盖 0）** | ~~G-07~~（已落地）；admin 媒体 22 条已于 2026-11-03 全部页面化（含按 server+mediaId 查询、按 ID 保护、删除用户全部媒体）；客户端上传压缩/分块偏好与媒体服务配置已在设置→存储接线；链接预览已于 2026-11-04 接线（`MatrixMediaService.getUrlPreview` 封装 `preview_url` 4 条 + 输入区撰写抽屉，桌面工具栏与移动端九宫格双入口）；`deleteMedia`、`uploadContentWithId` 无合适 UX，`download_signed` 2 条由 SDK `getContentUriDownloadUrl({ signature, timestamp })` 覆盖且无独立入口，共 4 条登记为无 UI 承载 | 主链 `MatrixMediaService` + `MatrixMultimediaService` + `ChunkUploadService`；配额三接口、媒体配置（`getMediaConfig` / `getAuthenticatedMediaConfig`）与上传策略已在 `StorageSettings.vue` 接线；链接预览见 `LinkPreviewPane.vue` + `useMsgInputDirectSend.sendLinkPreviewDirect`；媒体管理页 `views/admin/AdminMedia.vue` + `composables/admin/useAdminMedia.ts`（路由 `adminMedia`） |
 | Key Backup | 33 | 已覆盖 | — | `MatrixKeyBackupService`（含 1 条走不通的 `verifyBackup`，见 §3.4 注） |
 | 密钥轮转 | 9 | 已覆盖 | — | `KeyRotationDialog.vue` + `EncryptionSettings.vue` |
 | Widget | 16 | 已覆盖 | — | `MatrixWidgetService`（`private_on_std_widgets=0`，全走私有路由） |
@@ -172,7 +172,7 @@ python3 ../synapse-rust/scripts/contract/route_metrics.py --json
 
 > **管理族规模口径修正**：上一版写「管理 150」，那是**逐模块口径**（`ROUTE_CONTRACT.md` 的「管理 (Admin) 150 条」）。命名空间口径下 `/_synapse/admin` 实为 **300** 条（用户 76 / 服务器 62 / 房间 59 / 安全 58 / 媒体 23 / 联邦 22）。两个口径不可相加，本表统一用**逐模块口径**，与 §1.1 的 300 只是分类方式不同。
 >
-> **三个模块族已于 2026-11-03 完成取证**（判据见 §1.3 口径）：Worker 26 条 = 未覆盖 15 + 不适用 11；第三方 3PID 6 条 = 服务层已封 UI 未接 1 + 未覆盖 5；媒体 60 条 = 已覆盖 52（admin 媒体 22 条已全部页面化）/ 无 UI 承载 2（`deleteMedia`、`uploadContentWithId`）/ 未覆盖 6。未覆盖项均不按「已覆盖」计入完成率。
+> **三个模块族已于 2026-11-03 完成取证，媒体族于 2026-11-04 清零未覆盖**（判据见 §1.3 口径）：Worker 26 条 = 未覆盖 15 + 不适用 11；第三方 3PID 6 条 = 服务层已封 UI 未接 1 + 未覆盖 5；媒体 60 条 = 已覆盖 56（admin 媒体 22 条已全部页面化 + 链接预览 4 条）/ 无 UI 承载 4（`deleteMedia`、`uploadContentWithId`、`download_signed` 2 条，后者由 SDK `getContentUriDownloadUrl` 覆盖）/ 未覆盖 0。未覆盖项均不按「已覆盖」计入完成率。
 
 ---
 
@@ -856,7 +856,7 @@ pnpm verify:sdk-pin
 2. P2 收敛：`hardcoded_color` 保持 0 并锁定基线；`NModal` 已完成分类收敛并**冻结在 105**（设置第一批 197 → 170，好友/空间/管理后台批次 170 → 121，房间批次 121 → 119，widget 批次 119 → 111，robot 批次 111 → 107，layout/left 批次 107 → 105）；残留均为确认/向导/选择器/查看器/前置认证并逐文件登记，**验收口径为「计数不再上升」**，非编辑语义弹窗不再纳入收敛范围。
 3. 能力缺口：G-01、G-02、G-03、G-04、G-06、G-07、G-08 已落地并有测试；G-05 已于 2026-11-03 落地并有测试（后端内置 CAS 登录页 + loginToken 回调，前端 Tauri 子窗口 + `m.login.token`）。
 4. 残留清理：`SyncStatusBar.vue` 与其实测已删除，`typings/` 无该符号。
-5. 未取证项已于 2026-11-03 清零并回写 §1.3：Worker 15 未覆盖 + 11 不适用、3PID 1 服务层已封 UI 未接 + 5 未覆盖、媒体 52 已覆盖（admin 媒体 22 条全部页面化）/ 2 无 UI 承载 / 6 未覆盖；A-01 已在 Storybook 可达后跑通 `check:a11y`（0 serious/critical）并修复 `FileUploadModal` 的 `trap-focus=false`，逐故事扫描待补；A-02 已修复（`role="separator"` + `aria-label` + 方向键，回归测试覆盖）、A-03 经取证不成立（无手动收起控件）。
+5. 未取证项已于 2026-11-03 清零并回写 §1.3：Worker 15 未覆盖 + 11 不适用、3PID 1 服务层已封 UI 未接 + 5 未覆盖、媒体 52 已覆盖（admin 媒体 22 条全部页面化）/ 2 无 UI 承载 / 6 未覆盖；媒体剩余 6 条已于 2026-11-04 收口（链接预览 4 条接线、`download_signed` 2 条由 SDK 覆盖），媒体族现为 56 已覆盖 / 4 无 UI 承载 / 0 未覆盖；A-01 已在 Storybook 可达后跑通 `check:a11y`（0 serious/critical）并修复 `FileUploadModal` 的 `trap-focus=false`，逐故事扫描待补；A-02 已修复（`role="separator"` + `aria-label` + 方向键，回归测试覆盖）、A-03 经取证不成立（无手动收起控件）。
 6. 门禁全绿（2026-11-03 实际执行）：`vue-tsc --noEmit` 0 错误、`test:run` 全量通过、`check:ratchet` 全部持平基线、`check:doc-coverage` 无回退、`check:doc-paths` 路径全部存在、`check:sdk-boundary` 无回退、`quality:no-raw-fetch` 裸请求均在白名单内、`check`（Biome + i18n）通过、`check:file-size` 超限文件数等于基线 118、`check:i18n-dead-keys` 孤儿 key 0（基线 0）。
 
 ---

@@ -26,6 +26,7 @@
         v-model:is-conceal="isConceal"
         :recent-emojis="recentEmojis"
         :burn-after-read-enabled="burnAfterReadEnabled"
+        :link-preview-enabled="settingStore.linkPreviewEnabled"
         :screenshot-shortcut="settingStore.screenshotShortcut"
         :disabled="chatStore.isMsgMultiChoose"
         :check-is-url="checkIsUrl"
@@ -36,6 +37,7 @@
         @handle-image-open="handleImageOpen"
         @handle-voice-record="handleVoiceRecord"
         @show-location-modal="showLocationModal = true"
+        @show-link-preview-modal="showLinkPreviewPane = true"
         @toggle-burn-after-read="toggleBurnAfterRead"
         @open-chat-history="openChatHistory" />
 
@@ -57,6 +59,9 @@
       @location-selected="handleLocationSelected"
       @cancel="showLocationModal = false" />
 
+    <!-- 链接预览撰写抽屉 -->
+    <LinkPreviewPane v-model:show="showLinkPreviewPane" @submit="handleLinkPreviewSubmit" />
+
     <!-- 移动端面板 -->
     <MobilePanel
       v-if="isMobileRef"
@@ -66,7 +71,8 @@
       @mobile-voice-cancel="handleMobileVoiceCancel"
       @mobile-voice-send="handleMobileVoiceSend"
       @more-send-files="handleMoreSendFiles"
-      @more-location="showLocationModal = true" />
+      @more-location="showLocationModal = true"
+      @more-link-preview="showLinkPreviewPane = true" />
   </main>
 </template>
 
@@ -75,6 +81,7 @@ import { open } from '@tauri-apps/plugin-dialog'
 import { readFile } from '@tauri-apps/plugin-fs'
 import { useI18n } from 'vue-i18n'
 import { FOOTER_HEIGHT, MAX_FOOTER_HEIGHT, MIN_FOOTER_HEIGHT } from '@/common/constants'
+import LinkPreviewPane from '@/components/rightBox/linkPreview/LinkPreviewPane.vue'
 import LocationModal from '@/components/rightBox/location/LocationModal.vue'
 import type { VoiceRecordPayload } from '@/components/rightBox/VoiceRecorder.vue'
 import { useChatLayoutGlobal } from '@/composables/chat/useChatLayout'
@@ -89,6 +96,7 @@ import { useWindow } from '@/composables/common/useWindow'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum } from '@/enums'
+import type { MediaUrlPreview } from '@/services/matrix/media/mediaTypes'
 import type { SessionItem } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -132,6 +140,7 @@ type MsgInputInstance = {
   handleLocationSelected: (locationData: LocationData) => Promise<void>
   sendVoiceDirect: (voiceData: VoiceRecordPayload) => Promise<void>
   sendFilesDirect: (files: File[]) => Promise<void>
+  sendLinkPreviewDirect: (payload: MediaUrlPreview) => Promise<void>
   isVoiceMode?: boolean
 }
 
@@ -140,6 +149,7 @@ const msgInputDom = ref<HTMLElement | null>(null)
 const emojiShow = ref(false)
 const recentlyTip = ref(false)
 const showLocationModal = ref(false)
+const showLinkPreviewPane = ref(false)
 const burnAfterRead = useBurnAfterRead()
 const burnAfterReadEnabled = computed(() => burnAfterRead.isRoomBurnEnabled())
 
@@ -269,6 +279,15 @@ const handleLocationSelected = async (locationData: LocationData) => {
     showLocationModal.value = false
   } catch (error) {
     logger.error('Failed to send location message:', error)
+  }
+}
+
+const handleLinkPreviewSubmit = async (payload: MediaUrlPreview) => {
+  try {
+    await MsgInputRef.value?.sendLinkPreviewDirect(payload)
+  } catch (error) {
+    logger.error('Failed to send link preview:', error)
+    showFeedback(t('chat.link_preview.send_failed'), 'error')
   }
 }
 

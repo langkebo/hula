@@ -1697,6 +1697,7 @@ export type I18nKeys = {
       "send_file": "发送文件",
       "send_image": "发送图片",
       "voice_message": "语音消息",
+      "link_preview": "链接预览",
       "location": "位置",
       "burn_after_read": "阅后即焚",
       "chat_history": "聊天记录"
@@ -1747,7 +1748,16 @@ export type I18nKeys = {
     },
     "link_preview": {
       "unknown_link": "未知链接",
-      "unknown_source": "未知来源"
+      "unknown_source": "未知来源",
+      "title": "发送链接预览",
+      "url_placeholder": "粘贴或输入链接，例如 https://example.com",
+      "fetch": "获取预览",
+      "fetching": "正在获取预览...",
+      "fetch_failed": "未获取到预览，仍可直接发送链接",
+      "hint": "输入链接后可获取标题与摘要，获取失败时以纯链接发送",
+      "send": "发送",
+      "send_failed": "链接预览发送失败",
+      "disabled": "链接预览已在设置中关闭，可在偏好设置中重新开启"
     },
     "beacon": {
       "live_location": "实时位置共享",
@@ -2124,6 +2134,7 @@ export type I18nKeys = {
     "image": "图片",
     "upload_file": "上传文件",
     "voice": "语音",
+    "link_preview": "链接预览",
     "location": "位置",
     "chat_history": "聊天记录",
     "screenshot": "截图",
@@ -4275,6 +4286,7 @@ export type I18nKeys = {
       "file": "文件",
       "voice": "语音",
       "video": "视频",
+      "link_preview": "链接预览",
       "location": "位置",
       "only_image": "只能选择图片哦~"
     },
@@ -8797,6 +8809,7 @@ export type I18nKeyPaths =
   | "chat.footer.send_file"
   | "chat.footer.send_image"
   | "chat.footer.voice_message"
+  | "chat.footer.link_preview"
   | "chat.footer.location"
   | "chat.footer.burn_after_read"
   | "chat.footer.chat_history"
@@ -8838,6 +8851,15 @@ export type I18nKeyPaths =
   | "chat.location.error_short"
   | "chat.link_preview.unknown_link"
   | "chat.link_preview.unknown_source"
+  | "chat.link_preview.title"
+  | "chat.link_preview.url_placeholder"
+  | "chat.link_preview.fetch"
+  | "chat.link_preview.fetching"
+  | "chat.link_preview.fetch_failed"
+  | "chat.link_preview.hint"
+  | "chat.link_preview.send"
+  | "chat.link_preview.send_failed"
+  | "chat.link_preview.disabled"
   | "chat.beacon.live_location"
   | "chat.beacon.remaining_time"
   | "chat.beacon.view_location"
@@ -9118,6 +9140,7 @@ export type I18nKeyPaths =
   | "editor.image"
   | "editor.upload_file"
   | "editor.voice"
+  | "editor.link_preview"
   | "editor.location"
   | "editor.chat_history"
   | "editor.screenshot"
@@ -10755,6 +10778,7 @@ export type I18nKeyPaths =
   | "mobile_chat.input_panel.file"
   | "mobile_chat.input_panel.voice"
   | "mobile_chat.input_panel.video"
+  | "mobile_chat.input_panel.link_preview"
   | "mobile_chat.input_panel.location"
   | "mobile_chat.input_panel.only_image"
   | "mobile_chat.preview.forward_no_id"

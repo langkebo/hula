@@ -19,6 +19,7 @@
     "file": "File",
     "voice": "Voice",
     "video": "Video",
+    "link_preview": "Link Preview",
     "location": "Location",
     "only_image": "Only images can be selected"
   },

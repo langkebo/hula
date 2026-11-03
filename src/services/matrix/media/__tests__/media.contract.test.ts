@@ -63,6 +63,18 @@ setupMswServer(
   http.get(`${HOMESERVER}/_matrix/client/v1/media/config`, ({ request }) => {
     seenUrls.push({ method: request.method, url: request.url })
     return HttpResponse.json({ authenticated_media: true })
+  }),
+  http.get(`${HOMESERVER}/_matrix/media/v3/preview_url`, ({ request }) => {
+    seenUrls.push({ method: request.method, url: request.url })
+    const target = new URL(request.url).searchParams.get('url') ?? ''
+    if (target.includes('unreachable')) {
+      return HttpResponse.json({ errcode: 'M_UNKNOWN', error: 'Failed to fetch' }, { status: 400 })
+    }
+    return HttpResponse.json({
+      'og:title': 'Example Title',
+      'og:description': 'Example Description',
+      'og:image': 'mxc://hs.media-contract.test/thumb'
+    })
   })
 )
 
@@ -159,5 +171,27 @@ describe('Media service URL construction contract (real SDK + msw)', () => {
     expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/client/v1/media/config`)
     expect(calls[0].url).not.toMatch(DOUBLE_PREFIX)
     expect(result?.authenticated_media).toBe(true)
+  })
+
+  it('getUrlPreview hits /_matrix/media/v3/preview_url and normalizes og fields', async () => {
+    const result = await matrixMediaService.getUrlPreview('https://example.com/page')
+
+    const calls = seenUrls.filter((u) => u.url.includes('/media/v3/preview_url'))
+    expect(calls).toHaveLength(1)
+    expect(calls[0].method).toBe('GET')
+    expect(calls[0].url).toContain('url=https%3A%2F%2Fexample.com%2Fpage')
+    expect(calls[0].url).not.toMatch(DOUBLE_PREFIX)
+    expect(result).toEqual({
+      url: 'https://example.com/page',
+      title: 'Example Title',
+      description: 'Example Description',
+      imageUrl: 'mxc://hs.media-contract.test/thumb'
+    })
+  })
+
+  it('getUrlPreview falls back to null when the server cannot preview the URL', async () => {
+    const result = await matrixMediaService.getUrlPreview('https://unreachable.example.com')
+
+    expect(result).toBeNull()
   })
 })

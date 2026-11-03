@@ -48,6 +48,7 @@ import type { CallTypeEnum } from '@/enums'
 import { CallTypeEnum as CallTypeEnumValue } from '@/enums'
 import router from '@/router'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
@@ -56,6 +57,7 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
 const globalStore = useGlobalStore()
+const settingStore = useSettingStore()
 
 // 语音/视频通话入口依赖服务端 voip 能力
 const canUseVoip = useServerCapability().canUseVoip
@@ -83,6 +85,15 @@ const options = ref([
       pickRtcCall.value = true
     },
     isShow: () => canUseVoip.value
+  },
+  {
+    type: 'link',
+    labelKey: 'mobile_chat.input_panel.link_preview',
+    icon: 'link',
+    onClick: () => {
+      emit('linkPreview')
+    },
+    isShow: () => settingStore.linkPreviewEnabled
   },
   {
     type: 'location',
@@ -128,6 +139,7 @@ const startAudioCall = () => {
 const emit = defineEmits<{
   (e: 'sendFiles', files: File[]): void
   (e: 'location'): void
+  (e: 'linkPreview'): void
 }>()
 
 const selectedFiles = ref<File[]>([])

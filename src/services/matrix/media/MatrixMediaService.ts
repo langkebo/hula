@@ -15,7 +15,8 @@ import {
   fetchMediaConfig,
   fetchQuotaAlerts,
   fetchQuotaStats,
-  fetchQuotaUsage
+  fetchQuotaUsage,
+  fetchUrlPreview
 } from './mediaConfigOps'
 import {
   downloadEncryptedFileBytes as dlEncryptedFileBytes,
@@ -28,6 +29,7 @@ import {
   type EncryptedUploadResult,
   MEDIA_CHUNK_UPLOAD_THRESHOLD_BYTES,
   type MediaInfo,
+  type MediaUrlPreview,
   type UploadResult
 } from './mediaTypes'
 import { createUploadOptions, uploadContentWithChunkFallback } from './mediaUploadHelpers'
@@ -374,6 +376,11 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   /** 获取认证媒体配置（是否启用 authenticated_media）；失败返回 null。 */
   async getAuthenticatedMediaConfig(): Promise<{ authenticated_media: boolean; [key: string]: unknown } | null> {
     return fetchAuthenticatedMediaConfig(() => this.getMedia())
+  }
+
+  /** 获取链接预览（标题/描述/缩略图）；服务端不支持或抓取失败时返回 null。 */
+  async getUrlPreview(url: string, ts?: number): Promise<MediaUrlPreview | null> {
+    return fetchUrlPreview(() => this.getMedia(), url, ts)
   }
 }
 

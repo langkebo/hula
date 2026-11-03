@@ -292,6 +292,7 @@ const {
   sendFilesDirect,
   sendVoiceDirect,
   sendEmojiDirect,
+  sendLinkPreviewDirect,
   personList,
   disabledSend,
   ait,
@@ -659,6 +660,7 @@ defineExpose({
   sendVoiceDirect,
   sendFilesDirect,
   sendEmojiDirect,
+  sendLinkPreviewDirect,
   handleLocationSelected
 })
 

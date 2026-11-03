@@ -38,6 +38,15 @@ export const DEFAULT_COMPRESS_OPTIONS: CompressOptions = {
   maxSizeKB: 1024
 }
 
+/** 链接预览（归一化后的展示字段，供消息体与卡片直接使用）。 */
+export interface MediaUrlPreview {
+  url: string
+  title: string
+  description?: string
+  imageUrl?: string
+  siteName?: string
+}
+
 /** 触发主动分块上传的文件大小阈值（10MB）。 */
 export const MEDIA_CHUNK_UPLOAD_THRESHOLD_BYTES = 10 * 1024 * 1024
 

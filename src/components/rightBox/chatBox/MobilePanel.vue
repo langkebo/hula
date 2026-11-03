@@ -9,7 +9,10 @@
           <VoicePanel @cancel="emit('mobileVoiceCancel')" @send="emit('mobileVoiceSend', $event)" />
         </div>
         <div v-else-if="mobilePanelState === MobilePanelStateEnum.MORE" key="more" class="panel-content">
-          <More @sendFiles="emit('moreSendFiles', $event)" @location="emit('moreLocation')" />
+          <More
+            @sendFiles="emit('moreSendFiles', $event)"
+            @location="emit('moreLocation')"
+            @linkPreview="emit('moreLinkPreview')" />
         </div>
       </Transition>
     </div>
@@ -37,6 +40,7 @@ const emit = defineEmits<{
   (event: 'mobileVoiceSend', voiceData: VoiceRecordPayload): void
   (event: 'moreSendFiles', files: File[]): void
   (event: 'moreLocation'): void
+  (event: 'moreLinkPreview'): void
 }>()
 
 const onEmojiHandle = (item: unknown, type?: unknown) => {

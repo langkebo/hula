@@ -9,6 +9,7 @@ const {
   toggleRoomBurnMock,
   sendEmojiDirectMock,
   sendFilesDirectMock,
+  sendLinkPreviewDirectMock,
   historySetEmojiMock,
   loggerErrorMock,
   mittOnMock,
@@ -19,6 +20,7 @@ const {
   toggleRoomBurnMock: vi.fn(),
   sendEmojiDirectMock: vi.fn(),
   sendFilesDirectMock: vi.fn(),
+  sendLinkPreviewDirectMock: vi.fn(),
   historySetEmojiMock: vi.fn(),
   loggerErrorMock: vi.fn(),
   mittOnMock: vi.fn(),
@@ -179,6 +181,7 @@ const MsgInputStub = defineComponent({
       handleLocationSelected: vi.fn(),
       sendVoiceDirect: vi.fn(),
       sendFilesDirect: sendFilesDirectMock,
+      sendLinkPreviewDirect: sendLinkPreviewDirectMock,
       isVoiceMode: false
     })
 
@@ -196,6 +199,7 @@ const mountComponent = () =>
         MsgInput: MsgInputStub,
         ChatMsgMultiChoose: true,
         LocationModal: true,
+        LinkPreviewPane: true,
         FooterOverlays: true,
         FooterToolbar: true,
         MobilePanel: true,
@@ -242,6 +246,7 @@ describe('ChatFooter', () => {
     settingStore = reactive({
       screenshotConcealEnabled: false,
       screenshotShortcut: 'Cmd+Shift+A',
+      linkPreviewEnabled: true,
       setScreenshotConceal: vi.fn()
     })
 
@@ -250,6 +255,7 @@ describe('ChatFooter', () => {
     })
     sendEmojiDirectMock.mockResolvedValue(undefined)
     sendFilesDirectMock.mockResolvedValue(undefined)
+    sendLinkPreviewDirectMock.mockResolvedValue(undefined)
   })
 
   it('uses action feedback for burn-after-read enable and disable states', async () => {
@@ -313,5 +319,39 @@ describe('ChatFooter', () => {
     expect(sendEmojiDirectMock).toHaveBeenCalledWith('https://example.com/server.webp')
     expect(historySetEmojiMock).toHaveBeenCalledWith(['https://example.com/server.webp'])
     expect(showFeedbackMock).toHaveBeenCalledWith('发送表情包失败', 'error')
+  })
+
+  it('forwards link preview payload to MsgInput', async () => {
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const payload = {
+      url: 'https://example.com/a',
+      title: 'Example',
+      description: 'Example description',
+      imageUrl: 'mxc://hs.test/thumb'
+    }
+    await (
+      wrapper.vm as unknown as { handleLinkPreviewSubmit: (value: typeof payload) => Promise<void> }
+    ).handleLinkPreviewSubmit(payload)
+    await flushPromises()
+
+    expect(sendLinkPreviewDirectMock).toHaveBeenCalledWith(payload)
+  })
+
+  it('uses action feedback when link preview send fails', async () => {
+    sendLinkPreviewDirectMock.mockRejectedValueOnce(new Error('send failed'))
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    await (
+      wrapper.vm as unknown as {
+        handleLinkPreviewSubmit: (value: { url: string; title: string }) => Promise<void>
+      }
+    ).handleLinkPreviewSubmit({ url: 'https://example.com/a', title: 'Example' })
+    await flushPromises()
+
+    expect(loggerErrorMock).toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('chat.link_preview.send_failed', 'error')
   })
 })
