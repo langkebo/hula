@@ -16,6 +16,8 @@ export type { FederationBlacklistView, FederationDestination } from './useAdminF
 export { useAdminFederation } from './useAdminFederation'
 export type { AdminFeatureFlag, AdminFeatureFlagInput } from './useAdminMaintenance'
 export { useAdminMaintenance } from './useAdminMaintenance'
+export type { MediaLibraryItem, UseAdminMedia } from './useAdminMedia'
+export { useAdminMedia } from './useAdminMedia'
 export type { ServerNoticeInfo } from './useAdminNotices'
 export { useAdminNotices } from './useAdminNotices'
 
