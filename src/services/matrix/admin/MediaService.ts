@@ -104,6 +104,11 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 获取单个媒体详情。
+   * @param mediaId 媒体 ID。
+   * @returns 媒体详情；失败时返回 null。
+   */
   async getMediaInfo(mediaId: string): Promise<MediaInfo | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -114,6 +119,12 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 按服务器获取单个媒体详情。
+   * @param serverName 媒体所在服务器名。
+   * @param mediaId 媒体 ID。
+   * @returns 媒体详情；失败时返回 null。
+   */
   async getMediaInfoByServer(serverName: string, mediaId: string): Promise<MediaInfo | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -135,6 +146,12 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 按服务器删除媒体。
+   * @param serverName 媒体所在服务器名。
+   * @param mediaId 媒体 ID。
+   * @returns 无返回值；失败时抛出。
+   */
   async deleteMediaByServer(serverName: string, mediaId: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
@@ -157,6 +174,12 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 隔离媒体。
+   * @param serverName 媒体所在服务器名。
+   * @param mediaId 媒体 ID。
+   * @returns 无返回值；失败时抛出。
+   */
   async quarantineMedia(serverName: string, mediaId: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
@@ -167,6 +190,12 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 取消隔离媒体。
+   * @param serverName 媒体所在服务器名。
+   * @param mediaId 媒体 ID。
+   * @returns 无返回值；失败时抛出。
+   */
   async unquarantineMedia(serverName: string, mediaId: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
@@ -177,6 +206,12 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 保护媒体（按服务器 + 媒体 ID）。
+   * @param serverName 媒体所在服务器名。
+   * @param mediaId 媒体 ID。
+   * @returns 保护响应；失败时返回 null。
+   */
   async protectMedia(serverName: string, mediaId: string): Promise<MediaProtectionResponse | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -187,6 +222,11 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 按媒体 ID 保护媒体。
+   * @param mediaId 媒体 ID。
+   * @returns 保护响应；失败时返回 null。
+   */
   async protectMediaById(mediaId: string): Promise<MediaProtectionResponse | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -197,6 +237,11 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 取消保护媒体。
+   * @param mediaId 媒体 ID。
+   * @returns 取消保护响应；失败时返回 null。
+   */
   async unprotectMedia(mediaId: string): Promise<MediaUnprotectionResponse | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -207,6 +252,11 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 按策略（时间/体积阈值）删除媒体。
+   * @param options 删除条件，可含 `beforeTs` 与 `maxSize`。
+   * @returns 删除条数；失败时返回 null。
+   */
   async deleteMediaByPolicy(options: { beforeTs?: number; maxSize?: number }): Promise<{ deleted: number } | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -217,6 +267,11 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 获取全局媒体隔离变更。
+   * @param from 起始游标，缺省为 0。
+   * @returns 隔离变更响应；失败时返回 null。
+   */
   async getGlobalQuarantineChanges(from?: number): Promise<GlobalMediaQuarantineChangesResponse | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -240,6 +295,13 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 获取房间媒体列表。
+   * @param roomId 房间 ID。
+   * @param from 分页游标。
+   * @param limit 单页条数。
+   * @returns 房间媒体分页；失败时返回 null。
+   */
   async getRoomMedia(roomId: string, from?: string, limit?: number): Promise<RoomMediaPage | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -253,6 +315,12 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 删除房间媒体。
+   * @param roomId 房间 ID。
+   * @param mediaId 媒体 ID。
+   * @returns 无返回值；失败时抛出。
+   */
   async deleteRoomMedia(roomId: string, mediaId: string): Promise<void> {
     try {
       const admin = await this.sdkAdmin()
@@ -263,6 +331,12 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 隔离房间媒体。
+   * @param roomId 房间 ID。
+   * @param userId 可选，仅隔离该用户的媒体。
+   * @returns 隔离响应；失败时返回 null。
+   */
   async quarantineRoomMedia(roomId: string, userId?: string): Promise<RoomMediaQuarantineResponse | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -273,6 +347,12 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 取消隔离房间媒体。
+   * @param roomId 房间 ID。
+   * @param userId 可选，仅取消隔离该用户的媒体。
+   * @returns 取消隔离响应；失败时返回 null。
+   */
   async unquarantineRoomMedia(roomId: string, userId?: string): Promise<RoomMediaUnquarantineResponse | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -283,6 +363,11 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 获取用户媒体列表。
+   * @param userId 用户 ID。
+   * @returns 用户媒体列表；失败时返回 null。
+   */
   async getUserMedia(userId: string): Promise<UserMediaList | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -293,6 +378,11 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 删除用户媒体。
+   * @param userId 用户 ID。
+   * @returns 删除条数；响应形状缺失或失败时返回 null。
+   */
   async deleteUserMedia(userId: string): Promise<{ deleted: number } | null> {
     try {
       const admin = await this.sdkAdmin()
@@ -309,6 +399,11 @@ export class AdminMediaService {
     }
   }
 
+  /**
+   * 隔离用户媒体。
+   * @param userId 用户 ID。
+   * @returns 隔离响应；失败时返回 null。
+   */
   async quarantineUserMedia(userId: string): Promise<UserMediaQuarantineResponse | null> {
     try {
       const admin = await this.sdkAdmin()
