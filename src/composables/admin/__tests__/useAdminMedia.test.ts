@@ -158,6 +158,52 @@ describe('useAdminMedia', () => {
     expect(c.quarantineLoading.value).toBe(false)
   })
 
+  it('loadMoreQuarantineChanges 本页为空时停止且不再发请求', async () => {
+    vi.mocked(adminService.getGlobalQuarantineChanges)
+      .mockResolvedValueOnce({
+        next_batch: 42,
+        changes: [{ origin: 'a.example', media_id: 'm1', quarantined: true }]
+      })
+      .mockResolvedValueOnce({
+        next_batch: 42,
+        changes: []
+      })
+
+    const c = useAdminMedia()
+    await c.loadQuarantineChanges()
+    await c.loadMoreQuarantineChanges()
+
+    expect(adminService.getGlobalQuarantineChanges).toHaveBeenLastCalledWith(42)
+    expect(c.quarantineChanges.value).toHaveLength(1)
+
+    await c.loadMoreQuarantineChanges()
+    expect(adminService.getGlobalQuarantineChanges).toHaveBeenCalledTimes(2)
+    expect(c.quarantineChanges.value).toHaveLength(1)
+  })
+
+  it('loadMoreQuarantineChanges 游标未前进时不重复追加且停止翻页', async () => {
+    vi.mocked(adminService.getGlobalQuarantineChanges)
+      .mockResolvedValueOnce({
+        next_batch: 42,
+        changes: [{ origin: 'a.example', media_id: 'm1', quarantined: true }]
+      })
+      .mockResolvedValueOnce({
+        next_batch: 42,
+        changes: [{ origin: 'a.example', media_id: 'm1', quarantined: true }]
+      })
+
+    const c = useAdminMedia()
+    await c.loadQuarantineChanges()
+    await c.loadMoreQuarantineChanges()
+
+    expect(adminService.getGlobalQuarantineChanges).toHaveBeenLastCalledWith(42)
+    expect(c.quarantineChanges.value).toHaveLength(1)
+
+    await c.loadMoreQuarantineChanges()
+    expect(adminService.getGlobalQuarantineChanges).toHaveBeenCalledTimes(2)
+    expect(c.quarantineChanges.value).toHaveLength(1)
+  })
+
   it('loadMediaQuarantineHistory 返回变更列表，失败时为[]', async () => {
     vi.mocked(adminService.getMediaQuarantineChanges).mockResolvedValueOnce({
       changes: [
@@ -276,7 +322,7 @@ describe('useAdminMedia', () => {
     await expect(c.deleteByPolicy({ maxSize: 1024 })).resolves.toBe(0)
   })
 
-  it('返回值方法失败降级为 null 时不抛出', async () => {
+  it('返回值写方法服务层返回 null 时抛出中文错误', async () => {
     vi.mocked(adminService.protectMedia).mockResolvedValueOnce(null)
     vi.mocked(adminService.unprotectMedia).mockResolvedValueOnce(null)
     vi.mocked(adminService.quarantineRoomMedia).mockResolvedValueOnce(null)
@@ -285,12 +331,12 @@ describe('useAdminMedia', () => {
     vi.mocked(adminService.deleteUserMedia).mockResolvedValueOnce(null)
 
     const c = useAdminMedia()
-    await expect(c.protect('a.example', 'm1')).resolves.toBeUndefined()
-    await expect(c.unprotect('m1')).resolves.toBeUndefined()
-    await expect(c.quarantineRoom('!r:a.example', '@u:a.example')).resolves.toBeUndefined()
-    await expect(c.unquarantineRoom('!r:a.example')).resolves.toBeUndefined()
-    await expect(c.quarantineUser('@u:a.example')).resolves.toBeUndefined()
-    await expect(c.deleteUserAll('@u:a.example')).resolves.toBeUndefined()
+    await expect(c.protect('a.example', 'm1')).rejects.toThrow('保护媒体失败: m1')
+    await expect(c.unprotect('m1')).rejects.toThrow('取消保护媒体失败: m1')
+    await expect(c.quarantineRoom('!r:a.example', '@u:a.example')).rejects.toThrow('隔离房间媒体失败: !r:a.example')
+    await expect(c.unquarantineRoom('!r:a.example')).rejects.toThrow('取消隔离房间媒体失败: !r:a.example')
+    await expect(c.quarantineUser('@u:a.example')).rejects.toThrow('隔离用户媒体失败: @u:a.example')
+    await expect(c.deleteUserAll('@u:a.example')).rejects.toThrow('删除用户媒体失败: @u:a.example')
 
     expect(c.mutating.value).toBe(false)
   })

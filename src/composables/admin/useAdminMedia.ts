@@ -55,7 +55,7 @@ export interface UseAdminMedia {
  *
  * 只负责状态与编排，渲染与成功/失败提示由视图（useActionFeedback）承担：
  * - void 写方法失败时记录日志并 rethrow，视图据此展示错误；
- * - 返回 null 的方法失败时不抛出，改为清空对应状态并记录日志。
+ * - 服务层返回 null（失败信号）时同样抛出带中文消息的 Error，避免视图无法区分成功与失败。
  * 分页游标形状严格按后端契约：媒体库/房间媒体为字符串游标，全局隔离变更流为数值游标。
  */
 export function useAdminMedia(): UseAdminMedia {
@@ -69,6 +69,8 @@ export function useAdminMedia(): UseAdminMedia {
   const quarantineChanges = ref<GlobalMediaQuarantineChange[]>([])
   const quarantineNextBatch = ref(0)
   const quarantineLoading = ref(false)
+  // 全局隔离变更流是否还有更多数据；游标未前进或本页为空时置 false，避免原地重复翻页。
+  const quarantineHasMore = ref(true)
 
   const roomMedia = ref<RoomMediaItem[]>([])
   const roomMediaNextBatch = ref<string | null>(null)
@@ -135,8 +137,20 @@ export function useAdminMedia(): UseAdminMedia {
         }
         return
       }
-      quarantineChanges.value = reset ? result.changes : [...quarantineChanges.value, ...result.changes]
-      quarantineNextBatch.value = result.next_batch
+      const pageChanges = result.changes
+      // next_batch 运行时可能缺省或为 null，统一按“无更多数据”处理。
+      const nextBatch: number | null | undefined = result.next_batch
+      // 后端无新条目时会回显本次请求的游标，游标未前进说明该页已被消费，继续翻页只会重复。
+      const cursorStalled = !reset && from !== undefined && nextBatch === from
+      const pageExhausted =
+        pageChanges.length === 0 || cursorStalled || nextBatch === null || nextBatch === undefined || nextBatch === 0
+      if (reset) {
+        quarantineChanges.value = pageChanges
+      } else if (!pageExhausted) {
+        quarantineChanges.value = [...quarantineChanges.value, ...pageChanges]
+      }
+      quarantineNextBatch.value = nextBatch ?? quarantineNextBatch.value
+      quarantineHasMore.value = !pageExhausted
     } catch (e) {
       logger.error('加载全局媒体隔离变更失败', e)
       if (reset) {
@@ -149,8 +163,8 @@ export function useAdminMedia(): UseAdminMedia {
   }
 
   async function loadMoreQuarantineChanges() {
-    // 后端在无新条目时会回显请求游标，空列表时不再请求，避免原地翻页。
-    if (quarantineChanges.value.length === 0) return
+    // 列表为空或已确认没有更多数据时不再请求，避免原地重复翻页。
+    if (!quarantineHasMore.value || quarantineChanges.value.length === 0) return
     await loadQuarantineChanges(false)
   }
 
@@ -248,7 +262,10 @@ export function useAdminMedia(): UseAdminMedia {
     mutating.value = true
     try {
       const result = await adminService.protectMedia(serverName, mediaId)
-      if (!result) logger.warn(`保护媒体失败: ${mediaId}`)
+      if (!result) {
+        logger.warn(`保护媒体失败: ${mediaId}`)
+        throw new Error(`保护媒体失败: ${mediaId}`)
+      }
     } finally {
       mutating.value = false
     }
@@ -258,7 +275,10 @@ export function useAdminMedia(): UseAdminMedia {
     mutating.value = true
     try {
       const result = await adminService.unprotectMedia(mediaId)
-      if (!result) logger.warn(`取消保护媒体失败: ${mediaId}`)
+      if (!result) {
+        logger.warn(`取消保护媒体失败: ${mediaId}`)
+        throw new Error(`取消保护媒体失败: ${mediaId}`)
+      }
     } finally {
       mutating.value = false
     }
@@ -298,7 +318,7 @@ export function useAdminMedia(): UseAdminMedia {
       const result = await adminService.deleteUserMedia(userId)
       if (!result) {
         logger.warn(`删除用户媒体失败: ${userId}`)
-        return
+        throw new Error(`删除用户媒体失败: ${userId}`)
       }
       logger.info(`已删除用户媒体: ${userId} (${result.deleted}个)`)
     } finally {
@@ -310,7 +330,10 @@ export function useAdminMedia(): UseAdminMedia {
     mutating.value = true
     try {
       const result = await adminService.quarantineRoomMedia(roomId, userId)
-      if (!result) logger.warn(`隔离房间媒体失败: ${roomId}`)
+      if (!result) {
+        logger.warn(`隔离房间媒体失败: ${roomId}`)
+        throw new Error(`隔离房间媒体失败: ${roomId}`)
+      }
     } finally {
       mutating.value = false
     }
@@ -320,7 +343,10 @@ export function useAdminMedia(): UseAdminMedia {
     mutating.value = true
     try {
       const result = await adminService.unquarantineRoomMedia(roomId, userId)
-      if (!result) logger.warn(`取消隔离房间媒体失败: ${roomId}`)
+      if (!result) {
+        logger.warn(`取消隔离房间媒体失败: ${roomId}`)
+        throw new Error(`取消隔离房间媒体失败: ${roomId}`)
+      }
     } finally {
       mutating.value = false
     }
@@ -330,7 +356,10 @@ export function useAdminMedia(): UseAdminMedia {
     mutating.value = true
     try {
       const result = await adminService.quarantineUserMedia(userId)
-      if (!result) logger.warn(`隔离用户媒体失败: ${userId}`)
+      if (!result) {
+        logger.warn(`隔离用户媒体失败: ${userId}`)
+        throw new Error(`隔离用户媒体失败: ${userId}`)
+      }
     } finally {
       mutating.value = false
     }
