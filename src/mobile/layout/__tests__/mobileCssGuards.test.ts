@@ -51,12 +51,18 @@ describe('mobile backdrop blur performance fallback', () => {
     const block = source.slice(start, source.indexOf('\n}', start) + 2)
     expect(block).toContain('html.low-perf')
     expect(block).toContain('backdrop-filter: none')
+    // 必须是普通嵌套：`:global(html.low-perf) &` 在 Vue scoped 编译后只剩
+    // `html.low-perf { ... }`（丢弃 `&`），降级会完全失效
+    expect(block).toMatch(/^\s*html\.low-perf\s*&/m)
+    expect(block).not.toContain(':global')
     // 只关模糊，不得改写背景色（与 liquid-glass-fallback 的区别）
     expect(block).not.toMatch(/background\s*:/)
   })
 
   it('applies the fallback in every mobile surface that blurs', () => {
-    const blurred = blurSurfaces.filter((path) => /backdrop-(filter|blur)/.test(read(path)))
+    // 只认真实模糊声明，避免命中 `@include backdrop-blur-fallback` 自身导致空转
+    const blurUsage = /backdrop-blur-(?:sm|md)|backdrop-filter\s*:/
+    const blurred = blurSurfaces.filter((path) => blurUsage.test(read(path)))
     // 守卫防空转：四个目标文件都应仍然使用模糊
     expect(blurred).toHaveLength(4)
 
