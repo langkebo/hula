@@ -3,7 +3,7 @@
     <Transition name="video-preview" appear>
       <div
         v-if="visible"
-        class="fixed top-0 left-0 w-100vw h-100vh bg-black z-3000 box-border flex-center"
+        class="fixed top-0 left-0 w-100vw h-100dvh bg-black z-3000 box-border flex-center"
         :style="containerStyle"
         @click="handleClose">
         <div class="relative w-full h-full flex items-center justify-center overflow-hidden">

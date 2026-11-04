@@ -1,6 +1,6 @@
 <template>
   <!-- 🚀 加载页 DOM -->
-  <div id="loading-page" class="h-100vh"></div>
+  <div id="loading-page" class="h-100dvh"></div>
 </template>
 
 <script setup lang="ts">

@@ -166,7 +166,7 @@ onMounted(() => {
 .mobile-thread-view {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   background: var(--van-background-2);
 
   .reply-count {

@@ -10,11 +10,13 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.tjg"
         android:usesCleartextTraffic="${usesCleartextTraffic}">
+        <!-- API 30+ 下 enableEdgeToEdge() 会忽略该值，键盘遮挡由前端 useViewportInset 兜底；低版本 Android 由此项回退。 -->
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
             android:launchMode="singleTask"
             android:label="@string/main_activity_title"
             android:name=".MainActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

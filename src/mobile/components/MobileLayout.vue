@@ -14,14 +14,17 @@
         <slot></slot>
       </div>
 
-      <!-- 底部安全区域 -->
-      <div :class="[{ 'safe-area-bottom': safeAreaBottom }, props.bottomSafeAreaClass]" />
+      <!-- 底部安全区域：键盘弹出时键盘已覆盖 Home Indicator，不再叠加 -->
+      <div
+        v-if="safeAreaBottom && keyboardInset === 0"
+        :class="[{ 'safe-area-bottom': safeAreaBottom }, props.bottomSafeAreaClass]" />
     </div>
   </van-config-provider>
 </template>
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import { useViewportInset } from '#/composables/useViewportInset'
 import { useMessageSound } from '@/composables/common/useMessageSound'
 import { useMitt } from '@/composables/common/useMitt'
 import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum, WsResponseMessageType } from '@/enums'
@@ -56,6 +59,7 @@ const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const { playMessageSound } = useMessageSound()
+const { keyboardInset } = useViewportInset()
 
 const props = withDefaults(defineProps<MobileLayoutProps>(), {
   safeAreaTop: true,
@@ -83,6 +87,7 @@ const backgroundImageStyle = computed(() => {
 
 const mergedStyle = computed(() => ({
   backgroundColor: 'var(--tjg-surface-panel)',
+  paddingBottom: keyboardInset.value ? `${keyboardInset.value}px` : undefined,
   ...backgroundImageStyle.value
 }))
 

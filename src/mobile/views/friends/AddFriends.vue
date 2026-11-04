@@ -35,7 +35,7 @@
           <van-tab v-for="tab in tabs" :key="tab.name" :name="tab.name" :title="tab.label">
             <!-- 初始加载状态 -->
             <template v-if="initialLoading">
-              <div class="flex-center h-[calc(100vh/var(--page-scale,1)-200px)]">
+              <div class="flex-center h-[calc(100dvh/var(--page-scale,1)-200px)]">
                 <van-loading size="36px" />
               </div>
             </template>
@@ -46,7 +46,7 @@
                 :data-source="searchResults"
                 item-key="account"
                 :item-height="64"
-                max-height="calc(100vh / var(--page-scale, 1) - 128px)"
+                max-height="calc(100dvh / var(--page-scale, 1) - 128px)"
                 style-id="search-hover-classes">
                 <template #item="{ item }">
                   <div class="p-[0_20px] box-border">
@@ -91,7 +91,7 @@
 
             <!-- 搜索中状态 -->
             <template v-else-if="loading">
-              <div class="flex-center h-[calc(100vh/var(--page-scale,1)-200px)]">
+              <div class="flex-center h-[calc(100dvh/var(--page-scale,1)-200px)]">
                 <van-loading size="36px" />
               </div>
             </template>
