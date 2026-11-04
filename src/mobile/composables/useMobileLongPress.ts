@@ -1,7 +1,8 @@
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useTimerManager } from '@/utils/TimerManager'
+import { resolveLongPressMenuTop } from './longPressPosition'
 
 export interface LongPressOption {
   delay: number
@@ -31,6 +32,8 @@ export function useMobileLongPress(scrollControls: LongPressScrollControls) {
 
   const showMask = ref(false)
   const currentLongPressItem = ref<SessionItem | null>(null)
+  /** 长按菜单根节点（用于测量菜单高度，每个调用实例独立） */
+  const longPressMenuRef = ref<HTMLElement | null>(null)
 
   const longPressState = ref({
     showLongPressMenu: false,
@@ -104,16 +107,23 @@ export function useMobileLongPress(scrollControls: LongPressScrollControls) {
       if (!currentTarget) return
 
       const rect = currentTarget.getBoundingClientRect()
-      longPressState.value.longPressMenuTop = rect.top - rect.height / 3
+      longPressState.value.longPressMenuTop = resolveLongPressMenuTop({
+        anchorTop: rect.top,
+        anchorHeight: rect.height,
+        menuHeight: longPressMenuRef.value?.offsetHeight ?? 0,
+        viewportHeight: window.innerHeight
+      })
     }
 
     setLongPressMenuTop()
+    nextTick(setLongPressMenuTop)
     longPressState.value.showLongPressMenu = true
   }
 
   return {
     showMask,
     currentLongPressItem,
+    longPressMenuRef,
     longPressState,
     longPressOption,
     maskHandler,

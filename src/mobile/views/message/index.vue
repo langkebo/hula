@@ -60,6 +60,7 @@
     <teleport to="body">
       <div
         v-if="longPressState.showLongPressMenu"
+        :ref="(el) => (longPressMenuRef = el as HTMLElement | null)"
         :style="{ top: longPressState.longPressMenuTop + 'px' }"
         class="fixed gap-10px z-999 left-1/2 transform -translate-x-1/2">
         <div
@@ -119,8 +120,15 @@ const { isEnablePullRefresh, enablePullRefresh, disablePullRefresh, onScroll, ge
   useMobileScrollRefresh()
 
 // 长按菜单 & 蒙板(依赖滚动控制)
-const { showMask, currentLongPressItem, longPressState, longPressOption, maskHandler, handleLongPress } =
-  useMobileLongPress({ disablePullRefresh, enablePullRefresh, getScrollTop })
+const {
+  showMask,
+  currentLongPressItem,
+  longPressMenuRef,
+  longPressState,
+  longPressOption,
+  maskHandler,
+  handleLongPress
+} = useMobileLongPress({ disablePullRefresh, enablePullRefresh, getScrollTop })
 
 // 会话列表数据派生
 const { searchText, filteredSessionList, allUserMap } = useMobileSessionList()

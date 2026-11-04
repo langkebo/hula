@@ -1,6 +1,32 @@
 import type { Ref } from 'vue'
 import type { SizePayload } from './useContextMenuTypes'
 
+export interface MenuPositionInput {
+  x: number
+  y: number
+  w: number
+  h: number
+  vw: number
+  vh: number
+  margin?: number
+}
+
+/**
+ * 主菜单位置计算：右侧溢出则向左翻转，随后钳制在视口内
+ * 触屏上菜单宽度接近屏幕宽度，只翻转不钳制会把菜单推到屏幕外
+ */
+export const clampMenuPosition = ({ x, y, w, h, vw, vh, margin = 8 }: MenuPositionInput) => {
+  const maxX = Math.max(margin, vw - w - margin)
+  const maxY = Math.max(margin, vh - h - margin)
+  const wantX = x > vw - w ? x - w : x
+  const wantY = y > vh - h ? vh - h : y
+
+  return {
+    posX: Math.min(Math.max(wantX, margin), maxX),
+    posY: Math.min(Math.max(wantY, margin), maxY)
+  }
+}
+
 /**
  * 右键菜单位置与尺寸计算逻辑
  *
@@ -30,17 +56,16 @@ export const useContextMenuPosition = (options: {
   }
 
   /** 计算主菜单位置（避免溢出视口） */
-  const pos = computed(() => {
-    let posX = x.value
-    let posY = y.value
-    if (x.value > vw.value - w.value) {
-      posX -= w.value
-    }
-    if (y.value > vh.value - h.value) {
-      posY -= y.value - vh.value + h.value
-    }
-    return { posX, posY }
-  })
+  const pos = computed(() =>
+    clampMenuPosition({
+      x: x.value,
+      y: y.value,
+      w: w.value,
+      h: h.value,
+      vw: vw.value,
+      vh: vh.value
+    })
+  )
 
   /** 表情菜单的固定宽度（与 .emoji-container max-w-180px 对齐） */
   const emojiWidth = ref(180)
