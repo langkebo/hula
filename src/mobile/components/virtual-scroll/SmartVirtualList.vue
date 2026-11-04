@@ -68,11 +68,14 @@ const contentRef = ref<HTMLElement | null>(null)
 
 const scrollTop = ref(0)
 const offset = ref(0)
+const containerHeight = ref(0)
+let containerObserver: ResizeObserver | null = null
+let measurementFrame = 0
 const itemHeights = ref<Map<string | number, number>>(new Map())
 const cumulativeHeights = ref<Float64Array>(new Float64Array(0))
 
 const BUFFER = props.buffer
-const ITEM_HEIGHT = props.itemHeight
+const itemHeight = computed(() => props.itemHeight)
 
 function rebuildCumulativeHeights(): void {
   const len = props.items.length
@@ -80,7 +83,7 @@ function rebuildCumulativeHeights(): void {
   let acc = 0
   for (let i = 0; i < len; i++) {
     const id = getId(props.items[i])
-    acc += itemHeights.value.get(id) || ITEM_HEIGHT
+    acc += itemHeights.value.get(id) || itemHeight.value
     arr[i] = acc
   }
   cumulativeHeights.value = arr
@@ -109,15 +112,15 @@ function findStartIndex(target: number): number {
 }
 
 const visibleCount = computed(() => {
-  if (!containerRef.value) return 20
+  const height = containerHeight.value || containerRef.value?.clientHeight || 0
+  if (height <= 0) return 20
 
-  const containerHeight = containerRef.value.clientHeight
-  return Math.ceil(containerHeight / ITEM_HEIGHT) + BUFFER * 2
+  return Math.ceil(height / itemHeight.value) + BUFFER * 2
 })
 
 const startIndex = computed(() => {
   if (props.items.length === 0) return 0
-  const target = Math.max(0, scrollTop.value - BUFFER * ITEM_HEIGHT)
+  const target = Math.max(0, scrollTop.value - BUFFER * itemHeight.value)
   return Math.max(0, findStartIndex(target))
 })
 
@@ -173,6 +176,15 @@ function updateItemHeights(): void {
   }
 }
 
+function scheduleMeasure(): void {
+  if (measurementFrame !== 0) return
+
+  measurementFrame = requestAnimationFrame(() => {
+    measurementFrame = 0
+    updateItemHeights()
+  })
+}
+
 function handleScroll(event: Event): void {
   if (!containerRef.value) return
 
@@ -185,9 +197,7 @@ function handleScroll(event: Event): void {
     emit('loadMore')
   }
 
-  nextTick(() => {
-    updateItemHeights()
-  })
+  nextTick(scheduleMeasure)
 }
 
 function scrollToIndex(index: number, behavior: ScrollBehavior = 'smooth'): void {
@@ -197,7 +207,7 @@ function scrollToIndex(index: number, behavior: ScrollBehavior = 'smooth'): void
 
   for (let i = 0; i < index && i < props.items.length; i++) {
     const id = getId(props.items[i])
-    targetTop += itemHeights.value.get(id) || ITEM_HEIGHT
+    targetTop += itemHeights.value.get(id) || itemHeight.value
   }
 
   containerRef.value.scrollTo({
@@ -237,9 +247,7 @@ watch(
   () => props.items.length,
   () => {
     rebuildCumulativeHeights()
-    nextTick(() => {
-      updateItemHeights()
-    })
+    nextTick(scheduleMeasure)
   }
 )
 
@@ -248,9 +256,23 @@ onMounted(() => {
   if (phantomRef.value) {
     phantomRef.value.style.height = `${totalHeight.value}px`
   }
+
+  if (containerRef.value) {
+    containerHeight.value = containerRef.value.clientHeight
+    containerObserver = new ResizeObserver((entries) => {
+      containerHeight.value = entries[0]?.contentRect.height ?? containerRef.value?.clientHeight ?? 0
+    })
+    containerObserver.observe(containerRef.value)
+  }
 })
 
 onUnmounted(() => {
+  containerObserver?.disconnect()
+  containerObserver = null
+  if (measurementFrame !== 0) {
+    cancelAnimationFrame(measurementFrame)
+    measurementFrame = 0
+  }
   itemHeights.value.clear()
 })
 
