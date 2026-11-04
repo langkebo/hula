@@ -1,0 +1,97 @@
+# Rust 测试门禁
+#
+# 为什么单独一个 workflow：此前仓里**没有任何 `cargo test`**，`src-tauri/tests/*` 与
+# `#[cfg(test)]` 单测只在开发者本机跑，CI 只做 clippy。于是「测试挂了但 CI 绿」是常态
+# （2026-11-04 实测本地就有一条既有的、由跨模块 HOME 竞态引起的失败）。
+#
+# 平台选择：ubuntu-latest 最便宜，且 `debug-build.yml` 已验证同一套 Tauri 系统依赖可在
+# ubuntu-22.04 装齐，直接复用，避免另造一份清单。
+name: rust-tests
+
+on:
+  pull_request:
+    branches: ["master"]
+    paths:
+      - '**/*.rs'
+      - 'src-tauri/Cargo.toml'
+      - 'src-tauri/Cargo.lock'
+      - '.github/workflows/rust-tests.yml'
+  push:
+    branches: ["master"]
+    paths:
+      - '**/*.rs'
+      - 'src-tauri/Cargo.toml'
+      - 'src-tauri/Cargo.lock'
+      - '.github/workflows/rust-tests.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # 跳过 Renovate PR（与 rust-clippy.yml 一致）
+  rust-tests:
+    if: |
+      github.actor != 'renovate[bot]' &&
+      github.actor != 'renovate-preview[bot]'
+    name: Run cargo test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        # 仓库根目录没有 Cargo.toml，所有 cargo 命令都必须在 src-tauri 下执行
+        working-directory: src-tauri
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7.0.1
+
+      - name: Install Ubuntu dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            librsvg2-dev \
+            patchelf \
+            libudev-dev \
+            libasound2-dev \
+            pkg-config \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # 缓存 target 目录：首次约 3~4 分钟，命中缓存后 ~30s。
+      # 不缓存 `src-tauri/target` 之外的路径，避免与 pnpm store 混淆。
+      - name: Cache cargo registry and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-test-
+
+      # 单元测试 + 不依赖真实系统钥匙串的集成测试。
+      #
+      # 刻意不跑 `--all-targets` / 不列 `secure_store_keychain_test`：
+      # 那个 target 需要真实 keychain / secret-service（Linux 上要有可用 dbus 会话），
+      # 在 GitHub runner 里必然失败；把它塞进门禁会让整条流水线长期红，
+      # 反而削弱大家对门禁的信任。它在 macOS 本机仍可运行。
+      - name: Run unit tests
+        run: cargo test --lib
+
+      - name: Run integration tests
+        run: |
+          cargo test \
+            --test common_tests \
+            --test repository_tests \
+            --test message_repository_tests \
+            --test database_migration_tests

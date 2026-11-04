@@ -32,6 +32,11 @@ jobs:
 
     name: Run rust-clippy analyzing
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        # 仓库根目录没有 Cargo.toml：不指定工作目录时 `cargo clippy` 会直接
+        # 报 "could not find `Cargo.toml`"，本 workflow 自引入起就没真正跑过 lint。
+        working-directory: src-tauri
     permissions:
       contents: read
       security-events: write
