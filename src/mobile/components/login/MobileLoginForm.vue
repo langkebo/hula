@@ -35,47 +35,49 @@
       </transition>
     </div>
 
-    <van-field
-      :class="{ 'pl-22px': loginHistories.length > 0 }"
-      v-model="userInfo.account"
-      name="username"
-      :placeholder="accountPH"
-      @focus="accountPH = ''"
-      @blur="accountPH = t('login.mobile.input.account_placeholder')"
-      clearable
-      autocomplete="username"
-      :spellcheck="false"
-      autocorrect="off"
-      autocapitalize="off">
-      <template #right-icon>
-        <div v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
-          <svg v-if="!arrowStatus" class="down w-18px h-18px color-[--chat-text-color]">
-            <use href="#down"></use>
-          </svg>
-          <svg v-else class="down w-18px h-18px color-[--chat-text-color]"><use href="#up"></use></svg>
-        </div>
-      </template>
-    </van-field>
-
-    <!-- 账号选择框 -->
-    <div
-      v-if="loginHistories.length > 0 && arrowStatus"
-      class="account-box absolute w-80% max-h-140px bg-[--tjg-surface-elevated] mt-45px z-99 rounded-8px p-8px box-border border border-(1px solid [--login-dropdown-border])">
-      <div class="max-h-120px overflow-y-auto">
-        <div
-          v-for="item in loginHistories"
-          :key="item.account"
-          @click="onSelectAccount(item)"
-          class="p-8px hover:bg-[--tjg-surface-panel-muted] hover:rounded-6px">
-          <div class="flex-between-center">
-            <img
-              :src="AvatarUtils.getAvatarUrl(item.avatar)"
-              :alt="t('mobile_contact.avatar.user')"
-              class="size-28px bg-[--tjg-text-disabled] rounded-50% object-cover" />
-            <p class="text-14px color-[--chat-text-color]">{{ item.account }}</p>
-            <svg @click.stop="emit('delete-account', item)" class="w-12px h-12px">
-              <use href="#close"></use>
+    <div class="relative w-full">
+      <van-field
+        :class="{ 'pl-22px': loginHistories.length > 0 }"
+        v-model="userInfo.account"
+        name="username"
+        :placeholder="accountPH"
+        @focus="accountPH = ''"
+        @blur="accountPH = t('login.mobile.input.account_placeholder')"
+        clearable
+        autocomplete="username"
+        :spellcheck="false"
+        autocorrect="off"
+        autocapitalize="off">
+        <template #right-icon>
+          <div v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
+            <svg v-if="!arrowStatus" class="down w-18px h-18px color-[--chat-text-color]">
+              <use href="#down"></use>
             </svg>
+            <svg v-else class="down w-18px h-18px color-[--chat-text-color]"><use href="#up"></use></svg>
+          </div>
+        </template>
+      </van-field>
+
+      <!-- 账号选择框 -->
+      <div
+        v-if="loginHistories.length > 0 && arrowStatus"
+        class="account-box absolute top-full left-0 w-full max-h-140px bg-[--tjg-surface-elevated] mt-8px z-99 rounded-8px p-8px box-border border border-(1px solid [--login-dropdown-border])">
+        <div class="max-h-120px overflow-y-auto">
+          <div
+            v-for="item in loginHistories"
+            :key="item.account"
+            @click="onSelectAccount(item)"
+            class="p-8px hover:bg-[--tjg-surface-panel-muted] hover:rounded-6px">
+            <div class="flex-between-center">
+              <img
+                :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                :alt="t('mobile_contact.avatar.user')"
+                class="size-28px bg-[--tjg-text-disabled] rounded-50% object-cover" />
+              <p class="text-14px color-[--chat-text-color]">{{ item.account }}</p>
+              <svg @click.stop="emit('delete-account', item)" class="w-12px h-12px">
+                <use href="#close"></use>
+              </svg>
+            </div>
           </div>
         </div>
       </div>

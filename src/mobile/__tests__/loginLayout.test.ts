@@ -18,12 +18,24 @@ describe('登录页布局', () => {
     expect(loginSource).toContain('translate-x-[100px]')
     expect(loginSource).not.toContain('left-[133px]')
   })
+
+  it('指示条方向不可对调', () => {
+    expect(loginSource.indexOf("'translate-x-0'")).toBeLessThan(loginSource.indexOf("'translate-x-[100px]'"))
+  })
 })
 
 describe('登录表单语义', () => {
   it('使用 form 提交', () => {
     expect(formSource).toContain('@submit.prevent')
     expect(formSource).toContain('native-type="submit"')
+  })
+
+  it('根节点闭合正确', () => {
+    expect(formSource.match(/<\/form>/g) ?? []).toHaveLength(1)
+  })
+
+  it('提交守卫存在', () => {
+    expect(formSource).toContain('if (props.loading || props.loginDisabled) return')
   })
 
   it('提供正确的自动填充提示', () => {
