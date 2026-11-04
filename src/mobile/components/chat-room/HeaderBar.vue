@@ -48,6 +48,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useSafeBack } from '#/composables/useSafeBack'
 import FederationBadge from '@/components/atomic/FederationBadge.vue'
 import RoomHomeserverLabel from '@/components/room/RoomHomeserverLabel.vue'
 import router from '@/router'
@@ -99,8 +100,10 @@ const formattedMsgCount = computed(() => {
   return props.msgCount > 100 ? '99+' : `${props.msgCount}`
 })
 
-const handleBack = async () => {
-  router.back()
+const { goBack } = useSafeBack()
+
+const handleBack = () => {
+  goBack()
 }
 
 const handleMoreClick = () => {
