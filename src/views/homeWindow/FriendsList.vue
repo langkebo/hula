@@ -6,8 +6,10 @@
   </div>
 </template>
 
-<script setup lang="ts" name="friendsList">
+<script setup lang="ts">
 import FriendListView from '@/components/friend/FriendListView.vue'
+
+defineOptions({ name: 'friendsList' })
 </script>
 
 <style scoped lang="scss">

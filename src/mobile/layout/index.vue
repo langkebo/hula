@@ -8,11 +8,9 @@
 
       <div class="flex-1 overflow-hidden min-w-0">
         <RouterView v-slot="{ Component }">
-          <Transition name="slide" appear mode="out-in">
-            <keep-alive :max="10">
-              <component :is="Component" :key="route.name" />
-            </keep-alive>
-          </Transition>
+          <keep-alive :max="10">
+            <component :is="Component" :key="route.name" />
+          </keep-alive>
         </RouterView>
       </div>
 

@@ -36,7 +36,9 @@
     </template>
   </ListWorkbenchShell>
 </template>
-<script lang="ts" setup name="message">
+<script lang="ts" setup>
+defineOptions({ name: 'message' })
+
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import ListWorkbenchShell from '@/components/workbench/ListWorkbenchShell.vue'

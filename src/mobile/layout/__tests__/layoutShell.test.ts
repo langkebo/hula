@@ -18,3 +18,30 @@ describe('mobile tab shell', () => {
     expect(tabBar).toMatch(/\.tab-bar-wrap--vertical\s*\{[\s\S]*?\.tab-bar\s*\{[^}]*padding-bottom:\s*0/)
   })
 })
+
+describe('keep-alive 命名对齐', () => {
+  it('keep-alive 白名单命中真实组件名', () => {
+    const layout = read('src/mobile/layout/chat-room/ChatRoomLayout.vue')
+    const main = read('src/mobile/views/chat-room/MobileChatMain.vue')
+    const include = layout.match(/include="\[([^\]]+)\]"/)?.[1] ?? ''
+    const names = include.split(',').map((item) => item.trim().replace(/['"]/g, ''))
+    const actualName = main.match(/defineOptions\(\{\s*name:\s*'([^']+)'/)?.[1]
+    expect(actualName).toBeTruthy()
+    expect(names).toContain(actualName)
+  })
+
+  it('桌面中栏白名单同样命中', () => {
+    const names = (read('src/layout/center/index.vue').match(/include="\[([^\]]+)\]"/)?.[1] ?? '')
+      .split(',')
+      .map((item) => item.trim().replace(/['"]/g, ''))
+    const message = read('src/views/homeWindow/message/index.vue')
+    const friends = read('src/views/homeWindow/FriendsList.vue')
+    expect(message).toContain("defineOptions({ name: 'message' })")
+    expect(friends).toContain("defineOptions({ name: 'friendsList' })")
+    expect(names).toEqual(expect.arrayContaining(['message', 'friendsList']))
+  })
+
+  it('不再保留无样式的 slide 过渡', () => {
+    expect(read('src/mobile/layout/index.vue')).not.toContain('<Transition name="slide"')
+  })
+})
