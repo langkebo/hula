@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div ref="messageInputDom" contenteditable="true" spellcheck="false" class="sr-only"></div>
+    <div contenteditable="true" spellcheck="false" class="sr-only"></div>
 
     <div class="w-full min-h-20px flex flex-col z-2 footer-bar-shadow">
       <div v-if="showVoicePanel" class="voice-panel-container">
