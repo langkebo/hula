@@ -23,7 +23,7 @@
           class="flex flex-col w-full flex-1 relative items-center justify-center"
           :offset="[-6, 6]"
           color="var(--tjg-color-danger-500)"
-          :content="getUnReadCount(item.label) || ''"
+          :content="getUnReadCount(item) || ''"
           :max="99">
           <svg class="w-26px h-26px">
             <use :href="`#${route.path === item.path ? item.actionIcon : item.icon}`"></use>
@@ -36,17 +36,11 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { startRenderSample } from '@/utils/AppHarness'
-
-type NavItem = {
-  label: string
-  path: string
-  icon: string
-  actionIcon: string
-  testId: string
-}
+import { type MobileNavItem, resolveNavItems } from './navItems'
 
 const props = withDefaults(
   defineProps<{
@@ -60,11 +54,11 @@ const { t } = useI18n()
 const route = useRoute()
 const globalStore = useGlobalStore()
 
-const getUnReadCount = (label: string) => {
-  if (label === t('mobile_tabbar.items.messages')) {
+const getUnReadCount = (item: MobileNavItem) => {
+  if (item.unreadKey === 'messageUnreadCount') {
     return globalStore.messageUnreadCount
   }
-  if (label === t('mobile_tabbar.items.contacts')) {
+  if (item.unreadKey === 'contactUnreadCount') {
     return globalStore.contactUnreadCount
   }
   return 0
@@ -79,43 +73,7 @@ const handleNavigate = (path: string) => {
   }
 }
 
-const navItems: NavItem[] = [
-  {
-    label: t('mobile_tabbar.items.messages'),
-    path: '/mobile/message',
-    icon: 'message',
-    actionIcon: 'message-action',
-    testId: 'mobile-tab-message'
-  },
-  {
-    label: t('mobile_tabbar.items.contacts'),
-    path: '/mobile/friends',
-    icon: 'avatar',
-    actionIcon: 'avatar-action',
-    testId: 'mobile-tab-friends'
-  },
-  {
-    label: t('mobile_tabbar.items.rooms'),
-    path: '/mobile/rooms',
-    icon: 'room',
-    actionIcon: 'room-action',
-    testId: 'mobile-tab-rooms'
-  },
-  {
-    label: t('mobile_tabbar.items.spaces'),
-    path: '/mobile/space',
-    icon: 'space',
-    actionIcon: 'space',
-    testId: 'mobile-tab-space'
-  },
-  {
-    label: t('mobile_tabbar.items.me'),
-    path: '/mobile/my',
-    icon: 'wode',
-    actionIcon: 'wode-action',
-    testId: 'mobile-tab-my'
-  }
-]
+const navItems = computed(() => resolveNavItems(t))
 </script>
 
 <style scoped lang="scss">
