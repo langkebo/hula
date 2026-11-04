@@ -110,10 +110,15 @@ const userStore = useUserStore()
 const hoverId = ref('')
 const logger = createLogger('ChatMessageList')
 
+// 模块级缓存一次判定，避免每次 mouseenter 新建 MediaQueryList
+const canHover = (() => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+})()
+
 const handleRowMouseEnter = (messageId: string) => {
   // 触屏会合成 mouseenter，若直接写入会产生粘滞 hover 态
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
-  if (!window.matchMedia('(hover: hover)').matches) return
+  if (!canHover) return
   hoverId.value = messageId
 }
 
@@ -170,8 +175,11 @@ const isMessageFromMe = (item: MessageType) => getMessageSenderUid(item) === (us
   border-radius: 4px;
 }
 
-.message-row--hoverable:hover:not(.active-reply):not(.message-row--multi-select) {
-  background: color-mix(in srgb, var(--tjg-text-primary) 4%, transparent);
+// 触屏无真实 hover，只在具备指针悬停能力的设备上生效，避免点击后粘滞高亮
+@media (hover: hover) and (pointer: fine) {
+  .message-row--hoverable:hover:not(.active-reply):not(.message-row--multi-select) {
+    background: color-mix(in srgb, var(--tjg-text-primary) 4%, transparent);
+  }
 }
 
 .message-row--multi-select {

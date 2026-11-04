@@ -66,13 +66,17 @@ describe('friends list', () => {
 describe('chat main float button', () => {
   it('new-message float button is available on mobile and styled for it', () => {
     const source = read('src/components/rightBox/chatBox/ChatMain.vue')
-    expect(source).not.toContain('currentNewMsgCount && !isMobileRef')
+    const footer = source.match(/<footer[\s\S]*?>/)?.[0] ?? ''
+    expect(footer).toMatch(/\bshouldShowFloatButton\b/)
+    expect(footer).toMatch(/\bcurrentNewMsgCount\b/)
+    expect(footer).not.toContain('isMobileRef')
     expect(source).toContain('floatButtonStyle')
   })
 
   it('message row hover state is gated by hover capability', () => {
     const source = read('src/components/rightBox/chatBox/ChatMessageList.vue')
-    expect(source).toContain("matchMedia('(hover: hover)')")
+    expect(source).toContain("matchMedia('(hover: hover) and (pointer: fine)')")
+    expect(source).toMatch(/@media \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.message-row--hoverable:hover/)
     expect(source).not.toContain('@mouseenter="hoverId = item.message.id"')
   })
 })
