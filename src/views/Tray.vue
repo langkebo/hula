@@ -136,7 +136,7 @@ const toggleStatus = async (item: UserState) => {
     await userStatusStore.changeCurrentUserState(item)
     appWindow?.hide()
   } catch (error) {
-    logger.error('更新状态失败:', error)
+    logger.error('Failed to update status:', error)
     appWindow?.hide()
   }
 }
@@ -169,7 +169,7 @@ const stopBlinkTask = async () => {
       const tray = await TrayIcon.getById('tray')
       await tray?.setIcon('tray/icon.png')
     } catch (e) {
-      logger.warn('恢复托盘图标失败:', e)
+      logger.warn('Failed to restore tray icon:', e)
     }
     iconVisible.value = false
   }

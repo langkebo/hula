@@ -5,14 +5,17 @@
       <h1>{{ selectedItem.title }}</h1>
       <p>{{ selectedItem.description }}</p>
       <div class="dynamic-detail-note">
-        当前详情页已接入共享骨架，后续将直接在这里承接动态详情状态、评论状态与返回路径管理。
+        {{ t('dynamic.skeleton.detail') }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useDynamicDetail } from '@/composables/useDynamicDetail'
+
+const { t } = useI18n()
 
 defineOptions({
   name: 'DynamicDetailPage'

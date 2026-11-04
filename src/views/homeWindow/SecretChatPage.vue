@@ -163,7 +163,7 @@ const handleSessionClick = async (session: SessionItem) => {
 const handleClose = () => {
   // 关闭即锁（默认策略）：私密页是私密内容的唯一入口，
   // 退出时不留解锁态，避免「关掉页面后别人接着用这台机器」还能直接看见列表。
-  lockSecretChatSession('关闭私密会话页')
+  lockSecretChatSession('close secret chat page')
   router.back()
 }
 

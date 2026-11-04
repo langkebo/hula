@@ -1,10 +1,10 @@
 <template>
   <div class="dynamic-page">
     <div class="dynamic-shell">
-      <h1>动态共享骨架已接入</h1>
+      <h1>{{ t('dynamic.skeleton.title') }}</h1>
       <p>{{ summary }}</p>
       <div class="dynamic-meta">
-        <span>{{ hasMobileEntry ? '移动端入口已就绪' : '移动端入口待接入' }}</span>
+        <span>{{ hasMobileEntry ? t('dynamic.skeleton.mobile_ready') : t('dynamic.skeleton.mobile_pending') }}</span>
       </div>
       <div class="dynamic-grid">
         <div v-for="item in roadmap" :key="item.id" class="dynamic-card">
@@ -21,6 +21,7 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDynamic } from '@/composables/useDynamic'
 import { completeRenderSampleOnNextFrame, startRenderSample } from '@/utils/AppHarness'
 
@@ -41,6 +42,7 @@ onMounted(() => {
   })
 })
 
+const { t } = useI18n()
 const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
 </script>
 

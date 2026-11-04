@@ -459,7 +459,7 @@ const handleStepAction = async () => {
       emailCodeModalRef.value?.focus()
     })
   } catch (error) {
-    logger.error('发送验证码失败', error)
+    logger.error('Failed to send verification code', error)
     showFeedback(getErrorMessage(error, t('auth.register.messages.register_fail')), 'error')
   } finally {
     loading.value = false

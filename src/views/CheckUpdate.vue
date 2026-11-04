@@ -205,7 +205,18 @@ const doUpdate = async () => {
   if (!(await confirm(t('message.check_update.confirm_update')))) {
     return
   }
-  await createWebviewWindow('更新', 'update', 490, 335, '', false, 490, 335, false, true)
+  await createWebviewWindow(
+    t('common.window_titles.check_update'),
+    'update',
+    490,
+    335,
+    '',
+    false,
+    490,
+    335,
+    false,
+    true
+  )
   for (const label of ['login', 'home', 'checkupdate']) {
     await closeWindowByLabel(label)
   }
@@ -267,7 +278,7 @@ const moveWindowToBottomRight = async () => {
     // 移动窗口到计算的位置
     await checkUpdateWindow.setPosition(new PhysicalPosition(x, y))
   } catch (error) {
-    logger.error('移动窗口失败:', error)
+    logger.error('Failed to move window:', error)
   }
 }
 
@@ -303,7 +314,7 @@ const init = async () => {
     try {
       await invokeSilently('hide_title_bar_buttons', { windowLabel: 'checkupdate' })
     } catch (error) {
-      logger.error('隐藏标题栏按钮失败:', error)
+      logger.error('Failed to hide titlebar buttons:', error)
     }
   }
 }

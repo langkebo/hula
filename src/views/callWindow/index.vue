@@ -185,7 +185,7 @@ const startBell = () => {
   audio.loop = true
   bellAudio = audio
   audio.play?.().catch(() => {
-    logger.debug('铃声播放被浏览器阻止')
+    logger.debug('Ring playback blocked by the browser')
   })
 }
 
@@ -295,7 +295,7 @@ const setupCloseListener = async () => {
         unlisten()
       }
     } catch (error) {
-      logger.error('发送挂断消息失败:', error)
+      logger.error('Failed to send hangup message:', error)
     }
   })
 }
@@ -386,7 +386,7 @@ onMounted(async () => {
       await checkAvailability()
       await startCall(roomId, { audio: true, video: callType === CallTypeEnum.VIDEO })
     } else {
-      logger.warn('缺少媒体权限，无法发起通话')
+      logger.warn('Missing media permissions, cannot start the call')
     }
   }
 })

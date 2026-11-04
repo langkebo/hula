@@ -73,7 +73,7 @@
 
           <!-- 登录时显示的文字 -->
           <n-flex vertical align="center" justify="center" :size="30" v-if="isLogining && !isWrongPassword">
-            <img class="size-42px" src="@/assets/img/loading-one.svg" alt="加载中" />
+            <img class="size-42px" src="@/assets/img/loading-one.svg" :alt="t('common.loading')" />
             <p class="text-(20px [--tjg-text-secondary])">{{ t('message.lock_screen.unlocking') }}</p>
           </n-flex>
 

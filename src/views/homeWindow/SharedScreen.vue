@@ -4,7 +4,7 @@
 
     <div class="flex flex-col gap-4 text-center">
       <div>
-        <video ref="video" muted autoplay controls class="size-full" aria-label="共享屏幕视频流" />
+        <video ref="video" muted autoplay controls class="size-full" :aria-label="t('common.shared_screen_stream')" />
       </div>
     </div>
   </div>

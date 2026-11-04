@@ -74,7 +74,7 @@ const queryFilesAction = async () => {
     timeGroupedFiles.value = response.timeGroupedFiles
     userList.value = response.userList
   } catch (error) {
-    logger.error('查询文件失败:', error)
+    logger.error('Failed to query files:', error)
   } finally {
     loading.value = false
   }
@@ -85,7 +85,7 @@ const getNavigationItemsAction = async () => {
     const items = await getNavigationItems()
     navigationItems.value = items
   } catch (error) {
-    logger.error('获取导航菜单失败:', error)
+    logger.error('Failed to load navigation menu:', error)
   }
 }
 

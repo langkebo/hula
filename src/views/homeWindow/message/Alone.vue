@@ -1,5 +1,7 @@
 <template>
-  <main class="flex-1 rounded-8px bg-[--right-bg-color] h-full w-100vw" :aria-label="currentWindowLabel || '聊天'">
+  <main
+    class="flex-1 rounded-8px bg-[--right-bg-color] h-full w-100vw"
+    :aria-label="currentWindowLabel || t('common.chat')">
     <div class="h-full bg-[--right-theme-bg-color]" role="region" :aria-label="t('chat.chat_region')">
       <ActionBar :shrink="false" :current-label="currentWindowLabel" />
 

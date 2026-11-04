@@ -105,7 +105,7 @@ const handleConfirm = async () => {
     }
   } catch (error) {
     errorMsg.value = t('login.secret_chat.verify_failed')
-    logger.error('私密聊天密码验证失败:', error)
+    logger.error('Secret chat password verification failed:', error)
   } finally {
     loading.value = false
   }

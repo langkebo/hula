@@ -1,9 +1,9 @@
 <template>
-  <ListWorkbenchShell class="message-list-page" role="main" :aria-label="t('home.action.message_short_title', '消息')">
+  <ListWorkbenchShell class="message-list-page" role="main" :aria-label="t('home.action.message_short_title')">
     <template #toolbar>
       <MessageSessionToolbar
-        :title="t('home.action.message_short_title', '消息')"
-        :aria-label="t('home.action.message_short_title', '消息')"
+        :title="t('home.action.message_short_title')"
+        :aria-label="t('home.action.message_short_title')"
         :search-keyword="searchKeyword"
         :session-type-filter="sessionTypeFilter"
         :session-engagement-filter="sessionEngagementFilter"

@@ -302,7 +302,7 @@ const loadMessages = async () => {
     const result = await invokeWithResult<ChatHistoryResponse>(TauriCommand.QUERY_CHAT_HISTORY, { param: params })
 
     if (result.isErr()) {
-      logger.error('加载聊天记录失败:', result.error)
+      logger.error('Failed to load chat history:', result.error)
       return
     }
 
@@ -316,7 +316,7 @@ const loadMessages = async () => {
 
     hasMore.value = response.hasMore
   } catch (error) {
-    logger.error('加载聊天记录失败:', error)
+    logger.error('Failed to load chat history:', error)
   } finally {
     loading.value = false
   }

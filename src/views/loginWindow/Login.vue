@@ -139,7 +139,7 @@ onMounted(async () => {
       const win = getCurrentWindow()
       await win.setSize(new LogicalSize(420, 580))
     } catch (e) {
-      logger.warn('设置窗口尺寸失败:', e)
+      logger.warn('Failed to set window size:', e)
     }
   }
 })

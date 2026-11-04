@@ -259,7 +259,7 @@ const handleConfirmed = async (result: NewDeviceLoginResult) => {
       loadTextKey.value = 'login'
     })
   } catch (error) {
-    logger.error('QR 登录失败:', error)
+    logger.error('QR login failed:', error)
     confirmedHandled.value = false
     handleError('fetch_failed')
   }

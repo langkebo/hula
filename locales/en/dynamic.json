@@ -1,4 +1,10 @@
 {
   "title": "Post details",
-  "detail_placeholder": "This detail page now uses the mobile shell. Shared detail state, comment state and back navigation will be reused here."
+  "detail_placeholder": "This detail page now uses the mobile shell. Shared detail state, comment state and back navigation will be reused here.",
+  "skeleton": {
+    "title": "Shared dynamics shell is ready",
+    "detail": "This detail page now uses the shared shell. Shared detail state, comment state and back navigation will be wired up here.",
+    "mobile_ready": "Mobile entry is ready",
+    "mobile_pending": "Mobile entry is not connected yet"
+  }
 }

@@ -99,7 +99,7 @@ const handleActive = async (item: UserState) => {
     await userStatusStore.changeCurrentUserState(item)
     showFeedback(t('auth.onlineStatus.messages.success'), 'success')
   } catch (error) {
-    logger.error('更新状态失败:', formatMatrixError(error))
+    logger.error('Failed to update status:', formatMatrixError(error))
     showFeedback(t('auth.onlineStatus.messages.error'), 'error')
   }
 }

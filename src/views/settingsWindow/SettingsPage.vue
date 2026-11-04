@@ -93,7 +93,7 @@ const logger = createLogger('SettingsPage')
 onErrorCaptured((err) => {
   shellError.value =
     err instanceof Error ? err : new Error(typeof err === 'string' ? err : t('setting.dialog.shell_error_default'))
-  logger.error('[SettingsPage] 壳层组件渲染异常:', err)
+  logger.error('[SettingsPage] Shell component render error:', err)
   // 返回 false：阻止继续冒泡，由本页 fallback 承接
   return false
 })

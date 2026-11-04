@@ -55,3 +55,29 @@ describe('桌面端存量页面中文字面量收口', () => {
     expect(chineseSegments(readWithoutComments(path))).toEqual([])
   })
 })
+
+describe('桌面端剩余页面与窗口骨架中文字面量收口', () => {
+  it.each([
+    'src/views/callWindow/index.vue',
+    'src/plugins/dynamic/detail.vue',
+    'src/plugins/dynamic/index.vue',
+    'src/views/CheckUpdate.vue',
+    'src/views/homeWindow/message/index.vue',
+    'src/views/mailWindow/index.vue',
+    'src/views/Tray.vue',
+    'src/views/chatHistory/index.vue',
+    'src/views/fileManagerWindow/index.vue',
+    'src/views/LockScreen.vue',
+    'src/views/homeWindow/SecretChatPage.vue',
+    'src/views/homeWindow/SharedScreen.vue',
+    'src/views/homeWindow/message/Alone.vue',
+    'src/views/loginWindow/Login.vue',
+    'src/views/loginWindow/QRCode.vue',
+    'src/views/loginWindow/SecretChatModal.vue',
+    'src/views/onlineStatusWindow/index.vue',
+    'src/views/registerWindow/index.vue',
+    'src/views/settingsWindow/SettingsPage.vue'
+  ])('%s 的中文文案全部走 i18n', (path) => {
+    expect(chineseSegments(readWithoutComments(path))).toEqual([])
+  })
+})

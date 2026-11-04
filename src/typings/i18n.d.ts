@@ -1957,7 +1957,12 @@ export type I18nKeys = {
       "send_failed": "发送失败",
       "send_success": "发送成功",
       "start": "开始讨论串"
-    }
+    },
+    "loading": "加载中",
+    "notice": "公告",
+    "feature_in_development": "此功能有待开发中，请联系开发者",
+    "shared_screen_stream": "共享屏幕视频流",
+    "chat": "聊天"
   },
   "components": {
     "common": {
@@ -2110,7 +2115,13 @@ export type I18nKeys = {
   },
   "dynamic": {
     "title": "动态详情",
-    "detail_placeholder": "当前详情页已接入移动端页面壳，后续直接在这里复用共享详情状态、评论状态与返回路径管理。"
+    "detail_placeholder": "当前详情页已接入移动端页面壳，后续直接在这里复用共享详情状态、评论状态与返回路径管理。",
+    "skeleton": {
+      "title": "动态共享骨架已接入",
+      "detail": "当前详情页已接入共享骨架，后续将直接在这里承接动态详情状态、评论状态与返回路径管理。",
+      "mobile_ready": "移动端入口已就绪",
+      "mobile_pending": "移动端入口待接入"
+    }
   },
   "e2ee": {
     "banner": {
@@ -9078,6 +9089,11 @@ export type I18nKeyPaths =
   | "common.thread.send_failed"
   | "common.thread.send_success"
   | "common.thread.start"
+  | "common.loading"
+  | "common.notice"
+  | "common.feature_in_development"
+  | "common.shared_screen_stream"
+  | "common.chat"
   | "components.common.confirm"
   | "components.common.cancel"
   | "components.actionBar.always_on_top.enabled"
@@ -9181,6 +9197,10 @@ export type I18nKeyPaths =
   | "dm.create.no_recent"
   | "dynamic.title"
   | "dynamic.detail_placeholder"
+  | "dynamic.skeleton.title"
+  | "dynamic.skeleton.detail"
+  | "dynamic.skeleton.mobile_ready"
+  | "dynamic.skeleton.mobile_pending"
   | "e2ee.banner.title"
   | "e2ee.banner.desc"
   | "e2ee.unverified.title"
