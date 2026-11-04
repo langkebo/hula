@@ -135,11 +135,6 @@ const ACCEPTED_PATTERNS = [
     event: 'forwarded',
     reason: '转发已由 flow.forward/forwardMultiple 完成并自行关闭，事件是可选通知'
   },
-  {
-    component: 'src/mobile/components/chat-room/FooterBar.vue',
-    event: 'updateHeight',
-    reason: 'ResizeObserver 的纯尺寸测量通知，父组件不消费也不影响功能'
-  },
   /* --- 设计上可选：组件自身已完成用户可见动作，事件只是对外延伸点 --- */
   {
     component: 'src/mobile/components/AreaDrawer.vue',

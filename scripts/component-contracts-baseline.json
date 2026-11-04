@@ -14,7 +14,6 @@
     "src/mobile/components/ImagePreview.vue::more",
     "src/mobile/views/chat-room/LocationShare.vue::sent",
     "src/mobile/views/chat-room/MobileForwardDialog.vue::forwarded",
-    "src/mobile/components/chat-room/FooterBar.vue::updateHeight",
     "src/mobile/components/AreaDrawer.vue::update:value",
     "src/components/settings/ThemeSwitcher.vue::update:modelValue",
     "src/components/rightBox/MsgInput.vue::input",
