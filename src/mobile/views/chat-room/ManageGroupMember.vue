@@ -50,7 +50,7 @@
                   <n-avatar
                     round
                     :size="44"
-                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!, 128)"
                     fallback-src="/logo.png"
                     class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))" />
                   <!-- 文字信息 -->
@@ -141,7 +141,7 @@
                   <n-avatar
                     round
                     :size="40"
-                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!, 96)"
                     fallback-src="/logo.png"
                     class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))" />
                   <!-- 文字信息 -->

@@ -20,7 +20,9 @@
           <div class="relative flex flex-1">
             <div ref="measure" class="flex absolute w-full h-full top-0 left-0 z-1"></div>
             <div class="absolute z-10 w-full overflow-y-auto" :style="{ height: virtualScrollerHeight + 'px' }">
-              <div v-if="filteredList.length === 0" class="flex w-full justify-center mt-20px">{{ t('mobile_chat.no_data') }}</div>
+              <div v-if="filteredList.length === 0" class="flex w-full justify-center mt-20px">
+                {{ t('mobile_chat.no_data') }}
+              </div>
               <div v-else>
                 <div
                   v-for="item in filteredList"
@@ -30,7 +32,7 @@
                   <div class="flex items-center gap-10px">
                     <img
                       class="w-42px h-42px rounded-full object-cover flex-shrink-0"
-                      :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                      :src="AvatarUtils.getAvatarUrl(item.avatar, 96)"
                       :alt="t('mobile_contact.avatar.user')"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <span class="line-clamp-1">

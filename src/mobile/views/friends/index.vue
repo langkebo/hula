@@ -62,7 +62,7 @@
           class="flex items-center gap-10px p-10px rounded-10px bg-[--tjg-surface-panel]">
           <img
             class="size-40px rounded-full object-cover"
-            :src="AvatarUtils.getAvatarUrl(result.avatarUrl || '')"
+            :src="AvatarUtils.getAvatarUrl(result.avatarUrl || '', 96)"
             :alt="t('mobile_contact.avatar.default')"
             @error="($event.target as HTMLImageElement).src = '/logo.png'" />
           <div class="flex-1 min-w-0">
@@ -176,7 +176,7 @@
                       <img
                         class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
                         :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.userId) }"
-                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!)"
+                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
                         :alt="t('mobile_contact.avatar.user')"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
@@ -241,7 +241,7 @@
                         <img
                           class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
                           :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.userId) }"
-                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!)"
+                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
                           :alt="t('mobile_contact.avatar.user')"
                           @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                         <div class="flex flex-col justify-between h-fit flex-1 truncate">
@@ -310,7 +310,7 @@
                       ]">
                       <img
                         class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
-                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!)"
+                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
                         :alt="t('mobile_contact.avatar.user')"
                         @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                       <div class="flex flex-col justify-between h-fit flex-1 truncate">
@@ -343,7 +343,7 @@
                   <div class="flex items-center gap-10px h-75px pl-6px pr-8px flex-1 truncate">
                     <img
                       class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))"
-                      :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                      :src="AvatarUtils.getAvatarUrl(item.avatar, 96)"
                       :alt="t('mobile_contact.avatar.group')"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <span class="text-14px leading-tight flex-1 truncate">{{ item.remark || item.groupName }}</span>

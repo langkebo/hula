@@ -54,7 +54,7 @@
                 <template #default>
                   <div class="flex items-center gap-10px px-8px py-10px">
                     <img
-                      :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!)"
+                      :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
                       class="size-44px rounded-full object-cover border-[1px] border-[--avatar-border-color]"
                       :alt="t('mobile_contact.avatar.user')"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />

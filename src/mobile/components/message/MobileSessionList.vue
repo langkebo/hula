@@ -68,7 +68,7 @@
                   :max="99">
                   <img
                     class="size-48px rounded-8px object-cover"
-                    :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                    :src="AvatarUtils.getAvatarUrl(item.avatar, 96)"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                 </van-badge>
               </div>

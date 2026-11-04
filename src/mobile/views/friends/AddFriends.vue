@@ -52,7 +52,7 @@
                   <div class="p-[0_20px] box-border">
                     <div class="flex items-center gap-12px p-[8px_0] rounded-lg">
                       <img
-                        :src="AvatarUtils.getAvatarUrl(item.avatar)"
+                        :src="AvatarUtils.getAvatarUrl(item.avatar, 96)"
                         class="size-48px rounded-full object-cover"
                         :alt="t('mobile_contact.avatar.user')"
                         @error="
