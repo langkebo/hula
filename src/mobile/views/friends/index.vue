@@ -176,45 +176,11 @@
                         { active: activeItem === item.userId },
                         'item-box w-full h-75px mb-5px flex items-center gap-10px'
                       ]">
-                      <img
-                        class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
-                        :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.userId) }"
-                        :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
-                        :alt="t('mobile_contact.avatar.user')"
-                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-                      <div class="flex flex-col justify-between h-fit flex-1 truncate">
-                        <span class="text-[length:var(--tjg-font-size-base)] leading-tight flex-1 truncate">
-                          {{ groupStore.getUserInfo(item.userId)?.name }}
-                        </span>
-                        <div
-                          class="text leading-tight text-[length:var(--tjg-font-size-sm)] flex-y-center gap-4px flex-1 truncate">
-                          [
-                          <template v-if="isBotUser(item.userId)">{{ t('mobile_contact.bot_tag') }}</template>
-                          <template v-else-if="getUserState(item.userId)">
-                            <img
-                              class="size-12px rounded-50%"
-                              :src="getUserState(item.userId)?.url"
-                              :alt="translateStateTitle(getUserState(item.userId)?.title)" />
-                            {{ translateStateTitle(getUserState(item.userId)?.title) }}
-                          </template>
-                          <template v-else>
-                            <span
-                              class="inline-block size-8px rounded-full"
-                              :style="{
-                                backgroundColor:
-                                  item.activeStatus === OnlineEnum.ONLINE
-                                    ? 'var(--tjg-status-online)'
-                                    : 'var(--tjg-status-offline)'
-                              }"></span>
-                            {{
-                              item.activeStatus === OnlineEnum.ONLINE
-                                ? t('mobile_contact.status.online')
-                                : t('mobile_contact.status.offline')
-                            }}
-                          </template>
-                          ]
-                        </div>
-                      </div>
+                      <FriendContactRow
+                        :user-id="item.userId"
+                        :active-status="item.activeStatus"
+                        :is-bot="isBotUser(item.userId)"
+                        :state="getUserState(item.userId)" />
                     </div>
                   </div>
                 </div>
@@ -242,45 +208,11 @@
                           { active: activeItem === item.userId },
                           'item-box w-full h-75px mb-5px flex items-center gap-10px'
                         ]">
-                        <img
-                          class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
-                          :class="{ 'grayscale-0': item.activeStatus === OnlineEnum.ONLINE || isBotUser(item.userId) }"
-                          :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
-                          :alt="t('mobile_contact.avatar.user')"
-                          @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-                        <div class="flex flex-col justify-between h-fit flex-1 truncate">
-                          <span class="text-[length:var(--tjg-font-size-base)] leading-tight flex-1 truncate">
-                            {{ groupStore.getUserInfo(item.userId)?.name }}
-                          </span>
-                          <div
-                            class="text leading-tight text-[length:var(--tjg-font-size-sm)] flex-y-center gap-4px flex-1 truncate">
-                            [
-                            <template v-if="isBotUser(item.userId)">{{ t('mobile_contact.bot_tag') }}</template>
-                            <template v-else-if="getUserState(item.userId)">
-                              <img
-                                class="size-12px rounded-50%"
-                                :src="getUserState(item.userId)?.url"
-                                :alt="translateStateTitle(getUserState(item.userId)?.title)" />
-                              {{ translateStateTitle(getUserState(item.userId)?.title) }}
-                            </template>
-                            <template v-else>
-                              <span
-                                class="inline-block size-8px rounded-full"
-                                :style="{
-                                  backgroundColor:
-                                    item.activeStatus === OnlineEnum.ONLINE
-                                      ? 'var(--tjg-status-online)'
-                                      : 'var(--tjg-status-offline)'
-                                }"></span>
-                              {{
-                                item.activeStatus === OnlineEnum.ONLINE
-                                  ? t('mobile_contact.status.online')
-                                  : t('mobile_contact.status.offline')
-                              }}
-                            </template>
-                            ]
-                          </div>
-                        </div>
+                        <FriendContactRow
+                          :user-id="item.userId"
+                          :active-status="item.activeStatus"
+                          :is-bot="isBotUser(item.userId)"
+                          :state="getUserState(item.userId)" />
                       </div>
                       <template #right>
                         <van-button square type="danger" class="h-full" @click="handleDeleteContact(item.userId)">
@@ -407,7 +339,8 @@ import { useMessage } from '@/composables/chat/useMessage'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useFriends } from '@/composables/useFriends'
-import { MittEnum, OnlineEnum, RoomTypeEnum } from '@/enums'
+import { MittEnum, RoomTypeEnum } from '@/enums'
+import FriendContactRow from '@/mobile/components/friend/FriendContactRow.vue'
 import router from '@/router'
 import { matrixFriendOperations, userDirectoryService } from '@/services/matrix'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
@@ -586,13 +519,6 @@ async function handleDeleteContact(uid: string) {
       showFailToast(e instanceof Error ? e.message : String(e) || t('mobile_contact.delete_friend_failed'))
     }
   }
-}
-
-const translateStateTitle = (title?: string) => {
-  if (!title) return ''
-  const key = `auth.onlineStatus.states.${title}`
-  const translated = t(key)
-  return translated === key ? title : translated
 }
 
 onMounted(async () => {

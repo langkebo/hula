@@ -14,11 +14,7 @@
           <van-cell-group inset>
             <van-cell :title="t('mobile_setting.status')" is-link @click="router.push('/mobile/mobileMy/status')">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.status">
-                  <Icon :icon="statusIcon" :width="20" :style="{ color: statusColor }" />
-                </div>
+                <SettingCellIcon :icon="statusIcon" :color="statusColor" shell="success" />
               </template>
               <template #value>
                 <span class="text-[length:var(--tjg-font-size-base)]">{{ statusLabel }}</span>
@@ -30,11 +26,7 @@
               is-link
               @click="router.push('/mobile/mobileMy/editProfile')">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.profile">
-                  <Icon icon="mdi:account-edit" :width="20" color="var(--tjg-color-info-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:account-edit" color="var(--tjg-color-info-500)" shell="info" />
               </template>
             </van-cell>
 
@@ -43,11 +35,7 @@
               is-link
               @click="router.push(MOBILE_SETTINGS_PASSWORD_PATH)">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.password">
-                  <Icon icon="mdi:lock-reset" :width="20" color="var(--tjg-color-warning-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:lock-reset" color="var(--tjg-color-warning-500)" shell="warning" />
               </template>
             </van-cell>
 
@@ -56,11 +44,7 @@
               is-link
               @click="router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.security">
-                  <Icon icon="mdi:shield-lock" :width="20" color="var(--tjg-color-danger-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:shield-lock" color="var(--tjg-color-danger-500)" shell="danger" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -75,11 +59,7 @@
               is-link
               @click="router.push('/mobile/mobileFriends/groups')">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.social">
-                  <Icon icon="mdi:account-group" :width="20" color="var(--tjg-color-info-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:account-group" color="var(--tjg-color-info-500)" shell="info" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -94,11 +74,7 @@
               is-link
               @click="router.push('/mobile/mobileMy/notifications')">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.notification">
-                  <Icon icon="mdi:bell" :width="20" color="var(--tjg-color-warning-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:bell" color="var(--tjg-color-warning-500)" shell="warning" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -110,11 +86,7 @@
           <van-cell-group inset>
             <van-cell :title="t('mobile_setting.theme')">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.theme">
-                  <Icon icon="mdi:palette" :width="20" color="var(--tjg-color-beta-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:palette" color="var(--tjg-color-beta-500)" shell="beta" />
               </template>
               <template #right-icon>
                 <van-radio-group v-model="themeValue" direction="horizontal">
@@ -126,11 +98,7 @@
 
             <van-cell :title="t('mobile_setting.language')">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.language">
-                  <Icon icon="mdi:translate" :width="20" color="var(--tjg-color-info-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:translate" color="var(--tjg-color-info-500)" shell="info" />
               </template>
               <template #right-icon>
                 <van-radio-group v-model="languageValue" direction="horizontal">
@@ -161,11 +129,7 @@
               is-link
               @click="router.push('/mobile/mobileMy/preferences')">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.preferences">
-                  <Icon icon="mdi:tune" :width="20" color="var(--tjg-color-info-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:tune" color="var(--tjg-color-info-500)" shell="info" />
               </template>
             </van-cell>
 
@@ -174,11 +138,7 @@
               is-link
               @click="router.push('/mobile/mobileMy/burnAfterRead')">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.burnAfterRead">
-                  <Icon icon="mdi:timer-outline" :width="20" color="var(--tjg-color-warning-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:timer-outline" color="var(--tjg-color-warning-500)" shell="warning" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -193,11 +153,7 @@
               is-link
               @click="router.push(MOBILE_SETTINGS_HELP_ABOUT_PATH)">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="iconShellStyles.help">
-                  <Icon icon="mdi:help-circle" :width="20" color="var(--tjg-color-info-500)" />
-                </div>
+                <SettingCellIcon icon="mdi:help-circle" color="var(--tjg-color-info-500)" shell="info" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -214,11 +170,7 @@
               is-link
               @click="router.push(item.path)">
               <template #icon>
-                <div
-                  class="w-40px h-40px rounded-full mr-12px flex items-center justify-center"
-                  :style="{ backgroundColor: item.iconBackgroundColor }">
-                  <Icon :icon="item.icon" :width="20" :color="item.iconColor" />
-                </div>
+                <SettingCellIcon :icon="item.icon" :color="item.iconColor" :background="item.iconBackgroundColor" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -239,12 +191,11 @@
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
-
 import { showDialog, showToast } from 'vant'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
@@ -296,20 +247,6 @@ const handleFontScaleChange = (value: string | number) => {
 }
 
 const currentStatusId = computed(() => userStatusStore.stateId || 'online')
-
-const iconShellStyles = {
-  status: { backgroundColor: 'var(--tjg-color-success-100)' },
-  profile: { backgroundColor: 'var(--tjg-color-info-100)' },
-  security: { backgroundColor: 'var(--tjg-color-danger-100)' },
-  password: { backgroundColor: 'var(--tjg-color-warning-100)' },
-  social: { backgroundColor: 'var(--tjg-color-info-100)' },
-  notification: { backgroundColor: 'var(--tjg-color-warning-100)' },
-  theme: { backgroundColor: 'var(--tjg-color-beta-100)' },
-  language: { backgroundColor: 'var(--tjg-color-info-100)' },
-  preferences: { backgroundColor: 'var(--tjg-color-info-100)' },
-  burnAfterRead: { backgroundColor: 'var(--tjg-color-warning-100)' },
-  help: { backgroundColor: 'var(--tjg-color-info-100)' }
-} as const
 
 const statusOptions = [
   {

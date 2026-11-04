@@ -25,7 +25,7 @@
     },
     {
       "file": "src/typings/components.d.ts",
-      "lines": 744
+      "lines": 748
     },
     {
       "file": "src/mobile/views/chat-room/ChatSetting.vue",

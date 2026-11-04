@@ -149,22 +149,13 @@ const isCallActive = computed(() => {
 })
 
 // --- Stream binding ---
+// 两条流是同一个关注点（把流绑到对应的 <video>），合成一个 watch：
+// ref 在非视频通话下不存在，故逐个判空；immediate 保证挂载即绑。
 watch(
-  localStream,
-  (stream) => {
-    if (localVideoRef.value) {
-      localVideoRef.value.srcObject = stream
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  remoteStream,
-  (stream) => {
-    if (remoteVideoRef.value) {
-      remoteVideoRef.value.srcObject = stream
-    }
+  [localStream, remoteStream],
+  ([local, remote]) => {
+    if (localVideoRef.value) localVideoRef.value.srcObject = local
+    if (remoteVideoRef.value) remoteVideoRef.value.srcObject = remote
   },
   { immediate: true }
 )

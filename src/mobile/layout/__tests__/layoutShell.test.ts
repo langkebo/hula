@@ -66,6 +66,8 @@ describe('friends list', () => {
 describe('mobile list avatars', () => {
   const files = [
     'src/mobile/components/message/MobileSessionList.vue',
+    // 好友行的头像渲染已下沉到该组件（2026-11-04），仍在守卫范围内
+    'src/mobile/components/friend/FriendContactRow.vue',
     'src/mobile/views/friends/index.vue',
     'src/mobile/views/friends/StartGroupChat.vue',
     'src/mobile/views/friends/AddFriends.vue',
