@@ -20,6 +20,10 @@
  *    Prefer scoped CSS / UnoCSS utilities so theming keeps working.
  *  - important_css: `!important` declarations in style sources (non-test,
  *    comments stripped). Converge on design tokens / specificity instead.
+ *  - zh_literal_vue: Chinese literals in .vue (non-test, comments stripped).
+ *  - zh_literal_rust: Chinese **string literals** in src-tauri/src (all .rs files).
+ *    Rust errors/logs must return a code (or English) and let the frontend
+ *    translate; the count may only decrease (see the counter's own doc).
  *
  * Usage:
  *   node scripts/check-ratchet.mjs            # verify (CI / pre-merge)
@@ -33,6 +37,9 @@ import { fileURLToPath } from 'node:url'
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const baselinePath = path.join(repoRoot, 'meta', 'ratchet-baseline.json')
 const srcRoot = path.join(repoRoot, 'src')
+/** Rust 侧（Tauri 后端）单独一棵树；只被声明了 `roots` 的计数器扫描 */
+const rustRoot = path.join(repoRoot, 'src-tauri', 'src')
+const RUST_EXTENSIONS = new Set(['.rs'])
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.mts', '.cts', '.tsx', '.vue'])
 /** 样式相关计数器需覆盖 scss/css/输出文档（mdx） */
@@ -84,6 +91,55 @@ function stripCommentsAndHtmlComments(content) {
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/\/\/[^\n]*/g, '')
     .replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
+/**
+ * 剥离 Rust 注释，**保留字符串字面量原文**。
+ *
+ * 为什么不复用 `stripCommentsOnly`：它的 `//` 规则会把 URL 字面量
+ * （`"https://..."`）之后的内容整段当注释丢掉；而 Rust 代码里 `format!("...{}", "中文")`
+ * 这种写法很常见，误剥会让计数偏低、守卫失明。这里按字符扫描，区分「字符串内」与「代码」。
+ *
+ * 已知近似：Rust 裸字符串 `r#"..."#` 与字符字面量 `'"'` 会被当成普通字符串处理。
+ * 这只会影响极少数行的边界判断，不影响「新增中文串必然抬高计数」这一判据。
+ */
+function stripRustComments(content) {
+  let out = ''
+  let i = 0
+  let inString = false
+  while (i < content.length) {
+    const ch = content[i]
+    if (inString) {
+      if (ch === '\\') {
+        out += content.slice(i, i + 2)
+        i += 2
+        continue
+      }
+      if (ch === '"') inString = false
+      out += ch
+      i += 1
+      continue
+    }
+    if (ch === '"') {
+      inString = true
+      out += ch
+      i += 1
+      continue
+    }
+    if (ch === '/' && content[i + 1] === '/') {
+      const end = content.indexOf('\n', i)
+      i = end === -1 ? content.length : end
+      continue
+    }
+    if (ch === '/' && content[i + 1] === '*') {
+      const end = content.indexOf('*/', i + 2)
+      i = end === -1 ? content.length : end + 2
+      continue
+    }
+    out += ch
+    i += 1
+  }
+  return out
 }
 
 /**
@@ -260,6 +316,32 @@ const counters = {
     total: 0,
     files: new Map(),
     strip: stripCommentsOnly
+  },
+  /**
+   * Rust 侧（src-tauri/src 下所有 .rs）的中文**字符串字面量**。
+   *
+   * 判据本意：后端不该把面向用户的文案写死成中文 —— 正确形态是「返回错误码/英文 +
+   * 前端 `t('key')` 翻译」，否则多语言永远是半成品，且文案改动要发 Rust 版本。
+   *
+   * 口径（与 `zh_literal_vue` 的区别，刻意不同）：
+   *  - `zh_literal_vue` 数「连续汉字段」，适合前端模板里零散的中文；
+   *  - 这里数 **含中文的字符串字面量个数**（一个 `"请检查 {} 是否存在"` 记 1，不是 2），
+   *    因为 Rust 侧的债务单位是「一句话」，按汉字段数会把标点分隔算成多份、虚高。
+   *  - 先剥离注释：中文注释是**好的**（本仓文档一律中文），不该计入债务。
+   *
+   * 收敛策略：新代码禁止新增中文串（新增即 FAIL）；存量按文件分批改为错误码 + 前端翻译。
+   * 2026-11-04 首次量化：**192 处 / 23 文件**（`secure_store.rs` 27、`video_thumbnail.rs` 22、
+   * `file_manager_command.rs` 19、`upload_command.rs` 19…），较 10-13 的 156/21 **净增 36** ——
+   * 正是「没有守卫 → 越写越多」的典型，故先上闸再还存量。
+   */
+  zh_literal_rust: {
+    pattern: /"[^"\n]*[\u4e00-\u9fff][^"\n]*"/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripRustComments,
+    extensions: RUST_EXTENSIONS,
+    roots: [rustRoot]
   }
 }
 
@@ -276,6 +358,26 @@ for (const filePath of walk(srcRoot, STYLE_EXTENSIONS)) {
     if (count > 0) {
       counter.total += count
       counter.files.set(relPath, count)
+    }
+  }
+}
+
+// 声明了 `roots` 的计数器扫描自己的根（如 Rust 树）；其余仍走上面的 `src` 单次遍历。
+for (const counter of Object.values(counters)) {
+  if (!counter.roots) continue
+  const extensions = counter.extensions ?? SOURCE_EXTENSIONS
+  for (const root of counter.roots) {
+    if (!fs.existsSync(root)) continue
+    for (const filePath of walk(root, extensions)) {
+      const relPath = path.relative(repoRoot, filePath)
+      if (!counter.includeTests && isTestPath(relPath)) continue
+      const content = fs.readFileSync(filePath, 'utf8')
+      const text = counter.strip ? counter.strip(content) : content
+      const count = countOccurrences(text, counter.pattern)
+      if (count > 0) {
+        counter.total += count
+        counter.files.set(relPath, count)
+      }
     }
   }
 }
