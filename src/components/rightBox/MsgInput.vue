@@ -38,11 +38,7 @@
               role="textbox"
               aria-multiline="true"
               :aria-label="t('editor.placeholder')"
-              :style="{
-                minHeight: inputMinHeight,
-                lineHeight: inputLineHeight,
-                outline: 'none'
-              }"
+              :style="{ minHeight: inputMinHeight, lineHeight: inputLineHeight, outline: 'none' }"
               contenteditable
               spellcheck="false"
               @paste="onPaste($event)"
