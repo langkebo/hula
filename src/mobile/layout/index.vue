@@ -1,8 +1,8 @@
 <template>
   <MobileLayout :safeAreaTop="shouldShowTopSafeArea" :safe-area-bottom="false">
-    <div class="h-full" :class="isLandscape ? 'flex flex-row' : 'flex flex-col'">
-      <!-- 横屏：TabBar 作为左侧垂直导航栏 -->
-      <div v-if="isLandscape" class="flex-shrink-0 h-full">
+    <div class="h-full" :class="showSidebar ? 'flex flex-row' : 'flex flex-col'">
+      <!-- 横屏或展开态：TabBar 作为左侧垂直导航栏 -->
+      <div v-if="showSidebar" class="flex-shrink-0 h-full">
         <TabBar ref="tabBarElement" vertical />
       </div>
 
@@ -15,7 +15,7 @@
       </div>
 
       <!-- 竖屏：TabBar 在底部 -->
-      <div v-if="!isLandscape" class="flex-shrink-0">
+      <div v-if="!showSidebar" class="flex-shrink-0">
         <TabBar ref="tabBarElement" />
       </div>
     </div>
@@ -23,14 +23,18 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useMobileBreakpoint } from '#/composables/useMobileBreakpoint'
 import TabBar from '#/layout/tabBar/index.vue'
 import { useLandscape } from '@/composables/useLandscape'
 
 const route = useRoute()
 
-// 横屏检测：宽度 >= 768 且宽 > 高时切换为双栏布局
+// 横屏或展开态（>1024）时切换为带侧边导航的双栏布局
 const { isLandscape } = useLandscape()
+const { isExpanded } = useMobileBreakpoint()
+const showSidebar = computed(() => isLandscape.value || isExpanded.value)
 
 // 根据路由动态控制顶部安全区域
 // 当在动态页面时，关闭顶部安全区域
