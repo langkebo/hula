@@ -90,6 +90,9 @@ jobs:
           # AR-07b（2026-11-04）：Matrix 服务层 token 收口与调用链棘轮。
           # 基线见 meta/matrix-layering-baseline.json（只可收紧；--update 收紧）。
           pnpm check:matrix-layering
+          # 移动端 CSS 约定（2026-11-04）：100vh 必须配 100dvh；模糊必须带 -webkit- 前缀。
+          # 此前是 mobileCssGuards.test.ts 里逐个文件名写死的断言，新文件一律漏网。
+          pnpm check:mobile-css
 
       - name: Upload contract judgment diff (C-1)
         if: always()

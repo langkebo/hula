@@ -12,7 +12,7 @@
       :class="[
         longPressState.longPressActive
           ? ''
-          : 'bg-black/20 backdrop-blur-sm transition-all duration-3000 ease-in-out opacity-100'
+          : 'bg-black/20 mobile-mask--blurred transition-all duration-3000 ease-in-out opacity-100'
       ]"
       class="mobile-mask--blur fixed inset-0 z-[999]"></div>
 
@@ -197,6 +197,17 @@ const toSimpleBio = () => {
 
 <style scoped lang="scss">
 @use '@/styles/scss/mixins/liquid-glass' as *;
+
+/**
+ * 遮罩模糊：显式双声明，不用 UnoCSS 的 `backdrop-blur-sm` ——
+ * 仓库未接 autoprefixer，工具类只产不带前缀的 backdrop-filter，
+ * 旧 iOS/Android WebView 直接丢掉，等于没有模糊。
+ * 值与原先的 blur-sm 一致（4px）。
+ */
+.mobile-mask--blurred {
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
 
 /* 低性能设备关闭遮罩模糊，保留正常态的 bg-black/20 */
 .mobile-mask--blur {

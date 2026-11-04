@@ -166,6 +166,8 @@ onMounted(() => {
 .mobile-thread-view {
   display: flex;
   flex-direction: column;
+  /* 旧 WebView 不认 dvh ⇒ 先给 vh 兜底，再让 dvh 覆盖（跟随键盘/地址栏） */
+  height: 100vh;
   height: 100dvh;
   background: var(--van-background-2);
 

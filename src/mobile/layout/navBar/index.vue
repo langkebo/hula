@@ -28,7 +28,11 @@
 @use '@/styles/scss/mixins/liquid-glass' as *;
 
 .safe-area-nav {
-  @apply z-998 w-full backdrop-blur-md;
+  @apply z-998 w-full;
+  /* 模糊：显式双声明，不用 @apply backdrop-blur-md —— 工具类不带 -webkit- 前缀，
+     旧 iOS/Android WebView 会丢弃整条声明。值同 blur-md = 12px */
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   height: 44px;
   /* 低性能设备关闭 @apply 生成的模糊；选择器优先级高于原规则 */
   @include backdrop-blur-fallback;
