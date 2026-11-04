@@ -32,3 +32,35 @@ describe('mobile font payload', () => {
     expect(setting).not.toMatch(/fonts:\s*'PingFang'/)
   })
 })
+
+describe('mobile backdrop blur performance fallback', () => {
+  /** 移动端所有使用模糊的表面 */
+  const blurSurfaces = [
+    'src/mobile/layout/tabBar/index.vue',
+    'src/mobile/layout/navBar/index.vue',
+    'src/mobile/views/message/index.vue',
+    'src/mobile/views/friends/index.vue'
+  ]
+
+  it('exposes a blur-only fallback mixin driven by html.low-perf', () => {
+    const source = read('src/styles/scss/mixins/_liquid-glass.scss')
+    const start = source.indexOf('@mixin backdrop-blur-fallback')
+    expect(start).toBeGreaterThan(-1)
+
+    // 只取该 mixin 的规则体（到下一个顶格右括号为止）
+    const block = source.slice(start, source.indexOf('\n}', start) + 2)
+    expect(block).toContain('html.low-perf')
+    expect(block).toContain('backdrop-filter: none')
+    // 只关模糊，不得改写背景色（与 liquid-glass-fallback 的区别）
+    expect(block).not.toMatch(/background\s*:/)
+  })
+
+  it('applies the fallback in every mobile surface that blurs', () => {
+    const blurred = blurSurfaces.filter((path) => /backdrop-(filter|blur)/.test(read(path)))
+    // 守卫防空转：四个目标文件都应仍然使用模糊
+    expect(blurred).toHaveLength(4)
+
+    const missing = blurred.filter((path) => !read(path).includes('@include backdrop-blur-fallback'))
+    expect(missing).toEqual([])
+  })
+})

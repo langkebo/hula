@@ -42,6 +42,21 @@
   }
 }
 
+/// 仅关闭模糊的降级（不改变背景色）：用于背景另有来源的元素
+/// 与 `liquid-glass-fallback` 的差异：不写 `background`，避免给导航栏/遮罩等
+/// 已有底色的表面叠加不透明面板色造成视觉变更。
+///
+/// 注意：这里用普通嵌套 `html.low-perf &` 而非 `:global(...) &`。
+/// Vue SFC scoped 编译遇到 `:global(a) b` 时会丢弃 `:global()` 之后的复合选择器，
+/// 只留下 `html.low-perf { ... }`（实测），导致降级规则完全失效；
+/// 普通嵌套会被编译为 `html.low-perf .target[data-v-xxx]`，特异性高于原规则。
+@mixin backdrop-blur-fallback {
+  html.low-perf & {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 /// 面板级液态玻璃（阶段 2.2 — SettingsSidebar 等）
 /// @param {Number} $blur 模糊半径（默认 20px）
 /// @param {Number} $opacity 不透明度 0-1（默认 0.85）

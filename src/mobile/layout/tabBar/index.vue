@@ -77,6 +77,8 @@ const navItems = computed(() => resolveNavItems(t))
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 .tab-bar-wrap {
   background: var(--tjg-surface-panel);
 }
@@ -86,6 +88,8 @@ const navItems = computed(() => resolveNavItems(t))
   padding-bottom: var(--safe-area-inset-bottom, 0px);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+  /* 低性能设备关闭模糊；父级 .tab-bar-wrap 已提供背景色 */
+  @include backdrop-blur-fallback;
 }
 
 .tab-item {

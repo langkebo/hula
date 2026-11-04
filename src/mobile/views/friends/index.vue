@@ -8,7 +8,7 @@
       v-if="showMask"
       @touchend="maskHandler.close"
       @click="maskHandler.close"
-      class="fixed inset-0 bg-black/20 backdrop-blur-sm z-[999] transition-all duration-3000 ease-in-out opacity-100"></div>
+      class="mobile-mask--blur fixed inset-0 bg-black/20 backdrop-blur-sm z-[999] transition-all duration-3000 ease-in-out opacity-100"></div>
 
     <!-- 导航条 -->
     <NavBar>
@@ -625,3 +625,12 @@ const maskHandler = {
   }
 }
 </script>
+
+<style scoped lang="scss">
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
+/* 低性能设备关闭遮罩模糊，保留正常态的 bg-black/20 */
+.mobile-mask--blur {
+  @include backdrop-blur-fallback;
+}
+</style>

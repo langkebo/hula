@@ -25,8 +25,12 @@
 
 <script setup lang="ts"></script>
 <style scoped lang="scss">
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 .safe-area-nav {
   @apply z-998 w-full backdrop-blur-md;
   height: 44px;
+  /* 低性能设备关闭 @apply 生成的模糊；选择器优先级高于原规则 */
+  @include backdrop-blur-fallback;
 }
 </style>
