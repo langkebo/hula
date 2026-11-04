@@ -4,6 +4,7 @@ use crate::error::CommonError;
 use crate::repository::im_message_repository::reset_table_initialization_flags;
 use migration::{Migrator, MigratorTrait};
 use sea_orm::{ConnectionTrait, DatabaseConnection, DbBackend, Statement};
+use std::path::Path;
 use tauri::{AppHandle, State};
 use tracing::{info, warn};
 
@@ -118,6 +119,48 @@ pub async fn merge_login_uid(
     Ok(affected)
 }
 
+/// 迁移的下一步动作，由「源账号行数 / 目标账号行数」决定。
+///
+/// 为什么用行数而不是「目标文件是否存在」：迁移可能在复制完成、改写未完成时中断，
+/// 用文件存在与否判定会把这种半成品当成「已完成」，从此永久跳过改写
+/// （数据看着在库里，查询按旧 uid 过滤却一行都取不到）。
+#[derive(Debug, PartialEq, Eq)]
+pub enum MigrationStep {
+    /// 目标库里已无旧账号行、且有新账号行 ⇒ 上次已迁完，幂等重入，只需切连接
+    AlreadyMerged,
+    /// 目标库已有新账号自己的数据 ⇒ 放弃，避免两个账号的数据混写
+    Conflict,
+    /// 两边都没有行 ⇒ 源库本来就没数据（或复制失败被重建），交给调用方切库
+    NothingToMigrate,
+    /// 目标库只有旧账号行 ⇒ 改写 `login_uid`
+    Merge,
+}
+
+/// 纯函数：根据两边行数判定下一步。
+pub fn decide_migration_step(from_rows: i64, to_rows: i64) -> MigrationStep {
+    if from_rows == 0 && to_rows > 0 {
+        MigrationStep::AlreadyMerged
+    } else if to_rows > 0 {
+        MigrationStep::Conflict
+    } else if from_rows == 0 {
+        MigrationStep::NothingToMigrate
+    } else {
+        MigrationStep::Merge
+    }
+}
+
+/// 把源库文件复制成目标库文件；目标已存在时**不动它**，返回是否真的复制了。
+///
+/// 与命令分开是为了可测 —— 文件级行为（内容一致、不覆盖已有目标、幂等）
+/// 恰恰是 SQL 断言发现不了的部分。
+pub fn copy_database_file(from_path: &Path, to_path: &Path) -> Result<bool, CommonError> {
+    if to_path.exists() {
+        return Ok(false);
+    }
+    std::fs::copy(from_path, to_path).map_err(|e| anyhow::anyhow!("复制数据库文件失败: {}", e))?;
+    Ok(true)
+}
+
 /// 把 `from_uid` 的本地库迁移成 `to_uid` 的本地库（访客升级为正式账号时调用）。
 ///
 /// # 为什么需要
@@ -176,9 +219,9 @@ pub async fn migrate_user_database(
                     warn!("迁移前 WAL checkpoint 失败（继续尝试复制）: {}", err);
                 }
             }
-            std::fs::copy(&from_path, &to_path)
-                .map_err(|e| anyhow::anyhow!("复制数据库文件失败: {}", e))?;
-            info!("已复制本地库: {:?} -> {:?}", from_path, to_path);
+            if copy_database_file(&from_path, &to_path)? {
+                info!("已复制本地库: {:?} -> {:?}", from_path, to_path);
+            }
         }
 
         // 2) 打开目标库（顺带执行迁移，确保表结构齐全）
@@ -190,29 +233,30 @@ pub async fn migrate_user_database(
         let from_rows = count_login_uid_rows(&target, &from_uid).await?;
         let to_rows = count_login_uid_rows(&target, &to_uid).await?;
 
-        // 3) 用「行数」而不是「文件是否存在」判定进度，使中断后可自愈：
-        //    - 已全部改写（幂等重入）⇒ 只需把运行期连接切过去
-        //    - 仍有旧账号行且目标库无新账号行 ⇒ 补做改写
-        //    - 两边都有 ⇒ 目标库已有新账号自己的数据，放弃以免混写
-        //    - 两边都空 ⇒ 源库本来就没数据（或复制失败被重建），放弃由调用方切库
-        if from_rows == 0 && to_rows > 0 {
-            info!("目标库已完成迁移（幂等跳过改写）: {}", to_uid);
-        } else if to_rows > 0 {
-            warn!(
-                "目标库已含新账号数据（{} 行），放弃迁移以免混写（源库保留）: {}",
-                to_rows,
-                to_path.display()
-            );
-            return Ok(false);
-        } else if from_rows == 0 {
-            warn!("源库无可见数据（{} 行），跳过改写", from_rows);
-            return Ok(false);
-        } else {
-            let affected = merge_login_uid(&target, &from_uid, &to_uid).await?;
-            info!(
-                "已把 {} 行数据的 login_uid 改写为 {}（源共 {} 行）",
-                affected, to_uid, from_rows
-            );
+        // 3) 按行数判定进度（判定逻辑见 `decide_migration_step`，中断后可自愈）
+        match decide_migration_step(from_rows, to_rows) {
+            MigrationStep::AlreadyMerged => {
+                info!("目标库已完成迁移（幂等跳过改写）: {}", to_uid);
+            }
+            MigrationStep::Conflict => {
+                warn!(
+                    "目标库已含新账号数据（{} 行），放弃迁移以免混写（源库保留）: {}",
+                    to_rows,
+                    to_path.display()
+                );
+                return Ok(false);
+            }
+            MigrationStep::NothingToMigrate => {
+                warn!("源库无可见数据（{} 行），跳过改写", from_rows);
+                return Ok(false);
+            }
+            MigrationStep::Merge => {
+                let affected = merge_login_uid(&target, &from_uid, &to_uid).await?;
+                info!(
+                    "已把 {} 行数据的 login_uid 改写为 {}（源共 {} 行）",
+                    affected, to_uid, from_rows
+                );
+            }
         }
 
         // 4) 切换运行期连接，后续写入直接落在新库
