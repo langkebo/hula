@@ -2,6 +2,13 @@
   "title": "Settings",
   "theme": "Theme",
   "language": "Language",
+  "font_size": "Font size",
+  "font_sizes": {
+    "small": "Small",
+    "normal": "Default",
+    "large": "Large",
+    "xlarge": "Extra large"
+  },
   "version": "Version",
   "button": {
     "logout": "Log Out"

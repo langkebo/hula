@@ -2,6 +2,13 @@
   "title": "设置",
   "theme": "主题",
   "language": "语言",
+  "font_size": "字号",
+  "font_sizes": {
+    "small": "小",
+    "normal": "标准",
+    "large": "大",
+    "xlarge": "超大"
+  },
   "version": "版本",
   "button": {
     "logout": "退出登录"

@@ -137,6 +137,16 @@
                 </van-radio-group>
               </template>
             </van-cell>
+
+            <van-cell :title="t('mobile_setting.font_size')" center>
+              <template #right-icon>
+                <van-radio-group v-model="fontScaleValue" direction="horizontal" @change="handleFontScaleChange">
+                  <van-radio v-for="step in FONT_SCALE_STEPS" :key="step" :name="String(step)" icon-size="16px">
+                    {{ t(FONT_SCALE_LABEL_KEYS[step]) }}
+                  </van-radio>
+                </van-radio-group>
+              </template>
+            </van-cell>
           </van-cell-group>
 
           <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
@@ -237,6 +247,7 @@ import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { applyFontScale, FONT_SCALE_STEPS, loadFontScale, saveFontScale } from '@/utils/fontScale'
 import { createLogger } from '@/utils/Logger'
 import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
 import {
@@ -264,6 +275,21 @@ const languageValue = computed({
   get: () => settingStore.languagePreference,
   set: (v) => settingStore.setLanguage(v)
 })
+
+const FONT_SCALE_LABEL_KEYS: Record<number, string> = {
+  0.875: 'mobile_setting.font_sizes.small',
+  1: 'mobile_setting.font_sizes.normal',
+  1.125: 'mobile_setting.font_sizes.large',
+  1.25: 'mobile_setting.font_sizes.xlarge'
+}
+
+const fontScaleValue = ref(String(loadFontScale()))
+
+const handleFontScaleChange = (value: string | number) => {
+  const scale = Number(value)
+  applyFontScale(scale)
+  saveFontScale(scale)
+}
 
 const currentStatusId = computed(() => userStatusStore.stateId || 'online')
 
