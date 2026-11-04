@@ -31,3 +31,16 @@ describe('群成员相关页面单层滚动', () => {
     expect(source.match(/overflow-y-auto/g) ?? []).toHaveLength(1)
   })
 })
+
+describe('群成员页布局链路', () => {
+  it('ManageGroupMember 不嵌套布局容器', () => {
+    expect(manageSource).not.toContain('MobileLayout')
+    expect(manageSource).not.toContain('AutoFixHeightPage')
+  })
+
+  it('MobileInviteGroupMember 建立 flex 高度链并保留页脚', () => {
+    expect(inviteSource).not.toContain('addEventListener')
+    expect(inviteSource).not.toContain(':show-footer="false"')
+    expect(inviteSource).toContain('h-full flex flex-col')
+  })
+})

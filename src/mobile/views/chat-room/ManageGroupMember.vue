@@ -1,5 +1,5 @@
 <template>
-  <!-- 外层 ChatRoomLayout 已提供 MobileLayout 与高度，此处不可再嵌套，否则键盘 inset 会叠加两次 -->
+  <!-- 外层 ChatRoomLayout 已提供完整高度，此处不可再嵌套任何布局容器，否则键盘 inset 会叠加两次 -->
   <div class="flex w-full flex-col h-full">
     <HeaderBar
       :isOfficial="false"
@@ -29,7 +29,7 @@
               ? 'border-[--tjg-color-primary-300] bg-[--tjg-color-primary-100]'
               : 'border-[--tjg-border-default]'
           ">
-          <van-checkbox :name="item.uid" class="w-full px-5px" icon-size="20px">
+          <van-checkbox :name="item.uid" shape="square" class="w-full px-5px" icon-size="20px">
             <div class="flex items-center gap-10px px-8px py-10px w-full">
               <img
                 :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!, 128)"
@@ -37,7 +37,7 @@
                 class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))"
                 @error="handleAvatarError" />
               <div class="flex flex-col leading-tight truncate">
-                <span class="text-14px font-medium truncate">
+                <span class="text-14px font-medium truncate text-[--tjg-text-primary]">
                   {{ groupStore.getUserInfo(item.uid)?.name }}
                 </span>
                 <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-4px truncate">
@@ -147,6 +147,8 @@ const validateRemoval = () => {
 }
 
 const handleRemove = async () => {
+  if (isLoading.value) return false
+
   if (!validateRemoval()) {
     return false
   }
@@ -172,6 +174,8 @@ const handleRemove = async () => {
 }
 
 const handleMobileRemove = async () => {
+  if (isLoading.value) return
+
   if (!validateRemoval()) return
 
   try {
@@ -205,4 +209,13 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+:deep(.van-checkbox__label) {
+  flex: 1;
+  min-width: 0;
+}
+
+:deep(.van-search__content) {
+  background: var(--tjg-surface-search);
+}
+</style>

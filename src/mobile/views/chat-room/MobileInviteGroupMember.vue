@@ -1,5 +1,5 @@
 <template>
-  <AutoFixHeightPage :show-footer="false">
+  <AutoFixHeightPage>
     <template #header>
       <HeaderBar
         :isOfficial="false"
@@ -10,78 +10,80 @@
     </template>
 
     <template #container>
-      <!-- 顶部搜索框 -->
-      <div class="px-16px mt-10px flex gap-3">
-        <div class="flex-1 shrink-0">
-          <van-field
-            v-model="keyword"
-            :placeholder="t('mobile_chat_setting.search_contacts_hint')"
-            clearable
-            autocomplete="off"
-            :spellcheck="false"
-            autocorrect="off"
-            autocapitalize="off">
-            <template #left-icon>
-              <svg class="w-12px h-12px"><use href="#search"></use></svg>
-            </template>
-          </van-field>
+      <div class="h-full flex flex-col">
+        <!-- 顶部搜索框 -->
+        <div class="px-16px mt-10px flex gap-3">
+          <div class="flex-1 shrink-0">
+            <van-field
+              v-model="keyword"
+              :placeholder="t('mobile_chat_setting.search_contacts_hint')"
+              clearable
+              autocomplete="off"
+              :spellcheck="false"
+              autocorrect="off"
+              autocapitalize="off">
+              <template #left-icon>
+                <svg class="w-12px h-12px"><use href="#search"></use></svg>
+              </template>
+            </van-field>
+          </div>
+          <div class="flex justify-end items-center">
+            <van-button size="small" type="primary" plain round @click="doSearch">
+              {{ t('mobile_chat_setting.search_button') }}
+            </van-button>
+          </div>
         </div>
-        <div class="flex justify-end items-center">
-          <van-button size="small" type="primary" plain round @click="doSearch">
-            {{ t('mobile_chat_setting.search_button') }}
-          </van-button>
-        </div>
-      </div>
 
-      <!-- 好友列表 -->
-      <div class="flex-1 min-h-0 overflow-y-auto px-16px mt-10px">
-        <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
-          <div
-            v-for="item in filteredContacts"
-            :key="item.userId"
-            class="rounded-10px border border-[--tjg-border-default] overflow-hidden">
-            <van-checkbox
-              :name="item.userId"
-              shape="square"
-              class="w-full flex items-center px-5px"
-              :class="[
-                'cursor-pointer select-none transition-colors duration-150',
-                selectedList.includes(item.userId)
-                  ? 'bg-[--tjg-color-primary-100] text-[--tjg-color-primary-600] dark:bg-[--tjg-color-primary-100] dark:text-[--tjg-color-primary-400]'
-                  : 'hover:bg-[--tjg-color-primary-100] dark:hover:bg-[--tjg-color-primary-100]'
-              ]">
-              <template #default>
-                <div class="flex items-center gap-10px px-8px py-10px">
-                  <img
-                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
-                    class="size-44px rounded-full object-cover border-[1px] border-[--avatar-border-color]"
-                    :alt="t('mobile_contact.avatar.user')"
-                    @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-                  <div class="flex flex-col leading-tight truncate">
-                    <span class="text-14px font-medium truncate">
-                      {{ groupStore.getUserInfo(item.userId)?.name }}
-                    </span>
-                    <div class="text-12px text-[--tjg-text-tertiary] flex items-center gap-4px truncate">
-                      <span
-                        class="inline-block size-8px rounded-full"
-                        :style="{
-                          backgroundColor:
-                            item.activeStatus === OnlineEnum.ONLINE
-                              ? 'var(--tjg-status-online)'
-                              : 'var(--tjg-status-offline)'
-                        }"></span>
-                      {{
-                        item.activeStatus === OnlineEnum.ONLINE
-                          ? t('mobile_contact.status.online')
-                          : t('mobile_contact.status.offline')
-                      }}
+        <!-- 好友列表 -->
+        <div class="flex-1 min-h-0 overflow-y-auto px-16px mt-10px">
+          <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
+            <div
+              v-for="item in filteredContacts"
+              :key="item.userId"
+              class="rounded-10px border border-[--tjg-border-default] overflow-hidden">
+              <van-checkbox
+                :name="item.userId"
+                shape="square"
+                class="w-full flex items-center px-5px"
+                :class="[
+                  'cursor-pointer select-none transition-colors duration-150',
+                  selectedList.includes(item.userId)
+                    ? 'bg-[--tjg-color-primary-100] text-[--tjg-color-primary-600] dark:bg-[--tjg-color-primary-100] dark:text-[--tjg-color-primary-400]'
+                    : 'hover:bg-[--tjg-color-primary-100] dark:hover:bg-[--tjg-color-primary-100]'
+                ]">
+                <template #default>
+                  <div class="flex items-center gap-10px px-8px py-10px">
+                    <img
+                      :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
+                      class="size-44px rounded-full object-cover border-[1px] border-[--avatar-border-color]"
+                      :alt="t('mobile_contact.avatar.user')"
+                      @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                    <div class="flex flex-col leading-tight truncate">
+                      <span class="text-14px font-medium truncate">
+                        {{ groupStore.getUserInfo(item.userId)?.name }}
+                      </span>
+                      <div class="text-12px text-[--tjg-text-tertiary] flex items-center gap-4px truncate">
+                        <span
+                          class="inline-block size-8px rounded-full"
+                          :style="{
+                            backgroundColor:
+                              item.activeStatus === OnlineEnum.ONLINE
+                                ? 'var(--tjg-status-online)'
+                                : 'var(--tjg-status-offline)'
+                          }"></span>
+                        {{
+                          item.activeStatus === OnlineEnum.ONLINE
+                            ? t('mobile_contact.status.online')
+                            : t('mobile_contact.status.offline')
+                        }}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </template>
-            </van-checkbox>
-          </div>
-        </van-checkbox-group>
+                </template>
+              </van-checkbox>
+            </div>
+          </van-checkbox-group>
+        </div>
       </div>
     </template>
 
@@ -152,11 +154,14 @@ const filteredContacts = computed(() => {
 const doSearch = () => {}
 
 const handleInvite = async () => {
+  if (isLoading.value) return
+
   if (selectedList.value.length === 0) {
     showFeedback(t('mobile_chat_setting.select_friends_to_invite'), 'warning')
     return
   }
 
+  const count = selectedList.value.length
   isLoading.value = true
   try {
     await Promise.all(
@@ -165,7 +170,7 @@ const handleInvite = async () => {
       )
     )
 
-    showFeedback(t('mobile_chat_setting.invite_success', { count: selectedList.value.length }), 'success')
+    showFeedback(t('mobile_chat_setting.invite_success', { count }), 'success')
     router.back()
   } catch (error) {
     logger.error('Failed to invite:', error)
