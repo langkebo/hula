@@ -35,7 +35,7 @@
 
       <!-- 好友列表 -->
       <div ref="scrollArea" class="flex-1 overflow-y-auto px-16px mt-10px" :style="{ height: scrollHeight + 'px' }">
-        <div class="max-h-[calc(100vh-150px)] overflow-y-auto">
+        <div class="max-h-[calc(100dvh-150px)] overflow-y-auto">
           <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
             <div
               v-for="item in filteredContacts"
