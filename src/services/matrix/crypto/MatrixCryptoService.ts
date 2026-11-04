@@ -39,6 +39,9 @@ export type EncryptionAlgorithm = 'm.megolm.v1.aes-sha2' | 'm.olm.v1.curve25519-
  * - 密钥请求：createRoomKeyRequest
  */
 class MatrixCryptoService extends BaseMatrixService {
+  /**
+   * 失效 crypto 缓存并重新获取 crypto 实例；SDK 未启用时只告警不抛错。
+   */
   async initializeCrypto(): Promise<void> {
     try {
       cryptoSDKAdapter.invalidateCryptoCache()
@@ -54,6 +57,9 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 取跨签名与密钥备份的就绪状态；异常时返回 null。
+   */
   async getCryptoStatus(): Promise<{ crossSigningReady: boolean; keyBackupEnabled: boolean } | null> {
     try {
       const result = await cryptoSDKAdapter.getCryptoStatus()
@@ -64,6 +70,9 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 列出指定用户的设备。查**他人**设备只能走 `POST /keys/query`。
+   */
   async getDevices(userId: string): Promise<DeviceInfo[]> {
     try {
       return await cryptoSDKAdapter.getDevices(userId)
@@ -73,6 +82,10 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 把设备标记为已验证。
+   * 只写**本地 crypto store**，不上报服务端；其他设备看不到该判定。
+   */
   async verifyDevice(userId: string, deviceId: string): Promise<void> {
     try {
       await cryptoSDKAdapter.verifyDevice(userId, deviceId)
@@ -83,6 +96,9 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 取消设备的已验证标记（同样只作用于本地 crypto store）。
+   */
   async unverifyDevice(userId: string, deviceId: string): Promise<void> {
     try {
       await cryptoSDKAdapter.unverifyDevice(userId, deviceId)
@@ -93,6 +109,10 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 读设备验证状态。
+   * 唯一事实源是本地 crypto store —— `/keys/query` 响应里没有信任字段。
+   */
   async getDeviceVerificationStatus(userId: string, deviceId: string): Promise<VerificationStatus> {
     try {
       return await cryptoSDKAdapter.getDeviceVerificationStatus(userId, deviceId)
@@ -102,6 +122,10 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 发起设备验证请求；返回 `null` 表示 SDK 拒绝或不可用。
+   * SAS 需**对端接受后**才产生，不能把「请求已发」当成「已完成」。
+   */
   async requestDeviceVerification(userId: string, deviceId: string): Promise<VerificationRequest | null> {
     try {
       const result = await cryptoSDKAdapter.requestDeviceVerification(userId, deviceId)
@@ -115,6 +139,9 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 用口令初始化密钥备份（创建备份版本）。
+   */
   async setupKeyBackup(passphrase: string): Promise<void> {
     try {
       await cryptoSDKAdapter.setupKeyBackup(passphrase)
@@ -125,6 +152,9 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 导出房间密钥；口令校验失败时抛专用错误（而非笼统的 SDK 异常）。
+   */
   async exportKeys(passphrase: string): Promise<string> {
     try {
       const result = await cryptoSDKAdapter.exportKeys(passphrase)
@@ -139,6 +169,9 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 由口令派生恢复密钥（无口令则随机生成）；SDK 不可用时返回 null。
+   */
   async createRecoveryKeyFromPassphrase(password?: string): Promise<GeneratedSecretStorageKey | null> {
     try {
       const result = await cryptoSDKAdapter.createRecoveryKeyFromPassphrase(password)
@@ -154,6 +187,10 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 创建安全备份并返回恢复密钥。
+   * 口令经 PBKDF2 在**客户端**派生，只上传公钥与密文，口令/私钥永不上送服务端。
+   */
   async createSecureBackup(passphrase: string): Promise<{ recoveryKey: string } | null> {
     try {
       // ISSUE-6.3: 客户端派生，passphrase 经 PBKDF2 派生 recovery key，
@@ -169,6 +206,9 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 判断房间是否加密；异常时按 `false` 处理（加密状态拿不到时不宣称已加密）。
+   */
   async isRoomEncrypted(roomId: string): Promise<boolean> {
     try {
       return await cryptoSDKAdapter.isRoomEncrypted(roomId)
@@ -178,6 +218,9 @@ class MatrixCryptoService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 为房间开启加密；默认算法 `m.megolm.v1.aes-sha2`。
+   */
   async enableEncryption(roomId: string, algorithm: EncryptionAlgorithm = 'm.megolm.v1.aes-sha2'): Promise<void> {
     try {
       await cryptoSDKAdapter.enableEncryption(roomId, algorithm)

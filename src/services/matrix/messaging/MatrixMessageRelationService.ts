@@ -81,6 +81,9 @@ class MatrixMessageRelationService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 编辑媒体消息的说明文字：保留原 msgtype 与文件信息，只替换 body。
+   */
   async editMediaMessage(roomId: string, originalEventId: string, newCaption?: string): Promise<string> {
     const client = matrixClientService.getClient()
     if (!client) throw new Error(this.t('matrix_error.common.client_not_initialized'))
@@ -189,6 +192,9 @@ class MatrixMessageRelationService extends BaseMatrixService {
 
   // ── 删除 ──
 
+  /**
+   * 撤回自己的消息（redact）；`reason` 会写入撤回事件，供对端展示。
+   */
   async deleteMessage(roomId: string, eventId: string, reason?: string): Promise<void> {
     const client = matrixClientService.getClient()
     if (!client) throw new Error(this.t('matrix_error.common.client_not_initialized'))
@@ -243,6 +249,9 @@ class MatrixMessageRelationService extends BaseMatrixService {
 
   // ── 聚合 ──
 
+  /**
+   * 取事件的聚合数据（如表情计数）；失败返回 null。
+   */
   async getAggregations(roomId: string, eventId: string, relType: string): Promise<AggregationsResponse | null> {
     const client = matrixClientService.getClient()
     if (!client) return null
@@ -258,26 +267,44 @@ class MatrixMessageRelationService extends BaseMatrixService {
 
   // ── 查询委托（relationQueries）──
 
+  /**
+   * 取事件的编辑历史（读本地事件库，按时间序）。
+   */
   getEditHistory(roomId: string, eventId: string) {
     return this.queries.getEditHistory(roomId, eventId)
   }
 
+  /**
+   * 取最近一次编辑事件；从未编辑过返回 null。
+   */
   getLatestEdit(roomId: string, eventId: string): MatrixEvent | null {
     return this.queries.getLatestEdit(roomId, eventId)
   }
 
+  /**
+   * 沿 `m.in_reply_to` 回溯回复链；`maxDepth` 限制深度以断开环。
+   */
   getReplyChain(roomId: string, eventId: string, maxDepth?: number) {
     return this.queries.getReplyChain(roomId, eventId, maxDepth)
   }
 
+  /**
+   * 取线程内的全部回复事件。
+   */
   getThreadReplies(roomId: string, threadRootId: string): MatrixEvent[] {
     return this.queries.getThreadReplies(roomId, threadRootId)
   }
 
+  /**
+   * 取线程摘要（根事件、回复数、参与者）；非线程根返回 null。
+   */
   getThreadInfo(roomId: string, threadRootId: string): ThreadInfo | null {
     return this.queries.getThreadInfo(roomId, threadRootId)
   }
 
+  /**
+   * 取某事件的直接回复（不含线程内回复）。
+   */
   getEventReplies(roomId: string, eventId: string): MatrixEvent[] {
     return this.queries.getEventReplies(roomId, eventId)
   }
@@ -307,24 +334,39 @@ class MatrixMessageRelationService extends BaseMatrixService {
     return this.queries.fetchRelationsByType(roomId, eventId, 'm.replace', options)
   }
 
+  /**
+   * 取表情聚合（`m.annotation` 关系）。
+   */
   async getReactionAggregations(roomId: string, eventId: string): Promise<AggregationsResponse | null> {
     return this.getAggregations(roomId, eventId, 'm.annotation')
   }
 
   // ── 事件检查委托（relationEventHelpers）──
 
+  /**
+   * 判断事件是否被编辑过。
+   */
   isEdited(event: MatrixEvent): boolean {
     return isEdited(event)
   }
 
+  /**
+   * 取编辑后的内容；未编辑过时回退为原内容。
+   */
   getEditedContent(event: MatrixEvent): Record<string, unknown> {
     return getEditedContent(event)
   }
 
+  /**
+   * 取回复的目标事件 ID；非回复消息返回 null。
+   */
   getReplyToEventId(event: MatrixEvent): string | null {
     return getReplyToEventId(event)
   }
 
+  /**
+   * 取线程根事件 ID；非线程消息返回 null。
+   */
   getThreadRootId(event: MatrixEvent): string | null {
     return getThreadRootId(event)
   }

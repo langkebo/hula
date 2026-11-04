@@ -36,6 +36,9 @@ class MatrixBurnAfterReadService {
     return client.getBurnAfterReadManager()
   }
 
+  /**
+   * 为房间启用阅后即焚（可指定时长）；未初始化或失败时返回 null。
+   */
   async enableBurn(roomId: string, burnAfterMs?: number, throwOnError = false): Promise<BurnSettings | null> {
     try {
       const manager = this.getManager()
@@ -54,6 +57,9 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 关闭房间的阅后即焚。
+   */
   async disableBurn(roomId: string, throwOnError = false): Promise<BurnSettings | null> {
     try {
       const manager = this.getManager()
@@ -71,6 +77,9 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 读取房间的焚毁设置（是否启用、时长）。
+   */
   async getBurnSettings(roomId: string, throwOnError = false): Promise<BurnSettings | null> {
     try {
       const manager = this.getManager()
@@ -87,6 +96,9 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 判断房间是否启用焚毁；与 `getBurnSettings` 同源，但只返回开关。
+   */
   async isBurnEnabled(roomId: string, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
@@ -100,6 +112,9 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 列出待焚毁消息及其到期时间。
+   */
   async getPendingBurns(roomId: string, throwOnError = false): Promise<BurnPendingEvent[]> {
     try {
       const manager = this.getManager()
@@ -117,6 +132,9 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 把消息标记为已读，触发倒计时（到期后由焚毁流程处理）。
+   */
   async markBurnRead(roomId: string, eventId: string, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
@@ -131,6 +149,9 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 取消某条消息的待焚毁状态。
+   */
   async cancelBurn(roomId: string, eventId: string, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
@@ -145,6 +166,9 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 设置全局默认焚毁时长（毫秒），返回服务端生效值。
+   */
   async setBurnConfig(defaultBurnMs: number, throwOnError = false): Promise<number | null> {
     try {
       const manager = this.getManager()
@@ -159,6 +183,9 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 取焚毁统计：累计焚毁数、待处理数、启用焚毁的房间数。
+   */
   async getBurnStats(throwOnError = false): Promise<BurnStats> {
     try {
       const manager = this.getManager()
@@ -205,6 +232,10 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 立即焚毁该消息。
+   * 后端只登记 per-user 销毁时间、**不做 redact**，所以这里的「焚毁」在本地是遮罩语义，不是物理删除。
+   */
   async burnMessage(eventId: string, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
@@ -219,6 +250,9 @@ class MatrixBurnAfterReadService {
     }
   }
 
+  /**
+   * 延长某条消息的焚毁时间（毫秒）。
+   */
   async extendBurnTime(eventId: string, additionalTime: number, throwOnError = false): Promise<boolean> {
     try {
       const manager = this.getManager()
