@@ -2638,6 +2638,40 @@ export type I18nKeys = {
       "network": "网络连接中断，请检查网络设置",
       "server_unavailable": "服务器暂时不可用，请稍后重试",
       "unknown": "操作失败，请稍后重试"
+    },
+    "cmd": {
+      "admin_not_logged_in": "登录状态已失效，请重新登录",
+      "file_manager_nav_unsupported": "不支持的文件导航类型",
+      "directory_not_found": "目录不存在: {detail}",
+      "directory_path_not_dir": "路径不是目录: {detail}",
+      "directory_scan_timeout": "目录扫描超时，请稍后重试",
+      "directory_scan_cancelled": "目录扫描已取消",
+      "directory_disk_not_found": "无法找到目录所在的磁盘",
+      "markdown_remote_not_allowed": "不支持从远程地址读取 markdown: {detail}",
+      "markdown_not_markdown_file": "只能读取 markdown 文件: {detail}",
+      "markdown_outside_doc_dir": "只能读取文档目录内的文件: {detail}",
+      "markdown_too_large": "markdown 文件过大: {detail}",
+      "markdown_file_not_found": "找不到文件: {detail}",
+      "oauth_state_invalid": "授权状态参数无效",
+      "oauth_state_invalid_chars": "授权状态参数包含非法字符",
+      "oauth_local_server_start_failed": "启动本地授权服务失败（端口可能被占用）: {detail}",
+      "cas_login_scheme_invalid": "CAS 登录地址必须使用 http/https",
+      "cas_login_origin_mismatch": "CAS 登录地址必须与服务器同源",
+      "screenshot_invalid_arg": "截图参数无效: {detail}",
+      "upload_source_missing": "上传源文件不存在: {detail}",
+      "upload_path_outside_app_data": "不允许读取应用数据目录之外的文件: {detail}",
+      "upload_url_invalid": "上传地址无效: {detail}",
+      "upload_scheme_not_allowed": "上传地址只支持 http/https: {detail}",
+      "upload_url_has_credentials": "上传地址不能包含用户名或密码: {detail}",
+      "upload_url_missing_host": "上传地址缺少主机名: {detail}",
+      "upload_host_forbidden": "不允许向内网或回环地址上传: {detail}",
+      "upload_header_name_empty": "上传请求头名称不能为空",
+      "upload_header_name_invalid": "上传请求头名称非法: {detail}",
+      "upload_header_value_invalid": "上传请求头包含非法换行: {detail}",
+      "upload_header_forbidden": "不允许透传该请求头: {detail}",
+      "drop_path_not_absolute": "拖拽文件路径必须是绝对路径: {detail}",
+      "drop_file_missing": "拖拽的文件不存在: {detail}",
+      "drop_outside_home": "不允许复制主目录之外的文件: {detail}"
     }
   },
   "errorBoundary": {
@@ -2691,6 +2725,11 @@ export type I18nKeys = {
       "meta": {
         "from": "来自："
       }
+    },
+    "time": {
+      "unknown": "未知时间",
+      "today": "今天",
+      "yesterday": "昨天"
     },
     "empty": {
       "search": "未找到相关文件",
@@ -9660,6 +9699,38 @@ export type I18nKeyPaths =
   | "error.matrix.network"
   | "error.matrix.server_unavailable"
   | "error.matrix.unknown"
+  | "error.cmd.admin_not_logged_in"
+  | "error.cmd.file_manager_nav_unsupported"
+  | "error.cmd.directory_not_found"
+  | "error.cmd.directory_path_not_dir"
+  | "error.cmd.directory_scan_timeout"
+  | "error.cmd.directory_scan_cancelled"
+  | "error.cmd.directory_disk_not_found"
+  | "error.cmd.markdown_remote_not_allowed"
+  | "error.cmd.markdown_not_markdown_file"
+  | "error.cmd.markdown_outside_doc_dir"
+  | "error.cmd.markdown_too_large"
+  | "error.cmd.markdown_file_not_found"
+  | "error.cmd.oauth_state_invalid"
+  | "error.cmd.oauth_state_invalid_chars"
+  | "error.cmd.oauth_local_server_start_failed"
+  | "error.cmd.cas_login_scheme_invalid"
+  | "error.cmd.cas_login_origin_mismatch"
+  | "error.cmd.screenshot_invalid_arg"
+  | "error.cmd.upload_source_missing"
+  | "error.cmd.upload_path_outside_app_data"
+  | "error.cmd.upload_url_invalid"
+  | "error.cmd.upload_scheme_not_allowed"
+  | "error.cmd.upload_url_has_credentials"
+  | "error.cmd.upload_url_missing_host"
+  | "error.cmd.upload_host_forbidden"
+  | "error.cmd.upload_header_name_empty"
+  | "error.cmd.upload_header_name_invalid"
+  | "error.cmd.upload_header_value_invalid"
+  | "error.cmd.upload_header_forbidden"
+  | "error.cmd.drop_path_not_absolute"
+  | "error.cmd.drop_file_missing"
+  | "error.cmd.drop_outside_home"
   | "errorBoundary.errorBoundary.title"
   | "errorBoundary.errorBoundary.unknownError"
   | "errorBoundary.errorBoundary.retry"
@@ -9688,6 +9759,9 @@ export type I18nKeyPaths =
   | "fileManager.header.subtitle.total"
   | "fileManager.list.fileCount"
   | "fileManager.list.meta.from"
+  | "fileManager.time.unknown"
+  | "fileManager.time.today"
+  | "fileManager.time.yesterday"
   | "fileManager.empty.search"
   | "fileManager.empty.userHasNoFiles"
   | "fileManager.empty.default"

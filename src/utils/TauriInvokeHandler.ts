@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { AppException, ErrorType } from '@/common/exception'
 import { err, ok, type Result } from '@/common/result'
+import { translateTauriError } from '@/common/tauriErrorTranslator'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
@@ -64,7 +65,7 @@ export async function invokeWithResult<T = unknown>(
     let errorMessage = customErrorMessage
     if (!errorMessage) {
       if (typeof error === 'string') {
-        errorMessage = error
+        errorMessage = translateTauriError(error)
       } else if (error instanceof Error) {
         errorMessage = error.message
       } else {
@@ -122,7 +123,7 @@ export async function invokeWithErrorHandler<T = unknown>(
     let errorMessage = customErrorMessage
     if (!errorMessage) {
       if (typeof error === 'string') {
-        errorMessage = error
+        errorMessage = translateTauriError(error)
       } else if (error instanceof Error) {
         errorMessage = error.message
       } else {
