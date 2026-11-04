@@ -157,7 +157,8 @@ pub fn copy_database_file(from_path: &Path, to_path: &Path) -> Result<bool, Comm
     if to_path.exists() {
         return Ok(false);
     }
-    std::fs::copy(from_path, to_path).map_err(|e| anyhow::anyhow!("复制数据库文件失败: {}", e))?;
+    std::fs::copy(from_path, to_path)
+        .map_err(|e| anyhow::anyhow!("failed to copy database file: {}", e))?;
     Ok(true)
 }
 
@@ -201,7 +202,7 @@ pub async fn migrate_user_database(
 
         if !from_path.exists() {
             warn!(
-                "源库不存在，跳过迁移（{:?}）：新账号将从空库开始",
+                "source database missing, skipping migration ({:?}): new account starts from an empty database",
                 from_path
             );
             return Ok(false);
@@ -216,11 +217,11 @@ pub async fn migrate_user_database(
                     .execute_unprepared("PRAGMA wal_checkpoint(TRUNCATE)")
                     .await
                 {
-                    warn!("迁移前 WAL checkpoint 失败（继续尝试复制）: {}", err);
+                    warn!("WAL checkpoint before migration failed (continuing with copy): {}", err);
                 }
             }
             if copy_database_file(&from_path, &to_path)? {
-                info!("已复制本地库: {:?} -> {:?}", from_path, to_path);
+                info!("copied local database: {:?} -> {:?}", from_path, to_path);
             }
         }
 
@@ -236,24 +237,24 @@ pub async fn migrate_user_database(
         // 3) 按行数判定进度（判定逻辑见 `decide_migration_step`，中断后可自愈）
         match decide_migration_step(from_rows, to_rows) {
             MigrationStep::AlreadyMerged => {
-                info!("目标库已完成迁移（幂等跳过改写）: {}", to_uid);
+                info!("target database already migrated (idempotent skip): {}", to_uid);
             }
             MigrationStep::Conflict => {
                 warn!(
-                    "目标库已含新账号数据（{} 行），放弃迁移以免混写（源库保留）: {}",
+                    "target database already contains new account data ({} rows), aborting migration to avoid mixed writes (source kept): {}",
                     to_rows,
                     to_path.display()
                 );
                 return Ok(false);
             }
             MigrationStep::NothingToMigrate => {
-                warn!("源库无可见数据（{} 行），跳过改写", from_rows);
+                warn!("source database has no visible data ({} rows), skipping rewrite", from_rows);
                 return Ok(false);
             }
             MigrationStep::Merge => {
                 let affected = merge_login_uid(&target, &from_uid, &to_uid).await?;
                 info!(
-                    "已把 {} 行数据的 login_uid 改写为 {}（源共 {} 行）",
+                    "rewrote login_uid for {} rows to {} (source had {} rows)",
                     affected, to_uid, from_rows
                 );
             }

@@ -1,3 +1,4 @@
+use crate::common::cmd_error::cmd_error_with_detail;
 use crate::common::path_guard::path_is_within;
 use base64::{Engine as _, engine::general_purpose};
 use pulldown_cmark::{CowStr, Event, Options, Parser, Tag, html};
@@ -63,7 +64,10 @@ fn resolve_markdown_path(app: &AppHandle, file_path: &str) -> Result<PathBuf, St
         || file_path.starts_with("https://")
         || file_path.starts_with("data:")
     {
-        return Err(format!("拒绝从远程地址读取 markdown: {file_path}"));
+        return Err(cmd_error_with_detail(
+            "MARKDOWN_REMOTE_NOT_ALLOWED",
+            file_path,
+        ));
     }
 
     let roots = allowed_markdown_roots(app);
@@ -81,24 +85,30 @@ fn resolve_markdown_path(app: &AppHandle, file_path: &str) -> Result<PathBuf, St
             continue;
         }
         if !is_markdown_file(&candidate) {
-            return Err(format!("拒绝读取非 markdown 文件: {file_path}"));
+            return Err(cmd_error_with_detail(
+                "MARKDOWN_NOT_MARKDOWN_FILE",
+                file_path,
+            ));
         }
         if !roots.iter().any(|root| path_is_within(&candidate, root)) {
-            return Err(format!("拒绝读取文档目录之外的文件: {file_path}"));
+            return Err(cmd_error_with_detail("MARKDOWN_OUTSIDE_DOC_DIR", file_path));
         }
         let size = fs::metadata(&candidate)
-            .map_err(|e| format!("无法读取文件元信息 {:?}: {}", candidate, e))?
+            .map_err(|e| format!("failed to read file metadata {:?}: {}", candidate, e))?
             .len();
         if size > MAX_MARKDOWN_BYTES {
-            return Err(format!(
-                "markdown 文件过大（{} 字节，上限 {} 字节）: {file_path}",
-                size, MAX_MARKDOWN_BYTES
+            return Err(cmd_error_with_detail(
+                "MARKDOWN_TOO_LARGE",
+                format!(
+                    "{} bytes, limit {} bytes: {}",
+                    size, MAX_MARKDOWN_BYTES, file_path
+                ),
             ));
         }
         return Ok(candidate);
     }
 
-    Err(format!("无法找到文件: {file_path}"))
+    Err(cmd_error_with_detail("MARKDOWN_FILE_NOT_FOUND", file_path))
 }
 
 /// 处理图片 URL,将相对路径转换为 base64 数据 URI。
@@ -176,7 +186,7 @@ pub async fn parse_markdown(app: AppHandle, file_path: String) -> Result<String,
 
     // 读取文件内容
     let markdown_content = fs::read_to_string(&full_path)
-        .map_err(|e| format!("无法读取文件 {:?}: {}", full_path, e))?;
+        .map_err(|e| format!("failed to read file {:?}: {}", full_path, e))?;
 
     // 配置 markdown 解析选项
     let mut options = Options::empty();
@@ -281,8 +291,8 @@ pub async fn get_readme_html(app: AppHandle, language: String) -> Result<String,
         }
     }
 
-    let markdown_content =
-        markdown_content.ok_or_else(|| format!("无法找到 {} 文件", readme_filename))?;
+    let markdown_content = markdown_content
+        .ok_or_else(|| cmd_error_with_detail("MARKDOWN_FILE_NOT_FOUND", readme_filename))?;
 
     let readme_path = readme_path.unwrap();
 

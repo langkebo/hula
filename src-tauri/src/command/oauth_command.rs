@@ -1,3 +1,4 @@
+use crate::common::cmd_error::cmd_error_with_detail;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::async_runtime::JoinHandle;
@@ -27,15 +28,19 @@ impl Default for OauthServerState {
 /// 回调监听器只接受与之一致的 `state`，用于阻断授权码注入 / 会话固定。
 fn validate_expected_state(state: &str) -> Result<(), String> {
     if !(MIN_STATE_LEN..=MAX_STATE_LEN).contains(&state.len()) {
-        return Err(format!(
-            "OAuth state 长度必须在 {MIN_STATE_LEN}-{MAX_STATE_LEN} 之间"
+        return Err(cmd_error_with_detail(
+            "OAUTH_STATE_INVALID",
+            format!("length must be {MIN_STATE_LEN}-{MAX_STATE_LEN}"),
         ));
     }
     let allowed = state
         .bytes()
         .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~'));
     if !allowed {
-        return Err("OAuth state 只能包含 URL 安全字符（字母/数字/-/_/./~）".to_string());
+        return Err(cmd_error_with_detail(
+            "OAUTH_STATE_INVALID_CHARS",
+            "only URL-safe characters are allowed",
+        ));
     }
     Ok(())
 }
@@ -55,9 +60,9 @@ fn request_query_params(request: &str) -> HashMap<String, String> {
         .collect()
 }
 
-const SUCCESS_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>登录成功</h1><p>您可以关闭此窗口返回应用。</p></div><script>setTimeout(function(){window.close()}, 2000);</script>";
-const INVALID_STATE_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>授权校验失败</h1><p>state 参数缺失或不匹配，请重新发起登录。</p></div>";
-const MISSING_CODE_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>授权失败</h1><p>回调缺少授权码。</p></div>";
+const SUCCESS_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>Login successful</h1><p>You can close this window and return to the app.</p></div><script>setTimeout(function(){window.close()}, 2000);</script>";
+const INVALID_STATE_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>Authorization check failed</h1><p>The state parameter is missing or does not match. Please start the login again.</p></div>";
+const MISSING_CODE_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>Authorization failed</h1><p>The callback is missing the authorization code.</p></div>";
 
 #[tauri::command]
 pub async fn start_oauth_server<R: Runtime>(
@@ -86,9 +91,12 @@ pub async fn start_oauth_server<R: Runtime>(
         Err(_) => {
             // 如果绑定失败，可能是端口还未释放，稍等一下再试
             tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
-            TcpListener::bind("127.0.0.1:36677")
-                .await
-                .map_err(|e| format!("启动本地授权服务失败(端口 36677 被占用): {}", e))?
+            TcpListener::bind("127.0.0.1:36677").await.map_err(|e| {
+                cmd_error_with_detail(
+                    "OAUTH_LOCAL_SERVER_START_FAILED",
+                    format!("port 36677 is unavailable: {e}"),
+                )
+            })?
         }
     };
 

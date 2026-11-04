@@ -832,7 +832,7 @@ pub async fn query_chat_history(
     condition: crate::command::chat_history_command::ChatHistoryQueryCondition,
 ) -> Result<Vec<MessageWithThumbnail>, CommonError> {
     info!(
-        "查询聊天历史记录 - 房间: {}, 类型: {:?}, 关键词: {:?}",
+        "query chat history - room: {}, type: {:?}, keyword: {:?}",
         condition.room_id, condition.message_type, condition.search_keyword
     );
 
@@ -878,15 +878,9 @@ pub async fn query_chat_history(
     // 日期范围筛选
     if let Some(ref date_range) = condition.date_range {
         if let Some(start_time) = date_range.start_time {
-            chrono::DateTime::from_timestamp_millis(start_time)
-                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
-                .unwrap_or_else(|| "无效时间".to_string());
             conditions = conditions.add(im_message::Column::SendTime.gte(start_time));
         }
         if let Some(end_time) = date_range.end_time {
-            chrono::DateTime::from_timestamp_millis(end_time)
-                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
-                .unwrap_or_else(|| "无效时间".to_string());
             conditions = conditions.add(im_message::Column::SendTime.lte(end_time));
         }
     }
@@ -914,7 +908,7 @@ pub async fn query_chat_history(
     let messages = query
         .all(db)
         .await
-        .map_err(|e| anyhow::anyhow!("查询聊天历史记录失败: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("failed to query chat history: {}", e))?;
 
     enrich_models_with_thumbnails(db, messages).await
 }
@@ -1003,7 +997,7 @@ pub async fn query_file_messages(
     let messages = query
         .all(db)
         .await
-        .map_err(|e| anyhow::anyhow!("查询文件消息失败: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("failed to query file messages: {}", e))?;
 
     enrich_models_with_thumbnails(db, messages).await
 }

@@ -23,13 +23,13 @@ fn enforce_debugger_policy() {
     #[cfg(not(debug_assertions))]
     {
         if prevent_debugger_attach().is_err() {
-            eprintln!("[HuLa] 无法设置调试防护 (macOS) 。");
+            eprintln!("[HuLa] failed to enable debugger protection (macOS).");
         }
     }
 
     #[cfg(debug_assertions)]
     {
-        eprintln!("[HuLa] 调试构建：macOS 运行时防护仅记录提示，不阻断调试。");
+        eprintln!("[HuLa] debug build: macOS runtime guard only logs, debugger is not blocked.");
     }
 }
 

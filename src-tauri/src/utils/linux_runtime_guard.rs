@@ -28,11 +28,11 @@ fn enforce_debugger_policy() {
     #[cfg(not(debug_assertions))]
     {
         if set_dumpable(false).is_err() {
-            eprintln!("[HuLa] 无法设置 Linux dumpable 保护。");
+            eprintln!("[HuLa] failed to enable Linux dumpable protection.");
         }
 
         if debugger_attached() {
-            eprintln!("[HuLa] 检测到调试器 (Linux)，已终止启动。");
+            eprintln!("[HuLa] debugger detected (Linux), start-up aborted.");
             std::process::exit(0);
         }
     }
@@ -40,7 +40,7 @@ fn enforce_debugger_policy() {
     #[cfg(debug_assertions)]
     {
         if debugger_attached() {
-            eprintln!("[HuLa] 调试模式：检测到调试器附加 (Linux)。");
+            eprintln!("[HuLa] debug build: debugger attached (Linux).");
         }
     }
 }

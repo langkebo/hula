@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 
 use crate::AppData;
+use crate::common::cmd_error::cmd_error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AdminCheckResult {
@@ -17,7 +18,7 @@ pub async fn check_admin_status(
     state: State<'_, AppData>,
 ) -> Result<AdminCheckResult, String> {
     if user_id.is_empty() || access_token.is_empty() {
-        return Err("用户未登录".to_string());
+        return Err(cmd_error("ADMIN_NOT_LOGGED_IN"));
     }
 
     let config = state.config.read().await;
@@ -28,7 +29,11 @@ pub async fn check_admin_status(
 
     let is_admin = verify_admin_via_matrix(&homeserver, &user_id, &access_token).await?;
 
-    tracing::info!("管理员状态检查: userId={}, isAdmin={}", user_id, is_admin);
+    tracing::info!(
+        "admin status check: userId={}, isAdmin={}",
+        user_id,
+        is_admin
+    );
 
     Ok(AdminCheckResult { is_admin, user_id })
 }
@@ -43,7 +48,7 @@ async fn verify_admin_via_matrix(
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(cfg!(debug_assertions))
         .build()
-        .map_err(|e| format!("创建管理员验证 HTTP 客户端失败: {}", e))?;
+        .map_err(|e| format!("failed to create admin verification HTTP client: {}", e))?;
 
     let url = format!(
         "{}/_synapse/admin/v1/users/{}",
@@ -56,21 +61,21 @@ async fn verify_admin_via_matrix(
         .header("Authorization", format!("Bearer {}", access_token))
         .send()
         .await
-        .map_err(|e| format!("请求管理员验证失败: {}", e))?;
+        .map_err(|e| format!("admin verification request failed: {}", e))?;
 
     if response.status() == reqwest::StatusCode::FORBIDDEN {
-        tracing::warn!("管理员验证被拒绝: userId={}", user_id);
+        tracing::warn!("admin verification rejected: userId={}", user_id);
         return Ok(false);
     }
 
     if response.status() == reqwest::StatusCode::UNAUTHORIZED {
-        tracing::warn!("管理员验证未授权: userId={}", user_id);
+        tracing::warn!("admin verification unauthorized: userId={}", user_id);
         return Ok(false);
     }
 
     if !response.status().is_success() {
         tracing::warn!(
-            "管理员验证请求失败: status={}, userId={}",
+            "admin verification request unsuccessful: status={}, userId={}",
             response.status(),
             user_id
         );
@@ -80,7 +85,7 @@ async fn verify_admin_via_matrix(
     let body: serde_json::Value = response
         .json()
         .await
-        .map_err(|e| format!("解析管理员验证响应失败: {}", e))?;
+        .map_err(|e| format!("failed to parse admin verification response: {}", e))?;
 
     let is_admin = body.get("admin").and_then(|v| v.as_bool()).unwrap_or(false);
 

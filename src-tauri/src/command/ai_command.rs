@@ -61,7 +61,7 @@ pub async fn check_openclaw_installation() -> Result<OpenClawStatus, String> {
             // 尝试获取版本号
             let version = get_openclaw_version(&path).await;
 
-            info!("OpenClaw 已安装: path={}, version={:?}", path, version);
+            info!("OpenClaw installed: path={}, version={:?}", path, version);
             Ok(OpenClawStatus {
                 installed: true,
                 path: Some(path),
@@ -74,7 +74,7 @@ pub async fn check_openclaw_installation() -> Result<OpenClawStatus, String> {
             if let Some(path) = check_common_paths().await {
                 let version = get_openclaw_version(&path).await;
                 info!(
-                    "OpenClaw 在常见路径中找到: path={}, version={:?}",
+                    "OpenClaw found in common paths: path={}, version={:?}",
                     path, version
                 );
                 Ok(OpenClawStatus {
@@ -84,7 +84,7 @@ pub async fn check_openclaw_installation() -> Result<OpenClawStatus, String> {
                     os_type,
                 })
             } else {
-                info!("OpenClaw 未安装");
+                info!("OpenClaw not installed");
                 Ok(OpenClawStatus {
                     installed: false,
                     path: None,
@@ -269,14 +269,14 @@ pub async fn ai_message_cancel_stream(
     state: State<'_, AppData>,
     request_id: String,
 ) -> Result<(), String> {
-    info!("尝试取消 AI 流式任务: {}", request_id);
+    info!("attempting to cancel AI streaming task: {}", request_id);
     let mut tasks = state.stream_tasks.lock().await;
     if let Some(handle) = tasks.remove(&request_id) {
         handle.abort();
-        info!("AI 流式任务已取消: {}", request_id);
+        info!("AI streaming task cancelled: {}", request_id);
         return Ok(());
     }
-    Err(format!("未找到指定请求ID的任务: {}", request_id))
+    Err(format!("no task found for request id: {}", request_id))
 }
 
 #[cfg(test)]

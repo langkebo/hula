@@ -27,7 +27,7 @@ pub async fn get_config_by_key(
         .filter(im_config::Column::LoginUid.eq(login_uid))
         .one(db)
         .await
-        .map_err(|e| anyhow::anyhow!("查询配置失败: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("failed to query config: {}", e))?;
     Ok(config)
 }
 
@@ -79,7 +79,7 @@ pub async fn save_config_batch(
         .filter(im_config::Column::LoginUid.eq(login_uid))
         .exec(&txn)
         .await
-        .map_err(|e| anyhow::anyhow!("删除现有配置数据失败: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("failed to delete existing config data: {}", e))?;
 
     // 批量插入新的配置数据
     let active_models: Vec<im_config::ActiveModel> = configs
@@ -96,7 +96,7 @@ pub async fn save_config_batch(
         im_config::Entity::insert_many(active_models)
             .exec(&txn)
             .await
-            .map_err(|e| anyhow::anyhow!("批量插入配置数据失败: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("failed to bulk insert config data: {}", e))?;
     }
 
     // 提交事务
@@ -115,6 +115,6 @@ pub async fn delete_config(
         .filter(im_config::Column::LoginUid.eq(login_uid))
         .exec(db)
         .await
-        .map_err(|e| anyhow::anyhow!("删除配置失败: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("failed to delete config: {}", e))?;
     Ok(())
 }

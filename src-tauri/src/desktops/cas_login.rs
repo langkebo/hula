@@ -1,3 +1,4 @@
+use crate::common::cmd_error::cmd_error;
 use tauri::{AppHandle, Emitter, Manager, Url, WebviewUrl, WebviewWindowBuilder};
 
 const CAS_WINDOW_LABEL: &str = "cas-login";
@@ -22,11 +23,11 @@ fn extract_login_token(url: &str) -> Option<String> {
 fn validate_cas_url(login_url: &str, homeserver_origin: &str) -> Result<Url, String> {
     let login = Url::parse(login_url).map_err(|e| e.to_string())?;
     if login.scheme() != "http" && login.scheme() != "https" {
-        return Err("CAS 登录地址必须使用 http/https".to_string());
+        return Err(cmd_error("CAS_LOGIN_SCHEME_INVALID"));
     }
     let homeserver = Url::parse(homeserver_origin).map_err(|e| e.to_string())?;
     if login.origin() != homeserver.origin() {
-        return Err("CAS 登录地址必须与家服务器同源".to_string());
+        return Err(cmd_error("CAS_LOGIN_ORIGIN_MISMATCH"));
     }
     Ok(login)
 }
@@ -51,7 +52,7 @@ pub async fn open_cas_login_window(
 
     let handle = app.clone();
     WebviewWindowBuilder::new(&app, CAS_WINDOW_LABEL, WebviewUrl::External(login))
-        .title("CAS 登录")
+        .title("CAS Login")
         .inner_size(480.0, 640.0)
         .resizable(false)
         .on_navigation(move |url| {

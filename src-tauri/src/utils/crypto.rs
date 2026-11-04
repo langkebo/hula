@@ -54,7 +54,7 @@ fn load_key_from_file() -> Option<[u8; 32]> {
 /// 保存密钥到文件（确保 dev 模式重建后仍可恢复）
 fn save_key_to_file(key: &[u8; 32]) {
     let Some(path) = get_key_file_path() else {
-        error!("HOME 环境变量未设置，无法保存密钥文件");
+        error!("HOME environment variable is not set, cannot save key file");
         return;
     };
 
@@ -361,7 +361,7 @@ mod tests {
         assert_ne!(
             &first_body[..SALT_LEN],
             &second_body[..SALT_LEN],
-            "每份密文必须携带不同的随机盐"
+            "each ciphertext must carry a different random salt"
         );
 
         assert_eq!(decrypt(&first).unwrap(), "same");
@@ -526,7 +526,7 @@ mod tests {
         let _lock = TEST_LOCK.lock().unwrap();
         let _env = TestEnv::new("persistence");
 
-        // 第一次"运行"：生成并保存密钥
+        // 第一次「运行」：生成并保存密钥
         let key_run1 = [123u8; 32];
         save_key_to_file(&key_run1);
 

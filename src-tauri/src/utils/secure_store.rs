@@ -671,7 +671,7 @@ mod tests {
         }
     }
 
-    /// 验证跨"重启"后 fallback 密钥一致（dev 模式核心场景）
+    /// 验证跨「重启」后 fallback 密钥一致（dev 模式核心场景）
     #[test]
     fn test_fallback_persistence_across_restarts() {
         let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
@@ -680,7 +680,7 @@ mod tests {
         let key = "test-key-persistence";
         let value = "persistent-secret-value";
 
-        // 第一次"运行"：写入
+        // 第一次「运行」：写入
         assert!(
             save_to_fallback(key, value),
             "save_to_fallback should succeed"
@@ -709,7 +709,7 @@ mod tests {
         let _env = TestEnv::new("integration");
 
         let key = "integration-test-key";
-        let value = "integration-test-value-非常机密";
+        let value = "integration-test-value-very-secret";
 
         // set 会同时写 keychain 和 fallback
         // 在测试环境中 keychain 可能可用也可能不可用，但 fallback 一定会写入
@@ -788,13 +788,13 @@ mod tests {
                 let loaded = SecureStore::get(key).unwrap();
                 assert!(
                     loaded.is_some(),
-                    "set 返回 Ok 但 get 返回 None，说明 set 返回了虚假的 Ok"
+                    "set returned Ok but get returned None, meaning set returned a false Ok"
                 );
-                println!("[INFO] keychain 可用，set 通过 keychain 成功");
+                println!("[INFO] keychain available, set via keychain succeeded");
             }
             Err(e) => {
                 println!(
-                    "[INFO] keychain 不可用且 fallback 失败，set 正确返回 Err: {:?}",
+                    "[INFO] keychain unavailable and fallback failed, set correctly returned Err: {:?}",
                     e
                 );
             }
@@ -843,7 +843,7 @@ mod tests {
         let _env = TestEnv::new("write-verify");
 
         let key = "write-verify-test-key";
-        let value = "write-verify-test-value-含中文加密内容";
+        let value = "write-verify-test-value-with-encrypted-content";
 
         // 正常写入应返回 true（写后验证通过）
         let result = save_to_fallback(key, value);
@@ -989,7 +989,7 @@ mod tests {
 
         let key = "special-chars-key";
         // 包含中文、emoji、换行符、路径分隔符、制表符等
-        let value = "中文测试-🔐-newline\n\ttab/slash\\back-emoji🎉-üñîçødé";
+        let value = "unicode-test-🔐-newline\n\ttab/slash\\back-emoji🎉-üñîçødé";
 
         // save_to_fallback 应正确处理特殊字符
         let saved = save_to_fallback(key, value);
@@ -1034,8 +1034,8 @@ mod tests {
             "user@example.com",
             "namespace:key",
             "key with spaces",
-            "中文密钥",
-            "mixed@中文:with spaces",
+            "unicode-key-ключ",
+            "mixed@ключ:with spaces",
         ];
 
         for key in &special_keys {
@@ -1233,12 +1233,12 @@ mod tests {
         let backends = SecureStore::check_backends();
         assert!(
             backends.encrypted_file_fallback,
-            "有效 HOME 下加密文件 fallback 应实测可用"
+            "encrypted file fallback must be measured available under a valid HOME"
         );
-        assert!(backends.any(), "至少一个后端可用");
+        assert!(backends.any(), "at least one backend must be available");
         assert!(
             backends.effective().is_some(),
-            "至少一个后端可用时必有生效后端"
+            "the effective backend must exist when at least one backend is available"
         );
         // 两条判据必须同源，避免 `is_available` 与 `check_backends` 漂移
         assert_eq!(SecureStore::is_available(), backends.any());
@@ -1266,7 +1266,7 @@ mod tests {
 
         assert!(
             !backends.encrypted_file_fallback,
-            "HOME 缺失时不应报告文件 fallback 可用"
+            "file fallback must not be reported available when HOME is missing"
         );
     }
 
@@ -1289,7 +1289,7 @@ mod tests {
         assert_ne!(
             degraded.backend,
             platform_native_backend_id(),
-            "降级时 backend 不得是平台原生密钥库名"
+            "backend must not be a native platform key store name when degraded"
         );
     }
 

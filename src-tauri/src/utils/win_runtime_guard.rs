@@ -27,7 +27,9 @@ fn sanitize_sensitive_env() {
 
 fn enforce_debugger_policy() {
     if debugger_attached() {
-        eprintln!("[HuLa] 检测到调试器或远程调试会话，出于安全考虑终止启动。");
+        eprintln!(
+            "[HuLa] debugger or remote debug session detected, start-up aborted for security."
+        );
 
         #[cfg(not(debug_assertions))]
         {

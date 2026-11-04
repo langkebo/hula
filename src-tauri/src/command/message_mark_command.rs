@@ -61,7 +61,7 @@ pub async fn save_message_mark(
         tx.commit().await?;
 
         info!(
-            "消息标记保存成功，消息ID: {}, 标记类型: {}",
+            "message mark saved, msg_id: {}, mark_type: {}",
             &data.msg_id, data.mark_type
         );
         Ok(())
@@ -106,6 +106,6 @@ fn get_new_message_marks(
     }
 
     let new_message_marks = serde_json::to_string(&message_marks)
-        .map_err(|e| anyhow::anyhow!("序列化消息标记错误: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("failed to serialize message marks: {}", e))?;
     Ok(new_message_marks)
 }

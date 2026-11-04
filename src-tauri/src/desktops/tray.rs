@@ -73,9 +73,9 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
         // 创建分隔符和菜单项
         let separator1 = PredefinedMenuItem::separator(app)?;
         let open_menu_item =
-            MenuItem::with_id(app, open_id.clone(), "打开主面板", true, None::<&str>)?;
+            MenuItem::with_id(app, open_id.clone(), "Open Main Panel", true, None::<&str>)?;
         let separator2 = PredefinedMenuItem::separator(app)?;
-        let exit_menu_item = MenuItem::with_id(app, exit_id.clone(), "退出", true, None::<&str>)?;
+        let exit_menu_item = MenuItem::with_id(app, exit_id.clone(), "Quit", true, None::<&str>)?;
 
         // 构建菜单
         let tray_menu = MenuBuilder::new(app)
@@ -89,7 +89,7 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
                 tracing::error!("Default window icon not found");
                 return Err(tauri::Error::Io(std::io::Error::new(
                     std::io::ErrorKind::NotFound,
-                    "未找到默认窗口图标",
+                    "default window icon not found",
                 )));
             }
         };
@@ -158,7 +158,7 @@ pub fn create_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
                 tracing::error!("Default window icon not found");
                 return Err(tauri::Error::Io(std::io::Error::new(
                     std::io::ErrorKind::NotFound,
-                    "未找到默认窗口图标",
+                    "default window icon not found",
                 )));
             }
         };

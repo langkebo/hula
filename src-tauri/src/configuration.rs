@@ -77,7 +77,7 @@ const ILLEGAL_FILENAME_CHARS: &[char] = &['<', '>', ':', '"', '/', '\\', '|', '?
 /// 把 uid 归一化为**跨平台合法**的文件名片段：非法字符与控制字符 → `_`。
 ///
 /// 额外的两处 Windows 语义（不是所有非法字符都由 `ILLEGAL_FILENAME_CHARS` 覆盖）：
-/// - 尾随 `.` / 空格会被 Win32 静默剥离 ⇒ 会与"写进去的名字"不一致，故去掉；
+/// - 尾随 `.` / 空格会被 Win32 静默剥离 ⇒ 会与「写进去的名字」不一致，故去掉；
 /// - 保留设备名（CON/PRN/AUX/NUL/COM1…）不可作文件名 —— Matrix ID 必以 `@` 开头，
 ///   不会命中，故不额外处理（保留了 `@`，也就不会误伤合法 uid）。
 pub(crate) fn sanitize_uid_for_filename(uid: &str) -> String {
@@ -224,7 +224,7 @@ impl DatabaseSettings {
         let db_dir = database_dir(app_handle)?;
 
         // 文件名解析放在目录确定之后：若本机存在历史（含 `:` 等非法字符）数据库文件，
-        // 这里先做一次改名迁移，避免改用归一化名后把本地数据"留在旧文件里"。
+        // 这里先做一次改名迁移，避免改用归一化名后把本地数据「留在旧文件里」。
         let db_filename = Self::resolve_db_filename(&db_dir, uid);
         info!("Database filename: {}", db_filename);
         let db_path = db_dir.join(&db_filename);
@@ -237,17 +237,20 @@ impl DatabaseSettings {
                     let backup = db_path.with_extension("corrupted");
                     match std::fs::rename(&db_path, &backup) {
                         Ok(()) => warn!(
-                            "数据库文件头不是 SQLite，已备份为 {:?}（原文件不再使用）",
+                            "database file header is not SQLite, backed up to {:?} (original file is no longer used)",
                             backup
                         ),
                         Err(rename_err) => {
                             // rename 失败再删：两步都失败时必须让人知道，否则下次启动会继续读到同一坏文件
                             match std::fs::remove_file(&db_path) {
                                 Ok(()) => {
-                                    warn!("备份失败（{}），已删除损坏的数据库文件", rename_err)
+                                    warn!(
+                                        "backup failed ({}), removed the corrupted database file",
+                                        rename_err
+                                    )
                                 }
                                 Err(remove_err) => warn!(
-                                    "损坏的数据库文件既无法备份也无法删除（{} / {}），下次启动会再次失败",
+                                    "corrupted database file can neither be backed up nor removed ({} / {}), the next start will fail again",
                                     rename_err, remove_err
                                 ),
                             }
@@ -255,7 +258,7 @@ impl DatabaseSettings {
                     }
                 }
                 DbHeaderVerdict::Unknown => warn!(
-                    "无法读取数据库文件头，按「未知」处理并保留原文件（不判定为损坏）: {:?}",
+                    "failed to read database file header, treated as unknown and kept the file as-is (not considered corrupted): {:?}",
                     db_path
                 ),
             }
@@ -585,7 +588,7 @@ mod database_filename_tests {
             DatabaseSettings::get_legacy_db_filename(Some("@test1:matrix.test")).as_deref(),
             Some("db_@test1:matrix.test.sqlite")
         );
-        // 无需归一化 ⇒ 无"历史名"，不会被误判为待迁移
+        // 无需归一化 ⇒ 无「历史名」，不会被误判为待迁移
         assert_eq!(
             DatabaseSettings::get_legacy_db_filename(Some("@alice")),
             None
@@ -609,9 +612,15 @@ mod database_filename_tests {
         let resolved = DatabaseSettings::resolve_db_filename(&dir, Some("@u:host"));
 
         assert_eq!(resolved, "db_@u_host.sqlite");
-        assert!(!legacy.exists(), "迁移后旧文件不应残留");
-        assert!(dir.join("db_@u_host.sqlite").exists(), "内容应被搬到新名");
-        // 迁移是"搬运"而非"复制"：数据必须在
+        assert!(
+            !legacy.exists(),
+            "stale file must not remain after migration"
+        );
+        assert!(
+            dir.join("db_@u_host.sqlite").exists(),
+            "content must be moved to the new name"
+        );
+        // 迁移是「搬运」而非「复制」：数据必须在
         assert_eq!(
             std::fs::read(dir.join("db_@u_host.sqlite")).unwrap(),
             b"SQLite format 3\0"
@@ -633,7 +642,10 @@ mod database_filename_tests {
             std::fs::read(dir.join("db_@u_host.sqlite")).unwrap(),
             b"NEW"
         );
-        assert!(dir.join("db_@u:host.sqlite").exists(), "旧文件不应被删除");
+        assert!(
+            dir.join("db_@u:host.sqlite").exists(),
+            "legacy file must not be deleted"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

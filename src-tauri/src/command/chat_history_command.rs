@@ -46,7 +46,7 @@ pub async fn query_chat_history(
     state: State<'_, AppData>,
 ) -> Result<ChatHistoryResponse, String> {
     info!(
-        "查询聊天历史记录 - 房间ID: {}, 消息类型: {:?}, 搜索关键词: {:?}, 排序: {:?}, 页码: {}",
+        "query chat history - roomId: {}, messageType: {:?}, keyword: {:?}, sort: {:?}, page: {}",
         param.room_id,
         param.message_type,
         param.search_keyword,
@@ -76,7 +76,7 @@ pub async fn query_chat_history(
         im_message_repository::query_chat_history(&*state.db_conn.read().await, query_condition)
             .await
             .map_err(|e| {
-                error!("查询聊天历史记录失败: {}", e);
+                error!("failed to query chat history: {}", e);
                 e.to_string()
             })?;
 

@@ -65,11 +65,11 @@ pub async fn check_secure_storage_available() -> Result<SecureStorageCheckRespon
     debug_assert_eq!(
         report.degraded,
         report.available && !report.native_available,
-        "degraded 必须等价于「可用但非原生」"
+        "degraded must be equivalent to available but non-native"
     );
     debug_assert!(
         !report.degraded || report.backend == StorageBackend::EncryptedFileFallback.id(),
-        "降级时 backend 必须是加密文件 fallback（不得报成平台原生密钥库）"
+        "backend must be the encrypted file fallback when degraded (must not report a native platform key store)"
     );
 
     if report.degraded {
@@ -119,7 +119,7 @@ mod tests {
         assert_ne!(
             report.backend,
             platform_native_backend_id(),
-            "降级时不得上报平台原生密钥库名"
+            "native platform key store name must not be reported when degraded"
         );
         assert!(report.available);
         assert!(report.degraded);
