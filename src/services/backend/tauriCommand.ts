@@ -81,7 +81,6 @@ export type FileManagerFileItem = {
 
 export type FileManagerTimeGroup = {
   date: string
-  displayDate: string
   files: FileManagerFileItem[]
 }
 

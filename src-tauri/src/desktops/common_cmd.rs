@@ -1,4 +1,5 @@
 #![allow(unexpected_cfgs)]
+use crate::common::cmd_error::cmd_error_with_detail;
 use base64::{Engine as _, engine::general_purpose};
 use screenshots::Screen;
 #[cfg(target_os = "macos")]
@@ -301,24 +302,25 @@ pub fn default_window_icon<R: Runtime>(
 
 #[tauri::command]
 pub fn screenshot(x: &str, y: &str, width: &str, height: &str) -> Result<String, String> {
-    let screen = Screen::from_point(100, 100).map_err(|e| format!("获取屏幕信息失败: {}", e))?;
+    let screen =
+        Screen::from_point(100, 100).map_err(|e| format!("failed to get screen info: {}", e))?;
 
     let x = x
         .parse::<i32>()
-        .map_err(|_| "无效的 x 坐标参数".to_string())?;
+        .map_err(|_| cmd_error_with_detail("SCREENSHOT_INVALID_ARG", "x"))?;
     let y = y
         .parse::<i32>()
-        .map_err(|_| "无效的 y 坐标参数".to_string())?;
+        .map_err(|_| cmd_error_with_detail("SCREENSHOT_INVALID_ARG", "y"))?;
     let width = width
         .parse::<u32>()
-        .map_err(|_| "无效的宽度参数".to_string())?;
+        .map_err(|_| cmd_error_with_detail("SCREENSHOT_INVALID_ARG", "width"))?;
     let height = height
         .parse::<u32>()
-        .map_err(|_| "无效的高度参数".to_string())?;
+        .map_err(|_| cmd_error_with_detail("SCREENSHOT_INVALID_ARG", "height"))?;
 
     let image = screen
         .capture_area(x, y, width, height)
-        .map_err(|e| format!("截图失败: {}", e))?;
+        .map_err(|e| format!("screenshot failed: {}", e))?;
 
     let buffer = image.as_raw();
     let base64_str = general_purpose::STANDARD_NO_PAD.encode(buffer);
@@ -346,14 +348,14 @@ fn play_audio_internal(path: &str, handle: &AppHandle) -> Result<(), String> {
     let audio_path = handle
         .path()
         .resolve(path, BaseDirectory::Resource)
-        .map_err(|e| format!("解析音频路径失败: {}", e))?;
+        .map_err(|e| format!("failed to resolve audio path: {}", e))?;
 
-    let audio = File::open(audio_path).map_err(|e| format!("打开音频文件失败: {}", e))?;
+    let audio = File::open(audio_path).map_err(|e| format!("failed to open audio file: {}", e))?;
 
     let file = BufReader::new(audio);
     let stream = rodio::OutputStreamBuilder::open_default_stream()
-        .map_err(|e| format!("创建音频输出流失败: {}", e))?;
-    let source = Decoder::new(file).map_err(|e| format!("解码音频文件失败: {}", e))?;
+        .map_err(|e| format!("failed to create audio output stream: {}", e))?;
+    let source = Decoder::new(file).map_err(|e| format!("failed to decode audio file: {}", e))?;
 
     stream.mixer().add(source);
     thread::sleep(Duration::from_millis(3000));
@@ -364,22 +366,22 @@ fn play_audio_internal(path: &str, handle: &AppHandle) -> Result<(), String> {
 pub fn set_height(height: u32, handle: AppHandle) -> Result<(), String> {
     let home_window = handle
         .get_webview_window("home")
-        .ok_or("未找到 home 窗口")?;
+        .ok_or("home window not found")?;
 
     let sf = home_window
         .scale_factor()
-        .map_err(|e| format!("获取窗口缩放因子失败: {}", e))?;
+        .map_err(|e| format!("failed to get window scale factor: {}", e))?;
 
     let out_size = home_window
         .inner_size()
-        .map_err(|e| format!("获取窗口尺寸失败: {}", e))?;
+        .map_err(|e| format!("failed to get window size: {}", e))?;
 
     home_window
         .set_size(LogicalSize::new(
             out_size.to_logical(sf).width,
             cmp::max(out_size.to_logical(sf).height, height),
         ))
-        .map_err(|e| format!("设置窗口高度失败: {}", e))?;
+        .map_err(|e| format!("failed to set window height: {}", e))?;
 
     Ok(())
 }

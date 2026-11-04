@@ -1,3 +1,4 @@
+use crate::common::cmd_error::cmd_error;
 use async_walkdir::WalkDir as AsyncWalkDir;
 use futures::stream::StreamExt;
 use serde::Serialize;
@@ -52,7 +53,7 @@ async fn get_directory_size_with_progress(
         Ok(result) => result,
         Err(_) => {
             tracing::warn!("Directory scan timeout, automatically cancelled");
-            Err("目录扫描超时，请尝试扫描较小的目录".to_string())
+            Err(cmd_error("DIRECTORY_SCAN_TIMEOUT"))
         }
     }
 }
@@ -61,11 +62,11 @@ async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> R
     let path = PathBuf::from(&directory_path);
 
     if !path.exists() {
-        return Err("目录不存在".to_string());
+        return Err(cmd_error("DIRECTORY_NOT_FOUND"));
     }
 
     if !path.is_dir() {
-        return Err("指定路径不是目录".to_string());
+        return Err(cmd_error("DIRECTORY_PATH_NOT_DIR"));
     }
 
     // 创建取消接收器
@@ -80,7 +81,7 @@ async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> R
     let _ = handle.emit(
         "directory-scan-progress",
         &DirectoryScanProgress {
-            current_path: "正在统计文件数量...".to_string(),
+            current_path: String::new(),
             files_processed: 0,
             total_size: 0,
             elapsed_time: 0,
@@ -94,7 +95,7 @@ async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> R
             // 检查取消信号
             _ = cancel_receiver.recv() => {
                 let _ = handle.emit("directory-scan-cancelled", ());
-                return Err("扫描已取消".to_string());
+                return Err(cmd_error("DIRECTORY_SCAN_CANCELLED"));
             }
             // 处理文件扫描
             entry = entries.next() => {
@@ -123,7 +124,7 @@ async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> R
             // 检查取消信号
             _ = cancel_receiver.recv() => {
                 let _ = handle.emit("directory-scan-cancelled", ());
-                return Err("扫描已取消".to_string());
+                return Err(cmd_error("DIRECTORY_SCAN_CANCELLED"));
             }
             // 处理文件扫描
             entry = entries.next() => {
@@ -182,7 +183,7 @@ async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> R
     let final_elapsed_seconds = final_elapsed as f64 / 1000.0;
 
     let final_progress = DirectoryScanProgress {
-        current_path: "扫描完成".to_string(),
+        current_path: String::new(),
         files_processed,
         total_size,
         elapsed_time: final_elapsed,
@@ -239,7 +240,7 @@ pub async fn get_directory_usage_info_with_progress(
     }
 
     if best_match.is_empty() {
-        return Err("无法找到目录所在的磁盘".to_string());
+        return Err(cmd_error("DIRECTORY_DISK_NOT_FOUND"));
     }
 
     let usage_percentage = if disk_total_space > 0 {

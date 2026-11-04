@@ -1,4 +1,5 @@
 use crate::AppData;
+use crate::common::cmd_error::cmd_error;
 use crate::repository::im_message_repository::{self, MessageWithThumbnail};
 use entity::im_message;
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect};
@@ -35,7 +36,6 @@ pub struct UserInfo {
 #[serde(rename_all = "camelCase")]
 pub struct TimeGroup {
     pub date: String,
-    pub display_date: String,
     pub files: Vec<FileInfo>,
 }
 
@@ -110,7 +110,7 @@ pub async fn query_files(
             query_files_by_sessions(&db, &login_uid, &param).await?
         }
         _ => {
-            return Err("不支持的导航类型".to_string());
+            return Err(cmd_error("FILE_MANAGER_NAV_UNSUPPORTED"));
         }
     };
 
@@ -188,7 +188,7 @@ async fn query_files_by_senders(
             .filter(im_message::Column::Uid.eq(contact_uid))
             .all(db_conn)
             .await
-            .map_err(|e| format!("查询联系人消息失败: {}", e))?;
+            .map_err(|e| format!("failed to query contact messages: {}", e))?;
 
         // 提取不重复的房间ID
         let mut room_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -290,7 +290,7 @@ fn convert_message_to_file_info(record: MessageWithThumbnail) -> Option<FileInfo
 
                 let sender = UserInfo {
                     id: message.uid.clone(),
-                    name: message.nickname.clone().unwrap_or("未知用户".to_string()),
+                    name: message.nickname.clone().unwrap_or_default(),
                     avatar: "/avatars/default.jpg".to_string(),
                     is_online: None,
                 };
@@ -316,15 +316,15 @@ fn convert_message_to_file_info(record: MessageWithThumbnail) -> Option<FileInfo
                 return Some(file_info);
             }
             Err(e) => {
-                info!("消息体不是有效的 JSON 格式，跳过: {}", e);
+                info!("message body is not valid JSON, skipping: {}", e);
                 // 不再创建假数据，直接返回 None
             }
         }
     } else {
-        info!("消息体为空");
+        info!("message body is empty");
     }
 
-    info!("无法转换消息为文件信息");
+    info!("failed to convert message into file info");
     None
 }
 
@@ -365,7 +365,7 @@ fn format_timestamp(timestamp: i64) -> String {
     if let Some(dt) = Local.timestamp_opt(timestamp / 1000, 0).single() {
         dt.format("%Y-%m-%d %H:%M:%S").to_string()
     } else {
-        "未知时间".to_string()
+        String::new()
     }
 }
 
@@ -403,7 +403,6 @@ fn group_files_by_time(files: Vec<FileInfo>) -> Vec<TimeGroup> {
             files.sort_by(|a, b| b.upload_time.cmp(&a.upload_time));
             TimeGroup {
                 date: date.format("%Y-%m-%d").to_string(),
-                display_date: format_display_date(date),
                 files,
             }
         })
@@ -413,7 +412,6 @@ fn group_files_by_time(files: Vec<FileInfo>) -> Vec<TimeGroup> {
         unknown_files.sort_by(|a, b| b.upload_time.cmp(&a.upload_time));
         time_groups.push(TimeGroup {
             date: "unknown".to_string(),
-            display_date: "未知时间".to_string(),
             files: unknown_files,
         });
     }
@@ -426,49 +424,31 @@ fn parse_upload_time(upload_time: &str) -> Option<chrono::NaiveDateTime> {
     chrono::NaiveDateTime::parse_from_str(upload_time, "%Y-%m-%d %H:%M:%S").ok()
 }
 
-/// 格式化显示日期
-fn format_display_date(date: chrono::NaiveDate) -> String {
-    use chrono::{Datelike, Local};
-
-    let today = Local::now().date_naive();
-    let diff = today.signed_duration_since(date).num_days();
-
-    if diff == 0 {
-        "今天".to_string()
-    } else if diff == 1 {
-        "昨天".to_string()
-    } else if today.year() == date.year() {
-        date.format("%m月%d日").to_string()
-    } else {
-        date.format("%Y年%m月%d日").to_string()
-    }
-}
-
 /// 获取导航菜单项
 #[tauri::command]
 pub async fn get_navigation_items() -> Result<Vec<NavigationItem>, String> {
     let items = vec![
         NavigationItem {
             key: "myFiles".to_string(),
-            label: "我的文件".to_string(),
+            label: "My Files".to_string(),
             icon: "file".to_string(),
             active: true,
         },
         NavigationItem {
             key: "senders".to_string(),
-            label: "发送人".to_string(),
+            label: "Senders".to_string(),
             icon: "avatar".to_string(),
             active: false,
         },
         NavigationItem {
             key: "sessions".to_string(),
-            label: "会话".to_string(),
+            label: "Sessions".to_string(),
             icon: "message".to_string(),
             active: false,
         },
         NavigationItem {
             key: "groups".to_string(),
-            label: "群聊".to_string(),
+            label: "Groups".to_string(),
             icon: "peoples".to_string(),
             active: false,
         },
@@ -492,7 +472,7 @@ pub async fn debug_message_stats(state: State<'_, AppData>) -> Result<serde_json
         .filter(im_message::Column::LoginUid.eq(&login_uid))
         .count(&*db)
         .await
-        .map_err(|e| format!("查询总消息数失败: {}", e))?;
+        .map_err(|e| format!("failed to count total messages: {}", e))?;
 
     // 查询各种类型的消息数
     let mut stats = serde_json::Map::new();
@@ -508,7 +488,7 @@ pub async fn debug_message_stats(state: State<'_, AppData>) -> Result<serde_json
             .filter(im_message::Column::MessageType.eq(msg_type))
             .count(&*db)
             .await
-            .map_err(|e| format!("查询类型 {} 消息数失败: {}", msg_type, e))?;
+            .map_err(|e| format!("failed to count messages of type {}: {}", msg_type, e))?;
 
         if count > 0 {
             stats.insert(
@@ -526,7 +506,7 @@ pub async fn debug_message_stats(state: State<'_, AppData>) -> Result<serde_json
         .limit(5)
         .all(&*db)
         .await
-        .map_err(|e| format!("查询样例消息失败: {}", e))?;
+        .map_err(|e| format!("failed to query sample messages: {}", e))?;
 
     let samples: Vec<serde_json::Value> = sample_messages
         .into_iter()

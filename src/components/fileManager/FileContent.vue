@@ -42,7 +42,7 @@
           <div v-for="timeGroup in displayedTimeGroupedFiles" :key="timeGroup.date" class="flex flex-col gap-12px">
             <div class="time-group">
               <span class="text-[length:var(--tjg-font-size-base)] font-600">
-                {{ timeGroup.displayDate || timeGroup.date }}
+                {{ formatGroupDate(timeGroup.date) }}
               </span>
               <span class="text-[length:var(--tjg-font-size-sm)]">
                 {{ t('fileManager.list.fileCount', { count: timeGroup.files.length }) }}
@@ -64,7 +64,7 @@
                     <p>{{ t('fileManager.list.meta.from') }}</p>
                     <p class="file-sender">{{ file.sender?.id ? getUserDisplayName(file.sender.id) : '' }}</p>
                   </div>
-                  <p class="opacity-80">{{ file.uploadTime }}</p>
+                  <p class="opacity-80">{{ file.uploadTime || t('fileManager.time.unknown') }}</p>
                 </div>
               </ContextMenu>
             </div>
@@ -98,41 +98,19 @@ import { sumBy } from 'es-toolkit'
 import { useI18n } from 'vue-i18n'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 import { useDownload } from '@/composables/common/useDownload'
-import type { FileBody } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
 import { createLogger } from '@/utils/Logger'
 import EmptyState from './FileManagerEmptyState.vue'
+import {
+  type FileItem,
+  matchesFileByKeyword,
+  type TimeGroup,
+  type User,
+  useFileContentDisplay
+} from './useFileContentDisplay'
 
 const logger = createLogger('FileContent')
-
-type FileItem = {
-  id: string
-  fileName?: string
-  name?: string
-  originalName?: string
-  title?: string
-  fileType?: string
-  fileSize?: number
-  downloadUrl?: string
-  url?: string
-  uploadTime: string
-  sender?: {
-    id: string
-    name?: string
-  }
-}
-
-type TimeGroup = {
-  date: string
-  displayDate: string
-  files: FileItem[]
-}
-
-type User = {
-  id: string
-  name: string
-}
 
 type FileManagerState = {
   timeGroupedFiles: Ref<TimeGroup[]>
@@ -163,31 +141,6 @@ const fileSearchKeyword = computed({
 
 const normalizedFileSearchKeyword = computed(() => fileSearchKeyword.value.trim().toLowerCase())
 const hasActiveSearch = computed(() => normalizedFileSearchKeyword.value.length > 0)
-
-// 检查文件是否匹配搜索关键词
-const matchesFileByKeyword = (file: FileItem, keyword: string) => {
-  if (!keyword) {
-    return true
-  }
-
-  const candidates = [
-    file.fileName,
-    file.name,
-    file.originalName,
-    file.title,
-    file.sender?.name,
-    file.fileType,
-    file.downloadUrl,
-    file.url
-  ]
-
-  return candidates.some((candidate) => {
-    if (candidate == null) {
-      return false
-    }
-    return String(candidate).toLowerCase().includes(keyword)
-  })
-}
 
 // 过滤显示的时间分组文件
 const displayedTimeGroupedFiles = computed(() => {
@@ -271,87 +224,23 @@ const getUserDisplayName = (uid: string) => {
   return t('fileManager.common.unknownUser')
 }
 
-// 获取文件搜索占位符
-const getFileSearchPlaceholder = () => {
-  switch (activeNavigation.value) {
-    case 'myFiles':
-      return t('fileManager.search.placeholder.myFiles')
-    case 'senders':
-      return t('fileManager.search.placeholder.senders')
-    case 'sessions':
-      return t('fileManager.search.placeholder.sessions')
-    case 'groups':
-      return t('fileManager.search.placeholder.groups')
-    default:
-      return t('fileManager.search.placeholder.default')
-  }
-}
-
-// 获取内容标题
-const getContentTitle = () => {
-  const navigationTitles: { [key: string]: string } = {
-    myFiles: t('fileManager.header.titles.myFiles'),
-    senders: t('fileManager.header.titles.senders'),
-    sessions: t('fileManager.header.titles.sessions'),
-    groups: t('fileManager.header.titles.groups')
-  }
-
-  return navigationTitles[activeNavigation.value] || t('fileManager.header.titles.default')
-}
-
-// 获取内容副标题
-const getContentSubtitle = () => {
-  const totalFiles = totalDisplayedFiles.value
-
-  if (selectedUser.value) {
-    const user = userList.value.find((u: User) => u.id === selectedUser.value)
-    if (user) {
-      return t('fileManager.header.subtitle.userFiles', { name: user.name, total: totalFiles })
-    }
-  }
-
-  const keyword = fileSearchKeyword.value.trim()
-  if (keyword) {
-    return t('fileManager.header.subtitle.search', { total: totalFiles })
-  }
-
-  return t('fileManager.header.subtitle.total', { total: totalFiles })
-}
-
-const getEmptyStateIcon = () => {
-  if (hasActiveSearch.value) {
-    return 'search'
-  }
-
-  const navigationIcons: { [key: string]: string } = {
-    myFiles: 'folder',
-    senders: 'user',
-    sessions: 'message',
-    groups: 'group'
-  }
-
-  return navigationIcons[activeNavigation.value] || 'folder'
-}
-
-const getEmptyStateTitle = () => {
-  if (hasActiveSearch.value) {
-    return t('fileManager.empty.search')
-  }
-
-  if (selectedUser.value) {
-    const user = userList.value.find((u: User) => u.id === selectedUser.value)
-    return user ? t('fileManager.empty.userHasNoFiles', { name: user.name }) : t('fileManager.empty.default')
-  }
-
-  const navigationTitles: { [key: string]: string } = {
-    myFiles: t('fileManager.empty.default'),
-    senders: t('fileManager.empty.senders'),
-    sessions: t('fileManager.empty.sessions'),
-    groups: t('fileManager.empty.groups')
-  }
-
-  return navigationTitles[activeNavigation.value] || t('fileManager.empty.default')
-}
+// 格式化时间分组标题：后端只返回机器可读日期，展示文案在前端按语言格式化
+const {
+  formatGroupDate,
+  getFileSearchPlaceholder,
+  getContentTitle,
+  getContentSubtitle,
+  getEmptyStateIcon,
+  getEmptyStateTitle,
+  convertToFileBody
+} = useFileContentDisplay({
+  activeNavigation,
+  selectedUser,
+  userList,
+  fileSearchKeyword,
+  hasActiveSearch,
+  totalDisplayedFiles
+})
 
 // 清除搜索
 const clearSearch = () => {
@@ -361,15 +250,6 @@ const clearSearch = () => {
 // 清除用户筛选
 const clearUserFilter = () => {
   setSelectedUser('')
-}
-
-// 转换文件数据为 FileBody 格式
-const convertToFileBody = (file: FileItem): FileBody => {
-  return {
-    fileName: file.fileName || '',
-    size: file.fileSize || 0,
-    url: file.url || file.downloadUrl || ''
-  }
 }
 </script>
 

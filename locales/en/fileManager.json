@@ -40,6 +40,11 @@
       "from": "From:"
     }
   },
+  "time": {
+    "unknown": "Unknown time",
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
   "empty": {
     "search": "No related files",
     "userHasNoFiles": "{name} has no files",

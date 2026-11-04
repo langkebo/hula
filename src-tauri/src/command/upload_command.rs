@@ -1,3 +1,4 @@
+use crate::common::cmd_error::{cmd_error, cmd_error_with_detail};
 use crate::common::path_guard::path_is_within;
 use bytes::Bytes;
 use futures_util::stream::try_unfold;
@@ -83,12 +84,15 @@ fn resolve_upload_path(
     };
 
     if !resolved.is_file() {
-        return Err(format!("上传源文件不存在: {}", resolved.display()));
+        return Err(cmd_error_with_detail(
+            "UPLOAD_SOURCE_MISSING",
+            resolved.display(),
+        ));
     }
 
     let roots = allowed_upload_roots(app_handle);
     if !roots.iter().any(|root| path_is_within(&resolved, root)) {
-        return Err(format!("拒绝读取应用数据目录之外的文件: {path}"));
+        return Err(cmd_error_with_detail("UPLOAD_PATH_OUTSIDE_APP_DATA", path));
     }
 
     Ok(resolved)
@@ -98,20 +102,20 @@ fn resolve_upload_path(
 ///
 /// 目的是阻断「本地文件 → 任意 URL」的数据外泄链路，以及 SSRF。
 fn validate_upload_url(url: &str) -> Result<(), String> {
-    let parsed = Url::parse(url).map_err(|e| format!("上传地址非法: {e}"))?;
+    let parsed = Url::parse(url).map_err(|e| cmd_error_with_detail("UPLOAD_URL_INVALID", e))?;
 
     if !matches!(parsed.scheme(), "http" | "https") {
-        return Err(format!("拒绝非 http(s) 上传地址: {url}"));
+        return Err(cmd_error_with_detail("UPLOAD_SCHEME_NOT_ALLOWED", url));
     }
     if !parsed.username().is_empty() || parsed.password().is_some() {
-        return Err(format!("拒绝携带用户信息的 URL: {url}"));
+        return Err(cmd_error_with_detail("UPLOAD_URL_HAS_CREDENTIALS", url));
     }
 
     let host = parsed
         .host_str()
-        .ok_or_else(|| format!("上传地址缺少主机名: {url}"))?;
+        .ok_or_else(|| cmd_error_with_detail("UPLOAD_URL_MISSING_HOST", url))?;
     if is_forbidden_upload_host(host) {
-        return Err(format!("拒绝向内网或回环地址上传: {url}"));
+        return Err(cmd_error_with_detail("UPLOAD_HOST_FORBIDDEN", url));
     }
 
     Ok(())
@@ -167,16 +171,16 @@ fn is_forbidden_upload_ip(addr: std::net::IpAddr) -> bool {
 fn validate_upload_header(key: &str, value: &str) -> Result<(), String> {
     let normalized = key.trim().to_ascii_lowercase();
     if normalized.is_empty() {
-        return Err("上传 header 名称不能为空".to_string());
+        return Err(cmd_error("UPLOAD_HEADER_NAME_EMPTY"));
     }
     if !normalized
         .bytes()
         .all(|b| b.is_ascii_alphanumeric() || b == b'-')
     {
-        return Err(format!("上传 header 名称非法: {key}"));
+        return Err(cmd_error_with_detail("UPLOAD_HEADER_NAME_INVALID", key));
     }
     if value.contains('\r') || value.contains('\n') {
-        return Err(format!("上传 header 值包含非法换行: {key}"));
+        return Err(cmd_error_with_detail("UPLOAD_HEADER_VALUE_INVALID", key));
     }
 
     const FORBIDDEN_HEADERS: &[&str] = &[
@@ -199,7 +203,7 @@ fn validate_upload_header(key: &str, value: &str) -> Result<(), String> {
         "x-real-ip",
     ];
     if FORBIDDEN_HEADERS.contains(&normalized.as_str()) {
-        return Err(format!("拒绝透传 header: {key}"));
+        return Err(cmd_error_with_detail("UPLOAD_HEADER_FORBIDDEN", key));
     }
 
     Ok(())
@@ -222,19 +226,19 @@ pub async fn copy_file_to_app_scope(
 ) -> Result<String, String> {
     let source = PathBuf::from(&source_path);
     if !source.is_absolute() {
-        return Err(format!("拖拽文件路径不是绝对路径: {source_path}"));
+        return Err(cmd_error_with_detail("DROP_PATH_NOT_ABSOLUTE", source_path));
     }
     if !source.is_file() {
-        return Err(format!("拖拽文件不存在: {source_path}"));
+        return Err(cmd_error_with_detail("DROP_FILE_MISSING", source_path));
     }
 
     // 白名单：源文件必须位于用户主目录（$HOME）之内，否则拒绝。
     let home_dir = app_handle
         .path()
         .home_dir()
-        .map_err(|e| format!("获取用户主目录失败: {e}"))?;
+        .map_err(|e| format!("failed to resolve home directory: {e}"))?;
     if !path_is_within(&source, &home_dir) {
-        return Err(format!("拒绝复制主目录之外的文件: {source_path}"));
+        return Err(cmd_error_with_detail("DROP_OUTSIDE_HOME", source_path));
     }
 
     let file_name = source
@@ -246,16 +250,17 @@ pub async fn copy_file_to_app_scope(
     let app_data_dir = app_handle
         .path()
         .app_data_dir()
-        .map_err(|e| format!("获取应用数据目录失败: {e}"))?;
+        .map_err(|e| format!("failed to resolve app data directory: {e}"))?;
     // 与前端 PathUtil 的 USER_DATA（"userData"）根目录保持一致，落在 $APPDATA/** 作用域内
     let dest_dir = app_data_dir.join("userData").join("dropped");
-    std::fs::create_dir_all(&dest_dir).map_err(|e| format!("创建目标目录失败: {e}"))?;
+    std::fs::create_dir_all(&dest_dir)
+        .map_err(|e| format!("failed to create destination directory: {e}"))?;
 
     // 尽力而为地清理过期文件，避免 dropped 目录无界增长
     cleanup_dropped_dir(&dest_dir);
 
     let dest_path = dest_dir.join(unique_file_name(&file_name));
-    std::fs::copy(&source, &dest_path).map_err(|e| format!("复制文件失败: {e}"))?;
+    std::fs::copy(&source, &dest_path).map_err(|e| format!("failed to copy file: {e}"))?;
 
     Ok(dest_path.to_string_lossy().to_string())
 }
@@ -350,7 +355,7 @@ async fn upload_put(
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(cfg!(debug_assertions))
         .build()
-        .map_err(|e| format!("创建上传 HTTP 客户端失败: {e}"))?;
+        .map_err(|e| format!("failed to build upload HTTP client: {e}"))?;
     let mut request = client
         .put(url)
         .header(reqwest::header::CONTENT_LENGTH, total)

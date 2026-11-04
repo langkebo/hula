@@ -40,6 +40,11 @@
       "from": "来自："
     }
   },
+  "time": {
+    "unknown": "未知时间",
+    "today": "今天",
+    "yesterday": "昨天"
+  },
   "empty": {
     "search": "未找到相关文件",
     "userHasNoFiles": "{name} 暂无文件",
