@@ -22,7 +22,11 @@
           </Transition>
           <div
             class="absolute right-3 flex gap-3 p-2 rounded-8 text-white bg-black/75 z-20 shadow-lg"
-            :style="actionStyle">
+            :style="actionStyle"
+            @touchstart.stop
+            @touchmove.stop
+            @touchend.stop
+            @touchcancel.stop>
             <button
               v-if="showForward"
               class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
@@ -134,8 +138,9 @@ interface GestureState {
 const scale = ref(1)
 const translate = ref({ x: 0, y: 0 })
 const dragOffsetY = ref(0)
-const lastTapAt = ref(0)
+const lastTapAt = ref<number | null>(null)
 const suppressClickUntil = ref(0)
+let closing = false
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 const gesture = ref<GestureState>({
   mode: 'none',
@@ -185,6 +190,10 @@ const getCurrentRoomId = () => {
 }
 
 const handleClose = () => {
+  // 幂等：延迟关闭与 iOS 迟到 click 可能重复触发，只发出一次关闭事件
+  if (closing) return
+  closing = true
+  clearCloseTimer()
   emit('update:visible', false)
 }
 
@@ -343,9 +352,10 @@ watch(
   (visible) => {
     if (!visible) {
       resetTransform()
-      lastTapAt.value = 0
+      lastTapAt.value = null
       return
     }
+    closing = false
     refreshLayout()
   },
   { immediate: true }
@@ -355,7 +365,7 @@ watch(
   () => props.imageUrl,
   () => {
     resetTransform()
-    lastTapAt.value = 0
+    lastTapAt.value = null
   }
 )
 
@@ -404,8 +414,8 @@ const handleTap = () => {
   gesture.value.mode = 'none'
 
   // 双击命中：取消单击的延迟关闭，并在放大与还原之间切换
-  if (lastTapAt.value > 0 && now - lastTapAt.value < DOUBLE_TAP_MS) {
-    lastTapAt.value = 0
+  if (lastTapAt.value !== null && now - lastTapAt.value < DOUBLE_TAP_MS) {
+    lastTapAt.value = null
     clearCloseTimer()
     scale.value = isZoomed() ? 1 : DOUBLE_TAP_SCALE
     translate.value = { x: 0, y: 0 }
@@ -413,6 +423,8 @@ const handleTap = () => {
   }
 
   lastTapAt.value = now
+  // 单击时清除拖动残留偏移（gesture.mode 已复位，过渡生效）
+  translate.value = { x: 0, y: 0 }
   // 放大态单击只作为双击序列的第一下，不关闭；未放大态延迟关闭给第二下留窗口
   if (!isZoomed()) scheduleClose()
 }
@@ -483,7 +495,8 @@ const handleTouchMove = (event: TouchEvent) => {
     return
   }
 
-  // 未放大时仅响应纵向拖动作为关闭手势
+  // 未放大时仅响应纵向拖动作为关闭手势；mode 非 swipe 时（如工具栏触摸）不移动画面
+  if (gesture.value.mode !== 'swipe') return
   if (Math.abs(dy) > Math.abs(dx)) {
     dragOffsetY.value = dy
     translate.value = { x: 0, y: dy }

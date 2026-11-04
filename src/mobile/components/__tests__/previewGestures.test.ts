@@ -122,6 +122,17 @@ describe('image preview tap behaviour', () => {
     expect(wrapper.emitted('update:visible')).toEqual([[false]])
   })
 
+  it('触摸工具栏按钮不会触发预览关闭', async () => {
+    const button = wrapper.find('button')
+    expect(button.exists()).toBe(true)
+    await fireTouch(button.element, 'touchstart', [{ clientX: 0, clientY: 0 }])
+    await fireTouch(button.element, 'touchend', [])
+
+    vi.advanceTimersByTime(DOUBLE_TAP_MS * 2)
+    await nextTick()
+    expect(wrapper.emitted('update:visible')).toBeUndefined()
+  })
+
   it('放大态双击可复位到 scale(1)，随后单击关闭', async () => {
     await tap(surface().element)
     vi.advanceTimersByTime(100)
