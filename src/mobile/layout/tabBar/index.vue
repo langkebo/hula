@@ -154,6 +154,8 @@ const navItems: NavItem[] = [
     height: 100%;
     width: 100%;
     flex-direction: column !important;
+    /* 横屏安全区改由 padding-left 承担，底部不再叠加安全区 */
+    padding-bottom: 0;
   }
 
   .tab-item {

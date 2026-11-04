@@ -12,4 +12,9 @@ describe('mobile tab shell', () => {
     expect(tabBar).toMatch(/\.tab-bar\s*\{[^}]*padding-bottom:\s*var\(--safe-area-inset-bottom/)
     expect(tabBar).not.toContain('padding-bottom: var(--safe-area-inset-bottom, 10px)')
   })
+
+  it('横屏侧边栏的 tab-bar 不继承底部安全区 padding', () => {
+    const tabBar = read('src/mobile/layout/tabBar/index.vue')
+    expect(tabBar).toMatch(/\.tab-bar-wrap--vertical\s*\{[\s\S]*?\.tab-bar\s*\{[^}]*padding-bottom:\s*0/)
+  })
 })
