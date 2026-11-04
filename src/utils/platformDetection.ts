@@ -13,7 +13,12 @@ export function readRequestedPlatform(
 ): RuntimePlatform | null {
   const fromQuery = normalizeRequestedPlatform(new URLSearchParams(search).get(PLATFORM_QUERY_KEY))
   if (fromQuery) return fromQuery
-  return normalizeRequestedPlatform(storage?.getItem(PLATFORM_STORAGE_KEY) ?? null)
+  try {
+    return normalizeRequestedPlatform(storage?.getItem(PLATFORM_STORAGE_KEY) ?? null)
+  } catch {
+    // 隐私模式等场景下访问 localStorage 会抛 SecurityError，平台覆盖视为未设置
+    return null
+  }
 }
 
 export function resolvePlatformType(osType: string): RuntimePlatform {

@@ -28,6 +28,15 @@ describe('readRequestedPlatform', () => {
     expect(readRequestedPlatform('', storageWith('mobile'))).toBe('mobile')
   })
 
+  it('storage 读取抛异常时按无值处理', () => {
+    const throwing = {
+      getItem: () => {
+        throw new Error('SecurityError')
+      }
+    }
+    expect(readRequestedPlatform('', throwing)).toBeNull()
+  })
+
   it('两者都无效时返回 null', () => {
     expect(readRequestedPlatform('', storageWith('nope'))).toBeNull()
     expect(readRequestedPlatform('', null)).toBeNull()
