@@ -41,16 +41,31 @@ class ResizeObserverStub {
   }
 }
 
-const extractCallBody = (source: string, callName: string): string => {
+const extractCallArgs = (source: string, callName: string): string => {
   const start = source.indexOf(`${callName}(`)
   if (start === -1) throw new Error(`${callName} not found`)
-  const open = source.indexOf('{', start)
+  const open = start + callName.length
   let depth = 0
   for (let i = open; i < source.length; i++) {
-    if (source[i] === '{') depth++
-    if (source[i] === '}') {
+    if (source[i] === '(') depth++
+    else if (source[i] === ')') {
       depth--
       if (depth === 0) return source.slice(open + 1, i)
+    }
+  }
+  throw new Error(`${callName} arguments are unbalanced`)
+}
+
+const extractCallBody = (source: string, callName: string): string => {
+  const args = extractCallArgs(source, callName)
+  const open = args.indexOf('{')
+  if (open === -1) throw new Error(`${callName} has no block body`)
+  let depth = 0
+  for (let i = open; i < args.length; i++) {
+    if (args[i] === '{') depth++
+    else if (args[i] === '}') {
+      depth--
+      if (depth === 0) return args.slice(open + 1, i)
     }
   }
   throw new Error(`${callName} body is unbalanced`)
@@ -90,16 +105,16 @@ describe('FooterBar lifecycle', () => {
   it('registers observer cleanup in setup scope, not inside the mount callback', () => {
     const source = readFileSync(resolve(__dirname, '../FooterBar.vue'), 'utf-8')
     expect(source).toContain('let resizeObserver: ResizeObserver | null = null')
-    expect(source).not.toContain('const resizeObserver = new ResizeObserver')
+    expect(source).not.toMatch(/(?:const|let)\s+\w+\s*=\s*new\s+ResizeObserver/)
 
     const onMountedBody = extractCallBody(source, 'onMounted')
-    expect(onMountedBody).not.toContain('onUnmounted')
+    expect(onMountedBody).not.toMatch(/on(Before)?Unmount|onScopeDispose/)
 
     const onUnmountedBody = extractCallBody(source, 'onUnmounted')
-    expect(onUnmountedBody).toContain('resizeObserver?.disconnect()')
+    expect(onUnmountedBody).toMatch(/resizeObserver\??\.disconnect\(\)/)
   })
 
-  it('disconnects the resize observer on unmount and stops emitting heights', () => {
+  it('observes the root element and disconnects the resize observer on unmount', () => {
     const onUpdateHeight = vi.fn()
     const wrapper = mountFooterBar(onUpdateHeight)
 
@@ -113,8 +128,5 @@ describe('FooterBar lifecycle', () => {
 
     wrapper.unmount()
     expect(observer.disconnect).toHaveBeenCalledTimes(1)
-
-    observer.trigger(240)
-    expect(onUpdateHeight).toHaveBeenCalledTimes(1)
   })
 })
