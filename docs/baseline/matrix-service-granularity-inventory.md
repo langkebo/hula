@@ -247,7 +247,7 @@ index.ts → friends/MatrixFriendService → friends/MatrixFriendGroups → frie
 | :--- | :--- | :--- | :--- |
 | B1 | 删副本 C（extension 实例字段改请求时读）/ 删 `MatrixClientState` 的 config 兜底 / `accessToken` 退出 `persist.pick` / 快照去 token | 副本 3 → 0 | ✅ **已完成（2026-11-04，见 §10.6）** |
 | B2 | 剩余非白名单读取点逐条判读；只修缺陷，不压数字 | 读取点语义澄清 | ✅ **已完成（2026-11-04，见 §10.7）** |
-| B3 | 抽 `MatrixRuntimeContext`（纯接口），`MatrixClientState` 降到最底层，拆 `MatrixCapabilityService` 的广域依赖 | L4 深度 15 → ≤12 | 待排期 |
+| B3 | 剪断两处层级倒置（`MatrixRequestHelper → MatrixClientService`、`MatrixClientAuthHttp → paths` barrel） | L4 深度 15 → ≤12 | ✅ **已完成（2026-11-04，见 §10.8）**；15 → **12** |
 
 > 仍然**不设文件数下降目标**（§5 结论未变）：`check-sdk-boundary` + `check-bare-matrix-paths` 要求这些接缝存在。本文档 v1.1 的核心更正只有两点 —— **token 不是单一收口**、**调用链口径必须只算运行时边**。
 
@@ -309,3 +309,36 @@ homeserver 无尾斜杠时得到 `https://hs.example.com_matrix/...`（主机名
 
 > 补充：`?access_token=` 的残留风险（URL 进代理/历史）已有兜底 —— `Logger.sanitizePatterns` 覆盖
 > `access_token=` / `Authorization: Bearer` / `syt_` 前缀，日志侧不会明文。修复后它回到「最后兜底」的原本定位。
+
+### 10.8 B3 执行记录（2026-11-04）
+
+**目标**：运行时最长依赖链 15 层 → ≤12。**结果：12 层（达标）。**
+
+原计划是「抽 `MatrixRuntimeContext` + `MatrixClientState` 降到最底层」，动手前先按链路逐跳验证，发现
+真正的冗余来自**两处可以零语义变更剪掉的边**，比大重构划算得多：
+
+| 倒置 | 原状 | 改法 | 剪掉 |
+| :--- | :--- | :--- | ---: |
+| **低层反向依赖装配层** | `MatrixRequestHelper`（被 `MatrixHttpClient` 调用的传输助手）`import { matrixClientService }` 取 client | 改走 `getMatrixClient()`（accessor）。二者在 client 未创建时**同样返回 null**（accessor 由 `MatrixConnectionManager` 在 client 创建后同步注册），语义等价 | **≈3 层** |
+| **为 1 个常量拉整个 barrel** | `MatrixClientAuthHttp` 只要 `PREFIX_V3`，却 `from './paths'` → `paths/index` → `paths/auth` → `paths/prefixes` | 改为 `from './paths/prefixes'` 直连叶子 | **2 层** |
+
+**未做（刻意）**：`BaseMatrixService → MatrixClientService`。
+它是 39 个服务的基类，换掉看起来收益更大，但 **`waitForClientReady` 语义不同**：
+accessor 注册的是 `connectionManager.waitForClientReady`，而基类现在用的是 `lifecycle.waitForClientReady`
+（超时/错误文案/轮询策略可能不同）。在没有对齐两者实现前换掉，等于用「深度少一层」换「启动期等待行为漂移」，
+风险不对等。留作 **B3b**：先统一 `waitForClientReady` 的单一实现，再换 provider。
+
+**剩余深度构成（12 层）**：
+
+```
+index → friends/MatrixFriendService → MatrixFriendGroups → MatrixFriendSync
+      → SynapseFriendExtensionService → MatrixCapabilityService → MatrixAccountService
+      → BaseMatrixService → MatrixClientService → MatrixClientAuth → MatrixClientAuthHttp
+      → network/runtimeFetch → MatrixRateLimitInterceptor
+```
+
+再往下压需要动 `MatrixCapabilityService → MatrixAccountService`（能力探测复用账号服务的 worker 路径）。
+可选做法只有「注入 provider」或「动态 import」——后者只是让静态图变浅，属指标游戏，**不做**。
+
+**验证**：`vue-tsc` 0 错误；auth / extensions / RequestHelper / lifecycle / tokenRefresh 共 31 文件 470 用例通过；
+新增变异自证 M4（人为加一条更深的 import）→ `[runtime-depth-growth]` exit 1，回滚后恢复 12 层。

@@ -4,8 +4,9 @@ const { getClientMock } = vi.hoisted(() => ({
   getClientMock: vi.fn()
 }))
 
-vi.mock('../MatrixClientService', () => ({
-  matrixClientService: { getClient: getClientMock }
+// AR-07b / B3：safe* 改走 accessor（不再依赖 MatrixClientService，剪掉层级倒置）
+vi.mock('../matrixClientAccessor', () => ({
+  getMatrixClient: getClientMock
 }))
 
 import {

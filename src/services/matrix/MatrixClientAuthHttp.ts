@@ -13,7 +13,9 @@ import { useI18nGlobal } from '@/services/i18n'
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import type { LoginResponse } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
-import { PREFIX_V3 } from './paths'
+// 只用一个前缀常量，直连叶子模块：走 `./paths` barrel 会连带把
+// paths/index → paths/auth → ... 整串拉进依赖链（AR-07b / B3 剪链）。
+import { PREFIX_V3 } from './paths/prefixes'
 
 const logger = createLogger('MatrixClient')
 

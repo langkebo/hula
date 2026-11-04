@@ -10,7 +10,7 @@
  * `throw new Error(\`HTTP ${status}: …\`)` 这类不含结构化字段的字符串错误。
  */
 
-import { matrixClientService } from './MatrixClientService'
+import { getMatrixClient } from './matrixClientAccessor'
 
 /**
  * 归一化后的传输层错误。
@@ -313,7 +313,7 @@ function requireAuthedRequest(client: unknown): MatrixAuthedRequestInvoker {
  * @returns 响应体
  */
 export async function safeGet<T>(path: string, queryParams?: Record<string, string>): Promise<T> {
-  const client = matrixClientService.getClient()
+  const client = getMatrixClient()
   try {
     return await requireAuthedRequest(client).authedRequest<T>('GET', path, queryParams)
   } catch (err) {
@@ -330,7 +330,7 @@ export async function safeGet<T>(path: string, queryParams?: Record<string, stri
  * @returns 响应体
  */
 export async function safePost<T>(path: string, body?: unknown, queryParams?: Record<string, string>): Promise<T> {
-  const client = matrixClientService.getClient()
+  const client = getMatrixClient()
   try {
     return await requireAuthedRequest(client).authedRequest<T>('POST', path, queryParams, body)
   } catch (err) {
@@ -347,7 +347,7 @@ export async function safePost<T>(path: string, body?: unknown, queryParams?: Re
  * @returns 响应体
  */
 export async function safePut<T>(path: string, body?: unknown, queryParams?: Record<string, string>): Promise<T> {
-  const client = matrixClientService.getClient()
+  const client = getMatrixClient()
   try {
     return await requireAuthedRequest(client).authedRequest<T>('PUT', path, queryParams, body)
   } catch (err) {
@@ -363,7 +363,7 @@ export async function safePut<T>(path: string, body?: unknown, queryParams?: Rec
  * @returns 响应体
  */
 export async function safeDelete<T>(path: string, queryParams?: Record<string, string>): Promise<T> {
-  const client = matrixClientService.getClient()
+  const client = getMatrixClient()
   try {
     return await requireAuthedRequest(client).authedRequest<T>('DELETE', path, queryParams)
   } catch (err) {
