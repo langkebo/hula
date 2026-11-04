@@ -5,6 +5,8 @@ const read = (relative: string) => readFileSync(new URL(relative, import.meta.ur
 
 const source = read('../MobileSettings.vue')
 const layoutSource = read('../../../components/MobileLayout.vue')
+const sessionListSource = read('../../../components/message/MobileSessionList.vue')
+const friendsSource = read('../../../views/friends/index.vue')
 const zh = JSON.parse(read('../../../../../locales/zh-CN/mobile_setting.json'))
 const en = JSON.parse(read('../../../../../locales/en/mobile_setting.json'))
 
@@ -36,6 +38,19 @@ describe('移动端字号设置', () => {
     for (const locale of [zh, en]) {
       expect(typeof locale.font_size_changed).toBe('string')
       expect(locale.font_size_changed.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('主路径字号使用设计 token', () => {
+    const primarySources = {
+      'MobileSettings.vue': source,
+      'MobileSessionList.vue': sessionListSource,
+      'friends/index.vue': friendsSource
+    }
+
+    for (const [name, content] of Object.entries(primarySources)) {
+      expect(content, `${name} 仍含硬编码字号`).not.toMatch(/\btext-\d+px\b/)
+      expect(content, `${name} 未接入字号 token`).toContain('text-[length:var(--tjg-font-size-')
     }
   })
 })

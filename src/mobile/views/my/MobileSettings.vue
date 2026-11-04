@@ -7,7 +7,9 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-[--tjg-text-secondary] mb-8px">{{ t('mobile_setting.account_section') }}</div>
+          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mb-8px">
+            {{ t('mobile_setting.account_section') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_setting.status')" is-link @click="router.push('/mobile/mobileMy/status')">
@@ -19,7 +21,7 @@
                 </div>
               </template>
               <template #value>
-                <span class="text-14px">{{ statusLabel }}</span>
+                <span class="text-[length:var(--tjg-font-size-base)]">{{ statusLabel }}</span>
               </template>
             </van-cell>
 
@@ -63,7 +65,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.social_section') }}
           </div>
 
@@ -82,7 +84,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.notification_section') }}
           </div>
 
@@ -101,7 +103,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.appearance_section') }}
           </div>
 
@@ -149,7 +151,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.privacy_section') }}
           </div>
 
@@ -181,7 +183,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.help_section') }}
           </div>
 
@@ -200,7 +202,7 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-14px text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.advanced_section') }}
           </div>
 
@@ -227,7 +229,7 @@
             </van-button>
           </div>
 
-          <div class="text-center text-12px text-[--tjg-text-quaternary] mt-16px">
+          <div class="text-center text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-quaternary] mt-16px">
             {{ t('mobile_setting.version') }}: v1.0.0
           </div>
         </div>

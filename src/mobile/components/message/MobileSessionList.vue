@@ -3,7 +3,7 @@
     <div class="py-5px shrink-0">
       <van-field
         id="search"
-        class="search-field rounded-8px w-full relative text-13px"
+        class="search-field rounded-8px w-full relative text-[length:var(--tjg-font-size-md)]"
         maxlength="20"
         clearable
         autocomplete="off"
@@ -74,14 +74,19 @@
               </div>
               <!-- 中间:两行内容 -->
               <div class="truncate flex gap-10px leading-tight flex-col min-w-0">
-                <span class="text-15px font-medium flex-1 truncate text-[--tjg-text-primary]">{{ item.name }}</span>
-                <div class="text-13px text-[--tjg-text-secondary] dark:text-[--tjg-text-tertiary] truncate">
+                <span
+                  class="text-[length:var(--tjg-font-size-2lg)] font-medium flex-1 truncate text-[--tjg-text-primary]">
+                  {{ item.name }}
+                </span>
+                <div
+                  class="text-[length:var(--tjg-font-size-md)] text-[--tjg-text-secondary] dark:text-[--tjg-text-tertiary] truncate">
                   {{ item.lastMsg }}
                 </div>
               </div>
 
               <!-- 时间:靠顶 -->
-              <div class="text-11px text-right flex flex-col gap-1 items-end justify-center text-[--tjg-text-tertiary]">
+              <div
+                class="text-[length:var(--tjg-font-size-2xs)] text-right flex flex-col gap-1 items-end justify-center text-[--tjg-text-tertiary]">
                 <div class="flex items-center gap-1">
                   <span v-if="item.hotFlag === IsAllUserEnum.Yes">
                     <svg class="size-14px select-none outline-none cursor-pointer color-[--tjg-color-primary-500]">
@@ -107,13 +112,13 @@
             <template #right>
               <div class="flex w-auto flex-wrap h-full">
                 <div
-                  class="h-full text-14px w-80px bg-[--tjg-color-primary-500] text-white flex items-center justify-center"
+                  class="h-full text-[length:var(--tjg-font-size-base)] w-80px bg-[--tjg-color-primary-500] text-white flex items-center justify-center"
                   @click="emit('toggle-top', item)">
                   {{ item.top ? t('mobile_home.chat.unpin') : t('mobile_home.chat.pintop') }}
                 </div>
                 <div
                   :class="(item?.unreadCount ?? 0) > 0 ? 'bg-[--tjg-text-tertiary]' : 'bg-[--tjg-color-warning-500]'"
-                  class="h-full text-14px w-80px text-white flex items-center justify-center"
+                  class="h-full text-[length:var(--tjg-font-size-base)] w-80px text-white flex items-center justify-center"
                   @click="emit('toggle-read', (item?.unreadCount ?? 0) > 0, item)">
                   {{
                     (item?.unreadCount ?? 0) > 0
@@ -122,7 +127,7 @@
                   }}
                 </div>
                 <div
-                  class="h-full text-14px w-80px bg-[--tjg-color-danger-500] text-white flex items-center justify-center"
+                  class="h-full text-[length:var(--tjg-font-size-base)] w-80px bg-[--tjg-color-danger-500] text-white flex items-center justify-center"
                   @click="emit('delete', item)">
                   {{ t('mobile_home.chat.delete') }}
                 </div>
@@ -207,7 +212,7 @@ function isFirstPinned(item: MobileSessionListItem, index: number): boolean {
 
 .pinned-group-label {
   padding: 6px 16px 2px;
-  font-size: 12px;
+  font-size: var(--tjg-font-size-sm);
   line-height: 1.2;
   color: var(--tjg-text-tertiary);
   background: var(--tjg-surface-subtle);
