@@ -1,5 +1,5 @@
 <template>
-  <div data-testid="mobile-login-form" class="text-center w-80% flex flex-col gap-16px">
+  <form data-testid="mobile-login-form" class="text-center w-80% flex flex-col gap-16px" @submit.prevent="handleSubmit">
     <!-- Homeserver 地址输入框 -->
     <div class="homeserver-wrap">
       <van-field
@@ -38,11 +38,12 @@
     <van-field
       :class="{ 'pl-22px': loginHistories.length > 0 }"
       v-model="userInfo.account"
+      name="username"
       :placeholder="accountPH"
       @focus="accountPH = ''"
       @blur="accountPH = t('login.mobile.input.account_placeholder')"
       clearable
-      autocomplete="off"
+      autocomplete="username"
       :spellcheck="false"
       autocorrect="off"
       autocapitalize="off">
@@ -83,12 +84,13 @@
     <van-field
       class="pl-22px mt-8px"
       v-model="userInfo.password"
+      name="password"
       :type="showLoginPassword ? 'text' : 'password'"
       :placeholder="passwordPH"
       @focus="passwordPH = ''"
       @blur="passwordPH = t('login.mobile.input.code_placeholder')"
       clearable
-      autocomplete="off"
+      autocomplete="current-password"
       :spellcheck="false"
       autocorrect="off"
       autocapitalize="off"
@@ -103,16 +105,16 @@
 
     <van-button
       data-testid="mobile-login-submit"
+      native-type="submit"
       :loading="loading"
       :disabled="loginDisabled"
       block
-      class="mt-8px mb-50px gradient-button"
-      @click="emit('login')">
+      class="mt-8px mb-8px gradient-button">
       <span>{{ loginText }}</span>
     </van-button>
 
     <!-- 协议 -->
-    <div class="flex items-center justify-center gap-6px absolute bottom-0 w-[80%]" :style="agreementStyle">
+    <div class="flex items-center justify-center gap-6px w-full mt-8px">
       <van-checkbox v-model="protocol" shape="square" icon-size="16px" />
       <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
         <span>{{ t('login.term.checkout.text1') }}</span>
@@ -125,16 +127,14 @@
         </span>
       </div>
     </div>
-  </div>
+  </form>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { UserInfoType } from '@/services/types'
-import { useMobileStore } from '@/stores/domains/settings/mobile'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { isAndroid } from '@/utils/PlatformConstants'
 
 /** 登录表单使用的用户信息子集（与 useLoginFlow 返回的 info 结构一致） */
 interface LoginUserInfo {
@@ -167,8 +167,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const loginHistoriesStore = useLoginHistoriesStore()
 const { loginHistories } = storeToRefs(loginHistoriesStore)
-const mobileStore = useMobileStore()
-const safeArea = computed(() => mobileStore.safeArea)
 
 const protocol = defineModel<boolean>('protocol', { default: true })
 const homeserverUrl = defineModel<string>('homeserverUrl', { default: '' })
@@ -179,16 +177,10 @@ const arrowStatus = ref(false)
 const showLoginPassword = ref(false)
 const showHomeserverAdvanced = ref(false)
 
-const agreementStyle = computed(() => {
-  const inset = safeArea.value.bottom || 0
-  if (isAndroid()) {
-    return { bottom: `${inset + 10}px` }
-  }
-  if (inset > 0) {
-    return { bottom: `${inset}px` }
-  }
-  return { bottom: 'var(--safe-area-inset-bottom)' }
-})
+const handleSubmit = () => {
+  if (props.loading || props.loginDisabled) return
+  emit('login')
+}
 
 const onSelectAccount = (item: UserInfoType) => {
   emit('select-account', item)

@@ -1,13 +1,14 @@
 <template>
   <MobileLayout :safeAreaTop="false" :safeAreaBottom="false">
-    <div class="h-full flex-col-center gap-40px bg-[--tjg-mobile-login-bg]">
-      <div class="flex-center absolute top-13vh left-36px">
+    <div
+      class="h-full flex flex-col items-center gap-24px bg-[--tjg-mobile-login-bg] pt-[max(10vh,56px)] pb-60px overflow-y-auto">
+      <div class="w-80% flex items-center justify-start gap-6px">
         <p class="text-(20px [--tjg-text-primary])">{{ t('login.mobile.welcome_title') }}</p>
         <img src="@/assets/mobile/2.svg" alt="Tjg" class="w-80px h-20px" />
       </div>
 
       <!-- 选项卡导航 -->
-      <div class="w-80% h-40px absolute top-20vh flex-center">
+      <div class="w-80% h-40px flex-center">
         <div class="flex w-200px relative">
           <div
             data-testid="tab-login"
@@ -29,8 +30,8 @@
           <div
             class="tab-indicator"
             :class="[
-              'z-10 absolute bottom--4px h-6px w-34px bg-[--tjg-color-primary-500] transition-all duration-300 ease-out',
-              activeTab === 'login' ? 'left-[33px]' : 'left-[133px]'
+              'z-10 absolute bottom--4px left-[33px] h-6px w-34px bg-[--tjg-color-primary-500] transition-transform duration-300 ease-out',
+              activeTab === 'login' ? 'translate-x-0' : 'translate-x-[100px]'
             ]"></div>
         </div>
       </div>
