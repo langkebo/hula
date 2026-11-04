@@ -13,23 +13,24 @@ const logger = createLogger('SynapseExtensionHttpBase')
  * 2026-08 按域拆分为 extensions/ 下的多个专职服务，本基类承载它们共用的
  * 初始化 / 鉴权请求 / 响应解包 / 端点探测逻辑。
  *
- * 每个子服务实例独立持有 baseUrl/accessToken，ensureInitialized 每次调用都会
- * 从 matrixClientService 读取最新 token，因此 token 刷新对各实例天然生效。
+ * AR-07b / B1：**不再持有 token 字段**。
+ * 此前每个子服务实例各存一份 `accessToken`，靠「每次请求比对 latestToken」兜陈旧 ——
+ * 那是副本导致的补丁（7 个 extension ≈ 7 份副本 + 一段比对逻辑）。现在改为
+ * 每次请求直接问 `matrixClientService.getAccessToken()`（它一路委托到 SDK client，
+ * 是唯一事实源；相比全局 accessor 保留 DI 可注入性，便于单测），副本与补丁同时消失。
+ * baseUrl 仍缓存：它不随刷新变化。
  */
 export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
   private baseUrl: string = ''
-  private accessToken: string = ''
   private endpointAvailability: Map<string, boolean> = new Map()
 
-  /** 初始化扩展 HTTP 客户端
+  /** 初始化扩展 HTTP 客户端（只解析并缓存 baseUrl；token 每次请求现取）
    */
   async initialize(): Promise<void> {
     const baseUrlFromConfig = matrixClientService.getHomeserverUrl?.() || ''
-    const accessTokenFromConfig = matrixClientService.getAccessToken?.() || ''
 
-    if (baseUrlFromConfig && accessTokenFromConfig) {
+    if (baseUrlFromConfig) {
       this.baseUrl = baseUrlFromConfig
-      this.accessToken = accessTokenFromConfig
       return
     }
 
@@ -38,55 +39,49 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
     })
 
     const baseUrl = client.getHomeserverUrl()
-    const accessToken = client.getAccessToken() || ''
-    if (!baseUrl || !accessToken) {
+    if (!baseUrl) {
       throw new Error(this.t('matrix_error.common.client_not_initialized'))
     }
 
     this.baseUrl = baseUrl
-    this.accessToken = accessToken
   }
 
   /** 清理扩展状态
    */
   clear(): void {
     this.baseUrl = ''
-    this.accessToken = ''
     this.endpointAvailability.clear()
   }
 
   /** 停止扩展服务
    */
   stop(): void {
-    this.accessToken = ''
+    this.baseUrl = ''
   }
 
-  protected async ensureInitialized(): Promise<void> {
-    // 每次都从 matrixClientService 获取最新 token，确保 Token 刷新后不会使用旧 token
-    const latestToken = matrixClientService.getAccessToken?.() || ''
-    if (!this.baseUrl || !this.accessToken || this.accessToken !== latestToken) {
-      if (latestToken) {
-        this.accessToken = latestToken
-      }
-      if (!this.baseUrl) {
-        await this.initialize()
-      }
+  /** 确保 baseUrl 可用，并返回本次请求要用的 token（现取，不缓存） */
+  protected async ensureInitialized(): Promise<string> {
+    if (!this.baseUrl) {
+      await this.initialize()
     }
 
-    if (!this.baseUrl || !this.accessToken) {
+    const accessToken = matrixClientService.getAccessToken?.() || ''
+    if (!this.baseUrl || !accessToken) {
       throw new Error(this.t('matrix_error.extensions.not_initialized'))
     }
+
+    return accessToken
   }
 
   protected async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    await this.ensureInitialized()
+    const accessToken = await this.ensureInitialized()
     const url = `${this.baseUrl}${endpoint}`
     const runtimeFetch = getRuntimeAwareFetch()
 
     // GET/HEAD 请求不应设置 Content-Type，避免服务端尝试解析空的请求体
     const isBodylessMethod = !options.method || options.method === 'GET' || options.method === 'HEAD'
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${this.accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
       ...(options.headers as Record<string, string>)
     }
     if (!isBodylessMethod) {
@@ -172,13 +167,13 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
     if (cached !== undefined) return cached
 
     try {
-      await this.ensureInitialized()
+      const accessToken = await this.ensureInitialized()
       const url = `${this.baseUrl}${endpoint}`
       const runtimeFetch = getRuntimeAwareFetch()
       const response = await runtimeFetch(url, {
         method: 'HEAD',
         headers: {
-          Authorization: `Bearer ${this.accessToken}`
+          Authorization: `Bearer ${accessToken}`
         }
       })
       const available = response.ok || response.status === 405

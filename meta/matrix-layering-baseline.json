@@ -1,0 +1,31 @@
+{
+  "comment": "AR-07b 分层与 token 收口棘轮。数值只可收紧不可放宽；清理后运行 `node scripts/check-matrix-service-layering.mjs --update`。",
+  "updated_at": "2026-11-04T01:18:15.954Z",
+  "scope": "src/services/matrix/** 非测试 .ts（运行时 import 边，不含 import type）",
+  "counters": {
+    "service_files": 240,
+    "runtime_edges": 429,
+    "runtime_cycles": 0,
+    "runtime_max_depth": 15,
+    "token_copies": 0
+  },
+  "token_read_sites": {
+    "src/services/matrix/EndpointCapabilityService.ts": 1,
+    "src/services/matrix/MatrixClientAuth.ts": 1,
+    "src/services/matrix/MatrixClientService.ts": 2,
+    "src/services/matrix/MatrixClientState.ts": 2,
+    "src/services/matrix/MatrixConnectionManager.ts": 1,
+    "src/services/matrix/MatrixHttpClient.ts": 2,
+    "src/services/matrix/MatrixRawUploadChannel.ts": 1,
+    "src/services/matrix/admin/AdminFacadeService.ts": 1,
+    "src/services/matrix/auth/SessionBootstrapService.ts": 1,
+    "src/services/matrix/auth/SessionLoginService.ts": 3,
+    "src/services/matrix/auth/SessionOrchestrator.ts": 2,
+    "src/services/matrix/auth/SessionRestoreService.ts": 1,
+    "src/services/matrix/auth/sessionRuntimeInternal.ts": 1,
+    "src/services/matrix/extensions/SynapseExtensionHttpBase.ts": 1,
+    "src/services/matrix/matrixClientAccessor.ts": 2,
+    "src/services/matrix/media/mediaDownloadHelpers.ts": 2,
+    "src/services/matrix/user/MatrixAccountService.ts": 1
+  }
+}

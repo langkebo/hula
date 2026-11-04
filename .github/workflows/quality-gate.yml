@@ -87,6 +87,9 @@ jobs:
           # P1-1②（2026-10-12）：800 行红线此前只在脚本层存在、从未接入 CI（EG-04）。
           # 基线见 meta/file-size-baseline.json（棘轮：存量不增长，新增 >400 即红）。
           pnpm check:file-size
+          # AR-07b（2026-11-04）：Matrix 服务层 token 收口与调用链棘轮。
+          # 基线见 meta/matrix-layering-baseline.json（只可收紧；--update 收紧）。
+          pnpm check:matrix-layering
 
       - name: Upload contract judgment diff (C-1)
         if: always()

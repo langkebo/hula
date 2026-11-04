@@ -10,14 +10,37 @@ vi.mock('@tauri-apps/api/event', () => ({
 
 import { invoke } from '@tauri-apps/api/core'
 import { type Event, listen } from '@tauri-apps/api/event'
-import { persistRefreshedToken, setupSystemResumeListener } from '../matrixClientPlatform'
+import {
+  persistRefreshedToken,
+  persistWebAccessToken,
+  readWebAccessToken,
+  setupSystemResumeListener
+} from '../matrixClientPlatform'
 
 const mockedInvoke = vi.mocked(invoke)
 const mockedListen = vi.mocked(listen)
 
+/**
+ * AR-07b / B1：`persistRefreshedToken` 现在按运行期分流 ——
+ * Tauri 走 `invoke('update_token')`，浏览器走 localStorage at-rest 存储（刷新即更新）。
+ * 因此这里必须显式构造 `__TAURI_INTERNALS__` 才能进 Tauri 分支。
+ */
 describe('persistRefreshedToken', () => {
+  const originalTauriSymbol = (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__
+
   beforeEach(() => {
     mockedInvoke.mockReset()
+    localStorage.clear()
+    ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {}
+  })
+
+  afterEach(() => {
+    if (originalTauriSymbol === undefined) {
+      delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__
+    } else {
+      ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = originalTauriSymbol
+    }
+    localStorage.clear()
   })
 
   it('calls invoke update_token with the given credentials', async () => {
@@ -36,6 +59,48 @@ describe('persistRefreshedToken', () => {
   it('propagates invoke errors', async () => {
     mockedInvoke.mockRejectedValue(new Error('invoke failed'))
     await expect(persistRefreshedToken('uid-1', 'token', 'refresh')).rejects.toThrow('invoke failed')
+  })
+
+  it('在非 Tauri 运行期写入 localStorage 而不是调用 invoke', async () => {
+    delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__
+
+    await persistRefreshedToken('uid-1', 'web-token', 'refresh-xyz')
+
+    expect(mockedInvoke).not.toHaveBeenCalled()
+    expect(readWebAccessToken()).toBe('web-token')
+  })
+})
+
+describe('persistWebAccessToken / readWebAccessToken', () => {
+  const originalTauriSymbol = (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__
+
+  beforeEach(() => {
+    localStorage.clear()
+    delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__
+  })
+
+  afterEach(() => {
+    if (originalTauriSymbol !== undefined) {
+      ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = originalTauriSymbol
+    }
+    localStorage.clear()
+  })
+
+  it('浏览器运行期可写入、读取并清除', () => {
+    persistWebAccessToken('tok-1')
+    expect(readWebAccessToken()).toBe('tok-1')
+
+    persistWebAccessToken(null)
+    expect(readWebAccessToken()).toBeNull()
+  })
+
+  it('Tauri 运行期是 no-op（凭证只由 Rust 保管）', () => {
+    ;(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {}
+
+    persistWebAccessToken('should-not-persist')
+
+    expect(localStorage.getItem('tjg.matrix.accessToken')).toBeNull()
+    expect(readWebAccessToken()).toBeNull()
   })
 })
 

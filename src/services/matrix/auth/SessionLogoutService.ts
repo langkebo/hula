@@ -69,7 +69,6 @@ export class SessionLogoutService {
       patchMatrixSessionSnapshot({
         userId: null,
         deviceId: null,
-        accessToken: null,
         homeserverUrl: null
       })
       clearMatrixSessionEndpointConfig()

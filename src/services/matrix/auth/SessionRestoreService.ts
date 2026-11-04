@@ -3,6 +3,7 @@ import { resolveMatrixSessionEndpointConfig } from '@/services/backend/config'
 import { switchUserDatabase } from '@/services/backend/tauriCommand'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { readWebAccessToken } from '@/services/matrix/matrixClientPlatform'
 import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
@@ -35,14 +36,14 @@ export class SessionRestoreService {
    */
   async getStoredTokens(): Promise<StoredMatrixTokens> {
     const port = this.host.port
-    // 浏览器/E2E 环境：从 Pinia store（localStorage 持久化）读取 token
+    // 浏览器/E2E 环境：无 Rust 侧存储，读 at-rest 凭证（matrixClientPlatform 负责写入与刷新同步）
     if (!hasTauriRuntime()) {
-      const token = port.matrix.getAccessToken()
+      const token = port.matrix.getAccessToken() ?? readWebAccessToken()
       if (token) {
-        logger.debug('从 Pinia store 恢复 WEB 端 token')
+        logger.debug('从浏览器 at-rest 存储恢复 token')
         return { token, refreshToken: null }
       }
-      logger.debug('WEB 端无存储的 token')
+      logger.debug('浏览器端无存储的 token')
       return { token: null, refreshToken: null }
     }
     await ensureAppStateReady()
@@ -151,7 +152,6 @@ export class SessionRestoreService {
       patchMatrixSessionSnapshot({
         userId: uid,
         deviceId: this.host.getCurrentClientDeviceId(),
-        accessToken,
         homeserverUrl
       })
 

@@ -7,6 +7,8 @@ import {
   type MatrixClientConfig,
   matrixClientService
 } from '@/services/matrix/MatrixClientService'
+import { getMatrixAccessToken } from '@/services/matrix/matrixClientAccessor'
+import { persistWebAccessToken } from '@/services/matrix/matrixClientPlatform'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixStore')
@@ -35,7 +37,13 @@ export const useMatrixStore = defineStore(
     const connectionState = ref<ConnectionState>('DISCONNECTED')
     const userId = ref<string | null>(null)
     const deviceId = ref<string | null>(null)
-    const accessToken = ref<string | null>(null)
+    /**
+     * AR-07b / B1：token 不再作为 store 状态存在（不做 ref，也不做 computed）。
+     *
+     * 为什么连 computed 都不行：`computed(() => getMatrixAccessToken())` 没有任何
+     * 响应式依赖 ⇒ Pinia 里首次取值后永久缓存，等价于又一份更隐蔽的陈旧副本
+     * （首次读在 client 就绪前还会永久得到 null）。改为对外暴露方法，每次现取。
+     */
     const refreshToken = ref<string | null>(null)
     const homeserverUrl = ref<string | null>(null)
     const lastError = ref<string | null>(null)
@@ -44,8 +52,27 @@ export const useMatrixStore = defineStore(
     /** 当前会话是否为访客账号（升级为正式账号后置 false） */
     const isGuest = ref(false)
 
-    const isLoggedIn = computed(() => !!userId.value && !!accessToken.value)
+    /**
+     * 是否已登录。
+     *
+     * **只依赖 userId**，刻意不把 token 放进依赖链：
+     * - 任何 `computed` 里读 `getMatrixAccessToken()` 都是**非响应式读**，Pinia 会永久缓存首次结果。
+     *   冷启动首个读取点若早于 client 就绪，就会缓存 `false` 且再也不会翻转（管理员入口会永久关闭）；
+     * - 语义上 userId 只在登录/恢复成功后写入、登出时清空，已足够表达「有会话」。
+     *   token 是否存在由会话生命周期保证，不再作为 UI 门控的独立条件。
+     */
+    const isLoggedIn = computed(() => !!userId.value)
     const isConnected = computed(() => connectionState.value === 'CONNECTED')
+
+    /**
+     * 登录/升级/登出时同步浏览器 at-rest 凭证（Tauri 运行期 no-op，凭证由 Rust 保管）。
+     *
+     * 存在理由：`SessionRestoreService.getStoredTokens()` 的浏览器分支需要冷启动可读的 token；
+     * 此前该职责由 `persist.pick` 里的 token 副本顺手承担，现改为显式存储层 + 刷新时同步更新。
+     */
+    function rememberWebToken(token: string | null | undefined): void {
+      persistWebAccessToken(token ?? null)
+    }
 
     async function settlePostLoginStartup(): Promise<void> {
       let timeoutHandle: ReturnType<typeof setTimeout> | undefined
@@ -116,7 +143,7 @@ export const useMatrixStore = defineStore(
         homeserverUrl.value = config.homeserverUrl
         userId.value = config.userId ?? null
         deviceId.value = config.deviceId ?? null
-        accessToken.value = config.accessToken ?? null
+        rememberWebToken(config.accessToken)
         isInitialized.value = true
         connectionState.value = 'CONNECTING'
 
@@ -138,7 +165,7 @@ export const useMatrixStore = defineStore(
         if (result.success) {
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
-          accessToken.value = result.accessToken ?? null
+          rememberWebToken(result.accessToken)
           refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
           isGuest.value = false
@@ -177,7 +204,7 @@ export const useMatrixStore = defineStore(
         if (result.success) {
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
-          accessToken.value = result.accessToken ?? null
+          rememberWebToken(result.accessToken)
           refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
           isGuest.value = false
@@ -207,7 +234,7 @@ export const useMatrixStore = defineStore(
         if (result.success) {
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
-          accessToken.value = result.accessToken ?? null
+          rememberWebToken(result.accessToken)
           refreshToken.value = result.refreshToken ?? refreshTokenParam ?? null
           connectionState.value = 'CONNECTED'
 
@@ -240,7 +267,7 @@ export const useMatrixStore = defineStore(
         if (result.success) {
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
-          accessToken.value = result.accessToken ?? null
+          rememberWebToken(result.accessToken)
           refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
           isGuest.value = true
@@ -264,7 +291,7 @@ export const useMatrixStore = defineStore(
     /** 访客升级为正式账号后同步本地会话身份（client 的 token 已由 MatrixAuthService 切换） */
     function applyGuestUpgrade(uid: string, token: string): void {
       userId.value = uid
-      accessToken.value = token
+      rememberWebToken(token)
       isGuest.value = false
     }
 
@@ -276,7 +303,7 @@ export const useMatrixStore = defineStore(
       } finally {
         userId.value = null
         deviceId.value = null
-        accessToken.value = null
+        rememberWebToken(null)
         refreshToken.value = null
         connectionState.value = 'DISCONNECTED'
         syncState.value = null
@@ -318,7 +345,8 @@ export const useMatrixStore = defineStore(
       connectionState,
       userId,
       deviceId,
-      accessToken,
+      /** token 现取，不作为状态（见上方注释）；消费方切勿缓存其返回值 */
+      getAccessToken: getMatrixAccessToken,
       refreshToken,
       homeserverUrl,
       lastError,
@@ -342,9 +370,10 @@ export const useMatrixStore = defineStore(
   },
   {
     persist: {
-      // accessToken 需要持久化以便 WEB 端页面刷新后恢复会话
-      // 桌面端通过 Tauri SQLite 安全存储，WEB 端使用 localStorage（开发环境）
-      pick: ['userId', 'deviceId', 'homeserverUrl', 'accessToken', 'isGuest']
+      // AR-07b / B1：accessToken 已移出持久化 —— token 不是应用状态。
+      // 桌面走 Rust 安全存储（update_token），浏览器走 matrixClientPlatform 的
+      // at-rest 存储（persistWebAccessToken，刷新时同步更新）。
+      pick: ['userId', 'deviceId', 'homeserverUrl', 'isGuest']
     }
   }
 )

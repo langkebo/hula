@@ -72,7 +72,6 @@ export class SessionLoginService {
       patchMatrixSessionSnapshot({
         userId: uid,
         deviceId: this.host.getCurrentClientDeviceId(),
-        accessToken,
         homeserverUrl
       })
 
@@ -168,7 +167,6 @@ export class SessionLoginService {
       patchMatrixSessionSnapshot({
         userId: uid,
         deviceId: this.host.getCurrentClientDeviceId(),
-        accessToken,
         homeserverUrl
       })
 
@@ -227,7 +225,6 @@ export class SessionLoginService {
     patchMatrixSessionSnapshot({
       userId,
       deviceId: this.host.getCurrentClientDeviceId(),
-      accessToken,
       homeserverUrl: port.matrix.getHomeserverUrl() ?? null
     })
     port.matrix.applyGuestUpgrade(userId, accessToken)
@@ -306,7 +303,6 @@ export class SessionLoginService {
       patchMatrixSessionSnapshot({
         userId: uid,
         deviceId: this.host.getCurrentClientDeviceId(),
-        accessToken,
         homeserverUrl
       })
 

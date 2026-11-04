@@ -221,7 +221,6 @@ describe('SessionLogoutService.resetLocalSessionState', () => {
     expect(patchMatrixSessionSnapshotMock).toHaveBeenCalledWith({
       userId: null,
       deviceId: null,
-      accessToken: null,
       homeserverUrl: null
     })
     expect(clearMatrixSessionEndpointConfigMock).toHaveBeenCalled()

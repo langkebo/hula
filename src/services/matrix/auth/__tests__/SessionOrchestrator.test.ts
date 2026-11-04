@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   getMatrixClientMock,
+  getMatrixAccessTokenMock,
   getMatrixSessionSnapshotMock,
   getCurrentSessionRoomIdMock,
   setCurrentSessionRoomIdMock,
@@ -21,6 +22,7 @@ const {
   settingStoreMock
 } = vi.hoisted(() => ({
   getMatrixClientMock: vi.fn(),
+  getMatrixAccessTokenMock: vi.fn(),
   getMatrixSessionSnapshotMock: vi.fn(),
   getCurrentSessionRoomIdMock: vi.fn(),
   setCurrentSessionRoomIdMock: vi.fn(),
@@ -33,7 +35,6 @@ const {
     isInitialized: false,
     lastError: null as string | null,
     userId: null as string | null,
-    accessToken: null as string | null,
     homeserverUrl: null as string | null,
     refreshToken: undefined as string | undefined,
     getClient: vi.fn(),
@@ -98,7 +99,9 @@ vi.mock('@/services/matrix/matrixClientAccessor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/matrix/matrixClientAccessor')>()
   return {
     ...actual,
-    getMatrixClient: getMatrixClientMock
+    getMatrixClient: getMatrixClientMock,
+    // AR-07b / B1：SessionOrchestrator 的 token 只从 accessor 取
+    getMatrixAccessToken: getMatrixAccessTokenMock
   }
 })
 
@@ -154,13 +157,13 @@ describe('createSessionStorePort', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     matrixStoreMock.userId = null
-    matrixStoreMock.accessToken = null
     matrixStoreMock.homeserverUrl = null
+    getMatrixAccessTokenMock.mockReset()
+    getMatrixAccessTokenMock.mockReturnValue('token')
     matrixStoreMock.getClient.mockReset()
     matrixStoreMock.getClient.mockReturnValue(null)
     getMatrixSessionSnapshotMock.mockReturnValue({
       userId: '@alice:example.com',
-      accessToken: 'token',
       homeserverUrl: 'https://matrix.example.com'
     })
     getCurrentUserInfoMock.mockReturnValue({
@@ -192,12 +195,11 @@ describe('createSessionStorePort', () => {
   it('falls back to matrix store session fields when lightweight snapshot is not ready', () => {
     getMatrixSessionSnapshotMock.mockReturnValue({
       userId: null,
-      accessToken: null,
       homeserverUrl: null
     })
     matrixStoreMock.userId = '@restore:example.com'
-    matrixStoreMock.accessToken = 'restore-token'
     matrixStoreMock.homeserverUrl = 'https://restore.example.com'
+    getMatrixAccessTokenMock.mockReturnValue('restore-token')
 
     const port = createSessionStorePort()
 

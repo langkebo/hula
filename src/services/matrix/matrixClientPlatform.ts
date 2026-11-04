@@ -3,7 +3,55 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixClient')
 
+/**
+ * 浏览器（非 Tauri）运行期的 access token 落盘 key。
+ *
+ * 为什么需要：Rust 侧 `update_token` 只在 Tauri 运行期可用；浏览器 dev / E2E 冷启动
+ * 恢复会话时必须有个 at-rest 凭证来源。此前该职责被**pinia 的 persist.pick** 顺手承担，
+ * 导致 token 混在应用状态里、且刷新后不更新（副本陈旧）。
+ *
+ * 现在把它收敛成**唯一的浏览器 at-rest 凭证**，并由 `persistRefreshedToken` /
+ * 登录路径主动写入（刷新即更新），不再依赖 pinia 快照。
+ */
+const WEB_TOKEN_STORAGE_KEY = 'tjg.matrix.accessToken'
+
+/** 读取浏览器 at-rest token（Tauri 运行期恒为 null，凭证由 Rust 侧保管） */
+export function readWebAccessToken(): string | null {
+  if (hasTauriRuntime()) return null
+  if (typeof globalThis.localStorage === 'undefined') return null
+  try {
+    return globalThis.localStorage.getItem(WEB_TOKEN_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 写入（或清除）浏览器 at-rest token。Tauri 运行期是 no-op —— 凭证只由 Rust 保管。
+ *
+ * @param token 传 null 表示登出时清除
+ */
+export function persistWebAccessToken(token: string | null): void {
+  if (hasTauriRuntime()) return
+  if (typeof globalThis.localStorage === 'undefined') return
+  try {
+    if (token) {
+      globalThis.localStorage.setItem(WEB_TOKEN_STORAGE_KEY, token)
+    } else {
+      globalThis.localStorage.removeItem(WEB_TOKEN_STORAGE_KEY)
+    }
+  } catch (error) {
+    // 隐私模式/配额满时静默降级，不阻塞登录；但必须留痕，避免又一处「静默失效」
+    logger.warn('Failed to persist web access token:', error)
+  }
+}
+
 export async function persistRefreshedToken(uid: string, token: string, refreshToken: string): Promise<void> {
+  // 浏览器无 Rust 侧存储：写到 localStorage，保证刷新后的 token 也是最新值
+  if (!hasTauriRuntime()) {
+    persistWebAccessToken(token)
+    return
+  }
   const { invoke } = await import('@tauri-apps/api/core')
   await invoke('update_token', {
     req: {

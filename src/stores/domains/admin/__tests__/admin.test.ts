@@ -23,7 +23,8 @@ const matrixStoreMock = {
   isLoggedIn: true,
   isInitialized: true,
   userId: '@admin:example.com',
-  accessToken: 'syt_test_token',
+  // AR-07b / B1：token 不再是 store 状态，改为现取方法
+  getAccessToken: vi.fn(() => 'syt_test_token'),
   homeserverUrl: 'https://matrix.test'
 }
 
@@ -60,7 +61,7 @@ describe('AdminStore', () => {
     matrixStoreMock.isLoggedIn = true
     matrixStoreMock.isInitialized = true
     matrixStoreMock.userId = '@admin:example.com'
-    matrixStoreMock.accessToken = 'syt_test_token'
+    matrixStoreMock.getAccessToken.mockReturnValue('syt_test_token')
     matrixStoreMock.homeserverUrl = 'https://matrix.test'
     probeAdminApiMock.mockResolvedValue(ADMIN_API_AVAILABLE)
     getUserMock.mockResolvedValue({ userId: '@admin:example.com', admin: true })

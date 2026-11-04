@@ -6,7 +6,7 @@ import {
   setCurrentUserInfo
 } from '@/common/currentUserState'
 import { setTrayMenuShow } from '@/common/globalUiState'
-import { getMatrixClient } from '@/services/matrix/matrixClientAccessor'
+import { getMatrixAccessToken, getMatrixClient } from '@/services/matrix/matrixClientAccessor'
 import { getMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
 import type { UserInfoType } from '@/services/types'
 import { pinia } from '@/stores'
@@ -46,7 +46,9 @@ export function createSessionStorePort(): SessionStorePort {
 
     return {
       userId: sessionSnapshot.userId ?? store.userId ?? null,
-      accessToken: sessionSnapshot.accessToken ?? store.accessToken ?? null,
+      // AR-07b / B1：token 不再从快照或 pinia 镜像取（两者刷新后都陈旧），
+      // 唯一读入口是 accessor —— 它直接读 SDK client，client 内即真相。
+      accessToken: getMatrixAccessToken(),
       homeserverUrl: sessionSnapshot.homeserverUrl ?? store.homeserverUrl ?? null
     }
   }

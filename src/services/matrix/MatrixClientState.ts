@@ -91,11 +91,16 @@ export class MatrixClientState {
     return this.deps.connectionManager.getClient()?.getUserId() ?? null
   }
 
-  /** 获取访问令牌
+  /**
+   * 获取访问令牌。
+   *
+   * AR-07b / B1：**不再回退到连接配置里的 `accessToken` 快照**。
+   * 那个兜底本身就是第二份真相：client 为 null 时配置里的 token 可能已经过期
+   * （刷新只更新 client + Rust 存储，不更新配置），拿它顶上会让调用方以为"有 token"
+   * 却发出必然 401 的请求。client 不存在时返回 null，由调用方显式处理更诚实。
    */
   getAccessToken(): string | null {
-    const client = this.deps.connectionManager.getClient()
-    return client?.getAccessToken?.() ?? this.deps.connectionManager.getConfig()?.accessToken ?? null
+    return this.deps.connectionManager.getClient()?.getAccessToken?.() ?? null
   }
 
   /** 获取 homeserver URL

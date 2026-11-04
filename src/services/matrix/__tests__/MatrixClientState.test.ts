@@ -131,14 +131,15 @@ describe('MatrixClientState', () => {
     expect(state.getAccessToken()).toBe('token-abc')
   })
 
-  it('getAccessToken falls back to config accessToken when client getAccessToken is unavailable', () => {
+  it('getAccessToken does not fall back to the connection config snapshot (AR-07b)', () => {
     const deps = makeDeps()
     const mocked = getMockedDeps(deps)
     const client = makeClient({ getAccessToken: undefined })
     mocked.connectionManager.getClient.mockReturnValue(client)
+    // 配置里的 token 快照刷新后不更新，拿它兜底 = 用一份陈旧凭证发必然 401 的请求
     mocked.connectionManager.getConfig.mockReturnValue({ homeserverUrl: 'https://hs.test', accessToken: 'cfg-token' })
     const state = new MatrixClientState(deps)
-    expect(state.getAccessToken()).toBe('cfg-token')
+    expect(state.getAccessToken()).toBeNull()
   })
 
   it('getAccessToken returns null when client and config are missing', () => {

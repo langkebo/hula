@@ -2,7 +2,14 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
-const { matrixClientServiceMock, getHomeserverUrlMock, matrixCapabilityServiceMock } = vi.hoisted(() => {
+const {
+  matrixClientServiceMock,
+  getHomeserverUrlMock,
+  matrixCapabilityServiceMock,
+  accessTokenState,
+  getMatrixAccessTokenMock,
+  persistWebAccessTokenMock
+} = vi.hoisted(() => {
   const getHomeserverUrlMock = vi.fn(() => 'https://mock.homeserver.com')
   const getClientMock = vi.fn(() => ({
     getHomeserverUrl: getHomeserverUrlMock
@@ -26,10 +33,25 @@ const { matrixClientServiceMock, getHomeserverUrlMock, matrixCapabilityServiceMo
   const matrixCapabilityServiceMock = {
     refreshCapabilities: vi.fn()
   }
+
+  /**
+   * AR-07b / B1：store 的 accessToken 已改为 accessor 派生（不再持有 ref）。
+   * 这里用一个可控的 token 源模拟 SDK client；persistWebAccessToken 的桩同步更新它，
+   * 以便「登录后 token 立即可读」与「登出后归零」两个断言仍然成立。
+   */
+  const accessTokenState: { value: string | null } = { value: null }
+  const getMatrixAccessTokenMock = vi.fn(() => accessTokenState.value)
+  const persistWebAccessTokenMock = vi.fn((token: string | null) => {
+    accessTokenState.value = token ?? null
+  })
+
   return {
     matrixClientServiceMock,
     getHomeserverUrlMock,
-    matrixCapabilityServiceMock
+    matrixCapabilityServiceMock,
+    accessTokenState,
+    getMatrixAccessTokenMock,
+    persistWebAccessTokenMock
   }
 })
 
@@ -59,6 +81,14 @@ vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
   matrixCapabilityService: matrixCapabilityServiceMock
 }))
 
+vi.mock('@/services/matrix/matrixClientAccessor', () => ({
+  getMatrixAccessToken: getMatrixAccessTokenMock
+}))
+
+vi.mock('@/services/matrix/matrixClientPlatform', () => ({
+  persistWebAccessToken: persistWebAccessTokenMock
+}))
+
 vi.mock('@/stores/domains/admin/admin', () => ({
   useAdminStore: () => ({
     clearAdminState: vi.fn()
@@ -82,6 +112,12 @@ describe('MatrixStore', () => {
     vi.useRealTimers()
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    // afterEach 的 resetAllMocks 会清掉实现，这里逐用例重建 token 源的语义
+    accessTokenState.value = null
+    getMatrixAccessTokenMock.mockImplementation(() => accessTokenState.value)
+    persistWebAccessTokenMock.mockImplementation((token: string | null) => {
+      accessTokenState.value = token ?? null
+    })
   })
 
   afterEach(() => {
@@ -102,7 +138,7 @@ describe('MatrixStore', () => {
 
     it('should have null accessToken initially', () => {
       const store = useMatrixStore()
-      expect(store.accessToken).toBeNull()
+      expect(store.getAccessToken()).toBeNull()
     })
 
     it('should not be logged in initially', () => {
@@ -136,11 +172,11 @@ describe('MatrixStore', () => {
       const store = useMatrixStore()
       store.userId = '@test:matrix.org'
       store.deviceId = 'DEVICE_ID'
-      store.accessToken = 'ACCESS_TOKEN'
+      accessTokenState.value = 'ACCESS_TOKEN'
 
       expect(store.userId).toBe('@test:matrix.org')
       expect(store.deviceId).toBe('DEVICE_ID')
-      expect(store.accessToken).toBe('ACCESS_TOKEN')
+      expect(store.getAccessToken()).toBe('ACCESS_TOKEN')
       expect(store.isLoggedIn).toBe(true)
     })
   })
@@ -150,17 +186,17 @@ describe('MatrixStore', () => {
       const store = useMatrixStore()
       store.userId = '@test:matrix.org'
       store.deviceId = 'DEVICE_ID'
-      store.accessToken = 'ACCESS_TOKEN'
+      accessTokenState.value = 'ACCESS_TOKEN'
 
       expect(store.isLoggedIn).toBe(true)
 
       store.userId = null
       store.deviceId = null
-      store.accessToken = null
+      accessTokenState.value = null
 
       expect(store.userId).toBeNull()
       expect(store.deviceId).toBeNull()
-      expect(store.accessToken).toBeNull()
+      expect(store.getAccessToken()).toBeNull()
       expect(store.isLoggedIn).toBe(false)
     })
   })
@@ -180,7 +216,7 @@ describe('MatrixStore', () => {
       expect(store.homeserverUrl).toBe('https://matrix.test')
       expect(store.userId).toBe('@init:matrix.test')
       expect(store.deviceId).toBe('INITDEV')
-      expect(store.accessToken).toBe('init-token')
+      expect(store.getAccessToken()).toBe('init-token')
       expect(store.isInitialized).toBe(true)
       expect(store.connectionState).toBe('CONNECTING')
     })
@@ -222,7 +258,7 @@ describe('MatrixStore', () => {
       expect(result).toBe(true)
       expect(store.userId).toBe('@alice:matrix.test')
       expect(store.deviceId).toBe('ALICEDEVICE')
-      expect(store.accessToken).toBe('alice-token')
+      expect(store.getAccessToken()).toBe('alice-token')
       expect(store.connectionState).toBe('CONNECTED')
       expect(store.lastError).toBeNull()
     })
@@ -270,7 +306,7 @@ describe('MatrixStore', () => {
       expect(result).toBe(true)
       expect(store.userId).toBe('@restore:matrix.test')
       expect(store.deviceId).toBe('RESTOREDEVICE')
-      expect(store.accessToken).toBe('restore-token')
+      expect(store.getAccessToken()).toBe('restore-token')
       expect(store.connectionState).toBe('CONNECTED')
     })
 
@@ -326,7 +362,7 @@ describe('MatrixStore', () => {
       const store = useMatrixStore()
       store.userId = '@test:matrix.test'
       store.deviceId = 'DEV1'
-      store.accessToken = 'token123'
+      accessTokenState.value = 'token123'
       store.connectionState = 'CONNECTED'
       store.isInitialized = true
 
@@ -336,7 +372,7 @@ describe('MatrixStore', () => {
 
       expect(store.userId).toBeNull()
       expect(store.deviceId).toBeNull()
-      expect(store.accessToken).toBeNull()
+      expect(store.getAccessToken()).toBeNull()
       expect(store.connectionState).toBe('DISCONNECTED')
       expect(store.syncState).toBeNull()
       expect(store.lastError).toBeNull()
@@ -395,7 +431,7 @@ describe('MatrixStore', () => {
       await expect(loginPromise).resolves.toBe(true)
       expect(store.userId).toBe('@restore:matrix.test')
       expect(store.deviceId).toBe('RESTOREDEVICE')
-      expect(store.accessToken).toBe('restore-token')
+      expect(store.getAccessToken()).toBe('restore-token')
       expect(matrixCapabilityServiceMock.refreshCapabilities).not.toHaveBeenCalled()
     })
 
@@ -418,7 +454,7 @@ describe('MatrixStore', () => {
       await expect(loginPromise).resolves.toBe(true)
       expect(store.userId).toBe('@alice:matrix.test')
       expect(store.deviceId).toBe('ALICEDEVICE')
-      expect(store.accessToken).toBe('alice-token')
+      expect(store.getAccessToken()).toBe('alice-token')
       expect(matrixClientServiceMock.startClient).toHaveBeenCalledTimes(1)
       expect(matrixCapabilityServiceMock.refreshCapabilities).toHaveBeenCalledTimes(1)
     })
@@ -442,21 +478,25 @@ describe('MatrixStore', () => {
       await expect(loginPromise).resolves.toBe(true)
       expect(store.userId).toBe('@sso:matrix.test')
       expect(store.deviceId).toBe('SSODEVICE')
-      expect(store.accessToken).toBe('sso-token')
+      expect(store.getAccessToken()).toBe('sso-token')
       expect(matrixClientServiceMock.startClient).toHaveBeenCalledTimes(1)
       expect(matrixCapabilityServiceMock.refreshCapabilities).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('connection state transitions', () => {
-    it('isLoggedIn is true only when both userId and accessToken are set', () => {
+    it('isLoggedIn follows userId only (AR-07b: token 不参与响应式依赖)', () => {
       const store = useMatrixStore()
 
-      store.userId = '@test:matrix.test'
-      store.accessToken = null
+      // 无 userId → 未登录，与 token 是否存在无关
+      accessTokenState.value = 'token'
       expect(store.isLoggedIn).toBe(false)
 
-      store.accessToken = 'token'
+      store.userId = '@test:matrix.test'
+      expect(store.isLoggedIn).toBe(true)
+
+      // token 变化不应影响登录态：否则 computed 会在首次读取时缓存非响应式读的结果
+      accessTokenState.value = null
       expect(store.isLoggedIn).toBe(true)
 
       store.userId = null

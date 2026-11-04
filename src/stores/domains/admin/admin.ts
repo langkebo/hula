@@ -60,7 +60,7 @@ export const useAdminStore = defineStore('admin', () => {
       }
 
       const userId = matrixStore.userId
-      const accessToken = matrixStore.accessToken
+      const accessToken = matrixStore.getAccessToken()
 
       if (!userId || !accessToken) {
         logger.warn('后端验证: 缺少 userId 或 accessToken')

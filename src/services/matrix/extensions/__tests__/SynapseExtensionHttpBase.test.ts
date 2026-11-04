@@ -6,6 +6,7 @@ import { SynapseExtensionHttpBase } from '../SynapseExtensionHttpBase'
 vi.mock('../../MatrixClientService', () => ({
   matrixClientService: {
     getHomeserverUrl: vi.fn(),
+    // AR-07b / B1：基类不再从 service 读 token（改为请求时读 accessor）
     getAccessToken: vi.fn(),
     waitForClientReady: vi.fn()
   }
@@ -207,13 +208,14 @@ describe('SynapseExtensionHttpBase', () => {
       expect(matrixClientService.waitForClientReady).not.toHaveBeenCalled()
     })
 
-    it('clear resets state and stop clears token', async () => {
+    it('clear resets state and stop clears cached baseUrl', async () => {
       const ext = new TestExt()
       await ext.init()
       ext.stop()
-      // stop 后 token 被清空，重新请求应重新初始化
+      // stop 后缓存清空，再次请求应重新初始化（token 不入实例，无需清理）
       await ext.init()
       ext.clear()
+      expect(getAccessToken).toBeTypeOf('function')
     })
   })
 })

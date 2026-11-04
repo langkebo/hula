@@ -192,10 +192,10 @@ describe('SessionLoginService.loginWithPassword', () => {
       allowInsecureHttp: false
     })
     expect(mocks.login).toHaveBeenCalledWith('alice', 'secret', 'web')
+    // AR-07b / B1：快照不再携带 token（token 唯一读入口是 accessor / SDK client）
     expect(patchMatrixSessionSnapshotMock).toHaveBeenCalledWith({
       userId: '@alice:test',
       deviceId: 'DEV1',
-      accessToken: 'access-token',
       homeserverUrl: 'https://matrix.test'
     })
     expect(switchUserDatabaseMock).toHaveBeenCalledWith('@alice:test')
@@ -481,7 +481,7 @@ describe('SessionLoginService guest session', () => {
     await service.applyGuestUpgrade({ userId: '@bob:test', accessToken: 'new-token' })
 
     expect(patchMatrixSessionSnapshotMock).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: '@bob:test', accessToken: 'new-token' })
+      expect.objectContaining({ userId: '@bob:test', deviceId: 'DEV1' })
     )
     expect(mocks.applyGuestUpgrade).toHaveBeenCalledWith('@bob:test', 'new-token')
     expect(userPort.setUserInfo).toHaveBeenCalledWith(

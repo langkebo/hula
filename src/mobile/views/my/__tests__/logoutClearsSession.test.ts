@@ -98,7 +98,7 @@ describe('移动端「我的」页登出', () => {
     localStorage.clear()
     vi.clearAllMocks()
     showConfirmDialogMock.mockResolvedValue(undefined)
-    patchMatrixSessionSnapshot({ userId: '@me:test', deviceId: 'DEV1', accessToken: 'token' })
+    patchMatrixSessionSnapshot({ userId: '@me:test', deviceId: 'DEV1' })
   })
 
   it('走显式登出清理：清掉持久化的 sessionUnread、DND 镜像与邀请策略缓存', async () => {
