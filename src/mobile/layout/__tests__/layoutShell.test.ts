@@ -54,6 +54,15 @@ describe('mobile layout nesting', () => {
   })
 })
 
+describe('friends list', () => {
+  it('friends list does not ship a placeholder context menu', () => {
+    const source = read('src/mobile/views/friends/index.vue')
+    expect(source).not.toContain('<ContextMenu')
+    expect(source).not.toContain('@contextmenu.stop')
+    expect(source).not.toContain('const showMenu')
+  })
+})
+
 describe('chat header layout', () => {
   it('聊天头部用 flex 且不保留桌面残留图标', () => {
     const header = read('src/mobile/components/chat-room/HeaderBar.vue')

@@ -149,7 +149,7 @@
             <van-empty :description="t('friend.list.empty')" />
           </div>
           <van-collapse v-else v-model="activeCollapseNames">
-            <ContextMenu @contextmenu="showMenu($event)" @select="handleSelect($event.label)" :menu="menuList">
+            <div>
               <!-- 特殊关心分组 -->
               <van-collapse-item v-if="specialContacts.length > 0" name="special">
                 <template #title>
@@ -164,7 +164,7 @@
                   </span>
                 </template>
                 <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
-                  <div @contextmenu.stop="$event.preventDefault()">
+                  <div>
                     <div
                       v-for="item in specialContacts"
                       :key="item.userId"
@@ -230,7 +230,7 @@
                   </span>
                 </template>
                 <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
-                  <div @contextmenu.stop="$event.preventDefault()">
+                  <div>
                     <van-swipe-cell v-for="item in normalContacts" :key="item.userId">
                       <div
                         @click="handleClick(item.userId, RoomTypeEnum.SINGLE)"
@@ -299,7 +299,7 @@
                   <span class="text-(10px [--tjg-text-secondary])">{{ blockedContacts.length }}</span>
                 </template>
                 <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
-                  <div @contextmenu.stop="$event.preventDefault()">
+                  <div>
                     <div
                       v-for="item in blockedContacts"
                       :key="item.userId"
@@ -325,7 +325,7 @@
                   </div>
                 </div>
               </van-collapse-item>
-            </ContextMenu>
+            </div>
           </van-collapse>
         </van-tab>
         <van-tab :title="t('mobile_contact.tab.group')">
@@ -438,12 +438,6 @@ const userSearchLoading = ref(false)
 const hasUserSearched = ref(false)
 const addingFriend = ref<string | null>(null)
 
-const menuList = ref([
-  { label: t('mobile_contact.menu.add_group'), icon: 'plus' },
-  { label: t('mobile_contact.menu.rename_group'), icon: 'edit' },
-  { label: t('mobile_contact.menu.delete_group'), icon: 'delete' }
-])
-
 const detailsShow = ref(false)
 const shrinkStatus = ref(false)
 const groupStore = useGroupStore()
@@ -526,10 +520,6 @@ const handleClick = async (id: string, type: number) => {
     router.push(`/mobile/mobileFriends/friendInfo/${id}`)
   }
 }
-
-const showMenu = (_event: MouseEvent) => {}
-
-const handleSelect = (_event: MouseEvent) => {}
 
 // Debounced user search
 const onUserSearch = useDebounceFn(async (value: string) => {
