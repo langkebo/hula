@@ -1,4 +1,4 @@
-import type { MatrixClientConfig } from '@/services/matrix/MatrixClientService'
+import type { LoginResult, MatrixClientConfig } from '@/services/matrix/MatrixClientService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
 import type { RoomInfo, UserInfoType } from '@/services/types'
 import type { MessageType } from '@/types/message'
@@ -82,13 +82,19 @@ export interface SessionStorePort {
     isInitialized(): boolean
     getLastError(): string | undefined
     getAccessToken(): string | undefined
-    getRefreshToken(): string | undefined
     getHomeserverUrl(): string | undefined
     initialize(config: MatrixClientConfig): Promise<void>
-    login(username: string, password: string, deviceName?: string): Promise<boolean>
-    registerGuest(deviceName?: string): Promise<boolean>
+    /**
+     * 登录类入口返回 `LoginResult` 而非 `boolean`，是为了把 **refresh token** 交回调用方。
+     *
+     * 它只在登录响应里出现一次，之后只能靠 Rust 侧持久化保管；此前为了让调用方能拿到，
+     * store 里额外存了一份 ref 副本 —— 而副本在 token 续期（`MatrixTokenManager`）后不会更新，
+     * 属「两份真相 + 会陈旧」。改为随返回值传递后，副本与陈旧同时消失。
+     */
+    login(username: string, password: string, deviceName?: string): Promise<LoginResult>
+    registerGuest(deviceName?: string): Promise<LoginResult>
     applyGuestUpgrade(userId: string, accessToken: string): void
-    completeSSOLogin(loginToken: string): Promise<boolean>
+    completeSSOLogin(loginToken: string): Promise<LoginResult>
     loginWithToken(accessToken: string, userId: string, refreshToken?: string): Promise<boolean>
     stopClient(): Promise<void>
     logout(): Promise<void>

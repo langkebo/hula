@@ -74,9 +74,6 @@ export function createSessionStorePort(): SessionStorePort {
       getAccessToken() {
         return getRuntimeMatrixSession().accessToken ?? undefined
       },
-      getRefreshToken() {
-        return matrixStore().refreshToken ?? undefined
-      },
       getHomeserverUrl() {
         return getRuntimeMatrixSession().homeserverUrl ?? undefined
       },

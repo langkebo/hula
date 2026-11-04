@@ -82,13 +82,12 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
 } {
   const mocks = {
     initialize: vi.fn().mockResolvedValue(undefined),
-    login: vi.fn().mockResolvedValue(true),
-    registerGuest: vi.fn().mockResolvedValue(true),
+    login: vi.fn().mockResolvedValue({ success: true, refreshToken: 'refresh-token' }),
+    registerGuest: vi.fn().mockResolvedValue({ success: true, refreshToken: 'guest-refresh-token' }),
     applyGuestUpgrade: vi.fn(),
-    completeSSOLogin: vi.fn().mockResolvedValue(true),
+    completeSSOLogin: vi.fn().mockResolvedValue({ success: true, refreshToken: 'sso-refresh-token' }),
     getUserId: vi.fn().mockReturnValue('@alice:test'),
     getAccessToken: vi.fn().mockReturnValue('access-token'),
-    getRefreshToken: vi.fn().mockReturnValue('refresh-token'),
     getLastError: vi.fn().mockReturnValue(undefined),
     getCurrentClientDeviceId: vi.fn().mockReturnValue('DEV1'),
     bootstrapPostLoginState: vi.fn().mockResolvedValue(undefined)
@@ -102,7 +101,6 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
       isInitialized: vi.fn().mockReturnValue(true),
       getLastError: mocks.getLastError,
       getAccessToken: mocks.getAccessToken,
-      getRefreshToken: mocks.getRefreshToken,
       getHomeserverUrl: vi.fn().mockReturnValue('https://matrix.test'),
       initialize: mocks.initialize,
       login: mocks.login,

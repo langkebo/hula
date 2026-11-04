@@ -98,14 +98,11 @@ export class SessionBootstrapService {
     // 则从后端存储的 token 记录中获取。
     let uid = port.matrix.getUserId() ?? port.user.getUserInfo()?.uid ?? ''
 
-    const runtimeAccessToken = port.matrix.getAccessToken()
-    const runtimeRefreshToken = port.matrix.getRefreshToken()
-    const storedTokens = runtimeAccessToken
-      ? {
-          token: runtimeAccessToken,
-          refreshToken: runtimeRefreshToken ?? null
-        }
-      : await this.host.getStoredTokens()
+    // 走到这里说明 `port.matrix.getClient()` 为 null（函数开头就 return 了）。
+    // port 的 accessToken 与 client **同源**（B1 起直接从 SDK client 现取，不再有 store 副本），
+    // 所以运行时不可能有可用凭证，只能读后端存储；refreshToken 同样没有副本可读
+    // （它只在登录响应里出现一次，刷新后由 Rust 侧保管）。
+    const storedTokens = await this.host.getStoredTokens()
 
     // 如果 uid 为空但后端返回了 uid，则使用后端 uid
     if (!uid && storedTokens.uid) {

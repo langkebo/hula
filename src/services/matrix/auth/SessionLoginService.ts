@@ -57,8 +57,8 @@ export class SessionLoginService {
         allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 
-      const success = await port.matrix.login(username, password, deviceName)
-      if (!success) {
+      const loginResult = await port.matrix.login(username, password, deviceName)
+      if (!loginResult.success) {
         throw new Error(port.matrix.getLastError() || useI18nGlobal().t('matrix_error.auth.login_failed_check_network'))
       }
 
@@ -68,7 +68,8 @@ export class SessionLoginService {
         throw new Error(useI18nGlobal().t('matrix_error.auth.session_info_incomplete'))
       }
 
-      const refreshToken = port.matrix.getRefreshToken() ?? ''
+      // refresh token 只在登录响应里出现一次，由登录结果带回（store 不再存副本）
+      const refreshToken = loginResult.refreshToken ?? ''
       patchMatrixSessionSnapshot({
         userId: uid,
         deviceId: this.host.getCurrentClientDeviceId(),
@@ -152,8 +153,8 @@ export class SessionLoginService {
         allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 
-      const success = await port.matrix.registerGuest(deviceName)
-      if (!success) {
+      const loginResult = await port.matrix.registerGuest(deviceName)
+      if (!loginResult.success) {
         throw new Error(port.matrix.getLastError() || useI18nGlobal().t('matrix_error.auth.guest_login_failed'))
       }
 
@@ -163,7 +164,8 @@ export class SessionLoginService {
         throw new Error(useI18nGlobal().t('matrix_error.auth.session_info_incomplete'))
       }
 
-      const refreshToken = port.matrix.getRefreshToken() ?? ''
+      // refresh token 只在登录响应里出现一次，由登录结果带回（store 不再存副本）
+      const refreshToken = loginResult.refreshToken ?? ''
       patchMatrixSessionSnapshot({
         userId: uid,
         deviceId: this.host.getCurrentClientDeviceId(),
@@ -323,8 +325,8 @@ export class SessionLoginService {
         allowInsecureHttp: homeserverUrl.startsWith('http://')
       })
 
-      const success = await port.matrix.completeSSOLogin(loginToken)
-      if (!success) {
+      const loginResult = await port.matrix.completeSSOLogin(loginToken)
+      if (!loginResult.success) {
         throw new Error(useI18nGlobal().t('matrix_error.auth.sso_login_failed'))
       }
 
@@ -334,7 +336,8 @@ export class SessionLoginService {
         throw new Error(useI18nGlobal().t('matrix_error.auth.sso_session_incomplete'))
       }
 
-      const refreshToken = port.matrix.getRefreshToken() ?? ''
+      // refresh token 只在登录响应里出现一次，由登录结果带回（store 不再存副本）
+      const refreshToken = loginResult.refreshToken ?? ''
       patchMatrixSessionSnapshot({
         userId: uid,
         deviceId: this.host.getCurrentClientDeviceId(),

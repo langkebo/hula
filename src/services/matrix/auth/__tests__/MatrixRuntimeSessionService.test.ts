@@ -22,7 +22,6 @@ const mockPort = {
     isInitialized: vi.fn(() => false),
     getLastError: vi.fn(() => undefined),
     getAccessToken: vi.fn<() => string | undefined>(() => undefined),
-    getRefreshToken: vi.fn<() => string | undefined>(() => undefined),
     getHomeserverUrl: vi.fn(() => undefined),
     initialize: vi.fn(),
     login: vi.fn(),
@@ -213,11 +212,10 @@ describe('MatrixRuntimeSessionService', () => {
     mockPort.matrix.isInitialized.mockReturnValue(false)
     mockPort.matrix.getLastError.mockReturnValue(undefined)
     mockPort.matrix.getAccessToken.mockReturnValue(undefined)
-    mockPort.matrix.getRefreshToken.mockReturnValue(undefined)
     mockPort.matrix.getHomeserverUrl.mockReturnValue(undefined)
     mockPort.matrix.initialize.mockResolvedValue(undefined)
-    mockPort.matrix.login.mockResolvedValue(true)
-    mockPort.matrix.completeSSOLogin.mockResolvedValue(true)
+    mockPort.matrix.login.mockResolvedValue({ success: true, refreshToken: 'login-refresh-token' })
+    mockPort.matrix.completeSSOLogin.mockResolvedValue({ success: true, refreshToken: 'sso-refresh-token' })
     mockPort.matrix.loginWithToken.mockResolvedValue(true)
     mockPort.matrix.logout.mockResolvedValue(undefined)
 
@@ -290,7 +288,7 @@ describe('MatrixRuntimeSessionService', () => {
       req: {
         uid: '@alice:example.com',
         token: 'access-token',
-        refreshToken: ''
+        refreshToken: 'login-refresh-token'
       }
     })
     expect(mockInvoke).toHaveBeenCalledWith('save_user_info', {
@@ -353,7 +351,7 @@ describe('MatrixRuntimeSessionService', () => {
       req: {
         uid: '@sso:example.com',
         token: 'sso-access-token',
-        refreshToken: ''
+        refreshToken: 'sso-refresh-token'
       }
     })
     expect(mockPort.loginHistory.addLoginHistory).toHaveBeenCalledWith(
@@ -465,11 +463,13 @@ describe('MatrixRuntimeSessionService', () => {
     expect(mockPort.global.updateCurrentSessionRoomId).toHaveBeenCalledWith('!room:example.com')
   })
 
-  it('reuses runtime tokens for bootstrap restore when access token persistence is disabled', async () => {
+  it('reads stored tokens even if the port advertises a runtime token without a client', async () => {
+    // 生产里 accessToken 直读 SDK client（AR-07b / B1）⇒ client 为 null 时运行时 token 必然不可用。
+    // 这里故意让 port 谎报一个 token，锁住「不得把它当凭证来源」这条约束：
+    // 一旦有人重新引入「配置/快照里的 token 兜底」，就会多出刷新后必然陈旧的第二真相。
     mockPort.matrix.getClient.mockReturnValue(null)
     mockPort.matrix.getUserId.mockReturnValue('@dave:example.com')
     mockPort.matrix.getAccessToken.mockReturnValue('runtime-token')
-    mockPort.matrix.getRefreshToken.mockReturnValue('runtime-refresh-token')
     mockPort.user.getUserInfo.mockReturnValue({
       uid: '@dave:example.com',
       name: 'Dave',
@@ -478,6 +478,12 @@ describe('MatrixRuntimeSessionService', () => {
       avatar: 'mxc://dave',
       client: 'PC'
     } as any)
+    mockInvoke.mockImplementation(async (command: string) => {
+      if (command === 'get_user_tokens') {
+        return { token: 'stored-token', refreshToken: 'stored-refresh-token' }
+      }
+      return undefined
+    })
 
     const service = createService()
     await service.bootstrapPostLoginState({
@@ -487,19 +493,15 @@ describe('MatrixRuntimeSessionService', () => {
       client: 'PC'
     })
 
-    expect(mockPort.matrix.initialize).toHaveBeenCalledWith({
-      homeserverUrl: 'https://matrix-session.example.com',
-      identityServerUrl: 'https://identity-session.example.com',
-      accessToken: 'runtime-token',
-      userId: '@dave:example.com',
-      allowInsecureHttp: false
-    })
-    expect(mockPort.matrix.loginWithToken).toHaveBeenCalledWith(
-      'runtime-token',
-      '@dave:example.com',
-      'runtime-refresh-token'
+    expect(mockPort.matrix.initialize).toHaveBeenCalledWith(
+      expect.objectContaining({ accessToken: 'stored-token', userId: '@dave:example.com' })
     )
-    expect(mockInvoke).not.toHaveBeenCalledWith('get_user_tokens', undefined)
+    expect(mockPort.matrix.loginWithToken).toHaveBeenCalledWith(
+      'stored-token',
+      '@dave:example.com',
+      'stored-refresh-token'
+    )
+    // 未做迁移（同一 uid 复用同一库）
     expect(mockInvoke).not.toHaveBeenCalledWith('switch_user_database', expect.anything())
   })
 

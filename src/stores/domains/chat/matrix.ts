@@ -5,6 +5,7 @@ import { clearSenderDeviceCache } from '@/services/matrix/crypto/messageTrustCac
 import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import {
   type ConnectionState,
+  type LoginResult,
   type MatrixClientConfig,
   matrixClientService
 } from '@/services/matrix/MatrixClientService'
@@ -44,8 +45,12 @@ export const useMatrixStore = defineStore(
      * 为什么连 computed 都不行：`computed(() => getMatrixAccessToken())` 没有任何
      * 响应式依赖 ⇒ Pinia 里首次取值后永久缓存，等价于又一份更隐蔽的陈旧副本
      * （首次读在 client 就绪前还会永久得到 null）。改为对外暴露方法，每次现取。
+     *
+     * B1 续：**refreshToken 也不再存**。它只在登录响应里出现一次，此前为了让
+     * `SessionLoginService` 能持久化而在 store 里存了一份 ref，但 `MatrixTokenManager`
+     * 续期后只更新 Rust 侧、不回写这份 ref ⇒ 又是一份会陈旧的副本。
+     * 现在由 `login/completeSSOLogin/registerGuest` 的返回值直接交给调用方。
      */
-    const refreshToken = ref<string | null>(null)
     const homeserverUrl = ref<string | null>(null)
     const lastError = ref<string | null>(null)
     const isInitialized = ref(false)
@@ -157,7 +162,7 @@ export const useMatrixStore = defineStore(
       }
     }
 
-    async function login(username: string, password: string, deviceName?: string): Promise<boolean> {
+    async function login(username: string, password: string, deviceName?: string): Promise<LoginResult> {
       try {
         lastError.value = null
         connectionState.value = 'CONNECTING'
@@ -167,23 +172,22 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           rememberWebToken(result.accessToken)
-          refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
           isGuest.value = false
 
           await settlePostLoginStartup()
-          return true
+          return { success: true, refreshToken: result.refreshToken }
         } else {
           connectionState.value = 'ERROR'
           lastError.value = result.error ?? '登录失败'
           logger.error('登录失败:', result.error)
-          return false
+          return { success: false }
         }
       } catch (error) {
         connectionState.value = 'ERROR'
         lastError.value = error instanceof Error ? error.message : '登录失败'
         logger.error('登录异常:', error)
-        return false
+        return { success: false }
       }
     }
 
@@ -196,7 +200,7 @@ export const useMatrixStore = defineStore(
       }
     }
 
-    async function completeSSOLogin(loginToken: string): Promise<boolean> {
+    async function completeSSOLogin(loginToken: string): Promise<LoginResult> {
       try {
         lastError.value = null
         connectionState.value = 'CONNECTING'
@@ -206,23 +210,22 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           rememberWebToken(result.accessToken)
-          refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
           isGuest.value = false
 
           await settlePostLoginStartup()
-          return true
+          return { success: true, refreshToken: result.refreshToken }
         } else {
           connectionState.value = 'ERROR'
           lastError.value = result.error ?? 'SSO 登录失败'
           logger.error('SSO 登录失败:', result.error)
-          return false
+          return { success: false }
         }
       } catch (error) {
         connectionState.value = 'ERROR'
         lastError.value = error instanceof Error ? error.message : 'SSO 登录失败'
         logger.error('SSO 登录异常:', error)
-        return false
+        return { success: false }
       }
     }
 
@@ -236,7 +239,6 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           rememberWebToken(result.accessToken)
-          refreshToken.value = result.refreshToken ?? refreshTokenParam ?? null
           connectionState.value = 'CONNECTED'
 
           await settlePostLoginStartup()
@@ -259,7 +261,7 @@ export const useMatrixStore = defineStore(
      * 注册并登录访客账号。
      * 仅有服务端支持访客注册时由登录页调用（入口门控见 MatrixAuthService.getGuestSupport）。
      */
-    async function registerGuest(deviceName?: string): Promise<boolean> {
+    async function registerGuest(deviceName?: string): Promise<LoginResult> {
       try {
         lastError.value = null
         connectionState.value = 'CONNECTING'
@@ -269,23 +271,22 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           rememberWebToken(result.accessToken)
-          refreshToken.value = result.refreshToken ?? null
           connectionState.value = 'CONNECTED'
           isGuest.value = true
 
           await settlePostLoginStartup()
-          return true
+          return { success: true, refreshToken: result.refreshToken }
         }
 
         connectionState.value = 'ERROR'
         lastError.value = result.error ?? '访客登录失败'
         logger.error('访客登录失败:', result.error)
-        return false
+        return { success: false }
       } catch (error) {
         connectionState.value = 'ERROR'
         lastError.value = error instanceof Error ? error.message : '访客登录失败'
         logger.error('访客登录异常:', error)
-        return false
+        return { success: false }
       }
     }
 
@@ -322,7 +323,6 @@ export const useMatrixStore = defineStore(
         userId.value = null
         deviceId.value = null
         rememberWebToken(null)
-        refreshToken.value = null
         connectionState.value = 'DISCONNECTED'
         syncState.value = null
         lastError.value = null
@@ -365,7 +365,6 @@ export const useMatrixStore = defineStore(
       deviceId,
       /** token 现取，不作为状态（见上方注释）；消费方切勿缓存其返回值 */
       getAccessToken: getMatrixAccessToken,
-      refreshToken,
       homeserverUrl,
       lastError,
       isInitialized,

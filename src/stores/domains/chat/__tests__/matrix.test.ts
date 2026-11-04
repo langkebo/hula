@@ -246,20 +246,22 @@ describe('MatrixStore', () => {
   })
 
   describe('login', () => {
-    it('should set credentials and return true on successful login', async () => {
+    it('should set credentials and hand the refresh token back on successful login', async () => {
       const store = useMatrixStore()
       matrixClientServiceMock.login.mockResolvedValue({
         success: true,
         userId: '@alice:matrix.test',
         deviceId: 'ALICEDEVICE',
-        accessToken: 'alice-token'
+        accessToken: 'alice-token',
+        refreshToken: 'alice-refresh'
       })
       matrixClientServiceMock.startClient.mockResolvedValue(undefined)
       matrixCapabilityServiceMock.refreshCapabilities.mockResolvedValue(undefined)
 
       const result = await store.login('alice', 'pw', 'Test Device')
 
-      expect(result).toBe(true)
+      // refresh token 只在登录响应里出现一次，必须随返回值交给调用方去持久化
+      expect(result).toEqual({ success: true, refreshToken: 'alice-refresh' })
       expect(store.userId).toBe('@alice:matrix.test')
       expect(store.deviceId).toBe('ALICEDEVICE')
       expect(store.getAccessToken()).toBe('alice-token')
@@ -276,7 +278,7 @@ describe('MatrixStore', () => {
 
       const result = await store.login('alice', 'wrong-pw')
 
-      expect(result).toBe(false)
+      expect(result.success).toBe(false)
       expect(store.connectionState).toBe('ERROR')
       expect(store.lastError).toBe('Invalid password')
     })
@@ -287,7 +289,7 @@ describe('MatrixStore', () => {
 
       const result = await store.login('alice', 'pw')
 
-      expect(result).toBe(false)
+      expect(result.success).toBe(false)
       expect(store.connectionState).toBe('ERROR')
       expect(store.lastError).toBe('Network error')
     })
@@ -342,7 +344,7 @@ describe('MatrixStore', () => {
 
       const result = await store.completeSSOLogin('sso-login-token')
 
-      expect(result).toBe(true)
+      expect(result.success).toBe(true)
       expect(store.userId).toBe('@sso:matrix.test')
       expect(store.connectionState).toBe('CONNECTED')
     })
@@ -356,7 +358,7 @@ describe('MatrixStore', () => {
 
       const result = await store.completeSSOLogin('bad-token')
 
-      expect(result).toBe(false)
+      expect(result.success).toBe(false)
       expect(store.lastError).toBe('Invalid login token')
     })
   })
@@ -492,7 +494,7 @@ describe('MatrixStore', () => {
       const loginPromise = store.login('alice', 'pw', 'Tjg Test Device')
       await vi.advanceTimersByTimeAsync(15_000)
 
-      await expect(loginPromise).resolves.toBe(true)
+      await expect(loginPromise).resolves.toMatchObject({ success: true })
       expect(store.userId).toBe('@alice:matrix.test')
       expect(store.deviceId).toBe('ALICEDEVICE')
       expect(store.getAccessToken()).toBe('alice-token')
@@ -516,7 +518,7 @@ describe('MatrixStore', () => {
       const loginPromise = store.completeSSOLogin('mock-login-token')
       await vi.advanceTimersByTimeAsync(15_000)
 
-      await expect(loginPromise).resolves.toBe(true)
+      await expect(loginPromise).resolves.toMatchObject({ success: true })
       expect(store.userId).toBe('@sso:matrix.test')
       expect(store.deviceId).toBe('SSODEVICE')
       expect(store.getAccessToken()).toBe('sso-token')

@@ -118,7 +118,6 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
     getClient: vi.fn().mockReturnValue(null),
     getUserId: vi.fn().mockReturnValue('@alice:matrix.test'),
     getAccessToken: vi.fn().mockReturnValue(undefined),
-    getRefreshToken: vi.fn().mockReturnValue(undefined),
     getHomeserverUrl: vi.fn().mockReturnValue('https://matrix.test'),
     restoreWithAccessToken: vi.fn().mockResolvedValue(undefined),
     getStoredTokens: vi
@@ -165,7 +164,6 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
       isInitialized: vi.fn().mockReturnValue(true),
       getLastError: vi.fn().mockReturnValue(undefined),
       getAccessToken: mocks.getAccessToken,
-      getRefreshToken: mocks.getRefreshToken,
       getHomeserverUrl: mocks.getHomeserverUrl,
       initialize: vi.fn().mockResolvedValue(undefined),
       login: vi.fn().mockResolvedValue(true),
@@ -277,20 +275,19 @@ describe('SessionBootstrapService', () => {
       )
     })
 
-    it('uses runtime access token when available', async () => {
+    it('always reads stored tokens when no client exists (runtime token implies a client)', async () => {
       const { host, mocks } = createMockHost()
+      // 生产里 accessToken 直读 SDK client（AR-07b / B1）⇒ client 为 null 时不可能有运行时 token。
+      // 这里故意让 port 返回一个 token，验证这段代码**不再**拿它当凭证来源：
+      // 否则又会多出「配置/快照里的 token」这第二条真相（刷新后必然陈旧）。
       mocks.getAccessToken.mockReturnValue('runtime-token')
-      mocks.getRefreshToken.mockReturnValue('runtime-refresh')
 
       const service = new SessionBootstrapService(host, state)
       await service.ensureClientReady()
 
-      expect(mocks.getStoredTokens).not.toHaveBeenCalled()
+      expect(mocks.getStoredTokens).toHaveBeenCalled()
       expect(mocks.restoreWithAccessToken).toHaveBeenCalledWith(
-        expect.objectContaining({
-          accessToken: 'runtime-token',
-          refreshToken: 'runtime-refresh'
-        })
+        expect.objectContaining({ accessToken: 'stored-token' })
       )
     })
 
