@@ -6,5 +6,7 @@ pub mod linux_runtime_guard;
 pub mod macos_runtime_guard;
 pub mod secure_store;
 pub mod sql_debug;
+#[cfg(test)]
+pub mod test_env_lock;
 #[cfg(target_os = "windows")]
 pub mod win_runtime_guard;

@@ -540,10 +540,10 @@ impl SecureStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
-
-    // 所有修改 HOME 的测试必须获取此锁，防止并行执行时环境变量冲突
-    static TEST_LOCK: Mutex<()> = Mutex::new(());
+    // 所有修改 HOME 的测试必须获取此锁，防止并行执行时环境变量冲突。
+    // 注意：必须是**进程级共享**那把锁 —— 本模块与 utils::crypto 的用例都会改 HOME，
+    // 各持一把锁时跨模块会交叉污染（表现为「单跑绿、全量偶发红」）。
+    use crate::utils::test_env_lock::ENV_LOCK as TEST_LOCK;
 
     /// 测试环境守卫：设置临时 HOME，Drop 时恢复原始值并清理临时目录
     struct TestEnv {
