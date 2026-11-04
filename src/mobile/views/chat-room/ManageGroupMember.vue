@@ -83,7 +83,7 @@ import { useI18n } from 'vue-i18n'
 import HeaderBar from '#/components/chat-room/HeaderBar.vue'
 import { useSafeBack } from '#/composables/useSafeBack'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { OnlineEnum, RoleEnum } from '@/enums'
+import { OnlineEnum } from '@/enums'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -105,8 +105,18 @@ const keyword = ref('')
 const selectedList = ref<string[]>([])
 const isLoading = ref(false)
 
+// 请求期间用户可能已手动返回，成功后不能再触发一次返回
+let isUnmounted = false
+
+onUnmounted(() => {
+  isUnmounted = true
+})
+
+// group store 的 roleId 使用 0 群主 / 1 管理员 / 2 普通成员，与 RoleEnum 取值不同
+const ROLE_ID_NORMAL_MEMBER = 2
+
 const normalMembers = computed(() => {
-  return groupStore.memberList.filter((item) => item.roleId === RoleEnum.NORMAL)
+  return groupStore.memberList.filter((item) => item.roleId === ROLE_ID_NORMAL_MEMBER)
 })
 
 const filteredMembers = computed(() => {
@@ -162,7 +172,7 @@ const handleRemove = async () => {
 
     showFeedback(t('home.manage_group_member.remove_success', { count }), 'success')
     selectedList.value = []
-    handleClose()
+    if (!isUnmounted) handleClose()
     return true
   } catch (error) {
     logger.error('Failed to remove member:', error)

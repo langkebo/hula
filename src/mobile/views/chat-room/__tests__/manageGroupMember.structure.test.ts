@@ -14,6 +14,12 @@ describe('ManageGroupMember 移动端结构', () => {
     expect(manageSource).not.toContain('isMobileView')
   })
 
+  it('按 store 的 roleId 编码筛选普通成员', () => {
+    // group store 写入 0 群主 / 1 管理员 / 2 普通成员，RoleEnum.NORMAL(=3) 与之不等
+    expect(manageSource).toContain('ROLE_ID_NORMAL_MEMBER = 2')
+    expect(manageSource).not.toContain('RoleEnum.NORMAL')
+  })
+
   it('使用纯 Vant 交互', () => {
     expect(manageSource).toContain('van-search')
     expect(manageSource).toContain('van-checkbox-group')
