@@ -24,6 +24,8 @@
             :src="videoUrl"
             playsinline
             autoplay
+            controls
+            preload="metadata"
             @click.stop />
           <div class="absolute flex gap-3 p-2 rounded-8 text-white bg-black/75 z-20 shadow-lg" :style="actionStyle">
             <button

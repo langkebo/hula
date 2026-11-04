@@ -5,13 +5,13 @@
         v-if="visible"
         class="fixed top-0 left-0 w-100vw h-100dvh bg-black z-3000 box-border touch-none"
         :style="containerStyle"
-        @click="handleClose">
+        @click="handleBackdropClick">
         <div
           class="w-full h-full flex justify-center items-center relative overflow-hidden"
           @touchstart="handleTouchStart"
           @touchmove.prevent="handleTouchMove"
           @touchend="handleTouchEnd"
-          @touchcancel="handleTouchEnd">
+          @touchcancel="handleTouchCancel">
           <Transition name="image-zoom" appear>
             <img
               v-if="imageUrl"
@@ -108,9 +108,39 @@ const SHRINK_FACTOR = 0.9
 const EXTRA_MARGIN = 24
 const MIN_SCALE = 0.1
 const MAX_SCALE = 3
+const DOUBLE_TAP_SCALE = 2.5
+const DOUBLE_TAP_MS = 300
+const CLOSE_DRAG_PX = 80
+
+type GestureMode = 'none' | 'pinch' | 'pan' | 'swipe'
+
 const scale = ref(1)
-const startDistance = ref<number | null>(null)
-const startScale = ref(1)
+const translate = ref({ x: 0, y: 0 })
+const dragOffsetY = ref(0)
+const lastTapAt = ref(0)
+const gesture = ref({
+  mode: 'none' as GestureMode,
+  startDistance: 0,
+  startScale: 1,
+  startClientX: 0,
+  startClientY: 0,
+  startTranslateX: 0,
+  startTranslateY: 0,
+  startedAt: 0
+})
+
+/** 放大后的平移边界：以视口长边的一半作为可移动半径上限 */
+const clampOffset = (value: number, currentScale: number) => {
+  const limit = (Math.max(currentScale, 1) - 1) * 0.5 * Math.max(viewportSize.value.width, viewportSize.value.height)
+  return Math.min(Math.max(value, -limit), limit)
+}
+
+const resetTransform = () => {
+  scale.value = 1
+  translate.value = { x: 0, y: 0 }
+  dragOffsetY.value = 0
+  gesture.value.mode = 'none'
+}
 
 const containerStyle = computed(() => ({
   paddingTop: `${safeAreaInsets.value.top}px`,
@@ -253,7 +283,8 @@ const imageStyle = computed<CSSProperties>(() => {
       maxWidth: '100%',
       maxHeight: '100%',
       objectFit: 'contain',
-      transform: `translateZ(0) scale(${scale.value})`,
+      transform: `translate3d(${translate.value.x}px, ${translate.value.y}px, 0) scale(${scale.value})`,
+      transition: dragOffsetY.value === 0 ? 'transform 0.25s ease' : 'none',
       transformOrigin: 'center center'
     }
   }
@@ -271,7 +302,8 @@ const imageStyle = computed<CSSProperties>(() => {
     maxWidth: `${availableWidth || rawWidth}px`,
     maxHeight: `${availableHeight || rawHeight}px`,
     objectFit: 'contain',
-    transform: `translateZ(0) scale(${scale.value})`,
+    transform: `translate3d(${translate.value.x}px, ${translate.value.y}px, 0) scale(${scale.value})`,
+    transition: dragOffsetY.value === 0 ? 'transform 0.25s ease' : 'none',
     transformOrigin: 'center center'
   }
 })
@@ -280,9 +312,8 @@ watch(
   () => props.visible,
   (visible) => {
     if (!visible) {
-      scale.value = 1
-      startDistance.value = null
-      startScale.value = 1
+      resetTransform()
+      lastTapAt.value = 0
       return
     }
     refreshLayout()
@@ -293,9 +324,8 @@ watch(
 watch(
   () => props.imageUrl,
   () => {
-    scale.value = 1
-    startDistance.value = null
-    startScale.value = 1
+    resetTransform()
+    lastTapAt.value = 0
   }
 )
 
@@ -318,25 +348,102 @@ const getTouchesDistance = (event: TouchEvent) => {
   return Math.hypot(dx, dy)
 }
 
+const handleBackdropClick = () => {
+  // 放大状态下轻触不关闭，避免看细节时误退
+  if (scale.value > 1.01) return
+  handleClose()
+}
+
 const handleTouchStart = (event: TouchEvent) => {
-  if (event.touches.length < 2) return
-  startDistance.value = getTouchesDistance(event)
-  startScale.value = scale.value
+  if (event.touches.length >= 2) {
+    gesture.value = {
+      ...gesture.value,
+      mode: 'pinch',
+      startDistance: getTouchesDistance(event),
+      startScale: scale.value,
+      startedAt: Date.now()
+    }
+    return
+  }
+  const touch = event.touches[0]
+  if (!touch) return
+  gesture.value = {
+    mode: scale.value > 1.01 ? 'pan' : 'swipe',
+    startDistance: 0,
+    startScale: scale.value,
+    startClientX: touch.clientX,
+    startClientY: touch.clientY,
+    startTranslateX: translate.value.x,
+    startTranslateY: translate.value.y,
+    startedAt: Date.now()
+  }
 }
 
 const handleTouchMove = (event: TouchEvent) => {
-  if (!startDistance.value || event.touches.length < 2) return
-  event.preventDefault()
-  const distance = getTouchesDistance(event)
-  if (distance <= 0) return
-  const ratio = distance / startDistance.value
-  scale.value = clampScale(startScale.value * ratio)
+  if (gesture.value.mode === 'pinch') {
+    if (event.touches.length < 2 || gesture.value.startDistance <= 0) return
+    const distance = getTouchesDistance(event)
+    if (distance <= 0) return
+    scale.value = clampScale((distance / gesture.value.startDistance) * gesture.value.startScale)
+    translate.value = {
+      x: clampOffset(translate.value.x, scale.value),
+      y: clampOffset(translate.value.y, scale.value)
+    }
+    return
+  }
+
+  const touch = event.touches[0]
+  if (!touch) return
+  const dx = touch.clientX - gesture.value.startClientX
+  const dy = touch.clientY - gesture.value.startClientY
+
+  if (gesture.value.mode === 'pan') {
+    translate.value = {
+      x: clampOffset(gesture.value.startTranslateX + dx, scale.value),
+      y: clampOffset(gesture.value.startTranslateY + dy, scale.value)
+    }
+    return
+  }
+
+  // 未放大时仅响应纵向拖动作为关闭手势
+  if (Math.abs(dy) > Math.abs(dx)) {
+    dragOffsetY.value = dy
+    translate.value = { x: 0, y: dy }
+  }
 }
 
 const handleTouchEnd = (event: TouchEvent) => {
   if (event.touches.length >= 2) return
-  startDistance.value = null
-  startScale.value = scale.value
+  const mode = gesture.value.mode
+  const duration = Date.now() - gesture.value.startedAt
+  const dy = dragOffsetY.value
+
+  if (mode === 'swipe' && dy > CLOSE_DRAG_PX) {
+    resetTransform()
+    handleClose()
+    return
+  }
+
+  if (mode === 'swipe' && duration < 250 && Math.abs(dy) < 10) {
+    const now = Date.now()
+    if (now - lastTapAt.value < DOUBLE_TAP_MS) {
+      scale.value = scale.value > 1.01 ? 1 : DOUBLE_TAP_SCALE
+      translate.value = { x: 0, y: 0 }
+      lastTapAt.value = 0
+    } else {
+      lastTapAt.value = now
+    }
+  }
+
+  dragOffsetY.value = 0
+  if (scale.value <= 1.01) translate.value = { x: 0, y: 0 }
+  gesture.value.mode = 'none'
+}
+
+const handleTouchCancel = () => {
+  dragOffsetY.value = 0
+  if (scale.value <= 1.01) translate.value = { x: 0, y: 0 }
+  gesture.value.mode = 'none'
 }
 </script>
 
