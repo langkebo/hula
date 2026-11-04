@@ -19,7 +19,7 @@
                   <img
                     class="w-60px h-60px rounded-full object-cover"
                     :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar || '')"
-                    alt="用户头像"
+                    :alt="t('common.avatar_alt', { name: userInfo?.name || userInfo?.account || '' })"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                 </div>
 
@@ -85,7 +85,7 @@ onMounted(async () => {
         }
       })
     } catch (err) {
-      logger.error('生成二维码失败', err)
+      logger.error('Failed to generate QR code', err)
     }
   }
 })

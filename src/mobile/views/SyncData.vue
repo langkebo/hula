@@ -5,38 +5,42 @@
       :hidden-right="true"
       :enable-default-background="false"
       :enable-shadow="false"
-      room-name="登录确认" />
+      :room-name="t('login.mobile.confirm.title')" />
 
     <div
       class="flex flex-col rounded-15px bg-white pt-30px py-20px items-center justify-between gap-20px mt-40px h-70%">
       <div class="flex flex-col items-center gap-20px">
         <div class="flex items-center">
-          <div class="text-26px">登录</div>
+          <div class="text-26px">{{ t('login.mobile.confirm.heading') }}</div>
         </div>
 
         <van-checkbox-group
           v-model="checkedValues"
           checked-color="var(--tjg-color-primary-500)"
           class="flex flex-col gap-14px text-14px">
-          <van-checkbox name="syncRecentMessages">同步最近的消息</van-checkbox>
-          <van-checkbox name="autoLogin">自动登录该设备</van-checkbox>
+          <van-checkbox name="syncRecentMessages">{{ t('login.mobile.confirm.sync_recent_messages') }}</van-checkbox>
+          <van-checkbox name="autoLogin">{{ t('login.mobile.confirm.auto_login') }}</van-checkbox>
         </van-checkbox-group>
       </div>
       <div class="flex w-45% gap-30px justify-center items-center flex-col">
         <van-button @click="handleConfirmLogin" color="var(--tjg-color-primary-500)" class="w-full" type="primary">
-          确定登录
+          {{ t('login.mobile.confirm.confirm_button') }}
         </van-button>
-        <div @click="handleCancelLogin" class="w-full text-center text-gray-600">取消登录</div>
+        <div @click="handleCancelLogin" class="w-full text-center text-gray-600">
+          {{ t('login.button.cancel_login') }}
+        </div>
       </div>
     </div>
   </MobileLayout>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 
+const { t } = useI18n()
 const logger = createLogger('SyncData')
 
 const router = useRouter()
@@ -57,7 +61,7 @@ const handleConfirmLogin = async () => {
     // 跳转到主页面
     router.push('/mobile/home')
   } catch (error) {
-    logger.error('登录确认失败:', error)
+    logger.error('Login confirmation failed:', error)
   }
 }
 

@@ -2102,7 +2102,10 @@ export type I18nKeys = {
       "no_recent": "暂无最近联系人"
     }
   },
-  "dynamic": {},
+  "dynamic": {
+    "title": "动态详情",
+    "detail_placeholder": "当前详情页已接入移动端页面壳，后续直接在这里复用共享详情状态、评论状态与返回路径管理。"
+  },
   "e2ee": {
     "banner": {
       "title": "端到端加密",
@@ -3605,6 +3608,13 @@ export type I18nKeys = {
         "register": "注册"
       },
       "forget_code": "忘记密码",
+      "confirm": {
+        "title": "登录确认",
+        "heading": "登录",
+        "sync_recent_messages": "同步最近的消息",
+        "auto_login": "自动登录该设备",
+        "confirm_button": "确定登录"
+      },
       "input": {
         "account_placeholder": "账号",
         "code_placeholder": "密码"
@@ -4698,6 +4708,13 @@ export type I18nKeys = {
     "empty": "暂无文件",
     "opening": "正在打开 {name}",
     "deleted": "文件已删除",
+    "image_alt": "文件图片",
+    "demo": {
+      "project_doc": "项目文档.pdf",
+      "meeting_notes": "会议记录.docx",
+      "product_screenshot": "产品截图.png",
+      "demo_video": "演示视频.mp4"
+    },
     "actions": {
       "open": "打开",
       "save": "保存到相册",
@@ -9144,6 +9161,8 @@ export type I18nKeyPaths =
   | "dm.create.error"
   | "dm.create.recent_contacts"
   | "dm.create.no_recent"
+  | "dynamic.title"
+  | "dynamic.detail_placeholder"
   | "e2ee.banner.title"
   | "e2ee.banner.desc"
   | "e2ee.unverified.title"
@@ -10273,6 +10292,11 @@ export type I18nKeyPaths =
   | "login.mobile.tabs.login"
   | "login.mobile.tabs.register"
   | "login.mobile.forget_code"
+  | "login.mobile.confirm.title"
+  | "login.mobile.confirm.heading"
+  | "login.mobile.confirm.sync_recent_messages"
+  | "login.mobile.confirm.auto_login"
+  | "login.mobile.confirm.confirm_button"
   | "login.mobile.input.account_placeholder"
   | "login.mobile.input.code_placeholder"
   | "login.mobile.register.input.nickname"
@@ -11135,6 +11159,11 @@ export type I18nKeyPaths =
   | "mobile_files.empty"
   | "mobile_files.opening"
   | "mobile_files.deleted"
+  | "mobile_files.image_alt"
+  | "mobile_files.demo.project_doc"
+  | "mobile_files.demo.meeting_notes"
+  | "mobile_files.demo.product_screenshot"
+  | "mobile_files.demo.demo_video"
   | "mobile_files.actions.open"
   | "mobile_files.actions.save"
   | "mobile_files.actions.forward"

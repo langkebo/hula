@@ -73,7 +73,7 @@
               <img
                 class="size-36px rounded-full object-cover"
                 :src="member.avatarUrl || '/logo.png'"
-                alt="成员头像"
+                :alt="t('common.avatar_alt', { name: member.displayName || member.userId || member.uid })"
                 loading="lazy"
                 decoding="async"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />

@@ -1,7 +1,7 @@
 <template>
   <AutoFixHeightPage :show-footer="false">
     <template #header>
-      <HeaderBar border :isOfficial="false" :hidden-right="true" room-name="动态详情" />
+      <HeaderBar border :isOfficial="false" :hidden-right="true" :room-name="t('dynamic.title')" />
     </template>
 
     <template #container>
@@ -14,7 +14,7 @@
           </div>
 
           <div class="rounded-16px bg-white p-16px text-13px leading-22px text-gray-500">
-            当前详情页已接入移动端页面壳，后续直接在这里复用共享详情状态、评论状态与返回路径管理。
+            {{ t('dynamic.detail_placeholder') }}
           </div>
         </div>
       </div>
@@ -23,7 +23,10 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useDynamicDetail } from '@/composables/useDynamicDetail'
+
+const { t } = useI18n()
 
 // 详情 id 解析、状态读取、标签配色与渲染采样统一走共享 composable，移动端只保留 Vant 呈现
 const { selectedItem, getStatusText, getTagType } = useDynamicDetail({

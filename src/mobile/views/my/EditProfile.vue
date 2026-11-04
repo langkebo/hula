@@ -19,7 +19,7 @@
               <img
                 class="absolute size-86px rounded-full object-cover"
                 :src="AvatarUtils.getAvatarUrl(localUserInfo.avatar!)"
-                alt="用户头像"
+                :alt="t('common.avatar_alt', { name: localUserInfo.name ?? '' })"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
               <div class="avatar-scrim absolute h-50% w-full bottom-0 bg-[--tjg-avatar-scrim-bg] bg-clip-padding"></div>
               <div class="absolute bottom-25% text-center w-full text-12px text-white">

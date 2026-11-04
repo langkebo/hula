@@ -59,7 +59,11 @@
             <van-tab :title="t('mobile_files.media')">
               <div class="grid grid-cols-3 gap-8px pt-12px">
                 <div v-for="file in mediaFiles" :key="file.id" class="aspect-square rounded-8px overflow-hidden">
-                  <img v-if="file.type === 'image'" :src="file.url" class="w-full h-full object-cover" alt="文件图片" />
+                  <img
+                    v-if="file.type === 'image'"
+                    :src="file.url"
+                    class="w-full h-full object-cover"
+                    :alt="t('mobile_files.image_alt')" />
                   <div v-else class="w-full h-full bg-[--tjg-surface-subtle] flex items-center justify-center">
                     <Icon icon="mdi:play-circle" :width="32" color="var(--tjg-text-secondary)" />
                   </div>
@@ -112,17 +116,38 @@ const documentIconShellStyle = {
 } as const
 
 const files = ref<MobileFile[]>([
-  { id: '1', name: '项目文档.pdf', type: 'document', size: 2048000, time: Date.now() - 3600000, url: '' },
-  { id: '2', name: '会议记录.docx', type: 'document', size: 1024000, time: Date.now() - 7200000, url: '' },
+  {
+    id: '1',
+    name: t('mobile_files.demo.project_doc'),
+    type: 'document',
+    size: 2048000,
+    time: Date.now() - 3600000,
+    url: ''
+  },
+  {
+    id: '2',
+    name: t('mobile_files.demo.meeting_notes'),
+    type: 'document',
+    size: 1024000,
+    time: Date.now() - 7200000,
+    url: ''
+  },
   {
     id: '3',
-    name: '产品截图.png',
+    name: t('mobile_files.demo.product_screenshot'),
     type: 'image',
     size: 512000,
     time: Date.now() - 86400000,
     url: 'https://picsum.photos/200/200?random=3'
   },
-  { id: '4', name: '演示视频.mp4', type: 'video', size: 10240000, time: Date.now() - 172800000, url: '' }
+  {
+    id: '4',
+    name: t('mobile_files.demo.demo_video'),
+    type: 'video',
+    size: 10240000,
+    time: Date.now() - 172800000,
+    url: ''
+  }
 ])
 
 const filteredFiles = computed(() => {

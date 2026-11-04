@@ -190,6 +190,13 @@
       "register": "Register"
     },
     "forget_code": "Forget",
+    "confirm": {
+      "title": "Confirm login",
+      "heading": "Login",
+      "sync_recent_messages": "Sync recent messages",
+      "auto_login": "Sign in on this device automatically",
+      "confirm_button": "Confirm login"
+    },
     "input": {
       "account_placeholder": "Enter Tjg account",
       "code_placeholder": "Enter password"

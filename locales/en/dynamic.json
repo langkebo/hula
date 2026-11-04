@@ -1,1 +1,4 @@
-{}
+{
+  "title": "Post details",
+  "detail_placeholder": "This detail page now uses the mobile shell. Shared detail state, comment state and back navigation will be reused here."
+}

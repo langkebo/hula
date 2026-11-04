@@ -132,7 +132,7 @@
 
       <!-- 第三步：完成 -->
       <div v-if="currentStep === 3" class="w-full max-w-300px mx-auto mt-100px text-center">
-        <img class="size-98px" src="/emoji/party-popper.webp" alt="庆祝" />
+        <img class="size-98px" src="/emoji/party-popper.webp" :alt="t('common.celebration')" />
         <div class="mt-16px text-18px">{{ t('mobile_forget_code.password_reset_success') }}</div>
         <div class="mt-16px text-14px text-[--tjg-text-secondary]">
           {{ t('mobile_forget_code.password_reset_success_desc') }}
@@ -224,7 +224,7 @@ const getCaptchaImage = async () => {
       duration: captchaInterval
     })
   } catch (error) {
-    logger.error('获取验证码失败', error)
+    logger.error('Failed to fetch verification code', error)
     showFeedback(getErrorMessage(error, t('mobile_forget_code.captcha_failed')), 'error')
     captchaInCooldown.value = false
   }
@@ -265,7 +265,7 @@ const sendEmailCode = async () => {
       duration: 60 * 1000
     })
   } catch (error) {
-    logger.error('发送验证码失败', error)
+    logger.error('Failed to send verification code', error)
     showFeedback(getErrorMessage(error, t('mobile_forget_code.send_code_failed')), 'error')
     getCaptchaImage()
   } finally {
@@ -296,7 +296,7 @@ const verifyEmail = async () => {
     emailVerified.value = true
     currentStep.value = 2
   } catch (error) {
-    logger.error('表单验证失败', error)
+    logger.error('Form validation failed', error)
     showFeedback(getErrorMessage(error, t('mobile_forget_code.verify_email_failed')), 'error')
   } finally {
     verifyLoading.value = false
@@ -340,7 +340,7 @@ const submitNewPassword = async () => {
       router.push('/mobile/login')
     }, 2000)
   } catch (error) {
-    logger.error('重置密码失败', error)
+    logger.error('Failed to reset password', error)
     showFeedback(getErrorMessage(error, t('mobile_forget_code.reset_password_failed')), 'error')
   } finally {
     submitLoading.value = false

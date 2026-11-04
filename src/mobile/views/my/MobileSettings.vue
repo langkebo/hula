@@ -303,7 +303,7 @@ async function handleLogout() {
         await logout()
 
         settingStore.toggleLogin(false, false)
-        logger.info('登出账号')
+        logger.info('Logging out account')
         isTrayMenuShow.value = false
 
         showToast({
@@ -320,7 +320,7 @@ async function handleLogout() {
       }
     })
     .catch(() => {
-      logger.info('用户点击取消')
+      logger.info('User cancelled')
     })
     .finally(() => {
       isLoggingOut.value = false

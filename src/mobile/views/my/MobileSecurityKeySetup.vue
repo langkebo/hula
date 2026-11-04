@@ -134,7 +134,7 @@ async function startGenerate(): Promise<void> {
       passphrase.value ? { password: passphrase.value } : undefined
     )
     if (!encoded) {
-      throw new Error('setupKeyBackupWithOptions 未返回恢复密钥')
+      throw new Error('setupKeyBackupWithOptions did not return a recovery key')
     }
     recoveryKey.value = encoded
     step.value = 'showKey'

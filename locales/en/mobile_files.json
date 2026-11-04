@@ -7,6 +7,13 @@
   "empty": "No files",
   "opening": "Opening {name}",
   "deleted": "File deleted",
+  "image_alt": "File image",
+  "demo": {
+    "project_doc": "Project document.pdf",
+    "meeting_notes": "Meeting notes.docx",
+    "product_screenshot": "Product screenshot.png",
+    "demo_video": "Demo video.mp4"
+  },
   "actions": {
     "open": "Open",
     "save": "Save to Album",
