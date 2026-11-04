@@ -100,7 +100,22 @@
     "rendezvous_hint": "Use MSC3886 Rendezvous protocol for secure cross-device login",
     "open_rendezvous": "Open Rendezvous Manager",
     "confirm_title": "Sign in to {server}",
-    "confirm_default_server": "Tjg"
+    "confirm_default_server": "Tjg",
+    "qr_code_alt": "QR code",
+    "check_code": "Check code",
+    "server": "Server",
+    "login_time": "Login time",
+    "status": "Status",
+    "status_scan_failed": "Scan failed",
+    "status_confirming": "Confirming",
+    "status_connected": "Connected",
+    "status_connecting": "Connecting",
+    "status_waiting": "Waiting for connection",
+    "confirming": "Confirming...",
+    "connect_failed": "Connection failed",
+    "missing_qr_data": "QR code data was not received",
+    "scan_failed_detail": "Scan failed: {msg}",
+    "confirm_failed_detail": "Failed to confirm login: {msg}"
   },
   "guide": {
     "welcome": {

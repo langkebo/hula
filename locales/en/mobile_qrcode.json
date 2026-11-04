@@ -12,5 +12,7 @@
   "qr_code_expired_btn": "QR Code Expired",
   "qr_no_uid": "Login QR code missing uid",
   "group_qr_no_roomId": "Group QR code missing roomId",
-  "invalid_qr_code": "Cannot recognize the QR code"
+  "invalid_qr_code": "Cannot recognize the QR code",
+  "invalid_login_qr": "Invalid login QR code format",
+  "cannot_add_self": "You cannot add yourself as a friend"
 }

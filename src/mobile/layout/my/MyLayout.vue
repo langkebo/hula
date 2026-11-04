@@ -48,7 +48,7 @@ const handleScanLogin = async (data: ScanData) => {
   // MSC4108 flow: scanned QR is a base64 string passed as `qrData`
   const qrData = data.qrData as string
   if (!qrData || typeof qrData !== 'string') {
-    showFeedback('登录二维码格式不正确', 'warning')
+    showFeedback(t('mobile_qrcode.invalid_login_qr'), 'warning')
     throw new Error(`MSC4108 QR data missing or invalid: ${JSON.stringify(data)}`)
   }
 
@@ -62,10 +62,10 @@ const globalStore = useGlobalStore()
 const userStore = useUserStore()
 
 const handleScanAddFriend = async (data: ScanData) => {
-  logger.debug('尝试扫码添加好友')
+  logger.debug('QR scan intent: add friend')
   if (!hasOwn(data, 'uid')) {
     showFeedback(t('mobile_qrcode.qr_no_uid'), 'warning')
-    throw new Error(`登录二维码不存在uid: ${JSON.stringify(data)}`)
+    throw new Error(`Login QR data missing uid: ${JSON.stringify(data)}`)
   }
 
   const uidStr = data.uid as string
@@ -76,8 +76,8 @@ const handleScanAddFriend = async (data: ScanData) => {
   const selfUid = userStore.userInfo?.uid as string
 
   if (selfUid === uid) {
-    showFeedback('不能添加自己为好友哦~', 'warning')
-    throw new Error(`用户尝试扫自己二维码添加好友但被拒绝: ${JSON.stringify(data)}`)
+    showFeedback(t('mobile_qrcode.cannot_add_self'), 'warning')
+    throw new Error(`Refused to add self as friend: ${JSON.stringify(data)}`)
   }
 
   globalStore.setAddFriendTarget(uid)
@@ -91,10 +91,10 @@ const handleScanAddFriend = async (data: ScanData) => {
  * 扫码进群
  */
 const handleScanEnterGroup = async (data: ScanData) => {
-  logger.debug('尝试扫码加群', data, hasOwn(data, 'roomId'))
+  logger.debug('QR scan intent: join group', data, hasOwn(data, 'roomId'))
   if (!hasOwn(data, 'roomId')) {
     showFeedback(t('mobile_qrcode.group_qr_no_roomId'), 'warning')
-    throw new Error(`加群二维码不存在roomId: ${JSON.stringify(data)}`)
+    throw new Error(`Group QR data missing roomId: ${JSON.stringify(data)}`)
   }
 
   const roomId = data.roomId as string
@@ -119,8 +119,8 @@ const handleScanEnterGroup = async (data: ScanData) => {
  */
 useMitt.on(MittEnum.QR_SCAN_EVENT, async (data: ScanData) => {
   if (!hasOwn(data, 'type')) {
-    showFeedback('识别不到正确的二维码', 'warning')
-    throw new Error(`二维码缺少type字段: ${JSON.stringify(data)}`)
+    showFeedback(t('mobile_qrcode.invalid_qr_code'), 'warning')
+    throw new Error(`QR data missing type field: ${JSON.stringify(data)}`)
   }
 
   switch (data.type) {
@@ -128,26 +128,26 @@ useMitt.on(MittEnum.QR_SCAN_EVENT, async (data: ScanData) => {
       try {
         await handleScanLogin(data)
       } catch (error) {
-        logger.debug('扫码尝试获取Token失败:', error)
+        logger.debug('QR scan login failed:', error)
       }
       break
     case 'addFriend':
       try {
         await handleScanAddFriend(data)
       } catch (error) {
-        logger.debug('扫码添加好友失败:', error)
+        logger.debug('QR scan add friend failed:', error)
       }
       break
     case 'scanEnterGroup':
       try {
         await handleScanEnterGroup(data)
       } catch (error) {
-        logger.debug('扫码加入群失败:', error)
+        logger.debug('QR scan join group failed:', error)
       }
       break
     default:
       showFeedback(t('mobile_qrcode.invalid_qr_code'), 'warning')
-      throw new Error(`二维码缺少type字段: ${JSON.stringify(data)}`)
+      throw new Error(`QR data missing type field: ${JSON.stringify(data)}`)
   }
 })
 

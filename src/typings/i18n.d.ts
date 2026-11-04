@@ -3515,7 +3515,22 @@ export type I18nKeys = {
       "rendezvous_hint": "使用 MSC3886 Rendezvous 协议进行安全的跨设备登录",
       "open_rendezvous": "打开 Rendezvous 管理",
       "confirm_title": "登录 {server}",
-      "confirm_default_server": "Tjg"
+      "confirm_default_server": "Tjg",
+      "qr_code_alt": "二维码",
+      "check_code": "校验码",
+      "server": "服务器",
+      "login_time": "登录时间",
+      "status": "状态",
+      "status_scan_failed": "扫码失败",
+      "status_confirming": "确认中",
+      "status_connected": "已连接",
+      "status_connecting": "连接中",
+      "status_waiting": "等待连接",
+      "confirming": "确认中...",
+      "connect_failed": "连接失败",
+      "missing_qr_data": "未收到二维码数据",
+      "scan_failed_detail": "扫码失败: {msg}",
+      "confirm_failed_detail": "确认登录失败: {msg}"
     },
     "guide": {
       "welcome": {
@@ -5110,7 +5125,9 @@ export type I18nKeys = {
     "qr_code_expired_btn": "二维码已过期",
     "qr_no_uid": "登录二维码不存在uid",
     "group_qr_no_roomId": "加群二维码不存在roomId",
-    "invalid_qr_code": "识别不到正确的二维码"
+    "invalid_qr_code": "识别不到正确的二维码",
+    "invalid_login_qr": "登录二维码格式不正确",
+    "cannot_add_self": "不能添加自己为好友哦~"
   },
   "mobile_quick_actions": {
     "scan": "扫一扫",
@@ -10203,6 +10220,21 @@ export type I18nKeyPaths =
   | "login.qr.open_rendezvous"
   | "login.qr.confirm_title"
   | "login.qr.confirm_default_server"
+  | "login.qr.qr_code_alt"
+  | "login.qr.check_code"
+  | "login.qr.server"
+  | "login.qr.login_time"
+  | "login.qr.status"
+  | "login.qr.status_scan_failed"
+  | "login.qr.status_confirming"
+  | "login.qr.status_connected"
+  | "login.qr.status_connecting"
+  | "login.qr.status_waiting"
+  | "login.qr.confirming"
+  | "login.qr.connect_failed"
+  | "login.qr.missing_qr_data"
+  | "login.qr.scan_failed_detail"
+  | "login.qr.confirm_failed_detail"
   | "login.guide.welcome.title"
   | "login.guide.welcome.desc"
   | "login.guide.privacy.title"
@@ -11452,6 +11484,8 @@ export type I18nKeyPaths =
   | "mobile_qrcode.qr_no_uid"
   | "mobile_qrcode.group_qr_no_roomId"
   | "mobile_qrcode.invalid_qr_code"
+  | "mobile_qrcode.invalid_login_qr"
+  | "mobile_qrcode.cannot_add_self"
   | "mobile_quick_actions.scan"
   | "mobile_quick_actions.wallet"
   | "mobile_quick_actions.favorite"

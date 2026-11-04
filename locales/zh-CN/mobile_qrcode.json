@@ -12,5 +12,7 @@
   "qr_code_expired_btn": "二维码已过期",
   "qr_no_uid": "登录二维码不存在uid",
   "group_qr_no_roomId": "加群二维码不存在roomId",
-  "invalid_qr_code": "识别不到正确的二维码"
+  "invalid_qr_code": "识别不到正确的二维码",
+  "invalid_login_qr": "登录二维码格式不正确",
+  "cannot_add_self": "不能添加自己为好友哦~"
 }

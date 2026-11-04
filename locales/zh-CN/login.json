@@ -100,7 +100,22 @@
     "rendezvous_hint": "使用 MSC3886 Rendezvous 协议进行安全的跨设备登录",
     "open_rendezvous": "打开 Rendezvous 管理",
     "confirm_title": "登录 {server}",
-    "confirm_default_server": "Tjg"
+    "confirm_default_server": "Tjg",
+    "qr_code_alt": "二维码",
+    "check_code": "校验码",
+    "server": "服务器",
+    "login_time": "登录时间",
+    "status": "状态",
+    "status_scan_failed": "扫码失败",
+    "status_confirming": "确认中",
+    "status_connected": "已连接",
+    "status_connecting": "连接中",
+    "status_waiting": "等待连接",
+    "confirming": "确认中...",
+    "connect_failed": "连接失败",
+    "missing_qr_data": "未收到二维码数据",
+    "scan_failed_detail": "扫码失败: {msg}",
+    "confirm_failed_detail": "确认登录失败: {msg}"
   },
   "guide": {
     "welcome": {

@@ -4,12 +4,12 @@
     <div class="flex flex-col flex-1 items-center px-15px">
       <div class="flex flex-col w-full flex-1 flex-col rounded-15px bg-white pt-15% items-center gap-20px">
         <div class="flex flex-col items-center gap-15px">
-          <img class="w-100px h-100px" :src="qrCodeIcon" alt="二维码" />
+          <img class="w-100px h-100px" :src="qrCodeIcon" :alt="t('login.qr.qr_code_alt')" />
           <div class="text-20px font-bold text-[--tjg-text-primary]">
             {{ t('login.qr.confirm_title', { server: serverName || t('login.qr.confirm_default_server') }) }}
           </div>
           <div v-if="checkCode" class="text-14px text-[--tjg-text-tertiary]">
-            校验码:
+            {{ t('login.qr.check_code') }}:
             <span class="font-mono font-bold text-[--tjg-color-primary-500]">{{ checkCode }}</span>
           </div>
         </div>
@@ -18,15 +18,15 @@
 
         <div class="flex flex-col w-80% gap-20px mt-10px">
           <div class="flex justify-between w-full">
-            <span>服务器</span>
+            <span>{{ t('login.qr.server') }}</span>
             <span>{{ serverName || '-' }}</span>
           </div>
           <div class="flex justify-between">
-            <span>登录时间</span>
+            <span>{{ t('login.qr.login_time') }}</span>
             <span>{{ nowFormatted }}</span>
           </div>
           <div class="flex justify-between">
-            <span>状态</span>
+            <span>{{ t('login.qr.status') }}</span>
             <span>{{ statusText }}</span>
           </div>
         </div>
@@ -47,13 +47,15 @@
             class="px-50px">
             {{
               reciprocating
-                ? '确认中...'
+                ? t('login.qr.confirming')
                 : countdown > 0
                   ? t('mobile_qrcode.login_countdown', { countdown: countdown })
                   : t('mobile_qrcode.qr_code_expired_btn')
             }}
           </van-button>
-          <van-button :disabled="reciprocating" @click="handleDecline" type="default" class="px-30px">取消</van-button>
+          <van-button :disabled="reciprocating" @click="handleDecline" type="default" class="px-30px">
+            {{ t('common.cancel') }}
+          </van-button>
         </div>
       </div>
     </div>
@@ -97,17 +99,17 @@ const reciprocating = ref(false)
 const scanError = ref<string>('')
 
 const statusText = computed(() => {
-  if (scanError.value) return '扫码失败'
-  if (reciprocating.value) return '确认中'
-  if (serverName.value) return '已连接'
-  if (scanning.value) return '连接中'
-  return '等待连接'
+  if (scanError.value) return t('login.qr.status_scan_failed')
+  if (reciprocating.value) return t('login.qr.status_confirming')
+  if (serverName.value) return t('login.qr.status_connected')
+  if (scanning.value) return t('login.qr.status_connecting')
+  return t('login.qr.status_waiting')
 })
 
 // Subscribe to MSC4108 status changes for UI updates.
 matrixQrLoginSdkService.onStatusChange((status: QrLoginStatus, detail?: string) => {
   if (status === 'failed') {
-    scanError.value = detail || '连接失败'
+    scanError.value = detail || t('login.qr.connect_failed')
     reciprocating.value = false
   } else if (status === 'success') {
     reciprocating.value = false
@@ -117,7 +119,7 @@ matrixQrLoginSdkService.onStatusChange((status: QrLoginStatus, detail?: string) 
 /** 扫码并建立 MSC4108 安全通道 */
 const scanAndConnect = async () => {
   if (!props.qrData) {
-    scanError.value = '未收到二维码数据'
+    scanError.value = t('login.qr.missing_qr_data')
     return
   }
 
@@ -128,8 +130,8 @@ const scanAndConnect = async () => {
     checkCode.value = sessionInfo.checkCode ?? ''
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
-    logger.error('MSC4108 扫码失败:', error)
-    scanError.value = `扫码失败: ${msg}`
+    logger.error('MSC4108 scan failed', error)
+    scanError.value = t('login.qr.scan_failed_detail', { msg })
   } finally {
     scanning.value = false
   }
@@ -147,8 +149,8 @@ const handleConfirmLogin = async () => {
     router.push('/mobile/message')
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
-    logger.error('MSC4108 确认登录出错:', error)
-    scanError.value = `确认登录失败: ${msg}`
+    logger.error('MSC4108 confirm login failed', error)
+    scanError.value = t('login.qr.confirm_failed_detail', { msg })
   } finally {
     reciprocating.value = false
   }
