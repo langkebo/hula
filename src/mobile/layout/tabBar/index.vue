@@ -5,7 +5,7 @@
     <nav
       class="tab-bar flex items-end"
       :class="vertical ? 'flex-col justify-around' : 'justify-around'"
-      aria-label="移动端主导航">
+      :aria-label="t('mobile_tabbar.aria_label')">
       <RouterLink
         v-for="item in navItems"
         :key="item.path"

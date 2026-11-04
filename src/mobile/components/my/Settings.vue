@@ -1,23 +1,39 @@
 <template>
   <div
     class="grid grid-cols-[32px_32px_32px_32px] px-16px gap-12px z-1 h-32px items-center justify-end mt-10px dark:invert">
-    <div @click="toMyMessages" class="h-32px w-32px flex items-center justify-center">
+    <button
+      type="button"
+      :aria-label="t('mobile_my.actions.messages')"
+      class="relative h-32px w-32px flex items-center justify-center bg-transparent border-0 p-0 after:absolute after:-inset-8px after:content-['']"
+      @click="toMyMessages">
       <van-badge :content="unreadApplyCount || ''" :max="99">
         <svg class="iconpark-icon h-24px w-24px block"><use href="#remind"></use></svg>
       </van-badge>
-    </div>
+    </button>
 
-    <div @click="activate" class="h-32px w-32px flex items-center justify-center">
+    <button
+      type="button"
+      :aria-label="t('mobile_my.actions.share')"
+      class="relative h-32px w-32px flex items-center justify-center bg-transparent border-0 p-0 after:absolute after:-inset-8px after:content-['']"
+      @click="activate">
       <svg class="iconpark-icon h-24px w-24px block"><use href="#share"></use></svg>
-    </div>
+    </button>
 
-    <div @click="toScanQRCode" class="h-32px w-32px flex items-center justify-center">
+    <button
+      type="button"
+      :aria-label="t('mobile_my.actions.scan')"
+      class="relative h-32px w-32px flex items-center justify-center bg-transparent border-0 p-0 after:absolute after:-inset-8px after:content-['']"
+      @click="toScanQRCode">
       <svg class="iconpark-icon h-30px w-30px block"><use href="#saoma"></use></svg>
-    </div>
+    </button>
 
-    <div @click="toSettings" class="h-32px w-32px flex items-center justify-center">
+    <button
+      type="button"
+      :aria-label="t('mobile_my.actions.settings')"
+      class="relative h-32px w-32px flex items-center justify-center bg-transparent border-0 p-0 after:absolute after:-inset-8px after:content-['']"
+      @click="toSettings">
       <svg class="iconpark-icon h-30px w-30px block"><use href="#wode-shezhi"></use></svg>
-    </div>
+    </button>
 
     <van-popup v-model:show="active" position="bottom" :style="{ height: '30%' }">
       <div class="text-center py-20px text-16px">{{ t('mobile_my.share_to') }}</div>
