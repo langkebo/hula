@@ -28,11 +28,24 @@ vi.mock('@/services/matrix/crypto/MatrixAttachmentDecryptionService', async () =
   }
 })
 
-/** 构造模拟 MatrixClient */
+/**
+ * 构造模拟 MatrixClient。
+ *
+ * MSC3916 兜底 URL 现在由 SDK 的 media manager 按路由表构建，
+ * 因此 client 需要提供 `getMediaManager().getDownloadUrl()`。
+ */
 function createClient(overrides: { token?: string | null; homeserverUrl?: string } = {}) {
+  const homeserverUrl = overrides.homeserverUrl ?? 'https://hs.example.com'
+  const base = homeserverUrl.replace(/\/$/, '')
   return {
     getAccessToken: () => overrides.token ?? null,
-    getHomeserverUrl: () => overrides.homeserverUrl ?? 'https://hs.example.com'
+    getHomeserverUrl: () => homeserverUrl,
+    getMediaManager: () => ({
+      getDownloadUrl: (mxcUrl: string, options?: { useAuthentication?: boolean }) =>
+        options?.useAuthentication
+          ? `${base}/_matrix/client/v1/media/download/${mxcUrl.replace('mxc://', '')}`
+          : `${base}/_matrix/media/v3/download/${mxcUrl.replace('mxc://', '')}`
+    })
   } as unknown as MatrixClient
 }
 
@@ -93,40 +106,31 @@ describe('downloadFileBytes', () => {
     })
   })
 
-  it('should fall back to MSC3916 auth download endpoint on 404', async () => {
+  it('falls back to the SDK-provided MSC3916 authenticated download URL on 404', async () => {
     downloadBytes
       .mockRejectedValueOnce(new HttpClientError('not found', 404, 'Not Found', ''))
       .mockResolvedValueOnce(new ArrayBuffer(0))
-    const client = createClient({ token: 'tok', homeserverUrl: 'https://hs.example.com' })
+
+    // 断言的是**契约**：必须向 SDK 的 media manager 要「带认证」的下载 URL，
+    // 而不是在客户端手拼 `/_matrix/...`（手拼曾少一个 `/` ⇒ 永远 404，
+    // 也违反 check:ratchet 的「不得新增硬编码路径」）。
+    const getDownloadUrl = vi.fn(() => 'https://hs.example.com/_matrix/client/v1/media/download/server/media1')
+    const client = {
+      getAccessToken: () => 'tok',
+      getHomeserverUrl: () => 'https://hs.example.com',
+      getMediaManager: () => ({ getDownloadUrl })
+    } as unknown as MatrixClient
     const downloadUrl = 'https://hs.example.com/_matrix/media/v3/download/server/media1'
 
     const result = await downloadFileBytes(client, 'mxc://server/media1', () => downloadUrl, t)
 
-    // 第二次调用为 MSC3916 auth endpoint。
-    // 注意：这里必须是 `hs.example.com/_matrix/...` —— 旧断言写成
-    // `hs.example.com_matrix/...`（少一个斜杠），把 bug 当成了期望值。
-    const authUrl = 'https://hs.example.com/_matrix/client/v1/media/download/server/media1'
-    expect(downloadBytes).toHaveBeenNthCalledWith(2, authUrl, {
-      headers: { Authorization: 'Bearer tok' },
-      allowDynamicHost: true
-    })
-    expect(result).toBeInstanceOf(Uint8Array)
-  })
-
-  it('normalizes a trailing slash on the homeserver URL when building the auth endpoint', async () => {
-    downloadBytes
-      .mockRejectedValueOnce(new HttpClientError('not found', 404, 'Not Found', ''))
-      .mockResolvedValueOnce(new ArrayBuffer(0))
-    const client = createClient({ token: 'tok', homeserverUrl: 'https://hs.example.com/' })
-    const downloadUrl = 'https://hs.example.com/_matrix/media/v3/download/server/media1'
-
-    await downloadFileBytes(client, 'mxc://server/media1', () => downloadUrl, t)
-
+    expect(getDownloadUrl).toHaveBeenCalledWith('mxc://server/media1', { useAuthentication: true })
     expect(downloadBytes).toHaveBeenNthCalledWith(
       2,
       'https://hs.example.com/_matrix/client/v1/media/download/server/media1',
       { headers: { Authorization: 'Bearer tok' }, allowDynamicHost: true }
     )
+    expect(result).toBeInstanceOf(Uint8Array)
   })
 
   it('should fall back to access_token query param if auth endpoint also fails', async () => {

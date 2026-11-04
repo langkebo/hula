@@ -57,25 +57,19 @@ export async function downloadFileBytes(
     } catch (err) {
       if (err instanceof HttpClientError && err.status === 404 && accessToken) {
         // Fallback: try authenticated download endpoint (MSC3916)
-        const mxcMatch = mediaUrl.match(/^mxc:\/\/([^/]+)\/(.+)$/)
-        if (mxcMatch) {
-          const serverName = mxcMatch[1]
-          const mediaId = mxcMatch[2]
-          // AR-07b / B2 修复：此处原先直接拼 `getHomeserverUrl() + '_matrix/...'`，
-          // homeserver 无尾斜杠时得到 `https://hs.example.com_matrix/...`（主机名后缀被污染），
-          // 该兜底必然 404 —— 于是每次都落到下面的 `?access_token=` query 兜底，
-          // 把 token 写进 URL（访问日志 / 代理历史可读）。测试当时把错误串当成期望值，锁死了这个 bug。
-          const baseUrl = client.getHomeserverUrl().replace(/\/$/, '')
-          const authDownloadUrl = `${baseUrl}/_matrix/client/v1/media/download/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`
-          try {
-            const buffer = await HttpClient.downloadBytes(authDownloadUrl, {
-              headers: { Authorization: `Bearer ${accessToken}` },
-              allowDynamicHost: true
-            })
-            return new Uint8Array(buffer)
-          } catch {
-            // fall through to error
-          }
+        //
+        // 该 URL 由 SDK 的 media manager 按路由表构建（`/_matrix/client/v1/media/download/...`），
+        // 不在客户端手拼 —— 手拼既会产生硬编码 `/_matrix` 字面量（`check:ratchet` 会拦），
+        // 也曾经因为少一个 `/` 拼成 `hs.example.com_matrix/...`，使这条兜底永远 404。
+        try {
+          const authDownloadUrl = client.getMediaManager().getDownloadUrl(mediaUrl, { useAuthentication: true })
+          const buffer = await HttpClient.downloadBytes(authDownloadUrl, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            allowDynamicHost: true
+          })
+          return new Uint8Array(buffer)
+        } catch {
+          // fall through to the query-token fallback below
         }
         // Last fallback: access_token in query (only if all else fails)
         const separator = downloadUrl.includes('?') ? '&' : '?'
