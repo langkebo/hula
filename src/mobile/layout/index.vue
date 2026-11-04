@@ -1,5 +1,5 @@
 <template>
-  <MobileLayout :safeAreaTop="shouldShowTopSafeArea" :safeAreaBottom="!isLandscape">
+  <MobileLayout :safeAreaTop="shouldShowTopSafeArea" :safe-area-bottom="false">
     <div class="h-full" :class="isLandscape ? 'flex flex-row' : 'flex flex-col'">
       <!-- 横屏：TabBar 作为左侧垂直导航栏 -->
       <div v-if="isLandscape" class="flex-shrink-0 h-full">

@@ -124,7 +124,8 @@ const navItems: NavItem[] = [
 }
 
 .tab-bar {
-  height: 62px;
+  min-height: 62px;
+  padding-bottom: var(--safe-area-inset-bottom, 0px);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
@@ -132,7 +133,8 @@ const navItems: NavItem[] = [
 .tab-item {
   gap: 2px;
   font-size: 11px;
-  padding-bottom: var(--safe-area-inset-bottom, 10px);
+  /* 安全区统一由 .tab-bar 承担，item 不再重复叠加 */
+  padding-bottom: 0;
   /* 触摸热区 >= 48x48px，配合 min-h-48px 确保可点击区域 */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -144,6 +146,8 @@ const navItems: NavItem[] = [
   height: 100%;
   display: flex;
   flex-direction: row;
+  padding-left: var(--safe-area-inset-left, 0px);
+  padding-bottom: 0;
 
   /* 需 !important：覆盖 Vant Tabbar 的横向 flex 默认值 */
   .tab-bar {
