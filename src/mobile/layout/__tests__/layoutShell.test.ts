@@ -61,4 +61,12 @@ describe('chat header layout', () => {
     expect(header).not.toContain('grid-cols-[100px_1fr_100px]')
     expect(header).not.toContain('#diannao')
   })
+
+  it('头部三段式 flex 结构锁定：左右 shrink-0，中段 flex-1 且 min-w-0', () => {
+    const header = read('src/mobile/components/chat-room/HeaderBar.vue')
+    expect(header).toMatch(/class="[^"]*\bshrink-0\b[^"]*"/)
+    expect(header).toMatch(/class="[^"]*\bflex-1\b[^"]*\bmin-w-0\b[^"]*"/)
+    expect(header).toMatch(/class="[^"]*\bjustify-end\b[^"]*\bshrink-0\b[^"]*"/)
+    expect(header).toMatch(/class="[^"]*\bjustify-end\b[^"]*\bpe-16px\b[^"]*"/)
+  })
 })
