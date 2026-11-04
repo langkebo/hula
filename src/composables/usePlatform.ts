@@ -1,6 +1,7 @@
 import { type AsyncComponentLoader, type Component, type ComputedRef, computed, defineAsyncComponent, ref } from 'vue'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { isMobile } from '@/utils/PlatformConstants'
+import { readRequestedPlatform, resolveTauriPlatform } from '@/utils/platformDetection'
 
 type Platform = 'desktop' | 'mobile'
 
@@ -10,36 +11,9 @@ interface PlatformInfo {
   platform: Platform
   isTauri: boolean
   isWeb: boolean
-  isLandscape: boolean
 }
 
 const platformCache = ref<PlatformInfo | null>(null)
-
-const PLATFORM_QUERY_KEY = 'platform'
-const PLATFORM_STORAGE_KEY = 'tjg:e2e:platform'
-
-function readRequestedPlatform(): Platform | null {
-  if (typeof window === 'undefined') return null
-
-  const queryValue = new URLSearchParams(window.location.search).get(PLATFORM_QUERY_KEY)
-  if (queryValue === 'desktop' || queryValue === 'mobile') {
-    return queryValue
-  }
-
-  const storageValue = window.localStorage.getItem(PLATFORM_STORAGE_KEY)
-  if (storageValue === 'desktop' || storageValue === 'mobile') {
-    return storageValue
-  }
-
-  return null
-}
-
-function resolveTauriPlatform(): Platform | null {
-  const envPlatform = import.meta.env.TAURI_ENV_PLATFORM
-  if (envPlatform === 'android' || envPlatform === 'ios') return 'mobile'
-  if (envPlatform === 'windows' || envPlatform === 'darwin' || envPlatform === 'linux') return 'desktop'
-  return null
-}
 
 function detectPlatform(): PlatformInfo {
   if (platformCache.value) {
@@ -49,23 +23,18 @@ function detectPlatform(): PlatformInfo {
   const requestedPlatform = readRequestedPlatform()
   const isTauri = hasTauriRuntime()
   const isMobileUserAgent = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-  const tauriPlatform = resolveTauriPlatform()
+  const tauriPlatform = resolveTauriPlatform(import.meta.env.TAURI_ENV_PLATFORM)
   const platform: Platform =
     requestedPlatform ?? tauriPlatform ?? (isTauri ? 'desktop' : isMobileUserAgent ? 'mobile' : 'desktop')
   const isDesktop = platform === 'desktop'
   const isMobile = platform === 'mobile'
-  const isLandscape =
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-      ? window.matchMedia('(orientation: landscape)').matches
-      : false
 
   const info: PlatformInfo = {
     isDesktop,
     isMobile,
     platform,
     isTauri,
-    isWeb: !isTauri,
-    isLandscape
+    isWeb: !isTauri
   }
 
   platformCache.value = info
@@ -80,8 +49,7 @@ export function usePlatform(): PlatformInfo {
     isMobile: computed(() => info.isMobile).value,
     platform: computed(() => info.platform).value,
     isTauri: computed(() => info.isTauri).value,
-    isWeb: computed(() => info.isWeb).value,
-    isLandscape: computed(() => info.isLandscape).value
+    isWeb: computed(() => info.isWeb).value
   }
 }
 

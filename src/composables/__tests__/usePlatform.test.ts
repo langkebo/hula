@@ -1,35 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { usePlatform } from '../usePlatform'
 
-describe('usePlatform isLandscape', () => {
-  beforeEach(() => {
-    vi.resetModules()
-  })
-
-  it('returns true when window is landscape', async () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn().mockReturnValue({
-        matches: true,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
-      })
-    )
-    const { usePlatform } = await import('../usePlatform')
-    const { isLandscape } = usePlatform()
-    expect(isLandscape).toBe(true)
-  })
-
-  it('returns false when window is portrait', async () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn().mockReturnValue({
-        matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
-      })
-    )
-    const { usePlatform } = await import('../usePlatform')
-    const { isLandscape } = usePlatform()
-    expect(isLandscape).toBe(false)
+describe('usePlatform', () => {
+  it('returns platform info without the removed isLandscape field', () => {
+    const info = usePlatform()
+    expect(info).not.toHaveProperty('isLandscape')
+    expect(['desktop', 'mobile']).toContain(info.platform)
   })
 })

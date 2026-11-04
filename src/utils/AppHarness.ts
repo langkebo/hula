@@ -1,5 +1,6 @@
 import { type as getOsType } from '@tauri-apps/plugin-os'
 import { performanceReporter } from '@/utils/PerformanceReporter'
+import { readRequestedPlatform, resolvePlatformType } from '@/utils/platformDetection'
 
 type AppPlatform = 'desktop' | 'mobile'
 type RenderSampleStatus = 'pass' | 'warn'
@@ -30,10 +31,8 @@ interface ActiveRenderSample {
   meta?: Record<string, string> | undefined
 }
 
-const PLATFORM_QUERY_KEY = 'platform'
 const E2E_QUERY_KEY = 'e2e'
 const MOCK_AUTH_QUERY_KEY = 'mockAuth'
-const PLATFORM_STORAGE_KEY = 'tjg:e2e:platform'
 const E2E_STORAGE_KEY = 'tjg:e2e:enabled'
 const MOCK_AUTH_STORAGE_KEY = 'tjg:e2e:mock-auth'
 const DEFAULT_RENDER_THRESHOLD_MS = 800
@@ -58,14 +57,6 @@ const readStorageFlag = (key: string): string | null => {
 
 const isEnabledFlag = (value: string | null): boolean => {
   return value === '1' || value === 'true'
-}
-
-const getRequestedPlatform = (): AppPlatform | null => {
-  const candidate = readQueryFlag(PLATFORM_QUERY_KEY) ?? readStorageFlag(PLATFORM_STORAGE_KEY)
-  if (candidate === 'mobile' || candidate === 'desktop') {
-    return candidate
-  }
-  return null
 }
 
 const resolveFallbackRoute = (explicitRoute?: string): string => {
@@ -97,21 +88,17 @@ export const shouldBypassAuthForE2E = (): boolean => {
 }
 
 export const detectAppPlatform = (): AppPlatform => {
-  const requestedPlatform = getRequestedPlatform()
+  const requestedPlatform = readRequestedPlatform()
   if (requestedPlatform) {
     return requestedPlatform
   }
 
   try {
-    const osType = getOsType()
-    if (osType === 'ios' || osType === 'android') {
-      return 'mobile'
-    }
+    return resolvePlatformType(getOsType())
   } catch {
     // Browser-only E2E runs can safely fall back to desktop.
+    return 'desktop'
   }
-
-  return 'desktop'
 }
 
 export const startRenderSample = (name: string, options: RenderSampleStartOptions = {}): void => {

@@ -1,6 +1,7 @@
 import { type, version } from '@tauri-apps/plugin-os'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
+import { resolvePlatformType } from '@/utils/platformDetection'
 
 const logger = createLogger('PlatformConstants')
 
@@ -45,7 +46,7 @@ class PlatformDetector {
     try {
       const detectedType = type()
       PlatformDetector._osType = PlatformDetector.normalizeOSType(detectedType)
-      PlatformDetector._platformType = PlatformDetector.isDesktopOS(PlatformDetector._osType) ? 'desktop' : 'mobile'
+      PlatformDetector._platformType = resolvePlatformType(PlatformDetector._osType)
       PlatformDetector._osVersion = PlatformDetector.detectVersion()
       PlatformDetector._isWindows10 =
         PlatformDetector._osType === 'windows' && PlatformDetector.isWindows10Version(PlatformDetector._osVersion)
@@ -75,10 +76,6 @@ class PlatformDetector {
       default:
         throw new Error(`Unsupported OS type: ${osType}`)
     }
-  }
-
-  private static isDesktopOS(osType: OSType): boolean {
-    return osType === 'windows' || osType === 'linux' || osType === 'macos'
   }
 
   private static detectVersion(): string | undefined {
