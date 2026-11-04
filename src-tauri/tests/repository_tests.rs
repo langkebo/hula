@@ -14,11 +14,11 @@
 //! - 发现两处「实体/仓储」与「迁移建表」不一致的潜在漂移，相关路径以
 //!   `#[ignore]` 标注为已知失败复现器（详见各测试注释）；相关函数目前在
 //!   Rust 侧无调用方，属潜在缺陷而非活跃故障，故本文件不修改运行时代码。
-use entity::{im_config, im_contact, im_room, im_room_member};
+use entity::{im_config, im_contact, im_message, im_room, im_room_member};
 use migration::{Migrator, MigratorTrait};
 use sea_orm::{
-    ColumnTrait, ConnectOptions, Database, DatabaseConnection, EntityTrait, PaginatorTrait,
-    QueryFilter, Set,
+    ColumnTrait, ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbBackend,
+    EntityTrait, PaginatorTrait, QueryFilter, Set, Statement,
 };
 use tjg_app_lib::pojo::common::{CursorPageParam, CursorPageResp, PageParam};
 use tjg_app_lib::repository::{
@@ -452,4 +452,131 @@ async fn test_room_save_batch_and_page() {
     .expect("分页查询房间应成功");
     assert_eq!(page.records.len(), 1);
     assert_eq!(page.total, "1");
+}
+
+/// 访客升级迁移：`login_uid` 改写必须覆盖**所有**账号维度表。
+///
+/// 迁移 SQL 是 `UPDATE {table} SET login_uid = ? WHERE login_uid = ?`，漏一张表的结果
+/// 不是报错，而是「升级后该表数据在新账号下查不到」——静默失联。
+/// 故按「5 张表各一行属于 from、各一行属于 other」种数据，只迁 from，逐表断言，
+/// 同时校验对照组（other）未被误改。
+#[tokio::test]
+async fn merge_login_uid_moves_every_account_scoped_table() {
+    use tjg_app_lib::command::database_command::merge_login_uid;
+
+    const FROM: &str = "@guest:example.org";
+    const TO: &str = "@upgraded:example.org";
+    const OTHER: &str = "@other:example.org";
+
+    let db = setup_db().await;
+
+    for (login_uid, tag) in [(FROM, "from"), (OTHER, "other")] {
+        im_message::Entity::insert(im_message::ActiveModel {
+            id: Set(format!("msg-{tag}")),
+            uid: Set("@peer:example.org".to_string()),
+            room_id: Set("!room:example.org".to_string()),
+            login_uid: Set(login_uid.to_string()),
+            send_status: Set("success".to_string()),
+            ..Default::default()
+        })
+        .exec(&db)
+        .await
+        .expect("预置消息失败");
+
+        im_room::Entity::insert(im_room::ActiveModel {
+            id: Set(format!("room-{tag}")),
+            room_id: Set("!room:example.org".to_string()),
+            room_name: Set("R".to_string()),
+            login_uid: Set(login_uid.to_string()),
+            ..Default::default()
+        })
+        .exec(&db)
+        .await
+        .expect("预置房间失败");
+
+        im_contact::Entity::insert(im_contact::ActiveModel {
+            id: Set(format!("contact-{tag}")),
+            detail_id: Set("@peer:example.org".to_string()),
+            room_id: Set("!room:example.org".to_string()),
+            login_uid: Set(login_uid.to_string()),
+            ..Default::default()
+        })
+        .exec(&db)
+        .await
+        .expect("预置联系人失败");
+
+        im_room_member::Entity::insert(im_room_member::ActiveModel {
+            id: Set(format!("member-{tag}")),
+            name: Set("M".to_string()),
+            last_opt_time: Set(1),
+            login_uid: Set(login_uid.to_string()),
+            ..Default::default()
+        })
+        .exec(&db)
+        .await
+        .expect("预置成员失败");
+
+        // im_config.id 是非自增复合主键，需显式给值
+        im_config::Entity::insert(im_config::ActiveModel {
+            id: Set(if tag == "from" { 1 } else { 2 }),
+            config_key: Set(format!("k-{tag}")),
+            config_value: Set(None),
+            login_uid: Set(login_uid.to_string()),
+        })
+        .exec(&db)
+        .await
+        .expect("预置配置失败");
+    }
+
+    let affected = merge_login_uid(&db, FROM, TO).await.expect("迁移改写失败");
+    assert_eq!(affected, 5, "5 张表各 1 行应被改写");
+
+    // 用原生 SQL 计数：`im_room` 等实体与建表语句存在既有的列漂移
+    // （实体有 `remark`，迁移未建该列），走 `Entity::find()` 会因 SELECT 全列而报错。
+    // 迁移本身就是原生 SQL，这里用同一层级核对更贴近被测行为。
+    async fn count_login_uid(db: &DatabaseConnection, table: &str, uid: &str) -> i64 {
+        let stmt = Statement::from_sql_and_values(
+            DbBackend::Sqlite,
+            format!("SELECT COUNT(*) AS cnt FROM {table} WHERE login_uid = ?"),
+            [uid.into()],
+        );
+        let row = db
+            .query_one(stmt)
+            .await
+            .expect("统计失败")
+            .expect("COUNT(*) 应返回一行");
+        row.try_get::<i64>("", "cnt").expect("读取 cnt 失败")
+    }
+
+    // 旧账号在新库里应归零
+    for table in [
+        "im_message",
+        "im_room",
+        "im_contact",
+        "im_room_member",
+        "im_config",
+    ] {
+        assert_eq!(
+            count_login_uid(&db, table, FROM).await,
+            0,
+            "{table} 未迁移（旧账号仍可见）"
+        );
+        assert_eq!(
+            count_login_uid(&db, table, TO).await,
+            1,
+            "{table} 未迁到新账号"
+        );
+    }
+
+    // 对照组（其他账号）不得被误改
+    assert_eq!(
+        count_login_uid(&db, "im_message", OTHER).await,
+        1,
+        "其他账号的消息被误改"
+    );
+    assert_eq!(
+        count_login_uid(&db, "im_config", OTHER).await,
+        1,
+        "其他账号的配置被误改"
+    );
 }

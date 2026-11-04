@@ -1,9 +1,9 @@
 import { TauriCommand } from '@/enums'
 import { resolveMatrixSessionEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend/config'
-import { switchUserDatabase } from '@/services/backend/tauriCommand'
+import { migrateUserDatabase, switchUserDatabase } from '@/services/backend/tauriCommand'
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
+import { getMatrixSessionSnapshot, patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
 import { createLogger } from '@/utils/Logger'
@@ -215,12 +215,14 @@ export class SessionLoginService {
   /**
    * 访客升级为正式账号后，把新身份与新 token 写回本地会话（不重启 client）。
    *
-   * 升级接口已在 MatrixAuthService 中完成 token 切换；这里负责快照、本地用户信息
-   * 与 Tauri 持久化，保证重启后不会回落到访客身份。
+   * 升级接口已在 MatrixAuthService 中完成 token 切换；这里负责快照、本地库归属、
+   * 本地用户信息与 Tauri 持久化，保证重启后不会回落到访客身份、也不会丢本地数据。
    */
   async applyGuestUpgrade(options: MatrixGuestUpgradeOptions): Promise<void> {
     const port = this.host.port
     const { userId, accessToken } = options
+    // 升级返回的是**新 MXID**（等价于换账号），旧 uid 只在此处还能拿到（下面 patch 后就没了）
+    const previousUid = getMatrixSessionSnapshot().userId
 
     patchMatrixSessionSnapshot({
       userId,
@@ -228,6 +230,8 @@ export class SessionLoginService {
       homeserverUrl: port.matrix.getHomeserverUrl() ?? null
     })
     port.matrix.applyGuestUpgrade(userId, accessToken)
+
+    await this.migrateLocalDatabase(previousUid, userId)
 
     const currentInfo = port.user.getUserInfo()
     if (currentInfo) {
@@ -253,6 +257,37 @@ export class SessionLoginService {
         }
       })
     }
+  }
+
+  /**
+   * 把本地库从旧 uid 迁到新 uid（访客升级专用）。
+   *
+   * 本地数据有两套账号维度：库文件按 uid 分（`db_{uid}.sqlite`）、5 张表再用 `login_uid` 过滤。
+   * 升级换了 MXID 却不迁库，运行期就会继续写访客库，重启后切到 newUid 的空库
+   * ⇒ 聊天记录窗口、文件索引、本地搜索全部读不到（已存入的消息变成孤儿文件）。
+   *
+   * 迁移失败**不阻断升级**：服务端账号已经升级成功，本地库属次要数据；
+   * 失败时退回「直接切库」，至少保证后续写入落在会被重新打开的库里。
+   */
+  private async migrateLocalDatabase(previousUid: string | null, userId: string): Promise<void> {
+    if (!hasTauriRuntime()) return
+
+    if (!previousUid || previousUid === userId) {
+      await switchUserDatabase(userId)
+      return
+    }
+
+    try {
+      const migrated = await migrateUserDatabase(previousUid, userId)
+      if (migrated) {
+        logger.info(`本地库已迁移: ${previousUid} → ${userId}`)
+        return
+      }
+      logger.warn(`本地库未迁移（${previousUid} → ${userId}）：新账号本地历史为空，退回直接切库`)
+    } catch (err) {
+      logger.error(`迁移本地库异常（${previousUid} → ${userId}），退回直接切库:`, err)
+    }
+    await switchUserDatabase(userId)
   }
 
   /**

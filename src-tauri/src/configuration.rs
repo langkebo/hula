@@ -101,7 +101,45 @@ pub(crate) fn sanitize_uid_for_filename(uid: &str) -> String {
     }
 }
 
+/// 解析数据库所在目录（桌面 dev 用 `src-tauri/`，其余用 app_data_dir）。
+///
+/// 抽成独立函数是为了让「切库 / 迁库」能复用同一套目录规则：路径解析分散到两处时，
+/// 一旦某一处漏改就会在「迁移写 A 目录、连接读 B 目录」这种地方静默丢数据。
+fn database_dir(app_handle: &AppHandle) -> Result<PathBuf, CommonError> {
+    if cfg!(debug_assertions) && cfg!(desktop) {
+        // 桌面端开发环境：使用项目根目录（src-tauri）
+        return Ok(PathBuf::from(env!("CARGO_MANIFEST_DIR")));
+    }
+
+    match app_handle.path().app_data_dir() {
+        Ok(app_data_dir) => {
+            if let Err(create_err) = std::fs::create_dir_all(&app_data_dir) {
+                tracing::warn!("Failed to create app_data_dir: {}", create_err);
+            }
+            Ok(app_data_dir)
+        }
+        Err(e) => {
+            let error_msg = format!("Failed to get app_data_dir: {}", e);
+            tracing::error!("{}", error_msg);
+            Err(CommonError::RequestError(error_msg))
+        }
+    }
+}
+
 impl DatabaseSettings {
+    /// 解析某用户的数据库文件绝对路径（含历史文件名的一次性改名迁移）。
+    ///
+    /// 供「切库 / 迁库」这类需要**在打开连接之前**拿到路径的调用方使用；
+    /// `connection_string` 也走同一套目录与文件名规则，避免两处推导不一致。
+    pub fn user_db_path(
+        &self,
+        app_handle: &AppHandle,
+        uid: Option<&str>,
+    ) -> Result<PathBuf, CommonError> {
+        let dir = database_dir(app_handle)?;
+        Ok(dir.join(Self::resolve_db_filename(&dir, uid)))
+    }
+
     /// 根据用户ID生成数据库文件名
     /// 如果提供了用户ID，则生成 `db_{uid}.sqlite` 格式的文件名
     /// 否则使用默认的 `db.sqlite`
@@ -183,24 +221,7 @@ impl DatabaseSettings {
         uid: Option<&str>,
     ) -> Result<DatabaseConnection, CommonError> {
         // 数据库路径配置：先确定目录，再在其中解析文件名（含一次性迁移，见 `resolve_db_filename`）。
-        let db_dir = if cfg!(debug_assertions) && cfg!(desktop) {
-            // 桌面端开发环境：使用项目根目录（src-tauri）
-            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        } else {
-            match app_handle.path().app_data_dir() {
-                Ok(app_data_dir) => {
-                    if let Err(create_err) = std::fs::create_dir_all(&app_data_dir) {
-                        tracing::warn!("Failed to create app_data_dir: {}", create_err);
-                    }
-                    app_data_dir
-                }
-                Err(e) => {
-                    let error_msg = format!("Failed to get app_data_dir: {}", e);
-                    tracing::error!("{}", error_msg);
-                    return Err(CommonError::RequestError(error_msg));
-                }
-            }
-        };
+        let db_dir = database_dir(app_handle)?;
 
         // 文件名解析放在目录确定之后：若本机存在历史（含 `:` 等非法字符）数据库文件，
         // 这里先做一次改名迁移，避免改用归一化名后把本地数据"留在旧文件里"。

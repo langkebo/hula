@@ -25,7 +25,9 @@ vi.mock('@/services/backend/config', () => ({
 }))
 
 vi.mock('@/services/backend/tauriCommand', () => ({
-  switchUserDatabase: vi.fn().mockResolvedValue(undefined)
+  switchUserDatabase: vi.fn().mockResolvedValue(undefined),
+  // 默认「迁移成功」：访客升级用例默认走迁移分支，退回切库的两条用例各自覆盖
+  migrateUserDatabase: vi.fn().mockResolvedValue(true)
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
@@ -35,7 +37,14 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
 }))
 
 vi.mock('@/services/matrix/matrixSessionState', () => ({
-  patchMatrixSessionSnapshot: vi.fn()
+  patchMatrixSessionSnapshot: vi.fn(),
+  // 升级前快照里的 userId 就是被升级的访客 uid —— 迁移的 fromUid 只能从这里拿，
+  // patch 之后快照已经是新 uid 了
+  getMatrixSessionSnapshot: vi.fn(() => ({
+    userId: '@guest:test',
+    deviceId: 'DEV1',
+    homeserverUrl: 'https://matrix.test'
+  }))
 }))
 
 vi.mock('@/utils/AppHarness', () => ({
@@ -51,7 +60,7 @@ vi.mock('@/utils/TauriInvokeHandler', () => ({
 }))
 
 const { saveMatrixSessionEndpointConfig } = await import('@/services/backend/config')
-const { switchUserDatabase } = await import('@/services/backend/tauriCommand')
+const { switchUserDatabase, migrateUserDatabase } = await import('@/services/backend/tauriCommand')
 const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
 const { patchMatrixSessionSnapshot } = await import('@/services/matrix/matrixSessionState')
 const { hasTauriRuntime } = await import('@/utils/AppHarness')
@@ -60,6 +69,7 @@ const { invokeWithErrorHandler } = await import('@/utils/TauriInvokeHandler')
 
 const saveMatrixSessionEndpointConfigMock = vi.mocked(saveMatrixSessionEndpointConfig)
 const switchUserDatabaseMock = vi.mocked(switchUserDatabase)
+const migrateUserDatabaseMock = vi.mocked(migrateUserDatabase)
 const stopClientMock = vi.mocked(matrixClientService.stopClient)
 const patchMatrixSessionSnapshotMock = vi.mocked(patchMatrixSessionSnapshot)
 const hasTauriRuntimeMock = vi.mocked(hasTauriRuntime)
@@ -494,6 +504,35 @@ describe('SessionLoginService guest session', () => {
     expect(invokeWithErrorHandlerMock).toHaveBeenCalledWith(
       TauriCommand.SAVE_USER_INFO,
       expect.objectContaining({ userInfo: { uid: '@bob:test' } })
+    )
+    // 升级换了 MXID ⇒ 必须把访客库迁到新 uid，否则重启后切到空库（本地历史全丢）
+    expect(migrateUserDatabaseMock).toHaveBeenCalledWith('@guest:test', '@bob:test')
+    expect(switchUserDatabaseMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to switching the database when migration reports it could not run', async () => {
+    const { host } = createMockHost()
+    const service = new SessionLoginService(host)
+    migrateUserDatabaseMock.mockResolvedValueOnce(false)
+
+    await service.applyGuestUpgrade({ userId: '@bob:test', accessToken: 'new-token' })
+
+    expect(switchUserDatabaseMock).toHaveBeenCalledWith('@bob:test')
+  })
+
+  it('keeps the upgrade successful when local migration throws', async () => {
+    const { host, mocks } = createMockHost()
+    const service = new SessionLoginService(host)
+    migrateUserDatabaseMock.mockRejectedValueOnce(new Error('disk full'))
+
+    await expect(service.applyGuestUpgrade({ userId: '@bob:test', accessToken: 'new-token' })).resolves.toBeUndefined()
+
+    // 服务端账号已升级成功，本地库迁移失败只能降级，不能连累升级结果
+    expect(mocks.applyGuestUpgrade).toHaveBeenCalledWith('@bob:test', 'new-token')
+    expect(switchUserDatabaseMock).toHaveBeenCalledWith('@bob:test')
+    expect(invokeWithErrorHandlerMock).toHaveBeenCalledWith(
+      TauriCommand.UPDATE_TOKEN,
+      expect.objectContaining({ req: expect.objectContaining({ uid: '@bob:test' }) })
     )
   })
 })

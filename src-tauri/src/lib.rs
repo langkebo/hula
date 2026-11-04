@@ -127,7 +127,7 @@ pub fn get_secure_storage_service_name() -> String {
 use crate::command::chat_history_command::query_chat_history;
 use crate::command::contact_command::hide_contact_command;
 use crate::command::contact_command::list_contacts_command;
-use crate::command::database_command::switch_user_database;
+use crate::command::database_command::{migrate_user_database, switch_user_database};
 use crate::command::file_manager_command::debug_message_stats;
 use crate::command::file_manager_command::get_navigation_items;
 use crate::command::file_manager_command::query_files;
@@ -635,6 +635,7 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         set_webview_keyboard_adjustment,
         is_app_state_ready,
         switch_user_database,
+        migrate_user_database,
         check_admin_status,
         allow_asset_path,
         get_config,

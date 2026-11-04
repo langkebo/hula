@@ -1,7 +1,7 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { ensureAppStateReady } from '@/utils/AppStateReady'
-import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
+import { invokeWithErrorHandler, invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { useMatrixStore } from '../../stores/domains/chat/matrix'
 import { useUserStore } from '../../stores/domains/user/user'
 
@@ -29,6 +29,28 @@ export const switchUserDatabase = async (uid: string): Promise<void> => {
   }
   await ensureAppStateReady()
   return await invokeWithErrorHandler('switch_user_database', { uid })
+}
+
+/**
+ * 把 `fromUid` 的本地库迁移成 `toUid` 的库（访客升级为正式账号专用）。
+ *
+ * 为什么需要：本地库按 uid 分文件，而访客升级返回的是**新 MXID**。不迁移就会出现
+ * 「运行期继续写访客库 → 重启后切到 newUid 的空库」，聊天记录窗口 / 文件索引 / 本地搜索全部读不到。
+ *
+ * @returns `true` = 已迁移（或此前已完成，幂等），运行期连接已切到新库；
+ *          `false` = 未迁移（无源库 / 目标库已有新账号数据 / 浏览器环境），调用方应退回直接切库。
+ * 失败不抛：服务端账号升级已经成功，本地库迁移失败不应连带升级失败，由调用方降级并记录。
+ */
+export const migrateUserDatabase = async (fromUid: string, toUid: string): Promise<boolean> => {
+  if (!hasTauriRuntime()) {
+    return false
+  }
+  await ensureAppStateReady()
+  const result = await invokeWithResult<boolean>('migrate_user_database', { fromUid, toUid })
+  if (result.isErr()) {
+    throw new Error(String(result.error))
+  }
+  return result.value === true
 }
 
 export type FileQueryParam = {
