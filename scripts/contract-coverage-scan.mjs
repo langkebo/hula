@@ -19,6 +19,15 @@
  *
  * Output: scripts/contract-coverage-map.json
  *
+ * ⚠️ `uncoveredLedger` / `ledger.uncoveredPathCount` **不是「前端未覆盖数」**，不可作为
+ * 产品结论引用：
+ *   1. 它来自 SDK ledger，而 ledger 只在本地存在 `../matrix-js-sdk` sibling 时才有值
+ *      （CI 是 Tjg-only，扫描时 `ledger: null` ⇒ 同一份源码本地/CI 结论不同）；
+ *   2. 未覆盖集合里含大量**客户端本就不该消费**的路由：联邦（`/_matrix/federation/*`）、
+ *      AppService、媒体仓储内部、装配/管理端点。
+ * 要判断「前端缺哪个能力」，请走逐族取证（见审查报告 §1.3），不要引用这个计数。
+ * 门禁 `check:contract-coverage` 也已据此只比对源码派生字段（ledger 段不参与判定）。
+ *
  * Usage:
  *   node scripts/contract-coverage-scan.mjs                    # write & log summary
  *   node scripts/contract-coverage-scan.mjs --check            # also fail if zero callers
@@ -320,6 +329,10 @@ async function main() {
   if (ledger) {
     console.log(
       `[contract-coverage] ledger matched ${summary.ledger.matchedPathCount}/${ledger.entryCount} path(s); ${summary.unmatchedUrls.length} unmatched URL literal(s); ${uncoveredLedger.length} uncovered ledger path(s)`
+    )
+    // 防误用：这个计数长期被当成「前端未覆盖数」引用（审查报告 §5.3 M5）
+    console.log(
+      '[contract-coverage] 注意：uncovered ledger path 含联邦/AppService/装配等非客户端路由，且本地无 sibling 时为空 —— 不可作为前端覆盖结论'
     )
   } else {
     console.log(`[contract-coverage] ledger not found at ${ledgerPath} — mapping skipped`)

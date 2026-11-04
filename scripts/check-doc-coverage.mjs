@@ -186,6 +186,38 @@ function keyOf(entry) {
   return `${entry.file}::${entry.name}`
 }
 
+/**
+ * 已接受现状的目录 —— **只影响输出展示，不影响判定**。
+ *
+ * 2026-11-04 裁定（见审查报告 §0.4 MT-01）：`admin/` 是内部管理后台、不面向终端用户，
+ * 且其主文件均在体积基线内，补 JSDoc 必然让行数超限（`check:file-size` 红），
+ * 而按域拆文件又会撞 `check:matrix-layering` 的「服务层文件数只锁不降」。
+ *
+ * 为什么要在这里分组：总数 589 里的 196 属这块，不加区分会让读者把「589 处待补」
+ * 当成可推进清单，从而去补一批**不该补**的位置。
+ *
+ * 注意：这不是免检。基线比对逐条看 key，这些目录里**新增**无文档方法照样 FAIL
+ * （已用变异验证：给 `AdminFacadeService` 加一个无 JSDoc 方法 → 590 > 589 并点名）。
+ */
+const ACCEPTED_SCOPES = [
+  {
+    prefix: 'src/services/matrix/admin/',
+    reason: '内部管理后台，不面终端；主文件在体积基线内，补注释必超行数'
+  }
+]
+
+/** 把 missing key（`file::name`）归到已接受目录；返回 { total, byScope } */
+function summarizeAccepted(missingKeys) {
+  const byScope = new Map()
+  let total = 0
+  for (const scope of ACCEPTED_SCOPES) {
+    const count = missingKeys.filter((k) => k.startsWith(scope.prefix)).length
+    if (count > 0) byScope.set(scope.prefix, count)
+    total += count
+  }
+  return { total, byScope }
+}
+
 async function loadBaseline() {
   try {
     const text = await readFile(baselineFile, 'utf8')
@@ -251,9 +283,15 @@ async function main() {
     fixed = [...baseline.missing].filter((k) => !currentKeys.has(k))
   }
 
+  const acceptedSummary = summarizeAccepted([...currentKeys])
   const report = {
     scanned,
     currentMissing: allMissing.length,
+    acceptedScopes: {
+      total: acceptedSummary.total,
+      byScope: Object.fromEntries(acceptedSummary.byScope)
+    },
+    actionableMissing: allMissing.length - acceptedSummary.total,
     baselineMissing: baseline?.count ?? null,
     newRegressions: regressed,
     nowDocumented: fixed
@@ -263,7 +301,16 @@ async function main() {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`)
   } else {
     console.log(`[doc-coverage] scanned ${scanned} service file(s)`)
-    console.log(`[doc-coverage] current undocumented: ${allMissing.length}`)
+    const accepted = summarizeAccepted([...currentKeys])
+    const acceptedNote =
+      accepted.total > 0
+        ? `（其中 ${accepted.total} 属已接受现状：${[...accepted.byScope.keys()].join(', ')}；可推进 ${allMissing.length - accepted.total}）`
+        : ''
+    console.log(`[doc-coverage] current undocumented: ${allMissing.length}${acceptedNote}`)
+    for (const [prefix, count] of accepted.byScope) {
+      const reason = ACCEPTED_SCOPES.find((sc) => sc.prefix === prefix)?.reason ?? ''
+      console.log(`[doc-coverage]   ${prefix} = ${count}（${reason}）`)
+    }
     if (baseline) {
       console.log(`[doc-coverage] baseline undocumented: ${baseline.count}`)
       if (fixed.length > 0) console.log(`[doc-coverage] ${fixed.length} method(s) newly documented`)
