@@ -1,98 +1,96 @@
 <template>
-  <!-- 移动端布局 -->
-  <MobileLayout v-if="isMobileView">
-    <div class="flex w-full flex-col h-full">
-      <!-- 移动端头部 -->
-      <HeaderBar
-        :isOfficial="false"
-        :hidden-right="true"
-        :enable-default-background="false"
-        :enable-shadow="false"
-        :room-name="t('home.manage_group_member.title')" />
+  <!-- 移动端布局（外层 ChatRoomLayout 已提供 MobileLayout，此处不可再嵌套，否则键盘 inset 会叠加两次） -->
+  <div v-if="isMobileView" class="flex w-full flex-col h-full">
+    <!-- 移动端头部 -->
+    <HeaderBar
+      :isOfficial="false"
+      :hidden-right="true"
+      :enable-default-background="false"
+      :enable-shadow="false"
+      :room-name="t('home.manage_group_member.title')" />
 
-      <!-- 顶部搜索框 -->
-      <div class="px-16px mt-10px flex gap-3">
-        <div class="flex-1 py-5px shrink-0">
-          <n-input
-            v-model:value="keyword"
-            class="rounded-10px w-full bg-gray-100 relative text-14px"
-            :placeholder="t('home.manage_group_member.search_placeholder_mobile')"
-            clearable
-            spellCheck="false"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off">
-            <template #prefix>
-              <svg class="w-12px h-12px"><use href="#search"></use></svg>
-            </template>
-          </n-input>
-        </div>
-      </div>
-
-      <!-- 成员列表 -->
-      <div ref="scrollArea" class="flex-1 overflow-y-auto px-16px mt-10px" :style="{ height: scrollHeight + 'px' }">
-        <n-scrollbar class="max-h-[calc(100dvh-150px)]">
-          <n-checkbox-group v-model:value="selectedList" class="flex flex-col gap-2">
-            <div
-              v-for="item in filteredMembers"
-              :key="item.uid"
-              class="rounded-10px border border-gray-200 overflow-hidden">
-              <n-checkbox
-                :value="item.uid"
-                size="large"
-                class="w-full flex items-center px-5px"
-                :class="[
-                  'cursor-pointer select-none transition-colors duration-150',
-                  selectedList.includes(item.uid) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'
-                ]">
-                <template #default>
-                  <div class="flex items-center gap-10px px-8px py-10px">
-                    <!-- 头像 -->
-                    <n-avatar
-                      round
-                      :size="44"
-                      :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
-                      fallback-src="/logo.png"
-                      class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))" />
-                    <!-- 文字信息 -->
-                    <div class="flex flex-col leading-tight truncate">
-                      <span class="text-14px font-medium truncate">
-                        {{ groupStore.getUserInfo(item.uid)?.name }}
-                      </span>
-                      <div class="text-12px text-gray-500 flex items-center gap-4px truncate">
-                        <n-badge
-                          :color="
-                            item.activeStatus === OnlineEnum.ONLINE
-                              ? 'var(--tjg-status-online)'
-                              : 'var(--tjg-status-offline)'
-                          "
-                          dot />
-                        {{
-                          item.activeStatus === OnlineEnum.ONLINE
-                            ? t('home.friends_list.status.online')
-                            : t('home.friends_list.status.offline')
-                        }}
-                      </div>
-                    </div>
-                  </div>
-                </template>
-              </n-checkbox>
-            </div>
-          </n-checkbox-group>
-        </n-scrollbar>
-      </div>
-
-      <!-- 底部操作栏 -->
-      <div class="px-16px py-10px bg-white border-t border-gray-200 flex justify-between items-center">
-        <span class="text-14px">
-          {{ t('home.manage_group_member.selected_count', { count: selectedList.length }) }}
-        </span>
-        <n-button type="error" :disabled="selectedList.length === 0" :loading="isLoading" @click="handleMobileRemove">
-          {{ t('home.manage_group_member.remove_button') }}
-        </n-button>
+    <!-- 顶部搜索框 -->
+    <div class="px-16px mt-10px flex gap-3">
+      <div class="flex-1 py-5px shrink-0">
+        <n-input
+          v-model:value="keyword"
+          class="rounded-10px w-full bg-gray-100 relative text-14px"
+          :placeholder="t('home.manage_group_member.search_placeholder_mobile')"
+          clearable
+          spellCheck="false"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off">
+          <template #prefix>
+            <svg class="w-12px h-12px"><use href="#search"></use></svg>
+          </template>
+        </n-input>
       </div>
     </div>
-  </MobileLayout>
+
+    <!-- 成员列表 -->
+    <div ref="scrollArea" class="flex-1 overflow-y-auto px-16px mt-10px" :style="{ height: scrollHeight + 'px' }">
+      <n-scrollbar class="max-h-[calc(100dvh-150px)]">
+        <n-checkbox-group v-model:value="selectedList" class="flex flex-col gap-2">
+          <div
+            v-for="item in filteredMembers"
+            :key="item.uid"
+            class="rounded-10px border border-gray-200 overflow-hidden">
+            <n-checkbox
+              :value="item.uid"
+              size="large"
+              class="w-full flex items-center px-5px"
+              :class="[
+                'cursor-pointer select-none transition-colors duration-150',
+                selectedList.includes(item.uid) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'
+              ]">
+              <template #default>
+                <div class="flex items-center gap-10px px-8px py-10px">
+                  <!-- 头像 -->
+                  <n-avatar
+                    round
+                    :size="44"
+                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.uid)?.avatar!)"
+                    fallback-src="/logo.png"
+                    class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))" />
+                  <!-- 文字信息 -->
+                  <div class="flex flex-col leading-tight truncate">
+                    <span class="text-14px font-medium truncate">
+                      {{ groupStore.getUserInfo(item.uid)?.name }}
+                    </span>
+                    <div class="text-12px text-gray-500 flex items-center gap-4px truncate">
+                      <n-badge
+                        :color="
+                          item.activeStatus === OnlineEnum.ONLINE
+                            ? 'var(--tjg-status-online)'
+                            : 'var(--tjg-status-offline)'
+                        "
+                        dot />
+                      {{
+                        item.activeStatus === OnlineEnum.ONLINE
+                          ? t('home.friends_list.status.online')
+                          : t('home.friends_list.status.offline')
+                      }}
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </n-checkbox>
+          </div>
+        </n-checkbox-group>
+      </n-scrollbar>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="px-16px py-10px bg-white border-t border-gray-200 flex justify-between items-center">
+      <span class="text-14px">
+        {{ t('home.manage_group_member.selected_count', { count: selectedList.length }) }}
+      </span>
+      <n-button type="error" :disabled="selectedList.length === 0" :loading="isLoading" @click="handleMobileRemove">
+        {{ t('home.manage_group_member.remove_button') }}
+      </n-button>
+    </div>
+  </div>
 
   <!-- PC端布局（作为弹窗内容或独立页面） -->
   <div v-else class="flex w-full flex-col h-full">
@@ -212,7 +210,6 @@
 import { type } from '@tauri-apps/plugin-os'
 import { useI18n } from 'vue-i18n'
 import HeaderBar from '#/components/chat-room/HeaderBar.vue'
-import MobileLayout from '#/components/MobileLayout.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum, RoleEnum } from '@/enums'
 import router from '@/router'

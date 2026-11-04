@@ -45,3 +45,11 @@ describe('keep-alive 命名对齐', () => {
     expect(read('src/mobile/layout/index.vue')).not.toContain('<Transition name="slide"')
   })
 })
+
+describe('mobile layout nesting', () => {
+  it('聊天页子路由不再嵌套 MobileLayout', () => {
+    const page = read('src/mobile/views/chat-room/ManageGroupMember.vue')
+    expect(page).not.toContain('<MobileLayout')
+    expect(page).not.toContain("from '#/components/MobileLayout.vue'")
+  })
+})
