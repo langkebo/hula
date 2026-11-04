@@ -27,9 +27,9 @@ describe('mobile font payload', () => {
   })
 
   it('keeps the default page font on a valid family', () => {
-    const setting = read('src/stores/domains/settings/setting.ts')
-    expect(setting).toContain('PingFang: DEFAULT_PAGE_FONT_FAMILY')
-    expect(setting).not.toMatch(/fonts:\s*'PingFang'/)
+    const helpers = read('src/stores/domains/settings/settings-helpers.ts')
+    expect(helpers).toContain('PingFang: DEFAULT_PAGE_FONT_FAMILY')
+    expect(helpers).not.toMatch(/fonts:\s*'PingFang'/)
   })
 })
 

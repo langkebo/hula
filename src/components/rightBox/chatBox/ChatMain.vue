@@ -154,7 +154,6 @@ import { useWindow } from '@/composables/common/useWindow'
 import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
-import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum } from '@/enums'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import type { MessageType } from '@/stores/domains/chat/chat'
@@ -332,13 +331,6 @@ defineExpose({
   canSetSticky
 })
 
-const isMobileRef = useIsMobile()
-
-/** 移动端抬高悬浮按钮，避开底部输入栏；桌面端保持原位 */
-const floatButtonStyle = computed(() =>
-  isMobileRef.value ? { bottom: '88px', right: '16px' } : { bottom: '24px', right: '50px' }
-)
-
 const isGroup = computed<boolean>(() => chatStore.isGroup)
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const currentUserId = computed(() => userStore.userInfo?.uid ?? '')
@@ -428,7 +420,7 @@ const { activeReply, jumpToReplyMsg, onNavigateToMessage, clearActiveReply } = u
 })
 
 // New message count badge + float button
-const { currentNewMsgCount, newMsgCountLabel, handleFloatButtonClick } = useNewMessageBadge({
+const { currentNewMsgCount, newMsgCountLabel, handleFloatButtonClick, floatButtonStyle } = useNewMessageBadge({
   scrollContainerRef,
   isLoadingMore,
   shouldShowFloatButton,

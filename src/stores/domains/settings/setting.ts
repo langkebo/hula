@@ -13,6 +13,7 @@ import {
   verifySecretChatPasswordOnly
 } from './secretChatActions'
 import {
+  createDefaultPageSettings,
   getDefaultNotificationSettings,
   getDefaultPreferenceSettings,
   getDefaultShortcuts,
@@ -20,6 +21,7 @@ import {
   normalizeBurnDefaultDuration,
   normalizeEmojiSize,
   normalizeNotificationVolume,
+  normalizePageFontFamily,
   normalizeSpaceDefaultNotification,
   normalizeStrictUnverifiedRooms,
   normalizeTheme,
@@ -30,25 +32,6 @@ import {
   setDocumentTheme,
   stripLegacyThemeVariant
 } from './settings-helpers'
-
-/**
- * 页面字体默认值：与 design-tokens.css 的 --tjg-font-family 对齐的系统字体栈。
- * 历史默认值 'PingFang' 不是浏览器可识别的字体家族名（macOS 实际为 'PingFang SC'），
- * 全局 @font-face 移除后继续使用会让全站退化为 generic sans-serif，并丢失 500 字重。
- */
-export const DEFAULT_PAGE_FONT_FAMILY =
-  "-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Roboto, sans-serif"
-
-/** 旧版本已持久化的非法字体名 → 当前有效值 */
-const LEGACY_PAGE_FONT_FAMILIES: Record<string, string> = {
-  PingFang: DEFAULT_PAGE_FONT_FAMILY
-}
-
-/** 读取时迁移：兼容升级用户已落盘的旧字体名，避免页面字体失效 */
-export function normalizePageFontFamily(font?: string | null): string {
-  if (!font) return DEFAULT_PAGE_FONT_FAMILY
-  return LEGACY_PAGE_FONT_FAMILIES[font] ?? font
-}
 
 // 缓存方案：使用 Pinia + localStorage 分账号存储
 // 后续可迁移到 IndexedDB 以支持更大的数据量
@@ -82,12 +65,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       trustGateStrict: false
     },
     shortcuts: getDefaultShortcuts(),
-    page: {
-      shadow: true,
-      fonts: DEFAULT_PAGE_FONT_FAMILY,
-      blur: true,
-      lang: 'zh-CN'
-    },
+    page: createDefaultPageSettings(),
     update: {
       dismiss: ''
     },
@@ -499,12 +477,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     },
     ensurePageSettings() {
       if (!this.page) {
-        this.page = {
-          shadow: true,
-          fonts: DEFAULT_PAGE_FONT_FAMILY,
-          blur: true,
-          lang: 'zh-CN'
-        }
+        this.page = createDefaultPageSettings()
         return
       }
       this.page.shadow = this.page.shadow ?? true

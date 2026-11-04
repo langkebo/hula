@@ -1,5 +1,6 @@
 import { computed, nextTick, type Ref, type ShallowRef, watch } from 'vue'
 import { useMitt } from '@/composables/common/useMitt'
+import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum } from '@/enums'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -31,8 +32,14 @@ export const useNewMessageBadge = ({
 }: UseNewMessageBadgeOptions) => {
   const chatStore = useChatStore()
   const globalStore = useGlobalStore()
+  const isMobileRef = useIsMobile()
 
   const currentNewMsgCount = computed(() => chatStore.currentNewMsgCount || null)
+
+  /** 移动端抬高悬浮按钮，避开底部输入栏；桌面端保持原位 */
+  const floatButtonStyle = computed(() =>
+    isMobileRef.value ? { bottom: '88px', right: '16px' } : { bottom: '24px', right: '50px' }
+  )
 
   const newMsgCountLabel = computed(() => {
     if (!currentNewMsgCount.value?.count || currentNewMsgCount.value.count <= 0) return '0'
@@ -99,6 +106,7 @@ export const useNewMessageBadge = ({
   return {
     currentNewMsgCount,
     newMsgCountLabel,
-    handleFloatButtonClick
+    handleFloatButtonClick,
+    floatButtonStyle
   }
 }

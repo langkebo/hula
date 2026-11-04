@@ -45,6 +45,33 @@ export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
   burnRooms: []
 })
 
+/**
+ * 页面字体默认值：与 design-tokens.css 的 --tjg-font-family 对齐的系统字体栈。
+ * 历史默认值 'PingFang' 不是浏览器可识别的字体家族名（macOS 实际为 'PingFang SC'），
+ * 全局 @font-face 移除后继续使用会让全站退化为 generic sans-serif，并丢失 500 字重。
+ */
+export const DEFAULT_PAGE_FONT_FAMILY =
+  "-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Roboto, sans-serif"
+
+/** 旧版本已持久化的非法字体名 → 当前有效值 */
+const LEGACY_PAGE_FONT_FAMILIES: Record<string, string> = {
+  PingFang: DEFAULT_PAGE_FONT_FAMILY
+}
+
+/** 读取时迁移：兼容升级用户已落盘的旧字体名，避免页面字体失效 */
+export function normalizePageFontFamily(font?: string | null): string {
+  if (!font) return DEFAULT_PAGE_FONT_FAMILY
+  return LEGACY_PAGE_FONT_FAMILIES[font] ?? font
+}
+
+/** 页面外观默认值：state 初始化与 ensurePageSettings 复用同一份，避免默认值漂移 */
+export const createDefaultPageSettings = (): STO.Setting['page'] => ({
+  shadow: true,
+  fonts: DEFAULT_PAGE_FONT_FAMILY,
+  blur: true,
+  lang: 'zh-CN'
+})
+
 export const normalizeNotificationVolume = (volume?: number) => {
   if (typeof volume !== 'number') return 80
   return Math.min(100, Math.max(0, Math.round(volume)))

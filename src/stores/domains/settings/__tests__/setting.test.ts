@@ -20,8 +20,8 @@ vi.mock('@/utils/PlatformConstants', () => ({
 }))
 
 import { ShowModeEnum, ThemeEnum } from '@/enums'
-import { DEFAULT_PAGE_FONT_FAMILY, normalizePageFontFamily, useSettingStore } from '../setting'
-import { getDefaultShortcuts } from '../settings-helpers'
+import { useSettingStore } from '../setting'
+import { DEFAULT_PAGE_FONT_FAMILY, getDefaultShortcuts, normalizePageFontFamily } from '../settings-helpers'
 
 describe('SettingStore', () => {
   beforeEach(() => {
