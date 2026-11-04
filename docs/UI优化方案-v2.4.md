@@ -966,7 +966,7 @@ as_unknown_as: 0 (baseline 0) —— 剩余双重断言全部命中具名 allowl
 
 1. `route_modules=75` 与 ROUTE_CONTRACT 正文的「67 个含路由注册模块」统计粒度不同（前者按注册元数据聚合，后者按源码模块去重）。本文件 §1.1 同时列出，不做合并。
 2. `private_routes=545` 与 `private_on_std_*` 是 Tjg 侧私有扩展路由的口径，不能与 980 直接相加或相减。
-3. `scripts/contract-coverage-map.json` 的 `uncoveredPathCount` **不得**作为「前端未覆盖数」使用：该文件上次生成于 2026-10-19（ledger 1027 / commit `8072be84c`），已与当前契约不一致，且 801 条未覆盖中包含联邦、AppService、装配等非客户端可消费路由。本报告的能力覆盖结论一律来自 §1.3 的逐族取证。
+3. `scripts/contract-coverage-map.json` 的 `uncoveredPathCount` **不得**作为「前端未覆盖数」使用：该文件已于 2026-11-04 按 `meta/sdk-pin.json` 的 pinned sibling 重扫（ledger 961 / commit `aca988d9`，与 pin 一致，此前是过期的 1027 / `8072be84c`），仍有 755 条未覆盖，其中包含联邦、AppService、装配等非客户端可消费路由；且 ledger 段随 sibling 变动（Tjg-only CI 无 sibling 时为 `null`），故 `check:contract-coverage` 已改为只比对源码派生字段（`scanned` / `callerFiles` / `totalCalls` / `totalUrls` / `entries` 的调用计数），ledger 派生值不参与判定。本报告的能力覆盖结论一律来自 §1.3 的逐族取证。
 4. `check:a11y` 结果在补齐前不计入「已覆盖」与「已完成」；三个模块族已于 2026-11-03 完成取证并回写 §1.3（Worker 15 未覆盖 + 11 不适用、3PID 1 服务层已封 UI 未接 + 5 未覆盖、媒体 44 已覆盖 / 10 服务层已封 / 6 未覆盖），未覆盖项如实计入。
 
 ---

@@ -8,10 +8,14 @@
  * call without re-running the contract scan, ensuring the coverage map
  * stays in lockstep with the code.
  *
- * The map's `generatedAt` and `ledger.synapseRustCommit` fields legitimately
- * vary between runs, so they are normalized before comparison: timestamps
- * are stripped and the SDK commit is cleared so the diff only reflects
- * structural drift (caller files, URLs, ledger matches).
+ * The map's `generatedAt` and every ledger-derived field (`ledger`,
+ * `uncoveredLedger`, `entries[].ledgerRoutes`, `unmatchedUrls`) legitimately
+ * vary between runs and **between environments** — Tjg-only CI has no
+ * `../matrix-js-sdk` sibling, so the scan runs with `ledger: null` there.
+ * Comparison therefore uses a source-derived projection only
+ * (`scanned` / `callerFiles` / `totalCalls` / `totalUrls` / `entries[].{file,callCount,kinds,urlCount}`),
+ * which is exactly the invariant this gate owns: the map stays in lockstep
+ * with the service layer's call sites.
  *
  * Exit codes:
  *   0  no drift; committed map matches regenerated content
@@ -33,14 +37,38 @@ const projectRoot = path.resolve(__dirname, '..')
 const mapPath = path.join(projectRoot, 'scripts', 'contract-coverage-map.json')
 const scanScript = path.join(__dirname, 'contract-coverage-scan.mjs')
 
-function normalize(json) {
-  const cloned = JSON.parse(JSON.stringify(json))
-  delete cloned.generatedAt
-  if (cloned.ledger && typeof cloned.ledger === 'object') {
-    delete cloned.ledger.synapseRustCommit
+/**
+ * 只投影**源码派生**字段用于比对。
+ *
+ * 为什么不再整份 JSON 对比：`ledger` 段来自 `../matrix-js-sdk` sibling 的
+ * `route-manifest.default.json`，而 Tjg-only CI **没有该 sibling**（见 quality-gate.yml
+ * 「SDK Pin Verification」上方的降级说明）—— CI 里扫描会以 `ledger: null` 运行，
+ * 本地开发则有完整 ledger。把 ledger / uncoveredLedger / entries[].ledgerRoutes /
+ * unmatchedUrls 纳入比对，等于让同一份源码在不同环境得出不同结论，门禁在本地与 CI
+ * 之间来回红，最终被当成「反正一直是红的」而忽略。
+ *
+ * 因此门禁只守「地图与源码是否同步」这一条不变量：
+ * scanner 覆盖到的文件集、调用数、URL 数、调用类别。
+ * ledger 快照仍会写进 map（供人查阅），但**不参与判定**。
+ */
+function projectSourceContract(json) {
+  const entries = Array.isArray(json.entries) ? json.entries : []
+  return {
+    scanned: json.scanned ?? 0,
+    callerFiles: json.callerFiles ?? 0,
+    totalCalls: json.totalCalls ?? 0,
+    totalUrls: json.totalUrls ?? 0,
+    entries: entries.map((entry) => ({
+      file: entry.file,
+      callCount: entry.callCount,
+      kinds: entry.kinds ?? [],
+      urlCount: entry.urlCount ?? 0
+    }))
   }
-  return cloned
 }
+
+/** 参与判定的字段（用于失败时的提示语） */
+const COMPARED_FIELDS = ['scanned', 'callerFiles', 'totalCalls', 'totalUrls', 'entries']
 
 async function readCommittedMap() {
   try {
@@ -86,8 +114,8 @@ async function main() {
     await rm(scratchDir, { recursive: true, force: true })
   }
 
-  const a = normalize(committed)
-  const b = normalize(regenerated)
+  const a = projectSourceContract(committed)
+  const b = projectSourceContract(regenerated)
   if (JSON.stringify(a) === JSON.stringify(b)) {
     console.log('[contract-codegen-check] OK — committed contract coverage map is up to date')
     process.exit(0)
@@ -97,8 +125,8 @@ async function main() {
     '[contract-codegen-check] FAIL — committed scripts/contract-coverage-map.json drifted from source.'
   )
   console.error('Run `pnpm contract:coverage:scan` and commit the regenerated file.')
-  // Quick hint: report top-level keys whose serialization changed.
-  for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
+  // 只报「参与判定」的字段；ledger 段属外部输入，不解释漂移原因
+  for (const key of COMPARED_FIELDS) {
     const aSer = JSON.stringify(a[key])
     const bSer = JSON.stringify(b[key])
     if (aSer !== bSer) console.error(`  - drift in: ${key}`)
