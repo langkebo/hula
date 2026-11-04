@@ -762,7 +762,6 @@ html[data-theme='dark'] {
     --tjg-surface-list-selected: var(--tjg-surface-subtle);
     --tjg-menu-hover: var(--tjg-surface-subtle);
     --tjg-admin-sidebar-hover: var(--tjg-surface-subtle);
-    --tjg-admin-sidebar-text: var(--tjg-surface-subtle);
     --info-hover: var(--tjg-surface-subtle);
     --tray-hover-e: var(--tjg-surface-subtle);
 
@@ -781,6 +780,9 @@ html[data-theme='dark'] {
     --tag-danger-bg: var(--tjg-surface-panel);
     --time-group-bg: var(--tjg-surface-panel);
     --tjg-federation-badge-bg: var(--tjg-surface-panel);
+
+    /* 文本 */
+    --tjg-admin-sidebar-text: var(--tjg-text-inverse);
   }
 }
 
