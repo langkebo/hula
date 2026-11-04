@@ -341,7 +341,11 @@ onUnmounted(() => {
 
   .local-video {
     @apply absolute bottom-80px right-16px w-120px h-160px rounded-8px object-cover;
-    border: 2px solid color-mix(in srgb, var(--tjg-text-inverse) 80%, transparent);
+    border: 2px solid var(--tjg-border-default);
+
+    @supports (color: color-mix(in srgb, red, blue)) {
+      border: 2px solid color-mix(in srgb, var(--tjg-text-inverse) 80%, transparent);
+    }
   }
 }
 
@@ -380,9 +384,13 @@ onUnmounted(() => {
 
   .btn-active-toggled {
     @apply size-48px;
-    background: color-mix(in srgb, var(--tjg-color-danger-500) 60%, transparent);
+    background: var(--tjg-color-danger-500);
     color: var(--tjg-text-inverse);
     border: none;
+
+    @supports (color: color-mix(in srgb, red, blue)) {
+      background: color-mix(in srgb, var(--tjg-color-danger-500) 60%, transparent);
+    }
   }
 
   .btn-hangup {

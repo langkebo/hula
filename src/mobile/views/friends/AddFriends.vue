@@ -246,7 +246,11 @@ onMounted(async () => {
 .action-button:hover {
   opacity: 1;
   transform: scale(1.06);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--tjg-color-primary-500) 25%, transparent);
+  box-shadow: none;
+
+  @supports (color: color-mix(in srgb, red, blue)) {
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--tjg-color-primary-500) 25%, transparent);
+  }
 }
 
 .action-button:active {

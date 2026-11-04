@@ -207,11 +207,16 @@ useMitt.on('RoomClosed', handleCallEnd)
 
 <style scoped lang="scss">
 .rtc-call-card {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--tjg-surface-darkest) 95%, transparent),
-    color-mix(in srgb, var(--tjg-surface-darkest) 92%, transparent)
-  );
+  background: var(--tjg-surface-darkest);
+
+  @supports (color: color-mix(in srgb, red, blue)) {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tjg-surface-darkest) 95%, transparent),
+      color-mix(in srgb, var(--tjg-surface-darkest) 92%, transparent)
+    );
+  }
+
   backdrop-filter: blur(18px);
   border: 1px solid var(--tjg-border-contrast);
   border-radius: var(--tjg-radius-panel);
@@ -221,7 +226,12 @@ useMitt.on('RoomClosed', handleCallEnd)
 
 .avatar-shell {
   background: var(--tjg-border-contrast);
-  border: 1px solid color-mix(in srgb, var(--tjg-text-inverse) 14%, transparent);
+  border: 1px solid var(--tjg-border-default);
+
+  @supports (color: color-mix(in srgb, red, blue)) {
+    border: 1px solid color-mix(in srgb, var(--tjg-text-inverse) 14%, transparent);
+  }
+
   backdrop-filter: blur(14px);
 }
 
@@ -243,12 +253,22 @@ useMitt.on('RoomClosed', handleCallEnd)
   }
 
   &.reject {
-    background: color-mix(in srgb, var(--tjg-color-danger-500) 68%, transparent);
-    box-shadow: 0 12px 26px color-mix(in srgb, var(--tjg-color-danger-500) 30%, transparent);
+    background: var(--tjg-color-danger-500);
+    box-shadow: none;
+
+    @supports (color: color-mix(in srgb, red, blue)) {
+      background: color-mix(in srgb, var(--tjg-color-danger-500) 68%, transparent);
+      box-shadow: 0 12px 26px color-mix(in srgb, var(--tjg-color-danger-500) 30%, transparent);
+    }
   }
 
   &.accept {
-    background: color-mix(in srgb, var(--tjg-color-primary-500) 68%, transparent);
+    background: var(--tjg-color-primary-500);
+
+    @supports (color: color-mix(in srgb, red, blue)) {
+      background: color-mix(in srgb, var(--tjg-color-primary-500) 68%, transparent);
+    }
+
     box-shadow: 0 12px 26px var(--tjg-color-primary-300-alpha);
   }
 }

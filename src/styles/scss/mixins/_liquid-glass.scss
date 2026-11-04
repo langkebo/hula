@@ -27,7 +27,7 @@
   border: 1px solid color-mix(in srgb, var(--tjg-border-layout-divider) 50%, transparent);
 
   // 深色模式调整：降低不透明度以增强通透感
-  :global([data-theme='dark']) & {
+  html[data-theme='dark'] & {
     background: color-mix(in srgb, var(--tjg-surface-panel) #{$opacity * 80%}, transparent);
   }
 }
@@ -35,8 +35,8 @@
 /// 性能降级：低性能设备禁用 backdrop-filter
 /// `html.low-perf` 由 `src/utils/performanceTier.ts` 在应用启动早期写入（见 main.ts）
 ///
-/// 注意：这里必须用普通嵌套 `html.low-perf &` 而非 `:global(...) &`。
-/// Vue SFC scoped 编译遇到 `:global(a) b` 时会丢弃 `:global()` 之后的复合选择器，
+/// 注意：这里必须用普通嵌套 `html.low-perf &`，不要用 Vue 的全局选择器包装语法。
+/// 该语法在 Vue SFC scoped 编译时会被丢弃包装后的复合选择器，
 /// 只留下 `html.low-perf { ... }`（实测），降级规则不会命中目标元素。
 @mixin liquid-glass-fallback {
   html.low-perf & {
@@ -50,9 +50,9 @@
 /// 与 `liquid-glass-fallback` 的差异：不写 `background`，避免给导航栏/遮罩等
 /// 已有底色的表面叠加不透明面板色造成视觉变更。
 ///
-/// 注意：这里用普通嵌套 `html.low-perf &` 而非 `:global(...) &`。
-/// Vue SFC scoped 编译遇到 `:global(a) b` 时会丢弃 `:global()` 之后的复合选择器，
-/// 只留下 `html.low-perf { ... }`（实测），导致降级规则完全失效；
+/// 注意：这里用普通嵌套 `html.low-perf &`，不使用 Vue 的全局选择器包装语法。
+/// 该语法在 scoped SFC 中会被编译丢弃包装后的复合选择器，
+/// 只保留 `html.low-perf { ... }`（实测），导致降级规则完全失效；
 /// 普通嵌套会被编译为 `html.low-perf .target[data-v-xxx]`，特异性高于原规则。
 @mixin backdrop-blur-fallback {
   html.low-perf & {

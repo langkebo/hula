@@ -89,7 +89,12 @@ const serverSections = computed(() => tm('agreement.server.sections') as Agreeme
         color: var(--tjg-text-primary);
         width: fit-content;
         margin-bottom: 15px;
-        border-bottom: 2px solid color-mix(in srgb, var(--tjg-brand) 56%, transparent);
+        border-bottom: 2px solid var(--tjg-brand);
+
+        @supports (color: color-mix(in srgb, red, blue)) {
+          border-bottom: 2px solid color-mix(in srgb, var(--tjg-brand) 56%, transparent);
+        }
+
         padding-bottom: 5px;
       }
 

@@ -64,6 +64,10 @@ describe('liquid-glass mixin 定义', () => {
     expect(fallbackBody![0]).toMatch(/background:\s*var\(--tjg-surface-panel\)/)
   })
 
+  it('mixin 文件内不得再出现 :global', () => {
+    expect(source).not.toContain(':global(')
+  })
+
   it('降级规则必须用普通嵌套，:global 在 scoped SFC 中会丢失选择器', () => {
     const fallbackBody = source.match(/@mixin liquid-glass-fallback[\s\S]*?\n\}/)
     expect(fallbackBody, '缺少 liquid-glass-fallback 定义').not.toBeNull()

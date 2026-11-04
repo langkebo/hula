@@ -76,7 +76,7 @@ function handleClick(item: QuickAction) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--tjg-color-primary-50, color-mix(in srgb, var(--tjg-color-primary-500) 10%, transparent));
+  background: var(--tjg-color-primary-50, var(--tjg-color-primary-100));
   color: var(--tjg-color-primary-500);
 }
 </style>

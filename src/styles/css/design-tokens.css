@@ -751,3 +751,36 @@ html[data-theme='dark'] {
   --tjg-status-encryption-risk-ring: color-mix(in srgb, var(--tjg-color-danger-500) 35%, transparent);
 }
 
+/* ==================== color-mix 纯色兜底 ====================
+ * Android WebView < 111 不支持 color-mix；此处只做语义降级，全部复用既有 token。
+ * 现代浏览器不支持该 @supports not 条件时会忽略本块，继续使用上方 color-mix 定义。
+ * ================================================================== */
+@supports not (color: color-mix(in srgb, red, blue)) {
+  :root {
+    /* 悬停 / 选中 / 次级表面 */
+    --tjg-surface-list-hover: var(--tjg-surface-subtle);
+    --tjg-surface-list-selected: var(--tjg-surface-subtle);
+    --tjg-menu-hover: var(--tjg-surface-subtle);
+    --tjg-admin-sidebar-hover: var(--tjg-surface-subtle);
+    --tjg-admin-sidebar-text: var(--tjg-surface-subtle);
+    --info-hover: var(--tjg-surface-subtle);
+    --tray-hover-e: var(--tjg-surface-subtle);
+
+    /* 边框 / 描边 / 环 */
+    --tjg-room-card-encrypted-border: var(--tjg-border-default);
+    --tjg-room-card-federated-border: var(--tjg-border-default);
+    --tjg-federation-badge-border: var(--tjg-border-default);
+    --tjg-status-encryption-risk-ring: var(--tjg-border-default);
+
+    /* 背景 / 面板 */
+    --chat-left-bg: var(--tjg-surface-panel);
+    --progress-bg: var(--tjg-surface-panel);
+    --reply-bg: var(--tjg-surface-panel);
+    --plugin-icon-bg: var(--tjg-surface-panel);
+    --plugin-downloading-bg: var(--tjg-surface-panel);
+    --tag-danger-bg: var(--tjg-surface-panel);
+    --time-group-bg: var(--tjg-surface-panel);
+    --tjg-federation-badge-bg: var(--tjg-surface-panel);
+  }
+}
+

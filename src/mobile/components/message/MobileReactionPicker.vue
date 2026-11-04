@@ -140,7 +140,12 @@ watch(
     }
 
     &--active {
-      background: color-mix(in srgb, var(--tjg-color-primary-500) 16%, transparent);
+      background: var(--tjg-surface-subtle);
+
+      @supports (color: color-mix(in srgb, red, blue)) {
+        background: color-mix(in srgb, var(--tjg-color-primary-500) 16%, transparent);
+      }
+
       border-color: var(--tjg-color-primary-400);
     }
 
