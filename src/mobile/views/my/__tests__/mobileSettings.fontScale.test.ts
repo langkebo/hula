@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 const read = (relative: string) => readFileSync(new URL(relative, import.meta.url), 'utf-8')
 
 const source = read('../MobileSettings.vue')
+const layoutSource = read('../../../components/MobileLayout.vue')
 const zh = JSON.parse(read('../../../../../locales/zh-CN/mobile_setting.json'))
 const en = JSON.parse(read('../../../../../locales/en/mobile_setting.json'))
 
@@ -20,6 +21,21 @@ describe('移动端字号设置', () => {
     for (const locale of [zh, en]) {
       expect(Object.keys(locale.font_sizes).sort()).toEqual(['large', 'normal', 'small', 'xlarge'])
       expect(typeof locale.font_size).toBe('string')
+    }
+  })
+
+  it('将字号缩放接入 Vant 字号变量', () => {
+    expect(layoutSource).toContain(':theme-vars="fontScaleThemeVars"')
+    for (const name of ['fontSizeXs', 'fontSizeSm', 'fontSizeMd', 'fontSizeLg']) {
+      expect(layoutSource).toContain(name)
+    }
+    expect(layoutSource.match(/var\(--tjg-font-size-/g)?.length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('切换字号后给出反馈文案', () => {
+    for (const locale of [zh, en]) {
+      expect(typeof locale.font_size_changed).toBe('string')
+      expect(locale.font_size_changed.length).toBeGreaterThan(0)
     }
   })
 })

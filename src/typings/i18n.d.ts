@@ -5249,6 +5249,14 @@ export type I18nKeys = {
     "title": "设置",
     "theme": "主题",
     "language": "语言",
+    "font_size": "字号",
+    "font_sizes": {
+      "small": "小",
+      "normal": "标准",
+      "large": "大",
+      "xlarge": "超大"
+    },
+    "font_size_changed": "字号已更新",
     "version": "版本",
     "button": {
       "logout": "退出登录"
@@ -11568,6 +11576,12 @@ export type I18nKeyPaths =
   | "mobile_setting.title"
   | "mobile_setting.theme"
   | "mobile_setting.language"
+  | "mobile_setting.font_size"
+  | "mobile_setting.font_sizes.small"
+  | "mobile_setting.font_sizes.normal"
+  | "mobile_setting.font_sizes.large"
+  | "mobile_setting.font_sizes.xlarge"
+  | "mobile_setting.font_size_changed"
   | "mobile_setting.version"
   | "mobile_setting.button.logout"
   | "mobile_setting.themes.dark"

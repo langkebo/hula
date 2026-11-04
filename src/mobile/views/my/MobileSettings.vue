@@ -247,6 +247,7 @@ import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+// biome-ignore lint/style/useImportType: FONT_SCALE_STEPS 在模板中作为值使用，同时用于类型推导
 import { applyFontScale, FONT_SCALE_STEPS, loadFontScale, saveFontScale } from '@/utils/fontScale'
 import { createLogger } from '@/utils/Logger'
 import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
@@ -276,7 +277,7 @@ const languageValue = computed({
   set: (v) => settingStore.setLanguage(v)
 })
 
-const FONT_SCALE_LABEL_KEYS: Record<number, string> = {
+const FONT_SCALE_LABEL_KEYS: Record<(typeof FONT_SCALE_STEPS)[number], string> = {
   0.875: 'mobile_setting.font_sizes.small',
   1: 'mobile_setting.font_sizes.normal',
   1.125: 'mobile_setting.font_sizes.large',
@@ -289,6 +290,7 @@ const handleFontScaleChange = (value: string | number) => {
   const scale = Number(value)
   applyFontScale(scale)
   saveFontScale(scale)
+  showToast(t('mobile_setting.font_size_changed'))
 }
 
 const currentStatusId = computed(() => userStatusStore.stateId || 'online')

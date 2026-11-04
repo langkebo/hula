@@ -9,6 +9,7 @@
     "large": "Large",
     "xlarge": "Extra large"
   },
+  "font_size_changed": "Font size updated",
   "version": "Version",
   "button": {
     "logout": "Log Out"

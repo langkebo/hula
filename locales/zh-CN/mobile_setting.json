@@ -9,6 +9,7 @@
     "large": "大",
     "xlarge": "超大"
   },
+  "font_size_changed": "字号已更新",
   "version": "版本",
   "button": {
     "logout": "退出登录"

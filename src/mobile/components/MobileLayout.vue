@@ -1,5 +1,8 @@
 <template>
-  <van-config-provider :theme="settingStore.themeContent === ThemeEnum.DARK ? 'dark' : 'light'" class="h-full">
+  <van-config-provider
+    :theme="settingStore.themeContent === ThemeEnum.DARK ? 'dark' : 'light'"
+    :theme-vars="fontScaleThemeVars"
+    class="h-full">
     <div
       class="h-full flex flex-col box-border"
       :class="{
@@ -57,6 +60,15 @@ const fileStore = useFileStore()
 const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
+
+/** 将全局字号缩放接入 Vant 字号变量，使移动端组件真正响应字号设置 */
+const fontScaleThemeVars = {
+  fontSizeXs: 'var(--tjg-font-size-xs)',
+  fontSizeSm: 'var(--tjg-font-size-sm)',
+  fontSizeMd: 'var(--tjg-font-size-base)',
+  fontSizeLg: 'var(--tjg-font-size-lg)'
+}
+
 const userUid = computed(() => userStore.userInfo?.uid ?? '')
 const { playMessageSound } = useMessageSound()
 const { keyboardInset } = useViewportInset()
