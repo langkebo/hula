@@ -136,13 +136,13 @@ const handleClickMsg = async (group: GroupedMessage) => {
   // 找到对应的会话 - 根据roomId而不是消息ID
   const session = chatStore.sessionList.find((s) => s.roomId === group.roomId)
   if (session) {
-    logger.info(`点击消息，打开会话：${JSON.stringify(session)}`)
+    logger.info('Message clicked, opening conversation:', JSON.stringify(session))
     emitTo('home', 'search_to_msg', {
       uid: group.roomType === RoomTypeEnum.SINGLE ? session.detailId : session.roomId,
       roomType: group.roomType
     })
   } else {
-    logger.error('找不到对应的会话信息')
+    logger.error('Conversation not found for the message')
   }
 }
 
@@ -190,7 +190,7 @@ const showWindow = async (event: Event<NotifyEnterPayload>) => {
 const hideWindow = async () => {
   // 如果鼠标正在窗口内，不执行隐藏
   if (isMouseInWindow.value) {
-    logger.info('鼠标在窗口内，跳过隐藏')
+    logger.info('Cursor is inside the window, skip hiding')
     return
   }
   // 延迟检查，确保鼠标确实离开了窗口区域
@@ -229,7 +229,7 @@ onMounted(async () => {
 
   if (isWindows() && appWindow) {
     appWindow.listen<NotifyEnterPayload>('notify_enter', async (event) => {
-      logger.info('监听到enter事件，打开notify窗口')
+      logger.info('Received enter event, opening notify window')
       await showWindow(event)
     })
 

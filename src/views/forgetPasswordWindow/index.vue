@@ -187,7 +187,7 @@
             <path fill="currentColor" d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
           </svg>
         </n-icon> -->
-        <img class="size-98px" src="/emoji/party-popper.webp" alt="庆祝" />
+        <img class="size-98px" src="/emoji/party-popper.webp" :alt="t('common.celebration')" />
 
         <div class="mt-16px text-18px">{{ t('auth.forget.success.title') }}</div>
         <div class="mt-16px text-14px text-[--tjg-text-secondary]">{{ t('auth.forget.success.desc') }}</div>
@@ -349,8 +349,8 @@ const getCaptchaImage = async () => {
       duration: captchaInterval
     })
   } catch (error) {
-    logger.error('获取验证码失败', error)
-    showFeedback(getErrorMessage(error, '获取验证码失败，请稍后重试'), 'error')
+    logger.error('Failed to fetch captcha', error)
+    showFeedback(getErrorMessage(error, t('auth.forget.errors.captcha')), 'error')
     captchaInCooldown.value = false
   } finally {
     captchaLoading.value = false
@@ -379,7 +379,7 @@ const sendEmailCode = async () => {
       }
       captchaVerified.value = true
     } catch (error) {
-      logger.error('验证码校验失败', error)
+      logger.error('Captcha verification failed', error)
       showFeedback(getErrorMessage(error, t('auth.forget.messages.captcha_invalid')), 'error')
       getCaptchaImage()
       return
@@ -410,8 +410,8 @@ const sendEmailCode = async () => {
       duration: 60 * 1000
     })
   } catch (error) {
-    logger.error('发送验证码失败', error)
-    showFeedback(getErrorMessage(error, '发送验证码失败，请稍后重试'), 'error')
+    logger.error('Failed to send verification code', error)
+    showFeedback(getErrorMessage(error, t('auth.forget.errors.send_code')), 'error')
     getCaptchaImage()
   } finally {
     sendingEmailCode.value = false
@@ -426,7 +426,7 @@ const verifyEmail = async () => {
     await formRef.value.validate()
     verifyLoading.value = true
     if (!emailSessionId.value || !emailClientSecret.value) {
-      throw new Error('请先发送邮箱验证码')
+      throw new Error('Send the email verification code first')
     }
 
     formData.value.emailCode = formData.value.emailCode.trim()
@@ -440,8 +440,8 @@ const verifyEmail = async () => {
     emailVerified.value = true
     currentStep.value = 2
   } catch (error) {
-    logger.error('表单验证失败', error)
-    showFeedback(getErrorMessage(error, '邮箱验证码校验失败，请稍后重试'), 'error')
+    logger.error('Form validation failed', error)
+    showFeedback(getErrorMessage(error, t('auth.forget.errors.verify_code')), 'error')
   } finally {
     verifyLoading.value = false
   }
@@ -462,7 +462,7 @@ const submitNewPassword = async () => {
     submitLoading.value = true
 
     if (!emailVerified.value || !emailSessionId.value || !emailClientSecret.value) {
-      throw new Error('请先完成邮箱验证码校验')
+      throw new Error('Verify the email code first')
     }
 
     await MatrixAuthService.resetPassword(
@@ -476,8 +476,8 @@ const submitNewPassword = async () => {
     currentStep.value = 3
     stepStatus.value = 'finish'
   } catch (error) {
-    logger.error('重置密码失败', error)
-    showFeedback(getErrorMessage(error, '重置密码失败，请稍后重试'), 'error')
+    logger.error('Failed to reset password', error)
+    showFeedback(getErrorMessage(error, t('auth.forget.errors.reset_password')), 'error')
   } finally {
     submitLoading.value = false
   }

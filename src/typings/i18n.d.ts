@@ -1613,6 +1613,12 @@ export type I18nKeys = {
       "success": {
         "title": "密码修改成功",
         "desc": "您已成功重置密码，可以使用新密码登录"
+      },
+      "errors": {
+        "captcha": "获取验证码失败，请稍后重试",
+        "send_code": "发送验证码失败，请稍后重试",
+        "verify_code": "邮箱验证码校验失败，请稍后重试",
+        "reset_password": "重置密码失败，请稍后重试"
       }
     }
   },
@@ -7506,6 +7512,14 @@ export type I18nKeys = {
       "tech": "科技",
       "finance": "财经",
       "entertainment": "娱乐"
+    },
+    "errors": {
+      "search": "搜索失败：{error}",
+      "analyze": "分析失败：{error}",
+      "fetch_news": "获取新闻失败：{error}",
+      "fetch_trending": "获取趋势失败：{error}",
+      "fetch_subscriptions": "获取订阅失败：{error}",
+      "init": "初始化失败：{error}"
     }
   },
   "utils": {
@@ -8787,6 +8801,10 @@ export type I18nKeyPaths =
   | "auth.forget.rules.confirm_mismatch"
   | "auth.forget.success.title"
   | "auth.forget.success.desc"
+  | "auth.forget.errors.captcha"
+  | "auth.forget.errors.send_code"
+  | "auth.forget.errors.verify_code"
+  | "auth.forget.errors.reset_password"
   | "background_updates.title"
   | "background_updates.subtitle"
   | "background_updates.actions.retry_failed"
@@ -13473,6 +13491,12 @@ export type I18nKeyPaths =
   | "trendradar.tags.tech"
   | "trendradar.tags.finance"
   | "trendradar.tags.entertainment"
+  | "trendradar.errors.search"
+  | "trendradar.errors.analyze"
+  | "trendradar.errors.fetch_news"
+  | "trendradar.errors.fetch_trending"
+  | "trendradar.errors.fetch_subscriptions"
+  | "trendradar.errors.init"
   | "utils.download_link_not_found"
   | "utils.video_save_success"
   | "utils.video_save_failed"

@@ -226,7 +226,7 @@ const handleSearch = async (keyword: string) => {
     const result = await searchNews(keyword)
     searchResults.value = result.news || []
   } catch (err) {
-    emit('error', `搜索失败: ${err}`)
+    emit('error', t('trendradar.errors.search', { error: String(err) }))
   } finally {
     searchLoading.value = false
   }
@@ -247,7 +247,7 @@ const handleAnalyze = async () => {
     const result = await analyzeTopicTrend(analyzeKeyword.value)
     analyzeResult.value = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
   } catch (err) {
-    emit('error', `分析失败: ${err}`)
+    emit('error', t('trendradar.errors.analyze', { error: String(err) }))
   } finally {
     analyzeLoading.value = false
   }
@@ -259,7 +259,7 @@ const loadLatestNews = async () => {
     const result = await getLatestNews()
     newsList.value = result.news || []
   } catch (err) {
-    emit('error', `获取新闻失败: ${err}`)
+    emit('error', t('trendradar.errors.fetch_news', { error: String(err) }))
   } finally {
     loading.value = false
   }
@@ -270,7 +270,7 @@ const loadTrendingTopics = async () => {
   try {
     trendingTopics.value = await getTrendingTopics()
   } catch (err) {
-    emit('error', `获取趋势失败: ${err}`)
+    emit('error', t('trendradar.errors.fetch_trending', { error: String(err) }))
   } finally {
     trendingLoading.value = false
   }
@@ -281,7 +281,7 @@ const loadRss = async () => {
   try {
     rssList.value = await getLatestRss()
   } catch (err) {
-    emit('error', `获取订阅失败: ${err}`)
+    emit('error', t('trendradar.errors.fetch_subscriptions', { error: String(err) }))
   } finally {
     rssLoading.value = false
   }
@@ -294,7 +294,7 @@ const initializeData = async () => {
       await Promise.all([loadLatestNews(), loadTrendingTopics()])
     }
   } catch (err) {
-    emit('error', `初始化失败: ${err}`)
+    emit('error', t('trendradar.errors.init', { error: String(err) }))
   }
 }
 

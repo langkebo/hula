@@ -39,5 +39,13 @@
     "tech": "Tech",
     "finance": "Finance",
     "entertainment": "Entertainment"
+  },
+  "errors": {
+    "search": "Search failed: {error}",
+    "analyze": "Analysis failed: {error}",
+    "fetch_news": "Failed to fetch news: {error}",
+    "fetch_trending": "Failed to fetch trending: {error}",
+    "fetch_subscriptions": "Failed to fetch subscriptions: {error}",
+    "init": "Initialization failed: {error}"
   }
 }

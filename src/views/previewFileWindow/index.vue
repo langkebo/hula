@@ -141,12 +141,12 @@ const updateFile = async (absolutePath: string, exists: boolean) => {
       uiData.fileBuffer = buffer
 
       uiData.fileLoading = true
-      logger.debug('已更新本地文件 ', file.file.size, uiData.file.size)
+      logger.debug('Local file updated', file.file.size, uiData.file.size)
     } else {
       uiData.fileLoading = true
     }
   } catch (error) {
-    logger.error('读取文件时出错：', error)
+    logger.error('Failed to read file:', error)
     uiData.fileLoading = false
   }
 }
@@ -162,7 +162,7 @@ onMounted(async () => {
   await addListener(
     listen<{ payload: PayloadData }>(`${label}:update`, (event) => {
       const payload: PayloadData = event.payload.payload
-      logger.debug('payload更新：', payload)
+      logger.debug('Payload updated:', payload)
 
       merge(uiData.payload, payload)
 
@@ -173,13 +173,13 @@ onMounted(async () => {
 
   try {
     const payload = await getWindowPayload<PayloadData>(label)
-    logger.debug('获取的载荷信息：', payload)
+    logger.debug('Payload received:', payload)
 
     merge(uiData.payload, payload)
 
     updateFile(payload.resourceFile.absolutePath || '', payload.resourceFile.localExists)
   } catch (error) {
-    logger.error('获取错误：', error)
+    logger.error('Failed to get payload:', error)
   }
 
   await webviewWindow.show()

@@ -210,7 +210,7 @@ const getVideosFromCurrentFolder = async (currentVideoPath: string) => {
 
     return videoFiles.sort()
   } catch (error) {
-    logger.warn('获取文件夹视频文件失败:', error)
+    logger.warn('Failed to load videos from folder:', error)
     return []
   }
 }
@@ -225,7 +225,7 @@ const playPause = () => {
           isPlaying.value = true
         })
         .catch((error) => {
-          logger.warn('视频播放失败:', error)
+          logger.warn('Video playback failed:', error)
           isPlaying.value = false
         })
     } else {
@@ -256,7 +256,7 @@ const onVideoLoaded = () => {
         isPlaying.value = true
       })
       .catch((error) => {
-        logger.warn('自动播放失败，可能需要用户交互:', error)
+        logger.warn('Autoplay failed, user interaction may be required:', error)
         isPlaying.value = false
       })
   }
@@ -319,7 +319,7 @@ const previousVideo = async () => {
           isPlaying.value = true
         })
         .catch((error) => {
-          logger.warn('视频播放失败:', error)
+          logger.warn('Video playback failed:', error)
           isPlaying.value = false
         })
     }
@@ -363,7 +363,7 @@ const nextVideo = async () => {
           isPlaying.value = true
         })
         .catch((error) => {
-          logger.warn('视频播放失败:', error)
+          logger.warn('Video playback failed:', error)
           isPlaying.value = false
         })
     }
@@ -392,7 +392,7 @@ onMounted(async () => {
           if (videoRef.value) {
             videoRef.value.load()
             videoRef.value.play().catch((error) => {
-              logger.warn('视频播放失败:', error)
+              logger.warn('Video playback failed:', error)
               isPlaying.value = false
             })
           }

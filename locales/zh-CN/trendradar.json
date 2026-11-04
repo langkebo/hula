@@ -39,5 +39,13 @@
     "tech": "科技",
     "finance": "财经",
     "entertainment": "娱乐"
+  },
+  "errors": {
+    "search": "搜索失败：{error}",
+    "analyze": "分析失败：{error}",
+    "fetch_news": "获取新闻失败：{error}",
+    "fetch_trending": "获取趋势失败：{error}",
+    "fetch_subscriptions": "获取订阅失败：{error}",
+    "init": "初始化失败：{error}"
   }
 }

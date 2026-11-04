@@ -249,7 +249,7 @@ const invitePolicyEnforcement = useInvitePolicyEnforcement({
       .then(() => {
         void invitePolicyEnforcement.undo(info.roomId).then((ok) => {
           if (!ok) {
-            logger.warn(`撤回自动拒邀失败: ${info.roomId}`)
+            logger.warn('Failed to revoke auto-decline:', info.roomId)
           }
         })
       })
@@ -419,7 +419,7 @@ async function seedContactStateCache(): Promise<void> {
     const friends = await friendService.getFriends()
     contactStateResolver.seed(friends.map((friend) => friend.user_id).filter(Boolean))
   } catch (err) {
-    logger.warn('预热联系人状态缓存失败（忽略）:', err)
+    logger.warn('Failed to warm contact presence cache (ignored):', err)
   }
 }
 
@@ -431,7 +431,7 @@ onMounted(async () => {
   try {
     await bootstrap()
   } catch (err) {
-    logger.error('Bootstrap 失败，跳过依赖初始化的步骤:', err)
+    logger.error('Bootstrap failed, skipping init-dependent steps:', err)
     return
   }
   // 非 Matrix 窗口（截图/托盘/通知/更新）跳过 Matrix 运行时初始化：
