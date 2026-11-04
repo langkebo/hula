@@ -12,7 +12,7 @@
       "owner": "src/stores/domains/chat/matrix.ts:defineStore(StoresEnum.MATRIX)+persist",
       "consumers": ["src/stores/domains/chat/matrix.ts", "src/App.vue"],
       "kind": "state",
-      "note": "会话恢复所需的 userId/deviceId/homeserverUrl/accessToken；App.vue 在启动时读取"
+      "note": "会话恢复所需的 userId/deviceId/homeserverUrl；App.vue 在启动时读取（AR-07b B1 起 accessToken 不再持久化，见 tjg.matrix.accessToken）"
     },
     "user": {
       "owner": "src/stores/domains/user/user.ts:USER_STORAGE_KEY + defineStore(StoresEnum.USER)+persist",
@@ -533,6 +533,12 @@
       "consumers": ["src/services/secure/localUnlockKey.ts", "src/composables/secure/useLocalUnlockGate.ts"],
       "kind": "credential",
       "note": "F-4/B1：本地解锁密码的 PBKDF2 verifier（可落盘，非密钥本身）。dbKey 后 16B 只存内存，绝不落盘"
+    },
+    "tjg.matrix.accessToken": {
+      "owner": "src/services/matrix/matrixClientPlatform.ts:WEB_TOKEN_STORAGE_KEY",
+      "consumers": ["src/services/matrix/matrixClientPlatform.ts", "src/services/matrix/auth/SessionRestoreService.ts"],
+      "kind": "credential",
+      "note": "浏览器运行期（非 Tauri）的 at-rest access token：persistWebAccessToken 写入（登录/刷新/登出同步更新），SessionRestoreService.getStoredTokens 冷启动读取；Tauri 运行期 no-op，凭证只由 Rust 侧 update_token 保管（AR-07b B1）"
     }
   }
 }
