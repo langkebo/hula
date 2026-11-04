@@ -53,3 +53,12 @@ describe('mobile layout nesting', () => {
     expect(page).not.toContain("from '#/components/MobileLayout.vue'")
   })
 })
+
+describe('chat header layout', () => {
+  it('聊天头部用 flex 且不保留桌面残留图标', () => {
+    const header = read('src/mobile/components/chat-room/HeaderBar.vue')
+    expect(header).toContain('class="header-bar')
+    expect(header).not.toContain('grid-cols-[100px_1fr_100px]')
+    expect(header).not.toContain('#diannao')
+  })
+})

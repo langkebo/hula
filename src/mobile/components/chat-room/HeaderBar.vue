@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full h-[56px] grid grid-cols-[100px_1fr_100px] z-2 bg-background text-foreground">
-    <div @click="handleBack" class="w-full h-full flex items-center">
-      <svg class="iconpark-icon w-24px h-24px ms-16px p-5px">
+  <div class="header-bar w-full h-[56px] flex items-center gap-8px px-8px z-2 bg-background text-foreground">
+    <div @click="handleBack" class="flex items-center shrink-0">
+      <svg class="iconpark-icon w-24px h-24px ms-8px p-5px">
         <use href="#fanhui" class="text-foreground"></use>
       </svg>
       <div
@@ -10,7 +10,7 @@
         {{ formattedMsgCount }}
       </div>
     </div>
-    <div class="w-full h-full overflow-hidden flex items-center justify-center">
+    <div class="flex-1 min-w-0 flex items-center justify-center overflow-hidden">
       <div @click="handleRoomNameClick" :class="props.isOfficial ? ['chat-room-name-official'] : ['chat-room-name']">
         <div class="chat-room-name__text truncate whitespace-nowrap overflow-hidden text-foreground text-ellipsis">
           {{ props.roomName }}
@@ -29,22 +29,17 @@
           :title="props.federationServer" />
       </div>
     </div>
-    <div class="w-full h-full flex items-center">
-      <div v-if="!props.hiddenRight" class="w-full justify-end flex pe-16px items-center gap-8px">
-        <button
-          v-if="!props.isGroup && canUseBurnAfterRead"
-          type="button"
-          class="private-toggle-btn-mobile"
-          :class="{ 'private-toggle-btn-mobile--active': props.privateModeActive }"
-          :aria-label="
-            props.privateModeActive ? t('chat.header.private_mode_exit') : t('chat.header.private_mode_enter')
-          "
-          @click="emits('togglePrivateMode')">
-          <span class="private-toggle-btn-mobile__letter">S</span>
-        </button>
-        <svg class="w-24px h-24px iconpark-icon p-5px"><use href="#diannao"></use></svg>
-        <svg @click="handleMoreClick" class="w-24px h-24px iconpark-icon p-5px"><use href="#more"></use></svg>
-      </div>
+    <div v-if="!props.hiddenRight" class="flex items-center justify-end gap-8px shrink-0">
+      <button
+        v-if="!props.isGroup && canUseBurnAfterRead"
+        type="button"
+        class="private-toggle-btn-mobile"
+        :class="{ 'private-toggle-btn-mobile--active': props.privateModeActive }"
+        :aria-label="props.privateModeActive ? t('chat.header.private_mode_exit') : t('chat.header.private_mode_enter')"
+        @click="emits('togglePrivateMode')">
+        <span class="private-toggle-btn-mobile__letter">S</span>
+      </button>
+      <svg @click="handleMoreClick" class="w-24px h-24px iconpark-icon p-5px"><use href="#more"></use></svg>
     </div>
   </div>
 
