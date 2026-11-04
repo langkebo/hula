@@ -102,13 +102,31 @@ describe('downloadFileBytes', () => {
 
     const result = await downloadFileBytes(client, 'mxc://server/media1', () => downloadUrl, t)
 
-    // 第二次调用为 MSC3916 auth endpoint
-    const authUrl = 'https://hs.example.com_matrix/client/v1/media/download/server/media1'
+    // 第二次调用为 MSC3916 auth endpoint。
+    // 注意：这里必须是 `hs.example.com/_matrix/...` —— 旧断言写成
+    // `hs.example.com_matrix/...`（少一个斜杠），把 bug 当成了期望值。
+    const authUrl = 'https://hs.example.com/_matrix/client/v1/media/download/server/media1'
     expect(downloadBytes).toHaveBeenNthCalledWith(2, authUrl, {
       headers: { Authorization: 'Bearer tok' },
       allowDynamicHost: true
     })
     expect(result).toBeInstanceOf(Uint8Array)
+  })
+
+  it('normalizes a trailing slash on the homeserver URL when building the auth endpoint', async () => {
+    downloadBytes
+      .mockRejectedValueOnce(new HttpClientError('not found', 404, 'Not Found', ''))
+      .mockResolvedValueOnce(new ArrayBuffer(0))
+    const client = createClient({ token: 'tok', homeserverUrl: 'https://hs.example.com/' })
+    const downloadUrl = 'https://hs.example.com/_matrix/media/v3/download/server/media1'
+
+    await downloadFileBytes(client, 'mxc://server/media1', () => downloadUrl, t)
+
+    expect(downloadBytes).toHaveBeenNthCalledWith(
+      2,
+      'https://hs.example.com/_matrix/client/v1/media/download/server/media1',
+      { headers: { Authorization: 'Bearer tok' }, allowDynamicHost: true }
+    )
   })
 
   it('should fall back to access_token query param if auth endpoint also fails', async () => {

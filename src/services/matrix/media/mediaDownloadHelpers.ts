@@ -61,7 +61,12 @@ export async function downloadFileBytes(
         if (mxcMatch) {
           const serverName = mxcMatch[1]
           const mediaId = mxcMatch[2]
-          const authDownloadUrl = `${client.getHomeserverUrl()}_matrix/client/v1/media/download/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`
+          // AR-07b / B2 修复：此处原先直接拼 `getHomeserverUrl() + '_matrix/...'`，
+          // homeserver 无尾斜杠时得到 `https://hs.example.com_matrix/...`（主机名后缀被污染），
+          // 该兜底必然 404 —— 于是每次都落到下面的 `?access_token=` query 兜底，
+          // 把 token 写进 URL（访问日志 / 代理历史可读）。测试当时把错误串当成期望值，锁死了这个 bug。
+          const baseUrl = client.getHomeserverUrl().replace(/\/$/, '')
+          const authDownloadUrl = `${baseUrl}/_matrix/client/v1/media/download/${encodeURIComponent(serverName)}/${encodeURIComponent(mediaId)}`
           try {
             const buffer = await HttpClient.downloadBytes(authDownloadUrl, {
               headers: { Authorization: `Bearer ${accessToken}` },

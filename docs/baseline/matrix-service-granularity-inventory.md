@@ -246,7 +246,7 @@ index.ts → friends/MatrixFriendService → friends/MatrixFriendGroups → frie
 | 批次 | 动作 | 目标指标 | 状态 |
 | :--- | :--- | :--- | :--- |
 | B1 | 删副本 C（extension 实例字段改请求时读）/ 删 `MatrixClientState` 的 config 兜底 / `accessToken` 退出 `persist.pick` / 快照去 token | 副本 3 → 0 | ✅ **已完成（2026-11-04，见 §10.6）** |
-| B2 | `SessionStorePort.getAccessToken()` 直读 accessor（已随 B1 落地）；剩余 11 个非白名单读取点收敛 | 非白名单读取点 ≤ 6 | 待排期 |
+| B2 | 剩余非白名单读取点逐条判读；只修缺陷，不压数字 | 读取点语义澄清 | ✅ **已完成（2026-11-04，见 §10.7）** |
 | B3 | 抽 `MatrixRuntimeContext`（纯接口），`MatrixClientState` 降到最底层，拆 `MatrixCapabilityService` 的广域依赖 | L4 深度 15 → ≤12 | 待排期 |
 
 > 仍然**不设文件数下降目标**（§5 结论未变）：`check-sdk-boundary` + `check-bare-matrix-paths` 要求这些接缝存在。本文档 v1.1 的核心更正只有两点 —— **token 不是单一收口**、**调用链口径必须只算运行时边**。
@@ -282,3 +282,30 @@ index.ts → friends/MatrixFriendService → friends/MatrixFriendGroups → frie
 
 **守卫口径修正**：L1 原先只匹配 `getAccessToken(`，可用 `getAccessToken?.()` 绕过；已补可选调用匹配。
 因此 L1 绝对数从 22 → 25 **不可与旧值直接比较**（口径变化），可比指标是副本数（3→0）与非白名单文件数（11）。
+
+### 10.7 B2 执行记录（2026-11-04）
+
+**结论先说：这 11 个「非白名单读取点」不该压数字。** 逐条判读后分三类，均属正当设计：
+
+| 类别 | 文件 | 为什么合法 |
+| :--- | :--- | :--- |
+| A. 纯函数以 `client` 为显式依赖 | `media/mediaDownloadHelpers.ts` | 模块契约即「接收 MatrixClient 作为依赖」，取 token 是这个依赖的正常用法；改成全局 accessor 反而破坏可测性 |
+| B. 必须把 token 交给外部执行体 | `user/MatrixAccountService.ts`（传 Worker）、`admin/AdminFacadeService.ts`（传 Tauri 命令） | 目标执行体自己不能读 client |
+| C. 读的是「那一个」client | `MatrixClientAuth.ts`（重建期 `existingClient.getAccessToken()`） | 与已注册 client 未必同一实例，不能替换成全局入口 |
+| D. 端口/服务间接 | `Session{Login,Restore,Bootstrap,Orchestrator}Service`、`EndpointCapabilityService` | 走 `port.matrix.getAccessToken()` / `matrixClientService.getAccessToken()`，已收敛到单一实现 |
+
+把 D 类改写成 accessor 只是换一个函子，收益为零；把 A/B/C 类改写则需要重构 HTTP 网关（上传通道、Worker 通道、Tauri 命令各自有独立传输），**风险远大于收益**。所以 B2 的目标从「计数 ≤6」改为「澄清语义 + 修掉真缺陷」。
+
+**修掉的真缺陷（1 个，含 1 个被测试锁死的 bug）**：
+
+`mediaDownloadHelpers.downloadFileBytes` 的 MSC3916 兜底 URL 拼接为
+`${client.getHomeserverUrl()}_matrix/client/v1/media/download/...` —— **少了 `/`**，
+homeserver 无尾斜杠时得到 `https://hs.example.com_matrix/...`（主机名被污染）⇒ 该兜底**永远 404**，
+于是每次下载都落到最后那条 `?access_token=` query 兜底，把 token 写进 URL。
+
+而当时的单测把**错误串**写成了期望值（`hs.example.com_matrix/...`），属自洽桩：测试通过 = bug 被锁死。
+已修：用 `replace(/\/$/,'')` 归一后再拼 `/_matrix/...`；测试改为断言正确 URL，并补一条尾斜杠用例。
+端点存在于 SDK ledger（`media/download/{server_name}/{media_id}`），非臆造路径。
+
+> 补充：`?access_token=` 的残留风险（URL 进代理/历史）已有兜底 —— `Logger.sanitizePatterns` 覆盖
+> `access_token=` / `Authorization: Bearer` / `syt_` 前缀，日志侧不会明文。修复后它回到「最后兜底」的原本定位。
