@@ -71,6 +71,7 @@ const offset = ref(0)
 const containerHeight = ref(0)
 let containerObserver: ResizeObserver | null = null
 let measurementFrame = 0
+let disposed = false
 const itemHeights = ref<Map<string | number, number>>(new Map())
 const cumulativeHeights = ref<Float64Array>(new Float64Array(0))
 
@@ -177,12 +178,22 @@ function updateItemHeights(): void {
 }
 
 function scheduleMeasure(): void {
-  if (measurementFrame !== 0) return
+  if (measurementFrame !== 0 || disposed) return
 
   measurementFrame = requestAnimationFrame(() => {
     measurementFrame = 0
+    if (disposed) return
     updateItemHeights()
   })
+}
+
+function syncContainerHeight(): void {
+  containerHeight.value = containerRef.value?.clientHeight ?? 0
+}
+
+function handleWindowResize(): void {
+  syncContainerHeight()
+  scheduleMeasure()
 }
 
 function handleScroll(event: Event): void {
@@ -251,6 +262,14 @@ watch(
   }
 )
 
+watch(
+  () => props.itemHeight,
+  () => {
+    rebuildCumulativeHeights()
+    nextTick(scheduleMeasure)
+  }
+)
+
 onMounted(() => {
   rebuildCumulativeHeights()
   if (phantomRef.value) {
@@ -259,16 +278,23 @@ onMounted(() => {
 
   if (containerRef.value) {
     containerHeight.value = containerRef.value.clientHeight
-    containerObserver = new ResizeObserver((entries) => {
-      containerHeight.value = entries[0]?.contentRect.height ?? containerRef.value?.clientHeight ?? 0
-    })
-    containerObserver.observe(containerRef.value)
+    if (typeof ResizeObserver !== 'undefined') {
+      containerObserver = new ResizeObserver((entries) => {
+        containerHeight.value = entries[0]?.contentRect.height ?? containerRef.value?.clientHeight ?? 0
+        scheduleMeasure()
+      })
+      containerObserver.observe(containerRef.value)
+    } else {
+      window.addEventListener('resize', handleWindowResize)
+    }
   }
 })
 
 onUnmounted(() => {
+  disposed = true
   containerObserver?.disconnect()
   containerObserver = null
+  window.removeEventListener('resize', handleWindowResize)
   if (measurementFrame !== 0) {
     cancelAnimationFrame(measurementFrame)
     measurementFrame = 0

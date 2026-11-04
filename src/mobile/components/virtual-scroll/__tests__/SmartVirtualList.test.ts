@@ -47,11 +47,13 @@ describe('SmartVirtualList sizing', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
   it('tracks container height with a ResizeObserver', () => {
     expect(source).toContain('new ResizeObserver')
+    expect(source).toContain("typeof ResizeObserver !== 'undefined'")
     expect(source).toContain('containerHeight.value')
   })
 
@@ -95,5 +97,36 @@ describe('SmartVirtualList sizing', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.findAll('.virtual-item').length).toBe(17)
+  })
+
+  it('rebuilds total height and render range when itemHeight changes', async () => {
+    const wrapper = mountList()
+    const observer = ResizeObserverStub.instances[0]
+
+    observer.trigger(1000)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findAll('.virtual-item').length).toBe(31)
+    expect(wrapper.find('.phantom').attributes('style')).toContain('10000px')
+
+    await wrapper.setProps({ itemHeight: 20 })
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.phantom').attributes('style')).toContain('4000px')
+    expect(wrapper.findAll('.virtual-item').length).toBe(61)
+  })
+
+  it('falls back to a window resize listener without ResizeObserver', () => {
+    vi.stubGlobal('ResizeObserver', undefined)
+    const addSpy = vi.spyOn(window, 'addEventListener')
+    const removeSpy = vi.spyOn(window, 'removeEventListener')
+
+    const wrapper = mountList()
+
+    expect(addSpy).toHaveBeenCalledWith('resize', expect.any(Function))
+
+    wrapper.unmount()
+
+    expect(removeSpy).toHaveBeenCalledWith('resize', expect.any(Function))
   })
 })
