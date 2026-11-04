@@ -109,7 +109,6 @@
   "manage_group_member": {
     "title": "Manage group members",
     "search_placeholder_mobile": "Search members~",
-    "search_placeholder_pc": "Search group members",
     "selected_count": "Selected {count} members",
     "remove_button": "Remove from group",
     "dialog_negative": "Cancel",

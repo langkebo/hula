@@ -3046,7 +3046,6 @@ export type I18nKeys = {
     "manage_group_member": {
       "title": "管理群成员",
       "search_placeholder_mobile": "搜索成员~",
-      "search_placeholder_pc": "搜索群成员",
       "selected_count": "已选择 {count} 人",
       "remove_button": "踢出群聊",
       "dialog_negative": "取消",
@@ -4914,7 +4913,13 @@ export type I18nKeys = {
     "save_display_name_success": "显示名称已更新",
     "save_display_name_failed": "更新显示名称失败",
     "saving": "保存中...",
-    "share_to": "分享至"
+    "share_to": "分享至",
+    "actions": {
+      "messages": "我的消息",
+      "share": "分享",
+      "scan": "扫一扫",
+      "settings": "设置"
+    }
   },
   "mobile_mymessage": {
     "title": "消息",
@@ -5324,7 +5329,8 @@ export type I18nKeys = {
       "rooms": "房间",
       "spaces": "空间",
       "me": "我的"
-    }
+    },
+    "aria_label": "移动端主导航"
   },
   "mobile_voice_video": {
     "title": "语音视频设置",
@@ -9873,7 +9879,6 @@ export type I18nKeyPaths =
   | "home.chat_reaction.red_envelope"
   | "home.manage_group_member.title"
   | "home.manage_group_member.search_placeholder_mobile"
-  | "home.manage_group_member.search_placeholder_pc"
   | "home.manage_group_member.selected_count"
   | "home.manage_group_member.remove_button"
   | "home.manage_group_member.dialog_negative"
@@ -11279,6 +11284,10 @@ export type I18nKeyPaths =
   | "mobile_my.save_display_name_failed"
   | "mobile_my.saving"
   | "mobile_my.share_to"
+  | "mobile_my.actions.messages"
+  | "mobile_my.actions.share"
+  | "mobile_my.actions.scan"
+  | "mobile_my.actions.settings"
   | "mobile_mymessage.title"
   | "mobile_mymessage.accept"
   | "mobile_mymessage.approved"
@@ -11624,6 +11633,7 @@ export type I18nKeyPaths =
   | "mobile_tabbar.items.rooms"
   | "mobile_tabbar.items.spaces"
   | "mobile_tabbar.items.me"
+  | "mobile_tabbar.aria_label"
   | "mobile_voice_video.title"
   | "mobile_voice_video.audio_section"
   | "mobile_voice_video.video_section"

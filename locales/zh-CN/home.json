@@ -109,7 +109,6 @@
   "manage_group_member": {
     "title": "管理群成员",
     "search_placeholder_mobile": "搜索成员~",
-    "search_placeholder_pc": "搜索群成员",
     "selected_count": "已选择 {count} 人",
     "remove_button": "踢出群聊",
     "dialog_negative": "取消",
