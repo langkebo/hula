@@ -97,6 +97,13 @@ declare namespace STO {
        * 仅登记显式开启的房间，规模与用户操作次数同阶。
        */
       strictUnverifiedRooms: string[]
+      /**
+       * 已开启阅后即焚的房间列表（桌面 / 移动共用）。
+       *
+       * 服务层 `getBurnStats` 只返回房间数量、不返回房间 ID，故由开关操作
+       * 就地登记；桌面与移动端统一读这里，禁止各自维护 localStorage 副本。
+       */
+      burnRooms: { roomId: string; duration: number }[]
     }
     /** 聊天设置 */
     chat: {

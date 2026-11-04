@@ -145,7 +145,9 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     /** R-1：全局严格模式（不向未验证设备发送加密房间密钥） */
     blockUnverifiedDevicesEnabled: (state: STO.Setting) => state.preferences?.blockUnverifiedDevices ?? false,
     /** R-1：逐房间严格模式列表 */
-    strictUnverifiedRooms: (state: STO.Setting) => state.preferences?.strictUnverifiedRooms ?? []
+    strictUnverifiedRooms: (state: STO.Setting) => state.preferences?.strictUnverifiedRooms ?? [],
+    /** 已开启阅后即焚的房间列表（桌面 / 移动共用数据源） */
+    burnRooms: (state: STO.Setting) => state.preferences?.burnRooms ?? []
   },
   actions: {
     /** 初始化主题 */
@@ -262,6 +264,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.preferences.blockUnverifiedDevices =
         this.preferences.blockUnverifiedDevices ?? defaults.blockUnverifiedDevices
       this.preferences.strictUnverifiedRooms = normalizeStrictUnverifiedRooms(this.preferences.strictUnverifiedRooms)
+      this.preferences.burnRooms = this.preferences.burnRooms ?? defaults.burnRooms
     },
     migrateLegacyPreferenceSettings() {
       this.ensurePreferenceSettings()
@@ -392,6 +395,17 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     setBurnShowCountdownEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()
       this.preferences.burnShowCountdown = enabled
+    },
+    /** 登记/更新已开启阅后即焚的房间（id 幂等） */
+    setBurnRoomEnabled(roomId: string, duration: number) {
+      this.ensurePreferenceSettings()
+      const rest = this.burnRooms.filter((room: { roomId: string }) => room.roomId !== roomId)
+      this.preferences.burnRooms = [...rest, { roomId, duration }]
+    },
+    /** 房间级阅后即焚关闭后从列表移除 */
+    removeBurnRoom(roomId: string) {
+      this.ensurePreferenceSettings()
+      this.preferences.burnRooms = this.burnRooms.filter((room: { roomId: string }) => room.roomId !== roomId)
     },
     setThreadAutoSubscribeEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()

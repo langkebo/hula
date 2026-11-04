@@ -332,7 +332,8 @@ describe('SettingStore', () => {
         uploadCompressQuality: undefined as never,
         uploadChunkEnabled: undefined as never,
         blockUnverifiedDevices: undefined as never,
-        strictUnverifiedRooms: undefined as never
+        strictUnverifiedRooms: undefined as never,
+        burnRooms: undefined as never
       }
       store.ensurePreferenceSettings()
       expect(store.messageConfirmEnabled).toBe(false)

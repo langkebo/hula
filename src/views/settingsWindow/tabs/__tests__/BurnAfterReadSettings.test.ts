@@ -47,6 +47,7 @@ const {
     burnDefaultEnabled: false,
     burnDefaultDuration: 60,
     burnShowCountdownEnabled: true,
+    burnRooms: [],
     setBurnDefaultEnabled: (...args: unknown[]) => setBurnDefaultEnabledMock(...args),
     setBurnDefaultDuration: (...args: unknown[]) => setBurnDefaultDurationMock(...args),
     setBurnShowCountdownEnabled: (...args: unknown[]) => setBurnShowCountdownEnabledMock(...args)
@@ -78,6 +79,10 @@ vi.mock('@/utils/Logger', () => ({
 
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => settingStoreMock
+}))
+
+vi.mock('@/stores/domains/chat/room', () => ({
+  useRoomStore: () => ({ roomList: [] })
 }))
 
 vi.mock('vue-i18n', () => ({

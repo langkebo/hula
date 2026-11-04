@@ -65,14 +65,10 @@
 
 <script setup lang="ts">
 import { NAlert, NDivider, NSelect, NSpin, NSwitch, useDialog } from 'naive-ui'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
-import { useSettingStore } from '@/stores/domains/settings/setting'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('BurnAfterReadSettings')
+import { useBurnAfterReadSettings } from '@/composables/useBurnAfterReadSettings'
 
 defineOptions({
   name: 'BurnAfterReadSettings'
@@ -81,23 +77,22 @@ defineOptions({
 const { showFeedback } = useActionFeedback()
 const dialog = useDialog()
 const { t } = useI18n()
-const { getBurnStats } = useBurnAfterRead()
-const settingStore = useSettingStore()
 
-// 三个全局字段读写 settingStore，与移动端状态源一致
-const globalBurnEnabled = ref(settingStore.burnDefaultEnabled)
-// 显式标注 number；settingStore getter 返回联合类型 30|60|300|3600|86400，避免 ref 收窄后无法赋 number
-const globalBurnDuration = ref<number>(settingStore.burnDefaultDuration)
-const showBurnCountdown = ref(settingStore.burnShowCountdownEnabled)
+// 全局字段、统计与时长格式化统一由共享 composable 提供，桌面只保留 Naive UI 交互差异
+const {
+  globalEnabled: globalBurnEnabled,
+  defaultDuration: globalBurnDuration,
+  showCountdown: showBurnCountdown,
+  loadingStats,
+  burnStats,
+  formatDuration,
+  loadBurnStats,
+  setGlobalEnabled,
+  setDefaultDuration,
+  setShowCountdown
+} = useBurnAfterReadSettings()
 
-const loadingStats = ref(false)
-
-const burnStats = reactive({
-  totalBurned: 0,
-  totalPending: 0,
-  roomsWithBurnEnabled: 0
-})
-
+// 桌面用显式时长文案（durations.*），与移动端 formats.* 的派生文案不同
 const burnDurationOptions = computed(() => [
   { label: t('setting.burn_after_read.durations.30_seconds'), value: 30 },
   { label: t('setting.burn_after_read.durations.1_minute'), value: 60 },
@@ -110,29 +105,6 @@ onMounted(() => {
   loadBurnStats()
 })
 
-async function loadBurnStats() {
-  loadingStats.value = true
-  try {
-    const stats = await getBurnStats()
-    if (stats) {
-      burnStats.totalBurned = stats.totalBurned || 0
-      burnStats.totalPending = stats.totalPending ?? 0
-      burnStats.roomsWithBurnEnabled = stats.roomsWithBurnEnabled ?? 0
-    }
-  } catch {
-    logger.error('Failed to load burn stats')
-  } finally {
-    loadingStats.value = false
-  }
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return t('setting.burn_after_read.formats.seconds', { count: String(seconds) })
-  if (seconds < 3600) return t('setting.burn_after_read.formats.minutes', { count: String(Math.floor(seconds / 60)) })
-  if (seconds < 86400) return t('setting.burn_after_read.formats.hours', { count: String(Math.floor(seconds / 3600)) })
-  return t('setting.burn_after_read.formats.days', { count: String(Math.floor(seconds / 86400)) })
-}
-
 async function handleGlobalBurnToggle(value: boolean) {
   if (value) {
     dialog.warning({
@@ -141,29 +113,26 @@ async function handleGlobalBurnToggle(value: boolean) {
       positiveText: t('setting.burn_after_read.dialogs.enable_confirm'),
       negativeText: t('setting.common.cancel'),
       onPositiveClick: () => {
-        globalBurnEnabled.value = true
-        settingStore.setBurnDefaultEnabled(true)
+        setGlobalEnabled(true)
         showFeedback(t('setting.burn_after_read.feedback.global_enabled'), 'success')
       },
       onNegativeClick: () => {
-        globalBurnEnabled.value = false
+        setGlobalEnabled(false)
       }
     })
   } else {
-    globalBurnEnabled.value = false
-    settingStore.setBurnDefaultEnabled(false)
+    setGlobalEnabled(false)
     showFeedback(t('setting.burn_after_read.feedback.global_disabled'), 'info')
   }
 }
 
 function handleBurnDurationChange(value: number) {
-  globalBurnDuration.value = value
-  settingStore.setBurnDefaultDuration(value)
+  setDefaultDuration(value)
   showFeedback(t('setting.burn_after_read.feedback.duration_changed', { duration: formatDuration(value) }), 'success')
 }
 
 function handleCountdownToggle() {
-  settingStore.setBurnShowCountdownEnabled(showBurnCountdown.value)
+  setShowCountdown(showBurnCountdown.value)
   showFeedback(t('setting.burn_after_read.feedback.settings_updated'), 'success')
 }
 </script>

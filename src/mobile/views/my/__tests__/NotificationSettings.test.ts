@@ -251,7 +251,7 @@ describe('NotificationSettings', () => {
       const wrapper = mountComponent()
       const vm = wrapper.vm as any
       vm.keywordHighlight = false
-      vm.handleKeywordHighlightToggle()
+
       const stored = JSON.parse(localStorage.getItem('tjg-notification-display-preferences') as string)
       expect(stored.keywordHighlight).toBe(false)
     })
@@ -270,8 +270,6 @@ describe('NotificationSettings', () => {
       const wrapper = mountComponent()
       const vm = wrapper.vm as any
       vm.contentSummary = false
-
-      vm.handleContentSummaryToggle()
 
       const stored = JSON.parse(localStorage.getItem('tjg-notification-display-preferences') as string)
       expect(stored.contentSummary).toBe(false)

@@ -111,13 +111,8 @@ import { NButton, NDivider, NInput, NSlider, NSwitch, NTag } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useNotificationDisplayPreferences } from '@/composables/settings/useNotificationDisplayPreferences'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
-import {
-  loadNotificationDisplayPreferences,
-  type NotificationDisplayPreferences,
-  parseNotificationKeywords,
-  saveNotificationDisplayPreferences
-} from '@/services/matrix/notifications/notificationDisplayPreferences'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
 
@@ -136,7 +131,14 @@ const notificationConfig = ref(matrixNotificationService.getConfig())
 
 // 关键词开关 + 关键词列表的唯一来源是 notificationDisplayPreferences
 // （tjg-notification-display-preferences），与上面的事件开关不重叠、不互相镜像。
-const displayPreferences = ref(loadNotificationDisplayPreferences())
+// 展示偏好读写收敛到共享逻辑层，移动端使用的是同一份存储。
+const {
+  keywordNotifications: keywordNotification,
+  keywords,
+  reload: reloadDisplayPreferences,
+  addKeyword: appendKeyword,
+  removeKeyword: deleteKeyword
+} = useNotificationDisplayPreferences()
 
 type NotificationToggle = 'enableDesktop' | 'showMessageContent' | 'showSender'
 
@@ -152,11 +154,6 @@ function writeConfig(patch: Partial<Record<NotificationToggle, boolean>>) {
 
   notificationConfig.value = { ...notificationConfig.value, ...patch }
   matrixNotificationService.updateConfig(patch)
-}
-
-function writeDisplayPreferences(patch: Partial<NotificationDisplayPreferences>) {
-  displayPreferences.value = { ...displayPreferences.value, ...patch }
-  saveNotificationDisplayPreferences(displayPreferences.value)
 }
 
 const desktopNotification = computed({
@@ -181,11 +178,6 @@ const showSenderName = computed({
   get: () => notificationConfig.value.showSender,
   set: (value: boolean) => writeConfig({ showSender: value })
 })
-const keywordNotification = computed({
-  get: () => displayPreferences.value.keywordNotifications,
-  set: (value: boolean) => writeDisplayPreferences({ keywordNotifications: value })
-})
-const keywords = computed(() => displayPreferences.value.keywords)
 const newKeyword = ref('')
 
 // events.thread_mention 缺省即开启，因此未写入过时开关显示为打开。
@@ -202,7 +194,7 @@ const threadMentionNotify = computed({
 
 onMounted(() => {
   notificationConfig.value = matrixNotificationService.getConfig()
-  displayPreferences.value = loadNotificationDisplayPreferences()
+  reloadDisplayPreferences()
 })
 
 async function handleNotificationChange(value: boolean) {
@@ -277,23 +269,16 @@ function handleKeywordToggle(value: boolean) {
 
 function addKeyword() {
   const keyword = newKeyword.value.trim()
-  if (!keyword) {
+  if (!appendKeyword(keyword)) {
     return
   }
 
-  const current = keywords.value
-  const next = parseNotificationKeywords([...current, keyword].join(','))
-  if (next.length === current.length) {
-    return
-  }
-
-  writeDisplayPreferences({ keywords: next })
   newKeyword.value = ''
   showFeedback(t('setting.notification.feedback.keyword_added', { keyword }), 'success')
 }
 
 function removeKeyword(keyword: string) {
-  writeDisplayPreferences({ keywords: keywords.value.filter((k) => k !== keyword) })
+  deleteKeyword(keyword)
   showFeedback(t('setting.notification.feedback.keyword_removed', { keyword }), 'success')
 }
 

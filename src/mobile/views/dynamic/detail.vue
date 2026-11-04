@@ -23,31 +23,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { type DynamicRoadmapStatus, useDynamic } from '@/composables/useDynamic'
-import { completeRenderSampleOnNextFrame, startRenderSample } from '@/utils/AppHarness'
+import { useDynamicDetail } from '@/composables/useDynamicDetail'
 
-const route = useRoute()
-const detailId = computed(() => String(route.params.id || route.query.id || 'detail'))
-const { selectedItem, getStatusText } = useDynamic(detailId)
-
-startRenderSample('mobile-dynamic-detail', {
-  route: `/mobile/dynamic/${detailId.value}`,
-  meta: {
-    source: 'page-entry'
-  }
+// 详情 id 解析、状态读取、标签配色与渲染采样统一走共享 composable，移动端只保留 Vant 呈现
+const { selectedItem, getStatusText, getTagType } = useDynamicDetail({
+  sampleName: 'mobile-dynamic-detail',
+  routePrefix: '/mobile/dynamic'
 })
-
-onMounted(() => {
-  completeRenderSampleOnNextFrame('mobile-dynamic-detail', {
-    route: `/mobile/dynamic/${detailId.value}`
-  })
-})
-
-const getTagType = (status: DynamicRoadmapStatus) => {
-  if (status === 'in-progress') return 'primary'
-  if (status === 'blocked') return 'warning'
-  return 'default'
-}
 </script>

@@ -359,7 +359,7 @@ describe('PreferencesSettings', () => {
   it('calls settingStore on emoji size change', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    vm.handleEmojiSizeChange('large')
+    vm.emojiSize = 'large'
     expect(setEmojiSizeMock).toHaveBeenCalledWith('large')
   })
 
@@ -367,6 +367,7 @@ describe('PreferencesSettings', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
     vm.handleConfirmChange(true)
+    vm.messageConfirm = true
     expect(setMessageConfirmEnabledMock).toHaveBeenCalledWith(true)
     expect(messageSuccessMock).toHaveBeenCalledWith('已启用消息确认')
   })
@@ -374,14 +375,14 @@ describe('PreferencesSettings', () => {
   it('calls settingStore on link preview change', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    vm.handleLinkPreviewChange(false)
+    vm.linkPreview = false
     expect(setLinkPreviewEnabledMock).toHaveBeenCalledWith(false)
   })
 
   it('calls settingStore on emoji convert change', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    vm.handleEmojiChange(false)
+    vm.emojiConvert = false
     expect(setEmojiConvertEnabledMock).toHaveBeenCalledWith(false)
   })
 
@@ -389,6 +390,7 @@ describe('PreferencesSettings', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
     vm.handleSendKeyChange('Ctrl+Enter')
+    vm.sendKey = 'Ctrl+Enter'
     expect(setSendMessageShortcutMock).toHaveBeenCalledWith('Ctrl+Enter')
     expect(messageSuccessMock).toHaveBeenCalledWith('发送键已设置为 Ctrl + Enter')
   })
@@ -415,21 +417,21 @@ describe('PreferencesSettings', () => {
   it('calls settingStore on burn default toggle', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    vm.handleBurnDefaultToggle(true)
+    vm.burnDefaultEnabled = true
     expect(setBurnDefaultEnabledMock).toHaveBeenCalledWith(true)
   })
 
   it('calls settingStore on burn duration change', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    vm.handleBurnDurationChange(300)
+    vm.burnDefaultDuration = 300
     expect(setBurnDefaultDurationMock).toHaveBeenCalledWith(300)
   })
 
   it('calls settingStore on burn countdown toggle', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    vm.handleBurnCountdownToggle(false)
+    vm.burnShowCountdown = false
     expect(setBurnShowCountdownEnabledMock).toHaveBeenCalledWith(false)
   })
 
@@ -455,11 +457,11 @@ describe('PreferencesSettings', () => {
   it('calls settingStore for thread preferences', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    vm.handleThreadAutoSubscribe(false)
+    vm.threadAutoSubscribe = false
     expect(setThreadAutoSubscribeEnabledMock).toHaveBeenCalledWith(false)
-    vm.handleThreadShowInRoom(false)
+    vm.threadShowInRoom = false
     expect(setThreadShowInRoomEnabledMock).toHaveBeenCalledWith(false)
-    vm.handleThreadNotificationChange('none')
+    vm.threadNotificationLevel = 'none'
     expect(setThreadNotificationLevelMock).toHaveBeenCalledWith('none')
   })
 
@@ -485,11 +487,11 @@ describe('PreferencesSettings', () => {
   it('calls settingStore for space preferences', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    vm.handleSpaceAutoJoin(true)
+    vm.spaceAutoJoinRooms = true
     expect(setSpaceAutoJoinRoomsEnabledMock).toHaveBeenCalledWith(true)
-    vm.handleSpaceShowSubspaces(false)
+    vm.spaceShowSubspaces = false
     expect(setSpaceShowSubspacesEnabledMock).toHaveBeenCalledWith(false)
-    vm.handleSpaceNotificationChange('none')
+    vm.spaceDefaultNotification = 'none'
     expect(setSpaceDefaultNotificationMock).toHaveBeenCalledWith('none')
   })
 
@@ -512,9 +514,9 @@ describe('PreferencesSettings', () => {
   it('calls settingStore for privacy preference toggles', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = getVm(wrapper)
-    vm.handleReadReceiptsToggle(false)
+    vm.sendReadReceipts = false
     expect(setSendReadReceiptsEnabledMock).toHaveBeenCalledWith(false)
-    vm.handleTypingToggle(false)
+    vm.sendTypingNotifications = false
     expect(setSendTypingNotificationsEnabledMock).toHaveBeenCalledWith(false)
   })
 

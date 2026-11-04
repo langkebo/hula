@@ -18,9 +18,9 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
+import { useThreadIndicator } from '@/composables/messaging/useThreadIndicator'
 
 const { t } = useI18n()
 
@@ -33,16 +33,11 @@ const emit = defineEmits<{
   openThread: [eventId: string]
 }>()
 
-const replyCount = ref(0)
-
-const hasReplies = computed(() => replyCount.value > 0)
-
-const loadThreadInfo = () => {
-  const thread = matrixThreadService.getThread(props.roomId, props.eventId)
-  if (thread) {
-    replyCount.value = thread.replyCount
-  }
-}
+// 回复数读取与空态派生走共享逻辑，桌面只保留 Naive UI 呈现差异
+const { replyCount, hasReplies, loadThreadInfo } = useThreadIndicator(
+  () => props.roomId,
+  () => props.eventId
+)
 
 const handleOpenThread = () => {
   emit('openThread', props.eventId)

@@ -20,6 +20,7 @@ const settingStoreMock = {
   messageConfirmEnabled: false,
   linkPreviewEnabled: true,
   emojiConvertEnabled: true,
+  sendMessageShortcut: 'Enter',
   burnDefaultEnabled: false,
   burnDefaultDuration: 60,
   burnShowCountdownEnabled: true,
@@ -32,13 +33,19 @@ const settingStoreMock = {
   setLinkPreviewEnabled: (...args: any[]) => setLinkPreviewEnabledMock(...args),
   setEmojiConvertEnabled: (...args: any[]) => setEmojiConvertEnabledMock(...args),
   setBurnDefaultEnabled: (...args: any[]) => setBurnDefaultEnabledMock(...args),
-  setBurnDefaultDuration: (...args: any[]) => setBurnDefaultDurationMock(...args),
+  setBurnDefaultDuration: (value: number) => {
+    settingStoreMock.burnDefaultDuration = value
+    setBurnDefaultDurationMock(value)
+  },
   setBurnShowCountdownEnabled: (...args: any[]) => setBurnShowCountdownEnabledMock(...args),
   setThreadAutoSubscribeEnabled: (...args: any[]) => setThreadAutoSubscribeEnabledMock(...args),
   setThreadShowInRoomEnabled: (...args: any[]) => setThreadShowInRoomEnabledMock(...args),
   setSendReadReceiptsEnabled: (...args: any[]) => setSendReadReceiptsEnabledMock(...args),
   setSendTypingNotificationsEnabled: (...args: any[]) => setSendTypingNotificationsEnabledMock(...args),
-  setSendMessageShortcut: (...args: any[]) => setSendMessageShortcutMock(...args)
+  setSendMessageShortcut: (value: string) => {
+    settingStoreMock.sendMessageShortcut = value
+    setSendMessageShortcutMock(value)
+  }
 }
 
 vi.mock('vant', () => ({
@@ -76,6 +83,7 @@ describe('PreferencesSettings', () => {
     settingStoreMock.messageConfirmEnabled = false
     settingStoreMock.linkPreviewEnabled = true
     settingStoreMock.emojiConvertEnabled = true
+    settingStoreMock.sendMessageShortcut = 'Enter'
     settingStoreMock.burnDefaultEnabled = false
     settingStoreMock.burnDefaultDuration = 60
     settingStoreMock.burnShowCountdownEnabled = true
@@ -134,18 +142,18 @@ describe('PreferencesSettings', () => {
     expect((wrapper.vm as any).sendReadReceipts).toBe(false)
   })
 
-  it('calls settingStore on preference toggle', () => {
+  it('writes preference toggles back to settingStore', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = wrapper.vm as any
-    vm.handleMessageConfirmChange(true)
-    vm.handleLinkPreviewChange(false)
-    vm.handleEmojiConvertChange(false)
-    vm.handleBurnDefaultEnabledChange(true)
-    vm.handleBurnShowCountdownChange(false)
-    vm.handleThreadAutoSubscribeChange(false)
-    vm.handleThreadShowInRoomChange(false)
-    vm.handleReadReceiptsChange(false)
-    vm.handleTypingNotificationsChange(false)
+    vm.messageConfirm = true
+    vm.linkPreview = false
+    vm.emojiConvert = false
+    vm.burnDefaultEnabled = true
+    vm.burnShowCountdown = false
+    vm.threadAutoSubscribe = false
+    vm.threadShowInRoom = false
+    vm.sendReadReceipts = false
+    vm.sendTypingNotifications = false
     expect(setMessageConfirmEnabledMock).toHaveBeenCalledWith(true)
     expect(setLinkPreviewEnabledMock).toHaveBeenCalledWith(false)
     expect(setEmojiConvertEnabledMock).toHaveBeenCalledWith(false)
@@ -157,18 +165,19 @@ describe('PreferencesSettings', () => {
     expect(setSendTypingNotificationsEnabledMock).toHaveBeenCalledWith(false)
   })
 
-  it('loads sendKey from localStorage', () => {
-    localStorage.setItem('tjg-send-key', 'Ctrl+Enter')
+  it('loads sendKey from settingStore instead of a local duplicate', () => {
+    settingStoreMock.sendMessageShortcut = 'Ctrl+Enter'
+    localStorage.setItem('tjg-send-key', 'Shift+Enter')
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).sendKey).toBe('Ctrl+Enter')
   })
 
-  it('handleSendKeyConfirm saves to localStorage and store', () => {
+  it('handleSendKeyConfirm writes through settingStore only', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = wrapper.vm as any
     vm.handleSendKeyConfirm({ selectedValues: ['Ctrl+Enter'] })
-    expect(localStorage.getItem('tjg-send-key')).toBe('Ctrl+Enter')
     expect(setSendMessageShortcutMock).toHaveBeenCalledWith('Ctrl+Enter')
+    expect(localStorage.getItem('tjg-send-key')).toBeNull()
     expect((wrapper.vm as any).showSendKeyPicker).toBe(false)
   })
 
@@ -177,23 +186,18 @@ describe('PreferencesSettings', () => {
     const vm = wrapper.vm as any
     vm.handleBurnDurationConfirm({ selectedValues: [300] })
     expect(setBurnDefaultDurationMock).toHaveBeenCalledWith(300)
-    expect((wrapper.vm as any).burnDefaultDuration).toBe(300)
     expect((wrapper.vm as any).showBurnDurationPicker).toBe(false)
   })
 
   it('sendKeyLabel returns correct label', () => {
+    settingStoreMock.sendMessageShortcut = 'Ctrl+Enter'
     const wrapper = mount(PreferencesSettings)
-    expect((wrapper.vm as any).sendKeyLabel).toBe('Enter')
-    const vm = wrapper.vm as any
-    vm.sendKey = 'Ctrl+Enter'
     expect((wrapper.vm as any).sendKeyLabel).toBe('Ctrl + Enter')
   })
 
   it('burnDurationLabel returns correct label', () => {
+    settingStoreMock.burnDefaultDuration = 300
     const wrapper = mount(PreferencesSettings)
-    expect((wrapper.vm as any).burnDurationLabel).toBe('1分钟')
-    const vm = wrapper.vm as any
-    vm.burnDefaultDuration = 300
     expect((wrapper.vm as any).burnDurationLabel).toBe('5分钟')
   })
 

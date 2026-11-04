@@ -4,6 +4,7 @@ import {
   type BurnStats,
   matrixBurnAfterReadService
 } from '@/services/matrix/messaging/MatrixBurnAfterReadService'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
 // Fix 1: 模块级单例缓存，确保所有 useBurnAfterRead() 调用者共享同一份状态。
@@ -21,6 +22,24 @@ export function useBurnAfterRead() {
   const globalStore = useGlobalStore()
 
   const currentRoomId = computed(() => globalStore.currentSessionRoomId)
+
+  /**
+   * 房间级开关成功后同步到 settingStore。
+   *
+   * 服务层 `getBurnStats` 只给房间数量，不给房间 ID；桌面与移动设置页统一
+   * 读 settingStore，禁止各自维护 localStorage 副本。
+   */
+  const syncRoomBurnPreference = (roomId: string, enabled: boolean, durationSeconds: number) => {
+    const settingStore = useSettingStore()
+    const existing = settingStore.burnRooms.find((room: { roomId: string }) => room.roomId === roomId)
+    if (enabled) {
+      if (!existing || existing.duration !== durationSeconds) {
+        settingStore.setBurnRoomEnabled(roomId, durationSeconds)
+      }
+    } else if (existing) {
+      settingStore.removeBurnRoom(roomId)
+    }
+  }
 
   const isRoomBurnEnabled = (roomId?: string) => {
     const targetRoomId = roomId || currentRoomId.value
@@ -45,19 +64,21 @@ export function useBurnAfterRead() {
       if (settings) {
         burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: settings.enabled }
         // Fix 2: burnAfterMs 是毫秒，转为秒存储
+        const durationSeconds = Math.round(settings.burnAfterMs / 1000)
         burnDurationCache.value = {
           ...burnDurationCache.value,
-          [targetRoomId]: Math.round(settings.burnAfterMs / 1000)
+          [targetRoomId]: durationSeconds
         }
+        syncRoomBurnPreference(targetRoomId, settings.enabled, durationSeconds)
       }
     } catch {
       // Ignore errors - defaults will be used
     }
   }
 
-  const toggleRoomBurn = async (roomId?: string) => {
+  const toggleRoomBurn = async (roomId?: string): Promise<boolean> => {
     const targetRoomId = roomId || currentRoomId.value
-    if (!targetRoomId) return
+    if (!targetRoomId) return false
 
     const isEnabled = isRoomBurnEnabled(targetRoomId)
     try {
@@ -66,21 +87,27 @@ export function useBurnAfterRead() {
         // 仅在服务端确认成功时更新缓存，避免乐观更新导致状态不一致
         if (result !== null && result !== undefined) {
           burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: false }
+          syncRoomBurnPreference(targetRoomId, false, 0)
+          return true
         }
       } else {
         const result = await matrixBurnAfterReadService.enableBurn(targetRoomId)
         if (result !== null && result !== undefined) {
           burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: true }
           // Fix 3: 同步更新时长缓存（服务返回 burnAfterMs 毫秒，转秒存储）
+          const durationSeconds = Math.round(result.burnAfterMs / 1000)
           burnDurationCache.value = {
             ...burnDurationCache.value,
-            [targetRoomId]: Math.round(result.burnAfterMs / 1000)
+            [targetRoomId]: durationSeconds
           }
+          syncRoomBurnPreference(targetRoomId, true, durationSeconds)
+          return true
         }
       }
     } catch {
       // 服务端返回错误时不更新缓存，保持原有状态
     }
+    return false
   }
 
   // Fix 5: 返回 boolean 让调用方据以决定是否启动倒计时
@@ -126,36 +153,43 @@ export function useBurnAfterRead() {
     }
   }
 
-  const enableBurn = async (roomId?: string, burnAfterMs?: number) => {
+  const enableBurn = async (roomId?: string, burnAfterMs?: number): Promise<boolean> => {
     const targetRoomId = roomId || currentRoomId.value
-    if (!targetRoomId) return
+    if (!targetRoomId) return false
     try {
       const result = await matrixBurnAfterReadService.enableBurn(targetRoomId, burnAfterMs)
       if (result !== null && result !== undefined) {
         burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: true }
         // Fix 3: 同步更新时长缓存，优先使用传入的 burnAfterMs，否则用服务返回值
         const durationMs = burnAfterMs ?? result.burnAfterMs
+        const durationSeconds = Math.round(durationMs / 1000)
         burnDurationCache.value = {
           ...burnDurationCache.value,
-          [targetRoomId]: Math.round(durationMs / 1000)
+          [targetRoomId]: durationSeconds
         }
+        syncRoomBurnPreference(targetRoomId, true, durationSeconds)
+        return true
       }
     } catch {
       // 服务端返回错误时不更新缓存
     }
+    return false
   }
 
-  const disableBurn = async (roomId?: string) => {
+  const disableBurn = async (roomId?: string): Promise<boolean> => {
     const targetRoomId = roomId || currentRoomId.value
-    if (!targetRoomId) return
+    if (!targetRoomId) return false
     try {
       const result = await matrixBurnAfterReadService.disableBurn(targetRoomId)
       if (result !== null && result !== undefined) {
         burnSettingsCache.value = { ...burnSettingsCache.value, [targetRoomId]: false }
+        syncRoomBurnPreference(targetRoomId, false, 0)
+        return true
       }
     } catch {
       // 服务端返回错误时不更新缓存
     }
+    return false
   }
 
   return {

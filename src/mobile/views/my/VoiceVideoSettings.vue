@@ -30,11 +30,7 @@
           <van-cell-group inset>
             <van-cell :title="t('mobile_voice_video.test_microphone')">
               <template #right-icon>
-                <van-button
-                  :type="isRecording ? 'danger' : 'default'"
-                  size="small"
-                  :loading="testLoading"
-                  @click="handleTestAudio">
+                <van-button :type="isRecording ? 'danger' : 'default'" size="small" @click="handleTestAudio">
                   {{ isRecording ? t('mobile_voice_video.stop') : t('mobile_voice_video.test') }}
                 </van-button>
               </template>
@@ -110,14 +106,14 @@
 
       <van-popup v-model:show="showAudioInputPicker" position="bottom" round>
         <van-picker
-          :columns="audioInputOptions"
+          :columns="audioInputColumns"
           @confirm="onAudioInputConfirm"
           @cancel="showAudioInputPicker = false" />
       </van-popup>
 
       <van-popup v-model:show="showVideoInputPicker" position="bottom" round>
         <van-picker
-          :columns="videoInputOptions"
+          :columns="videoInputColumns"
           @confirm="onVideoInputConfirm"
           @cancel="showVideoInputPicker = false" />
       </van-popup>
@@ -128,254 +124,65 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { loadMediaDevicePreferences, saveMediaDevicePreferences } from '@/services/media/mediaDevicePreferences'
-import { createLogger } from '@/utils/Logger'
+import { useMediaDeviceSettings } from '@/composables/settings/useMediaDeviceSettings'
 
-const logger = createLogger('VoiceVideoSettings')
 const { t } = useI18n()
 
-const devicesLoading = ref(false)
-const testLoading = ref(false)
-const isRecording = ref(false)
-const isPreviewing = ref(false)
-const audioLevel = ref(0)
-
-const audioInputId = ref<string | null>(null)
-const videoInputId = ref<string | null>(null)
-const echoCancellation = ref(true)
-const noiseSuppression = ref(true)
-const autoGainControl = ref(true)
-
+const videoPreviewRef = ref<HTMLVideoElement>()
 const showAudioInputPicker = ref(false)
 const showVideoInputPicker = ref(false)
 
-const audioInputDevices = ref<MediaDeviceInfo[]>([])
-const videoInputDevices = ref<MediaDeviceInfo[]>([])
-
-const audioInputOptions = computed(() =>
-  audioInputDevices.value.map((d) => ({
-    text: d.label || `${t('mobile_voice_video.microphone')} ${d.deviceId.slice(0, 8)}`,
-    value: d.deviceId
-  }))
-)
-
-const videoInputOptions = computed(() =>
-  videoInputDevices.value.map((d) => ({
-    text: d.label || `${t('mobile_voice_video.camera')} ${d.deviceId.slice(0, 8)}`,
-    value: d.deviceId
-  }))
-)
-
-const audioInputName = computed(() => {
-  const device = audioInputDevices.value.find((d) => d.deviceId === audioInputId.value)
-  return device?.label || t('mobile_voice_video.select_device')
-})
-
-const videoInputName = computed(() => {
-  const device = videoInputDevices.value.find((d) => d.deviceId === videoInputId.value)
-  return device?.label || t('mobile_voice_video.select_device')
-})
-
-const videoPreviewRef = ref<HTMLVideoElement>()
-let mediaStream: MediaStream | null = null
-let audioContext: AudioContext | null = null
-let analyser: AnalyserNode | null = null
-let animationFrame: number | null = null
-
-onMounted(async () => {
-  await loadDevices()
-  loadSavedSettings()
-})
-
-onUnmounted(() => {
-  stopPreview()
-  stopAudioTest()
-})
-
-async function loadDevices() {
-  devicesLoading.value = true
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices()
-
-    audioInputDevices.value = devices.filter((d) => d.kind === 'audioinput')
-    videoInputDevices.value = devices.filter((d) => d.kind === 'videoinput')
-
-    if (audioInputDevices.value.length > 0 && !audioInputId.value) {
-      audioInputId.value = audioInputDevices.value[0].deviceId
-    }
-    if (videoInputDevices.value.length > 0 && !videoInputId.value) {
-      videoInputId.value = videoInputDevices.value[0].deviceId
-    }
-  } catch (error) {
-    logger.error('Failed to load media devices', error)
-    showToast({
-      type: 'fail',
-      message: t('mobile_voice_video.device_error')
-    })
-  } finally {
-    devicesLoading.value = false
+// 设备枚举、偏好持久化、麦克风测试与预览统一走共享 composable，移动端只保留 Vant 呈现
+const {
+  isRecording,
+  isPreviewing,
+  audioLevel,
+  echoCancellation,
+  noiseSuppression,
+  autoGainControl,
+  audioInputOptions,
+  videoInputOptions,
+  audioInputName,
+  videoInputName,
+  selectAudioInput,
+  selectVideoInput,
+  handleEchoCancellationChange,
+  handleNoiseSuppressionChange,
+  handleAutoGainChange,
+  handleTestAudio,
+  handleTogglePreview
+} = useMediaDeviceSettings({
+  audioFallbackLabel: (deviceId) => `${t('mobile_voice_video.microphone')} ${deviceId.slice(0, 8)}`,
+  videoFallbackLabel: (deviceId) => `${t('mobile_voice_video.camera')} ${deviceId.slice(0, 8)}`,
+  emptyDeviceLabel: t('mobile_voice_video.select_device'),
+  videoPreviewRef,
+  feedback: {
+    devicesFailed: () => showToast({ type: 'fail', message: t('mobile_voice_video.device_error') }),
+    microphoneTestStarted: () => showToast({ type: 'success', message: t('mobile_voice_video.test_started') }),
+    microphoneTestFailed: () => showToast({ type: 'fail', message: t('mobile_voice_video.mic_error') }),
+    previewStarted: () => showToast({ type: 'success', message: t('mobile_voice_video.preview_started') }),
+    previewFailed: () => showToast({ type: 'fail', message: t('mobile_voice_video.camera_error') })
   }
-}
+})
 
-function loadSavedSettings() {
-  // 与桌面设置窗口共用同一份偏好（localStorage key 映射与归一化都在 shared 模块里）
-  const preferences = loadMediaDevicePreferences()
-  echoCancellation.value = preferences.echoCancellation
-  noiseSuppression.value = preferences.noiseSuppression
-  autoGainControl.value = preferences.autoGain
-}
-
-function handleEchoCancellationChange(value: boolean) {
-  saveMediaDevicePreferences({ echoCancellation: value })
-}
-
-function handleNoiseSuppressionChange(value: boolean) {
-  saveMediaDevicePreferences({ noiseSuppression: value })
-}
-
-function handleAutoGainChange(value: boolean) {
-  saveMediaDevicePreferences({ autoGain: value })
-}
+// Vant Picker 需要 text 字段，共享层统一输出 label/value
+const audioInputColumns = computed(() =>
+  audioInputOptions.value.map((option) => ({ text: option.label, value: option.value }))
+)
+const videoInputColumns = computed(() =>
+  videoInputOptions.value.map((option) => ({ text: option.label, value: option.value }))
+)
 
 function onAudioInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
-  audioInputId.value = selectedOptions[0].value
-  localStorage.setItem('tjg-audio-input', audioInputId.value!)
+  selectAudioInput(selectedOptions[0].value)
   showAudioInputPicker.value = false
 }
 
 function onVideoInputConfirm({ selectedOptions }: { selectedOptions: Array<{ value: string }> }) {
-  videoInputId.value = selectedOptions[0].value
-  localStorage.setItem('tjg-video-input', videoInputId.value!)
+  selectVideoInput(selectedOptions[0].value)
   showVideoInputPicker.value = false
-  if (isPreviewing.value) {
-    stopPreview()
-    startPreview()
-  }
-}
-
-async function handleTestAudio() {
-  if (isRecording.value) {
-    stopAudioTest()
-  } else {
-    await startAudioTest()
-  }
-}
-
-async function startAudioTest() {
-  try {
-    const constraints: MediaStreamConstraints = {
-      audio: {
-        ...(audioInputId.value ? { deviceId: { exact: audioInputId.value } } : {}),
-        echoCancellation: echoCancellation.value,
-        noiseSuppression: noiseSuppression.value,
-        autoGainControl: autoGainControl.value
-      }
-    }
-
-    mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
-
-    audioContext = new AudioContext()
-    const source = audioContext.createMediaStreamSource(mediaStream)
-    analyser = audioContext.createAnalyser()
-    analyser.fftSize = 256
-    source.connect(analyser)
-
-    isRecording.value = true
-    updateAudioLevel()
-    showToast({
-      type: 'success',
-      message: t('mobile_voice_video.test_started')
-    })
-  } catch (error) {
-    logger.warn('Failed to start microphone test', error)
-    showToast({
-      type: 'fail',
-      message: t('mobile_voice_video.mic_error')
-    })
-  }
-}
-
-function stopAudioTest() {
-  if (animationFrame) {
-    cancelAnimationFrame(animationFrame)
-    animationFrame = null
-  }
-
-  if (audioContext) {
-    audioContext.close()
-    audioContext = null
-  }
-
-  if (mediaStream) {
-    mediaStream.getTracks().forEach((track) => track.stop())
-    mediaStream = null
-  }
-
-  isRecording.value = false
-  audioLevel.value = 0
-}
-
-function updateAudioLevel() {
-  if (!analyser || !isRecording.value) return
-
-  const dataArray = new Uint8Array(analyser.frequencyBinCount)
-  analyser.getByteFrequencyData(dataArray)
-
-  const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-  audioLevel.value = Math.min(100, (average / 128) * 100)
-
-  animationFrame = requestAnimationFrame(updateAudioLevel)
-}
-
-async function handleTogglePreview() {
-  if (isPreviewing.value) {
-    stopPreview()
-  } else {
-    await startPreview()
-  }
-}
-
-async function startPreview() {
-  try {
-    const constraints: MediaStreamConstraints = {
-      video: {
-        ...(videoInputId.value ? { deviceId: { exact: videoInputId.value } } : {})
-      }
-    }
-
-    mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
-
-    if (videoPreviewRef.value) {
-      videoPreviewRef.value.srcObject = mediaStream
-    }
-
-    isPreviewing.value = true
-    showToast({
-      type: 'success',
-      message: t('mobile_voice_video.preview_started')
-    })
-  } catch (error) {
-    logger.error('Failed to start video preview', error)
-    showToast({
-      type: 'fail',
-      message: t('mobile_voice_video.camera_error')
-    })
-  }
-}
-
-function stopPreview() {
-  if (mediaStream) {
-    mediaStream.getTracks().forEach((track) => track.stop())
-    mediaStream = null
-  }
-
-  if (videoPreviewRef.value) {
-    videoPreviewRef.value.srcObject = null
-  }
-
-  isPreviewing.value = false
 }
 </script>
 

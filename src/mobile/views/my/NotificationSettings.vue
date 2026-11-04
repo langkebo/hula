@@ -99,10 +99,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="contentSummary"
-                  :disabled="!notificationsEnabled"
-                  @change="handleContentSummaryToggle" />
+                <van-switch v-model="contentSummary" :disabled="!notificationsEnabled" />
               </template>
             </van-cell>
 
@@ -117,10 +114,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch
-                  v-model="keywordHighlight"
-                  :disabled="!notificationsEnabled"
-                  @change="handleKeywordHighlightToggle" />
+                <van-switch v-model="keywordHighlight" :disabled="!notificationsEnabled" />
               </template>
             </van-cell>
 
@@ -176,15 +170,12 @@ import { showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { useNotificationDisplayPreferences } from '@/composables/settings/useNotificationDisplayPreferences'
 import type { IPushRule } from '@/services/matrix/notifications/MatrixPushService'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
 import {
-  formatNotificationKeywords,
-  loadNotificationDisplayPreferences,
   NOTIFICATION_PRIORITIES,
-  type NotificationPriority,
-  parseNotificationKeywords,
-  saveNotificationDisplayPreferences
+  type NotificationPriority
 } from '@/services/matrix/notifications/notificationDisplayPreferences'
 import { createLogger } from '@/utils/Logger'
 import { MOBILE_SETTINGS_PUSH_PATH } from './settingsRoutes'
@@ -200,11 +191,17 @@ const roomNotifyMode = ref('all')
 const groupNotifyMode = ref('mention')
 const saving = ref(false)
 
-const displayPreferences = loadNotificationDisplayPreferences()
-const contentSummary = ref(displayPreferences.contentSummary)
-const keywordHighlight = ref(displayPreferences.keywordHighlight)
-const keywordsInput = ref(formatNotificationKeywords(displayPreferences.keywords))
-const priority = ref<NotificationPriority>(displayPreferences.priority)
+// 展示偏好由共享逻辑层统一读写（桌面/移动同一份存储，写入只覆盖本页字段）。
+const {
+  contentSummary,
+  keywordHighlight,
+  keywordsText,
+  priority,
+  reload: reloadDisplayPreferences,
+  normalizeKeywords
+} = useNotificationDisplayPreferences()
+
+const keywordsInput = ref(keywordsText.value)
 const showPriorityPicker = ref(false)
 
 const priorityColumns = NOTIFICATION_PRIORITIES.map((value) => ({
@@ -215,6 +212,8 @@ const priorityColumns = NOTIFICATION_PRIORITIES.map((value) => ({
 const priorityLabel = computed(() => t(`mobile_notifications.priority_${priority.value}`))
 
 onMounted(async () => {
+  reloadDisplayPreferences()
+  keywordsInput.value = keywordsText.value
   await loadPushRules()
 })
 
@@ -222,36 +221,14 @@ function openPushSettings() {
   router.push(MOBILE_SETTINGS_PUSH_PATH)
 }
 
-function persistDisplayPreferences() {
-  // 展示偏好是桌面/移动共用的同一份存储：这里只覆盖本页拥有的字段，
-  // 其余字段（如桌面端的 keywordNotifications）必须原样保留，避免移动端一保存就把桌面开关重置。
-  saveNotificationDisplayPreferences({
-    ...loadNotificationDisplayPreferences(),
-    contentSummary: contentSummary.value,
-    keywordHighlight: keywordHighlight.value,
-    keywords: parseNotificationKeywords(keywordsInput.value),
-    priority: priority.value
-  })
-}
-
-function handleContentSummaryToggle() {
-  persistDisplayPreferences()
-}
-
-function handleKeywordHighlightToggle() {
-  persistDisplayPreferences()
-}
-
 function handleKeywordsCommit() {
-  keywordsInput.value = formatNotificationKeywords(parseNotificationKeywords(keywordsInput.value))
-  persistDisplayPreferences()
+  keywordsInput.value = normalizeKeywords(keywordsInput.value)
 }
 
 function handlePriorityConfirm({ selectedValues }: { selectedValues: string[] }) {
   const selected = selectedValues[0]
   if (selected && NOTIFICATION_PRIORITIES.includes(selected as NotificationPriority)) {
     priority.value = selected as NotificationPriority
-    persistDisplayPreferences()
   }
   showPriorityPicker.value = false
 }

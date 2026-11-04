@@ -41,7 +41,8 @@ export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
   // 默认开启会让未验证设备（新设备 / 未完成交叉签名）完全收不到消息且无任何解释。
   // 用户可通过加密房间内提示或加密设置页显式开启。
   blockUnverifiedDevices: false,
-  strictUnverifiedRooms: []
+  strictUnverifiedRooms: [],
+  burnRooms: []
 })
 
 export const normalizeNotificationVolume = (volume?: number) => {

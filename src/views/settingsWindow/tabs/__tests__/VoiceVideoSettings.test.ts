@@ -186,7 +186,7 @@ describe('VoiceVideoSettings', () => {
     const wrapper = mount(VoiceVideoSettings)
     await flushPromises()
 
-    await (wrapper.vm as any).startAudioTest()
+    await (wrapper.vm as any).handleTestAudio()
 
     expect(getUserMediaMock).toHaveBeenCalled()
     expect((wrapper.vm as any).isRecording).toBe(true)
@@ -198,7 +198,7 @@ describe('VoiceVideoSettings', () => {
     await flushPromises()
     getUserMediaMock.mockRejectedValueOnce(new Error('permission denied'))
 
-    await (wrapper.vm as any).startPreview()
+    await (wrapper.vm as any).handleTogglePreview()
 
     expect(messageErrorMock).toHaveBeenCalledWith('无法访问摄像头，请检查权限')
     expect(loggerErrorMock).toHaveBeenCalled()

@@ -12,30 +12,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { useDynamic } from '@/composables/useDynamic'
-import { completeRenderSampleOnNextFrame, startRenderSample } from '@/utils/AppHarness'
+import { useDynamicDetail } from '@/composables/useDynamicDetail'
 
 defineOptions({
   name: 'DynamicDetailPage'
 })
 
-const route = useRoute()
-const detailId = computed(() => String(route.params.id || route.query.id || 'detail'))
-const { selectedItem, getStatusText } = useDynamic(detailId)
-
-startRenderSample('desktop-dynamic-detail', {
-  route: `/dynamic/${detailId.value}`,
-  meta: {
-    source: 'page-entry'
-  }
-})
-
-onMounted(() => {
-  completeRenderSampleOnNextFrame('desktop-dynamic-detail', {
-    route: `/dynamic/${detailId.value}`
-  })
+// 详情 id 解析、状态读取与渲染采样统一走共享 composable，桌面只保留页面结构
+const { selectedItem, getStatusText } = useDynamicDetail({
+  sampleName: 'desktop-dynamic-detail',
+  routePrefix: '/dynamic'
 })
 </script>
 

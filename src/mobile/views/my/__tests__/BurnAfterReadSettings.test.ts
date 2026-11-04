@@ -15,6 +15,7 @@ const settingStoreMock = {
   burnDefaultEnabled: false,
   burnDefaultDuration: 60,
   burnShowCountdownEnabled: true,
+  burnRooms: [] as { roomId: string; duration: number }[],
   migrateLegacyPreferenceSettings: (...args: any[]) => migrateLegacyPreferenceSettingsMock(...args),
   setBurnDefaultEnabled: (...args: any[]) => setBurnDefaultEnabledMock(...args),
   setBurnShowCountdownEnabled: (...args: any[]) => setBurnShowCountdownEnabledMock(...args),
@@ -47,6 +48,10 @@ vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => settingStoreMock
 }))
 
+vi.mock('@/stores/domains/chat/room', () => ({
+  useRoomStore: () => ({ roomList: [] })
+}))
+
 vi.mock('@/mobile/components/chat-room/AutoFixHeightPage.vue', () => ({
   default: {
     name: 'AutoFixHeightPage',
@@ -70,6 +75,7 @@ describe('BurnAfterReadSettings', () => {
     settingStoreMock.burnDefaultEnabled = false
     settingStoreMock.burnDefaultDuration = 60
     settingStoreMock.burnShowCountdownEnabled = true
+    settingStoreMock.burnRooms = []
     // 重新设定 mock 返回值：clearAllMocks 不会重置 mockResolvedValue，但显式重设以保稳健
     enableBurnMock.mockResolvedValue(true)
     disableBurnMock.mockResolvedValue(true)
@@ -133,14 +139,13 @@ describe('BurnAfterReadSettings', () => {
     expect((wrapper.vm as any).formatDuration(86400)).toBe('1天')
   })
 
-  it('loads burn rooms from localStorage', () => {
-    localStorage.setItem(
-      'tjg-burn-rooms',
-      JSON.stringify([{ roomId: 'r1', name: 'Room 1', duration: 60, enabled: true }])
-    )
+  it('reads burn rooms from settingStore', () => {
+    settingStoreMock.burnRooms = [{ roomId: 'r1', duration: 60 }]
     const wrapper = mount(BurnAfterReadSettings)
     expect((wrapper.vm as any).burnRooms).toHaveLength(1)
     expect((wrapper.vm as any).burnRooms[0].roomId).toBe('r1')
+    // 房间名由 roomStore.roomList 解析，解析不到时回退为 roomId
+    expect((wrapper.vm as any).burnRooms[0].name).toBe('r1')
   })
 
   it('loads burn stats from service via getBurnStats on mount', async () => {
@@ -148,60 +153,45 @@ describe('BurnAfterReadSettings', () => {
     await flushPromises()
     expect(getBurnStatsMock).toHaveBeenCalled()
     expect((wrapper.vm as any).burnStats.totalBurned).toBe(5)
-    expect((wrapper.vm as any).burnStats.activeRooms).toBe(1)
+    expect((wrapper.vm as any).burnStats.roomsWithBurnEnabled).toBe(1)
   })
 
-  it('keeps default burn stats when getBurnStats rejects', async () => {
-    getBurnStatsMock.mockRejectedValueOnce(new Error('network'))
+  it('keeps default burn stats when getBurnStats returns empty result', async () => {
+    getBurnStatsMock.mockResolvedValueOnce({ totalBurned: 0, totalPending: 0, roomsWithBurnEnabled: 0 })
     const wrapper = mount(BurnAfterReadSettings)
     await flushPromises()
     expect((wrapper.vm as any).burnStats.totalBurned).toBe(0)
-    expect((wrapper.vm as any).burnStats.activeRooms).toBe(0)
+    expect((wrapper.vm as any).burnStats.roomsWithBurnEnabled).toBe(0)
   })
 
   it('calls enableBurn with roomId and duration_ms when toggling room on', async () => {
-    localStorage.setItem(
-      'tjg-burn-rooms',
-      JSON.stringify([{ roomId: 'r1', name: 'Room 1', duration: 60, enabled: false }])
-    )
+    settingStoreMock.burnRooms = [{ roomId: 'r1', duration: 60 }]
     const wrapper = mount(BurnAfterReadSettings)
     await flushPromises()
     const room = (wrapper.vm as any).burnRooms[0]
     await (wrapper.vm as any).handleRoomToggle(room, true)
     expect(enableBurnMock).toHaveBeenCalledWith('r1', 60 * 1000)
-    expect(room.enabled).toBe(true)
-    // 切换成功后仍写入 localStorage 缓存
-    const saved = JSON.parse(localStorage.getItem('tjg-burn-rooms')!)
-    expect(saved[0].enabled).toBe(true)
+    expect(showToastMock).toHaveBeenCalled()
   })
 
   it('calls disableBurn with roomId when toggling room off', async () => {
-    localStorage.setItem(
-      'tjg-burn-rooms',
-      JSON.stringify([{ roomId: 'r1', name: 'Room 1', duration: 60, enabled: true }])
-    )
+    settingStoreMock.burnRooms = [{ roomId: 'r1', duration: 60 }]
     const wrapper = mount(BurnAfterReadSettings)
     await flushPromises()
     const room = (wrapper.vm as any).burnRooms[0]
     await (wrapper.vm as any).handleRoomToggle(room, false)
     expect(disableBurnMock).toHaveBeenCalledWith('r1')
-    expect(room.enabled).toBe(false)
-    const saved = JSON.parse(localStorage.getItem('tjg-burn-rooms')!)
-    expect(saved[0].enabled).toBe(false)
+    expect(showToastMock).toHaveBeenCalled()
   })
 
-  it('does not flip room.enabled and shows failure toast when enableBurn rejects', async () => {
-    enableBurnMock.mockRejectedValueOnce(new Error('forbidden'))
-    localStorage.setItem(
-      'tjg-burn-rooms',
-      JSON.stringify([{ roomId: 'r1', name: 'Room 1', duration: 60, enabled: false }])
-    )
+  it('shows failure toast when enableBurn returns false', async () => {
+    enableBurnMock.mockResolvedValueOnce(false)
+    settingStoreMock.burnRooms = [{ roomId: 'r1', duration: 60 }]
     const wrapper = mount(BurnAfterReadSettings)
     await flushPromises()
     const room = (wrapper.vm as any).burnRooms[0]
     await (wrapper.vm as any).handleRoomToggle(room, true)
     expect(enableBurnMock).toHaveBeenCalled()
-    expect(room.enabled).toBe(false)
     expect(showToastMock).toHaveBeenCalled()
   })
 

@@ -9,6 +9,20 @@ vi.mock('@/stores/domains/widget/global', () => ({
   useGlobalStore: () => globalStoreMock
 }))
 
+const settingStoreMock = reactive<{
+  burnRooms: { roomId: string; duration: number }[]
+  setBurnRoomEnabled: (roomId: string, duration: number) => void
+  removeBurnRoom: (roomId: string) => void
+}>({
+  burnRooms: [],
+  setBurnRoomEnabled: () => {},
+  removeBurnRoom: () => {}
+})
+
+vi.mock('@/stores/domains/settings/setting', () => ({
+  useSettingStore: () => settingStoreMock
+}))
+
 const getBurnSettingsMock = vi.fn()
 const enableBurnMock = vi.fn()
 const disableBurnMock = vi.fn()
@@ -36,6 +50,7 @@ const { useBurnAfterRead, _resetBurnCacheForTesting } = await import('@/composab
 describe('useBurnAfterRead', () => {
   beforeEach(() => {
     globalStoreMock.currentSessionRoomId = ''
+    settingStoreMock.burnRooms = []
     // Fix 1: 缓存已提升为模块级单例，每个测试需重置避免交叉污染
     _resetBurnCacheForTesting()
     getBurnSettingsMock.mockReset()
@@ -202,7 +217,7 @@ describe('useBurnAfterRead', () => {
     it('服务抛错时不更新缓存也不抛出', async () => {
       enableBurnMock.mockRejectedValue(new Error('server error'))
       const { enableBurn, isRoomBurnEnabled } = useBurnAfterRead()
-      await expect(enableBurn('room-1')).resolves.toBeUndefined()
+      await expect(enableBurn('room-1')).resolves.toBe(false)
       expect(isRoomBurnEnabled('room-1')).toBe(false)
     })
   })
@@ -243,7 +258,7 @@ describe('useBurnAfterRead', () => {
     it('服务抛错时不更新缓存也不抛出', async () => {
       disableBurnMock.mockRejectedValue(new Error('server error'))
       const { disableBurn } = useBurnAfterRead()
-      await expect(disableBurn('room-1')).resolves.toBeUndefined()
+      await expect(disableBurn('room-1')).resolves.toBe(false)
     })
   })
 
@@ -288,7 +303,7 @@ describe('useBurnAfterRead', () => {
     it('服务抛错时保持原有状态不抛出', async () => {
       enableBurnMock.mockRejectedValue(new Error('server error'))
       const { toggleRoomBurn, isRoomBurnEnabled } = useBurnAfterRead()
-      await expect(toggleRoomBurn('room-1')).resolves.toBeUndefined()
+      await expect(toggleRoomBurn('room-1')).resolves.toBe(false)
       expect(isRoomBurnEnabled('room-1')).toBe(false)
     })
   })

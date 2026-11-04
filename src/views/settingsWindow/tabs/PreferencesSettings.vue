@@ -273,6 +273,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useLanguageOptions } from '@/composables/settings/settingsOptions'
+import { usePreferenceSettings } from '@/composables/settings/usePreferenceSettings'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useScannerStore } from '@/stores/domains/widget/scanner'
 import { formatBytes } from '@/utils/Formatting.ts'
@@ -290,12 +291,9 @@ const { pathType, currentDirectory, scanning, showDiskUsage, diskInfo, scanProgr
   storeToRefs(scannerStore)
 const desktopRuntimeAvailable = isDesktop()
 
-settingStore.migrateLegacyPreferenceSettings()
-
 const language = ref(settingStore.languagePreference)
 const languageOptions = useLanguageOptions()
 
-const sendKey = ref(settingStore.sendMessageShortcut)
 const autoLogin = ref(settingStore.autoLoginEnabled)
 const autoStartup = ref(settingStore.autoStartupEnabled)
 const autoStartupLoading = ref(false)
@@ -317,26 +315,27 @@ const emojiSizeOptions = computed(() => [
   { label: t('setting.preferences.emoji_large'), value: 'large' }
 ])
 
-const messageConfirm = ref(settingStore.messageConfirmEnabled)
 const recallTime = ref(120)
-const linkPreview = ref(settingStore.linkPreviewEnabled)
-const emojiConvert = ref(settingStore.emojiConvertEnabled)
-const emojiSize = ref(settingStore.emojiSize)
 
-const burnDefaultEnabled = ref(settingStore.burnDefaultEnabled)
-const burnDefaultDuration = ref(settingStore.burnDefaultDuration)
-const burnShowCountdown = ref(settingStore.burnShowCountdownEnabled)
-
-const threadAutoSubscribe = ref(settingStore.threadAutoSubscribeEnabled)
-const threadShowInRoom = ref(settingStore.threadShowInRoomEnabled)
-const threadNotificationLevel = ref(settingStore.threadNotificationLevel)
-
-const spaceAutoJoinRooms = ref(settingStore.spaceAutoJoinRoomsEnabled)
-const spaceShowSubspaces = ref(settingStore.spaceShowSubspacesEnabled)
-const spaceDefaultNotification = ref(settingStore.spaceDefaultNotification)
-
-const sendReadReceipts = ref(settingStore.sendReadReceiptsEnabled)
-const sendTypingNotifications = ref(settingStore.sendTypingNotificationsEnabled)
+// 偏好开关统一由共享 composable 读写 settingStore（唯一数据源），组件只保留选项文案与反馈
+const {
+  messageConfirm,
+  linkPreview,
+  emojiConvert,
+  emojiSize,
+  sendKey,
+  burnDefaultEnabled,
+  burnDefaultDuration,
+  burnShowCountdown,
+  threadAutoSubscribe,
+  threadShowInRoom,
+  threadNotificationLevel,
+  spaceAutoJoinRooms,
+  spaceShowSubspaces,
+  spaceDefaultNotification,
+  sendReadReceipts,
+  sendTypingNotifications
+} = usePreferenceSettings()
 
 const burnDurationOptions = computed(() => [
   { label: t('setting.burn_after_read.durations.30_seconds'), value: 30 },
@@ -415,7 +414,6 @@ function handleLanguageChange(value: string) {
 }
 
 function handleSendKeyChange(value: string) {
-  settingStore.setSendMessageShortcut(value)
   showOptionSetFeedback(t('setting.preferences.send_key_label'), findOptionLabel(sendKeyOptions.value, value))
 }
 
@@ -466,32 +464,26 @@ async function startScan() {
 }
 
 function handleConfirmChange(value: boolean) {
-  settingStore.setMessageConfirmEnabled(value)
   showToggleFeedback(t('setting.preferences.message_confirm_label'), value)
 }
 
 function handleLinkPreviewChange(value: boolean) {
-  settingStore.setLinkPreviewEnabled(value)
   showToggleFeedback(t('setting.preferences.link_preview_label'), value)
 }
 
 function handleEmojiChange(value: boolean) {
-  settingStore.setEmojiConvertEnabled(value)
   showToggleFeedback(t('setting.preferences.emoji_convert_label'), value)
 }
 
 function handleEmojiSizeChange(value: string) {
-  settingStore.setEmojiSize(value)
   showOptionSetFeedback(t('setting.preferences.emoji_size_label'), findOptionLabel(emojiSizeOptions.value, value))
 }
 
 function handleBurnDefaultToggle(value: boolean) {
-  settingStore.setBurnDefaultEnabled(value)
   showToggleFeedback(t('setting.preferences.burn_default_enabled_label'), value)
 }
 
 function handleBurnDurationChange(value: number) {
-  settingStore.setBurnDefaultDuration(value)
   showOptionSetFeedback(
     t('setting.preferences.burn_default_duration_label'),
     findOptionLabel(burnDurationOptions.value, value)
@@ -499,22 +491,18 @@ function handleBurnDurationChange(value: number) {
 }
 
 function handleBurnCountdownToggle(value: boolean) {
-  settingStore.setBurnShowCountdownEnabled(value)
   showToggleFeedback(t('setting.preferences.burn_show_countdown_label'), value)
 }
 
 function handleThreadAutoSubscribe(value: boolean) {
-  settingStore.setThreadAutoSubscribeEnabled(value)
   showToggleFeedback(t('setting.preferences.thread_auto_subscribe_label'), value)
 }
 
 function handleThreadShowInRoom(value: boolean) {
-  settingStore.setThreadShowInRoomEnabled(value)
   showToggleFeedback(t('setting.preferences.thread_show_in_room_label'), value)
 }
 
 function handleThreadNotificationChange(value: string) {
-  settingStore.setThreadNotificationLevel(value)
   showOptionSetFeedback(
     t('setting.preferences.thread_notification_label'),
     findOptionLabel(threadNotificationOptions.value, value)
@@ -522,17 +510,14 @@ function handleThreadNotificationChange(value: string) {
 }
 
 function handleSpaceAutoJoin(value: boolean) {
-  settingStore.setSpaceAutoJoinRoomsEnabled(value)
   showToggleFeedback(t('setting.preferences.space_auto_join_label'), value)
 }
 
 function handleSpaceShowSubspaces(value: boolean) {
-  settingStore.setSpaceShowSubspacesEnabled(value)
   showToggleFeedback(t('setting.preferences.space_show_subspaces_label'), value)
 }
 
 function handleSpaceNotificationChange(value: string) {
-  settingStore.setSpaceDefaultNotification(value)
   showOptionSetFeedback(
     t('setting.preferences.space_notification_label'),
     findOptionLabel(spaceNotificationOptions.value, value)
@@ -540,12 +525,10 @@ function handleSpaceNotificationChange(value: string) {
 }
 
 function handleReadReceiptsToggle(value: boolean) {
-  settingStore.setSendReadReceiptsEnabled(value)
   showToggleFeedback(t('setting.preferences.read_receipts_label'), value)
 }
 
 function handleTypingToggle(value: boolean) {
-  settingStore.setSendTypingNotificationsEnabled(value)
   showToggleFeedback(t('setting.preferences.typing_notifications_label'), value)
 }
 </script>

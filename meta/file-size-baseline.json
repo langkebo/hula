@@ -1,11 +1,11 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-03T18:40:02.809Z",
+  "updated_at": "2026-11-03T23:37:12.938Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
   "critical_limit": 1000,
-  "total_oversized_files": 118,
+  "total_oversized_files": 117,
   "files": [
     {
       "file": "src/components/rightBox/MsgInput.vue",
@@ -56,16 +56,16 @@
       "lines": 673
     },
     {
+      "file": "src/stores/domains/settings/setting.ts",
+      "lines": 670
+    },
+    {
       "file": "src/views/admin/AdminRooms.vue",
       "lines": 664
     },
     {
       "file": "src/views/settingsWindow/tabs/PushSettings.vue",
       "lines": 659
-    },
-    {
-      "file": "src/stores/domains/settings/setting.ts",
-      "lines": 656
     },
     {
       "file": "src/components/rightBox/renderMessage/Video.vue",
@@ -80,10 +80,6 @@
       "lines": 644
     },
     {
-      "file": "src/views/settingsWindow/tabs/PreferencesSettings.vue",
-      "lines": 641
-    },
-    {
       "file": "src/components/rightBox/chatBox/ChatMain.vue",
       "lines": 638
     },
@@ -94,6 +90,10 @@
     {
       "file": "src/components/rightBox/renderMessage/File.vue",
       "lines": 627
+    },
+    {
+      "file": "src/views/settingsWindow/tabs/PreferencesSettings.vue",
+      "lines": 624
     },
     {
       "file": "src/plugins/robot/components/ChatRoleManagement.vue",
@@ -374,10 +374,6 @@
     {
       "file": "src/mobile/views/my/SecuritySettings.vue",
       "lines": 432
-    },
-    {
-      "file": "src/views/settingsWindow/tabs/VoiceVideoSettings.vue",
-      "lines": 429
     },
     {
       "file": "src/services/matrix/widget/MatrixWidgetService.ts",

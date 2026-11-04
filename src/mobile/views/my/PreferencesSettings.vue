@@ -33,7 +33,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="messageConfirm" size="22px" @change="handleMessageConfirmChange" />
+                <van-switch v-model="messageConfirm" size="22px" />
               </template>
             </van-cell>
 
@@ -45,7 +45,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="linkPreview" size="22px" @change="handleLinkPreviewChange" />
+                <van-switch v-model="linkPreview" size="22px" />
               </template>
             </van-cell>
 
@@ -57,7 +57,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="emojiConvert" size="22px" @change="handleEmojiConvertChange" />
+                <van-switch v-model="emojiConvert" size="22px" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -75,7 +75,7 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="burnDefaultEnabled" size="22px" @change="handleBurnDefaultEnabledChange" />
+                <van-switch v-model="burnDefaultEnabled" size="22px" />
               </template>
             </van-cell>
 
@@ -88,7 +88,7 @@
 
             <van-cell :title="t('mobile_preferences.burn_countdown')">
               <template #right-icon>
-                <van-switch v-model="burnShowCountdown" size="22px" @change="handleBurnShowCountdownChange" />
+                <van-switch v-model="burnShowCountdown" size="22px" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -106,13 +106,13 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="threadAutoSubscribe" size="22px" @change="handleThreadAutoSubscribeChange" />
+                <van-switch v-model="threadAutoSubscribe" size="22px" />
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_preferences.thread_show_in_room')">
               <template #right-icon>
-                <van-switch v-model="threadShowInRoom" size="22px" @change="handleThreadShowInRoomChange" />
+                <van-switch v-model="threadShowInRoom" size="22px" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -130,13 +130,13 @@
                 </div>
               </template>
               <template #right-icon>
-                <van-switch v-model="sendReadReceipts" size="22px" @change="handleReadReceiptsChange" />
+                <van-switch v-model="sendReadReceipts" size="22px" />
               </template>
             </van-cell>
 
             <van-cell :title="t('mobile_preferences.send_typing')">
               <template #right-icon>
-                <van-switch v-model="sendTypingNotifications" size="22px" @change="handleTypingNotificationsChange" />
+                <van-switch v-model="sendTypingNotifications" size="22px" />
               </template>
             </van-cell>
           </van-cell-group>
@@ -159,29 +159,26 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSettingStore } from '@/stores/domains/settings/setting'
+import { usePreferenceSettings } from '@/composables/settings/usePreferenceSettings'
 
 const { t } = useI18n()
-const settingStore = useSettingStore()
 
-settingStore.migrateLegacyPreferenceSettings()
-
-const messageConfirm = ref(settingStore.messageConfirmEnabled)
-const linkPreview = ref(settingStore.linkPreviewEnabled)
-const emojiConvert = ref(settingStore.emojiConvertEnabled)
-const sendKey = ref('Enter')
-
-const burnDefaultEnabled = ref(settingStore.burnDefaultEnabled)
-const burnDefaultDuration = ref(settingStore.burnDefaultDuration)
-const burnShowCountdown = ref(settingStore.burnShowCountdownEnabled)
-
-const threadAutoSubscribe = ref(settingStore.threadAutoSubscribeEnabled)
-const threadShowInRoom = ref(settingStore.threadShowInRoomEnabled)
-
-const sendReadReceipts = ref(settingStore.sendReadReceiptsEnabled)
-const sendTypingNotifications = ref(settingStore.sendTypingNotificationsEnabled)
+// 开关状态与写回统一走共享 composable（settingStore 为唯一数据源），移动端只保留 Vant 呈现
+const {
+  messageConfirm,
+  linkPreview,
+  emojiConvert,
+  sendKey,
+  burnDefaultEnabled,
+  burnDefaultDuration,
+  burnShowCountdown,
+  threadAutoSubscribe,
+  threadShowInRoom,
+  sendReadReceipts,
+  sendTypingNotifications
+} = usePreferenceSettings()
 
 const showSendKeyPicker = ref(false)
 const showBurnDurationPicker = ref(false)
@@ -219,53 +216,10 @@ const burnDurationLabel = computed(() => {
   return burnDurationOptions.value.find((o) => o.value === burnDefaultDuration.value)?.label || formatBurnDuration(60)
 })
 
-onMounted(() => {
-  const savedSendKey = localStorage.getItem('tjg-send-key')
-  if (savedSendKey) sendKey.value = savedSendKey
-})
-
-function handleMessageConfirmChange(value: boolean) {
-  settingStore.setMessageConfirmEnabled(value)
-}
-
-function handleLinkPreviewChange(value: boolean) {
-  settingStore.setLinkPreviewEnabled(value)
-}
-
-function handleEmojiConvertChange(value: boolean) {
-  settingStore.setEmojiConvertEnabled(value)
-}
-
-function handleBurnDefaultEnabledChange(value: boolean) {
-  settingStore.setBurnDefaultEnabled(value)
-}
-
-function handleBurnShowCountdownChange(value: boolean) {
-  settingStore.setBurnShowCountdownEnabled(value)
-}
-
-function handleThreadAutoSubscribeChange(value: boolean) {
-  settingStore.setThreadAutoSubscribeEnabled(value)
-}
-
-function handleThreadShowInRoomChange(value: boolean) {
-  settingStore.setThreadShowInRoomEnabled(value)
-}
-
-function handleReadReceiptsChange(value: boolean) {
-  settingStore.setSendReadReceiptsEnabled(value)
-}
-
-function handleTypingNotificationsChange(value: boolean) {
-  settingStore.setSendTypingNotificationsEnabled(value)
-}
-
 function handleSendKeyConfirm({ selectedValues }: { selectedValues: string[] }) {
   const val = selectedValues[0]
   if (val) {
     sendKey.value = val
-    localStorage.setItem('tjg-send-key', val)
-    settingStore.setSendMessageShortcut(val)
   }
   showSendKeyPicker.value = false
 }
@@ -274,7 +228,6 @@ function handleBurnDurationConfirm({ selectedValues }: { selectedValues: number[
   const val = selectedValues[0] as 30 | 60 | 300 | 3600 | 86400
   if (val) {
     burnDefaultDuration.value = val
-    settingStore.setBurnDefaultDuration(val)
   }
   showBurnDurationPicker.value = false
 }
