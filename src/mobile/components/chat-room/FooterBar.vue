@@ -56,18 +56,14 @@ const handleVoiceSend = async () => {
 }
 
 const root = ref()
+let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   if (root.value) {
-    const resizeObserver = new ResizeObserver((entries) => {
-      const height = entries[0].contentRect.height
-      emit('updateHeight', height)
+    resizeObserver = new ResizeObserver((entries) => {
+      emit('updateHeight', entries[0].contentRect.height)
     })
     resizeObserver.observe(root.value)
-
-    onUnmounted(() => {
-      resizeObserver.disconnect()
-    })
   }
 
   if (isIOS()) {
@@ -76,6 +72,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+
   if (isIOS()) {
     invokeSilently('set_webview_keyboard_adjustment', { enabled: false })
   }
