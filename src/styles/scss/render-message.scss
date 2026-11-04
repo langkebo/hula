@@ -97,13 +97,18 @@
   padding: 6px 8px;
   box-shadow: var(--tjg-shadow-sm);
   transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  &:hover {
-    background-color: color-mix(in srgb, var(--tjg-color-primary-200) 45%, var(--tjg-surface-panel));
+  // 触屏没有真实 hover，只在具备指针悬停能力的设备上启用，避免点击后粘滞变色
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background-color: color-mix(in srgb, var(--tjg-color-primary-200) 45%, var(--tjg-surface-panel));
+    }
   }
 }
 /** 浮标达到最大值时候的样式 */
-.max:hover {
-  background-color: var(--tjg-color-danger-100);
+@media (hover: hover) and (pointer: fine) {
+  .max:hover {
+    background-color: var(--tjg-color-danger-100);
+  }
 }
 /** 回复气泡的样式 */
 .reply-bubble {

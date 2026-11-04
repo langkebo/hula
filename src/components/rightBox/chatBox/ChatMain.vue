@@ -59,10 +59,7 @@
     </div>
 
     <!--  悬浮按钮提示(底部悬浮) -->
-    <footer
-      class="float-footer-button"
-      v-if="shouldShowFloatButton && currentNewMsgCount && !isMobileRef"
-      :style="{ bottom: '24px', right: '50px' }">
+    <footer class="float-footer-button" v-if="shouldShowFloatButton && currentNewMsgCount" :style="floatButtonStyle">
       <div
         class="float-box"
         :class="{ max: currentNewMsgCount?.count > 99 }"
@@ -336,6 +333,11 @@ defineExpose({
 })
 
 const isMobileRef = useIsMobile()
+
+/** 移动端抬高悬浮按钮，避开底部输入栏；桌面端保持原位 */
+const floatButtonStyle = computed(() =>
+  isMobileRef.value ? { bottom: '88px', right: '16px' } : { bottom: '24px', right: '50px' }
+)
 
 const isGroup = computed<boolean>(() => chatStore.isGroup)
 const userUid = computed(() => userStore.userInfo?.uid ?? '')

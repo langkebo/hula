@@ -63,6 +63,20 @@ describe('friends list', () => {
   })
 })
 
+describe('chat main float button', () => {
+  it('new-message float button is available on mobile and styled for it', () => {
+    const source = read('src/components/rightBox/chatBox/ChatMain.vue')
+    expect(source).not.toContain('currentNewMsgCount && !isMobileRef')
+    expect(source).toContain('floatButtonStyle')
+  })
+
+  it('message row hover state is gated by hover capability', () => {
+    const source = read('src/components/rightBox/chatBox/ChatMessageList.vue')
+    expect(source).toContain("matchMedia('(hover: hover)')")
+    expect(source).not.toContain('@mouseenter="hoverId = item.message.id"')
+  })
+})
+
 describe('chat header layout', () => {
   it('聊天头部用 flex 且不保留桌面残留图标', () => {
     const header = read('src/mobile/components/chat-room/HeaderBar.vue')

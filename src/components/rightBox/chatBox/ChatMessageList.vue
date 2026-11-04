@@ -42,7 +42,7 @@
         </span>
         <!-- 消息内容容器 -->
         <div
-          @mouseenter="hoverId = item.message.id"
+          @mouseenter="handleRowMouseEnter(item.message.id)"
           :class="[
             'w-full box-border message-row',
             item.message.type === MsgEnum.RECALL ? 'min-h-22px' : 'min-h-62px',
@@ -109,6 +109,13 @@ const userStore = useUserStore()
 
 const hoverId = ref('')
 const logger = createLogger('ChatMessageList')
+
+const handleRowMouseEnter = (messageId: string) => {
+  // 触屏会合成 mouseenter，若直接写入会产生粘滞 hover 态
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+  if (!window.matchMedia('(hover: hover)').matches) return
+  hoverId.value = messageId
+}
 
 // 诊断：观察当前房间 hasLoadedOnce 状态变化，确认 UI 层是否收到翻转。
 watch(
