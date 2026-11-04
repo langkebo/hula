@@ -34,56 +34,54 @@
       </div>
 
       <!-- 好友列表 -->
-      <div ref="scrollArea" class="flex-1 overflow-y-auto px-16px mt-10px" :style="{ height: scrollHeight + 'px' }">
-        <div class="max-h-[calc(100dvh-150px)] overflow-y-auto">
-          <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
-            <div
-              v-for="item in filteredContacts"
-              :key="item.userId"
-              class="rounded-10px border border-[--tjg-border-default] overflow-hidden">
-              <van-checkbox
-                :name="item.userId"
-                shape="square"
-                class="w-full flex items-center px-5px"
-                :class="[
-                  'cursor-pointer select-none transition-colors duration-150',
-                  selectedList.includes(item.userId)
-                    ? 'bg-[--tjg-color-primary-100] text-[--tjg-color-primary-600] dark:bg-[--tjg-color-primary-100] dark:text-[--tjg-color-primary-400]'
-                    : 'hover:bg-[--tjg-color-primary-100] dark:hover:bg-[--tjg-color-primary-100]'
-                ]">
-                <template #default>
-                  <div class="flex items-center gap-10px px-8px py-10px">
-                    <img
-                      :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
-                      class="size-44px rounded-full object-cover border-[1px] border-[--avatar-border-color]"
-                      :alt="t('mobile_contact.avatar.user')"
-                      @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-                    <div class="flex flex-col leading-tight truncate">
-                      <span class="text-14px font-medium truncate">
-                        {{ groupStore.getUserInfo(item.userId)?.name }}
-                      </span>
-                      <div class="text-12px text-[--tjg-text-tertiary] flex items-center gap-4px truncate">
-                        <span
-                          class="inline-block size-8px rounded-full"
-                          :style="{
-                            backgroundColor:
-                              item.activeStatus === OnlineEnum.ONLINE
-                                ? 'var(--tjg-status-online)'
-                                : 'var(--tjg-status-offline)'
-                          }"></span>
-                        {{
-                          item.activeStatus === OnlineEnum.ONLINE
-                            ? t('mobile_contact.status.online')
-                            : t('mobile_contact.status.offline')
-                        }}
-                      </div>
+      <div class="flex-1 min-h-0 overflow-y-auto px-16px mt-10px">
+        <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
+          <div
+            v-for="item in filteredContacts"
+            :key="item.userId"
+            class="rounded-10px border border-[--tjg-border-default] overflow-hidden">
+            <van-checkbox
+              :name="item.userId"
+              shape="square"
+              class="w-full flex items-center px-5px"
+              :class="[
+                'cursor-pointer select-none transition-colors duration-150',
+                selectedList.includes(item.userId)
+                  ? 'bg-[--tjg-color-primary-100] text-[--tjg-color-primary-600] dark:bg-[--tjg-color-primary-100] dark:text-[--tjg-color-primary-400]'
+                  : 'hover:bg-[--tjg-color-primary-100] dark:hover:bg-[--tjg-color-primary-100]'
+              ]">
+              <template #default>
+                <div class="flex items-center gap-10px px-8px py-10px">
+                  <img
+                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
+                    class="size-44px rounded-full object-cover border-[1px] border-[--avatar-border-color]"
+                    :alt="t('mobile_contact.avatar.user')"
+                    @error="($event.target as HTMLImageElement).src = '/logo.png'" />
+                  <div class="flex flex-col leading-tight truncate">
+                    <span class="text-14px font-medium truncate">
+                      {{ groupStore.getUserInfo(item.userId)?.name }}
+                    </span>
+                    <div class="text-12px text-[--tjg-text-tertiary] flex items-center gap-4px truncate">
+                      <span
+                        class="inline-block size-8px rounded-full"
+                        :style="{
+                          backgroundColor:
+                            item.activeStatus === OnlineEnum.ONLINE
+                              ? 'var(--tjg-status-online)'
+                              : 'var(--tjg-status-offline)'
+                        }"></span>
+                      {{
+                        item.activeStatus === OnlineEnum.ONLINE
+                          ? t('mobile_contact.status.online')
+                          : t('mobile_contact.status.offline')
+                      }}
                     </div>
                   </div>
-                </template>
-              </van-checkbox>
-            </div>
-          </van-checkbox-group>
-        </div>
+                </div>
+              </template>
+            </van-checkbox>
+          </div>
+        </van-checkbox-group>
       </div>
     </template>
 
@@ -127,8 +125,6 @@ const groupStore = useGroupStore()
 const keyword = ref('')
 const selectedList = ref<string[]>([])
 const isLoading = ref(false)
-const scrollHeight = ref(0)
-const scrollArea = ref<HTMLElement>()
 
 const allContacts = computed(() => {
   return contactStore.contactsList.filter((item) => {
@@ -179,13 +175,6 @@ const handleInvite = async () => {
   }
 }
 
-const calculateScrollHeight = () => {
-  if (scrollArea.value) {
-    const rect = scrollArea.value.getBoundingClientRect()
-    scrollHeight.value = window.innerHeight - rect.top - 60
-  }
-}
-
 onMounted(async () => {
   try {
     const chatStore = useChatStore()
@@ -203,13 +192,6 @@ onMounted(async () => {
   } catch (error) {
     logger.error('Failed to load user info:', error)
   }
-
-  calculateScrollHeight()
-  window.addEventListener('resize', calculateScrollHeight)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', calculateScrollHeight)
 })
 </script>
 
