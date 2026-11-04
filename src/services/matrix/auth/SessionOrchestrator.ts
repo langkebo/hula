@@ -25,6 +25,13 @@ import { MatrixRuntimeSessionService, type SessionStorePort } from './MatrixRunt
  * and the current user/room runtime state into a single interface for
  * MatrixRuntimeSessionService.
  *
+ * **这是应用启动期的组合根（composition root），不是「服务层反向依赖 store」。**
+ * 本文件是全仓唯一把「store 层聚合为 service 所需端口」的适配器：`SessionStorePort`
+ * 由服务层定义，实现放在这里、只在启动时实例化一次。把它挪到 store 层并不能消除
+ * `service → store` 的边 —— 只会把同一份适配逻辑连同 `sessionOrchestrator` 单例
+ * 一起搬走，并让 4 处导入路径跟着改（router / useLoginFlow / GuestUpgradeModal / 测试桩）。
+ * 故 2026-11-05 复审判定为**已知折中、不再迁移**（ARCH-A01 结项）。
+ *
  * @throws Never throws (factory function, all store access is synchronous).
  */
 export function createSessionStorePort(): SessionStorePort {

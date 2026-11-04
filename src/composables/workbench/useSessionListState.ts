@@ -66,7 +66,15 @@ export const useSessionListState = () => {
     }
   }
 
-  const sessionList = computed(() => {
+  /**
+   * 结构层：过滤 → 去重 → 同一对方 DM 合并 → 房间级标记 → 排序。
+   *
+   * 刻意**不读用户资料**（`groupStore.getUserInfo`）。用户头像/昵称变化很频繁
+   * （presence、资料同步都会触发），若与排序、房间查询写在同一个 computed 里，
+   * 每次都要重做 O(n log n) 排序 + 逐项 `getRoom/isRoomEncrypted`。
+   * 拆开后这类变化只重跑下面的展示层 O(n) 补丁（PF-A01）。
+   */
+  const structuredSessions = computed(() => {
     // 防御性过滤：消息会话列表展示聊天类条目（群聊 / 单聊）。
     // 空间(SPACE)及任何非 GROUP/SINGLE 类型不进入中间栏会话列表。
     // 注意：单聊必须保留——好友页「进入聊天/加密聊天」按钮依赖此列表渲染 DM 会话；
@@ -143,27 +151,11 @@ export const useSessionListState = () => {
     // 因此单条消息到达只会更新对应房间的末条预览，不会重排整个会话列表、也不会为取末条分配整条消息数组。
     return sessionItems
       .map((item) => {
-        let latestAvatar = item.avatar
-        if (item.type === RoomTypeEnum.SINGLE && item.detailId) {
-          latestAvatar = groupStore.getUserInfo(item.detailId)?.avatar || item.avatar
-        }
-
-        let displayName = item.name
-        if (item.type === RoomTypeEnum.GROUP && item.remark) {
-          displayName = item.remark
-        }
-
         const room = matrixClientService.getRoom(item.roomId)
         const isEncrypted = room ? matrixClientService.isRoomEncrypted(item.roomId) : false
         const isBurnAfterRead = !!room?.currentState?.getStateEvents('m.burn_after_read')?.length
 
-        return {
-          ...item,
-          avatar: latestAvatar,
-          name: displayName,
-          isEncrypted,
-          isBurnAfterRead
-        }
+        return { ...item, isEncrypted, isBurnAfterRead }
       })
       .sort((a, b) => {
         if (a.top && !b.top) return -1
@@ -177,6 +169,23 @@ export const useSessionListState = () => {
         return b.activeTime - a.activeTime
       })
   })
+
+  /**
+   * 展示层：只把「头像 / 显示名」补到结构层结果上。
+   *
+   * 输出形状与拆分前完全一致；因为排序键（`top` / `unreadCount` / `activeTime`）
+   * 都不受这两个字段影响，在这里覆写不会改变顺序。
+   */
+  const sessionList = computed(() =>
+    structuredSessions.value.map((item) => {
+      const avatar =
+        item.type === RoomTypeEnum.SINGLE && item.detailId
+          ? groupStore.getUserInfo(item.detailId)?.avatar || item.avatar
+          : item.avatar
+      const name = item.type === RoomTypeEnum.GROUP && item.remark ? item.remark : item.name
+      return { ...item, avatar, name }
+    })
+  )
 
   const selectedSession = computed(() => {
     if (!globalStore.currentSessionRoomId) return null

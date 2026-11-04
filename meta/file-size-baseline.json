@@ -9,7 +9,7 @@
   "files": [
     {
       "file": "src/components/rightBox/MsgInput.vue",
-      "lines": 785
+      "lines": 783
     },
     {
       "file": "src/views/admin/AdminUsers.vue",

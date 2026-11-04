@@ -110,6 +110,37 @@ describe('ContactGroupSection', () => {
     expect(wrapper.get('[data-test="group-count"]').text()).toBe('2')
   })
 
+  it('分组 ≤100 位时全量渲染，不出现「显示更多」', () => {
+    const friends = Array.from({ length: 100 }, (_, i) => makeContact({ userId: `@u${i}:ex.com` }))
+    const wrapper = mountSection({ groupName: 'Big', friends, collapsed: false })
+
+    expect(wrapper.findAll('.friend-list-item')).toHaveLength(100)
+    expect(wrapper.find('[data-test="group-show-more"]').exists()).toBe(false)
+  })
+
+  it('分组 >100 位时只渲染前 100，点击后追加（与扁平列表同一门控）', async () => {
+    const friends = Array.from({ length: 150 }, (_, i) => makeContact({ userId: `@u${i}:ex.com` }))
+    const wrapper = mountSection({ groupName: 'Big', friends, collapsed: false })
+
+    expect(wrapper.findAll('.friend-list-item')).toHaveLength(100)
+    const more = wrapper.get('[data-test="group-show-more"]')
+
+    await more.trigger('click')
+    expect(wrapper.findAll('.friend-list-item')).toHaveLength(150)
+    expect(wrapper.find('[data-test="group-show-more"]').exists()).toBe(false)
+  })
+
+  it('分组数据换新后窗口重置为 100（切筛选/搜索不会停在旧的展开位置）', async () => {
+    const first = Array.from({ length: 150 }, (_, i) => makeContact({ userId: `@a${i}:ex.com` }))
+    const wrapper = mountSection({ groupName: 'Big', friends: first, collapsed: false })
+    await wrapper.get('[data-test="group-show-more"]').trigger('click')
+    expect(wrapper.findAll('.friend-list-item')).toHaveLength(150)
+
+    const second = Array.from({ length: 150 }, (_, i) => makeContact({ userId: `@b${i}:ex.com` }))
+    await wrapper.setProps({ friends: second })
+    expect(wrapper.findAll('.friend-list-item')).toHaveLength(100)
+  })
+
   it('renders friend items when not collapsed', () => {
     const friends = [makeContact({ userId: '@a:ex.com' }), makeContact({ userId: '@b:ex.com' })]
     const wrapper = mountSection({

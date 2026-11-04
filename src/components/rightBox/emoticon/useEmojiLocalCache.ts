@@ -3,7 +3,7 @@ import { join } from '@tauri-apps/api/path'
 import { type BaseDirectory, exists, writeFile } from '@tauri-apps/plugin-fs'
 import pLimit from 'p-limit'
 import type { ComponentPublicInstance } from 'vue'
-import { type ComputedRef, type Ref, ref, watch } from 'vue'
+import { type ComputedRef, computed, type Ref, ref, watch } from 'vue'
 import type { EmojiItem as EmojiListItem } from '@/services/types'
 import type { useEmojiStore } from '@/stores/domains/chat/emoji'
 import type { useUserStore } from '@/stores/domains/user/user'
@@ -355,17 +355,17 @@ export const useEmojiLocalCache = ({ isFavoritesView, emojiStore, userStore }: U
     }
   }
 
-  watch(
-    () => emojiStore.emojiList.map((item) => ({ id: item.id, url: item.expressionUrl })),
-    (list) => {
-      if (!isFavoritesView.value) return
-      const ids = list.map((item) => item.id)
-      cleanupLocalEmojiMap(ids)
-      cleanupEmojiObservers(ids)
-      scheduleHydrateFavorites()
-    },
-    { immediate: false, deep: true }
-  )
+  // 只在 id / 地址真正变化时清理缓存：原实现用 deep 深遍历，且 getter 每次返回新数组，
+  // 内容没变也会触发清理 + 重新水合
+  const emojiListSignature = computed(() => emojiStore.emojiList.map((i) => `${i.id}:${i.expressionUrl}`).join('|'))
+
+  watch(emojiListSignature, () => {
+    if (!isFavoritesView.value) return
+    const ids = emojiStore.emojiList.map((item) => item.id)
+    cleanupLocalEmojiMap(ids)
+    cleanupEmojiObservers(ids)
+    scheduleHydrateFavorites()
+  })
 
   watch(
     () => userStore.userInfo?.uid,

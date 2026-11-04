@@ -386,22 +386,20 @@ onUnmounted(() => {
   timerManager.clearAll()
 })
 
-// 监听applyList变化，批量加载群组信息
-watch(
-  () => applyList.value,
-  (newList) => {
-    const roomIds = uniq(newList.filter((item) => item.roomId && Number(item.roomId) > 0).map((item) => item.roomId))
+// 待补详情的 roomId（原实现 deep watch 深遍历整个 applyList，实际只关心 roomId）
+const pendingGroupIds = computed(() =>
+  uniq(applyList.value.filter((item) => item.roomId && Number(item.roomId) > 0).map((item) => item.roomId))
+)
 
-    if (roomIds.length > 0) {
-      // 批量加载群组信息
-      roomIds.forEach((roomId) => {
-        if (roomId && !groupDetailsMap.value[roomId] && !loadingGroups.value.has(roomId)) {
-          getGroupDetail(roomId)
-        }
-      })
+// 听着「拼接签名」而不是数组引用：computed 每次重算都换引用，内容不变时不该触发
+watch(
+  () => pendingGroupIds.value.join(','),
+  () => {
+    for (const roomId of pendingGroupIds.value) {
+      if (roomId && !groupDetailsMap.value[roomId] && !loadingGroups.value.has(roomId)) getGroupDetail(roomId)
     }
   },
-  { immediate: true, deep: true }
+  { immediate: true }
 )
 </script>
 

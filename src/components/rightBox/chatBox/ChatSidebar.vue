@@ -159,7 +159,7 @@
         <!-- 成员列表（按 presence 分在线/离线两组） -->
         <div class="flex-1 min-h-0 relative">
           <div id="image-chat-sidebar" class="h-full overflow-y-auto px-6px py-4px" @scroll="handleScroll($event)">
-            <template v-for="item in memberListItems" :key="item.key">
+            <template v-for="item in visibleMemberItems" :key="item.key">
               <!-- 分组标题 -->
               <div
                 v-if="item.kind === 'header'"
@@ -326,6 +326,7 @@ import { createLogger } from '@/utils/Logger'
 import ChatSidebarFiles from './ChatSidebarFiles.vue'
 import FavoritesPanel from './FavoritesPanel.vue'
 import RoomExternalIds from './RoomExternalIds.vue'
+import { useListWindow } from './useListWindow'
 
 const logger = createLogger('ChatSidebar')
 
@@ -420,6 +421,13 @@ const memberListItems = computed<MemberListItem[]>(() => {
   return items
 })
 
+// 成员渲染窗口（PF-A02）：loadMoreGroupMembers 只是重拉成员、并非真分页
+const { visibleItems: visibleMemberItems, handleScroll: handleMemberListScroll } = useListWindow({
+  items: memberListItems,
+  resetKey: () => globalStore.currentSessionRoomId,
+  onReachBottom: () => !groupStore.userListOptions.loading && groupStore.loadMoreGroupMembers()
+})
+
 watch(
   () => [globalStore.currentSessionRoomId, isGroup.value] as const,
   async ([roomId, isGroupChat], prevValue) => {
@@ -503,16 +511,7 @@ const handleBlur = () => {
  * @param event 滚动事件
  */
 const handleScroll = (event: Event) => {
-  if (searchRef.value.trim()) {
-    return
-  }
-
-  const target = event.target as HTMLElement
-  const isBottom = target.scrollHeight - target.scrollTop === target.clientHeight
-
-  if (isBottom && !groupStore.userListOptions.loading) {
-    groupStore.loadMoreGroupMembers()
-  }
+  if (!searchRef.value.trim()) handleMemberListScroll(event)
 }
 
 /**

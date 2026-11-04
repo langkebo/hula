@@ -29,7 +29,7 @@
 
     <div v-show="!collapsed" class="contact-group-section__body" role="list">
       <FriendListItem
-        v-for="friend in friends"
+        v-for="friend in visibleFriends"
         :key="friend.userId"
         :item="friend"
         :selected="friend.userId === selectedUserId"
@@ -39,15 +39,34 @@
         @remove="$emit('remove', $event)"
         @more="$emit('more', $event)"
         @contextmenu="$emit('contextmenu', $event)" />
+
+      <!-- 与扁平列表同一门控（> 100 才需要窗口化）：分组模式下此前是裸 v-for，
+           成员多的分组会一次性渲染整组。这里不引虚拟列表 —— 区段在页面滚动容器内，
+           再套一层 RecycleScroller 会变成嵌套滚动。 -->
+      <button
+        v-if="hasMore"
+        type="button"
+        class="contact-group-section__more"
+        data-test="group-show-more"
+        @click="showMore">
+        {{ t('friend.list.show_more', { count: friends.length - visibleFriends.length }) }}
+      </button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import FriendListItem from './FriendListItem.vue'
 
-withDefaults(
+/** 与 FriendListView 的 `VIRTUAL_SCROLL_THRESHOLD` 对齐：> 100 才需要窗口化 */
+const GROUP_WINDOW_SIZE = 100
+
+const { t } = useI18n()
+
+const props = withDefaults(
   defineProps<{
     groupName: string
     friends: MatrixContact[]
@@ -58,6 +77,28 @@ withDefaults(
   {
     selectedUserId: '',
     query: ''
+  }
+)
+
+/**
+ * 可见窗口：分组超过 100 位时只渲染前 100，点「显示更多」再追加 100。
+ * 判据与扁平列表一致，避免「扁平有门控、分组没有」的不一致。
+ */
+const visibleCount = ref(GROUP_WINDOW_SIZE)
+const visibleFriends = computed(() =>
+  props.friends.length > GROUP_WINDOW_SIZE ? props.friends.slice(0, visibleCount.value) : props.friends
+)
+const hasMore = computed(() => props.friends.length > visibleFriends.value.length)
+
+const showMore = () => {
+  visibleCount.value += GROUP_WINDOW_SIZE
+}
+
+// 分组数据换了（切筛选 / 搜索 / 换分组）就重置窗口，避免停在旧的展开位置
+watch(
+  () => props.friends,
+  () => {
+    visibleCount.value = GROUP_WINDOW_SIZE
   }
 )
 
@@ -131,6 +172,27 @@ defineEmits<{
   flex-direction: column;
   gap: 2px;
   padding: 0 4px;
+}
+
+/* 分组超过 100 位时的「显示更多」入口 */
+.contact-group-section__more {
+  margin: 4px 8px 8px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: var(--tjg-radius-xs, 4px);
+  background: transparent;
+  color: var(--tjg-color-primary-500);
+  font-size: var(--tjg-font-size-sm, 12px);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--tjg-surface-list-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tjg-color-primary-500);
+    outline-offset: 2px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
