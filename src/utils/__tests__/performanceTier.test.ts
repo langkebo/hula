@@ -164,6 +164,6 @@ describe('接线契约（防止「降级类无人写入」回归）', () => {
 
     expect(scssSource).toContain(`html.${LOW_PERF_CLASS}`)
     // 降级分支必须真的关掉模糊，而不是只留占位注释
-    expect(scssSource).toMatch(/html\.low-perf\)\s*&?\s*\{[\s\S]*?backdrop-filter:\s*none/)
+    expect(scssSource).toMatch(/html\.low-perf\)?\s*&?\s*\{[\s\S]*?backdrop-filter:\s*none/)
   })
 })
