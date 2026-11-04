@@ -1,5 +1,5 @@
 <template>
-  <div class="h-100vh w-100vw">
+  <div class="app-shell-root w-100vw">
     <NaiveProvider :message-max="3" :notific-max="3" class="h-full flex flex-col">
       <ConnectionStatusBanner
         :state="connectionState"

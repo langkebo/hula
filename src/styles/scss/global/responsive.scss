@@ -71,3 +71,9 @@ $breakpoints: (
     max-width: 1140px;
   }
 }
+
+// 应用根容器高度：移动端用 dvh 跟随地址栏/键盘，旧 WebView 不认 dvh 时回退到 vh
+.app-shell-root {
+  height: 100vh;
+  height: 100dvh;
+}

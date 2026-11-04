@@ -14,10 +14,8 @@
     </div>
 
     <div
-      :style="{
-        maxHeight: props.customHeight ? props.customHeight + 'px' : 'calc(100vh / var(--page-scale, 1) - 80px)',
-        overflowY: 'auto'
-      }"
+      class="apply-list-scroll"
+      :style="props.customHeight ? { maxHeight: props.customHeight + 'px' } : undefined"
       @scroll="handleScroll"
       ref="scrollRef">
       <div v-for="item in applyList" :key="item.applyId" class="flex gap-2 w-full text-14px mb-15px">
@@ -356,4 +354,14 @@ watch(
 )
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.apply-list-scroll {
+  overflow-y: auto;
+  /* 旧 WebView 不认 dvh，先给 vh 兜底 */
+  max-height: calc(100vh / var(--page-scale, 1) - 80px);
+
+  @supports (height: 100dvh) {
+    max-height: calc(100dvh / var(--page-scale, 1) - 80px);
+  }
+}
+</style>

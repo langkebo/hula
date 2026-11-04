@@ -217,6 +217,7 @@ useMitt.on('RoomClosed', handleCallEnd)
     );
   }
 
+  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   border: 1px solid var(--tjg-border-contrast);
   border-radius: var(--tjg-radius-panel);
@@ -232,6 +233,7 @@ useMitt.on('RoomClosed', handleCallEnd)
     border: 1px solid color-mix(in srgb, var(--tjg-text-inverse) 14%, transparent);
   }
 
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
 

@@ -21,8 +21,7 @@
                 :src="AvatarUtils.getAvatarUrl(localUserInfo.avatar!)"
                 alt="用户头像"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-              <div
-                class="absolute h-50% w-full bottom-0 bg-[--tjg-avatar-scrim-bg] bg-clip-padding backdrop-filter backdrop-blur-sm backdrop-saturate-100 backdrop-contrast-100"></div>
+              <div class="avatar-scrim absolute h-50% w-full bottom-0 bg-[--tjg-avatar-scrim-bg] bg-clip-padding"></div>
               <div class="absolute bottom-25% text-center w-full text-12px text-white">
                 {{ t('mobile_edit_profile.change_avatar') }}
               </div>
@@ -350,5 +349,11 @@ onActivated(async () => {
 
 :deep(.van-cell.van-field::after) {
   display: none;
+}
+
+/* 旧 WebView 只认 -webkit- 前缀；仓库未接 autoprefixer，不能用 UnoCSS 的 backdrop 工具类 */
+.avatar-scrim {
+  -webkit-backdrop-filter: blur(4px) saturate(100%) contrast(100%);
+  backdrop-filter: blur(4px) saturate(100%) contrast(100%);
 }
 </style>

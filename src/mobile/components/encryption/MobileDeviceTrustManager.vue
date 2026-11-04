@@ -312,6 +312,7 @@ const handleRefresh = async () => {
 .device-trust-manager-mobile {
   padding: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--van-background-2);
 }
 

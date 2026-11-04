@@ -83,3 +83,43 @@ describe('移动端 FooterBar 死代码清理', () => {
     expect(source).not.toContain('ref="footerBar"')
   })
 })
+
+describe('移动端 backdrop-filter 前缀兼容', () => {
+  it.each(['src/mobile/components/RtcCallFloatCell.vue', 'src/mobile/views/my/EditProfile.vue'])(
+    '%s 的每条模糊声明都配 -webkit- 前缀',
+    (path) => {
+      const source = read(path)
+      const unprefixed = source.match(/(?<!-webkit-)backdrop-filter\s*:/g) ?? []
+      const prefixed = source.match(/-webkit-backdrop-filter\s*:/g) ?? []
+      // 守卫防空转：目标文件必须仍有模糊效果
+      expect(unprefixed.length).toBeGreaterThan(0)
+      expect(prefixed.length).toBe(unprefixed.length)
+    }
+  )
+
+  it('EditProfile 不再依赖 UnoCSS 的 backdrop 工具类', () => {
+    // 仓库未接 autoprefixer，UnoCSS 产出的 backdrop-filter 不会带 -webkit-
+    const source = read('src/mobile/views/my/EditProfile.vue')
+    expect(source).not.toMatch(/backdrop-(?:blur|saturate|contrast)-/)
+  })
+})
+
+describe('移动端视口高度 dvh 收口', () => {
+  it.each([
+    'src/styles/scss/global/responsive.scss',
+    'src/mobile/views/my/EncryptionSettings.vue',
+    'src/mobile/components/encryption/MobileDeviceTrustManager.vue',
+    'src/mobile/components/my/MobileApplyList.vue'
+  ])('%s 使用 100dvh 并保留 100vh 回退', (path) => {
+    const source = read(path)
+    const vh = source.match(/100vh/g) ?? []
+    const dvh = source.match(/100dvh/g) ?? []
+    // 旧 Android WebView 不认 dvh，声明会被丢弃，必须留一条 vh 兜底
+    expect(dvh.length).toBeGreaterThan(0)
+    expect(dvh.length).toBeGreaterThanOrEqual(vh.length)
+  })
+
+  it('应用根容器改用 app-shell-root，避免 UnoCSS 只产出无回退的单一高度', () => {
+    expect(read('src/App.vue')).toContain('class="app-shell-root w-100vw"')
+  })
+})
