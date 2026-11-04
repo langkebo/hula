@@ -252,7 +252,7 @@ const updateTauriSettings = async (proxySettings: ProxySettings) => {
 /* 展示字体仅登录窗口使用，避免全局 @font-face 让所有页面预下载 */
 @font-face {
   font-family: 'AliFangYuan';
-  src: url('/src/assets/fonts/AlimamaFangYuanTiVF-Thin.woff2') format('woff2');
+  src: url('@/assets/fonts/AlimamaFangYuanTiVF-Thin.woff2') format('woff2');
   font-style: normal;
   font-display: swap;
 }

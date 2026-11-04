@@ -20,7 +20,7 @@ vi.mock('@/utils/PlatformConstants', () => ({
 }))
 
 import { ShowModeEnum, ThemeEnum } from '@/enums'
-import { useSettingStore } from '../setting'
+import { DEFAULT_PAGE_FONT_FAMILY, normalizePageFontFamily, useSettingStore } from '../setting'
 import { getDefaultShortcuts } from '../settings-helpers'
 
 describe('SettingStore', () => {
@@ -75,7 +75,7 @@ describe('SettingStore', () => {
     it('has normalized page and login getters', () => {
       const store = useSettingStore()
       expect(store.languagePreference).toBe('zh-CN')
-      expect(store.pageFontFamily).toBe('PingFang')
+      expect(store.pageFontFamily).toBe(DEFAULT_PAGE_FONT_FAMILY)
       expect(store.pageShadowEnabled).toBe(true)
       expect(store.pageBlurEnabled).toBe(true)
       expect(store.autoLoginEnabled).toBe(false)
@@ -193,9 +193,22 @@ describe('SettingStore', () => {
       store.page = undefined as never
       store.ensurePageSettings()
       expect(store.languagePreference).toBe('zh-CN')
-      expect(store.pageFontFamily).toBe('PingFang')
+      expect(store.pageFontFamily).toBe(DEFAULT_PAGE_FONT_FAMILY)
       expect(store.pageShadowEnabled).toBe(true)
       expect(store.pageBlurEnabled).toBe(true)
+    })
+
+    it('migrates the legacy PingFang font name on read', () => {
+      const store = useSettingStore()
+      store.page = { ...store.page, fonts: 'PingFang' }
+      expect(store.pageFontFamily).toBe(DEFAULT_PAGE_FONT_FAMILY)
+      store.ensurePageSettings()
+      expect(store.page.fonts).toBe(DEFAULT_PAGE_FONT_FAMILY)
+    })
+
+    it('normalizePageFontFamily keeps valid custom families', () => {
+      expect(normalizePageFontFamily('Microsoft YaHei')).toBe('Microsoft YaHei')
+      expect(normalizePageFontFamily(undefined)).toBe(DEFAULT_PAGE_FONT_FAMILY)
     })
   })
 

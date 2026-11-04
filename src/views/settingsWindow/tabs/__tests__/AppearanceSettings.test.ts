@@ -113,9 +113,10 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-vi.mock('@/stores/domains/settings/setting', () => ({
-  useSettingStore: () => mockStore
-}))
+vi.mock('@/stores/domains/settings/setting', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/stores/domains/settings/setting')>()
+  return { ...actual, useSettingStore: () => mockStore }
+})
 
 describe('AppearanceSettings', () => {
   const getVm = (wrapper: ReturnType<typeof mount>) => wrapper.vm as AppearanceSettingsVm
@@ -132,7 +133,7 @@ describe('AppearanceSettings', () => {
     mockStore = {
       themePattern: 'dark',
       themeContent: 'dark',
-      pageFontFamily: 'PingFang',
+      pageFontFamily: 'PingFang SC',
       pageShadowEnabled: true,
       pageBlurEnabled: true,
       toggleTheme: (theme: string) => {

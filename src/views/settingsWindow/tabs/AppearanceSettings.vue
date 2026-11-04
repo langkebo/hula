@@ -79,7 +79,7 @@ import { useI18n } from 'vue-i18n'
 import AppearancePreview from '@/components/settings/AppearancePreview.vue'
 import ThemeSwitcher from '@/components/settings/ThemeSwitcher.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useSettingStore } from '@/stores/domains/settings/setting'
+import { DEFAULT_PAGE_FONT_FAMILY, useSettingStore } from '@/stores/domains/settings/setting'
 import { applyBubbleStyle, loadBubbleStyle, saveBubbleStyle } from '@/utils/bubbleStyle'
 import { applyFontScale, FONT_SCALE_STEPS, loadFontScale, normalizeFontScale, saveFontScale } from '@/utils/fontScale'
 
@@ -92,7 +92,7 @@ const { t } = useI18n()
 const settingStore = useSettingStore()
 
 const fontOptions = computed(() => [
-  { label: t('setting.appearance.font_default'), value: 'PingFang' },
+  { label: t('setting.appearance.font_default'), value: DEFAULT_PAGE_FONT_FAMILY },
   { label: t('setting.appearance.font_microsoft_yahei'), value: 'Microsoft YaHei' },
   { label: t('setting.appearance.font_pingfang_sc'), value: 'PingFang SC' },
   { label: t('setting.appearance.font_source_han_sans'), value: 'Source Han Sans' }

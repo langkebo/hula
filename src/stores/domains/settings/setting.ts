@@ -31,6 +31,25 @@ import {
   stripLegacyThemeVariant
 } from './settings-helpers'
 
+/**
+ * 页面字体默认值：与 design-tokens.css 的 --tjg-font-family 对齐的系统字体栈。
+ * 历史默认值 'PingFang' 不是浏览器可识别的字体家族名（macOS 实际为 'PingFang SC'），
+ * 全局 @font-face 移除后继续使用会让全站退化为 generic sans-serif，并丢失 500 字重。
+ */
+export const DEFAULT_PAGE_FONT_FAMILY =
+  "-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Roboto, sans-serif"
+
+/** 旧版本已持久化的非法字体名 → 当前有效值 */
+const LEGACY_PAGE_FONT_FAMILIES: Record<string, string> = {
+  PingFang: DEFAULT_PAGE_FONT_FAMILY
+}
+
+/** 读取时迁移：兼容升级用户已落盘的旧字体名，避免页面字体失效 */
+export function normalizePageFontFamily(font?: string | null): string {
+  if (!font) return DEFAULT_PAGE_FONT_FAMILY
+  return LEGACY_PAGE_FONT_FAMILIES[font] ?? font
+}
+
 // 缓存方案：使用 Pinia + localStorage 分账号存储
 // 后续可迁移到 IndexedDB 以支持更大的数据量
 // 每个账号的配置通过 userId 进行隔离存储
@@ -65,7 +84,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     shortcuts: getDefaultShortcuts(),
     page: {
       shadow: true,
-      fonts: 'PingFang',
+      fonts: DEFAULT_PAGE_FONT_FAMILY,
       blur: true,
       lang: 'zh-CN'
     },
@@ -102,7 +121,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     themeContent: (state: STO.Setting) => state.themes?.content ?? ThemeEnum.LIGHT,
     themePattern: (state: STO.Setting) => state.themes?.pattern ?? ThemeEnum.LIGHT,
     languagePreference: (state: STO.Setting) => state.page?.lang ?? 'zh-CN',
-    pageFontFamily: (state: STO.Setting) => state.page?.fonts ?? 'PingFang',
+    pageFontFamily: (state: STO.Setting) => normalizePageFontFamily(state.page?.fonts),
     pageShadowEnabled: (state: STO.Setting) => state.page?.shadow ?? true,
     pageBlurEnabled: (state: STO.Setting) => state.page?.blur ?? true,
     autoLoginEnabled: (state: STO.Setting) => state.login?.autoLogin ?? false,
@@ -482,20 +501,20 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       if (!this.page) {
         this.page = {
           shadow: true,
-          fonts: 'PingFang',
+          fonts: DEFAULT_PAGE_FONT_FAMILY,
           blur: true,
           lang: 'zh-CN'
         }
         return
       }
       this.page.shadow = this.page.shadow ?? true
-      this.page.fonts = this.page.fonts || 'PingFang'
+      this.page.fonts = normalizePageFontFamily(this.page.fonts)
       this.page.blur = this.page.blur ?? true
       this.page.lang = this.page.lang || 'zh-CN'
     },
     setPageFont(font: string) {
       this.ensurePageSettings()
-      this.page.fonts = font
+      this.page.fonts = normalizePageFontFamily(font)
     },
     setPageShadowEnabled(enabled: boolean) {
       this.ensurePageSettings()
