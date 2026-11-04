@@ -140,24 +140,29 @@ class MatrixClientService {
     return this.lifecycle.initialize(config)
   }
 
+  /** 启动客户端同步。内部有幂等守卫：并发或重复调用不会重复触发 crypto 初始化与 SDK startClient。 */
   async startClient(): Promise<void> {
     return this.lifecycle.startClient()
   }
 
+  /** 停止同步并释放 crypto 绑定；可重复调用，不抛错。 */
   async stopClient(): Promise<void> {
     return this.lifecycle.stopClient()
   }
 
+  /** 轮询等待 client 就绪，超时或间隔可配；超时抛错。 */
   async waitForClientReady(opts?: { timeoutMs?: number; intervalMs?: number }): Promise<MatrixClient> {
     return this.lifecycle.waitForClientReady(opts)
   }
 
+  /** 等待 Sliding Sync 就绪，返回是否在超时内完成（不抛错）。 */
   async waitForSlidingSyncReady(timeoutMs: number = 10000): Promise<boolean> {
     return this.lifecycle.waitForSlidingSyncReady(timeoutMs)
   }
 
   // ---- Auth / Login -----------------------------------------------------------
 
+  /** 密码登录。返回结果里带 refreshToken —— 它只在登录响应出现一次，调用方需自行持久化。 */
   async login(username: string, password: string, deviceName?: string): Promise<LoginResult> {
     return this.auth.login(username, password, deviceName)
   }
@@ -167,10 +172,12 @@ class MatrixClientService {
     return this.auth.registerGuest(deviceName)
   }
 
+  /** 生成 SSO 登录地址（含回调重定向与 state 校验）。 */
   async getSSOLoginUrl(): Promise<string> {
     return this.auth.getSSOLoginUrl()
   }
 
+  /** 用 SSO 回调带回的 loginToken 完成登录。 */
   async completeSSOLogin(loginToken: string): Promise<LoginResult> {
     return this.auth.completeSSOLogin(loginToken)
   }
@@ -181,28 +188,34 @@ class MatrixClientService {
     return this.auth.loginWithToken(token, userId, refreshToken)
   }
 
+  /** 登出：撤销服务端会话并清理本地加密状态、缓存与凭据。 */
   async logout(): Promise<void> {
     return this.auth.logout()
   }
 
   // ---- State / Accessors ------------------------------------------------------
 
+  /** 取 SDK 的 telemetry manager；未启用时返回 null。 */
   getTelemetry(): TelemetryManager | null {
     return this.telemetry.getTelemetry()
   }
 
+  /** 手动改写连接状态并广播 `connectionState` 事件（重连流程使用）。 */
   updateConnectionState(state: ConnectionState): void {
     this.state.updateConnectionState(state)
   }
 
+  /** 取当前 SDK client；尚未初始化时返回 null。 */
   getClient(): MatrixClient | null {
     return this.state.getClient()
   }
 
+  /** 取 Sliding Sync 实例；未启用或未就绪时返回 null。 */
   getSlidingSync(): SlidingSync | null {
     return this.state.getSlidingSync()
   }
 
+  /** 取 Rust Crypto 初始化的调试快照（是否成功、跳过原因、错误）。 */
   getRustCryptoDebugState(): RustCryptoDebugState {
     return this.state.getRustCryptoDebugState()
   }
@@ -215,6 +228,7 @@ class MatrixClientService {
     return this.state.isCryptoReady()
   }
 
+  /** 取事件解密路径的调试状态。 */
   getEventDecryptedDebugState(): EventDecryptedDebugState {
     return this.state.getEventDecryptedDebugState()
   }
@@ -230,18 +244,25 @@ class MatrixClientService {
     return this.state.getCryptoLifecycleDiagnostics()
   }
 
+  /** 当前连接状态机的取值。 */
   getConnectionState(): ConnectionState {
     return this.state.getConnectionState()
   }
 
+  /** 当前登录用户的 MXID；未登录时为 null。 */
   getUserId(): string | null {
     return this.state.getUserId()
   }
 
+  /**
+   * 当前 SDK client 的访问令牌；client 未就绪时为 null。
+   * **不回落**配置快照 —— 快照在 token 刷新后不会更新，用它发请求必然 401。
+   */
   getAccessToken(): string | null {
     return this.state.getAccessToken()
   }
 
+  /** 当前 homeserver 的 base URL。 */
   getHomeserverUrl(): string | null {
     return this.state.getHomeserverUrl()
   }
@@ -256,46 +277,56 @@ class MatrixClientService {
     return this.state.getServerDomain()
   }
 
+  /** 当前设备 ID；未登录时为 null。 */
   getDeviceId(): string | null {
     return this.state.getDeviceId()
   }
 
+  /** 按 MXID 取 SDK 的 User 对象；该用户不在本地已知集合中时返回 null。 */
   getUser(userId: string): User | null {
     return this.state.getUser(userId)
   }
 
+  /** 判断房间是否启用加密。 */
   isRoomEncrypted(roomId: string): boolean {
     return this.state.isRoomEncrypted(roomId)
   }
 
   // ---- Room operations --------------------------------------------------------
 
+  /** 取已加入的房间列表。 */
   getRooms(): Room[] {
     return this.roomOps.getRooms()
   }
 
+  /** 按 roomId 取房间；不存在或未加入时返回 null。 */
   getRoom(roomId: string): Room | null {
     return this.roomOps.getRoom(roomId)
   }
 
+  /** 创建房间（preset、加密、`room_types` 等选项透传给 SDK）。 */
   async createRoom(options: ICreateRoomOpts): Promise<Room> {
     return this.roomOps.createRoom(options)
   }
 
+  /** 加入房间，返回加入后的 Room 对象。 */
   async joinRoom(roomId: string): Promise<Room> {
     return this.roomOps.joinRoom(roomId)
   }
 
+  /** 退出房间。 */
   async leaveRoom(roomId: string): Promise<void> {
     return this.roomOps.leaveRoom(roomId)
   }
 
+  /** 判断当前用户是否有权管理该 Space（按层级与 power level）。 */
   canManageSpace(spaceId: string): boolean {
     return this.roomOps.canManageSpace(spaceId)
   }
 
   // ---- Manager stats ----------------------------------------------------------
 
+  /** 各 SDK manager 的请求统计（总数/成功/失败/重试）。 */
   getManagerStatsList(): Array<{
     name: string
     stats: { total: number; successful: number; failed: number; retried: number }
