@@ -70,3 +70,16 @@ describe('mobile backdrop blur performance fallback', () => {
     expect(missing).toEqual([])
   })
 })
+
+describe('移动端 FooterBar 死代码清理', () => {
+  it('FooterBar 不应再声明或触发 updateHeight 事件', () => {
+    const source = read('src/mobile/components/chat-room/FooterBar.vue')
+    expect(source).not.toContain('updateHeight')
+    expect(source).not.toContain('ResizeObserver')
+  })
+
+  it('MobileChatMain 不应再给 FooterBar 挂未使用的 ref', () => {
+    const source = read('src/mobile/views/chat-room/MobileChatMain.vue')
+    expect(source).not.toContain('ref="footerBar"')
+  })
+})

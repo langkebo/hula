@@ -20,7 +20,7 @@
     </template>
     <template #footer>
       <MobileBatchToolbar v-if="chatStore.isMsgMultiChoose" @forward="handleBatchForward" @exit="handleBatchExit" />
-      <FooterBar v-else ref="footerBar" @location="handleLocationClick" />
+      <FooterBar v-else @location="handleLocationClick" />
     </template>
 
     <!-- 移动端快捷表情回应面板 -->

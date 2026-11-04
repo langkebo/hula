@@ -1,5 +1,5 @@
 <template>
-  <div ref="root">
+  <div>
     <div ref="messageInputDom" contenteditable="true" spellcheck="false" class="sr-only"></div>
 
     <div class="w-full min-h-20px flex flex-col z-2 footer-bar-shadow">
@@ -47,7 +47,7 @@ import VoicePanel from './panel/VoicePanel.vue'
 
 const { t } = useI18n()
 const globalStore = useGlobalStore()
-const emit = defineEmits(['updateHeight', 'location'])
+const emit = defineEmits(['location'])
 
 const showVoicePanel = ref(false)
 
@@ -55,32 +55,17 @@ const handleVoiceSend = async () => {
   showVoicePanel.value = false
 }
 
-const root = ref()
-let resizeObserver: ResizeObserver | null = null
-
 onMounted(() => {
-  if (root.value) {
-    resizeObserver = new ResizeObserver((entries) => {
-      emit('updateHeight', entries[0].contentRect.height)
-    })
-    resizeObserver.observe(root.value)
-  }
-
   if (isIOS()) {
     invokeSilently('set_webview_keyboard_adjustment', { enabled: true })
   }
 })
 
 onUnmounted(() => {
-  resizeObserver?.disconnect()
-  resizeObserver = null
-
   if (isIOS()) {
     invokeSilently('set_webview_keyboard_adjustment', { enabled: false })
   }
 })
-
-defineExpose({ root })
 </script>
 
 <style lang="scss" scoped>
