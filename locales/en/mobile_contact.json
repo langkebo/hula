@@ -44,11 +44,6 @@
     "send_message": "Message",
     "add": "Add"
   },
-  "menu": {
-    "add_group": "Add Group",
-    "rename_group": "Rename Group",
-    "delete_group": "Delete Group"
-  },
   "refresh_notification_failed": "Failed to refresh notifications. Please try again later.",
   "add_friend_success": "Friend request sent",
   "add_friend_failed": "Failed to send friend request",

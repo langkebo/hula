@@ -4461,11 +4461,6 @@ export type I18nKeys = {
       "send_message": "发消息",
       "add": "添加"
     },
-    "menu": {
-      "add_group": "添加分组",
-      "rename_group": "重命名该组",
-      "delete_group": "删除分组"
-    },
     "refresh_notification_failed": "刷新通知失败，请稍后再试",
     "add_friend_success": "好友请求已发送",
     "add_friend_failed": "发送好友请求失败",
@@ -10916,9 +10911,6 @@ export type I18nKeyPaths =
   | "mobile_contact.button.edit_profile"
   | "mobile_contact.button.send_message"
   | "mobile_contact.button.add"
-  | "mobile_contact.menu.add_group"
-  | "mobile_contact.menu.rename_group"
-  | "mobile_contact.menu.delete_group"
   | "mobile_contact.refresh_notification_failed"
   | "mobile_contact.add_friend_success"
   | "mobile_contact.add_friend_failed"
