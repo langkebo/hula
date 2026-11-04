@@ -9,10 +9,15 @@ const fallbackCss = tokensCss.slice(tokensCss.indexOf(marker))
 
 describe('color-mix token 兜底', () => {
   it('每个使用 color-mix 的 token 都有纯色兜底', () => {
-    const mixedTokens = Array.from(tokensCss.matchAll(/^\s*(--[a-z0-9-]+):[^;\n]*color-mix\(/gim)).map(
-      (match) => match[1]
+    // 多行声明必须跨越换行取值，否则 --tjg-menu-bg 这类 linear-gradient 会被漏掉
+    const declarations = Array.from(
+      tokensCss.slice(0, tokensCss.indexOf(marker)).matchAll(/(--[a-z0-9-]+)\s*:\s*([^;{}]*)/gi)
     )
+    const mixedTokens = [
+      ...new Set(declarations.filter((item) => item[2].includes('color-mix(')).map((item) => item[1]))
+    ]
     expect(mixedTokens.length).toBeGreaterThan(0)
+    expect(mixedTokens).toContain('--tjg-menu-bg')
     expect(tokensCss).toContain(marker)
     expect(fallbackCss).toContain("html[data-theme='dark']")
     for (const token of mixedTokens) {

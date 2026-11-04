@@ -776,6 +776,8 @@ html[data-theme='dark'] {
     --tjg-status-encryption-risk-ring: var(--tjg-color-danger-500);
 
     /* 背景 / 面板 */
+    /* 菜单背景是 surface-panel 叠加透明度的渐变，兜底退化为同色纯色 */
+    --tjg-menu-bg: var(--tjg-surface-panel);
     --chat-left-bg: var(--tjg-surface-panel);
     --progress-bg: var(--tjg-color-primary-100);
     --reply-bg: var(--tjg-surface-subtle);
