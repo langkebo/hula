@@ -163,7 +163,7 @@
                     {{ specialOnlineCount }}/{{ specialContacts.length }}
                   </span>
                 </template>
-                <div class="max-h-[calc(100vh_-_calc(340px_var(--safe-area-inset-top)))] overflow-y-auto">
+                <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
                   <div @contextmenu.stop="$event.preventDefault()">
                     <div
                       v-for="item in specialContacts"
@@ -229,7 +229,7 @@
                     {{ normalOnlineCount }}/{{ normalContacts.length }}
                   </span>
                 </template>
-                <div class="max-h-[calc(100vh_-_calc(340px_var(--safe-area-inset-top)))] overflow-y-auto">
+                <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
                   <div @contextmenu.stop="$event.preventDefault()">
                     <van-swipe-cell v-for="item in normalContacts" :key="item.userId">
                       <div
@@ -298,7 +298,7 @@
                 <template #value>
                   <span class="text-(10px [--tjg-text-secondary])">{{ blockedContacts.length }}</span>
                 </template>
-                <div class="max-h-[calc(100vh_-_calc(340px_var(--safe-area-inset-top)))] overflow-y-auto">
+                <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
                   <div @contextmenu.stop="$event.preventDefault()">
                     <div
                       v-for="item in blockedContacts"
@@ -334,7 +334,7 @@
               <template #value>
                 <span class="text-(10px [--tjg-text-secondary])">{{ groupChatList.length }}</span>
               </template>
-              <div class="max-h-[calc(100vh_-_calc(340px_var(--safe-area-inset-top)))] overflow-y-auto">
+              <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
                 <div
                   @click="handleClick(item.roomId, RoomTypeEnum.GROUP)"
                   :class="[{ active: activeItem === item.roomId }, 'item-box w-full h-75px mb-5px']"
