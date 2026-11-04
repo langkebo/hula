@@ -89,7 +89,6 @@ describe('GuestUpgradeModal', () => {
     expect(upgradeGuestAccountMock).toHaveBeenCalledWith('alice', 'secret')
     expect(applyGuestUpgradeMock).toHaveBeenCalledWith(result)
     expect(showFeedbackMock).toHaveBeenCalledWith('guest.upgrade.success', 'success')
-    expect(wrapper.emitted('upgraded')).toHaveLength(1)
     expect(wrapper.emitted('update:show')?.[0]).toEqual([false])
   })
 
@@ -103,7 +102,6 @@ describe('GuestUpgradeModal', () => {
 
     expect(loggerErrorMock).toHaveBeenCalled()
     expect(wrapper.emitted('update:show')).toBeUndefined()
-    expect(wrapper.emitted('upgraded')).toBeUndefined()
     expect(wrapper.find('[data-test="guest-upgrade-error"]').text()).toContain('upgrade rejected by server')
     expect(wrapper.find('[data-test="guest-upgrade-submit"]').attributes('disabled')).toBeUndefined()
   })

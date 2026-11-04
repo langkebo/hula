@@ -93,7 +93,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:show': [value: boolean]
-  upgraded: []
 }>()
 
 const { t } = useI18n()
@@ -148,9 +147,11 @@ async function submit() {
   errorMessage.value = ''
   try {
     const result = await MatrixAuthService.upgradeGuestAccount(name, password.value)
+    // 身份切换后的收尾（换 MXID ⇒ 失效账号维度缓存 + 重取服务端能力）统一在
+    // sessionOrchestrator.applyGuestUpgrade 内完成，本组件不再向外抛 `upgraded`：
+    // 该事件自 e8eb8977 引入起从未有监听方，属误导性契约（check:component-contracts 已报）。
     await sessionOrchestrator.applyGuestUpgrade(result)
     showFeedback(t('guest.upgrade.success'), 'success')
-    emit('upgraded')
     emit('update:show', false)
   } catch (err) {
     logger.error('guest account upgrade failed:', err)

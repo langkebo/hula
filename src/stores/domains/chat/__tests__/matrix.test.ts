@@ -1,5 +1,7 @@
+import { flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { senderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 
 const {
@@ -118,6 +120,8 @@ describe('MatrixStore', () => {
     persistWebAccessTokenMock.mockImplementation((token: string | null) => {
       accessTokenState.value = token ?? null
     })
+    // 生产实现恒返回 Promise；resetAllMocks 后须重建，否则 applyGuestUpgrade 里的 .catch 会炸
+    matrixCapabilityServiceMock.refreshCapabilities.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -377,6 +381,43 @@ describe('MatrixStore', () => {
       expect(store.syncState).toBeNull()
       expect(store.lastError).toBeNull()
       expect(store.isInitialized).toBe(false)
+    })
+  })
+
+  describe('applyGuestUpgrade', () => {
+    /**
+     * 升级 = 换 MXID（guest 身份 → 新账号）。这里断言的是「换账号必须做的三件事」：
+     * 身份字段切换、at-rest token 同步、账号维度缓存失效 + 能力快照重取。
+     * 后两项是缺陷修复点：此前 applyGuestUpgrade 只改了三个字段。
+     */
+    it('switches identity and invalidates account-scoped caches', async () => {
+      const store = useMatrixStore()
+      store.userId = '@guest:matrix.test'
+      store.isGuest = true
+      senderDeviceCache.set('@guest:matrix.test:@friend:matrix.test', 'verified')
+
+      store.applyGuestUpgrade('@alice:matrix.test', 'upgraded-token')
+      await flushPromises()
+
+      expect(store.userId).toBe('@alice:matrix.test')
+      expect(store.isGuest).toBe(false)
+      expect(store.getAccessToken()).toBe('upgraded-token')
+      // 旧访客 MXID 下的信任判定必须释放，否则绿锁会残留到新账号的同一 sender 上
+      expect(senderDeviceCache.size).toBe(0)
+      // 能力快照是以访客凭证取的，换身份后必须重取（canUseFriendList / canUseE2EE 依赖它）
+      expect(matrixCapabilityServiceMock.refreshCapabilities).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not roll back the upgrade when capability refresh fails', async () => {
+      const store = useMatrixStore()
+      matrixCapabilityServiceMock.refreshCapabilities.mockRejectedValueOnce(new Error('capability store not ready'))
+
+      store.applyGuestUpgrade('@alice:matrix.test', 'upgraded-token')
+      await flushPromises()
+
+      expect(store.userId).toBe('@alice:matrix.test')
+      expect(store.isGuest).toBe(false)
+      expect(store.getAccessToken()).toBe('upgraded-token')
     })
   })
 

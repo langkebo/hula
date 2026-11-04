@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
+import { clearSenderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'
 import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import {
   type ConnectionState,
@@ -288,11 +289,28 @@ export const useMatrixStore = defineStore(
       }
     }
 
-    /** 访客升级为正式账号后同步本地会话身份（client 的 token 已由 MatrixAuthService 切换） */
+    /**
+     * 访客升级为正式账号后同步本地会话身份（client 的 token 已由 MatrixAuthService 切换）。
+     *
+     * 这不只是「改两个字段」——**MXID 变了就是换账号**，所有带账号维度的缓存都必须失效：
+     * - 消息信任缓存 key 是 `${accountUserId}:${senderId}`，不清则旧访客 MXID 的条目永久残留
+     *   （登出流程已按同一理由调用 clearSenderDeviceCache，升级属同类身份切换）；
+     * - 服务端能力快照（/versions + /capabilities + /client_config）是**以访客凭证取的**，
+     *   而 `canUseFriendList()` 直接门控好友扩展、`canUseE2EE()` 门控加密，
+     *   不刷新则升级成功后这些能力仍停留在访客判定，必须重启应用才恢复。
+     */
     function applyGuestUpgrade(uid: string, token: string): void {
       userId.value = uid
       rememberWebToken(token)
       isGuest.value = false
+
+      clearSenderDeviceCache()
+
+      // 与 startClient 同样采用 fire-and-forget：refreshCapabilities 内部对 HTTP 失败已做
+      // null 兜底，这里只需兜住「capability store 尚未就绪」这类同步抛出，不能让它中断升级流程。
+      void matrixCapabilityService.refreshCapabilities().catch((error) => {
+        logger.warn('访客升级后刷新服务端能力失败（将沿用旧快照）:', error)
+      })
     }
 
     async function logout(): Promise<void> {
