@@ -753,33 +753,37 @@ html[data-theme='dark'] {
 
 /* ==================== color-mix 纯色兜底 ====================
  * Android WebView < 111 不支持 color-mix；此处只做语义降级，全部复用既有 token。
+ * 必须同时覆盖 html[data-theme='dark']：自定义属性值不做解析校验，暗色下更高特异性的
+ * color-mix 定义仍会生效并在使用处退化为 unset，仅覆盖 :root 会让兜底完全失效。
+ * 本块位于文件末尾，靠源码顺序胜出同等特异性的暗色定义。
  * 现代浏览器不支持该 @supports not 条件时会忽略本块，继续使用上方 color-mix 定义。
  * ================================================================== */
 @supports not (color: color-mix(in srgb, red, blue)) {
-  :root {
+  :root,
+  html[data-theme='dark'] {
     /* 悬停 / 选中 / 次级表面 */
     --tjg-surface-list-hover: var(--tjg-surface-subtle);
     --tjg-surface-list-selected: var(--tjg-surface-subtle);
     --tjg-menu-hover: var(--tjg-surface-subtle);
-    --tjg-admin-sidebar-hover: var(--tjg-surface-subtle);
+    --tjg-admin-sidebar-hover: var(--tjg-surface-inverse-subtle);
     --info-hover: var(--tjg-surface-subtle);
-    --tray-hover-e: var(--tjg-surface-subtle);
+    --tray-hover-e: var(--tjg-color-danger-100);
 
     /* 边框 / 描边 / 环 */
     --tjg-room-card-encrypted-border: var(--tjg-border-default);
     --tjg-room-card-federated-border: var(--tjg-border-default);
-    --tjg-federation-badge-border: var(--tjg-border-default);
-    --tjg-status-encryption-risk-ring: var(--tjg-border-default);
+    --tjg-federation-badge-border: var(--tjg-color-info-500);
+    --tjg-status-encryption-risk-ring: var(--tjg-color-danger-500);
 
     /* 背景 / 面板 */
     --chat-left-bg: var(--tjg-surface-panel);
-    --progress-bg: var(--tjg-surface-panel);
-    --reply-bg: var(--tjg-surface-panel);
-    --plugin-icon-bg: var(--tjg-surface-panel);
-    --plugin-downloading-bg: var(--tjg-surface-panel);
-    --tag-danger-bg: var(--tjg-surface-panel);
+    --progress-bg: var(--tjg-color-primary-100);
+    --reply-bg: var(--tjg-surface-subtle);
+    --plugin-icon-bg: transparent;
+    --plugin-downloading-bg: var(--tjg-color-info-100);
+    --tag-danger-bg: var(--tjg-color-danger-100);
     --time-group-bg: var(--tjg-surface-panel);
-    --tjg-federation-badge-bg: var(--tjg-surface-panel);
+    --tjg-federation-badge-bg: var(--tjg-color-info-100);
 
     /* 文本 */
     --tjg-admin-sidebar-text: var(--tjg-text-inverse);

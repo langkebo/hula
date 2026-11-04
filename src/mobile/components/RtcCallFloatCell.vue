@@ -226,7 +226,7 @@ useMitt.on('RoomClosed', handleCallEnd)
 
 .avatar-shell {
   background: var(--tjg-border-contrast);
-  border: 1px solid var(--tjg-border-default);
+  border: 1px solid var(--tjg-surface-inverse-hover);
 
   @supports (color: color-mix(in srgb, red, blue)) {
     border: 1px solid color-mix(in srgb, var(--tjg-text-inverse) 14%, transparent);

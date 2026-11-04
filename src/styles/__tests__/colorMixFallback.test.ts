@@ -14,6 +14,7 @@ describe('color-mix token 兜底', () => {
     )
     expect(mixedTokens.length).toBeGreaterThan(0)
     expect(tokensCss).toContain(marker)
+    expect(fallbackCss).toContain("html[data-theme='dark']")
     for (const token of mixedTokens) {
       expect(fallbackCss).toContain(`${token}:`)
     }
