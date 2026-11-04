@@ -114,10 +114,11 @@
 
   /* 字体 */
   --tjg-font-family:
-    'PingFang',
     -apple-system,
     BlinkMacSystemFont,
-    'Segoe UI',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
     Roboto,
     sans-serif;
   --tjg-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;

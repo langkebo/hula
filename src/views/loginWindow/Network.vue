@@ -249,9 +249,17 @@ const updateTauriSettings = async (proxySettings: ProxySettings) => {
 <style scoped lang="scss">
 @use '@/styles/scss/global/login-bg';
 
+/* 展示字体仅登录窗口使用，避免全局 @font-face 让所有页面预下载 */
+@font-face {
+  font-family: 'AliFangYuan';
+  src: url('/src/assets/fonts/AlimamaFangYuanTiVF-Thin.woff2') format('woff2');
+  font-style: normal;
+  font-display: swap;
+}
+
 /* 需 !important：全局 `* { font-family: ... !important }`（variable.scss）只能用同为 !important 的类规则覆盖 */
 .textFont {
-  font-family: AliFangYuan, sans-serif !important;
+  font-family: 'AliFangYuan', sans-serif !important;
 }
 
 :deep(.n-input .n-input__input-el) {
