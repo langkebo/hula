@@ -97,7 +97,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
-import { useMessage } from '@/composables/chat/useMessage'
 import MobileConnectionBanner from '@/mobile/components/common/MobileConnectionBanner.vue'
 import MobileCreateDialogs from '@/mobile/components/message/MobileCreateDialogs.vue'
 import MobileSessionHeader from '@/mobile/components/message/MobileSessionHeader.vue'
@@ -113,7 +112,6 @@ import { useTimerManager } from '@/utils/TimerManager'
 const timerManager = useTimerManager()
 const { t } = useI18n()
 const router = useRouter()
-const { handleMsgClick } = useMessage()
 
 // 滚动 & 下拉刷新控制
 const { isEnablePullRefresh, enablePullRefresh, disablePullRefresh, onScroll, getScrollTop, lockScroll, unlockScroll } =
@@ -131,7 +129,7 @@ const {
 } = useMobileLongPress({ disablePullRefresh, enablePullRefresh, getScrollTop })
 
 // 会话列表数据派生
-const { searchText, filteredSessionList, allUserMap } = useMobileSessionList()
+const { searchText, filteredSessionList } = useMobileSessionList()
 
 // 会话操作 + matrix 同步事件订阅(依赖 maskHandler / currentLongPressItem)
 const { loading, handleDelete, handleToggleTop, handleToggleReadStatus, onRefresh } = useMobileMessageActions({
@@ -153,7 +151,7 @@ const {
   beforeCloseCreateGroup
 } = useMobileCreateDialogs({
   maskHandler,
-  goToChatRoom: (roomId: string) => router.push(`/mobile/chatRoom/chatMain/${roomId}`),
+  goToChatRoom: (roomId: string) => router.push({ name: 'mobileChatMain', params: { roomId } }),
   goToAddContact: () => router.push('/mobile/mobileFriends/addFriends')
 })
 
@@ -167,26 +165,23 @@ const handleSwipeClose = () => {
   preventClick = false
 }
 
+/**
+ * 进入会话。
+ *
+ * 只把 roomId 交给路由 —— 会话的唯一标识是 roomId，群聊没有对端 uid。
+ * 此前用 `allUserMap.get(item.detailId)` 判分支，群聊 / 非好友时 detailId 为空，
+ * 会 push 一个**不带参数**的 `mobileChatMain`，聊天页只能靠内存里的
+ * `currentSessionRoomId` 侥幸工作，刷新或进程重建后就是空白页。
+ *
+ * 会话切换（写当前会话 / 标已读 / 同步群成员）统一在 `MobileChatMain` 按路由参数做，
+ * 避免「列表点一次 + 页面挂载再一次」的重复切换。
+ */
 const intoRoom = (item: SessionItem) => {
   if (longPressState.value.longPressActive) return
   if (preventClick) return
 
-  handleMsgClick(item)
-  const foundedUser = allUserMap.value.get(item.detailId || '')
-
   timerManager.setTimeout(() => {
-    if (foundedUser && foundedUser.uid !== '1') {
-      router.push({
-        name: 'mobileChatMain',
-        params: {
-          uid: item.detailId
-        }
-      })
-    } else {
-      router.push({
-        name: 'mobileChatMain'
-      })
-    }
+    router.push({ name: 'mobileChatMain', params: { roomId: item.roomId } })
   }, 0)
 }
 

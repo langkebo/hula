@@ -17,14 +17,15 @@ const MOBILE_MESSAGE_LIST = '/mobile/message'
 /**
  * 移动端「进入房间」的私密门禁。
  *
- * 为什么不能像桌面那样放进 `router.beforeEach`：移动端聊天路由是
- * `/mobile/chatRoom/chatMain/:uid?`，参数是**对端 uid 而不是 roomId**，
- * 而 `secretChatGuard.extractRoomId` 只认 `message` / `windowChat` 两条路由的 `:roomId`，
- * 于是移动端这条路径**整个绕过门禁**（通知点击可直达私密房）。
+ * 为什么不能像桌面那样放进 `router.beforeEach`：`secretChatGuard.extractRoomId` 只认
+ * `message` / `windowChat` 两条路由的 `:roomId`，移动端这条路径原本**整个绕过门禁**
+ * （通知点击可直达私密房）。
  *
- * 所以改在聊天布局层（`ChatRoomLayout`）解析出房间号后再判，覆盖：
- * 会话列表点击、通知点击、以及冷启动深链（此时 currentSessionRoomId 可能为空，
- * 用 uid 反查会话拿 roomId）。
+ * 所以改在聊天布局层（`ChatRoomLayout`）拿到路由参数后再判，覆盖会话列表点击、
+ * 通知点击、以及冷启动深链（此时 currentSessionRoomId 可能为空）。
+ *
+ * 路由参数现已统一为**房间号**（`chatMain/:roomId?`）。`assertAccess` 仍兼容旧链接：
+ * 参数不以 `!` 开头时按「对端 uid」反查会话拿 roomId，避免历史推送直接放行私密房。
  */
 export function useMobilePrivateRoomGate() {
   const router = useRouter()
@@ -32,11 +33,24 @@ export function useMobilePrivateRoomGate() {
   const settingStore = useSettingStore()
   const globalStore = useGlobalStore()
 
-  /** 用对端 uid 反查房间号（冷启动深链时 currentSessionRoomId 还没被设置）。 */
+  /** 用对端 uid 反查房间号（旧深链 / currentSessionRoomId 尚未设置时）。 */
   function resolveRoomIdByPeer(uid: string | undefined): string | null {
     if (!uid) return null
     const session = sessionStore.sessionList.find((item) => item.detailId === uid || item.account === uid)
     return session?.roomId ?? null
+  }
+
+  /**
+   * 把路由参数归一成房间号。
+   *
+   * 新路由参数就是 `!xxx:server`；历史通知/收藏里的深链是 `@peer:server`，
+   * 这时按对端 uid 反查。两者都失败返回 null（无从判定，按普通房放行）。
+   */
+  function normalizeRoomParam(param: string | undefined): string | null {
+    const value = param?.trim()
+    if (!value) return null
+    if (value.startsWith('!')) return value
+    return resolveRoomIdByPeer(value)
   }
 
   // 收「已翻译文案」而不是 key：key 必须在调用点以「t + 字面量键」的形式出现，
@@ -50,7 +64,7 @@ export function useMobilePrivateRoomGate() {
    *
    * @returns `true` = 放行；`false` = 已拦下
    */
-  async function assertAccess(uid?: string): Promise<boolean> {
+  async function assertAccess(roomParam?: string): Promise<boolean> {
     try {
       // 冷启动时登记表可能还没按当前账号加载，此时 isPrivateRoom 读的是 anonymous 缓存 →
       // 私密房会被当普通房放行。必须先等它加载完。
@@ -66,7 +80,9 @@ export function useMobilePrivateRoomGate() {
 
     // 两个候选都要看，不能只看 currentSessionRoomId：
     // 通知点击时它可能还停在上一个**普通房**，只按它判会把私密房放行。
-    const candidates = [globalStore.currentSessionRoomId, resolveRoomIdByPeer(uid)].filter((id): id is string => !!id)
+    const candidates = [normalizeRoomParam(roomParam), globalStore.currentSessionRoomId].filter(
+      (id): id is string => !!id
+    )
     const privateRoomId = candidates.find((id) => isPrivateRoom(id)) ?? null
     if (!privateRoomId) return true
     if (isSecretChatUnlocked()) return true

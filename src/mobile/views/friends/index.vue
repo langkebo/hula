@@ -344,6 +344,7 @@ import FriendContactRow from '@/mobile/components/friend/FriendContactRow.vue'
 import router from '@/router'
 import { matrixFriendOperations, userDirectoryService } from '@/services/matrix'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -387,6 +388,7 @@ const detailsShow = ref(false)
 const shrinkStatus = ref(false)
 const groupStore = useGroupStore()
 const contactStore = useContactStore()
+const chatStore = useChatStore()
 const {
   groupChatList,
   specialContacts,
@@ -456,8 +458,15 @@ const handleClick = async (id: string, type: number) => {
 
   if (type === 1) {
     try {
-      await preloadChatRoom(id)
-      router.push(`/mobile/chatRoom/chatMain`)
+      // 好友列表给的是**对端 uid**，先查它对应的 DM 房间号；
+      // 查不到（尚未建过会话）时退回按 uid 深链，由聊天页反查兜底。
+      const dmRoomId = chatStore.sessionList.find((item) => item.detailId === id || item.account === id)?.roomId
+      if (dmRoomId) {
+        await preloadChatRoom(dmRoomId)
+        router.push({ name: 'mobileChatMain', params: { roomId: dmRoomId } })
+      } else {
+        router.push({ name: 'mobileChatMain', params: { roomId: id } })
+      }
     } catch (error) {
       logger.error(String(error))
     }

@@ -27,20 +27,22 @@ const computedBottomSafeAreaClass = computed(() => {
 /**
  * 私密房门禁（移动端）。
  *
- * 放在布局层而不是 `beforeEach`：移动端房间路由的参数是**对端 uid**，
- * `secretChatGuard.extractRoomId` 只认 `message` / `windowChat` 的 `:roomId`，
- * 因此移动端这条路径原本整个绕过门禁（通知点击可直达私密房）。
- * 布局层能同时拿到当前会话与路由参数，故在挂载与切房两个时机各判一次。
+ * 放在布局层而不是 `beforeEach`：`secretChatGuard.extractRoomId` 只认
+ * `message` / `windowChat` 的 `:roomId`，移动端这条路径原本整个绕过门禁
+ * （通知点击可直达私密房）。布局层能同时拿到当前会话与路由参数，故在挂载与切房两个时机各判一次。
+ *
+ * 路由参数已从「对端 uid」改为「房间号」，判据直接就是 roomId；
+ * 旧深链若仍是 uid，门禁层会先反查一次（见 `useMobilePrivateRoomGate`）。
  */
 const { assertAccess } = useMobilePrivateRoomGate()
 
 const guardCurrentRoom = () => {
   if (route.name !== 'mobileChatMain') return
-  const uid = route.params.uid
-  void assertAccess(typeof uid === 'string' ? uid : undefined)
+  const roomId = route.params.roomId
+  void assertAccess(typeof roomId === 'string' ? roomId : undefined)
 }
 
-watch(() => [route.name, route.params.uid] as const, guardCurrentRoom, { immediate: true })
+watch(() => [route.name, route.params.roomId] as const, guardCurrentRoom, { immediate: true })
 </script>
 
 <style lang="scss" scoped></style>

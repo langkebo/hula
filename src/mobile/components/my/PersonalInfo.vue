@@ -201,7 +201,7 @@ const toChatRoom = async () => {
       await chatStore.getSessionList(true)
     }
     await preloadChatRoom(res.roomId)
-    router.push(`/mobile/chatRoom/chatMain`)
+    router.push({ name: 'mobileChatMain', params: { roomId: res.roomId } })
   } catch (error) {
     logger.error('Failed to enter chat room for direct chat:', error)
   }

@@ -209,7 +209,7 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         redirect: '/mobile/chatRoom/chatMain'
       },
       {
-        path: 'chatMain/:uid?',
+        path: 'chatMain/:roomId?', // 参数是房间号（群聊无对端 uid）；旧链接带 uid 时页面反查兜底
         name: 'mobileChatMain',
         component: MobileChatMain,
         props: true,

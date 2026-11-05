@@ -261,7 +261,7 @@ function onRefresh() {
 }
 
 function enterRoom(roomId: string) {
-  router.push(`/mobile/chatRoom/chatMain/${roomId}`)
+  router.push({ name: 'mobileChatMain', params: { roomId } })
 }
 
 async function onCreateSelect(action: { value: string }) {

@@ -61,6 +61,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, RoomTypeEnum } from '@/enums'
 import router from '@/router'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import { useChatSession } from '@/shared/composables/useChatSession'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
@@ -74,6 +75,10 @@ defineOptions({
 
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
+// 只取 switchSession（写当前会话 / 标已读 / 同步群成员）。
+// 不要在这里引 `useMessage()`：它会把矩阵客户端初始化链路拖进 setup，
+// 组件测试与首屏都因此变慢（实测单测从 1s 涨到 52s）。
+const { switchSession } = useChatSession()
 const { currentSession } = storeToRefs(globalStore)
 const globalUnreadCount = computed(() => globalStore.messageUnreadCount ?? 0)
 
@@ -87,10 +92,67 @@ const isFederated = computed(() => {
 })
 
 const props = defineProps<{
-  uid?: ''
+  /** 路由参数：房间号（`!xxx:server`）。旧链接可能是对端 uid，见 `resolveRoomId`。 */
+  roomId?: string
 }>()
 
 const isGroupSession = computed(() => currentSession.value?.type === RoomTypeEnum.GROUP)
+
+/**
+ * 解析路由参数到房间号。
+ *
+ * 正常情况直接就是 roomId；历史推送/收藏里的旧深链带的是对端 uid（`@peer:server`），
+ * 这时按 session.detailId/account 反查一次，避免旧链接 404 到空聊天页。
+ */
+const resolveRoomId = (raw?: string): string | null => {
+  const value = raw?.trim()
+  if (!value) return null
+  if (value.startsWith('!')) return value
+  const matched = chatStore.sessionList.find((item) => item.detailId === value || item.account === value)
+  return matched?.roomId ?? null
+}
+
+/**
+ * 打开路由指定的会话（深链 / 刷新 / 进程重建的唯一入口）。
+ *
+ * 此前移动端进会话完全靠列表页把 `currentSessionRoomId` 写进内存，路由参数形同虚设：
+ * 刷新或系统回收后落在 `/mobile/chatRoom/chatMain`，房间丢了就是空白聊天页。
+ */
+const openRoomFromRoute = async (raw?: string) => {
+  const roomId = resolveRoomId(raw)
+  if (!roomId) return
+  if (globalStore.currentSessionRoomId === roomId) return
+
+  let session = chatStore.getSession(roomId)
+  if (!session) {
+    // 冷启动深链：会话列表还没拉过（列表页不在路由栈上），先补一次
+    await chatStore.getSessionList(true).catch(() => undefined)
+    session = chatStore.getSession(roomId)
+  }
+  if (!session) {
+    logger.warn('路由指向的会话不存在，回到消息列表:', roomId, raw)
+    await router.replace('/mobile/message')
+    return
+  }
+  // 与列表点击同一套语义：写当前会话 + 标已读 + 同步群成员
+  await switchSession(session)
+}
+
+onMounted(() => {
+  useMitt.on(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
+  void openRoomFromRoute(props.roomId)
+})
+
+watch(
+  () => props.roomId,
+  (next) => {
+    void openRoomFromRoute(next)
+  }
+)
+
+onUnmounted(() => {
+  useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
+})
 
 const privateModeActive = ref(false)
 const showPrivateConfirm = ref(false)
@@ -115,13 +177,6 @@ const onCancelPrivateMode = () => {
   showPrivateConfirm.value = false
 }
 
-onMounted(() => {
-  useMitt.on(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
-})
-onUnmounted(() => {
-  useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
-})
-
 const handleChatMainClick = () => {
   // 移动端点击聊天区域不再自动关闭面板
   // 用户需要手动点击按钮来关闭面板
@@ -132,9 +187,17 @@ const handleScroll = () => {
   // 用户需要手动点击按钮来关闭面板
 }
 
+/**
+ * 点标题栏进好友详情：身份从**当前会话**的 `detailId` 取，不再依赖路由参数。
+ *
+ * 路由参数现在是房间号（群聊没有对端 uid），沿用旧写法会把 roomId 拼进
+ * `/friendInfo/:uid` 得到 404。群聊不跳（成员详情走成员列表）。
+ */
 const handleRoomNameClick = () => {
-  if (props.uid) {
-    router.push(`/mobile/mobileFriends/friendInfo/${props.uid}`)
+  if (isGroupSession.value) return
+  const peerId = currentSession.value?.detailId
+  if (peerId) {
+    router.push(`/mobile/mobileFriends/friendInfo/${peerId}`)
   }
 }
 
