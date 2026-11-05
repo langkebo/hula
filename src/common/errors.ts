@@ -55,10 +55,29 @@ export type AppErrorFatal = {
 
 export type AppError = AppErrorAuth | AppErrorValidation | AppErrorNotFound | AppErrorRetryable | AppErrorFatal
 
-const AUTH_ERRCODES = new Set(['M_UNKNOWN_TOKEN', 'M_MISSING_TOKEN', 'M_FORBIDDEN', 'M_GUEST_ACCESS_FORBIDDEN'])
+/**
+ * 鉴权类 errcode。
+ *
+ * `M_UNAUTHORIZED` 是 synapse-rust 的**非规范**扩展码（`ApiError::unauthorized`，
+ * 实测 `POST /upload/token` 无 token 时返回 `{"errcode":"M_UNAUTHORIZED"}`）。
+ * Matrix 规范只有 `M_UNKNOWN_TOKEN` / `M_MISSING_TOKEN`，但后端确实在用它，
+ * 若不收录会被归为 fatal（用户看到「未知错误」而非「请重新登录」）。
+ */
+const AUTH_ERRCODES = new Set([
+  'M_UNKNOWN_TOKEN',
+  'M_MISSING_TOKEN',
+  'M_UNAUTHORIZED',
+  'M_FORBIDDEN',
+  'M_GUEST_ACCESS_FORBIDDEN'
+])
 const VALIDATION_ERRCODES = new Set([
   'M_BAD_JSON',
   'M_NOT_JSON',
+  // synapse-rust 的所有参数校验（`ApiError::invalid_param` / `validation`）都用这个码，
+  // 例如 `GET /friends?limit=0` → 400 M_INVALID_PARAM。此前未收录 ⇒ 参数错误被归为 fatal。
+  'M_INVALID_PARAM',
+  'M_INVALID_EMAIL',
+  'M_MISSING_PARAM',
   'M_INVALID_USERNAME',
   'M_WEAK_PASSWORD',
   'M_USER_IN_USE',
@@ -76,10 +95,15 @@ const I18N_KEY_MAP: Record<string, string> = {
   M_FORBIDDEN: 'error.matrix.forbidden',
   M_UNKNOWN_TOKEN: 'error.matrix.unknown_token',
   M_MISSING_TOKEN: 'error.matrix.missing_token',
+  // 非规范码，语义等同「凭证无效/缺失」⇒ 复用 unknown_token 的「会话已过期，请重新登录」
+  M_UNAUTHORIZED: 'error.matrix.unknown_token',
   M_LIMIT_EXCEEDED: 'error.matrix.rate_limited',
   M_NOT_FOUND: 'error.matrix.not_found',
   M_BAD_JSON: 'error.matrix.bad_request',
   M_NOT_JSON: 'error.matrix.bad_request',
+  M_INVALID_PARAM: 'error.matrix.bad_request',
+  M_MISSING_PARAM: 'error.matrix.bad_request',
+  M_INVALID_EMAIL: 'error.matrix.bad_request',
   M_USER_IN_USE: 'error.matrix.user_in_use',
   M_INVALID_USERNAME: 'error.matrix.invalid_username',
   M_WEAK_PASSWORD: 'error.matrix.weak_password',

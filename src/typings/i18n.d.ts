@@ -2938,7 +2938,8 @@ export type I18nKeys = {
       "friend_list_label": "好友列表",
       "new_request_announcement": "收到 {count} 条新的好友请求",
       "pending_requests": "{count} 条待处理好友请求",
-      "view_all": "查看全部"
+      "view_all": "查看全部",
+      "show_more": "显示更多（还有 {count} 位）"
     },
     "one_time_invite": {
       "title": "一次性邀请链接",
@@ -9923,6 +9924,7 @@ export type I18nKeyPaths =
   | "friend.list.new_request_announcement"
   | "friend.list.pending_requests"
   | "friend.list.view_all"
+  | "friend.list.show_more"
   | "friend.one_time_invite.title"
   | "friend.one_time_invite.boundary"
   | "friend.one_time_invite.generate"

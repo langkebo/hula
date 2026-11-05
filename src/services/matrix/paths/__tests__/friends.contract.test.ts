@@ -86,11 +86,18 @@ describe('§9.1 路径常量单一事实源 — friends 模块', () => {
     expectPathMatchesSdk(FRIENDS.CHECK('@alice:server'))
   })
 
-  it('FRIENDS.DM(userId) 匹配 SDK route-table', () => {
-    // FRIENDS.DM 在当前 SDK route-table 中可能不存在，记录但不强制失败
-    const matched = v1Matchers.some((m) => m.test(FRIENDS.DM('@alice:server')))
-    if (!matched) {
-    }
+  it('FRIENDS.DM(userId) 锁住命名空间且不重复编码', () => {
+    // 历史上这里是**空 `if` 体**（`if (!matched) {}`）⇒ 断言永远通过，等于没测。
+    //
+    // 本文件的构造器是「模板」：**编码在调用点完成**（`encodeURIComponent(userId)`
+    // 由 SynapseFriendExtensionService / SynapseDmExtensionService 传入）。
+    // 所以这里锁两件事：
+    // 1) 仍在 `/_matrix/vendor/v1/friends/dm/` 命名空间下（迁移/别名回退会红）；
+    // 2) 构造器自己不再编码一次——否则会得到 `%2540…`，后端 404。
+    const encoded = encodeURIComponent('@alice:server')
+    const dmPath = FRIENDS.DM(encoded)
+    expect(dmPath).toBe(`${PREFIX_VENDOR_V1}/friends/dm/${encoded}`)
+    expect(dmPath).not.toContain('%25')
   })
 
   it('FRIENDS.STATUS 已删除（生产零引用，好友状态走 FriendManager）', () => {

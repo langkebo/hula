@@ -1,11 +1,17 @@
 import { Channel } from '@tauri-apps/api/core'
-import { stat, writeFile } from '@tauri-apps/plugin-fs'
+import { stat } from '@tauri-apps/plugin-fs'
 import { createEventHook } from '@vueuse/core'
 import { probeAudioDuration, probeImageDimensions } from '@/composables/common/mediaFileProbe'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useTempObjectUrls } from '@/composables/common/useTempObjectUrls'
 import { TauriCommand, type UploadSceneEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
+import {
+  isAbsoluteFsPath,
+  uploadFileViaMatrix,
+  uploadPathViaMatrix,
+  uploadPresignedPut
+} from '@/services/media/uploadTransports'
 import { uploadService } from '@/services/performance/UploadService'
 import { renderWorker } from '@/services/renderWorker'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -13,7 +19,6 @@ import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 import { getCacheBaseDir, getCacheBaseDirName } from '@/utils/PathUtil'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
-import { removeTempFile } from '@/utils/TempFileManager'
 
 const logger = createLogger('Upload')
 
@@ -53,9 +58,8 @@ export interface UploadOptions {
 const Max = 500 // 单位M
 const MAX_FILE_SIZE = Max * 1024 * 1024 // 最大上传限制
 
-const isAbsolutePath = (path: string): boolean => {
-  return /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(path)
-}
+/** 路径判定与原生上传通道共用同一口径（见 services/media/matrixNativeUpload.ts） */
+const isAbsolutePath = isAbsoluteFsPath
 
 /**
  * 文件上传Hook
@@ -75,37 +79,17 @@ export const useUpload = () => {
   // 图片/音频预览临时 URL：替换与 scope 销毁时统一释放
   const tempUrls = useTempObjectUrls()
 
-  const uploadFileWithTauriPut = async (targetUrl: string, file: File, contentType: string) => {
-    const baseDir = getCacheBaseDir()
-    const baseDirName = getCacheBaseDirName()
-    const safeFileName = file.name.replace(/[\\/]/g, '_')
-    const tempPath = `temp-upload-${Date.now()}-${safeFileName}`
-
-    try {
-      await writeFile(tempPath, file.stream(), { baseDir })
-
-      const onProgress = new Channel<{ progressTotal: number; total: number }>()
-      let lastProgress = -1
-      onProgress.onmessage = ({ progressTotal, total }) => {
-        const pct = total > 0 ? Math.floor((progressTotal / total) * 100) : 0
-        if (pct !== lastProgress) {
-          lastProgress = pct
-          progress.value = pct
-          trigger('progress')
-        }
-      }
-
-      await invokeWithErrorHandler(TauriCommand.UPLOAD_FILE_PUT, {
-        url: targetUrl,
-        path: tempPath,
-        baseDir: baseDirName,
-        headers: { 'Content-Type': contentType },
-        onProgress
-      })
-    } finally {
-      await removeTempFile(tempPath, { baseDir, silent: true })
-    }
-  }
+  /**
+   * Matrix 原生上传（见 `services/media/uploadTransports.ts`）。
+   *
+   * 后端 `upload/token` 返回 `storage_type=matrix` 且 `upload_url` 是 POST 端点，
+   * 没有可 PUT 的预签名地址 ⇒ 必须走原生通道，否则附件永远发不出去。
+   */
+  const uploadViaMatrixNative = (file: File): Promise<string> =>
+    uploadFileViaMatrix(file, (pct) => {
+      progress.value = pct
+      trigger('progress')
+    })
 
   /**
    * 计算文件的MD5哈希值
@@ -188,10 +172,11 @@ export const useUpload = () => {
       ...(scene === undefined ? {} : { scene })
     })
     if (!credential) {
-      // upload/token 端点不可用，返回 null 让调用方降级到标准 Matrix 上传
+      // 端点不可用 / 未登录：由调用方降级到 Matrix 原生上传，不再直接报错
       return null
     }
-    if (!credential?.uploadUrl || !credential?.downloadUrl) {
+    // 只有 OSS 通道才要求预签名地址；matrix 通道的 uploadUrl 恒为空串
+    if (credential.provider === 'oss' && !credential.uploadUrl) {
       throw new Error(t('hooks.upload.credential_failed'))
     }
     return credential
@@ -256,12 +241,20 @@ export const useUpload = () => {
 
     try {
       const credential = await getUploadCredential(file.name, options?.scene)
-      if (!credential) {
-        // upload/token 不可用，降级到标准 Matrix 上传
+      // matrix 通道（含端点不可用）：直接走 Matrix 原生上传，不再要求预签名地址
+      if (!credential || credential.provider === 'matrix') {
+        fileInfo.value = { ...info }
+        await onStart.trigger(fileInfo)
+        isUploading.value = true
+        progress.value = 0
+        const downloadUrl = await uploadViaMatrixNative(file)
         isUploading.value = false
-        showFeedback(t('hooks.upload.credential_failed'), 'error')
-        return
+        progress.value = 100
+        fileInfo.value = { ...fileInfo.value!, downloadUrl }
+        trigger('success')
+        return { downloadUrl }
       }
+
       fileInfo.value = { ...info }
       await onStart.trigger(fileInfo)
 
@@ -269,7 +262,10 @@ export const useUpload = () => {
       isUploading.value = true
       progress.value = 0
 
-      await uploadFileWithTauriPut(credential.uploadUrl, file, contentType)
+      await uploadPresignedPut(credential.uploadUrl, file, contentType, (pct) => {
+        progress.value = pct
+        trigger('progress')
+      })
 
       isUploading.value = false
       progress.value = 100
@@ -286,17 +282,26 @@ export const useUpload = () => {
   /**
    * 获取上传和下载URL
    * 获取当前后端支持的上传凭证与下载地址
+   *
+   * `provider === 'matrix'`（或端点不可用）时返回 `uploadUrl: ''` 的占位对象：
+   * 策略层会把空 `uploadUrl` 透传给 `doUpload`，由它改走 Matrix 原生上传。
+   * 这里**不再返回 null**——那会让所有策略抛「上传服务不可用」，即使原生通道可用。
+   *
    * @param path 文件路径
    * @param options 上传选项
    */
   const getUploadAndDownloadUrl = async (
     _path: string,
     options?: UploadOptions
-  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> } | null> => {
+  ): Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }> => {
     const provider = await resolveProvider(options?.provider)
     const credential = await getUploadCredential(extractFileName(_path), options?.scene)
-    if (!credential) {
-      return null
+    if (!credential || credential.provider === 'matrix') {
+      return {
+        uploadUrl: '',
+        downloadUrl: '',
+        config: { provider, transport: 'matrix-native' }
+      }
     }
     return {
       uploadUrl: credential.uploadUrl,
@@ -325,12 +330,7 @@ export const useUpload = () => {
     const absolutePath = isAbsolutePath(path)
     logger.debug('执行文件上传:', path)
     try {
-      if (!uploadUrl) {
-        throw new Error(t('hooks.upload.url_failed'))
-      }
-
       const baseDir = getCacheBaseDir()
-      const baseDirName = getCacheBaseDirName()
       const fileStat = absolutePath ? await stat(path) : await stat(path, { baseDir })
 
       if (fileStat.size > MAX_FILE_SIZE) {
@@ -339,6 +339,16 @@ export const useUpload = () => {
 
       isUploading.value = true
       progress.value = 0
+
+      // 无预签名地址 ⇒ Matrix 原生上传（旧实现直接抛错，附件全发不出去）
+      if (!uploadUrl) {
+        const downloadUrl = await uploadPathViaMatrix(path)
+        isUploading.value = false
+        progress.value = 100
+        logger.debug('文件经 Matrix 原生通道上传成功')
+        trigger('success')
+        return downloadUrl
+      }
 
       const onProgress = new Channel<{ progressTotal: number; total: number }>()
       let lastProgress = -1
@@ -355,7 +365,7 @@ export const useUpload = () => {
       await invokeWithErrorHandler(TauriCommand.UPLOAD_FILE_PUT, {
         url: uploadUrl,
         path,
-        ...(absolutePath ? {} : { baseDir: baseDirName }),
+        ...(absolutePath ? {} : { baseDir: getCacheBaseDirName() }),
         headers: { 'Content-Type': 'application/octet-stream' },
         onProgress
       })

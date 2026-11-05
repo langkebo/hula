@@ -15,8 +15,15 @@ overrides:
   conventional-changelog-conventionalcommits: 8.0.0
   uuid@<14.0.0: '>=14.0.0'
   nanoid@<3.3.17: ^3.3.17
-  brace-expansion@>=4.0.0 <5.0.9: ^5.0.9
-  js-yaml@>=4.0.0 <4.3.1: ^4.3.1
+  brace-expansion@>=4.0.0 <5.0.11: ^5.0.11
+  brace-expansion@<1.1.20: ^1.1.20
+  js-yaml@>=4.0.0 <4.3.2: ^4.3.2
+  # 2026-11-04 依赖审计收敛：以下 high 告警均为可修复的传递依赖，
+  # 统一抬到 advisory 给出的 patched 版本（不升级直接依赖）。
+  source-map-js@<1.2.2: ^1.2.2
+  fast-uri@<3.1.7: ^3.1.7
+  smol-toml@<1.7.1: ^1.7.1
+  browserslist@<4.28.7: ^4.28.7
   # @conventional-changelog/git-client@3.2.0（release-it 变更日志插件传递依赖）要求
   # peer ^7.1.3，而锁文件仍停留在 commitlint 允许的 7.1.2；统一提升到 7.1.3
   # （同时满足 @commitlint/parse 的 ^7.0.0），消除 peer 不满足告警。

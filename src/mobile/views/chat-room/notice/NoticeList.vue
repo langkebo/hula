@@ -127,11 +127,21 @@ const goToAddNotice = () => {
 }
 
 onMounted(() => {
-  if (route.query.announList) {
-    announList.value = sortAnnouncements(JSON.parse(route.query.announList as string) as GroupAnnouncementListItem[])
-  } else {
-    loadAnnouncementList()
+  // 深链参数可能被手工构造或截断，解析失败时回退到接口加载，避免白屏。
+  const rawAnnouncements = route.query.announList
+  if (typeof rawAnnouncements === 'string' && rawAnnouncements) {
+    try {
+      const parsed = JSON.parse(rawAnnouncements) as unknown
+      if (Array.isArray(parsed)) {
+        announList.value = sortAnnouncements(parsed as GroupAnnouncementListItem[])
+        return
+      }
+      logger.warn('Ignored malformed announList route query')
+    } catch (error) {
+      logger.warn('Failed to parse announList route query:', error)
+    }
   }
+  loadAnnouncementList()
 })
 
 onActivated(() => {

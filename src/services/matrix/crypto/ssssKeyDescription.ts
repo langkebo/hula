@@ -90,3 +90,37 @@ export async function buildSsssKeyDescription(
   }
   return description
 }
+
+/* ── 密钥备份导入校验（同属密钥备份域工具，与 SSSS 描述共用此文件以免服务层文件数增长） ── */
+
+/** 从备份对象中取出 room keys 数组。
+ *
+ * @param keys 备份对象（数组或含 room_keys 的对象）
+ * @returns room keys 数组
+ * @throws 当 room_keys 不是数组时抛出可读错误
+ */
+export function extractRoomKeys(keys: unknown): Array<Record<string, unknown>> {
+  const roomKeys =
+    typeof keys === 'object' && keys !== null && 'room_keys' in keys ? (keys as { room_keys: unknown }).room_keys : keys
+  if (!Array.isArray(roomKeys)) {
+    throw new Error('[KeyBackup] 导入数据格式无效：room_keys 必须为数组')
+  }
+  return roomKeys as Array<Record<string, unknown>>
+}
+
+/** 解析 JSON 备份文件并取出 room keys 数组。
+ *
+ * @param data 备份文件原始文本
+ * @returns room keys 数组
+ * @throws 当文本不是合法 JSON 或 room_keys 不是数组时抛出可读错误
+ */
+export function parseRoomKeysExport(data: string): Array<Record<string, unknown>> {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(data)
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new Error(`[KeyBackup] 备份文件不是合法 JSON: ${reason}`)
+  }
+  return extractRoomKeys(parsed)
+}

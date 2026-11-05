@@ -11,6 +11,11 @@ vi.mock('@/services/backend', () => ({
   })
 }))
 
+// upload/token 现在要求鉴权头；无 token 会直接短路返回 null，测不到真实请求路径
+vi.mock('@/services/matrix/matrixClientAccessor', () => ({
+  getMatrixAccessToken: () => 'test-token'
+}))
+
 const { uploadService } = await import('@/services/performance/UploadService')
 
 const server = setupServer()
@@ -29,7 +34,12 @@ describe('UploadService', () => {
       const result = await uploadService.getOssToken({
         filename: 'test.png'
       })
-      expect(result).toEqual({ uploadUrl: 'https://oss.example/up' })
+      expect(result).toEqual({
+        provider: 'oss',
+        uploadUrl: 'https://oss.example/up',
+        downloadUrl: '',
+        storageType: 'oss'
+      })
     })
 
     it('returns null on 404 (graceful degradation)', async () => {

@@ -1,10 +1,15 @@
 import { createLogger } from '@/utils/Logger'
 import endpointCapabilityService from '../EndpointCapabilityService'
+import { normalizeFriendInfoList } from '../friends/friendUtils'
 import { matrixCapabilityService } from '../MatrixCapabilityService'
 import { MATRIX_PATHS } from '../paths'
 import { SynapseExtensionHttpBase } from './SynapseExtensionHttpBase'
 
 const logger = createLogger('SynapseFriendExtensionService')
+
+/** 后端 `limit` 只接受 1..=200；页数上限防异常游标导致的无界循环。 */
+const FRIEND_LIST_PAGE_SIZE = 200
+const MAX_FRIEND_LIST_PAGES = 10
 
 export interface SynapseFriendInfo {
   user_id: string
@@ -23,27 +28,26 @@ export interface SynapseFriendInfo {
   is_private?: boolean
 }
 
-function normalizeFriendInfo(friend: SynapseFriendInfo): SynapseFriendInfo {
-  const displayName = friend.display_name || friend.displayname || friend.username || friend.user_id
-  return {
-    ...friend,
-    display_name: displayName,
-    displayname: displayName,
-    username: friend.username || displayName
-  }
-}
-
-function normalizeFriendInfoList(friends: SynapseFriendInfo[]): SynapseFriendInfo[] {
-  return friends.map(normalizeFriendInfo)
-}
-
+/**
+ * 好友请求条目。真实形状以 REST 回退端点为准（实测）：
+ * `{user_id, message, timestamp, status}` —— 后端按「对端视角」建模，只给对端 `user_id`。
+ * 其余字段为兼容 FriendManager / 旧后端的可选历史字段。
+ */
 export interface SynapseFriendRequest {
-  request_id: number
-  requester: string
-  recipient: string
+  /** 对端用户 ID（incoming = 发起人；outgoing = 接收人） */
+  user_id?: string
   message?: string
-  status: 'pending' | 'accepted' | 'declined'
-  created_ts: number
+  /** 毫秒时间戳（REST 字段名） */
+  timestamp?: number
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'declined'
+  /** @deprecated 旧形状：请求序号（REST 不再返回） */
+  request_id?: number | string
+  /** @deprecated 旧形状：发起人（改用 `user_id`） */
+  requester?: string
+  /** @deprecated 旧形状：接收人（改用 `user_id`） */
+  recipient?: string
+  /** @deprecated 旧形状：改用 `timestamp` */
+  created_ts?: number
 }
 
 export interface SynapsePendingRequests {
@@ -69,10 +73,7 @@ export interface SynapseCheckFriendshipResult {
   are_friends: boolean
 }
 
-/**
- * synapse-rust 好友关系扩展（/_matrix/vendor/v1/friends/*）。
- * 从 SynapseRustExtensionsService 拆分而来，仅承载好友域方法。
- */
+/** synapse-rust 好友关系扩展（`/_matrix/vendor/v1/friends/*`），仅承载好友域方法。 */
 class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
   private hasLoggedFriendsBeforeClientReady = false
 
@@ -82,16 +83,16 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
   }
 
   private async isFriendEndpointAvailable(): Promise<boolean> {
-    // 优先使用声明式能力检测（通过 /_matrix/client/versions 的 io.hula.friends 特性标志）
-    // 这比 HEAD 请求探测更可靠，尤其在 Tauri 环境中 WKWebView 可能限制直接 fetch
+    // 优先声明式能力检测（versions 的 io.hula.friends），比 HEAD 探测可靠
     if (matrixCapabilityService.canUseFriendList()) {
       return true
     }
-    // 声明式检测不可用时，回退到 HEAD 请求探测
     return await endpointCapabilityService.check('GET', MATRIX_PATHS.FRIENDS.LIST)
   }
 
-  /** 获取好友列表
+  /** 获取好友列表（自动翻页，跟随 `next_batch`）。
+   *
+   * 后端是游标分页：`limit` 默认 50、上限 200；旧实现不传不读 ⇒ 超过 50 静默截断。
    */
   async getFriends(): Promise<SynapseFriendInfo[]> {
     try {
@@ -100,32 +101,37 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
         return []
       }
 
-      const response = await this.request<{
-        friends?: SynapseFriendInfo[]
-        items?: SynapseFriendInfo[]
-        data?: SynapseFriendInfo[]
-      }>(MATRIX_PATHS.FRIENDS.LIST, {
-        method: 'GET'
-      })
-      if (response && typeof response === 'object') {
-        // FT-092: 后端 GET /friends 已移除冗余 items 字段，优先使用 friends 字段
-        const arrayField = response.friends ?? response.items ?? response.data
-        if (Array.isArray(arrayField)) {
-          // 按 user_id 去重，防止后端返回重复数据
-          const seen = new Set<string>()
-          const deduped = arrayField.filter((f: SynapseFriendInfo) => {
-            if (!f.user_id || seen.has(f.user_id)) return false
-            seen.add(f.user_id)
-            return true
-          })
-          return normalizeFriendInfoList(deduped)
+      const seen = new Set<string>()
+      const collected: SynapseFriendInfo[] = []
+      let from: string | undefined
+
+      for (let page = 0; page < MAX_FRIEND_LIST_PAGES; page++) {
+        const query = new URLSearchParams({ limit: String(FRIEND_LIST_PAGE_SIZE) })
+        if (from) query.set('from', from)
+        const response = await this.request<{
+          friends?: SynapseFriendInfo[]
+          items?: SynapseFriendInfo[]
+          data?: SynapseFriendInfo[]
+          next_batch?: string | null
+        }>(`${MATRIX_PATHS.FRIENDS.LIST}?${query.toString()}`, { method: 'GET' })
+
+        // FT-092: 后端已移除冗余 items 字段，优先 friends
+        const arrayField = Array.isArray(response) ? response : (response?.friends ?? response?.items ?? response?.data)
+        const list: SynapseFriendInfo[] = Array.isArray(arrayField) ? arrayField : []
+
+        for (const friend of list) {
+          if (!friend?.user_id || seen.has(friend.user_id)) continue
+          seen.add(friend.user_id)
+          collected.push(friend)
         }
-        if (Array.isArray(response)) {
-          return response
-        }
+
+        const nextBatch = Array.isArray(response) ? null : (response?.next_batch ?? null)
+        if (!nextBatch || list.length === 0 || nextBatch === from) break
+        from = nextBatch
       }
-      this.hasLoggedFriendsBeforeClientReady = false
-      return normalizeFriendInfoList((Array.isArray(response) ? response : []) as SynapseFriendInfo[])
+
+      this.hasLoggedFriendsBeforeClientReady = collected.length === 0
+      return collected.length > 0 ? normalizeFriendInfoList(collected) : []
     } catch (err) {
       if (
         err instanceof Error &&
@@ -142,42 +148,49 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     }
   }
 
+  /** 发送好友请求。
+   *
+   * `request_id` 是**字符串**（后端 `resolve_request_id()` 返回 `X-Request-Id` 或
+   * `req-<uuid>`，实测 `"82"`），不是数值主键。旧声明 `number` 与运行时不符。
+   */
   async sendFriendRequest(
     userId: string,
     message?: string,
     options: { idempotencyKey?: string } = {}
   ): Promise<{
-    request_id: number
+    request_id: string
     status: string
   }> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) return { request_id: 0, status: 'unavailable' }
-      // 幂等键让「SDK 通道失败 → REST 降级重发」可被服务端识别为同一逻辑操作（审计 §7 批次 B-4）
+      if (!(await this.isFriendEndpointAvailable())) return { request_id: '', status: 'unavailable' }
+      // 后端读的是 `X-Request-Id`（`resolve_request_id`）⇒ 两个头都带，兼容两种实现
       const headers: Record<string, string> = {}
       if (options.idempotencyKey) {
         headers['Idempotency-Key'] = options.idempotencyKey
+        headers['X-Request-Id'] = options.idempotencyKey
       }
       const response = await this.request<{
-        request_id?: number
+        request_id?: string | number
         status?: string
-        data?: { request_id: number; status: string }
+        data?: { request_id: string | number; status: string }
       }>(MATRIX_PATHS.FRIENDS.REQUEST, {
         method: 'POST',
         body: JSON.stringify({ user_id: userId, message }),
         headers
       })
 
-      let data: { request_id: number; status: string } | undefined
+      let data: { request_id: string; status: string } | undefined
       if (response && typeof response === 'object') {
-        if ('data' in response && response.data) {
-          data = response.data
-        } else if ('request_id' in response) {
-          data = { request_id: response.request_id!, status: response.status || 'pending' }
+        const payload = 'data' in response && response.data ? response.data : null
+        const rawId = payload ? payload.request_id : response.request_id
+        const rawStatus = payload ? payload.status : response.status
+        if (rawId !== undefined && rawId !== null) {
+          // 统一成字符串：后端可能是 `"82"`，FriendManager 可能是 `82`
+          data = { request_id: String(rawId), status: rawStatus || 'pending' }
         }
       }
 
-      logger.info(`[SynapseRust] 发送好友请求成功: ${userId}`)
-      return data || { request_id: 0, status: 'error' }
+      return data || { request_id: '', status: 'error' }
     } catch (err) {
       logger.error(`[SynapseRust] 发送好友请求失败: ${err}`)
       throw err

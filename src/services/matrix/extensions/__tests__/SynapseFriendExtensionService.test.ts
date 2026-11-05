@@ -141,10 +141,34 @@ describe('SynapseFriendExtensionService', () => {
       expect(result).toEqual([])
     })
 
-    it('returns the raw array when response is a plain array', async () => {
+    it('accepts a plain array response and still normalizes display name', async () => {
       fetchMock.mockResolvedValue(makeResponse({ ok: true, status: 200, textResp: JSON.stringify([alice]) }))
       const result = await synapseFriendExtensionService.getFriends()
-      expect(result).toEqual([alice])
+      // 旧实现对数组分支直接 return，跳过了 display_name 归一（与对象分支不一致）
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ user_id: '@alice:hs', display_name: 'alice' })
+    })
+
+    it('requests the max page size and follows next_batch', async () => {
+      // 后端默认 limit=50，不传会静默截断；这里锁住「带 limit 且跟随游标」
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({
+          ok: true,
+          status: 200,
+          textResp: JSON.stringify({ friends: [alice], next_batch: 'c1' })
+        })
+      )
+      const bob = { user_id: '@bob:hs', since: 1 }
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ friends: [bob], next_batch: null }) })
+      )
+      const result = await synapseFriendExtensionService.getFriends()
+
+      expect(result.map((f) => f.user_id)).toEqual(['@alice:hs', '@bob:hs'])
+      const firstUrl = String(fetchMock.mock.calls[0][0])
+      expect(firstUrl).toContain('limit=200')
+      const secondUrl = String(fetchMock.mock.calls[1][0])
+      expect(secondUrl).toContain('from=c1')
     })
 
     it('returns [] when the request fails', async () => {
@@ -170,7 +194,7 @@ describe('SynapseFriendExtensionService', () => {
     it('returns unavailable result when endpoint is unavailable', async () => {
       makeUnavailable()
       const result = await synapseFriendExtensionService.sendFriendRequest('@bob:hs')
-      expect(result).toEqual({ request_id: 0, status: 'unavailable' })
+      expect(result).toEqual({ request_id: '', status: 'unavailable' })
     })
 
     it('returns data from wrapped { data } response', async () => {
@@ -178,23 +202,27 @@ describe('SynapseFriendExtensionService', () => {
         makeResponse({
           ok: true,
           status: 200,
-          textResp: JSON.stringify({ data: { request_id: 7, status: 'pending' } })
+          textResp: JSON.stringify({ data: { request_id: '7', status: 'pending' } })
         })
       )
       const result = await synapseFriendExtensionService.sendFriendRequest('@bob:hs', 'hi')
-      expect(result).toEqual({ request_id: 7, status: 'pending' })
+      // 后端 request_id 是字符串（实测 "82"），统一按字符串返回
+      expect(result).toEqual({ request_id: '7', status: 'pending' })
     })
 
     it('returns direct fields when no data wrapper', async () => {
-      fetchMock.mockResolvedValue(makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ request_id: 9 }) }))
+      // 真实响应示例：{"request_id":"82","status":"pending"}
+      fetchMock.mockResolvedValue(
+        makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ request_id: '82', status: 'pending' }) })
+      )
       const result = await synapseFriendExtensionService.sendFriendRequest('@bob:hs')
-      expect(result).toEqual({ request_id: 9, status: 'pending' })
+      expect(result).toEqual({ request_id: '82', status: 'pending' })
     })
 
     it('returns error result when no usable data', async () => {
       fetchMock.mockResolvedValue(makeResponse({ ok: true, status: 200, textResp: '{}' }))
       const result = await synapseFriendExtensionService.sendFriendRequest('@bob:hs')
-      expect(result).toEqual({ request_id: 0, status: 'error' })
+      expect(result).toEqual({ request_id: '', status: 'error' })
     })
 
     it('rethrows when the request fails', async () => {

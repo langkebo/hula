@@ -81,7 +81,7 @@ describe('sendFriendRequest', () => {
 
   it('FriendManager 为空时回退到 REST API，并携带确定性幂等键', async () => {
     mockSync.ensureFriendManager.mockResolvedValue(null)
-    vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockResolvedValue({ request_id: 1, status: 'pending' })
+    vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockResolvedValue({ request_id: '1', status: 'pending' })
 
     await operations.sendFriendRequest('@alice:example.org')
 
@@ -116,7 +116,7 @@ describe('sendFriendRequest', () => {
   it('SDK 抛连接类错误时降级到 REST API，且降级调用携带幂等键', async () => {
     mockSync.ensureFriendManager.mockResolvedValue(mockManager)
     mockManager.sendFriendRequest.mockRejectedValue(new TypeError('fetch failed'))
-    vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockResolvedValue({ request_id: 1, status: 'pending' })
+    vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockResolvedValue({ request_id: '1', status: 'pending' })
 
     await operations.sendFriendRequest('@alice:example.org')
 
@@ -129,7 +129,7 @@ describe('sendFriendRequest', () => {
   it('重复提交共享同一幂等键，使服务端可识别为同一逻辑操作', async () => {
     mockSync.ensureFriendManager.mockResolvedValue(mockManager)
     mockManager.sendFriendRequest.mockRejectedValue(new TypeError('fetch failed'))
-    vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockResolvedValue({ request_id: 1, status: 'pending' })
+    vi.mocked(synapseFriendExtensionService.sendFriendRequest).mockResolvedValue({ request_id: '1', status: 'pending' })
 
     await operations.sendFriendRequest('@alice:example.org')
     await operations.sendFriendRequest('@alice:example.org')

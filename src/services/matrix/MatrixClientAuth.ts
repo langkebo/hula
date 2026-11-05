@@ -28,7 +28,7 @@ import type { MatrixClientConfig, MatrixConnectionManager } from './MatrixConnec
 import type { MatrixCryptoStateTracker } from './MatrixCryptoStateTracker'
 import type { MatrixEventRouter } from './MatrixEventRouter'
 import type { MatrixSyncManager } from './MatrixSyncManager'
-import type { MatrixTokenManager } from './MatrixTokenManager'
+import { type MatrixTokenManager, resolveTokenExpiryMs } from './MatrixTokenManager'
 
 const logger = createLogger('MatrixClient')
 
@@ -132,9 +132,12 @@ export class MatrixClientAuth {
       }
 
       connectionManager.updateConnectionState('CONNECTED')
-      const expiresInMs = loginResponse.expires_in_ms ?? 0
+      // 规范字段是 `expires_in`（秒），不能只读 `expires_in_ms`（见 resolveTokenExpiryMs）。
+      const expiresInMs = resolveTokenExpiryMs(loginResponse)
       if (loginResponse.refresh_token && expiresInMs > 0) {
         tokenManager.schedule(connectionManager.getClient()!, loginResponse.refresh_token, expiresInMs)
+      } else if (loginResponse.refresh_token) {
+        logger.warn('[Auth] 响应未提供有效期，本次会话不排期自动续期')
       }
 
       return {
@@ -186,7 +189,7 @@ export class MatrixClientAuth {
       }
 
       connectionManager.updateConnectionState('CONNECTED')
-      const expiresInMs = (response.expires_in ?? 0) * 1000
+      const expiresInMs = resolveTokenExpiryMs(response)
       if (response.refresh_token && expiresInMs > 0) {
         tokenManager.schedule(connectionManager.getClient()!, response.refresh_token, expiresInMs)
       }
@@ -290,7 +293,7 @@ export class MatrixClientAuth {
       }
 
       connectionManager.updateConnectionState('CONNECTED')
-      const expiresInMs = loginResponse.expires_in_ms ?? 0
+      const expiresInMs = resolveTokenExpiryMs(loginResponse)
       if (loginResponse.refresh_token && expiresInMs > 0) {
         tokenManager.schedule(connectionManager.getClient()!, loginResponse.refresh_token, expiresInMs)
       }
@@ -380,12 +383,8 @@ export class MatrixClientAuth {
 
               const newAccessToken = refreshResult.access_token
               const newRefreshToken = refreshResult.refresh_token
-              let newExpiresInMs = refreshResult.expires_in_ms
-              // 防御性处理：部分后端实现返回 expires_in (秒) 而非 expires_in_ms (毫秒)
-              const expiresInSec = (refreshResult as typeof refreshResult & { expires_in?: number }).expires_in
-              if (!newExpiresInMs && expiresInSec) {
-                newExpiresInMs = expiresInSec * 1000
-              }
+              // 与登录路径共用同一口径，避免再次出现「只读 expires_in_ms」的分叉。
+              const newExpiresInMs = resolveTokenExpiryMs(refreshResult)
 
               if (newAccessToken && newExpiresInMs && newExpiresInMs > 0) {
                 client.setAccessToken(newAccessToken)

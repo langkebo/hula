@@ -84,6 +84,34 @@ describe('normalizeSynapseFriendRequest', () => {
     expect(result.message).toBe('Hi!')
     expect(result.timestamp).toBe(1700000000)
   })
+
+  describe('REST 回退的真实形状（实测后端契约）', () => {
+    // GET /_matrix/vendor/v1/friends/requests/{incoming,outgoing} 实际返回：
+    // {user_id, message, timestamp, status} —— 没有 requester/recipient/created_ts。
+    const restShape: SynapseFriendRequest = {
+      user_id: '@carol:hs',
+      message: 'hello',
+      timestamp: 1793832482378,
+      status: 'pending'
+    }
+
+    it('incoming 取 user_id 作为对端，并映射 timestamp', () => {
+      const result = normalizeSynapseFriendRequest(restShape, 'incoming')
+      expect(result.user_id).toBe('@carol:hs')
+      expect(result.timestamp).toBe(1793832482378)
+      expect(result.direction).toBe('incoming')
+    })
+
+    it('outgoing 同样取 user_id（后端已给对端视角）', () => {
+      const result = normalizeSynapseFriendRequest(restShape, 'outgoing')
+      expect(result.user_id).toBe('@carol:hs')
+    })
+
+    it('两个时间字段都缺失时回落 0，而不是伪造当前时间', () => {
+      const result = normalizeSynapseFriendRequest({ user_id: '@d:hs', status: 'pending' })
+      expect(result.timestamp).toBe(0)
+    })
+  })
 })
 
 describe('normalizeFriend', () => {

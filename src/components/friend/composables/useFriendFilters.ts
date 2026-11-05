@@ -50,10 +50,26 @@ export function useFriendFilters() {
     })
   })
 
-  const getFilterCount = (status: FriendStatus | 'all') => {
-    if (status === 'all') return contactStore.contactsList.length
-    return contactStore.contactsList.filter((f) => normalizeFriendStatus(f.friendStatus) === status).length
-  }
+  // 单次遍历产出各筛选项计数：模板里每个按钮会读 2 次计数，
+  // 原先每次都全表 filter，5 个筛选项即 10 次全量扫描。
+  const filterCounts = computed<Partial<Record<FriendStatus | 'all', number>>>(() => {
+    const counts: Partial<Record<FriendStatus | 'all', number>> = {
+      all: contactStore.contactsList.length,
+      favorite: 0,
+      normal: 0,
+      blocked: 0,
+      hidden: 0
+    }
+    for (const friend of contactStore.contactsList) {
+      const status = normalizeFriendStatus(friend.friendStatus)
+      if (status === 'favorite' || status === 'normal' || status === 'blocked' || status === 'hidden') {
+        counts[status] = (counts[status] ?? 0) + 1
+      }
+    }
+    return counts
+  })
+
+  const getFilterCount = (status: FriendStatus | 'all') => filterCounts.value[status] ?? 0
 
   const handleFilterChange = (filter: FriendStatus | 'all') => {
     currentFilter.value = filter

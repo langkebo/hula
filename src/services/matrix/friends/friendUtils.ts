@@ -51,19 +51,55 @@ export function getRequestUserId(request: FriendRequest): string {
   return request.user_id ?? ''
 }
 
+/**
+ * 归好好友展示名：后端可能只给 `displayname`（无下划线）或 `username`。
+ *
+ * 从 `SynapseFriendExtensionService` 抽出——纯函数，与本节其它 normalizer 同源。
+ */
+export function normalizeFriendInfo(friend: SynapseFriendInfo): SynapseFriendInfo {
+  const displayName = friend.display_name || friend.displayname || friend.username || friend.user_id
+  return {
+    ...friend,
+    display_name: displayName,
+    displayname: displayName,
+    username: friend.username || displayName
+  }
+}
+
+/** 批量归一好友列表 */
+export function normalizeFriendInfoList(friends: SynapseFriendInfo[]): SynapseFriendInfo[] {
+  return friends.map(normalizeFriendInfo)
+}
+
 /** 规范化 Synapse 好友请求数据
+ *
+ * 需要同时吃两种形状：
+ *
+ * 1. **REST 回退（真实契约）**：`{user_id, message, timestamp, status}`
+ *    —— 实测 `GET /_matrix/vendor/v1/friends/requests/{incoming,outgoing}`
+ *    后端按对端视角建模，不返回 `requester`/`recipient`/`created_ts`。
+ * 2. **旧形状 / FriendManager**：`{requester, recipient, created_ts, request_id}`
+ *
+ * 历史缺陷：只读第 2 种 ⇒ REST 回退路径下 `user_id` 与 `timestamp` 恒为 undefined，
+ * 而 `MatrixFriendSync.pollFriendRequests` 又用 `user_id` 做「新增请求」差集，
+ * 导致好友申请列表与新请求提示同时失效。
  */
 export function normalizeSynapseFriendRequest(
   req: SynapseFriendRequest,
   direction: 'incoming' | 'outgoing' = 'incoming'
 ): FriendRequest {
-  // incoming: 对方发起，user_id 取 requester
-  // outgoing: 本方发起，user_id 取 recipient
+  // incoming: 对方发起，对端 = requester；outgoing: 本方发起，对端 = recipient。
+  // 新形状没有这两个字段，直接取后端给的对端 `user_id`。
+  const counterpart =
+    (direction === 'incoming' ? req.requester : req.recipient) || req.user_id || req.requester || req.recipient || ''
+
   return {
-    user_id: direction === 'incoming' ? req.requester : req.recipient,
+    user_id: counterpart,
     ...(req.message !== undefined ? { message: req.message } : {}),
     status: req.status === 'declined' ? 'rejected' : req.status,
-    timestamp: req.created_ts,
+    // 后端 REST 给 `timestamp`（毫秒），旧形状给 `created_ts`；两者都缺时用 0
+    // （不伪造当前时间：那会让「三天前的请求」显示成「刚刚」）。
+    timestamp: req.created_ts ?? req.timestamp ?? 0,
     direction
   }
 }

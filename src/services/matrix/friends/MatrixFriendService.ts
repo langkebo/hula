@@ -229,7 +229,7 @@ class MatrixFriendService {
       return result
     } catch (err) {
       logger.error(`[MatrixFriend] 获取好友 DM 房间失败: ${err}`)
-      return { room_id: '', exists: false }
+      return { room_id: null, exists: false }
     }
   }
 
@@ -244,8 +244,9 @@ class MatrixFriendService {
    * （`{"action":"block_screenshot","is_private":true}`）并把
    * `history_visibility` 固定为 `invited`，前端据此启用防截屏提示（F-2）。
    *
-   * ⚠️ `synapseDmExtensionService.createPrivateDm` 的默认值是 `isPrivate = true`，
-   * 这里必须**显式传 false** —— 否则普通「发消息」也会被打上私密标记。
+   * ⚠️ `synapseDmExtensionService.createPrivateDm` 的默认值已与后端对齐为 `false`，
+   * 但这里仍**显式传 false** —— 默认值曾与后端相反（前端 true / 后端 false），
+   * 不传参就会静默创建私密会话。显式传值让意图不依赖默认值变化。
    *
    * @returns 房间 ID；失败返回 `null`（由调用方回落到客户端的本地建 DM）。
    */

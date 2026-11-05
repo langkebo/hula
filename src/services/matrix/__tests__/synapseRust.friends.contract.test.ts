@@ -138,7 +138,7 @@ describe('SynapseFriendExtensionService friends URL construction contract (real 
     const calls = filterBy('/friends')
     expect(calls).toHaveLength(1)
     expect(calls[0].method).toBe('GET')
-    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends`)
+    expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/vendor/v1/friends?limit=200`)
     expect(result).toHaveLength(1)
     expect(result[0].user_id).toBe('@alice:hs')
     expect(result[0].display_name).toBe('Alice')
@@ -183,7 +183,7 @@ describe('SynapseFriendExtensionService friends URL construction contract (real 
     const postCall = calls.find((c) => c.method === 'POST' && c.url.endsWith('/friends/request'))
     expect(postCall).toBeDefined()
     expect(JSON.parse(postCall!.body!)).toEqual({ user_id: '@target:hs', message: 'hi' })
-    expect(result.request_id).toBe(42)
+    expect(result.request_id).toBe('42')
     expect(result.status).toBe('pending')
   })
 

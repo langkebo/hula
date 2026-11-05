@@ -160,6 +160,20 @@ describe('MatrixClientAuth.login', () => {
     })
   })
 
+  it('服务端只返回 expires_in（秒）时仍调度续期（回归：曾因只读 expires_in_ms 而永不续期）', async () => {
+    const { auth, deps, client } = makeAuth()
+    deps.connectionManager.getClient.mockReturnValue(client)
+    deps.connectionManager.getConfig.mockReturnValue({ homeserverUrl: 'https://hs', deviceId: 'DEV1' })
+    // 实测 synapse-rust 的 /login 与 /refresh 只返回 expires_in: 86400，没有 expires_in_ms
+    client.loginRequest.mockResolvedValue(
+      makeLoginResponse({ refresh_token: 'rt', expires_in_ms: undefined, expires_in: 86400 })
+    )
+
+    await auth.login('alice', 'pw')
+
+    expect(deps.tokenManager.schedule).toHaveBeenCalledWith(client, 'rt', 86400_000)
+  })
+
   it('SDK 登录失败时回退到 HTTP 登录', async () => {
     const { auth, deps, client } = makeAuth()
     deps.connectionManager.getClient.mockReturnValue(client)

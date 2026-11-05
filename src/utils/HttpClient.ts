@@ -83,10 +83,15 @@ async function fetchWithTimeout(
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
+  const abortFromExternal = () => controller.abort()
   if (externalSignal) {
-    externalSignal.addEventListener('abort', () => controller.abort(), {
-      once: true
-    })
+    if (externalSignal.aborted) {
+      controller.abort()
+    } else {
+      // 必须显式移除：长生命周期的 signal（如页面级 controller）会持续
+      // 累积监听器，Chrome 超过 10 个还会打印泄漏告警。
+      externalSignal.addEventListener('abort', abortFromExternal, { once: true })
+    }
   }
 
   const combinedInit: RequestInit = {
@@ -107,6 +112,7 @@ async function fetchWithTimeout(
     throw err
   } finally {
     clearTimeout(timeoutId)
+    externalSignal?.removeEventListener('abort', abortFromExternal)
   }
 }
 

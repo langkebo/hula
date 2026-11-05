@@ -350,10 +350,10 @@ async fn upload_put(
         },
     );
 
-    // .test 自签名证书：debug 构建放宽 TLS 校验（与 start_homeserver_health_check 一致），
-    // 生产构建仍强制校验证书。
-    let client = reqwest::Client::builder()
-        .danger_accept_invalid_certs(cfg!(debug_assertions))
+    // .test 自签名证书：仅 debug 构建 + 本机回环地址放宽 TLS 校验。
+    // 同时禁用重定向：URL 已通过白名单校验，若允许跟随 3xx，服务端可将请求
+    // 转发到内网地址从而绕过白名单（SSRF）。
+    let client = crate::common::http_client::no_redirect_builder(&url)
         .build()
         .map_err(|e| format!("failed to build upload HTTP client: {e}"))?;
     let mut request = client

@@ -6,6 +6,12 @@ import { getRuntimeAwareFetch } from '../network/runtimeFetch'
 
 const logger = createLogger('SynapseExtensionHttpBase')
 
+/** 扩展端点单请求超时（毫秒）。与 `HttpClient` 的 30s 不同：这些是轻量读写接口，15s 足够。 */
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
+
+/** 能力探测（HEAD）超时：探测失败只影响降级判断，给更短的窗口。 */
+const PROBE_TIMEOUT_MS = 5_000
+
 /**
  * synapse-rust 私有扩展端点的共享 HTTP 基础设施。
  *
@@ -88,10 +94,47 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
       headers['Content-Type'] = 'application/json'
     }
 
-    const response = await runtimeFetch(url, {
-      ...options,
-      headers
-    })
+    // 超时治理（审计 M-2）：此前直接 `runtimeFetch(url, options)`，没有 AbortController，
+    // 后端慢查询/挂住时 Promise 永不 settle ⇒ 界面永久 loading 且无法取消。
+    // 现在统一 15s 超时，并与调用方传入的 signal 合并（外部取消优先）。
+    const externalSignal = options.signal ?? undefined
+    const controller = new AbortController()
+    let timedOut = false
+    const timeoutId = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, DEFAULT_REQUEST_TIMEOUT_MS)
+    const abortFromExternal = () => controller.abort()
+    if (externalSignal) {
+      if (externalSignal.aborted) controller.abort()
+      else externalSignal.addEventListener('abort', abortFromExternal, { once: true })
+    }
+
+    let response: Response
+    try {
+      response = await runtimeFetch(url, {
+        ...options,
+        headers,
+        signal: controller.signal
+      })
+    } catch (err) {
+      if (timedOut) {
+        logger.warn(`[SynapseRust] ${endpoint} 请求超时（${DEFAULT_REQUEST_TIMEOUT_MS}ms）`)
+        throw createMatrixTransportError({
+          status: 0,
+          fallbackErrcode: 'M_UNKNOWN',
+          message: this.t('matrix_error.extensions.api_request_failed_with_status', {
+            status: `timeout(${DEFAULT_REQUEST_TIMEOUT_MS}ms)`
+          }),
+          method: options.method ?? 'GET',
+          url
+        })
+      }
+      throw err
+    } finally {
+      clearTimeout(timeoutId)
+      externalSignal?.removeEventListener('abort', abortFromExternal)
+    }
 
     const text = await response.text()
 
@@ -170,12 +213,21 @@ export abstract class SynapseExtensionHttpBase extends BaseMatrixService {
       const accessToken = await this.ensureInitialized()
       const url = `${this.baseUrl}${endpoint}`
       const runtimeFetch = getRuntimeAwareFetch()
-      const response = await runtimeFetch(url, {
-        method: 'HEAD',
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      })
+      // 探测同样需要超时：否则端点黑洞会让能力检测永久挂起，进而卡住整个域的功能。
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS)
+      let response: Response
+      try {
+        response = await runtimeFetch(url, {
+          method: 'HEAD',
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          },
+          signal: controller.signal
+        })
+      } finally {
+        clearTimeout(timeoutId)
+      }
       const available = response.ok || response.status === 405
       this.endpointAvailability.set(endpoint, available)
       return available

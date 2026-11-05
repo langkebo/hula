@@ -655,76 +655,79 @@ async fn start_homeserver_health_check(app_handle: AppHandle) {
 
     static FAILURE_COUNT: AtomicU32 = AtomicU32::new(0);
 
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
-        .danger_accept_invalid_certs(cfg!(debug_assertions))
-        .build();
+    loop {
+        // 指数退避：60s → 120s → 240s → ... 最大 600s（10分钟）
+        let failures = FAILURE_COUNT.load(Ordering::SeqCst);
+        let backoff_secs = (60u64 * 2u64.pow(failures.min(4))).min(600);
+        tokio::time::sleep(Duration::from_secs(backoff_secs)).await;
 
-    match client {
-        Ok(client) => loop {
-            // 指数退避：60s → 120s → 240s → ... 最大 600s（10分钟）
-            let failures = FAILURE_COUNT.load(Ordering::SeqCst);
-            let backoff_secs = (60u64 * 2u64.pow(failures.min(4))).min(600);
-            tokio::time::sleep(Duration::from_secs(backoff_secs)).await;
+        let hs_url = {
+            if let Some(state) = app_handle.try_state::<crate::AppData>() {
+                let config = state.config.read().await;
+                config.backend.base_url.clone()
+            } else {
+                continue;
+            }
+        };
 
-            let hs_url = {
-                if let Some(state) = app_handle.try_state::<crate::AppData>() {
-                    let config = state.config.read().await;
-                    config.backend.base_url.clone()
-                } else {
-                    continue;
-                }
-            };
+        let health_url = format!("{}/_matrix/client/versions", hs_url.trim_end_matches('/'));
 
-            let health_url = format!("{}/_matrix/client/versions", hs_url.trim_end_matches('/'));
+        // .test 自签名证书：仅 debug 构建 + 本机回环地址放宽 TLS 校验，
+        // 远程 homeserver 始终强制校验证书。
+        let client = match crate::common::http_client::builder_for(&health_url)
+            .timeout(Duration::from_secs(10))
+            .build()
+        {
+            Ok(client) => client,
+            Err(e) => {
+                tracing::error!("[HEALTH] Failed to create health check HTTP client: {}", e);
+                continue;
+            }
+        };
 
-            match client.get(&health_url).send().await {
-                Ok(response) if response.status().is_success() => {
-                    let prev_failures = FAILURE_COUNT.swap(0, Ordering::SeqCst);
-                    if prev_failures > 0 {
-                        tracing::info!(
-                            "[HEALTH] Homeserver recovered after {} consecutive failures",
-                            prev_failures
-                        );
-                    }
-                }
-                Ok(response) => {
-                    let count = FAILURE_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
-                    // 前 3 次 WARN，之后降为 DEBUG 避免日志噪音
-                    if count <= 3 {
-                        tracing::warn!(
-                            "[HEALTH] Homeserver returned status {} (failure #{})",
-                            response.status(),
-                            count
-                        );
-                    } else {
-                        tracing::debug!(
-                            "[HEALTH] Homeserver returned status {} (failure #{})",
-                            response.status(),
-                            count
-                        );
-                    }
-                }
-                Err(e) => {
-                    let count = FAILURE_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
-                    if count <= 3 {
-                        tracing::warn!(
-                            "[HEALTH] Homeserver health check failed (failure #{}): {}",
-                            count,
-                            e
-                        );
-                    } else {
-                        tracing::debug!(
-                            "[HEALTH] Homeserver health check failed (failure #{}): {}",
-                            count,
-                            e
-                        );
-                    }
+        match client.get(&health_url).send().await {
+            Ok(response) if response.status().is_success() => {
+                let prev_failures = FAILURE_COUNT.swap(0, Ordering::SeqCst);
+                if prev_failures > 0 {
+                    tracing::info!(
+                        "[HEALTH] Homeserver recovered after {} consecutive failures",
+                        prev_failures
+                    );
                 }
             }
-        },
-        Err(e) => {
-            tracing::error!("[HEALTH] Failed to create health check HTTP client: {}", e);
+            Ok(response) => {
+                let count = FAILURE_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
+                // 前 3 次 WARN，之后降为 DEBUG 避免日志噪音
+                if count <= 3 {
+                    tracing::warn!(
+                        "[HEALTH] Homeserver returned status {} (failure #{})",
+                        response.status(),
+                        count
+                    );
+                } else {
+                    tracing::debug!(
+                        "[HEALTH] Homeserver returned status {} (failure #{})",
+                        response.status(),
+                        count
+                    );
+                }
+            }
+            Err(e) => {
+                let count = FAILURE_COUNT.fetch_add(1, Ordering::SeqCst) + 1;
+                if count <= 3 {
+                    tracing::warn!(
+                        "[HEALTH] Homeserver health check failed (failure #{}): {}",
+                        count,
+                        e
+                    );
+                } else {
+                    tracing::debug!(
+                        "[HEALTH] Homeserver health check failed (failure #{}): {}",
+                        count,
+                        e
+                    );
+                }
+            }
         }
     }
 }

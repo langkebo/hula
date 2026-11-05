@@ -81,12 +81,14 @@ describe('SynapseDmExtensionService', () => {
       expect(result).toEqual({ room_id: '', created: false })
     })
 
-    it('sends is_private=true by default', async () => {
+    it('默认发送 is_private=false（与后端 create_friend_dm 的缺省值对齐）', async () => {
       fetchMock.mockResolvedValue(makeResponse({ ok: true, status: 200, textResp: '{}' }))
       await synapseDmExtensionService.createPrivateDm('@alice:hs')
       const [, init] = fetchMock.mock.calls[0]
       expect(init.method).toBe('POST')
-      expect(JSON.parse(init.body)).toEqual({ is_private: true })
+      // 实测 POST /friends/dm/{uid} 无 body 时后端返回 is_private:false；
+      // 前端默认值曾是 true，会让普通「发消息」静默创建私密会话。
+      expect(JSON.parse(init.body)).toEqual({ is_private: false })
     })
 
     it('sends is_private=false when isPrivate is false', async () => {
@@ -110,36 +112,45 @@ describe('SynapseDmExtensionService', () => {
   })
 
   describe('getDmRoom', () => {
-    it('returns unwrapped data on success', async () => {
+    // 真实响应只有 {room_id, user_id}，没有 exists（实测）；无会话时 room_id 为 null。
+    it('returns room_id and derives exists from it', async () => {
       fetchMock.mockResolvedValue(
-        makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ room_id: '!dm:hs', exists: true }) })
+        makeResponse({
+          ok: true,
+          status: 200,
+          textResp: JSON.stringify({ room_id: '!dm:hs', user_id: '@alice:hs' })
+        })
       )
       const result = await synapseDmExtensionService.getDmRoom('@alice:hs')
       expect(result).toEqual({ room_id: '!dm:hs', exists: true })
     })
 
-    it('returns unwrapped data from wrapped { data } response', async () => {
+    it('unwraps { data } response and derives exists', async () => {
       fetchMock.mockResolvedValue(
-        makeResponse({
-          ok: true,
-          status: 200,
-          textResp: JSON.stringify({ data: { room_id: '!dm2:hs', exists: false } })
-        })
+        makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ data: { room_id: '!dm2:hs' } }) })
       )
       const result = await synapseDmExtensionService.getDmRoom('@alice:hs')
-      expect(result).toEqual({ room_id: '!dm2:hs', exists: false })
+      expect(result).toEqual({ room_id: '!dm2:hs', exists: true })
     })
 
-    it('falls back to default empty result when response carries no data', async () => {
+    it('treats null room_id (no existing DM) as not exists', async () => {
+      fetchMock.mockResolvedValue(
+        makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ room_id: null, user_id: '@alice:hs' }) })
+      )
+      const result = await synapseDmExtensionService.getDmRoom('@alice:hs')
+      expect(result).toEqual({ room_id: null, exists: false })
+    })
+
+    it('falls back to empty result when response carries no data', async () => {
       fetchMock.mockResolvedValue(makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ data: null }) }))
       const result = await synapseDmExtensionService.getDmRoom('@alice:hs')
-      expect(result).toEqual({ room_id: '', exists: false })
+      expect(result).toEqual({ room_id: null, exists: false })
     })
 
     it('returns default empty result on request failure (does not throw)', async () => {
       fetchMock.mockRejectedValue(new Error('down'))
       const result = await synapseDmExtensionService.getDmRoom('@alice:hs')
-      expect(result).toEqual({ room_id: '', exists: false })
+      expect(result).toEqual({ room_id: null, exists: false })
     })
   })
 })

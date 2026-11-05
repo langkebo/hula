@@ -9,6 +9,27 @@ const MIN_REFRESH_INTERVAL_MS = 30000
 const RETRY_INTERVAL_MS = 30000
 const MAX_RETRIES = 5
 
+/**
+ * 解析 token 有效期（毫秒）。
+ *
+ * 规范字段是 `expires_in`（**秒**），`expires_in_ms` 是草案扩展。synapse-rust 只返回
+ * `expires_in`（实测 register/refresh 都是 86400）⇒ 旧代码读 `expires_in_ms ?? 0` 恒得 0，
+ * `schedule()` 从未被调用，access token 24h 到期即掉线。
+ *
+ * @returns 毫秒数；无法判定时 0（= 不排期）
+ */
+export function resolveTokenExpiryMs(response: unknown): number {
+  const { expires_in_ms: fromMs, expires_in: fromSeconds } = (response ?? {}) as {
+    expires_in_ms?: unknown
+    expires_in?: unknown
+  }
+  if (typeof fromMs === 'number' && Number.isFinite(fromMs) && fromMs > 0) return fromMs
+  if (typeof fromSeconds === 'number' && Number.isFinite(fromSeconds) && fromSeconds > 0) {
+    return fromSeconds * 1000
+  }
+  return 0
+}
+
 export class MatrixTokenManager {
   private timer: ReturnType<typeof setTimeout> | null = null
   private refreshing = false

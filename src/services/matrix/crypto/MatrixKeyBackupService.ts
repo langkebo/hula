@@ -2,6 +2,7 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import type { BackupInfo, KeyBackupManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { extractRoomKeys } from './ssssKeyDescription'
 
 const logger = createLogger('MatrixKeyBackupService')
 
@@ -294,8 +295,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
-      const roomKeys = ('room_keys' in keys ? keys.room_keys : keys) as Array<Record<string, unknown>>
-      const result = await keyBackupManager.importKeys(roomKeys, version)
+      const result = await keyBackupManager.importKeys(extractRoomKeys(keys), version)
       logger.info('[KeyBackup] 导入密钥成功')
       return result as ImportResult
     } catch (err) {
@@ -407,8 +407,7 @@ class MatrixKeyBackupService extends BaseMatrixService {
     try {
       const keyBackupManager = this.getKeyBackupManager()
       if (!keyBackupManager) throw new Error('[KeyBackup] KeyBackupManager 不可用')
-      const roomKeys = ('room_keys' in keys ? keys.room_keys : keys) as Array<Record<string, unknown>>
-      const result = await keyBackupManager.importKeys(roomKeys, version)
+      const result = await keyBackupManager.importKeys(extractRoomKeys(keys), version)
       return result as ImportResult
     } catch (err) {
       logger.error(`[KeyBackup] 按版本导入密钥失败: ${version}, ${err}`)

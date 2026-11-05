@@ -18,7 +18,7 @@ import type {
   KeyExportResult,
   KeyImportResult
 } from './cryptoAdapterTypes'
-import { buildSsssKeyDescription } from './ssssKeyDescription'
+import { buildSsssKeyDescription, parseRoomKeysExport } from './ssssKeyDescription'
 
 const logger = createLogger('CryptoKeyBackupAdapter')
 
@@ -416,15 +416,13 @@ export class CryptoKeyBackupAdapter {
     return { data: '', count: 0 }
   }
 
-  /** 导入密钥
-   */
+  /** 导入密钥（解析失败或结构不符时显式报错，避免「导入 0 条」被当成成功） */
   async importKeys(data: string): Promise<KeyImportResult> {
-    const keys = JSON.parse(data)
+    const keys = parseRoomKeysExport(data)
     const crypto = this.accessors.getCrypto()
     if (crypto) {
       await crypto.importRoomKeys(keys)
-      const total = Array.isArray(keys) ? keys.length : 0
-      return { imported: total, total }
+      return { imported: keys.length, total: keys.length }
     }
     return { imported: 0, total: 0 }
   }

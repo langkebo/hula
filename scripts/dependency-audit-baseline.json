@@ -1,25 +1,6 @@
 {
-  "generatedAt": "2026-10-12T03:42:20.033Z",
+  "generatedAt": "2026-11-04T14:01:41.645Z",
   "threshold": "high",
-  "count": 18,
-  "advisories": [
-    "basic-ftp::1240853",
-    "brace-expansion::1240104",
-    "brace-expansion::1240107",
-    "brace-expansion::1240108",
-    "brace-expansion::1240111",
-    "braces::1240992",
-    "browserslist::1153171",
-    "browserslist::1153172",
-    "fast-uri::1158521",
-    "fast-uri::1158524",
-    "fast-uri::1158527",
-    "fast-uri::1158530",
-    "fast-uri::1239943",
-    "js-yaml::1193727",
-    "smol-toml::1193945",
-    "source-map-js::1241209",
-    "undici::1240041",
-    "undici::1240050"
-  ]
+  "count": 1,
+  "advisories": ["basic-ftp::1240853"]
 }

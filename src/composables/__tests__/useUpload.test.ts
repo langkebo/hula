@@ -121,6 +121,7 @@ describe('useUpload', () => {
 
     const { uploadService } = await import('@/services/performance/UploadService')
     vi.mocked(uploadService.getOssToken).mockResolvedValue({
+      provider: 'oss',
       uploadUrl: 'http://test.com/upload',
       downloadUrl: 'http://test.com/download',
       objectKey: 'test-key'
@@ -139,6 +140,7 @@ describe('useUpload', () => {
     const file = new File(['test'], 'test.txt', { type: 'text/plain' })
 
     vi.mocked(uploadService.getOssToken).mockResolvedValue({
+      provider: 'oss',
       uploadUrl: 'http://test.com/upload',
       downloadUrl: 'http://test.com/download',
       objectKey: 'test-key'
@@ -192,6 +194,7 @@ describe('useUpload', () => {
   it('should get upload and download URLs', async () => {
     const { uploadService } = await import('@/services/performance/UploadService')
     vi.mocked(uploadService.getOssToken).mockResolvedValue({
+      provider: 'oss',
       uploadUrl: 'http://test.com/upload',
       downloadUrl: 'http://test.com/download',
       objectKey: 'test-key'
@@ -209,6 +212,7 @@ describe('useUpload', () => {
   it('should trigger onChange event on progress', async () => {
     const { uploadService } = await import('@/services/performance/UploadService')
     vi.mocked(uploadService.getOssToken).mockResolvedValue({
+      provider: 'oss',
       uploadUrl: 'http://test.com/upload',
       downloadUrl: 'http://test.com/download',
       objectKey: 'test-key'

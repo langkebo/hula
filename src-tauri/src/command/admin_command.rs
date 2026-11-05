@@ -43,18 +43,16 @@ async fn verify_admin_via_matrix(
     user_id: &str,
     access_token: &str,
 ) -> Result<bool, String> {
-    // .test 自签名证书：debug 构建放宽 TLS 校验（与 start_homeserver_health_check 一致），
-    // 生产构建仍强制校验证书。
-    let client = reqwest::Client::builder()
-        .danger_accept_invalid_certs(cfg!(debug_assertions))
-        .build()
-        .map_err(|e| format!("failed to create admin verification HTTP client: {}", e))?;
-
     let url = format!(
         "{}/_synapse/admin/v1/users/{}",
         homeserver,
         urlencoding::encode(user_id)
     );
+
+    // .test 自签名证书：仅 debug 构建 + 本机回环地址放宽 TLS 校验。
+    let client = crate::common::http_client::builder_for(&url)
+        .build()
+        .map_err(|e| format!("failed to create admin verification HTTP client: {}", e))?;
 
     let response = client
         .get(&url)

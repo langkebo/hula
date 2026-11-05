@@ -166,7 +166,9 @@ describe('SynapseExtensionHttpBase', () => {
       expect(await ext.avail('/e')).toBe(true)
       expect(fetchMock).toHaveBeenCalledWith('https://hs.example.com/e', {
         method: 'HEAD',
-        headers: { Authorization: 'Bearer tok' }
+        headers: { Authorization: 'Bearer tok' },
+        // 探测现在带超时（AbortController），避免端点黑洞让能力检测永久挂起
+        signal: expect.any(AbortSignal)
       })
     })
 

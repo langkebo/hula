@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { PluginEnum, StoresEnum } from '@/enums'
 import { usePluginsList } from '@/layout/left/config.tsx'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('PluginsStore')
 
 export const usePluginsStore = defineStore(
   StoresEnum.PLUGINS,
@@ -84,14 +87,24 @@ export const usePluginsStore = defineStore(
     watch(pluginsList, (latest) => syncPluginsWithLocale(latest), { immediate: true })
 
     onBeforeMount(() => {
-      // 读取本地存储的插件数据
-      if (localStorage.getItem(StoresEnum.PLUGINS)) {
-        plugins.value = []
-        migrateLegacyPlugins(JSON.parse(localStorage.getItem(StoresEnum.PLUGINS)!)['plugins'] || []).forEach(
-          (item: STO.Plugins<PluginEnum>) => plugins.value.push(item)
-        )
-        syncPluginsWithLocale(pluginsList.value)
+      // 读取本地存储的插件数据。持久化内容可能被手工改坏或来自旧版本，
+      // 解析失败时回退到内置插件列表，避免设置页初始化直接抛错。
+      const raw = localStorage.getItem(StoresEnum.PLUGINS)
+      if (!raw) return
+
+      let storedPlugins: STO.Plugins<PluginEnum>[] = []
+      try {
+        const parsed = JSON.parse(raw) as { plugins?: STO.Plugins<PluginEnum>[] } | null
+        if (Array.isArray(parsed?.plugins)) {
+          storedPlugins = parsed.plugins
+        }
+      } catch (error) {
+        logger.warn('Failed to parse stored plugins, fallback to builtin list:', error)
       }
+
+      plugins.value = []
+      migrateLegacyPlugins(storedPlugins).forEach((item: STO.Plugins<PluginEnum>) => plugins.value.push(item))
+      syncPluginsWithLocale(pluginsList.value)
     })
 
     return {

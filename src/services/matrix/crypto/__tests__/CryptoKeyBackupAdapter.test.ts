@@ -214,10 +214,15 @@ describe('CryptoKeyBackupAdapter', () => {
 
       // Branch 3 returns immediately with the encoded key (SSSS runs in background)
       expect(result).toBe(fakeGeneratedKey.encodedPrivateKey)
-      // Give background task time to execute
-      await new Promise((resolve) => setTimeout(resolve, 50))
-      expect(crypto.bootstrapSecretStorage).toHaveBeenCalled()
-      expect(crypto.resetKeyBackup).toHaveBeenCalled()
+      // 后台任务包含密钥描述计算，全量跑（CPU 争抢）时固定 50ms 会假失败。
+      // 改为等待条件成立：超时仍然失败，断言强度不变。
+      await vi.waitFor(
+        () => {
+          expect(crypto.bootstrapSecretStorage).toHaveBeenCalled()
+          expect(crypto.resetKeyBackup).toHaveBeenCalled()
+        },
+        { timeout: 2000, interval: 10 }
+      )
     })
 
     it('branch 4: falls back to resetKeyBackup when bootstrapSecretStorage not available', async () => {
@@ -404,13 +409,20 @@ describe('CryptoKeyBackupAdapter', () => {
       expect(result).toEqual({ imported: 0, total: 0 })
     })
 
-    it('handles non-array JSON', async () => {
+    it('rejects non-array JSON instead of silently importing nothing', async () => {
       const crypto = { importRoomKeys: vi.fn().mockResolvedValue(undefined) } as unknown as CryptoApi
       const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
 
-      const result = await adapter.importKeys(JSON.stringify({ not: 'array' }))
+      await expect(adapter.importKeys(JSON.stringify({ not: 'array' }))).rejects.toThrow(/必须为数组/)
+      expect(crypto.importRoomKeys).not.toHaveBeenCalled()
+    })
 
-      expect(result).toEqual({ imported: 0, total: 0 })
+    it('rejects malformed JSON with a readable error', async () => {
+      const crypto = { importRoomKeys: vi.fn().mockResolvedValue(undefined) } as unknown as CryptoApi
+      const adapter = new CryptoKeyBackupAdapter(createMockAccessors({ crypto }))
+
+      await expect(adapter.importKeys('{ not json')).rejects.toThrow(/不是合法 JSON/)
+      expect(crypto.importRoomKeys).not.toHaveBeenCalled()
     })
   })
 
