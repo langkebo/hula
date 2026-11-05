@@ -5,8 +5,13 @@
     :close-on-esc="false"
     preset="card"
     class="local-unlock-dialog"
-    :title="needsConfigure ? t('setting.security.local_unlock_setup_title') : t('setting.security.local_unlock_title')">
+    :closable="false"
+    :aria-label="dialogTitle">
     <div class="local-unlock-dialog__body">
+      <!-- 不用 `preset="card"` 的 title 属性：naive-ui 会渲染
+           `<div class="n-card-header" role="heading">` 却不给 `aria-level`，
+           axe 判 `aria-required-attr`（critical）。改为自己出 h2，语义等价且合规。 -->
+      <h2 class="local-unlock-dialog__title">{{ dialogTitle }}</h2>
       <p class="local-unlock-dialog__desc">
         {{ needsConfigure ? t('setting.security.local_unlock_setup_desc') : t('setting.security.local_unlock_desc') }}
       </p>
@@ -47,7 +52,7 @@
 
 <script setup lang="ts">
 import { NButton, NInput, NModal } from 'naive-ui'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLocalUnlockGate } from '@/composables/secure/useLocalUnlockGate'
 
@@ -55,6 +60,12 @@ defineOptions({ name: 'LocalUnlockDialog' })
 
 const { t } = useI18n()
 const { visible, submitting, errorKey, needsConfigure, submit, skip } = useLocalUnlockGate()
+
+// 弹窗必须有可访问名（axe: aria-dialog-name）——naive-ui 的 preset card
+// 不会把 title 接到 `aria-labelledby`，所以显式给 `aria-label`。
+const dialogTitle = computed(() =>
+  needsConfigure.value ? t('setting.security.local_unlock_setup_title') : t('setting.security.local_unlock_title')
+)
 
 const password = ref('')
 
@@ -69,6 +80,14 @@ async function onSubmit(): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.local-unlock-dialog__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--tjg-text-primary);
 }
 
 .local-unlock-dialog__desc {

@@ -28,11 +28,14 @@
         :show-checkmark="false"
         :show-arrow="false">
         <template #trigger>
-          <div class="color-[--tjg-color-primary-500] cursor-pointer" :title="moreTitle">{{ moreLabel }}</div>
+          <div class="color-[--tjg-color-primary-500] cursor-pointer" :title="moreTitle" data-test="login-more-options">
+            {{ moreLabel }}
+          </div>
         </template>
         <n-flex vertical :size="2">
           <div
             class="register text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px p-8px"
+            data-test="login-register-entry"
             @click="emit('open-register')">
             {{ t('login.register') }}
           </div>
