@@ -54,6 +54,7 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
   const syncLoading = ref(false)
   const unreadDetail = shallowRef<Record<string, UnreadDetail>>({})
   const loadError = ref<string | null>(null)
+  let inFlight: Promise<void> | null = null
 
   const writeUnreadDetail = (roomId: string, detail: UnreadDetail | null) => {
     if (!roomId) return
@@ -125,11 +126,9 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
   }
 
   /**
-   * 设置会话未读数：界面与 sessionUnread 本地账本一起更新。
-   *
-   * 本机产生的未读变化（新消息 +1、已读清零）必须记账：关闭已读回执时服务端
-   * unread_count 不会因本机已读而减少，apply 的「情况 2」以本地账本为准，
-   * 账本不更新就会在会话列表重建 / 重连时把增量丢掉或把已读的算回来。
+   * 设置会话未读数：界面与 sessionUnread 本地账本一起更新。本机产生的未读变化必须记账：
+   * 关闭已读回执时服务端 unread_count 不会因本机已读而减少，apply 以本地账本为准，
+   * 账本不更新会在列表重建 / 重连时丢增量或把已读算回来。
    */
   const setUnreadCount = (roomId: string, count: number) => {
     if (!roomId) return
@@ -183,16 +182,10 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
   }
 
   /**
-   * DM 会话身份回填（数据层收口，根治同人 DM 重复）。
-   *
-   * 历史根因：m.direct 未注册 / 房间成员未就绪时，写入的 SINGLE 会话缺
-   * detailId/account，下游按身份的去重键退化为 roomId，同一联系人的多个
-   * DM 房间在消息列表重复展示，且该问题随各写入路径反复回归。
-   *
-   * 收口策略：所有增量写入（addSession）在进入 store 前，用好友列表的
-   * directRoomId（好友接受的 DM 房间映射，服务端真源）反查联系人身份，
-   * 保证「凡有好友关系的 DM 房间，身份必被填充」——UI 层 dmSeen 去重
-   * 不再依赖实时 Room 成员兜底即可合并同人。
+   * DM 会话身份回填（根治同人 DM 重复）：m.direct 未注册 / 成员未就绪时，SINGLE 会话
+   * 缺 detailId/account，下游去重键退化成 roomId ⇒ 同人多条。所有增量写入（addSession）
+   * 进 store 前用好友列表的 directRoomId（服务端真源）反查身份，UI 层 dmSeen 去重
+   * 不再依赖实时 Room 成员兜底。
    */
   const backfillDmIdentityFromContacts = (session: SessionItem): void => {
     if (session.type !== RoomTypeEnum.SINGLE || resolveDmIdentityKey(session)) return
@@ -242,12 +235,8 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     }
   }
 
-  const getSessionList = async (_isFresh = false) => {
+  const fetchSessionList = async (): Promise<void> => {
     try {
-      if (sessionOptions.isLoading) return
-      sessionOptions.isLoading = true
-      loadError.value = null
-      globalStore.unreadReady = false
       const previousSessionMap = sessionList.value.reduce(
         (map, session) => {
           map[session.roomId] = session
@@ -286,9 +275,21 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
     } catch (err) {
       logger.error('获取会话列表失败:', err)
       loadError.value = err instanceof Error ? err.message : String(err)
-    } finally {
-      sessionOptions.isLoading = false
     }
+  }
+
+  // single-flight：并发调用复用同一个 in-flight Promise。原先 `if (isLoading) return`
+  // 会让后到者静默拿到空结果（await 完以为已就绪），移动端首屏因此空到用户手动下拉。
+  const getSessionList = (_isFresh = false): Promise<void> => {
+    if (inFlight) return inFlight
+    sessionOptions.isLoading = true
+    loadError.value = null
+    globalStore.unreadReady = false
+    inFlight = fetchSessionList().finally(() => {
+      inFlight = null
+      sessionOptions.isLoading = false
+    })
+    return inFlight
   }
 
   const markSessionRead = async (roomId: string) => {

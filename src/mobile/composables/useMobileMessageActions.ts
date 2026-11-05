@@ -106,9 +106,33 @@ export function useMobileMessageActions(opts: {
       })
   }
 
+  /**
+   * 同步状态驱动的兜底刷新。
+   *
+   * 移动端此前只在「页面挂载 + 下拉刷新」拉会话列表：登录后若首次拉取早于 sliding sync
+   * 把房间灌进 store（bootstrap 与页面 onMounted 抢跑），列表会一直空到用户手动下拉 —— 而
+   * 用户看到的是「暂无会话」，不会想到去下拉。这里在 sync 到达后补一次，3s 节流防抖。
+   */
+  let lastSessionRefreshAt = 0
+  const refreshSessionsOnSync = () => {
+    const now = Date.now()
+    if (now - lastSessionRefreshAt < 3000) return
+    lastSessionRefreshAt = now
+    void chatStore.getSessionList(true).catch((err) => {
+      logger.warn('同步后刷新会话列表失败:', err)
+    })
+  }
+
   const handleSyncEvent = (payload: { state?: string }) => {
-    if (payload?.state === 'PREPARED') {
+    const state = payload?.state
+    if (state === 'PREPARED') {
       contactStore.getContactList(true)
+      refreshSessionsOnSync()
+      return
+    }
+    // SYNCING 时如果列表还是空的（首屏抢跑 / 首次同步还没落库），补一次
+    if (state === 'SYNCING' && chatStore.sessionList.length === 0) {
+      refreshSessionsOnSync()
     }
   }
 
