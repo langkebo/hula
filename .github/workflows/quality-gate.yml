@@ -55,6 +55,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # 安装阶段的 postinstall 在「依赖已缓存、pnpm 直接 Done」时不会执行，
+      # 而换 tarball 恰好就属于这种「看起来没事」的情形 ⇒ 这里再显式跑一次产物指纹校验。
+      - name: Installed SDK lib fingerprint
+        run: pnpm check:sdk-lib
+
       - name: Ratchet Guard
         run: pnpm check:ratchet
 

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T02:24:15.045Z",
+  "generatedAt": "2026-11-05T09:28:47.540Z",
   "scanned": 278,
   "callerFiles": 62,
   "totalCalls": 163,
@@ -7,10 +7,10 @@
   "ledger": {
     "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.default.json",
     "schemaVersion": "4",
-    "synapseRustCommit": "aca988d9ef7458e663c8806303e47ba252e94d63",
-    "entryCount": 961,
+    "synapseRustCommit": "0ed483fca0fafd33b0477a8ee8d879f531dc061b",
+    "entryCount": 963,
     "matchedPathCount": 7,
-    "uncoveredPathCount": 755
+    "uncoveredPathCount": 756
   },
   "unmatchedUrls": [],
   "uncoveredLedger": [
@@ -126,6 +126,7 @@
     "/_matrix/client/v3/knock/{room_id_or_alias}",
     "/_matrix/client/v3/login/saml/callback",
     "/_matrix/client/v3/login/sso/redirect/cas",
+    "/_matrix/client/v3/login/sso/redirect/cas/callback",
     "/_matrix/client/v3/login/sso/redirect/saml",
     "/_matrix/client/v3/logout",
     "/_matrix/client/v3/logout/all",

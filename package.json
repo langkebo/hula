@@ -44,6 +44,7 @@
     "format:all": "pnpm check:write && pnpm format:vue",
     "lint:staged": "lint-staged && vue-tsc --noEmit --incremental --tsBuildInfoFile node_modules/.cache/tjg-tsbuildinfo",
     "prepare": "husky",
+    "postinstall": "node scripts/check-installed-sdk-lib.mjs",
     "release": "release-it",
     "addition-commit": "git add . && git commit --amend --no-edit",
     "test:run": "node scripts/run-vitest.js run",
@@ -86,6 +87,9 @@
     "check:coverage": "node scripts/run-vitest.js run --coverage; node scripts/check-coverage-floor.mjs coverage/coverage-summary.json",
     "test:stability": "node scripts/run-vitest.js run src/services/matrix/__tests__/stability.contract.test.ts src/utils/__tests__/ExecutionGuard.test.ts",
     "test:contract": "node scripts/run-vitest.js run src/services/matrix/__tests__/stability.contract.test.ts src/utils/__tests__/ExecutionGuard.test.ts src/utils/__tests__/ErrorTracker.test.ts src/services/matrix/__tests__/MatrixClientService.spec.ts",
+    "test:integration": "node scripts/integration/contract-smoke.mjs",
+    "test:e2e:android": "playwright test e2e/multi-device.android.spec.ts --project=desktop-chromium",
+    "test:e2e:cross-device": "playwright test e2e/multi-device.chat.spec.ts --project=desktop-chromium",
     "test:crypto-health": "node scripts/test-crypto-health.js",
     "audit:deps": "node scripts/audit-deps.mjs",
     "check:dependency-audit": "node scripts/check-dependency-audit.mjs",
@@ -108,7 +112,8 @@
     "check:a11y": "node scripts/check-a11y.mjs",
     "check:release": "pnpm check:ratchet && pnpm check:file-size && pnpm typecheck && pnpm check:sdk-types && pnpm check:sdk-aliases && pnpm check:v-html && pnpm check:doc-coverage && pnpm check:doc-paths && pnpm check:sdk-boundary && pnpm check:bare-matrix-paths && pnpm check:contract-coverage && pnpm quality:no-raw-fetch && pnpm check:icon-colors && pnpm check:guard-patterns && pnpm check:settings-wiring && pnpm check:component-contracts && pnpm check:i18n-dead-keys && pnpm check:dependency-audit && pnpm check:vendor-runtime-deps && pnpm check:http-allowlist && pnpm check:tauri-permissions && pnpm check:tauri-plugin-parity && pnpm check:crypto-cross-window && pnpm check:tauri-window-coverage && pnpm check:sdk-crypto-teardown && pnpm check:window-registry && pnpm check:integration-map-freshness && pnpm check:window-session-entry && pnpm check:worker-client-boundary && pnpm check:sdk-unstable-methods && pnpm check:matrix-layering && pnpm check:mobile-css",
     "check:generated-typings": "node scripts/check-generated-typings.mjs",
-    "check:mobile-css": "node scripts/check-mobile-css.mjs"
+    "check:mobile-css": "node scripts/check-mobile-css.mjs",
+    "check:sdk-lib": "node scripts/check-installed-sdk-lib.mjs"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",

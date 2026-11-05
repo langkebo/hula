@@ -1,0 +1,96 @@
+name: Integration Smoke (live homeserver)
+
+# 为什么单独一个 workflow：`pnpm test:integration`（scripts/integration/contract-smoke.mjs）
+# 需要**可登录的真实后端**，会在目标 homeserver 上注册临时账号、建好友关系、建 DM 房间、
+# 上传媒体。这类副作用不能挂在 PR 流水线上，所以只在：
+#   1) 手动触发（workflow_dispatch，可选覆盖基址）
+#   2) 每天定时跑一次（发现后端契约漂移）
+#
+# 前置：仓库 Variable `TJG_TEST_HOMESERVER`（如 https://matrix.test）与可选
+# `TJG_TEST_INSECURE_TLS=1`（自签证书环境）。未配置时本 workflow 直接 skip 并给出提示，
+# **不冒充通过**。
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: '后端基址（留空则用仓库变量 TJG_TEST_HOMESERVER）'
+        required: false
+        type: string
+      run_id:
+        description: '账号前缀（便于事后清理，留空自动生成）'
+        required: false
+        type: string
+  schedule:
+    # 每天 02:30 UTC（本地 10:30）跑一次契约冒烟
+    - cron: '30 2 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e # v6.0.3
+        with:
+          version: 12
+
+      - name: Resolve base URL
+        id: target
+        shell: bash
+        env:
+          INPUT_BASE_URL: ${{ inputs.base_url }}
+          VAR_BASE_URL: ${{ vars.TJG_TEST_HOMESERVER }}
+        run: |
+          BASE="${INPUT_BASE_URL:-$VAR_BASE_URL}"
+          if [ -z "$BASE" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::未配置 TJG_TEST_HOMESERVER（也没有手填 base_url）—— 本 workflow 跳过，不视为通过"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "base_url=$BASE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.target.outputs.configured == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Contract smoke against live homeserver
+        if: steps.target.outputs.configured == 'true'
+        env:
+          BASE_URL: ${{ steps.target.outputs.base_url }}
+          RUN_ID: ${{ inputs.run_id || '' }}
+          # 自签证书环境（本地/内网栈）需显式开启，默认严格校验
+          NODE_TLS_REJECT_UNAUTHORIZED: ${{ vars.TJG_TEST_INSECURE_TLS == '1' && '0' || '1' }}
+          OUT_JSON: ${{ github.workspace }}/integration-smoke.json
+        run: pnpm test:integration
+
+      - name: Upload smoke report
+        if: always() && steps.target.outputs.configured == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: integration-smoke-${{ github.run_id }}
+          path: integration-smoke.json
+          if-no-files-found: warn
+          retention-days: 14
