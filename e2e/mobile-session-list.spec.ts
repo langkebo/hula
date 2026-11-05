@@ -112,17 +112,24 @@ test.describe('移动端消息列表与会话进入', () => {
     await page.evaluate(
       async ({ targetRoomId }) => {
         const runtimeWindow = window as Window & { pinia?: unknown }
-        const [{ useGlobalStore }, routerModule] = await Promise.all([
-          import(/* @vite-ignore */ '/src/stores/domains/widget/global.ts') as Promise<{
-            useGlobalStore: (pinia?: unknown) => { updateCurrentSessionRoomId: (id: string) => void }
-          }>,
-          import(/* @vite-ignore */ '/src/router/index.ts') as Promise<{
-            default: { push: (to: unknown) => Promise<unknown> }
-          }>
-        ])
+        const { useGlobalStore } = (await import(/* @vite-ignore */ '/src/stores/domains/widget/global.ts')) as {
+          useGlobalStore: (pinia?: unknown) => { updateCurrentSessionRoomId: (id: string) => void }
+        }
         useGlobalStore(runtimeWindow.pinia).updateCurrentSessionRoomId('')
-        await routerModule.default.push('/mobile/message')
-        await routerModule.default.push({ name: 'mobileChatMain', params: { roomId: targetRoomId } })
+
+        // 必须用**应用自己的 router 实例**：`/src/router/index.ts` 的路由表在模块加载时
+        // 按平台定型，dev server 复用模块后会被此前跑过的桌面用例污染成 desktop 表，
+        // 此时再 `import('/src/router/index.ts')` 会拿到一个没有 mobileChatMain 的实例。
+        const appRoot = document.querySelector('#app') as
+          | (HTMLElement & {
+              __vue_app__?: { config: { globalProperties: { $router?: { push: (to: unknown) => Promise<unknown> } } } }
+            })
+          | null
+        const appRouter = appRoot?.__vue_app__?.config?.globalProperties?.$router
+        if (!appRouter) throw new Error('应用 router 实例不可达（$router 未挂载）')
+
+        await appRouter.push('/mobile/message')
+        await appRouter.push({ name: 'mobileChatMain', params: { roomId: targetRoomId } })
       },
       { targetRoomId: roomId }
     )
