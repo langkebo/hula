@@ -346,6 +346,14 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     sessionStore.resetSessionSelection()
   }
 
+  // 必须 computed：对象字面量 getter 会在 store 创建时被求值成快照（见 §18）
+  const sessionListRef = computed(() => sessionStore.sessionList)
+  const sessionOptionsRef = computed(() => sessionStore.sessionOptions)
+  const syncLoadingRef = computed({
+    get: () => sessionStore.syncLoading,
+    set: (val: boolean) => (sessionStore.syncLoading = val)
+  })
+
   return {
     getMsgIndex,
     chatMessageList,
@@ -365,18 +373,9 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     currentReplyMap,
     currentNewMsgCount,
     loadMore,
-    get sessionList() {
-      return sessionStore.sessionList
-    },
-    get sessionOptions() {
-      return sessionStore.sessionOptions
-    },
-    get syncLoading() {
-      return sessionStore.syncLoading
-    },
-    set syncLoading(val: boolean) {
-      sessionStore.syncLoading = val
-    },
+    sessionList: sessionListRef,
+    sessionOptions: sessionOptionsRef,
+    syncLoading: syncLoadingRef,
     getSessionList: sessionStore.getSessionList,
     updateSession: sessionStore.updateSession,
     updateSessionLastActiveTime: sessionStore.updateSessionLastActiveTime,
