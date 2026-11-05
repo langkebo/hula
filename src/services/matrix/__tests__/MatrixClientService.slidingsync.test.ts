@@ -25,6 +25,8 @@ vi.mock('matrix-js-sdk', () => ({
     stop = vi.fn()
     on = vi.fn()
     off = vi.fn()
+    /** 房间订阅：MatrixSyncManager.create() 会重放订阅，桩必须实现 */
+    modifyRoomSubscriptions = vi.fn()
   },
   SlidingSyncEvent: {
     RoomData: 'SlidingSync.RoomData',

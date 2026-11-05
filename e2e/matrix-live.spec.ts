@@ -39,6 +39,36 @@ test.describe('Matrix Live Desktop Flows', () => {
     await expect(page.locator('.message-session-toolbar')).toBeVisible()
   })
 
+  /**
+   * SDK-1 回归（2026-11-05）：`mxc://` 只能在解析后以 http(s) 形式出现在 DOM 里。
+   *
+   * 历史上 `MatrixClient` 没有 `mxcUrlToHttp`，调用方拿到 undefined 后把原始
+   * `mxc://` 写进 `img.src`，webview 静默加载失败（头像/图片全白）。
+   * 这里做**否定式断言**：登录后的消息工作区里不允许出现 `img[src^="mxc://"]`。
+   * 不需要上传文件，只要有可登录的 live 后端即可跑。
+   */
+  test('渲染层不得残留裸 mxc:// 的图片地址', async ({ page }) => {
+    await loginToMatrixLive(page, matrixLiveEnv)
+    await openMessageWorkspace(page)
+    await waitForLiveSessions(page)
+
+    // 等一次列表渲染，把懒加载的头像也带出来
+    await expect(page.locator('.message-list-page')).toBeVisible()
+    const rawMxcImages = page.locator('img[src^="mxc://"]')
+    await expect(rawMxcImages).toHaveCount(0)
+
+    // 背景图同理（部分头像用 CSS background-image）
+    const rawMxcBackgrounds = await page.evaluate(() => {
+      const hits: string[] = []
+      for (const el of Array.from(document.querySelectorAll<HTMLElement>('*'))) {
+        const bg = getComputedStyle(el).backgroundImage
+        if (bg.includes('mxc://')) hits.push(el.className || el.tagName)
+      }
+      return hits
+    })
+    expect(rawMxcBackgrounds, `以下元素仍在使用裸 mxc://：${rawMxcBackgrounds.join(' | ')}`).toEqual([])
+  })
+
   test('sends a probe message into the configured encrypted room', async ({ page }) => {
     test.skip(
       !matrixLiveEnv.roomId && !matrixLiveEnv.roomName,

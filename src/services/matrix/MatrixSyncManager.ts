@@ -18,23 +18,14 @@ export type SlidingSyncLifecycleListener = (state: SlidingSyncState, resp: unkno
  */
 export type NetworkType = 'wifi' | '4g' | '3g' | 'slow-2g'
 
-/**
- * SlidingSync parameter preset for a given network type.
- * - roomRangeEnd: number of rooms to sync (range [0, roomRangeEnd])
- * - timelineLimit: number of timeline events per room
- * - pollTimeout: long-polling timeout in ms
- */
+/** 滑窗参数预设：房间范围端点 / 每房间 timeline 条数 / 长轮询超时（ms）。 */
 export interface SlidingSyncPreset {
   roomRangeEnd: number
   timelineLimit: number
   pollTimeout: number
 }
 
-/**
- * Four-tier presets adapted to network quality.
- * Wi-Fi/4G use larger ranges for faster initial load; 3G/2G reduce payload
- * to minimize bandwidth and improve responsiveness on slow links.
- */
+/** 按网络质量分四档：Wi-Fi/4G 放大范围换首屏速度，3G/2G 压小负载换取响应。 */
 export const SLIDING_SYNC_PRESETS: Record<NetworkType, SlidingSyncPreset> = {
   wifi: { roomRangeEnd: 49, timelineLimit: 10, pollTimeout: 30000 },
   '4g': { roomRangeEnd: 29, timelineLimit: 5, pollTimeout: 25000 },
@@ -43,13 +34,8 @@ export const SLIDING_SYNC_PRESETS: Record<NetworkType, SlidingSyncPreset> = {
 }
 
 /**
- * Detect the current network type using the Network Information API.
- *
- * Returns 'wifi' when:
- * - navigator.connection is unavailable (desktop Firefox/Safari, some Tauri builds)
- * - effectiveType is unknown
- *
- * On Android WebView (used by Tauri mobile), the API is well-supported.
+ * 用 Network Information API 探测网络类型；API 缺失或 effectiveType 未知时按 'wifi' 处理
+ * （桌面 Firefox/Safari 与部分 Tauri 构建都没有该 API）。
  */
 export function detectNetworkType(): NetworkType {
   const conn = (navigator as { connection?: { effectiveType?: string } }).connection
@@ -63,10 +49,7 @@ export function detectNetworkType(): NetworkType {
 
 export class MatrixSyncManager {
   private static readonly POS_STORAGE_KEY = 'matrix.sliding_sync.pos'
-  // 契约对齐：后端 sliding sync token 的 time_to_idle 为 30min（synapse-rust
-  // sliding_sync_service CONNECTION_TTL_MS）。前端 pos TTL 必须 ≤ 30min，否则
-  // 客户端关闭 30min 后恢复的 pos 已被后端 GC，只会得到 400 M_UNKNOWN_POS +
-  // 全量重同步。取 25min 留 5min 余量，覆盖「短时重启走增量」的窗口。
+  // 后端 token time_to_idle=30min，前端 pos TTL 取 25min：超过后被 GC 会得到 400 M_UNKNOWN_POS
   private static readonly POS_TTL_MS = 25 * 60 * 1000 // 25min
 
   private instance: SlidingSync | null = null
@@ -75,20 +58,23 @@ export class MatrixSyncManager {
   private posPersistListener: SlidingSyncLifecycleListener | null = null
   private currentNetworkType: NetworkType | null = null
   private networkChangeHandler: (() => void) | null = null
+  /**
+   * 滑窗房间订阅（MSC3575 `room_subscriptions`），按插入序做 LRU。
+   *
+   * 必须主动订阅：服务端只在 pos 缺省或订阅集合变化时给 `initial: true`，而
+   * `SlidingSyncSdk.onRoomData` 对 store 里没有的房间，`initial` 不为真直接 return ——
+   * 新建/新加入的房间会永远进不了 store（createRoom 5s 取不到实例、打开无 timeline）。
+   */
+  private roomSubscriptions = new Map<string, true>()
+  private activeRoomId: string | null = null
+  /** 订阅集合上限：活跃房间 + 最近建/加入的房间，避免请求体随使用时长无限增长 */
+  private static readonly MAX_ROOM_SUBSCRIPTIONS = 16
 
   /**
-   * Create a SlidingSync instance from the current config.
-   *
-   * Parameter defaults are selected dynamically based on the detected network
-   * type (via `detectNetworkType()`). Explicit values in `config.slidingSync`
-   * always take precedence over the preset.
-   *
-   * If a persisted pos exists in localStorage (within TTL), it is set as the
-   * initial pos via `slidingSync.setInitialPos()`, enabling incremental sync
-   * after restart. The pos is continuously updated as sync responses arrive.
+   * 按当前配置创建 SlidingSync 实例：预设随网络类型选择（`config.slidingSync` 显式值优先）；
+   * localStorage 里有未过期 pos 时用它做增量同步起点。
    */
   create(client: MatrixClient, config: MatrixClientConfig): SlidingSync {
-    // 根据网络类型选择预设参数（config 中的显式值优先）
     const networkType = detectNetworkType()
     const preset = SLIDING_SYNC_PRESETS[networkType]
     this.currentNetworkType = networkType
@@ -177,55 +163,72 @@ export class MatrixSyncManager {
     }
     slidingSync.on(SlidingSyncEvent.Lifecycle, this.posPersistListener)
 
-    // 注册网络变化监听，在网络降级/升级时记录日志
-    // 注意：不热重建 SlidingSync 实例（避免监听器丢失 + client.startClient 引用失效）
-    // 新预设将在下次 create() 时生效
+    // 网络变化只记日志，不热重建实例（会丢监听器 + startClient 引用失效）
     this.registerNetworkChangeListener()
 
     logger.info(
       `Sliding Sync created (network=${networkType}, rooms=${roomRangeEnd + 1}, timeline=${timelineLimit}, timeout=${pollTimeout}ms, homeserver=${runtimeHomeserverUrl})`
     )
     this.instance = slidingSync
+    // 重建实例（forceReconnect / 重新登录）后必须重放订阅：SlidingSync 的订阅集合是实例内的，
+    // 新实例不会继承；不重放则新建/打开过的房间又回到「拿不到 initial」的状态。
+    this.pushRoomSubscriptions()
     return slidingSync
   }
 
-  /**
-   * Get the current SlidingSync instance, if any.
-   *
-   * 仅用于 client.startClient({ slidingSync }) 初始化。
-   * 事件订阅请使用 onLifecycleEvent / offLifecycleEvent，不要直接操作返回的实例。
-   */
+  /** 取当前实例（仅用于 startClient 初始化；事件请走 on/offLifecycleEvent）。 */
   get(): SlidingSync | null {
     return this.instance
   }
 
-  /**
-   * Subscribe to SlidingSync Lifecycle events (RequestFinished, Complete, etc.).
-   *
-   * 封装 SDK 的 `slidingSync.on(SlidingSyncEvent.Lifecycle, listener)`，
-   * 避免调用方直接访问原始 SlidingSync 实例。
-   */
+  /** 订阅房间（幂等）：服务端据此强制 `initial: true` 下发全量状态与 timeline。 */
+  subscribeRoom(roomId: string): void {
+    const id = roomId?.trim()
+    if (!id) return
+    // 重新插入以刷新 LRU 位置（Map 保持插入序）
+    this.roomSubscriptions.delete(id)
+    this.roomSubscriptions.set(id, true)
+    while (this.roomSubscriptions.size > MatrixSyncManager.MAX_ROOM_SUBSCRIPTIONS) {
+      const oldest = this.roomSubscriptions.keys().next().value
+      // 活跃房间永不淘汰：否则正在看的房间会丢 timeline
+      if (oldest === undefined || oldest === this.activeRoomId) break
+      this.roomSubscriptions.delete(oldest)
+    }
+    this.pushRoomSubscriptions()
+  }
+
+  /** 设置「当前正在看」的房间并订阅它；`null` 表示离开所有会话（保留其它订阅）。 */
+  setActiveRoom(roomId: string | null): void {
+    const next = roomId?.trim() || null
+    if (next === this.activeRoomId) return
+    this.activeRoomId = next
+    if (next) {
+      this.subscribeRoom(next)
+      return
+    }
+    this.pushRoomSubscriptions()
+  }
+
+  /** 把当前订阅集合同步给 SDK（实例不存在时为空操作，`create()` 后会重放） */
+  private pushRoomSubscriptions(): void {
+    // 缺该方法（老 SDK / 测试桩）时退化为不订阅：订阅是增强，不能打断 startClient
+    if (typeof this.instance?.modifyRoomSubscriptions !== 'function') return
+    this.instance.modifyRoomSubscriptions(new Set(this.roomSubscriptions.keys()))
+  }
+
+  /** 订阅 Lifecycle 事件（封装 SDK 的 on，避免调用方直接持有实例）。 */
   onLifecycleEvent(listener: SlidingSyncLifecycleListener): void {
     this.instance?.on(SlidingSyncEvent.Lifecycle, listener)
   }
 
-  /**
-   * Unsubscribe from SlidingSync Lifecycle events.
-   */
+  /** 取消 Lifecycle 订阅。 */
   offLifecycleEvent(listener: SlidingSyncLifecycleListener): void {
     this.instance?.off(SlidingSyncEvent.Lifecycle, listener)
   }
 
   /**
-   * Stop and clear the current instance.
-   *
-   * Also removes the internal pos persistence listener and network change
-   * listener to avoid memory leaks. The persisted `pos` IS cleared — when
-   * `stop()` is called, the SlidingSync instance is being disposed and the
-   * associated client's room store may be reset (e.g. client rebuild during
-   * login). Retaining a stale `pos` would cause SlidingSync to fetch only
-   * incremental updates on the next `create()`, leaving the new room store's
-   * timelines empty (messages=0, isLast=true).
+   * 停掉并清空实例（同时摘掉 pos 持久化与网络监听，避免泄漏）。
+   * 持久化的 pos 也要清：重建实例后 room store 会被重置，留着旧 pos 只会拿到增量、timeline 全空。
    */
   stop(): void {
     this.unregisterNetworkChangeListener()
@@ -236,6 +239,9 @@ export class MatrixSyncManager {
     this.instance?.stop?.()
     this.instance = null
     this.currentNetworkType = null
+    // 订阅集合属于「这个账号的会话」，登出/换账号后必须清空，否则会沿用上一账号的 roomId
+    this.roomSubscriptions.clear()
+    this.activeRoomId = null
     // Clear persisted pos so the next create() performs a fresh initial sync.
     // Without this, a rebuilt client (empty room store) would receive only
     // incremental updates via the restored pos, resulting in empty timelines.
@@ -272,16 +278,8 @@ export class MatrixSyncManager {
   }
 
   /**
-   * Called when the network type changes (Wi-Fi ↔ 4G ↔ 3G ↔ slow-2g).
-   *
-   * Logs the transition and the preset that will take effect on the next
-   * `create()` call. Does NOT hot-rebuild the current SlidingSync instance
-   * to avoid:
-   * 1. Losing lifecycle listeners registered via `onLifecycleEvent()`
-   * 2. Invalidating the `client.startClient({ slidingSync })` reference
-   *
-   * The new preset will be applied on the next app restart or manual
-   * `stop()` + `create()` cycle.
+   * 网络类型变化时只记录，不热重建实例（热重建会丢 lifecycle 监听、并让
+   * `startClient({ slidingSync })` 的引用失效）；新预设下次 `create()` 生效。
    */
   adaptToNetwork(): void {
     const newType = detectNetworkType()

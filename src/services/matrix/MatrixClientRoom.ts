@@ -19,6 +19,14 @@ const logger = createLogger('MatrixClient')
 /** Room 子服务依赖的主类协作模块集合 */
 export interface MatrixClientRoomDeps {
   readonly connectionManager: MatrixConnectionManager
+  /**
+   * 订阅房间到滑窗同步（可选，缺失时退化为不订阅）。
+   *
+   * 建/入房后必须在 `waitForRoom` **之前**调用：服务端只对「订阅集合变化」的房间强制
+   * `initial: true`，而 SDK 对 store 里没有的房间必须看到 `initial` 才肯建实例。
+   * 不订阅就会出现「房间建成功了但 5s 内取不到实例」。
+   */
+  readonly subscribeRoomForSync?: (roomId: string) => void
 }
 
 /** 默认空间管理员（moderator）power level 阈值 */
@@ -57,7 +65,9 @@ export class MatrixClientRoom {
       logger.info(`创建房间成功: ${response.room_id}`)
       // SDK 的 createRoom 只发 HTTP 请求返回 { room_id }，不会立即写入 client.store。
       // 房间进入 store 依赖 sync 循环在后续 sync 响应中处理（sync.ts:1687 storeRoom）。
-      // 因此创建后轮询等待 sync 把房间带入 store，而非立即查询（会因时序返回 null）。
+      // 但增量同步里服务端对新房间给的是 `initial: false`，SlidingSyncSdk 会直接丢弃，
+      // 所以必须先订阅（服务端据此强制 initial=true），再等它进 store。
+      this.deps.subscribeRoomForSync?.(response.room_id)
       const room = await this.waitForRoom(client, response.room_id, 5000)
       if (!room) {
         throw new Error(useI18nGlobal().t('matrix_error.client.room_instance_failed_after_create'))
@@ -97,7 +107,8 @@ export class MatrixClientRoom {
     try {
       await client.joinRoom(roomId)
       logger.info(`加入房间成功: ${roomId}`)
-      // 与 createRoom 同理：joinRoom 返回后房间需等 sync 循环写入 store
+      // 与 createRoom 同理：先订阅拿到强制 initial，再等 sync 把房间写进 store
+      this.deps.subscribeRoomForSync?.(roomId)
       const room = await this.waitForRoom(client, roomId, 5000)
       if (!room) {
         throw new Error(useI18nGlobal().t('matrix_error.client.room_instance_failed_after_join'))

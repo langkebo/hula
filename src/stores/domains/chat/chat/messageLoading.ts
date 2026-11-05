@@ -4,6 +4,7 @@ import pLimit from 'p-limit'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import matrixClientService from '@/services/matrix/MatrixClientService'
 import matrixEventService from '@/services/matrix/MatrixEventService'
 import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
 import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
@@ -190,6 +191,10 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
     }
 
     logger.info(`[changeRoom] 开始切换房间 window=${label} roomId=${roomId}`)
+
+    // 告诉滑窗「现在看这个房间」：服务端会按房间订阅下发更完整的 required_state + timeline。
+    // 必须在拉消息之前，否则首屏只能拿到列表档位的 timeline_limit（新建房间甚至拿不到 initial）。
+    matrixClientService.setActiveSyncRoom(roomId)
 
     // 兜底：当用户从通知/搜索/好友页等入口打开一个尚未进入 sessionList 的会话时，
     // 消息能拉到但 session 取不到，会导致 ChatHeader 等依赖 currentSessionInfo 的 UI 缺数据。

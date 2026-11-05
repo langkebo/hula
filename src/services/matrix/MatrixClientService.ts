@@ -125,7 +125,10 @@ class MatrixClientService {
       cryptoTracker: this.cryptoTracker
     })
     this.roomOps = new MatrixClientRoom({
-      connectionManager: this.connectionManager
+      connectionManager: this.connectionManager,
+      // 建/入房后立即订阅：滑窗只对「订阅变化」的房间强制 initial=true，
+      // 否则新房间进不了 store（createRoom 的 waitForRoom 必超时）
+      subscribeRoomForSync: (roomId) => this.syncManager.subscribeRoom(roomId)
     })
     this.telemetry = new MatrixClientTelemetry({
       connectionManager: this.connectionManager
@@ -213,6 +216,16 @@ class MatrixClientService {
   /** 取 Sliding Sync 实例；未启用或未就绪时返回 null。 */
   getSlidingSync(): SlidingSync | null {
     return this.state.getSlidingSync()
+  }
+
+  /**
+   * 把「当前正在看的房间」同步给滑窗订阅。
+   *
+   * 订阅后服务端会为该房间下发更完整的 `required_state` + `timeline`；
+   * 不订阅时只能拿到列表档位的 `timeline_limit`，且新房间根本不会进 store。
+   */
+  setActiveSyncRoom(roomId: string | null): void {
+    this.syncManager.setActiveRoom(roomId)
   }
 
   /** 取 Rust Crypto 初始化的调试快照（是否成功、跳过原因、错误）。 */
