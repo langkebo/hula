@@ -14,6 +14,7 @@
   "noname": "无名",
   "china": "中国",
   "empty_session": "暂无会话",
+  "session_load_failed": "会话加载失败",
   "chat": {
     "unpin": "取消置顶",
     "pintop": "置顶",

@@ -5,6 +5,7 @@ import { MsgEnum, RoomTypeEnum } from '@/enums'
 import { isPrivateRoom } from '@/services/matrix/privateChat/privateRoomRegistry'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -19,6 +20,8 @@ type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderN
 export function useMobileSessionList() {
   const { t } = useI18n()
   const chatStore = useChatStore()
+  // 失败态直接从 session store 读（不再经 chatStore 转发，见 message.ts 的快照教训）
+  const sessionStore = useSessionStore()
   const groupStore = useGroupStore()
   const globalStore = useGlobalStore()
   const { checkRoomAtMe, getMessageSenderName, formatMessageContent } = useReplaceMsg()
@@ -137,8 +140,31 @@ export function useMobileSessionList() {
     searchText,
     sessionList,
     filteredSessionList,
-    allUserMap
+    allUserMap,
+    /** 最近一次拉取失败的原因；用于把「网络失败」与「真的没有会话」区分开 */
+    loadError: computed(() => sessionStore.loadError),
+    /** 服务端是否仍在拉取（首屏骨架/失败重试的判据） */
+    isLoading: computed(() => sessionStore.sessionOptions.isLoading)
   }
+}
+
+/** 会话列表的四种可视图态 */
+export type SessionListState = 'loading' | 'error' | 'empty' | 'list'
+
+/**
+ * 判定会话列表该显示哪个态。
+ *
+ * 抽成纯函数是为了能单测：把「还没拉到」当成「没有会话」是本页最容易被误读的体验问题
+ * （用户看到「暂无会话」不会想到去下拉刷新）。
+ */
+export function resolveSessionListState(input: {
+  count: number
+  isLoading: boolean
+  loadError: string | null | undefined
+}): SessionListState {
+  if (input.count > 0) return 'list'
+  if (input.loadError) return 'error'
+  return input.isLoading ? 'loading' : 'empty'
 }
 
 /** useMobileSessionList 派生的会话列表项(在 SessionItem 基础上附加 lastMsg/lastMsgTime/isAtMe 等展示字段) */

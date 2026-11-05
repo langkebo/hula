@@ -14,7 +14,6 @@
   "upload": {
     "credential_failed": "Failed to get upload credentials, please retry",
     "file_size_exceeded": "File size cannot exceed {max}MB",
-    "url_failed": "Failed to get upload URL, please retry",
     "upload_failed": "File upload failed, please retry"
   },
   "session": {

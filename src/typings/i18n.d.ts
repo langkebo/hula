@@ -3427,7 +3427,6 @@ export type I18nKeys = {
     "upload": {
       "credential_failed": "获取上传凭证失败，请重试",
       "file_size_exceeded": "文件大小不能超过{max}MB",
-      "url_failed": "获取上传链接失败，请重试",
       "upload_failed": "文件上传失败，请重试"
     },
     "session": {
@@ -4896,6 +4895,7 @@ export type I18nKeys = {
     "noname": "无名",
     "china": "中国",
     "empty_session": "暂无会话",
+    "session_load_failed": "会话加载失败",
     "chat": {
       "unpin": "取消置顶",
       "pintop": "置顶",
@@ -10256,7 +10256,6 @@ export type I18nKeyPaths =
   | "hooks.avatar_upload.upload_failed"
   | "hooks.upload.credential_failed"
   | "hooks.upload.file_size_exceeded"
-  | "hooks.upload.url_failed"
   | "hooks.upload.upload_failed"
   | "hooks.session.detail_failed"
   | "hooks.msg_input.file_size_exceeded"
@@ -11376,6 +11375,7 @@ export type I18nKeyPaths =
   | "mobile_home.noname"
   | "mobile_home.china"
   | "mobile_home.empty_session"
+  | "mobile_home.session_load_failed"
   | "mobile_home.chat.unpin"
   | "mobile_home.chat.pintop"
   | "mobile_home.chat.mark_as_read"

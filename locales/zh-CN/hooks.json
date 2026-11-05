@@ -14,7 +14,6 @@
   "upload": {
     "credential_failed": "获取上传凭证失败，请重试",
     "file_size_exceeded": "文件大小不能超过{max}MB",
-    "url_failed": "获取上传链接失败，请重试",
     "upload_failed": "文件上传失败，请重试"
   },
   "session": {

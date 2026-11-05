@@ -33,8 +33,28 @@
     @update:model-value="(value: boolean) => emit('update:loading', value)"
     @refresh="emit('refresh')">
     <div class="flex flex-col h-full">
-      <!-- 空状态:会话列表为空时显示 -->
-      <div v-if="filteredSessionList.length === 0" class="flex-1 flex items-center justify-center min-h-200px">
+      <!-- 首屏加载中：不要把「还没拉到」显示成「没有会话」 -->
+      <div
+        v-if="listState === 'loading'"
+        class="flex-1 flex flex-col items-center justify-center gap-8px min-h-200px"
+        data-test="session-list-loading">
+        <van-loading size="24px" />
+        <span class="text-13px text-[--tjg-text-tertiary]">{{ t('common.loading') }}</span>
+      </div>
+      <!-- 拉取失败：给原因 + 重试，而不是让用户以为真没有会话 -->
+      <div
+        v-else-if="listState === 'error'"
+        class="flex-1 flex items-center justify-center min-h-200px"
+        data-test="session-list-error">
+        <van-empty :description="t('mobile_home.session_load_failed')">
+          <p class="mt-4px text-12px text-[--tjg-text-tertiary] break-all">{{ loadError }}</p>
+          <van-button size="small" type="primary" plain class="mt-12px" @click="emit('refresh')">
+            {{ t('common.retry') }}
+          </van-button>
+        </van-empty>
+      </div>
+      <!-- 真空态:确实没有任何会话 -->
+      <div v-else-if="listState === 'empty'" class="flex-1 flex items-center justify-center min-h-200px">
         <van-empty :description="t('mobile_home.empty_session')" />
       </div>
       <SmartVirtualList
@@ -146,7 +166,7 @@ import { useI18n } from 'vue-i18n'
 import { NotificationTypeEnum } from '@/enums'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import type { LongPressOption } from '@/mobile/composables/useMobileLongPress'
-import type { MobileSessionListItem } from '@/mobile/composables/useMobileSessionList'
+import { type MobileSessionListItem, resolveSessionListState } from '@/mobile/composables/useMobileSessionList'
 import { IsAllUserEnum } from '@/services/types.ts'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -158,9 +178,22 @@ const props = defineProps<{
   filteredSessionList: MobileSessionListItem[]
   searchText: string
   loading: boolean
+  /** 最近一次拉取失败的原因（null = 没失败） */
+  loadError?: string | null
+  /** 服务端是否仍在拉取 */
+  isLoading?: boolean
   isEnablePullRefresh: boolean
   longPressOption: LongPressOption
 }>()
+
+/** 四态判定（loading / error / empty / list），逻辑在 composable 里可单测 */
+const listState = computed(() =>
+  resolveSessionListState({
+    count: props.filteredSessionList.length,
+    isLoading: props.isLoading ?? props.loading,
+    loadError: props.loadError
+  })
+)
 
 const emit = defineEmits<{
   (e: 'update:searchText', value: string): void

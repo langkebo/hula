@@ -41,6 +41,8 @@
 
     <MobileSessionList
       :filtered-session-list="filteredSessionList"
+      :load-error="loadError"
+      :is-loading="isLoading"
       v-model:search-text="searchText"
       v-model:loading="loading"
       :is-enable-pull-refresh="isEnablePullRefresh"
@@ -106,6 +108,7 @@ import { useMobileLongPress } from '@/mobile/composables/useMobileLongPress'
 import { useMobileMessageActions } from '@/mobile/composables/useMobileMessageActions'
 import { useMobileScrollRefresh } from '@/mobile/composables/useMobileScrollRefresh'
 import { useMobileSessionList } from '@/mobile/composables/useMobileSessionList'
+import { useSessionListScrollMemory } from '@/mobile/composables/useSessionListScrollMemory'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useTimerManager } from '@/utils/TimerManager'
 
@@ -129,7 +132,7 @@ const {
 } = useMobileLongPress({ disablePullRefresh, enablePullRefresh, getScrollTop })
 
 // 会话列表数据派生
-const { searchText, filteredSessionList } = useMobileSessionList()
+const { searchText, filteredSessionList, loadError, isLoading } = useMobileSessionList()
 
 // 会话操作 + matrix 同步事件订阅(依赖 maskHandler / currentLongPressItem)
 const { loading, handleDelete, handleToggleTop, handleToggleReadStatus, onRefresh } = useMobileMessageActions({
@@ -154,6 +157,27 @@ const {
   goToChatRoom: (roomId: string) => router.push({ name: 'mobileChatMain', params: { roomId } }),
   goToAddContact: () => router.push('/mobile/mobileFriends/addFriends')
 })
+
+// 返回列表时恢复滚动位置（进入会话会让 tab 布局卸载，列表被重建）
+const { remember: rememberScrollTop, restore: restoreScrollTop } = useSessionListScrollMemory()
+let scrollRestored = false
+
+onBeforeUnmount(() => {
+  rememberScrollTop(getScrollTop())
+})
+
+watch(
+  () => filteredSessionList.value.length,
+  (length) => {
+    if (!length || scrollRestored) return
+    scrollRestored = true
+    // 等虚拟列表渲染出可滚动高度后再设 scrollTop，否则会被 0 高度吞掉
+    void nextTick(() => {
+      restoreScrollTop()
+    })
+  },
+  { flush: 'post' }
+)
 
 let preventClick = false
 
