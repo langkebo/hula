@@ -411,4 +411,31 @@ describe('MatrixSessionService', () => {
 
     vi.useRealTimers()
   })
+
+  /**
+   * 错误语义（2026-11-06）：把「故障」与「真的没有会话」区分开。
+   *
+   * 旧实现整体 catch 后返回 []，上层（移动端消息页）只能显示「暂无会话」，
+   * 用户既不知道失败原因，也没有重试入口。
+   */
+  it('执行期异常必须抛出，不能伪装成「0 条会话」', async () => {
+    const boom = new Error('getRooms exploded')
+    // 先让 DM 元数据正常降级返回，确保异常只来自 getRooms（而非 mock 缺省值）
+    mockDirectMessageService.getDMRooms.mockResolvedValueOnce([])
+    mockClient.getRooms.mockImplementationOnce(() => {
+      throw boom
+    })
+
+    await expect(matrixSessionService.getSessionList()).rejects.toThrow('getRooms exploded')
+  })
+
+  it('client 未初始化（未登录）时返回空数组，不视为故障', async () => {
+    const serviceModule = await import('../../MatrixClientService')
+    const getClientMock = vi.mocked(serviceModule.matrixClientService.getClient)
+    getClientMock.mockImplementationOnce(() => {
+      throw new Error('client_not_initialized')
+    })
+
+    await expect(matrixSessionService.getSessionList()).resolves.toEqual([])
+  })
 })
