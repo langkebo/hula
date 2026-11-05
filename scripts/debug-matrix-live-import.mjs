@@ -16,8 +16,8 @@ await page.addInitScript(({ homeserverUrl }) => {
   const runtimeWindow = window
 
   if (!runtimeWindow.__TAURI_INTERNALS__) {
-    runtimeWindow.__HULA_TAURI_CALLBACKS__ = new Map()
-    runtimeWindow.__HULA_TAURI_CALLBACK_ID__ = 0
+    runtimeWindow.__TJG_TAURI_CALLBACKS__ = new Map()
+    runtimeWindow.__TJG_TAURI_CALLBACK_ID__ = 0
     runtimeWindow.__TAURI_INTERNALS__ = {
       metadata: {
         currentWindow: { label: 'home' },
@@ -33,13 +33,13 @@ await page.addInitScript(({ homeserverUrl }) => {
         return undefined
       },
       transformCallback(callback) {
-        const nextId = (runtimeWindow.__HULA_TAURI_CALLBACK_ID__ ?? 0) + 1
-        runtimeWindow.__HULA_TAURI_CALLBACK_ID__ = nextId
-        runtimeWindow.__HULA_TAURI_CALLBACKS__?.set(nextId, callback)
+        const nextId = (runtimeWindow.__TJG_TAURI_CALLBACK_ID__ ?? 0) + 1
+        runtimeWindow.__TJG_TAURI_CALLBACK_ID__ = nextId
+        runtimeWindow.__TJG_TAURI_CALLBACKS__?.set(nextId, callback)
         return nextId
       },
       unregisterCallback(id) {
-        runtimeWindow.__HULA_TAURI_CALLBACKS__?.delete(id)
+        runtimeWindow.__TJG_TAURI_CALLBACKS__?.delete(id)
       },
       convertFileSrc(filePath) {
         return filePath
@@ -47,16 +47,15 @@ await page.addInitScript(({ homeserverUrl }) => {
     }
   }
 
-  window.localStorage.setItem('hula:e2e:enabled', '1')
-  window.localStorage.setItem('hula:e2e:platform', 'desktop')
-  window.localStorage.removeItem('hula:e2e:mock-auth')
-  window.localStorage.removeItem('hula:e2e:seed-workbench')
+  window.localStorage.setItem('tjg:e2e:enabled', '1')
+  window.localStorage.setItem('tjg:e2e:platform', 'desktop')
+  window.localStorage.removeItem('tjg:e2e:mock-auth')
   window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
-  window.localStorage.setItem('hula-homeserver-url', homeserverUrl)
+  window.localStorage.setItem('tjg-homeserver-url', homeserverUrl)
 }, { homeserverUrl: HOMESERVER_URL })
 
 await page.goto(APP_URL)
-await page.waitForFunction(() => window.__HULA_APP_READY__ === true, undefined, { timeout: 120_000 })
+await page.waitForFunction(() => window.__TJG_APP_READY__ === true, undefined, { timeout: 120_000 })
 
 const importResult = await Promise.race([
   page.evaluate(async () => {

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
-import { bootstrapDesktopHarness } from './support/session'
+import { bootstrapDesktopHarness, markCapabilitiesLoaded } from './support/session'
 
 test.describe('Message Workspace', () => {
   test.beforeEach(async ({ page }) => {
@@ -47,7 +47,7 @@ test.describe('Message Workspace', () => {
     await page.waitForSelector('#app', { state: 'visible' })
 
     // Left sidebar renders navigation tabs
-    const roomsTab = page.getByRole('button', { name: /Rooms|会话/i })
+    const roomsTab = page.getByRole('button', { name: /房间列表|Rooms/i })
     await expect(roomsTab.first()).toBeVisible({ timeout: 10000 })
 
     // Session search input is present in the sidebar (may be visually hidden by Naive UI)
@@ -100,7 +100,7 @@ test.describe('Message Workspace', () => {
     await page.waitForSelector('#app', { state: 'visible' })
 
     // Verify workspace renders before network toggle
-    const roomsButton = page.getByRole('button', { name: /Rooms|会话/i })
+    const roomsButton = page.getByRole('button', { name: /房间列表|Rooms/i })
     await expect(roomsButton.first()).toBeVisible({ timeout: 10000 })
 
     // Simulate going offline and back — lazy-load failures during offline
@@ -130,6 +130,8 @@ test.describe('Message Workspace', () => {
     // Navigate to settings
     await page.goto('/settings?tab=preferences')
     await page.waitForLoadState('networkidle')
+    // mock 会话没有 matrix client ⇒ 能力探测不会跑，设置页会停在骨架屏
+    await markCapabilitiesLoaded(page)
 
     // Verify settings panel renders
     const settingsTab = page.locator('#settings-tab-preferences')

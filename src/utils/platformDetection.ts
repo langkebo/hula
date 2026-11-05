@@ -1,7 +1,9 @@
+import { E2E_STORAGE_KEYS } from '@/utils/storageKeys'
+
 export type RuntimePlatform = 'desktop' | 'mobile'
 
 export const PLATFORM_QUERY_KEY = 'platform'
-export const PLATFORM_STORAGE_KEY = 'tjg:e2e:platform'
+export const PLATFORM_STORAGE_KEY = E2E_STORAGE_KEYS.platform
 
 export function normalizeRequestedPlatform(value: string | null | undefined): RuntimePlatform | null {
   return value === 'mobile' || value === 'desktop' ? value : null

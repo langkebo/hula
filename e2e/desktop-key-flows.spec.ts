@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
-import { bootstrapDesktopHarness } from './support/session'
+import { bootstrapDesktopHarness, markCapabilitiesLoaded } from './support/session'
 
 type RenderSample = {
   name: string
@@ -39,14 +39,17 @@ test.describe('Desktop Key Flows', () => {
     const runtimeIssues = createRuntimeIssueCollector(page)
 
     await page.goto('/notification')
+    await markCapabilitiesLoaded(page)
     await expect(page).toHaveURL(/\/settings\?tab=notifications$/)
     await expect(page.locator('#settings-tab-notifications')).toHaveAttribute('aria-selected', 'true')
 
     await page.goto('/shortcut')
+    await markCapabilitiesLoaded(page)
     await expect(page).toHaveURL(/\/settings\?tab=keyboard$/)
     await expect(page.locator('#settings-tab-keyboard')).toHaveAttribute('aria-selected', 'true')
 
     await page.goto('/security-privacy')
+    await markCapabilitiesLoaded(page)
     await expect(page).toHaveURL(/\/settings\?tab=securityPrivacy$/)
     await expect(page.locator('#settings-tab-securityPrivacy')).toHaveAttribute('aria-selected', 'true')
 
@@ -58,17 +61,23 @@ test.describe('Desktop Key Flows', () => {
 
     await page.goto('/settings?tab=preferences')
     await page.waitForLoadState('networkidle')
+    await markCapabilitiesLoaded(page)
 
     await expect(page).toHaveURL(/\/settings\?tab=preferences$/)
     await expect(page.locator('#settings-tab-preferences')).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('#settings-tab-panel')).toBeVisible()
 
-    const searchInput = page.locator('.settings-search input')
+    const searchInput = page.locator('.settings-sidebar-search input')
     await expect(searchInput).toBeVisible()
-    await searchInput.fill('voice')
+    // 用 'video' 而不是 'voice'：zh-CN 的 search_terms 里 voice_video 含 video/audio/webrtc，
+    // 但不含 voice（en 才有）—— 用例跑在 zh-CN 默认语言下。
+    await searchInput.fill('video')
 
-    await expect(page.locator('#settings-tab-voiceVideo')).toBeVisible()
-    await expect(page.locator('#settings-tab-account')).toHaveCount(0)
+    // 有搜索词时侧栏切成「搜索结果」列表（.settings-search-result），不再渲染 #settings-tab-*
+    const results = page.locator('.settings-search-result')
+    await expect(results.first()).toBeVisible()
+    await expect(page.locator('.settings-search-result', { hasText: '语音视频' })).toHaveCount(1)
+    await expect(page.locator('.settings-search-result', { hasText: '账户' })).toHaveCount(0)
 
     await searchInput.clear()
     await expect(page.locator('#settings-tab-account')).toBeVisible()

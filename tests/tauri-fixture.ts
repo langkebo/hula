@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import path from 'node:path'
 import { test as base, expect, type Page } from '@playwright/test'
+import { autoDismissLocalUnlockGate } from '../e2e/support/localUnlockGate'
 
 /**
  * Tauri 专用 Playwright Fixture
@@ -44,6 +45,9 @@ export const test = base.extend<TauriFixtures>({
     // 这里假设应用在 9222 端口开启了调试
     const context = await browser.newContext()
     const page = await context.newPage()
+
+    // 纯浏览器 / 无密钥库环境会弹「设置本地解锁密码」并阻断启动，先自动放行
+    await autoDismissLocalUnlockGate(page)
 
     // 等待应用加载完成
     await page.goto('http://localhost:5210')

@@ -1,14 +1,17 @@
 /// <reference types="node" />
 import { expect, type Page } from '@playwright/test'
+import {
+  E2E_STORAGE_KEYS,
+  MATRIX_HOMESERVER_STORAGE_KEY,
+  MATRIX_IDENTITY_SERVER_STORAGE_KEY,
+  MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
+  MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY
+} from '../../src/utils/storageKeys'
+import { dismissLocalUnlockDialog } from './localUnlockGate'
 
-const MATRIX_HOMESERVER_STORAGE_KEY = 'hula-homeserver-url'
-const MATRIX_IDENTITY_SERVER_STORAGE_KEY = 'hula-identity-server-url'
-const MATRIX_SESSION_HOMESERVER_STORAGE_KEY = 'hula-session-homeserver-url'
-const MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY = 'hula-session-identity-server-url'
-const E2E_STORAGE_KEY = 'hula:e2e:enabled'
-const PLATFORM_STORAGE_KEY = 'hula:e2e:platform'
-const MOCK_AUTH_STORAGE_KEY = 'hula:e2e:mock-auth'
-const SEEDED_WORKBENCH_STORAGE_KEY = 'hula:e2e:seed-workbench'
+const E2E_STORAGE_KEY = E2E_STORAGE_KEYS.enabled
+const PLATFORM_STORAGE_KEY = E2E_STORAGE_KEYS.platform
+const MOCK_AUTH_STORAGE_KEY = E2E_STORAGE_KEYS.mockAuth
 const GUIDE_STORAGE_KEY = 'guide'
 
 export type MatrixLiveAuthStrategy = 'password-api' | 'restore-token' | 'ui'
@@ -223,11 +226,13 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
     ({
       homeserverUrl,
       identityServerUrl,
-      storageKeys
+      storageKeys,
+      e2eKeys
     }: {
       homeserverUrl: string
       identityServerUrl: string
       storageKeys: { homeserver: string; sessionHomeserver: string; identity: string; sessionIdentity: string }
+      e2eKeys: { enabled: string; platform: string; mockAuth: string; guide: string }
     }) => {
       const runtimeWindow = window as Window & {
         __TAURI_INTERNALS__?: {
@@ -350,11 +355,12 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
         }
       }
 
-      window.localStorage.setItem(E2E_STORAGE_KEY, '1')
-      window.localStorage.setItem(PLATFORM_STORAGE_KEY, 'desktop')
-      window.localStorage.removeItem(MOCK_AUTH_STORAGE_KEY)
-      window.localStorage.removeItem(SEEDED_WORKBENCH_STORAGE_KEY)
-      window.localStorage.setItem(GUIDE_STORAGE_KEY, JSON.stringify({ isGuideCompleted: true }))
+      // 注意：这段代码在**浏览器上下文**执行，不能引用本模块的 Node 常量
+      // （`E2E_STORAGE_KEY` 之类会直接 ReferenceError，导致后面所有播种都跳过）。
+      window.localStorage.setItem(e2eKeys.enabled, '1')
+      window.localStorage.setItem(e2eKeys.platform, 'desktop')
+      window.localStorage.removeItem(e2eKeys.mockAuth)
+      window.localStorage.setItem(e2eKeys.guide, JSON.stringify({ isGuideCompleted: true }))
       window.localStorage.setItem(storageKeys.homeserver, homeserverUrl)
       window.localStorage.setItem(storageKeys.sessionHomeserver, homeserverUrl)
       if (identityServerUrl) {
@@ -373,12 +379,24 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
         sessionHomeserver: MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
         identity: MATRIX_IDENTITY_SERVER_STORAGE_KEY,
         sessionIdentity: MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY
+      },
+      e2eKeys: {
+        enabled: E2E_STORAGE_KEY,
+        platform: PLATFORM_STORAGE_KEY,
+        mockAuth: MOCK_AUTH_STORAGE_KEY,
+        guide: GUIDE_STORAGE_KEY
       }
     }
   )
 
   await page.goto(env.appUrl)
   await page.waitForSelector('#app', { state: 'visible' })
+  // 「设置本地解锁密码」门禁（F-10）：纯浏览器没有 Tauri 密钥库时
+  // `useLocalUnlockGate().ensureReady()` 会**阻断启动**（splash 停在 0%、路由不就绪），
+  // 此前每个 live 用例都得自己处理，漏掉就卡死。这里统一点「稍后」放行；
+  // 弹窗不出现时最多等 3s 即继续（不改变原有语义）。
+  // 注意：放行后本次会话 crypto fail-closed，需要 E2EE 的用例必须走真实 Tauri。
+  await dismissLocalUnlockDialog(page, 3_000)
   await waitForTjgAppReady(page)
   await waitForPinia(page)
   await page.evaluate(async () => {
@@ -727,13 +745,6 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
         { getMatrixSessionSnapshot },
         { getCurrentUserInfo },
         { resolveMatrixRuntimeEndpointConfig, resolveMatrixSessionEndpointConfig },
-        { filterAndSortSessions, matchesKeyword, matchesSessionType, matchesSessionEngagement },
-        {
-          readSpaceWorkbenchSearch,
-          readSpaceWorkbenchSessionTypeFilter,
-          readSpaceWorkbenchSessionEngagementFilter,
-          readSpaceWorkbenchSessionSort
-        },
         { errorTracker }
       ] = await Promise.all([
         importBrowserModule<{ useMatrixStore: (pinia?: unknown) => Record<string, unknown> }>(
@@ -769,21 +780,6 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
           resolveMatrixSessionEndpointConfig: () => unknown
         }>('/src/services/backend/config.ts'),
         importBrowserModule<{
-          filterAndSortSessions: (
-            sessions: Record<string, unknown>[],
-            options: Record<string, unknown>
-          ) => Record<string, unknown>[]
-          matchesKeyword: (session: Record<string, unknown>, keyword: string) => boolean
-          matchesSessionType: (session: Record<string, unknown>, sessionTypeFilter: string) => boolean
-          matchesSessionEngagement: (session: Record<string, unknown>, sessionEngagementFilter: string) => boolean
-        }>('/src/composables/workbench/sessionListFilters.ts'),
-        importBrowserModule<{
-          readSpaceWorkbenchSearch: (query: Record<string, unknown>) => string
-          readSpaceWorkbenchSessionTypeFilter: (query: Record<string, unknown>) => string
-          readSpaceWorkbenchSessionEngagementFilter: (query: Record<string, unknown>) => string
-          readSpaceWorkbenchSessionSort: (query: Record<string, unknown>) => string
-        }>('/src/router/spaceNavigation.ts'),
-        importBrowserModule<{
           errorTracker: {
             getTopErrors: (limit: number) => Array<{
               type: string
@@ -799,19 +795,6 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
       const sessionStore = useSessionStore(runtimeWindow.pinia)
       const globalStore = useGlobalStore(runtimeWindow.pinia)
       const chatStore = useChatStore(runtimeWindow.pinia)
-      const routeQuery = Object.fromEntries(new URLSearchParams(window.location.search).entries())
-      const filters = {
-        search: readSpaceWorkbenchSearch(routeQuery),
-        type: readSpaceWorkbenchSessionTypeFilter(routeQuery),
-        engagement: readSpaceWorkbenchSessionEngagementFilter(routeQuery),
-        sort: readSpaceWorkbenchSessionSort(routeQuery)
-      }
-      const filteredSessions = filterAndSortSessions(sessionStore.sessionList, {
-        keyword: filters.search.toLocaleLowerCase(),
-        sessionTypeFilter: filters.type,
-        sessionEngagementFilter: filters.engagement,
-        sessionSort: filters.sort
-      })
       const client = matrixClientService.getClient()
       const crypto = client?.getCrypto?.() ?? null
       const activeRoomId = requestedRoomId || globalStore.currentSessionRoomId || null
@@ -859,8 +842,8 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
         endpoints: {
           runtime: resolveMatrixRuntimeEndpointConfig(),
           session: resolveMatrixSessionEndpointConfig(),
-          storedHomeserverUrl: window.localStorage.getItem('hula-homeserver-url'),
-          storedSessionHomeserverUrl: window.localStorage.getItem('hula-session-homeserver-url')
+          storedHomeserverUrl: window.localStorage.getItem('tjg-homeserver-url'),
+          storedSessionHomeserverUrl: window.localStorage.getItem('tjg-session-homeserver-url')
         },
         rooms: {
           count: roomStore.roomList.length,
@@ -888,39 +871,6 @@ export const collectMatrixLiveSessionDebugSnapshot = async (
                 unreadCount: session.unreadCount ?? 0,
                 highlightCount: session.highlightCount ?? 0,
                 isInvite: Boolean(session.isInvite)
-              })
-            )
-        },
-        filters,
-        filteredSessions: {
-          count: filteredSessions.length,
-          sample: filteredSessions.slice(0, 5).map((session: { roomId: string; name?: string }) => ({
-            roomId: session.roomId,
-            name: session.name ?? ''
-          })),
-          evaluation: sessionStore.sessionList
-            .slice(0, 5)
-            .map(
-              (session: {
-                roomId: string
-                name?: string
-                type?: unknown
-                unreadCount?: number
-                highlightCount?: number
-                isInvite?: boolean
-                lastMsg?: string
-                remark?: string
-                account?: string
-              }) => ({
-                roomId: session.roomId,
-                name: session.name ?? '',
-                type: session.type ?? null,
-                unreadCount: session.unreadCount ?? 0,
-                highlightCount: session.highlightCount ?? 0,
-                isInvite: Boolean(session.isInvite),
-                matchesType: matchesSessionType(session, filters.type),
-                matchesEngagement: matchesSessionEngagement(session, filters.engagement),
-                matchesKeyword: matchesKeyword(session, filters.search.toLocaleLowerCase())
               })
             )
         },

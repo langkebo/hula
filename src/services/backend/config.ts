@@ -1,10 +1,19 @@
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import {
+  MATRIX_HOMESERVER_STORAGE_KEY,
+  MATRIX_IDENTITY_SERVER_STORAGE_KEY,
+  MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
+  MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY
+} from '@/utils/storageKeys'
 import type { MatrixEndpointConfig, StorageLike } from './types'
 
-export const MATRIX_HOMESERVER_STORAGE_KEY = 'tjg-homeserver-url'
-export const MATRIX_IDENTITY_SERVER_STORAGE_KEY = 'tjg-identity-server-url'
-export const MATRIX_SESSION_HOMESERVER_STORAGE_KEY = 'tjg-session-homeserver-url'
-export const MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY = 'tjg-session-identity-server-url'
+export {
+  MATRIX_HOMESERVER_STORAGE_KEY,
+  MATRIX_IDENTITY_SERVER_STORAGE_KEY,
+  MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
+  MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY
+}
+
 /**
  * 本机开发兜底 homeserver 地址（M-3）。
  *

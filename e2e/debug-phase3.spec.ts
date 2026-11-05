@@ -1,6 +1,7 @@
 import { test } from '@playwright/test'
 import {
   bootstrapMatrixLivePage,
+  getMatrixLiveSkipReason,
   loginToMatrixLive,
   openConfiguredRoom,
   openMessageWorkspace,
@@ -13,6 +14,10 @@ const env = readMatrixLiveEnv()
 test.describe
   .serial('Debug Phase 3', () => {
     test.beforeEach(async ({ page }) => {
+      // 这是 live 调试用例：没有 MATRIX_LIVE_* 环境时必须跳过，
+      // 否则会在空 homeserver 上走 loginWithPassword → 'Invalid base url'
+      const skipReason = getMatrixLiveSkipReason(env)
+      test.skip(Boolean(skipReason), skipReason ?? '')
       await bootstrapMatrixLivePage(page, env)
     })
 

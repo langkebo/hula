@@ -1,6 +1,7 @@
 import { type as getOsType } from '@tauri-apps/plugin-os'
 import { performanceReporter } from '@/utils/PerformanceReporter'
 import { readRequestedPlatform, resolvePlatformType } from '@/utils/platformDetection'
+import { E2E_STORAGE_KEYS } from '@/utils/storageKeys'
 
 type AppPlatform = 'desktop' | 'mobile'
 type RenderSampleStatus = 'pass' | 'warn'
@@ -33,8 +34,8 @@ interface ActiveRenderSample {
 
 const E2E_QUERY_KEY = 'e2e'
 const MOCK_AUTH_QUERY_KEY = 'mockAuth'
-const E2E_STORAGE_KEY = 'tjg:e2e:enabled'
-const MOCK_AUTH_STORAGE_KEY = 'tjg:e2e:mock-auth'
+const E2E_STORAGE_KEY = E2E_STORAGE_KEYS.enabled
+const MOCK_AUTH_STORAGE_KEY = E2E_STORAGE_KEYS.mockAuth
 const DEFAULT_RENDER_THRESHOLD_MS = 800
 const activeSamples = new Map<string, ActiveRenderSample>()
 

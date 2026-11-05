@@ -19,8 +19,9 @@ test.describe('Login Flow', () => {
       const accountInput = page.locator('input').first()
       await expect(accountInput).toBeVisible()
 
-      // Verify password input is present
-      const passwordInput = page.locator('input[type="password"]')
+      // Verify password input is present（限定在登录卡片内：解锁门禁弹窗里也有一个
+      // `input[type=password]`，全局选择器会命中 2 个而触发 strict mode violation）
+      const passwordInput = page.locator('.login-box input[type="password"]')
       await expect(passwordInput).toBeVisible()
 
       // Verify login button is present
@@ -55,12 +56,13 @@ test.describe('Login Flow', () => {
       await page.goto('/')
       await page.waitForSelector('#app', { state: 'visible' })
 
-      // "Register" is inside a popover triggered by "More Opt..."
-      const moreLink = page.getByText(/More Opt|more/i)
+      // "Register" 藏在「更多选项」popover 里；用组件上的 data-test 锚点
+      // （`#moreShow` 是 n-popover 的 id，落在 teleport 出去的面板上，不在触发器上）
+      const moreLink = page.locator('[data-test="login-more-options"]')
       await moreLink.click()
       await page.waitForTimeout(500)
 
-      const registerLink = page.getByText(/register/i)
+      const registerLink = page.locator('[data-test="login-register-entry"]')
       await registerLink.click()
 
       await expect(page).toHaveURL(/\/register/, { timeout: 10000 })

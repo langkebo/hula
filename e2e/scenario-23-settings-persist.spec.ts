@@ -8,7 +8,7 @@
  *   1. Capturing `storageState` after writing the target setting.
  *   2. Spawning a fresh context with that state and re-asserting the value.
  *   3. Repeating with `pinia-plugin-persistedstate` keys for the relevant
- *      setting domain (e.g. `hula-settings-config`).
+ *      setting domain (store id 决定的 `tjg` 前缀键)。
  */
 import { expect, test } from '@playwright/test'
 import { seedMockSession } from './support/session'

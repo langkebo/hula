@@ -14,7 +14,7 @@
 
 import { expect, type Page, test } from '@playwright/test'
 import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
-import { bootstrapDesktopHarness, clearMockSession, seedMockSession } from './support/session'
+import { bootstrapDesktopHarness, bootstrapMobileHarness, clearMockSession } from './support/session'
 
 // RoomSettingsDrawer 的 11 个 Tab key（与 RoomSettingsDrawer.vue 中 tabs 定义一致）
 const EXPECTED_TAB_KEYS = [
@@ -66,11 +66,11 @@ test.describe('Login to Room Settings E2E', () => {
     await expect(loginBox).toBeVisible({ timeout: 15000 })
 
     // 验证账号输入框
-    const accountInput = page.locator('input').first()
+    const accountInput = page.locator('.login-box input').first()
     await expect(accountInput).toBeVisible()
 
-    // 验证密码输入框
-    const passwordInput = page.locator('input[type="password"]')
+    // 验证密码输入框（限定登录卡片内：解锁门禁弹窗也有一个 password input）
+    const passwordInput = page.locator('.login-box input[type="password"]')
     await expect(passwordInput).toBeVisible()
 
     // 验证登录按钮
@@ -88,11 +88,22 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 2：模拟登录后进入首页
   // ============================================================
   test('Phase 2: 模拟登录后首页正确渲染', async ({ page }) => {
-    await bootstrapDesktopHarness(page, { seedWorkbench: true })
+    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
     await page.goto('/home')
     await page.waitForSelector('#app', { state: 'visible' })
+
+    // F-8 回归断言：mock-auth 旁路必须真的生效。
+    // 此前 e2e 播种的是旧品牌前缀键，`shouldBypassAuthForE2E()` 恒 false ⇒ 路由恒被
+    // 重定向回 `/login`，而后续断言靠「#app 非空」兜住了，属假绿。
+    // 实测（2026-11-05）：不播种 / 旧前缀 → `/login`；正确前缀 → `/message`。
+    await expect
+      .poll(() => new URL(page.url()).pathname, {
+        message: 'mock-auth 旁路未生效：仍停在登录页',
+        timeout: 15000
+      })
+      .toBe('/message')
 
     // 验证首页布局渲染：尝试多种可能的选择器
     // 桌面端可能有会话按钮、搜索框、或侧边栏
@@ -133,7 +144,7 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 3：打开房间设置抽屉
   // ============================================================
   test('Phase 3: 点击房间设置按钮正确打开抽屉（不错误跳转）', async ({ page }) => {
-    await bootstrapDesktopHarness(page, { seedWorkbench: true })
+    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
     await page.goto('/home')
@@ -186,7 +197,7 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 4：验证 11 个 Tab 全部可渲染（不白屏）
   // ============================================================
   test('Phase 4: RoomSettingsDrawer 11 个 Tab 全部可渲染', async ({ page }) => {
-    await bootstrapDesktopHarness(page, { seedWorkbench: true })
+    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
     await page.goto('/home')
@@ -249,7 +260,7 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 5：验证 i18n 文本正确显示
   // ============================================================
   test('Phase 5: 房间设置抽屉 i18n 文本正确显示（非原始 key）', async ({ page }) => {
-    await bootstrapDesktopHarness(page, { seedWorkbench: true })
+    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
     await page.goto('/home')
@@ -310,7 +321,7 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 6：关闭抽屉并验证状态清理
   // ============================================================
   test('Phase 6: 关闭房间设置抽屉后正确清理', async ({ page }) => {
-    await bootstrapDesktopHarness(page, { seedWorkbench: true })
+    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
     await page.goto('/home')
@@ -363,7 +374,7 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 7：快速切换 Tab 不崩溃（回归测试）
   // ============================================================
   test('Phase 7: 快速连续切换 Tab 不崩溃', async ({ page }) => {
-    await bootstrapDesktopHarness(page, { seedWorkbench: true })
+    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
     await page.goto('/home')
@@ -424,8 +435,8 @@ test.describe('Login to Room Settings E2E - Mobile', () => {
   test.describe.configure({ mode: 'serial' })
 
   test('移动端登录页面渲染正确', async ({ page }) => {
-    // 使用移动端配置
-    await seedMockSession(page, { platform: 'mobile' })
+    // 使用移动端 harness（含解锁门禁自动放行，否则 splash 挡住登录表单）
+    await bootstrapMobileHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
     await page.goto('/')
