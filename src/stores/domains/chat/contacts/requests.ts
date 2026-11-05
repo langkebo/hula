@@ -1,4 +1,5 @@
 import { computed, ref, shallowRef, triggerRef } from 'vue'
+import { getFriendReadError } from '@/services/matrix/friends/friendEvents'
 import {
   type FriendRequest,
   matrixFriendOperations,
@@ -26,6 +27,8 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
 
   const requestFriendsList = shallowRef<FriendRequestItem[]>([])
   const applyPageOptions = ref({ isLast: false, cursor: '', pageNo: 1 })
+  /** 最近一次加载好友申请的失败原因；`null` 表示成功（供 UI 区分「没有申请」与「加载失败」） */
+  const requestLoadError = ref<unknown>(null)
   /** 防止 acceptFriendRequest 被重复调用 */
   const pendingAccepts = new Set<string>()
 
@@ -76,11 +79,14 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
         }))
       ]
 
+      requestLoadError.value = null
       globalStore.setFriendUnreadCount(incoming.length)
       logger.info(`[ContactStore] 加载好友请求成功: ${requestFriendsList.value.length} 个`)
     } catch (err) {
+      // 失败时**不动现有列表、不清零红点**：保持上次成功的结果，由 UI 显示错误态 + 重试。
+      // 服务层已把原因记进 'requests' 通道；此处回落到原始异常以便直接展示。
+      requestLoadError.value = getFriendReadError('requests') ?? err
       logger.error(`[ContactStore] 加载好友请求失败: ${err}`)
-      // 客户端未初始化是暂时状态，不需要额外处理
     }
   }
 
@@ -199,6 +205,7 @@ export function createFriendRequests(ctx: FriendRequestsContext) {
 
   return {
     requestFriendsList,
+    requestLoadError,
     applyPageOptions,
     incomingRequestsCount,
     handleRequestReceived,

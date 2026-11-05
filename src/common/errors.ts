@@ -12,6 +12,7 @@
 
 import { AppException, ErrorType } from './exception'
 import { translateMatrixError } from './matrixErrorTranslator'
+import { notImplementedError, resolveUnknownErrcodeSemantics } from './matrixUnknownSemantics'
 
 export type AppErrorAuth = {
   kind: 'auth'
@@ -236,6 +237,12 @@ export function toAppError(err: unknown, options: { resource?: string; field?: s
   }
 
   // 3. Matrix-level errcode.
+
+  // BE-7：M_UNKNOWN 按 HTTP 状态消歧（与后端 M_UNKNOWN_MEANINGS 同口径）
+  const unknown = resolveUnknownErrcodeSemantics(errcode, httpStatus, e.message)
+  if (unknown?.kind === 'validation') return unknown
+  if (unknown) return notImplementedError(unknown.message, newCorrelationId())
+
   if (errcode === 'M_LIMIT_EXCEEDED' || httpStatus === 429) {
     return {
       kind: 'retryable',
@@ -246,7 +253,10 @@ export function toAppError(err: unknown, options: { resource?: string; field?: s
     }
   }
   if (errcode && AUTH_ERRCODES.has(errcode)) {
-    const recoverable = errcode === 'M_UNKNOWN_TOKEN' || errcode === 'M_MISSING_TOKEN'
+    // `recoverable` 决定 UI 是否引导「重新登录」。凭证缺失/失效类都属可恢复；
+    // `M_UNAUTHORIZED`（synapse-rust 的非规范 401 码）同样是「没带/带错 token」，
+    // 漏掉它会让用户看到「不可恢复的权限错误」而不是登录引导。
+    const recoverable = errcode === 'M_UNKNOWN_TOKEN' || errcode === 'M_MISSING_TOKEN' || errcode === 'M_UNAUTHORIZED'
     return { kind: 'auth', code: errcode, recoverable, message: e.message || errcode, i18nKey: I18N_KEY_MAP[errcode] }
   }
   if (errcode === 'M_NOT_FOUND' || errcode === 'M_THREEPID_NOT_FOUND' || httpStatus === 404) {

@@ -47,3 +47,76 @@ class FriendEventBus {
 }
 
 export const friendEventBus = new FriendEventBus()
+
+/**
+ * 好友数据「代际」计数器。
+ *
+ * 用途：`MatrixFriendService.getFriends()` 的短 TTL 缓存据此失效。
+ *
+ * 为什么不直接用 `friendEventBus` 订阅写事件：`stop()` 会 `clear()` 掉全部监听器，
+ * 内部订阅会一并消失，登出再登入后缓存就再也不失效了。代际计数器是无状态模块变量，
+ * 不受 `clear()` 影响，也不需要写操作方 import 服务本体（避免循环依赖）。
+ */
+let friendsGeneration = 0
+
+/** 标记好友数据已变化（写操作成功后调用），使读缓存立即失效。 */
+export function bumpFriendsGeneration(): void {
+  friendsGeneration += 1
+}
+
+/** 读取当前代际；缓存条目代际不一致即视为过期。 */
+export function getFriendsGeneration(): number {
+  return friendsGeneration
+}
+
+/**
+ * 好友读取「降级信号」：按通道记录最近一次**拿不到数据**的失败原因（成功即清空）。
+ *
+ * 解决的是「空」与「失败」不可区分：服务层为兼容历史调用仍返回 `[]`/`false`，
+ * 但 UI 需要知道这次是「真的没有」还是「后端挂了」，否则只会显示空列表 / 空搜索结果。
+ *
+ * 通道划分：
+ * - `friends`  好友列表（`getFriends`）
+ * - `requests` 好友申请收发列表（`getIncomingRequests` / `getOutgoingRequests`）
+ * - `search`   加好友搜索（`searchFriends`）
+ */
+export type FriendReadChannel = 'friends' | 'requests' | 'search'
+
+const readErrors = new Map<FriendReadChannel, unknown>()
+
+/** 记录某通道一次读取失败（供 UI 显示错误态 + 重试）。 */
+export function setFriendReadError(channel: FriendReadChannel, error: unknown): void {
+  readErrors.set(channel, error)
+}
+
+/** 某通道读取成功即清空，避免陈旧错误态残留。 */
+export function clearFriendReadError(channel: FriendReadChannel): void {
+  readErrors.delete(channel)
+}
+
+/** 某通道最近一次失败原因；`null` 表示上次读取成功。 */
+export function getFriendReadError(channel: FriendReadChannel): unknown {
+  return readErrors.get(channel) ?? null
+}
+
+/** 清空全部通道（服务停止 / 账号切换）。 */
+export function clearAllFriendReadErrors(): void {
+  readErrors.clear()
+}
+
+/* ---------------- `friends` 通道的具名包装（既有调用方保持不变） ---------------- */
+
+/** 记录好友列表读取失败。 */
+export function setFriendsLoadError(error: unknown): void {
+  setFriendReadError('friends', error)
+}
+
+/** 好友列表读取成功，清空信号。 */
+export function clearFriendsLoadError(): void {
+  clearFriendReadError('friends')
+}
+
+/** 好友列表最近一次失败原因；`null` 表示上次读取成功。 */
+export function getFriendsLoadError(): unknown {
+  return getFriendReadError('friends')
+}

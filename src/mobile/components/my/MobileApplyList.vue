@@ -114,11 +114,12 @@
       </div>
     </div>
 
+    <!-- 空态：加载失败时换文案 + 出重试，避免把「读取失败」显示成「暂无申请」 -->
     <div v-if="applyList.length === 0" class="flex flex-col items-center justify-center py-40px">
-      <van-empty
-        :description="
-          props.type === 'friend' ? t('mobile_mymessage.empty_require') : t('mobile_mymessage.empty_group_require')
-        " />
+      <van-empty :description="emptyDescription" />
+      <van-button v-if="showLoadError" size="small" plain class="mt-8px" @click="handleRetryLoad">
+        {{ t('common.retry') }}
+      </van-button>
     </div>
   </div>
 </template>
@@ -154,9 +155,16 @@ const props = defineProps<{
 const groupDetailsMap = ref<Record<string, MatrixGroupInfo>>({})
 const loadingGroups = ref<Set<string>>(new Set())
 
-const isAccepted = (item: FriendRequestItem) => {
-  return item.status !== RequestNoticeAgreeStatus.UNTREATED
-}
+const isAccepted = (item: FriendRequestItem) => item.status !== RequestNoticeAgreeStatus.UNTREATED
+
+// 加载失败态：群通知走另一条链路，不共用该信号
+const showLoadError = computed(() => props.type === 'friend' && Boolean(contactStore.requestLoadError))
+const emptyDescription = computed(() =>
+  showLoadError.value
+    ? t('common.error')
+    : t(props.type === 'friend' ? 'mobile_mymessage.empty_require' : 'mobile_mymessage.empty_group_require')
+)
+const handleRetryLoad = () => void contactStore.loadFriendRequests()
 
 const applyList = computed(() => {
   return contactStore.requestFriendsList.filter((item) => {

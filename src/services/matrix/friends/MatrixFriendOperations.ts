@@ -4,6 +4,7 @@ import { createLogger } from '@/utils/Logger'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import { isConnectionClassError } from '../MatrixRequestHelper'
 import { matrixRoomActionFacade } from '../room/RoomFacade'
+import { bumpFriendsGeneration } from './friendEvents'
 import { buildFriendRequestIdempotencyKey, type FriendManagerCompat, type FriendStatus } from './friendUtils'
 import { type MatrixFriendSync, matrixFriendSync } from './MatrixFriendSync'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
@@ -130,6 +131,8 @@ export class MatrixFriendOperations {
       await synapseFriendExtensionService.acceptFriendRequest(userId)
       logger.info(`[MatrixFriend] 接受好友请求成功(REST降级): ${userId}`)
     }
+    // 接受后会新增好友房间与好友项 ⇒ 让好友列表缓存立即失效
+    bumpFriendsGeneration()
   }
 
   /** 取消好友请求
@@ -181,6 +184,7 @@ export class MatrixFriendOperations {
       await synapseFriendExtensionService.declineFriendRequest(userId)
       logger.info(`[MatrixFriend] 拒绝好友请求成功(REST降级): ${userId}`)
     }
+    bumpFriendsGeneration()
   }
 
   /** 删除好友
@@ -207,6 +211,7 @@ export class MatrixFriendOperations {
       await synapseFriendExtensionService.removeFriend(userId)
       logger.info(`[MatrixFriend] 删除好友成功(REST降级): ${userId}`)
     }
+    bumpFriendsGeneration()
   }
 
   /** 设置好友显示名称
@@ -216,6 +221,7 @@ export class MatrixFriendOperations {
       const manager = await this.sync.requireFriendManager()
       await manager.setFriendDisplayName(userId, displayName)
       logger.info(`[MatrixFriend] 设置好友备注成功: ${userId}`)
+      bumpFriendsGeneration()
     } catch (err) {
       logger.error(`[MatrixFriend] 设置好友备注失败: ${err}`)
       throw err
@@ -236,12 +242,14 @@ export class MatrixFriendOperations {
       }
 
       logger.info(`[MatrixFriend] 设置好友笔记成功: ${userId}`)
+      bumpFriendsGeneration()
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err)
       // manager 未初始化或不支持备注功能时 fallback REST
       if (errMsg.includes('not initialized') || errMsg.includes('不可用') || errMsg.includes('unsupported')) {
         await synapseFriendExtensionService.setFriendNote(userId, note)
         logger.info(`[MatrixFriend] 设置好友笔记成功(REST降级): ${userId}`)
+        bumpFriendsGeneration()
       } else {
         logger.error(`[MatrixFriend] 设置好友笔记失败: ${err}`)
         throw err
@@ -258,14 +266,17 @@ export class MatrixFriendOperations {
       if (status === 'favorite') {
         await matrixSpecialFriendService.addSpecialFriend(userId)
         logger.info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
+        bumpFriendsGeneration()
         return
       }
 
       await matrixSpecialFriendService.removeSpecialFriend(userId)
+      bumpFriendsGeneration()
 
       // 'accepted' 和 'normal' 是默认关系状态，无需调用后端 API
       if (status === 'accepted' || status === 'normal') {
         logger.info(`[MatrixFriend] 设置好友状态成功（本地默认状态，无需后端调用）: ${userId} -> ${status}`)
+        bumpFriendsGeneration()
         return
       }
 
@@ -276,6 +287,7 @@ export class MatrixFriendOperations {
 
       await manager.setFriendStatus(userId, status)
       logger.info(`[MatrixFriend] 设置好友状态成功: ${userId} -> ${status}`)
+      bumpFriendsGeneration()
     } catch (err) {
       logger.error(`[MatrixFriend] 设置好友状态失败: ${err}`)
       throw err

@@ -5,13 +5,21 @@ import { unknownToObject } from '@/utils/typeGuard'
 import { type SynapseDmInfo, synapseDmExtensionService } from '../extensions/SynapseDmExtensionService'
 import { synapseFriendExtensionService } from '../extensions/SynapseFriendExtensionService'
 import matrixClientService from '../MatrixClientService'
-import { friendEventBus } from './friendEvents'
+import {
+  clearAllFriendReadErrors,
+  clearFriendsLoadError,
+  friendEventBus,
+  getFriendsGeneration,
+  setFriendReadError,
+  setFriendsLoadError
+} from './friendEvents'
 import {
   type FriendStatus,
   type FriendSyncState,
   getFriendUserId,
   normalizeFriend,
-  normalizeSynapseFriendRequest
+  normalizeSynapseFriendRequest,
+  streamFriendPages
 } from './friendUtils'
 import { matrixFriendSync } from './MatrixFriendSync'
 import { matrixSpecialFriendService } from './MatrixSpecialFriendService'
@@ -28,21 +36,14 @@ export type { Friend, FriendRequest }
 
 const logger = createLogger('MatrixFriendService')
 
-/**
- * 好友查询门面：只保留**有实际逻辑**的读取路径（FriendManager 优先 → REST 回退、
- * 错误归一、日志）。纯 1:1 转发的方法已移出，调用方直接使用对应单例：
- *
- * | 能力 | 使用 |
- * |---|---|
- * | 生命周期 initialize / sync / stop | `matrixFriendSync` |
- * | 写操作（请求收发、解除关系、备注/状态） | `matrixFriendOperations` |
- * | 分组增删改查 | `matrixFriendGroups` |
- * | 事件订阅 on / off | 本门面的 `on` / `off`（转发 `friendEventBus`） |
- *
- * 这样拆分后每个文件都低于 400 行护栏，且不再有「门面方法只是换个名字再调一次」
- * 的空转层。
- */
+/** 好友列表缓存 TTL：覆盖启动阶段的重复读取；写操作另有代际失效，不依赖它。 */
+const FRIENDS_CACHE_TTL_MS = 15_000
+
+/** 好友查询门面：Manager 优先 → REST 回退、错误归一、降级信号。生命周期/写/分组见三个单例。 */
 class MatrixFriendService {
+  private friendsCache: { at: number; generation: number; data: Friend[] } | null = null
+  private friendsInFlight: Promise<Friend[]> | null = null
+
   /** 注册好友服务事件监听器（同一事件可注册多个回调）。 */
   on(event: string, callback: (data?: unknown) => void): void {
     friendEventBus.on(event, callback)
@@ -57,20 +58,53 @@ class MatrixFriendService {
   stop(): void {
     matrixFriendSync.stop()
     friendEventBus.clear()
+    this.invalidateFriendsCache()
+    clearAllFriendReadErrors()
   }
 
+  /** 让好友列表缓存立即失效（写操作 / 账号切换）。 */
+  invalidateFriendsCache(): void {
+    this.friendsCache = null
+    this.friendsInFlight = null
+  }
+
+  /** REST 回退：失败**抛出**，由 `getFriends` 记录降级信号（不再吞成空列表）。 */
   private async getFriendsByFallbackApi(): Promise<Friend[]> {
-    try {
-      const friends = await synapseFriendExtensionService.getFriends()
-      return friends.map((friend) => normalizeFriend(friend))
-    } catch (err) {
-      logger.error(`[MatrixFriend] 回退好友列表接口失败: ${err}`)
-      return []
-    }
+    const friends = await synapseFriendExtensionService.getFriends()
+    return friends.map((friend) => normalizeFriend(friend))
   }
 
-  /** 获取好友列表：优先 FriendManager，为空或不可用时回退 REST API。 */
+  /** 全量好友（Manager 优先 → REST），带单飞 + 短 TTL 缓存；写操作后由代际失效。 */
   async getFriends(): Promise<Friend[]> {
+    const generation = getFriendsGeneration()
+    if (this.friendsCache && this.friendsCache.generation === generation) {
+      const age = Date.now() - this.friendsCache.at
+      if (age < FRIENDS_CACHE_TTL_MS) return this.friendsCache.data
+    }
+    if (this.friendsInFlight) return this.friendsInFlight
+
+    this.friendsInFlight = this.loadFriends()
+      .then((friends) => {
+        // 期间发生过写操作则代际已变，不写缓存
+        if (getFriendsGeneration() === generation) {
+          this.friendsCache = { at: Date.now(), generation, data: friends }
+        }
+        clearFriendsLoadError()
+        return friends
+      })
+      .catch((err: unknown) => {
+        // 仍 fail-soft（调用方拿到 []），但记录原因供 UI 区分「空」与「失败」
+        setFriendsLoadError(err)
+        logger.error(`[MatrixFriend] 好友列表读取失败，已降级为空列表: ${err}`)
+        return []
+      })
+      .finally(() => {
+        this.friendsInFlight = null
+      })
+    return this.friendsInFlight
+  }
+
+  private async loadFriends(): Promise<Friend[]> {
     try {
       const manager = await matrixFriendSync.ensureFriendManager(false)
       if (manager) {
@@ -117,12 +151,13 @@ class MatrixFriendService {
       logger.error(`[MatrixFriend] FriendManager 检查好友关系失败，回退到 REST API: ${err}`)
     }
 
-    // FriendManager 不可用时，回退到 REST API
+    // 失败时**抛错**而非 false：`contactStateResolver` 用「抛错 = 无法确认」实现 fail-open；
+    // 返回 false 会被判成 stranger 并缓存 5 分钟，真实好友的邀请会被自动拒掉。
     try {
       return await synapseFriendExtensionService.checkFriendship(userId)
     } catch (restErr) {
-      logger.error(`[MatrixFriend] REST API 检查好友关系也失败: ${restErr}`)
-      return false
+      logger.error(`[MatrixFriend] 好友关系无法确认: ${userId} — ${restErr}`)
+      throw restErr
     }
   }
 
@@ -149,13 +184,13 @@ class MatrixFriendService {
       logger.error(`[MatrixFriend] FriendManager 获取入站好友请求失败，回退到 REST API: ${err}`)
     }
 
-    // FriendManager 不可用时，回退到 REST API
     try {
       const pending = await synapseFriendExtensionService.getPendingRequests()
       return (pending.incoming ?? []).map((r) => normalizeSynapseFriendRequest(r, 'incoming'))
     } catch (restErr) {
-      logger.error(`[MatrixFriend] REST API 获取入站好友请求也失败: ${restErr}`)
-      return []
+      setFriendReadError('requests', restErr)
+      logger.error(`[MatrixFriend] REST API 获取入站好友请求失败: ${restErr}`)
+      throw restErr
     }
   }
 
@@ -171,13 +206,13 @@ class MatrixFriendService {
       logger.error(`[MatrixFriend] FriendManager 获取出站好友请求失败，回退到 REST API: ${err}`)
     }
 
-    // FriendManager 不可用时，回退到 REST API
     try {
       const pending = await synapseFriendExtensionService.getPendingRequests()
       return (pending.outgoing ?? []).map((r) => normalizeSynapseFriendRequest(r, 'outgoing'))
     } catch (restErr) {
-      logger.error(`[MatrixFriend] REST API 获取出站好友请求也失败: ${restErr}`)
-      return []
+      setFriendReadError('requests', restErr)
+      logger.error(`[MatrixFriend] REST API 获取出站好友请求失败: ${restErr}`)
+      throw restErr
     }
   }
 
@@ -344,8 +379,9 @@ class MatrixFriendService {
         avatar_url: r.avatar_url
       }))
     } catch (err) {
+      setFriendReadError('search', err)
       logger.error(`[MatrixFriend] REST 搜索好友失败: ${err}`)
-      return []
+      throw err
     }
   }
 }
@@ -354,6 +390,8 @@ export const matrixFriendService = new MatrixFriendService()
 
 // 好友域聚合入口：调用方从这里取「查询门面 + 三个能力单例」，无需关心内部文件划分。
 export { friendEventBus } from './friendEvents'
+/** 逐页流式读好友（首页先返回，后续页随用随取）：绑定扩展服务实现。 */
+export const streamFriendsPages = () => streamFriendPages(synapseFriendExtensionService.getFriendsPage)
 export { matrixFriendGroups } from './MatrixFriendGroups'
 export { matrixFriendOperations } from './MatrixFriendOperations'
 export { matrixFriendSync } from './MatrixFriendSync'

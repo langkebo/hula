@@ -80,7 +80,8 @@ describe('MatrixCryptoStateTracker - ADR-005 H1 回归', () => {
     } as unknown as Parameters<MatrixCryptoStateTracker['ensureCrypto']>[0]
   }
 
-  it('同用户换设备登录时必须触发主动清理（H1 核心修复）', async () => {
+  // 这两条用真实计时器模拟「重启/切设备」，单跑约 11s；全目录并行时会撞默认超时，显式放宽
+  it('同用户换设备登录时必须触发主动清理（H1 核心修复）', { timeout: 60_000 }, async () => {
     // 第一次登录：user@test.com / device-A
     const clientA = createMockClient('@user:test.com', 'device-A')
     await tracker.ensureCrypto(clientA, true)
@@ -102,7 +103,7 @@ describe('MatrixCryptoStateTracker - ADR-005 H1 回归', () => {
     expect(localStorage.getItem('tjg.lastCryptoUserId')).toBe('@user:test.com:device-B')
   })
 
-  it('同用户同设备重启时不应触发清理', async () => {
+  it('同用户同设备重启时不应触发清理', { timeout: 60_000 }, async () => {
     // 第一次登录
     const client = createMockClient('@user:test.com', 'device-A')
     await tracker.ensureCrypto(client, true)

@@ -410,4 +410,88 @@ describe('errors', () => {
       }
     })
   })
+
+  /**
+   * 契约守护（FE-1）：errcode → AppError.kind 的映射是「后端错误码」与「前端 UI 分支」
+   * 之间唯一的转换层，必须逐码锁住。
+   *
+   * 样本来源：synapse-rust `6.3.0-7914e4630` 实测响应
+   * （`GET /friends?limit=0` → M_INVALID_PARAM；无 token → M_MISSING_TOKEN）。
+   */
+  describe('errcode → AppError.kind 契约（实测样本）', () => {
+    const cases: Array<{ errcode: string; httpStatus?: number; kind: string; note: string }> = [
+      { errcode: 'M_INVALID_PARAM', httpStatus: 400, kind: 'validation', note: '参数校验失败（limit 越界）' },
+      { errcode: 'M_MISSING_PARAM', httpStatus: 400, kind: 'validation', note: '缺参' },
+      { errcode: 'M_BAD_JSON', httpStatus: 400, kind: 'validation', note: '请求体非 JSON' },
+      { errcode: 'M_UNAUTHORIZED', httpStatus: 401, kind: 'auth', note: '非规范码，旧后端在用' },
+      { errcode: 'M_MISSING_TOKEN', httpStatus: 401, kind: 'auth', note: '未带 token' },
+      { errcode: 'M_UNKNOWN_TOKEN', httpStatus: 401, kind: 'auth', note: 'token 失效' },
+      { errcode: 'M_FORBIDDEN', httpStatus: 403, kind: 'auth', note: '无权限' },
+      { errcode: 'M_NOT_FOUND', httpStatus: 404, kind: 'not_found', note: '资源不存在' },
+      { errcode: 'M_LIMIT_EXCEEDED', httpStatus: 429, kind: 'retryable', note: '限流' },
+      { errcode: 'M_UNKNOWN', httpStatus: 500, kind: 'retryable', note: '5xx 一律可重试' }
+    ]
+
+    for (const c of cases) {
+      it(`${c.errcode} (HTTP ${c.httpStatus}) → ${c.kind}（${c.note}）`, () => {
+        const err = Object.assign(new Error(c.errcode), { errcode: c.errcode, httpStatus: c.httpStatus })
+        expect(toAppError(err).kind).toBe(c.kind)
+      })
+    }
+
+    it('M_INVALID_PARAM 不再是 fatal（回归：曾因未收录被归为未知错误）', () => {
+      const err = Object.assign(new Error('limit must be between 1 and 200'), {
+        errcode: 'M_INVALID_PARAM',
+        httpStatus: 400
+      })
+      const result = toAppError(err)
+      expect(result.kind).toBe('validation')
+      expect((result as AppErrorValidation).i18nKey).toBe('error.matrix.bad_request')
+    })
+
+    it('M_UNAUTHORIZED 归 auth 且可恢复（回归：曾落到 fatal+correlationId）', () => {
+      const err = Object.assign(new Error('Missing access token'), {
+        errcode: 'M_UNAUTHORIZED',
+        httpStatus: 401
+      })
+      const result = toAppError(err)
+      expect(result.kind).toBe('auth')
+      expect((result as AppErrorAuth).recoverable).toBe(true)
+    })
+  })
+})
+
+/**
+ * BE-7 客户端侧（F-1）：后端把 400/409/501/503 全映射到 catch-all `M_UNKNOWN`，
+ * 判别口径是「结合 HTTP 状态」（见后端 `M_UNKNOWN_MEANINGS` 的注释与守卫测试）。
+ *
+ * 修复前：这些响应落到 fallback → `kind:'fatal'` + correlationId，用户看到「未知错误 + 支持编号」。
+ */
+describe('M_UNKNOWN 按 HTTP 状态补语义（BE-7 客户端侧）', () => {
+  const make = (httpStatus: number, message: string) =>
+    Object.assign(new Error(message), { errcode: 'M_UNKNOWN', httpStatus })
+
+  it('400 → validation（请求内容不被接受），文案走 bad_request', () => {
+    const result = toAppError(make(400, 'field is not supported here'))
+    expect(result.kind).toBe('validation')
+    expect((result as AppErrorValidation).i18nKey).toBe('error.matrix.bad_request')
+  })
+
+  it('409 → validation，code 标为 M_CONFLICT 且保留后端原因（不套 generic 文案）', () => {
+    const result = toAppError(make(409, 'Already friends'))
+    expect(result.kind).toBe('validation')
+    expect((result as AppErrorValidation).code).toBe('M_CONFLICT')
+    expect((result as AppErrorValidation).i18nKey).toBeUndefined()
+    expect(result.message).toBe('Already friends')
+  })
+
+  it('501 → fatal 而非 retryable（未实现重试无意义）', () => {
+    const result = toAppError(make(501, 'Not supported'))
+    expect(result.kind).toBe('fatal')
+  })
+
+  it('500 / 503 仍为 retryable（回归：不能被 501 分支误伤）', () => {
+    expect(toAppError(make(500, 'boom')).kind).toBe('retryable')
+    expect(toAppError(make(503, 'maintenance')).kind).toBe('retryable')
+  })
 })

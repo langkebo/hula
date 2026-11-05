@@ -155,3 +155,30 @@ export function toFriendRequest(value: unknown): FriendRequest | null {
 export function buildFriendRequestIdempotencyKey(userId: string): string {
   return `friend-request:${userId}`
 }
+
+/** 单页加载器：由调用方绑定具体实现（避免 utils 直接依赖扩展服务造成循环导入）。 */
+export type FriendPageLoader = (
+  from?: string
+) => Promise<{ friends: Array<{ user_id: string }>; nextBatch: string | null }>
+
+/** 流式读取的页数上限（与扩展层 `MAX_FRIEND_LIST_PAGES` 对齐，防异常游标无界循环）。 */
+const MAX_FRIEND_PAGES = 10
+
+/**
+ * 逐页读取好友，每页 yield 一次 —— 供「首页先渲染、后续页补齐」使用。
+ *
+ * 后端游标分页是**串行**的（第 N 页要等第 N-1 页的 `nextBatch`），「并行预取」不成立，
+ * 能优化的只有「别让首屏等完所有页」。失败由 `loadPage` 抛出，本函数不吞错。
+ */
+export async function* streamFriendPages(
+  loadPage: FriendPageLoader,
+  maxPages = MAX_FRIEND_PAGES
+): AsyncGenerator<{ friends: Friend[]; nextBatch: string | null }> {
+  let from: string | undefined
+  for (let page = 0; page < maxPages; page++) {
+    const { friends, nextBatch } = await loadPage(from)
+    yield { friends: friends.map((friend) => normalizeFriend(friend)), nextBatch }
+    if (!nextBatch) return
+    from = nextBatch
+  }
+}

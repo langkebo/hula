@@ -114,6 +114,9 @@ const { matrixFriendGroups, matrixFriendOperations, matrixFriendService, matrixF
 )
 const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
 const { synapseFriendExtensionService } = await import('../../extensions/SynapseFriendExtensionService')
+const { bumpFriendsGeneration, clearAllFriendReadErrors, getFriendReadError, getFriendsLoadError } = await import(
+  '../friendEvents'
+)
 
 describe('MatrixFriendService', () => {
   beforeEach(() => {
@@ -397,5 +400,157 @@ describe('MatrixFriendService.createFriendDmRoom (B-2)', () => {
     createPrivateDmSpy.mockResolvedValue({ room_id: '', created: false })
 
     await expect(matrixFriendService.createFriendDmRoom('@bob:example.com')).resolves.toBeNull()
+  })
+})
+
+/**
+ * FE-2：好友列表读取的「单飞 + 短 TTL 缓存」。
+ *
+ * 背景：REST 路径按 200/页串行翻页，而启动阶段 `App.vue` 两处 + 通讯录 store 各读一次
+ * ⇒ 请求数 = 页数 × 调用次数。缓存窗口内复用，写操作（bump 代际）立即失效。
+ */
+describe('MatrixFriendService.getFriends — 缓存与单飞（FE-2）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    matrixFriendService.stop()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+    vi.mocked(synapseFriendExtensionService.getFriends).mockResolvedValue([{ user_id: '@alice:hs', since: 1 }] as never)
+  })
+
+  it('短窗口内重复读取只打一次后端', async () => {
+    const first = await matrixFriendService.getFriends()
+    const second = await matrixFriendService.getFriends()
+
+    expect(first.map((f) => f.user_id)).toEqual(['@alice:hs'])
+    expect(second).toBe(first) // 同一缓存数组实例，未重新构造
+    expect(synapseFriendExtensionService.getFriends).toHaveBeenCalledTimes(1)
+  })
+
+  it('并发调用合并为同一次请求（单飞）', async () => {
+    const [a, b] = await Promise.all([matrixFriendService.getFriends(), matrixFriendService.getFriends()])
+
+    expect(a).toBe(b)
+    expect(synapseFriendExtensionService.getFriends).toHaveBeenCalledTimes(1)
+  })
+
+  it('写操作 bump 代际后缓存立即失效', async () => {
+    await matrixFriendService.getFriends()
+    bumpFriendsGeneration()
+    await matrixFriendService.getFriends()
+
+    expect(synapseFriendExtensionService.getFriends).toHaveBeenCalledTimes(2)
+  })
+
+  it('invalidateFriendsCache() 后重新读取', async () => {
+    await matrixFriendService.getFriends()
+    matrixFriendService.invalidateFriendsCache()
+    await matrixFriendService.getFriends()
+
+    expect(synapseFriendExtensionService.getFriends).toHaveBeenCalledTimes(2)
+  })
+})
+
+/**
+ * M-3：把「失败」与「空」区分开。
+ *
+ * 服务层仍 fail-soft 返回 `[]`（不破坏既有调用方），但必须留下降级信号，
+ * 否则 UI 只会显示空列表、永远进不了错误态。
+ */
+describe('MatrixFriendService.getFriends — 降级信号（M-3）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    matrixFriendService.stop()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+  })
+
+  it('REST 读取失败时：返回空列表，但记录降级信号', async () => {
+    vi.mocked(synapseFriendExtensionService.getFriends).mockRejectedValue(new Error('HTTP 503'))
+
+    const friends = await matrixFriendService.getFriends()
+
+    expect(friends).toEqual([])
+    expect(getFriendsLoadError()).toBeInstanceOf(Error)
+    expect(String(getFriendsLoadError())).toContain('503')
+  })
+
+  it('下次读取成功后降级信号被清空', async () => {
+    vi.mocked(synapseFriendExtensionService.getFriends).mockRejectedValueOnce(new Error('down'))
+    await matrixFriendService.getFriends()
+    expect(getFriendsLoadError()).not.toBeNull()
+
+    vi.mocked(synapseFriendExtensionService.getFriends).mockResolvedValue([{ user_id: '@a:hs', since: 1 }] as never)
+    await matrixFriendService.getFriends()
+
+    expect(getFriendsLoadError()).toBeNull()
+  })
+
+  it('真空列表（成功但 0 条）不留降级信号', async () => {
+    vi.mocked(synapseFriendExtensionService.getFriends).mockResolvedValue([] as never)
+
+    const friends = await matrixFriendService.getFriends()
+
+    expect(friends).toEqual([])
+    expect(getFriendsLoadError()).toBeNull()
+  })
+})
+
+/**
+ * FE-4 / FE-5：静默降级修复。
+ *
+ * 这三条读路径此前失败时返回 `[]`/`false`，与「真的没有」不可区分：
+ * - 申请列表返回 `[]` ⇒ 未读红点被清零、列表被清空（用户以为没人加自己）；
+ * - 搜索返回 `[]` ⇒ UI 显示「没搜到人」而不是「搜索失败」；
+ * - `isFriend` 返回 `false` ⇒ `contactStateResolver` 判成 stranger 并缓存 5 分钟，
+ *   「仅允许联系人」的用户会把真实好友的邀请自动拒掉。
+ */
+describe('MatrixFriendService — 读失败必须可区分（FE-4/FE-5）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    clearAllFriendReadErrors()
+    matrixFriendService.stop()
+    vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
+  })
+
+  it('getIncomingRequests 失败时抛出并记录 requests 通道信号', async () => {
+    vi.mocked(synapseFriendExtensionService.getPendingRequests).mockRejectedValue(new Error('HTTP 503'))
+
+    await expect(matrixFriendService.getIncomingRequests()).rejects.toThrow('503')
+    expect(getFriendReadError('requests')).toBeInstanceOf(Error)
+  })
+
+  it('getOutgoingRequests 失败时抛出（不再返回空的「已发送」列表）', async () => {
+    vi.mocked(synapseFriendExtensionService.getPendingRequests).mockRejectedValue(new Error('HTTP 502'))
+
+    await expect(matrixFriendService.getOutgoingRequests()).rejects.toThrow('502')
+    expect(String(getFriendReadError('requests'))).toContain('502')
+  })
+
+  it('searchFriendsViaApi 失败时抛出并记录 search 通道信号', async () => {
+    vi.mocked(synapseFriendExtensionService.searchFriends).mockRejectedValue(new Error('rate_limited'))
+
+    await expect(matrixFriendService.searchFriendsViaApi('alice')).rejects.toThrow('rate_limited')
+    expect(String(getFriendReadError('search'))).toContain('rate_limited')
+  })
+
+  it('isFriend 无法确认时抛出（不能返回 false —— 会被判成 confirmed stranger）', async () => {
+    vi.mocked(synapseFriendExtensionService.checkFriendship).mockRejectedValue(new Error('network down'))
+
+    await expect(matrixFriendService.isFriend('@a:hs')).rejects.toThrow('network down')
+  })
+
+  it('isFriend 在 REST 明确返回 false 时仍是 false（确认不是好友 ≠ 无法确认）', async () => {
+    vi.mocked(synapseFriendExtensionService.checkFriendship).mockResolvedValue(false)
+
+    await expect(matrixFriendService.isFriend('@a:hs')).resolves.toBe(false)
+  })
+
+  it('stop() 清空全部通道信号（账号切换不残留错误态）', async () => {
+    vi.mocked(synapseFriendExtensionService.searchFriends).mockRejectedValue(new Error('x'))
+    await expect(matrixFriendService.searchFriendsViaApi('a')).rejects.toThrow()
+
+    matrixFriendService.stop()
+
+    expect(getFriendReadError('search')).toBeNull()
+    expect(getFriendReadError('requests')).toBeNull()
   })
 })

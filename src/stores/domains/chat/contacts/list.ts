@@ -4,7 +4,8 @@ import {
   type Friend,
   type FriendStatus,
   matrixFriendOperations,
-  matrixFriendService
+  matrixFriendService,
+  streamFriendsPages
 } from '@/services/matrix/friends/MatrixFriendService'
 import { type DmRoomInfo, matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
@@ -129,96 +130,105 @@ export function createContactsList(ctx: ContactsListContext) {
     }
   }
 
+  /** 好友（一页）→ 联系人条目：补 DM 房间与特别关注（`dmRoomInfos`/`specialFriends` 逐页复用）。 */
+  function friendsToContacts(friends: Friend[], dmRoomInfos: DmRoomInfo[], specialFriends: string[]): MatrixContact[] {
+    return friends.map((friend: Friend) => {
+      const dmRoom = dmRoomInfos.find(
+        (r: DmRoomInfo) => r.invitees.includes(friend.user_id) || r.inviter === friend.user_id
+      )
+      const isSpecial = specialFriends.includes(friend.user_id)
+      return {
+        ...friendToContact(friend),
+        directRoomId: dmRoom?.roomId ?? friend.dm_room_id,
+        friendStatus: isSpecial ? 'favorite' : normalizeFriendStatus(friend.status as FriendStatus | undefined)
+      }
+    })
+  }
+
+  /** DM 房间 → 联系人条目（对方不是好友，仅有会话）。 */
+  function dmRoomToContact(dmRoom: DmRoomInfo, partnerId: string, specialFriends: string[]): MatrixContact {
+    const isSpecial = specialFriends.includes(partnerId)
+    return {
+      userId: partnerId,
+      displayName: dmRoom.name ?? null,
+      avatarUrl: dmRoom.avatarUrl ?? null,
+      account: partnerId.split(':')[0],
+      activeStatus: OnlineEnum.OFFLINE,
+      remark: '',
+      lastOptTime: dmRoom.lastMessage?.timestamp ?? Date.now(),
+      hideMyPosts: false,
+      hideTheirPosts: false,
+      directRoomId: dmRoom.roomId,
+      friendStatus: isSpecial ? ('favorite' as FriendStatus) : undefined
+    }
+  }
+
+  /** 过滤服务端已删除/停用的幽灵账号；presence 校验失败时**保留原列表**。 */
+  async function filterGhostContacts(contacts: MatrixContact[]): Promise<MatrixContact[]> {
+    const candidateUserIds = contacts.map((c) => c.userId).filter((id): id is string => !!id)
+    if (candidateUserIds.length === 0) return contacts
+    try {
+      const presences = await matrixPresenceService.getBatchPresence(candidateUserIds)
+      const notFoundIds = new Set(presences.filter((p) => p.notFound).map((p) => p.user_id))
+      if (notFoundIds.size === 0) return contacts
+      const kept = contacts.filter((c) => !notFoundIds.has(c.userId))
+      logger.info(`[ContactStore] 已过滤 ${contacts.length - kept.length} 个不存在的联系人`)
+      return kept
+    } catch (err) {
+      logger.warn(`[ContactStore] 批量校验联系人存在性失败，保留原列表: ${err}`)
+      return contacts
+    }
+  }
+
+  /**
+   * 加载联系人（**首页 + 逐页补齐**）：首页一到就把 `isLoading` 置 false 让界面先出内容，
+   * 剩余页在同一循环里增量合并。游标串行，「并行预取」不成立，能省的只有首屏等待。
+   * 补齐期间列表是「部分」的（`isFriend` 可能漏判），但旧行为是整段加载期间列表**全空**，故非回归。
+   */
   async function loadContacts(): Promise<void> {
     isLoading.value = true
     lastFriendError.value = null
     try {
       await ensureFriendServicesReady()
-      const friends = await matrixFriendService.getFriends()
+      // DM 房间与特别关注只取一次，逐页复用
       const dmRoomInfos = await matrixDirectMessageService.getDmRoomInfos(false)
-
       const specialFriends = await matrixFriendService.getSpecialFriends()
 
-      const contacts: MatrixContact[] = friends.map((friend: Friend) => {
-        const dmRoom = dmRoomInfos.find(
-          (r: DmRoomInfo) => r.invitees.includes(friend.user_id) || r.inviter === friend.user_id
-        )
-        const isSpecial = specialFriends.includes(friend.user_id)
-        return {
-          ...friendToContact(friend),
-          directRoomId: dmRoom?.roomId ?? friend.dm_room_id,
-          friendStatus: isSpecial ? 'favorite' : normalizeFriendStatus(friend.status as FriendStatus | undefined)
-        }
-      })
+      let firstPage = true
+      // 失败语义：真实失败由生成器**抛出**（走下方 catch）；「客户端未就绪」只返回空页
+      for await (const page of streamFriendsPages()) {
+        const pageContacts = await filterGhostContacts(friendsToContacts(page.friends, dmRoomInfos, specialFriends))
+        // 注意 `mergeContactListPreservingPresence(prev, next)` 的语义是「用 next 重建、保留 prev 的在线态」，
+        // 不是追加 —— 追加必须自己拼 union，否则后一页会把前一页顶掉。
+        const known = new Set(contactsList.value.map((c) => c.userId))
+        const additions = firstPage ? pageContacts : pageContacts.filter((c) => !known.has(c.userId))
+        contactsList.value = mergeContactListPreservingPresence(contactsList.value, [
+          ...contactsList.value,
+          ...additions
+        ])
 
-      for (const dmRoom of dmRoomInfos) {
-        const partnerId = dmRoom.invitees[0] || dmRoom.inviter || ''
-        if (!partnerId) continue
-
-        if (!contacts.find((c) => c.userId === partnerId)) {
-          // 验证用户是否存在（异步，不阻塞加载）
-          let isUserValid = true
-          try {
-            const presence = await matrixPresenceService.getPresence(partnerId)
-            // 用户不存在（M_NOT_FOUND）时跳过，避免幽灵账号进入联系人列表
-            if (presence.notFound) {
-              isUserValid = false
-              logger.warn(`[ContactStore] DM 房间对方用户不存在，跳过: ${partnerId}`)
-            }
-          } catch {
-            // 获取 presence 失败时，仍然添加联系人（保守策略）
-          }
-
-          if (isUserValid) {
-            const isSpecial = specialFriends.includes(partnerId)
-            contacts.push({
-              userId: partnerId,
-              displayName: dmRoom.name ?? null,
-              avatarUrl: dmRoom.avatarUrl ?? null,
-              account: partnerId.split(':')[0],
-              activeStatus: OnlineEnum.OFFLINE,
-              remark: '',
-              lastOptTime: dmRoom.lastMessage?.timestamp ?? Date.now(),
-              hideMyPosts: false,
-              hideTheirPosts: false,
-              directRoomId: dmRoom.roomId,
-              friendStatus: isSpecial ? ('favorite' as FriendStatus) : undefined
-            })
-          }
+        if (firstPage) {
+          firstPage = false
+          isLoading.value = false
+          logger.info(`[ContactStore] 首页联系人已渲染: ${contactsList.value.length} 个（后续页继续补齐）`)
         }
       }
 
-      // 批量校验联系人存在性：过滤服务端已删除/停用的幽灵账号（如测试残留 @test3）。
-      // getBatchPresence 优先走 presence/list 批量接口，失败降级为逐个，避免阻塞加载。
-      const candidateUserIds = contacts.map((c) => c.userId).filter((id): id is string => !!id)
-      if (candidateUserIds.length > 0) {
-        try {
-          const presences = await matrixPresenceService.getBatchPresence(candidateUserIds)
-          const notFoundIds = new Set(presences.filter((p) => p.notFound).map((p) => p.user_id))
-          if (notFoundIds.size > 0) {
-            const before = contacts.length
-            for (let i = contacts.length - 1; i >= 0; i--) {
-              if (notFoundIds.has(contacts[i].userId)) {
-                logger.warn(`[ContactStore] 联系人用户不存在，从列表移除: ${contacts[i].userId}`)
-                contacts.splice(i, 1)
-              }
-            }
-            if (contacts.length < before) {
-              logger.info(`[ContactStore] 已过滤 ${before - contacts.length} 个不存在的联系人`)
-            }
-          }
-        } catch (err) {
-          // 校验失败时保留原列表，避免因 presence 服务异常误删联系人
-          logger.warn(`[ContactStore] 批量校验联系人存在性失败，保留原列表: ${err}`)
-        }
+      // 只有会话、不是好友的联系人：等分页结束再补，避免把「第 2 页的好友」先建成非好友条目
+      const dmOnly = dmRoomInfos
+        .map((dmRoom) => ({ dmRoom, partnerId: dmRoom.invitees[0] || dmRoom.inviter || '' }))
+        .filter(({ partnerId }) => partnerId && !contactsList.value.some((c) => c.userId === partnerId))
+        .map(({ dmRoom, partnerId }) => dmRoomToContact(dmRoom, partnerId, specialFriends))
+      if (dmOnly.length > 0) {
+        const kept = await filterGhostContacts(dmOnly)
+        contactsList.value = mergeContactListPreservingPresence(contactsList.value, kept)
       }
 
-      contactsList.value = mergeContactListPreservingPresence(contactsList.value, contacts)
-      logger.info(`[ContactStore] 加载联系人成功: ${contacts.length} 个`)
+      logger.info(`[ContactStore] 加载联系人成功: ${contactsList.value.length} 个`)
     } catch (err) {
       logger.error(`[ContactStore] 加载联系人失败: ${err}`)
-      // 客户端未初始化是暂时状态，不设置错误状态避免干扰 UI
-      if (String(err).includes('客户端未初始化')) return
+      // 客户端未初始化是暂时状态；已有数据时静默降级（不把已渲染的列表打成错误态）
+      if (String(err).includes('客户端未初始化') || contactsList.value.length > 0) return
       setFriendListError('contacts', err, '加载好友列表失败')
     } finally {
       isLoading.value = false

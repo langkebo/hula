@@ -79,17 +79,16 @@ export const useUpload = () => {
   // 图片/音频预览临时 URL：替换与 scope 销毁时统一释放
   const tempUrls = useTempObjectUrls()
 
-  /**
-   * Matrix 原生上传（见 `services/media/uploadTransports.ts`）。
-   *
-   * 后端 `upload/token` 返回 `storage_type=matrix` 且 `upload_url` 是 POST 端点，
-   * 没有可 PUT 的预签名地址 ⇒ 必须走原生通道，否则附件永远发不出去。
-   */
-  const uploadViaMatrixNative = (file: File): Promise<string> =>
-    uploadFileViaMatrix(file, (pct) => {
-      progress.value = pct
-      trigger('progress')
-    })
+  /** Matrix 原生上传（见 `services/media/uploadTransports.ts`）：后端只给 POST 端点，没有预签名地址。 */
+  const uploadViaMatrixNative = (file: File, downloadUrlPrefix?: string): Promise<string> =>
+    uploadFileViaMatrix(
+      file,
+      (pct) => {
+        progress.value = pct
+        trigger('progress')
+      },
+      downloadUrlPrefix ? { downloadUrlPrefix } : {}
+    )
 
   /**
    * 计算文件的MD5哈希值
@@ -247,7 +246,7 @@ export const useUpload = () => {
         await onStart.trigger(fileInfo)
         isUploading.value = true
         progress.value = 0
-        const downloadUrl = await uploadViaMatrixNative(file)
+        const downloadUrl = await uploadViaMatrixNative(file, credential?.downloadUrlPrefix)
         isUploading.value = false
         progress.value = 100
         fileInfo.value = { ...fileInfo.value!, downloadUrl }

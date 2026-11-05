@@ -333,10 +333,11 @@ const handleSendRequest = async () => {
     return
   }
 
-  // 发送前查重（前后端双保险，后端同样返回 409）：
-  // 已是好友或已有待处理请求时不重复发送，避免同一联系人堆积多条好友请求。
+  // 发送前查重：后端对同目标重复请求是**幂等**（200 + 同一 id）而非 409；`isFriend` 无法确认时
+  // 抛错（三态解析器靠它判 unknown），这里按 fail-open 处理，只挡多余往返。
   const targetUserId = searchResult.value.userId
-  if (await contactStore.isFriend(targetUserId)) {
+  const alreadyFriend = await contactStore.isFriend(targetUserId).catch(() => false)
+  if (alreadyFriend) {
     showFeedback(t('friend.add.already_friend'), 'info', 'polite')
     return
   }
@@ -379,7 +380,7 @@ const handleClearActiveSearch = () => {
   clearSearchState()
 }
 
-// 自动同步草稿到 store
+// 草稿同步 + 搜索待提交态
 watch([searchValue, searchMode, requestMessage], () => {
   draftStore.saveAddFriend({
     searchValue: searchValue.value,
@@ -387,7 +388,6 @@ watch([searchValue, searchMode, requestMessage], () => {
     requestMessage: requestMessage.value
   })
 })
-
 watch(searchValue, (value) => {
   if (!value.trim()) {
     clearSearchState()

@@ -121,10 +121,12 @@
       </template>
     </n-virtual-list>
 
-    <!-- 空数据提示 -->
+    <!-- 空数据提示：加载失败时换文案 + 出重试，避免把「读取失败」显示成「暂无好友申请」 -->
     <n-flex v-if="applyList.length === 0" vertical justify="center" align="center" class="py-40px">
-      <n-empty
-        :description="t(props.type === 'friend' ? 'home.apply_list.empty_friend' : 'home.apply_list.empty_group')" />
+      <n-empty :description="emptyDescription" />
+      <n-button v-if="showLoadError" size="small" tertiary type="primary" @click="handleRetryLoad">
+        {{ t('common.retry') }}
+      </n-button>
     </n-flex>
   </n-flex>
 </template>
@@ -157,14 +159,19 @@ const props = defineProps<{
   type: 'friend' | 'group'
 }>()
 
-// 新增：存储群组信息的响应式对象
 const groupDetailsMap = ref<Record<string, MatrixGroupInfo>>({})
 const loadingGroups = ref<Set<string>>(new Set())
 
-// 检查好友申请是否已被接受
-const isAccepted = (item: NoticeItem) => {
-  return item.status !== RequestNoticeAgreeStatus.UNTREATED
-}
+const isAccepted = (item: NoticeItem) => item.status !== RequestNoticeAgreeStatus.UNTREATED
+
+// 加载失败态：群通知走另一条链路，不共用该信号
+const showLoadError = computed(() => props.type === 'friend' && Boolean(contactStore.requestLoadError))
+const emptyDescription = computed(() =>
+  showLoadError.value
+    ? t('common.error')
+    : t(props.type === 'friend' ? 'home.apply_list.empty_friend' : 'home.apply_list.empty_group')
+)
+const handleRetryLoad = () => void contactStore.loadFriendRequests()
 
 const applyList = computed(() => {
   return contactStore.requestFriendsList.filter((item) => {
@@ -176,21 +183,12 @@ const applyList = computed(() => {
   })
 })
 
-// 新增：获取群组信息的函数
 const getGroupDetail = async (roomId: string) => {
   if (!roomId) return null
 
-  // 如果已经在加载中，直接返回
-  if (loadingGroups.value.has(roomId)) {
-    return null
-  }
+  if (loadingGroups.value.has(roomId)) return null
+  if (groupDetailsMap.value[roomId]) return groupDetailsMap.value[roomId]
 
-  // 如果已经有缓存，直接返回
-  if (groupDetailsMap.value[roomId]) {
-    return groupDetailsMap.value[roomId]
-  }
-
-  // 开始加载
   loadingGroups.value.add(roomId)
   try {
     const groupInfo = await groupStore.loadGroupInfo(roomId)
@@ -207,7 +205,6 @@ const getGroupDetail = async (roomId: string) => {
   return null
 }
 
-// 异步获取群组信息的计算属性
 const applyMsg = computed(() => (item: NoticeItem) => {
   if (props.type === 'friend') {
     return isCurrentUser(item.senderId)
@@ -257,7 +254,6 @@ const applyMsg = computed(() => (item: NoticeItem) => {
   return ''
 })
 
-// 下拉菜单选项
 const dropdownOptions = computed(() => [
   {
     label: t('home.apply_list.dropdown.reject'),
@@ -271,10 +267,7 @@ const dropdownOptions = computed(() => [
 
 const avatarSrc = (url: string) => AvatarUtils.getAvatarUrl(url)
 
-// 判断是否为当前登录用户
-const isCurrentUser = (uid: string) => {
-  return uid === (userStore.userInfo?.uid ?? '')
-}
+const isCurrentUser = (uid: string) => uid === (userStore.userInfo?.uid ?? '')
 
 /**
  * 获取当前用户查询视角

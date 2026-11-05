@@ -171,10 +171,9 @@ describe('SynapseFriendExtensionService', () => {
       expect(secondUrl).toContain('from=c1')
     })
 
-    it('returns [] when the request fails', async () => {
+    it('rethrows when the request fails（否则「空」与「失败」不可区分）', async () => {
       fetchMock.mockRejectedValue(new Error('down'))
-      const result = await synapseFriendExtensionService.getFriends()
-      expect(result).toEqual([])
+      await expect(synapseFriendExtensionService.getFriends()).rejects.toThrow('down')
     })
 
     it('returns [] when Matrix client is not ready', async () => {
@@ -187,6 +186,66 @@ describe('SynapseFriendExtensionService', () => {
       fetchMock.mockRejectedValue(new Error('客户端未初始化'))
       const result = await synapseFriendExtensionService.getFriends()
       expect(result).toEqual([])
+    })
+  })
+
+  /**
+   * F-6：单页读取。`getFriends()` 内部改由它驱动，两者必须共用同一套失败语义
+   * （真实失败抛出、「客户端未就绪」返回空页），否则首屏分页会把失败渲染成「没有好友」。
+   */
+  describe('getFriendsPage', () => {
+    it('透传 nextBatch，并带 limit=200', async () => {
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({
+          ok: true,
+          status: 200,
+          textResp: JSON.stringify({ friends: [alice], next_batch: 'c2' })
+        })
+      )
+
+      const result = await synapseFriendExtensionService.getFriendsPage()
+
+      expect(result.friends.map((f) => f.user_id)).toEqual(['@alice:hs'])
+      expect(result.nextBatch).toBe('c2')
+      expect(String(fetchMock.mock.calls[0][0])).toContain('limit=200')
+      expect(String(fetchMock.mock.calls[0][0])).not.toContain('from=')
+    })
+
+    it('带 from 时把游标拼进查询串', async () => {
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ friends: [] }) })
+      )
+
+      await synapseFriendExtensionService.getFriendsPage('c2')
+
+      expect(String(fetchMock.mock.calls[0][0])).toContain('from=c2')
+    })
+
+    it('游标原地打转（next_batch === from）→ 归一为 null，避免死循环', async () => {
+      fetchMock.mockResolvedValueOnce(
+        makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ friends: [alice], next_batch: 'c2' }) })
+      )
+
+      const result = await synapseFriendExtensionService.getFriendsPage('c2')
+
+      expect(result.nextBatch).toBeNull()
+    })
+
+    it('真实失败抛出（不能吞成空页）', async () => {
+      fetchMock.mockRejectedValue(new Error('HTTP 503'))
+      await expect(synapseFriendExtensionService.getFriendsPage()).rejects.toThrow('503')
+    })
+
+    it('客户端未就绪 → 空页 + nextBatch=null（启动期临时态）', async () => {
+      fetchMock.mockRejectedValue(new Error('客户端未初始化'))
+      const result = await synapseFriendExtensionService.getFriendsPage()
+      expect(result).toEqual({ friends: [], nextBatch: null })
+    })
+
+    it('端点不可用 → 空页（能力缺失 ≠ 读取失败）', async () => {
+      makeUnavailable()
+      const result = await synapseFriendExtensionService.getFriendsPage()
+      expect(result).toEqual({ friends: [], nextBatch: null })
     })
   })
 
@@ -286,10 +345,9 @@ describe('SynapseFriendExtensionService', () => {
       expect(result).toEqual([])
     })
 
-    it('returns [] when the request fails', async () => {
+    it('rethrows when the request fails（搜索失败不能显示成「没搜到人」）', async () => {
       fetchMock.mockRejectedValue(new Error('down'))
-      const result = await synapseFriendExtensionService.searchFriends('alice')
-      expect(result).toEqual([])
+      await expect(synapseFriendExtensionService.searchFriends('alice')).rejects.toThrow('down')
     })
   })
 
@@ -315,7 +373,7 @@ describe('SynapseFriendExtensionService', () => {
       expect(result.outgoing).toHaveLength(1)
     })
 
-    it('handles one fulfilled and one rejected via allSettled', async () => {
+    it('throws when one side fails（半个列表不能当完整列表返回）', async () => {
       const incomingReq = { request_id: 1, requester: '@a:hs', recipient: '@me:hs', status: 'pending', created_ts: 1 }
       // 基于 URL 分发：incoming 成功，outgoing 失败
       fetchMock.mockImplementation((url: string) => {
@@ -324,9 +382,13 @@ describe('SynapseFriendExtensionService', () => {
           makeResponse({ ok: true, status: 200, textResp: JSON.stringify({ requests: [incomingReq] }) })
         )
       })
+      await expect(synapseFriendExtensionService.getPendingRequests()).rejects.toThrow()
+    })
+
+    it('returns empty lists when client is not ready（启动期临时态不算失败）', async () => {
+      fetchMock.mockRejectedValue(new Error('MatrixClient 未在指定时间内就绪'))
       const result = await synapseFriendExtensionService.getPendingRequests()
-      expect(result.incoming).toHaveLength(1)
-      expect(result.outgoing).toEqual([])
+      expect(result).toEqual({ incoming: [], outgoing: [] })
     })
 
     it('returns [] entries when responses carry no array', async () => {
@@ -479,10 +541,9 @@ describe('SynapseFriendExtensionService', () => {
       expect(result).toBe(false)
     })
 
-    it('returns false when the request fails', async () => {
+    it('rethrows when the request fails（false 会被误判成「确认不是好友」）', async () => {
       fetchMock.mockRejectedValue(new Error('down'))
-      const result = await synapseFriendExtensionService.checkFriendship('@bob:hs')
-      expect(result).toBe(false)
+      await expect(synapseFriendExtensionService.checkFriendship('@bob:hs')).rejects.toThrow('down')
     })
   })
 })

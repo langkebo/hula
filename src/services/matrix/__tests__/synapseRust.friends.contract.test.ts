@@ -156,15 +156,15 @@ describe('SynapseFriendExtensionService friends URL construction contract (real 
     expect(result[0].user_id).toBe('@bare:hs')
   })
 
-  it('getFriends returns [] on HTTP error', async () => {
+  it('getFriends rethrows on HTTP error（不再吞成 []，否则「空」与「失败」不可区分）', async () => {
     server.use(
       http.get(`${HOMESERVER}/_matrix/vendor/v1/friends`, ({ request }) => {
         seenUrls.push({ method: request.method, url: request.url })
         return HttpResponse.json({ error: 'unauthorized' }, { status: 401 })
       })
     )
-    const result = await synapseFriendExtensionService.getFriends()
-    expect(result).toEqual([])
+    // M-3 修复后的契约：真实失败必须抛出，由门面记录降级信号；只有「客户端未就绪」才返回空。
+    await expect(synapseFriendExtensionService.getFriends()).rejects.toThrow()
   })
 
   it('searchFriends builds GET /_matrix/vendor/v1/friends/search?q=...&limit=...&mode=...', async () => {

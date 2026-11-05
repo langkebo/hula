@@ -21,22 +21,52 @@ const logger = createLogger('UploadTransport')
 /** 是否绝对文件系统路径 */
 export const isAbsoluteFsPath = (path: string): boolean => /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(path)
 
-/** 上传一个 `File` 并返回可访问的 HTTP 地址（mxc 解析失败时回退 mxc URI）。 */
-export async function uploadFileViaMatrix(file: File, onProgress?: (pct: number) => void): Promise<string> {
+/** 上传选项：`downloadUrlPrefix` 来自后端 `upload/token` 的 `download_url_prefix` */
+export interface MatrixNativeUploadOptions {
+  /** 下载地址前缀（`/_matrix/client/v1/media/download/<server>/`）；有值时优先使用 */
+  downloadUrlPrefix?: string
+}
+
+/** 从 `mxc://server/mediaId` 取 mediaId */
+function extractMediaId(mxcUrl: string): string {
+  const idx = mxcUrl.lastIndexOf('/')
+  return idx >= 0 ? mxcUrl.slice(idx + 1) : ''
+}
+
+/**
+ * 上传一个 `File` 并返回可访问的 HTTP 地址。
+ *
+ * 地址优先级：后端 `download_url_prefix` + mediaId > mxc→http 解析 > 原始 mxc URI。
+ * 之所以优先用 prefix：它是后端**显式声明**的下载路径，即便 SDK 未就绪
+ * （`getProfileManager` 不可用导致 mxc 解析返回 null）也能给出可用地址。
+ */
+export async function uploadFileViaMatrix(
+  file: File,
+  onProgress?: (pct: number) => void,
+  options: MatrixNativeUploadOptions = {}
+): Promise<string> {
   // 动态 import：`useUpload` 被大量首屏组件引用，静态引入会拖入整个媒体服务依赖图
   const { matrixMediaService } = await import('@/services/matrix/media/MatrixMediaService')
   const result = await matrixMediaService.uploadFile(file, onProgress)
+  const mediaId = extractMediaId(result.contentUri)
+  if (options.downloadUrlPrefix && mediaId) {
+    return `${options.downloadUrlPrefix}${mediaId}`
+  }
   const httpUrl = matrixMediaService.getMediaUrl(result.contentUri)
   if (!httpUrl) logger.warn(`[UploadTransport] mxc 解析失败，回退原始 URI: ${result.contentUri}`)
   return httpUrl ?? result.contentUri
 }
 
 /** 从本地路径上传（策略层只有路径，没有 `File`）。 */
-export async function uploadPathViaMatrix(path: string, mimeType?: string): Promise<string> {
+export async function uploadPathViaMatrix(
+  path: string,
+  mimeType?: string,
+  options: MatrixNativeUploadOptions = {}
+): Promise<string> {
   const bytes = isAbsoluteFsPath(path) ? await readFile(path) : await readFile(path, { baseDir: getCacheBaseDir() })
   const name = extractFileName(path) || `upload-${Date.now()}`
   const resolvedType = mimeType || getMimeTypeFromExtension(name) || 'application/octet-stream'
-  return await uploadFileViaMatrix(new File([bytes], name, { type: resolvedType }))
+  return await uploadFileViaMatrix(new File([bytes], name, { type: resolvedType }), undefined, options)
 }
 
 /**

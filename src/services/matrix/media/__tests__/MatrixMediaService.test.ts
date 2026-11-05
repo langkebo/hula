@@ -265,8 +265,8 @@ describe('MatrixMediaService', () => {
       expect(url).toBe('https://matrix.org/media/uploaded123')
     })
 
-    // 回归防护：mxc → http 必须走 ProfileManager（SDK 的 mxcUrlToHttp 不在 MatrixClient 上）。
-    // 若实现回退成 client.mxcUrlToHttp(...)，下面两处断言会直接失败。
+    // 回归防护：client 级方法缺失时（旧 SDK / manager 未装载）必须回退 ProfileManager。
+    // SDK-1（2026-11-05）后 client.mxcUrlToHttp 已存在，故「优先 client」由下一条用例锁住。
     it('把尺寸按 (width, height, "scale") 传给 ProfileManager.mxcUrlToHttp', () => {
       const mxcUrlToHttp = vi.fn().mockReturnValue('https://matrix.org/media/thumb')
       vi.mocked(matrixClientService.getClient).mockReturnValue({
@@ -279,14 +279,26 @@ describe('MatrixMediaService', () => {
       expect(mxcUrlToHttp).toHaveBeenCalledWith('mxc://matrix.org/abc123', 64, 48, 'scale')
     })
 
-    it('客户端只有幻影形态的 client.mxcUrlToHttp 时不得解析出 URL', () => {
-      const phantom = vi.fn().mockReturnValue('https://should-not-be-used.example/x')
+    // SDK-1（2026-11-05）：client.mxcUrlToHttp 已由 SDK 本体提供（与 content-repo 共用实现），
+    // 不再是「幻影方法」。此前的判据「有 client.mxcUrlToHttp 就返回 null」已失效 —— 它会把正常
+    // 解析路径一起否掉。现锁「优先用它、不触碰 ProfileManager」。
+    it('优先使用 client.mxcUrlToHttp（不触碰 ProfileManager）', () => {
+      const direct = vi.fn().mockReturnValue('https://matrix.org/media/direct')
+      const fromManager = vi.fn().mockReturnValue('https://matrix.org/media/from-manager')
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        mxcUrlToHttp: phantom
+        mxcUrlToHttp: direct,
+        getProfileManager: () => ({ mxcUrlToHttp: fromManager })
       } as unknown as MatrixClient)
 
+      expect(matrixMediaService.getMediaUrl('mxc://matrix.org/abc123')).toBe('https://matrix.org/media/direct')
+      expect(direct).toHaveBeenCalledWith('mxc://matrix.org/abc123')
+      expect(fromManager).not.toHaveBeenCalled()
+    })
+
+    it('两种解析能力都不可用时返回 null（绝不把 mxc:// 原样返回）', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({} as unknown as MatrixClient)
+
       expect(matrixMediaService.getMediaUrl('mxc://matrix.org/abc123')).toBeNull()
-      expect(phantom).not.toHaveBeenCalled()
     })
   })
 

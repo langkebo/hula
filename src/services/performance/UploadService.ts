@@ -22,6 +22,10 @@ interface RawUploadTokenResponse {
   upload_token?: string
   storage_type?: string
   upload_url?: string
+  /** 上传方法；后端现返回 "POST"，避免客户端按 PUT 使用 upload_url */
+  upload_method?: string
+  /** 下载地址前缀（`/_matrix/client/v1/media/download/<server>/`），拼上 mediaId 即可下载 */
+  download_url_prefix?: string
   filename?: string
   content_type?: string
   max_file_size?: number
@@ -51,6 +55,8 @@ export interface UploadCredential {
   objectKey?: string
   storageType?: string
   maxFileSize?: number
+  /** 下载地址前缀；有值时优先用它拼地址（胜过 mxc→http 解析） */
+  downloadUrlPrefix?: string
 }
 
 interface UploadProviderResponse {
@@ -142,9 +148,11 @@ class UploadService {
     const snakeUploadUrl = raw.upload_url ?? ''
     const uploadUrl = camelUploadUrl || snakeUploadUrl
     const storageType = (raw.storage_type ?? (raw.upload_token ? 'matrix' : 'oss')).toLowerCase()
-    // 后端给的 upload_url 是媒体上传的 POST 端点，不是 PUT 目标 ⇒ 一律按原生通道处理
+    // 后端给的 upload_url 是媒体上传的 **POST** 端点，不是 PUT 目标 ⇒ 一律按原生通道处理。
+    // `upload_method` 是后端的显式声明（实测为 "POST"），优先采信。
+    const isPostUpload = (raw.upload_method ?? '').toUpperCase() === 'POST'
     const provider: UploadProviderKind =
-      storageType === 'matrix' || !looksLikePresignedUrl(uploadUrl) ? 'matrix' : 'oss'
+      storageType === 'matrix' || isPostUpload || !looksLikePresignedUrl(uploadUrl) ? 'matrix' : 'oss'
 
     return {
       provider,
@@ -152,7 +160,8 @@ class UploadService {
       downloadUrl: raw.downloadUrl ?? '',
       ...(raw.objectKey ? { objectKey: raw.objectKey } : {}),
       storageType,
-      ...(typeof raw.max_file_size === 'number' ? { maxFileSize: raw.max_file_size } : {})
+      ...(typeof raw.max_file_size === 'number' ? { maxFileSize: raw.max_file_size } : {}),
+      ...(raw.download_url_prefix ? { downloadUrlPrefix: raw.download_url_prefix } : {})
     }
   }
 

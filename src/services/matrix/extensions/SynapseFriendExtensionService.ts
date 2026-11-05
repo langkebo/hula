@@ -7,6 +7,11 @@ import { SynapseExtensionHttpBase } from './SynapseExtensionHttpBase'
 
 const logger = createLogger('SynapseFriendExtensionService')
 
+/** 「客户端未就绪」是启动期临时态；其余失败一律抛出（吞成 `[]` 会让空与失败不可区分）。 */
+function isClientNotReadyError(err: unknown): boolean {
+  return err instanceof Error && (err.message === 'MatrixClient 未在指定时间内就绪' || err.message === '客户端未初始化')
+}
+
 /** 后端 `limit` 只接受 1..=200；页数上限防异常游标导致的无界循环。 */
 const FRIEND_LIST_PAGE_SIZE = 200
 const MAX_FRIEND_LIST_PAGES = 10
@@ -28,11 +33,7 @@ export interface SynapseFriendInfo {
   is_private?: boolean
 }
 
-/**
- * 好友请求条目。真实形状以 REST 回退端点为准（实测）：
- * `{user_id, message, timestamp, status}` —— 后端按「对端视角」建模，只给对端 `user_id`。
- * 其余字段为兼容 FriendManager / 旧后端的可选历史字段。
- */
+/** 好友请求条目。REST 实测形状：`{user_id, message, timestamp, status}`（按对端视角建模）。 */
 export interface SynapseFriendRequest {
   /** 对端用户 ID（incoming = 发起人；outgoing = 接收人） */
   user_id?: string
@@ -90,62 +91,58 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
     return await endpointCapabilityService.check('GET', MATRIX_PATHS.FRIENDS.LIST)
   }
 
-  /** 获取好友列表（自动翻页，跟随 `next_batch`）。
-   *
-   * 后端是游标分页：`limit` 默认 50、上限 200；旧实现不传不读 ⇒ 超过 50 静默截断。
-   */
-  async getFriends(): Promise<SynapseFriendInfo[]> {
+  /** 读取**一页**好友（游标分页）；真实失败抛出，仅「客户端未就绪」返回空页。 */
+  async getFriendsPage(from?: string): Promise<{ friends: SynapseFriendInfo[]; nextBatch: string | null }> {
     try {
-      if (!(await this.isFriendEndpointAvailable())) {
-        logger.info('[SynapseRust] 好友端点不可用，已降级')
-        return []
-      }
+      if (!(await this.isFriendEndpointAvailable())) return { friends: [], nextBatch: null }
+      const query = new URLSearchParams({ limit: String(FRIEND_LIST_PAGE_SIZE) })
+      if (from) query.set('from', from)
 
-      const seen = new Set<string>()
-      const collected: SynapseFriendInfo[] = []
-      let from: string | undefined
+      const response = await this.request<{
+        friends?: SynapseFriendInfo[]
+        items?: SynapseFriendInfo[]
+        data?: SynapseFriendInfo[]
+        next_batch?: string | null
+      }>(`${MATRIX_PATHS.FRIENDS.LIST}?${query.toString()}`, { method: 'GET' })
 
-      for (let page = 0; page < MAX_FRIEND_LIST_PAGES; page++) {
-        const query = new URLSearchParams({ limit: String(FRIEND_LIST_PAGE_SIZE) })
-        if (from) query.set('from', from)
-        const response = await this.request<{
-          friends?: SynapseFriendInfo[]
-          items?: SynapseFriendInfo[]
-          data?: SynapseFriendInfo[]
-          next_batch?: string | null
-        }>(`${MATRIX_PATHS.FRIENDS.LIST}?${query.toString()}`, { method: 'GET' })
-
-        // FT-092: 后端已移除冗余 items 字段，优先 friends
-        const arrayField = Array.isArray(response) ? response : (response?.friends ?? response?.items ?? response?.data)
-        const list: SynapseFriendInfo[] = Array.isArray(arrayField) ? arrayField : []
-
-        for (const friend of list) {
-          if (!friend?.user_id || seen.has(friend.user_id)) continue
-          seen.add(friend.user_id)
-          collected.push(friend)
-        }
-
-        const nextBatch = Array.isArray(response) ? null : (response?.next_batch ?? null)
-        if (!nextBatch || list.length === 0 || nextBatch === from) break
-        from = nextBatch
-      }
-
-      this.hasLoggedFriendsBeforeClientReady = collected.length === 0
-      return collected.length > 0 ? normalizeFriendInfoList(collected) : []
+      // FT-092: 后端已移除冗余 items 字段，优先 friends
+      const arrayField = Array.isArray(response) ? response : (response?.friends ?? response?.items ?? response?.data)
+      const friends = Array.isArray(arrayField) ? arrayField.filter((f) => Boolean(f?.user_id)) : []
+      const rawNext = Array.isArray(response) ? null : (response?.next_batch ?? null)
+      // 游标原地打转会导致外层死循环，这里直接判空
+      return { friends, nextBatch: rawNext && rawNext !== from ? rawNext : null }
     } catch (err) {
-      if (
-        err instanceof Error &&
-        (err.message === 'MatrixClient 未在指定时间内就绪' || err.message === '客户端未初始化')
-      ) {
+      if (isClientNotReadyError(err)) {
         if (!this.hasLoggedFriendsBeforeClientReady) {
           this.hasLoggedFriendsBeforeClientReady = true
           logger.info('[SynapseRust] Matrix 客户端未就绪，返回空好友列表')
         }
-        return []
+        return { friends: [], nextBatch: null }
       }
-      logger.error(`[SynapseRust] 获取好友列表失败: ${err}`)
-      return []
+      logger.error(`[SynapseRust] 获取好友页失败: ${err}`)
+      throw err
     }
+  }
+
+  /** 全量好友（内部按页跟随 `next_batch`，上限 `MAX_FRIEND_LIST_PAGES` 页）。 */
+  async getFriends(): Promise<SynapseFriendInfo[]> {
+    const seen = new Set<string>()
+    const collected: SynapseFriendInfo[] = []
+    let from: string | undefined
+
+    for (let page = 0; page < MAX_FRIEND_LIST_PAGES; page++) {
+      const { friends, nextBatch } = await this.getFriendsPage(from)
+      for (const friend of friends) {
+        if (seen.has(friend.user_id)) continue
+        seen.add(friend.user_id)
+        collected.push(friend)
+      }
+      if (!nextBatch || friends.length === 0) break
+      from = nextBatch
+    }
+
+    this.hasLoggedFriendsBeforeClientReady = collected.length === 0
+    return collected.length > 0 ? normalizeFriendInfoList(collected) : []
   }
 
   /** 发送好友请求。
@@ -225,59 +222,44 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
 
       return Array.isArray(response) ? response : []
     } catch (err) {
-      if (
-        err instanceof Error &&
-        (err.message === 'MatrixClient 未在指定时间内就绪' || err.message === '客户端未初始化')
-      ) {
+      if (isClientNotReadyError(err)) {
         if (!this.hasLoggedFriendsBeforeClientReady) {
           this.hasLoggedFriendsBeforeClientReady = true
           logger.info('[SynapseRust] Matrix 客户端未就绪，返回空好友搜索结果')
         }
         return []
       }
-
       this.hasLoggedFriendsBeforeClientReady = false
       logger.error(`[SynapseRust] 搜索好友失败: ${err}`)
-      return []
+      throw err
     }
   }
 
-  /** 获取待处理的好友请求
-   */
+  /** 获取待处理的好友请求。任一侧失败即**抛出**（半个列表不能当完整列表展示）。 */
   async getPendingRequests(): Promise<SynapsePendingRequests> {
-    try {
-      if (!(await this.isFriendEndpointAvailable())) return { incoming: [], outgoing: [] }
-      const [incomingResult, outgoingResult] = await Promise.allSettled([
-        this.request<{ requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }>(
-          MATRIX_PATHS.FRIENDS.INCOMING_REQUESTS,
-          { method: 'GET' }
-        ),
-        this.request<{ requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }>(
-          MATRIX_PATHS.FRIENDS.OUTGOING_REQUESTS,
-          { method: 'GET' }
-        )
-      ])
+    if (!(await this.isFriendEndpointAvailable())) return { incoming: [], outgoing: [] }
 
-      const extractRequests = (response: unknown): SynapseFriendRequest[] => {
-        if (response && typeof response === 'object') {
-          const res = response as { requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }
-          const arrayField = res.requests ?? res.data
-          if (Array.isArray(arrayField)) return arrayField
-        }
-        return Array.isArray(response) ? response : []
-      }
+    type RequestListResponse = { requests?: SynapseFriendRequest[]; data?: SynapseFriendRequest[] }
+    const [incoming, outgoing] = await Promise.allSettled([
+      this.request<RequestListResponse>(MATRIX_PATHS.FRIENDS.INCOMING_REQUESTS, { method: 'GET' }),
+      this.request<RequestListResponse>(MATRIX_PATHS.FRIENDS.OUTGOING_REQUESTS, { method: 'GET' })
+    ])
 
-      const incomingResponse = incomingResult.status === 'fulfilled' ? incomingResult.value : null
-      const outgoingResponse = outgoingResult.status === 'fulfilled' ? outgoingResult.value : null
-
-      return {
-        incoming: extractRequests(incomingResponse),
-        outgoing: extractRequests(outgoingResponse)
-      }
-    } catch (err) {
-      logger.error(`[SynapseRust] 获取待处理请求失败: ${err}`)
-      return { incoming: [], outgoing: [] }
+    const rejection = [incoming, outgoing].find((r): r is PromiseRejectedResult => r.status === 'rejected')
+    if (rejection) {
+      if (isClientNotReadyError(rejection.reason)) return { incoming: [], outgoing: [] }
+      logger.error(`[SynapseRust] 获取待处理请求失败: ${rejection.reason}`)
+      throw rejection.reason
     }
+
+    const extract = (result: PromiseSettledResult<RequestListResponse>): SynapseFriendRequest[] => {
+      const value: unknown = result.status === 'fulfilled' ? result.value : null
+      if (Array.isArray(value)) return value as SynapseFriendRequest[]
+      const field = (value as RequestListResponse | null)?.requests ?? (value as RequestListResponse | null)?.data
+      return Array.isArray(field) ? field : []
+    }
+
+    return { incoming: extract(incoming), outgoing: extract(outgoing) }
   }
 
   /** 接受好友请求
@@ -389,8 +371,10 @@ class SynapseFriendExtensionService extends SynapseExtensionHttpBase {
       const data = this.unwrapMaybeWrappedData(response)
       return data?.are_friends || false
     } catch (err) {
+      if (isClientNotReadyError(err)) return false
+      // 抛错而非 false：调用方用「抛错 = 无法确认」实现 fail-open（见 contactStateResolver）
       logger.error(`[SynapseRust] 检查好友关系失败: ${err}`)
-      return false
+      throw err
     }
   }
 }

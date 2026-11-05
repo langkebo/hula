@@ -154,6 +154,7 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     lastFriendError: list.lastFriendError,
     contactsOptions: list.contactsOptions,
     requestFriendsList: requests.requestFriendsList,
+    requestLoadError: requests.requestLoadError,
     applyPageOptions: requests.applyPageOptions,
     friendFilter: list.friendFilter,
     // getters

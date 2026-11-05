@@ -306,7 +306,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
    * 解析失败时返回 null。
    */
   getMediaUrl(mxcUrl: string, width?: number, height?: number): string | null {
-    // 统一走 resolveMxcToHttp（SDK 的 mxcUrlToHttp 在 ProfileManager 上，不在 MatrixClient 上）
+    // 统一走 resolveMxcToHttp（优先 client 级 mxcUrlToHttp，ProfileManager 仅回退）
     return resolveMxcToHttp(this.getClient(), mxcUrl, width, height)
   }
 
