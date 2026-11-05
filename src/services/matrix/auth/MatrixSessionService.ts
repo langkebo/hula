@@ -53,12 +53,7 @@ const DIRECT_ROOM_READY_TIMEOUT_MS = 3_000
 const DIRECT_ROOM_READY_POLL_INTERVAL_MS = 100
 
 class MatrixSessionService extends BaseMatrixService {
-  /**
-   * 获取当前账号的会话列表。
-   *
-   * 错误语义：未登录 → []（真的没有会话）；执行期异常 → 抛出，由调用方展示失败态。
-   * 旧实现整体 catch 成 []，把故障伪装成「0 条会话」，移动端只能显示「暂无会话」。
-   */
+  /** 会话列表：未登录 → []；执行期异常 → 抛出（旧实现 catch 成 []，把故障伪装成 0 条会话）。 */
   async getSessionList(): Promise<SessionInfo[]> {
     let client: MatrixClient
     try {
