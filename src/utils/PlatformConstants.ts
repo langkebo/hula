@@ -1,7 +1,7 @@
 import { type, version } from '@tauri-apps/plugin-os'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
-import { resolvePlatformType } from '@/utils/platformDetection'
+import { readRequestedPlatform, resolvePlatformType } from '@/utils/platformDetection'
 
 const logger = createLogger('PlatformConstants')
 
@@ -26,10 +26,31 @@ class PlatformDetector {
   private static _initialized = false
 
   /**
-   * 初始化平台检测（只执行一次）
+   * 初始化平台检测（只执行一次）。
+   *
+   * 「显式平台覆盖」（`?platform=mobile|desktop` 或 `localStorage['tjg:e2e:platform']`）**优先级最高**，
+   * 与路由层 `usePlatform().detectPlatform()` 的 `requestedPlatform ?? …` 口径一致。
+   *
+   * 为什么必须有这一条：此前无 Tauri runtime 时这里把 `_platformType` 硬编码成 `desktop`，
+   * 而路由层认 `requestedPlatform` ⇒ 浏览器里出现「页面是移动端、输入栏是桌面端」的混合态
+   * （`MsgInput` 的 `<MsgInputMobileControls v-if="isMobileRef">` 永不渲染，e2e 因此看不到
+   * `+` 更多按钮 → More 面板 → 附件选择器）。
    */
   static initialize(): void {
     if (PlatformDetector._initialized) return
+
+    const requested = readRequestedPlatform()
+    if (requested) {
+      PlatformDetector._osType = requested === 'mobile' ? 'android' : 'windows'
+      PlatformDetector._platformType = requested
+      PlatformDetector._osVersion = undefined
+      PlatformDetector._isWindows10 = false
+      if (import.meta.env.DEV) {
+        logger.debug(`Platform overridden by request: ${requested}`)
+      }
+      PlatformDetector._initialized = true
+      return
+    }
 
     // 浏览器/E2E 环境没有 Tauri runtime，跳过 OS 检测，直接使用默认值（desktop）
     if (!hasTauriRuntime()) {
