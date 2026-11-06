@@ -2,13 +2,14 @@
   <div class="friends-page flex flex-col overflow-auto h-full relative">
     <img
       src="@/assets/mobile/chat-home/background.webp"
-      class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
+      alt=""
+      class="fixed inset-0 w-full h-full z-0 object-cover dark:opacity-20" />
     <!-- 页面蒙板 -->
     <div
       v-if="showMask"
       @touchend="maskHandler.close"
       @click="maskHandler.close"
-      class="mobile-mask--blur mobile-mask--blurred fixed inset-0 bg-black/20 z-[999] transition-all duration-3000 ease-in-out opacity-100"></div>
+      class="mobile-mask--blur mobile-mask--blurred fixed inset-0 bg-black/20 z-[999] transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-in-out opacity-100"></div>
 
     <!-- 导航条 -->
     <NavBar>
@@ -35,7 +36,7 @@
       <van-field
         v-model="searchKeyword"
         id="search"
-        class="rounded-6px w-full relative text-[length:var(--tjg-font-size-sm)]"
+        class="rounded-[var(--tjg-radius-md)] w-full relative text-[length:var(--tjg-font-size-sm)]"
         maxlength="20"
         clearable
         autocomplete="off"
@@ -95,7 +96,7 @@
       <div
         class="flex items-center justify-between py-15px px-16px text-[length:var(--tjg-font-size-base)] border-b border-[--tjg-border-default]">
         <span class="font-medium">{{ t('mobile_contact.my_chat') }}</span>
-        <div class="flex items-center gap-8px" @click="toMessage">
+        <div v-clickable class="flex items-center gap-8px" @click="toMessage">
           <span
             v-if="contactUnreadCount > 0"
             class="px-4px py-4px rounded-999px bg-[--tjg-color-danger-500] text-white text-[length:var(--tjg-font-size-sm)] font-600 min-w-20px text-center">
@@ -178,6 +179,8 @@
                       ]">
                       <FriendContactRow
                         :user-id="item.userId"
+                        :name="item.remark || item.displayName || item.account"
+                        :avatar="item.avatarUrl || ''"
                         :active-status="item.activeStatus"
                         :is-bot="isBotUser(item.userId)"
                         :state="getUserState(item.userId)" />
@@ -210,6 +213,8 @@
                         ]">
                         <FriendContactRow
                           :user-id="item.userId"
+                          :name="item.remark || item.displayName || item.account"
+                          :avatar="item.avatarUrl || ''"
                           :active-status="item.activeStatus"
                           :is-bot="isBotUser(item.userId)"
                           :state="getUserState(item.userId)" />
@@ -406,7 +411,8 @@ const {
   setSelectedItem,
   clearSelectedItem,
   loading: friendsLoading,
-  initialLoading: friendsInitialLoading
+  initialLoading: friendsInitialLoading,
+  initialize: initializeFriends
 } = useFriends()
 
 const { isLoaded: capabilityLoaded, canUseFriendList } = useServerCapability()
@@ -430,6 +436,9 @@ const handleRetryMobileFriends = async () => {
     await contactStore.getContactList(true)
   } catch (error) {
     mobileFriendErrorMessage.value = error instanceof Error ? error.message : t('common.error')
+  } finally {
+    // 重试结束必须退出「初始加载」态，否则 loading 分支优先级更高，错误态永远看不到
+    friendsInitialLoading.value = false
   }
 }
 
@@ -538,7 +547,10 @@ onMounted(async () => {
     shrinkStatus.value = event as boolean
   })
   try {
-    await contactStore.getContactList(true)
+    // 必须走 useFriends().initialize()：`initialLoading` 只在它里面被置 false。
+    // 历史缺陷：这里只调了 contactStore.getContactList()，于是 `initialLoading` 永为 true，
+    // 页面永远停在 van-loading，分组与好友行一个都不渲染（好友卡片因此「0 行」）。
+    await initializeFriends()
     await contactStore.getApplyPage('friend', false)
   } catch (error) {
     logger.debug('Failed to request friend request list')

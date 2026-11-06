@@ -49,14 +49,24 @@ const props = defineProps<{
   isBot?: boolean
   /** 自定义状态：优先于在线状态展示 */
   state?: { url?: string; title?: string } | null
+  /**
+   * 列表项自带的显示名 / 头像。
+   *
+   * 历史缺陷：这一行只从 `groupStore.getUserInfo(uid)` 取名，而刚登录时 groupStore
+   * 里还没有这些联系人资料 ⇒ 好友列表渲染出一排**名字为空的空白行**（只有「离线/删除」）。
+   * 列表数据（MatrixContact）本来就带 name/avatar，优先用它，groupStore 作为补充，
+   * 最后兜底到 userId，保证永远不出现空名字。
+   */
+  name?: string
+  avatar?: string
 }>()
 
 const { t } = useI18n()
 const groupStore = useGroupStore()
 
 const userInfo = computed(() => groupStore.getUserInfo(props.userId))
-const name = computed(() => userInfo.value?.name ?? '')
-const avatar = computed(() => userInfo.value?.avatar ?? '')
+const name = computed(() => props.name || userInfo.value?.name || props.userId)
+const avatar = computed(() => props.avatar || userInfo.value?.avatar || '')
 const isOnline = computed(() => props.activeStatus === OnlineEnum.ONLINE)
 
 /** 状态标题走 i18n；未登记的状态名原样展示（与好友页原实现一致）。 */
