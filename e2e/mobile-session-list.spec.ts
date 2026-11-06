@@ -202,7 +202,7 @@ test.describe('移动端消息列表与会话进入', () => {
     await page.goBack()
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 20_000 }).toBe('/mobile/message')
 
-    // 恢复位置发生在「数据首次非空之后」，用 poll 等它落定
+    // 恢复位置：挂载后一两帧才建立可滚高度，用 poll 等它落定
     await expect
       .poll(
         () =>

@@ -36,6 +36,9 @@ export function useSessionListScrollMemory() {
       logger.debug('恢复滚动位置跳过：滚动容器尚未渲染')
       return false
     }
+    // 虚拟列表刚挂载时高度还没建立，此时写 scrollTop 会被 clamp 成 0（随后列表渲染完仍是 0）。
+    // 交给调用方稍后重试，而不是写一个无效值。
+    if (target.scrollHeight - target.clientHeight < rememberedTop) return false
     target.scrollTop = rememberedTop
     return target.scrollTop > 0
   }

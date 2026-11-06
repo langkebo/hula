@@ -162,22 +162,42 @@ const {
 })
 
 // 返回列表时恢复滚动位置（进入会话会让 tab 布局卸载，列表被重建）
-const { remember: rememberScrollTop, restore: restoreScrollTop } = useSessionListScrollMemory()
+const { remember: rememberScrollTop, restore: restoreScrollTop, getRemembered } = useSessionListScrollMemory()
 let scrollRestored = false
 
 onBeforeUnmount(() => {
   rememberScrollTop(getScrollTop())
 })
 
+/**
+ * 恢复滚动位置。
+ *
+ * 关键：**不能只挂在 `watch(length)` 上** —— 返回列表时 store 里已有数据，length 没有
+ * 0→N 的变化，watch 不会触发（实测返回后恒为 0）。所以挂载时也要试一次。
+ * 另外虚拟列表的高度要等一两帧才建立，写早了会被 clamp 成 0 ⇒ 重试。
+ */
+const scheduleScrollRestore = () => {
+  if (scrollRestored) return
+  if (getRemembered() <= 0) {
+    scrollRestored = true // 没离开过列表（或无记录），不必恢复
+    return
+  }
+  scrollRestored = true
+  let attempts = 0
+  const tryRestore = () => {
+    if (restoreScrollTop() || ++attempts >= 20) return
+    window.setTimeout(tryRestore, 100)
+  }
+  void nextTick(tryRestore)
+}
+
+onMounted(scheduleScrollRestore)
+
 watch(
   () => filteredSessionList.value.length,
   (length) => {
-    if (!length || scrollRestored) return
-    scrollRestored = true
-    // 等虚拟列表渲染出可滚动高度后再设 scrollTop，否则会被 0 高度吞掉
-    void nextTick(() => {
-      restoreScrollTop()
-    })
+    if (!length) return
+    scheduleScrollRestore()
   },
   { flush: 'post' }
 )
