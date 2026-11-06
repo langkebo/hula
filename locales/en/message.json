@@ -47,6 +47,8 @@
   },
   "call_window": {
     "incoming": "Incoming call",
+    "accept": "Accept",
+    "reject": "Decline",
     "video_call": "Video call",
     "voice_call": "Voice call",
     "unknown_user": "Unknown user",
@@ -107,6 +109,8 @@
     "rotate_right": "Rotate right",
     "reset": "Reset",
     "save_as": "Save as",
+    "previous_image": "Previous image",
+    "next_image": "Next image",
     "first_image": "This is the first image",
     "last_image": "This is already the last image",
     "filter_name": "Image"

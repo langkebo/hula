@@ -65,11 +65,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/trendradar/TrendRadarView.vue')
   },
   {
-    path: '/mail',
-    name: 'mail',
-    component: () => import('@/views/mailWindow/index.vue')
-  },
-  {
     path: '/fileManager',
     name: 'fileManager',
     component: () => import('@/views/fileManagerWindow/index.vue')

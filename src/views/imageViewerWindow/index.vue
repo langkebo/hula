@@ -36,24 +36,26 @@
     </div>
 
     <!-- 左右箭头 -->
-    <div
+    <button
       v-show="imageList.length > 1 && showArrows.left"
+      type="button"
+      :aria-label="t('message.image_viewer.previous_image')"
       @click="prevImage"
       @mouseenter="handleArrowEnter('left')"
       @mouseleave="handleArrowLeave('left')"
-      class="fixed left-20px top-1/2 -translate-y-1/2 size-40px rounded-full bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-all duration-200 opacity-0 z-10"
-      :class="{ 'opacity-100': showArrows.left }">
+      class="fixed left-20px top-1/2 -translate-y-1/2 size-40px rounded-full border-0 p-0 bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-all duration-200 opacity-0 z-10">
       <svg class="size-24px color-white rotate-180"><use href="#arrow-right"></use></svg>
-    </div>
-    <div
+    </button>
+    <button
       v-show="imageList.length > 1 && showArrows.right"
+      type="button"
+      :aria-label="t('message.image_viewer.next_image')"
       @click="nextImage"
       @mouseenter="handleArrowEnter('right')"
       @mouseleave="handleArrowLeave('right')"
-      class="fixed right-20px top-1/2 -translate-y-1/2 size-40px rounded-full bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-all duration-200 opacity-0 z-10"
-      :class="{ 'opacity-100': showArrows.right }">
+      class="fixed right-20px top-1/2 -translate-y-1/2 size-40px rounded-full border-0 p-0 bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-all duration-200 opacity-0 z-10">
       <svg class="size-24px color-white"><use href="#arrow-right"></use></svg>
-    </div>
+    </button>
 
     <!-- 底部工具栏 -->
     <div
@@ -61,7 +63,14 @@
       class="z-9999 h-50px bg-[--tjg-surface-media-preview] flex justify-center items-center gap-30px">
       <n-tooltip placement="top">
         <template #trigger>
-          <svg @click="zoomOut" class="size-24px cursor-pointer color-white"><use href="#zoom-out"></use></svg>
+          <button
+            type="button"
+            autofocus
+            :aria-label="t('message.image_viewer.zoom_out')"
+            @click="zoomOut"
+            class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+            <svg class="size-24px color-white"><use href="#zoom-out"></use></svg>
+          </button>
         </template>
         {{ t('message.image_viewer.zoom_out') }}
       </n-tooltip>
@@ -70,37 +79,65 @@
 
       <n-tooltip placement="top">
         <template #trigger>
-          <svg @click="zoomIn" class="size-24px cursor-pointer color-white"><use href="#zoom-in"></use></svg>
+          <button
+            type="button"
+            :aria-label="t('message.image_viewer.zoom_in')"
+            @click="zoomIn"
+            class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+            <svg class="size-24px color-white"><use href="#zoom-in"></use></svg>
+          </button>
         </template>
         {{ t('message.image_viewer.zoom_in') }}
       </n-tooltip>
 
       <n-tooltip placement="top">
         <template #trigger>
-          <svg @click="rotateLeft" class="size-24px cursor-pointer scale-x--100 color-white">
-            <use href="#RotateRight"></use>
-          </svg>
+          <button
+            type="button"
+            :aria-label="t('message.image_viewer.rotate_left')"
+            @click="rotateLeft"
+            class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+            <svg class="size-24px color-white scale-x--100"><use href="#RotateRight"></use></svg>
+          </button>
         </template>
         {{ t('message.image_viewer.rotate_left') }}
       </n-tooltip>
 
       <n-tooltip placement="top">
         <template #trigger>
-          <svg @click="rotateRight" class="size-24px cursor-pointer color-white"><use href="#RotateRight"></use></svg>
+          <button
+            type="button"
+            :aria-label="t('message.image_viewer.rotate_right')"
+            @click="rotateRight"
+            class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+            <svg class="size-24px color-white"><use href="#RotateRight"></use></svg>
+          </button>
         </template>
         {{ t('message.image_viewer.rotate_right') }}
       </n-tooltip>
 
       <n-tooltip placement="top">
         <template #trigger>
-          <svg @click="resetImage()" class="size-24px cursor-pointer color-white"><use href="#refresh"></use></svg>
+          <button
+            type="button"
+            :aria-label="t('message.image_viewer.reset')"
+            @click="resetImage()"
+            class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+            <svg class="size-24px color-white"><use href="#refresh"></use></svg>
+          </button>
         </template>
         {{ t('message.image_viewer.reset') }}
       </n-tooltip>
 
       <n-tooltip placement="top">
         <template #trigger>
-          <svg @click="saveImage" class="size-24px cursor-pointer color-white"><use href="#Importing"></use></svg>
+          <button
+            type="button"
+            :aria-label="t('message.image_viewer.save_as')"
+            @click="saveImage"
+            class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+            <svg class="size-24px color-white"><use href="#Importing"></use></svg>
+          </button>
         </template>
         {{ t('message.image_viewer.save_as') }}
       </n-tooltip>

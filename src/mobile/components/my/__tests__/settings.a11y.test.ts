@@ -11,17 +11,17 @@ const zhTabbar = JSON.parse(read('../../../../../locales/zh-CN/mobile_tabbar.jso
 const enTabbar = JSON.parse(read('../../../../../locales/en/mobile_tabbar.json'))
 
 describe('我的页入口可访问性', () => {
-  it('四个图标都有 48px 热区', () => {
-    expect(settingsSource.match(/after:-inset-8px/g) ?? []).toHaveLength(4)
+  it('三个图标都有 48px 热区', () => {
+    expect(settingsSource.match(/after:-inset-8px/g) ?? []).toHaveLength(3)
   })
 
-  it('四个图标都有 i18n aria-label', () => {
-    expect(settingsSource.match(/:aria-label="t\('mobile_my\.actions\./g) ?? []).toHaveLength(4)
+  it('三个图标都有 i18n aria-label', () => {
+    expect(settingsSource.match(/:aria-label="t\('mobile_my\.actions\./g) ?? []).toHaveLength(3)
   })
 
   it('语言包包含入口文案', () => {
     for (const locale of [zhMy, enMy]) {
-      expect(Object.keys(locale.actions).sort()).toEqual(['messages', 'scan', 'settings', 'share'])
+      expect(Object.keys(locale.actions).sort()).toEqual(['messages', 'scan', 'settings'])
     }
   })
 })

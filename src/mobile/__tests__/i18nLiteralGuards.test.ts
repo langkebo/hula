@@ -63,7 +63,6 @@ describe('桌面端剩余页面与窗口骨架中文字面量收口', () => {
     'src/plugins/dynamic/index.vue',
     'src/views/CheckUpdate.vue',
     'src/views/homeWindow/message/index.vue',
-    'src/views/mailWindow/index.vue',
     'src/views/Tray.vue',
     'src/views/chatHistory/index.vue',
     'src/views/fileManagerWindow/index.vue',

@@ -15,6 +15,7 @@ export enum TauriCommand {
   /** 删除单条聊天消息 */
   DELETE_MESSAGE = 'delete_message',
   /** 删除房间内的所有聊天记录 */
+  DELETE_ROOM_MESSAGES = 'delete_room_messages',
   /** 更新消息撤回状态 */
   /** 获取用户 tokens */
   GET_USER_TOKENS = 'get_user_tokens',

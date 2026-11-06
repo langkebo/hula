@@ -13,7 +13,8 @@
       <template #container>
         <div class="flex flex-col gap-1 overflow-auto h-full">
           <div class="w-full h-full box-border flex flex-col">
-            <div class="flex flex-col gap-20px justify-center p-[55px_20px] m-20px rounded-15px bg-white">
+            <div
+              class="flex flex-col gap-20px justify-center p-[55px_20px] m-20px rounded-15px bg-[--tjg-glass-row-bg]">
               <div class="flex items-center justify-center gap-20px">
                 <img
                   class="size-48px rounded-full object-cover"
@@ -67,7 +68,9 @@ const { t } = useI18n()
 
 const userStore = useUserStore()
 const { userInfo, avatarSrc, requestMsg, syncDefaultMessage, submitRequest } = useFriends({
-  defaultRequestMessage: computed(() => t('mobile_contact.default_request_message', { name: userStore.userInfo?.name ?? '' }))
+  defaultRequestMessage: computed(() =>
+    t('mobile_contact.default_request_message', { name: userStore.userInfo?.name ?? '' })
+  )
 })
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')

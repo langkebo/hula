@@ -3,10 +3,12 @@
     <template #header>
       <HeaderBar
         :isOfficial="false"
-        class="bg-white"
+        class="bg-[--tjg-glass-row-bg]"
         border
         :hidden-right="true"
-        :room-name="isEditMode ? t('mobile_chat.notice.edit_group_notice') : t('mobile_chat.notice.add_group_notice')" />
+        :room-name="
+          isEditMode ? t('mobile_chat.notice.edit_group_notice') : t('mobile_chat.notice.add_group_notice')
+        " />
     </template>
 
     <template #container>

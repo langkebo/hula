@@ -9,10 +9,8 @@
   "save_display_name_success": "显示名称已更新",
   "save_display_name_failed": "更新显示名称失败",
   "saving": "保存中...",
-  "share_to": "分享至",
   "actions": {
     "messages": "我的消息",
-    "share": "分享",
     "scan": "扫一扫",
     "settings": "设置"
   }

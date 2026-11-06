@@ -7,7 +7,7 @@
     <!--顶部操作栏-->
     <ActionBar :max-w="false" :shrink="false" />
 
-    <div class="flex-1 min-h-0 w-full overflow-hidden relative z-10">
+    <div class="flex-1 min-h-0 w-full overflow-y-auto relative z-10">
       <!-- 返回登录链接（对齐原型 auth-back-link） -->
       <RegisterBackLink @back="router.replace('/login')" />
       <div class="min-h-full w-full box-border flex flex-col items-center justify-center py-12px px-20px pb-40px">
@@ -134,9 +134,9 @@
                 <RegisterPasswordHints :password="info.password" />
 
                 <!-- 协议 -->
-                <n-flex align="center" justify="center" :size="6" class="mt-10px">
+                <label class="flex items-center justify-center gap-6px mt-10px cursor-pointer">
                   <n-checkbox v-model:checked="protocol" />
-                  <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
+                  <span class="text-12px color-[--tjg-text-tertiary] lh-14px">
                     <span>{{ t('login.term.checkout.text1') }}</span>
                     <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="openServiceAgreement">
                       {{ t('login.term.checkout.text2') }}
@@ -145,8 +145,8 @@
                     <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="openPrivacyAgreement">
                       {{ t('login.term.checkout.text4') }}
                     </span>
-                  </div>
-                </n-flex>
+                  </span>
+                </label>
               </div>
             </n-form>
           </div>

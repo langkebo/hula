@@ -38,38 +38,47 @@
       <!-- 上一个视频 -->
       <n-tooltip placement="top">
         <template #trigger>
-          <div
+          <button
+            type="button"
+            :aria-label="t('message.video_viewer.previous_video')"
+            :disabled="!canGoPrevious"
             @click="previousVideo"
-            class="bottom-operation"
-            :class="canGoPrevious ? 'cursor-pointer hover:bg-gray-600/50' : 'cursor-not-allowed'">
-            <svg
-              class="size-20px rotate-180"
-              :class="canGoPrevious ? 'color-white' : 'color-gray-500 cursor-not-allowed'">
+            class="bottom-operation border-0 bg-transparent disabled:cursor-not-allowed">
+            <svg class="size-20px rotate-180" :class="canGoPrevious ? 'color-white' : 'color-gray-500'">
               <use href="#right"></use>
             </svg>
-          </div>
+          </button>
         </template>
         {{ t('message.video_viewer.previous_video') }}
       </n-tooltip>
 
       <n-tooltip placement="top">
         <template #trigger>
-          <div @click="playPause" class="bottom-operation">
+          <button
+            type="button"
+            autofocus
+            :aria-label="isPlaying ? t('message.video_viewer.pause') : t('message.video_viewer.play')"
+            @click="playPause"
+            class="bottom-operation border-0 bg-transparent">
             <svg class="size-20px color-white">
               <use :href="isPlaying ? '#pause-one' : '#play'"></use>
             </svg>
-          </div>
+          </button>
         </template>
         {{ isPlaying ? t('message.video_viewer.pause') : t('message.video_viewer.play') }}
       </n-tooltip>
 
       <n-tooltip placement="top">
         <template #trigger>
-          <div @click="muteUnmute" class="bottom-operation">
+          <button
+            type="button"
+            :aria-label="isMuted ? t('message.video_viewer.unmute') : t('message.video_viewer.mute')"
+            @click="muteUnmute"
+            class="bottom-operation border-0 bg-transparent">
             <svg class="size-20px color-white">
               <use :href="isMuted ? '#volume-mute' : '#volume-notice'"></use>
             </svg>
-          </div>
+          </button>
         </template>
         {{ isMuted ? t('message.video_viewer.unmute') : t('message.video_viewer.mute') }}
       </n-tooltip>
@@ -77,11 +86,16 @@
       <!-- 下一个视频 -->
       <n-tooltip placement="top">
         <template #trigger>
-          <div @click="nextVideo" class="bottom-operation">
-            <svg class="size-20px" :class="canGoNext ? 'color-white' : 'color-gray-500 cursor-not-allowed'">
+          <button
+            type="button"
+            :aria-label="t('message.video_viewer.next_video')"
+            :disabled="!canGoNext"
+            @click="nextVideo"
+            class="bottom-operation border-0 bg-transparent disabled:cursor-not-allowed">
+            <svg class="size-20px" :class="canGoNext ? 'color-white' : 'color-gray-500'">
               <use href="#right"></use>
             </svg>
-          </div>
+          </button>
         </template>
         {{ t('message.video_viewer.next_video') }}
       </n-tooltip>
@@ -96,6 +110,7 @@ import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewW
 import { readDir } from '@tauri-apps/plugin-fs'
 import { useI18n } from 'vue-i18n'
 import ActionBar from '@/components/windows/ActionBar.vue'
+import { usePlatformClose } from '@/composables/common/usePlatformClose'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useVideoViewer } from '@/stores/domains/widget/videoViewer'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -104,6 +119,7 @@ import { createLogger } from '@/utils/Logger'
 const { t } = useI18n()
 const logger = createLogger('VideoViewer')
 const { addListener } = useTauriListener()
+const { closeCurrentWindow } = usePlatformClose()
 const videoViewerStore = useVideoViewer()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 
@@ -378,6 +394,32 @@ const showVideoTip = (message: string) => {
   }, 2000)
 }
 
+const handleKeydown = async (event: KeyboardEvent) => {
+  switch (event.key) {
+    case 'Escape':
+      await closeCurrentWindow()
+      break
+    case 'ArrowLeft':
+      event.preventDefault()
+      await previousVideo()
+      break
+    case 'ArrowRight':
+      event.preventDefault()
+      await nextVideo()
+      break
+    case ' ':
+      // 焦点在按钮或视频上时由原生控件处理，避免重复触发
+      if (event.target instanceof HTMLButtonElement || event.target instanceof HTMLVideoElement) return
+      event.preventDefault()
+      playPause()
+      break
+    case 'm':
+    case 'M':
+      muteUnmute()
+      break
+  }
+}
+
 onMounted(async () => {
   await getCurrentWebviewWindow().show()
 
@@ -406,12 +448,22 @@ onMounted(async () => {
   const validIndex = Math.min(Math.max(videoViewerStore.currentVideoIndex, 0), videoViewerStore.videoList.length - 1)
   videoList.value = [...videoViewerStore.videoList]
   currentIndex.value = validIndex
+
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
 <style scoped>
 .bottom-operation {
   @apply flex-center px-8px py-7px rounded-8px cursor-pointer hover:bg-gray-600/50 transition-colors duration-300;
+}
+
+.bottom-operation:disabled {
+  cursor: not-allowed;
 }
 
 /* 自定义滚动条样式 */

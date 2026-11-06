@@ -3268,8 +3268,6 @@ export type I18nKeys = {
       "contact_short_title": "好友",
       "file_manager": "文件管理器",
       "file_manager_short_title": "文件",
-      "favorite": "收藏列表",
-      "favorite_short_title": "收藏",
       "plugin": "插件",
       "plugin_manage": "插件管理",
       "plugin_background": "插件背景",
@@ -4010,6 +4008,8 @@ export type I18nKeys = {
     },
     "call_window": {
       "incoming": "来电",
+      "accept": "接听",
+      "reject": "拒接",
       "video_call": "视频通话",
       "voice_call": "语音通话",
       "unknown_user": "未知用户",
@@ -4070,6 +4070,8 @@ export type I18nKeys = {
       "rotate_right": "向右旋转",
       "reset": "重置",
       "save_as": "另存为",
+      "previous_image": "上一张图片",
+      "next_image": "下一张图片",
       "first_image": "这是第一张图片",
       "last_image": "已经最后一张图片",
       "filter_name": "图片"
@@ -4444,6 +4446,9 @@ export type I18nKeys = {
     "silent": "消息免打扰",
     "pintop": "置顶",
     "delete_chat_history": "删除聊天记录",
+    "confirm_clear_history": "确认删除该会话的全部聊天记录？删除后不可恢复。",
+    "clear_history_success": "聊天记录已删除",
+    "clear_history_failed": "删除聊天记录失败",
     "disband_group": "解散群聊",
     "leave_group": "退出群聊",
     "delete_friend": "删除好友",
@@ -5002,10 +5007,8 @@ export type I18nKeys = {
     "save_display_name_success": "显示名称已更新",
     "save_display_name_failed": "更新显示名称失败",
     "saving": "保存中...",
-    "share_to": "分享至",
     "actions": {
       "messages": "我的消息",
-      "share": "分享",
       "scan": "扫一扫",
       "settings": "设置"
     }
@@ -10151,8 +10154,6 @@ export type I18nKeyPaths =
   | "home.action.contact_short_title"
   | "home.action.file_manager"
   | "home.action.file_manager_short_title"
-  | "home.action.favorite"
-  | "home.action.favorite_short_title"
   | "home.action.plugin"
   | "home.action.plugin_manage"
   | "home.action.plugin_background"
@@ -10665,6 +10666,8 @@ export type I18nKeyPaths =
   | "message.voice_recorder.start_recording"
   | "message.voice_recorder.stop_recording"
   | "message.call_window.incoming"
+  | "message.call_window.accept"
+  | "message.call_window.reject"
   | "message.call_window.video_call"
   | "message.call_window.voice_call"
   | "message.call_window.unknown_user"
@@ -10715,6 +10718,8 @@ export type I18nKeyPaths =
   | "message.image_viewer.rotate_right"
   | "message.image_viewer.reset"
   | "message.image_viewer.save_as"
+  | "message.image_viewer.previous_image"
+  | "message.image_viewer.next_image"
   | "message.image_viewer.first_image"
   | "message.image_viewer.last_image"
   | "message.image_viewer.filter_name"
@@ -11014,6 +11019,9 @@ export type I18nKeyPaths =
   | "mobile_chat_setting.silent"
   | "mobile_chat_setting.pintop"
   | "mobile_chat_setting.delete_chat_history"
+  | "mobile_chat_setting.confirm_clear_history"
+  | "mobile_chat_setting.clear_history_success"
+  | "mobile_chat_setting.clear_history_failed"
   | "mobile_chat_setting.disband_group"
   | "mobile_chat_setting.leave_group"
   | "mobile_chat_setting.delete_friend"
@@ -11466,9 +11474,7 @@ export type I18nKeyPaths =
   | "mobile_my.save_display_name_success"
   | "mobile_my.save_display_name_failed"
   | "mobile_my.saving"
-  | "mobile_my.share_to"
   | "mobile_my.actions.messages"
-  | "mobile_my.actions.share"
   | "mobile_my.actions.scan"
   | "mobile_my.actions.settings"
   | "mobile_mymessage.title"

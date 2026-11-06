@@ -304,7 +304,7 @@ const shrinkWindow = async () => {
   if (shrinkStatus) {
     await resizeWindow('home', 310, 720)
   } else {
-    await resizeWindow('home', 960, 720)
+    await resizeWindow('home', 1024, 720)
   }
 }
 

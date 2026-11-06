@@ -34,21 +34,25 @@
     <!-- 操作按钮 -->
     <div class="flex gap-16px mr-8">
       <!-- 拒绝按钮 -->
-      <div
+      <button
+        type="button"
+        :aria-label="t('message.call_window.reject')"
         @click="emit('reject')"
-        class="size-40px rounded-full bg-[--tjg-color-danger-500] hover:bg-[--tjg-color-danger-500] flex-center cursor-pointer shadow-lg">
+        class="size-40px rounded-full border-0 bg-[--tjg-color-danger-500] hover:bg-[--tjg-color-danger-600] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--tjg-color-danger-400] flex-center cursor-pointer shadow-lg">
         <svg class="text-[--tjg-text-inverse] size-20px">
           <use href="#PhoneHangup"></use>
         </svg>
-      </div>
+      </button>
       <!-- 接听按钮 -->
-      <div
+      <button
+        type="button"
+        :aria-label="t('message.call_window.accept')"
         @click="emit('accept')"
-        class="size-40px rounded-full bg-[--tjg-color-primary-500] hover:bg-[--tjg-color-primary-500] flex-center cursor-pointer shadow-lg">
+        class="size-40px rounded-full border-0 bg-[--tjg-color-primary-500] hover:bg-[--tjg-color-primary-600] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-300] flex-center cursor-pointer shadow-lg">
         <svg class="text-[--tjg-text-inverse] size-20px">
           <use href="#phone-telephone-entity"></use>
         </svg>
-      </div>
+      </button>
     </div>
   </div>
 </template>

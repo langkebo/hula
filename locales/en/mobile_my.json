@@ -9,10 +9,8 @@
   "save_display_name_success": "Display name updated",
   "save_display_name_failed": "Failed to update display name",
   "saving": "Saving...",
-  "share_to": "Share to",
   "actions": {
     "messages": "My messages",
-    "share": "Share",
     "scan": "Scan",
     "settings": "Settings"
   }

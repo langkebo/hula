@@ -13,7 +13,8 @@
       <template #container>
         <div class="flex flex-col gap-1 overflow-auto h-full">
           <div class="w-full h-full box-border flex flex-col">
-            <div class="flex flex-col gap-20px justify-center p-[55px_20px] bg-white m-20px rounded-15px">
+            <div
+              class="flex flex-col gap-20px justify-center p-[55px_20px] bg-[--tjg-glass-row-bg] m-20px rounded-15px">
               <div class="flex items-center justify-center gap-20px">
                 <img
                   class="size-48px rounded-full object-cover"

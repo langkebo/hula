@@ -47,6 +47,8 @@
   },
   "call_window": {
     "incoming": "来电",
+    "accept": "接听",
+    "reject": "拒接",
     "video_call": "视频通话",
     "voice_call": "语音通话",
     "unknown_user": "未知用户",
@@ -107,6 +109,8 @@
     "rotate_right": "向右旋转",
     "reset": "重置",
     "save_as": "另存为",
+    "previous_image": "上一张图片",
+    "next_image": "下一张图片",
     "first_image": "这是第一张图片",
     "last_image": "已经最后一张图片",
     "filter_name": "图片"

@@ -234,7 +234,10 @@
             </div>
           </div>
 
-          <van-button plain class="cursor-pointer text-red text-14px rounded-10px w-full mb-20px">
+          <van-button
+            plain
+            class="cursor-pointer text-red text-14px rounded-10px w-full mb-20px"
+            @click="handleClearHistory">
             {{ t('mobile_chat_setting.delete_chat_history') }}
           </van-button>
 
@@ -281,7 +284,7 @@ import { useMyRoomInfoUpdater } from '@/composables/room/useMyRoomInfoUpdater'
 import { useRoomListManagement } from '@/composables/room/useRoomListManagement'
 import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
-import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum } from '@/enums'
+import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum, TauriCommand } from '@/enums'
 import ChatRemarkField from '@/mobile/components/chat-room/ChatRemarkField.vue'
 import ContactAliasField from '@/mobile/components/chat-room/ContactAliasField.vue'
 import router from '@/router'
@@ -299,6 +302,7 @@ import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
+import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('ChatSetting')
 const { write: writeClipboard } = useClipboard()
@@ -424,6 +428,34 @@ const goToNotice = () => {
       roomId: globalStore.currentSessionRoomId
     }
   })
+}
+
+async function handleClearHistory() {
+  const roomId = currentSessionRoomId.value
+  if (!roomId) {
+    showFeedback(t('mobile_chat_setting.session_not_ready'), 'warning')
+    return
+  }
+
+  try {
+    await showConfirmDialog({
+      title: t('components.common.confirm'),
+      message: t('mobile_chat_setting.confirm_clear_history'),
+      confirmButtonText: t('components.common.confirm'),
+      cancelButtonText: t('components.common.cancel')
+    })
+  } catch {
+    return
+  }
+
+  try {
+    await invokeWithErrorHandler<number>(TauriCommand.DELETE_ROOM_MESSAGES, { roomId })
+    chatStore.clearRoomMessages(roomId)
+    showFeedback(t('mobile_chat_setting.clear_history_success'), 'success')
+  } catch (error) {
+    logger.error('Failed to clear chat history:', error)
+    showFeedback(t('mobile_chat_setting.clear_history_failed'), 'error')
+  }
 }
 
 async function handleExit() {
