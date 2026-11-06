@@ -60,7 +60,7 @@
       @lock-scroll="lockScroll"
       @unlock-scroll="unlockScroll" />
 
-    <teleport to="body">
+    <teleport to=".app-shell-root">
       <div
         v-if="longPressState.showLongPressMenu"
         :ref="(el) => (longPressMenuRef = el as HTMLElement | null)"

@@ -4,7 +4,7 @@
     :title="t('message_container.reaction.menu_title')"
     closeable
     close-on-click-overlay
-    teleport="body"
+    teleport=".app-shell-root"
     @update:show="handleUpdateShow"
     @close="handleClose">
     <div class="mobile-reaction-picker">

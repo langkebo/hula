@@ -143,3 +143,68 @@ describe('移动端视口高度 dvh 收口', () => {
     expect(read('src/App.vue')).toContain('class="app-shell-root w-100vw"')
   })
 })
+
+describe('移动端宽屏兜底', () => {
+  /** 只取 @media (min-width: 520px) 段落，避免命中文件中其它规则 */
+  const wideScreenBlock = () => {
+    const source = read('src/styles/scss/global/mobile.scss')
+    const start = source.indexOf('@media (min-width: 520px)')
+    expect(start).toBeGreaterThan(-1)
+    const end = source.indexOf('\n}', start)
+    return source.slice(start, end + 2)
+  }
+
+  it('宽屏样式只在移动平台加载，不影响桌面构建', () => {
+    const source = read('src/App.vue')
+    const start = source.indexOf('if (isMobilePlatform.value) {')
+    expect(start).toBeGreaterThan(-1)
+    const block = source.slice(start, source.indexOf('}', start))
+    expect(block).toContain('@/styles/scss/global/mobile.scss')
+  })
+
+  it('宽屏时把根容器收成居中画布', () => {
+    const block = wideScreenBlock()
+    expect(block).toContain('.app-shell-root')
+    expect(block).toContain('--tjg-mobile-canvas-width: 480px')
+    expect(block).toContain('max-width: var(--tjg-mobile-canvas-width)')
+    expect(block).toContain('margin-inline: auto')
+  })
+
+  it('底部弹层与长按菜单 teleport 到画布内', () => {
+    // 只有落在画布内，宽屏时才会被 .app-shell-root 的 transform 约束住宽度
+    for (const path of [
+      'src/mobile/components/message/MobileReactionPicker.vue',
+      'src/mobile/views/chat-room/MobileForwardDialog.vue',
+      'src/mobile/views/message/index.vue'
+    ]) {
+      const source = read(path)
+      expect(source).toContain('.app-shell-root')
+      expect(source).not.toMatch(/teleport="body"|to="body"/)
+    }
+  })
+
+  it('全屏预览在宽屏时收窄到画布宽度', () => {
+    for (const path of ['src/mobile/components/ImagePreview.vue', 'src/mobile/components/VideoPreview.vue']) {
+      expect(read(path)).toContain('mobile-media-preview')
+    }
+
+    const block = wideScreenBlock()
+    expect(block).toContain('body > .mobile-media-preview')
+    expect(block).toContain('width: var(--tjg-mobile-canvas-width)')
+  })
+
+  it('根容器成为 fixed 子元素的包含块，并保留 vh 高度回退', () => {
+    const block = wideScreenBlock()
+    // 让 position:fixed 的浮层跟随画布，而不是铺满桌面窗口
+    expect(block).toContain('transform: translateZ(0)')
+    // 旧 Android WebView 不认 dvh，必须保留 vh 回退
+    expect(block).toContain('height: 100vh')
+    expect(block).toContain('height: 100dvh')
+  })
+
+  it('宽屏兜底不使用硬编码颜色', () => {
+    const block = wideScreenBlock()
+    expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+    expect(block).not.toMatch(/\brgba?\(/)
+  })
+})

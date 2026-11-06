@@ -5,7 +5,7 @@
     round
     closeable
     close-on-click-overlay
-    teleport="body"
+    teleport=".app-shell-root"
     :style="{ maxHeight: '75vh' }"
     @update:show="handleUpdateShow"
     @close="handleClose">

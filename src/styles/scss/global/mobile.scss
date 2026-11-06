@@ -211,3 +211,44 @@ nav {
     animation: none;
   }
 }
+
+/* ============================================================
+ * 宽屏兜底：桌面浏览器 / 平板横屏调试移动端构建
+ * ------------------------------------------------------------
+ * 真机 CSS 视口宽度通常 ≤ 480px，`min-width: 520px` 不会命中，
+ * 行为与改动前完全一致；宽屏时把 App 收成居中的移动画布，
+ * 避免整页被拉伸成桌面全宽（联调报告 §4.2-⑤）。
+ * `transform` 让本元素成为 position:fixed 子元素的包含块，
+ * 否则二维码 / 悬浮窗等固定定位浮层会铺满桌面窗口。
+ * 本文件仅在移动端平台加载（见 App.vue 的 isMobilePlatform 分支），
+ * 桌面端构建不加载，不会影响桌面布局。
+ * ============================================================ */
+@media (min-width: 520px) {
+  :root {
+    /* 宽屏调试时的移动画布宽度，根容器与 body 级全屏浮层共用 */
+    --tjg-mobile-canvas-width: 480px;
+  }
+
+  /* 画布两侧铺应用底色，避免宽屏留白突兀 */
+  body {
+    background-color: var(--tjg-surface-app);
+  }
+
+  .app-shell-root {
+    width: 100%;
+    max-width: var(--tjg-mobile-canvas-width);
+    height: 100vh;
+    height: 100dvh;
+    margin-inline: auto;
+    transform: translateZ(0);
+    box-shadow: var(--tjg-shadow-border);
+  }
+
+  /* 图片 / 视频全屏预览仍 teleport 到 body（避免画布 transform 干扰手势坐标），
+     宽屏时按画布位置与宽度收窄，保持与真机一致的铺满感 */
+  body > .mobile-media-preview {
+    left: 50%;
+    width: var(--tjg-mobile-canvas-width);
+    margin-left: calc(var(--tjg-mobile-canvas-width) / -2);
+  }
+}

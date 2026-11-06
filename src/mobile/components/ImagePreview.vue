@@ -3,7 +3,7 @@
     <Transition name="image-preview" appear>
       <div
         v-if="visible"
-        class="fixed top-0 left-0 w-100vw h-100dvh bg-black z-3000 box-border touch-none"
+        class="mobile-media-preview fixed top-0 left-0 w-100vw h-100dvh bg-black z-3000 box-border touch-none"
         :style="containerStyle"
         @click="handleBackdropClick">
         <div
