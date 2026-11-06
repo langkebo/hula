@@ -15,9 +15,33 @@ const logger = createLogger('MatrixClient')
  */
 const WEB_TOKEN_STORAGE_KEY = 'tjg.matrix.accessToken'
 
-/** 读取浏览器 at-rest token（Tauri 运行期恒为 null，凭证由 Rust 侧保管） */
+/**
+ * 「强制启用浏览器 at-rest 凭证」开关。
+ *
+ * 默认语义不变：真机 Tauri 由 Rust 保管凭证，localStorage 不落 token。
+ * 但有两种场景 `hasTauriRuntime()` 为真、Rust 存储却实际不可用：
+ *  1. 浏览器里的 Tauri shim（e2e `installBrowserTauriShim` 会伪造 `__TAURI_INTERNALS__`）；
+ *  2. 宿主 WebView 注入了 shim 但没带真实 Rust 命令。
+ * 这两种场景下刷新页面必掉登录（读 IPC 拿不到 token）。显式打开这个开关后，
+ * localStorage 作为**回退凭证源**参与读写 —— 代价是 XSS 可窃取 token，
+ * 因此默认关闭，只能由开发/测试显式置 1。
+ */
+export const WEB_SESSION_FALLBACK_KEY = 'tjg:session:web-fallback'
+
+/** 当前是否启用「浏览器 at-rest 凭证」读写 */
+export function isWebSessionStoreEnabled(): boolean {
+  if (!hasTauriRuntime()) return true
+  if (typeof globalThis.localStorage === 'undefined') return false
+  try {
+    return globalThis.localStorage.getItem(WEB_SESSION_FALLBACK_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+/** 读取浏览器 at-rest token（Tauri 原生运行期恒为 null，凭证由 Rust 侧保管） */
 export function readWebAccessToken(): string | null {
-  if (hasTauriRuntime()) return null
+  if (!isWebSessionStoreEnabled()) return null
   if (typeof globalThis.localStorage === 'undefined') return null
   try {
     return globalThis.localStorage.getItem(WEB_TOKEN_STORAGE_KEY)
@@ -32,7 +56,7 @@ export function readWebAccessToken(): string | null {
  * @param token 传 null 表示登出时清除
  */
 export function persistWebAccessToken(token: string | null): void {
-  if (hasTauriRuntime()) return
+  if (!isWebSessionStoreEnabled()) return
   if (typeof globalThis.localStorage === 'undefined') return
   try {
     if (token) {
@@ -48,7 +72,7 @@ export function persistWebAccessToken(token: string | null): void {
 
 export async function persistRefreshedToken(uid: string, token: string, refreshToken: string): Promise<void> {
   // 浏览器无 Rust 侧存储：写到 localStorage，保证刷新后的 token 也是最新值
-  if (!hasTauriRuntime()) {
+  if (isWebSessionStoreEnabled()) {
     persistWebAccessToken(token)
     return
   }

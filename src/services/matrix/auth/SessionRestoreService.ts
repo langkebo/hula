@@ -50,16 +50,33 @@ export class SessionRestoreService {
     const result = await invokeWithResult<StoredMatrixTokens>(TauriCommand.GET_USER_TOKENS)
     if (result.isErr()) {
       logger.error(`获取存储令牌失败: ${result.error}`)
-      return { token: null, refreshToken: null }
+      return this.withWebFallback({ token: null, refreshToken: null })
     }
     // 边界校验：IPC 返回体可能缺失（如浏览器 shim / 旧版本后端），
     // 不能让 undefined 于调用方 `tokens.token` 处抛错，否则会被误判为「未登录」而跳登录页。
     const stored = result.value
     if (!stored || typeof stored !== 'object') {
       logger.warn('获取存储令牌返回了非法载荷，按无令牌处理')
-      return { token: null, refreshToken: null }
+      return this.withWebFallback({ token: null, refreshToken: null })
     }
-    return stored
+    return stored.token ? stored : this.withWebFallback(stored)
+  }
+
+  /**
+   * Rust 侧没有 token 时，回退到浏览器 at-rest 凭证。
+   *
+   * 为什么需要：`hasTauriRuntime()` 为真不代表 Rust 存储可用 —— 浏览器里的 Tauri shim
+   * （e2e 的 `installBrowserTauriShim`）会伪造 `__TAURI_INTERNALS__`，`GET_USER_TOKENS`
+   * 要么报错要么返回空，于是刷新页面必掉登录。
+   * 是否真的允许用 localStorage 作凭证源由 `isWebSessionStoreEnabled()` 决定
+   * （默认在非 Tauri 环境开启；shim 场景需显式置 `tjg:session:web-fallback=1`）。
+   */
+  private withWebFallback(stored: StoredMatrixTokens): StoredMatrixTokens {
+    if (stored.token) return stored
+    const webToken = readWebAccessToken()
+    if (!webToken) return stored
+    logger.debug('Rust 侧无令牌，回退到浏览器 at-rest token')
+    return { uid: stored.uid ?? null, token: webToken, refreshToken: stored.refreshToken ?? null }
   }
 
   /** 检查是否存在已认证会话

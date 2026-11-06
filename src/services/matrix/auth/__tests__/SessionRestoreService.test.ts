@@ -218,6 +218,58 @@ describe('SessionRestoreService.getStoredTokens', () => {
 
     expect(result).toEqual({ token: null, refreshToken: null })
   })
+
+  // ── 浏览器 Tauri shim：hasTauriRuntime() 为真但 Rust 存储不可用 ──────────────
+  // 这是「刷新页面必掉登录」的根因场景：IPC 拿不到 token，必须回退到 at-rest 凭证。
+  describe('Rust 侧无令牌时回退浏览器 at-rest token', () => {
+    beforeEach(() => {
+      window.localStorage.clear()
+      // shim 场景需要显式开关（真机默认不落 localStorage）
+      window.localStorage.setItem('tjg:session:web-fallback', '1')
+      window.localStorage.setItem('tjg.matrix.accessToken', 'web-fallback-token')
+    })
+
+    afterEach(() => {
+      window.localStorage.clear()
+    })
+
+    it('IPC 返回空令牌时用 localStorage 兜底', async () => {
+      invokeWithResultMock.mockResolvedValue(
+        ok({ token: null, refreshToken: null }) as unknown as Awaited<ReturnType<typeof invokeWithResult>>
+      )
+      const { host } = createMockHost()
+
+      const service = new SessionRestoreService(host, new SessionRuntimeState())
+      const result = await service.getStoredTokens()
+
+      expect(result.token).toBe('web-fallback-token')
+    })
+
+    it('IPC 直接失败时同样兜底（不能因为一次 IPC 失败就判定未登录）', async () => {
+      invokeWithResultMock.mockResolvedValue(
+        err(new Error('shim: command not found')) as unknown as Awaited<ReturnType<typeof invokeWithResult>>
+      )
+      const { host } = createMockHost()
+
+      const service = new SessionRestoreService(host, new SessionRuntimeState())
+      const result = await service.getStoredTokens()
+
+      expect(result.token).toBe('web-fallback-token')
+    })
+
+    it('开关关闭时不回退（真机语义：凭证只由 Rust 保管）', async () => {
+      window.localStorage.removeItem('tjg:session:web-fallback')
+      invokeWithResultMock.mockResolvedValue(
+        ok({ token: null, refreshToken: null }) as unknown as Awaited<ReturnType<typeof invokeWithResult>>
+      )
+      const { host } = createMockHost()
+
+      const service = new SessionRestoreService(host, new SessionRuntimeState())
+      const result = await service.getStoredTokens()
+
+      expect(result).toEqual({ token: null, refreshToken: null })
+    })
+  })
 })
 
 describe('SessionRestoreService.hasAuthenticatedSession', () => {
