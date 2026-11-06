@@ -70,204 +70,25 @@
       </n-drawer-content>
     </n-drawer>
 
-    <n-drawer v-model:show="showUserDetail" placement="right" :width="520">
-      <n-drawer-content :title="t('admin.users.userDetail')" closable>
-        <template v-if="selectedUser">
-          <n-descriptions bordered :column="2" label-placement="left" class="mb-16px">
-            <n-descriptions-item :label="t('admin.users.userId')">{{ selectedUser.userId }}</n-descriptions-item>
-            <n-descriptions-item :label="t('admin.users.displayName')">
-              {{ selectedUser.displayname || '-' }}
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('admin.users.status')">
-              <n-tag :type="selectedUser.deactivated ? 'error' : 'success'" size="small">
-                {{ selectedUser.deactivated ? t('admin.users.deactivated') : t('admin.users.active') }}
-              </n-tag>
-            </n-descriptions-item>
-            <n-descriptions-item :label="t('admin.users.role')">
-              <n-space align="center" :size="8">
-                <n-tag :type="selectedUser.admin ? 'warning' : 'default'" size="small">
-                  {{ selectedUser.admin ? t('admin.users.adminRole') : t('admin.users.userRole') }}
-                </n-tag>
-                <n-switch
-                  :value="!!selectedUser.admin"
-                  size="small"
-                  @update:value="(val: boolean) => handleToggleAdminSwitch(val)">
-                  <template #checked>{{ t('admin.users.adminRole') }}</template>
-                  <template #unchecked>{{ t('admin.users.userRole') }}</template>
-                </n-switch>
-              </n-space>
-            </n-descriptions-item>
-            <n-descriptions-item v-if="accountStatusData" :label="t('admin.users.accountStatus')" :span="2">
-              <n-space :size="8">
-                <n-tag :type="accountStatusTagType" size="small">
-                  {{ accountStatusLabel }}
-                </n-tag>
-                <span v-if="accountStatusData.suspended" class="account-detail">
-                  {{ t('admin.users.suspended') }}
-                </span>
-              </n-space>
-            </n-descriptions-item>
-          </n-descriptions>
-
-          <n-tabs type="line" animated>
-            <n-tab-pane name="devices" :tab="t('admin.users.devices')">
-              <n-spin :show="devicesLoading">
-                <n-data-table
-                  v-if="userDevices.length > 0"
-                  :columns="deviceColumns"
-                  :data="userDevices"
-                  :bordered="false"
-                  size="small"
-                  :row-key="(row: UserDevice) => row.deviceId" />
-                <n-empty v-else :description="t('admin.users.noDevices')" class="py-24px" />
-              </n-spin>
-            </n-tab-pane>
-
-            <n-tab-pane name="sessions" :tab="t('admin.users.sessions')">
-              <n-spin :show="sessionsLoading">
-                <n-data-table
-                  v-if="userSessions.length > 0"
-                  :columns="sessionColumns"
-                  :data="userSessions"
-                  :bordered="false"
-                  size="small"
-                  :row-key="(row: UserSession) => row.deviceId" />
-                <n-empty v-else :description="t('admin.users.noSessions')" class="py-24px" />
-              </n-spin>
-            </n-tab-pane>
-
-            <n-tab-pane name="statistics" :tab="t('admin.users.statistics')">
-              <n-spin :show="statsLoading">
-                <template v-if="userStats">
-                  <n-space :size="24" class="py-16px">
-                    <n-statistic
-                      :label="t('admin.users.roomsJoined')"
-                      :value="userStats.joined_rooms ?? userStats.joinedRooms ?? '-'" />
-                    <n-statistic
-                      :label="t('admin.users.messagesSent')"
-                      :value="userStats.messages_sent ?? userStats.messagesSent ?? '-'" />
-                    <n-statistic
-                      :label="t('admin.users.mediaUploaded')"
-                      :value="userStats.media_uploaded ?? userStats.mediaUploaded ?? '-'" />
-                    <n-statistic
-                      :label="t('admin.users.invitesSent')"
-                      :value="userStats.invites_sent ?? userStats.invitesSent ?? '-'" />
-                  </n-space>
-                  <n-descriptions v-if="hasExtraStats" bordered :column="2" label-placement="left" size="small">
-                    <n-descriptions-item v-for="(value, key) in extraStats" :key="String(key)" :label="String(key)">
-                      {{ value }}
-                    </n-descriptions-item>
-                  </n-descriptions>
-                </template>
-                <n-empty v-else :description="t('admin.users.noStats')" class="py-24px" />
-              </n-spin>
-            </n-tab-pane>
-
-            <n-tab-pane name="rateLimit" :tab="t('admin.users.rateLimit')">
-              <n-spin :show="rateLimitLoading">
-                <n-space vertical>
-                  <n-descriptions bordered :column="2" label-placement="left">
-                    <n-descriptions-item :label="t('admin.users.messagesPerSecond')">
-                      {{ rateLimit?.messagesPerSecond ?? t('admin.users.default') }}
-                    </n-descriptions-item>
-                    <n-descriptions-item :label="t('admin.users.burstCount')">
-                      {{ rateLimit?.burstCount ?? t('admin.users.default') }}
-                    </n-descriptions-item>
-                  </n-descriptions>
-                  <n-space>
-                    <n-button size="small" @click="showRateLimitDialog = true">
-                      {{ t('admin.users.overrideUserRateLimit') }}
-                    </n-button>
-                    <n-button size="small" type="error" @click="handleDeleteRateLimit">
-                      {{ t('admin.users.deleteRateLimit') }}
-                    </n-button>
-                  </n-space>
-                </n-space>
-              </n-spin>
-            </n-tab-pane>
-
-            <n-tab-pane name="shadowBan" :tab="t('admin.users.shadowBan')">
-              <n-spin :show="shadowBanLoading">
-                <n-space vertical>
-                  <div class="shadow-ban-status">
-                    <n-tag :type="shadowBanStatus?.banned ? 'error' : 'success'" size="medium">
-                      {{ shadowBanStatus?.banned ? t('admin.users.shadowBanned') : t('admin.users.notShadowBanned') }}
-                    </n-tag>
-                    <span v-if="shadowBanStatus?.bannedAt" class="ban-time">
-                      {{ t('admin.users.bannedAt') }}: {{ new Date(shadowBanStatus.bannedAt).toLocaleString() }}
-                    </span>
-                  </div>
-                  <n-space>
-                    <n-button v-if="!shadowBanStatus?.banned" size="small" type="error" @click="handleShadowBan">
-                      {{ t('admin.users.shadowBan') }}
-                    </n-button>
-                    <n-button v-else size="small" type="success" @click="handleUnshadowBan">
-                      {{ t('admin.users.unshadowBan') }}
-                    </n-button>
-                  </n-space>
-                </n-space>
-              </n-spin>
-            </n-tab-pane>
-
-            <n-tab-pane name="actions" :tab="t('admin.users.quickActions')">
-              <n-space vertical>
-                <n-button size="small" @click="handleResetPassword(selectedUser!.userId)">
-                  {{ t('admin.users.resetPassword') }}
-                </n-button>
-                <n-button size="small" @click="handleToggleAdmin(selectedUser!)">
-                  {{ selectedUser!.admin ? t('admin.users.removeAdmin') : t('admin.users.grantAdmin') }}
-                </n-button>
-                <n-button
-                  size="small"
-                  :type="selectedUser!.deactivated ? 'success' : 'error'"
-                  @click="handleToggleDeactivate(selectedUser!)">
-                  {{ selectedUser!.deactivated ? t('admin.users.reactivate') : t('admin.users.deactivate') }}
-                </n-button>
-                <n-popconfirm @positive-click="handleInvalidateSession">
-                  <template #trigger>
-                    <n-button size="small" type="warning">
-                      {{ t('admin.users.invalidateAllSessions') }}
-                    </n-button>
-                  </template>
-                  {{ t('admin.users.invalidateSessionConfirm') }}
-                </n-popconfirm>
-              </n-space>
-            </n-tab-pane>
-          </n-tabs>
-        </template>
-        <template #footer>
-          <div class="flex justify-end gap-12px">
-            <n-button @click="showUserDetail = false">{{ t('admin.common.close') }}</n-button>
-          </div>
-        </template>
-      </n-drawer-content>
-    </n-drawer>
-
-    <n-drawer v-model:show="showRateLimitDialog" placement="right" :width="380">
-      <n-drawer-content :title="t('admin.users.overrideUserRateLimit')" closable>
-        <span>{{ t('admin.users.overrideRateLimitConfirm') }}</span>
-        <template #footer>
-          <div class="flex justify-end gap-12px">
-            <n-button @click="showRateLimitDialog = false">{{ t('admin.common.cancel') }}</n-button>
-            <n-button type="warning" :loading="settingRateLimit" @click="handleOverrideRateLimit">
-              {{ t('admin.common.confirm') }}
-            </n-button>
-          </div>
-        </template>
-      </n-drawer-content>
-    </n-drawer>
+    <AdminUserDetailDrawer
+      v-model:show="showUserDetail"
+      :admin="admin"
+      @reset-password="handleResetPassword"
+      @toggle-admin="handleToggleAdmin"
+      @toggle-deactivate="handleToggleDeactivate" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { NButton, NCheckbox, NDrawer, NDrawerContent, NSpace, NSwitch, NTag, useDialog } from 'naive-ui'
+import { NButton, NCheckbox, NDrawer, NDrawerContent, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminBulkActionBar from '@/components/admin/AdminBulkActionBar.vue'
 import AdminTable from '@/components/admin/AdminTable.vue'
-import { type UserDevice, type UserInfo, type UserSession, useAdminUsers } from '@/composables/admin'
+import { type UserInfo, useAdminUsers } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'
+import AdminUserDetailDrawer from './AdminUserDetailDrawer.vue'
 import { useAdminErrorHandler } from './useAdminError'
 
 const { t } = useI18n()
@@ -281,8 +102,6 @@ const admin = useAdminUsers()
 const showCreateDialog = ref(false)
 const creating = ref(false)
 const showUserDetail = ref(false)
-const showRateLimitDialog = ref(false)
-const settingRateLimit = ref(false)
 
 // Alias refs from composable so existing template bindings keep working
 const loading = admin.loading
@@ -290,18 +109,6 @@ const searchQuery = admin.searchQuery
 const filterRole = admin.filterRole
 const filterStatus = admin.filterStatus
 const filteredUsers = admin.filteredUsers
-const selectedUser = admin.selectedUser
-const userDevices = admin.userDevices
-const devicesLoading = admin.devicesLoading
-const rateLimit = admin.rateLimit
-const rateLimitLoading = admin.rateLimitLoading
-const shadowBanStatus = admin.shadowBanStatus
-const shadowBanLoading = admin.shadowBanLoading
-const userSessions = admin.userSessions
-const sessionsLoading = admin.sessionsLoading
-const userStats = admin.userStats
-const statsLoading = admin.statsLoading
-const accountStatus = admin.accountStatus
 const selectedUserIds = admin.selectedUserIds
 
 const createForm = ref({
@@ -315,48 +122,6 @@ const createRules = {
   username: { required: true, message: t('admin.users.usernameRequired') },
   password: { required: true, message: t('admin.users.passwordRequired') }
 }
-
-// Account status computed
-const accountStatusData = computed(() => accountStatus.value)
-
-const accountStatusLabel = computed(() => {
-  if (!accountStatus.value) return ''
-  if (accountStatus.value.suspended) return t('admin.users.suspended')
-  if (accountStatus.value.deactivated) return t('admin.users.deactivated')
-  return t('admin.users.active')
-})
-
-const accountStatusTagType = computed(() => {
-  if (!accountStatus.value) return 'default' as const
-  if (accountStatus.value.suspended) return 'warning' as const
-  if (accountStatus.value.deactivated) return 'error' as const
-  return 'success' as const
-})
-
-// Stats computed - extract known keys and show the rest
-const knownStatKeys = new Set([
-  'joined_rooms',
-  'joinedRooms',
-  'messages_sent',
-  'messagesSent',
-  'media_uploaded',
-  'mediaUploaded',
-  'invites_sent',
-  'invitesSent'
-])
-
-const extraStats = computed(() => {
-  if (!userStats.value) return {}
-  const result: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(userStats.value)) {
-    if (!knownStatKeys.has(key)) {
-      result[key] = value
-    }
-  }
-  return result
-})
-
-const hasExtraStats = computed(() => Object.keys(extraStats.value).length > 0)
 
 const columns = computed(() => [
   {
@@ -421,54 +186,6 @@ const columns = computed(() => [
           () => (row.deactivated ? t('admin.users.reactivate') : t('admin.users.deactivate'))
         )
       ])
-    }
-  }
-])
-
-const deviceColumns = computed(() => [
-  { title: t('admin.users.deviceId'), key: 'deviceId', ellipsis: { tooltip: true }, width: 140 },
-  { title: t('admin.users.deviceName'), key: 'displayName', width: 140 },
-  { title: t('admin.users.lastSeenIp'), key: 'lastSeenIp', width: 130 },
-  {
-    title: t('admin.users.lastSeenTime'),
-    key: 'lastSeenTs',
-    width: 160,
-    render(row: UserDevice) {
-      return row.lastSeenTs ? new Date(row.lastSeenTs).toLocaleString() : '-'
-    }
-  },
-  {
-    title: t('admin.common.actions'),
-    key: 'actions',
-    width: 80,
-    render(row: UserDevice) {
-      return h(NButton, { size: 'small', type: 'error', onClick: () => handleDeleteDevice(row.deviceId) }, () =>
-        t('admin.users.deleteDevice')
-      )
-    }
-  }
-])
-
-const sessionColumns = computed(() => [
-  { title: t('admin.users.deviceId'), key: 'deviceId', ellipsis: { tooltip: true }, width: 140 },
-  { title: t('admin.users.deviceName'), key: 'deviceName', width: 140 },
-  { title: t('admin.users.lastSeenIp'), key: 'lastSeenIp', width: 130 },
-  {
-    title: t('admin.users.lastSeenTime'),
-    key: 'lastSeenTs',
-    width: 160,
-    render(row: UserSession) {
-      return row.lastSeenTs ? new Date(row.lastSeenTs).toLocaleString() : '-'
-    }
-  },
-  {
-    title: t('admin.common.actions'),
-    key: 'actions',
-    width: 100,
-    render() {
-      return h(NButton, { size: 'small', type: 'warning', onClick: () => handleInvalidateSingleSession() }, () =>
-        t('admin.users.invalidateSession')
-      )
     }
   }
 ])
@@ -572,126 +289,6 @@ async function handleToggleAdmin(user: UserInfo) {
   })
 }
 
-async function handleToggleAdminSwitch(isAdmin: boolean) {
-  if (!selectedUser.value) return
-  dialog.warning({
-    title: isAdmin ? t('admin.users.grantAdmin') : t('admin.users.removeAdmin'),
-    content: t('admin.users.adminConfirm', {
-      userId: selectedUser.value.userId,
-      action: isAdmin ? t('admin.users.grantAdmin') : t('admin.users.removeAdmin')
-    }),
-    positiveText: t('admin.common.confirm'),
-    negativeText: t('admin.common.cancel'),
-    onPositiveClick: async () => {
-      try {
-        await admin.setAdmin(selectedUser.value!.userId, isAdmin)
-        showFeedback(t('admin.users.adminUpdateSuccess'), 'success')
-      } catch (err) {
-        if (handleAdminError(err)) showFeedback(t('admin.users.adminUpdateFailed'), 'error')
-      }
-    }
-  })
-}
-
-async function handleDeleteDevice(deviceId: string) {
-  if (!selectedUser.value) return
-  dialog.warning({
-    title: t('admin.users.deleteDevice'),
-    content: t('admin.users.deleteDeviceConfirm', { deviceId }),
-    positiveText: t('admin.common.confirm'),
-    negativeText: t('admin.common.cancel'),
-    onPositiveClick: async () => {
-      try {
-        await admin.deleteUserDevice(selectedUser.value!.userId, deviceId)
-        showFeedback(t('admin.users.deleteDeviceSuccess'), 'success')
-      } catch (err) {
-        if (handleAdminError(err)) showFeedback(t('admin.users.deleteDeviceFailed'), 'error')
-      }
-    }
-  })
-}
-
-async function handleOverrideRateLimit() {
-  if (!selectedUser.value) return
-  settingRateLimit.value = true
-  try {
-    await admin.overrideUserRateLimit(selectedUser.value.userId)
-    showFeedback(t('admin.users.rateLimitSetSuccess'), 'success')
-    showRateLimitDialog.value = false
-  } catch (err) {
-    if (handleAdminError(err)) showFeedback(t('admin.users.rateLimitSetFailed'), 'error')
-  } finally {
-    settingRateLimit.value = false
-  }
-}
-
-async function handleDeleteRateLimit() {
-  if (!selectedUser.value) return
-  try {
-    await admin.deleteRateLimit(selectedUser.value.userId)
-    showFeedback(t('admin.users.rateLimitDeleteSuccess'), 'success')
-  } catch (err) {
-    if (handleAdminError(err)) showFeedback(t('admin.users.rateLimitDeleteFailed'), 'error')
-  }
-}
-
-async function handleShadowBan() {
-  if (!selectedUser.value) return
-  dialog.warning({
-    title: t('admin.users.shadowBan'),
-    content: t('admin.users.shadowBanConfirm', { userId: selectedUser.value.userId }),
-    positiveText: t('admin.common.confirm'),
-    negativeText: t('admin.common.cancel'),
-    onPositiveClick: async () => {
-      try {
-        await admin.shadowBanUser(selectedUser.value!.userId)
-        showFeedback(t('admin.users.shadowBanSuccess'), 'success')
-      } catch (err) {
-        if (handleAdminError(err)) showFeedback(t('admin.users.shadowBanFailed'), 'error')
-      }
-    }
-  })
-}
-
-async function handleUnshadowBan() {
-  if (!selectedUser.value) return
-  try {
-    await admin.unshadowBanUser(selectedUser.value.userId)
-    showFeedback(t('admin.users.unshadowBanSuccess'), 'success')
-  } catch (err) {
-    if (handleAdminError(err)) showFeedback(t('admin.users.unshadowBanFailed'), 'error')
-  }
-}
-
-async function handleInvalidateSession() {
-  if (!selectedUser.value) return
-  try {
-    await admin.invalidateSession(selectedUser.value.userId)
-    showFeedback(t('admin.users.invalidateSessionSuccess'), 'success')
-  } catch (err) {
-    if (handleAdminError(err)) showFeedback(t('admin.users.invalidateSessionFailed'), 'error')
-  }
-}
-
-async function handleInvalidateSingleSession() {
-  if (!selectedUser.value) return
-  // invalidateUserSession invalidates all sessions for the user
-  dialog.warning({
-    title: t('admin.users.invalidateSession'),
-    content: t('admin.users.invalidateSessionConfirm'),
-    positiveText: t('admin.common.confirm'),
-    negativeText: t('admin.common.cancel'),
-    onPositiveClick: async () => {
-      try {
-        await admin.invalidateSession(selectedUser.value!.userId)
-        showFeedback(t('admin.users.invalidateSessionSuccess'), 'success')
-      } catch (err) {
-        if (handleAdminError(err)) showFeedback(t('admin.users.invalidateSessionFailed'), 'error')
-      }
-    }
-  })
-}
-
 async function handleBatchDeactivate() {
   const ids = Array.from(selectedUserIds.value)
   if (ids.length === 0) return
@@ -743,24 +340,7 @@ onMounted(loadUsers)
   gap: 12px;
 }
 
-.shadow-ban-status {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.ban-time {
-  font-size: 13px;
-  color: var(--tjg-text-tertiary);
-}
-
-.account-detail {
-  font-size: 13px;
-  color: var(--tjg-text-tertiary);
-}
-
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .admin-users-header {
     flex-direction: column;
     align-items: stretch;

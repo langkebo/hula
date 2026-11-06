@@ -43,6 +43,7 @@ const goHome = () => router.push('/message')
   align-items: center;
   justify-content: center;
   height: 100vh;
+  height: 100dvh;
   background: linear-gradient(135deg, var(--tjg-surface-panel-muted) 0%, var(--tjg-surface-subtle) 100%);
 }
 

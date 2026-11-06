@@ -583,7 +583,7 @@ onMounted(loadData)
 }
 
 .ring-progress {
-  transition: stroke-dashoffset 0.6s ease;
+  transition: stroke-dashoffset var(--tjg-motion-duration-xslow) ease;
 }
 
 .ring-center {
@@ -605,7 +605,7 @@ onMounted(loadData)
   color: var(--tjg-text-tertiary);
 }
 
-@include responsive.respond-to-max('lg') {
+@include responsive.down('lg') {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -619,7 +619,7 @@ onMounted(loadData)
   }
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .stats-grid {
     grid-template-columns: 1fr;
   }

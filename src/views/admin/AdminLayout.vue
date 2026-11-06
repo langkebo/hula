@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <div v-if="mobileMenuOpen" class="admin-overlay" @click="mobileMenuOpen = false" />
+    <div v-clickable v-if="mobileMenuOpen" class="admin-overlay" @click="mobileMenuOpen = false" />
   </div>
 </template>
 
@@ -67,6 +67,7 @@ const goHome = () => {
 .admin-layout {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: var(--admin-bg);
 }
@@ -106,7 +107,13 @@ const goHome = () => {
   background: var(--admin-card-bg);
   cursor: pointer;
   color: var(--admin-title-color);
-  transition: all 0.2s;
+  transition:
+    color var(--tjg-motion-duration-normal),
+    background-color var(--tjg-motion-duration-normal),
+    border-color var(--tjg-motion-duration-normal),
+    box-shadow var(--tjg-motion-duration-normal),
+    opacity var(--tjg-motion-duration-normal),
+    transform var(--tjg-motion-duration-normal);
 
   &:hover {
     background: var(--tjg-surface-list-hover);
@@ -160,7 +167,7 @@ const goHome = () => {
   color: var(--tjg-text-inverse);
   font-size: 13px;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity var(--tjg-motion-duration-normal);
 
   &:hover:not(:disabled) {
     opacity: 0.9;
@@ -180,7 +187,7 @@ const goHome = () => {
   z-index: 99;
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .admin-menu-toggle {
     display: flex;
   }

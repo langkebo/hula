@@ -74,7 +74,7 @@ const { navState, visibleNavGroups, showSkeleton, retrying, stateTitle, retryPro
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: width 0.3s ease;
+  transition: width var(--tjg-motion-duration-slow) ease;
   z-index: 100;
 }
 
@@ -126,7 +126,13 @@ const { navState, visibleNavGroups, showSkeleton, retrying, stateTitle, retryPro
   color: var(--admin-sidebar-text);
   text-decoration: none;
   font-size: 14px;
-  transition: all 0.2s;
+  transition:
+    color var(--tjg-motion-duration-normal),
+    background-color var(--tjg-motion-duration-normal),
+    border-color var(--tjg-motion-duration-normal),
+    box-shadow var(--tjg-motion-duration-normal),
+    opacity var(--tjg-motion-duration-normal),
+    transform var(--tjg-motion-duration-normal);
   white-space: nowrap;
 
   &:hover {
@@ -179,7 +185,7 @@ const { navState, visibleNavGroups, showSkeleton, retrying, stateTitle, retryPro
   color: var(--tjg-text-inverse);
   font-size: 13px;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity var(--tjg-motion-duration-normal);
 
   &:hover:not(:disabled) {
     opacity: 0.9;
@@ -225,7 +231,13 @@ const { navState, visibleNavGroups, showSkeleton, retrying, stateTitle, retryPro
   cursor: pointer;
   font-size: 14px;
   width: 100%;
-  transition: all 0.2s;
+  transition:
+    color var(--tjg-motion-duration-normal),
+    background-color var(--tjg-motion-duration-normal),
+    border-color var(--tjg-motion-duration-normal),
+    box-shadow var(--tjg-motion-duration-normal),
+    opacity var(--tjg-motion-duration-normal),
+    transform var(--tjg-motion-duration-normal);
   white-space: nowrap;
 
   &:hover {
@@ -234,14 +246,14 @@ const { navState, visibleNavGroups, showSkeleton, retrying, stateTitle, retryPro
   }
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .admin-sidebar {
     position: fixed;
     left: -260px;
     top: 0;
     bottom: 0;
     width: 240px;
-    transition: left 0.3s ease;
+    transition: left var(--tjg-motion-duration-slow) ease;
   }
 
   .admin-sidebar.sidebar-mobile-open {
@@ -250,8 +262,8 @@ const { navState, visibleNavGroups, showSkeleton, retrying, stateTitle, retryPro
 }
 
 // shrink 档（768–991px）：侧栏收为图标条；与 responsive.scss 的 md/lg 断点同源
-@include responsive.respond-to('md') {
-  @include responsive.respond-to-max('lg') {
+@include responsive.up('md') {
+  @include responsive.down('lg') {
     .admin-sidebar {
       width: 64px;
     }

@@ -268,7 +268,7 @@ onMounted(() => {
   gap: 12px;
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .tab-header {
     flex-direction: column;
     align-items: stretch;

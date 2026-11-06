@@ -23,7 +23,7 @@ interface UserStats {
   [key: string]: unknown
 }
 
-interface UseAdminUsersResult {
+export interface UseAdminUsersResult {
   // state
   users: Ref<UserInfo[]>
   filteredUsers: Ref<UserInfo[]>

@@ -152,11 +152,11 @@ const trendArrowPath = computed(() => {
   color: var(--tjg-text-tertiary);
 
   &--up {
-    color: var(--tjg-color-success-500);
+    color: var(--tjg-color-success-700);
   }
 
   &--down {
-    color: var(--tjg-color-danger-500);
+    color: var(--tjg-color-danger-700);
   }
 }
 
@@ -169,7 +169,7 @@ const trendArrowPath = computed(() => {
   color: var(--tjg-text-quaternary);
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .admin-stat-card {
     padding: var(--tjg-space-4);
   }

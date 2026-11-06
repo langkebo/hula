@@ -654,7 +654,7 @@ watch(searchQuery, (val) => {
   gap: 12px;
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .admin-rooms-header {
     flex-direction: column;
     align-items: stretch;

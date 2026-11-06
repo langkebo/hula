@@ -117,7 +117,7 @@ function handleAction(action: BulkAction) {
   }
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .admin-bulk-action-bar {
     flex-direction: column;
     align-items: stretch;

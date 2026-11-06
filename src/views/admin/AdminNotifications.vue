@@ -263,7 +263,7 @@ async function handleDeletePusher(pusher: Record<string, unknown>) {
   color: var(--n-text-color);
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .tab-header {
     flex-direction: column;
     align-items: stretch;

@@ -154,7 +154,7 @@ function handleViewDetail(moduleName: string) {
 
 .module-item {
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--tjg-motion-duration-normal) ease;
 
   &:hover {
     background-color: var(--tjg-bg-secondary);
@@ -215,7 +215,7 @@ function handleViewDetail(moduleName: string) {
   }
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .section-header {
     flex-direction: column;
     align-items: stretch;
