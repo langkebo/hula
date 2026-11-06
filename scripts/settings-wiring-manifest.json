@@ -534,6 +534,18 @@
       "kind": "credential",
       "note": "F-4/B1：本地解锁密码的 PBKDF2 verifier（可落盘，非密钥本身）。dbKey 后 16B 只存内存，绝不落盘"
     },
+    "tjg-crypto-key-source-v1": {
+      "owner": "src/services/secure/cryptoKeySource.ts:CRYPTO_KEY_SOURCE_STORAGE_KEY",
+      "consumers": ["src/services/secure/cryptoKeySource.ts"],
+      "kind": "credential",
+      "note": "D3：记录每个 userId:deviceId 的 crypto storageKey 实际来源（secure/local），跨会话锁定读取路径，避免后端可用性变化导致换密钥打开旧 store；只存枚举值，不含密钥材料"
+    },
+    "tjg:session:web-fallback": {
+      "owner": "src/utils/storageKeys.ts:WEB_SESSION_FALLBACK_STORAGE_KEY",
+      "consumers": ["src/utils/storageKeys.ts", "src/services/matrix/matrixClientPlatform.ts"],
+      "kind": "flag",
+      "note": "浏览器/e2e 宿主在拿不到 Rust 侧 token 时显式置 1，允许回退读 localStorage 中的 web access token；matrixClientPlatform.shouldUseWebTokenFallback 读取"
+    },
     "tjg.matrix.accessToken": {
       "owner": "src/services/matrix/matrixClientPlatform.ts:WEB_TOKEN_STORAGE_KEY",
       "consumers": ["src/services/matrix/matrixClientPlatform.ts", "src/services/matrix/auth/SessionRestoreService.ts"],

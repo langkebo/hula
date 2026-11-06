@@ -57,6 +57,23 @@ describe('useLocalUnlockGate（F-4 / B1）', () => {
     expect(gate.visible.value).toBe(false)
   })
 
+  // 回归（D3）：安全存储"当前可用"不代表旧 store 的密钥就在安全存储里。
+  // 用户设置过本地解锁，说明当时后端不可用，storageKey 很可能来自本地解锁密钥；
+  // 未解锁就放行 → crypto 拿不到正确密钥，会话页正常打开但 E2EE 静默不可用。
+  it('已配置本地解锁时，即使安全存储可用也要求解锁', async () => {
+    mocks.configured.current = true
+    mocks.unlockLocalUnlock.mockResolvedValueOnce(true)
+
+    const gate = useLocalUnlockGate()
+    const ready = gate.ensureReady()
+    await vi.waitFor(() => expect(gate.visible.value).toBe(true))
+
+    expect(gate.mode.value).toBe('unlock')
+    await gate.submit('local-pass')
+    await expect(ready).resolves.toBe(true)
+    expect(mocks.unlockLocalUnlock).toHaveBeenCalledWith('local-pass')
+  })
+
   // 关键：degraded 仍然加密，不需要设密码
   it('降级（加密文件 fallback）同样直接放行', async () => {
     mocks.backendInfo.current = {

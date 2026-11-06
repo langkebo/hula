@@ -68,6 +68,7 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => logSpies
 }))
 
+import { CRYPTO_KEY_SOURCE_STORAGE_KEY } from '../cryptoKeySource'
 import {
   CRYPTO_KEYCHAIN_PREFIX,
   CRYPTO_STORAGE_KEY_BYTES,
@@ -88,6 +89,9 @@ describe('cryptoStorageKey', () => {
     vi.clearAllMocks()
     hoisted.store.clear()
     clearCryptoStorageKeyCache()
+    // 来源标记会跨会话持久化，用例之间必须清掉，否则上一条用例的 'secure'/'local'
+    // 会改变下一条用例的读取路径（这正是被测行为本身）
+    localStorage.removeItem(CRYPTO_KEY_SOURCE_STORAGE_KEY)
   })
 
   afterEach(() => {
@@ -268,6 +272,7 @@ describe('cryptoStorageKey · 本地解锁兜底（F-4/B2）', () => {
   beforeEach(async () => {
     clearCryptoStorageKeyCache()
     hoisted.store.clear()
+    localStorage.removeItem(CRYPTO_KEY_SOURCE_STORAGE_KEY)
     const { clearLocalUnlock } = await import('../localUnlockKey')
     clearLocalUnlock()
   })
@@ -305,5 +310,99 @@ describe('cryptoStorageKey · 本地解锁兜底（F-4/B2）', () => {
     const key = await getOrCreateCryptoStorageKey('@carol:hs', 'DEV8')
 
     expect(key).toBeNull()
+  })
+})
+
+// D3：来源必须跨会话锁定。否则后端可用性一变（例如 keychain 恢复/失效），
+// 下一次启动就会用另一把密钥去打开旧 store，WASM 侧表现为
+// "An object failed to be decrypted while unpickling"，用户丢本地会话密钥。
+describe('cryptoStorageKey · 来源锁定（D3）', () => {
+  const readSource = (): Record<string, string> =>
+    JSON.parse(localStorage.getItem(CRYPTO_KEY_SOURCE_STORAGE_KEY) ?? '{}') as Record<string, string>
+
+  beforeEach(async () => {
+    // 清调用历史（不清实现），否则 "不得调用安全存储" 这类断言会被前面的用例污染
+    vi.clearAllMocks()
+    clearCryptoStorageKeyCache()
+    hoisted.store.clear()
+    localStorage.removeItem(CRYPTO_KEY_SOURCE_STORAGE_KEY)
+    // 前一批用例可能改过这些 mock 的持久实现，这里显式回到"原生可用"基线
+    hoisted.getSecureStorageBackendInfo.mockResolvedValue({
+      available: true,
+      backend: 'macos_keychain',
+      nativeAvailable: true,
+      degraded: false
+    })
+    hoisted.getSecureSecret.mockImplementation(async (key: string) => hoisted.store.get(key) ?? null)
+    hoisted.setSecureSecret.mockImplementation(async (key: string, value: string) => {
+      hoisted.store.set(key, value)
+      return true
+    })
+    hoisted.deleteSecureSecret.mockImplementation(async (key: string) => {
+      hoisted.store.delete(key)
+      return true
+    })
+    const { clearLocalUnlock } = await import('../localUnlockKey')
+    clearLocalUnlock()
+  })
+
+  it('首次从安全存储生成时把来源记为 secure', async () => {
+    await getOrCreateCryptoStorageKey('@alice:hs', 'DEV1')
+
+    expect(readSource()['@alice:hs:DEV1']).toBe('secure')
+  })
+
+  it('来源为 local 时，即使安全存储可用也不改读安全存储', async () => {
+    const { configureLocalUnlock, getLocalUnlockStorageKey } = await import('../localUnlockKey')
+    await configureLocalUnlock('local-pass')
+    const expected = getLocalUnlockStorageKey()!
+
+    // 模拟「后端恢复可用」：安全存储里确实有一把可用的密钥
+    hoisted.store.set(keychainKey('@dave:hs', 'DEV5'), btoa('x'.repeat(CRYPTO_STORAGE_KEY_BYTES)))
+    localStorage.setItem(CRYPTO_KEY_SOURCE_STORAGE_KEY, JSON.stringify({ '@dave:hs:DEV5': 'local' }))
+
+    const key = await getOrCreateCryptoStorageKey('@dave:hs', 'DEV5')
+
+    expect(key).not.toBeNull()
+    expect(Array.from(key!)).toEqual(Array.from(expected))
+    expect(hoisted.getSecureSecret).not.toHaveBeenCalled()
+  })
+
+  it('来源为 local 但本次会话未解锁时返回 null，且不读安全存储', async () => {
+    const { configureLocalUnlock, lockLocalUnlock } = await import('../localUnlockKey')
+    await configureLocalUnlock('local-pass')
+    lockLocalUnlock()
+    hoisted.store.set(keychainKey('@erin:hs', 'DEV6'), btoa('y'.repeat(CRYPTO_STORAGE_KEY_BYTES)))
+    localStorage.setItem(CRYPTO_KEY_SOURCE_STORAGE_KEY, JSON.stringify({ '@erin:hs:DEV6': 'local' }))
+
+    const key = await getOrCreateCryptoStorageKey('@erin:hs', 'DEV6')
+
+    expect(key).toBeNull()
+    expect(hoisted.getSecureSecret).not.toHaveBeenCalled()
+    // 未取到密钥不得改写来源标记
+    expect(readSource()['@erin:hs:DEV6']).toBe('local')
+  })
+
+  it('来源为 secure 但安全存储条目丢失时返回 null，不切换本地解锁密钥', async () => {
+    const { configureLocalUnlock, getLocalUnlockStorageKey } = await import('../localUnlockKey')
+    await configureLocalUnlock('local-pass')
+    expect(getLocalUnlockStorageKey()).not.toBeNull()
+    localStorage.setItem(CRYPTO_KEY_SOURCE_STORAGE_KEY, JSON.stringify({ '@frank:hs:DEV7': 'secure' }))
+
+    const key = await getOrCreateCryptoStorageKey('@frank:hs', 'DEV7')
+
+    expect(key).toBeNull()
+    // 既不得生成新密钥，也不得把来源改成 local
+    expect(hoisted.setSecureSecret).not.toHaveBeenCalled()
+    expect(readSource()['@frank:hs:DEV7']).toBe('secure')
+  })
+
+  it('deleteCryptoStorageKey 同时清除来源标记', async () => {
+    await getOrCreateCryptoStorageKey('@gina:hs', 'DEV10')
+    expect(readSource()['@gina:hs:DEV10']).toBe('secure')
+
+    await deleteCryptoStorageKey('@gina:hs', 'DEV10')
+
+    expect(readSource()['@gina:hs:DEV10']).toBeUndefined()
   })
 })

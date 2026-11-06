@@ -6,6 +6,7 @@ import {
   setSecureSecret
 } from '@/services/secure/secureStorage'
 import { createLogger } from '@/utils/Logger'
+import { clearKeySource, readKeySource, writeKeySource } from './cryptoKeySource'
 import { getLocalUnlockStorageKey } from './localUnlockKey'
 
 const logger = createLogger('CryptoStorageKey')
@@ -160,13 +161,74 @@ function resolveLocalUnlockKey(): Uint8Array | null {
 }
 
 /**
+ * 采用「本地解锁密码派生」的密钥，并把来源记为 `local`。
+ *
+ * 未解锁（密钥不在内存）时返回 null —— 调用方 fail-closed。
+ * 注意：此路径**不以安全存储可用性为前提**，因为来源一旦是 local，
+ * 安全存储里的那把密钥就不是加密旧 store 的那把。
+ */
+function adoptLocalUnlockKey(cKey: string, userId: string, deviceId: string): Uint8Array | null {
+  const localKey = resolveLocalUnlockKey()
+  if (!localKey) {
+    logger.warn(
+      `crypto storageKey 需由本地解锁密钥提供，但本次会话尚未解锁，crypto store 将不加密: ${userId}/${deviceId}`
+    )
+    return null
+  }
+  writeKeySource(cKey, 'local')
+  keyCache.set(cKey, localKey)
+  logger.debug(`使用本地解锁密钥作为 crypto storageKey: ${userId}/${deviceId}`)
+  return copyKey(localKey)
+}
+
+/**
+ * 来源已记为 `secure` 时的读取路径：**只**读安全存储。
+ *
+ * 条目缺失 / 损坏 / 读取抛错一律返回 null，绝不改读本地解锁密钥 ——
+ * 换一把密钥打开旧 store 只会 `unpickling` 失败，比"本次不加密"更糟。
+ */
+async function readRecordedSecureKey(
+  cKey: string,
+  userId: string,
+  deviceId: string,
+  key: string,
+  backendLabel: string
+): Promise<Uint8Array | null> {
+  try {
+    const existing = await getSecureSecret(key)
+    if (!existing) {
+      logger.warn(
+        `crypto storageKey 记录来源为安全存储，但 ${backendLabel} 中已无该条目；为避免换密钥打开旧 store，本次不加密: ${userId}/${deviceId}`
+      )
+      return null
+    }
+    const decoded = decodeKey(existing)
+    if (!decoded) {
+      logger.warn(`安全存储中的 crypto storageKey 损坏（非 32 字节 base64），已清除且不切换来源: ${userId}/${deviceId}`)
+      await deleteSecureSecret(key).catch(() => {})
+      return null
+    }
+    logger.debug(`从 ${backendLabel} 读取 crypto storageKey: ${userId}/${deviceId}`)
+    keyCache.set(cKey, decoded)
+    return copyKey(decoded)
+  } catch (err) {
+    logger.error(`读取 crypto storageKey 失败（记录来源为安全存储）: ${userId}/${deviceId}`, err)
+    return null
+  }
+}
+
+/**
  * 取出（或首次派生）用于加密本地 crypto store 的 32 字节 storageKey。
  *
- * 密钥来源是「本地解锁密码」派生：密码经 PBKDF2 派生 32B，前 16B 落盘作 verifier，
- * 后 16B 仅在解锁后留在内存。**未解锁时返回 null**，调用方必须据此 fail-closed
+ * 密钥来源有两条互斥路径，且**跨会话必须锁定在同一条**（见
+ * `CRYPTO_KEY_SOURCE_STORAGE_KEY`）：安全存储（首选，用户无感）与本地解锁密码派生
+ * （仅内存）。因此顺序是「已记录来源 → 安全存储 → 本地解锁」，
+ * 而不是每次启动按当时后端可用性重新选。
+ *
+ * 本地解锁未启用/未解锁时返回 null，调用方必须据此 fail-closed
  * （不传 storageKey 给 SDK 会让设备私钥与房间密钥明文落盘）。
  *
- * @returns 32 字节密钥；本地解锁未设置/未解锁/长度非法时为 null
+ * @returns 32 字节密钥；来源不可用/未解锁/值损坏时为 null
  */
 export async function getOrCreateCryptoStorageKey(userId: string, deviceId: string): Promise<Uint8Array | null> {
   const cKey = cacheKey(userId, deviceId)
@@ -178,6 +240,12 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
     return copyKey(cached)
   }
 
+  // 2. 已记录的来源优先于"当前后端是否可用"
+  const recordedSource = readKeySource(cKey)
+  if (recordedSource === 'local') {
+    return adoptLocalUnlockKey(cKey, userId, deviceId)
+  }
+
   const key = buildKey(userId, deviceId)
 
   // 后端事实（**不猜测**）：降级时密钥只受 master-key 加密的文件保护，
@@ -185,13 +253,18 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
   const backendInfo = await getSecureStorageBackendInfo()
   const backendLabel = describeSecureStorageBackend(backendInfo)
 
+  if (recordedSource === 'secure') {
+    return readRecordedSecureKey(cKey, userId, deviceId, key, backendLabel)
+  }
+
+  // 3. 来源未知（首次运行 / 升级前的旧安装）：安全存储优先，失败才退本地解锁
   try {
-    // 2. 从安全存储读取
     const existing = await getSecureSecret(key)
     if (existing) {
       const decoded = decodeKey(existing)
       if (decoded) {
         logger.debug(`从 ${backendLabel} 读取 crypto storageKey: ${userId}/${deviceId}`)
+        writeKeySource(cKey, 'secure')
         keyCache.set(cKey, decoded)
         return copyKey(decoded)
       }
@@ -199,18 +272,18 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
       // **不**静默生成新密钥（会用新密钥打开旧 store，必然解密失败且难以诊断）。
       logger.warn(`安全存储中的 crypto storageKey 损坏（非 32 字节 base64），已清除: ${userId}/${deviceId}`)
       await deleteSecureSecret(key).catch(() => {})
-      return resolveLocalUnlockKey()
+      return adoptLocalUnlockKey(cKey, userId, deviceId)
     }
 
-    // 3. 安全存储中无记录 → 生成新密钥并写入
+    // 4. 安全存储中无记录 → 生成新密钥并写入
     const generated = generateRandomKey()
     const success = await setSecureSecret(key, encodeKey(generated))
     if (!success) {
       logger.warn(`安全存储不可用或写入失败，尝试本地解锁密钥: ${userId}/${deviceId}`)
-      return resolveLocalUnlockKey()
+      return adoptLocalUnlockKey(cKey, userId, deviceId)
     }
 
-    // 4. 写入后立即读回验证
+    // 5. 写入后立即读回验证
     //    Rust 端 SecureStore 采用双写策略（原生密钥库 + 加密文件 fallback），
     //    get_secret 会先读原生后端，失败后从文件 fallback 加载。
     //    验证确保密钥可跨会话稳定读取，避免 initRustCrypto 报
@@ -221,9 +294,10 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
         `crypto storageKey 写入后读回验证失败（安全存储各后端均不可读），crypto store 将不加密: ${userId}/${deviceId}`
       )
       await deleteSecureSecret(key).catch(() => {})
-      return resolveLocalUnlockKey()
+      return adoptLocalUnlockKey(cKey, userId, deviceId)
     }
 
+    writeKeySource(cKey, 'secure')
     keyCache.set(cKey, generated)
     if (backendInfo.degraded) {
       logger.warn(
@@ -236,7 +310,7 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
   } catch (err) {
     // 安全存储本身抛错（IPC 失败 / 后端崩溃）也算「不可用」，不能直接落回明文
     logger.error(`获取 crypto storageKey 失败: ${userId}/${deviceId}`, err)
-    return resolveLocalUnlockKey()
+    return adoptLocalUnlockKey(cKey, userId, deviceId)
   }
 }
 
@@ -251,6 +325,8 @@ export async function getOrCreateCryptoStorageKey(userId: string, deviceId: stri
 export async function deleteCryptoStorageKey(userId: string, deviceId: string): Promise<void> {
   const cKey = cacheKey(userId, deviceId)
   keyCache.delete(cKey)
+  // 来源标记必须与密钥一起清除：残留标记会让下次启动按旧来源 fail-closed
+  clearKeySource(cKey)
   const key = buildKey(userId, deviceId)
   try {
     await deleteSecureSecret(key)

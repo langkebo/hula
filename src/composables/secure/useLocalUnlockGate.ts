@@ -64,11 +64,15 @@ export function useLocalUnlockGate() {
       logger.warn('读取安全存储状态失败，按不可用处理:', err)
     }
 
-    if (info?.available) {
-      // 原生或加密文件 fallback 均可用 —— 无需打扰用户
+    if (info?.available && !isLocalUnlockConfigured()) {
+      // 原生或加密文件 fallback 均可用，且用户从未设置本地解锁 —— 无需打扰用户
       return true
     }
 
+    // 已配置本地解锁时必须进入解锁流程，**即使安全存储当前可用**：
+    // crypto storageKey 可能来自上一次的本地解锁（当时安全存储不可用），
+    // 而未解锁时该密钥不在内存，直接放行会让 crypto 初始化拿不到正确密钥而 fail-closed
+    // （症状：冷启动直接进会话页，但 E2EE 不可用）。
     mode.value = isLocalUnlockConfigured() ? 'unlock' : 'setup'
     errorKey.value = null
     visible.value = true
