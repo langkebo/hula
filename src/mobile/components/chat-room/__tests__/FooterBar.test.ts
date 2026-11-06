@@ -4,8 +4,6 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-vi.mock('vant/es/dialog/style', () => ({}))
-vi.mock('@iconify/vue', () => ({ Icon: { name: 'Icon', template: '<i />' } }))
 vi.mock('@/stores/domains/widget/global', () => ({
   useGlobalStore: () => ({ currentSession: { detailId: '!room:hs' } })
 }))
@@ -13,9 +11,6 @@ vi.mock('@/utils/PlatformConstants', () => ({ isIOS: () => false }))
 vi.mock('@/utils/TauriInvokeHandler', () => ({ invokeSilently: vi.fn() }))
 vi.mock('@/components/rightBox/chatBox/ChatFooter.vue', () => ({
   default: { name: 'ChatFooter', template: '<div />' }
-}))
-vi.mock('@/mobile/components/chat-room/panel/VoicePanel.vue', () => ({
-  default: { name: 'VoicePanel', template: '<div />' }
 }))
 
 import FooterBar from '../FooterBar.vue'
@@ -25,8 +20,7 @@ const i18n = createI18n({
   locale: 'en-US',
   messages: {
     'en-US': {
-      location_share: { title: 'Location' },
-      mobile_chat: { keyboard: 'Keyboard', voice: 'Voice' }
+      location_share: { title: 'Location' }
     }
   } as never
 })
@@ -36,9 +30,7 @@ const mountFooterBar = () =>
     global: {
       plugins: [i18n],
       stubs: {
-        VoicePanel: true,
-        'chat-footer': true,
-        'van-button': { template: '<button><slot /><slot name="icon" /></button>' }
+        'chat-footer': true
       }
     }
   })
@@ -65,5 +57,22 @@ describe('FooterBar lifecycle', () => {
     expect(source).not.toContain('updateHeight')
     expect(source).not.toContain('ResizeObserver')
     expect(source).not.toContain('defineExpose({ root })')
+  })
+})
+
+describe('FooterBar voice entry deduplication', () => {
+  it('does not mount its own VoicePanel', () => {
+    // 移动端语音入口已收敛为 MsgInputMobileControls -> ChatFooter -> MobilePanel
+    const source = readFileSync(resolve(__dirname, '../FooterBar.vue'), 'utf-8')
+
+    expect(source).not.toContain('VoicePanel')
+    expect(source).not.toContain('showVoicePanel')
+  })
+
+  it('keeps the location action', () => {
+    const wrapper = mountFooterBar()
+
+    expect(wrapper.find('[data-testid="location-btn"]').exists()).toBe(true)
+    wrapper.unmount()
   })
 })

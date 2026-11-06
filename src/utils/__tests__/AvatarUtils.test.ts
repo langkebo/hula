@@ -33,12 +33,12 @@ describe('AvatarUtils', () => {
 
   describe('getAvatarUrl', () => {
     it('returns default for null/undefined', () => {
-      expect(AvatarUtils.getAvatarUrl(null)).toBe('/logoD.png')
-      expect(AvatarUtils.getAvatarUrl(undefined)).toBe('/logoD.png')
+      expect(AvatarUtils.getAvatarUrl(null)).toBe('/logo.png')
+      expect(AvatarUtils.getAvatarUrl(undefined)).toBe('/logo.png')
     })
 
     it('returns default for empty string', () => {
-      expect(AvatarUtils.getAvatarUrl('')).toBe('/logoD.png')
+      expect(AvatarUtils.getAvatarUrl('')).toBe('/logo.png')
     })
 
     it('returns avatar path for default avatars', () => {
@@ -57,8 +57,8 @@ describe('AvatarUtils', () => {
     })
 
     it('returns default for invalid strings', () => {
-      expect(AvatarUtils.getAvatarUrl('has spaces')).toBe('/logoD.png')
-      expect(AvatarUtils.getAvatarUrl('has/slashes')).toBe('/logoD.png')
+      expect(AvatarUtils.getAvatarUrl('has spaces')).toBe('/logo.png')
+      expect(AvatarUtils.getAvatarUrl('has/slashes')).toBe('/logo.png')
     })
 
     it('trims whitespace', () => {
@@ -71,7 +71,7 @@ describe('AvatarUtils', () => {
     })
 
     it('rejects ftp and other protocols', () => {
-      expect(AvatarUtils.getAvatarUrl('ftp://example.com/file')).toBe('/logoD.png')
+      expect(AvatarUtils.getAvatarUrl('ftp://example.com/file')).toBe('/logo.png')
     })
   })
 })
@@ -84,7 +84,7 @@ describe('mxc:// URL handling', () => {
 
   it('returns default when mxc:// URL has no resolver registered', () => {
     AvatarUtils.setMxcResolver(null)
-    expect(AvatarUtils.getAvatarUrl('mxc://example.org/abc123')).toBe('/logoD.png')
+    expect(AvatarUtils.getAvatarUrl('mxc://example.org/abc123')).toBe('/logo.png')
   })
 
   it('converts mxc:// URL using registered resolver', () => {
@@ -94,7 +94,7 @@ describe('mxc:// URL handling', () => {
 
   it('returns default when resolver returns null', () => {
     AvatarUtils.setMxcResolver(() => null)
-    expect(AvatarUtils.getAvatarUrl('mxc://example.org/abc123')).toBe('/logoD.png')
+    expect(AvatarUtils.getAvatarUrl('mxc://example.org/abc123')).toBe('/logo.png')
   })
 
   it('caches resolved mxc:// URLs', () => {

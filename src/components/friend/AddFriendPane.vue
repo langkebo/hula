@@ -43,7 +43,7 @@
               <n-avatar
                 :size="56"
                 :src="AvatarUtils.getAvatarUrl(searchResult.avatarUrl)"
-                :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                fallback-src="/logo.png"
                 round />
               <n-flex vertical :size="4" class="flex-1">
                 <span class="text-[length:var(--tjg-font-size-lg)] font-medium">
@@ -95,7 +95,7 @@
                   <n-avatar
                     :size="36"
                     :src="AvatarUtils.getAvatarUrl(suggestion.avatar_url ?? '')"
-                    :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                    fallback-src="/logo.png"
                     round />
                   <n-flex vertical :size="2" class="flex-1">
                     <span class="text-[length:var(--tjg-font-size-md)]">
@@ -137,10 +137,8 @@ import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
 import { useSearchFeedbackSummary } from '@/composables/common/useSearchFeedbackSummary'
 import { useFriends } from '@/composables/useFriends'
-import { ThemeEnum } from '@/enums'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useRightViewDraftStore } from '@/stores/domains/widget/rightViewDraft'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import FriendSearchBar from './FriendSearchBar.vue'
@@ -154,7 +152,6 @@ const route = useRoute()
 const { announce } = useAriaLive()
 const { showFeedback } = useActionFeedback()
 const contactStore = useContactStore()
-const settingStore = useSettingStore()
 const draftStore = useRightViewDraftStore()
 const { getFriendSuggestions, searchFriendsViaApi } = useFriends()
 const {

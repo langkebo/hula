@@ -133,7 +133,7 @@ const callDuration = ref(0)
 const isMuted = ref(false)
 const isVideoMuted = ref(false)
 const isScreenSharing = ref(false)
-const defaultAvatar = '/logoD.png'
+const defaultAvatar = '/logo.png'
 const remoteVideoRef = ref<HTMLVideoElement>()
 const localVideoRef = ref<HTMLVideoElement>()
 

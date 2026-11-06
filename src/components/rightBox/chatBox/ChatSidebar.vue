@@ -214,7 +214,7 @@
                             :class="{ 'grayscale-0': item.user.activeStatus === OnlineEnum.ONLINE }"
                             :size="26"
                             :color="'var(--tjg-text-inverse)'"
-                            :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                            fallback-src="/logo.png"
                             :src="AvatarUtils.getAvatarUrl(item.user.avatar)"
                             @load="userLoadedMap[item.user.uid] = true"
                             @error="userLoadedMap[item.user.uid] = true" />
@@ -312,12 +312,11 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useWindow } from '@/composables/common/useWindow'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
-import { MittEnum, OnlineEnum, RoleEnum, ThemeEnum, WsResponseMessageType } from '@/enums'
+import { MittEnum, OnlineEnum, RoleEnum, WsResponseMessageType } from '@/enums'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
 import type { UserItem } from '@/services/types'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -342,7 +341,6 @@ const emit = defineEmits<(e: 'ready') => void>()
 useWindow()
 const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
-const settingStore = useSettingStore()
 const announcementStore = useAnnouncementStore()
 const { clearAnnouncements } = announcementStore
 const showAnnouncementPanel = ref(false)

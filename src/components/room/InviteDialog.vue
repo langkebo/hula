@@ -95,7 +95,7 @@ type SearchUserResult = {
 }
 
 const searchResults = ref<SearchUserResult[]>([])
-const defaultAvatar = '/logoD.png'
+const defaultAvatar = '/logo.png'
 
 const filteredUsers = computed(() => {
   return searchResults.value

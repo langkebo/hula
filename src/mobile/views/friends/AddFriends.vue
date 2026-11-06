@@ -55,10 +55,7 @@
                         :src="AvatarUtils.getAvatarUrl(item.avatar, 96)"
                         class="size-48px rounded-full object-cover"
                         :alt="t('mobile_contact.avatar.user')"
-                        @error="
-                          ($event.target as HTMLImageElement).src =
-                            settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'
-                        " />
+                        @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                       <div class="flex flex-col justify-center gap-10px flex-1">
                         <div class="flex items-center gap-10px">
                           <span class="text-(14px [--tjg-text-primary])">{{ item.name }}</span>
@@ -119,10 +116,8 @@ import FloatBlockList from '@/components/common/FloatBlockList.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
 import { type FriendSearchResult, useFriends } from '@/composables/useFriends'
-import { ThemeEnum } from '@/enums'
 import { RoomTypeEnum } from '@/enums/index.ts'
 import router from '@/router'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
@@ -130,7 +125,6 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const { write: writeClipboard } = useClipboard()
 const globalStore = useGlobalStore()
-const settingStore = useSettingStore()
 const tabs = ref([
   { name: 'recommend', label: t('mobile_contact.tab.recommend') },
   { name: 'user', label: t('mobile_contact.tab.find_friend') },

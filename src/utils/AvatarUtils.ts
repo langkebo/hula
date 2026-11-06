@@ -12,7 +12,7 @@ export class AvatarUtils {
   private static readonly RANGE_START = parseInt(AvatarUtils.DEFAULT_AVATAR_RANGE.start, 10)
   private static readonly RANGE_END = parseInt(AvatarUtils.DEFAULT_AVATAR_RANGE.end, 10)
 
-  private static readonly DEFAULT = '/logoD.png'
+  private static readonly DEFAULT = '/logo.png'
 
   /** Memoization cache: avatar input -> resolved URL */
   private static readonly cache = new Map<string, string>()

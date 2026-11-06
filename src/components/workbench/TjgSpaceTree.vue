@@ -85,8 +85,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { type SpaceInfo, useSpace } from '@/composables/space'
-import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 
 const props = defineProps<{
@@ -112,7 +110,6 @@ const emit = defineEmits<{
 
 const logger = createLogger('TjgSpaceTree')
 const { t } = useI18n()
-const settingStore = useSettingStore()
 const { getHierarchy } = useSpace(() => props.spaceId!)
 const currentDepth = computed(() => props.depth ?? 0)
 const treeRole = computed(() => (props.nested ? 'group' : 'tree'))
@@ -124,7 +121,7 @@ const loadingMore = ref(false)
 const nextBatch = ref<string | undefined>(undefined)
 const expandedIds = ref<Set<string>>(new Set())
 
-const fallbackAvatar = computed(() => (settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'))
+const fallbackAvatar = computed(() => '/logo.png')
 const loadHierarchy = async (options: {
   spaceId: string
   from?: string

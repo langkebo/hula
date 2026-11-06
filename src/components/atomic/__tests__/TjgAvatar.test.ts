@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TjgAvatar from '../TjgAvatar.vue'
 
 // === Mock AvatarUtils ===
-const getAvatarUrlMock = vi.fn((src: string, _size?: number) => src || '/logoD.png')
+const getAvatarUrlMock = vi.fn((src: string, _size?: number) => src || '/logo.png')
 vi.mock('@/utils/AvatarUtils', () => ({
   AvatarUtils: {
     getAvatarUrl: (src: string, size?: number) => getAvatarUrlMock(src, size)
@@ -84,7 +84,7 @@ describe('TjgAvatar', () => {
     const wrapper = mount(TjgAvatar, {
       props: { src: 'https://broken.example.com/a.png' }
     })
-    // 默认 light 主题，fallback 应该是 /logoD.png
+    // 默认 light 主题，fallback 应该是 /logo.png
     // 但因为没出错，主图仍是 src
     const img = wrapper.find('img')
     expect(img.attributes('src')).toBe('https://broken.example.com/a.png')

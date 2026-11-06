@@ -57,7 +57,7 @@
                 tabindex="0"
                 aria-haspopup="dialog"
                 :aria-label="senderDisplayName"
-                :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                fallback-src="/logo.png"
                 :src="getAvatarSrc(senderUid)"
                 :class="isMe ? '' : 'mr-10px'" />
             </ContextMenu>
@@ -257,7 +257,7 @@
               round
               :size="20"
               color="var(--tjg-surface-panel)"
-              :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+              fallback-src="/logo.png"
               :src="getAvatarSrc(messageBody.reply.uid ?? '')" />
             <span>{{ `${messageBody.reply.username}: ` }}</span>
             <span class="content-span">
@@ -349,7 +349,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
 import { refreshTrustLevel, useMessageTrust } from '@/composables/encryption/useMessageTrust'
 import { useIsMobile } from '@/composables/usePlatform'
-import { MittEnum, MsgEnum, ThemeEnum } from '@/enums'
+import { MittEnum, MsgEnum } from '@/enums'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
 import router from '@/router'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
@@ -358,7 +358,6 @@ import { isRoomEncrypted } from '@/services/matrix/roomEncryption'
 import type { MessageBody, MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 import { arrayAt } from '@/utils/webCompat'
@@ -499,7 +498,6 @@ function handleVerifySender() {
 }
 
 const activeReply = ref<string>('')
-const settingStore = useSettingStore()
 const injectedChatMain = inject(chatMainInjectionKey, null)
 const chatMainApi = injectedChatMain ?? useChatMain()
 const {

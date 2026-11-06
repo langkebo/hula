@@ -51,7 +51,7 @@
             :size="80"
             :src="avatarSrc"
             :color="avatarColor"
-            :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+            fallback-src="/logo.png"
             :alt="displayName" />
 
           <!-- 自定义状态图标（离开/忙碌等业务态） -->

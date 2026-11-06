@@ -125,13 +125,6 @@ nav {
   backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
 }
 
-.tjg-glass--row {
-  background: var(--tjg-glass-row-bg);
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
-  box-shadow: var(--tjg-glass-inner-highlight);
-}
-
 /* 按下反馈：只做透明度/亮度变化，不缩放布局，避免列表抖动 */
 .tjg-glass-press {
   transition:
@@ -167,8 +160,7 @@ nav {
   .tjg-glass--nav,
   .tjg-glass--tabbar,
   .tjg-glass--sheet,
-  .tjg-glass--input,
-  .tjg-glass--row {
+  .tjg-glass--input {
     background: var(--tjg-surface-elevated);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -190,8 +182,7 @@ nav {
   .tjg-glass--nav,
   .tjg-glass--tabbar,
   .tjg-glass--sheet,
-  .tjg-glass--input,
-  .tjg-glass--row {
+  .tjg-glass--input {
     background: var(--tjg-surface-elevated);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;

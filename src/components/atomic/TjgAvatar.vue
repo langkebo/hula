@@ -35,12 +35,10 @@
  *
  * Fallback chain:
  * 1. Primary src (via AvatarUtils.getAvatarUrl)
- * 2. Theme-aware fallback image (/logoL.png or /logoD.png)
+ * 2. Fallback image (/logo.png)
  * 3. Text initials with deterministic color (when name is provided)
  */
 import { computed, ref } from 'vue'
-import { ThemeEnum } from '@/enums'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 defineOptions({ inheritAttrs: false })
@@ -50,7 +48,7 @@ const props = withDefaults(
     src?: string | null
     size?: number
     round?: boolean
-    /** 自定义 fallback，不传则按主题自动选择 */
+    /** 自定义 fallback，不传则使用应用 logo */
     fallbackSrc?: string
     /** 无障碍标签，默认空字符串 */
     ariaLabel?: string
@@ -67,16 +65,12 @@ const props = withDefaults(
   }
 )
 
-const settingStore = useSettingStore()
 const hasError = ref(false)
 const fallbackFailed = ref(false)
 
 const resolvedSrc = computed(() => AvatarUtils.getAvatarUrl(props.src, props.size))
 
-const resolvedFallback = computed(() => {
-  if (props.fallbackSrc) return props.fallbackSrc
-  return settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'
-})
+const resolvedFallback = computed(() => props.fallbackSrc || '/logo.png')
 
 /** Generate 1-2 character initials from name */
 const initials = computed(() => {

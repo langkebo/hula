@@ -1,11 +1,7 @@
 <template>
   <article class="friend-request-card" :dir="dir" :aria-label="ariaLabel">
     <div class="friend-request-card__header">
-      <n-avatar
-        :size="48"
-        round
-        :src="AvatarUtils.getAvatarUrl(request.avatarUrl)"
-        :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
+      <n-avatar :size="48" round :src="AvatarUtils.getAvatarUrl(request.avatarUrl)" fallback-src="/logo.png" />
       <div class="friend-request-card__identity">
         <span class="friend-request-card__name">{{ request.displayName || request.userId }}</span>
         <span class="friend-request-card__account">{{ request.userId }}</span>
@@ -46,9 +42,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ThemeEnum } from '@/enums'
 import type { FriendRequestItem } from '@/stores/domains/chat/contacts'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -72,7 +66,6 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const settingStore = useSettingStore()
 const expiresAt = computed(() => (props.request.timestamp || Date.now()) + DEFAULT_TTL_MS)
 const remainingMs = computed(() => Math.max(0, expiresAt.value - (props.now || Date.now())))
 const remainingHours = computed(() => Math.ceil(remainingMs.value / (60 * 60 * 1000)))

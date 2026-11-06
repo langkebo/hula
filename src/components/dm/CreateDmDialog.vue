@@ -29,7 +29,7 @@
             <n-avatar
               :size="56"
               :src="AvatarUtils.getAvatarUrl(searchResult.avatarUrl)"
-              :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+              fallback-src="/logo.png"
               round />
             <n-flex vertical :size="4" class="flex-1">
               <span class="text-[length:var(--tjg-font-size-lg)] font-medium">
@@ -77,7 +77,7 @@
                 <n-avatar
                   :size="32"
                   :src="AvatarUtils.getAvatarUrl(contact.avatarUrl)"
-                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  fallback-src="/logo.png"
                   round />
                 <span class="text-[length:var(--tjg-font-size-base)] truncate">
                   {{ contact.displayName || contact.userId }}
@@ -95,16 +95,13 @@
 import { useI18n } from 'vue-i18n'
 import BaseRightDrawer from '@/components/common/BaseRightDrawer.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { ThemeEnum } from '@/enums'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const contactStore = useContactStore()
-const settingStore = useSettingStore()
 
 const visible = defineModel<boolean>('show', { default: false })
 const emit = defineEmits<(e: 'created', roomId: string) => void>()

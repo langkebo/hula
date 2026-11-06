@@ -72,7 +72,7 @@ defineProps<{
 const emit = defineEmits<(e: 'cancel') => void>()
 
 const { t } = useI18n()
-const defaultAvatar = computed(() => '/logoD.png')
+const defaultAvatar = computed(() => '/logo.png')
 
 const getAvatarUrl = (avatar?: string) => {
   return AvatarUtils.getAvatarUrl(avatar || '')

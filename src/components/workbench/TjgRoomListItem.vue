@@ -13,11 +13,7 @@
     @contextmenu="handleContextMenu">
     <n-flex align="center" :size="12">
       <n-badge :dot="isFavorite" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
-        <n-avatar
-          :size="44"
-          :src="AvatarUtils.getAvatarUrl(avatarSrc)"
-          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
-          round />
+        <n-avatar :size="44" :src="AvatarUtils.getAvatarUrl(avatarSrc)" fallback-src="/logo.png" round />
       </n-badge>
       <n-flex vertical :size="4" class="flex-1 min-w-0">
         <n-flex align="center" justify="space-between" :gap="8">
@@ -96,11 +92,9 @@ import ContextMenu from '@/components/common/ContextMenu.vue'
 import { useTyping } from '@/composables/chat/useTyping'
 import type { ContextMenuItem } from '@/composables/common/useContextMenuTypes'
 import { useSessionLastMsg } from '@/composables/workbench/useSessionListState'
-import { ThemeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useRoomStore } from '@/stores/domains/chat/room'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { padZero } from '@/utils/StringUtils'
@@ -136,7 +130,6 @@ const { t } = useI18n()
 const globalStore = useGlobalStore()
 const roomStore = useRoomStore()
 const sessionStore = useSessionStore()
-const settingStore = useSettingStore()
 
 const roomId = computed(() => props.item.roomId)
 const displayName = computed(() => props.item.name)

@@ -101,7 +101,6 @@ Layer 3  组件级局部变量                  ← 组件内部私有，不跨�
 | Danger | `#ff4d4f` | `#ff7875` | `--tjg-color-danger-500` |
 | Info | `#1890ff` | `#40a9ff` | `--tjg-color-info-500` |
 | Beta | `#a789d9` | `#a789d9` | `--tjg-color-beta-500` |
-| Purple | `#722ed1` | `#9254de` | `--tjg-color-purple-500` |
 
 ### Neutral Surfaces
 
@@ -127,21 +126,9 @@ Layer 3  组件级局部变量                  ← 组件内部私有，不跨�
 
 ### 联邦身份（Matrix Federation）
 
-| 用途 | Token | 浅色值 | 深色值 |
-|:---|:---|:---|:---|
-| 本地服务器强调色 | `--tjg-federation-local-accent` | `#13987f` | `#1ab292` |
-| 远端服务器强调色 | `--tjg-federation-remote-accent` | `#1890ff` | `#40a9ff` |
-| 远端域名 chip 背景 | `--tjg-federation-remote-bg` | `rgba(24,144,255,0.08)` | `rgba(64,169,255,0.12)` |
-| 远端域名 chip 描边 | `--tjg-federation-remote-border` | `rgba(24,144,255,0.2)` | `rgba(64,169,255,0.25)` |
-| MXID 次级文字 | `--tjg-identity-mxid-color` | `#737373` | `#858585` |
-
-**使用示例：**
-```vue
-<!-- 联邦域名 chip -->
-<n-tag :style="{ background: 'var(--tjg-federation-remote-bg)', borderColor: 'var(--tjg-federation-remote-border)', color: 'var(--tjg-federation-remote-accent)' }" size="small">
-  {{ serverDomain }}
-</n-tag>
-```
+| 用途 | Token |
+|:---|:---|
+| MXID 次级文字 | `--tjg-identity-mxid-color` |
 
 ### 加密信任状态（E2EE）
 
@@ -157,27 +144,7 @@ Layer 3  组件级局部变量                  ← 组件内部私有，不跨�
 - 映射函数唯一，禁止组件内联 `switch`；统一在 `src/components/encryption/EncryptionStatus.vue` 中。
 - 明文房间不渲染锁，避免噪声。
 
-### 同步状态
-
-| 用途 | Token | 浅色值 | 深色值 |
-|:---|:---|:---|:---|
-| 进度条轨道背景 | `--tjg-sync-track-bg` | `var(--tjg-surface-subtle)` | `var(--tjg-surface-subtle)` |
-| 进度条填充 | `--tjg-sync-fill-bg` | `#13987f` | `#1ab292` |
-| 不确定进度背景 | `--tjg-sync-indeterminate-bg` | `var(--tjg-surface-subtle)` | `var(--tjg-surface-subtle)` |
-| 离线提示背景 | `--tjg-sync-offline-bg` | `var(--tjg-surface-panel)` | `var(--tjg-surface-panel-muted)` |
-| 离线提示文字 | `--tjg-sync-offline-text` | `#737373` | `#858585` |
-
-**使用示例：**
-```css
-/* 顶部状态条 */
-.sync-bar {
-  background: var(--tjg-sync-offline-bg);
-  color: var(--tjg-sync-offline-text);
-  /* 进度条使用 --tjg-sync-track-bg / --tjg-sync-fill-bg */
-}
-```
-
-**不存在的 token（不要引用）：** `--tjg-font-weight-normal`（请用浏览器默认字重）、`--tjg-space-7`、`--tjg-space-9`、`--tjg-space-10`、`--hula-*` 全部前缀。
+**不存在的 token（不要引用）：** `--tjg-font-weight-normal`（请用浏览器默认字重）、`--tjg-space-7`、`--tjg-space-9`、`--tjg-space-10`、`--tjg-color-purple-500`、`--hula-*` 全部前缀。
 
 ---
 

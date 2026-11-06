@@ -289,7 +289,7 @@ vi.mock('@/stores/domains/widget/global', () => ({
 vi.mock('@/utils/AvatarUtils', () => ({
   AvatarUtils: {
     batchResolve: vi.fn(),
-    getAvatarUrl: vi.fn((src: string) => src || '/logoD.png'),
+    getAvatarUrl: vi.fn((src: string) => src || '/logo.png'),
     clearCache: vi.fn()
   }
 }))

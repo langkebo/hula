@@ -102,7 +102,7 @@
                   :size="22"
                   :src="AvatarUtils.getAvatarUrl(item.avatar)"
                   color="var(--tjg-surface-panel)"
-                  :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+                  fallback-src="/logo.png"
                   :render-placeholder="() => null"
                   :intersection-observer-options="{
                     root: '#image-chat-ait'
@@ -198,11 +198,10 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useSendOptions } from '@/composables/settings/settingsOptions'
 import { useIsMobile } from '@/composables/usePlatform'
-import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum, ThemeEnum } from '@/enums'
+import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import type { AIModel, UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useLocationStore } from '@/stores/domains/chat/location'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import type { LocationData } from '@/types/common'
 import { hasTauriRuntime } from '@/utils/AppHarness'
@@ -239,7 +238,6 @@ const { addListener } = useTauriListener()
 // 收集其 cleanup/stop 函数，onUnmounted 统一清理，避免重复响应与内存增长。
 const mittCleanups: Array<() => void> = []
 const keyStrokeStops: Array<() => void> = []
-const settingStore = useSettingStore()
 const { handlePaste, processFiles } = useCommon()
 const sendOptions = useSendOptions()
 const arrow = ref(false)

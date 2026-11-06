@@ -35,7 +35,7 @@
 | 信息 | `#6ba3f8` | — | `--tjg-color-info-500` |
 | 成功 | `#10b981` | — | `--tjg-color-success` |
 | 联邦蓝 | `#6ba3f8` | — | — |
-| Beta 紫 | `#a789d9` | — | `--tjg-color-purple-500` |
+| Beta 紫 | `#a789d9` | — | — |
 
 ### 1.2 字体规范
 

@@ -98,8 +98,8 @@ const getSubtitle = (item: FileManagerListItem) => {
 }
 
 const getDefaultAvatar = () => {
-  // 统一使用 logoD.png 作为默认头像，避免闪烁问题
-  return '/logoD.png'
+  // 统一使用 logo.png 作为默认头像，避免闪烁问题
+  return '/logo.png'
 }
 
 const handleClick = () => {
@@ -111,7 +111,7 @@ const handleAvatarError = (event: Event) => {
   const defaultAvatar = getDefaultAvatar()
 
   // 防止无限循环：如果当前已经是默认头像，就不再尝试更换
-  if (target.src.includes('logoD.png') || target.src === defaultAvatar) {
+  if (target.src.includes('logo.png') || target.src === defaultAvatar) {
     return
   }
 

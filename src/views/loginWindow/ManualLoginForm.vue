@@ -6,7 +6,7 @@
           class="welcome size-80px rounded-50% border-(3px solid [--login-avatar-border])"
           :color="'var(--login-avatar-bg)'"
           alt="Tjg Logo"
-          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+          fallback-src="/logo.png"
           :src="AvatarUtils.getAvatarUrl(loginInfo.avatar)" />
       </div>
     </div>
@@ -182,9 +182,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { ThemeEnum } from '@/enums'
 import type { UserInfoType } from '@/services/types.ts'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
@@ -204,7 +202,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const settingStore = useSettingStore()
 const loginHistoriesStore = useLoginHistoriesStore()
 const { loginHistories } = storeToRefs(loginHistoriesStore)
 
@@ -232,7 +229,7 @@ const delAccount = (item: UserInfoType) => {
   }
   loginInfo.value.account = ''
   loginInfo.value.password = ''
-  loginInfo.value.avatar = '/logoD.png'
+  loginInfo.value.avatar = '/logo.png'
 }
 
 const giveAccount = (item: UserInfoType) => {
@@ -249,7 +246,7 @@ watch(
   () => loginInfo.value.account,
   (newAccount) => {
     if (!newAccount) {
-      loginInfo.value.avatar = '/logoD.png'
+      loginInfo.value.avatar = '/logo.png'
       return
     }
 
@@ -259,7 +256,7 @@ watch(
     if (matchedAccount) {
       loginInfo.value.avatar = matchedAccount.avatar
     } else {
-      loginInfo.value.avatar = '/logoD.png'
+      loginInfo.value.avatar = '/logo.png'
     }
   }
 )

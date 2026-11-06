@@ -31,7 +31,7 @@
       </div>
     </template>
 
-    <img v-else class="size-24px" :title="t('components.memoryMonitor.restore')" src="/logoL.png" alt="Tjg" />
+    <img v-else class="size-24px" :title="t('components.memoryMonitor.restore')" src="/logo.png" alt="Tjg" />
   </div>
 </template>
 <script setup lang="ts">

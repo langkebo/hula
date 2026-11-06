@@ -123,7 +123,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 // 默认头像
-const defaultAvatar = '/logoD.png'
+const defaultAvatar = '/logo.png'
 
 // 通过服务返回类型推断源消息事件类型,避免组件直接依赖 matrix-js-sdk
 type SourceEvent = NonNullable<Awaited<ReturnType<typeof matrixMessageService.getRoomMessage>>>

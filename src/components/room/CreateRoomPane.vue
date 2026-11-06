@@ -136,7 +136,7 @@ const draftStore = useRightViewDraftStore()
 const formRef = ref<FormInst>()
 const creating = ref(false)
 const inviting = ref(false)
-const defaultAvatar = '/logoD.png'
+const defaultAvatar = '/logo.png'
 const serverDomain = ref('matrix.org')
 
 const handleClose = () => {

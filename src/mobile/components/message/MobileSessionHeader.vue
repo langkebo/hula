@@ -2,7 +2,7 @@
   <div @click="emit('click')" class="flex items-center gap-6px w-full">
     <img
       class="size-38px rounded-full object-cover"
-      :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ? userStore.userInfo.avatar : '/logoD.png')"
+      :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ? userStore.userInfo.avatar : '/logo.png')"
       :alt="t('mobile_contact.avatar.user')"
       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 

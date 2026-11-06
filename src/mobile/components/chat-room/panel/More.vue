@@ -239,6 +239,8 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 /* 功能面板九宫格：每格是独立玻璃卡片，热区不小于 44px */
 .more-panel {
   color: var(--tjg-text-primary);
@@ -312,6 +314,9 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
   backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
   border-top: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-strong);
+
+  /* 低性能设备关闭模糊 */
+  @include backdrop-blur-fallback;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

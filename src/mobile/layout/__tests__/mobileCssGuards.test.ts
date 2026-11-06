@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -34,13 +34,29 @@ describe('mobile font payload', () => {
 })
 
 describe('mobile backdrop blur performance fallback', () => {
-  /** 移动端所有使用模糊的表面 */
-  const blurSurfaces = [
-    'src/mobile/layout/tabBar/index.vue',
-    'src/mobile/layout/navBar/index.vue',
-    'src/mobile/views/message/index.vue',
-    'src/mobile/views/friends/index.vue'
-  ]
+  const MOBILE_ROOT = 'src/mobile'
+
+  /** 扫描移动端全部样式源文件，避免新增模糊面漏出降级守卫 */
+  const walkMobileSources = (dir: string): string[] =>
+    readdirSync(resolve(root, dir), { withFileTypes: true }).flatMap((entry) => {
+      const path = `${dir}/${entry.name}`
+      if (entry.isDirectory()) return entry.name === '__tests__' ? [] : walkMobileSources(path)
+      return /\.(vue|scss)$/.test(entry.name) ? [path] : []
+    })
+
+  /** 不走 mixin 的模糊面：依赖下方独立用例的 -webkit- 前缀守卫 */
+  const prefixOnlySurfaces = new Set([
+    'src/mobile/components/RtcCallFloatCell.vue',
+    'src/mobile/views/my/EditProfile.vue'
+  ])
+
+  // 只认真实模糊声明，避免命中 `@include backdrop-blur-fallback` 自身导致空转
+  const blurUsage = /backdrop-blur-(?:sm|md)|backdrop-filter\s*:/
+  const lowPerfFallback = /@include backdrop-blur-fallback|html\.low-perf/
+
+  const blurSurfaces = walkMobileSources(MOBILE_ROOT).filter(
+    (path) => !prefixOnlySurfaces.has(path) && blurUsage.test(read(path))
+  )
 
   it('exposes a blur-only fallback mixin driven by html.low-perf', () => {
     const source = read('src/styles/scss/mixins/_liquid-glass.scss')
@@ -60,14 +76,18 @@ describe('mobile backdrop blur performance fallback', () => {
   })
 
   it('applies the fallback in every mobile surface that blurs', () => {
-    // 只认真实模糊声明，避免命中 `@include backdrop-blur-fallback` 自身导致空转
-    const blurUsage = /backdrop-blur-(?:sm|md)|backdrop-filter\s*:/
-    const blurred = blurSurfaces.filter((path) => blurUsage.test(read(path)))
-    // 守卫防空转：四个目标文件都应仍然使用模糊
-    expect(blurred).toHaveLength(4)
+    // 守卫防空转：glob 必须仍能扫到模糊面
+    expect(blurSurfaces.length).toBeGreaterThanOrEqual(4)
 
-    const missing = blurred.filter((path) => !read(path).includes('@include backdrop-blur-fallback'))
+    const missing = blurSurfaces.filter((path) => !lowPerfFallback.test(read(path)))
     expect(missing).toEqual([])
+  })
+
+  it('keeps the prefix-only exemption list valid', () => {
+    for (const path of prefixOnlySurfaces) {
+      expect(pathExists(path)).toBe(true)
+      expect(read(path)).toMatch(blurUsage)
+    }
   })
 })
 

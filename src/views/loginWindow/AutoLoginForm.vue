@@ -10,7 +10,7 @@
           :size="110"
           :color="'var(--login-avatar-bg)'"
           alt="Tjg Logo"
-          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'"
+          fallback-src="/logo.png"
           :src="AvatarUtils.getAvatarUrl(userInfo?.avatar ?? '')" />
       </n-flex>
 
@@ -35,9 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ThemeEnum } from '@/enums'
 import type { UserInfoType } from '@/services/types.ts'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
 defineProps<{
@@ -50,6 +48,4 @@ defineProps<{
 const emit = defineEmits<{
   login: []
 }>()
-
-const settingStore = useSettingStore()
 </script>

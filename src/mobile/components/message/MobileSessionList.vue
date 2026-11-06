@@ -244,6 +244,12 @@ function isFirstPinned(item: MobileSessionListItem, index: number): boolean {
   box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-soft);
 }
 
+/* 低性能设备关闭搜索框模糊；元素为 Vant 内部节点，需用 :global 让 html 选择器生效 */
+:global(html.low-perf) :deep(.van-cell.van-field) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 :deep(.van-cell.van-field::after) {
   display: none;
 }

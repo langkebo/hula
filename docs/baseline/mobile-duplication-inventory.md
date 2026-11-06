@@ -5,6 +5,15 @@
 > 最后更新：2026-10-12
 > 关联任务：P3-5 MT-09（`docs/TJG-保守项后续优化方案-2026-10-12.md`）
 > 性质：**只盘点，不改代码**
+> 清理记录：2026-11-06 已删除 §6 中 2 个 `.bak` 备份残留与 `typography.scss.bak`（依据
+> [`03-redundancy-report.md`](../../design-system/tjg-mobile/audit/03-redundancy-report.md) A-01）
+>
+> 清理记录（同批）：2026-11-06 完成 C-03（design-tokens.css 去重，token 437→386、零引用 23→0）、
+> C-07（`FooterBar.vue` 删除与 `MobilePanel` 重复的语音入口，保留 `MsgInputMobileControls.vue`）、
+> C-12（`mobileCssGuards.test.ts` 硬编码清单改为 `src/mobile` glob 扫描）、
+> C-01（`public/msgAction/` 8 个动画表情重编码为 64px APNG，7.1M→944K）、
+> B-03（`logoL.png`/`logoD.png` 与 `logo.png` 内容一致，合并为 256px `logo.png`，3.1M→30K）
+> （依据同报告 C-03 / C-07 / C-12 / C-01 / B-03）
 
 ---
 
@@ -215,8 +224,8 @@
 | `src/mobile/views/rooms/index.vue` | ② | 移动端专属 UI（Vant） |
 | `src/mobile/views/rtcCall/index.vue` | ② | 移动端专属 UI（Vant） |
 | `src/mobile/views/space/SpaceView.vue` | ② | 移动端专属 UI（Vant） |
-| `src/mobile/views/chat-room/ChatSetting.vue.bak` | ③ | 备份残留（`.bak`），非构建输入，可删 |
-| `src/mobile/views/message/index.vue.bak` | ③ | 备份残留（`.bak`），非构建输入，可删 |
+| `src/mobile/views/chat-room/ChatSetting.vue.bak` | ③ | 已删除（备份残留，非构建输入） |
+| `src/mobile/views/message/index.vue.bak` | ③ | 已删除（备份残留，非构建输入） |
 
 > 45 个测试 `.ts`（`__tests__/` 或 `*.test.ts`）归 **② 保留**：它们跟随被测源码存在，
 > 不参与共享/删除判定；若源码被抽到 `src/shared/`，其测试同步迁移。

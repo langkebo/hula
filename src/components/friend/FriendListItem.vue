@@ -10,11 +10,7 @@
     @contextmenu="$emit('contextmenu', { item, event: $event })">
     <div class="friend-list-item__avatar-wrap">
       <n-badge :dot="item.friendStatus === 'favorite'" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
-        <n-avatar
-          :size="44"
-          round
-          :src="AvatarUtils.getAvatarUrl(item.avatarUrl)"
-          :fallback-src="settingStore.themeContent === ThemeEnum.DARK ? '/logoL.png' : '/logoD.png'" />
+        <n-avatar :size="44" round :src="AvatarUtils.getAvatarUrl(item.avatarUrl)" fallback-src="/logo.png" />
       </n-badge>
       <span
         class="friend-list-item__presence"
@@ -81,10 +77,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { OnlineEnum, ThemeEnum } from '@/enums'
+import { OnlineEnum } from '@/enums'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { getContactDisplayName } from '@/stores/domains/chat/contacts/contactDisplay'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { escapeHtml } from '@/utils/escapeHtml'
 
@@ -111,7 +106,6 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const settingStore = useSettingStore()
 const isRtl = computed(() => props.dir === 'rtl')
 const displayName = computed(() => props.item.remark || getContactDisplayName(props.item))
 const ariaLabel = computed(() => `${displayName.value} ${props.item.userId}`)
