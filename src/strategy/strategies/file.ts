@@ -5,6 +5,7 @@ import { parseInnerText } from '@/composables/common/useCommon'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables/common/useUpload'
 import { MsgEnum, UploadSceneEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat/message'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { getMimeTypeFromExtension } from '@/utils/Formatting'
 import { getCacheBaseDir } from '@/utils/PathUtil'
 import { AbstractMessageStrategy, strategyLogger as logger, type ReplyRef } from './base'
@@ -89,13 +90,22 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
     // 创建临时路径用于上传
     const tempPath = `temp-file-${Date.now()}-${validatedFile.name}`
 
-    // 将文件保存到临时位置
-    const baseDir = getCacheBaseDir()
-    await writeFile(tempPath, validatedFile.stream(), { baseDir })
+    // 落临时文件是「path 版上传」的前提（Tauri 环境）。浏览器 / Web 没有 Tauri 运行时：
+    // writeFile 写不出真实文件，`path` 也不指向任何东西，后续上传会抛
+    // `Cannot read properties of undefined (reading 'isFile')`，用户只看到
+    // 「文件上传失败，请重试」。这里显式返回空 path，让上传侧改走 blob 直传
+    // （见 useMsgInputFileUpload.processGenericFile 的 `!localPath` 分支）。
+    let path = tempPath
+    if (hasTauriRuntime()) {
+      const baseDir = getCacheBaseDir()
+      await writeFile(tempPath, validatedFile.stream(), { baseDir })
+    } else {
+      path = ''
+    }
 
     return {
       type: this.msgType,
-      path: tempPath,
+      path,
       fileName: validatedFile.name,
       size: validatedFile.size,
       mimeType: validatedFile.type,

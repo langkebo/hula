@@ -108,7 +108,7 @@ const TINY_PNG = Buffer.from(
 test.describe('移动端输入栏与附件选择器', () => {
   test.skip(Boolean(SKIP_REASON), SKIP_REASON ?? '')
 
-  test('平台覆盖生效：移动输入栏渲染，附件选择器可打开并交付文件', async ({ page }) => {
+  test('平台覆盖生效：移动输入栏渲染，图片入口选完能真的发出去', async ({ page }) => {
     test.setTimeout(240_000)
 
     const self = await registerAccount('minput')
@@ -137,22 +137,61 @@ test.describe('移动端输入栏与附件选择器', () => {
     await expect(page.locator('.more-item[aria-label="文件"]')).toHaveCount(1)
     await expect(page.locator('.more-item[aria-label="图片"]')).toHaveCount(1)
 
-    // 3) 真实的文件选择：点「图片」uploader → 原生 filechooser → 交付文件
+    // 3) 图片入口：DOM 顺序＝options 顺序（[图片, 文件]），nth(0) 才是「图片」。
+    //    第一版误用 nth(1) 把 PNG 交给 accept="*/*" 的「文件」入口，
+    //    被 afterReadFile 的 imageTypes 过滤 ⇒ 什么都不发，看起来像链路坏了（实际是测试选错了入口）。
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser', { timeout: 20_000 }),
+      page.locator('.van-uploader input[type="file"]').nth(0).click({ force: true })
+    ])
+    await chooser.setFiles({ name: 'e2e.png', mimeType: 'image/png', buffer: TINY_PNG })
+
+    // 4) 房间里能看到建房时预置的消息（证明「确实在目标房间、timeline 已就绪」）
+    await expect.poll(() => countMessagesOfType(self, roomId, 'm.text'), { timeout: 30_000 }).toBeGreaterThan(0)
+
+    // 5) 关键一跳：服务端必须真的出现消息（选完 → 上传 → 发消息全通）
+    //    注意当前实现把「+ 图片」也按 `m.file` 发出（sendFilesDirect 固定走 FILE 策略），
+    //    所以这里断言 m.file；「图片应发成 m.image」是另一条 UX 缺口，记在报告的
+    //    §4.2（不在本用例的修复范围里，避免用一个断言掩盖两个问题）。
+    await expect
+      .poll(() => countMessagesOfType(self, roomId, 'm.file'), {
+        timeout: 60_000,
+        message: '选完图片后服务端没有消息（上传或发送链路断了）'
+      })
+      .toBeGreaterThan(0)
+  })
+
+  test('文件入口选完能真的发出去（m.file）', async ({ page }) => {
+    test.setTimeout(240_000)
+
+    const self = await registerAccount('mfile')
+    const peer = await registerAccount('mfilepeer')
+    const roomName = `file-${Date.now().toString(36)}`
+    const roomId = await seedDirectRoom(self, peer, roomName)
+
+    await page.addInitScript(() => {
+      window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
+    })
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
+    await pushRoute(page, { name: 'mobileChatMain', params: { roomId } })
+
+    const plus = page.locator('svg:has(use[href="#add-one"])').first()
+    await expect(plus, '移动输入栏未渲染').toBeVisible({ timeout: 30_000 })
+    await plus.click({ force: true })
+    await expect(page.locator('.van-uploader')).toHaveCount(2, { timeout: 15_000 })
+
+    // nth(1) = 文件入口（accept="*/*"），用非图片文件走 afterReadFile
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser', { timeout: 20_000 }),
       page.locator('.van-uploader input[type="file"]').nth(1).click({ force: true })
     ])
-    await chooser.setFiles({ name: 'e2e.png', mimeType: 'image/png', buffer: TINY_PNG })
+    await chooser.setFiles({ name: 'e2e-note.txt', mimeType: 'text/plain', buffer: Buffer.from('hello from e2e') })
 
-    // 4) 房间里能看到建房时预置的消息（顺带证明「确实在目标房间、timeline 已就绪」）
-    await expect.poll(() => countMessagesOfType(self, roomId, 'm.text'), { timeout: 30_000 }).toBeGreaterThan(0)
-
-    // 5) 选择器把手交付给上传入口（断言点：上传相关的异步模块被真实拉起来）
-    //    ⚠️ 到这里为止是本轮能验的上限：
-    //    实测选完文件后 **没有** `/upload`、没有上传确认弹窗、没有错误提示，
-    //    服务端也没有 `m.image` 事件（60s 轮询为 0）。已排除的选择器/面板/权限问题，
-    //    剩下的怀疑点是「上传链路依赖 Tauri 读文件句柄」——浏览器态拿不到真实路径，
-    //    因此「选完 → 真的发出去」这一跳需真机 Tauri 复核，见联调报告 §22.1。
-    await expect(page.locator('.van-uploader').first()).toBeVisible()
+    await expect
+      .poll(() => countMessagesOfType(self, roomId, 'm.file'), {
+        timeout: 60_000,
+        message: '选完文件后服务端没有 m.file 消息'
+      })
+      .toBeGreaterThan(0)
   })
 })

@@ -75,23 +75,41 @@ async function processGenericFile(
 
     const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
+    // 两条上传链：
+    //  - path 版（strategy.uploadFile/doUpload）：只在「path 指向真实本地文件」时可用（Tauri）；
+    //  - blob 版（matrixMediaService.uploadFile）：浏览器 / Web / van-uploader 选出的 File。
+    //
+    // 历史缺陷：无路径时也走 path 版，把 `undefined` 透给 Tauri fs，抛的是
+    // `TypeError: Cannot read properties of undefined (reading 'isFile')`，
+    // 用户只看到「文件上传失败，请重试」，附件选完永远发不出去。
+    // 现在不仅按「有没有 path」分流，**path 版失败也会回退 blob** —— 因为沙箱/WebView
+    // 里 `hasTauriRuntime()` 可能为真，但 fs 实际不可用（e2e 的 Tauri shim 就是如此）。
+    const localPath = typeof msg.path === 'string' ? msg.path : ''
+
+    const uploadFromBlob = async (): Promise<void> => {
+      const result = await matrixMediaService.uploadFile(file, progressCallback)
+      messageBody.url = result.contentUri
+    }
+
     if (isEncrypted) {
       const result = await matrixMediaService.uploadEncryptedFile(file, progressCallback)
-      cleanup()
       messageBody.encryptedFile = result.encryptedFile
       delete (messageBody as Record<string, unknown>).url
+    } else if (!localPath) {
+      await uploadFromBlob()
     } else {
-      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-        provider: UploadProviderEnum.DEFAULT
-      })
-      const uploadedUrl = await messageStrategy.doUpload(
-        msg.path as string,
-        uploadUrl,
-        config as Record<string, unknown>
-      )
-      cleanup()
-      messageBody.url = uploadedUrl || downloadUrl
+      try {
+        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(localPath, {
+          provider: UploadProviderEnum.DEFAULT
+        })
+        const uploadedUrl = await messageStrategy.doUpload(localPath, uploadUrl, config as Record<string, unknown>)
+        messageBody.url = uploadedUrl || downloadUrl
+      } catch (error) {
+        logger.warn('path 版上传不可用，回退 blob 直传:', error)
+        await uploadFromBlob()
+      }
     }
+    cleanup()
 
     delete (messageBody as Record<string, unknown>).path
 

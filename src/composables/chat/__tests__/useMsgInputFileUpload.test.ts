@@ -7,6 +7,7 @@ const {
   showFeedbackMock,
   getStrategyMock,
   checkQuotaMock,
+  uploadFileMock,
   initQueueMock,
   updateFileStatusMock,
   queueState,
@@ -16,6 +17,9 @@ const {
   showFeedbackMock: vi.fn(),
   getStrategyMock: vi.fn(),
   checkQuotaMock: vi.fn(),
+  uploadFileMock: vi
+    .fn()
+    .mockResolvedValue({ contentUri: 'mxc://example.com/blob', size: 100, mimetype: 'text/plain' }),
   initQueueMock: vi.fn((files: File[]) => {
     queueState.items = files.map((_, index) => ({ id: `file-${index + 1}` }))
   }),
@@ -57,7 +61,8 @@ vi.mock('@/services/matrix/crypto/CryptoSDKAdapter', () => ({
 vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
   matrixMediaService: {
     checkQuota: checkQuotaMock,
-    uploadEncryptedFile: vi.fn()
+    uploadEncryptedFile: vi.fn(),
+    uploadFile: uploadFileMock
   }
 }))
 
@@ -186,5 +191,98 @@ describe('useMsgInputFileUpload 配额预检', () => {
     await uploader.sendFilesDirect([makeFile('a.txt', 100)])
 
     expect(initQueueMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('useMsgInputFileUpload 无本地路径时走 blob 直传', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubGlobal('requestAnimationFrame', requestAnimationFrameMock)
+    vi.stubGlobal('cancelAnimationFrame', cancelAnimationFrameMock)
+    queueState.items = []
+    getStrategyMock.mockResolvedValue(createStrategy())
+    checkQuotaMock.mockResolvedValue(null)
+    uploadFileMock.mockResolvedValue({ contentUri: 'mxc://example.com/blob', size: 100, mimetype: 'text/plain' })
+  })
+
+  it('File 没有 path 时用 matrixMediaService.uploadFile 直传，而不是 path 版上传', async () => {
+    const strategy = createStrategy()
+    // getMsg 返回的 path 为空 —— 这正是浏览器里 van-uploader 选出的 File 的形态
+    strategy.getMsg.mockResolvedValue({
+      type: MsgEnum.FILE,
+      path: '',
+      fileName: 'a.txt',
+      size: 100,
+      mimeType: 'text/plain'
+    })
+    getStrategyMock.mockResolvedValue(strategy)
+    const { uploader, ctx } = createUploader()
+
+    await uploader.sendFilesDirect([makeFile('a.txt', 100)])
+
+    expect(uploadFileMock).toHaveBeenCalledTimes(1)
+    expect(uploadFileMock.mock.calls[0][0]).toBeInstanceOf(File)
+    // path 版上传链必须完全不被触碰（它读 Tauri 文件系统，浏览器里必抛）
+    expect(strategy.uploadFile).not.toHaveBeenCalled()
+    expect(strategy.doUpload).not.toHaveBeenCalled()
+    // 上传完必须带 url 落库并真的发出去
+    const updated = ctx.chatStore.updateMsg.mock.calls.at(-1)?.[0] as { body?: { url?: string } }
+    expect(updated.body?.url).toBe('mxc://example.com/blob')
+    expect(ctx.sendWithTracking).toHaveBeenCalled()
+  })
+
+  it('有本地路径时仍走 path 版上传（Tauri 拖拽/手输路径不回归）', async () => {
+    const strategy = createStrategy()
+    strategy.getMsg.mockResolvedValue({
+      type: MsgEnum.FILE,
+      path: '/tmp/a.txt',
+      fileName: 'a.txt',
+      size: 100,
+      mimeType: 'text/plain'
+    })
+    getStrategyMock.mockResolvedValue(strategy)
+    const { uploader } = createUploader()
+
+    await uploader.sendFilesDirect([makeFile('a.txt', 100)])
+
+    expect(strategy.uploadFile).toHaveBeenCalledWith('/tmp/a.txt', expect.anything())
+    expect(strategy.doUpload).toHaveBeenCalled()
+    expect(uploadFileMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('useMsgInputFileUpload path 版上传失败时回退 blob', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubGlobal('requestAnimationFrame', requestAnimationFrameMock)
+    vi.stubGlobal('cancelAnimationFrame', cancelAnimationFrameMock)
+    queueState.items = []
+    checkQuotaMock.mockResolvedValue(null)
+    uploadFileMock.mockResolvedValue({ contentUri: 'mxc://example.com/blob', size: 100, mimetype: 'text/plain' })
+  })
+
+  it('path 版上传抛错（沙箱/Tauri shim 里 fs 不可用）时必须改走 blob 并照常发出', async () => {
+    const strategy = createStrategy()
+    strategy.getMsg.mockResolvedValue({
+      type: MsgEnum.FILE,
+      path: 'temp-file-1-a.txt',
+      fileName: 'a.txt',
+      size: 100,
+      mimeType: 'text/plain'
+    })
+    // 模拟 Tauri fs 不可用：path 版上传抛 isFile 之类的 TypeError
+    strategy.uploadFile.mockRejectedValue(new TypeError("Cannot read properties of undefined (reading 'isFile')"))
+    getStrategyMock.mockResolvedValue(strategy)
+    const { uploader, ctx } = createUploader()
+
+    await uploader.sendFilesDirect([makeFile('a.txt', 100)])
+
+    expect(strategy.uploadFile).toHaveBeenCalled()
+    expect(uploadFileMock).toHaveBeenCalledTimes(1)
+    const updated = ctx.chatStore.updateMsg.mock.calls.at(-1)?.[0] as { body?: { url?: string } }
+    expect(updated.body?.url).toBe('mxc://example.com/blob')
+    expect(ctx.sendWithTracking).toHaveBeenCalled()
+    // 回退成功不应把消息标成失败
+    expect(ctx.chatStore.updateMsg).not.toHaveBeenCalledWith(expect.objectContaining({ status: 'failed' }))
   })
 })
