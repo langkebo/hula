@@ -125,6 +125,9 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
       fileName: msg.fileName as string,
       size: msg.size as number,
       mimeType: msg.mimeType as string,
+      // 协议字段是 info.mimetype（小写 t）：不补齐会被 messageContentBuilder
+      // 回退成 application/octet-stream，接收端拿不到真实类型。
+      mimetype: msg.mimeType as string,
       replyMsgId: (msg.reply as ReplyRef | undefined)?.key || undefined,
       reply: reply?.message?.body?.content
         ? {

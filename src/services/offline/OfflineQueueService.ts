@@ -107,10 +107,27 @@ const MAX_DELAY = 30000
  */
 const MAX_QUEUE_SIZE = 200
 
+/**
+ * 连接状态来源（`MatrixClientService` 事件订阅能力的最小子集）。
+ *
+ * 只依赖 `on/off/getConnectionState`，不 import matrix 服务，
+ * 避免离线队列反向耦合传输层。
+ */
+export interface ConnectionStateSource {
+  on(event: 'connectionState', handler: (data: unknown) => void): void
+  off(event: 'connectionState', handler: (data: unknown) => void): void
+  getConnectionState?(): string
+}
+
+/** 可以立刻投递写操作的连接状态（`CATCHUP` 仅补齐历史，发送不受阻）。 */
+const READY_STATES: ReadonlySet<string> = new Set(['CONNECTED', 'CATCHUP'])
+
 export class OfflineQueueService {
   private queue: QueuedOperation[] = []
   private processing = false
   private onlineHandler: (() => void) | null = null
+  private connectionHandler: ((data: unknown) => void) | null = null
+  private connectionSource: ConnectionStateSource | null = null
   private replayFn: ((op: QueuedOperation) => Promise<void>) | null = null
 
   constructor() {
@@ -277,6 +294,48 @@ export class OfflineQueueService {
     }
   }
 
+  /**
+   * 连接就绪即重放队列。
+   *
+   * `window 'online'` 只覆盖「物理断网恢复」，覆盖不到同步层状态迁移
+   * （CONNECTING / RECONNECTING / CATCHUP → CONNECTED）——而后者正是
+   * 「网络在线但传输未就绪」时消息被入队的场景。只监听 online 会让这些
+   * 消息永久停在 pending（气泡一直 SENDING，服务端 0 事件）。
+   */
+  startConnectionListener(source: ConnectionStateSource): void {
+    if (this.connectionHandler) return
+
+    this.connectionHandler = (data) => {
+      const state = (data as { state?: string } | null)?.state
+      if (!state || !READY_STATES.has(state)) return
+      logger.info(`连接就绪 (${state})，开始重放离线操作队列`)
+      void this.replayAll()
+    }
+    this.connectionSource = source
+    source.on('connectionState', this.connectionHandler)
+
+    // 启动时连接可能已经就绪，不会再产生一次状态迁移事件
+    const current = source.getConnectionState?.()
+    if (current && READY_STATES.has(current)) {
+      logger.info(`启动时连接已就绪 (${current})，开始重放离线操作队列`)
+      void this.replayAll()
+    }
+  }
+
+  /**
+   * 解除连接状态订阅（登出 / destroy 时调用）。
+   *
+   * 必须与 {@link startConnectionListener} 成对清理，否则重连后会残留旧闭包，
+   * 同一个状态迁移触发多次重放。
+   */
+  stopConnectionListener(): void {
+    if (this.connectionHandler && this.connectionSource) {
+      this.connectionSource.off('connectionState', this.connectionHandler)
+    }
+    this.connectionHandler = null
+    this.connectionSource = null
+  }
+
   private persistQueue(): void {
     try {
       const serializable = this.queue
@@ -331,6 +390,7 @@ export class OfflineQueueService {
 
   destroy(): void {
     this.stopNetworkListener()
+    this.stopConnectionListener()
     this.replayFn = null
   }
 }

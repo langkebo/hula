@@ -108,7 +108,7 @@ const TINY_PNG = Buffer.from(
 test.describe('移动端输入栏与附件选择器', () => {
   test.skip(Boolean(SKIP_REASON), SKIP_REASON ?? '')
 
-  test('平台覆盖生效：移动输入栏渲染，图片入口选完能真的发出去', async ({ page }) => {
+  test('平台覆盖生效：移动输入栏渲染，图片入口选完以 m.image 发出去', async ({ page }) => {
     test.setTimeout(240_000)
 
     const self = await registerAccount('minput')
@@ -150,11 +150,9 @@ test.describe('移动端输入栏与附件选择器', () => {
     await expect.poll(() => countMessagesOfType(self, roomId, 'm.text'), { timeout: 30_000 }).toBeGreaterThan(0)
 
     // 5) 关键一跳：服务端必须真的出现消息（选完 → 上传 → 发消息全通）
-    //    注意当前实现把「+ 图片」也按 `m.file` 发出（sendFilesDirect 固定走 FILE 策略），
-    //    所以这里断言 m.file；「图片应发成 m.image」是另一条 UX 缺口，记在报告的
-    //    §4.2（不在本用例的修复范围里，避免用一个断言掩盖两个问题）。
+    //    图片入口必须发成 `m.image`（此前固定走 FILE 策略，接收端只能当附件下载）。
     await expect
-      .poll(() => countMessagesOfType(self, roomId, 'm.file'), {
+      .poll(() => countMessagesOfType(self, roomId, 'm.image'), {
         timeout: 60_000,
         message: '选完图片后服务端没有消息（上传或发送链路断了）'
       })

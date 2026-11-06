@@ -1,4 +1,7 @@
+import { MessageStatusEnum } from '@/enums'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
+import type { ConnectionStateSource } from '@/services/offline/OfflineQueueService'
+import { useChatStore } from '@/stores/domains/chat/chat'
 
 interface MatrixClientLike {
   sendEvent(roomId: string, eventType: string, content: Record<string, unknown>): Promise<{ event_id: string }>
@@ -6,6 +9,10 @@ interface MatrixClientLike {
 
 interface ClientServiceDeps {
   getClient(): MatrixClientLike | null
+  /** 连接状态订阅（可选：测试替身可能不实现） */
+  on?(event: 'connectionState', handler: (data: unknown) => void): void
+  off?(event: 'connectionState', handler: (data: unknown) => void): void
+  getConnectionState?(): string
 }
 
 interface MessageServiceDeps {
@@ -113,6 +120,15 @@ export function useOfflineQueueReplay(deps: {
             const result = await messageService.sendStructuredMessage(structuredPayload)
             if (result?.event_id) {
               messageService.registerSentMessage(localEventId, result.event_id)
+              // 入队时气泡被置为 SENDING；重放成功后必须回填服务端 event_id，
+              // 否则气泡会永久停在 SENDING（用户以为在发，服务端其实早就收到了）。
+              if (typeof payload.tempMsgId === 'string') {
+                useChatStore().updateMsg({
+                  msgId: payload.tempMsgId,
+                  status: MessageStatusEnum.SUCCESS,
+                  newMsgId: result.event_id
+                })
+              }
             }
           }
           break
@@ -286,6 +302,19 @@ export function useOfflineQueueReplay(deps: {
       }
     })
     offlineQueueService.startNetworkListener()
+    const clientService = await deps.getMatrixClientService()
+    if (clientService.on && clientService.off) {
+      const on = clientService.on.bind(clientService)
+      const off = clientService.off.bind(clientService)
+      const connectionSource: ConnectionStateSource = {
+        on,
+        off,
+        ...(clientService.getConnectionState
+          ? { getConnectionState: clientService.getConnectionState.bind(clientService) }
+          : {})
+      }
+      offlineQueueService.startConnectionListener(connectionSource)
+    }
   }
 
   return { initOfflineQueue }

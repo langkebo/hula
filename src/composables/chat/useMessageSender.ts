@@ -1,10 +1,22 @@
 import { useMitt } from '@/composables/common/useMitt'
 import { MessageStatusEnum, MittEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+import type { ConnectionState } from '@/services/matrix/MatrixConnectionManager'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MessageSender')
+
+/**
+ * 可以立即发送的传输状态。
+ *
+ * `CATCHUP` 只是历史消息补齐阶段（SDK 已在正常 sync），发送请求完全可用；
+ * 把它排除会让「在线但仍在追历史」时发出的消息被静默塞进离线队列。
+ */
+const SENDABLE_STATES: ReadonlySet<ConnectionState> = new Set<ConnectionState>(['CONNECTED', 'CATCHUP'])
 
 type SendWithTrackingOptions = {
   tempMsgId: string
@@ -24,7 +36,7 @@ export const useMessageSender = () => {
     const { tempMsgId, payload, updateSessionActive = true, scrollOnUpdate = true, onSuccess, onError } = options
 
     const matrixState = matrixClientService.getConnectionState()
-    const canSend = navigator.onLine && matrixState === 'CONNECTED'
+    const canSend = navigator.onLine && SENDABLE_STATES.has(matrixState)
 
     if (!canSend) {
       offlineQueueService.enqueue('message', payload.roomId, {
@@ -59,7 +71,8 @@ export const useMessageSender = () => {
         useMitt.emit(MittEnum.CHAT_SCROLL_BOTTOM)
       }
       onSuccess?.(result)
-    } catch {
+    } catch (err) {
+      logger.error('发送消息失败', err)
       chatStore.updateMsg({
         msgId: tempMsgId,
         status: MessageStatusEnum.FAILED

@@ -222,4 +222,85 @@ describe('OfflineQueueService', () => {
     const remaining = service.getQueue()
     expect(remaining.every((op) => op.status !== 'failed')).toBe(true)
   })
+
+  describe('连接就绪重放', () => {
+    /** 极简的 connectionState 事件源替身 */
+    const createSource = (initial: string) => {
+      const handlers = new Set<(data: unknown) => void>()
+      let state = initial
+      return {
+        source: {
+          on: (_event: 'connectionState', handler: (data: unknown) => void) => handlers.add(handler),
+          off: (_event: 'connectionState', handler: (data: unknown) => void) => handlers.delete(handler),
+          getConnectionState: () => state
+        },
+        emit(next: string) {
+          state = next
+          for (const handler of handlers) handler({ state: next })
+        },
+        handlerCount: () => handlers.size
+      }
+    }
+
+    it('CONNECTED 状态迁移触发队列重放', async () => {
+      const replayed = vi.fn(async () => {})
+      service.setReplayFn(replayed)
+      service.enqueue('receipt', '!room:test', { eventId: '$event:1' })
+
+      const { source, emit } = createSource('CONNECTING')
+      service.startConnectionListener(source)
+      emit('CONNECTED')
+
+      await vi.waitFor(() => expect(replayed).toHaveBeenCalledTimes(1))
+      expect(service.getPendingCount()).toBe(0)
+    })
+
+    it('CATCHUP 也视为就绪（历史补齐不阻塞发送）', async () => {
+      const replayed = vi.fn(async () => {})
+      service.setReplayFn(replayed)
+      service.enqueue('receipt', '!room:test', { eventId: '$event:1' })
+
+      const { source, emit } = createSource('CONNECTING')
+      service.startConnectionListener(source)
+      emit('CATCHUP')
+
+      await vi.waitFor(() => expect(replayed).toHaveBeenCalledTimes(1))
+    })
+
+    it('未就绪状态不触发重放', async () => {
+      const replayed = vi.fn(async () => {})
+      service.setReplayFn(replayed)
+      service.enqueue('receipt', '!room:test', { eventId: '$event:1' })
+
+      const { source, emit } = createSource('DISCONNECTED')
+      service.startConnectionListener(source)
+      emit('CONNECTING')
+      emit('RECONNECTING')
+
+      await Promise.resolve()
+      expect(replayed).not.toHaveBeenCalled()
+      expect(service.getPendingCount()).toBe(1)
+    })
+
+    it('启动时连接已就绪也会重放（不会再产生状态迁移事件）', async () => {
+      const replayed = vi.fn(async () => {})
+      service.setReplayFn(replayed)
+      service.enqueue('receipt', '!room:test', { eventId: '$event:1' })
+
+      const { source } = createSource('CONNECTED')
+      service.startConnectionListener(source)
+
+      await vi.waitFor(() => expect(replayed).toHaveBeenCalledTimes(1))
+    })
+
+    it('stopConnectionListener 解除订阅；重复启动不会注册多次', () => {
+      const { source, handlerCount } = createSource('DISCONNECTED')
+      service.startConnectionListener(source)
+      service.startConnectionListener(source)
+      expect(handlerCount()).toBe(1)
+
+      service.stopConnectionListener()
+      expect(handlerCount()).toBe(0)
+    })
+  })
 })

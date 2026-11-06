@@ -66,6 +66,7 @@ describe('FileMessageStrategyImpl', () => {
       expect(body.fileName).toBe('doc.pdf')
       expect(body.size).toBe(1024)
       expect(body.mimeType).toBe('application/pdf')
+      expect(body.mimetype).toBe('application/pdf')
       expect(body.replyMsgId).toBe('rk')
       expect(body.reply).toBeUndefined()
     })

@@ -8,6 +8,7 @@ const {
   getStrategyMock,
   checkQuotaMock,
   uploadFileMock,
+  getImageDimensionsMock,
   initQueueMock,
   updateFileStatusMock,
   queueState,
@@ -20,6 +21,7 @@ const {
   uploadFileMock: vi
     .fn()
     .mockResolvedValue({ contentUri: 'mxc://example.com/blob', size: 100, mimetype: 'text/plain' }),
+  getImageDimensionsMock: vi.fn(),
   initQueueMock: vi.fn((files: File[]) => {
     queueState.items = files.map((_, index) => ({ id: `file-${index + 1}` }))
   }),
@@ -90,6 +92,10 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   readFile: vi.fn()
 }))
 
+vi.mock('@/utils/ImageUtils', () => ({
+  getImageDimensions: getImageDimensionsMock
+}))
+
 vi.mock('p-limit', () => ({
   default: () => (task: () => Promise<unknown>) => task()
 }))
@@ -142,6 +148,9 @@ const createUploader = (ctx = createContext()) => {
 
 const makeFile = (name: string, size: number) =>
   Object.defineProperty(new File(['x'], name, { type: 'text/plain' }), 'size', { value: size })
+
+const makeImageFile = (name: string, size: number) =>
+  Object.defineProperty(new File(['x'], name, { type: 'image/png' }), 'size', { value: size })
 
 describe('useMsgInputFileUpload 配额预检', () => {
   beforeEach(() => {
@@ -284,5 +293,105 @@ describe('useMsgInputFileUpload path 版上传失败时回退 blob', () => {
     expect(ctx.sendWithTracking).toHaveBeenCalled()
     // 回退成功不应把消息标成失败
     expect(ctx.chatStore.updateMsg).not.toHaveBeenCalledWith(expect.objectContaining({ status: 'failed' }))
+  })
+})
+
+describe('useMsgInputFileUpload 图片走 m.image', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubGlobal('requestAnimationFrame', requestAnimationFrameMock)
+    vi.stubGlobal('cancelAnimationFrame', cancelAnimationFrameMock)
+    queueState.items = []
+    checkQuotaMock.mockResolvedValue(null)
+    uploadFileMock.mockResolvedValue({ contentUri: 'mxc://example.com/photo', size: 2048, mimetype: 'image/png' })
+    getImageDimensionsMock.mockResolvedValue({ width: 640, height: 480 })
+  })
+
+  it('图片附件以 IMAGE 发送，并补齐 info 的宽高与 mimetype', async () => {
+    const strategy = createStrategy()
+    strategy.getMsg.mockResolvedValue({
+      type: MsgEnum.FILE,
+      path: '',
+      fileName: 'photo.png',
+      size: 2048,
+      mimeType: 'image/png'
+    })
+    strategy.buildMessageBody.mockReturnValue({
+      url: '',
+      fileName: 'photo.png',
+      size: 2048,
+      mimeType: 'image/png'
+    })
+    getStrategyMock.mockResolvedValue(strategy)
+    const { uploader, ctx } = createUploader()
+
+    await uploader.sendFilesDirect([makeImageFile('photo.png', 2048)])
+
+    const payload = ctx.sendWithTracking.mock.calls.at(-1)?.[0]?.payload as {
+      msgType: MsgEnum
+      body: Record<string, unknown>
+    }
+    expect(payload.msgType).toBe(MsgEnum.IMAGE)
+    expect(payload.body).toMatchObject({
+      url: 'mxc://example.com/photo',
+      fileName: 'photo.png',
+      mimetype: 'image/png',
+      width: 640,
+      height: 480
+    })
+    // 本地气泡也要切成图片类型，不能在发送成功后还显示成文件卡片
+    expect(ctx.chatStore.updateMsg).toHaveBeenCalledWith(
+      expect.objectContaining({ msgId: expect.any(String), type: MsgEnum.IMAGE })
+    )
+  })
+
+  it('尺寸读取失败时仍按 IMAGE 发送，宽高回退 0x0', async () => {
+    getImageDimensionsMock.mockRejectedValue(new Error('decode failed'))
+    const strategy = createStrategy()
+    strategy.getMsg.mockResolvedValue({
+      type: MsgEnum.FILE,
+      path: '',
+      fileName: 'photo.png',
+      size: 2048,
+      mimeType: 'image/png'
+    })
+    strategy.buildMessageBody.mockReturnValue({
+      url: '',
+      fileName: 'photo.png',
+      size: 2048,
+      mimeType: 'image/png'
+    })
+    getStrategyMock.mockResolvedValue(strategy)
+    const { uploader, ctx } = createUploader()
+
+    await uploader.sendFilesDirect([makeImageFile('photo.png', 2048)])
+
+    const payload = ctx.sendWithTracking.mock.calls.at(-1)?.[0]?.payload as {
+      msgType: MsgEnum
+      body: Record<string, unknown>
+    }
+    expect(payload.msgType).toBe(MsgEnum.IMAGE)
+    expect(payload.body).toMatchObject({ width: 0, height: 0, mimetype: 'image/png' })
+  })
+
+  it('非图片附件仍以 FILE 发送', async () => {
+    const strategy = createStrategy()
+    strategy.buildMessageBody.mockReturnValue({
+      url: '',
+      fileName: 'a.txt',
+      size: 100,
+      mimeType: 'text/plain'
+    })
+    getStrategyMock.mockResolvedValue(strategy)
+    const { uploader, ctx } = createUploader()
+
+    await uploader.sendFilesDirect([makeFile('a.txt', 100)])
+
+    const payload = ctx.sendWithTracking.mock.calls.at(-1)?.[0]?.payload as {
+      msgType: MsgEnum
+      body: Record<string, unknown>
+    }
+    expect(payload.msgType).toBe(MsgEnum.FILE)
+    expect(getImageDimensionsMock).not.toHaveBeenCalled()
   })
 })

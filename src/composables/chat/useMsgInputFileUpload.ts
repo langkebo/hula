@@ -24,6 +24,7 @@ import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/
 import { createLogger } from '@/utils/Logger'
 import { globalFileUploadQueue } from '../common/useFileUploadQueue'
 import { UploadProviderEnum } from '../common/useUpload'
+import { isImageUpload, withImageInfo } from './imageUploadBody'
 import {
   type ChatStoreLike,
   createRafProgressUpdater,
@@ -51,6 +52,8 @@ async function processGenericFile(
   ctx: FileUploadContext
 ): Promise<void> {
   const { reply, globalStore, userUid, chatStore, sendWithTracking } = ctx
+  // 上传链统一走 FILE 策略（500MB 上限、blob/path 双通道）；图片只改发送时的 msgtype 与 info 字段。
+  const msgType = isImageUpload(file) ? MsgEnum.IMAGE : MsgEnum.FILE
   const msg = await messageStrategy.getMsg('', reply.value as StrategyReplyArg, [file])
   const messageBody = messageStrategy.buildMessageBody(msg, reply.value as StrategyReplyArg)
 
@@ -113,15 +116,18 @@ async function processGenericFile(
 
     delete (messageBody as Record<string, unknown>).path
 
+    const finalBody = msgType === MsgEnum.IMAGE ? await withImageInfo(messageBody, file) : messageBody
+
     chatStore.updateMsg({
       msgId: tempMsgId,
-      body: messageBody,
+      body: finalBody,
+      type: msgType,
       status: MessageStatusEnum.SENDING
     })
 
     await sendWithTracking({
       tempMsgId,
-      payload: { id: tempMsgId, roomId: targetRoomId, msgType: MsgEnum.FILE, body: messageBody }
+      payload: { id: tempMsgId, roomId: targetRoomId, msgType, body: finalBody }
     })
   } catch (error) {
     cleanup()
@@ -143,8 +149,9 @@ async function processGenericPathFile(
     throw new Error(t('hooks.msg_input.file_size_exceeded'))
   }
 
+  const msgType = isImageUpload(file) ? MsgEnum.IMAGE : MsgEnum.FILE
   const msg = {
-    type: MsgEnum.FILE,
+    type: msgType,
     path: file.path,
     fileName: file.name,
     size: file.size,
@@ -196,15 +203,18 @@ async function processGenericPathFile(
 
     delete (messageBody as Record<string, unknown>).path
 
+    const finalBody = msgType === MsgEnum.IMAGE ? await withImageInfo(messageBody, file) : messageBody
+
     chatStore.updateMsg({
       msgId: tempMsgId,
-      body: messageBody,
+      body: finalBody,
+      type: msgType,
       status: MessageStatusEnum.SENDING
     })
 
     await sendWithTracking({
       tempMsgId,
-      payload: { id: tempMsgId, roomId: targetRoomId, msgType: MsgEnum.FILE, body: messageBody }
+      payload: { id: tempMsgId, roomId: targetRoomId, msgType, body: finalBody }
     })
   } catch (error) {
     cleanup()

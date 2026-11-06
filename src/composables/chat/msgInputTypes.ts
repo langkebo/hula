@@ -46,6 +46,8 @@ export interface ChatUpdateMsgPayload {
   status: MessageStatusEnum
   newMsgId?: string
   body?: Record<string, unknown>
+  /** 消息类型（图片上传完成后从占位 FILE 切换为 IMAGE） */
+  type?: MsgEnum
   uploadProgress?: number
   timeBlock?: number
   roomId?: string
