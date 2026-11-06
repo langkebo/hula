@@ -28,10 +28,10 @@ import type { ContextMenuHelpers } from './contextMenuHelpers'
 const logger = createLogger('ChatContextMenus')
 
 /** 右键菜单项的公共形状（消息项或群成员项） */
-export type ContextMenuItem = GroupRoleMenuItem
+type ContextMenuItem = GroupRoleMenuItem
 
 /** 菜单列表工厂依赖 */
-export type ContextMenuListDeps = {
+type ContextMenuListDeps = {
   t: ReturnType<typeof useI18n>['t']
   showFeedback: ReturnType<typeof useActionFeedback>['showFeedback']
   /** 历史记录模式：specialMenuList 输出复制/转发/另存为，正常模式只输出删除 */
@@ -689,5 +689,3 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
     handleItemType
   }
 }
-
-export type ContextMenuLists = ReturnType<typeof createContextMenuLists>

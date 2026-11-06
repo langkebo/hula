@@ -4,13 +4,13 @@ import { requireSubtleCrypto } from '@/utils/webCompat'
 const logger = createLogger('SsssKeyDescription')
 
 /** 规范算法名（Matrix Client-Server API, m.secret_storage.v1.aes-hmac-sha2） */
-export const SSSS_ALGORITHM = 'm.secret_storage.v1.aes-hmac-sha2'
+const SSSS_ALGORITHM = 'm.secret_storage.v1.aes-hmac-sha2'
 
 /** 默认密钥名，作为 HKDF 的 info 参与派生，必须与解密方一致 */
-export const DEFAULT_SSSS_KEY_NAME = 'TJG Security Key'
+const DEFAULT_SSSS_KEY_NAME = 'TJG Security Key'
 
 /** 可写入 `m.secret_storage.key.<keyId>` 的密钥描述 */
-export interface SsssKeyDescription {
+interface SsssKeyDescription {
   algorithm: string
   name: string
   iv: string
@@ -23,7 +23,7 @@ export interface SsssKeyDescription {
   }
 }
 
-export interface BuildSsssKeyDescriptionOptions {
+interface BuildSsssKeyDescriptionOptions {
   /** 人类可读名称；同时作为 HKDF info（规范要求解密方使用同一值） */
   name?: string
   /** 口令派生信息（若密钥来自口令） */

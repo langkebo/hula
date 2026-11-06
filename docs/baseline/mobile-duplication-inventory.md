@@ -14,6 +14,15 @@
 > C-01（`public/msgAction/` 8 个动画表情重编码为 64px APNG，7.1M→944K）、
 > B-03（`logoL.png`/`logoD.png` 与 `logo.png` 内容一致，合并为 256px `logo.png`，3.1M→30K）
 > （依据同报告 C-03 / C-07 / C-12 / C-01 / B-03）
+>
+> 清理记录（同批二）：2026-11-06 完成 A-05（清理 8 个 `.DS_Store`）、
+> C-04（`typography.scss` 字号标度别名到 `--tjg-font-size-*` 权威 token，删除零引用标度）、
+> C-05（`responsive.scss` 删除零引用 `.responsive-container`）、
+> C-06（`variable.scss` 拆出一次性全局样式到 `base.scss`，`variable.scss` 仅留 3 个 mixin，避免被
+> `additionalData` 注入后重复输出 N 份）、C-09（knip 未使用导出 199→3，保留 2 个已知误报）、
+> C-10（`@iconify/vue`、`@vueuse/core` 从 devDependencies 归位 dependencies）、
+> C-11（`friends/index.vue` 提取 `--friends-list-max-height` / `--friends-item-height` 变量）
+> （依据同报告 A-05 / C-04 / C-05 / C-06 / C-09 / C-10 / C-11）
 
 ---
 

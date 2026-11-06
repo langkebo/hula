@@ -1,7 +1,7 @@
 import { nextTick, ref } from 'vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 
-export interface UseReplyJumpOptions {
+interface UseReplyJumpOptions {
   /** 在本地消息列表中查找目标消息下标；找不到返回 -1。 */
   findIndexByEventId: (eventId: string) => number
   /** 目标消息的 DOM 节点，用于滚动定位；返回 null 表示当前没有可滚动节点。 */

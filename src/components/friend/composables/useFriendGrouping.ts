@@ -4,10 +4,10 @@ import { type FriendGroup, useFriends } from '@/composables/useFriends'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 
 /** Virtual group IDs for the favorite and ungrouped sections. */
-export const FAVORITE_GROUP_ID = '__favorite__'
-export const UNGROUPED_GROUP_ID = '__ungrouped__'
+const FAVORITE_GROUP_ID = '__favorite__'
+const UNGROUPED_GROUP_ID = '__ungrouped__'
 
-export interface FriendGroupSection {
+interface FriendGroupSection {
   groupId: string
   groupName: string
   friends: MatrixContact[]

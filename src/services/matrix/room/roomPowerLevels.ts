@@ -14,7 +14,7 @@
  */
 
 /** 仅需 power_levels 的 content 与当前用户，便于单测 */
-export interface PowerLevelsContent {
+interface PowerLevelsContent {
   users?: Record<string, number>
   users_default?: number
   events?: Record<string, number>
@@ -35,7 +35,7 @@ interface PowerLevelsClient {
  * 缺省值刻意与 Matrix spec 对齐（users_default 0 / state_default 50）——
  * 写错这两个默认值会让普通成员看到"能点但必 403"的开关。
  */
-export function canWriteStateEventFromContent(content: PowerLevelsContent, userId: string, eventType: string): boolean {
+function canWriteStateEventFromContent(content: PowerLevelsContent, userId: string, eventType: string): boolean {
   const users = content.users ?? {}
   const usersDefault = content.users_default ?? 0
   const events = content.events ?? {}

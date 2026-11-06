@@ -25,7 +25,7 @@ import * as passwordApi from './MatrixAuthPassword'
 import * as samlApi from './MatrixAuthSaml'
 
 // 类型再导出：保持对外 API 不变（useSessionActions 等仍从此处导入类型）
-export type { MatrixLoginResult, MatrixRegisterResult, MatrixRequestedEmailTokenResult } from './authHelpers'
+export type { MatrixRegisterResult, MatrixRequestedEmailTokenResult } from './authHelpers'
 
 /**
  * Matrix 认证服务（facade）。

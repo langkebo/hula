@@ -169,5 +169,3 @@ export function useMobileMessageActions(opts: {
     onRefresh
   }
 }
-
-export type MobileMessageActionsReturn = ReturnType<typeof useMobileMessageActions>

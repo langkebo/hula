@@ -12,9 +12,6 @@ export const NOTIFICATION_CONFIG_STORAGE_KEY = 'tjg-notification-config'
 /** 账号数据里的通知展示配置类型（只写不读的服务端备份，见 `syncConfigToAccountData`）。 */
 export const NOTIFICATION_CONFIG_ACCOUNT_DATA_TYPE = 'io.hula.notification_settings'
 
-/** 唯一有真实分发点、可以接线的细粒度事件开关。缺省视为开启。 */
-export type NotificationEventKind = 'thread_mention'
-
 /**
  * 通知配置的形状。
  *
@@ -36,7 +33,7 @@ export const DEFAULT_NOTIFICATION_CONFIG: NotificationConfig = {
 }
 
 /** 旧「线程中提及」开关（localStorage 字符串），一次性迁移进 `events.thread_mention`。 */
-export const LEGACY_THREAD_MENTION_STORAGE_KEY = 'tjg-thread-mention-notify'
+const LEGACY_THREAD_MENTION_STORAGE_KEY = 'tjg-thread-mention-notify'
 
 /**
  * 旧通知展示开关（base 的 NotificationSettings.vue 直接写 localStorage）→ 当前字段。

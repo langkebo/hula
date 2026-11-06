@@ -179,7 +179,7 @@ const legacyHashPassword = (password: string): string => {
   return hash.toString(16)
 }
 
-export async function hashPasswordWithSHA256(password: string): Promise<string> {
+async function hashPasswordWithSHA256(password: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(password)
   const hashBuffer = await requireSubtleCrypto().digest('SHA-256', data)

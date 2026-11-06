@@ -45,12 +45,9 @@ import { PROTOCOL_NAME } from './qrLoginTypes'
 
 // Re-export public types for backward compatibility
 export type {
-  ExistingDeviceReciprocateResult,
   NewDeviceLoginResult,
-  QrCodeData,
   QrLoginStatus,
-  ScannedSessionInfo,
-  StatusListener
+  ScannedSessionInfo
 } from './qrLoginTypes'
 
 export class MatrixQrLoginSdkService {

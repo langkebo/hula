@@ -21,13 +21,13 @@ import type { CryptoLifecycleDiagnosticsTracker } from './cryptoLifecycleDiagnos
 const logger = createLogger('MatrixCrypto')
 
 /** 拒绝解绑的原因。 */
-export type BindingReleaseRejectionReason = 'no-client' | 'no-crypto' | 'crypto-not-stopped'
+type BindingReleaseRejectionReason = 'no-client' | 'no-crypto' | 'crypto-not-stopped'
 
 /** 解绑结果。 */
-export type BindingReleaseOutcome = { ok: true } | { ok: false; reason: BindingReleaseRejectionReason }
+type BindingReleaseOutcome = { ok: true } | { ok: false; reason: BindingReleaseRejectionReason }
 
 /** 本函数对 client 的最小结构化依赖面。 */
-export interface CryptoBackendHolder {
+interface CryptoBackendHolder {
   cryptoBackend?: unknown
   getCrypto?: () => unknown
 }
@@ -56,7 +56,7 @@ export function releaseStoppedCryptoBinding(client: CryptoBackendHolder | null):
  *
  * @returns 命中时返回描述字符串，否则 null。
  */
-export function detectStaleCryptoReuse(client: CryptoBackendHolder | null): string | null {
+function detectStaleCryptoReuse(client: CryptoBackendHolder | null): string | null {
   if (!client) return null
   const existing = typeof client.getCrypto === 'function' ? client.getCrypto() : undefined
   if (!existing) return null

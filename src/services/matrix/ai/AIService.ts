@@ -24,9 +24,6 @@ import type {
 
 export type {
   AIAsyncGenerationResponse,
-  AudioGenerationRequest,
-  ImageGenerationRequest,
-  ImageGenerationResult,
   VideoGenerationRequest
 } from './aiMediaTypes'
 

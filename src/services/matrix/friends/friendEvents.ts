@@ -80,7 +80,7 @@ export function getFriendsGeneration(): number {
  * - `requests` 好友申请收发列表（`getIncomingRequests` / `getOutgoingRequests`）
  * - `search`   加好友搜索（`searchFriends`）
  */
-export type FriendReadChannel = 'friends' | 'requests' | 'search'
+type FriendReadChannel = 'friends' | 'requests' | 'search'
 
 const readErrors = new Map<FriendReadChannel, unknown>()
 

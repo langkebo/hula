@@ -11,7 +11,7 @@ import type { FriendRequestItem } from './types'
 
 const logger = createLogger('ContactStore.Requests')
 
-export type FriendRequestsContext = {
+type FriendRequestsContext = {
   ensureFriendServicesReady: () => Promise<void>
   loadContacts: () => Promise<void>
   startDirectRoom: (userId: string, encrypted?: boolean) => Promise<string | null>

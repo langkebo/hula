@@ -25,7 +25,7 @@ const RECONNECT_BASE_DELAY_MS = 1000
 /** 系统唤醒重连退避上限（ms）。 */
 const RECONNECT_MAX_DELAY_MS = 30_000
 
-export interface MatrixReconnectDeps {
+interface MatrixReconnectDeps {
   readonly connectionManager: MatrixConnectionManager
   readonly eventRouter: MatrixEventRouter
   readonly syncManager: MatrixSyncManager

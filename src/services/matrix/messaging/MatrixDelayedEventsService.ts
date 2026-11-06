@@ -9,7 +9,7 @@ const logger = createLogger('MatrixDelayedEvents')
 const UNSTABLE_MSC4140 = 'org.matrix.msc4140'
 
 /** 后端限制：delay_ms 必须为正整数且不超过 24 小时。 */
-export const MAX_DELAYED_EVENT_MS = 24 * 60 * 60 * 1000
+const MAX_DELAYED_EVENT_MS = 24 * 60 * 60 * 1000
 
 /** 服务端返回的延迟事件（归一化为 UI 可直接消费的字段）。 */
 export interface DelayedMessageInfo {

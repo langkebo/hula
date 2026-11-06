@@ -1,112 +1,6 @@
-/* 全局字体与光标色：需 !important 才能压过 naive-ui / Vant 在各自组件根上声明的 font-family */
-* {
-  font-family: var(--font-family), sans-serif !important;
-  caret-color: var(--tjg-color-primary-500) !important;
-}
-
-:focus-visible {
-  outline: 2px solid var(--tjg-color-primary-500);
-  outline-offset: 2px;
-  border-radius: var(--tjg-radius-xs);
-}
-
-html,
-body,
-svg {
-  &::selection {
-    background: var(--tjg-color-primary-300-alpha);
-  }
-  &:focus:not(:focus-visible) {
-    outline: none;
-  }
-  overscroll-behavior: none;
-}
-
-::selection {
-  background: var(--tjg-color-primary-300-alpha);
-}
-
-/* 语义化变量已迁移到 design-tokens.css 全局加载，避免 scoped 导致 :root 失效 */
-
-/**! 修改naive-ui的遮罩层样式*/
-@keyframes linearAnimation {
-  0% {
-    stroke-dasharray: 600;
-    stroke-dashoffset: 600;
-  }
-  100% {
-    stroke-dasharray: 600;
-    stroke-dashoffset: 0;
-  }
-}
-// 闪烁动画
-@keyframes twinkle {
-  0% {
-    transform: scale(0);
-  }
-  80% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-// 懒加载默认动画
-@keyframes come-in {
-  100% {
-    transform: translateX(0);
-  }
-}
-/**!修改naive-ui的遮罩层样式*/
-@mixin mask-style($blur: 4px) {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-}
-
-// 使用CSS变量来控制模糊效果
-html[data-blur='1'] {
-  .n-modal-mask,
-  .n-drawer-mask {
-    background-color: color-mix(in srgb, var(--tjg-surface-panel) 10%, transparent);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-}
-
-.n-modal-mask {
-  @include mask-style;
-}
-
-.n-drawer-mask {
-  @include mask-style(2px);
-}
-/**!end*/
-
-/**! 修改naive-ui复选框的样式 */
-:deep(.n-checkbox .n-checkbox-box) {
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-}
-
-/**! 修改naive-ui滚动条的间距 */
-:deep(
-  .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical,
-  .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical
-) {
-  right: 0;
-}
-
-/**! 修改naive-ui Popselect选中的样式 */
-.n-base-select-menu .n-base-select-option.n-base-select-option--selected {
-  color: var(--tjg-color-primary-500);
-}
-.n-base-select-menu .n-base-select-option .n-base-select-option__check {
-  color: var(--tjg-color-primary-500);
-}
+// 本文件会被 Vite additionalData 注入到每个 SCSS 编译单元，
+// 因此只允许定义 mixin / 变量，禁止输出任何 CSS 规则（否则产物重复 N 份）。
+// 全局基础样式请写到 base.scss。
 
 /**! 通用菜单项目样式 */
 @mixin menu-item-style($position: fixed) {
@@ -152,27 +46,11 @@ html[data-blur='1'] {
   }
 }
 
-/** 修改默认的naive-ui的选择器样式 */
-:deep(.n-base-selection) {
-  --n-box-shadow-active: 0 0 0 2px var(--tjg-color-primary-200) !important;
-  --n-border-active: 1px solid var(--tjg-color-primary-500) !important;
-  --n-border-hover: 1px solid var(--tjg-color-primary-500) !important;
-}
-
-/* 自定义滚动条 — 对齐原型设计 */
-html[data-theme='dark'] {
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--tjg-border-default);
-    border-radius: 3px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--tjg-text-quaternary);
-  }
+/**! 修改naive-ui的遮罩层样式 */
+@mixin mask-style($blur: 4px) {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
 }

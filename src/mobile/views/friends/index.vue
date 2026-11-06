@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col overflow-auto h-full relative">
+  <div class="friends-page flex flex-col overflow-auto h-full relative">
     <img
       src="@/assets/mobile/chat-home/background.webp"
       class="absolute fixed top-0 left-0 w-full h-full z-0 dark:opacity-20" />
@@ -166,7 +166,7 @@
                     {{ specialOnlineCount }}/{{ specialContacts.length }}
                   </span>
                 </template>
-                <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
+                <div class="max-h-[var(--friends-list-max-height)] overflow-y-auto">
                   <div>
                     <div
                       v-for="item in specialContacts"
@@ -174,7 +174,7 @@
                       @click="handleClick(item.userId, RoomTypeEnum.SINGLE)"
                       :class="[
                         { active: activeItem === item.userId },
-                        'item-box w-full h-75px mb-5px flex items-center gap-10px'
+                        'item-box w-full h-[var(--friends-item-height)] mb-5px flex items-center gap-10px'
                       ]">
                       <FriendContactRow
                         :user-id="item.userId"
@@ -199,14 +199,14 @@
                     {{ normalOnlineCount }}/{{ normalContacts.length }}
                   </span>
                 </template>
-                <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
+                <div class="max-h-[var(--friends-list-max-height)] overflow-y-auto">
                   <div>
                     <van-swipe-cell v-for="item in normalContacts" :key="item.userId">
                       <div
                         @click="handleClick(item.userId, RoomTypeEnum.SINGLE)"
                         :class="[
                           { active: activeItem === item.userId },
-                          'item-box w-full h-75px mb-5px flex items-center gap-10px'
+                          'item-box w-full h-[var(--friends-item-height)] mb-5px flex items-center gap-10px'
                         ]">
                         <FriendContactRow
                           :user-id="item.userId"
@@ -237,7 +237,7 @@
                     {{ blockedContacts.length }}
                   </span>
                 </template>
-                <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
+                <div class="max-h-[var(--friends-list-max-height)] overflow-y-auto">
                   <div>
                     <div
                       v-for="item in blockedContacts"
@@ -245,7 +245,7 @@
                       @click="handleClick(item.userId, RoomTypeEnum.SINGLE)"
                       :class="[
                         { active: activeItem === item.userId },
-                        'item-box w-full h-75px mb-5px opacity-60 flex items-center gap-10px'
+                        'item-box w-full h-[var(--friends-item-height)] mb-5px opacity-60 flex items-center gap-10px'
                       ]">
                       <img
                         class="size-44px rounded-full object-cover grayscale border-(1px solid var(--avatar-border-color))"
@@ -276,13 +276,16 @@
                   {{ groupChatList.length }}
                 </span>
               </template>
-              <div class="max-h-[calc(100dvh-340px-var(--safe-area-inset-top))] overflow-y-auto">
+              <div class="max-h-[var(--friends-list-max-height)] overflow-y-auto">
                 <div
                   @click="handleClick(item.roomId, RoomTypeEnum.GROUP)"
-                  :class="[{ active: activeItem === item.roomId }, 'item-box w-full h-75px mb-5px']"
+                  :class="[
+                    { active: activeItem === item.roomId },
+                    'item-box w-full h-[var(--friends-item-height)] mb-5px'
+                  ]"
                   v-for="item in groupChatList"
                   :key="item.roomId">
-                  <div class="flex items-center gap-10px h-75px pl-6px pr-8px flex-1 truncate">
+                  <div class="flex items-center gap-10px h-[var(--friends-item-height)] pl-6px pr-8px flex-1 truncate">
                     <img
                       class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))"
                       :src="AvatarUtils.getAvatarUrl(item.avatar, 96)"
@@ -575,6 +578,11 @@ const maskHandler = {
 
 <style scoped lang="scss">
 @use '@/styles/scss/mixins/liquid-glass' as *;
+
+.friends-page {
+  --friends-list-max-height: calc(100dvh - 340px - var(--safe-area-inset-top));
+  --friends-item-height: 75px;
+}
 
 /* 遮罩模糊：显式双声明（UnoCSS 工具类不产 -webkit- 前缀，旧 WebView 会丢），值同 blur-sm = 4px */
 .mobile-mask--blurred {

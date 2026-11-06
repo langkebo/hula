@@ -50,7 +50,7 @@ export const withAlpha = (hex: string, alpha: number): string => {
   return `rgba(${(value >> 16) & 0xff}, ${(value >> 8) & 0xff}, ${value & 0xff}, ${alpha})`
 }
 
-export interface ParsedDesignTokens {
+interface ParsedDesignTokens {
   light: TokenMap
   dark: TokenMap
 }

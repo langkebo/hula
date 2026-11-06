@@ -29,12 +29,8 @@ export { useAdminRetention } from './useAdminRetention'
 export type { RoomInfo } from './useAdminRooms'
 export { useAdminRooms } from './useAdminRooms'
 
-export { useAdminSaml } from './useAdminSaml'
-
-export { useAdminSecurity } from './useAdminSecurity'
-
 export { useAdminServerLogs } from './useAdminServerLogs'
-export type { SpaceInfo, SpaceStats } from './useAdminSpaces'
+export type { SpaceInfo } from './useAdminSpaces'
 export { useAdminSpaces } from './useAdminSpaces'
 export { useAdminTelemetry } from './useAdminTelemetry'
 export type { UserDevice, UserInfo, UserSession } from './useAdminUsers'

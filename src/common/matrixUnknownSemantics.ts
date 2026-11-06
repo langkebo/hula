@@ -12,7 +12,7 @@
  * 不接管的状态：`500` / `503`（重试有意义，走调用方「5xx 一律 retryable」分支），
  * 以及无法判定（`errcode` 不是 `M_UNKNOWN`、或缺 `httpStatus`）。
  */
-export type UnknownErrcodeSemantics =
+type UnknownErrcodeSemantics =
   | { kind: 'validation'; code: string; message: string; i18nKey?: string }
   | { kind: 'not_implemented'; message: string }
 

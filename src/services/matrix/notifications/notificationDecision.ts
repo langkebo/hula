@@ -7,7 +7,7 @@ import { matchesNotificationKeyword } from './notificationDisplayPreferences'
  * - `thread_mention` : 线程内提及，受 `events.thread_mention` 控制
  * - `keyword`        : 非提及消息，受关键词通知开关 + 关键词列表控制
  */
-export type NotificationMessageKind = 'mention' | 'thread_mention' | 'keyword'
+type NotificationMessageKind = 'mention' | 'thread_mention' | 'keyword'
 
 export interface NotificationMessageInput {
   isMention: boolean

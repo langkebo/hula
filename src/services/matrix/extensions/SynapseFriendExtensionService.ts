@@ -51,12 +51,12 @@ export interface SynapseFriendRequest {
   created_ts?: number
 }
 
-export interface SynapsePendingRequests {
+interface SynapsePendingRequests {
   incoming: SynapseFriendRequest[]
   outgoing: SynapseFriendRequest[]
 }
 
-export interface SynapseFriendSearchResult {
+interface SynapseFriendSearchResult {
   user_id: string
   username?: string
   displayname?: string
@@ -70,7 +70,7 @@ export interface SynapseFriendSearchResult {
   match_type?: string
 }
 
-export interface SynapseCheckFriendshipResult {
+interface SynapseCheckFriendshipResult {
   are_friends: boolean
 }
 

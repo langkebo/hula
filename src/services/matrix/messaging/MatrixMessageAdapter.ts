@@ -21,7 +21,7 @@ interface MatrixMessageAdapter {
   convertMatrixContent(content: Record<string, unknown>, msgType: MsgEnum): MessageBody
 }
 
-export const matrixMessageAdapter: MatrixMessageAdapter = {
+const matrixMessageAdapter: MatrixMessageAdapter = {
   convertMatrixEventToMessageType(event: MatrixEvent, roomId: string): MessageType {
     const sender = event.getSender() ?? ''
     const senderMember = event.sender

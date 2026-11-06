@@ -79,7 +79,7 @@ export function sameHomeserver(a?: string | null, b?: string | null): boolean {
 }
 
 /** 联邦对端解析结果 */
-export interface FederationPeer {
+interface FederationPeer {
   /** 对端 server name；无法解析时为空串 */
   server: string
   /** 是否来自远端 homeserver */

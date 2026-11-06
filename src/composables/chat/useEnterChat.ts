@@ -20,7 +20,7 @@ import { openMsgSession, openMsgSessionByRoomId } from './openMsgSession'
 
 const logger = createLogger('useEnterChat')
 
-export type EnterChatTarget = 'friend' | 'room' | 'space'
+type EnterChatTarget = 'friend' | 'room' | 'space'
 
 export function useEnterChat() {
   const globalStore = useGlobalStore()

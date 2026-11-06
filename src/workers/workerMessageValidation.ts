@@ -15,12 +15,12 @@
 
 import type { WorkerMessage } from './matrixWorkerTypes'
 
-export interface ValidatedWorkerMessage {
+interface ValidatedWorkerMessage {
   message: WorkerMessage
   payload: unknown
 }
 
-export type WorkerMessageValidationResult =
+type WorkerMessageValidationResult =
   | { ok: true; value: ValidatedWorkerMessage }
   | { ok: false; error: string; type: string; id: string }
 

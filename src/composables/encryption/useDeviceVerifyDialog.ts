@@ -10,7 +10,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('DeviceVerify')
 
 /** 设备验证对话框步骤状态机 */
-export type DeviceVerifyStep = 'intro' | 'pendingList' | 'showKey' | 'success' | 'rejected'
+type DeviceVerifyStep = 'intro' | 'pendingList' | 'showKey' | 'success' | 'rejected'
 
 /** 供 UI 选择的目标设备（跨用户验证时由 keys/query 拉取） */
 export interface DeviceOption {
@@ -33,7 +33,7 @@ export interface DeviceVerifyDialogProps {
   initialMode?: 'sas'
 }
 
-export type DeviceVerifyDialogEmit = {
+type DeviceVerifyDialogEmit = {
   (e: 'update:show', value: boolean): void
   (e: 'success'): void
 }

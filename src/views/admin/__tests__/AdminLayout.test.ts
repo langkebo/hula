@@ -22,6 +22,10 @@ const mocks = vi.hoisted(() => ({
   capabilityState: null as unknown
 }))
 
+vi.mock('@/components/windows/ActionBar.vue', () => ({
+  default: { name: 'ActionBar', template: '<div />' }
+}))
+
 vi.mock('vue-router', () => ({
   useRoute: () => ({ path: '/admin/users' }),
   useRouter: () => ({ push: mocks.push })

@@ -3,6 +3,7 @@
     <AdminSidebar :mobile-open="mobileMenuOpen" @close="mobileMenuOpen = false" @back-home="goHome" />
 
     <div class="admin-main">
+      <ActionBar :shrink="false" class="shrink-0" />
       <div class="admin-header">
         <div class="admin-header-left">
           <button

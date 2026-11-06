@@ -9,7 +9,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('useScreenshotDetection')
 
-export interface ScreenshotDetectedPayload {
+interface ScreenshotDetectedPayload {
   roomId: string
   timestamp: number
   platform: 'macos' | 'windows' | 'linux'

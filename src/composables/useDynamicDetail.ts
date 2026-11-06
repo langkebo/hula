@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router'
 import { type DynamicRoadmapStatus, useDynamic } from '@/composables/useDynamic'
 import { completeRenderSampleOnNextFrame, startRenderSample } from '@/utils/AppHarness'
 
-export type DynamicStatusTagType = 'primary' | 'warning' | 'default'
+type DynamicStatusTagType = 'primary' | 'warning' | 'default'
 
 export interface UseDynamicDetailOptions {
   /** 渲染采样名：桌面与移动分开统计，便于分别观察首屏耗时。 */

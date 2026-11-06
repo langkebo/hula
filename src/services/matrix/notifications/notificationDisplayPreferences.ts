@@ -15,7 +15,7 @@ export type NotificationPriority = 'low' | 'medium' | 'high'
 
 export const NOTIFICATION_PRIORITIES: readonly NotificationPriority[] = ['low', 'medium', 'high']
 
-export const DEFAULT_NOTIFICATION_PRIORITY: NotificationPriority = 'medium'
+const DEFAULT_NOTIFICATION_PRIORITY: NotificationPriority = 'medium'
 
 /** 与 MatrixNotificationService 的 `tjg-notification-config` 区分：这里是本地展示偏好，不参与 account data 同步。 */
 export const NOTIFICATION_DISPLAY_PREFERENCES_STORAGE_KEY = 'tjg-notification-display-preferences'
@@ -24,8 +24,8 @@ export const NOTIFICATION_DISPLAY_PREFERENCES_STORAGE_KEY = 'tjg-notification-di
  * 迁移来源（一次性，幂等）。这两个 key 曾由设置界面直接写入且没有任何消费方，
  * 现在统一并入本模块持有的展示偏好；迁移后删除旧 key，新值始终优先。
  */
-export const LEGACY_KEYWORD_NOTIFICATION_STORAGE_KEY = 'tjg-keyword-notification'
-export const LEGACY_KEYWORDS_STORAGE_KEY = 'tjg-keywords'
+const LEGACY_KEYWORD_NOTIFICATION_STORAGE_KEY = 'tjg-keyword-notification'
+const LEGACY_KEYWORDS_STORAGE_KEY = 'tjg-keywords'
 
 export interface NotificationDisplayPreferences {
   /** 通知中显示消息内容摘要。 */
@@ -43,12 +43,12 @@ export interface NotificationDisplayPreferences {
   priority: NotificationPriority
 }
 
-export interface NotificationDisplayInput {
+interface NotificationDisplayInput {
   title: string
   body: string
 }
 
-export interface NotificationDisplayDecision {
+interface NotificationDisplayDecision {
   title: string
   /** 正文原样返回；是否展示由 `contentVisible` 决定，避免服务层掺入文案。 */
   body: string

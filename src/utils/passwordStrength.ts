@@ -19,9 +19,9 @@ export const PASSWORD_MAX_LENGTH = 128
 const SPECIAL_CHARS_PATTERN = /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/
 
 /** 规则 id（供 i18n key 与测试断言使用） */
-export type PasswordRuleId = 'minLength' | 'maxLength' | 'uppercase' | 'lowercase' | 'digit' | 'special'
+type PasswordRuleId = 'minLength' | 'maxLength' | 'uppercase' | 'lowercase' | 'digit' | 'special'
 
-export interface PasswordRuleResult {
+interface PasswordRuleResult {
   id: PasswordRuleId
   passed: boolean
 }
@@ -85,7 +85,7 @@ export function getPasswordStrengthLevel(password: string): number {
  *
  * 两端共用，避免各自拼 key 造成漏配。
  */
-export const PASSWORD_RULE_I18N_KEYS: Readonly<Record<PasswordRuleId, string>> = {
+const PASSWORD_RULE_I18N_KEYS: Readonly<Record<PasswordRuleId, string>> = {
   minLength: 'password_too_short',
   maxLength: 'password_too_long',
   uppercase: 'password_need_uppercase',

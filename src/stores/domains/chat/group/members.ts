@@ -9,7 +9,7 @@ import type { MatrixGroupInfo, MatrixRoomMember } from './types'
 
 const logger = createLogger('GroupStore.Members')
 
-export type GroupMembersContext = {
+type GroupMembersContext = {
   /** 群信息 map（updateUserPresence 需要触碰以触发依赖方更新） */
   groupInfoMap: Record<string, MatrixGroupInfo>
 }

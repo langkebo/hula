@@ -14,7 +14,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('Telemetry')
 
-export type TelemetryEvent =
+type TelemetryEvent =
   | { kind: 'error'; name: string; error: unknown; context?: Record<string, unknown> }
   | {
       kind: 'health'

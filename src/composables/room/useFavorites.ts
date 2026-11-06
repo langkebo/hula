@@ -6,7 +6,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('useFavorites')
 
 /** 收藏消息摘要（纯文本展示用） */
-export interface FavoriteMessageInfo {
+interface FavoriteMessageInfo {
   eventId: string
   sender: string
   body: string

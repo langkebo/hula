@@ -12,7 +12,7 @@ import {
   type UpdateSessionResponse
 } from '@/services/matrix/rendezvous/MatrixRendezvousService'
 
-export type SessionPhase = 'idle' | 'creating' | 'active' | 'completed' | 'failed'
+type SessionPhase = 'idle' | 'creating' | 'active' | 'completed' | 'failed'
 
 interface UseRendezvousResult {
   loading: Ref<boolean>

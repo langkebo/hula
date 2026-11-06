@@ -1,13 +1,13 @@
 import { computed, type Ref, ref } from 'vue'
 
 /** 单个 emoji 比对项（m.sas.v1 的 7 项之一）。 */
-export interface SasEmoji {
+interface SasEmoji {
   emoji: string
   description: string
 }
 
 /** SDK 侧 SAS 视图（只取本 composable 需要的字段）。 */
-export interface SasViewSnapshot {
+interface SasViewSnapshot {
   emoji: ReadonlyArray<readonly [string, string]>
   decimal: readonly number[] | null
 }

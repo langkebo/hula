@@ -15,12 +15,12 @@ import type { FriendListErrorState, MatrixContact } from './types'
 
 const logger = createLogger('ContactStore.List')
 
-export type ContactsListContext = {
+type ContactsListContext = {
   ensureFriendServicesReady: () => Promise<void>
 }
 
 /** 好友状态归一化：服务端 accepted 映射为 normal */
-export const normalizeFriendStatus = (status?: FriendStatus): FriendStatus | undefined => {
+const normalizeFriendStatus = (status?: FriendStatus): FriendStatus | undefined => {
   if (status === 'accepted') {
     return 'normal'
   }

@@ -14,9 +14,6 @@ import type { useChatCopy } from './useChatCopy'
 import type { useChatFileDownload } from './useChatFileDownload'
 import { useGroupRoleGuard } from './useGroupRoleGuard'
 
-/** 右键菜单项的公共形状（消息项或群成员项） */
-export type { ContextMenuItem } from './contextMenuLists'
-
 type UseChatContextMenusOptions = {
   /** 历史记录模式：specialMenuList 输出复制/转发/另存为，正常模式只输出删除 */
   isHistoryMode: boolean

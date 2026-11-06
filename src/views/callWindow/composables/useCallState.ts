@@ -10,7 +10,7 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { padZero } from '@/utils/StringUtils'
 
-export const resolveCallType = (value?: string | null): CallTypeEnum => {
+const resolveCallType = (value?: string | null): CallTypeEnum => {
   const numeric = Number(value)
   return numeric === CallTypeEnum.VIDEO ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
 }

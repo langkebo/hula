@@ -1,24 +1,10 @@
-export { matrixClientService } from './MatrixClientService'
-
-// ============================================================
-// SDK re-exports: single choke-point for components and stores.
-// Components/stores MUST NOT import from 'matrix-js-sdk' directly;
-// import from '@/services/matrix' instead.
-// ============================================================
-
-export { matrixOidcService } from './auth/MatrixOidcService'
 // Key Backup 服务
 export { matrixKeyBackupService } from './crypto/MatrixKeyBackupService'
 export {
-  friendEventBus,
   matrixFriendGroups,
-  matrixFriendOperations,
-  matrixFriendService,
-  matrixFriendSync
+  matrixFriendOperations
 } from './friends/MatrixFriendService'
-// 新增：核心服务导出（文档对齐）
-export { matrixVoiceService } from './media/MatrixVoiceService'
-export { matrixEventReportService } from './moderation/MatrixEventReportService'
+export { matrixClientService } from './MatrixClientService'
 export { matrixRoomCreationService } from './room/CreationService'
 export { matrixDirectMessageService } from './room/MatrixDirectMessageService'
 export { matrixSpaceService } from './room/MatrixSpaceService'

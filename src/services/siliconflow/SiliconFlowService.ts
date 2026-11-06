@@ -282,8 +282,6 @@ class SiliconFlowClient {
 
 const siliconFlowClient = new SiliconFlowClient()
 
-export const siliconFlowService = siliconFlowClient
-
 // ============ Vue Composable ============
 
 export function useSiliconFlow() {

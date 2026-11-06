@@ -9,7 +9,6 @@ export {
   getSettingsTabGroupLabel,
   getSettingsTabLabel,
   normalizeSettingsTab,
-  SETTINGS_TAB_GROUPS,
   SETTINGS_TABS
 } from './settingsSchema'
 

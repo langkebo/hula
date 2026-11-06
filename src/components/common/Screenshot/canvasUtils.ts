@@ -3,7 +3,7 @@
  * 从 ScreenshotRoot 下沉，供蒙版框选与初始化描边共用。
  */
 
-export interface RectangleStyle {
+interface RectangleStyle {
   /** 选区边框颜色（--tjg-color-primary-500） */
   borderColor: string
   /** 选区圆角（CSS 像素，需乘 scaleX 换算到画布像素） */
@@ -13,13 +13,7 @@ export interface RectangleStyle {
 }
 
 /** 在选区左上角外侧绘制「宽 x 高」尺寸文本 */
-export const drawSizeText = (
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-) => {
+const drawSizeText = (context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => {
   const roundedWidth = Math.round(Math.abs(width))
   const roundedHeight = Math.round(Math.abs(height))
   const sizeText = `${roundedWidth} x ${roundedHeight}`

@@ -16,7 +16,7 @@ import { applyGlobalStrict, applyRoomStrict, readGlobalStrict } from './strictDe
 
 const logger = createLogger('StrictDevicePolicyBootstrap')
 
-export interface StrictnessReplayResult {
+interface StrictnessReplayResult {
   /** 全局开关是否已处于期望值（含"本来就一致、无需改写"） */
   globalApplied: boolean
   globalDesired: boolean

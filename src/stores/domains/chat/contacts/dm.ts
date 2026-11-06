@@ -7,7 +7,7 @@ import type { MatrixContact } from './types'
 
 const logger = createLogger('ContactStore.Dm')
 
-export type ContactDmContext = {
+type ContactDmContext = {
   contactsList: ShallowRef<MatrixContact[]>
 }
 

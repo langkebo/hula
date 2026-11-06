@@ -16,10 +16,10 @@ export type SlidingSyncLifecycleListener = (state: SlidingSyncState, resp: unkno
  * Network type detected via Network Information API.
  * Falls back to 'wifi' when the API is unavailable (desktop/Tauri).
  */
-export type NetworkType = 'wifi' | '4g' | '3g' | 'slow-2g'
+type NetworkType = 'wifi' | '4g' | '3g' | 'slow-2g'
 
 /** 滑窗参数预设：房间范围端点 / 每房间 timeline 条数 / 长轮询超时（ms）。 */
-export interface SlidingSyncPreset {
+interface SlidingSyncPreset {
   roomRangeEnd: number
   timelineLimit: number
   pollTimeout: number

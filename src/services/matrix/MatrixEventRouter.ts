@@ -23,16 +23,16 @@ import type { MatrixSyncManager } from './MatrixSyncManager'
 import { type MatrixClient, type MatrixEvent, type Room, SlidingSyncState } from './sdk'
 
 /** 同步状态处理回调（由 facade 设置，委托给 ConnectionManager） */
-export type SyncStateHandler = (state: string, prevState?: string, data?: unknown) => void
+type SyncStateHandler = (state: string, prevState?: string, data?: unknown) => void
 
 /** SlidingSync Lifecycle 错误回调（由 facade 设置，委托给 ConnectionManager.handleSyncLifecycleError） */
-export type SyncLifecycleErrorHandler = (err: Error) => void
+type SyncLifecycleErrorHandler = (err: Error) => void
 
 /** SlidingSync Lifecycle 成功回调（由 facade 设置，委托给 ConnectionManager.resetSyncErrorCount） */
-export type SyncLifecycleResetHandler = () => void
+type SyncLifecycleResetHandler = () => void
 
 /** 事件解密回调（由 facade 设置，委托给 CryptoStateTracker） */
-export type EventDecryptedHandler = (event: MatrixEvent, err?: Error) => void
+type EventDecryptedHandler = (event: MatrixEvent, err?: Error) => void
 
 /**
  * 事件路由器

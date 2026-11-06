@@ -10,7 +10,7 @@
 export const AI_EXTENSION_ENABLED = import.meta.env.VITE_AI_EXTENSION_ENABLED === 'true'
 
 /** 受 AI 扩展开关管辖的端点路径（URL 末段，不含前缀与查询串）。 */
-export const AI_EXTENSION_ENDPOINTS = new Set<string>([
+const AI_EXTENSION_ENDPOINTS = new Set<string>([
   'getAssistantModelList',
   'mapCoordTranslate',
   'mapReverseGeocode',

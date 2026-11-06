@@ -18,8 +18,7 @@
  *   `ThreadSummaryResponse`，不是 camelCase 的 `ThreadListItem`；
  * - 未读接口的 `threads` 元素是 `ThreadReadReceiptResponse`（已读回执），不是线程摘要。
  *
- * 本文件**不做** camelCase 转换，保持后端原始形状透传；
- * 展示层需要 `ThreadListItem` 时请用 `threadUtils.toThreadListItem()`。
+ * 本文件**不做** camelCase 转换，保持后端原始形状透传。
  */
 
 import { DEFAULT_PAGE_LIMIT, DEFAULT_SEARCH_LIMIT } from '@/common/constants'

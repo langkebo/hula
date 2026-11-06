@@ -36,7 +36,7 @@ type StartClientOptions = Parameters<MatrixClient['startClient']>[0]
 const SLIDING_SYNC_PROBE_TIMEOUT_MS = 5_000
 
 /** Lifecycle 子服务依赖的主类协作模块集合 */
-export interface MatrixClientLifecycleDeps {
+interface MatrixClientLifecycleDeps {
   readonly connectionManager: MatrixConnectionManager
   readonly eventRouter: MatrixEventRouter
   readonly syncManager: MatrixSyncManager

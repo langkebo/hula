@@ -38,7 +38,7 @@ export interface SpaceInfo {
   childCount: number
 }
 
-export type { SpaceChild, SpaceMember } from '../sdk-compat'
+export type { SpaceMember } from '../sdk-compat'
 
 /**
  * Matrix Space 服务 — 创建/查询/成员管理/子房间管理/层级关系。

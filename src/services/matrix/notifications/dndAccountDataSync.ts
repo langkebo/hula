@@ -7,7 +7,7 @@ const logger = createLogger('DndAccountDataSync')
 export const DND_ACCOUNT_DATA_TYPE = 'io.hula.dnd_settings'
 
 /** 账号数据同步只需要 `setAccountData`，不依赖完整客户端。 */
-export interface DndAccountDataWriter {
+interface DndAccountDataWriter {
   setAccountData(type: string, content: Record<string, unknown>): Promise<unknown>
 }
 
@@ -35,7 +35,7 @@ export async function pushDndToAccountData(client: DndAccountDataWriter, setting
  *
  * @param value 账号数据里的原始值
  */
-export function normalizeDndTimestamp(value: unknown): number | null {
+function normalizeDndTimestamp(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 

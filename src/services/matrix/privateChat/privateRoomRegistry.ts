@@ -21,7 +21,7 @@ const logger = createLogger('PrivateRoomRegistry')
  */
 
 /** account data 事件类型。 */
-export const PRIVATE_ROOMS_ACCOUNT_DATA = 'com.hula.private_rooms'
+const PRIVATE_ROOMS_ACCOUNT_DATA = 'com.hula.private_rooms'
 
 /** account data 结构。 */
 interface PrivateRoomsContent {
@@ -92,12 +92,6 @@ export function isPrivateRoom(roomId: string | undefined | null): boolean {
   registryVersion.value
   ensureLoaded()
   return cachedRoomIds.has(roomId)
-}
-
-/** 当前私密房间 ID 列表（同步读缓存）。 */
-export function listPrivateRoomIds(): string[] {
-  ensureLoaded()
-  return [...cachedRoomIds]
 }
 
 async function persist(userId: string | null, roomIds: Set<string>): Promise<void> {
@@ -209,12 +203,4 @@ export async function migrateFromHiddenSessions(hiddenRoomIds: string[]): Promis
   bumpVersion()
   logger.info(`已迁移 ${pending.length} 个隐藏会话为私密房间`)
   return pending.length
-}
-
-/** 测试用：重置内存态与标记位。 */
-export function resetPrivateRoomRegistryForTest(): void {
-  cachedUserId = null
-  cachedRoomIds = new Set()
-  loaded = false
-  readyPromise = null
 }

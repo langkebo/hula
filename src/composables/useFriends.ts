@@ -30,7 +30,7 @@ import {
 
 // Re-export to preserve the public API of this module.
 export type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
-export type { FriendSearchResult, GroupSearchViewItem, UserSearchResult } from './friends/friendSearchUtils'
+export type { FriendSearchResult } from './friends/friendSearchUtils'
 export {
   buildNormalContacts,
   filterRecommendedUsers,

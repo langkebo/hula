@@ -130,5 +130,3 @@ export function useMobileLongPress(scrollControls: LongPressScrollControls) {
     handleLongPress
   }
 }
-
-export type MobileLongPressReturn = ReturnType<typeof useMobileLongPress>

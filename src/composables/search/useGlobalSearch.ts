@@ -10,13 +10,13 @@ const SEARCH_DEBOUNCE_MS = 300
 const MIN_QUERY_LENGTH = 1
 const MAX_RESULTS_PER_TYPE = 10
 
-export interface GlobalSearchResults {
+interface GlobalSearchResults {
   users: UserSearchResult[]
   rooms: RoomSearchResult[]
   messages: SearchResult[]
 }
 
-export type GlobalSearchStatus = 'idle' | 'loading' | 'success' | 'error'
+type GlobalSearchStatus = 'idle' | 'loading' | 'success' | 'error'
 
 /**
  * 阶段 3：全局搜索 composable

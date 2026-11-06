@@ -16,7 +16,7 @@ import { requireSubtleCrypto } from '@/utils/webCompat'
  */
 
 /** HKDF 的用途分隔串（改动它等于换密钥，旧索引全部作废） */
-export const SEARCH_INDEX_KEY_INFO = 'tjg-search-index-v1'
+const SEARCH_INDEX_KEY_INFO = 'tjg-search-index-v1'
 
 const AES_KEY_BITS = 256
 const IV_BYTES = 12

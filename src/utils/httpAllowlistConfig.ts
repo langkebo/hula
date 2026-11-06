@@ -1,18 +1,18 @@
 import { type AllowRule, type Env, parseAllowRules } from '@/utils/hostAllowlist'
 
-export type AllowlistMode = 'report' | 'enforce'
+type AllowlistMode = 'report' | 'enforce'
 
-export interface AllowlistConfig {
+interface AllowlistConfig {
   rules: AllowRule[]
   mode: AllowlistMode
   warnings: string[]
 }
 
 /** 内置默认集：按方案 §6.2 host 归属表中的固定 host */
-export const DEFAULT_ALLOWLIST = 'https://gitee.com,https://api.siliconflow.cn,https://translate.googleapis.com'
+const DEFAULT_ALLOWLIST = 'https://gitee.com,https://api.siliconflow.cn,https://translate.googleapis.com'
 
 /** dev 默认集：在固定 host 基础上补本地 loopback（TrendRadar / Prometheus / consul 本地调试） */
-export const DEFAULT_ALLOWLIST_DEV = `${DEFAULT_ALLOWLIST},http://localhost,http://127.0.0.1`
+const DEFAULT_ALLOWLIST_DEV = `${DEFAULT_ALLOWLIST},http://localhost,http://127.0.0.1`
 
 function homeserverEntry(url?: string): string | null {
   if (!url) return null

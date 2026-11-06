@@ -22,7 +22,7 @@ const logger = createLogger('UploadTransport')
 export const isAbsoluteFsPath = (path: string): boolean => /^(\/|[A-Za-z]:[\\/]|\\\\)/.test(path)
 
 /** 上传选项：`downloadUrlPrefix` 来自后端 `upload/token` 的 `download_url_prefix` */
-export interface MatrixNativeUploadOptions {
+interface MatrixNativeUploadOptions {
   /** 下载地址前缀（`/_matrix/client/v1/media/download/<server>/`）；有值时优先使用 */
   downloadUrlPrefix?: string
 }

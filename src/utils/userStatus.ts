@@ -1,7 +1,7 @@
 import type { PresenceState } from '@/services/matrix/user/MatrixPresenceService'
 import type { UserState } from '@/services/types'
 
-export type MatrixPresence = PresenceState
+type MatrixPresence = PresenceState
 
 /**
  * 「允许其他用户看到您的在线状态」关闭时，把即将上报的 online 降级为 offline

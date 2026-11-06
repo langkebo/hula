@@ -1,17 +1,17 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-10-31T14:45:41.036Z",
+  "generated_at": "2026-11-06T02:40:09.904Z",
   "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.all.json",
   "upstream": {
     "schema_version": "4",
     "generated_at": "2026-05-02T00:00:00Z",
-    "synapse_rust_commit": "aca988d9ef7458e663c8806303e47ba252e94d63",
+    "synapse_rust_commit": "0ed483fca0fafd33b0477a8ee8d879f531dc061b",
     "state_profile": "all"
   },
-  "synapse_rust_commit": "aca988d9ef7458e663c8806303e47ba252e94d63",
+  "synapse_rust_commit": "0ed483fca0fafd33b0477a8ee8d879f531dc061b",
   "state_profile": "all",
-  "entry_count": 980,
-  "distinct_path_count": 780,
+  "entry_count": 982,
+  "distinct_path_count": 781,
   "note": "synapse-rust 导出 ledger 的 distinct path 权威快照（C-1）。entry_count 为 (method, path) 条目数；distinct_path_count 才是判据面口径。由 scripts/check-bare-matrix-paths.mjs --sync-authority 生成。",
   "paths": [
     "/",
@@ -130,6 +130,7 @@
     "/_matrix/client/v3/login/saml/callback",
     "/_matrix/client/v3/login/sso/redirect",
     "/_matrix/client/v3/login/sso/redirect/cas",
+    "/_matrix/client/v3/login/sso/redirect/cas/callback",
     "/_matrix/client/v3/login/sso/redirect/saml",
     "/_matrix/client/v3/login/sso/userinfo",
     "/_matrix/client/v3/logout",

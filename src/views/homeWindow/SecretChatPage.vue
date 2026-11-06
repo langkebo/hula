@@ -1,5 +1,7 @@
 <template>
   <div class="secret-chat-page size-full" role="main" :aria-label="t('home.secret_chat.title')">
+    <ActionBar :shrink="false" class="shrink-0" />
+
     <div class="secret-chat-header" role="banner">
       <div class="header-title">
         <svg class="size-20px" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

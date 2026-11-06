@@ -10,7 +10,6 @@ import {
 import matrixClientService from '@/services/matrix/MatrixClientService'
 import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 
-export type { MessageTrustLevel } from '@/services/matrix/crypto/messageTrustCache'
 export { clearSenderDeviceCache, senderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'
 
 /**
@@ -19,7 +18,7 @@ export { clearSenderDeviceCache, senderDeviceCache } from '@/services/matrix/cry
  * `MessageLockBadge` 只表达三种「已加密」的信任状态；未加密消息不展示徽章。
  * 收敛逻辑集中在此处，避免组件内联做锁态映射。
  */
-export type LockBadgeLevel = 'verified' | 'unverified' | 'risk'
+type LockBadgeLevel = 'verified' | 'unverified' | 'risk'
 
 /** 计算缓存键（**账号维度**，避免换账号后沿用上一账号的绿锁判定）。 */
 export function senderCacheKey(senderId: string): string {

@@ -12,7 +12,7 @@ export interface BackupVersionInfo {
   auth_data: Record<string, unknown>
 }
 
-export interface BackupVersion {
+interface BackupVersion {
   version: string
   algorithm: string
   auth_data: Record<string, unknown>
@@ -55,7 +55,7 @@ interface BatchRecoverResult {
   next_batch?: string
 }
 
-export interface ExportResult {
+interface ExportResult {
   room_keys: Array<{
     room_id: string
     session_id: string

@@ -7,7 +7,7 @@
  * 主题的真实来源是状态事件 `m.room.topic`（state key 为空串）。
  */
 
-export interface RoomStateLike {
+interface RoomStateLike {
   currentState?: {
     getStateEvents?: (eventType: string, stateKey?: string) => unknown
   } | null

@@ -13,7 +13,7 @@ import type { MatrixClient, TelemetryManager } from '@/services/matrix/sdk'
 import type { MatrixConnectionManager } from './MatrixConnectionManager'
 
 /** 单个 manager 的请求统计快照 */
-export interface ManagerRequestStats {
+interface ManagerRequestStats {
   total: number
   successful: number
   failed: number
@@ -21,13 +21,13 @@ export interface ManagerRequestStats {
 }
 
 /** getManagerStatsList 返回的条目类型 */
-export interface ManagerStatsEntry {
+interface ManagerStatsEntry {
   name: string
   stats: ManagerRequestStats
 }
 
 /** Telemetry 子服务依赖的主类协作模块集合 */
-export interface MatrixClientTelemetryDeps {
+interface MatrixClientTelemetryDeps {
   readonly connectionManager: MatrixConnectionManager
 }
 

@@ -7,9 +7,9 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('RoomStrictness')
 
 /** 权威查询的状态：`ready` 才代表 `unverifiedCount` 可信 */
-export type RoomStrictnessStatus = 'idle' | 'loading' | 'ready' | 'failed'
+type RoomStrictnessStatus = 'idle' | 'loading' | 'ready' | 'failed'
 
-export interface UseRoomStrictnessReturn {
+interface UseRoomStrictnessReturn {
   /** 未验证设备台数；`null` = 尚未取到（见 `status`） */
   unverifiedCount: Ref<number | null>
   status: Ref<RoomStrictnessStatus>

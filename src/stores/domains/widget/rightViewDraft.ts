@@ -18,13 +18,13 @@ import { ref } from 'vue'
  * - 不在视图切换时清除（保留草稿）
  */
 
-export interface AddFriendDraft {
+interface AddFriendDraft {
   searchValue: string
   searchMode: 'fuzzy' | 'exact'
   requestMessage: string
 }
 
-export interface CreateRoomDraft {
+interface CreateRoomDraft {
   name: string
   topic: string
   avatarUrl: string
@@ -35,18 +35,18 @@ export interface CreateRoomDraft {
   joinRule: 'invite' | 'knock' | 'public' | 'restricted'
 }
 
-export interface JoinRoomDraft {
+interface JoinRoomDraft {
   roomIdOrAlias: string
   reason: string
 }
 
-export interface CreateSpaceDraft {
+interface CreateSpaceDraft {
   name: string
   topic: string
   avatarUrl: string
 }
 
-export type RightViewDraftKey = 'addFriend' | 'createRoom' | 'joinRoom' | 'createSpace'
+type RightViewDraftKey = 'addFriend' | 'createRoom' | 'joinRoom' | 'createSpace'
 
 const EMPTY_ADD_FRIEND: AddFriendDraft = {
   searchValue: '',

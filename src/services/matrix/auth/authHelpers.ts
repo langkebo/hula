@@ -39,7 +39,7 @@ export interface MatrixCaptchaResult {
   mxc_url: string
 }
 
-export type MatrixAuthPayload = Record<string, unknown>
+type MatrixAuthPayload = Record<string, unknown>
 // Tjg 侧流程名 → SDK `submitEmailToken(..., scope)` 的映射见 MatrixAuthService：
 // `password_reset` → `password`，其余 → `register`（后端三条路径挂同一处理器）。
 export type MatrixEmailTokenPurpose = 'register' | 'password_reset'

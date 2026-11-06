@@ -12,12 +12,12 @@ export const logger = createLogger('useWindow')
 /** 判断是兼容的系统 */
 export const isCompatibilityMode = computed(() => isCompatibility())
 
-export const WINDOW_SAFE_PADDING = 32
-export const MIN_LOGICAL_WIDTH = 320
-export const MIN_LOGICAL_HEIGHT = 200
+const WINDOW_SAFE_PADDING = 32
+const MIN_LOGICAL_WIDTH = 320
+const MIN_LOGICAL_HEIGHT = 200
 export const MAC_TRAFFIC_LIGHTS_SPACING = 6
 
-export type DesktopWindowOptions = Omit<WebviewOptions, 'x' | 'y' | 'width' | 'height'> & WindowOptions
+type DesktopWindowOptions = Omit<WebviewOptions, 'x' | 'y' | 'width' | 'height'> & WindowOptions
 
 export const clampSizeToMonitor = (width: number, height: number, monitor?: Monitor | null) => {
   if (!monitor) {
@@ -35,12 +35,12 @@ export const clampSizeToMonitor = (width: number, height: number, monitor?: Moni
 }
 
 // Mac 端用于模拟父窗口禁用态的透明蒙层
-export const MAC_MODAL_OVERLAY_ID = 'mac-modal-overlay'
+const MAC_MODAL_OVERLAY_ID = 'mac-modal-overlay'
 // 记录当前已经打开模态窗口的 label，方便在最后一个关闭时移除蒙层
-export const activeMacModalLabels = new Set<string>()
+const activeMacModalLabels = new Set<string>()
 
 // 创建或复用蒙层 DOM
-export const ensureMacOverlayElement = () => {
+const ensureMacOverlayElement = () => {
   if (typeof document === 'undefined') return
   if (document.getElementById(MAC_MODAL_OVERLAY_ID)) return
   const overlay = document.createElement('div')
@@ -61,7 +61,7 @@ export const ensureMacOverlayElement = () => {
 }
 
 // 移除蒙层
-export const removeMacOverlayElement = () => {
+const removeMacOverlayElement = () => {
   if (typeof document === 'undefined') return
   document.getElementById(MAC_MODAL_OVERLAY_ID)?.remove()
 }
@@ -82,7 +82,7 @@ export const detachMacModalOverlay = (label: string) => {
   }
 }
 
-export const awaitWindowCreation = async (label: string, webview: WebviewWindow): Promise<WebviewWindow> => {
+const awaitWindowCreation = async (label: string, webview: WebviewWindow): Promise<WebviewWindow> => {
   return new Promise((resolve, reject) => {
     let settled = false
 

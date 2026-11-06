@@ -11,7 +11,7 @@ import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import type { AdminNavIconName } from './icons/adminNavIcons'
 
-export interface AdminNavItem {
+interface AdminNavItem {
   path: string
   label: string
   icon: AdminNavIconName
@@ -19,12 +19,12 @@ export interface AdminNavItem {
   optionalCapability?: AdminOptionalCapability
 }
 
-export interface AdminNavGroup {
+interface AdminNavGroup {
   label: string
   items: AdminNavItem[]
 }
 
-export type AdminStatusTagType = 'default' | 'primary' | 'info' | 'success' | 'warning' | 'error'
+type AdminStatusTagType = 'default' | 'primary' | 'info' | 'success' | 'warning' | 'error'
 
 /**
  * 后台导航的派生状态：六态、可选能力过滤、状态文案与状态徽标。

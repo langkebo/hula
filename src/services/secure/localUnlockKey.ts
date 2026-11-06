@@ -37,7 +37,7 @@ const logger = createLogger('LocalUnlockKey')
 export const LOCAL_UNLOCK_VERIFIER_STORAGE_KEY = 'tjg-local-unlock-verifier-v1'
 
 /** PBKDF2 迭代次数（与私密聊天同量级：OWASP 2023 对 SHA-256 的推荐） */
-export const LOCAL_UNLOCK_PBKDF2_ITERATIONS = 600_000
+const LOCAL_UNLOCK_PBKDF2_ITERATIONS = 600_000
 /** 派生产物总长：32B verifier + 32B storageKey */
 const DERIVED_BYTES = 64
 /** verifier 长度（落盘部分） */

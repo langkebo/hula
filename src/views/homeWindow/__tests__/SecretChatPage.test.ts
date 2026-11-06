@@ -28,6 +28,10 @@ vi.mock('pinia', async (importOriginal) => {
   }
 })
 
+vi.mock('@/components/windows/ActionBar.vue', () => ({
+  default: { name: 'ActionBar', template: '<div />' }
+}))
+
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: mocks.push, back: mocks.back, replace: mocks.replace })
 }))

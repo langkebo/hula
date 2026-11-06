@@ -9,7 +9,7 @@ import type { ComputedRef, Ref } from 'vue'
 import { MessageStatusEnum, type MsgEnum } from '@/enums'
 import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
-import type { UserItem, VoiceBody } from '@/services/types.ts'
+import type { UserItem } from '@/services/types.ts'
 import type { MessageType } from '@/stores/domains/chat/chat'
 
 export interface ReplyState {
@@ -87,8 +87,6 @@ export interface UseMsgInputSendOptions {
   isBurnAfterRead: ComputedRef<boolean>
   burnDuration: ComputedRef<number>
 }
-
-export type { VoiceBody }
 
 /**
  * Creates a requestAnimationFrame-throttled progress updater that batches

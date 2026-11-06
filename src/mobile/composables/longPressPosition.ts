@@ -1,4 +1,4 @@
-export interface LongPressMenuTopInput {
+interface LongPressMenuTopInput {
   anchorTop: number
   anchorHeight: number
   menuHeight: number

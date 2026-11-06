@@ -1,6 +1,9 @@
 <template>
   <div class="settings-window-page">
-    <SettingsPage :standalone="isStandalone" />
+    <ActionBar :shrink="false" class="shrink-0" />
+    <div class="settings-window-content">
+      <SettingsPage :standalone="isStandalone" />
+    </div>
   </div>
 </template>
 
@@ -57,7 +60,14 @@ watch(
 .settings-window-page {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
   background: var(--tjg-surface-app);
   box-sizing: border-box;
+}
+
+.settings-window-content {
+  flex: 1;
+  min-height: 0;
 }
 </style>

@@ -11,7 +11,7 @@
  */
 
 /** 上一次登录使用的 userId（`@user:server`）。 */
-export const LAST_CRYPTO_USER_KEY = 'tjg.lastCryptoUserId'
+const LAST_CRYPTO_USER_KEY = 'tjg.lastCryptoUserId'
 
 /**
  * 上一次「加密状态 + 加密原语」标记。
@@ -19,7 +19,7 @@ export const LAST_CRYPTO_USER_KEY = 'tjg.lastCryptoUserId'
  * 取值：`'k1'` = storageKey（32 字节）；`'p1'` / `'1'` = 历史 storagePassword；
  * `'0'` = 无密钥（store 未加密）；`null` = 首次运行。
  */
-export const LAST_CRYPTO_ENCRYPTED_KEY = 'tjg.lastCryptoEncrypted'
+const LAST_CRYPTO_ENCRYPTED_KEY = 'tjg.lastCryptoEncrypted'
 
 /** 读取 localStorage 中的 lastCryptoUserId 记录。 */
 export function readLastCryptoUser(): string | null {

@@ -6,7 +6,7 @@
  * `.vue` 中抬高中文硬编码 ratchet。
  */
 
-export type NewsPlatformType = 'info' | 'warning' | 'success' | 'default'
+type NewsPlatformType = 'info' | 'warning' | 'success' | 'default'
 
 /** 资讯平台 → n-tag type 映射规则（按声明顺序匹配首个命中项） */
 const PLATFORM_TYPE_RULES: { type: Exclude<NewsPlatformType, 'default'>; keywords: string[] }[] = [

@@ -9,18 +9,6 @@ const logger = createLogger('MatrixVoiceService')
 
 type VoiceManagerInstance = ReturnType<NonNullable<MatrixClient['getVoiceManager']>>
 
-/**
- * 语音统计与能力配置查询。
- *
- * 从 `MatrixVoiceService` 抽出：这三个方法只读取后端统计/配置，
- * 与上传、加密登记、转写等写入路径无共享状态。
- */
-export interface VoiceStatsDeps {
-  getVoiceMgr: () => VoiceManagerInstance
-  requireNonEmpty: (value: string, name: string) => void
-  t: (key: string) => string
-}
-
 /** 获取语音统计（传入 roomId 时统计房间维度，否则全局）；失败返回全 0。 */
 export async function fetchVoiceStats(
   getVoiceMgr: () => VoiceManagerInstance,

@@ -19,7 +19,7 @@ type GeolocationOptions = {
 }
 
 /** getLocationWithTransform 返回结果：原始 WGS-84 与转换后 GCJ-02 坐标分离 */
-export type LocationWithTransform = {
+type LocationWithTransform = {
   /** WGS-84 坐标，用于发送/存储（geo URI 必须用 WGS-84 与其它客户端互通） */
   original: { lat: number; lng: number }
   /** GCJ-02 坐标，用于腾讯地图显示与逆地理编码 */

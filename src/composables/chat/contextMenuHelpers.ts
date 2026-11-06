@@ -9,7 +9,7 @@ import type { useUserStore } from '@/stores/domains/user/user'
 import { isMobile } from '@/utils/PlatformConstants'
 
 /** 右键菜单辅助函数工厂依赖 */
-export type ContextMenuHelperDeps = {
+type ContextMenuHelperDeps = {
   t: ReturnType<typeof useI18n>['t']
   showFeedback: ReturnType<typeof useActionFeedback>['showFeedback']
   chatStore: ReturnType<typeof useChatStore>

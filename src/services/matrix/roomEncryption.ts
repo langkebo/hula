@@ -17,7 +17,7 @@
  */
 
 /** 只需要 `getRoom` 的结构化类型，便于在测试里注入最小 mock。 */
-export interface RoomLookupClient {
+interface RoomLookupClient {
   getRoom?: (roomId: string) => unknown
 }
 

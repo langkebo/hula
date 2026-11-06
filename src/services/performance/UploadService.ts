@@ -8,7 +8,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('UploadService')
 
 /** 上传通道类型：`matrix` = 服务端未提供预签名地址，必须走 Matrix 原生上传 */
-export type UploadProviderKind = 'matrix' | 'oss'
+type UploadProviderKind = 'matrix' | 'oss'
 
 /**
  * 后端 `POST {v3}/upload/token` 的**原始**响应（snake_case）。
@@ -46,7 +46,7 @@ interface RawUploadTokenResponse {
  * `provider === 'matrix'` 时 `uploadUrl` 为空，调用方**不得**再做 PUT，
  * 必须改用 Matrix 原生上传（`matrixMediaService.uploadFile`）。
  */
-export interface UploadCredential {
+interface UploadCredential {
   provider: UploadProviderKind
   /** 预签名 PUT 地址；`matrix` 通道下恒为空串 */
   uploadUrl: string

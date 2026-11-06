@@ -10,7 +10,7 @@ const logger = createLogger('AdminApiProbe')
  * 边界层之外裸引 `matrix-js-sdk`（新文件会直接判红）。探测只需要 `whoami`，
  * 用最小接口反而更清晰，也让本服务不携带 SDK 版本耦合。
  */
-export interface AdminApiProbeClient {
+interface AdminApiProbeClient {
   getAdminManager(): { whoami(): Promise<unknown> }
 }
 

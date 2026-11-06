@@ -41,7 +41,7 @@ interface TimelineEvent {
   event_id?: string
 }
 
-export type RoomSyncContext = {
+type RoomSyncContext = {
   rooms: ShallowRef<Map<string, RoomInfo>>
   updateRoom: (roomId: string, updates: Partial<RoomInfo>) => void
   loadRooms: () => Promise<boolean>

@@ -143,7 +143,7 @@ export function describeAdminApiAvailability(availability: AdminApiAvailability)
  */
 export type AdminOptionalCapability = 'saml' | 'oidc' | 'worker' | 'modules'
 
-export const ADMIN_OPTIONAL_CAPABILITY_FLAGS: Record<AdminOptionalCapability, string> = {
+const ADMIN_OPTIONAL_CAPABILITY_FLAGS: Record<AdminOptionalCapability, string> = {
   saml: 'io.hula.saml',
   oidc: 'io.hula.oidc',
   worker: 'io.hula.worker',
@@ -154,7 +154,7 @@ export const ADMIN_OPTIONAL_CAPABILITY_FLAGS: Record<AdminOptionalCapability, st
 export type AdminNavState = 'loading' | 'ready' | 'forbidden' | 'unauthorized' | 'unsupported' | 'unavailable'
 
 /** 导航项的能力门控声明 */
-export interface AdminNavItemGate {
+interface AdminNavItemGate {
   /** 依赖 Admin API 本身；未提供时由 `AdminNavState` 统一拦截 */
   requires?: 'admin-api'
   /** 依赖某个可选能力；服务端明确关闭时隐藏 */
@@ -188,7 +188,7 @@ export function readOptionalCapabilityFlag(
   return unstableFeatures[flag] === true
 }
 
-export interface AdminNavGroupLike<T> {
+interface AdminNavGroupLike<T> {
   label: string
   items: T[]
 }

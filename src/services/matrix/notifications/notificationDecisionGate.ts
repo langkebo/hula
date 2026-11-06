@@ -12,7 +12,7 @@ import {
 /**
  * 通知展示文案的取词函数：由服务注入 `t`，纯函数模块不直接依赖 i18n 单例。
  */
-export type NotificationTranslator = (key: string, params?: Record<string, unknown>) => string
+type NotificationTranslator = (key: string, params?: Record<string, unknown>) => string
 
 /**
  * 消息到达时的统一通知决策门：汇总细粒度事件开关、关键词展示偏好与勿扰状态后委托纯函数。

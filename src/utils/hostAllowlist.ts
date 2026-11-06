@@ -14,7 +14,7 @@ export interface AllowRule {
 
 export type Env = 'dev' | 'prod'
 
-export type Decision =
+type Decision =
   | { allowed: true; rule: AllowRule; host: string }
   | { allowed: false; reason: 'invalid-url' | 'no-rule' | 'scheme-mismatch'; host: string | null; url: string }
 

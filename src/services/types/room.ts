@@ -3,17 +3,6 @@
  * 注意：请使用TSDoc规范进行注释，以便在使用时能够获得良好提示。
  * @see TSDoc规范 https://tsdoc.org/
  */
-import type { RoomTypeEnum } from '@/enums'
-
-export type DetailsContent =
-  | {
-      type: 'apply'
-      applyType: 'friend' | 'group'
-    }
-  | {
-      type: RoomTypeEnum
-      uid: string
-    }
 
 export interface RoomMemberInfo {
   userId: string

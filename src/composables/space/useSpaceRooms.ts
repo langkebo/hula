@@ -20,7 +20,7 @@ export interface SpaceChildRoom {
   suggested?: boolean
 }
 
-export interface CreateRoomInSpaceInput {
+interface CreateRoomInSpaceInput {
   /** 房间名称（必填，最长 255 字符） */
   name: string
   /** 房间简介（可选，最长 4096 字符） */

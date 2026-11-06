@@ -26,6 +26,9 @@ export const NON_MATRIX_WINDOW_LABELS = new Set(['capture', 'tray', 'notify', 'u
  * `scripts/check-window-label-registry.mjs` 会静态收集全部 label 并强制"必须归类"。
  *
  * 动态 label（前缀）以 `--` 结尾登记，例如独立聊天窗口 `windowChat--<roomId>`。
+ *
+ * 注意：本常量由 `scripts/check-window-label-registry.mjs` 以文本方式解析，
+ * TS 侧无 import 引用，勿按"未使用导出"删除。
  */
 export const MATRIX_WINDOW_LABELS = new Set([
   'home',

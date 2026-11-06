@@ -169,7 +169,7 @@ export function toAudioQualityConstraints(preferences: MediaDevicePreferences): 
  * **禁止喂给 `applyConstraints`**：`deviceId` 是不可变约束，`applyConstraints` 必然 reject。
  * 未指定设备时不输出 `deviceId`，让浏览器用默认设备。
  */
-export interface MediaDeviceConstraintSets {
+interface MediaDeviceConstraintSets {
   /** 音频采集约束（未指定设备时为空对象）。 */
   audio: MediaTrackConstraintSet
   /** 视频采集约束（未指定设备时为空对象）。 */

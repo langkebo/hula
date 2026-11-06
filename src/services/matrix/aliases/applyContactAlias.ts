@@ -21,7 +21,7 @@ const logger = createLogger('ContactAliasApply')
  */
 
 /** 房间最小依赖面：只需要已加入成员的 userId 列表（SDK `Room` 结构上可赋值给它） */
-export interface RoomMembersView {
+interface RoomMembersView {
   getJoinedMembers: () => Array<{ userId: string }>
 }
 

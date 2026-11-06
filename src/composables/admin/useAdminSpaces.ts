@@ -21,7 +21,7 @@ interface SpaceDetail {
   [key: string]: unknown
 }
 
-export interface SpaceStats {
+interface SpaceStats {
   joinedMembers?: number
   joinedLocalMembers?: number
   rooms?: number

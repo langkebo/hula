@@ -22,21 +22,21 @@ const logger = createLogger('MatrixCrypto')
  * 这些名称是**固定的、不含 userId 后缀** —— 所以同源的所有窗口共享同一组 DB
  * （这也是"每窗口必须各自 init，但 Web Locks 串行化"那条设计约束的来源）。
  */
-export const CRYPTO_STORE_DB_NAMES = [
+const CRYPTO_STORE_DB_NAMES = [
   'matrix-js-sdk::matrix-sdk-crypto',
   'matrix-js-sdk::matrix-sdk-crypto-meta',
   'matrix-js-sdk:crypto'
 ] as const
 
 /** 清理结果统计。 */
-export interface CryptoStoreCleanupResult {
+interface CryptoStoreCleanupResult {
   deleted: number
   failed: number
   blocked: number
 }
 
 /** 单个 DB 的删除结果。 */
-export type CryptoDbDeleteOutcome = 'deleted' | 'failed' | 'blocked'
+type CryptoDbDeleteOutcome = 'deleted' | 'failed' | 'blocked'
 
 /**
  * 删除单个 IndexedDB 数据库，`onblocked` 时等待 300ms 后重试一次。
@@ -45,7 +45,7 @@ export type CryptoDbDeleteOutcome = 'deleted' | 'failed' | 'blocked'
  * `deleteDatabase` 对不存在的数据库既不触发 `onsuccess` 也不触发 `onerror`，
  * 会让 Promise 永久 pending、进而卡住 `clearStaleCryptoStores` → `ensureCrypto`。
  */
-export function deleteCryptoDbWithRetry(dbName: string): Promise<CryptoDbDeleteOutcome> {
+function deleteCryptoDbWithRetry(dbName: string): Promise<CryptoDbDeleteOutcome> {
   return new Promise((resolve) => {
     let settled = false
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined

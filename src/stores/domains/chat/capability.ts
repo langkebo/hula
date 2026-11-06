@@ -4,7 +4,7 @@ import { StoresEnum } from '@/enums'
 import type { MatrixCapabilities } from '@/types/message'
 
 /** 扩展健康状态：healthy=已注册，degraded=缺失但已降级，unknown=未检测 */
-export type ExtensionHealthStatus = 'healthy' | 'degraded' | 'unknown'
+type ExtensionHealthStatus = 'healthy' | 'degraded' | 'unknown'
 
 export const useCapabilityStore = defineStore(StoresEnum.CAPABILITY, () => {
   const unstableFeatures = ref<Record<string, boolean>>({})

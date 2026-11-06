@@ -4,7 +4,7 @@ import { SynapseExtensionHttpBase } from './SynapseExtensionHttpBase'
 
 const logger = createLogger('SynapseDmExtensionService')
 
-export interface SynapseCreateDmResult {
+interface SynapseCreateDmResult {
   room_id: string
   created: boolean
 }

@@ -15,7 +15,7 @@ import { verifyPasswordHash } from './settings-helpers'
  */
 
 /** action 复用的最小 store 形状（避免与 pinia 定义循环依赖）。 */
-export interface SecretChatStoreLike {
+interface SecretChatStoreLike {
   secretChat: {
     enabled: boolean
     passwordHash: string

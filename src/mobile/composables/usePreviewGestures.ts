@@ -21,7 +21,7 @@ interface GestureState {
   startedAt: number
 }
 
-export interface UsePreviewGesturesOptions {
+interface UsePreviewGesturesOptions {
   /** 预览容器的可用视口尺寸（用于计算放大后的平移边界） */
   viewportSize: Ref<ViewportSize>
   /** 请求关闭预览；幂等由调用方保证 */

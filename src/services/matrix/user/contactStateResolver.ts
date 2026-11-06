@@ -20,7 +20,7 @@ import { normalizeUserId } from './invitePolicy'
  */
 export type ContactState = 'contact' | 'stranger' | 'unknown'
 
-export interface ContactStateResolverDeps {
+interface ContactStateResolverDeps {
   /** 返回 true/false 表示确认结果；抛错表示无法确认。 */
   isFriend: (userId: string) => Promise<boolean>
   /** 缓存有效期，默认 5 分钟。 */
@@ -28,7 +28,7 @@ export interface ContactStateResolverDeps {
   now?: () => number
 }
 
-export interface ContactStateResolver {
+interface ContactStateResolver {
   resolve: (userId: unknown) => Promise<ContactState>
   /** 用已知好友列表预热缓存（启动时同步一次，省掉逐个查询）。 */
   seed: (userIds: readonly string[]) => void

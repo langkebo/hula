@@ -6,7 +6,7 @@ const logger = createLogger('TauriErrorTranslator')
 /** 形如 `CODE` 或 `CODE: detail`，CODE 为大写下划线标识。 */
 const ERROR_CODE_PATTERN = /^([A-Z][A-Z0-9_]+)(?:: ([\s\S]*))?$/
 
-export interface ParsedCommandError {
+interface ParsedCommandError {
   code: string
   detail?: string
 }

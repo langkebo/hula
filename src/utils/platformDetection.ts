@@ -1,6 +1,6 @@
 import { E2E_STORAGE_KEYS } from '@/utils/storageKeys'
 
-export type RuntimePlatform = 'desktop' | 'mobile'
+type RuntimePlatform = 'desktop' | 'mobile'
 
 export const PLATFORM_QUERY_KEY = 'platform'
 export const PLATFORM_STORAGE_KEY = E2E_STORAGE_KEYS.platform

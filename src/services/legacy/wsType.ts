@@ -12,11 +12,3 @@ export type WsTokenExpire = {
   ip: string
   client: string
 }
-
-export enum CallResponseStatus {
-  TIMEOUT = -1,
-  REJECTED = 0,
-  ACCEPTED = 1,
-  DROPPED = 2,
-  CANCEL = 3
-}

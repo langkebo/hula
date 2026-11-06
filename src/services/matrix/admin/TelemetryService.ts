@@ -45,7 +45,7 @@ export interface TelemetryStatus {
 }
 
 /** 资源属性响应（GET /telemetry/attributes）。 */
-export interface TelemetryResourceAttributes {
+interface TelemetryResourceAttributes {
   attributes: Record<string, string>
 }
 
@@ -95,13 +95,8 @@ export interface TelemetryAlert {
   metrics: unknown
 }
 
-/** 告警列表响应。 */
-export interface TelemetryAlertsResponse {
-  alerts: TelemetryAlert[]
-}
-
 /** 告警查询参数。 */
-export interface TelemetryAlertQueryParams {
+interface TelemetryAlertQueryParams {
   status?: TelemetryAlertStatus
   severity?: TelemetryAlertSeverity
   /** 是否在查询前同步最新健康状态。默认 true。 */

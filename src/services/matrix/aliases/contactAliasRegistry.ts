@@ -31,14 +31,14 @@ const CONTACT_ALIAS_ACCOUNT_DATA = 'com.hula.contact_alias'
 /** 别名显示名长度上限（与全局 profile 的常见限制对齐，避免超长破坏气泡布局） */
 export const CONTACT_ALIAS_MAX_NAME_LENGTH = 64
 
-export interface ContactAlias {
+interface ContactAlias {
   displayName: string
   /** 房间级头像（mxc://）。留空表示沿用全局头像 */
   avatarMxc?: string
   updatedAt: number
 }
 
-export interface ContactAliasBook {
+interface ContactAliasBook {
   version: 1
   aliases: Record<string, ContactAlias>
 }

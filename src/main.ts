@@ -1,6 +1,7 @@
 import 'uno.css'
 import '@unocss/reset/eric-meyer.css'
 import '@/styles/css/design-tokens.css'
+import '@/styles/scss/global/base.scss'
 import '@/styles/scss/global/responsive.scss'
 import '@/styles/scss/global/typography.scss'
 import App from '@/App.vue'

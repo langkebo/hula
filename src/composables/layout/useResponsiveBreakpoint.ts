@@ -8,9 +8,9 @@ import { type ComputedRef, computed } from 'vue'
  * - shrink: 窗口 768-991px，双栏 + 抽屉，中间栏 64px 仅图标
  * - single: 窗口 < 768px，单栏，中间栏 64px 仅图标
  */
-export type BreakpointMode = 'wide' | 'normal' | 'shrink' | 'single'
+type BreakpointMode = 'wide' | 'normal' | 'shrink' | 'single'
 
-export interface BreakpointConfig {
+interface BreakpointConfig {
   /** wide 模式最小宽度（含） */
   wide: number
   /** normal 模式最小宽度（含） */
@@ -19,12 +19,12 @@ export interface BreakpointConfig {
   shrink: number
 }
 
-export interface UseResponsiveBreakpointOptions {
+interface UseResponsiveBreakpointOptions {
   /** 断点配置，默认 { wide: 1200, normal: 992, shrink: 768 } */
   breakpoints?: Partial<BreakpointConfig>
 }
 
-export interface UseResponsiveBreakpointReturn {
+interface UseResponsiveBreakpointReturn {
   /** 当前断点模式 */
   mode: ComputedRef<BreakpointMode>
   /** 中间栏宽度（wide=280, normal=240, shrink/single=64） */

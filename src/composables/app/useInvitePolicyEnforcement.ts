@@ -8,7 +8,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('InvitePolicyEnforcement')
 
-export interface InvitePolicyEnforcementDeps {
+interface InvitePolicyEnforcementDeps {
   /** 工厂注入便于测试；生产环境用 createInvitePolicyEnforcer。 */
   createEnforcer: (options: InvitePolicyEnforcerOptions) => InvitePolicyEnforcer
   getCurrentUserId: () => string | undefined

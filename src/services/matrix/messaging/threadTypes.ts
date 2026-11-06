@@ -71,25 +71,6 @@ export interface ThreadViewData {
   replies: ThreadDisplayMessage[]
 }
 
-export interface ThreadListItem {
-  id: string
-  roomId: string
-  threadId: string
-  rootEventId: string
-  rootSender: string
-  rootContent: unknown
-  rootOriginServerTs: number
-  latestEventId: string
-  latestSender: string
-  latestContent: unknown
-  latestOriginServerTs: number
-  replyCount: number
-  participants: string[]
-  isFrozen: boolean
-  createdTs: number
-  updatedTs?: number
-}
-
 export interface ThreadStatistics {
   totalReplies: number
   totalParticipants: number

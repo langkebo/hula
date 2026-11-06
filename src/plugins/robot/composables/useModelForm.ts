@@ -9,7 +9,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('ModelForm')
 
 // 表单校验入口（n-form 在 ModelFormModal 子组件内，通过 defineExpose 暴露 validate）
-export interface FormValidator {
+interface FormValidator {
   validate: () => Promise<unknown> | undefined
 }
 

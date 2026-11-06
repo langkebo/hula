@@ -4,7 +4,7 @@ import type { Announcement } from '@/stores/domains/chat/announcement'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { createLogger } from '@/utils/Logger'
 
-export type AnnouncementData = {
+type AnnouncementData = {
   content: string
   top?: boolean
 }

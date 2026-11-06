@@ -5,12 +5,12 @@ import type { I18nKeyPaths } from '@/typings/i18n'
 /**
  * `t()` 的具名插值参数（`t('key', { count })`）。
  */
-export type I18nTranslateParams = Record<string, unknown> | readonly unknown[] | string | number
+type I18nTranslateParams = Record<string, unknown> | readonly unknown[] | string | number
 
 /**
  * `t()` 的第三参数：vue-i18n 的翻译选项（`locale` / `plural` 等）。
  */
-export type I18nTranslateOptions = TranslateOptions
+type I18nTranslateOptions = TranslateOptions
 
 /**
  * 收紧 key 的 `t()`：只接受 `locales/zh-CN` 里真实存在的点分 key。
@@ -18,7 +18,7 @@ export type I18nTranslateOptions = TranslateOptions
  * 重载刻意与仓库实际用到的形态一一对应（具名插值 / 列表插值 / 复数 / 缺失兜底文案），
  * 而不是保留 vue-i18n 的 `Key extends string` 自由泛型——后者正是伪造 key 不报错的原因。
  */
-export interface TypedTranslate {
+interface TypedTranslate {
   /** 仅 key */
   (key: I18nKeyPaths): string
   /** key + 插值/复数/兜底文案 */
@@ -31,7 +31,7 @@ export interface TypedTranslate {
  * 动态 key 的显式出口：key 由运行时拼接，静态不可知，因此不参与收紧。
  * 每一处使用都必须能说清「为什么静态写不出来」。
  */
-export interface DynamicTranslate {
+interface DynamicTranslate {
   /** 动态 key */
   (key: string): string
   /** 动态 key + 插值/复数/兜底文案 */

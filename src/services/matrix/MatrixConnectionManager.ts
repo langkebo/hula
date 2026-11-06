@@ -67,10 +67,10 @@ export interface MatrixClientConfig {
 }
 
 /** 状态变更回调类型 */
-export type ConnectionStateChangeCallback = (state: ConnectionState) => void
+type ConnectionStateChangeCallback = (state: ConnectionState) => void
 
 /** 同步状态映射结果 */
-export type SyncStateMappingResult = {
+type SyncStateMappingResult = {
   /** 映射后的连接状态（null 表示无需变更） */
   connectionState: ConnectionState | null
   /** 是否是 PREPARED/SYNCING（用于 markReady） */

@@ -149,7 +149,7 @@ export function useMobileSessionList() {
 }
 
 /** 会话列表的四种可视图态 */
-export type SessionListState = 'loading' | 'error' | 'empty' | 'list'
+type SessionListState = 'loading' | 'error' | 'empty' | 'list'
 
 /**
  * 判定会话列表该显示哪个态。
@@ -174,5 +174,3 @@ export type MobileSessionListItem = SessionItem & {
   lastMsgTime: string
   isAtMe: boolean
 }
-
-export type MobileSessionListReturn = ReturnType<typeof useMobileSessionList>

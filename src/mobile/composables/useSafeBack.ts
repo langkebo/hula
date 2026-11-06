@@ -2,7 +2,7 @@ import router from '@/router'
 
 export const MOBILE_FALLBACK_ROUTE = '/mobile/message'
 
-export type BackAction = { type: 'back' } | { type: 'replace'; path: string }
+type BackAction = { type: 'back' } | { type: 'replace'; path: string }
 
 export function resolveBackAction(historyBack: unknown, fallback: string = MOBILE_FALLBACK_ROUTE): BackAction {
   if (typeof historyBack === 'string' && historyBack.length > 0) {

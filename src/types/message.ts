@@ -112,7 +112,7 @@ export const RECALL_EXPIRATION_TIME = 2 * 60 * 1000
  * Synapse-Rust 扩展 capability 值类型，与 SDK `ICapability` 对齐。
  * FT-099: 后端 GET /capabilities 返回的扩展能力声明。
  */
-export interface SynapseRustCapability {
+interface SynapseRustCapability {
   enabled: boolean
 }
 

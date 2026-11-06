@@ -58,7 +58,7 @@ interface RequestRecord {
   path: string
   status: number
   ok: boolean
-  body?: string
+  body?: string | undefined
 }
 
 interface TabSnapshot {
@@ -156,7 +156,7 @@ test.describe('移动端 TabBar 点击与页面交互审计', () => {
         chain.push(info(el))
         el = el.parentElement
       }
-      const wide = [...document.querySelectorAll('body *')]
+      const wide = Array.from(document.querySelectorAll('body *'))
         .map((node) => ({ node, rect: node.getBoundingClientRect() }))
         .filter((item) => item.rect.width > window.innerWidth + 1)
         .slice(0, 10)
@@ -164,22 +164,24 @@ test.describe('移动端 TabBar 点击与页面交互审计', () => {
 
       // 关键工具类是否真正进了样式表（区分「类名没生成」与「被覆盖」）
       const ruleState: Record<string, boolean> = {}
-      for (const sheet of [...document.styleSheets]) {
+      for (const sheet of Array.from(document.styleSheets)) {
         let rules: CSSRuleList
         try {
           rules = sheet.cssRules
         } catch {
           continue
         }
-        for (const rule of [...rules]) {
+        for (const rule of Array.from(rules)) {
           const text = rule.cssText ?? ''
           for (const key of ['w-26px', 'size-38px', 'flex-1']) {
             if (!ruleState[key] && text.includes(`.${key}`)) ruleState[key] = true
           }
         }
       }
-      const svg = document.querySelector('[data-testid="mobile-tab-message"] svg')
-      const avatar = [...document.querySelectorAll('img')].find((node) => String(node.className).includes('size-38px'))
+      const svg = document.querySelector<SVGSVGElement>('[data-testid="mobile-tab-message"] svg')
+      const avatar = Array.from(document.querySelectorAll('img')).find((node) =>
+        String(node.className).includes('size-38px')
+      )
 
       return {
         viewport: `${window.innerWidth}x${window.innerHeight}`,
@@ -191,7 +193,7 @@ test.describe('移动端 TabBar 点击与页面交互审计', () => {
         ruleState,
         svg: svg
           ? {
-              class: String(svg.className.baseVal ?? svg.className),
+              class: String(svg.className.baseVal),
               widthAttr: svg.getAttribute('width'),
               computedWidth: getComputedStyle(svg).width,
               computedHeight: getComputedStyle(svg).height

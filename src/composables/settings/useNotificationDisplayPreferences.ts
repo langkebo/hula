@@ -18,7 +18,7 @@ import {
  * 因此写入必须是「读-合并-写」：先读回存储里的最新值，再只覆盖本次提交的字段，
  * 避免一端保存时把另一端拥有的开关重置成默认值。
  */
-export interface UseNotificationDisplayPreferencesResult {
+interface UseNotificationDisplayPreferencesResult {
   preferences: Ref<NotificationDisplayPreferences>
   contentSummary: WritableComputedRef<boolean>
   keywordHighlight: WritableComputedRef<boolean>

@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { padZero } from '@/utils/StringUtils'
 
-export interface GalleryAvatar {
+interface GalleryAvatar {
   id: number
   url: string
   name: string

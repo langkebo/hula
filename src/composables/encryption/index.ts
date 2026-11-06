@@ -1,2 +1,2 @@
-export type { CryptoHealthStatus, KeyRotationRecord } from './useEncryption'
+export type { KeyRotationRecord } from './useEncryption'
 export { useEncryption } from './useEncryption'

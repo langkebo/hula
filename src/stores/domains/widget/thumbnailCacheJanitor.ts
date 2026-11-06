@@ -19,7 +19,7 @@ export interface CacheMetadata {
   size: number
 }
 
-export interface JanitorDeps {
+interface JanitorDeps {
   /** 删除指定路径的文件，返回是否删除成功 */
   deleteFile: (path: string) => Promise<boolean>
   /** 启动时加载已持久化的元数据 */
@@ -28,7 +28,7 @@ export interface JanitorDeps {
   saveMetadata?: (metadata: Map<string, CacheMetadata>) => void
 }
 
-export interface JanitorOptions {
+interface JanitorOptions {
   /** 注入时钟，便于测试 */
   now?: () => number
   /** 初始元数据（优先于 loadMetadata） */

@@ -141,5 +141,3 @@ export function useMobileCreateDialogs(opts: CreateDialogsOptions) {
     beforeCloseCreateGroup
   }
 }
-
-export type MobileCreateDialogsReturn = ReturnType<typeof useMobileCreateDialogs>

@@ -20,7 +20,7 @@ export const INVITE_DECLINE_UNDO_WINDOW_MS = 60_000
  * SDK 边界守卫（check:sdk-boundary）只允许白名单文件直接 import matrix-js-sdk；
  * 这里需要的字段极少，本地声明反而更清楚，也更好构造测试替身。
  */
-export interface InviteMemberLike {
+interface InviteMemberLike {
   roomId: string
   userId: string
   membership?: string

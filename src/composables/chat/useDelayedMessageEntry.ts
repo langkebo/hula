@@ -2,8 +2,9 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 import type { DelayedMessageInfo } from '@/services/matrix/messaging/MatrixDelayedEventsService'
 import { useRoomStore } from '@/stores/domains/chat/room'
+
 /** useDelayedMessages 的返回结构（能力、列表与操作）。 */
-export interface DelayedMessagesApi {
+interface DelayedMessagesApi {
   supported: Ref<boolean>
   items: Ref<DelayedMessageInfo[]>
   loading: Ref<boolean>

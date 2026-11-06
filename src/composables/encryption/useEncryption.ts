@@ -20,8 +20,6 @@ import {
 } from '@/services/matrix/crypto/MatrixVerificationService'
 import { unknownToObject } from '@/utils/typeGuard'
 
-export type { CryptoHealthStatus } from '@/services/matrix/crypto/CryptoHealthMonitor'
-
 export type { KeyRotationRecord } from '@/services/matrix/crypto/MatrixEncryptionService'
 
 interface UseEncryptionResult {

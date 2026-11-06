@@ -18,19 +18,19 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('PerformanceTier')
 
 /** 性能分级 */
-export type PerformanceTier = 'low' | 'high'
+type PerformanceTier = 'low' | 'high'
 
 /** 降级类名 —— 必须与 `_liquid-glass.scss` 中的 `html.low-perf` 保持一致 */
 export const LOW_PERF_CLASS = 'low-perf'
 
 /** 逻辑核心数低于该值判为低性能 */
-export const MIN_CORES_FOR_HIGH = 4
+const MIN_CORES_FOR_HIGH = 4
 
 /** 设备内存（GB）低于该值判为低性能 */
-export const MIN_DEVICE_MEMORY_GB = 4
+const MIN_DEVICE_MEMORY_GB = 4
 
 /** 判级所依据的原始信号 */
-export interface PerformanceSignals {
+interface PerformanceSignals {
   /** `navigator.hardwareConcurrency`；环境不支持时为 undefined */
   hardwareConcurrency?: number | undefined
   /** `navigator.deviceMemory`（GB，非标准，仅 Chromium 系可用）；不支持时为 undefined */

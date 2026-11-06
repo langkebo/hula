@@ -6,7 +6,7 @@ import { readonly, ref } from 'vue'
  * `userId` 缺省表示「验证本账号的其它设备」（沿用 `DeviceVerifyDialog` 原有语义）；
  * 传入 `userId` 时表示「验证指定用户的设备」，对话框会去拉取该用户的设备列表。
  */
-export interface DeviceVerifyTarget {
+interface DeviceVerifyTarget {
   userId?: string
   deviceId?: string
   deviceName?: string

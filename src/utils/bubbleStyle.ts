@@ -5,7 +5,7 @@ const logger = createLogger('BubbleStyle')
 /** 可选的圆角档位。rounded 为默认。 */
 export const BUBBLE_STYLES = ['rounded', 'square'] as const
 
-export type BubbleStyle = (typeof BUBBLE_STYLES)[number]
+type BubbleStyle = (typeof BUBBLE_STYLES)[number]
 
 const STORAGE_KEY = 'tjg-bubble-style'
 const ROOT_ATTR = 'data-bubble-style'

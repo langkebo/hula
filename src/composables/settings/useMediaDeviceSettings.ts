@@ -5,7 +5,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('MediaDeviceSettings')
 
 /** 音视频设置页的提示文案回调：桌面走 Naive UI message，移动端走 Vant toast。 */
-export interface MediaDeviceSettingsFeedback {
+interface MediaDeviceSettingsFeedback {
   devicesFailed: () => void
   microphoneTestStarted: () => void
   microphoneTestFailed: () => void
@@ -13,7 +13,7 @@ export interface MediaDeviceSettingsFeedback {
   previewFailed: () => void
 }
 
-export interface MediaDeviceSettingsOptions {
+interface MediaDeviceSettingsOptions {
   /** 设备无 label 时的兜底名称（两端文案不同）。 */
   audioFallbackLabel: (deviceId: string) => string
   videoFallbackLabel: (deviceId: string) => string

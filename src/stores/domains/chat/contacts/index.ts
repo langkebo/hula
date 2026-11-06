@@ -14,7 +14,7 @@ import { createContactsList } from './list'
 import { createFriendRequests } from './requests'
 
 // 类型唯一真源在 ./types，此处 re-export 保持既有消费方兼容
-export type { ContactInvite, FriendRequestItem, MatrixContact } from './types'
+export type { FriendRequestItem, MatrixContact } from './types'
 
 const logger = createLogger('contacts')
 

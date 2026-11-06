@@ -8,7 +8,7 @@ const logger = createLogger('RoomStore.Tags')
 
 type RoomTags = Record<string, { order?: number }>
 
-export type RoomTagsContext = {
+type RoomTagsContext = {
   rooms: ShallowRef<Map<string, RoomInfo>>
 }
 

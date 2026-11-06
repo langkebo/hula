@@ -1,5 +1,7 @@
 <template>
   <div class="trendradar-view">
+    <ActionBar :shrink="false" class="shrink-0" />
+
     <!-- 顶部导航 -->
     <div class="trendradar-view__header">
       <div class="trendradar-view__header-left">

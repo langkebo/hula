@@ -38,7 +38,7 @@ export interface PresenceInfo {
 /**
  * 在线状态列表响应
  */
-export interface PresenceListResponse {
+interface PresenceListResponse {
   presences: PresenceInfo[]
 }
 

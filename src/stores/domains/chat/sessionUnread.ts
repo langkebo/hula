@@ -34,7 +34,7 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
  * 把已读部分减掉的水位，本机真实未读 = 服务端累计 - 已结算水位。没有它，冷启动/会话列表
  * 重建就只能拿服务端累计当未读（把已读的算回来），或把离线期间新增的消息丢掉。
  */
-export interface UnreadLedgerEntry {
+interface UnreadLedgerEntry {
   count: number
   updatedAt: number
   settledServerCount?: number | undefined

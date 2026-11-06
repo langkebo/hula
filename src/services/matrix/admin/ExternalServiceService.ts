@@ -21,20 +21,6 @@ const logger = createLogger('AdminExternalService')
 
 type GetClientGetter = () => MatrixClient
 
-/** 外部服务类型（与后端 ExternalServiceType 对齐）。 */
-export type ExternalServiceType =
-  | 'trendradar'
-  | 'openclaw'
-  | 'generic_webhook'
-  | 'webhook'
-  | 'irc_bridge'
-  | 'irc'
-  | 'slack_bridge'
-  | 'slack'
-  | 'discord_bridge'
-  | 'discord'
-  | 'custom'
-
 /** 外部服务实体（对应后端 ExternalServiceResponse）。 */
 export interface ExternalService {
   as_id: string
@@ -58,7 +44,7 @@ export interface ExternalServiceHealth {
 }
 
 /** 注册外部服务的请求体。 */
-export interface RegisterExternalServiceRequest {
+interface RegisterExternalServiceRequest {
   service_type: string
   service_id: string
   display_name: string
@@ -68,7 +54,7 @@ export interface RegisterExternalServiceRequest {
 }
 
 /** 更新外部服务的请求体（所有字段可选）。 */
-export interface UpdateExternalServiceRequest {
+interface UpdateExternalServiceRequest {
   webhook_url?: string
   api_key?: string
   config?: Record<string, unknown>
@@ -76,13 +62,13 @@ export interface UpdateExternalServiceRequest {
 }
 
 /** 列表查询参数。 */
-export interface ListServicesParams {
+interface ListServicesParams {
   /** 按服务类型过滤；传 'all' 或不传表示全部。 */
   serviceType?: string
 }
 
 /** 健康检查触发结果。 */
-export interface HealthCheckResult {
+interface HealthCheckResult {
   as_id: string
   is_healthy: boolean
 }

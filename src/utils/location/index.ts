@@ -8,7 +8,7 @@
 import type { LocationBody } from '@/services/types'
 import { wgs84ToGcj02 } from '@/utils/CoordinateTransform'
 
-export interface GeoUriResult {
+interface GeoUriResult {
   /** 纬度 */
   latitude: number
   /** 经度 */
@@ -55,7 +55,7 @@ export function locationEventGeoUri(content: Record<string, unknown>): string | 
 /**
  * `StaticProxyMap`（腾讯静态图）显示所需的数据结构：经纬度已转换为 GCJ-02。
  */
-export interface Gcj02LocationData {
+interface Gcj02LocationData {
   latitude: number
   longitude: number
   address?: string | undefined

@@ -24,7 +24,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('WindowSessionReady')
 
 /** 会话就绪三态。 */
-export type WindowSessionReadyState = 'ready' | 'no-session' | 'error'
+type WindowSessionReadyState = 'ready' | 'no-session' | 'error'
 
 /**
  * 等待 `waitForClientReady` 的默认超时。
@@ -32,7 +32,7 @@ export type WindowSessionReadyState = 'ready' | 'no-session' | 'error'
  * 取 15s：与设置页历史值一致（`SecuritySettings` / `SessionSettings` 原值），
  * 冷启动时 `loginWithToken` + `startClient` + Rust Crypto 初始化实测在数秒内完成。
  */
-export const DEFAULT_SESSION_READY_TIMEOUT_MS = 15_000
+const DEFAULT_SESSION_READY_TIMEOUT_MS = 15_000
 
 /** 依赖注入面（单测注入假实现；生产走模块级单例）。 */
 export interface WindowSessionReadyDeps {
@@ -47,7 +47,7 @@ export interface WindowSessionReadyDeps {
 }
 
 /** 组合式返回值。 */
-export interface WindowSessionReady {
+interface WindowSessionReady {
   /** 当前状态；`null` = 尚未尝试。 */
   state: Ref<WindowSessionReadyState | null>
   /** 最近一次失败的原始错误（仅 `error` 态非空）。 */

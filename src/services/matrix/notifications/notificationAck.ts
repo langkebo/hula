@@ -8,7 +8,7 @@ const logger = createLogger('NotificationAck')
  * ack 降级只需要「强制已读回执」这一个能力，因此不引用完整 `MatrixClient`：
  * 结构化的最小接口既避免了 SDK 边界扩散，也让测试可以直接传桩对象。
  */
-export interface ReadReceiptCapableClient {
+interface ReadReceiptCapableClient {
   getReadReceiptsManager(): {
     sendReceiptForce(roomId: string, receiptType: string, eventId: string): Promise<unknown>
   }
@@ -37,11 +37,7 @@ export async function ackNotification(notificationId: string): Promise<boolean> 
 }
 
 /** 用强制已读回执兜底：ack 端点不可用时把通知当已读处理。 */
-export async function sendReadReceipt(
-  client: ReadReceiptCapableClient,
-  roomId: string,
-  eventId: string
-): Promise<boolean> {
+async function sendReadReceipt(client: ReadReceiptCapableClient, roomId: string, eventId: string): Promise<boolean> {
   try {
     await client.getReadReceiptsManager().sendReceiptForce(roomId, 'm.read', eventId)
     logger.info(`[MatrixNotification] 已读回执发送成功: ${roomId}/${eventId}`)

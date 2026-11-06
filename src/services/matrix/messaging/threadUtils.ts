@@ -8,13 +8,7 @@
 import { MatrixContentField } from '@/common/matrixConstants'
 import type { MatrixEvent, Room } from '@/services/matrix/sdk'
 import matrixClientService from '../MatrixClientService'
-import type {
-  MessageContent,
-  ThreadDisplayMessage,
-  ThreadingManagerCompat,
-  ThreadListItem,
-  ThreadSummaryResponse
-} from './threadTypes'
+import type { MessageContent, ThreadDisplayMessage, ThreadingManagerCompat } from './threadTypes'
 
 /**
  * Returns the synapse-rust ThreadingManager extension from the current MatrixClient,
@@ -31,33 +25,6 @@ export function getThreadingManager(): ThreadingManagerCompat | null {
   const method = (client as { getThreadingManager?: () => ThreadingManagerCompat }).getThreadingManager
   if (typeof method === 'function') return method.call(client)
   return (client as { threadingManager?: ThreadingManagerCompat }).threadingManager ?? null
-}
-
-/**
- * SDK `ThreadSummaryResponse`（snake_case，后端原生）→ Tjg `ThreadListItem`（camelCase，展示层）。
- *
- * 线程接口统一透传后端原始形状（见 MatrixThreadApi），展示层需要 camelCase 时调用本函数，
- * 避免在类型镜像层做重命名而再次引入签名漂移。
- */
-export function toThreadListItem(summary: ThreadSummaryResponse): ThreadListItem {
-  return {
-    id: String(summary.thread_id ?? summary.id),
-    roomId: summary.room_id,
-    threadId: summary.thread_id,
-    rootEventId: summary.root_event_id,
-    rootSender: summary.root_sender,
-    rootContent: summary.root_content,
-    rootOriginServerTs: summary.root_origin_server_ts,
-    latestEventId: summary.latest_event_id ?? '',
-    latestSender: summary.latest_sender ?? '',
-    latestContent: summary.latest_content,
-    latestOriginServerTs: summary.latest_origin_server_ts ?? 0,
-    replyCount: summary.reply_count,
-    participants: Array.isArray(summary.participants) ? (summary.participants as string[]) : [],
-    isFrozen: summary.is_frozen,
-    createdTs: summary.created_ts,
-    updatedTs: summary.updated_ts
-  }
 }
 
 /**

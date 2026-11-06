@@ -9,7 +9,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RoomStore.Lifecycle')
 
-export type RoomLifecycleContext = {
+type RoomLifecycleContext = {
   rooms: ShallowRef<Map<string, RoomInfo>>
   currentRoomId: Ref<string | null>
   isLoading: Ref<boolean>

@@ -17,7 +17,7 @@ import type { MatrixConnectionManager } from './MatrixConnectionManager'
 const logger = createLogger('MatrixClient')
 
 /** Room 子服务依赖的主类协作模块集合 */
-export interface MatrixClientRoomDeps {
+interface MatrixClientRoomDeps {
   readonly connectionManager: MatrixConnectionManager
   /**
    * 订阅房间到滑窗同步（可选，缺失时退化为不订阅）。

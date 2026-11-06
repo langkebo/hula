@@ -5,7 +5,7 @@ import type { MatrixGroupInfo, MatrixRoomMember } from './types'
 
 const logger = createLogger('GroupStore.Lifecycle')
 
-export type GroupLifecycleContext = {
+type GroupLifecycleContext = {
   membersMap: Record<string, MatrixRoomMember[]>
   groupInfoMap: Record<string, MatrixGroupInfo>
   loadRoomMembers: (roomId: string, forceRefresh?: boolean) => Promise<MatrixRoomMember[]>

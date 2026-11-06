@@ -4,7 +4,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RoomAntiScreenshot')
 
-export interface UseRoomAntiScreenshotReturn {
+interface UseRoomAntiScreenshotReturn {
   /** 房间是否启用了防截屏标记（`com.hula.privacy` 的 `action: block_screenshot`） */
   enabled: Ref<boolean>
   /** 正在读取/写入 */

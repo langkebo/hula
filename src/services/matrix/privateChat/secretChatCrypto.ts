@@ -24,7 +24,7 @@ const VERIFIER_BYTES = 16
 export const SECRET_CHAT_KDF_PREFIX = 'pbkdf2-sha256'
 
 /** 派生结果：编码后的 verifier（可落盘）与 dbKey（仅内存）。 */
-export interface SecretChatKeyMaterial {
+interface SecretChatKeyMaterial {
   /** 可直接持久化的校验串。 */
   encodedVerifier: string
   /** 本地加密密钥，**不得落盘**；用后须 `zeroize`。 */
@@ -32,7 +32,7 @@ export interface SecretChatKeyMaterial {
 }
 
 /** 校验结果。 */
-export interface SecretChatVerifyResult {
+interface SecretChatVerifyResult {
   /** 密码是否正确。 */
   valid: boolean
   /** 正确时返回派生出的 dbKey（仅新格式可派生）。 */

@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import type { SizePayload } from './useContextMenuTypes'
 
-export interface MenuPositionInput {
+interface MenuPositionInput {
   x: number
   y: number
   w: number

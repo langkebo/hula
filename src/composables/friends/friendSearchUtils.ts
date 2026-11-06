@@ -6,7 +6,7 @@ import type { MatrixContact } from '@/stores/domains/chat/contacts'
 // ============================================================================
 
 export type FriendSearchType = 'recommend' | 'user' | 'group'
-export type FriendSearchAction = 'edit-profile' | 'message' | 'add'
+type FriendSearchAction = 'edit-profile' | 'message' | 'add'
 
 type BaseSearchResult = {
   account: string

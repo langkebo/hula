@@ -40,13 +40,11 @@ import type {
 // Re-export types for backward compatibility with existing consumers
 export type {
   CrossSigningStatusResult,
-  DeviceInfo,
   DeviceVerificationResult,
   KeyBackupRestoreResult,
   KeyBackupSetupResult,
   KeyExportResult,
-  KeyImportResult,
-  StoreCrossSigningKeysResult
+  KeyImportResult
 }
 
 const logger = createLogger('CryptoSDKAdapter')

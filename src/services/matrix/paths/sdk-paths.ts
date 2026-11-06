@@ -30,11 +30,8 @@ export const WIDGET_PATHS = WIDGET_ROUTES
 /** SDK burn-after-read 模块路由表。 */
 export const BURN_AFTER_READ_PATHS = BURN_AFTER_READ_ROUTES
 
-// 同时保留 SDK 原始 `_ROUTES` 命名，便于需要时直接引用
-export { BURN_AFTER_READ_ROUTES, FRIEND_ROUTES, ROOM_ROUTES, WIDGET_ROUTES }
-
 /** SDK 路由条目形状。 */
-export interface SdkRoute {
+interface SdkRoute {
   readonly method: string
   readonly path: string
 }

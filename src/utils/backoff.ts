@@ -7,7 +7,7 @@
  */
 
 /** 指数退避参数。 */
-export interface BackoffOptions {
+interface BackoffOptions {
   /** 首次退避时长（ms）。 */
   baseDelayMs: number
   /** 第几次重试，从 0 开始；负数按 0 处理。 */

@@ -16,13 +16,11 @@ export type {
   MatrixClient,
   MatrixEvent,
   MBeaconEventContent,
-  MBeaconInfoEventContent,
   PushRuleAction,
   Room,
   RoomMember,
   RoomState,
   SlidingSync,
-  StoreStats,
   User
 } from 'matrix-js-sdk'
 export {
@@ -30,13 +28,9 @@ export {
   createClient,
   Direction,
   EventType,
-  IndexedDBStore,
   initializeManagerExtensions,
   LocationAssetType,
   M_BEACON,
-  M_BEACON_INFO,
-  M_LOCATION,
-  MemoryStore,
   Preset,
   PushRuleActionName,
   PushRuleKind,
@@ -47,7 +41,6 @@ export {
 // ---- 扩展管理器与子模块 ----
 export type {
   AdminManager,
-  AdminShutdownRoomResult,
   FederationDestination as SdkFederationDestination,
   GlobalMediaQuarantineChange,
   GlobalMediaQuarantineChangesResponse,
@@ -66,17 +59,12 @@ export type {
   UserMediaQuarantineResponse
 } from 'matrix-js-sdk/admin'
 export { ClientEvent } from 'matrix-js-sdk/client'
-export type { SdkContractModule, SdkContractRoute } from 'matrix-js-sdk/contract'
+export type {} from 'matrix-js-sdk/contract'
 // 契约路由表：SDK 的聚合出口（`matrix-js-sdk/contract` 汇总全部 __generated__/route-table）。
 // 这里转发而非让 paths/sdk-paths.ts 直接 import，是为了保持「SDK 只有一个咽喉点」的边界约定
 // —— scripts/check-sdk-boundary.mjs 只放行本文件这类白名单模块。
-export {
-  SDK_CONTRACT_MODULE_SIZES,
-  SDK_CONTRACT_MODULES,
-  SDK_CONTRACT_ROUTE_TABLES,
-  SDK_CONTRACT_ROUTES
-} from 'matrix-js-sdk/contract'
-export type { CryptoApi, CryptoCallbacks } from 'matrix-js-sdk/crypto'
+export { SDK_CONTRACT_ROUTE_TABLES } from 'matrix-js-sdk/contract'
+export type { CryptoCallbacks } from 'matrix-js-sdk/crypto'
 export { CryptoEvent, decodeRecoveryKey, encodeRecoveryKey } from 'matrix-js-sdk/crypto'
 export type { DeviceKeysManager } from 'matrix-js-sdk/device-keys'
 export type {
@@ -89,7 +77,7 @@ export type {
 export type { ReportResponse } from 'matrix-js-sdk/event-report'
 export type { Friend, FriendManager, FriendRequest } from 'matrix-js-sdk/friend'
 export { FriendEvent } from 'matrix-js-sdk/friend'
-export { ClientPrefix, VendorPrefix } from 'matrix-js-sdk/http-api'
+export { VendorPrefix } from 'matrix-js-sdk/http-api'
 export type { KeyBackupManager as SDKKeyBackupManager } from 'matrix-js-sdk/key-backup'
 // 扩展清单：SDK 的权威扩展注册表（AUTO-GENERATED），用于派生关键扩展 ID。
 // 与 route-table 类似，这里转发而非让调用方直接 import 子路径，以维持
@@ -100,6 +88,5 @@ export type { MediaManager, MediaQuotaAlert, UrlPreview } from 'matrix-js-sdk/me
 export { RoomEvent } from 'matrix-js-sdk/models/room'
 export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'
 export type { IPresenceEvent } from 'matrix-js-sdk/presence'
-export type { MSC4108RendezvousSession, MSC4108SecureChannel } from 'matrix-js-sdk/rendezvous'
-export type { IStore } from 'matrix-js-sdk/store'
+export type {} from 'matrix-js-sdk/rendezvous'
 export type { TelemetryManager } from 'matrix-js-sdk/telemetry'

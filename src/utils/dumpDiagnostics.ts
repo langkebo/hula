@@ -12,7 +12,7 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DumpDiagnostics')
 
-export interface DiagnosticsSnapshot {
+interface DiagnosticsSnapshot {
   timestamp: string
   extensionHealth: Record<string, string>
   hasDegradedExtension: boolean

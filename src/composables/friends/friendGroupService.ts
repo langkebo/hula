@@ -1,7 +1,5 @@
 import { type Friend, type FriendGroup, matrixFriendGroups } from '@/services/matrix/friends/MatrixFriendService'
 
-export type { FriendGroup }
-
 /**
  * Friend group operations backed by `matrixFriendGroups`.
  *

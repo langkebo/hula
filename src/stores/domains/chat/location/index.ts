@@ -11,7 +11,7 @@ const logger = createLogger('LocationStore')
 const EXPIRY_STOP_RETRY_DELAY_MS = 5000
 
 /** 活跃信标状态（以 beacon_info 事件 ID 为键） */
-export interface ActiveBeacon {
+interface ActiveBeacon {
   roomId: string
   owner: string
   description?: string | undefined

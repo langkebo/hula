@@ -57,5 +57,3 @@ export function useMobileScrollRefresh() {
     unlockScroll
   }
 }
-
-export type MobileScrollRefreshReturn = ReturnType<typeof useMobileScrollRefresh>

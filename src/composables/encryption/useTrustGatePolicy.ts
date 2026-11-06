@@ -18,9 +18,9 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
  * - `risk`（加密房间里的明文）→ 红锁；**严格模式**下默认模糊 + 警示条
  * - `plain`（未加密房间的明文）→ 与信任无关，不门禁
  */
-export type TrustGateVisibility = 'open' | 'masked'
+type TrustGateVisibility = 'open' | 'masked'
 
-export interface TrustGatePolicy {
+interface TrustGatePolicy {
   /** 用户是否开启了严格模式（持久化在 setting store） */
   strict: ComputedRef<boolean>
   /** 该信任级在严格模式下是否需要默认模糊 */

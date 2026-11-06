@@ -30,11 +30,6 @@ export function setSearchIndexKey(key: Uint8Array | null): void {
   logger.info(indexKey ? '搜索索引已启用加密落盘' : '搜索索引不落盘（无密钥，仅内存）')
 }
 
-/** 当前是否具备落盘条件（供 handler 判断是否需要删旧库） */
-export function isSearchIndexPersistable(): boolean {
-  return indexKey !== null
-}
-
 function openDB(): Promise<IDBDatabase> {
   if (dbPromise) {
     return dbPromise

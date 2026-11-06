@@ -6,12 +6,12 @@ import type { RightViewType } from '@/layout/right/types'
 /** 信息面板折叠状态持久化键 */
 export const CHAT_SIDEBAR_COLLAPSED_KEY = 'tjg.chatSidebar.collapsed'
 
-export interface UseChatSidebarOptions {
+interface UseChatSidebarOptions {
   /** 当前房间是否为群聊；单聊不展示信息面板 */
   isGroup: Ref<boolean>
 }
 
-export interface UseChatSidebarReturn {
+interface UseChatSidebarReturn {
   /** 面板是否折叠（折叠时宽度为 0） */
   isCollapsed: Ref<boolean>
   /** 窄屏（768-991px）下改为抽屉浮层 */

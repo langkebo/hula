@@ -1,5 +1,4 @@
 @use 'sass:map';
-@use 'variable';
 
 // 响应式断点
 $breakpoints: (
@@ -47,28 +46,6 @@ $breakpoints: (
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
-  }
-}
-
-// 通用容器响应式样式
-.responsive-container {
-  width: 100%;
-  margin-right: auto;
-  margin-left: auto;
-  padding-right: 16px;
-  padding-left: 16px;
-
-  @include respond-to('sm') {
-    max-width: 540px;
-  }
-  @include respond-to('md') {
-    max-width: 720px;
-  }
-  @include respond-to('lg') {
-    max-width: 960px;
-  }
-  @include respond-to('xl') {
-    max-width: 1140px;
   }
 }
 

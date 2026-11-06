@@ -31,7 +31,7 @@ const logger = createLogger('MatrixNotificationService')
  *
  * 保留在门面层（配置模块只关心 `Record<string, boolean>` 的形状）。
  */
-export type NotificationEventKind = 'thread_mention'
+type NotificationEventKind = 'thread_mention'
 
 interface NotificationRule {
   ruleId: string

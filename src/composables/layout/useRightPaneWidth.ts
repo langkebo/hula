@@ -7,7 +7,7 @@ import type { RightViewType } from '@/layout/right/types'
  *
  * `chat` 视图为弹性布局（主区随窗口伸缩），不在固定宽度表中，回退到 min。
  */
-export const VIEW_WIDTH_MAP: Partial<Record<RightViewType, number>> = {
+const VIEW_WIDTH_MAP: Partial<Record<RightViewType, number>> = {
   empty: 360,
   details: 380,
   search: 440,
@@ -24,7 +24,7 @@ const DEFAULT_MIN = 240
 const DEFAULT_MAX = 800
 const DEFAULT_STORAGE_KEY = 'tjg.rightPaneWidth'
 
-export interface UseRightPaneWidthOptions {
+interface UseRightPaneWidthOptions {
   /** 当前右侧栏视图（路由派生） */
   rightView: Ref<RightViewType>
   /** localStorage 持久化 key，默认 'tjg.rightPaneWidth' */
@@ -35,7 +35,7 @@ export interface UseRightPaneWidthOptions {
   max?: number
 }
 
-export interface UseRightPaneWidthReturn {
+interface UseRightPaneWidthReturn {
   /** 当前实际宽度（用户调整 > 默认） */
   width: ComputedRef<number>
   /** 当前视图的默认宽度 */

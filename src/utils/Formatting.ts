@@ -19,7 +19,7 @@ export const formatBytes = (bytes: number): string => {
 }
 
 /** 时长格式化选项 */
-export interface FormatDurationOptions {
+interface FormatDurationOptions {
   /** 是否对秒数四舍五入（默认 false，向下取整） */
   round?: boolean
   /** 是否将分钟补零到两位（默认 false） */

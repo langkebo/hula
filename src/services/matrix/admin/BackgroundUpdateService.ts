@@ -32,7 +32,7 @@ export interface BackgroundUpdate {
 }
 
 /** 后台更新任务历史记录。 */
-export interface BackgroundUpdateHistory {
+interface BackgroundUpdateHistory {
   id: number
   job_name: string
   execution_start_ts: number
@@ -43,7 +43,7 @@ export interface BackgroundUpdateHistory {
 }
 
 /** 后台更新任务统计信息。 */
-export interface BackgroundUpdateStats {
+interface BackgroundUpdateStats {
   id: number
   job_name: string
   total_updates: number
@@ -57,7 +57,7 @@ export interface BackgroundUpdateStats {
 }
 
 /** 创建后台更新任务的请求体。 */
-export interface CreateBackgroundUpdateRequest {
+interface CreateBackgroundUpdateRequest {
   job_name: string
   job_type: string
   description?: string
@@ -81,29 +81,29 @@ export interface BackgroundUpdateStatusSummary {
 }
 
 /** 重试失败任务的结果。 */
-export interface RetryFailedResult {
+interface RetryFailedResult {
   retried_count: number
 }
 
 /** 清理过期锁的结果。 */
-export interface CleanupLocksResult {
+interface CleanupLocksResult {
   cleaned_count: number
 }
 
 /** 列表查询参数。 */
-export interface ListUpdatesParams {
+interface ListUpdatesParams {
   limit?: number
   from?: string
 }
 
 /** 历史查询参数。 */
-export interface GetHistoryParams {
+interface GetHistoryParams {
   limit?: number
   from?: string
 }
 
 /** 统计查询参数（limit 表示最近多少天）。 */
-export interface GetStatsParams {
+interface GetStatsParams {
   limit?: number
 }
 

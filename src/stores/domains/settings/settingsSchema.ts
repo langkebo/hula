@@ -42,7 +42,7 @@ export interface SettingsTab {
 
 export type SettingsTabTranslator = (key: string) => string
 
-export const SETTINGS_TAB_GROUPS: { id: SettingsTabGroup; label: string }[] = [
+const SETTINGS_TAB_GROUPS: { id: SettingsTabGroup; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'communication', label: 'Communication' },
   { id: 'security', label: 'Security' },
@@ -50,7 +50,7 @@ export const SETTINGS_TAB_GROUPS: { id: SettingsTabGroup; label: string }[] = [
   { id: 'other', label: 'Other' }
 ]
 
-export const SETTINGS_TAB_GROUP_TRANSLATION_KEYS: Record<SettingsTabGroup, string> = {
+const SETTINGS_TAB_GROUP_TRANSLATION_KEYS: Record<SettingsTabGroup, string> = {
   general: 'setting.dialog.groups.general',
   communication: 'setting.dialog.groups.communication',
   security: 'setting.dialog.groups.security',

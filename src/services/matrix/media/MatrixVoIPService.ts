@@ -8,7 +8,7 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import * as voipDiag from './voipDiagnostics'
 import { getCallById } from './voipHelpers'
-import type { CallInfo, CallOptions, CallState, VoIPCall, VoIPCallFeed } from './voipTypes'
+import type { CallInfo, CallOptions, VoIPCall, VoIPCallFeed } from './voipTypes'
 
 const logger = createLogger('MatrixVoIP')
 
@@ -432,5 +432,5 @@ class MatrixVoIPService extends BaseMatrixService {
   }
 }
 
-export type { CallInfo, CallOptions, CallState }
+export type { CallInfo, CallOptions }
 export const matrixVoIPService = new MatrixVoIPService()

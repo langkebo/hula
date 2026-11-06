@@ -17,7 +17,7 @@ interface SecretChatGuardLogger {
   warn(message: string): void
 }
 
-export interface CreateSecretChatGuardOptions {
+interface CreateSecretChatGuardOptions {
   logger: SecretChatGuardLogger
   /** 被挡回时去哪个路径（桌面 /message，移动端 /mobile/message）。 */
   fallbackPath: string

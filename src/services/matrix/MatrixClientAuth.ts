@@ -49,7 +49,7 @@ export interface LoginResult {
 }
 
 /** Auth 子服务依赖的主类协作模块集合 */
-export interface MatrixClientAuthDeps {
+interface MatrixClientAuthDeps {
   readonly connectionManager: MatrixConnectionManager
   readonly eventRouter: MatrixEventRouter
   readonly syncManager: MatrixSyncManager

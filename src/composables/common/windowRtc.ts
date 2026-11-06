@@ -8,7 +8,7 @@ import { isMac } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { ensureDesktopWindowInstance, logger, MAC_TRAFFIC_LIGHTS_SPACING } from './windowHelpers'
 
-export type CreateWebviewWindow = (
+type CreateWebviewWindow = (
   title: string,
   label: string,
   width: number,

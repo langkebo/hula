@@ -7,7 +7,7 @@ import type { MatrixGroupInfo, MatrixRoomMember } from './types'
 
 const logger = createLogger('GroupStore.Roles')
 
-export type GroupRolesContext = {
+type GroupRolesContext = {
   membersMap: Record<string, MatrixRoomMember[]>
   currentRoomMembers: ComputedRef<MatrixRoomMember[]>
   currentGroupInfo: ComputedRef<MatrixGroupInfo | null | undefined>

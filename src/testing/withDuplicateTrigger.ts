@@ -20,14 +20,14 @@
  * expect(results.every(r => r === results[0])).toBe(true)
  * ```
  */
-export interface DuplicateTriggerOptions {
+interface DuplicateTriggerOptions {
   /** 触发模式：concurrent = Promise.all 并发，serial = 依次 await */
   mode: 'concurrent' | 'serial'
   /** 重复触发次数（含首次） */
   times: number
 }
 
-export interface DuplicateTriggerResult<T> {
+interface DuplicateTriggerResult<T> {
   /** 所有调用的返回值（按触发顺序） */
   results: T[]
   /** 并发模式下是否复用了同一 Promise（所有结果引用相同） */

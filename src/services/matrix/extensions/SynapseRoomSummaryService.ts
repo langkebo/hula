@@ -38,7 +38,7 @@ export interface RoomSummary {
   heroes: RoomSummaryHero[]
 }
 
-export type RoomEphemeralEvent = Record<string, unknown>
+type RoomEphemeralEvent = Record<string, unknown>
 
 /**
  * synapse-rust 房间摘要 / 临时事件扩展。

@@ -19,7 +19,7 @@ import { getMatrixClient } from './matrixClientAccessor'
  * 因为 `src/common/errors.ts` 的 `extractRetryAfterMs` 只读取 `retry_after_ms`
  * 与 `data.retry_after_ms`。
  */
-export interface MatrixTransportError extends Error {
+interface MatrixTransportError extends Error {
   name: 'MatrixTransportError'
   /** Matrix errcode（保证非空；无法判定时为 `M_UNKNOWN`）。 */
   errcode: string
@@ -36,7 +36,7 @@ export interface MatrixTransportError extends Error {
 }
 
 /** `createMatrixTransportError` 的输入。 */
-export interface MatrixTransportErrorInput {
+interface MatrixTransportErrorInput {
   /** HTTP 状态码；非 HTTP 失败传 0。 */
   status: number
   statusText?: string | undefined

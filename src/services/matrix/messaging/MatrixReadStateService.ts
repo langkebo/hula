@@ -6,7 +6,7 @@ import matrixClientService from '../MatrixClientService'
  * 单条已读回执的展示模型：谁（userId）读到了哪条事件（eventId）、何时读的（timestamp），
  * 以及可选的成员头像与展示名（由房间成员信息补全，缺失时 displayName 回退为 userId）。
  */
-export interface ReadReceipt {
+interface ReadReceipt {
   userId: string
   eventId: string
   timestamp: number

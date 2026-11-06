@@ -8,9 +8,9 @@ import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { isBusyUserStateTitle, mapUserStateToPresence } from '@/utils/userStatus'
 
-export type PresenceKey = 'online' | 'away' | 'busy' | 'offline'
+type PresenceKey = 'online' | 'away' | 'busy' | 'offline'
 
-export type FetchedProfile = {
+type FetchedProfile = {
   displayName?: string | null
   avatarUrl?: string | null
   sex?: number | undefined

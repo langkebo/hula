@@ -56,7 +56,7 @@ export function getRequestUserId(request: FriendRequest): string {
  *
  * 从 `SynapseFriendExtensionService` 抽出——纯函数，与本节其它 normalizer 同源。
  */
-export function normalizeFriendInfo(friend: SynapseFriendInfo): SynapseFriendInfo {
+function normalizeFriendInfo(friend: SynapseFriendInfo): SynapseFriendInfo {
   const displayName = friend.display_name || friend.displayname || friend.username || friend.user_id
   return {
     ...friend,
@@ -157,9 +157,7 @@ export function buildFriendRequestIdempotencyKey(userId: string): string {
 }
 
 /** 单页加载器：由调用方绑定具体实现（避免 utils 直接依赖扩展服务造成循环导入）。 */
-export type FriendPageLoader = (
-  from?: string
-) => Promise<{ friends: Array<{ user_id: string }>; nextBatch: string | null }>
+type FriendPageLoader = (from?: string) => Promise<{ friends: Array<{ user_id: string }>; nextBatch: string | null }>
 
 /** 流式读取的页数上限（与扩展层 `MAX_FRIEND_LIST_PAGES` 对齐，防异常游标无界循环）。 */
 const MAX_FRIEND_PAGES = 10

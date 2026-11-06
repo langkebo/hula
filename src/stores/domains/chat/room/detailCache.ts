@@ -6,7 +6,7 @@ import { LRUCache } from '@/utils/LRUCache'
 
 const logger = createLogger('RoomStore.DetailCache')
 
-export type RoomDetailCacheContext = {
+type RoomDetailCacheContext = {
   rooms: ShallowRef<Map<string, RoomInfo>>
 }
 
