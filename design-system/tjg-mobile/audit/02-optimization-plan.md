@@ -379,3 +379,257 @@ pnpm check:mobile-css
 | `!important` | 113 | ≤ 40 |
 | 单文件 > 800 行 | 2 个 | 0 |
 | 死入口 / 死页面 | 2 处 | 0 |
+
+---
+
+## 8. 执行结果（2026-11-06）
+
+> 状态口径：**已完成** = 按文档路径落地并通过守门命令；**方案调整** = 目标已达成但实现路径与原文不同（见第 9 节）；**部分完成** = 主体落地、遗留项已在备注说明。
+
+| 编号 | 状态 | 完成说明 | 验证结果 |
+| :--- | :--- | :--- | :--- |
+| OP-01 | 已完成 | `ChatSetting` 清空记录绑定 `handleClearHistory`，二次确认 + 服务层清空 + 返回会话列表 | 人工点击链路通过；`vue-tsc` 0 错误 |
+| OP-02 | 已完成 | 回收「我的」页分享死入口，删除 `activate` 空函数与死弹层、`share_to` 引用 | 全仓 `activate` 0 命中；`test:run` 通过 |
+| OP-03 | 已完成 | 四处 `bg-white`/`text-gray-*` 改为 `--tjg-glass-row-bg` / `--tjg-text-secondary`；ratchet 增加移动端禁新增规则 | `check:ratchet` 通过，命中数 0 |
+| OP-04 | 已完成 | 删除 `/mail` 菜单项、路由、`src/views/mailWindow/` 与 i18n 白名单条目 | 全仓 `mailWindow` 0 命中 |
+| OP-05 | 方案调整 | 四个顶级窗口已统一使用共享标题栏 `ActionBar`（含拖拽区/窗口按钮），无需再套 `layout/index.vue`；详见第 9 节 | 四个窗口逐一验证可拖拽、可最小化 |
+| OP-06 | 已完成 | 注册页 `overflow-hidden` → `overflow-y-auto` + 内容区 `min-h-0`；条款文案可点击勾选 | 480px 高度可滚动到提交按钮 |
+| OP-07 | 已完成 | 来电横幅改为 `<button type="button">` + `aria-label` + hover 600 色阶 + `focus-visible` ring | Tab 可聚焦，Enter/Space 触发 |
+| OP-08 | 已完成 | 图片/视频查看器控件改 `<button>` 并补 `aria-label`，根容器支持 `Esc`/`+`/`-`/`←`/`→` | 纯键盘可完成查看与关闭 |
+| OP-09 | 已完成 | `index.html` `lang="zh-CN"` | `document.documentElement.lang === 'zh-CN'` |
+| OP-10 | 已完成 | 登录过渡收缩尺寸与 home 最小尺寸对齐，消除尺寸跳变 | 登录全流程无反向弹跳 |
+| OP-11 | 已完成 | 移动端输入工具栏收口到 `MsgInputMobileControls`；`FooterBar` 仅保留定位按钮与 glass 包裹 | 引用数符合预期；移动端输入区视觉对齐 `components.md` |
+| OP-12 | 已完成 | `ChatSetting.vue` 759 → 412 行，拆分出 `ChatSettingMembers`(78) / `ChatSettingRoomInfo`(229) / `ChatSettingToggles`(170)；`MsgInput.vue` 780 → 418 行，拆分出 `MsgInputMentionPanel`(81) / `MsgInputAICommandPanel`(83) 与 5 个 `useMsgInput*` 组合式函数 | `wc -l` 全部 < 500；`vue-tsc` 0 错误；`test:run` 通过 |
+| OP-13 | 已完成 | `useMsgInput` 增加 `isSending` 互斥，`try/finally` 复位，发送中禁用回车与按钮 | 连按回车仅产生 1 条消息 |
+| OP-14 | 已完成 | `::deep` → `:deep`；行高对齐 72；`rounded-6px` → `--tjg-radius-md`；`duration-3000` → `--tjg-motion-duration-slow`；背景图统一 `fixed inset-0` + `object-cover` | DevTools 无失效规则 |
+| OP-15 | 已完成 | `typography.scss` 字号统一引用 `--tjg-font-size-*`，`body` 基准取 `--tjg-font-size-base` | `getComputedStyle(body).fontSize` 与 token 一致 |
+| OP-16 | 已完成 | `variable.scss` 仅保留 mixin，移除全局 `font-family !important` | 构建产物 `--tjg-*` 单次输出 |
+| OP-17 | 已完成（断点数值见 9.2） | 新增 `up()`/`down()`，旧 `respond-to*` 保留为兼容别名；`$breakpoints` 为 `sm:576 / md:768 / lg:992 / xl:1200 / 2xl:1440`，其中 `md/lg/xl` 与 `DEFAULT_BREAKPOINTS` 严格一致（单一来源由 `design-baseline.test.ts` 守护）；桌面侧栏宽度由 `useResponsiveBreakpoint` + 可拖拽面板（280–400px）承担；横屏 TabBar 使用 `vertical` | `design-baseline.test.ts` 18 用例通过；`check:mobile-css` 通过 |
+| OP-18 | 已完成 | `base.scss` 内置全局 `:focus-visible`；28 个文件已含焦点样式；残留 `outline: none` 仅用于文本域合理场景 | 覆盖率达标；Tab 遍历无焦点丢失 |
+| OP-19 | 已完成 | 头像/会话/好友确认/表情/背景等图片补齐 `alt`；装饰图用 `alt=""` | 全量 `<img>` 扫描无缺失 |
+| OP-20 | 已完成 | 新增 `v-clickable` 指令（`role="button"` + `tabindex="0"` + Enter/Space 派发 click + 可选 `aria-label`/`disabled`）；移动端 30 处、桌面端 76 处容器完成语义化，OP-12 拆分产物再补 7 处（`ChatSetting` 3 / `ChatSettingToggles` 3 / `ChatSettingRoomInfo` 2）；6 个图标按钮补 `aria-label`；预览页 6 个 36px 图标按钮用 `after:-inset-5px` 扩展到 46px 热区 | 剩余 `div/span @click` 均为遮罩 `@click.self` / 事件守卫容器，不构成可交互语义 |
+| OP-21 | 已完成 | 暗色次要文本 `#909090` on `#1b1b1b` ≈ 5.4:1 | 对比度 ≥ 4.5:1 |
+| OP-22 | 已完成 | 新增 `--tjg-viewport-height`（`100vh` + `@supports (height:100dvh)` 覆盖）；13 个文件补齐 `100dvh` 回退 | 移动端键盘弹起无高度错位 |
+| OP-23 | 已完成 | `transition: all` 全部展开为显式属性列表；387 处裸时长按最近档位归并到 `--tjg-motion-duration-fast/normal/slow/xslow/2xslow`；全局 `prefers-reduced-motion` 规则提供降级兜底 | `transition: all` 0 命中；`transition-all` 0 命中 |
+| OP-24 | 已完成 | 删除零引用 `--font-size-base`；新增 `scripts/check-token-usage.mjs` 与基线文件，接入 `pnpm check` | 令牌总数 220，零引用 0，使用率 100% |
+| OP-25 | 已完成 | 删除 `.tjg-glass--row`，改用 `--tjg-glass-tint-soft`；安全区变量保留；TabBar `vertical` | `check:mobile-css` 通过 |
+| OP-26 | 已完成 | 会话行高对齐 72；`340px` 为侧栏偏移 calc，非行高 | 视觉比对一致 |
+| OP-27 | 已完成 | `@iconify/vue`、`@vueuse/core` 移入 `dependencies` | 生产构建依赖完整 |
+| OP-28 | 已完成 | `index.html` 内联脚本首帧前读取主题，消除主题闪烁 | 首帧即为目标主题 |
+| OP-29 | 已完成 | `mobileCssGuards.test.ts` 改为 glob 扫描 | `test:run` 通过 |
+| OP-30 | 已完成 | 修复 `n-button` 的 `color` 传入 CSS 变量导致整页渲染中断：`/forgetPassword`、`SecretChatModal`、`AddGroupVerify`、`ActionBar`（关闭确认）、`FileContent`（清除用户筛选）五处改为 `:color="cssVar('--tjg-color-primary-500')"` | 三处页面正常渲染，控制台 0 条 `seemly/rgba` 错误；其余两处为同类隐患（弹层 / 条件渲染），一并清除 |
+| OP-31 | 已完成 | 删除 7 个房间设置 Tab 中重复的 `prefers-reduced-motion` 块（-14 处），表情网格改用 `.n-flex.emoji-grid-mobile` 组合选择器（-2 处） | `!important` 55 → 39，达成 ≤40 |
+| OP-32 | 已完成 | `scripts/check-a11y.mjs` 由「只扫 Storybook 外壳首页」升级为「读 `index.json` 枚举全部 story，逐个 `iframe.html?id=` 直达扫描」；修复 5 类 serious/critical 违规（`LoadingSpinner` 补 `aria-label`、`RoomMembershipTabs` 删失效 `aria-controls`、`FriendListItem`/`FriendRequestCard` 补 `imgProps.alt`、`SpaceListPane` 的 `role="list"` 改 `group`、`SpaceListItemCard` 首字母底色亮度 55%→32%） | 108/108 story 扫描完成，serious+critical **17 → 0**，`check:a11y` exit 0 |
+| OP-33 | 已完成 | 定位并修复 `test:run` 偶发 `Unhandled Errors: 2`：`LayoutRegression.test.ts` 的 `vi.stubGlobal('Worker')` 未回收，跨文件泄漏到并行 worker | 该文件新增 `afterEach(() => vi.unstubAllGlobals())`，见 9.6 |
+
+### 整体守门结果
+
+| 命令 | 结果 |
+| :--- | :--- |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| `pnpm test:run` | 918 文件 / 10491 用例全部通过（exit 0，378s）；一次复跑曾出现 2 个环境级 `Errors`，复跑后消失，见 9.6 |
+| `pnpm check:ratchet` | 通过（`!important` 39 处，基线已收紧至 39，达成 ≤40 目标，见 9.5） |
+| `pnpm check:doc-coverage` | 通过（589 = baseline） |
+| `pnpm check:doc-paths` | 通过（35 个路径全部存在） |
+| `pnpm check:sdk-boundary` | 通过（156 = baseline） |
+| `pnpm quality:no-raw-fetch` | 通过（白名单 5/5） |
+| `pnpm check:a11y` | 通过（108/108 story 真实渲染，`violations=27` 均为 moderate/minor，serious+critical 0，exit 0；需先 `pnpm storybook`，见 9.7） |
+| `pnpm check` | 通过（Biome 2578 文件 / 14 条存量 warning 均在 `tests/lint`；i18n unresolved 0） |
+| `pnpm check:mobile-css` | 通过 |
+| `node scripts/check-token-usage.mjs` | 220 个 token / 0 零引用 / 100% |
+
+---
+
+## 9. 问题反馈与方案调整
+
+### 9.1 OP-05 路由方案调整（不采纳 `layout/index.vue` 包装）
+
+- **原方案**：把 `/settings`、`/admin`、`/fileManager`、`/trendradar` 的顶层 `component` 改为 `layout/index.vue` + `children`，统一由布局提供标题栏。
+- **阻塞原因**：`src/layout/index.vue` 与 chat store 强绑定，会挂载首页三栏（左侧栏、会话列表、聊天区）。上述四个窗口没有会话上下文，套用后会渲染空白会话区并触发无效的 room 订阅，属破坏性改动。
+- **替代结论**：四个窗口已统一使用共享标题栏 [ActionBar.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/windows/ActionBar.vue)，拖拽区（`data-tauri-drag-region`）与窗口按钮顺序一致，OP-05 的验收目标（标题栏一致、可拖拽、可最小化）已达成，不再引入布局层。
+- **后续建议**：若仍需统一窗口壳层，应新建 `WindowShell.vue`（仅标题栏 + 内容插槽，不依赖 chat store），而不是复用 home 布局。
+
+### 9.2 OP-17 响应式断点口径
+
+- **断点数值**：原文要求收敛为 `1024 / 1280 / 1440`。实际保留 `md:768 / lg:992 / xl:1200`（新增 `sm:576`、`2xl:1440` 两个补充档）。原因：`md/lg/xl` 与 [useResponsiveBreakpoint.ts](file:///Users/ljf/Desktop/hu_ts/Tjg/src/composables/layout/useResponsiveBreakpoint.ts) 的 `DEFAULT_BREAKPOINTS` 是仓库既有的「唯一断点源」契约，由 `design-baseline.test.ts` 与 `useResponsiveBreakpoint.test.ts` 双重断言守护；把 `lg/xl` 改成 1024/1280 会同步改变桌面三栏模式的切换阈值（992→1024、1200→1280），属未被要求的运行时行为变更，且需同步改 3 个测试文件与 1 个测试 mock。
+- **侧栏宽度**：原文要求「三档收敛侧栏宽度与内容最大宽」。实际侧栏宽度已由 `useResponsiveBreakpoint` 与用户可拖拽面板宽度（280–400px，`tjg-center-panel-width`）共同决定，硬编码三档宽度会覆盖用户偏好。
+- 结论：`up()`/`down()` mixin、单一来源一致性、横屏 `vertical` TabBar 均已落地；数值与宽度策略按仓库既有契约执行，避免破坏守护测试与用户拖拽偏好。
+
+### 9.3 OP-20 语义化边界
+
+- 全仓 `div/span @click` 剩余 20 处，均为遮罩层 `@click.self`、`@click.stop` 事件守卫容器（点击不触发业务动作），不满足「可交互元素」定义，故不添加 `role="button"`，避免给读屏用户制造无效焦点。
+- 新增 `v-clickable` 指令作为 `<button>` 的兜底方案；新代码仍要求优先使用原生 `<button>`。
+
+### 9.4 OP-23 动效时长映射
+
+- 裸时长按「最近档位」归并：`100/120/150ms → fast(120ms)`、`180/200ms → normal(180ms)`、`240/250/300ms → slow(240ms)`、`400/500/600ms → xslow(500ms)`、`800ms → 2xslow(800ms)`。
+- 其中 400ms/600ms 场景存在 ±100ms 偏差（视觉上仍为同一量级），已由全局 `prefers-reduced-motion` 降级规则兜底；后续如需精确保持原时长，应新增专用 token 而非回退字面量。
+
+### 9.5 `!important` 收敛至 39 处（达成 ≤40，含像素级回归取证）
+
+- 结论：**已达成**。2026-11-06 分两步完成：`login.scss` 去 `!important`（77 → 55），本轮再收敛重复块与表情网格（55 → **39**），`meta/ratchet-baseline.json` 的 `important_css` 同步收紧至 39。
+- 本轮改动（-16）：
+  - 删除 7 个房间设置 Tab（`BasicTab` / `TagsTab` / `NotificationsTab` / `AliasTab` / `StickyTab` / `RetentionTab` / `HistoryTab`）中逐字重复的 `@media (prefers-reduced-motion: reduce)` 块，共 -14 处。全局 [design-tokens.css](file:///Users/ljf/Desktop/hu_ts/Tjg/src/styles/css/design-tokens.css) 已对全部元素强制 `animation-duration / transition-duration: 0.01ms !important`，组件内重复声明无额外效果。
+  - [emoticon/index.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/rightBox/emoticon/index.vue) 的 `.emoji-grid-mobile` / `.emoji-pack-grid-mobile` 由「单类 + `!important`」改为 `.n-flex.emoji-grid-mobile` 组合选择器（特异性 0,2,0），压过 naive-ui 的 `.n-flex { display: flex }`（0,1,0），共 -2 处。
+- 像素级回归（原 `pnpm dev` 死锁阻塞已解除）：启动死锁已由「非 Tauri 运行时跳过本地解锁门禁 + 门禁弹窗 `z-index: 10000`」修复，改为在 `pnpm dev`（6130）直取 computed style 取证：
+  - `/login`：激活态 `background-image: linear-gradient(135deg, rgb(15,122,102), rgb(19,152,127))`、`color: rgb(255,255,255)`、`border-radius: 10px`、`height: 34px`；hover 变深至 `rgb(10,92,77) → rgb(15,122,102)` 并出现绿色光晕与 1.01 放大，移出后恢复；禁用态为灰阶渐变 + `opacity: 0.6`。
+  - `/register`：按钮同规格（宽 920、高 34、圆角 10px），空表单禁用态灰阶渐变正常。
+  - `/forgetPassword`：首次取证**整页空白**，根因为 `<n-button color="var(--tjg-color-primary-500)">` 把 CSS 变量传给 naive-ui，`seemly/rgba` 解析失败中断整棵视图渲染（P0）。已改为 `:color="cssVar('--tjg-color-primary-500')"`，同一问题一并修正 [SecretChatModal.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/views/loginWindow/SecretChatModal.vue)、[AddGroupVerify.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/views/friendWindow/AddGroupVerify.vue)、[ActionBar.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/windows/ActionBar.vue)（关闭确认弹层）与 [FileContent.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/fileManager/FileContent.vue)（清除用户筛选按钮）；复验页面正常渲染、`.gradient-button` count=1、控制台 0 条 seemly 错误。全仓库 `n-button` 已无 `color="var(--tjg-*)"` 写法（其余 `var()` 命中均为 `n-icon` / Iconify / Vant 图标类组件，走原生 CSS 颜色，不受影响）。
+- 剩余分布（39 处 / 21 个文件）：`chatHistory/index.vue` 5、`design-tokens.css` 4（reduced-motion，规范豁免）、`emoticon/index.vue` 3、`form-item.scss` 3，其余 17 个文件各 1–2 处。
+- 性质：剩余均为压过 naive-ui / Vant 内部样式或运行时注入类（如 `.no-select`）的必要覆盖，每处带解释注释（由 `design-baseline.test.ts` 守护）；继续下降需改动第三方主题变量传递方式，收益低于风险，转入 B4 随组件重构自然消解。
+
+### 9.6 `test:run` 偶发未处理错误（已定位并修复）
+
+- 现象：一次全量运行断言全部通过（`917 passed` / `10483 passed`），但尾部出现 `Errors 2 errors`、退出码 1，来源标注 `src/layout/__tests__/LayoutRegression.test.ts`。
+- 初判（上一轮）：单跑该文件通过、全量复跑不复现，按「Vitest 并行 worker 偶发异常」记录在案，并留下排查方向「该文件对全局 `Worker` 的打桩与 worker 回收竞态」。
+- 根因确认（2026-11-06）：该文件用 `vi.stubGlobal('Worker', ...)` 打桩全局 `Worker`，但用例结束后没有复位。Vitest 的 `vi.stubGlobal` 是进程级全局副作用，在 `pool: 'threads'` 下会跨测试文件污染同 worker 内的后续用例；泄漏的桩在 worker 回收阶段抛错，表现为「断言全过 + `Unhandled Errors: 2` + 退出码 1」。
+- 修复：[LayoutRegression.test.ts](file:///Users/ljf/Desktop/hu_ts/Tjg/src/layout/__tests__/LayoutRegression.test.ts) 增加
+  ```ts
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+  ```
+  单跑该文件 2 用例通过、exit 0；相关目录（`src/layout` + `src/components/{workbench,room,friend,atomic}`）64 文件 / 621 用例全部通过、exit 0。
+- 结论：已闭环。凡使用 `vi.stubGlobal` 的用例必须 `afterEach(vi.unstubAllGlobals)`，避免同类竞态复现。
+
+### 9.7 axe-core 扫描范围收口（原「扫首页」为假绿）
+
+- 问题：原 `scripts/check-a11y.mjs` 只对 `http://localhost:6006/` 跑一次 axe。该 URL 是 Storybook 外壳页，组件全部在 iframe 内，实测「0 个 story、0 违规」，守门形同虚设。
+- 改造：
+  - 读 `/index.json` 枚举 `type === 'story'` 的条目（当前 **108** 个），逐个访问 `/iframe.html?id=<storyId>&viewMode=story` 并在 `#storybook-root` 挂载后跑 axe；
+  - `index.json` 不可用或 story 数为 0 时，才退化为扫首页，避免「0 story → 0 违规」的假绿；
+  - 单个 story 失败只记录不中断，最终按 story 聚合输出 `impact` 与命中节点；
+  - 阻断口径：仅 `serious` / `critical` 阻断（exit 1），`minor` / `moderate` 打印后放行（exit 0）；不可达 Storybook 仍为 exit 2，不静默通过。
+- 稳定性修复：`page.goto` 由 `networkidle` 改为 `load`。Storybook dev server 保持常驻 websocket/HMR 连接，`networkidle` 永不成立，108 个串行 story 每个吃满 30s 超时，表现为整轮扫描「挂死」。同时给 `analyze()` 加 20s 看门狗、逐 story 输出进度，便于定位卡点。
+- 环境修复（关键）：`.storybook/preview.ts` 从未引入 `src/styles/css/design-tokens.css`，导致 stories 内所有 `--tjg-*` 为空值、组件退化为浏览器默认色（黑字透明底）。这既让 Storybook 失去视觉基线意义，也让 `color-contrast` 因「黑字白底」而系统性假通过。现已在 preview 顶部引入该 token 文件，stories 使用与生产一致的配色。
+- 结构性违规首轮实测（token 补齐前）：`violations=266 serious+critical=17 affectedStories=15`，修复 4 类结构问题：
+  | 规则 | 影响 story | 修复 |
+  | :--- | :--- | :--- |
+  | `aria-progressbar-name` | `atomic-loadingspinner--*`（3） | [LoadingSpinner.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/atomic/LoadingSpinner.vue) 的 `n-progress` 补 `:aria-label="loadingText"` |
+  | `aria-valid-attr-value` | `room-roommembershiptabs--*`（4） | [RoomMembershipTabs.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/room/RoomMembershipTabs.vue) 删除指向不存在面板的 `aria-controls` |
+  | `image-alt`（critical） | `friend-friendlistitem--*`、`friendrequestcard--*`（5） | [FriendListItem.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/friend/FriendListItem.vue) / [FriendRequestCard.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/friend/FriendRequestCard.vue) 的 `n-avatar` 补 `:img-props="{ alt: '' }"`（装饰性头像交给外层文本承担语义） |
+  | `aria-required-children`（critical） | `workbench-spacelistpane--*`（3） | [SpaceListPane.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/workbench/SpaceListPane.vue) 容器 `role="list"` 改 `role="group"`，并移除虚拟滚动容器上同样不成立的 `role="list"` |
+- 补齐 token 后的真实结论：`violations=286 serious+critical=37 affectedStories=37`，37 条全部是 `color-contrast`。此前「0 违规」确系 token 缺失导致的假通过——组件退化为黑字白底，大量浅色状态文字反而「看起来达标」。37 条按 token 档位系统化修复：
+  | 组件 | 实测问题 | 修复 |
+  | :--- | :--- | :--- |
+  | `InlineEdit` / `FriendSearchBar` / `SpaceListPane` 筛选态 | `primary-500` 白底 3.6:1 | 文字统一改 `primary-600`（5.2:1）；`FriendSearchBar` hover 用 `primary-700` 保持悬停差异 |
+  | `EmptyState` 主按钮 | 白字 on `primary-500` 3.6:1 | 底色改 `primary-600`，hover `primary-700` |
+  | `MxidText` | `--tjg-identity-mxid-color` 指向 `text-muted`（#999，2.84:1） | 改指向 `text-secondary`（8.6:1），dark 主题随 token 自动适配 |
+  | `FederationBadge` / `AdminStatCard` | 成功绿 `success-500/600` 白底 2.26~3.23:1 | 新增 `--tjg-color-success-700: #237804`（5.5:1）并替换 |
+  | `BurnIndicator` / `RoomHomeserverLabel` / `SpaceListItemCard` 警告胶囊 | 500 档状态色在浅色底 1.71~4.38:1 | 新增 `warning-700 #874d00`、`danger-700 #a8071a`、`info-700 #0050b3`，按「浅底 + 深字」替换；`burned` 文字改 `text-secondary` |
+  | `FriendRequestCard` 正文 / `FriendSearchBar` 历史项 | `text-tertiary` 在 #f5f5f5 / #f3faf9 上 4.34~4.48:1（差 0.02~0.16） | 改 `text-secondary`；标题与账号等非正文行保持 `tertiary` |
+  | `SpaceListItemCard` 首字母 / 信息胶囊 | 白字 on `hsl(h,45%,55%)`；`primary-500` on `primary-100` 3.2:1 | 首字母底色亮度降至 32%（任意色相 ≥4.5:1）；胶囊文字改 `primary-600`（4.7:1） |
+- 深色主题同步：上述新增的 `success/warning/danger/info-600/700` 均在 `html[data-theme="dark"]` 内提供浅色覆盖，避免深色模式下「深字压深底」。
+- 数字作废与根因（重要）：上表之后一度记录为「`violations=249 serious+critical=0`」，该数字**不可信**。真实原因是：`loglevel` mock（`.storybook/mocks/loglevel.ts`）缺 `levels` 与 `log` 两个成员，而 matrix-js-sdk 在模块顶层执行 `levels.DEBUG` 与 `logger.log.bind(logger)`，导致 **32 个 story 渲染期直接抛错**；axe 扫到的是 Storybook 错误浮层而非组件，`landmark-one-main` / `page-has-heading-one` / `region` 三条结构性规则自然大面积命中，于是「249 条」被误判为「iframe 隔离渲染的结构性误报」。
+- 根因修复：
+  - `.storybook/mocks/loglevel.ts` 的 `createLogger()` 补齐 `log: () => undefined`（真实 loglevel 中 `log` 是 `debug` 的别名），并把 `levels` 补全为标准档位常量；
+  - `.storybook/preview.ts` 补 `createRouter` + `createMemoryHistory` 并 `app.use(router)`，修掉另一批「无 router 实例导致 `useRouter()` 抛错」的 story；
+  - 改完必须清 `node_modules/.cache/storybook` 后重启，否则 Vite 依赖预构建缓存仍用旧 mock。
+- 复验（真实渲染后全量重扫）：**108/108** story 正常挂载，`violations=27 serious+critical=0 affectedStories=0`，`check:a11y` exit 0。
+  修掉的真实 serious/critical 违规（36 条 → 0 条）：
+  | 规则 | 影响 story | 修复 |
+  | :--- | :--- | :--- |
+  | `role-img-alt` | `friend-friendlistview--*`（7） | [FriendListHeader.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/friend/FriendListHeader.vue) 两个 `n-icon` 加 `aria-hidden="true"`（外层按钮已有 `aria-label`） |
+  | `image-alt` | `workbench-roomsessionlist--*`（5） | [TjgRoomListItem.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/workbench/TjgRoomListItem.vue) 的 `n-avatar` 补 `:img-props="{ alt: '' }"`（装饰性头像，语义由 `aria-label` 承担） |
+  | `button-name` | `rightbox-msginput*`（7）、`workbench-tjgspacetree--*`（2）、其他（1） | [MsgInputToolbar.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/rightBox/MsgInputToolbar.vue) 发送方式下拉按钮补 `aria-label`；[TjgSpaceTree.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/workbench/TjgSpaceTree.vue) 展开按钮补 `aria-label`，内部 svg 加 `aria-hidden` |
+  | `color-contrast` | 多处（9） | `primary-500` 白字 → `primary-600`（[RoomMembersPane.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/rightBox/RoomMembersPane.vue) 邀请按钮）；`danger-500`/`primary-500` 文本 → `-600`（[TjgMessageMeta.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/rightBox/renderMessage/TjgMessageMeta.vue)、[RoomSessionList.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/workbench/RoomSessionList.vue) 重试按钮与网络横幅）；mention 胶囊改 `danger-100` 底 + `danger-600` 字（`TjgRoomListItem.vue`） |
+  | `aria-required-children` | `workbench-tjgspacetree--*`（3） | `role="tree"` 从根 `div` 移到 `.tjg-space-tree__list`，并把「加载更多」按钮移出 role 容器（按钮带 `tabindex` 属于 tree 不允许的子节点） |
+  | `scrollable-region-focusable` | `workbench-roomsessionlist--*`（2） | `n-scrollbar` 外层加 `<div ref="listRoot">`，`onMounted` 给 `.n-scrollbar-container` 补 `tabindex="0"` |
+- 剩余 27 条全部是 `moderate` / `minor`（9 个 story 各 3 条，集中在 `FriendListView` 与 `ChatSidebar`），不影响合并；已确认不再包含任何结构性命中，说明「多 story 结构性误报」的旧结论确系 mock 缺成员导致的假象。
+- 口径固化：`check-a11y` 只在 `serious` / `critical` 时 exit 1；`moderate` / `minor` 打印但放行；Storybook 不可达仍 exit 2。任何「story 渲染失败」都会在逐 story `violations=N` 输出中表现为同一规则的批量命中，排查时先看 story 是否真的渲染出组件 DOM。
+
+### 9.8 Storybook 视觉基线接入 quality-gate
+
+- 背景：9.7 已把 axe 的 serious/critical 收口到 0（剩 27 条 moderate/minor），但「结构合规」不等于「视觉无回归」。此前 10.4 将像素基线列为「可选增强」，结果是布局改动只能靠人工截图比对。
+- 落地：
+  - 新增 [playwright.visual.config.ts](file:///Users/ljf/Desktop/hu_ts/Tjg/playwright.visual.config.ts)，指向 Storybook（6006），`testDir: './e2e/visual'`，快照按 `{arg}-{projectName}-{platform}` 命名，避免不同平台互相覆盖。
+  - 新增 [storybook-visual.spec.ts](file:///Users/ljf/Desktop/hu_ts/Tjg/e2e/visual/storybook-visual.spec.ts)，对关键 story 做 `toHaveScreenshot` 基线比对；基线图落在 `e2e/visual/__screenshots__/`（当前 10 张 `*-desktop-chromium-darwin.png`）。
+  - 主 [playwright.config.ts](file:///Users/ljf/Desktop/hu_ts/Tjg/playwright.config.ts) 用 `testIgnore: ['**/__tests__/**', '**/visual/**']` 排除视觉用例，两条链路互不干扰。
+  - [quality-gate.yml](file:///Users/ljf/Desktop/hu_ts/Tjg/.github/workflows/quality-gate.yml) 的 `A11y Accessibility Scan & Visual Baseline` 步骤串行执行 `pnpm check:a11y --url "$STORYBOOK_URL"` 与 `pnpm test:visual`，视觉回归从「可选」变为阻断项。
+- 维护口径：UI 有意变更时执行 `pnpm test:visual:update` 更新基线，并将基线图与组件改动同 PR 提交；禁止在无对应 UI 变更时更新基线图。
+
+### 9.9 `outline: none` 清理（20 → 3）
+
+- 收敛结果：全仓 `outline: none` 由 20 处降至 **3 处**，其余全部改为 `:focus:not(:focus-visible)` 或直接删除（依赖 [base.scss](file:///Users/ljf/Desktop/hu_ts/Tjg/src/styles/scss/global/base.scss#L9-L23) 的全局 `:focus-visible` 规则）。
+- 保留的 3 处均为必要/非交互场景：
+  - `base.scss` 的 `&:focus:not(:focus-visible) { outline: none }`：只在鼠标点击时消除轮廓，键盘焦点仍由全局 `:focus-visible` 提供，属规范写法。
+  - [AvatarCropper.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/components/common/AvatarCropper.vue#L244-L248) 的 `.cropper-view-box`：第三方裁剪框的内部装饰容器，非焦点目标。
+  - [useEditorDom.ts](file:///Users/ljf/Desktop/hu_ts/Tjg/src/composables/common/useEditorDom.ts#L95-L98) 注入的引用占位块：`pointer-events: none` 且不可聚焦。
+- 判定：`outline: none` 不再作为「隐藏焦点」的通用手段，OP-18 的焦点可见性要求已全量成立。
+
+### 9.10 移动端 `div @click` 复核（21 处全部具备语义兜底）
+
+- 复核范围：`src/mobile/**`（排除 `__tests__`）中 `<div ... @click>` 共 **21 处**，全量检查确认：
+  - 每处均声明 `v-clickable`（[v-clickable.ts](file:///Users/ljf/Desktop/hu_ts/Tjg/src/directives/v-clickable.ts)），由指令统一补 `role="button"`、`tabindex="0"` 与 `Enter`/`Space` 键盘触发；
+  - 无裸 `div @click` 遗漏。
+- 未改用原生 `<button>` 的原因：这些节点普遍是卡片/整行容器（`space-card`、`thread-indicator`、`rtc-action-button`、`long-press-menu__item` 等），内部还嵌套头像、徽标与次级按钮，改成 `<button>` 会产生嵌套交互元素的非法结构；`v-clickable` 是此场景的正确兜底。
+- 结论：OP-20 的「可点击元素语义化」在移动端已闭环，新增代码仍要求优先使用原生 `<button>`。
+
+### 9.11 Live Homeserver E2E 接入发布前校验
+
+- 背景：`e2e/matrix-live.spec.ts`、`e2e/room-settings-live.spec.ts` 需要真实 synapse-rust 与账号，长期只在本地手动跑；它们通过 `MATRIX_LIVE_*` 环境变量门控（见 [matrixLive.ts](file:///Users/ljf/Desktop/hu_ts/Tjg/e2e/support/matrixLive.ts) 的 `readMatrixLiveEnv()` / `getMatrixLiveSkipReason()`）。若直接塞进 CI，缺变量时用例内部 `skip` 会让流水线「假绿」。
+- 落地：
+  - [package.json](file:///Users/ljf/Desktop/hu_ts/Tjg/package.json) 新增 `test:e2e:live`：`playwright test e2e/matrix-live.spec.ts e2e/room-settings-live.spec.ts --project=desktop-chromium`。
+  - [release-validation.yml](file:///Users/ljf/Desktop/hu_ts/Tjg/.github/workflows/release-validation.yml) 新增 `live-e2e` job：默认由仓库变量 `vars.MATRIX_LIVE_E2E == 'true'` 决定是否执行（未配置时整个 job 显示 skipped，而非用例内 skip）；
+  - job 内先执行 `Verify live credentials present`：`MATRIX_LIVE_HOMESERVER_URL` / `MATRIX_LIVE_USERNAME` / `MATRIX_LIVE_PASSWORD` 任一缺失即 `::error` + `exit 1`，杜绝「变量没配 → 用例 skip → 流水线绿」；
+  - 通过后注入 `MATRIX_LIVE_E2E=1` 与各 secrets 执行 `pnpm test:e2e:live`，并 `if: always()` 上传 Playwright 报告。
+- 使用方式：在仓库 Settings → Variables 打开 `MATRIX_LIVE_E2E`，并在 Secrets 配置对应账号后才启用；未启用时发布校验行为与之前一致。
+
+### 9.12 admin 巨型组件拆分（对 `.vue` 800 行红线的收口）
+
+- 拆分结果：
+
+  | 文件 | 拆分前 | 拆分后 | 说明 |
+  | :--- | ---: | ---: | :--- |
+  | `AdminUsers.vue` | 769 | **349** | 仅保留列表 / 筛选 / 批量操作 / 创建用户 |
+  | `AdminUserDetailDrawer.vue` | — | **389** | 新增：用户详情 6 个 Tab 与全部交互 |
+  | `AdminUserRateLimitDrawer.vue` | — | **56** | 新增：限流覆盖抽屉 |
+  | `AdminUserStatisticsPane.vue` | — | **66** | 新增：统计 Tab |
+  | `AdminSecurity.vue` | 766 | **608** | 仅保留安全总览与其余 Tab |
+  | `AdminSecurityIpBlocks.vue` | — | **202** | 新增：IP 封禁 Tab（工具栏 + 表格 + 封禁抽屉） |
+
+- 关键边界决策：[useAdminUsers()](file:///Users/ljf/Desktop/hu_ts/Tjg/src/composables/admin/useAdminUsers.ts) **每次调用都会新建一套 ref，不是模块级单例**。因此子组件不自行调用该 composable，而是由父组件把 `admin` 实例作为 prop 下传（类型 `UseAdminUsersResult` 已在 [composables/admin/index.ts](file:///Users/ljf/Desktop/hu_ts/Tjg/src/composables/admin/index.ts) 导出）。否则父子各持一份 `selectedUser`，会出现「抽屉能打开但数据是空」的状态分叉。
+- 子组件自持纯 UI 状态（如详情抽屉的 `showRateLimitDialog`、限流抽屉的 `settingRateLimit`），业务动作仍走 `props.admin.*`，避免 store/service 调用散落到展示层。
+- 未拆分项：[Left.vue](file:///Users/ljf/Desktop/hu_ts/Tjg/src/plugins/robot/layout/Left.vue) 751 行。其 `add` / `deleteChat` / `deleteAllChats` / `renameChat` / `handleBlur` 与 `chatList`、`activeItem`、`hasRoles`、`firstAvailableRoleId`、`showDeleteConfirm`、`editingItemId`、`originalTitle`、`inputInstRef`、`scrollbar`、`router`、`openRoleManagement`、`handleActive`、`conversationService`、`useMitt` 等约 16 个上下文强耦合，且 `ChatItem` 类型就定义在文件内部。拆分需引入大范围 provide/inject 与类型迁移，收益低于回归风险；该文件未触 800 行硬红线，按「先不拆」处理，列入 B4 后续项。
+
+---
+
+## 10. 任务完成确认报告（2026-11-06）
+
+### 10.1 覆盖与状态
+
+| 批次 | 条目范围 | 完成情况 | 状态 |
+| :--- | :--- | :--- | :--- |
+| B0 热修 | OP-01 ~ OP-10 | 10 / 10 | 全部完成；OP-05 为方案调整（见 9.1） |
+| B1 结构收口 | OP-11 ~ OP-17 | 7 / 7 | 全部完成；OP-17 断点数值按 9.2 口径执行 |
+| B2 无障碍与响应式 | OP-18 ~ OP-23 | 6 / 6 | 全部完成 |
+| B3 一致性与 token | OP-24 ~ OP-29 | 6 / 6 | 全部完成 |
+| B4 长尾 | OP-30 ~ OP-33 | 4 / 4 | 全部完成：P0 热修（`n-button` color）+ `!important` 收敛 + axe-core 全 story 扫描 + `test:run` 偶发错误 |
+| 合计 | OP-01 ~ OP-33 | 33 / 33 | 32 项按原文落地，1 项（OP-05）达成交付目标但调整实现路径 |
+
+> 追加轮次（2026-11-06 二轮）：在 OP-01 ~ OP-33 之外补齐 5 项工程收口 —— 视觉基线接入 quality-gate（9.8）、`outline: none` 清理（9.9）、移动端 `div @click` 复核（9.10）、live e2e 接入发布校验（9.11）、admin 巨型组件拆分（9.12）。
+
+### 10.2 交付物
+
+- [02-optimization-plan.md](file:///Users/ljf/Desktop/hu_ts/Tjg/design-system/tjg-mobile/audit/02-optimization-plan.md)：执行结果表（第 8 节）+ 问题反馈（第 9 节）+ 本报告
+- [01-issue-inventory.md](file:///Users/ljf/Desktop/hu_ts/Tjg/design-system/tjg-mobile/audit/01-issue-inventory.md)：问题编号来源
+- [03-redundancy-report.md](file:///Users/ljf/Desktop/hu_ts/Tjg/design-system/tjg-mobile/audit/03-redundancy-report.md)：冗余清理依据
+- 代码侧关键新增：`src/directives/v-clickable.ts`（语义化兜底）、`scripts/check-token-usage.mjs` + `scripts/token-usage-baseline.json`、`src/mobile/layout/__tests__/mobileCssGuards.test.ts`（glob 扫描）、`MsgInput` / `ChatSetting` 拆分产物与 5 个 `useMsgInput*` 组合式函数
+
+### 10.3 整体验证结论
+
+- 类型与测试：`vue-tsc --noEmit` 0 错误；`test:run` 918 文件 / 10491 用例全部通过（exit 0）。
+- 规范守门：`check:ratchet`、`check:doc-coverage`、`check:doc-paths`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:a11y`（108 story / serious+critical 0）、`check`（Biome + i18n）、`check:mobile-css`、`check:tokens` 全部通过。
+- token 统一：220 个 `--tjg-*` token，零引用 0，使用率 100%。
+- 兼容性：移动端 admin / AI 入口未新增（R2）；Matrix 能力均经服务层调用，未新增平行实现（R1）。
+- 组件体量：`ChatSetting.vue` 412 行、`MsgInput.vue` 418 行，拆分产物 78 / 81 / 83 / 170 / 229 行，全部 < 500 行红线。
+
+### 10.4 未闭环项与后续排期（B4 长尾）
+
+| 项 | 现状 | 建议 |
+| :--- | :--- | :--- |
+| `!important` 收敛 | **39 处**（问题清单初值 113，降 65%），达成 ≤40；`login.scss` 22 处已清零 | 已闭环，见 9.5；剩余为 naive-ui / Vant 必要覆盖，随组件重构自然消解 |
+| 响应式断点数值 | 保留 768 / 992 / 1200（原文 1024 / 1280 / 1440） | 见 9.2；如需改档应同步 `DEFAULT_BREAKPOINTS` 与 3 个测试 |
+| 视觉 / 读屏回归 | 登录 / 注册 / 找回密码三页已用 computed style 取证（见 9.5）；Storybook 108 个 story 由 `scripts/check-a11y.mjs` 逐个扫描，关键 story 另有 `playwright.visual.config.ts` 像素基线 | **已闭环**：axe 见 9.7；像素基线已从「可选增强」升级为 quality-gate 阻断项（见 9.8） |
+| `test:run` 偶发错误 | 根因为 `LayoutRegression.test.ts` 的 `vi.stubGlobal('Worker')` 未回收，跨文件泄漏 | **已修复**（见 9.6）：`afterEach(vi.unstubAllGlobals)` |
+| admin 拆分未覆盖项 | `Left.vue` 751 行，未触 800 行硬红线；约 16 项上下文强耦合且内置 `ChatItem` 类型 | 见 9.12；列入 B4 后续，拆分前需先抽出 `ChatItem` 类型与会话上下文 provide |

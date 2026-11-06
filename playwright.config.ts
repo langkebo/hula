@@ -5,7 +5,8 @@ const liveHomeserverUrl = process.env.MATRIX_LIVE_HOMESERVER_URL?.trim()
 
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: '**/__tests__/**',
+  // visual 子目录跑 Storybook 截图基线（见 playwright.visual.config.ts），不属于应用 e2e
+  testIgnore: ['**/__tests__/**', '**/visual/**'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

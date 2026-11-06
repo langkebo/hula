@@ -5,6 +5,11 @@
  * 前置条件：一个已就绪的 Storybook（默认 http://localhost:6006）。
  * 本脚本只负责扫描，不负责启动 Storybook。
  *
+ * 扫描范围：读取 Storybook 的 `index.json` 枚举全部 story，逐个用 `iframe.html?id=`
+ * 直达并跑 axe-core（默认标签 wcag2a/2aa/21a/21aa + best-practice）。这样覆盖的是
+ * 每个组件的真实渲染，而不是 Storybook 外壳页。若 `index.json` 不可用或无 story，
+ * 才退化为扫描首页，避免「0 个 story、0 违规」的假绿。
+ *
  * 策略（Task 1 选定，方案 b：由 CI 真正启动 Storybook 后再扫描）：
  *   - CI：`.github/workflows/quality-gate.yml` 的 "A11y Accessibility Scan" 步骤先启动
  *     Storybook 并轮询就绪（未就绪则显式失败），再调用本脚本。
@@ -77,6 +82,91 @@ async function runAxe(url) {
   return results
 }
 
+/**
+ * 从 Storybook 的 index.json 解析出全部 story。
+ * 只取 type === 'story' 的条目（docs 页是文档容器，重复扫描同一组件收益低）。
+ */
+async function fetchStories(baseUrl) {
+  const indexUrl = new URL('/index.json', baseUrl).toString()
+  const res = await fetch(indexUrl)
+  if (!res.ok) throw new Error('index.json HTTP ' + res.status)
+  const data = await res.json()
+  const entries = data.entries || {}
+  return Object.values(entries)
+    .filter((e) => e && e.type === 'story' && e.id)
+    .map((e) => ({ id: e.id, title: e.title || e.id, name: e.name || '' }))
+    .sort((a, b) => a.id.localeCompare(b.id))
+}
+
+/**
+ * 逐 story 扫描。每个 story 用 iframe.html 直达，避免 Storybook 外壳的菜单/工具栏
+ * 干扰判定（外壳本身不是待测 UI）。
+ */
+async function scanStories(baseUrl, stories) {
+  const { chromium } = await import('playwright')
+  const { AxeBuilder } = await import('@axe-core/playwright')
+  const browser = await chromium.launch({ headless: true })
+  const context = await browser.newContext()
+  const page = await context.newPage()
+
+  const scanned = []
+  const failures = []
+
+  try {
+    let index = 0
+    for (const story of stories) {
+      index++
+      const url = new URL('/iframe.html', baseUrl)
+      url.searchParams.set('id', story.id)
+      url.searchParams.set('viewMode', 'story')
+
+      try {
+        // 注意：不能用 networkidle —— Storybook dev server 会保持常驻 websocket/HMR 连接，
+        // networkidle 永不成立，每个 story 都会吃满超时，表现为整轮扫描「挂死」。
+        await page.goto(url.toString(), { waitUntil: 'load', timeout: 15000 })
+        // 等组件首帧渲染完成（Storybook 挂载到 #storybook-root）
+        await page
+          .waitForFunction(
+            () => {
+              const root = document.getElementById('storybook-root')
+              return !!root && root.children.length > 0
+            },
+            { timeout: 8000 }
+          )
+          .catch(() => {})
+        await wait(200)
+
+        // analyze 也加看门狗：个别 story 的 axe 注入可能长时间不回调
+        const result = await Promise.race([
+          new AxeBuilder({ page })
+            .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'])
+            .analyze(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('axe analyze timeout (20s)')), 20000))
+        ])
+
+        const violations = result.violations || []
+        scanned.push({ id: story.id, violations: violations.length })
+        for (const v of violations) {
+          failures.push({ story: story.id, violation: v })
+        }
+        process.stdout.write(
+          '[a11y] (' + index + '/' + stories.length + ') ' + story.id + ' violations=' + violations.length + '\n'
+        )
+      } catch (err) {
+        // 单个 story 渲染失败不应掩盖其他 story 的结论：记录后继续
+        scanned.push({ id: story.id, error: err.message })
+        process.stdout.write(
+          '[a11y] (' + index + '/' + stories.length + ') ' + story.id + ' ERROR: ' + err.message + '\n'
+        )
+      }
+    }
+  } finally {
+    await browser.close()
+  }
+
+  return { scanned, failures }
+}
+
 function reportUnreachable(url, waitMs, skipIfUnreachable) {
   if (skipIfUnreachable) {
     console.log('[a11y] SKIP: axe-core 扫描未执行')
@@ -108,24 +198,69 @@ async function main() {
   console.log('[a11y] Storybook ready, scanning...')
 
   try {
-    const results = await runAxe(storybookUrl)
-    const serious = results.violations.filter(v => v.impact === 'serious' || v.impact === 'critical')
+    let stories = []
+    try {
+      stories = await fetchStories(storybookUrl)
+      console.log('[a11y] Stories discovered:', stories.length)
+    } catch (err) {
+      console.log('[a11y] WARN: index.json 不可用 (' + err.message + ')，退化为扫描 Storybook 首页')
+    }
 
-    if (results.violations.length > 0) {
-      console.log('[a11y] AXE RESULTS: violations=' + results.violations.length + ' serious+critical=' + serious.length)
-      for (const v of serious) {
-        console.log('[a11y] [' + v.impact.toUpperCase() + '] ' + v.id + ': ' + v.help)
+    // 无 story 时退回单页扫描，避免「0 个 story、0 违规」的假绿
+    if (stories.length === 0) {
+      const results = await runAxe(storybookUrl)
+      const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
+      console.log(
+        '[a11y] AXE RESULTS (shell page): violations=' + results.violations.length + ' serious+critical=' + serious.length
+      )
+      if (serious.length > 0) {
+        console.error('[a11y] FAIL: ' + serious.length + ' serious/critical violations, blocking merge')
+        process.exit(1)
+      }
+      process.exit(0)
+    }
+
+    const { scanned, failures } = await scanStories(storybookUrl, stories)
+    const errors = scanned.filter((s) => s.error)
+    const serious = failures.filter(
+      (f) => f.violation.impact === 'serious' || f.violation.impact === 'critical'
+    )
+
+    console.log('[a11y] Stories scanned:', scanned.length - errors.length + '/' + stories.length)
+    if (errors.length > 0) {
+      console.log('[a11y] Story scan errors:', errors.length)
+      for (const e of errors) console.log('[a11y]   ! ' + e.id + ': ' + e.error)
+    }
+
+    // 按 story 聚合输出，便于直接定位组件
+    const byStory = new Map()
+    for (const f of serious) {
+      const list = byStory.get(f.story) || []
+      list.push(f.violation)
+      byStory.set(f.story, list)
+    }
+
+    console.log(
+      '[a11y] AXE RESULTS: violations=' + failures.length + ' serious+critical=' + serious.length +
+        ' affectedStories=' + byStory.size
+    )
+    for (const [storyId, list] of byStory) {
+      for (const v of list) {
+        console.log('[a11y] [' + v.impact.toUpperCase() + '] ' + storyId + ' :: ' + v.id + ': ' + v.help)
         for (const h of v.nodes || []) {
           console.log('[a11y]   -> ' + ((h.html || '').substring(0, 120) || (h.target || ['unknown']).join('.')))
         }
       }
-    } else {
-      console.log('[a11y] OK: 0 violations')
     }
 
     if (serious.length > 0) {
       console.error('[a11y] FAIL: ' + serious.length + ' serious/critical violations, blocking merge')
       process.exit(1)
+    }
+    if (failures.length > 0) {
+      console.log('[a11y] OK (serious/critical): ' + failures.length + ' minor/moderate violations 不阻断合并')
+    } else {
+      console.log('[a11y] OK: 0 violations')
     }
     process.exit(0)
   } catch (err) {

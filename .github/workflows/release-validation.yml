@@ -151,3 +151,79 @@ jobs:
             hula/meta/sdk-pin.json
           if-no-files-found: warn
           retention-days: 30
+
+  live-e2e:
+    name: Live Homeserver E2E
+    runs-on: ubuntu-latest
+    # 默认关闭：仅当仓库变量 MATRIX_LIVE_E2E=true 且 secrets 已配置时运行真实 synapse-rust 后端用例。
+    # 不用「用例内部 test.skip」代替开关注入门禁：那种跳过在 CI 里是绿色的，
+    # 会让人误以为 live 流程已回归。未启用时本 job 在 GitHub UI 显式显示 skipped。
+    if: ${{ vars.MATRIX_LIVE_E2E == 'true' }}
+    timeout-minutes: 40
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 12
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium --with-deps
+
+      # 变量开了但 secrets 没配 ⇒ 用例会因缺少凭据自行 skip，CI 依然全绿。
+      # 这里显式失败，保证「开关打开」等于「真的跑过」。
+      - name: Verify live credentials present
+        env:
+          MATRIX_LIVE_HOMESERVER_URL: ${{ secrets.MATRIX_LIVE_HOMESERVER_URL }}
+          MATRIX_LIVE_USERNAME: ${{ secrets.MATRIX_LIVE_USERNAME }}
+          MATRIX_LIVE_PASSWORD: ${{ secrets.MATRIX_LIVE_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$MATRIX_LIVE_HOMESERVER_URL" ] && missing="$missing MATRIX_LIVE_HOMESERVER_URL"
+          [ -z "$MATRIX_LIVE_USERNAME" ] && missing="$missing MATRIX_LIVE_USERNAME"
+          [ -z "$MATRIX_LIVE_PASSWORD" ] && missing="$missing MATRIX_LIVE_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::MATRIX_LIVE_E2E=true 但缺少 secrets:$missing。补齐 secrets 或关闭该变量。"
+            exit 1
+          fi
+
+      # playwright.config.ts 的 webServer 会以 mobile vite 配置起 5210 端口，
+      # 并在设置了 MATRIX_LIVE_HOMESERVER_URL 时自动注入 VITE_HOMESERVER_URL。
+      - name: Run live flows
+        env:
+          MATRIX_LIVE_E2E: '1'
+          MATRIX_LIVE_AUTH_STRATEGY: ${{ vars.MATRIX_LIVE_AUTH_STRATEGY || 'password-api' }}
+          MATRIX_LIVE_HOMESERVER_URL: ${{ secrets.MATRIX_LIVE_HOMESERVER_URL }}
+          MATRIX_LIVE_USERNAME: ${{ secrets.MATRIX_LIVE_USERNAME }}
+          MATRIX_LIVE_PASSWORD: ${{ secrets.MATRIX_LIVE_PASSWORD }}
+          MATRIX_LIVE_USER_ID: ${{ secrets.MATRIX_LIVE_USER_ID }}
+          MATRIX_LIVE_ROOM_ID: ${{ secrets.MATRIX_LIVE_ROOM_ID }}
+          MATRIX_LIVE_ROOM_NAME: ${{ secrets.MATRIX_LIVE_ROOM_NAME }}
+          MATRIX_LIVE_PEER_USERNAME: ${{ secrets.MATRIX_LIVE_PEER_USERNAME }}
+          MATRIX_LIVE_PEER_PASSWORD: ${{ secrets.MATRIX_LIVE_PEER_PASSWORD }}
+        run: pnpm test:e2e:live
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: live-e2e-playwright-report
+          path: playwright-report
+          if-no-files-found: warn
+          retention-days: 7

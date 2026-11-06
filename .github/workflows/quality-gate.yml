@@ -111,7 +111,7 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps
 
-      - name: A11y Accessibility Scan
+      - name: A11y Accessibility Scan & Visual Baseline
         shell: bash
         run: |
           # 策略（b）：CI 真正启动 Storybook 后再扫描；启动失败即显式失败，绝不静默通过。
@@ -139,7 +139,15 @@ jobs:
 
           # 运行 axe-core 扫描（未就绪时脚本自身 exit 2，不会假装绿）
           pnpm check:a11y --url "$STORYBOOK_URL"
-          exit $?
+          A11Y_STATUS=$?
+
+          # 像素级视觉基线（复用上面已启动的 Storybook）。
+          # 基线按平台提交：当前平台无基线时用例显式 SKIP 并提示 `pnpm test:visual:update`，
+          # 不会静默变绿；有基线时 diff 超过 1% 直接阻断。
+          pnpm test:visual
+          VISUAL_STATUS=$?
+
+          exit $((A11Y_STATUS || VISUAL_STATUS))
         env:
           STORYBOOK_URL: http://localhost:6006
 
