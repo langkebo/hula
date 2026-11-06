@@ -76,6 +76,29 @@ const seedDirectRoom = async (self: Account, peer: Account, roomName: string): P
   return roomId
 }
 
+/** 服务端未读计数（MSC2654，后端已实现）：用于验证「未读清零」的真源 */
+const fetchUnreadCount = async (account: Account, roomId: string): Promise<number> => {
+  // 注意前缀：未读计数走 vendor 扩展（/_matrix/vendor/v1），不是 client/v3
+  const res = await fetch(`${APP_URL}/_matrix/vendor/v1/rooms/${encodeURIComponent(roomId)}/unread_count`, {
+    headers: { Authorization: `Bearer ${account.accessToken}` }
+  })
+  if (!res.ok) throw new Error(`查询未读失败: HTTP ${res.status} ${await res.text()}`)
+  const data = (await res.json()) as { notification_count?: number }
+  return Math.max(0, data.notification_count ?? 0)
+}
+
+/** 用 REST 建一个「有名字」的房间：name 事件会让它不被 dead-room 过滤（1 人房也保留） */
+const createNamedRoom = async (account: Account, name: string): Promise<string> => {
+  const res = await fetch(`${APP_URL}/_matrix/client/v3/createRoom`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${account.accessToken}` },
+    body: JSON.stringify({ name, preset: 'private_chat', visibility: 'private' })
+  })
+  if (!res.ok) throw new Error(`建房失败: HTTP ${res.status} ${await res.text()}`)
+  const { room_id: roomId } = (await res.json()) as { room_id: string }
+  return roomId
+}
+
 test.describe('移动端消息列表与会话进入', () => {
   test.skip(SKIP_REASON !== null, SKIP_REASON ?? '')
   test.setTimeout(240_000)
@@ -139,5 +162,101 @@ test.describe('移动端消息列表与会话进入', () => {
     await expect(page.getByText(`echo-${roomName}`).first(), '清空内存态后仅靠路由参数未能恢复到该会话').toBeVisible({
       timeout: 30_000
     })
+  })
+
+  /**
+   * 返回列表恢复滚动位置（P3-b）。
+   *
+   * `/mobile/message` 在 tab 布局、聊天页在 chat 布局，进会话时 tab 布局整体卸载
+   * ⇒ 列表被重建、滚动归零。微信式体感是「返回还在原来位置」。
+   * 造 12 个有名字的房间把列表撑到可滚动（有 m.room.name ⇒ 不会被 dead-room 过滤）。
+   */
+  test('返回列表时恢复滚动位置', async ({ page }) => {
+    const self = await registerAccount('mmobscroll')
+    const stamp = Date.now().toString(36)
+    for (let i = 0; i < 12; i += 1) {
+      await createNamedRoom(self, `scroll-${stamp}-${i}`)
+    }
+
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
+    const container = page.locator('.mobile-session-list')
+    await expect(container).toBeVisible({ timeout: 30_000 })
+
+    // 拉到中间位置（回读实际值，虚拟列表/容器高度会 clamp）
+    const scrolledTo = await page.evaluate(() => {
+      const el = document.querySelector('.mobile-session-list') as HTMLElement | null
+      if (!el) return 0
+      el.scrollTop = 300
+      el.dispatchEvent(new Event('scroll'))
+      return el.scrollTop
+    })
+    expect(scrolledTo, '房间数不足以让列表滚动，用例前提不成立').toBeGreaterThan(0)
+
+    // 进会话 → 返回
+    await page.evaluate(() => {
+      const row = document.querySelector('.van-swipe-cell .grid') as HTMLElement | null
+      row?.click()
+    })
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 20_000 }).toContain('/mobile/chatRoom/chatMain/')
+
+    await page.goBack()
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 20_000 }).toBe('/mobile/message')
+
+    // 恢复位置发生在「数据首次非空之后」，用 poll 等它落定
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const el = document.querySelector('.mobile-session-list') as HTMLElement | null
+            return el?.scrollTop ?? -1
+          }),
+        { timeout: 20_000 }
+      )
+      .toBeGreaterThan(scrolledTo - 5)
+  })
+
+  /**
+   * P4 验收（用户要求的完整闭环）：
+   * 注册两账号 → 建房发消息 → loginOnMobileUi 登录 → 列表出现该会话 →
+   * 点击进入聊天看到消息 → 返回列表仍在 → 未读清零。
+   *
+   * 「未读」用**服务端真源**（GET /rooms/{id}/unread_count）核对，而不是只看角标：
+   * 客户端角标会被本地账本折算，单看 UI 无法区分「真的清零」和「压根没算过」。
+   */
+  test('P4 验收：列表可见 → 进入会话 → 返回列表（未读清零）', async ({ page }) => {
+    const self = await registerAccount('mmobp4')
+    const peer = await registerAccount('mmobp4peer')
+    const roomName = `p4-${Date.now().toString(36)}`
+    // peer 建房 + 邀请 self → self join → peer 发消息（此时 self 已在房，形成未读）
+    const roomId = await seedDirectRoom(self, peer, roomName)
+
+    const unreadBefore = await fetchUnreadCount(self, roomId)
+    expect(unreadBefore, '用例前提：进入会话前服务端应记有未读').toBeGreaterThan(0)
+
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
+
+    // 1) 列表出现该会话
+    const row = page.locator('.van-swipe-cell').filter({ hasText: roomName }).first()
+    await expect(row).toBeVisible({ timeout: 30_000 })
+
+    // 2) 点击进入，聊天区能看到对方那条消息
+    await page.evaluate(() => {
+      const target = document.querySelector('.van-swipe-cell .grid') as HTMLElement | null
+      target?.click()
+    })
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
+      .toBe(`/mobile/chatRoom/chatMain/${roomId}`)
+    await expect(page.getByText(`echo-${roomName}`).first()).toBeVisible({ timeout: 30_000 })
+
+    // 3) 返回列表：会话仍在
+    await page.goBack()
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 20_000 }).toBe('/mobile/message')
+    await expect(row).toBeVisible({ timeout: 20_000 })
+
+    // 4) 未读清零（服务端真源；客户端进入会话时发 m.read，轮询等待回执生效）
+    await expect
+      .poll(() => fetchUnreadCount(self, roomId), { timeout: 30_000, message: '进入会话后服务端未读应清零' })
+      .toBe(0)
   })
 })

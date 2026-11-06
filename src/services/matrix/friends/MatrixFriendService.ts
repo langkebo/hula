@@ -391,7 +391,9 @@ export const matrixFriendService = new MatrixFriendService()
 // 好友域聚合入口：调用方从这里取「查询门面 + 三个能力单例」，无需关心内部文件划分。
 export { friendEventBus } from './friendEvents'
 /** 逐页流式读好友（首页先返回，后续页随用随取）：绑定扩展服务实现。 */
-export const streamFriendsPages = () => streamFriendPages(synapseFriendExtensionService.getFriendsPage)
+// 必须用箭头函数包一层：直接传方法引用会丢掉 this，
+// 扩展服务内部 this.isFriendEndpointAvailable 变为 undefined（好友页整体加载失败）。
+export const streamFriendsPages = () => streamFriendPages((from) => synapseFriendExtensionService.getFriendsPage(from))
 export { matrixFriendGroups } from './MatrixFriendGroups'
 export { matrixFriendOperations } from './MatrixFriendOperations'
 export { matrixFriendSync } from './MatrixFriendSync'

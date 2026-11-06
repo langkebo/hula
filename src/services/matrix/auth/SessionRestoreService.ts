@@ -52,7 +52,14 @@ export class SessionRestoreService {
       logger.error(`获取存储令牌失败: ${result.error}`)
       return { token: null, refreshToken: null }
     }
-    return result.value
+    // 边界校验：IPC 返回体可能缺失（如浏览器 shim / 旧版本后端），
+    // 不能让 undefined 于调用方 `tokens.token` 处抛错，否则会被误判为「未登录」而跳登录页。
+    const stored = result.value
+    if (!stored || typeof stored !== 'object') {
+      logger.warn('获取存储令牌返回了非法载荷，按无令牌处理')
+      return { token: null, refreshToken: null }
+    }
+    return stored
   }
 
   /** 检查是否存在已认证会话

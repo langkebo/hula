@@ -72,6 +72,10 @@ export const installBrowserTauriShim = async (page: Page): Promise<void> => {
       metadata: { currentWindow: { label: 'main' }, currentWebview: { label: 'main' } },
       async invoke(cmd: string, args?: Record<string, unknown>) {
         if (cmd === 'is_app_state_ready') return true
+        // 与真实 Rust 侧保持同形：会话恢复会读这个命令，返回 undefined 会被误判成「未登录」。
+        if (cmd === 'get_user_tokens') {
+          return { token: localStorage.getItem('tjg.matrix.accessToken'), refreshToken: null }
+        }
         if (cmd.includes('get_all_windows') || cmd.includes('get_all_webviews')) return []
         if (cmd === 'plugin:window|title') return 'HuLa'
         if (cmd === 'plugin:event|listen') return args?.handler ?? 0
@@ -175,10 +179,18 @@ export const loginOnMobileUi = async (page: Page, options: MobileLoginOptions): 
   }
   await clickAt(page, '[data-testid="mobile-login-submit"]')
 
-  const landed = await page
-    .waitForURL(/\/mobile\/(message|chatRoom|dynamic)/, { timeout: timeoutMs })
-    .then(() => true)
-    .catch(() => false)
+  // 登录提交后 crypto 初始化会再次触发「设置本地解锁密码」门禁，弹窗会挡住路由跳转；
+  // 只在跳转成功后才 dismiss 会永远等不到 URL 变化，所以等待期间持续「发现即点掉」。
+  const deadline = Date.now() + timeoutMs
+  let landed = false
+  while (Date.now() < deadline) {
+    if (/\/mobile\/(message|chatRoom|dynamic)/.test(new URL(page.url()).pathname)) {
+      landed = true
+      break
+    }
+    await dismissLocalUnlockDialog(page, 500)
+    await page.waitForTimeout(200)
+  }
   if (!landed) {
     const state = await page.evaluate(() => ({
       url: `${location.pathname}${location.search}`,

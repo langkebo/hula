@@ -82,7 +82,9 @@ export default defineConfig(
             // 以便默认值保持为一个有意义的护栏（避免掩盖慢测试/死锁），当前两类显式放宽：
             //   ① 「扫描全仓」类结构守卫（presenceSingleWriter / css-naming-lint / design-tokens /
             //      dead-constants），见各文件顶部的 vi.setConfig（30–120s）；
-            //   ② 重型移动端组件挂载（src/mobile/views/chat-room/__tests__/**，用例自带 120s timeout）。
+            //   ② 重型移动端组件挂载（src/mobile/views/chat-room/__tests__/**，用例自带 240s timeout）：
+            //      慢在「模块图转换」而非用例逻辑（子组件已全部 stub），整目录并行时单个文件
+            //      实测被顶到 130–175s，120s 会周期性假红。
             // 详见审计报告 §12.2 / §13。
             testTimeout: 30_000,
             // 约定：.test.ts 用于单元测试和契约测试（src/**/__tests__/、src/**/*.test.ts），

@@ -109,9 +109,8 @@ vi.mock('@/services/matrix/MatrixHttpClient', async () => {
 })
 
 const { synapseDmExtensionService } = await import('../../extensions/SynapseDmExtensionService')
-const { matrixFriendGroups, matrixFriendOperations, matrixFriendService, matrixFriendSync } = await import(
-  '../MatrixFriendService'
-)
+const { matrixFriendGroups, matrixFriendOperations, matrixFriendService, matrixFriendSync, streamFriendsPages } =
+  await import('../MatrixFriendService')
 const { matrixSpecialFriendService } = await import('../MatrixSpecialFriendService')
 const { synapseFriendExtensionService } = await import('../../extensions/SynapseFriendExtensionService')
 const { bumpFriendsGeneration, clearAllFriendReadErrors, getFriendReadError, getFriendsLoadError } = await import(
@@ -552,5 +551,33 @@ describe('MatrixFriendService — 读失败必须可区分（FE-4/FE-5）', () =
 
     expect(getFriendReadError('search')).toBeNull()
     expect(getFriendReadError('requests')).toBeNull()
+  })
+})
+
+/**
+ * 回归：`streamFriendsPages` 曾经直接传 `synapseFriendExtensionService.getFriendsPage`，
+ * 方法引用脱离对象后 `this` 变为 undefined，扩展服务内部读 `this.isFriendEndpointAvailable`
+ * 直接抛 TypeError，好友页初始化整体失败（Tab 点进去只有错误态）。
+ */
+describe('streamFriendsPages — 扩展服务方法必须保留 this', () => {
+  it('逐页读取不得因方法引用丢失 this 而抛错', async () => {
+    const service = synapseFriendExtensionService as unknown as {
+      isFriendEndpointAvailable: boolean
+      getFriendsPage: (from?: string) => Promise<{ friends: Array<{ user_id: string }>; nextBatch: string | null }>
+    }
+    service.isFriendEndpointAvailable = true
+    service.getFriendsPage = function (this: typeof service, from?: string) {
+      if (!this?.isFriendEndpointAvailable) {
+        throw new TypeError("Cannot read properties of undefined (reading 'isFriendEndpointAvailable')")
+      }
+      return Promise.resolve({ friends: [{ user_id: `@bind${from ?? ''}:hs` }], nextBatch: null })
+    }
+
+    const ids: string[] = []
+    for await (const page of streamFriendsPages()) {
+      ids.push(...page.friends.map((friend) => friend.user_id))
+    }
+
+    expect(ids).toEqual(['@bind:hs'])
   })
 })

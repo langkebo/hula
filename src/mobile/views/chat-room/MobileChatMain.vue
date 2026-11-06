@@ -130,7 +130,7 @@ const openRoomFromRoute = async (raw?: string) => {
     session = chatStore.getSession(roomId)
   }
   if (!session) {
-    logger.warn('路由指向的会话不存在，回到消息列表:', roomId, raw)
+    logger.warn('route session not found, falling back to message list:', roomId, raw)
     await router.replace('/mobile/message')
     return
   }
