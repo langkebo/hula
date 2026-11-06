@@ -31,14 +31,14 @@
                 :alt="t('common.avatar_alt', { name: userStore.userInfo?.name ?? '' })"
                 @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 
-              <div @click="toMyInfo" class="flex flex-col flex-1 py-10px">
+              <div v-clickable @click="toMyInfo" class="flex flex-col flex-1 py-10px">
                 <div class="font-bold text-18px">{{ userStore.userInfo?.name ?? '' }}</div>
                 <div class="mt-2 text-bold-style line-height-22px line-clamp-2">
                   {{ userStore.userInfo?.resume || t('mobile_my.default_bio') }}
                 </div>
               </div>
 
-              <div @click="toMyInfo" class="flex items-center justify-end">
+              <div v-clickable @click="toMyInfo" class="flex items-center justify-end">
                 <svg @click="handleBack" class="w-24px text-gray h-24px iconpark-icon"><use href="#right"></use></svg>
               </div>
             </div>

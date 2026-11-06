@@ -29,7 +29,11 @@
     </div>
 
     <!-- 文件图标区域 -->
-    <div :title="body?.fileName" class="file-icon-wrapper select-none cursor-pointer" @click="handleIconClick">
+    <div
+      v-clickable
+      :title="body?.fileName"
+      class="file-icon-wrapper select-none cursor-pointer"
+      @click="handleIconClick">
       <!-- 文件图标 -->
       <img
         :src="`/file/${getFileSuffix(body?.fileName || '')}.svg`"
@@ -474,7 +478,13 @@ onMounted(async () => {
   // 元素自声明即胜过父级继承值，无需 !important
   cursor: default;
   user-select: none;
-  transition: all var(--tjg-motion-duration-normal) ease;
+  transition:
+    color var(--tjg-motion-duration-normal) ease,
+    background-color var(--tjg-motion-duration-normal) ease,
+    border-color var(--tjg-motion-duration-normal) ease,
+    box-shadow var(--tjg-motion-duration-normal) ease,
+    opacity var(--tjg-motion-duration-normal) ease,
+    transform var(--tjg-motion-duration-normal) ease;
 
   &.downloading {
     opacity: 0.7;

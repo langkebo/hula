@@ -93,6 +93,7 @@
                   <img
                     class="session-avatar size-48px rounded-8px object-cover"
                     :src="AvatarUtils.getAvatarUrl(item.avatar, 96)"
+                    :alt="item.name || ''"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                 </van-badge>
               </div>
@@ -254,7 +255,7 @@ function isFirstPinned(item: MobileSessionListItem, index: number): boolean {
   display: none;
 }
 
-::deep(#search) {
+:deep(#search) {
   position: relative;
   z-index: 1500;
 }

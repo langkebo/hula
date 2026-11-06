@@ -25,7 +25,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: color var(--tjg-motion-duration-normal) ease, background-color var(--tjg-motion-duration-normal) ease, border-color var(--tjg-motion-duration-normal) ease, box-shadow var(--tjg-motion-duration-normal) ease, opacity var(--tjg-motion-duration-normal) ease, transform var(--tjg-motion-duration-normal) ease;
 
     &:hover {
       background: var(--code-block-toolbar-hover-bg);

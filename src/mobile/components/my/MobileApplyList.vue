@@ -366,7 +366,7 @@ watch(
 .apply-list-scroll {
   overflow-y: auto;
   /* 旧 WebView 不认 dvh，先给 vh 兜底 */
-  max-height: calc(100vh / var(--page-scale, 1) - 80px);
+  max-height: calc(var(--tjg-viewport-height, 100vh) / var(--page-scale, 1) - 80px);
 
   @supports (height: 100dvh) {
     max-height: calc(100dvh / var(--page-scale, 1) - 80px);

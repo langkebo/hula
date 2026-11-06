@@ -353,7 +353,7 @@ onMounted(() => {
   height: 18px;
   cursor: pointer;
   color: var(--tjg-text-secondary);
-  transition: transform 0.3s ease;
+  transition: transform var(--tjg-motion-duration-slow) ease;
 }
 
 .trendradar-view__refresh:hover {
@@ -386,7 +386,13 @@ onMounted(() => {
   cursor: pointer;
   color: var(--tjg-text-secondary);
   font-size: 12px;
-  transition: all 0.2s ease;
+  transition:
+    color var(--tjg-motion-duration-normal) ease,
+    background-color var(--tjg-motion-duration-normal) ease,
+    border-color var(--tjg-motion-duration-normal) ease,
+    box-shadow var(--tjg-motion-duration-normal) ease,
+    opacity var(--tjg-motion-duration-normal) ease,
+    transform var(--tjg-motion-duration-normal) ease;
 }
 
 .trendradar-view__nav-item:hover {
@@ -411,7 +417,7 @@ onMounted(() => {
 }
 
 .trendradar-view__panel {
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn var(--tjg-motion-duration-normal) ease;
 }
 
 @keyframes fadeIn {

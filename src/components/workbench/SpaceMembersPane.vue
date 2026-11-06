@@ -139,7 +139,7 @@ void load()
   background: transparent;
   color: var(--tjg-text-secondary);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);
@@ -181,7 +181,6 @@ void load()
 
   &:focus {
     border-color: var(--tjg-color-primary-500);
-    outline: none;
   }
 }
 
@@ -220,7 +219,7 @@ void load()
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);

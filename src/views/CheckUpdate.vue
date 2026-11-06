@@ -24,7 +24,7 @@
             <p class="relative text-(20px var(--tjg-color-primary-500)) font-500">{{ newVersion }}</p>
 
             <span
-              class="absolute top--10px right--44px p-[4px_8px] bg-[--tag-danger-bg] rounded-6px text-(12px [--tjg-color-danger-500])">
+              class="absolute top--10px right--44px p-[4px_8px] bg-[--tag-danger-bg] rounded-[var(--tjg-radius-md)] text-(12px [--tjg-color-danger-500])">
               {{ t('message.check_update.new_tag') }}
             </span>
           </n-flex>
@@ -58,11 +58,12 @@
       </n-flex>
       <div
         v-show="logVisible"
-        class="overflow-hidden transition-all duration-300"
+        class="overflow-hidden transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300"
         :class="logVisible ? 'h-460px' : 'h-0'">
         <n-scrollbar class="p-[0_10px] box-border">
           <div v-if="newCommitLog.length > 0">
-            <div class="p-[4px_8px] mt-4px w-fit bg-[--tag-danger-bg] rounded-6px text-(12px [--tjg-color-danger-500])">
+            <div
+              class="p-[4px_8px] mt-4px w-fit bg-[--tag-danger-bg] rounded-[var(--tjg-radius-md)] text-(12px [--tjg-color-danger-500])">
               {{ newVersion }}
             </div>
 
@@ -82,7 +83,8 @@
                   <use href="#RightArrow"></use>
                 </svg>
 
-                <span class="p-[4px_8px] w-fit bg-[--tag-neutral-bg] rounded-6px text-(12px [--tjg-text-tertiary])">
+                <span
+                  class="p-[4px_8px] w-fit bg-[--tag-neutral-bg] rounded-[var(--tjg-radius-md)] text-(12px [--tjg-text-tertiary])">
                   {{ currentVersion }}
                 </span>
               </n-flex>

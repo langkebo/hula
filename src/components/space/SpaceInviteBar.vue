@@ -215,7 +215,6 @@ onUnmounted(() => {
 
   &:focus {
     border-color: var(--tjg-color-primary-500);
-    outline: none;
   }
 
   &:disabled {
@@ -257,7 +256,7 @@ onUnmounted(() => {
   color: var(--tjg-text-primary);
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   &:hover:not(.space-invite-bar__item--disabled) {
     background: var(--tjg-surface-list-hover);

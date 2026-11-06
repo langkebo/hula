@@ -78,7 +78,13 @@ const getNavigationLabel = (item: NavigationItem) => {
   margin-bottom: 4px;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    color var(--tjg-motion-duration-normal) ease,
+    background-color var(--tjg-motion-duration-normal) ease,
+    border-color var(--tjg-motion-duration-normal) ease,
+    box-shadow var(--tjg-motion-duration-normal) ease,
+    opacity var(--tjg-motion-duration-normal) ease,
+    transform var(--tjg-motion-duration-normal) ease;
   color: var(--tjg-text-primary);
   user-select: none;
 
@@ -108,7 +114,7 @@ const getNavigationLabel = (item: NavigationItem) => {
 
   svg {
     color: inherit;
-    transition: color 0.2s ease;
+    transition: color var(--tjg-motion-duration-normal) ease;
   }
 }
 </style>

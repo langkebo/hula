@@ -64,6 +64,7 @@
             <svg><use href="#voice"></use></svg>
           </div>
           <div
+            v-clickable
             role="button"
             tabindex="0"
             :aria-label="t('common.cancel')"
@@ -78,6 +79,7 @@
         <!-- 录音中状态 -->
         <div v-if="isRecording" class="controls-recording">
           <div
+            v-clickable
             role="button"
             tabindex="0"
             :aria-label="t('message.voice_recorder.stop_recording')"
@@ -90,6 +92,7 @@
             </svg>
           </div>
           <div
+            v-clickable
             role="button"
             tabindex="0"
             :aria-label="t('message.voice_recorder.cancel_recording')"
@@ -103,7 +106,7 @@
 
         <!-- 处理中状态 -->
         <div v-if="!isRecording && isProcessing" class="controls-processing">
-          <!-- <div @click="handleCancel" class="cancel-btn">
+          <!-- <div v-clickable @click="handleCancel" class="cancel-btn">
             <svg><use href="#close"></use></svg>
           </div> -->
         </div>
@@ -111,6 +114,7 @@
         <!-- 录音完成状态 -->
         <div v-if="!isRecording && audioBlob && !isProcessing" class="controls-completed">
           <div
+            v-clickable
             role="button"
             tabindex="0"
             :aria-label="t('message.voice_recorder.re_record')"
@@ -121,6 +125,7 @@
             <svg><use href="#refresh"></use></svg>
           </div>
           <div
+            v-clickable
             role="button"
             tabindex="0"
             :aria-label="t('message.voice_recorder.send')"
@@ -133,6 +138,7 @@
             <div v-else class="loading-spinner"></div>
           </div>
           <div
+            v-clickable
             role="button"
             tabindex="0"
             :aria-label="t('common.cancel')"

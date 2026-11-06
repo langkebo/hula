@@ -93,7 +93,13 @@ onMounted(() => {
     background: var(--tjg-text-tertiary);
     border-radius: 2px;
     opacity: 0;
-    transition: all var(--tjg-motion-duration-normal) ease;
+    transition:
+      color var(--tjg-motion-duration-normal) ease,
+      background-color var(--tjg-motion-duration-normal) ease,
+      border-color var(--tjg-motion-duration-normal) ease,
+      box-shadow var(--tjg-motion-duration-normal) ease,
+      opacity var(--tjg-motion-duration-normal) ease,
+      transform var(--tjg-motion-duration-normal) ease;
   }
 
   // 上下辅助线（默认隐藏，hover 时显示）
@@ -104,7 +110,13 @@ onMounted(() => {
     height: 1px;
     background: transparent;
     border-radius: 1px;
-    transition: all var(--tjg-motion-duration-normal) ease;
+    transition:
+      color var(--tjg-motion-duration-normal) ease,
+      background-color var(--tjg-motion-duration-normal) ease,
+      border-color var(--tjg-motion-duration-normal) ease,
+      box-shadow var(--tjg-motion-duration-normal) ease,
+      opacity var(--tjg-motion-duration-normal) ease,
+      transform var(--tjg-motion-duration-normal) ease;
     opacity: 0;
     box-shadow:
       0 -3px 0 0 color-mix(in srgb, var(--tjg-text-tertiary) 50%, transparent),

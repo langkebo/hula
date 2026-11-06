@@ -1,5 +1,5 @@
 <template>
-  <div class="news-card" @click="handleClick">
+  <div v-clickable class="news-card" @click="handleClick">
     <div class="news-card__header">
       <n-tag size="small" :type="platformType" class="news-card__platform">
         {{ news.platform }}
@@ -75,7 +75,13 @@ const handleClick = () => {
   border-radius: 8px;
   padding: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    color var(--tjg-motion-duration-normal) ease,
+    background-color var(--tjg-motion-duration-normal) ease,
+    border-color var(--tjg-motion-duration-normal) ease,
+    box-shadow var(--tjg-motion-duration-normal) ease,
+    opacity var(--tjg-motion-duration-normal) ease,
+    transform var(--tjg-motion-duration-normal) ease;
   border: 1px solid var(--tjg-border-default);
 }
 

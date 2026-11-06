@@ -7,6 +7,7 @@
       <n-progress
         type="line"
         :show-indicator="false"
+        :aria-label="loadingText"
         :color="'var(--tjg-color-primary-500)'"
         :rail-color="'var(--tjg-color-primary-300-alpha)'"
         :percentage="percentage" />

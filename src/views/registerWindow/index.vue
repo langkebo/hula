@@ -138,11 +138,17 @@
                   <n-checkbox v-model:checked="protocol" />
                   <span class="text-12px color-[--tjg-text-tertiary] lh-14px">
                     <span>{{ t('login.term.checkout.text1') }}</span>
-                    <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="openServiceAgreement">
+                    <span
+                      v-clickable
+                      class="color-[--tjg-color-primary-500] cursor-pointer"
+                      @click.stop="openServiceAgreement">
                       {{ t('login.term.checkout.text2') }}
                     </span>
                     <span>{{ t('login.term.checkout.text3') }}</span>
-                    <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="openPrivacyAgreement">
+                    <span
+                      v-clickable
+                      class="color-[--tjg-color-primary-500] cursor-pointer"
+                      @click.stop="openPrivacyAgreement">
                       {{ t('login.term.checkout.text4') }}
                     </span>
                   </span>

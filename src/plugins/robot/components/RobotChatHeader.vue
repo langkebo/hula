@@ -21,7 +21,7 @@
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        class="w-[200px] h-[28px] text-14px rounded-6px"
+        class="w-[200px] h-[28px] text-14px rounded-[var(--tjg-radius-md)]"
         @blur="emit('blur')"
         @update:value="emit('update:chat-title', $event)" />
 
@@ -97,7 +97,7 @@
     <n-flex class="min-w-fit">
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
         <template #trigger>
-          <div class="right-btn" @click="emit('create-new-chat')">
+          <div v-clickable class="right-btn" @click="emit('create-new-chat')">
             <svg><use href="#plus"></use></svg>
           </div>
         </template>
@@ -106,7 +106,7 @@
 
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
         <template #trigger>
-          <div class="right-btn" @click="emit('edit')">
+          <div v-clickable class="right-btn" @click="emit('edit')">
             <svg><use href="#edit"></use></svg>
           </div>
         </template>
@@ -231,7 +231,13 @@ watch(
 
 .right-btn {
   @apply size-fit border-(1px solid [--tjg-border-default]) cursor-pointer bg-[--chat-bt-color] color-[--tjg-text-primary] rounded-8px custom-shadow p-[10px_11px];
-  transition: all 0.2s ease;
+  transition:
+    color var(--tjg-motion-duration-normal) ease,
+    background-color var(--tjg-motion-duration-normal) ease,
+    border-color var(--tjg-motion-duration-normal) ease,
+    box-shadow var(--tjg-motion-duration-normal) ease,
+    opacity var(--tjg-motion-duration-normal) ease,
+    transform var(--tjg-motion-duration-normal) ease;
 
   svg {
     @apply size-18px;

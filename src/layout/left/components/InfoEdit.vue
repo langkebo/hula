@@ -7,7 +7,7 @@
         <n-flex justify="center">
           <n-popover trigger="hover" :delay="300" :duration="300" placement="bottom">
             <template #trigger>
-              <div class="avatar-wrapper relative" @click="openAvatarCropper">
+              <div v-clickable class="avatar-wrapper relative" @click="openAvatarCropper">
                 <n-avatar
                   :size="80"
                   round
@@ -57,7 +57,7 @@
               "
               :maxlength="8"
               :passively-activated="true"
-              class="rounded-6px"
+              class="rounded-[var(--tjg-radius-md)]"
               clearable
               spellCheck="false"
               autoComplete="off"

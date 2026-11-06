@@ -54,7 +54,7 @@ const activate = () => {
   font-size: 13px;
   line-height: 1.4;
   text-decoration: none;
-  transition: top 0.15s ease;
+  transition: top var(--tjg-motion-duration-fast) ease;
 }
 
 .skip-link:focus,

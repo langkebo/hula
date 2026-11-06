@@ -554,7 +554,13 @@ onBeforeUnmount(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: all var(--tjg-motion-duration-overlay) ease;
+  transition:
+    color var(--tjg-motion-duration-overlay) ease,
+    background-color var(--tjg-motion-duration-overlay) ease,
+    border-color var(--tjg-motion-duration-overlay) ease,
+    box-shadow var(--tjg-motion-duration-overlay) ease,
+    opacity var(--tjg-motion-duration-overlay) ease,
+    transform var(--tjg-motion-duration-overlay) ease;
 }
 
 .fade-enter-from,
@@ -564,8 +570,9 @@ onBeforeUnmount(() => {
 }
 
 // 移动端表情网格布局 - 普通emoji表情（7列）
-.emoji-grid-mobile {
-  display: grid !important;
+// 双类选择器提高特异性，压过 naive-ui 的 `.n-flex { display: flex }`
+.n-flex.emoji-grid-mobile {
+  display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   justify-items: center;
@@ -573,8 +580,9 @@ onBeforeUnmount(() => {
 }
 
 // 移动端表情包网格布局 - 表情包图片（4列）
-.emoji-pack-grid-mobile {
-  display: grid !important;
+// 双类选择器提高特异性，压过 naive-ui 的 `.n-flex { display: flex }`
+.n-flex.emoji-pack-grid-mobile {
+  display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   justify-items: center;

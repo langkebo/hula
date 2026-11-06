@@ -34,7 +34,7 @@
 
           <n-button
             class="w-full"
-            color="var(--tjg-color-primary-500)"
+            :color="cssVar('--tjg-color-primary-500')"
             size="large"
             @click="handleConfirm"
             :loading="loading"
@@ -57,6 +57,7 @@ import { darkTheme, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { cssVar } from '@/utils/CssUtils'
 import { createLogger } from '@/utils/Logger'
 import { isMac } from '@/utils/PlatformConstants'
 

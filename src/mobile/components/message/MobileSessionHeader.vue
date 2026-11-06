@@ -1,5 +1,5 @@
 <template>
-  <div @click="emit('click')" class="flex items-center gap-6px w-full">
+  <div v-clickable @click="emit('click')" class="flex items-center gap-6px w-full">
     <img
       class="size-38px rounded-full object-cover"
       :src="AvatarUtils.getAvatarUrl(userStore.userInfo?.avatar ? userStore.userInfo.avatar : '/logo.png')"

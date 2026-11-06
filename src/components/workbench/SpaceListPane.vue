@@ -50,7 +50,7 @@
 
     <!-- 空间列表 -->
     <n-scrollbar class="space-list-pane__list flex-1 min-h-0">
-      <div class="space-list-pane__list-area p-8px" role="list" :aria-label="t('space.title')">
+      <div class="space-list-pane__list-area p-8px" role="group" :aria-label="t('space.title')">
         <Transition name="space-fade" mode="out-in">
           <!-- 1. loading 骨架屏 -->
           <n-flex v-if="loading" vertical :size="8" class="space-list-pane__skeleton" key="skeleton">
@@ -72,8 +72,6 @@
                 :items="allFilteredSpaces"
                 :item-size="64"
                 key-field="spaceId"
-                role="list"
-                :aria-label="t('space.title')"
                 v-slot="{ item }">
                 <SpaceListItemCard
                   :item="item"
@@ -363,7 +361,13 @@ const emptyDescription = computed(() => {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color var(--tjg-motion-duration-fast) ease,
+    background-color var(--tjg-motion-duration-fast) ease,
+    border-color var(--tjg-motion-duration-fast) ease,
+    box-shadow var(--tjg-motion-duration-fast) ease,
+    opacity var(--tjg-motion-duration-fast) ease,
+    transform var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     color: var(--tjg-text-primary);
@@ -371,7 +375,7 @@ const emptyDescription = computed(() => {
 
   &--active {
     background: var(--tjg-surface-panel);
-    color: var(--tjg-color-primary-500);
+    color: var(--tjg-color-primary-600);
     box-shadow: var(--tjg-shadow-sm);
   }
 }
@@ -467,7 +471,7 @@ const emptyDescription = computed(() => {
 /* 过渡动画 */
 .space-fade-enter-active,
 .space-fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--tjg-motion-duration-normal) ease;
 }
 
 .space-fade-enter-from,
@@ -476,7 +480,13 @@ const emptyDescription = computed(() => {
 }
 
 .space-item-enter-enter-active {
-  transition: all 0.25s ease;
+  transition:
+    color var(--tjg-motion-duration-slow) ease,
+    background-color var(--tjg-motion-duration-slow) ease,
+    border-color var(--tjg-motion-duration-slow) ease,
+    box-shadow var(--tjg-motion-duration-slow) ease,
+    opacity var(--tjg-motion-duration-slow) ease,
+    transform var(--tjg-motion-duration-slow) ease;
 }
 
 .space-item-enter-enter-from {
@@ -485,7 +495,13 @@ const emptyDescription = computed(() => {
 }
 
 .space-item-enter-leave-active {
-  transition: all 0.2s ease;
+  transition:
+    color var(--tjg-motion-duration-normal) ease,
+    background-color var(--tjg-motion-duration-normal) ease,
+    border-color var(--tjg-motion-duration-normal) ease,
+    box-shadow var(--tjg-motion-duration-normal) ease,
+    opacity var(--tjg-motion-duration-normal) ease,
+    transform var(--tjg-motion-duration-normal) ease;
 }
 
 .space-item-enter-leave-to {

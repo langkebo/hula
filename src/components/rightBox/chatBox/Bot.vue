@@ -2,7 +2,7 @@
   <div class="bot-container">
     <!-- 顶部工具栏 -->
     <div class="language-switcher">
-      <div v-if="canGoBack" class="back-btn flex-shrink-0" @click="goBack">
+      <div v-clickable v-if="canGoBack" class="back-btn flex-shrink-0" @click="goBack">
         <svg class="rotate-180"><use href="#right"></use></svg>
         {{ t('ai_assistant.bot.back') }}
       </div>
@@ -27,10 +27,10 @@
         <!-- 语言切换器 (仅在查看 README 时显示) -->
         <div v-if="!isViewingLink" class="flex-y-center w-full justify-between">
           <div class="flex-center gap-12px">
-            <div :class="['lang-btn', { active: currentLang === 'zh' }]" @click="switchLanguage('zh')">
+            <div v-clickable :class="['lang-btn', { active: currentLang === 'zh' }]" @click="switchLanguage('zh')">
               {{ t('ai_assistant.bot.lang_zh') }}
             </div>
-            <div :class="['lang-btn', { active: currentLang === 'en' }]" @click="switchLanguage('en')">
+            <div v-clickable :class="['lang-btn', { active: currentLang === 'en' }]" @click="switchLanguage('en')">
               {{ t('ai_assistant.bot.lang_en') }}
             </div>
           </div>
@@ -45,7 +45,7 @@
               {{ t('ai_assistant.bot.import_model') }}
             </n-button>
             <n-badge class="mr-14px" value="Beta" :color="'var(--tjg-color-beta-500)'">
-              <div :class="['assistant-btn', { active: isAssistantView }]" @click="showAssistant()">
+              <div v-clickable :class="['assistant-btn', { active: isAssistantView }]" @click="showAssistant()">
                 {{ t('ai_assistant.bot.preview_3d') }}
               </div>
             </n-badge>
@@ -66,7 +66,7 @@
 
         <!-- 当前页面标题和操作按钮 -->
         <div v-if="isViewingLink" class="page-title">{{ currentUrl }}</div>
-        <div v-if="isViewingLink" class="open-in-browser-btn" @click="openInBrowser">
+        <div v-clickable v-if="isViewingLink" class="open-in-browser-btn" @click="openInBrowser">
           <svg class="size-16px"><use href="#share"></use></svg>
           {{ t('ai_assistant.bot.open_in_browser') }}
         </div>
@@ -201,7 +201,13 @@ onUnmounted(cleanup)
     font-size: 13px;
     color: var(--tjg-text-primary);
     background: var(--tjg-surface-panel-muted);
-    transition: all var(--tjg-motion-duration-normal) ease;
+    transition:
+      color var(--tjg-motion-duration-normal) ease,
+      background-color var(--tjg-motion-duration-normal) ease,
+      border-color var(--tjg-motion-duration-normal) ease,
+      box-shadow var(--tjg-motion-duration-normal) ease,
+      opacity var(--tjg-motion-duration-normal) ease,
+      transform var(--tjg-motion-duration-normal) ease;
     user-select: none;
     -webkit-user-select: none;
 
@@ -241,7 +247,13 @@ onUnmounted(cleanup)
     font-size: 13px;
     color: var(--tjg-text-primary);
     background: var(--tjg-surface-panel-muted);
-    transition: all var(--tjg-motion-duration-normal) ease;
+    transition:
+      color var(--tjg-motion-duration-normal) ease,
+      background-color var(--tjg-motion-duration-normal) ease,
+      border-color var(--tjg-motion-duration-normal) ease,
+      box-shadow var(--tjg-motion-duration-normal) ease,
+      opacity var(--tjg-motion-duration-normal) ease,
+      transform var(--tjg-motion-duration-normal) ease;
     user-select: none;
     -webkit-user-select: none;
     white-space: nowrap;
@@ -268,7 +280,13 @@ onUnmounted(cleanup)
       color-mix(in srgb, var(--tjg-color-primary-500) 32%, transparent),
       var(--tjg-color-primary-400)
     );
-    transition: all var(--tjg-motion-duration-normal) ease-in-out;
+    transition:
+      color var(--tjg-motion-duration-normal) ease-in-out,
+      background-color var(--tjg-motion-duration-normal) ease-in-out,
+      border-color var(--tjg-motion-duration-normal) ease-in-out,
+      box-shadow var(--tjg-motion-duration-normal) ease-in-out,
+      opacity var(--tjg-motion-duration-normal) ease-in-out,
+      transform var(--tjg-motion-duration-normal) ease-in-out;
     user-select: none;
     -webkit-user-select: none;
 
@@ -298,7 +316,13 @@ onUnmounted(cleanup)
     font-size: 13px;
     color: var(--tjg-text-primary);
     background: var(--tjg-surface-panel-muted);
-    transition: all var(--tjg-motion-duration-normal) ease-in-out;
+    transition:
+      color var(--tjg-motion-duration-normal) ease-in-out,
+      background-color var(--tjg-motion-duration-normal) ease-in-out,
+      border-color var(--tjg-motion-duration-normal) ease-in-out,
+      box-shadow var(--tjg-motion-duration-normal) ease-in-out,
+      opacity var(--tjg-motion-duration-normal) ease-in-out,
+      transform var(--tjg-motion-duration-normal) ease-in-out;
     user-select: none;
     -webkit-user-select: none;
 
@@ -328,7 +352,13 @@ onUnmounted(cleanup)
     font-size: 13px;
     color: var(--tjg-text-primary);
     background: var(--tjg-surface-panel-muted);
-    transition: all var(--tjg-motion-duration-normal) ease;
+    transition:
+      color var(--tjg-motion-duration-normal) ease,
+      background-color var(--tjg-motion-duration-normal) ease,
+      border-color var(--tjg-motion-duration-normal) ease,
+      box-shadow var(--tjg-motion-duration-normal) ease,
+      opacity var(--tjg-motion-duration-normal) ease,
+      transform var(--tjg-motion-duration-normal) ease;
     user-select: none;
     -webkit-user-select: none;
 

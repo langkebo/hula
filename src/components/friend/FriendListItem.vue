@@ -10,7 +10,12 @@
     @contextmenu="$emit('contextmenu', { item, event: $event })">
     <div class="friend-list-item__avatar-wrap">
       <n-badge :dot="item.friendStatus === 'favorite'" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
-        <n-avatar :size="44" round :src="AvatarUtils.getAvatarUrl(item.avatarUrl)" fallback-src="/logo.png" />
+        <n-avatar
+          :size="44"
+          round
+          :src="AvatarUtils.getAvatarUrl(item.avatarUrl)"
+          fallback-src="/logo.png"
+          :img-props="{ alt: '' }" />
       </n-badge>
       <span
         class="friend-list-item__presence"
@@ -192,7 +197,7 @@ const highlightText = (value?: string | null) => {
   inset-inline-end: -2px;
   position: absolute;
   width: 12px;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--tjg-motion-duration-normal) ease;
 }
 
 .friend-list-item__presence--online {

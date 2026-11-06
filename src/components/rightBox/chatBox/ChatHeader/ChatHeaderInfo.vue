@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-header-info" @click="handleClick">
+  <div v-clickable class="chat-header-info" @click="handleClick">
     <TjgAvatar class="avatar" :src="avatar" :size="44" :name="name" round :style="avatarStyle" />
 
     <div class="info-content">

@@ -79,7 +79,13 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
 
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: all var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
+  transition:
+    color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard),
+    background-color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard),
+    border-color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard),
+    box-shadow var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard),
+    opacity var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard),
+    transform var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
   transform-origin: bottom;
 }
 

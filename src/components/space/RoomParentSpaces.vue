@@ -94,7 +94,7 @@ watch(() => props.roomId, loadParentSpaces, { immediate: true })
 
 .parent-space-tag {
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity var(--tjg-motion-duration-fast);
 
   &:hover {
     opacity: 0.8;

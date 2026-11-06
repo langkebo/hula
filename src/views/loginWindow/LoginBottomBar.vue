@@ -1,6 +1,7 @@
 <template>
   <div v-if="mode === 'auto'" class="text-14px flex justify-center items-center gap-12px w-full" id="bottomBar">
     <div
+      v-clickable
       class="color-[--tjg-color-primary-500] cursor-pointer"
       :title="cancelLoginTitle"
       @click="emit('cancel-auto-login')">
@@ -8,6 +9,7 @@
     </div>
     <div class="w-1px h-14px bg-[--login-divider-color]"></div>
     <div
+      v-clickable
       class="color-[--tjg-color-primary-500] cursor-pointer"
       :title="removeAccountTitle"
       @click="emit('remove-account')">
@@ -15,7 +17,11 @@
     </div>
   </div>
   <div v-else class="text-14px flex justify-center items-center gap-12px w-full" id="bottomBar">
-    <div class="color-[--tjg-color-primary-500] cursor-pointer" :title="qrCodeTitle" @click="emit('switch-to-qr')">
+    <div
+      v-clickable
+      class="color-[--tjg-color-primary-500] cursor-pointer"
+      :title="qrCodeTitle"
+      @click="emit('switch-to-qr')">
       {{ qrCodeLabel }}
     </div>
     <div class="w-1px h-14px bg-[--login-divider-color]"></div>
@@ -34,27 +40,31 @@
         </template>
         <n-flex vertical :size="2">
           <div
-            class="register text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px p-8px"
+            v-clickable
+            class="register text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-[var(--tjg-radius-md)] p-8px"
             data-test="login-register-entry"
             @click="emit('open-register')">
             {{ t('login.register') }}
           </div>
           <div
-            class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px p-8px"
+            v-clickable
+            class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-[var(--tjg-radius-md)] p-8px"
             @click="emit('open-forget-password')">
             {{ t('login.option.items.forget') }}
           </div>
           <div
+            v-clickable
             v-if="!isCompatibility()"
             @click="emit('open-server-config')"
             :class="{ network: isMac() }"
-            class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px p-8px">
+            class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-[var(--tjg-radius-md)] p-8px">
             {{ t('login.option.items.network_setting') }}
           </div>
           <div
+            v-clickable
             v-if="guestSupported"
             data-test="guest-login-btn"
-            class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px p-8px"
+            class="text-14px cursor-pointer hover:bg-[--tjg-text-tertiary]30 hover:rounded-[var(--tjg-radius-md)] p-8px"
             @click="emit('guest-login')">
             {{ t('login.guest') }}
           </div>

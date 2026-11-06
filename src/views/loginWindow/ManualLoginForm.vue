@@ -43,6 +43,7 @@
           </template>
           <template #suffix>
             <div
+              v-clickable
               class="cursor-pointer color-[--tjg-text-secondary]"
               :title="t('login.input.homeserver.toggle_title')"
               @click="showServerAdvanced = !showServerAdvanced">
@@ -115,7 +116,7 @@
             v-for="item in loginHistories"
             :key="item.account"
             @click="giveAccount(item)"
-            class="p-8px cursor-pointer hover:bg-[--tjg-text-tertiary]20 dark:hover:bg-[--tjg-text-tertiary]30 hover:rounded-6px">
+            class="p-8px cursor-pointer hover:bg-[--tjg-text-tertiary]20 dark:hover:bg-[--tjg-text-tertiary]30 hover:rounded-[var(--tjg-radius-md)]">
             <div class="flex-between-center">
               <n-avatar
                 :src="AvatarUtils.getAvatarUrl(item.avatar)"
@@ -151,11 +152,17 @@
         <n-checkbox v-model:checked="protocol" :aria-label="t('login.term.checkout.text1')" />
         <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px agreement">
           <span>{{ t('login.term.checkout.text1') }}</span>
-          <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="emit('open-service-agreement')">
+          <span
+            v-clickable
+            class="color-[--tjg-color-primary-500] cursor-pointer"
+            @click.stop="emit('open-service-agreement')">
             {{ t('login.term.checkout.text2') }}
           </span>
           <span>{{ t('login.term.checkout.text3') }}</span>
-          <span class="color-[--tjg-color-primary-500] cursor-pointer" @click.stop="emit('open-privacy-agreement')">
+          <span
+            v-clickable
+            class="color-[--tjg-color-primary-500] cursor-pointer"
+            @click.stop="emit('open-privacy-agreement')">
             {{ t('login.term.checkout.text4') }}
           </span>
         </div>

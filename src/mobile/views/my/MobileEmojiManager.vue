@@ -22,7 +22,7 @@
                   <div
                     class="w-40px h-40px rounded-full mr-12px flex items-center justify-center overflow-hidden"
                     :style="iconShellStyles.pack">
-                    <img v-if="pack.iconUrl" :src="pack.iconUrl" class="w-full h-full object-cover" />
+                    <img v-if="pack.iconUrl" :src="pack.iconUrl" alt="" class="w-full h-full object-cover" />
                     <Icon v-else icon="mdi:emoticon" :width="20" color="var(--tjg-color-beta-500)" />
                   </div>
                 </template>

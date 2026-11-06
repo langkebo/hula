@@ -44,7 +44,7 @@
               <div class="text-(12px [--tjg-text-secondary])">{{ formatBytes(file.size) }}</div>
             </div>
 
-            <div @click="removeFile(index)" class="flex-shrink-0 pl-20px cursor-pointer">
+            <div v-clickable @click="removeFile(index)" class="flex-shrink-0 pl-20px cursor-pointer">
               <svg class="size-20px hover:color-[--tjg-text-tertiary] transition-colors duration-200 ease-in-out">
                 <use href="#squareClose"></use>
               </svg>

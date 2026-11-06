@@ -1,34 +1,51 @@
 @use 'sass:map';
 
 // 响应式断点
+// md / lg / xl 必须与 src/composables/layout/useResponsiveBreakpoint.ts 的
+// DEFAULT_BREAKPOINTS（shrink / normal / wide）完全一致，由 design-baseline.test.ts 守护。
+// sm / 2xl 为补充档位，仅用于排版密度，不参与布局模式切换。
 $breakpoints: (
   'sm': 576px,
   'md': 768px,
   'lg': 992px,
   'xl': 1200px,
-  '2xl': 1400px
+  '2xl': 1440px
 );
 
-// 媒体查询 Mixins
-@mixin respond-to($breakpoint) {
-  $value: map.get($breakpoints, $breakpoint);
+// 向上匹配（min-width）
+@mixin up($bp) {
+  $value: map.get($breakpoints, $bp);
   @if $value {
     @media (min-width: $value) {
       @content;
     }
   } @else {
-    @warn "Invalid breakpoint: #{$breakpoint}.";
+    @warn "Invalid breakpoint: #{$bp}.";
   }
 }
 
-@mixin respond-to-max($breakpoint) {
-  $value: map.get($breakpoints, $breakpoint);
+// 向下匹配（max-width）
+@mixin down($bp) {
+  $value: map.get($breakpoints, $bp);
   @if $value {
     @media (max-width: ($value - 1px)) {
       @content;
     }
   } @else {
-    @warn "Invalid breakpoint: #{$breakpoint}.";
+    @warn "Invalid breakpoint: #{$bp}.";
+  }
+}
+
+// 兼容存量写法，新代码统一使用 up()/down()
+@mixin respond-to($breakpoint) {
+  @include up($breakpoint) {
+    @content;
+  }
+}
+
+@mixin respond-to-max($breakpoint) {
+  @include down($breakpoint) {
+    @content;
   }
 }
 
@@ -46,6 +63,17 @@ $breakpoints: (
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+// 视口高度：优先 dvh，旧 WebView 回退 vh
+:root {
+  --tjg-viewport-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --tjg-viewport-height: 100dvh;
   }
 }
 

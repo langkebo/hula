@@ -31,6 +31,13 @@ export const MATRIX_IDENTITY_SERVER_STORAGE_KEY = 'tjg-identity-server-url'
 export const MATRIX_SESSION_HOMESERVER_STORAGE_KEY = 'tjg-session-homeserver-url'
 /** 当前会话实际使用的 identity server 地址。 */
 export const MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY = 'tjg-session-identity-server-url'
+/**
+ * 「允许浏览器 at-rest 凭证回退」开关（`matrixClientPlatform` 消费）。
+ *
+ * 真机默认关闭：凭证只由 Rust 保管。仅有伪造 `__TAURI_INTERNALS__` 却读不到
+ * token 的场景（浏览器 e2e shim / 无真实命令的宿主 WebView）需显式置 1。
+ */
+export const WEB_SESSION_FALLBACK_STORAGE_KEY = 'tjg:session:web-fallback'
 
 /** 本模块声明的所有键（守卫用：e2e 里出现的 tjg 字面量必须命中本集合）。 */
 export const ALL_STORAGE_KEYS: readonly string[] = [
@@ -38,5 +45,6 @@ export const ALL_STORAGE_KEYS: readonly string[] = [
   MATRIX_HOMESERVER_STORAGE_KEY,
   MATRIX_IDENTITY_SERVER_STORAGE_KEY,
   MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
-  MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY
+  MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY,
+  WEB_SESSION_FALLBACK_STORAGE_KEY
 ]

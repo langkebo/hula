@@ -17,7 +17,7 @@
                 <n-flex vertical :size="10" justify="center">
                   <p class="text-12px pt-6px">{{ t('login.network.fields.host') }}</p>
                   <n-input
-                    class="rounded-6px text-12px"
+                    class="rounded-[var(--tjg-radius-md)] text-12px"
                     v-model:value="savedProxy.apiIp"
                     type="text"
                     spellCheck="false"
@@ -28,7 +28,7 @@
 
                   <p class="text-12px pt-6px">{{ t('login.network.fields.port') }}</p>
                   <n-input
-                    class="rounded-6px text-12px"
+                    class="rounded-[var(--tjg-radius-md)] text-12px"
                     v-model:value="savedProxy.apiPort"
                     type="text"
                     spellCheck="false"
@@ -38,7 +38,7 @@
                     :placeholder="t('login.network.placeholder.port')" />
                   <p class="text-12px pt-6px">{{ t('login.network.fields.suffix') }}</p>
                   <n-input
-                    class="rounded-6px text-12px"
+                    class="rounded-[var(--tjg-radius-md)] text-12px"
                     v-model:value="savedProxy.apiSuffix"
                     type="text"
                     spellCheck="false"
@@ -61,7 +61,7 @@
                 <n-flex vertical :size="10" justify="center">
                   <p class="text-12px pt-6px">{{ t('login.network.fields.host') }}</p>
                   <n-input
-                    class="rounded-6px text-12px"
+                    class="rounded-[var(--tjg-radius-md)] text-12px"
                     v-model:value="savedProxy.wsIp"
                     type="text"
                     spellCheck="false"
@@ -72,7 +72,7 @@
 
                   <p class="text-12px pt-6px">{{ t('login.network.fields.port') }}</p>
                   <n-input
-                    class="rounded-6px text-12px"
+                    class="rounded-[var(--tjg-radius-md)] text-12px"
                     v-model:value="savedProxy.wsPort"
                     type="text"
                     spellCheck="false"
@@ -82,7 +82,7 @@
                     :placeholder="t('login.network.placeholder.port')" />
                   <p class="text-12px pt-6px">{{ t('login.network.fields.suffix') }}</p>
                   <n-input
-                    class="rounded-6px text-12px"
+                    class="rounded-[var(--tjg-radius-md)] text-12px"
                     v-model:value="savedProxy.wsSuffix"
                     type="text"
                     spellCheck="false"

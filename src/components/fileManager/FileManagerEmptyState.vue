@@ -50,18 +50,18 @@ const resolvedIcon = computed(() => iconMap[props.icon] || props.icon)
   flex-direction: column;
   align-items: center;
   text-align: center;
-  animation: fadeInUp 0.5s ease-out;
+  animation: fadeInUp var(--tjg-motion-duration-xslow) ease-out;
 }
 
 .empty-icon {
   color: var(--tjg-text-primary);
   opacity: 0.3;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--tjg-motion-duration-slow) ease;
 }
 
 .empty-title {
   line-height: 1.2;
-  animation: fadeInUp 0.5s ease-out 0.1s both;
+  animation: fadeInUp var(--tjg-motion-duration-xslow) ease-out var(--tjg-motion-duration-fast) both;
 }
 
 .empty-actions {
@@ -69,7 +69,7 @@ const resolvedIcon = computed(() => iconMap[props.icon] || props.icon)
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
-  animation: fadeInUp 0.5s ease-out 0.3s both;
+  animation: fadeInUp var(--tjg-motion-duration-xslow) ease-out var(--tjg-motion-duration-slow) both;
 }
 
 @keyframes fadeInUp {

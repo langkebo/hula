@@ -72,7 +72,7 @@
                   left: 0,
                   transformOrigin: '0 0'
                 }">
-                <img v-if="previewUrl?.url" :src="previewUrl.url" :style="previewUrl?.img" />
+                <img v-if="previewUrl?.url" :src="previewUrl.url" :style="previewUrl?.img" alt="" />
               </div>
             </div>
           </div>
@@ -95,7 +95,7 @@
                   left: 0,
                   transformOrigin: '0 0'
                 }">
-                <img v-if="previewUrl?.url" :src="previewUrl.url" :style="previewUrl?.img" />
+                <img v-if="previewUrl?.url" :src="previewUrl.url" :style="previewUrl?.img" alt="" />
               </div>
             </div>
           </div>
@@ -258,7 +258,7 @@ onUnmounted(() => {
 
 /* 添加预览图片的过渡效果 */
 img {
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity var(--tjg-motion-duration-normal) ease-in-out;
 }
 
 .preview-wrapper {

@@ -132,12 +132,4 @@ onMounted(() => {
   color: var(--tjg-text-tertiary);
   margin: 0 0 10px 0;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .rs-tab,
-  .rs-tab * {
-    transition: none !important;
-    animation: none !important;
-  }
-}
 </style>

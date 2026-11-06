@@ -44,7 +44,7 @@ const emit = defineEmits<{
   color: var(--tjg-text-secondary);
   cursor: pointer;
   z-index: 10;
-  transition: color 0.15s;
+  transition: color var(--tjg-motion-duration-fast);
 
   svg {
     width: 16px;

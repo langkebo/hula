@@ -1,5 +1,10 @@
 <template>
-  <div class="mac-close-button" :class="[colorClass, $attrs.class]" v-bind="$attrs" @click="$emit('click', $event)">
+  <div
+    v-clickable
+    class="mac-close-button"
+    :class="[colorClass, $attrs.class]"
+    v-bind="$attrs"
+    @click="$emit('click', $event)">
     <svg class="mac-close-button__icon hidden"><use href="#close" /></svg>
   </div>
 </template>

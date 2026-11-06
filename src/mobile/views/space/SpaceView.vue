@@ -22,7 +22,12 @@
             <van-empty :description="t('space.empty')" />
           </div>
           <div v-else class="space-grid">
-            <div v-for="space in spaces" :key="space.spaceId" class="space-card" @click="handleSpaceClick(space)">
+            <div
+              v-clickable
+              v-for="space in spaces"
+              :key="space.spaceId"
+              class="space-card"
+              @click="handleSpaceClick(space)">
               <div class="space-cover">
                 <img v-if="space.avatarUrl" :src="space.avatarUrl" :alt="space.name" />
                 <div v-else class="default-cover">

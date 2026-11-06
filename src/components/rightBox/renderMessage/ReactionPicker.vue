@@ -99,7 +99,7 @@ const handleEmojiSelect = async (
 }
 
 .reaction-item {
-  @apply flex-center w-32px h-32px rounded-6px cursor-pointer transition-all;
+  @apply flex-center w-32px h-32px rounded-[var(--tjg-radius-md)] cursor-pointer transition-[width,transform,opacity,color,background-color,border-color,box-shadow];
 
   &:hover {
     background: var(--tjg-fill-hover);

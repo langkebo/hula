@@ -1,5 +1,12 @@
 import { shallowMount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+// 该文件通过 vi.stubGlobal 打桩全局 Worker；若不在用例结束后复位，
+// 残留的桩会跨文件泄露到并行 worker 中，曾导致全量运行时出现
+// "Unhandled Errors: 2"（断言全过、退出码 1）。此处显式回收。
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (k: string) => k }) }))
 vi.mock('@/router', () => ({ default: { push: vi.fn(), beforeEach: vi.fn() } }))

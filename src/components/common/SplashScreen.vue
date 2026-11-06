@@ -102,7 +102,7 @@ const { t } = useI18n()
 }
 
 // 小屏档位统一走 sm 断点（<576px），不再单列 480px 魔法值
-@include responsive.respond-to-max('sm') {
+@include responsive.down('sm') {
   .logo-container {
     width: 160px;
     height: 76px;
@@ -147,7 +147,7 @@ const { t } = useI18n()
 
 .splash-fade-enter-active,
 .splash-fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--tjg-motion-duration-slow) ease;
 }
 
 .splash-fade-enter-from,

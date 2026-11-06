@@ -111,7 +111,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   padding: 8px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--tjg-motion-duration-normal) ease;
 }
 
 .trending-panel__item:hover {

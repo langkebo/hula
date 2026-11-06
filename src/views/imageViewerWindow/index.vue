@@ -9,7 +9,9 @@
     <!-- 主体内容区域 -->
     <div ref="contentRef" class="flex-1 overflow-auto">
       <!-- 图片展示区域 -->
-      <div ref="imgContainerRef" class="min-h-[calc(100vh/var(--page-scale,1)-124px)] flex-center">
+      <div
+        ref="imgContainerRef"
+        class="min-h-[calc(var(--tjg-viewport-height, 100vh)/var(--page-scale,1)-124px)] flex-center">
         <img
           ref="imageRef"
           :src="currentImage"
@@ -27,7 +29,7 @@
         <transition name="viewer-tip">
           <div
             v-if="showTip"
-            class="fixed z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 px-24px py-12px rounded-8px text-(white 14px) transition-all duration-300 backdrop-blur-sm select-none flex items-center gap-8px">
+            class="fixed z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 px-24px py-12px rounded-8px text-(white 14px) transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 backdrop-blur-sm select-none flex items-center gap-8px">
             <svg class="size-16px"><use href="#info"></use></svg>
             {{ tipText }}
           </div>
@@ -43,7 +45,7 @@
       @click="prevImage"
       @mouseenter="handleArrowEnter('left')"
       @mouseleave="handleArrowLeave('left')"
-      class="fixed left-20px top-1/2 -translate-y-1/2 size-40px rounded-full border-0 p-0 bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-all duration-200 opacity-0 z-10">
+      class="fixed left-20px top-1/2 -translate-y-1/2 size-40px rounded-full border-0 p-0 bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-200 opacity-0 z-10">
       <svg class="size-24px color-white rotate-180"><use href="#arrow-right"></use></svg>
     </button>
     <button
@@ -53,7 +55,7 @@
       @click="nextImage"
       @mouseenter="handleArrowEnter('right')"
       @mouseleave="handleArrowLeave('right')"
-      class="fixed right-20px top-1/2 -translate-y-1/2 size-40px rounded-full border-0 p-0 bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-all duration-200 opacity-0 z-10">
+      class="fixed right-20px top-1/2 -translate-y-1/2 size-40px rounded-full border-0 p-0 bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-200 opacity-0 z-10">
       <svg class="size-24px color-white"><use href="#arrow-right"></use></svg>
     </button>
 
@@ -465,7 +467,7 @@ onUnmounted(() => {
 <style scoped>
 .viewer-tip-enter-active,
 .viewer-tip-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--tjg-motion-duration-slow) ease;
 }
 
 .viewer-tip-enter-from,

@@ -21,7 +21,7 @@ const route = useRoute()
 /* 侧滑切换动画 */
 /* .slide-enter-active,
 .slide-leave-active {
-  transition: all 0.1s ease;
+  transition: color var(--tjg-motion-duration-fast) ease, background-color var(--tjg-motion-duration-fast) ease, border-color var(--tjg-motion-duration-fast) ease, box-shadow var(--tjg-motion-duration-fast) ease, opacity var(--tjg-motion-duration-fast) ease, transform var(--tjg-motion-duration-fast) ease;
 }
 
 .slide-enter-from {

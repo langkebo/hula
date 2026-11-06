@@ -77,7 +77,13 @@ const { t } = useI18n()
 <style scoped lang="scss">
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all var(--tjg-motion-duration-slow) ease-out;
+  transition:
+    color var(--tjg-motion-duration-slow) ease-out,
+    background-color var(--tjg-motion-duration-slow) ease-out,
+    border-color var(--tjg-motion-duration-slow) ease-out,
+    box-shadow var(--tjg-motion-duration-slow) ease-out,
+    opacity var(--tjg-motion-duration-slow) ease-out,
+    transform var(--tjg-motion-duration-slow) ease-out;
 }
 
 .slide-up-enter-from {

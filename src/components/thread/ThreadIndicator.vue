@@ -1,5 +1,5 @@
 <template>
-  <div v-if="hasReplies" class="thread-indicator" @click="handleOpenThread">
+  <div v-clickable v-if="hasReplies" class="thread-indicator" @click="handleOpenThread">
     <n-icon size="16" class="thread-icon">
       <Icon icon="mdi:message-reply-text" />
     </n-icon>
@@ -57,7 +57,13 @@ onMounted(() => {
   background: var(--tjg-color-primary-200);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    color var(--tjg-motion-duration-normal),
+    background-color var(--tjg-motion-duration-normal),
+    border-color var(--tjg-motion-duration-normal),
+    box-shadow var(--tjg-motion-duration-normal),
+    opacity var(--tjg-motion-duration-normal),
+    transform var(--tjg-motion-duration-normal);
 
   &:hover {
     background: var(--tjg-color-primary-500);

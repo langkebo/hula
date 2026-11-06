@@ -1,76 +1,78 @@
 <template>
-  <n-scrollbar ref="msg-scrollbar" class="h-full">
-    <div v-if="syncLoading" class="flex-center gap-10px py-12px text-[var(--text-xs)] text-[--tjg-text-primary]">
-      <n-spin :size="14" />
-      <span>{{ t('message.message_list.sync_loading') }}</span>
-    </div>
-
-    <div
-      v-if="networkBanner && !syncLoading && !globalStore.currentSessionRoomId"
-      class="room-session-list__network-banner sticky top-8px z-[999]">
-      <svg class="size-16px flex-shrink-0">
-        <use href="#cloudError"></use>
-      </svg>
-      <span class="leading-tight">{{ networkBanner.text }}</span>
-      <button
-        v-if="showRetryAction"
-        type="button"
-        class="ml-auto rounded-full border border-[--tjg-color-danger-500] bg-transparent px-10px py-2px text-[var(--text-xs)] leading-tight color-[--tjg-color-danger-500] transition-opacity hover:opacity-80"
-        data-test="network-retry"
-        @click="() => onRetryNetwork?.()">
-        {{ t('common.retry') }}
-      </button>
-    </div>
-
-    <div
-      v-if="sessionList.length > 0"
-      role="list"
-      :aria-label="t('space.session_list_label')"
-      :aria-busy="syncLoading"
-      class="room-session-list__body h-full">
-      <RecycleScroller
-        class="scroller h-full"
-        :items="sessionList"
-        :item-size="58"
-        key-field="roomId"
-        v-slot="{ item }">
-        <TjgRoomListItem
-          :item="item"
-          :classes="getItemClasses(item)"
-          :menu="visibleMenu(item)"
-          :special-menu="visibleSpecialMenu(item)"
-          @click="onMsgClick(item)"
-          @dblclick="onMsgDblclick(item)"
-          @select="(e: any) => handleSelect(item as SessionItem, e)"
-          @accept-invite="onAcceptInvite?.($event)"
-          @reject-invite="onRejectInvite?.($event)"
-          @menu-show="onMenuShow as () => void" />
-      </RecycleScroller>
-    </div>
-
-    <n-flex v-else-if="sessionLoading" vertical :size="8" class="room-session-list__body relative h-full box-border">
-      <div v-for="i in 5" :key="i" class="room-session-list__skeleton">
-        <n-skeleton circle class="w-44px h-44px" :sharp="false" />
-        <n-flex vertical :size="4" class="flex-1 min-w-0">
-          <n-flex align="center" justify="space-between">
-            <n-skeleton height="14px" width="60%" :sharp="false" class="rounded-4px" />
-            <n-skeleton height="10px" width="30px" :sharp="false" class="rounded-4px" />
-          </n-flex>
-          <n-skeleton height="12px" width="80%" :sharp="false" class="rounded-4px" />
-        </n-flex>
+  <div ref="listRoot" class="h-full">
+    <n-scrollbar ref="msg-scrollbar" class="h-full">
+      <div v-if="syncLoading" class="flex-center gap-10px py-12px text-[var(--text-xs)] text-[--tjg-text-primary]">
+        <n-spin :size="14" />
+        <span>{{ t('message.message_list.sync_loading') }}</span>
       </div>
-    </n-flex>
 
-    <div v-else class="h-full flex-center text-[var(--text-xs)] color-[--tjg-text-tertiary]" role="status">
-      <n-empty :description="emptyDescription" size="large">
-        <template #icon>
-          <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
-            <use href="#chat"></use>
-          </svg>
-        </template>
-      </n-empty>
-    </div>
-  </n-scrollbar>
+      <div
+        v-if="networkBanner && !syncLoading && !globalStore.currentSessionRoomId"
+        class="room-session-list__network-banner sticky top-8px z-[999]">
+        <svg class="size-16px flex-shrink-0">
+          <use href="#cloudError"></use>
+        </svg>
+        <span class="leading-tight">{{ networkBanner.text }}</span>
+        <button
+          v-if="showRetryAction"
+          type="button"
+          class="ml-auto rounded-full border border-[--tjg-color-danger-600] bg-transparent px-10px py-2px text-[var(--text-xs)] leading-tight color-[--tjg-color-danger-600] transition-opacity hover:opacity-80"
+          data-test="network-retry"
+          @click="() => onRetryNetwork?.()">
+          {{ t('common.retry') }}
+        </button>
+      </div>
+
+      <div
+        v-if="sessionList.length > 0"
+        role="list"
+        :aria-label="t('space.session_list_label')"
+        :aria-busy="syncLoading"
+        class="room-session-list__body h-full">
+        <RecycleScroller
+          class="scroller h-full"
+          :items="sessionList"
+          :item-size="58"
+          key-field="roomId"
+          v-slot="{ item }">
+          <TjgRoomListItem
+            :item="item"
+            :classes="getItemClasses(item)"
+            :menu="visibleMenu(item)"
+            :special-menu="visibleSpecialMenu(item)"
+            @click="onMsgClick(item)"
+            @dblclick="onMsgDblclick(item)"
+            @select="(e: any) => handleSelect(item as SessionItem, e)"
+            @accept-invite="onAcceptInvite?.($event)"
+            @reject-invite="onRejectInvite?.($event)"
+            @menu-show="onMenuShow as () => void" />
+        </RecycleScroller>
+      </div>
+
+      <n-flex v-else-if="sessionLoading" vertical :size="8" class="room-session-list__body relative h-full box-border">
+        <div v-for="i in 5" :key="i" class="room-session-list__skeleton">
+          <n-skeleton circle class="w-44px h-44px" :sharp="false" />
+          <n-flex vertical :size="4" class="flex-1 min-w-0">
+            <n-flex align="center" justify="space-between">
+              <n-skeleton height="14px" width="60%" :sharp="false" class="rounded-4px" />
+              <n-skeleton height="10px" width="30px" :sharp="false" class="rounded-4px" />
+            </n-flex>
+            <n-skeleton height="12px" width="80%" :sharp="false" class="rounded-4px" />
+          </n-flex>
+        </div>
+      </n-flex>
+
+      <div v-else class="h-full flex-center text-[var(--text-xs)] color-[--tjg-text-tertiary]" role="status">
+        <n-empty :description="emptyDescription" size="large">
+          <template #icon>
+            <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
+              <use href="#chat"></use>
+            </svg>
+          </template>
+        </n-empty>
+      </div>
+    </n-scrollbar>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -90,9 +92,19 @@ type SessionListItem = SessionItem & {
   membership?: 'join' | 'leave' | 'invite' | 'ban'
 }
 
+type ScrollbarInstance = {
+  scrollTo: (options: { top: number; behavior: ScrollBehavior }) => void
+}
+
 const { t } = useI18n()
 const globalStore = useGlobalStore()
-const msgScrollbar = useTemplateRef<HTMLElement>('msg-scrollbar')
+const listRoot = useTemplateRef<HTMLElement>('listRoot')
+const msgScrollbar = useTemplateRef<ScrollbarInstance>('msg-scrollbar')
+
+onMounted(() => {
+  // n-scrollbar 的滚动容器默认不可聚焦，键盘用户无法滚动会话列表
+  listRoot.value?.querySelector('.n-scrollbar-container')?.setAttribute('tabindex', '0')
+})
 const props = defineProps<{
   sessionList: SessionListItem[]
   syncLoading: boolean
@@ -148,7 +160,7 @@ defineExpose({
   background: var(--tjg-color-danger-100);
   padding: 10px 12px;
   font-size: 12px;
-  color: var(--tjg-color-danger-500);
+  color: var(--tjg-color-danger-600);
 }
 
 .room-session-list__skeleton {

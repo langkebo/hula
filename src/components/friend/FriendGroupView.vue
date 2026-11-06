@@ -41,7 +41,7 @@
     <n-divider class="m-0" />
 
     <n-spin :show="loading">
-      <n-scrollbar class="h-[calc(100vh-200px)]">
+      <n-scrollbar class="h-[calc(var(--tjg-viewport-height, 100vh)-200px)]">
         <n-empty
           v-if="filteredGroups.length === 0"
           :description="hasSearchKeyword ? searchEmptyDescription : t('friend.group.empty')"
@@ -328,7 +328,7 @@ onMounted(() => {
   cursor: pointer;
   padding: 8px 12px;
   border-radius: 8px;
-  transition: background-color 0.2s;
+  transition: background-color var(--tjg-motion-duration-normal);
 }
 .group-item:hover {
   background-color: var(--tjg-fill-hover);

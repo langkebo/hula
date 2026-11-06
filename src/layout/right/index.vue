@@ -45,7 +45,7 @@
             class="h-48px flex items-center gap-12px px-12px border-b border-[--tjg-border-layout-divider] bg-[--tjg-surface-panel]">
             <button
               type="button"
-              class="flex-center size-28px rounded-6px hover:bg-[--tjg-surface-list-hover] color-[--tjg-text-secondary] cursor-pointer"
+              class="flex-center size-28px rounded-[var(--tjg-radius-md)] hover:bg-[--tjg-surface-list-hover] color-[--tjg-text-secondary] cursor-pointer"
               :aria-label="t('common.back')"
               :title="t('common.back')"
               @click="handleBack">

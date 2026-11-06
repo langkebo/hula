@@ -59,7 +59,9 @@ const currentHoverIndex = ref<number | null>(null)
 const containerHeight = ref<number>(0)
 
 const resolvedItemHeight = computed(() => props.itemHeight ?? 64)
-const resolvedMaxHeight = computed(() => props.maxHeight ?? 'calc(100vh / var(--page-scale, 1) - 132px)')
+const resolvedMaxHeight = computed(
+  () => props.maxHeight ?? 'calc(var(--tjg-viewport-height, 100vh) / var(--page-scale, 1) - 132px)'
+)
 const resolvedHoverOpacity = computed(() => props.hoverOpacity ?? 0.06)
 
 // 计算属性：判断悬浮位置是否有效（是否在容器范围内）
@@ -231,7 +233,7 @@ defineExpose({
   width: 100%;
   background: var(--tjg-text-primary);
   pointer-events: none;
-  transition: top 0.2s ease-in-out;
+  transition: top var(--tjg-motion-duration-normal) ease-in-out;
   z-index: 0;
 }
 </style>

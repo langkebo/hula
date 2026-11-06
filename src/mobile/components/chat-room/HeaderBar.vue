@@ -1,7 +1,7 @@
 <template>
   <div
     class="header-bar tjg-glass tjg-glass--nav w-full h-[56px] flex items-center gap-8px z-2 text-[--tjg-text-primary]">
-    <div @click="handleBack" class="flex items-center shrink-0">
+    <div v-clickable @click="handleBack" class="flex items-center shrink-0">
       <svg class="iconpark-icon w-24px h-24px ms-16px p-5px">
         <use href="#fanhui" class="text-foreground"></use>
       </svg>
@@ -12,7 +12,10 @@
       </div>
     </div>
     <div class="flex-1 min-w-0 flex items-center justify-center overflow-hidden">
-      <div @click="handleRoomNameClick" :class="props.isOfficial ? ['chat-room-name-official'] : ['chat-room-name']">
+      <div
+        v-clickable
+        @click="handleRoomNameClick"
+        :class="props.isOfficial ? ['chat-room-name-official'] : ['chat-room-name']">
         <div class="chat-room-name__text truncate whitespace-nowrap overflow-hidden text-foreground text-ellipsis">
           {{ props.roomName }}
         </div>

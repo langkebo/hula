@@ -133,6 +133,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   background: var(--tjg-surface-panel);
   overflow: hidden;

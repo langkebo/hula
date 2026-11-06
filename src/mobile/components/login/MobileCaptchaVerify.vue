@@ -24,7 +24,8 @@
 
         <!-- 验证码图片(点击刷新) -->
         <div
-          class="captcha-img-wrap h-36px w-100px flex-shrink-0 cursor-pointer rounded-6px overflow-hidden"
+          v-clickable="t('captcha.click_image_to_refresh')"
+          class="captcha-img-wrap h-36px w-100px flex-shrink-0 cursor-pointer rounded-[var(--tjg-radius-md)] overflow-hidden"
           :title="t('captcha.click_image_to_refresh')"
           @click="refresh">
           <van-image

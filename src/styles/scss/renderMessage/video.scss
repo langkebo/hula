@@ -1,6 +1,6 @@
 .video-thumbnail {
   @apply: select-none cursor-default size-full;
-  transition: transform 0.4s ease-in-out;
+  transition: transform var(--tjg-motion-duration-xslow) ease-in-out;
 
   &:hover {
     transform: scale(1.06);
@@ -19,7 +19,7 @@
 
 .play-button {
   @apply: absolute-center flex-center rounded-full size-44px cursor-pointer;
-  transition: all 0.3s ease;
+  transition: color var(--tjg-motion-duration-slow) ease, background-color var(--tjg-motion-duration-slow) ease, border-color var(--tjg-motion-duration-slow) ease, box-shadow var(--tjg-motion-duration-slow) ease, opacity var(--tjg-motion-duration-slow) ease, transform var(--tjg-motion-duration-slow) ease;
   pointer-events: auto;
 
   &:hover:not(.loading) {
@@ -55,7 +55,7 @@
 }
 
 .progress-ring-circle {
-  transition: stroke-dashoffset 0.3s ease;
+  transition: stroke-dashoffset var(--tjg-motion-duration-slow) ease;
 }
 
 .upload-icon,
@@ -93,7 +93,7 @@
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--tjg-motion-duration-slow) ease;
 }
 
 .fade-enter-from,

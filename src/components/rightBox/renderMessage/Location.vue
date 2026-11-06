@@ -22,7 +22,7 @@
     </div>
 
     <!-- 地图预览区域 -->
-    <div class="relative rounded-6px overflow-hidden bg-[--tjg-surface-app] h-120px flex-center">
+    <div class="relative rounded-[var(--tjg-radius-md)] overflow-hidden bg-[--tjg-surface-app] h-120px flex-center">
       <StaticProxyMap
         v-if="body"
         :location="locationData"

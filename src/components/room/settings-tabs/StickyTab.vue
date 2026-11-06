@@ -269,12 +269,4 @@ onMounted(async () => {
   color: var(--tjg-text-tertiary);
   font-family: monospace;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .rs-tab,
-  .rs-tab * {
-    transition: none !important;
-    animation: none !important;
-  }
-}
 </style>

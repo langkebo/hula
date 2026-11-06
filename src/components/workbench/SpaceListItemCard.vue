@@ -142,7 +142,9 @@ const avatarColor = computed(() => {
     hash = props.item.spaceId.charCodeAt(i) + ((hash << 5) - hash)
   }
   const hue = Math.abs(hash) % 360
-  return `hsl(${hue}, 45%, 55%)`
+  // 32% 亮度保证白色首字母在任意色相下都满足 WCAG AA（4.5:1）；
+  // 55% 会在偏绿/偏黄等高明度色相上低于阈值（axe color-contrast）。
+  return `hsl(${hue}, 45%, 32%)`
 })
 </script>
 
@@ -299,7 +301,13 @@ const avatarColor = computed(() => {
   background: var(--tjg-surface-search);
   color: var(--tjg-text-tertiary);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color var(--tjg-motion-duration-fast) ease,
+    background-color var(--tjg-motion-duration-fast) ease,
+    border-color var(--tjg-motion-duration-fast) ease,
+    box-shadow var(--tjg-motion-duration-fast) ease,
+    opacity var(--tjg-motion-duration-fast) ease,
+    transform var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-color-primary-100);
@@ -361,12 +369,14 @@ const avatarColor = computed(() => {
 
 .space-card__status-pill--info {
   background: var(--tjg-color-primary-100);
-  color: var(--tjg-color-primary-500);
+  // primary-500 在 primary-100 底上仅 3.2:1（10px 小字），需用更深一档满足 AA 4.5:1
+  color: var(--tjg-color-primary-600);
 }
 
 .space-card__status-pill--warning {
   background: color-mix(in srgb, var(--tjg-color-warning-500) 16%, transparent);
-  color: var(--tjg-color-warning-500);
+  // warning-500 在 16% 浅黄底上仅 1.71:1（10px 小字），需用 warning-700 满足 AA 4.5:1
+  color: var(--tjg-color-warning-700);
 }
 
 .space-card__visibility {

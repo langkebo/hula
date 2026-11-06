@@ -9,7 +9,7 @@
         <n-flex :size="8">
           <n-button quaternary circle size="small" :aria-label="t('menu.add_contact')" @click="$emit('click:add')">
             <template #icon>
-              <n-icon>
+              <n-icon aria-hidden="true">
                 <svg><use href="#plus" /></svg>
               </n-icon>
             </template>
@@ -21,7 +21,7 @@
             :aria-label="t('friend.list.pending_requests', { count: requestCount })"
             @click="$emit('click:requests')">
             <template #icon>
-              <n-icon>
+              <n-icon aria-hidden="true">
                 <svg><use href="#bell" /></svg>
               </n-icon>
             </template>

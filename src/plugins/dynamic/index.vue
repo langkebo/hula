@@ -52,6 +52,7 @@ const { roadmap, summary, hasMobileEntry, getStatusText } = useDynamic()
   justify-content: center;
   align-items: center;
   height: 100vh;
+  height: 100dvh;
   padding: 24px;
   background: var(--tjg-surface-app);
 }

@@ -123,19 +123,19 @@
 
                 <div class="action-item">
                   <div class="menu-list">
-                    <div v-if="!plugin.isAdd" @click="handleAdd(plugin)" class="menu-item">
+                    <div v-clickable v-if="!plugin.isAdd" @click="handleAdd(plugin)" class="menu-item">
                       <svg class="color-[--tjg-color-info-500]">
                         <use href="#add"></use>
                       </svg>
                       <p class="text-[--tjg-color-info-500]">{{ t('home.plugins.actions.pin') }}</p>
                     </div>
-                    <div v-else @click="handleDelete(plugin)" class="menu-item">
+                    <div v-clickable v-else @click="handleDelete(plugin)" class="menu-item">
                       <svg class="color-[--tjg-color-danger-500]">
                         <use href="#reduce"></use>
                       </svg>
                       <p class="text-[--tjg-color-danger-500]">{{ t('home.plugins.actions.unpin') }}</p>
                     </div>
-                    <div @click="handleUnload(plugin)" class="menu-item">
+                    <div v-clickable @click="handleUnload(plugin)" class="menu-item">
                       <svg>
                         <use href="#delete"></use>
                       </svg>
@@ -266,11 +266,23 @@ onUnmounted(() => {
 @use '@/styles/scss/global/variable.scss' as *;
 .box {
   @apply relative select-none custom-shadow cursor-pointer size-fit w-100px h-100px rounded-8px overflow-hidden;
-  transition: all var(--tjg-motion-duration-overlay) ease-in-out;
+  transition:
+    color var(--tjg-motion-duration-overlay) ease-in-out,
+    background-color var(--tjg-motion-duration-overlay) ease-in-out,
+    border-color var(--tjg-motion-duration-overlay) ease-in-out,
+    box-shadow var(--tjg-motion-duration-overlay) ease-in-out,
+    opacity var(--tjg-motion-duration-overlay) ease-in-out,
+    transform var(--tjg-motion-duration-overlay) ease-in-out;
 
   &.state-change-enter-active,
   &.state-change-leave-active {
-    transition: all var(--tjg-motion-duration-overlay) ease-in-out;
+    transition:
+      color var(--tjg-motion-duration-overlay) ease-in-out,
+      background-color var(--tjg-motion-duration-overlay) ease-in-out,
+      border-color var(--tjg-motion-duration-overlay) ease-in-out,
+      box-shadow var(--tjg-motion-duration-overlay) ease-in-out,
+      opacity var(--tjg-motion-duration-overlay) ease-in-out,
+      transform var(--tjg-motion-duration-overlay) ease-in-out;
   }
 
   &.state-change-enter-from,
@@ -297,7 +309,13 @@ onUnmounted(() => {
 
   &:hover .flash {
     left: 130%;
-    transition: all var(--tjg-motion-duration-2xslow) ease-in-out;
+    transition:
+      color var(--tjg-motion-duration-2xslow) ease-in-out,
+      background-color var(--tjg-motion-duration-2xslow) ease-in-out,
+      border-color var(--tjg-motion-duration-2xslow) ease-in-out,
+      box-shadow var(--tjg-motion-duration-2xslow) ease-in-out,
+      opacity var(--tjg-motion-duration-2xslow) ease-in-out,
+      transform var(--tjg-motion-duration-2xslow) ease-in-out;
   }
 }
 

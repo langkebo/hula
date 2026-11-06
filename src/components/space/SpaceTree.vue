@@ -4,11 +4,7 @@
     class="space-tree"
     :role="isRoot ? 'tree' : 'group'"
     :aria-label="isRoot ? t('space.title') : undefined">
-    <li
-      v-for="node in spaces"
-      :key="node.spaceId"
-      class="space-tree__node-wrapper"
-      role="none">
+    <li v-for="node in spaces" :key="node.spaceId" class="space-tree__node-wrapper" role="none">
       <!-- 节点行 -->
       <div
         :data-testid="`space-tree-node-${node.spaceId}`"
@@ -246,7 +242,6 @@ const handleRoomKeydown = (event: KeyboardEvent, room: { roomId: string }) => {
   border-radius: var(--tjg-radius-sm);
   cursor: pointer;
   color: var(--tjg-text-primary);
-  outline: none;
   transition:
     background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
     color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
@@ -368,7 +363,6 @@ const handleRoomKeydown = (event: KeyboardEvent, room: { roomId: string }) => {
   border-radius: var(--tjg-radius-sm);
   cursor: pointer;
   color: var(--tjg-text-secondary);
-  outline: none;
   transition: background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {

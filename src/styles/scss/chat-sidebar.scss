@@ -1,5 +1,5 @@
 .item-box {
-  @apply relative flex flex-col h-100vh box-border select-none text-[--tjg-text-primary];
+  @apply relative flex flex-col h-[var(--tjg-viewport-height,100vh)] box-border select-none text-[--tjg-text-primary];
   .item {
     height: 46px;
     padding: 0 4px;

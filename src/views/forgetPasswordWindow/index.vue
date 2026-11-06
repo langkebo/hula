@@ -52,7 +52,7 @@
                 autoCorrect="off"
                 autoCapitalize="off"
                 maxlength="6" />
-              <div class="relative cursor-pointer flex-shrink-0" @click="getCaptchaImage">
+              <div v-clickable class="relative cursor-pointer flex-shrink-0" @click="getCaptchaImage">
                 <img
                   v-if="captchaImageUrl"
                   :src="captchaImageUrl"
@@ -84,7 +84,7 @@
                 autoCapitalize="off"
                 maxlength="6" />
               <n-button
-                color="var(--tjg-color-primary-500)"
+                :color="cssVar('--tjg-color-primary-500')"
                 ghost
                 :disabled="sendBtnDisabled"
                 :loading="sendingEmailCode"
@@ -207,6 +207,7 @@ import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { acquireTimerWorker } from '@/services/timerWorkerHost'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { cssVar } from '@/utils/CssUtils'
 import { createLogger } from '@/utils/Logger'
 import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 

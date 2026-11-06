@@ -78,7 +78,13 @@ function selectDuration(seconds: number) {
   background: transparent;
   cursor: pointer;
   color: var(--tjg-text-tertiary);
-  transition: all 0.2s;
+  transition:
+    color var(--tjg-motion-duration-normal),
+    background-color var(--tjg-motion-duration-normal),
+    border-color var(--tjg-motion-duration-normal),
+    box-shadow var(--tjg-motion-duration-normal),
+    opacity var(--tjg-motion-duration-normal),
+    transform var(--tjg-motion-duration-normal);
 }
 
 .burn-toggle-btn:hover {
@@ -113,7 +119,13 @@ function selectDuration(seconds: number) {
   font-size: var(--tjg-text-xs);
   color: var(--tjg-text-secondary);
   cursor: pointer;
-  transition: all 0.15s;
+  transition:
+    color var(--tjg-motion-duration-fast),
+    background-color var(--tjg-motion-duration-fast),
+    border-color var(--tjg-motion-duration-fast),
+    box-shadow var(--tjg-motion-duration-fast),
+    opacity var(--tjg-motion-duration-fast),
+    transform var(--tjg-motion-duration-fast);
 }
 
 .burn-duration-btn:hover {

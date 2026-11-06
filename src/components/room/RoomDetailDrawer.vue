@@ -318,8 +318,7 @@ const buildRoomDetail = async (): Promise<RoomDetail | null> => {
     try {
       const members = await groupStore.getMembersByRoomId(props.roomId)
       memberCount = Math.max(memberCount, members?.length || 0)
-      onlineCount =
-        members?.filter((m) => m.activeStatus === OnlineEnum.ONLINE).length || 0
+      onlineCount = members?.filter((m) => m.activeStatus === OnlineEnum.ONLINE).length || 0
       roomMembers.value = (members as MatrixRoomMember[]) || []
     } catch {
       // member retrieval is best-effort
@@ -496,7 +495,7 @@ watch(
 /* 滑入抽屉 */
 .room-drawer-slide-enter-active,
 .room-drawer-slide-leave-active {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .room-drawer-slide-enter-from,

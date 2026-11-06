@@ -292,7 +292,6 @@ onUnmounted(() => {
   background: transparent;
   color: var(--tjg-text-primary);
   font-size: var(--tjg-font-size-sm);
-  outline: none;
 
   &::placeholder {
     color: var(--tjg-text-quaternary);

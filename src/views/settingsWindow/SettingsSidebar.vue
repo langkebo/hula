@@ -234,7 +234,7 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
   /* 液态玻璃面板（阶段 2.2 — 首个应用场景） */
   @include liquid-glass-panel;
 
-  @include responsive.respond-to-max('md') {
+  @include responsive.down('md') {
     width: 100%;
     max-width: 100%;
     border-right: none;
@@ -293,7 +293,6 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 .settings-tab-item:focus-visible {
   background-color: var(--tjg-surface-sidebar-hover);
   color: var(--tjg-text-primary);
-  outline: none;
 }
 
 .settings-tab-item-active {
@@ -332,7 +331,6 @@ function handleKeydown(event: KeyboardEvent, tabId: SettingsTabType) {
 .settings-search-result:focus-visible {
   background-color: var(--tjg-surface-sidebar-hover);
   color: var(--tjg-text-primary);
-  outline: none;
 }
 
 .settings-search-result-active {

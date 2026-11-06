@@ -261,6 +261,7 @@
 
       <!-- 管理员按钮（仅管理员显示，对接管理后台） -->
       <div
+        v-clickable
         v-if="adminStore.canShowAdminEntry"
         :class="[{ active: activeUrl === 'admin' }, 'bottom-action flex-col-center']"
         class="text-center"
@@ -307,7 +308,7 @@
           <div class="setting-item">
             <div class="menu-list">
               <div v-for="item in moreList" :key="item.icon">
-                <div class="menu-item" @click="() => item.click()">
+                <div v-clickable class="menu-item" @click="() => item.click()">
                   <svg>
                     <use :href="`#${item.icon}`"></use>
                   </svg>
@@ -571,10 +572,6 @@ onUnmounted(() => {
   transition:
     transform 0.2s ease,
     color 0.2s ease;
-}
-
-.workspace-entry:focus-visible {
-  outline: none;
 }
 
 .workspace-entry__indicator {

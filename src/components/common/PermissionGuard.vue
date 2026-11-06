@@ -10,7 +10,7 @@
   -->
   <slot v-if="granted" />
   <template v-else-if="mode === 'gray'">
-    <div class="tjg-permission-gate" :aria-disabled="true" @click.capture.stop="handleDenied">
+    <div v-clickable class="tjg-permission-gate" :aria-disabled="true" @click.capture.stop="handleDenied">
       <slot :denied="true" />
     </div>
   </template>

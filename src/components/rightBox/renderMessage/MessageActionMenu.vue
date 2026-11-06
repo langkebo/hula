@@ -188,7 +188,6 @@ const close = () => {
   border: 1px solid var(--tjg-border-contrast, rgba(255, 255, 255, 0.06));
   border-radius: 8px;
   box-shadow: var(--tjg-shadow-floating-menu);
-  outline: none;
 }
 
 .message-action-menu__item {

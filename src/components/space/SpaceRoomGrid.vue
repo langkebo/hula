@@ -174,7 +174,6 @@ const handleToggleSuggested = (room: SpaceChildRoom, e: MouseEvent) => {
   border-radius: var(--tjg-radius-sm);
   cursor: pointer;
   color: var(--tjg-text-primary);
-  outline: none;
   transition: background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {

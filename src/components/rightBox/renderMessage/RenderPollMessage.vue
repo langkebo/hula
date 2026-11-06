@@ -94,7 +94,7 @@ const handleVote = (index: number) => {
 }
 
 .poll-option {
-  @apply relative flex items-center p-8px rounded-6px cursor-pointer transition-all overflow-hidden;
+  @apply relative flex items-center p-8px rounded-[var(--tjg-radius-md)] cursor-pointer transition-[width,transform,opacity,color,background-color,border-color,box-shadow] overflow-hidden;
 
   &:not(.ended):hover {
     background: var(--tjg-fill-hover);
@@ -118,7 +118,7 @@ const handleVote = (index: number) => {
 }
 
 .option-progress {
-  @apply absolute inset-y-0 left-0 bg-[--tjg-color-primary-500]20 rounded-6px transition-all;
+  @apply absolute inset-y-0 left-0 bg-[--tjg-color-primary-500]20 rounded-[var(--tjg-radius-md)] transition-[width,transform,opacity,color,background-color,border-color,box-shadow];
 }
 
 .poll-footer {

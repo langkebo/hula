@@ -168,7 +168,11 @@
 
             <!-- 视频预览 -->
             <div v-else class="media-preview">
-              <div v-if="item.status === 20 && item.videoUrl" class="video-preview" @click="handlePreviewVideo(item)">
+              <div
+                v-clickable
+                v-if="item.status === 20 && item.videoUrl"
+                class="video-preview"
+                @click="handlePreviewVideo(item)">
                 <Icon icon="mdi:play-circle" class="text-64px text-white" />
                 <p class="text-12px text-white mt-8px">{{ t('ai_assistant.robot.click_to_play') }}</p>
               </div>
@@ -352,6 +356,7 @@ const {
   display: flex;
   flex-direction: row;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -377,7 +382,13 @@ const {
   border: 1px solid var(--tjg-border-default);
   border-radius: 8px;
   overflow: hidden;
-  transition: all 0.3s;
+  transition:
+    color var(--tjg-motion-duration-slow),
+    background-color var(--tjg-motion-duration-slow),
+    border-color var(--tjg-motion-duration-slow),
+    box-shadow var(--tjg-motion-duration-slow),
+    opacity var(--tjg-motion-duration-slow),
+    transform var(--tjg-motion-duration-slow);
 
   &:hover {
     box-shadow: var(--tjg-shadow-card);

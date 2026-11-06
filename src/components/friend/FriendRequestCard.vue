@@ -1,7 +1,12 @@
 <template>
   <article class="friend-request-card" :dir="dir" :aria-label="ariaLabel">
     <div class="friend-request-card__header">
-      <n-avatar :size="48" round :src="AvatarUtils.getAvatarUrl(request.avatarUrl)" fallback-src="/logo.png" />
+      <n-avatar
+        :size="48"
+        round
+        :src="AvatarUtils.getAvatarUrl(request.avatarUrl)"
+        fallback-src="/logo.png"
+        :img-props="{ alt: '' }" />
       <div class="friend-request-card__identity">
         <span class="friend-request-card__name">{{ request.displayName || request.userId }}</span>
         <span class="friend-request-card__account">{{ request.userId }}</span>
@@ -121,8 +126,7 @@ const ariaLabel = computed(() => `${props.request.displayName || props.request.u
 }
 
 .friend-request-card__account,
-.friend-request-card__countdown,
-.friend-request-card__message {
+.friend-request-card__countdown {
   color: var(--tjg-text-tertiary);
   font-size: 12px;
 }
@@ -134,6 +138,8 @@ const ariaLabel = computed(() => `${props.request.displayName || props.request.u
 .friend-request-card__message {
   background: var(--tjg-surface-panel-muted);
   border-radius: var(--tjg-radius-sm);
+  color: var(--tjg-text-secondary);
+  font-size: 12px;
   line-height: 1.5;
   margin: 0;
   padding: 8px 10px;

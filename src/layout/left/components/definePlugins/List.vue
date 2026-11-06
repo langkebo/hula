@@ -115,15 +115,15 @@
 
             <div class="action-item">
               <div class="menu-list">
-                <div v-if="!plugin.isAdd" @click="handleAdd(plugin)" class="menu-item">
+                <div v-clickable v-if="!plugin.isAdd" @click="handleAdd(plugin)" class="menu-item">
                   <svg class="text-[--tjg-color-info-500]"><use href="#add"></use></svg>
                   <p class="text-[--tjg-color-info-500]">{{ t('home.plugins.actions.pin') }}</p>
                 </div>
-                <div v-else @click="handleDelete(plugin)" class="menu-item">
+                <div v-clickable v-else @click="handleDelete(plugin)" class="menu-item">
                   <svg class="color-[--danger-text]"><use href="#reduce"></use></svg>
                   <p class="text-[--danger-text]">{{ t('home.plugins.actions.unpin') }}</p>
                 </div>
-                <div @click="handleUnload(plugin)" class="menu-item">
+                <div v-clickable @click="handleUnload(plugin)" class="menu-item">
                   <svg><use href="#delete"></use></svg>
                   <p>{{ t('home.plugins.actions.uninstall') }}</p>
                 </div>
@@ -251,7 +251,13 @@ onUnmounted(() => {
 
 .box {
   @apply relative select-none cursor-pointer size-fit w-60px h-40px rounded-8px overflow-hidden;
-  transition: all var(--tjg-motion-duration-normal);
+  transition:
+    color var(--tjg-motion-duration-normal),
+    background-color var(--tjg-motion-duration-normal),
+    border-color var(--tjg-motion-duration-normal),
+    box-shadow var(--tjg-motion-duration-normal),
+    opacity var(--tjg-motion-duration-normal),
+    transform var(--tjg-motion-duration-normal);
 }
 
 .downloading {

@@ -1,7 +1,7 @@
 <template>
   <div class="user-menu-header">
     <div class="user-info">
-      <div class="user-avatar" @click="handleAvatarClick">
+      <div v-clickable class="user-avatar" @click="handleAvatarClick">
         <slot name="avatar">
           <n-avatar round :size="48" :src="userAvatar" :fallback-src="defaultAvatar" />
         </slot>
@@ -24,6 +24,7 @@
         <div class="status-menu">
           <div class="status-menu-title">{{ t('menu.user_menu.status.title') }}</div>
           <div
+            v-clickable
             v-for="status in statusOptions"
             :key="status.id"
             class="status-option"
@@ -250,7 +251,7 @@ async function handleStatusChange(statusId: string) {
   gap: 8px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--tjg-motion-duration-normal);
 }
 
 .status-option:hover {

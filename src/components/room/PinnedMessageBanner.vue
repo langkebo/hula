@@ -152,7 +152,7 @@ const formatTime = (timestamp: number): string => {
   background: var(--tjg-surface-search, transparent);
   cursor: pointer;
   min-height: 36px;
-  transition: background var(--tjg-motion-duration-fast, 150ms) ease;
+  transition: background var(--tjg-motion-duration-fast, var(--tjg-motion-duration-fast)) ease;
 }
 
 .pinned-banner__item:hover {

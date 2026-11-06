@@ -65,7 +65,7 @@ const emit = defineEmits<{
   color: var(--tjg-color-primary-500);
   font-size: var(--tjg-font-size-2xs);
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background var(--tjg-motion-duration-normal) ease;
 }
 
 .guest-mode-banner__action:hover {

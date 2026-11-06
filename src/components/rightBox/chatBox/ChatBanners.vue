@@ -34,7 +34,7 @@
               {{ topAnnouncement.content }}
             </div>
           </n-flex>
-          <div class="flex-shrink-0 w-60px select-none" @click="$emit('viewAnnouncement')">
+          <div v-clickable class="flex-shrink-0 w-60px select-none" @click="$emit('viewAnnouncement')">
             <p class="text-[var(--text-sm)] text-[--tjg-color-primary-500] cursor-pointer">
               {{ t('home.chat_main.announcement.view_all') }}
             </p>

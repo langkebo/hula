@@ -136,7 +136,8 @@ const formatTime = (timestamp: number): string => {
   flex-shrink: 0;
   max-height: 240px;
   overflow: hidden;
-  transition: max-height var(--tjg-motion-duration-normal, 200ms) var(--tjg-motion-ease-standard, ease);
+  transition: max-height var(--tjg-motion-duration-normal, var(--tjg-motion-duration-normal))
+    var(--tjg-motion-ease-standard, ease);
 }
 
 .sticky-banner__header {
@@ -212,7 +213,7 @@ const formatTime = (timestamp: number): string => {
   background: var(--tjg-surface-panel);
   cursor: pointer;
   min-height: 36px;
-  transition: background var(--tjg-motion-duration-fast, 150ms) ease;
+  transition: background var(--tjg-motion-duration-fast, var(--tjg-motion-duration-fast)) ease;
 }
 
 .sticky-banner__item:hover {

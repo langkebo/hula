@@ -180,7 +180,13 @@ const indicatorStatus = computed(() => {
   border-radius: 12px;
   padding: 12px;
   border: 1px solid var(--tjg-border-default);
-  transition: all 0.3s ease;
+  transition:
+    color var(--tjg-motion-duration-slow) ease,
+    background-color var(--tjg-motion-duration-slow) ease,
+    border-color var(--tjg-motion-duration-slow) ease,
+    box-shadow var(--tjg-motion-duration-slow) ease,
+    opacity var(--tjg-motion-duration-slow) ease,
+    transform var(--tjg-motion-duration-slow) ease;
 }
 
 .burn-message--burning {
@@ -231,7 +237,7 @@ const indicatorStatus = computed(() => {
 
 .burn-fade-enter-active,
 .burn-fade-leave-active {
-  transition: opacity 0.5s ease;
+  transition: opacity var(--tjg-motion-duration-xslow) ease;
 }
 
 .burn-fade-enter-from,

@@ -14,7 +14,7 @@
         <button
           v-for="avatar in avatarList"
           :key="avatar.id"
-          class="size-64px rounded-50% overflow-hidden cursor-pointer hover:ring-2 hover:ring-[--tjg-color-primary-500] transition-all"
+          class="size-64px rounded-50% overflow-hidden cursor-pointer hover:ring-2 hover:ring-[--tjg-color-primary-500] transition-[width,transform,opacity,color,background-color,border-color,box-shadow]"
           :title="avatar.name"
           @click="handleSelect(avatar.url)">
           <img :src="avatar.url" :alt="avatar.name" class="size-full object-cover" loading="lazy" />

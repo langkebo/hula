@@ -36,6 +36,7 @@ const goHome = () => {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(135deg, var(--tjg-surface-panel-muted) 0%, var(--tjg-surface-subtle) 100%);
 }
 

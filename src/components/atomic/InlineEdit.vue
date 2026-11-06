@@ -185,12 +185,12 @@ watch(
 .inline-edit__toggle {
   background: transparent;
   border: none;
-  color: var(--tjg-color-primary-500);
+  color: var(--tjg-color-primary-600);
   font-size: 12px;
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 4px;
-  transition: background 0.15s;
+  transition: background var(--tjg-motion-duration-fast);
 
   &:hover {
     background: var(--tjg-color-primary-50);
@@ -215,7 +215,7 @@ watch(
 }
 
 .inline-edit__value--placeholder {
-  color: var(--tjg-text-tertiary);
+  color: var(--tjg-text-secondary);
 }
 
 .inline-edit__editor {
@@ -238,8 +238,7 @@ watch(
   background: var(--tjg-surface-panel);
   border: 1px solid var(--tjg-color-primary-500);
   border-radius: 6px;
-  outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--tjg-motion-duration-fast);
 
   &::placeholder {
     color: var(--tjg-text-tertiary);
@@ -279,7 +278,7 @@ watch(
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--tjg-motion-duration-fast);
 
   &:hover:not(:disabled) {
     background: var(--tjg-color-primary-600, var(--tjg-color-primary-500));
@@ -292,7 +291,7 @@ watch(
 }
 
 .inline-edit__spinner {
-  animation: inline-edit-spin 0.8s linear infinite;
+  animation: inline-edit-spin var(--tjg-motion-duration-2xslow) linear infinite;
 }
 
 @keyframes inline-edit-spin {

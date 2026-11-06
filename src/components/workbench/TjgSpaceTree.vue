@@ -1,14 +1,12 @@
 <template>
-  <div class="tjg-space-tree" :role="treeRole" :aria-label="treeAriaLabel" @keydown="handleKeyDown">
-    <div v-if="loading && !rooms.length" class="tjg-space-tree__loading">
-      <n-spin size="small" />
-    </div>
+  <div class="tjg-space-tree">
+    <div v-if="loading && !rooms.length" class="tjg-space-tree__loading"><n-spin size="small" /></div>
 
     <div v-else-if="!rooms.length && !loading" class="tjg-space-tree__empty">
       <n-empty :description="t('space.empty_tree')" />
     </div>
 
-    <div v-else class="tjg-space-tree__list">
+    <div v-else class="tjg-space-tree__list" :role="treeRole" :aria-label="treeAriaLabel" @keydown="handleKeyDown">
       <div
         v-for="(room, index) in rooms"
         :key="room.spaceId"
@@ -29,9 +27,10 @@
               v-if="room.childCount > 0"
               type="button"
               class="tjg-space-tree__expand-button"
+              :aria-label="expandedIds.has(room.spaceId) ? t('space.collapse') : t('space.expand')"
               :aria-expanded="expandedIds.has(room.spaceId)"
               @click.stop="toggleExpand(room.spaceId)">
-              <svg class="size-14px" :class="{ 'is-expanded': expandedIds.has(room.spaceId) }">
+              <svg class="size-14px" aria-hidden="true" :class="{ 'is-expanded': expandedIds.has(room.spaceId) }">
                 <use href="#down"></use>
               </svg>
             </button>
@@ -48,13 +47,9 @@
           <span class="tjg-space-tree__item-name">{{ room.name }}</span>
 
           <div class="tjg-space-tree__item-meta">
-            <n-tag v-if="room.childCount > 0" size="tiny" round :bordered="false">
-              {{ room.childCount }}
-            </n-tag>
+            <n-tag v-if="room.childCount > 0" size="tiny" round :bordered="false">{{ room.childCount }}</n-tag>
           </div>
         </div>
-
-        <!-- 递归渲染子空间 -->
         <Transition name="tjg-space-tree-child-expand">
           <TjgSpaceTree
             v-if="expandedIds.has(room.spaceId)"
@@ -67,17 +62,15 @@
             @select="handleSelect" />
         </Transition>
       </div>
+    </div>
 
-      <!-- 加载更多 -->
-      <div
-        v-if="nextBatch"
-        class="tjg-space-tree__load-more"
-        :style="{ paddingLeft: `${currentDepth * 16 + 32}px` }"
-        @click="loadMore">
-        <n-button text size="tiny" :loading="loadingMore">
-          {{ t('common.load_more') }}
-        </n-button>
-      </div>
+    <!-- 加载更多：按钮不能放在 role=tree/group 内，否则违反 aria-required-children -->
+    <div
+      v-if="nextBatch && rooms.length > 0"
+      class="tjg-space-tree__load-more"
+      :style="{ paddingLeft: `${currentDepth * 16 + 32}px` }"
+      @click="loadMore">
+      <n-button text size="tiny" :loading="loadingMore">{{ t('common.load_more') }}</n-button>
     </div>
   </div>
 </template>
@@ -236,9 +229,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 }
 
-onMounted(() => {
-  void loadData()
-})
+onMounted(() => void loadData())
 
 // 监听 spaceId 变化重新加载
 watch(
@@ -271,7 +262,7 @@ watch(
   padding: 8px 12px;
   cursor: pointer;
   border-radius: 8px;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--tjg-motion-duration-normal) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);
@@ -286,7 +277,7 @@ watch(
   color: var(--tjg-text-tertiary);
 
   svg {
-    transition: transform 0.2s ease;
+    transition: transform var(--tjg-motion-duration-normal) ease;
     &.is-expanded {
       transform: rotate(0);
     }
@@ -366,7 +357,16 @@ watch(
 
 .tjg-space-tree-child-expand-enter-active,
 .tjg-space-tree-child-expand-leave-active {
-  transition: all var(--tjg-motion-duration-normal, 0.2s) var(--tjg-motion-ease-standard, ease);
+  transition:
+    color var(--tjg-motion-duration-normal, var(--tjg-motion-duration-normal)) var(--tjg-motion-ease-standard, ease),
+    background-color var(--tjg-motion-duration-normal, var(--tjg-motion-duration-normal))
+      var(--tjg-motion-ease-standard, ease),
+    border-color var(--tjg-motion-duration-normal, var(--tjg-motion-duration-normal))
+      var(--tjg-motion-ease-standard, ease),
+    box-shadow var(--tjg-motion-duration-normal, var(--tjg-motion-duration-normal))
+      var(--tjg-motion-ease-standard, ease),
+    opacity var(--tjg-motion-duration-normal, var(--tjg-motion-duration-normal)) var(--tjg-motion-ease-standard, ease),
+    transform var(--tjg-motion-duration-normal, var(--tjg-motion-duration-normal)) var(--tjg-motion-ease-standard, ease);
 }
 
 .tjg-space-tree-child-expand-enter-from,

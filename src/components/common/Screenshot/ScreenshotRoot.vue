@@ -380,6 +380,7 @@ onUnmounted(async () => {
 .canvasbox {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   position: relative;
   background-color: transparent;
 }

@@ -323,7 +323,7 @@ const handleEnter = (el: Element) => {
     &.menu-item-focused {
       background-color: var(--tjg-menu-hover);
       svg {
-        animation: twinkle 0.3s ease-in-out;
+        animation: twinkle var(--tjg-motion-duration-slow) ease-in-out;
       }
     }
   }

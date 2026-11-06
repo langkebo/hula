@@ -493,7 +493,7 @@ onMounted(() => {
   padding: 8px 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--tjg-motion-duration-normal);
 
   &:hover {
     background: var(--tjg-surface-list-hover);

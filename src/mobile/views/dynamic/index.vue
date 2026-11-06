@@ -2,7 +2,8 @@
   <div class="flex flex-col overflow-auto h-full relative">
     <img
       src="@/assets/mobile/chat-home/background.webp"
-      class="absolute inset-0 top-0 left-0 w-full h-full z-0 dark:opacity-20" />
+      alt=""
+      class="fixed inset-0 w-full h-full z-0 object-cover dark:opacity-20" />
 
     <NavBar>
       <template #center>
@@ -37,7 +38,7 @@
         :data-testid="`mobile-space-item-${sp.spaceId || sp.roomId}`"
         class="rounded-12px bg-[--tjg-surface-panel] overflow-hidden">
         <!-- 空间信息卡片 -->
-        <div class="flex items-center gap-12px p-14px tap-highlight" @click="toggleSpaceDetail(sp)">
+        <div v-clickable class="flex items-center gap-12px p-14px tap-highlight" @click="toggleSpaceDetail(sp)">
           <img
             class="size-48px rounded-12px object-cover flex-shrink-0"
             :src="sp.avatarUrl || '/logo.png'"

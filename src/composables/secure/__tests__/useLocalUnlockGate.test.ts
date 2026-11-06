@@ -3,8 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   backendInfo: { current: null as null | Record<string, unknown> },
   configured: { current: false },
+  tauriRuntime: { current: true },
   configureLocalUnlock: vi.fn(async () => {}),
   unlockLocalUnlock: vi.fn(async () => false)
+}))
+
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => mocks.tauriRuntime.current
 }))
 
 vi.mock('@/services/secure/secureStorage', () => ({
@@ -32,6 +37,18 @@ describe('useLocalUnlockGate（F-4 / B1）', () => {
     resetLocalUnlockGateForTest()
     mocks.backendInfo.current = ifNative
     mocks.configured.current = false
+    mocks.tauriRuntime.current = true
+  })
+
+  // 回归：pnpm dev 没有 Tauri 运行时，若仍弹门禁会被 splash 覆盖并卡死启动
+  it('非 Tauri 运行时直接放行，不弹门禁', async () => {
+    mocks.tauriRuntime.current = false
+    mocks.backendInfo.current = ifUnavailable
+
+    const gate = useLocalUnlockGate()
+    await expect(gate.ensureReady()).resolves.toBe(true)
+    expect(gate.visible.value).toBe(false)
+    expect(mocks.configureLocalUnlock).not.toHaveBeenCalled()
   })
 
   it('安全存储可用时不打扰用户，直接放行', async () => {

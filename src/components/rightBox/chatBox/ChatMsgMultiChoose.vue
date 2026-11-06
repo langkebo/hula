@@ -39,7 +39,7 @@
             <n-input
               id="search"
               v-model:value="searchText"
-              class="rounded-6px mt-8px border-(solid 1px [--tjg-border-default]) w-full relative text-[length:var(--tjg-font-size-sm)]"
+              class="rounded-[var(--tjg-radius-md)] mt-8px border-(solid 1px [--tjg-border-default]) w-full relative text-[length:var(--tjg-font-size-sm)]"
               :maxlength="20"
               :placeholder="t('message.multi_choose.search_placeholder')"
               clearable
@@ -99,7 +99,7 @@
             <div class="flex-1 flex flex-col justify-between">
               <div class="flex-1 flex-col-center gap-12px">
                 <template v-if="isCustomImageTask">
-                  <div class="custom-task-card" @click="handlePreviewCustomImage">
+                  <div v-clickable class="custom-task-card" @click="handlePreviewCustomImage">
                     <div class="image-wrapper">
                       <img :src="customForwardTask?.previewUrl" alt="custom-forward" />
                     </div>

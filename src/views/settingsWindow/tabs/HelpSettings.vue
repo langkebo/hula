@@ -47,22 +47,22 @@
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.help_about.links') }}</h3>
       <div class="link-list">
-        <div class="link-item" @click="openLink('https://matrix.org')">
+        <div v-clickable class="link-item" @click="openLink('https://matrix.org')">
           <Icon icon="mdi:web" :width="20" />
           <span>{{ t('setting.help_about.matrix_website') }}</span>
           <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
         </div>
-        <div class="link-item" @click="openLink('https://spec.matrix.org')">
+        <div v-clickable class="link-item" @click="openLink('https://spec.matrix.org')">
           <Icon icon="mdi:book-open-variant" :width="20" />
           <span>{{ t('setting.help_about.matrix_spec') }}</span>
           <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
         </div>
-        <div class="link-item" @click="openLink('https://github.com/nichuanfang/nichuanfang.github.io')">
+        <div v-clickable class="link-item" @click="openLink('https://github.com/nichuanfang/nichuanfang.github.io')">
           <Icon icon="mdi:github" :width="20" />
           <span>{{ t('setting.help_about.project_home') }}</span>
           <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />
         </div>
-        <div class="link-item" @click="openLink('https://element-hq.github.io/synapse/latest/')">
+        <div v-clickable class="link-item" @click="openLink('https://element-hq.github.io/synapse/latest/')">
           <Icon icon="mdi:server" :width="20" />
           <span>{{ t('setting.help_about.synapse_docs') }}</span>
           <Icon icon="mdi:open-in-new" :width="14" class="link-arrow" />

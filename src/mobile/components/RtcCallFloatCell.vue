@@ -13,13 +13,13 @@
           </div>
 
           <div class="flex items-center gap-18px">
-            <div class="rtc-action-button reject" @click="handleReject">
+            <div v-clickable class="rtc-action-button reject" @click="handleReject">
               <svg class="size-20px color-[--tjg-text-inverse]">
                 <use href="#PhoneHangup"></use>
               </svg>
             </div>
 
-            <div class="rtc-action-button accept" @click="handleAccept">
+            <div v-clickable class="rtc-action-button accept" @click="handleAccept">
               <svg class="size-20px color-[--tjg-text-inverse]">
                 <use href="#phone-telephone-entity"></use>
               </svg>
@@ -244,7 +244,7 @@ useMitt.on('RoomClosed', handleCallEnd)
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: transform 0.15s ease-out;
+  transition: transform var(--tjg-motion-duration-fast) ease-out;
 
   &:active {
     transform: scale(0.95);

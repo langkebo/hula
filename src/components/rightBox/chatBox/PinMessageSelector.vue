@@ -156,7 +156,7 @@ const handleSelect = (eventId: string): void => {
   border-radius: var(--tjg-radius-sm, 8px);
   cursor: pointer;
   min-height: 36px;
-  transition: background var(--tjg-motion-duration-fast, 150ms) ease;
+  transition: background var(--tjg-motion-duration-fast, var(--tjg-motion-duration-fast)) ease;
 }
 
 .pin-selector__item:hover {

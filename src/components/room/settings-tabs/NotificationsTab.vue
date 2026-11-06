@@ -158,12 +158,4 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 8px;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .rs-tab,
-  .rs-tab * {
-    transition: none !important;
-    animation: none !important;
-  }
-}
 </style>

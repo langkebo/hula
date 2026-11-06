@@ -1,5 +1,6 @@
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
+import { WEB_SESSION_FALLBACK_STORAGE_KEY } from '@/utils/storageKeys'
 
 const logger = createLogger('MatrixClient')
 
@@ -26,7 +27,7 @@ const WEB_TOKEN_STORAGE_KEY = 'tjg.matrix.accessToken'
  * localStorage 作为**回退凭证源**参与读写 —— 代价是 XSS 可窃取 token，
  * 因此默认关闭，只能由开发/测试显式置 1。
  */
-export const WEB_SESSION_FALLBACK_KEY = 'tjg:session:web-fallback'
+export const WEB_SESSION_FALLBACK_KEY = WEB_SESSION_FALLBACK_STORAGE_KEY
 
 /** 当前是否启用「浏览器 at-rest 凭证」读写 */
 export function isWebSessionStoreEnabled(): boolean {

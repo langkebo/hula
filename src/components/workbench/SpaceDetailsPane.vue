@@ -492,7 +492,13 @@ const getInitials = (text: string) => {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    color var(--tjg-motion-duration-normal) ease,
+    background-color var(--tjg-motion-duration-normal) ease,
+    border-color var(--tjg-motion-duration-normal) ease,
+    box-shadow var(--tjg-motion-duration-normal) ease,
+    opacity var(--tjg-motion-duration-normal) ease,
+    transform var(--tjg-motion-duration-normal) ease;
 
   &:hover {
     border-color: var(--tjg-color-primary-300);
@@ -630,7 +636,7 @@ const getInitials = (text: string) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color 0.15s ease;
+  transition: color var(--tjg-motion-duration-fast) ease;
 }
 
 /* 子房间列表 */
@@ -647,7 +653,7 @@ const getInitials = (text: string) => {
   padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);
@@ -692,7 +698,13 @@ const getInitials = (text: string) => {
   color: var(--tjg-text-quaternary);
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition:
+    color var(--tjg-motion-duration-fast) ease,
+    background-color var(--tjg-motion-duration-fast) ease,
+    border-color var(--tjg-motion-duration-fast) ease,
+    box-shadow var(--tjg-motion-duration-fast) ease,
+    opacity var(--tjg-motion-duration-fast) ease,
+    transform var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-color-danger-100, color-mix(in srgb, var(--tjg-color-danger-500) 12%, transparent));

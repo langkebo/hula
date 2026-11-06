@@ -433,7 +433,13 @@ onMounted(() => {
   border-radius: 8px;
   padding: 16px;
   background: var(--tjg-surface-panel);
-  transition: all 0.3s;
+  transition:
+    color var(--tjg-motion-duration-slow),
+    background-color var(--tjg-motion-duration-slow),
+    border-color var(--tjg-motion-duration-slow),
+    box-shadow var(--tjg-motion-duration-slow),
+    opacity var(--tjg-motion-duration-slow),
+    transform var(--tjg-motion-duration-slow);
 
   &:hover {
     box-shadow: var(--tjg-shadow-card);

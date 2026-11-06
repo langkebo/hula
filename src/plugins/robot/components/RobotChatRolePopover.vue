@@ -7,7 +7,7 @@
     class="p-0 w-[320px]"
     @update:show="emit('update:show', $event)">
     <template #trigger>
-      <div class="flex items-center gap-6px cursor-pointer" @click="emit('update:show', !show)">
+      <div v-clickable class="flex items-center gap-6px cursor-pointer" @click="emit('update:show', !show)">
         <n-avatar v-if="selectedRole" :src="selectedRole.avatar" :size="24" round :fallback-src="getDefaultAvatar()" />
         <Icon v-else icon="mdi:account-circle" class="text-24px color-[--tjg-text-tertiary]" />
         <span class="text-(12px [--tjg-text-primary])">
@@ -43,6 +43,7 @@
 
         <div v-else class="roles-container">
           <div
+            v-clickable
             v-for="role in roleList"
             :key="role.id"
             class="role-item"

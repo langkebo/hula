@@ -187,7 +187,7 @@ const typingText = computed(() => {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--tjg-color-danger-500);
+  color: var(--tjg-color-danger-600);
   font-size: 11px;
   line-height: 1.2;
   cursor: pointer;
@@ -227,7 +227,7 @@ const typingText = computed(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: var(--tjg-color-primary-500);
+  color: var(--tjg-color-primary-600);
 }
 
 .typing-dots {
@@ -240,10 +240,10 @@ const typingText = computed(() => {
     border-radius: 50%;
     animation: typing-animation 1.4s infinite;
     &:nth-child(2) {
-      animation-delay: 0.2s;
+      animation-delay: var(--tjg-motion-duration-normal);
     }
     &:nth-child(3) {
-      animation-delay: 0.4s;
+      animation-delay: var(--tjg-motion-duration-xslow);
     }
   }
 }

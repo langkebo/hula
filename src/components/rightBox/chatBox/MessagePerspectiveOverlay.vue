@@ -31,7 +31,7 @@
           </div>
           <button
             type="button"
-            class="shrink-0 flex items-center justify-center size-24px rounded-6px bg-transparent border-none cursor-pointer hover:bg-[--tjg-menu-hover]"
+            class="shrink-0 flex items-center justify-center size-24px rounded-[var(--tjg-radius-md)] bg-transparent border-none cursor-pointer hover:bg-[--tjg-menu-hover]"
             :aria-label="t('common.close')"
             data-testid="message-perspective-close"
             @click="close">

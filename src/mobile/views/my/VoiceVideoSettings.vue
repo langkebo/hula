@@ -40,7 +40,7 @@
           <div v-if="audioLevel > 0" class="px-16px">
             <div class="h-8px bg-[var(--tjg-border-color)] rounded-full overflow-hidden">
               <div
-                class="h-full bg-[var(--tjg-color-success-500)] rounded-full transition-all duration-100"
+                class="h-full bg-[var(--tjg-color-success-500)] rounded-full transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-100"
                 :style="{ width: `${audioLevel}%` }"></div>
             </div>
             <div class="text-12px text-[var(--tjg-text-secondary)] text-center mt-4px">

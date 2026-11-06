@@ -214,7 +214,7 @@ const {
   height: 100%;
   background-color: var(--tjg-color-success-500);
   border-radius: var(--tjg-radius-xs);
-  transition: width 0.1s ease;
+  transition: width var(--tjg-motion-duration-fast) ease;
 }
 
 .level-text {

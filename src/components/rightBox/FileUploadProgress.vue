@@ -66,7 +66,13 @@ const getStatusText = () => {
   box-shadow: var(--tjg-shadow-md);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  transition: all var(--tjg-motion-duration-overlay) ease;
+  transition:
+    color var(--tjg-motion-duration-overlay) ease,
+    background-color var(--tjg-motion-duration-overlay) ease,
+    border-color var(--tjg-motion-duration-overlay) ease,
+    box-shadow var(--tjg-motion-duration-overlay) ease,
+    opacity var(--tjg-motion-duration-overlay) ease,
+    transform var(--tjg-motion-duration-overlay) ease;
 }
 
 .progress-actions {

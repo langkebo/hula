@@ -49,7 +49,7 @@
         autocorrect="off"
         autocapitalize="off">
         <template #right-icon>
-          <div v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
+          <div v-clickable v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
             <svg v-if="!arrowStatus" class="down w-18px h-18px color-[--chat-text-color]">
               <use href="#down"></use>
             </svg>
@@ -67,7 +67,7 @@
             v-for="item in loginHistories"
             :key="item.account"
             @click="onSelectAccount(item)"
-            class="p-8px hover:bg-[--tjg-surface-panel-muted] hover:rounded-6px">
+            class="p-8px hover:bg-[--tjg-surface-panel-muted] hover:rounded-[var(--tjg-radius-md)]">
             <div class="flex-between-center">
               <img
                 :src="AvatarUtils.getAvatarUrl(item.avatar)"
@@ -120,11 +120,17 @@
       <van-checkbox v-model="protocol" shape="square" icon-size="16px" />
       <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
         <span>{{ t('login.term.checkout.text1') }}</span>
-        <span @click.stop="emit('to-service-agreement')" class="color-[--tjg-color-primary-500] cursor-pointer">
+        <span
+          v-clickable
+          @click.stop="emit('to-service-agreement')"
+          class="color-[--tjg-color-primary-500] cursor-pointer">
           {{ t('login.term.checkout.text2') }}
         </span>
         <span>{{ t('login.term.checkout.text3') }}</span>
-        <span @click.stop="emit('to-privacy-agreement')" class="color-[--tjg-color-primary-500] cursor-pointer">
+        <span
+          v-clickable
+          @click.stop="emit('to-privacy-agreement')"
+          class="color-[--tjg-color-primary-500] cursor-pointer">
           {{ t('login.term.checkout.text4') }}
         </span>
       </div>
@@ -263,7 +269,7 @@ onUnmounted(() => {
   font-size: 12px;
   color: var(--tjg-text-tertiary);
   line-height: 1.6;
-  transition: max-height 0.25s ease;
+  transition: max-height var(--tjg-motion-duration-slow) ease;
   overflow: hidden;
   max-height: 0;
 

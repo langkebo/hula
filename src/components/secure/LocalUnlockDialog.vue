@@ -6,6 +6,7 @@
     preset="card"
     class="local-unlock-dialog"
     :closable="false"
+    :z-index="10000"
     :aria-label="dialogTitle">
     <div class="local-unlock-dialog__body">
       <!-- 不用 `preset="card"` 的 title 属性：naive-ui 会渲染

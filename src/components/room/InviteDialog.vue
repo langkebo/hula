@@ -194,7 +194,7 @@ watch(
 }
 
 .user-item {
-  @apply flex items-center gap-12px p-8px rounded-8px cursor-pointer transition-all;
+  @apply flex items-center gap-12px p-8px rounded-8px cursor-pointer transition-[width,transform,opacity,color,background-color,border-color,box-shadow];
 
   &:hover {
     background: var(--tjg-fill-hover);

@@ -354,6 +354,7 @@ onMounted(async () => {
 <style scoped lang="scss">
 .chat-history-container {
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--tjg-surface-subtle);

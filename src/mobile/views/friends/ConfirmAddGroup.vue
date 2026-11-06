@@ -19,6 +19,7 @@
                 <img
                   class="size-48px rounded-full object-cover"
                   :src="userInfo.avatar"
+                  :alt="userInfo.name || ''"
                   @error="($event.target as HTMLImageElement).src = '/logo.png'" />
 
                 <div class="flex flex-col gap-10px">

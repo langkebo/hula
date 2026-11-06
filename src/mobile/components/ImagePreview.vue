@@ -29,7 +29,7 @@
             @touchcancel.stop>
             <button
               v-if="showForward"
-              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
+              class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleForward"
               :aria-label="t('mobile_files.actions.forward')">
               <svg class="size-22px text-white">
@@ -38,7 +38,7 @@
             </button>
             <button
               v-if="showSave"
-              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
+              class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleSave"
               :aria-label="t('common.save')">
               <svg class="size-22px text-white">
@@ -47,7 +47,7 @@
             </button>
             <button
               v-if="showMore"
-              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
+              class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleMore"
               :aria-label="t('menu.ctx_menu_more')">
               <svg class="size-22px text-white">
@@ -280,7 +280,7 @@ const imageStyle = computed<CSSProperties>(() => {
       maxHeight: '100%',
       objectFit: 'contain',
       transform: `translate3d(${translate.value.x}px, ${translate.value.y}px, 0) scale(${scale.value})`,
-      transition: gestureMode.value === 'none' ? 'transform 0.25s ease' : 'none',
+      transition: gestureMode.value === 'none' ? 'transform var(--tjg-motion-duration-slow) ease' : 'none',
       transformOrigin: 'center center'
     }
   }
@@ -299,7 +299,7 @@ const imageStyle = computed<CSSProperties>(() => {
     maxHeight: `${availableHeight || rawHeight}px`,
     objectFit: 'contain',
     transform: `translate3d(${translate.value.x}px, ${translate.value.y}px, 0) scale(${scale.value})`,
-    transition: gestureMode.value === 'none' ? 'transform 0.25s ease' : 'none',
+    transition: gestureMode.value === 'none' ? 'transform var(--tjg-motion-duration-slow) ease' : 'none',
     transformOrigin: 'center center'
   }
 })
@@ -336,7 +336,7 @@ onUnmounted(() => {
 <style scoped>
 .image-preview-enter-active,
 .image-preview-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity var(--tjg-motion-duration-slow) ease;
 }
 
 .image-preview-enter-from,
@@ -346,7 +346,13 @@ onUnmounted(() => {
 
 .image-zoom-enter-active,
 .image-zoom-leave-active {
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition:
+    color var(--tjg-motion-duration-xslow) cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    background-color var(--tjg-motion-duration-xslow) cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    border-color var(--tjg-motion-duration-xslow) cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    box-shadow var(--tjg-motion-duration-xslow) cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity var(--tjg-motion-duration-xslow) cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform var(--tjg-motion-duration-xslow) cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .image-zoom-enter-from {

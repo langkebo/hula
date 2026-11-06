@@ -133,7 +133,13 @@ defineExpose({
   height: 8px;
   border-radius: 50%;
   z-index: 4;
-  transition: all 0.2s;
+  transition:
+    color var(--tjg-motion-duration-normal),
+    background-color var(--tjg-motion-duration-normal),
+    border-color var(--tjg-motion-duration-normal),
+    box-shadow var(--tjg-motion-duration-normal),
+    opacity var(--tjg-motion-duration-normal),
+    transform var(--tjg-motion-duration-normal);
 }
 
 .resize-handle.disabled {
@@ -217,7 +223,6 @@ defineExpose({
     height: 4px;
     background: var(--tjg-border-default);
     border-radius: 2px;
-    outline: none;
     margin: 0;
 
     &::-webkit-slider-thumb {

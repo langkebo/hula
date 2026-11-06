@@ -90,7 +90,7 @@
         </div>
 
         <!-- 位置信息显示 -->
-        <div v-if="selectedLocation" class="location-modal__info rounded-6px p-12px">
+        <div v-if="selectedLocation" class="location-modal__info rounded-[var(--tjg-radius-md)] p-12px">
           <n-flex vertical :size="8">
             <span class="text-[length:var(--tjg-font-size-base)] font-medium">
               {{ t('message.location.modal.info.current') }}

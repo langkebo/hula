@@ -48,7 +48,7 @@
         size="small"
         spellCheck="false"
         autoComplete="off"
-        class="flex-1 bg-[--tjg-surface-search] border-none rounded-6px text-[var(--text-xs)]">
+        class="flex-1 bg-[--tjg-surface-search] border-none rounded-[var(--tjg-radius-md)] text-[var(--text-xs)]">
         <template #prefix>
           <svg class="size-12px color-[--tjg-text-tertiary]">
             <use href="#search"></use>
@@ -148,7 +148,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .favorites-panel__item {
-  transition: background var(--tjg-motion-duration-fast, 150ms) ease;
+  transition: background var(--tjg-motion-duration-fast, var(--tjg-motion-duration-fast)) ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

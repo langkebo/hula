@@ -17,7 +17,6 @@
       data-testid="membership-tab"
       role="tab"
       :aria-selected="modelValue === tab.value"
-      :aria-controls="`membership-panel-${tab.value}`"
       @click="handleClick(tab.value)">
       <span>{{ t(tab.label) }}</span>
       <span

@@ -121,7 +121,7 @@ void load()
   background: transparent;
   color: var(--tjg-text-secondary);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);
@@ -157,7 +157,7 @@ void load()
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);
@@ -213,7 +213,13 @@ void load()
   color: var(--tjg-text-quaternary);
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.15s ease;
+  transition:
+    color var(--tjg-motion-duration-fast) ease,
+    background-color var(--tjg-motion-duration-fast) ease,
+    border-color var(--tjg-motion-duration-fast) ease,
+    box-shadow var(--tjg-motion-duration-fast) ease,
+    opacity var(--tjg-motion-duration-fast) ease,
+    transform var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-color-danger-100, color-mix(in srgb, var(--tjg-color-danger-500) 12%, transparent));

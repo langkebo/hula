@@ -1,6 +1,6 @@
 <template>
   <div class="m-quick-actions">
-    <div v-for="item in actions" :key="item.key" class="m-quick-item" @click="handleClick(item)">
+    <div v-clickable v-for="item in actions" :key="item.key" class="m-quick-item" @click="handleClick(item)">
       <div class="m-quick-icon">
         <Icon :icon="item.icon" :width="22" :height="22" />
       </div>

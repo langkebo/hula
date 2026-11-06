@@ -153,7 +153,13 @@ const onDiagnose = async () => {
   text-align: center;
   font-size: 12px;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition:
+    color var(--tjg-motion-duration-slow) ease,
+    background-color var(--tjg-motion-duration-slow) ease,
+    border-color var(--tjg-motion-duration-slow) ease,
+    box-shadow var(--tjg-motion-duration-slow) ease,
+    opacity var(--tjg-motion-duration-slow) ease,
+    transform var(--tjg-motion-duration-slow) ease;
 }
 
 .connection-status-banner--offline {
@@ -205,7 +211,7 @@ const onDiagnose = async () => {
   color: var(--tjg-text-inverse);
   font-size: 11px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background var(--tjg-motion-duration-normal);
 }
 
 .connection-status-banner__retry:hover {

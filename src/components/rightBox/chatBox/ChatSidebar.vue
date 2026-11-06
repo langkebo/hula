@@ -1,9 +1,10 @@
 <template>
   <main
     :style="panelStyle"
-    class="flex-shrink-0 flex flex-col transition-all duration-300 h-full"
+    class="flex-shrink-0 flex flex-col transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 h-full"
     :class="[panelClass, 'relative']">
     <div
+      v-clickable
       v-show="isGroup && !isHidden"
       role="button"
       :aria-label="isCollapsed ? t('home.chat_sidebar.toggle.expand') : t('home.chat_sidebar.toggle.collapse')"
@@ -72,6 +73,7 @@
             <template v-else-if="announcementSegments.length > 0">
               <template v-for="(segment, index) in announcementSegments" :key="`${index}-${segment.text}`">
                 <span
+                  v-clickable
                   v-if="segment.isLink"
                   class="cursor-pointer hover:underline text-[--tjg-color-primary-500]"
                   @click.stop="openAnnouncementLink(segment.text)">
@@ -136,7 +138,7 @@
             size="small"
             spellCheck="false"
             autoComplete="off"
-            class="flex-1 bg-[--tjg-surface-search] border-none rounded-6px text-[var(--text-xs)]">
+            class="flex-1 bg-[--tjg-surface-search] border-none rounded-[var(--tjg-radius-md)] text-[var(--text-xs)]">
             <template #prefix>
               <svg class="size-12px color-[--tjg-text-tertiary]">
                 <use href="#search"></use>
@@ -162,6 +164,7 @@
             <template v-for="item in visibleMemberItems" :key="item.key">
               <!-- 分组标题 -->
               <div
+                v-clickable
                 v-if="item.kind === 'header'"
                 :data-testid="`group-header-${item.group}`"
                 :role="item.group === 'offline' ? 'button' : undefined"

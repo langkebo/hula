@@ -28,7 +28,8 @@
     </div>
 
     <!-- 状态面板 -->
-    <div class="relative rounded-6px overflow-hidden bg-[--tjg-surface-app] h-80px flex-col-center gap-8px">
+    <div
+      class="relative rounded-[var(--tjg-radius-md)] overflow-hidden bg-[--tjg-surface-app] h-80px flex-col-center gap-8px">
       <template v-if="isActive">
         <p class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-secondary]">
           {{ t('chat.beacon.remaining_time') }} {{ remainingTimeText }}

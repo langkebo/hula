@@ -172,7 +172,6 @@ const handleSubmit = async () => {
   font-size: 13px;
   line-height: 1.4;
   resize: none;
-  outline: none;
   font-family: inherit;
 
   &:focus {

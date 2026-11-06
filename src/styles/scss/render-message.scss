@@ -72,7 +72,7 @@
 
 /* 消息入场动画 — 对齐原型设计 */
 .msg-row {
-  animation: msgIn 0.15s ease-out;
+  animation: msgIn var(--tjg-motion-duration-fast) ease-out;
 }
 @keyframes msgIn {
   from {
@@ -96,7 +96,7 @@
   border-radius: 50px;
   padding: 6px 8px;
   box-shadow: var(--tjg-shadow-sm);
-  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color var(--tjg-motion-duration-xslow) cubic-bezier(0.4, 0, 0.2, 1);
   // 触屏没有真实 hover，只在具备指针悬停能力的设备上启用，避免点击后粘滞变色
   @media (hover: hover) and (pointer: fine) {
     &:hover {
@@ -115,11 +115,11 @@
   @apply text-[--tjg-text-tertiary] rounded-8px p-4px cursor-pointer select-none;
   svg,
   span {
-    transition: color 0.4s ease-in-out;
+    transition: color var(--tjg-motion-duration-xslow) ease-in-out;
   }
   .reply-avatar {
     filter: grayscale(60%);
-    transition: filter 0.4s ease-in-out;
+    transition: filter var(--tjg-motion-duration-xslow) ease-in-out;
   }
   &:hover {
     .reply-avatar {
@@ -137,7 +137,7 @@
   }
   /** 回复图片的计数器样式 */
   .reply-img-sub {
-    @apply absolute bottom-8px right-6px color-[--tjg-color-primary-500] bg-[--tjg-border-default] p-[2px_4px] rounded-6px text-10px;
+    @apply absolute bottom-8px right-6px color-[--tjg-color-primary-500] bg-[--tjg-border-default] p-[2px_4px] rounded-[var(--tjg-radius-md)] text-10px;
   }
 }
 /** emoji回复气泡的样式 */
@@ -157,14 +157,14 @@
   background-color: color-mix(in srgb, var(--tjg-text-secondary) 12%, transparent);
   border-radius: 8px;
   margin: 0 8px;
-  transition: all 0.4s ease-in-out;
+  transition: color var(--tjg-motion-duration-xslow) ease-in-out, background-color var(--tjg-motion-duration-xslow) ease-in-out, border-color var(--tjg-motion-duration-xslow) ease-in-out, box-shadow var(--tjg-motion-duration-xslow) ease-in-out, opacity var(--tjg-motion-duration-xslow) ease-in-out, transform var(--tjg-motion-duration-xslow) ease-in-out;
 }
 /**  跳转到回复内容时候的退出动画 */
 .reply-exit {
   margin: 0;
   background-color: inherit;
   border-radius: 0;
-  transition: all 0.4s ease-in-out;
+  transition: color var(--tjg-motion-duration-xslow) ease-in-out, background-color var(--tjg-motion-duration-xslow) ease-in-out, border-color var(--tjg-motion-duration-xslow) ease-in-out, box-shadow var(--tjg-motion-duration-xslow) ease-in-out, opacity var(--tjg-motion-duration-xslow) ease-in-out, transform var(--tjg-motion-duration-xslow) ease-in-out;
 }
 
 /** 翻译气泡的样式 */
@@ -182,7 +182,7 @@
 /** 时间搓显示时候的动画(单聊) */
 .fade-single-enter-active,
 .fade-single-leave-active {
-  transition: opacity 0.4s ease-in-out;
+  transition: opacity var(--tjg-motion-duration-xslow) ease-in-out;
 }
 .fade-single-enter-from,
 .fade-single-leave-to {
@@ -192,7 +192,7 @@
 /** 时间搓显示时候的动画(群聊) */
 .fade-group-enter-active,
 .fade-group-leave-active {
-  transition: opacity 0.4s ease-in-out;
+  transition: opacity var(--tjg-motion-duration-xslow) ease-in-out;
 }
 .fade-group-enter-from,
 .fade-group-leave-to {
@@ -202,7 +202,7 @@
 /** 初始化加载动画 */
 .chat-init-enter-active,
 .chat-init-leave-active {
-  transition: opacity 0.4s ease-in-out;
+  transition: opacity var(--tjg-motion-duration-xslow) ease-in-out;
 }
 .chat-init-enter-from,
 .fchat-init-leave-to {
@@ -212,7 +212,7 @@
 /** 翻译动画 */
 .fade-translate-enter-active,
 .fade-translate-leave-active {
-  transition: opacity 0.4s ease-in-out;
+  transition: opacity var(--tjg-motion-duration-xslow) ease-in-out;
 }
 .fade-translate-enter-from,
 .fade-translate-leave-to {
@@ -222,7 +222,7 @@
 /** 公告显示/隐藏动画 */
 .announcement-enter-active,
 .announcement-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1), background-color var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1), border-color var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1), box-shadow var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1), opacity var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1), transform var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: top;
 }
 .announcement-enter-from,
@@ -248,7 +248,7 @@
   margin: 0;
   height: 34px;
   line-height: 36px;
-  transition: all 0.3s ease-in-out;
+  transition: color var(--tjg-motion-duration-slow) ease-in-out, background-color var(--tjg-motion-duration-slow) ease-in-out, border-color var(--tjg-motion-duration-slow) ease-in-out, box-shadow var(--tjg-motion-duration-slow) ease-in-out, opacity var(--tjg-motion-duration-slow) ease-in-out, transform var(--tjg-motion-duration-slow) ease-in-out;
   z-index: 10;
 }
 

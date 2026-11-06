@@ -179,7 +179,7 @@
           </label>
 
           <n-flex justify="end">
-            <n-button @click="handleConfirm" class="w-78px" color="var(--tjg-color-primary-500)">
+            <n-button @click="handleConfirm" class="w-78px" :color="cssVar('--tjg-color-primary-500')">
               {{ t('components.common.confirm') }}
             </n-button>
             <n-button @click="tipsRef.show = false" class="w-78px" secondary>
@@ -205,6 +205,7 @@ import router from '@/router'
 import { useAlwaysOnTopStore } from '@/stores/domains/settings/alwaysOnTop'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { cssVar } from '@/utils/CssUtils'
 import { createLogger } from '@/utils/Logger'
 import { isCompatibility, isMac, isWindows } from '@/utils/PlatformConstants'
 

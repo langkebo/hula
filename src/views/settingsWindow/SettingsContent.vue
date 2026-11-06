@@ -276,7 +276,7 @@ onErrorCaptured((err) => {
   background: var(--tjg-surface-panel);
   position: relative;
 
-  @include responsive.respond-to-max('md') {
+  @include responsive.down('md') {
     padding: var(--tjg-space-4);
   }
 }

@@ -1,5 +1,5 @@
 <template>
-  <div :class="['user-item', { 'user-item--selected': isSelected }]" @click="handleClick">
+  <div v-clickable :class="['user-item', { 'user-item--selected': isSelected }]" @click="handleClick">
     <!-- 头像 -->
     <div class="user-avatar">
       <img
@@ -126,7 +126,13 @@ const handleAvatarError = (event: Event) => {
   padding: 10px 8px;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    color var(--tjg-motion-duration-normal) ease,
+    background-color var(--tjg-motion-duration-normal) ease,
+    border-color var(--tjg-motion-duration-normal) ease,
+    box-shadow var(--tjg-motion-duration-normal) ease,
+    opacity var(--tjg-motion-duration-normal) ease,
+    transform var(--tjg-motion-duration-normal) ease;
   user-select: none;
 
   &:hover:not(&--selected) {

@@ -284,7 +284,7 @@ const onEmojiHandle = (item: string | EmojiUrlPayload, type?: 'emoji' | 'emoji-u
       background-color: var(--tjg-fill-hover);
 
       svg {
-        animation: twinkle 0.3s ease-in-out;
+        animation: twinkle var(--tjg-motion-duration-slow) ease-in-out;
       }
     }
   }

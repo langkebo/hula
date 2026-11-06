@@ -14,7 +14,7 @@
             data-testid="tab-login"
             @click="activeTab = 'login'"
             :class="[
-              'z-999 w-100px text-center transition-all duration-300 ease-out',
+              'z-999 w-100px text-center transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-out',
               activeTab === 'login' ? 'text-(18px [--tjg-text-primary])' : 'text-(16px [--tjg-text-secondary])'
             ]">
             {{ t('login.mobile.tabs.login') }}
@@ -22,7 +22,7 @@
           <div
             @click="activeTab = 'register'"
             :class="[
-              'z-999 w-100px text-center transition-all duration-300 ease-out',
+              'z-999 w-100px text-center transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-out',
               activeTab === 'register' ? 'text-(18px [--tjg-text-primary])' : 'text-(16px [--tjg-text-secondary])'
             ]">
             {{ t('login.mobile.tabs.register') }}

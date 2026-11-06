@@ -6,7 +6,7 @@
     <!-- 主体内容区域 -->
     <div class="flex-1 overflow-auto">
       <!-- 视频展示区域 -->
-      <div class="min-h-[calc(100vh/var(--page-scale,1)-124px)] flex-center w-full h-full">
+      <div class="min-h-[calc(var(--tjg-viewport-height, 100vh)/var(--page-scale,1)-124px)] flex-center w-full h-full">
         <video
           ref="videoRef"
           :src="currentVideo"
@@ -23,7 +23,7 @@
         <transition name="viewer-tip">
           <div
             v-if="showTip"
-            class="fixed z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 px-24px py-12px rounded-8px text-(white 14px) transition-all duration-300 backdrop-blur-sm select-none flex items-center gap-8px">
+            class="fixed z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 px-24px py-12px rounded-8px text-(white 14px) transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 backdrop-blur-sm select-none flex items-center gap-8px">
             <svg class="size-16px"><use href="#info"></use></svg>
             {{ tipText }}
           </div>

@@ -11,7 +11,7 @@
           <div class="info-item">
             <span class="label">{{ t('home.chat_header.group_name') }}</span>
             <div class="value-row">
-              <span v-if="!isEditingName" class="value" @click="startEditName">
+              <span v-clickable v-if="!isEditingName" class="value" @click="startEditName">
                 {{ groupName }}
               </span>
               <n-input
@@ -82,7 +82,7 @@
         <n-divider />
 
         <div class="settings-section">
-          <div class="setting-item" @click="handlePinRoom">
+          <div v-clickable class="setting-item" @click="handlePinRoom">
             <span class="setting-label">{{ t('home.chat_header.pin_room') }}</span>
             <n-switch :value="isPinned" size="small" />
           </div>
@@ -99,7 +99,7 @@
               @update:value="handleMuteChange" />
           </div>
 
-          <div class="setting-item danger" @click="handleClearMessages">
+          <div v-clickable class="setting-item danger" @click="handleClearMessages">
             <span class="setting-label">{{ t('home.chat_header.clear_messages') }}</span>
             <n-icon size="18">
               <svg><use href="#delete"></use></svg>

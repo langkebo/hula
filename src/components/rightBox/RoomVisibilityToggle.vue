@@ -103,7 +103,13 @@ watch(() => props.roomId, loadVisibility)
   color: var(--tjg-text-primary);
   font-size: 12px;
   cursor: pointer;
-  transition: all var(--tjg-motion-duration-fast) ease;
+  transition:
+    color var(--tjg-motion-duration-fast) ease,
+    background-color var(--tjg-motion-duration-fast) ease,
+    border-color var(--tjg-motion-duration-fast) ease,
+    box-shadow var(--tjg-motion-duration-fast) ease,
+    opacity var(--tjg-motion-duration-fast) ease,
+    transform var(--tjg-motion-duration-fast) ease;
 
   &:hover:not(:disabled) {
     border-color: var(--tjg-color-primary-500);

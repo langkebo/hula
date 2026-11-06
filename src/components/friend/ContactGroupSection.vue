@@ -131,7 +131,8 @@ defineEmits<{
   width: 100%;
   text-align: left;
   border-radius: var(--tjg-radius-xs, 4px);
-  transition: background-color var(--tjg-motion-duration-fast, 120ms) var(--tjg-motion-ease-standard);
+  transition: background-color var(--tjg-motion-duration-fast, var(--tjg-motion-duration-fast))
+    var(--tjg-motion-ease-standard);
 
   &:hover {
     background: var(--tjg-surface-list-hover);
@@ -146,7 +147,8 @@ defineEmits<{
 .contact-group-section__arrow {
   flex-shrink: 0;
   color: var(--tjg-text-tertiary);
-  transition: transform var(--tjg-motion-duration-normal, 180ms) var(--tjg-motion-ease-standard);
+  transition: transform var(--tjg-motion-duration-normal, var(--tjg-motion-duration-normal))
+    var(--tjg-motion-ease-standard);
 }
 
 .contact-group-section__arrow--collapsed {

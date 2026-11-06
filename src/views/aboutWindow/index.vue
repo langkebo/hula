@@ -109,7 +109,13 @@ onMounted(async () => {
   cursor: pointer;
   .computer {
     position: relative;
-    transition: all 0.2s;
+    transition:
+      color var(--tjg-motion-duration-normal),
+      background-color var(--tjg-motion-duration-normal),
+      border-color var(--tjg-motion-duration-normal),
+      box-shadow var(--tjg-motion-duration-normal),
+      opacity var(--tjg-motion-duration-normal),
+      transform var(--tjg-motion-duration-normal);
   }
 }
 </style>

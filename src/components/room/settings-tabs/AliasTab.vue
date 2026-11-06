@@ -159,12 +159,4 @@ onMounted(loadAliases)
   flex-wrap: wrap;
   gap: 6px;
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .rs-tab,
-  .rs-tab * {
-    transition: none !important;
-    animation: none !important;
-  }
-}
 </style>

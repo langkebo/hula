@@ -41,7 +41,7 @@ const validateMinLength = validatePasswordMinLength
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: color 0.2s;
+  transition: color var(--tjg-motion-duration-normal);
 
   &::before {
     content: '○';

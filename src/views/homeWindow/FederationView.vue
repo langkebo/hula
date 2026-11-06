@@ -93,7 +93,8 @@ onMounted(() => {
   background: transparent;
   color: var(--tjg-text-secondary);
   cursor: pointer;
-  transition: background-color var(--tjg-motion-duration-fast, 150ms) var(--tjg-motion-ease-standard, ease);
+  transition: background-color var(--tjg-motion-duration-fast, var(--tjg-motion-duration-fast))
+    var(--tjg-motion-ease-standard, ease);
 
   &:hover:not(:disabled) {
     background: var(--tjg-surface-list-hover);
@@ -120,7 +121,7 @@ onMounted(() => {
   border: 2px solid var(--tjg-border-default);
   border-top-color: var(--tjg-color-primary-400);
   border-radius: 50%;
-  animation: federation-spin 0.8s linear infinite;
+  animation: federation-spin var(--tjg-motion-duration-2xslow) linear infinite;
 }
 
 @keyframes federation-spin {
@@ -151,7 +152,8 @@ onMounted(() => {
   gap: 10px;
   padding: 10px 12px;
   border-radius: var(--tjg-radius-sm, 6px);
-  transition: background-color var(--tjg-motion-duration-fast, 150ms) var(--tjg-motion-ease-standard, ease);
+  transition: background-color var(--tjg-motion-duration-fast, var(--tjg-motion-duration-fast))
+    var(--tjg-motion-ease-standard, ease);
 
   &:hover {
     background: var(--tjg-surface-list-hover);

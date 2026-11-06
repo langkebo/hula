@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { configureLocalUnlock, isLocalUnlockConfigured, unlockLocalUnlock } from '@/services/secure/localUnlockKey'
 import { getSecureStorageBackendInfo } from '@/services/secure/secureStorage'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LocalUnlockGate')
@@ -48,6 +49,14 @@ export function useLocalUnlockGate() {
    *          本次会话 E2EE 不可用，但**不会**把私钥写成明文）
    */
   async function ensureReady(): Promise<boolean> {
+    // 浏览器 / 非 Tauri 宿主（含 `pnpm dev`）既没有安全存储也没有 E2EE，
+    // 门禁无从保护任何东西；若在此等待交互，启动 splash（z-index 9999）
+    // 会盖住对话框，形成「门禁等点击、bootstrap 等门禁、splash 等 bootstrap」的死锁。
+    if (!hasTauriRuntime()) {
+      logger.info('非 Tauri 运行时，跳过本地解锁门禁')
+      return true
+    }
+
     let info = null
     try {
       info = await getSecureStorageBackendInfo()

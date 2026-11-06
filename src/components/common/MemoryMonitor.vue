@@ -350,7 +350,7 @@ const detachDragListeners = () => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background var(--tjg-motion-duration-normal) ease;
   padding: 0;
 }
 .minimize-btn:hover {

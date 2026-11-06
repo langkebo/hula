@@ -76,11 +76,17 @@
       <van-checkbox v-model="registerProtocol" shape="square" icon-size="16px" />
       <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
         <span>{{ t('login.term.checkout.text1') }}</span>
-        <span @click.stop="emit('to-service-agreement')" class="color-[--tjg-color-primary-500] cursor-pointer">
+        <span
+          v-clickable
+          @click.stop="emit('to-service-agreement')"
+          class="color-[--tjg-color-primary-500] cursor-pointer">
           {{ t('login.term.checkout.text2') }}
         </span>
         <span>{{ t('login.term.checkout.text3') }}</span>
-        <span @click.stop="emit('to-privacy-agreement')" class="color-[--tjg-color-primary-500] cursor-pointer">
+        <span
+          v-clickable
+          @click.stop="emit('to-privacy-agreement')"
+          class="color-[--tjg-color-primary-500] cursor-pointer">
           {{ t('login.term.checkout.text4') }}
         </span>
       </div>
@@ -118,7 +124,7 @@
         v-for="option in commonEmailDomains"
         :key="option.value"
         @click="selectEmailSuggestion(option.value)"
-        class="p-8px hover:bg-[--tjg-surface-panel-muted] hover:rounded-6px text-14px color-[--chat-text-color] text-left cursor-pointer">
+        class="p-8px hover:bg-[--tjg-surface-panel-muted] hover:rounded-[var(--tjg-radius-md)] text-14px color-[--chat-text-color] text-left cursor-pointer">
         {{ option.label }}
       </div>
     </div>

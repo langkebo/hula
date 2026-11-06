@@ -330,7 +330,7 @@ export const CheckUpdate = defineComponent(() => {
 
                     <p class="relative text-(20px [--tjg-color-primary-500]) font-500">{newVersion.value}</p>
 
-                    <span class="absolute top--10px right--44px p-[4px_8px] bg-[--tjg-color-danger-100] rounded-6px text-(12px [--tjg-color-danger-500])">
+                    <span class="absolute top--10px right--44px p-[4px_8px] bg-[--tjg-color-danger-100] rounded-[var(--tjg-radius-md)] text-(12px [--tjg-color-danger-500])">
                       {t('message.check_update.new_tag')}
                     </span>
                   </NFlex>
@@ -354,7 +354,7 @@ export const CheckUpdate = defineComponent(() => {
             <NScrollbar class="max-h-460px p-[0_10px] box-border">
               {newCommitLog.value.length > 0 ? (
                 <>
-                  <div class="p-[4px_8px] mt-4px w-fit bg-[--tjg-color-danger-100] rounded-6px text-(12px [--tjg-color-danger-500])">
+                  <div class="p-[4px_8px] mt-4px w-fit bg-[--tjg-color-danger-100] rounded-[var(--tjg-radius-md)] text-(12px [--tjg-color-danger-500])">
                     {newVersion.value}
                   </div>
 
@@ -380,7 +380,7 @@ export const CheckUpdate = defineComponent(() => {
                         <use href={'#RightArrow'}></use>
                       </svg>
 
-                      <span class="p-[4px_8px] w-fit bg-[--tjg-surface-subtle] rounded-6px text-(12px [--tjg-text-quaternary])">
+                      <span class="p-[4px_8px] w-fit bg-[--tjg-surface-subtle] rounded-[var(--tjg-radius-md)] text-(12px [--tjg-text-quaternary])">
                         {currentVersion.value}
                       </span>
                     </NFlex>

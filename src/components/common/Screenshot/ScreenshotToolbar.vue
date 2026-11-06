@@ -1,43 +1,48 @@
 <template>
   <div ref="buttonGroupRef" class="button-group" v-show="visible && !isDragging && !isResizing">
     <span
+      v-clickable
       :class="{ active: currentDrawTool === 'rect' }"
       :title="t('message.screenshot.tool_rect')"
       @click="handleToolClick('rect')">
       <svg><use href="#square"></use></svg>
     </span>
     <span
+      v-clickable
       :class="{ active: currentDrawTool === 'circle' }"
       :title="t('message.screenshot.tool_circle')"
       @click="handleToolClick('circle')">
       <svg><use href="#round"></use></svg>
     </span>
     <span
+      v-clickable
       :class="{ active: currentDrawTool === 'arrow' }"
       :title="t('message.screenshot.tool_arrow')"
       @click="handleToolClick('arrow')">
       <svg><use href="#arrow-right-up"></use></svg>
     </span>
     <span
+      v-clickable
       :class="{ active: currentDrawTool === 'mosaic' }"
       :title="t('message.screenshot.tool_mosaic')"
       @click="handleToolClick('mosaic')">
       <svg><use href="#mosaic"></use></svg>
     </span>
-    <span :title="t('message.screenshot.redo')" @click="handleRedo">
+    <span v-clickable :title="t('message.screenshot.redo')" @click="handleRedo">
       <svg><use href="#refresh"></use></svg>
     </span>
     <span
+      v-clickable
       :class="{ disabled: !canUndo }"
       :aria-disabled="!canUndo"
       :title="t('message.screenshot.undo')"
       @click.stop="handleUndo">
       <svg><use href="#return"></use></svg>
     </span>
-    <span :title="t('message.screenshot.confirm')" @click="handleConfirm">
+    <span v-clickable :title="t('message.screenshot.confirm')" @click="handleConfirm">
       <svg><use href="#check-small"></use></svg>
     </span>
-    <span :title="t('message.screenshot.cancel')" @click="handleCancel">
+    <span v-clickable :title="t('message.screenshot.cancel')" @click="handleCancel">
       <svg><use href="#close"></use></svg>
     </span>
   </div>

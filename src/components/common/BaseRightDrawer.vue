@@ -1,19 +1,9 @@
 <template>
   <Teleport to="body">
     <Transition name="rj-drawer-fade">
-      <div
-        v-if="show"
-        class="rj-drawer-overlay"
-        @click.self="handleClose"
-        @keydown.esc="handleClose">
+      <div v-if="show" class="rj-drawer-overlay" @click.self="handleClose" @keydown.esc="handleClose">
         <Transition name="rj-drawer-slide" appear>
-          <aside
-            v-if="show"
-            class="rj-drawer"
-            role="dialog"
-            aria-modal="true"
-            :aria-label="title"
-            :style="{ width }">
+          <aside v-if="show" class="rj-drawer" role="dialog" aria-modal="true" :aria-label="title" :style="{ width }">
             <header class="rj-drawer__header">
               <span class="rj-drawer__title">{{ title }}</span>
               <div class="rj-drawer__header-actions">
@@ -163,7 +153,7 @@ const handleClose = () => {
 
 .rj-drawer-slide-enter-active,
 .rj-drawer-slide-leave-active {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .rj-drawer-slide-enter-from,

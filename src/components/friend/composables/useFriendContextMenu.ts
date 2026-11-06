@@ -172,7 +172,7 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
             value: friend.note ?? friend.remark ?? '',
             placeholder: t('friend.detail.note_placeholder'),
             style:
-              'width: 100%; padding: 8px 12px; border: 1px solid var(--tjg-border-default); border-radius: 6px; font-size: 14px; outline: none; background: var(--tjg-surface-panel); color: inherit;',
+              'width: 100%; padding: 8px 12px; border: 1px solid var(--tjg-border-default); border-radius: 6px; font-size: 14px; background: var(--tjg-surface-panel); color: inherit;',
             maxlength: 1000
           })
         ]),
@@ -198,7 +198,7 @@ export function useFriendContextMenu({ contextMenuRef }: UseFriendContextMenuOpt
             value: friend.remark ?? friend.displayName ?? '',
             placeholder: t('friend.detail.display_name_placeholder'),
             style:
-              'width: 100%; padding: 8px 12px; border: 1px solid var(--tjg-border-default); border-radius: 6px; font-size: 14px; outline: none; background: var(--tjg-surface-panel); color: inherit;',
+              'width: 100%; padding: 8px 12px; border: 1px solid var(--tjg-border-default); border-radius: 6px; font-size: 14px; background: var(--tjg-surface-panel); color: inherit;',
             maxlength: 256
           })
         ]),

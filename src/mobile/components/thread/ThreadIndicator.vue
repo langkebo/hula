@@ -1,5 +1,5 @@
 <template>
-  <div v-if="hasReplies" class="thread-indicator" @click="handleOpenThread">
+  <div v-clickable v-if="hasReplies" class="thread-indicator" @click="handleOpenThread">
     <van-icon name="chat-o" size="14" />
     <span class="reply-count">{{ replyCount }}</span>
     <van-icon name="arrow" size="12" />

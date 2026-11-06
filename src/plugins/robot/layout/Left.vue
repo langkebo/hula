@@ -37,7 +37,10 @@
         </div> -->
       </n-flex>
       <!-- 会话列表 -->
-      <n-scrollbar ref="scrollbar" class="max-h-[calc(100vh/var(--page-scale,1)-286px)] pr-8px" @scroll="handleScroll">
+      <n-scrollbar
+        ref="scrollbar"
+        class="max-h-[calc(var(--tjg-viewport-height, 100vh)/var(--page-scale,1)-286px)] pr-8px"
+        @scroll="handleScroll">
         <!-- 加载状态 -->
         <div v-if="loading && pageNo === 1" class="flex justify-center items-center py-20px">
           <n-spin size="small" />
@@ -77,7 +80,7 @@
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
-                  class="w-[200px] h-22px lh-22px rounded-6px"></n-input>
+                  class="w-[200px] h-22px lh-22px rounded-[var(--tjg-radius-md)]"></n-input>
                 <svg
                   @click.stop="deleteChat(item)"
                   class="chat-item-delete color-[--tjg-text-primary] size-20px absolute right-4px top-4px">
@@ -728,19 +731,25 @@ onMounted(async () => {
 
   &:hover {
     .chat-item-delete {
-      @apply opacity-100 -translate-x-2 transition-all duration-800 ease-in-out;
+      @apply opacity-100 -translate-x-2 transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-800 ease-in-out;
     }
   }
 }
 
 .chat-item-delete {
-  @apply opacity-0 transition-all duration-800 ease-in-out;
+  @apply opacity-0 transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-800 ease-in-out;
 }
 
 .list-move, /* 对移动中的元素应用的过渡 */
 .list-enter-active,
 .list-leave-active {
-  transition: all 0.5s ease;
+  transition:
+    color var(--tjg-motion-duration-xslow) ease,
+    background-color var(--tjg-motion-duration-xslow) ease,
+    border-color var(--tjg-motion-duration-xslow) ease,
+    box-shadow var(--tjg-motion-duration-xslow) ease,
+    opacity var(--tjg-motion-duration-xslow) ease,
+    transform var(--tjg-motion-duration-xslow) ease;
 }
 
 .list-enter-from,

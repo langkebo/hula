@@ -9,7 +9,7 @@
         <div class="relative w-full h-full flex items-center justify-center overflow-hidden">
           <div class="absolute rounded-8 bg-black/75 z-20 shadow-lg" :style="backStyle">
             <button
-              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
+              class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleClose"
               :aria-label="t('common.back')">
               <svg class="size-22px text-white rotate-180">
@@ -30,14 +30,14 @@
           <div class="absolute flex gap-3 p-2 rounded-8 text-white bg-black/75 z-20 shadow-lg" :style="actionStyle">
             <button
               v-if="showSave"
-              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
+              class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleSave"
               :aria-label="t('common.save')">
               <svg class="size-22px text-white"><use href="#Importing"></use></svg>
             </button>
             <button
               v-if="showMore"
-              class="w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer"
+              class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleMore"
               :aria-label="t('menu.ctx_menu_more')">
               <svg class="size-22px text-white"><use href="#more"></use></svg>
@@ -192,7 +192,7 @@ onMounted(() => {
 <style scoped>
 .video-preview-enter-active,
 .video-preview-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--tjg-motion-duration-normal) ease;
 }
 
 .video-preview-enter-from,

@@ -237,7 +237,6 @@ function segments(item: SearchResult): Array<{ text: string; hit: boolean }> {
   flex: 1;
   min-width: 0;
   border: none;
-  outline: none;
   background: transparent;
   font-size: 14px;
   color: var(--tjg-text-primary);

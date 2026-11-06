@@ -12,6 +12,7 @@
                 <template v-for="item in section.items" :key="item.id">
                   <div v-if="item.divider" class="menu-divider" />
                   <div
+                    v-clickable
                     v-else
                     class="menu-item"
                     :class="{
@@ -199,7 +200,7 @@ onUnmounted(() => {
   height: 40px;
   padding: 0 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--tjg-motion-duration-normal);
 }
 
 .menu-item:hover {
@@ -233,7 +234,7 @@ onUnmounted(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--tjg-motion-duration-normal) ease;
 }
 
 .fade-enter-from,

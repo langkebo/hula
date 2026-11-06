@@ -42,7 +42,7 @@
           type="textarea"
           :placeholder="t('message.group_verify.placeholder')" />
 
-        <n-button class="mt-120px" color="var(--tjg-color-primary-500)" @click="addFriend">
+        <n-button class="mt-120px" :color="cssVar('--tjg-color-primary-500')" @click="addFriend">
           {{ t('message.group_verify.send_btn') }}
         </n-button>
       </n-flex>
@@ -57,6 +57,7 @@ import { countGraphemes } from '@/composables/common/useCommon'
 import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+import { cssVar } from '@/utils/CssUtils'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('AddGroupVerify')

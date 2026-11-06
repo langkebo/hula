@@ -23,7 +23,7 @@
           autoCorrect="off"
           autoCapitalize="off"
           size="small"
-          class="w-[200px] rounded-6px border-(solid 1px [--tjg-border-default])">
+          class="w-[200px] rounded-[var(--tjg-radius-md)] border-(solid 1px [--tjg-border-default])">
           <template #prefix>
             <svg class="size-16px text-[--tjg-text-secondary] opacity-60">
               <use href="#search"></use>
@@ -83,7 +83,7 @@
             v-if="selectedUser"
             @click="clearUserFilter"
             ghost
-            color="var(--tjg-color-primary-500)"
+            :color="cssVar('--tjg-color-primary-500')"
             size="small">
             {{ t('fileManager.search.showAllUsers') }}
           </n-button>
@@ -100,6 +100,7 @@ import ContextMenu from '@/components/common/ContextMenu.vue'
 import { useDownload } from '@/composables/common/useDownload'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { saveFileAttachmentAs, saveVideoAttachmentAs } from '@/utils/AttachmentSaver'
+import { cssVar } from '@/utils/CssUtils'
 import { createLogger } from '@/utils/Logger'
 import EmptyState from './FileManagerEmptyState.vue'
 import {
@@ -255,7 +256,7 @@ const clearUserFilter = () => {
 
 <style scoped lang="scss">
 .time-group {
-  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-6px text-[--tjg-text-primary] bg-[--time-group-bg] backdrop-blur-md;
+  @apply sticky top-10px z-10 flex items-center justify-between p-12px rounded-[var(--tjg-radius-md)] text-[--tjg-text-primary] bg-[--time-group-bg] backdrop-blur-md;
 }
 
 .file-meta-info {

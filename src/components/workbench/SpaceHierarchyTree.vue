@@ -69,7 +69,7 @@ const handleSelect = (space: SpaceInfo) => {
   background: transparent;
   color: var(--tjg-text-secondary);
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   &:hover {
     background: var(--tjg-surface-list-hover);

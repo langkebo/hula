@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { WEB_SESSION_FALLBACK_STORAGE_KEY } from '../src/utils/storageKeys'
 import { loginOnMobileUi } from './support/androidDevice'
 
 /**
@@ -10,7 +11,7 @@ import { loginOnMobileUi } from './support/androidDevice'
  *
  * 现在 `SessionRestoreService.getStoredTokens()` 在 Rust 侧无令牌时回退到浏览器
  * at-rest token（`tjg.matrix.accessToken`）；是否允许这么用由显式开关
- * `tjg:session:web-fallback=1` 控制（真机默认关闭，凭证只由 Rust 保管）。
+ * `${WEB_SESSION_FALLBACK_STORAGE_KEY}=1` 控制（真机默认关闭，凭证只由 Rust 保管）。
  *
  * 这条用例就是该回退的端到端证明：登录 → 整页 reload → 仍在登录态。
  *
@@ -46,10 +47,10 @@ test.describe('浏览器态会话恢复', () => {
     const account = await registerAccount('mrestore')
 
     // 两个关键前置：跳过引导 + 打开 web 会话回退开关（shim 场景必须显式开）
-    await page.addInitScript(() => {
+    await page.addInitScript((fallbackKey) => {
       window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
-      window.localStorage.setItem('tjg:session:web-fallback', '1')
-    })
+      window.localStorage.setItem(fallbackKey, '1')
+    }, WEB_SESSION_FALLBACK_STORAGE_KEY)
 
     await loginOnMobileUi(page, { appUrl: APP_URL, account: account.username, password: account.password })
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 20_000 }).toContain('/mobile/')

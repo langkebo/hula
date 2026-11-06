@@ -40,7 +40,11 @@
     <template v-else>
       <n-flex vertical :size="20" class="size-full p-10px box-border z-10 relative">
         <!-- 头像 + 状态指示 -->
-        <div class="avatar-wrapper relative" :class="{ 'cursor-pointer': isCurrentUserUid }" @click="openEditInfo">
+        <div
+          v-clickable
+          class="avatar-wrapper relative"
+          :class="{ 'cursor-pointer': isCurrentUserUid }"
+          @click="openEditInfo">
           <div v-if="isCurrentUserUid" class="hover-area absolute top-8px left-8px w-80px h-80px rounded-full z-20">
             <div class="avatar-hover absolute inset-0 rounded-full"></div>
           </div>
@@ -109,6 +113,7 @@
           <n-tooltip trigger="hover">
             <template #trigger>
               <span
+                v-clickable
                 class="flex items-center gap-4px cursor-pointer hover:color-[--tjg-text-tertiary] hover:transition-colors outline-none"
                 role="button"
                 tabindex="0"
@@ -457,7 +462,7 @@ onMounted(() => {
   .hover-area {
     .avatar-hover {
       opacity: 0;
-      transition: opacity 0.4s ease-in-out;
+      transition: opacity var(--tjg-motion-duration-xslow) ease-in-out;
       background: var(--tjg-overlay-mask-subtle);
       cursor: pointer;
     }

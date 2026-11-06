@@ -16,6 +16,7 @@
           type="button"
           data-test="quick-emoji-btn"
           :data-emoji="item.emoji"
+          :aria-label="item.emoji"
           :class="[
             'mobile-reaction-picker__emoji',
             { 'mobile-reaction-picker__emoji--active': hasReacted(item.emoji) },
@@ -132,7 +133,13 @@ watch(
     background: var(--tjg-surface-panel-muted);
     cursor: pointer;
     padding: 0;
-    transition: all 0.15s ease;
+    transition:
+      color var(--tjg-motion-duration-fast) ease,
+      background-color var(--tjg-motion-duration-fast) ease,
+      border-color var(--tjg-motion-duration-fast) ease,
+      box-shadow var(--tjg-motion-duration-fast) ease,
+      opacity var(--tjg-motion-duration-fast) ease,
+      transform var(--tjg-motion-duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
 
     &:active {

@@ -13,7 +13,12 @@
     @contextmenu="handleContextMenu">
     <n-flex align="center" :size="12">
       <n-badge :dot="isFavorite" color="var(--tjg-color-warning-500)" :offset="[-4, 4]">
-        <n-avatar :size="44" :src="AvatarUtils.getAvatarUrl(avatarSrc)" fallback-src="/logo.png" round />
+        <n-avatar
+          :size="44"
+          :src="AvatarUtils.getAvatarUrl(avatarSrc)"
+          fallback-src="/logo.png"
+          :img-props="{ alt: '' }"
+          round />
       </n-badge>
       <n-flex vertical :size="4" class="flex-1 min-w-0">
         <n-flex align="center" justify="space-between" :gap="8">
@@ -40,7 +45,13 @@
         </n-flex>
         <n-flex align="center" justify="space-between" :gap="8">
           <n-flex align="center" :gap="4" class="min-w-0 flex-1">
-            <n-tag v-if="hasMention" size="tiny" round :bordered="false" type="error" class="shrink-0">
+            <n-tag
+              v-if="hasMention"
+              size="tiny"
+              round
+              :bordered="false"
+              :color="{ color: 'var(--tjg-color-danger-100)', textColor: 'var(--tjg-color-danger-600)' }"
+              class="shrink-0">
               {{ t('message.message_list.mention_tag') }}
             </n-tag>
             <n-tag v-if="hasFavoriteTag" size="tiny" round :bordered="false" class="shrink-0">

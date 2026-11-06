@@ -215,14 +215,14 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
   font-size: 13px;
   font-weight: 500;
   color: var(--tjg-text-inverse);
-  background: var(--tjg-color-primary-500);
+  background: var(--tjg-color-primary-600);
   cursor: pointer;
   transition:
     background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
     transform var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {
-    background: var(--tjg-color-primary-600);
+    background: var(--tjg-color-primary-700);
   }
 }
 
@@ -241,7 +241,7 @@ const variantClass = computed(() => `empty-state--${props.variant ?? 'default'}`
 }
 
 .empty-state__enter-active {
-  animation: empty-fade-in 240ms var(--tjg-motion-ease-enter);
+  animation: empty-fade-in var(--tjg-motion-duration-slow) var(--tjg-motion-ease-enter);
 }
 
 @keyframes empty-fade-in {

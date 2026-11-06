@@ -51,7 +51,7 @@
 
 .item-hover {
   @apply select-none hover:bg-[--info-hover] cursor-pointer w-fit rounded-10px p-4px;
-  transition: all var(--tjg-motion-duration-xslow) ease-in-out;
+  transition: color var(--tjg-motion-duration-xslow) ease-in-out, background-color var(--tjg-motion-duration-xslow) ease-in-out, border-color var(--tjg-motion-duration-xslow) ease-in-out, box-shadow var(--tjg-motion-duration-xslow) ease-in-out, opacity var(--tjg-motion-duration-xslow) ease-in-out, transform var(--tjg-motion-duration-xslow) ease-in-out;
 }
 
 :deep(.n-badge .n-badge-sup) {
@@ -63,7 +63,7 @@
   color: inherit;
 }
 
-@include responsive.respond-to-max('md') {
+@include responsive.down('md') {
   .item-hover {
     padding: 6px;
   }

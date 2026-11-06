@@ -134,7 +134,7 @@ const handleEsc = () => {
 
 .friend-search-bar__history-header {
   align-items: center;
-  color: var(--tjg-text-tertiary);
+  color: var(--tjg-text-secondary);
   display: flex;
   font-size: 12px;
   justify-content: space-between;
@@ -149,11 +149,11 @@ const handleEsc = () => {
 }
 
 .friend-search-bar__clear {
-  color: var(--tjg-color-primary-500);
+  color: var(--tjg-color-primary-600);
   transition: color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {
-    color: var(--tjg-color-primary-600);
+    color: var(--tjg-color-primary-700);
   }
 }
 

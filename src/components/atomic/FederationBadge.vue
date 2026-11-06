@@ -85,7 +85,7 @@ const label = computed(() => {
   font-size: var(--tjg-font-size-xs);
   line-height: 1.4;
   white-space: nowrap;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--tjg-motion-duration-fast) ease;
 
   /* 远端服务器（默认） */
   background: var(--tjg-federation-badge-bg, rgba(24, 144, 255, 0.08));
@@ -96,7 +96,7 @@ const label = computed(() => {
 /* 本地服务器变体 */
 .federation-badge--local {
   background: var(--tjg-federation-local-bg, rgba(82, 196, 26, 0.08));
-  color: var(--tjg-federation-local-text, var(--tjg-color-success-600));
+  color: var(--tjg-federation-local-text, var(--tjg-color-success-700));
   border-color: var(--tjg-federation-local-border, rgba(82, 196, 26, 0.2));
 }
 

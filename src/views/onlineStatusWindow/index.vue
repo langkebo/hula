@@ -17,7 +17,7 @@
       <!-- 状态 -->
       <n-flex
         vertical
-        class="w-full h-100vh bg-[--right-bg-color] rounded-6px box-border p-13px"
+        class="w-full h-[var(--tjg-viewport-height,100vh)] bg-[--right-bg-color] rounded-[var(--tjg-radius-md)] box-border p-13px"
         data-tauri-drag-region>
         <n-scrollbar class="max-h-215px">
           <n-flex align="center" :size="10">
@@ -118,7 +118,13 @@ onMounted(async () => {
   width: 56px;
   height: 70px;
   border-radius: 8px;
-  transition: all 0.4s ease-in-out;
+  transition:
+    color var(--tjg-motion-duration-xslow) ease-in-out,
+    background-color var(--tjg-motion-duration-xslow) ease-in-out,
+    border-color var(--tjg-motion-duration-xslow) ease-in-out,
+    box-shadow var(--tjg-motion-duration-xslow) ease-in-out,
+    opacity var(--tjg-motion-duration-xslow) ease-in-out,
+    transform var(--tjg-motion-duration-xslow) ease-in-out;
   display: flex;
   flex-direction: column;
   align-items: center;

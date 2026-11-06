@@ -1,6 +1,6 @@
 <template>
   <div class="user-menu-desktop" ref="_menuRef">
-    <div class="avatar-container" @click="handleLeftClick">
+    <div v-clickable class="avatar-container" @click="handleLeftClick">
       <slot name="avatar">
         <n-avatar round :size="34" :src="userAvatar" :fallback-src="defaultAvatar" />
       </slot>
@@ -56,7 +56,7 @@ const onlineClass = computed(() => {
   cursor: pointer;
   padding: 4px;
   border-radius: 50%;
-  transition: background-color 0.2s;
+  transition: background-color var(--tjg-motion-duration-normal);
 }
 
 .avatar-container:hover {

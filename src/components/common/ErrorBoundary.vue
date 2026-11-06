@@ -69,6 +69,7 @@ const handleReload = async () => {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 24px;
   background: var(--tjg-surface-app);
 }

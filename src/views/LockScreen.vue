@@ -2,12 +2,12 @@
   <!-- 锁屏页面 -->
   <div
     data-tauri-drag-region
-    class="login-box overflow-y-hidden rounded-8px select-none absolute top-0 left-0 w-full h-full z-9999 transition-all duration-300 ease-in-out">
+    class="login-box overflow-y-hidden rounded-8px select-none absolute top-0 left-0 w-full h-full z-9999 transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-in-out">
     <ActionBar class="absolute top-0 right-0 z-99999" :current-label="currentWindowLabel" :shrink="false" />
 
     <Transition name="slide-fade" appear>
       <!--  壁纸界面  -->
-      <div v-if="!isUnlockPage" @click.stop="isUnlockPage = true" class="size-full rounded-8px">
+      <div v-clickable v-if="!isUnlockPage" @click.stop="isUnlockPage = true" class="size-full rounded-8px">
         <n-flex vertical align="center" :size="120" class="size-full mt-10%">
           <n-flex vertical align="center" :size="20" class="will-change-auto will-change-contents">
             <p class="text-(100px [--tjg-text-secondary]) font-500">{{ currentTime }}</p>
@@ -62,7 +62,7 @@
                 <template #trigger>
                   <svg
                     @click.stop="unlock"
-                    class="size-16px text-[--tjg-text-secondary] mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-all duration-300 ease-in-out hover:bg-[--tjg-color-primary-600]">
+                    class="size-16px text-[--tjg-text-secondary] mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-in-out hover:bg-[--tjg-color-primary-600]">
                     <use href="#arrow-right"></use>
                   </svg>
                 </template>
@@ -277,7 +277,7 @@ onUnmounted(() => {
 }
 
 .tips {
-  @apply cursor-pointer w-240px p-12px rounded-8px transition-all duration-300 ease-in-out;
+  @apply cursor-pointer w-240px p-12px rounded-8px transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-in-out;
   svg {
     @apply size-24px p-4px rounded-8px;
     color: var(--lock-icon-color, var(--tjg-surface-subtle));
@@ -305,11 +305,23 @@ onUnmounted(() => {
   持续时间和速度曲线。
 */
 .slide-fade-enter-active {
-  transition: all 0.2s ease-in-out;
+  transition:
+    color var(--tjg-motion-duration-normal) ease-in-out,
+    background-color var(--tjg-motion-duration-normal) ease-in-out,
+    border-color var(--tjg-motion-duration-normal) ease-in-out,
+    box-shadow var(--tjg-motion-duration-normal) ease-in-out,
+    opacity var(--tjg-motion-duration-normal) ease-in-out,
+    transform var(--tjg-motion-duration-normal) ease-in-out;
 }
 
 .slide-fade-leave-active {
-  transition: all 0.6s cubic-bezier(1, 0.5, 0.8, 1);
+  transition:
+    color var(--tjg-motion-duration-xslow) cubic-bezier(1, 0.5, 0.8, 1),
+    background-color var(--tjg-motion-duration-xslow) cubic-bezier(1, 0.5, 0.8, 1),
+    border-color var(--tjg-motion-duration-xslow) cubic-bezier(1, 0.5, 0.8, 1),
+    box-shadow var(--tjg-motion-duration-xslow) cubic-bezier(1, 0.5, 0.8, 1),
+    opacity var(--tjg-motion-duration-xslow) cubic-bezier(1, 0.5, 0.8, 1),
+    transform var(--tjg-motion-duration-xslow) cubic-bezier(1, 0.5, 0.8, 1);
 }
 
 .slide-fade-enter-from,

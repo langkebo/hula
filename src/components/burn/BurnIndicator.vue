@@ -71,25 +71,31 @@ const show = computed(() => {
   font-weight: 500;
   background: var(--tjg-surface-list-hover);
   border: 1px solid var(--tjg-border-default);
-  transition: all 0.3s ease;
+  transition:
+    color var(--tjg-motion-duration-slow) ease,
+    background-color var(--tjg-motion-duration-slow) ease,
+    border-color var(--tjg-motion-duration-slow) ease,
+    box-shadow var(--tjg-motion-duration-slow) ease,
+    opacity var(--tjg-motion-duration-slow) ease,
+    transform var(--tjg-motion-duration-slow) ease;
 }
 
 .burn-indicator--burning {
   background: color-mix(in srgb, var(--tjg-color-danger-500) 10%, transparent);
   border-color: color-mix(in srgb, var(--tjg-color-danger-500) 30%, transparent);
-  color: var(--tjg-color-danger-500);
+  color: var(--tjg-color-danger-600);
 }
 
 .burn-indicator--burned {
   background: color-mix(in srgb, var(--tjg-text-tertiary) 10%, transparent);
   border-color: color-mix(in srgb, var(--tjg-text-tertiary) 30%, transparent);
-  color: var(--tjg-text-tertiary);
+  color: var(--tjg-text-secondary);
 }
 
 .burn-indicator--waiting {
   background: var(--tjg-color-warning-100);
   border-color: color-mix(in srgb, var(--tjg-color-warning-500) 30%, transparent);
-  color: var(--tjg-color-warning-500);
+  color: var(--tjg-color-warning-700);
 }
 
 .burn-indicator__icon {

@@ -247,7 +247,13 @@ onMounted(() => {
   white-space: nowrap;
   border-bottom: 2px solid transparent;
   background: transparent;
-  transition: all var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+  transition:
+    color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    border-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    box-shadow var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    opacity var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    transform var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:hover {
     color: var(--tjg-text-primary);
@@ -318,7 +324,7 @@ onMounted(() => {
 
 .rs-drawer-slide-enter-active,
 .rs-drawer-slide-leave-active {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .rs-drawer-slide-enter-from,

@@ -256,8 +256,7 @@ async function submit() {
   background: var(--tjg-surface-input);
   color: var(--tjg-text-primary);
   font-size: var(--tjg-font-size-base);
-  outline: none;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--tjg-motion-duration-normal) ease;
 }
 
 .guest-upgrade-field__input:focus {
@@ -287,7 +286,7 @@ async function submit() {
   border-radius: 6px;
   font-size: var(--tjg-font-size-sm);
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background var(--tjg-motion-duration-normal) ease;
 }
 
 .guest-upgrade-btn:disabled {
@@ -323,7 +322,7 @@ async function submit() {
 
 .guest-upgrade-fade-enter-active,
 .guest-upgrade-fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--tjg-motion-duration-normal) ease;
 }
 
 .guest-upgrade-fade-enter-from,

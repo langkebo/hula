@@ -13,7 +13,7 @@
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        class="rounded-6px border-(solid 1px [--tjg-border-default]) w-full relative text-[length:var(--tjg-font-size-sm)]"
+        class="rounded-[var(--tjg-radius-md)] border-(solid 1px [--tjg-border-default]) w-full relative text-[length:var(--tjg-font-size-sm)]"
         size="small">
         <template #prefix>
           <svg class="size-16px text-[--tjg-text-secondary] opacity-60">
@@ -31,7 +31,7 @@
         </span>
       </div>
 
-      <n-scrollbar class="h-[calc(100vh/var(--page-scale,1)-110px)]">
+      <n-scrollbar class="h-[calc(var(--tjg-viewport-height, 100vh)/var(--page-scale,1)-110px)]">
         <div class="pr-12px">
           <!-- 全部选项 -->
           <UserItem

@@ -26,7 +26,7 @@
         <van-button @click="handleConfirmLogin" color="var(--tjg-color-primary-500)" class="w-full" type="primary">
           {{ t('login.mobile.confirm.confirm_button') }}
         </van-button>
-        <div @click="handleCancelLogin" class="w-full text-center text-gray-600">
+        <div v-clickable @click="handleCancelLogin" class="w-full text-center text-gray-600">
           {{ t('login.button.cancel_login') }}
         </div>
       </div>

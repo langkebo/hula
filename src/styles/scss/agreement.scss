@@ -6,7 +6,7 @@
   color: var(--tjg-text-primary);
   user-select: none;
   -webkit-user-select: none;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color var(--tjg-motion-duration-slow) ease, color var(--tjg-motion-duration-slow) ease;
 
   --agreement-heading-color: var(--tjg-text-primary);
   --agreement-subheading-color: var(--tjg-text-primary);

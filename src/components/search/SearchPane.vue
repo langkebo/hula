@@ -435,12 +435,11 @@ onMounted(() => {
     display: flex;
     gap: 10px;
     padding: 8px 10px;
-    transition: background-color 0.15s ease;
+    transition: background-color var(--tjg-motion-duration-fast) ease;
 
     &:hover,
     &:focus-visible {
       background: var(--tjg-surface-list-hover);
-      outline: none;
     }
   }
 

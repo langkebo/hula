@@ -116,7 +116,6 @@ const handleClick = () => {
   background: var(--tjg-surface-panel);
   border: 1px solid var(--tjg-border-muted);
   cursor: pointer;
-  outline: none;
   width: 100%;
   box-sizing: border-box;
   transition:

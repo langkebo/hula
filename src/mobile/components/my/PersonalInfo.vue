@@ -37,7 +37,7 @@
         <!-- 账号 -->
         <div class="flex flex-warp gap-2 items-center">
           <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo?.account }}</span>
-          <span v-if="isMyPage" @click="toMyQRCode" class="pe-15px">
+          <span v-clickable v-if="isMyPage" @click="toMyQRCode" class="pe-15px">
             <img
               class="w-14px h-14px dark:invert"
               src="@/assets/mobile/my/qr-code.webp"
@@ -326,7 +326,7 @@ function beforeEnter(el: Element) {
 
 function enter(el: Element, done: () => void) {
   const box = el as HTMLElement
-  box.style.transition = 'all 0.3s ease'
+  box.style.transition = 'all var(--tjg-motion-duration-slow) ease'
   requestAnimationFrame(() => {
     box.style.height = box.scrollHeight + 'px'
     box.style.opacity = '1'
@@ -350,7 +350,7 @@ function leave(el: Element, done: () => void) {
   box.style.transform = 'translateY(0)'
 
   requestAnimationFrame(() => {
-    box.style.transition = 'all 0.3s ease'
+    box.style.transition = 'all var(--tjg-motion-duration-slow) ease'
     box.style.height = '0'
     box.style.opacity = '0'
     box.style.transform = 'translateY(-20px)'
@@ -368,7 +368,7 @@ watch(
     if (!box) return
 
     box.style.overflow = 'hidden'
-    box.style.transition = 'all 0.3s ease'
+    box.style.transition = 'all var(--tjg-motion-duration-slow) ease'
 
     if (show) {
       box.style.height = box.scrollHeight + 'px'
@@ -400,7 +400,7 @@ watch(
     const info = infoBox.value
     if (!info) return
 
-    info.style.transition = 'transform 0.3s ease'
+    info.style.transition = 'transform var(--tjg-motion-duration-slow) ease'
 
     if (show) {
       info.style.transform = 'translateX(0)'
@@ -453,7 +453,13 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  transition: all 0.3s ease;
+  transition:
+    color var(--tjg-motion-duration-slow) ease,
+    background-color var(--tjg-motion-duration-slow) ease,
+    border-color var(--tjg-motion-duration-slow) ease,
+    box-shadow var(--tjg-motion-duration-slow) ease,
+    opacity var(--tjg-motion-duration-slow) ease,
+    transform var(--tjg-motion-duration-slow) ease;
 }
 
 .slide-fade-enter-from {
@@ -505,7 +511,13 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .avatar-collapsible {
-  transition: all 0.3s ease;
+  transition:
+    color var(--tjg-motion-duration-slow) ease,
+    background-color var(--tjg-motion-duration-slow) ease,
+    border-color var(--tjg-motion-duration-slow) ease,
+    box-shadow var(--tjg-motion-duration-slow) ease,
+    opacity var(--tjg-motion-duration-slow) ease,
+    transform var(--tjg-motion-duration-slow) ease;
   transform-origin: top;
 }
 </style>

@@ -291,7 +291,13 @@ onUnmounted(() => {
   gap: 12px;
   border-radius: var(--tjg-radius-surface);
   cursor: pointer;
-  transition: all var(--tjg-motion-duration-normal) ease;
+  transition:
+    color var(--tjg-motion-duration-normal) ease,
+    background-color var(--tjg-motion-duration-normal) ease,
+    border-color var(--tjg-motion-duration-normal) ease,
+    box-shadow var(--tjg-motion-duration-normal) ease,
+    opacity var(--tjg-motion-duration-normal) ease,
+    transform var(--tjg-motion-duration-normal) ease;
   &.loading {
     cursor: wait;
     opacity: 0.7;
@@ -341,7 +347,13 @@ onUnmounted(() => {
     height: 100%;
     border-radius: 1px;
     opacity: 0;
-    transition: all var(--tjg-motion-duration-fast) ease;
+    transition:
+      color var(--tjg-motion-duration-fast) ease,
+      background-color var(--tjg-motion-duration-fast) ease,
+      border-color var(--tjg-motion-duration-fast) ease,
+      box-shadow var(--tjg-motion-duration-fast) ease,
+      opacity var(--tjg-motion-duration-fast) ease,
+      transform var(--tjg-motion-duration-fast) ease;
     pointer-events: none;
     z-index: 1;
 
@@ -367,7 +379,7 @@ onUnmounted(() => {
     pointer-events: none;
     z-index: 2;
     box-shadow: var(--tjg-shadow-sm);
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn var(--tjg-motion-duration-normal) ease;
   }
 }
 

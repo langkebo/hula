@@ -2,7 +2,8 @@
   <div class="flex flex-col overflow-auto h-full relative">
     <img
       src="@/assets/mobile/chat-home/background.webp"
-      class="absolute inset-0 top-0 left-0 w-full h-full z-0 dark:opacity-20" />
+      alt=""
+      class="fixed inset-0 w-full h-full z-0 object-cover dark:opacity-20" />
 
     <!-- 页面蒙板 -->
     <div
@@ -12,7 +13,7 @@
       :class="[
         longPressState.longPressActive
           ? ''
-          : 'bg-black/20 mobile-mask--blurred transition-all duration-3000 ease-in-out opacity-100'
+          : 'bg-black/20 mobile-mask--blurred transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-in-out opacity-100'
       ]"
       class="mobile-mask--blur fixed inset-0 z-[999]"></div>
 
@@ -66,10 +67,10 @@
         :style="{ top: longPressState.longPressMenuTop + 'px' }"
         class="fixed gap-10px z-999 left-1/2 transform -translate-x-1/2">
         <div class="long-press-menu flex justify-between p-18px text-16px gap-22px whitespace-nowrap">
-          <div class="long-press-menu__item" @click="handleDelete(currentLongPressItem)">
+          <div v-clickable class="long-press-menu__item" @click="handleDelete(currentLongPressItem)">
             {{ t('mobile_home.menu.delete') }}
           </div>
-          <div class="long-press-menu__item" @click="handleToggleTop(currentLongPressItem)">
+          <div v-clickable class="long-press-menu__item" @click="handleToggleTop(currentLongPressItem)">
             {{ currentLongPressItem?.top ? t('mobile_home.menu.unpin') : t('mobile_home.menu.pintop') }}
           </div>
           <div

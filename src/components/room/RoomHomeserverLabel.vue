@@ -41,7 +41,7 @@ const resolvedServerName = computed(() => {
  * ==================================================== */
 .room-homeserver-label {
   font-size: var(--tjg-font-size-2xs);
-  color: var(--tjg-color-info-600);
+  color: var(--tjg-color-info-700);
   background: color-mix(in srgb, var(--tjg-color-info-500) 12%, transparent);
   padding: 1px 6px;
   border-radius: var(--tjg-radius-xs);

@@ -2,10 +2,13 @@
   margin-left: 22px;
 }
 
-/* Vant 密码输入框：库内部对该 control 有自身字号/字体声明，需 !important 压过 */
+/*
+ * Vant 密码输入框：Vant 未在 .van-field__control 上声明字号/字体（字号由 .van-cell 继承），
+ * 本选择器直接命中 control，声明优先于继承，无需 !important
+ */
 :deep(.van-field .van-field__control[type='password']) {
-  font-size: 22px !important;
-  font-family: 'Courier New', monospace !important;
+  font-size: 22px;
+  font-family: 'Courier New', monospace;
   line-height: 22px;
 }
 
@@ -31,17 +34,20 @@
 /*
  * 登录按钮样式覆盖
  * 兼容两套 UI 库：Naive UI (n-button) 与 Vant (van-button) — 移动端使用 Vant
- * 两套库内部样式优先级高，必须用 !important 强制覆盖
+ * 不依赖 !important：改用「业务类 + 库类」组合选择器（0,2,0）稳压库内
+ * .n-button / .van-button（0,1,0）及 .n-button:hover / :active（0,2,0）分支；
+ * scoped 场景下 Vue 还会追加 [data-v-*]，实际优先级更高
  * 穿透 .n-button__content / .van-button__content 确保白色文字生效
  */
-.gradient-button {
-  border: none !important;
-  color: var(--tjg-text-inverse) !important;
-  background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-700)) !important;
+.gradient-button.n-button,
+.gradient-button.van-button {
+  border: none;
+  color: var(--tjg-text-inverse);
+  background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-700));
   box-shadow:
     0 6px 20px color-mix(in srgb, var(--tjg-color-primary-700) 45%, transparent),
     0 2px 6px color-mix(in srgb, var(--tjg-color-primary-700) 25%, transparent),
-    inset 0px 1px 0px color-mix(in srgb, white 25%, transparent) !important;
+    inset 0px 1px 0px color-mix(in srgb, white 25%, transparent);
   transition:
     background 0.25s ease,
     box-shadow 0.25s ease,
@@ -49,42 +55,42 @@
     filter 0.15s ease,
     opacity 0.2s ease;
 
-  /* 默认态：深青绿渐变 */
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-600)) !important;
+    /* 悬停：提亮一档并上浮 */
+    background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-600));
     box-shadow:
       0 8px 24px color-mix(in srgb, var(--tjg-brand) 50%, transparent),
-      inset 0px 1px 0px color-mix(in srgb, white 30%, transparent) !important;
+      inset 0px 1px 0px color-mix(in srgb, white 30%, transparent);
     transform: translateY(-1px) scale(1.01);
   }
 
-  /* 各状态分支同样需要 !important：两套 UI 库（naive-ui / Vant）的按钮背景与阴影优先级高于本类 */
   &:active:not(:disabled) {
-    background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700)) !important;
+    /* 各状态分支同样靠组合选择器取胜：库的按钮背景/阴影停留在 0,1,0 ~ 0,2,0 */
+    background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700));
     transform: translateY(0) scale(0.97);
     box-shadow:
       0 2px 8px color-mix(in srgb, var(--tjg-color-primary-700) 40%, transparent),
-      inset 0px 2px 4px color-mix(in srgb, black 20%, transparent) !important;
+      inset 0px 2px 4px color-mix(in srgb, black 20%, transparent);
     filter: brightness(0.88);
   }
 
-  /* 禁用状态：灰阶渐变（兼容 Naive UI n-button 和 Vant van-button） */
   &:disabled,
   &.n-button--disabled,
   &.van-button--disabled {
-    background: linear-gradient(135deg, var(--tjg-text-disabled), var(--tjg-border-strong)) !important;
-    box-shadow: inset 0px 1px 0px color-mix(in srgb, white 10%, transparent) !important;
+    /* 禁用状态：灰阶渐变（兼容 Naive UI n-button 和 Vant van-button） */
+    background: linear-gradient(135deg, var(--tjg-text-disabled), var(--tjg-border-strong));
+    box-shadow: inset 0px 1px 0px color-mix(in srgb, white 10%, transparent);
     opacity: 0.7;
     cursor: not-allowed;
     transform: none;
     filter: none;
   }
 
-  /* 加载中状态：脉冲动画（兼容 Naive UI n-button 和 Vant van-button） */
   &.n-button--loading,
   &.van-button--loading {
-    background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-400)) !important;
-    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha) !important;
+    /* 加载中状态：脉冲动画（兼容 Naive UI n-button 和 Vant van-button） */
+    background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-400));
+    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha);
     animation: gradient-button-pulse 1.4s ease-in-out infinite;
   }
 
@@ -95,7 +101,7 @@
   .van-button__content > span,
   .van-button__text,
   span {
-    color: var(--tjg-text-inverse) !important;
+    color: var(--tjg-text-inverse);
   }
 }
 
@@ -111,35 +117,36 @@
   }
 }
 
-/* 暗色主题：同上，渐变与阴影仍需 !important 压过两套 UI 库 */
+/* 暗色主题：选择器结构与亮色一致，特异性同样高于两套 UI 库，无需 !important */
 [data-theme='dark'] {
-  .gradient-button {
-    background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-brand)) !important;
-    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha) !important;
+  .gradient-button.n-button,
+  .gradient-button.van-button {
+    background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-brand));
+    box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha);
 
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-600)) !important;
-      box-shadow: 0 6px 20px color-mix(in srgb, var(--tjg-brand) 40%, transparent) !important;
+      background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-600));
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--tjg-brand) 40%, transparent);
     }
 
-    /* 同上：压过库的按钮背景 */
     &:active:not(:disabled) {
-      background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700)) !important;
+      /* 同上：压过库的按钮背景 */
+      background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-700));
       filter: brightness(0.82);
     }
 
-    /* 同上：禁用态灰阶 */
     &:disabled,
     &.n-button--disabled,
     &.van-button--disabled {
-      background: linear-gradient(135deg, var(--tjg-text-tertiary), var(--tjg-text-quaternary)) !important;
+      /* 同上：禁用态灰阶 */
+      background: linear-gradient(135deg, var(--tjg-text-tertiary), var(--tjg-text-quaternary));
       opacity: 0.6;
     }
 
-    /* 同上：加载态 */
     &.n-button--loading,
     &.van-button--loading {
-      background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-500)) !important;
+      /* 同上：加载态 */
+      background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-500));
     }
   }
 }

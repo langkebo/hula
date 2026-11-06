@@ -233,7 +233,13 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .action-button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    color var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1),
+    background-color var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1),
+    border-color var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1),
+    opacity var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1),
+    transform var(--tjg-motion-duration-slow) cubic-bezier(0.4, 0, 0.2, 1);
   opacity: 0.9;
 }
 
