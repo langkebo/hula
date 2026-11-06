@@ -82,9 +82,14 @@ export default defineConfig(
             // 以便默认值保持为一个有意义的护栏（避免掩盖慢测试/死锁），当前两类显式放宽：
             //   ① 「扫描全仓」类结构守卫（presenceSingleWriter / css-naming-lint / design-tokens /
             //      dead-constants），见各文件顶部的 vi.setConfig（30–120s）；
-            //   ② 重型移动端组件挂载（src/mobile/views/chat-room/__tests__/**，用例自带 240s timeout）：
-            //      慢在「模块图转换」而非用例逻辑（子组件已全部 stub），整目录并行时单个文件
-            //      实测被顶到 130–175s，120s 会周期性假红。
+            //   ② 重型移动端组件挂载（src/mobile/views/chat-room/__tests__/**，用例自带 240s timeout）。
+            //      注意：它们「慢」的主因不是用例逻辑（子组件已全部 stub），而是在 WorkBuddy 沙箱里
+            //      `NODE_OPTIONS=--require node-language-shim.cjs` + `CODEBUDDY_BROKERED_FS_HOOK_ENABLED=1`
+            //      把每个 readFileSync 变成一次 broker IPC：同一批用例 90s vs 6s（差 14×），
+            //      负载高时 broker 还会 `connect failed: Connection refused` ⇒ 报成失败而非超时。
+            //      批量跑若出现这类红，先关钩子重跑：
+            //        CODEBUDDY_BROKERED_FS_HOOK_ENABLED=0 NODE_OPTIONS= node scripts/run-vitest.js run <paths>
+            //      240s 只是沙箱下的余量，不是根因修复。
             // 详见审计报告 §12.2 / §13。
             testTimeout: 30_000,
             // 约定：.test.ts 用于单元测试和契约测试（src/**/__tests__/、src/**/*.test.ts），
