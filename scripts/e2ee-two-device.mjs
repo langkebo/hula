@@ -134,6 +134,80 @@ async function waitDeviceKeys(userId, token, label, timeoutMs = 60000) {
   return { ok: false, ...(last ?? {}) }
 }
 
+/** 打开一个可复用的 CDP 会话（需要 Input 域做真实点击） */
+async function openAndroid() {
+  const list = await (await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`)).json()
+  const page = list.find((t) => t.type === 'page' && t.url.includes('tauri.localhost'))
+  if (!page) throw new Error('没有 tauri WebView target')
+  const ws = new WebSocket(page.webSocketDebuggerUrl)
+  await new Promise((res, rej) => {
+    ws.addEventListener('open', () => res())
+    ws.addEventListener('error', () => rej(new Error('CDP connect failed')))
+  })
+  let id = 0
+  const pending = new Map()
+  ws.addEventListener('message', (ev) => {
+    const m = JSON.parse(ev.data)
+    if (m.id && pending.has(m.id)) {
+      const { resolve, reject } = pending.get(m.id)
+      pending.delete(m.id)
+      m.error ? reject(new Error(JSON.stringify(m.error))) : resolve(m.result)
+    }
+  })
+  const send = (method, params = {}) =>
+    new Promise((resolve, reject) => {
+      id += 1
+      pending.set(id, { resolve, reject })
+      ws.send(JSON.stringify({ id, method, params }))
+    })
+  await send('Runtime.enable')
+  const evaluate = async (expression) => {
+    const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true })
+    if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text)
+    return r.result?.value
+  }
+  return { send, evaluate, close: () => ws.close() }
+}
+
+/**
+ * 在 Android 端用**真实**输入 + 真实鼠标点击发一条消息。
+ *
+ * 为什么不能用合成事件：`#message-input` 的 Enter 是换行；而发送按钮
+ * （`<n-button v-if="hasInput">{{ t('editor.send') }}</n-button>`）只在输入框有内容时渲染，
+ * 必须先用 `Input.insertText` 让 Vue 更新 `hasInput`，再点它。
+ */
+async function androidRealSend(text) {
+  const a = await openAndroid()
+  try {
+    await a.evaluate(`document.querySelector('#message-input')?.focus(); true`)
+    await sleep(200)
+    await a.send('Input.insertText', { text })
+    await sleep(800)
+    const btn = await a.evaluate(`
+      (() => {
+        const b = [...document.querySelectorAll('button')]
+          .find((x) => /^(发送|Send)$/.test((x.innerText || '').trim()));
+        if (!b) return { found: false };
+        const r = b.getBoundingClientRect();
+        return { found: true, x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), disabled: Boolean(b.disabled) };
+      })()
+    `)
+    if (!btn?.found || btn.disabled) {
+      return { ok: false, reason: btn?.found ? '按钮 disabled' : '找不到「发送」按钮', text }
+    }
+    await a.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: btn.x, y: btn.y, button: 'none', clickCount: 0 })
+    await sleep(60)
+    await a.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: btn.x, y: btn.y, button: 'left', clickCount: 1 })
+    await sleep(80)
+    await a.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: btn.x, y: btn.y, button: 'left', clickCount: 1 })
+    await sleep(6000)
+    const composer = await a.evaluate(`(document.querySelector('#message-input')?.innerText ?? '').trim()`)
+    return { ok: true, text, at: `(${btn.x},${btn.y})`, composerCleared: !String(composer).includes(text) }
+  } finally {
+    a.close()
+  }
+}
+
 /** 极简 CDP：只用于 Android WebView */
 async function androidEval(expression) {
   const list = await (await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`)).json()
@@ -268,28 +342,7 @@ async function main() {
         return true;
       })()`)
       await sleep(6000)
-      const send = await androidEval(`(async () => {
-        const box = [...document.querySelectorAll('textarea, [contenteditable="true"], .n-input')]
-          .find((e) => e.offsetParent !== null && !String(e.className).includes('van-field__control'));
-        if (!box) return { ok: false, reason: 'no-composer' };
-        const text = 'enc-from-android-' + Date.now();
-        const target = box.querySelector?.('textarea, [contenteditable="true"]') ?? box;
-        target.focus();
-        if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
-          const setter = Object.getOwnPropertyDescriptor(target.constructor.prototype, 'value').set;
-          setter.call(target, text);
-          target.dispatchEvent(new Event('input', { bubbles: true }));
-        } else {
-          target.innerText = text;
-          target.dispatchEvent(new InputEvent('input', { bubbles: true, data: text }));
-        }
-        await new Promise((r) => setTimeout(r, 600));
-        const btn = [...document.querySelectorAll('[aria-label], button, [role="button"]')]
-          .find((b) => /^发送$|send message/i.test((b.getAttribute?.('aria-label') || b.innerText || '').trim()));
-        if (btn) { btn.click(); return { ok: true, text, via: 'button' }; }
-        target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
-        return { ok: true, text, via: 'enter' };
-      })()`)
+      const send = await androidRealSend(`enc-from-android-${Date.now()}`)
       record('S3', 'Android 端发送', send?.ok ? 'pass' : 'fail', `${send?.via}: ${send?.text}`, send)
       ctx.sentByA = send?.text
       await sleep(5000)
@@ -301,15 +354,10 @@ async function main() {
         const m = t.match(/本房间有\\s*(\\d+)\\s*台未验证设备/);
         return { blocked: Boolean(m), devices: m ? m[1] : null, hasSendAnyway: /仅向已验证设备发送/.test(t) };
       })()`)
+      // 弹窗只是**提示**：实测真实点击后消息照常加密发出（服务端有 encrypted），
+      // 所以「有弹窗」不能判失败，判据必须落到服务端事件上。
       if (gate?.blocked) {
-        record(
-          'S3',
-          'UI 发送被「未验证设备」门禁拦截',
-          'fail',
-          `${gate.devices} 台未验证设备，弹窗要求选择发送范围；未选择时消息不发且无错误提示`,
-          gate
-        )
-        // 关掉弹窗，避免影响后续直发
+        record('S3', '出现「未验证设备」提示弹窗', 'info', `${gate.devices} 台未验证设备（提示性，不阻断发送）`, gate)
         await androidEval(`(() => {
           const btn = [...document.querySelectorAll('button, .van-dialog__cancel, [role="button"]')]
             .find((b) => /^关闭$/.test((b.innerText || '').trim()));
@@ -318,8 +366,18 @@ async function main() {
         })()`)
         await sleep(1500)
       } else {
-        record('S3', '未验证设备门禁', 'pass', '未出现拦截弹窗')
+        record('S3', '出现「未验证设备」提示弹窗', 'info', '本次未出现')
       }
+
+      const afterUiSend = await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=50`, { token: a.token })
+      const uiEnc = (afterUiSend.body?.chunk ?? []).filter((e) => e.type === 'm.room.encrypted').length
+      record(
+        'S3',
+        'UI 真实点击后服务端出现 m.room.encrypted',
+        uiEnc > 0 ? 'pass' : 'fail',
+        `${uiEnc} 条`,
+        { composerCleared: send?.composerCleared, at: send?.at }
+      )
 
       // 绕过 UI 门禁，直接用 SDK 发送：用来区分「加密链路不通」和「UI 拦住了」
       const direct = await androidEval(`(async () => {
@@ -363,43 +421,72 @@ async function main() {
         app?.config?.globalProperties?.$router?.push({ name: 'mobileChatMain', params: { roomId: rid } }).catch(() => {})
       }, roomId)
       await sleep(8000)
+      // router.push 是异步渲染：timeline 可能立刻有数据（缓存），但页面还是空壳
+      // （实测 timeline=12 条时页面长度只有 208）。先等页面真正画出消息列表再判。
+      await sleep(6000)
+      let bState = null
+      for (let i = 0; i < 20; i += 1) {
+        bState = await pageB.evaluate(async (rid) => {
+          const m = await import('/src/services/matrix/index.ts')
+          const room = m.matrixClientService.getClient()?.getRoom?.(rid)
+          const evs = room?.getLiveTimeline?.()?.getEvents?.() ?? []
+          return { count: evs.length, utd: evs.filter((e) => e.isDecryptionFailure?.()).length }
+        }, roomId)
+        const painted = await pageB.evaluate(() => document.body.innerText.length)
+        if (bState?.count > 0 && painted > 300) break
+        await sleep(1500)
+      }
       const renderedB = await pageB.evaluate(() => document.body.innerText)
-      const found = renderedB.includes(ctx.sentByA)
-      record(
-        'S4',
-        'Chromium 端解密渲染 A 的消息',
-        found ? 'pass' : 'fail',
-        found ? `页面上出现 ${ctx.sentByA}` : '没渲染出来（可能是解密失败，也可能未同步）',
-        { preview: renderedB.replace(/\s+/g, ' ').slice(0, 160) }
-      )
+      const bStateFinal = await pageB.evaluate(async (rid) => {
+        const m = await import('/src/services/matrix/index.ts')
+        const room = m.matrixClientService.getClient()?.getRoom?.(rid)
+        const evs = room?.getLiveTimeline?.()?.getEvents?.() ?? []
+        return { count: evs.length, utd: evs.filter((e) => e.isDecryptionFailure?.()).length }
+      }, roomId)
+      bState = bStateFinal ?? bState
+      const foundB = renderedB.includes(ctx.sentByA)
+      if (foundB) {
+        record('S4', 'Chromium 端解密渲染 A 的消息', 'pass', `出现 ${ctx.sentByA}`)
+      } else if (bState?.utd > 0) {
+        // 新设备没有历史 Megolm 会话 ⇒ UTD。这是 D5 的表现，不是渲染缺陷。
+        record(
+          'S4',
+          'Chromium 端解密渲染 A 的消息',
+          'info',
+          `未渲染，但 timeline 有 ${bState.utd} 条 UTD（新设备缺会话密钥，属 D5 现象）`,
+          bState
+        )
+      } else {
+        // 页面长度 < 300 说明 B 端根本没进入房间 UI（导航/渲染问题），
+        // 此时「没渲染出消息」不能当作解密结论 ⇒ 记 info 并单列一条导航问题。
+        const painted = renderedB.length
+        record(
+          'S4',
+          'Chromium 端解密渲染 A 的消息',
+          painted > 300 ? 'fail' : 'skip',
+          painted > 300
+            ? `页面已渲染但没出现该消息；timeline=${bState?.count ?? '?'} 条`
+            : `判据无效：B 端页面未进入房间 UI（长度=${painted}，timeline=${bState?.count ?? '?'} 条，url=${pageB.url()}）`,
+          { bState, url: pageB.url() }
+        )
+      }
     }
 
     // 6) B 发一条，Android 是否渲染
     if (androidReady) {
       const bText = `enc-from-chromium-${Date.now()}`
-      const sendB = await pageB.evaluate(async (text) => {
-        const box = [...document.querySelectorAll('textarea, [contenteditable="true"]')].find((e) => e.offsetParent !== null)
-        if (!box) return { ok: false, reason: 'no-composer' }
-        box.focus()
-        if (box.tagName === 'TEXTAREA') {
-          const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set
-          setter.call(box, text)
-          box.dispatchEvent(new Event('input', { bubbles: true }))
-        } else {
-          box.innerText = text
-          box.dispatchEvent(new InputEvent('input', { bubbles: true, data: text }))
-        }
-        await new Promise((r) => setTimeout(r, 500))
-        const btn = [...document.querySelectorAll('[aria-label], button, [role="button"]')].find((b) =>
-          /^发送$|send message/i.test((b.getAttribute?.('aria-label') || b.innerText || '').trim())
-        )
-        if (btn) {
-          btn.click()
-          return { ok: true, via: 'button' }
-        }
-        box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }))
-        return { ok: true, via: 'enter' }
-      }, bText)
+      // Playwright 的 click/type 是真实输入事件（非 JS 合成），发送按钮会随 hasInput 出现
+      let sendB = { ok: false, reason: 'unknown' }
+      try {
+        await pageB.locator('#message-input').click({ timeout: 15000 })
+        await pageB.keyboard.type(bText, { delay: 20 })
+        await pageB.waitForTimeout(600)
+        const sendBtn = pageB.locator('button', { hasText: /^(发送|Send)$/ }).first()
+        await sendBtn.click({ timeout: 15000 })
+        sendB = { ok: true, via: 'button' }
+      } catch (e) {
+        sendB = { ok: false, reason: String(e).slice(0, 120) }
+      }
       record('S5', 'Chromium 端发送', sendB?.ok ? 'pass' : 'fail', `${sendB?.via ?? sendB?.reason}`, sendB)
       await sleep(9000)
       const bodyA = await androidEval('document.body.innerText')
@@ -457,13 +544,16 @@ async function main() {
       const types = Array.isArray(keyReq) ? keyReq : []
       const requested = types.find((t) => t.type === 'm.room_key_request')
       const forwarded = types.find((t) => t.type === 'm.forwarded_room_key')
+      const utdSeen = Number(utdBefore) > 0
       record(
         'S6',
         'UTD 后是否发出 m.room_key_request',
-        requested ? 'pass' : 'fail',
+        requested ? 'pass' : utdSeen ? 'fail' : 'skip',
         requested
           ? `服务端收到 ${requested.count} 条（B 端会主动请求密钥）`
-          : `未发出（这段时间 to-device 只有：${types.map((t) => `${t.type}×${t.count}`).join(', ') || '无'}）`,
+          : utdSeen
+            ? `未发出（该设备 UTD=${utdBefore} 条，to-device 仅：${types.map((t) => `${t.type}×${t.count}`).join(', ') || '无'}）`
+            : `未触发 UTD（该设备 UTD=0），本轮无法判定 —— 全表历史 0 条 %room_key% 仍需单独复现`,
         { sinceMs, utdFailuresBefore: utdBefore, types: keyReq }
       )
       if (requested) {

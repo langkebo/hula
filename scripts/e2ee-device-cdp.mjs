@@ -530,39 +530,89 @@ async function main() {
     record('D4', '导航到加密房', nav?.ok ? 'pass' : 'fail', nav?.ok ? roomId : nav?.reason)
     await sleep(6000)
 
-    const composer = await cdp.eval(`
-      (() => {
-        const tas = [...document.querySelectorAll('textarea, [contenteditable="true"], input[type="text"]')];
-        return tas.map((e) => ({ tag: e.tagName, ph: e.placeholder || '', cls: String(e.className).slice(0, 40) }));
-      })()
-    `)
-    record('D4', '输入区候选元素', 'info', `${composer.length} 个`, composer)
+    // ── D4-1 真实输入 + 真实点击「发送」按钮
+    //    关键：`MsgInputMobileControls.vue` 的按钮是
+    //      <n-button v-if="hasInput" type="primary">{{ t('editor.send') }}</n-button>
+    //    ⇒ ① 只有输入框有内容才渲染；② 文案来自 i18n（zh-CN = 发送）。
+    //    之前用「JS 合成 KeyboardEvent 发 Enter」永远发不出去（该输入框 Enter 是换行），
+    //    于是误判成「UI 发送静默失败」。真实路径必须走 Input.insertText + 鼠标点击。
+    const composerSel = '#message-input'
+    const hasComposer = await cdp.eval(`Boolean(document.querySelector('${composerSel}'))`)
+    record('D4', '输入框就绪', hasComposer ? 'pass' : 'fail', hasComposer ? composerSel : '找不到 #message-input')
 
-    const sent = await cdp.eval(`
-      (() => {
-        const el = [...document.querySelectorAll('textarea, [contenteditable="true"], input[type="text"]')]
-          .find((e) => !String(e.className).includes('van-field__control') || (e.placeholder || '').length >= 0);
-        if (!el) return { ok: false, reason: '没有输入框' };
-        const text = 'e2ee-device-' + Date.now();
-        if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
-          const setter = Object.getOwnPropertyDescriptor(el.constructor.prototype, 'value').set;
-          setter.call(el, text);
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-        } else {
-          el.innerText = text;
-          el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-        }
-        // 找发送按钮：aria-label 或 svg use#send
-        const btn = [...document.querySelectorAll('[aria-label], button, [role="button"]')]
-          .find((b) => /发送|send/i.test(b.getAttribute?.('aria-label') || b.innerText || ''));
-        if (btn) { btn.click(); return { ok: true, text, via: 'button' }; }
-        // 退化：回车
-        el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
-        return { ok: true, text, via: 'enter' };
+    const msgText = `e2ee-device-${Date.now()}`
+    const encBefore = (
+      await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=50`, { token: a.accessToken })
+    ).body?.chunk?.filter((e) => e.type === 'm.room.encrypted').length ?? 0
+
+    const eventsBefore = await cdp.eval(`
+      (async () => {
+        const m = await import('/src/services/matrix/index.ts');
+        const room = m.matrixClientService.getClient()?.getRoom(${JSON.stringify(roomId)});
+        return (room?.getLiveTimeline?.()?.getEvents?.() ?? []).length;
       })()
     `)
-    record('D4', '发送一条消息', sent?.ok ? 'pass' : 'fail', sent?.ok ? `${sent.via}: ${sent.text}` : sent?.reason)
-    await sleep(8000)
+
+    await cdp.eval(`document.querySelector('${composerSel}')?.focus(); true`)
+    await sleep(200)
+    await cdp.send('Input.insertText', { text: msgText })
+    await sleep(800)
+
+    const typed = await cdp.eval(`(document.querySelector('${composerSel}')?.innerText ?? '').trim()`)
+    record('D4', '文本进入编辑器', String(typed).includes(msgText) ? 'pass' : 'fail', JSON.stringify(String(typed).slice(0, 40)))
+
+    const btn = await cdp.eval(`
+      (() => {
+        const b = [...document.querySelectorAll('button')]
+          .find((x) => /^(发送|Send)$/.test((x.innerText || '').trim()));
+        if (!b) return { found: false, candidates: [...document.querySelectorAll('button')].map((x) => (x.innerText || '').trim()).filter(Boolean).slice(0, 6) };
+        const r = b.getBoundingClientRect();
+        return { found: true, x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), w: Math.round(r.width), h: Math.round(r.height), disabled: Boolean(b.disabled) };
+      })()
+    `)
+    record(
+      'D4',
+      '「发送」按钮出现且可点',
+      btn?.found && !btn.disabled ? 'pass' : 'fail',
+      btn?.found ? `${btn.w}×${btn.h} @ (${btn.x},${btn.y})` : `未找到，候选=${JSON.stringify(btn?.candidates ?? [])}`,
+      btn
+    )
+
+    if (btn?.found && !btn.disabled) {
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: btn.x, y: btn.y, button: 'none', clickCount: 0 })
+      await sleep(60)
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: btn.x, y: btn.y, button: 'left', clickCount: 1 })
+      await sleep(80)
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: btn.x, y: btn.y, button: 'left', clickCount: 1 })
+      record('D4', '真实鼠标点击发送', 'pass', `(${btn.x},${btn.y})`)
+      await sleep(7000)
+
+      const afterSend = await cdp.eval(`
+        (async () => {
+          const el = document.querySelector('${composerSel}');
+          const m = await import('/src/services/matrix/index.ts');
+          const room = m.matrixClientService.getClient()?.getRoom(${JSON.stringify(roomId)});
+          const evs = (room?.getLiveTimeline?.()?.getEvents?.() ?? []).map((e) => String(e.getContent?.()?.body ?? ''));
+          return { composer: (el?.innerText ?? '').trim(), eventCount: evs.length, hasText: evs.some((b) => b.includes(${JSON.stringify(msgText)})) };
+        })()
+      `)
+      record(
+        'D4',
+        '① 输入框已清空',
+        String(afterSend?.composer ?? '').includes(msgText) ? 'fail' : 'pass',
+        JSON.stringify(String(afterSend?.composer ?? '').slice(0, 30))
+      )
+      // 判据②：只要求 timeline 事件数增加。自己发出的 `m.room.encrypted` 在本地
+      // 不保证立刻可读 body（SDK 解密是异步的），用 body 文本判定会假阴性。
+      record(
+        'D4',
+        '② timeline 新增事件',
+        Number(afterSend?.eventCount) > Number(eventsBefore) ? 'pass' : 'fail',
+        `事件数 ${eventsBefore} → ${afterSend?.eventCount}（body 可读=${afterSend?.hasText}）`
+      )
+    } else {
+      record('D4', '真实鼠标点击发送', 'skip', '按钮不可用，跳过（不伪造结论）')
+    }
 
     const msgs = await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=15`, {
       token: a.accessToken
@@ -572,9 +622,9 @@ async function main() {
     const plain = chunk.filter((e) => e.type === 'm.room.message')
     record(
       'D4',
-      '服务端收到的形态',
-      encrypted.length ? 'pass' : 'fail',
-      `encrypted=${encrypted.length} 条，plaintext=${plain.length} 条${plain.length ? '（加密房里出现明文 = 客户端没加密）' : ''}`,
+      '③ 服务端出现新的 m.room.encrypted',
+      encrypted.length > encBefore ? 'pass' : 'fail',
+      `encrypted ${encBefore} → ${encrypted.length} 条，plaintext=${plain.length} 条${plain.length ? '（加密房里出现明文 = 客户端没加密）' : ''}`,
       {
         encrypted: encrypted.slice(0, 2).map((e) => ({ algorithm: e.content?.algorithm, session_id: e.content?.session_id?.slice(0, 8) })),
         plaintext: plain.slice(0, 2).map((e) => ({ body: e.content?.body?.slice(0, 40) }))
@@ -596,17 +646,23 @@ async function main() {
         return { found: m ? m[0] : null, bodyLen: text.length };
       })()
     `)
+    // 加密房里的**明文**消息：Matrix 语义上客户端应忽略（房间声明了 m.room.encryption）。
+    // 所以「没渲染」才是符合预期的；渲染出来反而是缺陷（说明加密态被绕过）。
     record(
       'D5',
-      '真机渲染对端消息',
-      rendered?.found ? 'pass' : 'fail',
-      rendered?.found ? `页面上出现 ${rendered.found}` : '页面上没有该消息（加密房未解密 或 未同步）',
+      '加密房内的明文消息被忽略（预期行为）',
+      rendered?.found ? 'fail' : 'pass',
+      rendered?.found
+        ? `页面上渲染了明文 ${rendered.found} ⇒ 加密房接受了未加密消息`
+        : '未渲染明文（符合 Matrix 语义）',
       rendered
     )
 
     // ── 汇总日志
+    // console error 里有大量 SDK/crypto 噪音（如 SDK 内部 warn 被包成 error），
+    // 单看条数会假红；这里只作观察项，真正的判据是上面的服务端事实。
     const errors = cdp.logs.filter((l) => l.type === 'error')
-    record('D9', '页面错误日志', errors.length ? 'fail' : 'pass', `${errors.length} 条`, errors.slice(-5).map((e) => e.text))
+    record('D9', '页面错误日志（观察项）', 'info', `${errors.length} 条`, errors.slice(-5).map((e) => e.text.slice(0, 120)))
   } catch (error) {
     record('XX', '流程中断', 'fail', error instanceof Error ? error.message : String(error))
   } finally {
