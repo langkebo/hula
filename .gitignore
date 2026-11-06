@@ -88,6 +88,10 @@ vite.config.d.ts
 vite.config.js
 .superpowers/
 
+# Python bytecode (skill scripts under .trae/skills)
+__pycache__/
+*.pyc
+
 # Xcode user data (personal IDE state — per-machine, never commit)
 **/*.xcuserstate
 **/xcuserdata/
