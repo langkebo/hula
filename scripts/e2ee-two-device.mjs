@@ -412,6 +412,70 @@ async function main() {
       )
     }
 
+    // ── S6 UTD 触发后是否发出 m.room_key_request（D5 的客观判据）
+    //    用户口径：用服务端日志/表确认「客户端到底发没发」，前端不自建补发逻辑。
+    //    `m.room_key_request` 是 to-device 事件，落在 to_device_messages 表，房间事件里看不到。
+    {
+      const sinceMs = Date.now() - 2000
+      const utdBefore = await pageB.evaluate(async (rid) => {
+        const m = await import('/src/services/matrix/index.ts')
+        const room = m.matrixClientService.getClient()?.getRoom?.(rid)
+        const evs = room?.getLiveTimeline?.()?.getEvents?.() ?? []
+        return evs.filter((e) => e.isDecryptionFailure?.()).length
+      }, roomId).catch(() => -1)
+      // 让 B（新设备）重新打开房间：冷开历史 → 触发 UTD → 客户端可能请求密钥
+      await pageB.evaluate((rid) => {
+        const app = document.querySelector('#app')?.__vue_app__
+        app?.config?.globalProperties?.$router?.push({ name: 'mobileMessage' }).catch(() => {})
+        setTimeout(() => {
+          app?.config?.globalProperties?.$router?.push({ name: 'mobileChatMain', params: { roomId: rid } }).catch(() => {})
+        }, 1500)
+      }, roomId)
+      await sleep(20000)
+
+      let keyReq = null
+      try {
+        const { execFileSync } = await import('node:child_process')
+        const sql = `select event_type, count(*) from to_device_messages where created_ts >= ${sinceMs} group by 1 order by 2 desc`
+        const out = execFileSync(
+          'docker',
+          ['exec', 'synapse-postgres', 'psql', '-U', 'synapse', '-d', 'synapse', '-tAc', sql],
+          { encoding: 'utf8', timeout: 15000 }
+        )
+        keyReq = out
+          .trim()
+          .split('\n')
+          .filter(Boolean)
+          .map((line) => {
+            const [type, count] = line.split('|')
+            return { type, count: Number(count) }
+          })
+      } catch (e) {
+        keyReq = { error: String(e).slice(0, 160) }
+      }
+
+      const types = Array.isArray(keyReq) ? keyReq : []
+      const requested = types.find((t) => t.type === 'm.room_key_request')
+      const forwarded = types.find((t) => t.type === 'm.forwarded_room_key')
+      record(
+        'S6',
+        'UTD 后是否发出 m.room_key_request',
+        requested ? 'pass' : 'fail',
+        requested
+          ? `服务端收到 ${requested.count} 条（B 端会主动请求密钥）`
+          : `未发出（这段时间 to-device 只有：${types.map((t) => `${t.type}×${t.count}`).join(', ') || '无'}）`,
+        { sinceMs, utdFailuresBefore: utdBefore, types: keyReq }
+      )
+      if (requested) {
+        record(
+          'S6',
+          '发送方是否响应并转发会话密钥',
+          forwarded ? 'pass' : 'fail',
+          forwarded ? `m.forwarded_room_key ×${forwarded.count}` : '未见 m.forwarded_room_key（A 端未响应请求）'
+        )
+      }
+    }
+
     const errB = logsB.filter((l) => l.type === 'error')
     record('S9', 'Chromium 端错误日志', errB.length ? 'info' : 'pass', `${errB.length} 条`, errB.slice(-4))
   } catch (error) {

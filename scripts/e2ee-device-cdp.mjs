@@ -170,7 +170,16 @@ async function ensureLocalUnlock(cdp, password) {
       return { configured: m.isLocalUnlockConfigured(), unlocked: m.isLocalUnlockUnlocked() };
     })()
   `)
-  if (before?.unlocked) return { ...before, action: 'already-unlocked' }
+  if (before?.unlocked) {
+    // 已在解锁态也要把 key 读出来（否则会误报 storageKey=0 而判 fail）
+    const keyLen = await cdp.eval(`
+      (async () => {
+        const m = await import('/src/services/secure/localUnlockKey.ts');
+        return m.getLocalUnlockStorageKey()?.length ?? 0;
+      })()
+    `)
+    return { ...before, keyLen, action: 'already-unlocked' }
+  }
   if (before?.configured) {
     const ok = await cdp.eval(`
       (async () => {
@@ -189,6 +198,55 @@ async function ensureLocalUnlock(cdp, password) {
     })()
   `)
   return { ...before, action: 'configured', ...created }
+}
+
+/**
+ * 处理「输入本地解锁密码」弹窗（冷启动门禁）。
+ *
+ * 实测（2026-11-06 21:xx 重跑）：从 splashscreen 冷启动时**会**弹这个框，
+ * 文案是「这台设备无法访问系统密钥库，消息密钥由本地密码保护」。
+ * 它盖在登录页上，此时 DOM 里只有 1 个 input（密码框），所以「填账号密码登录」
+ * 会报「找不到账号/密码输入框」—— 必须先把这一层过掉。
+ */
+async function passUnlockDialog(cdp, password) {
+  const state = await cdp.eval(`
+    (() => {
+      const t = document.body.innerText;
+      const present = t.includes('输入本地解锁密码');
+      const btn = [...document.querySelectorAll('button, .van-dialog__confirm, [role="button"]')]
+        .find((b) => /^解锁$/.test((b.innerText || '').trim()));
+      return { present, hasButton: Boolean(btn), inputs: document.querySelectorAll('input').length };
+    })()
+  `)
+  if (!state?.present) return { present: false }
+  if (!state.hasButton) return { present: true, ok: false, reason: '有弹窗但找不到「解锁」按钮' }
+
+  await cdp.eval(`
+    (() => {
+      const el = [...document.querySelectorAll('input')].find((i) => i.type === 'password' || !i.type);
+      if (!el) return false;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      setter.call(el, ${JSON.stringify(password)});
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    })()
+  `)
+  await sleep(400)
+  await cdp.eval(`
+    (() => {
+      const btn = [...document.querySelectorAll('button, .van-dialog__confirm, [role="button"]')]
+        .find((b) => /^解锁$/.test((b.innerText || '').trim()));
+      btn?.click();
+      return true;
+    })()
+  `)
+  for (let i = 0; i < 15; i += 1) {
+    await sleep(1000)
+    const gone = await cdp.eval(`!document.body.innerText.includes('输入本地解锁密码')`)
+    if (gone) return { present: true, ok: true, waitedMs: (i + 1) * 1000 }
+  }
+  return { present: true, ok: false, reason: '点了解锁但弹窗未消失（密码不对？）' }
 }
 
 /** 已登录时先登出：crypto 初始化挂在登录流程上，不重登就不会重跑 */
@@ -227,6 +285,23 @@ async function logoutIfSignedIn(cdp) {
 
 /** 在真机 WebView 里用 DOM 事件填表登录（不是注入 token，走真实登录链路） */
 async function loginViaUi(cdp, { username, password, serverUrl }) {
+  // 真机从 splashscreen 到登录表单可能需要 10s+（冷启动 + vite 首次编译），
+  // 直接填表会拿到「找不到账号/密码输入框」。
+  for (let i = 0; i < 25; i += 1) {
+    const n = await cdp.eval('document.querySelectorAll("input").length')
+    if (Number(n) >= 2) break
+    if (i === 8) {
+      // 8s 还没出表单：可能停在 splashscreen，主动推一次登录路由
+      await cdp.eval(`
+        (() => {
+          const router = document.querySelector('#app')?.__vue_app__?.config?.globalProperties?.$router;
+          router?.push({ name: 'mobileLogin' }).catch(() => {});
+          return true;
+        })()
+      `)
+    }
+    await sleep(1000)
+  }
   const fill = `
     (() => {
       const setVal = (el, v) => {
@@ -338,6 +413,20 @@ async function main() {
       `${unlock.action}（configured=${unlock.configured}），storageKey=${unlock.keyLen ?? 0} 字节`,
       unlock
     )
+
+    // ── D1a-2 冷启动解锁门禁（会盖在登录页上，不过掉就填不了表）
+    const unlockDialog = await passUnlockDialog(cdp, UNLOCK_PASSWORD)
+    if (unlockDialog.present) {
+      record(
+        'D1',
+        '冷启动解锁门禁',
+        unlockDialog.ok ? 'pass' : 'fail',
+        unlockDialog.ok ? `弹窗已通过（${unlockDialog.waitedMs}ms）` : (unlockDialog.reason ?? '未通过'),
+        unlockDialog
+      )
+    } else {
+      record('D1', '冷启动解锁门禁', 'info', '本次未出现解锁弹窗（已在解锁态或走了会话恢复路径）')
+    }
 
     // ── D1b 先登出再登录：crypto 初始化挂在登录流程上，不重登不会重跑
     const logout = await logoutIfSignedIn(cdp)
