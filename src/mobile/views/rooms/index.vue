@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full bg-[--tjg-surface-panel]">
+  <div class="tjg-aurora flex flex-col h-full">
     <NavBar :title="t('mobile_tabbar.items.rooms')">
       <template #right>
         <van-icon
@@ -41,7 +41,7 @@
     <!-- 房间列表 -->
     <van-pull-refresh v-else v-model="refreshing" @refresh="onRefresh" class="flex-1 min-h-0">
       <SmartVirtualList
-        class="h-full overflow-y-auto overflow-x-hidden"
+        class="rooms-glass-list h-full overflow-y-auto overflow-x-hidden"
         :items="roomList"
         :item-height="72"
         :buffer="6"
@@ -389,6 +389,16 @@ fetchRooms()
 </script>
 
 <style scoped lang="scss">
+/* 房间列表：整条列表作为一块玻璃面，单行保持透明避免长列表逐行模糊掉帧 */
+.rooms-glass-list {
+  margin: 0 12px 12px;
+  border-radius: var(--tjg-radius-xl);
+  background: var(--tjg-glass-row-bg);
+  border: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-inner-highlight);
+  overflow-y: auto;
+}
+
 .tap-highlight {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;

@@ -59,7 +59,7 @@
         <div
           v-for="result in userSearchResults"
           :key="result.userId"
-          class="flex items-center gap-10px p-10px rounded-10px bg-[--tjg-surface-panel]">
+          class="flex items-center gap-10px p-10px rounded-[--tjg-radius-lg] bg-[--tjg-glass-row-bg] border border-[--tjg-glass-border-color] shadow-[var(--tjg-glass-inner-highlight)]">
           <img
             class="size-40px rounded-full object-cover"
             :src="AvatarUtils.getAvatarUrl(result.avatarUrl || '', 96)"
@@ -90,7 +90,7 @@
       </div>
     </div>
 
-    <div class="custom-rounded flex-1 bg-[--tjg-surface-panel]">
+    <div class="custom-rounded flex-1 bg-[--tjg-glass-row-bg]">
       <!-- 卡片头部 -->
       <div
         class="flex items-center justify-between py-15px px-16px text-[length:var(--tjg-font-size-base)] border-b border-[--tjg-border-default]">
@@ -311,8 +311,8 @@
 
 :deep(.van-cell.van-field) {
   padding: 8px 12px;
-  border-radius: 6px;
-  background: var(--tjg-overlay-mobile-sheet);
+  border-radius: var(--tjg-radius-md);
+  background: var(--tjg-glass-input-bg);
 }
 
 :deep(.van-cell.van-field::after) {

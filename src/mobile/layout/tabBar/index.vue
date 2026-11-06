@@ -1,9 +1,7 @@
 <template>
   <div class="tab-bar-wrap" :class="{ 'tab-bar-wrap--vertical': vertical }">
-    <div v-if="!vertical" class="h-1px bg-[--tjg-border-layout-divider]"></div>
-    <div v-else class="w-1px h-full bg-[--tjg-border-layout-divider]"></div>
     <nav
-      class="tab-bar flex items-end"
+      class="tab-bar tjg-glass tjg-glass--tabbar flex items-end"
       :class="vertical ? 'flex-col justify-around' : 'justify-around'"
       :aria-label="t('mobile_tabbar.aria_label')">
       <RouterLink
@@ -25,10 +23,12 @@
           color="var(--tjg-color-danger-500)"
           :content="getUnReadCount(item) || ''"
           :max="99">
-          <svg class="w-26px h-26px">
-            <use :href="`#${route.path === item.path ? item.actionIcon : item.icon}`"></use>
-          </svg>
-          <span class="text-11px mt-0.5">{{ item.label }}</span>
+          <span class="tab-item__icon">
+            <svg class="w-24px h-24px">
+              <use :href="`#${route.path === item.path ? item.actionIcon : item.icon}`"></use>
+            </svg>
+          </span>
+          <span class="tab-item__label">{{ item.label }}</span>
         </van-badge>
       </RouterLink>
     </nav>
@@ -80,26 +80,70 @@ const navItems = computed(() => resolveNavItems(t))
 @use '@/styles/scss/mixins/liquid-glass' as *;
 
 .tab-bar-wrap {
-  background: var(--tjg-surface-panel);
+  /* 透明容器，让页面上滑内容透到玻璃标签栏下方 */
+  background: transparent;
 }
 
 .tab-bar {
   min-height: 62px;
+  padding-top: 6px;
   padding-bottom: var(--safe-area-inset-bottom, 0px);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  /* 低性能设备关闭模糊；父级 .tab-bar-wrap 已提供背景色 */
+  border-radius: var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0 0;
+  border-bottom: 0;
+  /* 材质（模糊 / 染色 / 渐变描边 / 投影）由 .tjg-glass--tabbar 统一提供；
+     此处显式声明模糊只为挂载低性能设备降级（html.low-perf） */
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
+  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
   @include backdrop-blur-fallback;
 }
 
 .tab-item {
   gap: 2px;
-  font-size: 11px;
+  min-width: 44px;
+  /* 触摸热区 >= 48x48px，配合 min-h-48px 确保可点击区域 */
+  min-height: 48px;
+  font-size: var(--tjg-font-size-2xs);
   /* 安全区统一由 .tab-bar 承担，item 不再重复叠加 */
   padding-bottom: 0;
-  /* 触摸热区 >= 48x48px，配合 min-h-48px 确保可点击区域 */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 选中态：图标托在玻璃胶囊上，形成清晰的层级焦点 */
+.tab-item__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 30px;
+  border-radius: var(--tjg-radius-full);
+  transition:
+    background-color var(--tjg-motion-duration-normal) var(--tjg-motion-ease-enter),
+    box-shadow var(--tjg-motion-duration-normal) var(--tjg-motion-ease-enter);
+}
+
+.tab-item[aria-current='page'] .tab-item__icon {
+  background-color: var(--tjg-glass-tint-strong);
+  box-shadow:
+    inset 0 0 0 1px var(--tjg-glass-border-color),
+    var(--tjg-glass-inner-highlight),
+    var(--tjg-glass-shadow-soft);
+}
+
+.tab-item__label {
+  line-height: 1.2;
+  transition: color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+}
+
+.tab-item[aria-current='page'] .tab-item__label {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-item__icon,
+  .tab-item__label {
+    transition: none;
+  }
 }
 
 /* 横屏垂直布局（侧边栏模式） */
@@ -118,6 +162,8 @@ const navItems = computed(() => resolveNavItems(t))
     flex-direction: column !important;
     /* 横屏安全区改由 padding-left 承担，底部不再叠加安全区 */
     padding-bottom: 0;
+    /* 垂直模式贴合屏幕左缘：圆角只留右侧 */
+    border-radius: 0 var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0;
   }
 
   .tab-item {

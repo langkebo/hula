@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col flex-1 min-h-0 relative">
+  <div class="flex flex-col flex-1 min-h-0 relative" :class="{ 'tjg-aurora': !bgmURL }">
     <img
       v-if="bgmURL"
       :src="bgmURL as string"

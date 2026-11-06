@@ -241,6 +241,50 @@
   --tjg-glass-border: 1px solid rgba(255, 255, 255, 0.06);
   --tjg-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 
+  /* 液态玻璃分层（移动端 IM）
+   * 层次：氛围背景 → 内容 → 玻璃面（导航 / 标签栏 / 输入坞 / 功能面板 / 气泡）。
+   * 组件只消费本组 token，禁止再写颜色字面量。 */
+  --tjg-glass-blur-soft: 10px;
+  --tjg-glass-blur-medium: 18px;
+  --tjg-glass-blur-strong: 28px;
+  --tjg-glass-saturate-soft: 1.35;
+  --tjg-glass-saturate-strong: 1.8;
+  --tjg-glass-tint: rgba(255, 255, 255, 0.55);
+  --tjg-glass-tint-strong: rgba(255, 255, 255, 0.74);
+  --tjg-glass-tint-soft: rgba(255, 255, 255, 0.36);
+  --tjg-glass-tint-input: rgba(255, 255, 255, 0.62);
+  --tjg-glass-tint-bubble-sent: rgba(19, 152, 127, 0.86);
+  --tjg-glass-tint-bubble-received: rgba(255, 255, 255, 0.76);
+  --tjg-glass-border-soft: 1px solid rgba(255, 255, 255, 0.32);
+  --tjg-glass-border-strong: 1px solid rgba(255, 255, 255, 0.58);
+  --tjg-glass-border-color: rgba(255, 255, 255, 0.58);
+  /* 柔和渐变描边：左上高光 → 右下品牌色偏折 */
+  --tjg-glass-edge-gradient: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.22) 38%,
+    rgba(19, 152, 127, 0.28) 78%,
+    rgba(255, 255, 255, 0.55) 100%
+  );
+  --tjg-glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 42%);
+  --tjg-glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --tjg-glass-shadow-soft: 0 6px 22px rgba(17, 34, 30, 0.1);
+  --tjg-glass-shadow-strong: 0 14px 40px rgba(17, 34, 30, 0.16);
+  --tjg-glass-scrim: rgba(10, 18, 16, 0.24);
+  --tjg-glass-row-bg: rgba(255, 255, 255, 0.46);
+  --tjg-glass-row-bg-pressed: rgba(255, 255, 255, 0.76);
+  --tjg-glass-sheet-bg: rgba(255, 255, 255, 0.82);
+  --tjg-glass-nav-bg: rgba(255, 255, 255, 0.6);
+  --tjg-glass-tabbar-bg: rgba(255, 255, 255, 0.64);
+  --tjg-glass-input-bg: rgba(255, 255, 255, 0.72);
+  --tjg-glass-aurora-a: radial-gradient(120% 80% at 8% 0%, rgba(19, 152, 127, 0.3) 0%, rgba(19, 152, 127, 0) 62%);
+  --tjg-glass-aurora-b: radial-gradient(90% 70% at 96% 12%, rgba(64, 169, 255, 0.22) 0%, rgba(64, 169, 255, 0) 60%);
+  --tjg-glass-aurora-c: radial-gradient(100% 80% at 50% 106%, rgba(255, 168, 76, 0.18) 0%, rgba(255, 168, 76, 0) 58%);
+  --tjg-glass-noise-opacity: 0.05;
+  --tjg-glass-press-scale: 0.985;
+  --tjg-glass-motion-enter: 320ms;
+  --tjg-glass-motion-move: 420ms;
+
   /* 对话框宽度（对齐原型 C5/G10）
    * sm: 窄面板/线程抽屉 320px（原型 4574 行）
    * md: 常规对话框 480px（原型 2605、6256 行）
@@ -501,6 +545,44 @@ html[data-theme='dark'] {
   --tjg-glass-bubble-opacity: 0.65;
   --tjg-glass-border: 1px solid rgba(255, 255, 255, 0.08);
   --tjg-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+
+  /* 液态玻璃分层（暗色） */
+  --tjg-glass-blur-soft: 12px;
+  --tjg-glass-blur-medium: 20px;
+  --tjg-glass-blur-strong: 32px;
+  --tjg-glass-saturate-soft: 1.3;
+  --tjg-glass-saturate-strong: 1.7;
+  --tjg-glass-tint: rgba(32, 40, 38, 0.58);
+  --tjg-glass-tint-strong: rgba(28, 36, 34, 0.78);
+  --tjg-glass-tint-soft: rgba(32, 40, 38, 0.4);
+  --tjg-glass-tint-input: rgba(38, 46, 44, 0.72);
+  --tjg-glass-tint-bubble-sent: rgba(19, 152, 127, 0.72);
+  --tjg-glass-tint-bubble-received: rgba(53, 60, 58, 0.76);
+  --tjg-glass-border-soft: 1px solid rgba(255, 255, 255, 0.1);
+  --tjg-glass-border-strong: 1px solid rgba(255, 255, 255, 0.2);
+  --tjg-glass-border-color: rgba(255, 255, 255, 0.2);
+  --tjg-glass-edge-gradient: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.34) 0%,
+    rgba(255, 255, 255, 0.08) 38%,
+    rgba(19, 152, 127, 0.42) 78%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  --tjg-glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 42%);
+  --tjg-glass-inner-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --tjg-glass-shadow-soft: 0 6px 22px rgba(0, 0, 0, 0.32);
+  --tjg-glass-shadow-strong: 0 14px 40px rgba(0, 0, 0, 0.44);
+  --tjg-glass-scrim: rgba(0, 0, 0, 0.4);
+  --tjg-glass-row-bg: rgba(255, 255, 255, 0.05);
+  --tjg-glass-row-bg-pressed: rgba(255, 255, 255, 0.11);
+  --tjg-glass-sheet-bg: rgba(30, 38, 36, 0.86);
+  --tjg-glass-nav-bg: rgba(24, 30, 29, 0.68);
+  --tjg-glass-tabbar-bg: rgba(24, 30, 29, 0.72);
+  --tjg-glass-input-bg: rgba(46, 54, 52, 0.8);
+  --tjg-glass-aurora-a: radial-gradient(120% 80% at 8% 0%, rgba(19, 152, 127, 0.28) 0%, rgba(19, 152, 127, 0) 62%);
+  --tjg-glass-aurora-b: radial-gradient(90% 70% at 96% 12%, rgba(64, 169, 255, 0.18) 0%, rgba(64, 169, 255, 0) 60%);
+  --tjg-glass-aurora-c: radial-gradient(100% 80% at 50% 106%, rgba(255, 168, 76, 0.12) 0%, rgba(255, 168, 76, 0) 58%);
+  --tjg-glass-noise-opacity: 0.04;
 
   --tjg-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --tjg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.24);

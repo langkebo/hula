@@ -130,4 +130,16 @@ async function handleLogout() {
 }
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+/* 昵称输入：玻璃输入面，与其他页面的搜索/输入保持一致 */
+:deep(.van-field) {
+  background: var(--tjg-glass-input-bg);
+  border: var(--tjg-glass-border-soft);
+  border-radius: var(--tjg-radius-lg);
+  box-shadow: var(--tjg-glass-inner-highlight);
+}
+
+:deep(.van-field::after) {
+  display: none;
+}
+</style>

@@ -35,8 +35,8 @@
       <svg class="iconpark-icon h-30px w-30px block"><use href="#wode-shezhi"></use></svg>
     </button>
 
-    <van-popup v-model:show="active" position="bottom" :style="{ height: '30%' }">
-      <div class="text-center py-20px text-16px">{{ t('mobile_my.share_to') }}</div>
+    <van-popup v-model:show="active" position="bottom" round class="my-share-sheet" :style="{ height: '30%' }">
+      <div class="text-center py-20px text-16px text-[--tjg-text-primary]">{{ t('mobile_my.share_to') }}</div>
     </van-popup>
   </div>
 </template>
@@ -69,4 +69,21 @@ const toMyMessages = () => {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+/* 分享弹层：底部玻璃抽屉 */
+:global(.my-share-sheet) {
+  background: var(--tjg-glass-sheet-bg);
+  border-top: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-strong);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :global(.my-share-sheet) {
+    background: var(--tjg-surface-panel);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+</style>

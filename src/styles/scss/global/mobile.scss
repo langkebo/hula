@@ -40,3 +40,183 @@ nav {
 .chat-bot-message-gap {
   gap: 4px;
 }
+
+/* ============================================================
+ * 液态玻璃层（Liquid Glass）— 仅移动端加载本文件时生效
+ * 分层：氛围背景 → 内容 → 玻璃面（导航 / 标签栏 / 输入坞 / 面板 / 气泡）
+ * 统一实现：毛玻璃模糊 + 半透明染色 + 渐变描边 + 内高光 + 柔和投影
+ * ============================================================ */
+
+/* 氛围背景：在内容之下铺三层极低饱和的径向光晕，为玻璃面提供可被模糊的底色 */
+.tjg-aurora {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--tjg-surface-app);
+}
+
+.tjg-aurora::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--tjg-glass-aurora-a), var(--tjg-glass-aurora-b), var(--tjg-glass-aurora-c);
+  background-repeat: no-repeat;
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%;
+}
+
+/* 玻璃基类：只负责材质，不负责布局 */
+.tjg-glass {
+  position: relative;
+  background: var(--tjg-glass-tint);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
+  border: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-shadow-soft), var(--tjg-glass-inner-highlight);
+}
+
+/* 渐变描边：用遮罩只保留 1px 外圈，避免实心边框压扁玻璃质感 */
+.tjg-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--tjg-glass-edge-gradient);
+  -webkit-mask:
+    linear-gradient(black 0 0) content-box,
+    linear-gradient(black 0 0);
+  mask:
+    linear-gradient(black 0 0) content-box,
+    linear-gradient(black 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* 变体：按层级分配模糊强度与染色浓度 */
+.tjg-glass--nav {
+  background: var(--tjg-glass-nav-bg);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+  backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+}
+
+.tjg-glass--tabbar {
+  background: var(--tjg-glass-tabbar-bg);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
+  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
+  box-shadow: var(--tjg-glass-shadow-strong), var(--tjg-glass-inner-highlight);
+}
+
+.tjg-glass--sheet {
+  background: var(--tjg-glass-sheet-bg);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  box-shadow: var(--tjg-glass-shadow-strong), var(--tjg-glass-inner-highlight);
+}
+
+.tjg-glass--input {
+  background: var(--tjg-glass-input-bg);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+}
+
+.tjg-glass--row {
+  background: var(--tjg-glass-row-bg);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  box-shadow: var(--tjg-glass-inner-highlight);
+}
+
+/* 按下反馈：只做透明度/亮度变化，不缩放布局，避免列表抖动 */
+.tjg-glass-press {
+  transition:
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    box-shadow var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+}
+
+.tjg-glass-press:active {
+  background-color: var(--tjg-glass-row-bg-pressed);
+}
+
+/* 消息气泡：接收方半透明玻璃，发送方保留深色底以确保白字对比度 ≥ 4.5:1 */
+.bubble {
+  background-color: var(--tjg-glass-tint-bubble-received);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  border: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-soft);
+}
+
+.bubble-oneself {
+  background-color: var(--tjg-glass-tint-bubble-sent);
+  background-image: var(--tjg-glass-sheen);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  border: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-soft);
+}
+
+/* 降级 1：不支持 backdrop-filter 时退回实色，保证可读性与层级 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tjg-glass,
+  .tjg-glass--nav,
+  .tjg-glass--tabbar,
+  .tjg-glass--sheet,
+  .tjg-glass--input,
+  .tjg-glass--row {
+    background: var(--tjg-surface-elevated);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .bubble {
+    background-color: var(--tjg-bubble-received-bg);
+  }
+
+  .bubble-oneself {
+    background-color: var(--tjg-bubble-sent-bg);
+    background-image: none;
+  }
+}
+
+/* 降级 2：系统开启「降低透明度」时移除模糊与半透明 */
+@media (prefers-reduced-transparency: reduce) {
+  .tjg-glass,
+  .tjg-glass--nav,
+  .tjg-glass--tabbar,
+  .tjg-glass--sheet,
+  .tjg-glass--input,
+  .tjg-glass--row {
+    background: var(--tjg-surface-elevated);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .bubble {
+    background-color: var(--tjg-bubble-received-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .bubble-oneself {
+    background-color: var(--tjg-bubble-sent-bg);
+    background-image: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* 降级 3：尊重「减少动态效果」 */
+@media (prefers-reduced-motion: reduce) {
+  .tjg-glass,
+  .tjg-glass::after,
+  .tjg-glass-press {
+    transition: none;
+    animation: none;
+  }
+}

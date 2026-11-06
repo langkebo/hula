@@ -52,10 +52,25 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
 .panel-container {
   width: 100%;
   overflow: hidden;
-  background-color: var(--tjg-surface-panel-muted);
   display: flex;
   flex-direction: column;
-  transition: height var(--tjg-motion-duration-overlay) cubic-bezier(0.4, 0, 0.2, 1);
+  /* 功能面板：一块从输入坞下方升起的玻璃抽屉 */
+  background: var(--tjg-glass-sheet-bg);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  border-top: var(--tjg-glass-border-soft);
+  border-radius: var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0 0;
+  box-shadow: var(--tjg-glass-inner-highlight);
+  transition: height var(--tjg-motion-duration-overlay) var(--tjg-motion-ease-standard);
+}
+
+/* 不支持模糊时退回实色抽屉 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .panel-container {
+    background: var(--tjg-surface-panel);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 .panel-container--fixed {
@@ -64,7 +79,7 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
 
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: all var(--tjg-motion-duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--tjg-motion-duration-normal) var(--tjg-motion-ease-standard);
   transform-origin: bottom;
 }
 
@@ -105,5 +120,15 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
 .panel-content-leave-from {
   opacity: 1;
   transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-container,
+  .panel-slide-enter-active,
+  .panel-slide-leave-active,
+  .panel-content-enter-active,
+  .panel-content-leave-active {
+    transition: none;
+  }
 }
 </style>

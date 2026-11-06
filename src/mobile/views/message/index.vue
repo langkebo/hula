@@ -65,13 +65,16 @@
         :ref="(el) => (longPressMenuRef = el as HTMLElement | null)"
         :style="{ top: longPressState.longPressMenuTop + 'px' }"
         class="fixed gap-10px z-999 left-1/2 transform -translate-x-1/2">
-        <div
-          class="flex justify-between p-18px text-16px gap-22px rounded-16px bg-[var(--tjg-surface-subtle)] whitespace-nowrap">
-          <div class="text-white" @click="handleDelete(currentLongPressItem)">{{ t('mobile_home.menu.delete') }}</div>
-          <div class="text-white" @click="handleToggleTop(currentLongPressItem)">
+        <div class="long-press-menu flex justify-between p-18px text-16px gap-22px whitespace-nowrap">
+          <div class="long-press-menu__item" @click="handleDelete(currentLongPressItem)">
+            {{ t('mobile_home.menu.delete') }}
+          </div>
+          <div class="long-press-menu__item" @click="handleToggleTop(currentLongPressItem)">
             {{ currentLongPressItem?.top ? t('mobile_home.menu.unpin') : t('mobile_home.menu.pintop') }}
           </div>
-          <div class="text-white" @click="handleToggleReadStatus((currentLongPressItem?.unreadCount ?? 0) > 0)">
+          <div
+            class="long-press-menu__item"
+            @click="handleToggleReadStatus((currentLongPressItem?.unreadCount ?? 0) > 0)">
             {{
               (currentLongPressItem?.unreadCount ?? 0) > 0 ? t('mobile_home.menu.read') : t('mobile_home.menu.unread')
             }}
@@ -79,7 +82,7 @@
         </div>
         <div class="flex w-full justify-center h-15px">
           <svg width="34" height="13" viewBox="0 0 35 13">
-            <path d="M0 0 L35 0 L17.5 13 Z" fill="var(--tjg-surface-subtle)" />
+            <path d="M0 0 L35 0 L17.5 13 Z" class="long-press-menu__arrow" />
           </svg>
         </div>
       </div>
@@ -231,5 +234,47 @@ const toSimpleBio = () => {
 /* 低性能设备关闭遮罩模糊，保留正常态的 bg-black/20 */
 .mobile-mask--blur {
   @include backdrop-blur-fallback;
+}
+
+/* 长按菜单：悬浮玻璃气泡，文字走主文本色以避免浅色玻璃上的白字不可读 */
+.long-press-menu {
+  background: var(--tjg-glass-sheet-bg);
+  border: var(--tjg-glass-border-soft);
+  border-radius: var(--tjg-radius-xl);
+  box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-strong);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  color: var(--tjg-text-primary);
+}
+
+.long-press-menu__item {
+  cursor: pointer;
+  transition: opacity var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+}
+
+.long-press-menu__item:active {
+  opacity: 0.6;
+}
+
+.long-press-menu__arrow {
+  fill: var(--tjg-glass-sheet-bg);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .long-press-menu {
+    background: var(--tjg-surface-panel);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .long-press-menu__arrow {
+    fill: var(--tjg-surface-panel);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .long-press-menu__item {
+    transition: none;
+  }
 }
 </style>

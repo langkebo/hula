@@ -6,7 +6,8 @@
     <div
       class="h-full flex flex-col box-border"
       :class="{
-        'bg-cover bg-center bg-no-repeat': props.backgroundImage
+        'bg-cover bg-center bg-no-repeat': props.backgroundImage,
+        'tjg-aurora': !props.backgroundImage
       }"
       :style="mergedStyle">
       <!-- 顶部安全区域 -->
@@ -98,7 +99,8 @@ const backgroundImageStyle = computed(() => {
 })
 
 const mergedStyle = computed(() => ({
-  backgroundColor: 'var(--tjg-surface-panel)',
+  // 无自定义背景图时交给 .tjg-aurora 的氛围层铺底，玻璃面才有可折射的底色
+  backgroundColor: props.backgroundImage ? 'var(--tjg-surface-panel)' : undefined,
   paddingBottom: keyboardInset.value ? `${keyboardInset.value}px` : undefined,
   ...backgroundImageStyle.value
 }))

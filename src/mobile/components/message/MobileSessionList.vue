@@ -39,7 +39,7 @@
         class="flex-1 flex flex-col items-center justify-center gap-8px min-h-200px"
         data-test="session-list-loading">
         <van-loading size="24px" />
-        <span class="text-13px text-[--tjg-text-tertiary]">{{ t('common.loading') }}</span>
+        <span class="text-[length:var(--tjg-font-size-md)] text-[--tjg-text-tertiary]">{{ t('common.loading') }}</span>
       </div>
       <!-- 拉取失败：给原因 + 重试，而不是让用户以为真没有会话 -->
       <div
@@ -47,7 +47,9 @@
         class="flex-1 flex items-center justify-center min-h-200px"
         data-test="session-list-error">
         <van-empty :description="t('mobile_home.session_load_failed')">
-          <p class="mt-4px text-12px text-[--tjg-text-tertiary] break-all">{{ loadError }}</p>
+          <p class="mt-4px text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-tertiary] break-all">
+            {{ loadError }}
+          </p>
           <van-button size="small" type="primary" plain class="mt-12px" @click="emit('refresh')">
             {{ t('common.retry') }}
           </van-button>
@@ -72,8 +74,8 @@
             @open="emit('swipe-open')"
             @close="emit('swipe-close')"
             v-on-long-press="[(e: PointerEvent) => emit('long-press', e, item), longPressOption]"
-            class="text-black"
-            :class="item.top ? 'w-full bg-[--tjg-color-primary-100]' : ''">
+            class="session-row"
+            :class="item.top ? 'session-row--pinned' : ''">
             <!-- 长按项 -->
             <div
               @click.stop="emit('into-room', item)"
@@ -82,12 +84,14 @@
                 <van-badge
                   :offset="[-6, 6]"
                   :color="
-                    item.muteNotification === NotificationTypeEnum.NOT_DISTURB ? 'grey' : 'var(--tjg-color-danger-500)'
+                    item.muteNotification === NotificationTypeEnum.NOT_DISTURB
+                      ? 'var(--tjg-text-tertiary)'
+                      : 'var(--tjg-color-danger-500)'
                   "
                   :content="item.unreadCount"
                   :max="99">
                   <img
-                    class="size-48px rounded-8px object-cover"
+                    class="session-avatar size-48px rounded-8px object-cover"
                     :src="AvatarUtils.getAvatarUrl(item.avatar, 96)"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                 </van-badge>
@@ -223,15 +227,21 @@ function isFirstPinned(item: MobileSessionListItem, index: number): boolean {
 
 <style scoped lang="scss">
 :deep(.van-cell.van-field) {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--tjg-surface-search);
-  border: 1px solid transparent;
-  transition: border-color 0.15s ease;
+  padding: 10px 14px;
+  border-radius: var(--tjg-radius-xl);
+  background: var(--tjg-glass-input-bg);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-soft)) saturate(var(--tjg-glass-saturate-soft));
+  border: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-inner-highlight);
+  transition:
+    border-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    box-shadow var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 }
 
 :deep(.van-cell.van-field:focus-within) {
   border-color: var(--tjg-color-primary-500);
+  box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-soft);
 }
 
 :deep(.van-cell.van-field::after) {
@@ -243,11 +253,45 @@ function isFirstPinned(item: MobileSessionListItem, index: number): boolean {
   z-index: 1500;
 }
 
+/* 会话行：半透明玻璃卡片 + 柔和圆角。
+ * 不逐行加 backdrop-filter：长列表滚动时逐行模糊会显著掉帧，
+ * 模糊留给导航、标签栏、输入坞这些数量恒定的面。 */
+.session-row {
+  margin: 0 10px;
+  border-radius: var(--tjg-radius-lg);
+  background: var(--tjg-glass-row-bg);
+  box-shadow: var(--tjg-glass-inner-highlight);
+  overflow: hidden;
+  transition: background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+}
+
+.session-row:active {
+  background-color: var(--tjg-glass-row-bg-pressed);
+}
+
+.session-row--pinned {
+  background-color: var(--tjg-color-primary-100);
+}
+
+.session-row--pinned:active {
+  filter: brightness(0.97);
+}
+
+.session-avatar {
+  box-shadow: 0 0 0 1px var(--tjg-glass-border-color);
+}
+
 .pinned-group-label {
-  padding: 6px 16px 2px;
+  padding: 8px 16px 4px;
   font-size: var(--tjg-font-size-sm);
   line-height: 1.2;
   color: var(--tjg-text-tertiary);
-  background: var(--tjg-surface-subtle);
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-row {
+    transition: none;
+  }
 }
 </style>

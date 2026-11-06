@@ -50,9 +50,12 @@ function handleClick(item: QuickAction) {
   flex-wrap: wrap;
   justify-content: space-around;
   gap: 8px 0;
-  padding: 12px 16px;
-  background: var(--tjg-surface-panel);
-  border-bottom: 8px solid var(--tjg-border-layout-divider);
+  margin: 12px 16px 0;
+  padding: 14px 8px;
+  border-radius: var(--tjg-radius-xl);
+  background: var(--tjg-glass-row-bg);
+  border: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-inner-highlight);
 }
 
 .m-quick-item {
@@ -61,22 +64,40 @@ function handleClick(item: QuickAction) {
   align-items: center;
   gap: 6px;
   width: 20%;
+  min-height: 44px;
   cursor: pointer;
   padding: 6px 0;
+  border-radius: var(--tjg-radius-lg);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    transform var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
 
   &:active {
-    opacity: 0.6;
+    background: var(--tjg-glass-row-bg-pressed);
+    transform: scale(var(--tjg-glass-press-scale));
   }
 }
 
 .m-quick-icon {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--tjg-radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--tjg-color-primary-50, var(--tjg-color-primary-100));
+  background: var(--tjg-glass-tint-soft);
   color: var(--tjg-color-primary-500);
+  box-shadow: var(--tjg-glass-inner-highlight);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-quick-item {
+    transition: none;
+  }
+
+  .m-quick-item:active {
+    transform: none;
+  }
 }
 </style>

@@ -1,5 +1,6 @@
 <template>
-  <div class="header-bar w-full h-[56px] flex items-center gap-8px z-2 bg-background text-foreground">
+  <div
+    class="header-bar tjg-glass tjg-glass--nav w-full h-[56px] flex items-center gap-8px z-2 text-[--tjg-text-primary]">
     <div @click="handleBack" class="flex items-center shrink-0">
       <svg class="iconpark-icon w-24px h-24px ms-16px p-5px">
         <use href="#fanhui" class="text-foreground"></use>

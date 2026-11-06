@@ -1,40 +1,50 @@
 <template>
-  <div class="h-15rem w-full">
-    <div class="px-15px pt-15px pb-20px flex flex-wrap justify-around gap-4">
+  <div class="more-panel h-15rem w-full">
+    <div class="more-grid">
       <div
         v-for="item in options"
         :key="item.type"
         v-show="item.isShow()"
-        class="flex flex-col gap-8px items-center justify-center w-16"
+        class="more-item"
+        role="button"
+        :aria-label="t(item.labelKey)"
         @click="handleClickIcon(item)">
-        <!-- 文件：原生选择器 -->
-        <van-uploader v-if="item.type === 'file'" accept="*/*" multiple :after-read="afterReadFile">
-          <svg class="h-24px w-24px iconpark-icon">
+        <span class="more-item__icon">
+          <!-- 文件：原生选择器 -->
+          <van-uploader v-if="item.type === 'file'" accept="*/*" multiple :after-read="afterReadFile">
+            <svg class="h-24px w-24px iconpark-icon">
+              <use :href="`#${item.icon}`"></use>
+            </svg>
+          </van-uploader>
+
+          <!-- 图片：原生选择器 -->
+          <van-uploader v-else-if="item.type === 'image'" accept="image/*" multiple :after-read="afterReadImage">
+            <svg class="h-24px w-24px iconpark-icon">
+              <use :href="`#${item.icon}`"></use>
+            </svg>
+          </van-uploader>
+
+          <!-- 位置：触发位置选择 -->
+          <svg v-else class="h-24px w-24px iconpark-icon">
             <use :href="`#${item.icon}`"></use>
           </svg>
-        </van-uploader>
+        </span>
 
-        <!-- 图片：原生选择器 -->
-        <van-uploader v-else-if="item.type === 'image'" accept="image/*" multiple :after-read="afterReadImage">
-          <svg class="h-24px w-24px iconpark-icon">
-            <use :href="`#${item.icon}`"></use>
-          </svg>
-        </van-uploader>
-
-        <!-- 位置：触发位置选择 -->
-        <svg v-else class="h-24px w-24px iconpark-icon">
-          <use :href="`#${item.icon}`"></use>
-        </svg>
-
-        <div class="text-10px">{{ t(item.labelKey) }}</div>
+        <span class="more-item__label">{{ t(item.labelKey) }}</span>
       </div>
     </div>
 
-    <van-popup v-model:show="pickRtcCall" position="bottom">
-      <div class="flex flex-col items-center justify-center">
-        <div class="w-full text-center py-3" @click="startVideoCall">{{ t('mobile_chat.input_panel.video_call') }}</div>
-        <div class="w-full text-center py-3" @click="startAudioCall">{{ t('mobile_chat.input_panel.audio_call') }}</div>
-        <div class="w-full text-center py-3" @click="pickRtcCall = false">{{ t('common.cancel') }}</div>
+    <van-popup v-model:show="pickRtcCall" position="bottom" round class="rtc-sheet">
+      <div class="rtc-sheet__list">
+        <button type="button" class="rtc-sheet__item" @click="startVideoCall">
+          {{ t('mobile_chat.input_panel.video_call') }}
+        </button>
+        <button type="button" class="rtc-sheet__item" @click="startAudioCall">
+          {{ t('mobile_chat.input_panel.audio_call') }}
+        </button>
+        <button type="button" class="rtc-sheet__item rtc-sheet__item--cancel" @click="pickRtcCall = false">
+          {{ t('common.cancel') }}
+        </button>
       </div>
     </van-popup>
   </div>
@@ -228,4 +238,140 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
 }
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+/* 功能面板九宫格：每格是独立玻璃卡片，热区不小于 44px */
+.more-panel {
+  color: var(--tjg-text-primary);
+}
+
+.more-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px 14px 18px;
+}
+
+.more-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 88px;
+  padding: 10px 4px;
+  border-radius: var(--tjg-radius-xl);
+  background: var(--tjg-glass-row-bg);
+  border: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-inner-highlight);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    transform var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+}
+
+.more-item:active {
+  background: var(--tjg-glass-row-bg-pressed);
+  transform: scale(var(--tjg-glass-press-scale));
+}
+
+.more-item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--tjg-radius-full);
+  color: var(--tjg-color-primary-500);
+  background: var(--tjg-glass-tint-soft);
+  box-shadow: var(--tjg-glass-inner-highlight);
+}
+
+.more-item__icon :deep(.van-uploader__wrapper),
+.more-item__icon :deep(.van-uploader),
+.more-item__icon :deep(.van-uploader__input-wrapper) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--tjg-radius-full);
+}
+
+.more-item__label {
+  font-size: var(--tjg-font-size-2xs);
+  line-height: 1.2;
+  color: var(--tjg-text-secondary);
+  text-align: center;
+}
+
+/* 通话选择弹层：底部玻璃抽屉 + 44px 行高 */
+.rtc-sheet {
+  background: var(--tjg-glass-sheet-bg);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  border-top: var(--tjg-glass-border-soft);
+  box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-strong);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rtc-sheet {
+    background: var(--tjg-surface-panel);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.rtc-sheet__list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+}
+
+.rtc-sheet__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: none;
+  background: transparent;
+  color: var(--tjg-text-primary);
+  font-size: var(--tjg-font-size-md);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+}
+
+.rtc-sheet__item:active {
+  background: var(--tjg-glass-row-bg-pressed);
+}
+
+.rtc-sheet__item--cancel {
+  margin-top: 6px;
+  color: var(--tjg-text-secondary);
+}
+
+@media (max-width: 360px) {
+  .more-grid {
+    gap: 10px;
+    padding: 12px 10px 16px;
+  }
+
+  .more-item {
+    min-height: 80px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more-item,
+  .rtc-sheet__item {
+    transition: none;
+  }
+
+  .more-item:active {
+    transform: none;
+  }
+}
+</style>

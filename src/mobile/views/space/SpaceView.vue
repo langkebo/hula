@@ -352,7 +352,7 @@ onMounted(() => {
   min-height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: var(--van-background-2);
+  background: transparent;
   padding: 16px;
 }
 
@@ -367,10 +367,21 @@ onMounted(() => {
 }
 
 .space-card {
-  background: var(--van-background);
-  border-radius: 8px;
+  background: var(--tjg-glass-row-bg);
+  border: var(--tjg-glass-border-soft);
+  border-radius: var(--tjg-radius-xl);
   overflow: hidden;
-  box-shadow: var(--tjg-shadow-card);
+  box-shadow: var(--tjg-glass-inner-highlight);
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard),
+    transform var(--tjg-motion-duration-fast) var(--tjg-motion-ease-standard);
+
+  &:active {
+    background: var(--tjg-glass-row-bg-pressed);
+    transform: scale(var(--tjg-glass-press-scale));
+  }
 
   .space-cover {
     width: 100%;
@@ -505,6 +516,16 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-card {
+    transition: none;
+  }
+
+  .space-card:active {
+    transform: none;
   }
 }
 </style>
