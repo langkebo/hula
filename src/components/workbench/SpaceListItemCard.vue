@@ -131,10 +131,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const hovered = ref(false)
 
-const initials = computed(() => {
-  const name = props.item.name || ''
-  return name.slice(0, 2).toUpperCase() || '?'
-})
+const initials = computed(() => (props.item.name || '').slice(0, 2).toUpperCase() || '?')
 
 const avatarColor = computed(() => {
   let hash = 0

@@ -108,38 +108,24 @@ const hasEncryptedFile = computed(() => {
   return typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
 })
 
-const resolvedVoiceFileName = computed(() => {
-  if (props.body?.fileName) {
-    return props.body.fileName
-  }
-
-  const extracted = extractFileName(rawAudioUrl.value || '')
-  return extracted || 'voice.webm'
-})
+const resolvedVoiceFileName = computed(
+  () => props.body?.fileName || extractFileName(rawAudioUrl.value || '') || 'voice.webm'
+)
 
 // 判断是否为当前用户发送的消息
 const isCurrentUser = computed(() => {
   return props.fromUserUid === userStore.userInfo?.uid
 })
 
-// 计算语音图标颜色
-const voiceIconColor = computed(() => {
-  return isCurrentUser.value ? 'var(--tjg-text-inverse)' : 'var(--tjg-text-primary)'
-})
+// 语音主色：对方气泡浅底用主文本色，自己发送的深色气泡用反色
+const voiceIconColor = computed(() => (isCurrentUser.value ? 'var(--tjg-text-inverse)' : 'var(--tjg-text-primary)'))
 
 const timePreviewStyle = computed(() => {
-  if (isCurrentUser.value) {
-    return {
-      color: 'var(--tjg-text-inverse)',
-      backgroundColor: 'var(--tjg-overlay-inverse-strong)',
-      border: 'none'
-    }
-  }
-
+  const self = isCurrentUser.value
   return {
-    color: 'var(--tjg-text-primary)',
-    backgroundColor: 'var(--tjg-surface-panel)',
-    border: '1px solid var(--tjg-border-strong)'
+    color: self ? 'var(--tjg-text-inverse)' : 'var(--tjg-text-primary)',
+    backgroundColor: self ? 'var(--tjg-overlay-inverse-strong)' : 'var(--tjg-surface-panel)',
+    border: self ? 'none' : '1px solid var(--tjg-border-strong)'
   }
 })
 
@@ -185,7 +171,7 @@ const waveformRenderer = useWaveformRenderer(
 
 // 计算波形颜色状态
 const getWaveformColors = () => {
-  const baseColor = isCurrentUser.value ? 'var(--tjg-text-inverse)' : 'var(--tjg-text-primary)'
+  const baseColor = voiceIconColor.value
 
   // 已播放区域颜色（始终完全不透明）
   const playedColor = baseColor

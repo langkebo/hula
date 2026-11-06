@@ -87,8 +87,8 @@ export default defineConfig(
             //      `NODE_OPTIONS=--require node-language-shim.cjs` + `CODEBUDDY_BROKERED_FS_HOOK_ENABLED=1`
             //      把每个 readFileSync 变成一次 broker IPC：同一批用例 90s vs 6s（差 14×），
             //      负载高时 broker 还会 `connect failed: Connection refused` ⇒ 报成失败而非超时。
-            //      批量跑若出现这类红，先关钩子重跑：
-            //        CODEBUDDY_BROKERED_FS_HOOK_ENABLED=0 NODE_OPTIONS= node scripts/run-vitest.js run <paths>
+            //      批量跑若出现这类红，先关钩子重跑（`scripts/run-vitest.js` 已统一固定
+            //      `CODEBUDDY_BROKERED_FS_HOOK_ENABLED=0`，走该脚本无需手工加前缀）
             //      240s 只是沙箱下的余量，不是根因修复。
             // 详见审计报告 §12.2 / §13。
             testTimeout: 30_000,
