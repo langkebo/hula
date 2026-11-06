@@ -12,7 +12,7 @@
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col gap-15px py-15px px-20px flex-1 min-h-0 z-1">
           <div class="bg-[--tjg-surface-panel] rounded-10px p-0">
-            <div class="flex py-10px rounded-10px w-full items-center gap-10px" @click="clickInfo">
+            <div v-clickable class="flex py-10px rounded-10px w-full items-center gap-10px" @click="clickInfo">
               <!-- 群头像 -->
               <div class="flex justify-center">
                 <div class="rounded-full relative bg-[--tjg-surface-panel] w-38px h-38px overflow-hidden ml-10px">
@@ -50,189 +50,40 @@
           </div>
 
           <!-- 群成员  -->
-          <div v-if="isGroup" class="bg-[--tjg-surface-panel] rounded-10px">
-            <div class="flex items-center justify-between p-[15px_15px_0px_15px]">
-              <span class="text-14px font-medium">{{ t('mobile_chat_setting.group_members_title') }}</span>
-              <div
-                @click="toGroupChatMember"
-                class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
-                <i18n-t keypath="mobile_chat_setting.member_count">
-                  <template #count>
-                    <span class="text-[--tjg-color-primary-500]">{{ groupStore.countInfo?.memberNum || 0 }}</span>
-                  </template>
-                </i18n-t>
-                <div>
-                  <svg class="w-14px h-14px iconpark-icon">
-                    <use href="#right"></use>
-                  </svg>
-                </div>
-              </div>
-            </div>
-            <div class="p-[15px_15px_0px_15px]">
-              <div class="py-15px px-5px grid grid-cols-5 gap-15px text-12px">
-                <div
-                  @click="toFriendInfo(i.uid)"
-                  v-for="i in groupMemberListSliced"
-                  :key="i.uid"
-                  class="flex flex-col justify-center items-center gap-5px">
-                  <div
-                    class="rounded-full relative bg-[--tjg-color-primary-100] w-36px h-36px flex items-center justify-center">
-                    <div
-                      v-if="i.activeStatus !== OnlineEnum.ONLINE"
-                      class="w-36px h-36px absolute rounded-full bg-[--tjg-text-tertiary] opacity-60 z-4"></div>
-                    <img
-                      class="absolute z-3 size-36px rounded-full object-cover"
-                      :src="avatarSrc(i.avatar)"
-                      :alt="t('mobile_contact.avatar.user')"
-                      @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-                  </div>
-                  <div class="truncate max-w-full text-[--tjg-text-secondary]">{{ i.name }}</div>
-                </div>
-                <div class="flex flex-col justify-center items-center gap-5px cursor-pointer">
-                  <van-button plain round size="small" icon="plus" @click="toInviteGroupMember" />
-                  <div>{{ t('mobile_chat_setting.group_invite_member') }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ChatSettingMembers v-if="isGroup" />
 
           <!-- 管理群成员 -->
           <div
             v-if="isGroup && groupStore.isAdminOrLord() && globalStore.currentSessionRoomId !== '1'"
+            v-clickable
             class="bg-[--tjg-surface-panel] p-15px rounded-10px shadow text-14px flex cursor-pointer"
             @click="toManageGroupMember">
             {{ t('mobile_chat_setting.manage_group_members') }}
           </div>
 
-          <div class="bg-[--tjg-surface-panel] rounded-10px p-15px cursor-pointer" @click="handleSearchChatContent">
+          <div
+            v-clickable
+            class="bg-[--tjg-surface-panel] rounded-10px p-15px cursor-pointer"
+            @click="handleSearchChatContent">
             {{ t('mobile_chat_setting.search_history') }}
           </div>
 
           <!-- 群公告 & 信息 -->
-          <div class="bg-[--tjg-surface-panel] rounded-10px">
-            <div class="p-15px!">
-              <div @click="handleCopy(activeItem?.account || '')" class="flex justify-between items-center">
-                <div class="text-14px">
-                  {{
-                    t('mobile_chat_setting.id_card.qr_code_label', {
-                      t: isGroup
-                        ? t('mobile_chat_setting.id_card.type.group')
-                        : t('mobile_chat_setting.id_card.type.single_chat')
-                    })
-                  }}
-                </div>
-                <div class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
-                  <div>{{ activeItem?.account || '' }}</div>
-                  <div>
-                    <svg class="w-14px h-14px iconpark-icon">
-                      <use href="#saoma-i3589iic"></use>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="mx-15px border-b border-[--tjg-border-default]"></div>
-            <!-- 公告内容 -->
-            <div @click="goToNotice" v-if="isGroup" class="flex flex-col text-14px gap-10px p-15px">
-              <div>{{ t('mobile_chat_setting.group_notice.title') }}</div>
-              <div class="text-[--tjg-text-secondary] line-clamp-2 text-12px line-height-20px">
-                {{ announList.length > 0 ? announList[0]?.content : '' }}
-              </div>
-            </div>
+          <ChatSettingRoomInfo
+            :avatar-mxc="avatarValue"
+            :group-info="groupInfo"
+            :announcements="announList"
+            :initial-remark="initialRoomRemark" />
 
-            <div v-if="isGroup" class="mx-15px border-b border-[--tjg-border-default]"></div>
-
-            <!-- 群名称 -->
-            <div class="flex justify-between p-15px items-center">
-              <div class="text-14px">{{ t('mobile_chat_setting.group_name') }}</div>
-              <div class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
-                <van-field
-                  v-model="nameValue"
-                  :border="false"
-                  input-align="right"
-                  :placeholder="t('mobile_chat_setting.input.group_name')"
-                  @blur="handleGroupInfoUpdate"
-                  class="!bg-transparent !p-0 !min-w-0 inline-block" />
-              </div>
-            </div>
-
-            <div class="mx-15px border-b border-[--tjg-border-default]"></div>
-
-            <!-- 群别名 -->
-            <div v-if="isGroup" class="flex justify-between p-15px items-center">
-              <div class="text-14px">{{ t('mobile_chat_setting.group_alias') }}</div>
-              <div class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
-                <van-field
-                  v-model="nicknameValue"
-                  :border="false"
-                  input-align="right"
-                  :placeholder="t('mobile_chat_setting.input.group_alias')"
-                  @blur="handleInfoUpdate"
-                  class="!bg-transparent !p-0 !min-w-0 inline-block" />
-              </div>
-            </div>
-          </div>
-
-          <ChatRemarkField v-model="remarkValue" @blur="handleInfoUpdate" />
-          <ContactAliasField v-if="!isGroup && friend?.userId" :user-id="friend.userId" />
           <!-- 设置 -->
-
-          <div class="bg-[--tjg-surface-panel] rounded-10px">
-            <div class="p-15px text-14px font-medium">
-              {{ t('mobile_chat_setting.setting_type', { t: title }) }}
-            </div>
-            <div class="flex justify-between items-center px-15px pb-12px">
-              <div class="text-14px">{{ t('mobile_chat_setting.pintop') }}</div>
-              <van-switch :model-value="!!activeItem?.top" @update:model-value="handleTop" size="20px" />
-            </div>
-            <div class="mx-15px border-b border-[--tjg-border-default]"></div>
-            <div class="flex justify-between p-15px items-center">
-              <div class="text-14px">{{ t('mobile_chat_setting.silent') }}</div>
-              <van-switch
-                :model-value="activeItem?.muteNotification === NotificationTypeEnum.NOT_DISTURB"
-                @update:model-value="handleNotification"
-                size="20px" />
-            </div>
-            <div
-              v-if="isGroup && roomUpgradeFlow.canUpgrade.value"
-              class="mx-15px border-b border-[--tjg-border-default]"></div>
-            <div
-              v-if="isGroup && roomUpgradeFlow.canUpgrade.value"
-              class="flex justify-between p-15px items-center cursor-pointer"
-              @click="showRoomUpgrade = true">
-              <div class="text-14px">{{ t('room_advanced.room_upgrade.title') }}</div>
-              <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-10px">
-                <span>{{ roomUpgradeFlow.currentVersion.value || '—' }}</span>
-                <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
-              </div>
-            </div>
-            <div
-              v-if="isGroup && listMgmt.canManage.value"
-              class="mx-15px border-b border-[--tjg-border-default]"></div>
-            <div
-              v-if="isGroup && listMgmt.canManage.value"
-              class="flex justify-between p-15px items-center cursor-pointer"
-              @click="openListManagement('allowlist')">
-              <div class="text-14px">{{ t('room_advanced.allowlist.title') }}</div>
-              <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-10px">
-                <span>{{ listMgmt.allowlistCount.value }}</span>
-                <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
-              </div>
-            </div>
-            <div
-              v-if="isGroup && listMgmt.canManage.value"
-              class="mx-15px border-b border-[--tjg-border-default]"></div>
-            <div
-              v-if="isGroup && listMgmt.canManage.value"
-              class="flex justify-between p-15px items-center cursor-pointer"
-              @click="openListManagement('denylist')">
-              <div class="text-14px">{{ t('room_advanced.denylist.title') }}</div>
-              <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-10px">
-                <span>{{ listMgmt.denylistCount.value }}</span>
-                <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
-              </div>
-            </div>
-          </div>
+          <ChatSettingToggles
+            :can-upgrade="isGroup && roomUpgradeFlow.canUpgrade.value"
+            :current-version="roomUpgradeFlow.currentVersion.value"
+            :can-manage="isGroup && listMgmt.canManage.value"
+            :allowlist-count="listMgmt.allowlistCount.value"
+            :denylist-count="listMgmt.denylistCount.value"
+            @upgrade="showRoomUpgrade = true"
+            @manage="openListManagement" />
 
           <van-button
             plain
@@ -274,23 +125,19 @@
 
 <script setup lang="ts">
 import { showConfirmDialog } from 'vant'
-import { I18nT, useI18n } from 'vue-i18n'
+import { useI18n } from 'vue-i18n'
 import MobileListManagementDialog from '#/views/chat-room/MobileListManagementDialog.vue'
 import MobileRoomUpgradeDialog from '#/views/chat-room/MobileRoomUpgradeDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useClipboard } from '@/composables/common/useClipboard'
 import { useMitt } from '@/composables/common/useMitt'
-import { useMyRoomInfoUpdater } from '@/composables/room/useMyRoomInfoUpdater'
 import { useRoomListManagement } from '@/composables/room/useRoomListManagement'
 import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
-import { MittEnum, NotificationTypeEnum, OnlineEnum, RoleEnum, RoomTypeEnum, TauriCommand } from '@/enums'
-import ChatRemarkField from '@/mobile/components/chat-room/ChatRemarkField.vue'
-import ContactAliasField from '@/mobile/components/chat-room/ContactAliasField.vue'
+import { MittEnum, RoleEnum, RoomTypeEnum, TauriCommand } from '@/enums'
+import ChatSettingMembers from '@/mobile/views/chat-room/components/ChatSettingMembers.vue'
+import ChatSettingRoomInfo from '@/mobile/views/chat-room/components/ChatSettingRoomInfo.vue'
+import ChatSettingToggles from '@/mobile/views/chat-room/components/ChatSettingToggles.vue'
 import router from '@/router'
-import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
-import { matrixRoomNotificationService } from '@/services/matrix/notifications/MatrixRoomNotificationService'
-import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import type { UserItem } from '@/services/types'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -301,11 +148,9 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
-import { toFriendInfoPage } from '@/utils/RouterUtils'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('ChatSetting')
-const { write: writeClipboard } = useClipboard()
 
 defineOptions({
   name: 'mobileChatSetting'
@@ -320,7 +165,6 @@ const groupStore = useGroupStore()
 const announcementStore = useAnnouncementStore()
 const contactStore = useContactStore()
 const { currentSessionRoomId } = storeToRefs(globalStore)
-const { persistMyRoomInfo } = useMyRoomInfoUpdater()
 
 type GroupAnnouncementListResponse = Awaited<ReturnType<typeof announcementStore.getGroupAnnouncementList>>
 type GroupAnnouncementListItem = GroupAnnouncementListResponse['records'][number]
@@ -357,30 +201,17 @@ const openListManagement = (tab: 'allowlist' | 'denylist') => {
   showListManagement.value = true
 }
 
-const groupMemberListSliced = computed(() => {
-  const list = groupStore.memberList.slice(0, 9)
-  return list
-})
-
-const avatarSrc = (url: string) => AvatarUtils.getAvatarUrl(url)
-
 const announError = ref(false)
 const announNum = ref(0)
 const isAddAnnoun = ref(false)
 const announList = ref<GroupAnnouncementListItem[]>([])
-const remarkValue = ref('')
 
 const groupInfo = ref<MatrixGroupInfo | null>(null)
-const nameValue = ref('')
 const avatarValue = ref('')
-const nicknameValue = ref('')
+const initialRoomRemark = ref('')
 const options = ref<Array<{ name: string; src: string }>>([])
 const { currentSession: activeItem } = storeToRefs(globalStore)
 const friend = computed(() => contactStore.contactsList.find((item) => item.userId === activeItem.value?.detailId))
-
-const initialRemarkValue = ref('')
-const initialNicknameValue = ref('')
-const initialNameValue = ref('')
 
 const {
   localImageUrl,
@@ -398,36 +229,8 @@ const handleCrop = async (cropBlob: Blob) => {
   await onCrop(cropBlob)
 }
 
-const handleCopy = (val: string) => {
-  if (!val) return
-  void writeClipboard(val).catch((err) => logger.error('Copy failed:', err))
-  showFeedback(t('mobile_chat_setting.copy_id', { id: val }), 'success')
-}
-
-const toFriendInfo = (uid: string) => {
-  toFriendInfoPage(uid)
-}
-
-const toGroupChatMember = () => {
-  router.push({ name: 'mobileGroupChatMember' })
-}
-
-const toInviteGroupMember = () => {
-  router.push({ name: 'mobileInviteGroupMember' })
-}
-
 const toManageGroupMember = () => {
   router.push({ name: 'manageGroupMember' })
-}
-
-const goToNotice = () => {
-  router.push({
-    path: '/mobile/chatRoom/notice',
-    query: {
-      announList: JSON.stringify(announList.value),
-      roomId: globalStore.currentSessionRoomId
-    }
-  })
 }
 
 async function handleClearHistory() {
@@ -554,83 +357,6 @@ const handleLoadGroupAnnoun = async () => {
   }
 }
 
-const handleTop = (value: boolean) => {
-  const session = activeItem.value
-  if (!session) return
-  matrixSessionService
-    .setSessionTop(currentSessionRoomId.value, value)
-    .then(() => {
-      chatStore.updateSession(currentSessionRoomId.value, { top: value })
-      showFeedback(
-        value ? t('mobile_chat_setting.pinned_success') : t('mobile_chat_setting.unpinned_success'),
-        'success'
-      )
-    })
-    .catch(() => {
-      showFeedback(t('mobile_chat_setting.pin_failed'), 'error')
-    })
-}
-
-const handleInfoUpdate = async () => {
-  const remarkChanged = remarkValue.value !== initialRemarkValue.value
-  const nicknameChanged = nicknameValue.value !== initialNicknameValue.value
-
-  if (!remarkChanged && !nicknameChanged) {
-    return
-  }
-
-  if (isGroup.value) {
-    await persistMyRoomInfo({
-      roomId: globalStore.currentSessionRoomId,
-      remark: remarkValue.value,
-      myName: nicknameValue.value
-    })
-    initialRemarkValue.value = remarkValue.value
-    initialNicknameValue.value = nicknameValue.value
-  } else {
-    if (!remarkChanged) {
-      return
-    }
-
-    const detailId = activeItem.value?.detailId
-    if (!detailId) {
-      showFeedback(t('mobile_chat_setting.get_friend_info_failed'), 'warning')
-      return
-    }
-    await contactStore.setFriendNote(detailId, remarkValue.value)
-
-    if (friend.value) {
-      // 「备注」输入框写的是 note，本地镜像也必须写 note，不能写 remark（那是备注名）
-      friend.value.note = remarkValue.value
-    }
-    initialRemarkValue.value = remarkValue.value
-  }
-
-  showFeedback(t('mobile_chat_setting.remark_updated', { n: title.value }), 'success')
-}
-
-const handleGroupInfoUpdate = async () => {
-  const session = activeItem.value
-  if (!session) return
-  if (nameValue.value === initialNameValue.value) {
-    return
-  }
-
-  await matrixRoomActionFacade.setRoomName(currentSessionRoomId.value, nameValue.value)
-  if (avatarValue.value && avatarValue.value !== session.avatar) {
-    await matrixRoomActionFacade.setRoomAvatar(currentSessionRoomId.value, avatarValue.value)
-  }
-  session.avatar = avatarValue.value
-  session.name = nameValue.value
-  chatStore.updateSession(currentSessionRoomId.value, {
-    avatar: avatarValue.value,
-    name: nameValue.value
-  })
-
-  initialNameValue.value = nameValue.value
-  showFeedback(t('mobile_chat_setting.group_name_updated'), 'success')
-}
-
 const fetchGroupMembers = async (roomId: string) => {
   try {
     const userList = groupStore.getUserListByRoomId(roomId)
@@ -646,64 +372,6 @@ const fetchGroupMembers = async (roomId: string) => {
   } catch (error) {
     logger.error('Failed to fetch group members:', error)
   }
-}
-
-const handleShield = (value: boolean) => {
-  const session = activeItem.value
-  if (!session) return
-  matrixRoomNotificationService
-    .setRoomShield(currentSessionRoomId.value, value)
-    .then(() => {
-      chatStore.updateSession(currentSessionRoomId.value, {
-        shield: value
-      })
-
-      const tempRoomId = globalStore.currentSessionRoomId
-
-      nextTick(() => {
-        globalStore.updateCurrentSessionRoomId(tempRoomId)
-      })
-
-      showFeedback(
-        value ? t('mobile_chat_setting.messages_muted') : t('mobile_chat_setting.messages_unmuted'),
-        'success'
-      )
-    })
-    .catch(() => {
-      showFeedback(t('mobile_chat_setting.setting_failed'), 'error')
-    })
-}
-
-const handleNotification = (value: boolean) => {
-  const session = activeItem.value
-  if (!session) return
-  const newType = value ? NotificationTypeEnum.NOT_DISTURB : NotificationTypeEnum.RECEPTION
-  if (session.shield) {
-    handleShield(false)
-  }
-  matrixRoomNotificationService
-    .setRoomNotification(currentSessionRoomId.value, newType)
-    .then(() => {
-      chatStore.updateSession(currentSessionRoomId.value, {
-        muteNotification: newType
-      })
-
-      if (session.muteNotification === NotificationTypeEnum.NOT_DISTURB && newType === NotificationTypeEnum.RECEPTION) {
-        chatStore.updateTotalUnreadCount()
-      }
-
-      if (newType === NotificationTypeEnum.NOT_DISTURB) {
-        chatStore.updateTotalUnreadCount()
-      }
-
-      showFeedback(
-        value ? t('mobile_chat_setting.notifications_silent') : t('mobile_chat_setting.notifications_enabled'),
-        'success'
-      )
-    })
-    .catch(() => {
-      showFeedback(t('mobile_chat_setting.setting_failed'), 'error')
-    })
 }
 
 const handleSearchChatContent = () => {
@@ -722,34 +390,19 @@ onMounted(async () => {
 
       if (response) {
         groupInfo.value = response
-        nameValue.value = response.groupName || response.name || ''
         avatarValue.value = response.avatar || response.avatarUrl || ''
-        nicknameValue.value = response.myName || ''
-        remarkValue.value = response.remark || ''
-
-        initialNameValue.value = nameValue.value
-        initialNicknameValue.value = nicknameValue.value
-        initialRemarkValue.value = remarkValue.value
         await fetchGroupMembers(roomId)
       }
     } catch (e: unknown) {
       logger.error('Failed to fetch group details:', e)
     }
   } else {
-    remarkValue.value = friend.value?.remark || ''
-    initialRemarkValue.value = remarkValue.value
+    initialRoomRemark.value = friend.value?.remark || ''
   }
 })
 </script>
 
 <style scoped lang="scss">
-:deep(.van-cell.van-field) {
-  padding: 8px 0;
-}
-
-:deep(.van-cell.van-field::after) {
-  display: none;
-}
 .centered-overlay {
   position: absolute;
   top: 50%;

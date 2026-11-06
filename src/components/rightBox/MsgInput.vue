@@ -75,84 +75,20 @@
           @open-delayed-modal="openDelayedModal" />
 
         <!-- @提及框 -->
-        <div v-if="ait && activeItem?.type === RoomTypeEnum.GROUP && personList.length > 0" class="ait-options">
-          <n-virtual-list
-            id="image-chat-ait"
-            ref="virtualListInst-ait"
-            class="max-h-180px"
-            :item-size="36"
-            :items="personList"
-            v-model:selectedKey="selectedAitKey">
-            <template #default="{ item }">
-              <n-flex
-                @mouseover="() => (selectedAitKey = item.uid)"
-                :class="{ active: selectedAitKey === item.uid }"
-                @click="handleAit(item)"
-                :key="item.uid"
-                align="center"
-                class="ait-item"
-                role="option"
-                tabindex="0"
-                :aria-selected="selectedAitKey === item.uid"
-                :aria-label="item.myName || item.name"
-                @keydown.enter.prevent="handleAit(item)">
-                <n-avatar
-                  lazy
-                  round
-                  :size="22"
-                  :src="AvatarUtils.getAvatarUrl(item.avatar)"
-                  color="var(--tjg-surface-panel)"
-                  fallback-src="/logo.png"
-                  :render-placeholder="() => null"
-                  :intersection-observer-options="{
-                    root: '#image-chat-ait'
-                  }" />
-                <span>{{ item.myName || item.name }}</span>
-              </n-flex>
-            </template>
-          </n-virtual-list>
-        </div>
+        <MsgInputMentionPanel
+          ref="aitPanelRef"
+          :visible="ait && activeItem?.type === RoomTypeEnum.GROUP && personList.length > 0"
+          :items="personList"
+          v-model:selectedKey="selectedAitKey"
+          @select="handleAit" />
 
         <!-- / 提及框 -->
-        <div
-          v-if="aiDialogVisible && activeItem?.type === RoomTypeEnum.GROUP && groupedAIModels.length > 0"
-          class="AI-options">
-          <n-virtual-list
-            ref="virtualListInst-AI"
-            class="max-h-180px"
-            :item-size="36"
-            :items="groupedAIModels"
-            v-model:selectedKey="selectedAIKey">
-            <template #default="{ item }">
-              <n-flex
-                @mouseover="() => (selectedAIKey = item.uid)"
-                :class="{ active: selectedAIKey === item.uid }"
-                @click="handleAI()"
-                align="center"
-                class="AI-item">
-                <n-flex align="center" justify="space-between" class="w-full pr-6px">
-                  <n-flex align="center">
-                    <img
-                      class="size-18px object-contain"
-                      :src="item.avatar"
-                      :alt="t('common.avatar_alt', { name: item.name })" />
-                    <p class="text-(14px [--tjg-text-primary])">{{ item.name }}</p>
-                  </n-flex>
-
-                  <n-flex align="center" :size="6">
-                    <div
-                      class="ml-6px p-[4px_8px] size-fit bg-[--tjg-color-beta-100] rounded-6px text-(11px [--tjg-color-beta-500] center)">
-                      Beta
-                    </div>
-                    <n-tag size="small" class="text-[length:var(--tjg-font-size-xs)]" :bordered="false" type="success">
-                      128k
-                    </n-tag>
-                  </n-flex>
-                </n-flex>
-              </n-flex>
-            </template>
-          </n-virtual-list>
-        </div>
+        <MsgInputAICommandPanel
+          ref="aiPanelRef"
+          :visible="aiDialogVisible && activeItem?.type === RoomTypeEnum.GROUP && groupedAIModels.length > 0"
+          :items="groupedAIModels"
+          v-model:selectedKey="selectedAIKey"
+          @select="handleAI()" />
       </div>
     </form>
 
@@ -180,43 +116,34 @@
 </template>
 
 <script setup lang="ts">
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { onKeyStroke } from '@vueuse/core'
 import type { VirtualListInst } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DelayedMessagesModal from '@/components/rightBox/DelayedMessagesModal.vue'
 import type { ReplyToInfo } from '@/components/rightBox/ReplyComposer.vue'
 import ReplyComposer from '@/components/rightBox/ReplyComposer.vue'
 import { useDelayedMessageEntry } from '@/composables/chat/useDelayedMessageEntry'
 import { useMsgInput } from '@/composables/chat/useMsgInput'
-import { useTyping } from '@/composables/chat/useTyping'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useCommon } from '@/composables/common/useCommon'
+import { useMsgInputLocationShare } from '@/composables/chat/useMsgInputLocationShare'
+import { useMsgInputMobilePanels } from '@/composables/chat/useMsgInputMobilePanels'
+import { useMsgInputSendEntry } from '@/composables/chat/useMsgInputSendEntry'
+import { useMsgInputSuggestionNav } from '@/composables/chat/useMsgInputSuggestionNav'
+import { useMsgInputUploadEntry } from '@/composables/chat/useMsgInputUploadEntry'
 import { useMitt } from '@/composables/common/useMitt'
-import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useSendOptions } from '@/composables/settings/settingsOptions'
-import { useIsMobile } from '@/composables/usePlatform'
-import { MittEnum, MobilePanelStateEnum, MsgEnum, RoomTypeEnum } from '@/enums'
-import type { AIModel, UserItem } from '@/services/types.ts'
+import { MittEnum, type MobilePanelStateEnum, MsgEnum, RoomTypeEnum } from '@/enums'
+import type { UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
-import { useLocationStore } from '@/stores/domains/chat/location'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import type { LocationData } from '@/types/common'
-import { hasTauriRuntime } from '@/utils/AppHarness'
-import { AvatarUtils } from '@/utils/AvatarUtils'
-import type { UploadFile } from '@/utils/FileType'
-import { createLogger } from '@/utils/Logger'
 import MsgInputMobileControls from './MsgInputMobileControls.vue'
 import MsgInputToolbar from './MsgInputToolbar.vue'
+import MsgInputAICommandPanel from './msg-input/MsgInputAICommandPanel.vue'
+import MsgInputMentionPanel from './msg-input/MsgInputMentionPanel.vue'
 
 // 异步加载重型组件
 const LocationModal = defineAsyncComponent(() => import('./location/LocationModal.vue'))
 const VoiceRecorder = defineAsyncComponent(() => import('./VoiceRecorder.vue'))
 const FileUploadModal = defineAsyncComponent(() => import('./FileUploadModal.vue'))
-
-const logger = createLogger('MsgInput')
 
 interface Props {
   isAIMode?: boolean
@@ -228,52 +155,32 @@ const props = withDefaults(defineProps<Props>(), {
   isAIStreaming: false
 })
 
-const { t } = useI18n()
-const { showFeedback } = useActionFeedback()
-const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+interface ClickState {
+  panelState: MobilePanelStateEnum
+}
 
-// F-1 修复：Tauri 监听器统一走 useTauriListener（onUnmounted 自动 unlisten）
-const { addListener } = useTauriListener()
-// F-1 修复：async onMounted 中注册的 mitt/键盘 handler（getCurrentInstance 已失效，不自动清理），
-// 收集其 cleanup/stop 函数，onUnmounted 统一清理，避免重复响应与内存增长。
-const mittCleanups: Array<() => void> = []
-const keyStrokeStops: Array<() => void> = []
-const { handlePaste, processFiles } = useCommon()
+interface AISendData {
+  content: string
+}
+
+const selfEmitter = defineEmits<{
+  (e: 'clickMore', data: ClickState): void
+  (e: 'clickEmoji', data: ClickState): void
+  (e: 'clickVoice', data: ClickState): void
+  (e: 'customFocus', data: ClickState): void
+  (e: 'send', data: ClickState): void
+  (e: 'input', event: Event): void
+  (e: 'send-ai', data: AISendData): void
+  (e: 'stop-ai'): void
+}>()
+
+const { t } = useI18n()
 const sendOptions = useSendOptions()
 const arrow = ref(false)
 const messageInputDom = ref<HTMLElement>()
 const gloabalStore = useGlobalStore()
 const { currentSession: activeItem, currentSessionRoomId } = storeToRefs(gloabalStore)
-const virtualListInstAit = useTemplateRef<VirtualListInst>('virtualListInst-ait')
-const virtualListInstAI = useTemplateRef<VirtualListInst>('virtualListInst-AI')
-const isVoiceMode = ref(false)
 const groupStore = useGroupStore()
-const locationStore = useLocationStore()
-const { sharing } = storeToRefs(locationStore)
-
-const showFileModal = ref(false)
-const pendingFiles = ref<UploadFile[]>([])
-const showLocationModal = ref(false)
-const privateModeActive = ref(false)
-const onPrivateModeChanged = (isActive: boolean) => {
-  privateModeActive.value = isActive
-}
-
-// ===== 移动端检测（收敛模板内平台判定） =====
-const isMobileRef = useIsMobile()
-
-const formClass = computed(() => (isMobileRef.value ? 'gap-10px ' : ''))
-const containerClass = computed(() =>
-  isMobileRef.value ? 'flex flex-1 p-5px gap-2 pt-5px items-center min-h-2.25rem' : ' flex-col'
-)
-const inputMinHeight = computed(() => (isMobileRef.value ? '2rem' : '36px'))
-const inputLineHeight = computed(() => (isMobileRef.value && !msgInput.value ? '2rem' : '20px'))
-const inputClass = computed(() => {
-  const base = isMobileRef.value
-    ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) p-2 min-h-2rem ps-10px! text-[length:var(--tjg-font-size-base)]! rounded-10px! max-h-8rem! flex items-center'
-    : 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) p-2'
-  return privateModeActive.value ? `${base} private-mode-input` : base
-})
 
 const {
   inputKeyDown,
@@ -303,6 +210,93 @@ const {
   scheduleDelayedMessage,
   delayedMessages
 } = useMsgInput(messageInputDom)
+
+// ===== 私有模式（接收外部状态广播）=====
+const privateModeActive = ref(false)
+const onPrivateModeChanged = (isActive: boolean) => {
+  privateModeActive.value = isActive
+}
+
+onMounted(() => {
+  useMitt.on(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
+})
+
+onUnmounted(() => {
+  useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
+})
+
+// ===== 移动端面板状态 / 语音模式 / 输入区样式 =====
+const {
+  isMobileRef,
+  isVoiceMode,
+  mobilePanelState,
+  formClass,
+  containerClass,
+  inputMinHeight,
+  inputLineHeight,
+  inputClass,
+  setIsFocus,
+  handleMoreClick,
+  handleEmojiClick,
+  handleVoiceClick,
+  handleVoiceCancel
+} = useMsgInputMobilePanels({
+  msgInput,
+  privateModeActive,
+  emitCustomFocus: (panelState) => selfEmitter('customFocus', { panelState }),
+  emitClickMore: (panelState) => selfEmitter('clickMore', { panelState }),
+  emitClickEmoji: (panelState) => selfEmitter('clickEmoji', { panelState }),
+  emitClickVoice: (panelState) => selfEmitter('clickVoice', { panelState })
+})
+
+// ===== @ 提及 / 指令候选面板 =====
+const aitPanelRef = useTemplateRef<{ virtualList: VirtualListInst | undefined }>('aitPanelRef')
+const aiPanelRef = useTemplateRef<{ virtualList: VirtualListInst | undefined }>('aiPanelRef')
+const virtualListInstAit = computed(() => aitPanelRef.value?.virtualList)
+const virtualListInstAI = computed(() => aiPanelRef.value?.virtualList)
+
+useMsgInputSuggestionNav({
+  ait,
+  aiDialogVisible,
+  personList,
+  groupedAIModels,
+  selectedAitKey,
+  selectedAIKey,
+  virtualListInstAit,
+  virtualListInstAI,
+  handleAit
+})
+
+// ===== 文件入口 / 位置能力 / 发送入口 =====
+const {
+  showFileModal,
+  pendingFiles,
+  showFileModalCallback,
+  handleFileUploadClick,
+  handleGlobalFilesDrop,
+  onPaste,
+  handleFileConfirm,
+  handleFileCancel
+} = useMsgInputUploadEntry({ messageInputDom, sendFilesDirect })
+
+const { sharing, showLocationModal, handleBeaconClick, handleLocationSelected } = useMsgInputLocationShare({
+  currentSessionRoomId,
+  sendLocationDirect
+})
+
+const { handleFormSubmit, handleInternalInput, handleAISend, handleMobileSend, handleDesktopSend, handleEnterKey } =
+  useMsgInputSendEntry({
+    messageInputDom,
+    currentSessionRoomId,
+    isAIMode: () => props.isAIMode,
+    isAIStreaming: () => props.isAIStreaming,
+    send,
+    inputKeyDown,
+    handleInput,
+    emitInput: (e) => selfEmitter('input', e),
+    emitSendAi: (content) => selfEmitter('send-ai', { content }),
+    emitStopAi: () => selfEmitter('stop-ai')
+  })
 
 // ===== 定时消息（MSC4140）=====
 const {
@@ -338,18 +332,6 @@ const clearReply = () => {
   reply.value = { avatar: '', imgCount: 0, accountName: '', content: '', key: 0 }
 }
 
-const { startTyping, stopTyping } = useTyping()
-
-const handleFormSubmit = async (e: Event) => {
-  e.preventDefault()
-  if (currentSessionRoomId.value && isTyping.value) {
-    isTyping.value = false
-    if (typingTimeout.value) clearTimeout(typingTimeout.value)
-    stopTyping(currentSessionRoomId.value)
-  }
-  await send()
-}
-
 const focusInput = () => {
   if (messageInputDom.value) {
     focusOn(messageInputDom.value)
@@ -371,278 +353,6 @@ watch(activeItem, () => {
   })
 })
 
-watch(personList, (newList) => {
-  if (newList.length > 0) {
-    virtualListInstAit.value?.scrollTo({ key: newList[0].uid })
-    selectedAitKey.value = newList[0].uid
-  } else {
-    ait.value = false
-  }
-})
-
-const typingTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
-const isTyping = ref(false)
-
-const handleInternalInput = (e: Event) => {
-  handleInput(e)
-  selfEmitter('input', e)
-
-  if (currentSessionRoomId.value && !isTyping.value) {
-    isTyping.value = true
-    startTyping(currentSessionRoomId.value, 30000)
-  }
-
-  if (typingTimeout.value) clearTimeout(typingTimeout.value)
-
-  typingTimeout.value = setTimeout(() => {
-    if (currentSessionRoomId.value && isTyping.value) {
-      isTyping.value = false
-      stopTyping(currentSessionRoomId.value)
-    }
-  }, 3000)
-}
-
-const showFileModalCallback = (files: UploadFile[]) => {
-  pendingFiles.value = files
-  showFileModal.value = true
-}
-
-const handleBeaconClick = async () => {
-  if (!currentSessionRoomId.value) return
-
-  // 已在共享中：再次点击工具栏按钮即「停止共享」
-  if (sharing.value) {
-    await stopSharing()
-    return
-  }
-
-  try {
-    await locationStore.startLiveShare(currentSessionRoomId.value, t('chat.beacon.live_location'))
-    showFeedback(t('message.beacon.started'), 'success')
-  } catch (error) {
-    logger.error('Failed to start Beacon:', error)
-    showFeedback(t('message.beacon.failed'), 'error')
-  }
-}
-
-const stopSharing = async () => {
-  const liveBeaconId = Array.from(locationStore.activeBeacons.entries()).find(([, beacon]) => beacon.isLive)?.[0]
-  if (!liveBeaconId) return
-
-  try {
-    await locationStore.stopLiveShare(liveBeaconId)
-    showFeedback(t('message.beacon.stop_success'), 'success')
-  } catch (error) {
-    logger.error('Failed to stop Beacon:', error)
-    showFeedback(t('message.beacon.stop_failed'), 'error')
-  }
-}
-
-const handleFileUploadClick = () => {
-  showFileModalCallback([])
-}
-
-const onPaste = async (e: ClipboardEvent) => {
-  if (messageInputDom.value) await handlePaste(e, messageInputDom.value, showFileModalCallback)
-}
-
-const handleFileConfirm = async (files: UploadFile[]) => {
-  try {
-    await sendFilesDirect(files)
-  } catch (error) {
-    logger.error('Failed to send files from modal:', error)
-  }
-  showFileModal.value = false
-  pendingFiles.value = []
-}
-
-const handleFileCancel = () => {
-  showFileModal.value = false
-  pendingFiles.value = []
-}
-
-const handleGlobalFilesDrop = async (files: UploadFile[]) => {
-  if (!files?.length || !messageInputDom.value) return
-  try {
-    await processFiles(files, messageInputDom.value, showFileModalCallback)
-  } catch (error) {
-    logger.error('Failed to process dropped files:', error)
-    showFeedback(t('message.file.toast.drop_failed'), 'error')
-  }
-}
-
-const handleLocationSelected = async (locationData: LocationData) => {
-  try {
-    await sendLocationDirect(locationData)
-  } catch (error) {
-    logger.error('Failed to send location:', error)
-    showFeedback(t('message.location.send_failed'), 'error')
-  }
-}
-
-const handleAitKeyChange = (
-  direction: 1 | -1,
-  list: Ref<UserItem[] | AIModel[]>,
-  virtualListInst: VirtualListInst,
-  key: Ref<string | null>
-) => {
-  const currentIndex = list.value.findIndex((item) => item.uid === key.value)
-  const newIndex = Math.max(0, Math.min(currentIndex + direction, list.value.length - 1))
-  const item = list.value[newIndex]
-  if (item) {
-    key.value = item.uid
-    virtualListInst?.scrollTo({ index: newIndex })
-  }
-}
-
-const closeMenu = (event: MouseEvent) => {
-  if (event.target instanceof HTMLElement && !event.target.matches('#message-input, #message-input *')) {
-    ait.value = false
-  }
-}
-
-const disableSelectAll = (e: KeyboardEvent) => {
-  if (e.ctrlKey && e.key === 'a') {
-    const inputDiv = document.getElementById('message-input')
-    const hasFocus = document.activeElement === inputDiv
-    const hasContent = inputDiv?.textContent && inputDiv.textContent.trim().length > 0
-    if (!hasFocus || !hasContent) e.preventDefault()
-  }
-}
-
-const handleVoiceCancel = () => {
-  isVoiceMode.value = false
-}
-
-const mobilePanelState = ref<MobilePanelStateEnum>(MobilePanelStateEnum.NONE)
-
-interface ClickState {
-  panelState: MobilePanelStateEnum
-}
-
-interface AISendData {
-  content: string
-}
-
-const selfEmitter = defineEmits<{
-  (e: 'clickMore', data: ClickState): void
-  (e: 'clickEmoji', data: ClickState): void
-  (e: 'clickVoice', data: ClickState): void
-  (e: 'customFocus', data: ClickState): void
-  (e: 'send', data: ClickState): void
-  (e: 'input', event: Event): void
-  (e: 'send-ai', data: AISendData): void
-  (e: 'stop-ai'): void
-}>()
-
-const setIsFocus = (value: boolean) => {
-  if (
-    isMobileRef.value &&
-    !value &&
-    (mobilePanelState.value === MobilePanelStateEnum.EMOJI ||
-      mobilePanelState.value === MobilePanelStateEnum.VOICE ||
-      mobilePanelState.value === MobilePanelStateEnum.MORE)
-  ) {
-    return
-  }
-
-  mobilePanelState.value = value ? MobilePanelStateEnum.FOCUS : MobilePanelStateEnum.NONE
-  selfEmitter('customFocus', { panelState: mobilePanelState.value })
-}
-
-const handleMoreClick = () => {
-  mobilePanelState.value =
-    mobilePanelState.value === MobilePanelStateEnum.MORE ? MobilePanelStateEnum.NONE : MobilePanelStateEnum.MORE
-  selfEmitter('clickMore', { panelState: mobilePanelState.value })
-}
-
-const handleEmojiClick = () => {
-  mobilePanelState.value =
-    mobilePanelState.value === MobilePanelStateEnum.EMOJI ? MobilePanelStateEnum.NONE : MobilePanelStateEnum.EMOJI
-  selfEmitter('clickEmoji', { panelState: mobilePanelState.value })
-}
-
-const handleVoiceClick = () => {
-  mobilePanelState.value =
-    mobilePanelState.value === MobilePanelStateEnum.VOICE ? MobilePanelStateEnum.NONE : MobilePanelStateEnum.VOICE
-  selfEmitter('clickVoice', { panelState: mobilePanelState.value })
-}
-
-const getInputContent = (): string => {
-  if (messageInputDom.value) {
-    const innerHTML = messageInputDom.value.innerHTML || ''
-    if (innerHTML.includes('data-type="emoji"')) return 'emoji'
-    if (innerHTML.includes('<img') || innerHTML.includes('data-type=')) return 'image'
-    return messageInputDom.value.textContent?.trim() || ''
-  }
-  return ''
-}
-
-const determineSendType = (): 'ai' | 'im' => {
-  if (props.isAIMode) return 'ai'
-  return 'im'
-}
-
-const handleMobileSend = async () => {
-  if (props.isAIMode && props.isAIStreaming) {
-    useMitt.emit(MittEnum.AI_STOP_STREAMING)
-  } else {
-    await send()
-  }
-}
-
-const clearInput = () => {
-  if (messageInputDom.value) {
-    messageInputDom.value.textContent = ''
-    const event = new Event('input', { bubbles: true })
-    messageInputDom.value.dispatchEvent(event)
-  }
-}
-
-const handleAISend = async () => {
-  const content = getInputContent()
-  if (!content.trim()) {
-    showFeedback(t('message.empty_input'), 'warning')
-    return
-  }
-  selfEmitter('send-ai', { content })
-  clearInput()
-}
-
-const handleDesktopSend = async () => {
-  if (props.isAIMode && props.isAIStreaming) {
-    useMitt.emit(MittEnum.AI_STOP_STREAMING)
-  } else {
-    await send()
-  }
-}
-
-const handleEnterKey = (e: KeyboardEvent) => {
-  if (determineSendType() === 'ai') {
-    e.preventDefault()
-    e.stopPropagation()
-    if (props.isAIStreaming) {
-      selfEmitter('stop-ai')
-      return
-    }
-    handleAISend()
-  } else {
-    inputKeyDown(e)
-  }
-}
-
-const listenMobilePanelHandler = () => {
-  mobilePanelState.value = MobilePanelStateEnum.NONE
-}
-
-const listenMobileClosePanel = () => {
-  useMitt.on(MittEnum.MOBILE_CLOSE_PANEL, listenMobilePanelHandler)
-}
-
-const removeMobileClosePanel = () => {
-  useMitt.off(MittEnum.MOBILE_CLOSE_PANEL, listenMobilePanelHandler)
-}
-
 defineExpose({
   messageInputDom,
   updateSelectionRange,
@@ -655,49 +365,16 @@ defineExpose({
   sendFilesDirect,
   sendEmojiDirect,
   sendLinkPreviewDirect,
-  handleLocationSelected
+  handleLocationSelected,
+  handleGlobalFilesDrop,
+  handleAISend
 })
+
+// F-1 修复：async onMounted 中注册的 mitt handler（getCurrentInstance 已失效，不自动清理），
+// 收集其 cleanup 函数，onUnmounted 统一清理，避免重复响应与内存增长。
+const mittCleanups: Array<() => void> = []
 
 onMounted(() => {
-  useMitt.on(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
-})
-onUnmounted(() => {
-  useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
-})
-
-onMounted(async () => {
-  useMitt.on(MittEnum.GLOBAL_FILES_DROP, handleGlobalFilesDrop)
-  if (isMobileRef.value) {
-    listenMobileClosePanel()
-  }
-  keyStrokeStops.push(
-    onKeyStroke('Enter', () => {
-      if (ait.value && Number(selectedAitKey.value) > -1) {
-        const item = personList.value.find((item) => item.uid === selectedAitKey.value)
-        if (item) handleAit(item)
-      }
-    })
-  )
-  keyStrokeStops.push(
-    onKeyStroke('ArrowUp', (e) => {
-      e.preventDefault()
-      if (ait.value) {
-        handleAitKeyChange(-1, personList, virtualListInstAit.value!, selectedAitKey)
-      } else if (aiDialogVisible.value) {
-        handleAitKeyChange(-1, groupedAIModels, virtualListInstAI.value!, selectedAIKey)
-      }
-    })
-  )
-  keyStrokeStops.push(
-    onKeyStroke('ArrowDown', (e) => {
-      e.preventDefault()
-      if (ait.value) {
-        handleAitKeyChange(1, personList, virtualListInstAit.value!, selectedAitKey)
-      } else if (aiDialogVisible.value) {
-        handleAitKeyChange(1, groupedAIModels, virtualListInstAI.value!, selectedAIKey)
-      }
-    })
-  )
   nextTick(() => {
     if (!isMobileRef.value) {
       const inputDiv = document.getElementById('message-input')
@@ -715,50 +392,11 @@ onMounted(async () => {
       }
     })
   )
-  mittCleanups.push(
-    useMitt.on(MittEnum.VOICE_RECORD_TOGGLE, () => {
-      isVoiceMode.value = !isVoiceMode.value
-    })
-  )
-  keyStrokeStops.push(
-    onKeyStroke('Escape', () => {
-      if (isVoiceMode.value) isVoiceMode.value = false
-    })
-  )
-  if (appWindow) {
-    addListener(
-      appWindow.listen<{ buffer: number[]; mimeType: string }>('screenshot', async (e) => {
-        if (messageInputDom.value) {
-          messageInputDom.value.focus()
-          try {
-            const buffer = new Uint8Array(e.payload.buffer)
-            const blob = new Blob([buffer], { type: e.payload.mimeType })
-            const file = new File([blob], 'screenshot.png', { type: e.payload.mimeType })
-            await processFiles([file], messageInputDom.value, showFileModalCallback)
-          } catch (error) {
-            logger.error('Failed to process screenshot:', error)
-          }
-        }
-      }),
-      'msg-input-screenshot'
-    )
-  }
-  window.addEventListener('click', closeMenu, true)
-  window.addEventListener('keydown', disableSelectAll)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('click', closeMenu, true)
-  window.removeEventListener('keydown', disableSelectAll)
-  useMitt.off(MittEnum.GLOBAL_FILES_DROP, handleGlobalFilesDrop)
-  // F-1 修复：清理 async onMounted 中注册的 mitt handler 与键盘监听
   mittCleanups.forEach((cleanup) => cleanup())
   mittCleanups.length = 0
-  keyStrokeStops.forEach((stop) => stop())
-  keyStrokeStops.length = 0
-  if (isMobileRef.value) {
-    removeMobileClosePanel()
-  }
 })
 
 watch(

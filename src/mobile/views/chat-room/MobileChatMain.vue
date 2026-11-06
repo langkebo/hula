@@ -14,7 +14,7 @@
         @toggle-private-mode="onTogglePrivateMode" />
     </template>
     <template #container>
-      <div @click="handleChatMainClick" class="h-full overflow-y-auto">
+      <div v-clickable @click="handleChatMainClick" class="h-full overflow-y-auto">
         <ChatMain @scroll="handleScroll" />
       </div>
     </template>

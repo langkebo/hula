@@ -75,7 +75,7 @@
         @click="$emit('handleDesktopSend')">
         {{ isAIMode && isAIStreaming ? t('ai_assistant.stop_thinking') : t('editor.send') }}
       </n-button>
-      <n-button type="primary" class="p-[0_6px]">
+      <n-button type="primary" class="p-[0_6px]" :aria-label="t('setting.preferences.send_key_label')">
         <template #icon>
           <n-popselect
             v-model:show="arrowLocal"

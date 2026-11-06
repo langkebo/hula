@@ -36,8 +36,11 @@ export const useMsgInput = (messageInputDom: Ref) => {
   const sendKey = computed(() => settingStore.sendMessageShortcut)
   /** 输入框内容  */
   const msgInput = ref('')
+  /** 发送中标记：阻止重复提交（Enter 连击 / 点击与回车并发） */
+  const isSending = ref(false)
   /** 发送按钮是否禁用 */
   const disabledSend = computed(() => {
+    if (isSending.value) return true
     const plainText = stripHtml(msgInput.value)
     return (
       plainText.length === 0 ||
@@ -241,7 +244,13 @@ export const useMsgInput = (messageInputDom: Ref) => {
   })
 
   const send = async () => {
-    await sendCore()
+    if (isSending.value) return
+    isSending.value = true
+    try {
+      await sendCore()
+    } finally {
+      isSending.value = false
+    }
     if (isMobile()) {
       nextTick(() => {
         focusOn(messageInputDom.value)

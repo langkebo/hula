@@ -10,7 +10,7 @@
           <RecycleScroller :items="announList" :item-size="120" key-field="id" class="flex flex-col">
             <template #default="{ item }">
               <div class="bg-[--tjg-surface-panel] rounded-10px p-15px">
-                <div @click="goToNoticeDetail(item.id)">
+                <div v-clickable @click="goToNoticeDetail(item.id)">
                   <div class="flex flex-col w-full gap-10px">
                     <div class="flex items-center justify-between text-14px">
                       <span class="flex gap-5px">
