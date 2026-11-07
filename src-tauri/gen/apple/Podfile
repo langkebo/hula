@@ -1,13 +1,8 @@
 # Uncomment the next line to define a global platform for your project
 
-target 'hula_iOS' do
+target 'tjg_iOS' do
 platform :ios, '13.0'
-  # Pods for hula_iOS
-end
-
-target 'hula_macOS' do
-platform :osx, '11.0'
-  # Pods for hula_macOS
+  # Pods for tjg_iOS
 end
 
 # Delete the deployment target for iOS and macOS, causing it to be inherited from the Podfile

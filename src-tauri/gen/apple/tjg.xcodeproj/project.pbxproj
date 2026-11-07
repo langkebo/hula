@@ -17,6 +17,7 @@
 		66C0485D21D30EE3FC68535D /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 43A3F90CF52FE87749F6AF66 /* WebKit.framework */; };
 		6A23616AC45A179BCF1E5D72 /* KeyboardAccessory.mm in Sources */ = {isa = PBXBuildFile; fileRef = B8C5C8B5CA56D55663BDD69E /* KeyboardAccessory.mm */; };
 		725ABB36A3E4DBADE9B85F1A /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = BEB6A0287B0C05B54BB18D76 /* main.mm */; };
+		931DA7B66168E16C45576CBC /* libPods-tjg_iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0E84C11DD98A54002FAD211E /* libPods-tjg_iOS.a */; };
 		C6E3EE1EC5041769CD8C63BC /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 51F03346AEBB6EB6B6949B1F /* MetalKit.framework */; };
 		D1564E2CD79BBD6D5513CC12 /* SplashScreen.mm in Sources */ = {isa = PBXBuildFile; fileRef = CEF65E2365062B72506BF2E2 /* SplashScreen.mm */; };
 		DFD77F9BDCD981184134D70B /* assets in Resources */ = {isa = PBXBuildFile; fileRef = E0D58092E5EAD80CE1062F64 /* assets */; };
@@ -28,6 +29,7 @@
 		08540D26D56575B5EDCCEFED /* contact_command.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = contact_command.rs; sourceTree = "<group>"; };
 		086659065418BD13F88CDE8E /* error.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = error.rs; sourceTree = "<group>"; };
 		0B6EF43A950A8BAEED368AF5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		0E84C11DD98A54002FAD211E /* libPods-tjg_iOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-tjg_iOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E85BD885CF13B5507CBBB49 /* mod.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = mod.rs; sourceTree = "<group>"; };
 		0EAE4FC26DFF27ECF25E3D74 /* app_event.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = app_event.rs; sourceTree = "<group>"; };
 		116EAAD2A6E3F6A66C37084E /* BadgeBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = BadgeBridge.mm; sourceTree = "<group>"; };
@@ -70,6 +72,7 @@
 		7C088F0946E6632763EFE49E /* im_message_repository.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = im_message_repository.rs; sourceTree = "<group>"; };
 		8260CE2704DD9442C25B51B4 /* vo.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = vo.rs; sourceTree = "<group>"; };
 		8302212411AE642A3C772F3F /* ios.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = ios.rs; sourceTree = "<group>"; };
+		873C71206E6AB1B6982C729F /* Pods-tjg_iOS.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-tjg_iOS.release.xcconfig"; path = "Target Support Files/Pods-tjg_iOS/Pods-tjg_iOS.release.xcconfig"; sourceTree = "<group>"; };
 		890054E0AD9DAD0DA9239400 /* splash.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = splash.rs; sourceTree = "<group>"; };
 		8E86FE7BA45C3B661D49C3B8 /* markdown_command.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = markdown_command.rs; sourceTree = "<group>"; };
 		8EA08F12BCB04981BCB86BEF /* common_cmd.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = common_cmd.rs; sourceTree = "<group>"; };
@@ -83,6 +86,7 @@
 		A40AA5007156C6FB20E0E933 /* mod.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = mod.rs; sourceTree = "<group>"; };
 		A4B8E62E5DC223A7FC7D1AE0 /* timeout_config.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = timeout_config.rs; sourceTree = "<group>"; };
 		A583D4FB62026B9A59646369 /* message.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = message.rs; sourceTree = "<group>"; };
+		B3FB2089D8A167B901747E69 /* Pods-tjg_iOS.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-tjg_iOS.debug.xcconfig"; path = "Target Support Files/Pods-tjg_iOS/Pods-tjg_iOS.debug.xcconfig"; sourceTree = "<group>"; };
 		B78A07DD51FA78F2779116C3 /* linux_runtime_guard.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = linux_runtime_guard.rs; sourceTree = "<group>"; };
 		B83317330D17DD50F7382EE7 /* common.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = common.rs; sourceTree = "<group>"; };
 		B8C5C8B5CA56D55663BDD69E /* KeyboardAccessory.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = KeyboardAccessory.mm; sourceTree = "<group>"; };
@@ -123,6 +127,7 @@
 				18AC9896C229BD92ADBCADCB /* Security.framework in Frameworks */,
 				F071EC93B93610D304D95F53 /* UIKit.framework in Frameworks */,
 				66C0485D21D30EE3FC68535D /* WebKit.framework in Frameworks */,
+				931DA7B66168E16C45576CBC /* libPods-tjg_iOS.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,6 +146,7 @@
 				3B17F5DA74559A9153C5BDAC /* src */,
 				C776CC4AE1CA158AD2B3B6AF /* Frameworks */,
 				EBB8EABBB9D585A2001DACE6 /* Products */,
+				6E354D5A066AECB379396C40 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -219,6 +225,16 @@
 				2D7169E7E23000C0AB794413 /* libapp.a */,
 			);
 			path = debug;
+			sourceTree = "<group>";
+		};
+		6E354D5A066AECB379396C40 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				B3FB2089D8A167B901747E69 /* Pods-tjg_iOS.debug.xcconfig */,
+				873C71206E6AB1B6982C729F /* Pods-tjg_iOS.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		7411D5000D384AA5E5747F33 /* pojo */ = {
@@ -344,6 +360,7 @@
 				41E146C31A7CB2949CC9D6E1 /* Security.framework */,
 				CFA870C7B772C580417E0CB8 /* UIKit.framework */,
 				43A3F90CF52FE87749F6AF66 /* WebKit.framework */,
+				0E84C11DD98A54002FAD211E /* libPods-tjg_iOS.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -402,6 +419,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4B0BF0B0E9E74F171FC6F91A /* Build configuration list for PBXNativeTarget "tjg_iOS" */;
 			buildPhases = (
+				F72F26A5EACE9DB54DEF7761 /* [CP] Check Pods Manifest.lock */,
 				60C47CFA6681755DC983806C /* Build Rust Code */,
 				320D7D3798704BEC7F8A3F6E /* Sources */,
 				7D09DBF60CAE0514DC05176A /* Resources */,
@@ -412,8 +430,6 @@
 			dependencies = (
 			);
 			name = tjg_iOS;
-			packageProductDependencies = (
-			);
 			productName = tjg_iOS;
 			productReference = C06894DAF450154EAA9FAA93 /* Tjg.app */;
 			productType = "com.apple.product-type.application";
@@ -437,6 +453,7 @@
 			);
 			mainGroup = 19DDB0BC6EF26FCF935BDC63;
 			minimizedProjectReferenceProxies = 1;
+			productRefGroup = EBB8EABBB9D585A2001DACE6 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -478,7 +495,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "pnpm tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}";
+			shellScript = "cd \"$SRCROOT/../..\" && pnpm tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}";
+		};
+		F72F26A5EACE9DB54DEF7761 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-tjg_iOS-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -499,6 +538,7 @@
 /* Begin XCBuildConfiguration section */
 		19C2056DA7AAAD31E3C3A11C /* debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B3FB2089D8A167B901747E69 /* Pods-tjg_iOS.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = arm64;
@@ -550,6 +590,7 @@
 		};
 		26AEED89A0EDD8D5A7E017A7 /* release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 873C71206E6AB1B6982C729F /* Pods-tjg_iOS.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ARCHS = arm64;
