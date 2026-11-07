@@ -14,7 +14,7 @@ const spaceServiceMock = {
   inviteToSpace: vi.fn(),
   getSpaceRooms: vi.fn(),
   addChildToSpace: vi.fn(),
-  removeChildFromSpace: vi.fn()
+  removeChild: vi.fn()
 }
 
 vi.mock('@/services/matrix/room/MatrixSpaceService', () => ({
@@ -190,7 +190,7 @@ describe('useSpaceRooms', () => {
   })
 
   it('removeRoom captures error', async () => {
-    spaceServiceMock.removeChildFromSpace.mockRejectedValueOnce(new Error('boom'))
+    spaceServiceMock.removeChild.mockRejectedValueOnce(new Error('boom'))
     const { removeRoom, error } = useSpaceRooms(() => 's1')
     const ok = await removeRoom('!r:e')
     expect(ok).toBe(false)

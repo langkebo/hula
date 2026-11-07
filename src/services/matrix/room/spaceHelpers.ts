@@ -4,8 +4,8 @@
  * 从 MatrixSpaceService 抽离，包含类型转换和路径规范化逻辑。
  */
 
-import type { Room } from '../sdk'
-import type { Space as SdkSpace } from '../sdk-compat'
+import { Direction, type Room } from '../sdk'
+import type { Space as SdkSpace, SpaceChild as SdkSpaceChild } from '../sdk-compat'
 import type { SpaceInfo } from './MatrixSpaceService'
 import { getRoomTopic } from './roomTopic'
 
@@ -55,4 +55,24 @@ export function normalizeSpaceTreePathItems(
     dedupedItems.push({ space_id: item.space_id, name: item.name || '' })
   }
   return dedupedItems
+}
+
+/** 从已加载房间的 m.space.child 状态事件构造子房间列表（SpaceManager 不可用时的回退）
+ */
+export function getSpaceChildrenFromRoom(room: Room, spaceId: string): SdkSpaceChild[] {
+  const childEvents = room.getLiveTimeline().getState(Direction.Forward)?.getStateEvents('m.space.child') ?? []
+  return childEvents
+    .map((event) => {
+      const roomId = event.getStateKey()
+      if (!roomId) return null
+      const content = event.getContent() as { via?: string[]; suggested?: boolean; order?: string }
+      return {
+        space_id: spaceId,
+        room_id: roomId,
+        via_servers: content.via || [],
+        is_suggested: content.suggested ?? false,
+        order: content.order
+      } as SdkSpaceChild
+    })
+    .filter((child): child is SdkSpaceChild => child !== null)
 }

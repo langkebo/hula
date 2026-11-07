@@ -14,8 +14,8 @@ export interface SpaceChildRoom {
   onlineCount?: number
   /**
    * 是否被标记为建议子房间（来自 m.space.child 状态事件的 suggested 字段）。
-   * 服务端 SpaceManager 的 addChild 是 upsert 语义，前端通过 toggleSuggested 直接发送
-   * 状态事件修改该字段。
+   * 服务端 SpaceManager 的 addChild 是 upsert 语义，前端通过 toggleSuggested
+   * 走 MatrixSpaceService.setChildSuggested 修改该字段。
    */
   suggested?: boolean
 }
@@ -44,7 +44,7 @@ interface UseSpaceRoomsResult {
    */
   createRoomInSpace: (input: CreateRoomInSpaceInput) => Promise<string | null>
   /**
-   * 切换子房间的建议标记：直接发送 m.space.child 状态事件，保留既有的 via / order。
+   * 切换子房间的建议标记：由服务层保留既有的 via / order 后 upsert m.space.child。
    * @returns 是否成功
    */
   toggleSuggested: (roomId: string, currentSuggested: boolean) => Promise<boolean>
@@ -128,7 +128,7 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     mutating.value = true
     error.value = null
     try {
-      await matrixSpaceService.removeChildFromSpace(id, roomId)
+      await matrixSpaceService.removeChild(id, roomId)
       await load()
       return true
     } catch (err) {
@@ -142,8 +142,7 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
 
   const createRoomInSpace = async (input: CreateRoomInSpaceInput): Promise<string | null> => {
     const id = spaceId()
-    const client = matrixClientService.getClient()
-    if (!id || !client) {
+    if (!id || !matrixClientService.getClient()) {
       error.value = 'client_unavailable'
       return null
     }
@@ -151,16 +150,16 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     error.value = null
     try {
       const visibility = resolveVisibility(id)
-      const { room_id } = await client.createRoom({
+      const room = await matrixClientService.createRoom({
         name: input.name,
         visibility,
         ...(input.topic === undefined ? {} : { topic: input.topic })
       })
-      await matrixSpaceService.addChildToSpace(id, room_id, {
+      await matrixSpaceService.addChildToSpace(id, room.roomId, {
         ...(input.suggested === undefined ? {} : { suggested: input.suggested })
       })
       await load()
-      return room_id
+      return room.roomId
     } catch (err) {
       logger.error('createRoomInSpace failed', err)
       error.value = err instanceof Error ? err.message : String(err)
@@ -172,25 +171,11 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
 
   const toggleSuggested = async (roomId: string, currentSuggested: boolean): Promise<boolean> => {
     const id = spaceId()
-    const client = matrixClientService.getClient()
-    if (!id || !roomId || !client) return false
+    if (!id || !roomId) return false
     mutating.value = true
     error.value = null
     try {
-      // 读取既有 child 状态以保留 via / order（upsert 语义，不覆盖未提供的字段）
-      let via: string[] = []
-      let order: string | undefined
-      try {
-        const children = await matrixSpaceService.getSpaceChildren(id)
-        const child = children.find((c) => c.room_id === roomId)
-        if (child) {
-          via = child.via_servers ?? []
-          order = child.order
-        }
-      } catch {
-        /* 保留默认空值 */
-      }
-      await client.sendStateEvent(id, 'm.space.child', { suggested: !currentSuggested, via, order }, roomId)
+      await matrixSpaceService.setChildSuggested(id, roomId, !currentSuggested)
       await load()
       return true
     } catch (err) {

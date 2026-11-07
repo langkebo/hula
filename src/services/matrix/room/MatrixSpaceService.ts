@@ -1,6 +1,5 @@
 import { Visibility } from 'matrix-js-sdk'
 import { SPACE_SEARCH_LIMIT } from '@/common/constants'
-import { Direction } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import type {
@@ -8,7 +7,13 @@ import type {
   SpaceManager as SdkSpaceManager,
   SpaceMember as SdkSpaceMember
 } from '../sdk-compat'
-import { getSpaceChildIds, normalizeSpaceTreePathItems, roomToSpaceInfo, sdkSpaceToSpaceInfo } from './spaceHelpers'
+import {
+  getSpaceChildIds,
+  getSpaceChildrenFromRoom,
+  normalizeSpaceTreePathItems,
+  roomToSpaceInfo,
+  sdkSpaceToSpaceInfo
+} from './spaceHelpers'
 import { createSpaceQueries } from './spaceQueries'
 
 const logger = createLogger('MatrixSpaceService')
@@ -315,22 +320,7 @@ class SpaceService extends BaseMatrixService {
       logger.error(`[Space] SpaceManager 获取子房间失败，回退: ${err}`)
       try {
         const room = this.getClient().getRoom(spaceId)
-        if (!room) return []
-        const childEvents = room.getLiveTimeline().getState(Direction.Forward)?.getStateEvents('m.space.child') ?? []
-        return childEvents
-          .map((e) => {
-            const key = e.getStateKey()
-            if (!key) return null
-            const content = e.getContent() as { via?: string[]; suggested?: boolean; order?: string }
-            return {
-              space_id: spaceId,
-              room_id: key,
-              via_servers: content.via || [],
-              is_suggested: content.suggested ?? false,
-              order: content.order
-            } as SdkSpaceChild
-          })
-          .filter((c): c is SdkSpaceChild => c !== null)
+        return room ? getSpaceChildrenFromRoom(room, spaceId) : []
       } catch (fallbackErr) {
         logger.error(`[Space] 回退获取子房间也失败: ${fallbackErr}`)
         return []
@@ -357,24 +347,24 @@ class SpaceService extends BaseMatrixService {
   async addChildToSpace(
     spaceId: string,
     roomId: string,
-    options?: { via?: string[]; suggested?: boolean }
+    options?: { via?: string[]; suggested?: boolean; order?: string }
   ): Promise<void> {
+    const via = options?.via || []
+    const suggested = options?.suggested || false
+    const order = options?.order
     try {
       await this.getSpaceManager().child.addChild(spaceId, {
         room_id: roomId,
-        via_servers: options?.via || [],
-        suggested: options?.suggested || false
+        via_servers: via,
+        suggested,
+        ...(order === undefined ? {} : { order })
       })
       logger.info(`[Space] 子房间已添加: ${roomId} 到 ${spaceId}`)
     } catch (err) {
       logger.info(`[Space] SpaceManager 添加子房间失败，回退到状态事件: ${err}`)
       try {
-        await this.getClient().sendStateEvent(
-          spaceId,
-          'm.space.child',
-          { via: options?.via || [], suggested: options?.suggested || false },
-          roomId
-        )
+        const content = { via, suggested, ...(order === undefined ? {} : { order }) }
+        await this.getClient().sendStateEvent(spaceId, 'm.space.child', content, roomId)
         logger.info(`[Space] 子房间已添加（回退）: ${roomId} 到 ${spaceId}`)
       } catch (fallbackErr) {
         logger.error(`[Space] 添加子房间失败: ${fallbackErr}`)
@@ -383,9 +373,14 @@ class SpaceService extends BaseMatrixService {
     }
   }
 
-  /** @deprecated Use {@link removeChild} instead. */
-  async removeChildFromSpace(spaceId: string, roomId: string): Promise<void> {
-    return this.removeChild(spaceId, roomId)
+  /** 切换子房间的 suggested 标记，保留既有 via / order。 */
+  async setChildSuggested(spaceId: string, roomId: string, suggested: boolean): Promise<void> {
+    const child = (await this.getSpaceChildren(spaceId)).find((c) => c.room_id === roomId)
+    await this.addChildToSpace(spaceId, roomId, {
+      via: child?.via_servers ?? [],
+      suggested,
+      ...(child?.order === undefined ? {} : { order: child.order })
+    })
   }
 
   // ── Space queries（委托 spaceQueries）──
