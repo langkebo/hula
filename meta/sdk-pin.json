@@ -7,8 +7,8 @@
   "sdk_mode": "tarball",
   "ledger_schema": "4",
   "synapse_rust_commit": "0ed483fca0fafd33b0477a8ee8d879f531dc061b",
-  "tarball_sha256": "sha256-2fe7a2c25f03c2b35338f96c6590578ab218bf33cf862c510bf33d451683d5b7",
-  "pinned_at": "2026-11-06T12:24:08.996Z",
+  "tarball_sha256": "sha256-be6ca4497f3a0bb3c26c1b8d9fa8ef0442b3307d54138b36698eec573d5217f0",
+  "pinned_at": "2026-11-07T00:32:13.918Z",
   "pinned_by": "ljf",
-  "sdk_lib_fingerprint": "sha256-1b597294b913e03280dc230b19e20d8625ab0fd9cba4b1e9e2e7730865c63a62"
+  "sdk_lib_fingerprint": "sha256-8de7676391725bd158ec6448c323464a72535c8e24a6ce87aed3575d22bfd270"
 }

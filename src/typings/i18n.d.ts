@@ -3434,7 +3434,8 @@ export type I18nKeys = {
       "file_size_exceeded": "文件大小不能超过500MB",
       "upload_limit": "一次性只能上传{count}个文件或图片",
       "type_not_supported": "暂不支持发送类型消息",
-      "file_send_failed": "{fileName} 发送失败"
+      "file_send_failed": "{fileName} 发送失败",
+      "file_too_large": "{fileName} 超过服务器上传上限（已尝试分片上传），请压缩后重试"
     },
     "mention": {
       "ai_coming_soon": "当前ai正在对接，敬请期待"
@@ -10263,6 +10264,7 @@ export type I18nKeyPaths =
   | "hooks.msg_input.upload_limit"
   | "hooks.msg_input.type_not_supported"
   | "hooks.msg_input.file_send_failed"
+  | "hooks.msg_input.file_too_large"
   | "hooks.mention.ai_coming_soon"
   | "invite_policy.declined_title"
   | "invite_policy.declined_message"

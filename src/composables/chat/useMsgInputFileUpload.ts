@@ -17,6 +17,7 @@ import { MessageStatusEnum, MittEnum, MsgEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { isPayloadTooLarge } from '@/services/matrix/media/mediaUploadHelpers'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import type { MessageStrategy } from '@/strategy/MessageStrategy'
 import { getStrategy } from '@/strategy/MessageStrategy.ts'
@@ -319,7 +320,12 @@ export function useMsgInputFileUpload(
           }
 
           chatStore.updateMsg({ msgId: tempMsgId, status: MessageStatusEnum.FAILED })
-          showFeedback(t('hooks.msg_input.file_send_failed', { fileName: job.file.name }), 'error')
+          // 413 已走过「单次上传 → 分片上传」回退，仍失败说明确实超过服务端上限，
+          // 不能再提示笼统的「发送失败」（用户会反复重试同一个大文件）。
+          const feedbackMessage = isPayloadTooLarge(error)
+            ? t('hooks.msg_input.file_too_large', { fileName: job.file.name })
+            : t('hooks.msg_input.file_send_failed', { fileName: job.file.name })
+          showFeedback(feedbackMessage, 'error')
         }
       })
     )

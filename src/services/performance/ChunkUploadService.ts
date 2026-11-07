@@ -99,7 +99,14 @@ class ChunkUploadService {
     const totalChunks = Math.ceil(file.size / chunkSize)
 
     // Step 1: Start upload session via MediaManager.startChunkUpload
-    const startResp = await media.startChunkUpload(file.name, file.type || 'application/octet-stream', file.size)
+    // 必须同时声明 total_chunks：后端按「已上传分片数 >= total_chunks」推进会话状态，
+    // 缺省（=1）会让第一个分片就把会话判定为 complete，后续分片一律 400。
+    const startResp = await media.startChunkUpload(
+      file.name,
+      file.type || 'application/octet-stream',
+      file.size,
+      totalChunks
+    )
     const serverUploadId = startResp.upload_id
 
     const context: ChunkUploadContext = {

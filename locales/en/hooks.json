@@ -23,7 +23,8 @@
     "file_size_exceeded": "File size cannot exceed 500MB",
     "upload_limit": "You can only upload {count} files or images at once",
     "type_not_supported": "This message type is not supported yet",
-    "file_send_failed": "{fileName} send failed"
+    "file_send_failed": "{fileName} send failed",
+    "file_too_large": "{fileName} exceeds the server upload limit (chunked upload was attempted). Please compress it and retry."
   },
   "mention": {
     "ai_coming_soon": "AI integration coming soon, stay tuned"
