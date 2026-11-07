@@ -265,6 +265,28 @@ const counters = {
     extensions: STYLE_EXTENSIONS
   },
   /**
+   * 裸 `backdrop-filter` 声明（非测试，剥注释后计；`-webkit-` 前缀一并计入）。
+   *
+   * 判据本意（UI 优化方案 v2.4 §E1）：模糊只能经由 `_liquid-glass.scss` 的变体
+   * 或 `TjGlass.vue` 输出，以便统一「前缀 + `html.low-perf` + `prefers-reduced-transparency`」
+   * 三层降级；组件里手写 `backdrop-filter` 会绕过降级链（G1/G2 的根因）。
+   * 该计数只能降不能升。
+   *
+   * 口径：
+   * - 只计「产生模糊」的声明，`backdrop-filter: none`（降级关闭）不计 ——
+   *   否则给存量手写模糊补降级反而会让计数上升，与判据本意相反；
+   * - 不排除 mixin 自身 —— 新增模糊变体也必须显式更新基线，避免「悄悄多一层模糊」；
+   * - 测试文件不计入（常见断言字符串）。
+   */
+  backdrop_filter_raw: {
+    pattern: /backdrop-filter\s*:(?!\s*none\b)/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsOnly,
+    extensions: STYLE_EXTENSIONS
+  },
+  /**
    * `.vue` 中的中文硬编码文案（非测试，剥离注释后按「连续汉字段」计）。
    * 新文案必须走 `t('key')`（文案落 `locales/`）；存量按模块分批抽取，
    * 因此该计数只能降不能升（P1-4 i18n ratchet 止血）。
