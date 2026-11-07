@@ -65,7 +65,7 @@
                 <div class="flex cursor-default">
                   <n-avatar
                     :size="32"
-                    :src="getAvatarSrc(item.fromUser.uid)"
+                    :src="resolveAvatarUrl(item.fromUser.uid)"
                     class="rounded-10px mr-12px"
                     fallback-src="/default-avatar.png" />
 
@@ -109,13 +109,13 @@ import { useChatMain } from '@/composables/chat/useChatMain'
 import { useReplyJump } from '@/composables/chat/useReplyJump'
 import { useImageViewer } from '@/composables/common/useImageViewer'
 import { useVideoViewer } from '@/composables/common/useVideoViewer'
+import { useUserAvatar } from '@/composables/user/useUserAvatar'
 import { MsgEnum, TauriCommand } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatDateLabel, normalizeHistoryDateRange } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
@@ -219,10 +219,7 @@ const handleDateChange = useDebounceFn((value: [number, number] | null) => {
 }, 300)
 
 // 获取用户头像
-const getAvatarSrc = (uid: string) => {
-  const avatar = uid === userUid.value ? (userStore.userInfo?.avatar ?? '') : groupStore.getUserInfo(uid)?.avatar
-  return AvatarUtils.getAvatarUrl(avatar as string)
-}
+const { resolveAvatarUrl } = useUserAvatar()
 
 // 重置并重新加载
 const resetAndReload = () => {

@@ -11,7 +11,7 @@
           <div class="flex cursor-default">
             <n-avatar
               :size="32"
-              :src="getAvatarSrc(item.fromUser.uid)"
+              :src="resolveAvatarUrl(item.fromUser.uid)"
               class="rounded-10px mr-12px"
               fallback-src="/default-avatar.png" />
 
@@ -55,6 +55,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useImageViewer } from '@/composables/common/useImageViewer'
 import { useVideoViewer } from '@/composables/common/useVideoViewer'
 import { useWindow } from '@/composables/common/useWindow'
+import { useUserAvatar } from '@/composables/user/useUserAvatar'
 import { MsgEnum } from '@/enums'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixContactService } from '@/services/matrix/user/MatrixContactService'
@@ -63,7 +64,6 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import type { UserItem } from '@/types/matrix-services'
 import { hasTauriRuntime } from '@/utils/AppHarness'
-import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatChatTime } from '@/utils/ComputedTime.ts'
 import { createLogger } from '@/utils/Logger'
 
@@ -94,6 +94,7 @@ const { activeReply, jumpToReply } = useReplyJump({
 })
 
 const userUid = computed(() => userStore.userInfo?.uid)
+const { resolveAvatarUrl } = useUserAvatar()
 
 const isSpecialMsgType = (type: number): boolean => {
   return (
@@ -111,12 +112,6 @@ const getUserDisplayName = computed(() => (uid: string) => {
   const user = groupStore.getUserInfo(uid)
   return user?.myName || user?.name || ''
 })
-
-// 获取用户头像
-const getAvatarSrc = (uid: string) => {
-  const avatar = uid === userUid.value ? (userStore.userInfo?.avatar ?? '') : groupStore.getUserInfo(uid)?.avatar
-  return AvatarUtils.getAvatarUrl(avatar as string)
-}
 
 // 获取当前页面的所有图片和表情URL
 const getAllImageUrls = computed(() => {

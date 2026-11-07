@@ -3,7 +3,7 @@
   <main class="w-full flex-center">
     <div
       class="chat-message-max-width bg-[--tjg-settings-warning-bg] flex-center chat-bot-message-gap px-12px py-4px rounded-8px bot-message-border">
-      <n-avatar class="select-none" round :size="22" :src="getAvatarSrc(fromUserUid)" />
+      <n-avatar class="select-none" round :size="22" :src="resolveAvatarUrl(fromUserUid)" />
       <div
         v-for="(part, index) in parseMessage(body.content ?? '')"
         :key="`part-${index}-${part.type}`"
@@ -21,9 +21,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { useGroupStore } from '@/stores/domains/chat/group'
-import { useUserStore } from '@/stores/domains/user/user'
-import { AvatarUtils } from '@/utils/AvatarUtils'
+import { useUserAvatar } from '@/composables/user/useUserAvatar'
 
 interface Props {
   body: { content?: string; [key: string]: unknown }
@@ -33,10 +31,7 @@ interface Props {
 defineProps<Props>()
 
 const { t } = useI18n()
-const userStore = useUserStore()
-const groupStore = useGroupStore()
-
-const userUid = computed(() => userStore.userInfo?.uid ?? '')
+const { resolveAvatarUrl } = useUserAvatar()
 
 // 处理机器人消息内容，高亮[]包裹的内容
 const parseMessage = (content: string) => {
@@ -54,12 +49,6 @@ const parseMessage = (content: string) => {
       return { type: 'text', text: part }
     })
     .filter((part) => part.text)
-}
-
-// 获取用户头像
-const getAvatarSrc = (uid: string) => {
-  const avatar = uid === userUid.value ? userStore.userInfo?.avatar : groupStore.getUserInfo(uid)?.avatar
-  return AvatarUtils.getAvatarUrl(avatar as string)
 }
 </script>
 
