@@ -39,6 +39,9 @@ export const MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY = 'tjg-session-identity-
  */
 export const WEB_SESSION_FALLBACK_STORAGE_KEY = 'tjg:session:web-fallback'
 
+/** 离线消息队列的持久化键（`OfflineQueueService` 与 e2e 断网用例共用）。 */
+export const OFFLINE_QUEUE_STORAGE_KEY = 'tjg-offline-queue'
+
 /** 本模块声明的所有键（守卫用：e2e 里出现的 tjg 字面量必须命中本集合）。 */
 export const ALL_STORAGE_KEYS: readonly string[] = [
   ...Object.values(E2E_STORAGE_KEYS),
@@ -46,5 +49,6 @@ export const ALL_STORAGE_KEYS: readonly string[] = [
   MATRIX_IDENTITY_SERVER_STORAGE_KEY,
   MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
   MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY,
-  WEB_SESSION_FALLBACK_STORAGE_KEY
+  WEB_SESSION_FALLBACK_STORAGE_KEY,
+  OFFLINE_QUEUE_STORAGE_KEY
 ]

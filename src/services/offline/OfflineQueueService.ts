@@ -1,5 +1,6 @@
 import { computeBackoffDelay, sleep } from '@/utils/backoff'
 import { createLogger } from '@/utils/Logger'
+import { OFFLINE_QUEUE_STORAGE_KEY } from '@/utils/storageKeys'
 
 const logger = createLogger('OfflineQueue')
 
@@ -97,7 +98,7 @@ function hasRedactedField(value: unknown, sensitiveFields: readonly string[]): b
   )
 }
 
-const STORAGE_KEY = 'tjg-offline-queue'
+const STORAGE_KEY = OFFLINE_QUEUE_STORAGE_KEY
 const MAX_RETRIES = 3
 const BASE_DELAY = 1000
 const MAX_DELAY = 30000
