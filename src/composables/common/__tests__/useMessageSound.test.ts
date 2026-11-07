@@ -65,6 +65,15 @@ describe('useMessageSound', () => {
     expect(playMock.mock.calls[1][0].volume).toBe(1)
   })
 
+  it('reuses a single audio element instead of creating one per message', async () => {
+    const { playMessageSound } = useMessageSound()
+
+    await playMessageSound()
+    await playMessageSound()
+
+    expect(playMock.mock.calls[0][0]).toBe(playMock.mock.calls[1][0])
+  })
+
   it('does not play anything while the message sound toggle is off', async () => {
     const settingStore = useSettingStore()
     settingStore.setMessageSoundEnabled(false)

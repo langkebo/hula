@@ -9,6 +9,22 @@ const MESSAGE_SOUND_ID = 'message-notification'
 const DEFAULT_VOLUME_PERCENT = 80
 
 /**
+ * 复用的提示音元素。
+ *
+ * 原实现每次播放都 `new Audio(...)`，收到 N 条消息就创建 N 个音频元素
+ * （各自持有一份解码后的资源，且旧元素只能等 GC 回收）。提示音是同一段音频、
+ * 由 AudioManager 统一调度（同 id 会先复位再播放），因此复用一个元素即可。
+ */
+let messageAudio: HTMLAudioElement | null = null
+
+const getMessageAudio = (): HTMLAudioElement => {
+  if (!messageAudio) {
+    messageAudio = new Audio(MESSAGE_SOUND_SRC)
+  }
+  return messageAudio
+}
+
+/**
  * 把设置里的 0-100 提示音音量换算成 HTMLAudioElement 需要的 0..1。
  * 未配置（undefined）时回落默认 80，与 `getDefaultNotificationSettings()` 一致；
  * 越界值按 0..1 截断，避免 `volume` 赋值抛 IndexSizeError。
@@ -34,7 +50,7 @@ export function useMessageSound() {
     }
 
     try {
-      const audio = new Audio(MESSAGE_SOUND_SRC)
+      const audio = getMessageAudio()
       audio.volume = resolveNotificationVolume(settingStore.notification?.volume)
       await audioManager.play(audio, MESSAGE_SOUND_ID)
     } catch (error) {
