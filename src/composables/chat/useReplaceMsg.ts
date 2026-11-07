@@ -49,11 +49,16 @@ export const useReplaceMsg = () => {
       return false
     }
 
-    // 过滤出@当前用户的消息
-    const messagesWithAt = messages.filter(checkMessageAtMe)
-
-    // 检查是否有@我的消息以及是否在未读范围内
-    return messagesWithAt.some((msg) => messages.indexOf(msg) >= messages.length - (unreadCount || 0))
+    // 只扫描未读窗口：从末尾倒序检查，命中即返回。
+    // 历史实现先 filter 再对每条消息做 indexOf，整体是 O(n²)，
+    // 且会话列表每行每次重算都会调用一次，长列表下开销明显。
+    const start = unreadCount > 0 ? Math.max(0, messages.length - unreadCount) : messages.length
+    for (let i = messages.length - 1; i >= start; i--) {
+      if (checkMessageAtMe(messages[i])) {
+        return true
+      }
+    }
+    return false
   }
 
   /**
