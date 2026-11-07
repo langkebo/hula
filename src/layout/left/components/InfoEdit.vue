@@ -257,6 +257,8 @@ onMounted(async () => {
 })
 </script>
 <style scoped lang="scss">
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 .badge-item {
   .tip {
     transition: opacity var(--tjg-motion-duration-xslow) ease-in-out;
@@ -278,6 +280,8 @@ onMounted(async () => {
     transition: opacity var(--tjg-motion-duration-xslow) ease-in-out;
     backdrop-filter: blur(var(--tjg-glass-blur-soft));
     -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft));
+    /* 背景由头像自身提供，低性能设备只关闭模糊 */
+    @include backdrop-blur-fallback;
     top: 0;
     left: 0;
 
