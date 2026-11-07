@@ -13,7 +13,7 @@
     },
     {
       "file": "src/typings/components.d.ts",
-      "lines": 752
+      "lines": 754
     },
     {
       "file": "src/components/workbench/SpaceDetailsPane.vue",

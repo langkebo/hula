@@ -551,6 +551,12 @@
       "consumers": ["src/services/matrix/matrixClientPlatform.ts", "src/services/matrix/auth/SessionRestoreService.ts"],
       "kind": "credential",
       "note": "浏览器运行期（非 Tauri）的 at-rest access token：persistWebAccessToken 写入（登录/刷新/登出同步更新），SessionRestoreService.getStoredTokens 冷启动读取；Tauri 运行期 no-op，凭证只由 Rust 侧 update_token 保管（AR-07b B1）"
+    },
+    "glassEffect": {
+      "owner": "src/stores/domains/settings/glassEffect.ts:defineStore(StoresEnum.GLASS_EFFECT)+persist",
+      "consumers": ["src/components/atomic/glass/TjGlass.vue", "src/main.ts"],
+      "kind": "preference",
+      "note": "液态玻璃用户偏好（mode/intensity/advancedRefraction）；TjGlass 消费开关与强度，main.ts 启动时 syncTier 同步性能档位（tier 不持久化）"
     }
   }
 }
