@@ -338,7 +338,7 @@
 <script setup lang="ts">
 import { vOnLongPress } from '@vueuse/components'
 import type { Component } from 'vue'
-import { defineAsyncComponent, onMounted, onUnmounted } from 'vue'
+import { defineAsyncComponent } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MessageLockBadge from '@/components/atomic/MessageLockBadge.vue'
 import BurnMessage from '@/components/burn/BurnMessage.vue'
@@ -347,7 +347,7 @@ import ThreadIndicatorDesktop from '@/components/thread/ThreadIndicator.vue'
 import { chatMainInjectionKey, useChatMain } from '@/composables/chat/useChatMain'
 import { useMitt } from '@/composables/common/useMitt'
 import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
-import { refreshTrustLevel, useMessageTrust } from '@/composables/encryption/useMessageTrust'
+import { useMessageTrust } from '@/composables/encryption/useMessageTrust'
 import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum, MsgEnum } from '@/enums'
 import ThreadIndicatorMobile from '@/mobile/components/thread/ThreadIndicator.vue'
@@ -461,25 +461,9 @@ const messageTrust = useMessageTrust(() => props.message?.message?.body?.hasEncr
 // lockBadgeLevel 已在 composable 内把 'plain' 收敛为 'unverified'，此处直接绑定保证类型安全
 const { isEncrypted: isEncryptedMessage, lockBadgeLevel, trustDescriptionKey, trustLevel } = messageTrust
 
-// ===== 设备验证状态刷新（挂载 + senderUid 变化时异步升级锁色）=====
-let trustRefreshTimer: ReturnType<typeof setInterval> | null = null
-
-onMounted(() => {
-  if (senderUid.value && isEncryptedMessage.value) {
-    // 初始刷新：unverified → 真实设备验证状态
-    refreshTrustLevel(senderUid.value).catch(() => {})
-    // 周期刷新（设备验证状态可能在会话中被用户改变）
-    trustRefreshTimer = setInterval(() => {
-      if (isEncryptedMessage.value && senderUid.value) {
-        refreshTrustLevel(senderUid.value).catch(() => {})
-      }
-    }, 30_000)
-  }
-})
-
-onUnmounted(() => {
-  if (trustRefreshTimer) clearInterval(trustRefreshTimer)
-})
+// ===== 设备验证状态刷新 =====
+// 初始刷新与周期性刷新均由 useMessageTrust 统一负责（全局共享节拍），
+// 组件不再为每条消息单独起 setInterval，避免长列表下 N 个定时器叠加。
 
 // ===== 锁徽章 → 设备验证（方案 3.1「可操作入口」）=====
 const { open: openDeviceVerification } = useDeviceVerifyLauncher()

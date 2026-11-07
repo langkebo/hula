@@ -32,6 +32,30 @@ export function senderCacheKey(senderId: string): string {
 }
 
 /**
+ * 同一发送者的并发刷新合并。
+ *
+ * 全局节拍会在同一时刻唤醒所有消息实例的刷新逻辑，同一发送者可能被请求 N 次；
+ * 共享 in-flight Promise 后，N 次并发只产生 1 次 `/keys/query`。
+ */
+const trustRefreshInFlight = new Map<string, Promise<MessageTrustLevel>>()
+
+async function fetchTrustLevel(key: string, senderId: string): Promise<MessageTrustLevel> {
+  try {
+    const devices = await matrixDeviceService.getUserDevices(senderId)
+    // 设备列表为空 ⇒ 无法证认任何设备 ⇒ 未验证（绝不能因为"没有反对证据"就给绿锁）
+    const level: MessageTrustLevel =
+      devices.length > 0 && devices.every((d) => d.verified === true) ? 'verified' : 'unverified'
+    senderDeviceCache.set(key, level)
+    bumpTrustCacheVersion()
+    return level
+  } catch {
+    // 设备查询失败 → 保持安全默认值，不抛错干扰渲染
+    bumpTrustCacheVersion()
+    return senderDeviceCache.get(key) ?? 'unverified'
+  }
+}
+
+/**
  * 异步刷新信任等级（查设备列表 → 判定设备验证状态 → 更新缓存）
  *
  * 典型用法：消息渲染组件在 `onMounted` / senderId 变化时调用，
@@ -47,22 +71,15 @@ export function senderCacheKey(senderId: string): string {
  *
  * @returns 刷新后的信任等级；失败时保持缓存原值（不抛错）
  */
-export async function refreshTrustLevel(senderId: string): Promise<MessageTrustLevel> {
-  if (!senderId) return 'unverified'
+export function refreshTrustLevel(senderId: string): Promise<MessageTrustLevel> {
+  if (!senderId) return Promise.resolve('unverified')
   const key = senderCacheKey(senderId)
-  try {
-    const devices = await matrixDeviceService.getUserDevices(senderId)
-    // 设备列表为空 ⇒ 无法证认任何设备 ⇒ 未验证（绝不能因为"没有反对证据"就给绿锁）
-    const level: MessageTrustLevel =
-      devices.length > 0 && devices.every((d) => d.verified === true) ? 'verified' : 'unverified'
-    senderDeviceCache.set(key, level)
-    bumpTrustCacheVersion()
-    return level
-  } catch {
-    // 设备查询失败 → 保持安全默认值，不抛错干扰渲染
-    bumpTrustCacheVersion()
-    return senderDeviceCache.get(key) ?? 'unverified'
-  }
+  const pending = trustRefreshInFlight.get(key)
+  if (pending) return pending
+
+  const task = fetchTrustLevel(key, senderId).finally(() => trustRefreshInFlight.delete(key))
+  trustRefreshInFlight.set(key, task)
+  return task
 }
 
 /**

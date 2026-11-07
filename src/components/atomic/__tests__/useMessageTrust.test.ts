@@ -195,6 +195,16 @@ describe('useMessageTrust', () => {
     await expect(refreshTrustLevel('@all:server')).resolves.toBe('verified')
   })
 
+  it('合并同一发送者的并发刷新（只发起一次设备查询）', async () => {
+    mockGetUserDevices.mockResolvedValue([{ device_id: 'D1', verified: true }])
+
+    const [first, second] = await Promise.all([refreshTrustLevel('@alice:server'), refreshTrustLevel('@alice:server')])
+
+    expect(first).toBe('verified')
+    expect(second).toBe('verified')
+    expect(mockGetUserDevices).toHaveBeenCalledTimes(1)
+  })
+
   it('verified 字段缺失（undefined）不得被当作已验证', async () => {
     mockGetUserDevices.mockResolvedValue([{ device_id: 'D1' }])
     await expect(refreshTrustLevel('@noverified:server')).resolves.toBe('unverified')
