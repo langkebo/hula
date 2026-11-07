@@ -222,7 +222,11 @@
 
   /* 液态玻璃分层（移动端 IM）
    * 层次：氛围背景 → 内容 → 玻璃面（导航 / 标签栏 / 输入坞 / 功能面板 / 气泡）。
-   * 组件只消费本组 token，禁止再写颜色字面量。 */
+   * 组件只消费本组 token，禁止再写颜色字面量。
+   * 参数对齐 docs/UI优化方案-v2.4.md 附录 A：blur soft/medium/strong = 10/18/28px，
+   * saturate soft/strong = 1.35/1.8，圆角走 --tjg-radius-surface/panel/sheet = 16/20/24px。
+   * 暗色档位见下方「液态玻璃分层（暗色）」；模糊统一由 _liquid-glass.scss / TjGlass.vue 输出，
+   * 禁止新增手写 backdrop-filter（check-ratchet 的 backdrop_filter_raw 只降不升）。 */
   --tjg-glass-blur-soft: 10px;
   --tjg-glass-blur-medium: 18px;
   --tjg-glass-blur-strong: 28px;
