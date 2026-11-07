@@ -565,8 +565,8 @@ onUnmounted(() => {
   gap: 12px;
   font-size: 14px;
   color: var(--tjg-color-primary-500);
+  /* 加载态覆盖层禁用实时模糊（§9.2），避免在 3D 画布上多一层合成 */
   background: color-mix(in srgb, var(--tjg-surface-panel) 12%, transparent);
-  backdrop-filter: blur(8px);
 }
 
 .assistant-view__progress {

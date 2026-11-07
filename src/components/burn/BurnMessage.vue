@@ -217,8 +217,8 @@ const indicatorStatus = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* 消息行禁用模糊（§9.2），90% 底色已足够遮挡 */
   background: color-mix(in srgb, var(--tjg-surface-panel) 90%, transparent);
-  backdrop-filter: blur(2px);
   border-radius: 12px;
   z-index: 10;
 }

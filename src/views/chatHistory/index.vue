@@ -384,8 +384,7 @@ onMounted(async () => {
   top: 4px;
   z-index: 10;
   padding: 6px 12px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* 列表项禁用模糊（§9.2），底色由 n-tag 的 type 提供 */
 }
 
 /* 需 !important：抵消上下文菜单注入的 .no-select */

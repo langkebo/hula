@@ -49,6 +49,8 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
 </script>
 
 <style scoped lang="scss">
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 .panel-container {
   width: 100%;
   overflow: hidden;
@@ -58,6 +60,8 @@ const onEmojiHandle = (item: unknown, type?: unknown) => {
   background: var(--tjg-glass-sheet-bg);
   -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
   backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  /* 低性能设备只关闭模糊，保留 sheet 底色与顶部描边 */
+  @include backdrop-blur-fallback;
   border-top: var(--tjg-glass-border-soft);
   border-radius: var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0 0;
   box-shadow: var(--tjg-glass-inner-highlight);
