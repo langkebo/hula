@@ -325,46 +325,46 @@ class MatrixFriendService {
     }
   }
 
-  /** 获取与指定用户的好友关系状态，未知或失败时返回 null。 */
+  /**
+   * 获取与指定用户的好友关系状态。
+   * fail-loud：Manager 与 REST 均失败时向上抛错，不把「查询失败」伪装成「无好友关系」（null）。
+   * 仅「无 client」与「关系确实不存在」返回 null。
+   */
   async getFriendStatus(userId: string): Promise<FriendStatus | null> {
-    const manager = await matrixFriendSync.ensureFriendManager(false)
+    if (!matrixClientService.getClient()) return null
 
-    try {
-      if (manager && typeof manager.getFriendStatus === 'function') {
+    const manager = await matrixFriendSync.ensureFriendManager(false)
+    if (manager && typeof manager.getFriendStatus === 'function') {
+      try {
         const status = await manager.getFriendStatus(userId)
         logger.info(`[MatrixFriend] 获取好友状态成功: ${userId}`)
         return (status as FriendStatus | undefined) ?? null
+      } catch (err) {
+        logger.error(`[MatrixFriend] FriendManager 获取好友状态失败，回退到 REST API: ${err}`)
       }
-    } catch (err) {
-      logger.error(`[MatrixFriend] FriendManager 获取好友状态失败，回退到 REST API: ${err}`)
     }
 
-    try {
-      const result = await synapseFriendExtensionService.checkFriendship(userId)
-      return result ? 'accepted' : null
-    } catch (restErr) {
-      logger.error(`[MatrixFriend] REST API 获取好友状态也失败: ${restErr}`)
-      return null
-    }
+    // REST 失败直接抛出（fail-loud），由调用方决定降级展示；不再吞成 null。
+    const result = await synapseFriendExtensionService.checkFriendship(userId)
+    return result ? 'accepted' : null
   }
 
-  /** 获取指定好友的状态详情，客户端或接口不可用时返回 null。 */
+  /**
+   * 获取指定好友的状态详情。
+   *
+   * 失败语义为 fail-loud：SDK 调用失败时向上抛错。仅「无 client」与
+   * 「FriendManager 未提供该接口」返回 null。
+   */
   async getFriendStatusInfo(userId: string): Promise<Record<string, unknown> | null> {
     const client = matrixClientService.getClient()
     if (!client) return null
-    try {
-      const friendManager = client.getFriendManager()
-      if (friendManager?.getFriendStatusInfo) {
-        const result = await friendManager.getFriendStatusInfo(userId)
-        logger.info(`[MatrixFriend] 获取好友状态详情成功: ${userId}`)
-        // SDK 返回 FriendStatusInfo（具体接口，无索引签名）；保持公开契约 Record<string, unknown> | null
-        return unknownToObject(result)
-      }
-    } catch (err) {
-      logger.error(`[MatrixFriend] FriendManager 获取好友状态详情失败: ${err}`)
-      return null
-    }
-    return null
+    const friendManager = client.getFriendManager()
+    if (!friendManager?.getFriendStatusInfo) return null
+
+    const result = await friendManager.getFriendStatusInfo(userId)
+    logger.info(`[MatrixFriend] 获取好友状态详情成功: ${userId}`)
+    // SDK 返回 FriendStatusInfo（具体接口，无索引签名）；保持公开契约 Record<string, unknown> | null
+    return unknownToObject(result)
   }
 
   async searchFriendsViaApi(
