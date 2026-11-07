@@ -293,6 +293,17 @@ const toSimpleBio = () => {
   }
 }
 
+/* 低性能设备关闭实时模糊，保留不透明底色保证可读 */
+html.low-perf .long-press-menu {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--tjg-surface-panel);
+}
+
+html.low-perf .long-press-menu__arrow {
+  fill: var(--tjg-surface-panel);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .long-press-menu__item {
     transition: none;

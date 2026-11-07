@@ -2,6 +2,7 @@ import 'uno.css'
 import '@unocss/reset/eric-meyer.css'
 import '@/styles/css/design-tokens.css'
 import '@/styles/scss/global/base.scss'
+import '@/styles/scss/global/glass.scss'
 import '@/styles/scss/global/responsive.scss'
 import '@/styles/scss/global/typography.scss'
 import App from '@/App.vue'
@@ -17,6 +18,7 @@ import { setupI18n } from '@/services/i18n'
 import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
 import { pinia } from '@/stores'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
+import { useGlassEffectStore } from '@/stores/domains/settings/glassEffect'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { errorTracker } from '@/utils/ErrorTracker'
 import { initializePlatform, isIOS, isMobile } from '@/utils/PlatformConstants'
@@ -112,6 +114,10 @@ app
   .directive('safe-html', vSafeHtml)
   .directive('ripple', vRipple)
   .directive('clickable', vClickable)
+
+// 液态玻璃 store 同步性能档位；DOM 降级类仍由顶部 applyPerformanceTier() 写入
+// （docs/UI优化方案-v2.4.md §7.2：applyPerformanceTier → pinia → syncTier → 首屏）
+useGlassEffectStore(pinia).syncTier()
 
 // Expose pinia for E2E tests and mark readiness
 window.pinia = pinia

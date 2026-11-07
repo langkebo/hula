@@ -11,9 +11,28 @@
   }
 }
 
-.left,
-.left-bg {
+.left-root {
+  position: relative;
+  isolation: isolate;
+}
+
+/* 品牌青实底由材质层承担：TjGlass 只提供玻璃材质与降级能力，颜色仍取 --left-bg-color，
+   保证白字、图标与悬停态在明暗主题下的对比度与改动前一致。
+   选择器叠加 .tj-glass 是为了压过 TjGlass 内置的 panel 底色（含深色覆写）。 */
+.left-root .left-glass.tj-glass {
+  position: absolute;
+  /* main 为 h-full，顶部另有 30px 拖拽条，材质层需同步下探覆盖，避免底部露出底色 */
+  inset: 0 0 -30px;
+  z-index: 0;
+  border: 0;
+  border-radius: 0;
   background: var(--left-bg-color);
+}
+
+.left {
+  position: relative;
+  z-index: 1;
+  background: transparent;
 }
 
 .top-action,

@@ -27,7 +27,7 @@ describe('移动端字号设置', () => {
   })
 
   it('将字号缩放接入 Vant 字号变量', () => {
-    expect(layoutSource).toContain(':theme-vars="fontScaleThemeVars"')
+    expect(layoutSource).toContain(':theme-vars="mobileThemeVars"')
     for (const name of ['fontSizeXs', 'fontSizeSm', 'fontSizeMd', 'fontSizeLg']) {
       expect(layoutSource).toContain(name)
     }

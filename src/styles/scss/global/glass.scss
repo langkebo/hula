@@ -1,0 +1,86 @@
+// 液态玻璃工具层（docs/UI优化方案-v2.4.md §4.1 L1）
+// 只提供类名封装，材质与降级全部来自 mixin；颜色一律消费 --tjg-* token。
+// 与移动端 mobile.scss 中的 .tjg-glass--* 组件类区分，统一使用 u-glass 前缀。
+
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
+.u-glass {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+
+  &--panel {
+    @include liquid-glass-panel;
+  }
+
+  &--subtle {
+    @include liquid-glass-subtle;
+  }
+
+  /* 列表行只允许纯色底（§9.2 禁用清单） */
+  &--row {
+    background: var(--tjg-glass-row-bg);
+  }
+
+  &--none {
+    background: var(--tjg-surface-panel);
+    border: 1px solid var(--tjg-border-layout-divider);
+  }
+
+  &--radius-surface {
+    border-radius: var(--tjg-radius-surface);
+  }
+
+  &--radius-panel {
+    border-radius: var(--tjg-radius-panel);
+  }
+
+  &--radius-sheet {
+    border-radius: var(--tjg-radius-sheet);
+  }
+
+  &--radius-full {
+    border-radius: var(--tjg-radius-full);
+  }
+
+  &--tone-nav {
+    background-color: var(--tjg-glass-nav-bg);
+  }
+
+  &--tone-tabbar {
+    background-color: var(--tjg-glass-tabbar-bg);
+  }
+
+  &--tone-input {
+    background-color: var(--tjg-glass-input-bg);
+  }
+
+  &--tone-sheet {
+    background-color: var(--tjg-glass-sheet-bg);
+  }
+
+  &--tone-row {
+    background-color: var(--tjg-glass-row-bg);
+  }
+
+  /* 用户关闭玻璃或 low 档：去掉实时模糊，保留底色兜底 */
+  &--flat {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  &__engine {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .u-glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--tjg-surface-panel);
+  }
+}

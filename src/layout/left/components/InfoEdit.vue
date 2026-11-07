@@ -276,8 +276,8 @@ onMounted(async () => {
   .avatar-hover {
     opacity: 0;
     transition: opacity var(--tjg-motion-duration-xslow) ease-in-out;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(var(--tjg-glass-blur-soft));
+    -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft));
     top: 0;
     left: 0;
 

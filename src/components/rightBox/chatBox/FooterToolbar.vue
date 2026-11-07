@@ -292,8 +292,6 @@ const onEmojiHandle = (item: string | EmojiUrlPayload, type?: 'emoji' | 'emoji-u
 .liquid-glass-popover {
   padding: 0;
   background: var(--tjg-surface-panel);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--tjg-shadow-md);
   border: 1px solid var(--tjg-border-default);
 }

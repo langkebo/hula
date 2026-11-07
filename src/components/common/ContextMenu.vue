@@ -288,6 +288,22 @@ const handleEnter = (el: Element) => {
 
 <style scoped lang="scss">
 @use '@/styles/scss/global/variable.scss' as *;
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
+/* 右键菜单表面：subtle 材质 + 统一阴影/边框/字号（阶段 B4） */
+@mixin context-glass-surface($position: fixed) {
+  position: $position;
+  @include liquid-glass-subtle;
+  border-radius: 6px;
+  color: var(--tjg-text-primary);
+  box-shadow: var(--tjg-shadow-floating-menu);
+  z-index: 999;
+  width: fit-content;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
 @mixin menu-item {
   padding: 2px 8px;
@@ -308,8 +324,8 @@ const handleEnter = (el: Element) => {
   }
 }
 
+/* 材质由外层 .context-menu（context-glass-surface）统一提供，内层不再叠加第二次模糊 */
 @mixin menu-list {
-  -webkit-backdrop-filter: blur(10px);
   padding: 5px;
   display: flex;
   flex-direction: column;
@@ -330,7 +346,7 @@ const handleEnter = (el: Element) => {
 }
 
 .context-menu {
-  @include menu-item-style();
+  @include context-glass-surface;
 
   .menu-list {
     @include menu-list();
@@ -353,9 +369,8 @@ const handleEnter = (el: Element) => {
 }
 
 .context-submenu {
-  position: fixed;
+  @include context-glass-surface;
   z-index: 1000;
-  @include menu-item-style();
 
   .menu-list {
     @include menu-list();

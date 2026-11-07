@@ -217,12 +217,18 @@ useMitt.on('RoomClosed', handleCallEnd)
     );
   }
 
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium));
+  backdrop-filter: blur(var(--tjg-glass-blur-medium));
   border: 1px solid var(--tjg-border-contrast);
   border-radius: var(--tjg-radius-panel);
   padding: 12px 16px;
   box-shadow: var(--tjg-shadow-call-float);
+
+  /* 低性能设备关闭实时模糊，半透明底色仍保证可读 */
+  html.low-perf & {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 .avatar-shell {
@@ -233,8 +239,13 @@ useMitt.on('RoomClosed', handleCallEnd)
     border: 1px solid color-mix(in srgb, var(--tjg-text-inverse) 14%, transparent);
   }
 
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-soft));
+
+  html.low-perf & {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 .rtc-action-button {

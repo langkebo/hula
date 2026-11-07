@@ -66,14 +66,18 @@ const displayedEmojis = computed(() => {
 
 <style scoped lang="scss">
 @use '@/styles/scss/global/variable.scss' as *;
+@use '@/styles/scss/mixins/liquid-glass' as *;
 
 .context-menu {
-  @include menu-item-style();
+  @include liquid-glass-subtle;
+  border-radius: 6px;
+  box-shadow: var(--tjg-shadow-floating-menu);
+  z-index: 999;
+  width: fit-content;
 }
 
 .emoji-container {
-  -webkit-backdrop-filter: blur(10px);
-  background: var(--tjg-menu-bg);
+  /* 材质由外层 .context-menu 统一提供，内层不再叠加第二次模糊 */
   @apply flex flex-wrap max-w-180px px-6px select-none;
 }
 

@@ -356,4 +356,9 @@ onActivated(async () => {
   -webkit-backdrop-filter: blur(4px) saturate(100%) contrast(100%);
   backdrop-filter: blur(4px) saturate(100%) contrast(100%);
 }
+
+html.low-perf .avatar-scrim {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 </style>

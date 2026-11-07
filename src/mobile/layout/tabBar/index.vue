@@ -1,7 +1,9 @@
 <template>
   <div class="tab-bar-wrap" :class="{ 'tab-bar-wrap--vertical': vertical }">
+    <!-- 材质层与内容分离：避免 TjGlass 的 overflow:hidden 裁掉角标与选中态阴影 -->
+    <TjGlass variant="panel" tone="tabbar" class="tab-bar-glass" />
     <nav
-      class="tab-bar tjg-glass tjg-glass--tabbar flex items-end"
+      class="tab-bar flex items-end"
       :class="vertical ? 'flex-col justify-around' : 'justify-around'"
       :aria-label="t('mobile_tabbar.aria_label')">
       <RouterLink
@@ -80,21 +82,47 @@ const navItems = computed(() => resolveNavItems(t))
 @use '@/styles/scss/mixins/liquid-glass' as *;
 
 .tab-bar-wrap {
+  position: relative;
+  isolation: isolate;
   /* 透明容器，让页面上滑内容透到玻璃标签栏下方 */
   background: transparent;
 }
 
+/* 材质层：模糊 / 染色 / 投影沿用 .tjg-glass--tabbar 的设计值，
+   通过叠加 .tj-glass 压过 TjGlass 内置 panel 底色（含深色覆写） */
+.tab-bar-wrap .tab-bar-glass.tj-glass {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  border-radius: var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0 0;
+  background: var(--tjg-glass-tabbar-bg);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
+  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
+  box-shadow: var(--tjg-glass-shadow-strong), var(--tjg-glass-inner-highlight);
+  @include backdrop-blur-fallback;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .tab-bar-wrap .tab-bar-glass.tj-glass {
+    background: var(--tjg-surface-elevated);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* 中配设备：strong 档模糊降为 medium 档 */
+html.medium-perf .tab-bar-wrap .tab-bar-glass.tj-glass {
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+  backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+}
+
 .tab-bar {
+  position: relative;
+  z-index: 1;
   min-height: 62px;
   padding-top: 6px;
   padding-bottom: var(--safe-area-inset-bottom, 0px);
-  border-radius: var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0 0;
-  border-bottom: 0;
-  /* 材质（模糊 / 染色 / 渐变描边 / 投影）由 .tjg-glass--tabbar 统一提供；
-     此处显式声明模糊只为挂载低性能设备降级（html.low-perf） */
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
-  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-strong));
-  @include backdrop-blur-fallback;
 }
 
 .tab-item {
@@ -155,6 +183,11 @@ const navItems = computed(() => resolveNavItems(t))
   padding-left: var(--safe-area-inset-left, 0px);
   padding-bottom: 0;
 
+  /* 垂直模式贴合屏幕左缘：圆角只留右侧 */
+  .tab-bar-glass.tj-glass {
+    border-radius: 0 var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0;
+  }
+
   /* 需 !important：覆盖 Vant Tabbar 的横向 flex 默认值 */
   .tab-bar {
     height: 100%;
@@ -162,8 +195,6 @@ const navItems = computed(() => resolveNavItems(t))
     flex-direction: column !important;
     /* 横屏安全区改由 padding-left 承担，底部不再叠加安全区 */
     padding-bottom: 0;
-    /* 垂直模式贴合屏幕左缘：圆角只留右侧 */
-    border-radius: 0 var(--tjg-radius-2xl) var(--tjg-radius-2xl) 0;
   }
 
   .tab-item {

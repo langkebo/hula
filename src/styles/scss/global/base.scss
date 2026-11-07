@@ -57,8 +57,8 @@ html[data-blur='1'] {
   .n-modal-mask,
   .n-drawer-mask {
     background-color: color-mix(in srgb, var(--tjg-surface-panel) 10%, transparent);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(var(--tjg-glass-blur-soft));
+    -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft));
   }
 }
 
@@ -68,6 +68,16 @@ html[data-blur='1'] {
 
 .n-drawer-mask {
   @include mask-style(2px);
+}
+
+/**
+ * 阶段 B3：Modal / Drawer 内容面板接入玻璃质感
+ * 遮罩层已负责背景模糊；面板只换成半透明 sheet 底色而不叠加 backdrop-filter，
+ * 避免文档 5.3 节指出的「双层模糊」性能与对比度问题。
+ */
+.n-modal.n-card,
+.n-drawer .n-drawer-content {
+  background-color: var(--tjg-glass-sheet-bg);
 }
 
 /**! 修改naive-ui复选框的样式 */

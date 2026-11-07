@@ -130,3 +130,45 @@ describe('liquid-glass 使用点降级契约', () => {
     expect(Array.isArray(bare)).toBe(true)
   })
 })
+
+/**
+ * 阶段 A 契约（docs/UI优化方案-v2.4.md §2.2 硬规则 4 与 §5.1 预算）：
+ * - L2 组件与 L1 工具层只允许消费 token，不得出现颜色字面量；
+ * - 单视图玻璃面总数 ≤3。
+ */
+const COLOR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/g
+
+describe('液态玻璃新增层约束', () => {
+  const glassComponentPath = resolve(SRC, 'components/atomic/glass/TjGlass.vue')
+  const glassToolPath = resolve(SRC, 'styles/scss/global/glass.scss')
+
+  it('TjGlass.vue 不得包含颜色字面量', () => {
+    const text = readFileSync(glassComponentPath, 'utf-8')
+    const matches = text.match(COLOR_LITERAL) ?? []
+
+    expect(matches, `TjGlass.vue 出现硬编码颜色：${matches.join(', ')}`).toEqual([])
+  })
+
+  it('glass.scss 不得包含颜色字面量', () => {
+    const text = readFileSync(glassToolPath, 'utf-8')
+    const matches = text.match(COLOR_LITERAL) ?? []
+
+    expect(matches, `glass.scss 出现硬编码颜色：${matches.join(', ')}`).toEqual([])
+  })
+
+  it('每个视图使用的 TjGlass 不超过 3 个', () => {
+    const offenders = sources
+      .filter(({ path }) => path.endsWith('.vue'))
+      .filter(({ path }) => /[/\\](views|layout)[/\\]/.test(path))
+      .map(({ path, text }) => ({
+        path: path.replace(`${SRC}/`, ''),
+        count: (text.match(/<TjGlass\b/g) ?? []).length
+      }))
+      .filter(({ count }) => count > 3)
+
+    expect(
+      offenders,
+      `以下视图玻璃面超预算：\n${offenders.map(({ path, count }) => `${path} → ${count}`).join('\n')}`
+    ).toEqual([])
+  })
+})

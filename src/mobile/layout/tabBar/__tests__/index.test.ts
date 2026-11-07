@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import TabBar from '../index.vue'
 
@@ -35,6 +36,7 @@ const mountTabBar = (props: Record<string, unknown> = {}) =>
   mount(TabBar, {
     props,
     global: {
+      plugins: [createPinia()],
       stubs: {
         RouterLink: {
           props: ['to'],
@@ -70,6 +72,15 @@ describe('Mobile TabBar', () => {
     expect(wrap.classes()).not.toContain('tab-bar-wrap--vertical')
     const nav = wrapper.find('.tab-bar')
     expect(nav.classes()).not.toContain('flex-col')
+  })
+
+  it('renders material as a separate glass layer behind the nav', () => {
+    const wrapper = mountTabBar()
+    const glass = wrapper.find('.tab-bar-glass')
+    expect(glass.exists()).toBe(true)
+    expect(glass.attributes('data-glass')).toBe('on')
+    expect(glass.classes()).toContain('tj-glass')
+    expect(wrapper.find('.tab-bar').classes()).not.toContain('tjg-glass')
   })
 
   it('renders vertical layout when vertical prop is true (landscape)', () => {

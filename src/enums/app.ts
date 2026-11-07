@@ -75,6 +75,8 @@ export enum StoresEnum {
   USER_MENU = 'userMenu',
   /** 设置标签页（持久化 key 保持 settingsDialog 不变） */
   SETTINGS_DIALOG = 'settingsDialog',
+  /** 液态玻璃开关（用户偏好持久化，性能档位不持久化） */
+  GLASS_EFFECT = 'glassEffect',
   /** 全局搜索 */
   SPOTLIGHT = 'spotlight',
   /** 线程 */

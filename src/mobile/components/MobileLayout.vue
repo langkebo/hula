@@ -1,7 +1,7 @@
 <template>
   <van-config-provider
     :theme="settingStore.themeContent === ThemeEnum.DARK ? 'dark' : 'light'"
-    :theme-vars="fontScaleThemeVars"
+    :theme-vars="mobileThemeVars"
     class="h-full">
     <div
       class="h-full flex flex-col box-border"
@@ -62,12 +62,22 @@ const userStore = useUserStore()
 const globalStore = useGlobalStore()
 const settingStore = useSettingStore()
 
-/** 将全局字号缩放接入 Vant 字号变量，使移动端组件真正响应字号设置 */
-const fontScaleThemeVars = {
+/**
+ * 移动端 Vant 主题变量
+ * - 字号：将全局字号缩放接入 Vant 字号变量，使移动端组件真正响应字号设置
+ * - 玻璃：导航栏 / 标签栏 / 弹层 / 输入框统一走 design-tokens，避免 Vant 默认实色盖住氛围层
+ */
+const mobileThemeVars = {
   fontSizeXs: 'var(--tjg-font-size-xs)',
   fontSizeSm: 'var(--tjg-font-size-sm)',
   fontSizeMd: 'var(--tjg-font-size-base)',
-  fontSizeLg: 'var(--tjg-font-size-lg)'
+  fontSizeLg: 'var(--tjg-font-size-lg)',
+  navBarBackground: 'transparent',
+  tabbarBackground: 'transparent',
+  tabbarItemTextColor: 'var(--tjg-text-secondary)',
+  tabbarItemActiveColor: 'var(--tjg-color-primary-600)',
+  popupBackground: 'var(--tjg-glass-sheet-bg)',
+  fieldInputTextColor: 'var(--tjg-text-primary)'
 }
 
 const userUid = computed(() => userStore.userInfo?.uid ?? '')

@@ -8,8 +8,8 @@
   background: var(--tjg-menu-bg);
   color: var(--tjg-text-primary);
   border-radius: 6px;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-soft));
   box-shadow: var(--tjg-shadow-floating-menu);
   z-index: 999;
   width: fit-content;
@@ -17,6 +17,12 @@
   line-height: 1.8;
   white-space: nowrap;
   overflow: hidden;
+
+  /* 低性能设备只关闭实时模糊，底色与阴影保持不变 */
+  html.low-perf & {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 /**! 通用菜单项样式 */

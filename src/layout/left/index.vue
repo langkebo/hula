@@ -1,6 +1,8 @@
 <template>
-  <div class="h-full left-bg">
-    <div class="left-bg h-30px"></div>
+  <div class="h-full left-root">
+    <!-- 材质层：统一由 TjGlass 提供玻璃/降级能力，底色仍取品牌 token（见 style.scss） -->
+    <TjGlass variant="panel" class="left-glass" />
+    <div class="h-30px"></div>
     <main
       :class="`left ${leftMinWidthClass} h-full p-[0_6px_40px] box-border flex-col-center select-none`"
       data-tauri-drag-region>

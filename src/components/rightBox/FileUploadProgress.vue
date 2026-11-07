@@ -64,8 +64,6 @@ const getStatusText = () => {
   background: var(--tjg-surface-panel);
   border-radius: 8px;
   box-shadow: var(--tjg-shadow-md);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   transition:
     color var(--tjg-motion-duration-overlay) ease,
     background-color var(--tjg-motion-duration-overlay) ease,
