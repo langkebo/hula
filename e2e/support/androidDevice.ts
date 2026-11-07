@@ -156,9 +156,40 @@ export const loginOnMobileUi = async (page: Page, options: MobileLoginOptions): 
   const timeoutMs = options.timeoutMs ?? 120_000
   await installBrowserTauriShim(page)
 
+  // 浏览器态必须把 homeserver 指到应用同源（Vite 的 `/_matrix` 代理）。
+  // 因为注入了 Tauri shim，`shouldUseMatrixDevProxy()` 会判定"处于 Tauri 运行时"而不做代理重写，
+  // 页面会直连 8008，被 index.html 的 CSP `connect-src` 拦截（登录表现为 Failed to fetch）。
+  await page.addInitScript((appUrl: string) => {
+    try {
+      window.localStorage.setItem('tjg-homeserver-url', appUrl)
+      window.localStorage.setItem('tjg-session-homeserver-url', appUrl)
+    } catch {
+      // localStorage 不可用时保持默认配置，后续登录失败会给出更直接的错误
+    }
+  }, options.appUrl)
+
   // 设备上可能残留上一轮的会话：客户端已初始化时，登录页照常渲染但点击提交不会有任何反应
   // （`normalLogin` 走不通，也看不到错误提示）。所以先尽量把旧会话登出，保证「干净登录」。
   await clearExistingSession(page, options.appUrl)
+
+  // 登录失败时页面只剩一张空表单（toast 早已消失），没有日志几乎无法定位。
+  // 这里保留最近的 console 错误与失败请求，失败时拼进异常信息。
+  const diagnostics: string[] = []
+  const onConsole = (message: { type: () => string; text: () => string }): void => {
+    if (message.type() === 'error') diagnostics.push(`console: ${message.text().slice(0, 300)}`)
+  }
+  const onRequestFailed = (request: { url: () => string; failure: () => { errorText: string } | null }): void => {
+    diagnostics.push(`request-failed: ${request.url().slice(0, 200)} ${request.failure()?.errorText ?? ''}`)
+  }
+  const onResponse = (response: { url: () => string; status: () => number }): void => {
+    const url = response.url()
+    if (url.includes('/_matrix/') && response.status() >= 400) {
+      diagnostics.push(`HTTP ${response.status()}: ${url.slice(0, 200)}`)
+    }
+  }
+  page.on('console', onConsole)
+  page.on('requestfailed', onRequestFailed)
+  page.on('response', onResponse)
 
   await page.goto(`${options.appUrl}/mobile/login?platform=mobile`, { waitUntil: 'domcontentloaded' })
   await dismissLocalUnlockDialog(page)
@@ -198,8 +229,14 @@ export const loginOnMobileUi = async (page: Page, options: MobileLoginOptions): 
       submitDisabled: (document.querySelector('[data-testid="mobile-login-submit"]') as HTMLButtonElement | null)
         ?.disabled
     }))
-    throw new Error(`移动端登录后未跳转：${JSON.stringify(state)}`)
+    page.off('console', onConsole)
+    page.off('requestfailed', onRequestFailed)
+    page.off('response', onResponse)
+    throw new Error(`移动端登录后未跳转：${JSON.stringify(state)}\n诊断：${diagnostics.slice(-10).join('\n')}`)
   }
+  page.off('console', onConsole)
+  page.off('requestfailed', onRequestFailed)
+  page.off('response', onResponse)
   // 登录后可能再次弹出解锁门禁（crypto 初始化在登录之后），再关一次
   await dismissLocalUnlockDialog(page, 5000)
 }

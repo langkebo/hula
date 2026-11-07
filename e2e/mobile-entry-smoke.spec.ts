@@ -56,7 +56,8 @@ test.describe('Mobile Auto-Registered Entry Smoke', () => {
       await page.goto(entryCase.path)
 
       await expect(page).toHaveURL(new RegExp(entryCase.path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
-      await expect(page.locator('body')).toContainText(entryCase.readyPattern)
+      // 冷启动 Vite 首次编译较慢，默认 5s 会在并行下偶发超时，显式放宽。
+      await expect(page.locator('body')).toContainText(entryCase.readyPattern, { timeout: 15_000 })
       expectNoRuntimeIssues(runtimeIssues, ENTRY_RUNTIME_ISSUE_OPTIONS)
     })
   }

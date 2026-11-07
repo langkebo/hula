@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { OFFLINE_QUEUE_STORAGE_KEY } from '../src/utils/storageKeys'
 import { loginOnMobileUi } from './support/androidDevice'
 
 /**
@@ -83,6 +84,23 @@ const countMessagesOfType = async (account: Account, roomId: string, msgtype: st
   if (!res.ok) return 0
   const body = (await res.json()) as { chunk?: Array<{ type?: string; content?: { msgtype?: string } }> }
   return (body.chunk ?? []).filter((e) => e.type === 'm.room.message' && e.content?.msgtype === msgtype).length
+}
+
+/** 房间最近一条某 `msgtype` 的消息内容（服务端真源） */
+const latestMessageOfType = async (
+  account: Account,
+  roomId: string,
+  msgtype: string
+): Promise<Record<string, unknown> | null> => {
+  const res = await fetch(`${APP_URL}/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=30`, {
+    headers: { Authorization: `Bearer ${account.accessToken}` }
+  })
+  if (!res.ok) return null
+  const body = (await res.json()) as {
+    chunk?: Array<{ type?: string; content?: Record<string, unknown> & { msgtype?: string } }>
+  }
+  const entry = (body.chunk ?? []).find((e) => e.type === 'm.room.message' && e.content?.msgtype === msgtype)
+  return entry?.content ?? null
 }
 
 /** SPA 导航：浏览器态 token 只在内存，整页 `goto` 会掉登录 */
@@ -191,5 +209,157 @@ test.describe('移动端输入栏与附件选择器', () => {
         message: '选完文件后服务端没有 m.file 消息'
       })
       .toBeGreaterThan(0)
+  })
+
+  test('10MB 以上文件走分片上传并真的发出去（m.file）', async ({ page }) => {
+    test.setTimeout(300_000)
+
+    const self = await registerAccount('mbig')
+    const peer = await registerAccount('mbigpeer')
+    const roomName = `big-${Date.now().toString(36)}`
+    const roomId = await seedDirectRoom(self, peer, roomName)
+
+    await page.addInitScript(() => {
+      window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
+    })
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.userId, password: self.password })
+    await pushRoute(page, { name: 'mobileChatMain', params: { roomId } })
+
+    const plus = page.locator('svg:has(use[href="#add-one"])').first()
+    await expect(plus, '移动输入栏未渲染').toBeVisible({ timeout: 30_000 })
+    await plus.click({ force: true })
+    await expect(page.locator('.van-uploader')).toHaveCount(2, { timeout: 15_000 })
+
+    // 10MB + 64KB：越过 MEDIA_CHUNK_UPLOAD_THRESHOLD_BYTES（10MB），强制走分片上传
+    const largeFile = Buffer.alloc(10 * 1024 * 1024 + 64 * 1024, 0x61)
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser', { timeout: 20_000 }),
+      page.locator('.van-uploader input[type="file"]').nth(1).click({ force: true })
+    ])
+    await chooser.setFiles({ name: 'e2e-large.bin', mimeType: 'application/octet-stream', buffer: largeFile })
+
+    // 以服务端 content.info.size 为真源：只有真正完成上传才会有 >=10MB 的记录
+    await expect
+      .poll(
+        async () => {
+          const content = await latestMessageOfType(self, roomId, 'm.file')
+          const info = content?.info as { size?: number } | undefined
+          return typeof info?.size === 'number' ? info.size : 0
+        },
+        { timeout: 120_000, message: '大文件未完成上传/发送（分片上传链路断了）' }
+      )
+      .toBeGreaterThan(10 * 1024 * 1024 - 1)
+  })
+
+  test('上传返回 413 时提示超限，失败消息的重试入口可点', async ({ page }) => {
+    test.setTimeout(300_000)
+
+    const self = await registerAccount('m413')
+    const peer = await registerAccount('m413peer')
+    const roomName = `big413-${Date.now().toString(36)}`
+    const roomId = await seedDirectRoom(self, peer, roomName)
+
+    await page.addInitScript(() => {
+      window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
+    })
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.userId, password: self.password })
+    await pushRoute(page, { name: 'mobileChatMain', params: { roomId } })
+
+    // 所有媒体上传（含分片 start）统一回 413，验证「单次上传 → 分片回退」两跳都失败后的用户提示
+    let uploadAttempts = 0
+    await page.route('**/_matrix/media/**', async (route) => {
+      if (!route.request().url().includes('/upload')) {
+        await route.continue()
+        return
+      }
+      uploadAttempts += 1
+      await route.fulfill({
+        status: 413,
+        contentType: 'application/json',
+        body: JSON.stringify({ errcode: 'M_TOO_LARGE', error: 'too large' })
+      })
+    })
+
+    const plus = page.locator('svg:has(use[href="#add-one"])').first()
+    await expect(plus, '移动输入栏未渲染').toBeVisible({ timeout: 30_000 })
+    await plus.click({ force: true })
+    await expect(page.locator('.van-uploader')).toHaveCount(2, { timeout: 15_000 })
+
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser', { timeout: 20_000 }),
+      page.locator('.van-uploader input[type="file"]').nth(1).click({ force: true })
+    ])
+    await chooser.setFiles({
+      name: 'e2e-too-large.bin',
+      mimeType: 'application/octet-stream',
+      buffer: Buffer.alloc(1024)
+    })
+
+    // 专门提示「超过服务器上传上限」，而不是笼统的「发送失败」
+    await expect(page.getByText('超过服务器上传上限').first()).toBeVisible({ timeout: 60_000 })
+    // 单次上传 + 分片回退，至少两次尝试
+    expect(uploadAttempts).toBeGreaterThanOrEqual(2)
+
+    const retry = page.locator('button.retry-button').first()
+    await expect(retry, '413 失败后没有可点的重试入口').toBeVisible({ timeout: 15_000 })
+    await expect(retry).toBeEnabled()
+    await retry.click()
+    await expect(page.locator('button.retry-button').first()).toBeVisible({ timeout: 30_000 })
+  })
+
+  test('断网发送进入离线队列，恢复网络后自动补发', async ({ page }) => {
+    test.setTimeout(300_000)
+
+    const self = await registerAccount('moffline')
+    const peer = await registerAccount('mofflinepeer')
+    const roomName = `offline-${Date.now().toString(36)}`
+    const roomId = await seedDirectRoom(self, peer, roomName)
+
+    await page.addInitScript(() => {
+      window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
+    })
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.userId, password: self.password })
+    await pushRoute(page, { name: 'mobileChatMain', params: { roomId } })
+
+    const input = page.locator('#message-input')
+    await expect(input).toBeVisible({ timeout: 30_000 })
+
+    const text = `offline-${Date.now().toString(36)}`
+    await page.context().setOffline(true)
+    await input.fill(text)
+
+    const send = page.getByRole('button', { name: '发送' }).first()
+    await expect(send).toBeVisible({ timeout: 15_000 })
+    await send.click()
+
+    // 离线期间消息必须落到本地队列（不能静默丢失）
+    await expect
+      .poll(
+        () =>
+          page.evaluate((storageKey) => {
+            const raw = window.localStorage.getItem(storageKey)
+            try {
+              const queue = raw ? (JSON.parse(raw) as unknown) : []
+              return Array.isArray(queue) ? queue.length : 0
+            } catch {
+              return 0
+            }
+          }, OFFLINE_QUEUE_STORAGE_KEY),
+        { timeout: 15_000, message: '断网发送后离线队列为空（消息被丢弃）' }
+      )
+      .toBeGreaterThan(0)
+
+    // 离线期间服务端不应出现该消息
+    const whileOffline = await latestMessageOfType(self, roomId, 'm.text')
+    expect(whileOffline?.body).not.toBe(text)
+
+    // 恢复网络 → online 事件触发重放
+    await page.context().setOffline(false)
+    await expect
+      .poll(async () => (await latestMessageOfType(self, roomId, 'm.text'))?.body, {
+        timeout: 60_000,
+        message: '恢复网络后离线消息没有补发到服务端'
+      })
+      .toBe(text)
   })
 })

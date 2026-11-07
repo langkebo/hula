@@ -231,7 +231,8 @@ describe('Skeleton integration', () => {
     vi.clearAllMocks()
   })
 
-  it('SpaceList renders SkeletonSpaceTree when loading', async () => {
+  // 动态导入 + 多组件 mount 在 CI 并行下可能超过默认 5s，显式放宽。
+  it('SpaceList renders SkeletonSpaceTree when loading', { timeout: 30_000 }, async () => {
     const SpaceList = (await import('@/views/homeWindow/SpaceList.vue')).default
     const wrapper = mount(SpaceList, {
       props: { loading: true },
@@ -249,7 +250,7 @@ describe('Skeleton integration', () => {
     expect(wrapper.find('[data-testid="skeleton-space"]').exists()).toBe(true)
   })
 
-  it('SettingsPage renders SkeletonSettings when loading', async () => {
+  it('SettingsPage renders SkeletonSettings when loading', { timeout: 30_000 }, async () => {
     const SettingsPage = (await import('@/views/settingsWindow/SettingsPage.vue')).default
     const wrapper = mount(SettingsPage, {
       props: { loading: true },

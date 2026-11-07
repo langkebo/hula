@@ -176,7 +176,8 @@ describe('check-sdk-boundary: evaluateGate 判据', () => {
 })
 
 describe('check-sdk-boundary: 当前代码树自洽', () => {
-  it('真实扫描结果相对真实基线不阻断（门禁绿）', async () => {
+  // 全量并行跑测试时，扫描全仓 1300+ 文件会超过 Vitest 默认 5s，这里显式放宽。
+  it('真实扫描结果相对真实基线不阻断（门禁绿）', { timeout: 60_000 }, async () => {
     const baseline = loadBaseline()
     const { violations, scanned } = await collectViolations(srcRoot)
     expect(scanned).toBeGreaterThan(0)
