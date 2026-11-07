@@ -202,7 +202,37 @@ nav {
   }
 }
 
-/* 降级 3：尊重「减少动态效果」 */
+/* 降级 3：中等性能设备（触屏 / 中配，performanceTier 启动期写入 html.medium-perf）
+ * strong 档模糊降为 medium 档；特殊说明：--nav / --input / 气泡本就是 soft-medium，无需覆盖。 */
+html.medium-perf {
+  .tjg-glass--tabbar {
+    -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+    backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-strong));
+  }
+
+  .tjg-glass--sheet {
+    -webkit-backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
+    backdrop-filter: blur(var(--tjg-glass-blur-medium)) saturate(var(--tjg-glass-saturate-soft));
+  }
+}
+
+/* 降级 4：低性能设备（performanceTier 启动期写入 html.low-perf）
+ * 只关闭模糊，保留各面自己的半透明底色 —— 低端机不应因降级整片变白。
+ * 特异性 (0,2,1) 高于各面自身规则，可覆盖 --tabbar / --sheet 的 strong 档。 */
+html.low-perf {
+  .tjg-glass,
+  .tjg-glass--nav,
+  .tjg-glass--tabbar,
+  .tjg-glass--sheet,
+  .tjg-glass--input,
+  .bubble,
+  .bubble-oneself {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* 降级 5：尊重「减少动态效果」 */
 @media (prefers-reduced-motion: reduce) {
   .tjg-glass,
   .tjg-glass::after,

@@ -2,11 +2,12 @@
  * performanceTier 单元测试 + 接线契约测试
  *
  * 覆盖：
- * - `resolvePerformanceTier` 四条判级规则及边界（核心数/内存缺失时**不降级**）
+ * - `resolvePerformanceTier` 三档判级规则及边界（核心数/内存缺失时**不降级**）
  * - `collectPerformanceSignals` 对 navigator / matchMedia 缺失与抛错的容错
  * - `applyPerformanceTier` 对 `<html>` 类的幂等写入与移除
  * - **接线契约**：`main.ts` 必须调用 `applyPerformanceTier`，且 `_liquid-glass.scss`
- *   必须消费 `html.low-perf` —— 防止「降级类无人写入 → 降级分支成为死代码」回归
+ *   与 `mobile.scss` 必须消费 `html.low-perf`（低档）/ `html.medium-perf`（中档）——
+ *   防止「降级类无人写入 / 移动端不消费」回归
  *
  * 不覆盖：
  * - 运行期偏好变化（当前实现只做启动期一次性判级）
@@ -21,6 +22,7 @@ import {
   collectPerformanceSignals,
   detectPerformanceTier,
   LOW_PERF_CLASS,
+  MEDIUM_PERF_CLASS,
   type PerformanceScope,
   resolvePerformanceTier
 } from '@/utils/performanceTier'
@@ -47,17 +49,21 @@ describe('resolvePerformanceTier', () => {
     expect(resolvePerformanceTier(signals())).toBe('high')
   })
 
-  it('粗指针（触屏）设备 → low（移动端 GPU 模糊代价高）', () => {
-    expect(resolvePerformanceTier(signals({ coarsePointer: true }))).toBe('low')
+  it('粗指针（触屏）设备 → medium，不再单独判 low（G2）', () => {
+    // 触屏 + 高配：移动端样式消费 html.low-perf（G1）后，判 low 会让真机永远看不到玻璃
+    expect(resolvePerformanceTier(signals({ coarsePointer: true }))).toBe('medium')
+    expect(resolvePerformanceTier(signals({ coarsePointer: true, hardwareConcurrency: 12 }))).toBe('medium')
   })
 
   it('prefers-reduced-transparency: reduce → low', () => {
     expect(resolvePerformanceTier(signals({ reducedTransparency: true }))).toBe('low')
   })
 
-  it('核心数低于阈值 → low，恰好等于阈值 → high（边界）', () => {
+  it('核心数 <4 → low，4-7 → medium，≥8 → high（三档边界）', () => {
     expect(resolvePerformanceTier(signals({ hardwareConcurrency: 3 }))).toBe('low')
-    expect(resolvePerformanceTier(signals({ hardwareConcurrency: 4 }))).toBe('high')
+    expect(resolvePerformanceTier(signals({ hardwareConcurrency: 4 }))).toBe('medium')
+    expect(resolvePerformanceTier(signals({ hardwareConcurrency: 7 }))).toBe('medium')
+    expect(resolvePerformanceTier(signals({ hardwareConcurrency: 8 }))).toBe('high')
   })
 
   it('设备内存低于阈值 → low，恰好等于阈值 → high（边界）', () => {
@@ -112,6 +118,15 @@ describe('collectPerformanceSignals', () => {
 
     expect(detectPerformanceTier(scope)).toBe('low')
   })
+
+  it('detectPerformanceTier 端到端：高配触屏 → medium（真机仍可见玻璃）', () => {
+    const scope: PerformanceScope = {
+      navigator: { hardwareConcurrency: 8, deviceMemory: 8 },
+      matchMedia: (query) => ({ matches: query === '(pointer: coarse)' })
+    }
+
+    expect(detectPerformanceTier(scope)).toBe('medium')
+  })
 })
 
 describe('applyPerformanceTier', () => {
@@ -125,11 +140,21 @@ describe('applyPerformanceTier', () => {
     expect(root.className.split(/\s+/).filter((token) => token === LOW_PERF_CLASS)).toHaveLength(1)
   })
 
-  it('high 时移除已存在的 low-perf', () => {
+  it('high 时移除已存在的 low-perf / medium-perf', () => {
+    const root = document.createElement('div')
+    root.classList.add(LOW_PERF_CLASS, MEDIUM_PERF_CLASS)
+
+    expect(applyPerformanceTier(root, 'high')).toBe('high')
+    expect(root.classList.contains(LOW_PERF_CLASS)).toBe(false)
+    expect(root.classList.contains(MEDIUM_PERF_CLASS)).toBe(false)
+  })
+
+  it('medium 写 medium-perf、不写 low-perf（触屏保留 medium 档模糊）', () => {
     const root = document.createElement('div')
     root.classList.add(LOW_PERF_CLASS)
 
-    expect(applyPerformanceTier(root, 'high')).toBe('high')
+    expect(applyPerformanceTier(root, 'medium')).toBe('medium')
+    expect(root.classList.contains(MEDIUM_PERF_CLASS)).toBe(true)
     expect(root.classList.contains(LOW_PERF_CLASS)).toBe(false)
   })
 
@@ -165,5 +190,36 @@ describe('接线契约（防止「降级类无人写入」回归）', () => {
     expect(scssSource).toContain(`html.${LOW_PERF_CLASS}`)
     // 降级分支必须真的关掉模糊，而不是只留占位注释
     expect(scssSource).toMatch(/html\.low-perf\)?\s*&?\s*\{[\s\S]*?backdrop-filter:\s*none/)
+  })
+
+  it('mobile.scss 的低性能分支必须覆盖所有玻璃面并关闭模糊（G1）', () => {
+    const mobileSource = readSource('src/styles/scss/global/mobile.scss')
+    const block = mobileSource.match(/html\.low-perf\s*\{[\s\S]*?\n\}/)
+
+    expect(block, 'mobile.scss 缺少 html.low-perf 降级块').not.toBeNull()
+    for (const selector of [
+      '.tjg-glass',
+      '.tjg-glass--nav',
+      '.tjg-glass--tabbar',
+      '.tjg-glass--sheet',
+      '.tjg-glass--input',
+      '.bubble',
+      '.bubble-oneself'
+    ]) {
+      expect(block![0]).toContain(selector)
+    }
+    expect(block![0]).toMatch(/backdrop-filter:\s*none/)
+    expect(block![0]).toMatch(/-webkit-backdrop-filter:\s*none/)
+  })
+
+  it('mobile.scss 的中档分支必须把 strong 模糊降为 medium（G2）', () => {
+    const mobileSource = readSource('src/styles/scss/global/mobile.scss')
+    const block = mobileSource.match(/html\.medium-perf\s*\{[\s\S]*?\n\}/)
+
+    expect(block, 'mobile.scss 缺少 html.medium-perf 降级块').not.toBeNull()
+    expect(block![0]).toContain('.tjg-glass--tabbar')
+    expect(block![0]).toContain('.tjg-glass--sheet')
+    expect(block![0]).toContain('var(--tjg-glass-blur-medium)')
+    expect(block![0]).not.toContain('var(--tjg-glass-blur-strong)')
   })
 })

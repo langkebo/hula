@@ -30,7 +30,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('Main')
 const { showFeedback } = useActionFeedback()
 
-// 性能分级必须在首次绘制前完成：液态玻璃等重特效依赖 <html>.low-perf 决定是否启用 backdrop-filter
+// 性能分级必须在首次绘制前完成：液态玻璃等重特效依赖 <html>.low-perf / .medium-perf 决定模糊档位
 applyPerformanceTier()
 
 // Pre-emptively hide splash screen on mobile to reduce perceived startup time
