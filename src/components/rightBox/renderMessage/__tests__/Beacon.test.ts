@@ -195,4 +195,38 @@ describe('Beacon render message', () => {
       timestamp: expect.any(Number)
     })
   })
+
+  // ---- 倒计时定时器：已结束的 Beacon 不应常驻空转 ----
+
+  it('已结束的 Beacon 不启动倒计时定时器', () => {
+    mountBeacon({ description: 'ended beacon', isLive: false, timeout: 0 })
+
+    expect(setIntervalMock).not.toHaveBeenCalled()
+  })
+
+  it('实时共享中启动每秒刷新，卸载时清理', () => {
+    const wrapper = mountBeacon({
+      description: 'live beacon',
+      isLive: true,
+      lastUpdateTs: Date.now(),
+      timeout: 60_000
+    })
+
+    expect(setIntervalMock).toHaveBeenCalledTimes(1)
+    expect(setIntervalMock).toHaveBeenCalledWith(expect.any(Function), 1000)
+
+    wrapper.unmount()
+    expect(clearIntervalMock).toHaveBeenCalledWith(1)
+  })
+
+  it('由已结束切换为实时共享时补启动定时器', async () => {
+    const wrapper = mountBeacon({ description: 'beacon', isLive: false, timeout: 0 })
+    expect(setIntervalMock).not.toHaveBeenCalled()
+
+    await wrapper.setProps({
+      body: { description: 'beacon', isLive: true, lastUpdateTs: Date.now(), timeout: 60_000 }
+    })
+
+    expect(setIntervalMock).toHaveBeenCalledTimes(1)
+  })
 })

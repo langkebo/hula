@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
@@ -196,17 +196,37 @@ const handleJoinClick = () => {
   handleBeaconClick()
 }
 
-onMounted(() => {
-  timer = timerManager.setInterval(() => {
-    now.value = Date.now()
-  }, 1000)
-})
-
-onUnmounted(() => {
+/**
+ * 停止 1s 倒计时刷新。
+ *
+ * 已结束的 Beacon 文案不再变化，继续每秒 setInterval 只是空转：
+ * 长历史消息里每条已结束的 Beacon 都会常驻一个定时器。
+ */
+const stopTicker = () => {
   if (timer) {
     timerManager.clearInterval(timer)
+    timer = undefined
   }
-})
+}
+
+/**
+ * 启动 1s 倒计时刷新：仅在实时共享中启动，倒计时结束后自动停止。
+ */
+const startTicker = () => {
+  stopTicker()
+  if (!props.body?.isLive) return
+
+  now.value = Date.now()
+  timer = timerManager.setInterval(() => {
+    now.value = Date.now()
+    // 共享到期后 isActive 转为 false，此时不再需要每秒刷新
+    if (!isActive.value) stopTicker()
+  }, 1000)
+}
+
+onMounted(startTicker)
+watch(() => props.body?.isLive, startTicker)
+onUnmounted(stopTicker)
 </script>
 
 <style scoped lang="scss">
