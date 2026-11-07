@@ -118,6 +118,10 @@ export function createSessionStorePort(): SessionStorePort {
       },
       setUserInfo(info) {
         setCurrentUserInfo(info)
+        // 页面内登录不经过 SessionRestoreService 的 initUserInfo，只写 currentUserState
+        // 会让 userStore.userInfo 一直为空：自己发的消息被判定成他人（isMe=false），
+        // 头像、消息对齐与失败重试入口全部失效，直到手动刷新页面。
+        userStore().userInfo = info
       },
       clearUser() {
         clearCurrentUserState()

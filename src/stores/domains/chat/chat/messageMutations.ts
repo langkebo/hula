@@ -361,12 +361,12 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     if (uploadProgress !== undefined) {
       logger.debug(`更新消息进度: ${uploadProgress}% (消息ID: ${msgId})`)
       roomMessages[nextMsgId] = { ...msg, uploadProgress }
-      setMessageRoomIndex(nextMsgId, resolvedRoomId)
-      messageMap[resolvedRoomId] = { ...roomMessages }
     } else {
-      roomMessages[nextMsgId] = msg
-      setMessageRoomIndex(nextMsgId, resolvedRoomId)
+      // messageMap 是 shallowReactive：只改 status 不重建房间映射，视图收不到更新（失败重试入口就不出现）。
+      roomMessages[nextMsgId] = { ...msg }
     }
+    setMessageRoomIndex(nextMsgId, resolvedRoomId)
+    messageMap[resolvedRoomId] = { ...roomMessages }
 
     removeReplyReferences(resolvedRoomId, previousMessageId)
     if (newMsgId && previousMessageId !== newMsgId) {
