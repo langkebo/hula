@@ -289,16 +289,15 @@ const handleForgetRoom = () => {
 </script>
 
 <style scoped lang="scss">
-@use '@/styles/scss/mixins/liquid-glass' as *;
-
 .group-details {
   // 与 .single-details 的 padding: 8px 0 对齐，保证两种详情面板 hero 卡顶部间距一致
   margin-top: 8px;
 }
 
-/* 群信息 hero 卡：与 SingleDetails 的 .single-details__hero 同规格（面板级玻璃 + 低性能降级） */
+/* 群信息 hero 卡：与 SingleDetails 的 .single-details__hero 同规格（外层材质统一模糊，卡片不重复叠加） */
 .group-details__hero {
-  @include liquid-glass-panel(20px, 0.85);
+  background: var(--tjg-glass-tint);
+  border: var(--tjg-glass-border-soft);
   border-radius: var(--tjg-radius-surface);
   padding: 20px;
   width: 100%;

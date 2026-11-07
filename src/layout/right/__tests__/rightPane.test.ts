@@ -69,7 +69,9 @@ const stubs = {
   JoinRoomPane: true,
   CreateSpacePane: true,
   SpaceChildrenPane: true,
-  SearchPane: true
+  SearchPane: true,
+  // 本文件只测关闭接线，玻璃材质层经 pinia store 取档位，隔离掉以免依赖全局 store
+  TjGlass: true
 }
 
 const mountPane = () => mount(LayoutRight, { global: { stubs } })

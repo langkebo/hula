@@ -9,7 +9,8 @@
  * 本测试守护修复后的**规格一致性**：
  * - 群聊 hero 卡存在，且包住头像上传/展示与群名编辑
  * - 两种 hero 卡的几何（圆角/内边距/间距/宽度）与玻璃参数完全一致
- * - 双方都走带降级的 `liquid-glass-panel` 变体
+ * - 双方都只保留 token 半透明底，模糊由右侧面板材质层（`layout/right` 的 TjGlass）统一提供，
+ *   卡片不再叠加 `backdrop-filter`（避免双层模糊）
  * - 群聊面板顶部偏移与单聊的 `padding: 8px 0` 对齐
  *
  * 反馈循环策略：目标约束是 SCSS/模板源码文本（happy-dom 无法计算 backdrop-filter
@@ -59,16 +60,18 @@ describe('GroupDetails - hero 卡结构与样式', () => {
     expect(body).toMatch(/group-details__name-edit/)
   })
 
-  it('.group-details__hero 应使用 liquid-glass-panel（自带 html.low-perf 降级）', () => {
+  it('.group-details__hero 使用非模糊半透明底（模糊由右侧材质层统一提供）', () => {
     const block = extractRule(source, '.group-details__hero')
     expect(block, '缺少 .group-details__hero 规则块').not.toBeNull()
-    expect(block).toMatch(/@include\s+liquid-glass-panel\(20px,\s*0\.85\)/)
+    expect(block).toMatch(/background:\s*var\(--tjg-glass-tint\)/)
+    expect(block).toMatch(/border:\s*var\(--tjg-glass-border-soft\)/)
+    expect(block).not.toMatch(/backdrop-filter\s*:/)
+    expect(block).not.toMatch(/@include\s+liquid-glass/)
   })
 
-  it('liquid-glass mixin 不应再是死导入', () => {
-    expect(source).toMatch(/@use\s+'@\/styles\/scss\/mixins\/liquid-glass'/)
-    // 有 @use 就必须至少有一次 @include
-    expect(source).toMatch(/@include\s+liquid-glass/)
+  it('不再引入 liquid-glass mixin（避免与右侧材质层叠加双层模糊）', () => {
+    expect(source).not.toMatch(/@use\s+'@\/styles\/scss\/mixins\/liquid-glass'/)
+    expect(source).not.toMatch(/@include\s+liquid-glass/)
   })
 
   it('hero 卡不得引入硬编码颜色', () => {
@@ -97,13 +100,12 @@ describe('SingleDetails / GroupDetails - hero 卡规格一致性', () => {
     }
   })
 
-  it('两者都应使用 liquid-glass-panel 的同一参数', () => {
-    const includePattern = /@include\s+liquid-glass-panel\(([^)]*)\)/
-    const groupParams = groupHero!.match(includePattern)?.[1]
-    const singleParams = singleHero!.match(includePattern)?.[1]
-    expect(singleParams, '单聊 hero 应改用带降级的 liquid-glass-panel').toBeDefined()
-    expect(groupParams, '群聊 hero 应使用 liquid-glass-panel').toBeDefined()
-    expect(groupParams).toBe(singleParams)
+  it('两者都应使用同一套非模糊半透明底', () => {
+    for (const prop of ['background', 'border']) {
+      expect(declOf(groupHero!, prop), `群聊 hero 的 ${prop} 应与单聊一致`).toBe(declOf(singleHero!, prop))
+    }
+    expect(groupHero).not.toMatch(/backdrop-filter\s*:/)
+    expect(singleHero).not.toMatch(/backdrop-filter\s*:/)
   })
 })
 

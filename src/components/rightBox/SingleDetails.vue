@@ -262,8 +262,6 @@ const handleRemoveFriend = async () => {
 </script>
 
 <style scoped lang="scss">
-@use '@/styles/scss/mixins/liquid-glass' as *;
-
 .single-details {
   height: 100%;
   display: flex;
@@ -275,8 +273,8 @@ const handleRemoveFriend = async () => {
 }
 
 .single-details__hero {
-  // 面板级玻璃：与 GroupDetails 的 hero 保持一致；-panel 变体自带 html.low-perf 降级
-  @include liquid-glass-panel(20px, 0.85);
+  background: var(--tjg-glass-tint);
+  border: var(--tjg-glass-border-soft);
   border-radius: var(--tjg-radius-surface);
   padding: 20px;
   width: 100%;

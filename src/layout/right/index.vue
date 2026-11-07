@@ -10,6 +10,9 @@
       'flex-1 w-full': isRightPaneFullscreen
     }"
     :style="paneStyle">
+    <!-- B2：非聊天视图统一由 TjGlass 提供面板级材质（与左栏 left-glass 同构）；聊天视图沿用会话主题背景 -->
+    <TjGlass v-if="!shouldShowChat" variant="panel" class="right-glass" />
+
     <!-- Step 2.3：左边缘拖拽分隔条（14px，hover 显示拖拽图标）；聊天视图改由信息面板左缘拖拽 -->
     <div
       v-if="!isRightPaneFullscreen && !isElasticPane"
@@ -31,7 +34,7 @@
     <div
       :style="{ background: shouldShowChat ? 'var(--right-theme-bg-color)' : '' }"
       data-tauri-drag-region
-      class="flex-1 flex flex-col min-h-0">
+      class="right-pane-content flex-1 flex flex-col min-h-0">
       <ActionBar v-bind="appWindow ? { currentLabel: appWindow.label } : {}" />
 
       <!-- 阶段 2/4：右侧栏视图状态机，路由为单一真相源 -->
@@ -240,6 +243,22 @@ useMitt.on(MittEnum.DETAILS_SHOW, () => {
 </script>
 
 <style scoped lang="scss">
+/* B2：非聊天视图的材质层，与左栏 `.left-glass` 同构（见 layout/left/style.scss）；边框/圆角由容器自身提供 */
+#chat-main .right-glass.tj-glass {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+/* 内容层必须高于材质层，否则会被玻璃底盖住 */
+.right-pane-content {
+  position: relative;
+  z-index: 1;
+}
+
 /* Step 2.3：视图驱动动态宽度过渡动画 */
 .right-pane-animated {
   transition:
