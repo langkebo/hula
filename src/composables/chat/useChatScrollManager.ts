@@ -69,9 +69,20 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
   let roomWatchStop: (() => void) | null = null
   let intentWatchStop: (() => void) | null = null
 
+  // 贴底与 scrollTop 各自维护一个 pending rAF：同一帧内的多次请求合并成一次 DOM 写入
+  let pendingStickBottomRaf: number | null = null
+  let pendingScrollTopRaf: number | null = null
+  let pendingScrollTop = 0
+  let suppressTimer: ReturnType<typeof setTimeout> | null = null
+
   const temporarilySuppressTopLoadMore = () => {
     suppressTopLoadMore.value = true
-    setTimeout(() => {
+    // 复用同一个 timer：多次贴底只保留最后一次的 32ms 静默窗口，避免先前的 timer 提前解除抑制
+    if (suppressTimer) {
+      clearTimeout(suppressTimer)
+    }
+    suppressTimer = setTimeout(() => {
+      suppressTimer = null
       suppressTopLoadMore.value = false
     }, 32)
   }
@@ -94,6 +105,25 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
     return false
   })
 
+  const flushScrollToBottom = (): void => {
+    pendingStickBottomRaf = null
+    const container = scrollContainer.value
+    if (!container) return
+    container.scrollTop = container.scrollHeight
+    onScrollToBottom?.()
+  }
+
+  /**
+   * 把同一帧内的多次贴底请求合并成一次 DOM 写入。
+   * 图片解码、流式消息、presence 更新都会让消息列表高度连续变化，
+   * ResizeObserver 在一次刷新里可能回调多次；若每次单独 rAF 写 scrollTop，
+   * 会重复触发布局计算与 onScrollToBottom 回调。
+   */
+  const scheduleScrollToBottom = (): void => {
+    if (pendingStickBottomRaf !== null) return
+    pendingStickBottomRaf = requestAnimationFrame(flushScrollToBottom)
+  }
+
   const scrollToBottom = (): void => {
     temporarilySuppressTopLoadMore()
     const container = scrollContainer.value
@@ -103,11 +133,7 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
     isAtBottom.value = true
     enableAutoScroll(500)
 
-    requestAnimationFrame(() => {
-      if (!container) return
-      container.scrollTop = container.scrollHeight
-      onScrollToBottom?.()
-    })
+    scheduleScrollToBottom()
   }
 
   const scrollToMessage = (messageId: string, behavior: ScrollBehavior = 'smooth'): void => {
@@ -147,11 +173,13 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
   }
 
   const debouncedScrollOperations = useDebounceFn(async (container: HTMLElement) => {
+    // 直接读 DOM 而非 scrollTop ref：ref 每帧才刷新一次，debounce 到期时可能落后一帧
     const scrollHeight = container.scrollHeight
     const clientHeight = container.clientHeight
-    const distanceFromBottom = scrollHeight - scrollTop.value - clientHeight
+    const currentScrollTop = container.scrollTop
+    const distanceFromBottom = scrollHeight - currentScrollTop - clientHeight
 
-    if (scrollTop.value < topLoadThreshold) {
+    if (currentScrollTop < topLoadThreshold) {
       if (suppressTopLoadMore.value || isLoading.value || isLastPage.value) return
       await loadMore()
     }
@@ -165,12 +193,30 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
     }
   }, 16)
 
+  const flushScrollTop = (): void => {
+    pendingScrollTopRaf = null
+    if (scrollTop.value !== pendingScrollTop) {
+      scrollTop.value = pendingScrollTop
+    }
+  }
+
+  /**
+   * scrollTop 每帧最多写一次：触控板/高刷屏的滚动事件可达 120Hz，
+   * 而下游 `shouldShowFloatButton` 每次求值都要读 scrollHeight/clientHeight（强制布局）。
+   * isAtBottom 仍即时更新，避免用户刚上滚、同帧新消息到达时被误判为在底部。
+   */
+  const scheduleScrollTop = (value: number): void => {
+    pendingScrollTop = value
+    if (pendingScrollTopRaf !== null) return
+    pendingScrollTopRaf = requestAnimationFrame(flushScrollTop)
+  }
+
   const handleScroll = (event: Event): void => {
     const container = event.target as HTMLElement
     if (!container) return
 
     const currentScrollTop = container.scrollTop
-    scrollTop.value = currentScrollTop
+    scheduleScrollTop(currentScrollTop)
 
     if (isAutoScrolling.value) {
       isAtBottom.value = true
@@ -252,10 +298,11 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
       const container = scrollContainer.value
       if (!container) return
 
-      const { scrollHeight, scrollTop, clientHeight } = container
-      const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+      const { scrollHeight, scrollTop: currentScrollTop, clientHeight } = container
+      const distanceFromBottom = scrollHeight - currentScrollTop - clientHeight
 
       if (distanceFromBottom <= 150 || isAtBottom.value) {
+        // 同一帧内多次高度变化只会产生一次贴底写入（scheduleScrollToBottom 内部合并）
         nextTick(() => {
           scrollToBottom()
         })
@@ -269,6 +316,18 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
     roomWatchStop?.()
     intentWatchStop?.()
     resizeObserverStop?.stop()
+    if (pendingStickBottomRaf !== null) {
+      cancelAnimationFrame(pendingStickBottomRaf)
+      pendingStickBottomRaf = null
+    }
+    if (pendingScrollTopRaf !== null) {
+      cancelAnimationFrame(pendingScrollTopRaf)
+      pendingScrollTopRaf = null
+    }
+    if (suppressTimer) {
+      clearTimeout(suppressTimer)
+      suppressTimer = null
+    }
   }
 
   onUnmounted(cleanup)
