@@ -154,6 +154,29 @@ nav {
   box-shadow: var(--tjg-glass-inner-highlight), var(--tjg-glass-shadow-soft);
 }
 
+/* ============================================================
+ * Vant 弹层玻璃接线（阶段 C2）
+ * ------------------------------------------------------------
+ * 底部弹层（ActionSheet / Picker / 自定义 Popup）统一换成 sheet 玻璃底色，
+ * 与 .tjg-glass--sheet 共用同一材质，避免玻璃容器内出现实色白底。
+ * 仅作用于 bottom 弹层：居中弹窗与全屏浮层内容密度高，保持实色更稳。
+ * 降级规则统一并入下方「降级 1/2/4」，不再单独维护一套。
+ * ============================================================ */
+.van-popup--bottom {
+  --van-popup-background: var(--tjg-glass-sheet-bg);
+  --van-action-sheet-item-background: transparent;
+  /* Picker 内部默认是实色底，透明后才会透出弹层玻璃 */
+  --van-picker-background: transparent;
+
+  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+  backdrop-filter: blur(var(--tjg-glass-blur-strong)) saturate(var(--tjg-glass-saturate-soft));
+}
+
+/* 弹层遮罩跟随设计 token，避免 Vant 默认的高不透明度黑罩压暗玻璃 */
+:root {
+  --van-overlay-background: var(--tjg-overlay-mask-default);
+}
+
 /* 降级 1：不支持 backdrop-filter 时退回实色，保证可读性与层级 */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .tjg-glass,
@@ -173,6 +196,14 @@ nav {
   .bubble-oneself {
     background-color: var(--tjg-bubble-sent-bg);
     background-image: none;
+  }
+
+  .van-popup--bottom {
+    --van-popup-background: var(--tjg-surface-elevated);
+    --van-action-sheet-item-background: var(--tjg-surface-elevated);
+    --van-picker-background: var(--tjg-surface-elevated);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 
@@ -197,6 +228,14 @@ nav {
   .bubble-oneself {
     background-color: var(--tjg-bubble-sent-bg);
     background-image: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .van-popup--bottom {
+    --van-popup-background: var(--tjg-surface-elevated);
+    --van-action-sheet-item-background: var(--tjg-surface-elevated);
+    --van-picker-background: var(--tjg-surface-elevated);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
@@ -226,9 +265,17 @@ html.low-perf {
   .tjg-glass--sheet,
   .tjg-glass--input,
   .bubble,
-  .bubble-oneself {
+  .bubble-oneself,
+  .van-popup--bottom {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+
+  /* 底衬回到实色，避免低端机上玻璃弹层变成看不清的透明片 */
+  .van-popup--bottom {
+    --van-popup-background: var(--tjg-surface-elevated);
+    --van-action-sheet-item-background: var(--tjg-surface-elevated);
+    --van-picker-background: var(--tjg-surface-elevated);
   }
 }
 
