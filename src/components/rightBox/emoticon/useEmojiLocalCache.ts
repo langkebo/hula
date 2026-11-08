@@ -52,6 +52,8 @@ export const useEmojiLocalCache = ({ isFavoritesView, emojiStore, userStore }: U
   const emojiWorkerUrl = new URL('../../workers/imageDownloader.ts', import.meta.url)
   let emojiCacheWorker: Worker | null = null
   const downloadLimit = pLimit(3)
+  // 水合阶段的文件名计算与 exists 探测是轻量 I/O，串行执行会随表情数量线性变慢，改用小并发批量推进
+  const hydrateLimit = pLimit(6)
 
   const getEmojiWorker = () => {
     if (!isFavoritesView.value) return null
@@ -101,9 +103,10 @@ export const useEmojiLocalCache = ({ isFavoritesView, emojiStore, userStore }: U
     return `${hash}.${ext}`
   }
 
+  // 原地写入：ref 深层响应式，逐条替换整个对象会让水合 N 条表情退化为 O(n²) 拷贝
   const setEmojiLocalPath = (id: string, absolutePath: string, expressionUrl?: string) => {
     const localUrl = convertFileSrc(absolutePath)
-    emojiLocalPathMap.value = { ...emojiLocalPathMap.value, [id]: localUrl }
+    emojiLocalPathMap.value[id] = localUrl
     emojiStore.setLocalUrl(id, localUrl)
     if (expressionUrl) {
       emojiUrlToLocalMap.set(expressionUrl, localUrl)
@@ -112,9 +115,7 @@ export const useEmojiLocalCache = ({ isFavoritesView, emojiStore, userStore }: U
   }
 
   const clearEmojiLocalPath = (id: string, expressionUrl?: string) => {
-    const next = { ...emojiLocalPathMap.value }
-    delete next[id]
-    emojiLocalPathMap.value = next
+    delete emojiLocalPathMap.value[id]
     emojiStore.setLocalUrl(id, null)
     if (expressionUrl) {
       emojiUrlToLocalMap.delete(expressionUrl)
@@ -276,38 +277,40 @@ export const useEmojiLocalCache = ({ isFavoritesView, emojiStore, userStore }: U
     if (!isFavoritesView.value) return
     const env = await ensureEmojiCacheEnvironment()
     if (!env) return
-    const downloadTasks: Promise<unknown>[] = []
-    for (const item of emojiStore.emojiList) {
-      const fileName = await buildEmojiFileName(item.expressionUrl)
-      const relativePath = await join(env.emojiDir, fileName)
-      const hasFile = await exists(relativePath, { baseDir: env.baseDir })
-      const absolutePath = await join(env.baseDirPath, relativePath)
 
-      if (!hasFile) {
-        clearEmojiLocalPath(item.id, item.expressionUrl)
-        if (!downloadingUrls.has(item.expressionUrl)) {
-          downloadingUrls.add(item.expressionUrl)
-          const task = downloadLimit(async () => {
-            try {
-              await ensureEmojiCached(item, env.emojiDir, env.baseDir, env.baseDirPath)
-            } catch (error) {
-              logger.error('重新缓存表情失败:', item.expressionUrl, error)
-            } finally {
-              downloadingUrls.delete(item.expressionUrl)
-            }
-          })
-          downloadTasks.push(task)
-        }
-      } else {
-        const localUrl = convertFileSrc(absolutePath)
-        setEmojiLocalPath(item.id, absolutePath, item.expressionUrl)
-        localUrlCache.set(item.expressionUrl, localUrl)
-        emojiUrlToLocalMap.set(item.expressionUrl, localUrl)
-      }
+    // 并发探测本地文件：命中项就地写入映射，缺失项收集后交给下载队列限流补齐
+    const missing: EmojiListItem[] = []
+    await Promise.all(
+      emojiStore.emojiList.map((item) =>
+        hydrateLimit(async () => {
+          const fileName = await buildEmojiFileName(item.expressionUrl)
+          const relativePath = await join(env.emojiDir, fileName)
+          if (await exists(relativePath, { baseDir: env.baseDir })) {
+            setEmojiLocalPath(item.id, await join(env.baseDirPath, relativePath), item.expressionUrl)
+          } else {
+            missing.push(item)
+          }
+        })
+      )
+    )
+    const downloadTasks: Promise<unknown>[] = []
+    for (const item of missing) {
+      clearEmojiLocalPath(item.id, item.expressionUrl)
+      if (downloadingUrls.has(item.expressionUrl)) continue
+      downloadingUrls.add(item.expressionUrl)
+      downloadTasks.push(
+        downloadLimit(async () => {
+          try {
+            await ensureEmojiCached(item, env.emojiDir, env.baseDir, env.baseDirPath)
+          } catch (error) {
+            logger.error('重新缓存表情失败:', item.expressionUrl, error)
+          } finally {
+            downloadingUrls.delete(item.expressionUrl)
+          }
+        })
+      )
     }
-    if (downloadTasks.length) {
-      await Promise.allSettled(downloadTasks)
-    }
+    if (downloadTasks.length) await Promise.allSettled(downloadTasks)
   }
 
   const scheduleHydrateFavorites = () => {
