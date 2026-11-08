@@ -348,13 +348,8 @@ const announcementStore = useAnnouncementStore()
 const { clearAnnouncements } = announcementStore
 const showAnnouncementPanel = ref(false)
 const currentRoomId = computed(() => globalStore.currentSessionRoomId)
-// 当前加载的群聊ID
-// 如果成员列表未完全加载，使用当前列表的在线人数，避免与头像显示不一致
-const onlineCountDisplay = computed(
-  () =>
-    groupStore.onlineCountMap[globalStore.currentSessionRoomId] ??
-    groupStore.userList.filter((m) => m.activeStatus === OnlineEnum.ONLINE).length
-)
+// 当前群聊在线人数：只统计当前房间已加载成员，避免全量房间扫描与头像状态不一致
+const onlineCountDisplay = computed(() => groupStore.currentRoomOnlineCount)
 const isGroup = useRoomType().isGroup
 // 公告相关计算属性
 const { announcementContent, announNum, announError, isAddAnnoun } = storeToRefs(announcementStore)

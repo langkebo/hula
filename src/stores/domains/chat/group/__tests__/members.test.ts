@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { OnlineEnum } from '@/enums'
 import type { MatrixGroupInfo, MatrixRoomMember } from '../types'
 
 const globalStoreMock = { currentSessionRoomId: 'room-1' }
@@ -192,5 +193,60 @@ describe('createGroupMembers.allUserInfo localpart 归一化去重', () => {
     expect(members.membersMap['room-1']).toHaveLength(1)
     // allUserInfo 也应只返回一条
     expect(members.allUserInfo.value).toHaveLength(1)
+  })
+})
+
+describe('createGroupMembers 派生结构缓存（presence 不重建 allUserInfo）', () => {
+  beforeEach(() => {
+    globalStoreMock.currentSessionRoomId = 'room-1'
+  })
+
+  it('presence 更新后 allUserInfo 保持同一引用，实时状态仍从 membersMap 读取', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.addUserItem(member('@alice:matrix.test'), 'room-a')
+    const snapshot = members.allUserInfo.value
+
+    members.updateUserPresence('@alice:matrix.test', {
+      activeStatus: OnlineEnum.ONLINE,
+      lastOptTime: 100
+    })
+
+    // 跨房间去重结果不随上下线事件重建（避免每次 presence 都 O(全部成员) 扫描）
+    expect(members.allUserInfo.value).toBe(snapshot)
+    expect(members.membersMap['room-a'][0].activeStatus).toBe(OnlineEnum.ONLINE)
+  })
+
+  it('成员集合变更后 allUserInfo 重新计算并包含新成员', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.addUserItem(member('@alice:matrix.test'), 'room-a')
+    const before = members.allUserInfo.value
+
+    members.addUserItem(member('@bob:matrix.test'), 'room-a')
+
+    const after = members.allUserInfo.value
+    expect(after).not.toBe(before)
+    expect(after.map((m) => m.uid).sort()).toEqual(['@alice:matrix.test', '@bob:matrix.test'])
+  })
+
+  it('新增成员整体替换房间数组（shallowReactive 原地 push 不触发依赖方）', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.updateMemberCache('room-a', [member('@alice:matrix.test')])
+    const before = members.membersMap['room-a']
+
+    members.addUserItem(member('@bob:matrix.test'), 'room-a')
+
+    expect(members.membersMap['room-a']).not.toBe(before)
+    expect(members.membersMap['room-a']).toHaveLength(2)
+  })
+
+  it('currentRoomOnlineCount 只统计当前会话房间的在线成员', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.updateMemberCache('room-1', [
+      member('@alice:matrix.test', { activeStatus: OnlineEnum.ONLINE }),
+      member('@bob:matrix.test', { activeStatus: OnlineEnum.OFFLINE })
+    ])
+    members.updateMemberCache('room-2', [member('@carol:matrix.test', { activeStatus: OnlineEnum.ONLINE })])
+
+    expect(members.currentRoomOnlineCount.value).toBe(1)
   })
 })

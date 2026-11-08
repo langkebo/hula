@@ -34,7 +34,7 @@ let globalStore: ReturnType<typeof reactive<{ currentSessionRoomId: string; curr
 let groupStore: ReturnType<
   typeof reactive<{
     userList: unknown[]
-    onlineCountMap: Record<string, number>
+    currentRoomOnlineCount: number
     userListOptions: { loading: boolean }
     updateUserItem: typeof vi.fn
     updateMemberCache: typeof vi.fn
@@ -241,7 +241,7 @@ describe('ChatSidebar', () => {
 
     groupStore = reactive({
       userList: [],
-      onlineCountMap: {},
+      currentRoomOnlineCount: 0,
       userListOptions: { loading: false },
       updateUserItem: vi.fn(),
       updateMemberCache: vi.fn(),

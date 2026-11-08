@@ -1,4 +1,4 @@
-import { computed, reactive, shallowReactive, shallowRef, triggerRef } from 'vue'
+import { computed, reactive, ref, shallowReactive, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum } from '@/enums'
 import { matrixRoomQueryFacade } from '@/services/matrix/room/RoomFacade'
 import type { RoomMember } from '@/services/matrix/sdk'
@@ -33,15 +33,32 @@ export function createGroupMembers(ctx: GroupMembersContext) {
   const userList = computed(() => currentRoomMembers.value)
   const memberList = computed(() => currentRoomMembers.value)
 
-  const onlineCountMap = computed(() => {
-    const map: Record<string, number> = {}
-    Object.keys(membersMap).forEach((roomId) => {
-      map[roomId] = membersMap[roomId].filter((m) => m.activeStatus === 1).length
-    })
-    return map
-  })
+  const currentRoomOnlineCount = computed(
+    () => currentRoomMembers.value.filter((m) => m.activeStatus === OnlineEnum.ONLINE).length
+  )
 
+  /**
+   * 结构版本号：只由「成员集合 / 资料」变更推进（加载、增删、改名等）。
+   * presence 更新（updateUserPresence / updateOnlineNum）刻意不推进，避免每次上下线事件
+   * 都把 allUserInfo 的跨房间去重全量重算一遍（大账号下为 O(全部成员)）。
+   */
+  const memberStructureVersion = ref(0)
+  const markStructureChanged = () => {
+    memberStructureVersion.value += 1
+  }
+
+  let allUserInfoCache: MatrixRoomMember[] = []
+  let allUserInfoVersion = -1
+
+  /**
+   * 跨房间成员去重快照（按 localpart 归一化）。
+   * 命中缓存时不读取 membersMap，因此 presence 变化不会触发重建；
+   * 需要实时在线状态请读 membersMap / currentRoomMembers。
+   */
   const allUserInfo = computed(() => {
+    const version = memberStructureVersion.value
+    if (version === allUserInfoVersion) return allUserInfoCache
+
     const allUsers: MatrixRoomMember[] = []
     const seen = new Set<string>()
     Object.values(membersMap).forEach((members) => {
@@ -53,7 +70,10 @@ export function createGroupMembers(ctx: GroupMembersContext) {
         }
       })
     })
-    return allUsers
+
+    allUserInfoCache = allUsers
+    allUserInfoVersion = version
+    return allUserInfoCache
   })
 
   const getUserInfo = computed(() => (uid: string, roomId?: string) => {
@@ -116,6 +136,7 @@ export function createGroupMembers(ctx: GroupMembersContext) {
       }
 
       membersMap[roomId] = dedupedMembers
+      markStructureChanged()
       logger.info(`[GroupStore] 加载房间成员成功: ${roomId}, ${dedupedMembers.length} 个成员`)
       return dedupedMembers
     } catch (err) {
@@ -147,6 +168,7 @@ export function createGroupMembers(ctx: GroupMembersContext) {
     if (memberIndex === -1) return false
 
     membersMap[targetRoomId] = membersMap[targetRoomId].map((m, i) => (i === memberIndex ? { ...m, ...updates } : m))
+    markStructureChanged()
     return true
   }
 
@@ -161,7 +183,7 @@ export function createGroupMembers(ctx: GroupMembersContext) {
 
       // 先定位命中下标，未命中则不复制数组。
       // 此前无条件 members.map 后回写，会让每次 presence 事件都替换所有房间的数组，
-      // 连锁触发 allUserInfo / onlineCountMap 重算与成员列表重渲染。
+      // 连锁触发成员列表重渲染；allUserInfo 已按结构版本缓存，不再受影响。
       let nextMembers: MatrixRoomMember[] | null = null
       for (let i = 0; i < members.length; i += 1) {
         const member = members[i]
@@ -194,6 +216,7 @@ export function createGroupMembers(ctx: GroupMembersContext) {
 
   function updateMemberCache(roomId: string, members: MatrixRoomMember[]): void {
     membersMap[roomId] = members
+    markStructureChanged()
   }
 
   function updateOnlineNum(options: { uid?: string; roomId?: string; isAdd?: boolean }): void {
@@ -233,6 +256,7 @@ export function createGroupMembers(ctx: GroupMembersContext) {
 
   function removeAllUsers(roomId: string): void {
     membersMap[roomId] = []
+    markStructureChanged()
   }
 
   function removeUserItem(uid: string, roomId?: string): boolean {
@@ -245,6 +269,7 @@ export function createGroupMembers(ctx: GroupMembersContext) {
         if (m.userId === uid || m.uid === uid) return false
         return localpart ? toLocalpart(m.userId || m.uid) !== localpart : true
       }) || []
+    markStructureChanged()
     return true
   }
 
@@ -262,14 +287,19 @@ export function createGroupMembers(ctx: GroupMembersContext) {
       ? membersMap[targetRoomId].findIndex((m) => toLocalpart(m.userId || m.uid) === localpart)
       : -1
     if (existingIndex >= 0) {
-      membersMap[targetRoomId][existingIndex] = {
-        ...membersMap[targetRoomId][existingIndex],
+      // membersMap 是 shallowReactive，原地改写数组不会触发依赖方，必须整体替换
+      const nextMembers = membersMap[targetRoomId].slice()
+      nextMembers[existingIndex] = {
+        ...nextMembers[existingIndex],
         ...user
       }
-      return true
+      membersMap[targetRoomId] = nextMembers
+    } else {
+      // 同上：push 不触发响应式，整体替换后才能让成员面板即时出现新成员
+      membersMap[targetRoomId] = [...membersMap[targetRoomId], user]
     }
 
-    membersMap[targetRoomId].push(user)
+    markStructureChanged()
     return true
   }
 
@@ -280,7 +310,7 @@ export function createGroupMembers(ctx: GroupMembersContext) {
     currentRoomMembers,
     userList,
     memberList,
-    onlineCountMap,
+    currentRoomOnlineCount,
     allUserInfo,
     getUserInfo,
     getUserDisplayName,
