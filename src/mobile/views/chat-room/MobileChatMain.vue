@@ -121,7 +121,6 @@ const resolveRoomId = (raw?: string): string | null => {
 const openRoomFromRoute = async (raw?: string) => {
   const roomId = resolveRoomId(raw)
   if (!roomId) return
-  if (globalStore.currentSessionRoomId === roomId) return
 
   let session = chatStore.getSession(roomId)
   if (!session) {

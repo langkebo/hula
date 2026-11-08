@@ -49,11 +49,18 @@ export const useChatSession = () => {
    */
   const switchSession = async (item: SessionItem) => {
     const roomId = item.roomId
+    const isSameRoom = globalStore.currentSessionRoomId === roomId
     logger.debug('切换会话:', roomId, 'UI未读数:', item.unreadCount)
 
     globalStore.updateCurrentSessionRoomId(roomId)
     chatStore.getSession(roomId)
     chatStore.markSessionRead(roomId)
+
+    // 重复进入同一房间时 currentSessionRoomId 不变，globalStore 的 changeRoom watcher 不会触发。
+    // 若上次首屏加载尚未完成（刷新/深链恢复只还原了 roomId），消息区会永久停在骨架屏。
+    if (isSameRoom && chatStore.currentMessageOptions?.hasLoadedOnce !== true) {
+      await chatStore.changeRoom()
+    }
 
     // 兜底刷新群成员，防止批量切换账号后看到旧数据
     try {
