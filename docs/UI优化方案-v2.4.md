@@ -4,7 +4,7 @@
 | :--- | :--- |
 | 版本 | v2.4 |
 | 日期 | 2026-11-07 |
-| 状态 | 评审稿（待评审后进入阶段 A） |
+| 状态 | 已落地（阶段 A/B/E 完成，C1/C2/C4 完成，C3 待真机回归；阶段 D 暂缓） |
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
@@ -540,6 +540,16 @@ main.ts
 | E1 | 收紧 `check-ratchet` 基线 | 裸 `backdrop-filter` 计数只降不升 |
 | E2 | 视觉回归用例 | Storybook 覆盖 4 个 variant × 明暗 |
 | E3 | 文档同步 | 本文件与 `design-tokens.css` 注释一致 |
+
+### 落地状态（2026-11-08）
+
+| 阶段 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| A | 已完成 | A4 的移动端玻璃面（NavBar / FooterBar / More 等）已全部接入 `html.low-perf` 降级；A6 契约测试见 `src/styles/__tests__/liquid-glass.test.ts` |
+| B | 已完成 | B3 见 `base.scss` 的 `.n-modal-mask` / `.n-drawer-mask` 与低性能降级；B4 见 `ContextMenu.vue` / `ContextMenuEmoji.vue`；B5 裸模糊已收敛到 `_liquid-glass.scss` 的 `backdrop-blur-pair` / `glass-blur`，`blur(10px)` 字面量清零 |
+| C | 部分完成 | C1/C2/C4 已完成：C2 在 `mobile.scss` 接线 `--van-popup-background` / `--van-action-sheet-item-background` / `--van-picker-background`；C4 由 `mobileCssGuards.test.ts` 与 `check:mobile-css` 自动守卫。C3 待真机截图回归 |
+| D | 暂缓 | 经确认暂缓增强库 POC，现有 CSS 玻璃基座保持不变 |
+| E | 已完成 | E1 基线已收紧；E2 在 `storybook-visual.spec.ts` 增加 8 条 TjGlass 基线（4 variant × 明暗）；E3 本文件与 `design-tokens.css` 的玻璃 token 已对齐 |
 
 ---
 
