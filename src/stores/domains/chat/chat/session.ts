@@ -12,6 +12,7 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 import { resolveDmIdentityKey, toLocalpart } from '@/utils/userIdentity'
+import { moveSessionToGroupHead } from './sessionOrder'
 
 const logger = createLogger('SessionStore')
 
@@ -328,11 +329,11 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
 
   const updateSessionLastActiveTime = (roomId: string, session?: SessionItem) => {
     const activeSession = session || resolveSessionByRoomId(roomId)
-    if (activeSession) {
-      activeSession.activeTime = Date.now()
-      triggerRef(sessionList)
-      sessionList.value = orderBy(sessionList.value, ['top', 'activeTime'], ['desc', 'desc'])
-    }
+    if (!activeSession) return
+    activeSession.activeTime = Date.now()
+    // 增量归位替代全量 orderBy，避免每条消息发送都 O(n log n) 重排并整表重建
+    moveSessionToGroupHead(sessionList.value, activeSession)
+    triggerRef(sessionList)
   }
 
   const currentSessionInfo = computed(() => {
