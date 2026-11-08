@@ -159,25 +159,32 @@ export function createGroupMembers(ctx: GroupMembersContext) {
         return
       }
 
-      let roomUpdated = false
-      membersMap[roomId] = members.map((member) => {
+      // 先定位命中下标，未命中则不复制数组。
+      // 此前无条件 members.map 后回写，会让每次 presence 事件都替换所有房间的数组，
+      // 连锁触发 allUserInfo / onlineCountMap 重算与成员列表重渲染。
+      let nextMembers: MatrixRoomMember[] | null = null
+      for (let i = 0; i < members.length; i += 1) {
+        const member = members[i]
         if (member.userId !== uid && member.uid !== uid) {
-          return member
+          continue
         }
 
-        roomUpdated = true
-        return {
+        nextMembers ??= members.slice()
+        nextMembers[i] = {
           ...member,
           ...updates
         }
-      })
+      }
 
-      if (roomUpdated) {
-        hasUpdated = true
-        if (groupInfoMap[roomId]) {
-          groupInfoMap[roomId] = {
-            ...groupInfoMap[roomId]
-          }
+      if (!nextMembers) {
+        return
+      }
+
+      membersMap[roomId] = nextMembers
+      hasUpdated = true
+      if (groupInfoMap[roomId]) {
+        groupInfoMap[roomId] = {
+          ...groupInfoMap[roomId]
         }
       }
     })

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { MatrixRoomMember } from '../types'
+import type { MatrixGroupInfo, MatrixRoomMember } from '../types'
 
 const globalStoreMock = { currentSessionRoomId: 'room-1' }
 
@@ -33,6 +33,22 @@ const member = (userId: string, extra: Partial<MatrixRoomMember> = {}): MatrixRo
     roleId: 2,
     ...extra
   }) as MatrixRoomMember
+
+const groupInfo = (roomId: string): MatrixGroupInfo => ({
+  roomId,
+  name: roomId,
+  avatarUrl: null,
+  topic: null,
+  memberCount: 1,
+  isEncrypted: false,
+  isPublic: false,
+  creator: null,
+  avatar: '',
+  groupName: roomId,
+  roleId: 2,
+  account: '',
+  myName: ''
+})
 
 describe('createGroupMembers.addUserItem 去重（根因 B：localpart 与完整 MXID 同人合并）', () => {
   beforeEach(() => {
@@ -68,6 +84,72 @@ describe('createGroupMembers.addUserItem 去重（根因 B：localpart 与完整
 
     expect(members.membersMap['room-a']).toHaveLength(1)
     expect(members.membersMap['room-b']).toHaveLength(1)
+  })
+})
+
+describe('createGroupMembers.updateUserPresence 精确写入', () => {
+  beforeEach(() => {
+    globalStoreMock.currentSessionRoomId = 'room-1'
+  })
+
+  it('只替换包含该用户的房间数组，其余房间保持引用不变', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.addUserItem(member('@alice:matrix.test'), 'room-a')
+    members.addUserItem(member('@bob:matrix.test'), 'room-b')
+
+    const roomABefore = members.membersMap['room-a']
+    const roomBBefore = members.membersMap['room-b']
+
+    const updated = members.updateUserPresence('@alice:matrix.test', { activeStatus: 1, lastOptTime: 100 })
+
+    expect(updated).toBe(true)
+    expect(members.membersMap['room-a']).not.toBe(roomABefore)
+    expect(members.membersMap['room-a'][0].activeStatus).toBe(1)
+    // 未命中的房间不复制、不触发依赖方重算
+    expect(members.membersMap['room-b']).toBe(roomBBefore)
+  })
+
+  it('用户不在任何房间时不产生写入并返回 false', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.addUserItem(member('@alice:matrix.test'), 'room-a')
+    const before = members.membersMap['room-a']
+
+    const updated = members.updateUserPresence('@nobody:matrix.test', { activeStatus: 1, lastOptTime: 100 })
+
+    expect(updated).toBe(false)
+    expect(members.membersMap['room-a']).toBe(before)
+  })
+
+  it('同一房间内的重复记录全部更新', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.updateMemberCache('room-a', [
+      member('@alice:matrix.test'),
+      member('@alice:matrix.test', { displayName: 'alice-dup' })
+    ])
+
+    members.updateUserPresence('@alice:matrix.test', { activeStatus: 1, lastOptTime: 100 })
+
+    const list = members.membersMap['room-a']
+    expect(list).toHaveLength(2)
+    expect(list.every((m) => m.activeStatus === 1)).toBe(true)
+  })
+
+  it('命中房间时同步触碰群信息，未命中房间不触碰', () => {
+    const groupInfoMap: Record<string, MatrixGroupInfo> = {
+      'room-a': groupInfo('room-a'),
+      'room-b': groupInfo('room-b')
+    }
+    const members = createGroupMembers({ groupInfoMap })
+    members.addUserItem(member('@alice:matrix.test'), 'room-a')
+    members.addUserItem(member('@bob:matrix.test'), 'room-b')
+    const roomAInfoBefore = groupInfoMap['room-a']
+    const roomBInfoBefore = groupInfoMap['room-b']
+
+    members.updateUserPresence('@alice:matrix.test', { activeStatus: 1, lastOptTime: 100 })
+
+    // 命中房间替换群信息引用以触发依赖方更新，未命中房间保持原引用
+    expect(groupInfoMap['room-a']).not.toBe(roomAInfoBefore)
+    expect(groupInfoMap['room-b']).toBe(roomBInfoBefore)
   })
 })
 
