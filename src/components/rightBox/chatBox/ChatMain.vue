@@ -520,14 +520,6 @@ onMounted(() => {
   useMitt.on(MittEnum.OPEN_ROOM_SEARCH, onOpenRoomSearch)
   useMitt.on(MittEnum.NAVIGATE_TO_MESSAGE, onNavigateToMessage)
 
-  // F2 快捷键打开搜索面板
-  window.addEventListener('keydown', (event: KeyboardEvent) => {
-    if (event.key === 'F2' && !searchIsOpen.value) {
-      event.preventDefault()
-      openRoomSearch()
-    }
-  })
-
   // 初始化公告监听器
   if (appWindow) {
     initAnnouncementListeners(appWindow).catch((e) => logger.error('initAnnouncementListeners failed:', e))
@@ -543,12 +535,6 @@ onUnmounted(() => {
   useMitt.off(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
   useMitt.off(MittEnum.OPEN_ROOM_SEARCH, onOpenRoomSearch)
   useMitt.off(MittEnum.NAVIGATE_TO_MESSAGE, onNavigateToMessage)
-})
-
-window.removeEventListener('keydown', (event: KeyboardEvent) => {
-  if (event.key === 'F2') {
-    event.preventDefault()
-  }
 })
 </script>
 
