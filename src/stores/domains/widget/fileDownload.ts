@@ -213,89 +213,103 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
     })
   }
 
+  // 进行中的下载：同一文件并发请求只发起一次网络请求；key 带上文件名，因为同一 URL 可能被保存为不同文件名
+  const pendingDownloads = new Map<string, Promise<string | null>>()
+
+  const dedupeDownload = (fileUrl: string, fileName: string, task: () => Promise<string | null>) => {
+    const key = `${fileUrl}::${fileName}`
+    const pending = pendingDownloads.get(key)
+    if (pending) return pending
+    const promise = task().finally(() => pendingDownloads.delete(key))
+    pendingDownloads.set(key, promise)
+    return promise
+  }
+
   /**
    * 下载文件
    * @param fileUrl 文件URL
    * @param fileName 文件名
    */
-  const downloadFile = async (fileUrl: string, fileName: string): Promise<string | null> => {
-    try {
-      // 检查文件是否已存在
-      const isExists = await checkFileExists(fileUrl, fileName)
-      if (isExists) {
-        const existingStatus = getFileStatus(fileUrl)
-        return existingStatus.absolutePath || existingStatus.localPath || null
+  const downloadFile = (fileUrl: string, fileName: string): Promise<string | null> =>
+    dedupeDownload(fileUrl, fileName, async () => {
+      try {
+        // 检查文件是否已存在
+        const isExists = await checkFileExists(fileUrl, fileName)
+        if (isExists) {
+          const existingStatus = getFileStatus(fileUrl)
+          return existingStatus.absolutePath || existingStatus.localPath || null
+        }
+
+        // 更新状态为下载中
+        updateFileStatus(fileUrl, {
+          status: 'downloading',
+          progress: 0
+        })
+
+        // 获取下载目录
+        const downloadsDir = await userStore.getUserRoomDir()
+        const filePath = await join(downloadsDir, fileName)
+
+        // 下载文件
+        // 用户消息中的文件 URL（动态 host）
+        const buffer = await HttpClient.downloadBytes(fileUrl, { allowDynamicHost: true })
+        const fileData = new Uint8Array(buffer)
+
+        // 写入文件
+        const baseDir = getDownloadBaseDir()
+        await writeFile(filePath, fileData, { baseDir })
+
+        // 构建绝对路径
+        const baseDirPath = await getDownloadBaseDirPath()
+        const absolutePath = await join(baseDirPath, filePath)
+
+        finalizeSuccessfulWrite(fileUrl, absolutePath, filePath)
+        return absolutePath
+      } catch (error) {
+        logger.error('文件下载失败:', error)
+
+        updateFileStatus(fileUrl, {
+          status: 'failed',
+          error: error instanceof Error ? error.message : '下载失败'
+        })
+
+        showFeedback(`文件下载失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error')
+        return null
       }
+    })
 
-      // 更新状态为下载中
-      updateFileStatus(fileUrl, {
-        status: 'downloading',
-        progress: 0
-      })
-
-      // 获取下载目录
-      const downloadsDir = await userStore.getUserRoomDir()
-      const filePath = await join(downloadsDir, fileName)
-
-      // 下载文件
-      // 用户消息中的文件 URL（动态 host）
-      const buffer = await HttpClient.downloadBytes(fileUrl, { allowDynamicHost: true })
-      const fileData = new Uint8Array(buffer)
-
-      // 写入文件
-      const baseDir = getDownloadBaseDir()
-      await writeFile(filePath, fileData, { baseDir })
-
-      // 构建绝对路径
-      const baseDirPath = await getDownloadBaseDirPath()
-      const absolutePath = await join(baseDirPath, filePath)
-
-      finalizeSuccessfulWrite(fileUrl, absolutePath, filePath)
-      return absolutePath
-    } catch (error) {
-      logger.error('文件下载失败:', error)
-
-      updateFileStatus(fileUrl, {
-        status: 'failed',
-        error: error instanceof Error ? error.message : '下载失败'
-      })
-
-      showFeedback(`文件下载失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error')
-      return null
-    }
-  }
-
-  const downloadEncryptedFile = async (
+  const downloadEncryptedFile = (
     fileUrl: string,
     fileName: string,
     encryptedFile: MatrixEncryptedAttachmentLike
-  ): Promise<string | null> => {
-    try {
-      const isExists = await checkFileExists(fileUrl, fileName)
-      if (isExists) {
-        const existingStatus = getFileStatus(fileUrl)
-        return existingStatus.absolutePath || existingStatus.localPath || null
+  ): Promise<string | null> =>
+    dedupeDownload(fileUrl, fileName, async () => {
+      try {
+        const isExists = await checkFileExists(fileUrl, fileName)
+        if (isExists) {
+          const existingStatus = getFileStatus(fileUrl)
+          return existingStatus.absolutePath || existingStatus.localPath || null
+        }
+
+        updateFileStatus(fileUrl, {
+          status: 'downloading',
+          progress: 0
+        })
+
+        const fileData = await matrixMediaService.downloadEncryptedFileBytes(encryptedFile)
+        return await saveFileFromBytes(fileUrl, fileName, fileData)
+      } catch (error) {
+        logger.error('加密文件下载失败:', error)
+
+        updateFileStatus(fileUrl, {
+          status: 'failed',
+          error: error instanceof Error ? error.message : '下载失败'
+        })
+
+        showFeedback(`文件下载失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error')
+        return null
       }
-
-      updateFileStatus(fileUrl, {
-        status: 'downloading',
-        progress: 0
-      })
-
-      const fileData = await matrixMediaService.downloadEncryptedFileBytes(encryptedFile)
-      return await saveFileFromBytes(fileUrl, fileName, fileData)
-    } catch (error) {
-      logger.error('加密文件下载失败:', error)
-
-      updateFileStatus(fileUrl, {
-        status: 'failed',
-        error: error instanceof Error ? error.message : '下载失败'
-      })
-
-      showFeedback(`文件下载失败: ${error instanceof Error ? error.message : '未知错误'}`, 'error')
-      return null
-    }
-  }
+    })
 
   /**
    * 将 worker 下载的字节数据写入到本地文件
