@@ -34,7 +34,6 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
   // 使用两个数据结构：Map 用于快速查找和修改，Array 用于保持顺序和渲染
   const messageMap = shallowReactive<Record<string, Record<string, MessageType>>>({})
   const sortedMessageKeys = reactive<Record<string, string[]>>({})
-  const sortedMessageKeyIndexes = reactive<Record<string, Record<string, number>>>({})
   const messageOptions = reactive<Record<string, MessageListOptions>>({})
 
   const transientStatuses = new Set<MessageStatusEnum>([
@@ -46,10 +45,9 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     return msg?.message?.status ? transientStatuses.has(msg.message.status) : false
   }
 
-  const sortedKeysHelpers = createMessageSortedKeys(messageMap, sortedMessageKeys, sortedMessageKeyIndexes)
+  const sortedKeysHelpers = createMessageSortedKeys(messageMap, sortedMessageKeys)
   const {
     ensureSortedMessageState,
-    rebuildSortedMessageKeyIndex,
     setSortedMessageKeys,
     findMessageInsertIndex,
     mergeSortedMessageKeys,
@@ -228,7 +226,6 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     currentReplyMap,
     currentMsgReply,
     ensureSortedMessageState,
-    rebuildSortedMessageKeyIndex,
     setSortedMessageKeys,
     findMessageInsertIndex,
     getCurrentSortedMessageKeys,
@@ -293,12 +290,8 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     if (!msgId) return -1
     const roomId = globalStore.currentSessionRoomId
     if (!roomId) return -1
-    return sortedMessageKeyIndexes[roomId]?.[msgId] ?? -1
-  }
-
-  const getMessageIndexByRoomId = (roomId: string, msgId: string) => {
-    if (!roomId || !msgId) return -1
-    return sortedMessageKeyIndexes[roomId]?.[msgId] ?? -1
+    // 按需线性查找：仅在「跳转到指定消息」时调用，避免为每条消息维护 O(n) 反向索引
+    return sortedMessageKeys[roomId]?.indexOf(msgId) ?? -1
   }
 
   const getRecalledMessage = (msgId: string): RecalledMessage | undefined => {
@@ -414,7 +407,6 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     shouldKeepTransientMessage,
     clearOtherRoomsMessages,
     clearRoomMessagesExceptTransient,
-    convertEventToMessage: matrixEventService.convertEventToMessage.bind(matrixEventService),
-    getMessageIndexByRoomId
+    convertEventToMessage: matrixEventService.convertEventToMessage.bind(matrixEventService)
   }
 })

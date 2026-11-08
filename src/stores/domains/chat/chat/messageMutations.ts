@@ -37,7 +37,6 @@ interface MessageMutationsDeps {
   currentMsgReply: Ref<Partial<MessageType>>
 
   ensureSortedMessageState: (roomId: string) => void
-  rebuildSortedMessageKeyIndex: (roomId: string) => void
   setSortedMessageKeys: (roomId: string, keys: string[]) => void
   findMessageInsertIndex: (roomId: string, messageKey: string) => number
   getCurrentSortedMessageKeys: (roomId: string) => string[]
@@ -72,7 +71,6 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
     currentReplyMap,
     currentMsgReply,
     ensureSortedMessageState,
-    rebuildSortedMessageKeyIndex,
     setSortedMessageKeys,
     findMessageInsertIndex,
     getCurrentSortedMessageKeys,
@@ -168,7 +166,6 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
       const keys = sortedMessageKeys[msg.message.roomId]
       const low = findMessageInsertIndex(msg.message.roomId, messageKey)
       keys.splice(low, 0, messageKey)
-      rebuildSortedMessageKeyIndex(msg.message.roomId)
     }
 
     const targetRoomId = options.activeRoomId ?? globalStore.currentSessionRoomId ?? ''
@@ -388,7 +385,6 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
           const keys = sortedMessageKeys[resolvedRoomId]
           const low = findMessageInsertIndex(resolvedRoomId, newMsgId)
           keys.splice(low, 0, newMsgId)
-          rebuildSortedMessageKeyIndex(resolvedRoomId)
         }
       }
       messageMap[resolvedRoomId] = { ...roomMessages }

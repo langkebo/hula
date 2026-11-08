@@ -1,35 +1,25 @@
 import type { MessageType } from './types'
 
 /**
- * 维护每个房间消息按 `message.id` 升序的有序键集合，
- * 同时保留键 -> 索引的反向映射，避免线性查找。
+ * 维护每个房间消息按 `message.id` 升序的有序键集合。
+ *
+ * 历史实现额外维护 `key -> index` 反向映射，并在每次消息变更时整体重建该映射。
+ * 它只服务于「跳转到指定消息」这类低频动作，却让每条消息都要付出 O(n) 遍历，
+ * 还会在 reactive 容器上重新创建 n 个代理键。现改为按需线性查找（见 `getMsgIndex`），
+ * 只在用户真正触发跳转时扫描一次。
  */
 export const createMessageSortedKeys = (
   messageMap: Record<string, Record<string, MessageType>>,
-  sortedMessageKeys: Record<string, string[]>,
-  sortedMessageKeyIndexes: Record<string, Record<string, number>>
+  sortedMessageKeys: Record<string, string[]>
 ) => {
   const ensureSortedMessageState = (roomId: string) => {
     if (!sortedMessageKeys[roomId]) {
       sortedMessageKeys[roomId] = []
     }
-    if (!sortedMessageKeyIndexes[roomId]) {
-      sortedMessageKeyIndexes[roomId] = {}
-    }
-  }
-
-  const rebuildSortedMessageKeyIndex = (roomId: string) => {
-    ensureSortedMessageState(roomId)
-    const nextIndexMap: Record<string, number> = {}
-    sortedMessageKeys[roomId].forEach((msgId, index) => {
-      nextIndexMap[msgId] = index
-    })
-    sortedMessageKeyIndexes[roomId] = nextIndexMap
   }
 
   const setSortedMessageKeys = (roomId: string, keys: string[]) => {
     sortedMessageKeys[roomId] = keys
-    rebuildSortedMessageKeyIndex(roomId)
   }
 
   const getMessageOrder = (msg?: MessageType) => {
@@ -143,7 +133,6 @@ export const createMessageSortedKeys = (
 
   return {
     ensureSortedMessageState,
-    rebuildSortedMessageKeyIndex,
     setSortedMessageKeys,
     findMessageInsertIndex,
     mergeSortedMessageKeys,
