@@ -3,6 +3,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import VoiceMessage from '../Voice.vue'
 
+vi.hoisted(() => {
+  // 让可见性任务在挂载时立即触发，使惰性加载在测试中可确定地执行
+  class ImmediateIntersectionObserver {
+    private callback: (entries: IntersectionObserverEntry[]) => void
+
+    constructor(callback: (entries: IntersectionObserverEntry[]) => void) {
+      this.callback = callback
+    }
+
+    observe(target: Element) {
+      this.callback([{ isIntersecting: true, target } as IntersectionObserverEntry])
+    }
+
+    unobserve() {}
+
+    disconnect() {}
+  }
+
+  ;(globalThis as { IntersectionObserver?: unknown }).IntersectionObserver = ImmediateIntersectionObserver
+})
+
 const {
   togglePlaybackMock,
   seekToTimeMock,
@@ -56,16 +77,25 @@ vi.mock('@/composables/chat/useVoiceDragControl', () => ({
 }))
 
 vi.mock('@/composables/chat/useWaveformRenderer', () => ({
-  useWaveformRenderer: () => ({
-    waveformCanvas: ref(null),
-    waveformWidth: ref(waveformState.waveformWidth),
-    scanLinePosition: ref(waveformState.scanLinePosition),
-    shouldUpdateCache: ref(false),
-    drawWaveform: vi.fn(),
-    drawWaveformThrottled: vi.fn(),
-    drawWaveformImmediate: vi.fn(),
-    generateWaveformData: vi.fn().mockResolvedValue(undefined)
-  })
+  useWaveformRenderer: () => {
+    const waveformData = ref<number[]>([])
+    return {
+      waveformCanvas: ref(null),
+      waveformWidth: ref(waveformState.waveformWidth),
+      scanLinePosition: ref(waveformState.scanLinePosition),
+      waveformData,
+      shouldUpdateCache: ref(false),
+      drawWaveform: vi.fn(),
+      drawWaveformThrottled: vi.fn(),
+      drawWaveformImmediate: vi.fn(),
+      generateWaveformData: vi.fn(async () => {
+        waveformData.value = [0.4, 0.8]
+      }),
+      loadPrecomputedWaveform: vi.fn((data: number[]) => {
+        waveformData.value = data
+      })
+    }
+  }
 }))
 
 vi.mock('@/composables/common/useAudioFileManager', () => ({
@@ -142,6 +172,13 @@ vi.mock('@/utils/PathUtil', () => ({
 }))
 
 describe('renderMessage/Voice', () => {
+  // 波形缓存是模块级的，为每个用例生成独立音频地址，避免用例之间互相命中
+  let voiceSequence = 0
+  const nextVoiceUrl = () => {
+    voiceSequence += 1
+    return `mxc://server/voice-${voiceSequence}`
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     audioState.isPlaying = false
@@ -161,17 +198,44 @@ describe('renderMessage/Voice', () => {
   const mountComponent = (body: Record<string, unknown> = {}, fromUserUid = '@other:server.test') =>
     mount(VoiceMessage, {
       props: {
-        body: { mxcUrl: 'mxc://server/voice', second: 65, ...body },
+        body: { mxcUrl: nextVoiceUrl(), second: 65, ...body },
         fromUserUid
       } as never
     })
 
-  it('挂载时加载波形并创建音频元素', async () => {
-    mountComponent()
+  const bodyUrl = (wrapper: ReturnType<typeof mountComponent>) => (wrapper.props('body') as { mxcUrl: string }).mxcUrl
+
+  it('进入视口时只加载波形，不提前创建音频元素', async () => {
+    const wrapper = mountComponent()
+    const url = bodyUrl(wrapper)
     await flushPromises()
 
-    expect(loadAudioWaveformMock).toHaveBeenCalledWith('mxc://server/voice')
-    expect(createAudioElementMock).toHaveBeenCalledWith('mxc://server/voice', 65)
+    expect(loadAudioWaveformMock).toHaveBeenCalledWith(url)
+    expect(createAudioElementMock).not.toHaveBeenCalled()
+  })
+
+  it('点击容器时按需创建音频元素并开始播放', async () => {
+    const wrapper = mountComponent()
+    const url = bodyUrl(wrapper)
+    await flushPromises()
+
+    await wrapper.find('.voice-container').trigger('click')
+    await flushPromises()
+
+    expect(createAudioElementMock).toHaveBeenCalledWith(url, 65)
+    expect(togglePlaybackMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('同一音频重复挂载时复用波形缓存', async () => {
+    const body = { mxcUrl: 'mxc://server/cached-voice', second: 65 }
+
+    mountComponent(body)
+    await flushPromises()
+    expect(loadAudioWaveformMock).toHaveBeenCalledTimes(1)
+
+    mountComponent(body)
+    await flushPromises()
+    expect(loadAudioWaveformMock).toHaveBeenCalledTimes(1)
   })
 
   it('格式化语音时长为分:秒', async () => {
@@ -186,15 +250,6 @@ describe('renderMessage/Voice', () => {
     await flushPromises()
 
     expect(wrapper.find('.voice-second').text()).toBe('0:05')
-  })
-
-  it('点击容器切换播放状态', async () => {
-    const wrapper = mountComponent()
-    await flushPromises()
-
-    await wrapper.find('.voice-container').trigger('click')
-
-    expect(togglePlaybackMock).toHaveBeenCalledTimes(1)
   })
 
   it('加载中时展示 loading 图标与 loading 样式', async () => {
@@ -228,13 +283,19 @@ describe('renderMessage/Voice', () => {
     expect(wrapper.find('.voice-second').attributes('style')).toContain('--tjg-text-primary')
   })
 
-  it('加密语音挂载时走加密下载流程', async () => {
+  it('加密语音进入视口时下载解密，点击后才创建可播放地址', async () => {
     const encryptedFile = { url: 'mxc://server/enc', v: 'v2' }
-    mountComponent({ encryptedFile, mxcUrl: 'mxc://server/voice' })
+    const wrapper = mountComponent({ encryptedFile })
     await flushPromises()
 
     expect(downloadEncryptedFileMock).toHaveBeenCalled()
+    expect(getAudioUrlMock).not.toHaveBeenCalled()
+
+    await wrapper.find('.voice-container').trigger('click')
+    await flushPromises()
+
     expect(getAudioUrlMock).toHaveBeenCalledWith('/local/voice.webm')
+    expect(createAudioElementMock).toHaveBeenCalledWith('blob:audio', 65)
   })
 
   it('卸载时清理播放与文件资源', async () => {

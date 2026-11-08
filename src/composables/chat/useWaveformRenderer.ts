@@ -39,6 +39,11 @@ type WaveformRendererReturn = {
   setDimensions: (width: number, height: number) => void
 }
 
+// 共享 AudioContext：每实例各建一个会耗尽浏览器上下文配额（Safari 尤甚），decodeAudioData 只依赖上下文能力，全局复用即可。
+let sharedAudioContext: AudioContext | null = null
+
+const getSharedAudioContext = () => (sharedAudioContext ??= new AudioContext())
+
 /**
  * 波形可视化渲染Hook
  * @param duration 音频时长（秒）
@@ -57,7 +62,6 @@ export const useWaveformRenderer = (
 ): WaveformRendererReturn => {
   const waveformData = ref<number[]>([])
   const waveformCanvas = ref<HTMLCanvasElement | null>(null)
-  const audioContext = ref<AudioContext | null>(null)
 
   const waveformImageCache = ref<ImageData | null>(null)
   const shouldUpdateCache = ref(true)
@@ -115,10 +119,7 @@ export const useWaveformRenderer = (
    */
   const generateWaveformData = async (input: ArrayBuffer | Uint8Array | SharedArrayBuffer) => {
     try {
-      // 创建 AudioContext
-      if (!audioContext.value) {
-        audioContext.value = new (window.AudioContext || window.AudioContext)()
-      }
+      const audioContext = getSharedAudioContext()
 
       // 确保 arrayBuffer 是 ArrayBuffer 类型
       let arrayBuffer: ArrayBuffer
@@ -140,7 +141,7 @@ export const useWaveformRenderer = (
       }
 
       // 解码音频数据
-      const buffer = await audioContext.value.decodeAudioData(arrayBuffer)
+      const buffer = await audioContext.decodeAudioData(arrayBuffer)
       const channelData = buffer.getChannelData(0)
       const samples = waveformSamples.value
       const blockSize = Math.floor(channelData.length / samples)

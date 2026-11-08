@@ -1,12 +1,13 @@
 <template>
   <div
+    ref="container"
     class="voice-container select-none cursor-pointer"
-    :class="{ playing: audioPlayback.isPlaying.value, loading: audioPlayback.loading.value }"
-    @click="audioPlayback.togglePlayback">
+    :class="{ playing: audioPlayback.isPlaying.value, loading: playbackBusy }"
+    @click="handleContainerClick">
     <!-- 语音图标 -->
     <div class="voice-icon select-none cursor-pointer">
       <img
-        v-if="audioPlayback.loading.value"
+        v-if="playbackBusy"
         class="loading-icon"
         :style="{ color: voiceIconColor }"
         src="@/assets/img/loading.svg"
@@ -30,8 +31,8 @@
         :width="waveformRenderer.waveformWidth.value"
         height="24"
         @click.stop="handleSeekToPosition"
-        @mousedown.stop="dragControl.handleDragStart"
-        @touchstart.stop="dragControl.handleDragStart"
+        @mousedown.stop="handleDragStart"
+        @touchstart.stop="handleDragStart"
         @pointerdown.stop></canvas>
       <div
         class="scan-line"
@@ -63,22 +64,14 @@
 </template>
 
 <script setup lang="ts">
+import { useVoiceAudioLoader } from '@/composables/chat/useVoiceAudioLoader'
 import { useVoiceDragControl } from '@/composables/chat/useVoiceDragControl'
 import { useWaveformRenderer } from '@/composables/chat/useWaveformRenderer'
-import { useAudioFileManager } from '@/composables/common/useAudioFileManager'
 import { useAudioPlayback } from '@/composables/common/useAudioPlayback'
-import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import type { MsgType, VoiceBody } from '@/services/types'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
-import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
-import type { MatrixEncryptedAttachmentLike } from '@/types/matrix-services'
-import { extractFileName, formatDuration } from '@/utils/Formatting'
-
-import { createLogger } from '@/utils/Logger'
-import { safeExistsPath } from '@/utils/PathUtil'
-
-const logger = createLogger('Voice')
+import { formatDuration } from '@/utils/Formatting'
 
 const props = defineProps<{
   body: VoiceBody
@@ -88,29 +81,12 @@ const props = defineProps<{
 
 const settingStore = useSettingStore()
 const userStore = useUserStore()
-const fileDownloadStore = useFileDownloadStore()
 
 // 使用messageId作为音频ID，确保唯一性
 const rawAudioUrl = computed(() => props.body.mxcUrl || props.body.url)
-const fallbackPlayableAudioUrl = computed(() => {
-  return matrixVoiceService.getPlayableUrl(props.body.mxcUrl, props.body.url)
-})
 const audioId = rawAudioUrl.value || props.body.url
 const waveformCanvas = ref<HTMLCanvasElement | null>(null)
-const localEncryptedAudioPath = ref<string | null>(null)
-
-const hasEncryptedFile = computed(() => {
-  const encryptedFile = props.body?.encryptedFile
-  if (!encryptedFile || typeof encryptedFile !== 'object') {
-    return false
-  }
-
-  return typeof encryptedFile.url === 'string' && typeof encryptedFile.v === 'string'
-})
-
-const resolvedVoiceFileName = computed(
-  () => props.body?.fileName || extractFileName(rawAudioUrl.value || '') || 'voice.webm'
-)
+const container = ref<HTMLElement | null>(null)
 
 // 判断是否为当前用户发送的消息
 const isCurrentUser = computed(() => {
@@ -131,8 +107,6 @@ const timePreviewStyle = computed(() => {
 
 // 音频时长
 const second = computed(() => props.body.second || 0)
-// 音频文件管理
-const fileManager = useAudioFileManager(userStore.userInfo?.uid as string)
 // 音频播放控制
 const audioPlayback = useAudioPlayback(audioId, () => {
   // 时间更新回调，用于重绘波形
@@ -145,11 +119,15 @@ const dragControl = useVoiceDragControl(
   second,
   audioPlayback.isPlaying,
   (time: number) => {
-    audioPlayback.seekToTime(time)
-    waveformRenderer.drawWaveformImmediate()
+    // 首次拖拽时音频可能还没创建，先按需准备再 seek
+    void audioLoader.preparePlayer().then(() => {
+      audioPlayback.seekToTime(time)
+      waveformRenderer.drawWaveformImmediate()
+    })
   },
   async (shouldPlay: boolean) => {
     if (shouldPlay) {
+      await audioLoader.preparePlayer()
       await audioPlayback.togglePlayback()
     } else {
       if (audioPlayback.audioElement.value) {
@@ -168,6 +146,16 @@ const waveformRenderer = useWaveformRenderer(
   dragControl.previewTime,
   () => getWaveformColors()
 )
+
+// 语音文件的惰性加载：进入视口只加载波形，首次播放才创建音频元素
+const audioLoader = useVoiceAudioLoader({
+  body: () => props.body,
+  duration: second,
+  renderer: waveformRenderer,
+  playback: audioPlayback
+})
+
+const playbackBusy = computed(() => audioLoader.preparing.value || audioPlayback.loading.value)
 
 // 计算波形颜色状态
 const getWaveformColors = () => {
@@ -190,8 +178,13 @@ const getWaveformColors = () => {
 }
 
 // 点击波形跳转到指定位置
-const handleSeekToPosition = (event: MouseEvent) => {
-  if (!audioPlayback.audioElement.value || !waveformCanvas.value || dragControl.isDragging.value) return
+const handleSeekToPosition = async (event: MouseEvent) => {
+  if (dragControl.isDragging.value) return
+  if (!audioPlayback.audioElement.value) {
+    const ready = await audioLoader.preparePlayer()
+    if (!ready) return
+  }
+  if (!audioPlayback.audioElement.value || !waveformCanvas.value) return
 
   const rect = waveformCanvas.value.getBoundingClientRect()
   const clickX = event.clientX - rect.left
@@ -200,6 +193,20 @@ const handleSeekToPosition = (event: MouseEvent) => {
 
   audioPlayback.seekToTime(targetTime)
   waveformRenderer.drawWaveformImmediate()
+}
+
+// 首次拖拽时音频元素可能还没创建，先按需准备（预览仍基于消息时长，不阻塞手势）
+const handleDragStart = (event: MouseEvent | TouchEvent) => {
+  void audioLoader.preparePlayer()
+  dragControl.handleDragStart(event)
+}
+
+const handleContainerClick = async () => {
+  if (!audioPlayback.audioElement.value) {
+    const ready = await audioLoader.preparePlayer()
+    if (!ready) return
+  }
+  await audioPlayback.togglePlayback()
 }
 
 watch(
@@ -215,58 +222,16 @@ watch(audioPlayback.isPlaying, () => {
   waveformRenderer.drawWaveform()
 })
 
-// 组件挂载
-onMounted(async () => {
-  try {
-    let waveformSource = fallbackPlayableAudioUrl.value
-    let audioSource = fallbackPlayableAudioUrl.value
-
-    if (hasEncryptedFile.value && rawAudioUrl.value) {
-      if (props.body.localPath) {
-        try {
-          const localExists = await safeExistsPath(props.body.localPath)
-          if (localExists) {
-            localEncryptedAudioPath.value = props.body.localPath
-          }
-        } catch (error) {
-          logger.warn('Failed to check encrypted voice local file:', error)
-        }
-      }
-
-      if (!localEncryptedAudioPath.value) {
-        const absolutePath = await fileDownloadStore.downloadEncryptedFile(
-          rawAudioUrl.value,
-          resolvedVoiceFileName.value,
-          props.body.encryptedFile as MatrixEncryptedAttachmentLike
-        )
-        localEncryptedAudioPath.value = absolutePath
-      }
-
-      if (!localEncryptedAudioPath.value) {
-        throw new Error('Failed to download encrypted voice message')
-      }
-
-      waveformSource = localEncryptedAudioPath.value
-      audioSource = await fileManager.getAudioUrl(localEncryptedAudioPath.value)
-    }
-
-    // 设置Canvas引用
-    waveformRenderer.waveformCanvas.value = waveformCanvas.value
-
-    // 加载音频波形数据
-    const audioBuffer = await fileManager.loadAudioWaveform(waveformSource)
-    await waveformRenderer.generateWaveformData(audioBuffer)
-
-    // 创建音频元素
-    await audioPlayback.createAudioElement(audioSource, second.value)
-  } catch (error) {
-    logger.error('Component initialization failed:', error)
-  }
+// 组件挂载：只绑定 canvas 并注册可见性监听，重 I/O 交给 audioLoader 按需执行
+onMounted(() => {
+  waveformRenderer.waveformCanvas.value = waveformCanvas.value
+  audioLoader.observeVisibility(container.value)
 })
+
 onUnmounted(() => {
   audioPlayback.cleanup()
   dragControl.cleanup()
-  fileManager.cleanup()
+  audioLoader.cleanup()
 })
 </script>
 
