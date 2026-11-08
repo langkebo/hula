@@ -88,11 +88,29 @@ export function createGroupMembers(ctx: GroupMembersContext) {
     return member?.displayName || member?.name || ''
   })
 
+  // single-flight：同一房间的并发加载复用同一个 Promise。
+  // 此前 presence 同步（forceRefresh）与成员面板首次打开可能同时触发全量成员拉取，
+  // 大房间下会重复拉取并重复 map 上万条成员记录。
+  const inFlightLoads = new Map<string, Promise<MatrixRoomMember[]>>()
+
   async function loadRoomMembers(roomId: string, forceRefresh = false): Promise<MatrixRoomMember[]> {
     if (!forceRefresh && membersMap[roomId]?.length) {
       return membersMap[roomId]
     }
 
+    const inFlight = inFlightLoads.get(roomId)
+    if (inFlight) return inFlight
+
+    const task = fetchRoomMembers(roomId)
+    inFlightLoads.set(roomId, task)
+    try {
+      return await task
+    } finally {
+      inFlightLoads.delete(roomId)
+    }
+  }
+
+  async function fetchRoomMembers(roomId: string): Promise<MatrixRoomMember[]> {
     loadingRooms.value.add(roomId)
     triggerRef(loadingRooms)
     try {

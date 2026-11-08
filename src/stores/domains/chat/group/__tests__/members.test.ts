@@ -10,6 +10,7 @@ vi.mock('@/stores/domains/widget/global', () => ({
 
 vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomQueryFacade: {
+    getMembers: vi.fn(),
     getRoomMembers: vi.fn(),
     getRoom: vi.fn()
   }
@@ -19,6 +20,7 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
 }))
 
+const { matrixRoomQueryFacade } = await import('@/services/matrix/room/RoomFacade')
 const { createGroupMembers } = await import('../members')
 
 const member = (userId: string, extra: Partial<MatrixRoomMember> = {}): MatrixRoomMember =>
@@ -196,7 +198,7 @@ describe('createGroupMembers.allUserInfo localpart 归一化去重', () => {
   })
 })
 
-describe('createGroupMembers 派生结构缓存（presence 不重建 allUserInfo）', () => {
+describe('createGroupMembers 派生结构缓存与成员加载收敛', () => {
   beforeEach(() => {
     globalStoreMock.currentSessionRoomId = 'room-1'
   })
@@ -237,6 +239,40 @@ describe('createGroupMembers 派生结构缓存（presence 不重建 allUserInfo
 
     expect(members.membersMap['room-a']).not.toBe(before)
     expect(members.membersMap['room-a']).toHaveLength(2)
+  })
+
+  it('同一房间并发加载只发起一次全量拉取（single-flight）', async () => {
+    let resolveFetch: (value: unknown[]) => void = () => undefined
+    const pending = new Promise<unknown[]>((resolve) => {
+      resolveFetch = resolve
+    })
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockReset()
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockReturnValue(pending as never)
+
+    const members = createGroupMembers({ groupInfoMap: {} })
+    const first = members.loadRoomMembers('room-a', true)
+    const second = members.loadRoomMembers('room-a')
+
+    expect(matrixRoomQueryFacade.getMembers).toHaveBeenCalledTimes(1)
+
+    resolveFetch([{ userId: '@alice:matrix.test', name: 'alice', membership: 'join', powerLevel: 0 }])
+    await expect(first).resolves.toHaveLength(1)
+    await expect(second).resolves.toHaveLength(1)
+    expect(members.membersMap['room-a']).toHaveLength(1)
+  })
+
+  it('加载失败后清除 in-flight，后续可重新发起', async () => {
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockReset()
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockRejectedValueOnce(new Error('network'))
+
+    const members = createGroupMembers({ groupInfoMap: {} })
+    await expect(members.loadRoomMembers('room-b', true)).resolves.toEqual([])
+
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockResolvedValueOnce([
+      { userId: '@bob:matrix.test', name: 'bob', membership: 'join', powerLevel: 0 }
+    ] as never)
+    await expect(members.loadRoomMembers('room-b', true)).resolves.toHaveLength(1)
+    expect(matrixRoomQueryFacade.getMembers).toHaveBeenCalledTimes(2)
   })
 
   it('currentRoomOnlineCount 只统计当前会话房间的在线成员', () => {
