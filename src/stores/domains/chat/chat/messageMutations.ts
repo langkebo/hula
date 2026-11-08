@@ -202,12 +202,14 @@ export const createMessageMutations = (deps: MessageMutationsDeps) => {
 
       if (shouldIncreaseUnread) {
         const nextUnread = (session.unreadCount || 0) + 1
-        // 走 setUnreadCount：界面与 sessionUnread 本地账本一起更新（关闭已读回执时账本是唯一可信计数）
-        sessionStore.setUnreadCount(msg.message.roomId, nextUnread)
+        // 未读数与摘要/活跃时间一次原子写入：拆成 setUnreadCount + updateSession 会让同一条
+        // 消息对 sessionList / sessionMap 各触发两轮失效，订阅会话列表的 computed 白算一次。
+        // 未读账本仍由 setUnreadCount 统一记账。
+        sessionStore.setUnreadCount(msg.message.roomId, nextUnread, updateData)
         logger.debug('增加未读数:', msg.message.roomId, nextUnread)
+      } else {
+        sessionStore.updateSession(msg.message.roomId, updateData)
       }
-
-      sessionStore.updateSession(msg.message.roomId, updateData)
     } else {
       try {
         const room = await matrixRoomQueryService.getRoom(msg.message.roomId, false)

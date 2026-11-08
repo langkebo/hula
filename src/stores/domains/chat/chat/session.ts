@@ -127,13 +127,12 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
   }
 
   /**
-   * 设置会话未读数：界面与 sessionUnread 本地账本一起更新。本机产生的未读变化必须记账：
-   * 关闭已读回执时服务端 unread_count 不会因本机已读而减少，apply 以本地账本为准，
-   * 账本不更新会在列表重建 / 重连时丢增量或把已读算回来。
+   * 设置未读数：界面与 sessionUnread 本地账本一起更新（关闭回执时账本是唯一可信计数）。
+   * `extra` 把摘要/活跃时间并入同一次写入，一条消息只写一次会话、只触发一轮 ref 失效。
    */
-  const setUnreadCount = (roomId: string, count: number) => {
+  const setUnreadCount = (roomId: string, count: number, extra?: Partial<SessionItem>) => {
     if (!roomId) return
-    updateSession(roomId, { unreadCount: count })
+    updateSession(roomId, extra ? { ...extra, unreadCount: count } : { unreadCount: count })
     persistUnreadCount(roomId, count)
   }
 
@@ -173,13 +172,14 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
 
   const updateSession = (roomId: string, data: Partial<SessionItem>) => {
     const session = resolveSessionByRoomId(roomId)
-    if (session) {
-      Object.assign(session, data)
-      triggerRef(sessionList)
-      triggerRef(sessionMap)
-      return true
-    }
-    return false
+    if (!session) return false
+    // 值全未变时跳过失效：addSession 后紧跟的同值写入会空触发，让列表订阅者白算一次。
+    const changed = Object.entries(data).some(([key, value]) => Reflect.get(session, key) !== value)
+    if (!changed) return true
+    Object.assign(session, data)
+    triggerRef(sessionList)
+    triggerRef(sessionMap)
+    return true
   }
 
   /**

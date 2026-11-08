@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { createPersistedState } from 'pinia-plugin-persistedstate'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, nextTick } from 'vue'
+import { createApp, nextTick, watchEffect } from 'vue'
 import { RoomTypeEnum } from '@/enums'
 import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -477,5 +477,48 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
     await store.getSessionList()
 
     expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(4)
+  })
+})
+
+/**
+ * 收消息路径的会话写入收敛：未读数与摘要/活跃时间必须一次写进会话，避免同一条消息
+ * 对 sessionList / sessionMap 连续触发两轮失效；值完全未变的重复写入也不再发通知。
+ */
+describe('SessionStore 会话字段原子写入', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    globalStoreMock.currentSessionRoomId = ''
+  })
+
+  const countInvalidations = (store: ReturnType<typeof useSessionStore>) => {
+    const invalidations = vi.fn()
+    // 用 onTrigger 统计 ref 失效次数（watch 会因新旧值引用相同而跳过回调，数不出重复触发）
+    watchEffect(() => store.sessionList.length, { flush: 'sync', onTrigger: invalidations })
+    return invalidations
+  }
+
+  it('setUnreadCount 并入摘要与活跃时间，只触发一次失效', () => {
+    const store = useSessionStore()
+    store.addSession(makeSession({ unreadCount: 0, activeTime: 100, text: '' }))
+    const invalidations = countInvalidations(store)
+
+    store.setUnreadCount(ROOM_ID, 2, { text: 'hi', activeTime: 300 })
+
+    expect(invalidations).toHaveBeenCalledTimes(1)
+    const session = store.getSession(ROOM_ID)
+    expect(session?.unreadCount).toBe(2)
+    expect(session?.text).toBe('hi')
+    expect(session?.activeTime).toBe(300)
+  })
+
+  it('字段值未变化时 updateSession 跳过失效通知', () => {
+    const store = useSessionStore()
+    store.addSession(makeSession({ unreadCount: 4, activeTime: 100, text: 'same' }))
+    const invalidations = countInvalidations(store)
+
+    store.updateSession(ROOM_ID, { unreadCount: 4, activeTime: 100, text: 'same' })
+
+    expect(invalidations).not.toHaveBeenCalled()
   })
 })

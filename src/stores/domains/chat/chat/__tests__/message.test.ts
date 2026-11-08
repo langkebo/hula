@@ -881,14 +881,21 @@ describe('ChatMessageStore', () => {
       expect(sessionStoreMock.setUnreadCount).not.toHaveBeenCalled()
     })
 
-    it('后台会话收到消息：仍走界面 +1 记账', async () => {
+    it('后台会话收到消息：未读与摘要合并为一次会话写入', async () => {
       const store = useChatStore()
       sessionStoreMock.getSession.mockReturnValueOnce({ ...activeSession, roomId: 'room-2' } as never)
       globalStoreMock.currentSessionRoomId = 'room-1'
 
       await store.pushMsg(createMessage('11', 'room-2'), { isActiveChatView: false, activeRoomId: 'room-1' })
 
-      expect(sessionStoreMock.setUnreadCount).toHaveBeenCalledWith('room-2', 1)
+      // 单次原子写入：未读数与最新消息摘要/活跃时间一起提交，不再额外调用 updateSession
+      expect(sessionStoreMock.setUnreadCount).toHaveBeenCalledTimes(1)
+      expect(sessionStoreMock.setUnreadCount).toHaveBeenCalledWith(
+        'room-2',
+        1,
+        expect.objectContaining({ text: 'message-11', activeTime: expect.any(Number) })
+      )
+      expect(sessionStoreMock.updateSession).not.toHaveBeenCalled()
     })
 
     it('自己发的消息不增加未读', async () => {
