@@ -184,6 +184,18 @@ describe('RoomMembersPane', () => {
     expect(wrapper.text()).toContain('Bob')
   })
 
+  it('大群成员列表窗口化：首屏只渲染窗口大小，滚动到底后追加', async () => {
+    membersRef.value = Array.from({ length: 150 }, (_, i) => MEMBER({ userId: `@user${i}:server` }))
+    const wrapper = mount(RoomMembersPane, {
+      props: { roomId: '!room-1:server', canManage: false }
+    })
+
+    expect(wrapper.findAll('[data-test="member-item"]')).toHaveLength(100)
+
+    await wrapper.find('.room-members-pane__list').trigger('scroll')
+    expect(wrapper.findAll('[data-test="member-item"]')).toHaveLength(150)
+  })
+
   it('hides invite form when canManage=false', () => {
     const wrapper = mount(RoomMembersPane, {
       props: { roomId: '!room-1:server', canManage: false }

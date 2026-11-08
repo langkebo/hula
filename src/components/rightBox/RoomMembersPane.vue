@@ -26,10 +26,10 @@
     </div>
 
     <!-- 成员列表 -->
-    <div v-else class="room-members-pane__list">
-      <!-- 已加入成员 -->
+    <div v-else class="room-members-pane__list" @scroll="handleMemberScroll">
+      <!-- 已加入成员（窗口化渲染：大群首屏只挂载前 LIST_WINDOW_SIZE 行，滚到底再追加） -->
       <div
-        v-for="member in joinedMembers"
+        v-for="member in visibleJoinedMembers"
         :key="member.userId"
         class="room-members-pane__item"
         data-test="member-item"
@@ -117,6 +117,7 @@ import matrixClientService from '@/services/matrix/MatrixClientService'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import { useMemberListWindow } from './useMemberListWindow'
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -145,11 +146,10 @@ const inviteSubmitting = ref(false)
 // 成员列表：从 groupStore.userList 获取
 const allMembers = computed<MatrixRoomMember[]>(() => groupStore.userList)
 
-// 已加入成员（membership === 'join'）
-const joinedMembers = computed(() => allMembers.value.filter((m) => m.membership === 'join'))
-
-// 已封禁成员（membership === 'ban'）
-const bannedMembers = computed(() => allMembers.value.filter((m) => m.membership === 'ban'))
+const { joinedMembers, bannedMembers, visibleJoinedMembers, handleMemberScroll } = useMemberListWindow(
+  allMembers,
+  () => props.roomId
+)
 
 // 邀请成员
 const handleInvite = async () => {
