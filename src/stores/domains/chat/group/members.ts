@@ -190,38 +190,81 @@ export function createGroupMembers(ctx: GroupMembersContext) {
     return true
   }
 
-  function updateUserPresence(uid: string, updates: Pick<MatrixRoomMember, 'activeStatus' | 'lastOptTime'>): boolean {
-    let hasUpdated = false
+  /**
+   * presence 写入索引：key 为用户标识（完整 MXID / localpart）映射到其所在的 (roomId, index)。
+   * 结构版本变化（加载/增删/改名）时才重建，presence 更新只改字段、不改变顺序，索引保持有效。
+   * 缺少索引时每次 presence 事件都要扫描全部已加载房间的全部成员（O(全部成员)）。
+   */
+  let presenceIndexCache: Map<string, { roomId: string; index: number }[]> | null = null
+  let presenceIndexVersion = -1
 
+  function getPresenceIndex(): Map<string, { roomId: string; index: number }[]> {
+    const version = memberStructureVersion.value
+    if (presenceIndexCache && presenceIndexVersion === version) {
+      return presenceIndexCache
+    }
+
+    const index = new Map<string, { roomId: string; index: number }[]>()
     Object.keys(membersMap).forEach((roomId) => {
       const members = membersMap[roomId]
-      if (!members?.length) {
-        return
-      }
+      if (!members?.length) return
+      members.forEach((member, memberIndex) => {
+        const keys = new Set<string>()
+        if (member.userId) keys.add(member.userId)
+        if (member.uid) keys.add(member.uid)
+        const localpart = toLocalpart(member.userId || member.uid)
+        if (localpart) keys.add(localpart)
+        keys.forEach((key) => {
+          const entries = index.get(key)
+          if (entries) {
+            entries.push({ roomId, index: memberIndex })
+          } else {
+            index.set(key, [{ roomId, index: memberIndex }])
+          }
+        })
+      })
+    })
 
-      // 先定位命中下标，未命中则不复制数组。
-      // 此前无条件 members.map 后回写，会让每次 presence 事件都替换所有房间的数组，
-      // 连锁触发成员列表重渲染；allUserInfo 已按结构版本缓存，不再受影响。
-      let nextMembers: MatrixRoomMember[] | null = null
-      for (let i = 0; i < members.length; i += 1) {
-        const member = members[i]
-        if (member.userId !== uid && member.uid !== uid) {
-          continue
+    presenceIndexCache = index
+    presenceIndexVersion = version
+    return index
+  }
+
+  function updateUserPresence(uid: string, updates: Pick<MatrixRoomMember, 'activeStatus' | 'lastOptTime'>): boolean {
+    if (!uid) return false
+
+    const index = getPresenceIndex()
+    // 兼容事件侧传入完整 MXID 或 localpart 两种形态
+    const keys = new Set([uid, toLocalpart(uid)])
+    const roomHits = new Map<string, Set<number>>()
+    keys.forEach((key) => {
+      if (!key) return
+      index.get(key)?.forEach(({ roomId, index: memberIndex }) => {
+        const hits = roomHits.get(roomId)
+        if (hits) {
+          hits.add(memberIndex)
+        } else {
+          roomHits.set(roomId, new Set([memberIndex]))
         }
+      })
+    })
 
-        nextMembers ??= members.slice()
-        nextMembers[i] = {
-          ...member,
+    if (!roomHits.size) return false
+
+    // 每个房间只复制一次数组，避免每次 presence 事件替换全部房间数组引发连锁重渲染
+    roomHits.forEach((hits, roomId) => {
+      const members = membersMap[roomId]
+      if (!members) return
+
+      const nextMembers = members.slice()
+      hits.forEach((memberIndex) => {
+        nextMembers[memberIndex] = {
+          ...nextMembers[memberIndex],
           ...updates
         }
-      }
-
-      if (!nextMembers) {
-        return
-      }
-
+      })
       membersMap[roomId] = nextMembers
-      hasUpdated = true
+
       if (groupInfoMap[roomId]) {
         groupInfoMap[roomId] = {
           ...groupInfoMap[roomId]
@@ -229,7 +272,7 @@ export function createGroupMembers(ctx: GroupMembersContext) {
       }
     })
 
-    return hasUpdated
+    return true
   }
 
   function updateMemberCache(roomId: string, members: MatrixRoomMember[]): void {

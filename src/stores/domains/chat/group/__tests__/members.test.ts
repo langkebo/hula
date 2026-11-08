@@ -275,6 +275,36 @@ describe('createGroupMembers 派生结构缓存与成员加载收敛', () => {
     expect(matrixRoomQueryFacade.getMembers).toHaveBeenCalledTimes(2)
   })
 
+  it('presence 索引兼容 localpart 与完整 MXID，并命中该用户所在的所有房间', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.updateMemberCache('room-a', [member('@alice:matrix.test')])
+    members.updateMemberCache('room-b', [member('alice')])
+
+    // 先用完整 MXID 触发一次索引构建，再用 localpart 更新
+    members.updateUserPresence('@alice:matrix.test', { activeStatus: OnlineEnum.OFFLINE, lastOptTime: 1 })
+    const updated = members.updateUserPresence('alice', { activeStatus: OnlineEnum.ONLINE, lastOptTime: 2 })
+
+    expect(updated).toBe(true)
+    expect(members.membersMap['room-a'][0].activeStatus).toBe(OnlineEnum.ONLINE)
+    expect(members.membersMap['room-b'][0].activeStatus).toBe(OnlineEnum.ONLINE)
+  })
+
+  it('结构变化后 presence 索引失效重建，新成员可被更新', () => {
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.updateMemberCache('room-a', [member('@alice:matrix.test')])
+    // 建立索引
+    members.updateUserPresence('@alice:matrix.test', { activeStatus: OnlineEnum.ONLINE, lastOptTime: 1 })
+
+    members.addUserItem(member('@bob:matrix.test'), 'room-a')
+    const updated = members.updateUserPresence('@bob:matrix.test', {
+      activeStatus: OnlineEnum.ONLINE,
+      lastOptTime: 2
+    })
+
+    expect(updated).toBe(true)
+    expect(members.membersMap['room-a'][1].activeStatus).toBe(OnlineEnum.ONLINE)
+  })
+
   it('currentRoomOnlineCount 只统计当前会话房间的在线成员', () => {
     const members = createGroupMembers({ groupInfoMap: {} })
     members.updateMemberCache('room-1', [
