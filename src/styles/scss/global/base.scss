@@ -1,6 +1,8 @@
 // 全局基础样式：只允许在 main.ts 中引入一次。
 // variable.scss 会被 Vite additionalData 注入到每个 SCSS 编译单元，禁止在其中输出 CSS 规则。
 
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 body {
   font-family: var(--tjg-font-family), sans-serif;
   caret-color: var(--tjg-color-primary-500);
@@ -57,8 +59,7 @@ html[data-blur='1'] {
   .n-modal-mask,
   .n-drawer-mask {
     background-color: color-mix(in srgb, var(--tjg-surface-panel) 10%, transparent);
-    backdrop-filter: blur(var(--tjg-glass-blur-soft));
-    -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft));
+    @include backdrop-blur-pair;
   }
 }
 

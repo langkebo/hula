@@ -2,14 +2,16 @@
 // 因此只允许定义 mixin / 变量，禁止输出任何 CSS 规则（否则产物重复 N 份）。
 // 全局基础样式请写到 base.scss。
 
+@use '@/styles/scss/mixins/liquid-glass' as *;
+
 /**! 通用菜单项目样式 */
 @mixin menu-item-style($position: fixed) {
   position: $position;
   background: var(--tjg-menu-bg);
   color: var(--tjg-text-primary);
   border-radius: 6px;
-  -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft));
-  backdrop-filter: blur(var(--tjg-glass-blur-soft));
+  /* 玻璃模糊与低性能降级统一由 mixin 提供，避免裸声明绕过 -webkit- 前缀守卫 */
+  @include glass-blur;
   box-shadow: var(--tjg-shadow-floating-menu);
   z-index: 999;
   width: fit-content;
@@ -17,12 +19,6 @@
   line-height: 1.8;
   white-space: nowrap;
   overflow: hidden;
-
-  /* 低性能设备只关闭实时模糊，底色与阴影保持不变 */
-  html.low-perf & {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
 
 /**! 通用菜单项样式 */

@@ -61,6 +61,24 @@
   }
 }
 
+/// 成对输出 `-webkit-backdrop-filter` / `backdrop-filter`
+/// 仓库未接 autoprefixer，手写模糊必须自带 `-webkit-` 前缀（iOS Safari / 旧 Android WebView）。
+/// @param {String} $blur 模糊值，默认跟随设计 token
+@mixin backdrop-blur-pair($blur: var(--tjg-glass-blur-soft)) {
+  -webkit-backdrop-filter: blur(#{$blur});
+  backdrop-filter: blur(#{$blur});
+}
+
+/// 手写模糊 + 低性能降级：仅关闭模糊，不改写背景色
+/// 用于背景另有来源、无法使用 `liquid-glass` 的面板（菜单、遮罩、头像悬浮层等）
+/// @param {String} $blur 模糊值，默认跟随设计 token
+@mixin glass-blur($blur: var(--tjg-glass-blur-soft)) {
+  @include backdrop-blur-pair($blur);
+
+  /* 性能回退 */
+  @include backdrop-blur-fallback;
+}
+
 /// 面板级液态玻璃（阶段 2.2 — SettingsSidebar 等）
 /// @param {Number} $blur 模糊半径（默认 20px）
 /// @param {Number} $opacity 不透明度 0-1（默认 0.85）

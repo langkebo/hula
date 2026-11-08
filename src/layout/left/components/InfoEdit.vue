@@ -278,10 +278,8 @@ onMounted(async () => {
   .avatar-hover {
     opacity: 0;
     transition: opacity var(--tjg-motion-duration-xslow) ease-in-out;
-    backdrop-filter: blur(var(--tjg-glass-blur-soft));
-    -webkit-backdrop-filter: blur(var(--tjg-glass-blur-soft));
     /* 背景由头像自身提供，低性能设备只关闭模糊 */
-    @include backdrop-blur-fallback;
+    @include glass-blur;
     top: 0;
     left: 0;
 
