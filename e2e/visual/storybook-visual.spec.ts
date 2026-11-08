@@ -19,7 +19,16 @@ const STORIES = [
   { name: 'room-membership-tabs', id: 'room-roommembershiptabs--joined-tab' },
   { name: 'room-homeserver-label', id: 'room-roomhomeserverlabel--federated-room' },
   { name: 'workbench-space-list-item', id: 'components-workbench-spacelistitemcard--default' },
-  { name: 'workbench-space-list-pane', id: 'components-workbench-spacelistpane--default' }
+  { name: 'workbench-space-list-pane', id: 'components-workbench-spacelistpane--default' },
+  // 阶段 E2：TjGlass 4 个 variant × 明暗主题，守住玻璃材质的视觉回归
+  { name: 'tjglass-panel-light', id: 'atomic-tjglass--panel-light' },
+  { name: 'tjglass-panel-dark', id: 'atomic-tjglass--panel-dark' },
+  { name: 'tjglass-subtle-light', id: 'atomic-tjglass--subtle-light' },
+  { name: 'tjglass-subtle-dark', id: 'atomic-tjglass--subtle-dark' },
+  { name: 'tjglass-row-light', id: 'atomic-tjglass--row-light' },
+  { name: 'tjglass-row-dark', id: 'atomic-tjglass--row-dark' },
+  { name: 'tjglass-none-light', id: 'atomic-tjglass--none-light' },
+  { name: 'tjglass-none-dark', id: 'atomic-tjglass--none-dark' }
 ] as const
 
 test.describe('Storybook visual baseline', () => {
