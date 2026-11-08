@@ -1,4 +1,6 @@
+import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, shallowRef, triggerRef } from 'vue'
 import { OnlineEnum } from '@/enums'
 import type { PresenceInfo } from '@/services/matrix/user/MatrixPresenceService'
 import { createPresenceHandler } from '../wsPresenceHandler'
@@ -154,5 +156,52 @@ describe('wsPresenceHandler presence 单一管线', () => {
     handler.applyPresenceStatus('', OnlineEnum.ONLINE, 1000)
     expect(stores.contactStore.updateContactPresence).toHaveBeenCalledTimes(1)
     expect(stores.groupStore.updateUserPresence).toHaveBeenCalledTimes(1)
+  })
+
+  /**
+   * 回归守门：watch 只应关心「被跟踪用户集合」的成员变化。
+   *
+   * updateContactPresence 按原下标替换元素，仍会 triggerRef(contactsList)；
+   * 若 watch getter 还把整表 clone + sort + join 当作键，每次好友上/下线都会
+   * 做一遍 O(n log n) 的整表排序。这里用真实 shallowRef 驱动，锁定 presence
+   * 字段变化不再触发批量刷新，只有成员增删才触发。
+   */
+  it('仅 presence 字段变化不触发批量刷新，成员集合变化才触发', async () => {
+    subscribeToPresence.mockResolvedValue({ presences: [] })
+    getBatchPresence.mockResolvedValue([])
+
+    const contacts = shallowRef<Array<Record<string, unknown>>>([{ userId: ALICE }])
+    const stores = createStores()
+    const handler = createPresenceHandler({
+      ...stores,
+      // 模拟 Pinia 把 shallowRef 解包后的响应式读取
+      contactStore: {
+        get contactsList() {
+          return contacts.value
+        },
+        updateContactPresence: vi.fn()
+      }
+    } as never)
+
+    handler.startPresenceWatch()
+    await flushPromises()
+    await nextTick()
+    const initialSyncs = getBatchPresence.mock.calls.length
+    expect(initialSyncs).toBeGreaterThan(0)
+
+    // 好友 presence 事件：只替换单个元素，成员集合未变
+    contacts.value[0] = { userId: ALICE, activeStatus: OnlineEnum.ONLINE, lastOptTime: 1 }
+    triggerRef(contacts)
+    await nextTick()
+    await flushPromises()
+    expect(getBatchPresence.mock.calls.length).toBe(initialSyncs)
+
+    // 成员集合变化（新增好友）才需要重新订阅并批量刷新
+    contacts.value = [...contacts.value, { userId: BOB }]
+    await nextTick()
+    await flushPromises()
+    expect(getBatchPresence.mock.calls.length).toBe(initialSyncs + 1)
+
+    handler.cleanup()
   })
 })

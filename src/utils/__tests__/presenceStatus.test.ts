@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { OnlineEnum } from '@/enums'
 import {
   buildPresenceStorePatch,
+  buildTrackedPresenceKey,
   collectTrackedPresenceUserIds,
   mapPresenceToOnlineStatus,
   resolveDisplayActiveStatus,
@@ -124,6 +125,49 @@ describe('presenceStatus', () => {
         contacts: [{ userId: null }, { uid: null }, { userId: '@alice:example.com' }]
       })
       expect(result).toEqual(['@alice:example.com'])
+    })
+  })
+
+  /**
+   * 这个键在每次 presence 事件后都会重算（contactsList 失效即触发 watch getter），
+   * 因此它只做「成员集合是否变化」的判定：不打乱顺序、不整表克隆、不做去重排序。
+   * 下面的用例锁定它与 presence 字段变化解耦，避免又退回 O(n log n) 的整表排序。
+   */
+  describe('buildTrackedPresenceKey', () => {
+    it('按 contacts -> members 的顺序拼接，并包含当前用户', () => {
+      expect(
+        buildTrackedPresenceKey({
+          currentUserId: '@me:example.com',
+          contacts: [{ userId: '@alice:example.com' }],
+          members: [{ uid: '@bob:example.com' }]
+        })
+      ).toBe('@me:example.com\u0001@alice:example.com\u0001@bob:example.com')
+    })
+
+    it('忽略空 id', () => {
+      expect(
+        buildTrackedPresenceKey({
+          currentUserId: '   ',
+          contacts: [{ userId: null }, { userId: '' }, { userId: '@alice:example.com' }],
+          members: [{ uid: null }]
+        })
+      ).toBe('@alice:example.com')
+    })
+
+    it('仅 presence 字段变化时键保持不变', () => {
+      const before = buildTrackedPresenceKey({ contacts: [{ userId: '@alice:example.com' }] })
+      const after = buildTrackedPresenceKey({
+        contacts: [{ userId: '@alice:example.com', activeStatus: OnlineEnum.ONLINE, lastOptTime: 1 } as never]
+      })
+      expect(after).toBe(before)
+    })
+
+    it('成员增删时键发生变化', () => {
+      const before = buildTrackedPresenceKey({ contacts: [{ userId: '@alice:example.com' }] })
+      const added = buildTrackedPresenceKey({
+        contacts: [{ userId: '@alice:example.com' }, { userId: '@bob:example.com' }]
+      })
+      expect(added).not.toBe(before)
     })
   })
 })

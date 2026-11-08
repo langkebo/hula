@@ -319,13 +319,21 @@ export function createContactsList(ctx: ContactsListContext) {
     updates: Pick<MatrixContact, 'activeStatus' | 'lastOptTime'> &
       Partial<Pick<MatrixContact, 'presence' | 'statusMessage'>>
   ): boolean {
-    const index = contactsList.value.findIndex((c) => c.userId === userId || c.userId === userId)
+    const index = contactsList.value.findIndex((c) => c.userId === userId)
     if (index === -1) {
       return false
     }
 
+    const current = contactsList.value[index]
+    // 重复/心跳 presence 常携带与现值相同的字段：跳过写入与失效，
+    // 否则一次无效事件会让好友列表整表克隆 + 重排 + 重渲染。
+    const changed = Object.entries(updates).some(([key, value]) => Reflect.get(current, key) !== value)
+    if (!changed) {
+      return true
+    }
+
     contactsList.value[index] = {
-      ...contactsList.value[index],
+      ...current,
       ...updates
     }
     triggerRef(contactsList)

@@ -7,7 +7,7 @@ import type { useGroupStore } from '@/stores/domains/chat/group'
 import type { useUserStore } from '@/stores/domains/user/user'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
-import { buildPresenceStorePatch, collectTrackedPresenceUserIds } from '@/utils/presenceStatus'
+import { buildPresenceStorePatch, buildTrackedPresenceKey, collectTrackedPresenceUserIds } from '@/utils/presenceStatus'
 
 const logger = createLogger('WsPresenceHandler')
 
@@ -219,11 +219,11 @@ export function createPresenceHandler(deps: PresenceHandlerDeps) {
     })
     stopTrackedUsersWatch = watch(
       () =>
-        collectTrackedPresenceUserIds({
+        buildTrackedPresenceKey({
           currentUserId: userStore.userInfo?.uid ?? null,
           contacts: contactStore.contactsList,
           members: groupStore.allUserInfo
-        }).join('|'),
+        }),
       () => {
         void syncAvatarPresence()
       },
