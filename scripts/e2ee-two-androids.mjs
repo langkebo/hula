@@ -110,7 +110,13 @@ async function register(label) {
       body: { username, password: PASSWORD, auth: { type: 'm.login.dummy' } }
     })
     if (r.status === 200) {
-      return { username, password: PASSWORD, userId: r.body.user_id, token: r.body.access_token, deviceId: r.body.device_id }
+      return {
+        username,
+        password: PASSWORD,
+        userId: r.body.user_id,
+        token: r.body.access_token,
+        deviceId: r.body.device_id
+      }
     }
     if (r.status === 429) {
       await sleep(1200)
@@ -180,7 +186,9 @@ async function startAppWithCdp(device) {
   // WebView devtools socket 要等 WebView 真正创建后才出现；冷启动 + ANR 时可能 60s+
   for (let i = 0; i < 60; i += 1) {
     try {
-      const list = await (await fetch(`http://127.0.0.1:${device.cdp}/json/list`, { signal: AbortSignal.timeout(2000) })).json()
+      const list = await (
+        await fetch(`http://127.0.0.1:${device.cdp}/json/list`, { signal: AbortSignal.timeout(2000) })
+      ).json()
       if (Array.isArray(list) && list.some((t) => t.type === 'page')) return { ok: true, pid, waitedMs: i * 1000 }
     } catch {
       /* forward 还没通 */
@@ -194,7 +202,8 @@ async function startAppWithCdp(device) {
 async function openCdp(port) {
   const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
   const page =
-    list.find((t) => t.type === 'page' && String(t.url).includes('tauri.localhost')) ?? list.find((t) => t.type === 'page')
+    list.find((t) => t.type === 'page' && String(t.url).includes('tauri.localhost')) ??
+    list.find((t) => t.type === 'page')
   if (!page) throw new Error(`:${port} 没有 WebView target（forward 失效或 app 未起）`)
   const ws = new WebSocket(page.webSocketDebuggerUrl)
   await new Promise((res, rej) => {
@@ -234,12 +243,14 @@ async function openCdp(port) {
  */
 async function ensureLocalUnlock(cdp, pw) {
   const before = await cdp
-    .evaluate(`
+    .evaluate(
+      `
     (async () => {
       const m = await import('/src/services/secure/localUnlockKey.ts');
       return { configured: m.isLocalUnlockConfigured(), unlocked: m.isLocalUnlockUnlocked(), keyLen: m.getLocalUnlockStorageKey()?.length ?? 0 };
     })()
-  `)
+  `
+    )
     .catch(() => ({ error: 'import failed' }))
   if (before?.unlocked && Number(before.keyLen) === 32) return { ...before, action: 'already' }
   if (before?.configured) {
@@ -293,7 +304,8 @@ async function passUnlockDialog(cdp, pw, { waitMs = 45_000 } = {}) {
   `)
   for (let i = 0; i < 15; i += 1) {
     await sleep(1000)
-    if (!(await cdp.evaluate(`document.body.innerText.includes('输入本地解锁密码')`))) return { present: true, ok: true }
+    if (!(await cdp.evaluate(`document.body.innerText.includes('输入本地解锁密码')`)))
+      return { present: true, ok: true }
   }
   return { present: true, ok: false }
 }
@@ -301,7 +313,8 @@ async function passUnlockDialog(cdp, pw, { waitMs = 45_000 } = {}) {
 /** 当前 client 是否真的挂了 crypto（debug state 会跨账号残留，不能只看它） */
 async function cryptoBinding(cdp) {
   return cdp
-    .evaluate(`
+    .evaluate(
+      `
     (async () => {
       try {
         const m = await import('/src/services/matrix/index.ts');
@@ -309,7 +322,8 @@ async function cryptoBinding(cdp) {
         return { uid: c?.getUserId?.() ?? null, hasCrypto: Boolean(c?.getCrypto?.()) };
       } catch { return { uid: null, hasCrypto: false }; }
     })()
-  `)
+  `
+    )
     .catch(() => ({ uid: null, hasCrypto: false }))
 }
 
@@ -333,11 +347,33 @@ async function logoutAndReload(cdp) {
       return true;
     })()
   `)
-  await sleep(5000)
+  await sleep(3000)
+  // ⚠️ 必须清掉**两处**残留凭证：
+  // 1. Rust secure store —— `store.logout()` 只调 `matrixClientService.logout()`，
+  //    不会 `remove_tokens`（产品 UI 走 `SessionLogoutService` 才清）；残留时 reload 后
+  //    session restore 会把旧账号恢复回来（实测 uid 仍是旧账号、rooms=0、sync=null）。
+  // 2. localStorage —— 本脚本为绕过 D2 开了 `tjg:session:web-fallback=1`，同理会恢复旧会话。
+  await cdp
+    .evaluate(
+      `
+      (async () => {
+        try {
+          const inv = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke;
+          if (inv) await inv('remove_tokens');
+        } catch {}
+        try {
+          localStorage.removeItem('tjg.matrix.accessToken');
+          localStorage.removeItem('tjg.matrix.refreshToken');
+        } catch {}
+        return true;
+      })()
+    `
+    )
+    .catch(() => null)
+  await sleep(2000)
   await cdp.evaluate(`location.reload(), true`).catch(() => {})
   await sleep(9000)
 }
-
 
 /** 等登录表单就绪（splashscreen 可能 10s+） */
 async function waitLoginForm(cdp) {
@@ -426,12 +462,14 @@ async function waitCryptoReady(cdp, { userId, token, label, username, password }
 
   while (Date.now() - started < CRYPTO_TIMEOUT_MS) {
     const st = await cdp
-      .evaluate(`
+      .evaluate(
+        `
       (async () => {
         const m = await import('/src/services/matrix/index.ts');
         return m.matrixClientService.getRustCryptoDebugState?.() ?? null;
       })()
-    `)
+    `
+      )
       .catch((e) => ({ error: String(e).slice(0, 120) }))
     lastState = st
 
@@ -453,11 +491,18 @@ async function waitCryptoReady(cdp, { userId, token, label, username, password }
       if (keys.withKeys.length) return { ok: true, elapsedMs: elapsed, state: st, keys, reloaded, bind }
       if (elapsed - lastLog > 15_000) {
         lastLog = elapsed
-        console.log(`   · ${label} crypto 已本地就绪（client 已绑定），等服务端 device_keys ${(elapsed / 1000).toFixed(0)}s`)
+        console.log(
+          `   · ${label} crypto 已本地就绪（client 已绑定），等服务端 device_keys ${(elapsed / 1000).toFixed(0)}s`
+        )
       }
     }
     if (st?.error) {
-      return { ok: false, elapsedMs: Date.now() - started, state: st, reason: `init 报错：${String(st.error).slice(0, 120)}` }
+      return {
+        ok: false,
+        elapsedMs: Date.now() - started,
+        state: st,
+        reason: `init 报错：${String(st.error).slice(0, 120)}`
+      }
     }
 
     const elapsed = Date.now() - started
@@ -486,7 +531,12 @@ async function waitCryptoReady(cdp, { userId, token, label, username, password }
     }
     await sleep(3000)
   }
-  return { ok: false, elapsedMs: Date.now() - started, state: lastState, reason: `${CRYPTO_TIMEOUT_MS / 1000}s 超时未就绪` }
+  return {
+    ok: false,
+    elapsedMs: Date.now() - started,
+    state: lastState,
+    reason: `${CRYPTO_TIMEOUT_MS / 1000}s 超时未就绪`
+  }
 }
 
 async function gotoTargetRoom(cdp, roomId) {
@@ -522,9 +572,21 @@ async function realSend(cdp, text) {
   if (!btn?.found || btn.disabled) return { ok: false, reason: btn?.found ? 'disabled' : '找不到发送按钮' }
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: btn.x, y: btn.y, button: 'none', clickCount: 0 })
   await sleep(60)
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: btn.x, y: btn.y, button: 'left', clickCount: 1 })
+  await cdp.send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: btn.x,
+    y: btn.y,
+    button: 'left',
+    clickCount: 1
+  })
   await sleep(80)
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: btn.x, y: btn.y, button: 'left', clickCount: 1 })
+  await cdp.send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: btn.x,
+    y: btn.y,
+    button: 'left',
+    clickCount: 1
+  })
   await sleep(6000)
   const composer = await cdp.evaluate(`(document.querySelector('#message-input')?.innerText ?? '').trim()`)
   return { ok: true, composerCleared: !String(composer).includes(text) }
@@ -573,7 +635,12 @@ async function bringUp(device, account, { stage, restore = false } = {}) {
     record(stage, `${tag} 应用启动`, 'fail', boot.reason, boot)
     return { ok: false, reason: boot.reason }
   }
-  record(stage, `${tag} 应用启动 + CDP 就绪`, 'pass', `pid=${boot.pid}，${((Date.now() - t0) / 1000).toFixed(0)}s，reverse=${rev}`)
+  record(
+    stage,
+    `${tag} 应用启动 + CDP 就绪`,
+    'pass',
+    `pid=${boot.pid}，${((Date.now() - t0) / 1000).toFixed(0)}s，reverse=${rev}`
+  )
 
   let cdp
   try {
@@ -586,9 +653,11 @@ async function bringUp(device, account, { stage, restore = false } = {}) {
   // 首屏：解锁弹窗 或 登录表单
   for (let i = 0; i < 45; i += 1) {
     const st = await cdp
-      .evaluate(`
+      .evaluate(
+        `
         (() => ({ n: document.querySelectorAll('input').length, unlock: document.body.innerText.includes('输入本地解锁密码'), href: location.href }))()
-      `)
+      `
+      )
       .catch(() => null)
     if (st?.unlock || Number(st?.n) >= 3 || (st?.href ?? '').includes('/message')) break
     await sleep(1000)
@@ -605,9 +674,16 @@ async function bringUp(device, account, { stage, restore = false } = {}) {
 
   // 凭证回退开关（必须在登录/持久化之前写；见文件头 D2 说明）
   const flag = await cdp
-    .evaluate(`(() => { try { localStorage.setItem('tjg:session:web-fallback', '${WEB_FALLBACK ? '1' : '0'}'); return localStorage.getItem('tjg:session:web-fallback') } catch (e) { return 'error' } })()`)
+    .evaluate(
+      `(() => { try { localStorage.setItem('tjg:session:web-fallback', '${WEB_FALLBACK ? '1' : '0'}'); return localStorage.getItem('tjg:session:web-fallback') } catch (e) { return 'error' } })()`
+    )
     .catch(() => 'error')
-  record(stage, `${tag} 凭证回退开关`, WEB_FALLBACK ? 'pass' : 'info', `tjg:session:web-fallback=${flag}${WEB_FALLBACK ? '' : '（关：用于复现 D2 会话不持久）'}`)
+  record(
+    stage,
+    `${tag} 凭证回退开关`,
+    WEB_FALLBACK ? 'pass' : 'info',
+    `tjg:session:web-fallback=${flag}${WEB_FALLBACK ? '' : '（关：用于复现 D2 会话不持久）'}`
+  )
 
   // 会话：若已登录，先 logout + reload 变干净上下文，再登录目标账号
   //       （不能只清 localStorage：token 在 Rust 侧，reload 会照样恢复旧会话）
@@ -630,7 +706,29 @@ async function bringUp(device, account, { stage, restore = false } = {}) {
     )
     // 回退开关在 reload 之后重写一次（reload 不会丢，但确保顺序在登录前）
     await cdp
-      .evaluate(`(() => { try { localStorage.setItem('tjg:session:web-fallback', '${WEB_FALLBACK ? '1' : '0'}'); } catch {} return true })()`)
+      .evaluate(
+        `(() => { try { localStorage.setItem('tjg:session:web-fallback', '${WEB_FALLBACK ? '1' : '0'}'); } catch {} return true })()`
+      )
+      .catch(() => null)
+
+    // 登录前必须清掉浏览器侧残留 token：`web-fallback=1` 时 session restore 会优先
+    // 用 localStorage 里的旧账号恢复会话，把「刚填的新账号」覆盖掉（实测 uid 仍是旧账号）。
+    await cdp
+      .evaluate(
+        `
+        (async () => {
+          try {
+            const inv = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke;
+            if (inv) await inv('remove_tokens');
+          } catch {}
+          try {
+            localStorage.removeItem('tjg.matrix.accessToken');
+            localStorage.removeItem('tjg.matrix.refreshToken');
+          } catch {}
+          return true;
+        })()
+      `
+      )
       .catch(() => null)
 
     const lg = await login(cdp, account.username, account.password)
@@ -649,7 +747,13 @@ async function bringUp(device, account, { stage, restore = false } = {}) {
   if (bind.uid !== account.userId) return { ok: false, cdp, reason: `client uid=${bind.uid}，期望 ${account.userId}` }
   const action = before.uid ? (restore ? 'restored' : 'logout+reload+login') : 'login'
 
-  const crypto = await waitCryptoReady(cdp, { userId: account.userId, token: account.token, label: tag, username: account.username, password: account.password })
+  const crypto = await waitCryptoReady(cdp, {
+    userId: account.userId,
+    token: account.token,
+    label: tag,
+    username: account.username,
+    password: account.password
+  })
   record(
     stage,
     `${tag} crypto 就绪（device_keys 上报）`,
@@ -659,7 +763,14 @@ async function bringUp(device, account, { stage, restore = false } = {}) {
       : `${(crypto.elapsedMs / 1000).toFixed(0)}s：${crypto.reason ?? '未就绪'}｜state=${JSON.stringify(crypto.state)}`,
     crypto
   )
-  return { ok: crypto.ok, cdp, action, crypto, reason: crypto.ok ? null : (crypto.reason ?? 'crypto 未就绪'), startedMs: Date.now() - t0 }
+  return {
+    ok: crypto.ok,
+    cdp,
+    action,
+    crypto,
+    reason: crypto.ok ? null : (crypto.reason ?? 'crypto 未就绪'),
+    startedMs: Date.now() - t0
+  }
 }
 
 async function main() {
@@ -681,9 +792,7 @@ async function main() {
         name: `two-android-${Date.now().toString(36)}`,
         preset: 'private_chat',
         invite: [b.userId],
-        initial_state: [
-          { type: 'm.room.encryption', state_key: '', content: { algorithm: 'm.megolm.v1.aes-sha2' } }
-        ]
+        initial_state: [{ type: 'm.room.encryption', state_key: '', content: { algorithm: 'm.megolm.v1.aes-sha2' } }]
       }
     })
     if (created.status !== 200) throw new Error(`createRoom ${created.status}`)
@@ -696,7 +805,12 @@ async function main() {
     phase('S1 仅 A 在线（B 强制停止）')
     if (SERIAL) {
       const stopB = forceStopApp(DEVICES.b)
-      record('S1', 'B 已强制停止（让出 CPU/内存给 A 的 crypto 初始化）', stopB.ok ? 'pass' : 'fail', `pid=${stopB.pid ?? 'null'}`)
+      record(
+        'S1',
+        'B 已强制停止（让出 CPU/内存给 A 的 crypto 初始化）',
+        stopB.ok ? 'pass' : 'fail',
+        `pid=${stopB.pid ?? 'null'}`
+      )
     }
     const upA1 = await bringUp(DEVICES.a, a, { stage: 'S1' })
     cdpA = upA1.cdp ?? null
@@ -706,12 +820,24 @@ async function main() {
     record('S1', 'A 进入加密房', navA.ok ? 'pass' : 'fail', navA.ok ? `${navA.waitedMs}ms` : '找不到输入框')
     const textA1 = `A1-${Date.now()}`
     const sendA1 = await realSend(cdpA, textA1)
-    record('S1', 'A 真实点击发送（msgA1）', sendA1.ok ? 'pass' : 'fail', sendA1.ok ? `输入框已清空=${sendA1.composerCleared}` : sendA1.reason)
+    record(
+      'S1',
+      'A 真实点击发送（msgA1）',
+      sendA1.ok ? 'pass' : 'fail',
+      sendA1.ok ? `输入框已清空=${sendA1.composerCleared}` : sendA1.reason
+    )
     await sleep(3000)
-    const msgs1 = await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=30`, { token: a.token })
+    const msgs1 = await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=30`, {
+      token: a.token
+    })
     const enc1 = (msgs1.body?.chunk ?? []).filter((e) => e.type === 'm.room.encrypted')
     const plain1 = (msgs1.body?.chunk ?? []).filter((e) => e.type === 'm.room.message')
-    record('S1', '服务端形态（msgA1）', enc1.length ? 'pass' : 'fail', `encrypted=${enc1.length} / plaintext=${plain1.length}`)
+    record(
+      'S1',
+      '服务端形态（msgA1）',
+      enc1.length ? 'pass' : 'fail',
+      `encrypted=${enc1.length} / plaintext=${plain1.length}`
+    )
     ctx.textA1 = textA1
     cdpA.close()
     cdpA = null
@@ -739,10 +865,17 @@ async function main() {
     )
     const textB1 = `B1-${Date.now()}`
     const sendB1 = await realSend(cdpB, textB1)
-    record('S2', 'B 真实点击发送（msgB1，A 离线）', sendB1.ok ? 'pass' : 'fail', sendB1.ok ? `输入框已清空=${sendB1.composerCleared}` : sendB1.reason)
+    record(
+      'S2',
+      'B 真实点击发送（msgB1，A 离线）',
+      sendB1.ok ? 'pass' : 'fail',
+      sendB1.ok ? `输入框已清空=${sendB1.composerCleared}` : sendB1.reason
+    )
     ctx.textB1 = textB1
     await sleep(4000)
-    const msgs2 = await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=30`, { token: a.token })
+    const msgs2 = await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=30`, {
+      token: a.token
+    })
     const enc2 = (msgs2.body?.chunk ?? []).filter((e) => e.type === 'm.room.encrypted')
     record('S2', '服务端已累计 2 条 m.room.encrypted', enc2.length >= 2 ? 'pass' : 'fail', `${enc2.length} 条`)
 
@@ -759,13 +892,20 @@ async function main() {
       'S3',
       'A 解密显示 B 的消息（B → A）',
       tlA.found ? 'pass' : tlA.utd > 0 ? 'fail' : 'fail',
-      tlA.found ? `timeline 含 ${textB1}（${(tlA.waitedMs / 1000).toFixed(1)}s）` : `timeline=${tlA.count} 条，UTD=${tlA.utd}`,
+      tlA.found
+        ? `timeline 含 ${textB1}（${(tlA.waitedMs / 1000).toFixed(1)}s）`
+        : `timeline=${tlA.count} 条，UTD=${tlA.utd}`,
       { utd: tlA.utd }
     )
 
     const textA2 = `A2-${Date.now()}`
     const sendA2 = await realSend(cdpA, textA2)
-    record('S3', 'A 真实点击发送（msgA2，此时 B 的 device_keys 已上传）', sendA2.ok ? 'pass' : 'fail', sendA2.ok ? `输入框已清空=${sendA2.composerCleared}` : sendA2.reason)
+    record(
+      'S3',
+      'A 真实点击发送（msgA2，此时 B 的 device_keys 已上传）',
+      sendA2.ok ? 'pass' : 'fail',
+      sendA2.ok ? `输入框已清空=${sendA2.composerCleared}` : sendA2.reason
+    )
     ctx.textA2 = textA2
     await sleep(4000)
 
@@ -774,14 +914,23 @@ async function main() {
       'S3',
       'B 解密显示 A 的新消息（A → B）',
       tlB1.found ? 'pass' : 'fail',
-      tlB1.found ? `timeline 含 ${textA2}（${(tlB1.waitedMs / 1000).toFixed(1)}s）` : `timeline=${tlB1.count} 条，UTD=${tlB1.utd}`,
+      tlB1.found
+        ? `timeline 含 ${textA2}（${(tlB1.waitedMs / 1000).toFixed(1)}s）`
+        : `timeline=${tlB1.count} 条，UTD=${tlB1.utd}`,
       { utd: tlB1.utd }
     )
 
-    const msgs3 = await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=50`, { token: a.token })
+    const msgs3 = await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages?dir=b&limit=50`, {
+      token: a.token
+    })
     const enc3 = (msgs3.body?.chunk ?? []).filter((e) => e.type === 'm.room.encrypted')
     const plain3 = (msgs3.body?.chunk ?? []).filter((e) => e.type === 'm.room.message')
-    record('S3', '服务端最终形态', enc3.length >= 3 && plain3.length === 0 ? 'pass' : 'fail', `encrypted=${enc3.length} / plaintext=${plain3.length}`)
+    record(
+      'S3',
+      '服务端最终形态',
+      enc3.length >= 3 && plain3.length === 0 ? 'pass' : 'fail',
+      `encrypted=${enc3.length} / plaintext=${plain3.length}`
+    )
   } catch (error) {
     record('XX', '流程中断', 'fail', error instanceof Error ? error.message : String(error))
   } finally {
