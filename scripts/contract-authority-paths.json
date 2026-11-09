@@ -1,17 +1,17 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-11-06T02:40:09.904Z",
+  "generated_at": "2026-11-09T22:32:35.569Z",
   "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.all.json",
   "upstream": {
     "schema_version": "4",
     "generated_at": "2026-05-02T00:00:00Z",
-    "synapse_rust_commit": "0ed483fca0fafd33b0477a8ee8d879f531dc061b",
+    "synapse_rust_commit": "1a62ac6eb53a95c4c3a6979ab722e65d9648ddf4",
     "state_profile": "all"
   },
-  "synapse_rust_commit": "0ed483fca0fafd33b0477a8ee8d879f531dc061b",
+  "synapse_rust_commit": "1a62ac6eb53a95c4c3a6979ab722e65d9648ddf4",
   "state_profile": "all",
-  "entry_count": 982,
-  "distinct_path_count": 781,
+  "entry_count": 983,
+  "distinct_path_count": 782,
   "note": "synapse-rust 导出 ledger 的 distinct path 权威快照（C-1）。entry_count 为 (method, path) 条目数；distinct_path_count 才是判据面口径。由 scripts/check-bare-matrix-paths.mjs --sync-authority 生成。",
   "paths": [
     "/",
@@ -189,6 +189,7 @@
     "/_matrix/client/v3/room_keys/recovery/{version}/progress",
     "/_matrix/client/v3/room_keys/request",
     "/_matrix/client/v3/room_keys/request/{request_id}",
+    "/_matrix/client/v3/room_keys/request/{request_id}/fulfill",
     "/_matrix/client/v3/room_keys/verify/{version}",
     "/_matrix/client/v3/room_keys/version",
     "/_matrix/client/v3/room_keys/version/{version}",
