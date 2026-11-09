@@ -317,7 +317,7 @@ class MatrixClientService {
     return this.roomOps.getRoom(roomId)
   }
 
-  /** 创建房间（preset、加密、`room_types` 等选项透传给 SDK）。 */
+  /** 创建房间（preset、加密、`creation_content` 等选项透传给 SDK）。 */
   async createRoom(options: ICreateRoomOpts): Promise<Room> {
     return this.roomOps.createRoom(options)
   }

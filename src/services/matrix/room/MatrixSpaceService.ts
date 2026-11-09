@@ -46,13 +46,8 @@ export interface SpaceInfo {
 export type { SpaceMember } from '../sdk-compat'
 
 /**
- * Matrix Space 服务 — 创建/查询/成员管理/子房间管理/层级关系。
- *
- * 实现已拆分为两个子模块：
- * - spaceHelpers：纯函数（类型转换、路径规范化、子房间 ID 提取）
- * - spaceQueries：查询操作工厂（父空间、搜索、用户空间、公开空间）
- *
- * 本文件保留：Space CRUD、成员管理、子房间管理、层级关系。
+ * Matrix Space 服务：Space CRUD / 成员 / 子房间 / 层级。
+ * 纯函数在 `spaceHelpers`，查询工厂在 `spaceQueries`。
  */
 class SpaceService extends BaseMatrixService {
   private getSpaceManager(): SdkSpaceManager {
@@ -91,27 +86,38 @@ class SpaceService extends BaseMatrixService {
         name: options.name,
         ...(options.topic !== undefined ? { topic: options.topic } : {}),
         ...(options.visibility !== undefined ? { visibility: options.visibility } : {}),
-        room_types: ['m.space'],
+        // ⚠️ 必须用 `creation_content.type`（MSC1772）；`room_types` 会被 SDK 原样发出 → 400 M_BAD_JSON。
+        creation_content: { type: 'm.space' },
         ...(options.ignoreDuplicateName !== undefined ? { ignore_duplicate_name: options.ignoreDuplicateName } : {}),
         initial_state: [
           ...(options.avatarUrl ? [{ type: 'm.room.avatar', state_key: '', content: { url: options.avatarUrl } }] : [])
         ]
       })
       logger.info(`[Space] Space 已创建: ${room_id}`)
+      // ⚠️ 建 m.space 房时后端**已自动登记**进空间注册表；再无条件 createSpace 会插第二条
+      // （同 room_id、不同 space_id）⇒ 列表出现重复卡片。故先查后登记。
+      let spaceId = room_id
       try {
-        await this.getSpaceManager().lifecycle.createSpace({
-          room_id,
-          name: options.name,
-          ...(options.topic !== undefined ? { topic: options.topic } : {}),
-          ...(options.avatarUrl !== undefined ? { avatar_url: options.avatarUrl } : {}),
-          visibility: options.visibility === 'public' ? 'public' : 'private'
-        })
-        logger.info(`[Space] Space 已注册到后端: ${room_id}`)
+        const manager = this.getSpaceManager()
+        const existing = (await manager.query.getUserSpaces(true)).find((s) => s.room_id === room_id)
+        if (existing?.space_id) {
+          spaceId = existing.space_id
+        } else {
+          const created = await manager.lifecycle.createSpace({
+            room_id,
+            name: options.name,
+            ...(options.topic !== undefined ? { topic: options.topic } : {}),
+            ...(options.avatarUrl !== undefined ? { avatar_url: options.avatarUrl } : {}),
+            visibility: options.visibility === 'public' ? 'public' : 'private'
+          })
+          spaceId = created?.space_id || room_id
+          logger.info(`[Space] Space 已注册到后端: ${spaceId}`)
+        }
       } catch (mgrErr) {
         logger.info(`[Space] SpaceManager 注册失败（非致命）: ${mgrErr}`)
       }
       return {
-        spaceId: room_id,
+        spaceId,
         name: options.name,
         topic: options.topic,
         avatarUrl: options.avatarUrl,
@@ -407,32 +413,31 @@ class SpaceService extends BaseMatrixService {
 
   // ── Space rooms ──
 
+  /**
+   * 空间下的房间列表。
+   *
+   * ⚠️ 不要用 `child.getSpaceRooms()`：后端 `/spaces/{id}/rooms` 只回 `{rooms:["!id"]}`，
+   * SDK 却按 space 对象归一化 ⇒ 每项变成 `{roomId:'', name:''}`（UI 渲染空白行）。
+   * 改走 `children`（有 room_id）+ 本地房间名，缺失时兜底 roomId。
+   */
   async getSpaceRooms(spaceId: string): Promise<Array<{ roomId: string; name: string; avatarUrl?: string }>> {
+    const client = this.getClient()
+    const toRow = (roomId: string) => {
+      const room = client.getRoom(roomId)
+      const avatarUrl = room?.getMxcAvatarUrl?.() || undefined
+      return { roomId, name: room?.name || roomId, ...(avatarUrl ? { avatarUrl } : {}) }
+    }
     try {
-      const spaces = await this.getSpaceManager().child.getSpaceRooms(spaceId)
-      return spaces.map((s) => ({
-        roomId: s.room_id,
-        name: s.name || '',
-        ...(s.avatar_url ? { avatarUrl: s.avatar_url } : {})
-      }))
+      const children = await this.getSpaceManager().child.getSpaceChildren(spaceId)
+      return children
+        .map((c) => c.room_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+        .map(toRow)
     } catch (err) {
       logger.error(`[Space] SpaceManager 获取 Space 房间列表失败，回退: ${err}`)
       try {
-        const room = this.getClient().getRoom(spaceId)
-        const childIds = room ? getSpaceChildIds(room) : []
-        const rooms: Array<{ roomId: string; name: string; avatarUrl?: string }> = []
-        for (const childId of childIds) {
-          const childRoom = this.getClient().getRoom(childId)
-          if (childRoom) {
-            const avatarUrl = childRoom.getMxcAvatarUrl() || undefined
-            rooms.push({
-              roomId: childId,
-              name: childRoom.name || '',
-              ...(avatarUrl !== undefined ? { avatarUrl } : {})
-            })
-          }
-        }
-        return rooms
+        const room = client.getRoom(spaceId)
+        return room ? getSpaceChildIds(room).map(toRow) : []
       } catch (fallbackErr) {
         logger.error(`[Space] 回退获取 Space 房间列表也失败: ${fallbackErr}`)
         return []

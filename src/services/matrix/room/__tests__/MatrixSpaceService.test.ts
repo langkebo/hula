@@ -108,9 +108,11 @@ describe('MatrixSpaceService', () => {
     })
     expect(mockCreateRoom).toHaveBeenCalled()
     // 契约：不得把 m.room.create 放进 initial_state（服务端会拒绝并返回 400）。
-    // 创建 Space 必须走 room_types: ['m.space']。
+    // 创建 Space 必须走 creation_content.type（MSC1772）；
+    // `room_types` 会被 SDK 原样发给 synapse-rust，严格 schema 直接 400 M_BAD_JSON。
     const createRoomArg = mockCreateRoom.mock.calls[0][0]
-    expect(createRoomArg.room_types).toEqual(['m.space'])
+    expect(createRoomArg.creation_content).toEqual({ type: 'm.space' })
+    expect(createRoomArg.room_types).toBeUndefined()
     expect(createRoomArg.initial_state).not.toContainEqual(expect.objectContaining({ type: 'm.room.create' }))
     // 契约：不得把 m.room.member 放进 initial_state（synapse-rust 同样返回 400）。
     // 创建者由服务端自动设为 joined 成员，无需显式声明。

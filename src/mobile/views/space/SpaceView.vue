@@ -113,6 +113,8 @@
             </div>
           </div>
 
+          <SpaceChildrenList :space-id="selectedSpace.spaceId" />
+
           <van-divider />
 
           <div class="detail-actions">
@@ -132,7 +134,6 @@
         </div>
       </van-action-sheet>
 
-      <!-- 邀请成员 -->
       <van-action-sheet v-model:show="showInviteSheet" :title="t('space.invite_title')">
         <div class="create-form">
           <van-form @submit="handleInvite">
@@ -152,7 +153,6 @@
         </div>
       </van-action-sheet>
 
-      <!-- 添加房间 -->
       <van-action-sheet v-model:show="showAddRoomSheet" :title="t('space.add_room_title')">
         <div class="create-form">
           <van-form @submit="handleAddRoom">
@@ -177,7 +177,6 @@
         </div>
       </van-action-sheet>
 
-      <!-- 空间设置 -->
       <van-action-sheet v-model:show="showSettingsSheet" :title="t('space.settings_title')">
         <div class="create-form">
           <van-form @submit="handleSaveSettings">
@@ -214,6 +213,7 @@ import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.v
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
 import { Visibility } from '@/services/matrix/sdk'
+import SpaceChildrenList from './components/SpaceChildrenList.vue'
 
 const { t } = useI18n()
 
