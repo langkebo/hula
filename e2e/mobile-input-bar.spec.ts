@@ -146,7 +146,9 @@ test.describe('移动端输入栏与附件选择器', () => {
     // 1) 移动输入栏确实渲染了（这条是 PlatformDetector 覆盖分支的回归护栏）
     const plus = page.locator('svg:has(use[href="#add-one"])').first()
     await expect(plus, '移动输入栏未渲染：`+` 更多按钮不存在（平台覆盖未生效？）').toBeVisible({ timeout: 30_000 })
-    await expect(page.locator('svg:has(use[href="#voice"])').first()).toBeVisible()
+    // ⚠️ 必须限定在移动输入栏（#message-form）内：页面上还有语音录制面板等
+    // 其它 `#voice` 图标（`v-show=false` 时仍留在 DOM），`.first()` 会命中那个隐藏实例。
+    await expect(page.locator('#message-form svg:has(use[href="#voice"])').first()).toBeVisible()
 
     // 2) 打开 More 面板 → 两个 van-uploader（发送文件 / 发送图片）
     //    注：面板里还有位置/链接预览/通话等共 6 个 `.more-item`，只锁与附件相关的两个 uploader

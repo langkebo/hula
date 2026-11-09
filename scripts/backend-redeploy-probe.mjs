@@ -197,10 +197,49 @@ async function main() {
     : null
   rec(
     'A5',
-    'D5：兑现端点是否存在（POST …/fulfill）',
-    fulfillTry && fulfillTry.status < 400 ? 'pass' : 'fail',
-    `status=${fulfillTry?.status ?? 'n/a'}（404/405 ⇒ 仍无兑现通道）`,
+    'D5 负向：他人不可兑现（应为 403/404）',
+    fulfillTry && fulfillTry.status >= 400 ? 'pass' : 'fail',
+    `status=${fulfillTry?.status ?? 'n/a'}（200 ⇒ 越权兑现）`,
     fulfillTry?.body
+  )
+
+  // 正向：本人**另一台设备**兑现（D5 的核心能力；旧镜像此端点根本不存在 → 404）
+  const fulfillDeviceId = `RDF${Date.now().toString(36).slice(-5).toUpperCase()}`
+  const login2 = await rest('POST', '/_matrix/client/v3/login', {
+    body: {
+      type: 'm.login.password',
+      identifier: { type: 'm.id.user', user: a.username },
+      password: PW,
+      device_id: fulfillDeviceId,
+      initial_device_display_name: 'redeploy-probe-fulfill'
+    }
+  })
+  const token2 = login2.body?.access_token
+  const fulfill2 =
+    requestId && token2
+      ? await rest('POST', `/_matrix/client/v3/room_keys/request/${encodeURIComponent(requestId)}/fulfill`, {
+          token: token2,
+          body: { session_key: 'probeSessionKey', sender_key: 'probeSenderKey', first_known_index: 0 }
+        })
+      : null
+  rec(
+    'A5',
+    'D5 正向：本人另一设备兑现',
+    fulfill2 && fulfill2.status < 400 ? 'pass' : 'fail',
+    `login2=${login2.status}，fulfill=${fulfill2?.status ?? 'n/a'}`,
+    fulfill2?.body
+  )
+  const fulfilledRow = requestId
+    ? psql(
+        `select is_fulfilled, coalesce(fulfilled_by_device,'-') from e2ee_key_requests where request_id = '${requestId}'`
+      )
+    : ''
+  rec(
+    'A5',
+    'D5：DB 落库（is_fulfilled | fulfilled_by_device）',
+    /^t\|/m.test(fulfilledRow) ? 'pass' : 'fail',
+    `row=${fulfilledRow}`,
+    { fulfilledRow }
   )
 
   // ── A6 D16：通知（含提及）
@@ -219,6 +258,28 @@ async function main() {
   const notif = await rest('GET', '/_matrix/client/v3/notifications', { token: b.token })
   const count = notif.body?.notifications?.length ?? -1
   rec('A6', 'D16 复核：/notifications（含提及）', count > 0 ? 'pass' : 'fail', `count=${count}`, notif.body)
+
+  // ⚠️ ack 的路径参数是 **notification_id**（不是 event_id）；用 event_id 会 400 M_INVALID_PARAM
+  const notifId = notif.body?.notifications?.[0]?.notification_id ?? null
+  if (notifId) {
+    const ack = await rest('POST', `/_matrix/client/v3/notifications/${encodeURIComponent(notifId)}/ack`, {
+      token: b.token,
+      body: {}
+    })
+    const after = await rest('GET', '/_matrix/client/v3/notifications', { token: b.token })
+    const afterCount = after.body?.notifications?.length ?? -1
+    const readFlag = after.body?.notifications?.find((n) => n.notification_id === notifId)?.read
+    rec(
+      'A6',
+      'D16 ack 生效（该项 read=true）',
+      ack.status < 400 && readFlag === true ? 'pass' : 'fail',
+      `ack=${ack.status}（is_read=${ack.body?.is_read}），列表仍返回 ${afterCount} 条、read=${readFlag}` +
+        `（**ack 不会把条目从列表移除**，前端要按 read 过滤或用计数接口）`,
+      { ack: ack.body, after: after.body }
+    )
+  } else {
+    rec('A6', 'D16 ack 后计数归零', 'info', '通知体里取不到 event_id，跳过 ack')
+  }
 
   // ── A7 D17：burn 是否仍按 per-user
   const burnA = await rest('PUT', `/_matrix/vendor/v1/rooms/${encodeURIComponent(roomId)}/burn`, {
@@ -245,6 +306,32 @@ async function main() {
     markB.status === 400 ? 'pass' : 'fail',
     `A enable=${burnA.status}，B mark=${markB.status}（400 ⇒ 仍 per-user）`,
     markB.body
+  )
+
+  // ── A9：device_id 命名空间（Matrix 规范：device_id 是**按用户**唯一，不同用户可同名）
+  const sharedDevice = `SHARED${Date.now().toString(36).slice(-4).toUpperCase()}`
+  const ra = await rest('POST', '/_matrix/client/v3/login', {
+    body: {
+      type: 'm.login.password',
+      identifier: { type: 'm.id.user', user: a.username },
+      password: PW,
+      device_id: sharedDevice
+    }
+  })
+  const rb = await rest('POST', '/_matrix/client/v3/login', {
+    body: {
+      type: 'm.login.password',
+      identifier: { type: 'm.id.user', user: b.username },
+      password: PW,
+      device_id: sharedDevice
+    }
+  })
+  rec(
+    'A9',
+    '跨用户同 device_id 登录（规范应允许）',
+    ra.status === 200 && rb.status === 200 ? 'pass' : 'fail',
+    `A=${ra.status}，B=${rb.status}${rb.body?.error ? `（${rb.body.error}）` : ''}`,
+    rb.body
   )
 
   // ── 汇总
