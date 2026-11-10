@@ -68,7 +68,7 @@ const guardCurrentRoom = async () => {
     await assertAccess(typeof roomId === 'string' ? roomId : undefined)
   } catch (err) {
     // assertAccess 自身已做重定向与提示，这里只记录，避免未捕获的 rejection 终止遮罩逻辑
-    logger.error('私密房门禁校验异常:', err)
+    logger.error('Secret room gate check failed:', err)
   } finally {
     if (runId === guardRunId) {
       gatePending.value = false
