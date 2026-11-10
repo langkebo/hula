@@ -78,7 +78,8 @@ describe('useMobilePrivateRoomGate', () => {
     const gate = useMobilePrivateRoomGate()
 
     await expect(gate.assertAccess('@peer:server')).resolves.toBe(false)
-    expect(mocks.openUnlock).toHaveBeenCalledWith('/mobile/message')
+    // 解锁后回跳私密列表（普通列表已过滤掉私密房，回跳 /mobile/message 等于「解锁也进不去」）
+    expect(mocks.openUnlock).toHaveBeenCalledWith('/mobile/secretChat')
     expect(mocks.replace).toHaveBeenCalledWith('/mobile/message')
   })
 

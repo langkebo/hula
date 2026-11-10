@@ -24,7 +24,7 @@ interface Harness {
   warn: ReturnType<typeof vi.fn>
 }
 
-const createHarness = (privateRoomId: string = PRIVATE_ROOM): Harness => {
+const createHarness = (privateRoomId: string = PRIVATE_ROOM, fallbackPath = '/message'): Harness => {
   const isConfigured = vi.fn(async () => true)
   const isUnlocked = vi.fn(async () => true)
   const ensureRegistryReady = vi.fn(async () => {})
@@ -33,7 +33,7 @@ const createHarness = (privateRoomId: string = PRIVATE_ROOM): Harness => {
   const warn = vi.fn()
   const guard = createSecretChatGuard({
     logger: { warn },
-    fallbackPath: '/message',
+    fallbackPath,
     isConfigured,
     isUnlocked,
     isPrivateRoom: async (roomId: string) => roomId === privateRoomId,
@@ -85,6 +85,23 @@ describe('secretChatGuard — /secretChat 列表页', () => {
 
   it('已配置已解锁放行', async () => {
     const result = await h.guard(createRoute('/secretChat', 'secretChat'))
+    expect(result).toBe(true)
+    expect(h.openUnlock).not.toHaveBeenCalled()
+  })
+})
+
+describe('secretChatGuard — 移动端 /mobile/secretChat 列表页', () => {
+  it('未解锁时弹解锁框并记录移动端完整路径，挡回移动端消息列表', async () => {
+    const h = createHarness(PRIVATE_ROOM, '/mobile/message')
+    h.isUnlocked.mockResolvedValue(false)
+    const result = await h.guard(createRoute('/mobile/secretChat', 'mobileSecretChat'))
+    expect(result).toBe('/mobile/message')
+    expect(h.openUnlock).toHaveBeenCalledWith('/mobile/secretChat')
+  })
+
+  it('已配置已解锁放行', async () => {
+    const h = createHarness(PRIVATE_ROOM, '/mobile/message')
+    const result = await h.guard(createRoute('/mobile/secretChat', 'mobileSecretChat'))
     expect(result).toBe(true)
     expect(h.openUnlock).not.toHaveBeenCalled()
   })

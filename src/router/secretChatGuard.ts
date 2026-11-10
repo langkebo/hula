@@ -46,7 +46,11 @@ export const extractRoomId = (to: RouteLocationNormalized): string | null => {
   return typeof value === 'string' && value.length > 0 ? value : null
 }
 
-const isSecretChatListRoute = (path: string): boolean => path === '/secretChat' || path.startsWith('/secretChat/')
+/** 私密会话列表页：桌面 `/secretChat`、移动端 `/mobile/secretChat`。 */
+const SECRET_CHAT_LIST_PATHS = ['/secretChat', '/mobile/secretChat']
+
+const isSecretChatListRoute = (path: string): boolean =>
+  SECRET_CHAT_LIST_PATHS.some((base) => path === base || path.startsWith(`${base}/`))
 
 export const createSecretChatGuard = ({
   logger,

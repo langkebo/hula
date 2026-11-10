@@ -25,6 +25,7 @@ const MobileFriendPage = () => import('#/views/friends/index.vue')
 const StartGroupChat = () => import('#/views/friends/StartGroupChat.vue')
 const FriendGroups = () => import('#/views/friends/FriendGroups.vue')
 const MobileMessagePage = () => import('#/views/message/index.vue')
+const MobileSecretChatPage = () => import('#/views/secretChat/SecretChatPage.vue')
 const MobileDynamicPage = () => import('#/views/dynamic/index.vue')
 const MobileDynamicDetail = () => import('#/views/dynamic/detail.vue')
 const EditBio = () => import('#/views/my/EditBio.vue')
@@ -197,6 +198,12 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
     path: '/mobile/syncData',
     name: 'mobileSyncData',
     component: SyncData
+  },
+  {
+    // 私密会话列表：私密房会被普通会话列表整体过滤，必须有独立入口才进得去
+    path: '/mobile/secretChat',
+    name: 'mobileSecretChat',
+    component: MobileSecretChatPage
   },
   {
     path: '/mobile/chatRoom',

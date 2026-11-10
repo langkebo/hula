@@ -23,17 +23,32 @@
       </template>
 
       <template #right>
-        <van-popover
-          v-model:show="showAddPopover"
-          :actions="addActions"
-          @select="onAddActionSelect"
-          placement="bottom-end">
-          <template #reference>
-            <van-button round plain size="small" :aria-label="t('common.add')">
-              <svg class="w-16px h-16px"><use href="#plus"></use></svg>
-            </van-button>
-          </template>
-        </van-popover>
+        <div class="flex items-center gap-8px">
+          <!-- 私密会话入口：私密房会被普通列表整体过滤，没有这个入口用户进不去 -->
+          <van-button
+            v-if="hiddenSessionCount > 0"
+            round
+            plain
+            size="small"
+            :aria-label="t('home.secret_chat.hidden_sessions')"
+            @click="handleOpenHiddenSessions">
+            <svg class="w-16px h-16px" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12 3a9 9 0 0 0-9 9 9.75 9.75 0 0 0 5.5 8.38l-1.15 1.15a1 1 0 0 0 1.37 1.37l1.15-1.15A9.75 9.75 0 0 0 21 12a9 9 0 0 0-9-9zm-5 9a5 5 0 1 1 10 0 5 5 0 0 1-10 0z" />
+            </svg>
+          </van-button>
+          <van-popover
+            v-model:show="showAddPopover"
+            :actions="addActions"
+            @select="onAddActionSelect"
+            placement="bottom-end">
+            <template #reference>
+              <van-button round plain size="small" :aria-label="t('common.add')">
+                <svg class="w-16px h-16px"><use href="#plus"></use></svg>
+              </van-button>
+            </template>
+          </van-popover>
+        </div>
       </template>
     </NavBar>
 
@@ -103,6 +118,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
 import MobileConnectionBanner from '@/mobile/components/common/MobileConnectionBanner.vue'
 import MobileCreateDialogs from '@/mobile/components/message/MobileCreateDialogs.vue'
 import MobileSessionHeader from '@/mobile/components/message/MobileSessionHeader.vue'
@@ -114,11 +131,14 @@ import { useMobileScrollRefresh } from '@/mobile/composables/useMobileScrollRefr
 import { useMobileSessionList } from '@/mobile/composables/useMobileSessionList'
 import { useSessionListScrollMemory } from '@/mobile/composables/useSessionListScrollMemory'
 import type { SessionItem } from '@/stores/domains/chat/chat'
+import { isSecretChatUnlocked } from '@/stores/domains/settings/secretChatSession'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useTimerManager } from '@/utils/TimerManager'
 
 const timerManager = useTimerManager()
 const { t } = useI18n()
 const router = useRouter()
+const settingStore = useSettingStore()
 
 // 滚动 & 下拉刷新控制
 const { isEnablePullRefresh, enablePullRefresh, disablePullRefresh, onScroll, getScrollTop, lockScroll, unlockScroll } =
@@ -136,7 +156,7 @@ const {
 } = useMobileLongPress({ disablePullRefresh, enablePullRefresh, getScrollTop })
 
 // 会话列表数据派生
-const { searchText, filteredSessionList, loadError, isLoading } = useMobileSessionList()
+const { searchText, filteredSessionList, hiddenSessionCount, loadError, isLoading } = useMobileSessionList()
 
 // 会话操作 + matrix 同步事件订阅(依赖 maskHandler / currentLongPressItem)
 const { loading, handleDelete, handleToggleTop, handleToggleReadStatus, onRefresh } = useMobileMessageActions({
@@ -235,6 +255,25 @@ const intoRoom = (item: SessionItem) => {
 
 const toSimpleBio = () => {
   router.push('/mobile/mobileMy/simpleBio')
+}
+
+/**
+ * 打开私密会话列表。
+ *
+ * 移动端没有桌面工具栏入口，私密房又被普通列表整体过滤，所以这里是唯一入口：
+ * 未配置密码只提示（否则会进入一个永远解不开的页面）；未解锁先弹全局解锁框，
+ * 解锁成功后回跳私密列表（见 SecretChatUnlockDialog 的 pendingPath）。
+ */
+const handleOpenHiddenSessions = () => {
+  if (!settingStore.isSecretChatConfigured()) {
+    useActionFeedback().showFeedback(t('home.secret_chat.no_password'), 'warning')
+    return
+  }
+  if (!isSecretChatUnlocked()) {
+    openSecretChatUnlock('/mobile/secretChat')
+    return
+  }
+  void router.push('/mobile/secretChat')
 }
 </script>
 

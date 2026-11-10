@@ -15,6 +15,14 @@ const logger = createLogger('MobilePrivateRoomGate')
 const MOBILE_MESSAGE_LIST = '/mobile/message'
 
 /**
+ * 解锁成功后的回跳目标：移动端私密会话列表。
+ *
+ * 私密房会被普通会话列表整体过滤，回跳 `/mobile/message` 等于「解锁后仍然看不到」，
+ * 必须回到带入口的私密列表页，用户才能继续进入刚才那个会话。
+ */
+const MOBILE_SECRET_CHAT_LIST = '/mobile/secretChat'
+
+/**
  * 移动端「进入房间」的私密门禁。
  *
  * 为什么不能像桌面那样放进 `router.beforeEach`：`secretChatGuard.extractRoomId` 只认
@@ -96,7 +104,7 @@ export function useMobilePrivateRoomGate() {
       return false
     }
 
-    openSecretChatUnlock(MOBILE_MESSAGE_LIST)
+    openSecretChatUnlock(MOBILE_SECRET_CHAT_LIST)
     await router.replace(MOBILE_MESSAGE_LIST)
     return false
   }

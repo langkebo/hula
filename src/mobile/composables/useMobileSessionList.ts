@@ -2,7 +2,11 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useReplaceMsg } from '@/composables/chat/useReplaceMsg'
 import { MsgEnum, RoomTypeEnum } from '@/enums'
-import { isPrivateRoom } from '@/services/matrix/privateChat/privateRoomRegistry'
+import {
+  isPrivateRoom,
+  loadPrivateRoomRegistry,
+  migrateFromHiddenSessions
+} from '@/services/matrix/privateChat/privateRoomRegistry'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useSessionStore } from '@/stores/domains/chat/chat/session'
@@ -10,6 +14,9 @@ import type { MatrixRoomMember } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatChatTime } from '@/utils/ComputedTime.ts'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MobileSessionList')
 
 type SessionMsgCacheItem = { msg: string; isAtMe: boolean; time: number; senderName: string }
 
@@ -122,6 +129,43 @@ export function useMobileSessionList() {
     return visible.filter((item) => item.name?.toLowerCase().includes(query))
   })
 
+  /**
+   * 私密会话数量。
+   *
+   * 移动端没有桌面工具栏那样的入口容器，入口按钮直接挂在本页 NavBar 上，
+   * 因此把计数暴露给视图；`isPrivateRoom` 内部的 registryVersion 变化会触发重算。
+   */
+  const hiddenSessionCount = computed(() => sessionList.value.filter((item) => isPrivateRoom(item.roomId)).length)
+
+  /**
+   * 同步私密房登记表（一次性）。
+   *
+   * 冷启动时 `isPrivateRoom` 读的是 localStorage 缓存，换设备新增的私密房要等
+   * account data 拉取后才知道；不拉就会先闪进普通列表（信息泄漏）。
+   * 顺带把历史 `session.hide` 会话迁入登记表，保证老数据也能进入私密列表。
+   */
+  let privateRoomsSynced = false
+  const syncPrivateRoomRegistry = async () => {
+    if (privateRoomsSynced) return
+    privateRoomsSynced = true
+    try {
+      await loadPrivateRoomRegistry()
+      await migrateFromHiddenSessions(chatStore.sessionList.filter((item) => item.hide).map((item) => item.roomId))
+    } catch (err) {
+      // 失败允许下次会话变化时重试；此时列表按缓存判定，最坏是漏藏而非错藏
+      privateRoomsSynced = false
+      logger.warn('同步私密房登记表失败，暂按本地缓存判定:', err)
+    }
+  }
+
+  watch(
+    () => chatStore.sessionList.length,
+    (length) => {
+      if (length > 0) void syncPrivateRoomRegistry()
+    },
+    { immediate: true }
+  )
+
   // 会话被移除时清理对应的消息缓存
   watch(
     () => chatStore.sessionList.map((item) => item.roomId),
@@ -140,6 +184,8 @@ export function useMobileSessionList() {
     searchText,
     sessionList,
     filteredSessionList,
+    /** 私密会话数量；为 0 时不显示「已隐藏的会话」入口 */
+    hiddenSessionCount,
     allUserMap,
     /** 最近一次拉取失败的原因；用于把「网络失败」与「真的没有会话」区分开 */
     loadError: computed(() => sessionStore.loadError),
