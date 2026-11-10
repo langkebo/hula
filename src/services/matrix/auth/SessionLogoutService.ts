@@ -11,6 +11,7 @@ import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState
 import { clearDndMirrorCache } from '@/services/matrix/notifications/dndMirror'
 import { clearInvitePolicyCache } from '@/services/matrix/user/invitePolicy'
 import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import { lockSecretChatSession, stopSecretChatAutoLock } from '@/stores/domains/settings/secretChatSession'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isMac } from '@/utils/PlatformConstants'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
@@ -60,6 +61,11 @@ export class SessionLogoutService {
       // DND 镜像是设备级 key（跨会话存在）。登出必须整体回收：镜像里较新的 updatedAt
       // 会在「本地新者胜」规则下，把下一个账号的服务端勿扰窗口永久挡住。
       clearDndMirrorCache()
+
+      // 私密聊天解锁态（含 dbKey）是模块级单例，必须随当前会话一起上锁并停掉巡检：
+      // 否则同一 webview 换账号后「已解锁」会被继承，新账号可直接读到私密房内容。
+      lockSecretChatSession('退出登录')
+      stopSecretChatAutoLock()
 
       if (!preserveTokens) {
         localStorage.removeItem('user')

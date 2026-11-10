@@ -1,5 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EventEnum, TauriCommand } from '@/enums'
+import {
+  isSecretChatUnlocked,
+  resetSecretChatSessionForTest,
+  unlockSecretChatSession
+} from '@/stores/domains/settings/secretChatSession'
 import { SessionLogoutService } from '../SessionLogoutService'
 import type { SessionRuntimeHost } from '../sessionRuntimeInternal'
 import { SessionRuntimeState } from '../sessionRuntimeInternal'
@@ -203,6 +208,10 @@ describe('SessionLogoutService.resetLocalSessionState', () => {
     localStorage.clear()
   })
 
+  afterEach(() => {
+    resetSecretChatSessionForTest()
+  })
+
   it('clears tokens from localStorage and invokes REMOVE_TOKENS by default', async () => {
     localStorage.setItem('user', 'u')
     localStorage.setItem('TOKEN', 't')
@@ -247,6 +256,18 @@ describe('SessionLogoutService.resetLocalSessionState', () => {
     await service.resetLocalSessionState()
 
     expect(clearInvitePolicyCacheMock).toHaveBeenCalledWith('@alice:test')
+  })
+
+  it('locks the secret chat session so a new account cannot inherit the unlocked state', async () => {
+    unlockSecretChatSession(new Uint8Array(32))
+    expect(isSecretChatUnlocked()).toBe(true)
+
+    const { host } = createMockHost()
+    const service = new SessionLogoutService(host, new SessionRuntimeState())
+
+    await service.resetLocalSessionState()
+
+    expect(isSecretChatUnlocked()).toBe(false)
   })
 
   it('clears the device-local DND mirror so the next account cannot inherit the previous window', async () => {
