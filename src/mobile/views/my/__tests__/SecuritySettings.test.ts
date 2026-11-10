@@ -70,7 +70,8 @@ function mountSecuritySettings(extraOpts: Record<string, any> = {}) {
       template:
         '<div v-bind="$attrs" data-test="van-cell"><span>{{ title }}</span><span>{{ label }}</span><slot name="icon" /><slot name="right-icon" /></div>'
     },
-    ...(extraOpts.stubs || {})
+    ...(extraOpts.stubs || {}),
+    MobilePrivateChatSection: { template: '<div data-test="private-chat-section" />' }
   }
   return mount(SecuritySettings, {
     global: {

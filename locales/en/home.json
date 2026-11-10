@@ -124,6 +124,7 @@
   "secret_chat": {
     "title": "Secret Chat",
     "no_password": "Please set a secret chat password in settings first",
+    "password_incorrect": "Incorrect password",
     "hidden_sessions_list": "Hidden Sessions",
     "no_hidden_sessions": "No hidden sessions",
     "no_messages": "No messages",

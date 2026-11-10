@@ -3121,6 +3121,7 @@ export type I18nKeys = {
     "secret_chat": {
       "title": "私密聊天",
       "no_password": "请先在设置中设置私密聊天密码",
+      "password_incorrect": "密码不正确",
       "hidden_sessions_list": "隐藏会话列表",
       "no_hidden_sessions": "暂无隐藏会话",
       "no_messages": "暂无消息",
@@ -5294,6 +5295,29 @@ export type I18nKeys = {
     "password_mismatch": "两次输入的密码不一致",
     "password_too_short": "密码长度至少为8位",
     "privacy_section": "隐私设置",
+    "secret_chat": {
+      "password": "私密聊天密码",
+      "set_password": "设置密码",
+      "change_password": "修改密码",
+      "password_unset": "未设置",
+      "enable": "启用私密聊天",
+      "enable_hint": "开启后，标记为私密的会话需输入密码才能查看",
+      "auto_lock": "离开后自动锁定",
+      "auto_lock_hint": "离开私密会话后按设定时间自动上锁",
+      "lock_timeout": "自动锁定时间",
+      "minutes": "{n} 分钟",
+      "clear": "清除私密聊天密码",
+      "clear_confirm": "清除后所有私密标记将不再受密码保护，确定清除？",
+      "cleared": "已清除私密聊天密码",
+      "password_saved": "密码已设置，请重新解锁",
+      "password_mismatch": "两次输入的密码不一致",
+      "password_too_short": "密码至少 6 位",
+      "old_password": "当前密码",
+      "new_password": "新密码",
+      "confirm_password": "确认新密码",
+      "go_settings": "去设置密码"
+    },
+    "secret_chat_section": "私密聊天",
     "secure_backup": {
       "title": "安全备份",
       "desc": "创建或恢复跨设备安全备份以保护您的加密消息",
@@ -10060,6 +10084,7 @@ export type I18nKeyPaths =
   | "home.manage_group_member.channel_manage_unsupported"
   | "home.secret_chat.title"
   | "home.secret_chat.no_password"
+  | "home.secret_chat.password_incorrect"
   | "home.secret_chat.hidden_sessions_list"
   | "home.secret_chat.no_hidden_sessions"
   | "home.secret_chat.no_messages"
@@ -11723,6 +11748,27 @@ export type I18nKeyPaths =
   | "mobile_security.password_mismatch"
   | "mobile_security.password_too_short"
   | "mobile_security.privacy_section"
+  | "mobile_security.secret_chat.password"
+  | "mobile_security.secret_chat.set_password"
+  | "mobile_security.secret_chat.change_password"
+  | "mobile_security.secret_chat.password_unset"
+  | "mobile_security.secret_chat.enable"
+  | "mobile_security.secret_chat.enable_hint"
+  | "mobile_security.secret_chat.auto_lock"
+  | "mobile_security.secret_chat.auto_lock_hint"
+  | "mobile_security.secret_chat.lock_timeout"
+  | "mobile_security.secret_chat.minutes"
+  | "mobile_security.secret_chat.clear"
+  | "mobile_security.secret_chat.clear_confirm"
+  | "mobile_security.secret_chat.cleared"
+  | "mobile_security.secret_chat.password_saved"
+  | "mobile_security.secret_chat.password_mismatch"
+  | "mobile_security.secret_chat.password_too_short"
+  | "mobile_security.secret_chat.old_password"
+  | "mobile_security.secret_chat.new_password"
+  | "mobile_security.secret_chat.confirm_password"
+  | "mobile_security.secret_chat.go_settings"
+  | "mobile_security.secret_chat_section"
   | "mobile_security.secure_backup.title"
   | "mobile_security.secure_backup.desc"
   | "mobile_security.secure_backup.create"

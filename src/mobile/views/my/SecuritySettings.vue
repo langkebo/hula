@@ -142,6 +142,12 @@
           </van-cell-group>
 
           <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
+            {{ t('mobile_security.secret_chat_section') }}
+          </div>
+
+          <MobilePrivateChatSection />
+
+          <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
             {{ t('mobile_security.danger_section') }}
           </div>
 
@@ -218,6 +224,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import MobileDeviceVerifyDialog from '#/components/encryption/MobileDeviceVerifyDialog.vue'
 import MobileSecureBackupDialog from '#/components/encryption/MobileSecureBackupDialog.vue'
+import MobilePrivateChatSection from '#/components/settings/MobilePrivateChatSection.vue'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
