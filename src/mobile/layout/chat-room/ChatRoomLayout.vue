@@ -26,6 +26,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useMobilePrivateRoomGate } from '@/composables/secretChat/useMobilePrivateRoomGate'
+import { createLogger } from '@/utils/Logger'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -48,8 +49,14 @@ const computedBottomSafeAreaClass = computed(() => {
  * 旧深链若仍是 uid，门禁层会先反查一次（见 `useMobilePrivateRoomGate`）。
  */
 const { assertAccess } = useMobilePrivateRoomGate()
+const logger = createLogger('ChatRoomLayout')
+
+// 自增序号：快速连续切房时，只有最新一次运行能改 gatePending。
+// 否则旧一次运行的 finally 会把新一次刚置的 true 清成 false，遮罩提前解除导致私密内容闪现。
+let guardRunId = 0
 
 const guardCurrentRoom = async () => {
+  const runId = ++guardRunId
   if (route.name !== 'mobileChatMain') {
     gatePending.value = false
     return
@@ -59,8 +66,13 @@ const guardCurrentRoom = async () => {
   gatePending.value = true
   try {
     await assertAccess(typeof roomId === 'string' ? roomId : undefined)
+  } catch (err) {
+    // assertAccess 自身已做重定向与提示，这里只记录，避免未捕获的 rejection 终止遮罩逻辑
+    logger.error('私密房门禁校验异常:', err)
   } finally {
-    gatePending.value = false
+    if (runId === guardRunId) {
+      gatePending.value = false
+    }
   }
 }
 
