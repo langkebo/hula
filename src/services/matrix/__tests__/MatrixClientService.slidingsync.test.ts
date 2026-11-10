@@ -170,7 +170,9 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
 
       const client = matrixClientService.getClient() as RustCryptoCapableClient | null
       if (client) {
-        vi.mocked(client.getDeviceId).mockReturnValueOnce(null)
+        // D9：ensureCrypto 入口的 bindClient 会先读一次 deviceId 判定状态归属，
+        // 不能用 mockReturnValueOnce（会被入口消耗，随后误判为有 deviceId 而初始化 crypto）。
+        vi.mocked(client.getDeviceId).mockReturnValue(null)
       }
 
       await expect(matrixClientService.startClient()).resolves.toBeUndefined()

@@ -98,13 +98,15 @@ export class SessionRestoreService {
 
       // 未登录+未初始化：首次走 IPC，后续导航复用缓存避免重复 IPC
       // 缓存在登出或会话恢复成功后清除
-      if (this.state.cachedHasSession !== null) {
-        return this.state.cachedHasSession
+      // 只缓存肯定结果：冷启动早期一次瞬时 IPC/DB 失败会被固化成永久「无会话」，
+      // 让 useWindowSessionReady 直接判 no-session 且不再重试（D2/D12）。
+      if (this.state.cachedHasSession === true) {
+        return true
       }
 
       const tokens = await this.getStoredTokens()
       const hasSession = !!tokens.token
-      this.state.cachedHasSession = hasSession
+      this.state.cachedHasSession = hasSession ? true : null
       return hasSession
     } catch (err) {
       logger.error(`检查认证会话失败: ${err}`)

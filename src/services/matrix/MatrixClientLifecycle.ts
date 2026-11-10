@@ -288,10 +288,16 @@ export class MatrixClientLifecycle {
 
   /**
    * 通过 whoami 端点（带 token 的直接 HTTP 调用，无需已初始化的 MatrixClient）
-   * 解析 access token 绑定的 deviceId，用于 token 登录 / 会话恢复时一次性确定稳定设备 ID，
-   * 避免「先建 client 再发现 deviceId 又重建」的泄漏与重复 E2EE 查询。
+   * 解析 access token 绑定的 identity（userId + deviceId）。
+   *
+   * 用途：
+   * - token 登录 / 会话恢复时一次性确定稳定设备 ID，避免「先建 client 再发现 deviceId 又重建」；
+   * - 冷启动时本地 uid 丢失（store / 后端记录缺失）但 token 仍有效，用 whoami 恢复身份，
+   *   否则会话恢复会静默返回、页面停在「已登录但无 client」（D2/D12）。
+   *
+   * 失败返回空对象（调用方据此如实报错，不伪造身份）。
    */
-  async resolveDeviceIdByWhoami(token: string, homeserverUrl: string): Promise<string | undefined> {
+  async resolveIdentityByWhoami(token: string, homeserverUrl: string): Promise<{ userId?: string; deviceId?: string }> {
     const { getRuntimeAwareFetch } = await import('@/services/matrix/network/runtimeFetch')
     const runtimeFetch = getRuntimeAwareFetch()
     const url = `${homeserverUrl.replace(/\/+$/, '')}${PREFIX_V3}/account/whoami`
@@ -301,14 +307,29 @@ export class MatrixClientLifecycle {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!response.ok) {
-        logger.warn(`whoami 预解析 deviceId 失败 (status=${response.status})，回退 SDK 默认设备`)
-        return undefined
+        logger.warn(`whoami 预解析 identity 失败 (status=${response.status})`)
+        return {}
       }
       const whoami = (await response.json()) as { device_id?: string | null; user_id?: string | null }
-      return whoami.device_id ?? undefined
+      return {
+        ...(whoami.user_id ? { userId: whoami.user_id } : {}),
+        ...(whoami.device_id ? { deviceId: whoami.device_id } : {})
+      }
     } catch (err) {
-      logger.warn('whoami 预解析 deviceId 异常，回退 SDK 默认设备', err)
-      return undefined
+      logger.warn('whoami 预解析 identity 异常', err)
+      return {}
     }
+  }
+
+  /**
+   * 通过 whoami 端点解析 access token 绑定的 deviceId，
+   * 用于 token 登录 / 会话恢复时一次性确定稳定设备 ID。
+   */
+  async resolveDeviceIdByWhoami(token: string, homeserverUrl: string): Promise<string | undefined> {
+    const identity = await this.resolveIdentityByWhoami(token, homeserverUrl)
+    if (!identity.deviceId) {
+      logger.warn('whoami 未返回 deviceId，回退 SDK 默认设备')
+    }
+    return identity.deviceId
   }
 }

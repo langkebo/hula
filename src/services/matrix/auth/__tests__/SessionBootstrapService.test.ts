@@ -34,8 +34,10 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
     getClient: vi.fn().mockReturnValue(null),
     waitForClientReady: vi.fn().mockResolvedValue({}),
+    startClient: vi.fn().mockResolvedValue(undefined),
     getUserId: vi.fn().mockReturnValue('@alice:matrix.test'),
-    getDeviceId: vi.fn().mockReturnValue('DEV1')
+    getDeviceId: vi.fn().mockReturnValue('DEV1'),
+    resolveIdentityByWhoami: vi.fn().mockResolvedValue({})
   }
 }))
 
@@ -275,6 +277,17 @@ describe('SessionBootstrapService', () => {
       )
     })
 
+    it('starts the client after restoring a session (D12 cold start)', async () => {
+      const { host } = createMockHost()
+      const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
+
+      const service = new SessionBootstrapService(host, state)
+      await service.ensureClientReady()
+
+      // 恢复会话只建 client + loginWithToken；没有 startClient 就不会 sync / 初始化 crypto。
+      expect(matrixClientService.startClient).toHaveBeenCalledTimes(1)
+    })
+
     it('always reads stored tokens when no client exists (runtime token implies a client)', async () => {
       const { host, mocks } = createMockHost()
       // 生产里 accessToken 直读 SDK client（AR-07b / B1）⇒ client 为 null 时不可能有运行时 token。
@@ -291,11 +304,41 @@ describe('SessionBootstrapService', () => {
       )
     })
 
-    it('returns early when uid is empty and no stored uid', async () => {
+    it('recovers uid via whoami when local uid is missing but token exists (D2/D12)', async () => {
       const { host, mocks } = createMockHost()
       mocks.getUserId.mockReturnValue('')
       mocks.getUserInfo.mockReturnValue(undefined)
       mocks.getStoredTokens.mockResolvedValue({ uid: null, token: 'tok' })
+      const { matrixClientService } = await import('@/services/matrix/MatrixClientService')
+      vi.mocked(matrixClientService.resolveIdentityByWhoami).mockResolvedValueOnce({
+        userId: '@whoami:matrix.test'
+      })
+
+      const service = new SessionBootstrapService(host, state)
+      await service.ensureClientReady()
+
+      expect(vi.mocked(matrixClientService.resolveIdentityByWhoami).mock.calls[0]?.[0]).toBe('tok')
+      expect(mocks.restoreWithAccessToken).toHaveBeenCalledWith(
+        expect.objectContaining({ uid: '@whoami:matrix.test', accessToken: 'tok' })
+      )
+    })
+
+    it('throws when uid cannot be recovered via whoami (retryable error, not no-session)', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getUserId.mockReturnValue('')
+      mocks.getUserInfo.mockReturnValue(undefined)
+      mocks.getStoredTokens.mockResolvedValue({ uid: null, token: 'tok' })
+
+      const service = new SessionBootstrapService(host, state)
+      await expect(service.ensureClientReady()).rejects.toThrow('matrix_error.auth.user_id_missing')
+      expect(mocks.restoreWithAccessToken).not.toHaveBeenCalled()
+    })
+
+    it('returns early when uid is empty and no token exists', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getUserId.mockReturnValue('')
+      mocks.getUserInfo.mockReturnValue(undefined)
+      mocks.getStoredTokens.mockResolvedValue({ uid: null, token: null })
 
       const service = new SessionBootstrapService(host, state)
       await service.ensureClientReady()

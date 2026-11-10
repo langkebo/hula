@@ -163,6 +163,11 @@ class MatrixClientService {
     return this.lifecycle.waitForSlidingSyncReady(timeoutMs)
   }
 
+  /** 用 access token 通过 whoami 解析身份（userId/deviceId），失败返回空对象。 */
+  async resolveIdentityByWhoami(token: string, homeserverUrl: string): Promise<{ userId?: string; deviceId?: string }> {
+    return this.lifecycle.resolveIdentityByWhoami(token, homeserverUrl)
+  }
+
   // ---- Auth / Login -----------------------------------------------------------
 
   /** 密码登录。返回结果里带 refreshToken —— 它只在登录响应出现一次，调用方需自行持久化。 */

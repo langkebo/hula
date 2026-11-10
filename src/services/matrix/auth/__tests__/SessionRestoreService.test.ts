@@ -335,6 +335,26 @@ describe('SessionRestoreService.hasAuthenticatedSession', () => {
     getStoredTokensSpy.mockRestore()
   })
 
+  it('does not cache a negative result so a transient failure can be retried (D2/D12)', async () => {
+    const { host, mocks } = createMockHost()
+    mocks.isLoggedIn.mockReturnValue(false)
+    mocks.isInitialized.mockReturnValue(false)
+    const state = new SessionRuntimeState()
+    const service = new SessionRestoreService(host, state)
+    const getStoredTokensSpy = vi
+      .spyOn(service, 'getStoredTokens')
+      .mockResolvedValueOnce({ token: null, refreshToken: null })
+      .mockResolvedValueOnce({ token: 'found', refreshToken: null })
+
+    expect(await service.hasAuthenticatedSession()).toBe(false)
+    // 冷启动早期的瞬时 IPC/DB 失败不能固化成永久「无会话」
+    expect(state.cachedHasSession).toBeNull()
+
+    expect(await service.hasAuthenticatedSession()).toBe(true)
+    expect(state.cachedHasSession).toBe(true)
+    expect(getStoredTokensSpy).toHaveBeenCalledTimes(2)
+  })
+
   it('returns false when getStoredTokens throws', async () => {
     const { host, mocks } = createMockHost()
     mocks.isLoggedIn.mockReturnValue(false)

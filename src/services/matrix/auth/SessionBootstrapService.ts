@@ -109,12 +109,25 @@ export class SessionBootstrapService {
       uid = storedTokens.uid
     }
 
-    if (!uid) {
-      return
+    if (!storedTokens.token) {
+      // 无可用凭证：没有会话可恢复，交给上层按 no-session 处理（此处静默返回是正确语义）
+      if (!uid) {
+        return
+      }
+      throw new Error(useI18nGlobal().t('matrix_error.auth.access_token_missing'))
     }
 
-    if (!storedTokens.token) {
-      throw new Error(useI18nGlobal().t('matrix_error.auth.access_token_missing'))
+    // token 有效但本地 uid 丢失（store 未就绪 / 后端记录缺失）时用 whoami 恢复身份。
+    // 直接 return 会让 useWindowSessionReady 判成 no-session 并停止重试，
+    // 页面停在「已登录但无 client」（D2/D12）；恢复失败则抛错进入可重试的 error 态。
+    if (!uid) {
+      const homeserverUrl = port.matrix.getHomeserverUrl() ?? resolveMatrixSessionEndpointConfig().homeserverUrl
+      const identity = await matrixClientService.resolveIdentityByWhoami(storedTokens.token, homeserverUrl)
+      uid = identity.userId ?? ''
+      if (!uid) {
+        throw new Error(useI18nGlobal().t('matrix_error.auth.user_id_missing'))
+      }
+      logger.info('本地 uid 缺失，已通过 whoami 恢复身份')
     }
 
     const userInfo = port.user.getUserInfo()
@@ -134,6 +147,13 @@ export class SessionBootstrapService {
       switchDatabase: false,
       bootstrapAfterRestore: false
     })
+
+    // D12：会话恢复只创建 client + loginWithToken，不会启动 sync / crypto。
+    // 冷启动（整页 reload / WebView 进程重建）没有任何登录流程会补这一步，
+    // 若不在这里启动，页面会停在「已登录但无 client 生命周期」：getClient() 有值却
+    // 不同步、crypto 未初始化，「连接失败，请重试」也救不回来。
+    // startClient 由 startClientGuard 串行化且幂等，登录主路径重复调用无副作用。
+    await matrixClientService.startClient()
   }
 
   private async doBootstrapPostLoginState(options: MatrixPostLoginBootstrapOptions): Promise<void> {
