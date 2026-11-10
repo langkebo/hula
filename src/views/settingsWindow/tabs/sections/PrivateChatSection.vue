@@ -57,6 +57,13 @@
     <n-drawer-content :title="t('setting.private_chat.set_password')" closable>
       <div class="secret-chat-form">
         <n-form :model="secretChatForm" :rules="secretChatRules">
+          <n-form-item v-if="secretChatConfigured" path="oldPassword" :label="t('setting.account.current_password')">
+            <n-input
+              v-model:value="secretChatForm.oldPassword"
+              type="password"
+              :placeholder="t('setting.account.current_password_placeholder')"
+              show-password-on="click" />
+          </n-form-item>
           <n-form-item path="password" :label="t('setting.private_chat.password')">
             <n-input
               v-model:value="secretChatForm.password"
@@ -130,6 +137,7 @@ const secretChatLockTimeout = computed({
 const showSecretChatDialog = ref(false)
 const savingSecretChat = ref(false)
 const secretChatForm = reactive({
+  oldPassword: '',
   password: '',
   confirmPassword: ''
 })
@@ -155,24 +163,32 @@ const lockTimeoutOptions = computed(() => [
 ])
 
 function handleSetupSecretChat() {
+  secretChatForm.oldPassword = ''
   secretChatForm.password = ''
   secretChatForm.confirmPassword = ''
   showSecretChatDialog.value = true
 }
 
 async function handleSaveSecretChat() {
-  if (secretChatForm.password !== secretChatForm.confirmPassword) {
-    showFeedback(t('setting.private_chat.password_mismatch'), 'error')
-    return
-  }
-
   if (secretChatForm.password.length < 4) {
     showFeedback(t('setting.private_chat.password_too_short'), 'error')
     return
   }
 
+  if (secretChatForm.password !== secretChatForm.confirmPassword) {
+    showFeedback(t('setting.private_chat.password_mismatch'), 'error')
+    return
+  }
+
   try {
     savingSecretChat.value = true
+    if (secretChatConfigured.value) {
+      const valid = await settingStore.verifySecretChatPassword(secretChatForm.oldPassword)
+      if (!valid) {
+        showFeedback(t('home.secret_chat.password_incorrect'), 'error')
+        return
+      }
+    }
     await settingStore.setSecretChatPassword(secretChatForm.password)
     showSecretChatDialog.value = false
     showFeedback(t('setting.private_chat.password_set_success'), 'success')
