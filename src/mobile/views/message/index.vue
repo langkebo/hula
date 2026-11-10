@@ -95,6 +95,17 @@
               (currentLongPressItem?.unreadCount ?? 0) > 0 ? t('mobile_home.menu.read') : t('mobile_home.menu.unread')
             }}
           </div>
+          <div
+            v-if="currentLongPressItem?.type === RoomTypeEnum.SINGLE"
+            v-clickable
+            class="long-press-menu__item"
+            @click="handleTogglePrivate(currentLongPressItem)">
+            {{
+              currentLongPressItem && isRoomPrivate(currentLongPressItem.roomId)
+                ? t('home.secret_chat.unmark_private')
+                : t('home.secret_chat.mark_private')
+            }}
+          </div>
         </div>
         <div class="flex w-full justify-center h-15px">
           <svg width="34" height="13" viewBox="0 0 35 13">
@@ -120,6 +131,7 @@ import { useI18n } from 'vue-i18n'
 import NavBar from '#/layout/navBar/index.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
+import { RoomTypeEnum } from '@/enums'
 import MobileConnectionBanner from '@/mobile/components/common/MobileConnectionBanner.vue'
 import MobileCreateDialogs from '@/mobile/components/message/MobileCreateDialogs.vue'
 import MobileSessionHeader from '@/mobile/components/message/MobileSessionHeader.vue'
@@ -159,7 +171,15 @@ const {
 const { searchText, filteredSessionList, hiddenSessionCount, loadError, isLoading } = useMobileSessionList()
 
 // 会话操作 + matrix 同步事件订阅(依赖 maskHandler / currentLongPressItem)
-const { loading, handleDelete, handleToggleTop, handleToggleReadStatus, onRefresh } = useMobileMessageActions({
+const {
+  loading,
+  handleDelete,
+  handleToggleTop,
+  handleToggleReadStatus,
+  handleTogglePrivate,
+  isRoomPrivate,
+  onRefresh
+} = useMobileMessageActions({
   maskHandler,
   currentLongPressItem
 })

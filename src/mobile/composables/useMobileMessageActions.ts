@@ -2,6 +2,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMessage } from '@/composables/chat/useMessage'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { usePrivateRoomActions } from '@/composables/secretChat/usePrivateRoomActions'
 import { matrixSessionService } from '@/services/matrix/auth/MatrixSessionService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixReceiptService } from '@/services/matrix/messaging/MatrixReceiptService'
@@ -26,6 +27,7 @@ export function useMobileMessageActions(opts: {
   const { t } = useI18n()
   const { showFeedback } = useActionFeedback()
   const { handleMsgDelete } = useMessage()
+  const { isRoomPrivate, togglePrivateRoom } = usePrivateRoomActions()
   const chatStore = useChatStore()
   const contactStore = useContactStore()
   const globalStore = useGlobalStore()
@@ -83,6 +85,18 @@ export function useMobileMessageActions(opts: {
       const errorMsg = markAsRead ? t('mobile_home.mark_as_read_failed') : t('mobile_home.mark_as_unread_failed')
       showFeedback(errorMsg, 'error')
       logger.error(errorMsg, error)
+    } finally {
+      opts.maskHandler.close()
+    }
+  }
+
+  /** 设为私密 / 取消私密：守卫（单聊、已配置、已解锁）全部在 togglePrivateRoom 内。 */
+  const handleTogglePrivate = async (item: SessionItem | null) => {
+    if (!item) return
+    try {
+      await togglePrivateRoom(item)
+    } catch (error) {
+      logger.error('切换私密会话失败:', error)
     } finally {
       opts.maskHandler.close()
     }
@@ -166,6 +180,8 @@ export function useMobileMessageActions(opts: {
     handleDelete,
     handleToggleTop,
     handleToggleReadStatus,
+    handleTogglePrivate,
+    isRoomPrivate,
     onRefresh
   }
 }
