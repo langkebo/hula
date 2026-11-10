@@ -19,7 +19,7 @@
         <router-view />
       </div>
       <LockScreen v-else />
-      <SecretChatUnlockDialog />
+      <component :is="secretChatUnlockDialog" />
       <LocalUnlockDialog />
       <GuestUpgradeModal v-model:show="showGuestUpgrade" />
       <GlobalAriaLive />
@@ -74,10 +74,17 @@ const showGuestUpgrade = ref(false)
 const LockScreen = defineAsyncComponent(() => import('@/views/LockScreen.vue'))
 const MemoryMonitor = defineAsyncComponent(() => import('@/components/common/MemoryMonitor.vue'))
 const SplashScreen = defineAsyncComponent(() => import('@/components/common/SplashScreen.vue'))
-const SecretChatUnlockDialog = defineAsyncComponent(() => import('@/components/secretChat/SecretChatUnlockDialog.vue'))
 
 // 平台在运行期恒定：探测一次后复用
 const isMobilePlatform = useIsMobile()
+
+const DesktopSecretChatUnlockDialog = defineAsyncComponent(
+  () => import('@/components/secretChat/SecretChatUnlockDialog.vue')
+)
+const MobileSecretChatUnlockDialog = defineAsyncComponent(
+  () => import('@/mobile/components/secretChat/MobileSecretChatUnlockDialog.vue')
+)
+const secretChatUnlockDialog = isMobilePlatform.value ? MobileSecretChatUnlockDialog : DesktopSecretChatUnlockDialog
 
 const mobileRtcCallFloatCell = isMobilePlatform.value
   ? defineAsyncComponent(() => import('@/mobile/components/RtcCallFloatCell.vue'))
