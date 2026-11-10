@@ -33,6 +33,8 @@ class MatrixSlidingSyncService {
       required_state?: unknown[] | undefined
     }
   > = new Map()
+  /** 已请求补订阅的房间：避免同一房间的每个增量包都重复触发一次同步请求 */
+  private autoSubscribedRooms = new Set<string>()
   private readonly lifecycleListener = (
     state: SlidingSyncState,
     resp: MSC3575SlidingSyncResponse | null,
@@ -64,6 +66,7 @@ class MatrixSlidingSyncService {
     this.slidingSync = syncInstance
     this.hasCompletedInitialSync = false
     this.roomCache.clear()
+    this.autoSubscribedRooms.clear()
 
     this.slidingSync.on(SlidingSyncEvent.Lifecycle, this.lifecycleListener)
     this.slidingSync.on(SlidingSyncEvent.RoomData, this.roomDataListener)
@@ -149,6 +152,8 @@ class MatrixSlidingSyncService {
   }
 
   private onRoomData(roomId: string, roomData: MSC3575RoomData) {
+    this.ensureRoomInStore(roomId)
+
     this.roomCache.set(roomId, {
       notification_count: roomData.notification_count,
       highlight_count: roomData.highlight_count,
@@ -168,6 +173,20 @@ class MatrixSlidingSyncService {
     }
 
     // Room data 更新是高频事件，不输出日志避免刷屏
+  }
+
+  /**
+   * 接收方补订阅：滑窗增量下发中，store 里不存在的新房间 `initial` 为 false，
+   * `SlidingSyncSdk.onRoomData` 会直接丢弃该房间 —— 被邀请/被拉入的新会话因此
+   * 永远进不了 store（收不到消息、打开也没有 timeline）。
+   * 这里对该房间发起一次订阅，服务端下一轮响应会强制 `initial: true`。
+   */
+  private ensureRoomInStore(roomId: string): void {
+    if (this.autoSubscribedRooms.has(roomId)) return
+    if (matrixClientService.getRoom(roomId)) return
+    this.autoSubscribedRooms.add(roomId)
+    logger.info(`发现本地缺失的房间，补订阅以强制初始同步: ${roomId}`)
+    matrixClientService.subscribeRoomForSync(roomId)
   }
 
   private shouldRefreshRoomList(resp: MSC3575SlidingSyncResponse): boolean {

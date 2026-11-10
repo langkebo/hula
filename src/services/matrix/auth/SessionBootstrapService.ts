@@ -48,6 +48,14 @@ export class SessionBootstrapService {
    */
   async ensureClientReady(options?: MatrixPostLoginBootstrapOptions): Promise<void> {
     await this.ensureClientReadyForBootstrap(options)
+
+    // 冷启动（整页 reload / WebView 进程重建）与独立 WebView 只走这条轻量恢复路径，
+    // 不会执行 bootstrapPostLoginState，因此房间实时监听器（timeline/name/avatar/member）
+    // 与 Sliding Sync 回调从未挂到当前 client 上：sync 明明拿到了新消息，UI 却永远不更新。
+    // setupEventListeners 自带 listenersInitialized 幂等闸门，重复调用零成本。
+    if (this.host.port.matrix.getClient()) {
+      await this.host.port.room.setupEventListeners()
+    }
   }
 
   /**

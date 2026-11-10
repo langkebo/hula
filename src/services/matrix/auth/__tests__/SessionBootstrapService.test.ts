@@ -288,6 +288,29 @@ describe('SessionBootstrapService', () => {
       expect(matrixClientService.startClient).toHaveBeenCalledTimes(1)
     })
 
+    it('attaches room realtime listeners when the client is already available (cold start)', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getClient.mockReturnValue({})
+
+      const service = new SessionBootstrapService(host, state)
+      await service.ensureClientReady()
+
+      // 冷启动不经过 bootstrapPostLoginState：不补挂监听器就永远收不到新消息。
+      expect(mocks.setupEventListeners).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not attach room realtime listeners when no session can be restored', async () => {
+      const { host, mocks } = createMockHost()
+      mocks.getUserId.mockReturnValue('')
+      mocks.getUserInfo.mockReturnValue(undefined)
+      mocks.getStoredTokens.mockResolvedValue({ uid: null, token: null })
+
+      const service = new SessionBootstrapService(host, state)
+      await service.ensureClientReady()
+
+      expect(mocks.setupEventListeners).not.toHaveBeenCalled()
+    })
+
     it('always reads stored tokens when no client exists (runtime token implies a client)', async () => {
       const { host, mocks } = createMockHost()
       // 生产里 accessToken 直读 SDK client（AR-07b / B1）⇒ client 为 null 时不可能有运行时 token。

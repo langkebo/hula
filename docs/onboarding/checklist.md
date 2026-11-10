@@ -73,10 +73,10 @@
 
 建议优先阅读以下文档：
 
-- [ ] [`hula优化实施方案.md`](file:///Users/ljf/Desktop/hu_ts/hula/docs/hula优化实施方案.md)
-- [ ] [`PROJECT_OPTIMIZATION_ROADMAP.md`](file:///Users/ljf/Desktop/hu_ts/hula/docs/PROJECT_OPTIMIZATION_ROADMAP.md)
-- [ ] [`RoomArchitecture.md`](file:///Users/ljf/Desktop/hu_ts/hula/docs/RoomArchitecture.md)
-- [ ] [`SDK_API_AUDIT_REPORT.md`](file:///Users/ljf/Desktop/hu_ts/hula/docs/SDK_API_AUDIT_REPORT.md)
+- [ ] [`TJG-前端启动与联调环境指南.md`](../TJG-前端启动与联调环境指南.md)
+- [ ] [`sdk-usage-guide.md`](../sdk-usage-guide.md)
+- [ ] [`sdk-encapsulation-audit.md`](../sdk-encapsulation-audit.md)
+- [ ] [`TJG-前后端联调测试报告-2026-11-05.md`](../TJG-前后端联调测试报告-2026-11-05.md)
 
 ---
 

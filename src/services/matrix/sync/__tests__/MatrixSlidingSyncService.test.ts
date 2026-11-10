@@ -1,4 +1,4 @@
-import type { MatrixClient } from 'matrix-js-sdk'
+import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SlidingSync } from '@/types/matrix-js-sdk'
 import { SlidingSyncEvent } from '@/types/matrix-js-sdk'
@@ -29,6 +29,8 @@ vi.mock('../../MatrixClientService', () => {
   const mockService = {
     getSlidingSync: vi.fn(() => null as SlidingSync | null),
     getClient: vi.fn(() => null as MatrixClient | null),
+    getRoom: vi.fn(() => null),
+    subscribeRoomForSync: vi.fn(),
     updateConnectionState: vi.fn()
   }
   return {
@@ -129,5 +131,47 @@ describe('MatrixSlidingSyncService', () => {
     lifecycleCallback('COMPLETE', { rooms: { '!room:1': { timeline: [{}] } } })
 
     expect(onRoomListRefresh).not.toHaveBeenCalled()
+  })
+
+  it('subscribes unknown rooms exactly once so the server sends initial data', async () => {
+    let roomDataCallback: (...args: unknown[]) => void = () => {}
+    const syncInstance = {
+      on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+        if (event === SlidingSyncEvent.RoomData) {
+          roomDataCallback = cb
+        }
+      }),
+      off: vi.fn()
+    }
+
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as unknown as SlidingSync)
+    await matrixSlidingSyncService.initialize()
+
+    roomDataCallback('!unknown-room:example.com', {})
+    roomDataCallback('!unknown-room:example.com', {})
+
+    expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledTimes(1)
+    expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledWith('!unknown-room:example.com')
+  })
+
+  it('does not subscribe rooms already present in the local store', async () => {
+    vi.mocked(matrixClientService.getRoom).mockReturnValue({ roomId: '!known-room:example.com' } as unknown as Room)
+
+    let roomDataCallback: (...args: unknown[]) => void = () => {}
+    const syncInstance = {
+      on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+        if (event === SlidingSyncEvent.RoomData) {
+          roomDataCallback = cb
+        }
+      }),
+      off: vi.fn()
+    }
+
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as unknown as SlidingSync)
+    await matrixSlidingSyncService.initialize()
+
+    roomDataCallback('!known-room:example.com', {})
+
+    expect(matrixClientService.subscribeRoomForSync).not.toHaveBeenCalled()
   })
 })

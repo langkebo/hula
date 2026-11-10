@@ -1,3 +1,4 @@
+import { MatrixRoomType } from '@/common/matrixConstants'
 import { NotificationTypeEnum, RoomTypeEnum } from '@/enums'
 import type { DmRoomInfo, MatrixClient, MatrixEvent, Room } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
@@ -53,6 +54,17 @@ const DIRECT_ROOM_READY_TIMEOUT_MS = 3_000
 const DIRECT_ROOM_READY_POLL_INTERVAL_MS = 100
 
 class MatrixSessionService extends BaseMatrixService {
+  /**
+   * 系统容器房间（如后端存放好友关系的 m.friends 房间）只承载协议状态，
+   * 不能作为聊天会话展示：否则用户会对着只有自己的房间发消息，对方永远收不到。
+   */
+  private isSystemContainerRoom(room: Room): boolean {
+    const createEvents = room.currentState?.getStateEvents?.('m.room.create')
+    const createEvent = Array.isArray(createEvents) ? createEvents[0] : createEvents
+    const roomType = (createEvent?.getContent?.() as { type?: unknown } | undefined)?.type
+    return roomType === MatrixRoomType.FRIENDS
+  }
+
   /** 会话列表：未登录 → []；执行期异常 → 抛出（旧实现 catch 成 []，把故障伪装成 0 条会话）。 */
   async getSessionList(): Promise<SessionInfo[]> {
     let client: MatrixClient
@@ -81,9 +93,16 @@ class MatrixSessionService extends BaseMatrixService {
         return this.getUnreadCount(room) === 0
       }
 
+      // 已退出/被封禁的房间不是会话：保留只会让用户点进一个自己已不在的房间，
+      // 既收不到新消息（服务端不再向该用户投递），也无法发送。
+      const isLeftRoom = (room: Room): boolean => {
+        const membership = room.getMyMembership?.()
+        return membership === 'leave' || membership === 'ban'
+      }
+
       const sessions = client
         .getRooms()
-        .filter((room) => !isDeadRoom(room))
+        .filter((room) => !this.isSystemContainerRoom(room) && !isLeftRoom(room) && !isDeadRoom(room))
         .map((room) => {
           const dmRoomInfo = dmRoomMap.get(room.roomId) ?? null
           return this.buildSessionFromRoom(room, dmRoomInfo)

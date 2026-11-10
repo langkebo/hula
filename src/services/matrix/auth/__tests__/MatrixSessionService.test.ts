@@ -53,6 +53,7 @@ function createRoom(options: {
   tags?: Record<string, unknown>
   notificationSettings?: Record<string, unknown> | null
   joinedMembers?: Array<{ userId: string }>
+  createType?: string
 }) {
   const {
     roomId = '!room:example.com',
@@ -63,7 +64,8 @@ function createRoom(options: {
     events = [],
     tags,
     notificationSettings = null,
-    joinedMembers
+    joinedMembers,
+    createType
   } = options
 
   return {
@@ -73,6 +75,15 @@ function createRoom(options: {
     getUnreadNotificationCount: vi.fn(() => unreadCount),
     getJoinedMemberCount: vi.fn(() => joinedMemberCount),
     getJoinedMembers: vi.fn(() => joinedMembers ?? []),
+    ...(createType
+      ? {
+          currentState: {
+            getStateEvents: vi.fn((eventType: string) =>
+              eventType === 'm.room.create' ? [{ getContent: () => ({ type: createType }) }] : []
+            )
+          }
+        }
+      : {}),
     getLiveTimeline: vi.fn(() => ({
       getEvents: vi.fn(() => events)
     })),
@@ -261,6 +272,56 @@ describe('MatrixSessionService', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].roomId).toBe('!alive-dm:example.com')
+  })
+
+  it('系统容器房间过滤：m.friends 好友容器房间不进会话列表（用户在其内发消息对方永远收不到）', async () => {
+    const friendsContainer = createRoom({
+      roomId: '!friends:example.com',
+      name: 'Friends',
+      joinedMemberCount: 1,
+      createType: 'm.friends'
+    })
+    const normalGroup = createRoom({
+      roomId: '!group:example.com',
+      name: 'General',
+      joinedMemberCount: 2,
+      events: [createEvent(3000, 'hi')]
+    })
+
+    mockDirectMessageService.getDMRooms.mockResolvedValueOnce([])
+    mockClient.getRooms.mockReturnValueOnce([friendsContainer, normalGroup] as unknown as Room[])
+
+    const result = await matrixSessionService.getSessionList()
+
+    expect(result.map((session) => session.roomId)).toEqual(['!group:example.com'])
+  })
+
+  it('成员状态过滤：已退出/被封禁的房间不进会话列表（点进去既收不到也发不出）', async () => {
+    const leftRoom = {
+      ...createRoom({
+        roomId: '!left:example.com',
+        name: 'd11-verify-mwabans4',
+        joinedMemberCount: 1,
+        unreadCount: 2,
+        events: [createEvent(3000, 'old message')]
+      }),
+      getMyMembership: vi.fn(() => 'leave')
+    }
+    const bannedRoom = {
+      ...createRoom({ roomId: '!banned:example.com', joinedMemberCount: 3, events: [createEvent(3000, 'hi')] }),
+      getMyMembership: vi.fn(() => 'ban')
+    }
+    const joinedRoom = {
+      ...createRoom({ roomId: '!joined:example.com', joinedMemberCount: 2, events: [createEvent(3000, 'hi')] }),
+      getMyMembership: vi.fn(() => 'join')
+    }
+
+    mockDirectMessageService.getDMRooms.mockResolvedValueOnce([])
+    mockClient.getRooms.mockReturnValueOnce([leftRoom, bannedRoom, joinedRoom] as unknown as Room[])
+
+    const result = await matrixSessionService.getSessionList()
+
+    expect(result.map((session) => session.roomId)).toEqual(['!joined:example.com'])
   })
 
   it('死房间过滤：有 m.room.name 事件的空间子房间（仅 1 人）保留', async () => {

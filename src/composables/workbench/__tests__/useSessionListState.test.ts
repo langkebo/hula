@@ -37,6 +37,11 @@ const botStoreMock = reactive({
   displayText: 'bot-display'
 })
 
+// 阅后即焚按用户存：会话列表的焚毁标记只认 settingStore.burnRooms（D17）
+const settingStoreMock = reactive({
+  burnRooms: [] as Array<{ roomId: string; duration: number }>
+})
+
 const replaceMsgMock = {
   checkRoomAtMe: vi.fn((roomId: string) => roomId === 'room-group'),
   getMessageSenderName: vi.fn((_: unknown, __: string, roomId: string) => `sender-${roomId}`),
@@ -58,6 +63,10 @@ vi.mock('@/stores/domains/chat/group', () => ({
 
 vi.mock('@/stores/domains/user/bot', () => ({
   useBotStore: () => botStoreMock
+}))
+
+vi.mock('@/stores/domains/settings/setting', () => ({
+  useSettingStore: () => settingStoreMock
 }))
 
 vi.mock('@/composables/common/useNetworkStatus', () => ({
@@ -113,6 +122,7 @@ describe('useSessionListState', () => {
     sessionStoreMock.getSessionList.mockResolvedValue(undefined)
     globalStoreMock.currentSessionRoomId = 'room-group'
     botStoreMock.displayText = 'bot-display'
+    settingStoreMock.burnRooms = []
 
     sessionStoreMock.sessionList = [
       {
@@ -526,6 +536,38 @@ describe('useSessionListState', () => {
     expect(items[0].detailId).toBe('@test1:matrix.test') // 身份字段从 dm-new 补全
     expect(items[0].unreadCount).toBe(7)
 
+    wrapper.unmount()
+  })
+
+  it('焚毁标记按「每用户」配置判定，不读房间级 m.burn_after_read state（D17）', async () => {
+    const matrixClientService = (await import('@/services/matrix/MatrixClientService')).default
+    const getRoomSpy = vi.spyOn(matrixClientService, 'getRoom').mockReturnValue({
+      // 旧实现依赖该房间级 state，服务端按用户存时它恒为空
+      currentState: { getStateEvents: () => [{ type: 'm.burn_after_read' }] }
+    } as never)
+
+    sessionStoreMock.sessionList = [
+      {
+        roomId: 'room-burn',
+        type: RoomTypeEnum.GROUP,
+        name: '焚毁群',
+        unreadCount: 0,
+        activeTime: 10,
+        top: false,
+        shield: false
+      }
+    ]
+    chatStoreMock.chatMessageListByRoomId.mockImplementation(() => [])
+
+    const { wrapper, api } = await createHarness()
+    // 房间级 state 存在也不算开启（旧逻辑会误判为 true）
+    expect(api.sessionList.value[0]?.isBurnAfterRead).toBe(false)
+
+    settingStoreMock.burnRooms = [{ roomId: 'room-burn', duration: 60 }]
+    await flushAll()
+    expect(api.sessionList.value[0]?.isBurnAfterRead).toBe(true)
+
+    getRoomSpy.mockRestore()
     wrapper.unmount()
   })
 

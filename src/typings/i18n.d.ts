@@ -5883,13 +5883,13 @@ export type I18nKeys = {
     },
     "burn": {
       "title": "阅后即焚",
-      "enable_label": "启用阅后即焚",
-      "enable_desc": "开启后，新发送的消息在对方阅读后将自动销毁",
+      "enable_label": "对本账号启用阅后即焚",
+      "enable_desc": "仅对你在本房间发送的新消息生效；每位成员各自读取后在自己的视角销毁，不会改变其他成员的设置",
       "duration_label": "焚毁时间",
-      "duration_desc": "消息阅读后多少时间后销毁",
-      "pending_count": "当前待销毁消息：{count} 条",
-      "tip": "提示：销毁后消息无法恢复，请谨慎使用",
-      "pending_title": "待销毁消息",
+      "duration_desc": "消息被读取后，经过该时长在阅读者视角销毁",
+      "pending_count": "我的待销毁消息：{count} 条",
+      "tip": "本设置仅对当前账号生效；销毁后消息无法恢复，请谨慎使用",
+      "pending_title": "我的待销毁消息",
       "pending_empty": "暂无待销毁消息",
       "cancel": "取消销毁",
       "remaining_seconds": "{count} 秒后销毁",
@@ -6350,7 +6350,13 @@ export type I18nKeys = {
         "title": "通知历史",
         "desc": "查看最近的通知记录",
         "empty": "暂无通知记录",
-        "no_content": "无内容"
+        "no_content": "无内容",
+        "read": "已读",
+        "mark_read": "标记已读",
+        "ack_success": "已标记为已读",
+        "ack_receipt": "服务端不支持通知确认，已通过已读回执标记",
+        "ack_failed": "标记已读失败",
+        "ack_unavailable": "该通知缺少确认所需的字段"
       }
     },
     "common": {
@@ -12591,6 +12597,12 @@ export type I18nKeyPaths =
   | "setting.push.history.desc"
   | "setting.push.history.empty"
   | "setting.push.history.no_content"
+  | "setting.push.history.read"
+  | "setting.push.history.mark_read"
+  | "setting.push.history.ack_success"
+  | "setting.push.history.ack_receipt"
+  | "setting.push.history.ack_failed"
+  | "setting.push.history.ack_unavailable"
   | "setting.common.cancel"
   | "setting.common.save"
   | "setting.common.confirm"

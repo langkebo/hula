@@ -125,7 +125,7 @@ export class VerificationService extends BaseMatrixService {
   }
 
   /**
-   * 事务阶段变化：终态注销，Started 自动 `verify()`，Ready 且本端发起时自动选 SAS。
+   * 事务阶段变化：终态注销，Started 自动 `verify()`，Ready 且已知对端设备时自动选 SAS。
    *
    * 自动驱动的原因：SDK 的 `Verifier.verify()` 只等待双方 MAC 交换，**不会**自己发起；
    * 若任一端不调用，SAS 永远不产生，界面就会卡在「等待对方」。参见 D10。
@@ -146,7 +146,11 @@ export class VerificationService extends BaseMatrixService {
       return
     }
 
-    if (phase === VerificationPhase.Ready && request.initiatedByMe && request.otherPartySupportsMethod('m.sas.v1')) {
+    // Ready 表示本端已发出 m.key.verification.ready（接收方即"已接受"，发起方即"对端已接受"）。
+    // rust-crypto 的发起方在 Ready 阶段经常拿不到 otherDeviceId（SDK 未回填 other_device_id），
+    // 此时 startVerification() 必抛「other device is unknown」；接收方的 otherDeviceId 则是已知的。
+    // 因此两侧都可以启动 SAS，由 SDK 自身处理同时 start 的 tie-break（D10）。
+    if (phase === VerificationPhase.Ready && request.otherDeviceId && request.otherPartySupportsMethod('m.sas.v1')) {
       void this.startSasForRequest(transactionId).catch((err: unknown) => {
         logger.warn(`[Verification] 自动启动 SAS 失败: ${transactionId}: ${err}`)
       })

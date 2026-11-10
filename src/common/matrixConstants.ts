@@ -19,6 +19,13 @@ export const MatrixEventType = {
   KEY_VERIFICATION_CANCEL: 'm.key.verification.cancel'
 } as const
 
+// m.room.create 事件的 content.type：标识房间用途，缺省即普通聊天房间
+export const MatrixRoomType = {
+  SPACE: 'm.space',
+  /** 后端用于存放好友关系（m.friends.list）的私有容器房间，不是聊天会话 */
+  FRIENDS: 'm.friends'
+} as const
+
 export const MatrixMsgType = {
   TEXT: 'm.text',
   NOTICE: 'm.notice',

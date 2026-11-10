@@ -119,7 +119,9 @@ vi.mock('@/composables/chat/useMessage', () => ({
 // 方案B：index.vue 新增已隐藏会话入口，依赖设置密码校验与操作反馈
 vi.mock('@/stores/domains/settings/setting', () => ({
   useSettingStore: () => ({
-    isSecretChatConfigured: vi.fn(() => true)
+    isSecretChatConfigured: vi.fn(() => true),
+    // 阅后即焚按用户存，useSessionListState 读取该列表判定焚毁标记（D17）
+    burnRooms: []
   })
 }))
 

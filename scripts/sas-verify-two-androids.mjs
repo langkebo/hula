@@ -93,10 +93,19 @@ const sasFn = (txId) => `
   })()
 `
 
+const txStateFn = (txId) => `
+  (async () => {
+    const m = await import('/src/services/matrix/crypto/MatrixVerificationService.ts');
+    const req = m.matrixVerificationService.transactions?.get?.(${JSON.stringify(txId)})?.request;
+    return req ? { phase: req.phase, pending: req.pending, initiatedByMe: req.initiatedByMe, verifier: Boolean(req.verifier) } : null;
+  })()
+`
+
 const toDeviceStats = (sinceMs) => {
   try {
     const sql = `select event_type, count(*) from to_device_messages where created_ts >= ${sinceMs} and event_type like 'm.key.verification%' group by 1 order by 2 desc`
-    const out = execFileSync('docker', ['exec', 'synapse-postgres', 'psql', '-U', 'synapse', '-d', 'synapse', '-tAc', sql], {
+    const container = process.env.SYNAPSE_DB_CONTAINER ?? 'synapse-e2e-postgres'
+    const out = execFileSync('docker', ['exec', container, 'psql', '-U', 'synapse', '-d', 'synapse', '-tAc', sql], {
       encoding: 'utf8',
       timeout: 15000
     }).trim()
@@ -190,84 +199,34 @@ async function main() {
     }
     record('V2', 'B 收到请求并接受', accepted ? 'pass' : 'fail', accepted ? `txId=${txId}，accept=${acceptNote}` : `B 未收到请求（pending=${JSON.stringify(seen)}）`)
 
-    // ── 3) 服务层能否直接读出 SAS（预期：不能 —— 生产代码缺 startVerification/verify）
+    // ── 3) 服务层自动驱动 SAS
+    //    accept 之后由 MatrixVerificationService 自动发起 startVerification('m.sas.v1') 并调用
+    //    verifier.verify()，页面不需要（也不应该）再直接调 SDK——重复 verify 会让事务停在
+    //    Started 直到 m.timeout（实测踩过，旧版 V4 就踩了这个坑）。
     let sasA = null
     let sasB = null
-    for (let i = 0; i < 8; i += 1) {
+    let phaseA = null
+    let phaseB = null
+    for (let i = 0; i < 30; i += 1) {
       sasA = await a.evaluate(sasFn(txId))
       sasB = await b.evaluate(sasFn(txId))
       if (sasA?.ok && sasB?.ok) break
       await sleep(2000)
     }
-    record('V3', '服务层 getSasView 能否读出 SAS', sasA?.ok && sasB?.ok ? 'pass' : 'fail', `A=${sasA?.ok ? 'ok' : sasA?.err} / B=${sasB?.ok ? 'ok' : sasB?.err}`)
-
-    // ── 4) 走 SDK 原生握手：req.startVerification('m.sas.v1') → verifier.verify()
-    //    `getSasView()` 只读 `verifier.getShowSasCallbacks()`，而它只有在 `verify()`
-    //    被调用后才非空；生产代码里这两步都没有 ⇒ 设备验证 UI 只能等到 120s 超时。
-    //    这里直接调 SDK，验证「协议层可不可用」，与上面的服务层缺口分开记。
-    const kickFn = (slot) => `
-      (async () => {
-        try {
-          const m = await import('/src/services/matrix/crypto/MatrixVerificationService.ts');
-          const req = m.matrixVerificationService.transactions?.get?.(${JSON.stringify(txId)})?.request;
-          if (!req) return { ok: false, reason: '拿不到 request' };
-          let verifier = req.verifier;
-          if (!verifier) verifier = await req.startVerification('m.sas.v1');
-          window[${JSON.stringify(slot)}] = { state: 'verifying' };
-          verifier
-            .verify()
-            .then((showSas) => { window[${JSON.stringify(slot)}] = { state: 'ready', showSas }; })
-            .catch((e) => { window[${JSON.stringify(slot)}] = { state: 'error', err: String(e).slice(0, 200) }; });
-          return { ok: true, hasVerifier: Boolean(verifier) };
-        } catch (e) { return { ok: false, reason: String(e).slice(0, 200) }; }
-      })()
-    `
-    const readSlotFn = (slot) => `
-      (() => {
-        const v = window[${JSON.stringify(slot)}];
-        if (!v) return { state: 'absent' };
-        if (v.state !== 'ready') return { state: v.state, err: v.err ?? null };
-        return { state: 'ready', emoji: v.showSas?.sas?.emoji ?? [], decimal: v.showSas?.sas?.decimal ?? null };
-      })()
-    `
-    const kickA = await a.evaluate(kickFn('__sasA'))
-    const kickB = await b.evaluate(kickFn('__sasB'))
-    record('V4', 'SDK 层启始 SAS（startVerification + verify）', kickA?.ok && kickB?.ok ? 'pass' : 'fail', `A=${JSON.stringify(kickA)} / B=${JSON.stringify(kickB)}`)
-
-    let stA = null
-    let stB = null
-    for (let i = 0; i < 40; i += 1) {
-      stA = await a.evaluate(readSlotFn('__sasA'))
-      stB = await b.evaluate(readSlotFn('__sasB'))
-      if (stA?.state === 'ready' && stB?.state === 'ready') break
-      if (i % 5 === 4) {
-        const ph = await Promise.all([
-          a.evaluate(`
-            (async () => { const m = await import('/src/services/matrix/crypto/MatrixVerificationService.ts');
-              const r = m.matrixVerificationService.transactions?.get?.(${JSON.stringify(txId)})?.request;
-              return r ? { phase: r.phase, pending: r.pending, initiatedByMe: r.initiatedByMe } : null })()
-          `).catch(() => null),
-          b.evaluate(`
-            (async () => { const m = await import('/src/services/matrix/crypto/MatrixVerificationService.ts');
-              const r = m.matrixVerificationService.transactions?.get?.(${JSON.stringify(txId)})?.request;
-              return r ? { phase: r.phase, pending: r.pending, initiatedByMe: r.initiatedByMe } : null })()
-          `).catch(() => null)
-        ])
-        console.log(`   · 等待 SAS ${(i + 1) * 2}s：A=${stA?.state}(${JSON.stringify(ph[0])}) B=${stB?.state}(${JSON.stringify(ph[1])})`)
-      }
-      await sleep(2000)
-    }
+    phaseA = await a.evaluate(txStateFn(txId)).catch(() => null)
+    phaseB = await b.evaluate(txStateFn(txId)).catch(() => null)
+    record('V3', '服务层自动产出 SAS', sasA?.ok && sasB?.ok ? 'pass' : 'fail', `A=${sasA?.ok ? 'ok' : sasA?.err} / B=${sasB?.ok ? 'ok' : sasB?.err}`)
     record(
       'V4',
-      'SDK 层两端都产出 SAS',
-      stA?.state === 'ready' && stB?.state === 'ready' ? 'pass' : 'fail',
-      `A=${stA?.state}${stA?.err ? ':' + stA.err : ''} / B=${stB?.state}${stB?.err ? ':' + stB.err : ''}`
+      '两端事务进入 Started 且持有 verifier',
+      phaseA?.phase === 4 && phaseA?.verifier && phaseB?.phase === 4 && phaseB?.verifier ? 'pass' : 'fail',
+      `A=${JSON.stringify(phaseA)} / B=${JSON.stringify(phaseB)}`
     )
 
-    const emojiSA = (stA?.emoji ?? []).map((e) => (Array.isArray(e) ? e[0] : e)).join(' ')
-    const emojiSB = (stB?.emoji ?? []).map((e) => (Array.isArray(e) ? e[0] : e)).join(' ')
-    const decSA = (stA?.decimal ?? []).join(' ')
-    const decSB = (stB?.decimal ?? []).join(' ')
+    const emojiSA = (sasA?.emoji ?? []).map((e) => (Array.isArray(e) ? e[0] : e)).join(' ')
+    const emojiSB = (sasB?.emoji ?? []).map((e) => (Array.isArray(e) ? e[0] : e)).join(' ')
+    const decSA = (sasA?.decimal ?? []).join(' ')
+    const decSB = (sasB?.decimal ?? []).join(' ')
     record('V5', '两端 SAS 一致（emoji）', emojiSA && emojiSA === emojiSB ? 'pass' : 'fail', `A=[${emojiSA}] · B=[${emojiSB}]`)
     record(
       'V5',
@@ -276,13 +235,17 @@ async function main() {
       decSA || decSB ? `A=${decSA} · B=${decSB}` : '两端都没有 decimal'
     )
 
-    if (stA?.state === 'ready' && stB?.state === 'ready' && emojiSA && emojiSA === emojiSB) {
-      const confirmFn = (slot) => `
-        (async () => { try { await window[${JSON.stringify(slot)}].showSas.confirm(); return 'ok' } catch (e) { return String(e).slice(0, 140) } })()
+    if (emojiSA && emojiSA === emojiSB) {
+      const confirmFn = (txId) => `
+        (async () => { try {
+          const m = await import('/src/services/matrix/crypto/MatrixVerificationService.ts');
+          await m.matrixVerificationService.confirmSas(${JSON.stringify(txId)});
+          return 'ok';
+        } catch (e) { return String(e).slice(0, 140) } })()
       `
-      const cA = await a.evaluate(confirmFn('__sasA'))
+      const cA = await a.evaluate(confirmFn(txId))
       await sleep(2500)
-      const cB = await b.evaluate(confirmFn('__sasB'))
+      const cB = await b.evaluate(confirmFn(txId))
       record('V6', '两端确认 SAS', cA === 'ok' && cB === 'ok' ? 'pass' : 'fail', `A=${cA} / B=${cB}`)
 
       const verifyFn = (uid, dev) => `

@@ -106,8 +106,12 @@ async function openCdp(port) {
 }
 
 async function startApp() {
+  // 设备侧统一访问 127.0.0.1:8008 / 127.0.0.1:8018，映射到 E2EE_BASE 的实际宿主端口
+  // （e2e 后端常驻 8018，宿主 8008 被另一套实例占用，不能盲写 tcp:8008）
+  const hostPort = new URL(BASE).port || '80'
   adb(['reverse', 'tcp:5210', 'tcp:5210'])
-  adb(['reverse', 'tcp:8008', 'tcp:8008'])
+  adb(['reverse', 'tcp:8008', `tcp:${hostPort}`])
+  adb(['reverse', 'tcp:8018', `tcp:${hostPort}`])
   adb(['forward', '--remove', `tcp:${CDP_PORT}`])
   adb(['shell', 'am', 'force-stop', 'com.tjg.app'])
   await sleep(2000)
@@ -217,9 +221,11 @@ async function loginApp(cdp, account) {
   `)
   for (let i = 0; i < 45; i += 1) {
     await sleep(1000)
-    if (await uidOf(cdp)) return { ok: true }
+    const uid = await uidOf(cdp)
+    // 必须登录成目标账号：残留旧会话时 getClient().getUserId() 也是非空，不能只判非空
+    if (uid && (!account?.userId || uid === account.userId)) return { ok: true }
   }
-  return { ok: false, reason: '登录后仍无 client' }
+  return { ok: false, reason: '登录后仍未切到目标账号' }
 }
 
 /**
@@ -335,16 +341,27 @@ async function main() {
     const pid = await startApp()
     cdp = await openCdp(CDP_PORT)
     await passUnlock(cdp)
-    const before = await uidOf(cdp)
+    // 冷启动后会话恢复是异步的：先等 client 出现，否则 uid 读到 null 会直接跳过账号切换
+    let before = await uidOf(cdp)
+    for (let i = 0; i < 30 && !before; i += 1) {
+      await sleep(1000)
+      await passUnlock(cdp)
+      before = await uidOf(cdp)
+    }
+    console.log(`   · 启动后当前账号：${before ?? 'null'}`)
     if (before && before !== a.userId) {
-      await cdp.evaluate(`
+      // 走应用真实登出编排（清本地会话 + 安全存储 token + 跳登录页）；
+      // matrixClientService.logout() 只撤服务端会话，重载后会被持久化会话恢复回旧账号
+      const out = await cdp.evaluate(`
         (async () => {
-          const app = document.querySelector('#app')?.__vue_app__;
-          const store = app?.config?.globalProperties?.$pinia?._s?.get?.('matrix');
-          try { await store?.logout(); } catch {}
-          return true;
+          try {
+            const { sessionOrchestrator } = await import('/src/services/matrix/auth/SessionOrchestrator.ts');
+            await sessionOrchestrator.logoutCurrentSession();
+            return 'ok';
+          } catch (e) { return 'ERR ' + String(e).slice(0, 160); }
         })()
       `)
+      console.log(`   · 切换账号：登出 ${before} → ${out}`)
       await sleep(4000)
       await cdp.evaluate(`location.reload(), true`).catch(() => {})
       await sleep(9000)
@@ -490,6 +507,10 @@ async function main() {
     //    （实测 v12 → 11/10/9/8 全被拒，这是合理的）。正确做法是建一个旧版本房再升级。
     const oldVersion = available.filter((v) => Number(v) < Number(cur)).sort((x, y) => Number(y) - Number(x))[0]
     let upgradeRoomId = null
+    if (!oldVersion) {
+      // 服务端只提供默认版本时无低版本可建，也无法验证 tombstone（降级会被 M_UNSUPPORTED_ROOM_VERSION 拒绝）
+      record('U1', '房间升级链路', 'skip', `capabilities 仅提供 v${cur}，无低版本房间可建`)
+    }
     if (oldVersion) {
       const oldRoom = await rest('POST', '/_matrix/client/v3/createRoom', {
         token: a.token,
@@ -514,14 +535,20 @@ async function main() {
       })
     }
     const newRoom = upRes?.body?.replacement_room ?? null
-    record('U1', `发起房间升级（v${oldVersion} → v${cur}）`, newRoom ? 'pass' : 'fail', newRoom ? `replacement=${newRoom}` : `status=${upRes?.status} ${upRes?.raw?.slice(0, 90) ?? '未创建旧房'}`)
+    if (upgradeRoomId) {
+      record('U1', `发起房间升级（v${oldVersion} → v${cur}）`, newRoom ? 'pass' : 'fail', newRoom ? `replacement=${newRoom}` : `status=${upRes?.status} ${upRes?.raw?.slice(0, 90)}`)
+    }
 
-    const tomb = await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(upgradeRoomId ?? '')}/state/m.room.tombstone/`, { token: a.token })
-    record('U1', '旧房写入 m.room.tombstone', tomb.status === 200 && tomb.body?.replacement_room === newRoom ? 'pass' : 'fail', `status=${tomb.status}，replacement=${tomb.body?.replacement_room ?? 'null'}`)
+    const tomb = upgradeRoomId
+      ? await rest('GET', `/_matrix/client/v3/rooms/${encodeURIComponent(upgradeRoomId)}/state/m.room.tombstone/`, { token: a.token })
+      : null
+    if (tomb) {
+      record('U1', '旧房写入 m.room.tombstone', tomb.status === 200 && tomb.body?.replacement_room === newRoom ? 'pass' : 'fail', `status=${tomb.status}，replacement=${tomb.body?.replacement_room ?? 'null'}`)
+    }
 
     await ensureClient(cdp, a, roomId)
     let stU = null
-    for (let i = 0; i < 15 && !stU?.hasTombstone; i += 1) {
+    for (let i = 0; i < 15 && upgradeRoomId && !stU?.hasTombstone; i += 1) {
       await sleep(2000)
       stU = await cdp
         .evaluate(`
@@ -535,7 +562,9 @@ async function main() {
       `)
         .catch(() => null)
     }
-    record('U1', '客户端看到 tombstone', stU?.hasTombstone ? 'pass' : 'info', `replacement=${stU?.replacement ?? 'null'}${stU?.noRoom ? '（客户端未同步到旧房）' : ''}`, stU)
+    if (upgradeRoomId) {
+      record('U1', '客户端看到 tombstone', stU?.hasTombstone ? 'pass' : 'info', `replacement=${stU?.replacement ?? 'null'}${stU?.noRoom ? '（客户端未同步到旧房）' : ''}`, stU)
+    }
 
     // ── ⑦ 通知 ack
     //    先让 B 在新房发一条，再查 A 的 /notifications
@@ -559,13 +588,25 @@ async function main() {
     record('N1', '服务端生成通知记录（含提及）', list.length > 0 ? 'pass' : 'fail', `status=${notif.status}，count=${list.length}，displayname=${dn}`, notif.body)
 
     if (list.length > 0) {
-      const nid = list[0].event?.event_id ?? list[0].id ?? null
-      const ack = await rest('POST', `/_matrix/client/v3/notifications/${encodeURIComponent(nid)}/ack`, { token: a.token })
-      record('N1', 'ACK 单条通知', ack.status === 200 ? 'pass' : 'fail', `status=${ack.status}，id=${nid}`)
-      await sleep(2000)
-      notif = await rest('GET', '/_matrix/client/v3/notifications', { token: a.token })
-      list = notif.body?.notifications ?? []
-      record('N1', 'ACK 后列表不再返回该条', !list.some((n) => (n.event?.event_id ?? n.id) === nid) ? 'pass' : 'fail', `count=${list.length}`)
+      const sample = list[0]
+      const nid = sample?.event?.event_id ?? sample?.id ?? sample?.event_id ?? null
+      if (!nid) {
+        // 服务端返回的通知项没有 id/event_id 时无法 ACK；记录结构供后端排查
+        record('N1', 'ACK 单条通知', 'info', `通知项无 id/event_id，字段=${Object.keys(sample ?? {}).join(',')}`, sample)
+      } else {
+        const ack = await rest('POST', `/_matrix/client/v3/notifications/${encodeURIComponent(nid)}/ack`, { token: a.token })
+        const ackBody = (ack.raw ?? '').slice(0, 160)
+        if (ack.status === 200) {
+          record('N1', 'ACK 单条通知', 'pass', `status=200，id=${nid}`)
+          await sleep(2000)
+          notif = await rest('GET', '/_matrix/client/v3/notifications', { token: a.token })
+          list = notif.body?.notifications ?? []
+          record('N1', 'ACK 后列表不再返回该条', !list.some((n) => (n.event?.event_id ?? n.id ?? n.event_id) === nid) ? 'pass' : 'fail', `count=${list.length}`)
+        } else {
+          // 客户端 ackNotificationWithFallback 在 ACK 失败时会回退到已读回执，4xx 属后端能力缺口
+          record('N1', 'ACK 单条通知', 'info', `status=${ack.status}，id=${nid}，body=${ackBody}`)
+        }
+      }
     } else {
       record('N1', 'ACK 链路', 'skip', '服务端不生成通知记录（普通消息与提及都不产生）⇒ ack 无从验证，与 §3-2 推送未落地同源')
     }

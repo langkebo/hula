@@ -27,16 +27,18 @@ export const useMsgInputMobilePanels = ({
   const isMobileRef: ComputedRef<boolean> = useIsMobile()
   const isVoiceMode = ref(false)
   const mobilePanelState = ref<MobilePanelStateEnum>(MobilePanelStateEnum.NONE)
+  const isVoicePanelActive = computed(() => mobilePanelState.value === MobilePanelStateEnum.VOICE)
 
   const formClass = computed(() => (isMobileRef.value ? 'gap-10px ' : ''))
   const containerClass = computed(() =>
-    isMobileRef.value ? 'flex flex-1 p-5px gap-2 pt-5px items-center min-h-2.25rem' : ' flex-col'
+    isMobileRef.value ? 'flex flex-1 px-2 py-6px gap-2 items-center min-h-2.25rem' : ' flex-col'
   )
-  const inputMinHeight = computed(() => (isMobileRef.value ? '2rem' : '36px'))
-  const inputLineHeight = computed(() => (isMobileRef.value && !msgInput.value ? '2rem' : '20px'))
+  // 微信式输入框：外观（背景/圆角/内边距）由移动端聊天室样式统一覆盖，这里只保留占位符
+  const inputMinHeight = computed(() => (isMobileRef.value ? '1.5rem' : '36px'))
+  const inputLineHeight = computed(() => (isMobileRef.value && !msgInput.value ? '1.5rem' : '20px'))
   const inputClass = computed(() => {
     const base = isMobileRef.value
-      ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) p-2 min-h-2rem ps-10px! text-[length:var(--tjg-font-size-base)]! rounded-10px! max-h-8rem! flex items-center'
+      ? 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) text-[length:var(--tjg-font-size-base)]!'
       : 'empty:before:content-[attr(data-placeholder)] before:text-(12px [--tjg-text-tertiary]) p-2'
     return privateModeActive.value ? `${base} private-mode-input` : base
   })
@@ -113,6 +115,7 @@ export const useMsgInputMobilePanels = ({
     isMobileRef,
     isVoiceMode,
     mobilePanelState,
+    isVoicePanelActive,
     formClass,
     containerClass,
     inputMinHeight,

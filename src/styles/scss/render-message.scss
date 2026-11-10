@@ -53,11 +53,14 @@
   border-radius: var(--tjg-radius-xs);
 }
 
-/* 气泡 hover 微浮 — 对齐原型 B2（transform 不触发 reflow，无布局抖动） */
-.bubble:hover,
-.bubble-oneself:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--tjg-shadow-md);
+/* 气泡 hover 微浮 — 对齐原型 B2（transform 不触发 reflow，无布局抖动）
+   仅指针设备生效：触屏点击会合成 hover，若不加限制气泡会粘滞抬起 */
+@media (hover: hover) and (pointer: fine) {
+  .bubble:hover,
+  .bubble-oneself:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--tjg-shadow-md);
+  }
 }
 
 /* 选中文本时的高亮颜色（包含根节点与后代，避免被全局 ::selection 覆盖） */

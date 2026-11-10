@@ -1,11 +1,12 @@
 <template>
-  <div class="tjg-message-meta" :class="{ 'is-me': isMe }">
-    <div class="meta-row">
-      <div v-if="!isMe && senderPresence" class="presence-indicator" :title="senderPresenceText">
+  <div class="tjg-message-meta" :class="{ 'is-me': isMe, 'is-compact': compact }">
+    <!-- 移动端紧凑模式只保留发送状态/重试，时间由消息列表的时间分割承担 -->
+    <div class="meta-row" v-if="!compact || isSending || showRetry">
+      <div v-if="!compact && !isMe && senderPresence" class="presence-indicator" :title="senderPresenceText">
         <div class="presence-dot" :class="senderPresence" />
       </div>
 
-      <span class="timestamp">{{ formattedTime }}</span>
+      <span v-if="!compact" class="timestamp">{{ formattedTime }}</span>
 
       <span v-if="isSending" class="status-pill status-pill--sending">
         <span class="status-dot status-dot--sending" />
@@ -15,7 +16,7 @@
         {{ t('message_container.retry') }}
       </button>
 
-      <div v-if="receipts.length" class="receipts-preview">
+      <div v-if="!compact && receipts.length" class="receipts-preview">
         <n-tooltip trigger="hover">
           <template #trigger>
             <div class="receipts-count">
@@ -68,6 +69,8 @@ const props = defineProps<{
   isMe: boolean
   status?: MessageStatusEnum | undefined
   isLastMessage?: boolean
+  /** 移动端紧凑模式：隐藏时间、在线状态与已读数，仅保留发送中/失败重试 */
+  compact?: boolean
 }>()
 const emit = defineEmits<{ retry: [] }>()
 
@@ -139,6 +142,10 @@ const typingText = computed(() => {
 
   &.is-me {
     align-items: flex-end;
+  }
+
+  &.is-compact {
+    margin-top: 2px;
   }
 }
 

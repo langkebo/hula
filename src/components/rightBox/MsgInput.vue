@@ -17,18 +17,15 @@
       :class="formClass"
       class="w-full flex flex-1 min-h-0">
       <div class="w-full flex" :class="containerClass">
-        <!-- 移动端控件（语音按钮 + 底部操作栏） -->
-        <MsgInputMobileControls
-          v-if="isMobileRef"
-          :mobile-panel-state="mobilePanelState"
-          :has-input="msgInput"
-          :disabled-send="disabledSend"
-          :isAIMode="props.isAIMode"
-          :isAIStreaming="props.isAIStreaming"
-          @handle-voice-click="handleVoiceClick"
-          @handle-emoji-click="handleEmojiClick"
-          @handle-more-click="handleMoreClick"
-          @handle-mobile-send="handleMobileSend" />
+        <!-- 移动端语音按钮（输入框左侧，顺序对齐微信） -->
+        <div v-if="isMobileRef" class="flex items-center justify-center w-6 ms-5px h-2.5rem">
+          <svg
+            @click="handleVoiceClick"
+            :class="isVoicePanelActive ? 'text-[--tjg-color-primary-500]' : ''"
+            class="w-25px h-25px mt-2px outline-none">
+            <use href="#voice"></use>
+          </svg>
+        </div>
 
         <ContextMenu class="w-full flex-1 min-h-0" @select="$event.click()" :menu="menuList">
           <n-scrollbar @click="focusInput">
@@ -56,6 +53,18 @@
               :class="inputClass"></div>
           </n-scrollbar>
         </ContextMenu>
+
+        <!-- 移动端表情/发送操作栏（位于输入框右侧，顺序对齐微信） -->
+        <MsgInputMobileControls
+          v-if="isMobileRef"
+          :mobile-panel-state="mobilePanelState"
+          :has-input="msgInput"
+          :disabled-send="disabledSend"
+          :isAIMode="props.isAIMode"
+          :isAIStreaming="props.isAIStreaming"
+          @handle-emoji-click="handleEmojiClick"
+          @handle-more-click="handleMoreClick"
+          @handle-mobile-send="handleMobileSend" />
 
         <!-- 桌面端工具栏 + 发送按钮 -->
         <MsgInputToolbar
@@ -230,6 +239,7 @@ const {
   isMobileRef,
   isVoiceMode,
   mobilePanelState,
+  isVoicePanelActive,
   formClass,
   containerClass,
   inputMinHeight,

@@ -253,7 +253,13 @@
       "title": "Notification History",
       "desc": "View recent notification records",
       "empty": "No notification records",
-      "no_content": "No content"
+      "no_content": "No content",
+      "read": "Read",
+      "mark_read": "Mark as read",
+      "ack_success": "Marked as read",
+      "ack_receipt": "Server does not support notification ack; marked via read receipt",
+      "ack_failed": "Failed to mark as read",
+      "ack_unavailable": "This notification is missing fields required to acknowledge it"
     }
   },
   "common": {

@@ -101,7 +101,7 @@ const handleCreate = async () => {
   showToast(t('space.create_room_success'))
   roomName.value = ''
   showCreate.value = false
-  logger.info(`子房间已创建并挂载到空间 ${props.spaceId}: ${roomId}`)
+  logger.info(`Child room created and linked to space ${props.spaceId}: ${roomId}`)
 }
 
 const openRoom = (room: SpaceChildRoom) => {

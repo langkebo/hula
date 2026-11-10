@@ -240,11 +240,32 @@ describe('MatrixVerificationService', () => {
       })
     })
 
-    it('对端发起时不在 Ready 阶段抢选 SAS 方法', async () => {
+    it('对端发起但已知对端设备时，也在 Ready 阶段启动 SAS（发起方 otherDeviceId 可能为空）', async () => {
+      const verify = vi.fn(async () => undefined)
+      const verifier = { getShowSasCallbacks: vi.fn(() => null), verify }
       const request = makeSdkRequest({
         transactionId: 'txn-peer',
         phase: VerificationPhase.Ready,
-        initiatedByMe: false
+        initiatedByMe: false,
+        startVerification: vi.fn(async () => verifier)
+      })
+      receivedHandler?.(request)
+
+      emitChange(request)
+
+      await vi.waitFor(() => {
+        expect(request.startVerification).toHaveBeenCalledWith('m.sas.v1')
+        expect(verify).toHaveBeenCalled()
+      })
+    })
+
+    it('对端设备未知时不启动 SAS（SDK 会抛 other device is unknown）', async () => {
+      const request = makeSdkRequest({
+        transactionId: 'txn-unknown-device',
+        phase: VerificationPhase.Ready,
+        initiatedByMe: true,
+        otherDeviceId: '',
+        startVerification: vi.fn()
       })
       receivedHandler?.(request)
 

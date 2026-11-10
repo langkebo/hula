@@ -36,7 +36,7 @@
         <!-- 信息间隔时间 -->
         <span
           class="text-[var(--text-sm)] text-[--tjg-text-tertiary] select-none p-4px"
-          v-if="item.timeBlock"
+          v-if="shouldShowTimeBlock(index)"
           @click.stop>
           {{ formatChatTime(item.message.sendTime) }}
         </span>
@@ -166,6 +166,17 @@ const getMessageSenderUid = (message: MessageType): string => {
 }
 
 const isMessageFromMe = (item: MessageType) => getMessageSenderUid(item) === (userStore.userInfo?.uid ?? '')
+
+// 微信式时间分割：首条或与上一条间隔超过 5 分钟才展示，避免连续消息逐条显示时间
+const TIME_BLOCK_GAP_MS = 5 * 60 * 1000
+const shouldShowTimeBlock = (index: number): boolean => {
+  const list = chatStore.chatMessageList
+  const current = list[index]
+  if (!current) return false
+  if (index === 0) return true
+  const previous = list[index - 1]
+  return current.message.sendTime - (previous?.message.sendTime ?? 0) >= TIME_BLOCK_GAP_MS
+}
 </script>
 
 <style scoped lang="scss">

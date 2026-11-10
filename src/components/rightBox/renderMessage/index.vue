@@ -67,24 +67,17 @@
         </n-popover>
 
         <n-flex vertical :size="6" class="color-[--tjg-text-primary] flex-1" :class="isMe ? 'items-end mr-10px' : ''">
-          <n-flex :size="6" align="center" :style="isMe ? 'flex-direction: row-reverse' : ''">
+          <!-- 昵称/角色标签只对群聊里的他人展示：参考微信，自己的消息不重复身份 -->
+          <n-flex :size="6" align="center" v-if="isGroup && !isMe">
             <ContextMenu
               @select="$event.click(message, 'Main')"
               :content="message"
               :menu="isGroup ? optionsList : void 0"
               :special-menu="report">
-              <n-flex
-                :size="6"
-                class="select-none cursor-default"
-                align="center"
-                v-if="isGroup"
-                :style="isMe ? 'flex-direction: row-reverse' : ''">
+              <n-flex :size="6" class="select-none cursor-default" align="center">
                 <!-- 用户名 -->
                 <span
-                  :class="[
-                    'text-[length:var(--tjg-font-size-sm)] select-none color-[--tjg-text-tertiary] inline-block align-top',
-                    !isMe ? 'cursor-pointer hover:color-[--tjg-color-primary-500] transition-colors' : ''
-                  ]"
+                  class="text-[length:var(--tjg-font-size-sm)] select-none color-[--tjg-text-tertiary] inline-block align-top cursor-pointer hover:color-[--tjg-color-primary-500] transition-colors"
                   @click.stop="handleMentionUser">
                   {{ senderDisplayName }}
                 </span>
@@ -187,8 +180,9 @@
                 :history-mode="historyMode" />
             </MessageTrustGate>
 
+            <!-- 移动端用长按菜单，桌面悬浮操作条不渲染（省 DOM，也避免不可见层拦截触摸） -->
             <MessageActionBar
-              :visible="!chatStore.isMsgMultiChoose"
+              :visible="!chatStore.isMsgMultiChoose && !isMobileRef"
               :is-me="isMe"
               :message-type="message.message.type"
               @react="showReactionPickerId = message.message.id"
@@ -304,6 +298,7 @@
 
           <TjgMessageMeta
             v-if="!historyMode"
+            :compact="isMobileRef"
             :message-id="message.message.id"
             :room-id="message.message.roomId"
             :sender-id="senderUid"
@@ -506,8 +501,9 @@ const isLastRoomMessage = computed(() => {
   return lastMessage?.message.id === props.message.message.id
 })
 const bubbleMaxWidth = computed(() => {
+  // 移动端参考微信：气泡留出约三成空白，避免整屏宽的长条
   if (isMobileRef.value) {
-    return '84%'
+    return props.isGroup ? '68%' : '74%'
   }
   return props.isGroup ? '32vw' : '50vw'
 })

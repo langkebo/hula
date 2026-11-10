@@ -1,20 +1,15 @@
 <template>
+  <!-- 参考微信：没有回复时不显示任何讨论串入口，避免每条消息下常驻按钮 -->
   <div v-clickable v-if="hasReplies" class="thread-indicator" @click="handleOpenThread">
     <van-icon name="chat-o" size="14" />
     <span class="reply-count">{{ replyCount }}</span>
     <van-icon name="arrow" size="12" />
   </div>
-  <van-button v-else plain size="mini" type="primary" icon="chat-o" @click="handleOpenThread">
-    {{ t('common.thread.start') }}
-  </van-button>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useThreadIndicator } from '@/composables/messaging/useThreadIndicator'
-
-const { t } = useI18n()
 
 const props = defineProps<{
   roomId: string

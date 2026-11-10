@@ -121,10 +121,10 @@ describe('MatrixRoomRealtimeService', () => {
   })
 
   describe('event subscriptions', () => {
-    const setupClient = () => {
+    const setupClient = (rooms: Room[] = []) => {
       const on = vi.fn()
       const getRoom = vi.fn()
-      vi.mocked(matrixClientService.getClient).mockReturnValue({ on, getRoom } as never)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({ on, getRoom, getRooms: () => rooms } as never)
       return { on, getRoom }
     }
 
@@ -342,11 +342,19 @@ describe('MatrixRoomRealtimeService', () => {
     )
 
     it('onRoomNameChange forwards roomId + name', () => {
-      const { on } = setupClient()
+      const roomOn = vi.fn()
+      const room = makeRoom({ roomId: '!r:e', name: 'N', on: roomOn } as unknown as Partial<Room>)
+      setupClient([room])
       const cb = vi.fn()
       service.onRoomNameChange(cb)
-      on.mock.calls[0][1]({ roomId: '!r:e', name: 'N' })
+      // 绑定前 name 已就绪时补发一次，避免监听晚于初始 state 到达而漏掉名称
       expect(cb).toHaveBeenCalledWith('!r:e', 'N')
+
+      // 名称由 Room 实例 emit（client 不转发），绑定后的变更继续转发
+      const handler = roomOn.mock.calls[0][1] as () => void
+      room.name = 'N2'
+      handler()
+      expect(cb).toHaveBeenLastCalledWith('!r:e', 'N2')
     })
 
     it('onRoomAvatarChange forwards roomId + avatar, defaults to null', () => {

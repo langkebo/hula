@@ -183,6 +183,14 @@ export class MatrixConnectionManager {
       })
 
       this.client = createClient(clientOpts)
+      // synapse-rust 没有请求体解压层（无 RequestDecompressionLayer），而 SDK 默认会把
+      // 超过 1KiB 的 JSON 请求体 gzip 压缩并带上 `Content-Encoding: gzip`。服务端按明文
+      // 解析压缩字节 → 400 M_NOT_JSON「Request body is not valid JSON」。
+      // 滑动同步的请求体随订阅房间增多必然超过阈值，一旦触发就永久失败（收不到任何新消息）。
+      // SDK 未把这个开关透出到 createClient 选项，只能就地覆盖 HTTP 层配置。
+      // 测试替身不提供 http，故先判空再改。
+      const httpOpts = this.client.http?.opts
+      if (httpOpts) httpOpts.gzipRequests = false
       logger.info(`客户端初始化完成: ${config.homeserverUrl}`)
 
       // 扩展健康断言：在 client 创建后检测关键扩展是否已注册。

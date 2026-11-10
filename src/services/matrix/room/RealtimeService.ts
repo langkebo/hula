@@ -1,9 +1,10 @@
-import type { MatrixEvent, Room, RoomMember } from 'matrix-js-sdk'
+import type { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk'
 import { RoomTypeEnum } from '@/enums'
 import type { RoomInfo } from '@/services/types'
 import matrixClientService from '../MatrixClientService'
 import matrixEventServiceLocal from '../MatrixEventService'
 import { matrixReadStateService } from '../messaging/MatrixReadStateService'
+import { ClientEvent, RoomEvent } from '../sdk'
 import matrixSlidingSyncService from '../sync/MatrixSlidingSyncService'
 import { matrixRoomCreationService } from './CreationService'
 import { findDmCounterpart, isDirectMessageRoomFromRoom } from './roomTypeUtils'
@@ -51,6 +52,14 @@ interface TimelineEventData {
 }
 
 /**
+ * 在某个 client 实例上挂监听器，返回卸载函数。
+ *
+ * client 会在 forceReconnect / token 刷新 / 冷启动恢复时被重建，旧实例上的监听器
+ * 随之失效；若不在新实例上重放，实时消息永远进不了 store（表现为「收不到别人发的消息」）。
+ */
+type ClientListenerBinder = (client: MatrixClient) => () => void
+
+/**
  * Realtime / view-layer domain service.
  *
  * Groups two concerns that share live-client reads:
@@ -60,6 +69,51 @@ interface TimelineEventData {
  * Extracted from `MatrixRoomService` as part of the P1-1 split.
  */
 export class MatrixRoomRealtimeService {
+  /** key → 监听器绑定器；同一 key 重复注册会覆盖，避免 setupEventListeners 重入时重复渲染 */
+  private readonly clientBinders = new Map<string, ClientListenerBinder>()
+  /** 当前已挂载监听器的 client 实例，用于识别 client 重建 */
+  private boundClient: MatrixClient | null = null
+  private boundUnsubscribers: Array<() => void> = []
+  private connectionStateHandler: ((...args: unknown[]) => void) | null = null
+
+  /**
+   * 登记一个 client 事件监听器，并按当前 client 幂等挂载。
+   *
+   * client 重建后由 `connectionState`(CONNECTED) 触发整组重放，无需调用方重新注册。
+   */
+  private bindClientListener(key: string, binder: ClientListenerBinder): void {
+    this.clientBinders.set(key, binder)
+    this.syncClientListeners()
+  }
+
+  /** 把已登记的监听器挂到当前 client；client 实例变化时先卸载旧实例上的监听器再重放。 */
+  private syncClientListeners(): void {
+    this.watchConnectionState()
+    const client = matrixClientService.getClient()
+    if (!client || client === this.boundClient) return
+
+    for (const unsubscribe of this.boundUnsubscribers) {
+      unsubscribe()
+    }
+    this.boundUnsubscribers = []
+    this.boundClient = client
+    for (const binder of this.clientBinders.values()) {
+      this.boundUnsubscribers.push(binder(client))
+    }
+  }
+
+  /** 监听连接状态：client 重建后重新 CONNECTED 时补挂监听器。 */
+  private watchConnectionState(): void {
+    if (this.connectionStateHandler) return
+    this.connectionStateHandler = (...args: unknown[]) => {
+      const data = args[0] as { state?: string } | undefined
+      if (data?.state === 'CONNECTED') {
+        this.syncClientListeners()
+      }
+    }
+    matrixClientService.on('connectionState', this.connectionStateHandler)
+  }
+
   convertRoomToSession(room: Room): RoomSession {
     const name = room.name || 'Unknown Room'
     const avatar = room.getMxcAvatarUrl() || ''
@@ -109,36 +163,32 @@ export class MatrixRoomRealtimeService {
       message: import('@/stores/domains/chat/chat/types').MessageType | null
     }) => void
   ): void {
-    const client = matrixClientService.getClient()
-    if (!client) return
+    this.bindClientListener('timeline', (client) => {
+      const emitTimelineEvent = (event: MatrixEvent, room: Room): void => {
+        const eventType = event.getType()
+        const roomInfo = matrixRoomCreationService.convertRoomToRoomInfo(room)
+        let message: import('@/stores/domains/chat/chat/types').MessageType | null = null
 
-    const emitTimelineEvent = (event: MatrixEvent, room: Room): void => {
-      const eventType = event.getType()
-      const roomInfo = matrixRoomCreationService.convertRoomToRoomInfo(room)
-      let message: import('@/stores/domains/chat/chat/types').MessageType | null = null
+        if (eventType === 'm.room.message') {
+          message = matrixEventServiceLocal.convertEventToMessage(event, room)
+        } else if (eventType === 'm.room.encrypted') {
+          message = matrixEventServiceLocal.convertEventToMessageType(event)
+        } else if (BEACON_EVENT_TYPES.has(eventType)) {
+          message = matrixEventServiceLocal.convertEventToMessage(event, room)
+        }
+        // m.room.redaction 不在此列：目标事件由 SDK 的 tryApplyRedaction 置为已撤回，
+        // 撤回提示由 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
 
-      if (eventType === 'm.room.message') {
-        message = matrixEventServiceLocal.convertEventToMessage(event, room)
-      } else if (eventType === 'm.room.encrypted') {
-        message = matrixEventServiceLocal.convertEventToMessageType(event)
-      } else if (BEACON_EVENT_TYPES.has(eventType)) {
-        message = matrixEventServiceLocal.convertEventToMessage(event, room)
+        callback({ roomId: room.roomId, eventType, roomInfo, message })
       }
-      // m.room.redaction 不在此列：目标事件由 SDK 的 tryApplyRedaction 置为已撤回，
-      // 撤回提示由 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
 
-      callback({ roomId: room.roomId, eventType, roomInfo, message })
-    }
-
-    client.on(
-      ROOM_EVENTS.Timeline,
-      (
+      const handler = (
         event: MatrixEvent,
         room: Room | undefined,
         _toStartOfTimeline?: boolean,
         _removed?: boolean,
         data?: TimelineEventData
-      ) => {
+      ): void => {
         if (!room) return
 
         // D14：开启 threadSupport 后，讨论串回复只存在于 thread 时间线，
@@ -159,38 +209,59 @@ export class MatrixRoomRealtimeService {
           }
         }
       }
-    )
+
+      client.on(ROOM_EVENTS.Timeline, handler)
+      return () => client.off(ROOM_EVENTS.Timeline, handler)
+    })
   }
 
   onRoomNameChange(callback: (roomId: string, name: string) => void): void {
-    const client = matrixClientService.getClient()
-    if (!client) return
-
-    client.on(ROOM_EVENTS.Name, (room: Room) => {
-      callback(room.roomId, room.name)
+    this.bindClientListener('name', (client) => {
+      // `Room.name` 由 Room 实例发出（client 不转发），直接监听 client 永远收不到。
+      // 逐房间绑定，并为后续新建的房间补挂；初始 state 到达时 Room 也会 emit Name。
+      const unsubscribers: Array<() => void> = []
+      const bindRoom = (room: Room): void => {
+        const handler = (): void => callback(room.roomId, room.name)
+        room.on(RoomEvent.Name, handler)
+        unsubscribers.push(() => room.off(RoomEvent.Name, handler))
+        // 绑定前 state 可能已到达（监听器晚于 sync 挂载），补一次当前值，避免错过首次 Name。
+        if (room.name) handler()
+      }
+      for (const room of client.getRooms()) bindRoom(room)
+      const handleNewRoom = (...args: unknown[]): void => {
+        const room = args[0] as Room | undefined
+        if (room) bindRoom(room)
+      }
+      client.on(ClientEvent.Room, handleNewRoom)
+      return () => {
+        client.off(ClientEvent.Room, handleNewRoom)
+        for (const unsubscribe of unsubscribers) unsubscribe()
+      }
     })
   }
 
   onRoomAvatarChange(callback: (roomId: string, avatarUrl: string | null) => void): void {
-    const client = matrixClientService.getClient()
-    if (!client) return
-
-    client.on(ROOM_EVENTS.Avatar, (room: Room) => {
-      callback(room.roomId, room.getMxcAvatarUrl?.() ?? null)
+    this.bindClientListener('avatar', (client) => {
+      const handler = (room: Room): void => {
+        callback(room.roomId, room.getMxcAvatarUrl?.() ?? null)
+      }
+      client.on(ROOM_EVENTS.Avatar, handler)
+      return () => client.off(ROOM_EVENTS.Avatar, handler)
     })
   }
 
   onRoomMemberChange(callback: (roomId: string, roomInfo: RoomInfo) => void): void {
-    const client = matrixClientService.getClient()
-    if (!client) return
-
-    client.on(ROOM_EVENTS.Member, (_event: MatrixEvent, member: RoomMember) => {
-      const roomId = member.roomId
-      const room = client.getRoom(roomId)
-      if (room) {
-        const roomInfo = matrixRoomCreationService.convertRoomToRoomInfo(room)
-        callback(roomId, roomInfo)
+    this.bindClientListener('member', (client) => {
+      const handler = (_event: MatrixEvent, member: RoomMember): void => {
+        const roomId = member.roomId
+        const room = client.getRoom(roomId)
+        if (room) {
+          const roomInfo = matrixRoomCreationService.convertRoomToRoomInfo(room)
+          callback(roomId, roomInfo)
+        }
       }
+      client.on(ROOM_EVENTS.Member, handler)
+      return () => client.off(ROOM_EVENTS.Member, handler)
     })
   }
 

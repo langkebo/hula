@@ -9,6 +9,7 @@ import matrixClientService from '@/services/matrix/MatrixClientService'
 import { findDmCounterpart } from '@/services/matrix/room/roomTypeUtils'
 import { type SessionItem, useChatStore, useSessionStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useBotStore } from '@/stores/domains/user/bot'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatChatTime } from '@/utils/ComputedTime.ts'
@@ -28,6 +29,7 @@ export const useSessionListState = () => {
   const sessionStore = useSessionStore()
   const globalStore = useGlobalStore()
   const groupStore = useGroupStore()
+  const settingStore = useSettingStore()
   const networkStatus = useNetworkStatus()
   const syncLoading = toRef(sessionStore, 'syncLoading')
   const sourceSessionList = toRef(sessionStore, 'sessionList')
@@ -153,7 +155,9 @@ export const useSessionListState = () => {
       .map((item) => {
         const room = matrixClientService.getRoom(item.roomId)
         const isEncrypted = room ? matrixClientService.isRoomEncrypted(item.roomId) : false
-        const isBurnAfterRead = !!room?.currentState?.getStateEvents('m.burn_after_read')?.length
+        // 阅后即焚是「每用户」配置（服务端 burn_after_read_pending 按用户存），
+        // 并不存在房间级 m.burn_after_read state；旧判定恒为 false（D17）。
+        const isBurnAfterRead = settingStore.burnRooms.some((entry) => entry.roomId === item.roomId)
 
         return { ...item, isEncrypted, isBurnAfterRead }
       })

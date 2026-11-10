@@ -119,7 +119,7 @@
       <p class="section-desc">{{ t('setting.push.history.desc') }}</p>
       <n-spin :show="historyLoading">
         <div v-if="notifications.length > 0" class="notification-list">
-          <div v-for="(notif, idx) in notifications" :key="idx" class="notification-item">
+          <div v-for="(notif, idx) in notifications" :key="notificationKey(notif, idx)" class="notification-item">
             <div class="notification-info">
               <div class="notification-content">
                 {{ getNotificationContent(notif) }}
@@ -128,6 +128,14 @@
                 <span v-if="notif.room_id" class="notification-room">{{ notif.room_id }}</span>
                 <span v-if="notif.ts" class="notification-time">{{ formatTimestamp(notif.ts as number) }}</span>
               </div>
+            </div>
+            <div class="notification-actions">
+              <span v-if="isNotificationRead(notif)" class="notification-read">
+                {{ t('setting.push.history.read') }}
+              </span>
+              <n-button v-else size="tiny" secondary :loading="isAcking(notif)" @click="handleAckNotification(notif)">
+                {{ t('setting.push.history.mark_read') }}
+              </n-button>
             </div>
           </div>
         </div>
@@ -182,6 +190,8 @@ const dndEnabled = ref(false)
 const dndStartTime = ref<number | null>(null)
 const dndEndTime = ref<number | null>(null)
 const notifications = ref<Array<Record<string, unknown>>>([])
+/** 正在确认中的通知 ID，用于逐条禁用按钮，避免重复提交 */
+const ackingIds = ref<string[]>([])
 let unsubscribePushRules: (() => void) | null = null
 
 const showAddPusherModal = ref(false)
@@ -367,6 +377,60 @@ function getNotificationContent(notif: Record<string, unknown>): string {
     return String(content.body)
   }
   return t('setting.push.history.no_content')
+}
+
+/** 后端 `notification_id` 是 i64，统一转成字符串交给 ack 端点 */
+function getNotificationId(notif: Record<string, unknown>): string | null {
+  const id = notif.notification_id
+  if (typeof id === 'number' || typeof id === 'string') {
+    return String(id)
+  }
+  return null
+}
+
+/** 列表 key：优先用稳定的通知 ID，缺失时退回事件 ID / 序号 */
+function notificationKey(notif: Record<string, unknown>, idx: number): string {
+  return getNotificationId(notif) ?? String(notif.event_id ?? idx)
+}
+
+function isNotificationRead(notif: Record<string, unknown>): boolean {
+  return notif.read === true
+}
+
+function isAcking(notif: Record<string, unknown>): boolean {
+  const id = getNotificationId(notif)
+  return id !== null && ackingIds.value.includes(id)
+}
+
+async function handleAckNotification(notif: Record<string, unknown>) {
+  const notificationId = getNotificationId(notif)
+  const roomId = typeof notif.room_id === 'string' ? notif.room_id : ''
+  const eventId = typeof notif.event_id === 'string' ? notif.event_id : ''
+  // ack 端点只认 notification_id；回执兜底还需要 room_id + event_id
+  if (notificationId === null || !roomId || !eventId) {
+    showFeedback(t('setting.push.history.ack_unavailable'), 'warning')
+    return
+  }
+  if (ackingIds.value.includes(notificationId)) return
+
+  ackingIds.value = [...ackingIds.value, notificationId]
+  try {
+    const result = await matrixNotificationService.ackNotificationWithFallback(notificationId, roomId, eventId)
+    if (!result.success) {
+      showFeedback(t('setting.push.history.ack_failed'), 'error')
+      return
+    }
+    notif.read = true
+    showFeedback(
+      result.method === 'receipt' ? t('setting.push.history.ack_receipt') : t('setting.push.history.ack_success'),
+      'success'
+    )
+  } catch (error) {
+    logger.warn('Failed to ack notification', error)
+    showFeedback(t('setting.push.history.ack_failed'), 'error')
+  } finally {
+    ackingIds.value = ackingIds.value.filter((id) => id !== notificationId)
+  }
 }
 
 function formatTimestamp(ts: number): string {
@@ -621,13 +685,28 @@ function handleDndTimeChange() {
 }
 
 .notification-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tjg-space-3);
   padding: var(--tjg-space-3) var(--tjg-space-4);
   background-color: var(--tjg-settings-card-bg);
   border-radius: var(--tjg-radius-sm);
 }
 
+.notification-actions {
+  flex-shrink: 0;
+}
+
+.notification-read {
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+}
+
 .notification-info {
   display: flex;
+  flex: 1;
+  min-width: 0;
   flex-direction: column;
   gap: var(--tjg-space-1);
 }

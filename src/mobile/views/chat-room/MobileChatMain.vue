@@ -254,4 +254,47 @@ const handleBatchExit = (): void => {
 
 <style lang="scss">
 @use '@/styles/scss/render-message';
+
+/**
+ * 移动端聊天室微信式视觉微调（仅本页 chunk 加载，不影响桌面）。
+ * 只做"收紧留白 + 压平气泡"，颜色与圆角仍走设计 token。
+ */
+#image-chat-main .message-row {
+  /* 桌面行首 20px 是为头像留白，移动端左右对称更接近微信 */
+  padding: 5px 12px;
+}
+
+#image-chat-main .bubble,
+#image-chat-main .bubble-oneself {
+  box-shadow: none;
+}
+
+/* 保留用户的"方形气泡"外观设置，不覆盖其圆角 */
+html:not([data-bubble-style='square']) #image-chat-main .bubble {
+  border-radius: 2px 10px 10px 10px;
+}
+
+html:not([data-bubble-style='square']) #image-chat-main .bubble-oneself {
+  border-radius: 10px 2px 10px 10px;
+}
+
+/* 微信输入框没有聚焦高亮外框，聚焦反馈体现在光标与文字上 */
+#message-form:focus-within .n-scrollbar.n-scrollbar {
+  border-color: transparent;
+}
+
+/* 微信式输入框：浅灰圆角底 + 舒适内边距，覆盖桌面态的透明背景与 4px 内边距 */
+#message-form #message-input {
+  background: var(--tjg-surface-subtle);
+  border-radius: 8px;
+  padding: 8px 12px;
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+/* 占位符：UnoCSS 的 empty 变体在移动端未命中，这里显式声明 */
+#message-form #message-input:empty::before {
+  content: attr(data-placeholder);
+  color: var(--tjg-text-tertiary);
+}
 </style>

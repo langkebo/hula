@@ -276,6 +276,9 @@ export function createRoomSync(ctx: RoomSyncContext) {
 
     matrixRoomRealtimeService.onRoomNameChange((roomId, name) => {
       updateRoom(roomId, { name })
+      // 冷启动时会话列表先于房间 state 建好，名称会退化成 roomId（会话标题显示原始房间 ID）。
+      // state 到达后同步回会话，列表与聊天页标题才能解析成房间名。
+      if (name) useSessionStore().updateSession(roomId, { name })
     })
 
     matrixRoomRealtimeService.onRoomAvatarChange((roomId, avatarUrl) => {
@@ -298,7 +301,9 @@ export function createRoomSync(ctx: RoomSyncContext) {
             roomInfo.notificationCount = update.notificationCount
             rooms.value.set(update.roomId, roomInfo)
           }
-          sessionStore.updateSession(update.roomId, { unreadCount: update.unreadCount })
+          // 服务端 notification_count 在本后端恒为 0，直接写回会抹掉刚 +1 的本机未读。
+          // 统一走账本对账，仅在服务端计数更大时向上覆盖。
+          sessionStore.applyServerUnreadCount(update.roomId, update.unreadCount)
           sessionStore.writeUnreadDetail(update.roomId, {
             total: update.notificationCount ?? update.unreadCount,
             highlight: update.highlightCount ?? 0,
@@ -311,11 +316,15 @@ export function createRoomSync(ctx: RoomSyncContext) {
         const roomInfo = rooms.value.get(roomId)
         if (roomInfo) {
           const sessionStore = useSessionStore()
+          // rooms 里的 RoomInfo 是冷启动时转换的，那一刻房间 state 可能还没到，name 会退化成
+          // roomId 并被缓存下来。直接回写会话会把监听 Name 事件拿到的真实房间名覆盖成原始 ID。
+          const resolvedName = roomInfo.name && roomInfo.name !== roomId ? roomInfo.name : undefined
           sessionStore.updateSession(roomId, {
-            name: roomInfo.name,
-            avatar: roomInfo.avatarUrl ?? undefined,
-            unreadCount: roomInfo.unreadCount
+            ...(resolvedName ? { name: resolvedName } : {}),
+            avatar: roomInfo.avatarUrl ?? undefined
           })
+          // 房间刷新带回的未读多半来自读态（本后端为 0），同样不能直接覆盖本机账本。
+          sessionStore.applyServerUnreadCount(roomId, roomInfo.unreadCount)
         }
         scheduleTagsRefresh(roomId)
       },
