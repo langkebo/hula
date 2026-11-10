@@ -255,7 +255,7 @@ export class MatrixClientLifecycle {
   /** 停止客户端并清理监听器
    */
   async stopClient(): Promise<void> {
-    const { connectionManager, eventRouter, syncManager, tokenManager, startClientGuard } = this.deps
+    const { connectionManager, eventRouter, syncManager, tokenManager, cryptoTracker, startClientGuard } = this.deps
     try {
       tokenManager.clear()
       // 必须先注销系统唤醒监听器，否则下次 startClient 会叠加新的监听器。
@@ -264,7 +264,16 @@ export class MatrixClientLifecycle {
       if (client) {
         eventRouter.detach(client, syncManager)
         syncManager.stop()
-        client.stopClient()
+        try {
+          client.stopClient()
+        } finally {
+          // D9：SDK 的 stopClient() 会停掉 crypto 并清空 `cryptoBackend`
+          // （node_modules/matrix-js-sdk/lib/client-lifecycle-stop.js 的 releaseCryptoBackend），
+          // 但 tracker 是窗口级单例、不随 client 变化 —— 不重置就会留下
+          // 「initialized=true，而 getCrypto() 已是 undefined」的脱钩状态。
+          // 放在 finally 里：即使停止过程抛错，旧绑定也不可再信。
+          cryptoTracker.resetState()
+        }
         AvatarUtils.setMxcResolver(null)
         connectionManager.updateConnectionState('DISCONNECTED')
         // 重置启动守卫，允许下次 startClient 重新初始化

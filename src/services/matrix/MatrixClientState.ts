@@ -53,10 +53,52 @@ export class MatrixClientState {
     return this.deps.syncManager.get()
   }
 
-  /** 获取 Rust Crypto 调试状态
+  /**
+   * 获取 Rust Crypto 调试状态。
+   *
+   * D9：tracker 的状态是窗口级单例，必须与**当前 client 的绑定**对账 ——
+   * `initialized=true` 只有在 `getClient().getCrypto()` 真有句柄时才成立；
+   * 否则降级为 false 并标注脱钩原因，避免业务判据与真机脚本读到
+   * 「状态已初始化，但当前 client 没有 crypto」。
    */
   getRustCryptoDebugState(): RustCryptoDebugState {
-    return this.deps.cryptoTracker.getRustCryptoDebugState()
+    const state = this.deps.cryptoTracker.getRustCryptoDebugState()
+    if (!state.initialized) {
+      return state
+    }
+    const client = this.deps.connectionManager.getClient()
+    const cryptoClient = client as (MatrixClient & { getCrypto?: () => unknown }) | null
+    const crypto = typeof cryptoClient?.getCrypto === 'function' ? cryptoClient.getCrypto() : null
+    const cryptoStopped = (crypto as { stopped?: boolean } | null)?.stopped === true
+
+    if (crypto && !cryptoStopped) {
+      // 句柄存在，但归属仍可能是上一个会话：状态标注的账号/设备与当前 client 不一致时
+      // 同样不能算「当前会话已就绪」（D9：登出→登录复用 tracker 的典型形态）。
+      const currentUserId = client?.getUserId?.() ?? null
+      const currentDeviceId = client?.getDeviceId?.() ?? null
+      const ownerMismatch =
+        (state.userId !== null && currentUserId !== null && state.userId !== currentUserId) ||
+        (state.deviceId !== null && currentDeviceId !== null && state.deviceId !== currentDeviceId)
+      if (!ownerMismatch) {
+        return state
+      }
+      return {
+        ...state,
+        initialized: false,
+        skippedReason: 'crypto-state-owner-mismatch',
+        error: `tracker 状态属于 ${state.userId}:${state.deviceId}，与当前 client ${currentUserId}:${currentDeviceId} 不一致`
+      }
+    }
+
+    const identity = `${client?.getUserId?.() ?? 'unknown'}:${client?.getDeviceId?.() ?? 'unknown'}`
+    return {
+      ...state,
+      initialized: false,
+      skippedReason: cryptoStopped ? 'crypto-stopped' : 'crypto-unavailable-after-init',
+      error: cryptoStopped
+        ? `tracker 报 initialized，但当前 client 的 crypto 已停止（${identity}）`
+        : `tracker 报 initialized，但当前 client 没有 crypto 句柄（${identity}）`
+    }
   }
 
   /**
@@ -64,7 +106,7 @@ export class MatrixClientState {
    * 用于在登录后判断加密功能是否可用，若不可用则在加密房间无法发送消息。
    */
   isCryptoReady(): boolean {
-    return this.deps.cryptoTracker.getRustCryptoDebugState().initialized
+    return this.getRustCryptoDebugState().initialized
   }
 
   /** 获取事件解密调试状态

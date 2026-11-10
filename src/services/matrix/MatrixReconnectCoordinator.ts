@@ -75,6 +75,11 @@ export class MatrixReconnectCoordinator {
       // `initRustCrypto`。下面的解绑是**兜底**（SDK 若回退成"只停不清"仍能救回 E2EE），
       // 正常时序下它看到 `getCrypto() === undefined`（no-crypto）而直接返回。
       cryptoTracker.releaseStoppedCryptoBinding(client)
+      // D9：上面一句已让 crypto 从 client 上消失（SDK 清空 cryptoBackend），
+      // 但 tracker 仍会报 initialized=true —— 真机脚本/UI 会把「重连窗口」误判为
+      // 「E2EE 就绪但绑定丢失」并直接失败。这里同步作废旧状态；等下面的
+      // ensureCrypto 重新初始化成功后，状态才会再次变为 initialized=true。
+      cryptoTracker.resetState()
 
       const backoffDelay = computeBackoffDelay({
         baseDelayMs: RECONNECT_BASE_DELAY_MS,

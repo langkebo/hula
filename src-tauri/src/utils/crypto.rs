@@ -9,7 +9,7 @@ use rand::{RngCore, rngs::OsRng};
 use sha2::Sha256;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 use tracing::{debug, error, info, warn};
 
 const SERVICE_NAME: &str = "hula-messenger";
@@ -31,16 +31,65 @@ const KDF_ITERATIONS: u32 = 10_000;
 
 static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 
-/// 获取密钥文件路径（keyring 不可用时的文件 fallback）
-fn get_key_file_path() -> Option<PathBuf> {
-    std::env::var("HOME")
+/// 启动时注入的应用数据目录。
+///
+/// Android/iOS 进程没有 `HOME`（或 `HOME=/`），此时必须落到应用私有目录，
+/// 否则主密钥只能写临时目录甚至写失败（D2）。
+static APP_DATA_DIR: Mutex<Option<PathBuf>> = Mutex::new(None);
+
+/// 注入应用数据目录（由 `common_setup` 在启动时调用）。
+pub fn init_app_data_dir(dir: PathBuf) {
+    match APP_DATA_DIR.lock() {
+        Ok(mut slot) => *slot = Some(dir),
+        Err(poisoned) => *poisoned.into_inner() = Some(dir),
+    }
+}
+
+fn non_empty_env(name: &str) -> Option<String> {
+    std::env::var(name)
         .ok()
-        .map(|home| PathBuf::from(home).join(".tjg").join("master-key"))
+        .filter(|value| !value.trim().is_empty())
+}
+
+/// 选择落盘根目录（纯函数，便于验证优先级）。
+///
+/// 优先级：`HOME`（桌面端保持既有 `~/.tjg` 路径）> 注入的应用数据目录
+/// （移动端无 HOME）> `TJG_PROFILE_DIR`（多实例调试）> 系统临时目录。
+fn pick_storage_root(
+    home: Option<String>,
+    app_data_dir: Option<PathBuf>,
+    profile_dir: Option<String>,
+    temp_dir: PathBuf,
+) -> PathBuf {
+    if let Some(home) = home.filter(|home| home != "/") {
+        return PathBuf::from(home);
+    }
+    if let Some(dir) = app_data_dir {
+        return dir;
+    }
+    if let Some(profile) = profile_dir {
+        return PathBuf::from(profile);
+    }
+    warn!(
+        "HOME/app data dir/profile dir unavailable, falling back to temp dir for encrypted storage"
+    );
+    temp_dir
+}
+
+/// 当前可写的落盘根目录（绝不返回 None：宁可降级到临时目录也要保证密钥可持久化）。
+pub(crate) fn storage_root() -> PathBuf {
+    let app_data_dir = APP_DATA_DIR.lock().ok().and_then(|slot| slot.clone());
+    pick_storage_root(
+        non_empty_env("HOME"),
+        app_data_dir,
+        non_empty_env("TJG_PROFILE_DIR"),
+        std::env::temp_dir(),
+    )
 }
 
 /// 从文件加载密钥（dev 模式 keyring 失效时的 fallback，且仅用于迁移旧安装）。
 fn load_key_from_file() -> Option<[u8; 32]> {
-    let path = get_key_file_path()?;
+    let path = storage_root().join(".tjg").join("master-key");
     let content = fs::read_to_string(&path).ok()?;
     let key_bytes = STANDARD.decode(content.trim()).ok()?;
     if key_bytes.len() != MASTER_KEY_LEN {
@@ -53,10 +102,7 @@ fn load_key_from_file() -> Option<[u8; 32]> {
 
 /// 保存密钥到文件（确保 dev 模式重建后仍可恢复）
 fn save_key_to_file(key: &[u8; 32]) {
-    let Some(path) = get_key_file_path() else {
-        error!("HOME environment variable is not set, cannot save key file");
-        return;
-    };
+    let path = storage_root().join(".tjg").join("master-key");
 
     // 创建父目录
     if let Some(parent) = path.parent() {
@@ -157,9 +203,7 @@ fn store_key_in_keychain(key: &[u8; 32]) -> bool {
 
 /// 删除旧版明文密钥文件（仅在钥匙串已完成托管后调用）。
 fn remove_key_file() {
-    let Some(path) = get_key_file_path() else {
-        return;
-    };
+    let path = storage_root().join(".tjg").join("master-key");
     match fs::remove_file(&path) {
         Ok(()) => info!("Migrated master key into keyring and removed legacy file"),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
@@ -509,7 +553,7 @@ mod tests {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let path = get_key_file_path().expect("Key file path should exist");
+            let path = storage_root().join(".tjg").join("master-key");
             let mode = fs::metadata(&path).unwrap().permissions().mode();
             assert_eq!(
                 mode & 0o777,
@@ -555,7 +599,7 @@ mod tests {
         );
     }
 
-    /// 验证 HOME 环境变量未设置时 get_key_file_path 返回 None
+    /// D2：HOME 缺失（Android/iOS）时仍必须解析出可写路径，不能返回 None
     #[test]
     fn test_file_fallback_no_home_env() {
         let _lock = TEST_LOCK.lock().unwrap();
@@ -563,16 +607,58 @@ mod tests {
         // SAFETY: TEST_LOCK 确保不会并行执行
         unsafe { std::env::remove_var("HOME") };
 
-        let path = get_key_file_path();
+        let path = storage_root().join(".tjg").join("master-key");
         assert!(
-            path.is_none(),
-            "get_key_file_path should return None when HOME is not set"
+            path.ends_with(PathBuf::from(".tjg").join("master-key")),
+            "fallback key path must keep the .tjg/master-key layout"
         );
 
         // 恢复
         if let Some(home) = original_home {
             unsafe { std::env::set_var("HOME", home) };
         }
+    }
+
+    /// D2：落盘根目录优先级（HOME > 应用数据目录 > profile > 临时目录）
+    #[test]
+    fn test_storage_root_priority() {
+        let temp = PathBuf::from("/tmp/tjg-test-temp");
+        let app_data = PathBuf::from("/data/app");
+        let profile = String::from("/data/profile");
+
+        assert_eq!(
+            pick_storage_root(
+                Some("/home/user".into()),
+                Some(app_data.clone()),
+                Some(profile.clone()),
+                temp.clone()
+            ),
+            PathBuf::from("/home/user")
+        );
+        // Android 部分机型把 HOME 设为 "/"，应视为不可写并回退
+        assert_eq!(
+            pick_storage_root(
+                Some("/".into()),
+                Some(app_data.clone()),
+                Some(profile.clone()),
+                temp.clone()
+            ),
+            app_data
+        );
+        assert_eq!(
+            pick_storage_root(
+                None,
+                Some(app_data.clone()),
+                Some(profile.clone()),
+                temp.clone()
+            ),
+            app_data
+        );
+        assert_eq!(
+            pick_storage_root(None, None, Some(profile.clone()), temp.clone()),
+            PathBuf::from(profile)
+        );
+        assert_eq!(pick_storage_root(None, None, None, temp.clone()), temp);
     }
 
     /// 验证空内容文件被正确拒绝

@@ -437,17 +437,28 @@ export class MatrixClientAuth {
 
     try {
       await client.logout()
-      await lifecycle.stopClient()
       logger.info('登出成功')
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '登出失败'
       logger.error(errorMessage)
     } finally {
+      // D9：无论 /logout 是否成功，都必须停掉 client 与 crypto 后端。
+      // 失败路径原先会跳过 stopClient()，旧 OlmMachine 仍持有 IndexedDB 连接，
+      // 随后的 crypto store 清理被 blocked，新登录的 initRustCrypto 会和旧库冲突。
+      try {
+        await lifecycle.stopClient()
+      } catch (err) {
+        logger.warn(`登出时停止客户端失败: ${err}`)
+      }
       syncManager.stop()
       AvatarUtils.setMxcResolver(null)
-      connectionManager.setClient(null)
+      // D9：登出必须把 ConnectionManager 的 client 与 config 一起清掉。
+      // 只 setClient(null) 会留下旧账号的 config，同页重登时身份判等可能命中陈旧配置。
       connectionManager.updateConnectionState('DISCONNECTED')
+      connectionManager.resetState()
       startClientGuard.reset() // 重置启动守卫，保证登出后下次登录能 startClient
+      // D9：同步重置 crypto 调试状态，避免旧会话的 initialized=true 被新登录读到
+      cryptoTracker.resetState()
       // ISSUE-08：清理 keychain 中的 crypto storageKey，避免残留
       if (userId && deviceId) {
         void deleteCryptoStorageKey(userId, deviceId)
@@ -458,11 +469,15 @@ export class MatrixClientAuth {
       clearSecretStorageKeys()
       // 清空消息信任缓存（key 含账号维度，登出仍须释放，避免重登首帧沿用旧判定）
       clearSenderDeviceCache()
-      // 清除 IndexedDB crypto store 与 localStorage 记录，确保下次登录从干净状态开始
+      // 清除 IndexedDB crypto store 与 localStorage 记录，确保下次登录从干净状态开始。
+      // D9：必须 await —— 原先 fire-and-forget 会与新登录的 initRustCrypto 竞争，
+      // 导致新会话 crypto 句柄被清理/初始化交错，表现为「已登录但 getCrypto() 为空」。
       if (userId) {
-        cryptoTracker.clearCryptoStoreForLogout(userId).catch((err) => {
+        try {
+          await cryptoTracker.clearCryptoStoreForLogout(userId)
+        } catch (err) {
           logger.warn(`清理 crypto store 失败 (userId=${userId}):`, err)
-        })
+        }
       }
       void eventRouter // 保留仅为 deps 形状完整（监听器清理已由 lifecycle.stopClient 完成）
     }

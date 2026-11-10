@@ -25,6 +25,15 @@ export interface RustCryptoDebugState {
    * 生产环境的密钥库降级将没有任何可观测信号。
    */
   storeEncrypted: boolean | null
+  /**
+   * 状态所属账号（D9）。
+   *
+   * tracker 是窗口级单例，`initialized` 若不标注归属，调用方无法判断它属于
+   * 「当前 client」还是「上一个会话」。为 null 表示尚未成功绑定账号。
+   */
+  userId: string | null
+  /** 状态所属设备（D9），与 {@link userId} 一起构成绑定归属。 */
+  deviceId: string | null
 }
 
 /** eventDecryptedDebugState：事件解密结果的可观测状态。 */
@@ -48,7 +57,9 @@ export function createInitialRustCryptoDebugState(): RustCryptoDebugState {
     skippedReason: null,
     error: null,
     usedIndexedDB: null,
-    storeEncrypted: null
+    storeEncrypted: null,
+    userId: null,
+    deviceId: null
   }
 }
 

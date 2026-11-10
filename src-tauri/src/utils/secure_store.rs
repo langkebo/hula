@@ -1,16 +1,20 @@
+#[cfg(not(target_os = "android"))]
 use keyring::Entry;
 use std::collections::hash_map::DefaultHasher;
 use std::fs;
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
+#[cfg(not(target_os = "android"))]
 use std::sync::OnceLock;
 use tracing::{debug, error, info, warn};
 
 // 复用 crypto.rs 的 master-key 加密能力
 use crate::utils::crypto;
 
+#[cfg(not(target_os = "android"))]
 static SERVICE_NAME: OnceLock<String> = OnceLock::new();
 
+#[cfg(not(target_os = "android"))]
 fn get_service_name() -> &'static str {
     SERVICE_NAME.get_or_init(|| {
         if let Ok(profile_dir) = std::env::var("TJG_PROFILE_DIR")
@@ -27,12 +31,10 @@ fn get_service_name() -> &'static str {
 
 /// 获取 secure storage 文件 fallback 目录路径
 ///
-/// 文件 fallback 用于 macOS dev 模式下 keychain 不可用时，
-/// 将加密的 secret 存储到文件系统，确保跨会话稳定。
+/// 文件 fallback 用于 keychain 不可用（macOS dev 模式）或移动端无 HOME
+/// （Android/iOS）的场景，根目录由 `crypto::storage_root()` 统一解析（D2）。
 fn get_fallback_dir() -> Option<PathBuf> {
-    std::env::var("HOME")
-        .ok()
-        .map(|home| PathBuf::from(home).join(".tjg").join("secure-storage"))
+    Some(crypto::storage_root().join(".tjg").join("secure-storage"))
 }
 
 /// 根据 key 生成文件 fallback 路径
@@ -166,6 +168,7 @@ fn test_fallback_writable() -> bool {
 ///
 /// macOS dev 模式下常见 `set_password` 返回 Ok 但用新 Entry 读取返回 `NoEntry`
 /// （ACL 不匹配），该情形必须判定为不可用，否则上层会误以为 secret 已持久化。
+#[cfg(not(target_os = "android"))]
 fn test_keychain_writable() -> bool {
     let probe_key = "__hula_probe_keychain_writable__";
     let probe_value = "probe";
@@ -194,6 +197,264 @@ fn test_keychain_writable() -> bool {
     verified
 }
 
+// ===== 平台原生后端抽象 =====
+//
+// 桌面/iOS：系统钥匙串（keyring）。
+// Android：keyring 没有实现，改用 Android Keystore 加密后落盘，见下方实现。
+
+#[cfg(not(target_os = "android"))]
+fn native_get(key: &str) -> Option<String> {
+    let entry = match Entry::new(get_service_name(), key) {
+        Ok(entry) => entry,
+        Err(e) => {
+            warn!("[SECURE_STORE] Failed to create keyring entry: {:?}", e);
+            return None;
+        }
+    };
+
+    match entry.get_password() {
+        Ok(password) => {
+            debug!("[SECURE_STORE] Read secret from keychain for key '{}'", key);
+            Some(password)
+        }
+        Err(keyring::Error::NoEntry) => {
+            debug!(
+                "[SECURE_STORE] No keychain entry for key '{}', trying file fallback",
+                key
+            );
+            None
+        }
+        Err(keyring::Error::Ambiguous(_)) => {
+            warn!(
+                "[SECURE_STORE] Ambiguous keychain entries for key '{}', trying file fallback",
+                key
+            );
+            None
+        }
+        Err(e) => {
+            warn!(
+                "[SECURE_STORE] Keychain read failed for key '{}': {:?}. Falling back to file storage",
+                key, e
+            );
+            None
+        }
+    }
+}
+
+#[cfg(not(target_os = "android"))]
+fn native_set(key: &str, value: &str) -> bool {
+    let entry = match Entry::new(get_service_name(), key) {
+        Ok(entry) => entry,
+        Err(e) => {
+            warn!("[SECURE_STORE] Failed to create keyring entry: {:?}", e);
+            return false;
+        }
+    };
+
+    if let Err(e) = entry.set_password(value) {
+        warn!("[SECURE_STORE] Failed to save secret to keychain: {:?}", e);
+        return false;
+    }
+
+    // 用 NEW Entry 读回验证：macOS dev 模式下 set 成功但读不到是已知问题，
+    // 不验证会让上层误判 secret 已托管。
+    let verified = Entry::new(get_service_name(), key)
+        .ok()
+        .and_then(|entry| entry.get_password().ok())
+        .is_some_and(|stored| stored == value);
+    if !verified {
+        warn!(
+            "[SECURE_STORE] Keychain write could not be verified for key '{}' (macOS dev mode ACL)",
+            key
+        );
+    }
+    verified
+}
+
+#[cfg(not(target_os = "android"))]
+fn native_delete(key: &str) {
+    match Entry::new(get_service_name(), key) {
+        Ok(entry) => match entry.delete_credential() {
+            Ok(()) => debug!("[SECURE_STORE] Deleted keychain entry for key '{}'", key),
+            Err(keyring::Error::NoEntry) => {
+                debug!(
+                    "[SECURE_STORE] No keychain entry to delete for key '{}'",
+                    key
+                )
+            }
+            Err(e) => warn!(
+                "[SECURE_STORE] Failed to delete keychain entry for key '{}': {:?}",
+                key, e
+            ),
+        },
+        Err(e) => warn!("[SECURE_STORE] Failed to create keyring entry: {:?}", e),
+    }
+}
+
+#[cfg(not(target_os = "android"))]
+fn test_native_writable() -> bool {
+    test_keychain_writable()
+}
+
+/// Android Keystore 加密文件的目录（与 keyring 的 service 隔离，互不覆盖）。
+#[cfg(target_os = "android")]
+fn get_keystore_dir() -> Option<PathBuf> {
+    Some(
+        crypto::storage_root()
+            .join(".tjg")
+            .join("secure-storage-keystore"),
+    )
+}
+
+/// 根据 key 生成 Keystore 加密文件路径（与文件 fallback 相同的 hash 规则）。
+#[cfg(target_os = "android")]
+fn get_keystore_path(key: &str) -> Option<PathBuf> {
+    let dir = get_keystore_dir()?;
+    let mut hasher = DefaultHasher::new();
+    key.hash(&mut hasher);
+    Some(dir.join(format!("{:016x}.ks", hasher.finish())))
+}
+
+/// 读取并解密 Keystore 保护的文件。
+#[cfg(target_os = "android")]
+fn load_from_keystore(key: &str) -> Option<String> {
+    let path = get_keystore_path(key)?;
+    let payload = fs::read_to_string(&path).ok()?;
+    match crate::utils::android_keystore::decrypt(payload.trim()) {
+        Some(decrypted) => {
+            debug!(
+                "[SECURE_STORE] Read secret from Android keystore for key '{}'",
+                key
+            );
+            Some(decrypted)
+        }
+        None => {
+            warn!(
+                "[SECURE_STORE] Failed to decrypt Android keystore payload for key '{}'",
+                key
+            );
+            None
+        }
+    }
+}
+
+/// 用 Android Keystore 加密后落盘，并做写后读回验证。
+#[cfg(target_os = "android")]
+fn save_to_keystore(key: &str, value: &str) -> bool {
+    let Some(path) = get_keystore_path(key) else {
+        warn!(
+            "[SECURE_STORE] Cannot determine keystore path for key '{}'",
+            key
+        );
+        return false;
+    };
+
+    if let Some(parent) = path.parent() {
+        if let Err(e) = fs::create_dir_all(parent) {
+            warn!(
+                "[SECURE_STORE] Failed to create keystore directory: {:?}",
+                e
+            );
+            return false;
+        }
+    }
+
+    let Some(encrypted) = crate::utils::android_keystore::encrypt(value) else {
+        warn!(
+            "[SECURE_STORE] Failed to encrypt secret with Android keystore for key '{}'",
+            key
+        );
+        return false;
+    };
+
+    if let Err(e) = fs::write(&path, &encrypted) {
+        warn!(
+            "[SECURE_STORE] Failed to write keystore file for key '{}': {:?}",
+            key, e
+        );
+        return false;
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Err(e) = fs::set_permissions(&path, fs::Permissions::from_mode(0o600)) {
+            warn!(
+                "[SECURE_STORE] Failed to set keystore file permissions: {:?}",
+                e
+            );
+        }
+    }
+
+    match load_from_keystore(key) {
+        Some(loaded) if loaded == value => {
+            debug!(
+                "[SECURE_STORE] Android keystore write verified (read-back matches) for key '{}'",
+                key
+            );
+            true
+        }
+        _ => {
+            warn!(
+                "[SECURE_STORE] Android keystore read-back failed for key '{}', removing file",
+                key
+            );
+            let _ = fs::remove_file(&path);
+            false
+        }
+    }
+}
+
+#[cfg(target_os = "android")]
+fn delete_from_keystore(key: &str) {
+    if let Some(path) = get_keystore_path(key) {
+        match fs::remove_file(&path) {
+            Ok(()) => debug!("[SECURE_STORE] Deleted keystore file for key '{}'", key),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                debug!(
+                    "[SECURE_STORE] No keystore file to delete for key '{}'",
+                    key
+                )
+            }
+            Err(e) => warn!(
+                "[SECURE_STORE] Failed to delete keystore file for key '{}': {:?}",
+                key, e
+            ),
+        }
+    }
+}
+
+/// 探测 Android Keystore 后端是否真正可用（加密-落盘-解密往返验证）。
+#[cfg(target_os = "android")]
+fn test_keystore_writable() -> bool {
+    let probe_key = "__hula_probe_keystore_writable__";
+    let ok = save_to_keystore(probe_key, "probe");
+    if ok {
+        delete_from_keystore(probe_key);
+    }
+    ok
+}
+
+#[cfg(target_os = "android")]
+fn native_get(key: &str) -> Option<String> {
+    load_from_keystore(key)
+}
+
+#[cfg(target_os = "android")]
+fn native_set(key: &str, value: &str) -> bool {
+    save_to_keystore(key, value)
+}
+
+#[cfg(target_os = "android")]
+fn native_delete(key: &str) {
+    delete_from_keystore(key);
+}
+
+#[cfg(target_os = "android")]
+fn test_native_writable() -> bool {
+    test_keystore_writable()
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum SecureStoreError {
     #[error("Secure storage backend is not available on this platform")]
@@ -215,7 +476,8 @@ pub enum SecureStoreError {
 /// `Keychain bug detected … Falling back to file storage`）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StorageBackend {
-    /// 平台原生安全存储：macOS Keychain / Windows Credential Manager / Linux Secret Service
+    /// 平台原生安全存储：macOS Keychain / Windows Credential Manager /
+    /// Linux Secret Service / Android Keystore
     NativeKeychain,
     /// master-key 加密的本地文件 fallback（权限 0600）
     EncryptedFileFallback,
@@ -245,10 +507,15 @@ pub fn platform_native_backend_id() -> String {
     {
         "linux_secret_service".to_string()
     }
+    #[cfg(target_os = "android")]
+    {
+        "android_keystore".to_string()
+    }
     #[cfg(not(any(
         target_os = "macos",
         target_os = "windows",
-        all(target_os = "linux", not(target_os = "android"))
+        target_os = "linux",
+        target_os = "android",
     )))]
     {
         "unknown".to_string()
@@ -324,44 +591,18 @@ impl BackendAvailability {
 pub struct SecureStore;
 
 impl SecureStore {
-    /// 读取 secret：优先 keychain，失败后从文件 fallback 加载
+    /// 读取 secret：优先平台原生后端（桌面/iOS 钥匙串、Android Keystore），
+    /// 失败后从文件 fallback 加载。
     ///
     /// macOS dev 模式下 keychain 可能写入成功但读取失败（binary 签名变化），
     /// 文件 fallback 确保跨会话稳定，且 secret 被 master-key 加密保护。
     pub fn get(key: &str) -> Result<Option<String>, SecureStoreError> {
-        // 1. 尝试从 keychain 读取
-        match Entry::new(get_service_name(), key) {
-            Ok(entry) => match entry.get_password() {
-                Ok(password) => {
-                    debug!(
-                        "Successfully retrieved secret from keychain for key '{}'",
-                        key
-                    );
-                    return Ok(Some(password));
-                }
-                Err(keyring::Error::NoEntry) => {
-                    debug!("No keychain entry found for key '{}'", key);
-                }
-                Err(keyring::Error::Ambiguous(_)) => {
-                    warn!("Ambiguous keychain entry for key '{}'", key);
-                    // 继续尝试文件 fallback
-                }
-                Err(e) => {
-                    // macOS dev 模式下常见错误：errSecAuthFailed（签名变化）
-                    debug!(
-                        "Keychain read failed for key '{}' (likely macOS dev mode): {:?}",
-                        key, e
-                    );
-                    // 继续尝试文件 fallback
-                }
-            },
-            Err(e) => {
-                warn!("Failed to create keyring entry for key '{}': {}", key, e);
-                // 继续尝试文件 fallback
-            }
+        // 1. 平台原生后端
+        if let Some(value) = native_get(key) {
+            return Ok(Some(value));
         }
 
-        // 2. keychain 读取失败或无条目，尝试从文件 fallback 加载
+        // 2. 原生后端读取失败或无条目，尝试从文件 fallback 加载
         if let Some(value) = load_from_fallback(key) {
             info!(
                 "Retrieved secret from file fallback (keychain unavailable): key='{}'",
@@ -374,144 +615,55 @@ impl SecureStore {
         Ok(None)
     }
 
-    /// 写入 secret：同时写入 keychain 和文件 fallback
+    /// 写入 secret：同时写入平台原生后端和文件 fallback
     ///
     /// 双写策略确保：
-    /// - 生产环境：keychain 工作正常，文件 fallback 作为备份
-    /// - dev 模式：keychain 可能读取失败，文件 fallback 保证跨会话稳定
+    /// - 生产环境：原生后端工作正常，文件 fallback 作为备份
+    /// - dev 模式：原生后端可能读取失败，文件 fallback 保证跨会话稳定
     ///
-    /// 只有当 keychain 或 fallback 至少一处实际写入成功（可读验证）时才返回 Ok，
+    /// 只有当原生后端或 fallback 至少一处实际写入成功（可读验证）时才返回 Ok，
     /// 避免返回虚假的 Ok 导致上层认为已持久化但实际丢失。
     pub fn set(key: &str, value: &str) -> Result<(), SecureStoreError> {
-        let mut keychain_ok = false;
-
-        // 1. 写入 keychain
-        match Entry::new(get_service_name(), key) {
-            Ok(entry) => match entry.set_password(value) {
-                Ok(()) => {
-                    // 写后读验证：macOS dev 模式下 set_password 可能返回 Ok
-                    // 但实际不可读（ACL 不匹配）。注意必须用 NEW Entry 实例验证，
-                    // 因为写入的 Entry 实例自身有访问权限，但新实例可能没有（ACL 问题）。
-                    // 这模拟了 SecureStore::get 的真实读取路径。
-                    let verify_entry = Entry::new(get_service_name(), key);
-                    match verify_entry {
-                        Ok(v_entry) => match v_entry.get_password() {
-                            Ok(retrieved) if retrieved == value => {
-                                debug!(
-                                    "Keychain write verified (read-back via new Entry matches) for key '{}'",
-                                    key
-                                );
-                                keychain_ok = true;
-                            }
-                            Ok(other) => {
-                                warn!(
-                                    "Keychain read-back mismatch for key '{}': expected len {}, got len {}. \
-                                     Treating keychain write as failed.",
-                                    key,
-                                    value.len(),
-                                    other.len()
-                                );
-                            }
-                            Err(keyring::Error::NoEntry) => {
-                                warn!(
-                                    "Keychain bug detected for key '{}': set_password returned Ok \
-                                     but get_password (new Entry) returned NoEntry \
-                                     (macOS dev mode ACL issue). Falling back to file storage.",
-                                    key
-                                );
-                            }
-                            Err(e) => {
-                                warn!(
-                                    "Keychain read-back failed for key '{}': {:?}. \
-                                     Treating keychain write as unverified.",
-                                    key, e
-                                );
-                            }
-                        },
-                        Err(e) => {
-                            warn!(
-                                "Failed to create verify Entry for key '{}': {:?}. \
-                                 Treating keychain write as unverified.",
-                                key, e
-                            );
-                        }
-                    }
-                }
-                Err(e) => {
-                    warn!("Failed to set keychain password for key '{}': {:?}", key, e);
-                    // 继续写入文件 fallback
-                }
-            },
-            Err(e) => {
-                warn!("Failed to create keyring entry for key '{}': {}", key, e);
-                // 继续写入文件 fallback
-            }
-        }
+        // 1. 写入平台原生后端（内部含写后读回验证）
+        let native_ok = native_set(key, value);
 
         // 2. 同时写入文件 fallback（加密存储）
         // save_to_fallback 返回实际写入结果，而非路径可计算性
         let fallback_ok = save_to_fallback(key, value);
 
-        if keychain_ok {
+        if native_ok {
             if !fallback_ok {
                 warn!(
-                    "Keychain write verified but fallback write failed for key '{}'. \
-                     Secret stored to keychain only.",
+                    "Native backend write verified but fallback write failed for key '{}'. \
+                     Secret stored to native backend only.",
                     key
                 );
             }
             Ok(())
         } else if fallback_ok {
-            // keychain 失败但文件 fallback 实际写入成功
+            // 原生后端失败但文件 fallback 实际写入成功
             info!(
-                "Secret stored to file fallback only (keychain unavailable): key='{}'",
+                "Secret stored to file fallback only (native backend unavailable): key='{}'",
                 key
             );
             Ok(())
         } else {
             // 两处都失败：返回错误，不返回虚假的 Ok
             error!(
-                "Both keychain and fallback failed to store secret for key '{}'",
+                "Both native backend and fallback failed to store secret for key '{}'",
                 key
             );
             Err(SecureStoreError::AccessDenied)
         }
     }
 
-    /// 删除 secret：同时删除 keychain 和文件 fallback 中的记录
+    /// 删除 secret：同时删除平台原生后端和文件 fallback 中的记录
     pub fn delete(key: &str) -> Result<(), SecureStoreError> {
-        let mut had_error = false;
-
-        // 1. 删除 keychain 条目
-        match Entry::new(get_service_name(), key) {
-            Ok(entry) => match entry.delete_credential() {
-                Ok(()) => {
-                    debug!("Successfully deleted keychain secret for key '{}'", key);
-                }
-                Err(keyring::Error::NoEntry) => {
-                    debug!("No keychain entry to delete for key '{}'", key);
-                }
-                Err(e) => {
-                    warn!(
-                        "Failed to delete keychain credential for key '{}': {:?}",
-                        key, e
-                    );
-                    had_error = true;
-                }
-            },
-            Err(e) => {
-                warn!("Failed to create keyring entry for deletion: {}", e);
-                had_error = true;
-            }
-        }
+        // 1. 删除平台原生后端条目（桌面/iOS 钥匙串、Android Keystore 文件）
+        native_delete(key);
 
         // 2. 删除文件 fallback
         delete_from_fallback(key);
-
-        if had_error {
-            // 文件 fallback 已删除，keychain 错误不阻断
-            debug!("Deletion completed with keychain errors for key '{}'", key);
-        }
 
         Ok(())
     }
@@ -522,10 +674,10 @@ impl SecureStore {
     /// keychain 写失败而文件 fallback 成功时，硬编码会把"密钥落文件"报成"keychain 可用"。
     pub fn check_backends() -> BackendAvailability {
         BackendAvailability {
-            // keychain 可用性检查：必须实际写-读-删往返验证。
+            // 原生后端可用性检查：必须实际写-读-删往返验证。
             // `Entry::new(...).is_ok()` 几乎恒为 true，会导致可用性误报
             //（日志中出现 available=true 但 set 仍失败）。
-            native_keychain: test_keychain_writable(),
+            native_keychain: test_native_writable(),
             // 文件 fallback 可用性检查：不能仅检查路径可计算（HOME 存在不代表可写），
             // 必须实际尝试一次写-读-删往返来验证。
             encrypted_file_fallback: get_fallback_dir().is_some() && test_fallback_writable(),
@@ -725,7 +877,7 @@ mod tests {
         SecureStore::delete(key).unwrap();
     }
 
-    /// 验证 HOME 环境变量未设置时 fallback 路径返回 None
+    /// D2：HOME 未设置时 fallback 路径仍可解析（移动端必须能落盘）
     #[test]
     fn test_fallback_no_home_env() {
         let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
@@ -735,8 +887,8 @@ mod tests {
 
         let path = get_fallback_path("some-key");
         assert!(
-            path.is_none(),
-            "Fallback path should be None when HOME is not set"
+            path.is_some(),
+            "Fallback path must remain resolvable when HOME is not set"
         );
 
         // 恢复
@@ -1249,9 +1401,9 @@ mod tests {
         );
     }
 
-    /// 验证 HOME 缺失时文件 fallback 判为不可用（路径不可计算，不假装可用）
+    /// D2：HOME 缺失（Android/iOS）时文件 fallback 仍应可用（回退到应用数据目录/临时目录）
     #[test]
-    fn test_check_backends_without_home_has_no_fallback() {
+    fn test_check_backends_without_home_keeps_fallback() {
         let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let original_home = std::env::var("HOME").ok();
         // SAFETY: TEST_LOCK 确保不会并行执行
@@ -1265,8 +1417,8 @@ mod tests {
         }
 
         assert!(
-            !backends.encrypted_file_fallback,
-            "file fallback must not be reported available when HOME is missing"
+            backends.encrypted_file_fallback,
+            "file fallback must stay available on mobile targets where HOME is missing"
         );
     }
 

@@ -457,6 +457,20 @@ fn common_setup(app_handle: AppHandle) -> Result<(), Box<dyn std::error::Error>>
         tracing::warn!("Failed to allow configuration directory: {}", e);
     }
 
+    // D2：移动端进程没有 HOME（或 HOME=/），主密钥与 secure storage 的
+    // 文件 fallback 必须落到应用私有数据目录，否则只能写临时目录甚至失败。
+    if let Ok(dir) = app_handle.path().app_data_dir() {
+        tracing::info!("[STORAGE] App data dir resolved: {}", dir.display());
+        crate::utils::crypto::init_app_data_dir(dir);
+    } else {
+        tracing::warn!("[STORAGE] App data dir unavailable, encrypted storage will fall back");
+    }
+
+    // D2：Android 上没有 keyring 后端，secure storage 的原生后端改为
+    // Android Keystore（经本地插件 tauri-plugin-hula 调用），这里注入 AppHandle。
+    #[cfg(target_os = "android")]
+    crate::utils::android_keystore::init(app_handle.clone());
+
     #[cfg(desktop)]
     setup_logout_listener(app_handle.clone());
 

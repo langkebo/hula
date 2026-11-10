@@ -61,6 +61,7 @@ function makeConnectionManager() {
     getConfig: vi.fn(),
     updateConnectionState: vi.fn(),
     setClient: vi.fn(),
+    resetState: vi.fn(),
     shouldReuse: vi.fn(() => false)
   }
 }
@@ -71,7 +72,7 @@ function makeDeps(overrides: Record<string, unknown> = {}) {
     connectionManager,
     eventRouter: { setSyncStateHandler: vi.fn() },
     syncManager: { stop: vi.fn() },
-    cryptoTracker: { clearCryptoStoreForLogout: vi.fn(() => Promise.resolve()) },
+    cryptoTracker: { clearCryptoStoreForLogout: vi.fn(() => Promise.resolve()), resetState: vi.fn() },
     tokenManager: { schedule: vi.fn(), clear: vi.fn() },
     lifecycle: {
       initialize: vi.fn(async () => undefined),
@@ -439,7 +440,8 @@ describe('MatrixClientAuth.logout', () => {
     expect(deps.lifecycle.stopClient).toHaveBeenCalled()
     expect(deps.syncManager.stop).toHaveBeenCalled()
     expect(AvatarUtils.setMxcResolver).toHaveBeenCalledWith(null)
-    expect(deps.connectionManager.setClient).toHaveBeenCalledWith(null)
+    // D9：登出必须同时清掉 client 与 config，resetState() 负责两者
+    expect(deps.connectionManager.resetState).toHaveBeenCalled()
     expect(deps.connectionManager.updateConnectionState).toHaveBeenCalledWith('DISCONNECTED')
     expect(deps.startClientGuard.reset).toHaveBeenCalled()
     expect(deleteCryptoStorageKey).toHaveBeenCalledWith('@alice:hs', 'DEV1')
@@ -458,5 +460,10 @@ describe('MatrixClientAuth.logout', () => {
     expect(deps.connectionManager.updateConnectionState).toHaveBeenCalledWith('DISCONNECTED')
     expect(deps.startClientGuard.reset).toHaveBeenCalled()
     expect(clearCryptoStorageKeyCache).toHaveBeenCalled()
+    // D9：/logout 失败也必须停掉 client 与 crypto 后端，否则旧 OlmMachine 占着
+    // IndexedDB，清理会被 blocked，新会话 initRustCrypto 依旧拿不到句柄。
+    expect(deps.lifecycle.stopClient).toHaveBeenCalled()
+    expect(deps.connectionManager.resetState).toHaveBeenCalled()
+    expect(deps.cryptoTracker.resetState).toHaveBeenCalled()
   })
 })

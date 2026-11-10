@@ -281,7 +281,7 @@ describe('MatrixClientState', () => {
     expect(state.isRoomEncrypted('!room:matrix.org')).toBe(false)
   })
 
-  it('isCryptoReady returns true when crypto is initialized', () => {
+  it('isCryptoReady returns true when crypto is initialized and bound to the current client', () => {
     const deps = makeDeps()
     const mocked = getMockedDeps(deps)
     mocked.cryptoTracker.getRustCryptoDebugState.mockReturnValue({
@@ -291,8 +291,115 @@ describe('MatrixClientState', () => {
       error: null,
       usedIndexedDB: true
     })
+    // D9：tracker 报 initialized 时还必须与当前 client 的 crypto 绑定对账。
+    mocked.connectionManager.getClient.mockReturnValue(makeClient({ getCrypto: vi.fn(() => ({})) }))
     const state = new MatrixClientState(deps)
     expect(state.isCryptoReady()).toBe(true)
+  })
+
+  // D9：tracker 是窗口级单例，client.stopClient() 会清空 cryptoBackend，
+  // 若 tracker 未同步作废，就会出现「initialized=true 但 getCrypto()=null」的脱钩。
+  it('isCryptoReady returns false when tracker claims initialized but the client has no crypto', () => {
+    const deps = makeDeps()
+    const mocked = getMockedDeps(deps)
+    mocked.cryptoTracker.getRustCryptoDebugState.mockReturnValue({
+      attempted: true,
+      initialized: true,
+      skippedReason: null,
+      error: null,
+      usedIndexedDB: true
+    })
+    mocked.connectionManager.getClient.mockReturnValue(
+      makeClient({
+        getUserId: vi.fn(() => '@alice:matrix.org'),
+        getDeviceId: vi.fn(() => 'DEVICE1'),
+        getCrypto: vi.fn(() => null)
+      })
+    )
+    const state = new MatrixClientState(deps)
+
+    expect(state.isCryptoReady()).toBe(false)
+    expect(state.getRustCryptoDebugState()).toMatchObject({
+      attempted: true,
+      initialized: false,
+      skippedReason: 'crypto-unavailable-after-init'
+    })
+  })
+
+  it('isCryptoReady returns false when tracker claims initialized but there is no client', () => {
+    const deps = makeDeps()
+    const mocked = getMockedDeps(deps)
+    mocked.cryptoTracker.getRustCryptoDebugState.mockReturnValue({
+      attempted: true,
+      initialized: true,
+      skippedReason: null,
+      error: null,
+      usedIndexedDB: true
+    })
+    mocked.connectionManager.getClient.mockReturnValue(null)
+    const state = new MatrixClientState(deps)
+
+    expect(state.isCryptoReady()).toBe(false)
+    expect(state.getRustCryptoDebugState().skippedReason).toBe('crypto-unavailable-after-init')
+  })
+
+  // D9：tracker 是窗口级单例，登出→登录会复用同一实例。crypto 句柄存在不代表
+  // 状态属于当前账号：旧账号的 initialized=true 不能被当成本会话已就绪。
+  it('isCryptoReady returns false when crypto state belongs to another account', () => {
+    const deps = makeDeps()
+    const mocked = getMockedDeps(deps)
+    mocked.cryptoTracker.getRustCryptoDebugState.mockReturnValue({
+      attempted: true,
+      initialized: true,
+      skippedReason: null,
+      error: null,
+      usedIndexedDB: true,
+      userId: '@alice:matrix.org',
+      deviceId: 'DEVICE1'
+    })
+    mocked.connectionManager.getClient.mockReturnValue(
+      makeClient({
+        getUserId: vi.fn(() => '@bob:matrix.org'),
+        getDeviceId: vi.fn(() => 'DEVICE2'),
+        getCrypto: vi.fn(() => ({}))
+      })
+    )
+    const state = new MatrixClientState(deps)
+
+    expect(state.isCryptoReady()).toBe(false)
+    expect(state.getRustCryptoDebugState()).toMatchObject({
+      initialized: false,
+      skippedReason: 'crypto-state-owner-mismatch'
+    })
+  })
+
+  // D9：SDK 已 stop 的 backend 仍非空，但 E2EE 已静默失效 —— 不能当成就绪。
+  it('isCryptoReady returns false when the bound crypto is stopped', () => {
+    const deps = makeDeps()
+    const mocked = getMockedDeps(deps)
+    mocked.cryptoTracker.getRustCryptoDebugState.mockReturnValue({
+      attempted: true,
+      initialized: true,
+      skippedReason: null,
+      error: null,
+      usedIndexedDB: true,
+      userId: '@alice:matrix.org',
+      deviceId: 'DEVICE1'
+    })
+    mocked.connectionManager.getClient.mockReturnValue(
+      makeClient({
+        getUserId: vi.fn(() => '@alice:matrix.org'),
+        getDeviceId: vi.fn(() => 'DEVICE1'),
+        getCrypto: vi.fn(() => ({ stopped: true }))
+      })
+    )
+    const state = new MatrixClientState(deps)
+
+    expect(state.isCryptoReady()).toBe(false)
+    expect(state.getRustCryptoDebugState()).toMatchObject({
+      initialized: false,
+      skippedReason: 'crypto-stopped'
+    })
   })
 
   it('isCryptoReady returns false when crypto is not initialized', () => {
@@ -309,7 +416,7 @@ describe('MatrixClientState', () => {
     expect(state.isCryptoReady()).toBe(false)
   })
 
-  it('getRustCryptoDebugState delegates to cryptoTracker', () => {
+  it('getRustCryptoDebugState delegates to cryptoTracker when crypto is bound', () => {
     const deps = makeDeps()
     const mocked = getMockedDeps(deps)
     const debugState = {
@@ -320,6 +427,7 @@ describe('MatrixClientState', () => {
       usedIndexedDB: true
     }
     mocked.cryptoTracker.getRustCryptoDebugState.mockReturnValue(debugState)
+    mocked.connectionManager.getClient.mockReturnValue(makeClient({ getCrypto: vi.fn(() => ({})) }))
     const state = new MatrixClientState(deps)
     expect(state.getRustCryptoDebugState()).toBe(debugState)
   })

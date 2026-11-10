@@ -202,12 +202,19 @@ describe('MatrixCryptoStateTracker - initRustCrypto 失败清理重试', () => {
     localStorage.clear()
   })
 
-  function createMockClient(userId: string, deviceId: string, initImpl: ReturnType<typeof vi.fn>) {
+  function createMockClient(userId: string, deviceId: string, initImpl: (...args: unknown[]) => Promise<unknown>) {
+    // 贴近真实 SDK：initRustCrypto 成功后 getCrypto() 返回 crypto 句柄。
+    // 若始终返回 null，D9 的「初始化结果未回挂」守卫会把成功误判为失败。
+    let cryptoBackend: unknown = null
     return {
       getUserId: vi.fn().mockReturnValue(userId),
       getDeviceId: vi.fn().mockReturnValue(deviceId),
-      getCrypto: vi.fn().mockReturnValue(null),
-      initRustCrypto: initImpl
+      getCrypto: vi.fn(() => cryptoBackend),
+      initRustCrypto: vi.fn(async (...args: unknown[]) => {
+        const result = await initImpl(...args)
+        cryptoBackend = {}
+        return result
+      })
     } as unknown as Parameters<MatrixCryptoStateTracker['ensureCrypto']>[0]
   }
 
@@ -592,7 +599,7 @@ describe('MatrixCryptoStateTracker - 解除已停止的 crypto 绑定（重启�
     expect(tracker.releaseStoppedCryptoBinding(null)).toBe(false)
   })
 
-  it('解除后再 ensureCrypto 必须真的重新 initRustCrypto（回归：否则 E2EE 永久静默失效）', async () => {
+  it('已停止的 crypto 由 ensureCrypto 自动解绑并重新 initRustCrypto（回归：否则 E2EE 永久静默失效）', async () => {
     const fake: {
       cryptoBackend: unknown
       getUserId: () => string
@@ -628,15 +635,52 @@ describe('MatrixCryptoStateTracker - 解除已停止的 crypto 绑定（重启�
       writable: true
     })
 
-    // 未解除绑定：ensureCrypto 会把已停止的 crypto 误判为"已可用"而早退（缺陷形态）
-    await tracker.ensureCrypto(client, true)
-    expect(fake.initRustCrypto).not.toHaveBeenCalled()
-
-    tracker.releaseStoppedCryptoBinding(client)
+    // D9：ensureCrypto 自己识别 stopped 绑定 → 先解绑 → 再重新初始化（无需调用方手动解绑）
     await tracker.ensureCrypto(client, true)
 
     expect(fake.initRustCrypto).toHaveBeenCalledTimes(1)
-    expect(tracker.getRustCryptoDebugState().initialized).toBe(true)
+    const state = tracker.getRustCryptoDebugState()
+    expect(state.initialized).toBe(true)
+    expect(state.skippedReason).not.toBe('crypto-stopped-but-still-bound')
+  })
+
+  it('debug state 自证归属：返回当前 client 的 userId/deviceId', async () => {
+    const client = {
+      getUserId: () => '@user:test.com',
+      getDeviceId: () => 'device-H',
+      getCrypto: () => undefined
+    }
+
+    await tracker.ensureCrypto(client as unknown as Parameters<MatrixCryptoStateTracker['ensureCrypto']>[0], true)
+
+    const state = tracker.getRustCryptoDebugState()
+    expect(state.userId).toBe('@user:test.com')
+    expect(state.deviceId).toBe('device-H')
+  })
+
+  it('换绑后旧 client 的后台初始化结果不得回写到新会话（代次守卫）', async () => {
+    const slowInit = vi.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    })
+    const clientA = {
+      getUserId: () => '@user-a:test.com',
+      getDeviceId: () => 'device-A',
+      getCrypto: () => undefined,
+      initRustCrypto: slowInit
+    }
+
+    // 旧会话的初始化仍在跑时切到新会话（无 client）
+    const pending = tracker.ensureCrypto(
+      clientA as unknown as Parameters<MatrixCryptoStateTracker['ensureCrypto']>[0],
+      true
+    )
+    await tracker.ensureCrypto(null, false)
+    await pending
+
+    // 旧任务的 initialized=true 属于已作废的 client，不得覆盖新会话状态
+    const state = tracker.getRustCryptoDebugState()
+    expect(state.initialized).toBe(false)
+    expect(state.skippedReason).toBe('missing-client-or-access-token')
   })
 })
 

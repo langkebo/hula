@@ -300,7 +300,8 @@ describe('MatrixClientLifecycle', () => {
   describe('stopClient', () => {
     it('有 client 时注销监听器并停止', async () => {
       const made = makeLifecycle()
-      const { lifecycle, connectionManager, eventRouter, syncManager, tokenManager, startClientGuard } = made
+      const { lifecycle, connectionManager, eventRouter, syncManager, tokenManager, startClientGuard, cryptoTracker } =
+        made
       const client = makeClient()
       connectionManager.client = client
 
@@ -310,6 +311,9 @@ describe('MatrixClientLifecycle', () => {
       expect(eventRouter.detach).toHaveBeenCalledWith(client, syncManager)
       expect(syncManager.stop).toHaveBeenCalled()
       expect(client.stopClient).toHaveBeenCalled()
+      // D9：SDK 的 stopClient() 会清空 cryptoBackend，状态必须同步作废，
+      // 否则会出现 initialized=true 而 getCrypto() 为 undefined 的脱钩。
+      expect(cryptoTracker.resetState).toHaveBeenCalled()
       expect(AvatarUtils.setMxcResolver).toHaveBeenCalledWith(null)
       expect(connectionManager.updateConnectionState).toHaveBeenCalledWith('DISCONNECTED')
       expect(startClientGuard.reset).toHaveBeenCalled()
@@ -322,14 +326,15 @@ describe('MatrixClientLifecycle', () => {
       expect(eventRouter.detach).not.toHaveBeenCalled()
     })
 
-    it('停止失败时重新抛出', async () => {
-      const { lifecycle, connectionManager, client } = makeStartClientEnv()
+    it('停止失败时重新抛出，但仍作废 crypto 状态（D9）', async () => {
+      const { lifecycle, connectionManager, cryptoTracker, client } = makeStartClientEnv()
       connectionManager.client = client
       client.stopClient.mockImplementation(() => {
         throw new Error('stop failed')
       })
 
       await expect(lifecycle.stopClient()).rejects.toThrow('stop failed')
+      expect(cryptoTracker.resetState).toHaveBeenCalled()
     })
   })
 
@@ -456,6 +461,7 @@ describe('MatrixClientLifecycle', () => {
       vi.mocked(client.startClient).mockClear()
       cryptoTracker.ensureCrypto.mockClear()
       cryptoTracker.releaseStoppedCryptoBinding.mockClear()
+      cryptoTracker.resetState.mockClear()
 
       const onResume = connectionManager.setupResumeListener.mock.calls[0][0] as () => void
       onResume()
@@ -467,7 +473,10 @@ describe('MatrixClientLifecycle', () => {
 
       const orderOf = (mock: Mock) => mock.mock.invocationCallOrder[0] ?? Number.MAX_SAFE_INTEGER
       expect(orderOf(vi.mocked(client.stopClient))).toBeLessThan(orderOf(cryptoTracker.releaseStoppedCryptoBinding))
-      expect(orderOf(cryptoTracker.releaseStoppedCryptoBinding)).toBeLessThan(orderOf(cryptoTracker.ensureCrypto))
+      // D9：停止后必须立刻作废旧 crypto 状态，否则「重连窗口」里会读到
+      // initialized=true 而 getCrypto() 为 undefined（真机脚本会直接判失败）。
+      expect(orderOf(cryptoTracker.releaseStoppedCryptoBinding)).toBeLessThan(orderOf(cryptoTracker.resetState))
+      expect(orderOf(cryptoTracker.resetState)).toBeLessThan(orderOf(cryptoTracker.ensureCrypto))
       expect(orderOf(cryptoTracker.ensureCrypto)).toBeLessThan(orderOf(vi.mocked(client.startClient)))
     })
 

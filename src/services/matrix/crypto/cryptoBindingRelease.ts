@@ -81,7 +81,7 @@ export function recordStaleCryptoReuseIfAny(
   if (!reason) return null
   lifecycle.recordStaleCryptoReuse(reason)
   logger.warn(
-    `检测到已停止的 crypto 仍被复用（${reason}）：本次将跳过 initRustCrypto，E2EE 可能不可用 —— ` +
+    `检测到已停止的 crypto 仍被复用（${reason}）：将先解绑再重新初始化，否则 E2EE 不可用 —— ` +
       '正常时序由 MatrixClientLifecycle 的「stop → 解绑 → 重新初始化」保证，命中此处说明有人绕过了它'
   )
   return reason

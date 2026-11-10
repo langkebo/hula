@@ -40,6 +40,8 @@ export function rejectMissingStorageKeyState(
     skippedReason: 'local-unlock-required',
     error: null,
     usedIndexedDB: useIndexedDB,
-    storeEncrypted: false
+    storeEncrypted: false,
+    userId,
+    deviceId
   }
 }
