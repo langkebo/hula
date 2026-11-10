@@ -26,7 +26,7 @@
         <div class="flex items-center gap-8px">
           <!-- 私密会话入口：私密房会被普通列表整体过滤，没有这个入口用户进不去 -->
           <van-button
-            v-if="hiddenSessionCount > 0"
+            v-if="showHiddenSessionsEntry"
             round
             plain
             size="small"
@@ -169,6 +169,16 @@ const {
 
 // 会话列表数据派生
 const { searchText, filteredSessionList, hiddenSessionCount, loadError, isLoading } = useMobileSessionList()
+
+/**
+ * 私密会话入口是否可见。
+ *
+ * 光有私密房不够：密码被清除后登记表可能还留着旧数据，此时入口点进去只会落到
+ * 一个「永远解不开」的页面。设置页清除密码后本入口必须随之消失。
+ * `isSecretChatConfigured()` 内部读取 `secretChat.enabled/passwordHash`，
+ * 在 computed 中调用即可被 Pinia 的响应式追踪。
+ */
+const showHiddenSessionsEntry = computed(() => hiddenSessionCount.value > 0 && settingStore.isSecretChatConfigured())
 
 // 会话操作 + matrix 同步事件订阅(依赖 maskHandler / currentLongPressItem)
 const {
