@@ -25,6 +25,11 @@ import { VerificationService } from '../MatrixVerificationService'
  * 注意：不接受 `verificationRequests` 这类幻影成员——它在本仓的
  * vendored matrix-js-sdk 中并不存在，服务改为在自己的注册表中登记真身对象。
  */
+interface FakeVerifier {
+  getShowSasCallbacks: ReturnType<typeof vi.fn>
+  verify: ReturnType<typeof vi.fn>
+}
+
 interface FakeSdkRequest {
   transactionId: string
   /** SDK 对端用户字段名为 otherUserId（不是 userId） */
@@ -33,27 +38,47 @@ interface FakeSdkRequest {
   otherDeviceId: string
   methods: string[]
   phase: VerificationPhase
+  initiatedByMe: boolean
   accept: ReturnType<typeof vi.fn>
   cancel: ReturnType<typeof vi.fn>
-  verifier: { getShowSasCallbacks: ReturnType<typeof vi.fn> } | undefined
+  otherPartySupportsMethod: ReturnType<typeof vi.fn>
+  startVerification: ReturnType<typeof vi.fn>
+  verifier: FakeVerifier | undefined
+  /** 登记在 fake 上的 Change 处理器，测试用 emitChange 触发 */
+  changeHandlers: Array<() => void>
   on: ReturnType<typeof vi.fn>
   off: ReturnType<typeof vi.fn>
 }
 
 function makeSdkRequest(overrides: Partial<FakeSdkRequest> = {}): FakeSdkRequest {
-  return {
+  const changeHandlers: Array<() => void> = []
+  const request: FakeSdkRequest = {
     transactionId: 'txn-1',
     otherUserId: '@user:example.com',
     otherDeviceId: 'DEVICE123',
     methods: ['m.sas.v1'],
     phase: VerificationPhase.Requested,
+    initiatedByMe: false,
     accept: vi.fn(async () => undefined),
     cancel: vi.fn(async () => undefined),
+    otherPartySupportsMethod: vi.fn(() => true),
+    startVerification: vi.fn(),
     verifier: undefined,
-    on: vi.fn(),
-    off: vi.fn(),
+    changeHandlers,
+    on: vi.fn((_event: string, handler: () => void) => {
+      changeHandlers.push(handler)
+    }),
+    off: vi.fn((_event: string, handler: () => void) => {
+      const index = changeHandlers.indexOf(handler)
+      if (index >= 0) changeHandlers.splice(index, 1)
+    }),
     ...overrides
   }
+  return request
+}
+
+function emitChange(request: FakeSdkRequest): void {
+  for (const handler of [...request.changeHandlers]) handler()
 }
 
 describe('MatrixVerificationService', () => {
@@ -159,7 +184,8 @@ describe('MatrixVerificationService', () => {
             confirm,
             mismatch: vi.fn(),
             cancel: vi.fn()
-          }))
+          })),
+          verify: vi.fn(async () => undefined)
         }
       })
       receivedHandler?.(request)
@@ -177,6 +203,90 @@ describe('MatrixVerificationService', () => {
 
       // 已注销：再次操作必须报「未找到」
       await expect(service.acceptVerification('txn-4')).rejects.toThrow(/was not found/)
+    })
+  })
+
+  describe('SAS 自动驱动（D10）', () => {
+    it('进入 Started 后自动对 verifier 调用 verify()，且幂等只调一次', async () => {
+      const verify = vi.fn(async () => undefined)
+      const request = makeSdkRequest({
+        transactionId: 'txn-drive',
+        phase: VerificationPhase.Started,
+        verifier: { getShowSasCallbacks: vi.fn(() => null), verify }
+      })
+      receivedHandler?.(request)
+
+      emitChange(request)
+      emitChange(request)
+      await vi.waitFor(() => expect(verify).toHaveBeenCalledTimes(1))
+    })
+
+    it('本端发起且对端接受后自动 startVerification(m.sas.v1) 并 verify()', async () => {
+      const verify = vi.fn(async () => undefined)
+      const verifier = { getShowSasCallbacks: vi.fn(() => null), verify }
+      const request = makeSdkRequest({
+        transactionId: 'txn-ready',
+        phase: VerificationPhase.Ready,
+        initiatedByMe: true,
+        startVerification: vi.fn(async () => verifier)
+      })
+      receivedHandler?.(request)
+
+      emitChange(request)
+
+      await vi.waitFor(() => {
+        expect(request.startVerification).toHaveBeenCalledWith('m.sas.v1')
+        expect(verify).toHaveBeenCalled()
+      })
+    })
+
+    it('对端发起时不在 Ready 阶段抢选 SAS 方法', async () => {
+      const request = makeSdkRequest({
+        transactionId: 'txn-peer',
+        phase: VerificationPhase.Ready,
+        initiatedByMe: false
+      })
+      receivedHandler?.(request)
+
+      emitChange(request)
+
+      expect(request.startVerification).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('事务清理（D11）', () => {
+    it('终态事务不再出现在待处理列表', async () => {
+      const request = makeSdkRequest({ transactionId: 'txn-old' })
+      receivedHandler?.(request)
+
+      request.phase = VerificationPhase.Done
+      emitChange(request)
+
+      await expect(service.getPendingVerifications()).resolves.toEqual([])
+      await expect(service.acceptVerification('txn-old')).rejects.toThrow(/was not found/)
+    })
+
+    it('待处理列表按时间倒序，避免「取第一条」命中旧事务', async () => {
+      const older = makeSdkRequest({ transactionId: 'txn-a', otherDeviceId: 'DEVICE_A' })
+      receivedHandler?.(older)
+      await new Promise((resolve) => setTimeout(resolve, 2))
+      const newer = makeSdkRequest({ transactionId: 'txn-b', otherDeviceId: 'DEVICE_B' })
+      receivedHandler?.(newer)
+
+      const pending = await service.getPendingVerifications()
+
+      expect(pending.map((item) => item.transactionId)).toEqual(['txn-b', 'txn-a'])
+    })
+
+    it('reset() 丢弃全部事务（登出后旧事务不可再操作）', async () => {
+      const request = makeSdkRequest({ transactionId: 'txn-reset' })
+      receivedHandler?.(request)
+
+      service.reset()
+
+      await expect(service.getPendingVerifications()).resolves.toEqual([])
+      await expect(service.acceptVerification('txn-reset')).rejects.toThrow(/was not found/)
+      expect(request.off).toHaveBeenCalled()
     })
   })
 

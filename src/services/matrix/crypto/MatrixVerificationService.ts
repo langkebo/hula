@@ -1,11 +1,19 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import type { CryptoApi, VerificationRequest as SDKVerificationRequest, ShowSasCallbacks } from 'matrix-js-sdk/crypto'
+import type {
+  CryptoApi,
+  VerificationRequest as SDKVerificationRequest,
+  ShowSasCallbacks,
+  Verifier
+} from 'matrix-js-sdk/crypto'
 import { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
 
 const logger = createLogger('MatrixVerificationService')
+
+/** confirm() 之后等待对端 MAC 的上限；超时只告警，不把验证判死 */
+const VERIFY_SETTLE_TIMEOUT_MS = 15_000
 
 export type VerificationMethod = 'm.sas.v1' | 'm.qr_code.show.v1' | 'm.reciprocate.v1'
 
@@ -51,6 +59,10 @@ interface TransactionEntry {
 export class VerificationService extends BaseMatrixService {
   private observedClient: MatrixClient | null = null
   private readonly transactions: Map<string, TransactionEntry> = new Map()
+  /** 每个事务的 `Verifier.verify()` 进行中 Promise，用于确认后等待 MAC 交换结束 */
+  private readonly verifyPromises: Map<string, Promise<void>> = new Map()
+  /** 每个请求对象上的 change 处理器缓存（WeakMap 避免请求终态后仍被持有） */
+  private readonly changeHandlers = new WeakMap<SDKVerificationRequest, Map<string, () => void>>()
 
   /**
    * 取出已登记的 SDK 验证请求。
@@ -67,10 +79,22 @@ export class VerificationService extends BaseMatrixService {
     return entry.request
   }
 
-  /** 登记一个 SDK 验证请求；同一 id 重复到达时以最新对象为准 */
+  /** 事务进入终态后从注册表移除，避免陈旧 id 跨会话泄漏 */
+  private unregister(transactionId?: string): void {
+    if (!transactionId) return
+    if (this.transactions.delete(transactionId)) {
+      logger.info(`[Verification] 注销验证请求: ${transactionId}`)
+    }
+  }
+
+  /** 登记一个 SDK 验证请求，并接管其阶段变化；同一 id 重复到达时以最新对象为准 */
   private register(request: SDKVerificationRequest): void {
     const transactionId = request?.transactionId
     if (!transactionId) return
+
+    const existing = this.transactions.get(transactionId)
+    if (existing?.request === request) return
+    existing?.request.off(VerificationRequestEvent.Change, this.getChangeHandler(transactionId, existing.request))
 
     this.transactions.set(transactionId, {
       request,
@@ -83,35 +107,85 @@ export class VerificationService extends BaseMatrixService {
         timestamp: Date.now()
       }
     })
+
+    request.on(VerificationRequestEvent.Change, this.getChangeHandler(transactionId, request))
     logger.info(`[Verification] 登记验证请求: ${transactionId}`)
   }
 
-  /** 事务进入终态后从注册表移除，避免陈旧 id 跨会话泄漏 */
-  private unregister(transactionId?: string): void {
-    if (!transactionId) return
-    if (this.transactions.delete(transactionId)) {
-      logger.info(`[Verification] 注销验证请求: ${transactionId}`)
+  /** 每个请求独立的 change 处理器（需要同时拿到 request 才能解绑） */
+  private getChangeHandler(transactionId: string, request: SDKVerificationRequest): () => void {
+    const handlers = this.changeHandlers.get(request) ?? new Map<string, () => void>()
+    const cached = handlers.get(transactionId)
+    if (cached) return cached
+
+    const handler = (): void => this.handlePhaseChange(transactionId, request, handler)
+    handlers.set(transactionId, handler)
+    this.changeHandlers.set(request, handlers)
+    return handler
+  }
+
+  /**
+   * 事务阶段变化：终态注销，Started 自动 `verify()`，Ready 且本端发起时自动选 SAS。
+   *
+   * 自动驱动的原因：SDK 的 `Verifier.verify()` 只等待双方 MAC 交换，**不会**自己发起；
+   * 若任一端不调用，SAS 永远不产生，界面就会卡在「等待对方」。参见 D10。
+   */
+  private handlePhaseChange(transactionId: string, request: SDKVerificationRequest, handler: () => void): void {
+    const phase = request.phase
+
+    if (phase === VerificationPhase.Done || phase === VerificationPhase.Cancelled) {
+      request.off(VerificationRequestEvent.Change, handler)
+      this.changeHandlers.delete(request)
+      this.verifyPromises.delete(transactionId)
+      this.unregister(transactionId)
+      return
     }
+
+    if (phase === VerificationPhase.Started && request.verifier) {
+      this.driveVerifier(transactionId, request.verifier)
+      return
+    }
+
+    if (phase === VerificationPhase.Ready && request.initiatedByMe && request.otherPartySupportsMethod('m.sas.v1')) {
+      void this.startSasForRequest(transactionId).catch((err: unknown) => {
+        logger.warn(`[Verification] 自动启动 SAS 失败: ${transactionId}: ${err}`)
+      })
+    }
+  }
+
+  /** 对已创建的 verifier 调用 `verify()`（幂等：同一事务只驱动一次） */
+  private driveVerifier(transactionId: string, verifier: Verifier): void {
+    if (this.verifyPromises.has(transactionId)) return
+
+    const promise = verifier
+      .verify()
+      .then(() => logger.info(`[Verification] 验证完成: ${transactionId}`))
+      .catch((err: unknown) => {
+        logger.warn(`[Verification] verify() 未正常结束: ${transactionId}: ${err}`)
+      })
+      .finally(() => this.verifyPromises.delete(transactionId))
+
+    this.verifyPromises.set(transactionId, promise)
+  }
+
+  /** 本端作为发起方在对端接受后选择 SAS 方法，并驱动 `verify()` */
+  private async startSasForRequest(transactionId: string): Promise<void> {
+    const request = this.requireRequest(transactionId, 'start SAS verification')
+    if (request.verifier) {
+      this.driveVerifier(transactionId, request.verifier)
+      return
+    }
+
+    logger.info(`[Verification] 对端已接受，启动 m.sas.v1: ${transactionId}`)
+    const verifier = await request.startVerification('m.sas.v1')
+    this.driveVerifier(transactionId, verifier)
   }
 
   /**
    * 订阅请求生命周期事件。
-   *
-   * 用 SDK 的 `VerificationRequestEvent.Change` 监听阶段变化：
-   * 进入 Done/Cancelled 时注销并解绑，避免监听器随请求累积。
    */
   private readonly handleRequestReceived = (request: SDKVerificationRequest): void => {
     this.register(request)
-
-    const handleChange = (): void => {
-      const phase = request.phase
-      if (phase === VerificationPhase.Done || phase === VerificationPhase.Cancelled) {
-        this.unregister(request.transactionId)
-        request.off(VerificationRequestEvent.Change, handleChange)
-      }
-    }
-
-    request.on(VerificationRequestEvent.Change, handleChange)
   }
 
   initialize(): void {
@@ -131,6 +205,8 @@ export class VerificationService extends BaseMatrixService {
 
     if (this.observedClient) {
       this.observedClient.off(CryptoEvent.VerificationRequestReceived, this.handleRequestReceived as never)
+      // 换 client（登出/换账号）时旧事务不可再操作，必须一并丢弃（D11）
+      this.clearTransactions()
     }
 
     client.on(CryptoEvent.VerificationRequestReceived, this.handleRequestReceived as never)
@@ -143,7 +219,16 @@ export class VerificationService extends BaseMatrixService {
       this.observedClient.off(CryptoEvent.VerificationRequestReceived, this.handleRequestReceived as never)
       this.observedClient = null
     }
+    this.clearTransactions()
+  }
+
+  /** 丢弃所有已登记事务与进行中的 verify()，避免陈旧事务跨账号/跨会话残留 */
+  private clearTransactions(): void {
+    for (const entry of this.transactions.values()) {
+      entry.request.off(VerificationRequestEvent.Change, this.getChangeHandler(entry.view.transactionId, entry.request))
+    }
     this.transactions.clear()
+    this.verifyPromises.clear()
   }
 
   getCurrentUserId(): string | null {
@@ -201,6 +286,9 @@ export class VerificationService extends BaseMatrixService {
     this.getVerificationClient()
     try {
       const verification = this.requireRequest(transactionId, 'accept verification request')
+      if (verification.phase === VerificationPhase.Done || verification.phase === VerificationPhase.Cancelled) {
+        throw new Error(`Cannot accept verification request: ${transactionId} is already closed`)
+      }
       await verification.accept()
       logger.info(`[Verification] 验证请求已接受: ${transactionId}`)
     } catch (err) {
@@ -294,9 +382,31 @@ export class VerificationService extends BaseMatrixService {
 
       await showSas.confirm()
       logger.info(`[Verification] SAS 已确认: ${transactionId}`)
+      await this.waitForVerifySettle(transactionId)
     } catch (err) {
       logger.error(`[Verification] 确认 SAS 失败: ${err}`)
       throw err
+    }
+  }
+
+  /**
+   * 等待 `Verifier.verify()` 收尾（双方 MAC 交换完成）。
+   *
+   * 本端 confirm() 只发送自己的 MAC，仍需对端确认；这里给一个上限，
+   * 超时只告警不抛错，避免对端稍晚确认时被误判为失败。
+   */
+  private async waitForVerifySettle(transactionId: string): Promise<void> {
+    const pending = this.verifyPromises.get(transactionId)
+    if (!pending) return
+
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(() => resolve(), VERIFY_SETTLE_TIMEOUT_MS)
+    })
+    await Promise.race([pending, timeout])
+    if (timer) clearTimeout(timer)
+    if (this.verifyPromises.has(transactionId)) {
+      logger.warn(`[Verification] verify() 仍在等待对端确认: ${transactionId}`)
     }
   }
 
@@ -339,10 +449,22 @@ export class VerificationService extends BaseMatrixService {
    * 列出当前待处理的验证事务。
    *
    * 仅包含本会话内通过事件登记的事务——SDK 没有可靠的跨会话反查 API，
-   * 因此这里不做"猜测式"补全。
+   * 因此这里不做"猜测式"补全。已进入终态的事务在返回前顺手注销，
+   * 避免调用方「取第一条」时选中已经结束的旧事务（D11）。
    */
   async getPendingVerifications(): Promise<VerificationTransaction[]> {
-    return Array.from(this.transactions.values()).map((entry) => entry.view)
+    const pending: VerificationTransaction[] = []
+
+    for (const [transactionId, entry] of this.transactions) {
+      const { phase } = entry.request
+      if (phase === VerificationPhase.Done || phase === VerificationPhase.Cancelled) {
+        this.unregister(transactionId)
+        continue
+      }
+      pending.push(entry.view)
+    }
+
+    return pending.sort((a, b) => b.timestamp - a.timestamp)
   }
 
   async isDeviceVerified(userId: string, deviceId: string): Promise<boolean> {
