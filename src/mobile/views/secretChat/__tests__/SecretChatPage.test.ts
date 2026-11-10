@@ -174,6 +174,7 @@ describe('移动端私密会话页', () => {
     const unmark = wrapper.get('[aria-label="home.secret_chat.unmark_private"]')
 
     expect(unmark.classes()).toContain('w-32px')
-    expect(unmark.classes()).toContain('h-32px')
+    // Vant 的 .van-button--mini 会设置 24px 高且后置生效，必须用 important 尺寸类压过
+    expect(unmark.classes()).toContain('!h-32px')
   })
 })

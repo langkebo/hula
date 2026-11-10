@@ -73,7 +73,7 @@
               <van-button
                 size="mini"
                 plain
-                class="ms-8px w-32px h-32px"
+                class="ms-8px w-32px !h-32px"
                 :aria-label="t('home.secret_chat.unmark_private')"
                 @click.stop="handleUnmark(session)">
                 <svg class="w-16px h-16px" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
