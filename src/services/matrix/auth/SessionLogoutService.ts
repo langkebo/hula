@@ -4,6 +4,7 @@ import { useWindow } from '@/composables/common/useWindow'
 import { stopPresenceHeartbeat } from '@/composables/user/usePresenceHeartbeat'
 import { EventEnum, TauriCommand } from '@/enums'
 import { clearMatrixSessionEndpointConfig } from '@/services/backend/config'
+import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
 import { matrixWsBridge } from '@/services/matrix/MatrixWsBridge'
 import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState'
@@ -138,7 +139,13 @@ export class SessionLogoutService {
       port.global.updateCurrentSessionRoomId('')
     }
 
-    await port.matrix.logout()
+    try {
+      await port.matrix.logout()
+    } finally {
+      // D11：登出必须丢弃所有已登记/进行中的验证事务，避免下一次登录
+      // 仍能从残留的 transactionId 里「取第一条」并操作旧请求。
+      matrixVerificationService.reset()
+    }
 
     if (isDesktop()) {
       port.global.setTrayMenuShow(false)
