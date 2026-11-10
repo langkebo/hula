@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T22:32:40.849Z",
+  "generatedAt": "2026-11-10T04:38:11.409Z",
   "scanned": 279,
   "callerFiles": 62,
   "totalCalls": 164,
@@ -7,7 +7,7 @@
   "ledger": {
     "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.default.json",
     "schemaVersion": "4",
-    "synapseRustCommit": "1a62ac6eb53a95c4c3a6979ab722e65d9648ddf4",
+    "synapseRustCommit": "247ad28a9de01e6f143d250f13024d3b1aff6742",
     "entryCount": 964,
     "matchedPathCount": 7,
     "uncoveredPathCount": 757

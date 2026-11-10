@@ -1,14 +1,14 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-11-09T22:32:35.569Z",
+  "generated_at": "2026-11-10T04:38:10.959Z",
   "source": "../matrix-js-sdk/docs/api-contract/generated/route-manifest.all.json",
   "upstream": {
     "schema_version": "4",
     "generated_at": "2026-05-02T00:00:00Z",
-    "synapse_rust_commit": "1a62ac6eb53a95c4c3a6979ab722e65d9648ddf4",
+    "synapse_rust_commit": "247ad28a9de01e6f143d250f13024d3b1aff6742",
     "state_profile": "all"
   },
-  "synapse_rust_commit": "1a62ac6eb53a95c4c3a6979ab722e65d9648ddf4",
+  "synapse_rust_commit": "247ad28a9de01e6f143d250f13024d3b1aff6742",
   "state_profile": "all",
   "entry_count": 983,
   "distinct_path_count": 782,
