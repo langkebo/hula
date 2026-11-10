@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 
 /**
  * 私密聊天解锁对话框的全局状态（模块级单例）。
@@ -9,13 +10,13 @@ import { ref } from 'vue'
  */
 
 const visible = ref(false)
-/** 解锁成功后要回跳的路径（由守卫记录）。 */
-const pendingPath = ref<string | null>(null)
+/** 解锁成功后要回跳的目标（字符串路径或路由对象，含 `!`/`:` 的 roomId 必须用路由对象）。 */
+const pendingPath = ref<RouteLocationRaw | null>(null)
 /** 失败计数，用于 UI 退避提示。 */
 const failureCount = ref(0)
 
 /** 打开解锁对话框；`targetPath` 为解锁后回跳目标。 */
-export function openSecretChatUnlock(targetPath?: string): void {
+export function openSecretChatUnlock(targetPath?: RouteLocationRaw): void {
   if (targetPath) {
     pendingPath.value = targetPath
   }
@@ -29,7 +30,7 @@ export function closeSecretChatUnlock(): void {
 }
 
 /** 取出并清空回跳目标。 */
-export function consumeSecretChatPendingPath(): string | null {
+export function consumeSecretChatPendingPath(): RouteLocationRaw | null {
   const path = pendingPath.value
   pendingPath.value = null
   return path

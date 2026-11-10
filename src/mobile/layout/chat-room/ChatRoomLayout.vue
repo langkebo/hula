@@ -2,21 +2,34 @@
   <MobileLayout :safeAreaTop="true" :safeAreaBottom="true" :bottomSafeAreaClass="computedBottomSafeAreaClass">
     <div class="h-full flex flex-col">
       <!-- 页面全部内容 -->
-      <div class="flex flex-col flex-1 min-h-0">
+      <div class="relative flex flex-col flex-1 min-h-0">
         <router-view v-slot="{ Component }">
           <keep-alive :include="['mobileChatRoomDefault', 'mobileGroupChatMember']">
             <component :is="Component" />
           </keep-alive>
         </router-view>
+
+        <!-- 门禁是异步的：遮住首帧，避免私密内容闪现（不依赖颜色传达状态，带 aria-label） -->
+        <div
+          v-if="gatePending"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-[--tjg-surface-panel]"
+          data-testid="mobile-chat-room-gate-mask"
+          role="status"
+          :aria-label="t('home.secret_chat.checking_access')">
+          <van-loading size="24px" />
+        </div>
       </div>
     </div>
   </MobileLayout>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useMobilePrivateRoomGate } from '@/composables/secretChat/useMobilePrivateRoomGate'
 
+const { t } = useI18n()
 const route = useRoute()
+const gatePending = ref(false)
 const computedBottomSafeAreaClass = computed(() => {
   if (route.name === 'mobileChatMain') {
     return 'bg-[--tjg-surface-panel-muted]'
@@ -36,10 +49,19 @@ const computedBottomSafeAreaClass = computed(() => {
  */
 const { assertAccess } = useMobilePrivateRoomGate()
 
-const guardCurrentRoom = () => {
-  if (route.name !== 'mobileChatMain') return
+const guardCurrentRoom = async () => {
+  if (route.name !== 'mobileChatMain') {
+    gatePending.value = false
+    return
+  }
   const roomId = route.params.roomId
-  void assertAccess(typeof roomId === 'string' ? roomId : undefined)
+  // 进入任何会话先遮一帧：登记表加载完成后才知道是不是私密房
+  gatePending.value = true
+  try {
+    await assertAccess(typeof roomId === 'string' ? roomId : undefined)
+  } finally {
+    gatePending.value = false
+  }
 }
 
 watch(() => [route.name, route.params.roomId] as const, guardCurrentRoom, { immediate: true })

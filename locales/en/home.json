@@ -139,7 +139,8 @@
     "unlock_action": "Enter password to continue",
     "unread_badge": "{count} unread",
     "avatar_alt": "{name} avatar",
-    "registry_unavailable": "Cannot verify secret-session state, please retry later"
+    "registry_unavailable": "Cannot verify secret-session state, please retry later",
+    "checking_access": "Checking access"
   },
   "chat_sidebar": {
     "actions": {
