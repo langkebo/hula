@@ -91,6 +91,34 @@ describe('移动端聊天布局 · 私密房遮罩', () => {
     expect(wrapper.find(MASK_SELECTOR).exists()).toBe(false)
   })
 
+  it('线程页（mobileThreadView）带私密房 roomId 时同样走门禁并遮罩首帧', async () => {
+    route.name = 'mobileThreadView'
+    route.params.roomId = '!private:test'
+
+    const wrapper = mountLayout()
+    await nextTick()
+
+    expect(mocks.assertAccess).toHaveBeenCalledWith('!private:test')
+    expect(wrapper.find(MASK_SELECTOR).exists()).toBe(true)
+
+    deferreds[0]?.resolve()
+    await flushPromises()
+    expect(wrapper.find(MASK_SELECTOR).exists()).toBe(false)
+  })
+
+  it('无 roomId 参数的子路由（如设置页）不触发门禁，也不遮罩', async () => {
+    route.name = 'mobileChatSetting'
+    delete route.params.roomId
+
+    const wrapper = mountLayout()
+    await nextTick()
+    await flushPromises()
+
+    expect(mocks.assertAccess).not.toHaveBeenCalled()
+    expect(deferreds).toHaveLength(0)
+    expect(wrapper.find(MASK_SELECTOR).exists()).toBe(false)
+  })
+
   it('assertAccess 抛错时记录日志并解除遮罩', async () => {
     const wrapper = mountLayout()
     await nextTick()

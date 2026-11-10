@@ -57,15 +57,18 @@ let guardRunId = 0
 
 const guardCurrentRoom = async () => {
   const runId = ++guardRunId
-  if (route.name !== 'mobileChatMain') {
+  const roomId = route.params.roomId
+  // 判据是「路由带 roomId」，不是路由名：线程页（mobileThreadView）同样挂本布局并带 roomId，
+  // 只认 mobileChatMain 会让私密房的线程深链绕过门禁。
+  // 无 roomId 的子路由（设置 / 搜索 / 媒体查看）保持放行，不给它们加遮罩。
+  if (typeof roomId !== 'string') {
     gatePending.value = false
     return
   }
-  const roomId = route.params.roomId
   // 进入任何会话先遮一帧：登记表加载完成后才知道是不是私密房
   gatePending.value = true
   try {
-    await assertAccess(typeof roomId === 'string' ? roomId : undefined)
+    await assertAccess(roomId)
   } catch (err) {
     // assertAccess 自身已做重定向与提示，这里只记录，避免未捕获的 rejection 终止遮罩逻辑
     logger.error('Secret room gate check failed:', err)
