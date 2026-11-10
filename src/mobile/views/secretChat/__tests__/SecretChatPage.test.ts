@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import { MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from '@/mobile/views/my/settingsRoutes'
 import SecretChatPage from '../SecretChatPage.vue'
 
 /**
@@ -17,10 +18,12 @@ const sessionList = ref([
 ])
 
 const isUnlocked = ref(true)
+const configured = ref(true)
 const isPrivateRoomMock = vi.fn((roomId: string) => roomId === '!private:test')
 const openUnlockMock = vi.fn()
 const lockMock = vi.fn()
 const pushMock = vi.fn().mockResolvedValue(undefined)
+const replaceMock = vi.fn().mockResolvedValue(undefined)
 const loadRegistryMock = vi.fn().mockResolvedValue(undefined)
 const migrateMock = vi.fn().mockResolvedValue(undefined)
 const unmarkMock = vi.fn().mockResolvedValue(undefined)
@@ -35,7 +38,7 @@ vi.mock('vant', () => ({
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
   onBeforeRouteLeave: (cb: (to: { name?: string }) => void) => {
     leaveGuard.current = cb
   }
@@ -69,6 +72,10 @@ vi.mock('@/stores/domains/settings/secretChatSession', () => ({
   lockSecretChatSession: (...args: unknown[]) => lockMock(...args)
 }))
 
+vi.mock('@/stores/domains/settings/setting', () => ({
+  useSettingStore: () => ({ isSecretChatConfigured: () => configured.value })
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
 }))
@@ -77,7 +84,8 @@ const mountPage = () =>
   mount(SecretChatPage, {
     global: {
       stubs: {
-        VanButton: true,
+        // 渲染默认插槽，才能断言按钮文案与命中区尺寸
+        VanButton: { template: '<button v-bind="$attrs"><slot /></button>' },
         VanEmpty: true,
         VanBadge: true,
         VanCellGroup: { template: '<div><slot /></div>' },
@@ -94,6 +102,7 @@ describe('移动端私密会话页', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     isUnlocked.value = true
+    configured.value = true
     showConfirmDialogMock.mockResolvedValue(undefined)
   })
 
@@ -129,5 +138,42 @@ describe('移动端私密会话页', () => {
 
     leaveGuard.current?.({ name: 'mobileMessage' })
     expect(lockMock).toHaveBeenCalled()
+  })
+
+  it('未设置密码时锁定态显示「去设置密码」并跳转安全设置页', async () => {
+    isUnlocked.value = false
+    configured.value = false
+    const wrapper = mountPage()
+
+    const cta = wrapper.get('[data-testid="mobile-secret-chat-setup-password"]')
+    expect(cta.text()).toBe('mobile_security.secret_chat.go_settings')
+    await cta.trigger('click')
+    expect(pushMock).toHaveBeenCalledWith(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
+  })
+
+  it('未解锁且未配置密码：直接跳安全设置页，不弹解锁框', () => {
+    isUnlocked.value = false
+    configured.value = false
+    mountPage()
+
+    expect(replaceMock).toHaveBeenCalledWith(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
+    expect(openUnlockMock).not.toHaveBeenCalled()
+  })
+
+  it('未解锁但已配置密码：打开解锁框并回跳本页', () => {
+    isUnlocked.value = false
+    configured.value = true
+    mountPage()
+
+    expect(openUnlockMock).toHaveBeenCalledWith('/mobile/secretChat')
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
+  it('移出私密按钮命中区 32px 且带无障碍标签', () => {
+    const wrapper = mountPage()
+    const unmark = wrapper.get('[aria-label="home.secret_chat.unmark_private"]')
+
+    expect(unmark.classes()).toContain('w-32px')
+    expect(unmark.classes()).toContain('h-32px')
   })
 })

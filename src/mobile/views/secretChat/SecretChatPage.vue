@@ -27,8 +27,17 @@
           </svg>
           <span class="text-15px font-500 text-[--tjg-text-primary]">{{ t('home.secret_chat.locked_title') }}</span>
           <span class="text-12px text-[--tjg-text-secondary]">{{ t('home.secret_chat.locked_hint') }}</span>
-          <van-button class="mt-8px" size="small" type="primary" plain @click="handleUnlockClick">
+          <van-button v-if="configured" class="mt-8px" size="small" type="primary" plain @click="handleUnlockClick">
             {{ t('home.secret_chat.unlock_action') }}
+          </van-button>
+          <van-button
+            v-else
+            class="mt-8px"
+            size="small"
+            type="primary"
+            data-testid="mobile-secret-chat-setup-password"
+            @click="handleGoSetupPassword">
+            {{ t('mobile_security.secret_chat.go_settings') }}
           </van-button>
         </div>
 
@@ -64,7 +73,7 @@
               <van-button
                 size="mini"
                 plain
-                class="ms-8px"
+                class="ms-8px w-32px h-32px"
                 :aria-label="t('home.secret_chat.unmark_private')"
                 @click.stop="handleUnmark(session)">
                 <svg class="w-16px h-16px" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -88,6 +97,7 @@ import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import { MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from '@/mobile/views/my/settingsRoutes'
 import {
   isPrivateRoom,
   loadPrivateRoomRegistry,
@@ -100,6 +110,7 @@ import {
   lockSecretChatSession,
   useSecretChatSession
 } from '@/stores/domains/settings/secretChatSession'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileSecretChatPage')
@@ -111,6 +122,10 @@ defineOptions({
 const { t } = useI18n()
 const router = useRouter()
 const sessionStore = useSessionStore()
+const settingStore = useSettingStore()
+
+/** 未配置密码时解锁必然失败，锁定态改为引导去设置密码。 */
+const configured = computed(() => settingStore.isSecretChatConfigured())
 
 /** 解锁态取自单例响应式 computed：自动锁/其它窗口上锁都会立刻切回锁定态。 */
 const { isUnlocked } = useSecretChatSession()
@@ -131,6 +146,11 @@ const sessionAriaLabel = (session: SessionItem) =>
 /** 锁定态点「输入密码继续」：回跳目标是本页，解锁后由守卫放行。 */
 const handleUnlockClick = () => {
   openSecretChatUnlock('/mobile/secretChat')
+}
+
+/** 未配置密码：跳安全设置页完成设置，而不是弹必然失败的解锁框。 */
+const handleGoSetupPassword = () => {
+  void router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
 }
 
 const handleSessionClick = async (session: SessionItem) => {
@@ -183,6 +203,11 @@ const refreshPrivateSessions = () => {
 
 onMounted(() => {
   if (!isSecretChatUnlocked()) {
+    // 未配置密码时解锁不可能成功，直接引导去安全设置页
+    if (!settingStore.isSecretChatConfigured()) {
+      void router.replace(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
+      return
+    }
     // 正常路径下路由守卫已拦过；这里只兜底「守卫放行后瞬间被锁」的竞态
     openSecretChatUnlock('/mobile/secretChat')
     return
