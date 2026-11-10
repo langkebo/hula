@@ -114,6 +114,21 @@ describe('MobileSecretChatUnlockDialog', () => {
     )
   })
 
+  it('无 pendingPath 时解锁成功只关闭弹窗，不跳转到私密列表', async () => {
+    // 「设为私密」等就地解锁场景不提供回跳目标：此时跳私密列表只会落到空列表，
+    // 且原动作并未执行，用户还得自己回退重来。
+    mocks.pendingPath.value = null
+    const wrapper = mountDialog()
+    const vm = wrapper.vm as unknown as DialogVm
+    vm.password = 'DevUnlock!2026'
+
+    await vm.handleConfirm()
+
+    expect(mocks.unlockSecretChat).toHaveBeenCalledWith('DevUnlock!2026')
+    expect(mocks.closeSecretChatUnlock).toHaveBeenCalled()
+    expect(mocks.replace).not.toHaveBeenCalled()
+  })
+
   it('解锁失败记录失败次数、清空密码且不跳转、不关闭', async () => {
     mocks.unlockSecretChat.mockResolvedValueOnce(false)
     const wrapper = mountDialog()

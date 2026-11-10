@@ -88,7 +88,11 @@ const handleConfirm = async () => {
     }
     const target = consumeSecretChatPendingPath()
     closeSecretChatUnlock()
-    await router.replace(target ?? '/mobile/secretChat')
+    // 无回跳目标时保持当前页面：`togglePrivateRoom` 这类「就地解锁」场景没有待跳转路由，
+    // 跳私密列表只会把用户丢进一个空列表（且原本的动作仍未执行，需重新触发）。
+    if (target) {
+      await router.replace(target)
+    }
   } catch (err) {
     logger.error('secret chat unlock failed:', err)
     showToast({ type: 'fail', message: t('login.secret_chat.verify_failed') })
