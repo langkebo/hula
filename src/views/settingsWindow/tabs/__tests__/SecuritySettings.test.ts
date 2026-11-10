@@ -21,6 +21,7 @@ const {
   isEncryptionAvailableMock,
   getKeyBackupInfoMock,
   isSecretChatConfiguredMock,
+  verifySecretChatPasswordMock,
   setSecretChatPasswordMock,
   clearSecretChatPasswordMock,
   setSecretChatEnabledMock,
@@ -66,6 +67,7 @@ const {
   const getKeyBackupInfoMock = vi.fn().mockResolvedValue(null)
 
   const isSecretChatConfiguredMock = vi.fn().mockReturnValue(false)
+  const verifySecretChatPasswordMock = vi.fn().mockResolvedValue(true)
   const setSecretChatPasswordMock = vi.fn()
   const clearSecretChatPasswordMock = vi.fn()
   const setSecretChatEnabledMock = vi.fn()
@@ -103,6 +105,7 @@ const {
     isEncryptionAvailableMock,
     getKeyBackupInfoMock,
     isSecretChatConfiguredMock,
+    verifySecretChatPasswordMock,
     setSecretChatPasswordMock,
     clearSecretChatPasswordMock,
     setSecretChatEnabledMock,
@@ -140,6 +143,7 @@ type PrivacySettingsVm = ComponentPublicInstance & {
 
 type PrivateChatVm = ComponentPublicInstance & {
   secretChatForm: {
+    oldPassword: string
     password: string
     confirmPassword: string
   }
@@ -231,6 +235,7 @@ vi.mock('@/stores/domains/settings/setting', () => ({
     secretChatAutoLock: false,
     secretChatLockTimeout: 5,
     isSecretChatConfigured: () => isSecretChatConfiguredMock(),
+    verifySecretChatPassword: (password: string) => verifySecretChatPasswordMock(password),
     setSecretChatPassword: (password: string) => setSecretChatPasswordMock(password),
     clearSecretChatPassword: () => clearSecretChatPasswordMock(),
     setSecretChatEnabled: (enabled: boolean) => setSecretChatEnabledMock(enabled),
@@ -326,6 +331,7 @@ describe('SecuritySettings', () => {
     isEncryptionAvailableMock.mockResolvedValue(false)
     getKeyBackupInfoMock.mockResolvedValue(null)
     isSecretChatConfiguredMock.mockReturnValue(false)
+    verifySecretChatPasswordMock.mockResolvedValue(true)
     privacyState.showOnlineStatus = true
     privacyState.sendTypingNotifications = true
     privacyState.sendReadReceipts = true
@@ -460,10 +466,26 @@ describe('SecuritySettings', () => {
     const wrapper = mount(SecuritySettings)
     await vi.dynamicImportSettled()
     const vm = getPrivateChatVm(wrapper)
+    vm.secretChatForm.oldPassword = 'old-pass'
     vm.secretChatForm.password = '1234'
     vm.secretChatForm.confirmPassword = '1234'
     await vm.handleSaveSecretChat()
+    expect(verifySecretChatPasswordMock).toHaveBeenCalledWith('old-pass')
     expect(setSecretChatPasswordMock).toHaveBeenCalledWith('1234')
+  })
+
+  it('rejects wrong old secret chat password', async () => {
+    isSecretChatConfiguredMock.mockReturnValue(true)
+    verifySecretChatPasswordMock.mockResolvedValue(false)
+    const wrapper = mount(SecuritySettings)
+    await vi.dynamicImportSettled()
+    const vm = getPrivateChatVm(wrapper)
+    vm.secretChatForm.oldPassword = 'wrong'
+    vm.secretChatForm.password = '1234'
+    vm.secretChatForm.confirmPassword = '1234'
+    await vm.handleSaveSecretChat()
+    expect(setSecretChatPasswordMock).not.toHaveBeenCalled()
+    expect(messageErrorMock).toHaveBeenCalled()
   })
 
   it('rejects mismatched secret chat passwords', async () => {
