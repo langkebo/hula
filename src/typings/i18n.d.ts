@@ -3132,6 +3132,7 @@ export type I18nKeys = {
       "unmark_private": "移出私密聊天",
       "unmark_confirm": "移出后该会话将回到普通列表，确认移出？",
       "subtitle": "本机加密显示；服务端仍按保留策略保存消息",
+      "encryption_boundary_hint": "私密聊天通过隐藏会话与密码校验保护，不提供端到端加密",
       "locked_title": "私密会话已锁定",
       "unlock_action": "输入密码继续",
       "unlock_title": "解锁私密聊天",
@@ -10101,6 +10102,7 @@ export type I18nKeyPaths =
   | "home.secret_chat.unmark_private"
   | "home.secret_chat.unmark_confirm"
   | "home.secret_chat.subtitle"
+  | "home.secret_chat.encryption_boundary_hint"
   | "home.secret_chat.locked_title"
   | "home.secret_chat.unlock_action"
   | "home.secret_chat.unlock_title"

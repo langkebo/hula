@@ -35,6 +35,10 @@
       @click="handleClear" />
   </van-cell-group>
 
+  <p class="px-16px pt-8px text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-quaternary]">
+    {{ t('home.secret_chat.encryption_boundary_hint') }}
+  </p>
+
   <van-popup v-model:show="showTimeoutSheet" position="bottom" round>
     <van-picker
       :columns="timeoutColumns"

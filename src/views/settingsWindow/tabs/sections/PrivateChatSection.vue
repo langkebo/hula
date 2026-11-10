@@ -1,6 +1,7 @@
 <template>
   <div class="settings-section">
     <h3 class="section-title">{{ t('setting.private_chat.title') }}</h3>
+    <p class="setting-desc">{{ t('home.secret_chat.encryption_boundary_hint') }}</p>
     <div class="setting-item">
       <div class="setting-info">
         <span class="setting-label">{{ t('setting.private_chat.enable') }}</span>

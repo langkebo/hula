@@ -135,6 +135,7 @@
     "unmark_private": "Remove from secret chat",
     "unmark_confirm": "This session will return to the normal list. Remove it from secret chat?",
     "subtitle": "Decrypted on this device; messages are still stored per the server retention policy",
+    "encryption_boundary_hint": "Secret chat is protected by hidden sessions and password verification; it does not provide end-to-end encryption",
     "locked_title": "Secret sessions are locked",
     "unlock_action": "Enter password to continue",
     "unlock_title": "Unlock secret chat",
