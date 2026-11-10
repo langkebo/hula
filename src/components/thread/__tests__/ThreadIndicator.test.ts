@@ -44,6 +44,8 @@ function makeReply(id: string, sender: string, ts: number) {
 
 function makeFakeClient(replies: ReturnType<typeof makeReply>[]) {
   const room = {
+    // threadSupport 关闭时没有 SDK Thread，走 timeline 扫描兜底（D14）
+    getThread: () => undefined,
     getUnfilteredTimelineSet: () => ({
       getLiveTimeline: () => ({ getEvents: () => replies })
     })

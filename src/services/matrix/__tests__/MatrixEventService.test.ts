@@ -339,7 +339,8 @@ describe('MatrixEventService', () => {
           getEvents: opts.getEvents ?? (() => events),
           getPaginationToken: opts.getPaginationToken ?? (() => null)
         }),
-        getMember: () => ({ name: 'Alice', getMxcAvatarUrl: () => 'mxc://a' })
+        getMember: () => ({ name: 'Alice', getMxcAvatarUrl: () => 'mxc://a' }),
+        fetchRoomThreads: vi.fn(() => Promise.resolve())
       }) as unknown as Room
 
     it('初始加载返回整个 live 窗口；loadMore 用 /messages 反向分页取更早历史直到 isLast', async () => {
@@ -355,6 +356,7 @@ describe('MatrixEventService', () => {
         return true // hasMore
       })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
+        supportsThreads: () => false,
         paginateEventTimeline: paginate
       } as unknown as MatrixClient)
 
@@ -393,6 +395,7 @@ describe('MatrixEventService', () => {
         return true
       })
       vi.mocked(matrixClientService.getClient).mockReturnValue({
+        supportsThreads: () => false,
         paginateEventTimeline: paginate
       } as unknown as MatrixClient)
 
@@ -402,6 +405,20 @@ describe('MatrixEventService', () => {
       expect(first.messages.length).toBe(30)
       expect(first.messages[0].message.id).toBe('server-1')
       expect(first.isLast).toBe(false)
+    })
+
+    it('初始加载且开启 threadSupport 时拉起历史讨论串（D14）', async () => {
+      const events = Array.from({ length: 6 }, (_, i) => makeMessageEvent(`event-${i + 1}`))
+      const room = makeRoom(events)
+      vi.mocked(matrixRoomQueryService.getRoom).mockResolvedValue(room)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        supportsThreads: () => true,
+        paginateEventTimeline: vi.fn(async () => false)
+      } as unknown as MatrixClient)
+
+      await matrixEventService.getPagedRoomMessages('!room:e', 20, '')
+
+      expect(room.fetchRoomThreads).toHaveBeenCalledTimes(1)
     })
   })
 })

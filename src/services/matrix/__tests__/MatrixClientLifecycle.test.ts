@@ -244,7 +244,7 @@ describe('MatrixClientLifecycle', () => {
         expect(eventRouter.setEventDecryptedHandler).toHaveBeenCalled()
         expect(eventRouter.setup).toHaveBeenCalled()
         expect(connectionManager.getClient().startClient).toHaveBeenCalledWith(
-          expect.objectContaining({ slidingSync: expect.any(Object) })
+          expect.objectContaining({ slidingSync: expect.any(Object), threadSupport: true })
         )
       },
       SLOW_ASYNC_START_TIMEOUT_MS
@@ -426,7 +426,8 @@ describe('MatrixClientLifecycle', () => {
       expect(eventRouter.detach).toHaveBeenCalledWith(client, syncManager)
       expect(syncManager.create).toHaveBeenCalled()
       expect(eventRouter.setup).toHaveBeenCalled()
-      expect(client.startClient).toHaveBeenCalled()
+      // 重连后也必须保留线程支持，否则 getThread() 失效（D14）
+      expect(client.startClient).toHaveBeenCalledWith(expect.objectContaining({ threadSupport: true }))
     })
 
     /**

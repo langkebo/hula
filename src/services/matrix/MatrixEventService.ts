@@ -416,6 +416,15 @@ class MatrixEventService extends BaseMatrixService {
         return { messages: [], isLast: true, cursor: '' }
       }
     } else {
+      // D14：开启 threadSupport 后 thread 回复不再进入房间主 timeline，
+      // 历史讨论串需要显式建 Thread（内部走 /threads 或 thread filter 的 /messages，
+      // 并把 relations store 中该 root 的子事件合并进 Thread）。
+      // fire-and-forget：服务端不支持 thread 列表时只记日志，不影响主时间线加载。
+      if (client.supportsThreads()) {
+        void room.fetchRoomThreads().catch((err) => {
+          logger.warn(`历史讨论串加载失败: ${roomId}`, err)
+        })
+      }
       // 初始加载：SlidingSync 下 live timeline 窗口仅含 1~10 条，
       // scrollback 极易超时（10s）且 SlidingSync 适配不完整，
       // 导致”只显示最后一条”。改用 paginateEventTimeline（走 /messages 端点）

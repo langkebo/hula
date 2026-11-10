@@ -389,4 +389,77 @@ describe('MatrixThreadService - REST API Methods', () => {
       expect(result.nextBatch).toBe('next')
     })
   })
+
+  describe('SDK Thread model reads (D14)', () => {
+    const makeReply = (id: string, ts: number, sender = '@u:example.com') => ({
+      getId: () => id,
+      getTs: () => ts,
+      getSender: () => sender,
+      getContent: () => ({ body: id, 'm.relates_to': { rel_type: 'm.thread', event_id: '$root' } })
+    })
+
+    const makeSdkRoom = (overrides: Record<string, unknown> = {}) => {
+      const room = {
+        roomId: '!room:example.com',
+        getThread: vi.fn(() => undefined),
+        getThreads: vi.fn(() => []),
+        findEventById: vi.fn(() => undefined),
+        getUnfilteredTimelineSet: vi.fn(() => ({
+          getLiveTimeline: () => ({ getEvents: () => [] })
+        })),
+        ...overrides
+      }
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoom: () => room
+      } as unknown as MatrixClient)
+      return room
+    }
+
+    it('getThreadReplies prefers SDK thread events over timeline scan', () => {
+      const threadEvents = [makeReply('$r2', 200), makeReply('$r1', 100)]
+      makeSdkRoom({ getThread: vi.fn(() => ({ id: '$root', events: threadEvents })) })
+
+      const replies = matrixThreadService.getThreadReplies('!room:example.com', '$root')
+
+      expect(replies.map((event) => event.getId())).toEqual(['$r1', '$r2'])
+    })
+
+    it('getThreadReplies falls back to room timeline when Thread is absent', () => {
+      const legacyReply = makeReply('$legacy', 50)
+      makeSdkRoom({
+        getUnfilteredTimelineSet: vi.fn(() => ({
+          getLiveTimeline: () => ({ getEvents: () => [legacyReply] })
+        }))
+      })
+
+      const replies = matrixThreadService.getThreadReplies('!room:example.com', '$root')
+
+      expect(replies.map((event) => event.getId())).toEqual(['$legacy'])
+    })
+
+    it('getThread counts replies from the SDK thread', () => {
+      const threadEvents = [makeReply('$r1', 100, '@a:example.com'), makeReply('$r2', 200, '@b:example.com')]
+      makeSdkRoom({ getThread: vi.fn(() => ({ id: '$root', events: threadEvents })) })
+
+      const thread = matrixThreadService.getThread('!room:example.com', '$root')
+
+      expect(thread?.replyCount).toBe(2)
+      expect(thread?.participants).toEqual(expect.arrayContaining(['@a:example.com', '@b:example.com']))
+      expect(thread?.lastReply?.eventId).toBe('$r2')
+    })
+
+    it('getThreadsInRoom reads room.getThreads() instead of scanning the timeline', () => {
+      const threadEvents = [makeReply('$r1', 100)]
+      makeSdkRoom({
+        getThreads: vi.fn(() => [{ id: '$root' }]),
+        getThread: vi.fn(() => ({ id: '$root', events: threadEvents }))
+      })
+
+      const threads = matrixThreadService.getThreadsInRoom('!room:example.com')
+
+      expect(threads).toHaveLength(1)
+      expect(threads[0].id).toBe('$root')
+      expect(threads[0].replyCount).toBe(1)
+    })
+  })
 })

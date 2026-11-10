@@ -143,6 +143,15 @@ class MatrixThreadService extends BaseMatrixService {
     const room = client.getRoom(roomId)
     if (!room) return []
 
+    // D14：开启 threadSupport 后 thread 回复不再进入房间主 timeline，
+    // 必须优先读 SDK 的 Thread 模型：liveTimeline 持有回复，
+    // createThread 时还会把 relations store 中该 root 的子事件一并合并。
+    const sdkThread = room.getThread(threadRootId)
+    if (sdkThread && sdkThread.events.length > 0) {
+      return [...sdkThread.events].sort((a, b) => a.getTs() - b.getTs())
+    }
+
+    // fallback：threadSupport 关闭，或 Thread 尚未建立时仍从房间 timeline 扫描。
     const replies: MatrixEvent[] = []
     const timelineSet = room.getUnfilteredTimelineSet()
     const events = timelineSet.getLiveTimeline().getEvents()
@@ -218,6 +227,16 @@ class MatrixThreadService extends BaseMatrixService {
     const room = client.getRoom(roomId)
     if (!room) return []
 
+    // D14：优先使用 SDK Thread 列表（含 fetchRoomThreads 为历史房间建好的讨论串）。
+    const sdkThreads = room.getThreads()
+    if (sdkThreads.length > 0) {
+      return sdkThreads
+        .map((sdkThread) => this.getThread(roomId, sdkThread.id))
+        .filter((thread): thread is Thread => thread !== null)
+        .sort((a, b) => (b.lastReply?.timestamp ?? 0) - (a.lastReply?.timestamp ?? 0))
+    }
+
+    // fallback：threadSupport 关闭，或 Thread 尚未建立时仍扫描房间 timeline 聚合。
     const threadRoots = new Map<string, Thread>()
     const timelineSet = room.getUnfilteredTimelineSet()
     const events = timelineSet.getLiveTimeline().getEvents()

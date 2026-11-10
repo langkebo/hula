@@ -101,7 +101,9 @@ export class MatrixReconnectCoordinator {
 
       const startOpts: StartClientOptions = {
         initialSyncLimit: 10,
-        pendingEventOrdering: PendingEventOrdering.Detached
+        pendingEventOrdering: PendingEventOrdering.Detached,
+        // 与 doStartClient 保持一致：重连后仍需线程支持，否则 getThread() 失效（D14）
+        threadSupport: true
       }
 
       const config = connectionManager.getConfig()

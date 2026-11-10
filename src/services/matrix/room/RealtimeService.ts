@@ -52,6 +52,16 @@ interface VisibleRoomSession extends RoomSession {
 }
 
 /**
+ * `RoomEvent.Timeline` 的第 5 个参数：`timeline` 表示事件落在哪条时间线，
+ * 讨论串时间线的 `getTimelineSet().thread` 非空，用于区分主时间线（D14）。
+ */
+interface TimelineEventData {
+  timeline?: {
+    getTimelineSet?: () => { thread?: unknown } | undefined
+  }
+}
+
+/**
  * Realtime / view-layer domain service.
  *
  * Groups two concerns that share live-client reads:
@@ -134,20 +144,36 @@ export class MatrixRoomRealtimeService {
       callback({ roomId: room.roomId, eventType, roomInfo, message })
     }
 
-    client.on(ROOM_EVENTS.Timeline, (event: MatrixEvent, room: Room | undefined) => {
-      if (!room) return
-      emitTimelineEvent(event, room)
+    client.on(
+      ROOM_EVENTS.Timeline,
+      (
+        event: MatrixEvent,
+        room: Room | undefined,
+        _toStartOfTimeline?: boolean,
+        _removed?: boolean,
+        data?: TimelineEventData
+      ) => {
+        if (!room) return
 
-      if (event.getType() === 'm.room.encrypted') {
-        for (const delay of [250, 1000, 3000]) {
-          setTimeout(() => {
-            if (event.getType() === 'm.room.message' || BEACON_EVENT_TYPES.has(event.getType())) {
-              emitTimelineEvent(event, room)
-            }
-          }, delay)
+        // D14：开启 threadSupport 后，讨论串回复只存在于 thread 时间线，
+        // SDK 会经 room.reEmitter 把 thread 的 RoomEvent.Timeline 再转发到本回调
+        // （第二个参数仍是同一个 Room，只能靠 data.timeline 区分）。
+        // 不过滤会在主会话里重复渲染 thread 回复，thread root 更会与主时间线版本重复。
+        if (data?.timeline?.getTimelineSet?.()?.thread) return
+
+        emitTimelineEvent(event, room)
+
+        if (event.getType() === 'm.room.encrypted') {
+          for (const delay of [250, 1000, 3000]) {
+            setTimeout(() => {
+              if (event.getType() === 'm.room.message' || BEACON_EVENT_TYPES.has(event.getType())) {
+                emitTimelineEvent(event, room)
+              }
+            }, delay)
+          }
         }
       }
-    })
+    )
   }
 
   /**

@@ -181,7 +181,10 @@ export class MatrixClientLifecycle {
     try {
       const startOpts: StartClientOptions = {
         initialSyncLimit: 20,
-        pendingEventOrdering: PendingEventOrdering.Detached
+        pendingEventOrdering: PendingEventOrdering.Detached,
+        // SDK 的 supportsThreads() 直接读 startClient 传入的 opts（clientOpts），
+        // 不开此开关则 room.getThread() 恒为 null、/relations 线程内容不进入 SDK（D14）。
+        threadSupport: true
       }
 
       const config = connectionManager.getConfig()

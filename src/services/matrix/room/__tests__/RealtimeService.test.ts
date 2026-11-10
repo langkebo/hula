@@ -142,6 +142,35 @@ describe('MatrixRoomRealtimeService', () => {
       expect(cb).not.toHaveBeenCalled()
     })
 
+    it('onTimelineEvent skips events emitted from a thread timeline (D14)', () => {
+      const { on } = setupClient()
+      const cb = vi.fn()
+      service.onTimelineEvent(cb)
+      const handler = on.mock.calls[0][1]
+      const threadTimeline = { getTimelineSet: () => ({ thread: { id: '$root' } }) }
+      handler({ getType: () => 'm.room.message', getContent: () => ({}) }, makeRoom(), false, false, {
+        timeline: threadTimeline
+      })
+      expect(cb).not.toHaveBeenCalled()
+      expect(convertEventToMessageMock).not.toHaveBeenCalled()
+    })
+
+    it('onTimelineEvent dispatches events from the room main timeline (D14)', () => {
+      const { on } = setupClient()
+      convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
+      convertEventToMessageMock.mockReturnValueOnce({ id: 'm1' })
+      const cb = vi.fn()
+      service.onTimelineEvent(cb)
+      const handler = on.mock.calls[0][1]
+      const mainTimeline = { getTimelineSet: () => ({ thread: undefined }) }
+      handler({ getType: () => 'm.room.message', getContent: () => ({}) }, makeRoom(), false, false, {
+        timeline: mainTimeline
+      })
+      expect(cb).toHaveBeenCalledWith(
+        expect.objectContaining({ roomId: '!r:e', eventType: 'm.room.message', message: { id: 'm1' } })
+      )
+    })
+
     it('onTimelineEvent converts room info; message for m.room.message', () => {
       const { on } = setupClient()
       convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
