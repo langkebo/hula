@@ -179,6 +179,7 @@ vi.mock('@/services/matrix/MatrixClientService', () => {
   const stub = {
     getClient: vi.fn(() => null),
     getConnectionState: vi.fn(() => 'CONNECTED'),
+    startClient: vi.fn().mockResolvedValue(undefined),
     waitForClientReady: vi.fn().mockResolvedValue(undefined),
     on: vi.fn((event: string, cb: (data: unknown) => void) => {
       // 模拟 sync 事件立即触发，避免 waitSyncPrepared 超时
