@@ -3134,9 +3134,15 @@ export type I18nKeys = {
       "subtitle": "本机加密显示；服务端仍按保留策略保存消息",
       "locked_title": "私密会话已锁定",
       "unlock_action": "输入密码继续",
+      "unlock_title": "解锁私密聊天",
+      "password_label": "密码",
+      "password_placeholder": "请输入密码",
+      "password_required": "请输入密码",
+      "password_incorrect_retry": "密码错误（已连续多次失败）。密码无法找回，请确认后重试。",
       "unread_badge": "{count} 条未读",
       "avatar_alt": "{name} 的头像",
-      "registry_unavailable": "无法校验私密会话状态，请稍后重试"
+      "registry_unavailable": "无法校验私密会话状态，请稍后重试",
+      "checking_access": "正在校验访问权限"
     },
     "chat_sidebar": {
       "actions": {
@@ -10097,9 +10103,15 @@ export type I18nKeyPaths =
   | "home.secret_chat.subtitle"
   | "home.secret_chat.locked_title"
   | "home.secret_chat.unlock_action"
+  | "home.secret_chat.unlock_title"
+  | "home.secret_chat.password_label"
+  | "home.secret_chat.password_placeholder"
+  | "home.secret_chat.password_required"
+  | "home.secret_chat.password_incorrect_retry"
   | "home.secret_chat.unread_badge"
   | "home.secret_chat.avatar_alt"
   | "home.secret_chat.registry_unavailable"
+  | "home.secret_chat.checking_access"
   | "home.chat_sidebar.actions.retry"
   | "home.chat_sidebar.search.placeholder"
   | "home.chat_sidebar.quota.title"
