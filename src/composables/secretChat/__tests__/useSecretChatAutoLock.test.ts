@@ -16,14 +16,27 @@ import { useSecretChatAutoLock } from '../useSecretChatAutoLock'
  * 超时上锁 / 关闭开关不上锁 / 活动刷新计时 / dispose 后不再上锁。
  */
 describe('useSecretChatAutoLock', () => {
+  /** happy-dom 的 `visibilityState` 只读，用可配置 getter 模拟。 */
+  let visibilityState: DocumentVisibilityState = 'visible'
+
+  function setVisibilityState(state: DocumentVisibilityState) {
+    visibilityState = state
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => visibilityState
+    })
+  }
+
   beforeEach(() => {
     setActivePinia(createPinia())
     resetSecretChatSessionForTest()
+    setVisibilityState('visible')
     vi.useFakeTimers()
   })
 
   afterEach(() => {
     resetSecretChatSessionForTest()
+    setVisibilityState('visible')
     vi.useRealTimers()
   })
 
@@ -91,6 +104,39 @@ describe('useSecretChatAutoLock', () => {
     vi.advanceTimersByTime(45_000)
     document.dispatchEvent(new Event('visibilitychange'))
     vi.advanceTimersByTime(45_000)
+    expect(isSecretChatUnlocked()).toBe(true)
+
+    dispose()
+  })
+
+  it('后台停留超过锁定时长后回前台立即上锁', () => {
+    configure(true, 1)
+    const { dispose } = useSecretChatAutoLock()
+    unlockSecretChatSession(new Uint8Array(32))
+
+    setVisibilityState('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    // 只推进系统时钟、不跑定时器：模拟后台 setInterval 被节流/挂起
+    vi.setSystemTime(Date.now() + 120_000)
+    setVisibilityState('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(isSecretChatUnlocked()).toBe(false)
+
+    dispose()
+  })
+
+  it('关闭自动锁时后台停留再回前台仍保持解锁', () => {
+    configure(false, 1)
+    const { dispose } = useSecretChatAutoLock()
+    unlockSecretChatSession(new Uint8Array(32))
+
+    setVisibilityState('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    vi.setSystemTime(Date.now() + 120_000)
+    setVisibilityState('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+
     expect(isSecretChatUnlocked()).toBe(true)
 
     dispose()

@@ -1,4 +1,5 @@
 import {
+  lockSecretChatSession,
   startSecretChatAutoLock,
   stopSecretChatAutoLock,
   touchSecretChatSession
@@ -32,10 +33,25 @@ export function useSecretChatAutoLock(): { dispose: () => void } {
   const handleActivity = () => {
     touchSecretChatSession()
   }
+  /** 进入后台的时刻；回前台据此判定是否已超时（后台定时器可能被节流甚至挂起）。 */
+  let hiddenAt: number | null = null
   const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
-      touchSecretChatSession()
+    if (document.visibilityState === 'hidden') {
+      hiddenAt = Date.now()
+      return
     }
+    if (document.visibilityState !== 'visible') {
+      return
+    }
+
+    const hiddenDuration = hiddenAt === null ? 0 : Date.now() - hiddenAt
+    hiddenAt = null
+    // 超时配置实时读取，与 startSecretChatAutoLock 的 provider 同源，不做 setup 期快照
+    if (settingStore.secretChatAutoLock && hiddenDuration >= settingStore.secretChatLockTimeout * 60_000) {
+      lockSecretChatSession('后台超时')
+      return
+    }
+    touchSecretChatSession()
   }
 
   if (hasDocument) {
@@ -50,6 +66,7 @@ export function useSecretChatAutoLock(): { dispose: () => void } {
       document.removeEventListener('keydown', handleActivity, true)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
+    hiddenAt = null
     stopSecretChatAutoLock()
   }
 
