@@ -55,7 +55,20 @@ const stubs = {
 }
 const global = { stubs }
 
-type SectionVm = { handleEnabledChange: (value: boolean) => void }
+type SectionVm = {
+  handleEnabledChange: (value: boolean) => void
+  handlePasswordConfirm: (action: string) => Promise<boolean>
+  form: { oldPassword: string; newPassword: string; confirmPassword: string }
+}
+
+const mountWithForm = (values: { oldPassword?: string; newPassword?: string; confirmPassword?: string }) => {
+  const wrapper = mount(MobilePrivateChatSection, { global })
+  const vm = wrapper.vm as unknown as SectionVm
+  vm.form.oldPassword = values.oldPassword ?? ''
+  vm.form.newPassword = values.newPassword ?? ''
+  vm.form.confirmPassword = values.confirmPassword ?? ''
+  return vm
+}
 
 describe('MobilePrivateChatSection', () => {
   beforeEach(() => {
@@ -92,5 +105,42 @@ describe('MobilePrivateChatSection', () => {
     const vm = wrapper.vm as unknown as SectionVm
     vm.handleEnabledChange(true)
     expect(setSecretChatEnabled).not.toHaveBeenCalled()
+  })
+
+  it('新密码不足 6 位时返回 false 且不保存密码', async () => {
+    const vm = mountWithForm({ newPassword: '12345', confirmPassword: '12345' })
+
+    await expect(vm.handlePasswordConfirm('confirm')).resolves.toBe(false)
+
+    expect(setSecretChatPassword).not.toHaveBeenCalled()
+    expect(verifySecretChatPassword).not.toHaveBeenCalled()
+  })
+
+  it('两次输入不一致时返回 false 且不保存密码', async () => {
+    const vm = mountWithForm({ newPassword: '123456', confirmPassword: '654321' })
+
+    await expect(vm.handlePasswordConfirm('confirm')).resolves.toBe(false)
+
+    expect(setSecretChatPassword).not.toHaveBeenCalled()
+    expect(verifySecretChatPassword).not.toHaveBeenCalled()
+  })
+
+  it('旧密码校验失败时返回 false 且不保存密码', async () => {
+    verifySecretChatPassword.mockResolvedValueOnce(false)
+    const vm = mountWithForm({ oldPassword: 'wrong-pass', newPassword: '123456', confirmPassword: '123456' })
+
+    await expect(vm.handlePasswordConfirm('confirm')).resolves.toBe(false)
+
+    expect(verifySecretChatPassword).toHaveBeenCalledWith('wrong-pass')
+    expect(setSecretChatPassword).not.toHaveBeenCalled()
+  })
+
+  it('校验通过时保存新密码并返回 true', async () => {
+    const vm = mountWithForm({ oldPassword: 'old-pass', newPassword: '123456', confirmPassword: '123456' })
+
+    await expect(vm.handlePasswordConfirm('confirm')).resolves.toBe(true)
+
+    expect(verifySecretChatPassword).toHaveBeenCalledWith('old-pass')
+    expect(setSecretChatPassword).toHaveBeenCalledWith('123456')
   })
 })
