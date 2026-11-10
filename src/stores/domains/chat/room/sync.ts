@@ -121,12 +121,13 @@ export function createRoomSync(ctx: RoomSyncContext) {
       }
 
       const chatStore = useChatStore()
-      // 可显示的消息事件类型白名单，非消息事件（如 m.thread、m.reaction）不渲染为消息气泡
+      // 可显示的消息事件类型白名单，非消息事件（如 m.thread、m.reaction）不渲染为消息气泡。
+      // m.room.redaction 不在此列：撤回提示由 RoomEvent.Redaction 驱动，目标事件被清空后
+      // 已渲染为唯一一条撤回态，redaction 事件本身再入列会产生重复气泡。
       const DISPLAYABLE_EVENT_TYPES = new Set([
         'm.room.message',
         'm.room.encrypted',
         'm.room.member',
-        'm.room.redaction',
         ...BEACON_INFO_EVENT_TYPES
       ])
       for (const event of roomData.timeline) {
@@ -205,6 +206,8 @@ export function createRoomSync(ctx: RoomSyncContext) {
     }
 
     matrixRoomRealtimeService.onTimelineEvent(({ roomId, eventType, roomInfo, message }) => {
+      // 撤回提示不在这里处理：由 SDK 的 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
+      // 时间线里的 m.room.redaction 只负责目标事件的 makeRedacted 兜底，不再重复上抛。
       if ((eventType === 'm.room.message' || eventType === 'm.room.encrypted') && message) {
         if (chatStore.checkMsgExist(roomId, message.message.id)) {
           if (eventType === 'm.room.message' && hasRenderableMessageBody(message.message.body)) {
@@ -240,6 +243,16 @@ export function createRoomSync(ctx: RoomSyncContext) {
       }
 
       const roomId = message.message.roomId
+
+      // 撤回先于解密到达时，SDK 已清空 content；这里不要用空正文覆盖撤回文案，
+      // 只补齐撤回态，避免加密房里撤回后只剩一个空气泡。
+      if (event.isRedacted()) {
+        void chatStore.updateRecallMsg({ msgId: message.message.id, roomId, recallUid: event.getSender() ?? '' })
+        rooms.value.set(roomId, matrixRoomCreationService.convertRoomToRoomInfo(room))
+        triggerRef(rooms)
+        return
+      }
+
       const body = normalizeMessageBody(message.message.body)
 
       if (chatStore.checkMsgExist(roomId, message.message.id)) {

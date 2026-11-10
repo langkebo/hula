@@ -672,6 +672,38 @@ describe('RoomStore', () => {
       expect(mockChatStore.pushMsg).not.toHaveBeenCalled()
       expect(store.rooms.get('!room:id')?.lastMessage).toBe('[实时位置共享]')
     })
+
+    it('should not render m.room.redaction as a standalone bubble', async () => {
+      const store = useRoomStore()
+      store.rooms.set('!room:id', {
+        roomId: '!room:id',
+        name: 'Room',
+        avatarUrl: null,
+        isDirect: false,
+        isEncrypted: false,
+        unreadCount: 0,
+        highlightCount: 0,
+        notificationCount: 0,
+        lastMessage: null,
+        lastMessageTime: null,
+        members: []
+      })
+
+      await store.handleIncrementalUpdate('!room:id', {
+        timeline: [
+          {
+            event_id: '$redact',
+            type: 'm.room.redaction',
+            sender: '@u:server',
+            content: { redacts: '$target' },
+            origin_server_ts: 444
+          }
+        ]
+      })
+
+      // 撤回提示由 RoomEvent.Redaction 驱动目标事件进入撤回态，redaction 事件本身不得再成气泡
+      expect(mockChatStore.pushMsg).not.toHaveBeenCalled()
+    })
   })
 
   describe('loadRooms', () => {
@@ -931,7 +963,8 @@ describe('RoomStore', () => {
           getSender: () => '@user:server',
           getTs: () => 3000,
           getType: () => 'm.room.encrypted',
-          getContent: () => ({ body: 'decrypted hello' })
+          getContent: () => ({ body: 'decrypted hello' }),
+          isRedacted: () => false
         },
         room: {
           roomId: '!room:id',

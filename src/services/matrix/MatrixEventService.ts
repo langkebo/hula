@@ -306,14 +306,17 @@ class MatrixEventService extends BaseMatrixService {
     const content = event.getContent()
     const sender = event.getSender()
     const member = room.getMember(sender || '')
-    const resolvedMsgType = matrixMessageAdapter.getMsgTypeFromMatrixEvent(event)
+    // 已被撤回的事件：服务端会清空 content，若按原类型转换会渲染出空正文气泡。
+    // 这里直接产出撤回态（body 留空，由 RecallMessage 组件回退到 i18n 撤回文案）。
+    const isRedacted = event.isRedacted()
+    const resolvedMsgType = isRedacted ? MsgEnum.RECALL : matrixMessageAdapter.getMsgTypeFromMatrixEvent(event)
     const msgType = resolvedMsgType === MsgEnum.UNKNOWN ? MsgEnum.TEXT : resolvedMsgType
     // SDK 解密失败时会把 clearEvent 置为 `{ msgtype: 'm.bad.encrypted' }` 占位，
     // 渲染层据此展示「无法解密 + 重试」卡片（不依赖正文内容）。
     const isBadEncrypted = content?.msgtype === 'm.bad.encrypted'
 
     const burnAfterReadMeta = content?.['m.burn_after_read'] as { expires_in?: number } | undefined
-    const burnAfterRead = !!burnAfterReadMeta
+    const burnAfterRead = !isRedacted && !!burnAfterReadMeta
     const burnExpiresIn = burnAfterReadMeta?.expires_in || MatrixBurnDuration.DEFAULT_MS
     const burnRemainingSeconds = burnAfterRead ? Math.round(burnExpiresIn / 1000) : undefined
 
@@ -322,13 +325,17 @@ class MatrixEventService extends BaseMatrixService {
     // 仅 LINK_PREVIEW 保留 content 透传（其渲染组件读取 msc2788 原始结构，适配器未覆盖）。
     // 历史根因（2026-08-25）：此前非 LOCATION/BEACON 类型直接透传 Matrix 原始 content（{msgtype,body}），
     // 而 Text.vue 读取 body.content，导致 TEXT 消息渲染为空气泡。
-    const body: MessageType['message']['body'] =
-      msgType === MsgEnum.LINK_PREVIEW
-        ? content
-        : (matrixMessageAdapter.convertMatrixContent(
-            content as Record<string, unknown>,
-            msgType
-          ) as MessageType['message']['body'])
+    let body: MessageType['message']['body']
+    if (isRedacted) {
+      body = {}
+    } else if (msgType === MsgEnum.LINK_PREVIEW) {
+      body = content
+    } else {
+      body = matrixMessageAdapter.convertMatrixContent(
+        content as Record<string, unknown>,
+        msgType
+      ) as MessageType['message']['body']
+    }
 
     // 线程内消息：m.relates_to.rel_type === 'm.thread'，event_id 指向线程根。
     // body 是新建对象（LINK_PREVIEW 例外但同样可安全附加），这里直接补字段。

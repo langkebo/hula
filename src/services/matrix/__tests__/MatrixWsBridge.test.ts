@@ -47,10 +47,11 @@ describe('MatrixWsBridge', () => {
     matrixWsBridge.start()
     expect(fakeClient.on).toHaveBeenCalledWith(ClientEvent.Sync, expect.any(Function))
     expect(fakeClient.on).toHaveBeenCalledWith(RoomEvent.Redaction, expect.any(Function))
+    expect(fakeClient.on).toHaveBeenCalledWith(RoomEvent.Timeline, expect.any(Function))
     expect(fakeClient.on).toHaveBeenCalledWith(RoomStateEvent.Events, expect.any(Function))
 
     matrixWsBridge.stop()
-    expect(fakeClient.off).toHaveBeenCalledTimes(3)
+    expect(fakeClient.off).toHaveBeenCalledTimes(4)
   })
 
   it('emits TOKEN_EXPIRED on sync error with M_UNKNOWN_TOKEN', async () => {
@@ -83,7 +84,8 @@ describe('MatrixWsBridge', () => {
     matrixWsBridge.start()
 
     const event = {
-      event: { redacts: '$evt:matrix.test' },
+      getId: () => '$redaction:matrix.test',
+      getRedactionTargetId: () => '$evt:matrix.test',
       getContent: () => ({}),
       getSender: () => '@bob:matrix.test'
     }
@@ -95,6 +97,65 @@ describe('MatrixWsBridge', () => {
       roomId: '!room:matrix.test',
       recallUid: '@bob:matrix.test'
     })
+    matrixWsBridge.stop()
+  })
+
+  it('emits MSG_RECALL for a redaction seen only on the timeline (D13 target evicted from SDK timeline)', async () => {
+    const { matrixWsBridge } = await import('../MatrixWsBridge')
+    matrixWsBridge.start()
+
+    const event = {
+      getId: () => '$redaction:matrix.test',
+      isRedaction: () => true,
+      getRedactionTargetId: () => '$evicted:matrix.test',
+      getSender: () => '@bob:matrix.test',
+      getRoomId: () => '!room:matrix.test'
+    }
+    fire(RoomEvent.Timeline, event, { roomId: '!room:matrix.test' })
+
+    expect(mockEmit).toHaveBeenCalledWith(WsResponseMessageType.MSG_RECALL, {
+      msgId: '$evicted:matrix.test',
+      roomId: '!room:matrix.test',
+      recallUid: '@bob:matrix.test'
+    })
+    matrixWsBridge.stop()
+  })
+
+  it('emits MSG_RECALL only once when both channels see the same redaction', async () => {
+    const { matrixWsBridge } = await import('../MatrixWsBridge')
+    matrixWsBridge.start()
+
+    const event = {
+      getId: () => '$redaction:matrix.test',
+      isRedaction: () => true,
+      getRedactionTargetId: () => '$evt:matrix.test',
+      getSender: () => '@bob:matrix.test',
+      getRoomId: () => '!room:matrix.test'
+    }
+    const room = { roomId: '!room:matrix.test' }
+    fire(RoomEvent.Redaction, event, room)
+    fire(RoomEvent.Timeline, event, room)
+
+    expect(mockEmit).toHaveBeenCalledTimes(1)
+    matrixWsBridge.stop()
+  })
+
+  it('ignores non-redaction timeline events and redactions without a target', async () => {
+    const { matrixWsBridge } = await import('../MatrixWsBridge')
+    matrixWsBridge.start()
+
+    fire(RoomEvent.Timeline, { isRedaction: () => false }, { roomId: '!room:matrix.test' })
+    fire(
+      RoomEvent.Timeline,
+      {
+        isRedaction: () => true,
+        getRedactionTargetId: () => undefined,
+        getRoomId: () => '!room:matrix.test'
+      },
+      { roomId: '!room:matrix.test' }
+    )
+
+    expect(mockEmit).not.toHaveBeenCalled()
     matrixWsBridge.stop()
   })
 

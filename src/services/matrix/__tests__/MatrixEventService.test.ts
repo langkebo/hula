@@ -191,13 +191,14 @@ describe('MatrixEventService', () => {
   })
 
   describe('convertEventToMessage', () => {
-    const makeEvent = (type: string, content: Record<string, unknown>): MatrixEvent =>
+    const makeEvent = (type: string, content: Record<string, unknown>, redacted = false): MatrixEvent =>
       ({
         getId: () => '$evt',
         getSender: () => '@alice:e',
         getType: () => type,
         getContent: () => content,
-        getTs: () => 1700000000000
+        getTs: () => 1700000000000,
+        isRedacted: () => redacted
       }) as unknown as MatrixEvent
 
     const makeRoom = (): Room =>
@@ -308,6 +309,13 @@ describe('MatrixEventService', () => {
       )
       expect(reply?.message.body.threadId).toBeUndefined()
     })
+
+    it('maps a redacted event into a RECALL message with empty body (no stale or blank TEXT bubble)', () => {
+      const msg = matrixEventService.convertEventToMessage(makeEvent('m.room.message', {}, true), makeRoom())
+
+      expect(msg?.message.type).toBe(MsgEnum.RECALL)
+      expect(msg?.message.body).toEqual({})
+    })
   })
 
   describe('getPagedRoomMessages', () => {
@@ -317,7 +325,8 @@ describe('MatrixEventService', () => {
         getSender: () => '@alice:e',
         getType: () => 'm.room.message',
         getContent: () => ({ msgtype: 'm.text', body: `body-${id}` }),
-        getTs: () => 1700000000000
+        getTs: () => 1700000000000,
+        isRedacted: () => false
       }) as unknown as MatrixEvent
 
     const makeRoom = (

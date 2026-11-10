@@ -24,6 +24,17 @@ const ROOM_EVENTS = {
  */
 const BEACON_EVENT_TYPES = new Set<string>(['m.beacon_info', 'org.matrix.msc3672.beacon_info'])
 
+/**
+ * 解析撤回事件指向的目标消息 ID。
+ * room v11 起 redacts 迁移到 content.redacts；legacy 房间仍写在事件顶层 redacts。
+ */
+export function resolveRedactionTargetId(event: MatrixEvent): string | undefined {
+  const contentTarget = event.getContent<{ redacts?: unknown }>()?.redacts
+  const legacyTarget = event.event?.redacts
+  const target = contentTarget ?? legacyTarget
+  return typeof target === 'string' && target.length > 0 ? target : undefined
+}
+
 interface RoomSession {
   roomId: string
   name: string
@@ -113,14 +124,14 @@ export class MatrixRoomRealtimeService {
         message = matrixEventServiceLocal.convertEventToMessageType(event)
       } else if (BEACON_EVENT_TYPES.has(eventType)) {
         message = matrixEventServiceLocal.convertEventToMessage(event, room)
+      } else if (eventType === 'm.room.redaction') {
+        // 撤回提示由 MatrixWsBridge 统一上抛（RoomEvent.Redaction + 本条 timeline 双通道去重），
+        // 这里只做目标事件的幂等兜底：SDK 已能解析 content.redacts 并在命中时 makeRedacted，
+        // 此调用仅在 SDK 未命中/未生效时补齐，保证重复渲染不会回显原文。
+        this.applyRedaction(event, room)
       }
 
-      callback({
-        roomId: room.roomId,
-        eventType,
-        roomInfo,
-        message
-      })
+      callback({ roomId: room.roomId, eventType, roomInfo, message })
     }
 
     client.on(ROOM_EVENTS.Timeline, (event: MatrixEvent, room: Room | undefined) => {
@@ -137,6 +148,24 @@ export class MatrixRoomRealtimeService {
         }
       }
     })
+  }
+
+  /**
+   * 目标事件的幂等兜底：就地补齐已撤回标记。
+   *
+   * vendored SDK 的 `tryApplyRedaction` 已能解析 content.redacts（room v11+）与顶层 redacts，
+   * 并在目标事件仍在本窗口 timeline 中时 makeRedacted。目标已滑出窗口时 SDK 静默跳过，
+   * 此时本方法也无事可做（findEventById 为空）；它的价值是防御 SDK 未生效时原文残留，
+   * 与 MatrixWsBridge 的 MSG_RECALL 上抛互补（后者负责 UI 撤回态落地）。
+   */
+  private applyRedaction(event: MatrixEvent, room: Room): void {
+    const targetId = resolveRedactionTargetId(event)
+    if (!targetId) return
+
+    const target = room.findEventById(targetId)
+    if (target && !target.isRedacted()) {
+      target.makeRedacted(event, room)
+    }
   }
 
   onRoomNameChange(callback: (roomId: string, name: string) => void): void {
