@@ -32,6 +32,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
+  clearSecretChatPendingPath,
   closeSecretChatUnlock,
   consumeSecretChatPendingPath,
   recordSecretChatUnlockFailure,
@@ -39,6 +40,7 @@ import {
 } from '@/composables/secretChat/useSecretChatGate'
 import { MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from '@/mobile/views/my/settingsRoutes'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { createLogger } from '@/utils/Logger'
 
 /**
  * 移动端私密聊天解锁弹窗（Vant）。
@@ -51,6 +53,7 @@ defineOptions({ name: 'MobileSecretChatUnlockDialog' })
 const { t } = useI18n()
 const router = useRouter()
 const settingStore = useSettingStore()
+const logger = createLogger('MobileSecretChatUnlockDialog')
 const { visible, failureCount } = useSecretChatGate()
 
 const password = ref('')
@@ -61,6 +64,8 @@ const show = computed({
   set: (value: boolean) => {
     if (!value) {
       password.value = ''
+      // 用户取消关闭时必须丢弃回跳目标，否则下次无参 openSecretChatUnlock() 会误用旧房间
+      clearSecretChatPendingPath()
       closeSecretChatUnlock()
     }
   }
@@ -84,6 +89,9 @@ const handleConfirm = async () => {
     const target = consumeSecretChatPendingPath()
     closeSecretChatUnlock()
     await router.replace(target ?? '/mobile/secretChat')
+  } catch (err) {
+    logger.error('secret chat unlock failed:', err)
+    showToast({ type: 'fail', message: t('login.secret_chat.verify_failed') })
   } finally {
     submitting.value = false
   }
@@ -93,6 +101,7 @@ const handleConfirm = async () => {
 const handleBeforeClose = async (action: string): Promise<boolean> => {
   if (action !== 'confirm') {
     password.value = ''
+    clearSecretChatPendingPath()
     return true
   }
   await handleConfirm()
@@ -100,6 +109,8 @@ const handleBeforeClose = async (action: string): Promise<boolean> => {
 }
 
 const goSettings = () => {
+  password.value = ''
+  clearSecretChatPendingPath()
   closeSecretChatUnlock()
   void router.replace(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
 }

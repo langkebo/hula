@@ -19,9 +19,11 @@ const mocks = vi.hoisted(() => ({
   unlockSecretChat: vi.fn(async () => true),
   recordSecretChatUnlockFailure: vi.fn(() => 1),
   closeSecretChatUnlock: vi.fn(),
+  clearSecretChatPendingPath: vi.fn(),
   consumeSecretChatPendingPath: vi.fn(),
   replace: vi.fn(async () => undefined),
-  showToast: vi.fn()
+  showToast: vi.fn(),
+  loggerError: vi.fn()
 }))
 
 vi.mock('@/composables/secretChat/useSecretChatGate', () => ({
@@ -32,6 +34,7 @@ vi.mock('@/composables/secretChat/useSecretChatGate', () => ({
   }),
   consumeSecretChatPendingPath: mocks.consumeSecretChatPendingPath,
   closeSecretChatUnlock: mocks.closeSecretChatUnlock,
+  clearSecretChatPendingPath: mocks.clearSecretChatPendingPath,
   recordSecretChatUnlockFailure: mocks.recordSecretChatUnlockFailure
 }))
 vi.mock('@/stores/domains/settings/setting', () => ({
@@ -40,6 +43,9 @@ vi.mock('@/stores/domains/settings/setting', () => ({
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ replace: mocks.replace }) }))
 vi.mock('vant', () => ({ showToast: mocks.showToast }))
+vi.mock('@/utils/Logger', () => ({
+  createLogger: () => ({ error: mocks.loggerError, info: vi.fn(), warn: vi.fn(), debug: vi.fn() })
+}))
 
 import MobileSecretChatUnlockDialog from '../MobileSecretChatUnlockDialog.vue'
 
@@ -50,6 +56,9 @@ mocks.visible = ref(true)
 mocks.failureCount = ref(0)
 mocks.pendingPath = ref<unknown>(pendingTarget)
 mocks.consumeSecretChatPendingPath.mockImplementation(() => mocks.pendingPath.value)
+mocks.clearSecretChatPendingPath.mockImplementation(() => {
+  mocks.pendingPath.value = null
+})
 
 /**
  * 测试环境未启用 VantResolver，`van-*` 标签会被当作原生元素；
@@ -70,6 +79,7 @@ const mountDialog = () => mount(MobileSecretChatUnlockDialog, { global })
 
 type DialogVm = {
   password: string
+  show: boolean
   handleConfirm: () => Promise<void>
   handleBeforeClose: (action: string) => Promise<boolean>
 }
@@ -79,9 +89,13 @@ describe('MobileSecretChatUnlockDialog', () => {
     vi.clearAllMocks()
     mocks.visible.value = true
     mocks.failureCount.value = 0
+    mocks.pendingPath.value = pendingTarget
     mocks.unlockSecretChat.mockResolvedValue(true)
     mocks.closeSecretChatUnlock.mockImplementation(() => {
       mocks.visible.value = false
+    })
+    mocks.clearSecretChatPendingPath.mockImplementation(() => {
+      mocks.pendingPath.value = null
     })
   })
 
@@ -126,9 +140,14 @@ describe('MobileSecretChatUnlockDialog', () => {
     expect(mocks.showToast).toHaveBeenCalled()
   })
 
-  it('连续失败达到阈值后显示去设置密码入口', () => {
-    mocks.failureCount.value = 3
+  it('连续失败达到阈值后显示去设置密码入口', async () => {
+    mocks.failureCount.value = 2
     const wrapper = mountDialog()
+
+    expect(wrapper.find('[data-testid="mobile-secret-chat-failure-hint"]').exists()).toBe(false)
+
+    mocks.failureCount.value = 3
+    await wrapper.vm.$nextTick()
 
     expect(wrapper.find('[data-testid="mobile-secret-chat-failure-hint"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('mobile_security.secret_chat.go_settings')
@@ -145,7 +164,7 @@ describe('MobileSecretChatUnlockDialog', () => {
     expect(mocks.unlockSecretChat).toHaveBeenCalledWith('DevUnlock!2026')
   })
 
-  it('cancel 动作允许关闭并清空密码', async () => {
+  it('cancel 动作允许关闭、清空密码并丢弃 pendingPath', async () => {
     const wrapper = mountDialog()
     const vm = wrapper.vm as unknown as DialogVm
     vm.password = 'abc'
@@ -154,6 +173,39 @@ describe('MobileSecretChatUnlockDialog', () => {
 
     expect(closed).toBe(true)
     expect(vm.password).toBe('')
+    expect(mocks.clearSecretChatPendingPath).toHaveBeenCalledTimes(1)
+    expect(mocks.pendingPath.value).toBeNull()
     expect(mocks.unlockSecretChat).not.toHaveBeenCalled()
+  })
+
+  it('弹窗被直接关闭（show 置 false）时同样清空 pendingPath 与密码', async () => {
+    const wrapper = mountDialog()
+    const vm = wrapper.vm as unknown as DialogVm
+    vm.password = 'abc'
+
+    vm.show = false
+    await wrapper.vm.$nextTick()
+
+    expect(vm.password).toBe('')
+    expect(mocks.clearSecretChatPendingPath).toHaveBeenCalled()
+    expect(mocks.pendingPath.value).toBeNull()
+  })
+
+  it('unlockSecretChat 抛异常时提示失败并复位 submitting，不跳转也不计失败次数', async () => {
+    mocks.unlockSecretChat.mockRejectedValueOnce(new Error('pbkdf2 exploded'))
+    const wrapper = mountDialog()
+    const vm = wrapper.vm as unknown as DialogVm
+    vm.password = 'boom'
+
+    await vm.handleConfirm()
+
+    expect(mocks.replace).not.toHaveBeenCalled()
+    expect(mocks.recordSecretChatUnlockFailure).not.toHaveBeenCalled()
+    expect(mocks.loggerError).toHaveBeenCalled()
+    expect(mocks.showToast).toHaveBeenCalledWith({ type: 'fail', message: 'login.secret_chat.verify_failed' })
+
+    // submitting 已复位：第二次仍能进入校验
+    await vm.handleConfirm()
+    expect(mocks.unlockSecretChat).toHaveBeenCalledTimes(2)
   })
 })
