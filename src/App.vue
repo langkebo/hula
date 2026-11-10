@@ -44,6 +44,7 @@ import { useGlobalShortcut } from '@/composables/common/useGlobalShortcut'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
+import { useSecretChatAutoLock } from '@/composables/secretChat/useSecretChatAutoLock'
 import { useLocalStorePlaintextWarning } from '@/composables/secure/useLocalStorePlaintextWarning'
 import { runLocalUnlockPreflight } from '@/composables/secure/useLocalUnlockGate'
 import { useLockScreen } from '@/composables/settings/useLockScreen'
@@ -456,7 +457,13 @@ async function recoverMobileSessionWithRetry(): Promise<void> {
 }
 
 // ========== Lifecycle ==========
+/** 私密聊天自动锁定的清理句柄（`onMounted` 中接入，`onUnmounted` 中释放）。 */
+let disposeSecretChatAutoLock: (() => void) | null = null
+
 onMounted(async () => {
+  // 尽早接入：即使后面 bootstrap 失败提前 return，自动锁定也必须生效
+  disposeSecretChatAutoLock = useSecretChatAutoLock().dispose
+
   // bootstrap 内部失败会 re-throw，必须 catch 避免未处理 rejection 中断后续初始化。
   // bootstrap 内部已将错误存入 state.error，SplashScreen 会展示重试入口。
   await runLocalUnlockPreflight()
@@ -503,6 +510,8 @@ onMounted(async () => {
 })
 
 onUnmounted(async () => {
+  disposeSecretChatAutoLock?.()
+  disposeSecretChatAutoLock = null
   wsEventHandler.cleanup()
   invitePolicyEnforcement.stop()
   contactStateResolver.clear()
