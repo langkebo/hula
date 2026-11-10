@@ -229,11 +229,10 @@ describe('MatrixRoomRealtimeService', () => {
       }
     )
 
-    it('onTimelineEvent applies m.room.redaction via content.redacts (room v11+) without emitting recall', () => {
+    it('onTimelineEvent leaves message null for m.room.redaction and does not patch targets itself', () => {
       const { on } = setupClient()
       convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
-      const makeRedacted = vi.fn()
-      const findEventById = vi.fn(() => ({ isRedacted: () => false, makeRedacted }))
+      const findEventById = vi.fn()
       const cb = vi.fn()
       service.onTimelineEvent(cb)
       on.mock.calls[0][1](
@@ -245,52 +244,9 @@ describe('MatrixRoomRealtimeService', () => {
         makeRoom({ findEventById } as unknown as Partial<Room>)
       )
 
-      expect(findEventById).toHaveBeenCalledWith('$msg')
-      expect(makeRedacted).toHaveBeenCalledTimes(1)
-      expect(makeRedacted.mock.calls[0][1]).toMatchObject({ roomId: '!r:e' })
-      expect(cb.mock.calls[0][0].message).toBeNull()
-      // 撤回提示由 RoomEvent.Redaction 驱动，时间线分支不再上抛 recall
-      expect(cb.mock.calls[0][0].recall).toBeUndefined()
-    })
-
-    it('onTimelineEvent falls back to legacy top-level redacts and skips already redacted targets', () => {
-      const { on } = setupClient()
-      convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
-      const makeRedacted = vi.fn()
-      const findEventById = vi.fn(() => ({ isRedacted: () => true, makeRedacted }))
-      const cb = vi.fn()
-      service.onTimelineEvent(cb)
-      on.mock.calls[0][1](
-        {
-          getType: () => 'm.room.redaction',
-          getContent: () => ({}),
-          event: { redacts: '$legacy' },
-          getSender: () => '@bob:e'
-        },
-        makeRoom({ findEventById } as unknown as Partial<Room>)
-      )
-
-      expect(findEventById).toHaveBeenCalledWith('$legacy')
-      expect(makeRedacted).not.toHaveBeenCalled()
-      expect(cb.mock.calls[0][0].recall).toBeUndefined()
-    })
-
-    it('onTimelineEvent skips redaction without target when redacts is missing or invalid', () => {
-      const { on } = setupClient()
-      convertRoomToRoomInfoMock.mockReturnValueOnce({ roomId: '!r:e' })
-      const findEventById = vi.fn()
-      const cb = vi.fn()
-      service.onTimelineEvent(cb)
-      on.mock.calls[0][1](
-        {
-          getType: () => 'm.room.redaction',
-          getContent: () => ({ redacts: '' }),
-          getSender: () => '@bob:e'
-        },
-        makeRoom({ findEventById } as unknown as Partial<Room>)
-      )
-
+      // 目标事件由 SDK 的 tryApplyRedaction 置为撤回态，撤回提示由 RoomEvent.Redaction 驱动
       expect(findEventById).not.toHaveBeenCalled()
+      expect(cb.mock.calls[0][0].message).toBeNull()
       expect(cb.mock.calls[0][0].recall).toBeUndefined()
     })
 

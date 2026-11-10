@@ -207,7 +207,7 @@ export function createRoomSync(ctx: RoomSyncContext) {
 
     matrixRoomRealtimeService.onTimelineEvent(({ roomId, eventType, roomInfo, message }) => {
       // 撤回提示不在这里处理：由 SDK 的 RoomEvent.Redaction → MatrixWsBridge → MSG_RECALL 驱动。
-      // 时间线里的 m.room.redaction 只负责目标事件的 makeRedacted 兜底，不再重复上抛。
+      // 时间线里的 m.room.redaction 不产出消息，避免与目标事件的撤回态重复渲染。
       if ((eventType === 'm.room.message' || eventType === 'm.room.encrypted') && message) {
         if (chatStore.checkMsgExist(roomId, message.message.id)) {
           if (eventType === 'm.room.message' && hasRenderableMessageBody(message.message.body)) {
