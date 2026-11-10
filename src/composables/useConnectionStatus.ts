@@ -29,7 +29,9 @@ export function useConnectionStatus() {
       case 'DISCONNECTED':
         // 未初始化/未登录时，不应显示为"网络已断开"
         if (!matrixStore.isInitialized) {
-          return 'idle'
+          // 已登录（有持久化会话）却无 client：整页重载/进程重建后恢复失败。
+          // 必须显式提示断线，否则用户只看到旧缓存且无任何线索（D12）。
+          return matrixStore.isLoggedIn ? 'error' : 'idle'
         }
         return 'offline'
       default:
@@ -40,7 +42,14 @@ export function useConnectionStatus() {
   const retry = async () => {
     retryCount.value++
     try {
-      await matrixStore.startClient()
+      if (!matrixStore.isInitialized) {
+        // 冷启动恢复失败时 client 尚未建立，startClient 会直接抛错；
+        // 必须走会话恢复（读凭证 + 初始化 client）路径（D12）。
+        const { sessionOrchestrator } = await import('@/services/matrix/auth/SessionOrchestrator')
+        await sessionOrchestrator.ensureClientReady()
+      } else {
+        await matrixStore.startClient()
+      }
     } catch {
       // retry failed, state will update via computed
     }

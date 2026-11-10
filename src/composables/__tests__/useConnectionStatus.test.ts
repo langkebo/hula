@@ -1,18 +1,28 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
+const { ensureClientReady } = vi.hoisted(() => ({
+  ensureClientReady: vi.fn(() => Promise.resolve())
+}))
+
 const matrixStoreMock = reactive<{
   connectionState: string
   isInitialized: boolean
+  isLoggedIn: boolean
   startClient: ReturnType<typeof vi.fn>
 }>({
   connectionState: 'DISCONNECTED',
   isInitialized: false,
+  isLoggedIn: false,
   startClient: vi.fn(() => Promise.resolve())
 })
 
 vi.mock('@/stores/domains/chat/matrix', () => ({
   useMatrixStore: () => matrixStoreMock
+}))
+
+vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
+  sessionOrchestrator: { ensureClientReady }
 }))
 
 const { useConnectionStatus } = await import('@/composables/useConnectionStatus')
@@ -21,7 +31,9 @@ describe('useConnectionStatus', () => {
   beforeEach(() => {
     matrixStoreMock.connectionState = 'DISCONNECTED'
     matrixStoreMock.isInitialized = false
+    matrixStoreMock.isLoggedIn = false
     matrixStoreMock.startClient = vi.fn(() => Promise.resolve())
+    ensureClientReady.mockClear()
   })
 
   afterEach(() => {
@@ -71,11 +83,20 @@ describe('useConnectionStatus', () => {
       expect(state.value).toBe('error')
     })
 
-    it('DISCONNECTED 且未初始化时映射为 idle（不应显示网络已断开）', () => {
+    it('DISCONNECTED 且未初始化、未登录时映射为 idle（不应显示网络已断开）', () => {
       matrixStoreMock.connectionState = 'DISCONNECTED'
       matrixStoreMock.isInitialized = false
+      matrixStoreMock.isLoggedIn = false
       const { state } = useConnectionStatus()
       expect(state.value).toBe('idle')
+    })
+
+    it('DISCONNECTED 且未初始化但已登录时映射为 error（整页重载后必须提示断线，D12）', () => {
+      matrixStoreMock.connectionState = 'DISCONNECTED'
+      matrixStoreMock.isInitialized = false
+      matrixStoreMock.isLoggedIn = true
+      const { state } = useConnectionStatus()
+      expect(state.value).toBe('error')
     })
 
     it('DISCONNECTED 且已初始化时映射为 offline', () => {
@@ -121,6 +142,7 @@ describe('useConnectionStatus', () => {
     })
 
     it('多次调用 retry 累加 retryCount', async () => {
+      matrixStoreMock.isInitialized = true
       const { retry, retryCount } = useConnectionStatus()
       await retry()
       await retry()
@@ -130,7 +152,27 @@ describe('useConnectionStatus', () => {
     })
 
     it('startClient 抛错时 retry 不抛出，retryCount 仍递增', async () => {
+      matrixStoreMock.isInitialized = true
       matrixStoreMock.startClient = vi.fn(() => Promise.reject(new Error('network error')))
+      const { retry, retryCount } = useConnectionStatus()
+      await expect(retry()).resolves.toBeUndefined()
+      expect(retryCount.value).toBe(1)
+    })
+
+    it('client 未建立时 retry 走会话恢复而不是 startClient（D12）', async () => {
+      matrixStoreMock.isInitialized = false
+      const { retry, retryCount } = useConnectionStatus()
+
+      await retry()
+
+      expect(retryCount.value).toBe(1)
+      expect(ensureClientReady).toHaveBeenCalledTimes(1)
+      expect(matrixStoreMock.startClient).not.toHaveBeenCalled()
+    })
+
+    it('会话恢复失败时 retry 不抛出，retryCount 仍递增', async () => {
+      matrixStoreMock.isInitialized = false
+      ensureClientReady.mockRejectedValueOnce(new Error('restore failed'))
       const { retry, retryCount } = useConnectionStatus()
       await expect(retry()).resolves.toBeUndefined()
       expect(retryCount.value).toBe(1)
