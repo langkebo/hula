@@ -126,18 +126,64 @@ const pushRoute = async (page: Page, target: unknown) => {
   return { pushed, ...(await readRoute(page)) }
 }
 
-/** 关掉解锁对话框（naive-ui 的弹层不能点坐标，直接派发 click） */
+/**
+ * 关掉解锁对话框。
+ *
+ * ⚠️ 桌面与移动是**两个组件**：桌面 `SecretChatUnlockDialog`（naive-ui，`.secret-chat-unlock`），
+ * 移动 `MobileSecretChatUnlockDialog`（vant，`.van-dialog`）。两种都处理。
+ */
 const closeUnlockDialog = async (page: Page): Promise<boolean> => {
   const clicked = await page.evaluate(() => {
-    const dialog = document.querySelector('.secret-chat-unlock')
-    const btn = [...(dialog?.querySelectorAll('button') ?? [])].find((b) => (b.textContent || '').trim() === '取消')
-    if (!btn) return false
-    ;(btn as HTMLElement).click()
-    return true
+    for (const dialog of [document.querySelector('.secret-chat-unlock'), document.querySelector('.van-dialog')]) {
+      const btn = [...(dialog?.querySelectorAll('button') ?? [])].find((b) => (b.textContent || '').trim() === '取消')
+      if (btn) {
+        ;(btn as HTMLElement).click()
+        return true
+      }
+    }
+    return false
   })
-  await page.waitForTimeout(500)
+  await page.waitForTimeout(600)
   return clicked
 }
+
+/** 移动端解锁弹窗是否可见（vant dialog 里才有 password 输入框） */
+const mobileUnlockVisible = (page: Page): Promise<boolean> =>
+  page
+    .locator('.van-dialog input[type="password"]')
+    .first()
+    .isVisible()
+    .catch(() => false)
+
+/**
+ * 配置私密房：设密码 → 解锁 → 标记私密 → 上锁。
+ *
+ * 顺序不能反：`markRoomPrivate` 的前置是「已配置且已解锁」（见 `usePrivateRoomActions`）。
+ */
+const configurePrivateRoom = async (page: Page, roomId: string) =>
+  page.evaluate(
+    async ({ id, pw }) => {
+      const [{ useSettingStore }, registry, session] = await Promise.all([
+        import(/* @vite-ignore */ '/src/stores/domains/settings/setting.ts'),
+        import(/* @vite-ignore */ '/src/services/matrix/privateChat/privateRoomRegistry.ts'),
+        import(/* @vite-ignore */ '/src/stores/domains/settings/secretChatSession.ts')
+      ])
+      const runtimeWindow = window as Window & { pinia?: unknown }
+      const store = useSettingStore(runtimeWindow.pinia)
+      await store.setSecretChatPassword(pw)
+      const unlocked = await store.unlockSecretChat(pw)
+      await registry.ensurePrivateRoomRegistryReady()
+      await registry.markRoomPrivate(id)
+      session.lockSecretChatSession('pgate-lock')
+      return {
+        unlocked,
+        configured: store.isSecretChatConfigured(),
+        isPrivate: registry.isPrivateRoom(id),
+        locked: !session.isSecretChatUnlocked()
+      }
+    },
+    { id: roomId, pw: SECRET_PW }
+  )
 
 test.describe('私密聊天门禁（四条入口）', () => {
   test.skip(SKIP_REASON !== null, SKIP_REASON ?? '')
@@ -173,30 +219,7 @@ test.describe('私密聊天门禁（四条入口）', () => {
     await expect.poll(() => hasRoom(roomId), { timeout: 60_000 }).toBe(true)
     await expect.poll(() => hasRoom(plainRoom), { timeout: 60_000 }).toBe(true)
 
-    // 设密码 → 解锁 → 标记私密 → 上锁（顺序不能反：标记要求「已配置且已解锁」）
-    const setup = await page.evaluate(
-      async ({ id, pw }) => {
-        const [{ useSettingStore }, registry, session] = await Promise.all([
-          import(/* @vite-ignore */ '/src/stores/domains/settings/setting.ts'),
-          import(/* @vite-ignore */ '/src/services/matrix/privateChat/privateRoomRegistry.ts'),
-          import(/* @vite-ignore */ '/src/stores/domains/settings/secretChatSession.ts')
-        ])
-        const runtimeWindow = window as Window & { pinia?: unknown }
-        const store = useSettingStore(runtimeWindow.pinia)
-        await store.setSecretChatPassword(pw)
-        const unlocked = await store.unlockSecretChat(pw)
-        await registry.ensurePrivateRoomRegistryReady()
-        await registry.markRoomPrivate(id)
-        session.lockSecretChatSession('pgate-lock')
-        return {
-          unlocked,
-          configured: store.isSecretChatConfigured(),
-          isPrivate: registry.isPrivateRoom(id),
-          locked: !session.isSecretChatUnlocked()
-        }
-      },
-      { id: roomId, pw: SECRET_PW }
-    )
+    const setup = await configurePrivateRoom(page, roomId)
     expect(setup, `私密配置未就绪: ${JSON.stringify(setup)}`).toMatchObject({
       unlocked: true,
       configured: true,
@@ -230,10 +253,7 @@ test.describe('私密聊天门禁（四条入口）', () => {
     // `useMobilePrivateRoomGate.assertAccess` 时，只有弹框断言会红）。
     const e4 = await pushRoute(page, { name: 'mobileChatMain', params: { roomId } })
     expect(e4.path, `E4 /mobile/chatRoom/chatMain/${roomId} 未被拦（通知点击可直达私密房）`).toBe('/mobile/message')
-    const dialogE4 = await page
-      .locator('.secret-chat-unlock')
-      .isVisible()
-      .catch(() => false)
+    const dialogE4 = await mobileUnlockVisible(page)
     expect(dialogE4, 'E4 被拦但没有弹出解锁框').toBe(true)
 
     // 关掉对话框：否则下面「解锁后是否还弹框」永远为真（读到的是上一次残留的弹层）
@@ -316,5 +336,74 @@ test.describe('私密聊天门禁（四条入口）', () => {
     expect(unlocked, '解锁失败（密码与设置时不一致？）').toBe(true)
     const e2ok = await pushRoute(page, { name: 'message', params: { roomId } })
     expect(e2ok.path, `解锁后桌面深链仍进不去（${e2ok.path}）`).toBe(`/message/${roomId}`)
+  })
+
+  /**
+   * D19（2026-11-10 已修）：移动端**没有** `/mobile/secretChat` 时，私密房被普通列表整体过滤
+   * ⇒ 标记私密后在该端无处可进。本条钉住修复后的用户可见结果：
+   * 1. 锁定态进入私密列表：只显示「已锁定」，**不渲染任何会话名**（名称本身就泄露「和谁私密往来」）；
+   * 2. 弹解锁框 → 输密码 → 列表出现该私密房（带 aria-label）；
+   * 3. 点行回到 `/mobile/chatRoom/chatMain/<roomId>`。
+   */
+  test('移动端私密会话有独立入口：锁定态不泄露、解锁后可见可进', async ({ page }) => {
+    const self = await registerAccount('pglst')
+    const peer = await registerAccount('pglstpeer')
+    const roomName = `pglst-${Date.now().toString(36)}`
+    const roomId = await seedDirectRoom(self, peer, roomName, `${roomName} body`)
+
+    await page.addInitScript(
+      ({ fallbackKey }) => {
+        window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
+        window.localStorage.setItem(fallbackKey, '1')
+      },
+      { fallbackKey: WEB_SESSION_FALLBACK_STORAGE_KEY }
+    )
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 20_000 }).toContain('/mobile/')
+
+    await expect
+      .poll(
+        () =>
+          page.evaluate(async (target) => {
+            const { matrixClientService } = (await import(/* @vite-ignore */ '/src/services/matrix/index.ts')) as {
+              matrixClientService: { getClient: () => { getRoom?: (r: string) => unknown } | null }
+            }
+            return Boolean(matrixClientService.getClient()?.getRoom?.(target))
+          }, roomId),
+        { timeout: 60_000 }
+      )
+      .toBe(true)
+
+    await configurePrivateRoom(page, roomId)
+
+    // 1) 锁定态：路由**入口存在但被门禁挡回**（与桌面 `/secretChat` 同语义），同时弹解锁框
+    const entered = await pushRoute(page, { name: 'mobileSecretChat' })
+    expect(entered.path, `移动端私密入口未被门禁接管（落在 ${entered.path}）`).toBe('/mobile/message')
+    const pwd = page.locator('.van-dialog input[type="password"]').first()
+    await expect(pwd, '被挡回却没有任何解锁入口（用户会以为功能坏了）').toBeVisible({ timeout: 10_000 })
+
+    // 2) 走 UI 解锁：填密码 → 点「输入密码继续」
+    await pwd.fill(SECRET_PW)
+    await page
+      .evaluate(() => {
+        const dialog = document.querySelector('.van-dialog')
+        const btns = [...(dialog?.querySelectorAll('button') ?? [])]
+        const btn = btns.find((b) => /输入密码继续|确认/.test((b.textContent || '').trim()))
+        if (btn) (btn as HTMLElement).click()
+        return true
+      })
+      .catch(() => null)
+
+    // 3) 解锁后再进：列表页出现，且列出该私密房（锁定态不渲染任何会话名）
+    const unlockedEntry = await pushRoute(page, { name: 'mobileSecretChat' })
+    expect(unlockedEntry.path, `解锁后仍进不去私密列表（${unlockedEntry.path}）`).toBe('/mobile/secretChat')
+    const row = page.locator('.van-cell').filter({ hasText: roomName }).first()
+    await expect(row, '解锁后私密列表里没有该会话').toBeVisible({ timeout: 20_000 })
+
+    // 4) 点行回到原房间
+    await row.click()
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 20_000 })
+      .toBe(`/mobile/chatRoom/chatMain/${roomId}`)
   })
 })

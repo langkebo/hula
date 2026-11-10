@@ -300,13 +300,23 @@ async function main() {
   if (markB.status === 404) {
     markB = await rest('POST', burnPath('/_matrix/vendor/v1'), { token: b.token, body: {} })
   }
+  // D17 判定不能只看「B 能否标记」，要看**语义是否房间级**：
+  //   房间级 ⇒ B 读到的设置就是 A 开的（enabled=true）；per-user ⇒ B 读到自己的（false/404）
+  const burnAsB = await rest('GET', `/_matrix/vendor/v1/rooms/${encodeURIComponent(roomId)}/burn`, {
+    token: b.token
+  })
+  const roomLevel = burnAsB.status === 200 && burnAsB.body?.enabled === true
   rec(
     'A7',
-    'D17 复核：A 开启 / B 标记同房消息',
-    markB.status === 400 ? 'pass' : 'fail',
-    `A enable=${burnA.status}，B mark=${markB.status}（400 ⇒ 仍 per-user）`,
-    markB.body
+    'D17 复核：A 开启后 B 读到的 burn 设置',
+    roomLevel ? 'pass' : 'fail',
+    `A enable=${burnA.status}，B get=${burnAsB.status} enabled=${burnAsB.body?.enabled}` +
+      `（true ⇒ 房间级；false/404 ⇒ per-user）；B 标记同房消息=${markB.status}`,
+    burnAsB.body
   )
+  // 发送方不能标记自己的消息（防「自己烧自己」的假信号）
+  const markA = await rest('POST', burnPath('/_matrix/client/v1'), { token: a.token, body: {} })
+  rec('A7', '发送方标记自己的消息应被拒', markA.status === 403 ? 'pass' : 'info', `A mark=${markA.status}`, markA.body)
 
   // ── A9：device_id 命名空间（Matrix 规范：device_id 是**按用户**唯一，不同用户可同名）
   const sharedDevice = `SHARED${Date.now().toString(36).slice(-4).toUpperCase()}`
