@@ -302,10 +302,11 @@ export function createRoomSync(ctx: RoomSyncContext) {
             rooms.value.set(update.roomId, roomInfo)
           }
           // 服务端 notification_count 在本后端恒为 0，直接写回会抹掉刚 +1 的本机未读。
-          // 统一走账本对账，仅在服务端计数更大时向上覆盖。
-          sessionStore.applyServerUnreadCount(update.roomId, update.unreadCount)
+          // 统一走账本对账，仅在服务端计数更大时向上覆盖；详情角标（桌面端优先读
+          // unreadDetail.total）必须用对账后的值，否则桌面列表仍是 0。
+          const reconciled = sessionStore.applyServerUnreadCount(update.roomId, update.unreadCount)
           sessionStore.writeUnreadDetail(update.roomId, {
-            total: update.notificationCount ?? update.unreadCount,
+            total: reconciled,
             highlight: update.highlightCount ?? 0,
             silent: sessionStore.getUnreadDetail(update.roomId)?.silent ?? false
           })

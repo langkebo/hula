@@ -143,18 +143,22 @@ export const useSessionStore = defineStore(StoresEnum.SESSION, () => {
    * 关闭已读回执时本机已读也不会让服务端计数下降。直接写回会把 messageMutations 刚 +1 的
    * 本机未读抹平（角标永远停在 0）。这里以会话/账本计数为下限，只允许更大的服务端计数向上
    * 覆盖（真实后端的跨设备新增）；归零只走 markSessionRead 与 sessionUnread.apply 的已读判定。
+   *
+   * @returns 对账后的未读数（会话不存在时为 0）。调用方用它同步 `unreadDetail.total`，
+   *   否则桌面端 `TjgRoomListItem` 会优先展示被服务端写成 0 的详情角标。
    */
-  const applyServerUnreadCount = (roomId: string, serverCount: number) => {
-    if (!roomId) return
+  const applyServerUnreadCount = (roomId: string, serverCount: number): number => {
+    if (!roomId) return 0
     const session = resolveSessionByRoomId(roomId)
-    if (!session) return
+    if (!session) return 0
     const uid = userStore.userInfo?.uid
     const ledgerCount = (uid ? sessionUnreadStore.cacheStore[uid]?.[roomId]?.count : 0) ?? 0
     const normalizedServer = Number.isFinite(serverCount) ? Math.max(0, Math.floor(serverCount)) : 0
     const next = Math.max(session.unreadCount || 0, ledgerCount, normalizedServer)
-    if (next === session.unreadCount) return
+    if (next === session.unreadCount) return next
     updateSession(roomId, { unreadCount: next })
     persistUnreadCount(roomId, next)
+    return next
   }
 
   const rebuildSessionMap = () => {

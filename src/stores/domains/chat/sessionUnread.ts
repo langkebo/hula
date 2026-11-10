@@ -248,12 +248,19 @@ export const useSessionUnreadStore = defineStore(
             return
           }
 
-          // 如果服务端返回的值与本地缓存不一致，需要生成更新
-          if (currentUnread !== entry?.count) {
-            updates[session.roomId] = currentUnread
+          // 回执开时服务端理论上是未读真源，但本后端 notification_count 恒为 0，无条件采信
+          // 会把账本里本机已累计的未读清零（会话列表重建 fetchSessionList → apply）。
+          // 与情况 3b 对齐：取账本与服务端的较大值，只允许服务端向上覆盖。
+          // 房间正开着时到达的消息已被本机看到，服务端累计包含它，不能折算成未读。
+          const ledgerOrServer = Math.max(entry?.count ?? 0, currentUnread)
+          const reconciled =
+            openRoomId === session.roomId && entry
+              ? resolveOpenRoomLedger(entry, currentUnread)
+              : { count: ledgerOrServer, settledServerCount: Math.max(0, currentUnread - ledgerOrServer) }
+          if (currentUnread !== reconciled.count) {
+            updates[session.roomId] = reconciled.count
           }
-          // 确保本地缓存与服务端一致
-          writeReconciledEntry(cache, session.roomId, currentUnread, 0)
+          writeReconciledEntry(cache, session.roomId, reconciled.count, reconciled.settledServerCount, currentUnread)
           return
         }
 

@@ -462,10 +462,13 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
   })
 
   /**
-   * 回执开启时「当前打开房间收到消息」的既有行为：服务端即真源，角标等于服务端累计值。
-   * 当前打开房间的特例只在回执关时生效，因此这条行为完全不变。
+   * 回执开启时「当前打开房间收到消息」同样不能弹角标。
+   *
+   * 服务端计数在本后端恒为 0，真实后端也可能因为回执延迟暂时不清零；房间开着时消息已经
+   * 显示在视图里，账本计数才是可见性真值。修复后与回执关走同一条判定，水位对齐服务端快照，
+   * 供离开房间后的增量折算使用。
    */
-  it('回执开启 + 消息到达当前打开的房间：仍以服务端为准（行为不变）', async () => {
+  it('回执开启 + 消息到达当前打开的房间：角标保持 0', async () => {
     useSettingStore().setSendReadReceiptsEnabled(true)
 
     const store = useSessionStore()
@@ -476,7 +479,7 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
     getSessionListMock.mockResolvedValue([makeSession({ unreadCount: 4, activeTime: 200 })])
     await store.getSessionList()
 
-    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(4)
+    expect(store.sessionList.find((s) => s.roomId === ROOM_ID)?.unreadCount).toBe(0)
   })
 })
 

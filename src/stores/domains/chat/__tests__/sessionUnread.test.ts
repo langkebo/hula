@@ -127,14 +127,17 @@ describe('useSessionUnreadStore', () => {
       expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(0)
     })
 
-    it('trusts server count when activeTime > lastReadTime', () => {
+    it('keeps the larger ledger count with receipts enabled when the server reports fewer', () => {
+      // 回执开时服务端计数理论上是真源，但 synapse-rust 的 notification_count 恒为 0；
+      // 直接采信会把本机账本增量清零（会话列表重建时角标归零），因此与情况 3b 一致，
+      // 只允许服务端向上覆盖。
       const store = useSessionUnreadStore()
       store.set('uid-1', 'room-a', 99)
       store.setLastRead('uid-1', 'room-a', 100)
       const sessions = [makeSession({ roomId: 'room-a', unreadCount: 7, activeTime: 200 })]
       const updates = store.apply('uid-1', sessions)
-      expect(updates).toEqual({ 'room-a': 7 })
-      expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(7)
+      expect(updates).toEqual({ 'room-a': 99 })
+      expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(99)
     })
 
     it('zeroes unread when activeTime is 0 with a recorded lastReadTime', () => {
@@ -252,7 +255,7 @@ describe('useSessionUnreadStore', () => {
       expect(afterClose).toEqual({ 'room-a': 1 })
     })
 
-    it('keeps receipts-on behaviour for the currently open room (server stays the source of truth)', () => {
+    it('adopts the server count for the currently open room with receipts enabled when no ledger exists', () => {
       useSettingStore().setSendReadReceiptsEnabled(true)
       const store = useSessionUnreadStore()
       store.setLastRead('uid-1', 'room-a', 100)
@@ -262,8 +265,26 @@ describe('useSessionUnreadStore', () => {
         [makeSession({ roomId: 'room-a', unreadCount: 4, activeTime: 200 })],
         'room-a'
       )
-      expect(updates).toEqual({ 'room-a': 4 })
+      expect(updates).toEqual({})
       expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(4)
+    })
+
+    it('does not resurrect unread for the currently open room with receipts enabled when a ledger exists', () => {
+      // 房间开着时收到的消息已经显示在视图里，服务端累计（本后端恒为 0，真实后端会 +1）
+      // 都不能折算成未读；账本值才是可见性真值。
+      useSettingStore().setSendReadReceiptsEnabled(true)
+      const store = useSessionUnreadStore()
+      store.setLastRead('uid-1', 'room-a', 100)
+      store.set('uid-1', 'room-a', 0)
+
+      const updates = store.apply(
+        'uid-1',
+        [makeSession({ roomId: 'room-a', unreadCount: 4, activeTime: 200 })],
+        'room-a'
+      )
+      expect(updates).toEqual({ 'room-a': 0 })
+      expect(store.cacheStore['uid-1']?.['room-a']?.count).toBe(0)
+      expect(store.cacheStore['uid-1']?.['room-a']?.settledServerCount).toBe(4)
     })
   })
 
