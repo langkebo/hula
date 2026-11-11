@@ -136,12 +136,12 @@ describe('useFriendGrouping', () => {
       const sections = groupFriends(friends)
 
       const designSection = sections.find((s) => s.groupId === 'group-1')
-      expect(designSection).toBeTruthy()
+      expect(designSection).toBeDefined()
       expect(designSection?.friends).toHaveLength(1)
       expect(designSection?.friends[0]?.userId).toBe('@alice:example.com')
 
       const backendSection = sections.find((s) => s.groupId === 'group-2')
-      expect(backendSection).toBeTruthy()
+      expect(backendSection).toBeDefined()
       expect(backendSection?.friends).toHaveLength(1)
       expect(backendSection?.friends[0]?.userId).toBe('@charlie:example.com')
     })
@@ -158,7 +158,7 @@ describe('useFriendGrouping', () => {
       const sections = groupFriends(friends)
 
       const ungroupedSection = sections.find((s) => s.groupId === '__ungrouped__')
-      expect(ungroupedSection).toBeTruthy()
+      expect(ungroupedSection).toBeDefined()
       expect(ungroupedSection?.isUngrouped).toBe(true)
       expect(ungroupedSection?.friends).toHaveLength(1)
       expect(ungroupedSection?.friends[0]?.userId).toBe('@eve:example.com')

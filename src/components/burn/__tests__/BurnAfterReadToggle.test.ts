@@ -19,7 +19,6 @@ describe('BurnAfterReadToggle', () => {
       props: { enabled: false }
     })
     await wrapper.find('[data-test="burn-toggle"]').trigger('click')
-    expect(wrapper.emitted('update:enabled')).toBeTruthy()
     expect(wrapper.emitted('update:enabled')![0]).toEqual([true])
   })
 
@@ -35,7 +34,6 @@ describe('BurnAfterReadToggle', () => {
       props: { enabled: true }
     })
     await wrapper.find('[data-test="burn-duration-60"]').trigger('click')
-    expect(wrapper.emitted('select-duration')).toBeTruthy()
     expect(wrapper.emitted('select-duration')![0]).toEqual([60])
   })
 })

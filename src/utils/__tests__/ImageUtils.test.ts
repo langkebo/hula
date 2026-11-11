@@ -82,7 +82,6 @@ describe('ImageUtils', () => {
           const file = new File([blob], 'test.png', { type: 'image/png' })
           const result = await compressImage(file, { quality: 0.5 })
 
-          expect(result).toBeTruthy()
           expect(result.width).toBe(100)
           expect(result.height).toBe(100)
           expect(result.blob).toBeInstanceOf(Blob)

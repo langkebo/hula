@@ -115,7 +115,7 @@ describe('render-message.scss 气泡圆角接线', () => {
   const squareBody = squareBlock?.slice(squareBlock.indexOf('{') + 1) ?? ''
 
   it("存在 [data-bubble-style='square'] 覆盖规则", () => {
-    expect(squareBlock, "render-message.scss 必须有 [data-bubble-style='square'] 规则").toBeTruthy()
+    expect(squareBlock, "render-message.scss 必须有 [data-bubble-style='square'] 规则").toBeDefined()
   })
 
   it('同时覆盖 .bubble 与 .bubble-oneself', () => {

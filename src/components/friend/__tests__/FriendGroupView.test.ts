@@ -227,7 +227,7 @@ describe('FriendGroupView', () => {
     await drawer.get('input').setValue('New Team')
 
     const confirmButton = drawer.findAll('button').find((button) => button.text() === 'common.confirm')
-    expect(confirmButton).toBeTruthy()
+    expect(confirmButton).toBeDefined()
     await confirmButton?.trigger('click')
     await flushPromises()
 

@@ -103,7 +103,7 @@ describe('UserReportDialog — 举报用户弹窗 (P0-2 MSC4260)', () => {
     expect(reportUserMock).toHaveBeenCalledWith('@bad:hs', 'abuse')
     expect(showFeedbackMock).toHaveBeenCalledWith('moderation.report_user.success', 'success')
     expect(wrapper.emitted('update:show')?.[0]).toEqual([false])
-    expect(wrapper.emitted('reported')).toBeTruthy()
+    expect(wrapper.emitted('reported')).toHaveLength(1)
   })
 
   it('举报失败时显示错误反馈且不关闭弹窗', async () => {

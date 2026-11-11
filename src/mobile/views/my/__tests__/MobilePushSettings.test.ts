@@ -126,7 +126,7 @@ describe('MobilePushSettings', () => {
   })
 
   it('renders correctly', () => {
-    expect(mountPage().html()).toBeTruthy()
+    expect(mountPage().html()).not.toBe('')
   })
 
   it('loads pushers and rules on mount', async () => {

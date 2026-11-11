@@ -188,7 +188,6 @@ describe('AdminModules', () => {
     const firstItem = wrapper.findAll('[data-testid="module-item"]')[0]!
     await firstItem.trigger('click')
 
-    expect(wrapper.emitted('view-detail')).toBeTruthy()
     expect(wrapper.emitted('view-detail')![0]).toEqual(['auth-service'])
   })
 

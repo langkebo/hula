@@ -95,7 +95,7 @@ describe('PreferencesSettings', () => {
 
   it('renders correctly', () => {
     const wrapper = mount(PreferencesSettings)
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
   })
 
   it('has correct default values', () => {

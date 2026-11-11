@@ -45,7 +45,7 @@ describe('localUnlockKey（B2）', () => {
     await configureLocalUnlock(PASSWORD)
 
     const stored = localStorage.getItem(LOCAL_UNLOCK_VERIFIER_STORAGE_KEY)
-    expect(stored).toBeTruthy()
+    expect(stored).not.toBeNull()
     const parts = stored!.split('$')
     expect(parts[0]).toBe('pbkdf2-sha256-64')
     expect(parts.length).toBe(4)

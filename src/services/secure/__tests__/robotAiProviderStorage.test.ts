@@ -43,7 +43,7 @@ describe('robotAiProviderStorage', () => {
     })
     expect(window.localStorage.getItem('tjg-chat-trendradar-config')).toBe('{"apiUrl":"http://127.0.0.1:3333/mcp"}')
     const storedApiKey = window.sessionStorage.getItem('tjg-chat-trendradar-api-key-session')
-    expect(storedApiKey).toBeTruthy()
+    expect(storedApiKey).not.toBeNull()
     expect(storedApiKey).not.toBe('trendradar-key')
 
     const loaded = await loadRobotTrendRadarConfig({

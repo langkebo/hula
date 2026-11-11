@@ -79,7 +79,6 @@ describe('ThemeSwitcher', () => {
     await darkOption.trigger('click')
 
     expect(toggleThemeMock).toHaveBeenCalledWith('dark')
-    expect(wrapper.emitted('update:modelValue')).toBeTruthy()
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['dark'])
   })
 

@@ -122,6 +122,6 @@ describe('ChatSetting - list management entries', () => {
         }
       }
     })
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
   })
 })

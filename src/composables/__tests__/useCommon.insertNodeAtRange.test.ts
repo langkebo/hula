@@ -77,7 +77,6 @@ describe('insertNodeAtRange — MsgEnum.AIT', () => {
     insertNodeAtRange(MsgEnum.AIT, { name: 'Alice', uid: 'u-1' }, input, sr)
 
     const span = input.querySelector('#aitSpan')!
-    expect(span).toBeTruthy()
     expect(span.textContent).toBe('@Alice')
     expect((span as HTMLElement).contentEditable).toBe('false')
     expect((span as HTMLElement).dataset.aitUid).toBe('u-1')
@@ -165,11 +164,10 @@ describe('insertNodeAtRange — MsgEnum.AI', () => {
     insertNodeAtRange(MsgEnum.AI, { name: 'GPT', avatar: 'mxc://a', accountName: '', content: '' }, input, sr)
 
     const ai = document.getElementById('AIDiv')!
-    expect(ai).toBeTruthy()
     expect(ai.contentEditable).toBe('false')
     expect(ai.textContent).toContain('GPT')
     // Avatar image is present
-    expect(ai.querySelector('img')).toBeTruthy()
+    expect(ai.querySelector('img')).not.toBeNull()
   })
 
   it('strips the trailing "/" trigger char from the host text node', () => {
@@ -197,7 +195,6 @@ describe('insertNodeAtRange — MsgEnum.AI', () => {
     common.insertNodeAtRange(MsgEnum.AI, { name: 'GPT', avatar: 'a' } as any, input, setupRangeAfterText(input, '/'))
 
     const closeBtn = document.getElementById('closeBtn')!
-    expect(closeBtn).toBeTruthy()
     expect(closeBtn.textContent).toBe('关闭')
 
     closeBtn.dispatchEvent(new Event('click', { bubbles: true }))

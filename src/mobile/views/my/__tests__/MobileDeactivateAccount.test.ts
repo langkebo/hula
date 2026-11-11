@@ -93,7 +93,7 @@ describe('MobileDeactivateAccount', () => {
   })
 
   it('renders correctly', () => {
-    expect(mountPage().html()).toBeTruthy()
+    expect(mountPage().html()).not.toBe('')
   })
 
   it('starts on the consequence step', () => {

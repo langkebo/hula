@@ -183,14 +183,13 @@ describe('MobileBatchToolbar', () => {
     expect(mockBatchForward).toHaveBeenCalled()
     expect(mockExitMultiSelect).toHaveBeenCalled()
     const events = wrapper.emitted() as Record<string, any[][]>
-    expect(events.forward).toBeTruthy()
     expect(events.forward?.[0]?.[0]).toEqual({
       eventId: '$msg:1',
       roomId: '!room:hs',
       event: null,
       eventIds: ['$msg:1']
     })
-    expect(events.exit).toBeTruthy()
+    expect(events.exit).toEqual([[], []])
   })
 
   it('删除按钮调用 batchDelete', async () => {
@@ -203,6 +202,6 @@ describe('MobileBatchToolbar', () => {
     const wrapper = mountToolbar()
     await wrapper.find('[data-test="batch-exit-btn"]').trigger('click')
     expect(mockExitMultiSelect).toHaveBeenCalled()
-    expect(wrapper.emitted('exit')).toBeTruthy()
+    expect(wrapper.emitted('exit')).toEqual([[], []])
   })
 })

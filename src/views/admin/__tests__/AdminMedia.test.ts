@@ -409,7 +409,7 @@ describe('AdminMedia', () => {
     await flushPromises()
 
     const button = findButton(wrapper, 'admin.media.action.quarantine')
-    expect(button).toBeTruthy()
+    expect(button).toBeDefined()
     await button!.trigger('click')
     await flushPromises()
 
@@ -443,7 +443,7 @@ describe('AdminMedia', () => {
     await flushPromises()
 
     const button = findButton(wrapper, 'admin.media.action.loadMore')
-    expect(button).toBeTruthy()
+    expect(button).toBeDefined()
     await button!.trigger('click')
     await flushPromises()
 
@@ -469,7 +469,7 @@ describe('AdminMedia', () => {
     expect(panel.text()).toContain('admin.media.column.quarantined')
 
     const loadMore = panel.findAll('button').find((button) => button.text().includes('admin.media.action.loadMore'))
-    expect(loadMore).toBeTruthy()
+    expect(loadMore).toBeDefined()
     await loadMore!.trigger('click')
     expect(loadMoreQuarantineChangesMock).toHaveBeenCalledTimes(1)
   })
@@ -604,7 +604,7 @@ describe('AdminMedia', () => {
     expect(roomCard.text()).toContain('room.png')
 
     const loadMore = roomCard.findAll('button').find((button) => button.text().includes('admin.media.action.loadMore'))
-    expect(loadMore).toBeTruthy()
+    expect(loadMore).toBeDefined()
     await loadMore!.trigger('click')
     expect(loadMoreRoomMediaMock).toHaveBeenCalledTimes(1)
   })

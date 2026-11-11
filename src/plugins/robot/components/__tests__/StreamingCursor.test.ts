@@ -29,7 +29,7 @@ describe('StreamingCursor', () => {
 
   it('has aria-label for accessibility', () => {
     const wrapper = mountCursor({ active: true })
-    expect(wrapper.find('[data-testid="streaming-cursor"]').attributes('aria-label')).toBeTruthy()
+    expect(wrapper.find('[data-testid="streaming-cursor"]').attributes('aria-label')).toMatch(/\S+/)
   })
 
   it('sets aria-hidden=false when active', () => {

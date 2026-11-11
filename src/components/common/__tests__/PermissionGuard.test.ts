@@ -38,7 +38,7 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
 
     expect(wrapper.find('.real').exists()).toBe(true)
     expect(wrapper.find('.tjg-permission-gate').exists()).toBe(false)
-    expect(wrapper.emitted('granted')).toBeTruthy()
+    expect(wrapper.emitted('granted')).toHaveLength(1)
   })
 
   it('grays out when mode="gray" and capability is missing, emits denied', async () => {

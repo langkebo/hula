@@ -87,7 +87,6 @@ describe('SpaceHierarchyTree', () => {
     const treeStub = wrapper.findComponent({ name: 'TjgSpaceTree' })
     treeStub.vm.$emit('select', { spaceId: '!child-1:server', name: 'Child Space 1' })
     await wrapper.vm.$nextTick()
-    expect(wrapper.emitted('select')).toBeTruthy()
     expect(wrapper.emitted('select')![0]).toEqual([{ spaceId: '!child-1:server', name: 'Child Space 1' }])
   })
 

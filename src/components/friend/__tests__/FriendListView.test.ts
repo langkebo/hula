@@ -594,7 +594,7 @@ describe('FriendListView', () => {
     await flushPromises()
 
     const firstItem = wrapper.findAll('.friend-list-item')[0]
-    expect(firstItem).toBeTruthy()
+    expect(firstItem).toBeDefined()
 
     await firstItem!.trigger('contextmenu')
     await wrapper.get('[data-test="context-menu-secret-chat"]').trigger('click')
@@ -616,7 +616,7 @@ describe('FriendListView', () => {
     await flushPromises()
 
     const firstItem = wrapper.findAll('.friend-list-item')[0]
-    expect(firstItem).toBeTruthy()
+    expect(firstItem).toBeDefined()
     // FriendListItem 渲染三个动作按钮：send-message / remove / more
     const actionButtons = firstItem!.findAll('button')
     await actionButtons[0]!.trigger('click')
@@ -635,7 +635,7 @@ describe('FriendListView', () => {
     await flushPromises()
 
     const firstItem = wrapper.findAll('.friend-list-item')[0]
-    expect(firstItem).toBeTruthy()
+    expect(firstItem).toBeDefined()
     const actionButtons = firstItem!.findAll('button')
     await actionButtons[0]!.trigger('click')
     await flushPromises()
@@ -650,7 +650,7 @@ describe('FriendListView', () => {
     await flushPromises()
 
     const firstItem = wrapper.findAll('.friend-list-item')[0]
-    expect(firstItem).toBeTruthy()
+    expect(firstItem).toBeDefined()
     const actionButtons = firstItem!.findAll('button')
     // 第二个动作按钮为 remove
     await actionButtons[1]!.trigger('click')
@@ -667,7 +667,7 @@ describe('FriendListView', () => {
     await flushPromises()
 
     const firstItem = wrapper.findAll('.friend-list-item')[0]
-    expect(firstItem).toBeTruthy()
+    expect(firstItem).toBeDefined()
 
     await firstItem!.trigger('contextmenu')
     await wrapper.get('[data-test="context-menu-send-message"]').trigger('click')
@@ -683,7 +683,7 @@ describe('FriendListView', () => {
     await flushPromises()
 
     const firstItem = wrapper.findAll('.friend-list-item')[0]
-    expect(firstItem).toBeTruthy()
+    expect(firstItem).toBeDefined()
 
     await firstItem!.trigger('contextmenu')
     await wrapper.get('[data-test="context-menu-remove"]').trigger('click')

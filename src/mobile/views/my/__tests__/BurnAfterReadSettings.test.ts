@@ -84,7 +84,7 @@ describe('BurnAfterReadSettings', () => {
 
   it('renders correctly', () => {
     const wrapper = mount(BurnAfterReadSettings)
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
   })
 
   it('has globalEnabled false by default', () => {

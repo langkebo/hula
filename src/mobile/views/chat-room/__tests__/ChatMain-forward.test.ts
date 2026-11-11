@@ -92,6 +92,6 @@ describe('MobileChatMain - forward dialog', () => {
         }
       }
     })
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
   })
 })

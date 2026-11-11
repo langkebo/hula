@@ -155,7 +155,7 @@ describe('useWindow', () => {
     const { createWebviewWindow } = useWindow()
     const result = await createWebviewWindow('Test Window', 'test', 800, 600)
 
-    expect(result).toBeTruthy()
+    expect(result).toBeDefined()
     expect(createdWindows[0]?.label).toBe('test')
   })
 

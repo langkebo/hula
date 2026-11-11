@@ -20,7 +20,7 @@ describe('OfflineQueueService', () => {
 
   it('enqueues operations', () => {
     const id = service.enqueue('message', '!room:test', { text: 'hello' })
-    expect(id).toBeTruthy()
+    expect(id).toMatch(/\S/)
     expect(service.getPendingCount()).toBe(1)
     expect(service.getQueue().length).toBe(1)
     expect(service.getQueue()[0].type).toBe('message')
@@ -36,7 +36,7 @@ describe('OfflineQueueService', () => {
     service.enqueue('message', '!room:test', { text: 'hello', msgtype: 'm.text' })
     // 验证 text 字段被脱敏为 '[redacted]' 后写入 localStorage
     const stored = localStorage.getItem('tjg-offline-queue')
-    expect(stored).toBeTruthy()
+    expect(stored).not.toBeNull()
     const parsed = JSON.parse(stored!)
     expect(parsed[0].payload.text).toBe('[redacted]')
     // msgtype 等非敏感字段应保留原值
@@ -52,7 +52,7 @@ describe('OfflineQueueService', () => {
     })
 
     const stored = localStorage.getItem('tjg-offline-queue')
-    expect(stored).toBeTruthy()
+    expect(stored).not.toBeNull()
     // 明文不得出现在任何位置
     expect(stored).not.toContain('SECRET_NESTED_BODY')
     const parsed = JSON.parse(stored!)

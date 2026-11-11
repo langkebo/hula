@@ -115,6 +115,7 @@ const {
     e2eeFullySetup: true,
     async loadEncryptionStatus() {},
     async loadDeviceVerification() {},
+    async loadBackupStatus() {},
     async loadRotationStatus() {
       this.needsRotation = (await getKeyRotationStatusMock())?.needsRotation ?? false
     },
@@ -163,6 +164,26 @@ vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
     getCurrentSessionContext: getCurrentSessionContextMock,
     getCurrentDeviceFingerprint: getCurrentDeviceFingerprintMock
+  }
+}))
+
+// 页面经 useEncryption 消费 crypto 能力（服务只在 composable 层出现）
+vi.mock('@/composables/encryption/useEncryption', () => ({
+  useEncryption: () => ({
+    getDeviceFingerprint: getCurrentDeviceFingerprintMock,
+    getPendingVerifications: getPendingVerificationsMock,
+    cancelVerification: cancelVerificationMock
+  })
+}))
+
+// 设备统计来自 useDeviceSessions（GET /devices + 本地验证状态），这里固定两份会话
+vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
+  matrixDeviceService: {
+    getCurrentDeviceId: () => 'DEVICE123',
+    getDevices: async () => [
+      { device_id: 'DEVICE123', display_name: 'Desktop', last_seen_ts: 1 },
+      { device_id: 'OTHER_DEVICE', display_name: 'Phone', last_seen_ts: 2 }
+    ]
   }
 }))
 
@@ -485,6 +506,9 @@ describe('EncryptionSettings', () => {
     expect(wrapper.text()).toContain('此设备已验证')
     expect(wrapper.text()).toContain('待处理验证请求')
     expect(wrapper.text()).toContain('OTHER_DEVICE')
+    // 设备统计来自 useDeviceSessions 的真实结果，不再是硬编码占位
+    expect((wrapper.vm as any).verifiedDevicesCount).toBe(2)
+    expect((wrapper.vm as any).unverifiedDevicesCount).toBe(0)
     expect((wrapper.vm as any).deviceFingerprint).toBe('ABCD 1234 EFGH 5678')
   })
 

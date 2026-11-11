@@ -262,7 +262,7 @@ describe('SessionSettings', () => {
     await vi.dynamicImportSettled()
     const ts = new Date('2025-01-15T10:30:00').getTime()
     const result = getVm(wrapper).formatDate(ts)
-    expect(result).toBeTruthy()
+    expect(result).toMatch(/\d{4}/)
     expect(typeof result).toBe('string')
   })
 

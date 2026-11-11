@@ -78,7 +78,7 @@ describe('FriendSearchBar', () => {
     })
 
     await wrapper.find('.friend-search-bar__clear').trigger('click')
-    expect(wrapper.emitted('clear-history')).toBeTruthy()
+    expect(wrapper.emitted('clear-history')).toHaveLength(1)
   })
 
   it('does not render history panel when history is empty or disabled', () => {

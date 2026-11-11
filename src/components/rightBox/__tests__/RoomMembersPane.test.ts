@@ -381,7 +381,6 @@ describe('RoomMembersPane', () => {
     const memberItems = wrapper.findAll('[data-test="member-item"]')
     await memberItems[0].trigger('click')
 
-    expect(wrapper.emitted('memberClick')).toBeTruthy()
     expect(wrapper.emitted('memberClick')![0]).toEqual(['@alice:server'])
   })
 

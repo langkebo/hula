@@ -49,6 +49,6 @@ describe('FriendContactRow 显示名', () => {
 
   it('没有头像时回落到默认图，不会是空 src', () => {
     const wrapper = mountRow({ name: 'Alice' })
-    expect(wrapper.find('img').attributes('src')).toBeTruthy()
+    expect(wrapper.find('img').attributes('src')).toMatch(/\S+/)
   })
 })

@@ -159,7 +159,7 @@ describe('设备验证流程接线与文案契约', () => {
 
     it('canVerifySender 必须同时要求「已加密 + 非自己 + 有发送者」', () => {
       const match = source.match(/const canVerifySender = computed\(\(\) =>([^\n]*)\)/)
-      expect(match).toBeTruthy()
+      expect(match).toBeDefined()
       const expression = match?.[1] ?? ''
       expect(expression).toContain('isEncryptedMessage')
       expect(expression).toContain('!isMe')

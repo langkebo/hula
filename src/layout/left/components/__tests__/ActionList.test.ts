@@ -317,7 +317,7 @@ describe('ActionList', () => {
     const wrapper = await mountActionList()
 
     const messageItem = wrapper.findAll('[role="button"]').find((node) => node.attributes('aria-label') === 'Message')
-    expect(messageItem).toBeTruthy()
+    expect(messageItem).toBeDefined()
 
     await messageItem!.trigger('keydown', { key: 'Enter' })
     expect(pageJumps).toHaveBeenCalledWith('message', 'Message', undefined, undefined)

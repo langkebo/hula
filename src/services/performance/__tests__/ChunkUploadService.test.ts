@@ -73,9 +73,9 @@ describe('ChunkUploadService (MediaManager-backed)', () => {
   it('start/uploadChunk/complete URLs hit /_matrix/media/v1/upload/chunk/* via SDK', async () => {
     const result = await chunkUploadService.upload({ file: makeFile(), chunkSize: 10 })
 
-    expect(seenRequests.find((r) => r.url.includes('/chunk/start'))).toBeTruthy()
-    expect(seenRequests.find((r) => r.url.includes('/chunk?') || r.url.includes('/chunk&'))).toBeTruthy()
-    expect(seenRequests.find((r) => r.url.includes('/chunk/complete'))).toBeTruthy()
+    expect(seenRequests.find((r) => r.url.includes('/chunk/start'))).toBeDefined()
+    expect(seenRequests.find((r) => r.url.includes('/chunk?') || r.url.includes('/chunk&'))).toBeDefined()
+    expect(seenRequests.find((r) => r.url.includes('/chunk/complete'))).toBeDefined()
     expect(result.mxcUrl).toBe('mxc://hs/chunked')
   })
 
@@ -90,7 +90,7 @@ describe('ChunkUploadService (MediaManager-backed)', () => {
 
     await expect(chunkUploadService.upload({ file: makeFile(), chunkSize: 10, maxRetries: 2 })).rejects.toThrow()
 
-    expect(seenRequests.find((r) => r.url.includes('/chunk/cancel'))).toBeTruthy()
+    expect(seenRequests.find((r) => r.url.includes('/chunk/cancel'))).toBeDefined()
   })
 
   it('disables SDK-level retry during upload to prevent double-retry', async () => {

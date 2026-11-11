@@ -190,7 +190,7 @@ describe('FriendListHeader', () => {
     const addButton = wrapper.find('[aria-label="menu.add_contact"]')
     expect(addButton.exists()).toBe(true)
     await addButton.trigger('click')
-    expect(wrapper.emitted('click:add')).toBeTruthy()
+    expect(wrapper.emitted('click:add')).toHaveLength(1)
   })
 
   it('emits click:requests when requests button is clicked', async () => {
@@ -198,7 +198,7 @@ describe('FriendListHeader', () => {
     const requestsButton = wrapper.find('[aria-label="pending 2"]')
     expect(requestsButton.exists()).toBe(true)
     await requestsButton.trigger('click')
-    expect(wrapper.emitted('click:requests')).toBeTruthy()
+    expect(wrapper.emitted('click:requests')).toHaveLength(1)
   })
 
   it('emits update:searchValue when search bar input changes', async () => {
@@ -222,7 +222,7 @@ describe('FriendListHeader', () => {
   it('emits clear-history when clear history is triggered', async () => {
     const wrapper = mountHeader()
     await wrapper.get('[data-test="friend-search-clear-history"]').trigger('click')
-    expect(wrapper.emitted('clear-history')).toBeTruthy()
+    expect(wrapper.emitted('clear-history')).toHaveLength(1)
   })
 
   it('emits global-search when global search is triggered', async () => {
@@ -277,7 +277,7 @@ describe('FriendListHeader', () => {
     const clearButton = wrapper.find('.friend-list-view__search-clear')
     expect(clearButton.exists()).toBe(true)
     await clearButton.trigger('click')
-    expect(wrapper.emitted('clear-active-search')).toBeTruthy()
+    expect(wrapper.emitted('clear-active-search')).toHaveLength(1)
   })
 
   it('renders filter buttons with labels', () => {

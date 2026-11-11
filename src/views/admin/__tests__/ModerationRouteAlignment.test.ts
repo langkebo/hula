@@ -68,7 +68,6 @@ describe('Moderation route alignment', () => {
     const routes = getDesktopRoutes()
     const adminRoute = routes.find((r) => r.path === '/admin')
     const moderationRoute = adminRoute?.children?.find((r) => r.path === 'moderation')
-    expect(moderationRoute).toBeTruthy()
     expect(moderationRoute?.name).toBe('adminModeration')
     expect(typeof moderationRoute?.component).toBe('function')
     const componentFn = moderationRoute!.component as () => Promise<{ default: { name?: string } }>

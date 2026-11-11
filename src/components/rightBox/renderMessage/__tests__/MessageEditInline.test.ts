@@ -73,14 +73,14 @@ describe('MessageEditInline', () => {
     const wrapper = mountInline()
     await wrapper.find('[data-test="edit-inline-cancel"]').trigger('click')
     expect(wrapper.emitted('update:visible')![0]).toEqual([false])
-    expect(wrapper.emitted('cancel')).toBeTruthy()
+    expect(wrapper.emitted('cancel')).toHaveLength(1)
   })
 
   it('Esc key triggers cancel', async () => {
     const wrapper = mountInline()
     await wrapper.find('[data-test="edit-inline-textarea"]').trigger('keydown.esc')
     expect(wrapper.emitted('update:visible')![0]).toEqual([false])
-    expect(wrapper.emitted('cancel')).toBeTruthy()
+    expect(wrapper.emitted('cancel')).toHaveLength(1)
   })
 
   it('Enter key submits (without shift)', async () => {

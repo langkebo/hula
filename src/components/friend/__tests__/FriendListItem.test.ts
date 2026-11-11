@@ -98,7 +98,6 @@ describe('FriendListItem', () => {
     })
 
     await wrapper.trigger('click')
-    expect(wrapper.emitted('select')).toBeTruthy()
     expect(wrapper.emitted('select')?.[0]).toEqual([mockFriend])
   })
 
@@ -116,7 +115,7 @@ describe('FriendListItem', () => {
     const buttons = wrapper.findAll('button')
     // The first button is send-message based on template
     await buttons[0].trigger('click')
-    expect(wrapper.emitted('send-message')).toBeTruthy()
+    expect(wrapper.emitted('send-message')).toHaveLength(1)
   })
 
   it('applies RTL class when dir is rtl', () => {

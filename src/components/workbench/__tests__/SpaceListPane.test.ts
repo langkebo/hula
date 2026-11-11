@@ -251,7 +251,6 @@ describe('SpaceListPane', () => {
     const cards = wrapper.findAll('[data-test="space-card"]')
     await cards[0].trigger('click')
 
-    expect(wrapper.emitted('selectSpace')).toBeTruthy()
     expect(wrapper.emitted('selectSpace')![0]).toEqual(['!space-1:server'])
   })
 
@@ -261,7 +260,6 @@ describe('SpaceListPane', () => {
     const pinBtn = wrapper.findAll('[data-test="space-card"]')[0].find('.stub-pin')
     await pinBtn.trigger('click')
 
-    expect(wrapper.emitted('pinSpace')).toBeTruthy()
     expect(wrapper.emitted('pinSpace')![0]).toEqual(['!space-1:server'])
   })
 
@@ -270,7 +268,6 @@ describe('SpaceListPane', () => {
     const settingsBtn = wrapper.findAll('[data-test="space-card"]')[0].find('.stub-settings')
     await settingsBtn.trigger('click')
 
-    expect(wrapper.emitted('spaceSettings')).toBeTruthy()
     expect(wrapper.emitted('spaceSettings')![0]).toEqual(['!space-1:server'])
   })
 
@@ -279,7 +276,6 @@ describe('SpaceListPane', () => {
     const leaveBtn = wrapper.findAll('[data-test="space-card"]')[0].find('.stub-leave')
     await leaveBtn.trigger('click')
 
-    expect(wrapper.emitted('leaveSpace')).toBeTruthy()
     expect(wrapper.emitted('leaveSpace')![0]).toEqual(['!space-1:server'])
   })
 
@@ -288,7 +284,6 @@ describe('SpaceListPane', () => {
     const deleteBtn = wrapper.findAll('[data-test="space-card"]')[0].find('.stub-delete')
     await deleteBtn.trigger('click')
 
-    expect(wrapper.emitted('deleteSpace')).toBeTruthy()
     expect(wrapper.emitted('deleteSpace')![0]).toEqual(['!space-1:server'])
   })
 
@@ -300,7 +295,7 @@ describe('SpaceListPane', () => {
     expect(footerButtons.length).toBeGreaterThanOrEqual(1)
     await footerButtons[0].trigger('click')
 
-    expect(wrapper.emitted('createSpace')).toBeTruthy()
+    expect(wrapper.emitted('createSpace')).toHaveLength(1)
   })
 
   it('navigates to /search?type=space when clicking discover button', async () => {

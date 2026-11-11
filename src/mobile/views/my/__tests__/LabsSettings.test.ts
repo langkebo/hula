@@ -62,7 +62,7 @@ describe('LabsSettings', () => {
 
   it('renders correctly', () => {
     const wrapper = mountComponent()
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
   })
 
   it('不再渲染零消费方的实验特性/调试/性能开关', () => {

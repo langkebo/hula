@@ -165,7 +165,6 @@ describe('RoomSettingsDrawer', () => {
     await wrapper.find('.rs-drawer__close').trigger('click')
     await flushPromises()
 
-    expect(wrapper.emitted('close')).toBeTruthy()
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
@@ -176,7 +175,7 @@ describe('RoomSettingsDrawer', () => {
     await wrapper.find('[data-testid="room-settings-drawer-overlay"]').trigger('click')
     await flushPromises()
 
-    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
   it('does not emit close when clicking inside the drawer panel', async () => {
@@ -419,7 +418,6 @@ describe('RoomSettingsDrawer', () => {
     await wrapper.find('.rs-drawer__close').trigger('click')
     await flushPromises()
 
-    expect(wrapper.emitted('close')).toBeTruthy()
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 })

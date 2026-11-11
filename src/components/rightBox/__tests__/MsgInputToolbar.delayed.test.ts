@@ -54,7 +54,7 @@ describe('MsgInputToolbar delayed-send entry', () => {
     const wrapper = mountComponent(true)
     const scheduledButton = findScheduledButton(wrapper)
 
-    expect(scheduledButton).toBeTruthy()
+    expect(scheduledButton).toBeDefined()
 
     await scheduledButton?.trigger('click')
     expect(wrapper.emitted('openDelayedModal')).toHaveLength(1)

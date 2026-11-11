@@ -167,7 +167,7 @@ describe('ChatSetting - room upgrade entry', () => {
   }, async () => {
     const ChatSetting = (await ChatSettingModule).default
     const wrapper = mount(ChatSetting, mountOptions())
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
     expect(wrapper.text()).toContain('Room Upgrade')
     expect(wrapper.text()).toContain('10')
     expect(wrapper.find('.mock-upgrade-dialog').exists()).toBe(false)

@@ -102,7 +102,7 @@ describe('RobotCard', () => {
   it('emits click when card is clicked', async () => {
     const wrapper = mountCard()
     await wrapper.find('[data-testid="robot-card"]').trigger('click')
-    expect(wrapper.emitted('click')).toBeTruthy()
+    expect(wrapper.emitted('click')).toHaveLength(1)
   })
 
   it('applies active class when active prop is true', () => {

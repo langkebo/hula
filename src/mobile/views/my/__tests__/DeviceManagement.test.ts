@@ -122,7 +122,7 @@ describe('DeviceManagement', () => {
 
   it('renders correctly', () => {
     const wrapper = mount(DeviceManagement)
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
   })
 
   it('loads devices on mount', async () => {
@@ -172,7 +172,7 @@ describe('DeviceManagement', () => {
   it('formatDeviceLabel returns no_info for empty device', async () => {
     const wrapper = mount(DeviceManagement)
     await vi.dynamicImportSettled()
-    expect((wrapper.vm as any).formatDeviceLabel({})).toBeTruthy()
+    expect((wrapper.vm as any).formatDeviceLabel({})).toMatch(/\S+/)
   })
 
   it('登出单设备失败时提示错误', async () => {

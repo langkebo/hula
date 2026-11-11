@@ -139,7 +139,7 @@ describe('SecuritySettings', () => {
 
   it('renders correctly', () => {
     const wrapper = mountSecuritySettings()
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
   })
 
   it('loads device count on mount', async () => {
@@ -193,9 +193,9 @@ describe('SecuritySettings', () => {
     const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
-    vm.passwordForm = { oldPassword: 'oldpass12', newPassword: 'newpass12', confirmPassword: 'newpass12' }
+    vm.passwordForm = { oldPassword: 'oldpass12', newPassword: 'Newpass1!', confirmPassword: 'Newpass1!' }
     await vm.handleChangePassword()
-    expect(changePasswordMock).toHaveBeenCalledWith('oldpass12', 'newpass12')
+    expect(changePasswordMock).toHaveBeenCalledWith('oldpass12', 'Newpass1!')
   })
 
   it('shows error on password change failure', async () => {
@@ -203,7 +203,7 @@ describe('SecuritySettings', () => {
     const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
-    vm.passwordForm = { oldPassword: 'oldpass12', newPassword: 'newpass12', confirmPassword: 'newpass12' }
+    vm.passwordForm = { oldPassword: 'oldpass12', newPassword: 'Newpass1!', confirmPassword: 'Newpass1!' }
     await vm.handleChangePassword()
     expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
   })

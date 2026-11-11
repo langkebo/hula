@@ -26,7 +26,6 @@ describe('keep-alive 命名对齐', () => {
     const include = layout.match(/include="\[([^\]]+)\]"/)?.[1] ?? ''
     const names = include.split(',').map((item) => item.trim().replace(/['"]/g, ''))
     const actualName = main.match(/defineOptions\(\{\s*name:\s*'([^']+)'/)?.[1]
-    expect(actualName).toBeTruthy()
     expect(names).toContain(actualName)
   })
 

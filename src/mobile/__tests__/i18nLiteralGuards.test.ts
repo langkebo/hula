@@ -65,7 +65,6 @@ describe('桌面端剩余页面与窗口骨架中文字面量收口', () => {
     'src/views/fileManagerWindow/index.vue',
     'src/views/LockScreen.vue',
     'src/views/homeWindow/SecretChatPage.vue',
-    'src/views/homeWindow/message/Alone.vue',
     'src/views/loginWindow/Login.vue',
     'src/views/loginWindow/QRCode.vue',
     'src/views/loginWindow/SecretChatModal.vue',

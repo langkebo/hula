@@ -71,7 +71,6 @@ describe('StickyEventBanner — 粘性事件横幅 (§8.2)', () => {
     })
     await wrapper.find('.sticky-banner__item').trigger('click')
     const viewEvents = wrapper.emitted('view')
-    expect(viewEvents).toBeTruthy()
     expect(viewEvents![0]).toEqual(['$evt1:server'])
   })
 
@@ -94,7 +93,7 @@ describe('StickyEventBanner — 粘性事件横幅 (§8.2)', () => {
       props: { events: [makeEvent()], canSetSticky: true }
     })
     await wrapper.find('[data-testid="sticky-set-btn"]').trigger('click')
-    expect(wrapper.emitted('set-sticky')).toBeTruthy()
+    expect(wrapper.emitted('set-sticky')).toHaveLength(1)
   })
 
   it('横幅有可访问性 role=status', () => {
@@ -132,7 +131,6 @@ describe('StickyEventBanner — 粘性事件横幅 (§8.2)', () => {
     })
     await wrapper.find('[data-testid="sticky-cancel-btn"]').trigger('click')
     const cancelEvents = wrapper.emitted('cancel-sticky')
-    expect(cancelEvents).toBeTruthy()
     expect(cancelEvents![0]).toEqual(['$evt1:server'])
   })
 })

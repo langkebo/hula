@@ -32,7 +32,7 @@ describe('v-ripple', () => {
     el.dispatchEvent(new PointerEvent('pointerdown', { clientX: 50, clientY: 20 }))
 
     const ripple = el.querySelector('span')
-    expect(ripple).toBeTruthy()
+    expect(ripple).not.toBeNull()
   })
 
   it('涟漪 span 样式不影响布局且不拦截事件', () => {
@@ -75,7 +75,7 @@ describe('v-ripple', () => {
     vRipple.mounted?.(el, {} as never)
 
     el.dispatchEvent(new PointerEvent('pointerdown', { clientX: 50, clientY: 20 }))
-    expect(el.querySelector('span')).toBeTruthy()
+    expect(el.querySelector('span')).not.toBeNull()
 
     vi.advanceTimersByTime(300)
 

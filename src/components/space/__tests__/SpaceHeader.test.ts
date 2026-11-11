@@ -107,6 +107,6 @@ describe('SpaceHeader', () => {
     const wrapper = mountHeader()
     const avatar = wrapper.find('[data-testid="space-header-avatar"]')
     expect(avatar.exists()).toBe(true)
-    expect(avatar.attributes('aria-label')).toBeTruthy()
+    expect(avatar.attributes('aria-label')).toMatch(/\S+/)
   })
 })

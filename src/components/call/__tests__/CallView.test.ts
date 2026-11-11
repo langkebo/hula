@@ -248,7 +248,7 @@ describe('CallView', () => {
       await hangupButton.trigger('click')
       await flushPromises()
 
-      expect(wrapper.emitted('hangup')).toBeTruthy()
+      expect(wrapper.emitted('hangup')).toHaveLength(1)
     })
   })
 })

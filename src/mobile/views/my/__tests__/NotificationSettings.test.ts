@@ -124,7 +124,7 @@ describe('NotificationSettings', () => {
 
   it('renders correctly', () => {
     const wrapper = mountComponent()
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
   })
 
   it('has notifications enabled by default', () => {

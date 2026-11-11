@@ -138,8 +138,8 @@ describe('RtcCall (mobile)', () => {
 
     // 通话 id 由 composable 内部持有，页面不再把 props.callId 透传进去
     expect(rejectCallMock).toHaveBeenCalledWith()
-    expect(wrapper.emitted('reject')).toBeTruthy()
-    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('reject')).toHaveLength(1)
+    expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
   it('点击接听按钮调用 answerCall', async () => {
@@ -150,7 +150,7 @@ describe('RtcCall (mobile)', () => {
 
     // 接听只传媒体约束，callId 由 composable 从 initialCallId 解析
     expect(answerCallMock).toHaveBeenCalledWith(undefined, { audio: true, video: false })
-    expect(wrapper.emitted('answer')).toBeTruthy()
+    expect(wrapper.emitted('answer')).toHaveLength(1)
   })
 
   it('去电场景渲染取消按钮并发起通话', async () => {
@@ -193,7 +193,7 @@ describe('RtcCall (mobile)', () => {
     await flushPromises()
 
     expect(hangupMock).toHaveBeenCalled()
-    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
   it('视频通话中显示摄像头切换按钮', () => {
@@ -218,7 +218,7 @@ describe('RtcCall (mobile)', () => {
     }
 
     const wrapper = mountRtcCall({ isVideo: true, isIncoming: false })
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
     wrapper.unmount()
     // 验证组件卸载不会抛出异常
   })
@@ -231,6 +231,6 @@ describe('RtcCall (mobile)', () => {
     sharedState.value = 'ended'
     await flushPromises()
 
-    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('close')).toHaveLength(1)
   })
 })

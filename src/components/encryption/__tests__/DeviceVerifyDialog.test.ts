@@ -197,7 +197,7 @@ describe('DeviceVerifyDialog（SAS 比对）', () => {
 
     expect(mocks.confirmSas).toHaveBeenCalledWith('txn-123')
     expect(vmOf(wrapper).step).toBe('success')
-    expect(wrapper.emitted('success')).toBeTruthy()
+    expect(wrapper.emitted('success')).toHaveLength(1)
   })
 
   it('拿不到 SAS 时进入失败态，绝不降级为指纹比对', async () => {
@@ -244,7 +244,7 @@ describe('DeviceVerifyDialog（SAS 比对）', () => {
     await wrapper.find('[data-testid="sas-confirm-checkbox"]').setValue(true)
     await vmOf(wrapper).handleConfirm()
 
-    expect(wrapper.emitted('success')).toBeTruthy()
+    expect(wrapper.emitted('success')).toHaveLength(1)
     expect(vmOf(wrapper).step).toBe('success')
   })
 

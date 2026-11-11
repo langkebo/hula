@@ -97,7 +97,6 @@ describe('enums/index.ts', () => {
       expect(EventEnum.WIN_CLOSE).toBe('winClose')
       expect(EventEnum.EXIT).toBe('exit')
       expect(EventEnum.LOGOUT).toBe('logout')
-      expect(EventEnum.ALONE).toBe('alone')
       expect(EventEnum.LOCK_SCREEN).toBe('lockScreen')
       expect(EventEnum.MULTI_MSG).toBe('multiMsg')
     })

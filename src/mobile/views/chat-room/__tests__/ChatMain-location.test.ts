@@ -82,6 +82,6 @@ describe('MobileChatMain - location sharing', () => {
         }
       }
     })
-    expect(wrapper.html()).toBeTruthy()
+    expect(wrapper.html()).not.toBe('')
   })
 })

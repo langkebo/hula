@@ -181,7 +181,7 @@ describe('MobileKeyBackupDialog', () => {
     const wrapper = createWrapper({ mode: 'setup' })
     const buttons = wrapper.findAll('.van-button-stub')
     await buttons[buttons.length - 1].trigger('click')
-    expect(wrapper.emitted('complete')).toBeTruthy()
+    expect(wrapper.emitted('complete')).toHaveLength(1)
   })
 
   it('emits complete on successful restore', async () => {
@@ -193,6 +193,6 @@ describe('MobileKeyBackupDialog', () => {
     ;(wrapper.vm as any).recoveryKeyInput = 'RECOVERY-KEY-123'
     const buttons = wrapper.findAll('.van-button-stub')
     await buttons[buttons.length - 1].trigger('click')
-    expect(wrapper.emitted('complete')).toBeTruthy()
+    expect(wrapper.emitted('complete')).toHaveLength(1)
   })
 })

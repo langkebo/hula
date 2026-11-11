@@ -45,7 +45,7 @@ describe('dumpDiagnostics (O4)', () => {
   it('返回结构化诊断快照', () => {
     const snapshot = dumpDiagnostics()
 
-    expect(snapshot.timestamp).toBeTruthy()
+    expect(snapshot.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     expect(snapshot.connectionState).toBe('CONNECTED')
     expect(snapshot.homeserverUrl).toBe('https://matrix.test')
     expect(snapshot.errorSummary.total).toBe(5)

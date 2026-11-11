@@ -92,7 +92,7 @@ describe('renderMessage/special/RecallMessage', () => {
     })
 
     const reEdit = wrapper.findAll('p').find((p) => p.text() === '重新编辑')
-    expect(reEdit).toBeTruthy()
+    expect(reEdit).toBeDefined()
   })
 
   it('非文本类型撤回消息不显示「重新编辑」', () => {

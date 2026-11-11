@@ -79,7 +79,6 @@ describe('MessageSessionToolbar · 群聊/单人 类型过滤', () => {
   it('点击「群聊」emit update:sessionTypeFilter=group', async () => {
     const wrapper = mountToolbar()
     await typeButtons(wrapper)[0].trigger('click')
-    expect(wrapper.emitted('update:sessionTypeFilter')).toBeTruthy()
     expect(wrapper.emitted('update:sessionTypeFilter')?.[0]).toEqual(['group'])
   })
 
@@ -118,7 +117,7 @@ describe('MessageSessionToolbar · 已隐藏会话入口（方案B）', () => {
   it('点击入口 emit openHiddenSessions', async () => {
     const wrapper = mountToolbar({ hiddenCount: 1 })
     await wrapper.find('[aria-label="home.secret_chat.hidden_sessions"]').trigger('click')
-    expect(wrapper.emitted('openHiddenSessions')).toBeTruthy()
+    expect(wrapper.emitted('openHiddenSessions')).toHaveLength(1)
   })
 
   it('角标超过 99 显示 99+（max 封顶由 NBadge 承担，此处验证透传）', () => {

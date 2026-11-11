@@ -103,6 +103,6 @@ describe('FriendRequestCard', () => {
     })
 
     await wrapper.find('[data-test="friend-request-accept"]').trigger('click')
-    expect(wrapper.emitted('accept')).toBeTruthy()
+    expect(wrapper.emitted('accept')).toHaveLength(1)
   })
 })

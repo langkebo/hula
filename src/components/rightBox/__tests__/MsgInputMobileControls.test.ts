@@ -42,7 +42,7 @@ describe('rightBox/MsgInputMobileControls', () => {
   it('点击表情图标触发 handleEmojiClick', async () => {
     const wrapper = mountComponent()
     await wrapper.findAll('svg')[0].trigger('click')
-    expect(wrapper.emitted('handleEmojiClick')).toBeTruthy()
+    expect(wrapper.emitted('handleEmojiClick')).toHaveLength(1)
   })
 
   it('无输入时显示「更多」图标并触发 handleMoreClick', async () => {
@@ -50,7 +50,7 @@ describe('rightBox/MsgInputMobileControls', () => {
     const svgs = wrapper.findAll('svg')
     // 顺序：emoji / more（语音按钮在 MsgInput 输入框左侧）
     await svgs[1].trigger('click')
-    expect(wrapper.emitted('handleMoreClick')).toBeTruthy()
+    expect(wrapper.emitted('handleMoreClick')).toHaveLength(1)
   })
 
   it('有输入时隐藏「更多」、显示发送按钮', () => {
@@ -63,7 +63,7 @@ describe('rightBox/MsgInputMobileControls', () => {
   it('点击发送按钮触发 handleMobileSend', async () => {
     const wrapper = mountComponent({ hasInput: 'true' })
     await wrapper.find('[data-test="NButton"]').trigger('click')
-    expect(wrapper.emitted('handleMobileSend')).toBeTruthy()
+    expect(wrapper.emitted('handleMobileSend')).toHaveLength(1)
   })
 
   it('AI 流式输出时发送按钮文案切换为「停止思考」', () => {

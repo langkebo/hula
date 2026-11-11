@@ -174,7 +174,6 @@ describe('ContactGroupSection', () => {
 
     await wrapper.get('[data-test="group-header"]').trigger('click')
 
-    expect(wrapper.emitted('toggle')).toBeTruthy()
     expect(wrapper.emitted('toggle')).toHaveLength(1)
   })
 
@@ -188,7 +187,6 @@ describe('ContactGroupSection', () => {
 
     await wrapper.get('.friend-list-item').trigger('click')
 
-    expect(wrapper.emitted('select-friend')).toBeTruthy()
     expect(wrapper.emitted('select-friend')![0]).toEqual([friend])
   })
 
@@ -268,7 +266,6 @@ describe('ContactGroupSection', () => {
     // First button is send-message
     await buttons[0]!.trigger('click')
 
-    expect(wrapper.emitted('send-message')).toBeTruthy()
     expect(wrapper.emitted('send-message')![0]).toEqual([friend])
   })
 
@@ -284,7 +281,6 @@ describe('ContactGroupSection', () => {
     // Second button is remove
     await buttons[1]!.trigger('click')
 
-    expect(wrapper.emitted('remove')).toBeTruthy()
     expect(wrapper.emitted('remove')![0]).toEqual([friend])
   })
 })

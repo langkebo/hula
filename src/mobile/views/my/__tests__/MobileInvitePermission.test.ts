@@ -75,7 +75,7 @@ describe('MobileInvitePermission', () => {
   })
 
   it('renders correctly', () => {
-    expect(mountPage().html()).toBeTruthy()
+    expect(mountPage().html()).not.toBe('')
   })
 
   it('loads the config on mount', async () => {
