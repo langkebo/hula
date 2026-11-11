@@ -5,7 +5,7 @@
         <van-icon
           name="add-o"
           size="22"
-          class="color-[--tjg-text-primary]"
+          class="relative color-[--tjg-text-primary] after:absolute after:-inset-11px after:content-['']"
           :data-testid="'mobile-rooms-add'"
           @click="showCreateMenu = true" />
       </template>
@@ -24,9 +24,16 @@
     <!-- 加载状态 -->
     <van-loading v-if="loading" size="24px" class="flex justify-center py-40px" />
 
+    <!-- 加载失败：给出重试出口，而不是伪装成「暂无群聊」 -->
+    <van-empty v-else-if="loadError" :description="t('mobile_rooms.load_failed')">
+      <van-button round type="primary" :data-testid="'mobile-rooms-retry'" @click="retryLoad">
+        {{ t('common.retry') }}
+      </van-button>
+    </van-empty>
+
     <!-- 空状态 -->
     <van-empty
-      v-else-if="!loading && roomList.length === 0"
+      v-else-if="roomList.length === 0"
       :description="searchText ? t('mobile_rooms.no_search_result') : t('mobile_rooms.no_rooms')">
       <van-button
         v-if="!searchText"
@@ -185,6 +192,7 @@ const router = useRouter()
 
 const searchText = ref('')
 const loading = ref(true)
+const loadError = ref(false)
 const refreshing = ref(false)
 const showCreateMenu = ref(false)
 const roomList = ref<RoomItem[]>([])
@@ -218,13 +226,21 @@ async function fetchRooms() {
   try {
     const rooms = await matrixRoomQueryFacade.getRooms()
     roomList.value = rooms.map(mapRoomToItem)
+    loadError.value = false
   } catch (e) {
     logger.error('Failed to fetch rooms:', e)
+    loadError.value = true
     showToast({ type: 'fail', message: t('mobile_rooms.load_failed') })
   } finally {
     loading.value = false
     refreshing.value = false
   }
+}
+
+function retryLoad() {
+  loading.value = true
+  loadError.value = false
+  fetchRooms()
 }
 
 function onSearch() {
@@ -233,6 +249,7 @@ function onSearch() {
     return
   }
   loading.value = true
+  loadError.value = false
   matrixSearchService
     .searchRooms(searchText.value.trim())
     .then((results) => {

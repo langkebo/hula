@@ -3,6 +3,7 @@ import { MOBILE_SETTINGS_RELATIVE_PATHS, MOBILE_SETTINGS_ROUTE_NAMES } from '@/m
 
 const BurnAfterReadSettings = () => import('#/views/my/BurnAfterReadSettings.vue')
 const DeviceManagement = () => import('#/views/my/DeviceManagement.vue')
+const EncryptionSettings = () => import('#/views/my/EncryptionSettings.vue')
 const Files = () => import('#/views/my/Files.vue')
 const HelpFeedback = () => import('#/views/my/HelpFeedback.vue')
 const HomeserverSettings = () => import('@/mobile/views/my/HomeserverSettings.vue')
@@ -60,6 +61,12 @@ export const MOBILE_MY_SETTINGS_CHILD_ROUTES: RouteRecordRaw[] = [
     path: MOBILE_SETTINGS_RELATIVE_PATHS.securityKey,
     name: MOBILE_SETTINGS_ROUTE_NAMES.securityKey,
     component: MobileSecurityKeySetup
+  },
+  {
+    // 加密设置与其余二级页同构，挂在 MyLayout 内，保证有 TabBar 壳与返回逻辑
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.encryption,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.encryption,
+    component: EncryptionSettings
   },
   {
     path: MOBILE_SETTINGS_RELATIVE_PATHS.storage,

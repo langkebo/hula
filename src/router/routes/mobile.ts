@@ -27,8 +27,7 @@ const StartGroupChat = () => import('#/views/friends/StartGroupChat.vue')
 const FriendGroups = () => import('#/views/friends/FriendGroups.vue')
 const MobileMessagePage = () => import('#/views/message/index.vue')
 const MobileSecretChatPage = () => import('#/views/secretChat/SecretChatPage.vue')
-const MobileDynamicPage = () => import('#/views/dynamic/index.vue')
-const MobileDynamicDetail = () => import('#/views/dynamic/detail.vue')
+
 const EditBio = () => import('#/views/my/EditBio.vue')
 const EditBirthday = () => import('#/views/my/EditBirthday.vue')
 const EditProfile = () => import('#/views/my/EditProfile.vue')
@@ -38,7 +37,6 @@ const MobileSettings = () => import('#/views/my/MobileSettings.vue')
 const MyMessages = () => import('#/views/my/MyMessages.vue')
 const Share = () => import('#/views/my/Share.vue')
 const MyAlbum = () => import('#/views/my/MyAlbum.vue')
-const SimpleBio = () => import('#/views/my/SimpleBio.vue')
 const StatusSettings = () => import('#/views/my/StatusSettings.vue')
 const ConfirmQRLogin = () => import('#/views/ConfirmQRLogin.vue')
 const MyQRCode = () => import('#/views/MyQRCode.vue')
@@ -231,17 +229,6 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         meta: { keepAlive: true }
       },
       {
-        path: '/mobile/dynamic',
-        name: 'mobileDynamic',
-        component: MobileDynamicPage,
-        meta: { keepAlive: true }
-      },
-      {
-        path: '/mobile/dynamic/:id',
-        name: 'mobileDynamicDetail',
-        component: MobileDynamicDetail
-      },
-      {
         // 空间页作为主导航 Tab 之一，必须置于 /mobile/home 壳层内，
         // 才能与消息/好友/房间/我的共享底部 TabBar（原型移动端 5 Tab 同壳）。
         path: '/mobile/space',
@@ -292,14 +279,14 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         component: MobileQRCode
       },
       {
+        path: 'myQRCode',
+        name: 'mobileMyQRCodePage',
+        component: MyQRCode
+      },
+      {
         path: 'share',
         name: 'mobileShare',
         component: Share
-      },
-      {
-        path: 'SimpleBio',
-        name: 'mobileSimpleBio',
-        component: SimpleBio
       },
       {
         path: 'myAlbum',
@@ -366,27 +353,10 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
     props: (route) => ({ qrData: route.query.qr_data as string })
   },
   {
-    path: '/mobile/myQRCode',
-    name: 'mobileMyQRCode',
-    component: FriendsLayout,
-    children: [
-      {
-        path: '',
-        name: 'mobileMyQRCodePage',
-        component: MyQRCode
-      }
-    ]
-  },
-  {
     path: '/mobile/rtcCall',
     name: 'rtcCall',
     component: () => import('../../mobile/views/rtcCall/index.vue'),
     props: (route) => mapMobileRtcCallProps(route.query as Record<string, unknown>)
-  },
-  {
-    path: '/mobile/encryption',
-    name: 'mobileEncryption',
-    component: () => import('../../mobile/views/my/EncryptionSettings.vue')
   },
   {
     path: '/mobile/addGroupQRCode',

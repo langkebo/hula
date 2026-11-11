@@ -4383,6 +4383,7 @@ export type I18nKeys = {
     "voice": "语音",
     "keyboard": "键盘",
     "no_data": "无数据",
+    "session_load_failed": "会话加载失败，正在返回消息列表",
     "chat_background": "聊天背景",
     "input_panel": {
       "video_call": "视频通话",
@@ -4570,6 +4571,7 @@ export type I18nKeys = {
       "add": "添加"
     },
     "refresh_notification_failed": "刷新通知失败，请稍后再试",
+    "open_chat_failed": "会话加载失败，正在直接进入会话",
     "add_friend_success": "好友请求已发送",
     "add_friend_failed": "发送好友请求失败",
     "delete_friend_title": "删除好友",
@@ -11044,6 +11046,7 @@ export type I18nKeyPaths =
   | "mobile_chat.voice"
   | "mobile_chat.keyboard"
   | "mobile_chat.no_data"
+  | "mobile_chat.session_load_failed"
   | "mobile_chat.chat_background"
   | "mobile_chat.input_panel.video_call"
   | "mobile_chat.input_panel.audio_call"
@@ -11193,6 +11196,7 @@ export type I18nKeyPaths =
   | "mobile_contact.button.send_message"
   | "mobile_contact.button.add"
   | "mobile_contact.refresh_notification_failed"
+  | "mobile_contact.open_chat_failed"
   | "mobile_contact.add_friend_success"
   | "mobile_contact.add_friend_failed"
   | "mobile_contact.delete_friend_title"

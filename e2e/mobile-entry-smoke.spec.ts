@@ -25,12 +25,6 @@ const mobileEntryCases: MobileEntryCase[] = [
     readyPattern: /登录确认|确定登录|Confirm/
   },
   {
-    name: 'mobile dynamic entry',
-    path: '/mobile/dynamic',
-    // /mobile/dynamic 页面已改造为空间(Space)列表页
-    readyPattern: /空间|Space/
-  },
-  {
     name: 'mobile settings entry',
     path: '/mobile/mobileMy/settings',
     readyPattern: /Edit Profile|编辑资料|Settings/

@@ -195,7 +195,7 @@ const openRoom = (room: SpaceChildRoom) => {
     padding: 1px 6px;
     border-radius: 999px;
     color: var(--van-primary-color);
-    background: var(--van-primary-color-2, rgba(25, 137, 250, 0.1));
+    background: var(--tjg-color-primary-100);
   }
 
   .child-chevron {

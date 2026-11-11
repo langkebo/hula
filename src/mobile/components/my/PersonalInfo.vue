@@ -314,7 +314,7 @@ const toEditProfile = () => {
 }
 
 const toMyQRCode = () => {
-  router.push('/mobile/myQRCode')
+  router.push('/mobile/mobileMy/myQRCode')
 }
 
 function beforeEnter(el: Element) {

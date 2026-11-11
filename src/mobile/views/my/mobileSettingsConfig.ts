@@ -1,4 +1,8 @@
-import { MOBILE_SETTINGS_EMOTICONS_PATH, MOBILE_SETTINGS_LABS_PATH } from './settingsRoutes'
+import {
+  MOBILE_SETTINGS_EMOTICONS_PATH,
+  MOBILE_SETTINGS_ENCRYPTION_PATH,
+  MOBILE_SETTINGS_LABS_PATH
+} from './settingsRoutes'
 
 interface MobileSettingsNavItem {
   titleKey: string
@@ -12,7 +16,7 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
   {
     // 加密与密钥状态页（477 行）此前**有路由但无人 push**，只能手输 URL 到达
     titleKey: 'setting.encryption.title',
-    path: '/mobile/encryption',
+    path: MOBILE_SETTINGS_ENCRYPTION_PATH,
     icon: 'mdi:lock-check',
     iconColor: 'var(--tjg-color-success-500)',
     iconBackgroundColor: 'var(--tjg-color-success-100)'

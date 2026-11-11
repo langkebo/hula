@@ -108,6 +108,17 @@ const sessions = ref<
     lastSeenIp?: string | undefined
   }>
 >([])
+/** `GET /devices` 行有两种形状：REST 原始（snake_case）与测试/适配层（camelCase） */
+interface DeviceSessionRecord {
+  device_id?: string
+  display_name?: string
+  last_seen_ts?: number
+  last_seen_ip?: string
+  deviceId?: string
+  displayName?: string
+  lastSeenTs?: number
+  lastSeenIp?: string
+}
 const currentUserId = ref('')
 const showDeviceActionSheet = ref(false)
 const selectedDevice = ref<DeviceTrustInfo | null>(null)
@@ -204,12 +215,12 @@ async function loadDevices() {
     // 两条数据源并行：会话列表（权威行集合）+ 信任状态（可能因 crypto 未就绪而为空）
     const [sessionsResult] = await Promise.all([
       matrixDeviceService.getDevices().catch((error) => {
-        logger.warn('GET /devices 失败，退化为仅展示已知设备', error)
+        logger.warn('GET /devices failed, falling back to known devices only', error)
         return []
       }),
       userId
         ? loadTrustDevices(userId).catch((error) => {
-            logger.warn('keys/query 失败，设备列表将不含验证状态', error)
+            logger.warn('keys/query failed, device list will lack verification status', error)
           })
         : Promise.resolve()
     ])
@@ -217,7 +228,7 @@ async function loadDevices() {
     sessions.value = sessionsResult
       .map((raw) => {
         // 兼容两种形状：REST 原始（snake_case）与测试/适配层（camelCase）
-        const source = raw as unknown as Record<string, unknown>
+        const source = raw as DeviceSessionRecord
         const deviceId = (source.device_id ?? source.deviceId) as string | undefined
         if (!deviceId) return null
         return {

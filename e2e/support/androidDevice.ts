@@ -215,7 +215,7 @@ export const loginOnMobileUi = async (page: Page, options: MobileLoginOptions): 
   const deadline = Date.now() + timeoutMs
   let landed = false
   while (Date.now() < deadline) {
-    if (/\/mobile\/(message|chatRoom|dynamic)/.test(new URL(page.url()).pathname)) {
+    if (/\/mobile\/(message|chatRoom)/.test(new URL(page.url()).pathname)) {
       landed = true
       break
     }

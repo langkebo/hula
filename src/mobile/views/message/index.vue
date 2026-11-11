@@ -30,6 +30,7 @@
             round
             plain
             size="small"
+            class="relative after:absolute after:-inset-6px after:content-['']"
             :aria-label="t('home.secret_chat.hidden_sessions')"
             @click="handleOpenHiddenSessions">
             <svg class="w-16px h-16px" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -43,7 +44,12 @@
             @select="onAddActionSelect"
             placement="bottom-end">
             <template #reference>
-              <van-button round plain size="small" :aria-label="t('common.add')">
+              <van-button
+                round
+                plain
+                size="small"
+                class="relative after:absolute after:-inset-6px after:content-['']"
+                :aria-label="t('common.add')">
                 <svg class="w-16px h-16px"><use href="#plus"></use></svg>
               </van-button>
             </template>

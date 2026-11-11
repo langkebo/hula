@@ -13,6 +13,7 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   ignoredUsers: 'ignoredUsers',
   simpleBio: 'simpleBio',
   securityKey: 'securityKey',
+  encryption: 'encryption',
   storage: 'storage',
   pushSettings: 'pushSettings',
   invitePermission: 'invitePermission',
@@ -29,6 +30,7 @@ export const MOBILE_SETTINGS_SECURITY_PRIVACY_PATH = `${MOBILE_SETTINGS_BASE_PAT
 export const MOBILE_SETTINGS_PASSWORD_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.password}`
 export const MOBILE_SETTINGS_IGNORED_USERS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.ignoredUsers}`
 export const MOBILE_SETTINGS_SECURITY_KEY_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.securityKey}`
+export const MOBILE_SETTINGS_ENCRYPTION_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.encryption}`
 export const MOBILE_SETTINGS_PUSH_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.pushSettings}`
 export const MOBILE_SETTINGS_INVITE_PERMISSION_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.invitePermission}`
 export const MOBILE_SETTINGS_DEVICES_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.devices}`
@@ -44,6 +46,7 @@ export const MOBILE_SETTINGS_ROUTE_NAMES = {
   password: 'mobilePasswordSettings',
   ignoredUsers: 'mobileIgnoredUsers',
   securityKey: 'mobileSecurityKeySetup',
+  encryption: 'mobileEncryption',
   storage: 'mobileStorageSettings',
   pushSettings: 'mobilePushSettings',
   invitePermission: 'mobileInvitePermission',

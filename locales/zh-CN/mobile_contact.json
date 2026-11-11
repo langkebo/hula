@@ -45,6 +45,7 @@
     "add": "添加"
   },
   "refresh_notification_failed": "刷新通知失败，请稍后再试",
+  "open_chat_failed": "会话加载失败，正在直接进入会话",
   "add_friend_success": "好友请求已发送",
   "add_friend_failed": "发送好友请求失败",
   "delete_friend_title": "删除好友",

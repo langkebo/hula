@@ -165,7 +165,7 @@ async function clearSearchIndex(): Promise<void> {
       await matrixWorkerHost.resetSearchIndex()
       return
     } catch (error) {
-      logger.warn('worker 清理失败，回退直接清盘', error)
+      logger.warn('worker clear failed, falling back to clearing IndexedDB directly', error)
     }
   }
   await clearAllSearchData()

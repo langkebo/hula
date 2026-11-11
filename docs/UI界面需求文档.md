@@ -1226,7 +1226,7 @@ Tauri 能力包括文件系统、窗口、托盘、截图、系统通知、深�
 | `/mobile/mobileMy/status`、`/mobile/mobileMy/settings`、`/mobile/mobileMy/scanQRCode`、`/mobile/mobileMy/share`、`/mobile/mobileMy/SimpleBio`、`/mobile/mobileMy/myAlbum` | 移动状态、设置、扫码、分享、简介与相册 |
 | `/mobile/mobileFriends/addFriends`、`/mobile/mobileFriends/startGroupChat`、`/mobile/mobileFriends/groups` | 移动添加好友、发起群聊与好友分组 |
 | `/mobile/mobileFriends/confirmAddFriend`、`/mobile/mobileFriends/confirmAddGroup`、`/mobile/mobileFriends/friendInfo/:uid` | 移动好友确认与详情 |
-| `/mobile/confirmQRLogin`、`/mobile/myQRCode`、`/mobile/addGroupQRCode` | 二维码确认、我的二维码与加群二维码 |
+| `/mobile/confirmQRLogin`、`/mobile/mobileMy/myQRCode`、`/mobile/addGroupQRCode` | 二维码确认、我的二维码与加群二维码 |
 | `/mobile/rtcCall`、`/mobile/encryption` | 移动通话与加密设置（仅桌面端设置页的对应 Tab 不受影响） |
 
 > 已删除项：`/mobile/mobileMy/aiAssistant`（v2.4 列出但路由不存在），AI 助手在移动端无独立入口。

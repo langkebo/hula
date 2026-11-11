@@ -418,14 +418,14 @@ describe('MobileInvitePermission', () => {
 
     expect(setConfigMock).toHaveBeenCalledWith({
       mode: 'blocklist',
-      // 本页拥有的字段以当前界面状态为准
+      // 本页拥有的字段以当前界面状态为准（好友请求三项自 M6 起也归本页编辑）
       blocklist: [],
       allowlist: [],
       allowStrangers: true,
+      allowFriendRequests: true,
+      autoAcceptFriends: false,
+      requireFriendRequestMessage: true,
       // 本页不拥有的字段必须来自写前的严格重读，而不是挂载快照
-      allowFriendRequests: false,
-      autoAcceptFriends: true,
-      requireFriendRequestMessage: false,
       contacts: ['@fresh:server']
     })
   })

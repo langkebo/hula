@@ -166,7 +166,7 @@ watch(
 .hint {
   margin-top: 12px;
   padding: 8px 10px;
-  background: var(--tjg-color-warning-bg, rgba(255, 196, 0, 0.1));
+  background: var(--tjg-color-warning-bg);
   border-radius: 6px;
   font-size: 12px;
   color: var(--tjg-color-warning-600);

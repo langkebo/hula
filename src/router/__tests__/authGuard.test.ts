@@ -184,7 +184,7 @@ describe('authGuard', () => {
       shouldBypassAuth: () => true
     })
 
-    const result = await guard(createRoute('/mobile/dynamic'))
+    const result = await guard(createRoute('/mobile/space'))
 
     expect(result).toBe(true)
     expect(mockHasAuthenticatedSession).not.toHaveBeenCalled()

@@ -169,12 +169,12 @@ describe('移动端私密会话页', () => {
     expect(replaceMock).not.toHaveBeenCalled()
   })
 
-  it('移出私密按钮命中区 32px 且带无障碍标签', () => {
+  it('移出私密按钮命中区 44px 且带无障碍标签', () => {
     const wrapper = mountPage()
     const unmark = wrapper.get('[aria-label="home.secret_chat.unmark_private"]')
 
-    expect(unmark.classes()).toContain('w-32px')
+    expect(unmark.classes()).toContain('w-44px')
     // Vant 的 .van-button--mini 会设置 24px 高且后置生效，必须用 important 尺寸类压过
-    expect(unmark.classes()).toContain('!h-32px')
+    expect(unmark.classes()).toContain('!h-44px')
   })
 })

@@ -1,5 +1,5 @@
 <template>
-  <MobileLayout :safeAreaTop="shouldShowTopSafeArea" :safe-area-bottom="false">
+  <MobileLayout :safe-area-top="true" :safe-area-bottom="false">
     <div class="h-full" :class="showSidebar ? 'flex flex-row' : 'flex flex-col'">
       <!-- 横屏或展开态：TabBar 作为左侧垂直导航栏 -->
       <div v-if="showSidebar" class="flex-shrink-0 h-full">
@@ -35,12 +35,6 @@ const route = useRoute()
 const { isLandscape } = useLandscape()
 const { isExpanded } = useMobileBreakpoint()
 const showSidebar = computed(() => isLandscape.value || isExpanded.value)
-
-// 根据路由动态控制顶部安全区域
-// 当在动态页面时，关闭顶部安全区域
-const shouldShowTopSafeArea = computed(() => {
-  return route.path !== '/mobile/dynamic'
-})
 </script>
 
 <style lang="scss"></style>

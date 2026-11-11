@@ -45,6 +45,7 @@
     "add": "Add"
   },
   "refresh_notification_failed": "Failed to refresh notifications. Please try again later.",
+  "open_chat_failed": "Failed to load the conversation. Opening it directly.",
   "add_friend_success": "Friend request sent",
   "add_friend_failed": "Failed to send friend request",
   "delete_friend_title": "Delete Friend",

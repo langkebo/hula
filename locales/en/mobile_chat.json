@@ -11,6 +11,7 @@
   "voice": "Voice",
   "keyboard": "Keyboard",
   "no_data": "No data",
+  "session_load_failed": "Failed to load the conversation. Returning to the message list.",
   "chat_background": "Chat Background",
   "input_panel": {
     "video_call": "Video Call",

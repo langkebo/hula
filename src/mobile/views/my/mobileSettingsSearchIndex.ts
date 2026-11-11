@@ -11,6 +11,8 @@
  * - **内联项用 anchor**：主题/语言/字号不是独立页面，点了要滚到设置页对应分组，而不是「点了没反应」。
  * - 文案一律复用既有 i18n 键，**不新增键**（避免动 `i18n.d.ts` 与并行改动冲突）。
  */
+import { MOBILE_SETTINGS_ENCRYPTION_PATH } from './settingsRoutes'
+
 export interface MobileSettingsSearchEntry {
   /** 条目文案键 */
   labelKey: string
@@ -158,7 +160,7 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
   {
     labelKey: 'setting.encryption.title',
     groupKey: 'mobile_setting.advanced_section',
-    path: '/mobile/encryption',
+    path: MOBILE_SETTINGS_ENCRYPTION_PATH,
     keywords: ['encryption', '加密', 'e2ee', '密钥备份', '交叉签名', '设备验证', '脱水设备']
   },
   {

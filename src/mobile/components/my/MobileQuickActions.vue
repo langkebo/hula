@@ -51,7 +51,7 @@ const actions: QuickAction[] = [
     key: 'qr',
     labelKey: 'mobile_personal_info.qr_code',
     icon: 'mdi:qrcode',
-    route: '/mobile/myQRCode'
+    route: '/mobile/mobileMy/myQRCode'
   },
   {
     // 私密房会被普通会话列表整体过滤，没有独立入口就等于进不去

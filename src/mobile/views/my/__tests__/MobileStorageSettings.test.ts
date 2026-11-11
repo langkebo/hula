@@ -11,6 +11,7 @@ import MobileStorageSettings from '../MobileStorageSettings.vue'
  * 却会弹「清理成功」。假数据与假成功已随 `workerClientHandlers` 一起删除。
  * 本文件现在锁两件事：① 浏览器存储用量（真实数据）仍正常展示；② **死灰不得复燃** ——
  * 页面不得再调用 worker 的这两个方法。
+ * M9 之后「清理缓存」换成了真实删除搜索索引，入口按 `hasClearableIndex` 收敛，同样不经过 worker。
  */
 
 const getStatsMock = vi.fn()
@@ -59,6 +60,7 @@ interface Vm {
   usageText: string
   quotaText: string
   loadStats: () => Promise<void>
+  hasClearableIndex: boolean
 }
 
 const mountPage = () => mount(MobileStorageSettings)
@@ -133,10 +135,9 @@ describe('MobileStorageSettings', () => {
 
     expect(getStatsMock).not.toHaveBeenCalled()
     expect(clearStoresMock).not.toHaveBeenCalled()
-    expect('handleClear' in vmOf(wrapper)).toBe(false)
-    // 假 UI 也不应回来
-    const html = wrapper.html()
-    expect(html).not.toContain('mobile_storage.cache_section')
-    expect(html).not.toContain('mobile_storage.clear')
+    // 索引为空时清理入口应为禁用态（M9 起清理是真实删除搜索索引，不可空跑）
+    expect(vmOf(wrapper).hasClearableIndex).toBe(false)
+    // 假 UI 也不应回来（缓存命中率/清理缓存分区已删除）
+    expect(wrapper.html()).not.toContain('mobile_storage.cache_section')
   })
 })

@@ -143,7 +143,7 @@ test.describe('我的页信息架构（S1）', () => {
       ['扫一扫', '/mobile/mobileMy/scanQRCode'],
       ['文件', '/mobile/mobileMy/files'],
       ['相册', '/mobile/mobileMy/myAlbum'],
-      ['二维码', '/mobile/myQRCode']
+      ['二维码', '/mobile/mobileMy/myQRCode']
     ]
     for (const [label, path] of expected) {
       await gotoTab(page)
@@ -230,7 +230,7 @@ test.describe('我的页信息架构（S1）', () => {
       .first()
     await expect(encryptionEntry, '设置页没有「加密设置」入口').toBeVisible({ timeout: 10_000 })
     await encryptionEntry.click()
-    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/encryption')
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/mobileMy/encryption')
 
     // ── 3) 气泡样式：切「方角」必须真的写到根元素（render-message.scss 消费该属性）
     await openSettings(page)

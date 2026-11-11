@@ -310,33 +310,6 @@
   </div>
 </template>
 
-<style scoped>
-.custom-rounded {
-  border-top-left-radius: var(--tjg-radius-2xl);
-  border-top-right-radius: var(--tjg-radius-2xl);
-  overflow: hidden;
-}
-
-:deep(.van-cell.van-field) {
-  padding: 8px 12px;
-  border-radius: var(--tjg-radius-md);
-  background: var(--tjg-glass-input-bg);
-}
-
-:deep(.van-cell.van-field::after) {
-  display: none;
-}
-
-:deep(.van-collapse-item__content) {
-  padding: 0;
-}
-
-:deep(.van-tabs__nav--card) {
-  border-radius: 8px;
-  overflow: hidden;
-}
-</style>
-
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { showConfirmDialog, showFailToast, showToast } from 'vant'
@@ -469,19 +442,21 @@ const handleClick = async (id: string, type: number) => {
   useMitt.emit(MittEnum.DETAILS_SHOW, data)
 
   if (type === 1) {
-    try {
-      // 好友列表给的是**对端 uid**，先查它对应的 DM 房间号；
-      // 查不到（尚未建过会话）时退回按 uid 深链，由聊天页反查兜底。
-      const dmRoomId = chatStore.sessionList.find((item) => item.detailId === id || item.account === id)?.roomId
-      if (dmRoomId) {
-        await preloadChatRoom(dmRoomId)
-        router.push({ name: 'mobileChatMain', params: { roomId: dmRoomId } })
-      } else {
-        router.push({ name: 'mobileChatMain', params: { roomId: id } })
-      }
-    } catch (error) {
-      logger.error(String(error))
+    // 好友列表给的是**对端 uid**，先查它对应的 DM 房间号；
+    // 查不到（尚未建过会话）时退回按 uid 深链，由聊天页反查兜底。
+    const dmRoomId = chatStore.sessionList.find((item) => item.detailId === id || item.account === id)?.roomId
+    if (!dmRoomId) {
+      router.push({ name: 'mobileChatMain', params: { roomId: id } })
+      return
     }
+    try {
+      await preloadChatRoom(dmRoomId)
+    } catch (error) {
+      // 预加载只是加速手段，失败时仍要进入会话，否则用户点击毫无反馈。
+      logger.error('Failed to preload chat room, navigating without preload', error)
+      showFeedback(t('mobile_contact.open_chat_failed'), 'warning')
+    }
+    router.push({ name: 'mobileChatMain', params: { roomId: dmRoomId } })
   } else {
     router.push(`/mobile/mobileFriends/friendInfo/${id}`)
   }
@@ -587,6 +562,33 @@ const maskHandler = {
   }
 }
 </script>
+
+<style scoped>
+.custom-rounded {
+  border-top-left-radius: var(--tjg-radius-2xl);
+  border-top-right-radius: var(--tjg-radius-2xl);
+  overflow: hidden;
+}
+
+:deep(.van-cell.van-field) {
+  padding: 8px 12px;
+  border-radius: var(--tjg-radius-md);
+  background: var(--tjg-glass-input-bg);
+}
+
+:deep(.van-cell.van-field::after) {
+  display: none;
+}
+
+:deep(.van-collapse-item__content) {
+  padding: 0;
+}
+
+:deep(.van-tabs__nav--card) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+</style>
 
 <style scoped lang="scss">
 @use '@/styles/scss/mixins/liquid-glass' as *;

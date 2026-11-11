@@ -8,7 +8,7 @@ type DynamicStatusTagType = 'primary' | 'warning' | 'default'
 export interface UseDynamicDetailOptions {
   /** 渲染采样名：桌面与移动分开统计，便于分别观察首屏耗时。 */
   sampleName: string
-  /** 详情页路由前缀，例如 `/dynamic` 或 `/mobile/dynamic`。 */
+  /** 详情页路由前缀，例如 `/dynamic`。 */
   routePrefix: string
 }
 
@@ -24,8 +24,8 @@ export function getDynamicStatusTagType(status: DynamicRoadmapStatus): DynamicSt
 /**
  * 动态详情页共享逻辑：路由 id 解析、详情状态读取、渲染采样。
  *
- * 桌面 `plugins/dynamic/detail.vue` 与移动 `mobile/views/dynamic/detail.vue`
- * 只保留各自的模板与样式，状态与采样口径统一在这里维护。
+ * 桌面 `plugins/dynamic/detail.vue` 只保留自己的模板与样式，状态与采样口径统一在这里维护。
+ * （移动端同名详情页与其路由已于 2026-11-11 删除：无入口、且是空间页的复制品。）
  */
 export function useDynamicDetail({ sampleName, routePrefix }: UseDynamicDetailOptions) {
   const route = useRoute()

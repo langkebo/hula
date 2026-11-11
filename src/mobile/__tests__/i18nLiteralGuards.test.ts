@@ -30,11 +30,9 @@ describe('移动端其余用户可见页面中文字面量收口', () => {
     'src/mobile/views/SyncData.vue',
     'src/mobile/views/MobileForgetPassword.vue',
     'src/mobile/views/my/Files.vue',
-    'src/mobile/views/dynamic/detail.vue',
     'src/mobile/views/MyQRCode.vue',
     'src/mobile/views/my/MobileSettings.vue',
     'src/mobile/views/space/SpaceView.vue',
-    'src/mobile/views/dynamic/index.vue',
     'src/mobile/views/my/EditProfile.vue',
     'src/mobile/views/my/MobileSecurityKeySetup.vue',
     'src/mobile/views/my/SimpleBio.vue'
