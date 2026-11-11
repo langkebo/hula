@@ -1,14 +1,21 @@
 /**
  * Worker 服务器探测处理器
  *
- * 在登录前/诊断场景下直接通过 fetch 探测 homeserver 的协议版本、
- * 登录流程、Sliding Sync 端点、CORS 头、服务器能力等。
+ * 在登录前/诊断场景下探测 homeserver 的协议版本、登录流程、Sliding Sync 端点、
+ * CORS 头、服务器能力等。
  * 这些请求不依赖 SDK 客户端实例，在 Worker 独立线程执行以避免阻塞主线程。
+ *
+ * 传输层遵循 ADR-003「禁止 Web Worker 直接 fetch，一切 HTTP 走统一通道」：
+ * 统一走 `getRuntimeAwareFetch()`（限流/熔断/凭据省略/原生通道回退），
+ * 不再使用裸 `fetch`。
  *
  * 从 matrixSdk.worker.ts 拆分，保持原有逻辑不变。
  */
 
 import { useI18nGlobal } from '@/services/i18n'
+import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+
+const runtimeFetch = getRuntimeAwareFetch()
 
 interface GetServerVersionsPayload {
   baseUrl: string
@@ -30,7 +37,7 @@ export async function handleGetServerVersions(payload: GetServerVersionsPayload)
   if (payload.accessToken) {
     headers.Authorization = `Bearer ${payload.accessToken}`
   }
-  const response = await fetch(url, { method: 'GET', headers })
+  const response = await runtimeFetch(url, { method: 'GET', headers })
   if (!response.ok) {
     throw new Error(`getVersions HTTP ${response.status}`)
   }
@@ -60,7 +67,7 @@ export async function handleGetLoginFlows(payload: GetLoginFlowsPayload): Promis
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
   const url = `${trimmed}/_matrix/client/v3/login`
-  const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
+  const response = await runtimeFetch(url, { method: 'GET', headers: { Accept: 'application/json' } })
   if (!response.ok) {
     throw new Error(`getLoginFlows HTTP ${response.status}`)
   }
@@ -97,7 +104,7 @@ export async function handleProbeSlidingSyncEndpoints(
   return Promise.all(
     endpoints.map(async (endpoint): Promise<SlidingSyncProbeResult> => {
       try {
-        const response = await fetch(`${trimmed}${endpoint}`, {
+        const response = await runtimeFetch(`${trimmed}${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
@@ -134,7 +141,7 @@ export async function handleProbeCors(payload: ProbeCorsPayload): Promise<CorsPr
     throw new Error(useI18nGlobal().t('matrix_error.client.base_url_required'))
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
-  const response = await fetch(`${trimmed}/_matrix/client/versions`, { method: 'OPTIONS' })
+  const response = await runtimeFetch(`${trimmed}/_matrix/client/versions`, { method: 'OPTIONS' })
   return {
     'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
     'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
@@ -156,7 +163,7 @@ export async function handleGetCapabilities(payload: GetCapabilitiesPayload): Pr
   }
   const trimmed = payload.baseUrl.replace(/\/+$/, '')
   const url = `${trimmed}/_matrix/client/v3/capabilities`
-  const response = await fetch(url, {
+  const response = await runtimeFetch(url, {
     method: 'GET',
     headers: {
       Accept: 'application/json',

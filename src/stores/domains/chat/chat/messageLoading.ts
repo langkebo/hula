@@ -221,22 +221,27 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
       await getPageMsg(pageSize, roomId, '', true)
     } catch (err) {
       logger.error('[changeRoom] 无法加载消息:', err)
-      currentMessageOptions.value = {
-        isLast: false,
-        isLoading: false,
-        cursor: '',
-        hasLoadedOnce: true
+      // 房间已切换时不要覆盖新房间的加载态
+      if (globalStore.currentSessionRoomId === roomId) {
+        currentMessageOptions.value = {
+          isLast: false,
+          isLoading: false,
+          cursor: '',
+          hasLoadedOnce: true
+        }
       }
     }
 
-    logger.info(
-      `[changeRoom] 切换房间结束 window=${label} roomId=${roomId} hasLoadedOnce=${currentMessageOptions.value?.hasLoadedOnce}`
-    )
-
-    if (globalStore.currentSessionRoomId) {
-      sessionStore.markSessionRead(globalStore.currentSessionRoomId)
+    if (globalStore.currentSessionRoomId !== roomId) {
+      logger.debug(`[changeRoom] 已切换到其它房间，跳过 ${roomId} 的收尾状态写入`)
+      return
     }
 
+    logger.info(
+      `[changeRoom] 切换房间结束 window=${label} roomId=${roomId} hasLoadedOnce=${messageOptions[roomId]?.hasLoadedOnce}`
+    )
+
+    sessionStore.markSessionRead(roomId)
     currentMsgReply.value = {}
   }
 

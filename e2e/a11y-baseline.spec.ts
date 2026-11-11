@@ -128,13 +128,9 @@ test.describe('a11y baseline', () => {
         // 由于 Playwright 无法直接设置 prefers-contrast，采用 emulateMedia 方式见下
       `
     })
-    // 使用 Playwright 的 emulateMedia 设置 contrast（Chromium 116+ 支持）
-    try {
-      await contrastPage.emulateMedia({ contrast: 'more' })
-    } catch {
-      test.skip(true, 'browser does not support prefers-contrast emulation')
-      return
-    }
+    // 使用 Playwright 的 emulateMedia 设置 contrast（Chromium 116+ / Playwright 1.51+ 支持）。
+    // 不再用 try/catch 静默 skip：模拟失效应当让用例失败，而不是伪装成「环境不支持」。
+    await contrastPage.emulateMedia({ contrast: 'more' })
     await contrastPage.goto('/')
     await contrastPage.waitForLoadState('networkidle')
     const contrastBodyColor = await contrastPage.evaluate(() => {

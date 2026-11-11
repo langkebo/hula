@@ -67,7 +67,8 @@ vi.mock('@/services/backend', () => ({
   resolveMatrixEndpointConfig: resolveMatrixEndpointConfigMock,
   saveMatrixIdentityServerUrl: saveMatrixIdentityServerUrlMock,
   isValidHttpUrl: isValidHttpUrlMock,
-  isPotentialHomeserverInput: isPotentialHomeserverInputMock
+  isPotentialHomeserverInput: isPotentialHomeserverInputMock,
+  MATRIX_DEFAULT_HOMESERVER_EXAMPLE: 'http://localhost:8008'
 }))
 
 vi.mock('@/utils/Logger', () => ({

@@ -70,6 +70,9 @@ const mockPort = {
   },
   setting: {
     closeAutoLogin: vi.fn()
+  },
+  location: {
+    reset: vi.fn()
   }
 }
 
@@ -252,6 +255,8 @@ describe('MatrixRuntimeSessionService', () => {
     mockPort.emoji.prefetchEmojiToLocal.mockResolvedValue(undefined)
 
     mockPort.setting.closeAutoLogin.mockReset()
+
+    mockPort.location.reset.mockReset()
 
     mockEnsureAppStateReady.mockResolvedValue(undefined)
     mockInvoke.mockResolvedValue(undefined)

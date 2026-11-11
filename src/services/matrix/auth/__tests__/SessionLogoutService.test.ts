@@ -155,6 +155,9 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
       setupEventListeners: vi.fn().mockResolvedValue(undefined),
       loadRooms: vi.fn().mockResolvedValue(true)
     },
+    location: {
+      reset: vi.fn()
+    },
     chat: {
       getSessionList: vi.fn().mockResolvedValue(undefined),
       getSessionListValue: vi.fn().mockReturnValue([])

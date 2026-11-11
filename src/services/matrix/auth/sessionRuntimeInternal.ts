@@ -114,6 +114,9 @@ export interface SessionStorePort {
     setupEventListeners(): Promise<void>
     loadRooms(): Promise<boolean>
   }
+  location: {
+    reset(): void
+  }
   chat: {
     getSessionList(refresh: boolean): Promise<void>
     getSessionListValue(): Array<{ roomId: string }>

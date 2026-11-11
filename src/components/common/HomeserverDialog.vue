@@ -11,7 +11,7 @@
       </div>
       <div class="config-hint">
         <p>{{ t('menu.homeserver_hint') }}</p>
-        <p class="example">{{ t('menu.homeserver_example') }}: http://localhost:8008</p>
+        <p class="example">{{ t('menu.homeserver_example') }}: {{ MATRIX_DEFAULT_HOMESERVER_EXAMPLE }}</p>
       </div>
     </div>
     <template #footer>
@@ -31,6 +31,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import {
   discoverAndSaveMatrixEndpoints,
   isPotentialHomeserverInput,
+  MATRIX_DEFAULT_HOMESERVER_EXAMPLE,
   resolveMatrixEndpointConfig,
   saveMatrixIdentityServerUrl
 } from '@/services/backend'

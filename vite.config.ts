@@ -28,7 +28,25 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     }
   })
 
-  // 3. 移动端生产构建裁剪桌面专属模块
+  // 3. 路由 entry 按平台解析（dev 与 build 一致）：
+  //    移动端把平台入口替换为移动装配，桌面构建不会静态引入移动端页面，移动构建
+  //    也不会引入桌面路由；运行期不再做平台分派，因此桌面产物不含移动端路由代码。
+  //    浏览器 dev 的 ?platform=mobile 覆盖只影响布局/平台检测，不再切换路由集，
+  //    需要移动端路由请使用移动端 dev server（5210）。
+  if (!isPC) {
+    viteConfig = mergeConfig(viteConfig, {
+      resolve: {
+        alias: [
+          {
+            find: '@/router/entries/platformRoutes',
+            replacement: fileURLToPath(new URL('./src/router/entries/mobileRoutes.ts', import.meta.url))
+          }
+        ]
+      }
+    })
+  }
+
+  // 4. 移动端生产构建裁剪桌面专属模块
   //    admin / AI 功能按 R2 不得进入移动端产物：桌面路由模块只做静态替换还不够，
   //    其内部的动态 import 仍会被解析成 chunk 落进 dist。这里在解析期把整个模块
   //    换成空实现，admin 页面、AI 插件、TrendRadar 等 chunk 不再产生。
@@ -57,7 +75,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     })
   }
 
-  // 4. 让 dev 代理目标跟随 VITE_HOMESERVER_URL，支持自签名 https
+  // 5. 让 dev 代理目标跟随 VITE_HOMESERVER_URL，支持自签名 https
   //    例：VITE_HOMESERVER_URL=https://matrix.test 时，自动走代理 + 关掉 TLS 校验。
   //    Tauri 运行时由 runtimeFetch.ts 的 .test 域名白名单处理；这里只影响浏览器 dev。
   //    如果有独立代理目标（如 nginx 未启动时直连后端），用 VITE_PROXY_TARGET 覆盖。
@@ -87,7 +105,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     }
   })
 
-  // 5. 启动信息打印
+  // 6. 启动信息打印
   const host = isPC ? 'localhost' : getLocalIP() || '127.0.0.1'
   atStartup(config, mode, host)()
 

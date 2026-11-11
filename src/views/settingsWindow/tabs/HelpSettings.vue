@@ -237,10 +237,10 @@ function handleFeedback() {
 async function handleOpenLogs() {
   if (isDesktopPlatform) {
     try {
-      const { open } = await import('@tauri-apps/plugin-shell')
+      const { openPath } = await import('@tauri-apps/plugin-opener')
       const { appDataDir } = await import('@tauri-apps/api/path')
       const logPath = await appDataDir()
-      await open(logPath)
+      await openPath(logPath)
     } catch (error) {
       showFeedback(t('setting.help_about.open_logs_failed'), 'error')
     }

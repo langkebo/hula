@@ -400,13 +400,19 @@ class MatrixEventService extends BaseMatrixService {
     if (cursor) {
       // 上拉加载更早历史：用 /messages 反向分页，兼容 SlidingSync，不依赖 live timeline 窗口。
       try {
-        const before = events.length
+        // 用 eventId 差集判断新增，而不是数组长度差：live timeline 在窗口满时会裁剪尾部，
+        // 长度可能保持不变（新增 N 条 + 裁剪 N 条），长度差会被误判为 0 => 提前 isLast。
+        const beforeIds = new Set(events.map((event) => event.getId() ?? ''))
         const hasMore = await withTimeout(
           client.paginateEventTimeline(timeline, { backwards: true, limit: pageSize }),
           PAGINATE_TIMEOUT_MS
         )
         events = room.getLiveTimeline().getEvents()
-        const added = events.length - before
+        // 新加载的更早事件被 prepend 到时间线起点，向前统计不属于旧集合的前缀长度。
+        let added = 0
+        while (added < events.length && !beforeIds.has(events[added].getId() ?? '')) {
+          added += 1
+        }
         // 仅返回本次新加载的更早事件（已 prepend 到时间线起点）。
         pageEvents = added > 0 ? events.slice(0, added) : []
         // 反向分页无新增 或 已无更早历史 => 终止上拉，避免死循环。

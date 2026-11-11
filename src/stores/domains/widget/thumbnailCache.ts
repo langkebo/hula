@@ -296,7 +296,12 @@ export const useThumbnailCacheStore = defineStore(StoresEnum.THUMBNAIL_CACHE, ()
       delete statusMap.value[url]
       triggerRef(statusMap)
     }
-    waiterMap.delete(url)
+    // 先 settle 等待方再移除，否则等待该缩略图的 Promise 永不落地（调用方一直挂起）。
+    const waiters = waiterMap.get(url)
+    if (waiters?.length) {
+      waiters.forEach((resolve) => resolve(null))
+      waiterMap.delete(url)
+    }
   }
 
   const getStatus = (url: string) => statusMap.value[url]

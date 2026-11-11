@@ -128,6 +128,16 @@ export const leftHook = () => {
     useMitt.emit(MittEnum.OPEN_EDIT_INFO)
   }
 
+  /** 工作台分区路由（/home 的子路由）：深链进入时保持当前路由，仅同步侧边栏高亮 */
+  const isWorkbenchRoute = computed(() => route.matched[0]?.path === '/home')
+
+  /** 路由首段 → 侧边栏菜单 url（friend 路由对应 friendsList 菜单项） */
+  const activeUrlFromRoute = (path: string) => {
+    const segment = path.split('/')[1] ?? ''
+    if (!segment) return activeUrl.value
+    return segment === 'friend' ? 'friendsList' : segment
+  }
+
   /**
    * 侧边栏部分跳转窗口路由事件
    * @param url 跳转的路由
@@ -194,8 +204,12 @@ export const leftHook = () => {
   }
 
   onMounted(async () => {
-    /** 页面加载的时候默认显示消息列表（设置页内嵌 LeftNav 时不跳转） */
-    if (route.path !== '/settings') {
+    // 深链直接落在工作台分区（/message、/room、/space、/friend 等）时以当前路由为准：
+    // 旧逻辑会在挂载时强制跳回默认页，导致刷新或深链被劫持到 /message。
+    if (isWorkbenchRoute.value) {
+      activeUrl.value = activeUrlFromRoute(route.path)
+    } else if (route.path !== '/settings') {
+      /** 页面加载的时候默认显示消息列表（设置页内嵌 LeftNav 时不跳转） */
       pageJumps(activeUrl.value)
     }
     window.addEventListener('click', closeMenu, true)

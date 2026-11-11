@@ -34,9 +34,6 @@
                   <van-tag v-if="device.isVerified && !isCurrentDevice(device.deviceId)" type="success" size="medium">
                     {{ t('mobile_devices.verified') }}
                   </van-tag>
-                  <van-tag v-if="device.isBlocked" type="danger" size="medium">
-                    {{ t('mobile_devices.blocked') }}
-                  </van-tag>
                 </div>
               </template>
             </van-cell>
@@ -84,73 +81,36 @@ import { Icon } from '@iconify/vue'
 import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type DeviceTrustInfo, useDeviceTrust } from '@/composables/encryption/useDeviceTrust'
+import { type DeviceSessionInfo, useDeviceSessions } from '@/composables/encryption/useDeviceSessions'
+import { useDeviceTrust } from '@/composables/encryption/useDeviceTrust'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DeviceManagement')
 
 const { t } = useI18n()
 
-// Use the unified device trust composable (keys/query based)
-const { loading, devices: trustDevices, loadDevices: loadTrustDevices, trustDevice, untrustDevice } = useDeviceTrust()
+// 设备列表与写操作统一由 useDeviceSessions 提供（与加密设置页共用）
+const {
+  loading,
+  devices,
+  currentDeviceId,
+  userId: currentUserId,
+  otherDevices,
+  isCurrentDevice,
+  loadDevices: loadDeviceSessions,
+  deleteDevice,
+  deleteDevices,
+  renameDevice
+} = useDeviceSessions()
+// 信任/取消信任仍走设备信任 composable
+const { trustDevice, untrustDevice } = useDeviceTrust()
 
-const currentDeviceId = ref<string>('')
-/** `GET /devices` 的会话列表：登录设备的**权威来源** */
-const sessions = ref<
-  Array<{
-    deviceId: string
-    displayName?: string | undefined
-    lastSeenTs?: number | undefined
-    lastSeenIp?: string | undefined
-  }>
->([])
-/** `GET /devices` 行有两种形状：REST 原始（snake_case）与测试/适配层（camelCase） */
-interface DeviceSessionRecord {
-  device_id?: string
-  display_name?: string
-  last_seen_ts?: number
-  last_seen_ip?: string
-  deviceId?: string
-  displayName?: string
-  lastSeenTs?: number
-  lastSeenIp?: string
-}
-const currentUserId = ref('')
 const showDeviceActionSheet = ref(false)
-const selectedDevice = ref<DeviceTrustInfo | null>(null)
+const selectedDevice = ref<DeviceSessionInfo | null>(null)
 const showRenameDialog = ref(false)
 const renameInput = ref('')
-
-/**
- * 列表来源：`GET /devices`（会话）+ `keys/query`（信任状态）合并。
- *
- * 历史缺陷：整页只吃 `keys/query`（`useDeviceTrust`）。而 `keys/query` 只返回**上传过
- * device_keys 的设备** —— 刚登录、crypto 尚未初始化的设备（包括本机）根本不在里面，
- * 于是「登录设备」页经常是空的，用户既看不到自己这台，也改不了名字。
- *
- * `GET /devices` 才是「我这账号有哪些登录会话」的权威端点（含本机、含 last_seen），
- * 所以以它为行集合，`keys/query` 只用来补「是否已验证」。
- */
-const devices = computed<DeviceTrustInfo[]>(() => {
-  const trustById = new Map(trustDevices.value.map((d) => [d.deviceId, d]))
-  return sessions.value.map((session) => {
-    const trust = trustById.get(session.deviceId)
-    return {
-      deviceId: session.deviceId,
-      userId: currentUserId.value,
-      displayName: session.displayName ?? trust?.displayName,
-      lastSeenTs: session.lastSeenTs ?? trust?.lastSeenTs,
-      lastSeenIp: session.lastSeenIp ?? trust?.lastSeenIp,
-      isVerified: trust?.isVerified ?? false,
-      isCrossSigningVerified: trust?.isCrossSigningVerified ?? false,
-      isBlocked: false
-    }
-  })
-})
 
 /**
  * 操作面板项。
@@ -200,67 +160,29 @@ const deviceActions = computed<DeviceAction[]>(() => {
   return actions
 })
 
-/** 其他设备（用于「安全操作」分区的显示与计数） */
-const otherDevices = computed(() => devices.value.filter((d) => !isCurrentDevice(d.deviceId)))
-
 onMounted(async () => {
   await loadDevices()
 })
+
 async function loadDevices() {
-  try {
-    currentDeviceId.value = matrixDeviceService.getCurrentDeviceId() || ''
-    const userId = matrixClientService.getUserId() || ''
-    currentUserId.value = userId
-
-    // 两条数据源并行：会话列表（权威行集合）+ 信任状态（可能因 crypto 未就绪而为空）
-    const [sessionsResult] = await Promise.all([
-      matrixDeviceService.getDevices().catch((error) => {
-        logger.warn('GET /devices failed, falling back to known devices only', error)
-        return []
-      }),
-      userId
-        ? loadTrustDevices(userId).catch((error) => {
-            logger.warn('keys/query failed, device list will lack verification status', error)
-          })
-        : Promise.resolve()
-    ])
-
-    sessions.value = sessionsResult
-      .map((raw) => {
-        // 兼容两种形状：REST 原始（snake_case）与测试/适配层（camelCase）
-        const source = raw as DeviceSessionRecord
-        const deviceId = (source.device_id ?? source.deviceId) as string | undefined
-        if (!deviceId) return null
-        return {
-          deviceId,
-          displayName: (source.display_name ?? source.displayName) as string | undefined,
-          lastSeenTs: (source.last_seen_ts ?? source.lastSeenTs) as number | undefined,
-          lastSeenIp: (source.last_seen_ip ?? source.lastSeenIp) as string | undefined
-        }
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null)
-  } catch (error) {
-    logger.error('Failed to load devices', error)
+  const loaded = await loadDeviceSessions()
+  if (!loaded) {
     showToast({ type: 'fail', message: t('mobile_devices.load_failed') })
   }
-}
-
-function isCurrentDevice(deviceId: string): boolean {
-  return deviceId === currentDeviceId.value
 }
 
 /**
  * 设备图标。
  *
  * 历史缺陷：原实现把 `lastSeenIp`（一个 IP 地址）当作 User-Agent 字符串去匹配
- * `mobile`/`ipad`，恒不命中而永远返回笔记本图标。`DeviceTrustInfo` 当前没有
- * UA 字段（`keys/query` 不返回），因此这里返回中性图标而不是臆测设备类型。
+ * `mobile`/`ipad`，恒不命中而永远返回笔记本图标。设备会话没有 UA 字段，
+ * 因此这里返回中性图标而不是臆测设备类型。
  */
 function getDeviceIcon(): string {
   return 'mdi:devices'
 }
 
-function formatDeviceLabel(device: DeviceTrustInfo): string {
+function formatDeviceLabel(device: DeviceSessionInfo): string {
   const parts: string[] = []
   if (device.lastSeenIp) {
     parts.push(device.lastSeenIp)
@@ -273,7 +195,7 @@ function formatDeviceLabel(device: DeviceTrustInfo): string {
 }
 
 /** 打开某台设备的操作面板（替代原先非法的多语句内联表达式） */
-function openDeviceActions(device: DeviceTrustInfo): void {
+function openDeviceActions(device: DeviceSessionInfo): void {
   selectedDevice.value = device
   showDeviceActionSheet.value = true
 }
@@ -282,7 +204,7 @@ function openDeviceActions(device: DeviceTrustInfo): void {
 async function handleActionSelect(action: { name: string }) {
   if (!selectedDevice.value) return
   const device = selectedDevice.value
-  const userId = device.userId
+  const userId = currentUserId.value
   const deviceId = device.deviceId
 
   try {
@@ -294,6 +216,7 @@ async function handleActionSelect(action: { name: string }) {
         })
         await trustDevice(userId, deviceId)
         showToast(t('mobile_devices.trust_success'))
+        await loadDevices()
         break
       case 'untrust':
         await showConfirmDialog({
@@ -302,6 +225,7 @@ async function handleActionSelect(action: { name: string }) {
         })
         await untrustDevice(userId, deviceId)
         showToast(t('mobile_devices.untrust_success'))
+        await loadDevices()
         break
       case 'rename':
         renameInput.value = device.displayName || ''
@@ -314,9 +238,8 @@ async function handleActionSelect(action: { name: string }) {
             name: device.displayName || t('mobile_devices.unnamed_device')
           })
         })
-        await matrixDeviceService.deleteDevice(deviceId)
+        await deleteDevice(deviceId)
         showToast(t('mobile_devices.logout_success'))
-        await loadDevices()
         break
       case 'block':
       case 'unblock':
@@ -343,10 +266,9 @@ async function handleRenameConfirm(): Promise<void> {
     return
   }
   try {
-    await matrixDeviceService.updateDevice(device.deviceId, name)
+    await renameDevice(device.deviceId, name)
     showToast(t('mobile_devices.rename_success'))
     showRenameDialog.value = false
-    await loadDevices()
   } catch (error) {
     logger.error('Failed to rename device', error)
     showToast({ type: 'fail', message: t('mobile_devices.rename_failed') })
@@ -367,9 +289,8 @@ async function handleLogoutOtherDevices(): Promise<void> {
       confirmButtonText: t('mobile_devices.logout_other_confirm.confirm'),
       cancelButtonText: t('mobile_devices.logout_other_confirm.cancel')
     })
-    await matrixDeviceService.deleteDevices(others.map((d) => d.deviceId))
+    await deleteDevices(others.map((d) => d.deviceId))
     showToast(t('mobile_devices.logout_other_success'))
-    await loadDevices()
   } catch (error) {
     if (error !== 'cancel') {
       logger.error('Failed to log out other devices', error)

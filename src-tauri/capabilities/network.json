@@ -61,16 +61,16 @@
           "url": "https://matrix.test:**"
         },
         {
-          "url": "https://localhost:**"
+          "url": "https://localhost:8008"
         },
         {
-          "url": "http://localhost:**"
+          "url": "http://localhost:8008"
         },
         {
-          "url": "https://127.0.0.1:**"
+          "url": "https://127.0.0.1:8008"
         },
         {
-          "url": "http://127.0.0.1:**"
+          "url": "http://127.0.0.1:8008"
         }
       ]
     }

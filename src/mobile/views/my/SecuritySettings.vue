@@ -54,7 +54,7 @@
               :title="t('mobile_security.key_backup')"
               :label="keyBackupStatus"
               is-link
-              @click="showBackupDialog = true">
+              @click="showSecureBackup = true">
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
@@ -193,25 +193,6 @@
             :placeholder="t('mobile_security.confirm_password_placeholder')" />
         </div>
       </van-dialog>
-
-      <van-dialog
-        v-model:show="showBackupDialog"
-        :title="t('mobile_security.key_backup')"
-        show-cancel-button
-        :confirm-button-text="t('mobile_security.confirm')"
-        :cancel-button-text="t('mobile_security.cancel')"
-        @confirm="handleSetupBackup">
-        <div class="p-16px">
-          <div class="text-14px text-[var(--tjg-text-secondary)] mb-12px">
-            {{ t('mobile_security.backup_description') }}
-          </div>
-          <van-field
-            v-model="backupPassphrase"
-            type="password"
-            :label="t('mobile_security.backup_passphrase')"
-            :placeholder="t('mobile_security.backup_passphrase_placeholder')" />
-        </div>
-      </van-dialog>
     </template>
   </AutoFixHeightPage>
 </template>
@@ -225,6 +206,7 @@ import { useRouter } from 'vue-router'
 import MobileDeviceVerifyDialog from '#/components/encryption/MobileDeviceVerifyDialog.vue'
 import MobileSecureBackupDialog from '#/components/encryption/MobileSecureBackupDialog.vue'
 import MobilePrivateChatSection from '#/components/settings/MobilePrivateChatSection.vue'
+import { useKeyExport } from '@/composables/encryption/useKeyExport'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
@@ -249,7 +231,6 @@ const crossSigningEnabled = ref(false)
 const keyBackupEnabled = ref(false)
 
 const showPasswordDialog = ref(false)
-const showBackupDialog = ref(false)
 
 const passwordForm = ref({
   oldPassword: '',
@@ -257,11 +238,10 @@ const passwordForm = ref({
   confirmPassword: ''
 })
 
-const backupPassphrase = ref('')
-
 const matrixStore = useMatrixStore()
 const showDeviceVerify = ref(false)
 const showSecureBackup = ref(false)
+const { exportKeys } = useKeyExport()
 const currentUserId = computed(() => matrixStore.userId ?? '')
 const currentDeviceId = computed(() => matrixStore.deviceId ?? '')
 function onDeviceVerified() {
@@ -347,39 +327,6 @@ async function handleChangePassword() {
   }
 }
 
-async function handleSetupBackup() {
-  if (!backupPassphrase.value) {
-    showToast({
-      type: 'fail',
-      message: t('mobile_security.passphrase_required')
-    })
-    return
-  }
-
-  try {
-    showLoadingToast({
-      message: t('mobile_security.setting_up_backup'),
-      forbidClick: true
-    })
-
-    await matrixCryptoService.setupKeyBackup(backupPassphrase.value)
-
-    showToast({
-      type: 'success',
-      message: t('mobile_security.backup_setup_success')
-    })
-
-    backupPassphrase.value = ''
-    await loadSecurityInfo()
-  } catch (error) {
-    logger.error('Failed to set up key backup', error)
-    showToast({
-      type: 'fail',
-      message: t('mobile_security.backup_setup_failed')
-    })
-  }
-}
-
 async function handleExportKeys() {
   try {
     await showConfirmDialog({
@@ -394,18 +341,9 @@ async function handleExportKeys() {
       forbidClick: true
     })
 
-    const keysJson = await matrixCryptoService.exportKeys('')
+    // 导出实现与桌面端共用 useKeyExport，只有文件名保留移动端格式
+    const keysJson = await exportKeys(`tjg-keys-${new Date().toISOString().slice(0, 10)}.json`)
     if (keysJson) {
-      const blob = new Blob([keysJson], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `tjg-keys-${new Date().toISOString().slice(0, 10)}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
       showToast({
         type: 'success',
         message: t('mobile_security.export_keys_success')

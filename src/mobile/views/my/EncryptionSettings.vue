@@ -47,17 +47,17 @@
               @load="loadDevices">
               <van-cell
                 v-for="device in devices"
-                :key="device.device_id"
-                :title="device.display_name || device.device_id"
-                :label="device.device_id"
+                :key="device.deviceId"
+                :title="device.displayName || device.deviceId"
+                :label="device.deviceId"
                 is-link
                 @click="handleDeviceClick(device)">
                 <template #value>
                   <div class="device-tags">
-                    <van-tag v-if="device.device_id === currentDeviceId" type="primary" size="medium">
+                    <van-tag v-if="device.deviceId === currentDeviceId" type="primary" size="medium">
                       {{ t('setting.encryption.current') }}
                     </van-tag>
-                    <van-tag v-if="device.verified" type="success" size="medium">
+                    <van-tag v-if="device.isVerified" type="success" size="medium">
                       {{ t('setting.encryption.verified') }}
                     </van-tag>
                   </div>
@@ -90,12 +90,6 @@
             :label="t('setting.encryption.restore_backup_desc')"
             is-link
             @click="handleRestoreBackup" />
-        </van-cell-group>
-
-        <!-- Key backup dialog entry -->
-        <van-cell-group :title="t('encryption.backup.title')" inset>
-          <van-cell :title="t('encryption.keyBackup.setup')" is-link @click="showKeyBackupSetup = true" />
-          <van-cell :title="t('encryption.keyBackup.restore')" is-link @click="showKeyBackupRestore = true" />
         </van-cell-group>
 
         <!-- 脱水设备管理 -->
@@ -152,15 +146,11 @@
             :title="t('setting.encryption.never_send_unencrypted')"
             :label="t('setting.encryption.never_send_unencrypted_desc')">
             <template #right-icon>
-              <van-switch v-model="neverSendUnencrypted" size="20px" />
-            </template>
-          </van-cell>
-
-          <van-cell
-            :title="t('setting.encryption.show_encryption_warnings')"
-            :label="t('setting.encryption.show_encryption_warnings_desc')">
-            <template #right-icon>
-              <van-switch v-model="showEncryptionWarnings" size="20px" />
+              <van-switch
+                :model-value="strictEnabled"
+                :disabled="!encryptionEnabled"
+                size="20px"
+                @update:model-value="setStrictEnabled" />
             </template>
           </van-cell>
         </van-cell-group>
@@ -169,24 +159,24 @@
       <!-- 设备详情弹出层 -->
       <van-action-sheet
         v-model:show="showDeviceSheet"
-        :title="(selectedDevice?.display_name || selectedDevice?.device_id) ?? ''">
+        :title="(selectedDevice?.displayName || selectedDevice?.deviceId) ?? ''">
         <div class="device-detail">
           <van-cell-group>
             <van-cell
               :title="t('setting.encryption.device_id')"
-              v-bind="selectedDevice?.device_id !== undefined ? { value: selectedDevice.device_id } : {}" />
+              v-bind="selectedDevice?.deviceId !== undefined ? { value: selectedDevice.deviceId } : {}" />
             <van-cell
-              v-if="selectedDevice?.last_seen_ts"
+              v-if="selectedDevice?.lastSeenTs"
               :title="t('setting.encryption.last_seen')"
-              :value="formatLastSeen(selectedDevice.last_seen_ts)" />
+              :value="formatLastSeen(selectedDevice.lastSeenTs)" />
           </van-cell-group>
 
           <div class="device-actions">
-            <van-button v-if="!selectedDevice?.verified" type="primary" block @click="handleVerifyDevice">
+            <van-button v-if="!selectedDevice?.isVerified" type="primary" block @click="handleVerifyDevice">
               {{ t('setting.encryption.verify') }}
             </van-button>
             <van-button
-              v-if="selectedDevice?.device_id !== currentDeviceId"
+              v-if="selectedDevice?.deviceId !== currentDeviceId"
               type="danger"
               block
               @click="handleDeleteDevice">
@@ -196,27 +186,10 @@
         </div>
       </van-action-sheet>
 
-      <van-dialog
-        v-model:show="showRestoreDialog"
-        :title="t('setting.encryption.restore_backup')"
-        show-cancel-button
-        @confirm="handleRestoreConfirm">
-        <div class="p-16px">
-          <div class="text-14px text-[--tjg-text-secondary] mb-12px">
-            {{ t('setting.encryption.restore_backup_desc') }}
-          </div>
-          <van-field
-            v-model="recoveryKey"
-            type="textarea"
-            rows="3"
-            :placeholder="t('setting.encryption.recovery_key_placeholder')" />
-        </div>
-      </van-dialog>
-
-      <!-- Key backup dialog components -->
+      <!-- 密钥备份流程统一走共享弹窗（useKeyBackupFlow），页面不再直连备份服务 -->
       <MobileKeyBackupDialog v-model="showKeyBackupSetup" mode="setup" @complete="onKeyBackupComplete" />
       <MobileKeyBackupDialog v-model="showKeyBackupRestore" mode="restore" @complete="onKeyBackupComplete" />
-      <MobileDehydratedDeviceDialog v-model:show="showDehydratedDevice" @complete="loadEncryptionStatus()" />
+      <MobileDehydratedDeviceDialog v-model:show="showDehydratedDevice" @complete="loadOverview()" />
       <MobileDeviceTrustManager v-model:show="showDeviceTrustManager" @complete="loadDevices()" />
     </template>
   </AutoFixHeightPage>
@@ -229,44 +202,54 @@ import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { type DeviceSessionInfo, useDeviceSessions } from '@/composables/encryption/useDeviceSessions'
+import { useEncryptionOverview } from '@/composables/encryption/useEncryptionOverview'
+import { useGlobalStrictMode } from '@/composables/encryption/useGlobalStrictMode'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileDehydratedDeviceDialog from '@/mobile/components/encryption/MobileDehydratedDeviceDialog.vue'
 import MobileDeviceTrustManager from '@/mobile/components/encryption/MobileDeviceTrustManager.vue'
 import MobileKeyBackupDialog from '@/mobile/components/encryption/MobileKeyBackupDialog.vue'
-import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
-import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
-import { matrixVerificationService } from '@/services/matrix/crypto/MatrixVerificationService'
-import type { Device } from '@/services/matrix/user/MatrixDeviceService'
-import { matrixDeviceService } from '@/services/matrix/user/MatrixDeviceService'
 import { MOBILE_SETTINGS_SECURITY_KEY_PATH } from './settingsRoutes'
 
 const { t } = useI18n()
 const router = useRouter()
 
-const loading = ref(false)
 const refreshing = ref(false)
 const finished = ref(false)
-const devices = ref<Device[]>([])
-const currentDeviceId = ref<string | null>(null)
-const encryptionEnabled = ref(true)
-const deviceVerified = ref(false)
-const backupEnabled = ref(false)
-const neverSendUnencrypted = ref(false)
-const showEncryptionWarnings = ref(true)
+// 设备列表与验证状态统一由 useDeviceSessions 提供（与登录设备页共用同一份实现）
+const {
+  loading,
+  devices,
+  currentDeviceId,
+  loadDevices: loadDeviceSessions,
+  deleteDevice: removeDevice,
+  startVerification
+} = useDeviceSessions()
+// 加密总览状态统一由 useEncryptionOverview 提供（与桌面端共用 store 数据与刷新副作用）
+const {
+  encryptionEnabled,
+  deviceVerified,
+  backupEnabled,
+  backupVersion,
+  crossSigningSetup: crossSigningConfigured,
+  loadOverview,
+  refreshBackup
+} = useEncryptionOverview()
+// 严格模式（不向未验证设备发送消息）与桌面端共用同一份偏好与施加逻辑
+const { enabled: strictEnabled, setEnabled: setStrictEnabled } = useGlobalStrictMode()
 const showDeviceSheet = ref(false)
-const selectedDevice = ref<Device | null>(null)
+const selectedDevice = ref<DeviceSessionInfo | null>(null)
 // MobileKeyBackupDialog state
 const showKeyBackupSetup = ref(false)
 const showKeyBackupRestore = ref(false)
 const showDehydratedDevice = ref(false)
 // Cross-signing state
-const crossSigningConfigured = ref(false)
 const showCrossSigningSetup = ref(false)
 // Device trust manager
 const showDeviceTrustManager = ref(false)
 function onKeyBackupComplete() {
-  loadBackupStatus()
+  refreshBackup()
 }
 
 const encryptionStatusText = computed(() => {
@@ -287,61 +270,21 @@ const formatLastSeen = (timestamp: number) => {
   return dayjs(timestamp).fromNow()
 }
 
-const loadEncryptionStatus = async () => {
-  try {
-    const { userId, deviceId, isCryptoEnabled } = matrixEncryptionContextService.getCurrentSessionContext()
-    encryptionEnabled.value = isCryptoEnabled
-
-    if (isCryptoEnabled && userId && deviceId) {
-      deviceVerified.value = await matrixVerificationService.isDeviceVerified(userId, deviceId)
-    }
-  } catch {
-    encryptionEnabled.value = false
-  }
-}
-
-const loadBackupStatus = async () => {
-  try {
-    const versions = await matrixKeyBackupService.getBackupVersions()
-    backupEnabled.value = versions.length > 0
-  } catch {
-    backupEnabled.value = false
-  }
-}
-
 const loadDevices = async () => {
-  try {
-    loading.value = true
-    currentDeviceId.value = matrixDeviceService.getCurrentDeviceId()
-    const deviceList = await matrixDeviceService.getDevices()
-    devices.value = deviceList
-    finished.value = true
-
-    const { userId } = matrixEncryptionContextService.getCurrentSessionContext()
-    if (userId) {
-      for (const device of devices.value) {
-        try {
-          device.verified = await matrixVerificationService.isDeviceVerified(userId, device.device_id)
-        } catch {
-          device.verified = false
-        }
-      }
-    }
-  } catch (error) {
+  const loaded = await loadDeviceSessions()
+  finished.value = true
+  if (!loaded) {
     showToast(t('setting.encryption.load_devices_failed'))
-  } finally {
-    loading.value = false
-    refreshing.value = false
   }
 }
 
-const onRefresh = () => {
+const onRefresh = async () => {
   finished.value = false
-  devices.value = []
-  loadDevices()
+  await loadDevices()
+  refreshing.value = false
 }
 
-const handleDeviceClick = (device: Device) => {
+const handleDeviceClick = (device: DeviceSessionInfo) => {
   selectedDevice.value = device
   showDeviceSheet.value = true
 }
@@ -349,11 +292,8 @@ const handleDeviceClick = (device: Device) => {
 const handleVerifyDevice = async () => {
   if (!selectedDevice.value) return
 
-  const { userId } = matrixEncryptionContextService.getCurrentSessionContext()
-  if (!userId) return
-
   try {
-    const transactionId = await matrixVerificationService.startSasVerification(userId, selectedDevice.value.device_id)
+    const transactionId = await startVerification(selectedDevice.value.deviceId)
     showToast(t('mobile_devices.verification_started', { transactionId }))
   } catch (error) {
     showToast(t('setting.encryption.verify_device_todo'))
@@ -370,10 +310,9 @@ const handleDeleteDevice = async () => {
       message: t('setting.encryption.delete_device_confirm')
     })
 
-    await matrixDeviceService.deleteDevice(selectedDevice.value.device_id)
+    await removeDevice(selectedDevice.value.deviceId)
     showToast(t('setting.encryption.delete_device_success'))
     showDeviceSheet.value = false
-    onRefresh()
   } catch (error) {
     if (error !== 'cancel') {
       showToast(t('setting.encryption.delete_device_failed'))
@@ -381,69 +320,28 @@ const handleDeleteDevice = async () => {
   }
 }
 
-const handleBackupClick = async () => {
+const handleBackupClick = () => {
   if (backupEnabled.value) {
-    try {
-      const versions = await matrixKeyBackupService.getBackupVersions()
-      if (versions.length > 0) {
-        showToast(`${t('setting.encryption.manage_backup')}: v${versions[0].version}`)
-      }
-    } catch {
-      showToast(t('setting.encryption.manage_backup_todo'))
-    }
-  } else {
-    try {
-      // 直接使用 SDK 的真实 API：生成备份密钥 → 存入 SSSS → 创建备份版本 → 启用引擎。
-      // 历史缺陷：调用不存在的 prepareKeyBackupVersion，恒为 null，必然走「已禁用」分支。
-      const ready = await matrixEncryptionContextService.ensureKeyBackupVersion()
-      if (!ready) {
-        showToast(t('setting.encryption.disabled'))
-        return
-      }
-
-      showToast(t('setting.encryption.setup_backup'))
-      await loadBackupStatus()
-    } catch {
-      showToast(t('setting.encryption.setup_backup_todo'))
-    }
-  }
-}
-
-const showRestoreDialog = ref(false)
-const recoveryKey = ref('')
-
-const handleRestoreBackup = () => {
-  showRestoreDialog.value = true
-}
-
-const handleRestoreConfirm = async () => {
-  if (!recoveryKey.value.trim()) {
-    showToast(t('setting.encryption.recovery_key_required'))
+    showToast(
+      backupVersion.value
+        ? `${t('setting.encryption.manage_backup')}: v${backupVersion.value}`
+        : t('setting.encryption.manage_backup_todo')
+    )
     return
   }
-
-  try {
-    const versions = await matrixKeyBackupService.getBackupVersions()
-    if (versions.length === 0) {
-      showToast(t('setting.encryption.no_backup_found'))
-      return
-    }
-
-    const latestVersion = versions[versions.length - 1]
-    await matrixKeyBackupService.recoverKeys(latestVersion.version)
-
-    showToast(t('setting.encryption.restore_backup_success'))
-    showRestoreDialog.value = false
-    recoveryKey.value = ''
-    await loadBackupStatus()
-  } catch (error) {
-    showToast(t('setting.encryption.restore_backup_failed'))
-  }
+  // 设置流程统一由 MobileKeyBackupDialog（useKeyBackupFlow）承担
+  showKeyBackupSetup.value = true
 }
+
+const handleRestoreBackup = () => {
+  // 恢复流程统一由 MobileKeyBackupDialog（useKeyBackupFlow）读取恢复密钥并恢复
+  showKeyBackupRestore.value = true
+}
+
 onMounted(() => {
   loadDevices()
-  loadEncryptionStatus()
-  loadBackupStatus()
+  // 加密开关、设备验证、备份与交叉签名状态由 store 统一刷新
+  loadOverview()
 })
 </script>
 

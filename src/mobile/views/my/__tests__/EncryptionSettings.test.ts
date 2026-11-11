@@ -1,27 +1,34 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import EncryptionSettings from '../EncryptionSettings.vue'
+
+const { applyGlobalStrictMock } = vi.hoisted(() => ({
+  applyGlobalStrictMock: vi.fn(() => true)
+}))
+
+// 严格模式开关依赖 crypto 适配器；这里隔离 SDK 边界，只验证偏好与施加调用
+vi.mock('@/services/matrix/crypto/strictDevicePolicy', () => ({
+  applyGlobalStrict: applyGlobalStrictMock
+}))
 
 const {
   getCurrentSessionContextMock,
-  ensureKeyBackupVersionMock,
   getCurrentDeviceIdMock,
   getDevicesMock,
   deleteDeviceMock,
   getBackupVersionsMock,
-  createBackupVersionMock,
   isDeviceVerifiedMock,
   startSasVerificationMock,
   showToastMock,
   showConfirmDialogMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
-  ensureKeyBackupVersionMock: vi.fn(),
   getCurrentDeviceIdMock: vi.fn(),
   getDevicesMock: vi.fn(),
   deleteDeviceMock: vi.fn(),
   getBackupVersionsMock: vi.fn(),
-  createBackupVersionMock: vi.fn(),
   isDeviceVerifiedMock: vi.fn(),
   startSasVerificationMock: vi.fn(),
   showToastMock: vi.fn(),
@@ -147,8 +154,7 @@ vi.mock('@/router', () => ({
 
 vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
   matrixEncryptionContextService: {
-    getCurrentSessionContext: getCurrentSessionContextMock,
-    ensureKeyBackupVersion: ensureKeyBackupVersionMock
+    getCurrentSessionContext: getCurrentSessionContextMock
   }
 }))
 
@@ -162,8 +168,7 @@ vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
 
 vi.mock('@/services/matrix/crypto/MatrixKeyBackupService', () => ({
   matrixKeyBackupService: {
-    getBackupVersions: getBackupVersionsMock,
-    createBackupVersion: createBackupVersionMock
+    getBackupVersions: getBackupVersionsMock
   }
 }))
 
@@ -174,16 +179,76 @@ vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
   }
 }))
 
+// 加密总览状态改为由 encryption store 提供（useEncryptionOverview 读取它）：
+// 这里用契约等价的 store 替身，保留真实 store 的失败降级语义。
+vi.mock('@/stores/domains/settings/encryption', async () => {
+  const { reactive } = await import('vue')
+  const store = reactive({
+    encryptionEnabled: false,
+    deviceVerified: false,
+    backupEnabled: false,
+    backupVersion: '',
+    crossSigningSetup: false,
+    needsRotation: false,
+    e2eeFullySetup: false,
+    loading: false,
+    async loadEncryptionStatus() {
+      try {
+        const { isCryptoEnabled } = getCurrentSessionContextMock()
+        store.encryptionEnabled = isCryptoEnabled
+        if (!isCryptoEnabled) {
+          store.backupEnabled = false
+          store.crossSigningSetup = false
+          return
+        }
+        try {
+          const versions = await getBackupVersionsMock()
+          store.backupEnabled = versions.length > 0
+          store.backupVersion = versions.at(-1)?.version ?? ''
+        } catch {
+          store.backupEnabled = false
+        }
+        store.crossSigningSetup = true
+      } catch {
+        store.encryptionEnabled = false
+        store.backupEnabled = false
+      }
+    },
+    async loadDeviceVerification() {
+      try {
+        const { userId, deviceId } = getCurrentSessionContextMock()
+        if (userId && deviceId) {
+          store.deviceVerified = await isDeviceVerifiedMock(userId, deviceId)
+        }
+      } catch {
+        store.deviceVerified = false
+      }
+    },
+    async loadBackupStatus() {
+      try {
+        const versions = await getBackupVersionsMock()
+        store.backupEnabled = versions.length > 0
+        store.backupVersion = versions.at(-1)?.version ?? ''
+      } catch {
+        store.backupEnabled = false
+      }
+    }
+  })
+  return { useEncryptionStore: () => store }
+})
+
 describe('Mobile EncryptionSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // 组件通过 useGlobalStrictMode 读取 setting store，需要激活 Pinia
+    setActivePinia(createPinia())
+    localStorage.clear()
 
     getCurrentSessionContextMock.mockReturnValue({
       userId: '@alice:example.com',
       deviceId: 'CURRENT_DEVICE',
       isCryptoEnabled: true
     })
-    ensureKeyBackupVersionMock.mockResolvedValue(true)
     getCurrentDeviceIdMock.mockReturnValue('CURRENT_DEVICE')
     getDevicesMock.mockResolvedValue([
       { device_id: 'CURRENT_DEVICE', display_name: 'Current Device' },
@@ -191,11 +256,6 @@ describe('Mobile EncryptionSettings', () => {
     ])
     deleteDeviceMock.mockResolvedValue(undefined)
     getBackupVersionsMock.mockResolvedValue([{ version: '1', algorithm: 'm.megolm.backup.v1', auth_data: {} }])
-    createBackupVersionMock.mockResolvedValue({
-      version: '1',
-      algorithm: 'm.megolm.backup.v1',
-      auth_data: {}
-    })
     isDeviceVerifiedMock.mockImplementation(async (_userId: string, deviceId: string) => deviceId === 'CURRENT_DEVICE')
     startSasVerificationMock.mockResolvedValue('txn-123')
     showConfirmDialogMock.mockResolvedValue(undefined)
@@ -249,8 +309,8 @@ describe('Mobile EncryptionSettings', () => {
     expect((wrapper.vm as any).backupEnabled).toBe(true)
     expect((wrapper.vm as any).currentDeviceId).toBe('CURRENT_DEVICE')
     expect((wrapper.vm as any).devices).toHaveLength(2)
-    expect((wrapper.vm as any).devices[0].verified).toBe(true)
-    expect((wrapper.vm as any).devices[1].verified).toBe(false)
+    expect((wrapper.vm as any).devices[0].isVerified).toBe(true)
+    expect((wrapper.vm as any).devices[1].isVerified).toBe(false)
     expect((wrapper.vm as any).encryptionStatusText).toBe('setting.encryption.encryption_enabled_desc')
     expect((wrapper.vm as any).backupStatusText).toBe('setting.encryption.backup_enabled_desc')
     expect(wrapper.text()).toContain('setting.encryption.encryption_enabled_desc')
@@ -279,50 +339,45 @@ describe('Mobile EncryptionSettings', () => {
     expect((wrapper.vm as any).showDeviceSheet).toBe(false)
   })
 
-  it('支持创建和查看密钥备份，并提供恢复提示', async () => {
-    getBackupVersionsMock.mockResolvedValueOnce([])
+  it('密钥备份入口统一打开共享备份弹窗，并在已启用时提示当前版本', async () => {
     const wrapper = mountComponent()
 
     await flushPromises()
-    ;(wrapper.vm as any).backupEnabled = false
-
     const vm = wrapper.vm as any
-    await vm.handleBackupClick()
-    ;(wrapper.vm as any).backupEnabled = true
-    await vm.handleBackupClick()
-    ;(wrapper.vm as any).handleRestoreBackup()
 
-    expect(ensureKeyBackupVersionMock).toHaveBeenCalled()
-    // 新实现直接使用 SDK resetKeyBackup，不再手工 createBackupVersion
-    expect(createBackupVersionMock).not.toHaveBeenCalled()
-    expect(showToastMock).toHaveBeenCalledWith('setting.encryption.setup_backup')
+    ;(wrapper.vm as any).backupEnabled = false
+    vm.handleBackupClick()
+    expect((wrapper.vm as any).showKeyBackupSetup).toBe(true)
+
+    ;(wrapper.vm as any).showKeyBackupSetup = false
+    ;(wrapper.vm as any).backupEnabled = true
+    ;(wrapper.vm as any).backupVersion = '1'
+    vm.handleBackupClick()
     expect(showToastMock).toHaveBeenCalledWith('setting.encryption.manage_backup: v1')
-    expect((wrapper.vm as any).showRestoreDialog).toBe(true)
+
+    vm.handleRestoreBackup()
+    expect((wrapper.vm as any).showKeyBackupRestore).toBe(true)
   })
 
-  it('在加密不可用或操作失败时走降级提示', async () => {
+  it('在加密不可用或设备加载失败时走降级提示', async () => {
     getCurrentSessionContextMock.mockReturnValue({
       userId: null,
       deviceId: null,
       isCryptoEnabled: false
     })
-    ensureKeyBackupVersionMock.mockResolvedValue(false)
     getDevicesMock.mockRejectedValue(new Error('load failed'))
 
     const wrapper = mountComponent()
 
     await flushPromises()
-    ;(wrapper.vm as any).backupEnabled = false
     const vm = wrapper.vm as any
-    await vm.handleBackupClick()
-    ;(wrapper.vm as any).selectedDevice = { device_id: 'DEVICE_X' }
+    ;(wrapper.vm as any).selectedDevice = { deviceId: 'DEVICE_X', isVerified: false }
     await vm.handleVerifyDevice()
     ;(wrapper.vm as any).onRefresh()
     await flushPromises()
 
     expect((wrapper.vm as any).encryptionEnabled).toBe(false)
     expect(showToastMock).toHaveBeenCalledWith('setting.encryption.load_devices_failed')
-    expect(showToastMock).toHaveBeenCalledWith('setting.encryption.disabled')
     expect((wrapper.vm as any).devices).toEqual([])
   })
 
@@ -350,7 +405,7 @@ describe('Mobile EncryptionSettings', () => {
     const wrapper = mountComponent()
 
     await flushPromises()
-    expect((wrapper.vm as any).devices.every((item: any) => item.verified === false)).toBe(true)
+    expect((wrapper.vm as any).devices.every((item: any) => item.isVerified === false)).toBe(true)
 
     ;(wrapper.vm as any).handleDeviceClick((wrapper.vm as any).devices[1])
     const vm = wrapper.vm as any
@@ -361,26 +416,21 @@ describe('Mobile EncryptionSettings', () => {
     expect(showToastMock).toHaveBeenCalledWith('setting.encryption.delete_device_failed')
   })
 
-  it('在删除取消和备份异常时按预期处理', async () => {
+  it('在删除取消和备份管理缺省时按预期处理', async () => {
     const wrapper = mountComponent()
 
     await flushPromises()
-    ;(wrapper.vm as any).selectedDevice = { device_id: 'OTHER_DEVICE' }
+    ;(wrapper.vm as any).selectedDevice = { deviceId: 'OTHER_DEVICE', isVerified: false }
     showConfirmDialogMock.mockRejectedValueOnce('cancel')
     const vm = wrapper.vm as any
     await vm.handleDeleteDevice()
 
     ;(wrapper.vm as any).backupEnabled = true
-    getBackupVersionsMock.mockRejectedValueOnce(new Error('manage failed'))
-    await vm.handleBackupClick()
-
-    ;(wrapper.vm as any).backupEnabled = false
-    ensureKeyBackupVersionMock.mockRejectedValueOnce(new Error('ensure failed'))
-    await vm.handleBackupClick()
+    ;(wrapper.vm as any).backupVersion = ''
+    vm.handleBackupClick()
 
     expect(showToastMock).not.toHaveBeenCalledWith('setting.encryption.delete_device_failed')
     expect(showToastMock).toHaveBeenCalledWith('setting.encryption.manage_backup_todo')
-    expect(showToastMock).toHaveBeenCalledWith('setting.encryption.setup_backup_todo')
   })
 
   it('当前设备已验证时隐藏设备操作按钮', async () => {
@@ -388,14 +438,37 @@ describe('Mobile EncryptionSettings', () => {
 
     await flushPromises()
     ;(wrapper.vm as any).handleDeviceClick({
-      device_id: 'CURRENT_DEVICE',
-      display_name: 'Current Device',
-      verified: true
+      deviceId: 'CURRENT_DEVICE',
+      displayName: 'Current Device',
+      isVerified: true
     })
     await flushPromises()
 
     expect(wrapper.text()).toContain('Current Device')
     expect(wrapper.text()).not.toContain('setting.encryption.verify')
     expect(wrapper.text()).not.toContain('common.delete')
+  })
+
+  it('严格模式开关与桌面端共用同一份偏好并施加到 SDK', async () => {
+    const wrapper = mountComponent()
+
+    await flushPromises()
+
+    const vm = wrapper.vm as any
+    expect(vm.strictEnabled).toBe(false)
+
+    vm.setStrictEnabled(true)
+    await flushPromises()
+
+    expect(useSettingStore().blockUnverifiedDevicesEnabled).toBe(true)
+    expect(applyGlobalStrictMock).toHaveBeenCalledWith(true)
+    expect(vm.strictEnabled).toBe(true)
+
+    vm.setStrictEnabled(false)
+    await flushPromises()
+
+    expect(useSettingStore().blockUnverifiedDevicesEnabled).toBe(false)
+    expect(applyGlobalStrictMock).toHaveBeenLastCalledWith(false)
+    expect(vm.strictEnabled).toBe(false)
   })
 })

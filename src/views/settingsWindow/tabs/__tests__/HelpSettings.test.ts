@@ -9,7 +9,8 @@ const messageErrorMock = vi.fn()
 const messageInfoMock = vi.fn()
 const getVersionMock = vi.fn()
 const getTauriVersionMock = vi.fn()
-const openShellMock = vi.fn()
+const openUrlMock = vi.fn()
+const openPathMock = vi.fn()
 const appDataDirMock = vi.fn()
 
 let isDesktopPlatformMock = false
@@ -133,8 +134,9 @@ vi.mock('@tauri-apps/api/app', () => ({
   getTauriVersion: (...args: unknown[]) => getTauriVersionMock(...args)
 }))
 
-vi.mock('@tauri-apps/plugin-shell', () => ({
-  open: (...args: unknown[]) => openShellMock(...args)
+vi.mock('@tauri-apps/plugin-opener', () => ({
+  openUrl: (...args: unknown[]) => openUrlMock(...args),
+  openPath: (...args: unknown[]) => openPathMock(...args)
 }))
 
 vi.mock('@tauri-apps/api/path', () => ({
@@ -167,7 +169,8 @@ describe('HelpSettings', () => {
     getVersionMock.mockResolvedValue('9.9.9')
     getTauriVersionMock.mockResolvedValue('2.1.0')
     appDataDirMock.mockResolvedValue('/tmp/hula')
-    openShellMock.mockResolvedValue(undefined)
+    openUrlMock.mockResolvedValue(undefined)
+    openPathMock.mockResolvedValue(undefined)
 
     vi.stubGlobal('open', openWindowMock)
   })
@@ -224,9 +227,9 @@ describe('HelpSettings', () => {
     vm.handleDownloadUpdate()
     vm.handleFeedback()
 
-    expect(openShellMock).toHaveBeenNthCalledWith(1, 'https://matrix.org')
-    expect(openShellMock).toHaveBeenNthCalledWith(2, 'https://github.com/nichuanfang/nichuanfang.github.io/releases')
-    expect(openShellMock).toHaveBeenNthCalledWith(3, 'https://github.com/nichuanfang/nichuanfang.github.io/issues')
+    expect(openUrlMock).toHaveBeenNthCalledWith(1, 'https://matrix.org')
+    expect(openUrlMock).toHaveBeenNthCalledWith(2, 'https://github.com/nichuanfang/nichuanfang.github.io/releases')
+    expect(openUrlMock).toHaveBeenNthCalledWith(3, 'https://github.com/nichuanfang/nichuanfang.github.io/issues')
     expect(openWindowMock).not.toHaveBeenCalled()
   })
 
@@ -249,12 +252,12 @@ describe('HelpSettings', () => {
     await vm.handleOpenLogs()
 
     expect(appDataDirMock).toHaveBeenCalledTimes(1)
-    expect(openShellMock).toHaveBeenCalledWith('/tmp/hula')
+    expect(openPathMock).toHaveBeenCalledWith('/tmp/hula')
   })
 
   it('shows error when opening logs fails on desktop', async () => {
     isDesktopPlatformMock = true
-    openShellMock.mockRejectedValueOnce(new Error('boom'))
+    openPathMock.mockRejectedValueOnce(new Error('boom'))
 
     const wrapper = mount(HelpSettings)
     await flushPromises()

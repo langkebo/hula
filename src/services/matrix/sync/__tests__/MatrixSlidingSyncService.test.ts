@@ -174,4 +174,29 @@ describe('MatrixSlidingSyncService', () => {
 
     expect(matrixClientService.subscribeRoomForSync).not.toHaveBeenCalled()
   })
+
+  it('retries subscribing when the previous attempt throws', async () => {
+    vi.mocked(matrixClientService.getRoom).mockReturnValue(null)
+    vi.mocked(matrixClientService.subscribeRoomForSync).mockImplementationOnce(() => {
+      throw new Error('subscribe failed')
+    })
+
+    let roomDataCallback: (...args: unknown[]) => void = () => {}
+    const syncInstance = {
+      on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+        if (event === SlidingSyncEvent.RoomData) {
+          roomDataCallback = cb
+        }
+      }),
+      off: vi.fn()
+    }
+
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as unknown as SlidingSync)
+    await matrixSlidingSyncService.initialize()
+
+    roomDataCallback('!retry-room:example.com', {})
+    roomDataCallback('!retry-room:example.com', {})
+
+    expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledTimes(2)
+  })
 })

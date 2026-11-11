@@ -1,6 +1,9 @@
 /**
- * matrix-js-sdk 类型扩展
- * 提供官方 SDK 缺失的类型定义
+ * matrix-js-sdk 类型再导出入口
+ *
+ * 本文件只做「从 SDK 顶层再导出」，不声明任何新类型：
+ * - 需要给 SDK 补声明时 → src/types/matrix-js-sdk-augmentations.d.ts（唯一 augmentation 归属）
+ * - 需要 tjg 自有扩展类型时 → src/types/matrix-extensions.d.ts（唯一独立类型归属）
  */
 /// <reference types="vite/client" />
 

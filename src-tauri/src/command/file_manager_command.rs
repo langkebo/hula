@@ -95,7 +95,9 @@ pub async fn query_files(
     };
 
     // 查询数据库
-    let db = state.db_conn.read().await;
+    // DatabaseConnection 内部是 Arc，克隆后立即释放读锁：整个查询期间（含多次 await）
+    // 持有读锁会阻塞账号切换/写入侧拿写锁。
+    let db = state.db_conn.read().await.clone();
     let messages = match param.navigation_type.as_str() {
         "myFiles" => {
             // 查询所有房间的文件

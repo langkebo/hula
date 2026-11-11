@@ -104,27 +104,59 @@ async function persist(userId: string | null, roomIds: Set<string>): Promise<voi
   writeCache(userId, roomIds)
 }
 
+/**
+ * 串行化登记表写入：mark/unmark 都是「读快照 → await 网络 → 写回」，
+ * 并发执行时后完成的调用会用陈旧快照覆盖先完成的结果（丢失一次标记）。
+ * 用一条 Promise 链把变更排队，保证每次读到的都是上一次写入后的状态。
+ */
+let mutationChain: Promise<void> = Promise.resolve()
+
+function enqueueMutation<T>(task: () => Promise<T>): Promise<T> {
+  const result = mutationChain.then(task, task)
+  mutationChain = result.then(
+    () => undefined,
+    () => undefined
+  )
+  return result
+}
+
 /** 标记房间为私密；已标记则幂等返回。 */
 export async function markRoomPrivate(roomId: string): Promise<void> {
-  ensureLoaded()
-  if (cachedRoomIds.has(roomId)) return
-  const next = new Set(cachedRoomIds).add(roomId)
-  await persist(cachedUserId, next)
-  cachedRoomIds = next
-  bumpVersion()
-  logger.info(`房间已标记为私密: ${roomId}`)
+  return enqueueMutation(async () => {
+    ensureLoaded()
+    const userId = cachedUserId
+    if (cachedRoomIds.has(roomId)) return
+    const next = new Set(cachedRoomIds).add(roomId)
+    await persist(userId, next)
+    // await 期间可能已切换账号/重载登记表：只在账号未变时写回内存态，
+    // 否则会用旧账号快照覆盖新账号的缓存。
+    if (cachedUserId !== userId) {
+      logger.warn(`账号已切换，丢弃过期的私密标记结果: ${roomId}`)
+      return
+    }
+    cachedRoomIds = next
+    bumpVersion()
+    logger.info(`房间已标记为私密: ${roomId}`)
+  })
 }
 
 /** 取消私密标记；未标记则幂等返回。 */
 export async function unmarkRoomPrivate(roomId: string): Promise<void> {
-  ensureLoaded()
-  if (!cachedRoomIds.has(roomId)) return
-  const next = new Set(cachedRoomIds)
-  next.delete(roomId)
-  await persist(cachedUserId, next)
-  cachedRoomIds = next
-  bumpVersion()
-  logger.info(`房间已取消私密标记: ${roomId}`)
+  return enqueueMutation(async () => {
+    ensureLoaded()
+    const userId = cachedUserId
+    if (!cachedRoomIds.has(roomId)) return
+    const next = new Set(cachedRoomIds)
+    next.delete(roomId)
+    await persist(userId, next)
+    if (cachedUserId !== userId) {
+      logger.warn(`账号已切换，丢弃过期的私密标记结果: ${roomId}`)
+      return
+    }
+    cachedRoomIds = next
+    bumpVersion()
+    logger.info(`房间已取消私密标记: ${roomId}`)
+  })
 }
 
 /**

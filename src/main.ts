@@ -16,9 +16,11 @@ import vSlide from '@/directives/v-slide.ts'
 import router from '@/router'
 import { setupI18n } from '@/services/i18n'
 import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
+import { registerPrivacyPreferenceHooks } from '@/services/matrix/privacyPreferences'
 import { pinia } from '@/stores'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import { useGlassEffectStore } from '@/stores/domains/settings/glassEffect'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { errorTracker } from '@/utils/ErrorTracker'
 import { initializePlatform, isIOS, isMobile } from '@/utils/PlatformConstants'
@@ -126,6 +128,13 @@ window.__TJG_PINIA_READY__ = true
 // Register capability store resolver to break circular dependency
 // (must be called after pinia is installed)
 registerCapabilityStoreResolver(() => useCapabilityStore())
+
+// 注入隐私偏好读取器，打破 service → setting store 的循环依赖
+// （MatrixTypingService / MatrixPresenceService 不再直接 import Pinia）
+registerPrivacyPreferenceHooks({
+  isSendTypingNotificationsEnabled: () => useSettingStore(pinia).sendTypingNotificationsEnabled,
+  isShowOnlineStatusEnabled: () => useSettingStore(pinia).showOnlineStatusEnabled
+})
 performance.mark('tjg-plugin-install-end')
 
 performance.mark('tjg-mount-start')

@@ -1,6 +1,7 @@
 use crate::common::cmd_error::cmd_error_with_detail;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::time::Duration;
 use tauri::async_runtime::JoinHandle;
 use tauri::{AppHandle, Emitter, Runtime, State};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -9,6 +10,9 @@ use tokio::net::TcpListener;
 /// OAuth `state` 参数的最小/最大长度。
 const MIN_STATE_LEN: usize = 16;
 const MAX_STATE_LEN: usize = 128;
+
+/// 回调监听的存活上限：用户放弃登录后，监听任务必须自行退出，不能永久占着端口 accept。
+const CALLBACK_TIMEOUT: Duration = Duration::from_secs(300);
 
 /// 定义状态以管理 OAuth 服务器任务
 pub struct OauthServerState {
@@ -64,6 +68,27 @@ const SUCCESS_BODY: &str = "<div style='display:flex;flex-direction:column;align
 const INVALID_STATE_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>Authorization check failed</h1><p>The state parameter is missing or does not match. Please start the login again.</p></div>";
 const MISSING_CODE_BODY: &str = "<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;'><h1>Authorization failed</h1><p>The callback is missing the authorization code.</p></div>";
 
+/// 校验回调请求的 `Host` 头是否指向本机回环地址。
+///
+/// 固定端口 + 无 Host 校验时，攻击者可用 DNS rebinding 让自己的域名解析到 127.0.0.1，
+/// 从而在其页面里读取授权码。只接受 localhost / 127.0.0.1 / [::1]（可带端口）。
+fn host_header_is_loopback(request: &str) -> bool {
+    request
+        .lines()
+        .find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            name.eq_ignore_ascii_case("host")
+                .then(|| value.trim().to_ascii_lowercase())
+        })
+        .is_some_and(|host| {
+            host == "localhost"
+                || host.starts_with("localhost:")
+                || host == "127.0.0.1"
+                || host.starts_with("127.0.0.1:")
+                || host.starts_with("[::1]")
+        })
+}
+
 #[tauri::command]
 pub async fn start_oauth_server<R: Runtime>(
     app: AppHandle<R>,
@@ -105,10 +130,16 @@ pub async fn start_oauth_server<R: Runtime>(
 
     // 3. 启动新任务
     let handle = tauri::async_runtime::spawn(async move {
-        // 一次性消费：首次成功回调后，任何后续请求（含重复 state）都被拒绝，
-        // 防止同一授权码被重放。
+        // 一次性消费：首次成功回调后立刻停止监听，防止同一授权码被重放，
+        // 也避免用户放弃登录后监听任务永久占着端口。
         let mut consumed = false;
-        while let Ok((mut stream, _)) = listener.accept().await {
+        let deadline = tokio::time::Instant::now() + CALLBACK_TIMEOUT;
+        loop {
+            let Ok(Ok((mut stream, _))) =
+                tokio::time::timeout_at(deadline, listener.accept()).await
+            else {
+                break;
+            };
             let mut buffer = [0; 1024];
             let Ok(n) = stream.read(&mut buffer).await else {
                 continue;
@@ -116,7 +147,10 @@ pub async fn start_oauth_server<R: Runtime>(
             let request = String::from_utf8_lossy(&buffer[..n]);
             let params = request_query_params(&request);
 
-            let state_matches = !consumed
+            // Host 不是回环地址时一律拒绝，阻断 DNS rebinding 读取授权码。
+            let host_trusted = host_header_is_loopback(&request);
+            let state_matches = host_trusted
+                && !consumed
                 && params
                     .get("state")
                     .is_some_and(|value| value == &expected_state);
@@ -147,6 +181,10 @@ pub async fn start_oauth_server<R: Runtime>(
             );
             let _ = stream.write_all(response.as_bytes()).await;
             let _ = stream.flush().await;
+
+            if consumed {
+                break;
+            }
         }
     });
 

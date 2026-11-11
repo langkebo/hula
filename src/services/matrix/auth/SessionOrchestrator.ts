@@ -13,6 +13,7 @@ import { pinia } from '@/stores'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useLocationStore } from '@/stores/domains/chat/location'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -40,6 +41,7 @@ export function createSessionStorePort(): SessionStorePort {
   const roomStore = () => useRoomStore(pinia)
   const chatStore = () => useChatStore(pinia)
   const groupStore = () => useGroupStore(pinia)
+  const locationStore = () => useLocationStore(pinia)
   const loginHistoryStore = () => useLoginHistoriesStore(pinia)
   const emojiStore = () => useEmojiStore(pinia)
   const settingStore = () => useSettingStore(pinia)
@@ -153,6 +155,11 @@ export function createSessionStorePort(): SessionStorePort {
       },
       loadRooms() {
         return roomStore().loadRooms()
+      }
+    },
+    location: {
+      reset() {
+        locationStore().reset()
       }
     },
     chat: {

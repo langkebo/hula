@@ -1967,7 +1967,6 @@ export type I18nKeys = {
     "loading": "加载中",
     "notice": "公告",
     "feature_in_development": "此功能有待开发中，请联系开发者",
-    "shared_screen_stream": "共享屏幕视频流",
     "chat": "聊天"
   },
   "components": {
@@ -2223,7 +2222,6 @@ export type I18nKeys = {
   },
   "encryption": {
     "backup": {
-      "title": "密钥备份",
       "recovery_key_desc": "恢复密钥用于在丢失设备或更换设备时恢复加密密钥。请妥善保存。",
       "copy_key": "复制密钥",
       "download_key": "下载密钥",
@@ -2259,8 +2257,6 @@ export type I18nKeys = {
       "minutes": "{minutes}分钟"
     },
     "keyBackup": {
-      "setup": "设置密钥备份",
-      "restore": "恢复密钥备份",
       "setupTitle": "设置密钥备份",
       "restoreTitle": "恢复密钥备份",
       "setupComplete": "密钥备份已设置成功。",
@@ -2650,6 +2646,8 @@ export type I18nKeys = {
       "file_manager_nav_unsupported": "不支持的文件导航类型",
       "directory_not_found": "目录不存在: {detail}",
       "directory_path_not_dir": "路径不是目录: {detail}",
+      "directory_path_not_allowed": "路径不在允许访问的目录范围内: {detail}",
+      "asset_path_not_allowed": "资源路径不在允许访问的范围内: {detail}",
       "directory_scan_timeout": "目录扫描超时，请稍后重试",
       "directory_scan_cancelled": "目录扫描已取消",
       "directory_disk_not_found": "无法找到目录所在的磁盘",
@@ -6707,19 +6705,14 @@ export type I18nKeys = {
       "settings": "加密设置",
       "never_send_unencrypted": "从不发送未加密消息",
       "never_send_unencrypted_desc": "如果对方设备不支持加密，则不发送消息",
-      "show_encryption_warnings": "显示加密警告",
-      "show_encryption_warnings_desc": "当发生加密问题时显示警告提示",
       "load_devices_failed": "加载设备列表失败",
       "verify_device_todo": "设备验证功能开发中",
       "delete_device_success": "设备已删除",
       "delete_device_failed": "删除设备失败",
       "delete_device_confirm": "确定要删除该设备吗？",
-      "setup_backup_todo": "密钥备份功能开发中",
       "manage_backup_todo": "密钥备份管理功能开发中",
       "recovery_key_required": "请输入恢复密钥",
       "recovery_key_placeholder": "请输入恢复密钥",
-      "no_backup_found": "未找到备份",
-      "restore_backup_success": "密钥恢复成功",
       "restore_backup_failed": "密钥恢复失败",
       "key_section": "加密密钥",
       "key_status_title": "加密密钥状态",
@@ -9211,7 +9204,6 @@ export type I18nKeyPaths =
   | "common.loading"
   | "common.notice"
   | "common.feature_in_development"
-  | "common.shared_screen_stream"
   | "common.chat"
   | "components.common.confirm"
   | "components.common.cancel"
@@ -9388,7 +9380,6 @@ export type I18nKeyPaths =
   | "emoticon.packs.uninstall_failed"
   | "emoticon.packs.uninstall_success"
   | "emoticon.packs.upload_failed"
-  | "encryption.backup.title"
   | "encryption.backup.recovery_key_desc"
   | "encryption.backup.copy_key"
   | "encryption.backup.download_key"
@@ -9418,8 +9409,6 @@ export type I18nKeyPaths =
   | "encryption.room_settings.enable_failed"
   | "encryption.room_settings.days_hours"
   | "encryption.room_settings.minutes"
-  | "encryption.keyBackup.setup"
-  | "encryption.keyBackup.restore"
   | "encryption.keyBackup.setupTitle"
   | "encryption.keyBackup.restoreTitle"
   | "encryption.keyBackup.setupComplete"
@@ -9783,6 +9772,8 @@ export type I18nKeyPaths =
   | "error.cmd.file_manager_nav_unsupported"
   | "error.cmd.directory_not_found"
   | "error.cmd.directory_path_not_dir"
+  | "error.cmd.directory_path_not_allowed"
+  | "error.cmd.asset_path_not_allowed"
   | "error.cmd.directory_scan_timeout"
   | "error.cmd.directory_scan_cancelled"
   | "error.cmd.directory_disk_not_found"
@@ -12883,19 +12874,14 @@ export type I18nKeyPaths =
   | "setting.encryption.settings"
   | "setting.encryption.never_send_unencrypted"
   | "setting.encryption.never_send_unencrypted_desc"
-  | "setting.encryption.show_encryption_warnings"
-  | "setting.encryption.show_encryption_warnings_desc"
   | "setting.encryption.load_devices_failed"
   | "setting.encryption.verify_device_todo"
   | "setting.encryption.delete_device_success"
   | "setting.encryption.delete_device_failed"
   | "setting.encryption.delete_device_confirm"
-  | "setting.encryption.setup_backup_todo"
   | "setting.encryption.manage_backup_todo"
   | "setting.encryption.recovery_key_required"
   | "setting.encryption.recovery_key_placeholder"
-  | "setting.encryption.no_backup_found"
-  | "setting.encryption.restore_backup_success"
   | "setting.encryption.restore_backup_failed"
   | "setting.encryption.key_section"
   | "setting.encryption.key_status_title"

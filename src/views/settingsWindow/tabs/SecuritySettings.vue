@@ -51,7 +51,7 @@ import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDial
 import InvitePermissionPanel from '@/components/settings/InvitePermissionPanel.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
-import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
+import { useKeyExport } from '@/composables/encryption/useKeyExport'
 import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
@@ -77,7 +77,8 @@ const showBackupDialog = ref(false)
 const showSecurityKeyDialog = ref(false)
 const showSecureBackupDialog = ref(false)
 const backupLoading = ref(false)
-const exportLoading = ref(false)
+// 导出实现由 useKeyExport 统一提供（与移动端共用），这里只保留加载态
+const { isExporting: exportLoading, exportKeys } = useKeyExport()
 const hasBackup = ref(false)
 const backupInfo = ref<{ version: string | null; count: number } | null>(null)
 
@@ -124,34 +125,23 @@ async function handleBackupSuccess() {
   showFeedback(t('setting.security.backup_setup_success'), 'success')
 }
 
-// 导出恢复密钥：通过 cryptoSDKAdapter 导出 keys JSON 并下载
+// 导出恢复密钥：SDK 导出与下载细节统一在 useKeyExport（与移动端共用实现）
 async function handleExportKey() {
   if (!encryptionEnabled.value) {
     showFeedback(t('setting.security.enable_encryption_first'), 'warning')
     return
   }
 
-  exportLoading.value = true
   try {
-    const keysResult = await cryptoSDKAdapter.exportKeys()
-    const keysJson = keysResult.data
-
-    const blob = new Blob([keysJson], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `tjg-keys-backup-${Date.now()}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-
+    const keysJson = await exportKeys(`tjg-keys-backup-${Date.now()}.json`)
+    if (!keysJson) {
+      showFeedback(t('setting.security.export_key_failed'), 'error')
+      return
+    }
     showFeedback(t('setting.security.keys_exported'), 'success')
   } catch (error) {
     logger.error('Failed to export recovery key', error)
     showFeedback(t('setting.security.export_key_failed'), 'error')
-  } finally {
-    exportLoading.value = false
   }
 }
 </script>

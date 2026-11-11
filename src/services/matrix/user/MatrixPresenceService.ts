@@ -7,8 +7,8 @@
 
 import type { MatrixClient } from 'matrix-js-sdk'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
+import { isShowOnlineStatusEnabled } from '@/services/matrix/privacyPreferences'
 import type { IPresenceEvent } from '@/services/matrix/sdk'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 import { unknownToObject } from '@/utils/typeGuard'
 import { recordSentPresence, resolveOutgoingPresence } from '@/utils/userStatus'
@@ -143,7 +143,7 @@ class MatrixPresenceService extends BaseMatrixService {
     // 门控后实际上报值可能不同于意图，失败日志里同时给出两者便于定位
     let effective: PresenceState = presence
     try {
-      effective = resolveOutgoingPresence(presence, useSettingStore().showOnlineStatusEnabled)
+      effective = resolveOutgoingPresence(presence, isShowOnlineStatusEnabled())
       const client = this.getClient()
       const presenceManager = client.getPresenceManager()
       const userId = client.getUserId()

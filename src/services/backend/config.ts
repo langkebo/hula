@@ -15,21 +15,22 @@ export {
 }
 
 /**
- * 本机开发兜底 homeserver 地址（M-3）。
+ * 本机 homeserver 示例地址（M-3），也是 dev 环境兜底默认值的唯一来源。
  *
- * 仅当构建期未注入 `VITE_HOMESERVER_URL` 且处于 dev 时才使用；
+ * 全仓（含 UI 示例文案、旧值迁移白名单）一律引用该常量，避免同一地址多处硬编码漂移。
+ * 仅当构建期未注入 `VITE_HOMESERVER_URL` 且处于 dev 时才作为默认值；
  * 生产包不再静默回退到 localhost，避免缺省配置下误连本机地址。
  */
-const LOCAL_DEV_HOMESERVER_URL = 'http://localhost:8008'
+export const MATRIX_DEFAULT_HOMESERVER_EXAMPLE = 'http://localhost:8008'
 
 /** 默认 homeserver 地址：优先构建期注入的环境变量。 */
 export const DEFAULT_MATRIX_HOMESERVER_URL =
-  import.meta.env.VITE_HOMESERVER_URL || (import.meta.env.DEV ? LOCAL_DEV_HOMESERVER_URL : '')
+  import.meta.env.VITE_HOMESERVER_URL || (import.meta.env.DEV ? MATRIX_DEFAULT_HOMESERVER_EXAMPLE : '')
 export const DEFAULT_MATRIX_IDENTITY_SERVER_URL = ''
 const MATRIX_DEV_PROXY_PORT = '6130'
 const MATRIX_DEV_PROXY_TARGET_PORT = '8008'
 const LEGACY_LOCAL_MATRIX_HOMESERVER_URLS = new Set([
-  'http://localhost:8008',
+  MATRIX_DEFAULT_HOMESERVER_EXAMPLE,
   'http://127.0.0.1:8008',
   'http://localhost:28008',
   'http://127.0.0.1:28008',

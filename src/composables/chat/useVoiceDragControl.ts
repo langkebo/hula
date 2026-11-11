@@ -248,11 +248,20 @@ export const useVoiceDragControl = (
     }
   }
 
+  /** 已绑定监听器的 canvas，cleanup 时需要一并解绑，避免旧元素持续触发拖拽。 */
+  let boundCanvas: HTMLCanvasElement | null = null
+
   /**
    * 绑定Canvas元素的拖拽事件
    * @param canvas Canvas元素
    */
   const bindDragEvents = (canvas: HTMLCanvasElement) => {
+    // 重复绑定前先解绑旧元素，避免同一 handler 挂在多个 canvas 上。
+    if (boundCanvas && boundCanvas !== canvas) {
+      boundCanvas.removeEventListener('mousedown', handleDragStart)
+      boundCanvas.removeEventListener('touchstart', handleDragStart)
+    }
+    boundCanvas = canvas
     canvas.addEventListener('mousedown', handleDragStart)
     canvas.addEventListener('touchstart', handleDragStart)
   }
@@ -261,6 +270,13 @@ export const useVoiceDragControl = (
    * 清理资源和事件监听器
    */
   const cleanup = () => {
+    // 解绑 canvas 监听器，避免已被销毁的 canvas 仍持有 handler 重复触发。
+    if (boundCanvas) {
+      boundCanvas.removeEventListener('mousedown', handleDragStart)
+      boundCanvas.removeEventListener('touchstart', handleDragStart)
+      boundCanvas = null
+    }
+
     // 清理全局事件监听器
     document.removeEventListener('mousemove', handleDragMove)
     document.removeEventListener('mouseup', handleDragEnd)

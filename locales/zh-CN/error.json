@@ -30,6 +30,8 @@
     "file_manager_nav_unsupported": "不支持的文件导航类型",
     "directory_not_found": "目录不存在: {detail}",
     "directory_path_not_dir": "路径不是目录: {detail}",
+    "directory_path_not_allowed": "路径不在允许访问的目录范围内: {detail}",
+    "asset_path_not_allowed": "资源路径不在允许访问的范围内: {detail}",
     "directory_scan_timeout": "目录扫描超时，请稍后重试",
     "directory_scan_cancelled": "目录扫描已取消",
     "directory_disk_not_found": "无法找到目录所在的磁盘",

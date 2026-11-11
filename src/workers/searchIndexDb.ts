@@ -1,9 +1,10 @@
 import { createLogger } from '@/utils/Logger'
+import { SEARCH_INDEX_DB_NAME } from '@/utils/storageKeys'
 import type { SearchEventDoc, SearchRoomDoc } from './matrixWorkerTypes'
 
 const logger = createLogger('SearchIndexDB')
 
-const DB_NAME = 'tjg-worker-cache'
+const DB_NAME = SEARCH_INDEX_DB_NAME
 const DB_VERSION = 1
 const ROOMS_STORE = 'search-rooms'
 const EVENTS_STORE = 'search-events'
@@ -50,10 +51,30 @@ function openDB(): Promise<IDBDatabase> {
     }
 
     request.onsuccess = (event) => {
-      resolve((event.target as IDBOpenDBRequest).result)
+      const db = (event.target as IDBOpenDBRequest).result
+
+      // 其它上下文触发版本升级/删除时主动断开，并清空单例以便重新打开，
+      // 否则后续所有事务都会在已关闭的连接上失败且永远不再重试。
+      db.onversionchange = () => {
+        db.close()
+        dbPromise = null
+        logger.warn('Search index DB version changed, closing connection')
+      }
+
+      db.onclose = () => {
+        dbPromise = null
+      }
+
+      resolve(db)
+    }
+
+    request.onblocked = () => {
+      logger.warn('Search index DB open is blocked by another context')
     }
 
     request.onerror = (event) => {
+      // 失败时清空单例，避免 rejected Promise 被永久缓存
+      dbPromise = null
       logger.error('Failed to open IndexedDB', (event.target as IDBOpenDBRequest).error)
       reject((event.target as IDBOpenDBRequest).error)
     }
@@ -65,6 +86,32 @@ function openDB(): Promise<IDBDatabase> {
 async function getStore(storeName: string, mode: IDBTransactionMode): Promise<IDBObjectStore> {
   const db = await openDB()
   return db.transaction(storeName, mode).objectStore(storeName)
+}
+
+/**
+ * 在写事务中执行操作，并等待事务真正 complete。
+ * `getStore(...).delete()` 只是把请求排入队列，事务未完成时函数就返回了：
+ * 登出清库/删房间这类调用方会误以为已落盘，随后立刻关闭连接或退出就会丢写。
+ */
+function runWriteTransaction(
+  storeNames: string | string[],
+  operation: (transaction: IDBTransaction) => void
+): Promise<void> {
+  return openDB().then(
+    (db) =>
+      new Promise<void>((resolve, reject) => {
+        const transaction = db.transaction(storeNames, 'readwrite')
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+        transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction aborted'))
+        try {
+          operation(transaction)
+        } catch (err) {
+          transaction.abort()
+          reject(err)
+        }
+      })
+  )
 }
 
 /**
@@ -190,33 +237,32 @@ export async function saveEventsToDB(events: SearchEventDoc[]): Promise<void> {
 }
 
 export async function deleteEventFromDB(eventId: string): Promise<void> {
-  const store = await getStore(EVENTS_STORE, 'readwrite')
-  store.delete(eventId)
+  await runWriteTransaction(EVENTS_STORE, (transaction) => {
+    transaction.objectStore(EVENTS_STORE).delete(eventId)
+  })
 }
 
 export async function deleteRoomFromDB(roomId: string): Promise<void> {
-  const roomStore = await getStore(ROOMS_STORE, 'readwrite')
-  roomStore.delete(roomId)
+  await runWriteTransaction([ROOMS_STORE, EVENTS_STORE], (transaction) => {
+    transaction.objectStore(ROOMS_STORE).delete(roomId)
 
-  const eventStore = await getStore(EVENTS_STORE, 'readwrite')
-  const index = eventStore.index('by_room')
-  const request = index.openCursor(IDBKeyRange.only(roomId))
-
-  request.onsuccess = () => {
-    const cursor = request.result
-    if (cursor) {
-      cursor.delete()
-      cursor.continue()
+    const index = transaction.objectStore(EVENTS_STORE).index('by_room')
+    const request = index.openCursor(IDBKeyRange.only(roomId))
+    request.onsuccess = () => {
+      const cursor = request.result
+      if (cursor) {
+        cursor.delete()
+        cursor.continue()
+      }
     }
-  }
+  })
 }
 
 export async function clearAllSearchData(): Promise<void> {
-  const roomStore = await getStore(ROOMS_STORE, 'readwrite')
-  roomStore.clear()
-
-  const eventStore = await getStore(EVENTS_STORE, 'readwrite')
-  eventStore.clear()
+  await runWriteTransaction([ROOMS_STORE, EVENTS_STORE], (transaction) => {
+    transaction.objectStore(ROOMS_STORE).clear()
+    transaction.objectStore(EVENTS_STORE).clear()
+  })
 }
 
 /**

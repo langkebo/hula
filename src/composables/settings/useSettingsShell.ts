@@ -59,16 +59,8 @@ export function useSettingsShell(options: UseSettingsShellOptions = {}): UseSett
 
   const capability = useServerCapability()
   const isCapabilityLoaded = computed(() => capability.isLoaded.value)
-
-  const capabilityCheckers: Record<TjgCapability, () => boolean> = {
-    'sliding-sync': () => capability.canUseSlidingSync.value,
-    e2ee: () => capability.canUseE2EE.value,
-    voip: () => capability.canUseVoip.value,
-    'friend-list': () => capability.canUseFriendList.value,
-    'admin-api': () => capability.canUseAdminApi.value,
-    'burn-after-read': () => capability.canUseBurnAfterRead.value
-  }
-  const isCapabilityAvailable = (capabilityId: TjgCapability): boolean => capabilityCheckers[capabilityId]()
+  // 判定口径由 useServerCapability 统一提供，桌面/移动两端共用同一份映射
+  const isCapabilityAvailable = (capabilityId: TjgCapability): boolean => capability.isCapabilityAvailable(capabilityId)
 
   function isTabAvailable(tab: SettingsTab): boolean {
     return matchesCapability(tab, isCapabilityLoaded.value, isCapabilityAvailable)

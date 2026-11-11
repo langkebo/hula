@@ -1,6 +1,5 @@
 {
   "backup": {
-    "title": "密钥备份",
     "recovery_key_desc": "恢复密钥用于在丢失设备或更换设备时恢复加密密钥。请妥善保存。",
     "copy_key": "复制密钥",
     "download_key": "下载密钥",
@@ -36,8 +35,6 @@
     "minutes": "{minutes}分钟"
   },
   "keyBackup": {
-    "setup": "设置密钥备份",
-    "restore": "恢复密钥备份",
     "setupTitle": "设置密钥备份",
     "restoreTitle": "恢复密钥备份",
     "setupComplete": "密钥备份已设置成功。",

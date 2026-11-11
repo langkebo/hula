@@ -195,11 +195,12 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useMobileLogout } from '@/composables/user/useMobileLogout'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { APP_VERSION } from '@/utils/appVersion'
 import MobileAppearanceSection from './components/MobileAppearanceSection.vue'
 import MobileSettingsSearch from './components/MobileSettingsSearch.vue'
-import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
+import { filterMobileSettingsItems, MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
 import type { MobileSettingsSearchEntry } from './mobileSettingsSearchIndex'
 import {
   MOBILE_SETTINGS_DEVICES_PATH,
@@ -211,7 +212,12 @@ import {
 const { t } = useI18n()
 const router = useRouter()
 const userStatusStore = useUserStatusStore()
-const advancedSettingsItems = MOBILE_ADVANCED_SETTINGS_ITEMS
+
+// 与桌面设置页同一策略：能力探测完成后隐藏后端未开放的入口（如 voip）
+const capability = useServerCapability()
+const advancedSettingsItems = computed(() =>
+  filterMobileSettingsItems(MOBILE_ADVANCED_SETTINGS_ITEMS, capability.isLoaded.value, capability.isCapabilityAvailable)
+)
 
 // ── 设置搜索 ────────────────────────────────────────────────
 const searchQuery = ref('')

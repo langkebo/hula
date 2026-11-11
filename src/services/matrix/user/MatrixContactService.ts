@@ -131,8 +131,9 @@ class MatrixContactService {
               avatarUrl: profile.avatar_url ?? undefined
             })
           }
-        } catch {
-          // profile 不存在，忽略
+        } catch (err) {
+          // profile 不存在属正常结果（用户未注册/无资料），记录 debug 便于排查而不误报警。
+          logger.debug(`[MatrixContact] 直接 profile 查询无结果: ${trimmedQuery}`, err)
         }
       }
 
@@ -152,8 +153,9 @@ class MatrixContactService {
               })
             }
           }
-        } catch {
-          // profile 不存在，忽略
+        } catch (err) {
+          // profile 不存在属正常结果（用户未注册/无资料），记录 debug 便于排查而不误报警。
+          logger.debug(`[MatrixContact] localpart 构造 profile 查询无结果: ${trimmedQuery}`, err)
         }
       }
 

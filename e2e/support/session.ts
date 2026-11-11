@@ -137,8 +137,14 @@ export interface SessionFixtures {
   seededPage: Page
 }
 
+export interface CapabilitySeed {
+  unstable_features?: Record<string, unknown>
+  capabilities?: Record<string, unknown>
+  client_config?: Record<string, unknown>
+}
+
 /**
- * 把 `capability` store 标记为「已加载」（空能力表）。
+ * 把 `capability` store 标记为「已加载」（默认空能力表，可用 `seed` 覆盖）。
  *
  * 为什么需要：设置页侧栏用 `capabilitiesLoaded` 做骨架屏门禁，而 `isLoaded` 只由
  * `MatrixCapabilityService.refreshCapabilities()` 置位 —— 该方法需要 matrix client。
@@ -147,25 +153,90 @@ export interface SessionFixtures {
  *
  * 这里是**测试侧**补位，不改产品语义（真实登录一定会有 client 和一次 refresh）。
  */
-export const markCapabilitiesLoaded = async (page: Page): Promise<void> => {
+export const markCapabilitiesLoaded = async (page: Page, seed: CapabilitySeed = {}): Promise<void> => {
   await page.waitForFunction(
     () => (window as Window & { __TJG_PINIA_READY__?: boolean }).__TJG_PINIA_READY__ === true,
     undefined,
     { timeout: 20_000 }
   )
-  await page.evaluate(async () => {
-    const modulePath = '/src/stores/domains/chat/capability.ts'
-    const { useCapabilityStore } = (await import(/* @vite-ignore */ modulePath)) as {
-      useCapabilityStore: (pinia?: unknown) => {
-        setCapabilities: (data: Record<string, unknown>) => void
+  await page.evaluate(
+    async (payload) => {
+      const modulePath = '/src/stores/domains/chat/capability.ts'
+      const { useCapabilityStore } = (await import(/* @vite-ignore */ modulePath)) as {
+        useCapabilityStore: (pinia?: unknown) => {
+          setCapabilities: (data: Record<string, unknown>) => void
+        }
       }
+      useCapabilityStore((window as Window & { pinia?: unknown }).pinia).setCapabilities(payload)
+    },
+    {
+      unstable_features: seed.unstable_features ?? {},
+      capabilities: seed.capabilities ?? {},
+      client_config: seed.client_config ?? {}
     }
-    useCapabilityStore((window as Window & { pinia?: unknown }).pinia).setCapabilities({
-      unstable_features: {},
-      capabilities: {},
-      client_config: {}
-    })
-  })
+  )
+}
+
+/** mock 房间 roomId：e2e 播种与断言共用同一标识。 */
+export const E2E_MOCK_ROOM_ID = '!e2e-room:tjg.local'
+
+export interface MockRoomOptions {
+  roomId?: string
+  name?: string
+}
+
+interface SeededSessionStore {
+  sessionList: Array<{
+    roomId: string
+    name: string
+    type: number
+    unreadCount: number
+    activeTime: number
+  }>
+}
+
+/**
+ * 向 `session` store 播种一条 GROUP 会话。
+ *
+ * 为什么需要：mock-auth 不产生任何真实房间，房间/会话列表恒为空，房间设置类
+ * e2e 只能以 `test.skip(true, 'Mock 环境无可用房间')` 永久跳过（审计 S5 假绿）。
+ * 这里只补「列表里有一条可点会话」这一个最小事实；房间详情、设置数据仍走真实
+ * 组件与降级分支，因此后续断言仍具回归价值。
+ */
+export const seedMockRoom = async (page: Page, options: MockRoomOptions = {}): Promise<void> => {
+  const roomId = options.roomId ?? E2E_MOCK_ROOM_ID
+  const name = options.name ?? 'E2E Mock Room'
+
+  await page.waitForFunction(
+    () => (window as Window & { __TJG_PINIA_READY__?: boolean }).__TJG_PINIA_READY__ === true,
+    undefined,
+    { timeout: 20_000 }
+  )
+  await page.evaluate(
+    async ({ roomId, name }) => {
+      const storePath = '/src/stores/domains/chat/chat/session.ts'
+      const enumPath = '/src/enums/room.ts'
+      const { useSessionStore } = (await import(/* @vite-ignore */ storePath)) as {
+        useSessionStore: (pinia?: unknown) => SeededSessionStore
+      }
+      const { RoomTypeEnum } = (await import(/* @vite-ignore */ enumPath)) as {
+        RoomTypeEnum: { GROUP: number }
+      }
+      const store = useSessionStore((window as Window & { pinia?: unknown }).pinia)
+      if (store.sessionList.some((session) => session.roomId === roomId)) return
+      store.sessionList = [
+        ...store.sessionList,
+        {
+          roomId,
+          name,
+          type: RoomTypeEnum.GROUP,
+          unreadCount: 0,
+          activeTime: Date.now()
+        }
+      ]
+    },
+    { roomId, name }
+  )
 }
 
 /**

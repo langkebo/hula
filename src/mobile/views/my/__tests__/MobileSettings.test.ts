@@ -2,7 +2,12 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import MobileSettings from '../MobileSettings.vue'
-import { MOBILE_ADVANCED_SETTINGS_ITEMS } from '../mobileSettingsConfig'
+import {
+  filterMobileSettingsItems,
+  getMobileSettingsItemCapabilities,
+  MOBILE_ADVANCED_SETTINGS_ITEMS,
+  type MobileSettingsNavItem
+} from '../mobileSettingsConfig'
 import { MOBILE_SETTINGS_LABS_PATH } from '../settingsRoutes'
 
 const routerPushMock = vi.fn()
@@ -70,6 +75,23 @@ vi.mock('@/composables/user/useMobileLogout', () => ({
   useMobileLogout: () => ({ isLoggingOut: ref(false), handleLogout: logoutMock })
 }))
 
+// 能力判定由真实服务提供，但服务模块会把整个 Matrix client 图拉进单测。
+// 这里只桩出 MobileSettings 用到的两个字段，并允许按用例改写能力状态。
+const capabilityState = vi.hoisted(() => ({
+  isLoaded: false,
+  isCapabilityAvailable: (_capability: string): boolean => true
+}))
+
+vi.mock('@/services/matrix/MatrixCapabilityService', async () => {
+  const { ref: createRef } = await import('vue')
+  return {
+    useServerCapability: () => ({
+      isLoaded: createRef(capabilityState.isLoaded),
+      isCapabilityAvailable: (capability: string) => capabilityState.isCapabilityAvailable(capability)
+    })
+  }
+})
+
 vi.mock('@/mobile/components/chat-room/AutoFixHeightPage.vue', () => ({
   default: {
     name: 'AutoFixHeightPage',
@@ -104,6 +126,8 @@ describe('MobileSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     showDialogMock.mockReturnValue(Promise.resolve())
+    capabilityState.isLoaded = false
+    capabilityState.isCapabilityAvailable = () => true
   })
 
   function mountComponent() {
@@ -142,5 +166,51 @@ describe('MobileSettings', () => {
     expect(labsCell).toBeDefined()
     await labsCell!.trigger('click')
     expect(routerPushMock).toHaveBeenCalledWith(MOBILE_SETTINGS_LABS_PATH)
+  })
+
+  it('keeps every entry while capability detection is not loaded', () => {
+    capabilityState.isLoaded = false
+    capabilityState.isCapabilityAvailable = () => false
+
+    const wrapper = mountComponent()
+    expect(wrapper.text()).toContain('mobile_setting.voice_video')
+  })
+
+  it('hides entries whose required capability is unavailable once loaded', () => {
+    capabilityState.isLoaded = true
+    capabilityState.isCapabilityAvailable = (capability) => capability !== 'voip'
+
+    const wrapper = mountComponent()
+    expect(wrapper.text()).not.toContain('mobile_setting.voice_video')
+    expect(wrapper.text()).toContain('mobile_setting.labs')
+  })
+})
+
+describe('filterMobileSettingsItems', () => {
+  const item = (
+    titleKey: string,
+    requiredCapability?: MobileSettingsNavItem['requiredCapability']
+  ): MobileSettingsNavItem => ({
+    titleKey,
+    path: `/${titleKey}`,
+    icon: 'mdi:test',
+    iconColor: 'var(--tjg-color-info-500)',
+    iconBackgroundColor: 'var(--tjg-color-info-100)',
+    ...(requiredCapability ? { requiredCapability } : {})
+  })
+
+  it('treats entries without a capability declaration as always available', () => {
+    expect(getMobileSettingsItemCapabilities(item('plain'))).toEqual([])
+    expect(filterMobileSettingsItems([item('plain')], true, () => false)).toHaveLength(1)
+  })
+
+  it('normalizes a single capability declaration to an array', () => {
+    expect(getMobileSettingsItemCapabilities(item('voip', 'voip'))).toEqual(['voip'])
+  })
+
+  it('requires every declared capability to be available', () => {
+    const entries = [item('multi', ['voip', 'friend-list']), item('free')]
+    const result = filterMobileSettingsItems(entries, true, (capability) => capability === 'voip')
+    expect(result.map((entry) => entry.titleKey)).toEqual(['free'])
   })
 })

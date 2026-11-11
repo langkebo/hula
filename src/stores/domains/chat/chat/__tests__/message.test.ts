@@ -505,6 +505,24 @@ describe('ChatMessageStore', () => {
     expect(sessionStoreMock.markSessionRead).toHaveBeenCalledWith('room-1')
   })
 
+  it('does not touch the new room state when switching away mid-load', async () => {
+    let resolvePaged: (value: unknown) => void = () => {}
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePaged = resolve
+      }) as never
+    )
+    const store = useChatStore()
+
+    const pending = store.changeRoom()
+    // 加载尚未完成时用户切到另一个房间
+    globalStoreMock.currentSessionRoomId = 'room-2'
+    resolvePaged({ messages: [], isLast: true, cursor: '' })
+    await pending
+
+    expect(sessionStoreMock.markSessionRead).not.toHaveBeenCalled()
+  })
+
   it('should add a minimal session when opening a room missing from sessionList (e.g. from a notification)', async () => {
     const store = useChatStore()
     const fakeRoom = { roomId: 'room-1', name: 'Orphan Room' }

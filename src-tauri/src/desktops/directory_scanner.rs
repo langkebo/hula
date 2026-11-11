@@ -5,7 +5,8 @@ use serde::Serialize;
 use std::path::PathBuf;
 use std::time::Instant;
 use sysinfo::Disks;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_fs::FsExt;
 use tokio::sync::broadcast;
 
 #[derive(Serialize)]
@@ -58,16 +59,38 @@ async fn get_directory_size_with_progress(
     }
 }
 
-async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> Result<u64, String> {
-    let path = PathBuf::from(&directory_path);
+/// 校验扫描路径是否在已授权范围内
+///
+/// 允许两类目录：dialog 选择后写入 fs scope 的目录，以及应用缓存目录。
+/// 避免前端传入任意本地路径进行全盘扫描。
+fn ensure_scan_path_allowed(handle: &AppHandle, directory_path: &str) -> Result<PathBuf, String> {
+    let canonical_path = PathBuf::from(directory_path)
+        .canonicalize()
+        .map_err(|_| cmd_error("DIRECTORY_NOT_FOUND"))?;
 
-    if !path.exists() {
-        return Err(cmd_error("DIRECTORY_NOT_FOUND"));
-    }
-
-    if !path.is_dir() {
+    if !canonical_path.is_dir() {
         return Err(cmd_error("DIRECTORY_PATH_NOT_DIR"));
     }
+
+    let in_app_cache = handle
+        .path()
+        .app_cache_dir()
+        .map(|dir| canonical_path.starts_with(dir))
+        .unwrap_or(false);
+
+    if !in_app_cache && !handle.fs_scope().is_allowed(&canonical_path) {
+        tracing::warn!(
+            "Rejected directory scan outside scope: {}",
+            canonical_path.display()
+        );
+        return Err(cmd_error("DIRECTORY_PATH_NOT_ALLOWED"));
+    }
+
+    Ok(canonical_path)
+}
+
+async fn scan_directory_internal(directory_path: String, handle: AppHandle) -> Result<u64, String> {
+    let path = ensure_scan_path_allowed(&handle, &directory_path)?;
 
     // 创建取消接收器
     let mut cancel_receiver = CANCEL_SENDER.subscribe();

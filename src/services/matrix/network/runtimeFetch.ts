@@ -1,4 +1,4 @@
-import { type ClientOptions, fetch as nativeFetch } from '@tauri-apps/plugin-http'
+import { fetch as nativeFetch } from '@tauri-apps/plugin-http'
 import { createRateLimitedFetch } from '@/services/matrix/MatrixRateLimitInterceptor'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { computeBackoffDelay, sleep } from '@/utils/backoff'
@@ -56,37 +56,6 @@ function withOmittedCredentials(init?: RequestInit): RequestInit {
 
 function resolveRequestUrl(input: URL | RequestInfo): string {
   return typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-}
-
-function shouldAllowInvalidCerts(input: URL | RequestInfo): boolean {
-  if (!(import.meta.env.DEV || import.meta.env.MODE === 'test')) {
-    return false
-  }
-
-  try {
-    const url = new URL(resolveRequestUrl(input))
-    if (url.protocol !== 'https:') {
-      return false
-    }
-
-    return RELAXED_TLS_HOST_SUFFIXES.some((suffix) => url.hostname === suffix.slice(1) || url.hostname.endsWith(suffix))
-  } catch {
-    return false
-  }
-}
-
-function withTauriClientOptions(input: URL | RequestInfo, init?: RequestInit): RequestInit & ClientOptions {
-  const requestInit: RequestInit & ClientOptions = withOmittedCredentials(init)
-
-  if (shouldAllowInvalidCerts(input)) {
-    requestInit.danger = {
-      ...requestInit.danger,
-      acceptInvalidCerts: true,
-      acceptInvalidHostnames: true
-    }
-  }
-
-  return requestInit
 }
 
 function shouldUseBrowserFallback(input: URL | RequestInfo): boolean {
@@ -211,7 +180,7 @@ async function fetchWithRetry(
 
 function createTauriFetchWithBrowserFallback(): typeof globalThis.fetch {
   return (async (input: URL | RequestInfo, init?: RequestInit) => {
-    const normalizedInit = withTauriClientOptions(input, init)
+    const normalizedInit = withOmittedCredentials(init)
     const url = resolveRequestUrl(input)
 
     if (isSignalAborted(init)) {

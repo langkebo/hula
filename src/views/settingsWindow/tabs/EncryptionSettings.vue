@@ -281,15 +281,15 @@ import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
+import { useEncryptionOverview } from '@/composables/encryption/useEncryptionOverview'
+import { useGlobalStrictMode } from '@/composables/encryption/useGlobalStrictMode'
 import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
 import {
   matrixVerificationService,
   type VerificationTransaction
 } from '@/services/matrix/crypto/MatrixVerificationService'
-import { applyGlobalStrict } from '@/services/matrix/crypto/strictDevicePolicy'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 import CrossSigningSection from './sections/CrossSigningSection.vue'
 import DehydratedDeviceSection from './sections/DehydratedDeviceSection.vue'
@@ -304,7 +304,6 @@ const { showFeedback } = useActionFeedback()
 const { write: writeClipboard } = useClipboard()
 const { t } = useI18n()
 const encryptionStore = useEncryptionStore()
-const settingStore = useSettingStore()
 
 // 服务端未声明 E2EE 能力时降级为只读（页签本身保留，见 settingsSchema 的 readonly fallback）。
 // 能力探测未完成前不做判定，避免登录初期误判导致整页不可用。
@@ -317,16 +316,9 @@ const isReadOnly = computed(() => capability.isLoaded.value && !capability.canUs
  * 注意本 fork **没有** `setGlobalBlacklistUnverifiedDevices()` 方法，
  * 且该值随 client 重建归零 ⇒ 除在此即时施加外，登录/crypto 初始化后
  * 还需由 `reapplyPersistedStrictness()` 重放（见该函数注释）。
+ * 偏好读写与施加逻辑在 `useGlobalStrictMode` 中，与移动端设置页共用一份实现。
  */
-const strictModeEnabled = computed(() => settingStore.blockUnverifiedDevicesEnabled)
-
-function handleStrictModeToggle(enabled: boolean) {
-  settingStore.setBlockUnverifiedDevicesEnabled(enabled)
-  const applied = applyGlobalStrict(enabled)
-  if (!applied) {
-    logger.warn('crypto not ready; strict-mode preference saved and will take effect after crypto init')
-  }
-}
+const { enabled: strictModeEnabled, setEnabled: handleStrictModeToggle } = useGlobalStrictMode()
 
 const deviceKeyVisible = ref(false)
 const deviceFingerprint = ref('')
@@ -345,13 +337,17 @@ const pendingVerifications = ref<VerificationTransaction[]>([])
 const selectedVerificationTransaction = ref<VerificationTransaction | null>(null)
 const verifyDialogMode = ref<'sas'>('sas')
 
-const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
-const securityKeySetup = computed(() => encryptionStore.securityKeyConfigured)
-const backupEnabled = computed(() => encryptionStore.backupEnabled)
-const backupVersion = computed(() => encryptionStore.backupVersion)
-const needsRotation = computed(() => encryptionStore.needsRotation)
-const deviceVerified = computed(() => encryptionStore.deviceVerified)
-const e2eeFullySetup = computed(() => encryptionStore.e2eeFullySetup)
+// 加密总览状态统一由 useEncryptionOverview 提供（与移动端共用同一份 store 数据与刷新副作用）
+const {
+  encryptionEnabled,
+  deviceVerified,
+  backupEnabled,
+  backupVersion,
+  crossSigningSetup: securityKeySetup,
+  needsRotation,
+  e2eeFullySetup,
+  loadOverview
+} = useEncryptionOverview()
 
 const keyStatus = computed(() => {
   if (!encryptionEnabled.value) {
@@ -372,9 +368,10 @@ onMounted(async () => {
 })
 
 async function loadEncryptionInfo() {
-  await encryptionStore.loadEncryptionStatus()
+  // loadOverview 内部已包含「加密状态 → 当前设备验证状态」两步，桌面端只补自身特有信息
+  const enabled = await loadOverview()
 
-  if (!encryptionEnabled.value) {
+  if (!enabled) {
     return
   }
 
@@ -384,7 +381,6 @@ async function loadEncryptionInfo() {
       deviceFingerprint.value = formatFingerprint(fingerprint)
     }
 
-    await encryptionStore.loadDeviceVerification()
     pendingVerifications.value = await matrixVerificationService.getPendingVerifications()
   } catch (error) {
     logger.error('Failed to load encryption details', error)

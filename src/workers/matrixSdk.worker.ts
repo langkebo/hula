@@ -98,7 +98,12 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
   }
 }
 
-// 初始化搜索引擎（从 IndexedDB 加载本地搜索索引）
-void initSearchEngine()
+// 初始化搜索引擎（从 IndexedDB 加载本地搜索索引）。
+// 索引初始化失败不应阻塞 worker 就绪：搜索请求会在 handler 内部再次拿到错并回传，
+// 这里只记录日志，避免未处理的 Promise rejection 静默丢失。
+initSearchEngine().catch((error: unknown) => {
+  // biome-ignore lint/suspicious/noConsole: worker 内无 Tauri 日志通道，此兜底不可丢
+  console.error('[matrixSdk.worker] 搜索引擎初始化失败:', error)
+})
 
 self.postMessage({ type: 'ready', id: 'init', success: true })

@@ -308,8 +308,24 @@ export const matrixCapabilityService = new MatrixCapabilityService()
 export function useServerCapability() {
   const service = matrixCapabilityService
 
+  /**
+   * 能力 id → 判定函数（唯一实现）。
+   * 桌面设置页与移动设置页共用，避免两端各维护一份映射后判定口径分叉。
+   */
+  const capabilityCheckers: Record<TjgCapability, () => boolean> = {
+    'sliding-sync': () => service.canUseSlidingSync(),
+    e2ee: () => service.canUseE2EE(),
+    voip: () => service.canUseVoip(),
+    'friend-list': () => service.canUseFriendList(),
+    'admin-api': () => service.canUseAdminApi(),
+    'burn-after-read': () => service.canUseBurnAfterRead()
+  }
+
+  const isCapabilityAvailable = (capability: TjgCapability): boolean => capabilityCheckers[capability]()
+
   return {
     isLoaded: computed(() => tryGetStore()?.isLoaded ?? false),
+    isCapabilityAvailable,
     hasUnstable: (flag: string) => tryGetStore()?.hasUnstable(flag).value ?? false,
     hasFeature: (feature: string) => tryGetStore()?.hasFeature(feature).value ?? false,
 

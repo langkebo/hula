@@ -97,7 +97,9 @@ describe('check-no-raw-fetch: 真实仓库自洽', () => {
 
     const result = evaluateBypasses(sources)
 
-    expect(sources.length).toBeGreaterThanOrEqual(5)
+    // 基数断言：白名单只允许随债务清偿收缩（S8 workerProbeHandlers 已迁到 runtimeFetch），
+    // 这里锁住「仍然存在若干经批准的例外」，避免这个自洽测试在空列表上变成空转。
+    expect(sources.length).toBeGreaterThanOrEqual(4)
     expect(result.violations).toEqual([])
     expect(result.staleAllowlist).toEqual([])
   })

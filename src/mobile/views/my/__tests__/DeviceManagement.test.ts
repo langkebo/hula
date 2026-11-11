@@ -28,6 +28,20 @@ vi.mock('vue-i18n', () => ({
 // 而不是把整个 composable 换成桩——后者会掩盖 composable 自身的行为。
 const adapterDevicesMock = vi.hoisted(() => vi.fn())
 const cryptoVerificationStatusMock = vi.hoisted(() => vi.fn())
+const isDeviceVerifiedMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
+  matrixEncryptionContextService: {
+    getCurrentSessionContext: () => ({ userId: '@alice:example.com', deviceId: 'CURRENT' })
+  }
+}))
+
+vi.mock('@/services/matrix/crypto/MatrixVerificationService', () => ({
+  matrixVerificationService: {
+    isDeviceVerified: (...args: any[]) => isDeviceVerifiedMock(...args),
+    startSasVerification: vi.fn()
+  }
+}))
 
 vi.mock('@/services/matrix/crypto/CryptoSDKAdapter', () => ({
   cryptoSDKAdapter: {
@@ -102,6 +116,7 @@ describe('DeviceManagement', () => {
       }))
     })
     cryptoVerificationStatusMock.mockResolvedValue({ verified: false, crossSigningVerified: false })
+    isDeviceVerifiedMock.mockResolvedValue(false)
     getCurrentDeviceIdMock.mockReturnValue('CURRENT')
   })
 
@@ -113,7 +128,7 @@ describe('DeviceManagement', () => {
   it('loads devices on mount', async () => {
     mount(DeviceManagement)
     await vi.dynamicImportSettled()
-    expect(adapterDevicesMock).toHaveBeenCalled()
+    expect(getDevicesMock).toHaveBeenCalled()
     expect(getCurrentDeviceIdMock).toHaveBeenCalled()
   })
 

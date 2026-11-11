@@ -52,10 +52,6 @@ export const RULES = {
     hint: '请改用 @/utils/HttpClient、SDK manager 方法或统一 gateway',
     allowlist: new Map([
       ['src/services/matrix/network/runtimeFetch.ts', 'fetch 包装器本体'],
-      [
-        'src/workers/workerProbeHandlers.ts',
-        '登录前哨探测（versions/loginFlows/CORS/capabilities）——此时 SDK client 尚不存在'
-      ],
       ['src/App.vue', 'apple.com favicon 可达性探测（no-cors）'],
       ['src/strategy/strategies/video.ts', 'blob: URL 必须用浏览器原生 fetch'],
       [

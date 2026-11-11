@@ -314,6 +314,17 @@ const handleIconError = (event: Event) => {
   target.src = '/file/other.svg'
 }
 
+// 校验目标路径是否位于当前会话文件目录内，避免消息内容诱导打开任意本地路径
+const isWithinChatFilesDir = async (targetPath: string) => {
+  const roomDir = await userStore.getUserRoomAbsoluteDir()
+  const normalize = (value: string) => value.replace(/\\/g, '/').replace(/\/+$/, '')
+  const normalizedDir = normalize(roomDir)
+  if (!normalizedDir) return false
+
+  const normalizedTarget = normalize(targetPath.replace(/^file:\/\//i, ''))
+  return normalizedTarget === normalizedDir || normalizedTarget.startsWith(`${normalizedDir}/`)
+}
+
 // 处理文件点击
 const handleFileClick = async () => {
   if (!props.body?.url || !props.body?.fileName || isUploading.value) return
@@ -332,7 +343,7 @@ const handleFileClick = async () => {
     } else if (needsDownload.value) {
       // 需要下载文件
       await downloadAndOpenFile()
-    } else {
+    } else if (await isWithinChatFilesDir(props.body.url)) {
       // 本地文件路径，尝试打开
       try {
         await openPath(props.body.url)
@@ -340,6 +351,9 @@ const handleFileClick = async () => {
         logger.warn('Cannot open file directly, trying to reveal in file manager:', openError)
         await revealInDirSafely(props.body.url)
       }
+    } else {
+      logger.warn('Refused to open path outside chat files directory:', props.body.url)
+      showFeedback(t('message.file.toast.missing_local'), 'error')
     }
   } catch (error) {
     logger.error('Failed to open file:', error)

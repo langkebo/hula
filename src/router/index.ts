@@ -1,35 +1,19 @@
-import {
-  createRouter,
-  createWebHistory,
-  type RouteLocationNormalized,
-  type RouteRecordRaw,
-  type Router
-} from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized, type Router } from 'vue-router'
 import { createAuthGuard } from '@/router/authGuard'
+import { getPlatformRoutes, platformIsMobile } from '@/router/entries/platformRoutes'
 import { getCommonRoutes } from '@/router/routes/common'
-import { getDesktopRoutes } from '@/router/routes/desktop'
-import { getMobileRoutes } from '@/router/routes/mobile'
 import { createSecretChatGuard } from '@/router/secretChatGuard'
 import { verifyAdminAccess } from '@/stores/domains/admin/bridge'
-import { detectAppPlatform, shouldBypassAuthForE2E } from '@/utils/AppHarness'
+import { shouldBypassAuthForE2E } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RouterGuard')
 
 const { BASE_URL } = import.meta.env
 
-// 移动端产物在构建期即裁剪桌面装配（含 admin 路由与 admin store）：
-// __TJG_MOBILE_BUILD__ 由 vite.config.ts 在 android/ios 生产构建中替换为 true，
-// 常量折叠后桌面分支整体消失，admin 代码不进入移动端产物。
-// 开发态（含浏览器 E2E）保留运行时分派，兼容 ?platform=mobile 覆盖。
-const isMobileBuild = typeof __TJG_MOBILE_BUILD__ === 'boolean' ? __TJG_MOBILE_BUILD__ : false
-const isMobile = isMobileBuild || detectAppPlatform() === 'mobile'
-
-const getPlatformRoutes: () => Array<RouteRecordRaw> = isMobileBuild
-  ? getMobileRoutes
-  : isMobile
-    ? getMobileRoutes
-    : getDesktopRoutes
+// 路由集在构建期由 vite alias 决定（router/entries/platformRoutes）：
+// 桌面产物只解析桌面路由，移动产物只解析移动路由，运行期不再分派。
+const isMobile = platformIsMobile
 
 const router: Router = createRouter({
   history: createWebHistory(BASE_URL),

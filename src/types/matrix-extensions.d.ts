@@ -4,7 +4,7 @@
  * 为 matrix-js-sdk 提供额外的类型定义，避免使用 any 类型
  */
 
-import type { IPusher, IPusherRequest, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
+import type { ICreatePushRuleRequest, IPusher, IPusherRequest, MatrixClient, PushRuleAction } from 'matrix-js-sdk'
 
 // ============================================
 // Crypto API 扩展
@@ -181,14 +181,8 @@ export interface IDeviceUpdateRequest {
 }
 
 // SDK-7: Push 管理器类型
-export interface ICreatePushRuleRequest {
-  actions: PushRuleAction[]
-  conditions?: Record<string, unknown>[]
-  pattern?: string
-  before?: string
-  after?: string
-}
-
+// ICreatePushRuleRequest 唯一归属 matrix-js-sdk-augmentations.d.ts（SDK 顶层导出补声明），
+// 此处直接复用；禁止本地再声明第二份，否则 conditions 形状会与 SDK 漂移。
 export interface PushManager {
   setPusher(pusher: IPusherRequest): Promise<void>
   removePusher(pushkey: string, appId: string, deviceId?: string): Promise<void>

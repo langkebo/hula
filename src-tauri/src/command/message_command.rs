@@ -313,8 +313,10 @@ pub async fn send_msg(
 
         let status = "success";
 
+        // 先克隆连接再释放读锁，避免 `&*guard` 临时值把读锁持有到 await 结束。
+        let db = db_conn.read().await.clone();
         let model = MessageService::update_message_status(
-            &*db_conn.read().await,
+            &db,
             record_for_send,
             status,
             None,

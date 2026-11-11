@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { extractLinkSegments, normalizeExternalUrl, openExternalUrl } from '@/composables/common/useLinkSegments'
 
-const openShellMock = vi.fn()
+const openUrlMock = vi.fn()
 const windowOpenMock = vi.fn()
 
-vi.mock('@tauri-apps/plugin-shell', () => ({
-  open: (...args: unknown[]) => openShellMock(...args)
+vi.mock('@tauri-apps/plugin-opener', () => ({
+  openUrl: (...args: unknown[]) => openUrlMock(...args)
 }))
 
 vi.mock('@tauri-apps/plugin-log', () => ({
@@ -125,15 +125,15 @@ describe('useLinkSegments', () => {
   })
 
   describe('openExternalUrl', () => {
-    it('opens allowed URLs with shell first', async () => {
+    it('opens allowed URLs with opener first', async () => {
       await openExternalUrl('https://example.com')
 
-      expect(openShellMock).toHaveBeenCalledWith('https://example.com')
+      expect(openUrlMock).toHaveBeenCalledWith('https://example.com')
       expect(windowOpenMock).not.toHaveBeenCalled()
     })
 
-    it('falls back to window.open when shell open fails', async () => {
-      openShellMock.mockRejectedValueOnce(new Error('shell unavailable'))
+    it('falls back to window.open when opener fails', async () => {
+      openUrlMock.mockRejectedValueOnce(new Error('opener unavailable'))
 
       await openExternalUrl('example.com')
 
@@ -144,7 +144,7 @@ describe('useLinkSegments', () => {
       const result = await openExternalUrl('javascript:alert(1)')
 
       expect(result).toBe(false)
-      expect(openShellMock).not.toHaveBeenCalled()
+      expect(openUrlMock).not.toHaveBeenCalled()
       expect(windowOpenMock).not.toHaveBeenCalled()
     })
   })

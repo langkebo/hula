@@ -33,8 +33,9 @@ class MatrixSlidingSyncService {
       required_state?: unknown[] | undefined
     }
   > = new Map()
-  /** 已请求补订阅的房间：避免同一房间的每个增量包都重复触发一次同步请求 */
-  private autoSubscribedRooms = new Set<string>()
+  /** 已请求补订阅的房间及请求时间：带 TTL 以允许同步失败后重试 */
+  private autoSubscribedRooms = new Map<string, number>()
+  private readonly autoSubscribeRetryMs = 60_000
   private readonly lifecycleListener = (
     state: SlidingSyncState,
     resp: MSC3575SlidingSyncResponse | null,
@@ -182,11 +183,20 @@ class MatrixSlidingSyncService {
    * 这里对该房间发起一次订阅，服务端下一轮响应会强制 `initial: true`。
    */
   private ensureRoomInStore(roomId: string): void {
-    if (this.autoSubscribedRooms.has(roomId)) return
     if (matrixClientService.getRoom(roomId)) return
-    this.autoSubscribedRooms.add(roomId)
+
+    const lastAttempt = this.autoSubscribedRooms.get(roomId)
+    if (lastAttempt !== undefined && Date.now() - lastAttempt < this.autoSubscribeRetryMs) return
+
+    this.autoSubscribedRooms.set(roomId, Date.now())
     logger.info(`发现本地缺失的房间，补订阅以强制初始同步: ${roomId}`)
-    matrixClientService.subscribeRoomForSync(roomId)
+    try {
+      matrixClientService.subscribeRoomForSync(roomId)
+    } catch (error) {
+      // 订阅失败时清除标记，让后续同步包可以重试
+      this.autoSubscribedRooms.delete(roomId)
+      logger.warn(`补订阅房间失败，将在下次同步时重试: ${roomId}`, error)
+    }
   }
 
   private shouldRefreshRoomList(resp: MSC3575SlidingSyncResponse): boolean {

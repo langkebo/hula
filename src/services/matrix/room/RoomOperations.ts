@@ -572,18 +572,15 @@ export class RoomOperations extends BaseMatrixService {
         actions: []
       })
     } else if (level === 'mentions') {
-      // 仅 @提及 通知：匹配 body 中包含当前用户名
-      const userId = client.getUserId()
-      if (userId) {
-        const localPart = userId.split(':')[0].replace('@', '')
-        await client.getPushManager().createPushRule('global', PushRuleKind.Override, roomId, {
-          conditions: [
-            { kind: ConditionKind.EventMatch, key: 'room_id', pattern: roomId },
-            { kind: ConditionKind.EventMatch, key: 'content.body', pattern: localPart }
-          ],
-          actions: [PushRuleActionName.Notify, { set_tweak: TweakName.Highlight, value: true }]
-        })
-      }
+      // 仅 @提及 通知：EventMatch 对 content.body 做整串匹配，永远无法命中，
+      // 改用服务端内置的“正文包含当前用户显示名”条件。
+      await client.getPushManager().createPushRule('global', PushRuleKind.Override, roomId, {
+        conditions: [
+          { kind: ConditionKind.EventMatch, key: 'room_id', pattern: roomId },
+          { kind: ConditionKind.ContainsDisplayName }
+        ],
+        actions: [PushRuleActionName.Notify, { set_tweak: TweakName.Highlight, value: true }]
+      })
     }
     // level === 'all' 时不清除（默认行为）
   }

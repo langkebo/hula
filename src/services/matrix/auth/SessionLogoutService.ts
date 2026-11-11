@@ -83,6 +83,9 @@ export class SessionLogoutService {
       port.setting.closeAutoLogin()
       port.user.clearUser()
       port.global.updateCurrentSessionRoomId('')
+      // 位置/信标状态是模块级单例（含到期定时器与后台上报链）：登出必须停止并清空，
+      // 否则同一 webview 换账号后仍会为旧账号继续共享位置。
+      port.location.reset()
 
       if (isMac()) {
         const homeWindow = await WebviewWindow.getByLabel('home')

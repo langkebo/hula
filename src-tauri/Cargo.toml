@@ -21,7 +21,7 @@ overflow-checks = true
 incremental = true     
 
 [profile.release]
-panic = "abort"    # 崩溃时直接终止
+panic = "unwind"   # 允许捕获单个命令的 panic，避免一处崩溃终止整个应用
 codegen-units = 1  # 一个接一个地编译包，这样编译器就可以更好地优化
 lto = true         # 启用链接到优化
 opt-level = 3      # 最大优化
@@ -53,12 +53,7 @@ tauri = { version = "2.11.1", features = [
     "unstable",
 ] }
 tauri-plugin-os = "2"
-tauri-plugin-shell = "2"
-tauri-plugin-http = { version = "2.5.4", features = [
-    "dangerous-settings",
-    "unsafe-headers",
-    "rustls-tls",
-] }
+tauri-plugin-http = { version = "2.5.4", features = ["rustls-tls"] }
 tauri-plugin-process = "2"
 tauri-plugin-fs = "2.5"
 tauri-plugin-dialog = "2.7"

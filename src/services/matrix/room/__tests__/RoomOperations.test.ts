@@ -181,6 +181,23 @@ describe('RoomOperations', () => {
     })
   })
 
+  describe('setNotificationLevel', () => {
+    it('mentions level uses contains_display_name condition', async () => {
+      const deletePushRule = vi.fn().mockResolvedValue(undefined)
+      const createPushRule = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getPushManager: vi.fn().mockReturnValue({ deletePushRule, createPushRule })
+      } as never)
+
+      await ops.setNotificationLevel('!r', 'mentions')
+
+      expect(createPushRule).toHaveBeenCalledWith('global', 'override', '!r', {
+        conditions: [{ kind: 'event_match', key: 'room_id', pattern: '!r' }, { kind: 'contains_display_name' }],
+        actions: ['notify', { set_tweak: 'highlight', value: true }]
+      })
+    })
+  })
+
   // === Tags methods ===
 
   describe('getTags', () => {

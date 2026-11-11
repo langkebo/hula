@@ -8,7 +8,7 @@
     <div class="flex flex-1 min-h-0">
       <AsyncLeft />
       <AsyncCenter />
-      <AsyncRight v-if="!shrinkStatus && !isRoomListRoute" />
+      <AsyncRight v-if="showRightPane" />
     </div>
     <div v-if="overlayVisible" class="absolute inset-0 z-10 flex items-center justify-center bg-[--tjg-surface-subtle]">
       <LoadingSpinner :percentage="loadingPercentage" :loading-text="loadingText" />
@@ -225,6 +225,20 @@ const globalStore = useGlobalStore()
 const contactStore = useContactStore()
 const { checkUpdate, CHECK_UPDATE_TIME } = useCheckUpdate()
 const shrinkStatus = ref(false)
+// 右侧详情栏是否渲染：房间列表路由与收缩态下不渲染
+const showRightPane = computed(() => !shrinkStatus.value && !isRoomListRoute.value)
+// AsyncRight 不渲染时其 loader 不会调用 markAsyncLoaded，首次登录遮罩会因
+// asyncTotal(3) 永远差 1 而无法隐藏（直接打开 /room 时整页被遮罩挡住）。
+let rightPaneMarked = false
+watch(
+  showRightPane,
+  (visible) => {
+    if (visible || rightPaneMarked) return
+    rightPaneMarked = true
+    markAsyncLoaded()
+  },
+  { immediate: true }
+)
 const isDraggingFiles = ref(false)
 const tauriFileDropUnlisteners: UnlistenFn[] = []
 

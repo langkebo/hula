@@ -4,6 +4,7 @@ export {
   getDefaultMatrixEndpointConfig,
   isPotentialHomeserverInput,
   isValidHttpUrl,
+  MATRIX_DEFAULT_HOMESERVER_EXAMPLE,
   resolveMatrixEndpointConfig,
   resolveMatrixRuntimeEndpointConfig,
   resolveMatrixRuntimeHomeserverUrl,

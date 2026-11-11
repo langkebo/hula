@@ -1,8 +1,8 @@
 import type { MatrixClient, TypingManager } from 'matrix-js-sdk'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { isSendTypingNotificationsEnabled } from '../privacyPreferences'
 
 const logger = createLogger('MatrixTypingService')
 
@@ -40,7 +40,7 @@ class MatrixTypingService extends BaseMatrixService {
   async sendTypingNotification(roomId: string, isTyping: boolean, timeout?: number): Promise<void> {
     // 关闭「发送输入中提示」后不再发 typing=true；但停止信号必须照发，
     // 否则对方界面会一直停在"正在输入"
-    if (isTyping && !useSettingStore().sendTypingNotificationsEnabled) {
+    if (isTyping && !isSendTypingNotificationsEnabled()) {
       return
     }
 

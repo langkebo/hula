@@ -13,7 +13,6 @@ const {
   changePasswordMock,
   deactivateAccountMock,
   getCryptoStatusMock,
-  setupKeyBackupMock,
   exportKeysMock
 } = vi.hoisted(() => {
   return {
@@ -27,8 +26,7 @@ const {
     changePasswordMock: vi.fn().mockResolvedValue(undefined),
     deactivateAccountMock: vi.fn().mockResolvedValue(undefined),
     getCryptoStatusMock: vi.fn().mockResolvedValue(null),
-    setupKeyBackupMock: vi.fn().mockResolvedValue(undefined),
-    exportKeysMock: vi.fn().mockResolvedValue(null)
+    exportKeysMock: vi.fn().mockResolvedValue('')
   }
 })
 
@@ -94,11 +92,20 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
 
 vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
   matrixCryptoService: {
-    getCryptoStatus: () => getCryptoStatusMock(),
-    setupKeyBackup: (...args: any[]) => setupKeyBackupMock(...args),
-    exportKeys: (...args: any[]) => exportKeysMock(...args)
+    getCryptoStatus: () => getCryptoStatusMock()
   }
 }))
+
+// 导出与下载由 useKeyExport 统一实现（桌面/移动共用），组件只关心结果文案
+vi.mock('@/composables/encryption/useKeyExport', async () => {
+  const { ref } = await import('vue')
+  return {
+    useKeyExport: () => ({
+      isExporting: ref(false),
+      exportKeys: (...args: any[]) => exportKeysMock(...args)
+    })
+  }
+})
 
 vi.mock('@/mobile/components/chat-room/AutoFixHeightPage.vue', () => ({
   default: {
@@ -127,7 +134,7 @@ describe('SecuritySettings', () => {
     getDevicesMock.mockResolvedValue([])
     getIgnoredUsersMock.mockResolvedValue([])
     getCryptoStatusMock.mockResolvedValue(null)
-    exportKeysMock.mockResolvedValue(null)
+    exportKeysMock.mockResolvedValue('')
   })
 
   it('renders correctly', () => {
@@ -226,8 +233,8 @@ describe('SecuritySettings', () => {
     expect(exportKeysMock).toHaveBeenCalled()
   })
 
-  it('shows error when export returns null', async () => {
-    exportKeysMock.mockResolvedValue(null)
+  it('shows error when export returns empty content', async () => {
+    exportKeysMock.mockResolvedValue('')
     const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
@@ -235,23 +242,14 @@ describe('SecuritySettings', () => {
     expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
   })
 
-  it('validates backup passphrase', async () => {
+  it('no longer keeps a parallel key-backup setup path', async () => {
+    // 旧的口令对话框（matrixCryptoService.setupKeyBackup）已删除：
+    // 密钥备份统一走 MobileSecureBackupDialog → useSecureBackupFlow（单一实现）。
     const wrapper = mountSecuritySettings()
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
-    vm.backupPassphrase = ''
-    await vm.handleSetupBackup()
-    expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
-  })
-
-  it('calls setupKeyBackup with passphrase', async () => {
-    setupKeyBackupMock.mockResolvedValue(undefined)
-    const wrapper = mountSecuritySettings()
-    await vi.dynamicImportSettled()
-    const vm = wrapper.vm as any
-    vm.backupPassphrase = 'my-passphrase'
-    await vm.handleSetupBackup()
-    expect(setupKeyBackupMock).toHaveBeenCalledWith('my-passphrase')
+    expect(vm.handleSetupBackup).toBeUndefined()
+    expect(vm.showBackupDialog).toBeUndefined()
   })
 
   it('renders secure backup entry cell with dialog component', async () => {

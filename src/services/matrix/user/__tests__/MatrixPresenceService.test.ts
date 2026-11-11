@@ -1,7 +1,6 @@
 import type { MatrixClient, PresenceManager } from 'matrix-js-sdk'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useSettingStore } from '@/stores/domains/settings/setting'
+import { registerPrivacyPreferenceHooks } from '@/services/matrix/privacyPreferences'
 import { getLastSentPresence, recordSentPresence, resetSentPresence } from '@/utils/userStatus'
 import matrixClientService from '../../MatrixClientService'
 import { matrixPresenceService } from '../MatrixPresenceService'
@@ -11,6 +10,14 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn(),
   warn: vi.fn()
 }))
+
+/** 服务层不再直接读 store，在线状态可见性通过注入点提供 */
+const setOnlineStatusPreference = (enabled: boolean) => {
+  registerPrivacyPreferenceHooks({
+    isSendTypingNotificationsEnabled: () => true,
+    isShowOnlineStatusEnabled: () => enabled
+  })
+}
 
 describe('MatrixPresenceService', () => {
   let mockClient: Partial<MatrixClient>
@@ -23,8 +30,8 @@ describe('MatrixPresenceService', () => {
   }
 
   beforeEach(() => {
-    // setPresence 内部读取「显示在线状态」偏好，需要激活 Pinia
-    setActivePinia(createPinia())
+    // setPresence 内部读取「显示在线状态」偏好，默认开启
+    setOnlineStatusPreference(true)
     vi.clearAllMocks()
     resetSentPresence()
 
@@ -73,7 +80,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('开关关闭时把 online 降级为 offline 上报，并返回生效值', async () => {
-      useSettingStore().setShowOnlineStatusEnabled(false)
+      setOnlineStatusPreference(false)
 
       const effective = await matrixPresenceService.setPresence('online')
 
@@ -84,7 +91,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('开关开启时 online 原样上报，并返回 online', async () => {
-      useSettingStore().setShowOnlineStatusEnabled(true)
+      setOnlineStatusPreference(true)
 
       const effective = await matrixPresenceService.setPresence('online')
 
@@ -94,7 +101,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('开关关闭时 unavailable 原样上报（用户显式选择不受门控影响）', async () => {
-      useSettingStore().setShowOnlineStatusEnabled(false)
+      setOnlineStatusPreference(false)
 
       const effective = await matrixPresenceService.setPresence('unavailable')
 
@@ -104,7 +111,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('开关关闭时 offline 原样上报（登出/teardown 语义不变）', async () => {
-      useSettingStore().setShowOnlineStatusEnabled(false)
+      setOnlineStatusPreference(false)
 
       const effective = await matrixPresenceService.setPresence('offline')
 
@@ -113,7 +120,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('状态消息与生效值一起写入', async () => {
-      useSettingStore().setShowOnlineStatusEnabled(false)
+      setOnlineStatusPreference(false)
 
       await matrixPresenceService.setPresence('online', '工作中')
 
@@ -121,7 +128,7 @@ describe('MatrixPresenceService', () => {
     })
 
     it('上报失败时不推进记账，避免心跳误判已降级', async () => {
-      useSettingStore().setShowOnlineStatusEnabled(true)
+      setOnlineStatusPreference(true)
       recordSentPresence('online')
       mockPresenceManager.setPresence.mockRejectedValue(new Error('boom'))
 
@@ -136,7 +143,7 @@ describe('MatrixPresenceService', () => {
   describe('setPresence status_msg 语义', () => {
     beforeEach(() => {
       mockPresenceManager.setPresence.mockResolvedValue(undefined)
-      useSettingStore().setShowOnlineStatusEnabled(true)
+      setOnlineStatusPreference(true)
     })
 
     it('未传状态消息时以 undefined 透传，不清空服务端状态文本', async () => {

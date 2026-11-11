@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-04T06:35:12.726Z",
-  "count": 589,
+  "generatedAt": "2026-11-11T11:32:39.887Z",
+  "count": 587,
   "missing": [
     "src/services/backend/config.ts::clearMatrixSessionEndpointConfig",
     "src/services/backend/config.ts::getDefaultMatrixEndpointConfig",
@@ -280,7 +280,6 @@
     "src/services/matrix/crypto/CryptoSDKAdapter.ts::invalidateCryptoCache",
     "src/services/matrix/crypto/CryptoSDKAdapter.ts::isCrossSigningReady",
     "src/services/matrix/crypto/CryptoSDKAdapter.ts::isEncryptionAvailable",
-    "src/services/matrix/crypto/CryptoSDKAdapter.ts::isRoomEncrypted",
     "src/services/matrix/crypto/CryptoSDKAdapter.ts::requestDeviceVerification",
     "src/services/matrix/crypto/CryptoSDKAdapter.ts::requireSDKDeviceKeysManager",
     "src/services/matrix/crypto/CryptoSDKAdapter.ts::requireSDKKeyBackupManager",
@@ -465,7 +464,6 @@
     "src/services/matrix/room/MatrixSpaceService.ts::getSpace",
     "src/services/matrix/room/MatrixSpaceService.ts::getSpaceChildren",
     "src/services/matrix/room/MatrixSpaceService.ts::getSpaceMembers",
-    "src/services/matrix/room/MatrixSpaceService.ts::getSpaceRooms",
     "src/services/matrix/room/MatrixSpaceService.ts::getSpaceTreePath",
     "src/services/matrix/room/MatrixSpaceService.ts::getSpaces",
     "src/services/matrix/room/MatrixSpaceService.ts::getUserSpaces",

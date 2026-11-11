@@ -212,7 +212,7 @@ fn validate_upload_header(key: &str, value: &str) -> Result<(), String> {
 /// 将拖拽/选择的文件复制到应用作用域目录（`$APPDATA/userData/dropped`），
 /// 并返回复制后的目标绝对路径。
 ///
-/// 该命令使用 `std::fs::copy`，不经过 `tauri-plugin-fs` 的能力 scope 检查，
+/// 该命令直接复制文件，不经过 `tauri-plugin-fs` 的能力 scope 检查，
 /// 因此可以复制位于 `$HOME` 下（含 `$DESKTOP/$PICTURES/$DOCUMENTS/$DOWNLOADS`）
 /// 的拖拽文件。复制后的文件位于 `$APPDATA/**` 内，前端随后用 plugin-fs 的
 /// `readFile`/`stat` 以绝对路径读取即可通过 `fs:read-files` 收窄后的 scope。
@@ -253,14 +253,21 @@ pub async fn copy_file_to_app_scope(
         .map_err(|e| format!("failed to resolve app data directory: {e}"))?;
     // 与前端 PathUtil 的 USER_DATA（"userData"）根目录保持一致，落在 $APPDATA/** 作用域内
     let dest_dir = app_data_dir.join("userData").join("dropped");
-    std::fs::create_dir_all(&dest_dir)
+    tokio::fs::create_dir_all(&dest_dir)
+        .await
         .map_err(|e| format!("failed to create destination directory: {e}"))?;
 
-    // 尽力而为地清理过期文件，避免 dropped 目录无界增长
-    cleanup_dropped_dir(&dest_dir);
+    // 尽力而为地清理过期文件，避免 dropped 目录无界增长。
+    // 清理是同步目录遍历，放到阻塞线程池，避免大目录时占住 tokio worker。
+    {
+        let dir = dest_dir.clone();
+        let _ = tokio::task::spawn_blocking(move || cleanup_dropped_dir(&dir)).await;
+    }
 
     let dest_path = dest_dir.join(unique_file_name(&file_name));
-    std::fs::copy(&source, &dest_path).map_err(|e| format!("failed to copy file: {e}"))?;
+    tokio::fs::copy(&source, &dest_path)
+        .await
+        .map_err(|e| format!("failed to copy file: {e}"))?;
 
     Ok(dest_path.to_string_lossy().to_string())
 }

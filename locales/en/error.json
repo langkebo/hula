@@ -30,6 +30,8 @@
     "file_manager_nav_unsupported": "Unsupported file navigation type",
     "directory_not_found": "Directory not found: {detail}",
     "directory_path_not_dir": "Path is not a directory: {detail}",
+    "directory_path_not_allowed": "Path is outside the allowed directories: {detail}",
+    "asset_path_not_allowed": "Asset path is outside the allowed scope: {detail}",
     "directory_scan_timeout": "Directory scan timed out, please try again",
     "directory_scan_cancelled": "Directory scan cancelled",
     "directory_disk_not_found": "Cannot locate the disk containing this directory",

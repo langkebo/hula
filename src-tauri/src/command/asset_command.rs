@@ -1,27 +1,30 @@
+use crate::common::cmd_error::cmd_error;
 use std::path::PathBuf;
-use tauri::AppHandle;
-use tauri_plugin_fs::FsExt;
+use tauri::{AppHandle, Manager};
 
-/// 动态允许资产协议访问特定路径
-/// 用于支持用户从任意位置导入资源（如 3D 模型、本地图片等）
+/// 校验资产协议访问请求
+///
+/// 仅接受已经被授权进入 asset 协议作用域的路径（如 dialog 选择文件后自动授权，
+/// 或 `tauri.conf.json` 中静态配置的 `$APPDATA/$RESOURCE/$CACHE/$TEMP`），
+/// 避免任意本地路径被动态加入作用域。
 #[tauri::command]
 pub fn allow_asset_path(app: AppHandle, path: String) -> Result<(), String> {
-    let path_buf = PathBuf::from(&path);
-    let canonical_path = path_buf
+    let canonical_path = PathBuf::from(&path)
         .canonicalize()
         .map_err(|e| format!("Failed to canonicalize path: {e}"))?;
 
     // 仅允许单个真实文件，避免把目录直接加入 scope。
     if !canonical_path.is_file() {
-        return Err(format!("Path is not a file: {}", path));
+        return Err(format!("Path is not a file: {path}"));
     }
 
-    // 获取资产协议范围并允许该文件
-    // 注意：在 Tauri v2 中，使用 FsExt 扩展来管理范围
-    let scope = app.fs_scope();
-    scope
-        .allow_file(&canonical_path)
-        .map_err(|e| e.to_string())?;
+    if !app.asset_protocol_scope().is_allowed(&canonical_path) {
+        tracing::warn!(
+            "Rejected asset path outside scope: {}",
+            canonical_path.display()
+        );
+        return Err(cmd_error("ASSET_PATH_NOT_ALLOWED"));
+    }
 
     tracing::info!("Allowed asset path: {}", canonical_path.display());
     Ok(())

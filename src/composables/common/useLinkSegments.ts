@@ -1,4 +1,4 @@
-import { open } from '@tauri-apps/plugin-shell'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import { type ComputedRef, computed, type Ref, unref } from 'vue'
 import { createLogger } from '@/utils/Logger'
 
@@ -78,7 +78,7 @@ export const openExternalUrl = async (url: string) => {
   }
 
   try {
-    await open(normalizedUrl)
+    await openUrl(normalizedUrl)
     return true
   } catch (error) {
     logger.error('打开链接失败:', error)

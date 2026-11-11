@@ -3,8 +3,11 @@ import { useDebounceFn } from '@vueuse/core'
 import { sumBy } from 'es-toolkit'
 import { NotificationTypeEnum } from '@/enums'
 import type { SessionItem } from '@/stores/domains/chat/chat'
+import { createLogger } from '@/utils/Logger'
 import { isIOS, isMac } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
+
+const logger = createLogger('UnreadCountManager')
 
 /**
  * 统一的未读计数管理器
@@ -67,7 +70,7 @@ export class UnreadCountManager {
     unReadMark.newMsgUnreadCount = totalUnread
 
     // 更新系统徽章（包含朋友圈未读数）
-    this.updateSystemBadge(unReadMark, feedUnreadCount)
+    this.updateSystemBadgeSafe(unReadMark, feedUnreadCount)
   }
 
   /**
@@ -78,6 +81,24 @@ export class UnreadCountManager {
       this.updateCallback()
     }
     this.pendingUpdates.clear()
+  }
+
+  /**
+   * 触发系统徽章更新并兜住异步失败。
+   * updateSystemBadge 是异步的（跨窗口/原生 IPC），调用方不 await，
+   * 不捕获会产生未处理的 Promise rejection（窗口未就绪时尤其常见）。
+   */
+  private updateSystemBadgeSafe(
+    unReadMark: {
+      newFriendUnreadCount: number
+      newGroupUnreadCount: number
+      newMsgUnreadCount: number
+    },
+    feedUnreadCount?: number
+  ): void {
+    void this.updateSystemBadge(unReadMark, feedUnreadCount).catch((err) => {
+      logger.warn('更新系统徽章失败:', err)
+    })
   }
 
   /**
@@ -138,7 +159,7 @@ export class UnreadCountManager {
     },
     feedUnreadCount?: number
   ) {
-    this.updateSystemBadge(unReadMark, feedUnreadCount)
+    this.updateSystemBadgeSafe(unReadMark, feedUnreadCount)
   }
 
   /**

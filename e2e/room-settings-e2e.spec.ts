@@ -14,7 +14,10 @@
 
 import { expect, type Page, test } from '@playwright/test'
 import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
-import { bootstrapDesktopHarness, bootstrapMobileHarness, clearMockSession } from './support/session'
+import { bootstrapDesktopHarness, bootstrapMobileHarness, clearMockSession, seedMockRoom } from './support/session'
+
+const ROOM_LIST_PATH = '/room'
+const ROOM_CARD_SETTINGS = '[data-testid="room-card-action-settings"]'
 
 // RoomSettingsDrawer 的 11 个 Tab key（与 RoomSettingsDrawer.vue 中 tabs 定义一致）
 const EXPECTED_TAB_KEYS = [
@@ -46,6 +49,29 @@ async function waitForSettingsDrawer(page: Page): Promise<void> {
  */
 async function getVisibleTabs(page: Page) {
   return page.locator('.rs-drawer__tab')
+}
+
+/**
+ * 打开房间列表 → 播种一条 mock 会话 → 点卡片上的设置按钮打开抽屉。
+ *
+ * 审计 S5 前，这里依赖真实房间，mock 环境恒为空 ⇒ 后续用例全部 skip。
+ * 播种只补「列表里有条目」，房间详情/设置数据仍走真实组件的降级分支。
+ */
+async function openRoomSettingsDrawer(page: Page): Promise<void> {
+  await bootstrapDesktopHarness(page)
+  await page.goto(ROOM_LIST_PATH)
+  await page.waitForSelector('#app', { state: 'visible' })
+  await seedMockRoom(page)
+
+  // 冷启动遮罩（layout 的 LoadingSpinner 层）会拦截指针事件，且会在异步加载完成后
+  // 自行消失；不等它卸载，点击会稳定失败在「overlay intercepts pointer events」。
+  await page.locator('#layout > div.absolute.inset-0.z-10').waitFor({ state: 'detached', timeout: 20000 })
+
+  const settingsButton = page.locator(ROOM_CARD_SETTINGS).first()
+  await expect(settingsButton, 'mock 房间卡片应渲染设置按钮').toBeVisible({ timeout: 15000 })
+  await settingsButton.click()
+
+  await waitForSettingsDrawer(page)
 }
 
 test.describe('Login to Room Settings E2E', () => {
@@ -144,51 +170,12 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 3：打开房间设置抽屉
   // ============================================================
   test('Phase 3: 点击房间设置按钮正确打开抽屉（不错误跳转）', async ({ page }) => {
-    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
-    await page.goto('/home')
-    await page.waitForSelector('#app', { state: 'visible' })
-
-    // 等待房间列表渲染
-    await page.waitForTimeout(2000)
-
-    // 尝试找到房间项并点击
-    const roomItem = page.locator('.room-item, [class*="room-list-item"]').first()
-    const roomAvailable = await roomItem.isVisible({ timeout: 5000 }).catch(() => false)
-
-    if (!roomAvailable) {
-      // 没有房间时跳过此测试（mock 环境限制）
-      test.skip(true, 'Mock 环境无可用房间，跳过房间设置 E2E 测试')
-      return
-    }
-
-    // 点击房间项打开详情
-    await roomItem.click()
-    await page.waitForTimeout(1000)
-
-    // 查找房间设置按钮（RoomDetailPane 或 RoomDetailDrawer 中的设置按钮）
-    const settingsButton = page.locator(
-      '[data-testid="room-detail-action-settings"], [data-testid="room-drawer-settings"]'
-    )
-    const settingsAvailable = await settingsButton
-      .first()
-      .isVisible({ timeout: 5000 })
-      .catch(() => false)
-
-    if (!settingsAvailable) {
-      test.skip(true, '房间详情面板未显示设置按钮，跳过')
-      return
-    }
-
-    // 点击设置按钮 — 此前 bug 是这里会错误跳转到房间详情页
-    await settingsButton.first().click()
-
-    // 验证 RoomSettingsDrawer 打开（而不是路由跳转）
-    await waitForSettingsDrawer(page)
+    await openRoomSettingsDrawer(page)
 
     // 验证 URL 没有变化（不是路由跳转）
-    expect(page.url(), '点击设置按钮不应触发路由跳转').toContain('/home')
+    expect(new URL(page.url()).pathname, '点击设置按钮不应触发路由跳转').toBe(ROOM_LIST_PATH)
 
     expectNoRuntimeIssues(issues)
   })
@@ -197,39 +184,9 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 4：验证 11 个 Tab 全部可渲染（不白屏）
   // ============================================================
   test('Phase 4: RoomSettingsDrawer 11 个 Tab 全部可渲染', async ({ page }) => {
-    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
-    await page.goto('/home')
-    await page.waitForSelector('#app', { state: 'visible' })
-    await page.waitForTimeout(2000)
-
-    // 打开房间设置抽屉
-    const roomItem = page.locator('.room-item, [class*="room-list-item"]').first()
-    const roomAvailable = await roomItem.isVisible({ timeout: 5000 }).catch(() => false)
-    if (!roomAvailable) {
-      test.skip(true, 'Mock 环境无可用房间')
-      return
-    }
-
-    await roomItem.click()
-    await page.waitForTimeout(1000)
-
-    const settingsButton = page.locator(
-      '[data-testid="room-detail-action-settings"], [data-testid="room-drawer-settings"]'
-    )
-    if (
-      !(await settingsButton
-        .first()
-        .isVisible({ timeout: 5000 })
-        .catch(() => false))
-    ) {
-      test.skip(true, '设置按钮不可见')
-      return
-    }
-
-    await settingsButton.first().click()
-    await waitForSettingsDrawer(page)
+    await openRoomSettingsDrawer(page)
 
     // 验证 Tab 数量
     const tabs = await getVisibleTabs(page)
@@ -260,38 +217,9 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 5：验证 i18n 文本正确显示
   // ============================================================
   test('Phase 5: 房间设置抽屉 i18n 文本正确显示（非原始 key）', async ({ page }) => {
-    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
-    await page.goto('/home')
-    await page.waitForSelector('#app', { state: 'visible' })
-    await page.waitForTimeout(2000)
-
-    // 打开房间设置抽屉
-    const roomItem = page.locator('.room-item, [class*="room-list-item"]').first()
-    if (!(await roomItem.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, 'Mock 环境无可用房间')
-      return
-    }
-
-    await roomItem.click()
-    await page.waitForTimeout(1000)
-
-    const settingsButton = page.locator(
-      '[data-testid="room-detail-action-settings"], [data-testid="room-drawer-settings"]'
-    )
-    if (
-      !(await settingsButton
-        .first()
-        .isVisible({ timeout: 5000 })
-        .catch(() => false))
-    ) {
-      test.skip(true, '设置按钮不可见')
-      return
-    }
-
-    await settingsButton.first().click()
-    await waitForSettingsDrawer(page)
+    await openRoomSettingsDrawer(page)
 
     // 验证标题文本（不是原始 key 如 "room.settings_drawer.title"）
     const title = page.locator('.rs-drawer__title')
@@ -321,38 +249,9 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 6：关闭抽屉并验证状态清理
   // ============================================================
   test('Phase 6: 关闭房间设置抽屉后正确清理', async ({ page }) => {
-    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
-    await page.goto('/home')
-    await page.waitForSelector('#app', { state: 'visible' })
-    await page.waitForTimeout(2000)
-
-    // 打开房间设置抽屉
-    const roomItem = page.locator('.room-item, [class*="room-list-item"]').first()
-    if (!(await roomItem.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, 'Mock 环境无可用房间')
-      return
-    }
-
-    await roomItem.click()
-    await page.waitForTimeout(1000)
-
-    const settingsButton = page.locator(
-      '[data-testid="room-detail-action-settings"], [data-testid="room-drawer-settings"]'
-    )
-    if (
-      !(await settingsButton
-        .first()
-        .isVisible({ timeout: 5000 })
-        .catch(() => false))
-    ) {
-      test.skip(true, '设置按钮不可见')
-      return
-    }
-
-    await settingsButton.first().click()
-    await waitForSettingsDrawer(page)
+    await openRoomSettingsDrawer(page)
 
     // 点击关闭按钮
     const closeButton = page.locator('.rs-drawer__close')
@@ -374,38 +273,9 @@ test.describe('Login to Room Settings E2E', () => {
   // 阶段 7：快速切换 Tab 不崩溃（回归测试）
   // ============================================================
   test('Phase 7: 快速连续切换 Tab 不崩溃', async ({ page }) => {
-    await bootstrapDesktopHarness(page)
     const issues = createRuntimeIssueCollector(page)
 
-    await page.goto('/home')
-    await page.waitForSelector('#app', { state: 'visible' })
-    await page.waitForTimeout(2000)
-
-    // 打开房间设置抽屉
-    const roomItem = page.locator('.room-item, [class*="room-list-item"]').first()
-    if (!(await roomItem.isVisible({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, 'Mock 环境无可用房间')
-      return
-    }
-
-    await roomItem.click()
-    await page.waitForTimeout(1000)
-
-    const settingsButton = page.locator(
-      '[data-testid="room-detail-action-settings"], [data-testid="room-drawer-settings"]'
-    )
-    if (
-      !(await settingsButton
-        .first()
-        .isVisible({ timeout: 5000 })
-        .catch(() => false))
-    ) {
-      test.skip(true, '设置按钮不可见')
-      return
-    }
-
-    await settingsButton.first().click()
-    await waitForSettingsDrawer(page)
+    await openRoomSettingsDrawer(page)
 
     // 快速连续切换 Tab（不等待渲染完成）
     const tabs = await getVisibleTabs(page)

@@ -3,7 +3,7 @@ use crate::configuration::get_configuration;
 use crate::error::CommonError;
 use crate::repository::im_message_repository::reset_table_initialization_flags;
 use migration::{Migrator, MigratorTrait};
-use sea_orm::{ConnectionTrait, DatabaseConnection, DbBackend, Statement};
+use sea_orm::{ConnectionTrait, DatabaseConnection, DbBackend, Statement, TransactionTrait};
 use std::path::Path;
 use tauri::{AppHandle, State};
 use tracing::{info, warn};
@@ -38,15 +38,12 @@ pub async fn switch_user_database(
             .connection_string(&app_handle, Some(&uid))
             .await?;
 
-        // 执行数据库迁移
-        match Migrator::up(&new_db, None).await {
-            Ok(_) => {
-                info!("Database migration completed for user: {}", uid);
-            }
-            Err(e) => {
-                tracing::warn!("Database migration warning for user {}: {}", uid, e);
-            }
-        }
+        // 执行数据库迁移。迁移失败必须向上返回：继续运行会得到一个 schema 半迁移的库，
+        // 后续读写按新表结构执行时会在不可预期的地方报错（甚至静默写坏数据）。
+        Migrator::up(&new_db, None)
+            .await
+            .map_err(|e| anyhow::anyhow!("Database migration failed for user {}: {}", uid, e))?;
+        info!("Database migration completed for user: {}", uid);
 
         // 重置表初始化标志，确保新数据库会创建必要的表
         reset_table_initialization_flags();
@@ -107,6 +104,9 @@ pub async fn merge_login_uid(
     from_uid: &str,
     to_uid: &str,
 ) -> Result<u64, CommonError> {
+    // 5 张表必须在同一事务里改写：中途失败若不回滚，会留下「一半表指向新账号、
+    // 一半仍指向旧账号」的分裂状态，而按行数的进度判定无法识别这种分裂。
+    let txn = db.begin().await?;
     let mut affected = 0u64;
     for table in LOGIN_UID_TABLES {
         let stmt = Statement::from_sql_and_values(
@@ -114,8 +114,9 @@ pub async fn merge_login_uid(
             format!("UPDATE {table} SET login_uid = ? WHERE login_uid = ?"),
             [to_uid.into(), from_uid.into()],
         );
-        affected += db.execute(stmt).await?.rows_affected();
+        affected += txn.execute(stmt).await?.rows_affected();
     }
+    txn.commit().await?;
     Ok(affected)
 }
 
@@ -220,7 +221,13 @@ pub async fn migrate_user_database(
                     warn!("WAL checkpoint before migration failed (continuing with copy): {}", err);
                 }
             }
-            if copy_database_file(&from_path, &to_path)? {
+            // 库文件可能有数 GB：同步复制会阻塞 tokio worker，放到阻塞线程池执行。
+            let copy_from = from_path.clone();
+            let copy_to = to_path.clone();
+            let copied = tokio::task::spawn_blocking(move || copy_database_file(&copy_from, &copy_to))
+                .await
+                .map_err(|e| anyhow::anyhow!("database copy task join failed: {}", e))??;
+            if copied {
                 info!("copied local database: {:?} -> {:?}", from_path, to_path);
             }
         }

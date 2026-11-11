@@ -100,10 +100,15 @@ self.onmessage = (e) => {
     }
 
     case 'startTimer': {
-      activeTimers++
+      // 替换已有定时器时不能再计数：旧 timer 被 clearTimeout 后不会再走 timeout 分支的
+      // activeTimers--，重复累加会让计数只增不减，allTimersCompleted 永远不触发。
+      const replacing = timerIds.has(msgId)
+      if (!replacing) {
+        activeTimers++
+      }
       safeLog(`[Worker] 启动定时器: ${msgId}, 时长: ${duration}ms`)
       // 使用数字类型的msgId
-      if (timerIds.has(msgId)) {
+      if (replacing) {
         const { timerId, debugId } = timerIds.get(msgId)!
         clearTimeout(timerId)
         if (debugId) clearInterval(debugId)

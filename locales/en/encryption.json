@@ -1,6 +1,5 @@
 {
   "backup": {
-    "title": "Key Backup",
     "recovery_key_desc": "The recovery key is used to restore your encryption keys when you lose or change devices. Please keep it safe.",
     "copy_key": "Copy Key",
     "download_key": "Download Key",
@@ -36,8 +35,6 @@
     "minutes": "{minutes} min"
   },
   "keyBackup": {
-    "setup": "Set Up Key Backup",
-    "restore": "Restore Key Backup",
     "setupTitle": "Set Up Key Backup",
     "restoreTitle": "Restore Key Backup",
     "setupComplete": "Key backup has been set up successfully.",

@@ -9,6 +9,8 @@ const logger = createLogger('LocationStore')
 
 /** 到期自动停止失败后的退避重试间隔。 */
 const EXPIRY_STOP_RETRY_DELAY_MS = 5000
+/** 到期自动停止的最大连续重试次数：耗尽后放弃，避免失败任务永久占用定时器。 */
+const EXPIRY_STOP_MAX_RETRIES = 3
 
 /** 活跃信标状态（以 beacon_info 事件 ID 为键） */
 interface ActiveBeacon {
@@ -35,6 +37,8 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
 
   /** 到期定时器（以 beacon_info 事件 ID 为键），到期后自动停止对应信标。 */
   const expiryTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  /** 到期自动停止的连续失败次数（以 beacon_info 事件 ID 为键），成功后清零。 */
+  const expiryStopRetryCounts = new Map<string, number>()
 
   function clearExpiryTimer(beaconInfoEventId: string): void {
     const timer = expiryTimers.get(beaconInfoEventId)
@@ -49,6 +53,7 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
       clearTimeout(timer)
     }
     expiryTimers.clear()
+    expiryStopRetryCounts.clear()
   }
 
   /** 依据 timestamp + timeout 计算剩余时长并排定到期定时器；到期即调用 stopLiveShare。 */
@@ -77,7 +82,14 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
    * 否则定时器已删除、isLive/sharing 未复位，信标会永久卡在 live 态。
    */
   function handleExpiryStopFailure(beaconInfoEventId: string, error: unknown): void {
-    logger.warn('到期自动停止失败，短暂退避后重试:', beaconInfoEventId, error)
+    const attempts = (expiryStopRetryCounts.get(beaconInfoEventId) ?? 0) + 1
+    if (attempts > EXPIRY_STOP_MAX_RETRIES) {
+      expiryStopRetryCounts.delete(beaconInfoEventId)
+      logger.error(`到期自动停止连续失败 ${EXPIRY_STOP_MAX_RETRIES} 次，放弃重试:`, beaconInfoEventId, error)
+      return
+    }
+    expiryStopRetryCounts.set(beaconInfoEventId, attempts)
+    logger.warn(`到期自动停止失败（第 ${attempts} 次），短暂退避后重试:`, beaconInfoEventId, error)
     expiryTimers.set(
       beaconInfoEventId,
       setTimeout(() => {
@@ -164,6 +176,8 @@ export const useLocationStore = defineStore(StoresEnum.LOCATION, () => {
     }
 
     activeBeacons.value.set(beaconInfoEventId, { ...beacon, isLive: false })
+    // 停止成功即清零失败计数，避免同一信标下一次到期被历史失败次数拖累。
+    expiryStopRetryCounts.delete(beaconInfoEventId)
 
     // 仅当不再存在任何 live 信标时才关闭共享态（为多信标场景预留）。
     sharing.value = Array.from(activeBeacons.value.values()).some((item) => item.isLive)
