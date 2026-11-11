@@ -52,7 +52,12 @@ export const createAuthGuard = ({
       return true
     }
 
-    const loginPath = isMobile ? '/mobile/login' : '/login'
+    // 平台判定与「用户此刻站在哪套路由里」可能不一致：
+    // - 移动端产物保留了桌面窗口路由（?platform=desktop 覆盖）；
+    // - 浏览器 E2E 里整页重载可能丢掉 `?platform=mobile` 标记。
+    // 一旦不一致，用户会从移动端页面被甩到**桌面登录页**（手机上看到 PC 布局）。
+    // 因此以用户所见为准：目标在 /mobile/** 下就回移动登录页。
+    const loginPath = isMobile || to.path.startsWith('/mobile') ? '/mobile/login' : '/login'
 
     try {
       const isLoggedIn = await hasAuthenticatedSession()

@@ -111,6 +111,27 @@ describe('authGuard', () => {
     expect(result).toBe('/mobile/login')
   })
 
+  it('redirects to mobile login when the target is under /mobile even if the guard is desktop', async () => {
+    // 平台判定（isMobile=false）与目标路由（/mobile/**）不一致时，
+    // 以用户所见页面为准 —— 否则手机上会被甩到桌面登录页。
+    mockHasAuthenticatedSession.mockResolvedValue(false)
+
+    const guard = createAuthGuard({
+      isMobile: false,
+      hasAuthenticatedSession: mockHasAuthenticatedSession,
+      verifyAdminAccess: mockVerifyAdminAccess,
+      logger: {
+        warn: mockWarn,
+        error: mockError
+      }
+    })
+
+    const result = await guard(createRoute('/mobile/mobileMy/settings'))
+
+    expect(result).toBe('/mobile/login')
+    expect(mockWarn).toHaveBeenCalledWith('未登录，跳转到 /mobile/login')
+  })
+
   it('blocks protected admin routes for non-admin users', async () => {
     mockHasAuthenticatedSession.mockResolvedValue(true)
     mockVerifyAdminAccess.mockResolvedValue(false)

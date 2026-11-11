@@ -18,7 +18,8 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   invitePermission: 'invitePermission',
   devices: 'devices',
   deactivateAccount: 'deactivateAccount',
-  helpAbout: SETTINGS_CANONICAL_ROUTE_SEGMENTS.helpAbout
+  helpAbout: SETTINGS_CANONICAL_ROUTE_SEGMENTS.helpAbout,
+  emoticons: 'emoticons'
 } as const
 
 export const MOBILE_SETTINGS_LABS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.labs}`
@@ -32,6 +33,7 @@ export const MOBILE_SETTINGS_INVITE_PERMISSION_PATH = `${MOBILE_SETTINGS_BASE_PA
 export const MOBILE_SETTINGS_DEVICES_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.devices}`
 export const MOBILE_SETTINGS_DEACTIVATE_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.deactivateAccount}`
 export const MOBILE_SETTINGS_HELP_ABOUT_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.helpAbout}`
+export const MOBILE_SETTINGS_EMOTICONS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.emoticons}`
 
 export const MOBILE_SETTINGS_ROUTE_NAMES = {
   labs: 'mobileLabsSettings',
@@ -45,5 +47,6 @@ export const MOBILE_SETTINGS_ROUTE_NAMES = {
   invitePermission: 'mobileInvitePermission',
   devices: 'mobileDeviceManagement',
   deactivateAccount: 'mobileDeactivateAccount',
-  helpAbout: 'mobileHelpAboutSettings'
+  helpAbout: 'mobileHelpAboutSettings',
+  emoticons: 'mobileEmojiManager'
 } as const

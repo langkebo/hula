@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
-import { WEB_SESSION_FALLBACK_STORAGE_KEY } from '../src/utils/storageKeys'
+import { E2E_STORAGE_KEYS, WEB_SESSION_FALLBACK_STORAGE_KEY } from '../src/utils/storageKeys'
 import { loginOnMobileUi } from './support/androidDevice'
 import { autoDismissLocalUnlockGate, dismissLocalUnlockDialog } from './support/localUnlockGate'
 
@@ -102,6 +102,29 @@ const pushRoute = async (
   return readRoute(page)
 }
 
+/**
+ * 播 e2e 标记（本套用例只验证「入口可达」，鉴权另有 authGuard 单测）。
+ *
+ * - `platform=mobile`：整页重载可能丢掉 `?platform=mobile`，此时 `detectAppPlatform()`
+ *   会把纯浏览器判成桌面，守卫随之把用户踢到桌面登录页。
+ * - `mockAuth`：开发态下 `sessionOrchestrator.hasAuthenticatedSession()` 会偶发读空
+ *   （既有缺陷），导致导航被随机甩到登录页 —— 与本轮 UI 改动无关。
+ */
+const seedE2EStorage = async (page: Page) =>
+  page.addInitScript(
+    ({ fallbackKey, e2eKeys }) => {
+      window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
+      window.localStorage.setItem(fallbackKey, '1')
+      window.localStorage.setItem(e2eKeys.platform, 'mobile')
+      window.localStorage.setItem(e2eKeys.enabled, '1')
+      window.localStorage.setItem(e2eKeys.mockAuth, '1')
+    },
+    {
+      fallbackKey: WEB_SESSION_FALLBACK_STORAGE_KEY,
+      e2eKeys: E2E_STORAGE_KEYS
+    }
+  )
+
 /** 回到「我的」首屏并等待快捷入口渲染（客户端未就绪时首屏不渲染，按重试处理） */
 const gotoTab = async (page: Page, attempts = 3) => {
   for (let i = 0; i < attempts; i += 1) {
@@ -149,13 +172,7 @@ test.describe('我的页信息架构（S1）', () => {
       if (m.type() === 'error') pageErrors.push(`console: ${m.text().slice(0, 200)}`)
     })
 
-    await page.addInitScript(
-      ({ fallbackKey }) => {
-        window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
-        window.localStorage.setItem(fallbackKey, '1')
-      },
-      { fallbackKey: WEB_SESSION_FALLBACK_STORAGE_KEY }
-    )
+    await seedE2EStorage(page)
 
     // 纯浏览器没有系统密钥库 ⇒ 启动期必然弹「设置本地解锁密码」并阻断路由。
     // 必须装**常驻**的点掉逻辑（只点一次会漏掉 crypto 初始化时的第二次弹层，
@@ -245,5 +262,72 @@ test.describe('我的页信息架构（S1）', () => {
     const settingsText = await page.evaluate(() => document.body.innerText)
     expect(settingsText, `设置页仍显示硬编码版本 v1.0.0`).not.toContain('v1.0.0')
     expect(settingsText, `设置页没有显示 package.json 的版本 v${PKG_VERSION}`).toContain(`v${PKG_VERSION}`)
+  })
+
+  /**
+   * S2 的三项：
+   * 1. 设置搜索能按文案/别名命中并跳转（此前 16 个一级项 + 20 个二级页只能滚动找）；
+   * 2. 加密设置页（477 行）此前**有路由但无人 push**，只能手输 URL —— 现在从设置页一级项可达；
+   * 3. 表情包管理（255 行）此前**无路由无入口**，已注册路由并接入。
+   */
+  test('设置页：搜索命中、加密与表情包入口可达', async ({ page }) => {
+    const self = await registerAccount('myset')
+    await seedE2EStorage(page)
+    await autoDismissLocalUnlockGate(page)
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
+    await dismissLocalUnlockDialog(page, 10_000)
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 45_000 }).not.toContain('/mobile/login')
+    await page.waitForTimeout(1500)
+
+    // push 到同一路由不会重建组件（搜索词会残留并把列表 v-show 隐藏），
+    // 所以每次进设置页都走这个 helper：先进入、再把搜索清空。
+    const gotoSettings = async () => {
+      await pushRoute(page, '/mobile/mobileMy/settings')
+      const input = page.locator('.van-search input').first()
+      await input.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
+      if (await input.isVisible().catch(() => false)) {
+        await input.fill('')
+        await page.waitForTimeout(300)
+      }
+    }
+
+    await gotoSettings()
+    const searchInput = page.locator('.van-search input').first()
+    await expect(searchInput, '设置页没有渲染搜索框').toBeVisible({ timeout: 20_000 })
+
+    // ── 1) 搜索：按文案命中 → 点击跳转
+    await searchInput.fill('设备')
+    const results = page.locator('.settings-search-results .van-cell')
+    await expect(results.first(), '搜「设备」没有任何结果').toBeVisible({ timeout: 10_000 })
+    const deviceHit = results.filter({ hasText: /设备管理|Devices/i }).first()
+    await expect(deviceHit, '搜「设备」没有命中「设备管理」').toBeVisible()
+    await deviceHit.click()
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/mobileMy/devices')
+
+    // 别名也应命中（用户常按「黑名单」找「已忽略用户」）
+    await gotoSettings()
+    await page.locator('.van-search input').first().fill('黑名单')
+    const aliasHit = page.locator('.settings-search-results .van-cell').filter({ hasText: /已忽略用户|Ignored/i })
+    await expect(aliasHit.first(), '别名「黑名单」没有命中「已忽略用户」').toBeVisible({ timeout: 10_000 })
+
+    // ── 2) 加密设置入口
+    await gotoSettings()
+    const encryptionEntry = page
+      .locator('.van-cell')
+      .filter({ hasText: /加密设置|Encryption/i })
+      .first()
+    await expect(encryptionEntry, '设置页没有「加密设置」入口').toBeVisible({ timeout: 10_000 })
+    await encryptionEntry.click()
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/encryption')
+
+    // ── 3) 表情包管理入口
+    await gotoSettings()
+    const emoticonEntry = page
+      .locator('.van-cell')
+      .filter({ hasText: /表情包管理|Emoji Packs/i })
+      .first()
+    await expect(emoticonEntry, '设置页没有「表情包管理」入口').toBeVisible({ timeout: 10_000 })
+    await emoticonEntry.click()
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/mobileMy/emoticons')
   })
 })

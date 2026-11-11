@@ -6,8 +6,23 @@
 
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
-        <div class="flex flex-col p-16px gap-12px">
-          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mb-8px">
+        <!-- 设置搜索：16 个一级项 + 20 个二级页，没有搜索只能靠滚动记忆找 -->
+        <div class="settings-search sticky top-0 z-2">
+          <van-search
+            v-model="searchQuery"
+            :placeholder="t('setting.dialog.search_placeholder')"
+            :aria-label="t('setting.dialog.search_aria_label')"
+            shape="round"
+            clearable
+            @clear="searchQuery = ''" />
+        </div>
+
+        <MobileSettingsSearch v-show="hasQuery" :query="searchQuery" @navigate="handleSearchNavigate" />
+
+        <div v-show="!hasQuery" class="flex flex-col p-16px gap-12px">
+          <div
+            id="settings-group-account"
+            class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mb-8px">
             {{ t('mobile_setting.account_section') }}
           </div>
 
@@ -55,7 +70,9 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div
+            id="settings-group-social"
+            class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.social_section') }}
           </div>
 
@@ -70,7 +87,9 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div
+            id="settings-group-notification"
+            class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.notification_section') }}
           </div>
 
@@ -85,7 +104,9 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div
+            id="settings-group-appearance"
+            class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.appearance_section') }}
           </div>
 
@@ -125,7 +146,9 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div
+            id="settings-group-privacy"
+            class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.privacy_section') }}
           </div>
 
@@ -149,7 +172,9 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div
+            id="settings-group-help"
+            class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.help_section') }}
           </div>
 
@@ -164,7 +189,9 @@
             </van-cell>
           </van-cell-group>
 
-          <div class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
+          <div
+            id="settings-group-advanced"
+            class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] mt-16px mb-8px">
             {{ t('mobile_setting.advanced_section') }}
           </div>
 
@@ -208,7 +235,9 @@ import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { APP_VERSION } from '@/utils/appVersion'
 // biome-ignore lint/style/useImportType: FONT_SCALE_STEPS 在模板中作为值使用，同时用于类型推导
 import { applyFontScale, FONT_SCALE_STEPS, loadFontScale, saveFontScale } from '@/utils/fontScale'
+import MobileSettingsSearch from './components/MobileSettingsSearch.vue'
 import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
+import type { MobileSettingsSearchEntry } from './mobileSettingsSearchIndex'
 import {
   MOBILE_SETTINGS_DEVICES_PATH,
   MOBILE_SETTINGS_HELP_ABOUT_PATH,
@@ -221,6 +250,28 @@ const router = useRouter()
 const settingStore = useSettingStore()
 const userStatusStore = useUserStatusStore()
 const advancedSettingsItems = MOBILE_ADVANCED_SETTINGS_ITEMS
+
+// ── 设置搜索 ────────────────────────────────────────────────
+const searchQuery = ref('')
+const hasQuery = computed(() => searchQuery.value.trim().length > 0)
+
+/**
+ * 搜索结果点击：
+ * - 有独立页面 → 直接跳转；
+ * - 内联控件（主题 / 语言 / 字号）→ 先清空搜索再滚到对应分组，
+ *   否则「点了没反应」比搜不到更让人困惑。
+ */
+async function handleSearchNavigate(entry: MobileSettingsSearchEntry) {
+  if (entry.path) {
+    await router.push(entry.path)
+    return
+  }
+  searchQuery.value = ''
+  await nextTick()
+  if (entry.anchor) {
+    document.getElementById(entry.anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
 
 const themeValue = computed({
   get: () => settingStore.themeContent,
@@ -290,6 +341,12 @@ const { isLoggingOut, handleLogout } = useMobileLogout()
 </script>
 
 <style scoped lang="scss">
+/* 搜索框吸顶：设置页可滚动很长，滚动中仍要能改关键词 */
+.settings-search {
+  background: var(--tjg-surface-panel);
+  border-bottom: 1px solid var(--tjg-border-layout-divider);
+}
+
 :deep(.van-cell-group--inset) {
   margin: 0 12px;
   border-radius: 12px;
