@@ -67,7 +67,10 @@
             </div>
           </div>
           <div class="session-info">
-            <div class="session-name">{{ session.name }}</div>
+            <div class="session-name-row">
+              <div class="session-name">{{ session.name }}</div>
+              <EncryptionLockBadge v-if="isEncrypted(session.roomId)" :label="t('home.secret_chat.encrypted_badge')" />
+            </div>
             <div class="session-preview">{{ session.text || t('home.secret_chat.no_messages') }}</div>
           </div>
           <div class="session-meta">
@@ -102,6 +105,8 @@ import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import EmptyState from '@/components/common/EmptyState.vue'
+import EncryptionLockBadge from '@/components/encryption/EncryptionLockBadge.vue'
+import { usePrivateRoomEncryption } from '@/composables/secretChat/usePrivateRoomEncryption'
 import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
 import {
   isPrivateRoom,
@@ -148,6 +153,17 @@ const hiddenSessions = computed(() => {
 const handleUnlockClick = () => {
   openSecretChatUnlock('/secretChat')
 }
+
+const { refresh: refreshEncryption, isEncrypted } = usePrivateRoomEncryption()
+
+/** 列表变化时批量刷新加密状态；锁定态列表为空，快照随之清空。 */
+watch(
+  () => hiddenSessions.value.map((session: SessionItem) => session.roomId),
+  (roomIds) => {
+    void refreshEncryption(roomIds)
+  },
+  { immediate: true }
+)
 
 /** 行内容的无障碍描述（含未读）；文案走 i18n，避免模板里堆中文。 */
 const sessionAriaLabel = (session: SessionItem) =>
@@ -346,6 +362,13 @@ watch(isUnlocked, (value) => {
   overflow: hidden;
 }
 
+.session-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
 .session-name {
   font-size: 14px;
   font-weight: 500;
@@ -353,6 +376,7 @@ watch(isUnlocked, (value) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .session-preview {

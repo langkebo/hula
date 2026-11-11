@@ -151,7 +151,8 @@
     "unread_badge": "{count} 条未读",
     "avatar_alt": "{name} 的头像",
     "registry_unavailable": "无法校验私密会话状态，请稍后重试",
-    "checking_access": "正在校验访问权限"
+    "checking_access": "正在校验访问权限",
+    "encrypted_badge": "已加密"
   },
   "chat_sidebar": {
     "actions": {

@@ -50,10 +50,17 @@
           <van-cell
             v-for="session in hiddenSessions"
             :key="session.roomId"
-            :title="session.name"
             :label="session.text || t('home.secret_chat.no_messages')"
             :aria-label="sessionAriaLabel(session)"
             @click="handleSessionClick(session)">
+            <template #title>
+              <div class="flex items-center gap-4px overflow-hidden">
+                <span class="truncate">{{ session.name }}</span>
+                <EncryptionLockBadge
+                  v-if="isEncrypted(session.roomId)"
+                  :label="t('home.secret_chat.encrypted_badge')" />
+              </div>
+            </template>
             <template #icon>
               <div
                 class="w-44px h-44px rounded-full overflow-hidden shrink-0 me-12px flex items-center justify-center bg-[--tjg-color-primary-500] text-[--tjg-text-inverse] text-18px font-500">
@@ -94,6 +101,8 @@ import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import EncryptionLockBadge from '@/components/encryption/EncryptionLockBadge.vue'
+import { usePrivateRoomEncryption } from '@/composables/secretChat/usePrivateRoomEncryption'
 import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
@@ -136,6 +145,17 @@ const hiddenSessions = computed(() => {
   if (locked.value) return []
   return sessionStore.sessionList.filter((session: SessionItem) => isPrivateRoom(session.roomId))
 })
+
+const { refresh: refreshEncryption, isEncrypted } = usePrivateRoomEncryption()
+
+/** 列表变化时批量刷新加密状态；锁定态列表为空，快照随之清空。 */
+watch(
+  () => hiddenSessions.value.map((session: SessionItem) => session.roomId),
+  (roomIds) => {
+    void refreshEncryption(roomIds)
+  },
+  { immediate: true }
+)
 
 /** 行内容的无障碍描述（含未读）。 */
 const sessionAriaLabel = (session: SessionItem) =>

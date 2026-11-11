@@ -3137,7 +3137,7 @@ export type I18nKeys = {
       "unmark_private": "移出私密聊天",
       "unmark_confirm": "移出后该会话将回到普通列表，确认移出？",
       "subtitle": "本机加密显示；服务端仍按保留策略保存消息",
-      "encryption_boundary_hint": "私密聊天通过隐藏会话与密码校验保护，不提供端到端加密",
+      "encryption_boundary_hint": "设为私密时会开启端到端加密，仅对此后发送的新消息生效。",
       "locked_title": "私密会话已锁定",
       "unlock_action": "输入密码继续",
       "unlock_title": "解锁私密聊天",
@@ -3148,7 +3148,8 @@ export type I18nKeys = {
       "unread_badge": "{count} 条未读",
       "avatar_alt": "{name} 的头像",
       "registry_unavailable": "无法校验私密会话状态，请稍后重试",
-      "checking_access": "正在校验访问权限"
+      "checking_access": "正在校验访问权限",
+      "encrypted_badge": "已加密"
     },
     "chat_sidebar": {
       "actions": {
@@ -10125,6 +10126,7 @@ export type I18nKeyPaths =
   | "home.secret_chat.avatar_alt"
   | "home.secret_chat.registry_unavailable"
   | "home.secret_chat.checking_access"
+  | "home.secret_chat.encrypted_badge"
   | "home.chat_sidebar.actions.retry"
   | "home.chat_sidebar.search.placeholder"
   | "home.chat_sidebar.quota.title"
