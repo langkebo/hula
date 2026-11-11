@@ -223,6 +223,31 @@ export const useMessage = () => {
     }
   ])
 
+  // 房间加密不可逆：桌面入口先弹确认，取消则放弃设为私密
+  const confirmEnableEncryption = () =>
+    new Promise<boolean>((resolve) => {
+      const dialog = window.$dialog
+      if (!dialog) {
+        resolve(false)
+        return
+      }
+      let settled = false
+      const settle = (value: boolean) => {
+        if (settled) return
+        settled = true
+        resolve(value)
+      }
+      dialog.warning({
+        title: t('home.secret_chat.encryption_confirm_title'),
+        content: t('home.secret_chat.encryption_confirm_message'),
+        positiveText: t('home.secret_chat.encryption_confirm_ok'),
+        negativeText: t('home.secret_chat.encryption_confirm_cancel'),
+        onPositiveClick: () => settle(true),
+        onNegativeClick: () => settle(false),
+        onClose: () => settle(false)
+      })
+    })
+
   const specialMenuList = ref<OPT.RightMenu[]>([
     {
       label: (item: SessionItem) => (item.shield ? t('menu.unblock_user_messages') : t('menu.block_user_messages')),
@@ -257,7 +282,7 @@ export const useMessage = () => {
         isRoomPrivate(item.roomId) ? t('home.secret_chat.unmark_private') : t('home.secret_chat.mark_private'),
       icon: (item: SessionItem) => (isRoomPrivate(item.roomId) ? 'eye' : 'eye-close'),
       click: async (item: SessionItem) => {
-        await togglePrivateRoom(item)
+        await togglePrivateRoom(item, { confirmEnableEncryption })
       },
       // 群聊成员不可控，标成私密会产生假承诺
       visible: (item: SessionItem) => item.type === RoomTypeEnum.SINGLE
