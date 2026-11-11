@@ -126,15 +126,43 @@ test.describe('「我的」页体验基线', () => {
 
     const viewport = page.viewportSize()
 
-    // ── TTI：整页 reload 到「九宫格可见」的墙钟时间（含会话恢复，贴近真实冷启）
+    // ── 冷启 TTI：拆成两段，避免把两件事混成一个数。
+    //
+    // ⚠️ 旧实现是「reload 后等 `.m-quick-actions` 可见」，而 reload 的落点是**消息页**
+    // （路由不持久化），该元素根本不在首屏 ⇒ 必然等满超时记 null。它一直是 n/a
+    // 不是会话慢，是判据写错了。
     const ttiStart = Date.now()
     await page.reload({ waitUntil: 'domcontentloaded' })
+    await dismissLocalUnlockDialog(page, 15_000)
+
+    // 第 1 段：冷启动后「会话恢复完成」（client 建起来）——D12 的判据
+    let sessionRestoreMs: number | null = null
+    try {
+      await expect
+        .poll(
+          () =>
+            page.evaluate(async () => {
+              const { matrixClientService } = (await import(/* @vite-ignore */ '/src/services/matrix/index.ts')) as {
+                matrixClientService: { getClient: () => unknown | null }
+              }
+              return Boolean(matrixClientService.getClient())
+            }),
+          { timeout: 60_000 }
+        )
+        .toBe(true)
+      sessionRestoreMs = Date.now() - ttiStart
+    } catch {
+      sessionRestoreMs = null
+    }
+
+    // 第 2 段：从冷启开始到「我的页九宫格可见」（含会话恢复 + 一次 SPA 导航）
     let ttiMs: number | null = null
     try {
-      await page.locator('.m-quick-actions').first().waitFor({ state: 'visible', timeout: 60_000 })
+      await pushMobileRoute(page, { name: 'mobileMy' })
+      await page.locator('.m-quick-actions').first().waitFor({ state: 'visible', timeout: 30_000 })
       ttiMs = Date.now() - ttiStart
     } catch {
-      ttiMs = null // 客户端会话抖动（既有缺陷）时如实记 null，不编数字
+      ttiMs = null // 会话/接口抖动时如实记 null，不编数字
     }
 
     // ── SPA 导航耗时：消息页 → 我的页，到九宫格可见。
@@ -157,6 +185,7 @@ test.describe('「我的」页体验基线', () => {
 
     const myHub = {
       ttiMs,
+      sessionRestoreMs,
       spaNavMs,
       domNodes: await page.evaluate(DOM_NODE_COUNT),
       touchTargets: await page.evaluate(SCAN_TOUCH_TARGETS),
@@ -188,7 +217,7 @@ test.describe('「我的」页体验基线', () => {
     // 摘要打到 stdout，便于 CI 日志直接看
     console.log('[metrics]', JSON.stringify(report, null, 2))
     console.log(
-      `[metrics] 我的页 TTI=${ttiMs ?? 'n/a'}ms · SPA 导航=${spaNavMs}ms · 触控合规 ${myHub.touchTargets.compliant}/${myHub.touchTargets.total}` +
+      `[metrics] 冷启 TTI=${ttiMs ?? 'n/a'}ms（会话恢复 ${sessionRestoreMs ?? 'n/a'}ms） · SPA 导航=${spaNavMs}ms · 触控合规 ${myHub.touchTargets.compliant}/${myHub.touchTargets.total}` +
         ` · 单手可达 ${myHub.oneHand.reachable}/${myHub.oneHand.total}` +
         ` · 设置页触控合规 ${settings.touchTargets.compliant}/${settings.touchTargets.total}` +
         ` · 写入 ${OUTPUT_PATH}`
