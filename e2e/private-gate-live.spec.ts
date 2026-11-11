@@ -334,6 +334,27 @@ test.describe('私密聊天门禁（四条入口）', () => {
       return useSettingStore((window as Window & { pinia?: unknown }).pinia).unlockSecretChat(pw)
     }, SECRET_PW)
     expect(unlocked, '解锁失败（密码与设置时不一致？）').toBe(true)
+
+    // ⚠️ 先等客户端真的拿到这个房间，再验证「门禁放行」。
+    // 桌面段是整页重载后的新页面，长跑后偶发会话没恢复（D12/D2：Rust 侧有 token 但 client 为空），
+    // 此时 `switchSession` 找不到会话会把页面弹回列表 —— 路由同样是 `/message`，
+    // 与「被门禁拦住」无法区分，断言会给出误导性的失败原因。先等就绪，失败时直接指向会话恢复。
+    await expect
+      .poll(
+        () =>
+          page.evaluate(async (target) => {
+            const { matrixClientService } = (await import(/* @vite-ignore */ '/src/services/matrix/index.ts')) as {
+              matrixClientService: { getClient: () => { getRoom?: (r: string) => unknown } | null }
+            }
+            return Boolean(matrixClientService.getClient()?.getRoom?.(target))
+          }, roomId),
+        {
+          timeout: 60_000,
+          message: '会话未恢复（D12/D2）：客户端拿不到该房间，无法验证门禁是否放行'
+        }
+      )
+      .toBe(true)
+
     const e2ok = await pushRoute(page, { name: 'message', params: { roomId } })
     expect(e2ok.path, `解锁后桌面深链仍进不去（${e2ok.path}）`).toBe(`/message/${roomId}`)
   })
