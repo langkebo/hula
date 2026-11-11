@@ -193,6 +193,7 @@ describe('usePrivateRoomActions', () => {
       await vi.advanceTimersByTimeAsync(1000)
 
       expect(await pending).toBe(true)
+      expect(mocks.getRoomEncryptionState).toHaveBeenCalledTimes(2)
       expect(mocks.markRoomPrivate).toHaveBeenCalledWith(SINGLE_ROOM)
       expect(mocks.showFeedback).toHaveBeenCalledWith('已设为私密聊天，并开启端到端加密', 'success')
     } finally {
@@ -211,6 +212,7 @@ describe('usePrivateRoomActions', () => {
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(await pending).toBe(false)
+      expect(mocks.getRoomEncryptionState).toHaveBeenCalledTimes(5)
       expect(mocks.enableEncryption).toHaveBeenCalledWith(SINGLE_ROOM)
       expect(mocks.markRoomPrivate).not.toHaveBeenCalled()
       expect(mocks.updateSession).not.toHaveBeenCalled()
