@@ -19,6 +19,41 @@
             </van-cell>
           </van-cell-group>
 
+          <van-cell-group :title="t('setting.push.dnd.title')" inset>
+            <van-cell :title="t('setting.push.dnd.label')" :label="t('setting.push.dnd.desc')">
+              <template #right-icon>
+                <van-switch v-model="dndEnabled" data-testid="dnd-switch" @change="handleDndToggle" />
+              </template>
+            </van-cell>
+            <template v-if="dndEnabled">
+              <van-cell
+                :title="t('setting.push.dnd.startTime')"
+                :value="dndStartLabel"
+                is-link
+                data-testid="dnd-start"
+                @click="openDndPicker('start')" />
+              <van-cell
+                :title="t('setting.push.dnd.endTime')"
+                :value="dndEndLabel"
+                is-link
+                data-testid="dnd-end"
+                @click="openDndPicker('end')" />
+            </template>
+          </van-cell-group>
+
+          <van-cell-group inset>
+            <van-cell
+              :title="t('setting.push.history.title')"
+              :label="t('setting.push.history.desc')"
+              is-link
+              data-testid="notification-history-entry"
+              @click="router.push(MOBILE_SETTINGS_NOTIFICATION_HISTORY_PATH)">
+              <template #icon>
+                <SettingCellIcon icon="mdi:history" color="var(--tjg-color-info-500)" shell="info" />
+              </template>
+            </van-cell>
+          </van-cell-group>
+
           <van-cell-group :title="t('mobile_push.devices_section')" inset>
             <van-cell
               v-for="pusher in pushers"
@@ -64,17 +99,30 @@
             {{ t('mobile_push.no_rules') }}
           </div>
         </template>
+
+        <van-popup v-model:show="showDndPicker" position="bottom" round teleport="body">
+          <van-time-picker
+            v-model="dndPickerValue"
+            :title="dndPickerTarget === 'start' ? t('setting.push.dnd.startTime') : t('setting.push.dnd.endTime')"
+            @confirm="onDndPickerConfirm"
+            @cancel="showDndPicker = false" />
+        </van-popup>
       </div>
     </template>
   </AutoFixHeightPage>
 </template>
 
 <script setup lang="ts">
+import dayjs from 'dayjs'
 import { showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
+import { MOBILE_SETTINGS_NOTIFICATION_HISTORY_PATH } from '@/mobile/views/my/settingsRoutes'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import type { IPusher, IPushRule } from '@/services/matrix/notifications/MatrixPushService'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
 import {
@@ -94,6 +142,7 @@ import { createLogger } from '@/utils/Logger'
 const logger = createLogger('MobilePushSettings')
 
 const { t } = useI18n()
+const router = useRouter()
 
 const loading = ref(true)
 const togglingMaster = ref(false)
@@ -107,9 +156,80 @@ const totalRules = computed(() => countPushRules(groupedRules.value))
 const visibleKinds = computed(() => PUSH_RULE_KINDS.filter((kind) => groupedRules.value[kind].length > 0))
 
 onMounted(async () => {
+  loadDnd()
   await Promise.all([loadPushers(), loadRules()])
   loading.value = false
 })
+
+// ── 免打扰时段（DND）────────────────────────────────────────
+// 服务侧唯一写入点：`matrixNotificationService.setDndSettings` 负责打 updatedAt
+// 并同步到账号数据，移动端只负责收集窗口。
+const dndEnabled = ref(false)
+const dndStartTime = ref<number | null>(null)
+const dndEndTime = ref<number | null>(null)
+const showDndPicker = ref(false)
+const dndPickerTarget = ref<'start' | 'end'>('start')
+const dndPickerValue = ref<string[]>(['22', '00'])
+
+const dndStartLabel = computed(() => (dndStartTime.value ? dayjs(dndStartTime.value).format('HH:mm') : '--:--'))
+const dndEndLabel = computed(() => (dndEndTime.value ? dayjs(dndEndTime.value).format('HH:mm') : '--:--'))
+
+function loadDnd() {
+  const window = matrixNotificationService.getDndSettings()
+  dndEnabled.value = window.enabled
+  dndStartTime.value = window.startTime
+  dndEndTime.value = window.endTime
+}
+
+function persistDnd() {
+  matrixNotificationService.setDndSettings({
+    enabled: dndEnabled.value,
+    startTime: dndStartTime.value,
+    endTime: dndEndTime.value
+  })
+}
+
+const DND_DEFAULT_START = ['22', '00']
+const DND_DEFAULT_END = ['08', '00']
+
+/** `['HH','mm']` → 今天的对应时间戳（服务侧按当天分钟数比较，日期无意义） */
+function timeOfDay(values: string[]): number {
+  return dayjs().hour(Number(values[0])).minute(Number(values[1])).second(0).millisecond(0).valueOf()
+}
+
+function handleDndToggle(enabled: boolean) {
+  dndEnabled.value = enabled
+  if (enabled) {
+    // 关键：`isWithinDndWindow` 对「配置不完整」（start/end 任一为 null）返回 false，
+    // 也就是开关打开了但**实际不会静音** —— 用户以为静音了，消息照响。
+    // 所以打开即补默认窗口（22:00 → 08:00），保证开关状态与真实行为一致。
+    if (dndStartTime.value === null) dndStartTime.value = timeOfDay(DND_DEFAULT_START)
+    if (dndEndTime.value === null) dndEndTime.value = timeOfDay(DND_DEFAULT_END)
+  }
+  persistDnd()
+}
+
+function openDndPicker(target: 'start' | 'end') {
+  dndPickerTarget.value = target
+  const current = target === 'start' ? dndStartTime.value : dndEndTime.value
+  dndPickerValue.value = current
+    ? [dayjs(current).format('HH'), dayjs(current).format('mm')]
+    : target === 'start'
+      ? [...DND_DEFAULT_START]
+      : [...DND_DEFAULT_END]
+  showDndPicker.value = true
+}
+
+function onDndPickerConfirm({ selectedValues }: { selectedValues: string[] }) {
+  const timestamp = timeOfDay(selectedValues)
+  if (dndPickerTarget.value === 'start') {
+    dndStartTime.value = timestamp
+  } else {
+    dndEndTime.value = timestamp
+  }
+  showDndPicker.value = false
+  persistDnd()
+}
 
 async function loadPushers() {
   try {

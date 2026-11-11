@@ -267,4 +267,48 @@ test.describe('我的页信息架构（S1）', () => {
     await emoticonEntry.click()
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/mobileMy/emoticons')
   })
+
+  /**
+   * M5：通知相关两项此前移动端完全没有 ——
+   * 1. **免打扰时段**：桌面有起止时间，移动端只能全局关通知（粒度粗糙）；
+   * 2. **通知历史**：后端 `/notifications` 已能产出记录，移动端是唯一看不到的地方。
+   *
+   * 断言口径：DND 打开后必须出现起止时间行；历史页必须真实渲染（空态或列表行都算），
+   * 不能是白屏 —— 白屏说明路由到了但组件没跑起来。
+   */
+  test('推送设置：免打扰时段与通知历史可用', async ({ page }) => {
+    const self = await registerMobileAccount('mypush')
+    await seedE2EStorage(page)
+    await autoDismissLocalUnlockGate(page)
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
+    await dismissLocalUnlockDialog(page, 10_000)
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 45_000 }).not.toContain('/mobile/login')
+    await page.waitForTimeout(1500)
+
+    await pushMobileRoute(page, '/mobile/mobileMy/pushSettings')
+    const dndSwitch = page.locator('[data-testid="dnd-switch"]')
+    await expect(dndSwitch, '推送设置页没有免打扰开关').toBeVisible({ timeout: 20_000 })
+
+    // 关闭态不应显示时间行；打开后必须出现
+    expect(await page.locator('[data-testid="dnd-start"]').count(), '关闭态不该有时间行').toBe(0)
+    await dndSwitch.click()
+    await expect(page.locator('[data-testid="dnd-start"]'), '打开免打扰后没有起始时间').toBeVisible({
+      timeout: 10_000
+    })
+    await expect(page.locator('[data-testid="dnd-end"]'), '打开免打扰后没有结束时间').toBeVisible()
+
+    // 时间行有值（默认 22:00 / 08:00），不是 --:--
+    const startText = await page.locator('[data-testid="dnd-start"]').innerText()
+    expect(startText, `起始时间没有默认值：${startText}`).toMatch(/\d{2}:\d{2}/)
+
+    // 通知历史入口 → 真实页面（不是白屏）
+    await page.locator('[data-testid="notification-history-entry"]').click()
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+      .toBe('/mobile/mobileMy/notificationHistory')
+    await expect(
+      page.locator('[data-testid="notification-empty"], [data-testid="notification-row"]').first(),
+      '通知历史页白屏（既没有空态也没有列表）'
+    ).toBeVisible({ timeout: 20_000 })
+  })
 })

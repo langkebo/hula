@@ -19,7 +19,8 @@ export const MOBILE_SETTINGS_RELATIVE_PATHS = {
   devices: 'devices',
   deactivateAccount: 'deactivateAccount',
   helpAbout: SETTINGS_CANONICAL_ROUTE_SEGMENTS.helpAbout,
-  emoticons: 'emoticons'
+  emoticons: 'emoticons',
+  notificationHistory: 'notificationHistory'
 } as const
 
 export const MOBILE_SETTINGS_LABS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.labs}`
@@ -34,6 +35,7 @@ export const MOBILE_SETTINGS_DEVICES_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBI
 export const MOBILE_SETTINGS_DEACTIVATE_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.deactivateAccount}`
 export const MOBILE_SETTINGS_HELP_ABOUT_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.helpAbout}`
 export const MOBILE_SETTINGS_EMOTICONS_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.emoticons}`
+export const MOBILE_SETTINGS_NOTIFICATION_HISTORY_PATH = `${MOBILE_SETTINGS_BASE_PATH}/${MOBILE_SETTINGS_RELATIVE_PATHS.notificationHistory}`
 
 export const MOBILE_SETTINGS_ROUTE_NAMES = {
   labs: 'mobileLabsSettings',
@@ -48,5 +50,6 @@ export const MOBILE_SETTINGS_ROUTE_NAMES = {
   devices: 'mobileDeviceManagement',
   deactivateAccount: 'mobileDeactivateAccount',
   helpAbout: 'mobileHelpAboutSettings',
-  emoticons: 'mobileEmojiManager'
+  emoticons: 'mobileEmojiManager',
+  notificationHistory: 'mobileNotificationHistory'
 } as const

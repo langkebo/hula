@@ -10,6 +10,7 @@ const IntegrationsSettings = () => import('#/views/my/IntegrationsSettings.vue')
 const LabsSettings = () => import('#/views/my/LabsSettings.vue')
 const MobileDeactivateAccount = () => import('#/views/my/MobileDeactivateAccount.vue')
 const MobileEmojiManager = () => import('#/views/my/MobileEmojiManager.vue')
+const MobileNotificationHistory = () => import('@/mobile/views/my/MobileNotificationHistory.vue')
 const MobileIgnoredUsers = () => import('#/views/my/MobileIgnoredUsers.vue')
 const MobileInvitePermission = () => import('#/views/my/MobileInvitePermission.vue')
 const MobilePushSettings = () => import('#/views/my/MobilePushSettings.vue')
@@ -130,5 +131,10 @@ export const MOBILE_MY_SETTINGS_CHILD_ROUTES: RouteRecordRaw[] = [
     path: MOBILE_SETTINGS_RELATIVE_PATHS.emoticons,
     name: MOBILE_SETTINGS_ROUTE_NAMES.emoticons,
     component: MobileEmojiManager
+  },
+  {
+    path: MOBILE_SETTINGS_RELATIVE_PATHS.notificationHistory,
+    name: MOBILE_SETTINGS_ROUTE_NAMES.notificationHistory,
+    component: MobileNotificationHistory
   }
 ]
