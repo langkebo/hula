@@ -320,7 +320,36 @@ test.describe('我的页信息架构（S1）', () => {
     await encryptionEntry.click()
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/encryption')
 
-    // ── 3) 表情包管理入口
+    // ── 3) 气泡样式：切「方角」必须真的写到根元素（render-message.scss 消费该属性）
+    await gotoSettings()
+    const bubbleCell = page
+      .locator('.van-cell')
+      .filter({ hasText: /气泡样式|Bubble style/i })
+      .first()
+    await expect(bubbleCell, '外观组没有「气泡样式」').toBeVisible({ timeout: 10_000 })
+    await bubbleCell
+      .locator('.van-radio')
+      .filter({ hasText: /方角|Square/i })
+      .first()
+      .click()
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.getAttribute('data-bubble-style')), {
+        timeout: 10_000
+      })
+      .toBe('square')
+    // 复原，避免影响其它用例的视觉断言
+    await bubbleCell
+      .locator('.van-radio')
+      .filter({ hasText: /圆角|Rounded/i })
+      .first()
+      .click()
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.getAttribute('data-bubble-style')), {
+        timeout: 10_000
+      })
+      .toBe('rounded')
+
+    // ── 4) 表情包管理入口
     await gotoSettings()
     const emoticonEntry = page
       .locator('.van-cell')

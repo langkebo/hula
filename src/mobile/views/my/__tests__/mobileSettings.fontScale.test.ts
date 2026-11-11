@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 const read = (relative: string) => readFileSync(new URL(relative, import.meta.url), 'utf-8')
 
 const source = read('../MobileSettings.vue')
+// 外观组（主题/语言/气泡/字号）已抽成独立组件，字号相关断言随实现迁到该文件
+const appearanceSource = read('../components/MobileAppearanceSection.vue')
 const layoutSource = read('../../../components/MobileLayout.vue')
 const sessionListSource = read('../../../components/message/MobileSessionList.vue')
 const friendsSource = read('../../../views/friends/index.vue')
@@ -12,11 +14,16 @@ const en = JSON.parse(read('../../../../../locales/en/mobile_setting.json'))
 
 describe('移动端字号设置', () => {
   it('复用既有 fontScale 工具', () => {
-    expect(source).toContain("from '@/utils/fontScale'")
-    expect(source).toContain('FONT_SCALE_STEPS')
-    expect(source).toContain('applyFontScale')
-    expect(source).toContain('saveFontScale')
-    expect(source).toContain('loadFontScale')
+    expect(appearanceSource).toContain("from '@/utils/fontScale'")
+    expect(appearanceSource).toContain('FONT_SCALE_STEPS')
+    expect(appearanceSource).toContain('applyFontScale')
+    expect(appearanceSource).toContain('saveFontScale')
+    expect(appearanceSource).toContain('loadFontScale')
+  })
+
+  it('设置页通过独立组件挂载外观组（避免主文件行数爆掉）', () => {
+    expect(source).toContain('<MobileAppearanceSection />')
+    expect(source).not.toContain('FONT_SCALE_STEPS')
   })
 
   it('提供四档文案', () => {

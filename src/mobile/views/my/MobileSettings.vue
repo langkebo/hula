@@ -110,41 +110,7 @@
             {{ t('mobile_setting.appearance_section') }}
           </div>
 
-          <van-cell-group inset>
-            <van-cell :title="t('mobile_setting.theme')">
-              <template #icon>
-                <SettingCellIcon icon="mdi:palette" color="var(--tjg-color-beta-500)" shell="beta" />
-              </template>
-              <template #right-icon>
-                <van-radio-group v-model="themeValue" direction="horizontal">
-                  <van-radio name="light">{{ t('mobile_setting.themes.light') }}</van-radio>
-                  <van-radio name="dark">{{ t('mobile_setting.themes.dark') }}</van-radio>
-                </van-radio-group>
-              </template>
-            </van-cell>
-
-            <van-cell :title="t('mobile_setting.language')">
-              <template #icon>
-                <SettingCellIcon icon="mdi:translate" color="var(--tjg-color-info-500)" shell="info" />
-              </template>
-              <template #right-icon>
-                <van-radio-group v-model="languageValue" direction="horizontal">
-                  <van-radio name="zh-CN">{{ t('setting.preferences.language_zh_cn') }}</van-radio>
-                  <van-radio name="en">{{ t('setting.preferences.language_en') }}</van-radio>
-                </van-radio-group>
-              </template>
-            </van-cell>
-
-            <van-cell :title="t('mobile_setting.font_size')" center>
-              <template #right-icon>
-                <van-radio-group v-model="fontScaleValue" direction="horizontal" @change="handleFontScaleChange">
-                  <van-radio v-for="step in FONT_SCALE_STEPS" :key="step" :name="String(step)" icon-size="16px">
-                    {{ t(FONT_SCALE_LABEL_KEYS[step]) }}
-                  </van-radio>
-                </van-radio-group>
-              </template>
-            </van-cell>
-          </van-cell-group>
+          <MobileAppearanceSection />
 
           <div
             id="settings-group-privacy"
@@ -230,11 +196,9 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useMobileLogout } from '@/composables/user/useMobileLogout'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { APP_VERSION } from '@/utils/appVersion'
-// biome-ignore lint/style/useImportType: FONT_SCALE_STEPS 在模板中作为值使用，同时用于类型推导
-import { applyFontScale, FONT_SCALE_STEPS, loadFontScale, saveFontScale } from '@/utils/fontScale'
+import MobileAppearanceSection from './components/MobileAppearanceSection.vue'
 import MobileSettingsSearch from './components/MobileSettingsSearch.vue'
 import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
 import type { MobileSettingsSearchEntry } from './mobileSettingsSearchIndex'
@@ -247,7 +211,6 @@ import {
 
 const { t } = useI18n()
 const router = useRouter()
-const settingStore = useSettingStore()
 const userStatusStore = useUserStatusStore()
 const advancedSettingsItems = MOBILE_ADVANCED_SETTINGS_ITEMS
 
@@ -271,32 +234,6 @@ async function handleSearchNavigate(entry: MobileSettingsSearchEntry) {
   if (entry.anchor) {
     document.getElementById(entry.anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-}
-
-const themeValue = computed({
-  get: () => settingStore.themeContent,
-  set: (val) => settingStore.toggleTheme(val)
-})
-
-const languageValue = computed({
-  get: () => settingStore.languagePreference,
-  set: (v) => settingStore.setLanguage(v)
-})
-
-const FONT_SCALE_LABEL_KEYS: Record<(typeof FONT_SCALE_STEPS)[number], string> = {
-  0.875: 'mobile_setting.font_sizes.small',
-  1: 'mobile_setting.font_sizes.normal',
-  1.125: 'mobile_setting.font_sizes.large',
-  1.25: 'mobile_setting.font_sizes.xlarge'
-}
-
-const fontScaleValue = ref(String(loadFontScale()))
-
-const handleFontScaleChange = (value: string | number) => {
-  const scale = Number(value)
-  applyFontScale(scale)
-  saveFontScale(scale)
-  showToast(t('mobile_setting.font_size_changed'))
 }
 
 const currentStatusId = computed(() => userStatusStore.stateId || 'online')
