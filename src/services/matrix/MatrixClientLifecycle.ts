@@ -239,6 +239,10 @@ export class MatrixClientLifecycle {
       eventRouter.setup(client, syncManager)
       await client.startClient(startOpts)
 
+      // crypto 后端随 startClient 建立；这里只做引导，不阻塞启动。
+      const { startE2EE } = await import('./crypto/e2eeStartup')
+      void startE2EE()
+
       // VoIP 服务初始化：注册 Call.incoming / Call.hangup / Call.replaced 监听器
       const { matrixVoIPService } = await import('./media/MatrixVoIPService')
       await matrixVoIPService.initialize()
@@ -274,6 +278,8 @@ export class MatrixClientLifecycle {
           // 放在 finally 里：即使停止过程抛错，旧绑定也不可再信。
           cryptoTracker.resetState()
         }
+        const { stopE2EE } = await import('./crypto/e2eeStartup')
+        stopE2EE()
         AvatarUtils.setMxcResolver(null)
         connectionManager.updateConnectionState('DISCONNECTED')
         // 重置启动守卫，允许下次 startClient 重新初始化
