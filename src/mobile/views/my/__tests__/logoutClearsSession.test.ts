@@ -4,23 +4,27 @@ import { patchMatrixSessionSnapshot } from '@/services/matrix/matrixSessionState
 import { DND_MIRROR_STORAGE_KEYS } from '@/services/matrix/notifications/dndMirror'
 import { INVITE_POLICY_ACCOUNT_DATA_TYPE } from '@/services/matrix/user/invitePolicy'
 import { pinia } from '@/stores'
-import MyIndex from '../index.vue'
+import MobileSettings from '../MobileSettings.vue'
 
 /**
- * 整分支评审 I3：移动端「我的」页登出原先直接调 `matrixClientService.logout()`，
+ * 整分支评审 I3：移动端登出原先直接调 `matrixClientService.logout()`，
  * 绕过了 `SessionLogoutService.resetLocalSessionState`，于是 sessionUnread、DND 镜像与
  * 邀请策略缓存都不会在移动端登出时清理——文档声称的「显式登出清理」契约在真实路径上不成立。
  *
- * 这里从移动端页面本身驱动登出（不是直接调 orchestrator），证明该路径确实会清掉本地会话状态。
+ * 这里从**移动端页面本身**驱动登出（不是直接调 orchestrator），证明该路径确实会清掉本地会话状态。
+ *
+ * 2026-11-11 迁移：登出按钮从「我的」首屏移到设置页底部（首屏不再放危险操作），
+ * 且两条分叉的登出实现（`useSessionActions` / `useLoginFlow`）合并为
+ * `useMobileLogout`。因此用例改为挂载 `MobileSettings.vue`。
  */
 
-const showConfirmDialogMock = vi.fn().mockResolvedValue(undefined)
+const showDialogMock = vi.fn().mockResolvedValue(undefined)
 const showToastMock = vi.fn()
 const showFailToastMock = vi.fn()
 const routerPushMock = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('vant', () => ({
-  showConfirmDialog: (...args: unknown[]) => showConfirmDialogMock(...args),
+  showDialog: (...args: unknown[]) => showDialogMock(...args),
   showToast: (...args: unknown[]) => showToastMock(...args),
   showFailToast: (...args: unknown[]) => showFailToastMock(...args)
 }))
@@ -28,13 +32,7 @@ vi.mock('vant', () => ({
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: routerPushMock }),
-  useRoute: () => ({ path: '/mobile/mobileMy', params: {}, query: {} })
-}))
-
-// 视图里只用到 profileService；matrixClientService 已不再被登出路径使用。
-vi.mock('@/services/matrix', () => ({
-  matrixClientService: { logout: vi.fn().mockResolvedValue(undefined) },
-  profileService: { setDisplayName: vi.fn().mockResolvedValue(undefined) }
+  useRoute: () => ({ path: '/mobile/mobileMy/settings', params: {}, query: {} })
 }))
 
 // 登出只验证本地状态清理，SDK 客户端生命周期用桩；真实清理链路（SessionLogoutService）保持不 mock。
@@ -75,29 +73,40 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
 }))
 
-// 页面子组件与登出无关，桩掉避免把无关的移动端设置面板拉进用例。
-vi.mock('#/components/my/Settings.vue', () => ({ default: { name: 'Settings', template: '<div />' } }))
-vi.mock('#/components/my/PersonalInfo.vue', () => ({ default: { name: 'PersonalInfo', template: '<div />' } }))
-vi.mock('#/components/my/MobileQuickActions.vue', () => ({
-  default: { name: 'MobileQuickActions', template: '<div />' }
+// 页面骨架（自动注册的布局组件）与登出无关；真实实现会经 useSafeBack 拉起 `@/router`
+// 单例，而本用例把 vue-router 整体桩掉了，必须在模块边界截断。
+vi.mock('#/components/chat-room/AutoFixHeightPage.vue', () => ({
+  default: { name: 'AutoFixHeightPage', template: '<div><slot name="header" /><slot name="container" /></div>' }
+}))
+vi.mock('#/components/chat-room/HeaderBar.vue', () => ({
+  default: { name: 'HeaderBar', template: '<div />' }
 }))
 
 const INVITE_POLICY_KEY = `${INVITE_POLICY_ACCOUNT_DATA_TYPE}:@me:test`
 
+// shallow：页面模板里的 vant 组件与图标壳跟登出无关，stub 掉只执行 setup。
+// 显式列 vant 组件名，避免「Failed to resolve component: van-*」噪声淹没真实告警。
 const mountPage = () =>
-  mount(MyIndex, {
+  mount(MobileSettings, {
     global: {
       plugins: [pinia],
-      // 视图模板直接用 Vant 的 van-field / van-button（真实应用里全局注册），用例里给桩即可。
-      stubs: { VanField: true, VanButton: true }
-    }
+      stubs: {
+        VanCell: true,
+        VanCellGroup: true,
+        VanRadioGroup: true,
+        VanRadio: true,
+        VanSwitch: true,
+        VanButton: true
+      }
+    },
+    shallow: true
   })
 
-describe('移动端「我的」页登出', () => {
+describe('移动端设置页登出', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.clearAllMocks()
-    showConfirmDialogMock.mockResolvedValue(undefined)
+    showDialogMock.mockResolvedValue(undefined)
     patchMatrixSessionSnapshot({ userId: '@me:test', deviceId: 'DEV1' })
   })
 

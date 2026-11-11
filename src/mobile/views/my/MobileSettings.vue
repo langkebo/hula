@@ -12,6 +12,12 @@
           </div>
 
           <van-cell-group inset>
+            <van-cell :title="t('mobile_devices.title')" is-link @click="router.push(MOBILE_SETTINGS_DEVICES_PATH)">
+              <template #icon>
+                <SettingCellIcon icon="mdi:devices" color="var(--tjg-color-danger-500)" shell="danger" />
+              </template>
+            </van-cell>
+
             <van-cell :title="t('mobile_setting.status')" is-link @click="router.push('/mobile/mobileMy/status')">
               <template #icon>
                 <SettingCellIcon :icon="statusIcon" :color="statusColor" shell="success" />
@@ -182,7 +188,7 @@
           </div>
 
           <div class="text-center text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-quaternary] mt-16px">
-            {{ t('mobile_setting.version') }}: v1.0.0
+            {{ t('mobile_setting.version') }}: v{{ APP_VERSION }}
           </div>
         </div>
       </div>
@@ -191,31 +197,27 @@
 </template>
 
 <script setup lang="ts">
-import { showDialog, showToast } from 'vant'
+import { showToast } from 'vant'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { useMobileLogout } from '@/composables/user/useMobileLogout'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
-import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
-import { useGlobalStore } from '@/stores/domains/widget/global'
+import { APP_VERSION } from '@/utils/appVersion'
 // biome-ignore lint/style/useImportType: FONT_SCALE_STEPS 在模板中作为值使用，同时用于类型推导
 import { applyFontScale, FONT_SCALE_STEPS, loadFontScale, saveFontScale } from '@/utils/fontScale'
-import { createLogger } from '@/utils/Logger'
 import { MOBILE_ADVANCED_SETTINGS_ITEMS } from './mobileSettingsConfig'
 import {
+  MOBILE_SETTINGS_DEVICES_PATH,
   MOBILE_SETTINGS_HELP_ABOUT_PATH,
   MOBILE_SETTINGS_PASSWORD_PATH,
   MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
 } from './settingsRoutes'
 
-const logger = createLogger('MobileSettings')
-
 const { t } = useI18n()
 const router = useRouter()
-const globalStore = useGlobalStore()
-const { isTrayMenuShow } = storeToRefs(globalStore)
 const settingStore = useSettingStore()
 const userStatusStore = useUserStatusStore()
 const advancedSettingsItems = MOBILE_ADVANCED_SETTINGS_ITEMS
@@ -283,49 +285,8 @@ const statusLabel = computed(() => currentStatus.value.label)
 const statusIcon = computed(() => currentStatus.value.icon)
 const statusColor = computed(() => currentStatus.value.color)
 
-const { logout } = useLoginFlow()
-
-const isLoggingOut = ref(false)
-
-async function handleLogout() {
-  if (isLoggingOut.value) return
-  isLoggingOut.value = true
-
-  showDialog({
-    title: t('mobile_setting.logout_confirm.title'),
-    message: t('mobile_setting.logout_confirm.message'),
-    showCancelButton: true,
-    confirmButtonText: t('mobile_setting.logout_confirm.confirm'),
-    cancelButtonText: t('mobile_setting.logout_confirm.cancel')
-  })
-    .then(async () => {
-      try {
-        await logout()
-
-        settingStore.toggleLogin(false, false)
-        logger.info('Logging out account')
-        isTrayMenuShow.value = false
-
-        showToast({
-          type: 'success',
-          message: t('mobile_setting.logout_success')
-        })
-        await router.push('/mobile/login')
-      } catch (localError) {
-        logger.error('Failed to clear local logout state', localError)
-        showToast({
-          type: 'fail',
-          message: t('mobile_setting.logout_failed')
-        })
-      }
-    })
-    .catch(() => {
-      logger.info('User cancelled')
-    })
-    .finally(() => {
-      isLoggingOut.value = false
-    })
-}
+// 登出只有一个实现（见 useMobileLogout）：走 SessionOrchestrator 的显式清理
+const { isLoggingOut, handleLogout } = useMobileLogout()
 </script>
 
 <style scoped lang="scss">

@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import { visualizer } from 'rollup-plugin-visualizer'
 import AutoImport from 'unplugin-auto-import/vite'
-import type { UserConfig } from 'vite'
+import type { Plugin, UserConfig } from 'vite'
 import compression from 'vite-plugin-compression'
 import VueSetupExtend from 'vite-plugin-vue-setup-extend'
 import packageJson from '../../package.json' with { type: 'json' }
@@ -14,6 +14,21 @@ import { createManualChunks } from './chunks.ts'
 import { createSdkAliases } from './sdk-aliases.ts'
 
 const dependencies = Object.keys(packageJson.dependencies || {})
+
+/**
+ * 把 package.json 的版本号注入 index.html 的 `<meta name="app-version">`。
+ *
+ * ⚠️ 不用 `define: { __APP_VERSION__ }`：实测 Vite 8 在 **dev** 下不应用项目级 define
+ * （同仓的 `__TJG_MOBILE_BUILD__` 在 dev 下也仍是原文），只有 build 生效 ⇒ 开发态与
+ * 生产态读到的版本号会不一致。`transformIndexHtml` 在 dev/build/preview 三条路径都执行。
+ */
+const appVersionPlugin = (): Plugin => ({
+  name: 'tjg-app-version',
+  transformIndexHtml(html) {
+    const tag = `<meta name="app-version" content="${packageJson.version}" />`
+    return html.includes('</head>') ? html.replace('</head>', `  ${tag}\n  </head>`) : `${tag}\n${html}`
+  }
+})
 
 // SDK 去 link 化（2026-08-09）：matrix-js-sdk 以 tarball（file:vendor/matrix-js-sdk.tgz）
 // 安装进 node_modules，构建不再依赖仓库外 sibling 目录。alias 配置已抽取到 sdk-aliases.ts，
@@ -71,7 +86,8 @@ export const baseConfig: UserConfig = {
       threshold: 1024,
       deleteOriginFile: false
     }),
-    cspNoncePlugin()
+    cspNoncePlugin(),
+    appVersionPlugin()
   ],
   worker: {
     format: 'es'

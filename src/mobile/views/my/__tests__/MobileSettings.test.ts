@@ -64,8 +64,10 @@ vi.mock('@/stores/domains/user/userStatus', () => ({
   })
 }))
 
-vi.mock('@/shared/composables/useLoginFlow', () => ({
-  useLoginFlow: () => ({ logout: logoutMock })
+// 登出已抽成 useMobileLogout（唯一实现）。这里只关心设置项渲染，
+// 桩掉可避免拉起 useSessionActions → 各 store 的 defineStore 链。
+vi.mock('@/composables/user/useMobileLogout', () => ({
+  useMobileLogout: () => ({ isLoggingOut: ref(false), handleLogout: logoutMock })
 }))
 
 vi.mock('@/mobile/components/chat-room/AutoFixHeightPage.vue', () => ({

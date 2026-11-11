@@ -11,7 +11,6 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -22,25 +21,49 @@ interface QuickAction {
   key: string
   labelKey: string
   icon: string
-  /** 已接入的路由；留空则给出开发占位提示 */
-  route?: string
+  /** 必须是真实可达的路由；首屏不允许出现「点击只弹开发中」的空入口 */
+  route: string
 }
 
-// 对齐原型《移动端我的页》快捷入口：扫一扫 / 钱包 / 收藏 / 文件 / 摇一摇
+// 5 个入口全部接入真实页面。原 wallet / favorite / shake 没有对应能力（点击只弹
+// 「功能开发中」），已下线——上面写着「文件开发中」而 /mobile/mobileMy/files 早已
+// 可用，这类谎报入口比缺入口更伤信任。
 const actions: QuickAction[] = [
-  { key: 'scan', labelKey: 'mobile_quick_actions.scan', icon: 'mdi:qrcode-scan', route: '/mobile/myQRCode' },
-  { key: 'wallet', labelKey: 'mobile_quick_actions.wallet', icon: 'mdi:wallet' },
-  { key: 'favorite', labelKey: 'mobile_quick_actions.favorite', icon: 'mdi:star-outline' },
-  { key: 'file', labelKey: 'mobile_quick_actions.file', icon: 'mdi:file-document-outline' },
-  { key: 'shake', labelKey: 'mobile_quick_actions.shake', icon: 'mdi:shuffle-variant' }
+  {
+    key: 'scan',
+    labelKey: 'mobile_quick_actions.scan',
+    icon: 'mdi:qrcode-scan',
+    route: '/mobile/mobileMy/scanQRCode'
+  },
+  {
+    key: 'file',
+    labelKey: 'mobile_quick_actions.file',
+    icon: 'mdi:file-document-outline',
+    route: '/mobile/mobileMy/files'
+  },
+  {
+    key: 'album',
+    labelKey: 'mobile_photo.title',
+    icon: 'mdi:image-multiple-outline',
+    route: '/mobile/mobileMy/myAlbum'
+  },
+  {
+    key: 'qr',
+    labelKey: 'mobile_personal_info.qr_code',
+    icon: 'mdi:qrcode',
+    route: '/mobile/myQRCode'
+  },
+  {
+    // 私密房会被普通会话列表整体过滤，没有独立入口就等于进不去
+    key: 'secret',
+    labelKey: 'home.secret_chat.title',
+    icon: 'mdi:shield-lock-outline',
+    route: '/mobile/secretChat'
+  }
 ]
 
 function handleClick(item: QuickAction) {
-  if (item.route) {
-    router.push(item.route)
-    return
-  }
-  showToast(t('mobile_quick_actions.developing', { name: t(item.labelKey) }))
+  router.push(item.route)
 }
 </script>
 
