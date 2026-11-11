@@ -209,6 +209,10 @@ class MatrixCryptoService extends BaseMatrixService {
 
   /**
    * 判断房间是否加密；异常时按 `false` 处理（加密状态拿不到时不宣称已加密）。
+   *
+   * 注意：`unknown`（尚未同步 / 读取失败）与 `plaintext` 都会被折叠成 false，
+   * 这是为 UI 展示保留的 fail-open 接口。安全决策（上传、发送）
+   * 必须使用 {@link getRoomEncryptionState} 并对 `unknown` 做显式拒绝。
    */
   async isRoomEncrypted(roomId: string): Promise<boolean> {
     try {

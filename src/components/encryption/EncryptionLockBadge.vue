@@ -1,5 +1,5 @@
 <template>
-  <span class="inline-flex items-center gap-4px text-12px text-[--tjg-status-encryption-verified]">
+  <span class="inline-flex shrink-0 items-center gap-4px text-12px text-[--tjg-status-encryption-verified]">
     <svg
       width="12"
       height="12"

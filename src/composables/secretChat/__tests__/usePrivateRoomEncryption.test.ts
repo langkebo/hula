@@ -32,10 +32,47 @@ describe('usePrivateRoomEncryption', () => {
     expect(mocks.isRoomEncrypted).not.toHaveBeenCalled()
   })
 
-  it('查询失败时保持 false，不抛错', async () => {
-    mocks.isRoomEncrypted.mockRejectedValue(new Error('network'))
-    const { refresh, isEncrypted } = usePrivateRoomEncryption()
+  it('查询失败时显式回写 false，不沿用上次快照', async () => {
+    mocks.isRoomEncrypted.mockResolvedValueOnce(true)
+    const { refresh, encryptedRooms, isEncrypted } = usePrivateRoomEncryption()
+    await refresh(['!a:test'])
+    expect(encryptedRooms.value).toEqual({ '!a:test': true })
+
+    mocks.isRoomEncrypted.mockRejectedValueOnce(new Error('network'))
     await expect(refresh(['!a:test'])).resolves.toBeUndefined()
+    // 断言具体键值，避免「默认就是空对象」导致的空转断言
+    expect(encryptedRooms.value).toEqual({ '!a:test': false })
     expect(isEncrypted('!a:test')).toBe(false)
+  })
+
+  it('单个房间失败不影响同批其他房间的结果', async () => {
+    mocks.isRoomEncrypted.mockImplementation(async (roomId: string) => {
+      if (roomId === '!a:test') throw new Error('network')
+      return true
+    })
+    const { refresh, encryptedRooms } = usePrivateRoomEncryption()
+    await refresh(['!a:test', '!b:test'])
+    expect(encryptedRooms.value).toEqual({ '!a:test': false, '!b:test': true })
+  })
+
+  it('旧请求晚返回时不会覆盖新请求的结果', async () => {
+    let resolveFirst!: (value: boolean) => void
+    mocks.isRoomEncrypted
+      .mockImplementationOnce(
+        () =>
+          new Promise<boolean>((resolve) => {
+            resolveFirst = resolve
+          })
+      )
+      .mockResolvedValueOnce(false)
+
+    const { refresh, encryptedRooms } = usePrivateRoomEncryption()
+    const first = refresh(['!a:test'])
+    const second = refresh(['!b:test'])
+    await second
+
+    resolveFirst(true)
+    await first
+    expect(encryptedRooms.value).toEqual({ '!b:test': false })
   })
 })

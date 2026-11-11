@@ -148,14 +148,18 @@ const statusText = computed(() => {
  * 尚未进入 client store、SDK 查询异常等），此时默认不放行——宁可短暂无法预览，
  * 也不把明文 URL 泄漏给服务端。
  *
- * roomId 为空表示当前没有会话上下文（本组件只在聊天上下文中使用），此时放行，
- * 因为对无会话上下文弹「已加密」提示是错误文案。
+ * roomId 为空同样按阻断处理：拿不到房间上下文就无法确认房间是明文，无法确认
+ * 即不放行，不能因为「文案不好看」而退化成 fail-open。
  */
 const ensurePreviewAllowed = async (seq: number): Promise<boolean> => {
   const roomId = globalStore.currentSessionRoomId
   if (!roomId) {
-    if (seq === requestSeq) blockedByEncryption.value = false
-    return true
+    if (seq === requestSeq) {
+      blockedByEncryption.value = true
+      preview.value = null
+      fetchFailed.value = false
+    }
+    return false
   }
   const state: RoomEncryptionState = await matrixCryptoService.getRoomEncryptionState(roomId)
   // 请求已被切房/reset 作废，不再改写当前会话的状态。
@@ -207,7 +211,7 @@ const fetchPreview = (target: string): Promise<MediaUrlPreview | null> => {
 }
 
 const handleFetch = async () => {
-  if (!isValidUrl.value || fetching.value) return
+  if (!isValidUrl.value) return
   await fetchPreview(normalizedUrl.value)
 }
 

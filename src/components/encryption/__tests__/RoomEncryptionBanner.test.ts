@@ -16,11 +16,11 @@ const mountBanner = (warnings: EncryptionWarningKey[]) =>
   })
 
 const warningRows = (wrapper: ReturnType<typeof mountBanner>) =>
-  wrapper.findAll('[data-test="room-encryption-banner"] > span')
+  wrapper.findAll('[data-testid="room-encryption-banner"] > span')
 
 describe('RoomEncryptionBanner', () => {
   it('无告警时不渲染', () => {
-    expect(mountBanner([]).find('[data-test="room-encryption-banner"]').exists()).toBe(false)
+    expect(mountBanner([]).find('[data-testid="room-encryption-banner"]').exists()).toBe(false)
   })
 
   it('按告警数量与顺序渲染映射后的文案', () => {

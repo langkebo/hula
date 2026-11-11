@@ -1,6 +1,7 @@
 import { computed, getCurrentInstance, onMounted, onUnmounted, type Ref, ref, watch } from 'vue'
 import type { RoomEncryptionState } from '@/services/matrix/crypto/cryptoAdapterTypes'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 
@@ -23,10 +24,13 @@ const ROOM_ENCRYPTION_RETRY_DELAY_MS = 1000
  */
 export const useRoomEncryptionStatus = (roomId: Ref<string>) => {
   const encryptionStore = useEncryptionStore()
+  const matrixStore = useMatrixStore()
   const state = ref<RoomEncryptionState>('unknown')
   const loading = ref(false)
   let retryAttempts = 0
   let retryTimer: ReturnType<typeof setTimeout> | null = null
+  /** 请求代次：并发 reload（快速切房）时只允许最后一次写状态/排重试。 */
+  let loadSeq = 0
 
   const cancelRetry = () => {
     if (retryTimer !== null) {
@@ -38,6 +42,8 @@ export const useRoomEncryptionStatus = (roomId: Ref<string>) => {
   const scheduleRetry = () => {
     if (state.value !== 'unknown') return
     if (retryAttempts >= ROOM_ENCRYPTION_RETRY_LIMIT) return
+    // 并发 load 各自排定时器会覆盖句柄，旧定时器既取消失效又会多触发一轮查询
+    cancelRetry()
     retryAttempts += 1
     retryTimer = setTimeout(() => {
       retryTimer = null
@@ -46,6 +52,7 @@ export const useRoomEncryptionStatus = (roomId: Ref<string>) => {
   }
 
   const load = async (): Promise<void> => {
+    const seq = ++loadSeq
     const currentRoomId = roomId.value
     if (!currentRoomId) {
       state.value = 'unknown'
@@ -54,10 +61,11 @@ export const useRoomEncryptionStatus = (roomId: Ref<string>) => {
     loading.value = true
     try {
       try {
-        state.value = await matrixCryptoService.getRoomEncryptionState(currentRoomId)
+        const next = await matrixCryptoService.getRoomEncryptionState(currentRoomId)
+        if (seq === loadSeq) state.value = next
       } catch (err) {
         logger.warn(`加载房间加密状态失败: ${err}`)
-        state.value = 'unknown'
+        if (seq === loadSeq) state.value = 'unknown'
       }
       if (!encryptionStore.loaded) {
         try {
@@ -67,9 +75,10 @@ export const useRoomEncryptionStatus = (roomId: Ref<string>) => {
         }
       }
     } finally {
-      loading.value = false
+      if (seq === loadSeq) loading.value = false
     }
-    // 等待期间已切换房间：交给新的 reload 负责，避免为旧房间排重试
+    // 已有更新的请求在途或等待期间已切换房间：交给它负责，避免覆盖或排重试
+    if (seq !== loadSeq) return
     if (roomId.value !== currentRoomId) return
     scheduleRetry()
   }
@@ -85,6 +94,15 @@ export const useRoomEncryptionStatus = (roomId: Ref<string>) => {
   const stopRoomWatch = watch(roomId, () => {
     void reload()
   })
+  // 断线期间的重试必然拿不到新状态；连接恢复后立即重判一次，而不是等用户切房。
+  const stopConnectionWatch = watch(
+    () => matrixStore.connectionState,
+    (next, prev) => {
+      if (next === 'CONNECTED' && prev !== 'CONNECTED') {
+        void reload()
+      }
+    }
+  )
   if (instance) {
     onMounted(() => {
       void reload()
@@ -92,6 +110,7 @@ export const useRoomEncryptionStatus = (roomId: Ref<string>) => {
     onUnmounted(() => {
       cancelRetry()
       stopRoomWatch()
+      stopConnectionWatch()
     })
   }
 

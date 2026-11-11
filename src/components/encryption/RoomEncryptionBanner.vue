@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="warnings.length"
-    data-test="room-encryption-banner"
+    data-testid="room-encryption-banner"
     class="flex flex-col gap-2px px-12px py-8px text-12px bg-[--tjg-color-warning-bg] text-[--tjg-color-warning-700]">
     <span v-for="warning in warnings" :key="warning" class="flex items-center gap-6px">
       <svg

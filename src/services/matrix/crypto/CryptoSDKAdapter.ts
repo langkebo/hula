@@ -291,6 +291,13 @@ class CryptoSDKAdapter implements CryptoAdapterAccessors {
     }
   }
 
+  /**
+   * 布尔包装的三态查询：只有确认 `encrypted` 才返回 true。
+   *
+   * `unknown`（房间尚未同步 / 状态读取失败）会被折叠成 false，属于刻意保留的
+   * fail-open 便利接口，仅可用于「是否展示加密徽标」这类非安全决策。
+   * 涉及上传/发送路径的判断必须改用 {@link getRoomEncryptionState} 显式处理 unknown。
+   */
   async isRoomEncrypted(roomId: string): Promise<boolean> {
     return (await this.getRoomEncryptionState(roomId)) === 'encrypted'
   }

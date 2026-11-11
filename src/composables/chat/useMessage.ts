@@ -244,7 +244,11 @@ export const useMessage = () => {
         negativeText: t('home.secret_chat.encryption_confirm_cancel'),
         onPositiveClick: () => settle(true),
         onNegativeClick: () => settle(false),
-        onClose: () => settle(false)
+        onClose: () => settle(false),
+        // 遮罩点击（maskClosable 默认 true）与 ESC 都会关闭弹窗，但不会触发 onClose。
+        // 不补这两个回调，Promise 永不 settle，调用方会一直挂着。
+        onMaskClick: () => settle(false),
+        onEsc: () => settle(false)
       })
     })
 

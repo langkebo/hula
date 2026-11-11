@@ -158,9 +158,11 @@ const { refresh: refreshEncryption, isEncrypted } = usePrivateRoomEncryption()
 
 /** 列表变化时批量刷新加密状态；锁定态列表为空，快照随之清空。 */
 watch(
-  () => hiddenSessions.value.map((session: SessionItem) => session.roomId),
-  (roomIds) => {
-    void refreshEncryption(roomIds)
+  // map() 每次求值都返回新数组，直接 watch 会因引用变化在无关更新时重复整批查询；
+  // 用 join 后的字符串做稳定 key，只有房间集合真正变化才触发。
+  () => hiddenSessions.value.map((session: SessionItem) => session.roomId).join('\n'),
+  () => {
+    void refreshEncryption(hiddenSessions.value.map((session: SessionItem) => session.roomId))
   },
   { immediate: true }
 )

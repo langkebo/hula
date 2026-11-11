@@ -240,8 +240,11 @@ export class MatrixClientLifecycle {
       await client.startClient(startOpts)
 
       // crypto 后端随 startClient 建立；这里只做引导，不阻塞启动。
-      const { startE2EE } = await import('./crypto/e2eeStartup')
-      void startE2EE()
+      // 用 .then/.catch 而非 await：动态 import 失败只应降级 E2EE，不能落进下方
+      // 启动 catch 被误报成「客户端启动失败」。
+      void import('./crypto/e2eeStartup')
+        .then(({ startE2EE }) => startE2EE())
+        .catch((err) => logger.warn('E2EE 引导模块加载失败，已降级为明文可用:', err))
 
       // VoIP 服务初始化：注册 Call.incoming / Call.hangup / Call.replaced 监听器
       const { matrixVoIPService } = await import('./media/MatrixVoIPService')
@@ -277,9 +280,15 @@ export class MatrixClientLifecycle {
           // 「initialized=true，而 getCrypto() 已是 undefined」的脱钩状态。
           // 放在 finally 里：即使停止过程抛错，旧绑定也不可再信。
           cryptoTracker.resetState()
+          // E2EE 复位同样必须在 finally：stopClient() 抛错时也不能把健康巡检
+          // 留在已销毁的 client 上。import 失败只记日志，不掩盖原始错误。
+          try {
+            const { stopE2EE } = await import('./crypto/e2eeStartup')
+            stopE2EE()
+          } catch (err) {
+            logger.warn('E2EE 复位模块加载失败:', err)
+          }
         }
-        const { stopE2EE } = await import('./crypto/e2eeStartup')
-        stopE2EE()
         AvatarUtils.setMxcResolver(null)
         connectionManager.updateConnectionState('DISCONNECTED')
         // 重置启动守卫，允许下次 startClient 重新初始化

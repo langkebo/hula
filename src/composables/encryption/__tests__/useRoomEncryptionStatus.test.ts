@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 
 const mocks = vi.hoisted(() => {
   const store = {
@@ -16,6 +16,8 @@ const mocks = vi.hoisted(() => {
   }
 })
 
+const matrixStoreMock = reactive<{ connectionState: string }>({ connectionState: 'CONNECTED' })
+
 vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
   matrixCryptoService: { getRoomEncryptionState: mocks.getRoomEncryptionState }
 }))
@@ -24,16 +26,21 @@ vi.mock('@/stores/domains/settings/encryption', () => ({
   useEncryptionStore: () => mocks.store
 }))
 
+vi.mock('@/stores/domains/chat/matrix', () => ({
+  useMatrixStore: () => matrixStoreMock
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
 }))
 
-import { useRoomEncryptionStatus } from '../useRoomEncryptionStatus'
+const { useRoomEncryptionStatus } = await import('../useRoomEncryptionStatus')
 
 describe('useRoomEncryptionStatus', () => {
   beforeEach(() => {
     mocks.getRoomEncryptionState.mockReset().mockResolvedValue('encrypted')
     mocks.loadEncryptionStatus.mockReset().mockResolvedValue(undefined)
+    matrixStoreMock.connectionState = 'CONNECTED'
     Object.assign(mocks.store, {
       cryptoInitFailed: false,
       backupEnabled: true,
@@ -153,5 +160,53 @@ describe('useRoomEncryptionStatus', () => {
     await vi.advanceTimersByTimeAsync(3000)
     expect(mocks.getRoomEncryptionState).toHaveBeenCalledTimes(callCount)
     expect(mocks.getRoomEncryptionState.mock.calls.filter(([id]) => id === '!a:test')).toHaveLength(1)
+  })
+
+  it('快速切房的并发 load 不会用旧结果覆盖新状态，也不会泄漏重试定时器', async () => {
+    vi.useFakeTimers()
+    const resolvers: Array<(value: string) => void> = []
+    mocks.getRoomEncryptionState.mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+
+    const roomId = ref('!a:test')
+    const { reload, isEncrypted } = useRoomEncryptionStatus(roomId)
+    const first = reload() // A #1
+    roomId.value = '!b:test'
+    await nextTick() // B #2
+    roomId.value = '!a:test'
+    await nextTick() // A #3
+    expect(resolvers).toHaveLength(3)
+
+    // 最新请求先返回，随后两个已过期的请求才姗姗来迟
+    resolvers[2]('encrypted')
+    await nextTick()
+    resolvers[1]('plaintext')
+    resolvers[0]('plaintext')
+    await first
+
+    expect(isEncrypted.value).toBe(true)
+    // 最新请求已是 encrypted，任何被淘汰的请求都不允许再排重试
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(mocks.getRoomEncryptionState).toHaveBeenCalledTimes(3)
+  })
+
+  it('连接恢复后会重新判定加密状态', async () => {
+    mocks.getRoomEncryptionState.mockResolvedValue('unknown')
+
+    matrixStoreMock.connectionState = 'CONNECTING'
+    const { reload } = useRoomEncryptionStatus(ref('!a:test'))
+    await reload()
+    expect(mocks.getRoomEncryptionState).toHaveBeenCalledTimes(1)
+
+    // 前序用例的实例也 watch 同一个 store mock，连接恢复会一起触发；
+    // 这里只关心「恢复后确实重新查询」，不做全局次数断言。
+    mocks.getRoomEncryptionState.mockClear()
+    matrixStoreMock.connectionState = 'CONNECTED'
+    await nextTick()
+    expect(mocks.getRoomEncryptionState).toHaveBeenCalled()
   })
 })

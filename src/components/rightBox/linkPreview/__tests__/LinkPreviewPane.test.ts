@@ -11,14 +11,18 @@ const settingStore = reactive({
   linkPreviewEnabled: true
 })
 
-const currentSessionRoomId = '!room:test'
+const currentSessionRoomId = reactive({ value: '!room:test' })
 
 vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
   matrixCryptoService: { getRoomEncryptionState: getRoomEncryptionStateMock }
 }))
 
 vi.mock('@/stores/domains/widget/global', () => ({
-  useGlobalStore: () => ({ currentSessionRoomId })
+  useGlobalStore: () => ({
+    get currentSessionRoomId() {
+      return currentSessionRoomId.value
+    }
+  })
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -96,6 +100,7 @@ const vmOf = (wrapper: ReturnType<typeof mountPane>) => wrapper.vm as unknown as
 describe('LinkPreviewPane', () => {
   beforeEach(() => {
     settingStore.linkPreviewEnabled = true
+    currentSessionRoomId.value = '!room:test'
     getUrlPreviewMock.mockReset()
     getRoomEncryptionStateMock.mockReset()
     getRoomEncryptionStateMock.mockResolvedValue('plaintext')
@@ -161,6 +166,19 @@ describe('LinkPreviewPane', () => {
     await wrapper.find('[data-test="link-preview-fetch"]').trigger('click')
     await flushPromises()
 
+    expect(getUrlPreviewMock).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('chat.link_preview.blocked_encrypted')
+    wrapper.unmount()
+  })
+
+  it('无会话上下文时阻断，不请求加密状态与服务端预览', async () => {
+    currentSessionRoomId.value = ''
+    const wrapper = mountPane()
+    await wrapper.find('input').setValue('https://example.com/a')
+    await wrapper.find('[data-test="link-preview-fetch"]').trigger('click')
+    await flushPromises()
+
+    expect(getRoomEncryptionStateMock).not.toHaveBeenCalled()
     expect(getUrlPreviewMock).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('chat.link_preview.blocked_encrypted')
     wrapper.unmount()

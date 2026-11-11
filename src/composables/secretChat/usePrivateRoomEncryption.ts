@@ -13,23 +13,35 @@ const logger = createLogger('PrivateRoomEncryption')
 export const usePrivateRoomEncryption = () => {
   const encryptedRooms = ref<Record<string, boolean>>({})
   const loading = ref(false)
+  /** 请求代次：列表快速切换时只认最后一次结果，避免旧响应覆盖新快照。 */
+  let requestSeq = 0
 
   const refresh = async (roomIds: string[]): Promise<void> => {
+    const seq = ++requestSeq
     const targets = roomIds.filter((id) => !!id)
     if (targets.length === 0) {
       encryptedRooms.value = {}
+      loading.value = false
       return
     }
     loading.value = true
     try {
       const entries = await Promise.all(
-        targets.map(async (roomId) => [roomId, await matrixCryptoService.isRoomEncrypted(roomId)] as const)
+        targets.map(async (roomId) => {
+          try {
+            return [roomId, await matrixCryptoService.isRoomEncrypted(roomId)] as const
+          } catch (err) {
+            // 单房间查询失败按未加密处理（fail-closed），并显式写入 false，
+            // 不能沿用上一次快照里的 true 继续展示加密徽标。
+            logger.warn(`加载房间加密状态失败: ${roomId} ${err}`)
+            return [roomId, false] as const
+          }
+        })
       )
+      if (seq !== requestSeq) return
       encryptedRooms.value = Object.fromEntries(entries)
-    } catch (err) {
-      logger.warn(`加载私密会话加密状态失败: ${err}`)
     } finally {
-      loading.value = false
+      if (seq === requestSeq) loading.value = false
     }
   }
 
