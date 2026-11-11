@@ -363,4 +363,132 @@ test.describe('我的页信息架构（S1）', () => {
     await allowSwitch.click()
     await expect(autoSwitch).not.toHaveClass(/disabled/, { timeout: 10_000 })
   })
+
+  /**
+   * M9：存储管理从「只读配额」变成「可解释 + 可清理」。
+   *
+   * 关键判据不是「点了有 toast」，而是**数据真的被删**：seed 3 条索引 → 页面显示 3 →
+   * 点清空 → 直接读 IndexedDB 必须为 0。历史上这里的「清理缓存」是 no-op 却弹「清理成功」，
+   * 只有查库才能区分真假。
+   */
+  test('存储管理：明细真实、清空搜索索引真的删数据', async ({ page }) => {
+    const self = await registerMobileAccount('mystore')
+    await seedE2EStorage(page)
+    await autoDismissLocalUnlockGate(page)
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
+    await dismissLocalUnlockDialog(page, 10_000)
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 45_000 }).not.toContain('/mobile/login')
+    await page.waitForTimeout(1500)
+
+    /**
+     * 重进存储页。
+     *
+     * 两件事同时要满足：① push 同一路由不会重建组件，`onMounted` 不会重跑；
+     * ② 连续两次 push（设置 → 存储）时第二次会被前一次的导航收尾打断，落点仍是设置页。
+     * 所以经消息页中转：既换了路由（保证重挂载），又不连击同一层级。
+     */
+    const openStorage = async () => {
+      await pushMobileRoute(page, '/mobile/message')
+      await pushMobileRoute(page, '/mobile/mobileMy/storage')
+      await expect(page.locator('[data-testid="search-index-cell"]')).toBeVisible({ timeout: 20_000 })
+    }
+
+    await openStorage()
+
+    // 明细必须有真实值：登录后 localStorage 一定非空
+    const localText = await page.locator('[data-testid="local-storage-cell"]').innerText()
+    expect(localText, `「本地设置与缓存」没有真实字节数：${localText}`).toMatch(/\d/)
+    await expect(page.locator('[data-testid="other-data-cell"]')).toBeVisible()
+
+    // 全新账号索引为空 ⇒ 按钮必须禁用（旧实现无条件「清理成功」）
+    const clearButton = page.locator('[data-testid="clear-search-index-button"]')
+    await expect(clearButton, '没有可清理内容时按钮仍可点').toBeDisabled()
+
+    // 造 3 条索引记录（与 worker 同一库同一 schema）→ 重进页面应看到 3
+    const seeded = await seedSearchIndex(page, 3)
+    expect(seeded).toBe(3)
+    await openStorage()
+    await expect(page.locator('[data-testid="search-index-cell"]'), '页面没读到刚写入的索引条数').toContainText('3', {
+      timeout: 20_000
+    })
+    await expect(clearButton).toBeEnabled()
+
+    // 清空：确认框 → 点「清空搜索索引」
+    await clearButton.click()
+    const dialog = page
+      .locator('.van-dialog')
+      .filter({ hasText: /清空搜索索引|Clear search index/ })
+      .first()
+    await expect(dialog, '点清空没有弹确认框').toBeVisible({ timeout: 10_000 })
+    await dialog
+      .locator('button')
+      .filter({ hasText: /清空搜索索引|Clear search index/ })
+      .first()
+      .click()
+
+    // 真删：直接读库
+    await expect.poll(() => readSearchIndexCount(page), { timeout: 20_000 }).toBe(0)
+    // UI 同步归零 + 按钮回到禁用（不是「清完了还能再点一次」）
+    await expect(page.locator('[data-testid="search-index-cell"]')).toContainText('0', { timeout: 15_000 })
+    await expect(clearButton).toBeDisabled()
+  })
 })
+
+/**
+ * 往搜索索引库写入 N 条事件（+1 个会话）。
+ *
+ * 用的是 worker 的同一库名与 schema（`tjg-worker-cache`），所以页面读到的就是它。
+ * 不经过 worker 消息：本用例要验证的是「页面读库 → 清库」这条链路，
+ * 造数据绕开 worker 反而更纯粹（也不依赖 worker 是否已启动）。
+ */
+const seedSearchIndex = (page: Page, count: number) =>
+  page.evaluate(async (n) => {
+    const openDb = () =>
+      new Promise<IDBDatabase>((resolve, reject) => {
+        const request = indexedDB.open('tjg-worker-cache', 1)
+        request.onupgradeneeded = () => {
+          const db = request.result
+          if (!db.objectStoreNames.contains('search-rooms')) {
+            db.createObjectStore('search-rooms', { keyPath: 'roomId' })
+          }
+          if (!db.objectStoreNames.contains('search-events')) {
+            const store = db.createObjectStore('search-events', { keyPath: 'eventId' })
+            store.createIndex('by_room', 'roomId', { unique: false })
+          }
+        }
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+
+    const db = await openDb()
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(['search-rooms', 'search-events'], 'readwrite')
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+      tx.objectStore('search-rooms').put({ roomId: '!seed:localhost', name: 'seed-room' })
+      const events = tx.objectStore('search-events')
+      for (let i = 0; i < n; i++) {
+        events.put({ eventId: `$seed-${i}:localhost`, roomId: '!seed:localhost', enc: 'v1:seed' })
+      }
+    })
+    db.close()
+    return n
+  }, count)
+
+/** 直接读库计数：绕过页面与 worker，验证「真的删了」 */
+const readSearchIndexCount = (page: Page) =>
+  page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('tjg-worker-cache', 1)
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const count = await new Promise<number>((resolve, reject) => {
+      const tx = db.transaction('search-events', 'readonly')
+      const req = tx.objectStore('search-events').count()
+      req.onsuccess = () => resolve(req.result)
+      req.onerror = () => reject(req.error)
+    })
+    db.close()
+    return count
+  })

@@ -3,5 +3,22 @@
   "loading": "Loading...",
   "usage_section": "Storage usage",
   "used": "Used",
-  "quota": "Quota"
+  "quota": "Quota",
+  "detail_section": "Local data",
+  "search_index": "Search index",
+  "search_index_records": "{events} messages / {rooms} rooms",
+  "search_index_desc": "Stored on this device only, encrypted. Clearing it keeps your messages; the index rebuilds on the next search",
+  "local_storage": "Local settings & cache",
+  "local_storage_keys": "{count} keys",
+  "other_data": "Other (session & encryption)",
+  "other_data_desc": "Contains credentials and encryption keys. Cleared on logout, not here",
+  "unavailable": "This environment does not support local storage statistics",
+  "clear_section": "Cleanup",
+  "clear_action": "Clear search index",
+  "clear_hint": "Only the search index is cleared. Messages, media and login state are kept",
+  "nothing_to_clear": "Nothing to clear in the search index",
+  "clear_confirm_title": "Clear search index?",
+  "clear_confirm_message": "This clears the local search index ({events} messages, {rooms} rooms). Messages, media and login state are unaffected; the index rebuilds on the next search.",
+  "clear_success": "Search index cleared",
+  "clear_failed": "Failed to clear, please retry"
 }

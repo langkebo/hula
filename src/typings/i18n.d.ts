@@ -5469,7 +5469,24 @@ export type I18nKeys = {
     "loading": "加载中...",
     "usage_section": "存储用量",
     "used": "已使用",
-    "quota": "可用配额"
+    "quota": "可用配额",
+    "detail_section": "本地数据明细",
+    "search_index": "搜索索引",
+    "search_index_records": "{events} 条消息 / {rooms} 个会话",
+    "search_index_desc": "仅存于本机并加密落盘；清空不影响聊天记录，下次搜索时自动重建",
+    "local_storage": "本地设置与缓存",
+    "local_storage_keys": "{count} 个键",
+    "other_data": "其它（会话与加密数据）",
+    "other_data_desc": "含登录凭据与加密密钥，随账号登出清理，不在此处删除",
+    "unavailable": "当前环境不支持统计本地数据（浏览器限制）",
+    "clear_section": "清理",
+    "clear_action": "清空搜索索引",
+    "clear_hint": "只清理搜索索引，聊天记录、媒体与登录状态都会保留",
+    "nothing_to_clear": "当前没有可清理的搜索索引",
+    "clear_confirm_title": "清空搜索索引？",
+    "clear_confirm_message": "将清空本机搜索索引（{events} 条消息索引、{rooms} 个会话）。聊天记录、媒体与登录状态不受影响，下次搜索会重建。",
+    "clear_success": "搜索索引已清空",
+    "clear_failed": "清空失败，请重试"
   },
   "mobile_tabbar": {
     "items": {
@@ -11921,6 +11938,23 @@ export type I18nKeyPaths =
   | "mobile_storage.usage_section"
   | "mobile_storage.used"
   | "mobile_storage.quota"
+  | "mobile_storage.detail_section"
+  | "mobile_storage.search_index"
+  | "mobile_storage.search_index_records"
+  | "mobile_storage.search_index_desc"
+  | "mobile_storage.local_storage"
+  | "mobile_storage.local_storage_keys"
+  | "mobile_storage.other_data"
+  | "mobile_storage.other_data_desc"
+  | "mobile_storage.unavailable"
+  | "mobile_storage.clear_section"
+  | "mobile_storage.clear_action"
+  | "mobile_storage.clear_hint"
+  | "mobile_storage.nothing_to_clear"
+  | "mobile_storage.clear_confirm_title"
+  | "mobile_storage.clear_confirm_message"
+  | "mobile_storage.clear_success"
+  | "mobile_storage.clear_failed"
   | "mobile_tabbar.items.messages"
   | "mobile_tabbar.items.contacts"
   | "mobile_tabbar.items.rooms"

@@ -218,3 +218,25 @@ export async function clearAllSearchData(): Promise<void> {
   const eventStore = await getStore(EVENTS_STORE, 'readwrite')
   eventStore.clear()
 }
+
+/**
+ * 只读统计落盘条数（**不加载记录内容**）。
+ *
+ * 主线程的「存储管理」用它展示搜索索引占用规模：`count()` 走索引元数据，
+ * 比 `getAll()` 轻几个数量级（索引可能是几十万条），也避免把加密记录读进内存。
+ *
+ * 与 worker 内的 `handleSearchStats()` 的区别：那是**内存索引**的统计，
+ * 需要 worker 存活；这里是**磁盘**统计，任何时候都能拿到。
+ */
+export async function countSearchIndexRecords(): Promise<{ rooms: number; events: number }> {
+  const roomStore = await getStore(ROOMS_STORE, 'readonly')
+  const eventStore = await getStore(EVENTS_STORE, 'readonly')
+  const count = (store: IDBObjectStore) =>
+    new Promise<number>((resolve, reject) => {
+      const request = store.count()
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+  const [rooms, events] = await Promise.all([count(roomStore), count(eventStore)])
+  return { rooms, events }
+}
