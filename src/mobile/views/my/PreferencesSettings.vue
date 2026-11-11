@@ -161,6 +161,7 @@
 import { Icon } from '@iconify/vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useBurnDurationOptions, useSendKeyOptions } from '@/composables/settings/settingsOptions'
 import { usePreferenceSettings } from '@/composables/settings/usePreferenceSettings'
 
 const { t } = useI18n()
@@ -183,37 +184,20 @@ const {
 const showSendKeyPicker = ref(false)
 const showBurnDurationPicker = ref(false)
 
-const sendKeyOptions = [
-  { label: 'Enter', value: 'Enter' },
-  { label: 'Ctrl + Enter', value: 'Ctrl+Enter' },
-  { label: 'Shift + Enter', value: 'Shift+Enter' }
-]
+// 选项文案与桌面端同源（settingsOptions），移动端只做 Vant 列格式转换
+const sendKeyOptions = useSendKeyOptions()
+const burnDurationOptions = useBurnDurationOptions()
 
-const sendKeyColumns = sendKeyOptions.map((o) => ({ text: o.label, value: o.value }))
+const sendKeyColumns = computed(() => sendKeyOptions.value.map((o) => ({ text: o.label, value: o.value })))
 
 const sendKeyLabel = computed(() => {
-  return sendKeyOptions.find((o) => o.value === sendKey.value)?.label || 'Enter'
+  return sendKeyOptions.value.find((o) => o.value === sendKey.value)?.label || 'Enter'
 })
-
-function formatBurnDuration(value: number): string {
-  if (value < 60) return t('setting.burn_after_read.formats.seconds', { count: String(value) })
-  if (value < 3600) return t('setting.burn_after_read.formats.minutes', { count: String(value / 60) })
-  if (value < 86400) return t('setting.burn_after_read.formats.hours', { count: String(value / 3600) })
-  return t('setting.burn_after_read.formats.days', { count: String(value / 86400) })
-}
-
-const burnDurationOptions = computed(() => [
-  { label: formatBurnDuration(30), value: 30 },
-  { label: formatBurnDuration(60), value: 60 },
-  { label: formatBurnDuration(300), value: 300 },
-  { label: formatBurnDuration(3600), value: 3600 },
-  { label: formatBurnDuration(86400), value: 86400 }
-])
 
 const burnDurationColumns = computed(() => burnDurationOptions.value.map((o) => ({ text: o.label, value: o.value })))
 
 const burnDurationLabel = computed(() => {
-  return burnDurationOptions.value.find((o) => o.value === burnDefaultDuration.value)?.label || formatBurnDuration(60)
+  return burnDurationOptions.value.find((o) => o.value === burnDefaultDuration.value)?.label || ''
 })
 
 function handleSendKeyConfirm({ selectedValues }: { selectedValues: string[] }) {

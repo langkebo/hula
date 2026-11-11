@@ -95,13 +95,6 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
     component: () => import('@/views/aboutWindow/index.vue')
   },
   {
-    // 独立聊天窗口：label 形如 `alone123`，由 useWindow.createWebviewWindow 按 `/${label.split('--')[0]}`
-    // 拼出该路径并直接加载，故此处无显式 push 引用也属于活路由
-    path: '/alone',
-    name: 'alone',
-    component: () => import('@/views/homeWindow/message/Alone.vue')
-  },
-  {
     path: '/settings',
     name: 'settings',
     component: SettingsWindow

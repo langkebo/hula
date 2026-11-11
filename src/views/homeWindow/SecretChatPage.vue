@@ -107,12 +107,8 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import EncryptionLockBadge from '@/components/encryption/EncryptionLockBadge.vue'
 import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
 import { useSecretChatSessions } from '@/composables/secretChat/useSecretChatSessions'
-import { unmarkRoomPrivate } from '@/services/matrix/privateChat/privateRoomRegistry'
 import type { SessionItem } from '@/stores/domains/chat/chat/session'
 import { isSecretChatUnlocked, lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('SecretChatPage')
 
 defineOptions({
   name: 'SecretChatPage'
@@ -122,7 +118,8 @@ const { t } = useI18n()
 const router = useRouter()
 
 /** 列表过滤 / 加密状态 / 登记表加载与移动端共用同一份规则（见 composable 注释）。 */
-const { locked, hiddenSessions, isEncrypted, sessionAriaLabel, refreshPrivateSessions } = useSecretChatSessions()
+const { locked, hiddenSessions, isEncrypted, sessionAriaLabel, refreshPrivateSessions, unmarkSession } =
+  useSecretChatSessions()
 
 /** 锁定态下点「输入密码继续」：回跳目标仍是本页，解锁后守卫会放行。 */
 const handleUnlockClick = () => {
@@ -150,13 +147,7 @@ const handleUnmark = (session: SessionItem) => {
     content: t('home.secret_chat.unmark_confirm'),
     positiveText: t('common.confirm'),
     negativeText: t('common.cancel'),
-    onPositiveClick: async () => {
-      try {
-        await unmarkRoomPrivate(session.roomId)
-      } catch (err) {
-        logger.error('unmark private room failed:', err)
-      }
-    }
+    onPositiveClick: () => unmarkSession(session.roomId)
   })
 }
 

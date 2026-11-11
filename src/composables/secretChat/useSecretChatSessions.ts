@@ -4,11 +4,15 @@ import { useI18n } from 'vue-i18n'
 import {
   isPrivateRoom,
   loadPrivateRoomRegistry,
-  migrateFromHiddenSessions
+  migrateFromHiddenSessions,
+  unmarkRoomPrivate
 } from '@/services/matrix/privateChat/privateRoomRegistry'
 import { type SessionItem, useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useSecretChatSession } from '@/stores/domains/settings/secretChatSession'
+import { createLogger } from '@/utils/Logger'
 import { usePrivateRoomEncryption } from './usePrivateRoomEncryption'
+
+const logger = createLogger('SecretChatSessions')
 
 /**
  * 私密会话列表视图模型（桌面 `SecretChatPage` 与移动端 `secretChat/SecretChatPage` 共用）。
@@ -69,10 +73,26 @@ export const useSecretChatSessions = () => {
     )
   }
 
+  /**
+   * 移出私密（取消房间登记），成功后会话回到普通列表。
+   *
+   * 两端此前各写一份「调 unmarkRoomPrivate + catch 后记日志」，提示方式不同
+   * （桌面 dialog / 移动 toast）由平台层决定，这里只返回是否成功。
+   */
+  const unmarkSession = async (roomId: string): Promise<boolean> => {
+    try {
+      await unmarkRoomPrivate(roomId)
+      return true
+    } catch (err) {
+      logger.error('unmark private room failed:', err)
+      return false
+    }
+  }
+
   // 原地解锁后要补一次登记表加载：页面 onMounted 在锁定态会直接 return
   watch(isUnlocked, (value) => {
     if (value) refreshPrivateSessions()
   })
 
-  return { locked, hiddenSessions, isEncrypted, sessionAriaLabel, refreshPrivateSessions }
+  return { locked, hiddenSessions, isEncrypted, sessionAriaLabel, refreshPrivateSessions, unmarkSession }
 }

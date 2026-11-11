@@ -234,7 +234,7 @@
 
     <CrossSigningDialog v-model:show="showCrossSigningDialog" />
 
-    <KeyRotationDialog v-model:show="showKeyRotationDialog" @updated="loadRotationStatus" />
+    <KeyRotationDialog v-model:show="showKeyRotationDialog" @updated="refreshRotationStatus" />
 
     <SecurityKeySetupDialog v-model:show="showSecurityKeyDialog" @success="handleSecurityKeyCreated" />
 
@@ -281,15 +281,11 @@ import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
+import { useDeviceSessions } from '@/composables/encryption/useDeviceSessions'
+import { useEncryption, type VerificationTransaction } from '@/composables/encryption/useEncryption'
 import { useEncryptionOverview } from '@/composables/encryption/useEncryptionOverview'
 import { useGlobalStrictMode } from '@/composables/encryption/useGlobalStrictMode'
-import { matrixEncryptionContextService } from '@/services/matrix/crypto/MatrixEncryptionContextService'
-import {
-  matrixVerificationService,
-  type VerificationTransaction
-} from '@/services/matrix/crypto/MatrixVerificationService'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
-import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 import CrossSigningSection from './sections/CrossSigningSection.vue'
 import DehydratedDeviceSection from './sections/DehydratedDeviceSection.vue'
@@ -303,7 +299,10 @@ defineOptions({
 const { showFeedback } = useActionFeedback()
 const { write: writeClipboard } = useClipboard()
 const { t } = useI18n()
-const encryptionStore = useEncryptionStore()
+// 设备指纹 / 待处理验证经 useEncryption 消费（crypto 服务只在 composable 层出现）
+const { getDeviceFingerprint, getPendingVerifications, cancelVerification } = useEncryption()
+// 设备统计与移动端登录设备页共用 useDeviceSessions，不再页面内硬编码计数
+const { devices, loadDevices } = useDeviceSessions()
 
 // 服务端未声明 E2EE 能力时降级为只读（页签本身保留，见 settingsSchema 的 readonly fallback）。
 // 能力探测未完成前不做判定，避免登录初期误判导致整页不可用。
@@ -346,7 +345,10 @@ const {
   crossSigningSetup: securityKeySetup,
   needsRotation,
   e2eeFullySetup,
-  loadOverview
+  loadOverview,
+  refreshBackup,
+  refreshRotationStatus,
+  markSecurityKeyConfigured
 } = useEncryptionOverview()
 
 const keyStatus = computed(() => {
@@ -360,8 +362,8 @@ const encryptionAlgorithm = computed(() => {
   return encryptionEnabled.value ? 'Megolm (AES-256)' : t('setting.encryption.disabled')
 })
 
-const verifiedDevicesCount = ref(0)
-const unverifiedDevicesCount = ref(1)
+const verifiedDevicesCount = computed(() => devices.value.filter((device) => device.isVerified).length)
+const unverifiedDevicesCount = computed(() => devices.value.filter((device) => !device.isVerified).length)
 
 onMounted(async () => {
   await loadEncryptionInfo()
@@ -376,19 +378,18 @@ async function loadEncryptionInfo() {
   }
 
   try {
-    const fingerprint = await matrixEncryptionContextService.getCurrentDeviceFingerprint()
+    const fingerprint = await getDeviceFingerprint()
     if (fingerprint) {
       deviceFingerprint.value = formatFingerprint(fingerprint)
     }
 
-    pendingVerifications.value = await matrixVerificationService.getPendingVerifications()
+    pendingVerifications.value = await getPendingVerifications()
   } catch (error) {
     logger.error('Failed to load encryption details', error)
   }
-}
 
-async function loadRotationStatus() {
-  await encryptionStore.loadRotationStatus()
+  // 设备统计与验证状态同源（GET /devices + 本地 crypto store）
+  await loadDevices()
 }
 
 function formatFingerprint(key: string): string {
@@ -414,8 +415,9 @@ function handleCreateBackup() {
   showBackupDialog.value = true
 }
 
-function handleBackupCreated() {
-  encryptionStore.markBackupEnabled(String(Date.now()))
+async function handleBackupCreated() {
+  // 备份版本以服务器状态为准（此前用 Date.now() 伪造版本号，界面会展示假版本）
+  await refreshBackup()
   showFeedback(t('setting.encryption.backup_created'), 'success')
 }
 
@@ -423,7 +425,9 @@ function handleRestoreBackup() {
   showRestoreDialog.value = true
 }
 
-function handleRestoreSuccess() {
+async function handleRestoreSuccess() {
+  // 恢复后备份状态同样以服务器为准（与移动端 onKeyBackupComplete 一致）
+  await refreshBackup()
   showFeedback(t('setting.encryption.restore_success'), 'success')
 }
 
@@ -447,9 +451,9 @@ function handleVerifyDialogVisibilityChange(value: boolean) {
 }
 
 function handleVerifySuccess() {
-  encryptionStore.markDeviceVerified()
   showFeedback(t('setting.encryption.verify_success'), 'success')
   showVerifyDialog.value = false
+  // 验证状态以 SDK 为准：loadEncryptionInfo 内部会重读总览与设备列表
   void loadEncryptionInfo()
 }
 
@@ -461,7 +465,7 @@ function handleAcceptPendingVerification(request: VerificationTransaction) {
 
 async function handleCancelPendingVerification(request: VerificationTransaction) {
   try {
-    await matrixVerificationService.cancelVerification(request.transactionId, 'User cancelled verification')
+    await cancelVerification(request.transactionId, 'User cancelled verification')
     showFeedback(t('setting.encryption.pending_verification_cancelled'), 'success')
     pendingVerifications.value = pendingVerifications.value.filter(
       (item) => item.transactionId !== request.transactionId
@@ -486,12 +490,10 @@ async function copyFingerprint() {
   showFeedback(t('setting.encryption.copied'), 'success')
 }
 
-function handleSecurityKeyCreated() {
-  encryptionStore.markSecurityKeyConfigured()
+async function handleSecurityKeyCreated() {
   showFeedback(t('setting.encryption.security_key_created'), 'success')
-  // 该流程内部会 bootstrapSecretStorage（把已知的交叉签名私钥补存进 4S）⇒
-  // 必须重读状态，否则「私钥只在本机」的警告会一直挂着不消失。
-  void encryptionStore.loadCrossSigningStatus()
+  // 标记已配置 + 重读交叉签名状态由总览 composable 统一完成（与移动端共用同一份收敛逻辑）
+  await markSecurityKeyConfigured()
 }
 
 function handleOnboardingComplete() {

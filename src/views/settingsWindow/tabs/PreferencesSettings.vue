@@ -272,7 +272,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useLanguageOptions } from '@/composables/settings/settingsOptions'
+import { useBurnDurationOptions, useLanguageOptions, useSendKeyOptions } from '@/composables/settings/settingsOptions'
 import { usePreferenceSettings } from '@/composables/settings/usePreferenceSettings'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useScannerStore } from '@/stores/domains/widget/scanner'
@@ -297,11 +297,7 @@ const languageOptions = useLanguageOptions()
 const autoLogin = ref(settingStore.autoLoginEnabled)
 const autoStartup = ref(settingStore.autoStartupEnabled)
 const autoStartupLoading = ref(false)
-const sendKeyOptions = computed(() => [
-  { label: 'Enter', value: 'Enter' },
-  { label: t('setting.preferences.send_key_ctrl_enter'), value: 'Ctrl+Enter' },
-  { label: t('setting.preferences.send_key_shift_enter'), value: 'Shift+Enter' }
-])
+const sendKeyOptions = useSendKeyOptions()
 
 const recallTimeOptions = computed(() => [
   { label: t('setting.preferences.recall_2_minutes'), value: 120 },
@@ -337,13 +333,7 @@ const {
   sendTypingNotifications
 } = usePreferenceSettings()
 
-const burnDurationOptions = computed(() => [
-  { label: t('setting.burn_after_read.durations.30_seconds'), value: 30 },
-  { label: t('setting.burn_after_read.durations.1_minute'), value: 60 },
-  { label: t('setting.burn_after_read.durations.5_minutes'), value: 300 },
-  { label: t('setting.burn_after_read.durations.1_hour'), value: 3600 },
-  { label: t('setting.burn_after_read.durations.24_hours'), value: 86400 }
-])
+const burnDurationOptions = useBurnDurationOptions()
 
 const threadNotificationOptions = computed(() => [
   { label: t('setting.preferences.notification_all_messages'), value: 'all' },

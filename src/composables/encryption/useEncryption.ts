@@ -21,6 +21,8 @@ import {
 import { unknownToObject } from '@/utils/typeGuard'
 
 export type { KeyRotationRecord } from '@/services/matrix/crypto/MatrixEncryptionService'
+/** 待处理验证事务类型：页面经本 composable 消费，避免再直接 import crypto 服务模块 */
+export type { VerificationTransaction }
 
 interface UseEncryptionResult {
   isEncryptionEnabled: Ref<boolean>

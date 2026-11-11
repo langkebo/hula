@@ -107,13 +107,9 @@ import { useSecretChatSessions } from '@/composables/secretChat/useSecretChatSes
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from '@/mobile/views/my/settingsRoutes'
-import { unmarkRoomPrivate } from '@/services/matrix/privateChat/privateRoomRegistry'
 import type { SessionItem } from '@/stores/domains/chat/chat/session'
 import { isSecretChatUnlocked, lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('MobileSecretChatPage')
 
 defineOptions({
   name: 'MobileSecretChatPage'
@@ -127,7 +123,8 @@ const settingStore = useSettingStore()
 const configured = computed(() => settingStore.isSecretChatConfigured())
 
 /** 列表过滤 / 加密状态 / 登记表加载与桌面端共用同一份规则（见 composable 注释）。 */
-const { locked, hiddenSessions, isEncrypted, sessionAriaLabel, refreshPrivateSessions } = useSecretChatSessions()
+const { locked, hiddenSessions, isEncrypted, sessionAriaLabel, refreshPrivateSessions, unmarkSession } =
+  useSecretChatSessions()
 
 /** 锁定态点「输入密码继续」：回跳目标是本页，解锁后由守卫放行。 */
 const handleUnlockClick = () => {
@@ -166,10 +163,7 @@ const handleUnmark = async (session: SessionItem) => {
     return
   }
 
-  try {
-    await unmarkRoomPrivate(session.roomId)
-  } catch (err) {
-    logger.error('unmark private room failed:', err)
+  if (!(await unmarkSession(session.roomId))) {
     showToast({ type: 'fail', message: t('home.secret_chat.registry_unavailable') })
   }
 }

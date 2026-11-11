@@ -63,7 +63,7 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 import { applyBubbleStyle, loadBubbleStyle } from '@/utils/bubbleStyle'
 import { applyFontScale, loadFontScale } from '@/utils/fontScale'
 import { createLogger } from '@/utils/Logger'
-import { isDesktop, isIOS, isWindows10 } from '@/utils/PlatformConstants'
+import { isDesktop, isWindows10 } from '@/utils/PlatformConstants'
 import { isNonMatrixWindow } from '@/utils/windowLabels'
 
 const logger = createLogger('App')
@@ -347,20 +347,6 @@ function uninstallSecurityListeners() {
   }
 }
 
-// ========== iOS network permission ==========
-const requestIOSNetworkPermission = async () => {
-  if (!isIOS()) return
-  try {
-    // Browser favicon reachability check — intentionally uses native fetch with no-cors
-    await fetch('https://www.apple.com/favicon.ico', {
-      method: 'HEAD',
-      cache: 'no-cache'
-    })
-  } catch {
-    // Expected to fail on first launch, triggers the permission dialog
-  }
-}
-
 // ========== Mobile re-login listener ==========
 const setupMobileReLoginListener = async () => {
   if (!isMobilePlatform.value) return
@@ -491,7 +477,6 @@ onMounted(async () => {
     // 无会话时 `recoverColdStartSession` 立即返回，不会在登录页空转。
     void recoverColdStartSession()
   }
-  await requestIOSNetworkPermission()
   initPlatformStyles()
   installSecurityListeners()
   await setupWindowHandlers()

@@ -212,6 +212,7 @@ import { matrixAccountService } from '@/services/matrix/user/MatrixAccountServic
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { createLogger } from '@/utils/Logger'
+import { firstPasswordRuleViolationKey } from '@/utils/passwordStrength'
 import {
   MOBILE_SETTINGS_DEACTIVATE_PATH,
   MOBILE_SETTINGS_DEVICES_PATH,
@@ -292,10 +293,12 @@ async function handleChangePassword() {
     return
   }
 
-  if (passwordForm.value.newPassword.length < 8) {
+  // 密码强度规则与后端 / 桌面端同源（utils/passwordStrength），避免移动端放过后端会拒绝的密码
+  const violationKey = firstPasswordRuleViolationKey(passwordForm.value.newPassword)
+  if (violationKey) {
     showToast({
       type: 'fail',
-      message: t('mobile_security.password_too_short')
+      message: t(`setting.account.${violationKey}`)
     })
     return
   }

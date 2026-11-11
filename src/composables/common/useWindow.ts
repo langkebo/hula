@@ -44,20 +44,8 @@ export const useWindow = () => {
     const originalLabel = label
     const isMultiMsgWindow = originalLabel.includes(EventEnum.MULTI_MSG)
 
-    const checkLabel = () => {
-      /** 如果是打开独立窗口就截取label中的固定label名称 */
-      if (label.includes(EventEnum.ALONE)) {
-        return label.replace(/\d/g, '')
-      } else {
-        return label
-      }
-    }
-
-    // 对于multiMsg类型的窗口，保留原始label用于窗口标识，但URL路由统一指向 /multiMsg
-    label = isMultiMsgWindow ? originalLabel : checkLabel()
-
     // 构建URL，包含查询参数
-    let url = isMultiMsgWindow ? `/${EventEnum.MULTI_MSG}` : `/${label.split('--')[0]}`
+    let url = isMultiMsgWindow ? `/${EventEnum.MULTI_MSG}` : `/${originalLabel.split('--')[0]}`
 
     if (queryParams && Object.keys(queryParams).length > 0) {
       const searchParams = new URLSearchParams()

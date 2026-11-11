@@ -107,9 +107,6 @@ export enum EventEnum {
   EXIT = 'exit',
   /** 退出账号 */
   LOGOUT = 'logout',
-  /** 独立窗口 */
-  ALONE = 'alone',
-  /** 共享屏幕 */
   /** 锁屏 */
   LOCK_SCREEN = 'lockScreen',
   /** 解锁（跨窗口同步） */

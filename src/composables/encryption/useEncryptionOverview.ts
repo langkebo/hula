@@ -40,6 +40,22 @@ export function useEncryptionOverview() {
     await store.loadDeviceVerification()
   }
 
+  /** 刷新密钥轮换状态（轮换完成后调用） */
+  async function refreshRotationStatus(): Promise<void> {
+    await store.loadRotationStatus()
+  }
+
+  /**
+   * 安全密钥创建成功后的状态收敛。
+   *
+   * 该流程内部会 bootstrapSecretStorage（把已知的交叉签名私钥补存进 4S），
+   * 因此必须重读交叉签名状态，否则「私钥只在本机」的警告会一直挂着。
+   */
+  async function markSecurityKeyConfigured(): Promise<void> {
+    store.markSecurityKeyConfigured()
+    await store.loadCrossSigningStatus()
+  }
+
   return {
     encryptionEnabled,
     deviceVerified,
@@ -51,6 +67,8 @@ export function useEncryptionOverview() {
     loading,
     loadOverview,
     refreshBackup,
-    refreshDeviceVerification
+    refreshDeviceVerification,
+    refreshRotationStatus,
+    markSecurityKeyConfigured
   }
 }
