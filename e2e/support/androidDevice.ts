@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { type Browser, chromium, type Page } from '@playwright/test'
+import { type Browser, chromium, expect, type Page } from '@playwright/test'
 import { dismissLocalUnlockDialog as dismissLocalUnlockGate } from './localUnlockGate'
 
 /**
@@ -196,6 +196,12 @@ export const loginOnMobileUi = async (page: Page, options: MobileLoginOptions): 
 
   const form = page.locator('form[data-testid="mobile-login-form"]')
   await form.waitFor({ timeout: timeoutMs })
+  // 表单容器先出现、内部 input 稍后才挂载（Vue 分步渲染 + 首屏资源竞争）。
+  // 直接 nth(1).fill() 会在 input 尚未存在时抛 "element(s) not found"，
+  // 看起来像登录失败，实际是时序问题。等够 3 个 input 再填。
+  await expect
+    .poll(() => form.locator('input').count(), { timeout: timeoutMs, message: '登录表单未渲染出 3 个输入框' })
+    .toBeGreaterThanOrEqual(3)
   // 第 0 个 input 是服务器地址（通常已由 env 预填），第 1/2 个才是账号与密码
   await form.locator('input').nth(1).fill(options.account)
   await form.locator('input').nth(2).fill(options.password)

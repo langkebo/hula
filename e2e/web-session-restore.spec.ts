@@ -87,13 +87,12 @@ test.describe('浏览器态会话恢复', () => {
     // 历史现象：路由放行、页面正常，但 getClient() 恒为 null，sync / crypto 都没启动。
     await expectClientRestored(page, account.userId)
 
-    // 断言 6：桌面 home 窗口同样要能冷启动恢复。
-    // 此前 app 级恢复只挂在 `isMobilePlatform`，桌面窗口整页 reload 后没有任何人调
-    // `ensureClientReady`（只有进设置窗口才触发），于是 getClient() 恒 null。
-    await page.goto(`${APP_URL}/?platform=desktop`, { waitUntil: 'domcontentloaded' })
-    await dismissLocalUnlockDialog(page, 10_000)
-    await expect.poll(() => new URL(page.url()).pathname, { timeout: 60_000 }).not.toContain('/login')
-    await expectClientRestored(page, account.userId, { label: '桌面窗口冷启动' })
+    // 断言 6（原「桌面窗口冷启动」）已移除：
+    // 2026-11-11 起路由集改为**构建期装配**（vite alias 决定 mobile/desktop 路由），
+    // `?platform=desktop` 只影响布局与平台检测，不再切换路由集。本 dev server（5210）
+    // 是移动端装配，再走 `?platform=desktop` 既不代表桌面产物，也会因布局与路由不匹配
+    // 被守卫推回 `/mobile/login` —— 它测不到「桌面 home 冷启动」这件事。
+    // 桌面侧冷启动恢复需要桌面 dev server（或桌面产物）单独验证，已记入联调报告。
   })
 })
 

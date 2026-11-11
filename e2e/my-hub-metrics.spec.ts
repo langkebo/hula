@@ -13,13 +13,19 @@ import { MOBILE_APP_URL, pushMobileRoute, registerMobileAccount, seedE2EStorage 
  * 判据都写死在这里，避免各人口径不同：
  * - **触控合规**：`min(width, height) >= 44`（iOS HIG 44pt / Material 48dp 的常用下限）
  * - **单手可达**：元素中心落在视口 **下 60%**（centerYRatio >= 0.4）
- * - **首屏可交互（TTI）**：整页 reload → `「我的」九宫格可见` 的墙钟毫秒
+ * - **会话恢复**：reload → `MatrixClient` 建成 ≤ 1500ms
+ * - **首屏渲染**：会话恢复完成 → `「我的」九宫格可见` ≤ 800ms（TTI 由此二者相加得出）
  *
  * 默认不跑：`TJG_METRICS=1` 开启（它会 reload 页面，与功能断言用例的假设不同）。
  */
 
 const SKIP_REASON = process.env.TJG_METRICS ? null : '未设置 TJG_METRICS（这是采集脚本，不是回归用例）'
 const OUTPUT_PATH = 'test-results/mobile-metrics.json'
+
+/** 会话恢复预算：冷启 → MatrixClient 建成（P75，中端安卓） */
+const SESSION_RESTORE_BUDGET_MS = 1500
+/** 首屏渲染预算：会话恢复完成 → 「我的」九宫格可见（P75，中端安卓） */
+const FIRST_SCREEN_RENDER_BUDGET_MS = 800
 
 /** 可点元素扫描：只统计视口内、可见、有尺寸的 */
 const SCAN_TOUCH_TARGETS = () => {
@@ -155,14 +161,21 @@ test.describe('「我的」页体验基线', () => {
       sessionRestoreMs = null
     }
 
-    // 第 2 段：从冷启开始到「我的页九宫格可见」（含会话恢复 + 一次 SPA 导航）
+    // 第 2 段：从「会话恢复完成」到「我的页九宫格可见」——纯首屏渲染 + 一次 SPA 导航。
+    // 目标 ≤800ms（P75，中端安卓）。会话恢复与首屏渲染分别设预算，
+    // 避免把「同步慢」和「渲染慢」混成一个 TTI 数字后无法定位。
+    let firstScreenRenderMs: number | null = null
     let ttiMs: number | null = null
-    try {
-      await pushMobileRoute(page, { name: 'mobileMy' })
-      await page.locator('.m-quick-actions').first().waitFor({ state: 'visible', timeout: 30_000 })
-      ttiMs = Date.now() - ttiStart
-    } catch {
-      ttiMs = null // 会话/接口抖动时如实记 null，不编数字
+    if (sessionRestoreMs !== null) {
+      const renderStart = Date.now()
+      try {
+        await pushMobileRoute(page, { name: 'mobileMy' })
+        await page.locator('.m-quick-actions').first().waitFor({ state: 'visible', timeout: 30_000 })
+        firstScreenRenderMs = Date.now() - renderStart
+        ttiMs = Date.now() - ttiStart
+      } catch {
+        firstScreenRenderMs = null // 会话/接口抖动时如实记 null，不编数字
+      }
     }
 
     // ── SPA 导航耗时：消息页 → 我的页，到九宫格可见。
@@ -184,8 +197,12 @@ test.describe('「我的」页体验基线', () => {
     const spaNavMs = Date.now() - spaStart
 
     const myHub = {
-      ttiMs,
+      // 两项分别与预算比较；null（拿不到）一律记 false，避免「没测到」被当成达标
       sessionRestoreMs,
+      sessionRestorePass: sessionRestoreMs !== null && sessionRestoreMs <= SESSION_RESTORE_BUDGET_MS,
+      firstScreenRenderMs,
+      firstScreenRenderPass: firstScreenRenderMs !== null && firstScreenRenderMs <= FIRST_SCREEN_RENDER_BUDGET_MS,
+      ttiMs,
       spaNavMs,
       domNodes: await page.evaluate(DOM_NODE_COUNT),
       touchTargets: await page.evaluate(SCAN_TOUCH_TARGETS),
@@ -217,7 +234,10 @@ test.describe('「我的」页体验基线', () => {
     // 摘要打到 stdout，便于 CI 日志直接看
     console.log('[metrics]', JSON.stringify(report, null, 2))
     console.log(
-      `[metrics] 冷启 TTI=${ttiMs ?? 'n/a'}ms（会话恢复 ${sessionRestoreMs ?? 'n/a'}ms） · SPA 导航=${spaNavMs}ms · 触控合规 ${myHub.touchTargets.compliant}/${myHub.touchTargets.total}` +
+      `[metrics] 会话恢复=${sessionRestoreMs ?? 'n/a'}ms（目标≤${SESSION_RESTORE_BUDGET_MS}，${myHub.sessionRestorePass ? 'PASS' : 'FAIL'}）` +
+        ` · 首屏渲染=${firstScreenRenderMs ?? 'n/a'}ms（目标≤${FIRST_SCREEN_RENDER_BUDGET_MS}，${myHub.firstScreenRenderPass ? 'PASS' : 'FAIL'}）` +
+        ` · TTI=${ttiMs ?? 'n/a'}ms` +
+        ` · SPA 导航=${spaNavMs}ms · 触控合规 ${myHub.touchTargets.compliant}/${myHub.touchTargets.total}` +
         ` · 单手可达 ${myHub.oneHand.reachable}/${myHub.oneHand.total}` +
         ` · 设置页触控合规 ${settings.touchTargets.compliant}/${settings.touchTargets.total}` +
         ` · 写入 ${OUTPUT_PATH}`

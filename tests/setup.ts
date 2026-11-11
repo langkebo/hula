@@ -61,7 +61,14 @@ vi.mock('vue-i18n', () => ({
         'setting.burn_after_read.formats.seconds': `${params?.count}秒`,
         'setting.burn_after_read.formats.minutes': `${params?.count}分钟`,
         'setting.burn_after_read.formats.hours': `${params?.count}小时`,
-        'setting.burn_after_read.formats.days': `${params?.count}天`
+        'setting.burn_after_read.formats.days': `${params?.count}天`,
+        'setting.burn_after_read.durations.30_seconds': '30秒',
+        'setting.burn_after_read.durations.1_minute': '1分钟',
+        'setting.burn_after_read.durations.5_minutes': '5分钟',
+        'setting.burn_after_read.durations.1_hour': '1小时',
+        'setting.burn_after_read.durations.24_hours': '24小时',
+        'setting.preferences.send_key_ctrl_enter': 'Ctrl + Enter',
+        'setting.preferences.send_key_shift_enter': 'Shift + Enter'
       }
       return translations[key] || key
     },
