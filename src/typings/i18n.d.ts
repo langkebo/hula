@@ -3142,7 +3142,7 @@ export type I18nKeys = {
       "mark_private": "设为私密聊天",
       "unmark_private": "移出私密聊天",
       "unmark_confirm": "移出后该会话将回到普通列表，确认移出？",
-      "subtitle": "本机加密显示；服务端仍按保留策略保存消息",
+      "subtitle": "私密会话仅在本机解锁后显示；端到端加密状态见会话徽标",
       "encryption_boundary_hint": "设为私密时会开启端到端加密，仅对此后发送的新消息生效。",
       "locked_title": "私密会话已锁定",
       "unlock_action": "输入密码继续",
