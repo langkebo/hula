@@ -166,6 +166,33 @@ describe('LinkPreviewPane', () => {
     wrapper.unmount()
   })
 
+  it('抓取在途时点发送复用同一请求', async () => {
+    const preview = {
+      url: 'https://example.com/a',
+      title: 'Deferred',
+      description: 'Deferred description'
+    }
+    let resolvePreview: (value: unknown) => void = () => {}
+    getUrlPreviewMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePreview = resolve
+        })
+    )
+    const wrapper = mountPane()
+
+    await wrapper.find('[data-test="link-preview-url"]').setValue('https://example.com/a')
+    await wrapper.find('[data-test="link-preview-url"]').trigger('blur')
+    await flushPromises()
+    await wrapper.find('[data-test="link-preview-send"]').trigger('click')
+    resolvePreview(preview)
+    await flushPromises()
+
+    expect(getUrlPreviewMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ title: 'Deferred' })
+    wrapper.unmount()
+  })
+
   it('sends the fetched preview on submit', async () => {
     const preview = {
       url: 'https://example.com/a',

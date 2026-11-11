@@ -95,6 +95,11 @@ const submitting = ref(false)
 const fetchFailed = ref(false)
 const blockedByEncryption = ref(false)
 
+/** 同一 URL 的在途抓取复用同一 Promise，避免 blur + 发送 双发或丢结果。 */
+let inflight: { target: string; promise: Promise<MediaUrlPreview | null> } | null = null
+/** 请求代次：切房/reset 后递增，用于丢弃过期结果。 */
+let requestSeq = 0
+
 /** 补全协议并校验，非法时返回空串。 */
 const normalizedUrl = computed(() => {
   const raw = url.value.trim()
@@ -146,13 +151,15 @@ const statusText = computed(() => {
  * roomId 为空表示当前没有会话上下文（本组件只在聊天上下文中使用），此时放行，
  * 因为对无会话上下文弹「已加密」提示是错误文案。
  */
-const ensurePreviewAllowed = async (): Promise<boolean> => {
+const ensurePreviewAllowed = async (seq: number): Promise<boolean> => {
   const roomId = globalStore.currentSessionRoomId
   if (!roomId) {
-    blockedByEncryption.value = false
+    if (seq === requestSeq) blockedByEncryption.value = false
     return true
   }
   const state: RoomEncryptionState = await matrixCryptoService.getRoomEncryptionState(roomId)
+  // 请求已被切房/reset 作废，不再改写当前会话的状态。
+  if (seq !== requestSeq) return false
   if (state !== 'plaintext') {
     blockedByEncryption.value = true
     preview.value = null
@@ -163,24 +170,40 @@ const ensurePreviewAllowed = async (): Promise<boolean> => {
   return true
 }
 
-/** 拉取预览；失败返回 null，由调用方决定降级策略。 */
-const fetchPreview = async (target: string): Promise<MediaUrlPreview | null> => {
-  if (fetching.value) return null
-  fetching.value = true
-  try {
-    if (!(await ensurePreviewAllowed())) return null
-    const result = await matrixMediaService.getUrlPreview(target)
-    preview.value = result
-    fetchFailed.value = !result
-    return result
-  } catch (err) {
-    logger.warn(`[LinkPreview] failed to fetch preview: ${err}`)
-    preview.value = null
-    fetchFailed.value = true
-    return null
-  } finally {
-    fetching.value = false
-  }
+/**
+ * 拉取预览；失败返回 null，由调用方决定降级策略。
+ * 同一 URL 的在途请求复用同一 Promise，`blur` 自动抓取后立刻点「发送」不会丢结果；
+ * 写回界面与复位 `fetching` 都受请求代次约束，切房后过期结果直接丢弃。
+ */
+const fetchPreview = (target: string): Promise<MediaUrlPreview | null> => {
+  if (inflight?.target === target) return inflight.promise
+  const seq = ++requestSeq
+  const promise = (async (): Promise<MediaUrlPreview | null> => {
+    fetching.value = true
+    try {
+      if (!(await ensurePreviewAllowed(seq))) return null
+      const result = await matrixMediaService.getUrlPreview(target)
+      if (seq === requestSeq) {
+        preview.value = result
+        fetchFailed.value = !result
+      }
+      return result
+    } catch (err) {
+      logger.warn(`[LinkPreview] failed to fetch preview: ${err}`)
+      if (seq === requestSeq) {
+        preview.value = null
+        fetchFailed.value = true
+      }
+      return null
+    } finally {
+      if (seq === requestSeq) {
+        fetching.value = false
+        inflight = null
+      }
+    }
+  })()
+  inflight = { target, promise }
+  return promise
 }
 
 const handleFetch = async () => {
@@ -195,6 +218,9 @@ const handleBlur = () => {
 }
 
 const reset = () => {
+  requestSeq++
+  inflight = null
+  fetching.value = false
   url.value = ''
   preview.value = null
   fetchFailed.value = false
