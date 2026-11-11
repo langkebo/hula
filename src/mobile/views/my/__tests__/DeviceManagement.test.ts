@@ -182,14 +182,32 @@ describe('DeviceManagement', () => {
     vm.openDeviceActions({ deviceId: 'OTHER', displayName: 'Phone', isVerified: false })
     await vi.dynamicImportSettled()
 
-    const names = vm.deviceActions.map((a: { name: string }) => a.name)
+    const names = vm.deviceActions.map((a: { key: string }) => a.key)
     expect(names).toContain('rename')
     expect(names).toContain('logout')
     expect(names).not.toContain('block')
     expect(names).not.toContain('unblock')
   })
 
-  it('当前设备不提供任何操作项', async () => {
+  // 方案 3.1 的原意是「当前设备不可**删除**」；此前实现把改名一起封了，
+  // 导致单设备用户永远改不了自己这台的名字（桌面端一直可以改本机名）。
+  // Vant 4 的 ActionSheetAction 只有 `name`（显示文案），没有 `text`：
+  // 旧实现 { name: 'rename', text: t(...) } 会把英文标识符直接显示给用户。
+  it('操作项显示的是本地化文案，不是英文标识符', async () => {
+    getDevicesMock.mockResolvedValue([{ deviceId: 'OTHER', displayName: 'Phone' }])
+    const wrapper = mount(DeviceManagement)
+    await vi.dynamicImportSettled()
+    const vm = wrapper.vm as any
+
+    vm.openDeviceActions({ deviceId: 'OTHER', displayName: 'Phone', isVerified: false })
+    await vi.dynamicImportSettled()
+
+    const labels = vm.deviceActions.map((a: { name: string }) => a.name)
+    expect(labels).toContain('mobile_devices.rename_device')
+    expect(labels).not.toContain('rename')
+  })
+
+  it('当前设备只提供改名，不提供登出（自踢下线）与信任操作', async () => {
     const wrapper = mount(DeviceManagement)
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
@@ -197,7 +215,21 @@ describe('DeviceManagement', () => {
     vm.openDeviceActions({ deviceId: 'CURRENT', displayName: 'Me', isVerified: true })
     await vi.dynamicImportSettled()
 
-    expect(vm.deviceActions).toHaveLength(0)
+    expect(vm.deviceActions.map((a: { key: string }) => a.key)).toEqual(['rename'])
+  })
+
+  it('当前设备改命中也走 updateDevice（单设备用户可达）', async () => {
+    getDevicesMock.mockResolvedValue([{ deviceId: 'CURRENT', displayName: 'Old' }])
+    const wrapper = mount(DeviceManagement)
+    await vi.dynamicImportSettled()
+    const vm = wrapper.vm as any
+
+    vm.openDeviceActions({ deviceId: 'CURRENT', displayName: 'Old' })
+    vm.renameInput = 'My Phone'
+    await vm.handleRenameConfirm()
+
+    expect(updateDeviceMock).toHaveBeenCalledWith('CURRENT', 'My Phone')
+    expect(showToastMock).toHaveBeenCalledWith('mobile_devices.rename_success')
   })
 
   it('重命名成功时调用 updateDevice 并刷新', async () => {

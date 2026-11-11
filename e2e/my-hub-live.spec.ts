@@ -432,6 +432,70 @@ test.describe('我的页信息架构（S1）', () => {
     await expect(page.locator('[data-testid="search-index-cell"]')).toContainText('0', { timeout: 15_000 })
     await expect(clearButton).toBeDisabled()
   })
+
+  /**
+   * M8 补充：本机设备可改名。
+   *
+   * 原实现把「当前设备」的所有操作都封了（注释写「方案 3.1：当前设备固定顶部，不可删除」），
+   * 但**不可删除 ≠ 不可改名**：单设备用户在移动端永远改不了自己这台的名字，
+   * 而桌面端一直允许（`SessionSettings` 的 `showRenameDialog(currentDevice)`）。
+   *
+   * 判据取服务端事实：`GET /devices` 的 `display_name` 真的变了，不只是 UI 上写了个值。
+   */
+  test('设备管理：本机可改名，且写入服务端', async ({ page }) => {
+    const self = await registerMobileAccount('mydev')
+    await seedE2EStorage(page)
+    await autoDismissLocalUnlockGate(page)
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
+    await dismissLocalUnlockDialog(page, 10_000)
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 45_000 }).not.toContain('/mobile/login')
+    await page.waitForTimeout(1500)
+
+    const readServerDevices = async () => {
+      const res = await fetch(`${APP_URL}/_matrix/client/v3/devices`, {
+        headers: { Authorization: `Bearer ${self.accessToken}` }
+      })
+      expect(res.status).toBe(200)
+      const data = (await res.json()) as { devices: Array<{ device_id: string; display_name?: string }> }
+      return data.devices
+    }
+    expect((await readServerDevices()).length, '登录后服务端应至少有一台设备').toBeGreaterThan(0)
+
+    await pushMobileRoute(page, '/mobile/mobileMy/devices')
+    const currentRow = page
+      .locator('.van-cell')
+      .filter({ hasText: /当前设备|Current device/ })
+      .first()
+    await expect(currentRow, '设备列表里没有「本机」行').toBeVisible({ timeout: 20_000 })
+    await currentRow.click()
+
+    const renameItem = page
+      .locator('.van-action-sheet__item')
+      .filter({ hasText: /重命名设备|Rename device/ })
+      .first()
+    await expect(renameItem, '本机设备没有「重命名设备」入口（单设备用户不可达）').toBeVisible({ timeout: 10_000 })
+    await renameItem.click()
+
+    const newName = `MyPhone-${Date.now().toString(36).slice(-5)}`
+    const dialog = page
+      .locator('.van-dialog')
+      .filter({ hasText: /重命名设备|Rename device/ })
+      .first()
+    await expect(dialog, '点「重命名设备」没有弹输入框').toBeVisible({ timeout: 10_000 })
+    await dialog.locator('input').first().fill(newName)
+    await dialog
+      .locator('button')
+      .filter({ hasText: /确认|Confirm/ })
+      .first()
+      .click()
+
+    // 服务端事实：display_name 必须变成新名字
+    await expect
+      .poll(async () => (await readServerDevices()).some((d) => d.display_name === newName), { timeout: 20_000 })
+      .toBe(true)
+    // UI 同步刷新
+    await expect(page.locator('.van-cell').filter({ hasText: newName }).first()).toBeVisible({ timeout: 15_000 })
+  })
 })
 
 /**

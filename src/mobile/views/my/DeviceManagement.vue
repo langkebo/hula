@@ -55,8 +55,7 @@
           <van-action-sheet
             v-model:show="showDeviceActionSheet"
             :title="t('mobile_devices.actions')"
-            :actions="deviceActions"
-            @select="handleActionSelect" />
+            :actions="deviceActions" />
 
           <!-- 重命名弹窗（方案 3.1.1） -->
           <van-dialog
@@ -100,35 +99,92 @@ const { t } = useI18n()
 const { loading, devices: trustDevices, loadDevices: loadTrustDevices, trustDevice, untrustDevice } = useDeviceTrust()
 
 const currentDeviceId = ref<string>('')
+/** `GET /devices` 的会话列表：登录设备的**权威来源** */
+const sessions = ref<
+  Array<{
+    deviceId: string
+    displayName?: string | undefined
+    lastSeenTs?: number | undefined
+    lastSeenIp?: string | undefined
+  }>
+>([])
+const currentUserId = ref('')
 const showDeviceActionSheet = ref(false)
 const selectedDevice = ref<DeviceTrustInfo | null>(null)
 const showRenameDialog = ref(false)
 const renameInput = ref('')
 
-// Unified devices ref (exposes trust info for rendering)
-const devices = computed(() => trustDevices.value)
+/**
+ * 列表来源：`GET /devices`（会话）+ `keys/query`（信任状态）合并。
+ *
+ * 历史缺陷：整页只吃 `keys/query`（`useDeviceTrust`）。而 `keys/query` 只返回**上传过
+ * device_keys 的设备** —— 刚登录、crypto 尚未初始化的设备（包括本机）根本不在里面，
+ * 于是「登录设备」页经常是空的，用户既看不到自己这台，也改不了名字。
+ *
+ * `GET /devices` 才是「我这账号有哪些登录会话」的权威端点（含本机、含 last_seen），
+ * 所以以它为行集合，`keys/query` 只用来补「是否已验证」。
+ */
+const devices = computed<DeviceTrustInfo[]>(() => {
+  const trustById = new Map(trustDevices.value.map((d) => [d.deviceId, d]))
+  return sessions.value.map((session) => {
+    const trust = trustById.get(session.deviceId)
+    return {
+      deviceId: session.deviceId,
+      userId: currentUserId.value,
+      displayName: session.displayName ?? trust?.displayName,
+      lastSeenTs: session.lastSeenTs ?? trust?.lastSeenTs,
+      lastSeenIp: session.lastSeenIp ?? trust?.lastSeenIp,
+      isVerified: trust?.isVerified ?? false,
+      isCrossSigningVerified: trust?.isCrossSigningVerified ?? false,
+      isBlocked: false
+    }
+  })
+})
 
-// Action sheet buttons (dynamically shown based on selected device state)
-const deviceActions = computed(() => {
-  const actions: Array<{ name: string; text: string }> = []
+/**
+ * 操作面板项。
+ *
+ * ⚠️ Vant 4 的 `ActionSheetAction` **只有 `name`**（就是显示文案），没有 `text`
+ * 字段。原实现写的是 `{ name: 'rename', text: t(...) }`，于是弹层里直接把
+ * 英文标识符渲染出来（用户看到「rename / logout」而不是「重命名设备 / 登出」）。
+ *
+ * 现在：`name` 放**本地化文案**（Vant 拿它显示），动作靠 `key` + `callback` 区分。
+ */
+interface DeviceAction {
+  key: 'rename' | 'trust' | 'untrust' | 'logout'
+  name: string
+  callback: () => void
+}
+
+const deviceActions = computed<DeviceAction[]>(() => {
+  const actions: DeviceAction[] = []
   const device = selectedDevice.value
-  // 当前设备不可操作（方案 3.1：当前设备固定在列表顶部，不可删除）
-  if (!device || isCurrentDevice(device.deviceId)) {
+  if (!device) {
+    return actions
+  }
+  const push = (key: DeviceAction['key'], labelKey: string) =>
+    actions.push({ key, name: t(labelKey), callback: () => void handleActionSelect({ name: key }) })
+
+  // 方案 3.1 的原意是「当前设备不可**删除**」（在列表里点删除等于把自己踢下线），
+  // 但此前写成了「当前设备不可操作」，顺手把**改名**也封了 ⇒ 单设备用户永远改不了自己这台的名字。
+  // 桌面端一直允许改本机名（`SessionSettings` 的 `showRenameDialog(currentDevice)`），这里对齐。
+  if (isCurrentDevice(device.deviceId)) {
+    push('rename', 'mobile_devices.rename_device')
     return actions
   }
 
-  actions.push({ name: 'rename', text: t('mobile_devices.rename_device') })
+  push('rename', 'mobile_devices.rename_device')
 
   if (!device.isVerified) {
-    actions.push({ name: 'trust', text: t('mobile_devices.trust_device') })
+    push('trust', 'mobile_devices.trust_device')
   } else {
-    actions.push({ name: 'untrust', text: t('mobile_devices.untrust_device') })
+    push('untrust', 'mobile_devices.untrust_device')
   }
 
   // 屏蔽/解除屏蔽：SDK 未提供设备屏蔽写入 API，不再提供必然失败的操作项
   // （此前点击只会得到 "blockDevice is not a function" 类错误）
 
-  actions.push({ name: 'logout', text: t('mobile_devices.logout_device') })
+  push('logout', 'mobile_devices.logout_device')
 
   return actions
 })
@@ -143,9 +199,35 @@ async function loadDevices() {
   try {
     currentDeviceId.value = matrixDeviceService.getCurrentDeviceId() || ''
     const userId = matrixClientService.getUserId() || ''
-    if (userId) {
-      await loadTrustDevices(userId)
-    }
+    currentUserId.value = userId
+
+    // 两条数据源并行：会话列表（权威行集合）+ 信任状态（可能因 crypto 未就绪而为空）
+    const [sessionsResult] = await Promise.all([
+      matrixDeviceService.getDevices().catch((error) => {
+        logger.warn('GET /devices 失败，退化为仅展示已知设备', error)
+        return []
+      }),
+      userId
+        ? loadTrustDevices(userId).catch((error) => {
+            logger.warn('keys/query 失败，设备列表将不含验证状态', error)
+          })
+        : Promise.resolve()
+    ])
+
+    sessions.value = sessionsResult
+      .map((raw) => {
+        // 兼容两种形状：REST 原始（snake_case）与测试/适配层（camelCase）
+        const source = raw as unknown as Record<string, unknown>
+        const deviceId = (source.device_id ?? source.deviceId) as string | undefined
+        if (!deviceId) return null
+        return {
+          deviceId,
+          displayName: (source.display_name ?? source.displayName) as string | undefined,
+          lastSeenTs: (source.last_seen_ts ?? source.lastSeenTs) as number | undefined,
+          lastSeenIp: (source.last_seen_ip ?? source.lastSeenIp) as string | undefined
+        }
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
   } catch (error) {
     logger.error('Failed to load devices', error)
     showToast({ type: 'fail', message: t('mobile_devices.load_failed') })
