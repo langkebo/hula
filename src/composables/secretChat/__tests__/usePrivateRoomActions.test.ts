@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   updateSession: vi.fn(),
   invoke: vi.fn(),
   hasTauriRuntime: vi.fn(),
+  isRoomEncrypted: vi.fn(),
+  enableEncryption: vi.fn(),
   state: { configured: true, unlocked: true }
 }))
 
@@ -38,12 +40,19 @@ vi.mock('@/stores/domains/chat/chat', () => ({
   useChatStore: () => ({ updateSession: mocks.updateSession })
 }))
 vi.mock('@/utils/AppHarness', () => ({ hasTauriRuntime: mocks.hasTauriRuntime }))
+vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
+  matrixCryptoService: {
+    isRoomEncrypted: mocks.isRoomEncrypted,
+    enableEncryption: mocks.enableEncryption
+  }
+}))
 vi.mock('@/utils/TauriInvokeHandler', () => ({ invokeWithErrorHandler: mocks.invoke }))
 
 import { RoomTypeEnum } from '@/enums'
 import { usePrivateRoomActions } from '../usePrivateRoomActions'
 
 const SINGLE_ROOM = '!dm:example.com'
+const PRIVATE_ROOM = '!private:example.com'
 
 const session = (type: RoomTypeEnum = RoomTypeEnum.SINGLE) => ({ roomId: SINGLE_ROOM, type }) as any
 
@@ -57,6 +66,8 @@ describe('usePrivateRoomActions', () => {
     mocks.markRoomPrivate.mockResolvedValue(undefined)
     mocks.unmarkRoomPrivate.mockResolvedValue(undefined)
     mocks.invoke.mockResolvedValue(undefined)
+    mocks.isRoomEncrypted.mockResolvedValue(true)
+    mocks.enableEncryption.mockResolvedValue(undefined)
   })
 
   it('未设置密码时拒绝标记并提示（不做任何写入）', async () => {
@@ -130,5 +141,61 @@ describe('usePrivateRoomActions', () => {
     expect(await togglePrivateRoom(session())).toBe(false)
     expect(mocks.showFeedback).toHaveBeenCalledWith('Error: account data unavailable', 'error')
     expect(mocks.updateSession).not.toHaveBeenCalled()
+  })
+
+  it('未加密的房间在设为私密前会开启加密', async () => {
+    mocks.isRoomEncrypted.mockResolvedValueOnce(false)
+    const { togglePrivateRoom } = usePrivateRoomActions()
+
+    const ok = await togglePrivateRoom(session())
+
+    expect(mocks.enableEncryption).toHaveBeenCalledWith(SINGLE_ROOM)
+    expect(mocks.markRoomPrivate).toHaveBeenCalledWith(SINGLE_ROOM)
+    expect(mocks.showFeedback).toHaveBeenCalledWith('已设为私密聊天，并开启端到端加密', 'success')
+    expect(ok).toBe(true)
+  })
+
+  it('用户拒绝开启加密时放弃设为私密', async () => {
+    mocks.isRoomEncrypted.mockResolvedValueOnce(false)
+    const confirmEnableEncryption = vi.fn().mockResolvedValue(false)
+    const { togglePrivateRoom } = usePrivateRoomActions()
+
+    const ok = await togglePrivateRoom(session(), { confirmEnableEncryption })
+
+    expect(confirmEnableEncryption).toHaveBeenCalledTimes(1)
+    expect(mocks.enableEncryption).not.toHaveBeenCalled()
+    expect(mocks.markRoomPrivate).not.toHaveBeenCalled()
+    expect(ok).toBe(false)
+  })
+
+  it('开启加密失败时不写私密标记', async () => {
+    mocks.isRoomEncrypted.mockResolvedValueOnce(false)
+    mocks.enableEncryption.mockRejectedValueOnce(new Error('power level too low'))
+    const { togglePrivateRoom } = usePrivateRoomActions()
+
+    const ok = await togglePrivateRoom(session())
+
+    expect(mocks.markRoomPrivate).not.toHaveBeenCalled()
+    expect(ok).toBe(false)
+  })
+
+  it('已加密房间不再重复开启加密', async () => {
+    mocks.isRoomEncrypted.mockResolvedValueOnce(true)
+    const { togglePrivateRoom } = usePrivateRoomActions()
+
+    await togglePrivateRoom(session())
+
+    expect(mocks.enableEncryption).not.toHaveBeenCalled()
+    expect(mocks.markRoomPrivate).toHaveBeenCalledWith(SINGLE_ROOM)
+  })
+
+  it('取消私密不会关闭房间加密', async () => {
+    mocks.isPrivateRoom.mockReturnValue(true)
+    const { togglePrivateRoom } = usePrivateRoomActions()
+
+    await togglePrivateRoom({ roomId: PRIVATE_ROOM, type: RoomTypeEnum.SINGLE } as any)
+
+    expect(mocks.unmarkRoomPrivate).toHaveBeenCalledWith(PRIVATE_ROOM)
+    expect(mocks.enableEncryption).not.toHaveBeenCalled()
   })
 })

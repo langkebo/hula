@@ -58,6 +58,7 @@
   "unblock_user_messages": "Unblock chat",
   "remove_from_list": "Remove chat",
   "secret_chat_success": "Set as secret chat",
+  "secret_chat_success_encrypted": "Set as private chat with end-to-end encryption enabled",
   "secret_chat_cancel": "Secret chat cancelled",
   "delete_friend": "Remove friend",
   "dissolve_group": "Disband group",

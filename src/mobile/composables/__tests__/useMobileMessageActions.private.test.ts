@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const togglePrivateRoom = vi.fn(async () => true)
+const togglePrivateRoom = vi.fn<(item: unknown, options?: unknown) => Promise<boolean>>(async () => true)
 const isRoomPrivate = vi.fn(() => false)
+const showConfirmDialog = vi.hoisted(() => vi.fn(async () => 'confirm'))
 
+vi.mock('vant', () => ({ showConfirmDialog }))
 vi.mock('@/composables/secretChat/usePrivateRoomActions', () => ({
   usePrivateRoomActions: () => ({ togglePrivateRoom, isRoomPrivate })
 }))
@@ -31,6 +33,7 @@ describe('useMobileMessageActions · 私密聊天', () => {
   beforeEach(() => {
     togglePrivateRoom.mockClear()
     isRoomPrivate.mockClear()
+    showConfirmDialog.mockClear()
   })
 
   it('handleTogglePrivate 委托给 togglePrivateRoom 并关闭长按菜单', async () => {
@@ -42,8 +45,26 @@ describe('useMobileMessageActions · 私密聊天', () => {
 
     await handleTogglePrivate(item)
 
-    expect(togglePrivateRoom).toHaveBeenCalledWith(item)
+    expect(togglePrivateRoom).toHaveBeenCalledWith(item, {
+      confirmEnableEncryption: expect.any(Function)
+    })
     expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('确认框被取消时确认回调返回 false，不设为私密', async () => {
+    showConfirmDialog.mockRejectedValueOnce(new Error('cancel'))
+    const close = vi.fn()
+    const { handleTogglePrivate } = useMobileMessageActions({
+      maskHandler: { close },
+      currentLongPressItem: { value: null }
+    })
+
+    await handleTogglePrivate(item)
+
+    const options = togglePrivateRoom.mock.calls[0][1] as {
+      confirmEnableEncryption: () => Promise<boolean>
+    }
+    await expect(options.confirmEnableEncryption()).resolves.toBe(false)
   })
 
   it('item 为空时不做任何事', async () => {

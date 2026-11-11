@@ -3128,6 +3128,11 @@ export type I18nKeys = {
       "hidden_sessions": "已隐藏的会话",
       "single_only": "私密聊天仅支持单聊会话",
       "locked_hint": "私密聊天已锁定，请先解锁",
+      "encryption_failed": "开启端到端加密失败，未设为私密",
+      "encryption_confirm_title": "开启端到端加密",
+      "encryption_confirm_message": "设为私密将同时开启端到端加密，此操作不可撤销，仅对此后发送的新消息生效。",
+      "encryption_confirm_ok": "开启并设为私密",
+      "encryption_confirm_cancel": "取消",
       "mark_private": "设为私密聊天",
       "unmark_private": "移出私密聊天",
       "unmark_confirm": "移出后该会话将回到普通列表，确认移出？",
@@ -3900,6 +3905,7 @@ export type I18nKeys = {
     "unblock_user_messages": "取消屏蔽消息",
     "remove_from_list": "删除会话",
     "secret_chat_success": "已设置为私密聊天",
+    "secret_chat_success_encrypted": "已设为私密聊天，并开启端到端加密",
     "secret_chat_cancel": "已取消私密聊天",
     "delete_friend": "删除好友",
     "dissolve_group": "解散群聊",
@@ -10098,6 +10104,11 @@ export type I18nKeyPaths =
   | "home.secret_chat.hidden_sessions"
   | "home.secret_chat.single_only"
   | "home.secret_chat.locked_hint"
+  | "home.secret_chat.encryption_failed"
+  | "home.secret_chat.encryption_confirm_title"
+  | "home.secret_chat.encryption_confirm_message"
+  | "home.secret_chat.encryption_confirm_ok"
+  | "home.secret_chat.encryption_confirm_cancel"
   | "home.secret_chat.mark_private"
   | "home.secret_chat.unmark_private"
   | "home.secret_chat.unmark_confirm"
@@ -10631,6 +10642,7 @@ export type I18nKeyPaths =
   | "menu.unblock_user_messages"
   | "menu.remove_from_list"
   | "menu.secret_chat_success"
+  | "menu.secret_chat_success_encrypted"
   | "menu.secret_chat_cancel"
   | "menu.delete_friend"
   | "menu.dissolve_group"

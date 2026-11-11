@@ -1,3 +1,4 @@
+import { showConfirmDialog } from 'vant'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMessage } from '@/composables/chat/useMessage'
@@ -94,7 +95,21 @@ export function useMobileMessageActions(opts: {
   const handleTogglePrivate = async (item: SessionItem | null) => {
     if (!item) return
     try {
-      await togglePrivateRoom(item)
+      await togglePrivateRoom(item, {
+        confirmEnableEncryption: async () => {
+          try {
+            await showConfirmDialog({
+              title: t('home.secret_chat.encryption_confirm_title'),
+              message: t('home.secret_chat.encryption_confirm_message'),
+              confirmButtonText: t('home.secret_chat.encryption_confirm_ok'),
+              cancelButtonText: t('home.secret_chat.encryption_confirm_cancel')
+            })
+            return true
+          } catch {
+            return false
+          }
+        }
+      })
     } catch (error) {
       logger.error('切换私密会话失败:', error)
     } finally {

@@ -2,6 +2,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
 import { RoomTypeEnum } from '@/enums'
+import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { isPrivateRoom, markRoomPrivate, unmarkRoomPrivate } from '@/services/matrix/privateChat/privateRoomRegistry'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -12,6 +13,11 @@ import { createLogger } from '@/utils/Logger'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('PrivateRoomActions')
+
+export interface TogglePrivateRoomOptions {
+  /** 用户确认「开启不可逆的房间加密」；返回 false 则放弃设为私密。 */
+  confirmEnableEncryption?: () => Promise<boolean>
+}
 
 /**
  * 私密房间的标记 / 取消标记（方案 P0-0-e）。
@@ -34,7 +40,7 @@ export const usePrivateRoomActions = () => {
   /**
    * 切换私密标记。返回是否发生变更（被拦截时为 false）。
    */
-  const togglePrivateRoom = async (item: SessionItem): Promise<boolean> => {
+  const togglePrivateRoom = async (item: SessionItem, options: TogglePrivateRoomOptions = {}): Promise<boolean> => {
     if (!item.roomId) return false
 
     if (item.type !== RoomTypeEnum.SINGLE) {
@@ -51,21 +57,47 @@ export const usePrivateRoomActions = () => {
       return false
     }
 
-    const marked = isPrivateRoom(item.roomId)
+    const roomId = item.roomId
+    const marked = isPrivateRoom(roomId)
+    let encryptedNow = false
+
+    // 只能单向：Matrix 房间加密不可关闭，取消私密不撤销加密。
+    if (!marked) {
+      const alreadyEncrypted = await matrixCryptoService.isRoomEncrypted(roomId)
+      if (!alreadyEncrypted) {
+        if (options.confirmEnableEncryption && !(await options.confirmEnableEncryption())) {
+          return false
+        }
+        try {
+          await matrixCryptoService.enableEncryption(roomId)
+          encryptedNow = true
+        } catch (e) {
+          logger.error('开启房间加密失败:', e)
+          showFeedback(t('home.secret_chat.encryption_failed'), 'error')
+          return false
+        }
+      }
+    }
+
     try {
       if (marked) {
-        await unmarkRoomPrivate(item.roomId)
+        await unmarkRoomPrivate(roomId)
       } else {
-        await markRoomPrivate(item.roomId)
+        await markRoomPrivate(roomId)
       }
       // 兼容镜像：旧逻辑读 session.hide，保留一个版本避免两处不一致
-      chatStore.updateSession(item.roomId, { hide: !marked })
+      chatStore.updateSession(roomId, { hide: !marked })
       if (hasTauriRuntime()) {
         await invokeWithErrorHandler('hide_contact_command', {
-          data: { roomId: item.roomId, hide: !marked }
+          data: { roomId, hide: !marked }
         })
       }
-      showFeedback(marked ? t('menu.secret_chat_cancel') : t('menu.secret_chat_success'), 'success')
+      const successKey = marked
+        ? 'menu.secret_chat_cancel'
+        : encryptedNow
+          ? 'menu.secret_chat_success_encrypted'
+          : 'menu.secret_chat_success'
+      showFeedback(t(successKey), 'success')
       return true
     } catch (e) {
       logger.error('切换私密房间标记失败:', e)
