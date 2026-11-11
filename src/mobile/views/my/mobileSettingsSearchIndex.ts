@@ -11,7 +11,12 @@
  * - **内联项用 anchor**：主题/语言/字号不是独立页面，点了要滚到设置页对应分组，而不是「点了没反应」。
  * - 文案一律复用既有 i18n 键，**不新增键**（避免动 `i18n.d.ts` 与并行改动冲突）。
  */
-import { MOBILE_SETTINGS_ENCRYPTION_PATH } from './settingsRoutes'
+import {
+  MOBILE_SETTINGS_ENCRYPTION_PATH,
+  MOBILE_SETTINGS_HELP_ABOUT_PATH,
+  MOBILE_SETTINGS_NOTIFICATION_HISTORY_PATH,
+  MOBILE_SETTINGS_SECURITY_PRIVACY_PATH
+} from './settingsRoutes'
 
 export interface MobileSettingsSearchEntry {
   /** 条目文案键 */
@@ -50,6 +55,18 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
     keywords: ['profile', '昵称', '头像', '简介', 'avatar', 'nickname', '资料']
   },
   {
+    labelKey: 'mobile_edit_profile.bio',
+    groupKey: 'mobile_setting.account_section',
+    path: '/mobile/mobileMy/simpleBio',
+    keywords: ['bio', '简介', '个人简介', 'profile', '主页', '个人信息']
+  },
+  {
+    labelKey: 'mobile_mymessage.title',
+    groupKey: 'mobile_setting.account_section',
+    path: '/mobile/mobileMy/myMessages',
+    keywords: ['message', '消息', '我的消息', '提及', '互动', 'at']
+  },
+  {
     labelKey: 'mobile_setting.change_password',
     groupKey: 'mobile_setting.account_section',
     path: '/mobile/mobileMy/password',
@@ -58,7 +75,7 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
   {
     labelKey: 'mobile_setting.security',
     groupKey: 'mobile_setting.account_section',
-    path: '/mobile/mobileMy/securityPrivacy',
+    path: MOBILE_SETTINGS_SECURITY_PRIVACY_PATH,
     keywords: ['security', '安全', '隐私', 'privacy', '私密聊天']
   },
   {
@@ -107,7 +124,12 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
     path: '/mobile/mobileMy/pushSettings',
     keywords: ['push', '推送', '设备令牌', 'pusher']
   },
-
+  {
+    labelKey: 'setting.push.history.title',
+    groupKey: 'mobile_setting.notification_section',
+    path: MOBILE_SETTINGS_NOTIFICATION_HISTORY_PATH,
+    keywords: ['notification history', '通知历史', '历史通知', '消息历史', '已读', 'ack']
+  },
   // ── 外观（内联控件，按 anchor 滚动）
   {
     labelKey: 'mobile_setting.theme',
@@ -152,7 +174,7 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
   {
     labelKey: 'mobile_setting.help_feedback',
     groupKey: 'mobile_setting.help_section',
-    path: '/mobile/mobileMy/helpAbout',
+    path: MOBILE_SETTINGS_HELP_ABOUT_PATH,
     keywords: ['help', '帮助', '反馈', 'about', '关于', '版本', '更新']
   },
 
@@ -168,6 +190,12 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
     groupKey: 'mobile_setting.advanced_section',
     path: '/mobile/mobileMy/voiceVideo',
     keywords: ['voice', 'video', '语音', '视频', '通话', '麦克风', '摄像头']
+  },
+  {
+    labelKey: 'mobile_files.title',
+    groupKey: 'mobile_setting.advanced_section',
+    path: '/mobile/mobileMy/files',
+    keywords: ['file', 'files', '文件', '文档', '图片', '视频', '媒体']
   },
   {
     labelKey: 'mobile_setting.storage',

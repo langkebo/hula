@@ -1212,10 +1212,8 @@ Tauri 能力包括文件系统、窗口、托盘、截图、系统通知、深�
 | `/mobile/message` | 消息 Tab |
 | `/mobile/friends` | 好友 Tab |
 | `/mobile/rooms` | 房间 Tab |
-| `/mobile/dynamic`、`/mobile/dynamic/:id` | 动态 Tab 与动态详情 |
 | `/mobile/my` | 我的 Tab |
 | `/mobile/space` | 空间页 |
-| `/mobile/syncData` | 首次同步数据页 |
 | `/mobile/chatRoom/chatMain/:uid?` | 移动聊天页 |
 | `/mobile/chatRoom/setting`、`/mobile/chatRoom/searchContent`、`/mobile/chatRoom/mediaViewer` | 移动聊天设置、搜索与媒体查看 |
 | `/mobile/chatRoom/groupChatMember`、`/mobile/chatRoom/inviteGroupMember`、`/mobile/chatRoom/manageGroupMember` | 移动群成员管理 |
@@ -1226,10 +1224,10 @@ Tauri 能力包括文件系统、窗口、托盘、截图、系统通知、深�
 | `/mobile/mobileMy/status`、`/mobile/mobileMy/settings`、`/mobile/mobileMy/scanQRCode`、`/mobile/mobileMy/share`、`/mobile/mobileMy/SimpleBio`、`/mobile/mobileMy/myAlbum` | 移动状态、设置、扫码、分享、简介与相册 |
 | `/mobile/mobileFriends/addFriends`、`/mobile/mobileFriends/startGroupChat`、`/mobile/mobileFriends/groups` | 移动添加好友、发起群聊与好友分组 |
 | `/mobile/mobileFriends/confirmAddFriend`、`/mobile/mobileFriends/confirmAddGroup`、`/mobile/mobileFriends/friendInfo/:uid` | 移动好友确认与详情 |
-| `/mobile/confirmQRLogin`、`/mobile/mobileMy/myQRCode`、`/mobile/addGroupQRCode` | 二维码确认、我的二维码与加群二维码 |
+| `/mobile/confirmQRLogin`、`/mobile/mobileMy/myQRCode` | 二维码登录确认与我的二维码 |
 | `/mobile/rtcCall`、`/mobile/encryption` | 移动通话与加密设置（仅桌面端设置页的对应 Tab 不受影响） |
 
-> 已删除项：`/mobile/mobileMy/aiAssistant`（v2.4 列出但路由不存在），AI 助手在移动端无独立入口。
+> 已删除项：`/mobile/dynamic`、`/mobile/dynamic/:id`（动态模块整体移除）、`/mobile/syncData`（与 `/mobile/confirmQRLogin` 重复）、`/mobile/addGroupQRCode`（与 `/mobile/mobileMy/myQRCode` 重复）、`/mobile/mobileMy/aiAssistant`（v2.4 列出但路由不存在），AI 助手在移动端无独立入口。
 
 ### 10.5 权限守卫
 
