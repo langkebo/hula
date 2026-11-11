@@ -75,7 +75,7 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
     labelKey: 'mobile_security.invite_permission',
     groupKey: 'mobile_setting.account_section',
     path: '/mobile/mobileMy/invitePermission',
-    keywords: ['invite', '邀请', '谁能加我', '陌生人']
+    keywords: ['invite', '邀请', '谁能加我', '陌生人', '好友请求', '加好友', '自动接受', '附言']
   },
   {
     labelKey: 'mobile_security.deactivate_account',

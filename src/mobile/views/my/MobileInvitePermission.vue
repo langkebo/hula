@@ -58,6 +58,40 @@
               :title="t('mobile_invite_permission.allow_strangers_inactive')" />
           </van-cell-group>
 
+          <van-cell-group inset :title="t('setting.friends.requests.title')">
+            <van-cell
+              :title="t('setting.friends.requests.allow_label')"
+              :label="t('setting.friends.requests.allow_desc')">
+              <template #right-icon>
+                <van-switch v-model="allowFriendRequests" data-testid="allow-friend-requests" @change="persist" />
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('setting.friends.requests.auto_accept_label')"
+              :label="t('setting.friends.requests.auto_accept_desc')">
+              <template #right-icon>
+                <van-switch
+                  v-model="autoAcceptFriends"
+                  data-testid="auto-accept-friends"
+                  :disabled="!allowFriendRequests"
+                  @change="persist" />
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('setting.friends.requests.message_required_label')"
+              :label="t('setting.friends.requests.message_required_desc')">
+              <template #right-icon>
+                <van-switch
+                  v-model="requireFriendRequestMessage"
+                  data-testid="require-friend-request-message"
+                  :disabled="!allowFriendRequests"
+                  @change="persist" />
+              </template>
+            </van-cell>
+          </van-cell-group>
+
           <van-cell-group
             v-if="mode !== 'allow_all'"
             :title="
@@ -132,6 +166,11 @@ const mode = ref<InvitePolicyMode>('allow_all')
 const blocklist = ref<string[]>([])
 const allowlist = ref<string[]>([])
 const allowStrangers = ref(true)
+// 好友请求三项：**消费方在 synapse-rust 后端**（读同一份 account data），
+// 前端只负责读写与展示，因此这三项无法在本仓给出「真的生效」的行为证据。
+const allowFriendRequests = ref(true)
+const autoAcceptFriends = ref(false)
+const requireFriendRequestMessage = ref(true)
 const newUserId = ref('')
 const encryptByDefault = ref(loadDmPrivacyPreferences().encryptByDefault)
 
@@ -158,13 +197,16 @@ function applyConfig(policy: InvitePolicy | null) {
   blocklist.value = normalized.blocklist
   allowlist.value = normalized.allowlist
   allowStrangers.value = normalized.allowStrangers
+  allowFriendRequests.value = normalized.allowFriendRequests
+  autoAcceptFriends.value = normalized.autoAcceptFriends
+  requireFriendRequestMessage.value = normalized.requireFriendRequestMessage
 }
 
 /**
  * 写回本页拥有的四个字段。
  *
- * **写前必须严格重读**（与桌面编辑器一致）：本页只拥有 mode / blocklist /
- * allowlist / allowStrangers，其余字段（好友请求三项、contacts）必须来自
+ * **写前必须严格重读**（与桌面编辑器一致）：本页拥有 mode / blocklist /
+ * allowlist / allowStrangers / 好友请求三项，其余字段（contacts）必须来自
  * 服务端最新值。读取失败会抛错 → 中止写入并提示；绝不拿挂载快照或默认值
  * 整对象覆盖，否则一次读取失败 + 一次成功的 PUT 就会静默删掉服务端策略。
  */
@@ -178,7 +220,10 @@ async function persist() {
       mode: mode.value,
       blocklist: blocklist.value,
       allowlist: allowlist.value,
-      allowStrangers: allowStrangers.value
+      allowStrangers: allowStrangers.value,
+      allowFriendRequests: allowFriendRequests.value,
+      autoAcceptFriends: autoAcceptFriends.value,
+      requireFriendRequestMessage: requireFriendRequestMessage.value
     })
   } catch (error) {
     logger.error('Failed to persist invite policy', error)

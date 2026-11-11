@@ -66,6 +66,22 @@ const clickQuickAction = async (page: Page, label: string) => {
   return after
 }
 
+/**
+ * 进设置页并清空搜索。
+ *
+ * push 到同一路由不会重建组件（搜索词会残留并把列表 `v-show` 隐藏），
+ * 所以每次进入都要显式清空，否则后续断言会命中隐藏元素。
+ */
+const openSettings = async (page: Page) => {
+  await pushMobileRoute(page, '/mobile/mobileMy/settings')
+  const input = page.locator('.van-search input').first()
+  await input.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
+  if (await input.isVisible().catch(() => false)) {
+    await input.fill('')
+    await page.waitForTimeout(300)
+  }
+}
+
 test.describe('我的页信息架构（S1）', () => {
   // 登录 + 5 次入口往返 + 设置页，30s 默认超时不够
   test.setTimeout(180_000)
@@ -187,19 +203,7 @@ test.describe('我的页信息架构（S1）', () => {
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 45_000 }).not.toContain('/mobile/login')
     await page.waitForTimeout(1500)
 
-    // push 到同一路由不会重建组件（搜索词会残留并把列表 v-show 隐藏），
-    // 所以每次进设置页都走这个 helper：先进入、再把搜索清空。
-    const gotoSettings = async () => {
-      await pushMobileRoute(page, '/mobile/mobileMy/settings')
-      const input = page.locator('.van-search input').first()
-      await input.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
-      if (await input.isVisible().catch(() => false)) {
-        await input.fill('')
-        await page.waitForTimeout(300)
-      }
-    }
-
-    await gotoSettings()
+    await openSettings(page)
     const searchInput = page.locator('.van-search input').first()
     await expect(searchInput, '设置页没有渲染搜索框').toBeVisible({ timeout: 20_000 })
 
@@ -213,13 +217,13 @@ test.describe('我的页信息架构（S1）', () => {
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/mobileMy/devices')
 
     // 别名也应命中（用户常按「黑名单」找「已忽略用户」）
-    await gotoSettings()
+    await openSettings(page)
     await page.locator('.van-search input').first().fill('黑名单')
     const aliasHit = page.locator('.settings-search-results .van-cell').filter({ hasText: /已忽略用户|Ignored/i })
     await expect(aliasHit.first(), '别名「黑名单」没有命中「已忽略用户」').toBeVisible({ timeout: 10_000 })
 
     // ── 2) 加密设置入口
-    await gotoSettings()
+    await openSettings(page)
     const encryptionEntry = page
       .locator('.van-cell')
       .filter({ hasText: /加密设置|Encryption/i })
@@ -229,7 +233,7 @@ test.describe('我的页信息架构（S1）', () => {
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/encryption')
 
     // ── 3) 气泡样式：切「方角」必须真的写到根元素（render-message.scss 消费该属性）
-    await gotoSettings()
+    await openSettings(page)
     const bubbleCell = page
       .locator('.van-cell')
       .filter({ hasText: /气泡样式|Bubble style/i })
@@ -258,7 +262,7 @@ test.describe('我的页信息架构（S1）', () => {
       .toBe('rounded')
 
     // ── 4) 表情包管理入口
-    await gotoSettings()
+    await openSettings(page)
     const emoticonEntry = page
       .locator('.van-cell')
       .filter({ hasText: /表情包管理|Emoji Packs/i })
@@ -310,5 +314,53 @@ test.describe('我的页信息架构（S1）', () => {
       page.locator('[data-testid="notification-empty"], [data-testid="notification-row"]').first(),
       '通知历史页白屏（既没有空态也没有列表）'
     ).toBeVisible({ timeout: 20_000 })
+  })
+
+  /**
+   * M6：好友请求三项（是否接收 / 自动接受 / 需附言）。
+   *
+   * 桌面 `FriendsSettings` 早就有这三项，移动端只有「陌生人私聊 + 名单」，
+   * 等于手机上只能管「谁能私聊我」、管不了「谁能加我好友」。
+   *
+   * 注意：这三项的**消费方是 synapse-rust 后端**（读同一份 `im.hula.invite_policy`
+   * account data），所以本用例只能验证「UI 能写、互斥关系正确」，
+   * 无法在客户端证明「服务端真的按它裁决」——这一点必须写在文档里而不是假装验证过。
+   */
+  test('好友隐私：好友请求三项可配、互斥关系正确', async ({ page }) => {
+    const self = await registerMobileAccount('myfriend')
+    await seedE2EStorage(page)
+    await autoDismissLocalUnlockGate(page)
+    await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
+    await dismissLocalUnlockDialog(page, 10_000)
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 45_000 }).not.toContain('/mobile/login')
+    await page.waitForTimeout(1500)
+
+    // 用搜索直达：入口本身在「安全设置」里（3 层），搜索是唯一 2 跳路径
+    await openSettings(page)
+    await page.locator('.van-search input').first().fill('好友请求')
+    const hit = page
+      .locator('.settings-search-results .van-cell')
+      .filter({ hasText: /邀请权限|Invite/i })
+      .first()
+    await expect(hit, '搜「好友请求」没有命中「邀请权限」').toBeVisible({ timeout: 10_000 })
+    await hit.click()
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/mobileMy/invitePermission')
+
+    const allowSwitch = page.locator('[data-testid="allow-friend-requests"]')
+    const autoSwitch = page.locator('[data-testid="auto-accept-friends"]')
+    const messageSwitch = page.locator('[data-testid="require-friend-request-message"]')
+
+    await expect(allowSwitch, '邀请权限页没有「允许接收好友请求」').toBeVisible({ timeout: 20_000 })
+    await expect(autoSwitch).toBeVisible()
+    await expect(messageSwitch).toBeVisible()
+
+    // 关掉「允许接收」→ 另两项失去意义，必须禁用（渐进披露，避免配了也不生效）
+    await allowSwitch.click()
+    await expect(autoSwitch, '关闭接收后「自动接受」仍可点').toHaveClass(/disabled/, { timeout: 10_000 })
+    await expect(messageSwitch, '关闭接收后「需要附言」仍可点').toHaveClass(/disabled/)
+
+    // 打开回来 → 恢复可配
+    await allowSwitch.click()
+    await expect(autoSwitch).not.toHaveClass(/disabled/, { timeout: 10_000 })
   })
 })
