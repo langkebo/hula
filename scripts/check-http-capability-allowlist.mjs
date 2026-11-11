@@ -234,6 +234,108 @@ export function evaluateHttpCapabilityAllowlist({
   }
 }
 
+/** `tauri-plugin-http` 明确禁止启用的 feature（会打开危险请求能力/绕过 header 校验） */
+export const FORBIDDEN_HTTP_FEATURES = ['dangerous-settings', 'unsafe-headers']
+
+/** 唯一允许的 `frame-src` 取值：禁止嵌入任何外部/自站 iframe */
+export const REQUIRED_FRAME_SRC = "'none'"
+
+/** 从 `tauri.conf.json` 的 `app.security.csp` 取 CSP 文本（支持字符串与按平台分组的对象写法） */
+export function extractCspEntries(tauriConf) {
+  const csp = tauriConf?.app?.security?.csp
+  if (typeof csp === 'string') return [{ label: 'app.security.csp', value: csp }]
+  if (csp && typeof csp === 'object') {
+    return Object.entries(csp)
+      .filter(([, value]) => typeof value === 'string')
+      .map(([label, value]) => ({ label: `app.security.csp.${label}`, value }))
+  }
+  return []
+}
+
+/** 把 CSP 文本解析为 `directive → 归一化取值`（多条同名指令合并） */
+export function parseCspDirectives(csp) {
+  const directives = new Map()
+  for (const part of String(csp ?? '').split(';')) {
+    const tokens = part.trim().split(/\s+/).filter(Boolean)
+    if (tokens.length === 0) continue
+    const [name, ...values] = tokens
+    const key = name.toLowerCase()
+    const merged = [...(directives.get(key) ?? []), ...values]
+    directives.set(key, merged)
+  }
+  return directives
+}
+
+/**
+ * 从 `Cargo.toml` 取某个 crate 的 features 列表。
+ *
+ * 同时支持行内表（`crate = { ..., features = [...] }`）与独立依赖段
+ * （`[dependencies.crate]` + `features = [...]`）；未找到该依赖时返回 `null`。
+ */
+export function extractCargoFeatures(cargoToml, crate = 'tauri-plugin-http') {
+  const text = String(cargoToml ?? '')
+  const inline = new RegExp(`^\\s*${crate}\\s*=\\s*\\{([\\s\\S]*?)\\}`, 'm').exec(text)
+  const section = new RegExp(
+    `^[ \\t]*\\[dependencies\\.${crate}\\][^\\n]*\\n([\\s\\S]*?)(?=^[ \\t]*\\[|(?![\\s\\S]))`,
+    'm'
+  ).exec(text)
+  const block = inline?.[1] ?? section?.[1]
+  if (block === undefined) {
+    // 简单写法（`crate = "2"`）没有 features 字段；完全未声明则返回 null
+    const simple = new RegExp(`^\\s*${crate}\\s*=\\s*["']`, 'm')
+    return simple.test(text) ? [] : null
+  }
+  const features = /features\s*=\s*\[([^\]]*)\]/.exec(block)
+  if (!features) return []
+  return features[1]
+    .split(',')
+    .map((item) => item.trim().replace(/^["']|["']$/g, ''))
+    .filter(Boolean)
+}
+
+/**
+ * 纯函数判据：CSP 不得允许 iframe 嵌入；`tauri-plugin-http` 不得启用危险 feature。
+ *
+ * @param {{ cargoToml?: string, tauriConf?: unknown }} input
+ * @returns {{ ok: boolean, problems: string[], frameSrc: string[], httpFeatures: string[] }}
+ */
+export function evaluateHttpTransportHardening({ cargoToml, tauriConf } = {}) {
+  const problems = []
+  const frameSrc = []
+
+  const cspEntries = extractCspEntries(tauriConf)
+  if (cspEntries.length === 0) {
+    problems.push('基数断言失败：tauri.conf.json 未配置 app.security.csp（无法断言 frame-src）')
+  }
+  for (const { label, value } of cspEntries) {
+    const directives = parseCspDirectives(value)
+    const values = directives.get('frame-src')
+    const normalized = values === undefined ? null : values.join(' ')
+    if (normalized === null) {
+      problems.push(`${label} 缺少 frame-src 指令（必须显式 frame-src ${REQUIRED_FRAME_SRC}，禁止嵌入 iframe）`)
+    } else {
+      frameSrc.push(normalized)
+      if (normalized !== REQUIRED_FRAME_SRC) {
+        problems.push(`${label} 的 frame-src 必须为 ${REQUIRED_FRAME_SRC}，当前为 ${normalized}`)
+      }
+    }
+  }
+
+  const httpFeatures = extractCargoFeatures(cargoToml)
+  if (httpFeatures === null) {
+    problems.push('基数断言失败：src-tauri/Cargo.toml 未找到 tauri-plugin-http 依赖声明（无法断言 feature）')
+  } else {
+    const forbidden = httpFeatures.filter((feature) => FORBIDDEN_HTTP_FEATURES.includes(feature))
+    if (forbidden.length > 0) {
+      problems.push(
+        `tauri-plugin-http 启用了危险 feature：${forbidden.join(', ')}（会绕过 scope/header 约束；仅允许 rustls-tls 等传输 feature）`
+      )
+    }
+  }
+
+  return { ok: problems.length === 0, problems, frameSrc, httpFeatures: httpFeatures ?? [] }
+}
+
 function loadCapabilityAllowLists(projectDir, readFile = (p) => readFileSync(p, 'utf8')) {
   const allowLists = {}
   for (const rel of CAPABILITY_FILES) {
@@ -252,6 +354,7 @@ async function main() {
   let allowLists
   let homeserver
   let sanctionedTestHosts
+  let hardening
   try {
     allowLists = loadCapabilityAllowLists(projectRoot)
     homeserver = resolveHomeserver(projectRoot)
@@ -259,6 +362,10 @@ async function main() {
     sanctionedTestHosts = collectSanctionedDevHomeserverHosts(
       existsSync(envExampleFile) ? readFileSync(envExampleFile, 'utf8') : ''
     )
+    hardening = evaluateHttpTransportHardening({
+      cargoToml: readFileSync(path.join(projectRoot, 'src-tauri', 'Cargo.toml'), 'utf8'),
+      tauriConf: JSON.parse(readFileSync(path.join(projectRoot, 'src-tauri', 'tauri.conf.json'), 'utf8'))
+    })
   } catch (err) {
     console.error(`[http-allowlist] scan failed: ${err.message}`)
     process.exit(2)
@@ -275,18 +382,25 @@ async function main() {
     homeserverSource: homeserver.source,
     sanctionedTestHosts
   })
+  result.problems.push(...hardening.problems)
+  result.ok = result.problems.length === 0
 
   if (jsonOutput) {
     process.stdout.write(
-      `${JSON.stringify({ ...result, files: Object.keys(allowLists), homeserverSource: homeserver.source }, null, 2)}\n`
+      `${JSON.stringify(
+        { ...result, files: Object.keys(allowLists), homeserverSource: homeserver.source, hardening },
+        null,
+        2
+      )}\n`
     )
   } else if (result.ok) {
     console.log(
       `[http-allowlist] OK — ${Object.keys(allowLists).length} 份 capability 一致；` +
-        `homeserver=${result.homeserver.url ?? '(未配置)'} (${homeserver.source ?? 'n/a'}) 已覆盖`
+        `homeserver=${result.homeserver.url ?? '(未配置)'} (${homeserver.source ?? 'n/a'}) 已覆盖；` +
+        `frame-src=${hardening.frameSrc.join(' | ')}；http features=[${hardening.httpFeatures.join(', ')}]`
     )
   } else {
-    console.error('[http-allowlist] FAIL — capability http allow 与实际 homeserver 不对齐:')
+    console.error('[http-allowlist] FAIL — 网络出网面配置不合规（capability allow / CSP frame-src / http feature）:')
     for (const problem of result.problems) console.error(`  - ${problem}`)
     console.error('  see docs/TJG-安全纵深专项方案-2026-10-12.md 附录 C')
   }

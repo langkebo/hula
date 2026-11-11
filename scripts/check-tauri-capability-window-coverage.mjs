@@ -83,7 +83,6 @@ export const WINDOW_LABEL_REGISTRY = [
   // —— 桌面：动态族 glob（label 含运行时变量，无法静态枚举） ——
   { label: 'multiMsg*', platform: 'desktop', rationale: '合并转发记录窗，label=multiMsg<msgId>（src/components/rightBox/chatBox/ChatMultiMsg.vue:107）' },
   { label: 'windowChat--*', platform: 'desktop', rationale: '独立聊天窗，label=windowChat--<roomId>（src/composables/chat/useIndependentChatWindow.ts:29/35）' },
-  { label: 'alone*', platform: 'desktop', rationale: '独立消息窗前缀，useWindow.checkLabel 对含 alone 的 label 去数字（src/composables/common/useWindow.ts:49；Alone.vue:24 发射 EventEnum.ALONE）' },
   // —— 移动：精确 label ——
   { label: 'mobile-home', platform: 'mobile', rationale: '移动端主窗口（src-tauri/tauri.ios.conf.json:27、tauri.android.conf.json:45；mobile-hula.json 已按此 label 授权）' }
 ]

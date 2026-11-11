@@ -213,7 +213,7 @@ pub async fn migrate_user_database(
         if !to_path.exists() {
             // 复制前把 WAL 落盘：未 checkpoint 的最新写入不在主文件里，直接复制会缺数据
             {
-                let db = state.db_conn.read().await;
+                let db = state.db_conn.read().await.clone();
                 if let Err(err) = db
                     .execute_unprepared("PRAGMA wal_checkpoint(TRUNCATE)")
                     .await

@@ -348,7 +348,8 @@ pub async fn save_msg(data: MessageResp, state: State<'_, AppData>) -> Result<()
         let db_conn = state.db_conn.clone();
         let record = record.clone();
         async move {
-            let db = db_conn.read().await;
+            // 先克隆连接再释放读锁，避免事务期间持有读锁阻塞账号切换。
+            let db = db_conn.read().await.clone();
             let tx = db.begin().await?;
             MessageService::save_message_in_tx(&tx, record).await?;
             tx.commit().await?;
@@ -427,7 +428,8 @@ pub async fn delete_message(
     state: State<'_, AppData>,
 ) -> Result<(), String> {
     let login_uid = state.user_info.lock().await.uid.clone();
-    let db = state.db_conn.read().await;
+    // 克隆连接后立即释放读锁，删除涉及多次 await。
+    let db = state.db_conn.read().await.clone();
 
     if let Some(room) = room_id {
         im_message_repository::delete_message_by_id(&db, &message_id, &login_uid)
@@ -474,7 +476,8 @@ pub async fn delete_room_messages(
     state: State<'_, AppData>,
 ) -> Result<u64, String> {
     let login_uid = state.user_info.lock().await.uid.clone();
-    let db = state.db_conn.read().await;
+    // 克隆连接后立即释放读锁，删除涉及 await。
+    let db = state.db_conn.read().await.clone();
 
     let affected_rows = MessageService::delete_room_messages(&db, &room_id, &login_uid)
         .await

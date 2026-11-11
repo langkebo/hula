@@ -27,10 +27,12 @@ pub async fn save_message_mark(
     state: State<'_, AppData>,
 ) -> Result<(), String> {
     let result: Result<(), CommonError> = async {
-        let db = state.db_conn.read().await;
+        // 先克隆连接再释放读锁：DatabaseConnection 内部是 Arc，克隆很廉价；
+        // 整个标记写入期间（多次 await）持有读锁会阻塞账号切换所需的写锁。
+        let db = state.db_conn.read().await.clone();
         let messages: Vec<im_message::Model> = im_message::Entity::find()
             .filter(im_message::Column::Id.eq(data.msg_id.clone()))
-            .all(&*db)
+            .all(&db)
             .await?;
 
         for message in messages {
@@ -49,9 +51,7 @@ pub async fn save_message_mark(
                 active_message.message_marks = Set(Some(new_message_marks));
 
                 // 更新数据库
-                im_message::Entity::update(active_message)
-                    .exec(&*db)
-                    .await?;
+                im_message::Entity::update(active_message).exec(&db).await?;
             }
         }
 

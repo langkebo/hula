@@ -83,7 +83,8 @@ impl MessageService {
             let db_conn = db_conn.clone();
             let mut record = record.clone();
             async move {
-                let db = db_conn.read().await;
+                // 先克隆连接再释放读锁，避免事务期间持有读锁阻塞账号切换。
+                let db = db_conn.read().await.clone();
                 let tx = db.begin().await.map_err(CommonError::DatabaseError)?;
                 record = im_message_repository::save_message(&tx, record).await?;
                 tx.commit().await.map_err(CommonError::DatabaseError)?;

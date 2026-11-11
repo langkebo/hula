@@ -25,8 +25,7 @@
     "settings",
     "lockScreen",
     "multiMsg*",
-    "windowChat--*",
-    "alone*"
+    "windowChat--*"
   ],
   "permissions": [
     {

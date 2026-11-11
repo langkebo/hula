@@ -467,12 +467,13 @@ pub async fn debug_message_stats(state: State<'_, AppData>) -> Result<serde_json
         user_info.uid.clone()
     };
 
-    let db = state.db_conn.read().await;
+    // 克隆连接后立即释放读锁：下面有多轮查询 await，持锁会阻塞账号切换。
+    let db = state.db_conn.read().await.clone();
 
     // 查询总消息数
     let total_messages = im_message::Entity::find()
         .filter(im_message::Column::LoginUid.eq(&login_uid))
-        .count(&*db)
+        .count(&db)
         .await
         .map_err(|e| format!("failed to count total messages: {}", e))?;
 
@@ -488,7 +489,7 @@ pub async fn debug_message_stats(state: State<'_, AppData>) -> Result<serde_json
         let count = im_message::Entity::find()
             .filter(im_message::Column::LoginUid.eq(&login_uid))
             .filter(im_message::Column::MessageType.eq(msg_type))
-            .count(&*db)
+            .count(&db)
             .await
             .map_err(|e| format!("failed to count messages of type {}: {}", msg_type, e))?;
 
@@ -506,7 +507,7 @@ pub async fn debug_message_stats(state: State<'_, AppData>) -> Result<serde_json
         .filter(im_message::Column::MessageType.is_in([4, 6]))
         .order_by_desc(im_message::Column::SendTime)
         .limit(5)
-        .all(&*db)
+        .all(&db)
         .await
         .map_err(|e| format!("failed to query sample messages: {}", e))?;
 

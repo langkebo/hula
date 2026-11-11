@@ -38,8 +38,9 @@ pub async fn save_user_info(
     user_info: SaveUserInfoRequest,
     state: State<'_, AppData>,
 ) -> Result<(), String> {
-    let db = state.db_conn.read().await;
-    UserService::save_user_info(&*db, &user_info.uid)
+    // 克隆连接后立即释放读锁，避免写库期间阻塞账号切换。
+    let db = state.db_conn.read().await.clone();
+    UserService::save_user_info(&db, &user_info.uid)
         .await
         .map_err(|e| format!("Failed to save user info: {}", e))
 }
@@ -47,9 +48,10 @@ pub async fn save_user_info(
 #[tauri::command]
 pub async fn update_user_last_opt_time(state: State<'_, AppData>) -> Result<(), String> {
     info!("Updating user last operation time");
-    let db = state.db_conn.read().await;
+    // 克隆连接后立即释放读锁，避免写库期间阻塞账号切换。
+    let db = state.db_conn.read().await.clone();
     let uid = state.user_info.lock().await.uid.clone();
-    UserService::update_last_opt_time(&*db, &uid)
+    UserService::update_last_opt_time(&db, &uid)
         .await
         .map_err(|e| format!("Failed to update user last opt time: {}", e))
 }

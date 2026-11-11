@@ -6,8 +6,13 @@ import {
   collectSanctionedDevHomeserverHosts,
   coversHost,
   evaluateHttpCapabilityAllowlist,
+  evaluateHttpTransportHardening,
+  extractCargoFeatures,
+  extractCspEntries,
   extractHttpAllowEntries,
+  FORBIDDEN_HTTP_FEATURES,
   parseAllEnvHomeservers,
+  parseCspDirectives,
   parseEnvHomeserver,
   resolveHomeserver,
   splitHostPattern
@@ -195,6 +200,99 @@ describe('check-http-capability-allowlist: evaluateHttpCapabilityAllowlist', () 
   })
 })
 
+describe('check-http-capability-allowlist: extractCargoFeatures', () => {
+  it('解析行内表 features', () => {
+    const toml = 'tauri-plugin-http = { version = "2.5.4", features = ["rustls-tls"] }'
+    expect(extractCargoFeatures(toml)).toEqual(['rustls-tls'])
+  })
+
+  it('解析独立依赖段 features', () => {
+    const toml = [
+      '[dependencies.tauri-plugin-http]',
+      'version = "2.5.4"',
+      'features = ["rustls-tls"]',
+      '',
+      '[dependencies.other]'
+    ].join('\n')
+    expect(extractCargoFeatures(toml)).toEqual(['rustls-tls'])
+  })
+
+  it('无 features 时返回空数组，缺依赖时返回 null', () => {
+    expect(extractCargoFeatures('tauri-plugin-http = "2"')).toEqual([])
+    expect(extractCargoFeatures('tauri-plugin-fs = "2"')).toBeNull()
+  })
+})
+
+describe('check-http-capability-allowlist: evaluateHttpTransportHardening', () => {
+  const cargo = 'tauri-plugin-http = { version = "2.5.4", features = ["rustls-tls"] }'
+  const cspWithFrameNone = { app: { security: { csp: "default-src 'self'; frame-src 'none';" } } }
+
+  it('frame-src 为 none 且无非传输 feature ⇒ 通过', () => {
+    const result = evaluateHttpTransportHardening({ cargoToml: cargo, tauriConf: cspWithFrameNone })
+    expect(result.ok).toBe(true)
+    expect(result.frameSrc).toEqual(["'none'"])
+    expect(result.httpFeatures).toEqual(['rustls-tls'])
+  })
+
+  it('frame-src 缺失或放宽 ⇒ 失败', () => {
+    const missing = evaluateHttpTransportHardening({
+      cargoToml: cargo,
+      tauriConf: { app: { security: { csp: "default-src 'self';" } } }
+    })
+    expect(missing.ok).toBe(false)
+    expect(missing.problems.join('\n')).toContain('缺少 frame-src')
+
+    const relaxed = evaluateHttpTransportHardening({
+      cargoToml: cargo,
+      tauriConf: { app: { security: { csp: "frame-src 'self' https://*.example.com;" } } }
+    })
+    expect(relaxed.ok).toBe(false)
+    expect(relaxed.problems.join('\n')).toContain("必须为 'none'")
+  })
+
+  it(`启用危险 feature（${FORBIDDEN_HTTP_FEATURES.join(' / ')}）⇒ 失败`, () => {
+    for (const feature of FORBIDDEN_HTTP_FEATURES) {
+      const result = evaluateHttpTransportHardening({
+        cargoToml: `tauri-plugin-http = { version = "2.5.4", features = ["rustls-tls", "${feature}"] }`,
+        tauriConf: cspWithFrameNone
+      })
+      expect(result.ok).toBe(false)
+      expect(result.problems.join('\n')).toContain(feature)
+    }
+  })
+
+  it('CSP 按平台分组（对象写法）时逐平台校验', () => {
+    const entries = extractCspEntries({
+      app: {
+        security: {
+          csp: {
+            'src-tauri/tauri.macos.conf.json': "frame-src 'none';",
+            'src-tauri/tauri.windows.conf.json': "frame-src 'self';"
+          }
+        }
+      }
+    })
+    expect(entries).toHaveLength(2)
+    const result = evaluateHttpTransportHardening({
+      cargoToml: cargo,
+      tauriConf: { app: { security: { csp: { a: "frame-src 'none';", b: 'frame-src *;' } } } }
+    })
+    expect(result.ok).toBe(false)
+    expect(result.problems.join('\n')).toContain('app.security.csp.b')
+  })
+
+  it('parseCspDirectives 合并同名指令并统一大小写', () => {
+    const directives = parseCspDirectives("FRAME-SRC 'none'; frame-src https:")
+    expect(directives.get('frame-src')).toEqual(["'none'", 'https:'])
+  })
+
+  it('空输入不抛错但判定失败（基数断言）', () => {
+    const result = evaluateHttpTransportHardening({})
+    expect(result.ok).toBe(false)
+    expect(result.problems.join('\n')).toContain('基数断言失败')
+  })
+})
+
 describe('check-http-capability-allowlist: coversHost', () => {
   it('端口与路径通配均视为覆盖', () => {
     expect(coversHost(['https://matrix.test'], 'https', 'matrix.test')).toBe(true)
@@ -252,5 +350,14 @@ describe('check-http-capability-allowlist: 真实仓库自洽', () => {
       .filter((parsed) => parsed?.host.endsWith('.test'))
       .map((parsed) => parsed.host)
     expect([...new Set(testHosts)].every((testHost) => sanctioned.includes(testHost))).toBe(true)
+  })
+
+  it('CSP frame-src 为 none 且 http 插件未启用危险 feature', () => {
+    const result = evaluateHttpTransportHardening({
+      cargoToml: readFileSync(join(projectRoot, 'src-tauri', 'Cargo.toml'), 'utf8'),
+      tauriConf: JSON.parse(readFileSync(join(projectRoot, 'src-tauri', 'tauri.conf.json'), 'utf8'))
+    })
+    expect(result.problems).toEqual([])
+    expect(result.ok).toBe(true)
   })
 })
