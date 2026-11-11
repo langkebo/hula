@@ -2,9 +2,9 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h, reactive } from 'vue'
 import LinkPreviewPane from '../LinkPreviewPane.vue'
 
-const { getUrlPreviewMock, isRoomEncryptedMock } = vi.hoisted(() => ({
+const { getUrlPreviewMock, getRoomEncryptionStateMock } = vi.hoisted(() => ({
   getUrlPreviewMock: vi.fn(),
-  isRoomEncryptedMock: vi.fn()
+  getRoomEncryptionStateMock: vi.fn()
 }))
 
 const settingStore = reactive({
@@ -14,7 +14,7 @@ const settingStore = reactive({
 const currentSessionRoomId = '!room:test'
 
 vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
-  matrixCryptoService: { isRoomEncrypted: isRoomEncryptedMock }
+  matrixCryptoService: { getRoomEncryptionState: getRoomEncryptionStateMock }
 }))
 
 vi.mock('@/stores/domains/widget/global', () => ({
@@ -97,8 +97,8 @@ describe('LinkPreviewPane', () => {
   beforeEach(() => {
     settingStore.linkPreviewEnabled = true
     getUrlPreviewMock.mockReset()
-    isRoomEncryptedMock.mockReset()
-    isRoomEncryptedMock.mockResolvedValue(false)
+    getRoomEncryptionStateMock.mockReset()
+    getRoomEncryptionStateMock.mockResolvedValue('plaintext')
   })
 
   it('rejects invalid urls without sending', async () => {
@@ -131,7 +131,31 @@ describe('LinkPreviewPane', () => {
   })
 
   it('加密房间不请求服务端预览', async () => {
-    isRoomEncryptedMock.mockResolvedValueOnce(true)
+    getRoomEncryptionStateMock.mockResolvedValueOnce('encrypted')
+    const wrapper = mountPane()
+    await wrapper.find('input').setValue('https://example.com/a')
+    await wrapper.find('[data-test="link-preview-fetch"]').trigger('click')
+    await flushPromises()
+
+    expect(getUrlPreviewMock).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('chat.link_preview.blocked_encrypted')
+    wrapper.unmount()
+  })
+
+  it('加密房间点发送不请求预览', async () => {
+    getRoomEncryptionStateMock.mockResolvedValueOnce('encrypted')
+    const wrapper = mountPane()
+    await wrapper.find('input').setValue('https://example.com/a')
+    await wrapper.find('[data-test="link-preview-send"]').trigger('click')
+    await flushPromises()
+
+    expect(getUrlPreviewMock).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('chat.link_preview.blocked_encrypted')
+    wrapper.unmount()
+  })
+
+  it('无法判定加密状态时阻断', async () => {
+    getRoomEncryptionStateMock.mockResolvedValueOnce('unknown')
     const wrapper = mountPane()
     await wrapper.find('input').setValue('https://example.com/a')
     await wrapper.find('[data-test="link-preview-fetch"]').trigger('click')

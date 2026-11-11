@@ -67,6 +67,7 @@
 import { NButton, NDrawer, NDrawerContent, NInput } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { THUMBNAIL_SIZE_LINK_PREVIEW } from '@/common/constants'
+import type { RoomEncryptionState } from '@/services/matrix/crypto/cryptoAdapterTypes'
 import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { MediaUrlPreview } from '@/services/matrix/media/mediaTypes'
@@ -136,10 +137,23 @@ const statusText = computed(() => {
 /**
  * 解密只发生在客户端；链接一旦交给服务端抓取，房间的加密承诺就被绕开了。
  * 所有服务端抓取都必须先过这道闸门（含「获取预览」与「发送」两条路径）。
+ *
+ * 判定必须用三态并 fail-closed：只有明确 `plaintext` 才放行，`encrypted` 与
+ * `unknown` 一并阻断。`unknown` 意味着拿不到房间加密状态（冷启动时房间可能
+ * 尚未进入 client store、SDK 查询异常等），此时默认不放行——宁可短暂无法预览，
+ * 也不把明文 URL 泄漏给服务端。
+ *
+ * roomId 为空表示当前没有会话上下文（本组件只在聊天上下文中使用），此时放行，
+ * 因为对无会话上下文弹「已加密」提示是错误文案。
  */
 const ensurePreviewAllowed = async (): Promise<boolean> => {
   const roomId = globalStore.currentSessionRoomId
-  if (roomId && (await matrixCryptoService.isRoomEncrypted(roomId))) {
+  if (!roomId) {
+    blockedByEncryption.value = false
+    return true
+  }
+  const state: RoomEncryptionState = await matrixCryptoService.getRoomEncryptionState(roomId)
+  if (state !== 'plaintext') {
     blockedByEncryption.value = true
     preview.value = null
     fetchFailed.value = false
@@ -151,9 +165,10 @@ const ensurePreviewAllowed = async (): Promise<boolean> => {
 
 /** 拉取预览；失败返回 null，由调用方决定降级策略。 */
 const fetchPreview = async (target: string): Promise<MediaUrlPreview | null> => {
-  if (!(await ensurePreviewAllowed())) return null
+  if (fetching.value) return null
   fetching.value = true
   try {
+    if (!(await ensurePreviewAllowed())) return null
     const result = await matrixMediaService.getUrlPreview(target)
     preview.value = result
     fetchFailed.value = !result
@@ -191,6 +206,12 @@ watch(
   (visible) => {
     if (!visible) reset()
   }
+)
+
+/** 抽屉开着时切换会话，必须清掉上一房间的预览与「已加密禁用」提示。 */
+watch(
+  () => globalStore.currentSessionRoomId,
+  () => reset()
 )
 
 const handleSubmit = async () => {
