@@ -63,8 +63,16 @@ vi.mock('@/services/matrix/privateChat/privateRoomRegistry', () => ({
 }))
 
 vi.mock('@/stores/domains/chat/chat/session', () => ({
-  useSessionStore: () => ({ sessionList: sessionList.value })
+  useSessionStore: () => ({})
 }))
+
+// 列表视图模型（`useSecretChatSessions`）用 storeToRefs 读会话列表；
+// 这里给出同一个 ref，让页面与用例共享一份数据。
+const storeRefs = vi.hoisted(() => ({ sessionList: null as unknown }))
+vi.mock('pinia', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('pinia')>()
+  return { ...actual, storeToRefs: () => ({ sessionList: storeRefs.sessionList }) }
+})
 
 vi.mock('@/stores/domains/settings/secretChatSession', () => ({
   useSecretChatSession: () => ({ isUnlocked }),
@@ -101,6 +109,7 @@ const mountPage = () =>
 describe('移动端私密会话页', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    storeRefs.sessionList = sessionList
     isUnlocked.value = true
     configured.value = true
     showConfirmDialogMock.mockResolvedValue(undefined)

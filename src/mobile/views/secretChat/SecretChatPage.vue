@@ -98,27 +98,18 @@
 
 <script setup lang="ts">
 import { showConfirmDialog, showToast } from 'vant'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import EncryptionLockBadge from '@/components/encryption/EncryptionLockBadge.vue'
-import { usePrivateRoomEncryption } from '@/composables/secretChat/usePrivateRoomEncryption'
 import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
+import { useSecretChatSessions } from '@/composables/secretChat/useSecretChatSessions'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from '@/mobile/views/my/settingsRoutes'
-import {
-  isPrivateRoom,
-  loadPrivateRoomRegistry,
-  migrateFromHiddenSessions,
-  unmarkRoomPrivate
-} from '@/services/matrix/privateChat/privateRoomRegistry'
-import { type SessionItem, useSessionStore } from '@/stores/domains/chat/chat/session'
-import {
-  isSecretChatUnlocked,
-  lockSecretChatSession,
-  useSecretChatSession
-} from '@/stores/domains/settings/secretChatSession'
+import { unmarkRoomPrivate } from '@/services/matrix/privateChat/privateRoomRegistry'
+import type { SessionItem } from '@/stores/domains/chat/chat/session'
+import { isSecretChatUnlocked, lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 
@@ -130,40 +121,13 @@ defineOptions({
 
 const { t } = useI18n()
 const router = useRouter()
-const sessionStore = useSessionStore()
 const settingStore = useSettingStore()
 
 /** 未配置密码时解锁必然失败，锁定态改为引导去设置密码。 */
 const configured = computed(() => settingStore.isSecretChatConfigured())
 
-/** 解锁态取自单例响应式 computed：自动锁/其它窗口上锁都会立刻切回锁定态。 */
-const { isUnlocked } = useSecretChatSession()
-const locked = computed(() => !isUnlocked.value)
-
-const hiddenSessions = computed(() => {
-  // 锁定态一律返回空数组：模板即使被改坏也泄漏不出会话名
-  if (locked.value) return []
-  return sessionStore.sessionList.filter((session: SessionItem) => isPrivateRoom(session.roomId))
-})
-
-const { refresh: refreshEncryption, isEncrypted } = usePrivateRoomEncryption()
-
-/** 列表变化时批量刷新加密状态；锁定态列表为空，快照随之清空。 */
-watch(
-  // map() 每次求值都返回新数组，直接 watch 会因引用变化在无关更新时重复整批查询；
-  // 用 join 后的字符串做稳定 key，只有房间集合真正变化才触发。
-  () => hiddenSessions.value.map((session: SessionItem) => session.roomId).join('\n'),
-  () => {
-    void refreshEncryption(hiddenSessions.value.map((session: SessionItem) => session.roomId))
-  },
-  { immediate: true }
-)
-
-/** 行内容的无障碍描述（含未读）。 */
-const sessionAriaLabel = (session: SessionItem) =>
-  session.unreadCount > 0
-    ? `${session.name} ${t('home.secret_chat.unread_badge', { count: session.unreadCount })}`
-    : session.name
+/** 列表过滤 / 加密状态 / 登记表加载与桌面端共用同一份规则（见 composable 注释）。 */
+const { locked, hiddenSessions, isEncrypted, sessionAriaLabel, refreshPrivateSessions } = useSecretChatSessions()
 
 /** 锁定态点「输入密码继续」：回跳目标是本页，解锁后由守卫放行。 */
 const handleUnlockClick = () => {
@@ -210,19 +174,6 @@ const handleUnmark = async (session: SessionItem) => {
   }
 }
 
-/**
- * 刷新登记表 + 把历史 `session.hide` 会话一次性迁入（幂等）。
- * 只在已解锁时执行：登记表内容本身也是私密信息。
- */
-const refreshPrivateSessions = () => {
-  void loadPrivateRoomRegistry()
-  void migrateFromHiddenSessions(
-    sessionStore.sessionList
-      .filter((session: SessionItem) => session.hide)
-      .map((session: SessionItem) => session.roomId)
-  )
-}
-
 onMounted(() => {
   if (!isSecretChatUnlocked()) {
     // 未配置密码时解锁不可能成功，直接引导去安全设置页
@@ -235,10 +186,5 @@ onMounted(() => {
     return
   }
   refreshPrivateSessions()
-})
-
-// 原地解锁后补一次登记表加载
-watch(isUnlocked, (value) => {
-  if (value) refreshPrivateSessions()
 })
 </script>
