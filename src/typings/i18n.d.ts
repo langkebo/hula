@@ -4935,6 +4935,7 @@ export type I18nKeys = {
     "marked_as_unread": "已标记为未读",
     "mark_as_read_failed": "标记已读失败",
     "mark_as_unread_failed": "标记未读失败",
+    "private_room_processing": "正在处理，请稍候",
     "new_chat_title": "新建聊天",
     "new_chat_creating": "创建中...",
     "new_chat_success": "聊天创建成功",
@@ -11466,6 +11467,7 @@ export type I18nKeyPaths =
   | "mobile_home.marked_as_unread"
   | "mobile_home.mark_as_read_failed"
   | "mobile_home.mark_as_unread_failed"
+  | "mobile_home.private_room_processing"
   | "mobile_home.new_chat_title"
   | "mobile_home.new_chat_creating"
   | "mobile_home.new_chat_success"

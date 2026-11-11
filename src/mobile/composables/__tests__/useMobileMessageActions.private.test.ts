@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const togglePrivateRoom = vi.fn<(item: unknown, options?: unknown) => Promise<boolean>>(async () => true)
 const isRoomPrivate = vi.fn(() => false)
 const showConfirmDialog = vi.hoisted(() => vi.fn(async () => 'confirm'))
+const showLoadingToast = vi.hoisted(() => vi.fn())
+const closeToast = vi.hoisted(() => vi.fn())
 
-vi.mock('vant', () => ({ showConfirmDialog }))
+vi.mock('vant', () => ({ showConfirmDialog, showLoadingToast, closeToast }))
 vi.mock('@/composables/secretChat/usePrivateRoomActions', () => ({
   usePrivateRoomActions: () => ({ togglePrivateRoom, isRoomPrivate })
 }))
@@ -34,6 +36,8 @@ describe('useMobileMessageActions · 私密聊天', () => {
     togglePrivateRoom.mockClear()
     isRoomPrivate.mockClear()
     showConfirmDialog.mockClear()
+    showLoadingToast.mockClear()
+    closeToast.mockClear()
   })
 
   it('handleTogglePrivate 委托给 togglePrivateRoom 并关闭长按菜单', async () => {
@@ -48,6 +52,12 @@ describe('useMobileMessageActions · 私密聊天', () => {
     expect(togglePrivateRoom).toHaveBeenCalledWith(item, {
       confirmEnableEncryption: expect.any(Function)
     })
+    expect(showLoadingToast).toHaveBeenCalledWith({
+      message: 'mobile_home.private_room_processing',
+      duration: 0,
+      forbidClick: false
+    })
+    expect(closeToast).toHaveBeenCalledTimes(1)
     expect(close).toHaveBeenCalledTimes(1)
   })
 

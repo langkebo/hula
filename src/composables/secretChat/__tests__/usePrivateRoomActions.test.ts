@@ -51,7 +51,7 @@ vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
 vi.mock('@/utils/TauriInvokeHandler', () => ({ invokeWithErrorHandler: mocks.invoke }))
 
 import { RoomTypeEnum } from '@/enums'
-import { usePrivateRoomActions } from '../usePrivateRoomActions'
+import { resetPrivateRoomEncryptionMemoryForTests, usePrivateRoomActions } from '../usePrivateRoomActions'
 
 const SINGLE_ROOM = '!dm:example.com'
 const PRIVATE_ROOM = '!private:example.com'
@@ -61,6 +61,7 @@ const session = (type: RoomTypeEnum = RoomTypeEnum.SINGLE) => ({ roomId: SINGLE_
 describe('usePrivateRoomActions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetPrivateRoomEncryptionMemoryForTests()
     mocks.state.configured = true
     mocks.state.unlocked = true
     mocks.isPrivateRoom.mockReturnValue(false)
@@ -220,6 +221,30 @@ describe('usePrivateRoomActions', () => {
         '端到端加密已提交但尚未生效，请稍后重试；本次未设为私密',
         'warning'
       )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('超时后重试不再重复确认、不重发 state event，直接等待生效', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.isRoomEncrypted.mockResolvedValue(false)
+      mocks.getRoomEncryptionState.mockResolvedValue('plaintext')
+      const confirmEnableEncryption = vi.fn().mockResolvedValue(true)
+      const { togglePrivateRoom } = usePrivateRoomActions()
+
+      const first = togglePrivateRoom(session(), { confirmEnableEncryption })
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(await first).toBe(false)
+
+      mocks.getRoomEncryptionState.mockResolvedValue('encrypted')
+      expect(await togglePrivateRoom(session(), { confirmEnableEncryption })).toBe(true)
+
+      expect(confirmEnableEncryption).toHaveBeenCalledTimes(1)
+      expect(mocks.enableEncryption).toHaveBeenCalledTimes(1)
+      expect(mocks.markRoomPrivate).toHaveBeenCalledTimes(1)
+      expect(mocks.showFeedback).toHaveBeenLastCalledWith('已设为私密聊天，并开启端到端加密', 'success')
     } finally {
       vi.useRealTimers()
     }

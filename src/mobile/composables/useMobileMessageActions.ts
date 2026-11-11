@@ -1,4 +1,4 @@
-import { showConfirmDialog } from 'vant'
+import { closeToast, showConfirmDialog, showLoadingToast } from 'vant'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMessage } from '@/composables/chat/useMessage'
@@ -94,6 +94,13 @@ export function useMobileMessageActions(opts: {
   /** 设为私密 / 取消私密：守卫（单聊、已配置、已解锁）全部在 togglePrivateRoom 内。 */
   const handleTogglePrivate = async (item: SessionItem | null) => {
     if (!item) return
+    // 加密确认通过后最长还要等待约 4 秒本地 state 生效，遮罩期间必须有加载反馈。
+    // 不使用 forbidClick，避免挡住加密确认弹窗的按钮。
+    showLoadingToast({
+      message: t('mobile_home.private_room_processing'),
+      duration: 0,
+      forbidClick: false
+    })
     try {
       await togglePrivateRoom(item, {
         confirmEnableEncryption: async () => {
@@ -113,6 +120,7 @@ export function useMobileMessageActions(opts: {
     } catch (error) {
       logger.error('切换私密会话失败:', error)
     } finally {
+      closeToast()
       opts.maskHandler.close()
     }
   }

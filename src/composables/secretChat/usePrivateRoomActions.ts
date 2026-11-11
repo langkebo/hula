@@ -38,6 +38,19 @@ const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
  */
 const inflightRoomIds = new Set<string>()
 
+/**
+ * 本轮已提交过 `m.room.encryption`、但本地 room state 尚未确认生效的房间。
+ *
+ * 超时重试时 `isRoomEncrypted` 读的仍是本地 state（依旧为 false），若没有这层记忆，
+ * 会再弹一次「不可撤销」确认并重发同一个 state event。只有确认生效后才移除。
+ */
+const encryptionSubmittedRoomIds = new Set<string>()
+
+/** 仅供测试：清空加密提交记忆，避免用例之间互相污染。 */
+export const resetPrivateRoomEncryptionMemoryForTests = () => {
+  encryptionSubmittedRoomIds.clear()
+}
+
 /** 有界轮询，直到本地 room state 确认已加密；超时返回 false。 */
 const waitForEncryptionEffective = async (roomId: string): Promise<boolean> => {
   for (let attempt = 0; attempt < ENCRYPTION_CONFIRM_ATTEMPTS; attempt++) {
@@ -96,16 +109,23 @@ export const usePrivateRoomActions = () => {
       // 只能单向：Matrix 房间加密不可关闭，取消私密不撤销加密。
       if (!marked) {
         const alreadyEncrypted = await matrixCryptoService.isRoomEncrypted(roomId)
-        if (!alreadyEncrypted) {
-          if (options.confirmEnableEncryption && !(await options.confirmEnableEncryption())) {
-            return false
-          }
-          try {
-            await matrixCryptoService.enableEncryption(roomId)
-          } catch (e) {
-            logger.error('开启房间加密失败:', e)
-            showFeedback(t('home.secret_chat.encryption_failed'), 'error')
-            return false
+        if (alreadyEncrypted) {
+          encryptionSubmittedRoomIds.delete(roomId)
+        } else {
+          // 上一轮已提交但本地未确认生效：跳过确认与重发，直接继续等待。
+          const encryptionSubmitted = encryptionSubmittedRoomIds.has(roomId)
+          if (!encryptionSubmitted) {
+            if (options.confirmEnableEncryption && !(await options.confirmEnableEncryption())) {
+              return false
+            }
+            try {
+              await matrixCryptoService.enableEncryption(roomId)
+            } catch (e) {
+              logger.error('开启房间加密失败:', e)
+              showFeedback(t('home.secret_chat.encryption_failed'), 'error')
+              return false
+            }
+            encryptionSubmittedRoomIds.add(roomId)
           }
           // 发出 state event 不等于本地已生效：等到本地 room state 确认，
           // 否则窗口期内发送的消息仍会明文出站，却被提示「已加密」。
@@ -114,6 +134,7 @@ export const usePrivateRoomActions = () => {
             showFeedback(t('home.secret_chat.encryption_not_effective'), 'warning')
             return false
           }
+          encryptionSubmittedRoomIds.delete(roomId)
           encryptedNow = true
         }
       }
