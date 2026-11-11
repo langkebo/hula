@@ -2,6 +2,7 @@ import type { GeneratedSecretStorageKey, VerificationRequest } from '@/types/mat
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { cryptoSDKAdapter } from './CryptoSDKAdapter'
+import type { RoomEncryptionState } from './cryptoAdapterTypes'
 
 const logger = createLogger('MatrixCryptoService')
 
@@ -215,6 +216,21 @@ class MatrixCryptoService extends BaseMatrixService {
     } catch (err) {
       logger.error(`[MatrixCrypto] 检查房间加密状态失败: ${err}`)
       return false
+    }
+  }
+
+  /**
+   * 查询房间加密状态（三态透传）；异常时按 `unknown` 处理。
+   *
+   * 与 {@link isRoomEncrypted} 的布尔契约区分：需要区分「确认未加密」与
+   * 「尚未同步/无法判定」的调用方必须走这里，避免把乐观冷启动当成明文。
+   */
+  async getRoomEncryptionState(roomId: string): Promise<RoomEncryptionState> {
+    try {
+      return await cryptoSDKAdapter.getRoomEncryptionState(roomId)
+    } catch (err) {
+      logger.error(`[MatrixCrypto] 查询房间加密状态失败: ${err}`)
+      return 'unknown'
     }
   }
 
