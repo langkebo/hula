@@ -20,11 +20,6 @@ const mobileEntryCases: MobileEntryCase[] = [
     readyPattern: /HuLa服务协议|服务协议/
   },
   {
-    name: 'mobile sync confirm entry',
-    path: '/mobile/syncData',
-    readyPattern: /登录确认|确定登录|Confirm/
-  },
-  {
     name: 'mobile settings entry',
     path: '/mobile/mobileMy/settings',
     readyPattern: /Edit Profile|编辑资料|Settings/

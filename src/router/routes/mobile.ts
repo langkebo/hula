@@ -44,7 +44,6 @@ const Splashscreen = () => import('#/views/Splashscreen.vue')
 const MobileForgetPassword = () => import('#/views/MobileForgetPassword.vue')
 const MobileServiceAgreement = () => import('#/views/MobileServiceAgreement.vue')
 const MobilePrivacyAgreement = () => import('#/views/MobilePrivacyAgreement.vue')
-const SyncData = () => import('#/views/SyncData.vue')
 
 /**
  * `/mobile/rtcCall` 的入参契约：调用方（`More.vue`、`RtcCallFloatCell.vue`）只把
@@ -99,11 +98,6 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
     path: '/mobile/privacyAgreement',
     name: 'mobilePrivacyAgreement',
     component: MobilePrivacyAgreement
-  },
-  {
-    path: '/mobile/syncData',
-    name: 'mobileSyncData',
-    component: SyncData
   },
   {
     // 私密会话列表：私密房会被普通会话列表整体过滤，必须有独立入口才进得去
@@ -357,10 +351,5 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
     name: 'rtcCall',
     component: () => import('../../mobile/views/rtcCall/index.vue'),
     props: (route) => mapMobileRtcCallProps(route.query as Record<string, unknown>)
-  },
-  {
-    path: '/mobile/addGroupQRCode',
-    name: 'mobileAddGroupQRCode',
-    component: () => import('../../mobile/views/AddGroupQRCode.vue')
   }
 ]

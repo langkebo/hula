@@ -27,7 +27,6 @@ describe('移动端用户可见页面中文字面量收口', () => {
 
 describe('移动端其余用户可见页面中文字面量收口', () => {
   it.each([
-    'src/mobile/views/SyncData.vue',
     'src/mobile/views/MobileForgetPassword.vue',
     'src/mobile/views/my/Files.vue',
     'src/mobile/views/MyQRCode.vue',
