@@ -19,6 +19,7 @@
       </div>
     </template>
     <template #footer>
+      <RoomEncryptionBanner :warnings="roomEncryptionWarnings" />
       <MobileBatchToolbar v-if="chatStore.isMsgMultiChoose" @forward="handleBatchForward" @exit="handleBatchExit" />
       <FooterBar v-else @location="handleLocationClick" />
     </template>
@@ -57,7 +58,9 @@ import MobileBatchToolbar from '#/components/chat-room/MobileBatchToolbar.vue'
 import PrivateModeConfirmDialog from '#/components/chat-room/PrivateModeConfirmDialog.vue'
 import LocationShare from '#/views/chat-room/LocationShare.vue'
 import MobileForwardDialog from '#/views/chat-room/MobileForwardDialog.vue'
+import RoomEncryptionBanner from '@/components/encryption/RoomEncryptionBanner.vue'
 import { useMitt } from '@/composables/common/useMitt'
+import { useRoomEncryptionStatus } from '@/composables/encryption/useRoomEncryptionStatus'
 import { MittEnum, RoomTypeEnum } from '@/enums'
 import router from '@/router'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
@@ -84,6 +87,7 @@ const globalUnreadCount = computed(() => globalStore.messageUnreadCount ?? 0)
 
 // 联邦判定（与 ChatHeaderRoot 单一事实源一致）
 const currentSessionRoomId = computed(() => globalStore.currentSessionRoomId)
+const { warnings: roomEncryptionWarnings } = useRoomEncryptionStatus(currentSessionRoomId)
 const federationServer = computed(() => extractServerName(currentSessionRoomId.value))
 const isFederated = computed(() => {
   const roomServer = federationServer.value

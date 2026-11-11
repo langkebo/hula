@@ -104,6 +104,11 @@
     "trust_gate_reveal": "Click to show",
     "trust_gate_plaintext_in_encrypted_room": "This message is unencrypted although the room should be encrypted"
   },
+  "encryption_banner": {
+    "backup_disabled": "Key backup is off. You will not be able to decrypt history on a new device.",
+    "keys_local_only": "Your security key exists only on this device. Clearing data or switching devices will lose decryption ability.",
+    "crypto_init_failed": "Encryption failed to initialize; encrypted messages are unavailable."
+  },
   "private_mode": {
     "burning": "Private Mode: Burn After Reading",
     "enabled": "Private Mode Enabled"

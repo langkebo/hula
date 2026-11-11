@@ -1801,6 +1801,11 @@ export type I18nKeys = {
       "trust_gate_reveal": "点击显示内容",
       "trust_gate_plaintext_in_encrypted_room": "这条消息在本应加密的房间里是明文"
     },
+    "encryption_banner": {
+      "backup_disabled": "密钥备份未开启，换设备后将无法解密历史消息",
+      "keys_local_only": "安全密钥只存在本机，清除缓存或换设备将丢失解密能力",
+      "crypto_init_failed": "加密模块初始化失败，当前无法收发加密消息"
+    },
     "private_mode": {
       "burning": "私密模式：阅后即焚",
       "enabled": "私密模式已开启"
@@ -9044,6 +9049,9 @@ export type I18nKeyPaths =
   | "chat.encryption.plain_title"
   | "chat.encryption.trust_gate_reveal"
   | "chat.encryption.trust_gate_plaintext_in_encrypted_room"
+  | "chat.encryption_banner.backup_disabled"
+  | "chat.encryption_banner.keys_local_only"
+  | "chat.encryption_banner.crypto_init_failed"
   | "chat.private_mode.burning"
   | "chat.private_mode.enabled"
   | "chat.window.no_room_id"

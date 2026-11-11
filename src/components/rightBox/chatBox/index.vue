@@ -3,16 +3,6 @@
     <!-- 头部 -->
     <ChatHeader />
 
-    <!-- 加密不可用警告条：crypto 未初始化且当前房间为加密房间时显示 -->
-    <div
-      v-if="showCryptoWarning"
-      class="crypto-unavailable-banner flex items-center gap-8px px-12px py-6px bg-[--tjg-color-warning-100] border-b border-[--tjg-color-warning-500] text-[var(--text-xs)] color-[--tjg-color-warning-500]">
-      <svg class="size-14px flex-shrink-0">
-        <use href="#remind"></use>
-      </svg>
-      <span class="flex-1 truncate">{{ t('chat.crypto_unavailable.message') }}</span>
-    </div>
-
     <div class="flex-1 flex min-h-0">
       <div class="flex-1 min-h-0">
         <!-- bot用户时显示Bot组件 -->
@@ -32,6 +22,7 @@
           </template>
           <template #2>
             <!-- 输入框和操作列表 -->
+            <RoomEncryptionBanner :warnings="roomEncryptionWarnings" />
             <ChatFooter :detail-id="currentSession?.detailId" />
           </template>
         </n-split>
@@ -43,13 +34,12 @@
 </template>
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { useI18n } from 'vue-i18n'
+import RoomEncryptionBanner from '@/components/encryption/RoomEncryptionBanner.vue'
+import { useRoomEncryptionStatus } from '@/composables/encryption/useRoomEncryptionStatus'
 import { UserType } from '@/enums'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 
-const { t } = useI18n()
 const globalStore = useGlobalStore()
 const encryptionStore = useEncryptionStore()
 const { currentSession } = storeToRefs(globalStore)
@@ -57,13 +47,9 @@ const { currentSession } = storeToRefs(globalStore)
 // 是否为bot用户
 const isBotUser = computed(() => currentSession.value?.account === UserType.BOT)
 
-// 加密不可用警告：crypto 初始化失败且当前房间为加密房间时显示
-const showCryptoWarning = computed(() => {
-  if (!encryptionStore.cryptoInitFailed) return false
-  const roomId = globalStore.currentSessionRoomId
-  if (!roomId) return false
-  return matrixClientService.isRoomEncrypted(roomId)
-})
+// 当前房间的加密风险提示（密钥备份关闭 / 安全密钥仅本机 / 加密初始化失败）
+const currentSessionRoomId = computed(() => globalStore.currentSessionRoomId ?? '')
+const { warnings: roomEncryptionWarnings } = useRoomEncryptionStatus(currentSessionRoomId)
 
 onMounted(() => {
   // 登录后检查 crypto 初始化状态（startClient 中 ensureCrypto 已完成）
