@@ -20,6 +20,8 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(HERE, '../../..')
 const MOBILE_ROOT = join(REPO_ROOT, 'src/mobile')
 const ROUTES_FILE = join(REPO_ROOT, 'src/router/routes/mobile.ts')
+// 「我的 → 设置」子路由已拆到独立文件，扫描时必须一并纳入，否则拆分后整块路由都算未注册
+const MY_SETTINGS_ROUTES_FILE = join(REPO_ROOT, 'src/router/routes/mobileMySettingsRoutes.ts')
 const SETTINGS_ROUTES_FILE = join(REPO_ROOT, 'src/mobile/views/my/settingsRoutes.ts')
 const SETTINGS_SCHEMA_FILE = join(REPO_ROOT, 'src/stores/domains/settings/settingsSchema.ts')
 
@@ -59,7 +61,7 @@ function collectPushTargets(): Map<string, string[]> {
  */
 function registeredSegments(): Set<string> {
   const constantsSrc = readFileSync(SETTINGS_ROUTES_FILE, 'utf8')
-  const src = readFileSync(ROUTES_FILE, 'utf8')
+  const src = readFileSync(ROUTES_FILE, 'utf8') + '\n' + readFileSync(MY_SETTINGS_ROUTES_FILE, 'utf8')
 
   // 1) 常量映射：只取 MOBILE_SETTINGS_RELATIVE_PATHS 对象块内的字面量键值，
   //    否则会把路由里的 `name: 'xxx'` 也当成常量（实测踩过这个坑）。
