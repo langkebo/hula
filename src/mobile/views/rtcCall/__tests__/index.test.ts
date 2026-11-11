@@ -3,20 +3,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import RtcCall from '../index.vue'
 
-const { answerCallMock, rejectCallMock, hangupMock, toggleMuteMock, toggleVideoMock, toggleSpeakerMock } = vi.hoisted(
-  () => ({
-    answerCallMock: vi.fn().mockResolvedValue(true),
-    rejectCallMock: vi.fn().mockResolvedValue(true),
-    hangupMock: vi.fn().mockResolvedValue(undefined),
-    toggleMuteMock: vi.fn().mockResolvedValue(true),
-    toggleVideoMock: vi.fn().mockResolvedValue(true),
-    toggleSpeakerMock: vi.fn().mockResolvedValue(undefined)
-  })
-)
+const {
+  answerCallMock,
+  rejectCallMock,
+  hangupMock,
+  startCallMock,
+  toggleMuteMock,
+  toggleVideoMock,
+  toggleSpeakerMock
+} = vi.hoisted(() => ({
+  answerCallMock: vi.fn().mockResolvedValue(true),
+  rejectCallMock: vi.fn().mockResolvedValue(true),
+  hangupMock: vi.fn().mockResolvedValue(undefined),
+  startCallMock: vi.fn().mockResolvedValue(true),
+  toggleMuteMock: vi.fn().mockResolvedValue(true),
+  toggleVideoMock: vi.fn().mockResolvedValue(true),
+  toggleSpeakerMock: vi.fn().mockResolvedValue(undefined)
+}))
 
 // Shared refs that can be mutated in tests to simulate call state changes
 const sharedCallInfo = ref<any>(null)
 const sharedIsSpeakerOn = ref(false)
+const sharedState = ref<string | null>(null)
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -29,10 +37,11 @@ vi.mock('@/composables/useVoIPCallFlow', () => ({
     isVideoEnabled: ref(false),
     isSpeakerOn: sharedIsSpeakerOn,
     loading: ref(false),
-    state: ref(null),
+    state: sharedState,
     answerCall: answerCallMock,
     rejectCall: rejectCallMock,
     hangup: hangupMock,
+    startCall: startCallMock,
     toggleMute: toggleMuteMock,
     toggleVideo: toggleVideoMock,
     toggleSpeaker: toggleSpeakerMock
@@ -98,8 +107,10 @@ describe('RtcCall (mobile)', () => {
     answerCallMock.mockResolvedValue(true)
     rejectCallMock.mockResolvedValue(true)
     hangupMock.mockResolvedValue(undefined)
+    startCallMock.mockResolvedValue(true)
     sharedCallInfo.value = null
     sharedIsSpeakerOn.value = false
+    sharedState.value = null
   })
 
   afterEach(() => {
@@ -125,7 +136,8 @@ describe('RtcCall (mobile)', () => {
     await wrapper.find('button[aria-label="voip.incoming.decline"]').trigger('click')
     await flushPromises()
 
-    expect(rejectCallMock).toHaveBeenCalledWith('call-1')
+    // 通话 id 由 composable 内部持有，页面不再把 props.callId 透传进去
+    expect(rejectCallMock).toHaveBeenCalledWith()
     expect(wrapper.emitted('reject')).toBeTruthy()
     expect(wrapper.emitted('close')).toBeTruthy()
   })
@@ -136,17 +148,22 @@ describe('RtcCall (mobile)', () => {
     await wrapper.find('button[aria-label="voip.incoming.answer"]').trigger('click')
     await flushPromises()
 
-    expect(answerCallMock).toHaveBeenCalledWith('call-1', { audio: true, video: false })
+    // 接听只传媒体约束，callId 由 composable 从 initialCallId 解析
+    expect(answerCallMock).toHaveBeenCalledWith(undefined, { audio: true, video: false })
     expect(wrapper.emitted('answer')).toBeTruthy()
   })
 
-  it('去电场景渲染取消按钮', () => {
-    const wrapper = mountRtcCall({ isIncoming: false })
+  it('去电场景渲染取消按钮并发起通话', async () => {
+    // 去电没有 Matrix callId（路由 mapper 会给空字符串），必须由本页发起
+    const wrapper = mountRtcCall({ isIncoming: false, callId: '' })
+    await flushPromises()
 
     expect(wrapper.find('button[aria-label="voip.outgoing.cancel"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('voip.states.ringing_outgoing')
     // 来电按钮不应出现
     expect(wrapper.find('button[aria-label="voip.incoming.answer"]').exists()).toBe(false)
+    // 去电必须由本页发起，否则永远停在响铃界面
+    expect(startCallMock).toHaveBeenCalledWith('!room:example.com', { audio: true, video: false })
   })
 
   it('通话中界面渲染扬声器和静音按钮', () => {
@@ -204,5 +221,16 @@ describe('RtcCall (mobile)', () => {
     expect(wrapper.html()).toBeTruthy()
     wrapper.unmount()
     // 验证组件卸载不会抛出异常
+  })
+
+  it('远端结束通话时 emit close 并退出页面', async () => {
+    const wrapper = mountRtcCall({ isIncoming: false, callId: '' })
+    await flushPromises()
+    expect(wrapper.emitted('close')).toBeFalsy()
+
+    sharedState.value = 'ended'
+    await flushPromises()
+
+    expect(wrapper.emitted('close')).toBeTruthy()
   })
 })

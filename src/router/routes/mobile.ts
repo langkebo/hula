@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { CallTypeEnum } from '@/enums'
 import { MOBILE_MY_SETTINGS_CHILD_ROUTES } from './mobileMySettingsRoutes'
 
 const ChatRoomLayout = () => import('#/layout/chat-room/ChatRoomLayout.vue')
@@ -46,6 +47,29 @@ const MobileForgetPassword = () => import('#/views/MobileForgetPassword.vue')
 const MobileServiceAgreement = () => import('#/views/MobileServiceAgreement.vue')
 const MobilePrivacyAgreement = () => import('#/views/MobilePrivacyAgreement.vue')
 const SyncData = () => import('#/views/SyncData.vue')
+
+/**
+ * `/mobile/rtcCall` 的入参契约：调用方（`More.vue`、`RtcCallFloatCell.vue`）只把
+ * `remoteUserId` / `roomId` / `callType` / `isIncoming` 放在 query 上，而通话页按 props 渲染。
+ * 必须在路由层完成映射，否则 `isVideo` / `isIncoming` 恒为 false、`remoteUser` 为空。
+ */
+export const mapMobileRtcCallProps = (query: Record<string, unknown>) => {
+  const read = (key: string): string => {
+    const raw = query[key]
+    const value = Array.isArray(raw) ? raw[0] : raw
+    if (value === null || value === undefined) return ''
+    return String(value)
+  }
+  const remoteUserId = read('remoteUserId')
+
+  return {
+    callId: read('callId'),
+    roomId: read('roomId'),
+    isVideo: read('callType') === String(CallTypeEnum.VIDEO),
+    isIncoming: read('isIncoming') === 'true',
+    remoteUser: remoteUserId ? { userId: remoteUserId } : undefined
+  }
+}
 
 export const getMobileRoutes = (): Array<RouteRecordRaw> => [
   {
@@ -356,7 +380,8 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
   {
     path: '/mobile/rtcCall',
     name: 'rtcCall',
-    component: () => import('../../mobile/views/rtcCall/index.vue')
+    component: () => import('../../mobile/views/rtcCall/index.vue'),
+    props: (route) => mapMobileRtcCallProps(route.query as Record<string, unknown>)
   },
   {
     path: '/mobile/encryption',

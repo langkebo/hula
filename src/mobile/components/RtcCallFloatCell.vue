@@ -35,45 +35,30 @@
 import { useI18n } from 'vue-i18n'
 import { useMitt } from '@/composables/common/useMitt'
 import { CallTypeEnum, MittEnum } from '@/enums'
+import type { CallInfo } from '@/services/matrix/media/MatrixVoIPService'
+import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useMobileStore } from '@/stores/domains/settings/mobile'
-import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RtcCallFloatCell')
 
-const sendMatrixVoipSignal = async (type: string, data: unknown) => {
-  logger.warn('Matrix VoIP Signal:', type, data)
-}
-
-type CallPayload = {
-  callerUid?: string
-  callerId?: string
-  senderId?: string
-  targetUid?: string
-  targetIds?: string[]
-  roomId?: string
-  isVideo?: boolean
-  video?: boolean
-  name?: string
-  callerName?: string
-  avatar?: string
-}
-
 const router = useRouter()
 const mobileStore = useMobileStore()
 const groupStore = useGroupStore()
-const userStore = useUserStore()
 const { t } = useI18n()
 
 const currentCall = ref<{
+  callId: string
   callerUid: string
   roomId: string
   callType: CallTypeEnum
   displayName: string
   avatar: string
 } | null>(null)
+
+let unsubscribeCallUpdate: (() => void) | null = null
 
 const topOffset = computed(() => {
   const safeTop = mobileStore.safeArea.top
@@ -101,75 +86,50 @@ const toAvatarUrl = (raw?: unknown) => {
 }
 
 const clearCall = () => {
+  unsubscribeCallUpdate?.()
+  unsubscribeCallUpdate = null
   currentCall.value = null
 }
 
-const matchCurrentRoom = (payload: { roomId?: string }) => {
-  if (!currentCall.value) return false
-  if (!payload?.roomId) return true
-  return payload.roomId === currentCall.value.roomId
-}
+const handleIncomingCall = (info: CallInfo) => {
+  const callerUid = info.participants?.[0]?.userId ?? ''
+  if (!info.callId || !info.roomId || !callerUid) return
 
-const extractTargetIds = (payload: CallPayload) => {
-  if (Array.isArray(payload.targetIds)) {
-    return payload.targetIds.filter((id): id is string => typeof id === 'string')
-  }
-  if (typeof payload.targetUid === 'string') {
-    return [payload.targetUid]
-  }
-  return []
-}
-
-const handleCallRequest = (payload: CallPayload) => {
-  const myUid = userStore.userInfo?.uid
-  if (!myUid) return
-
-  const targets = extractTargetIds(payload)
-  if (targets.length > 0 && !targets.includes(myUid)) {
+  // 已在通话页说明本机忙线，第二路来电必须立即拒绝，否则会一直响铃
+  if (router.currentRoute.value.path === '/mobile/rtcCall') {
+    void matrixVoIPService.rejectCall(info.callId).catch((error) => {
+      logger.warn('Failed to reject incoming call while busy:', error)
+    })
     return
   }
 
-  const callerUid = payload.callerUid || payload.callerId || payload.senderId
-  const roomId = payload.roomId
-  if (!callerUid || !roomId) return
-
-  const callType = payload.isVideo || payload.video ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
-  const remoteUserInfo = groupStore.getUserInfo(callerUid, roomId)
-  const displayNameCandidate =
-    remoteUserInfo?.myName ||
-    remoteUserInfo?.name ||
-    payload.callerName ||
-    payload.name ||
-    t('mobile_voice_video.unknown_user')
-  const avatarCandidate = remoteUserInfo?.avatar ?? payload.avatar
-
-  currentCall.value = {
-    callerUid,
-    roomId,
-    callType,
-    displayName: displayNameCandidate,
-    avatar: toAvatarUrl(avatarCandidate)
-  }
-}
-
-const handleCallEnd = (payload: { roomId?: string }) => {
-  if (!currentCall.value) return
-  if (!matchCurrentRoom(payload)) return
   clearCall()
+  const remoteUserInfo = groupStore.getUserInfo(callerUid, info.roomId)
+  currentCall.value = {
+    callId: info.callId,
+    callerUid,
+    roomId: info.roomId,
+    callType: info.isVideo ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO,
+    displayName:
+      remoteUserInfo?.myName ||
+      remoteUserInfo?.name ||
+      info.participants[0]?.displayName ||
+      t('mobile_voice_video.unknown_user'),
+    avatar: toAvatarUrl(remoteUserInfo?.avatar ?? info.participants[0]?.avatarUrl)
+  }
+
+  unsubscribeCallUpdate = matrixVoIPService.onCallUpdate(info.callId, (update) => {
+    if (update.state === 'ended' || update.state === 'error') clearCall()
+  })
 }
 
 const handleReject = async () => {
   const call = currentCall.value
   if (!call) return
-
   try {
-    await sendMatrixVoipSignal('VIDEO_CALL_RESPONSE', {
-      callerUid: call.callerUid,
-      roomId: call.roomId,
-      accepted: 'rejected'
-    })
+    await matrixVoIPService.rejectCall(call.callId)
   } catch (error) {
-    logger.error('Failed to send reject response:', error)
+    logger.error('Failed to reject incoming call:', error)
   } finally {
     clearCall()
   }
@@ -180,29 +140,24 @@ const handleAccept = async () => {
   if (!call) return
 
   const query = {
+    callId: call.callId,
     remoteUserId: call.callerUid,
     roomId: call.roomId,
     callType: String(call.callType),
-    isIncoming: 'true',
-    autoAccept: '1'
+    isIncoming: 'true'
   } as const
 
   try {
     await router.push({ path: '/mobile/rtcCall', query })
-  } catch (error) {
-    logger.error('Failed to navigate to call page:', error)
-  } finally {
     clearCall()
+  } catch (error) {
+    // 跳转失败时保留浮层，用户可重试接听
+    logger.error('Failed to navigate to call page:', error)
   }
 }
 
-useMitt.on(MittEnum.MOBILE_RTC_CALL_REQUEST, handleCallRequest)
-useMitt.on('CANCEL', handleCallEnd)
-useMitt.on('DROPPED', handleCallEnd)
-useMitt.on('TIMEOUT', handleCallEnd)
-useMitt.on('CallRejected', handleCallEnd)
-useMitt.on('CallAccepted', handleCallEnd)
-useMitt.on('RoomClosed', handleCallEnd)
+useMitt.on(MittEnum.MOBILE_VOIP_INCOMING_CALL, handleIncomingCall)
+onUnmounted(clearCall)
 </script>
 
 <style scoped lang="scss">

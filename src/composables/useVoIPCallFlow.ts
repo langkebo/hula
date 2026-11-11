@@ -33,6 +33,8 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
   const isIncomingCall = ref(false)
 
   let unsubscribeCallUpdate: (() => void) | null = null
+  // 页面卸载后异步操作才完成时，必须回收已在服务层创建的通话，避免幽灵通话
+  let disposed = false
 
   const state = computed(() => callInfo.value?.state ?? null)
   const isConnected = computed(() => state.value === 'connected')
@@ -48,8 +50,20 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
       unsubscribeCallUpdate()
     }
     unsubscribeCallUpdate = matrixVoIPService.onCallUpdate(callId.value, (info: CallInfo) => {
-      callInfo.value = info
+      // 服务层原地修改同一个对象后再次通知（answerCall 改 state、feeds_changed 改 stream），
+      // shallowRef 收到同一引用不会失效，必须换新对象才能让 computed 重新计算。
+      callInfo.value = { ...info }
     })
+  }
+
+  // 外部已建好通话（如来电透传 callId）时必须先种子 callInfo：
+  // 来电已经处于 ringing，不会再有 notifyCallUpdate 触发，否则页面会误判为去电响铃。
+  if (callId.value) {
+    isIncomingCall.value = true
+    const existing = matrixVoIPService.getActiveCalls().find((call) => call.callId === callId.value)
+    callInfo.value = existing ?? null
+    isVideoEnabled.value = !!existing?.isVideo
+    subscribeCallUpdate()
   }
 
   const startCall = async (targetRoomId: string, callOptions: CallOptions): Promise<boolean> => {
@@ -60,6 +74,10 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
     error.value = null
     try {
       const id = await matrixVoIPService.startCall(targetRoomId, callOptions)
+      if (disposed) {
+        void matrixVoIPService.hangupCall(id).catch((err) => logger.warn('startCall hangup after unmount failed', err))
+        return false
+      }
       callId.value = id
       roomId.value = targetRoomId
       isVideoEnabled.value = !!callOptions.video
@@ -82,6 +100,10 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
     loading.value = true
     try {
       await matrixVoIPService.answerCall(id, callOptions)
+      if (disposed) {
+        void matrixVoIPService.hangupCall(id).catch((err) => logger.warn('answerCall hangup after unmount failed', err))
+        return false
+      }
       callId.value = id
       isVideoEnabled.value = !!callOptions?.video
       isIncomingCall.value = true
@@ -213,10 +235,17 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
   }
 
   onUnmounted(() => {
+    disposed = true
     if (unsubscribeCallUpdate) {
       unsubscribeCallUpdate()
       unsubscribeCallUpdate = null
     }
+    // 离开通话页必须结束通话；不走 hangup() 以免刷新 loading 或弹出错误提示
+    const id = callId.value
+    if (!id) return
+    void matrixVoIPService.hangupCall(id).catch((err) => logger.warn('hangup on unmount failed', err))
+    callId.value = null
+    callInfo.value = null
   })
 
   return {

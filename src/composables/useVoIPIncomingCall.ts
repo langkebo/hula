@@ -1,5 +1,6 @@
 import { onMounted, onUnmounted } from 'vue'
-import { CallTypeEnum } from '@/enums'
+import { useMitt } from '@/composables/common/useMitt'
+import { CallTypeEnum, MittEnum } from '@/enums'
 import type { CallInfo } from '@/services/matrix/media/MatrixVoIPService'
 import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { createLogger } from '@/utils/Logger'
@@ -26,16 +27,19 @@ export function useVoIPIncomingCall(deps?: {
 
     const callType = callInfo.isVideo ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
 
-    if (isDesktop() && deps?.createRtcCallWindow) {
-      // 桌面端：创建独立来电通知窗口
+    if (isDesktop()) {
+      if (!deps?.createRtcCallWindow) return
       try {
         await deps.createRtcCallWindow(true, callerUserId, callInfo.roomId, callType)
         logger.info(`来电窗口已创建: ${callerUserId} in ${callInfo.roomId}`)
       } catch (err) {
         logger.error('创建来电窗口失败:', err)
       }
+      return
     }
-    // 移动端：由 RtcCallFloatCell 或路由守卫处理
+
+    // 移动端：把完整 CallInfo（含 callId）交给 RtcCallFloatCell，拒绝/接听才能落到 SDK
+    useMitt.emit(MittEnum.MOBILE_VOIP_INCOMING_CALL, callInfo)
   }
 
   onMounted(() => {

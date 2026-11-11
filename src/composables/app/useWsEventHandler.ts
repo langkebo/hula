@@ -73,16 +73,10 @@ export function useWsEventHandler() {
 
     useMitt.on<VideoCallRequestPayload>(WsResponseMessageType.VideoCallRequest, (event) => {
       logger.info(`收到通话请求：${JSON.stringify(event)}`)
-      const remoteUid = event.callerUid
+      // 移动端来电统一走 Matrix Call.incoming（useVoIPIncomingCall → RtcCallFloatCell），此处仅保留桌面链路
+      if (isMobilePlatform) return
       const callType = event.isVideo ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
-      if (isMobilePlatform) {
-        useMitt.emit(MittEnum.MOBILE_RTC_CALL_REQUEST, {
-          ...event,
-          callerUid: remoteUid
-        })
-        return
-      }
-      callHandler.handleVideoCall(remoteUid, callType)
+      callHandler.handleVideoCall(event.callerUid, callType)
     })
 
     useMitt.on(WsResponseMessageType.LOGIN_SUCCESS, async (data: LoginSuccessResType) => {

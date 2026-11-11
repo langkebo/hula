@@ -117,6 +117,9 @@ class MatrixVoIPService extends BaseMatrixService {
         : []
     }
     this.calls.set(call.callId, callInfo)
+    // 来电与去电走同一套每通话事件（state/feeds_changed/hangup/error），
+    // 否则接听后 feeds 与 connected 状态都不会下发。
+    this.setupCallEventHandlers(call, call.callId)
     this.notifyCallUpdate(call.callId)
     // 通知 UI 层创建来电窗口
     this.incomingCallCallback?.(callInfo)

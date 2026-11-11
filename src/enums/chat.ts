@@ -71,8 +71,8 @@ export enum MittEnum {
   MSG_MULTI_CHOOSE = 'msgMultiChoose',
   /** 扫码事件 */
   QR_SCAN_EVENT = 'qrScanEvent',
-  /** 移动端通话浮层请求 */
-  MOBILE_RTC_CALL_REQUEST = 'mobileRtcCallRequest',
+  /** Matrix 来电派发给移动端浮层 */
+  MOBILE_VOIP_INCOMING_CALL = 'mobileVoipIncomingCall',
   /** 移动端关闭输入框面板 */
   MOBILE_CLOSE_PANEL = 'mobileClosePanel',
   /** 全局文件拖拽 */

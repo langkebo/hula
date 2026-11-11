@@ -59,10 +59,10 @@
           <!-- 静音 -->
           <van-button
             round
-            :class="isMuted ? 'btn-active-toggled' : 'btn-control'"
+            :class="isAudioMuted ? 'btn-active-toggled' : 'btn-control'"
             :aria-label="t('voip.call.mute')"
             @click="handleToggleMute">
-            <van-icon :name="isMuted ? 'warning-o' : 'volume-o'" size="22" />
+            <van-icon :name="isAudioMuted ? 'warning-o' : 'volume-o'" size="22" />
           </van-button>
 
           <!-- 扬声器 -->
@@ -103,14 +103,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useVoIPCallFlow } from '@/composables/useVoIPCallFlow'
-import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
+import router from '@/router'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RtcCallMobile')
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 const props = defineProps<{
   callId: string
@@ -131,10 +133,26 @@ const emit = defineEmits<{
 }>()
 
 // --- VoIP call flow ---
-const { callInfo, isSpeakerOn, toggleSpeaker, answerCall, rejectCall, hangup } = useVoIPCallFlow()
+// callId 由路由层从 query 映射（来电透传）；去电时页面自己发起通话
+const initialCallId = props.callId?.trim() || undefined
+const {
+  callInfo,
+  isAudioMuted,
+  isSpeakerOn,
+  state,
+  toggleSpeaker,
+  startCall,
+  toggleMute,
+  answerCall,
+  rejectCall,
+  hangup
+} = useVoIPCallFlow({
+  // exactOptionalPropertyTypes 下可选属性不接受显式 undefined，缺省时整体省略
+  ...(initialCallId ? { initialCallId } : {}),
+  ...(props.roomId ? { initialRoomId: props.roomId } : {})
+})
 
 // --- Refs ---
-const isMuted = ref(false)
 const remoteVideoRef = ref<HTMLVideoElement>()
 const localVideoRef = ref<HTMLVideoElement>()
 const cameraFacingMode = ref<'user' | 'environment'>('user')
@@ -162,11 +180,7 @@ watch(
 
 // --- Actions ---
 const handleToggleMute = async () => {
-  try {
-    isMuted.value = await matrixVoIPService.toggleMute(props.callId)
-  } catch (err) {
-    logger.error('toggleMute failed:', err)
-  }
+  await toggleMute()
 }
 
 const handleToggleSpeaker = async () => {
@@ -206,50 +220,74 @@ const handleSwitchCamera = async () => {
   }
 }
 
-const handleDecline = async () => {
-  try {
-    await rejectCall(props.callId)
-  } catch (err) {
-    logger.error('Decline call failed:', err)
-  } finally {
-    emit('reject')
-    emit('close')
+// 本地挂断/拒接与远端结束都会走到这里，guard 保证只导航一次
+let hasLeft = false
+const leaveCallPage = () => {
+  if (hasLeft) return
+  hasLeft = true
+  if (window.history.state?.back) {
+    router.back()
+    return
   }
+  router.replace('/mobile/message')
+}
+
+// 远端挂断或通话出错时页面不能停留在通话界面
+watch(state, (next) => {
+  if (next === 'ended' || next === 'error') {
+    emit('close')
+    leaveCallPage()
+  }
+})
+
+const handleDecline = async () => {
+  await rejectCall()
+  emit('reject')
+  emit('close')
+  leaveCallPage()
 }
 
 const handleAnswer = async () => {
-  try {
-    await answerCall(props.callId, { audio: true, video: props.isVideo })
-  } catch (err) {
-    logger.error('Answer call failed:', err)
+  if (!initialCallId) {
+    // 路由未透传 callId 时没有可接听的 Matrix 通话，明确告知而不是静默失败
+    showFeedback(t('voip.errors.answer_failed'), 'error')
+    return
+  }
+  const answered = await answerCall(undefined, { audio: true, video: props.isVideo })
+  if (!answered) {
     return
   }
   emit('answer')
 }
 
 const handleCancel = async () => {
-  try {
-    await hangup()
-  } catch (err) {
-    logger.error('Cancel call failed:', err)
-  } finally {
-    emit('reject')
-    emit('close')
-  }
+  await hangup()
+  emit('reject')
+  emit('close')
+  leaveCallPage()
 }
 
 const handleHangup = async () => {
-  try {
-    await hangup()
-  } catch (err) {
-    logger.error('Hangup failed:', err)
-  } finally {
-    emit('close')
-  }
+  await hangup()
+  emit('close')
+  leaveCallPage()
 }
+
+// 去电：调用方只负责跳转并把 roomId / callType 放进 query，通话必须由本页发起
+onMounted(async () => {
+  if (props.isIncoming || initialCallId || !props.roomId) {
+    return
+  }
+  const started = await startCall(props.roomId, { audio: true, video: props.isVideo })
+  if (!started) {
+    leaveCallPage()
+  }
+})
 
 // --- Cleanup on unmount ---
 onUnmounted(() => {
+  // 卸载后 startCall 才 rejected（如页面已被返回键关闭）时，续体不能再触发一次回退
+  hasLeft = true
   if (localVideoRef.value) {
     localVideoRef.value.srcObject = null
   }

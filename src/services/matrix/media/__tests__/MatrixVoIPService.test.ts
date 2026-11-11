@@ -49,7 +49,8 @@ describe('MatrixVoIPService', () => {
     oldListeners.get('Call.incoming')?.({
       callId: 'old-call',
       roomId: '!old:example.com',
-      isVideo: false
+      isVideo: false,
+      on: vi.fn()
     })
 
     expect(matrixVoIPService.getActiveCalls()).toHaveLength(1)
@@ -64,6 +65,33 @@ describe('MatrixVoIPService', () => {
     expect(newClient.on).toHaveBeenCalledWith('Call.hangup', expect.any(Function))
     expect(newClient.on).toHaveBeenCalledWith('Call.replaced', expect.any(Function))
     expect(matrixVoIPService.getActiveCalls()).toEqual([])
+  })
+
+  it('来电会为通话实例注册每通话事件处理器', async () => {
+    const listeners = new Map<string, (...args: unknown[]) => void>()
+    const client = {
+      callEventHandler: {},
+      on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        listeners.set(event, handler)
+      }),
+      off: vi.fn()
+    }
+    vi.mocked(matrixClientService.getClient).mockReturnValue(client as unknown as MatrixClient)
+    await matrixVoIPService.initialize()
+
+    const incomingCall = {
+      callId: 'incoming-1',
+      roomId: '!incoming:example.com',
+      isVideo: true,
+      on: vi.fn()
+    }
+    listeners.get('Call.incoming')?.(incomingCall)
+
+    // 缺任一处理器都会让接听后停在 connecting / 黑屏 / 远端挂断不退页
+    expect(incomingCall.on).toHaveBeenCalledWith('feeds_changed', expect.any(Function))
+    expect(incomingCall.on).toHaveBeenCalledWith('state', expect.any(Function))
+    expect(incomingCall.on).toHaveBeenCalledWith('hangup', expect.any(Function))
+    expect(incomingCall.on).toHaveBeenCalledWith('error', expect.any(Function))
   })
 })
 
