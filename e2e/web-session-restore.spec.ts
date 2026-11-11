@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { WEB_SESSION_FALLBACK_STORAGE_KEY } from '../src/utils/storageKeys'
 import { loginOnMobileUi } from './support/androidDevice'
+import { autoDismissLocalUnlockGate, dismissLocalUnlockDialog } from './support/localUnlockGate'
 
 /**
  * 浏览器态「刷新后仍在登录态」。
@@ -22,7 +23,7 @@ const APP_URL = (process.env.TJG_MOBILE_APP_URL ?? 'http://127.0.0.1:5210').repl
 const SKIP_REASON = process.env.TJG_MOBILE_LIVE ? null : '未设置 TJG_MOBILE_LIVE（需可用的本地 homeserver）'
 const PW = 'Xmobile!e2e-restore-1'
 
-const registerAccount = async (prefix: string): Promise<{ username: string; password: string }> => {
+const registerAccount = async (prefix: string): Promise<{ username: string; password: string; userId: string }> => {
   let lastError = ''
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const username = `${prefix}${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`
@@ -31,7 +32,10 @@ const registerAccount = async (prefix: string): Promise<{ username: string; pass
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password: PW, auth: { type: 'm.login.dummy' } })
     })
-    if (res.ok) return { username, password: PW }
+    if (res.ok) {
+      const data = (await res.json()) as { user_id?: string }
+      return { username, password: PW, userId: data.user_id ?? '' }
+    }
     lastError = `HTTP ${res.status} ${await res.text()}`
     await new Promise((resolve) => setTimeout(resolve, 500))
   }
@@ -52,19 +56,19 @@ test.describe('浏览器态会话恢复', () => {
       window.localStorage.setItem(fallbackKey, '1')
     }, WEB_SESSION_FALLBACK_STORAGE_KEY)
 
+    // 常驻自动跳过「设置本地解锁密码」：它在 App.vue 里 **先于** bootstrap 被 await，
+    // 不跳过则启动流程整体卡住，后面的会话恢复（D12）根本不会执行。
+    // 必须用常驻版本：reload 与 `?platform=desktop` 的整页导航都会重新弹一次，
+    // 且桌面弹窗与移动弹窗的触发时机不同（手点一次的写法会漏）。
+    await autoDismissLocalUnlockGate(page)
+
     await loginOnMobileUi(page, { appUrl: APP_URL, account: account.username, password: account.password })
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 20_000 }).toContain('/mobile/')
 
     // 整页刷新 = 浏览器里「进程重建」的等价物
     await page.reload({ waitUntil: 'domcontentloaded' })
     // 刷新会重跑启动流程，「设置本地解锁密码」门禁会再弹一次
-    const skip = page.locator('[data-test="local-unlock-skip"]')
-    if (await skip.count()) {
-      await skip
-        .first()
-        .dispatchEvent('click')
-        .catch(() => {})
-    }
+    await dismissLocalUnlockDialog(page, 10_000)
 
     // 断言 1：没有被打回登录页
     await expect
@@ -78,5 +82,58 @@ test.describe('浏览器态会话恢复', () => {
         timeout: 10_000
       })
       .toBe(true)
+
+    // 断言 3~5：D12 的真正判据 —— 「还在登录态」不等于「client 建起来了」。
+    // 历史现象：路由放行、页面正常，但 getClient() 恒为 null，sync / crypto 都没启动。
+    await expectClientRestored(page, account.userId)
+
+    // 断言 6：桌面 home 窗口同样要能冷启动恢复。
+    // 此前 app 级恢复只挂在 `isMobilePlatform`，桌面窗口整页 reload 后没有任何人调
+    // `ensureClientReady`（只有进设置窗口才触发），于是 getClient() 恒 null。
+    await page.goto(`${APP_URL}/?platform=desktop`, { waitUntil: 'domcontentloaded' })
+    await dismissLocalUnlockDialog(page, 10_000)
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 60_000 }).not.toContain('/login')
+    await expectClientRestored(page, account.userId, { label: '桌面窗口冷启动' })
   })
 })
+
+/**
+ * 断言「client 真的建起来了」：非 null + userId 正确 + sync 进入 PREPARED/SYNCING。
+ *
+ * 只断言「没被踢回登录页」是不够的 —— D12 的表现正是页面正常但 client 为 null。
+ */
+const expectClientRestored = async (
+  page: import('@playwright/test').Page,
+  expectedUserId: string,
+  options: { label?: string } = {}
+) => {
+  const label = options.label ?? '移动端冷启动'
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async () => {
+          const { matrixClientService } = (await import(/* @vite-ignore */ '/src/services/matrix/index.ts')) as {
+            matrixClientService: {
+              getClient: () => { getUserId?: () => string | null; getSyncState?: () => string | null } | null
+            }
+          }
+          const client = matrixClientService.getClient()
+          return { hasClient: Boolean(client), userId: client?.getUserId?.() ?? null }
+        }),
+      { timeout: 90_000, message: `${label}：client 未建立（D12）` }
+    )
+    .toEqual({ hasClient: true, userId: expectedUserId })
+
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async () => {
+          const { matrixClientService } = (await import(/* @vite-ignore */ '/src/services/matrix/index.ts')) as {
+            matrixClientService: { getClient: () => { getSyncState?: () => string | null } | null }
+          }
+          return matrixClientService.getClient()?.getSyncState?.() ?? null
+        }),
+      { timeout: 90_000, message: `${label}：sync 未进入 PREPARED/SYNCING（client 建了但没同步）` }
+    )
+    .toMatch(/PREPARED|SYNCING/)
+}

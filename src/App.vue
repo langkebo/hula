@@ -431,26 +431,34 @@ async function seedContactStateCache(): Promise<void> {
   }
 }
 
-/** 移动端冷启动会话恢复的最大尝试次数（有界，避免无会话时无限重试）。 */
-const MOBILE_SESSION_RECOVERY_ATTEMPTS = 3
+/** 冷启动会话恢复的最大尝试次数（有界，避免无会话时无限重试）。 */
+const COLD_START_SESSION_RECOVERY_ATTEMPTS = 5
 
 /**
- * 移动端冷启动恢复会话：有界退避重试。
+ * 冷启动恢复会话（D12）：有界退避重试，**平台无关**。
  *
- * 单次失败可能来自启动早期的瞬时故障（IPC/DB 尚未就绪、网络未就绪），
- * 只试一次会让页面永久停在「已登录但无 client」（D2/D12）。ready 即停，
- * 其余状态按 1s/2s/3s 退避重试，最多 {@link MOBILE_SESSION_RECOVERY_ATTEMPTS} 次。
+ * 整页 reload / WebView 重建 / dev HMR 全量重载时没有任何登录流程会跑，也没有窗口级
+ * 入口负责恢复 ⇒ 页面停在「已登录但无 client」（路由放行、界面正常，`getClient()` 恒 null，
+ * sync/crypto 都不启动）。原先只对移动端生效，桌面 home 的整页 reload 无人恢复
+ * （桌面只有打开设置窗口才触发 `useWindowSessionReady`）。已改为两平台都跑。
+ *
+ * 重试：必要修复是「平台无关」（变异自证：改回仅移动端 ⇒ 用例红）。
+ * 「no-session 也重试」只是兜底（当前用例无法证明其必要性），最多 5 次 / 退避 1-4s。
  */
-async function recoverMobileSessionWithRetry(): Promise<void> {
+async function recoverColdStartSession(): Promise<void> {
   const { useWindowSessionReady } = await import('@/composables/common/useWindowSessionReady')
   const session = useWindowSessionReady()
-  for (let attempt = 1; attempt <= MOBILE_SESSION_RECOVERY_ATTEMPTS; attempt += 1) {
+  for (let attempt = 1; attempt <= COLD_START_SESSION_RECOVERY_ATTEMPTS; attempt += 1) {
     const state = await session.ensureSessionReady().catch((err) => {
-      logger.warn(`Mobile cold-start session recovery attempt ${attempt} failed:`, err)
+      logger.warn(`Cold-start session recovery attempt ${attempt} failed:`, err)
       return 'error' as const
     })
-    if (state === 'ready') return
-    if (attempt < MOBILE_SESSION_RECOVERY_ATTEMPTS) {
+    if (state === 'ready') {
+      if (attempt > 1) logger.info(`Cold-start session recovered on attempt ${attempt}`)
+      return
+    }
+    logger.info(`Cold-start session recovery attempt ${attempt}: ${state}`)
+    if (attempt < COLD_START_SESSION_RECOVERY_ATTEMPTS) {
       await new Promise((resolve) => setTimeout(resolve, attempt * 1000))
     }
   }
@@ -478,13 +486,10 @@ onMounted(async () => {
   const skipMatrixInit = isNonMatrixWindow()
   if (!skipMatrixInit) {
     await initOfflineQueue()
-    if (isMobilePlatform.value) {
-      // D12：移动端冷启动（整页 reload / WebView 进程被回收后重建）不经过任何窗口级
-      // 会话就绪入口，若不在这里主动恢复，页面会停在「已登录但无 client」：路由放行、
-      // 页面可见，但 getClient() 恒为 null，sync / crypto 都不会启动。
-      // ready 是终态，其余状态有界退避重试（覆盖启动早期瞬时 IPC/DB 失败）。
-      void recoverMobileSessionWithRetry()
-    }
+    // D12：冷启动（整页 reload / WebView 进程重建）不经过任何登录或窗口级恢复入口。
+    // 这里主动恢复一次；两个平台都要跑（桌面 home 的整页 reload 同样无人恢复）。
+    // 无会话时 `recoverColdStartSession` 立即返回，不会在登录页空转。
+    void recoverColdStartSession()
   }
   await requestIOSNetworkPermission()
   initPlatformStyles()
