@@ -108,3 +108,12 @@ const handleBubbleStyleChange = (value: string | number) => {
   )
 }
 </script>
+
+<style scoped lang="scss">
+/* 单选的可点区域必须够 44px：vant 默认 40px，差 4px 就会在实机上点不中 */
+:deep(.van-radio) {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+</style>

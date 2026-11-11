@@ -37,7 +37,7 @@
         <!-- 账号 -->
         <div class="flex flex-warp gap-2 items-center">
           <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo?.account }}</span>
-          <span v-clickable v-if="isMyPage" @click="toMyQRCode" class="pe-15px">
+          <span v-clickable v-if="isMyPage" @click="toMyQRCode" class="p-[15px] -m-[15px]">
             <img
               class="w-14px h-14px dark:invert"
               src="@/assets/mobile/my/qr-code.webp"
@@ -81,7 +81,7 @@
           round
           size="small"
           v-if="props.isMyPage && !isBotUser(uid)"
-          class="font-bold px-4 py-10px text-12px">
+          class="font-bold px-4 py-10px text-12px min-h-44px">
           {{ t('mobile_personal_info.edit_profile') }}
         </van-button>
         <van-button

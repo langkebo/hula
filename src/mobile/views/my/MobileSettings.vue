@@ -292,6 +292,8 @@ const { isLoggingOut, handleLogout } = useMobileLogout()
 
 :deep(.van-cell) {
   background: var(--tjg-surface-panel);
+  /* 触控下限 44px：vant 默认内容高度约 34px，与 iOS HIG / Material 的下限差 10px */
+  min-height: 44px;
 }
 
 :deep(.van-cell::after) {

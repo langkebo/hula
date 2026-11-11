@@ -1,7 +1,7 @@
 <template>
   <div
     class="header-bar tjg-glass tjg-glass--nav w-full h-[56px] flex items-center gap-8px z-2 text-[--tjg-text-primary]">
-    <div v-clickable @click="handleBack" class="flex items-center shrink-0">
+    <div v-clickable @click="handleBack" class="flex items-center shrink-0 min-h-[44px]">
       <svg class="iconpark-icon w-24px h-24px ms-16px p-5px">
         <use href="#fanhui" class="text-foreground"></use>
       </svg>
@@ -12,10 +12,16 @@
       </div>
     </div>
     <div class="flex-1 min-w-0 flex items-center justify-center overflow-hidden">
+      <!-- 标题可点（查看房间信息），但文字盒只有 28×21：用伪元素纵向扩到 45px，
+           既满足 44px 触控下限，又不改变顶栏高度与视觉排版 -->
       <div
         v-clickable
         @click="handleRoomNameClick"
-        :class="props.isOfficial ? ['chat-room-name-official'] : ['chat-room-name']">
+        :class="[
+          'relative justify-center after:absolute after:inset-x-0 after:-inset-y-12px after:content-[\'\']',
+          props.isOfficial ? 'chat-room-name-official' : 'chat-room-name'
+        ]"
+        :style="{ minWidth: '44px' }">
         <div class="chat-room-name__text truncate whitespace-nowrap overflow-hidden text-foreground text-ellipsis">
           {{ props.roomName }}
         </div>

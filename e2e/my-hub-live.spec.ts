@@ -1,8 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { expect, type Page, test } from '@playwright/test'
-import { E2E_STORAGE_KEYS, WEB_SESSION_FALLBACK_STORAGE_KEY } from '../src/utils/storageKeys'
 import { loginOnMobileUi } from './support/androidDevice'
 import { autoDismissLocalUnlockGate, dismissLocalUnlockDialog } from './support/localUnlockGate'
+import {
+  MOBILE_APP_URL,
+  pushMobileRoute,
+  readMobileRoute,
+  registerMobileAccount,
+  seedE2EStorage
+} from './support/mobileHub'
 
 /**
  * 「我的」页（`/mobile/my`）的信息架构回归。
@@ -20,115 +26,17 @@ import { autoDismissLocalUnlockGate, dismissLocalUnlockDialog } from './support/
  * 默认不跑（需要可用 homeserver）：`TJG_MOBILE_LIVE=1` 开启。
  */
 
-const APP_URL = (process.env.TJG_MOBILE_APP_URL ?? 'http://127.0.0.1:5210').replace(/\/$/, '')
+const APP_URL = MOBILE_APP_URL
 const SKIP_REASON = process.env.TJG_MOBILE_LIVE ? null : '未设置 TJG_MOBILE_LIVE（需可用的本地 homeserver）'
 
 const PKG_VERSION = (
   JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
 ).version
 
-interface Account {
-  userId: string
-  accessToken: string
-  username: string
-  password: string
-}
-
-const registerAccount = async (prefix: string): Promise<Account> => {
-  const password = `Xhub!${Math.random().toString(36).slice(2, 10)}${Math.floor(Math.random() * 10)}`
-  let lastError = ''
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const username = `${prefix}${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`
-    const res = await fetch(`${APP_URL}/_matrix/client/v3/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, auth: { type: 'm.login.dummy' } })
-    })
-    if (res.ok) {
-      const data = (await res.json()) as { user_id: string; access_token: string }
-      return { userId: data.user_id, accessToken: data.access_token, username, password }
-    }
-    lastError = `HTTP ${res.status} ${await res.text()}`
-    await new Promise((resolve) => setTimeout(resolve, 500))
-  }
-  throw new Error(`注册账号失败: ${lastError}`)
-}
-
-type RouterSnapshot = { name?: unknown; path?: string }
-
-const readRoute = async (page: Page) =>
-  page.evaluate(() => {
-    const router = (
-      document.querySelector('#app') as
-        | (HTMLElement & {
-            __vue_app__?: { config: { globalProperties: { $router?: { currentRoute?: { value?: unknown } } } } }
-          })
-        | null
-    )?.__vue_app__?.config?.globalProperties?.$router
-    const raw = router?.currentRoute?.value as RouterSnapshot | undefined
-    return { name: typeof raw?.name === 'string' ? raw.name : null, path: raw?.path ?? null }
-  })
-
-const pushRoute = async (
-  page: Page,
-  target: unknown,
-  attempt = 0
-): Promise<{ name: string | null; path: string | null }> => {
-  try {
-    await page.evaluate(async (to) => {
-      const router = (
-        document.querySelector('#app') as
-          | (HTMLElement & {
-              __vue_app__?: { config: { globalProperties: { $router?: { push: (t: unknown) => Promise<unknown> } } } }
-            })
-          | null
-      )?.__vue_app__?.config?.globalProperties?.$router
-      if (!router) throw new Error('应用 router 实例不可达（$router 未挂载）')
-      try {
-        await router.push(to)
-      } catch {
-        // 重定向/导航中止会 reject，路由真相以 currentRoute 为准
-      }
-    }, target)
-  } catch (error) {
-    // 登录后 SPA 重定向尚在进行时，evaluate 会撞上 "Execution context was destroyed"
-    if (attempt < 3) {
-      await page.waitForTimeout(1500)
-      return pushRoute(page, target, attempt + 1)
-    }
-    throw error
-  }
-  await page.waitForTimeout(1200)
-  return readRoute(page)
-}
-
-/**
- * 播 e2e 标记（本套用例只验证「入口可达」，鉴权另有 authGuard 单测）。
- *
- * - `platform=mobile`：整页重载可能丢掉 `?platform=mobile`，此时 `detectAppPlatform()`
- *   会把纯浏览器判成桌面，守卫随之把用户踢到桌面登录页。
- * - `mockAuth`：开发态下 `sessionOrchestrator.hasAuthenticatedSession()` 会偶发读空
- *   （既有缺陷），导致导航被随机甩到登录页 —— 与本轮 UI 改动无关。
- */
-const seedE2EStorage = async (page: Page) =>
-  page.addInitScript(
-    ({ fallbackKey, e2eKeys }) => {
-      window.localStorage.setItem('guide', JSON.stringify({ isGuideCompleted: true }))
-      window.localStorage.setItem(fallbackKey, '1')
-      window.localStorage.setItem(e2eKeys.platform, 'mobile')
-      window.localStorage.setItem(e2eKeys.enabled, '1')
-      window.localStorage.setItem(e2eKeys.mockAuth, '1')
-    },
-    {
-      fallbackKey: WEB_SESSION_FALLBACK_STORAGE_KEY,
-      e2eKeys: E2E_STORAGE_KEYS
-    }
-  )
-
 /** 回到「我的」首屏并等待快捷入口渲染（客户端未就绪时首屏不渲染，按重试处理） */
 const gotoTab = async (page: Page, attempts = 3) => {
   for (let i = 0; i < attempts; i += 1) {
-    await pushRoute(page, { name: 'mobileMy' })
+    await pushMobileRoute(page, { name: 'mobileMy' })
     const visible = await page
       .locator('.m-quick-actions')
       .first()
@@ -144,16 +52,16 @@ const gotoTab = async (page: Page, attempts = 3) => {
 const clickQuickAction = async (page: Page, label: string) => {
   const item = page.locator('.m-quick-item').filter({ hasText: label }).first()
   await expect(item, `九宫格里找不到「${label}」`).toBeVisible({ timeout: 10_000 })
-  const before = (await readRoute(page)).path
+  const before = (await readMobileRoute(page)).path
   await item.click()
   await page.waitForTimeout(1500)
-  const after = await readRoute(page)
+  const after = await readMobileRoute(page)
   // 元素在首屏可视区内，原生 click 已足够；这里保留一次兜底派发，
   // 避免 glass 层的 hit-test 偶发拦截导致假失败。
   if (after.path === before) {
     await item.dispatchEvent('click')
     await page.waitForTimeout(1500)
-    return readRoute(page)
+    return readMobileRoute(page)
   }
   return after
 }
@@ -164,7 +72,7 @@ test.describe('我的页信息架构（S1）', () => {
   test.skip(Boolean(SKIP_REASON), SKIP_REASON ?? '')
 
   test('九宫格全部真实可达、设备管理 1 跳、首屏无编辑控件', async ({ page }) => {
-    const self = await registerAccount('myhub')
+    const self = await registerMobileAccount('myhub')
     // 导航失败时页面通常只在 console 留一句，这里收起来拼进断言，便于定位
     const pageErrors: string[] = []
     page.on('pageerror', (e) => pageErrors.push(`pageerror: ${e.message.slice(0, 200)}`))
@@ -249,13 +157,13 @@ test.describe('我的页信息架构（S1）', () => {
     await expect(devices, '首屏没有设备管理入口').toBeVisible({ timeout: 10_000 })
     await devices.dispatchEvent('click')
     await page.waitForTimeout(1500)
-    const landedDevices = await readRoute(page)
+    const landedDevices = await readMobileRoute(page)
     expect(landedDevices.path, `设备管理应 1 跳直达，实际落在 ${landedDevices.path}`).toBe('/mobile/mobileMy/devices')
 
     // ── 4) 版本号单源：设置页底部显示真实版本，不再是硬编码 v1.0.0
     // 用 path 而不是 name：桌面与移动两份路由表在 dev 下共存过，按 name 跳可能
     // 命中另一份表或匹配不到（实测落 404）。path 是平台内唯一的。
-    await pushRoute(page, '/mobile/mobileMy/settings')
+    await pushMobileRoute(page, '/mobile/mobileMy/settings')
     await expect(page.locator('.van-cell-group').first(), '设置页没渲染（可能落在 404）').toBeVisible({
       timeout: 20_000
     })
@@ -271,7 +179,7 @@ test.describe('我的页信息架构（S1）', () => {
    * 3. 表情包管理（255 行）此前**无路由无入口**，已注册路由并接入。
    */
   test('设置页：搜索命中、加密与表情包入口可达', async ({ page }) => {
-    const self = await registerAccount('myset')
+    const self = await registerMobileAccount('myset')
     await seedE2EStorage(page)
     await autoDismissLocalUnlockGate(page)
     await loginOnMobileUi(page, { appUrl: APP_URL, account: self.username, password: self.password })
@@ -282,7 +190,7 @@ test.describe('我的页信息架构（S1）', () => {
     // push 到同一路由不会重建组件（搜索词会残留并把列表 v-show 隐藏），
     // 所以每次进设置页都走这个 helper：先进入、再把搜索清空。
     const gotoSettings = async () => {
-      await pushRoute(page, '/mobile/mobileMy/settings')
+      await pushMobileRoute(page, '/mobile/mobileMy/settings')
       const input = page.locator('.van-search input').first()
       await input.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
       if (await input.isVisible().catch(() => false)) {
