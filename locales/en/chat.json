@@ -66,6 +66,7 @@
     "hint": "Enter a link to fetch its title and summary; on failure the raw link is sent",
     "send": "Send",
     "send_failed": "Failed to send link preview",
+    "blocked_encrypted": "This chat is end-to-end encrypted; link previews are disabled.",
     "disabled": "Link preview is disabled in settings. Enable it in preferences to use it."
   },
   "beacon": {

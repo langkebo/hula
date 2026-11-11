@@ -2,13 +2,24 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h, reactive } from 'vue'
 import LinkPreviewPane from '../LinkPreviewPane.vue'
 
-const { getUrlPreviewMock } = vi.hoisted(() => ({
-  getUrlPreviewMock: vi.fn()
+const { getUrlPreviewMock, isRoomEncryptedMock } = vi.hoisted(() => ({
+  getUrlPreviewMock: vi.fn(),
+  isRoomEncryptedMock: vi.fn()
 }))
 
 const settingStore = reactive({
   linkPreviewEnabled: true
 })
+
+const currentSessionRoomId = '!room:test'
+
+vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
+  matrixCryptoService: { isRoomEncrypted: isRoomEncryptedMock }
+}))
+
+vi.mock('@/stores/domains/widget/global', () => ({
+  useGlobalStore: () => ({ currentSessionRoomId })
+}))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -86,6 +97,8 @@ describe('LinkPreviewPane', () => {
   beforeEach(() => {
     settingStore.linkPreviewEnabled = true
     getUrlPreviewMock.mockReset()
+    isRoomEncryptedMock.mockReset()
+    isRoomEncryptedMock.mockResolvedValue(false)
   })
 
   it('rejects invalid urls without sending', async () => {
@@ -114,6 +127,18 @@ describe('LinkPreviewPane', () => {
 
     expect(getUrlPreviewMock).toHaveBeenCalledWith('https://example.com/a')
     expect(vmOf(wrapper).preview).toEqual({ url: 'https://example.com/a', title: 'Example' })
+    wrapper.unmount()
+  })
+
+  it('加密房间不请求服务端预览', async () => {
+    isRoomEncryptedMock.mockResolvedValueOnce(true)
+    const wrapper = mountPane()
+    await wrapper.find('input').setValue('https://example.com/a')
+    await wrapper.find('[data-test="link-preview-fetch"]').trigger('click')
+    await flushPromises()
+
+    expect(getUrlPreviewMock).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('chat.link_preview.blocked_encrypted')
     wrapper.unmount()
   })
 

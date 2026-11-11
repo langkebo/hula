@@ -1763,6 +1763,7 @@ export type I18nKeys = {
       "hint": "输入链接后可获取标题与摘要，获取失败时以纯链接发送",
       "send": "发送",
       "send_failed": "链接预览发送失败",
+      "blocked_encrypted": "该会话已端到端加密，链接预览已禁用",
       "disabled": "链接预览已在设置中关闭，可在偏好设置中重新开启"
     },
     "beacon": {
@@ -9024,6 +9025,7 @@ export type I18nKeyPaths =
   | "chat.link_preview.hint"
   | "chat.link_preview.send"
   | "chat.link_preview.send_failed"
+  | "chat.link_preview.blocked_encrypted"
   | "chat.link_preview.disabled"
   | "chat.beacon.live_location"
   | "chat.beacon.remaining_time"

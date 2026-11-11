@@ -67,9 +67,11 @@
 import { NButton, NDrawer, NDrawerContent, NInput } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { THUMBNAIL_SIZE_LINK_PREVIEW } from '@/common/constants'
+import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { MediaUrlPreview } from '@/services/matrix/media/mediaTypes'
 import { useSettingStore } from '@/stores/domains/settings/setting'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('LinkPreviewPane')
@@ -83,12 +85,14 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const settingStore = useSettingStore()
+const globalStore = useGlobalStore()
 
 const url = ref('')
 const preview = ref<MediaUrlPreview | null>(null)
 const fetching = ref(false)
 const submitting = ref(false)
 const fetchFailed = ref(false)
+const blockedByEncryption = ref(false)
 
 /** 补全协议并校验，非法时返回空串。 */
 const normalizedUrl = computed(() => {
@@ -123,13 +127,31 @@ const thumbnailUrl = computed(() => {
 })
 
 const statusText = computed(() => {
+  if (blockedByEncryption.value) return t('chat.link_preview.blocked_encrypted')
   if (fetching.value) return t('chat.link_preview.fetching')
   if (fetchFailed.value) return t('chat.link_preview.fetch_failed')
   return ''
 })
 
+/**
+ * 解密只发生在客户端；链接一旦交给服务端抓取，房间的加密承诺就被绕开了。
+ * 所有服务端抓取都必须先过这道闸门（含「获取预览」与「发送」两条路径）。
+ */
+const ensurePreviewAllowed = async (): Promise<boolean> => {
+  const roomId = globalStore.currentSessionRoomId
+  if (roomId && (await matrixCryptoService.isRoomEncrypted(roomId))) {
+    blockedByEncryption.value = true
+    preview.value = null
+    fetchFailed.value = false
+    return false
+  }
+  blockedByEncryption.value = false
+  return true
+}
+
 /** 拉取预览；失败返回 null，由调用方决定降级策略。 */
 const fetchPreview = async (target: string): Promise<MediaUrlPreview | null> => {
+  if (!(await ensurePreviewAllowed())) return null
   fetching.value = true
   try {
     const result = await matrixMediaService.getUrlPreview(target)
@@ -161,6 +183,7 @@ const reset = () => {
   url.value = ''
   preview.value = null
   fetchFailed.value = false
+  blockedByEncryption.value = false
 }
 
 watch(
