@@ -92,7 +92,7 @@ const mountPage = () =>
         VanCell: {
           props: ['title', 'label'],
           template:
-            '<div class="cell" @click="$emit(\'click\')">{{ title }}<slot name="icon" /><slot name="value" /><slot name="right-icon" /></div>'
+            '<div class="cell" @click="$emit(\'click\')"><slot name="title">{{ title }}</slot><slot name="icon" /><slot name="value" /><slot name="right-icon" /></div>'
         }
       }
     }
