@@ -36,7 +36,7 @@ export type EncryptionAlgorithm = 'm.megolm.v1.aes-sha2' | 'm.olm.v1.curve25519-
  * - 初始化/状态：initializeCrypto、getCryptoStatus
  * - 设备信任：getDevices、verifyDevice、unverifyDevice、getDeviceVerificationStatus、requestDeviceVerification
  * - 备份流程：setupKeyBackup、exportKeys、createRecoveryKeyFromPassphrase、createSecureBackup
- * - 房间加密：isRoomEncrypted、enableEncryption
+ * - 房间加密：isRoomEncrypted、getRoomEncryptionState、enableEncryption
  * - 密钥请求：createRoomKeyRequest
  */
 class MatrixCryptoService extends BaseMatrixService {

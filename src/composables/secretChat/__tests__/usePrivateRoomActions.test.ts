@@ -225,6 +225,30 @@ describe('usePrivateRoomActions', () => {
     }
   })
 
+  it('同一房间切换在途时，重复触发直接忽略（不重复确认、不重复发 state event）', async () => {
+    let resolveState!: (value: string) => void
+    mocks.isRoomEncrypted.mockResolvedValueOnce(false)
+    mocks.getRoomEncryptionState.mockReturnValueOnce(
+      new Promise<string>((resolve) => {
+        resolveState = resolve
+      })
+    )
+    const confirmEnableEncryption = vi.fn().mockResolvedValue(true)
+    const { togglePrivateRoom } = usePrivateRoomActions()
+
+    const first = togglePrivateRoom(session(), { confirmEnableEncryption })
+    const second = await togglePrivateRoom(session(), { confirmEnableEncryption })
+
+    expect(second).toBe(false)
+
+    await vi.waitFor(() => expect(mocks.getRoomEncryptionState).toHaveBeenCalledTimes(1))
+    resolveState('encrypted')
+    expect(await first).toBe(true)
+    expect(confirmEnableEncryption).toHaveBeenCalledTimes(1)
+    expect(mocks.enableEncryption).toHaveBeenCalledTimes(1)
+    expect(mocks.markRoomPrivate).toHaveBeenCalledTimes(1)
+  })
+
   it('已加密房间不再重复开启加密', async () => {
     mocks.isRoomEncrypted.mockResolvedValueOnce(true)
     const { togglePrivateRoom } = usePrivateRoomActions()

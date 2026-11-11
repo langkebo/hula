@@ -31,6 +31,13 @@ export interface TogglePrivateRoomOptions {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+/**
+ * 同一房间的在途切换。桌面菜单与移动端长按共用本 composable，
+ * 而「设为私密」最长会等待约 4 秒（加密状态轮询），期间重复点击必须直接忽略，
+ * 否则会重复弹「不可撤销」确认、重发 state event、重复写登记表。
+ */
+const inflightRoomIds = new Set<string>()
+
 /** 有界轮询，直到本地 room state 确认已加密；超时返回 false。 */
 const waitForEncryptionEffective = async (roomId: string): Promise<boolean> => {
   for (let attempt = 0; attempt < ENCRYPTION_CONFIRM_ATTEMPTS; attempt++) {
@@ -79,58 +86,65 @@ export const usePrivateRoomActions = () => {
     }
 
     const roomId = item.roomId
-    const marked = isPrivateRoom(roomId)
-    let encryptedNow = false
-
-    // 只能单向：Matrix 房间加密不可关闭，取消私密不撤销加密。
-    if (!marked) {
-      const alreadyEncrypted = await matrixCryptoService.isRoomEncrypted(roomId)
-      if (!alreadyEncrypted) {
-        if (options.confirmEnableEncryption && !(await options.confirmEnableEncryption())) {
-          return false
-        }
-        try {
-          await matrixCryptoService.enableEncryption(roomId)
-        } catch (e) {
-          logger.error('开启房间加密失败:', e)
-          showFeedback(t('home.secret_chat.encryption_failed'), 'error')
-          return false
-        }
-        // 发出 state event 不等于本地已生效：等到本地 room state 确认，
-        // 否则窗口期内发送的消息仍会明文出站，却被提示「已加密」。
-        if (!(await waitForEncryptionEffective(roomId))) {
-          logger.warn('房间加密已提交但本地状态未生效，跳过私密标记:', roomId)
-          showFeedback(t('home.secret_chat.encryption_not_effective'), 'warning')
-          return false
-        }
-        encryptedNow = true
-      }
-    }
+    if (inflightRoomIds.has(roomId)) return false
+    inflightRoomIds.add(roomId)
 
     try {
-      if (marked) {
-        await unmarkRoomPrivate(roomId)
-      } else {
-        await markRoomPrivate(roomId)
+      const marked = isPrivateRoom(roomId)
+      let encryptedNow = false
+
+      // 只能单向：Matrix 房间加密不可关闭，取消私密不撤销加密。
+      if (!marked) {
+        const alreadyEncrypted = await matrixCryptoService.isRoomEncrypted(roomId)
+        if (!alreadyEncrypted) {
+          if (options.confirmEnableEncryption && !(await options.confirmEnableEncryption())) {
+            return false
+          }
+          try {
+            await matrixCryptoService.enableEncryption(roomId)
+          } catch (e) {
+            logger.error('开启房间加密失败:', e)
+            showFeedback(t('home.secret_chat.encryption_failed'), 'error')
+            return false
+          }
+          // 发出 state event 不等于本地已生效：等到本地 room state 确认，
+          // 否则窗口期内发送的消息仍会明文出站，却被提示「已加密」。
+          if (!(await waitForEncryptionEffective(roomId))) {
+            logger.warn('房间加密已提交但本地状态未生效，跳过私密标记:', roomId)
+            showFeedback(t('home.secret_chat.encryption_not_effective'), 'warning')
+            return false
+          }
+          encryptedNow = true
+        }
       }
-      // 兼容镜像：旧逻辑读 session.hide，保留一个版本避免两处不一致
-      chatStore.updateSession(roomId, { hide: !marked })
-      if (hasTauriRuntime()) {
-        await invokeWithErrorHandler('hide_contact_command', {
-          data: { roomId, hide: !marked }
-        })
+
+      try {
+        if (marked) {
+          await unmarkRoomPrivate(roomId)
+        } else {
+          await markRoomPrivate(roomId)
+        }
+        // 兼容镜像：旧逻辑读 session.hide，保留一个版本避免两处不一致
+        chatStore.updateSession(roomId, { hide: !marked })
+        if (hasTauriRuntime()) {
+          await invokeWithErrorHandler('hide_contact_command', {
+            data: { roomId, hide: !marked }
+          })
+        }
+        const successKey = marked
+          ? 'menu.secret_chat_cancel'
+          : encryptedNow
+            ? 'menu.secret_chat_success_encrypted'
+            : 'menu.secret_chat_success'
+        showFeedback(t(successKey), 'success')
+        return true
+      } catch (e) {
+        logger.error('切换私密房间标记失败:', e)
+        showFeedback(String(e), 'error')
+        return false
       }
-      const successKey = marked
-        ? 'menu.secret_chat_cancel'
-        : encryptedNow
-          ? 'menu.secret_chat_success_encrypted'
-          : 'menu.secret_chat_success'
-      showFeedback(t(successKey), 'success')
-      return true
-    } catch (e) {
-      logger.error('切换私密房间标记失败:', e)
-      showFeedback(String(e), 'error')
-      return false
+    } finally {
+      inflightRoomIds.delete(roomId)
     }
   }
 
