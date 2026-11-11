@@ -14,9 +14,30 @@ import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('PrivateRoomActions')
 
+/**
+ * 等待房间加密在**本地 room state** 生效的轮询参数。
+ *
+ * `enableEncryption` 只发送 `m.room.encryption` state event，而 SDK 的出站加密
+ * 依据 `room.hasEncryptionStateEvent()`——本地 state 要等下一次 sync 才更新。
+ * 若不等待就标记私密成功，窗口期内发出的消息仍是明文，等于对用户说谎。
+ */
+const ENCRYPTION_CONFIRM_ATTEMPTS = 5
+const ENCRYPTION_CONFIRM_INTERVAL_MS = 1000
+
 export interface TogglePrivateRoomOptions {
   /** 用户确认「开启不可逆的房间加密」；返回 false 则放弃设为私密。 */
   confirmEnableEncryption?: () => Promise<boolean>
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+/** 有界轮询，直到本地 room state 确认已加密；超时返回 false。 */
+const waitForEncryptionEffective = async (roomId: string): Promise<boolean> => {
+  for (let attempt = 0; attempt < ENCRYPTION_CONFIRM_ATTEMPTS; attempt++) {
+    if (attempt > 0) await sleep(ENCRYPTION_CONFIRM_INTERVAL_MS)
+    if ((await matrixCryptoService.getRoomEncryptionState(roomId)) === 'encrypted') return true
+  }
+  return false
 }
 
 /**
@@ -70,12 +91,19 @@ export const usePrivateRoomActions = () => {
         }
         try {
           await matrixCryptoService.enableEncryption(roomId)
-          encryptedNow = true
         } catch (e) {
           logger.error('开启房间加密失败:', e)
           showFeedback(t('home.secret_chat.encryption_failed'), 'error')
           return false
         }
+        // 发出 state event 不等于本地已生效：等到本地 room state 确认，
+        // 否则窗口期内发送的消息仍会明文出站，却被提示「已加密」。
+        if (!(await waitForEncryptionEffective(roomId))) {
+          logger.warn('房间加密已提交但本地状态未生效，跳过私密标记:', roomId)
+          showFeedback(t('home.secret_chat.encryption_not_effective'), 'warning')
+          return false
+        }
+        encryptedNow = true
       }
     }
 

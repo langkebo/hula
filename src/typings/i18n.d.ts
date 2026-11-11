@@ -3135,6 +3135,7 @@ export type I18nKeys = {
       "single_only": "私密聊天仅支持单聊会话",
       "locked_hint": "私密聊天已锁定，请先解锁",
       "encryption_failed": "开启端到端加密失败，未设为私密",
+      "encryption_not_effective": "端到端加密已提交但尚未生效，请稍后重试；本次未设为私密",
       "encryption_confirm_title": "开启端到端加密",
       "encryption_confirm_message": "设为私密将同时开启端到端加密，此操作不可撤销，仅对此后发送的新消息生效。",
       "encryption_confirm_ok": "开启并设为私密",
@@ -10116,6 +10117,7 @@ export type I18nKeyPaths =
   | "home.secret_chat.single_only"
   | "home.secret_chat.locked_hint"
   | "home.secret_chat.encryption_failed"
+  | "home.secret_chat.encryption_not_effective"
   | "home.secret_chat.encryption_confirm_title"
   | "home.secret_chat.encryption_confirm_message"
   | "home.secret_chat.encryption_confirm_ok"

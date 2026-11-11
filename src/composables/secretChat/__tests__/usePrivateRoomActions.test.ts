@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   invoke: vi.fn(),
   hasTauriRuntime: vi.fn(),
   isRoomEncrypted: vi.fn(),
+  getRoomEncryptionState: vi.fn(),
   enableEncryption: vi.fn(),
   state: { configured: true, unlocked: true }
 }))
@@ -43,6 +44,7 @@ vi.mock('@/utils/AppHarness', () => ({ hasTauriRuntime: mocks.hasTauriRuntime })
 vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
   matrixCryptoService: {
     isRoomEncrypted: mocks.isRoomEncrypted,
+    getRoomEncryptionState: mocks.getRoomEncryptionState,
     enableEncryption: mocks.enableEncryption
   }
 }))
@@ -67,6 +69,7 @@ describe('usePrivateRoomActions', () => {
     mocks.unmarkRoomPrivate.mockResolvedValue(undefined)
     mocks.invoke.mockResolvedValue(undefined)
     mocks.isRoomEncrypted.mockResolvedValue(true)
+    mocks.getRoomEncryptionState.mockResolvedValue('encrypted')
     mocks.enableEncryption.mockResolvedValue(undefined)
   })
 
@@ -177,6 +180,47 @@ describe('usePrivateRoomActions', () => {
 
     expect(mocks.markRoomPrivate).not.toHaveBeenCalled()
     expect(ok).toBe(false)
+  })
+
+  it('本地加密状态生效后才标记私密（跨 sync 的窗口期不外泄明文）', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.isRoomEncrypted.mockResolvedValueOnce(false)
+      mocks.getRoomEncryptionState.mockResolvedValueOnce('unknown').mockResolvedValueOnce('encrypted')
+      const { togglePrivateRoom } = usePrivateRoomActions()
+
+      const pending = togglePrivateRoom(session())
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(await pending).toBe(true)
+      expect(mocks.markRoomPrivate).toHaveBeenCalledWith(SINGLE_ROOM)
+      expect(mocks.showFeedback).toHaveBeenCalledWith('已设为私密聊天，并开启端到端加密', 'success')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('加密已提交但本地状态超时未生效时，不标记私密并提示稍后重试', async () => {
+    vi.useFakeTimers()
+    try {
+      mocks.isRoomEncrypted.mockResolvedValueOnce(false)
+      mocks.getRoomEncryptionState.mockResolvedValue('unknown')
+      const { togglePrivateRoom } = usePrivateRoomActions()
+
+      const pending = togglePrivateRoom(session())
+      await vi.advanceTimersByTimeAsync(5000)
+
+      expect(await pending).toBe(false)
+      expect(mocks.enableEncryption).toHaveBeenCalledWith(SINGLE_ROOM)
+      expect(mocks.markRoomPrivate).not.toHaveBeenCalled()
+      expect(mocks.updateSession).not.toHaveBeenCalled()
+      expect(mocks.showFeedback).toHaveBeenCalledWith(
+        '端到端加密已提交但尚未生效，请稍后重试；本次未设为私密',
+        'warning'
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('已加密房间不再重复开启加密', async () => {

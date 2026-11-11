@@ -132,6 +132,7 @@
     "single_only": "Secret chat is only available for direct messages",
     "locked_hint": "Secret chat is locked. Unlock it first.",
     "encryption_failed": "Failed to enable end-to-end encryption; not set as private",
+    "encryption_not_effective": "End-to-end encryption was requested but has not taken effect yet. Try again shortly; this chat was not set as private",
     "encryption_confirm_title": "Enable end-to-end encryption",
     "encryption_confirm_message": "Making this chat private also enables end-to-end encryption. This cannot be undone and only affects new messages.",
     "encryption_confirm_ok": "Enable and set private",
