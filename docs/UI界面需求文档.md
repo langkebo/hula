@@ -1159,7 +1159,7 @@ Tauri 能力包括文件系统、窗口、托盘、截图、系统通知、深�
 | `/search` | 全局搜索承接页 |
 | `/friendsList`、`/roomList`、`/spaceList` | 旧路径重定向到 `/friend`、`/room`、`/space` |
 | `/settings?tab=...` | 设置页 |
-| `/general`、`/loginSetting`、`/manageStore` | 重定向到 `/settings?tab=preferences` |
+| `/general`、`/loginSetting` | 重定向到 `/settings?tab=preferences` |
 | `/notification` | 重定向到 `/settings?tab=notifications` |
 | `/shortcut` | 重定向到 `/settings?tab=keyboard` |
 | `/account`、`/threepid` | 重定向到 `/settings?tab=account` |
@@ -1170,9 +1170,9 @@ Tauri 能力包括文件系统、窗口、托盘、截图、系统通知、深�
 | `/encryption` | 重定向到 `/settings?tab=encryption` |
 | `/help-about` | 重定向到 `/settings?tab=helpAbout` |
 | `/fileManager`、`/previewFile` | 文件管理与文件预览 |
-| `/chat-history`、`/multiMsg`、`/alone` | 聊天辅助窗口 |
+| `/chat-history`、`/multiMsg` | 聊天辅助窗口 |
 | `/secretChat` | 私密会话列表（解锁后进入） |
-| `/rtcCall`、`/sharedScreen` | 通话与屏幕共享 |
+| `/rtcCall` | 通话窗口（屏幕共享走同一窗口，不再单独设 `/sharedScreen`） |
 | `/robot`、`/chat` | AI 助手与 AI 对话页（`/chat` 为 `/robot` 的子路由） |
 | `/dynamic`、`/dynamic/:id`、`/dynamicDetail` | 动态与动态详情 |
 | `/trendradar`、`/mail`、`/onlineStatus`、`/about` | 扩展功能与辅助窗口 |
