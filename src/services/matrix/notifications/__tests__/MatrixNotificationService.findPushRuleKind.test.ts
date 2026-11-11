@@ -13,7 +13,7 @@ describe('FT-106: findPushRuleKind 通过 rules.global 访问规则', () => {
   it('findPushRuleKind 方法体引用 rules.global 而非顶层 rules[kind]', () => {
     // 提取 findPushRuleKind 方法体
     const methodMatch = sourceContent.match(/private async findPushRuleKind[\s\S]*?\n {2}\}/)
-    expect(methodMatch).toBeTruthy()
+    expect(methodMatch).toBeDefined()
     const methodBody = methodMatch![0]
 
     // 应该通过 rules.global 访问（或 rules.global?.[kind]）

@@ -293,8 +293,8 @@ describe('MatrixReceiptService', () => {
 
       // 通过发送路径触发 manager 缓存
       await matrixReceiptService.sendReadMarker('!room:id', '$event')
-      expect((matrixReceiptService as any).cachedClient).toBeTruthy()
-      expect((matrixReceiptService as any).cachedManager).toBeTruthy()
+      expect((matrixReceiptService as any).cachedClient).not.toBeNull()
+      expect((matrixReceiptService as any).cachedManager).not.toBeNull()
 
       // 清理
       matrixReceiptService.clearCache()

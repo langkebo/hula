@@ -414,7 +414,7 @@ describe('load / cache round trip', () => {
 
   it('writes under a per-user key derived from the account-data type', () => {
     cacheInvitePolicy(policy({ mode: 'blocklist' }), UID)
-    expect(localStorage.getItem(invitePolicyCacheKey(UID))).toBeTruthy()
+    expect(localStorage.getItem(invitePolicyCacheKey(UID))).not.toBeNull()
     // 不再写全局 key：否则同设备换账号会读到别人的策略
     expect(localStorage.getItem(INVITE_POLICY_ACCOUNT_DATA_TYPE)).toBeNull()
   })

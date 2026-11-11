@@ -74,7 +74,7 @@ describe('QR 登录协议一致性（MSC4108）', () => {
       expect(response.status).toBe(200)
       const body = await response.json()
       expect(body.url).toBe(`${MSC4108_RENDEZVOUS_URL}/session-123`)
-      expect(response.headers.get('ETag')).toBeTruthy()
+      expect(response.headers.get('ETag')).not.toBeNull()
     })
 
     it('GET /rendezvous/{id} 轮询数据返回 200 + text/plain', async () => {
@@ -182,7 +182,7 @@ describe('QR 登录协议一致性（MSC4108）', () => {
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.login_token).toBeTruthy()
+      expect(body.login_token).toMatch(/\S+/)
       expect(body.expires_in_ms).toBe(60000)
     })
 
@@ -210,7 +210,7 @@ describe('QR 登录协议一致性（MSC4108）', () => {
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.access_token).toBeTruthy()
+      expect(body.access_token).toMatch(/\S+/)
       expect(body.user_id).toBe('@user:hs.example.com')
     })
   })

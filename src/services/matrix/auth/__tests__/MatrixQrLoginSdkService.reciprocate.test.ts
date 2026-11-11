@@ -116,7 +116,7 @@ describe('MatrixQrLoginSdkService.reciprocateLogin qr_token path (FT-091)', () =
 
     // 提取 reciprocateLogin 方法体
     const reciprocateMatch = sourceContent.match(/async reciprocateLogin[\s\S]*?\n {2}\}/)
-    expect(reciprocateMatch).toBeTruthy()
+    expect(reciprocateMatch).toBeDefined()
     const reciprocateBody = reciprocateMatch![0]
 
     // 应引用 L3 常量
@@ -134,7 +134,7 @@ describe('MatrixQrLoginSdkService.postJson 使用 SDK HTTP 基础设施（FT-087
   it('postJson 函数体引用 matrixHttpClient 而非直接 fetch', () => {
     // 提取 postJson 函数体
     const postJsonMatch = helpersContent.match(/async function postJson[\s\S]*?\n}/)
-    expect(postJsonMatch).toBeTruthy()
+    expect(postJsonMatch).toBeDefined()
     const postJsonBody = postJsonMatch![0]
 
     // 应引用 matrixHttpClient（走 SDK 基础设施：重试、限流、URL 解析）

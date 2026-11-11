@@ -87,7 +87,7 @@ describe('SynapseOneTimeInviteExtensionService（F-5 / B-9）', () => {
   it('claim 被服务端拒绝（403 已使用）时抛错', async () => {
     reply(false, 403, { errcode: 'M_FORBIDDEN', error: 'Invite token has already been used' })
 
-    await expect(synapseOneTimeInviteService.claim('tok')).rejects.toBeTruthy()
+    await expect(synapseOneTimeInviteService.claim('tok')).rejects.toThrow()
   })
 
   it('claim 响应缺 room_id 时返回 null（由上层决定不跳转）', async () => {

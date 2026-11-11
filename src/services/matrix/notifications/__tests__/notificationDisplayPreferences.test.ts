@@ -121,7 +121,7 @@ describe('load / save round trip', () => {
 
   it('writes under the documented storage key', () => {
     saveNotificationDisplayPreferences(prefs({ priority: 'low' }))
-    expect(localStorage.getItem(NOTIFICATION_DISPLAY_PREFERENCES_STORAGE_KEY)).toBeTruthy()
+    expect(localStorage.getItem(NOTIFICATION_DISPLAY_PREFERENCES_STORAGE_KEY)).not.toBeNull()
   })
 
   it('recovers from corrupt JSON', () => {

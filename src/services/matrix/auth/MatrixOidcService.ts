@@ -1,7 +1,7 @@
-import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { requireSubtleCrypto } from '@/utils/webCompat'
 import { matrixClientService } from '../MatrixClientService'
+import { matrixHttpClient } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
 
 const logger = createLogger('MatrixOidcService')
@@ -60,8 +60,8 @@ class MatrixOidcService {
 
       const url = `${homeserverUrl}${MATRIX_PATHS.WELL_KNOWN.OIDC_DISCOVERY}`
 
-      // homeserver 由 env/用户配置（动态 host）
-      const discovery = await HttpClient.get<OidcDiscoveryDocument>(url, { allowDynamicHost: true })
+      // 绝对 URL 由 MatrixHttpClient 原样透传（不参与 homeserver 前缀拼接）
+      const discovery = await matrixHttpClient.request<OidcDiscoveryDocument>('GET', url)
       this.discovery = discovery
       logger.info(`[MatrixOidcService] OIDC discovered successfully. Issuer: ${discovery.issuer}`)
       return discovery
@@ -251,21 +251,18 @@ class MatrixOidcService {
     try {
       logger.info(`[MatrixOidcService] Exchanging OIDC token for Matrix token`)
 
-      const result = await HttpClient.post<{
+      const result = await matrixHttpClient.request<{
         user_id: string
         access_token: string
         device_id: string
         refresh_token?: string
-      }>(
-        `${homeserverUrl}/_matrix/client/v3/oidc/token`,
-        {
+      }>('POST', `${homeserverUrl}/_matrix/client/v3/oidc/token`, {
+        body: {
           grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
           oidc_access_token: oidcAccessToken,
           oidc_refresh_token: oidcRefreshToken
-        },
-        // homeserver 由 env/用户配置（动态 host）
-        { allowDynamicHost: true }
-      )
+        }
+      })
 
       logger.info(`[MatrixOidcService] OIDC to Matrix token exchange successful`)
       return result

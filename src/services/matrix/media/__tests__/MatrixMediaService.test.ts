@@ -141,8 +141,8 @@ describe('MatrixMediaService', () => {
           }
         }
       })
-      expect(result.encryptedFile.hashes.sha256).toBeTruthy()
-      expect(result.encryptedFile.iv).toBeTruthy()
+      expect(result.encryptedFile.hashes.sha256).toMatch(/\S+/)
+      expect(result.encryptedFile.iv).toMatch(/\S+/)
     })
   })
 

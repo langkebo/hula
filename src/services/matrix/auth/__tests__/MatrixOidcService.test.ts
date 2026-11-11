@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
-import { HttpClient } from '@/utils/HttpClient'
+import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 import matrixClientService from '../../MatrixClientService'
 import { matrixOidcService } from '../MatrixOidcService'
 
@@ -19,7 +19,7 @@ setupMswServer(
       subject_types_supported: ['public']
     })
   }),
-  // MSW handler for exchangeOidcForMatrixToken — still used via HttpClient.post()
+  // MSW handler for exchangeOidcForMatrixToken — 传输层经 MatrixHttpClient 收敛
   http.post(`${TEST_BASE_URL}/_matrix/client/v3/oidc/token`, async ({ request }) => {
     const body = (await request.json()) as Record<string, string>
     if (body?.grant_type === 'urn:matrix:oidc:grant-type:token-exchange') {
@@ -46,29 +46,13 @@ vi.mock('@tauri-apps/plugin-log', () => ({
   error: vi.fn()
 }))
 
-// Mock HttpClient for exchangeOidcForMatrixToken verification
-const mockHttpClientPost = vi.fn()
-vi.mock('@/utils/HttpClient', () => ({
-  HttpClient: {
-    post: (...args: unknown[]) => mockHttpClientPost(...args),
-    get: vi.fn(),
-    head: vi.fn(),
-    downloadBytes: vi.fn(),
-    streamResponse: vi.fn()
-  },
-  HttpClientError: class extends Error {
-    status: number
-    statusText: string
-    body: string
-    constructor(message: string, status: number, statusText: string, body: string) {
-      super(message)
-      this.name = 'HttpClientError'
-      this.status = status
-      this.statusText = statusText
-      this.body = body
-    }
-  }
-}))
+// Mock 传输层入口：OIDC discovery 与 token exchange 都经 matrixHttpClient.request 发出
+vi.mock('@/services/matrix/MatrixHttpClient', async () => {
+  const actual = await vi.importActual<typeof import('@/services/matrix/MatrixHttpClient')>(
+    '@/services/matrix/MatrixHttpClient'
+  )
+  return { ...actual, matrixHttpClient: { request: vi.fn() } }
+})
 
 const resetOidcServiceState = () => {
   const service = matrixOidcService as unknown as {
@@ -96,7 +80,7 @@ describe('MatrixOidcService', () => {
   })
 
   it('should discover oidc and generate authorization url', async () => {
-    vi.mocked(HttpClient.get).mockResolvedValue({
+    vi.mocked(matrixHttpClient.request).mockResolvedValue({
       issuer: 'https://issuer.example.com',
       authorization_endpoint: 'https://issuer.example.com/auth',
       token_endpoint: 'https://issuer.example.com/token',
@@ -220,19 +204,20 @@ describe('MatrixOidcService — handleCallback migrated to SDK OidcManager.token
   })
 })
 
-describe('MatrixOidcService — exchangeOidcForMatrixToken migrated to HttpClient.post()', () => {
+describe('MatrixOidcService — exchangeOidcForMatrixToken 经 MatrixHttpClient.request()', () => {
+  const mockRequest = vi.mocked(matrixHttpClient.request)
+
   beforeEach(() => {
     vi.clearAllMocks()
     sessionStorage.clear()
     resetOidcServiceState()
-    // Reset HttpClient mock for each test
-    vi.mocked(mockHttpClientPost).mockReset()
+    mockRequest.mockReset()
   })
 
-  it('should call HttpClient.post() with correct token-exchange params', async () => {
+  it('should call matrixHttpClient.request() with correct token-exchange params', async () => {
     sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
 
-    mockHttpClientPost.mockResolvedValue({
+    mockRequest.mockResolvedValue({
       user_id: '@oidc:example.com',
       access_token: 'matrix-abc',
       device_id: 'DEVICE-XYZ',
@@ -244,25 +229,23 @@ describe('MatrixOidcService — exchangeOidcForMatrixToken migrated to HttpClien
       'oidc-refresh-token-value'
     )
 
-    expect(mockHttpClientPost).toHaveBeenCalledWith(
-      `${TEST_BASE_URL}/_matrix/client/v3/oidc/token`,
-      {
+    expect(mockRequest).toHaveBeenCalledWith('POST', `${TEST_BASE_URL}/_matrix/client/v3/oidc/token`, {
+      body: {
         grant_type: 'urn:matrix:oidc:grant-type:token-exchange',
         oidc_access_token: 'oidc-access-token-value',
         oidc_refresh_token: 'oidc-refresh-token-value'
-      },
-      { allowDynamicHost: true }
-    )
+      }
+    })
     expect(result?.user_id).toBe('@oidc:example.com')
     expect(result?.access_token).toBe('matrix-abc')
     expect(result?.device_id).toBe('DEVICE-XYZ')
     expect(result?.refresh_token).toBe('matrix-refresh-xyz')
   })
 
-  it('should handle HttpClientError from token exchange gracefully', async () => {
+  it('should handle transport error from token exchange gracefully', async () => {
     sessionStorage.setItem('oidc_homeserver_url', TEST_BASE_URL)
 
-    mockHttpClientPost.mockRejectedValue(new Error('Network error'))
+    mockRequest.mockRejectedValue(new Error('Network error'))
 
     const result = await matrixOidcService.exchangeOidcForMatrixToken('oidc-access-token-value')
 

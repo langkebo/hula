@@ -64,6 +64,13 @@ export async function authedRequestWithPath<T>(
 }
 
 const logger = createLogger('MatrixHttpClient')
+
+/** 媒体/文件下载的默认超时（与旧 `HttpClient` 的 30s 对齐，避免下载悬挂） */
+const MATRIX_DOWNLOAD_TIMEOUT_MS = 30_000
+
+/** 绝对 URL（媒体下载、OIDC 端点）不参与 SDK 的 homeserver 前缀拼接 */
+const ABSOLUTE_URL_RE = /^https?:\/\//i
+
 class MatrixHttpClient {
   private hasWarnedAiDisabled = false
 
@@ -149,7 +156,9 @@ class MatrixHttpClient {
       ? Object.fromEntries(Object.entries(requestOptions.queryParams).map(([k, v]) => [k, String(v)]))
       : undefined
 
-    if (client) {
+    // 绝对 URL（OIDC 端点、媒体地址）不是 homeserver 相对路径，
+    // 交给 SDK 的 authedRequestWithPrefix 会被二次拼接前缀 ⇒ 必须走下面的原始传输。
+    if (client && !ABSOLUTE_URL_RE.test(requestPath)) {
       // 经 SDK manager 统一入口：内部自动处理 accessToken / baseUrl，
       // 并按 KNOWN_PREFIXES 剥离路径中已有的完整前缀，避免二次拼接默认 v3 前缀。
       const requester = client.getRoomManager() as MatrixAuthedRequestWithPrefixInvoker
@@ -237,6 +246,44 @@ class MatrixHttpClient {
    */
   async uploadRaw<T>(path: string, body: BodyInit, options: MatrixRawRequestOptions = {}): Promise<T> {
     return performRawUpload<T>(path, body, options)
+  }
+
+  /**
+   * 下载**原始字节**（媒体/文件）。
+   *
+   * 与 {@link request} 共用同一条底层传输（`getRuntimeAwareFetch`：限流/重试/原生通道回退），
+   * 只是不做 JSON 解析。认证头由调用点按需传入（query token / MSC3916 header）。
+   *
+   * @throws {MatrixError} 非 2xx 时抛出（经 `createMatrixTransportError` 归一化，带 `httpStatus`）。
+   */
+  async downloadRaw(
+    url: string,
+    options: { headers?: Record<string, string>; timeoutMs?: number } = {}
+  ): Promise<ArrayBuffer> {
+    const timeoutMs = options.timeoutMs ?? MATRIX_DOWNLOAD_TIMEOUT_MS
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const init: RequestInit = { method: 'GET', signal: controller.signal }
+      if (options.headers) {
+        init.headers = options.headers
+      }
+      const response = await getRuntimeAwareFetch()(url, init)
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '')
+        throw createMatrixTransportError({
+          status: response.status,
+          statusText: response.statusText,
+          bodyText: errorText,
+          headers: response.headers,
+          method: 'GET',
+          url
+        })
+      }
+      return await response.arrayBuffer()
+    } finally {
+      clearTimeout(timer)
+    }
   }
 
   /**

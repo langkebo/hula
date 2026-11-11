@@ -36,6 +36,15 @@ class MatrixContactService {
     return err instanceof Error && err.message === ERROR_CLIENT_NOT_INITIALIZED_EN
   }
 
+  /**
+   * 区分「查无此人」与真实故障：404 / `M_NOT_FOUND` 是搜索的正常结果，
+   * 5xx 与网络错误才需要按异常上报，避免把故障淹没在 debug 日志里。
+   */
+  private isNotFoundError(err: unknown): boolean {
+    const candidate = err as { httpStatus?: number; errcode?: string } | null
+    return candidate?.httpStatus === 404 || candidate?.errcode === 'M_NOT_FOUND'
+  }
+
   private getCurrentMatrixUserId(): string {
     return matrixClientService.getUserId() || matrixClientService.getClient()?.getUserId?.() || ''
   }
@@ -132,8 +141,12 @@ class MatrixContactService {
             })
           }
         } catch (err) {
-          // profile 不存在属正常结果（用户未注册/无资料），记录 debug 便于排查而不误报警。
-          logger.debug(`[MatrixContact] 直接 profile 查询无结果: ${trimmedQuery}`, err)
+          if (this.isNotFoundError(err)) {
+            // profile 不存在属正常结果（用户未注册/无资料），记录 debug 便于排查而不误报警。
+            logger.debug(`[MatrixContact] 直接 profile 查询无结果: ${trimmedQuery}`, err)
+          } else {
+            logger.warn(`[MatrixContact] 直接 profile 查询失败（非 404）: ${trimmedQuery}`, err)
+          }
         }
       }
 
@@ -154,8 +167,12 @@ class MatrixContactService {
             }
           }
         } catch (err) {
-          // profile 不存在属正常结果（用户未注册/无资料），记录 debug 便于排查而不误报警。
-          logger.debug(`[MatrixContact] localpart 构造 profile 查询无结果: ${trimmedQuery}`, err)
+          if (this.isNotFoundError(err)) {
+            // profile 不存在属正常结果（用户未注册/无资料），记录 debug 便于排查而不误报警。
+            logger.debug(`[MatrixContact] localpart 构造 profile 查询无结果: ${trimmedQuery}`, err)
+          } else {
+            logger.warn(`[MatrixContact] localpart 构造 profile 查询失败（非 404）: ${trimmedQuery}`, err)
+          }
         }
       }
 
@@ -166,6 +183,10 @@ class MatrixContactService {
           this.hasLoggedSearchBeforeClientReady = true
           logger.info('[MatrixContact] Matrix client 未就绪，返回空搜索结果')
         }
+        return []
+      }
+      if (this.isNotFoundError(err)) {
+        logger.debug(`[MatrixContact] 用户目录搜索无结果: ${query}`, err)
         return []
       }
       logger.error(`[MatrixContact] Failed to search users: ${err}`)

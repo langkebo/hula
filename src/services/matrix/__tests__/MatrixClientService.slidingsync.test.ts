@@ -131,14 +131,14 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
       await expect(matrixClientService.initialize(configWithoutToken)).resolves.not.toThrow()
 
       const client = matrixClientService.getClient()
-      expect(client).toBeTruthy()
+      expect(client).not.toBeNull()
     })
 
     it('应该在有 accessToken 的情况下初始化', async () => {
       await expect(matrixClientService.initialize(testConfig)).resolves.not.toThrow()
 
       const client = matrixClientService.getClient()
-      expect(client).toBeTruthy()
+      expect(client).not.toBeNull()
     })
 
     it('不应该在 initialize() 阶段创建 SlidingSync', async () => {
@@ -185,7 +185,7 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
       await matrixClientService.startClient()
 
       const slidingSync = matrixClientService.getSlidingSync()
-      expect(slidingSync).toBeTruthy()
+      expect(slidingSync).not.toBeNull()
     })
 
     it('应该通过 startClient 选项把 SlidingSync 交给 SDK', async () => {
@@ -295,8 +295,8 @@ describe('MatrixClientService - SlidingSync 初始化修复', () => {
       const initCalls = vi.mocked(createClient).mock.calls
       const preInitCall = initCalls.find((c) => !(c[0] as { deviceId?: string }).deviceId)
       const tokenInitCall = initCalls.find((c) => (c[0] as { deviceId?: string }).deviceId === 'RESTOREDEVICE')
-      expect(preInitCall).toBeTruthy()
-      expect(tokenInitCall).toBeTruthy()
+      expect(preInitCall).toBeDefined()
+      expect(tokenInitCall).toBeDefined()
       // 不应出现「先无 deviceId 的 loginWithToken init，再带 deviceId 的二次 init」
       expect(initCalls.length).toBe(2)
 

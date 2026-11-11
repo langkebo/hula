@@ -131,6 +131,17 @@ async function toHttpClientError(response: Response, method: string, url: string
   )
 }
 
+/**
+ * 通用 HTTP 客户端（host allowlist + 超时 + 限流包装的 `runtimeFetch`）。
+ *
+ * 使用边界（S11 传输层收敛）：
+ * - **Matrix 协议域禁止使用**。`src/services/matrix/**` 内的请求必须走
+ *   `matrixHttpClient`（`request` / `uploadRaw` / `downloadRaw`），以便复用 SDK 的
+ *   前缀解析、鉴权与错误归一化；该类只保留给**非 Matrix 的第三方端点**
+ *   （更新检查、AI provider、翻译兜底、图片/音频直链等）。
+ * - 新增第三方调用也应优先直接使用 `getRuntimeAwareFetch()`；本类是为这些存量
+ *   调用点保留的 allowlist 层，后续逐步下线。
+ */
 export class HttpClient {
   static async get<T = unknown>(url: string, config?: HttpClientConfig): Promise<T> {
     const response = await fetchWithTimeout(

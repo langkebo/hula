@@ -9,8 +9,13 @@ import {
   type MatrixEncryptedAttachmentLike,
   matrixAttachmentDecryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
-import { HttpClient, HttpClientError } from '@/utils/HttpClient'
+import { matrixHttpClient } from '../MatrixHttpClient'
 import type { MatrixClient } from '../sdk'
+
+/** 归一化错误里是否带 404（`createMatrixTransportError` 统一写入 `httpStatus`） */
+function isNotFoundError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as { httpStatus?: unknown }).httpStatus === 404
+}
 
 /** 解析媒体下载 URL
  */
@@ -48,14 +53,12 @@ export async function downloadFileBytes(
   const accessToken = client.getAccessToken()
   if (accessToken && downloadUrl.startsWith(client.getHomeserverUrl())) {
     try {
-      const buffer = await HttpClient.downloadBytes(downloadUrl, {
-        ...(accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {}),
-        // homeserver 由 env/用户配置（动态 host）
-        allowDynamicHost: true
+      const buffer = await matrixHttpClient.downloadRaw(downloadUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` }
       })
       return new Uint8Array(buffer)
     } catch (err) {
-      if (err instanceof HttpClientError && err.status === 404 && accessToken) {
+      if (isNotFoundError(err) && accessToken) {
         // Fallback: try authenticated download endpoint (MSC3916)
         //
         // 该 URL 由 SDK 的 media manager 按路由表构建（`/_matrix/client/v1/media/download/...`），
@@ -63,9 +66,8 @@ export async function downloadFileBytes(
         // 也曾经因为少一个 `/` 拼成 `hs.example.com_matrix/...`，使这条兜底永远 404。
         try {
           const authDownloadUrl = client.getMediaManager().getDownloadUrl(mediaUrl, { useAuthentication: true })
-          const buffer = await HttpClient.downloadBytes(authDownloadUrl, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-            allowDynamicHost: true
+          const buffer = await matrixHttpClient.downloadRaw(authDownloadUrl, {
+            headers: { Authorization: `Bearer ${accessToken}` }
           })
           return new Uint8Array(buffer)
         } catch {
@@ -74,7 +76,7 @@ export async function downloadFileBytes(
         // Last fallback: access_token in query (only if all else fails)
         const separator = downloadUrl.includes('?') ? '&' : '?'
         const queryUrl = `${downloadUrl}${separator}access_token=${encodeURIComponent(accessToken)}`
-        const buffer = await HttpClient.downloadBytes(queryUrl, { allowDynamicHost: true })
+        const buffer = await matrixHttpClient.downloadRaw(queryUrl)
         return new Uint8Array(buffer)
       }
       throw err
@@ -82,7 +84,7 @@ export async function downloadFileBytes(
   }
 
   // downloadUrl 可能为 homeserver 或外部媒体地址（动态 host）
-  const buffer = await HttpClient.downloadBytes(downloadUrl, { allowDynamicHost: true })
+  const buffer = await matrixHttpClient.downloadRaw(downloadUrl)
   return new Uint8Array(buffer)
 }
 

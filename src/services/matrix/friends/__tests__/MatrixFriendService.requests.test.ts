@@ -12,7 +12,7 @@ describe('FT-107: getIncomingRequests/getOutgoingRequests 使用 normalizeSynaps
 
   it('getIncomingRequests 回退路径使用 normalizeSynapseFriendRequest 而非 as unknown as', () => {
     const methodMatch = sourceContent.match(/async getIncomingRequests[\s\S]*?\n {2}\}/)
-    expect(methodMatch).toBeTruthy()
+    expect(methodMatch).toBeDefined()
     const methodBody = methodMatch![0]
 
     // 应该使用 normalizeSynapseFriendRequest
@@ -23,7 +23,7 @@ describe('FT-107: getIncomingRequests/getOutgoingRequests 使用 normalizeSynaps
 
   it('getOutgoingRequests 回退路径使用 normalizeSynapseFriendRequest 而非 as unknown as', () => {
     const methodMatch = sourceContent.match(/async getOutgoingRequests[\s\S]*?\n {2}\}/)
-    expect(methodMatch).toBeTruthy()
+    expect(methodMatch).toBeDefined()
     const methodBody = methodMatch![0]
 
     // 应该使用 normalizeSynapseFriendRequest
@@ -37,7 +37,7 @@ describe('FT-107: getIncomingRequests/getOutgoingRequests 使用 normalizeSynaps
     const utilsPath = resolve(process.cwd(), 'src/services/matrix/friends/friendUtils.ts')
     const utilsContent = readFileSync(utilsPath, 'utf8')
     const methodMatch = utilsContent.match(/function normalizeSynapseFriendRequest[\s\S]*?\n}/)
-    expect(methodMatch).toBeTruthy()
+    expect(methodMatch).toBeDefined()
     const methodBody = methodMatch![0]
 
     // 应该接受 direction 参数

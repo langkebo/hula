@@ -82,7 +82,7 @@ describe('load / cache round trip', () => {
 
   it('writes under the documented key', () => {
     cacheDmPrivacyPreferences(prefs())
-    expect(localStorage.getItem(DM_PRIVACY_PREFERENCES_STORAGE_KEY)).toBeTruthy()
+    expect(localStorage.getItem(DM_PRIVACY_PREFERENCES_STORAGE_KEY)).not.toBeNull()
   })
 
   it('recovers from corrupt JSON', () => {

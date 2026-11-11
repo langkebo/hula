@@ -350,12 +350,14 @@ export class RoomOperations extends BaseMatrixService {
   /**
    * 降级翻译：调用外部第三方 Google 翻译端点（后端 `translateText` 不可用时）。
    *
-   * ⚠️ 两个须知（Batch 3.4 复核订正了本文档原先「直连、绕过管控」的表述）：
+   * ⚠️ 三点须知（Batch 3.4 复核订正了本文档原先「直连、绕过管控」的表述）：
    * 1. 它**不是**裸请求 —— 走 `@/utils/HttpClient`，而后者用 `getRuntimeAwareFetch()`
    *    （即统一传输层 `runtimeFetch`，含限流包装）并带显式超时；目标域名
    *    `translate.googleapis.com` 也已在 `utils/httpAllowlistConfig.ts` 的 allowlist 里显式登记。
    * 2. 但它是**内容出境**：用户消息正文会被发送到 Google。仅在后端翻译失败时才会走到这里，
    *    若后续要加强隐私，应在这里加用户级开关或直接删除该降级路径（属产品决策，本轮保留）。
+   * 3. S11 传输层收敛的**唯一保留例外**：目标是非 Matrix 的第三方端点（不属于 Matrix
+   *    协议域），因此继续用 `@/utils/HttpClient` 的 allowlist 通道，而不改走 `matrixHttpClient`。
    */
   private async translateViaFallback(text: string, targetLang: string): Promise<string> {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(targetLang)}&dt=t&q=${encodeURIComponent(text)}`

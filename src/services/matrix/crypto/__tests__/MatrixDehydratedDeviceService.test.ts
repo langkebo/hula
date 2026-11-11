@@ -30,7 +30,6 @@ describe('MatrixDehydratedDeviceService', () => {
         initialDeviceDisplayName: 'Test Device'
       })
 
-      expect(result).toBeTruthy()
       expect(result?.deviceId).toBe('DEVID123')
     })
 
@@ -57,7 +56,6 @@ describe('MatrixDehydratedDeviceService', () => {
 
       const result = await matrixDehydratedDeviceService.getDevice('DEVID123')
 
-      expect(result).toBeTruthy()
       expect(result?.deviceId).toBe('DEVID123')
     })
 
@@ -102,7 +100,6 @@ describe('MatrixDehydratedDeviceService', () => {
 
       const result = await matrixDehydratedDeviceService.claimDevice('DEVID123', 'signing_key')
 
-      expect(result).toBeTruthy()
       expect(result?.accessToken).toBe('token123')
     })
 
