@@ -19,6 +19,7 @@
 import { CLIENT_READY_TIMEOUT_MS } from '@/common/constants'
 import { resolveMatrixRuntimeHomeserverUrl } from '@/services/backend'
 import { useI18nGlobal } from '@/services/i18n'
+import { reportExtensionHealth } from '@/services/matrix/extensionHealthSink'
 import {
   CRITICAL_EXTENSION_IDS,
   FRIEND_EXTENSION_ID,
@@ -35,7 +36,6 @@ import {
 } from '@/services/matrix/sdk'
 import { createSecretStorageCryptoCallbacks } from '@/services/matrix/secretStorageCallbacks'
 import { createMatrixStore } from '@/services/matrix/storeFactory'
-import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import type { ICreateClientOpts } from '@/types/matrix-js-sdk'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
@@ -481,14 +481,8 @@ export class MatrixConnectionManager {
       })
     }
 
-    // 写入 capability store（Pinia 可能未初始化，如独立 WebView / 测试环境）
-    try {
-      const store = useCapabilityStore()
-      store.setExtensionHealthBatch(results)
-    } catch {
-      // Pinia 未初始化时静默跳过（测试环境常见），不影响 client 创建
-      logger.debug('[扩展健康断言] capability store 未初始化，跳过状态写入')
-    }
+    // 通过注入的 sink 写出健康状态（Pinia 可能未初始化，如独立 WebView / 测试环境）
+    reportExtensionHealth(results)
   }
 
   /** 重置连接管理器状态

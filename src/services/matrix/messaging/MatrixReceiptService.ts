@@ -1,8 +1,8 @@
 import type { MatrixClient, MatrixEvent, ReadReceiptsManager, Room } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
-import { useSettingStore } from '@/stores/domains/settings/setting'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
+import { isSendReadReceiptsEnabled } from '../privacyPreferences'
 
 const logger = createLogger('MatrixReceiptService')
 
@@ -163,7 +163,7 @@ class MatrixReceiptService extends BaseMatrixService {
    * 都必须经过它，避免三处各写一遍判断而漏掉其中一条。
    */
   private shouldSendReadReceipts(): boolean {
-    return useSettingStore().sendReadReceiptsEnabled
+    return isSendReadReceiptsEnabled()
   }
 
   async sendReadReceipt(roomId: string, event: MatrixEvent): Promise<string | undefined> {

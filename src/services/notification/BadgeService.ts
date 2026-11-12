@@ -1,6 +1,6 @@
 import { IsYesEnum } from '@/enums'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
-import { buildBadgeCatalog } from '@/stores/domains/chat/badge'
+import { buildBadgeCatalog } from '@/services/notification/badgeCatalog'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('BadgeService')

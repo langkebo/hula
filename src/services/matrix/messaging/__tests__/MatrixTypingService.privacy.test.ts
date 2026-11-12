@@ -19,7 +19,8 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
 const setTypingPreference = (enabled: boolean) => {
   registerPrivacyPreferenceHooks({
     isSendTypingNotificationsEnabled: () => enabled,
-    isShowOnlineStatusEnabled: () => true
+    isShowOnlineStatusEnabled: () => true,
+    isSendReadReceiptsEnabled: () => true
   })
 }
 

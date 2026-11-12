@@ -7,7 +7,8 @@ vi.mock('@/services/matrix', () => ({
   }
 }))
 
-import { buildBadgeCatalog, useBadgeStore } from '../badge'
+import { buildBadgeCatalog } from '@/services/notification/badgeCatalog'
+import { useBadgeStore } from '../badge'
 
 describe('buildBadgeCatalog', () => {
   it('returns the known catalog entry for id "6"', () => {

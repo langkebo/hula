@@ -15,6 +15,8 @@ import { vSafeHtml } from '@/directives/v-safe-html'
 import vSlide from '@/directives/v-slide.ts'
 import router from '@/router'
 import { setupI18n } from '@/services/i18n'
+import { registerStrictDevicePolicyPreferences } from '@/services/matrix/crypto/strictDevicePolicyBootstrap'
+import { registerExtensionHealthReporter } from '@/services/matrix/extensionHealthSink'
 import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
 import { registerPrivacyPreferenceHooks } from '@/services/matrix/privacyPreferences'
 import { pinia } from '@/stores'
@@ -130,11 +132,24 @@ window.__TJG_PINIA_READY__ = true
 registerCapabilityStoreResolver(() => useCapabilityStore())
 
 // 注入隐私偏好读取器，打破 service → setting store 的循环依赖
-// （MatrixTypingService / MatrixPresenceService 不再直接 import Pinia）
+// （MatrixTypingService / MatrixPresenceService / MatrixReceiptService 不再直接 import Pinia）
 registerPrivacyPreferenceHooks({
   isSendTypingNotificationsEnabled: () => useSettingStore(pinia).sendTypingNotificationsEnabled,
-  isShowOnlineStatusEnabled: () => useSettingStore(pinia).showOnlineStatusEnabled
+  isShowOnlineStatusEnabled: () => useSettingStore(pinia).showOnlineStatusEnabled,
+  isSendReadReceiptsEnabled: () => useSettingStore(pinia).sendReadReceiptsEnabled
 })
+
+// 注入严格模式偏好读取器，打破 service → setting store 的循环依赖
+// （strictDevicePolicyBootstrap 不再直接 import Pinia）
+registerStrictDevicePolicyPreferences({
+  ensureLoaded: () => useSettingStore(pinia).ensurePreferenceSettings(),
+  isBlockUnverifiedDevicesEnabled: () => useSettingStore(pinia).blockUnverifiedDevicesEnabled,
+  listRoomOverrides: () => useSettingStore(pinia).strictUnverifiedRooms
+})
+
+// 注入扩展健康状态接收器，打破 service → capability store 的循环依赖
+// （MatrixConnectionManager 只上报状态，不直接 import Pinia）
+registerExtensionHealthReporter((statuses) => useCapabilityStore(pinia).setExtensionHealthBatch(statuses))
 performance.mark('tjg-plugin-install-end')
 
 performance.mark('tjg-mount-start')

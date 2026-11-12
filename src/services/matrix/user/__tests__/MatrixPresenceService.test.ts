@@ -15,7 +15,8 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 const setOnlineStatusPreference = (enabled: boolean) => {
   registerPrivacyPreferenceHooks({
     isSendTypingNotificationsEnabled: () => true,
-    isShowOnlineStatusEnabled: () => enabled
+    isShowOnlineStatusEnabled: () => enabled,
+    isSendReadReceiptsEnabled: () => true
   })
 }
 

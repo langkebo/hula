@@ -57,12 +57,6 @@ vi.mock('@/services/matrix/sdk', () => ({
   DEFAULT_CORE_EXTENSIONS: { includeFriend: true }
 }))
 
-vi.mock('@/stores/domains/chat/capability', () => ({
-  useCapabilityStore: vi.fn().mockReturnValue({
-    setExtensionHealthBatch: vi.fn()
-  })
-}))
-
 const baseConfig: MatrixClientConfig = {
   homeserverUrl: 'https://matrix.test',
   accessToken: 'token-1',

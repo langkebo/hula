@@ -45,14 +45,6 @@ vi.mock('@/services/secure/cryptoStorageKey', () => ({
   deleteCryptoStorageKey: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('@/stores/domains/chat/capability', () => ({
-  useCapabilityStore: () => ({
-    setExtensionHealthBatch: vi.fn(),
-    setExtensionHealth: vi.fn(),
-    resetExtensionHealth: vi.fn()
-  })
-}))
-
 vi.mock('matrix-js-sdk', () => {
   const mockClient = {
     login: vi.fn(),

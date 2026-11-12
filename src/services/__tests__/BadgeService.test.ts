@@ -11,7 +11,7 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   }
 }))
 
-vi.mock('@/stores/domains/chat/badge', () => ({
+vi.mock('@/services/notification/badgeCatalog', () => ({
   buildBadgeCatalog: (ids: string[]) =>
     ids.map((id) => ({
       id,

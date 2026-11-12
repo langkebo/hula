@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
+import type { ExtensionHealthStatus } from '@/services/matrix/extensionHealthSink'
 import type { MatrixCapabilities } from '@/types/message'
 
-/** 扩展健康状态：healthy=已注册，degraded=缺失但已降级，unknown=未检测 */
-type ExtensionHealthStatus = 'healthy' | 'degraded' | 'unknown'
+// 扩展健康状态的类型定义放在 service 层（extensionHealthSink），
+// 服务负责上报、store 负责保存，避免两处各写一份联合类型。
 
 export const useCapabilityStore = defineStore(StoresEnum.CAPABILITY, () => {
   const unstableFeatures = ref<Record<string, boolean>>({})

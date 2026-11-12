@@ -1,40 +1,15 @@
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
+import { type BadgeCatalogItem, buildBadgeCatalog, KNOWN_BADGE_IDS } from '@/services/notification/badgeCatalog'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('BadgeStore')
 
-interface Badge {
-  id: string
-  img: string
-  describe: string
-}
-
-const KNOWN_BADGES: Record<string, Badge> = {
-  '6': {
-    id: '6',
-    img: '/tjg.png',
-    describe: '频道徽章'
-  }
-}
-
-export function buildBadgeCatalog(ids: string[]): Badge[] {
-  return [...new Set(ids)]
-    .filter((id): id is string => Boolean(id))
-    .map((id) => {
-      const knownBadge = KNOWN_BADGES[id]
-      if (knownBadge) return knownBadge
-      return {
-        id,
-        img: '/img/dispersion-bg.png',
-        describe: `徽章 ${id}`
-      }
-    })
-}
+type Badge = BadgeCatalogItem
 
 export const useBadgeStore = defineStore(StoresEnum.BADGE, () => {
-  const badges = ref<Badge[]>(buildBadgeCatalog(Object.keys(KNOWN_BADGES)))
+  const badges = ref<Badge[]>(buildBadgeCatalog(KNOWN_BADGE_IDS))
 
   const badgeById = computed(() => (id?: string) => {
     if (!id) return undefined
