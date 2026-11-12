@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
+import { senderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'
 import { MatrixClientAuth, resolveStableDeviceId } from '@/services/matrix/MatrixClientAuth'
 import { loginByHttpFallback, tokenLoginByHttpFallback } from '@/services/matrix/MatrixClientAuthHttp'
 import { persistRefreshedToken } from '@/services/matrix/matrixClientPlatform'
+import { clearSecretStorageKeys } from '@/services/matrix/secretStorageKeyVault'
 import { clearCryptoStorageKeyCache, deleteCryptoStorageKey } from '@/services/secure/cryptoStorageKey'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 
@@ -28,6 +30,11 @@ vi.mock('@/services/matrix/matrixClientPlatform', () => ({
 vi.mock('@/services/secure/cryptoStorageKey', () => ({
   clearCryptoStorageKeyCache: vi.fn(),
   deleteCryptoStorageKey: vi.fn()
+}))
+
+// SSSS 私钥保险箱：登出必须清空（历史缺陷：sessionStorage 缓存从不清理）
+vi.mock('@/services/matrix/secretStorageKeyVault', () => ({
+  clearSecretStorageKeys: vi.fn()
 }))
 
 vi.mock('@/utils/AvatarUtils', () => ({
@@ -432,6 +439,7 @@ describe('MatrixClientAuth.logout', () => {
   it('登出成功并清理全部状态', async () => {
     const { auth, deps, client } = makeAuth()
     deps.connectionManager.getClient.mockReturnValue(client)
+    senderDeviceCache.set('@alice:hs:@bob:hs', 'verified')
 
     await auth.logout()
 
@@ -446,7 +454,22 @@ describe('MatrixClientAuth.logout', () => {
     expect(deps.startClientGuard.reset).toHaveBeenCalled()
     expect(deleteCryptoStorageKey).toHaveBeenCalledWith('@alice:hs', 'DEV1')
     expect(clearCryptoStorageKeyCache).toHaveBeenCalled()
+    // SSSS 私钥内存保险箱必须随登出清空，否则重登后仍能解旧会话密钥
+    expect(clearSecretStorageKeys).toHaveBeenCalled()
+    // 信任缓存（绿锁判定）必须清空：key 含账号维度，登出后不得沿用旧判定
+    expect(senderDeviceCache.size).toBe(0)
     expect(deps.cryptoTracker.clearCryptoStoreForLogout).toHaveBeenCalledWith('@alice:hs')
+  })
+
+  it('登出后同 sender 的旧绿锁不会被新账号命中', async () => {
+    const { auth, deps, client } = makeAuth()
+    deps.connectionManager.getClient.mockReturnValue(client)
+    senderDeviceCache.set('@alice:hs:@bob:hs', 'verified')
+
+    await auth.logout()
+
+    expect(senderDeviceCache.get('@alice:hs:@bob:hs')).toBeUndefined()
+    expect(senderDeviceCache.get('@carol:hs:@bob:hs')).toBeUndefined()
   })
 
   it('client.logout 抛错时仍执行 finally 清理', async () => {
@@ -460,6 +483,8 @@ describe('MatrixClientAuth.logout', () => {
     expect(deps.connectionManager.updateConnectionState).toHaveBeenCalledWith('DISCONNECTED')
     expect(deps.startClientGuard.reset).toHaveBeenCalled()
     expect(clearCryptoStorageKeyCache).toHaveBeenCalled()
+    // 服务端登出失败也不能把旧会话密钥留在内存里
+    expect(clearSecretStorageKeys).toHaveBeenCalled()
     // D9：/logout 失败也必须停掉 client 与 crypto 后端，否则旧 OlmMachine 占着
     // IndexedDB，清理会被 blocked，新会话 initRustCrypto 依旧拿不到句柄。
     expect(deps.lifecycle.stopClient).toHaveBeenCalled()

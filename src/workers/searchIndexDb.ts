@@ -89,6 +89,23 @@ async function getStore(storeName: string, mode: IDBTransactionMode): Promise<ID
 }
 
 /**
+ * 读操作失败后重置连接并重试一次（S3）。
+ *
+ * 多标签页版本升级被打断（onblocked）、隐私模式或配额抖动都可能让一次
+ * open / 读取失败；不做重试的话，搜索要等用户下一次操作才可能自愈。
+ * 只用于读：写事务可能已部分提交，重放会重复写入。
+ */
+async function withReadRetry<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation()
+  } catch (error) {
+    dbPromise = null
+    logger.warn('Search index read failed, retrying once after resetting connection', error)
+    return operation()
+  }
+}
+
+/**
  * 在写事务中执行操作，并等待事务真正 complete。
  * `getStore(...).delete()` 只是把请求排入队列，事务未完成时函数就返回了：
  * 登出清库/删房间这类调用方会误以为已落盘，随后立刻关闭连接或退出就会丢写。
@@ -125,11 +142,13 @@ interface EncryptedEventRecord {
 }
 
 export async function loadRoomsFromDB(): Promise<SearchRoomDoc[]> {
-  const store = await getStore(ROOMS_STORE, 'readonly')
-  return new Promise((resolve, reject) => {
-    const request = store.getAll()
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
+  return withReadRetry(async () => {
+    const store = await getStore(ROOMS_STORE, 'readonly')
+    return new Promise<SearchRoomDoc[]>((resolve, reject) => {
+      const request = store.getAll()
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
   })
 }
 
@@ -145,11 +164,13 @@ export async function loadEventsFromDB(): Promise<SearchEventDoc[]> {
   const { decryptIndexField } = await import('@/services/secure/searchIndexCrypto')
   const key = new Uint8Array(indexKey)
 
-  const store = await getStore(EVENTS_STORE, 'readonly')
-  const records = await new Promise<EncryptedEventRecord[]>((resolve, reject) => {
-    const request = store.getAll()
-    request.onsuccess = () => resolve(request.result as EncryptedEventRecord[])
-    request.onerror = () => reject(request.error)
+  const records = await withReadRetry(async () => {
+    const store = await getStore(EVENTS_STORE, 'readonly')
+    return new Promise<EncryptedEventRecord[]>((resolve, reject) => {
+      const request = store.getAll()
+      request.onsuccess = () => resolve(request.result as EncryptedEventRecord[])
+      request.onerror = () => reject(request.error)
+    })
   })
 
   const docs: SearchEventDoc[] = []
@@ -275,14 +296,16 @@ export async function clearAllSearchData(): Promise<void> {
  * 需要 worker 存活；这里是**磁盘**统计，任何时候都能拿到。
  */
 export async function countSearchIndexRecords(): Promise<{ rooms: number; events: number }> {
-  const roomStore = await getStore(ROOMS_STORE, 'readonly')
-  const eventStore = await getStore(EVENTS_STORE, 'readonly')
-  const count = (store: IDBObjectStore) =>
-    new Promise<number>((resolve, reject) => {
-      const request = store.count()
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
-    })
-  const [rooms, events] = await Promise.all([count(roomStore), count(eventStore)])
-  return { rooms, events }
+  return withReadRetry(async () => {
+    const roomStore = await getStore(ROOMS_STORE, 'readonly')
+    const eventStore = await getStore(EVENTS_STORE, 'readonly')
+    const count = (store: IDBObjectStore) =>
+      new Promise<number>((resolve, reject) => {
+        const request = store.count()
+        request.onsuccess = () => resolve(request.result)
+        request.onerror = () => reject(request.error)
+      })
+    const [rooms, events] = await Promise.all([count(roomStore), count(eventStore)])
+    return { rooms, events }
+  })
 }

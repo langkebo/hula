@@ -335,4 +335,41 @@ describe('MatrixWorkerHost', () => {
 
     expect((await ready) instanceof Error).toBe(true)
   })
+
+  // === 失败兜底：worker 不回包 / 通道写不进去 ===
+
+  it('worker 不回包时按超时 reject，迟到的响应被忽略且不再 settle', async () => {
+    vi.useFakeTimers()
+    try {
+      const { host, worker } = makeReadyHost()
+      const outcome = host.ping().catch((e: Error) => e)
+      const sent = worker.postedMessages[0]
+
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      const err = await outcome
+      expect(err).toBeInstanceOf(Error)
+      expect((err as Error).message).toBe("worker request 'ping' timed out after 15000ms")
+
+      // 超时后 pending 已清理，迟到响应只走「未登记」分支，不得二次 settle
+      expect(() => worker.emit({ type: 'ping', id: sent.id, success: true, data: { timestamp: 1 } })).not.toThrow()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('postMessage 抛错时立即 reject 该请求，后续请求不受影响', async () => {
+    const { host, worker } = makeReadyHost()
+
+    worker.postMessage.mockImplementationOnce(() => {
+      throw new Error('DataCloneError')
+    })
+
+    await expect(host.ping()).rejects.toThrow('DataCloneError')
+
+    const retry = host.ping()
+    const sent = worker.postedMessages.at(-1) as FakeMessage
+    worker.emit({ type: 'ping', id: sent.id, success: true, data: { timestamp: 42 } })
+    await expect(retry).resolves.toEqual({ timestamp: 42 })
+  })
 })
