@@ -26,15 +26,23 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
+import { filterMobileSettingsItems } from '@/mobile/views/my/mobileSettingsConfig'
 import {
   MOBILE_SETTINGS_SEARCH_ENTRIES,
   type MobileSettingsSearchEntry
 } from '@/mobile/views/my/mobileSettingsSearchIndex'
+import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 
 const props = defineProps<{ query: string }>()
 const emit = defineEmits<(e: 'navigate', item: MobileSettingsSearchEntry) => void>()
 
 const { t } = useI18n()
+
+// 与设置入口共用同一份能力过滤：入口被隐藏时，搜索结果不能还能跳进去。
+const capability = useServerCapability()
+const availableEntries = computed(() =>
+  filterMobileSettingsItems(MOBILE_SETTINGS_SEARCH_ENTRIES, capability.isLoaded.value, capability.isCapabilityAvailable)
+)
 
 /**
  * 匹配规则：条目译文 / 分组译文 / 关键词，任一「包含」即命中（不区分大小写）。
@@ -45,7 +53,7 @@ const { t } = useI18n()
 const results = computed(() => {
   const q = props.query.trim().toLowerCase()
   if (!q) return []
-  return MOBILE_SETTINGS_SEARCH_ENTRIES.filter((entry) => {
+  return availableEntries.value.filter((entry) => {
     const label = t(entry.labelKey).toLowerCase()
     const group = t(entry.groupKey).toLowerCase()
     return label.includes(q) || group.includes(q) || entry.keywords.some((k) => k.toLowerCase().includes(q))

@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import MobileSettingsSearch from '../components/MobileSettingsSearch.vue'
 import MobileSettings from '../MobileSettings.vue'
 import {
   filterMobileSettingsItems,
@@ -8,6 +9,7 @@ import {
   MOBILE_ADVANCED_SETTINGS_ITEMS,
   type MobileSettingsNavItem
 } from '../mobileSettingsConfig'
+import { MOBILE_SETTINGS_SEARCH_ENTRIES } from '../mobileSettingsSearchIndex'
 import { MOBILE_SETTINGS_LABS_PATH } from '../settingsRoutes'
 
 const routerPushMock = vi.fn()
@@ -212,5 +214,42 @@ describe('filterMobileSettingsItems', () => {
     const entries = [item('multi', ['voip', 'friend-list']), item('free')]
     const result = filterMobileSettingsItems(entries, true, (capability) => capability === 'voip')
     expect(result.map((entry) => entry.titleKey)).toEqual(['free'])
+  })
+})
+
+describe('MobileSettingsSearch capability filtering', () => {
+  function mountSearch(query: string) {
+    return mount(MobileSettingsSearch, {
+      props: { query },
+      global: {
+        stubs: {
+          SettingCellIcon: true,
+          'van-cell-group': { template: '<div><slot /></div>' },
+          'van-cell': VanCellStub,
+          'van-empty': { template: '<div class="empty-stub" />' }
+        }
+      }
+    })
+  }
+
+  it('declares the same capability on the search entry as on the settings entry', () => {
+    const searchEntry = MOBILE_SETTINGS_SEARCH_ENTRIES.find((entry) => entry.path === '/mobile/mobileMy/voiceVideo')
+    expect(searchEntry?.requiredCapability).toBe('voip')
+  })
+
+  it('keeps results while capability detection is not loaded', () => {
+    capabilityState.isLoaded = false
+    capabilityState.isCapabilityAvailable = () => false
+
+    expect(mountSearch('语音').text()).toContain('mobile_setting.voice_video')
+  })
+
+  it('drops results whose required capability is unavailable once loaded', () => {
+    capabilityState.isLoaded = true
+    capabilityState.isCapabilityAvailable = (capability) => capability !== 'voip'
+
+    const wrapper = mountSearch('语音')
+    expect(wrapper.text()).not.toContain('mobile_setting.voice_video')
+    expect(wrapper.find('.empty-stub').exists()).toBe(true)
   })
 })

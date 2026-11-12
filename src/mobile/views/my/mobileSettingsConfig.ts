@@ -67,7 +67,9 @@ export const MOBILE_ADVANCED_SETTINGS_ITEMS: MobileSettingsNavItem[] = [
 ]
 
 /** 归一化条目的能力声明为数组（无声明返回空数组） */
-export function getMobileSettingsItemCapabilities(item: MobileSettingsNavItem): TjgCapability[] {
+export function getMobileSettingsItemCapabilities(item: {
+  requiredCapability?: TjgCapability | TjgCapability[]
+}): TjgCapability[] {
   if (!item.requiredCapability) return []
   return Array.isArray(item.requiredCapability) ? item.requiredCapability : [item.requiredCapability]
 }
@@ -78,11 +80,11 @@ export function getMobileSettingsItemCapabilities(item: MobileSettingsNavItem): 
  * 与桌面 `useSettingsShell.matchesCapability` 同一策略：能力探测未完成时全部保留
  * （避免登录初期误判），探测完成后才隐藏缺失能力的入口。
  */
-export function filterMobileSettingsItems(
-  items: MobileSettingsNavItem[],
+export function filterMobileSettingsItems<T extends { requiredCapability?: TjgCapability | TjgCapability[] }>(
+  items: T[],
   isCapabilityLoaded: boolean,
   isCapabilityAvailable: (capability: TjgCapability) => boolean
-): MobileSettingsNavItem[] {
+): T[] {
   if (!isCapabilityLoaded) return items
   return items.filter((item) => getMobileSettingsItemCapabilities(item).every(isCapabilityAvailable))
 }

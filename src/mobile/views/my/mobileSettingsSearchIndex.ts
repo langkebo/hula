@@ -11,6 +11,7 @@
  * - **内联项用 anchor**：主题/语言/字号不是独立页面，点了要滚到设置页对应分组，而不是「点了没反应」。
  * - 文案一律复用既有 i18n 键，**不新增键**（避免动 `i18n.d.ts` 与并行改动冲突）。
  */
+import type { TjgCapability } from '@/services/matrix/MatrixCapabilityService'
 import {
   MOBILE_SETTINGS_ENCRYPTION_PATH,
   MOBILE_SETTINGS_HELP_ABOUT_PATH,
@@ -29,6 +30,11 @@ export interface MobileSettingsSearchEntry {
   anchor?: string
   /** 额外匹配词：中英别名 + 用户的常见叫法 */
   keywords: string[]
+  /**
+   * 该结果页依赖的服务端能力，与设置入口的 `requiredCapability` 同语义。
+   * 入口被能力过滤隐藏后，搜索也必须同步过滤，否则「搜得到、点进去空白」。
+   */
+  requiredCapability?: TjgCapability | TjgCapability[]
 }
 
 const DEVICES_PATH = '/mobile/mobileMy/devices'
@@ -189,7 +195,8 @@ export const MOBILE_SETTINGS_SEARCH_ENTRIES: MobileSettingsSearchEntry[] = [
     labelKey: 'mobile_setting.voice_video',
     groupKey: 'mobile_setting.advanced_section',
     path: '/mobile/mobileMy/voiceVideo',
-    keywords: ['voice', 'video', '语音', '视频', '通话', '麦克风', '摄像头']
+    keywords: ['voice', 'video', '语音', '视频', '通话', '麦克风', '摄像头'],
+    requiredCapability: 'voip'
   },
   {
     labelKey: 'mobile_files.title',
