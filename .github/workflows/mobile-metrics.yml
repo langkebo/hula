@@ -1,0 +1,187 @@
+name: Mobile Metrics Gate (G5/G6)
+
+# 把「我的」页体验指标从「只采集」变成强制门禁。
+#
+# 两个判据的依赖不同，所以拆成两个 job：
+#   1) G5 触控合规（touch-targets）：纯 DOM 测量，mock 会话即可渲染「我的」页与设置页，
+#      不需要后端 ⇒ 每次 PR 必跑，未达标即红（0 个 <44px 触控目标）。
+#   2) G6 会话恢复 / 首屏渲染（live-tti）：必须冷启恢复真实会话，依赖可用 homeserver
+#      （会注册临时账号）⇒ 仅在仓库 Variable `TJG_TEST_HOMESERVER` 配置时执行；
+#      未配置时显式 `::notice::` 跳过，**不冒充通过**（与 integration-smoke.yml 同一范式）。
+#
+# 采集口径唯一来源：`e2e/support/mobileMetrics.ts`（两个 spec 共用，避免口径漂移）。
+# 预算：会话恢复 ≤1500ms、首屏渲染 ≤800ms（P75，中端安卓）。
+
+on:
+  pull_request:
+    branches: [main, develop, master]
+  push:
+    branches: [main, develop, master]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: '后端基址（留空则用仓库变量 TJG_TEST_HOMESERVER）'
+        required: false
+        type: string
+  schedule:
+    # 每天 03:10 UTC（本地 11:10）跑一次 live 指标，发现性能回退
+    - cron: '10 3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  # G5：触控目标合规（无后端，PR 强门禁）
+  touch-targets:
+    name: G5 Touch Targets (offline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 12
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Cache dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.STORE_PATH }}
+            node_modules
+          key: ${{ runner.os }}-pnpm-quality-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-quality-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium --with-deps
+
+      # spec 内部对「我的」页与设置页各有 total 下限 + offenders 必须为空；
+      # 未达标（或选择器失效扫不到元素）都会红，不会静默通过。
+      - name: G5 touch target gate
+        run: pnpm test:touch-targets
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: mobile-touch-targets-report-${{ github.run_id }}
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: warn
+          retention-days: 14
+
+  # G6：会话恢复 + 首屏渲染（需要真实 homeserver）
+  live-tti:
+    name: G6 Session Restore & First Screen (live)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 12
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Cache dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.STORE_PATH }}
+            node_modules
+          key: ${{ runner.os }}-pnpm-quality-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-quality-
+
+      - name: Resolve live homeserver
+        id: target
+        shell: bash
+        env:
+          INPUT_BASE_URL: ${{ inputs.base_url }}
+          VAR_BASE_URL: ${{ vars.TJG_TEST_HOMESERVER }}
+        run: |
+          BASE="${INPUT_BASE_URL:-$VAR_BASE_URL}"
+          if [ -z "$BASE" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::未配置 TJG_TEST_HOMESERVER（也没有手填 base_url）—— G6 live 指标跳过，不视为通过"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "base_url=$BASE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.target.outputs.configured == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        if: steps.target.outputs.configured == 'true'
+        run: pnpm exec playwright install chromium --with-deps
+
+      # spec 末段对 G5 offenders 与 G6 两段预算都有 expect 断言；
+      # 拿不到数字（null）同样判红 —— 没测到不等于达标。
+      - name: G6 live metrics gate
+        if: steps.target.outputs.configured == 'true'
+        env:
+          TJG_METRICS: '1'
+          MATRIX_LIVE_HOMESERVER_URL: ${{ steps.target.outputs.base_url }}
+          # 自签证书环境（本地/内网栈）需显式开启，默认严格校验
+          NODE_TLS_REJECT_UNAUTHORIZED: ${{ vars.TJG_TEST_INSECURE_TLS == '1' && '0' || '1' }}
+        run: pnpm exec playwright test e2e/my-hub-metrics.spec.ts --project=mobile-chromium
+
+      - name: Upload metrics report
+        if: always() && steps.target.outputs.configured == 'true'
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: mobile-metrics-${{ github.run_id }}
+          path: |
+            test-results/mobile-metrics.json
+            playwright-report
+            test-results
+          if-no-files-found: warn
+          retention-days: 14

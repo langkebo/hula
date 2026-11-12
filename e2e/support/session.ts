@@ -199,7 +199,7 @@ interface SeededSessionStore {
  * 向 `session` store 播种一条 GROUP 会话。
  *
  * 为什么需要：mock-auth 不产生任何真实房间，房间/会话列表恒为空，房间设置类
- * e2e 只能以 `test.skip(true, 'Mock 环境无可用房间')` 永久跳过（审计 S5 假绿）。
+ * e2e 原本只能永久跳过（审计 S5 假绿，`test.skip(true, ...)` 已全部清除）。
  * 这里只补「列表里有一条可点会话」这一个最小事实；房间详情、设置数据仍走真实
  * 组件与降级分支，因此后续断言仍具回归价值。
  */
