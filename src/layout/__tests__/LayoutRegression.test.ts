@@ -4,7 +4,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 // 该文件通过 vi.stubGlobal 打桩全局 Worker；若不在用例结束后复位，
 // 残留的桩会跨文件泄露到并行 worker 中，曾导致全量运行时出现
 // "Unhandled Errors: 2"（断言全过、退出码 1）。此处显式回收。
+const mountedWrappers: { unmount: () => void }[] = []
+
 afterEach(() => {
+  for (const wrapper of mountedWrappers.splice(0)) {
+    wrapper.unmount()
+  }
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -68,6 +74,11 @@ vi.mock('@tauri-apps/api/window', () => ({ UserAttentionType: { Critical: 'Criti
 vi.mock('@/components/atomic/LoadingSpinner.vue', () => ({ default: { name: 'LoadingSpinner', template: '<div />' } }))
 
 const mountLayout = async () => {
+  // 首次渲染会阻塞 600ms 延迟加载左右面板（maybeDelayForInitialRender），
+  // 若用真实计时器，该延迟会在用例结束、环境销毁后才继续动态 import
+  // （left/index.vue → TjGlass.vue），触发 EnvironmentTeardownError。
+  // 这里冻结计时器，让未完成的加载停在 await 上，不再于销毁后继续执行。
+  vi.useFakeTimers()
   vi.stubGlobal(
     'Worker',
     class {
@@ -78,13 +89,15 @@ const mountLayout = async () => {
     }
   )
   const Layout = (await import('@/layout/index.vue')).default
-  return shallowMount(Layout, {
+  const wrapper = shallowMount(Layout, {
     global: {
       stubs: {
         RouterView: true
       }
     }
   })
+  mountedWrappers.push(wrapper)
+  return wrapper
 }
 
 // Regression guard: layout/index.vue previously rendered <PrivacyOverlay v-if="isPrivacyMode">,
