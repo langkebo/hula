@@ -16,21 +16,54 @@ pub struct SecureStorageCheckResponse {
     pub degraded: bool,
 }
 
+/// 允许通过 IPC 读写系统钥匙串的键名前缀（白名单）。
+///
+/// 渲染层被注入后可调用 `get_secret` / `set_secret` / `delete_secret`；
+/// 若键名不受约束，攻击者能把任意字符串当作键名探测或覆盖钥匙串条目。
+/// **新增 secret 必须先在 `src/services/secure/` 登记，并在此追加前缀**，
+/// 否则前端调用会直接失败。
+const ALLOWED_KEY_PREFIXES: &[&str] = &[
+    // per 用户/设备的 Matrix crypto store 密钥（cryptoStorageKey.ts）
+    "tjg-crypto-storage-password:",
+    // TrendRadar API Key，可带 `::<scope>` 账号后缀（robotAiProviderStorage.ts）
+    "tjg-chat-trendradar-api-key",
+];
+
+/// 校验键名，返回可安全写入日志的脱敏形式。
+///
+/// 键名后缀含 MXID / deviceId / 账号 scope 等用户标识，日志只保留已登记前缀；
+/// 拒绝时也不回显键名，避免把待探测的键名写进日志。
+fn authorize_key(key: &str) -> Result<String, String> {
+    match ALLOWED_KEY_PREFIXES
+        .iter()
+        .find(|prefix| key.starts_with(**prefix))
+    {
+        Some(prefix) => Ok(format!("{prefix}***")),
+        None => Err(format!(
+            "unregistered secret key rejected (length {})",
+            key.chars().count()
+        )),
+    }
+}
+
 #[tauri::command]
 pub async fn get_secret(key: String) -> Result<Option<String>, String> {
-    info!("Secure storage: get_secret for key '{}'", key);
+    let log_key = authorize_key(&key)?;
+    info!("Secure storage: get_secret for key '{}'", log_key);
     SecureStore::get(&key).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn set_secret(key: String, value: String) -> Result<(), String> {
-    info!("Secure storage: set_secret for key '{}'", key);
+    let log_key = authorize_key(&key)?;
+    info!("Secure storage: set_secret for key '{}'", log_key);
     SecureStore::set(&key, &value).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn delete_secret(key: String) -> Result<(), String> {
-    info!("Secure storage: delete_secret for key '{}'", key);
+    let log_key = authorize_key(&key)?;
+    info!("Secure storage: delete_secret for key '{}'", log_key);
     SecureStore::delete(&key).map_err(|e| e.to_string())
 }
 
@@ -183,5 +216,28 @@ mod tests {
         assert!(!report.available);
         assert!(!report.degraded);
         assert_eq!(report.backend, "unavailable");
+    }
+
+    /// 键名白名单：已登记前缀放行，日志值只保留前缀，不含 MXID / deviceId。
+    #[test]
+    fn authorize_key_accepts_registered_prefixes_and_redacts_suffix() {
+        assert_eq!(
+            authorize_key("tjg-crypto-storage-password:@alice:example.com:DEVICE").unwrap(),
+            "tjg-crypto-storage-password:***"
+        );
+        assert_eq!(
+            authorize_key("tjg-chat-trendradar-api-key").unwrap(),
+            "tjg-chat-trendradar-api-key***"
+        );
+        assert!(authorize_key("tjg-chat-trendradar-api-key::@alice:example.com").is_ok());
+    }
+
+    /// 未登记键名必须拒绝，且错误信息不得回显键名。
+    #[test]
+    fn authorize_key_rejects_unregistered_keys_without_echoing_them() {
+        let err = authorize_key("ssh-passphrase").unwrap_err();
+
+        assert!(err.contains("unregistered secret key"));
+        assert!(!err.contains("ssh-passphrase"));
     }
 }

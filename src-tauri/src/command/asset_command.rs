@@ -1,6 +1,14 @@
 use crate::common::cmd_error::cmd_error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
+
+/// 日志脱敏：只保留文件名，不把用户的绝对路径写进日志。
+fn redacted_path(path: &Path) -> String {
+    match path.file_name().and_then(|name| name.to_str()) {
+        Some(name) => format!("<file:{name}>"),
+        None => "<unnamed>".to_string(),
+    }
+}
 
 /// 校验资产协议访问请求
 ///
@@ -21,11 +29,11 @@ pub fn allow_asset_path(app: AppHandle, path: String) -> Result<(), String> {
     if !app.asset_protocol_scope().is_allowed(&canonical_path) {
         tracing::warn!(
             "Rejected asset path outside scope: {}",
-            canonical_path.display()
+            redacted_path(&canonical_path)
         );
         return Err(cmd_error("ASSET_PATH_NOT_ALLOWED"));
     }
 
-    tracing::info!("Allowed asset path: {}", canonical_path.display());
+    tracing::info!("Allowed asset path: {}", redacted_path(&canonical_path));
     Ok(())
 }
