@@ -574,12 +574,17 @@ export class RoomOperations extends BaseMatrixService {
         actions: []
       })
     } else if (level === 'mentions') {
-      // 仅 @提及 通知：EventMatch 对 content.body 做整串匹配，永远无法命中，
-      // 改用服务端内置的“正文包含当前用户显示名”条件。
+      // 仅 @提及 通知：只有 m.mentions（MSC3952）能可靠表达「这条消息 @ 了我」，
+      // 服务端默认规则 `.m.rule.is_user_mention` 同样使用 event_property_contains。
+      // 旧实现用 EventMatch 对 content.body 做整串相等匹配，永远不会命中；
+      // contains_display_name 仅在正文出现显示名时成立，按 MXID @ 或用户改过昵称会漏推。
+      const userId = client.getUserId()
       await client.getPushManager().createPushRule('global', PushRuleKind.Override, roomId, {
         conditions: [
           { kind: ConditionKind.EventMatch, key: 'room_id', pattern: roomId },
-          { kind: ConditionKind.ContainsDisplayName }
+          userId
+            ? { kind: ConditionKind.EventPropertyContains, key: 'content.m\\.mentions.user_ids', value: userId }
+            : { kind: ConditionKind.ContainsDisplayName }
         ],
         actions: [PushRuleActionName.Notify, { set_tweak: TweakName.Highlight, value: true }]
       })

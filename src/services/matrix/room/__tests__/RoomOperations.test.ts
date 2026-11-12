@@ -182,11 +182,31 @@ describe('RoomOperations', () => {
   })
 
   describe('setNotificationLevel', () => {
-    it('mentions level uses contains_display_name condition', async () => {
+    it('mentions level uses m.mentions user_ids condition', async () => {
       const deletePushRule = vi.fn().mockResolvedValue(undefined)
       const createPushRule = vi.fn().mockResolvedValue(undefined)
       vi.mocked(matrixClientService.getClient).mockReturnValue({
-        getPushManager: vi.fn().mockReturnValue({ deletePushRule, createPushRule })
+        getPushManager: vi.fn().mockReturnValue({ deletePushRule, createPushRule }),
+        getUserId: vi.fn().mockReturnValue('@me:example.com')
+      } as never)
+
+      await ops.setNotificationLevel('!r', 'mentions')
+
+      expect(createPushRule).toHaveBeenCalledWith('global', 'override', '!r', {
+        conditions: [
+          { kind: 'event_match', key: 'room_id', pattern: '!r' },
+          { kind: 'event_property_contains', key: 'content.m\\.mentions.user_ids', value: '@me:example.com' }
+        ],
+        actions: ['notify', { set_tweak: 'highlight', value: true }]
+      })
+    })
+
+    it('mentions level falls back to contains_display_name without a user id', async () => {
+      const deletePushRule = vi.fn().mockResolvedValue(undefined)
+      const createPushRule = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getPushManager: vi.fn().mockReturnValue({ deletePushRule, createPushRule }),
+        getUserId: vi.fn().mockReturnValue(null)
       } as never)
 
       await ops.setNotificationLevel('!r', 'mentions')

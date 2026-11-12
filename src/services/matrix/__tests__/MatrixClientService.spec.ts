@@ -37,15 +37,6 @@ vi.mock('@/services/secure/cryptoStorageKey', () => ({
   deleteCryptoStorageKey: vi.fn().mockResolvedValue(undefined)
 }))
 
-// Mock capability store 以避免 Pinia 未初始化时 assertCriticalExtensions 抛错
-vi.mock('@/stores/domains/chat/capability', () => ({
-  useCapabilityStore: () => ({
-    setExtensionHealthBatch: vi.fn(),
-    setExtensionHealth: vi.fn(),
-    resetExtensionHealth: vi.fn()
-  })
-}))
-
 // Mock ErrorTracker 以断言降级可观测事件（O7 契约测试）
 vi.mock('@/utils/ErrorTracker', () => ({
   errorTracker: {

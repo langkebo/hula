@@ -328,9 +328,11 @@ class MatrixClientService {
    * 服务端只在 pos 缺省或订阅集合变化时下发 `initial: true`，而 `SlidingSyncSdk.onRoomData`
    * 对 store 里不存在的房间在 `initial` 不为真时直接丢弃。被邀请/被拉入的新房间必须先订阅，
    * 否则接收方永远进不了 store、看不到该会话的消息。
+   *
+   * @returns 是否已下发到 SDK；`false` 表示实例未就绪（排队等 `create()` 重放）或下发失败。
    */
-  subscribeRoomForSync(roomId: string): void {
-    this.syncManager.subscribeRoom(roomId)
+  subscribeRoomForSync(roomId: string): boolean {
+    return this.syncManager.subscribeRoom(roomId)
   }
 
   /** 创建房间（preset、加密、`creation_content` 等选项透传给 SDK）。 */

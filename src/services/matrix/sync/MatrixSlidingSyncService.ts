@@ -33,9 +33,10 @@ class MatrixSlidingSyncService {
       required_state?: unknown[] | undefined
     }
   > = new Map()
-  /** 已请求补订阅的房间及请求时间：带 TTL 以允许同步失败后重试 */
-  private autoSubscribedRooms = new Map<string, number>()
+  /** 已请求补订阅的房间及重试状态：带 TTL 与最大次数，避免失败后无限重试/刷日志 */
+  private autoSubscribedRooms = new Map<string, { attempts: number; lastAttempt: number; gaveUp: boolean }>()
   private readonly autoSubscribeRetryMs = 60_000
+  private readonly autoSubscribeMaxAttempts = 3
   private readonly lifecycleListener = (
     state: SlidingSyncState,
     resp: MSC3575SlidingSyncResponse | null,
@@ -183,17 +184,41 @@ class MatrixSlidingSyncService {
    * 这里对该房间发起一次订阅，服务端下一轮响应会强制 `initial: true`。
    */
   private ensureRoomInStore(roomId: string): void {
-    if (matrixClientService.getRoom(roomId)) return
+    if (matrixClientService.getRoom(roomId)) {
+      // 房间已进入 store：清理重试状态，避免 Map 随会话数增长
+      this.autoSubscribedRooms.delete(roomId)
+      return
+    }
 
-    const lastAttempt = this.autoSubscribedRooms.get(roomId)
-    if (lastAttempt !== undefined && Date.now() - lastAttempt < this.autoSubscribeRetryMs) return
+    const now = Date.now()
+    const record = this.autoSubscribedRooms.get(roomId)
+    if (record) {
+      if (now - record.lastAttempt < this.autoSubscribeRetryMs) return
+      if (record.attempts >= this.autoSubscribeMaxAttempts) {
+        // 达到重试上限：继续订阅也不会拿到 initial，只告警一次避免每轮刷屏
+        if (!record.gaveUp) {
+          record.gaveUp = true
+          logger.warn(`补订阅 ${record.attempts} 次后房间仍未进入 store，停止重试: ${roomId}`)
+        }
+        return
+      }
+    }
 
-    this.autoSubscribedRooms.set(roomId, Date.now())
-    logger.info(`发现本地缺失的房间，补订阅以强制初始同步: ${roomId}`)
+    const attempts = (record?.attempts ?? 0) + 1
+    this.autoSubscribedRooms.set(roomId, { attempts, lastAttempt: now, gaveUp: false })
+
+    logger.info(`发现本地缺失的房间，补订阅以强制初始同步（第 ${attempts} 次）: ${roomId}`)
     try {
-      matrixClientService.subscribeRoomForSync(roomId)
+      const pushed = matrixClientService.subscribeRoomForSync(roomId)
+      if (!pushed) {
+        // 实例未就绪时订阅已排队（create() 后重放），SDK 抛错时订阅集合也已更新；
+        // 两种情况都保留标记：TTL 到期后按剩余次数重试，避免每个同步包刷一条日志。
+        logger.warn(
+          `补订阅尚未下发到 SDK（实例未就绪或下发失败），${this.autoSubscribeRetryMs / 1000}s 后重试: ${roomId}`
+        )
+      }
     } catch (error) {
-      // 订阅失败时清除标记，让后续同步包可以重试
+      // 订阅同步抛错：清除标记，让后续同步包立即重试
       this.autoSubscribedRooms.delete(roomId)
       logger.warn(`补订阅房间失败，将在下次同步时重试: ${roomId}`, error)
     }

@@ -199,4 +199,82 @@ describe('MatrixSlidingSyncService', () => {
 
     expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledTimes(2)
   })
+
+  it('retries after the TTL and stops after the max attempt count', async () => {
+    vi.mocked(matrixClientService.getRoom).mockReturnValue(null)
+    vi.mocked(matrixClientService.subscribeRoomForSync).mockReset().mockReturnValue(true)
+
+    const nowSpy = vi.spyOn(Date, 'now')
+    let now = 1_000_000
+    nowSpy.mockImplementation(() => now)
+
+    let roomDataCallback: (...args: unknown[]) => void = () => {}
+    const syncInstance = {
+      on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+        if (event === SlidingSyncEvent.RoomData) {
+          roomDataCallback = cb
+        }
+      }),
+      off: vi.fn()
+    }
+
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as unknown as SlidingSync)
+    await matrixSlidingSyncService.initialize()
+
+    roomDataCallback('!slow-room:example.com', {})
+    expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledTimes(1)
+    expect(loggerSpy.warn).not.toHaveBeenCalled()
+
+    for (let attempt = 2; attempt <= 3; attempt += 1) {
+      now += 61_000
+      roomDataCallback('!slow-room:example.com', {})
+      expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledTimes(attempt)
+    }
+
+    now += 61_000
+    roomDataCallback('!slow-room:example.com', {})
+    expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledTimes(3)
+    expect(loggerSpy.warn).toHaveBeenCalledWith('补订阅 3 次后房间仍未进入 store，停止重试: !slow-room:example.com')
+
+    // 合并告警只出现一次：后续同步包不再刷日志
+    loggerSpy.warn.mockClear()
+    now += 61_000
+    roomDataCallback('!slow-room:example.com', {})
+    expect(loggerSpy.warn).not.toHaveBeenCalled()
+
+    nowSpy.mockRestore()
+  })
+
+  it('clears the retry marker once the room appears in the store', async () => {
+    vi.mocked(matrixClientService.getRoom).mockReturnValue(null)
+    vi.mocked(matrixClientService.subscribeRoomForSync).mockReset().mockReturnValue(true)
+
+    let roomDataCallback: (...args: unknown[]) => void = () => {}
+    const syncInstance = {
+      on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+        if (event === SlidingSyncEvent.RoomData) {
+          roomDataCallback = cb
+        }
+      }),
+      off: vi.fn()
+    }
+
+    vi.mocked(matrixClientService.getSlidingSync).mockReturnValue(syncInstance as unknown as SlidingSync)
+    await matrixSlidingSyncService.initialize()
+
+    roomDataCallback('!arriving-room:example.com', {})
+    expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledTimes(1)
+
+    // 房间已进入 store：同一时间窗口内不会重复订阅，并清除标记
+    vi.mocked(matrixClientService.getRoom).mockReturnValue({
+      roomId: '!arriving-room:example.com'
+    } as unknown as Room)
+    roomDataCallback('!arriving-room:example.com', {})
+    expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledTimes(1)
+
+    // 房间里再次消失时不受旧 TTL 标记影响，立即补订阅
+    vi.mocked(matrixClientService.getRoom).mockReturnValue(null)
+    roomDataCallback('!arriving-room:example.com', {})
+    expect(matrixClientService.subscribeRoomForSync).toHaveBeenCalledTimes(2)
+  })
 })

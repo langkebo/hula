@@ -181,10 +181,15 @@ export class MatrixSyncManager {
     return this.instance
   }
 
-  /** 订阅房间（幂等）：服务端据此强制 `initial: true` 下发全量状态与 timeline。 */
-  subscribeRoom(roomId: string): void {
+  /**
+   * 订阅房间（幂等）：服务端据此强制 `initial: true` 下发全量状态与 timeline。
+   *
+   * @returns 是否已成功下发给 SDK；`false` 表示实例未就绪（已排队，`create()` 后重放）
+   * 或 SDK 抛错，调用方可据此决定是否重试。
+   */
+  subscribeRoom(roomId: string): boolean {
     const id = roomId?.trim()
-    if (!id) return
+    if (!id) return false
     // 重新插入以刷新 LRU 位置（Map 保持插入序）
     this.roomSubscriptions.delete(id)
     this.roomSubscriptions.set(id, true)
@@ -194,7 +199,7 @@ export class MatrixSyncManager {
       if (oldest === undefined || oldest === this.activeRoomId) break
       this.roomSubscriptions.delete(oldest)
     }
-    this.pushRoomSubscriptions()
+    return this.pushRoomSubscriptions()
   }
 
   /** 设置「当前正在看」的房间并订阅它；`null` 表示离开所有会话（保留其它订阅）。 */
@@ -209,11 +214,22 @@ export class MatrixSyncManager {
     this.pushRoomSubscriptions()
   }
 
-  /** 把当前订阅集合同步给 SDK（实例不存在时为空操作，`create()` 后会重放） */
-  private pushRoomSubscriptions(): void {
+  /**
+   * 把当前订阅集合同步给 SDK。
+   *
+   * @returns 是否真正下发给 SDK。实例不存在、缺少 `modifyRoomSubscriptions`
+   * （老 SDK / 测试桩）或 SDK 抛错时返回 `false`——订阅集合仍保留，`create()` 后会重放。
+   */
+  private pushRoomSubscriptions(): boolean {
     // 缺该方法（老 SDK / 测试桩）时退化为不订阅：订阅是增强，不能打断 startClient
-    if (typeof this.instance?.modifyRoomSubscriptions !== 'function') return
-    this.instance.modifyRoomSubscriptions(new Set(this.roomSubscriptions.keys()))
+    if (typeof this.instance?.modifyRoomSubscriptions !== 'function') return false
+    try {
+      this.instance.modifyRoomSubscriptions(new Set(this.roomSubscriptions.keys()))
+      return true
+    } catch (error) {
+      logger.warn(`下发滑窗订阅失败: ${error}`)
+      return false
+    }
   }
 
   /** 订阅 Lifecycle 事件（封装 SDK 的 on，避免调用方直接持有实例）。 */

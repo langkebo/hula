@@ -63,18 +63,21 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
 
   const getPageMsg = async (size: number, roomId: string, cursor: string = '', showLoadingBar = false) => {
     logger.info(`[getPageMsg] 开始加载房间消息 roomId=${roomId} cursor=${cursor}`)
+    // 失败时保留旧游标与 isLast：抹掉游标会让「向上翻页」退回首屏，且再也翻不回历史。
+    const fallbackOptions = messageOptions[roomId] || {
+      isLast: false,
+      isLoading: false,
+      cursor: '',
+      hasLoadedOnce: false
+    }
+    const fallbackCursor = fallbackOptions.cursor
+    const fallbackIsLast = fallbackOptions.isLast
     try {
       if (showLoadingBar) {
         startLoading()
       }
-      const currentOptions = messageOptions[roomId] || {
-        isLast: false,
-        isLoading: false,
-        cursor: '',
-        hasLoadedOnce: false
-      }
       messageOptions[roomId] = {
-        ...currentOptions,
+        ...fallbackOptions,
         isLoading: true
       }
       const result = await matrixEventService.getPagedRoomMessages(roomId, size, cursor)
@@ -113,7 +116,13 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         errorLoading()
       }
       showFeedback(t('message.load_messages_failed'), 'error')
-      messageOptions[roomId] = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: true }
+      // 按 roomId 写回（不是 currentMessageOptions）：await 期间用户可能已切到别的房间
+      messageOptions[roomId] = {
+        isLast: fallbackIsLast,
+        isLoading: false,
+        cursor: fallbackCursor,
+        hasLoadedOnce: true
+      }
     }
   }
 
@@ -204,7 +213,9 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
     cleanupExpiredRecalledMessages()
     clearRoomMessagesExceptTransient(roomId)
 
-    currentMessageOptions.value = {
+    // 按 roomId 写入而不是 currentMessageOptions：上面 ensureSessionForRoom 是 await，
+    // 期间用户可能已经切到别的房间，用 computed setter 会把重置态写到新房间上。
+    messageOptions[roomId] = {
       isLast: false,
       isLoading: true,
       cursor: '',
@@ -221,12 +232,13 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
       await getPageMsg(pageSize, roomId, '', true)
     } catch (err) {
       logger.error('[changeRoom] 无法加载消息:', err)
-      // 房间已切换时不要覆盖新房间的加载态
+      // 房间已切换时不要覆盖新房间的加载态；同房间失败也要保留旧游标
       if (globalStore.currentSessionRoomId === roomId) {
+        const failedOptions = messageOptions[roomId]
         currentMessageOptions.value = {
-          isLast: false,
+          isLast: failedOptions?.isLast ?? false,
           isLoading: false,
-          cursor: '',
+          cursor: failedOptions?.cursor ?? '',
           hasLoadedOnce: true
         }
       }

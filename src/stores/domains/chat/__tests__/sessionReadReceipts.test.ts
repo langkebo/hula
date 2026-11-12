@@ -3,6 +3,7 @@ import { createPersistedState } from 'pinia-plugin-persistedstate'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick, watchEffect } from 'vue'
 import { RoomTypeEnum } from '@/enums'
+import { registerPrivacyPreferenceHooks } from '@/services/matrix/privacyPreferences'
 import { useSessionUnreadStore } from '@/stores/domains/chat/sessionUnread'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { SessionItem } from '../chat'
@@ -86,6 +87,13 @@ describe('SessionStore markSessionRead 与「发送已读回执」偏好联动',
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    // 测试不经过应用入口，手动完成 main.ts 的偏好注入（S7：服务已不再 import setting store）。
+    // 读取器在执行时取当前 active pinia，因此冷启动用例新建的 pinia 同样生效。
+    registerPrivacyPreferenceHooks({
+      isSendTypingNotificationsEnabled: () => true,
+      isShowOnlineStatusEnabled: () => true,
+      isSendReadReceiptsEnabled: () => useSettingStore().sendReadReceiptsEnabled
+    })
     getSessionListMock.mockResolvedValue([])
     globalStoreMock.currentSessionRoomId = ''
   })

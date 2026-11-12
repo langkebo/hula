@@ -25,8 +25,10 @@ interface MatrixClientRoomDeps {
    * 建/入房后必须在 `waitForRoom` **之前**调用：服务端只对「订阅集合变化」的房间强制
    * `initial: true`，而 SDK 对 store 里没有的房间必须看到 `initial` 才肯建实例。
    * 不订阅就会出现「房间建成功了但 5s 内取不到实例」。
+   *
+   * @returns 是否已下发到 SDK；`false` 表示实例未就绪（排队等 `create()` 重放）或下发失败。
    */
-  readonly subscribeRoomForSync?: (roomId: string) => void
+  readonly subscribeRoomForSync?: (roomId: string) => boolean
 }
 
 /** 默认空间管理员（moderator）power level 阈值 */

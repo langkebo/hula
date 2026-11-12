@@ -523,6 +523,60 @@ describe('ChatMessageStore', () => {
     expect(sessionStoreMock.markSessionRead).not.toHaveBeenCalled()
   })
 
+  it('keeps the previous cursor when loading more messages fails', async () => {
+    const store = useChatStore()
+    // currentMessageOptions 指向当前房间（room-1），写入即落到该房间的分页状态
+    store.currentMessageOptions = {
+      isLast: false,
+      isLoading: false,
+      cursor: 'cursor-42',
+      hasLoadedOnce: true
+    }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(new Error('network down'))
+
+    await store.loadMore()
+
+    // 失败不能抹掉游标：否则「向上翻页」退回首屏且再也翻不回历史（S4）
+    expect(matrixEventService.getPagedRoomMessages).toHaveBeenCalledWith('room-1', 20, 'cursor-42')
+    expect(store.currentMessageOptions).toMatchObject({
+      cursor: 'cursor-42',
+      isLast: false,
+      isLoading: false,
+      hasLoadedOnce: true
+    })
+  })
+
+  it('does not overwrite the new room state when the previous room load fails', async () => {
+    const store = useChatStore()
+    const paged = vi.mocked(matrixEventService.getPagedRoomMessages)
+
+    // 先让 room-2 成功加载一页，留下游标 cursor-b
+    globalStoreMock.currentSessionRoomId = 'room-2'
+    paged.mockResolvedValueOnce({ messages: [], isLast: false, cursor: 'cursor-b' } as never)
+    await store.changeRoom()
+    expect(store.currentMessageOptions.cursor).toBe('cursor-b')
+    sessionStoreMock.markSessionRead.mockClear()
+
+    // 切到 room-1 并让加载挂起
+    globalStoreMock.currentSessionRoomId = 'room-1'
+    let rejectPaged: (reason?: unknown) => void = () => {}
+    paged.mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectPaged = reject
+      }) as never
+    )
+    const pending = store.changeRoom()
+
+    // 加载尚未完成时用户切回 room-2，随后 room-1 加载失败
+    globalStoreMock.currentSessionRoomId = 'room-2'
+    rejectPaged(new Error('boom'))
+    await pending
+
+    // 失败收尾必须按入参 roomId 写回，不能覆盖新房间的游标/已读状态
+    expect(store.currentMessageOptions.cursor).toBe('cursor-b')
+    expect(sessionStoreMock.markSessionRead).not.toHaveBeenCalled()
+  })
+
   it('should add a minimal session when opening a room missing from sessionList (e.g. from a notification)', async () => {
     const store = useChatStore()
     const fakeRoom = { roomId: 'room-1', name: 'Orphan Room' }
