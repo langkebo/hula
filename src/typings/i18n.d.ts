@@ -4649,6 +4649,7 @@ export type I18nKeys = {
     "title": "设备管理",
     "subtitle": "管理您的登录设备",
     "loading": "加载中...",
+    "empty": "暂无登录设备",
     "unnamed_device": "未命名设备",
     "no_info": "无信息",
     "current": "当前设备",
@@ -4891,7 +4892,8 @@ export type I18nKeys = {
     "contact_support": "联系客服",
     "about_tjg": "关于 Tjg",
     "check_update": "检查更新",
-    "latest_version": "已是最新版本",
+    "mobile_update_hint": "当前版本 {version}。移动端需下载安装包完成更新，应用内无法自动安装，是否前往发行页？",
+    "go_to_release_page": "前往发行页",
     "bug_title": "问题标题",
     "bug_title_placeholder": "请简要描述问题",
     "bug_description": "问题描述",
@@ -4901,8 +4903,8 @@ export type I18nKeys = {
     "feature_description": "功能描述",
     "feature_description_placeholder": "请详细描述您希望的功能",
     "submit": "提交",
-    "submit_success": "提交成功",
-    "submit_failed": "提交失败，请稍后重试",
+    "open_feedback_page": "已打开反馈页面，请在浏览器中完成提交",
+    "open_feedback_failed": "无法打开反馈页面，请稍后重试",
     "title_required": "请输入标题",
     "about_description": "Tjg 是一个基于 Matrix 协议的跨平台通讯应用",
     "copyright": "© 2024 Tjg Team. All rights reserved."
@@ -5139,9 +5141,6 @@ export type I18nKeys = {
   },
   "mobile_personal_info": {
     "account": "ID",
-    "follower": "粉丝",
-    "follow": "关注",
-    "like": "点赞",
     "edit_profile": "编辑资料",
     "remove_user": "移除",
     "add_friend": "添加好友",
@@ -5476,12 +5475,30 @@ export type I18nKeys = {
     "search_index_desc": "仅存于本机并加密落盘；清空不影响聊天记录，下次搜索时自动重建",
     "local_storage": "本地设置与缓存",
     "local_storage_keys": "{count} 个键",
+    "thumbnail_cache": "图片缩略图",
+    "thumbnail_cache_desc": "聊天图片与视频封面的本地缓存",
+    "emoji_cache": "表情缓存",
+    "emoji_cache_desc": "聊天表情包的本地缓存",
+    "cache_label_thumbnail": "缩略图",
+    "cache_label_emoji": "表情缓存",
+    "media_cache_size": "{size} · {files} 个文件",
+    "media_cache_empty": "无缓存文件",
     "other_data": "其它（会话与加密数据）",
     "other_data_desc": "含登录凭据与加密密钥，随账号登出清理，不在此处删除",
     "unavailable": "当前环境不支持统计本地数据（浏览器限制）",
+    "strategy_section": "缓存策略",
+    "auto_cache": "自动缓存媒体",
+    "auto_cache_desc": "关闭后聊天中的图片/视频缩略图不再写入本地，直接加载远端地址",
     "clear_section": "清理",
     "clear_action": "清空搜索索引",
     "clear_hint": "只清理搜索索引，聊天记录、媒体与登录状态都会保留",
+    "clear_thumbnail_action": "清理缩略图",
+    "clear_emoji_action": "清理表情",
+    "clear_cache_hint": "{files} 个缓存文件，清理后聊天中会按需重新加载",
+    "clear_cache_confirm_title": "清理{kind}？",
+    "clear_cache_confirm_message": "将删除本机 {files} 个文件（{kind}）。聊天记录与登录状态不受影响，需要时会重新加载。",
+    "clear_cache_success": "{kind}已清理",
+    "clear_cache_failed": "清理失败，请重试",
     "nothing_to_clear": "当前没有可清理的搜索索引",
     "clear_confirm_title": "清空搜索索引？",
     "clear_confirm_message": "将清空本机搜索索引（{events} 条消息索引、{rooms} 个会话）。聊天记录、媒体与登录状态不受影响，下次搜索会重建。",
@@ -11249,6 +11266,7 @@ export type I18nKeyPaths =
   | "mobile_devices.title"
   | "mobile_devices.subtitle"
   | "mobile_devices.loading"
+  | "mobile_devices.empty"
   | "mobile_devices.unnamed_device"
   | "mobile_devices.no_info"
   | "mobile_devices.current"
@@ -11443,7 +11461,8 @@ export type I18nKeyPaths =
   | "mobile_help.contact_support"
   | "mobile_help.about_tjg"
   | "mobile_help.check_update"
-  | "mobile_help.latest_version"
+  | "mobile_help.mobile_update_hint"
+  | "mobile_help.go_to_release_page"
   | "mobile_help.bug_title"
   | "mobile_help.bug_title_placeholder"
   | "mobile_help.bug_description"
@@ -11453,8 +11472,8 @@ export type I18nKeyPaths =
   | "mobile_help.feature_description"
   | "mobile_help.feature_description_placeholder"
   | "mobile_help.submit"
-  | "mobile_help.submit_success"
-  | "mobile_help.submit_failed"
+  | "mobile_help.open_feedback_page"
+  | "mobile_help.open_feedback_failed"
   | "mobile_help.title_required"
   | "mobile_help.about_description"
   | "mobile_help.copyright"
@@ -11649,9 +11668,6 @@ export type I18nKeyPaths =
   | "mobile_password.rule_digit"
   | "mobile_password.rule_special"
   | "mobile_personal_info.account"
-  | "mobile_personal_info.follower"
-  | "mobile_personal_info.follow"
-  | "mobile_personal_info.like"
   | "mobile_personal_info.edit_profile"
   | "mobile_personal_info.remove_user"
   | "mobile_personal_info.add_friend"
@@ -11939,12 +11955,30 @@ export type I18nKeyPaths =
   | "mobile_storage.search_index_desc"
   | "mobile_storage.local_storage"
   | "mobile_storage.local_storage_keys"
+  | "mobile_storage.thumbnail_cache"
+  | "mobile_storage.thumbnail_cache_desc"
+  | "mobile_storage.emoji_cache"
+  | "mobile_storage.emoji_cache_desc"
+  | "mobile_storage.cache_label_thumbnail"
+  | "mobile_storage.cache_label_emoji"
+  | "mobile_storage.media_cache_size"
+  | "mobile_storage.media_cache_empty"
   | "mobile_storage.other_data"
   | "mobile_storage.other_data_desc"
   | "mobile_storage.unavailable"
+  | "mobile_storage.strategy_section"
+  | "mobile_storage.auto_cache"
+  | "mobile_storage.auto_cache_desc"
   | "mobile_storage.clear_section"
   | "mobile_storage.clear_action"
   | "mobile_storage.clear_hint"
+  | "mobile_storage.clear_thumbnail_action"
+  | "mobile_storage.clear_emoji_action"
+  | "mobile_storage.clear_cache_hint"
+  | "mobile_storage.clear_cache_confirm_title"
+  | "mobile_storage.clear_cache_confirm_message"
+  | "mobile_storage.clear_cache_success"
+  | "mobile_storage.clear_cache_failed"
   | "mobile_storage.nothing_to_clear"
   | "mobile_storage.clear_confirm_title"
   | "mobile_storage.clear_confirm_message"

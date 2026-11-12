@@ -83,11 +83,16 @@ export const readMobileRoute = async (page: Page): Promise<{ name: string | null
     return { name: typeof raw?.name === 'string' ? raw.name : null, path: raw?.path ?? null }
   })
 
-/** 用应用 router 推一条路由，等重定向收敛后返回最终路由 */
+/**
+ * 用应用 router 推一条路由，等重定向收敛后返回最终路由。
+ *
+ * `settleMs` 是导航后固定等待的沉降时间，默认 1200ms（给懒加载区块/请求收尾留余量）。
+ * **计时类用例必须传 0**：否则固定等待会被算进导航耗时，指标恒高、门禁永远红。
+ */
 export const pushMobileRoute = async (
   page: Page,
   target: unknown,
-  attempt = 0
+  { settleMs = 1200, attempt = 0 }: { settleMs?: number; attempt?: number } = {}
 ): Promise<{ name: string | null; path: string | null }> => {
   try {
     await page.evaluate(async (to) => {
@@ -109,10 +114,10 @@ export const pushMobileRoute = async (
     // 登录后 SPA 重定向尚在进行时，evaluate 会撞上 "Execution context was destroyed"
     if (attempt < 3) {
       await page.waitForTimeout(1500)
-      return pushMobileRoute(page, target, attempt + 1)
+      return pushMobileRoute(page, target, { settleMs, attempt: attempt + 1 })
     }
     throw error
   }
-  await page.waitForTimeout(1200)
+  if (settleMs > 0) await page.waitForTimeout(settleMs)
   return readMobileRoute(page)
 }

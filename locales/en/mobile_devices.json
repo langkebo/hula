@@ -2,6 +2,7 @@
   "title": "Device Management",
   "subtitle": "Manage your login devices",
   "loading": "Loading...",
+  "empty": "No login devices",
   "unnamed_device": "Unnamed Device",
   "no_info": "No information",
   "current": "Current",

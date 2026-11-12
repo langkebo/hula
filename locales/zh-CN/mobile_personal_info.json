@@ -1,8 +1,5 @@
 {
   "account": "ID",
-  "follower": "粉丝",
-  "follow": "关注",
-  "like": "点赞",
   "edit_profile": "编辑资料",
   "remove_user": "移除",
   "add_friend": "添加好友",

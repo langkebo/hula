@@ -1,5 +1,5 @@
 import { join } from '@tauri-apps/api/path'
-import { exists, mkdir, remove, writeFile } from '@tauri-apps/plugin-fs'
+import { exists, mkdir, readDir, remove, stat, writeFile } from '@tauri-apps/plugin-fs'
 import { defineStore } from 'pinia'
 import { MessageStatusEnum, StoresEnum, TauriCommand } from '@/enums'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -25,6 +25,17 @@ type Task = {
 
 /** localStorage 元数据持久化键 */
 const METADATA_STORAGE_KEY = 'tjg:thumbnail-cache-metadata'
+/** 自动缓存开关持久化键 */
+const AUTO_CACHE_STORAGE_KEY = 'tjg:media-auto-cache'
+/** 媒体缓存类别，与磁盘子目录同名；用于按类统计与清理 */
+export type MediaCacheKind = 'thumbnails' | 'emojis'
+/** 媒体缓存目录（相对用户数据根目录） */
+const MEDIA_CACHE_SUBDIRS = ['thumbnails', 'emojis'] as const satisfies readonly MediaCacheKind[]
+/** 每个缓存类别对应的下载任务类型（清理时同步废弃状态） */
+const MEDIA_CACHE_TASK_KINDS: Record<MediaCacheKind, TaskKind[]> = {
+  thumbnails: ['image', 'video'],
+  emojis: ['emoji']
+}
 /** 每多少次入队触发一次 TTL 清理 */
 const CLEANUP_INTERVAL = 100
 /** 单次缩略图下载的超时时间（ms）：Worker 卡死时避免任务永挂。 */
@@ -47,6 +58,14 @@ const saveMetadataToStorage = (metadata: Map<string, CacheMetadata>) => {
     localStorage.setItem(METADATA_STORAGE_KEY, JSON.stringify(obj))
   } catch {
     // 忽略配额或序列化错误
+  }
+}
+
+const loadAutoCacheEnabled = (): boolean => {
+  try {
+    return localStorage.getItem(AUTO_CACHE_STORAGE_KEY) !== '0'
+  } catch {
+    return true
   }
 }
 
@@ -135,6 +154,81 @@ export const useThumbnailCacheStore = defineStore(StoresEnum.THUMBNAIL_CACHE, ()
   // 启动时清理过期项（异步，不阻塞渲染）
   void janitor.cleanupExpired()
   let enqueueSinceLastCleanup = 0
+
+  /** 是否自动把媒体缩略图缓存到本地磁盘（关闭后仅使用远端地址） */
+  const autoCacheEnabled = ref(loadAutoCacheEnabled())
+
+  const setAutoCacheEnabled = (enabled: boolean) => {
+    autoCacheEnabled.value = enabled
+    try {
+      localStorage.setItem(AUTO_CACHE_STORAGE_KEY, enabled ? '1' : '0')
+    } catch {
+      // 忽略存储失败：本次会话内仍然生效
+    }
+  }
+
+  const getMediaCacheDir = async (sub: string) => {
+    const dir = await userStore.getUserRoomDir()
+    return await join(dir, sub)
+  }
+
+  /**
+   * 统计媒体缓存占用与文件数。
+   * 传 `kind` 时只统计该类目录，不传则聚合全部（缩略图 + 表情）。
+   */
+  const getMediaCacheStats = async (kind?: MediaCacheKind): Promise<{ bytes: number; files: number }> => {
+    const baseDir = getDownloadBaseDir()
+    let bytes = 0
+    let files = 0
+    const targets = kind ? [kind] : MEDIA_CACHE_SUBDIRS
+    for (const sub of targets) {
+      const root = await getMediaCacheDir(sub)
+      try {
+        if (!(await exists(root, { baseDir }))) continue
+        const entries = await readDir(root, { baseDir })
+        for (const entry of entries) {
+          if (!entry.isFile || !entry.name) continue
+          try {
+            const info = await stat(await join(root, entry.name), { baseDir })
+            bytes += info.size
+            files += 1
+          } catch {
+            // 单个文件读取失败不影响整体统计
+          }
+        }
+      } catch {
+        // 目录不可读时跳过，由清理动作暴露真实错误
+      }
+    }
+    return { bytes, files }
+  }
+
+  /**
+   * 清空媒体缓存文件与元数据；失败时抛错，由调用方提示用户。
+   * 传 `kind` 时只清该类目录（缩略图 / 表情），不传则全清。
+   */
+  const clearMediaCache = async (kind?: MediaCacheKind): Promise<void> => {
+    const baseDir = getDownloadBaseDir()
+    const targets = kind ? [kind] : MEDIA_CACHE_SUBDIRS
+    for (const sub of targets) {
+      const root = await getMediaCacheDir(sub)
+      if (await exists(root, { baseDir })) {
+        await remove(root, { baseDir, recursive: true })
+      }
+    }
+    if (kind) {
+      // 只丢该类的元数据与下载状态，另一类缓存保持可用
+      janitor.clearUnder(kind)
+      const kinds = MEDIA_CACHE_TASK_KINDS[kind]
+      for (const [url, task] of Object.entries(statusMap.value)) {
+        if (kinds.includes(task.kind)) invalidate(url)
+      }
+      return
+    }
+    janitor.clearAll()
+    statusMap.value = {}
+    triggerRef(statusMap)
+  }
 
   const notifyWaiters = (url: string, path: string | null) => {
     const waiters = waiterMap.get(url)
@@ -258,6 +352,9 @@ export const useThumbnailCacheStore = defineStore(StoresEnum.THUMBNAIL_CACHE, ()
   }
 
   const enqueueThumbnail = async (options: { url: string; msgId: string; roomId: string; kind: TaskKind }) => {
+    // 用户关闭自动缓存：不做磁盘缓存，调用方回退到远端地址
+    if (!autoCacheEnabled.value) return null
+
     // 周期性触发 TTL 清理，避免长期堆积过期文件
     enqueueSinceLastCleanup += 1
     if (enqueueSinceLastCleanup >= CLEANUP_INTERVAL) {
@@ -306,5 +403,13 @@ export const useThumbnailCacheStore = defineStore(StoresEnum.THUMBNAIL_CACHE, ()
 
   const getStatus = (url: string) => statusMap.value[url]
 
-  return { enqueueThumbnail, getStatus, invalidate }
+  return {
+    autoCacheEnabled,
+    setAutoCacheEnabled,
+    getMediaCacheStats,
+    clearMediaCache,
+    enqueueThumbnail,
+    getStatus,
+    invalidate
+  }
 })

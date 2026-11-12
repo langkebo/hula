@@ -35,7 +35,6 @@ const MobileMy = () => import('#/views/my/index.vue')
 const MobileQRCode = () => import('#/views/my/MobileQRCode.vue')
 const MobileSettings = () => import('#/views/my/MobileSettings.vue')
 const MyMessages = () => import('#/views/my/MyMessages.vue')
-const Share = () => import('#/views/my/Share.vue')
 const MyAlbum = () => import('#/views/my/MyAlbum.vue')
 const StatusSettings = () => import('#/views/my/StatusSettings.vue')
 const ConfirmQRLogin = () => import('#/views/ConfirmQRLogin.vue')
@@ -276,11 +275,6 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'myQRCode',
         name: 'mobileMyQRCodePage',
         component: MyQRCode
-      },
-      {
-        path: 'share',
-        name: 'mobileShare',
-        component: Share
       },
       {
         path: 'myAlbum',

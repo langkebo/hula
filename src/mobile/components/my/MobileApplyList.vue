@@ -78,7 +78,7 @@
             v-if="item.status === RequestNoticeAgreeStatus.UNTREATED && !isCurrentUser(item.senderId || '')">
             <template #reference>
               <div
-                class="cursor-pointer px-15px py-3px rounded-5px mt-10px bg-gray-300 h-50% flex items-center justify-center">
+                class="cursor-pointer px-15px py-3px rounded-5px mt-10px bg-[--tjg-surface-subtle] h-50% flex items-center justify-center">
                 <svg class="size-16px color-[--tjg-text-primary]">
                   <use href="#more"></use>
                 </svg>

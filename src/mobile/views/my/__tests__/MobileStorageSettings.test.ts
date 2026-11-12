@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { showToast } from 'vant'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MobileStorageSettings from '../MobileStorageSettings.vue'
 
@@ -17,6 +18,14 @@ import MobileStorageSettings from '../MobileStorageSettings.vue'
 const getStatsMock = vi.fn()
 const clearStoresMock = vi.fn()
 
+// 媒体缓存 store 会拉起 Pinia userStore 与 Tauri FS，测试里整体替换为可控假实现
+const mediaCacheMock = vi.hoisted(() => ({
+  autoCacheEnabled: { value: true },
+  setAutoCacheEnabled: vi.fn(),
+  getMediaCacheStats: vi.fn(),
+  clearMediaCache: vi.fn()
+}))
+
 vi.mock('vant', async () => {
   const { defineComponent } = await import('vue')
   const passthrough = (name: string, tag = 'div') =>
@@ -28,9 +37,21 @@ vi.mock('vant', async () => {
     VanCell: passthrough('VanCell'),
     VanButton: passthrough('VanButton', 'button'),
     VanLoading: passthrough('VanLoading'),
-    VanProgress: passthrough('VanProgress')
+    VanProgress: passthrough('VanProgress'),
+    VanSwitch: passthrough('VanSwitch')
   }
 })
+
+vi.mock('@/stores/domains/widget/thumbnailCache', () => ({
+  useThumbnailCacheStore: () => ({
+    get autoCacheEnabled() {
+      return mediaCacheMock.autoCacheEnabled.value
+    },
+    setAutoCacheEnabled: mediaCacheMock.setAutoCacheEnabled,
+    getMediaCacheStats: mediaCacheMock.getMediaCacheStats,
+    clearMediaCache: mediaCacheMock.clearMediaCache
+  })
+}))
 
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }) }))
@@ -52,6 +73,9 @@ vi.mock('@/mobile/components/chat-room/HeaderBar.vue', () => ({
   default: { name: 'HeaderBar', template: '<div />', props: ['border', 'isOfficial', 'hiddenRight', 'roomName'] }
 }))
 
+type MediaCacheKind = 'thumbnails' | 'emojis'
+type MediaCacheUsage = { bytes: number; files: number }
+
 interface Vm {
   loading: boolean
   usage: number
@@ -61,14 +85,36 @@ interface Vm {
   quotaText: string
   loadStats: () => Promise<void>
   hasClearableIndex: boolean
+  mediaStats: Record<MediaCacheKind, MediaCacheUsage>
+  mediaCacheAvailable: boolean
+  hasClearableMedia: (kind: MediaCacheKind) => boolean
+  mediaCacheTextFor: (kind: MediaCacheKind) => string
+  handleToggleAutoCache: (value: string | number | boolean) => void
+  handleClearMedia: (kind: MediaCacheKind) => Promise<void>
 }
 
 const mountPage = () => mount(MobileStorageSettings)
 const vmOf = (w: ReturnType<typeof mount>) => w.vm as unknown as Vm
 
+/** 按类别返回可控统计，便于分别验证「缩略图 / 表情」两条路径 */
+const mockStatsByKind = (initial: Record<MediaCacheKind, MediaCacheUsage>) => {
+  const stats: Record<MediaCacheKind, MediaCacheUsage> = {
+    thumbnails: { ...initial.thumbnails },
+    emojis: { ...initial.emojis }
+  }
+  mediaCacheMock.getMediaCacheStats.mockImplementation((kind: MediaCacheKind) => Promise.resolve({ ...stats[kind] }))
+  mediaCacheMock.clearMediaCache.mockImplementation((kind: MediaCacheKind) => {
+    stats[kind] = { bytes: 0, files: 0 }
+    return Promise.resolve()
+  })
+  return stats
+}
+
 describe('MobileStorageSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mediaCacheMock.autoCacheEnabled.value = true
+    mockStatsByKind({ thumbnails: { bytes: 0, files: 0 }, emojis: { bytes: 0, files: 0 } })
     // jsdom 没有 navigator.storage，补一个
     Object.defineProperty(navigator, 'storage', {
       configurable: true,
@@ -139,5 +185,96 @@ describe('MobileStorageSettings', () => {
     expect(vmOf(wrapper).hasClearableIndex).toBe(false)
     // 假 UI 也不应回来（缓存命中率/清理缓存分区已删除）
     expect(wrapper.html()).not.toContain('mobile_storage.cache_section')
+  })
+
+  it('缩略图与表情缓存按类别分开统计（不再合并成一个数字）', async () => {
+    mockStatsByKind({ thumbnails: { bytes: 3084, files: 3 }, emojis: { bytes: 1024, files: 2 } })
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(mediaCacheMock.getMediaCacheStats).toHaveBeenCalledWith('thumbnails')
+    expect(mediaCacheMock.getMediaCacheStats).toHaveBeenCalledWith('emojis')
+    expect(vmOf(wrapper).mediaStats.thumbnails).toEqual({ bytes: 3084, files: 3 })
+    expect(vmOf(wrapper).mediaStats.emojis).toEqual({ bytes: 1024, files: 2 })
+    expect(vmOf(wrapper).hasClearableMedia('thumbnails')).toBe(true)
+    expect(vmOf(wrapper).hasClearableMedia('emojis')).toBe(true)
+    expect(vmOf(wrapper).mediaCacheTextFor('thumbnails')).toBe('mobile_storage.media_cache_size')
+  })
+
+  it('某一类为空时只有该类不可清理，另一类不受影响', async () => {
+    mockStatsByKind({ thumbnails: { bytes: 3084, files: 3 }, emojis: { bytes: 0, files: 0 } })
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(vmOf(wrapper).hasClearableMedia('thumbnails')).toBe(true)
+    expect(vmOf(wrapper).hasClearableMedia('emojis')).toBe(false)
+    expect(vmOf(wrapper).mediaCacheTextFor('emojis')).toBe('mobile_storage.media_cache_empty')
+  })
+
+  it('读不到媒体缓存目录时标记不可用，不谎报「无缓存」', async () => {
+    mediaCacheMock.getMediaCacheStats.mockRejectedValue(new Error('not a tauri env'))
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(vmOf(wrapper).mediaCacheAvailable).toBe(false)
+    expect(vmOf(wrapper).hasClearableMedia('thumbnails')).toBe(false)
+    expect(vmOf(wrapper).hasClearableMedia('emojis')).toBe(false)
+    expect(vmOf(wrapper).mediaCacheTextFor('thumbnails')).toBe('mobile_storage.unavailable')
+  })
+
+  it('自动缓存开关调用 store 的真实 setter', async () => {
+    const wrapper = mountPage()
+    await flushPromises()
+
+    vmOf(wrapper).handleToggleAutoCache(false)
+    expect(mediaCacheMock.setAutoCacheEnabled).toHaveBeenCalledWith(false)
+    vmOf(wrapper).handleToggleAutoCache('1')
+    expect(mediaCacheMock.setAutoCacheEnabled).toHaveBeenLastCalledWith(true)
+  })
+
+  it('清理表情缓存只清该类，缩略图统计保持不变', async () => {
+    mockStatsByKind({ thumbnails: { bytes: 2048, files: 2 }, emojis: { bytes: 512, files: 1 } })
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    await vmOf(wrapper).handleClearMedia('emojis')
+
+    expect(mediaCacheMock.clearMediaCache).toHaveBeenCalledTimes(1)
+    expect(mediaCacheMock.clearMediaCache).toHaveBeenCalledWith('emojis')
+    expect(vmOf(wrapper).mediaStats.emojis).toEqual({ bytes: 0, files: 0 })
+    expect(vmOf(wrapper).mediaStats.thumbnails).toEqual({ bytes: 2048, files: 2 })
+    expect(vmOf(wrapper).hasClearableMedia('thumbnails')).toBe(true)
+  })
+
+  it('清理缩略图缓存调用 store 的 thumbnails 分支', async () => {
+    mockStatsByKind({ thumbnails: { bytes: 2048, files: 2 }, emojis: { bytes: 512, files: 1 } })
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    await vmOf(wrapper).handleClearMedia('thumbnails')
+
+    expect(mediaCacheMock.clearMediaCache).toHaveBeenCalledWith('thumbnails')
+    expect(vmOf(wrapper).mediaStats.thumbnails).toEqual({ bytes: 0, files: 0 })
+    expect(vmOf(wrapper).hasClearableMedia('emojis')).toBe(true)
+  })
+
+  it('清理失败时弹失败提示，不静默当成功', async () => {
+    mockStatsByKind({ thumbnails: { bytes: 2048, files: 2 }, emojis: { bytes: 0, files: 0 } })
+    mediaCacheMock.clearMediaCache.mockRejectedValue(new Error('permission denied'))
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    await vmOf(wrapper).handleClearMedia('thumbnails')
+
+    expect(vmOf(wrapper).hasClearableMedia('thumbnails')).toBe(true)
+    expect(vi.mocked(showToast)).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'fail', message: 'mobile_storage.clear_cache_failed' })
+    )
   })
 })

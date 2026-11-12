@@ -11,9 +11,19 @@
         </div>
 
         <div v-else class="flex flex-col p-16px gap-12px">
-          <div class="text-14px text-gray-500 mb-8px">{{ t('mobile_devices.subtitle') }}</div>
+          <div class="text-14px text-[--tjg-text-secondary] mb-8px">{{ t('mobile_devices.subtitle') }}</div>
 
-          <van-cell-group inset>
+          <van-empty
+            v-if="devices.length === 0"
+            data-testid="device-empty"
+            image="search"
+            :description="loadFailed ? t('mobile_devices.load_failed') : t('mobile_devices.empty')">
+            <van-button v-if="loadFailed" round type="primary" size="small" @click="loadDevices">
+              {{ t('common.retry') }}
+            </van-button>
+          </van-empty>
+
+          <van-cell-group v-else inset>
             <van-cell
               v-for="device in devices"
               :key="device.deviceId"
@@ -22,7 +32,8 @@
               is-link
               @click="openDeviceActions(device)">
               <template #icon>
-                <div class="w-40px h-40px rounded-full bg-gray-100 mr-12px flex items-center justify-center">
+                <div
+                  class="w-40px h-40px rounded-full bg-[--tjg-surface-subtle] mr-12px flex items-center justify-center">
                   <Icon :icon="getDeviceIcon()" :width="20" color="var(--tjg-text-secondary)" />
                 </div>
               </template>
@@ -108,6 +119,8 @@ const {
 const { trustDevice, untrustDevice } = useDeviceTrust()
 
 const showDeviceActionSheet = ref(false)
+/** 加载失败与「真的没有设备」必须区分，否则空态会谎报「暂无登录设备」 */
+const loadFailed = ref(false)
 const selectedDevice = ref<DeviceSessionInfo | null>(null)
 const showRenameDialog = ref(false)
 const renameInput = ref('')
@@ -166,6 +179,7 @@ onMounted(async () => {
 
 async function loadDevices() {
   const loaded = await loadDeviceSessions()
+  loadFailed.value = !loaded
   if (!loaded) {
     showToast({ type: 'fail', message: t('mobile_devices.load_failed') })
   }

@@ -146,6 +146,29 @@ export class ThumbnailCacheJanitor {
     return this.metadata.size
   }
 
+  /** 清空全部元数据（不删除文件，文件由调用方按目录清理） */
+  clearAll(): void {
+    if (this.metadata.size === 0) return
+    this.metadata.clear()
+    this.persist()
+  }
+
+  /**
+   * 只清掉路径包含 `marker` 的元数据（按缓存类别清理时用，不删除文件）。
+   * 路径形如 `<userDir>/thumbnails/<hash>.jpg`，用子目录名匹配即可区分类别。
+   */
+  clearUnder(marker: string): void {
+    if (!marker) return
+    let changed = false
+    for (const path of [...this.metadata.keys()]) {
+      if (path.includes(marker)) {
+        this.metadata.delete(path)
+        changed = true
+      }
+    }
+    if (changed) this.persist()
+  }
+
   private findLRU(): string | null {
     let oldestPath: string | null = null
     let oldestTime = Infinity

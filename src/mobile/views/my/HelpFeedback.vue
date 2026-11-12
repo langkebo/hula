@@ -177,11 +177,12 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { showToast } from 'vant'
-import { onMounted, ref } from 'vue'
+import { showConfirmDialog, showToast } from 'vant'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
+import { APP_VERSION } from '@/utils/appVersion'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('HelpFeedback')
@@ -205,7 +206,9 @@ const iconShellStyles = {
   update: { backgroundColor: 'var(--tjg-color-success-100)' }
 } as const
 
-const versionInfo = ref('v1.0.0')
+const versionInfo = `v${APP_VERSION}`
+
+const checkingUpdate = ref(false)
 
 const bugReport = ref({
   title: '',
@@ -217,103 +220,95 @@ const featureRequest = ref({
   description: ''
 })
 
-onMounted(() => {
-  loadVersion()
-})
-
-function loadVersion() {
-  try {
-    const pkgVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : null
-    if (pkgVersion) {
-      versionInfo.value = `v${pkgVersion}`
-    } else {
-      const stored = localStorage.getItem('tjg-app-version')
-      if (stored) {
-        versionInfo.value = stored
-      }
-    }
-  } catch {
-    versionInfo.value = 'v1.0.0'
-  }
-}
+const FEEDBACK_ISSUE_URL = 'https://github.com/nichuanfang/nichuanfang.github.io/issues/new'
+/** 移动端安装包的唯一获取入口（与桌面端帮助页一致） */
+const RELEASE_PAGE_URL = 'https://github.com/nichuanfang/nichuanfang.github.io/releases'
 
 function openLink(url: string) {
   void openExternalUrl(url)
 }
 
+/**
+ * 检查更新（移动端）。
+ *
+ * `@tauri-apps/plugin-updater` 官方不支持 Android/iOS（仅桌面端注册），所以这里既不调用它，
+ * 也不伪造「已是最新版本」；移动端真实升级路径是发行页/应用商店安装新包，因此如实展示当前
+ * 版本并给出可跳转的发行页。桌面端的真实 updater 流程在 `views/CheckUpdate.vue`。
+ */
 async function checkUpdate() {
+  if (checkingUpdate.value) return
+  checkingUpdate.value = true
+  try {
+    await showConfirmDialog({
+      title: t('mobile_help.check_update'),
+      message: t('mobile_help.mobile_update_hint', { version: versionInfo }),
+      confirmButtonText: t('mobile_help.go_to_release_page'),
+      cancelButtonText: t('common.cancel')
+    })
+  } catch {
+    return // 用户取消
+  } finally {
+    checkingUpdate.value = false
+  }
+
+  try {
+    await openExternalUrl(RELEASE_PAGE_URL)
+  } catch (error) {
+    // 与 openLink 一致：打不开外链只记日志，不误报成「检查更新失败」
+    logger.warn('Failed to open release page', error)
+  }
+}
+
+function buildFeedbackUrl(type: 'bug' | 'feature', title: string, description: string): string {
+  const params = new URLSearchParams()
+  params.set('title', `[${type === 'bug' ? 'Bug' : 'Feature'}] ${title}`)
+  params.set('body', `${description}\n\n---\nTJG Mobile ${versionInfo}\nUA: ${navigator.userAgent}`)
+  return `${FEEDBACK_ISSUE_URL}?${params.toString()}`
+}
+
+async function submitReport(
+  type: 'bug' | 'feature',
+  payload: { title: string; description: string },
+  closePopup: () => void
+) {
+  const title = payload.title.trim()
+  if (!title) {
+    showToast({
+      type: 'fail',
+      message: t('mobile_help.title_required')
+    })
+    return
+  }
+
+  const opened = await openExternalUrl(buildFeedbackUrl(type, title, payload.description.trim()))
+  if (!opened) {
+    logger.error('Failed to open feedback issue page', { type })
+    showToast({
+      type: 'fail',
+      message: t('mobile_help.open_feedback_failed')
+    })
+    return
+  }
+
   showToast({
     type: 'success',
-    message: t('mobile_help.latest_version')
+    message: t('mobile_help.open_feedback_page')
+  })
+  payload.title = ''
+  payload.description = ''
+  closePopup()
+}
+
+function submitBugReport() {
+  void submitReport('bug', bugReport.value, () => {
+    showBugReport.value = false
   })
 }
 
-async function submitBugReport() {
-  if (!bugReport.value.title) {
-    showToast({
-      type: 'fail',
-      message: t('mobile_help.title_required')
-    })
-    return
-  }
-
-  try {
-    const reports = JSON.parse(localStorage.getItem('tjg-bug-reports') || '[]')
-    reports.push({
-      ...bugReport.value,
-      timestamp: Date.now(),
-      type: 'bug'
-    })
-    localStorage.setItem('tjg-bug-reports', JSON.stringify(reports))
-
-    showToast({
-      type: 'success',
-      message: t('mobile_help.submit_success')
-    })
-
-    bugReport.value = { title: '', description: '' }
-    showBugReport.value = false
-  } catch (error) {
-    logger.error('Failed to submit bug report', error)
-    showToast({
-      type: 'fail',
-      message: t('mobile_help.submit_failed')
-    })
-  }
-}
-
-async function submitFeatureRequest() {
-  if (!featureRequest.value.title) {
-    showToast({
-      type: 'fail',
-      message: t('mobile_help.title_required')
-    })
-    return
-  }
-
-  try {
-    const requests = JSON.parse(localStorage.getItem('tjg-feature-requests') || '[]')
-    requests.push({
-      ...featureRequest.value,
-      timestamp: Date.now(),
-      type: 'feature'
-    })
-    localStorage.setItem('tjg-feature-requests', JSON.stringify(requests))
-
-    showToast({
-      type: 'success',
-      message: t('mobile_help.submit_success')
-    })
-
-    featureRequest.value = { title: '', description: '' }
+function submitFeatureRequest() {
+  void submitReport('feature', featureRequest.value, () => {
     showFeatureRequest.value = false
-  } catch (error) {
-    logger.error('Failed to submit feature request', error)
-    showToast({
-      type: 'fail',
-      message: t('mobile_help.submit_failed')
-    })
-  }
+  })
 }
 </script>
 

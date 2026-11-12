@@ -37,12 +37,39 @@
               :label="t('mobile_storage.local_storage_keys', { count: local.keyCount })"
               data-testid="local-storage-cell" />
             <van-cell
+              :title="t('mobile_storage.thumbnail_cache')"
+              :value="mediaCacheTextFor('thumbnails')"
+              :label="t('mobile_storage.thumbnail_cache_desc')"
+              data-testid="thumbnail-cache-cell" />
+            <van-cell
+              :title="t('mobile_storage.emoji_cache')"
+              :value="mediaCacheTextFor('emojis')"
+              :label="t('mobile_storage.emoji_cache_desc')"
+              data-testid="emoji-cache-cell" />
+            <van-cell
               :title="t('mobile_storage.other_data')"
               :label="t('mobile_storage.other_data_desc')"
               data-testid="other-data-cell" />
           </van-cell-group>
 
-          <!-- 清理：只做真实可清的一项。旧的「清理缓存」是 no-op 却弹成功，已移除 -->
+          <!-- 缓存策略：开关真实生效，关闭后缩略图不再写入本地磁盘 -->
+          <van-cell-group :title="t('mobile_storage.strategy_section')" inset>
+            <van-cell
+              :title="t('mobile_storage.auto_cache')"
+              :label="t('mobile_storage.auto_cache_desc')"
+              data-testid="auto-cache-cell">
+              <template #right-icon>
+                <van-switch
+                  size="20px"
+                  :model-value="thumbnailStore.autoCacheEnabled"
+                  :aria-label="t('mobile_storage.auto_cache')"
+                  data-testid="auto-cache-switch"
+                  @update:model-value="handleToggleAutoCache" />
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <!-- 清理：每一项都真实删除，失败会明确提示 -->
           <van-cell-group :title="t('mobile_storage.clear_section')" inset>
             <van-cell data-testid="clear-search-index-cell">
               <template #title>
@@ -66,6 +93,58 @@
                 </van-button>
               </template>
             </van-cell>
+            <van-cell data-testid="clear-thumbnail-cell">
+              <template #title>
+                <div class="flex flex-col gap-4px">
+                  <span>{{ t('mobile_storage.clear_thumbnail_action') }}</span>
+                  <span class="text-12px text-[--tjg-text-tertiary]">
+                    {{
+                      hasClearableMedia('thumbnails')
+                        ? t('mobile_storage.clear_cache_hint', { files: mediaStats.thumbnails.files })
+                        : t('mobile_storage.media_cache_empty')
+                    }}
+                  </span>
+                </div>
+              </template>
+              <template #right-icon>
+                <van-button
+                  size="small"
+                  type="danger"
+                  plain
+                  :loading="clearingMedia === 'thumbnails'"
+                  :disabled="!hasClearableMedia('thumbnails')"
+                  data-testid="clear-thumbnail-button"
+                  @click="handleClearMedia('thumbnails')">
+                  {{ t('mobile_storage.clear_thumbnail_action') }}
+                </van-button>
+              </template>
+            </van-cell>
+            <van-cell data-testid="clear-emoji-cell">
+              <template #title>
+                <div class="flex flex-col gap-4px">
+                  <span>{{ t('mobile_storage.clear_emoji_action') }}</span>
+                  <span class="text-12px text-[--tjg-text-tertiary]">
+                    {{
+                      hasClearableMedia('emojis')
+                        ? t('mobile_storage.clear_cache_hint', { files: mediaStats.emojis.files })
+                        : t('mobile_storage.media_cache_empty')
+                    }}
+                  </span>
+                </div>
+              </template>
+              <template #right-icon>
+                <van-button
+                  size="small"
+                  type="danger"
+                  plain
+                  :loading="clearingMedia === 'emojis'"
+                  :disabled="!hasClearableMedia('emojis')"
+                  data-testid="clear-emoji-button"
+                  @click="handleClearMedia('emojis')">
+                  {{ t('mobile_storage.clear_emoji_action') }}
+                </van-button>
+              </template>
+            </van-cell>
           </van-cell-group>
         </template>
       </div>
@@ -80,6 +159,7 @@ import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
+import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { formatBytes } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 import { measureLocalStorageUsage } from '@/utils/localStorageUsage'
@@ -98,6 +178,34 @@ const searchRooms = ref(0)
 const searchEvents = ref(0)
 /** IndexedDB / worker 都拿不到统计时为 false（此时不谎报 0 条） */
 const searchStatsAvailable = ref(true)
+
+const thumbnailStore = useThumbnailCacheStore()
+type MediaCacheKind = 'thumbnails' | 'emojis'
+type MediaCacheUsage = { bytes: number; files: number }
+/** 按类别分开统计，用户才能判断该清哪一类 */
+const mediaStats = ref<Record<MediaCacheKind, MediaCacheUsage>>({
+  thumbnails: { bytes: 0, files: 0 },
+  emojis: { bytes: 0, files: 0 }
+})
+const mediaCacheLoading = ref(false)
+/** 读不到媒体缓存目录（如浏览器环境）时为 false，避免谎报「无缓存」 */
+const mediaCacheAvailable = ref(true)
+/** 正在清理的类别；null 表示空闲 */
+const clearingMedia = ref<MediaCacheKind | null>(null)
+
+const hasClearableMedia = (kind: MediaCacheKind): boolean =>
+  mediaCacheAvailable.value && mediaStats.value[kind].files > 0
+
+function mediaCacheTextFor(kind: MediaCacheKind): string {
+  if (mediaCacheLoading.value) return t('mobile_storage.loading')
+  if (!mediaCacheAvailable.value) return t('mobile_storage.unavailable')
+  const stat = mediaStats.value[kind]
+  if (stat.files === 0) return t('mobile_storage.media_cache_empty')
+  return t('mobile_storage.media_cache_size', {
+    size: formatBytes(stat.bytes),
+    files: stat.files
+  })
+}
 
 const usageText = computed(() => formatBytes(usage.value))
 const quotaText = computed(() => formatBytes(quota.value))
@@ -130,6 +238,24 @@ async function loadSearchIndexStats(): Promise<void> {
   }
 }
 
+/** 分类统计磁盘上的缩略图 / 表情缓存；读不到目录时标记为不可用而不是回 0 */
+async function loadMediaCacheStats(): Promise<void> {
+  mediaCacheLoading.value = true
+  try {
+    const [thumbnails, emojis] = await Promise.all([
+      thumbnailStore.getMediaCacheStats('thumbnails'),
+      thumbnailStore.getMediaCacheStats('emojis')
+    ])
+    mediaStats.value = { thumbnails, emojis }
+    mediaCacheAvailable.value = true
+  } catch (error) {
+    logger.warn('Failed to read media cache stats', error)
+    mediaCacheAvailable.value = false
+  } finally {
+    mediaCacheLoading.value = false
+  }
+}
+
 async function loadStats(): Promise<void> {
   // ⚠️ 这里曾展示「缓存命中率 / 内存占用 / 缓存条目」并调用矩阵 worker 的 getStats()。
   // Batch 3.2 取证确认该消息在 worker 侧恒返回 null（worker 从不持有 client）⇒ 三项永远为
@@ -145,6 +271,7 @@ async function loadStats(): Promise<void> {
     }
     local.value = measureLocalStorageUsage()
     await loadSearchIndexStats()
+    await loadMediaCacheStats()
   } catch (error) {
     logger.error('Failed to load storage stats', error)
   } finally {
@@ -200,6 +327,44 @@ async function handleClear(): Promise<void> {
     showToast({ type: 'fail', message: t('mobile_storage.clear_failed') })
   } finally {
     clearing.value = false
+  }
+}
+
+function handleToggleAutoCache(value: string | number | boolean): void {
+  thumbnailStore.setAutoCacheEnabled(Boolean(value))
+}
+
+/** 真实删除某一类缓存文件（缩略图 / 表情）；删除失败弹失败提示 */
+async function handleClearMedia(kind: MediaCacheKind): Promise<void> {
+  if (!hasClearableMedia(kind) || clearingMedia.value) return
+
+  const label =
+    kind === 'thumbnails' ? t('mobile_storage.cache_label_thumbnail') : t('mobile_storage.cache_label_emoji')
+  try {
+    await showConfirmDialog({
+      title: t('mobile_storage.clear_cache_confirm_title', { kind: label }),
+      message: t('mobile_storage.clear_cache_confirm_message', {
+        kind: label,
+        files: mediaStats.value[kind].files
+      }),
+      confirmButtonText:
+        kind === 'thumbnails' ? t('mobile_storage.clear_thumbnail_action') : t('mobile_storage.clear_emoji_action'),
+      cancelButtonText: t('common.cancel')
+    })
+  } catch {
+    return // 用户取消
+  }
+
+  clearingMedia.value = kind
+  try {
+    await thumbnailStore.clearMediaCache(kind)
+    await loadMediaCacheStats()
+    showToast({ type: 'success', message: t('mobile_storage.clear_cache_success', { kind: label }) })
+  } catch (error) {
+    logger.error('Failed to clear media cache', { kind }, error)
+    showToast({ type: 'fail', message: t('mobile_storage.clear_cache_failed') })
+  } finally {
+    clearingMedia.value = null
   }
 }
 

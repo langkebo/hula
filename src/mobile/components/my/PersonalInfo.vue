@@ -7,7 +7,13 @@
       <div
         class="self-center h-auto transition-transform duration-300 ease-in-out origin-top"
         :style="{ transform: props.isShow ? 'scale(1) translateY(0)' : 'scale(0.62) translateY(0px)' }">
+        <div
+          v-if="showSkeleton"
+          class="size-64px rounded-full bg-[--tjg-surface-subtle] animate-pulse motion-reduce:animate-none"
+          data-testid="personal-info-skeleton-avatar"
+          aria-hidden="true" />
         <img
+          v-else
           class="size-64px rounded-full object-cover"
           :src="AvatarUtils.getAvatarUrl(userDetailInfo?.avatar || '')"
           :alt="t('mobile_contact.avatar.user')"
@@ -18,7 +24,12 @@
       <div ref="infoBox" class="pl-2 flex gap-8px flex-col transition-transform duration-300 ease-in-out">
         <!-- 名字与在线状态 -->
         <div class="flex flex-warp gap-4 items-center">
-          <span class="font-semibold text-18px">{{ userDetailInfo?.name }}</span>
+          <span
+            v-if="showSkeleton"
+            class="block h-18px w-96px rounded-4px bg-[--tjg-surface-subtle] animate-pulse motion-reduce:animate-none"
+            data-testid="personal-info-skeleton-name"
+            aria-hidden="true" />
+          <span v-else class="font-semibold text-18px">{{ userDetailInfo?.name }}</span>
           <div
             v-show="hasUserOnlineState"
             class="bg-[--tjg-color-primary-100] flex flex-wrap ps-2 px-8px items-center rounded-full gap-1 h-24px">
@@ -36,44 +47,34 @@
 
         <!-- 账号 -->
         <div class="flex flex-warp gap-2 items-center">
-          <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo?.account }}</span>
-          <span v-clickable v-if="isMyPage" @click="toMyQRCode" class="p-[15px] -m-[15px]">
-            <img
-              class="w-14px h-14px dark:invert"
-              src="@/assets/mobile/my/qr-code.webp"
-              :alt="t('mobile_personal_info.qr_code')" />
-          </span>
+          <span
+            v-if="showSkeleton"
+            class="block h-14px w-120px rounded-4px bg-[--tjg-surface-subtle] animate-pulse motion-reduce:animate-none"
+            data-testid="personal-info-skeleton-account"
+            aria-hidden="true" />
+          <template v-else>
+            <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo?.account }}</span>
+            <span v-clickable v-if="isMyPage" @click="toMyQRCode" class="p-[15px] -m-[15px]">
+              <Icon
+                icon="mdi:qrcode"
+                :width="14"
+                :height="14"
+                class="text-[--tjg-text-secondary]"
+                :aria-label="t('mobile_personal_info.qr_code')" />
+            </span>
+          </template>
         </div>
       </div>
     </div>
   </div>
-  <!-- 个人描述和点赞关注区 -->
+  <!-- 个人描述与操作区 -->
   <Transition name="slide-fade" @before-enter="beforeEnter" @enter="enter" @leave="leave">
     <div v-if="props.isShow" ref="animatedBox" class="will-change-transform flex flex-col px-16px">
       <!-- 个人描述 -->
       <div class="mt-2 text-bold-style line-height-24px">
         {{ displayResume }}
       </div>
-      <!-- 点赞关注 -->
-      <div class="flex flex-wrap justify-around mt-4">
-        <div class="flex flex-warp gap-2 items-center">
-          <div class="min-w-10 flex flex-col items-center">
-            <span class="fans-number">920.13W</span>
-            <div class="fans-title">{{ t('mobile_personal_info.follower') }}</div>
-          </div>
-          <div class="h-20px w-1px bg-gray-300"></div>
-          <div class="min-w-10 flex flex-col items-center">
-            <span class="fans-number">120</span>
-            <div class="fans-title">{{ t('mobile_personal_info.follow') }}</div>
-          </div>
-          <div class="h-20px w-1px bg-gray-300"></div>
-          <div class="min-w-10 flex flex-col items-center">
-            <span class="fans-number">43.15W</span>
-            <div class="fans-title">{{ t('mobile_personal_info.like') }}</div>
-          </div>
-        </div>
-      </div>
-      <div class="justify-end flex items-center gap-3 mt-30px">
+      <div class="justify-end flex items-center gap-3 mt-16px">
         <van-button
           :disabled="loading"
           @click="toEditProfile"
@@ -93,7 +94,7 @@
           @click="handleDelete"
           color="var(--tjg-color-danger-500)"
           v-if="!props.isMyPage && isMyFriendState && !isBotUser(uid)"
-          class="px-5 py-10px font-bold text-center text-12px">
+          class="px-5 py-10px font-bold text-center text-12px min-h-44px">
           {{ t('mobile_personal_info.remove_user') }}
         </van-button>
 
@@ -105,7 +106,7 @@
           size="small"
           @click="handleAddFriend"
           v-if="!props.isMyPage && !isMyFriendState && !isBotUser(uid)"
-          class="px-5 py-10px font-bold text-center text-12px">
+          class="px-5 py-10px font-bold text-center text-12px min-h-44px">
           +&nbsp;
           {{ t('mobile_personal_info.add_friend') }}
         </van-button>
@@ -117,7 +118,7 @@
           @click="toChatRoom"
           :disabled="loading"
           v-if="!props.isMyPage && isMyFriendState"
-          class="px-5 py-10px text-center font-bold text-12px">
+          class="px-5 py-10px text-center font-bold text-12px min-h-44px">
           {{ isBotUser(uid) ? t('mobile_personal_info.open_bot') : t('mobile_personal_info.chat') }}
         </van-button>
       </div>
@@ -126,6 +127,7 @@
 </template>
 
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { showDialog } from 'vant'
 import { useRoute, useRouter } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -246,7 +248,19 @@ const getUserState = (
   return foundedState
 }
 
-onMounted(() => {
+/**
+ * 首屏骨架：昵称与账号都取不到时先渲染占位，避免昵称/账号闪空（方案 §8.5）。
+ * 本人页数据来自持久化 store，通常同步可得；他人页来自群成员缓存，
+ * 缓存未命中时由下方 watch 在数据到达后补渲染。
+ */
+const infoResolved = computed(() => Boolean(userDetailInfo.value?.name || userDetailInfo.value?.account))
+/** 兜底：3s 后仍未取到数据就撤掉骨架，避免永久占位 */
+const skeletonTimedOut = ref(false)
+const showSkeleton = computed(() => !infoResolved.value && !skeletonTimedOut.value)
+
+let skeletonTimer: ReturnType<typeof setTimeout> | undefined
+
+function resolveUserDetail(): void {
   if (!uid) {
     userDetailInfo.value = userStore.userInfo
     return
@@ -271,6 +285,23 @@ onMounted(() => {
   if (foundedFriend) {
     isMyFriendState.value = true
   }
+}
+
+onMounted(() => {
+  resolveUserDetail()
+  skeletonTimer = setTimeout(() => {
+    skeletonTimedOut.value = true
+  }, 3000)
+})
+
+// 数据晚于首屏到达（本人资料 / 群成员缓存）时补渲染并自动撤掉骨架
+watch([() => groupStore.allUserInfo, () => userStore.userInfo], () => {
+  if (infoResolved.value) return
+  resolveUserDetail()
+})
+
+onUnmounted(() => {
+  if (skeletonTimer) clearTimeout(skeletonTimer)
 })
 
 const currentState = computed(() => userStatusStore.currentState)
@@ -411,8 +442,6 @@ watch(
 )
 </script>
 <style lang="scss" scoped>
-$text-font-size-base: 14px;
-
 $font-family-system: -apple-system, BlinkMacSystemFont;
 $font-family-windows: 'Segoe UI', 'Microsoft YaHei';
 $font-family-chinese: 'PingFang SC', 'Hiragino Sans GB';
@@ -430,19 +459,6 @@ $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-weight: bolder;
   font-size: 1.25em;
   font-family: $font-family-system, $font-family-windows, $font-family-chinese, $font-family-sans;
-}
-
-.fans-number {
-  font-size: $text-font-size-base;
-  font-family: $font-family-system, $font-family-windows, $font-family-chinese, $font-family-sans;
-  font-weight: 600;
-}
-
-.fans-title {
-  margin-top: 0.5rem;
-  font-size: 13px;
-  font-family: $font-family-system, $font-family-windows, $font-family-sans;
-  color: var(--tjg-text-tertiary);
 }
 
 .custom-rounded {

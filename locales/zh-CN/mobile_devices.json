@@ -2,6 +2,7 @@
   "title": "设备管理",
   "subtitle": "管理您的登录设备",
   "loading": "加载中...",
+  "empty": "暂无登录设备",
   "unnamed_device": "未命名设备",
   "no_info": "无信息",
   "current": "当前设备",

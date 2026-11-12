@@ -1,8 +1,5 @@
 {
   "account": "ID",
-  "follower": "Followers",
-  "follow": "Following",
-  "like": "Like",
   "edit_profile": "Edit profile",
   "remove_user": "Remove",
   "add_friend": "Add friend",

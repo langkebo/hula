@@ -77,12 +77,13 @@ test.describe('「我的」页体验门禁', () => {
     // 第 2 段：从「会话恢复完成」到「我的页九宫格可见」——纯首屏渲染 + 一次 SPA 导航。
     // 目标 ≤800ms（P75，中端安卓）。会话恢复与首屏渲染分别设预算，
     // 避免把「同步慢」和「渲染慢」混成一个 TTI 数字后无法定位。
+    // settleMs 必须为 0：默认的 1200ms 沉降等待会被算进这个区间，指标恒 ≥1200ms。
     let firstScreenRenderMs: number | null = null
     let ttiMs: number | null = null
     if (sessionRestoreMs !== null) {
       const renderStart = Date.now()
       try {
-        await pushMobileRoute(page, { name: 'mobileMy' })
+        await pushMobileRoute(page, { name: 'mobileMy' }, { settleMs: 0 })
         await page.locator('.m-quick-actions').first().waitFor({ state: 'visible', timeout: 30_000 })
         firstScreenRenderMs = Date.now() - renderStart
         ttiMs = Date.now() - ttiStart
