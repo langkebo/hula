@@ -98,17 +98,16 @@
 
 <script setup lang="ts">
 import { showConfirmDialog, showToast } from 'vant'
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import EncryptionLockBadge from '@/components/encryption/EncryptionLockBadge.vue'
-import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
-import { useSecretChatSessions } from '@/composables/secretChat/useSecretChatSessions'
+import { useSecretChatPage } from '@/composables/secretChat/useSecretChatPage'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from '@/mobile/views/my/settingsRoutes'
 import type { SessionItem } from '@/stores/domains/chat/chat/session'
-import { isSecretChatUnlocked, lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
+import { lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({
@@ -122,23 +121,42 @@ const settingStore = useSettingStore()
 /** 未配置密码时解锁必然失败，锁定态改为引导去设置密码。 */
 const configured = computed(() => settingStore.isSecretChatConfigured())
 
-/** 列表过滤 / 加密状态 / 登记表加载与桌面端共用同一份规则（见 composable 注释）。 */
-const { locked, hiddenSessions, isEncrypted, sessionAriaLabel, refreshPrivateSessions, unmarkSession } =
-  useSecretChatSessions()
-
-/** 锁定态点「输入密码继续」：回跳目标是本页，解锁后由守卫放行。 */
-const handleUnlockClick = () => {
-  openSecretChatUnlock('/mobile/secretChat')
-}
+/** 列表过滤 / 加密状态 / 解锁回跳 / 移出私密确认与桌面端共用同一份规则。 */
+const {
+  locked,
+  hiddenSessions,
+  isEncrypted,
+  sessionAriaLabel,
+  handleUnlockClick,
+  handleSessionClick,
+  handleUnmark: unmarkPrivateSession
+} = useSecretChatPage({
+  returnTarget: '/mobile/secretChat',
+  // 不清除私密标记：只是进入查看。
+  openSession: (session) => router.push({ name: 'mobileChatMain', params: { roomId: session.roomId } }),
+  confirmUnmark: async () => {
+    try {
+      await showConfirmDialog({
+        title: t('home.secret_chat.unmark_private'),
+        message: t('home.secret_chat.unmark_confirm'),
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel')
+      })
+      return true
+    } catch {
+      return false
+    }
+  },
+  isPasswordConfigured: () => settingStore.isSecretChatConfigured(),
+  // 未配置密码时解锁不可能成功，直接引导去安全设置页
+  onMissingPassword: () => {
+    void router.replace(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
+  }
+})
 
 /** 未配置密码：跳安全设置页完成设置，而不是弹必然失败的解锁框。 */
 const handleGoSetupPassword = () => {
   void router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
-}
-
-const handleSessionClick = async (session: SessionItem) => {
-  // 不清除私密标记：只是进入查看。
-  await router.push({ name: 'mobileChatMain', params: { roomId: session.roomId } })
 }
 
 /**
@@ -150,35 +168,10 @@ onBeforeRouteLeave((to) => {
   lockSecretChatSession('leave mobile secret chat page')
 })
 
-/** 移出私密：取消房间标记，会话回到普通列表（可逆操作，需二次确认）。 */
+/** 移出私密：取消房间标记后回到普通列表；登记表不可用时提示重试。 */
 const handleUnmark = async (session: SessionItem) => {
-  try {
-    await showConfirmDialog({
-      title: t('home.secret_chat.unmark_private'),
-      message: t('home.secret_chat.unmark_confirm'),
-      confirmButtonText: t('common.confirm'),
-      cancelButtonText: t('common.cancel')
-    })
-  } catch {
-    return
-  }
-
-  if (!(await unmarkSession(session.roomId))) {
+  if ((await unmarkPrivateSession(session)) === 'failed') {
     showToast({ type: 'fail', message: t('home.secret_chat.registry_unavailable') })
   }
 }
-
-onMounted(() => {
-  if (!isSecretChatUnlocked()) {
-    // 未配置密码时解锁不可能成功，直接引导去安全设置页
-    if (!settingStore.isSecretChatConfigured()) {
-      void router.replace(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
-      return
-    }
-    // 正常路径下路由守卫已拦过；这里只兜底「守卫放行后瞬间被锁」的竞态
-    openSecretChatUnlock('/mobile/secretChat')
-    return
-  }
-  refreshPrivateSessions()
-})
 </script>

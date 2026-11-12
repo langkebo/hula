@@ -12,7 +12,7 @@ const {
   getIgnoredUsersMock,
   changePasswordMock,
   deactivateAccountMock,
-  getCryptoStatusMock,
+  loadEncryptionStatusMock,
   exportKeysMock
 } = vi.hoisted(() => {
   return {
@@ -25,7 +25,7 @@ const {
     getIgnoredUsersMock: vi.fn().mockResolvedValue([]),
     changePasswordMock: vi.fn().mockResolvedValue(undefined),
     deactivateAccountMock: vi.fn().mockResolvedValue(undefined),
-    getCryptoStatusMock: vi.fn().mockResolvedValue(null),
+    loadEncryptionStatusMock: vi.fn().mockResolvedValue(undefined),
     exportKeysMock: vi.fn().mockResolvedValue('')
   }
 })
@@ -90,11 +90,23 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   }
 }))
 
-vi.mock('@/services/matrix/crypto/MatrixCryptoService', () => ({
-  matrixCryptoService: {
-    getCryptoStatus: () => getCryptoStatusMock()
+// 交叉签名/密钥备份状态与桌面端同源：统一由 encryption store 汇总（不再直连 crypto service）
+vi.mock('@/stores/domains/settings/encryption', async () => {
+  const { ref } = await import('vue')
+  const securityKeyConfigured = ref(false)
+  const backupEnabled = ref(false)
+  return {
+    useEncryptionStore: () => ({
+      get securityKeyConfigured() {
+        return securityKeyConfigured.value
+      },
+      get backupEnabled() {
+        return backupEnabled.value
+      },
+      loadEncryptionStatus: () => loadEncryptionStatusMock()
+    })
   }
-}))
+})
 
 // 导出与下载由 useKeyExport 统一实现（桌面/移动共用），组件只关心结果文案
 vi.mock('@/composables/encryption/useKeyExport', async () => {
@@ -133,7 +145,7 @@ describe('SecuritySettings', () => {
     localStorage.clear()
     getDevicesMock.mockResolvedValue([])
     getIgnoredUsersMock.mockResolvedValue([])
-    getCryptoStatusMock.mockResolvedValue(null)
+    loadEncryptionStatusMock.mockResolvedValue(undefined)
     exportKeysMock.mockResolvedValue('')
   })
 
@@ -156,11 +168,10 @@ describe('SecuritySettings', () => {
     expect(getIgnoredUsersMock).toHaveBeenCalled()
   })
 
-  it('loads crypto status on mount', async () => {
-    getCryptoStatusMock.mockResolvedValue({ crossSigningReady: true, keyBackupEnabled: false })
+  it('loads encryption status from the shared store on mount', async () => {
     mountSecuritySettings()
     await vi.dynamicImportSettled()
-    expect(getCryptoStatusMock).toHaveBeenCalled()
+    expect(loadEncryptionStatusMock).toHaveBeenCalled()
   })
 
   it('navigates to devices page', async () => {

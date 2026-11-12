@@ -207,10 +207,10 @@ import MobileDeviceVerifyDialog from '#/components/encryption/MobileDeviceVerify
 import MobileSecureBackupDialog from '#/components/encryption/MobileSecureBackupDialog.vue'
 import MobilePrivateChatSection from '#/components/settings/MobilePrivateChatSection.vue'
 import { useKeyExport } from '@/composables/encryption/useKeyExport'
-import { matrixCryptoService } from '@/services/matrix/crypto/MatrixCryptoService'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
+import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 import { firstPasswordRuleViolationKey } from '@/utils/passwordStrength'
 import {
@@ -228,8 +228,11 @@ useLoginFlow()
 
 const deviceCount = ref('0')
 const ignoredUsersCount = ref('0')
-const crossSigningEnabled = ref(false)
-const keyBackupEnabled = ref(false)
+// 交叉签名 / 密钥备份状态统一取自 encryptionStore（与桌面 Settings → 安全页同源），
+// 不再直连 matrixCryptoService.getCryptoStatus()，避免两端各维护一套判定（S9）
+const encryptionStore = useEncryptionStore()
+const crossSigningEnabled = computed(() => encryptionStore.securityKeyConfigured)
+const keyBackupEnabled = computed(() => encryptionStore.backupEnabled)
 
 const showPasswordDialog = ref(false)
 
@@ -273,15 +276,12 @@ async function loadSecurityInfo() {
 
     const ignoredUsers = await matrixAccountService.getIgnoredUsers()
     ignoredUsersCount.value = ignoredUsers.length.toString()
-
-    const cryptoStatus = await matrixCryptoService.getCryptoStatus()
-    if (cryptoStatus) {
-      crossSigningEnabled.value = cryptoStatus.crossSigningReady
-      keyBackupEnabled.value = cryptoStatus.keyBackupEnabled
-    }
   } catch (error) {
     logger.error('Failed to load security details', error)
   }
+
+  // 加密/备份状态统一由 store 汇总（内部 Promise.allSettled，单项失败不影响其余项）
+  await encryptionStore.loadEncryptionStatus()
 }
 
 async function handleChangePassword() {

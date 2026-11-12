@@ -141,6 +141,10 @@ async function toHttpClientError(response: Response, method: string, url: string
  *   （更新检查、AI provider、翻译兜底、图片/音频直链等）。
  * - 新增第三方调用也应优先直接使用 `getRuntimeAwareFetch()`；本类是为这些存量
  *   调用点保留的 allowlist 层，后续逐步下线。
+ *
+ * @deprecated 迁移路径：Matrix 协议域改用 `matrixHttpClient`；非 Matrix 第三方请求
+ *   改用 `@/services/matrix/network/runtimeFetch` 的 `getRuntimeAwareFetch()`。
+ *   仍依赖本类 host allowlist / 超时 / 错误归一化的存量调用点会逐批迁移，迁完后删除本类。
  */
 export class HttpClient {
   static async get<T = unknown>(url: string, config?: HttpClientConfig): Promise<T> {

@@ -219,6 +219,12 @@ vi.mock('@/stores/domains/settings/encryption', () => ({
       return _encryptionEnabled
     },
     securityKeyConfigured: false,
+    // 备份状态与移动端同源：页面只读 store，不再直连 matrixKeyBackupService
+    backupEnabled: false,
+    backupVersion: '',
+    backupKeyCount: 0,
+    loading: false,
+    loadBackupStatus: vi.fn().mockResolvedValue(undefined),
     // F-4：本地密钥库状态卡会读这两个字段 + 触发一次刷新
     localStoreEncryption: 'unknown',
     secureStorageBackend: null,

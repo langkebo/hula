@@ -52,7 +52,6 @@ import InvitePermissionPanel from '@/components/settings/InvitePermissionPanel.v
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { useKeyExport } from '@/composables/encryption/useKeyExport'
-import { matrixKeyBackupService } from '@/services/matrix/crypto/MatrixKeyBackupService'
 import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 import BlockedUsersSection from './sections/BlockedUsersSection.vue'
@@ -76,38 +75,30 @@ const { ensureSessionReady } = useWindowSessionReady()
 const showBackupDialog = ref(false)
 const showSecurityKeyDialog = ref(false)
 const showSecureBackupDialog = ref(false)
-const backupLoading = ref(false)
 // 导出实现由 useKeyExport 统一提供（与移动端共用），这里只保留加载态
 const { isExporting: exportLoading, exportKeys } = useKeyExport()
-const hasBackup = ref(false)
-const backupInfo = ref<{ version: string | null; count: number } | null>(null)
 
 const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
 const securityKeyConfigured = computed(() => encryptionStore.securityKeyConfigured)
+// 备份状态统一取自 encryptionStore.loadEncryptionStatus → loadBackupStatus，
+// 不再在本页直连 matrixKeyBackupService（否则与移动端形成两份状态源，S9）
+const hasBackup = computed(() => encryptionStore.backupEnabled)
+const backupInfo = computed(() =>
+  encryptionStore.backupEnabled
+    ? { version: encryptionStore.backupVersion || null, count: encryptionStore.backupKeyCount }
+    : null
+)
+// 备份信息随 loadEncryptionStatus 一起拉取，加载态直接复用 store 的 loading
+const backupLoading = computed(() => encryptionStore.loading)
 
 onMounted(async () => {
   // 本页是独立 Tauri WebView 的一页，MatrixClient 需要先恢复才能读加密/备份状态。
   // 恢复统一走 `useWindowSessionReady()`（幂等、每窗口一次）：入口在 SettingsPage，
   // 此处只是 wait 同一次 in-flight，不再自带 waitForClientReady(15s)。
   const sessionState = await ensureSessionReady()
-  logger.info(`[SecuritySettings] session state=${sessionState}; loading encryption status and backup info`)
-
+  logger.info(`[SecuritySettings] session state=${sessionState}; loading encryption status`)
   await encryptionStore.loadEncryptionStatus()
-  await loadBackupInfo()
 })
-
-// 加载密钥备份信息（用于 EncryptionStatusSection 的备份状态展示）
-async function loadBackupInfo() {
-  if (!encryptionEnabled.value) return
-
-  try {
-    const info = await matrixKeyBackupService.checkKeyBackup()
-    hasBackup.value = !!info
-    backupInfo.value = info ? { version: info.version, count: info.count ?? 0 } : null
-  } catch (error) {
-    logger.error('Failed to fetch backup info', error)
-  }
-}
 
 // 安全密钥创建成功回调（由 SecurityKeySetupDialog 触发）
 function handleSecurityKeyCreated() {
@@ -119,9 +110,9 @@ function handleSetupBackup() {
   showBackupDialog.value = true
 }
 
-// 备份创建成功回调：刷新备份信息并反馈
+// 备份创建成功回调：刷新备份状态并反馈
 async function handleBackupSuccess() {
-  await loadBackupInfo()
+  await encryptionStore.loadBackupStatus()
   showFeedback(t('setting.security.backup_setup_success'), 'success')
 }
 

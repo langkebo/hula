@@ -100,15 +100,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import EmptyState from '@/components/common/EmptyState.vue'
 import EncryptionLockBadge from '@/components/encryption/EncryptionLockBadge.vue'
-import { openSecretChatUnlock } from '@/composables/secretChat/useSecretChatGate'
-import { useSecretChatSessions } from '@/composables/secretChat/useSecretChatSessions'
-import type { SessionItem } from '@/stores/domains/chat/chat/session'
-import { isSecretChatUnlocked, lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
+import { useSecretChatPage } from '@/composables/secretChat/useSecretChatPage'
+import { lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
 
 defineOptions({
   name: 'SecretChatPage'
@@ -117,21 +114,34 @@ defineOptions({
 const { t } = useI18n()
 const router = useRouter()
 
-/** 列表过滤 / 加密状态 / 登记表加载与移动端共用同一份规则（见 composable 注释）。 */
-const { locked, hiddenSessions, isEncrypted, sessionAriaLabel, refreshPrivateSessions, unmarkSession } =
-  useSecretChatSessions()
-
-/** 锁定态下点「输入密码继续」：回跳目标仍是本页，解锁后守卫会放行。 */
-const handleUnlockClick = () => {
-  openSecretChatUnlock('/secretChat')
-}
-
-const handleSessionClick = async (session: SessionItem) => {
-  // 不清除私密标记：房间仍是私密房，只是进入查看。
-  // 路由名必须是 `message`——`/chat/:roomId` 在本仓不存在（`/chat` 是机器人插件路由且无参数），
-  // 之前跳到那里会落到 notFound。
-  await router.push({ name: 'message', params: { roomId: session.roomId } })
-}
+/**
+ * 列表过滤 / 加密状态 / 解锁回跳 / 移出私密确认与移动端共用同一份规则。
+ *
+ * 进入页面时的锁定兜底（守卫放行后瞬间被锁的竞态）由 composable 的 onMounted 处理：
+ * 原地切到锁定态视图（不跳走），列表被 v-if 掉、`hiddenSessions` 返回空数组，
+ * DOM 里不留任何会话名/头像；点「输入密码继续」可原地解锁。
+ */
+const { locked, hiddenSessions, isEncrypted, sessionAriaLabel, handleUnlockClick, handleSessionClick, handleUnmark } =
+  useSecretChatPage({
+    returnTarget: '/secretChat',
+    // 不清除私密标记：房间仍是私密房，只是进入查看。
+    // 路由名必须是 `message`——`/chat/:roomId` 在本仓不存在（`/chat` 是机器人插件路由且无参数），
+    // 之前跳到那里会落到 notFound。
+    openSession: (session) => router.push({ name: 'message', params: { roomId: session.roomId } }),
+    confirmUnmark: () =>
+      new Promise<boolean>((resolve) => {
+        const dialog = window.$dialog?.create({
+          title: t('home.secret_chat.unmark_private'),
+          content: t('home.secret_chat.unmark_confirm'),
+          positiveText: t('common.confirm'),
+          negativeText: t('common.cancel'),
+          onPositiveClick: () => resolve(true),
+          onNegativeClick: () => resolve(false),
+          onClose: () => resolve(false)
+        })
+        if (!dialog) resolve(false)
+      })
+  })
 
 const handleClose = () => {
   // 关闭即锁（默认策略）：私密页是私密内容的唯一入口，
@@ -139,33 +149,6 @@ const handleClose = () => {
   lockSecretChatSession('close secret chat page')
   router.back()
 }
-
-/** 移出私密：取消房间标记，会话回到普通列表（可逆操作，需二次确认）。 */
-const handleUnmark = (session: SessionItem) => {
-  window.$dialog?.create({
-    title: t('home.secret_chat.unmark_private'),
-    content: t('home.secret_chat.unmark_confirm'),
-    positiveText: t('common.confirm'),
-    negativeText: t('common.cancel'),
-    onPositiveClick: () => unmarkSession(session.roomId)
-  })
-}
-
-/**
- * 锁定兜底：路由守卫挡的是「进入时未解锁」，但页面停留期间可能触发自动锁
- * （空闲 / 切后台 / 另一处主动上锁）。
- *
- * 原地切到锁定态视图（不跳走）：列表被 v-if 掉、`hiddenSessions` 返回空数组，
- * DOM 里不留任何会话名/头像；点「输入密码继续」可原地解锁。
- */
-onMounted(() => {
-  if (!isSecretChatUnlocked()) {
-    // 正常路径下守卫已经拦过；这里只处理「守卫放行后瞬间被锁」的竞态
-    openSecretChatUnlock('/secretChat')
-    return
-  }
-  refreshPrivateSessions()
-})
 </script>
 
 <style scoped>
