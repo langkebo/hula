@@ -8,7 +8,7 @@
           props.type === 'friend' ? t('mobile_mymessage.notification.friend') : t('mobile_mymessage.notification.group')
         }}
       </p>
-      <svg class="size-18px cursor-pointer">
+      <svg class="size-18px cursor-pointer" aria-hidden="true">
         <use href="#delete"></use>
       </svg>
     </div>
@@ -79,7 +79,7 @@
             <template #reference>
               <div
                 class="cursor-pointer px-15px py-3px rounded-5px mt-10px bg-[--tjg-surface-subtle] h-50% flex items-center justify-center">
-                <svg class="size-16px color-[--tjg-text-primary]">
+                <svg class="size-16px color-[--tjg-text-primary]" aria-hidden="true">
                   <use href="#more"></use>
                 </svg>
               </div>

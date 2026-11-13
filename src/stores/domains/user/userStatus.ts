@@ -25,64 +25,76 @@ const ensureStateColor = (state?: STO.UserState) => {
   img.onerror = () => {}
 }
 
-export const useUserStatusStore = defineStore(StoresEnum.USER_STATE, () => {
-  /** 在线状态列表 */
-  const stateList = ref<STO.UserState[]>([])
+export const useUserStatusStore = defineStore(
+  StoresEnum.USER_STATE,
+  () => {
+    /** 在线状态列表 */
+    const stateList = ref<STO.UserState[]>([])
 
-  const stateId = ref<string>('1')
+    const stateId = ref<string>('1')
 
-  const currentState = computed(() => {
-    const item = stateList.value.find((state: { id: string }) => state.id === stateId.value)
+    /** 状态文案的本地到期时间戳（毫秒）。Matrix 协议没有有效期，由本机计时到期清除（Y-12） */
+    const presenceExpiresAt = ref<number | null>(null)
 
-    if (!item) {
-      const defaultItem = stateList.value.find((state: { id: string }) => state.id === '1')
-      if (defaultItem) {
-        ensureStateColor(defaultItem)
-        return defaultItem
+    const currentState = computed(() => {
+      const item = stateList.value.find((state: { id: string }) => state.id === stateId.value)
+
+      if (!item) {
+        const defaultItem = stateList.value.find((state: { id: string }) => state.id === '1')
+        if (defaultItem) {
+          ensureStateColor(defaultItem)
+          return defaultItem
+        }
+      }
+
+      if (item) {
+        ensureStateColor(item)
+      }
+      return item as STO.UserState
+    })
+
+    watch(
+      stateList,
+      (list) => {
+        list.forEach((state: STO.UserState) => ensureStateColor(state))
+      },
+      { immediate: true }
+    )
+
+    async function changeCurrentUserState(state: STO.UserState): Promise<void> {
+      const userStore = useUserStore()
+      const groupStore = useGroupStore()
+
+      const targetPresence = mapUserStateToPresence(state)
+      // 门控与记账都在唯一写入点 matrixPresenceService.setPresence 内完成；这里只传意图，
+      // 并用返回的生效值判断本地是否需要降级（开关关闭时 online 会被服务降为 offline）。
+      const presence = await matrixPresenceService.setPresence(targetPresence)
+      const hidesOnline = presence !== targetPresence
+
+      stateId.value = state.id
+
+      if (userStore.userInfo?.uid) {
+        userStore.userInfo.userStateId = state.id
+        if (hidesOnline) {
+          userStore.userInfo.activeStatus = OnlineEnum.OFFLINE
+        }
+        groupStore.updateUserItem(userStore.userInfo.uid, {
+          userStateId: state.id
+        })
       }
     }
 
-    if (item) {
-      ensureStateColor(item)
+    return {
+      stateList,
+      stateId,
+      currentState,
+      changeCurrentUserState,
+      presenceExpiresAt
     }
-    return item as STO.UserState
-  })
-
-  watch(
-    stateList,
-    (list) => {
-      list.forEach((state: STO.UserState) => ensureStateColor(state))
-    },
-    { immediate: true }
-  )
-
-  async function changeCurrentUserState(state: STO.UserState): Promise<void> {
-    const userStore = useUserStore()
-    const groupStore = useGroupStore()
-
-    const targetPresence = mapUserStateToPresence(state)
-    // 门控与记账都在唯一写入点 matrixPresenceService.setPresence 内完成；这里只传意图，
-    // 并用返回的生效值判断本地是否需要降级（开关关闭时 online 会被服务降为 offline）。
-    const presence = await matrixPresenceService.setPresence(targetPresence)
-    const hidesOnline = presence !== targetPresence
-
-    stateId.value = state.id
-
-    if (userStore.userInfo?.uid) {
-      userStore.userInfo.userStateId = state.id
-      if (hidesOnline) {
-        userStore.userInfo.activeStatus = OnlineEnum.OFFLINE
-      }
-      groupStore.updateUserItem(userStore.userInfo.uid, {
-        userStateId: state.id
-      })
+  },
+  {
+    persist: {
+      pick: ['presenceExpiresAt']
     }
   }
-
-  return {
-    stateList,
-    stateId,
-    currentState,
-    changeCurrentUserState
-  }
-})
+)

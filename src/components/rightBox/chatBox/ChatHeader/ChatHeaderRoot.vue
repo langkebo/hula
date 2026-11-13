@@ -348,7 +348,7 @@ const { privateModeActive, showPrivateConfirm, setRoomId, togglePrivateMode, con
   usePrivateMode()
 
 const handleTogglePrivateMode = () => {
-  setRoomId(currentSessionRoomId.value || '')
+  void setRoomId(currentSessionRoomId.value || '')
   togglePrivateMode()
 }
 

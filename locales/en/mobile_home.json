@@ -36,7 +36,9 @@
   "create_group_title": "Create Group Chat",
   "group_name_placeholder": "Group name",
   "group_name_required": "Please enter a group name",
-  "group_members_placeholder": "Member IDs, separated by commas (optional)",
+  "group_members_required": "Please enter at least 1 member ID",
+  "group_members_exceeded": "Group members cannot exceed {count} (currently {current})",
+  "group_members_placeholder": "Member IDs, separated by commas (at least 1)",
   "create_group_creating": "Creating group...",
   "create_group_success": "Group created",
   "create_group_failed": "Failed to create group"

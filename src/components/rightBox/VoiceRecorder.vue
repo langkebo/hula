@@ -157,7 +157,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useVoiceRecordRust } from '@/composables/chat/useVoiceRecordRust'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { createLogger } from '@/utils/Logger'
 
 export type VoiceRecordPayload = {
@@ -170,12 +169,12 @@ export type VoiceRecordPayload = {
 
 const logger = createLogger('VoiceRecorder')
 const { t } = useI18n()
-const { showFeedback } = useActionFeedback()
 
 // 事件定义
 const emit = defineEmits<{
   cancel: []
   send: [voiceData: VoiceRecordPayload]
+  permissionDenied: []
 }>()
 
 // 录音状态
@@ -209,8 +208,11 @@ const {
     isProcessing.value = false
     createAudioElement()
   },
-  onError: () => {
-    showFeedback(t('message.voice_recorder.error'), 'error')
+  onError: (kind) => {
+    if (kind === 'permission') {
+      // 权限被拒时由宿主弹「去系统设置」引导，这里不再重复 toast
+      emit('permissionDenied')
+    }
     isProcessing.value = false
   }
 })

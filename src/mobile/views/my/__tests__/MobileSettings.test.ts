@@ -13,6 +13,7 @@ import { MOBILE_SETTINGS_SEARCH_ENTRIES } from '../mobileSettingsSearchIndex'
 import { MOBILE_SETTINGS_LABS_PATH } from '../settingsRoutes'
 
 const routerPushMock = vi.fn()
+const routerReplaceMock = vi.fn()
 const showDialogMock = vi.fn()
 const showToastMock = vi.fn()
 const infoMock = vi.fn()
@@ -27,7 +28,9 @@ vi.mock('pinia', () => ({
 }))
 
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: routerPushMock })
+  // 搜索关键词同步到 route.query.q（Y-16），组件挂载时会读取 route
+  useRoute: () => ({ query: {} }),
+  useRouter: () => ({ push: routerPushMock, replace: routerReplaceMock })
 }))
 
 vi.mock('vant', () => ({

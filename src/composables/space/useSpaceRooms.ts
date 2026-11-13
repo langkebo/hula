@@ -18,6 +18,12 @@ export interface SpaceChildRoom {
    * 走 MatrixSpaceService.setChildSuggested 修改该字段。
    */
   suggested?: boolean
+  /**
+   * 当前用户是否已加入该子房间。
+   * 子空间里可以挂载未加入的房间（如公开房间 / 仅邀请房间），
+   * 未加入时不能直接跳聊天页，需要先走加入流程。
+   */
+  joined?: boolean
 }
 
 interface CreateRoomInSpaceInput {
@@ -72,6 +78,16 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     }
   }
 
+  /** 读取本地同步状态判断是否已加入；客户端不可用时按未加入处理 */
+  const resolveJoined = (roomId: string): boolean => {
+    try {
+      return matrixClientService.getClient()?.getRoom(roomId)?.getMyMembership() === 'join'
+    } catch (err) {
+      logger.warn('resolveJoined failed, defaulting to false', err)
+      return false
+    }
+  }
+
   const load = async () => {
     const id = spaceId()
     if (!id) {
@@ -94,7 +110,8 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
       }
       rooms.value = base.map((r) => ({
         ...r,
-        suggested: suggestedMap.get(r.roomId) ?? false
+        suggested: suggestedMap.get(r.roomId) ?? false,
+        joined: resolveJoined(r.roomId)
       }))
     } catch (err) {
       logger.error('load rooms failed', err)

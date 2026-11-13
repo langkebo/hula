@@ -149,6 +149,7 @@ export type Messages = {
     "encryption_boundary_hint": "设为私密时会开启端到端加密，仅对此后发送的新消息生效。",
     "locked_title": "私密会话已锁定",
     "unlock_action": "输入密码继续",
+    "exit_action": "退出私密模式",
     "unlock_title": "解锁私密聊天",
     "password_label": "密码",
     "password_placeholder": "请输入密码",
@@ -546,6 +547,7 @@ export type KeyPaths =
   | "home.secret_chat.encryption_boundary_hint"
   | "home.secret_chat.locked_title"
   | "home.secret_chat.unlock_action"
+  | "home.secret_chat.exit_action"
   | "home.secret_chat.unlock_title"
   | "home.secret_chat.password_label"
   | "home.secret_chat.password_placeholder"

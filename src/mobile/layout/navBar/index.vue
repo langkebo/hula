@@ -7,7 +7,7 @@
       </div>
 
       <!-- 中间内容 -->
-      <div v-if="$slots.center" class="flex-1 flex justify-center">
+      <div v-if="$slots.center" class="flex-1 min-w-0 overflow-hidden flex justify-center">
         <div class="flex justify-center">
           <slot name="center"></slot>
         </div>

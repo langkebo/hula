@@ -38,7 +38,11 @@
         </div>
         <div class="child-name">{{ room.name || room.roomId }}</div>
         <span v-if="room.suggested" class="child-badge">{{ t('space.suggested_label') }}</span>
-        <van-icon name="arrow" class="child-chevron" />
+        <!-- 未加入的子房间不能直接进聊天页，这里显式区分「加入」与「进入」（P-5） -->
+        <span v-if="!room.joined" class="child-join">
+          {{ joiningRoomId === room.roomId ? t('common.loading') : t('space.join') }}
+        </span>
+        <van-icon v-else name="arrow" class="child-chevron" />
       </div>
     </div>
   </div>
@@ -51,6 +55,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useSpaceRooms } from '@/composables/space'
 import type { SpaceChildRoom } from '@/composables/space/useSpaceRooms'
+import { useMobileErrorText } from '@/mobile/composables/useMobileErrorText'
+import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
 import { createLogger } from '@/utils/Logger'
 
 /**
@@ -70,11 +76,14 @@ const props = defineProps<{ spaceId: string }>()
 const { t } = useI18n()
 const router = useRouter()
 const logger = createLogger('SpaceChildrenList')
+const { resolve: resolveErrorText } = useMobileErrorText()
 
 const { rooms, loading, mutating, load, createRoomInSpace } = useSpaceRooms(() => props.spaceId)
 
 const showCreate = ref(false)
 const roomName = ref('')
+/** 正在加入的子房间 ID，用于行内 loading 并阻止重复点击 */
+const joiningRoomId = ref('')
 
 watch(
   () => props.spaceId,
@@ -104,9 +113,24 @@ const handleCreate = async () => {
   logger.info(`Child room created and linked to space ${props.spaceId}: ${roomId}`)
 }
 
-const openRoom = (room: SpaceChildRoom) => {
+const openRoom = async (room: SpaceChildRoom) => {
   if (!room.roomId) return
-  void router.push({ name: 'mobileChatMain', params: { roomId: room.roomId } })
+  if (room.joined) {
+    void router.push({ name: 'mobileChatMain', params: { roomId: room.roomId } })
+    return
+  }
+  if (joiningRoomId.value) return
+  joiningRoomId.value = room.roomId
+  try {
+    await matrixRoomMembershipService.joinRoom(room.roomId)
+    showToast(t('space.join_success'))
+    void router.push({ name: 'mobileChatMain', params: { roomId: room.roomId } })
+  } catch (err) {
+    logger.error(`Join child room failed: ${room.roomId}`, err)
+    showToast({ type: 'fail', message: resolveErrorText(err) })
+  } finally {
+    joiningRoomId.value = ''
+  }
 }
 </script>
 
@@ -196,6 +220,15 @@ const openRoom = (room: SpaceChildRoom) => {
     border-radius: 999px;
     color: var(--van-primary-color);
     background: var(--tjg-color-primary-100);
+  }
+
+  .child-join {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    color: var(--van-primary-color);
+    border: 1px solid var(--van-primary-color);
   }
 
   .child-chevron {

@@ -15,7 +15,7 @@
   <div v-else-if="viewState === 'capability'" class="flex items-center justify-center px-16px text-center min-h-240px">
     <van-empty :description="t('friend.list.capability_unavailable_description')">
       <template #image>
-        <svg class="size-40px color-[--tjg-text-tertiary]"><use href="#friends"></use></svg>
+        <svg class="size-40px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#friends"></use></svg>
       </template>
       <template #bottom>
         <div class="mt-8px text-[length:var(--tjg-font-size-base)] font-600 text-[--tjg-text-primary]">
@@ -27,7 +27,7 @@
   <div v-else-if="viewState === 'error'" class="flex items-center justify-center px-16px text-center min-h-240px">
     <van-empty :description="errorMessage">
       <template #image>
-        <svg class="size-40px color-[--tjg-text-tertiary]"><use href="#warning"></use></svg>
+        <svg class="size-40px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#warning"></use></svg>
       </template>
       <template #bottom>
         <div class="mt-8px flex flex-col items-center gap-12px">
@@ -60,7 +60,9 @@
         <van-collapse-item v-if="specialContacts.length > 0" name="special">
           <template #title>
             <div class="flex items-center gap-8px">
-              <svg class="size-14px color-[--tjg-color-warning-500]"><use href="#star-fill"></use></svg>
+              <svg class="size-14px color-[--tjg-color-warning-500]" aria-hidden="true">
+                <use href="#star-fill"></use>
+              </svg>
               <span>{{ t('mobile_contact.group.special') }}</span>
             </div>
           </template>
@@ -95,7 +97,7 @@
         <van-collapse-item name="normal">
           <template #title>
             <div class="flex items-center gap-8px">
-              <svg class="size-14px color-[--tjg-text-secondary]"><use href="#friends"></use></svg>
+              <svg class="size-14px color-[--tjg-text-secondary]" aria-hidden="true"><use href="#friends"></use></svg>
               <span>{{ t('mobile_contact.group.normal') }}</span>
             </div>
           </template>
@@ -135,7 +137,7 @@
         <van-collapse-item v-if="blockedContacts.length > 0" name="blocked">
           <template #title>
             <div class="flex items-center gap-8px">
-              <svg class="size-14px color-[--tjg-text-tertiary]"><use href="#forbidden"></use></svg>
+              <svg class="size-14px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#forbidden"></use></svg>
               <span>{{ t('mobile_contact.group.blocked') }}</span>
             </div>
           </template>

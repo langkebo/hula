@@ -5,15 +5,15 @@
   "documents": "文档",
   "media": "媒体",
   "empty": "暂无文件",
-  "opening": "正在打开 {name}",
-  "deleted": "文件已删除",
   "image_alt": "文件图片",
-  "demo": {
-    "project_doc": "项目文档.pdf",
-    "meeting_notes": "会议记录.docx",
-    "product_screenshot": "产品截图.png",
-    "demo_video": "演示视频.mp4"
-  },
+  "quota_used": "已用 {used} / {total} · {count} 个媒体",
+  "upload": "上传",
+  "upload_no_room": "请先进入一个会话再上传",
+  "upload_success": "文件已发送到当前会话",
+  "upload_failed": "文件上传失败",
+  "open_failed": "无法打开该文件",
+  "delete_confirm": "仅从本页移除，聊天记录中的文件不受影响。",
+  "removed": "已从本页移除",
   "actions": {
     "open": "打开",
     "save": "保存到相册",

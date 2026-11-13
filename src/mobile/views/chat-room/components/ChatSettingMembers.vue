@@ -11,7 +11,7 @@
           </template>
         </i18n-t>
         <div>
-          <svg class="w-14px h-14px iconpark-icon">
+          <svg class="w-14px h-14px iconpark-icon" aria-hidden="true">
             <use href="#right"></use>
           </svg>
         </div>

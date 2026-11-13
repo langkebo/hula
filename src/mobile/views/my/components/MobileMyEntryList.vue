@@ -3,7 +3,12 @@
        放置于此可 1 跳到达（此前设备管理要走「设置 → 安全设置 → 设备管理」三层）。 -->
   <div class="mt-16px">
     <van-cell-group inset>
-      <van-cell v-for="item in entries" :key="item.path" :title="t(item.titleKey)" is-link @click="go(item.path)">
+      <van-cell
+        v-for="item in availableEntries"
+        :key="item.path"
+        :title="t(item.titleKey)"
+        is-link
+        @click="go(item.path)">
         <template #icon>
           <SettingCellIcon :icon="item.icon" :color="item.color" :shell="item.shell" />
         </template>
@@ -13,6 +18,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
@@ -60,6 +66,9 @@ const entries: MyEntry[] = [
     shell: 'info'
   }
 ]
+
+/** 按路由表实际注册情况过滤，避免入口指向未装配/已裁剪的页面（Y-15） */
+const availableEntries = computed(() => entries.filter((item) => router.resolve(item.path).matched.length > 0))
 
 function go(path: string) {
   router.push(path)

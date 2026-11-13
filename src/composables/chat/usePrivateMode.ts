@@ -1,7 +1,11 @@
 import { computed, ref } from 'vue'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
+import { PRIVATE_MODE_STATE_EVENT_TYPE, roomOperations } from '@/services/matrix/room/RoomOperations'
+import { createLogger } from '@/utils/Logger'
 import { useScreenshotDetection } from './useScreenshotDetection'
+
+const logger = createLogger('usePrivateMode')
 
 // 模块级单例状态：所有 usePrivateMode() 调用者共享同一份响应式状态
 // 与同一个截屏检测实例，避免多实例导致状态不一致或重复注册监听器。
@@ -10,6 +14,10 @@ const showPrivateConfirm = ref(false)
 const burnEnabled = ref(false)
 const burnDuration = ref(60)
 const currentRoomId = ref<string>('')
+
+// 状态版本号：异步读取/写入返回时若版本已变化，说明用户已切房间或手动切换，
+// 丢弃过期结果，避免「刚关掉又被旧房间的回填重新打开」。
+let stateVersion = 0
 
 // 截屏检测实例仅在模块加载时创建一次，确保全局唯一。
 const { startWatch, stopWatch } = useScreenshotDetection()
@@ -35,41 +43,78 @@ const privateModeFeatures = computed(() => [
   }
 ])
 
+/**
+ * 把私密模式开关同步到房间状态事件，保证重进房间后能恢复。
+ *
+ * 无写权限（普通成员 PL 0）时不写服务端，降级为「仅本次会话生效」，
+ * 不阻塞用户切换；其他异常只记日志，避免打断会话。
+ */
+async function persistPrivateMode(roomId: string, enabled: boolean) {
+  try {
+    if (!roomOperations.canWriteStateEvent(roomId, PRIVATE_MODE_STATE_EVENT_TYPE)) return
+    await roomOperations.setPrivateMode(roomId, enabled)
+  } catch (error) {
+    logger.warn('同步私密模式状态失败', error)
+  }
+}
+
+function deactivatePrivateMode() {
+  stateVersion++
+  privateModeActive.value = false
+  burnEnabled.value = false
+  useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, false)
+  stopWatch()
+}
+
 export function usePrivateMode() {
   /**
-   * 同步当前房间号；切换房间时强制退出私密模式。
+   * 同步当前房间号，并按房间状态事件恢复私密模式。
    *
    * `privateModeActive` 是模块级单例，keepAlive 下的聊天页实例会被复用。
-   * 若不重置，用户在一个会话开启私密模式后切到另一个会话，顶栏仍显示私密态、
-   * 截屏监听也停留在旧房间，属于状态泄漏。
+   * 切房间时必须先复位本地状态（否则顶栏仍显示私密态、截屏监听停留在旧房间），
+   * 但不写旧房间的状态事件——私密模式是按房间持久化的，离开不应抹掉该房间的开关。
    */
-  function setRoomId(roomId: string) {
-    if (privateModeActive.value && currentRoomId.value && currentRoomId.value !== roomId) {
+  async function setRoomId(roomId: string) {
+    if (roomId === currentRoomId.value) return
+    const version = ++stateVersion
+    if (privateModeActive.value) {
       privateModeActive.value = false
       burnEnabled.value = false
       useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, false)
       stopWatch()
     }
     currentRoomId.value = roomId
+    if (!roomId) return
+    try {
+      const enabled = await roomOperations.getPrivateMode(roomId)
+      if (!enabled || version !== stateVersion) return
+      privateModeActive.value = true
+      useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, true)
+      startWatch(roomId)
+    } catch (error) {
+      logger.warn('读取私密模式状态失败', error)
+    }
   }
 
   function togglePrivateMode() {
     if (privateModeActive.value) {
-      privateModeActive.value = false
-      burnEnabled.value = false
-      useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, false)
-      stopWatch()
+      const roomId = currentRoomId.value
+      deactivatePrivateMode()
+      if (roomId) void persistPrivateMode(roomId, false)
     } else {
       showPrivateConfirm.value = true
     }
   }
 
   function confirmPrivateMode() {
+    stateVersion++
     privateModeActive.value = true
     showPrivateConfirm.value = false
     useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, true)
-    if (currentRoomId.value) {
-      startWatch(currentRoomId.value)
+    const roomId = currentRoomId.value
+    if (roomId) {
+      startWatch(roomId)
+      void persistPrivateMode(roomId, true)
     }
   }
 

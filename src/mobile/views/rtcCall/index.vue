@@ -3,8 +3,8 @@
     <!-- 来电界面 -->
     <div v-if="isIncoming && !isCallActive" class="incoming-call-screen">
       <div class="caller-info">
-        <van-image round width="80" height="80" :src="remoteUser?.avatarUrl || ''" class="caller-avatar" />
-        <span class="caller-name">{{ remoteUser?.displayName || remoteUser?.userId || t('voip.unknown') }}</span>
+        <van-image round width="80" height="80" :src="remoteAvatarUrl" class="caller-avatar" />
+        <span class="caller-name">{{ peerDisplayName }}</span>
         <span class="call-type-label">
           {{ isVideo ? t('voip.incoming.video_call') : t('voip.incoming.voice_call') }}
         </span>
@@ -27,8 +27,8 @@
     <!-- 去电界面 -->
     <div v-else-if="!isIncoming && !isCallActive" class="outgoing-call-screen">
       <div class="caller-info">
-        <van-image round width="80" height="80" :src="remoteUser?.avatarUrl || ''" class="caller-avatar" />
-        <span class="caller-name">{{ remoteUser?.displayName || remoteUser?.userId || t('voip.unknown') }}</span>
+        <van-image round width="80" height="80" :src="remoteAvatarUrl" class="caller-avatar" />
+        <span class="caller-name">{{ peerDisplayName }}</span>
         <span class="call-state-text">{{ t('voip.states.ringing_outgoing') }}</span>
       </div>
       <div class="outgoing-actions">
@@ -43,7 +43,7 @@
       <RtcCallStatusOverlay
         :peer-name="peerDisplayName"
         :reconnecting="isReconnecting"
-        :avatar-url="remoteUser?.avatarUrl || ''"
+        :avatar-url="remoteAvatarUrl"
         :is-video="isVideo" />
       <template v-if="isVideo">
         <div class="video-container">
@@ -71,6 +71,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useVoIPCallFlow } from '@/composables/useVoIPCallFlow'
 import router from '@/router'
+import { profileService } from '@/services/matrix/user/MatrixProfileService'
 import { createLogger } from '@/utils/Logger'
 import { classifyMediaError, type MediaErrorTarget, resolveMediaErrorText } from './mediaError'
 import RtcCallActionBar from './RtcCallActionBar.vue'
@@ -130,7 +131,29 @@ const remoteStream = computed(() => callInfo.value?.remoteStream ?? null)
 
 const isReconnecting = computed(() => callInfo.value?.state === 'reconnecting')
 
-const peerDisplayName = computed(() => props.remoteUser?.displayName || props.remoteUser?.userId || '')
+/** 刷新页面后路由只带 remoteUserId，资料需回查（Q-8） */
+const remoteProfile = ref<{ displayName?: string; avatarUrl?: string } | null>(null)
+
+const remoteUserId = computed(() => props.remoteUser?.userId || '')
+const remoteAvatarUrl = computed(() => props.remoteUser?.avatarUrl || remoteProfile.value?.avatarUrl || '')
+const peerDisplayName = computed(
+  () => props.remoteUser?.displayName || remoteProfile.value?.displayName || remoteUserId.value || ''
+)
+
+async function resolveRemoteProfile() {
+  if (props.remoteUser?.displayName && props.remoteUser?.avatarUrl) return
+  if (!remoteUserId.value) return
+
+  try {
+    const profile = await profileService.getProfile(remoteUserId.value)
+    remoteProfile.value = {
+      ...(profile.displayname ? { displayName: profile.displayname } : {}),
+      ...(profile.avatarUrl ? { avatarUrl: profile.avatarUrl } : {})
+    }
+  } catch (error) {
+    logger.warn('Failed to fetch remote user profile', error)
+  }
+}
 
 const isCallActive = computed(() => {
   const currentState = callInfo.value?.state
@@ -277,6 +300,8 @@ const handleHangup = async () => {
 
 // 去电：调用方只负责跳转并把 roomId / callType 放进 query，通话必须由本页发起
 onMounted(async () => {
+  void resolveRemoteProfile()
+
   if (props.isIncoming || initialCallId || !props.roomId) {
     return
   }

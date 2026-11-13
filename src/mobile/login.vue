@@ -246,6 +246,15 @@ onMounted(async () => {
     return
   }
 
+  // 已有可用会话时不再展示登录表单：登录页可能被深链/历史回退/通知冷启动带到前台，
+  // 此时留在登录页会让用户误以为掉线。直接 replace，避免登录页残留可回退的历史记录。
+  const { sessionOrchestrator } = await import('@/services/matrix/auth/SessionOrchestrator')
+  if (await sessionOrchestrator.hasAuthenticatedSession()) {
+    loading.value = false
+    router.replace('/mobile/message')
+    return
+  }
+
   useMitt.on(WsResponseMessageType.NO_INTERNET, () => {
     loginDisabled.value = true
     loginText.value = t('login.status.service_disconnected')

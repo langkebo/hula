@@ -114,12 +114,26 @@ async function loadGroups(): Promise<void> {
   loading.value = true
   try {
     groups.value = await matrixFriendGroups.getFriendGroups()
+    // 分组已被删除时，其成员缓存必须一起失效，否则展开旧分组还能看到幽灵成员
+    const validIds = new Set(groups.value.map((group) => group.group_id))
+    const nextCache: Record<string, Friend[]> = {}
+    for (const [groupId, members] of Object.entries(membersByGroup.value)) {
+      if (validIds.has(groupId)) nextCache[groupId] = members
+    }
+    membersByGroup.value = nextCache
   } catch (error) {
     logger.error('Failed to load friend groups', error)
     showToast({ type: 'fail', message: t('mobile_friend_groups.load_failed') })
   } finally {
     loading.value = false
   }
+}
+
+/** 分组被删除后清掉对应成员缓存 */
+function invalidateMembers(groupId: string): void {
+  const next = { ...membersByGroup.value }
+  delete next[groupId]
+  membersByGroup.value = next
 }
 
 /** 展开分组时懒加载成员 */
@@ -193,6 +207,7 @@ async function handleDelete(groupId: string): Promise<void> {
 
   try {
     await matrixFriendGroups.deleteFriendGroup(groupId)
+    invalidateMembers(groupId)
     showToast(t('mobile_friend_groups.delete_success'))
     await loadGroups()
   } catch (error) {

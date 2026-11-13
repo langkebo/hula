@@ -32,7 +32,7 @@
               class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleForward"
               :aria-label="t('mobile_files.actions.forward')">
-              <svg class="size-22px text-white">
+              <svg class="size-22px text-white" aria-hidden="true">
                 <use href="#share"></use>
               </svg>
             </button>
@@ -41,7 +41,7 @@
               class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleSave"
               :aria-label="t('common.save')">
-              <svg class="size-22px text-white">
+              <svg class="size-22px text-white" aria-hidden="true">
                 <use href="#Importing"></use>
               </svg>
             </button>
@@ -50,7 +50,7 @@
               class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleMore"
               :aria-label="t('menu.ctx_menu_more')">
-              <svg class="size-22px text-white">
+              <svg class="size-22px text-white" aria-hidden="true">
                 <use href="#more"></use>
               </svg>
             </button>
@@ -69,7 +69,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { MergeMessageType, MittEnum } from '@/enums'
 import { usePreviewGestures } from '@/mobile/composables/usePreviewGestures'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
-import type { MsgType } from '@/services/types'
+import type { MessageBody } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
@@ -80,10 +80,17 @@ const logger = createLogger('ImagePreview')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
+/** 预览/保存只依赖这些字段，完整 MsgType 结构同样兼容（Y-10 相册侧构造轻量对象） */
+type PreviewMessage = {
+  id: string
+  roomId: string
+  body?: MessageBody
+}
+
 interface Props {
   visible: boolean
   imageUrl: string
-  message?: MsgType
+  message?: PreviewMessage
   showForward?: boolean
   showSave?: boolean
   showMore?: boolean

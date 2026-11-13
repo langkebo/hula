@@ -108,10 +108,13 @@ const backgroundImageStyle = computed(() => {
   return styles
 })
 
+/** 仅带底部输入栏的页面按键盘高度抬升，其余页面不因键盘弹出被整体压缩（X-5） */
+const bottomInputInset = computed(() => (route.meta.bottomInput ? keyboardInset.value : 0))
+
 const mergedStyle = computed(() => ({
   // 无自定义背景图时交给 .tjg-aurora 的氛围层铺底，玻璃面才有可折射的底色
   backgroundColor: props.backgroundImage ? 'var(--tjg-surface-panel)' : undefined,
-  paddingBottom: keyboardInset.value ? `${keyboardInset.value}px` : undefined,
+  paddingBottom: bottomInputInset.value ? `${bottomInputInset.value}px` : undefined,
   ...backgroundImageStyle.value
 }))
 

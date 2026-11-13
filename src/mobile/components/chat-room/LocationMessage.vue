@@ -35,12 +35,14 @@
     <!-- 地图预览区域 -->
     <div class="location-message__map">
       <StaticProxyMap
-        v-if="locationData"
+        v-if="locationData && !mapFailed"
+        :key="mapRenderKey"
         :location="locationData"
         :zoom="16"
         :height="120"
         :draggable="false"
-        :controls="false" />
+        :controls="false"
+        @map-error="handleMapError" />
       <div v-else class="location-message__empty">
         <svg
           class="location-message__empty-icon"
@@ -55,14 +57,17 @@
           <path d="M8 15s1.5 2 4 2 4-2 4-2" />
           <path d="M9 9h.01M15 9h.01" />
         </svg>
-        <span>{{ t('chat.location.cannot_display') }}</span>
+        <span>{{ mapFailed ? t('chat.location.map_load_failed') : t('chat.location.cannot_display') }}</span>
+        <van-button v-if="mapFailed" size="mini" plain type="primary" @click.stop="handleRetryMap">
+          {{ t('chat.location.retry') }}
+        </van-button>
       </div>
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import StaticProxyMap from '@/components/rightBox/location/StaticProxyMap.vue'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
@@ -82,6 +87,23 @@ const props = defineProps<{
 
 // 收到的 geo URI 存 WGS-84，腾讯地图显示前转 GCJ-02（仅中国境内坐标会被转换）
 const locationData = computed(() => toGcj02LocationData(props.body))
+
+/** 静态地图加载失败时给出占位与重试，而不是留一块空白 */
+const mapFailed = ref(false)
+const mapRenderKey = ref(0)
+
+const handleMapError = () => {
+  mapFailed.value = true
+}
+
+const handleRetryMap = () => {
+  mapFailed.value = false
+  mapRenderKey.value += 1
+}
+
+watch(locationData, () => {
+  mapFailed.value = false
+})
 
 const handleOpenMap = () => {
   if (!locationData.value) return

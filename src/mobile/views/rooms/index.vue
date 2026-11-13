@@ -121,6 +121,10 @@
           </van-button>
         </div>
       </div>
+      <!-- 搜索完成但无结果：给出明确空态，避免弹窗内容区一片空白 -->
+      <div v-else-if="publicSearchSearched" class="px-16px pb-16px">
+        <van-empty image-size="64" :description="t('mobile_rooms.search_empty')" />
+      </div>
     </van-dialog>
   </div>
 </template>
@@ -130,6 +134,7 @@ import { showConfirmDialog, showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
+import { useMobileErrorText } from '@/mobile/composables/useMobileErrorText'
 import RoomListCard from '@/mobile/views/rooms/RoomListCard.vue'
 import {
   buildRoomCardModels,
@@ -158,6 +163,7 @@ interface PublicRoomResult {
 }
 
 const { t } = useI18n()
+const { resolve: resolveErrorText } = useMobileErrorText()
 const router = useRouter()
 const sessionStore = useSessionStore()
 const userStore = useUserStore()
@@ -176,6 +182,8 @@ const showPublicSearchDialog = ref(false)
 const publicSearchQuery = ref('')
 const publicSearchResults = ref<PublicRoomResult[]>([])
 const publicSearchLoading = ref(false)
+/** 是否已执行过一次搜索：用于区分「还没搜」与「搜了没结果」 */
+const publicSearchSearched = ref(false)
 
 const createActions = computed(() => [
   { name: t('mobile_rooms.create_room'), value: 'create' },
@@ -286,6 +294,7 @@ async function onCreateSelect(action: { value: string }) {
     case 'search':
       publicSearchQuery.value = ''
       publicSearchResults.value = []
+      publicSearchSearched.value = false
       showPublicSearchDialog.value = true
       break
   }
@@ -306,7 +315,7 @@ async function handleCreateRoom() {
       logger.error('Create room failed:', e)
       showToast({
         type: 'fail',
-        message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.create_failed')
+        message: resolveErrorText(e)
       })
     }
   }
@@ -333,7 +342,7 @@ async function beforeCloseJoinRoom(action: string): Promise<boolean> {
     return true
   } catch (e) {
     logger.error('Join room failed:', e)
-    showToast({ type: 'fail', message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.join_failed') })
+    showToast({ type: 'fail', message: resolveErrorText(e) })
     return false
   }
 }
@@ -355,8 +364,9 @@ async function beforeClosePublicSearch(action: string): Promise<boolean> {
     publicSearchResults.value = result || []
   } catch (e) {
     logger.error('Public room search failed:', e)
-    showToast({ type: 'fail', message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.search_failed') })
+    showToast({ type: 'fail', message: resolveErrorText(e) })
   } finally {
+    publicSearchSearched.value = true
     publicSearchLoading.value = false
   }
   return false // Keep dialog open to show results
@@ -371,7 +381,7 @@ async function joinPublicRoom(roomId: string) {
     await fetchRooms()
   } catch (e) {
     logger.error('Join public room failed:', e)
-    showToast({ type: 'fail', message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.join_failed') })
+    showToast({ type: 'fail', message: resolveErrorText(e) })
   }
 }
 
@@ -388,7 +398,7 @@ async function handleLeaveRoom(roomId: string) {
   } catch (e) {
     if (e !== 'cancel') {
       logger.error('Leave room failed:', e)
-      showToast({ type: 'fail', message: e instanceof Error ? e.message : String(e) || t('mobile_rooms.leave_failed') })
+      showToast({ type: 'fail', message: resolveErrorText(e) })
     }
   }
 }

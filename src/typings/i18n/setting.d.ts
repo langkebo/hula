@@ -261,7 +261,10 @@ export type Messages = {
       "no_content": "无内容",
       "read": "已读",
       "mark_read": "标记已读",
+      "mark_all_read": "全部已读",
       "ack_success": "已标记为已读",
+      "ack_all_success": "全部标记为已读",
+      "ack_all_partial": "有 {count} 条通知标记失败，请重试",
       "ack_receipt": "服务端不支持通知确认，已通过已读回执标记",
       "ack_failed": "标记已读失败",
       "ack_unavailable": "该通知缺少确认所需的字段"
@@ -1411,7 +1414,10 @@ export type KeyPaths =
   | "setting.push.history.no_content"
   | "setting.push.history.read"
   | "setting.push.history.mark_read"
+  | "setting.push.history.mark_all_read"
   | "setting.push.history.ack_success"
+  | "setting.push.history.ack_all_success"
+  | "setting.push.history.ack_all_partial"
   | "setting.push.history.ack_receipt"
   | "setting.push.history.ack_failed"
   | "setting.push.history.ack_unavailable"

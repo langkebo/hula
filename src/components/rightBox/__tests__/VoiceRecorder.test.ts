@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import VoiceRecorder from '../VoiceRecorder.vue'
 
-const { showFeedbackMock, loggerDebugMock, loggerErrorMock } = vi.hoisted(() => ({
-  showFeedbackMock: vi.fn(),
+const { loggerDebugMock, loggerErrorMock } = vi.hoisted(() => ({
   loggerDebugMock: vi.fn(),
   loggerErrorMock: vi.fn()
 }))
@@ -12,18 +11,12 @@ const { showFeedbackMock, loggerDebugMock, loggerErrorMock } = vi.hoisted(() => 
 let capturedOptions: {
   onStart: () => void
   onStop: (blob: Blob, duration: number, localPath: string) => void
-  onError: () => void
+  onError: (kind: 'permission' | 'unknown', message: string) => void
 } | null = null
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
-  })
-}))
-
-vi.mock('@/composables/common/useActionFeedback', () => ({
-  useActionFeedback: () => ({
-    showFeedback: showFeedbackMock
   })
 }))
 
@@ -54,12 +47,20 @@ describe('VoiceRecorder', () => {
     capturedOptions = null
   })
 
-  it('uses action feedback when voice recorder reports error', async () => {
-    mount(VoiceRecorder)
+  it('emits permissionDenied when microphone permission is denied', () => {
+    const wrapper = mount(VoiceRecorder)
 
     expect(capturedOptions).not.toBeNull()
-    capturedOptions?.onError()
+    capturedOptions?.onError('permission', 'denied')
 
-    expect(showFeedbackMock).toHaveBeenCalledWith('message.voice_recorder.error', 'error')
+    expect(wrapper.emitted('permissionDenied')).toHaveLength(1)
+  })
+
+  it('does not emit permissionDenied for unknown recording errors', () => {
+    const wrapper = mount(VoiceRecorder)
+
+    capturedOptions?.onError('unknown', 'boom')
+
+    expect(wrapper.emitted('permissionDenied')).toBeUndefined()
   })
 })

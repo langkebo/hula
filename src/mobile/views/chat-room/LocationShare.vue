@@ -136,7 +136,30 @@ const durationOptions = [
   { label: t('location_share.duration_1hour'), value: 60 * 60 * 1000 },
   { label: t('location_share.duration_8hour'), value: 8 * 60 * 60 * 1000 }
 ]
-const selectedDuration = ref(durationOptions[1].value)
+
+const DURATION_STORAGE_KEY = 'hula.mobile.location_share.duration'
+
+const readSavedDuration = () => {
+  try {
+    const saved = Number(localStorage.getItem(DURATION_STORAGE_KEY))
+    if (durationOptions.some((option) => option.value === saved)) {
+      return saved
+    }
+  } catch {
+    // 读取失败回退默认值
+  }
+  return durationOptions[1].value
+}
+const selectedDuration = ref(readSavedDuration())
+
+// 记住上次选择的共享时长，下次打开面板不再回落到默认值
+watch(selectedDuration, (value) => {
+  try {
+    localStorage.setItem(DURATION_STORAGE_KEY, String(value))
+  } catch {
+    // 隐私模式 / 存储配额受限时忽略，保持默认值即可
+  }
+})
 
 const sending = ref(false)
 const starting = ref(false)

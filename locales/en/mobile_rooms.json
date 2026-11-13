@@ -22,6 +22,7 @@
   "leave_failed": "Failed to leave room",
   "load_failed": "Failed to load rooms",
   "search_failed": "Failed to search rooms",
+  "search_empty": "No public rooms found",
   "members": "members",
   "encrypted": "Encrypted",
   "public_room": "Public room",

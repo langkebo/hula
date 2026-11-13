@@ -33,6 +33,21 @@
 
         <div class="w-80% h-1px bg-gray-100 mt-10px"></div>
 
+        <!-- MSC4108 的扫码 payload 只有服务器与校验码，不含发起设备的名称/IP/位置，
+             因此无法列出设备详情；改为明确告知并提示仅在本人操作时确认（Q-4） -->
+        <div class="flex items-start gap-8px w-80% px-12px py-10px rounded-8px bg-[--tjg-color-warning-bg]" role="note">
+          <svg
+            class="w-16px h-16px shrink-0 mt-1px text-[--tjg-color-warning-600]"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true">
+            <path d="M12 2 1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z" />
+          </svg>
+          <span class="text-12px leading-18px text-[--tjg-color-warning-700]">
+            {{ t('login.qr.security_hint') }}
+          </span>
+        </div>
+
         <!-- 状态提示 -->
         <div v-if="scanError" class="text-14px text-red-500 px-20px text-center">
           {{ scanError }}

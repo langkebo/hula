@@ -10,9 +10,11 @@
     <van-field
       :model-value="value"
       :placeholder="t('mobile_chat_setting.input.alias')"
+      :maxlength="MAX_ALIAS_LENGTH"
+      show-word-limit
       data-test="mobile-contact-alias"
       class="rounded-10px"
-      @update:model-value="value = $event"
+      @update:model-value="handleUpdate"
       @blur="handleBlur" />
   </div>
 </template>
@@ -47,6 +49,15 @@ const { showFeedback } = useActionFeedback()
 
 const value = ref(getContactAlias(props.userId)?.displayName ?? '')
 const saving = ref(false)
+
+const MAX_ALIAS_LENGTH = 32
+
+// 别名会同步到房间状态事件，控制字符会污染对方看到的名称
+const sanitizeAlias = (raw: string) => raw.replace(/\p{Cc}/gu, '').slice(0, MAX_ALIAS_LENGTH)
+
+const handleUpdate = (raw: unknown) => {
+  value.value = sanitizeAlias(String(raw ?? ''))
+}
 
 /** 别名是模块级缓存（不是 store），读版本号建立响应式依赖 */
 watch(

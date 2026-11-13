@@ -92,6 +92,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMessageForward } from '@/composables/messaging/useMessageForward'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
@@ -121,6 +122,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 // 默认头像
 const defaultAvatar = '/logo.png'
@@ -160,12 +162,17 @@ const sourcePreview = computed<string>(() => {
 })
 
 /**
+ * 可转发的房间：排除源消息所在房间（转发到源房间没有意义，且会被视为「已存在」）
+ */
+const availableRooms = computed(() => flow.recentRooms.value.filter((room) => room.roomId !== props.roomId))
+
+/**
  * 根据搜索关键字过滤房间列表
  */
 const filteredRooms = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return flow.recentRooms.value
-  return flow.recentRooms.value.filter((room) => room.name.toLowerCase().includes(query))
+  if (!query) return availableRooms.value
+  return availableRooms.value.filter((room) => room.name.toLowerCase().includes(query))
 })
 
 /**
@@ -216,10 +223,20 @@ const handleSubmit = async (): Promise<void> => {
     successCount = await flow.forward()
   }
 
-  if (successCount > 0) {
+  if (successCount >= selectedRoomIds.length) {
     emit('forwarded', selectedRoomIds)
     emit('update:visible', false)
+    return
   }
+
+  // 逐条转发结果无法精确到房间，但能给出成功/总数，避免失败时弹窗静默不动
+  if (successCount === 0) {
+    showFeedback(t('message.forward.failed'), 'error')
+    return
+  }
+  showFeedback(t('message.forward.partial_result', { success: successCount, total: selectedRoomIds.length }), 'warning')
+  emit('forwarded', selectedRoomIds)
+  emit('update:visible', false)
 }
 
 /**

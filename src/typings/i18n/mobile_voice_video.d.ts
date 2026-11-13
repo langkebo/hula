@@ -6,6 +6,14 @@
 export type Messages = {
   "title": "语音视频设置",
   "audio_section": "音频设置",
+  "permission_section": "权限状态",
+  "microphone_permission": "麦克风",
+  "camera_permission": "摄像头",
+  "permission_granted": "已授权",
+  "permission_denied": "已拒绝，请在系统设置中开启",
+  "permission_prompt": "尚未授权",
+  "permission_unknown": "无法读取，请尝试测试",
+  "request_permission": "申请权限",
   "video_section": "视频设置",
   "call_section": "通话设置",
   "audio_input": "音频输入设备",
@@ -44,6 +52,14 @@ export type Messages = {
 export type KeyPaths =
   | "mobile_voice_video.title"
   | "mobile_voice_video.audio_section"
+  | "mobile_voice_video.permission_section"
+  | "mobile_voice_video.microphone_permission"
+  | "mobile_voice_video.camera_permission"
+  | "mobile_voice_video.permission_granted"
+  | "mobile_voice_video.permission_denied"
+  | "mobile_voice_video.permission_prompt"
+  | "mobile_voice_video.permission_unknown"
+  | "mobile_voice_video.request_permission"
   | "mobile_voice_video.video_section"
   | "mobile_voice_video.call_section"
   | "mobile_voice_video.audio_input"

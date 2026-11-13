@@ -16,7 +16,7 @@
         @focus="emit('lock-scroll')"
         @blur="emit('unlock-scroll')">
         <template #left-icon>
-          <svg class="w-14px h-14px color-[--tjg-text-tertiary]">
+          <svg class="w-14px h-14px color-[--tjg-text-tertiary]" aria-hidden="true">
             <use href="#search"></use>
           </svg>
         </template>
@@ -97,12 +97,16 @@
                 class="text-[length:var(--tjg-font-size-2xs)] text-right flex flex-col gap-1 items-end justify-center text-[--tjg-text-tertiary]">
                 <div class="flex items-center gap-1">
                   <span v-if="item.hotFlag === IsAllUserEnum.Yes">
-                    <svg class="size-14px select-none outline-none cursor-pointer color-[--tjg-color-primary-500]">
+                    <svg
+                      class="size-14px select-none outline-none cursor-pointer color-[--tjg-color-primary-500]"
+                      aria-hidden="true">
                       <use href="#auth"></use>
                     </svg>
                   </span>
                   <span v-if="item.isFavorite">
-                    <svg class="size-14px select-none outline-none cursor-pointer color-[--tjg-color-warning-500]">
+                    <svg
+                      class="size-14px select-none outline-none cursor-pointer color-[--tjg-color-warning-500]"
+                      aria-hidden="true">
                       <use href="#star"></use>
                     </svg>
                   </span>
@@ -111,7 +115,7 @@
                   </span>
                 </div>
                 <div v-if="item.muteNotification === NotificationTypeEnum.NOT_DISTURB">
-                  <svg class="size-14px z-100 color-[--tjg-text-tertiary]">
+                  <svg class="size-14px z-100 color-[--tjg-text-tertiary]" aria-hidden="true">
                     <use href="#close-remind"></use>
                   </svg>
                 </div>

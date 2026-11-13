@@ -40,7 +40,9 @@
 import { showToast } from 'vant'
 import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { QUICK_EMOJIS, type QuickEmoji, useReactionFlow } from '@/composables/messaging/useReactionFlow'
+import { MOBILE_SETTINGS_ROUTE_NAMES } from '@/mobile/views/my/settingsRoutes'
 
 defineOptions({ name: 'MobileReactionPicker' })
 
@@ -56,6 +58,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const router = useRouter()
 
 const { reactions, loading, pendingEmoji, getReactions, toggleReaction } = useReactionFlow({
   roomId: () => props.roomId,
@@ -77,9 +80,10 @@ const handleSelect = async (item: QuickEmoji): Promise<void> => {
   }
 }
 
+/** 「更多」跳转既有的表情包管理页，复用路由不自造入口（T-19） */
 const handleMore = (): void => {
-  // 简化实现:仅提示,后续可接入完整表情面板
   emit('update:visible', false)
+  void router.push({ name: MOBILE_SETTINGS_ROUTE_NAMES.emoticons })
 }
 
 const handleClose = (): void => {

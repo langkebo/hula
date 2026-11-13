@@ -27,6 +27,7 @@ export type Messages = {
   "leave_failed": "退出房间失败",
   "load_failed": "加载房间列表失败",
   "search_failed": "搜索房间失败",
+  "search_empty": "没有找到公开房间",
   "members": "人",
   "encrypted": "已加密",
   "public_room": "公开房间",
@@ -73,6 +74,7 @@ export type KeyPaths =
   | "mobile_rooms.leave_failed"
   | "mobile_rooms.load_failed"
   | "mobile_rooms.search_failed"
+  | "mobile_rooms.search_empty"
   | "mobile_rooms.members"
   | "mobile_rooms.encrypted"
   | "mobile_rooms.public_room"

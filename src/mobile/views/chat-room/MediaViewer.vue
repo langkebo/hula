@@ -2,7 +2,7 @@
   <div class="flex flex-col h-full">
     <div class="flex justify-between items-center p-16px">
       <div v-clickable @click="() => router.back()">
-        <svg class="iconpark-icon w-24px h-24px"><use href="#fanhui"></use></svg>
+        <svg class="iconpark-icon w-24px h-24px" aria-hidden="true"><use href="#fanhui"></use></svg>
       </div>
       <van-dropdown-menu>
         <van-dropdown-item v-model="mediaType" :options="typeOptions" />

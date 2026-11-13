@@ -12,7 +12,7 @@
           data-testid="location-btn"
           :aria-label="t('location_share.title')"
           @click="emit('location')">
-          <svg class="w-22px h-22px iconpark-icon">
+          <svg class="w-22px h-22px iconpark-icon" aria-hidden="true">
             <use href="#location"></use>
           </svg>
         </button>

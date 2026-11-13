@@ -25,7 +25,7 @@
             @keydown.enter="handleSearchNow"
             @clear="handleSearchClear">
             <template #left-icon>
-              <svg class="w-14px h-14px"><use href="#search" /></svg>
+              <svg class="w-14px h-14px" aria-hidden="true"><use href="#search" /></svg>
             </template>
           </van-field>
         </div>
@@ -66,7 +66,8 @@
                           </span>
                           <svg
                             class="size-12px hover:color-[--tjg-text-tertiary] hover:transition-colors cursor-pointer"
-                            @click="handleCopy(item.account)">
+                            @click="handleCopy(item.account)"
+                            aria-hidden="true">
                             <use href="#copy"></use>
                           </svg>
                         </div>

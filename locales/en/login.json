@@ -115,7 +115,8 @@
     "connect_failed": "Connection failed",
     "missing_qr_data": "QR code data was not received",
     "scan_failed_detail": "Scan failed: {msg}",
-    "confirm_failed_detail": "Failed to confirm login: {msg}"
+    "confirm_failed_detail": "Failed to confirm login: {msg}",
+    "security_hint": "This login request does not include the requesting device's name, IP, or location. Only confirm if you started this login yourself; otherwise cancel."
   },
   "guide": {
     "welcome": {

@@ -225,6 +225,7 @@ async function persist() {
       autoAcceptFriends: autoAcceptFriends.value,
       requireFriendRequestMessage: requireFriendRequestMessage.value
     })
+    showToast(t('mobile_invite_permission.save_success'))
   } catch (error) {
     logger.error('Failed to persist invite policy', error)
     showToast({ type: 'fail', message: t('mobile_invite_permission.save_failed') })

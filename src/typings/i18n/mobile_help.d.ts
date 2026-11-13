@@ -20,6 +20,7 @@ export type Messages = {
   "mobile_update_hint": "当前版本 {version}。移动端需下载安装包完成更新，应用内无法自动安装，是否前往发行页？",
   "go_to_release_page": "前往发行页",
   "bug_title": "问题标题",
+  "contact_label": "联系方式",
   "bug_title_placeholder": "请简要描述问题",
   "bug_description": "问题描述",
   "bug_description_placeholder": "请详细描述您遇到的问题",
@@ -61,6 +62,7 @@ export type KeyPaths =
   | "mobile_help.mobile_update_hint"
   | "mobile_help.go_to_release_page"
   | "mobile_help.bug_title"
+  | "mobile_help.contact_label"
   | "mobile_help.bug_title_placeholder"
   | "mobile_help.bug_description"
   | "mobile_help.bug_description_placeholder"

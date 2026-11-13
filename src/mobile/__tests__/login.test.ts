@@ -89,7 +89,9 @@ vi.mock('@/enums', async (importOriginal) => {
 
 vi.mock('@/services/matrix/auth/SessionOrchestrator', () => ({
   sessionOrchestrator: {
-    loginWithSsoToken: loginWithSsoTokenMock
+    loginWithSsoToken: loginWithSsoTokenMock,
+    // 登录页挂载时会探测已有会话，未登录场景返回 false 以展示表单
+    hasAuthenticatedSession: async () => false
   }
 }))
 

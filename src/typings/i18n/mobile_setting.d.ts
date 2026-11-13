@@ -45,6 +45,9 @@ export type Messages = {
   "homeserver_invalid": "请输入有效的服务器地址",
   "homeserver_saved": "服务器设置已保存",
   "homeserver_save_failed": "保存服务器设置失败",
+  "homeserver_test": "测试连接",
+  "homeserver_test_ok": "连接成功（{versions}）",
+  "homeserver_test_failed": "无法连接到该服务器",
   "save": "保存",
   "status_online": "在线",
   "status_away": "离开",
@@ -112,6 +115,9 @@ export type KeyPaths =
   | "mobile_setting.homeserver_invalid"
   | "mobile_setting.homeserver_saved"
   | "mobile_setting.homeserver_save_failed"
+  | "mobile_setting.homeserver_test"
+  | "mobile_setting.homeserver_test_ok"
+  | "mobile_setting.homeserver_test_failed"
   | "mobile_setting.save"
   | "mobile_setting.status_online"
   | "mobile_setting.status_away"

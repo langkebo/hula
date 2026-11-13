@@ -28,4 +28,12 @@ describe('mobile css guards', () => {
     const offenders = files.filter((file) => /\bl-0\b/.test(readFileSync(file, 'utf8')))
     expect(offenders).toEqual([])
   })
+
+  it('装饰性 svg 必须声明 aria-hidden / role / aria-label', () => {
+    const offenders = files.filter((file) => {
+      const source = readFileSync(file, 'utf8')
+      return [...source.matchAll(/<svg\b([^>]*)>/g)].some((match) => !/aria-hidden|role=|aria-label/.test(match[1]))
+    })
+    expect(offenders).toEqual([])
+  })
 })

@@ -12,20 +12,20 @@
         <span class="more-item__icon">
           <!-- 文件：原生选择器 -->
           <van-uploader v-if="item.type === 'file'" accept="*/*" multiple :after-read="afterReadFile">
-            <svg class="h-24px w-24px iconpark-icon">
+            <svg class="h-24px w-24px iconpark-icon" aria-hidden="true">
               <use :href="`#${item.icon}`"></use>
             </svg>
           </van-uploader>
 
           <!-- 图片：原生选择器 -->
           <van-uploader v-else-if="item.type === 'image'" accept="image/*" multiple :after-read="afterReadImage">
-            <svg class="h-24px w-24px iconpark-icon">
+            <svg class="h-24px w-24px iconpark-icon" aria-hidden="true">
               <use :href="`#${item.icon}`"></use>
             </svg>
           </van-uploader>
 
           <!-- 位置：触发位置选择 -->
-          <svg v-else class="h-24px w-24px iconpark-icon">
+          <svg v-else class="h-24px w-24px iconpark-icon" aria-hidden="true">
             <use :href="`#${item.icon}`"></use>
           </svg>
         </span>

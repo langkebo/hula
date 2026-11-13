@@ -1,7 +1,7 @@
 <template>
   <div class="bg-[--tjg-surface-panel] rounded-10px">
     <div class="p-15px!">
-      <div v-clickable class="flex justify-between items-center" @click="handleCopy(activeItem?.account || '')">
+      <div v-clickable class="flex justify-between items-center" @click="handleIdCardClick">
         <div class="text-14px">
           {{
             t('mobile_chat_setting.id_card.qr_code_label', {
@@ -14,7 +14,7 @@
         <div class="text-12px text-[--tjg-text-secondary] flex flex-wrap gap-10px items-center">
           <div>{{ activeItem?.account || '' }}</div>
           <div>
-            <svg class="w-14px h-14px iconpark-icon">
+            <svg class="w-14px h-14px iconpark-icon" aria-hidden="true">
               <use href="#saoma-i3589iic"></use>
             </svg>
           </div>
@@ -62,6 +62,23 @@
       </div>
     </div>
   </div>
+
+  <!-- 群二维码：此前点击只复制群号，移动端无法把入群方式分享给他人（G-14） -->
+  <van-popup v-model:show="showGroupQr" position="bottom" round closeable :lazy-render="false">
+    <div class="flex flex-col items-center gap-12px px-20px pt-24px pb-20px">
+      <div class="text-16px font-medium text-[--tjg-text-primary]">
+        {{ t('mobile_chat_setting.group_qr.title') }}
+      </div>
+      <div class="text-13px text-[--tjg-text-secondary]">{{ activeItem?.name }}</div>
+      <canvas ref="qrCanvasRef" class="rounded-12px bg-white"></canvas>
+      <p class="text-12px text-[--tjg-text-tertiary] text-center">
+        {{ t('mobile_chat_setting.group_qr.tip') }}
+      </p>
+      <van-button block plain type="primary" @click="handleCopy(roomId)">
+        {{ t('mobile_chat_setting.group_qr.copy_id') }}
+      </van-button>
+    </div>
+  </van-popup>
 
   <ChatRemarkField v-model="remarkValue" @blur="handleInfoUpdate" />
   <ContactAliasField v-if="!isGroup && friend?.userId" :user-id="friend.userId" />
@@ -145,6 +162,44 @@ const handleCopy = (val: string) => {
   if (!val) return
   void writeClipboard(val).catch((err) => logger.error('Copy failed:', err))
   showFeedback(t('mobile_chat_setting.copy_id', { id: val }), 'success')
+}
+
+const showGroupQr = ref(false)
+const qrCanvasRef = ref<HTMLCanvasElement | null>(null)
+
+const roomId = computed(() => String(globalStore.currentSessionRoomId || ''))
+
+const renderGroupQr = async () => {
+  await nextTick()
+  const canvas = qrCanvasRef.value
+  if (!canvas) return
+  try {
+    const QRCode = (await import('qrcode')).default
+    const rootStyle = getComputedStyle(document.documentElement)
+    // 与「扫一扫」的入群意图保持一致，扫码端解析后可直达加群确认页
+    await QRCode.toCanvas(canvas, JSON.stringify({ type: 'scanEnterGroup', roomId: roomId.value }), {
+      width: 220,
+      margin: 2,
+      color: {
+        dark: rootStyle.getPropertyValue('--tjg-brand').trim(),
+        light: rootStyle.getPropertyValue('--tjg-text-inverse').trim()
+      }
+    })
+  } catch (err) {
+    logger.error('Failed to generate group QR code:', err)
+    showFeedback(t('mobile_chat_setting.group_qr.generate_failed'), 'error')
+  }
+}
+
+/** 群聊展示二维码 / 单聊仍复制账号，避免把个人号伪装成群二维码 */
+const handleIdCardClick = async () => {
+  if (!isGroup.value) {
+    handleCopy(activeItem.value?.account || '')
+    return
+  }
+  if (!roomId.value) return
+  showGroupQr.value = true
+  await renderGroupQr()
 }
 
 const goToNotice = () => {

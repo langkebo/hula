@@ -21,6 +21,12 @@ export type Messages = {
     },
     "qr_code_label": "{t}号 / 二维码"
   },
+  "group_qr": {
+    "title": "群二维码",
+    "tip": "使用天机阁「扫一扫」即可加入本群",
+    "copy_id": "复制群号",
+    "generate_failed": "二维码生成失败，请重试"
+  },
   "group_notice": {
     "title": "群公告"
   },
@@ -107,6 +113,10 @@ export type KeyPaths =
   | "mobile_chat_setting.id_card.type.group"
   | "mobile_chat_setting.id_card.type.single_chat"
   | "mobile_chat_setting.id_card.qr_code_label"
+  | "mobile_chat_setting.group_qr.title"
+  | "mobile_chat_setting.group_qr.tip"
+  | "mobile_chat_setting.group_qr.copy_id"
+  | "mobile_chat_setting.group_qr.generate_failed"
   | "mobile_chat_setting.group_notice.title"
   | "mobile_chat_setting.group_name"
   | "mobile_chat_setting.input.group_name"

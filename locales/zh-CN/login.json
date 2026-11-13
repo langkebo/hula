@@ -115,7 +115,8 @@
     "connect_failed": "连接失败",
     "missing_qr_data": "未收到二维码数据",
     "scan_failed_detail": "扫码失败: {msg}",
-    "confirm_failed_detail": "确认登录失败: {msg}"
+    "confirm_failed_detail": "确认登录失败: {msg}",
+    "security_hint": "登录请求不包含发起设备的名称、IP 或位置。请仅在确认是本人操作时点击确认，否则请取消。"
   },
   "guide": {
     "welcome": {

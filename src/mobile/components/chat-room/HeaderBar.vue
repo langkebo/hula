@@ -2,7 +2,7 @@
   <div
     class="header-bar tjg-glass tjg-glass--nav w-full h-[56px] flex items-center gap-8px z-2 text-[--tjg-text-primary]">
     <div v-clickable @click="handleBack" class="flex items-center shrink-0 min-h-[44px]">
-      <svg class="iconpark-icon w-24px h-24px ms-16px p-5px">
+      <svg class="iconpark-icon w-24px h-24px ms-16px p-5px" aria-hidden="true">
         <use href="#fanhui" class="text-foreground"></use>
       </svg>
       <div
@@ -25,7 +25,10 @@
         <div class="chat-room-name__text truncate whitespace-nowrap overflow-hidden text-foreground text-ellipsis">
           {{ props.roomName }}
         </div>
-        <svg v-if="props.isOfficial" class="w-18px h-18px iconpark-icon shrink-0 text-[--tjg-color-primary-500]">
+        <svg
+          v-if="props.isOfficial"
+          class="w-18px h-18px iconpark-icon shrink-0 text-[--tjg-color-primary-500]"
+          aria-hidden="true">
           <use href="#auth"></use>
         </svg>
         <!-- 房间 homeserver 常显（不限联邦房间）；域名由组件的 resolvedServerName 解析，禁止在此 split -->
@@ -39,7 +42,7 @@
           :title="props.federationServer" />
       </div>
     </div>
-    <div v-if="!props.hiddenRight" class="flex items-center justify-end gap-8px shrink-0 pe-16px">
+    <div v-if="!props.hiddenRight" class="header-bar__actions flex items-center justify-end gap-8px shrink-0 pe-16px">
       <button
         v-if="!props.isGroup && canUseBurnAfterRead"
         type="button"
@@ -49,7 +52,9 @@
         @click="emits('togglePrivateMode')">
         <span class="private-toggle-btn-mobile__letter">S</span>
       </button>
-      <svg @click="handleMoreClick" class="w-24px h-24px iconpark-icon p-5px"><use href="#more"></use></svg>
+      <svg @click="handleMoreClick" class="w-24px h-24px iconpark-icon p-5px" aria-hidden="true">
+        <use href="#more"></use>
+      </svg>
     </div>
   </div>
 
@@ -133,7 +138,25 @@ const handleMoreClick = () => {
 }
 
 .chat-room-name__text {
-  @apply min-w-0;
+  /* flex-1：房间名吃掉剩余宽度并截断，域名 chip / 徽章保持固定宽度不挤压 */
+  @apply min-w-0 flex-1;
+}
+
+/* <360dp 窄屏：收紧右侧操作区，避免次要按钮挤压房间名 */
+@media (max-width: 359.98px) {
+  .header-bar__actions {
+    gap: 4px;
+    padding-inline-end: 8px;
+  }
+
+  .private-toggle-btn-mobile {
+    width: 24px;
+    height: 24px;
+
+    &__letter {
+      font-size: 14px;
+    }
+  }
 }
 
 .private-toggle-btn-mobile {

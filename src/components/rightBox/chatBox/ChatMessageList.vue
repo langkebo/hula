@@ -33,11 +33,8 @@
       ]"
       :data-index="index">
       <n-flex vertical class="flex-y-center mb-12px" :data-message-id="item.message.id" :data-message-index="index">
-        <!-- 信息间隔时间 -->
-        <span
-          class="text-[var(--text-sm)] text-[--tjg-text-tertiary] select-none p-4px"
-          v-if="shouldShowTimeBlock(index)"
-          @click.stop>
+        <!-- 信息间隔时间：居中 chip，用 secondary 文本色保证小字号下的对比度 -->
+        <span class="message-time-separator select-none" v-if="shouldShowTimeBlock(index)" @click.stop>
           {{ formatChatTime(item.message.sendTime) }}
         </span>
         <!-- 消息内容容器 -->
@@ -218,6 +215,15 @@ const shouldShowTimeBlock = (index: number): boolean => {
   flex-direction: column;
   gap: 16px;
   padding: 20px 20px 28px;
+}
+
+.message-time-separator {
+  align-self: center;
+  padding: 2px 10px;
+  font-size: var(--text-sm);
+  color: var(--tjg-text-secondary);
+  background: color-mix(in srgb, var(--tjg-surface-muted) 80%, transparent);
+  border-radius: var(--tjg-radius-full);
 }
 
 .message-skeleton {

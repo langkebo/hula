@@ -9,6 +9,22 @@
         <div class="flex flex-col p-16px gap-12px">
           <van-search v-model="searchQuery" :placeholder="t('mobile_files.search_placeholder')" shape="round" />
 
+          <div class="flex items-center justify-between">
+            <div v-if="quota" class="text-12px text-[--tjg-text-tertiary]">
+              {{
+                t('mobile_files.quota_used', {
+                  used: formatBytes(quota.storageBytes),
+                  total: formatBytes(quota.limitBytes),
+                  count: quota.mediaCount
+                })
+              }}
+            </div>
+            <van-button size="small" type="primary" :loading="uploading" @click="triggerUpload">
+              {{ t('mobile_files.upload') }}
+            </van-button>
+          </div>
+          <input ref="uploadInputRef" type="file" class="hidden" @change="handleUploadChange" />
+
           <van-tabs v-model:active="activeTab" sticky>
             <van-tab :title="t('mobile_files.all')">
               <div v-if="filteredFiles.length === 0" class="flex flex-col items-center justify-center py-60px">
@@ -85,13 +101,20 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { showToast } from 'vant'
-import { computed, ref } from 'vue'
+import { openPath } from '@tauri-apps/plugin-opener'
+import { showConfirmDialog, showToast } from 'vant'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useFileDownloadStore } from '@/stores/domains/widget/fileDownload'
+import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatBytes } from '@/utils/Formatting'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('MobileFiles')
 
 const { t } = useI18n()
 
@@ -102,6 +125,7 @@ type MobileFile = {
   size: number
   time: number
   url: string
+  mxcUrl: string
 }
 
 type FileAction = {
@@ -114,8 +138,28 @@ const activeTab = ref(0)
 const showOptions = ref(false)
 const selectedFile = ref<MobileFile | null>(null)
 const chatStore = useChatStore()
+const globalStore = useGlobalStore()
+const fileDownloadStore = useFileDownloadStore()
 /** 本地已删除的文件（消息本身不受影响，仅从本页移除） */
 const removedIds = ref<Set<string>>(new Set())
+
+const uploadInputRef = ref<HTMLInputElement | null>(null)
+const uploading = ref(false)
+const quota = ref<{ storageBytes: number; mediaCount: number; limitBytes: number } | null>(null)
+
+/** 容量汇总来自服务端配额接口；接口不可用时隐藏该区域，不伪造数据（Y-14） */
+async function loadQuota() {
+  try {
+    quota.value = await matrixMediaService.getQuotaStats()
+  } catch (error) {
+    logger.warn('Failed to load media quota stats', error)
+    quota.value = null
+  }
+}
+
+onMounted(() => {
+  void loadQuota()
+})
 
 const documentIconShellStyle = {
   backgroundColor: 'var(--tjg-color-info-100)'
@@ -139,13 +183,15 @@ const files = computed<MobileFile[]>(() => {
       const type = toFileType(msg.type)
       if (!type) continue
       seen.add(msg.id)
+      const mxcUrl = msg.body.url ?? ''
       result.push({
         id: msg.id,
         name: msg.body.fileName || msg.body.body || msg.body.content || msg.id,
         type,
         size: msg.body.size ?? 0,
         time: msg.sendTime,
-        url: resolveMediaUrl(msg.body.url)
+        url: resolveMediaUrl(mxcUrl),
+        mxcUrl
       })
     }
   }
@@ -218,8 +264,70 @@ function formatTime(timestamp: number): string {
   return date.toLocaleDateString()
 }
 
-function handleFileClick(file: MobileFile) {
-  showToast(t('mobile_files.opening', { name: file.name }))
+/** 打开文件：先经媒体服务解析原始地址并下载到本地，再交给系统打开（Y-13） */
+async function handleFileClick(file: MobileFile) {
+  if (!file.mxcUrl) {
+    showToast({ type: 'fail', message: t('mobile_files.open_failed') })
+    return
+  }
+
+  try {
+    const httpUrl = matrixMediaService.getMediaUrl(file.mxcUrl)
+    if (!httpUrl) {
+      showToast({ type: 'fail', message: t('mobile_files.open_failed') })
+      return
+    }
+    const localPath = await fileDownloadStore.downloadFile(httpUrl, file.name || file.id)
+    if (!localPath) {
+      showToast({ type: 'fail', message: t('mobile_files.open_failed') })
+      return
+    }
+    await openPath(localPath)
+  } catch (error) {
+    logger.error('Failed to open file', error)
+    showToast({ type: 'fail', message: t('mobile_files.open_failed') })
+  }
+}
+
+function triggerUpload() {
+  uploadInputRef.value?.click()
+}
+
+/** 上传入口复用媒体服务与消息服务：上传后发送到当前会话，文件才会进入本列表（Y-14） */
+async function handleUploadChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  const roomId = globalStore.currentSessionRoomId
+  if (!roomId) {
+    showToast({ type: 'fail', message: t('mobile_files.upload_no_room') })
+    return
+  }
+
+  uploading.value = true
+  try {
+    const uploaded = await matrixMediaService.uploadFile(file)
+    await matrixMessageService.sendStructuredMessage({
+      id: `upload-${Date.now()}`,
+      roomId,
+      msgType: MsgEnum.FILE,
+      body: {
+        url: uploaded.contentUri,
+        fileName: file.name,
+        size: file.size,
+        mimetype: file.type || 'application/octet-stream'
+      }
+    })
+    showToast({ type: 'success', message: t('mobile_files.upload_success') })
+    void loadQuota()
+  } catch (error) {
+    logger.error('Failed to upload file', error)
+    showToast({ type: 'fail', message: t('mobile_files.upload_failed') })
+  } finally {
+    uploading.value = false
+  }
 }
 
 function showFileOptions(file: MobileFile) {
@@ -227,15 +335,32 @@ function showFileOptions(file: MobileFile) {
   showOptions.value = true
 }
 
-function onActionSelect(action: FileAction) {
-  if (action.name === t('mobile_files.actions.delete')) {
-    if (selectedFile.value) {
-      removedIds.value = new Set([...removedIds.value, selectedFile.value.id])
-    }
-    showToast(t('mobile_files.deleted'))
-  } else {
-    showToast(`${action.name}: ${selectedFile.value?.name ?? ''}`)
+async function onActionSelect(action: FileAction) {
+  const file = selectedFile.value
+  if (!file) return
+
+  if (action.name === t('mobile_files.actions.open')) {
+    await handleFileClick(file)
+    return
   }
+
+  if (action.name === t('mobile_files.actions.delete')) {
+    // Matrix 没有面向普通用户的媒体删除接口（仅管理员可用），因此这里只从本页移除，并如实告知
+    try {
+      await showConfirmDialog({
+        message: t('mobile_files.delete_confirm'),
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel')
+      })
+    } catch {
+      return
+    }
+    removedIds.value = new Set([...removedIds.value, file.id])
+    showToast(t('mobile_files.removed'))
+    return
+  }
+
+  showToast(`${action.name}: ${file.name}`)
 }
 </script>
 

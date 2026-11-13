@@ -24,7 +24,7 @@
           placement="bottom-end">
           <template #reference>
             <van-button round plain size="small" :aria-label="t('common.add')">
-              <svg class="w-16px h-16px"><use href="#plus"></use></svg>
+              <svg class="w-16px h-16px" aria-hidden="true"><use href="#plus"></use></svg>
             </van-button>
           </template>
         </van-popover>
@@ -46,7 +46,7 @@
         :placeholder="t('mobile_contact.input.search')"
         @update:model-value="onUserSearch">
         <template #left-icon>
-          <svg class="w-12px h-12px"><use href="#search"></use></svg>
+          <svg class="w-12px h-12px" aria-hidden="true"><use href="#search"></use></svg>
         </template>
       </van-field>
     </div>

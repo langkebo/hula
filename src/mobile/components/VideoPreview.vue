@@ -12,13 +12,14 @@
               class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleClose"
               :aria-label="t('common.back')">
-              <svg class="size-22px text-white rotate-180">
+              <svg class="size-22px text-white rotate-180" aria-hidden="true">
                 <use href="#right"></use>
               </svg>
             </button>
           </div>
           <video
             v-if="videoUrl"
+            ref="videoRef"
             class="max-w-full max-h-full rounded-8px bg-black"
             :style="videoStyle"
             :src="videoUrl"
@@ -33,14 +34,14 @@
               class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleSave"
               :aria-label="t('common.save')">
-              <svg class="size-22px text-white"><use href="#Importing"></use></svg>
+              <svg class="size-22px text-white" aria-hidden="true"><use href="#Importing"></use></svg>
             </button>
             <button
               v-if="showMore"
               class="relative w-36px h-36px rounded-full flex items-center justify-center bg-white/20 border-none cursor-pointer after:absolute after:-inset-5px after:content-['']"
               @click.stop="handleMore"
               :aria-label="t('menu.ctx_menu_more')">
-              <svg class="size-22px text-white"><use href="#more"></use></svg>
+              <svg class="size-22px text-white" aria-hidden="true"><use href="#more"></use></svg>
             </button>
           </div>
         </div>
@@ -81,6 +82,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const emit = defineEmits<Emits>()
 const safeAreaInsets = ref({ top: 0, bottom: 0, left: 0, right: 0 })
+const videoRef = ref<HTMLVideoElement | null>(null)
 const chatStore = useChatStore()
 const fileDownloadStore = useFileDownloadStore()
 const fileStore = useFileStore()
@@ -184,8 +186,23 @@ watch(
   { immediate: true }
 )
 
+/**
+ * 息屏 / 切后台时暂停播放：WebView 隐藏后 video 不会自动暂停，
+ * 会导致画面不可见但音频继续输出（R-6）。
+ */
+const handleVisibilityChange = () => {
+  if (document.hidden) {
+    videoRef.value?.pause()
+  }
+}
+
 onMounted(() => {
   updateSafeAreaInsets()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 

@@ -8,6 +8,35 @@
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
           <div class="text-14px text-[var(--tjg-text-secondary)] mb-8px">
+            {{ t('mobile_voice_video.permission_section') }}
+          </div>
+
+          <van-cell-group inset>
+            <van-cell :title="t('mobile_voice_video.microphone_permission')" :label="permissionLabel(micPermission)">
+              <template #right-icon>
+                <van-button
+                  v-if="micPermission !== 'granted'"
+                  size="small"
+                  :loading="requestingMic"
+                  @click="requestMicPermission">
+                  {{ t('mobile_voice_video.request_permission') }}
+                </van-button>
+              </template>
+            </van-cell>
+            <van-cell :title="t('mobile_voice_video.camera_permission')" :label="permissionLabel(cameraPermission)">
+              <template #right-icon>
+                <van-button
+                  v-if="cameraPermission !== 'granted'"
+                  size="small"
+                  :loading="requestingCamera"
+                  @click="requestCameraPermission">
+                  {{ t('mobile_voice_video.request_permission') }}
+                </van-button>
+              </template>
+            </van-cell>
+          </van-cell-group>
+
+          <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
             {{ t('mobile_voice_video.audio_section') }}
           </div>
 
@@ -124,11 +153,19 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMediaDeviceSettings } from '@/composables/settings/useMediaDeviceSettings'
 
 const { t } = useI18n()
+
+/** 权限状态：Permissions API 不支持时统一落到 unknown，不伪造结果 */
+type MediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unknown'
+
+const micPermission = ref<MediaPermissionState>('unknown')
+const cameraPermission = ref<MediaPermissionState>('unknown')
+const requestingMic = ref(false)
+const requestingCamera = ref(false)
 
 const videoPreviewRef = ref<HTMLVideoElement>()
 const showAudioInputPicker = ref(false)
@@ -166,6 +203,61 @@ const {
     previewFailed: () => showToast({ type: 'fail', message: t('mobile_voice_video.camera_error') })
   }
 })
+
+async function queryPermission(name: 'microphone' | 'camera'): Promise<MediaPermissionState> {
+  try {
+    const status = await navigator.permissions?.query({ name } as PermissionDescriptor)
+    return (status?.state as MediaPermissionState) ?? 'unknown'
+  } catch {
+    // Safari / WKWebView 不支持 microphone / camera 权限查询
+    return 'unknown'
+  }
+}
+
+async function refreshPermissions() {
+  const [mic, camera] = await Promise.all([queryPermission('microphone'), queryPermission('camera')])
+  micPermission.value = mic
+  cameraPermission.value = camera
+}
+
+onMounted(() => {
+  void refreshPermissions()
+})
+
+function permissionLabel(state: MediaPermissionState): string {
+  switch (state) {
+    case 'granted':
+      return t('mobile_voice_video.permission_granted')
+    case 'denied':
+      return t('mobile_voice_video.permission_denied')
+    case 'prompt':
+      return t('mobile_voice_video.permission_prompt')
+    default:
+      return t('mobile_voice_video.permission_unknown')
+  }
+}
+
+/** 申请麦克风权限：复用共享录音测试（真实 getUserMedia），结果回写状态（T-24） */
+async function requestMicPermission() {
+  requestingMic.value = true
+  try {
+    await handleTestAudio()
+    micPermission.value = isRecording.value ? 'granted' : 'denied'
+  } finally {
+    requestingMic.value = false
+  }
+}
+
+/** 申请摄像头权限：复用共享预览流程（真实 getUserMedia），结果回写状态（T-24） */
+async function requestCameraPermission() {
+  requestingCamera.value = true
+  try {
+    await handleTogglePreview()
+    cameraPermission.value = isPreviewing.value ? 'granted' : 'denied'
+  } finally {
+    requestingCamera.value = false
+  }
+}
 
 // Vant Picker 需要 text 字段，共享层统一输出 label/value
 const audioInputColumns = computed(() =>

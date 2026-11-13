@@ -1,5 +1,5 @@
 <template>
-  <AutoFixHeightPage :show-footer="false">
+  <AutoFixHeightPage :show-footer="false" class="secret-chat-page">
     <template #header>
       <HeaderBar border :is-official="false" :hidden-right="true" :room-name="t('home.secret_chat.title')" />
     </template>
@@ -91,6 +91,14 @@
             </template>
           </van-cell>
         </van-cell-group>
+
+        <!-- 解锁态显式提供退出入口：移动端没有关闭按钮，只能靠系统返回，
+             易被视为「无法退出私密模式」（Q-10） -->
+        <div v-if="!locked" class="mt-auto px-16px pt-12px pb-16px">
+          <van-button block plain type="default" data-testid="mobile-secret-chat-exit" @click="handleClose">
+            {{ t('home.secret_chat.exit_action') }}
+          </van-button>
+        </div>
       </div>
     </template>
   </AutoFixHeightPage>
@@ -128,13 +136,22 @@ const {
   sessionAriaLabel,
   handleUnlockClick,
   handleSessionClick,
-  handleUnmark: unmarkPrivateSession
+  handleUnmark: unmarkPrivateSession,
+  handleClose
 } = useSecretChatPage({
   returnTarget: '/mobile/secretChat',
   // 不清除私密标记：只是进入查看。
   openSession: (session) => router.push({ name: 'mobileChatMain', params: { roomId: session.roomId } }),
   // 进入私密会话不算「离开」，路由离开上锁由 composable 统一处理
   sessionRouteName: 'mobileChatMain',
+  // 退出私密模式：先上锁再离开，无历史记录时回到消息列表（Q-10）
+  closePage: () => {
+    if (window.history.state?.back) {
+      router.back()
+      return
+    }
+    void router.replace('/mobile/message')
+  },
   confirmUnmark: async () => {
     try {
       await showConfirmDialog({
@@ -167,3 +184,10 @@ const handleUnmark = async (session: SessionItem) => {
   }
 }
 </script>
+
+<style scoped lang="scss">
+/* 本页不挂 MobileLayout，需自行避让刘海/状态栏，否则标题被裁切 */
+.secret-chat-page {
+  padding-top: var(--safe-area-inset-top, 0px);
+}
+</style>

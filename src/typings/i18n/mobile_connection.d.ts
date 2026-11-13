@@ -8,7 +8,8 @@ export type Messages = {
   "reconnecting": "连接已断开，正在重连…",
   "syncing": "正在同步消息…",
   "offline": "网络已断开",
-  "error": "连接失败，请稍后重试"
+  "error": "连接失败，请稍后重试",
+  "retry": "重试"
 }
 
 /**
@@ -26,3 +27,4 @@ export type KeyPaths =
   | "mobile_connection.syncing"
   | "mobile_connection.offline"
   | "mobile_connection.error"
+  | "mobile_connection.retry"

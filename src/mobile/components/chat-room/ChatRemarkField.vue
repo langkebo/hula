@@ -9,8 +9,10 @@
     <van-field
       :model-value="modelValue"
       :placeholder="t('mobile_chat_setting.input.remark')"
+      :maxlength="MAX_REMARK_LENGTH"
+      show-word-limit
       class="rounded-10px"
-      @update:model-value="$emit('update:modelValue', String($event))"
+      @update:model-value="handleUpdate"
       @blur="$emit('blur')" />
   </div>
 </template>
@@ -28,8 +30,18 @@ import { useI18n } from 'vue-i18n'
  */
 defineOptions({ name: 'ChatRemarkField' })
 
+const MAX_REMARK_LENGTH = 32
+
+// 备注会写入房间状态事件，控制字符会污染展示，输入阶段直接剔除
+const sanitize = (raw: string) => raw.replace(/\p{Cc}/gu, '').slice(0, MAX_REMARK_LENGTH)
+
+const emit = defineEmits<{ 'update:modelValue': [string]; blur: [] }>()
+
 defineProps<{ modelValue: string }>()
-defineEmits<{ 'update:modelValue': [string]; blur: [] }>()
+
+const handleUpdate = (raw: unknown) => {
+  emit('update:modelValue', sanitize(String(raw ?? '')))
+}
 
 const { t } = useI18n()
 </script>

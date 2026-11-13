@@ -12,5 +12,5 @@ export {
   saveMatrixIdentityServerUrl,
   saveMatrixSessionEndpointConfig
 } from './config'
-export { discoverAndSaveMatrixEndpoints } from './discovery'
+export { discoverAndSaveMatrixEndpoints, probeMatrixHomeserver } from './discovery'
 export { matrixExtensionEndpoints } from './endpoints'

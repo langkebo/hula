@@ -26,7 +26,7 @@
 
         <div class="upload-image-container pt-10px">
           <div class="upload-trigger">
-            <svg class="size-24px text-[--tjg-text-tertiary]">
+            <svg class="size-24px text-[--tjg-text-tertiary]" aria-hidden="true">
               <use href="#plus"></use>
             </svg>
             <span class="text-12px text-[--tjg-text-tertiary] mt-5px">{{ t('mobile_chat.notice.click_upload') }}</span>

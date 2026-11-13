@@ -42,7 +42,12 @@
                 :placeholder="t('mobile_contact.add_friend_message_placeholder')"
                 class="rounded-8px" />
 
-              <van-button block class="mt-30px gradient-button" @click="addFriend">
+              <van-button
+                block
+                class="mt-30px gradient-button"
+                :loading="submitting"
+                :disabled="submitting"
+                @click="addFriend">
                 {{ t('mobile_contact.add_friend') }}
               </van-button>
             </div>
@@ -76,13 +81,22 @@ const { userInfo, avatarSrc, requestMsg, syncDefaultMessage, submitRequest } = u
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
 
+/** 提交中锁：申请接口有网络往返，重复点击会产生多条好友申请 */
+const submitting = ref(false)
+
 const addFriend = async () => {
-  const submitted = await submitRequest()
-  if (!submitted) return
-  showFeedback(t('mobile_contact.add_friend_request_sent'), 'success')
-  timerManager.setTimeout(() => {
-    router.push('/mobile/message')
-  }, 2000)
+  if (submitting.value) return
+  submitting.value = true
+  try {
+    const submitted = await submitRequest()
+    if (!submitted) return
+    showFeedback(t('mobile_contact.add_friend_request_sent'), 'success')
+    timerManager.setTimeout(() => {
+      router.push('/mobile/message')
+    }, 2000)
+  } finally {
+    submitting.value = false
+  }
 }
 
 onMounted(async () => {

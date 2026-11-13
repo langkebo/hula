@@ -67,6 +67,9 @@ export type Messages = {
     "save_failed": "保存公告失败，请重试",
     "fetch_failed": "获取公告详情失败，请重试",
     "unknown_user": "未知用户",
+    "empty": "群内还没有公告",
+    "publish": "发布公告",
+    "unread": "未读",
     "cancel": "取消",
     "save": "保存",
     "edit_group_notice": "编辑群公告",
@@ -146,6 +149,9 @@ export type KeyPaths =
   | "mobile_chat.notice.save_failed"
   | "mobile_chat.notice.fetch_failed"
   | "mobile_chat.notice.unknown_user"
+  | "mobile_chat.notice.empty"
+  | "mobile_chat.notice.publish"
+  | "mobile_chat.notice.unread"
   | "mobile_chat.notice.cancel"
   | "mobile_chat.notice.save"
   | "mobile_chat.notice.edit_group_notice"

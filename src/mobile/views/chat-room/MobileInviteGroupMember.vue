@@ -23,7 +23,7 @@
               autocorrect="off"
               autocapitalize="off">
               <template #left-icon>
-                <svg class="w-12px h-12px"><use href="#search"></use></svg>
+                <svg class="w-12px h-12px" aria-hidden="true"><use href="#search"></use></svg>
               </template>
             </van-field>
           </div>

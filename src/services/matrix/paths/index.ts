@@ -8,7 +8,7 @@ import { SYNC } from './sync'
 import { VOICE } from './voice'
 import { WELL_KNOWN } from './wellKnown'
 
-export { PREFIX_V3 } from './prefixes'
+export { CLIENT_VERSIONS, PREFIX_V3 } from './prefixes'
 // 从 SDK re-export 路由表常量与校验工具，使 SDK 路由成为前后端 API 路径的单一事实源。
 // 详见 `./sdk-paths.ts`。
 export * from './sdk-paths'

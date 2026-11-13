@@ -8,6 +8,10 @@
       <div class="flex flex-col overflow-auto h-full">
         <div class="flex flex-col p-16px gap-12px">
           <div class="text-14px text-[--tjg-text-secondary] mb-8px">{{ t('mobile_burn.global_section') }}</div>
+          <!-- 层级说明：全局默认是基线，房间级开关优先级更高（T-16） -->
+          <div class="text-12px text-[--tjg-text-tertiary] -mt-4px mb-4px leading-18px">
+            {{ t('mobile_burn.hierarchy_hint') }}
+          </div>
 
           <van-cell-group inset>
             <van-cell :title="t('mobile_burn.global_enable')">

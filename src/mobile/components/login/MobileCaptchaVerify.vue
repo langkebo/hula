@@ -2,7 +2,7 @@
   <div class="captcha-verify-mobile w-full">
     <!-- 已通过状态 -->
     <div v-if="internalVerified" class="flex items-center gap-8px py-6px">
-      <svg class="size-16px color-[--tjg-color-success-500]"><use href="#success"></use></svg>
+      <svg class="size-16px color-[--tjg-color-success-500]" aria-hidden="true"><use href="#success"></use></svg>
       <span class="text-13px color-[--tjg-color-success-500]">{{ t('captcha.verify_success') }}</span>
     </div>
 

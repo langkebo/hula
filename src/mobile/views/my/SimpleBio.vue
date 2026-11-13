@@ -13,13 +13,19 @@
                     {{ t('mobile_my.online') }}
                   </span>
                 </div>
-                <svg @click="toSettings" class="dark:color-gray-200/90 iconpark-icon h-32px w-32px block">
+                <svg
+                  @click="toSettings"
+                  class="dark:color-gray-200/90 iconpark-icon h-32px w-32px block"
+                  aria-hidden="true">
                   <use href="#wode-shezhi"></use>
                 </svg>
-                <svg @click="toScanQRCode" class="dark:color-gray-200/90 iconpark-icon h-32px w-32px block">
+                <svg
+                  @click="toScanQRCode"
+                  class="dark:color-gray-200/90 iconpark-icon h-32px w-32px block"
+                  aria-hidden="true">
                   <use href="#saoma"></use>
                 </svg>
-                <svg @click="handleBack" class="dark:color-gray-200/90 w-32px h-32px iconpark-icon">
+                <svg @click="handleBack" class="dark:color-gray-200/90 w-32px h-32px iconpark-icon" aria-hidden="true">
                   <use href="#right"></use>
                 </svg>
               </div>
@@ -39,7 +45,9 @@
               </div>
 
               <div v-clickable @click="toMyInfo" class="flex items-center justify-end">
-                <svg @click="handleBack" class="w-24px text-gray h-24px iconpark-icon"><use href="#right"></use></svg>
+                <svg @click="handleBack" class="w-24px text-gray h-24px iconpark-icon" aria-hidden="true">
+                  <use href="#right"></use>
+                </svg>
               </div>
             </div>
             <div class="bg-[--tjg-surface-panel] rounded-lg p-15px flex flex-col w-full flex-1">
@@ -49,11 +57,11 @@
                 @click="item.onClick"
                 class="flex flex-wrap items-center gap-15px p-[15px_10px_5px_10px] cursor-pointer">
                 <div>
-                  <svg class="iconpark-icon w-30px h-30px"><use :href="'#' + item.icon"></use></svg>
+                  <svg class="iconpark-icon w-30px h-30px" aria-hidden="true"><use :href="'#' + item.icon"></use></svg>
                 </div>
                 <div class="flex-1 text-14px">{{ item.label }}</div>
                 <div>
-                  <svg class="w-20px text-gray h-20px iconpark-icon"><use href="#right"></use></svg>
+                  <svg class="w-20px text-gray h-20px iconpark-icon" aria-hidden="true"><use href="#right"></use></svg>
                 </div>
               </div>
             </div>

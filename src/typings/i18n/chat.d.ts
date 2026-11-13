@@ -58,6 +58,8 @@ export type Messages = {
   "location": {
     "title": "位置",
     "cannot_display": "无法展示",
+    "map_load_failed": "地图加载失败",
+    "retry": "重试",
     "error_short": "位置出错"
   },
   "link_preview": {
@@ -188,6 +190,8 @@ export type KeyPaths =
   | "chat.burn.toggle_title"
   | "chat.location.title"
   | "chat.location.cannot_display"
+  | "chat.location.map_load_failed"
+  | "chat.location.retry"
   | "chat.location.error_short"
   | "chat.link_preview.unknown_link"
   | "chat.link_preview.unknown_source"

@@ -6,6 +6,7 @@
 export type Messages = {
   "title": "阅后即焚",
   "global_section": "全局设置",
+  "hierarchy_hint": "全局设置作为默认值对所有房间生效；下方房间级开关优先级更高，可单独关闭某个房间的阅后即焚。",
   "global_enable": "启用阅后即焚",
   "default_duration": "默认焚毁时间",
   "show_countdown": "显示倒计时",
@@ -34,6 +35,7 @@ export type Messages = {
 export type KeyPaths =
   | "mobile_burn.title"
   | "mobile_burn.global_section"
+  | "mobile_burn.hierarchy_hint"
   | "mobile_burn.global_enable"
   | "mobile_burn.default_duration"
   | "mobile_burn.show_countdown"

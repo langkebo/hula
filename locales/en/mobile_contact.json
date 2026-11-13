@@ -66,6 +66,7 @@
   "join_group_message_placeholder": "Enter verification message",
   "apply_join_group": "Apply to Join",
   "group_request_sent": "Group request sent",
+  "already_in_group": "You are already in this group",
   "friend_info": {
     "title": "Profile",
     "basic_info": "Basic Info",

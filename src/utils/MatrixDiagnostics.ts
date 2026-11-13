@@ -1,6 +1,6 @@
 import { useI18nGlobal } from '@/services/i18n'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
-import { MATRIX_PATHS } from '@/services/matrix/paths'
+import { CLIENT_VERSIONS, MATRIX_PATHS } from '@/services/matrix/paths'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from './Logger'
@@ -36,7 +36,7 @@ export class MatrixDiagnostics {
     try {
       const data = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.getServerVersions(this.homeserverUrl)
-        : await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}/_matrix/client/versions`, {
+        : await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}${CLIENT_VERSIONS}`, {
             // homeserver 由 env/用户配置（动态 host）
             allowDynamicHost: true
           })
@@ -162,7 +162,7 @@ export class MatrixDiagnostics {
       const corsHeaders = matrixWorkerHost.isStarted
         ? await matrixWorkerHost.probeCors(this.homeserverUrl)
         : await (async () => {
-            await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}/_matrix/client/versions`, {
+            await HttpClient.get<{ versions?: string[] }>(`${this.homeserverUrl}${CLIENT_VERSIONS}`, {
               allowDynamicHost: true
             })
             return {

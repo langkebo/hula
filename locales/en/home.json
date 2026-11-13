@@ -144,6 +144,7 @@
     "encryption_boundary_hint": "Making a chat private enables end-to-end encryption, which applies only to messages sent afterwards.",
     "locked_title": "Secret sessions are locked",
     "unlock_action": "Enter password to continue",
+    "exit_action": "Exit secret mode",
     "unlock_title": "Unlock secret chat",
     "password_label": "Password",
     "password_placeholder": "Enter password",

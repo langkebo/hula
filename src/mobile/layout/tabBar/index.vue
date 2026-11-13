@@ -26,7 +26,7 @@
           :content="getUnReadCount(item) || ''"
           :max="99">
           <span class="tab-item__icon">
-            <svg class="w-24px h-24px">
+            <svg class="w-24px h-24px" aria-hidden="true">
               <use :href="`#${route.path === item.path ? item.actionIcon : item.icon}`"></use>
             </svg>
           </span>

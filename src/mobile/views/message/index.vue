@@ -50,7 +50,7 @@
                 size="small"
                 class="relative after:absolute after:-inset-6px after:content-['']"
                 :aria-label="t('common.add')">
-                <svg class="w-16px h-16px"><use href="#plus"></use></svg>
+                <svg class="w-16px h-16px" aria-hidden="true"><use href="#plus"></use></svg>
               </van-button>
             </template>
           </van-popover>
@@ -114,7 +114,7 @@
           </div>
         </div>
         <div class="flex w-full justify-center h-15px">
-          <svg width="34" height="13" viewBox="0 0 35 13">
+          <svg width="34" height="13" viewBox="0 0 35 13" aria-hidden="true">
             <path d="M0 0 L35 0 L17.5 13 Z" class="long-press-menu__arrow" />
           </svg>
         </div>

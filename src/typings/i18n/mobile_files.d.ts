@@ -10,15 +10,15 @@ export type Messages = {
   "documents": "文档",
   "media": "媒体",
   "empty": "暂无文件",
-  "opening": "正在打开 {name}",
-  "deleted": "文件已删除",
   "image_alt": "文件图片",
-  "demo": {
-    "project_doc": "项目文档.pdf",
-    "meeting_notes": "会议记录.docx",
-    "product_screenshot": "产品截图.png",
-    "demo_video": "演示视频.mp4"
-  },
+  "quota_used": "已用 {used} / {total} · {count} 个媒体",
+  "upload": "上传",
+  "upload_no_room": "请先进入一个会话再上传",
+  "upload_success": "文件已发送到当前会话",
+  "upload_failed": "文件上传失败",
+  "open_failed": "无法打开该文件",
+  "delete_confirm": "仅从本页移除，聊天记录中的文件不受影响。",
+  "removed": "已从本页移除",
   "actions": {
     "open": "打开",
     "save": "保存到相册",
@@ -43,13 +43,15 @@ export type KeyPaths =
   | "mobile_files.documents"
   | "mobile_files.media"
   | "mobile_files.empty"
-  | "mobile_files.opening"
-  | "mobile_files.deleted"
   | "mobile_files.image_alt"
-  | "mobile_files.demo.project_doc"
-  | "mobile_files.demo.meeting_notes"
-  | "mobile_files.demo.product_screenshot"
-  | "mobile_files.demo.demo_video"
+  | "mobile_files.quota_used"
+  | "mobile_files.upload"
+  | "mobile_files.upload_no_room"
+  | "mobile_files.upload_success"
+  | "mobile_files.upload_failed"
+  | "mobile_files.open_failed"
+  | "mobile_files.delete_confirm"
+  | "mobile_files.removed"
   | "mobile_files.actions.open"
   | "mobile_files.actions.save"
   | "mobile_files.actions.forward"

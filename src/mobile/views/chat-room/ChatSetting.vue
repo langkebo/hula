@@ -41,7 +41,7 @@
                   {{ activeItem?.name || '' }}
                 </span>
                 <span v-if="activeItem?.hotFlag === 1">
-                  <svg class="w-18px h-18px iconpark-icon text-[--tjg-color-primary-500]">
+                  <svg class="w-18px h-18px iconpark-icon text-[--tjg-color-primary-500]" aria-hidden="true">
                     <use href="#auth"></use>
                   </svg>
                 </span>

@@ -24,6 +24,7 @@
   },
   "remove": "Remove",
   "save_failed": "Failed to save invite permission",
+  "save_success": "Invite permission saved",
   "title": "Invite permission",
   "user_id": "User ID",
   "user_id_placeholder": "e.g. @alice:example.org"

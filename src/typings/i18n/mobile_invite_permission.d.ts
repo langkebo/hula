@@ -29,6 +29,7 @@ export type Messages = {
   },
   "remove": "移除",
   "save_failed": "邀请权限保存失败",
+  "save_success": "邀请权限已保存",
   "title": "邀请权限",
   "user_id": "用户 ID",
   "user_id_placeholder": "例如 @alice:example.org"
@@ -65,6 +66,7 @@ export type KeyPaths =
   | "mobile_invite_permission.mode_hint.allowlist"
   | "mobile_invite_permission.remove"
   | "mobile_invite_permission.save_failed"
+  | "mobile_invite_permission.save_success"
   | "mobile_invite_permission.title"
   | "mobile_invite_permission.user_id"
   | "mobile_invite_permission.user_id_placeholder"

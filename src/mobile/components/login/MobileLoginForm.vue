@@ -50,10 +50,12 @@
         autocapitalize="off">
         <template #right-icon>
           <div v-clickable v-if="loginHistories.length > 0" @click="arrowStatus = !arrowStatus">
-            <svg v-if="!arrowStatus" class="down w-18px h-18px color-[--chat-text-color]">
+            <svg v-if="!arrowStatus" class="down w-18px h-18px color-[--chat-text-color]" aria-hidden="true">
               <use href="#down"></use>
             </svg>
-            <svg v-else class="down w-18px h-18px color-[--chat-text-color]"><use href="#up"></use></svg>
+            <svg v-else class="down w-18px h-18px color-[--chat-text-color]" aria-hidden="true">
+              <use href="#up"></use>
+            </svg>
           </div>
         </template>
       </van-field>
@@ -74,7 +76,7 @@
                 :alt="t('mobile_contact.avatar.user')"
                 class="size-28px bg-[--tjg-text-disabled] rounded-50% object-cover" />
               <p class="text-14px color-[--chat-text-color]">{{ item.account }}</p>
-              <svg @click.stop="emit('delete-account', item)" class="w-12px h-12px">
+              <svg @click.stop="emit('delete-account', item)" class="w-12px h-12px" aria-hidden="true">
                 <use href="#close"></use>
               </svg>
             </div>

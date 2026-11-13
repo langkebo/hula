@@ -42,7 +42,12 @@
                 :placeholder="t('mobile_contact.join_group_message_placeholder')"
                 class="rounded-8px" />
 
-              <van-button block class="mt-120px gradient-button" @click="addFriend">
+              <van-button
+                block
+                class="mt-120px gradient-button"
+                :loading="submitting"
+                :disabled="submitting"
+                @click="addFriend">
                 {{ t('mobile_contact.apply_join_group') }}
               </van-button>
             </div>
@@ -57,6 +62,7 @@
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
+import { useMobileErrorText } from '@/mobile/composables/useMobileErrorText'
 import router from '@/router'
 import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
@@ -65,6 +71,7 @@ import { useTimerManager } from '@/utils/TimerManager'
 const logger = createLogger('ConfirmAddGroup')
 const timerManager = useTimerManager()
 const { showFeedback } = useActionFeedback()
+const { resolve: resolveErrorText } = useMobileErrorText()
 const { t } = useI18n()
 
 const userStore = useUserStore()
@@ -74,13 +81,27 @@ const { userInfo, requestMsg, syncDefaultMessage, submitRequest } = useGroupRequ
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
 
+const submitting = ref(false)
+
+/** 「已在群中」在 Matrix 里也是 M_FORBIDDEN，需要按错误文案区分，不能笼统提示无权限 */
+const isAlreadyJoined = (err: unknown) => /already in (the )?room|already joined/i.test(String(err))
+
 const addFriend = async () => {
-  const submitted = await submitRequest()
-  if (!submitted) return
-  showFeedback(t('mobile_contact.group_request_sent'), 'success')
-  timerManager.setTimeout(() => {
-    router.push('/mobile/message')
-  }, 2000)
+  if (submitting.value) return
+  submitting.value = true
+  try {
+    const submitted = await submitRequest()
+    if (!submitted) return
+    showFeedback(t('mobile_contact.group_request_sent'), 'success')
+    timerManager.setTimeout(() => {
+      router.push('/mobile/message')
+    }, 2000)
+  } catch (e) {
+    logger.error('Join group failed:', e)
+    showFeedback(isAlreadyJoined(e) ? t('mobile_contact.already_in_group') : resolveErrorText(e), 'error')
+  } finally {
+    submitting.value = false
+  }
 }
 
 onMounted(async () => {

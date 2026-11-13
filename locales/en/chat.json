@@ -53,6 +53,8 @@
   "location": {
     "title": "Location",
     "cannot_display": "Cannot display",
+    "map_load_failed": "Failed to load map",
+    "retry": "Retry",
     "error_short": "Location error"
   },
   "link_preview": {

@@ -16,10 +16,18 @@ const logger = createLogger('VoiceRecordRust')
 // 导入worker计时器
 let voiceTimerHandle: TimerWorkerHandle | null = null
 
+type VoiceRecordErrorKind = 'permission' | 'unknown'
+
 type VoiceRecordRustOptions = {
   onStart?: () => void
   onStop?: (audioBlob: Blob, duration: number, localPath: string) => void
-  onError?: (error: string) => void
+  onError?: (kind: VoiceRecordErrorKind, message: string) => void
+}
+
+/** 系统/WebView 抛出的权限拒绝文案不统一，按关键字归类，避免把权限问题当成普通录音失败 */
+const isPermissionDenied = (error: unknown) => {
+  const detail = error instanceof Error ? `${error.name} ${error.message}` : String(error)
+  return /NotAllowedError|PermissionDenied|permission|denied|权限|拒绝/i.test(detail)
 }
 
 export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
@@ -91,8 +99,9 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       options.onStart?.()
     } catch (error) {
       logger.error('开始录音失败:', error)
-      showFeedback('录音失败', 'error')
-      options.onError?.('录音失败')
+      const kind: VoiceRecordErrorKind = isPermissionDenied(error) ? 'permission' : 'unknown'
+      showFeedback(kind === 'permission' ? '麦克风权限被拒绝，请在系统设置中开启' : '录音失败', 'error')
+      options.onError?.(kind, kind === 'permission' ? '麦克风权限被拒绝' : '录音失败')
     }
   }
 
@@ -179,7 +188,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         clearInterval(audioMonitor.value)
         audioMonitor.value = null
       }
-      options.onError?.('停止录音失败')
+      options.onError?.('unknown', '停止录音失败')
     }
   }
 
@@ -210,7 +219,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
       logger.error('取消录音失败:', error)
       // 确保状态被重置
       isRecording.value = false
-      options.onError?.('取消录音失败')
+      options.onError?.('unknown', '取消录音失败')
     }
   }
 
@@ -267,7 +276,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
     } catch (error) {
       logger.error('保存音频文件失败:', error)
       showFeedback('音频保存失败', 'error')
-      options.onError?.('音频保存失败')
+      options.onError?.('unknown', '音频保存失败')
     }
   }
 

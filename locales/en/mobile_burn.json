@@ -1,6 +1,7 @@
 {
   "title": "Burn After Read",
   "global_section": "Global Settings",
+  "hierarchy_hint": "Global settings act as the default for all rooms; the per-room switches below take precedence and can disable burn after read for individual rooms.",
   "global_enable": "Enable Burn After Read",
   "default_duration": "Default Burn Duration",
   "show_countdown": "Show Countdown",

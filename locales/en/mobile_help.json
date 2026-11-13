@@ -15,6 +15,7 @@
   "mobile_update_hint": "Current version {version}. Updates on mobile require downloading a new package; in-app installation is not supported. Go to the release page?",
   "go_to_release_page": "Go to release page",
   "bug_title": "Bug Title",
+  "contact_label": "Contact",
   "bug_title_placeholder": "Briefly describe the issue",
   "bug_description": "Description",
   "bug_description_placeholder": "Describe the issue in detail",

@@ -9,7 +9,7 @@
     @cancel="handleCancel">
     <div class="px-16px py-12px">
       <div v-for="feature in privateModeFeatures" :key="feature.textKey" class="flex items-start gap-8px py-6px">
-        <svg class="w-20px h-20px flex-shrink-0" :class="feature.iconClass">
+        <svg class="w-20px h-20px flex-shrink-0" :class="feature.iconClass" aria-hidden="true">
           <use :href="feature.icon"></use>
         </svg>
         <div class="text-12px text-[--tjg-text-secondary]">{{ t(feature.textKey) }}</div>

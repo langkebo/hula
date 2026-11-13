@@ -1,4 +1,5 @@
 import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
+import { CLIENT_VERSIONS } from '@/services/matrix/paths'
 import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import {
@@ -230,4 +231,25 @@ export async function discoverAndSaveMatrixEndpoints(
     homeserverUrl: saveMatrixHomeserverUrl(discovery.homeserverUrl),
     identityServerUrl: saveMatrixIdentityServerUrl(discovery.identityServerUrl)
   }
+}
+
+export interface MatrixHomeserverProbeResult {
+  homeserverUrl: string
+  versions: string[]
+}
+
+/**
+ * 只探测连通性：解析端点后请求服务端能力端点，不写任何配置。
+ * 供设置页「测试连接」使用，避免用户未保存就覆盖现有配置。
+ */
+export async function probeMatrixHomeserver(input: string): Promise<MatrixHomeserverProbeResult> {
+  const discovery = await discoverMatrixEndpoints(input)
+  const response = await HttpClient.get<{ versions?: string[] }>(`${discovery.homeserverUrl}${CLIENT_VERSIONS}`, {
+    allowDynamicHost: true
+  })
+  const versions = response?.versions ?? []
+  if (versions.length === 0) {
+    throw new Error('homeserver did not report any supported Matrix versions')
+  }
+  return { homeserverUrl: discovery.homeserverUrl, versions }
 }

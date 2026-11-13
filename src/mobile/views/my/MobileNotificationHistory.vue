@@ -11,13 +11,27 @@
         </div>
 
         <template v-else>
-          <div class="text-12px text-[--tjg-text-tertiary]">{{ t('setting.push.history.desc') }}</div>
+          <div class="flex items-center justify-between">
+            <div class="text-12px text-[--tjg-text-tertiary]">{{ t('setting.push.history.desc') }}</div>
+            <van-button
+              v-if="hasUnread"
+              size="mini"
+              type="primary"
+              plain
+              :loading="ackingAll"
+              data-testid="notification-ack-all"
+              @click="handleAckAll">
+              {{ t('setting.push.history.mark_all_read') }}
+            </van-button>
+          </div>
 
           <van-cell-group v-if="notifications.length > 0" inset>
             <van-cell
               v-for="(notif, index) in notifications"
               :key="notificationKey(notif, index)"
-              data-testid="notification-row">
+              clickable
+              data-testid="notification-row"
+              @click="openRoom(notif)">
               <template #icon>
                 <SettingCellIcon icon="mdi:bell-outline" color="var(--tjg-color-warning-500)" shell="warning" />
               </template>
@@ -44,7 +58,7 @@
                   plain
                   :loading="ackingId === getNotificationId(notif)"
                   data-testid="notification-ack"
-                  @click="handleAck(notif)">
+                  @click.stop="handleAck(notif)">
                   {{ t('setting.push.history.mark_read') }}
                 </van-button>
               </template>
@@ -73,8 +87,9 @@
 
 <script setup lang="ts">
 import { showToast } from 'vant'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
@@ -90,12 +105,16 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileNotificationHistory')
 const { t } = useI18n()
+const router = useRouter()
 
 const loading = ref(true)
 const loadingMore = ref(false)
 const notifications = ref<Array<Record<string, unknown>>>([])
 const nextToken = ref<string | undefined>()
 const ackingId = ref<string | null>(null)
+const ackingAll = ref(false)
+
+const hasUnread = computed(() => notifications.value.some((notif) => !isNotificationRead(notif)))
 
 onMounted(load)
 
@@ -132,30 +151,26 @@ async function loadMore() {
 }
 
 /**
- * 标记已读。
+ * 标记单条已读。
  *
  * ⚠️ ack 端点只认 `notification_id`（用 `event_id` 会 400），且**不会把条目从列表里移除**，
  * 只在服务端置 `read=true`。所以这里必须同步改本地状态，否则用户点完看不到任何变化。
  */
 async function handleAck(notif: Record<string, unknown>) {
-  const notificationId = getNotificationId(notif)
-  const roomId = typeof notif.room_id === 'string' ? notif.room_id : ''
-  const eventId = typeof notif.event_id === 'string' ? notif.event_id : ''
-
-  if (notificationId === null || !roomId || !eventId) {
+  const target = resolveAckTarget(notif)
+  if (target.notificationId === null || !target.roomId || !target.eventId) {
     showToast(t('setting.push.history.ack_unavailable'))
     return
   }
   if (ackingId.value) return
 
-  ackingId.value = notificationId
+  ackingId.value = target.notificationId
   try {
-    const ok = await matrixNotificationService.ackNotificationWithFallback(notificationId, roomId, eventId)
+    const ok = await ackOne(notif)
     if (!ok) {
       showToast({ type: 'fail', message: t('setting.push.history.ack_failed') })
       return
     }
-    notif.read = true
     showToast(t('setting.push.history.ack_success'))
   } catch (error) {
     logger.error('Failed to ack notification', error)
@@ -163,5 +178,61 @@ async function handleAck(notif: Record<string, unknown>) {
   } finally {
     ackingId.value = null
   }
+}
+
+/**
+ * 一键已读：只处理当前已加载且未读的条目。
+ *
+ * 服务端没有批量 ack 接口，这里串行逐条调用既有 `ackNotificationWithFallback`，
+ * 避免并发触发限流；失败的条目保持未读并汇总提示。
+ */
+async function handleAckAll() {
+  if (ackingAll.value) return
+  const pending = notifications.value.filter((notif) => !isNotificationRead(notif))
+  if (pending.length === 0) return
+
+  ackingAll.value = true
+  let failed = 0
+  try {
+    for (const notif of pending) {
+      try {
+        if (!(await ackOne(notif))) failed++
+      } catch (error) {
+        logger.error('Failed to ack notification', error)
+        failed++
+      }
+    }
+    if (failed === 0) {
+      showToast(t('setting.push.history.ack_all_success'))
+    } else {
+      showToast({ type: 'fail', message: t('setting.push.history.ack_all_partial', { count: failed }) })
+    }
+  } finally {
+    ackingAll.value = false
+  }
+}
+
+function resolveAckTarget(notif: Record<string, unknown>) {
+  return {
+    notificationId: getNotificationId(notif),
+    roomId: typeof notif.room_id === 'string' ? notif.room_id : '',
+    eventId: typeof notif.event_id === 'string' ? notif.event_id : ''
+  }
+}
+
+async function ackOne(notif: Record<string, unknown>): Promise<boolean> {
+  const { notificationId, roomId, eventId } = resolveAckTarget(notif)
+  if (notificationId === null || !roomId || !eventId) return false
+  const result = await matrixNotificationService.ackNotificationWithFallback(notificationId, roomId, eventId)
+  if (!result.success) return false
+  notif.read = true
+  return true
+}
+
+/** 点击通知进入对应会话；缺少 room_id 时忽略，避免跳到空路由。 */
+function openRoom(notif: Record<string, unknown>) {
+  const roomId = typeof notif.room_id === 'string' ? notif.room_id : ''
+  if (!roomId) return
+  void router.push({ name: 'mobileChatMain', params: { roomId } })
 }
 </script>

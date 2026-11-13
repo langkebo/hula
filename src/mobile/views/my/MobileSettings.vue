@@ -190,9 +190,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useMobileLogout } from '@/composables/user/useMobileLogout'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
@@ -210,6 +210,7 @@ import {
 } from './settingsRoutes'
 
 const { t } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const userStatusStore = useUserStatusStore()
 
@@ -220,8 +221,16 @@ const advancedSettingsItems = computed(() =>
 )
 
 // ── 设置搜索 ────────────────────────────────────────────────
-const searchQuery = ref('')
+// 关键词同步到 route.query，从二级页返回时由 keep-alive / 重新挂载都能回填（Y-16）
+const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const hasQuery = computed(() => searchQuery.value.trim().length > 0)
+
+watch(searchQuery, (value) => {
+  const nextQuery = value.trim() ? value : undefined
+  if (nextQuery === undefined && route.query.q === undefined) return
+  // 用 replace 避免每次输入都往历史栈里塞一条记录
+  void router.replace({ query: { ...route.query, q: nextQuery } })
+})
 
 /**
  * 搜索结果点击：

@@ -5,15 +5,15 @@
   "documents": "Documents",
   "media": "Media",
   "empty": "No files",
-  "opening": "Opening {name}",
-  "deleted": "File deleted",
   "image_alt": "File image",
-  "demo": {
-    "project_doc": "Project document.pdf",
-    "meeting_notes": "Meeting notes.docx",
-    "product_screenshot": "Product screenshot.png",
-    "demo_video": "Demo video.mp4"
-  },
+  "quota_used": "{used} / {total} used · {count} media items",
+  "upload": "Upload",
+  "upload_no_room": "Open a chat before uploading",
+  "upload_success": "File sent to the current chat",
+  "upload_failed": "File upload failed",
+  "open_failed": "Unable to open this file",
+  "delete_confirm": "Only removed from this page; files in chat history are unaffected.",
+  "removed": "Removed from this page",
   "actions": {
     "open": "Open",
     "save": "Save to Album",

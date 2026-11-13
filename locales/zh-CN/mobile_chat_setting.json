@@ -16,6 +16,12 @@
     },
     "qr_code_label": "{t}号 / 二维码"
   },
+  "group_qr": {
+    "title": "群二维码",
+    "tip": "使用天机阁「扫一扫」即可加入本群",
+    "copy_id": "复制群号",
+    "generate_failed": "二维码生成失败，请重试"
+  },
   "group_notice": {
     "title": "群公告"
   },

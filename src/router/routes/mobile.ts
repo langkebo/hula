@@ -85,7 +85,7 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
   },
   {
     path: '/mobile/splashscreen',
-    name: 'splashscreen',
+    name: 'mobileSplashscreen',
     component: Splashscreen
   },
   {
@@ -119,7 +119,8 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         name: 'mobileChatMain',
         component: MobileChatMain,
         props: true,
-        meta: { keepAlive: true }
+        // 有底部输入栏：键盘弹出时需要按 keyboardInset 抬升（X-5）
+        meta: { keepAlive: true, bottomInput: true }
       },
       {
         path: 'setting',
@@ -156,7 +157,9 @@ export const getMobileRoutes = (): Array<RouteRecordRaw> => [
         path: 'thread/:roomId/:threadRootId',
         name: 'mobileThreadView',
         component: MobileThreadView,
-        props: true
+        props: true,
+        // 线程页同样有底部输入栏（X-5）
+        meta: { bottomInput: true }
       },
       {
         path: 'notice',

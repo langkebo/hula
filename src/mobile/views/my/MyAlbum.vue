@@ -17,7 +17,7 @@
             </div>
 
             <div v-else-if="allImages.length === 0" class="flex flex-col justify-center items-center py-40px gap-10px">
-              <svg class="iconpark-icon w-60px h-60px text-gray">
+              <svg class="iconpark-icon w-60px h-60px text-gray" aria-hidden="true">
                 <use href="#xiangce"></use>
               </svg>
               <div class="text-gray text-14px">{{ t('mobile_photo.empty') }}</div>
@@ -25,12 +25,20 @@
 
             <div v-else class="grid grid-cols-4 gap-1">
               <div
-                v-for="image in allImages"
+                v-for="image in visibleImages"
                 :key="image.id"
                 class="overflow-hidden bg-gray-100 aspect-square cursor-pointer"
                 @click="handleImageClick(image)">
-                <img :src="image.displayUrl" class="w-full h-full object-cover" :alt="t('mobile_photo.image_alt')" />
+                <img
+                  :src="image.displayUrl"
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                  :alt="t('mobile_photo.image_alt')" />
               </div>
+            </div>
+
+            <div v-if="hasMore" class="flex justify-center pb-16px">
+              <van-button size="small" plain @click="loadMore">{{ t('common.load_more') }}</van-button>
             </div>
           </div>
         </div>
@@ -39,9 +47,10 @@
 
     <ImagePreview
       v-model:visible="showImagePreviewRef"
-      :image-url="activeImageUrl"
+      :image-url="previewUrl"
+      v-bind="previewMessage ? { message: previewMessage } : {}"
       :show-forward="false"
-      :show-save="false"
+      :show-save="true"
       :show-more="false" />
   </div>
 </template>
@@ -52,6 +61,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import ImagePreview from '@/mobile/components/ImagePreview.vue'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MyAlbum')
@@ -61,11 +71,51 @@ const { showFeedback } = useActionFeedback()
 const fileStore = useFileStore()
 const globalStore = useGlobalStore()
 
-const showImagePreviewRef = ref(false)
-const activeImageUrl = ref('')
-const loading = ref(true)
+const PAGE_SIZE = 40
 
-const allImages = ref<Array<{ displayUrl: string; originalUrl: string; id: string; roomId: string }>>([])
+interface AlbumImage {
+  displayUrl: string
+  originalUrl: string
+  id: string
+  roomId: string
+}
+
+const showImagePreviewRef = ref(false)
+const activeImage = ref<AlbumImage | null>(null)
+const loading = ref(true)
+const visibleCount = ref(PAGE_SIZE)
+
+const allImages = ref<AlbumImage[]>([])
+
+/** 分页渲染，避免一次性挂载全部图片导致首屏卡顿（Y-10） */
+const visibleImages = computed(() => allImages.value.slice(0, visibleCount.value))
+const hasMore = computed(() => visibleCount.value < allImages.value.length)
+
+const loadMore = () => {
+  visibleCount.value += PAGE_SIZE
+}
+
+/** 远程原图直接用原始 URL；本地文件用 asset 协议地址（本身就是原图） */
+const previewUrl = computed(() => {
+  const image = activeImage.value
+  if (!image) return ''
+  return image.originalUrl.startsWith('http') ? image.originalUrl : image.displayUrl
+})
+
+/** ImagePreview 的保存链路需要消息体：远程传原图 URL，本地文件传 localPath（Y-10） */
+const previewMessage = computed(() => {
+  const image = activeImage.value
+  if (!image) return undefined
+  const isRemote = image.originalUrl.startsWith('http')
+  const body = isRemote
+    ? { url: image.originalUrl, fileName: extractFileName(image.originalUrl) }
+    : { localPath: image.originalUrl }
+  return {
+    id: image.id,
+    roomId: image.roomId,
+    body
+  }
+})
 
 const getAllImages = async () => {
   loading.value = true
@@ -100,6 +150,7 @@ const getAllImages = async () => {
 
     logger.debug('Final image list:', imagesList)
     allImages.value = imagesList
+    visibleCount.value = PAGE_SIZE
   } catch (error) {
     logger.error('Failed to load images', error)
     showFeedback(t('mobile_photo.image_load_failed'), 'error')
@@ -108,9 +159,9 @@ const getAllImages = async () => {
   }
 }
 
-const handleImageClick = (image: { displayUrl: string; originalUrl: string; id: string; roomId: string }) => {
+const handleImageClick = (image: AlbumImage) => {
   logger.debug('Image clicked:', image)
-  activeImageUrl.value = image.displayUrl
+  activeImage.value = image
   showImagePreviewRef.value = true
 }
 

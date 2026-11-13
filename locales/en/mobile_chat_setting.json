@@ -16,6 +16,12 @@
     },
     "qr_code_label": "{t} / QR Code"
   },
+  "group_qr": {
+    "title": "Group QR Code",
+    "tip": "Scan with TJG Scanner to join this group",
+    "copy_id": "Copy Group ID",
+    "generate_failed": "Failed to generate QR code, please retry"
+  },
   "group_notice": {
     "title": "Announcement"
   },

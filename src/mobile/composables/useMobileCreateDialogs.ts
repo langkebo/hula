@@ -7,6 +7,9 @@ import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileCreateDialogs')
 
+/** 建群时一次性邀请的成员上限（纯客户端预校验，避免提交后才被服务端拒绝） */
+const MAX_GROUP_INVITE_MEMBERS = 50
+
 interface CreateDialogsOptions {
   /** 添加菜单关闭时(选择项后)联动关闭蒙板 */
   maskHandler: { close: () => void }
@@ -100,10 +103,29 @@ export function useMobileCreateDialogs(opts: CreateDialogsOptions) {
       return false
     }
 
-    const memberIds = createGroupMemberIds.value
-      .split(',')
-      .map((id) => id.trim())
-      .filter((id) => id.length > 0)
+    const memberIds = [
+      ...new Set(
+        createGroupMemberIds.value
+          .split(',')
+          .map((id) => id.trim())
+          .filter((id) => id.length > 0)
+      )
+    ]
+
+    // 服务端未下发成员上限能力，这里用保守的客户端上限拦截误粘贴的超长列表
+    if (memberIds.length === 0) {
+      showFailToast(t('mobile_home.group_members_required'))
+      return false
+    }
+    if (memberIds.length > MAX_GROUP_INVITE_MEMBERS) {
+      showFailToast(
+        t('mobile_home.group_members_exceeded', {
+          count: MAX_GROUP_INVITE_MEMBERS,
+          current: memberIds.length
+        })
+      )
+      return false
+    }
 
     try {
       showToast({ type: 'loading', message: t('mobile_home.create_group_creating'), forbidClick: true })

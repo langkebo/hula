@@ -10,6 +10,9 @@ import { canWriteStateEventInRoom } from './roomPowerLevels'
 
 const logger = createLogger('RoomOperations')
 
+/** 私密模式状态事件类型：房间级持久化，重进房间时据此恢复开关。 */
+export const PRIVATE_MODE_STATE_EVENT_TYPE = 'com.hula.private_mode'
+
 /**
  * InviteBlocklistManager 实例类型。
  *
@@ -400,6 +403,31 @@ export class RoomOperations extends BaseMatrixService {
    */
   canManageAntiScreenshot(roomId: string): boolean {
     return this.canWriteStateEvent(roomId, 'com.hula.privacy')
+  }
+
+  /**
+   * 读取房间级私密模式标记。
+   *
+   * 房间不在本地缓存时按未开启处理，避免把「未知」误判成开启。
+   */
+  async getPrivateMode(roomId: string): Promise<boolean> {
+    const client = this.getClient()
+    const room = client.getRoom(roomId)
+    if (!room) return false
+    const event = room.currentState.getStateEvents(PRIVATE_MODE_STATE_EVENT_TYPE, '')
+    const content = event?.getContent() as { enabled?: unknown } | undefined
+    return content?.enabled === true
+  }
+
+  /**
+   * 写入房间级私密模式标记。
+   *
+   * 需要该 state 事件的写权限；调用方应先通过 `canWriteStateEvent` 判定，
+   * 无权限时降级为「仅在本次会话生效」。
+   */
+  async setPrivateMode(roomId: string, enabled: boolean): Promise<void> {
+    const client = this.getClient()
+    await client.sendStateEvent(roomId, PRIVATE_MODE_STATE_EVENT_TYPE, { enabled }, '')
   }
 
   async setPinnedEvents(roomId: string, eventIds: string[]): Promise<void> {

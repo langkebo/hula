@@ -21,8 +21,11 @@
           </div>
         </div>
 
-        <div class="mt-16px">
-          <van-button type="primary" block :loading="saving" @click="handleSave">
+        <div class="mt-16px flex gap-12px">
+          <van-button class="flex-1" block :loading="testing" :disabled="saving" @click="handleTest">
+            {{ t('mobile_setting.homeserver_test') }}
+          </van-button>
+          <van-button class="flex-1" type="primary" block :loading="saving" :disabled="testing" @click="handleSave">
             {{ t('mobile_setting.save') }}
           </van-button>
         </div>
@@ -39,6 +42,7 @@ import {
   discoverAndSaveMatrixEndpoints,
   isPotentialHomeserverInput,
   MATRIX_DEFAULT_HOMESERVER_EXAMPLE,
+  probeMatrixHomeserver,
   resolveMatrixEndpointConfig,
   saveMatrixIdentityServerUrl
 } from '@/services/backend'
@@ -50,10 +54,41 @@ const { t } = useI18n()
 
 const homeserverUrl = ref('')
 const saving = ref(false)
+const testing = ref(false)
 
 onMounted(() => {
   homeserverUrl.value = resolveMatrixEndpointConfig().homeserverUrl
 })
+
+/** 只探测连通性，不落库：用户可以先验证地址再决定是否保存（T-22） */
+async function handleTest() {
+  const rawValue = homeserverUrl.value.trim()
+  if (!rawValue || !isPotentialHomeserverInput(rawValue)) {
+    showToast({
+      type: 'fail',
+      message: t('mobile_setting.homeserver_invalid')
+    })
+    return
+  }
+
+  testing.value = true
+
+  try {
+    const result = await probeMatrixHomeserver(rawValue)
+    showToast({
+      type: 'success',
+      message: t('mobile_setting.homeserver_test_ok', { versions: result.versions.slice(0, 2).join(', ') })
+    })
+  } catch (error) {
+    logger.error('Failed to probe homeserver', error)
+    showToast({
+      type: 'fail',
+      message: t('mobile_setting.homeserver_test_failed')
+    })
+  } finally {
+    testing.value = false
+  }
+}
 
 async function handleSave() {
   if (!homeserverUrl.value.trim()) {

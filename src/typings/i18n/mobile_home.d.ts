@@ -41,7 +41,9 @@ export type Messages = {
   "create_group_title": "创建群聊",
   "group_name_placeholder": "群聊名称",
   "group_name_required": "请输入群聊名称",
-  "group_members_placeholder": "成员 ID，用逗号分隔（可选）",
+  "group_members_required": "请至少填写 1 位成员 ID",
+  "group_members_exceeded": "群成员不能超过 {count} 人（当前 {current} 人）",
+  "group_members_placeholder": "成员 ID，用逗号分隔（至少 1 人）",
   "create_group_creating": "创建群聊中...",
   "create_group_success": "群聊创建成功",
   "create_group_failed": "创建群聊失败"
@@ -88,6 +90,8 @@ export type KeyPaths =
   | "mobile_home.create_group_title"
   | "mobile_home.group_name_placeholder"
   | "mobile_home.group_name_required"
+  | "mobile_home.group_members_required"
+  | "mobile_home.group_members_exceeded"
   | "mobile_home.group_members_placeholder"
   | "mobile_home.create_group_creating"
   | "mobile_home.create_group_success"

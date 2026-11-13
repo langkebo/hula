@@ -71,6 +71,7 @@ export type Messages = {
   "join_group_message_placeholder": "输入验证消息",
   "apply_join_group": "申请加入",
   "group_request_sent": "已发送群聊申请",
+  "already_in_group": "你已经在该群聊中",
   "friend_info": {
     "title": "用户资料",
     "basic_info": "基本信息",
@@ -146,6 +147,7 @@ export type KeyPaths =
   | "mobile_contact.join_group_message_placeholder"
   | "mobile_contact.apply_join_group"
   | "mobile_contact.group_request_sent"
+  | "mobile_contact.already_in_group"
   | "mobile_contact.friend_info.title"
   | "mobile_contact.friend_info.basic_info"
   | "mobile_contact.friend_info.user_id"

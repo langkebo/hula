@@ -24,7 +24,7 @@
       <div class="text-14px">{{ t('room_advanced.room_upgrade.title') }}</div>
       <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-10px">
         <span>{{ currentVersion || '—' }}</span>
-        <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
+        <svg class="w-14px h-14px iconpark-icon" aria-hidden="true"><use href="#right"></use></svg>
       </div>
     </div>
     <div v-if="canManage" class="mx-15px border-b border-[--tjg-border-default]"></div>
@@ -36,7 +36,7 @@
       <div class="text-14px">{{ t('room_advanced.allowlist.title') }}</div>
       <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-10px">
         <span>{{ allowlistCount }}</span>
-        <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
+        <svg class="w-14px h-14px iconpark-icon" aria-hidden="true"><use href="#right"></use></svg>
       </div>
     </div>
     <div v-if="canManage" class="mx-15px border-b border-[--tjg-border-default]"></div>
@@ -48,7 +48,7 @@
       <div class="text-14px">{{ t('room_advanced.denylist.title') }}</div>
       <div class="text-12px text-[--tjg-text-secondary] flex items-center gap-10px">
         <span>{{ denylistCount }}</span>
-        <svg class="w-14px h-14px iconpark-icon"><use href="#right"></use></svg>
+        <svg class="w-14px h-14px iconpark-icon" aria-hidden="true"><use href="#right"></use></svg>
       </div>
     </div>
   </div>

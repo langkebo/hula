@@ -119,6 +119,7 @@
       <van-popup v-model:show="showBugReport" position="bottom" round :style="{ height: '60%' }">
         <div class="p-16px">
           <div class="text-16px font-bold mb-16px">{{ t('mobile_help.report_bug') }}</div>
+          <van-field v-if="contactInfo" :model-value="contactInfo" :label="t('mobile_help.contact_label')" readonly />
           <van-field
             v-model="bugReport.title"
             :label="t('mobile_help.bug_title')"
@@ -141,6 +142,7 @@
       <van-popup v-model:show="showFeatureRequest" position="bottom" round :style="{ height: '60%' }">
         <div class="p-16px">
           <div class="text-16px font-bold mb-16px">{{ t('mobile_help.feature_request') }}</div>
+          <van-field v-if="contactInfo" :model-value="contactInfo" :label="t('mobile_help.contact_label')" readonly />
           <van-field
             v-model="featureRequest.title"
             :label="t('mobile_help.feature_title')"
@@ -178,10 +180,11 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { showConfirmDialog, showToast } from 'vant'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
+import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { APP_VERSION } from '@/utils/appVersion'
 import { createLogger } from '@/utils/Logger'
 
@@ -189,6 +192,10 @@ const logger = createLogger('HelpFeedback')
 
 const { t } = useI18n()
 const router = useRouter()
+const matrixStore = useMatrixStore()
+
+/** 反馈走外部页面提交，无后端工单接口；仅回填当前账号作为联系方式（T-21） */
+const contactInfo = computed(() => matrixStore.userId ?? '')
 
 const showBugReport = ref(false)
 const showFeatureRequest = ref(false)
@@ -262,7 +269,10 @@ async function checkUpdate() {
 function buildFeedbackUrl(type: 'bug' | 'feature', title: string, description: string): string {
   const params = new URLSearchParams()
   params.set('title', `[${type === 'bug' ? 'Bug' : 'Feature'}] ${title}`)
-  params.set('body', `${description}\n\n---\nTJG Mobile ${versionInfo}\nUA: ${navigator.userAgent}`)
+  params.set(
+    'body',
+    `${description}\n\n---\nContact: ${contactInfo.value || 'n/a'}\nTJG Mobile ${versionInfo}\nUA: ${navigator.userAgent}`
+  )
   return `${FEEDBACK_ISSUE_URL}?${params.toString()}`
 }
 

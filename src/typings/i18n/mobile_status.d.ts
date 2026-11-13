@@ -11,6 +11,19 @@ export type Messages = {
   "save": "保存",
   "save_success": "状态已更新",
   "save_failed": "设置状态失败",
+  "clear_status": "清除状态",
+  "clear_success": "状态已清除",
+  "clear_failed": "清除状态失败",
+  "expiry_label": "状态有效期",
+  "expiry_hint": "Matrix 协议不含状态有效期，到期后由本设备清除状态文案。",
+  "expiry": {
+    "never": "永久",
+    "30m": "30 分钟",
+    "1h": "1 小时",
+    "4h": "4 小时",
+    "8h": "8 小时",
+    "24h": "24 小时"
+  },
   "away_busy_limited": "受 Matrix 在线状态协议限制，「离开」与「忙碌」均上报为「不可用」，其他设备无法区分。",
   "status": {
     "online": "在线",
@@ -37,6 +50,17 @@ export type KeyPaths =
   | "mobile_status.save"
   | "mobile_status.save_success"
   | "mobile_status.save_failed"
+  | "mobile_status.clear_status"
+  | "mobile_status.clear_success"
+  | "mobile_status.clear_failed"
+  | "mobile_status.expiry_label"
+  | "mobile_status.expiry_hint"
+  | "mobile_status.expiry.never"
+  | "mobile_status.expiry.30m"
+  | "mobile_status.expiry.1h"
+  | "mobile_status.expiry.4h"
+  | "mobile_status.expiry.8h"
+  | "mobile_status.expiry.24h"
   | "mobile_status.away_busy_limited"
   | "mobile_status.status.online"
   | "mobile_status.status.away"
