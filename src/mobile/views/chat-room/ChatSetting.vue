@@ -49,17 +49,11 @@
             </div>
           </div>
 
-          <!-- 群成员  -->
-          <ChatSettingMembers v-if="isGroup" />
-
-          <!-- 管理群成员 -->
-          <div
-            v-if="isGroup && groupStore.isAdminOrLord() && globalStore.currentSessionRoomId !== '1'"
-            v-clickable
-            class="bg-[--tjg-surface-panel] p-15px rounded-10px shadow text-14px flex cursor-pointer"
-            @click="toManageGroupMember">
-            {{ t('mobile_chat_setting.manage_group_members') }}
-          </div>
+          <!-- 群成员与管理入口：权限判定仍由父组件完成 -->
+          <ChatSettingMemberSection
+            :show="isGroup"
+            :show-manage-entry="isGroup && groupStore.isAdminOrLord() && globalStore.currentSessionRoomId !== '1'"
+            @manage-members="toManageGroupMember" />
 
           <div
             v-clickable
@@ -138,9 +132,9 @@ import { useRoomListManagement } from '@/composables/room/useRoomListManagement'
 import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import { MittEnum, RoomTypeEnum, TauriCommand } from '@/enums'
-import ChatSettingMembers from '@/mobile/views/chat-room/components/ChatSettingMembers.vue'
 import ChatSettingRoomInfo from '@/mobile/views/chat-room/components/ChatSettingRoomInfo.vue'
 import ChatSettingToggles from '@/mobile/views/chat-room/components/ChatSettingToggles.vue'
+import ChatSettingMemberSection from '@/mobile/views/chat-room/setting/ChatSettingMemberSection.vue'
 import router from '@/router'
 import type { UserItem } from '@/services/types'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'

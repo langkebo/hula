@@ -40,68 +40,26 @@
 
     <!-- 通话中界面 -->
     <div v-else class="active-call-screen">
-      <div v-if="isReconnecting" class="reconnecting-banner" role="status" aria-live="polite">
-        <van-loading size="16" class="reconnecting-spinner" />
-        <span>{{ t('voip.states.reconnecting') }}</span>
-      </div>
+      <RtcCallStatusOverlay
+        :peer-name="peerDisplayName"
+        :reconnecting="isReconnecting"
+        :avatar-url="remoteUser?.avatarUrl || ''"
+        :is-video="isVideo" />
       <template v-if="isVideo">
         <div class="video-container">
           <video ref="remoteVideoRef" class="remote-video" autoplay playsinline />
           <video ref="localVideoRef" class="local-video" autoplay playsinline muted />
         </div>
       </template>
-      <template v-else>
-        <div class="voice-container">
-          <van-image round width="100" height="100" :src="remoteUser?.avatarUrl || ''" />
-          <span class="user-name">{{ remoteUser?.displayName || remoteUser?.userId }}</span>
-          <span class="call-status">{{ t('voip.states.connected') }}</span>
-        </div>
-      </template>
 
-      <div class="call-controls">
-        <div class="controls-row">
-          <!-- 静音 -->
-          <van-button
-            round
-            :class="isAudioMuted ? 'btn-active-toggled' : 'btn-control'"
-            :aria-label="t('voip.call.mute')"
-            @click="handleToggleMute">
-            <van-icon :name="isAudioMuted ? 'warning-o' : 'volume-o'" size="22" />
-          </van-button>
-
-          <!-- 扬声器 -->
-          <van-button
-            round
-            :class="isSpeakerOn ? 'btn-control' : 'btn-active-toggled'"
-            :aria-label="t('voip.call.speaker')"
-            @click="handleToggleSpeaker">
-            <van-icon :name="isSpeakerOn ? 'volume' : 'volume-o'" size="22" />
-          </van-button>
-
-          <!-- 摄像头切换（仅视频通话） -->
-          <van-button
-            v-if="isVideo"
-            round
-            class="btn-control"
-            :aria-label="t('voip.call.switch_camera')"
-            @click="handleSwitchCamera">
-            <van-icon name="revoke" size="22" />
-          </van-button>
-        </div>
-
-        <div class="hangup-row">
-          <!-- 挂断 -->
-          <van-button
-            round
-            type="danger"
-            size="large"
-            class="btn-hangup"
-            :aria-label="t('voip.call.hangup')"
-            @click="handleHangup">
-            <van-icon name="phone-o" size="28" />
-          </van-button>
-        </div>
-      </div>
+      <RtcCallActionBar
+        :muted="isAudioMuted"
+        :camera-enabled="isVideo"
+        :speaker-on="isSpeakerOn"
+        @toggle-mute="handleToggleMute"
+        @toggle-camera="handleSwitchCamera"
+        @toggle-speaker="handleToggleSpeaker"
+        @hangup="handleHangup" />
     </div>
   </div>
 </template>
@@ -115,6 +73,8 @@ import { useVoIPCallFlow } from '@/composables/useVoIPCallFlow'
 import router from '@/router'
 import { createLogger } from '@/utils/Logger'
 import { classifyMediaError, type MediaErrorTarget, resolveMediaErrorText } from './mediaError'
+import RtcCallActionBar from './RtcCallActionBar.vue'
+import RtcCallStatusOverlay from './RtcCallStatusOverlay.vue'
 
 const logger = createLogger('RtcCallMobile')
 const { t } = useI18n()
@@ -169,6 +129,8 @@ const localStream = computed(() => callInfo.value?.localStream ?? null)
 const remoteStream = computed(() => callInfo.value?.remoteStream ?? null)
 
 const isReconnecting = computed(() => callInfo.value?.state === 'reconnecting')
+
+const peerDisplayName = computed(() => props.remoteUser?.displayName || props.remoteUser?.userId || '')
 
 const isCallActive = computed(() => {
   const currentState = callInfo.value?.state
@@ -400,19 +362,6 @@ onUnmounted(() => {
 
 .active-call-screen {
   @apply flex flex-col h-full w-full relative;
-
-  .reconnecting-banner {
-    @apply absolute top-0 left-0 right-0 z-10 flex items-center justify-center gap-8px px-16px py-8px text-13px;
-    background: var(--tjg-surface-subtle);
-    color: var(--tjg-text-primary);
-    --van-loading-spinner-color: var(--tjg-color-warning-500);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .reconnecting-banner :deep(.van-loading__circular) {
-      animation: none;
-    }
-  }
 }
 
 .video-container {
@@ -429,57 +378,6 @@ onUnmounted(() => {
     @supports (color: color-mix(in srgb, red, blue)) {
       border: 2px solid color-mix(in srgb, var(--tjg-text-inverse) 80%, transparent);
     }
-  }
-}
-
-.voice-container {
-  @apply flex flex-col items-center justify-center gap-16px flex-1;
-
-  .user-name {
-    @apply text-20px font-medium;
-    color: var(--tjg-text-primary);
-  }
-
-  .call-status {
-    @apply text-14px;
-    color: var(--tjg-text-tertiary);
-  }
-}
-
-.call-controls {
-  @apply flex flex-col items-center gap-24px pb-32px w-full;
-  padding-bottom: calc(32px + env(safe-area-inset-bottom));
-
-  .controls-row {
-    @apply flex items-center justify-center gap-20px;
-  }
-
-  .hangup-row {
-    @apply mt-8px;
-  }
-
-  .btn-control {
-    @apply size-48px;
-    background: var(--tjg-surface-subtle);
-    color: var(--tjg-text-primary);
-    border: none;
-  }
-
-  .btn-active-toggled {
-    @apply size-48px;
-    background: var(--tjg-color-danger-500);
-    color: var(--tjg-text-inverse);
-    border: none;
-
-    @supports (color: color-mix(in srgb, red, blue)) {
-      background: color-mix(in srgb, var(--tjg-color-danger-500) 60%, transparent);
-    }
-  }
-
-  .btn-hangup {
-    @apply size-64px;
-    border: none;
-    transform: rotate(135deg);
   }
 }
 </style>

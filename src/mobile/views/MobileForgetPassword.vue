@@ -14,121 +14,25 @@
         <van-step>{{ t('mobile_forget_code.steps.done') }}</van-step>
       </van-steps>
 
-      <!-- 第一步：验证邮箱 -->
-      <div v-if="currentStep === 1" class="w-full max-w-300px mx-auto mt-30px">
-        <!-- 邮箱输入 -->
-        <van-field
-          v-model="formData.email"
-          :placeholder="t('mobile_forget_code.input.email')"
-          :formatter="filterNoSideSpace"
-          format-trigger="onChange"
-          clearable
-          autocomplete="off"
-          :spellcheck="false"
-          autocorrect="off"
-          autocapitalize="off"
-          :label="t('mobile_forget_code.input.label.email')" />
+      <ForgetPasswordEmailStep
+        v-if="currentStep === 1"
+        v-model:email="formData.email"
+        v-model:code="formData.emailCode"
+        :loading="verifyLoading"
+        :sending="sendingEmailCode"
+        :send-disabled="sendBtnDisabled"
+        :code-button-text="emailCodeBtnText"
+        :next-disabled="nextDisabled"
+        @send-code="sendEmailCode"
+        @submit="verifyEmail" />
 
-        <!-- 邮箱验证码 -->
-        <van-field
-          v-model="formData.emailCode"
-          :placeholder="t('mobile_forget_code.input.email_code')"
-          :formatter="filterNoSideSpace"
-          format-trigger="onChange"
-          maxlength="6"
-          clearable
-          autocomplete="off"
-          :spellcheck="false"
-          autocorrect="off"
-          autocapitalize="off"
-          :label="t('mobile_forget_code.input.label.email_verification_code')">
-          <template #button>
-            <van-button
-              size="small"
-              type="primary"
-              :disabled="sendBtnDisabled"
-              :loading="sendingEmailCode"
-              @click="sendEmailCode">
-              {{ emailCodeBtnText }}
-            </van-button>
-          </template>
-        </van-field>
-
-        <van-button
-          :loading="verifyLoading"
-          :disabled="nextDisabled"
-          block
-          class="mt-10px gradient-button"
-          @click="verifyEmail">
-          {{ t('mobile_forget_code.button.next') }}
-        </van-button>
-      </div>
-
-      <!-- 第二步：设置新密码 -->
-      <div v-if="currentStep === 2" class="w-full max-w-300px mx-auto mt-30px">
-        <!-- 新密码 -->
-        <van-field
-          v-model="passwordForm.password"
-          :type="showNewPassword ? 'text' : 'password'"
-          :placeholder="t('mobile_forget_code.input.new_pass', { len: '8-16' })"
-          :formatter="filterNoSideSpace"
-          format-trigger="onChange"
-          maxlength="16"
-          clearable
-          autocomplete="off"
-          :spellcheck="false"
-          autocorrect="off"
-          autocapitalize="off"
-          :right-icon="showNewPassword ? 'eye-o' : 'closed-eye'"
-          @click-right-icon="showNewPassword = !showNewPassword"
-          :label="t('mobile_forget_code.input.label.new_pass')" />
-
-        <div class="flex flex-col gap-4px px-16px mt-4px">
-          <Validation
-            :value="passwordForm.password"
-            :message="t('mobile_forget_code.validation.minlength', { len: '8-16' })"
-            :validator="validateMinLength" />
-          <Validation
-            :value="passwordForm.password"
-            :message="t('mobile_forget_code.validation.valid_characters')"
-            :validator="validateAlphaNumeric" />
-          <Validation
-            :value="passwordForm.password"
-            :message="t('mobile_forget_code.validation.must_special_char')"
-            :validator="validateSpecialChar" />
-        </div>
-
-        <!-- 确认密码 -->
-        <van-field
-          v-model="passwordForm.confirmPassword"
-          :type="showConfirmPassword ? 'text' : 'password'"
-          :placeholder="t('mobile_forget_code.input.confirm_password')"
-          :formatter="filterNoSideSpace"
-          format-trigger="onChange"
-          maxlength="16"
-          clearable
-          autocomplete="off"
-          :spellcheck="false"
-          autocorrect="off"
-          autocapitalize="off"
-          :right-icon="showConfirmPassword ? 'eye-o' : 'closed-eye'"
-          @click-right-icon="showConfirmPassword = !showConfirmPassword"
-          :label="t('mobile_forget_code.input.label.confirm_password')" />
-
-        <div class="flex flex-col gap-4px px-16px mt-4px">
-          <Validation
-            :value="passwordForm.confirmPassword"
-            :message="t('mobile_forget_code.validation.passwords_match')"
-            :validator="(value: string) => value === passwordForm.password && value !== ''" />
-        </div>
-
-        <div class="flex gap-16px mt-30px px-16px">
-          <van-button block @click="goBack">{{ t('mobile_forget_code.button.go_back_setp') }}</van-button>
-          <van-button :loading="submitLoading" block class="gradient-button" @click="submitNewPassword">
-            {{ t('mobile_forget_code.button.submit') }}
-          </van-button>
-        </div>
-      </div>
+      <ForgetPasswordResetStep
+        v-if="currentStep === 2"
+        v-model:password="passwordForm.password"
+        v-model:confirm-password="passwordForm.confirmPassword"
+        :loading="submitLoading"
+        @back="goBack"
+        @submit="submitNewPassword" />
 
       <!-- 第三步：完成 -->
       <div v-if="currentStep === 3" class="w-full max-w-300px mx-auto mt-100px text-center">
@@ -144,13 +48,13 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import Validation from '@/components/common/Validation.vue'
+import ForgetPasswordEmailStep from '#/components/login/ForgetPasswordEmailStep.vue'
+import ForgetPasswordResetStep from '#/components/login/ForgetPasswordResetStep.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import router from '@/router'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
 import { acquireTimerWorker } from '@/services/timerWorkerHost'
 import { createLogger } from '@/utils/Logger'
-import { validateAlphaNumeric, validateSpecialChar } from '@/utils/Validate'
 
 const logger = createLogger('MobileForgetPassword')
 
@@ -189,16 +93,10 @@ const passwordForm = ref({
   confirmPassword: ''
 })
 const submitLoading = ref(false)
-const showNewPassword = ref(false)
-const showConfirmPassword = ref(false)
 
 const nextDisabled = computed(() => {
   return !(formData.value.email && formData.value.emailCode)
 })
-
-const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
-
-const validateMinLength = (value: string) => value.length >= 8
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error && error.message ? error.message : fallback
@@ -305,6 +203,9 @@ const verifyEmail = async () => {
 
 const goBack = () => {
   emailVerified.value = false
+  formData.value.emailCode = ''
+  passwordForm.value.password = ''
+  passwordForm.value.confirmPassword = ''
   currentStep.value = 1
 }
 

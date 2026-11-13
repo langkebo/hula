@@ -103,68 +103,16 @@
   </div>
 
   <!-- 第二步：邮箱和验证码 -->
-  <div v-else-if="currentStep === 2" class="text-center w-80% flex flex-col gap-16px">
-    <van-field
-      v-model="registerInfo.email"
-      :placeholder="registerEmailPH"
-      @focus="registerEmailPH = ''"
-      @blur="handleEmailBlur"
-      @update:model-value="onEmailInput"
-      clearable
-      autocomplete="off"
-      :spellcheck="false"
-      autocorrect="off"
-      autocapitalize="off" />
-
-    <!-- 邮箱域名建议 -->
-    <div
-      v-if="showEmailSuggestions"
-      class="border-[1px] border-solid border-[--login-dropdown-border] absolute w-80% bg-[--tjg-surface-elevated] z-99 rounded-8px p-4px box-border">
-      <div
-        v-for="option in commonEmailDomains"
-        :key="option.value"
-        @click="selectEmailSuggestion(option.value)"
-        class="p-8px hover:bg-[--tjg-surface-panel-muted] hover:rounded-[var(--tjg-radius-md)] text-14px color-[--chat-text-color] text-left cursor-pointer">
-        {{ option.label }}
-      </div>
-    </div>
-
-    <!-- 邮箱验证码 -->
-    <div class="flex justify-between items-center gap-10px">
-      <van-field
-        v-model="registerInfo.code"
-        maxlength="6"
-        :formatter="filterNoSideSpace"
-        format-trigger="onChange"
-        :placeholder="registerCodePH"
-        @focus="registerCodePH = ''"
-        @blur="registerCodePH = t('login.mobile.register.input.email_verification_code')"
-        clearable
-        autocomplete="off"
-        :spellcheck="false"
-        autocorrect="off"
-        autocapitalize="off"
-        class="flex-1" />
-
-      <van-button
-        class="flex-shrink-0 gradient-button"
-        :loading="sendCodeLoading"
-        :disabled="sendCodeDisabled"
-        size="small"
-        @click="handleSendEmailCode">
-        <span>{{ sendCodeButtonText }}</span>
-      </van-button>
-    </div>
-
-    <van-button
-      :loading="registerLoading"
-      :disabled="!isStep2Valid"
-      block
-      class="mt-8px mb-50px gradient-button"
-      @click="handleRegisterStep">
-      <span>{{ t('login.mobile.register.btn.register') }}</span>
-    </van-button>
-  </div>
+  <RegisterEmailVerifyStep
+    v-else-if="currentStep === 2"
+    v-model:email="registerInfo.email"
+    v-model:code="registerInfo.code"
+    :loading="registerLoading"
+    :send-loading="sendCodeLoading"
+    :countdown="sendCodeCountdown"
+    :submit-disabled="isStep2Valid"
+    @send-code="handleSendEmailCode"
+    @submit="handleRegisterComplete" />
 </template>
 
 <script setup lang="ts">
@@ -182,6 +130,7 @@ import {
   validateUsername
 } from '@/utils/Validate'
 import { useSendCodeCountdown } from '../../composables/useSendCodeCountdown'
+import RegisterEmailVerifyStep from './RegisterEmailVerifyStep.vue'
 
 const logger = createLogger('MobileRegisterForm')
 const { register: registerAccount, requestEmailToken, submitEmailToken } = useSessionActions()
@@ -217,10 +166,8 @@ const registerInfo = ref<LocalRegisterInfo>({
 })
 
 const registerNamePH = ref(t('login.mobile.register.input.nickname'))
-const registerEmailPH = ref(t('login.mobile.register.input.email'))
 const registerPasswordPH = ref(t('login.mobile.register.input.password'))
 const confirmPasswordPH = ref(t('login.mobile.register.input.confirm_password'))
-const registerCodePH = ref(t('login.mobile.register.input.email_verification_code'))
 const registerProtocol = ref(true)
 const registerLoading = ref(false)
 const sendCodeLoading = ref(false)
@@ -235,25 +182,6 @@ const {
 
 const showRegPassword = ref(false)
 const showConfirmPassword = ref(false)
-const showEmailSuggestions = ref(false)
-
-const sendCodeButtonText = computed(() => {
-  if (sendCodeCountdown.value > 0) {
-    return t('login.mobile.register.btn.resend_in', { seconds: sendCodeCountdown.value })
-  }
-  return t('login.mobile.register.btn.send_email_code')
-})
-
-const sendCodeDisabled = computed(() => {
-  return sendCodeLoading.value || sendCodeCountdown.value > 0 || !registerInfo.value.email || !isEmailValid.value
-})
-
-const commonEmailDomains = computed(() => {
-  return ['@gmail.com', '@163.com', '@qq.com'].map((suffix) => {
-    const prefix = registerInfo.value.email.split('@')[0]
-    return { label: prefix + suffix, value: prefix + suffix }
-  })
-})
 
 const filterNoSideSpace = (value: string) => value.replace(/^\s+|\s+$/g, '')
 
@@ -291,22 +219,6 @@ const isStep2Valid = computed(
   () => isEmailValid.value && !!registerInfo.value.code.trim() && !!emailSessionId.value && !!emailClientSecret.value
 )
 
-const onEmailInput = (value: string) => {
-  showEmailSuggestions.value = value.endsWith('@')
-}
-
-const handleEmailBlur = () => {
-  registerEmailPH.value = t('login.mobile.register.input.email')
-  setTimeout(() => {
-    showEmailSuggestions.value = false
-  }, 150)
-}
-
-const selectEmailSuggestion = (value: string) => {
-  registerInfo.value.email = value
-  showEmailSuggestions.value = false
-}
-
 const resetRegisterForm = () => {
   registerInfo.value = {
     nickName: '',
@@ -321,22 +233,16 @@ const resetRegisterForm = () => {
   } as LocalRegisterInfo
   currentStep.value = 1
   registerNamePH.value = t('login.mobile.register.input.nickname')
-  registerEmailPH.value = t('login.mobile.register.input.email')
   registerPasswordPH.value = t('login.mobile.register.input.password')
   confirmPasswordPH.value = t('login.mobile.register.input.confirm_password')
-  registerCodePH.value = t('login.mobile.register.input.email_verification_code')
   sendCodeLoading.value = false
   emailSessionId.value = ''
   emailClientSecret.value = ''
   stopSendCodeCountdown()
 }
 
-const handleRegisterStep = async () => {
-  if (currentStep.value === 1) {
-    currentStep.value = 2
-    return
-  }
-  await handleRegisterComplete()
+const handleRegisterStep = () => {
+  currentStep.value = 2
 }
 
 const handleSendEmailCode = async () => {

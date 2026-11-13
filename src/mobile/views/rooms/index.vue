@@ -66,20 +66,7 @@
         :buffer="6"
         key-field="roomId">
         <template #default="{ item: room }">
-          <van-swipe-cell>
-            <MobileRoomCard
-              :item="room"
-              :summary-text="room.summary || t('mobile_rooms.no_message')"
-              :time-label="formatRoomActiveTime(room.activeTime, t('menu.yesterday'))"
-              :members-label="t('mobile_rooms.members')"
-              :encrypted-label="t('mobile_rooms.encrypted')"
-              @click="enterRoom(room.roomId)" />
-            <template #right>
-              <van-button square type="danger" class="h-full" @click="handleLeaveRoom(room.roomId)">
-                {{ t('mobile_rooms.leave_room') }}
-              </van-button>
-            </template>
-          </van-swipe-cell>
+          <RoomListCard :room="room" @select="enterRoom(room.roomId)" @leave="handleLeaveRoom" />
         </template>
       </SmartVirtualList>
     </van-pull-refresh>
@@ -142,12 +129,11 @@
 import { showConfirmDialog, showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import MobileRoomCard from '@/mobile/components/rooms/MobileRoomCard.vue'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
+import RoomListCard from '@/mobile/views/rooms/RoomListCard.vue'
 import {
   buildRoomCardModels,
   filterRoomCards,
-  formatRoomActiveTime,
   type RoomFilter,
   type RoomListSource,
   type RoomSessionSnapshot,

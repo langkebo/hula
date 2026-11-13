@@ -1,136 +1,37 @@
 <template>
-  <!-- 个人信息区 -->
-  <div class="flex flex-col px-16px border-b border-[--tjg-border-layout-divider] pb-16px">
-    <!-- 头像基本信息 -->
-    <div ref="avatarBox" class="grid grid-cols-[64px_1fr] z-1 items-start mt-6 gap-2 will-change-transform">
-      <!-- 头像 -->
-      <div
-        class="self-center h-auto transition-transform duration-300 ease-in-out origin-top"
-        :style="{ transform: props.isShow ? 'scale(1) translateY(0)' : 'scale(0.62) translateY(0px)' }">
-        <div
-          v-if="showSkeleton"
-          class="size-64px rounded-full bg-[--tjg-surface-subtle] animate-pulse motion-reduce:animate-none"
-          data-testid="personal-info-skeleton-avatar"
-          aria-hidden="true" />
-        <img
-          v-else
-          class="size-64px rounded-full object-cover"
-          :src="AvatarUtils.getAvatarUrl(userDetailInfo?.avatar || '')"
-          :alt="t('mobile_contact.avatar.user')"
-          @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-      </div>
-
-      <!-- 基本信息栏 -->
-      <div ref="infoBox" class="pl-2 flex gap-8px flex-col transition-transform duration-300 ease-in-out">
-        <!-- 名字与在线状态 -->
-        <div class="flex flex-warp gap-4 items-center">
-          <span
-            v-if="showSkeleton"
-            class="block h-18px w-96px rounded-4px bg-[--tjg-surface-subtle] animate-pulse motion-reduce:animate-none"
-            data-testid="personal-info-skeleton-name"
-            aria-hidden="true" />
-          <span v-else class="font-semibold text-18px">{{ userDetailInfo?.name }}</span>
-          <div
-            v-show="hasUserOnlineState"
-            class="bg-[--tjg-color-primary-100] flex flex-wrap ps-2 px-8px items-center rounded-full gap-1 h-24px">
-            <span class="w-12px h-12px rounded-15px flex items-center">
-              <img
-                :src="friendUserState?.url ? friendUserState.url : currentState?.url"
-                :alt="friendUserState?.title || currentState?.title || ''"
-                class="rounded-50% size-14px" />
-            </span>
-            <span class="text-bold-style text-12px text-[--tjg-text-secondary]">
-              {{ friendUserState?.title ? friendUserState.title : currentState?.title || '' }}
-            </span>
-          </div>
-        </div>
-
-        <!-- 账号 -->
-        <div class="flex flex-warp gap-2 items-center">
-          <span
-            v-if="showSkeleton"
-            class="block h-14px w-120px rounded-4px bg-[--tjg-surface-subtle] animate-pulse motion-reduce:animate-none"
-            data-testid="personal-info-skeleton-account"
-            aria-hidden="true" />
-          <template v-else>
-            <span class="text-bold-style">{{ t('mobile_personal_info.account') }}:{{ userDetailInfo?.account }}</span>
-            <span v-clickable v-if="isMyPage" @click="toMyQRCode" class="p-[15px] -m-[15px]">
-              <Icon
-                icon="mdi:qrcode"
-                :width="14"
-                :height="14"
-                class="text-[--tjg-text-secondary]"
-                :aria-label="t('mobile_personal_info.qr_code')" />
-            </span>
-          </template>
-        </div>
-      </div>
-    </div>
-  </div>
+  <PersonalInfoHeader
+    ref="headerRef"
+    :user-detail-info="userDetailInfo"
+    :friend-user-state="friendUserState"
+    :current-state="currentState"
+    :is-my-page="props.isMyPage"
+    :show-skeleton="showSkeleton"
+    :has-user-online-state="hasUserOnlineState"
+    :is-show="props.isShow"
+    :avatar-url="avatarUrl"
+    @open-qr-code="toMyQRCode" />
   <!-- 个人描述与操作区 -->
   <Transition name="slide-fade" @before-enter="beforeEnter" @enter="enter" @leave="leave">
-    <div v-if="props.isShow" ref="animatedBox" class="will-change-transform flex flex-col px-16px">
-      <!-- 个人描述 -->
-      <div class="mt-2 text-bold-style line-height-24px">
-        {{ displayResume }}
-      </div>
-      <div class="justify-end flex items-center gap-3 mt-16px">
-        <van-button
-          :disabled="loading"
-          @click="toEditProfile"
-          plain
-          round
-          size="small"
-          v-if="props.isMyPage && !isBotUser(uid)"
-          class="font-bold px-4 py-10px text-12px min-h-44px">
-          {{ t('mobile_personal_info.edit_profile') }}
-        </van-button>
-        <van-button
-          :loading="loading"
-          :disabled="loading"
-          plain
-          round
-          size="small"
-          @click="handleDelete"
-          color="var(--tjg-color-danger-500)"
-          v-if="!props.isMyPage && isMyFriendState && !isBotUser(uid)"
-          class="px-5 py-10px font-bold text-center text-12px min-h-44px">
-          {{ t('mobile_personal_info.remove_user') }}
-        </van-button>
-
-        <van-button
-          type="primary"
-          :disabled="loading"
-          plain
-          round
-          size="small"
-          @click="handleAddFriend"
-          v-if="!props.isMyPage && !isMyFriendState && !isBotUser(uid)"
-          class="px-5 py-10px font-bold text-center text-12px min-h-44px">
-          +&nbsp;
-          {{ t('mobile_personal_info.add_friend') }}
-        </van-button>
-        <van-button
-          type="primary"
-          plain
-          round
-          size="small"
-          @click="toChatRoom"
-          :disabled="loading"
-          v-if="!props.isMyPage && isMyFriendState"
-          class="px-5 py-10px text-center font-bold text-12px min-h-44px">
-          {{ isBotUser(uid) ? t('mobile_personal_info.open_bot') : t('mobile_personal_info.chat') }}
-        </van-button>
-      </div>
-    </div>
+    <PersonalInfoActions
+      v-if="props.isShow"
+      :display-resume="displayResume"
+      :loading="loading"
+      :is-my-page="props.isMyPage"
+      :is-my-friend-state="isMyFriendState"
+      :is-bot="isBotUser(uid)"
+      @edit-profile="toEditProfile"
+      @delete-friend="handleDelete"
+      @add-friend="handleAddFriend"
+      @open-chat="toChatRoom" />
   </Transition>
 </template>
 
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { showDialog } from 'vant'
 import { useRoute, useRouter } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import PersonalInfoActions from '@/mobile/components/my/PersonalInfoActions.vue'
+import PersonalInfoHeader from '@/mobile/components/my/PersonalInfoHeader.vue'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -223,6 +124,8 @@ const userDetailInfo = ref<UserItem | UserInfoType | undefined>({
   account: '',
   resume: ''
 })
+
+const avatarUrl = computed(() => AvatarUtils.getAvatarUrl(userDetailInfo.value?.avatar || ''))
 
 const friendUserState = ref<{ title: string; url: string; id?: string } | null>({
   title: '',
@@ -390,12 +293,17 @@ function leave(el: Element, done: () => void) {
   box.addEventListener('transitionend', done, { once: true })
 }
 
-const avatarBox = ref<HTMLElement | null>(null)
+interface PersonalInfoHeaderExposed {
+  avatarBox: HTMLElement | null
+  infoBox: HTMLElement | null
+}
+
+const headerRef = ref<PersonalInfoHeaderExposed | null>(null)
 
 watch(
   () => props.isShow,
   (show) => {
-    const box = avatarBox.value
+    const box = headerRef.value?.avatarBox
     if (!box) return
 
     box.style.overflow = 'hidden'
@@ -424,11 +332,10 @@ watch(
   }
 )
 
-const infoBox = ref<HTMLElement | null>(null)
 watch(
   () => props.isShow,
   (show) => {
-    const info = infoBox.value
+    const info = headerRef.value?.infoBox
     if (!info) return
 
     info.style.transition = 'transform var(--tjg-motion-duration-slow) ease'
@@ -446,12 +353,6 @@ $font-family-system: -apple-system, BlinkMacSystemFont;
 $font-family-windows: 'Segoe UI', 'Microsoft YaHei';
 $font-family-chinese: 'PingFang SC', 'Hiragino Sans GB';
 $font-family-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-
-.text-bold-style {
-  font-size: 14px;
-  font-family: $font-family-system, $font-family-windows, $font-family-sans;
-  color: var(--tjg-text-tertiary);
-}
 
 .medal-number {
   margin: 0 5px 0 3px;
