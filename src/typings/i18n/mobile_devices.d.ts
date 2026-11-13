@@ -77,7 +77,9 @@ export type Messages = {
   },
   "logout_other_success": "其他设备已登出",
   "logout_other_failed": "登出其他设备失败",
-  "block_unsupported": "当前版本暂不支持屏蔽设备"
+  "block_unsupported": "当前版本暂不支持屏蔽设备",
+  "last_active": "最后活跃 {time}",
+  "current_device_protected": "当前设备无法删除，请使用退出登录"
 }
 
 /**
@@ -158,3 +160,5 @@ export type KeyPaths =
   | "mobile_devices.logout_other_success"
   | "mobile_devices.logout_other_failed"
   | "mobile_devices.block_unsupported"
+  | "mobile_devices.last_active"
+  | "mobile_devices.current_device_protected"

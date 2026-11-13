@@ -4,7 +4,8 @@
   },
   "states": {
     "ringing_outgoing": "Calling...",
-    "connected": "In call"
+    "connected": "In call",
+    "reconnecting": "Network unstable, reconnecting..."
   },
   "unknown": "Unknown",
   "call": {
@@ -26,7 +27,21 @@
     "hangup_failed": "Failed to hang up call",
     "mute_failed": "Mute operation failed",
     "video_failed": "Video toggle failed",
-    "screenshare_failed": "Screen share failed"
+    "screenshare_failed": "Screen share failed",
+    "call_failed": "The call encountered an error and has ended",
+    "mic_permission_denied": "Microphone permission denied",
+    "mic_permission_guide": "Allow microphone access in system settings and try again",
+    "camera_permission_denied": "Camera permission denied",
+    "camera_permission_guide": "Allow camera access in system settings and try again",
+    "media_permission_denied": "Microphone or camera permission denied",
+    "media_permission_guide": "Allow microphone and camera access in system settings and try again",
+    "mic_not_found": "No microphone available",
+    "camera_not_found": "No camera available",
+    "media_not_found": "No microphone or camera available",
+    "mic_busy": "Microphone is in use by another app",
+    "camera_busy": "Camera is in use by another app",
+    "media_busy": "Microphone or camera is in use by another app",
+    "media_failed": "Failed to start call media"
   },
   "incoming": {
     "video_call": "Video Call",

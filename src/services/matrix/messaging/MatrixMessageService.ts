@@ -30,6 +30,8 @@ export interface SendMessagePayload {
   roomId: string
   msgType: MsgEnum
   body: unknown
+  /** 客户端事务 ID：由临时消息 ID 派生，重试/离线重放共用同一值以触发服务端去重 */
+  txId?: string
   burnAfterRead?: boolean
   burnExpiresInMs?: number
 }
@@ -119,20 +121,24 @@ class MatrixMessageService extends BaseMatrixService {
 
   async sendStructuredMessage(payload: SendMessagePayload): Promise<ISendEventResponse> {
     const content = buildSendContent(payload)
+    const txId = payload.txId ?? (payload.id ? `tx-${payload.id}` : undefined)
 
     // H-9：与普通消息保持一致，离线时统一走离线队列，而不是直接抛网络错误。
     if (!navigator.onLine) {
       const id = offlineQueueService.enqueue('message', payload.roomId, {
         roomId: payload.roomId,
         eventType: MatrixEventType.ROOM_MESSAGE,
-        content
+        content,
+        ...(txId ? { txId } : {})
       })
       logger.info(`[MatrixMessage] 离线状态，已将结构化消息入队: ${payload.roomId} (queueId: ${id})`)
       return { event_id: `local-${id}` } as ISendEventResponse
     }
 
     return this.sendWithRetry(async () => {
-      const eventId = await matrixEventService.sendEvent(payload.roomId, MatrixEventType.ROOM_MESSAGE, content)
+      const eventId = txId
+        ? await matrixEventService.sendEvent(payload.roomId, MatrixEventType.ROOM_MESSAGE, content, txId)
+        : await matrixEventService.sendEvent(payload.roomId, MatrixEventType.ROOM_MESSAGE, content)
       if (payload.id && this.isLocalEventId(payload.id)) {
         this.registerSentMessage(payload.id, eventId)
       }

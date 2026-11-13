@@ -11,6 +11,7 @@ export type Messages = {
   "save": "保存",
   "save_success": "状态已更新",
   "save_failed": "设置状态失败",
+  "away_busy_limited": "受 Matrix 在线状态协议限制，「离开」与「忙碌」均上报为「不可用」，其他设备无法区分。",
   "status": {
     "online": "在线",
     "away": "离开",
@@ -36,6 +37,7 @@ export type KeyPaths =
   | "mobile_status.save"
   | "mobile_status.save_success"
   | "mobile_status.save_failed"
+  | "mobile_status.away_busy_limited"
   | "mobile_status.status.online"
   | "mobile_status.status.away"
   | "mobile_status.status.busy"

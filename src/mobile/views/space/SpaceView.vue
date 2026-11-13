@@ -101,9 +101,10 @@
               <div class="detail-name">{{ selectedSpace.name }}</div>
               <div v-if="selectedSpace.topic" class="detail-topic">{{ selectedSpace.topic }}</div>
               <div class="detail-stats">
-                <span>
+                <span v-clickable class="detail-members-entry" data-testid="space-members-entry" @click="openMembers">
                   <van-icon name="friends-o" />
                   {{ selectedSpace.memberCount }} {{ t('space.members') }}
+                  <van-icon name="arrow" class="detail-members-arrow" />
                 </span>
                 <span>
                   <van-icon name="chat-o" />
@@ -200,6 +201,19 @@
           </van-form>
         </div>
       </van-action-sheet>
+
+      <!-- 成员管理弹出层 -->
+      <van-popup v-model:show="showMembersPopup" position="bottom" round>
+        <div class="members-popup">
+          <div class="members-popup-header">
+            <span class="members-popup-title">{{ t('space.members_title') }}</span>
+            <van-icon v-clickable name="cross" @click="showMembersPopup = false" />
+          </div>
+          <div class="members-popup-body">
+            <SpaceMemberList v-if="selectedSpace" :space-id="selectedSpace.spaceId" :can-manage="canManageSpace" />
+          </div>
+        </div>
+      </van-popup>
     </template>
   </AutoFixHeightPage>
 </template>
@@ -211,9 +225,13 @@ import { useI18n } from 'vue-i18n'
 import { useSpace, useSpaceMembers, useSpaceRooms, useSpaces } from '@/composables/space'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
-import type { SpaceInfo, SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
+import SpaceMemberList from '@/mobile/components/space/SpaceMemberList.vue'
+import { matrixSpaceService, type SpaceInfo, type SpaceOptions } from '@/services/matrix/room/MatrixSpaceService'
 import { Visibility } from '@/services/matrix/sdk'
 import SpaceChildrenList from './components/SpaceChildrenList.vue'
+
+/** 可管理成员的 power level 门槛（管理员 / 版主） */
+const MANAGE_POWER_LEVEL = 50
 
 const { t } = useI18n()
 
@@ -229,6 +247,8 @@ const showDetailSheet = ref(false)
 const showInviteSheet = ref(false)
 const showAddRoomSheet = ref(false)
 const showSettingsSheet = ref(false)
+const showMembersPopup = ref(false)
+const canManageSpace = ref(false)
 const selectedSpace = ref<SpaceInfo | null>(null)
 
 const formData = reactive({
@@ -270,6 +290,21 @@ const openInvite = () => {
   inviteForm.userId = ''
   showDetailSheet.value = false
   showInviteSheet.value = true
+}
+
+/** 打开成员列表：先按当前用户在空间的 PL 判定管理权限 */
+const openMembers = async () => {
+  if (!selectedSpace.value) return
+  const spaceId = selectedSpace.value.spaceId
+  canManageSpace.value = false
+  showDetailSheet.value = false
+  showMembersPopup.value = true
+  try {
+    const powerLevel = await matrixSpaceService.getSpaceMemberPowerLevel(spaceId)
+    canManageSpace.value = powerLevel >= MANAGE_POWER_LEVEL
+  } catch {
+    canManageSpace.value = false
+  }
 }
 
 const handleInvite = async () => {
@@ -506,12 +541,21 @@ onMounted(() => {
         display: flex;
         gap: 16px;
         font-size: 14px;
-        color: var(--van-text-color-3);
+        color: var(--tjg-text-tertiary);
 
         span {
           display: flex;
           align-items: center;
           gap: 4px;
+        }
+
+        .detail-members-entry {
+          color: var(--tjg-text-secondary);
+        }
+
+        .detail-members-arrow {
+          font-size: var(--tjg-font-size-sm);
+          color: var(--tjg-text-tertiary);
         }
       }
     }
@@ -521,6 +565,34 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+}
+
+.members-popup {
+  display: flex;
+  flex-direction: column;
+  height: 70vh;
+  padding: 16px;
+  background: var(--tjg-glass-row-bg);
+
+  .members-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+
+    .members-popup-title {
+      font-size: var(--tjg-font-size-md);
+      font-weight: 500;
+      color: var(--tjg-text-primary);
+    }
+  }
+
+  .members-popup-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

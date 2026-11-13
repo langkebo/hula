@@ -72,5 +72,7 @@
   },
   "logout_other_success": "Other devices signed out",
   "logout_other_failed": "Could not sign out other devices",
-  "block_unsupported": "Blocking devices is not supported in this version"
+  "block_unsupported": "Blocking devices is not supported in this version",
+  "last_active": "Last active {time}",
+  "current_device_protected": "The current device cannot be removed. Sign out instead."
 }

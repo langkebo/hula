@@ -32,7 +32,12 @@ export type Messages = {
   "public_room": "公开房间",
   "unnamed_room": "未命名房间",
   "search_public_rooms_placeholder": "输入关键词搜索公开房间",
-  "search_btn": "搜索"
+  "search_btn": "搜索",
+  "filter_all": "全部",
+  "filter_public": "公开",
+  "filter_private": "私有",
+  "filter_owned": "我创建的",
+  "no_message": "暂无消息"
 }
 
 /**
@@ -74,3 +79,8 @@ export type KeyPaths =
   | "mobile_rooms.unnamed_room"
   | "mobile_rooms.search_public_rooms_placeholder"
   | "mobile_rooms.search_btn"
+  | "mobile_rooms.filter_all"
+  | "mobile_rooms.filter_public"
+  | "mobile_rooms.filter_private"
+  | "mobile_rooms.filter_owned"
+  | "mobile_rooms.no_message"

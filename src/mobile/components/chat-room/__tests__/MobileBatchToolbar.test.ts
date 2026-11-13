@@ -9,6 +9,11 @@ vi.mock('matrix-js-sdk', () => ({}))
 vi.mock('vant/es/dialog/style', () => ({}))
 vi.mock('vant/es/toast/style', () => ({}))
 
+const { mockShowConfirmDialog } = vi.hoisted(() => ({
+  mockShowConfirmDialog: vi.fn().mockResolvedValue(undefined)
+}))
+vi.mock('vant', () => ({ showConfirmDialog: mockShowConfirmDialog }))
+
 const {
   mockChatStore,
   mockShowFeedback,
@@ -112,12 +117,18 @@ const i18n = createI18n({
   locale: 'en-US',
   messages: {
     'en-US': {
+      common: {
+        tip: 'Tip',
+        confirm: 'Confirm',
+        cancel: 'Cancel'
+      },
       message: {
         multi_choose: {
           selected_count: '{count} selected',
           select_all: 'Select all',
           unselect_all: 'Deselect all',
-          exit_multi_select: 'Exit selection'
+          exit_multi_select: 'Exit selection',
+          delete_confirm: 'Delete {count} selected messages?'
         },
         multi_select: {
           empty_selection: 'Please select messages first',
@@ -133,7 +144,9 @@ const i18n = createI18n({
 const stubs = {
   'van-button': {
     name: 'VanButton',
-    template: '<button @click="$emit(\'click\')"><slot /></button>',
+    // 不要在这里再 $emit('click')：父级 @click 会通过 attrs 落到同一个根元素上，
+    // 会造成组件内处理器被调用两次（删除确认的取消路径因此失效）。
+    template: '<button><slot /></button>',
     props: ['type', 'size', 'plain', 'round', 'disabled', 'loading']
   },
   'van-icon': {
@@ -189,19 +202,33 @@ describe('MobileBatchToolbar', () => {
       event: null,
       eventIds: ['$msg:1']
     })
-    expect(events.exit).toEqual([[], []])
+    expect(events.exit).toEqual([[]])
   })
 
-  it('删除按钮调用 batchDelete', async () => {
+  it('删除按钮: 确认后调用 batchDelete 并退出多选', async () => {
     const wrapper = mountToolbar()
     await wrapper.find('[data-test="batch-delete-btn"]').trigger('click')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(mockShowConfirmDialog).toHaveBeenCalled()
     expect(mockBatchDelete).toHaveBeenCalled()
+    expect(mockExitMultiSelect).toHaveBeenCalled()
+    expect(wrapper.emitted('exit')).toEqual([[]])
+  })
+
+  it('删除按钮: 取消确认不执行删除', async () => {
+    mockShowConfirmDialog.mockImplementationOnce(() => Promise.reject(new Error('cancel')))
+    const wrapper = mountToolbar()
+    await wrapper.find('[data-test="batch-delete-btn"]').trigger('click')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(mockShowConfirmDialog).toHaveBeenCalled()
+    expect(mockBatchDelete).not.toHaveBeenCalled()
+    expect(mockExitMultiSelect).not.toHaveBeenCalled()
   })
 
   it('退出按钮调用 exitMultiSelect 并 emit exit', async () => {
     const wrapper = mountToolbar()
     await wrapper.find('[data-test="batch-exit-btn"]').trigger('click')
     expect(mockExitMultiSelect).toHaveBeenCalled()
-    expect(wrapper.emitted('exit')).toEqual([[], []])
+    expect(wrapper.emitted('exit')).toEqual([[]])
   })
 })

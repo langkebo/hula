@@ -79,6 +79,7 @@
 
 <script setup lang="ts">
 import 'vant/es/dialog/style'
+import { showConfirmDialog } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMessageMultiSelect } from '@/composables/messaging/useMessageMultiSelect'
@@ -162,9 +163,25 @@ const handleDelete = async (): Promise<void> => {
     showFeedback(t('message.multi_select.empty_selection'), 'warning')
     return
   }
+  try {
+    await showConfirmDialog({
+      title: t('common.tip'),
+      message: t('message.multi_choose.delete_confirm', { count: selectedIds.value.length }),
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel')
+    })
+  } catch {
+    // 用户取消
+    return
+  }
   pendingAction.value = 'delete'
   try {
-    await batchDelete()
+    const successCount = await batchDelete()
+    // 删除成功后退出多选，避免返回列表仍残留批量操作态
+    if (successCount > 0) {
+      exitMultiSelect()
+      emit('exit')
+    }
   } finally {
     pendingAction.value = null
   }

@@ -4,6 +4,7 @@ import { setupMswServer } from '@/../tests/msw'
 import matrixClientService from '../../MatrixClientService'
 import { type MatrixClient, Visibility } from '../../sdk'
 import { matrixSpaceService } from '../MatrixSpaceService'
+import { matrixRoomActionFacade, matrixRoomMemberFacade } from '../RoomFacade'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
 const PREFIX_V3 = '/_matrix/client/v3'
@@ -245,6 +246,30 @@ describe('MatrixSpaceService', () => {
       join_rule: 'invite',
       visibility: 'private',
       is_public: false
+    })
+  })
+
+  describe('空间成员权限管理', () => {
+    it('removeFromSpace 复用 kickUser', async () => {
+      const kickSpy = vi.spyOn(matrixRoomActionFacade, 'kickUser').mockResolvedValue()
+
+      await matrixSpaceService.removeFromSpace('!space:server', '@bob:server')
+
+      expect(kickSpy).toHaveBeenCalledWith('!space:server', '@bob:server')
+      kickSpy.mockRestore()
+    })
+
+    it.each([
+      ['admin', 100],
+      ['moderator', 50],
+      ['member', 0]
+    ] as const)('setSpaceMemberRole(%s) 调用 setMemberPowerLevel(..., %i)', async (role, powerLevel) => {
+      const powerLevelSpy = vi.spyOn(matrixRoomMemberFacade, 'setMemberPowerLevel').mockResolvedValue()
+
+      await matrixSpaceService.setSpaceMemberRole('!space:server', '@bob:server', role)
+
+      expect(powerLevelSpy).toHaveBeenCalledWith('!space:server', '@bob:server', powerLevel)
+      powerLevelSpy.mockRestore()
     })
   })
 })

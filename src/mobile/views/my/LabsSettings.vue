@@ -13,8 +13,9 @@
             <van-cell
               :title="t('mobile_setting.integrations')"
               :label="t('mobile_integrations.description')"
-              is-link
-              @click="openIntegrationsSettings">
+              :clickable="false"
+              disabled
+              data-testid="integrations-entry">
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
@@ -22,7 +23,7 @@
                 </div>
               </template>
               <template #value>
-                <van-tag type="warning" size="medium">Beta</van-tag>
+                <van-tag type="default" size="medium">{{ t('mobile_integrations.unavailable_badge') }}</van-tag>
               </template>
             </van-cell>
           </van-cell-group>
@@ -35,15 +36,8 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH } from './settingsRoutes'
 
 const { t } = useI18n()
-const router = useRouter()
-
-function openIntegrationsSettings() {
-  router.push(MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH)
-}
 </script>
 
 <style scoped></style>

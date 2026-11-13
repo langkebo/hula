@@ -196,14 +196,23 @@ function getDeviceIcon(): string {
   return 'mdi:devices'
 }
 
+/** 最后活跃时间：服务端回传 lastSeenTs 才展示，时间戳非法时不伪造 */
+function formatLastSeen(ts: number): string {
+  const date = new Date(ts)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString()
+}
+
 function formatDeviceLabel(device: DeviceSessionInfo): string {
   const parts: string[] = []
   if (device.lastSeenIp) {
     parts.push(device.lastSeenIp)
   }
   if (device.lastSeenTs) {
-    const date = new Date(device.lastSeenTs)
-    parts.push(date.toLocaleDateString())
+    const lastSeen = formatLastSeen(device.lastSeenTs)
+    if (lastSeen) {
+      parts.push(t('mobile_devices.last_active', { time: lastSeen }))
+    }
   }
   return parts.join(' · ') || t('mobile_devices.no_info')
 }
@@ -246,12 +255,21 @@ async function handleActionSelect(action: { name: string }) {
         showRenameDialog.value = true
         break
       case 'logout':
+        // 二次确认前先兜住「当前设备」：登出本机会把用户直接踢下线，界面上不提供该操作项，
+        // 这里再做一层防御，避免旧调用路径或竞态触发自踢。
+        if (isCurrentDevice(deviceId)) {
+          showToast(t('mobile_devices.current_device_protected'))
+          break
+        }
         await showConfirmDialog({
           title: t('mobile_devices.logout_device'),
           message: t('mobile_devices.logout_confirm', {
             name: device.displayName || t('mobile_devices.unnamed_device')
-          })
+          }),
+          confirmButtonText: t('mobile_devices.delete_confirm.confirm'),
+          cancelButtonText: t('mobile_devices.delete_confirm.cancel')
         })
+        // deleteDevice 内部会重新拉取列表（不依赖本地删除），成功后 toast
         await deleteDevice(deviceId)
         showToast(t('mobile_devices.logout_success'))
         break

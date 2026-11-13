@@ -6,27 +6,13 @@
 export type Messages = {
   "title": "集成管理",
   "description": "管理第三方集成和小部件，扩展 Tjg 的功能。",
-  "enable_integrations": "启用集成",
-  "installed_section": "已安装的集成",
-  "available_section": "可用集成",
-  "permissions_section": "集成权限",
-  "enabled": "已启用",
-  "disabled": "已禁用",
-  "install": "安装",
-  "enabled_success": "集成已启用",
-  "disabled_success": "集成已禁用",
-  "integration_enabled": "{name} 已启用",
-  "integration_disabled": "{name} 已禁用",
-  "installing": "正在安装 {name}...",
-  "install_success": "{name} 安装成功",
-  "permission_user_info": "允许访问用户信息",
-  "permission_room_list": "允许访问房间列表",
-  "permission_send_message": "允许发送消息",
   "integration_github": "接收 GitHub 通知和问题更新",
   "integration_giphy": "搜索和发送 GIF 动图",
   "integration_jira": "接收 Jira 任务更新",
   "integration_calendar": "同步日历事件和提醒",
-  "beta_warning": "集成功能目前处于测试阶段，部分功能可能尚未完全实现。安装的集成仅保存在本地，不会与服务器同步。"
+  "unavailable_title": "集成功能暂未上线",
+  "unavailable_description": "第三方集成尚未接入服务端，当前版本暂不可用。",
+  "unavailable_badge": "未上线"
 }
 
 /**
@@ -41,24 +27,10 @@ export type Messages = {
 export type KeyPaths =
   | "mobile_integrations.title"
   | "mobile_integrations.description"
-  | "mobile_integrations.enable_integrations"
-  | "mobile_integrations.installed_section"
-  | "mobile_integrations.available_section"
-  | "mobile_integrations.permissions_section"
-  | "mobile_integrations.enabled"
-  | "mobile_integrations.disabled"
-  | "mobile_integrations.install"
-  | "mobile_integrations.enabled_success"
-  | "mobile_integrations.disabled_success"
-  | "mobile_integrations.integration_enabled"
-  | "mobile_integrations.integration_disabled"
-  | "mobile_integrations.installing"
-  | "mobile_integrations.install_success"
-  | "mobile_integrations.permission_user_info"
-  | "mobile_integrations.permission_room_list"
-  | "mobile_integrations.permission_send_message"
   | "mobile_integrations.integration_github"
   | "mobile_integrations.integration_giphy"
   | "mobile_integrations.integration_jira"
   | "mobile_integrations.integration_calendar"
-  | "mobile_integrations.beta_warning"
+  | "mobile_integrations.unavailable_title"
+  | "mobile_integrations.unavailable_description"
+  | "mobile_integrations.unavailable_badge"

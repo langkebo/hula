@@ -36,7 +36,20 @@ const privateModeFeatures = computed(() => [
 ])
 
 export function usePrivateMode() {
+  /**
+   * 同步当前房间号；切换房间时强制退出私密模式。
+   *
+   * `privateModeActive` 是模块级单例，keepAlive 下的聊天页实例会被复用。
+   * 若不重置，用户在一个会话开启私密模式后切到另一个会话，顶栏仍显示私密态、
+   * 截屏监听也停留在旧房间，属于状态泄漏。
+   */
   function setRoomId(roomId: string) {
+    if (privateModeActive.value && currentRoomId.value && currentRoomId.value !== roomId) {
+      privateModeActive.value = false
+      burnEnabled.value = false
+      useMitt.emit(MittEnum.PRIVATE_MODE_CHANGED, false)
+      stopWatch()
+    }
     currentRoomId.value = roomId
   }
 

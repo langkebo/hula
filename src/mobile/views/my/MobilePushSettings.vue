@@ -122,6 +122,7 @@ import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.v
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
 import { MOBILE_SETTINGS_NOTIFICATION_HISTORY_PATH } from '@/mobile/views/my/settingsRoutes'
+import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import type { IPusher, IPushRule } from '@/services/matrix/notifications/MatrixPushService'
 import { matrixPushService } from '@/services/matrix/notifications/MatrixPushService'
@@ -149,6 +150,8 @@ const togglingMaster = ref(false)
 const pushers = ref<IPusher[]>([])
 const groupedRules = ref(groupPushRulesByKind(null))
 const masterEnabled = ref(true)
+/** 本次会话中被总开关注销的本机 pusher，用于重新开启时恢复注册。 */
+const suspendedPushers = ref<IPusher[]>([])
 
 const totalRules = computed(() => countPushRules(groupedRules.value))
 
@@ -246,19 +249,81 @@ async function loadRules() {
     const rules = await matrixPushService.getPushRules()
     groupedRules.value = groupPushRulesByKind(rules)
     const master = groupedRules.value.override.find((rule: IPushRule) => rule.rule_id === '.m.rule.master')
-    masterEnabled.value = isPushRuleEnabled(master ?? { enabled: true })
+    // `.m.rule.master` 的 enabled=true 表示「拦截全部通知」，所以开关取反。
+    masterEnabled.value = master ? !isPushRuleEnabled(master) : true
   } catch (error) {
     logger.error('Failed to load push rules', error)
     showToast({ type: 'fail', message: t('mobile_push.load_failed') })
   }
 }
 
-async function handleMasterToggle(enabled: boolean) {
-  togglingMaster.value = true
+type PusherChange = { pusher: IPusher; action: 'registered' | 'unregistered' }
+
+/** 只管理本机 pusher，避免把其他设备的推送注册一起注销。 */
+function getCurrentDevicePushers(): IPusher[] {
+  let deviceId: string | null = null
   try {
-    await matrixPushService.setMasterRuleEnabled(enabled)
+    deviceId = matrixClientService.getDeviceId()
   } catch (error) {
-    logger.error('Failed to toggle master push rule', error)
+    logger.error('Failed to resolve current device id', error)
+  }
+  if (!deviceId) return []
+  return pushers.value.filter((pusher) => pusher.device_id === deviceId)
+}
+
+async function revertPusherChanges(changes: PusherChange[]) {
+  for (const { pusher, action } of [...changes].reverse()) {
+    try {
+      if (action === 'unregistered') {
+        await matrixPushService.registerPusher(pusher)
+      } else {
+        await matrixPushService.unregisterPusher(pusher.pushkey, pusher.app_id)
+      }
+    } catch (error) {
+      logger.error('Failed to revert pusher change', error)
+    }
+  }
+}
+
+async function enablePushers(changes: PusherChange[]) {
+  for (const pusher of suspendedPushers.value) {
+    await matrixPushService.registerPusher(pusher)
+    changes.push({ pusher, action: 'registered' })
+  }
+  suspendedPushers.value = []
+  pushers.value = [...pushers.value, ...changes.map(({ pusher }) => pusher)]
+}
+
+async function disablePushers(changes: PusherChange[]) {
+  for (const pusher of getCurrentDevicePushers()) {
+    await matrixPushService.unregisterPusher(pusher.pushkey, pusher.app_id)
+    changes.push({ pusher, action: 'unregistered' })
+  }
+  suspendedPushers.value = changes.map(({ pusher }) => pusher)
+  const removed = new Set(changes.map(({ pusher }) => pusher))
+  pushers.value = pushers.value.filter((pusher) => !removed.has(pusher))
+}
+
+async function handleMasterToggle(enabled: boolean) {
+  if (togglingMaster.value) return
+  togglingMaster.value = true
+  const changes: PusherChange[] = []
+  try {
+    if (enabled) {
+      // 先恢复本机 pusher，再放开 master 规则，避免出现「规则已放开但 pusher 尚未注册」的空窗。
+      await enablePushers(changes)
+      await matrixPushService.setMasterRuleEnabled(true)
+    } else {
+      // 先拦截通知，再注销本机 pusher。
+      await matrixPushService.setMasterRuleEnabled(false)
+      await disablePushers(changes)
+    }
+  } catch (error) {
+    await revertPusherChanges(changes)
+    await matrixPushService.setMasterRuleEnabled(!enabled).catch((revertError) => {
+      logger.error('Failed to revert master push rule', revertError)
+    })
+    logger.error('Failed to toggle master push', error)
     masterEnabled.value = !enabled
     showToast({ type: 'fail', message: t('mobile_push.save_failed') })
   } finally {

@@ -90,6 +90,16 @@ export type Messages = {
   "invite_pending_tag": "已邀请",
   "invite_inviting": "邀请中…",
   "members_title": "成员列表",
+  "members_load_failed": "成员列表加载失败",
+  "members_empty": "暂无成员",
+  "members_role_creator": "创建者",
+  "members_role_admin": "管理员",
+  "members_role_member": "成员",
+  "members_action_admin": "设为管理员",
+  "members_action_remove": "移除成员",
+  "members_admin_confirm": "确定将「{name}」设为管理员吗？",
+  "members_remove_confirm": "确定将「{name}」移出该空间吗？",
+  "members_action_success": "操作成功",
   "membership_join": "已加入",
   "membership_leave": "已离开",
   "membership_ban": "已封禁",
@@ -256,6 +266,16 @@ export type KeyPaths =
   | "space.invite_pending_tag"
   | "space.invite_inviting"
   | "space.members_title"
+  | "space.members_load_failed"
+  | "space.members_empty"
+  | "space.members_role_creator"
+  | "space.members_role_admin"
+  | "space.members_role_member"
+  | "space.members_action_admin"
+  | "space.members_action_remove"
+  | "space.members_admin_confirm"
+  | "space.members_remove_confirm"
+  | "space.members_action_success"
   | "space.membership_join"
   | "space.membership_leave"
   | "space.membership_ban"

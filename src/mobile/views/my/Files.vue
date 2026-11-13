@@ -88,6 +88,9 @@ import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { MessageStatusEnum, MsgEnum } from '@/enums'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { useChatStore } from '@/stores/domains/chat/chat'
 import { formatBytes } from '@/utils/Formatting'
 
 const { t } = useI18n()
@@ -110,45 +113,68 @@ const searchQuery = ref('')
 const activeTab = ref(0)
 const showOptions = ref(false)
 const selectedFile = ref<MobileFile | null>(null)
+const chatStore = useChatStore()
+/** 本地已删除的文件（消息本身不受影响，仅从本页移除） */
+const removedIds = ref<Set<string>>(new Set())
 
 const documentIconShellStyle = {
   backgroundColor: 'var(--tjg-color-info-100)'
 } as const
 
-const files = ref<MobileFile[]>([
-  {
-    id: '1',
-    name: t('mobile_files.demo.project_doc'),
-    type: 'document',
-    size: 2048000,
-    time: Date.now() - 3600000,
-    url: ''
-  },
-  {
-    id: '2',
-    name: t('mobile_files.demo.meeting_notes'),
-    type: 'document',
-    size: 1024000,
-    time: Date.now() - 7200000,
-    url: ''
-  },
-  {
-    id: '3',
-    name: t('mobile_files.demo.product_screenshot'),
-    type: 'image',
-    size: 512000,
-    time: Date.now() - 86400000,
-    url: 'https://picsum.photos/200/200?random=3'
-  },
-  {
-    id: '4',
-    name: t('mobile_files.demo.demo_video'),
-    type: 'video',
-    size: 10240000,
-    time: Date.now() - 172800000,
-    url: ''
+/**
+ * 从本地已同步的聊天消息中汇总媒体与文件。
+ *
+ * 之前这里是写死的演示数据（含 picsum 占位图），用户看到的并非自己的文件。
+ * 服务层暂无「全局文件」查询接口，因此以本地缓存消息为数据源。
+ */
+const files = computed<MobileFile[]>(() => {
+  const result: MobileFile[] = []
+  const seen = new Set<string>()
+  for (const messages of Object.values(chatStore.chatMessageListByRoomId)) {
+    for (const item of messages ?? []) {
+      const msg = item.message
+      if (!msg?.id || seen.has(msg.id)) continue
+      if (msg.status === MessageStatusEnum.FAILED || removedIds.value.has(msg.id)) continue
+
+      const type = toFileType(msg.type)
+      if (!type) continue
+      seen.add(msg.id)
+      result.push({
+        id: msg.id,
+        name: msg.body.fileName || msg.body.body || msg.body.content || msg.id,
+        type,
+        size: msg.body.size ?? 0,
+        time: msg.sendTime,
+        url: resolveMediaUrl(msg.body.url)
+      })
+    }
   }
-])
+  return result.sort((a, b) => b.time - a.time)
+})
+
+function toFileType(msgType: MsgEnum): string | null {
+  switch (msgType) {
+    case MsgEnum.IMAGE:
+      return 'image'
+    case MsgEnum.VIDEO:
+      return 'video'
+    case MsgEnum.VOICE:
+      return 'audio'
+    case MsgEnum.FILE:
+      return 'document'
+    default:
+      return null
+  }
+}
+
+function resolveMediaUrl(mxcUrl?: string): string {
+  if (!mxcUrl) return ''
+  try {
+    return matrixMediaService.getMediaUrl(mxcUrl, 240, 240) ?? ''
+  } catch {
+    return ''
+  }
+}
 
 const filteredFiles = computed(() => {
   if (!searchQuery.value) return files.value
@@ -203,7 +229,9 @@ function showFileOptions(file: MobileFile) {
 
 function onActionSelect(action: FileAction) {
   if (action.name === t('mobile_files.actions.delete')) {
-    files.value = files.value.filter((f) => f.id !== selectedFile.value?.id)
+    if (selectedFile.value) {
+      removedIds.value = new Set([...removedIds.value, selectedFile.value.id])
+    }
     showToast(t('mobile_files.deleted'))
   } else {
     showToast(`${action.name}: ${selectedFile.value?.name ?? ''}`)

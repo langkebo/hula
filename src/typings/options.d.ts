@@ -90,6 +90,13 @@ declare namespace OPT {
     children?: RightMenu<TContent>[] | MenuChildrenResolver<TContent>
     /** 禁用态：静态布尔或按内容动态解析（如「撤回」是否已超时） */
     disabled?: boolean | MenuVisible<TContent>
+    /**
+     * 是否在移动端长按菜单中展示。
+     * 仅显式声明该标记的项会进入移动端菜单，避免桌面专属操作（如消息视角）下沉到移动端。
+     */
+    mobile?: boolean
+    /** 移动端展示条件（仅对声明了 mobile 的项生效） */
+    mobileVisible?: MenuVisible<TContent>
   }
 
   /**

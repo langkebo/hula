@@ -10,14 +10,25 @@ import MobilePushSettings from '../MobilePushSettings.vue'
  * 推送设备列表（pushkey 掩码 + 启用状态）。
  */
 
-const { showToastMock, getPushersMock, getPushRulesMock, setMasterRuleEnabledMock, setPushRuleEnabledMock } =
-  vi.hoisted(() => ({
-    showToastMock: vi.fn(),
-    getPushersMock: vi.fn(),
-    getPushRulesMock: vi.fn(),
-    setMasterRuleEnabledMock: vi.fn(),
-    setPushRuleEnabledMock: vi.fn()
-  }))
+const {
+  showToastMock,
+  getPushersMock,
+  getPushRulesMock,
+  setMasterRuleEnabledMock,
+  setPushRuleEnabledMock,
+  registerPusherMock,
+  unregisterPusherMock,
+  getDeviceIdMock
+} = vi.hoisted(() => ({
+  showToastMock: vi.fn(),
+  getPushersMock: vi.fn(),
+  getPushRulesMock: vi.fn(),
+  setMasterRuleEnabledMock: vi.fn(),
+  setPushRuleEnabledMock: vi.fn(),
+  registerPusherMock: vi.fn(),
+  unregisterPusherMock: vi.fn(),
+  getDeviceIdMock: vi.fn()
+}))
 
 vi.mock('vant', async () => {
   const { defineComponent } = await import('vue')
@@ -59,7 +70,15 @@ vi.mock('@/services/matrix/notifications/MatrixPushService', () => ({
     getPushers: () => getPushersMock(),
     getPushRules: () => getPushRulesMock(),
     setMasterRuleEnabled: (...args: any[]) => setMasterRuleEnabledMock(...args),
-    setPushRuleEnabled: (...args: any[]) => setPushRuleEnabledMock(...args)
+    setPushRuleEnabled: (...args: any[]) => setPushRuleEnabledMock(...args),
+    registerPusher: (...args: any[]) => registerPusherMock(...args),
+    unregisterPusher: (...args: any[]) => unregisterPusherMock(...args)
+  }
+}))
+
+vi.mock('@/services/matrix/MatrixClientService', () => ({
+  matrixClientService: {
+    getDeviceId: () => getDeviceIdMock()
   }
 }))
 
@@ -123,6 +142,9 @@ describe('MobilePushSettings', () => {
     getPushRulesMock.mockResolvedValue({ global: {} })
     setMasterRuleEnabledMock.mockResolvedValue(undefined)
     setPushRuleEnabledMock.mockResolvedValue(undefined)
+    registerPusherMock.mockResolvedValue(undefined)
+    unregisterPusherMock.mockResolvedValue(undefined)
+    getDeviceIdMock.mockReturnValue('DEVICE-A')
   })
 
   it('renders correctly', () => {
@@ -201,11 +223,18 @@ describe('MobilePushSettings', () => {
     expect(wrapper.findAll('[data-testid="push-rule"]')).toHaveLength(2)
   })
 
-  it('derives the master switch from the master rule', async () => {
-    getPushRulesMock.mockResolvedValue({ global: { override: [{ rule_id: '.m.rule.master', enabled: false }] } })
+  it('turns the master switch off when the master rule is enabled', async () => {
+    getPushRulesMock.mockResolvedValue({ global: { override: [{ rule_id: '.m.rule.master', enabled: true }] } })
     const wrapper = mountPage()
     await flushPromises()
     expect((wrapper.vm as any).masterEnabled).toBe(false)
+  })
+
+  it('keeps the master switch on when the master rule is disabled', async () => {
+    getPushRulesMock.mockResolvedValue({ global: { override: [{ rule_id: '.m.rule.master', enabled: false }] } })
+    const wrapper = mountPage()
+    await flushPromises()
+    expect((wrapper.vm as any).masterEnabled).toBe(true)
   })
 
   it('defaults the master switch to on when the rule is absent', async () => {
@@ -229,6 +258,64 @@ describe('MobilePushSettings', () => {
     await vm.handleMasterToggle(false)
     expect(vm.masterEnabled).toBe(true)
     expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
+  })
+
+  it('unregisters only this device pushers when the master switch is turned off', async () => {
+    const devicePusher = { app_id: 'im.tjg.app', pushkey: 'device-a-key', device_id: 'DEVICE-A', kind: 'http' }
+    const otherPusher = { app_id: 'im.tjg.app', pushkey: 'device-b-key', device_id: 'DEVICE-B', kind: 'http' }
+    getPushersMock.mockResolvedValue([devicePusher, otherPusher])
+
+    const wrapper = mountPage()
+    await flushPromises()
+    await (wrapper.vm as any).handleMasterToggle(false)
+
+    expect(unregisterPusherMock).toHaveBeenCalledTimes(1)
+    expect(unregisterPusherMock).toHaveBeenCalledWith('device-a-key', 'im.tjg.app')
+    expect(setMasterRuleEnabledMock).toHaveBeenCalledWith(false)
+  })
+
+  it('registers the pushers back when the master switch is turned on again', async () => {
+    const devicePusher = { app_id: 'im.tjg.app', pushkey: 'device-a-key', device_id: 'DEVICE-A', kind: 'http' }
+    getPushersMock.mockResolvedValue([devicePusher])
+
+    const wrapper = mountPage()
+    await flushPromises()
+    const vm = wrapper.vm as any
+    await vm.handleMasterToggle(false)
+    await vm.handleMasterToggle(true)
+
+    expect(registerPusherMock).toHaveBeenCalledWith(devicePusher)
+    expect(setMasterRuleEnabledMock).toHaveBeenLastCalledWith(true)
+  })
+
+  it('restores already-unregistered pushers when a later unregister fails', async () => {
+    const firstPusher = { app_id: 'im.tjg.app', pushkey: 'device-a-1', device_id: 'DEVICE-A', kind: 'http' }
+    const secondPusher = { app_id: 'im.tjg.app', pushkey: 'device-a-2', device_id: 'DEVICE-A', kind: 'http' }
+    getPushersMock.mockResolvedValue([firstPusher, secondPusher])
+    unregisterPusherMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('boom'))
+
+    const wrapper = mountPage()
+    await flushPromises()
+    const vm = wrapper.vm as any
+    await vm.handleMasterToggle(false)
+
+    expect(registerPusherMock).toHaveBeenCalledWith(firstPusher)
+    expect(vm.masterEnabled).toBe(true)
+    expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
+  })
+
+  it('skips pusher changes when the current device id is unknown', async () => {
+    getDeviceIdMock.mockReturnValue(null)
+    getPushersMock.mockResolvedValue([
+      { app_id: 'im.tjg.app', pushkey: 'device-a-key', device_id: 'DEVICE-A', kind: 'http' }
+    ])
+
+    const wrapper = mountPage()
+    await flushPromises()
+    await (wrapper.vm as any).handleMasterToggle(false)
+
+    expect(unregisterPusherMock).not.toHaveBeenCalled()
+    expect(setMasterRuleEnabledMock).toHaveBeenCalledWith(false)
   })
 
   it('toggles a single rule with the correct kind and id', async () => {

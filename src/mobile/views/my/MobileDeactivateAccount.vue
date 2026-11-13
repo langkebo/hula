@@ -54,6 +54,15 @@
               autocorrect="off"
               :spellcheck="false"
               @keyup.enter="handleVerifyNext" />
+            <van-field
+              v-model="passwordInput"
+              data-testid="deactivate-password"
+              type="password"
+              :label="t('mobile_deactivate.verify.password_field')"
+              :placeholder="t('mobile_deactivate.verify.password_placeholder')"
+              autocomplete="current-password"
+              :disabled="verifying"
+              @keyup.enter="handleVerifyNext" />
           </van-cell-group>
 
           <div class="flex flex-col gap-8px px-4px">
@@ -81,12 +90,13 @@
             <van-button
               type="danger"
               block
-              :loading="submitting"
+              :loading="submitting || verifying"
+              :disabled="submitting || verifying"
               data-testid="deactivate-confirm"
               @click="handleFinalConfirm">
               {{ t('mobile_deactivate.final.confirm') }}
             </van-button>
-            <van-button block plain :disabled="submitting" @click="handleCancel">
+            <van-button block plain :disabled="submitting || verifying" @click="handleCancel">
               {{ t('mobile_deactivate.final.keep') }}
             </van-button>
           </div>
@@ -122,6 +132,8 @@ const CONSEQUENCE_KEYS = ['profile', 'rooms', 'devices', 'backup'] as const
 const step = ref<Step>('consequences')
 const acknowledged = ref(false)
 const confirmationInput = ref('')
+const passwordInput = ref('')
+const verifying = ref(false)
 const eraseData = ref(false)
 const submitting = ref(false)
 
@@ -147,11 +159,18 @@ function handleVerifyNext() {
     showFailToast(t('mobile_deactivate.verify.mismatch'))
     return
   }
+
+  if (!passwordInput.value) {
+    showFailToast(t('mobile_deactivate.verify.password_required'))
+    return
+  }
+
   step.value = 'final'
 }
 
 function handleBack() {
   confirmationInput.value = ''
+  passwordInput.value = ''
   step.value = 'consequences'
 }
 
@@ -160,7 +179,13 @@ function handleCancel() {
 }
 
 async function handleFinalConfirm() {
-  if (submitting.value) {
+  if (submitting.value || verifying.value) {
+    return
+  }
+
+  const password = passwordInput.value
+  if (!password) {
+    showFailToast(t('mobile_deactivate.verify.password_required'))
     return
   }
 
@@ -177,9 +202,35 @@ async function handleFinalConfirm() {
     return
   }
 
+  // 注销前再次校验密码：校验失败不调用注销服务
+  verifying.value = true
+  try {
+    const verified = await matrixAccountService.verifyPassword(password)
+    if (!verified) {
+      showFailToast(t('mobile_deactivate.verify.password_invalid'))
+      return
+    }
+  } catch (error) {
+    logger.error('Failed to verify account password', error)
+    showFailToast(t('mobile_deactivate.verify.password_invalid'))
+    return
+  } finally {
+    verifying.value = false
+  }
+
+  const authData: Parameters<typeof matrixAccountService.deactivateAccount>[0] = {
+    type: 'm.login.password',
+    identifier: {
+      type: 'm.id.user',
+      user: currentUserId.value
+    },
+    password
+  }
+
   submitting.value = true
   try {
-    await matrixAccountService.deactivateAccount(undefined, eraseData.value)
+    await matrixAccountService.deactivateAccount(authData, eraseData.value)
+    passwordInput.value = ''
     showToast({ type: 'success', message: t('mobile_deactivate.success') })
     await logout()
     router.replace('/mobile/login')

@@ -21,6 +21,10 @@ export type Messages = {
   "no_data": "无数据",
   "session_load_failed": "会话加载失败，正在返回消息列表",
   "chat_background": "聊天背景",
+  "outbox_pending": "{count} 条消息待发送",
+  "outbox_failed": "{count} 条消息发送失败",
+  "outbox_retry": "重试",
+  "outbox_clear": "清除",
   "input_panel": {
     "video_call": "视频通话",
     "audio_call": "语音通话",
@@ -103,6 +107,10 @@ export type KeyPaths =
   | "mobile_chat.no_data"
   | "mobile_chat.session_load_failed"
   | "mobile_chat.chat_background"
+  | "mobile_chat.outbox_pending"
+  | "mobile_chat.outbox_failed"
+  | "mobile_chat.outbox_retry"
+  | "mobile_chat.outbox_clear"
   | "mobile_chat.input_panel.video_call"
   | "mobile_chat.input_panel.audio_call"
   | "mobile_chat.input_panel.image"

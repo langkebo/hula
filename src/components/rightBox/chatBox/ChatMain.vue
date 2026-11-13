@@ -220,10 +220,18 @@ const {
   burnEnabled,
   burnDuration,
   privateModeFeatures,
+  setRoomId,
   togglePrivateMode,
   confirmPrivateMode,
   cancelPrivateMode
 } = usePrivateMode()
+
+// 跟随当前会话切换：私密模式属于单个房间，切房间必须退出，避免状态泄漏到其他会话
+watch(
+  () => globalStore.currentSessionRoomId,
+  (roomId) => setRoomId(roomId || ''),
+  { immediate: true }
+)
 
 const burnAfterRead = useBurnAfterRead()
 const capability = useServerCapability()

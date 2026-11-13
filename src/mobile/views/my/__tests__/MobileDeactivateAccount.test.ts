@@ -3,14 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MobileDeactivateAccount from '../MobileDeactivateAccount.vue'
 
 /**
- * 账号注销三重确认（方案 P0）。
+ * 账号注销多重确认（方案 P0 + P1 T-15）。
  *
  * 缺口背景：移动端 `SecuritySettings.vue` 的注销只有**单次**确认对话框，
  * 方案要求「三层确认流程」。注销不可撤销，确认强度不足是真实的误操作风险。
  *
  * 三步设计（每步都能独立取消）：
  * 1. 后果说明 + 勾选「我已了解」
- * 2. 输入自己的 MXID 原文（复制粘贴 MXID 属于有意行为，且不会被误触）
+ * 2. 输入自己的 MXID 原文 + 当前账号密码（密码经 matrixAccountService 校验）
  * 3. 最终确认对话框，并选择是否同时抹除数据（erase）
  */
 
@@ -19,6 +19,7 @@ const {
   showConfirmDialogMock,
   showFailToastMock,
   deactivateAccountMock,
+  verifyPasswordMock,
   logoutMock,
   routerReplaceMock
 } = vi.hoisted(() => ({
@@ -26,9 +27,13 @@ const {
   showConfirmDialogMock: vi.fn(),
   showFailToastMock: vi.fn(),
   deactivateAccountMock: vi.fn(),
+  verifyPasswordMock: vi.fn(),
   logoutMock: vi.fn(),
   routerReplaceMock: vi.fn()
 }))
+
+const CURRENT_USER_ID = '@alice:example.org'
+const VALID_PASSWORD = 'correct-password'
 
 vi.mock('vant', async () => {
   const { defineComponent } = await import('vue')
@@ -50,12 +55,13 @@ vi.mock('vant', async () => {
 
 vi.mock('@/services/matrix', () => ({
   matrixAccountService: {
-    deactivateAccount: (...args: any[]) => deactivateAccountMock(...args)
+    deactivateAccount: (...args: any[]) => deactivateAccountMock(...args),
+    verifyPassword: (...args: any[]) => verifyPasswordMock(...args)
   }
 }))
 
 vi.mock('@/stores/domains/chat/matrix', () => ({
-  useMatrixStore: () => ({ userId: '@alice:example.org' })
+  useMatrixStore: () => ({ userId: CURRENT_USER_ID })
 }))
 
 vi.mock('@/shared/composables/useLoginFlow', () => ({
@@ -84,11 +90,26 @@ function mountPage() {
   return mount(MobileDeactivateAccount)
 }
 
+/** 走到「验证身份」步骤。 */
+async function goToVerifyStep(vm: any) {
+  vm.acknowledged = true
+  await vm.handleConsequencesNext()
+}
+
+/** 在验证步骤填入 MXID 与密码并继续，默认密码校验通过。 */
+async function goToFinalStep(vm: any, password = VALID_PASSWORD) {
+  await goToVerifyStep(vm)
+  vm.confirmationInput = CURRENT_USER_ID
+  vm.passwordInput = password
+  await vm.handleVerifyNext()
+}
+
 describe('MobileDeactivateAccount', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     showConfirmDialogMock.mockResolvedValue(undefined)
     deactivateAccountMock.mockResolvedValue(undefined)
+    verifyPasswordMock.mockResolvedValue(true)
     logoutMock.mockResolvedValue(undefined)
   })
 
@@ -112,93 +133,127 @@ describe('MobileDeactivateAccount', () => {
   it('advances to the MXID step once acknowledged', async () => {
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
+    await goToVerifyStep(vm)
     expect(vm.step).toBe('verify')
   })
 
   it('exposes the current MXID for the verification prompt', () => {
     const vm = mountPage().vm as any
-    expect(vm.currentUserId).toBe('@alice:example.org')
+    expect(vm.currentUserId).toBe(CURRENT_USER_ID)
   })
 
   it('rejects a mismatched MXID without deactivating', async () => {
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
+    await goToVerifyStep(vm)
     vm.confirmationInput = '@someone-else:example.org'
+    vm.passwordInput = VALID_PASSWORD
     await vm.handleVerifyNext()
     expect(vm.step).toBe('verify')
+    expect(verifyPasswordMock).not.toHaveBeenCalled()
     expect(deactivateAccountMock).not.toHaveBeenCalled()
     expect(showConfirmDialogMock).not.toHaveBeenCalled()
+    expect(showFailToastMock).toHaveBeenCalled()
+  })
+
+  it('does not advance when the password is empty', async () => {
+    const wrapper = mountPage()
+    const vm = wrapper.vm as any
+    await goToVerifyStep(vm)
+    vm.confirmationInput = CURRENT_USER_ID
+    vm.passwordInput = ''
+    await vm.handleVerifyNext()
+    expect(vm.step).toBe('verify')
+    expect(verifyPasswordMock).not.toHaveBeenCalled()
+    expect(deactivateAccountMock).not.toHaveBeenCalled()
+    expect(showFailToastMock).toHaveBeenCalled()
+  })
+
+  it('does not deactivate when the password is rejected', async () => {
+    verifyPasswordMock.mockResolvedValue(false)
+    const wrapper = mountPage()
+    const vm = wrapper.vm as any
+    await goToFinalStep(vm, 'wrong-password')
+    expect(verifyPasswordMock).not.toHaveBeenCalled()
+    await vm.handleFinalConfirm()
+    expect(verifyPasswordMock).toHaveBeenCalledWith('wrong-password')
+    expect(deactivateAccountMock).not.toHaveBeenCalled()
+    expect(vm.step).toBe('final')
+    expect(showFailToastMock).toHaveBeenCalled()
+  })
+
+  it('surfaces the failure and skips deactivation when password verification throws', async () => {
+    verifyPasswordMock.mockRejectedValue(new Error('network down'))
+    const wrapper = mountPage()
+    const vm = wrapper.vm as any
+    await goToFinalStep(vm)
+    await vm.handleFinalConfirm()
+    expect(vm.step).toBe('final')
+    expect(vm.verifying).toBe(false)
+    expect(deactivateAccountMock).not.toHaveBeenCalled()
     expect(showFailToastMock).toHaveBeenCalled()
   })
 
   it('treats a whitespace-padded MXID as matching', async () => {
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
-    vm.confirmationInput = '  @alice:example.org  '
+    await goToVerifyStep(vm)
+    vm.confirmationInput = `  ${CURRENT_USER_ID}  `
+    vm.passwordInput = VALID_PASSWORD
     await vm.handleVerifyNext()
     expect(vm.step).toBe('final')
   })
 
-  it('advances to the final step on a matching MXID', async () => {
+  it('advances to the final step once MXID and password are provided', async () => {
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
-    vm.confirmationInput = '@alice:example.org'
-    await vm.handleVerifyNext()
+    await goToFinalStep(vm)
     expect(vm.step).toBe('final')
+    // 密码校验在最终确认时才执行，避免用户中途取消却已触发服务端校验
+    expect(verifyPasswordMock).not.toHaveBeenCalled()
   })
 
   it('deactivates only after the final confirmation', async () => {
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
-    vm.confirmationInput = '@alice:example.org'
-    await vm.handleVerifyNext()
+    await goToFinalStep(vm)
     await vm.handleFinalConfirm()
     expect(showConfirmDialogMock).toHaveBeenCalled()
+    expect(verifyPasswordMock).toHaveBeenCalledWith(VALID_PASSWORD)
     expect(deactivateAccountMock).toHaveBeenCalled()
   })
 
-  it('passes the erase choice through to the service', async () => {
+  it('passes the password auth data and erase choice to the service', async () => {
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
-    vm.confirmationInput = '@alice:example.org'
-    await vm.handleVerifyNext()
+    await goToFinalStep(vm)
     vm.eraseData = true
     await vm.handleFinalConfirm()
-    expect(deactivateAccountMock).toHaveBeenCalledWith(undefined, true)
+    expect(deactivateAccountMock).toHaveBeenCalledWith(
+      {
+        type: 'm.login.password',
+        identifier: { type: 'm.id.user', user: CURRENT_USER_ID },
+        password: VALID_PASSWORD
+      },
+      true
+    )
   })
 
   it('defaults eraseData to false', async () => {
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
-    vm.confirmationInput = '@alice:example.org'
-    await vm.handleVerifyNext()
+    await goToFinalStep(vm)
     await vm.handleFinalConfirm()
-    expect(deactivateAccountMock).toHaveBeenCalledWith(undefined, false)
+    expect(deactivateAccountMock).toHaveBeenCalledWith(expect.objectContaining({ password: VALID_PASSWORD }), false)
   })
 
   it('does nothing when the final dialog is cancelled', async () => {
     showConfirmDialogMock.mockRejectedValue('cancel')
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
-    vm.confirmationInput = '@alice:example.org'
-    await vm.handleVerifyNext()
+    await goToFinalStep(vm)
     await vm.handleFinalConfirm()
+    expect(verifyPasswordMock).not.toHaveBeenCalled()
     expect(deactivateAccountMock).not.toHaveBeenCalled()
     expect(vm.step).toBe('final')
   })
@@ -206,10 +261,7 @@ describe('MobileDeactivateAccount', () => {
   it('logs out and leaves after a successful deactivation', async () => {
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
-    vm.confirmationInput = '@alice:example.org'
-    await vm.handleVerifyNext()
+    await goToFinalStep(vm)
     await vm.handleFinalConfirm()
     expect(logoutMock).toHaveBeenCalled()
     expect(routerReplaceMock).toHaveBeenCalledWith('/mobile/login')
@@ -219,10 +271,7 @@ describe('MobileDeactivateAccount', () => {
     deactivateAccountMock.mockRejectedValue(new Error('mfa required'))
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
-    vm.confirmationInput = '@alice:example.org'
-    await vm.handleVerifyNext()
+    await goToFinalStep(vm)
     await vm.handleFinalConfirm()
     expect(showFailToastMock).toHaveBeenCalled()
     expect(logoutMock).not.toHaveBeenCalled()
@@ -240,10 +289,7 @@ describe('MobileDeactivateAccount', () => {
     )
     const wrapper = mountPage()
     const vm = wrapper.vm as any
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
-    vm.confirmationInput = '@alice:example.org'
-    await vm.handleVerifyNext()
+    await goToFinalStep(vm)
 
     const first = vm.handleFinalConfirm()
     await flushPromises()
@@ -258,11 +304,12 @@ describe('MobileDeactivateAccount', () => {
     const wrapper = mountPage()
     const vm = wrapper.vm as any
     vm.currentUserId = ''
-    vm.acknowledged = true
-    await vm.handleConsequencesNext()
+    await goToVerifyStep(vm)
     vm.confirmationInput = ''
+    vm.passwordInput = VALID_PASSWORD
     await vm.handleVerifyNext()
     expect(vm.step).toBe('verify')
+    expect(verifyPasswordMock).not.toHaveBeenCalled()
     expect(deactivateAccountMock).not.toHaveBeenCalled()
   })
 })

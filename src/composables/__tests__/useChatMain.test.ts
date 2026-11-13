@@ -149,7 +149,9 @@ vi.mock('../chat/useGroupNicknameModal', () => ({
 
 vi.mock('@/services/matrix/messaging/MatrixMessageService', () => ({
   matrixMessageService: {
-    recallMessage: recallMessageMock
+    recallMessage: recallMessageMock,
+    isLocalEventId: (id: string) => id.startsWith('local-'),
+    getRemoteEventId: () => undefined
   }
 }))
 

@@ -8,10 +8,10 @@
         <van-dropdown-item v-model="mediaType" :options="typeOptions" />
       </van-dropdown-menu>
     </div>
-    <div class="flex-1 p-16px overflow-auto">
+    <div ref="scrollContainerRef" class="flex-1 p-16px overflow-auto">
       <div class="grid grid-cols-4 gap-4px">
         <div
-          v-for="image in imageList"
+          v-for="image in visibleImages"
           :key="image.url"
           class="overflow-hidden bg-gray-100 aspect-square"
           @click="
@@ -20,9 +20,15 @@
               showImagePreviewRef = true
             }
           ">
-          <img :src="image.url" class="w-full h-full" :alt="t('mobile_chat.media_viewer.image_alt')" />
+          <img
+            :src="image.url"
+            class="w-full h-full"
+            loading="lazy"
+            decoding="async"
+            :alt="t('mobile_chat.media_viewer.image_alt')" />
         </div>
       </div>
+      <div ref="sentinelRef" class="h-1px" aria-hidden="true"></div>
     </div>
 
     <component
@@ -34,12 +40,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { mobileOnlyAsyncComponent } from '@/composables/usePlatform'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { MEDIA_BATCH_SIZE, nextMediaBatchCount, sliceMediaBatch } from './mediaBatch'
 
 const ImagePreview = mobileOnlyAsyncComponent(() => import('@/mobile/components/ImagePreview.vue'))
 
@@ -59,6 +66,35 @@ const typeOptions = [
 ]
 
 const imageList = ref<{ url: string }[]>([])
+const renderCount = ref(MEDIA_BATCH_SIZE)
+const visibleImages = computed(() => sliceMediaBatch(imageList.value, renderCount.value))
+
+const scrollContainerRef = ref<HTMLElement>()
+const sentinelRef = ref<HTMLElement>()
+let observer: IntersectionObserver | null = null
+
+const hasMore = () => renderCount.value < imageList.value.length
+
+const loadMore = () => {
+  if (!hasMore()) return
+  renderCount.value = nextMediaBatchCount(renderCount.value, imageList.value.length)
+}
+
+const observeSentinel = () => {
+  if (typeof IntersectionObserver === 'undefined') {
+    // 不支持交叉观察的旧 WebView 直接全量渲染，避免无法继续加载
+    renderCount.value = imageList.value.length
+    return
+  }
+  observer?.disconnect()
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadMore()
+    },
+    { root: scrollContainerRef.value ?? null, rootMargin: '0px 0px 200px 0px' }
+  )
+  if (sentinelRef.value) observer.observe(sentinelRef.value)
+}
 
 const getImageList = async () => {
   const data = await fileStore.getRoomFilesForDisplay(globalStore.currentSessionRoomId)
@@ -69,9 +105,16 @@ const getImageList = async () => {
     return true
   })
   imageList.value = filteredImages.map((item) => ({ url: item.displayUrl }))
+  renderCount.value = typeof IntersectionObserver === 'undefined' ? imageList.value.length : MEDIA_BATCH_SIZE
 }
 
 onMounted(() => {
+  observeSentinel()
   getImageList()
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  observer = null
 })
 </script>

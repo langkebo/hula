@@ -49,6 +49,15 @@ interface AuthData {
   [key: string]: unknown
 }
 
+/** UIA 密码阶段失败（403 / M_FORBIDDEN）代表密码错误；其余异常需要继续上抛。 */
+function isPasswordRejectedError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') {
+    return false
+  }
+  const { errcode, httpStatus } = err as { errcode?: string; httpStatus?: number }
+  return errcode === 'M_FORBIDDEN' || httpStatus === 403
+}
+
 class MatrixAccountService extends BaseMatrixService {
   /** 更新当前账号的全局显示名称。 */
   async updateDisplayName(displayName: string): Promise<boolean> {
@@ -109,6 +118,43 @@ class MatrixAccountService extends BaseMatrixService {
     } catch (err) {
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
       logger.error(`[MatrixAccount] changePassword() 失败: ${detail}`)
+      throw err
+    }
+  }
+
+  /**
+   * 校验当前账号密码（高风险操作前的二次确认，不改变密码）。
+   *
+   * Matrix 没有独立的「校验密码」端点，这里复用 SDK 的 UIA 密码阶段：
+   * 以「新旧密码相同」调用 `client.setPassword`，服务端只有在旧密码正确时
+   * 才会通过 UIA，密码本身保持不变。密码错误返回 false，其它异常原样抛出。
+   */
+  async verifyPassword(password: string): Promise<boolean> {
+    const client = this.getClient()
+    const userId = client.getUserId()
+    if (!userId) {
+      throw new Error(this.t('matrix_error.account.cannot_get_user_id'))
+    }
+
+    const authData: Parameters<typeof client.setPassword>[0] = {
+      type: 'm.login.password',
+      identifier: {
+        type: 'm.id.user',
+        user: userId
+      },
+      password
+    }
+
+    try {
+      await client.setPassword(authData, password, false)
+      logger.info('[MatrixAccount] 密码校验通过')
+      return true
+    } catch (err) {
+      if (isPasswordRejectedError(err)) {
+        logger.warn('[MatrixAccount] 密码校验失败: 密码不正确')
+        return false
+      }
+      logger.error(`[MatrixAccount] 密码校验异常: ${err}`)
       throw err
     }
   }

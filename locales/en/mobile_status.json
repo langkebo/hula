@@ -6,6 +6,7 @@
   "save": "Save",
   "save_success": "Status updated",
   "save_failed": "Failed to set status",
+  "away_busy_limited": "Matrix presence cannot distinguish away from busy: both are reported as unavailable.",
   "status": {
     "online": "Online",
     "away": "Away",

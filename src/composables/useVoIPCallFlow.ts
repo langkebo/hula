@@ -29,6 +29,8 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
   const isScreensharing = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  // 最近一次开始的原始异常，供宿主页面按 err.name 做权限/设备分类引导
+  const lastError = ref<unknown>(null)
   // CallInfo 不包含来电/去电标识,用内部 ref 跟踪
   const isIncomingCall = ref(false)
 
@@ -41,7 +43,11 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
   const isIncoming = computed(() => isIncomingCall.value && state.value === 'ringing')
   const isOutgoing = computed(() => !isIncomingCall.value && state.value === 'ringing')
   const isActive = computed(
-    () => state.value === 'connected' || state.value === 'connecting' || state.value === 'ringing'
+    () =>
+      state.value === 'connected' ||
+      state.value === 'reconnecting' ||
+      state.value === 'connecting' ||
+      state.value === 'ringing'
   )
 
   const subscribeCallUpdate = (): void => {
@@ -72,6 +78,7 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
     }
     loading.value = true
     error.value = null
+    lastError.value = null
     try {
       const id = await matrixVoIPService.startCall(targetRoomId, callOptions)
       if (disposed) {
@@ -86,6 +93,7 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
       return true
     } catch (err) {
       logger.error('startCall failed', err)
+      lastError.value = err
       error.value = t('voip.errors.start_failed')
       showFeedback(error.value, 'error')
       return false
@@ -98,6 +106,7 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
     const id = targetCallId ?? callId.value
     if (!id || loading.value) return false
     loading.value = true
+    lastError.value = null
     try {
       await matrixVoIPService.answerCall(id, callOptions)
       if (disposed) {
@@ -111,6 +120,7 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
       return true
     } catch (err) {
       logger.error('answerCall failed', err)
+      lastError.value = err
       error.value = t('voip.errors.answer_failed')
       showFeedback(error.value, 'error')
       return false
@@ -259,6 +269,7 @@ export function useVoIPCallFlow(options: UseVoIPCallFlowOptions = {}) {
     isScreensharing,
     loading,
     error,
+    lastError,
     // getters
     state,
     isConnected,

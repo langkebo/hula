@@ -48,7 +48,7 @@ const props = defineProps<{
   /** 机器人账号：显示 bot 标签而非在线状态 */
   isBot?: boolean
   /** 自定义状态：优先于在线状态展示 */
-  state?: { url?: string; title?: string } | null
+  state?: { url?: string | undefined; title?: string | undefined } | null
   /**
    * 列表项自带的显示名 / 头像。
    *

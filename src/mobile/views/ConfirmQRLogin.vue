@@ -107,7 +107,8 @@ const statusText = computed(() => {
 })
 
 // Subscribe to MSC4108 status changes for UI updates.
-matrixQrLoginSdkService.onStatusChange((status: QrLoginStatus, detail?: string) => {
+// Keep the unsubscribe handle so the listener does not outlive this page.
+const unsubscribeStatus = matrixQrLoginSdkService.onStatusChange((status: QrLoginStatus, detail?: string) => {
   if (status === 'failed') {
     scanError.value = detail || t('login.qr.connect_failed')
     reciprocating.value = false
@@ -182,6 +183,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (timer) timerManager.clearInterval(timer)
+  unsubscribeStatus()
   // Cancel any in-flight MSC4108 session when leaving the page.
   matrixQrLoginSdkService.cancel().catch((err) => {
     logger.warn('Failed to cancel MSC4108 session on unmount', err)

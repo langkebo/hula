@@ -5,7 +5,7 @@
 
 export type Messages = {
   "title": "修改密码",
-  "intro": "修改密码后，你的其他设备可能需要重新登录。",
+  "intro": "修改密码后，你的其他设备会退出登录。",
   "old_label": "当前密码",
   "old_placeholder": "请输入当前密码",
   "new_label": "新密码",
@@ -15,9 +15,12 @@ export type Messages = {
   "incomplete": "请填写完整的密码信息",
   "mismatch": "两次输入的新密码不一致",
   "submitting": "正在修改密码",
-  "success": "密码修改成功",
+  "success": "密码修改成功，其他设备已退出登录",
+  "success_all_devices": "密码修改成功，其他设备已退出登录，当前设备需重新登录",
   "failed": "密码修改失败，请确认当前密码是否正确",
   "logout_others": "同时退出其他设备",
+  "logout_scope_all": "其他设备与本机都会退出登录",
+  "logout_scope_keep_current": "仅其他设备退出登录，本机保持登录",
   "submit": "修改密码",
   "strength_label": "密码强度",
   "strength_none": "未输入",
@@ -55,8 +58,11 @@ export type KeyPaths =
   | "mobile_password.mismatch"
   | "mobile_password.submitting"
   | "mobile_password.success"
+  | "mobile_password.success_all_devices"
   | "mobile_password.failed"
   | "mobile_password.logout_others"
+  | "mobile_password.logout_scope_all"
+  | "mobile_password.logout_scope_keep_current"
   | "mobile_password.submit"
   | "mobile_password.strength_label"
   | "mobile_password.strength_none"

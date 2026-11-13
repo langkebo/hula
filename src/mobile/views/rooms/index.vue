@@ -17,8 +17,22 @@
         v-model="searchText"
         :placeholder="t('mobile_rooms.search_placeholder')"
         shape="round"
-        background="transparent"
-        @search="onSearch" />
+        background="transparent" />
+    </div>
+
+    <!-- 筛选：仅展示当前数据能支撑的选项 -->
+    <div class="px-16px pb-8px flex gap-8px overflow-x-auto room-filter-row">
+      <button
+        v-for="filter in availableFilters"
+        :key="filter"
+        type="button"
+        class="room-filter-chip"
+        :class="{ 'room-filter-chip--active': activeFilter === filter }"
+        :data-testid="`mobile-rooms-filter-${filter}`"
+        :aria-pressed="activeFilter === filter"
+        @click="activeFilter = filter">
+        {{ filterLabels[filter] }}
+      </button>
     </div>
 
     <!-- 加载状态 -->
@@ -32,11 +46,9 @@
     </van-empty>
 
     <!-- 空状态 -->
-    <van-empty
-      v-else-if="roomList.length === 0"
-      :description="searchText ? t('mobile_rooms.no_search_result') : t('mobile_rooms.no_rooms')">
+    <van-empty v-else-if="filteredRooms.length === 0" :description="emptyDescription">
       <van-button
-        v-if="!searchText"
+        v-if="roomList.length === 0 && !hasActiveConditions"
         round
         type="primary"
         :data-testid="'mobile-rooms-create-first'"
@@ -49,49 +61,19 @@
     <van-pull-refresh v-else v-model="refreshing" @refresh="onRefresh" class="flex-1 min-h-0">
       <SmartVirtualList
         class="rooms-glass-list h-full overflow-y-auto overflow-x-hidden"
-        :items="roomList"
-        :item-height="72"
+        :items="filteredRooms"
+        :item-height="80"
         :buffer="6"
         key-field="roomId">
         <template #default="{ item: room }">
           <van-swipe-cell>
-            <div
-              :data-testid="`mobile-room-item-${room.roomId}`"
-              class="flex items-center gap-12px px-16px py-12px tap-highlight"
-              @click="enterRoom(room.roomId)">
-              <img
-                class="size-48px rounded-12px object-cover flex-shrink-0"
-                :src="room.avatarUrl || '/logo.png'"
-                :alt="room.name"
-                loading="lazy"
-                decoding="async"
-                @error="($event.target as HTMLImageElement).src = '/logo.png'" />
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-6px">
-                  <span class="text-15px font-500 text-[--tjg-text-primary] truncate">{{ room.name }}</span>
-                  <span
-                    v-if="room.isEncrypted"
-                    class="text-12px color-[--tjg-color-success-500]"
-                    :aria-label="t('mobile_rooms.encrypted')">
-                    &#x1F512;
-                  </span>
-                </div>
-                <div class="text-12px text-[--tjg-text-tertiary] truncate mt-2px">
-                  {{ room.topic || t('mobile_rooms.no_topic') }}
-                </div>
-              </div>
-              <div class="flex flex-col items-end gap-4px flex-shrink-0">
-                <span class="text-11px text-[--tjg-text-tertiary]">
-                  {{ room.memberCount }} {{ t('mobile_rooms.members') }}
-                </span>
-                <van-icon
-                  v-if="room.joinRule === 'public'"
-                  name="friends-o"
-                  size="14"
-                  class="color-[--tjg-text-tertiary]"
-                  :aria-label="t('mobile_rooms.public_room')" />
-              </div>
-            </div>
+            <MobileRoomCard
+              :item="room"
+              :summary-text="room.summary || t('mobile_rooms.no_message')"
+              :time-label="formatRoomActiveTime(room.activeTime, t('menu.yesterday'))"
+              :members-label="t('mobile_rooms.members')"
+              :encrypted-label="t('mobile_rooms.encrypted')"
+              @click="enterRoom(room.roomId)" />
             <template #right>
               <van-button square type="danger" class="h-full" @click="handleLeaveRoom(room.roomId)">
                 {{ t('mobile_rooms.leave_room') }}
@@ -160,25 +142,27 @@
 import { showConfirmDialog, showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import MobileRoomCard from '@/mobile/components/rooms/MobileRoomCard.vue'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
+import {
+  buildRoomCardModels,
+  filterRoomCards,
+  formatRoomActiveTime,
+  type RoomFilter,
+  type RoomListSource,
+  type RoomSessionSnapshot,
+  resolveAvailableRoomFilters
+} from '@/mobile/views/rooms/roomListModel'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
 import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
 import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
 import { matrixRoomQueryFacade } from '@/services/matrix/room/RoomFacade'
 import type { Room } from '@/services/matrix/sdk'
+import { type SessionItem, useSessionStore } from '@/stores/domains/chat/chat/session'
+import { useUserStore } from '@/stores/domains/user/user'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MobileRooms')
-
-interface RoomItem {
-  roomId: string
-  name: string
-  avatarUrl: string
-  topic: string
-  memberCount: number
-  joinRule: string
-  isEncrypted: boolean
-}
 
 interface PublicRoomResult {
   roomId: string
@@ -189,13 +173,16 @@ interface PublicRoomResult {
 
 const { t } = useI18n()
 const router = useRouter()
+const sessionStore = useSessionStore()
+const userStore = useUserStore()
 
 const searchText = ref('')
+const activeFilter = ref<RoomFilter>('all')
 const loading = ref(true)
 const loadError = ref(false)
 const refreshing = ref(false)
 const showCreateMenu = ref(false)
-const roomList = ref<RoomItem[]>([])
+const roomList = ref<RoomListSource[]>([])
 
 const showJoinDialog = ref(false)
 const joinRoomId = ref('')
@@ -210,22 +197,69 @@ const createActions = computed(() => [
   { name: t('mobile_rooms.search_public_rooms'), value: 'search' }
 ])
 
-function mapRoomToItem(room: Room): RoomItem {
+const filterLabels = computed<Record<RoomFilter, string>>(() => ({
+  all: t('mobile_rooms.filter_all'),
+  public: t('mobile_rooms.filter_public'),
+  private: t('mobile_rooms.filter_private'),
+  owned: t('mobile_rooms.filter_owned')
+}))
+
+const toSessionSnapshot = (session: SessionItem): RoomSessionSnapshot => ({
+  unreadCount: session.unreadCount,
+  activeTime: session.activeTime,
+  text: session.text
+})
+
+const sessionSnapshot = computed<Record<string, RoomSessionSnapshot>>(() => {
+  const snapshot: Record<string, RoomSessionSnapshot> = {}
+  for (const session of sessionStore.sessionList) {
+    snapshot[session.roomId] = toSessionSnapshot(session)
+  }
+  for (const [roomId, session] of Object.entries(sessionStore.sessionMap)) {
+    snapshot[roomId] = toSessionSnapshot(session)
+  }
+  return snapshot
+})
+
+const roomCards = computed(() =>
+  buildRoomCardModels(roomList.value, sessionSnapshot.value, (userId) => userStore.isMe(userId))
+)
+
+const availableFilters = computed(() => resolveAvailableRoomFilters(roomCards.value))
+
+// 数据刷新后若当前筛选项已不可用（例如创建者信息缺失），回退到「全部」，避免出现无选中项的空列表。
+watch(availableFilters, (filters) => {
+  if (!filters.includes(activeFilter.value)) {
+    activeFilter.value = 'all'
+  }
+})
+
+const filteredRooms = computed(() => filterRoomCards(roomCards.value, searchText.value, activeFilter.value))
+
+const hasActiveConditions = computed(() => searchText.value.trim().length > 0 || activeFilter.value !== 'all')
+
+const emptyDescription = computed(() =>
+  hasActiveConditions.value ? t('mobile_rooms.no_search_result') : t('mobile_rooms.no_rooms')
+)
+
+function mapRoomToSource(room: Room): RoomListSource {
+  const members = room.getJoinedMembers()
   return {
     roomId: room.roomId,
     name: room.name || t('mobile_rooms.unnamed_room'),
     avatarUrl: room.getMxcAvatarUrl?.() ?? '',
-    topic: (room.currentState?.getStateEvents?.('m.room.topic', '')?.getContent?.()?.topic as string | undefined) ?? '',
-    memberCount: room.getJoinedMemberCount?.() ?? 0,
-    joinRule: room.getJoinRule?.() ?? 'invite',
-    isEncrypted: room.currentState?.getStateEvents?.('m.room.encryption', '') !== null
+    memberCount: room.getJoinedMemberCount?.() ?? members.length,
+    joinRule: String(room.getJoinRule?.() ?? 'invite'),
+    isEncrypted: Boolean(room.currentState?.getStateEvents?.('m.room.encryption', '')),
+    creatorId: room.getCreator?.() ?? null,
+    memberNames: members.map((member) => member.name || member.userId)
   }
 }
 
 async function fetchRooms() {
   try {
     const rooms = await matrixRoomQueryFacade.getRooms()
-    roomList.value = rooms.map(mapRoomToItem)
+    roomList.value = rooms.map(mapRoomToSource)
     loadError.value = false
   } catch (e) {
     logger.error('Failed to fetch rooms:', e)
@@ -241,35 +275,6 @@ function retryLoad() {
   loading.value = true
   loadError.value = false
   fetchRooms()
-}
-
-function onSearch() {
-  if (!searchText.value.trim()) {
-    fetchRooms()
-    return
-  }
-  loading.value = true
-  loadError.value = false
-  matrixSearchService
-    .searchRooms(searchText.value.trim())
-    .then((results) => {
-      roomList.value = results.map((r) => ({
-        roomId: r.roomId,
-        name: r.roomName || t('mobile_rooms.unnamed_room'),
-        avatarUrl: r.avatarUrl ?? '',
-        topic: '',
-        memberCount: r.memberCount,
-        joinRule: 'invite',
-        isEncrypted: false
-      }))
-    })
-    .catch((e) => {
-      logger.error('Room search failed:', e)
-      showToast({ type: 'fail', message: t('mobile_rooms.search_failed') })
-    })
-    .finally(() => {
-      loading.value = false
-    })
 }
 
 function onRefresh() {
@@ -406,6 +411,30 @@ fetchRooms()
 </script>
 
 <style scoped lang="scss">
+/* 筛选 chip：沿用设计 token，避免硬编码颜色 */
+.room-filter-row {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.room-filter-chip {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border-radius: var(--tjg-radius-full, 999px);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
+  background: var(--tjg-surface-input);
+  transition: background-color 0.15s ease;
+
+  &--active {
+    color: var(--tjg-text-inverse);
+    background: var(--tjg-color-primary-500);
+  }
+}
+
 /* 房间列表：整条列表作为一块玻璃面，单行保持透明避免长列表逐行模糊掉帧 */
 .rooms-glass-list {
   margin: 0 12px 12px;
@@ -414,14 +443,5 @@ fetchRooms()
   border: var(--tjg-glass-border-soft);
   box-shadow: var(--tjg-glass-inner-highlight);
   overflow-y: auto;
-}
-
-.tap-highlight {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-
-  &:active {
-    background-color: var(--tjg-bg-pressed);
-  }
 }
 </style>

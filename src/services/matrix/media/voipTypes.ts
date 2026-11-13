@@ -50,7 +50,11 @@ export interface CallParticipant {
   stream?: MediaStream
 }
 
-export type CallState = 'ringing' | 'connecting' | 'connected' | 'ended' | 'error'
+/**
+ * `reconnecting`：已接通后 ICE 断线，SDK 回到 connecting 并 restartIce()，
+ * 仅在服务层把「此前已 connected」的 connecting 映射到此状态，用于 UI 重连横幅。
+ */
+export type CallState = 'ringing' | 'connecting' | 'connected' | 'reconnecting' | 'ended' | 'error'
 
 export interface CallOptions {
   audio: boolean

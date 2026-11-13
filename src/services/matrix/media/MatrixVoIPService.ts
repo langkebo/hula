@@ -8,6 +8,7 @@ import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import * as voipDiag from './voipDiagnostics'
 import { getCallById } from './voipHelpers'
+import { resolveCallState } from './voipState'
 import type { CallInfo, CallOptions, VoIPCall, VoIPCallFeed } from './voipTypes'
 
 const logger = createLogger('MatrixVoIP')
@@ -246,11 +247,13 @@ class MatrixVoIPService extends BaseMatrixService {
     })
     call.on('state', (...args: unknown[]) => {
       const state = args[0] as string
+      const prevState = args[1] as string | undefined
       const callInfo = this.calls.get(callId)
-      if (callInfo) {
-        if (state === 'connected') callInfo.state = 'connected'
-        this.notifyCallUpdate(callId)
-      }
+      if (!callInfo) return
+      const nextState = resolveCallState(state, prevState, callInfo.state)
+      if (!nextState || nextState === callInfo.state) return
+      callInfo.state = nextState
+      this.notifyCallUpdate(callId)
     })
   }
 

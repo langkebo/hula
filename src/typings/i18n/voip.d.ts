@@ -9,7 +9,8 @@ export type Messages = {
   },
   "states": {
     "ringing_outgoing": "正在呼叫...",
-    "connected": "通话中"
+    "connected": "通话中",
+    "reconnecting": "网络不稳定，正在重连..."
   },
   "unknown": "未知",
   "call": {
@@ -31,7 +32,21 @@ export type Messages = {
     "hangup_failed": "挂断通话失败",
     "mute_failed": "静音操作失败",
     "video_failed": "切换视频失败",
-    "screenshare_failed": "屏幕共享失败"
+    "screenshare_failed": "屏幕共享失败",
+    "call_failed": "通话出现错误，已结束",
+    "mic_permission_denied": "麦克风权限被拒绝",
+    "mic_permission_guide": "请在系统设置中允许麦克风权限后重试",
+    "camera_permission_denied": "相机权限被拒绝",
+    "camera_permission_guide": "请在系统设置中允许相机权限后重试",
+    "media_permission_denied": "麦克风或相机权限被拒绝",
+    "media_permission_guide": "请在系统设置中允许麦克风和相机权限后重试",
+    "mic_not_found": "未找到可用的麦克风",
+    "camera_not_found": "未找到可用的相机",
+    "media_not_found": "未找到可用的麦克风或相机",
+    "mic_busy": "麦克风被其他应用占用",
+    "camera_busy": "相机被其他应用占用",
+    "media_busy": "麦克风或相机被其他应用占用",
+    "media_failed": "无法启动通话媒体"
   },
   "incoming": {
     "video_call": "视频来电",
@@ -54,6 +69,7 @@ export type KeyPaths =
   | "voip.outgoing.cancel"
   | "voip.states.ringing_outgoing"
   | "voip.states.connected"
+  | "voip.states.reconnecting"
   | "voip.unknown"
   | "voip.call.hangup"
   | "voip.call.mute"
@@ -72,6 +88,20 @@ export type KeyPaths =
   | "voip.errors.mute_failed"
   | "voip.errors.video_failed"
   | "voip.errors.screenshare_failed"
+  | "voip.errors.call_failed"
+  | "voip.errors.mic_permission_denied"
+  | "voip.errors.mic_permission_guide"
+  | "voip.errors.camera_permission_denied"
+  | "voip.errors.camera_permission_guide"
+  | "voip.errors.media_permission_denied"
+  | "voip.errors.media_permission_guide"
+  | "voip.errors.mic_not_found"
+  | "voip.errors.camera_not_found"
+  | "voip.errors.media_not_found"
+  | "voip.errors.mic_busy"
+  | "voip.errors.camera_busy"
+  | "voip.errors.media_busy"
+  | "voip.errors.media_failed"
   | "voip.incoming.video_call"
   | "voip.incoming.voice_call"
   | "voip.incoming.answer"

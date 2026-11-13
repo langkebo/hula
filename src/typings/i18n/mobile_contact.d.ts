@@ -7,6 +7,7 @@ export type Messages = {
   "title": "联系人",
   "add_friends_group": "添加好友/群",
   "search_no_result": "未找到相关结果",
+  "search_no_user": "未找到该用户",
   "search_keyword_hint": "输入关键词搜索",
   "input": {
     "search": "搜索"
@@ -44,6 +45,8 @@ export type Messages = {
   "account_label": "账号：{account}",
   "copy_success": "复制成功 {account}",
   "search_failed": "搜索失败",
+  "search_friend_placeholder": "搜索好友",
+  "refresh_failed": "刷新好友列表失败，请稍后再试",
   "button": {
     "edit_profile": "编辑资料",
     "send_message": "发消息",
@@ -93,6 +96,7 @@ export type KeyPaths =
   | "mobile_contact.title"
   | "mobile_contact.add_friends_group"
   | "mobile_contact.search_no_result"
+  | "mobile_contact.search_no_user"
   | "mobile_contact.search_keyword_hint"
   | "mobile_contact.input.search"
   | "mobile_contact.my_chat"
@@ -118,6 +122,8 @@ export type KeyPaths =
   | "mobile_contact.account_label"
   | "mobile_contact.copy_success"
   | "mobile_contact.search_failed"
+  | "mobile_contact.search_friend_placeholder"
+  | "mobile_contact.refresh_failed"
   | "mobile_contact.button.edit_profile"
   | "mobile_contact.button.send_message"
   | "mobile_contact.button.add"

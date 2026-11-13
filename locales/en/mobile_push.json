@@ -2,6 +2,7 @@
   "title": "Push settings",
   "loading": "Loading...",
   "load_failed": "Failed to load push information",
+  "load_more": "Load more",
   "save_failed": "Failed to save push settings",
   "master_section": "Master switch",
   "master_switch": "Enable push",

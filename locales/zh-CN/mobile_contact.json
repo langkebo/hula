@@ -2,6 +2,7 @@
   "title": "联系人",
   "add_friends_group": "添加好友/群",
   "search_no_result": "未找到相关结果",
+  "search_no_user": "未找到该用户",
   "search_keyword_hint": "输入关键词搜索",
   "input": {
     "search": "搜索"
@@ -39,6 +40,8 @@
   "account_label": "账号：{account}",
   "copy_success": "复制成功 {account}",
   "search_failed": "搜索失败",
+  "search_friend_placeholder": "搜索好友",
+  "refresh_failed": "刷新好友列表失败，请稍后再试",
   "button": {
     "edit_profile": "编辑资料",
     "send_message": "发消息",

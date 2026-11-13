@@ -40,6 +40,10 @@
 
     <!-- 通话中界面 -->
     <div v-else class="active-call-screen">
+      <div v-if="isReconnecting" class="reconnecting-banner" role="status" aria-live="polite">
+        <van-loading size="16" class="reconnecting-spinner" />
+        <span>{{ t('voip.states.reconnecting') }}</span>
+      </div>
       <template v-if="isVideo">
         <div class="video-container">
           <video ref="remoteVideoRef" class="remote-video" autoplay playsinline />
@@ -103,12 +107,14 @@
 </template>
 
 <script setup lang="ts">
+import { showDialog } from 'vant'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useVoIPCallFlow } from '@/composables/useVoIPCallFlow'
 import router from '@/router'
 import { createLogger } from '@/utils/Logger'
+import { classifyMediaError, type MediaErrorTarget, resolveMediaErrorText } from './mediaError'
 
 const logger = createLogger('RtcCallMobile')
 const { t } = useI18n()
@@ -140,6 +146,7 @@ const {
   isAudioMuted,
   isSpeakerOn,
   state,
+  lastError,
   toggleSpeaker,
   startCall,
   toggleMute,
@@ -161,9 +168,11 @@ const cameraFacingMode = ref<'user' | 'environment'>('user')
 const localStream = computed(() => callInfo.value?.localStream ?? null)
 const remoteStream = computed(() => callInfo.value?.remoteStream ?? null)
 
+const isReconnecting = computed(() => callInfo.value?.state === 'reconnecting')
+
 const isCallActive = computed(() => {
-  const state = callInfo.value?.state
-  return state === 'connected' || state === 'connecting'
+  const currentState = callInfo.value?.state
+  return currentState === 'connected' || currentState === 'connecting' || currentState === 'reconnecting'
 })
 
 // --- Stream binding ---
@@ -179,6 +188,25 @@ watch(
 )
 
 // --- Actions ---
+
+/**
+ * 把媒体设备异常按 err.name 分类成可读引导弹窗。
+ * 返回 false 表示不是权限/设备类错误（调用方已自行兜底提示）。
+ */
+const showMediaErrorDialog = async (err: unknown, target: MediaErrorTarget): Promise<boolean> => {
+  const kind = classifyMediaError(err)
+  if (kind === 'unknown') return false
+  const { messageKey, guideKey } = resolveMediaErrorText(kind, target)
+  const message = guideKey ? `${t(messageKey)}\n${t(guideKey)}` : t(messageKey)
+  await showDialog({
+    message,
+    messageAlign: 'left',
+    confirmButtonText: t('common.close'),
+    closeOnClickOverlay: false
+  }).catch(() => {})
+  return true
+}
+
 const handleToggleMute = async () => {
   await toggleMute()
 }
@@ -217,6 +245,7 @@ const handleSwitchCamera = async () => {
     logger.info(`Camera switched to: ${newFacingMode}`)
   } catch (err) {
     logger.error('Camera switch failed:', err)
+    await showMediaErrorDialog(err, 'camera')
   }
 }
 
@@ -232,9 +261,19 @@ const leaveCallPage = () => {
   router.replace('/mobile/message')
 }
 
-// 远端挂断或通话出错时页面不能停留在通话界面
-watch(state, (next) => {
-  if (next === 'ended' || next === 'error') {
+// 远端挂断时直接回退；通话出错先给出可读原因（用户点“关闭”后再回退）
+watch(state, async (next) => {
+  if (next === 'ended') {
+    emit('close')
+    leaveCallPage()
+    return
+  }
+  if (next === 'error') {
+    await showDialog({
+      message: t('voip.errors.call_failed'),
+      confirmButtonText: t('common.close'),
+      closeOnClickOverlay: false
+    }).catch(() => {})
     emit('close')
     leaveCallPage()
   }
@@ -255,6 +294,7 @@ const handleAnswer = async () => {
   }
   const answered = await answerCall(undefined, { audio: true, video: props.isVideo })
   if (!answered) {
+    await showMediaErrorDialog(lastError.value, props.isVideo ? 'av' : 'mic')
     return
   }
   emit('answer')
@@ -280,6 +320,7 @@ onMounted(async () => {
   }
   const started = await startCall(props.roomId, { audio: true, video: props.isVideo })
   if (!started) {
+    await showMediaErrorDialog(lastError.value, props.isVideo ? 'av' : 'mic')
     leaveCallPage()
   }
 })
@@ -358,7 +399,20 @@ onUnmounted(() => {
 }
 
 .active-call-screen {
-  @apply flex flex-col h-full w-full;
+  @apply flex flex-col h-full w-full relative;
+
+  .reconnecting-banner {
+    @apply absolute top-0 left-0 right-0 z-10 flex items-center justify-center gap-8px px-16px py-8px text-13px;
+    background: var(--tjg-surface-subtle);
+    color: var(--tjg-text-primary);
+    --van-loading-spinner-color: var(--tjg-color-warning-500);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reconnecting-banner :deep(.van-loading__circular) {
+      animation: none;
+    }
+  }
 }
 
 .video-container {

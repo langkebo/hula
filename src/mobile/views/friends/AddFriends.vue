@@ -22,7 +22,7 @@
             :spellcheck="false"
             autocorrect="off"
             autocapitalize="off"
-            @keydown.enter="handleSearch"
+            @keydown.enter="handleSearchNow"
             @clear="handleSearchClear">
             <template #left-icon>
               <svg class="w-14px h-14px"><use href="#search" /></svg>
@@ -94,8 +94,8 @@
             </template>
 
             <!-- 搜索无结果状态 -->
-            <template v-else-if="hasSearched">
-              <van-empty :description="t('mobile_contact.search_no_result')" />
+            <template v-else-if="hasSearched && searchValue.trim()">
+              <van-empty :description="emptyDescription" />
             </template>
 
             <!-- 默认空状态 -->
@@ -149,6 +149,25 @@ const searchPlaceholder: Record<string, string> = {
   user: t('mobile_contact.search_placeholder.user'),
   group: t('mobile_contact.search_placeholder.group')
 }
+
+const emptyDescription = computed(() =>
+  searchType.value === 'group' ? t('mobile_contact.search_no_result') : t('mobile_contact.search_no_user')
+)
+
+// 输入变化交给 useFriends 内部的 300ms 防抖（useDebounceFn 会取消上一个 pending timer），
+// 连续输入只会发出最后一次请求。
+watch(searchValue, () => {
+  void handleSearch()
+})
+
+const handleSearchNow = () => {
+  handleSearch.cancel()
+  void handleSearch()
+}
+
+onBeforeUnmount(() => {
+  handleSearch.cancel()
+})
 
 const handleCopy = (account: string) => {
   void writeClipboard(account).catch(() => {})

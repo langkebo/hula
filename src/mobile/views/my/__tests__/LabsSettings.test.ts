@@ -78,12 +78,15 @@ describe('LabsSettings', () => {
     expect(wrapper.find('van-switch').exists()).toBe(false)
   })
 
-  it('保留到 Integrations 的入口与路由跳转', async () => {
+  it('Integrations 入口标记为未上线且不可跳转', async () => {
     const wrapper = mountComponent()
 
     expect(wrapper.text()).toContain('mobile_setting.integrations')
+    expect(wrapper.text()).toContain('mobile_integrations.unavailable_badge')
+    expect(wrapper.find('[data-testid="integrations-entry"]').exists()).toBe(true)
+
     await wrapper.find('.van-cell').trigger('click')
 
-    expect(routerPushMock).toHaveBeenCalledWith(MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH)
+    expect(routerPushMock).not.toHaveBeenCalledWith(MOBILE_SETTINGS_LABS_INTEGRATIONS_PATH)
   })
 })

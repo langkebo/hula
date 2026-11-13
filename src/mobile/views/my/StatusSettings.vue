@@ -29,6 +29,10 @@
             </van-cell>
           </van-cell-group>
 
+          <div class="text-12px text-[var(--tjg-text-tertiary)] px-4px">
+            {{ t('mobile_status.away_busy_limited') }}
+          </div>
+
           <div class="mt-16px">
             <van-cell-group inset>
               <van-field
@@ -57,14 +61,15 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { showToast } from 'vant'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { OnlineEnum } from '@/enums'
-import { matrixPresenceService } from '@/services/matrix/user/MatrixPresenceService'
+import { matrixPresenceService, type PresenceState } from '@/services/matrix/user/MatrixPresenceService'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useUserStatusStore } from '@/stores/domains/user/userStatus'
 import { createLogger } from '@/utils/Logger'
+import { isBusyUserStateTitle } from '@/utils/userStatus'
 
 const logger = createLogger('StatusSettings')
 
@@ -74,6 +79,8 @@ const userStatusStore = useUserStatusStore()
 
 const currentStatusId = ref(userStatusStore.stateId || 'online')
 const statusMessage = ref('')
+/** 进入页面时的服务端状态文案：保存时据此判断用户是否真的改过文案 */
+const initialStatusMessage = ref('')
 const loading = ref(false)
 
 const statusOptions = [
@@ -92,6 +99,37 @@ function handleStatusChange(statusId: string) {
   currentStatusId.value = statusId
 }
 
+/**
+ * presence → 页面状态。
+ *
+ * Matrix 协议只有 online/offline/unavailable 三态，away 与 busy 都上报为 unavailable，
+ * 因此 unavailable 时沿用本地已保存状态标题的语义（可判定为忙碌则选 busy），其余按离开处理。
+ */
+function resolveStatusId(presence: PresenceState): string {
+  if (presence === 'online') return 'online'
+  if (presence === 'offline') return 'offline'
+  const storedTitle = userStatusStore.currentState?.title
+  if (storedTitle && isBusyUserStateTitle(storedTitle)) return 'busy'
+  return currentStatusId.value === 'busy' ? 'busy' : 'away'
+}
+
+/** 进入页面回填服务端真实 presence 与状态文案，避免把「页面初值」当成用户输入 */
+async function loadCurrentStatus(): Promise<void> {
+  try {
+    const info = await matrixPresenceService.getCurrentPresence()
+    initialStatusMessage.value = info.status_msg ?? ''
+    statusMessage.value = initialStatusMessage.value
+    currentStatusId.value = resolveStatusId(info.presence)
+  } catch (error) {
+    // 回填失败时保持空文案：保存按「未修改」透传 undefined，不会清空服务端已有文案
+    logger.warn('Failed to load current presence', error)
+  }
+}
+
+onMounted(() => {
+  void loadCurrentStatus()
+})
+
 async function handleSave() {
   loading.value = true
   try {
@@ -103,9 +141,14 @@ async function handleSave() {
     }
 
     const targetPresence = presenceMap[currentStatusId.value] || 'online'
+    // 只在用户真的改过文案时覆盖；未改动传 undefined，服务层会省略 status_msg 而不是清空
+    const messageChanged = statusMessage.value !== initialStatusMessage.value
     // 与桌面同一唯一写入点：门控与记账都在 matrixPresenceService.setPresence 内完成，
     // 这里只传意图，并用返回的生效值把本地 activeStatus 同步为离线（hidesOnline 同语义）。
-    const effective = await matrixPresenceService.setPresence(targetPresence, statusMessage.value || undefined)
+    const effective = await matrixPresenceService.setPresence(
+      targetPresence,
+      messageChanged ? statusMessage.value : undefined
+    )
     const hidesOnline = effective !== targetPresence
 
     userStatusStore.stateId = currentStatusId.value

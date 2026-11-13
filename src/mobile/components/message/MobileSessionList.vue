@@ -34,31 +34,14 @@
     @refresh="emit('refresh')">
     <div class="flex flex-col h-full">
       <!-- 首屏加载中：不要把「还没拉到」显示成「没有会话」 -->
-      <div
-        v-if="listState === 'loading'"
-        class="flex-1 flex flex-col items-center justify-center gap-8px min-h-200px"
-        data-test="session-list-loading">
-        <van-loading size="24px" />
-        <span class="text-[length:var(--tjg-font-size-md)] text-[--tjg-text-tertiary]">{{ t('common.loading') }}</span>
-      </div>
-      <!-- 拉取失败：给原因 + 重试，而不是让用户以为真没有会话 -->
-      <div
-        v-else-if="listState === 'error'"
-        class="flex-1 flex items-center justify-center min-h-200px"
-        data-test="session-list-error">
-        <van-empty :description="t('mobile_home.session_load_failed')">
-          <p class="mt-4px text-[length:var(--tjg-font-size-sm)] text-[--tjg-text-tertiary] break-all">
-            {{ loadError }}
-          </p>
-          <van-button size="small" type="primary" plain class="mt-12px" @click="emit('refresh')">
-            {{ t('common.retry') }}
-          </van-button>
-        </van-empty>
-      </div>
-      <!-- 真空态:确实没有任何会话 -->
-      <div v-else-if="listState === 'empty'" class="flex-1 flex items-center justify-center min-h-200px">
-        <van-empty :description="t('mobile_home.empty_session')" />
-      </div>
+      <MobileAsyncState
+        v-if="listState !== 'list'"
+        :state="asyncState"
+        test-id="session-list"
+        :error-text="t('mobile_home.session_load_failed')"
+        :error-detail="loadError || ''"
+        :empty-text="t('mobile_home.empty_session')"
+        @retry="emit('refresh')" />
       <SmartVirtualList
         v-else
         class="mobile-session-list flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
@@ -169,6 +152,7 @@
 import { vOnLongPress } from '@vueuse/components'
 import { useI18n } from 'vue-i18n'
 import { NotificationTypeEnum } from '@/enums'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import type { LongPressOption } from '@/mobile/composables/useMobileLongPress'
 import { type MobileSessionListItem, resolveSessionListState } from '@/mobile/composables/useMobileSessionList'
@@ -198,6 +182,11 @@ const listState = computed(() =>
     isLoading: props.isLoading ?? props.loading,
     loadError: props.loadError
   })
+)
+
+/** 列表态映射为组件的 ready */
+const asyncState = computed<'loading' | 'error' | 'empty' | 'ready'>(() =>
+  listState.value === 'list' ? 'ready' : listState.value
 )
 
 const emit = defineEmits<{

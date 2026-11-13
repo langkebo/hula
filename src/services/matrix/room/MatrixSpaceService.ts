@@ -7,6 +7,7 @@ import type {
   SpaceManager as SdkSpaceManager,
   SpaceMember as SdkSpaceMember
 } from '../sdk-compat'
+import { matrixRoomActionFacade, matrixRoomMemberFacade } from './RoomFacade'
 import {
   getSpaceChildIds,
   getSpaceChildrenFromRoom,
@@ -44,6 +45,26 @@ export interface SpaceInfo {
 }
 
 export type { SpaceMember } from '../sdk-compat'
+
+/** 空间成员角色（映射到 Matrix power level） */
+export type SpaceMemberRole = 'admin' | 'moderator' | 'member'
+
+/** 空间成员角色对应的 power level */
+const SPACE_ROLE_POWER_LEVELS: Record<SpaceMemberRole, number> = {
+  admin: 100,
+  moderator: 50,
+  member: 0
+}
+
+/** 空间成员展示数据（在成员 ID 基础上补充昵称 / 头像 / 角色） */
+export interface SpaceMemberDetail {
+  userId: string
+  displayName: string
+  avatarUrl?: string
+  powerLevel: number
+  isCreator: boolean
+  isSelf: boolean
+}
 
 /**
  * Matrix Space 服务：Space CRUD / 成员 / 子房间 / 层级。
@@ -250,6 +271,53 @@ class SpaceService extends BaseMatrixService {
         throw fallbackErr
       }
     }
+  }
+
+  /** 空间成员展示数据：昵称 / 头像 / power level / 是否创建者 */
+  async getSpaceMemberDetails(spaceId: string): Promise<SpaceMemberDetail[]> {
+    const client = this.getClient()
+    const members = await this.getSpaceMembers(spaceId)
+    const room = client.getRoom(spaceId)
+    const creator = room?.getCreator?.() ?? null
+    const selfId = client.getUserId() ?? ''
+    return members.map(({ user_id }) => {
+      const member = room?.getMember(user_id) ?? null
+      const mxcAvatar = member?.getMxcAvatarUrl?.()
+      const avatarUrl = (mxcAvatar ? client.mxcUrlToHttp(mxcAvatar, 96, 96, 'scale') : null) ?? mxcAvatar
+      return {
+        userId: user_id,
+        displayName: member?.rawDisplayName || member?.name || user_id,
+        ...(avatarUrl ? { avatarUrl } : {}),
+        powerLevel: member?.powerLevel ?? 0,
+        isCreator: creator === user_id,
+        isSelf: selfId === user_id
+      }
+    })
+  }
+
+  /** 当前用户（或指定用户）在空间中的 power level；PL >= 50 视为可管理成员 */
+  async getSpaceMemberPowerLevel(spaceId: string, userId?: string): Promise<number> {
+    const client = this.getClient()
+    const target = userId ?? client.getUserId() ?? ''
+    const member = target ? client.getRoom(spaceId)?.getMember(target) : null
+    if (member) return member.powerLevel
+    const levels = await matrixRoomActionFacade.getPowerLevels(spaceId)
+    const users = (levels.users as Record<string, number> | undefined) ?? {}
+    if (target && typeof users[target] === 'number') return users[target]
+    return typeof levels.users_default === 'number' ? levels.users_default : 0
+  }
+
+  /** 将成员移出空间（kick） */
+  async removeFromSpace(spaceId: string, userId: string): Promise<void> {
+    await matrixRoomActionFacade.kickUser(spaceId, userId)
+    logger.info(`[Space] 已移除空间成员: ${userId} <- ${spaceId}`)
+  }
+
+  /** 更新空间成员角色（admin=100 / moderator=50 / member=0） */
+  async setSpaceMemberRole(spaceId: string, userId: string, role: SpaceMemberRole): Promise<void> {
+    const powerLevel = SPACE_ROLE_POWER_LEVELS[role]
+    await matrixRoomMemberFacade.setMemberPowerLevel(spaceId, userId, powerLevel)
+    logger.info(`[Space] 已更新空间成员角色: ${userId} -> ${role}(${powerLevel}) @ ${spaceId}`)
   }
 
   async joinSpace(spaceId: string, viaServers?: string[]): Promise<void> {

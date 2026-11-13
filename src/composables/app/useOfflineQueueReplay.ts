@@ -4,7 +4,12 @@ import type { ConnectionStateSource } from '@/services/offline/OfflineQueueServi
 import { useChatStore } from '@/stores/domains/chat/chat'
 
 interface MatrixClientLike {
-  sendEvent(roomId: string, eventType: string, content: Record<string, unknown>): Promise<{ event_id: string }>
+  sendEvent(
+    roomId: string,
+    eventType: string,
+    content: Record<string, unknown>,
+    txId?: string
+  ): Promise<{ event_id: string }>
 }
 
 interface ClientServiceDeps {
@@ -104,32 +109,46 @@ export function useOfflineQueueReplay(deps: {
         case 'message': {
           const payload = op.payload as Record<string, unknown>
           const localEventId = `local-${op.id}`
-          if (payload.eventType && payload.content) {
-            const { roomId, eventType, content } = payload as {
-              roomId: string
-              eventType: string
-              content: Record<string, unknown>
-            }
-            const client = clientService.getClient()
-            if (client) {
-              const sendResult = await client.sendEvent(roomId, eventType, content)
-              messageService.registerSentMessage(localEventId, sendResult.event_id)
-            }
-          } else {
-            const structuredPayload = (payload.payload || payload) as SendMessagePayload
-            const result = await messageService.sendStructuredMessage(structuredPayload)
-            if (result?.event_id) {
-              messageService.registerSentMessage(localEventId, result.event_id)
-              // 入队时气泡被置为 SENDING；重放成功后必须回填服务端 event_id，
-              // 否则气泡会永久停在 SENDING（用户以为在发，服务端其实早就收到了）。
-              if (typeof payload.tempMsgId === 'string') {
-                useChatStore().updateMsg({
-                  msgId: payload.tempMsgId,
-                  status: MessageStatusEnum.SUCCESS,
-                  newMsgId: result.event_id
-                })
+          const tempMsgId = typeof payload.tempMsgId === 'string' ? payload.tempMsgId : undefined
+          try {
+            if (payload.eventType && payload.content) {
+              const { roomId, eventType, content } = payload as {
+                roomId: string
+                eventType: string
+                content: Record<string, unknown>
+              }
+              const client = clientService.getClient()
+              if (client) {
+                const txId = typeof payload.txId === 'string' ? payload.txId : undefined
+                const sendResult = await client.sendEvent(roomId, eventType, content, txId)
+                messageService.registerSentMessage(localEventId, sendResult.event_id)
+              }
+            } else {
+              const structuredPayload = (payload.payload || payload) as SendMessagePayload
+              const result = await messageService.sendStructuredMessage(structuredPayload)
+              if (result?.event_id) {
+                messageService.registerSentMessage(localEventId, result.event_id)
+                // 入队时气泡被置为 SENDING；重放成功后必须回填服务端 event_id，
+                // 否则气泡会永久停在 SENDING（用户以为在发，服务端其实早就收到了）。
+                if (tempMsgId) {
+                  useChatStore().updateMsg({
+                    msgId: tempMsgId,
+                    status: MessageStatusEnum.SUCCESS,
+                    newMsgId: result.event_id
+                  })
+                }
               }
             }
+          } catch (error) {
+            // 重放失败（不可重试错误或重试次数耗尽）：把气泡从 SENDING 回写为 FAILED，
+            // 让 UI 出现重试/删除入口，而不是永久卡在发送中。
+            if (tempMsgId) {
+              useChatStore().updateMsg({
+                msgId: tempMsgId,
+                status: MessageStatusEnum.FAILED
+              })
+            }
+            throw error
           }
           break
         }

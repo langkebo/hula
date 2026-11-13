@@ -51,7 +51,20 @@
             </van-cell>
           </van-cell-group>
 
-          <van-empty v-else :description="t('setting.push.history.empty')" data-testid="notification-empty" />
+          <van-button
+            v-if="nextToken"
+            block
+            plain
+            :loading="loadingMore"
+            data-testid="notification-load-more"
+            @click="loadMore">
+            {{ t('mobile_push.load_more') }}
+          </van-button>
+
+          <van-empty
+            v-if="notifications.length === 0"
+            :description="t('setting.push.history.empty')"
+            data-testid="notification-empty" />
         </template>
       </div>
     </template>
@@ -79,7 +92,9 @@ const logger = createLogger('MobileNotificationHistory')
 const { t } = useI18n()
 
 const loading = ref(true)
+const loadingMore = ref(false)
 const notifications = ref<Array<Record<string, unknown>>>([])
+const nextToken = ref<string | undefined>()
 const ackingId = ref<string | null>(null)
 
 onMounted(load)
@@ -88,11 +103,31 @@ async function load() {
   try {
     const result = await matrixNotificationService.getNotifications(undefined, 30)
     notifications.value = result.notifications
+    nextToken.value = result.next_token
   } catch (error) {
     logger.error('Failed to load notifications', error)
     showToast({ type: 'fail', message: t('mobile_push.load_failed') })
   } finally {
     loading.value = false
+  }
+}
+
+/**
+ * 加载下一页通知。服务端通过 `next_token` 游标分页，首页之外必须带上游标，
+ * 否则永远只能看到最近 30 条。
+ */
+async function loadMore() {
+  if (loadingMore.value || !nextToken.value) return
+  loadingMore.value = true
+  try {
+    const result = await matrixNotificationService.getNotifications(nextToken.value, 30)
+    notifications.value = [...notifications.value, ...result.notifications]
+    nextToken.value = result.next_token
+  } catch (error) {
+    logger.error('Failed to load more notifications', error)
+    showToast({ type: 'fail', message: t('mobile_push.load_failed') })
+  } finally {
+    loadingMore.value = false
   }
 }
 

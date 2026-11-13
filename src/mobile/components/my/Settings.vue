@@ -1,5 +1,6 @@
 <template>
-  <div class="grid grid-cols-[32px_32px_32px] px-16px gap-12px z-1 h-32px items-center justify-end mt-10px dark:invert">
+  <div
+    class="grid grid-cols-[32px_32px_32px] px-16px gap-12px z-1 h-32px items-center justify-end mt-10px text-[--tjg-text-primary]">
     <button
       type="button"
       :aria-label="t('mobile_my.actions.messages')"

@@ -5,6 +5,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
 import { matrixEventService } from '@/services/matrix/MatrixEventService'
+import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixReactionService } from '@/services/matrix/messaging/MatrixReactionService'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -41,7 +42,9 @@ export const useMessageActions = (options: UseMessageActionsOptions) => {
 
       switch (type) {
         case MsgEnum.TEXT:
-          eventId = await matrixEventService.sendTextMessage(roomId, msgBody.text || '')
+          // 使用由临时消息 ID 派生的稳定 txId，与离线队列重放保持同一事务 ID，
+          // 避免手动重试与自动重放并发时同一条消息被发送两次。
+          eventId = (await matrixMessageService.sendTextMessage(roomId, msgBody.text || '', `tx-${id}`)).event_id
           break
         case MsgEnum.IMAGE:
           if (msgBody.url) {

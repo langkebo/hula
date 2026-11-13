@@ -18,7 +18,7 @@
                         <span class="text-black dark:text-white/80">{{ groupStore.getUserInfo(item.uid)?.name }}</span>
                       </span>
                       <span
-                        v-if="item.isTop"
+                        v-if="item.top"
                         class="text-[--tjg-color-primary-500] rounded-15px px-7px py-5px text-12px border-[1px] border-solid border-[--tjg-color-primary-500]">
                         {{ t('mobile_chat.notice.pinned') }}
                       </span>
@@ -30,9 +30,6 @@
                     <div class="flex items-center justify-between text-12px">
                       <span class="flex gap-5px text-[--tjg-text-secondary]">
                         {{ formatChatTime(item.createTime) }}
-                      </span>
-                      <span class="text-[--tjg-color-primary-500]">
-                        {{ t('mobile_chat.notice.read_count', { count: 128 }) }}
                       </span>
                     </div>
                   </div>

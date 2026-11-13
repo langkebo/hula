@@ -7,6 +7,7 @@ export type Messages = {
   "title": "推送设置",
   "loading": "加载中...",
   "load_failed": "推送信息加载失败",
+  "load_more": "加载更多",
   "save_failed": "推送设置保存失败",
   "master_section": "推送总开关",
   "master_switch": "启用推送",
@@ -39,6 +40,7 @@ export type KeyPaths =
   | "mobile_push.title"
   | "mobile_push.loading"
   | "mobile_push.load_failed"
+  | "mobile_push.load_more"
   | "mobile_push.save_failed"
   | "mobile_push.master_section"
   | "mobile_push.master_switch"

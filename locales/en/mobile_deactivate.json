@@ -28,8 +28,12 @@
   },
   "verify": {
     "title": "Verify your identity",
-    "instruction": "Type your full Matrix ID to confirm",
+    "instruction": "Type your full Matrix ID and current account password to confirm",
     "field": "Matrix ID",
+    "password_field": "Account password",
+    "password_placeholder": "Enter your current account password",
+    "password_required": "Enter your current account password",
+    "password_invalid": "Password verification failed. Please try again",
     "continue": "Confirm identity, continue",
     "mismatch": "That does not match the current account"
   },
@@ -40,7 +44,7 @@
     "confirm": "Permanently deactivate my account",
     "keep": "Keep my account",
     "dialog_title": "Deactivate account",
-    "dialog_message": "This cannot be undone. Permanently deactivate this account?",
+    "dialog_message": "This cannot be undone. The account and its data will be permanently deleted and cannot be recovered. Deactivate this account?",
     "dialog_confirm": "Deactivate",
     "dialog_cancel": "Cancel"
   }

@@ -38,6 +38,7 @@ vi.mock('@/composables/useVoIPCallFlow', () => ({
     isSpeakerOn: sharedIsSpeakerOn,
     loading: ref(false),
     state: sharedState,
+    lastError: ref(null),
     answerCall: answerCallMock,
     rejectCall: rejectCallMock,
     hangup: hangupMock,
@@ -84,7 +85,8 @@ const VanButtonStub = {
 const globalStubs = {
   VanButton: VanButtonStub,
   VanImage: { template: '<div />' },
-  VanIcon: { template: '<i />' }
+  VanIcon: { template: '<i />' },
+  VanLoading: { template: '<span class="van-loading-stub" />' }
 }
 
 const mountRtcCall = (overrides: Record<string, unknown> = {}) =>

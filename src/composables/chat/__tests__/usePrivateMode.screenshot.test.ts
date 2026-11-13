@@ -33,6 +33,19 @@ describe('usePrivateMode screenshot integration', () => {
     expect(useScreenshotDetection().startWatch).toHaveBeenCalledWith('!room1:server')
   })
 
+  it('setRoomId switching room exits private mode and stops watch', async () => {
+    const { useScreenshotDetection } = await import('../useScreenshotDetection')
+    const { usePrivateMode } = await import('../usePrivateMode')
+    const { setRoomId, confirmPrivateMode, privateModeActive } = usePrivateMode()
+    setRoomId('!room1:server')
+    confirmPrivateMode()
+    expect(privateModeActive.value).toBe(true)
+
+    setRoomId('!room2:server')
+    expect(privateModeActive.value).toBe(false)
+    expect(useScreenshotDetection().stopWatch).toHaveBeenCalled()
+  })
+
   it('togglePrivateMode (exit) calls stopWatch', async () => {
     const { useScreenshotDetection } = await import('../useScreenshotDetection')
     const { usePrivateMode } = await import('../usePrivateMode')

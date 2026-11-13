@@ -33,8 +33,12 @@ export type Messages = {
   },
   "verify": {
     "title": "验证身份",
-    "instruction": "请输入你的完整 Matrix ID 以确认",
+    "instruction": "请输入你的完整 Matrix ID 与当前账号密码以确认",
     "field": "Matrix ID",
+    "password_field": "账号密码",
+    "password_placeholder": "请输入当前账号密码",
+    "password_required": "请输入当前账号密码",
+    "password_invalid": "密码校验失败，请重试",
     "continue": "确认身份，继续",
     "mismatch": "输入与当前账号不一致"
   },
@@ -45,7 +49,7 @@ export type Messages = {
     "confirm": "永久注销我的账户",
     "keep": "保留账户",
     "dialog_title": "确认注销账户",
-    "dialog_message": "此操作不可撤销。确定要永久注销该账户吗？",
+    "dialog_message": "此操作不可撤销，账号与数据将被永久删除且无法恢复。确定要永久注销该账户吗？",
     "dialog_confirm": "永久注销",
     "dialog_cancel": "取消"
   }
@@ -83,6 +87,10 @@ export type KeyPaths =
   | "mobile_deactivate.verify.title"
   | "mobile_deactivate.verify.instruction"
   | "mobile_deactivate.verify.field"
+  | "mobile_deactivate.verify.password_field"
+  | "mobile_deactivate.verify.password_placeholder"
+  | "mobile_deactivate.verify.password_required"
+  | "mobile_deactivate.verify.password_invalid"
   | "mobile_deactivate.verify.continue"
   | "mobile_deactivate.verify.mismatch"
   | "mobile_deactivate.final.title"

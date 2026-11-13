@@ -154,6 +154,7 @@ export type Messages = {
     "password_placeholder": "请输入密码",
     "password_required": "请输入密码",
     "password_incorrect_retry": "密码错误（已连续多次失败）。密码无法找回，请确认后重试。",
+    "unlock_locked": "尝试次数过多，请在 {seconds} 秒后重试",
     "unread_badge": "{count} 条未读",
     "avatar_alt": "{name} 的头像",
     "registry_unavailable": "无法校验私密会话状态，请稍后重试",
@@ -550,6 +551,7 @@ export type KeyPaths =
   | "home.secret_chat.password_placeholder"
   | "home.secret_chat.password_required"
   | "home.secret_chat.password_incorrect_retry"
+  | "home.secret_chat.unlock_locked"
   | "home.secret_chat.unread_badge"
   | "home.secret_chat.avatar_alt"
   | "home.secret_chat.registry_unavailable"

@@ -15,8 +15,11 @@
     </template>
     <template #container>
       <!-- 滚动只由 ChatMain 内部时间线承担，外层禁止滚动，避免双层滚动容器 -->
-      <div v-clickable class="h-full overflow-hidden">
-        <ChatMain @scroll="handleScroll" />
+      <div class="flex flex-col h-full">
+        <MobileOutboxBar />
+        <div v-clickable class="flex-1 min-h-0 overflow-hidden">
+          <ChatMain @scroll="handleScroll" />
+        </div>
       </div>
     </template>
     <template #footer>
@@ -58,6 +61,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import MobileBatchToolbar from '#/components/chat-room/MobileBatchToolbar.vue'
 import PrivateModeConfirmDialog from '#/components/chat-room/PrivateModeConfirmDialog.vue'
+import MobileOutboxBar from '#/components/message/MobileOutboxBar.vue'
 import LocationShare from '#/views/chat-room/LocationShare.vue'
 import MobileForwardDialog from '#/views/chat-room/MobileForwardDialog.vue'
 import RoomEncryptionBanner from '@/components/encryption/RoomEncryptionBanner.vue'
@@ -69,6 +73,7 @@ import router from '@/router'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useChatSession } from '@/shared/composables/useChatSession'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
 import { extractServerName } from '@/utils/userIdentity'
@@ -83,6 +88,7 @@ defineOptions({
 
 const globalStore = useGlobalStore()
 const chatStore = useChatStore()
+const userStore = useUserStore()
 // 只取 switchSession（写当前会话 / 标已读 / 同步群成员）。
 // 不要在这里引 `useMessage()`：它会把矩阵客户端初始化链路拖进 setup，
 // 组件测试与首屏都因此变慢（实测单测从 1s 涨到 52s）。
@@ -160,14 +166,51 @@ onMounted(() => {
 
 watch(
   () => props.roomId,
-  (next) => {
+  (next, prev) => {
+    if (next !== prev) resetTransientState()
     void openRoomFromRoute(next)
   }
 )
 
 onUnmounted(() => {
   useMitt.off(MittEnum.PRIVATE_MODE_CHANGED, onPrivateModeChanged)
+  if (readReceiptTimer) {
+    clearTimeout(readReceiptTimer)
+    readReceiptTimer = null
+  }
 })
+
+/**
+ * 房间停留期间收到他人消息时同步已读回执。
+ *
+ * 聊天页可见时本地不会累加未读数，但服务端 `m.read` 不会自动推进，
+ * 其他设备/重装后会一直显示未读。这里对「他人发来的最后一条消息」防抖上报。
+ */
+let readReceiptTimer: ReturnType<typeof setTimeout> | null = null
+const scheduleReadReceipt = () => {
+  if (readReceiptTimer) clearTimeout(readReceiptTimer)
+  readReceiptTimer = setTimeout(() => {
+    readReceiptTimer = null
+    const roomId = resolveRoomId(props.roomId)
+    if (!roomId || document.visibilityState !== 'visible') return
+    void chatStore.markSessionRead(roomId)
+  }, 500)
+}
+
+watch(
+  () => {
+    const roomId = resolveRoomId(props.roomId)
+    return roomId ? (chatStore.getLastMessageByRoomId(roomId)?.message.id ?? '') : ''
+  },
+  (next, prev) => {
+    if (!next || next === prev) return
+    const roomId = resolveRoomId(props.roomId)
+    const last = roomId ? chatStore.getLastMessageByRoomId(roomId) : undefined
+    // 自己的消息由服务端隐式推进已读位置，无需额外回执
+    if (!last || last.fromUser?.uid === userStore.userInfo?.uid) return
+    scheduleReadReceipt()
+  }
+)
 
 const privateModeActive = ref(false)
 const showPrivateConfirm = ref(false)
@@ -225,6 +268,24 @@ const showLocationShare = ref(false)
 const showForwardDialog = ref(false)
 /** 批量转发的 eventId 列表(单条转发时为空数组) */
 const forwardEventIds = ref<string[]>([])
+
+/**
+ * 重置聊天页的临时 UI 状态。
+ *
+ * 聊天页开启了 keepAlive，同一实例会被不同房间复用；若不复位，
+ * 上一个房间的回应面板、转发对话框、多选状态会带到新房间。
+ */
+function resetTransientState() {
+  showReactionPicker.value = false
+  reactionEventId.value = ''
+  reactionRoomId.value = ''
+  showLocationShare.value = false
+  showForwardDialog.value = false
+  forwardEventIds.value = []
+  showPrivateConfirm.value = false
+  chatStore.setMsgMultiChoose(false)
+  chatStore.clearMsgCheck()
+}
 
 /** 子级组件（如 renderMessage/ContextMenu）通过 mitt 等通道直接触发各面板 */
 

@@ -16,6 +16,7 @@ const SOURCE = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '..
  */
 
 const changePasswordMock = vi.fn()
+const handleLogoutMock = vi.fn()
 const showToastMock = vi.fn()
 const showLoadingToastMock = vi.fn((..._args: any[]) => ({ close: vi.fn() }))
 const routerReplaceMock = vi.fn()
@@ -69,6 +70,10 @@ vi.mock('@/composables/user/useAccount', () => ({
   useAccount: () => ({ changePassword: changePasswordMock })
 }))
 
+vi.mock('@/composables/user/useMobileLogout', () => ({
+  useMobileLogout: () => ({ handleLogout: handleLogoutMock, isLoggingOut: false })
+}))
+
 vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })
 }))
@@ -90,6 +95,7 @@ describe('PasswordSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     changePasswordMock.mockResolvedValue(true)
+    handleLogoutMock.mockResolvedValue(undefined)
   })
 
   it('模板声明三个密码字段', () => {
@@ -161,6 +167,10 @@ describe('PasswordSettings', () => {
     expect(changePasswordMock).not.toHaveBeenCalled()
   })
 
+  it('默认勾选「退出其他设备」', () => {
+    expect(vmOf(mountPage()).logoutOthers).toBe(true)
+  })
+
   it('合法输入提交时传递 logoutOthers 选项', async () => {
     const wrapper = mountPage()
     const vm = vmOf(wrapper)
@@ -174,21 +184,45 @@ describe('PasswordSettings', () => {
     expect(changePasswordMock).toHaveBeenCalledWith('OldPass1!', 'Str0ng!Pass', true)
   })
 
-  it('修改成功后清空表单并返回上一页', async () => {
+  it('登出其他设备时同步清空本地会话并跳转登录页', async () => {
     const wrapper = mountPage()
     const vm = vmOf(wrapper)
     vm.oldPassword = 'OldPass1!'
     vm.newPassword = 'Str0ng!Pass'
     vm.confirmPassword = 'Str0ng!Pass'
+    vm.logoutOthers = true
 
     await vm.handleSubmit()
 
     expect(vm.oldPassword).toBe('')
     expect(vm.newPassword).toBe('')
+    expect(vm.confirmPassword).toBe('')
+    expect(handleLogoutMock).toHaveBeenCalledWith({
+      skipConfirm: true,
+      tolerateRemoteFailure: true,
+      successMessage: 'mobile_password.success_all_devices'
+    })
+    expect(routerReplaceMock).not.toHaveBeenCalled()
+  })
+
+  it('仅退出其他设备时保留当前会话并返回上一页', async () => {
+    const wrapper = mountPage()
+    const vm = vmOf(wrapper)
+    vm.oldPassword = 'OldPass1!'
+    vm.newPassword = 'Str0ng!Pass'
+    vm.confirmPassword = 'Str0ng!Pass'
+    vm.logoutOthers = false
+
+    await vm.handleSubmit()
+
+    expect(changePasswordMock).toHaveBeenCalledWith('OldPass1!', 'Str0ng!Pass', false)
+    expect(vm.oldPassword).toBe('')
+    expect(handleLogoutMock).not.toHaveBeenCalled()
+    expect(showToastMock).toHaveBeenCalledWith({ type: 'success', message: 'mobile_password.success' })
     expect(routerReplaceMock).toHaveBeenCalled()
   })
 
-  it('修改失败时保留输入并提示错误（不跳转）', async () => {
+  it('修改失败时保留输入并提示错误（不跳转、不清会话）', async () => {
     changePasswordMock.mockRejectedValueOnce(new Error('M_FORBIDDEN'))
     const wrapper = mountPage()
     const vm = vmOf(wrapper)
@@ -199,6 +233,7 @@ describe('PasswordSettings', () => {
     await vm.handleSubmit()
 
     expect(vm.oldPassword).toBe('WrongOld1!')
+    expect(handleLogoutMock).not.toHaveBeenCalled()
     expect(routerReplaceMock).not.toHaveBeenCalled()
     expect(showToastMock).toHaveBeenCalled()
   })

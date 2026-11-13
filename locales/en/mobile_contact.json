@@ -2,6 +2,7 @@
   "title": "Contacts",
   "add_friends_group": "Add Friends/Groups",
   "search_no_result": "No results found",
+  "search_no_user": "No such user found",
   "search_keyword_hint": "Enter keywords to search",
   "input": {
     "search": "Search"
@@ -39,6 +40,8 @@
   "account_label": "Account: {account}",
   "copy_success": "Copied {account}",
   "search_failed": "Search failed",
+  "search_friend_placeholder": "Search friends",
+  "refresh_failed": "Failed to refresh friend list. Please try again later.",
   "button": {
     "edit_profile": "Edit Profile",
     "send_message": "Message",

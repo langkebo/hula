@@ -303,7 +303,13 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     msgType: MsgEnum,
     messageBody: Record<string, unknown>
   ): SendMessagePayload {
-    const payload: SendMessagePayload = { id: tempMsgId, roomId: targetRoomId, msgType, body: messageBody }
+    const payload: SendMessagePayload = {
+      id: tempMsgId,
+      roomId: targetRoomId,
+      msgType,
+      body: messageBody,
+      txId: `tx-${tempMsgId}`
+    }
     if (isBurnAfterRead.value) {
       payload.burnAfterRead = true
       payload.burnExpiresInMs = burnDuration.value * 1000

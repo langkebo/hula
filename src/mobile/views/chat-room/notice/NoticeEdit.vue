@@ -65,6 +65,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
+import { buildNoticeDraftKey, clearNoticeDraft, readNoticeDraft, saveNoticeDraft } from './noticeDraft'
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -80,9 +81,21 @@ const globalStore = useGlobalStore()
 
 const isEditMode = computed(() => !!route.params.id)
 
+const roomId = computed(() => (route.query.roomId as string) || globalStore.currentSessionRoomId)
+const noticeId = computed(() => (typeof route.params.id === 'string' ? route.params.id : undefined))
+const draftKey = computed(() => buildNoticeDraftKey(roomId.value, noticeId.value))
+
 const announcementContent = ref('')
 const top = ref(false)
 const submitting = ref(false)
+
+const restoreDraft = () => {
+  const draft = readNoticeDraft(draftKey.value)
+  if (!draft) return
+
+  announcementContent.value = draft.content
+  top.value = draft.top
+}
 
 const loadAnnouncementDetail = async () => {
   if (!isEditMode.value) {
@@ -121,7 +134,7 @@ const handleSubmit = async () => {
     if (isEditMode.value) {
       const announcementData = {
         id: route.params.id as string,
-        roomId: (route.query.roomId as string) || globalStore.currentSessionRoomId,
+        roomId: roomId.value,
         content: announcementContent.value,
         top: top.value
       }
@@ -131,13 +144,14 @@ const handleSubmit = async () => {
         content: announcementData.content,
         isPinned: announcementData.top
       })
+      clearNoticeDraft(draftKey.value)
       showFeedback(t('mobile_chat.notice.update_success'), 'success')
       router.push({
         path: `/mobile/chatRoom/notice/detail/${announcementData.id}`
       })
     } else {
       const announcementData = {
-        roomId: (route.query.roomId as string) || globalStore.currentSessionRoomId,
+        roomId: roomId.value,
         content: announcementContent.value,
         top: top.value
       }
@@ -146,19 +160,26 @@ const handleSubmit = async () => {
         content: announcementData.content,
         isPinned: announcementData.top
       })
+      clearNoticeDraft(draftKey.value)
       showFeedback(t('mobile_chat.notice.publish_success'), 'success')
       router.back()
     }
   } catch (error) {
     logger.error('Failed to save announcement:', error)
+    // 保存失败：本地保留草稿，避免组件销毁后已输入内容丢失
+    saveNoticeDraft(draftKey.value, {
+      content: announcementContent.value,
+      top: top.value
+    })
     showFeedback(t('mobile_chat.notice.save_failed'), 'error')
   } finally {
     submitting.value = false
   }
 }
 
-onMounted(() => {
-  loadAnnouncementDetail()
+onMounted(async () => {
+  await loadAnnouncementDetail()
+  restoreDraft()
 })
 </script>
 

@@ -118,6 +118,23 @@
                 </svg>
               </div>
             </div>
+            <!-- 移动端专属扩展项（如失败/本地消息的删除） -->
+            <div
+              role="button"
+              tabindex="0"
+              :aria-label="getMenuItemProp(item, 'label')"
+              @click="handleClick(item)"
+              @keydown.enter.prevent="handleClick(item)"
+              @keydown.space.prevent="handleClick(item)"
+              v-for="item in mobileSpecialMenu"
+              :key="`special-${getMenuItemProp(item, 'label')}`"
+              class="w-45px h-45px flex justify-center items-center"
+              :class="getMenuItemProp(item, 'icon') === 'delete' ? 'text-[--tjg-color-danger-500]' : ''">
+              <div class="flex w-45px flex-col active:bg-[--tjg-menu-hover] justify-center items-center max-h-45px">
+                <svg class="w-18px"><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
+                <p class="h-24px text-12px">{{ getMenuItemProp(item, 'label') }}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -193,6 +210,19 @@ const visibleSpecialMenu = computed(() => {
     }
     return true
   })
+})
+
+/** 移动端只渲染显式标记 mobile 的扩展项，保持桌面端菜单行为不变 */
+const mobileSpecialMenu = computed(() => {
+  return (
+    visibleSpecialMenu.value?.filter((item) => {
+      if (item.mobile !== true) return false
+      if (typeof item.mobileVisible === 'function') {
+        return item.mobileVisible(props.content)
+      }
+      return true
+    }) ?? []
+  )
 })
 
 const isNull = computed(() => props.menu === void 0)

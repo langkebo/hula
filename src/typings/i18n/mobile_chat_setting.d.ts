@@ -71,7 +71,7 @@ export type Messages = {
   "selected_count": "已选择 {count} 人",
   "create_group_failed": "创建群聊失败",
   "create_group_success": "创建群聊成功",
-  "create_group_need_two": "两个人无法建群哦",
+  "create_group_need_two": "至少选择 2 人才能建群",
   "search_contacts_hint": "搜索联系人~",
   "invite_button": "邀请",
   "select_friends_to_invite": "请选择要邀请的好友",

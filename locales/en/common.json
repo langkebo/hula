@@ -18,6 +18,8 @@
   "back": "Back",
   "retry": "Retry",
   "error": "Operation failed",
+  "empty": "No data",
+  "load_failed": "Failed to load",
   "tip": "Tip",
   "hide": "Hide",
   "view": "View",

@@ -27,5 +27,10 @@
   "public_room": "Public room",
   "unnamed_room": "Unnamed room",
   "search_public_rooms_placeholder": "Enter keywords to search public rooms",
-  "search_btn": "Search"
+  "search_btn": "Search",
+  "filter_all": "All",
+  "filter_public": "Public",
+  "filter_private": "Private",
+  "filter_owned": "Created by me",
+  "no_message": "No messages yet"
 }

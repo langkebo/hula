@@ -8,32 +8,29 @@
       :room-name="t('mobile_chat_setting.start_group_chat')" />
 
     <!-- 顶部搜索框 -->
-    <div class="px-16px mt-10px flex gap-3">
-      <div class="flex-1 py-5px shrink-0">
-        <van-field
-          v-model="keyword"
-          :placeholder="t('mobile_chat_setting.search_contacts_hint')"
-          clearable
-          autocomplete="off"
-          :spellcheck="false"
-          autocorrect="off"
-          autocapitalize="off">
-          <template #left-icon>
-            <svg class="w-12px h-12px"><use href="#search"></use></svg>
-          </template>
-        </van-field>
-      </div>
-      <div class="flex justify-end items-center">
-        <van-button size="small" type="primary" plain round @click="doSearch">
-          {{ t('mobile_chat_setting.search_button') }}
-        </van-button>
-      </div>
+    <div class="px-16px mt-10px">
+      <van-field
+        v-model="keyword"
+        :placeholder="t('mobile_chat_setting.search_contacts_hint')"
+        clearable
+        autocomplete="off"
+        :spellcheck="false"
+        autocorrect="off"
+        autocapitalize="off">
+        <template #left-icon>
+          <svg class="w-12px h-12px"><use href="#search"></use></svg>
+        </template>
+      </van-field>
     </div>
 
     <!-- 联系人列表 -->
     <div ref="scrollArea" class="flex-1 overflow-y-auto px-16px mt-10px" :style="{ height: scrollHeight + 'px' }">
       <div class="max-h-[calc(100dvh-150px)] overflow-y-auto">
-        <van-checkbox-group v-model="selectedList" class="flex flex-col gap-2">
+        <van-empty
+          v-if="keyword.trim() && !filteredContacts.length"
+          :description="t('mobile_contact.search_no_result')"
+          image="search" />
+        <van-checkbox-group v-else v-model="selectedList" class="flex flex-col gap-2">
           <div
             v-for="item in filteredContacts"
             :key="item.userId"
@@ -51,13 +48,13 @@
               <template #default>
                 <div class="flex items-center gap-10px px-8px py-10px">
                   <img
-                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)!.avatar!, 96)"
+                    :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar, 96)"
                     class="size-44px rounded-full object-cover border-(1px solid var(--avatar-border-color))"
                     :alt="t('mobile_contact.avatar.user')"
                     @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                   <div class="flex flex-col leading-tight truncate">
                     <span class="text-14px font-medium truncate">
-                      {{ groupStore.getUserInfo(item.userId)!.name }}
+                      {{ groupStore.getUserInfo(item.userId)?.name }}
                     </span>
                     <div class="text-12px text-[--tjg-text-tertiary] flex items-center gap-4px truncate">
                       <template v-if="getUserState(item.userId)">
@@ -97,8 +94,13 @@
     <!-- 底部操作栏 -->
     <div
       class="px-16px py-10px bg-[--tjg-surface-panel] border-t border-[--tjg-border-default] flex justify-between items-center">
-      <span class="text-14px">{{ t('mobile_chat_setting.selected_count', { count: selectedList.length }) }}</span>
-      <van-button type="primary" :disabled="selectedList.length === 0" @click="createGroup">
+      <div class="flex flex-col gap-2px">
+        <span class="text-14px">{{ t('mobile_chat_setting.selected_count', { count: selectedList.length }) }}</span>
+        <span v-if="selectedList.length === 1" class="text-12px text-[--tjg-color-warning-700]">
+          {{ t('mobile_chat_setting.create_group_need_two') }}
+        </span>
+      </div>
+      <van-button type="primary" :disabled="selectedList.length < 2" @click="createGroup">
         {{ t('mobile_chat_setting.start_group_chat') }}
       </van-button>
     </div>
@@ -128,8 +130,8 @@ const chatStore = useChatStore()
 const globalStore = useGlobalStore()
 
 const getUserState = (uid: string) => {
-  const userInfo = groupStore.getUserInfo(uid)!
-  const userStateId = userInfo.userStateId
+  const userInfo = groupStore.getUserInfo(uid)
+  const userStateId = userInfo?.userStateId
 
   if (userStateId && userStateId !== '1') {
     return stateList.value.find((state: { id: string }) => state.id === userStateId)
@@ -148,8 +150,6 @@ onMounted(() => {
   scrollHeight.value = window.innerHeight - 180
 })
 
-const doSearch = () => {}
-
 const filteredContacts = computed(() => {
   const contactsList = contactStore.contactsList.filter((c) => {
     if (c.userId === '1') {
@@ -158,13 +158,14 @@ const filteredContacts = computed(() => {
     return true
   })
 
-  if (!keyword.value) return contactsList
+  const kw = keyword.value.trim().toLowerCase()
+  if (!kw) return contactsList
   return contactsList.filter((c) => {
-    const name = groupStore.getUserInfo(c.userId)!.name
-    if (name) {
-      return name.includes(keyword.value)
-    }
-    return false
+    const info = groupStore.getUserInfo(c.userId)
+    const name = info?.name?.toLowerCase() || ''
+    const account = info?.account?.toLowerCase() || ''
+    const userId = String(c.userId).toLowerCase()
+    return name.includes(kw) || account.includes(kw) || userId.includes(kw)
   })
 })
 

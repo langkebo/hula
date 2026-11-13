@@ -14,6 +14,9 @@
         :placeholder="t('home.secret_chat.password_placeholder')"
         :maxlength="64"
         autocomplete="current-password" />
+      <div v-if="locked" class="text-12px text-[--tjg-color-danger-500]" data-testid="mobile-secret-chat-lockout">
+        {{ t('home.secret_chat.unlock_locked', { seconds: lockRemaining }) }}
+      </div>
       <div v-if="failureCount >= 3" class="flex flex-col gap-8px" data-testid="mobile-secret-chat-failure-hint">
         <span class="text-12px text-[--tjg-color-warning-500]">
           {{ t('home.secret_chat.password_incorrect_retry') }}
@@ -28,7 +31,7 @@
 
 <script setup lang="ts">
 import { showToast } from 'vant'
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
@@ -59,6 +62,32 @@ const { visible, failureCount } = useSecretChatGate()
 const password = ref('')
 const submitting = ref(false)
 
+/** 连续失败达到阈值后进入冷却，阻断无限次暴力尝试 */
+const UNLOCK_LOCK_THRESHOLD = 5
+const UNLOCK_LOCK_SECONDS = 30
+const lockRemaining = ref(0)
+const locked = computed(() => lockRemaining.value > 0)
+let lockTimer: ReturnType<typeof setInterval> | null = null
+
+const stopLockCountdown = () => {
+  if (lockTimer) {
+    clearInterval(lockTimer)
+    lockTimer = null
+  }
+  lockRemaining.value = 0
+}
+
+const startLockCountdown = () => {
+  if (lockTimer) return
+  lockRemaining.value = UNLOCK_LOCK_SECONDS
+  lockTimer = setInterval(() => {
+    lockRemaining.value -= 1
+    if (lockRemaining.value <= 0) stopLockCountdown()
+  }, 1000)
+}
+
+onUnmounted(stopLockCountdown)
+
 const show = computed({
   get: () => visible.value,
   set: (value: boolean) => {
@@ -73,6 +102,13 @@ const show = computed({
 
 const handleConfirm = async () => {
   if (submitting.value) return
+  if (locked.value) {
+    showToast({
+      type: 'fail',
+      message: t('home.secret_chat.unlock_locked', { seconds: lockRemaining.value })
+    })
+    return
+  }
   if (!password.value) {
     showToast({ type: 'fail', message: t('home.secret_chat.password_required') })
     return
@@ -81,7 +117,10 @@ const handleConfirm = async () => {
   try {
     const ok = await settingStore.unlockSecretChat(password.value)
     if (!ok) {
-      recordSecretChatUnlockFailure()
+      const failures = recordSecretChatUnlockFailure()
+      if (failures >= UNLOCK_LOCK_THRESHOLD) {
+        startLockCountdown()
+      }
       password.value = ''
       showToast({ type: 'fail', message: t('home.secret_chat.password_incorrect') })
       return

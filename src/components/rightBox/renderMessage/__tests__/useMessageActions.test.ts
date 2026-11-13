@@ -26,7 +26,11 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixEventService', () => ({
-  matrixEventService: {
+  matrixEventService: {}
+}))
+
+vi.mock('@/services/matrix/messaging/MatrixMessageService', () => ({
+  matrixMessageService: {
     sendTextMessage: sendTextMessageMock
   }
 }))
@@ -56,7 +60,7 @@ vi.mock('@/utils/messageBody', () => ({
 describe('useMessageActions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    sendTextMessageMock.mockResolvedValue('$resent')
+    sendTextMessageMock.mockResolvedValue({ event_id: '$resent' })
     toggleReactionMock.mockResolvedValue(undefined)
     vi.stubGlobal('navigator', {
       clipboard: {
@@ -89,6 +93,8 @@ describe('useMessageActions', () => {
       status: MessageStatusEnum.SENDING
     })
     expect(showFeedbackMock).toHaveBeenCalledWith('message_container.resend_success', 'success')
+    // 重试必须带由临时消息 ID 派生的稳定 txId，避免与离线队列重放重复发送
+    expect(sendTextMessageMock).toHaveBeenCalledWith('!room:example.com', 'hello', 'tx-msg-1')
 
     sendTextMessageMock.mockRejectedValueOnce(new Error('resend failed'))
     await handleRetry(item)

@@ -23,6 +23,8 @@ export type Messages = {
   "back": "返回",
   "retry": "重试",
   "error": "操作失败",
+  "empty": "暂无数据",
+  "load_failed": "加载失败",
   "tip": "提示",
   "hide": "隐藏",
   "view": "查看",
@@ -160,6 +162,8 @@ export type KeyPaths =
   | "common.back"
   | "common.retry"
   | "common.error"
+  | "common.empty"
+  | "common.load_failed"
   | "common.tip"
   | "common.hide"
   | "common.view"

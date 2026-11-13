@@ -1,8 +1,16 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const read = (relative: string) => readFileSync(join(process.cwd(), relative), 'utf8')
+
+const FRIENDS_COMPONENTS_DIR = 'src/mobile/components/friends'
+
+/** 好友页（F-5 拆分）渲染逻辑分散在 friends 组件目录，守卫需覆盖拆分后的全部文件 */
+const friendsComponentFiles = (): string[] =>
+  readdirSync(join(process.cwd(), FRIENDS_COMPONENTS_DIR))
+    .filter((name) => name.endsWith('.vue'))
+    .map((name) => `${FRIENDS_COMPONENTS_DIR}/${name}`)
 
 describe('mobile tab shell', () => {
   it('底部安全区只由 TabBar 承担', () => {
@@ -55,10 +63,12 @@ describe('mobile layout nesting', () => {
 
 describe('friends list', () => {
   it('friends list does not ship a placeholder context menu', () => {
-    const source = read('src/mobile/views/friends/index.vue')
-    expect(source).not.toContain('<ContextMenu')
-    expect(source).not.toContain('@contextmenu.stop')
-    expect(source).not.toContain('const showMenu')
+    for (const file of [...friendsComponentFiles(), 'src/mobile/views/friends/index.vue']) {
+      const source = read(file)
+      expect(source, file).not.toContain('<ContextMenu')
+      expect(source, file).not.toContain('@contextmenu.stop')
+      expect(source, file).not.toContain('const showMenu')
+    }
   })
 })
 
@@ -67,7 +77,8 @@ describe('mobile list avatars', () => {
     'src/mobile/components/message/MobileSessionList.vue',
     // 好友行的头像渲染已下沉到该组件（2026-11-04），仍在守卫范围内
     'src/mobile/components/friend/FriendContactRow.vue',
-    'src/mobile/views/friends/index.vue',
+    // 好友页（F-5 拆分）：头像渲染下沉到 friends 组件，index.vue 只负责组装
+    ...friendsComponentFiles(),
     'src/mobile/views/friends/StartGroupChat.vue',
     'src/mobile/views/friends/AddFriends.vue',
     'src/mobile/views/chat-room/GroupChatMember.vue',

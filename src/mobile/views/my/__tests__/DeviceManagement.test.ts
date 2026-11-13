@@ -167,6 +167,16 @@ describe('DeviceManagement', () => {
     await vi.dynamicImportSettled()
     const result = (wrapper.vm as any).formatDeviceLabel({ lastSeenIp: '192.168.1.1', lastSeenTs: 1700000000000 })
     expect(result).toContain('192.168.1.1')
+    // 最后活跃时间走 i18n 标签，且格式化到日期+时间
+    expect(result).toContain('mobile_devices.last_active')
+    expect((wrapper.vm as any).formatLastSeen(1700000000000)).toMatch(/\d{1,2}:\d{2}/)
+  })
+
+  it('formatDeviceLabel 在服务端未回传 IP/时间时不伪造信息', async () => {
+    const wrapper = mount(DeviceManagement)
+    await vi.dynamicImportSettled()
+    const result = (wrapper.vm as any).formatDeviceLabel({ deviceId: 'OTHER' })
+    expect(result).toBe('mobile_devices.no_info')
   })
 
   it('formatDeviceLabel returns no_info for empty device', async () => {
@@ -247,11 +257,12 @@ describe('DeviceManagement', () => {
     expect(showToastMock).toHaveBeenCalledWith('mobile_devices.rename_success')
   })
 
-  it('重命名成功时调用 updateDevice 并刷新', async () => {
+  it('重命名成功时调用 updateDevice 并重新拉取列表', async () => {
     getDevicesMock.mockResolvedValue([{ deviceId: 'OTHER', displayName: 'Old' }])
     const wrapper = mount(DeviceManagement)
     await vi.dynamicImportSettled()
     const vm = wrapper.vm as any
+    const loadsBefore = getDevicesMock.mock.calls.length
 
     vm.openDeviceActions({ deviceId: 'OTHER', displayName: 'Old' })
     vm.renameInput = 'New Name'
@@ -259,6 +270,8 @@ describe('DeviceManagement', () => {
 
     expect(updateDeviceMock).toHaveBeenCalledWith('OTHER', 'New Name')
     expect(showToastMock).toHaveBeenCalledWith('mobile_devices.rename_success')
+    // 成功后就地刷新，而不是只改本地字段
+    expect(getDevicesMock.mock.calls.length).toBeGreaterThan(loadsBefore)
   })
 
   it('重命名输入为空时拒绝提交', async () => {
@@ -302,6 +315,68 @@ describe('DeviceManagement', () => {
     expect(deleteDeviceMock).toHaveBeenCalledWith('OTHER')
     // 成功路径以字符串调用 showToast（与既有 delete 成功提示一致）
     expect(showToastMock).toHaveBeenCalledWith('mobile_devices.logout_success')
+  })
+
+  it('删除设备前必须二次确认', async () => {
+    getDevicesMock.mockResolvedValue([{ deviceId: 'OTHER', displayName: 'Phone' }])
+    const wrapper = mount(DeviceManagement)
+    await vi.dynamicImportSettled()
+    const vm = wrapper.vm as any
+
+    vm.openDeviceActions({ deviceId: 'OTHER', displayName: 'Phone' })
+    await vm.handleActionSelect({ name: 'logout' })
+
+    expect(showConfirmDialogMock).toHaveBeenCalledTimes(1)
+    expect(showConfirmDialogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'mobile_devices.logout_device',
+        message: 'mobile_devices.logout_confirm'
+      })
+    )
+    expect(deleteDeviceMock).toHaveBeenCalledWith('OTHER')
+  })
+
+  it('删除确认被取消时不删除设备', async () => {
+    getDevicesMock.mockResolvedValue([{ deviceId: 'OTHER', displayName: 'Phone' }])
+    showConfirmDialogMock.mockRejectedValueOnce('cancel')
+    const wrapper = mount(DeviceManagement)
+    await vi.dynamicImportSettled()
+    const vm = wrapper.vm as any
+
+    vm.openDeviceActions({ deviceId: 'OTHER', displayName: 'Phone' })
+    await vm.handleActionSelect({ name: 'logout' })
+
+    expect(showConfirmDialogMock).toHaveBeenCalledTimes(1)
+    expect(deleteDeviceMock).not.toHaveBeenCalled()
+    expect(showToastMock).not.toHaveBeenCalledWith('mobile_devices.logout_success')
+  })
+
+  it('当前设备禁止删除（防线在动作分发层）', async () => {
+    getDevicesMock.mockResolvedValue([{ deviceId: 'CURRENT', displayName: 'Me' }])
+    const wrapper = mount(DeviceManagement)
+    await vi.dynamicImportSettled()
+    const vm = wrapper.vm as any
+
+    vm.openDeviceActions({ deviceId: 'CURRENT', displayName: 'Me' })
+    await vm.handleActionSelect({ name: 'logout' })
+
+    expect(showConfirmDialogMock).not.toHaveBeenCalled()
+    expect(deleteDeviceMock).not.toHaveBeenCalled()
+    expect(showToastMock).toHaveBeenCalledWith('mobile_devices.current_device_protected')
+  })
+
+  it('删除成功后重新拉取设备列表', async () => {
+    getDevicesMock.mockResolvedValue([{ deviceId: 'OTHER', displayName: 'Phone' }])
+    const wrapper = mount(DeviceManagement)
+    await vi.dynamicImportSettled()
+    const vm = wrapper.vm as any
+    const loadsBefore = getDevicesMock.mock.calls.length
+
+    vm.openDeviceActions({ deviceId: 'OTHER', displayName: 'Phone' })
+    await vm.handleActionSelect({ name: 'logout' })
+
+    expect(deleteDeviceMock).toHaveBeenCalledWith('OTHER')
+    expect(getDevicesMock.mock.calls.length).toBeGreaterThan(loadsBefore)
   })
 
   it('一键登出其他设备：确认后批量登出并排除当前设备', async () => {

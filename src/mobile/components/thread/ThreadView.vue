@@ -88,7 +88,7 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
 import { showImagePreview, showToast } from 'vant'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import type { Thread, ThreadDisplayMessage } from '@/services/matrix/messaging/MatrixThreadService'
@@ -212,9 +212,28 @@ const handleBack = () => {
   router.back()
 }
 
+/** 上报线程已读：失败仅记录日志，不阻断线程渲染 */
+const reportThreadRead = async () => {
+  try {
+    await matrixThreadService.markThreadAsRead(props.roomId, props.threadRootId)
+  } catch (error) {
+    logger.error('[MobileThreadView] Failed to mark thread as read:', error)
+  }
+}
+
 onMounted(() => {
   loadThread()
+  reportThreadRead()
 })
+
+watch(
+  () => [props.roomId, props.threadRootId],
+  ([roomId, threadRootId], previous) => {
+    const [previousRoomId, previousThreadRootId] = previous ?? []
+    if (roomId === previousRoomId && threadRootId === previousThreadRootId) return
+    reportThreadRead()
+  }
+)
 </script>
 
 <style scoped lang="scss">

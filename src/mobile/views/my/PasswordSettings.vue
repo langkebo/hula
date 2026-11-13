@@ -64,9 +64,14 @@
           </div>
 
           <van-cell-group inset>
-            <van-checkbox v-model="logoutOthers" class="px-16px py-12px">
+            <van-checkbox v-model="logoutOthers" class="px-16px pt-12px">
               {{ t('mobile_password.logout_others') }}
             </van-checkbox>
+            <p class="m-0 px-16px pb-12px text-12px text-[--tjg-text-tertiary]">
+              {{
+                logoutOthers ? t('mobile_password.logout_scope_all') : t('mobile_password.logout_scope_keep_current')
+              }}
+            </p>
           </van-cell-group>
 
           <div class="px-16px mt-8px">
@@ -87,6 +92,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { formatMatrixError } from '@/common/matrixErrorTranslator'
 import { useAccount } from '@/composables/user/useAccount'
+import { useMobileLogout } from '@/composables/user/useMobileLogout'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { createLogger } from '@/utils/Logger'
@@ -102,11 +108,16 @@ const logger = createLogger('MobilePasswordSettings')
 const { t } = useI18n()
 const router = useRouter()
 const { changePassword } = useAccount()
+const { handleLogout } = useMobileLogout()
 
 const oldPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
-const logoutOthers = ref(false)
+/**
+ * synapse-rust 的 `logout_devices=true` 会吊销该账号全部令牌（含当前设备），
+ * 因此默认勾选「退出其他设备」时，当前设备也必须重新登录。
+ */
+const logoutOthers = ref(true)
 const submitting = ref(false)
 
 /** 4 段强度等级 */
@@ -152,19 +163,36 @@ async function handleSubmit(): Promise<void> {
   submitting.value = true
   const toast = showLoadingToast({ message: t('mobile_password.submitting'), forbidClick: true, duration: 0 })
   try {
-    await changePassword(oldPassword.value, newPassword.value, logoutOthers.value)
+    try {
+      await changePassword(oldPassword.value, newPassword.value, logoutOthers.value)
+    } catch (error) {
+      toast.close()
+      logger.error('Change password failed', error)
+      showToast({ type: 'fail', message: formatMatrixError(error) || t('mobile_password.failed') })
+      return
+    }
+
     toast.close()
-    showToast(t('mobile_password.success'))
     // 成功后清空敏感输入，避免停留在页面上
     oldPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
-    router.replace(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
-  } catch (error) {
-    toast.close()
-    logger.error('Change password failed', error)
-    showToast({ type: 'fail', message: formatMatrixError(error) || t('mobile_password.failed') })
+
+    if (logoutOthers.value) {
+      // 服务端已吊销当前设备令牌，本地会话不可再用：清会话并引导重新登录，
+      // 不能只弹 toast 停留在已失效的页面上。
+      await handleLogout({
+        skipConfirm: true,
+        tolerateRemoteFailure: true,
+        successMessage: t('mobile_password.success_all_devices')
+      })
+      return
+    }
+
+    showToast({ type: 'success', message: t('mobile_password.success') })
+    await router.replace(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
   } finally {
+    toast.close()
     submitting.value = false
   }
 }

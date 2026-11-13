@@ -95,12 +95,13 @@ class MatrixEventService extends BaseMatrixService {
     return this.extractContentUri(response)
   }
 
-  async sendEvent(roomId: string, eventType: string, content: EventContent): Promise<string> {
+  async sendEvent(roomId: string, eventType: string, content: EventContent, txId?: string): Promise<string> {
     if (!navigator.onLine) {
       const id = offlineQueueService.enqueue('message', roomId, {
         roomId,
         eventType,
-        content
+        content,
+        ...(txId ? { txId } : {})
       })
       logger.info(`离线状态，已将事件发送操作入队: ${roomId}/${eventType} (queueId: ${id})`)
       // 返回一个带有前缀的临时 ID，以便前端识别
@@ -120,7 +121,9 @@ class MatrixEventService extends BaseMatrixService {
     }
 
     try {
-      const response = await client.sendEvent(roomId, eventType, content)
+      const response = txId
+        ? await client.sendEvent(roomId, eventType, content, txId)
+        : await client.sendEvent(roomId, eventType, content)
       const eventId = this.extractEventId(response)
       logger.debug(`发送事件成功: ${roomId}/${eventType}/${eventId}`)
       return eventId
