@@ -45,6 +45,18 @@ pub fn init_app_data_dir(dir: PathBuf) {
     }
 }
 
+/// 清空注入的应用数据目录（**仅测试用**）。
+///
+/// 单测要在同一进程内模拟「Android 无 HOME」与「桌面有 HOME」两种场景，
+/// 全局槽位必须可复位；生产代码没有第二个注入点，因此不对外暴露。
+#[cfg(test)]
+pub(crate) fn reset_app_data_dir() {
+    match APP_DATA_DIR.lock() {
+        Ok(mut slot) => *slot = None,
+        Err(poisoned) => *poisoned.into_inner() = None,
+    }
+}
+
 fn non_empty_env(name: &str) -> Option<String> {
     std::env::var(name)
         .ok()

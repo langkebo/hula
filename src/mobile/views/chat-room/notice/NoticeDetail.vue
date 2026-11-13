@@ -29,9 +29,14 @@
               </span>
             </div>
 
-            <van-button plain size="small" type="primary" @click="goToEdit">
-              {{ t('mobile_chat.notice.edit_notice') }}
-            </van-button>
+            <div class="flex shrink-0 items-center gap-8px">
+              <van-button plain size="small" type="primary" @click="goToEdit">
+                {{ t('mobile_chat.notice.edit_notice') }}
+              </van-button>
+              <van-button v-if="canManage" plain size="small" type="danger" :loading="deleting" @click="handleDelete">
+                {{ t('mobile_chat.notice.delete_notice') }}
+              </van-button>
+            </div>
           </div>
 
           <div class="notice-detail__content">
@@ -48,6 +53,7 @@
 </template>
 
 <script setup lang="ts">
+import { showConfirmDialog } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -71,7 +77,11 @@ const groupStore = useGroupStore()
 const globalStore = useGlobalStore()
 
 const loading = ref(false)
+const deleting = ref(false)
 const announcement = ref<Announcement | null>(null)
+
+/** 公告属于房间状态事件，只有群主 / 管理员有写权限 */
+const canManage = computed(() => groupStore.isAdminOrLord())
 
 const roomId = computed(() => String(route.query.roomId || globalStore.currentSessionRoomId || ''))
 const announcementId = computed(() => String(route.params.id || ''))
@@ -117,6 +127,38 @@ const goToEdit = () => {
       roomId: roomId.value
     }
   })
+}
+
+const handleDelete = async (): Promise<void> => {
+  const current = announcement.value
+  const targetRoomId = roomId.value
+  if (!current || !targetRoomId || deleting.value) {
+    return
+  }
+
+  try {
+    await showConfirmDialog({
+      title: t('mobile_chat.notice.delete_notice'),
+      message: t('mobile_chat.notice.delete_confirm'),
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel')
+    })
+  } catch {
+    // 用户取消
+    return
+  }
+
+  deleting.value = true
+  try {
+    await matrixAnnouncementService.deleteAnnouncement(targetRoomId, current.id)
+    showFeedback(t('mobile_chat.notice.delete_success'), 'success')
+    router.back()
+  } catch (error) {
+    logger.error('Failed to delete announcement:', error)
+    showFeedback(t('mobile_chat.notice.delete_failed'), 'error')
+  } finally {
+    deleting.value = false
+  }
 }
 
 onMounted(() => {

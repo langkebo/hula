@@ -179,15 +179,11 @@ fn process_image_url(url: &str, base_dir: &Path) -> String {
     }
 }
 
-/// 读取并解析 markdown 文件为 HTML
-#[tauri::command]
-pub async fn parse_markdown(app: AppHandle, file_path: String) -> Result<String, String> {
-    let full_path = resolve_markdown_path(&app, &file_path)?;
-
-    // 读取文件内容
-    let markdown_content = fs::read_to_string(&full_path)
-        .map_err(|e| format!("failed to read file {:?}: {}", full_path, e))?;
-
+/// 同步渲染 markdown 为 HTML（含相对路径图片内联）。
+///
+/// 该函数会做文件读取与 base64 编码，属于阻塞操作，只能由 `spawn_blocking` 调用，
+/// 不要在 async 任务里直接执行。
+fn render_markdown_to_html(markdown_content: &str, base_dir: &Path) -> String {
     // 配置 markdown 解析选项
     let mut options = Options::empty();
     options.insert(Options::ENABLE_TABLES);
@@ -197,10 +193,7 @@ pub async fn parse_markdown(app: AppHandle, file_path: String) -> Result<String,
     options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
 
     // 解析 markdown
-    let parser = Parser::new_ext(&markdown_content, options);
-
-    // 获取 markdown 文件所在目录,用于解析相对路径
-    let base_dir = full_path.parent().unwrap_or_else(|| Path::new("."));
+    let parser = Parser::new_ext(markdown_content, options);
 
     // 处理图片路径
     let events: Vec<Event> = parser
@@ -229,8 +222,23 @@ pub async fn parse_markdown(app: AppHandle, file_path: String) -> Result<String,
     // 转换为 HTML
     let mut html_output = String::new();
     html::push_html(&mut html_output, events.into_iter());
+    html_output
+}
 
-    Ok(html_output)
+/// 读取并解析 markdown 文件为 HTML
+#[tauri::command]
+pub async fn parse_markdown(app: AppHandle, file_path: String) -> Result<String, String> {
+    let full_path = resolve_markdown_path(&app, &file_path)?;
+
+    // 文件读取与图片 base64 编码都是阻塞操作，放到阻塞线程池，避免占住 async worker
+    tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let markdown_content = fs::read_to_string(&full_path)
+            .map_err(|e| format!("failed to read file {:?}: {}", full_path, e))?;
+        let base_dir = full_path.parent().unwrap_or_else(|| Path::new("."));
+        Ok(render_markdown_to_html(&markdown_content, base_dir))
+    })
+    .await
+    .map_err(|e| format!("markdown task join failed: {e}"))?
 }
 
 /// 读取 README markdown 文件
@@ -281,64 +289,23 @@ pub async fn get_readme_html(app: AppHandle, language: String) -> Result<String,
         possible_paths.push(project_root.join(readme_filename));
     }
 
-    let mut markdown_content = None;
-    let mut readme_path = None;
-    for path in possible_paths {
-        if let Ok(content) = fs::read_to_string(&path) {
-            markdown_content = Some(content);
-            readme_path = Some(path);
-            break;
-        }
-    }
+    // 文件探测、读取与图片 base64 编码均为阻塞操作，统一放到阻塞线程池
+    let readme_filename = readme_filename.to_string();
+    tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let found = possible_paths.into_iter().find_map(|path| {
+            fs::read_to_string(&path)
+                .ok()
+                .map(|content| (content, path))
+        });
 
-    let markdown_content = markdown_content
-        .ok_or_else(|| cmd_error_with_detail("MARKDOWN_FILE_NOT_FOUND", readme_filename))?;
+        let (markdown_content, readme_path) = found
+            .ok_or_else(|| cmd_error_with_detail("MARKDOWN_FILE_NOT_FOUND", readme_filename))?;
 
-    let readme_path = readme_path.unwrap();
-
-    // 配置 markdown 解析选项
-    let mut options = Options::empty();
-    options.insert(Options::ENABLE_TABLES);
-    options.insert(Options::ENABLE_FOOTNOTES);
-    options.insert(Options::ENABLE_STRIKETHROUGH);
-    options.insert(Options::ENABLE_TASKLISTS);
-    options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
-
-    // 解析 markdown
-    let parser = Parser::new_ext(&markdown_content, options);
-
-    // 获取 README 文件所在目录,用于解析相对路径
-    let base_dir = readme_path.parent().unwrap_or_else(|| Path::new("."));
-
-    // 处理图片路径
-    let events: Vec<Event> = parser
-        .map(|event| {
-            match event {
-                Event::Start(Tag::Image {
-                    link_type,
-                    dest_url,
-                    title,
-                    id,
-                }) => {
-                    // 处理图片 URL
-                    let new_url = process_image_url(&dest_url, base_dir);
-                    Event::Start(Tag::Image {
-                        link_type,
-                        dest_url: CowStr::from(new_url),
-                        title,
-                        id,
-                    })
-                }
-                _ => event,
-            }
-        })
-        .collect();
-
-    // 转换为 HTML
-    let mut html_output = String::new();
-    html::push_html(&mut html_output, events.into_iter());
-
-    Ok(html_output)
+        let base_dir = readme_path.parent().unwrap_or_else(|| Path::new("."));
+        Ok(render_markdown_to_html(&markdown_content, base_dir))
+    })
+    .await
+    .map_err(|e| format!("markdown task join failed: {e}"))?
 }
 
 #[cfg(test)]

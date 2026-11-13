@@ -1,3 +1,8 @@
+/**
+ * 路由集: both
+ * 依据：两套路由集都要跑（用例内部自带路由集能力守卫）。
+ * 校验：`tests/lint/e2e-route-sets.test.ts`（与 `e2e/specRouteSets.ts` 名单逐条比对）。
+ */
 import { expect, type Page, test } from '@playwright/test'
 import { WEB_SESSION_FALLBACK_STORAGE_KEY } from '../src/utils/storageKeys'
 import { loginOnMobileUi } from './support/androidDevice'

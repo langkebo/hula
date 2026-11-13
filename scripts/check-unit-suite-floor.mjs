@@ -33,10 +33,16 @@ const floorPath = resolve(scriptDir, 'unit-suite-floor.json')
 /** 必须被覆盖到的目录（相对 repo 根，posix 分隔符）。 */
 const REQUIRED_DIRS = [
   'src/services/matrix/admin',
+  'src/services/matrix/auth',
+  'src/services/matrix/crypto',
+  'src/services/matrix/sync',
   'src/services/matrix/user',
   'src/services/matrix/notifications',
   'src/services/matrix/media',
   'src/services/matrix/room',
+  'src/workers',
+  'src/stores',
+  'src/composables',
   'src/components/workbench',
   'src/locales',
   'src/utils',

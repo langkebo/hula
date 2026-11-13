@@ -17,6 +17,36 @@ vi.mock('@/services/secure/cryptoStorageKey', () => ({
   logCryptoStorageKeyBackend: vi.fn().mockResolvedValue(undefined)
 }))
 
+// D9：本地解锁状态可注入（真实实现依赖 Secure Store + PBKDF2，测试里只关心状态流转）。
+const unlockState = vi.hoisted(() => {
+  const listeners = new Set<(unlocked: boolean) => void>()
+  return {
+    listeners,
+    configured: false,
+    unlocked: false,
+    emit(unlocked: boolean) {
+      this.unlocked = unlocked
+      for (const listener of [...listeners]) listener(unlocked)
+    },
+    reset() {
+      listeners.clear()
+      this.configured = false
+      this.unlocked = false
+    }
+  }
+})
+
+vi.mock('@/services/secure/localUnlockKey', () => ({
+  isLocalUnlockConfigured: () => unlockState.configured,
+  isLocalUnlockUnlocked: () => unlockState.unlocked,
+  subscribeLocalUnlockState: (listener: (unlocked: boolean) => void) => {
+    unlockState.listeners.add(listener)
+    return () => {
+      unlockState.listeners.delete(listener)
+    }
+  }
+}))
+
 // 每个用例默认给一把 32B 密钥：F-4/B1 之后无密钥会 fail-closed，
 // 而本文件多数用例关心的是跨窗口 / 生命周期语义，不是加密状态。
 // 需要验证 fail-closed 的用例自行覆写为 null（且不会污染后续用例）。
@@ -299,6 +329,7 @@ describe('MatrixCryptoStateTracker - storageKey 原语与加密状态可观测�
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    unlockState.reset()
     tracker = new MatrixCryptoStateTracker()
     getOrCreateCryptoStorageKeyMock.mockResolvedValue(new Uint8Array(32).fill(5))
 
@@ -364,6 +395,81 @@ describe('MatrixCryptoStateTracker - storageKey 原语与加密状态可观测�
     expect(state.initialized).toBe(false)
     expect(state.skippedReason).toBe('local-unlock-required')
     expect(state.storeEncrypted).toBe(false)
+  })
+
+  // D9：fail-closed 后不能就此躺平 —— 「冷启动跳过门禁 → 登录」这条路径下，
+  // 用户随后解锁时必须有代码补一次初始化，否则整个会话 E2EE 不可用（只能整页 reload）。
+  it('无密钥 fail-closed 后，本地解锁完成时自动补一次初始化', async () => {
+    unlockState.configured = true
+    unlockState.unlocked = false
+    // 首次取密钥为 null（未解锁），解锁后能取到
+    getOrCreateCryptoStorageKeyMock.mockResolvedValueOnce(null).mockResolvedValue(new Uint8Array(32).fill(9))
+    // 模拟真实成功路径：initRustCrypto 返回后 client.getCrypto() 有句柄
+    let cryptoReady = false
+    const initRustCrypto = vi.fn().mockImplementation(async () => {
+      cryptoReady = true
+    })
+    const client = {
+      getUserId: vi.fn().mockReturnValue('@user:test.com'),
+      getDeviceId: vi.fn().mockReturnValue('device-A'),
+      getCrypto: vi.fn().mockImplementation(() => (cryptoReady ? {} : null)),
+      initRustCrypto
+    } as unknown as Parameters<MatrixCryptoStateTracker['ensureCrypto']>[0]
+
+    await tracker.ensureCrypto(client, true)
+    expect(initRustCrypto).not.toHaveBeenCalled()
+    expect(tracker.getRustCryptoDebugState().skippedReason).toBe('local-unlock-required')
+
+    unlockState.emit(true)
+
+    await vi.waitFor(() => expect(initRustCrypto).toHaveBeenCalledTimes(1))
+    expect(tracker.getRustCryptoDebugState().skippedReason).toBeNull()
+    expect(tracker.getRustCryptoDebugState().initialized).toBe(true)
+    expect(tracker.getRustCryptoDebugState().storeEncrypted).toBe(true)
+    // 一次性监听：再次触发锁定/解锁不得重复初始化
+    unlockState.emit(false)
+    unlockState.emit(true)
+    await Promise.resolve()
+    expect(initRustCrypto).toHaveBeenCalledTimes(1)
+  })
+
+  it('未配置本地解锁时不挂「解锁补初始化」监听', async () => {
+    unlockState.configured = false
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
+    const { client } = createMockClient('@user:test.com', 'device-A')
+
+    await tracker.ensureCrypto(client, true)
+
+    expect(unlockState.listeners.size).toBe(0)
+  })
+
+  it('已解锁状态下的 fail-closed 也不挂监听（解锁事件不会再发生）', async () => {
+    unlockState.configured = true
+    unlockState.unlocked = true
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
+    const { client } = createMockClient('@user:test.com', 'device-A')
+
+    await tracker.ensureCrypto(client, true)
+
+    expect(unlockState.listeners.size).toBe(0)
+  })
+
+  it('resetState 会解除「解锁补初始化」监听（登出后不得复活旧 client）', async () => {
+    unlockState.configured = true
+    unlockState.unlocked = false
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(null)
+    const { client, initRustCrypto } = createMockClient('@user:test.com', 'device-A')
+
+    await tracker.ensureCrypto(client, true)
+    expect(unlockState.listeners.size).toBe(1)
+
+    tracker.resetState()
+    expect(unlockState.listeners.size).toBe(0)
+
+    getOrCreateCryptoStorageKeyMock.mockResolvedValue(new Uint8Array(32).fill(9))
+    unlockState.emit(true)
+    await Promise.resolve()
+    expect(initRustCrypto).not.toHaveBeenCalled()
   })
 
   it('原语标记写入 localStorage：有密钥 → k1，无密钥 → 0', async () => {

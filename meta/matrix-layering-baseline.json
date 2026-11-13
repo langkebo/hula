@@ -1,10 +1,10 @@
 {
   "comment": "AR-07b 分层与 token 收口棘轮。数值只可收紧不可放宽；清理后运行 `node scripts/check-matrix-service-layering.mjs --update`。",
-  "updated_at": "2026-11-04T02:07:43.056Z",
+  "updated_at": "2026-11-12T10:49:39.317Z",
   "scope": "src/services/matrix/** 非测试 .ts（运行时 import 边，不含 import type）",
   "counters": {
-    "service_files": 240,
-    "runtime_edges": 429,
+    "service_files": 244,
+    "runtime_edges": 439,
     "runtime_cycles": 0,
     "runtime_max_depth": 12,
     "token_copies": 0
@@ -18,7 +18,6 @@
     "src/services/matrix/MatrixHttpClient.ts": 2,
     "src/services/matrix/MatrixRawUploadChannel.ts": 1,
     "src/services/matrix/admin/AdminFacadeService.ts": 1,
-    "src/services/matrix/auth/SessionBootstrapService.ts": 1,
     "src/services/matrix/auth/SessionLoginService.ts": 3,
     "src/services/matrix/auth/SessionOrchestrator.ts": 2,
     "src/services/matrix/auth/SessionRestoreService.ts": 1,

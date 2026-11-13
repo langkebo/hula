@@ -27,8 +27,18 @@ export const useContextMenuItem = (content: Ref<MenuContent>) => {
     return ['logout', 'forbid'].includes(icon)
   }
 
+  /**
+   * 判断菜单项是否禁用（支持静态布尔与按内容动态解析两种形式）
+   * @param item 菜单项
+   */
+  const isMenuItemDisabled = (item: ContextMenuItem) => {
+    if (typeof item.disabled === 'function') return item.disabled(content.value)
+    return item.disabled === true
+  }
+
   return {
     getMenuItemProp,
-    isDangerousItem
+    isDangerousItem,
+    isMenuItemDisabled
   }
 }

@@ -1,4 +1,9 @@
 /**
+ * 路由集: desktop
+ * 依据：只断言桌面路由 DOM（`.login-box` / `/settings` / `/message` …）；移动 dev server（5210）没有这些路由。
+ * 校验：`tests/lint/e2e-route-sets.test.ts`（与 `e2e/specRouteSets.ts` 名单逐条比对）。
+ */
+/**
  * E2E 测试：登录 → 进入房间设置页面完整流程
  *
  * 验证此前修复的所有问题在真实浏览器环境中正常工作：
@@ -311,6 +316,21 @@ test.describe('Login to Room Settings E2E - Mobile', () => {
 
     await page.goto('/')
     await page.waitForSelector('#app', { state: 'visible' })
+
+    // 路由集是**构建期装配**的（router/entries/platformRoutes）：桌面 dev server 上
+    // `/mobile/login` 根本不存在，`?platform=mobile` 只改布局不改路由集 ⇒ 页面空白。
+    // 这不是产品缺陷，按「路由集能力」显式跳过，避免桌面项目把这条算成红灯。
+    const hasMobileRoutes = await page.evaluate(() => {
+      const router = (
+        document.querySelector('#app') as
+          | (HTMLElement & {
+              __vue_app__?: { config: { globalProperties: { $router?: { hasRoute?: (n: string) => boolean } } } }
+            })
+          | null
+      )?.__vue_app__?.config?.globalProperties?.$router
+      return Boolean(router?.hasRoute?.('mobileLogin'))
+    })
+    test.skip(!hasMobileRoutes, '桌面路由集装配：/mobile/login 不存在，移动端登录页需移动 dev server（5210）')
 
     // 验证移动端登录表单
     const loginBox = page.locator('.login-box, .mobile-login, [class*="login"]')

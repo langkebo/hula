@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { shallowRef } from 'vue'
 import { OnlineEnum } from '@/enums'
 import { matrixFriendOperations, matrixFriendService } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
@@ -533,7 +534,8 @@ describe('contacts store 申请列表失败态（FE-4）', () => {
       ensureFriendServicesReady: async () => {},
       loadContacts: async () => {},
       startDirectRoom: async () => null,
-      loadPendingInvites: async () => {}
+      loadPendingInvites: async () => {},
+      pendingInvites: shallowRef([])
     })
 
   beforeEach(() => {

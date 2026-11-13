@@ -100,14 +100,13 @@
 import { showConfirmDialog, showToast } from 'vant'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import EncryptionLockBadge from '@/components/encryption/EncryptionLockBadge.vue'
 import { useSecretChatPage } from '@/composables/secretChat/useSecretChatPage'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from '@/mobile/views/my/settingsRoutes'
 import type { SessionItem } from '@/stores/domains/chat/chat/session'
-import { lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
 defineOptions({
@@ -121,7 +120,7 @@ const settingStore = useSettingStore()
 /** 未配置密码时解锁必然失败，锁定态改为引导去设置密码。 */
 const configured = computed(() => settingStore.isSecretChatConfigured())
 
-/** 列表过滤 / 加密状态 / 解锁回跳 / 移出私密确认与桌面端共用同一份规则。 */
+/** 列表过滤 / 加密状态 / 解锁回跳 / 移出私密确认 / 离开页面即上锁与桌面端共用同一份规则。 */
 const {
   locked,
   hiddenSessions,
@@ -134,6 +133,8 @@ const {
   returnTarget: '/mobile/secretChat',
   // 不清除私密标记：只是进入查看。
   openSession: (session) => router.push({ name: 'mobileChatMain', params: { roomId: session.roomId } }),
+  // 进入私密会话不算「离开」，路由离开上锁由 composable 统一处理
+  sessionRouteName: 'mobileChatMain',
   confirmUnmark: async () => {
     try {
       await showConfirmDialog({
@@ -158,15 +159,6 @@ const {
 const handleGoSetupPassword = () => {
   void router.push(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
 }
-
-/**
- * 离开本页即上锁（默认策略），但进入私密会话本身不算「关闭」——
- * 否则聊天页门禁会把刚解锁的会话立刻拦下。
- */
-onBeforeRouteLeave((to) => {
-  if (to.name === 'mobileChatMain') return
-  lockSecretChatSession('leave mobile secret chat page')
-})
 
 /** 移出私密：取消房间标记后回到普通列表；登记表不可用时提示重试。 */
 const handleUnmark = async (session: SessionItem) => {

@@ -1,0 +1,363 @@
+import { sendNotification } from '@tauri-apps/plugin-notification'
+import { type MessageStatusEnum, MsgEnum, RoomTypeEnum } from '@/enums'
+import { useI18nGlobal } from '@/services/i18n'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
+import { matrixRoomQueryService } from '@/services/matrix/room/QueryService'
+import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeService'
+import { createLogger } from '@/utils/Logger'
+import { clearRedundantMessages } from './messageCacheMutations'
+import type { MessageMutationsDeps } from './messageMutationsDeps'
+import type { SessionItem } from './session'
+import { type MessageType, ROOM_MESSAGE_CACHE_LIMIT } from './types'
+
+const logger = createLogger('ChatMessageMutations')
+
+/**
+ * 消息写入类操作：插入、更新、删除与清空。
+ * 从 `messageMutations.ts` 拆出（原文件 564 行）。
+ */
+export const createMessageInsertMutations = (deps: MessageMutationsDeps) => {
+  const {
+    route,
+    userStore,
+    groupStore,
+    globalStore,
+    sessionStore,
+    messageMap,
+    sortedMessageKeys,
+    replyMapping,
+    messageOptions,
+    newMsgCount,
+    currentMessageMap,
+    currentMessageOptions,
+    currentReplyMap,
+    currentMsgReply,
+    ensureSortedMessageState,
+    setSortedMessageKeys,
+    findMessageInsertIndex,
+    setMessageRoomIndex,
+    deleteMessageRoomIndex,
+    rebuildMessageRoomIndex,
+    findRoomIdByMsgId,
+    removeReplyReferences,
+    upsertReplyReference,
+    syncReplyReference,
+    migrateReplyTargetReferences
+  } = deps
+
+  const pushMsg = async (msg: MessageType, options: { isActiveChatView?: boolean; activeRoomId?: string } = {}) => {
+    // 防御性归一化：确保 fromUser 始终有有效结构
+    if (!msg.fromUser || typeof msg.fromUser !== 'object') {
+      msg.fromUser = { uid: '', username: '', avatar: '' }
+    }
+    msg.fromUser.uid = msg.fromUser.uid ?? ''
+
+    if (!msg.message.id) {
+      msg.message.id = `${msg.message.roomId}_${msg.message.sendTime}_${msg.fromUser.uid || 'unknown'}`
+    }
+    const messageKey = msg.message.id
+
+    let roomMessages = messageMap[msg.message.roomId]
+    if (!roomMessages) {
+      roomMessages = {}
+      messageMap[msg.message.roomId] = roomMessages
+    }
+
+    // 幂等性检查：如果消息已存在且不是自己发送的更新状态，直接忽略
+    const existedMsg = roomMessages[messageKey]
+    if (existedMsg) {
+      // 允许发送过程中的状态更新（如：发送中 -> 成功）
+      if (existedMsg.message.sendTime === msg.message.sendTime) {
+        return
+      }
+    }
+
+    roomMessages[messageKey] = msg
+    setMessageRoomIndex(messageKey, msg.message.roomId)
+    syncReplyReference(msg.message.roomId, messageKey, msg)
+
+    // 二分查找插入，维持有序性
+    ensureSortedMessageState(msg.message.roomId)
+
+    if (!existedMsg) {
+      const keys = sortedMessageKeys[msg.message.roomId]
+      const low = findMessageInsertIndex(msg.message.roomId, messageKey)
+      keys.splice(low, 0, messageKey)
+    }
+
+    const targetRoomId = options.activeRoomId ?? globalStore.currentSessionRoomId ?? ''
+    let isActiveChatView = options.isActiveChatView
+    if (isActiveChatView === undefined) {
+      const currentPath = route?.path
+      isActiveChatView =
+        (currentPath === '/message' || currentPath?.startsWith('/mobile/chatRoom')) &&
+        targetRoomId === msg.message.roomId
+    }
+
+    const uid = msg.fromUser?.uid ?? ''
+    const cacheUser = groupStore.getUserInfo(uid)
+
+    const session = sessionStore.getSession(msg.message.roomId)
+    if (session) {
+      const lastMsgUserName = cacheUser?.name
+      const formattedText =
+        msg.message.type === MsgEnum.RECALL
+          ? session.type === RoomTypeEnum.GROUP
+            ? `${lastMsgUserName}:撤回了一条消息`
+            : msg.fromUser?.uid === userStore.userInfo?.uid
+              ? '你撤回了一条消息'
+              : '对方撤回了一条消息'
+          : msg.message.body?.content || msg.message.body?.body || ''
+
+      const updateData: Partial<SessionItem> = {
+        text: formattedText,
+        activeTime: Date.now()
+      }
+
+      const isSelfMessage = msg.fromUser?.uid === userStore.userInfo?.uid
+      const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
+
+      if (shouldIncreaseUnread) {
+        const nextUnread = (session.unreadCount || 0) + 1
+        // 未读数与摘要/活跃时间一次原子写入：拆成 setUnreadCount + updateSession 会让同一条
+        // 消息对 sessionList / sessionMap 各触发两轮失效，订阅会话列表的 computed 白算一次。
+        // 未读账本仍由 setUnreadCount 统一记账。
+        sessionStore.setUnreadCount(msg.message.roomId, nextUnread, updateData)
+        logger.debug('增加未读数:', msg.message.roomId, nextUnread)
+      } else {
+        sessionStore.updateSession(msg.message.roomId, updateData)
+      }
+    } else {
+      try {
+        const room = await matrixRoomQueryService.getRoom(msg.message.roomId, false)
+        if (room) {
+          // 复用 convertRoomToSession：其会为 SINGLE 房间填充 detailId/account（对方 MXID），
+          // 保证下游按 counterpart 的会话去重（useSessionListState dmSeen）能正确合并同一联系人的
+          // 多个历史 DM 房间，避免消息列表出现重复成员。unreadCount/activeTime 按新会话语义覆盖。
+          const newSession = {
+            ...matrixRoomRealtimeService.convertRoomToSession(room),
+            unreadCount: 0,
+            activeTime: Date.now()
+          }
+          sessionStore.addSession(newSession)
+          const isSelfMessage = msg.fromUser?.uid === userStore.userInfo?.uid
+          const shouldIncreaseUnread = !isSelfMessage && (!isActiveChatView || msg.message.roomId !== targetRoomId)
+          if (shouldIncreaseUnread) {
+            sessionStore.setUnreadCount(msg.message.roomId, 1)
+          }
+        }
+      } catch (err) {
+        logger.error(
+          'Failed to fetch room for new session, message received but session not created:',
+          msg.message.roomId,
+          err
+        )
+      }
+    }
+
+    const isOwnMessage = msg.fromUser?.uid === userStore.userInfo?.uid
+    const notificationBody = msg.message.body.content || msg.message.body.body || ''
+    const isMention = msg.message.body.atUidList?.includes(userStore.userInfo?.uid ?? '') ?? false
+    // 唯一的系统通知分发点：统一决策门在 messageMutations 生效（提及 / 线程提及 / 关键词）。
+    // 自己发送的消息永不通知，因此不进入决策门。
+    const shouldSendNotification =
+      !isOwnMessage &&
+      matrixNotificationService.shouldNotifyMessage({
+        isMention,
+        isThread: Boolean(msg.message.body.threadId),
+        body: notificationBody
+      })
+
+    if (shouldSendNotification) {
+      const notificationConfig = matrixNotificationService.getConfig()
+
+      if (notificationConfig.enableDesktop) {
+        // showSender=false 时退化为中性标题而非房间名：单聊的房间名就是对方昵称，
+        // 沿用房间名仍会泄漏发送者身份，中性标题对所有房间类型都安全。
+        // 群缓存冷时退化为消息自带发送者，避免关键词通知静默失效。
+        const senderName = cacheUser?.name || msg.fromUser?.username || msg.fromUser?.uid || ''
+        const title = notificationConfig.showSender ? senderName : useI18nGlobal().t('message.notify.new_messages')
+        const display = matrixNotificationService.buildNotificationDisplay(title, notificationBody)
+
+        // 发送前先判权限：`sendNotification` 返回 void，没有 Promise 可 await，
+        // 插件内部 invoke 失败也接不住，唯一能做的失败隔离就是"没权限就不发"。
+        // 必须 void + catch：权限检查是异步的，异常不能从 pushMsg 逃逸成 unhandled rejection。
+        // 不传 icon：avatar 是 mxc:// URI，插件无法把它渲染成系统图标，传 '' 还会关掉应用图标回落。
+        void matrixNotificationService
+          .canSendSystemNotification()
+          .then((granted) => {
+            if (!granted) {
+              return
+            }
+            sendNotification({ title: display.title, body: display.body })
+          })
+          .catch((err) => logger.warn('发送系统通知失败:', err))
+      }
+    }
+
+    if (!isActiveChatView || msg.message.roomId !== targetRoomId) {
+      clearRedundantMessages(deps, msg.message.roomId, ROOM_MESSAGE_CACHE_LIMIT)
+    }
+  }
+
+  const updateMsg = ({
+    msgId,
+    status,
+    newMsgId,
+    body,
+    type,
+    isBadEncrypted,
+    uploadProgress,
+    timeBlock,
+    roomId,
+    isBurning,
+    isBurned,
+    burnRemainingSeconds
+  }: {
+    msgId: string
+    status?: MessageStatusEnum
+    newMsgId?: string
+    body?: Record<string, unknown>
+    type?: MsgEnum
+    isBadEncrypted?: boolean
+    uploadProgress?: number
+    timeBlock?: number
+    roomId?: string
+    isBurning?: boolean
+    isBurned?: boolean
+    burnRemainingSeconds?: number
+  }) => {
+    const resolvedRoomId =
+      (roomId && messageMap[roomId]?.[msgId] ? roomId : undefined) ??
+      (messageMap[globalStore.currentSessionRoomId]?.[msgId] ? globalStore.currentSessionRoomId : undefined) ??
+      findRoomIdByMsgId(msgId)
+
+    if (!resolvedRoomId) return
+
+    const roomMessages = messageMap[resolvedRoomId]
+    if (!roomMessages) return
+
+    const msg = roomMessages[msgId]
+    if (!msg) return
+    const previousMessageId = msg.message.id
+
+    if (status !== undefined) {
+      msg.message.status = status
+    }
+    // Fix 4: 支持 burn 状态字段更新，驱动 BurnMessage 组件的倒计时生命周期
+    if (isBurning !== undefined) {
+      msg.message.isBurning = isBurning
+    }
+    if (isBurned !== undefined) {
+      msg.message.isBurned = isBurned
+    }
+    if (burnRemainingSeconds !== undefined) {
+      msg.message.burnRemainingSeconds = burnRemainingSeconds
+    }
+    if (timeBlock !== undefined) {
+      msg.timeBlock = timeBlock
+    }
+    if (body) {
+      msg.message.body = body
+    }
+    // 解密成功回填：类型可能从 TEXT 变为图片/文件等真实类型，需同步更新
+    if (type !== undefined) {
+      msg.message.type = type
+    }
+    // 解密失败标记：重试成功后置 false，渲染层据此移出「无法解密」卡片
+    if (isBadEncrypted !== undefined) {
+      msg.message.isBadEncrypted = isBadEncrypted
+    }
+
+    const nextMsgId = newMsgId ?? msg.message.id
+    if (newMsgId) {
+      msg.message.id = newMsgId
+    }
+
+    if (uploadProgress !== undefined) {
+      logger.debug(`更新消息进度: ${uploadProgress}% (消息ID: ${msgId})`)
+      roomMessages[nextMsgId] = { ...msg, uploadProgress }
+    } else {
+      // messageMap 是 shallowReactive：只改 status 不重建房间映射，视图收不到更新（失败重试入口就不出现）。
+      roomMessages[nextMsgId] = { ...msg }
+    }
+    setMessageRoomIndex(nextMsgId, resolvedRoomId)
+    messageMap[resolvedRoomId] = { ...roomMessages }
+
+    removeReplyReferences(resolvedRoomId, previousMessageId)
+    if (newMsgId && previousMessageId !== newMsgId) {
+      migrateReplyTargetReferences(resolvedRoomId, previousMessageId, newMsgId)
+      removeReplyReferences(resolvedRoomId, newMsgId)
+    }
+    upsertReplyReference(resolvedRoomId, nextMsgId, roomMessages[nextMsgId])
+
+    if (newMsgId && msgId !== newMsgId) {
+      delete roomMessages[msgId]
+      deleteMessageRoomIndex(msgId)
+      if (sortedMessageKeys[resolvedRoomId]) {
+        setSortedMessageKeys(
+          resolvedRoomId,
+          sortedMessageKeys[resolvedRoomId].filter((id) => id !== msgId)
+        )
+
+        if (!sortedMessageKeys[resolvedRoomId].includes(newMsgId)) {
+          const keys = sortedMessageKeys[resolvedRoomId]
+          const low = findMessageInsertIndex(resolvedRoomId, newMsgId)
+          keys.splice(low, 0, newMsgId)
+        }
+      }
+      messageMap[resolvedRoomId] = { ...roomMessages }
+    }
+  }
+
+  const deleteMsg = (msgId: string) => {
+    if (currentMessageMap.value && msgId in currentMessageMap.value) {
+      const roomId = globalStore.currentSessionRoomId
+      delete currentMessageMap.value[msgId]
+      deleteMessageRoomIndex(msgId)
+      removeReplyReferences(roomId, msgId)
+      if (sortedMessageKeys[roomId]) {
+        setSortedMessageKeys(
+          roomId,
+          sortedMessageKeys[roomId].filter((id) => id !== msgId)
+        )
+      }
+    }
+  }
+
+  const clearRoomMessages = (roomId: string) => {
+    if (!roomId) return
+
+    if (messageMap[roomId]) {
+      messageMap[roomId] = {}
+    }
+    rebuildMessageRoomIndex(roomId)
+    replyMapping[roomId] = {}
+
+    setSortedMessageKeys(roomId, [])
+
+    const defaultOptions = {
+      isLast: true,
+      isLoading: false,
+      cursor: '',
+      hasLoadedOnce: false
+    }
+
+    if (globalStore.currentSessionRoomId === roomId) {
+      currentMessageOptions.value = defaultOptions
+      currentReplyMap.value = {}
+      currentMsgReply.value = {}
+    } else {
+      messageOptions[roomId] = defaultOptions
+    }
+
+    newMsgCount[roomId] = { count: 0, isStart: false }
+  }
+
+  return {
+    pushMsg,
+    updateMsg,
+    deleteMsg,
+    clearRoomMessages
+  }
+}

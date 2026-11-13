@@ -272,7 +272,14 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useBurnDurationOptions, useLanguageOptions, useSendKeyOptions } from '@/composables/settings/settingsOptions'
+import {
+  resolveOptionLabel,
+  useBurnDurationOptions,
+  useEmojiSizeOptions,
+  useLanguageOptions,
+  useRecallTimeOptions,
+  useSendKeyOptions
+} from '@/composables/settings/settingsOptions'
 import { usePreferenceSettings } from '@/composables/settings/usePreferenceSettings'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useScannerStore } from '@/stores/domains/widget/scanner'
@@ -298,20 +305,8 @@ const autoLogin = ref(settingStore.autoLoginEnabled)
 const autoStartup = ref(settingStore.autoStartupEnabled)
 const autoStartupLoading = ref(false)
 const sendKeyOptions = useSendKeyOptions()
-
-const recallTimeOptions = computed(() => [
-  { label: t('setting.preferences.recall_2_minutes'), value: 120 },
-  { label: t('setting.preferences.recall_5_minutes'), value: 300 },
-  { label: t('setting.preferences.recall_10_minutes'), value: 600 }
-])
-
-const emojiSizeOptions = computed(() => [
-  { label: t('setting.preferences.emoji_small'), value: 'small' },
-  { label: t('setting.preferences.emoji_medium'), value: 'medium' },
-  { label: t('setting.preferences.emoji_large'), value: 'large' }
-])
-
-const recallTime = ref(120)
+const recallTimeOptions = useRecallTimeOptions()
+const emojiSizeOptions = useEmojiSizeOptions()
 
 // 偏好开关统一由共享 composable 读写 settingStore（唯一数据源），组件只保留选项文案与反馈
 const {
@@ -319,6 +314,7 @@ const {
   linkPreview,
   emojiConvert,
   emojiSize,
+  recallTime,
   sendKey,
   burnDefaultEnabled,
   burnDefaultDuration,
@@ -359,10 +355,6 @@ const storageProgressText = computed(() => {
   })
 })
 
-function findOptionLabel<T extends string | number>(options: Array<{ label: string; value: T }>, value: T) {
-  return options.find((option) => option.value === value)?.label ?? String(value)
-}
-
 function showToggleFeedback(label: string, value: boolean) {
   showFeedback(
     t(value ? 'setting.preferences.feedback.enabled' : 'setting.preferences.feedback.disabled', { label }),
@@ -399,12 +391,12 @@ function handleLanguageChange(value: string) {
   settingStore.setLanguage(value)
   showOptionSetFeedback(
     t('setting.preferences.interface_language_label'),
-    findOptionLabel(languageOptions.value, value)
+    resolveOptionLabel(languageOptions.value, value)
   )
 }
 
 function handleSendKeyChange(value: string) {
-  showOptionSetFeedback(t('setting.preferences.send_key_label'), findOptionLabel(sendKeyOptions.value, value))
+  showOptionSetFeedback(t('setting.preferences.send_key_label'), resolveOptionLabel(sendKeyOptions.value, value))
 }
 
 function handleAutoLoginChange(value: boolean) {
@@ -466,7 +458,7 @@ function handleEmojiChange(value: boolean) {
 }
 
 function handleEmojiSizeChange(value: string) {
-  showOptionSetFeedback(t('setting.preferences.emoji_size_label'), findOptionLabel(emojiSizeOptions.value, value))
+  showOptionSetFeedback(t('setting.preferences.emoji_size_label'), resolveOptionLabel(emojiSizeOptions.value, value))
 }
 
 function handleBurnDefaultToggle(value: boolean) {
@@ -476,7 +468,7 @@ function handleBurnDefaultToggle(value: boolean) {
 function handleBurnDurationChange(value: number) {
   showOptionSetFeedback(
     t('setting.preferences.burn_default_duration_label'),
-    findOptionLabel(burnDurationOptions.value, value)
+    resolveOptionLabel(burnDurationOptions.value, value)
   )
 }
 
@@ -495,7 +487,7 @@ function handleThreadShowInRoom(value: boolean) {
 function handleThreadNotificationChange(value: string) {
   showOptionSetFeedback(
     t('setting.preferences.thread_notification_label'),
-    findOptionLabel(threadNotificationOptions.value, value)
+    resolveOptionLabel(threadNotificationOptions.value, value)
   )
 }
 
@@ -510,7 +502,7 @@ function handleSpaceShowSubspaces(value: boolean) {
 function handleSpaceNotificationChange(value: string) {
   showOptionSetFeedback(
     t('setting.preferences.space_notification_label'),
-    findOptionLabel(spaceNotificationOptions.value, value)
+    resolveOptionLabel(spaceNotificationOptions.value, value)
   )
 }
 

@@ -1,11 +1,18 @@
 <template>
-  <AutoFixHeightPage :show-footer="false">
-    <template #header>
-      <HeaderBar border :isOfficial="false" :hidden-right="true" :room-name="t('encryption.device_trust.title')" />
-    </template>
+  <van-popup
+    :show="props.show"
+    position="right"
+    class="device-trust-popup"
+    :style="{ width: '100%', height: '100%' }"
+    @update:show="handleVisibleUpdate">
+    <div class="device-trust-manager-mobile">
+      <van-nav-bar
+        :title="t('encryption.device_trust.title')"
+        left-arrow
+        safe-area-inset-top
+        @click-left="handleClose" />
 
-    <template #container>
-      <div class="device-trust-manager-mobile">
+      <div class="device-trust-manager-mobile__body">
         <!-- 加载状态 -->
         <div v-if="loading" class="flex justify-center items-center py-40px">
           <van-loading size="24px">{{ t('mobile_devices.loading') }}</van-loading>
@@ -175,20 +182,29 @@
           </div>
         </div>
       </van-action-sheet>
-    </template>
-  </AutoFixHeightPage>
+    </div>
+  </van-popup>
 </template>
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { showConfirmDialog, showToast } from 'vant'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type DeviceTrustInfo, useDeviceTrust } from '@/composables/encryption/useDeviceTrust'
-import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
-import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
+
+defineOptions({ name: 'MobileDeviceTrustManager' })
+
+const props = defineProps<{
+  show: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:show', value: boolean): void
+  (e: 'complete'): void
+}>()
 
 const { t } = useI18n()
 
@@ -211,13 +227,31 @@ const actionLoading = ref<string | null>(null)
 
 const currentDeviceId = computed(() => matrixEncryptionService.getCurrentDeviceId() || '')
 
-onMounted(async () => {
-  // 默认加载自己的设备列表
+const loadCurrentUserDevices = async () => {
   const userId = matrixClientService.getUserId()
   if (userId) {
     await loadDevices(userId)
   }
-})
+}
+
+watch(
+  () => props.show,
+  async (visible) => {
+    if (!visible) return
+    showDeviceSheet.value = false
+    await loadCurrentUserDevices()
+  },
+  { immediate: true }
+)
+
+function handleVisibleUpdate(value: boolean) {
+  emit('update:show', value)
+}
+
+function handleClose() {
+  emit('update:show', false)
+  emit('complete')
+}
 
 function handleDeviceClick(device: DeviceTrustInfo) {
   selectedDevice.value = device
@@ -237,6 +271,7 @@ async function handleTrustDevice() {
     await trustDevice(device.userId, device.deviceId)
     showToast(t('mobile_devices.trust_success'))
     showDeviceSheet.value = false
+    emit('complete')
   } catch {
     showToast(t('mobile_devices.trust_failed'))
   } finally {
@@ -256,6 +291,7 @@ async function handleUntrustDevice() {
     await untrustDevice(device.userId, device.deviceId)
     showToast(t('mobile_devices.untrust_success'))
     showDeviceSheet.value = false
+    emit('complete')
   } catch (e) {
     if (e !== 'cancel') showToast(t('mobile_devices.untrust_failed'))
   } finally {
@@ -275,6 +311,7 @@ async function handleBlockDevice() {
     await blockDevice(device.userId, device.deviceId)
     showToast(t('mobile_devices.block_success'))
     showDeviceSheet.value = false
+    emit('complete')
   } catch (e) {
     if (e !== 'cancel') showToast(t('mobile_devices.block_failed'))
   } finally {
@@ -287,6 +324,7 @@ async function handleUnblockClick(device: DeviceTrustInfo) {
   try {
     await unblockDevice(device.userId, device.deviceId)
     showToast(t('mobile_devices.unblock_success'))
+    emit('complete')
   } catch {
     showToast(t('mobile_devices.unblock_failed'))
   } finally {
@@ -301,19 +339,29 @@ async function handleUnblockDevice() {
 }
 
 const handleRefresh = async () => {
-  const userId = matrixClientService.getUserId()
-  if (userId) {
-    await loadDevices(userId)
-  }
+  await loadCurrentUserDevices()
 }
 </script>
 
 <style scoped lang="scss">
+.device-trust-popup {
+  display: flex;
+  flex-direction: column;
+}
+
 .device-trust-manager-mobile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
   background: var(--van-background-2);
+
+  &__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .empty-state {

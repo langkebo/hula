@@ -27,11 +27,6 @@
               </template>
             </van-field>
           </div>
-          <div class="flex justify-end items-center">
-            <van-button size="small" type="primary" plain round @click="doSearch">
-              {{ t('mobile_chat_setting.search_button') }}
-            </van-button>
-          </div>
         </div>
 
         <!-- 好友列表 -->
@@ -54,13 +49,13 @@
                 <template #default>
                   <div class="flex items-center gap-10px px-8px py-10px">
                     <img
-                      :src="AvatarUtils.getAvatarUrl(groupStore.getUserInfo(item.userId)?.avatar!, 96)"
+                      :src="AvatarUtils.getAvatarUrl(item.avatarUrl ?? '', 96)"
                       class="size-44px rounded-full object-cover border-[1px] border-[--avatar-border-color]"
                       :alt="t('mobile_contact.avatar.user')"
                       @error="($event.target as HTMLImageElement).src = '/logo.png'" />
                     <div class="flex flex-col leading-tight truncate">
                       <span class="text-14px font-medium truncate">
-                        {{ groupStore.getUserInfo(item.userId)?.name }}
+                        {{ contactDisplayName(item) }}
                       </span>
                       <div class="text-12px text-[--tjg-text-tertiary] flex items-center gap-4px truncate">
                         <span
@@ -105,7 +100,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
 import router from '@/router'
 import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
-import { useChatStore } from '@/stores/domains/chat/chat'
+import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -124,6 +119,10 @@ const contactStore = useContactStore()
 const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 
+/** 联系人显示名：备注 > 昵称 > 账号 */
+const contactDisplayName = (contact: MatrixContact) =>
+  contact.remark || contact.displayName || contact.account || contact.userId
+
 const keyword = ref('')
 const selectedList = ref<string[]>([])
 const isLoading = ref(false)
@@ -139,19 +138,16 @@ const allContacts = computed(() => {
 })
 
 const filteredContacts = computed(() => {
-  if (!keyword.value.trim()) {
+  const searchKeyword = keyword.value.trim().toLowerCase()
+  if (!searchKeyword) {
     return allContacts.value
   }
 
-  const searchKeyword = keyword.value.toLowerCase()
+  // 候选人是「好友联系人」，不是群成员，groupStore.getUserInfo 查不到他们
   return allContacts.value.filter((item) => {
-    const userInfo = groupStore.getUserInfo(item.userId)
-    if (!userInfo) return false
-    return userInfo.name.toLowerCase().includes(searchKeyword) || userInfo.account.toLowerCase().includes(searchKeyword)
+    return [contactDisplayName(item), item.account ?? '', item.userId].join(' ').toLowerCase().includes(searchKeyword)
   })
 })
-
-const doSearch = () => {}
 
 const handleInvite = async () => {
   if (isLoading.value) return
@@ -182,20 +178,12 @@ const handleInvite = async () => {
 
 onMounted(async () => {
   try {
-    const chatStore = useChatStore()
-    const groupSessions = chatStore.getGroupSessions()
-
+    // 只需要当前群成员列表来排除已在群内的联系人，候选人资料取自 contactsList
     if (globalStore.currentSessionRoomId) {
       await groupStore.getGroupUserList(globalStore.currentSessionRoomId)
     }
-
-    await Promise.all(
-      groupSessions
-        .filter((session) => session.roomId !== globalStore.currentSessionRoomId)
-        .map((session) => groupStore.getGroupUserList(session.roomId))
-    )
   } catch (error) {
-    logger.error('Failed to load user info:', error)
+    logger.error('Failed to load group members:', error)
   }
 })
 </script>

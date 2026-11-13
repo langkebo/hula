@@ -118,7 +118,10 @@ describe('buildDisplayMessage', () => {
       avatarUrl: 'mxc://avatar',
       content: 'hello',
       timestamp: 1234,
-      inReplyTo: undefined
+      inReplyTo: undefined,
+      msgType: 'm.text',
+      mxcUrl: undefined,
+      fileSize: undefined
     })
   })
 

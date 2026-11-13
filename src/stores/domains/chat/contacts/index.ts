@@ -68,7 +68,8 @@ export const useContactStore = defineStore(StoresEnum.CONTACTS, () => {
     ensureFriendServicesReady,
     loadContacts: list.loadContacts,
     startDirectRoom: dm.startDirectRoom,
-    loadPendingInvites: invites.loadPendingInvites
+    loadPendingInvites: invites.loadPendingInvites,
+    pendingInvites: invites.pendingInvites
   })
 
   async function initialize(): Promise<void> {

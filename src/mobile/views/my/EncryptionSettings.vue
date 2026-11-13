@@ -119,7 +119,7 @@
             :title="t('setting.encryption.cross_signing_setup')"
             :label="t('setting.encryption.cross_signing_not_setup_desc')"
             is-link
-            @click="showCrossSigningSetup = true" />
+            @click="router.push(MOBILE_SETTINGS_SECURITY_KEY_PATH)" />
         </van-cell-group>
 
         <!-- 安全密钥（SSSS 恢复密钥）入口：方案 4.2 -->
@@ -186,6 +186,13 @@
         </div>
       </van-action-sheet>
 
+      <!-- 已启用备份时的管理操作（恢复 / 删除） -->
+      <van-action-sheet
+        v-model:show="showBackupSheet"
+        :title="t('setting.encryption.manage_backup')"
+        :actions="backupActions"
+        @select="handleBackupAction" />
+
       <!-- 密钥备份流程统一走共享弹窗（useKeyBackupFlow），页面不再直连备份服务 -->
       <MobileKeyBackupDialog v-model="showKeyBackupSetup" mode="setup" @complete="onKeyBackupComplete" />
       <MobileKeyBackupDialog v-model="showKeyBackupRestore" mode="restore" @complete="onKeyBackupComplete" />
@@ -202,31 +209,25 @@ import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { type DeviceSessionInfo, useDeviceSessions } from '@/composables/encryption/useDeviceSessions'
-import { useEncryptionOverview } from '@/composables/encryption/useEncryptionOverview'
-import { useGlobalStrictMode } from '@/composables/encryption/useGlobalStrictMode'
+import type { DeviceSessionInfo } from '@/composables/encryption/useDeviceSessions'
+import { useEncryptionSettings } from '@/composables/encryption/useEncryptionSettings'
+import { useKeyBackupFlow } from '@/composables/encryption/useKeyBackupFlow'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import MobileDehydratedDeviceDialog from '@/mobile/components/encryption/MobileDehydratedDeviceDialog.vue'
 import MobileDeviceTrustManager from '@/mobile/components/encryption/MobileDeviceTrustManager.vue'
 import MobileKeyBackupDialog from '@/mobile/components/encryption/MobileKeyBackupDialog.vue'
+import { createLogger } from '@/utils/Logger'
 import { MOBILE_SETTINGS_SECURITY_KEY_PATH } from './settingsRoutes'
+
+const logger = createLogger('MobileEncryptionSettings')
 
 const { t } = useI18n()
 const router = useRouter()
 
 const refreshing = ref(false)
 const finished = ref(false)
-// 设备列表与验证状态统一由 useDeviceSessions 提供（与登录设备页共用同一份实现）
-const {
-  loading,
-  devices,
-  currentDeviceId,
-  loadDevices: loadDeviceSessions,
-  deleteDevice: removeDevice,
-  startVerification
-} = useDeviceSessions()
-// 加密总览状态统一由 useEncryptionOverview 提供（与桌面端共用 store 数据与刷新副作用）
+// 加密总览、设备会话、严格模式与刷新编排统一由 useEncryptionSettings 提供（与桌面端共用同一份实现）
 const {
   encryptionEnabled,
   deviceVerified,
@@ -234,20 +235,37 @@ const {
   backupVersion,
   crossSigningSetup: crossSigningConfigured,
   loadOverview,
-  refreshBackup
-} = useEncryptionOverview()
-// 严格模式（不向未验证设备发送消息）与桌面端共用同一份偏好与施加逻辑
-const { enabled: strictEnabled, setEnabled: setStrictEnabled } = useGlobalStrictMode()
+  refreshBackup,
+  devicesLoading: loading,
+  devices,
+  currentDeviceId,
+  loadDevices: loadDeviceSessions,
+  deleteDevice: removeDevice,
+  startDeviceVerification: startVerification,
+  strictModeEnabled: strictEnabled,
+  setStrictMode: setStrictEnabled,
+  refreshEncryptionSettings
+} = useEncryptionSettings()
 const showDeviceSheet = ref(false)
 const selectedDevice = ref<DeviceSessionInfo | null>(null)
 // MobileKeyBackupDialog state
 const showKeyBackupSetup = ref(false)
 const showKeyBackupRestore = ref(false)
 const showDehydratedDevice = ref(false)
-// Cross-signing state
-const showCrossSigningSetup = ref(false)
 // Device trust manager
 const showDeviceTrustManager = ref(false)
+// 已启用备份时的管理操作面板
+const showBackupSheet = ref(false)
+const { deleteBackupVersion } = useKeyBackupFlow()
+
+const backupActions = computed(() => [
+  { name: t('setting.encryption.restore_backup'), value: 'restore' },
+  {
+    name: t('encryption.secure_backup.delete_action'),
+    value: 'delete',
+    color: 'var(--tjg-color-danger-500)'
+  }
+])
 function onKeyBackupComplete() {
   refreshBackup()
 }
@@ -296,7 +314,8 @@ const handleVerifyDevice = async () => {
     const transactionId = await startVerification(selectedDevice.value.deviceId)
     showToast(t('mobile_devices.verification_started', { transactionId }))
   } catch (error) {
-    showToast(t('setting.encryption.verify_device_todo'))
+    logger.error('Failed to start device verification:', error)
+    showToast(t('setting.encryption.verify_device_failed'))
   }
   showDeviceSheet.value = false
 }
@@ -322,15 +341,48 @@ const handleDeleteDevice = async () => {
 
 const handleBackupClick = () => {
   if (backupEnabled.value) {
-    showToast(
-      backupVersion.value
-        ? `${t('setting.encryption.manage_backup')}: v${backupVersion.value}`
-        : t('setting.encryption.manage_backup_todo')
-    )
+    // 已启用备份：打开管理面板（恢复 / 删除），不再走占位提示
+    showBackupSheet.value = true
     return
   }
   // 设置流程统一由 MobileKeyBackupDialog（useKeyBackupFlow）承担
   showKeyBackupSetup.value = true
+}
+
+const handleBackupAction = (action: { value?: unknown }) => {
+  showBackupSheet.value = false
+  if (action.value === 'restore') {
+    handleRestoreBackup()
+    return
+  }
+  if (action.value === 'delete') {
+    void handleDeleteBackup()
+  }
+}
+
+const handleDeleteBackup = async () => {
+  let version = backupVersion.value
+  if (!version) {
+    await refreshBackup()
+    version = backupVersion.value
+  }
+  if (!version) return
+
+  try {
+    await showConfirmDialog({
+      title: t('common.confirm'),
+      message: t('encryption.secure_backup.delete_confirm'),
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel')
+    })
+  } catch {
+    return
+  }
+
+  const deleted = await deleteBackupVersion(version)
+  if (deleted) {
+    await refreshBackup()
+  }
 }
 
 const handleRestoreBackup = () => {
@@ -338,10 +390,13 @@ const handleRestoreBackup = () => {
   showKeyBackupRestore.value = true
 }
 
-onMounted(() => {
-  loadDevices()
-  // 加密开关、设备验证、备份与交叉签名状态由 store 统一刷新
-  loadOverview()
+onMounted(async () => {
+  // 加密开关、设备验证、备份与交叉签名状态，以及设备列表，统一由共享 composable 编排
+  const { devicesLoaded } = await refreshEncryptionSettings()
+  finished.value = true
+  if (!devicesLoaded) {
+    showToast(t('setting.encryption.load_devices_failed'))
+  }
 })
 </script>
 

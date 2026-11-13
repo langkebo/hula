@@ -1,5 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import BurnAfterReadSettings from '../BurnAfterReadSettings.vue'
 
 const showToastMock = vi.fn()
@@ -193,6 +194,32 @@ describe('BurnAfterReadSettings', () => {
     await (wrapper.vm as any).handleRoomToggle(room, true)
     expect(enableBurnMock).toHaveBeenCalled()
     expect(showToastMock).toHaveBeenCalled()
+  })
+
+  it('ignores duplicate toggle while saving and clears busy state afterwards', async () => {
+    let resolveFirst: (value: boolean) => void = () => {}
+    enableBurnMock.mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveFirst = resolve
+        })
+    )
+    settingStoreMock.burnRooms = [{ roomId: 'r1', duration: 60 }]
+    const wrapper = mount(BurnAfterReadSettings)
+    await flushPromises()
+    const room = (wrapper.vm as any).burnRooms[0]
+
+    const first = (wrapper.vm as any).handleRoomToggle(room, true)
+    await nextTick()
+    expect((wrapper.vm as any).busyRooms.r1).toBe(true)
+
+    await (wrapper.vm as any).handleRoomToggle(room, true)
+    expect(enableBurnMock).toHaveBeenCalledTimes(1)
+
+    resolveFirst(true)
+    await first
+    await flushPromises()
+    expect((wrapper.vm as any).busyRooms.r1).toBe(false)
   })
 
   it('currentDurationLabel returns correct label', () => {

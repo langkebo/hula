@@ -16,7 +16,8 @@ const mocks = vi.hoisted(() => ({
   migrate: vi.fn(async () => 0),
   unmark: vi.fn(async () => {}),
   // 运行期会被替换成真正的 ref（见 beforeEach），这里只占位
-  sessionList: null as unknown
+  sessionList: null as unknown,
+  leaveGuard: undefined as undefined | ((to: { name?: string }) => void)
 }))
 
 // storeToRefs 直接返回可控 ref，避免拉真 pinia store
@@ -33,7 +34,10 @@ vi.mock('@/components/windows/ActionBar.vue', () => ({
 }))
 
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: mocks.push, back: mocks.back, replace: mocks.replace })
+  useRouter: () => ({ push: mocks.push, back: mocks.back, replace: mocks.replace }),
+  onBeforeRouteLeave: (cb: (to: { name?: string }) => void) => {
+    mocks.leaveGuard = cb
+  }
 }))
 
 vi.mock('@/stores/domains/chat/chat/session', () => ({
@@ -75,6 +79,7 @@ describe('SecretChatPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetSecretChatSessionForTest()
+    mocks.leaveGuard = undefined
     mocks.sessionList = ref([makeSession(PRIVATE_ROOM, 'Alice'), makeSession(NORMAL_ROOM, 'Bob')])
     mocks.isPrivateRoom.mockImplementation((roomId: string) => roomId === PRIVATE_ROOM)
   })
@@ -134,5 +139,19 @@ describe('SecretChatPage', () => {
 
     expect(isSecretChatUnlocked()).toBe(false)
     expect(mocks.back).toHaveBeenCalled()
+  })
+
+  it('离开本页即上锁，但进入私密会话本身不上锁', async () => {
+    unlockSecretChatSession(new Uint8Array(32))
+    mountPage()
+    await nextTick()
+
+    expect(mocks.leaveGuard).toBeTypeOf('function')
+    // 进入私密会话：仍保持解锁，否则聊天页门禁会把刚解锁的会话拦下
+    mocks.leaveGuard?.({ name: 'message' })
+    expect(isSecretChatUnlocked()).toBe(true)
+
+    mocks.leaveGuard?.({ name: 'settings' })
+    expect(isSecretChatUnlocked()).toBe(false)
   })
 })

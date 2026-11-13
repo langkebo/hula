@@ -15,11 +15,12 @@
  * + 3 份可陈旧副本（matrixSessionState ref / pinia persist / extension 实例字段）
  * 且 `MatrixTokenManager.refresh()` 只回写 Rust 侧，两份 JS 副本不更新（潜伏缺陷）。
  *
- * 本守卫锁四件事：
+ * 本守卫锁五件事：
  *   L1 token 读取入口白名单 —— 除设计内的接缝外，任何文件新增 `getAccessToken(` 即红；
  *   L2 token 副本禁令 —— durable copy 计数不得增长（目标 0，逐批清理后 --update 收紧）；
  *   L3 运行时依赖环数 —— Tarjan SCC，含环分量数不得增长；
- *   L4 运行时最长依赖链 —— 深度不得增长。
+ *   L4 运行时最长依赖链 —— 深度不得增长；
+ *   L5 store 边界 —— 服务层不得 import Pinia store（S7 回归守卫，白名单外即红）。
  *
  * ⚠️ 口径（易误判，务必遵守）：
  *   - **只量运行时边**：`import type` / `export type` 整条语句被剔除。
@@ -112,6 +113,38 @@ export const TOKEN_COPY_RULES = [
 
 const isExcludedPath = (relPath) =>
   relPath.includes('__tests__') || /\.(test|spec)\.[cm]?ts$/.test(relPath) || relPath.endsWith('.d.ts')
+
+/**
+ * L5 白名单：服务层内**允许** import Pinia store 的文件。
+ *
+ * 服务层反向 import store 会形成 store ↔ service 静态环：store 未激活时调用即抛错，
+ * worker/单测也无法脱离 Pinia 复用服务。S7 已把 typing / presence / receipt 改为
+ * 钩子注入（`privacyPreferences.ts`，由 `main.ts` 注册），下列是剩余的设计内接缝。
+ */
+export const ALLOWED_STORE_IMPORT_FILES = {
+  [SERVICE_DIR + '/auth/SessionOrchestrator.ts']:
+    '启动期组合根（ARCH-A01 结项）：把 store 聚合为 SessionStorePort 端口，服务本体只依赖端口类型',
+  [SERVICE_DIR + '/media/mediaUploadPreferences.ts']:
+    '显式胶水层：把 store 偏好推给 MatrixMediaService，服务本体不 import Pinia',
+  [SERVICE_DIR + '/auth/SessionLogoutService.ts']:
+    '引用 secretChatSession 的纯函数（该模块无 defineStore），用于登出时锁定私密会话'
+}
+
+/**
+ * 判定 import 说明符是否指向 Pinia store 目录（`src/stores/**`）。
+ *
+ * 同时覆盖 `@/stores/...` 别名与相对路径；类型导入由调用方先行剔除。
+ */
+export function isStoreSpecifier(filePath, spec) {
+  let target = null
+  if (spec === '@/stores' || spec.startsWith('@/stores/')) {
+    target = spec.replace(/^@\//, 'src/')
+  } else if (spec.startsWith('.')) {
+    target = path.posix.normalize(path.posix.join(path.posix.dirname(filePath), spec))
+  }
+  if (!target) return false
+  return target === 'src/stores' || target.startsWith('src/stores/')
+}
 
 /** 行是否为注释（与 check-worker-client-boundary 同口径） */
 export const isCommentLine = (line) => {
@@ -411,6 +444,24 @@ export function scan(files, baseline, extraFiles = []) {
     })
   }
 
+  // L5 store 边界：服务层不得 import Pinia store（白名单见 ALLOWED_STORE_IMPORT_FILES）
+  const storeImports = []
+  for (const file of files) {
+    if (file.path in ALLOWED_STORE_IMPORT_FILES) continue
+    for (const { spec, typeOnly } of extractModuleSpecifiers(String(file.content ?? ''))) {
+      if (typeOnly) continue
+      if (isStoreSpecifier(file.path, spec)) storeImports.push({ path: file.path, spec })
+    }
+  }
+  if (storeImports.length > 0) {
+    violations.push({
+      kind: 'service-store-import',
+      path: storeImports.map((i) => `${i.path} → ${i.spec}`).join(', '),
+      detail: `${storeImports.length} 处白名单外的 store 导入`,
+      why: '服务层直接依赖 Pinia store 会形成 store ↔ service 环（S7）：改为钩子注入，或下沉到 stores 侧的胶水层'
+    })
+  }
+
   return {
     ok: violations.length === 0,
     checkedFiles: files.length,
@@ -420,7 +471,8 @@ export function scan(files, baseline, extraFiles = []) {
       runtime_cycles: cycles.length,
       runtime_max_depth: chain.depth,
       token_read_sites: Object.values(readSites).reduce((sum, n) => sum + n, 0),
-      token_copies: copies.length
+      token_copies: copies.length,
+      store_imports: storeImports.length
     },
     readSites,
     copies: copies.map((c) => c.id),

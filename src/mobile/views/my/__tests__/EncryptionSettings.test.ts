@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import EncryptionSettings from '../EncryptionSettings.vue'
+import { MOBILE_SETTINGS_SECURITY_KEY_PATH } from '../settingsRoutes'
 
 const { applyGlobalStrictMock } = vi.hoisted(() => ({
   applyGlobalStrictMock: vi.fn(() => true)
@@ -22,7 +23,8 @@ const {
   isDeviceVerifiedMock,
   startSasVerificationMock,
   showToastMock,
-  showConfirmDialogMock
+  showConfirmDialogMock,
+  routerPushMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
   getCurrentDeviceIdMock: vi.fn(),
@@ -32,11 +34,16 @@ const {
   isDeviceVerifiedMock: vi.fn(),
   startSasVerificationMock: vi.fn(),
   showToastMock: vi.fn(),
-  showConfirmDialogMock: vi.fn()
+  showConfirmDialogMock: vi.fn(),
+  routerPushMock: vi.fn()
 }))
 
 vi.mock('@iconify/vue', () => ({
   Icon: { name: 'Icon', template: '<i data-test="icon" />', props: ['icon', 'width', 'color'] }
+}))
+
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: routerPushMock })
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -339,7 +346,7 @@ describe('Mobile EncryptionSettings', () => {
     expect((wrapper.vm as any).showDeviceSheet).toBe(false)
   })
 
-  it('密钥备份入口统一打开共享备份弹窗，并在已启用时提示当前版本', async () => {
+  it('密钥备份入口统一打开共享备份弹窗，并在已启用时打开管理面板', async () => {
     const wrapper = mountComponent()
 
     await flushPromises()
@@ -353,10 +360,29 @@ describe('Mobile EncryptionSettings', () => {
     ;(wrapper.vm as any).backupEnabled = true
     ;(wrapper.vm as any).backupVersion = '1'
     vm.handleBackupClick()
-    expect(showToastMock).toHaveBeenCalledWith('setting.encryption.manage_backup: v1')
+    expect((wrapper.vm as any).showBackupSheet).toBe(true)
 
     vm.handleRestoreBackup()
     expect((wrapper.vm as any).showKeyBackupRestore).toBe(true)
+  })
+
+  it('交叉签名未设置时跳转安全密钥设置页', async () => {
+    getCurrentSessionContextMock.mockReturnValue({
+      userId: '@alice:example.com',
+      deviceId: 'CURRENT_DEVICE',
+      isCryptoEnabled: false
+    })
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const setupCell = wrapper
+      .findAll('[data-test="van-cell"]')
+      .find((cell) => cell.text().includes('setting.encryption.cross_signing_setup'))
+    expect(setupCell).toBeTruthy()
+
+    await setupCell?.trigger('click')
+
+    expect(routerPushMock).toHaveBeenCalledWith(MOBILE_SETTINGS_SECURITY_KEY_PATH)
   })
 
   it('在加密不可用或设备加载失败时走降级提示', async () => {
@@ -412,11 +438,11 @@ describe('Mobile EncryptionSettings', () => {
     await vm.handleVerifyDevice()
     await vm.handleDeleteDevice()
 
-    expect(showToastMock).toHaveBeenCalledWith('setting.encryption.verify_device_todo')
+    expect(showToastMock).toHaveBeenCalledWith('setting.encryption.verify_device_failed')
     expect(showToastMock).toHaveBeenCalledWith('setting.encryption.delete_device_failed')
   })
 
-  it('在删除取消和备份管理缺省时按预期处理', async () => {
+  it('在删除取消和备份管理入口按预期处理', async () => {
     const wrapper = mountComponent()
 
     await flushPromises()
@@ -426,11 +452,13 @@ describe('Mobile EncryptionSettings', () => {
     await vm.handleDeleteDevice()
 
     ;(wrapper.vm as any).backupEnabled = true
-    ;(wrapper.vm as any).backupVersion = ''
     vm.handleBackupClick()
+    expect((wrapper.vm as any).showBackupSheet).toBe(true)
 
+    vm.handleBackupAction({ value: 'restore' })
+    expect((wrapper.vm as any).showBackupSheet).toBe(false)
+    expect((wrapper.vm as any).showKeyBackupRestore).toBe(true)
     expect(showToastMock).not.toHaveBeenCalledWith('setting.encryption.delete_device_failed')
-    expect(showToastMock).toHaveBeenCalledWith('setting.encryption.manage_backup_todo')
   })
 
   it('当前设备已验证时隐藏设备操作按钮', async () => {

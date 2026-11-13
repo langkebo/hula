@@ -63,6 +63,12 @@ export interface ThreadDisplayMessage {
   content: string
   timestamp: number
   inReplyTo?: string | undefined
+  /** 消息类型（m.text / m.image / m.file ...），供端上按类型渲染 */
+  msgType?: string | undefined
+  /** 媒体消息的 mxc:// 地址 */
+  mxcUrl?: string | undefined
+  /** 媒体消息文件大小（字节） */
+  fileSize?: number | undefined
 }
 
 export interface ThreadViewData {

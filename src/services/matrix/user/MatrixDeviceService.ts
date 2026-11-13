@@ -328,6 +328,36 @@ class MatrixDeviceService extends BaseMatrixService {
   }
 
   /**
+   * 兑现（fulfill）指定的房间密钥请求：把请求指向的 room key 回传给请求方。
+   *
+   * SDK 已提供 `DeviceKeysManager.fulfillRoomKeyRequest(requestId)`（`POST /room_keys/request/{id}/fulfill`），
+   * 本方法只做服务层收口（S1：能力在 SDK，缺的是接入）。
+   * 注意：该方法挂在 `getDeviceKeysManager()` 上，`E2EEManager` 只镜像了 list/delete。
+   *
+   * @param requestId `getRoomKeyRequests()` 返回项里的 `request_id`
+   * @param opts 可选的 `session_key` / `sender_key` 覆盖值；省略时由后端按请求记录匹配
+   * @returns 成功 true；失败记录 error 并返回 false（与 {@link deleteRoomKeyRequest} 一致，不抛出）
+   */
+  async fulfillRoomKeyRequest(
+    requestId: string,
+    opts?: { session_key?: string; sender_key?: string }
+  ): Promise<boolean> {
+    if (!requestId.trim()) {
+      logger.error('[DeviceService] 兑现密钥请求失败: requestId 为空')
+      return false
+    }
+    const client = this.getClient()
+    try {
+      await client.getDeviceKeysManager().fulfillRoomKeyRequest(requestId, opts)
+      logger.info(`[DeviceService] 兑现密钥请求成功: ${requestId}`)
+      return true
+    } catch (err) {
+      logger.error(`[DeviceService] 兑现密钥请求失败: ${requestId}, ${err}`)
+      return false
+    }
+  }
+
+  /**
    * 删除指定的房间密钥请求。
    * 成功返回 true，失败记录 error 并返回 false。
    */

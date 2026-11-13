@@ -52,6 +52,8 @@ declare namespace STO {
       emojiConvert: boolean
       /** 表情显示大小 */
       emojiSize: 'small' | 'medium' | 'large'
+      /** 消息撤回时限（秒） */
+      recallTime: 120 | 300 | 600
       /** 新私聊默认是否开启阅后即焚 */
       burnDefaultEnabled: boolean
       /** 阅后即焚默认时长 */

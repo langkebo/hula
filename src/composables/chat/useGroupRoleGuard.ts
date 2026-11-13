@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { PowerEnum, RoleEnum, RoomTypeEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { isDiffNow } from '@/utils/ComputedTime'
@@ -19,6 +20,7 @@ export const useGroupRoleGuard = () => {
   const groupStore = useGroupStore()
   const userStore = useUserStore()
   const globalStore = useGlobalStore()
+  const settingStore = useSettingStore()
   const userUid = computed(() => userStore.userInfo?.uid ?? '')
 
   /** 群管理操作（设/撤管理员、移出群）的共同前置：当前是群聊且非频道房间(roomId === '1') */
@@ -45,37 +47,43 @@ export const useGroupRoleGuard = () => {
   /** 当前用户是否群主 */
   const isCurrentUserLord = (): boolean => currentUserRoleId() === RoleEnum.LORD
 
-  /**
-   * 撤回消息可见性：系统管理员 / 群管理（群主或管理员）可撤回任意消息；
-   * 普通成员只能撤回自己 2 分钟内的消息
-   */
-  const canRecallMessage = (item: MessageType): boolean => {
-    const isSystemAdmin = userStore.userInfo?.power === PowerEnum.ADMIN
-    if (isSystemAdmin) {
+  /** 撤回权限：系统管理员 / 群管理（群主或管理员）可撤回任意消息，且不受时限约束 */
+  const hasRecallPrivilege = (): boolean => {
+    if (userStore.userInfo?.power === PowerEnum.ADMIN) {
       return true
     }
 
     const isGroupSession = globalStore.currentSession?.type === RoomTypeEnum.GROUP
-    const currentMember = isGroupSession
-      ? groupStore.userList.find((member) => member.uid === userUid.value)
-      : undefined
-    const isGroupManager =
-      isGroupSession &&
-      (currentMember?.roleId === RoleEnum.LORD ||
-        currentMember?.roleId === RoleEnum.ADMIN ||
-        groupStore.currentLordId === userUid.value ||
-        groupStore.adminUidList.includes(userUid.value))
-
-    if (isGroupManager) {
-      return true
-    }
-
-    const isCurrentUser = item.fromUser.uid === userUid.value
-    if (!isCurrentUser) {
+    if (!isGroupSession) {
       return false
     }
+    const currentMember = groupStore.userList.find((member) => member.uid === userUid.value)
+    return (
+      currentMember?.roleId === RoleEnum.LORD ||
+      currentMember?.roleId === RoleEnum.ADMIN ||
+      groupStore.currentLordId === userUid.value ||
+      groupStore.adminUidList.includes(userUid.value)
+    )
+  }
 
-    return !isDiffNow({ time: item.message.sendTime, unit: 'minute', diff: 2 })
+  /**
+   * 撤回入口可见性：有特权者可撤回任意消息；普通成员只对自己的消息显示入口，
+   * 超出 settingStore.recallTime 时限时入口置灰（见 isRecallExpired）
+   */
+  const canRecallMessage = (item: MessageType): boolean => {
+    if (hasRecallPrivilege()) {
+      return true
+    }
+    return item.fromUser.uid === userUid.value
+  }
+
+  /**
+   * 本人消息是否已超出「消息撤回时间」设置的时间窗（秒）
+   * 有撤回特权者不受时限约束，始终返回 false
+   */
+  const isRecallExpired = (item: MessageType): boolean => {
+    if (hasRecallPrivilege()) return false
+    return isDiffNow({ time: item.message.sendTime, unit: 'second', diff: settingStore.recallTime })
   }
 
   return {
@@ -84,6 +92,7 @@ export const useGroupRoleGuard = () => {
     resolveTargetRoleId,
     currentUserRoleId,
     isCurrentUserLord,
-    canRecallMessage
+    canRecallMessage,
+    isRecallExpired
   }
 }

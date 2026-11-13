@@ -22,6 +22,7 @@ export const getDefaultPreferenceSettings = (): STO.Setting['preferences'] => ({
   linkPreview: true,
   emojiConvert: true,
   emojiSize: 'medium' as 'small' | 'medium' | 'large',
+  recallTime: 120 as 120 | 300 | 600,
   burnDefaultEnabled: false,
   burnDefaultDuration: 60,
   burnShowCountdown: true,
@@ -124,6 +125,12 @@ export const normalizeThreadNotificationLevel = (value?: string): 'all' | 'parti
 export const normalizeEmojiSize = (value?: string): 'small' | 'medium' | 'large' => {
   if (value === 'small' || value === 'large') return value
   return 'medium'
+}
+
+/** 消息撤回时限只接受 120 / 300 / 600 秒，其余（含缺失）回落到 120 秒 */
+export const normalizeRecallTime = (value?: number): 120 | 300 | 600 => {
+  if (value === 300 || value === 600) return value
+  return 120
 }
 
 export const normalizeBurnDefaultDuration = (value?: number): 30 | 60 | 300 | 3600 | 86400 => {

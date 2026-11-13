@@ -1,3 +1,8 @@
+/**
+ * 路由集: mobile
+ * 依据：只断言移动路由页面（`/mobile/*`）；桌面 dev server（5211）没有这些路由。
+ * 校验：`tests/lint/e2e-route-sets.test.ts`（与 `e2e/specRouteSets.ts` 名单逐条比对）。
+ */
 import { expect, type Page, test } from '@playwright/test'
 import { loginOnMobileUi } from './support/androidDevice'
 import { dismissLocalUnlockDialog } from './support/localUnlockGate'
@@ -94,9 +99,15 @@ test.describe('空间树 UI：建空间 → 建子房间 → 树形渲染 → �
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 20_000 }).toBe('/mobile/space')
 
     // ── 1) 建空间（走 UI 表单，不直连 API）
-    await clickByText(page, '.space-view button', '创建空间')
+    //
+    // ⚠️ 点击要重试：`clickByText` 走的是 DOM 原生 `.click()`，空间页刚挂载完时按钮
+    // 可能已渲染但事件还没绑定（或命中另一个同名节点），表现为「点了没反应、表单不出现」。
+    // 第 4 轮实测红过 1 次（其它 3 轮同一条用例是绿的）。
     const nameInput = page.locator('input[placeholder="请输入空间名称"]')
-    await expect(nameInput, '创建空间表单未出现').toBeVisible({ timeout: 15_000 })
+    await expect(async () => {
+      await clickByText(page, '.space-view button', '创建空间')
+      await expect(nameInput, '创建空间表单未出现').toBeVisible({ timeout: 3_000 })
+    }).toPass({ timeout: 20_000 })
     await nameInput.fill(spaceName)
     await clickByText(page, '.van-action-sheet .form-actions button', '创建')
 

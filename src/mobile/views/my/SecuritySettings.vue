@@ -206,11 +206,10 @@ import { useRouter } from 'vue-router'
 import MobileDeviceVerifyDialog from '#/components/encryption/MobileDeviceVerifyDialog.vue'
 import MobileSecureBackupDialog from '#/components/encryption/MobileSecureBackupDialog.vue'
 import MobilePrivateChatSection from '#/components/settings/MobilePrivateChatSection.vue'
-import { useKeyExport } from '@/composables/encryption/useKeyExport'
+import { useSecuritySettings } from '@/composables/encryption/useSecuritySettings'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
-import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 import { firstPasswordRuleViolationKey } from '@/utils/passwordStrength'
 import {
@@ -228,11 +227,14 @@ useLoginFlow()
 
 const deviceCount = ref('0')
 const ignoredUsersCount = ref('0')
-// 交叉签名 / 密钥备份状态统一取自 encryptionStore（与桌面 Settings → 安全页同源），
+// 交叉签名 / 密钥备份状态统一取自 useSecuritySettings（与桌面 Settings → 安全页同一实现），
 // 不再直连 matrixCryptoService.getCryptoStatus()，避免两端各维护一套判定（S9）
-const encryptionStore = useEncryptionStore()
-const crossSigningEnabled = computed(() => encryptionStore.securityKeyConfigured)
-const keyBackupEnabled = computed(() => encryptionStore.backupEnabled)
+const {
+  securityKeyConfigured: crossSigningEnabled,
+  hasBackup: keyBackupEnabled,
+  refreshEncryptionStatus,
+  exportRecoveryKeys
+} = useSecuritySettings()
 
 const showPasswordDialog = ref(false)
 
@@ -245,7 +247,6 @@ const passwordForm = ref({
 const matrixStore = useMatrixStore()
 const showDeviceVerify = ref(false)
 const showSecureBackup = ref(false)
-const { exportKeys } = useKeyExport()
 const currentUserId = computed(() => matrixStore.userId ?? '')
 const currentDeviceId = computed(() => matrixStore.deviceId ?? '')
 function onDeviceVerified() {
@@ -280,8 +281,8 @@ async function loadSecurityInfo() {
     logger.error('Failed to load security details', error)
   }
 
-  // 加密/备份状态统一由 store 汇总（内部 Promise.allSettled，单项失败不影响其余项）
-  await encryptionStore.loadEncryptionStatus()
+  // 加密/备份状态统一由 useSecuritySettings 汇总（内部 Promise.allSettled，单项失败不影响其余项）
+  await refreshEncryptionStatus()
 }
 
 async function handleChangePassword() {
@@ -344,9 +345,9 @@ async function handleExportKeys() {
       forbidClick: true
     })
 
-    // 导出实现与桌面端共用 useKeyExport，只有文件名保留移动端格式
-    const keysJson = await exportKeys(`tjg-keys-${new Date().toISOString().slice(0, 10)}.json`)
-    if (keysJson) {
+    // 导出与前置判定与桌面端共用 useSecuritySettings → useKeyExport，只有文件名保留移动端格式
+    const result = await exportRecoveryKeys(`tjg-keys-${new Date().toISOString().slice(0, 10)}.json`)
+    if (result.ok) {
       showToast({
         type: 'success',
         message: t('mobile_security.export_keys_success')
@@ -354,7 +355,10 @@ async function handleExportKeys() {
     } else {
       showToast({
         type: 'fail',
-        message: t('mobile_security.export_keys_empty')
+        message:
+          result.reason === 'encryption-disabled'
+            ? t('setting.security.enable_encryption_first')
+            : t('mobile_security.export_keys_empty')
       })
     }
   } catch (error) {

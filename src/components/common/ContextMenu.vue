@@ -31,7 +31,7 @@
             <div v-for="(item, index) in visibleMenu" :key="getMenuItemProp(item, 'label')">
               <!-- 禁止的菜单选项需要禁止点击事件  -->
               <div
-                v-if="item.disabled"
+                v-if="isMenuItemDisabled(item)"
                 :id="`menu-item-${index}`"
                 class="menu-item-disabled"
                 role="menuitem"
@@ -107,7 +107,9 @@
               @keydown.space.prevent="handleClick(item)"
               v-for="item in visibleMenu"
               :key="getMenuItemProp(item, 'label')"
-              class="w-45px h-45px flex justify-center items-center">
+              :aria-disabled="isMenuItemDisabled(item)"
+              class="w-45px h-45px flex justify-center items-center"
+              :class="{ 'opacity-50': isMenuItemDisabled(item) }">
               <div class="flex w-45px flex-col active:bg-[--tjg-menu-hover] justify-center items-center max-h-45px">
                 <svg class="w-18px w-18px"><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
                 <p class="h-24px text-12px">{{ getMenuItemProp(item, 'label') }}</p>
@@ -213,6 +215,7 @@ const { vw, vh } = useViewport()
 const contentRef = computed(() => props.content)
 
 function handleClick(item: ContextMenuItem) {
+  if (isMenuItemDisabled(item)) return
   nextTick(() => {
     showMenu.value = false
     emit('select', item)
@@ -227,7 +230,7 @@ function handleReplyEmoji(item: ReactionEmoji) {
   })
 }
 
-const { getMenuItemProp, isDangerousItem } = useContextMenuItem(contentRef)
+const { getMenuItemProp, isDangerousItem, isMenuItemDisabled } = useContextMenuItem(contentRef)
 
 const emojiCount = computed(() => props.emoji.length)
 const { pos, emojiMenuPosition, handleSize } = useContextMenuPosition({

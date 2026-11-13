@@ -18,6 +18,13 @@ export default defineConfig(({ mode }: ConfigEnv) => {
   //    （admin 路由与 admin store）被 tree-shaking 移除，满足移动端零残留要求。
   //    开发态保持 false，保留运行时分派（?platform=mobile 覆盖与浏览器 E2E 依赖）。
   viteConfig = mergeConfig(viteConfig, {
+    // 依赖预构建缓存目录按平台隔离。
+    //
+    // 移动端（5210）与桌面端（5211）两套 dev server 会**并行**跑 e2e，默认都写
+    // `node_modules/.vite/deps`：后启动的 server 重写 `_metadata.json` 后，先启动那个的
+    // 动态 import 会 404（实测 `MobileChatMain.vue` 加载失败，e2e 报
+    // `Failed to fetch dynamically imported module`），跑批中途还会反复 re-optimize。
+    cacheDir: `node_modules/.vite-${isPC ? 'desktop' : 'mobile'}`,
     define: {
       __TJG_MOBILE_BUILD__: JSON.stringify(!isPC && mode === 'production')
     },

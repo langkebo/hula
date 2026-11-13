@@ -133,9 +133,40 @@ function zeroize(bytes: Uint8Array | null): void {
   bytes?.fill(0)
 }
 
+/** 解锁状态变化监听：`true` = 本会话已解锁（storageKey 就绪），`false` = 已锁定/清除。 */
+type LocalUnlockStateListener = (unlocked: boolean) => void
+
+const stateListeners = new Set<LocalUnlockStateListener>()
+
+/**
+ * 订阅本地解锁状态变化（D9）。
+ *
+ * 用途：crypto 因拿不到 storageKey 而 fail-closed 后，等用户解锁完成再补一次初始化 ——
+ * 否则「冷启动先跳过门禁 → 登录」这条路径整个会话都拿不到 E2EE。
+ *
+ * @returns 取消订阅
+ */
+export function subscribeLocalUnlockState(listener: LocalUnlockStateListener): () => void {
+  stateListeners.add(listener)
+  return () => {
+    stateListeners.delete(listener)
+  }
+}
+
+function notifyLocalUnlockState(unlocked: boolean): void {
+  for (const listener of [...stateListeners]) {
+    try {
+      listener(unlocked)
+    } catch (err) {
+      logger.warn('本地解锁状态监听回调异常', err)
+    }
+  }
+}
+
 function setStorageKey(key: Uint8Array): void {
   zeroize(localUnlockStorageKey)
   localUnlockStorageKey = new Uint8Array(key.slice(0, STORAGE_KEY_BYTES))
+  notifyLocalUnlockState(true)
 }
 
 /** 是否已设置本地解锁密码 */
@@ -207,8 +238,10 @@ export async function unlockLocalUnlock(password: string): Promise<boolean> {
 
 /** 锁定：清除内存中的 storageKey（verifier 保留，下次仍可解锁） */
 export function lockLocalUnlock(): void {
+  const wasUnlocked = localUnlockStorageKey !== null
   zeroize(localUnlockStorageKey)
   localUnlockStorageKey = null
+  if (wasUnlocked) notifyLocalUnlockState(false)
 }
 
 /**

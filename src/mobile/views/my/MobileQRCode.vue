@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { listen } from '@tauri-apps/api/event'
 import { cancel, Format, scan } from '@tauri-apps/plugin-barcode-scanner'
+import { showDialog } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useMitt } from '@/composables/common/useMitt'
 import { usePlatformClose } from '@/composables/common/usePlatformClose'
@@ -33,6 +34,40 @@ const { closeCurrentWindow } = usePlatformClose()
 
 const result = ref<string | null>(null)
 const isActive = ref(true)
+
+/**
+ * 统一扫码结果结构：壳层只接受带 `type` 的对象。
+ * - JSON 且含 `type`：好友码 / 群码，原样派发（后续处理器按 `uid` / `roomId` 取值）
+ * - 其余（MSC4108 纯 base64 文本）：按登录码包装成 `{ type: 'login', qrData }`
+ */
+const normalizeScanPayload = (content: string): Record<string, unknown> => {
+  try {
+    const parsed: unknown = JSON.parse(content)
+    if (parsed && typeof parsed === 'object' && typeof (parsed as { type?: unknown }).type === 'string') {
+      return parsed as Record<string, unknown>
+    }
+  } catch {
+    // 非 JSON，落到登录码分支
+  }
+  return { type: 'login', qrData: content }
+}
+
+/** 相机权限错误按错误码 / 文案判定，不再只靠 message 正则 */
+const isPermissionError = (err: unknown): boolean => {
+  if (!err || typeof err !== 'object') return false
+  const { code, message } = err as { code?: unknown; message?: unknown }
+  return /permission|denied|not[_\s-]?allowed/i.test(`${String(code ?? '')} ${String(message ?? '')}`)
+}
+
+const showScanError = async (message: string): Promise<void> => {
+  result.value = message
+  try {
+    await showDialog({ message, confirmButtonText: t('common.confirm') })
+  } catch {
+    // 用户关闭对话框
+  }
+  router.back()
+}
 
 const startScan = async () => {
   try {
@@ -61,14 +96,9 @@ const startScan = async () => {
     logger.debug('Scan result:', res)
 
     if (res && typeof res === 'object' && 'content' in res && typeof res.content === 'string') {
-      try {
-        const jsonData = JSON.parse(res.content)
-        logger.debug('Parsed QR payload:', jsonData)
-        useMitt.emit(MittEnum.QR_SCAN_EVENT, jsonData)
-      } catch (error) {
-        logger.debug('QR result is not JSON, falling back to plain text:', error)
-        useMitt.emit(MittEnum.QR_SCAN_EVENT, { raw: res.content })
-      }
+      const payload = normalizeScanPayload(res.content)
+      logger.debug('Normalized QR payload:', payload)
+      useMitt.emit(MittEnum.QR_SCAN_EVENT, payload)
 
       if (window.history.length > 1) {
         window.history.back()
@@ -77,25 +107,22 @@ const startScan = async () => {
       }
       result.value = res.content
     } else if (typeof res === 'string') {
-      // 某些平台可能直接返回字符串内容
-      useMitt.emit(MittEnum.QR_SCAN_EVENT, { raw: res })
+      // 某些平台可能直接返回字符串内容，同样按统一契约派发
+      const payload = normalizeScanPayload(res)
+      useMitt.emit(MittEnum.QR_SCAN_EVENT, payload)
       result.value = res
       if (window.history.length > 1) window.history.back()
       else await closeCurrentWindow()
     } else {
-      result.value = t('mobile_qrcode.scan_failed_or_cancelled')
+      await showScanError(t('mobile_qrcode.scan_failed_or_cancelled'))
     }
   } catch (err: unknown) {
     logger.error('QR scan failed', err)
 
-    if (err && typeof err === 'object' && 'message' in err && /permission/i.test((err as Error).message)) {
-      alert(t('mobile_qrcode.camera_permission_required'))
-      router.back() // 用户点 OK 后会执行这里
-      result.value = t('mobile_qrcode.permission_missing')
+    if (isPermissionError(err)) {
+      await showScanError(t('mobile_qrcode.camera_permission_required'))
     } else {
-      alert(t('mobile_qrcode.scan_error'))
-      router.back() // 其他错误也返回上一页
-      result.value = t('mobile_qrcode.scan_error')
+      await showScanError(t('mobile_qrcode.scan_error'))
     }
   }
 }

@@ -161,10 +161,14 @@ describe('MatrixClientService', () => {
 
     it('配置一致时重复 initialize 应复用现有 client（不再 createClient）', async () => {
       await matrixClientService.initialize(baseConfig)
+      const firstClient = matrixClientService.getClient()
+      expect(firstClient).not.toBeNull()
+
       await matrixClientService.initialize(baseConfig)
 
       expect(sdk.createClient).toHaveBeenCalledTimes(1)
-      expect(matrixClientService.getClient()).toBeTruthy()
+      // 断言同一实例被复用，而非「存在某个非空对象」
+      expect(matrixClientService.getClient()).toBe(firstClient)
     })
 
     it('配置变更（deviceId 不同）时应释放旧 client 后重建（createClient 两次）', async () => {

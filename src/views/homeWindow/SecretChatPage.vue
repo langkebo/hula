@@ -105,7 +105,6 @@ import { useRouter } from 'vue-router'
 import EmptyState from '@/components/common/EmptyState.vue'
 import EncryptionLockBadge from '@/components/encryption/EncryptionLockBadge.vue'
 import { useSecretChatPage } from '@/composables/secretChat/useSecretChatPage'
-import { lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
 
 defineOptions({
   name: 'SecretChatPage'
@@ -115,40 +114,44 @@ const { t } = useI18n()
 const router = useRouter()
 
 /**
- * 列表过滤 / 加密状态 / 解锁回跳 / 移出私密确认与移动端共用同一份规则。
+ * 列表过滤 / 加密状态 / 解锁回跳 / 移出私密确认 / 离开页面即上锁与移动端共用同一份规则。
  *
  * 进入页面时的锁定兜底（守卫放行后瞬间被锁的竞态）由 composable 的 onMounted 处理：
  * 原地切到锁定态视图（不跳走），列表被 v-if 掉、`hiddenSessions` 返回空数组，
  * DOM 里不留任何会话名/头像；点「输入密码继续」可原地解锁。
  */
-const { locked, hiddenSessions, isEncrypted, sessionAriaLabel, handleUnlockClick, handleSessionClick, handleUnmark } =
-  useSecretChatPage({
-    returnTarget: '/secretChat',
-    // 不清除私密标记：房间仍是私密房，只是进入查看。
-    // 路由名必须是 `message`——`/chat/:roomId` 在本仓不存在（`/chat` 是机器人插件路由且无参数），
-    // 之前跳到那里会落到 notFound。
-    openSession: (session) => router.push({ name: 'message', params: { roomId: session.roomId } }),
-    confirmUnmark: () =>
-      new Promise<boolean>((resolve) => {
-        const dialog = window.$dialog?.create({
-          title: t('home.secret_chat.unmark_private'),
-          content: t('home.secret_chat.unmark_confirm'),
-          positiveText: t('common.confirm'),
-          negativeText: t('common.cancel'),
-          onPositiveClick: () => resolve(true),
-          onNegativeClick: () => resolve(false),
-          onClose: () => resolve(false)
-        })
-        if (!dialog) resolve(false)
+const {
+  locked,
+  hiddenSessions,
+  isEncrypted,
+  sessionAriaLabel,
+  handleUnlockClick,
+  handleSessionClick,
+  handleClose,
+  handleUnmark
+} = useSecretChatPage({
+  returnTarget: '/secretChat',
+  // 不清除私密标记：房间仍是私密房，只是进入查看。
+  // 路由名必须是 `message`——`/chat/:roomId` 在本仓不存在（`/chat` 是机器人插件路由且无参数），
+  // 之前跳到那里会落到 notFound。
+  openSession: (session) => router.push({ name: 'message', params: { roomId: session.roomId } }),
+  // 进入私密会话不算「关闭」，路由离开上锁由 composable 统一处理
+  sessionRouteName: 'message',
+  closePage: () => router.back(),
+  confirmUnmark: () =>
+    new Promise<boolean>((resolve) => {
+      const dialog = window.$dialog?.create({
+        title: t('home.secret_chat.unmark_private'),
+        content: t('home.secret_chat.unmark_confirm'),
+        positiveText: t('common.confirm'),
+        negativeText: t('common.cancel'),
+        onPositiveClick: () => resolve(true),
+        onNegativeClick: () => resolve(false),
+        onClose: () => resolve(false)
       })
-  })
-
-const handleClose = () => {
-  // 关闭即锁（默认策略）：私密页是私密内容的唯一入口，
-  // 退出时不留解锁态，避免「关掉页面后别人接着用这台机器」还能直接看见列表。
-  lockSecretChatSession('close secret chat page')
-  router.back()
-}
+      if (!dialog) resolve(false)
+    })
+})
 </script>
 
 <style scoped>

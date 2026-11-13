@@ -27,12 +27,18 @@
                     <div class="py-20px">
                       <div class="rounded-8px overflow-hidden border border-gray-200">
                         <div class="flex items-center px-16px py-12px border-b border-gray-200">
-                          <span class="text-14px text-[--tjg-text-secondary] w-80px">{{ t('mobile_contact.friend_info.user_id') }}</span>
+                          <span class="text-14px text-[--tjg-text-secondary] w-80px">
+                            {{ t('mobile_contact.friend_info.user_id') }}
+                          </span>
                           <span class="text-14px">{{ uid }}</span>
                         </div>
                         <div class="flex items-center px-16px py-12px">
-                          <span class="text-14px text-[--tjg-text-secondary] w-80px">{{ t('mobile_contact.friend_info.user_name') }}</span>
-                          <span class="text-14px">{{ userInfo?.name || t('mobile_contact.friend_info.unknown') }}</span>
+                          <span class="text-14px text-[--tjg-text-secondary] w-80px">
+                            {{ t('mobile_contact.friend_info.user_name') }}
+                          </span>
+                          <span class="text-14px">
+                            {{ targetDisplayName || t('mobile_contact.friend_info.unknown') }}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -41,7 +47,9 @@
                     <div class="py-20px text-center">
                       <van-empty :description="t('mobile_contact.friend_info.no_moments')">
                         <template #description>
-                          <span class="text-12px text-[--tjg-text-tertiary]">{{ t('mobile_contact.friend_info.moments_unsupported') }}</span>
+                          <span class="text-12px text-[--tjg-text-tertiary]">
+                            {{ t('mobile_contact.friend_info.moments_unsupported') }}
+                          </span>
                         </template>
                       </van-empty>
                     </div>
@@ -59,16 +67,43 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import PersonalInfo from '#/components/my/PersonalInfo.vue'
-import { useUserStore } from '@/stores/domains/user/user'
+import { profileService } from '@/services/matrix/user/MatrixProfileService'
+import { useContactStore } from '@/stores/domains/chat/contacts'
+import { getContactDisplayName } from '@/stores/domains/chat/contacts/contactDisplay'
+import { useGroupStore } from '@/stores/domains/chat/group'
+import { createLogger } from '@/utils/Logger'
 
+const logger = createLogger('MobileFriendInfo')
 const { t } = useI18n()
-const userStore = useUserStore()
+const contactStore = useContactStore()
+const groupStore = useGroupStore()
 
 const route = useRoute()
 const uid = route.params.uid as string
 const isMyPage = ref(false)
-const userInfo = computed(() => userStore.userInfo)
 const activeTab = ref(0)
+
+/**
+ * 资料页展示的是路由 `uid` 对应的用户，绝不能复用当前登录用户。
+ * 优先取好友列表（含备注名），其次取群成员缓存，最后按 uid 拉一次 profile。
+ */
+const remoteDisplayName = ref('')
+const targetDisplayName = computed(() => {
+  const contact = contactStore.contactsList.find((item) => item.userId === uid)
+  if (contact) return getContactDisplayName(contact)
+  const member = groupStore.allUserInfo.find((item) => item.uid === uid)
+  return member?.name || remoteDisplayName.value
+})
+
+const loadTargetProfile = async (): Promise<void> => {
+  if (targetDisplayName.value) return
+  try {
+    const profile = await profileService.getProfile(uid)
+    remoteDisplayName.value = profile.displayname || ''
+  } catch (error) {
+    logger.error('Failed to load target profile:', uid, error)
+  }
+}
 
 const isShow = ref(true)
 const measureRef = ref<HTMLDivElement>()
@@ -83,6 +118,7 @@ onMounted(() => {
   if (measureRef.value) {
     contentRectObserver.observe(measureRef.value)
   }
+  void loadTargetProfile()
 })
 
 onUnmounted(() => {

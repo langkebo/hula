@@ -4,7 +4,7 @@
       <HeaderBar
         ref="headerBar"
         :room-name="currentSession?.remark || currentSession?.name || ''"
-        :msg-count="globalUnreadCount"
+        :msg-count="roomUnreadCount"
         :is-official="globalStore.currentSessionRoomId === '1'"
         :is-group="isGroupSession"
         :private-mode-active="privateModeActive"
@@ -14,7 +14,8 @@
         @toggle-private-mode="onTogglePrivateMode" />
     </template>
     <template #container>
-      <div v-clickable @click="handleChatMainClick" class="h-full overflow-y-auto">
+      <!-- 滚动只由 ChatMain 内部时间线承担，外层禁止滚动，避免双层滚动容器 -->
+      <div v-clickable class="h-full overflow-hidden">
         <ChatMain @scroll="handleScroll" />
       </div>
     </template>
@@ -87,7 +88,8 @@ const chatStore = useChatStore()
 // 组件测试与首屏都因此变慢（实测单测从 1s 涨到 52s）。
 const { switchSession } = useChatSession()
 const { currentSession } = storeToRefs(globalStore)
-const globalUnreadCount = computed(() => globalStore.messageUnreadCount ?? 0)
+/** 顶栏角标只展示当前房间未读数，不能用全站未读总数 */
+const roomUnreadCount = computed(() => currentSession.value?.unreadCount ?? 0)
 
 // 联邦判定（与 ChatHeaderRoot 单一事实源一致）
 const currentSessionRoomId = computed(() => globalStore.currentSessionRoomId)
@@ -188,11 +190,6 @@ const onConfirmPrivateMode = () => {
 }
 const onCancelPrivateMode = () => {
   showPrivateConfirm.value = false
-}
-
-const handleChatMainClick = () => {
-  // 移动端点击聊天区域不再自动关闭面板
-  // 用户需要手动点击按钮来关闭面板
 }
 
 const handleScroll = () => {

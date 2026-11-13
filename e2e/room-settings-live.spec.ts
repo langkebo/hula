@@ -1,4 +1,9 @@
 /**
+ * 路由集: both
+ * 依据：两套路由集都要跑（用例内部自带路由集能力守卫）。
+ * 校验：`tests/lint/e2e-route-sets.test.ts`（与 `e2e/specRouteSets.ts` 名单逐条比对）。
+ */
+/**
  * E2E Live 测试：真实后端环境下验证房间设置完整流程
  *
  * 需要环境变量：

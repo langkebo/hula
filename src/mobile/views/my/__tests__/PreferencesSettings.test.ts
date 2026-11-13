@@ -7,6 +7,8 @@ const setSendMessageShortcutMock = vi.fn()
 const setMessageConfirmEnabledMock = vi.fn()
 const setLinkPreviewEnabledMock = vi.fn()
 const setEmojiConvertEnabledMock = vi.fn()
+const setEmojiSizeMock = vi.fn()
+const setRecallTimeMock = vi.fn()
 const setBurnDefaultEnabledMock = vi.fn()
 const setBurnDefaultDurationMock = vi.fn()
 const setBurnShowCountdownEnabledMock = vi.fn()
@@ -20,6 +22,8 @@ const settingStoreMock = {
   messageConfirmEnabled: false,
   linkPreviewEnabled: true,
   emojiConvertEnabled: true,
+  emojiSize: 'medium',
+  recallTime: 120,
   sendMessageShortcut: 'Enter',
   burnDefaultEnabled: false,
   burnDefaultDuration: 60,
@@ -32,6 +36,14 @@ const settingStoreMock = {
   setMessageConfirmEnabled: (...args: any[]) => setMessageConfirmEnabledMock(...args),
   setLinkPreviewEnabled: (...args: any[]) => setLinkPreviewEnabledMock(...args),
   setEmojiConvertEnabled: (...args: any[]) => setEmojiConvertEnabledMock(...args),
+  setEmojiSize: (value: string) => {
+    settingStoreMock.emojiSize = value
+    setEmojiSizeMock(value)
+  },
+  setRecallTime: (value: number) => {
+    settingStoreMock.recallTime = value
+    setRecallTimeMock(value)
+  },
   setBurnDefaultEnabled: (...args: any[]) => setBurnDefaultEnabledMock(...args),
   setBurnDefaultDuration: (value: number) => {
     settingStoreMock.burnDefaultDuration = value
@@ -83,6 +95,8 @@ describe('PreferencesSettings', () => {
     settingStoreMock.messageConfirmEnabled = false
     settingStoreMock.linkPreviewEnabled = true
     settingStoreMock.emojiConvertEnabled = true
+    settingStoreMock.emojiSize = 'medium'
+    settingStoreMock.recallTime = 120
     settingStoreMock.sendMessageShortcut = 'Enter'
     settingStoreMock.burnDefaultEnabled = false
     settingStoreMock.burnDefaultDuration = 60
@@ -103,6 +117,8 @@ describe('PreferencesSettings', () => {
     expect((wrapper.vm as any).messageConfirm).toBe(false)
     expect((wrapper.vm as any).linkPreview).toBe(true)
     expect((wrapper.vm as any).emojiConvert).toBe(true)
+    expect((wrapper.vm as any).emojiSize).toBe('medium')
+    expect((wrapper.vm as any).recallTime).toBe(120)
     expect((wrapper.vm as any).sendKey).toBe('Enter')
     expect((wrapper.vm as any).burnDefaultEnabled).toBe(false)
     expect((wrapper.vm as any).burnShowCountdown).toBe(true)
@@ -175,30 +191,31 @@ describe('PreferencesSettings', () => {
   it('handleSendKeyConfirm writes through settingStore only', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = wrapper.vm as any
-    vm.handleSendKeyConfirm({ selectedValues: ['Ctrl+Enter'] })
+    vm.sendKeyPicker.show = true
+    vm.sendKeyPicker.confirm({ selectedValues: ['Ctrl+Enter'] })
     expect(setSendMessageShortcutMock).toHaveBeenCalledWith('Ctrl+Enter')
     expect(localStorage.getItem('tjg-send-key')).toBeNull()
-    expect((wrapper.vm as any).showSendKeyPicker).toBe(false)
+    expect(vm.sendKeyPicker.show).toBe(false)
   })
 
   it('handleBurnDurationConfirm saves to settingStore', () => {
     const wrapper = mount(PreferencesSettings)
     const vm = wrapper.vm as any
-    vm.handleBurnDurationConfirm({ selectedValues: [300] })
+    vm.burnDurationPicker.confirm({ selectedValues: [300] })
     expect(setBurnDefaultDurationMock).toHaveBeenCalledWith(300)
-    expect((wrapper.vm as any).showBurnDurationPicker).toBe(false)
+    expect(vm.burnDurationPicker.show).toBe(false)
   })
 
   it('sendKeyLabel returns correct label', () => {
     settingStoreMock.sendMessageShortcut = 'Ctrl+Enter'
     const wrapper = mount(PreferencesSettings)
-    expect((wrapper.vm as any).sendKeyLabel).toBe('Ctrl + Enter')
+    expect((wrapper.vm as any).sendKeyPicker.label).toBe('Ctrl + Enter')
   })
 
   it('burnDurationLabel returns correct label', () => {
     settingStoreMock.burnDefaultDuration = 300
     const wrapper = mount(PreferencesSettings)
-    expect((wrapper.vm as any).burnDurationLabel).toBe('5分钟')
+    expect((wrapper.vm as any).burnDurationPicker.label).toBe('5分钟')
   })
 
   it('loads burnDefaultDuration from settingStore getter', () => {
@@ -211,5 +228,29 @@ describe('PreferencesSettings', () => {
     settingStoreMock.sendTypingNotificationsEnabled = false
     const wrapper = mount(PreferencesSettings)
     expect((wrapper.vm as any).sendTypingNotifications).toBe(false)
+  })
+
+  it('handleRecallTimeConfirm saves to settingStore', () => {
+    const wrapper = mount(PreferencesSettings)
+    const vm = wrapper.vm as any
+    vm.recallTimePicker.confirm({ selectedValues: [600] })
+    expect(setRecallTimeMock).toHaveBeenCalledWith(600)
+    expect(vm.recallTimePicker.show).toBe(false)
+  })
+
+  it('handleEmojiSizeConfirm saves to settingStore', () => {
+    const wrapper = mount(PreferencesSettings)
+    const vm = wrapper.vm as any
+    vm.emojiSizePicker.confirm({ selectedValues: ['large'] })
+    expect(setEmojiSizeMock).toHaveBeenCalledWith('large')
+    expect(vm.emojiSizePicker.show).toBe(false)
+  })
+
+  it('recallTimeLabel and emojiSizeLabel return correct labels', () => {
+    settingStoreMock.recallTime = 300
+    settingStoreMock.emojiSize = 'small'
+    const wrapper = mount(PreferencesSettings)
+    expect((wrapper.vm as any).recallTimePicker.label).toBe('5 分钟')
+    expect((wrapper.vm as any).emojiSizePicker.label).toBe('小')
   })
 })

@@ -53,6 +53,8 @@ function isGenerated(relPath) {
   // 本地跑过 dev/build 就会存在，不属于需要人工拆分的源码；`components.d.ts` 是跟踪文件，仍照常计入）
   return (
     relPath.endsWith('i18n.d.ts') ||
+    // 按语言包命名空间拆分的生成类型（目录 `src/typings/i18n/`），体量由生成器控制
+    relPath.includes(`typings${path.sep}i18n${path.sep}`) ||
     relPath.includes('matrix-js-sdk-augmentations.d.ts') ||
     relPath.endsWith('components.mobile.d.ts') ||
     relPath.endsWith('components.pc.d.ts')

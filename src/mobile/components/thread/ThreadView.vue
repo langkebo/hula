@@ -16,7 +16,19 @@
           <div class="timestamp">{{ formatTime(rootMessage.timestamp) }}</div>
         </div>
       </div>
-      <div class="message-content">{{ rootMessage.content }}</div>
+      <div class="message-content">
+        <van-image
+          v-if="isImage(rootMessage)"
+          :src="mediaUrl(rootMessage) ?? ''"
+          fit="cover"
+          class="message-image"
+          @click="previewImage(rootMessage)" />
+        <div v-else-if="isFile(rootMessage)" class="message-file">
+          <van-icon name="description" size="20" />
+          <span class="file-name">{{ rootMessage.content }}</span>
+        </div>
+        <span v-else class="message-text">{{ rootMessage.content }}</span>
+      </div>
     </div>
 
     <van-divider />
@@ -39,7 +51,19 @@
                 <span class="sender-name">{{ msg.senderName }}</span>
                 <span class="timestamp">{{ formatTime(msg.timestamp) }}</span>
               </div>
-              <div class="message-content">{{ msg.content }}</div>
+              <div class="message-content">
+                <van-image
+                  v-if="isImage(msg)"
+                  :src="mediaUrl(msg) ?? ''"
+                  fit="cover"
+                  class="message-image"
+                  @click="previewImage(msg)" />
+                <div v-else-if="isFile(msg)" class="message-file">
+                  <van-icon name="description" size="20" />
+                  <span class="file-name">{{ msg.content }}</span>
+                </div>
+                <span v-else class="message-text">{{ msg.content }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -63,7 +87,7 @@
 
 <script setup lang="ts">
 import dayjs from 'dayjs'
-import { showToast } from 'vant'
+import { showImagePreview, showToast } from 'vant'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -89,6 +113,26 @@ const thread = ref<Thread | null>(null)
 const rootMessage = ref<ThreadDisplayMessage | null>(null)
 const messages = ref<ThreadDisplayMessage[]>([])
 
+/** 每页窗口增量（synapse-rust getRoomThread 的 replyLimit 窗口） */
+const PAGE_SIZE = 50
+const pageLimit = ref(PAGE_SIZE)
+const lastLoadedCount = ref(0)
+
+const isImage = (msg: ThreadDisplayMessage) => msg.msgType === 'm.image' && !!msg.mxcUrl
+const isFile = (msg: ThreadDisplayMessage) =>
+  msg.msgType === 'm.file' || msg.msgType === 'm.audio' || msg.msgType === 'm.video'
+const mediaUrl = (msg: ThreadDisplayMessage) => matrixThreadService.resolveMediaUrl(msg.mxcUrl, 320)
+const previewImage = (msg: ThreadDisplayMessage) => {
+  const url = mediaUrl(msg)
+  if (url) showImagePreview([url])
+}
+
+const resetPagination = () => {
+  pageLimit.value = PAGE_SIZE
+  lastLoadedCount.value = 0
+  finished.value = false
+}
+
 const formatTime = (timestamp: number) => {
   return dayjs(timestamp).fromNow()
 }
@@ -109,11 +153,22 @@ const loadMessages = async () => {
 
   loading.value = true
   try {
-    const viewData = matrixThreadService.getThreadViewData(props.roomId, props.threadRootId)
-    messages.value = viewData.replies
-    finished.value = true
+    const { replies, total } = await matrixThreadService.loadThreadRepliesPage(
+      props.roomId,
+      props.threadRootId,
+      pageLimit.value
+    )
+    messages.value = replies
+    // 已取满，或窗口继续放大也拿不到更多（防止 van-list 无限触发 load）
+    if (replies.length >= total || replies.length === lastLoadedCount.value) {
+      finished.value = true
+    } else {
+      lastLoadedCount.value = replies.length
+      pageLimit.value += PAGE_SIZE
+    }
   } catch (error) {
     logger.error('[MobileThreadView] Failed to load messages:', error)
+    finished.value = true
     showToast(t('common.thread.load_failed'))
   } finally {
     loading.value = false
@@ -122,7 +177,7 @@ const loadMessages = async () => {
 
 const onRefresh = async () => {
   refreshing.value = true
-  finished.value = false
+  resetPagination()
   try {
     await loadThread()
     await loadMessages()
@@ -143,7 +198,7 @@ const handleSendReply = async () => {
     showToast(t('common.thread.send_success'))
 
     // 重新加载消息
-    finished.value = false
+    resetPagination()
     await loadMessages()
   } catch (error) {
     logger.error('[MobileThreadView] Failed to send reply:', error)
@@ -247,6 +302,33 @@ onMounted(() => {
       }
     }
   }
+}
+
+.message-image {
+  display: block;
+  max-width: 200px;
+  overflow: hidden;
+  border-radius: var(--tjg-radius-lg);
+}
+
+.message-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--van-background-2);
+  border-radius: var(--tjg-radius-lg);
+
+  .file-name {
+    font-size: 13px;
+    color: var(--van-text-color-2);
+    word-break: break-all;
+  }
+}
+
+.message-text {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .empty-state {

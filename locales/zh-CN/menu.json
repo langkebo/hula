@@ -19,6 +19,7 @@
   "forward": "转发",
   "reply": "回复",
   "recall": "撤回",
+  "recall_expired": "撤回（已超时）",
   "copy": "复制",
   "save_as": "另存为",
   "show_in_finder": "在 Finder 中显示",

@@ -283,7 +283,13 @@ const isStep1Valid = computed(() => {
   )
 })
 
-const isStep2Valid = computed(() => isEmailValid.value && !!registerInfo.value.code.trim())
+/**
+ * 第二步必须同时具备「邮箱格式合法 + 已填验证码 + 已拿到邮箱会话」。
+ * 只用验证码判断会绕过邮箱身份校验：空 session 时直接注册成功。
+ */
+const isStep2Valid = computed(
+  () => isEmailValid.value && !!registerInfo.value.code.trim() && !!emailSessionId.value && !!emailClientSecret.value
+)
 
 const onEmailInput = (value: string) => {
   showEmailSuggestions.value = value.endsWith('@')
@@ -372,17 +378,15 @@ const handleRegisterComplete = async () => {
     const avatarNum = Math.floor(Math.random() * 21) + 1
     registerInfo.value.avatar = padZero(avatarNum, 3)
 
-    if (emailSessionId.value && emailClientSecret.value && registerInfo.value.code) {
-      await submitEmailToken(registerInfo.value.code, emailClientSecret.value, emailSessionId.value)
-    }
+    await submitEmailToken(registerInfo.value.code, emailClientSecret.value, emailSessionId.value)
 
     await registerAccount(
       registerInfo.value.nickName,
       registerInfo.value.password,
-      emailSessionId.value || undefined,
-      emailSessionId.value ? 'm.login.email.identity' : undefined,
+      emailSessionId.value,
+      'm.login.email.identity',
       undefined,
-      emailClientSecret.value || undefined
+      emailClientSecret.value
     )
 
     showFeedback(t('login.mobile.register_success'), 'success')

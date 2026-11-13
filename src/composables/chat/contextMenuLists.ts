@@ -87,7 +87,8 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
     resolveTargetRoleId,
     currentUserRoleId,
     isCurrentUserLord,
-    canRecallMessage
+    canRecallMessage,
+    isRecallExpired
   } = groupRoleGuard
 
   const commonMenuList = ref<OPT.RightMenu[]>([
@@ -131,7 +132,7 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       }
     },
     {
-      label: () => t('menu.recall'),
+      label: (item: MessageType) => (isRecallExpired(item) ? t('menu.recall_expired') : t('menu.recall')),
       icon: 'corner-down-left',
       click: async (item: MessageType) => {
         const msg = { ...item }
@@ -155,7 +156,8 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
           msgId: msg.message.id
         })
       },
-      visible: (item: MessageType) => canRecallMessage(item)
+      visible: (item: MessageType) => canRecallMessage(item),
+      disabled: (item: MessageType) => isRecallExpired(item)
     }
   ])
   const videoMenuList = ref<OPT.RightMenu[]>([

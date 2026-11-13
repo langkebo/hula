@@ -74,7 +74,12 @@
                   </div>
                 </template>
                 <template #right-icon>
-                  <van-switch :model-value="true" size="22px" @change="(val: boolean) => handleRoomToggle(room, val)" />
+                  <van-switch
+                    :model-value="true"
+                    :loading="Boolean(busyRooms[room.roomId])"
+                    :disabled="Boolean(busyRooms[room.roomId])"
+                    size="22px"
+                    @change="(val: boolean) => handleRoomToggle(room, val)" />
                 </template>
               </van-cell>
             </template>
@@ -136,6 +141,8 @@ const {
 } = useBurnAfterReadSettings()
 
 const showDurationPicker = ref(false)
+/** 房间级开关的保存中状态：避免重复提交，并给用户明确的「保存中」反馈 */
+const busyRooms = ref<Record<string, boolean>>({})
 
 const iconShellStyles = {
   global: { backgroundColor: 'var(--tjg-color-warning-100)' },
@@ -172,11 +179,18 @@ function handleDurationConfirm({ selectedValues }: { selectedValues: number[] })
 }
 
 async function handleRoomToggle(room: { roomId: string; duration: number }, val: boolean) {
-  const ok = await toggleRoomBurn(room.roomId, val, room.duration)
-  if (!ok) {
-    showToast(t('mobile_burn.room_toggle_failed'))
-    return
+  if (busyRooms.value[room.roomId]) return
+  busyRooms.value[room.roomId] = true
+  try {
+    const ok = await toggleRoomBurn(room.roomId, val, room.duration)
+    if (!ok) {
+      // 失败时不改动列表状态（开关值为受控的 true），即回滚到服务端实际值
+      showToast(t('mobile_burn.room_toggle_failed'))
+      return
+    }
+    showToast(val ? t('mobile_burn.room_enabled') : t('mobile_burn.room_disabled'))
+  } finally {
+    busyRooms.value[room.roomId] = false
   }
-  showToast(val ? t('mobile_burn.room_enabled') : t('mobile_burn.room_disabled'))
 }
 </script>

@@ -65,6 +65,7 @@ describe('matrixSdk.worker 消息分发', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
@@ -206,5 +207,46 @@ describe('matrixSdk.worker 消息分发', () => {
     expect(consoleError).toHaveBeenCalledWith('[matrixSdk.worker] 搜索引擎初始化失败:', initError)
     // worker 仍然就绪，主线程不会因索引初始化失败而卡住
     expect(scope.postMessage).toHaveBeenCalledWith({ type: 'ready', id: 'init', success: true })
+  })
+
+  it('搜索类消息等索引载入完成后再执行，避免启动瞬间查到空索引（G4）', async () => {
+    let resolveInit: () => void = () => {}
+    searchMocks.initSearchEngine.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveInit = resolve
+      })
+    )
+    searchMocks.handleSearchQuery.mockResolvedValue({ results: [] })
+
+    const scope = await loadWorker()
+    const pending = dispatch(scope, {
+      type: 'search.query',
+      id: 'req-g4',
+      payload: { term: '历史', scope: 'messages' }
+    })
+
+    await Promise.resolve()
+    expect(searchMocks.handleSearchQuery).not.toHaveBeenCalled()
+
+    resolveInit()
+    await pending
+
+    expect(searchMocks.handleSearchQuery).toHaveBeenCalledTimes(1)
+    expect(lastResponse(scope)).toMatchObject({ type: 'search.query', id: 'req-g4', success: true })
+  })
+
+  it('索引载入卡住时最多等待 3s 后照常执行，不让搜索请求永久挂起（G4 兜底）', async () => {
+    searchMocks.initSearchEngine.mockReturnValue(new Promise<void>(() => {}))
+    searchMocks.handleSearchStats.mockResolvedValue({ rooms: 0 })
+
+    const scope = await loadWorker()
+    vi.useFakeTimers()
+
+    const pending = dispatch(scope, { type: 'search.stats', id: 'req-g4b' })
+    await vi.advanceTimersByTimeAsync(3000)
+    await pending
+
+    expect(searchMocks.handleSearchStats).toHaveBeenCalledTimes(1)
+    expect(lastResponse(scope)).toMatchObject({ type: 'search.stats', id: 'req-g4b', success: true })
   })
 })

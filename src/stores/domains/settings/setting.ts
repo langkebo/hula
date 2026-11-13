@@ -1,5 +1,3 @@
-import { setTheme } from '@tauri-apps/api/app'
-import type { Theme } from '@tauri-apps/api/window'
 import { defineStore } from 'pinia'
 import { CloseBxEnum, ShowModeEnum, StoresEnum, ThemeEnum } from '@/enums'
 import {
@@ -12,26 +10,31 @@ import {
   unlockSecretChatWithPassword,
   verifySecretChatPasswordOnly
 } from './secretChatActions'
+import { createSettingGetters } from './settingGetters'
+import {
+  ensureChatSettings as ensureChatDefaults,
+  ensureNotificationSettings as ensureNotificationDefaults,
+  ensurePageSettings as ensurePageDefaults,
+  ensurePreferenceSettings as ensurePreferenceDefaults,
+  ensureScreenshotSettings as ensureScreenshotDefaults,
+  ensureSecretChatSettings as ensureSecretChatDefaults,
+  ensureShortcuts as ensureShortcutDefaults,
+  migrateLegacyPreferences
+} from './settingSections'
 import {
   createDefaultPageSettings,
-  getDefaultNotificationSettings,
   getDefaultPreferenceSettings,
   getDefaultShortcuts,
-  LEGACY_PREFERENCE_STORAGE_KEYS,
   normalizeBurnDefaultDuration,
   normalizeEmojiSize,
   normalizeNotificationVolume,
   normalizePageFontFamily,
+  normalizeRecallTime,
   normalizeSpaceDefaultNotification,
-  normalizeStrictUnverifiedRooms,
-  normalizeTheme,
   normalizeThreadNotificationLevel,
-  normalizeUploadCompressQuality,
-  readLegacyBooleanPreference,
-  resolveOsTheme,
-  setDocumentTheme,
-  stripLegacyThemeVariant
+  normalizeUploadCompressQuality
 } from './settings-helpers'
+import { ensureThemeReady, initTheme, normalizeThemeState, syncOsTheme, toggleTheme } from './settingThemeActions'
 
 // 缓存方案：使用 Pinia + localStorage 分账号存储
 // 后续可迁移到 IndexedDB 以支持更大的数据量
@@ -92,130 +95,28 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
   // 前者缺失会让重启后 `isSecretChatConfigured()` 恒 false；后者缺失会让锁屏无法解锁。
   // 两者都是 PBKDF2 verifier，不含可用于解密的密钥，落盘不构成明文口令泄露。
   persist: true,
-  getters: {
-    screenshotShortcut: (state: STO.Setting) => state.shortcuts?.screenshot ?? getDefaultShortcuts().screenshot,
-    openMainPanelShortcut: (state: STO.Setting) =>
-      state.shortcuts?.openMainPanel ?? getDefaultShortcuts().openMainPanel,
-    themeContent: (state: STO.Setting) => state.themes?.content ?? ThemeEnum.LIGHT,
-    themePattern: (state: STO.Setting) => state.themes?.pattern ?? ThemeEnum.LIGHT,
-    languagePreference: (state: STO.Setting) => state.page?.lang ?? 'zh-CN',
-    pageFontFamily: (state: STO.Setting) => normalizePageFontFamily(state.page?.fonts),
-    pageShadowEnabled: (state: STO.Setting) => state.page?.shadow ?? true,
-    pageBlurEnabled: (state: STO.Setting) => state.page?.blur ?? true,
-    autoLoginEnabled: (state: STO.Setting) => state.login?.autoLogin ?? false,
-    autoStartupEnabled: (state: STO.Setting) => state.login?.autoStartup ?? false,
-    secretChatEnabled: (state: STO.Setting) => state.secretChat?.enabled ?? false,
-    secretChatHideSessions: (state: STO.Setting) => state.secretChat?.hideSessions ?? false,
-    secretChatAutoLock: (state: STO.Setting) => state.secretChat?.autoLock ?? false,
-    secretChatLockTimeout: (state: STO.Setting) => state.secretChat?.lockTimeout ?? 5,
-    sendMessageShortcut: (state: STO.Setting) => state.chat?.sendKey ?? 'Enter',
-    messageDoubleClickEnabled: (state: STO.Setting) => state.chat?.isDouble ?? true,
-    chatTranslateProvider: (state: STO.Setting) => state.chat?.translate ?? 'youdao',
-    /** F-1 严格信任门禁：未验证/风险消息默认模糊 */
-    trustGateStrictEnabled: (state: STO.Setting) => state.chat?.trustGateStrict ?? false,
-    globalShortcutEnabled: (state: STO.Setting) => state.shortcuts?.globalEnabled ?? false,
-    screenshotConcealEnabled: (state: STO.Setting) => state.screenshot?.isConceal ?? false,
-    messageSoundEnabled: (state: STO.Setting) => state.notification?.messageSound ?? true,
-    notificationVolume: (state: STO.Setting) => normalizeNotificationVolume(state.notification?.volume),
-    messageConfirmEnabled: (state: STO.Setting) => state.preferences?.messageConfirm ?? false,
-    linkPreviewEnabled: (state: STO.Setting) => state.preferences?.linkPreview ?? true,
-    emojiConvertEnabled: (state: STO.Setting) => state.preferences?.emojiConvert ?? true,
-    emojiSize: (state: STO.Setting) => normalizeEmojiSize(state.preferences?.emojiSize),
-    burnDefaultEnabled: (state: STO.Setting) => state.preferences?.burnDefaultEnabled ?? false,
-    burnDefaultDuration: (state: STO.Setting) => normalizeBurnDefaultDuration(state.preferences?.burnDefaultDuration),
-    burnShowCountdownEnabled: (state: STO.Setting) => state.preferences?.burnShowCountdown ?? true,
-    threadAutoSubscribeEnabled: (state: STO.Setting) => state.preferences?.threadAutoSubscribe ?? true,
-    threadShowInRoomEnabled: (state: STO.Setting) => state.preferences?.threadShowInRoom ?? true,
-    threadNotificationLevel: (state: STO.Setting) =>
-      normalizeThreadNotificationLevel(state.preferences?.threadNotificationLevel),
-    spaceAutoJoinRoomsEnabled: (state: STO.Setting) => state.preferences?.spaceAutoJoinRooms ?? false,
-    spaceShowSubspacesEnabled: (state: STO.Setting) => state.preferences?.spaceShowSubspaces ?? true,
-    spaceDefaultNotification: (state: STO.Setting) =>
-      normalizeSpaceDefaultNotification(state.preferences?.spaceDefaultNotification),
-    sendReadReceiptsEnabled: (state: STO.Setting) => state.preferences?.sendReadReceipts ?? true,
-    sendTypingNotificationsEnabled: (state: STO.Setting) => state.preferences?.sendTypingNotifications ?? true,
-    showOnlineStatusEnabled: (state: STO.Setting) => state.preferences?.showOnlineStatus ?? true,
-    uploadCompressEnabled: (state: STO.Setting) => state.preferences?.uploadCompressEnabled ?? true,
-    uploadCompressQuality: (state: STO.Setting) =>
-      normalizeUploadCompressQuality(state.preferences?.uploadCompressQuality),
-    uploadChunkEnabled: (state: STO.Setting) => state.preferences?.uploadChunkEnabled ?? true,
-    /** R-1：全局严格模式（不向未验证设备发送加密房间密钥） */
-    blockUnverifiedDevicesEnabled: (state: STO.Setting) => state.preferences?.blockUnverifiedDevices ?? false,
-    /** R-1：逐房间严格模式列表 */
-    strictUnverifiedRooms: (state: STO.Setting) => state.preferences?.strictUnverifiedRooms ?? [],
-    /** 已开启阅后即焚的房间列表（桌面 / 移动共用数据源） */
-    burnRooms: (state: STO.Setting) => state.preferences?.burnRooms ?? []
-  },
+  // getters 体量较大且与 state 一一对应，整块外置（见 settingGetters.ts）
+  getters: createSettingGetters(),
   actions: {
     /** 初始化主题 */
     initTheme(theme: string) {
-      const nextPattern = theme === ThemeEnum.OS ? ThemeEnum.OS : normalizeTheme(theme)
-      const nextContent = theme === ThemeEnum.OS ? resolveOsTheme() : normalizeTheme(theme)
-      this.$patch((state: STO.Setting) => {
-        state.themes.pattern = nextPattern
-        state.themes.content = nextContent
-      })
-      stripLegacyThemeVariant(this.themes)
-      setDocumentTheme(nextContent)
-      setTheme(Object.is(theme, 'os') ? null : (theme as Theme))
+      initTheme(this.themes, theme)
     },
     /** 切换主题 */
     toggleTheme(theme: string) {
-      setTheme(Object.is(theme, 'os') ? null : (theme as Theme))
-      if (theme === ThemeEnum.OS) {
-        const os = resolveOsTheme()
-        this.$patch((state: STO.Setting) => {
-          state.themes.pattern = ThemeEnum.OS
-          state.themes.content = os
-        })
-        stripLegacyThemeVariant(this.themes)
-        setDocumentTheme(os)
-        return
-      }
-      const nextTheme = normalizeTheme(theme)
-      this.$patch((state: STO.Setting) => {
-        state.themes.pattern = nextTheme
-        state.themes.content = nextTheme
-      })
-      stripLegacyThemeVariant(this.themes)
-      setDocumentTheme(nextTheme)
+      toggleTheme(this.themes, theme)
     },
     /** 同步系统主题到内容（仅在跟随系统时生效） */
     syncOsTheme() {
-      if (this.themes.pattern !== ThemeEnum.OS) return
-      const os = resolveOsTheme()
-      if (this.themes.content !== os) {
-        this.$patch((state: STO.Setting) => {
-          state.themes.content = os
-        })
-      }
-      setDocumentTheme(os)
+      syncOsTheme(this.themes)
     },
     /** 兜底修正主题状态 */
     normalizeThemeState() {
-      stripLegacyThemeVariant(this.themes)
-
-      if (this.themes.pattern === ThemeEnum.OS) {
-        this.syncOsTheme()
-        return
-      }
-      const nextTheme = normalizeTheme(this.themes.pattern || this.themes.content)
-      if (this.themes.pattern !== nextTheme || this.themes.content !== nextTheme) {
-        this.$patch((state: STO.Setting) => {
-          state.themes.pattern = nextTheme
-          state.themes.content = nextTheme
-        })
-      }
-      stripLegacyThemeVariant(this.themes)
-      setDocumentTheme(nextTheme)
+      normalizeThemeState(this.themes)
     },
     /** 确保主题状态已初始化且可安全使用 */
     ensureThemeReady(preferredTheme?: string) {
-      if (!this.themes.content) {
-        this.initTheme(preferredTheme || this.themes.pattern || ThemeEnum.OS)
-        return
-      }
-      this.normalizeThemeState()
+      ensureThemeReady(this.themes, preferredTheme)
     },
     /** 切换登录设置 */
     toggleLogin(autoLogin: boolean, autoStartup: boolean) {
@@ -230,140 +131,11 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.login.autoStartup = autoStartup
     },
     ensurePreferenceSettings() {
-      const defaults = getDefaultPreferenceSettings()
-      if (!this.preferences) {
-        this.preferences = defaults
-        return
-      }
-      this.preferences.messageConfirm = this.preferences.messageConfirm ?? defaults.messageConfirm
-      this.preferences.linkPreview = this.preferences.linkPreview ?? defaults.linkPreview
-      this.preferences.emojiConvert = this.preferences.emojiConvert ?? defaults.emojiConvert
-      this.preferences.emojiSize = normalizeEmojiSize(this.preferences.emojiSize)
-      this.preferences.burnDefaultEnabled = this.preferences.burnDefaultEnabled ?? defaults.burnDefaultEnabled
-      this.preferences.burnDefaultDuration = normalizeBurnDefaultDuration(this.preferences.burnDefaultDuration)
-      this.preferences.burnShowCountdown = this.preferences.burnShowCountdown ?? defaults.burnShowCountdown
-      this.preferences.threadAutoSubscribe = this.preferences.threadAutoSubscribe ?? defaults.threadAutoSubscribe
-      this.preferences.threadShowInRoom = this.preferences.threadShowInRoom ?? defaults.threadShowInRoom
-      this.preferences.threadNotificationLevel =
-        normalizeThreadNotificationLevel(this.preferences.threadNotificationLevel) ?? defaults.threadNotificationLevel
-      this.preferences.spaceAutoJoinRooms = this.preferences.spaceAutoJoinRooms ?? defaults.spaceAutoJoinRooms
-      this.preferences.spaceShowSubspaces = this.preferences.spaceShowSubspaces ?? defaults.spaceShowSubspaces
-      this.preferences.spaceDefaultNotification =
-        normalizeSpaceDefaultNotification(this.preferences.spaceDefaultNotification) ??
-        defaults.spaceDefaultNotification
-      this.preferences.sendReadReceipts = this.preferences.sendReadReceipts ?? defaults.sendReadReceipts
-      this.preferences.sendTypingNotifications =
-        this.preferences.sendTypingNotifications ?? defaults.sendTypingNotifications
-      this.preferences.showOnlineStatus = this.preferences.showOnlineStatus ?? defaults.showOnlineStatus
-      this.preferences.uploadCompressEnabled = this.preferences.uploadCompressEnabled ?? defaults.uploadCompressEnabled
-      this.preferences.uploadCompressQuality = normalizeUploadCompressQuality(this.preferences.uploadCompressQuality)
-      this.preferences.uploadChunkEnabled = this.preferences.uploadChunkEnabled ?? defaults.uploadChunkEnabled
-      this.preferences.blockUnverifiedDevices =
-        this.preferences.blockUnverifiedDevices ?? defaults.blockUnverifiedDevices
-      this.preferences.strictUnverifiedRooms = normalizeStrictUnverifiedRooms(this.preferences.strictUnverifiedRooms)
-      this.preferences.burnRooms = this.preferences.burnRooms ?? defaults.burnRooms
+      this.preferences = ensurePreferenceDefaults(this.preferences)
     },
     migrateLegacyPreferenceSettings() {
       this.ensurePreferenceSettings()
-      if (typeof localStorage === 'undefined') return
-
-      const messageConfirm = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.messageConfirm)
-      if (typeof messageConfirm === 'boolean') {
-        this.preferences.messageConfirm = messageConfirm
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.messageConfirm)
-      }
-
-      const linkPreview = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.linkPreview)
-      if (typeof linkPreview === 'boolean') {
-        this.preferences.linkPreview = linkPreview
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.linkPreview)
-      }
-
-      const emojiConvert = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.emojiConvert)
-      if (typeof emojiConvert === 'boolean') {
-        this.preferences.emojiConvert = emojiConvert
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.emojiConvert)
-      }
-
-      const emojiSize = localStorage.getItem(LEGACY_PREFERENCE_STORAGE_KEYS.emojiSize)
-      if (emojiSize !== null) {
-        this.preferences.emojiSize = normalizeEmojiSize(emojiSize)
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.emojiSize)
-      }
-
-      const burnDefaultEnabled = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.burnDefaultEnabled)
-      if (typeof burnDefaultEnabled === 'boolean') {
-        this.preferences.burnDefaultEnabled = burnDefaultEnabled
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.burnDefaultEnabled)
-      }
-
-      const burnDefaultDuration = localStorage.getItem(LEGACY_PREFERENCE_STORAGE_KEYS.burnDefaultDuration)
-      if (burnDefaultDuration !== null) {
-        this.preferences.burnDefaultDuration = normalizeBurnDefaultDuration(parseInt(burnDefaultDuration, 10))
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.burnDefaultDuration)
-      }
-
-      const burnShowCountdown = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.burnShowCountdown)
-      if (typeof burnShowCountdown === 'boolean') {
-        this.preferences.burnShowCountdown = burnShowCountdown
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.burnShowCountdown)
-      }
-
-      const threadAutoSubscribe = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.threadAutoSubscribe)
-      if (typeof threadAutoSubscribe === 'boolean') {
-        this.preferences.threadAutoSubscribe = threadAutoSubscribe
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.threadAutoSubscribe)
-      }
-
-      const threadShowInRoom = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.threadShowInRoom)
-      if (typeof threadShowInRoom === 'boolean') {
-        this.preferences.threadShowInRoom = threadShowInRoom
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.threadShowInRoom)
-      }
-
-      const threadNotificationLevel = localStorage.getItem(LEGACY_PREFERENCE_STORAGE_KEYS.threadNotificationLevel)
-      if (threadNotificationLevel !== null) {
-        this.preferences.threadNotificationLevel = normalizeThreadNotificationLevel(threadNotificationLevel)
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.threadNotificationLevel)
-      }
-
-      const spaceAutoJoinRooms = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.spaceAutoJoinRooms)
-      if (typeof spaceAutoJoinRooms === 'boolean') {
-        this.preferences.spaceAutoJoinRooms = spaceAutoJoinRooms
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.spaceAutoJoinRooms)
-      }
-
-      const spaceShowSubspaces = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.spaceShowSubspaces)
-      if (typeof spaceShowSubspaces === 'boolean') {
-        this.preferences.spaceShowSubspaces = spaceShowSubspaces
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.spaceShowSubspaces)
-      }
-
-      const spaceDefaultNotification = localStorage.getItem(LEGACY_PREFERENCE_STORAGE_KEYS.spaceDefaultNotification)
-      if (spaceDefaultNotification !== null) {
-        this.preferences.spaceDefaultNotification = normalizeSpaceDefaultNotification(spaceDefaultNotification)
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.spaceDefaultNotification)
-      }
-
-      const sendReadReceipts = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.sendReadReceipts)
-      if (typeof sendReadReceipts === 'boolean') {
-        this.preferences.sendReadReceipts = sendReadReceipts
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.sendReadReceipts)
-      }
-
-      const sendTypingNotifications = readLegacyBooleanPreference(
-        LEGACY_PREFERENCE_STORAGE_KEYS.sendTypingNotifications
-      )
-      if (typeof sendTypingNotifications === 'boolean') {
-        this.preferences.sendTypingNotifications = sendTypingNotifications
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.sendTypingNotifications)
-      }
-
-      const showOnlineStatus = readLegacyBooleanPreference(LEGACY_PREFERENCE_STORAGE_KEYS.showOnlineStatus)
-      if (typeof showOnlineStatus === 'boolean') {
-        this.preferences.showOnlineStatus = showOnlineStatus
-        localStorage.removeItem(LEGACY_PREFERENCE_STORAGE_KEYS.showOnlineStatus)
-      }
+      migrateLegacyPreferences(this.preferences)
     },
     setMessageConfirmEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()
@@ -380,6 +152,10 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     setEmojiSize(size: string) {
       this.ensurePreferenceSettings()
       this.preferences.emojiSize = normalizeEmojiSize(size)
+    },
+    setRecallTime(seconds: number) {
+      this.ensurePreferenceSettings()
+      this.preferences.recallTime = normalizeRecallTime(seconds)
     },
     setBurnDefaultEnabled(enabled: boolean) {
       this.ensurePreferenceSettings()
@@ -476,14 +252,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.preferences.strictUnverifiedRooms = next
     },
     ensurePageSettings() {
-      if (!this.page) {
-        this.page = createDefaultPageSettings()
-        return
-      }
-      this.page.shadow = this.page.shadow ?? true
-      this.page.fonts = normalizePageFontFamily(this.page.fonts)
-      this.page.blur = this.page.blur ?? true
-      this.page.lang = this.page.lang || 'zh-CN'
+      this.page = ensurePageDefaults(this.page)
     },
     setPageFont(font: string) {
       this.ensurePageSettings()
@@ -507,14 +276,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
     },
     /** 设置截图快捷键 */
     ensureShortcuts() {
-      const defaults = getDefaultShortcuts()
-      if (!this.shortcuts) {
-        this.shortcuts = defaults
-        return
-      }
-      this.shortcuts.screenshot = this.shortcuts.screenshot || defaults.screenshot
-      this.shortcuts.openMainPanel = this.shortcuts.openMainPanel || defaults.openMainPanel
-      this.shortcuts.globalEnabled = this.shortcuts.globalEnabled ?? defaults.globalEnabled
+      this.shortcuts = ensureShortcutDefaults(this.shortcuts)
     },
     resetGlobalShortcuts() {
       this.ensureShortcuts()
@@ -532,13 +294,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.shortcuts.openMainPanel = shortcut
     },
     ensureChatSettings() {
-      if (!this.chat) {
-        this.chat = { sendKey: 'Enter', isDouble: true, translate: 'youdao' }
-        return
-      }
-      this.chat.sendKey = this.chat.sendKey || 'Enter'
-      this.chat.isDouble = this.chat.isDouble ?? true
-      this.chat.translate = this.chat.translate || 'youdao'
+      this.chat = ensureChatDefaults(this.chat)
     },
     /** 设置发送消息快捷键 */
     setSendMessageShortcut(shortcut: string) {
@@ -562,11 +318,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.login.autoLogin = false
     },
     ensureScreenshotSettings() {
-      if (!this.screenshot) {
-        this.screenshot = { isConceal: false }
-        return
-      }
-      this.screenshot.isConceal = this.screenshot.isConceal ?? false
+      this.screenshot = ensureScreenshotDefaults(this.screenshot)
     },
     /** 设置截图时是否隐藏窗口 */
     setScreenshotConceal(isConceal: boolean) {
@@ -574,13 +326,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.screenshot.isConceal = isConceal
     },
     ensureNotificationSettings() {
-      const defaults = getDefaultNotificationSettings()
-      if (!this.notification) {
-        this.notification = defaults
-        return
-      }
-      this.notification.messageSound = this.notification.messageSound ?? defaults.messageSound
-      this.notification.volume = normalizeNotificationVolume(this.notification.volume)
+      this.notification = ensureNotificationDefaults(this.notification)
     },
     updateNotificationSettings(partial: Partial<{ messageSound: boolean; volume: number }>) {
       this.ensureNotificationSettings()
@@ -600,21 +346,7 @@ export const useSettingStore = defineStore(StoresEnum.SETTING, {
       this.updateNotificationSettings({ volume })
     },
     ensureSecretChatSettings() {
-      if (!this.secretChat) {
-        this.secretChat = {
-          enabled: false,
-          passwordHash: '',
-          hideSessions: false,
-          autoLock: false,
-          lockTimeout: 5
-        }
-        return
-      }
-      this.secretChat.enabled = this.secretChat.enabled ?? false
-      this.secretChat.passwordHash = this.secretChat.passwordHash || ''
-      this.secretChat.hideSessions = this.secretChat.hideSessions ?? false
-      this.secretChat.autoLock = this.secretChat.autoLock ?? false
-      this.secretChat.lockTimeout = Math.max(1, Math.round(this.secretChat.lockTimeout ?? 5))
+      this.secretChat = ensureSecretChatDefaults(this.secretChat)
     },
     /** 设置密码：PBKDF2 派生 verifier 落盘，dbKey 当场清零（解锁时再派生）。 */
     async setSecretChatPassword(password: string) {

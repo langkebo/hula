@@ -115,7 +115,11 @@
       </div>
     </template>
   </AutoFixHeightPage>
-  <MobileRoomUpgradeDialog v-model:visible="showRoomUpgrade" :room-id="currentSessionRoomId" :can-upgrade="!!isAdmin" />
+  <MobileRoomUpgradeDialog
+    v-model:visible="showRoomUpgrade"
+    :room-id="currentSessionRoomId"
+    :can-upgrade="!!isAdmin"
+    @upgraded="handleRoomUpgraded" />
   <MobileListManagementDialog
     v-model:visible="showListManagement"
     :room-id="currentSessionRoomId"
@@ -133,7 +137,7 @@ import { useMitt } from '@/composables/common/useMitt'
 import { useRoomListManagement } from '@/composables/room/useRoomListManagement'
 import { useRoomUpgradeFlow } from '@/composables/room/useRoomUpgradeFlow'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
-import { MittEnum, RoleEnum, RoomTypeEnum, TauriCommand } from '@/enums'
+import { MittEnum, RoomTypeEnum, TauriCommand } from '@/enums'
 import ChatSettingMembers from '@/mobile/views/chat-room/components/ChatSettingMembers.vue'
 import ChatSettingRoomInfo from '@/mobile/views/chat-room/components/ChatSettingRoomInfo.vue'
 import ChatSettingToggles from '@/mobile/views/chat-room/components/ChatSettingToggles.vue'
@@ -164,6 +168,7 @@ const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const announcementStore = useAnnouncementStore()
 const contactStore = useContactStore()
+const userStore = useUserStore()
 const { currentSessionRoomId } = storeToRefs(globalStore)
 
 type GroupAnnouncementListResponse = Awaited<ReturnType<typeof announcementStore.getGroupAnnouncementList>>
@@ -175,12 +180,12 @@ const title = computed(() =>
 const isGroup = computed(() => globalStore.currentSession?.type === RoomTypeEnum.GROUP)
 
 const isLord = computed(() => {
-  const currentUser = groupStore.userList.find((user) => user.uid === useUserStore().userInfo?.uid)
-  return currentUser?.roleId === RoleEnum.LORD
+  // 角色口径统一走群 store：本地 roleId 映射是 0=群主/1=管理员/2=普通，
+  // 与 RoleEnum(1/2/3) 不同，直接比较数字会把管理员判成群主、普通成员判成管理员
+  return groupStore.isCurrentLord(userStore.userInfo?.uid ?? '')
 })
 const isAdmin = computed(() => {
-  const currentUser = groupStore.userList.find((user) => user.uid === useUserStore().userInfo?.uid)
-  return currentUser?.roleId === RoleEnum.ADMIN
+  return groupStore.isAdmin(userStore.userInfo?.uid ?? '')
 })
 
 const showRoomUpgrade = ref(false)
@@ -316,8 +321,18 @@ async function handleExit() {
   }
 }
 
+/**
+ * 房间升级完成后旧 roomId 已失效，必须跳到替代房间，否则停留在已废弃的房间设置页。
+ * 用 replace 而不是 push：返回键不应回到旧房间。
+ */
+const handleRoomUpgraded = (replacementRoomId: string) => {
+  showRoomUpgrade.value = false
+  logger.info('Room upgraded, switching to replacement room:', replacementRoomId)
+  router.replace({ name: 'mobileChatMain', params: { roomId: replacementRoomId } })
+}
+
 const clickInfo = () => {
-  if (isGroup) {
+  if (isGroup.value) {
     openAvatarCropper()
   } else {
     const detailId = activeItem.value?.detailId

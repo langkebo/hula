@@ -1,6 +1,9 @@
 {
   "search": "搜索聊天内容",
   "search_placeholder": "搜索消息",
+  "search_empty": "没有找到相关消息",
+  "search_failed": "搜索失败，请重试",
+  "search_unsupported": "[非文本消息]",
   "quick_search": "快速搜索",
   "members": "群成员",
   "date": "日期",
@@ -60,6 +63,10 @@
     "edit_group_notice": "编辑群公告",
     "add_group_notice": "新增群公告",
     "update_success": "公告修改成功",
-    "publish_success": "公告发布成功"
+    "publish_success": "公告发布成功",
+    "delete_notice": "删除公告",
+    "delete_confirm": "删除后不可恢复，确认删除该公告？",
+    "delete_success": "公告已删除",
+    "delete_failed": "删除公告失败，请重试"
   }
 }

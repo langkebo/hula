@@ -61,6 +61,7 @@ describe('SettingStore', () => {
       expect(store.linkPreviewEnabled).toBe(true)
       expect(store.emojiConvertEnabled).toBe(true)
       expect(store.emojiSize).toBe('medium')
+      expect(store.recallTime).toBe(120)
       expect(store.burnDefaultEnabled).toBe(false)
       expect(store.burnDefaultDuration).toBe(60)
       expect(store.burnShowCountdownEnabled).toBe(true)
@@ -237,6 +238,14 @@ describe('SettingStore', () => {
       expect(store.emojiSize).toBe('large')
     })
 
+    it('setRecallTime updates recall time and rejects unsupported values', () => {
+      const store = useSettingStore()
+      store.setRecallTime(600)
+      expect(store.recallTime).toBe(600)
+      store.setRecallTime(3600)
+      expect(store.recallTime).toBe(120)
+    })
+
     it('setBurnDefaultEnabled updates burn default flag', () => {
       const store = useSettingStore()
       store.setBurnDefaultEnabled(true)
@@ -329,6 +338,7 @@ describe('SettingStore', () => {
         linkPreview: undefined as never,
         emojiConvert: undefined as never,
         emojiSize: undefined as never,
+        recallTime: undefined as never,
         burnDefaultEnabled: undefined as never,
         burnDefaultDuration: undefined as never,
         burnShowCountdown: undefined as never,
@@ -353,6 +363,7 @@ describe('SettingStore', () => {
       expect(store.linkPreviewEnabled).toBe(true)
       expect(store.emojiConvertEnabled).toBe(true)
       expect(store.emojiSize).toBe('medium')
+      expect(store.recallTime).toBe(120)
       expect(store.burnDefaultEnabled).toBe(false)
       expect(store.burnDefaultDuration).toBe(60)
       expect(store.burnShowCountdownEnabled).toBe(true)

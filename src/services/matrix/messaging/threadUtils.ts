@@ -28,6 +28,24 @@ export function getThreadingManager(): ThreadingManagerCompat | null {
 }
 
 /**
+ * 从消息内容里提取端上渲染需要的媒体元数据（类型 / mxc 地址 / 文件大小）。
+ */
+export function extractMediaMeta(
+  content: MessageContent
+): Pick<ThreadDisplayMessage, 'msgType' | 'mxcUrl' | 'fileSize'> {
+  const msgType = typeof content.msgtype === 'string' ? content.msgtype : undefined
+  const url = typeof content.url === 'string' ? content.url : undefined
+  const info = content.info
+  const size = info && typeof info === 'object' ? (info as { size?: unknown }).size : undefined
+
+  return {
+    msgType,
+    mxcUrl: url?.startsWith('mxc://') ? url : undefined,
+    fileSize: typeof size === 'number' ? size : undefined
+  }
+}
+
+/**
  * Builds a display-ready message snapshot from a timeline event, resolving the
  * sender display name and avatar from the room member state.
  */
@@ -43,6 +61,7 @@ export function buildDisplayMessage(room: Room, event: MatrixEvent): ThreadDispl
     avatarUrl: member?.getMxcAvatarUrl() || undefined,
     content: content.body || '',
     timestamp: event.getTs(),
-    inReplyTo: content?.[MatrixContentField.RELATES_TO]?.['m.in_reply_to']?.event_id
+    inReplyTo: content?.[MatrixContentField.RELATES_TO]?.['m.in_reply_to']?.event_id,
+    ...extractMediaMeta(content)
   }
 }

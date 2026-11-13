@@ -1,3 +1,8 @@
+/**
+ * 路由集: mobile
+ * 依据：只断言移动路由页面（`/mobile/*`）；桌面 dev server（5211）没有这些路由。
+ * 校验：`tests/lint/e2e-route-sets.test.ts`（与 `e2e/specRouteSets.ts` 名单逐条比对）。
+ */
 import { expect, test } from '@playwright/test'
 import { WEB_SESSION_FALLBACK_STORAGE_KEY } from '../src/utils/storageKeys'
 import { loginOnMobileUi } from './support/androidDevice'

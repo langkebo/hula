@@ -1,6 +1,9 @@
 {
   "search": "Search Chat",
   "search_placeholder": "Search messages",
+  "search_empty": "No matching messages",
+  "search_failed": "Search failed. Please try again.",
+  "search_unsupported": "[Non-text message]",
   "quick_search": "Quick Search",
   "members": "Members",
   "date": "Date",
@@ -60,6 +63,10 @@
     "edit_group_notice": "Edit Announcement",
     "add_group_notice": "New Announcement",
     "update_success": "Announcement updated successfully",
-    "publish_success": "Announcement published successfully"
+    "publish_success": "Announcement published successfully",
+    "delete_notice": "Delete announcement",
+    "delete_confirm": "This cannot be undone. Delete this announcement?",
+    "delete_success": "Announcement deleted",
+    "delete_failed": "Failed to delete announcement, please retry"
   }
 }

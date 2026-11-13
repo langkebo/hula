@@ -43,7 +43,7 @@
 
 <script setup lang="ts">
 import { NCard, NDivider } from 'naive-ui'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
@@ -51,8 +51,7 @@ import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDial
 import InvitePermissionPanel from '@/components/settings/InvitePermissionPanel.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
-import { useKeyExport } from '@/composables/encryption/useKeyExport'
-import { useEncryptionStore } from '@/stores/domains/settings/encryption'
+import { useSecuritySettings } from '@/composables/encryption/useSecuritySettings'
 import { createLogger } from '@/utils/Logger'
 import BlockedUsersSection from './sections/BlockedUsersSection.vue'
 import EncryptionStatusSection from './sections/EncryptionStatusSection.vue'
@@ -68,28 +67,24 @@ defineOptions({
 
 const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
-const encryptionStore = useEncryptionStore()
 const { ensureSessionReady } = useWindowSessionReady()
+const {
+  encryptionEnabled,
+  securityKeyConfigured,
+  hasBackup,
+  backupInfo,
+  backupLoading,
+  exportLoading,
+  refreshEncryptionStatus,
+  refreshBackupStatus,
+  markSecurityKeyConfigured,
+  exportRecoveryKeys
+} = useSecuritySettings()
 
-// 加密相关状态：弹窗可见性 + 备份信息（需传给 EncryptionStatusSection）
+// 弹窗可见性属桌面布局细节，留在组件内；加密/备份状态统一由 useSecuritySettings 提供（与移动端同源）
 const showBackupDialog = ref(false)
 const showSecurityKeyDialog = ref(false)
 const showSecureBackupDialog = ref(false)
-// 导出实现由 useKeyExport 统一提供（与移动端共用），这里只保留加载态
-const { isExporting: exportLoading, exportKeys } = useKeyExport()
-
-const encryptionEnabled = computed(() => encryptionStore.encryptionEnabled)
-const securityKeyConfigured = computed(() => encryptionStore.securityKeyConfigured)
-// 备份状态统一取自 encryptionStore.loadEncryptionStatus → loadBackupStatus，
-// 不再在本页直连 matrixKeyBackupService（否则与移动端形成两份状态源，S9）
-const hasBackup = computed(() => encryptionStore.backupEnabled)
-const backupInfo = computed(() =>
-  encryptionStore.backupEnabled
-    ? { version: encryptionStore.backupVersion || null, count: encryptionStore.backupKeyCount }
-    : null
-)
-// 备份信息随 loadEncryptionStatus 一起拉取，加载态直接复用 store 的 loading
-const backupLoading = computed(() => encryptionStore.loading)
 
 onMounted(async () => {
   // 本页是独立 Tauri WebView 的一页，MatrixClient 需要先恢复才能读加密/备份状态。
@@ -97,12 +92,12 @@ onMounted(async () => {
   // 此处只是 wait 同一次 in-flight，不再自带 waitForClientReady(15s)。
   const sessionState = await ensureSessionReady()
   logger.info(`[SecuritySettings] session state=${sessionState}; loading encryption status`)
-  await encryptionStore.loadEncryptionStatus()
+  await refreshEncryptionStatus()
 })
 
 // 安全密钥创建成功回调（由 SecurityKeySetupDialog 触发）
 function handleSecurityKeyCreated() {
-  encryptionStore.markSecurityKeyConfigured()
+  markSecurityKeyConfigured()
   showFeedback(t('setting.security.security_key_created'), 'success')
 }
 
@@ -112,21 +107,20 @@ function handleSetupBackup() {
 
 // 备份创建成功回调：刷新备份状态并反馈
 async function handleBackupSuccess() {
-  await encryptionStore.loadBackupStatus()
+  await refreshBackupStatus()
   showFeedback(t('setting.security.backup_setup_success'), 'success')
 }
 
-// 导出恢复密钥：SDK 导出与下载细节统一在 useKeyExport（与移动端共用实现）
+// 导出恢复密钥：SDK 导出与下载细节统一在 useSecuritySettings → useKeyExport（与移动端共用实现）
 async function handleExportKey() {
-  if (!encryptionEnabled.value) {
-    showFeedback(t('setting.security.enable_encryption_first'), 'warning')
-    return
-  }
-
   try {
-    const keysJson = await exportKeys(`tjg-keys-backup-${Date.now()}.json`)
-    if (!keysJson) {
-      showFeedback(t('setting.security.export_key_failed'), 'error')
+    const result = await exportRecoveryKeys(`tjg-keys-backup-${Date.now()}.json`)
+    if (!result.ok) {
+      if (result.reason === 'encryption-disabled') {
+        showFeedback(t('setting.security.enable_encryption_first'), 'warning')
+      } else {
+        showFeedback(t('setting.security.export_key_failed'), 'error')
+      }
       return
     }
     showFeedback(t('setting.security.keys_exported'), 'success')

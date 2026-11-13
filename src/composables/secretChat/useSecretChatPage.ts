@@ -1,7 +1,7 @@
 import { onMounted } from 'vue'
-import type { RouteLocationRaw } from 'vue-router'
+import { onBeforeRouteLeave, type RouteLocationRaw } from 'vue-router'
 import type { SessionItem } from '@/stores/domains/chat/chat/session'
-import { isSecretChatUnlocked } from '@/stores/domains/settings/secretChatSession'
+import { isSecretChatUnlocked, lockSecretChatSession } from '@/stores/domains/settings/secretChatSession'
 import { openSecretChatUnlock } from './useSecretChatGate'
 import { useSecretChatSessions } from './useSecretChatSessions'
 
@@ -20,6 +20,10 @@ export interface SecretChatPageOptions {
   isPasswordConfigured?: () => boolean
   /** 未配置私密密码时的兜底动作；仅配合 `isPasswordConfigured` 使用。 */
   onMissingPassword?: () => void
+  /** 从本页进入私密会话的目标路由名（两端命名不同；该跳转不算「离开」）。 */
+  sessionRouteName?: string
+  /** 桌面「关闭」按钮的离开动作；移动端没有关闭按钮（由系统返回触发路由离开），不传。 */
+  closePage?: () => void
 }
 
 /**
@@ -45,6 +49,23 @@ export function useSecretChatPage(options: SecretChatPageOptions) {
   const handleUnmark = async (session: SessionItem): Promise<SecretChatUnmarkOutcome> => {
     if (!(await options.confirmUnmark())) return 'cancelled'
     return (await sessions.unmarkSession(session.roomId)) ? 'unmarked' : 'failed'
+  }
+
+  /**
+   * 离开私密页即上锁（默认策略），唯一例外是从本页进入私密会话本身——
+   * 否则聊天页门禁会把刚解锁的会话立刻拦下。
+   */
+  if (options.sessionRouteName) {
+    onBeforeRouteLeave((to) => {
+      if (to.name === options.sessionRouteName) return
+      lockSecretChatSession('leave secret chat page')
+    })
+  }
+
+  /** 关闭按钮：先上锁再离开（离开动作由平台注入），避免关页后仍停留解锁态。 */
+  const handleClose = (): void => {
+    lockSecretChatSession('close secret chat page')
+    options.closePage?.()
   }
 
   /**
@@ -74,6 +95,7 @@ export function useSecretChatPage(options: SecretChatPageOptions) {
     ...sessions,
     handleUnlockClick,
     handleSessionClick,
-    handleUnmark
+    handleUnmark,
+    handleClose
   }
 }

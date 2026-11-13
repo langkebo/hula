@@ -1,5 +1,10 @@
+/**
+ * 路由集: mobile
+ * 依据：只断言移动路由页面（`/mobile/*`）；桌面 dev server（5211）没有这些路由。
+ * 校验：`tests/lint/e2e-route-sets.test.ts`（与 `e2e/specRouteSets.ts` 名单逐条比对）。
+ */
 import { readFileSync } from 'node:fs'
-import { expect, type Page, test } from '@playwright/test'
+import { expect, type Locator, type Page, test } from '@playwright/test'
 import { loginOnMobileUi } from './support/androidDevice'
 import { autoDismissLocalUnlockGate, dismissLocalUnlockDialog } from './support/localUnlockGate'
 import {
@@ -54,16 +59,32 @@ const clickQuickAction = async (page: Page, label: string) => {
   await expect(item, `九宫格里找不到「${label}」`).toBeVisible({ timeout: 10_000 })
   const before = (await readMobileRoute(page)).path
   await item.click()
-  await page.waitForTimeout(1500)
-  const after = await readMobileRoute(page)
-  // 元素在首屏可视区内，原生 click 已足够；这里保留一次兜底派发，
-  // 避免 glass 层的 hit-test 偶发拦截导致假失败。
-  if (after.path === before) {
-    await item.dispatchEvent('click')
-    await page.waitForTimeout(1500)
-    return readMobileRoute(page)
+  // ⚠️ 不能「固定等 1500ms 后读一次」：读的时候可能正处在路由切换中，
+  // `readMobileRoute()` 会返回 `path: null`（实测「文件」一条就这么红的）。
+  // 改成轮询到「读到非 null 且已离开原地」，最多 8s。
+  let changed = false
+  try {
+    await expect
+      .poll(
+        async () => {
+          const current = (await readMobileRoute(page)).path
+          return current !== null && current !== before ? current : null
+        },
+        { timeout: 8_000, message: `点击「${label}」后路由没有变化（仍停留在 ${before}）` }
+      )
+      .not.toBeNull()
+    changed = true
+  } catch {
+    changed = false
   }
-  return after
+  if (changed) return readMobileRoute(page)
+  // 兜底：glass 层 hit-test 偶发拦截原生点击，补一次合成 click 再等
+  await item.dispatchEvent('click')
+  await expect
+    .poll(async () => (await readMobileRoute(page)).path, { timeout: 8_000 })
+    .not.toBe(before)
+    .catch(() => {})
+  return readMobileRoute(page)
 }
 
 /**
@@ -80,6 +101,32 @@ const openSettings = async (page: Page) => {
     await input.fill('')
     await page.waitForTimeout(300)
   }
+}
+
+/**
+ * 点一个 `.van-cell` 入口，并等路由落到 `expected`；**失败自动重试点击**。
+ *
+ * 为什么需要重试：设置页的能力过滤（`useCapabilities`）会在首屏后重算一次并重挂载 cell，
+ * 点击可能落在已摘除的节点上 —— 点了但没触发导航。实测「设备管理」入口两轮都红在这，
+ * 「加密设置」在两轮对照里也复现过同一现象。
+ */
+const clickCellToRoute = async (page: Page, cell: Locator, expected: string): Promise<void> => {
+  await expect(cell, `入口不可见：${expected}`).toBeVisible({ timeout: 10_000 })
+  // ⚠️ 不要用 `expect(async () => { click(); expect(path) }).toPass()`：
+  // 点击其实已生效、只是 URL 更新晚一点时，断言会先失败，重试时**目标 cell 已随导航消失**
+  // ⇒ 后续 click 直接 5s 超时，最终报「元素不见了」而不是真实原因（第 3 轮实测踩到）。
+  // 正确顺序：先判是否已到位 → 点一次 → **轮询 URL 最多 8s** → 仍未到位才重试点击。
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (new URL(page.url()).pathname === expected) return
+    await cell.click({ timeout: 5_000 }).catch(() => {})
+    const arrived = await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 8_000 })
+      .toBe(expected)
+      .then(() => true)
+      .catch(() => false)
+    if (arrived) return
+  }
+  throw new Error(`点击后仍未到 ${expected}（当前 ${new URL(page.url()).pathname}）`)
 }
 
 test.describe('我的页信息架构（S1）', () => {
@@ -171,10 +218,10 @@ test.describe('我的页信息架构（S1）', () => {
       .filter({ hasText: /设备管理|Devices/i })
       .first()
     await expect(devices, '首屏没有设备管理入口').toBeVisible({ timeout: 10_000 })
-    await devices.dispatchEvent('click')
-    await page.waitForTimeout(1500)
-    const landedDevices = await readMobileRoute(page)
-    expect(landedDevices.path, `设备管理应 1 跳直达，实际落在 ${landedDevices.path}`).toBe('/mobile/mobileMy/devices')
+    // F5：原来是「固定等 1500ms 后只读一次路由」，路由跳转晚于该窗口就会读到旧 path（假失败）。
+    // 现在统一走 clickCellToRoute：真实点击 + 落点轮询 + **点击丢失时自动重试**
+    // （能力过滤会让首屏 cell 重挂载一次，点在被摘除的节点上不会触发导航）。
+    await clickCellToRoute(page, devices, '/mobile/mobileMy/devices')
 
     // ── 4) 版本号单源：设置页底部显示真实版本，不再是硬编码 v1.0.0
     // 用 path 而不是 name：桌面与移动两份路由表在 dev 下共存过，按 name 跳可能
@@ -213,8 +260,7 @@ test.describe('我的页信息架构（S1）', () => {
     await expect(results.first(), '搜「设备」没有任何结果').toBeVisible({ timeout: 10_000 })
     const deviceHit = results.filter({ hasText: /设备管理|Devices/i }).first()
     await expect(deviceHit, '搜「设备」没有命中「设备管理」').toBeVisible()
-    await deviceHit.click()
-    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/mobileMy/devices')
+    await clickCellToRoute(page, deviceHit, '/mobile/mobileMy/devices')
 
     // 别名也应命中（用户常按「黑名单」找「已忽略用户」）
     await openSettings(page)
@@ -229,8 +275,7 @@ test.describe('我的页信息架构（S1）', () => {
       .filter({ hasText: /加密设置|Encryption/i })
       .first()
     await expect(encryptionEntry, '设置页没有「加密设置」入口').toBeVisible({ timeout: 10_000 })
-    await encryptionEntry.click()
-    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/mobileMy/encryption')
+    await clickCellToRoute(page, encryptionEntry, '/mobile/mobileMy/encryption')
 
     // ── 3) 气泡样式：切「方角」必须真的写到根元素（render-message.scss 消费该属性）
     await openSettings(page)
@@ -268,8 +313,7 @@ test.describe('我的页信息架构（S1）', () => {
       .filter({ hasText: /表情包管理|Emoji Packs/i })
       .first()
     await expect(emoticonEntry, '设置页没有「表情包管理」入口').toBeVisible({ timeout: 10_000 })
-    await emoticonEntry.click()
-    await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe('/mobile/mobileMy/emoticons')
+    await clickCellToRoute(page, emoticonEntry, '/mobile/mobileMy/emoticons')
   })
 
   /**

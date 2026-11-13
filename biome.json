@@ -9,6 +9,7 @@
       "!public/*",
       "!coverage",
       "!src/typings/*.d.ts",
+      "!src/typings/**/*.d.ts",
       "!src-tauri/*",
       "!node_modules/*",
       "!tauri-plugin-hula/*",
@@ -125,6 +126,16 @@
       },
       "formatter": {
         "enabled": false
+      }
+    },
+    {
+      "includes": ["tests/lint/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noTemplateCurlyInString": "off"
+          }
+        }
       }
     },
     {

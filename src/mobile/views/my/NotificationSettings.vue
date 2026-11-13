@@ -240,9 +240,10 @@ async function loadPushRules() {
     const overrideRules = matrixPushService.getOverrideRules(rules)
     const roomRules = matrixPushService.getRoomRules(rules)
 
+    // master 规则 enabled = 全局静音，因此总开关状态取其反值
     const masterRule = overrideRules?.find((r: IPushRule) => r.rule_id === '.m.rule.master')
-    if (masterRule && !masterRule.enabled) {
-      notificationsEnabled.value = true
+    if (masterRule) {
+      notificationsEnabled.value = !masterRule.enabled
     }
 
     const dmRule = roomRules?.find((r: IPushRule) => r.rule_id === '.m.rule.room_one_to_one')

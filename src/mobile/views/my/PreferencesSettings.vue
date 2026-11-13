@@ -14,9 +14,9 @@
           <van-cell-group inset>
             <van-cell
               :title="t('mobile_preferences.send_key')"
-              :value="sendKeyLabel"
+              :value="sendKeyPicker.label"
               is-link
-              @click="showSendKeyPicker = true">
+              @click="sendKeyPicker.show = true">
               <template #icon>
                 <div
                   class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
@@ -34,6 +34,20 @@
               </template>
               <template #right-icon>
                 <van-switch v-model="messageConfirm" size="22px" />
+              </template>
+            </van-cell>
+
+            <van-cell
+              :title="t('mobile_preferences.recall_time')"
+              :label="t('mobile_preferences.recall_time_desc')"
+              :value="recallTimePicker.label"
+              is-link
+              @click="recallTimePicker.show = true">
+              <template #icon>
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-info-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:history" :width="20" color="var(--tjg-color-info-500)" />
+                </div>
               </template>
             </van-cell>
 
@@ -60,6 +74,20 @@
                 <van-switch v-model="emojiConvert" size="22px" />
               </template>
             </van-cell>
+
+            <van-cell
+              :title="t('mobile_preferences.emoji_size')"
+              :label="t('mobile_preferences.emoji_size_desc')"
+              :value="emojiSizePicker.label"
+              is-link
+              @click="emojiSizePicker.show = true">
+              <template #icon>
+                <div
+                  class="w-40px h-40px rounded-full bg-[var(--tjg-color-warning-100)] mr-12px flex items-center justify-center">
+                  <Icon icon="mdi:format-size" :width="20" color="var(--tjg-color-warning-500)" />
+                </div>
+              </template>
+            </van-cell>
           </van-cell-group>
 
           <div class="text-14px text-[var(--tjg-text-secondary)] mt-16px mb-8px">
@@ -82,9 +110,9 @@
             <van-cell
               v-if="burnDefaultEnabled"
               :title="t('mobile_preferences.burn_duration')"
-              :value="burnDurationLabel"
+              :value="burnDurationPicker.label"
               is-link
-              @click="showBurnDurationPicker = true" />
+              @click="burnDurationPicker.show = true" />
 
             <van-cell :title="t('mobile_preferences.burn_countdown')">
               <template #right-icon>
@@ -143,15 +171,32 @@
         </div>
       </div>
 
-      <van-popup v-model:show="showSendKeyPicker" position="bottom" round>
-        <van-picker :columns="sendKeyColumns" @confirm="handleSendKeyConfirm" @cancel="showSendKeyPicker = false" />
+      <van-popup v-model:show="sendKeyPicker.show" position="bottom" round>
+        <van-picker
+          :columns="sendKeyPicker.columns"
+          @confirm="sendKeyPicker.confirm"
+          @cancel="sendKeyPicker.show = false" />
       </van-popup>
 
-      <van-popup v-model:show="showBurnDurationPicker" position="bottom" round>
+      <van-popup v-model:show="burnDurationPicker.show" position="bottom" round>
         <van-picker
-          :columns="burnDurationColumns"
-          @confirm="handleBurnDurationConfirm"
-          @cancel="showBurnDurationPicker = false" />
+          :columns="burnDurationPicker.columns"
+          @confirm="burnDurationPicker.confirm"
+          @cancel="burnDurationPicker.show = false" />
+      </van-popup>
+
+      <van-popup v-model:show="recallTimePicker.show" position="bottom" round>
+        <van-picker
+          :columns="recallTimePicker.columns"
+          @confirm="recallTimePicker.confirm"
+          @cancel="recallTimePicker.show = false" />
+      </van-popup>
+
+      <van-popup v-model:show="emojiSizePicker.show" position="bottom" round>
+        <van-picker
+          :columns="emojiSizePicker.columns"
+          @confirm="emojiSizePicker.confirm"
+          @cancel="emojiSizePicker.show = false" />
       </van-popup>
     </template>
   </AutoFixHeightPage>
@@ -159,9 +204,14 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useBurnDurationOptions, useSendKeyOptions } from '@/composables/settings/settingsOptions'
+import {
+  useBurnDurationOptions,
+  useEmojiSizeOptions,
+  useRecallTimeOptions,
+  useSendKeyOptions,
+  useSettingPicker
+} from '@/composables/settings/settingsOptions'
 import { usePreferenceSettings } from '@/composables/settings/usePreferenceSettings'
 
 const { t } = useI18n()
@@ -171,6 +221,8 @@ const {
   messageConfirm,
   linkPreview,
   emojiConvert,
+  emojiSize,
+  recallTime,
   sendKey,
   burnDefaultEnabled,
   burnDefaultDuration,
@@ -181,38 +233,9 @@ const {
   sendTypingNotifications
 } = usePreferenceSettings()
 
-const showSendKeyPicker = ref(false)
-const showBurnDurationPicker = ref(false)
-
-// 选项文案与桌面端同源（settingsOptions），移动端只做 Vant 列格式转换
-const sendKeyOptions = useSendKeyOptions()
-const burnDurationOptions = useBurnDurationOptions()
-
-const sendKeyColumns = computed(() => sendKeyOptions.value.map((o) => ({ text: o.label, value: o.value })))
-
-const sendKeyLabel = computed(() => {
-  return sendKeyOptions.value.find((o) => o.value === sendKey.value)?.label || 'Enter'
-})
-
-const burnDurationColumns = computed(() => burnDurationOptions.value.map((o) => ({ text: o.label, value: o.value })))
-
-const burnDurationLabel = computed(() => {
-  return burnDurationOptions.value.find((o) => o.value === burnDefaultDuration.value)?.label || ''
-})
-
-function handleSendKeyConfirm({ selectedValues }: { selectedValues: string[] }) {
-  const val = selectedValues[0]
-  if (val) {
-    sendKey.value = val
-  }
-  showSendKeyPicker.value = false
-}
-
-function handleBurnDurationConfirm({ selectedValues }: { selectedValues: number[] }) {
-  const val = selectedValues[0] as 30 | 60 | 300 | 3600 | 86400
-  if (val) {
-    burnDefaultDuration.value = val
-  }
-  showBurnDurationPicker.value = false
-}
+// 选项文案与桌面端同源（settingsOptions），picker 的列 / 当前值文案 / 写回统一由共享件处理
+const sendKeyPicker = useSettingPicker(useSendKeyOptions(), sendKey)
+const burnDurationPicker = useSettingPicker(useBurnDurationOptions(), burnDefaultDuration)
+const recallTimePicker = useSettingPicker(useRecallTimeOptions(), recallTime)
+const emojiSizePicker = useSettingPicker(useEmojiSizeOptions(), emojiSize)
 </script>

@@ -5,8 +5,8 @@
       class="select-none cursor-pointer msg-emoji"
       :img-props="{
         style: {
-          maxWidth: '120px',
-          maxHeight: '120px',
+          maxWidth: `${emojiSizePx}px`,
+          maxHeight: `${emojiSizePx}px`,
           objectFit: 'contain'
         }
       }"
@@ -22,8 +22,8 @@
           align="center"
           justify="center"
           :style="{
-            width: '120px',
-            height: '120px',
+            width: `${emojiSizePx}px`,
+            height: `${emojiSizePx}px`,
             backgroundColor: 'var(--tjg-surface-sidebar-selected)'
           }"
           class="rounded-10px">
@@ -35,7 +35,8 @@
           v-if="isError"
           align="center"
           justify="center"
-          class="w-150px h-150px rounded-10px bg-[--tjg-surface-sidebar-selected]">
+          :style="{ width: `${emojiSizePx}px`, height: `${emojiSizePx}px` }"
+          class="rounded-10px bg-[--tjg-surface-sidebar-selected]">
           <svg class="size-34px color-[--tjg-text-tertiary]"><use href="#error-picture"></use></svg>
         </n-flex>
       </template>
@@ -57,6 +58,7 @@ import { useImageViewer } from '@/composables/common/useImageViewer'
 import { mobileOnlyAsyncComponent, useIsMobile } from '@/composables/usePlatform'
 import { MsgEnum } from '@/enums/index'
 import type { EmojiBody, MsgType } from '@/services/types'
+import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useThumbnailCacheStore } from '@/stores/domains/widget/thumbnailCache'
 import { createLogger } from '@/utils/Logger'
 import { getRemoteFileSize, safeExistsPath } from '@/utils/PathUtil'
@@ -76,8 +78,16 @@ const isError = ref(false)
 const localEmojiSrc = ref<string | null>(null)
 const showImagePreviewRef = ref(false)
 const thumbnailStore = useThumbnailCacheStore()
+const settingStore = useSettingStore()
 const { openImageViewer } = useImageViewer()
 const EMOJI_AUTO_DOWNLOAD_LIMIT = 1024 * 1024 // 1MB
+/** 「表情大小」设置映射到表情消息的像素上限（medium 为历史默认 120px） */
+const EMOJI_SIZE_PX: Record<STO.Setting['preferences']['emojiSize'], number> = {
+  small: 80,
+  medium: 120,
+  large: 160
+}
+const emojiSizePx = computed(() => EMOJI_SIZE_PX[settingStore.emojiSize] ?? EMOJI_SIZE_PX.medium)
 const ImagePreview = mobileOnlyAsyncComponent(() => import('@/mobile/components/ImagePreview.vue'))
 
 const displayEmojiSrc = computed(() => localEmojiSrc.value || props.body?.url || '')

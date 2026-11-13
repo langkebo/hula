@@ -9,13 +9,22 @@ import {
   MatrixMsgType,
   MatrixRelType
 } from '@/common/matrixConstants'
+import type { Room } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { resolveMxcToHttp } from '../media/mxcUrl'
 import { MatrixThreadApi } from './MatrixThreadApi'
 import { MatrixThreadState } from './MatrixThreadState'
-import type { MessageContent, Thread, ThreadMessage, ThreadViewData } from './threadTypes'
-import { buildDisplayMessage } from './threadUtils'
+import type {
+  MessageContent,
+  Thread,
+  ThreadDisplayMessage,
+  ThreadMessage,
+  ThreadReplyResponse,
+  ThreadViewData
+} from './threadTypes'
+import { buildDisplayMessage, extractMediaMeta } from './threadUtils'
 
 export type { Thread, ThreadDisplayMessage } from './threadTypes'
 
@@ -217,6 +226,71 @@ class MatrixThreadService extends BaseMatrixService {
       thread,
       rootMessage: rootEvent ? buildDisplayMessage(room, rootEvent) : null,
       replies
+    }
+  }
+
+  /**
+   * 分页拉取线程回复（移动端线程页使用）。
+   *
+   * matrix-js-sdk 的 Thread 只持有 live timeline，不支持线程级 back pagination；
+   * synapse-rust 的 `getRoomThread` 支持 `replyLimit`，因此按窗口递增向服务端取
+   * 更多回复，再与本地 SDK 事件按 eventId 合并去重。
+   */
+  async loadThreadRepliesPage(
+    roomId: string,
+    threadRootId: string,
+    limit: number
+  ): Promise<{ replies: ThreadDisplayMessage[]; total: number }> {
+    const client = matrixClientService.getClient()
+    const room = client?.getRoom(roomId)
+    const local = room
+      ? this.getThreadReplies(roomId, threadRootId).map((reply) => buildDisplayMessage(room, reply))
+      : []
+
+    let remoteReplies: ThreadDisplayMessage[] = []
+    let total = local.length
+
+    try {
+      const detail = await this.api.getRoomThreadViaApi(roomId, threadRootId, true, limit)
+      if (detail) {
+        total = detail.reply_count ?? total
+        remoteReplies = detail.replies
+          .filter((reply) => !reply.is_redacted)
+          .map((reply) => this.buildDisplayMessageFromReply(room ?? undefined, reply))
+      }
+    } catch (err) {
+      logger.warn(`[MatrixThread] 分页拉取线程回复失败，回退本地缓存: ${err}`)
+    }
+
+    const merged = new Map<string, ThreadDisplayMessage>()
+    for (const item of remoteReplies) merged.set(item.eventId, item)
+    for (const item of local) {
+      if (!merged.has(item.eventId)) merged.set(item.eventId, item)
+    }
+
+    const replies = Array.from(merged.values()).sort((a, b) => a.timestamp - b.timestamp)
+    return { replies, total: Math.max(total, replies.length) }
+  }
+
+  /** 解析线程内媒体地址（mxc:// → https），供端上直接作为图片 src 使用 */
+  resolveMediaUrl(mxcUrl?: string, size = 320): string | null {
+    if (!mxcUrl) return null
+    return resolveMxcToHttp(matrixClientService.getClient(), mxcUrl, size, size)
+  }
+
+  private buildDisplayMessageFromReply(room: Room | undefined, reply: ThreadReplyResponse): ThreadDisplayMessage {
+    const content = reply.content as MessageContent
+    const member = room?.getMember(reply.sender)
+
+    return {
+      eventId: reply.event_id,
+      sender: reply.sender,
+      senderName: member?.name || reply.sender,
+      avatarUrl: member?.getMxcAvatarUrl() || undefined,
+      content: typeof content.body === 'string' ? content.body : '',
+      timestamp: reply.origin_server_ts,
+      inReplyTo: reply.in_reply_to_event_id ?? undefined,
+      ...extractMediaMeta(content)
     }
   }
 

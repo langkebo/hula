@@ -281,10 +281,8 @@ import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
-import { useDeviceSessions } from '@/composables/encryption/useDeviceSessions'
-import { useEncryption, type VerificationTransaction } from '@/composables/encryption/useEncryption'
-import { useEncryptionOverview } from '@/composables/encryption/useEncryptionOverview'
-import { useGlobalStrictMode } from '@/composables/encryption/useGlobalStrictMode'
+import type { VerificationTransaction } from '@/composables/encryption/useEncryption'
+import { useEncryptionSettings } from '@/composables/encryption/useEncryptionSettings'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { createLogger } from '@/utils/Logger'
 import CrossSigningSection from './sections/CrossSigningSection.vue'
@@ -299,10 +297,6 @@ defineOptions({
 const { showFeedback } = useActionFeedback()
 const { write: writeClipboard } = useClipboard()
 const { t } = useI18n()
-// 设备指纹 / 待处理验证经 useEncryption 消费（crypto 服务只在 composable 层出现）
-const { getDeviceFingerprint, getPendingVerifications, cancelVerification } = useEncryption()
-// 设备统计与移动端登录设备页共用 useDeviceSessions，不再页面内硬编码计数
-const { devices, loadDevices } = useDeviceSessions()
 
 // 服务端未声明 E2EE 能力时降级为只读（页签本身保留，见 settingsSchema 的 readonly fallback）。
 // 能力探测未完成前不做判定，避免登录初期误判导致整页不可用。
@@ -315,12 +309,9 @@ const isReadOnly = computed(() => capability.isLoaded.value && !capability.canUs
  * 注意本 fork **没有** `setGlobalBlacklistUnverifiedDevices()` 方法，
  * 且该值随 client 重建归零 ⇒ 除在此即时施加外，登录/crypto 初始化后
  * 还需由 `reapplyPersistedStrictness()` 重放（见该函数注释）。
- * 偏好读写与施加逻辑在 `useGlobalStrictMode` 中，与移动端设置页共用一份实现。
+ * 偏好读写与施加逻辑统一在 `useEncryptionSettings` 中，与移动端设置页共用一份实现。
  */
-const { enabled: strictModeEnabled, setEnabled: handleStrictModeToggle } = useGlobalStrictMode()
-
 const deviceKeyVisible = ref(false)
-const deviceFingerprint = ref('')
 const showBackupDialog = ref(false)
 const showRestoreDialog = ref(false)
 const showVerifyDialog = ref(false)
@@ -332,11 +323,10 @@ const showOnboardingDialog = ref(false)
 const showDeviceTrustManager = ref(false)
 const showE2EEBootstrapWizard = ref(false)
 const createBackupLoading = ref(false)
-const pendingVerifications = ref<VerificationTransaction[]>([])
 const selectedVerificationTransaction = ref<VerificationTransaction | null>(null)
 const verifyDialogMode = ref<'sas'>('sas')
 
-// 加密总览状态统一由 useEncryptionOverview 提供（与移动端共用同一份 store 数据与刷新副作用）
+// 加密总览、设备会话、严格模式与刷新编排统一由 useEncryptionSettings 提供（与移动端共用同一份实现）
 const {
   encryptionEnabled,
   deviceVerified,
@@ -345,11 +335,18 @@ const {
   crossSigningSetup: securityKeySetup,
   needsRotation,
   e2eeFullySetup,
-  loadOverview,
   refreshBackup,
   refreshRotationStatus,
-  markSecurityKeyConfigured
-} = useEncryptionOverview()
+  markSecurityKeyConfigured,
+  strictModeEnabled,
+  setStrictMode: handleStrictModeToggle,
+  deviceFingerprint,
+  pendingVerifications,
+  verifiedDevicesCount,
+  unverifiedDevicesCount,
+  refreshEncryptionSettings,
+  cancelPendingVerification
+} = useEncryptionSettings()
 
 const keyStatus = computed(() => {
   if (!encryptionEnabled.value) {
@@ -362,38 +359,13 @@ const encryptionAlgorithm = computed(() => {
   return encryptionEnabled.value ? 'Megolm (AES-256)' : t('setting.encryption.disabled')
 })
 
-const verifiedDevicesCount = computed(() => devices.value.filter((device) => device.isVerified).length)
-const unverifiedDevicesCount = computed(() => devices.value.filter((device) => !device.isVerified).length)
-
 onMounted(async () => {
   await loadEncryptionInfo()
 })
 
 async function loadEncryptionInfo() {
-  // loadOverview 内部已包含「加密状态 → 当前设备验证状态」两步，桌面端只补自身特有信息
-  const enabled = await loadOverview()
-
-  if (!enabled) {
-    return
-  }
-
-  try {
-    const fingerprint = await getDeviceFingerprint()
-    if (fingerprint) {
-      deviceFingerprint.value = formatFingerprint(fingerprint)
-    }
-
-    pendingVerifications.value = await getPendingVerifications()
-  } catch (error) {
-    logger.error('Failed to load encryption details', error)
-  }
-
-  // 设备统计与验证状态同源（GET /devices + 本地 crypto store）
-  await loadDevices()
-}
-
-function formatFingerprint(key: string): string {
-  return key.match(/.{1,4}/g)?.join(' ') || key
+  // 总览 → 本机指纹与待处理验证 → 设备列表，统一由共享 composable 编排
+  await refreshEncryptionSettings({ includeDeviceDetails: true })
 }
 
 // 开关值只由 encryptionStore.backupEnabled（matrixKeyBackupService.checkKeyBackup 的服务器状态）决定。
@@ -465,11 +437,8 @@ function handleAcceptPendingVerification(request: VerificationTransaction) {
 
 async function handleCancelPendingVerification(request: VerificationTransaction) {
   try {
-    await cancelVerification(request.transactionId, 'User cancelled verification')
+    await cancelPendingVerification(request.transactionId)
     showFeedback(t('setting.encryption.pending_verification_cancelled'), 'success')
-    pendingVerifications.value = pendingVerifications.value.filter(
-      (item) => item.transactionId !== request.transactionId
-    )
   } catch (error) {
     logger.error('Failed to cancel pending verification', error)
     showFeedback(t('setting.encryption.pending_verification_cancel_failed'), 'error')

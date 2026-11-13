@@ -68,7 +68,13 @@ vi.mock('vue-i18n', () => ({
         'setting.burn_after_read.durations.1_hour': '1小时',
         'setting.burn_after_read.durations.24_hours': '24小时',
         'setting.preferences.send_key_ctrl_enter': 'Ctrl + Enter',
-        'setting.preferences.send_key_shift_enter': 'Shift + Enter'
+        'setting.preferences.send_key_shift_enter': 'Shift + Enter',
+        'setting.preferences.recall_2_minutes': '2 分钟',
+        'setting.preferences.recall_5_minutes': '5 分钟',
+        'setting.preferences.recall_10_minutes': '10 分钟',
+        'setting.preferences.emoji_small': '小',
+        'setting.preferences.emoji_medium': '中',
+        'setting.preferences.emoji_large': '大'
       }
       return translations[key] || key
     },

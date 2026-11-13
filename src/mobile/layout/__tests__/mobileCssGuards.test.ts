@@ -128,7 +128,6 @@ describe('移动端视口高度 dvh 收口', () => {
   it.each([
     'src/styles/scss/global/responsive.scss',
     'src/mobile/views/my/EncryptionSettings.vue',
-    'src/mobile/components/encryption/MobileDeviceTrustManager.vue',
     'src/mobile/components/my/MobileApplyList.vue'
   ])('%s 使用 100dvh 并保留 100vh 回退', (path) => {
     const source = read(path)

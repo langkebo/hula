@@ -1,7 +1,43 @@
-import { computed } from 'vue'
+import { type ComputedRef, computed, type Ref, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MacOsKeyEnum, WinKeyEnum } from '@/enums'
 import { isWindows } from '@/utils/PlatformConstants'
+
+export interface SettingOption<T extends string | number> {
+  label: string
+  value: T
+}
+
+/** 在选项列表中解析当前值对应的文案；未命中时回退为原始值，避免两端各写一套 fallback */
+export function resolveOptionLabel<T extends string | number>(
+  options: ReadonlyArray<SettingOption<T>>,
+  value: T
+): string {
+  return options.find((option) => option.value === value)?.label ?? String(value)
+}
+
+/**
+ * 选项型设置（发送键 / 焚毁时长 / 撤回时限 / 表情大小）的 picker 状态。
+ *
+ * 移动端直接绑定 `van-popup` 的 `show` / `van-picker` 的 `columns` / `confirm`；
+ * 桌面端用 `n-select`，只复用 `resolveOptionLabel` 解析反馈文案。
+ * 返回 `reactive` 包装，模板里可直接读写嵌套的 `show` 与 `label`。
+ */
+export function useSettingPicker<T extends string | number>(options: ComputedRef<SettingOption<T>[]>, model: Ref<T>) {
+  const show = ref(false)
+  const columns = computed(() => options.value.map((option) => ({ text: option.label, value: option.value })))
+  const label = computed(() => resolveOptionLabel(options.value, model.value))
+
+  function confirm({ selectedValues }: { selectedValues: T[] }) {
+    const value = selectedValues[0]
+    if (value !== undefined) {
+      model.value = value
+    }
+    show.value = false
+  }
+
+  return reactive({ show, columns, label, confirm })
+}
 
 export function useSendOptions() {
   const { t } = useI18n()
@@ -44,6 +80,26 @@ export function useBurnDurationOptions() {
     { label: t('setting.burn_after_read.durations.5_minutes'), value: 300 },
     { label: t('setting.burn_after_read.durations.1_hour'), value: 3600 },
     { label: t('setting.burn_after_read.durations.24_hours'), value: 86400 }
+  ])
+}
+
+/** 消息撤回时限选项（桌面 / 移动共用，单位秒） */
+export function useRecallTimeOptions() {
+  const { t } = useI18n()
+  return computed(() => [
+    { label: t('setting.preferences.recall_2_minutes'), value: 120 },
+    { label: t('setting.preferences.recall_5_minutes'), value: 300 },
+    { label: t('setting.preferences.recall_10_minutes'), value: 600 }
+  ])
+}
+
+/** 表情显示大小选项（桌面 / 移动共用） */
+export function useEmojiSizeOptions() {
+  const { t } = useI18n()
+  return computed(() => [
+    { label: t('setting.preferences.emoji_small'), value: 'small' },
+    { label: t('setting.preferences.emoji_medium'), value: 'medium' },
+    { label: t('setting.preferences.emoji_large'), value: 'large' }
   ])
 }
 

@@ -1422,6 +1422,61 @@ mod tests {
         );
     }
 
+    /// D2 核心判据：**无 HOME 时 secret 必须落在注入的应用数据目录，且能原样读回**。
+    ///
+    /// 这是「Android 冷启动后仍是登录态」的最小可复跑证明：
+    /// - 只断言 `check_backends().encrypted_file_fallback` 不够 —— 那条只要写进
+    ///   `std::env::temp_dir()` 也是 true，而临时目录在真机重启后可能被清理；
+    /// - 因此这里同时断言**落盘位置**（`<app_data_dir>/.tjg/secure-storage/` 下确有文件）
+    ///   与**读回值**（与写入一致）。
+    ///
+    /// 变异自证：把 `pick_storage_root` 的应用数据目录分支去掉 ⇒ 文件落进临时目录，
+    /// `landed` 断言变红。
+    #[test]
+    fn test_secret_lands_in_app_data_dir_when_home_missing() {
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let original_home = std::env::var("HOME").ok();
+        let app_dir = std::env::temp_dir().join("tjg-d2-appdata-sim-android");
+        let _ = fs::remove_dir_all(&app_dir);
+        fs::create_dir_all(&app_dir).unwrap();
+
+        crypto::init_app_data_dir(app_dir.clone());
+        // SAFETY: TEST_LOCK 确保不会并行执行
+        unsafe { std::env::remove_var("HOME") };
+
+        let key = "__d2_cold_start_probe__";
+        let value = "token-survives-cold-start";
+        let saved = SecureStore::set(key, value);
+
+        let fallback_dir = app_dir.join(".tjg").join("secure-storage");
+        let landed = fs::read_dir(&fallback_dir)
+            .map(|entries| entries.count() > 0)
+            .unwrap_or(false);
+        let loaded = SecureStore::get(key).ok().flatten();
+
+        // 清理（顺序：先删 secret，再复位全局槽位与 HOME）
+        let _ = SecureStore::delete(key);
+        crypto::reset_app_data_dir();
+        if let Some(home) = original_home {
+            unsafe { std::env::set_var("HOME", home) };
+        }
+        let _ = fs::remove_dir_all(&app_dir);
+
+        assert!(
+            saved.is_ok(),
+            "set() must succeed when only the injected app data dir is writable"
+        );
+        assert!(
+            landed,
+            "secret file must land under <app_data_dir>/.tjg/secure-storage/, not the temp dir"
+        );
+        assert_eq!(
+            loaded.as_deref(),
+            Some(value),
+            "secret must be readable after the write (cold-start persistence)"
+        );
+    }
+
     /// 上报映射（`report()`）——**本文件最关键的回归锁**。
     ///
     /// 变异自证记录：只测 `StorageBackend::id()` 时，"命令处理器按平台硬编码 backend"

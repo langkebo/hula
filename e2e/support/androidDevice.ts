@@ -142,6 +142,34 @@ export interface MobileLoginOptions {
   timeoutMs?: number
 }
 
+/** 移动登录表单的锚点（表单容器先出现、input 后挂载）。 */
+const MOBILE_LOGIN_FORM_SELECTOR = 'form[data-testid="mobile-login-form"]'
+
+/** 登录成功后的落点：消息列表或聊天页。 */
+const MOBILE_LANDED_PATH_RE = /\/mobile\/(message|chatRoom)/
+
+/**
+ * 「已登录视图」判据（F5 修法的第二判据）。
+ *
+ * 只看 URL 会漏掉「页面已登录但 SPA 重定向没跟上」的情况；这里用**与语言无关**的结构判据：
+ * 主导航里出现 `/mobile/message` 或 `/mobile/my` 链接，且登录表单已消失。
+ * 不用 `aria-label` 文案（会随语言变化）。
+ */
+const isMobileLoggedInView = async (page: Page): Promise<boolean> => {
+  try {
+    return await page.evaluate(
+      ({ formSelector }) => {
+        const hasNav = Boolean(document.querySelector('nav a[href="/mobile/message"], nav a[href="/mobile/my"]'))
+        const hasLoginForm = Boolean(document.querySelector(formSelector))
+        return hasNav && !hasLoginForm
+      },
+      { formSelector: MOBILE_LOGIN_FORM_SELECTOR }
+    )
+  } catch {
+    return false
+  }
+}
+
 /**
  * 在移动 UI 上完成一次真实登录（走页面表单，不走 API 直连）。
  *
@@ -154,6 +182,10 @@ export interface MobileLoginOptions {
  */
 export const loginOnMobileUi = async (page: Page, options: MobileLoginOptions): Promise<void> => {
   const timeoutMs = options.timeoutMs ?? 120_000
+  // 分段超时（修 F5）：以前「表单可见」和「落点」共用 120s，前一段慢掉后一段就没时间了，
+  // 最终被测试级超时打断，拿不到我们自己的诊断信息。现在每段独立封顶 60s。
+  const formTimeoutMs = Math.min(timeoutMs, 60_000)
+  const landingTimeoutMs = Math.min(timeoutMs, 60_000)
   await installBrowserTauriShim(page)
 
   // 浏览器态必须把 homeserver 指到应用同源（Vite 的 `/_matrix` 代理）。
@@ -194,13 +226,21 @@ export const loginOnMobileUi = async (page: Page, options: MobileLoginOptions): 
   await page.goto(`${options.appUrl}/mobile/login?platform=mobile`, { waitUntil: 'domcontentloaded' })
   await dismissLocalUnlockDialog(page)
 
-  const form = page.locator('form[data-testid="mobile-login-form"]')
-  await form.waitFor({ timeout: timeoutMs })
+  const form = page.locator(MOBILE_LOGIN_FORM_SELECTOR)
+  // ⚠️ 只等 `attached`，不等 visible：解锁门禁弹层会把登录表单**盖住**
+  // （元素在 DOM 里但不可见），等 visible 会白等到超时（实测 120s 超时，页面其实是好的）。
+  await form.waitFor({ state: 'attached', timeout: formTimeoutMs })
   // 表单容器先出现、内部 input 稍后才挂载（Vue 分步渲染 + 首屏资源竞争）。
   // 直接 nth(1).fill() 会在 input 尚未存在时抛 "element(s) not found"，
-  // 看起来像登录失败，实际是时序问题。等够 3 个 input 再填。
+  // 看起来像登录失败，实际是时序问题。等够 3 个 input 再填；等待期间顺手点掉门禁弹层。
   await expect
-    .poll(() => form.locator('input').count(), { timeout: timeoutMs, message: '登录表单未渲染出 3 个输入框' })
+    .poll(
+      async () => {
+        await dismissLocalUnlockDialog(page, 300)
+        return form.locator('input').count()
+      },
+      { timeout: formTimeoutMs, message: '登录表单未渲染出 3 个输入框（可能被解锁门禁遮住）' }
+    )
     .toBeGreaterThanOrEqual(3)
   // 第 0 个 input 是服务器地址（通常已由 env 预填），第 1/2 个才是账号与密码
   await form.locator('input').nth(1).fill(options.account)
@@ -218,27 +258,62 @@ export const loginOnMobileUi = async (page: Page, options: MobileLoginOptions): 
 
   // 登录提交后 crypto 初始化会再次触发「设置本地解锁密码」门禁，弹窗会挡住路由跳转；
   // 只在跳转成功后才 dismiss 会永远等不到 URL 变化，所以等待期间持续「发现即点掉」。
-  const deadline = Date.now() + timeoutMs
+  //
+  // 落点判据是**双判据**（修 F5）：
+  // - `url`：pathname 命中 `/mobile/(message|chatRoom)`；
+  // - `view`：已渲染登录后的主导航且登录表单已消失（URL 尚未跟上，SPA 重定向慢/被覆盖）。
+  //   以前只认 URL ⇒ 页面明明已登录却一直轮询到超时（两轮对照里 2 条用例就是这么红的）。
+  const deadline = Date.now() + landingTimeoutMs
   let landed = false
+  let landedBy: 'url' | 'view' | null = null
   while (Date.now() < deadline) {
-    if (/\/mobile\/(message|chatRoom)/.test(new URL(page.url()).pathname)) {
+    if (MOBILE_LANDED_PATH_RE.test(new URL(page.url()).pathname)) {
       landed = true
+      landedBy = 'url'
+      break
+    }
+    if (await isMobileLoggedInView(page)) {
+      landed = true
+      landedBy = 'view'
       break
     }
     await dismissLocalUnlockDialog(page, 500)
     await page.waitForTimeout(200)
   }
+  // URL 没跟上但已登录：纠正落点，避免后续断言一直停在 `/mobile/login`
+  if (landed && landedBy === 'view' && !MOBILE_LANDED_PATH_RE.test(new URL(page.url()).pathname)) {
+    await page
+      .evaluate(async () => {
+        const router = (
+          document.querySelector('#app') as
+            | (HTMLElement & {
+                __vue_app__?: { config: { globalProperties: { $router?: { push?: (p: string) => Promise<unknown> } } } }
+              })
+            | null
+        )?.__vue_app__?.config?.globalProperties?.$router
+        await router?.push?.('/mobile/message')
+      })
+      .catch(() => {})
+    await page.waitForTimeout(500)
+  }
   if (!landed) {
-    const state = await page.evaluate(() => ({
-      url: `${location.pathname}${location.search}`,
-      text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 200),
-      submitDisabled: (document.querySelector('[data-testid="mobile-login-submit"]') as HTMLButtonElement | null)
-        ?.disabled
-    }))
+    const state = await page.evaluate(
+      ({ formSelector }) => ({
+        url: `${location.pathname}${location.search}`,
+        hasLoginForm: Boolean(document.querySelector(formSelector)),
+        hasLoggedInNav: Boolean(document.querySelector('nav a[href="/mobile/message"]')),
+        text: document.body.innerText.replace(/\s+/g, ' ').slice(0, 200),
+        submitDisabled: (document.querySelector('[data-testid="mobile-login-submit"]') as HTMLButtonElement | null)
+          ?.disabled
+      }),
+      { formSelector: MOBILE_LOGIN_FORM_SELECTOR }
+    )
     page.off('console', onConsole)
     page.off('requestfailed', onRequestFailed)
     page.off('response', onResponse)
-    throw new Error(`移动端登录后未跳转：${JSON.stringify(state)}\n诊断：${diagnostics.slice(-10).join('\n')}`)
+    throw new Error(
+      `移动端登录后未跳转（landingTimeout=${landingTimeoutMs}ms）：${JSON.stringify(state)}\n诊断：${diagnostics.slice(-10).join('\n')}`
+    )
   }
   page.off('console', onConsole)
   page.off('requestfailed', onRequestFailed)

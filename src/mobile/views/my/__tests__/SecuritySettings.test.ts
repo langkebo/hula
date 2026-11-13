@@ -13,7 +13,8 @@ const {
   changePasswordMock,
   deactivateAccountMock,
   loadEncryptionStatusMock,
-  exportKeysMock
+  exportKeysMock,
+  encryptionFlags
 } = vi.hoisted(() => {
   return {
     showToastMock: vi.fn(),
@@ -26,7 +27,9 @@ const {
     changePasswordMock: vi.fn().mockResolvedValue(undefined),
     deactivateAccountMock: vi.fn().mockResolvedValue(undefined),
     loadEncryptionStatusMock: vi.fn().mockResolvedValue(undefined),
-    exportKeysMock: vi.fn().mockResolvedValue('')
+    exportKeysMock: vi.fn().mockResolvedValue(''),
+    // 导出前需要判断加密是否开启（与桌面端同一判定），默认开启以保留原有用例语义
+    encryptionFlags: { enabled: true }
   }
 })
 
@@ -97,13 +100,25 @@ vi.mock('@/stores/domains/settings/encryption', async () => {
   const backupEnabled = ref(false)
   return {
     useEncryptionStore: () => ({
+      get encryptionEnabled() {
+        return encryptionFlags.enabled
+      },
       get securityKeyConfigured() {
         return securityKeyConfigured.value
       },
       get backupEnabled() {
         return backupEnabled.value
       },
-      loadEncryptionStatus: () => loadEncryptionStatusMock()
+      get backupVersion() {
+        return ''
+      },
+      get backupKeyCount() {
+        return 0
+      },
+      loading: false,
+      loadEncryptionStatus: () => loadEncryptionStatusMock(),
+      loadBackupStatus: vi.fn(),
+      markSecurityKeyConfigured: vi.fn()
     })
   }
 })
@@ -147,6 +162,7 @@ describe('SecuritySettings', () => {
     getIgnoredUsersMock.mockResolvedValue([])
     loadEncryptionStatusMock.mockResolvedValue(undefined)
     exportKeysMock.mockResolvedValue('')
+    encryptionFlags.enabled = true
   })
 
   it('renders correctly', () => {
@@ -251,6 +267,18 @@ describe('SecuritySettings', () => {
     const vm = wrapper.vm as any
     await vm.handleExportKeys()
     expect(showToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'fail' }))
+  })
+
+  it('未开启加密时不触发导出，提示先开启加密（与桌面端同一判定）', async () => {
+    encryptionFlags.enabled = false
+    const wrapper = mountSecuritySettings()
+    await vi.dynamicImportSettled()
+    const vm = wrapper.vm as any
+    await vm.handleExportKeys()
+    expect(exportKeysMock).not.toHaveBeenCalled()
+    expect(showToastMock).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'fail', message: 'setting.security.enable_encryption_first' })
+    )
   })
 
   it('no longer keeps a parallel key-backup setup path', async () => {

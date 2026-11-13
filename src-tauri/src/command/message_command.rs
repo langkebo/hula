@@ -97,14 +97,13 @@ pub async fn page_msg(
         user_info.uid.clone()
     };
 
-    let db_result = MessageService::page_messages(
-        &*state.db_conn.read().await,
-        param.room_id,
-        param.cursor_page_param,
-        &login_uid,
-    )
-    .await
-    .map_err(|e| e.to_string())?;
+    // 连接句柄先克隆再使用，避免读锁生命周期跨 await
+    let db = state.db_conn.read().await.clone();
+
+    let db_result =
+        MessageService::page_messages(&db, param.room_id, param.cursor_page_param, &login_uid)
+            .await
+            .map_err(|e| e.to_string())?;
 
     let mut raw_list = db_result.list.unwrap_or_default();
     raw_list.sort_by(|a, b| {
@@ -121,7 +120,7 @@ pub async fn page_msg(
             resp.time_block = Some(1);
         } else if let Some(send_time) = msg.message.send_time {
             resp.time_block = im_message_repository::calculate_time_block(
-                &*state.db_conn.read().await,
+                &db,
                 &msg.message.room_id,
                 &msg.message.id,
                 send_time,
@@ -405,8 +404,11 @@ pub async fn update_message_recall_status(
 ) -> Result<(), String> {
     let login_uid = state.user_info.lock().await.uid.clone();
 
+    // 同上：先克隆连接句柄，避免读锁跨 await
+    let db = state.db_conn.read().await.clone();
+
     MessageService::update_message_recall_status(
-        &*state.db_conn.read().await,
+        &db,
         &message_id,
         message_type,
         &message_body,

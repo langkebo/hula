@@ -107,6 +107,10 @@ describe('MatrixDeviceService', () => {
     listRoomKeyRequests: ReturnType<typeof vi.fn>
     deleteRoomKeyRequest: ReturnType<typeof vi.fn>
   }
+  let mockKeysManager: {
+    getUserDevices: ReturnType<typeof vi.fn>
+    fulfillRoomKeyRequest: ReturnType<typeof vi.fn>
+  }
 
   const authedRequestImpl = vi
     .fn()
@@ -150,6 +154,12 @@ describe('MatrixDeviceService', () => {
       deleteRoomKeyRequest: vi.fn()
     }
 
+    // S1：fulfillRoomKeyRequest 在 DeviceKeysManager 上，E2EEManager 只镜像 list/delete。
+    mockKeysManager = {
+      getUserDevices: vi.fn().mockResolvedValue({}),
+      fulfillRoomKeyRequest: vi.fn()
+    }
+
     mockHttp = { authedRequest: authedRequestImpl }
 
     mockClient = {
@@ -165,7 +175,7 @@ describe('MatrixDeviceService', () => {
       ),
       getDeviceId: vi.fn(() => 'CURRENT_DEVICE'),
       // 只 stub 用到的单个方法，避免构造完整 DeviceKeysManager
-      getDeviceKeysManager: vi.fn(() => ({ getUserDevices: vi.fn().mockResolvedValue({}) }) as never)
+      getDeviceKeysManager: vi.fn(() => mockKeysManager as never)
     }
 
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
@@ -272,6 +282,45 @@ describe('MatrixDeviceService', () => {
       const result = await matrixDeviceService.getRoomKeyRequests()
 
       expect(result).toEqual([])
+    })
+  })
+
+  describe('fulfillRoomKeyRequest', () => {
+    it('调用 SDK 兑现密钥请求并返回 true', async () => {
+      mockKeysManager.fulfillRoomKeyRequest.mockResolvedValue(undefined)
+
+      const ok = await matrixDeviceService.fulfillRoomKeyRequest('req-1')
+
+      expect(ok).toBe(true)
+      expect(mockKeysManager.fulfillRoomKeyRequest).toHaveBeenCalledWith('req-1', undefined)
+    })
+
+    it('透传 session_key / sender_key 覆盖值', async () => {
+      mockKeysManager.fulfillRoomKeyRequest.mockResolvedValue(undefined)
+
+      const ok = await matrixDeviceService.fulfillRoomKeyRequest('req-2', {
+        session_key: 'SESSION',
+        sender_key: 'SENDER'
+      })
+
+      expect(ok).toBe(true)
+      expect(mockKeysManager.fulfillRoomKeyRequest).toHaveBeenCalledWith('req-2', {
+        session_key: 'SESSION',
+        sender_key: 'SENDER'
+      })
+    })
+
+    it('SDK 调用失败时返回 false 且不抛出', async () => {
+      mockKeysManager.fulfillRoomKeyRequest.mockRejectedValue(new Error('404 M_NOT_FOUND'))
+
+      await expect(matrixDeviceService.fulfillRoomKeyRequest('missing')).resolves.toBe(false)
+    })
+
+    it('requestId 为空时直接返回 false，不调用 SDK', async () => {
+      const ok = await matrixDeviceService.fulfillRoomKeyRequest('   ')
+
+      expect(ok).toBe(false)
+      expect(mockKeysManager.fulfillRoomKeyRequest).not.toHaveBeenCalled()
     })
   })
 

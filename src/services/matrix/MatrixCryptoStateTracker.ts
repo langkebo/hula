@@ -39,6 +39,11 @@ import {
 import { clearStaleCryptoStores } from '@/services/matrix/crypto/cryptoStoreCleanup'
 import { replayPersistedStrictness } from '@/services/matrix/crypto/strictDevicePolicyReplay'
 import { getOrCreateCryptoStorageKey, logCryptoStorageKeyBackend } from '@/services/secure/cryptoStorageKey'
+import {
+  isLocalUnlockConfigured,
+  isLocalUnlockUnlocked,
+  subscribeLocalUnlockState
+} from '@/services/secure/localUnlockKey'
 import { createLogger } from '@/utils/Logger'
 import { rejectMissingStorageKeyState } from './cryptoDebugState'
 
@@ -140,6 +145,14 @@ export class MatrixCryptoStateTracker {
   private readonly lifecycle = new CryptoLifecycleDiagnosticsTracker()
 
   /**
+   * 「解锁后补初始化」的取消订阅句柄（D9）。
+   *
+   * 非 null 表示当前已挂上一次性监听：storageKey 缺失导致 fail-closed 后，
+   * 用户完成本地解锁时自动补一次 `ensureCrypto`，避免整个会话 E2EE 不可用。
+   */
+  private disarmStorageKeyRetry: (() => void) | null = null
+
+  /**
    * 把状态归属绑定到调用方传入的 client（D9）。
    *
    * 换绑时递增代次并清空旧状态：旧 client 的后台续跑任务持有旧代次，
@@ -153,6 +166,8 @@ export class MatrixCryptoStateTracker {
       identity !== null && this.stateOwnerIdentity !== null && identity !== this.stateOwnerIdentity
 
     if (client !== this.stateOwnerClient || identityChanged) {
+      // 换绑后旧的「解锁补初始化」监听必然指向过期 client，先解除以免占住名额。
+      this.disarmStorageKeyRetry?.()
       this.stateOwnerClient = client
       this.stateOwnerIdentity = identity
       this.stateGeneration += 1
@@ -419,6 +434,9 @@ export class MatrixCryptoStateTracker {
     } else {
       // fail-closed：拿不到 storageKey 时不写明文（原因与恢复路径见 cryptoDebugState.ts）
       this.writeState(generation, rejectMissingStorageKeyState(userId, deviceId, useIndexedDB))
+      // D9：本地解锁密码来源但本会话尚未解锁时，storageKey 就是 null。
+      // 只报状态不够 —— 用户随后解锁后没人再触发 init，整个会话都拿不到 E2EE。
+      this.armStorageKeyRetry(cryptoClient, generation)
       return
     }
 
@@ -503,6 +521,39 @@ export class MatrixCryptoStateTracker {
         storeEncrypted: storeEncrypted
       })
       logger.warn(`Rust Crypto 初始化失败，继续以非加密模式启动: ${errMsg}`)
+    }
+  }
+
+  /**
+   * D9：storageKey 缺失导致 fail-closed 后，挂一个**一次性**本地解锁监听，解锁完成时补初始化。
+   *
+   * 触发场景：冷启动先跳过本地解锁门禁 → 登录 → `getOrCreateCryptoStorageKey()` 返回 null
+   * （密钥来源是本地解锁密码，但本会话未解锁）⇒ 原来只写 debug state 就返回，此后没有任何
+   * 路径再触发 init，直到用户整页 reload。这里补上「解锁即可用」。
+   *
+   * 只在**确实配置了本地解锁**时挂监听；Secure Store 不可用等其它 fail-closed 原因无解锁事件，
+   * 挂了也不会触发，但会增加噪音，故直接跳过。
+   */
+  private armStorageKeyRetry(cryptoClient: RustCryptoCapableClient, generation: number): void {
+    if (this.disarmStorageKeyRetry || !isLocalUnlockConfigured() || isLocalUnlockUnlocked()) {
+      return
+    }
+    const unsubscribe = subscribeLocalUnlockState((unlocked) => {
+      if (!unlocked) return
+      unsubscribe()
+      this.disarmStorageKeyRetry = null
+      if (!this.isCurrentGeneration(generation)) {
+        logger.info('本地解锁后的 crypto 补初始化已过期（client 已换绑/状态已重置），丢弃')
+        return
+      }
+      logger.info('本地解锁完成，补一次 Rust Crypto 初始化（此前 storageKey 缺失已 fail-closed）')
+      void this.doEnsureCrypto(cryptoClient, generation).catch((err: unknown) =>
+        logger.warn(`本地解锁后的 crypto 补初始化失败: ${normalizeCryptoError(err)}`)
+      )
+    })
+    this.disarmStorageKeyRetry = () => {
+      unsubscribe()
+      this.disarmStorageKeyRetry = null
     }
   }
 
@@ -622,6 +673,7 @@ export class MatrixCryptoStateTracker {
    */
   resetState(): void {
     // D9：重置同时解除 client 归属并推进代次，使旧 client 的后台续跑任务无法再回写状态。
+    this.disarmStorageKeyRetry?.()
     this.stateOwnerClient = null
     this.stateOwnerIdentity = null
     this.stateGeneration += 1

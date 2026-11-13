@@ -88,7 +88,8 @@ declare namespace OPT {
     click?: MenuAction<TContent>
     visible?: MenuVisible<TContent>
     children?: RightMenu<TContent>[] | MenuChildrenResolver<TContent>
-    disabled?: boolean
+    /** 禁用态：静态布尔或按内容动态解析（如「撤回」是否已超时） */
+    disabled?: boolean | MenuVisible<TContent>
   }
 
   /**

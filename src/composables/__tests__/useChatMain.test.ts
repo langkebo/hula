@@ -258,7 +258,7 @@ const mountComposable = () => {
 }
 
 const resolveMenuLabel = (item: { label?: string | ((content?: unknown) => string) }) =>
-  typeof item.label === 'function' ? item.label(void 0) : item.label
+  typeof item.label === 'function' ? item.label(createMessageItem()) : item.label
 
 const createMessageItem = (overrides: Partial<MessageItem> = {}): MessageItem => ({
   fromUser: { uid: '@target:example.com' },

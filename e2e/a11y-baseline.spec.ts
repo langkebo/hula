@@ -1,3 +1,8 @@
+/**
+ * 路由集: desktop
+ * 依据：只断言桌面路由 DOM（`.login-box` / `/settings` / `/message` …）；移动 dev server（5210）没有这些路由。
+ * 校验：`tests/lint/e2e-route-sets.test.ts`（与 `e2e/specRouteSets.ts` 名单逐条比对）。
+ */
 import { expect, test } from '@playwright/test'
 
 /**

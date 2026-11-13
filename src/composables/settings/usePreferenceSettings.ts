@@ -38,6 +38,11 @@ export function usePreferenceSettings() {
     set: (value: string) => settingStore.setEmojiSize(value)
   })
 
+  const recallTime = computed({
+    get: () => settingStore.recallTime,
+    set: (value: number) => settingStore.setRecallTime(value)
+  })
+
   const sendKey = computed({
     get: () => settingStore.sendMessageShortcut,
     set: (value: string) => settingStore.setSendMessageShortcut(value)
@@ -103,6 +108,7 @@ export function usePreferenceSettings() {
     linkPreview,
     emojiConvert,
     emojiSize,
+    recallTime,
     sendKey,
     burnDefaultEnabled,
     burnDefaultDuration,

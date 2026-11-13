@@ -47,6 +47,35 @@ import { sendResponse } from './workerState'
  */
 type HandlerFn = (payload: unknown) => Promise<unknown> | unknown
 
+/** 索引初始化最长等待时间：超时后照常执行，避免 IndexedDB 被 blocked 时搜索请求永久挂起。 */
+const SEARCH_ENGINE_READY_TIMEOUT_MS = 3000
+
+// 初始化搜索引擎（从 IndexedDB 加载本地搜索索引）。
+// 索引初始化失败不应阻塞 worker 就绪：这里只记录日志，避免未处理的 Promise rejection 静默丢失。
+const searchEngineReady: Promise<void> = initSearchEngine().catch((error: unknown) => {
+  // biome-ignore lint/suspicious/noConsole: worker 内无 Tauri 日志通道，此兜底不可丢
+  console.error('[matrixSdk.worker] 搜索引擎初始化失败:', error)
+})
+
+/**
+ * 搜索类消息先等索引从 IndexedDB 载入完成（G4）。
+ * 否则 worker ready 到载入完成之间的查询会命中空索引，表现为「刚启动搜不到历史消息」。
+ */
+async function afterSearchEngineReady<T>(run: () => Promise<T> | T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      searchEngineReady,
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, SEARCH_ENGINE_READY_TIMEOUT_MS)
+      })
+    ])
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
+  return run()
+}
+
 const messageHandlers: Record<string, HandlerFn> = {
   // --- 服务器探测 ---
   getServerVersions: (payload) => handleGetServerVersions(payload as { baseUrl: string; accessToken?: string }),
@@ -57,16 +86,22 @@ const messageHandlers: Record<string, HandlerFn> = {
   getCapabilities: (payload) => handleGetCapabilities(payload as { baseUrl: string; accessToken: string }),
 
   // --- 搜索索引 ---
-  'search.reset': () => handleSearchReset(),
-  'search.setKey': (payload) => handleSearchSetKey(payload as { key?: string | null }),
-  'search.bootstrapRooms': (payload) => handleSearchBootstrapRooms(payload as { rooms?: SearchRoomDoc[] }),
-  'search.upsertRooms': (payload) => handleSearchUpsertRooms(payload as { rooms?: SearchRoomDoc[] }),
-  'search.bootstrapEvents': (payload) => handleSearchBootstrapEvents(payload as { events?: SearchEventDoc[] }),
-  'search.upsertEvents': (payload) => handleSearchUpsertEvents(payload as { events?: SearchEventDoc[] }),
-  'search.redactEvent': (payload) => handleSearchRedactEvent(payload as { eventId?: string }),
-  'search.removeRoom': (payload) => handleSearchRemoveRoom(payload as { roomId?: string }),
-  'search.query': (payload) => handleSearchQuery(payload as SearchQueryPayload),
-  'search.stats': () => handleSearchStats(),
+  'search.reset': () => afterSearchEngineReady(() => handleSearchReset()),
+  'search.setKey': (payload) => afterSearchEngineReady(() => handleSearchSetKey(payload as { key?: string | null })),
+  'search.bootstrapRooms': (payload) =>
+    afterSearchEngineReady(() => handleSearchBootstrapRooms(payload as { rooms?: SearchRoomDoc[] })),
+  'search.upsertRooms': (payload) =>
+    afterSearchEngineReady(() => handleSearchUpsertRooms(payload as { rooms?: SearchRoomDoc[] })),
+  'search.bootstrapEvents': (payload) =>
+    afterSearchEngineReady(() => handleSearchBootstrapEvents(payload as { events?: SearchEventDoc[] })),
+  'search.upsertEvents': (payload) =>
+    afterSearchEngineReady(() => handleSearchUpsertEvents(payload as { events?: SearchEventDoc[] })),
+  'search.redactEvent': (payload) =>
+    afterSearchEngineReady(() => handleSearchRedactEvent(payload as { eventId?: string })),
+  'search.removeRoom': (payload) =>
+    afterSearchEngineReady(() => handleSearchRemoveRoom(payload as { roomId?: string })),
+  'search.query': (payload) => afterSearchEngineReady(() => handleSearchQuery(payload as SearchQueryPayload)),
+  'search.stats': () => afterSearchEngineReady(() => handleSearchStats()),
 
   // --- 心跳 ---
   ping: () => ({ timestamp: Date.now() })
@@ -97,13 +132,5 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
     await sendResponse(type, id, false, undefined, errorMessage)
   }
 }
-
-// 初始化搜索引擎（从 IndexedDB 加载本地搜索索引）。
-// 索引初始化失败不应阻塞 worker 就绪：搜索请求会在 handler 内部再次拿到错并回传，
-// 这里只记录日志，避免未处理的 Promise rejection 静默丢失。
-initSearchEngine().catch((error: unknown) => {
-  // biome-ignore lint/suspicious/noConsole: worker 内无 Tauri 日志通道，此兜底不可丢
-  console.error('[matrixSdk.worker] 搜索引擎初始化失败:', error)
-})
 
 self.postMessage({ type: 'ready', id: 'init', success: true })
