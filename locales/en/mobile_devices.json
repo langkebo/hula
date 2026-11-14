@@ -32,7 +32,6 @@
   "unblock": "Unblock",
   "verified": "Verified",
   "unverified": "Unverified",
-  "blocked": "Blocked",
   "cross_signed": "Cross-signed",
   "trust_success": "Device trusted",
   "trust_failed": "Device trust failed",

@@ -86,6 +86,23 @@ const ACCEPTED_PATTERNS = [
     reason: 'cancelEdit 已自行复位 editing/draft 本地状态，事件只是"已取消"的可选通知'
   },
   {
+    component: 'src/components/common/HomeserverDialog.vue',
+    event: 'save',
+    reason:
+      'handleSave 内 discoverAndSaveMatrixEndpoints 已落库并自行关闭弹窗且给出反馈，save 只是"已保存"的可选通知（HomeserverDialog.test.ts 断言其载荷）'
+  },
+  {
+    component: 'src/components/common/PermissionGuard.vue',
+    event: 'denied',
+    reason:
+      '通用能力门卫的生命周期播报：mode=hide 时本就无 UI，mode=gray 时组件自己 preventDefault 并降透明；父级订阅与否不影响组件行为'
+  },
+  {
+    component: 'src/components/common/PermissionGuard.vue',
+    event: 'granted',
+    reason: '通用能力门卫的生命周期播报，渲染由 slot 决定，事件只供可选遥测订阅'
+  },
+  {
     component: 'src/components/moderation/EventReportDialog.vue',
     event: 'reported',
     reason: '举报已由 matrixEventReportService.createReport 发出并自行关闭，事件是可选通知'
@@ -156,11 +173,6 @@ const ACCEPTED_PATTERNS = [
     component: 'src/mobile/components/virtual-scroll/SmartVirtualList.vue',
     event: 'loadMore',
     reason: '通用列表分页扩展点；现有 3 个父组件的数据源一次性给全，不消费该事件（组件内也没有 hasMore 守卫）'
-  },
-  {
-    component: 'src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue',
-    event: 'upgraded',
-    reason: '升级请求、成功提示与自关闭都由组件内 useRoomUpgradeFlow 完成，事件只是可选通知（父组件会保留旧版本号标签）'
   }
 ]
 

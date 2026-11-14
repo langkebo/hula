@@ -18,7 +18,8 @@
  *    包装调用 `translateXxx('k')`：实参子树里的字面量（含 `t(cond ? 'a' : 'b')`）；
  *  - `<i18n-t keypath="k">` 的 `keypath` 属性；
  *  - **键注册表位置**：对象的属性名/属性值、数组元素、变量初始化、赋值右值、`return`
- *    表达式。本仓大量用法是"把 key 存进 map/数组，之后 `t(map[x])` 消费"
+ *    表达式；判定时会穿透括号、三元分支与 `??` / `||` 右值（`const key = a ? 'x' : 'y'`
+ *    后接 `t(key)` 是真实用法）。本仓大量用法是"把 key 存进 map/数组，之后 `t(map[x])` 消费"
  *    （`userMessage: 'error.matrix.network'`、`labelKey: '...'`、`SETTINGS_TAB_GROUP_TRANSLATION_KEYS`…），
  *    这类间接引用无法靠字面量调用点识别，只能按注册表位置识别；
  *  - `new Error('matrix_error.…')`：本仓把 i18n key 作为错误消息抛出，属于间接引用。
@@ -117,16 +118,40 @@ function collectLiterals(node, add) {
   ts.forEachChild(node, (child) => collectLiterals(child, add))
 }
 
+/**
+ * 括号、三元分支、`??` / `||` 右值只是键值的中转，判定注册表位置时要穿透它们：
+ * `const key = a ? 'x' : 'y'` 与 `messageKey: cond ? 'x' : 'y'` 都是真实引用。
+ */
+function throughTransparentParent(node) {
+  let current = node
+  let parent = current.parent
+  while (parent) {
+    const transparent =
+      (ts.isParenthesizedExpression(parent) && parent.expression === current) ||
+      (ts.isConditionalExpression(parent) &&
+        (parent.condition === current || parent.whenTrue === current || parent.whenFalse === current)) ||
+      (ts.isBinaryExpression(parent) &&
+        parent.right === current &&
+        (parent.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
+          parent.operatorToken.kind === ts.SyntaxKind.BarBarToken))
+    if (!transparent) return current
+    current = parent
+    parent = current.parent
+  }
+  return current
+}
+
 /** 该字面量是否位于"键注册表位置"（对象键/属性值、数组元素、变量初始化、赋值右值、return）。 */
 function isRegistryPosition(node) {
-  const parent = node.parent
+  const value = throughTransparentParent(node)
+  const parent = value.parent
   if (!parent) return false
-  if (ts.isPropertyAssignment(parent) && (parent.initializer === node || parent.name === node)) return true
-  if (ts.isArrayLiteralExpression(parent) && parent.elements.includes(node)) return true
-  if (ts.isVariableDeclaration(parent) && parent.initializer === node) return true
-  if (ts.isPropertyDeclaration(parent) && parent.initializer === node) return true
-  if (ts.isBinaryExpression(parent) && parent.operatorToken.kind === ts.SyntaxKind.EqualsToken && parent.right === node) return true
-  if (ts.isReturnStatement(parent) && parent.expression === node) return true
+  if (ts.isPropertyAssignment(parent) && (parent.initializer === value || parent.name === value)) return true
+  if (ts.isArrayLiteralExpression(parent) && parent.elements.includes(value)) return true
+  if (ts.isVariableDeclaration(parent) && parent.initializer === value) return true
+  if (ts.isPropertyDeclaration(parent) && parent.initializer === value) return true
+  if (ts.isBinaryExpression(parent) && parent.operatorToken.kind === ts.SyntaxKind.EqualsToken && parent.right === value) return true
+  if (ts.isReturnStatement(parent) && parent.expression === value) return true
   return false
 }
 

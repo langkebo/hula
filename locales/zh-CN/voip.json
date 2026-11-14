@@ -7,7 +7,6 @@
     "connected": "通话中",
     "reconnecting": "网络不稳定，正在重连..."
   },
-  "unknown": "未知",
   "call": {
     "hangup": "挂断",
     "mute": "静音",

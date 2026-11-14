@@ -48,7 +48,7 @@
       v-if="ImagePreview"
       v-model:visible="showImagePreviewRef"
       :image-url="displayEmojiSrc"
-      v-bind="message !== undefined ? { message } : {}" />
+      :message="message" />
   </div>
 </template>
 

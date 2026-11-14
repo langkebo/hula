@@ -4,7 +4,6 @@
  */
 
 export type Messages = {
-  "chat_region": "聊天区域",
   "footer": {
     "emoji": "表情",
     "screenshot": "截图",
@@ -103,9 +102,6 @@ export type Messages = {
     "retry": "重试",
     "empty": "没有可展示的消息"
   },
-  "crypto_unavailable": {
-    "message": "加密功能未就绪，此房间的消息无法发送。请重新登录或联系管理员。"
-  },
   "encryption": {
     "verified_title": "端到端加密已验证",
     "unverified_title": "端到端加密未完全验证",
@@ -147,7 +143,6 @@ export type Messages = {
  * 不会被某个点分 t() key 直接寻址。
  */
 export type KeyPaths =
-  | "chat.chat_region"
   | "chat.footer.emoji"
   | "chat.footer.screenshot"
   | "chat.footer.send_file"
@@ -226,7 +221,6 @@ export type KeyPaths =
   | "chat.multi_msg.load_failed"
   | "chat.multi_msg.retry"
   | "chat.multi_msg.empty"
-  | "chat.crypto_unavailable.message"
   | "chat.encryption.verified_title"
   | "chat.encryption.unverified_title"
   | "chat.encryption.risk_title"

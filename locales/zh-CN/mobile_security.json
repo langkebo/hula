@@ -1,9 +1,4 @@
 {
-  "backup_description": "设置密钥备份可以保护您的加密消息",
-  "backup_passphrase": "备份密码",
-  "backup_passphrase_placeholder": "请输入备份密码",
-  "backup_setup_failed": "备份设置失败",
-  "backup_setup_success": "备份设置成功",
   "cancel": "取消",
   "change_password": "修改密码",
   "changing_password": "正在修改密码...",
@@ -40,17 +35,14 @@
   "new_password_placeholder": "请输入新密码",
   "old_password": "当前密码",
   "old_password_placeholder": "请输入当前密码",
-  "passphrase_required": "请输入备份密码",
   "password_change_failed": "密码修改失败",
   "password_changed": "密码修改成功",
   "password_mismatch": "两次输入的密码不一致",
-  "password_too_short": "密码长度至少为8位",
   "privacy_section": "隐私设置",
   "secret_chat": {
     "password": "私密聊天密码",
     "set_password": "设置密码",
     "change_password": "修改密码",
-    "password_unset": "未设置",
     "enable": "启用私密聊天",
     "enable_hint": "开启后，标记为私密的会话需输入密码才能查看",
     "auto_lock": "离开后自动锁定",
@@ -89,6 +81,5 @@
     "delete_success": "备份删除成功",
     "delete_failed": "备份删除失败"
   },
-  "setting_up_backup": "正在设置备份...",
   "title": "安全设置"
 }

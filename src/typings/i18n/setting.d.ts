@@ -265,7 +265,6 @@ export type Messages = {
       "desc": "查看最近的通知记录",
       "empty": "暂无通知记录",
       "no_content": "无内容",
-      "read": "已读",
       "mark_read": "标记已读",
       "mark_all_read": "全部已读",
       "ack_success": "已标记为已读",
@@ -1440,7 +1439,6 @@ export type KeyPaths =
   | "setting.push.history.desc"
   | "setting.push.history.empty"
   | "setting.push.history.no_content"
-  | "setting.push.history.read"
   | "setting.push.history.mark_read"
   | "setting.push.history.mark_all_read"
   | "setting.push.history.ack_success"

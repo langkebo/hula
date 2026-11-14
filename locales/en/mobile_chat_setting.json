@@ -68,7 +68,6 @@
   "notifications_silent": "Messages allowed, notifications off",
   "notifications_enabled": "Notifications enabled",
   "start_group_chat": "Start Group Chat",
-  "search_button": "Search",
   "selected_count": "{count} selected",
   "create_group_failed": "Failed to create group",
   "create_group_success": "Group created",

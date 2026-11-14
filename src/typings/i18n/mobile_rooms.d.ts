@@ -7,7 +7,6 @@ export type Messages = {
   "search_placeholder": "搜索房间",
   "no_rooms": "暂无房间",
   "no_search_result": "未找到匹配的房间",
-  "no_topic": "暂无话题",
   "create_first": "创建第一个房间",
   "create_room": "创建房间",
   "create_room_prompt": "请输入房间名称",
@@ -16,21 +15,16 @@ export type Messages = {
   "search_public_rooms": "搜索公开房间",
   "creating": "创建中...",
   "create_success": "房间创建成功",
-  "create_failed": "房间创建失败",
   "joining": "加入中...",
   "join_success": "加入房间成功",
-  "join_failed": "加入房间失败",
   "leave_room": "退出房间",
   "leave_room_confirm": "确定要退出该房间吗？",
   "leaving": "退出中...",
   "leave_success": "已退出房间",
-  "leave_failed": "退出房间失败",
   "load_failed": "加载房间列表失败",
-  "search_failed": "搜索房间失败",
   "search_empty": "没有找到公开房间",
   "members": "人",
   "encrypted": "已加密",
-  "public_room": "公开房间",
   "unnamed_room": "未命名房间",
   "search_public_rooms_placeholder": "输入关键词搜索公开房间",
   "search_btn": "搜索",
@@ -54,7 +48,6 @@ export type KeyPaths =
   | "mobile_rooms.search_placeholder"
   | "mobile_rooms.no_rooms"
   | "mobile_rooms.no_search_result"
-  | "mobile_rooms.no_topic"
   | "mobile_rooms.create_first"
   | "mobile_rooms.create_room"
   | "mobile_rooms.create_room_prompt"
@@ -63,21 +56,16 @@ export type KeyPaths =
   | "mobile_rooms.search_public_rooms"
   | "mobile_rooms.creating"
   | "mobile_rooms.create_success"
-  | "mobile_rooms.create_failed"
   | "mobile_rooms.joining"
   | "mobile_rooms.join_success"
-  | "mobile_rooms.join_failed"
   | "mobile_rooms.leave_room"
   | "mobile_rooms.leave_room_confirm"
   | "mobile_rooms.leaving"
   | "mobile_rooms.leave_success"
-  | "mobile_rooms.leave_failed"
   | "mobile_rooms.load_failed"
-  | "mobile_rooms.search_failed"
   | "mobile_rooms.search_empty"
   | "mobile_rooms.members"
   | "mobile_rooms.encrypted"
-  | "mobile_rooms.public_room"
   | "mobile_rooms.unnamed_room"
   | "mobile_rooms.search_public_rooms_placeholder"
   | "mobile_rooms.search_btn"

@@ -4,6 +4,9 @@
   "skippedLocations": [],
   "acceptedPatternNames": [
     "src/components/atomic/InlineEdit.vue::cancel",
+    "src/components/common/HomeserverDialog.vue::save",
+    "src/components/common/PermissionGuard.vue::denied",
+    "src/components/common/PermissionGuard.vue::granted",
     "src/components/moderation/EventReportDialog.vue::reported",
     "src/components/rightBox/chatBox/ChatSidebar.vue::ready",
     "src/components/search/SearchPane.vue::select",
@@ -17,7 +20,6 @@
     "src/mobile/components/AreaDrawer.vue::update:value",
     "src/components/settings/ThemeSwitcher.vue::update:modelValue",
     "src/components/rightBox/MsgInput.vue::input",
-    "src/mobile/components/virtual-scroll/SmartVirtualList.vue::loadMore",
-    "src/mobile/views/chat-room/MobileRoomUpgradeDialog.vue::upgraded"
+    "src/mobile/components/virtual-scroll/SmartVirtualList.vue::loadMore"
   ]
 }

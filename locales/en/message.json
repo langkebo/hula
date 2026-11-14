@@ -36,7 +36,6 @@
     "tap_suffix": "to speak",
     "recording": "Recording",
     "processing": "Processing audio",
-    "error": "Recording failed",
     "permission_denied_title": "Microphone permission required",
     "permission_denied_guide": "Microphone access was denied. Go to System Settings > Apps > TJG > Permissions, enable Microphone, then try again.",
     "cancel_recording": "Cancel Recording",

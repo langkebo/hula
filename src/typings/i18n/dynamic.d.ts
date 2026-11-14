@@ -4,8 +4,6 @@
  */
 
 export type Messages = {
-  "title": "动态详情",
-  "detail_placeholder": "当前详情页已接入移动端页面壳，后续直接在这里复用共享详情状态、评论状态与返回路径管理。",
   "skeleton": {
     "title": "动态共享骨架已接入",
     "detail": "当前详情页已接入共享骨架，后续将直接在这里承接动态详情状态、评论状态与返回路径管理。",
@@ -24,8 +22,6 @@ export type Messages = {
  * 不会被某个点分 t() key 直接寻址。
  */
 export type KeyPaths =
-  | "dynamic.title"
-  | "dynamic.detail_placeholder"
   | "dynamic.skeleton.title"
   | "dynamic.skeleton.detail"
   | "dynamic.skeleton.mobile_ready"

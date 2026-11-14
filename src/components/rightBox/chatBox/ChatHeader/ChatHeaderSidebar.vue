@@ -72,9 +72,7 @@
                 :value="localRemarkDraft"
                 size="small"
                 :placeholder="t('home.chat_header.input_remark')"
-                @update:value="handleLocalRemarkInput"
-                @blur="handleUpdateRemark"
-                @keyup.enter="handleUpdateRemark" />
+                @update:value="handleLocalRemarkInput" />
             </div>
           </div>
         </div>
@@ -149,7 +147,6 @@ const emit = defineEmits<{
   (e: 'update:localRemark', value: string): void
   (e: 'update-name', name: string): void
   (e: 'update-my-name', name: string): void
-  (e: 'update-remark', remark: string): void
   (e: 'pin-room'): void
   (e: 'mute-change', type: string): void
   (e: 'clear-messages'): void
@@ -206,10 +203,6 @@ const handleUpdateName = () => {
 
 const handleUpdateMyName = () => {
   emit('update-my-name', localMyNameDraft.value.trim())
-}
-
-const handleUpdateRemark = () => {
-  emit('update-remark', localRemarkDraft.value.trim())
 }
 
 const handleLocalMyNameInput = (value: string) => {

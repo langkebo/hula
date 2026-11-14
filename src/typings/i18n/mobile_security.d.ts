@@ -4,11 +4,6 @@
  */
 
 export type Messages = {
-  "backup_description": "设置密钥备份可以保护您的加密消息",
-  "backup_passphrase": "备份密码",
-  "backup_passphrase_placeholder": "请输入备份密码",
-  "backup_setup_failed": "备份设置失败",
-  "backup_setup_success": "备份设置成功",
   "cancel": "取消",
   "change_password": "修改密码",
   "changing_password": "正在修改密码...",
@@ -45,17 +40,14 @@ export type Messages = {
   "new_password_placeholder": "请输入新密码",
   "old_password": "当前密码",
   "old_password_placeholder": "请输入当前密码",
-  "passphrase_required": "请输入备份密码",
   "password_change_failed": "密码修改失败",
   "password_changed": "密码修改成功",
   "password_mismatch": "两次输入的密码不一致",
-  "password_too_short": "密码长度至少为8位",
   "privacy_section": "隐私设置",
   "secret_chat": {
     "password": "私密聊天密码",
     "set_password": "设置密码",
     "change_password": "修改密码",
-    "password_unset": "未设置",
     "enable": "启用私密聊天",
     "enable_hint": "开启后，标记为私密的会话需输入密码才能查看",
     "auto_lock": "离开后自动锁定",
@@ -94,7 +86,6 @@ export type Messages = {
     "delete_success": "备份删除成功",
     "delete_failed": "备份删除失败"
   },
-  "setting_up_backup": "正在设置备份...",
   "title": "安全设置"
 }
 
@@ -108,11 +99,6 @@ export type Messages = {
  * 不会被某个点分 t() key 直接寻址。
  */
 export type KeyPaths =
-  | "mobile_security.backup_description"
-  | "mobile_security.backup_passphrase"
-  | "mobile_security.backup_passphrase_placeholder"
-  | "mobile_security.backup_setup_failed"
-  | "mobile_security.backup_setup_success"
   | "mobile_security.cancel"
   | "mobile_security.change_password"
   | "mobile_security.changing_password"
@@ -147,16 +133,13 @@ export type KeyPaths =
   | "mobile_security.new_password_placeholder"
   | "mobile_security.old_password"
   | "mobile_security.old_password_placeholder"
-  | "mobile_security.passphrase_required"
   | "mobile_security.password_change_failed"
   | "mobile_security.password_changed"
   | "mobile_security.password_mismatch"
-  | "mobile_security.password_too_short"
   | "mobile_security.privacy_section"
   | "mobile_security.secret_chat.password"
   | "mobile_security.secret_chat.set_password"
   | "mobile_security.secret_chat.change_password"
-  | "mobile_security.secret_chat.password_unset"
   | "mobile_security.secret_chat.enable"
   | "mobile_security.secret_chat.enable_hint"
   | "mobile_security.secret_chat.auto_lock"
@@ -192,5 +175,4 @@ export type KeyPaths =
   | "mobile_security.secure_backup.verify_failed"
   | "mobile_security.secure_backup.delete_success"
   | "mobile_security.secure_backup.delete_failed"
-  | "mobile_security.setting_up_backup"
   | "mobile_security.title"

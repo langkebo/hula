@@ -140,10 +140,7 @@ export type Messages = {
   "delete_space_failed": "删除空间失败",
   "avatar": "头像",
   "space_tree_label": "空间树",
-  "management": {
-    "no_members": "暂无成员",
-    "show_all_members": "查看全部 {count} 位成员"
-  },
+  "management": {},
   "duplicate_name_title": "检测到同名空间",
   "duplicate_name_confirm": "已存在名为「{name}」的空间。仍然创建吗？",
   "duplicate_name_continue": "仍然创建",
@@ -316,8 +313,6 @@ export type KeyPaths =
   | "space.delete_space_failed"
   | "space.avatar"
   | "space.space_tree_label"
-  | "space.management.no_members"
-  | "space.management.show_all_members"
   | "space.duplicate_name_title"
   | "space.duplicate_name_confirm"
   | "space.duplicate_name_continue"

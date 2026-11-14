@@ -31,7 +31,6 @@ export type Messages = {
   "days": "天",
   "no_more": "没有更多了",
   "no_more_data": "没有更多数据了",
-  "screen_share": "共享屏幕",
   "notFound": "页面不存在或已被移除",
   "goHome": "返回首页",
   "draft_restored": "已恢复上次编辑内容",
@@ -128,10 +127,7 @@ export type Messages = {
     "send_success": "发送成功",
     "start": "开始讨论串"
   },
-  "loading": "加载中",
-  "notice": "公告",
-  "feature_in_development": "此功能有待开发中，请联系开发者",
-  "chat": "聊天"
+  "loading": "加载中"
 }
 
 /**
@@ -171,7 +167,6 @@ export type KeyPaths =
   | "common.days"
   | "common.no_more"
   | "common.no_more_data"
-  | "common.screen_share"
   | "common.notFound"
   | "common.goHome"
   | "common.draft_restored"
@@ -263,6 +258,3 @@ export type KeyPaths =
   | "common.thread.send_success"
   | "common.thread.start"
   | "common.loading"
-  | "common.notice"
-  | "common.feature_in_development"
-  | "common.chat"

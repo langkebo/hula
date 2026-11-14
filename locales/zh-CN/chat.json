@@ -1,5 +1,4 @@
 {
-  "chat_region": "聊天区域",
   "footer": {
     "emoji": "表情",
     "screenshot": "截图",
@@ -97,9 +96,6 @@
     "load_failed": "聊天记录加载失败",
     "retry": "重试",
     "empty": "没有可展示的消息"
-  },
-  "crypto_unavailable": {
-    "message": "加密功能未就绪，此房间的消息无法发送。请重新登录或联系管理员。"
   },
   "encryption": {
     "verified_title": "端到端加密已验证",

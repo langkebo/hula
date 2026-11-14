@@ -7,7 +7,6 @@
     "connected": "In call",
     "reconnecting": "Network unstable, reconnecting..."
   },
-  "unknown": "Unknown",
   "call": {
     "hangup": "Hang Up",
     "mute": "Mute",

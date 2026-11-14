@@ -73,7 +73,6 @@ export type Messages = {
   "notifications_silent": "已设置接收消息但不提醒",
   "notifications_enabled": "已允许消息提醒",
   "start_group_chat": "发起群聊",
-  "search_button": "搜索",
   "selected_count": "已选择 {count} 人",
   "create_group_failed": "创建群聊失败",
   "create_group_success": "创建群聊成功",
@@ -159,7 +158,6 @@ export type KeyPaths =
   | "mobile_chat_setting.notifications_silent"
   | "mobile_chat_setting.notifications_enabled"
   | "mobile_chat_setting.start_group_chat"
-  | "mobile_chat_setting.search_button"
   | "mobile_chat_setting.selected_count"
   | "mobile_chat_setting.create_group_failed"
   | "mobile_chat_setting.create_group_success"

@@ -187,7 +187,6 @@
     "banConfirm": "Are you sure you want to ban user {userId}?",
     "banSuccess": "User banned",
     "banFailed": "Failed to ban user",
-    "aliasRemoveNotSupported": "Alias removal is not supported yet",
     "loadedCount": "Loaded {count} items",
     "removeAlias": "Remove Alias",
     "removeAliasConfirm": "Are you sure you want to remove alias {alias}?",

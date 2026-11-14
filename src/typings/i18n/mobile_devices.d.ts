@@ -37,7 +37,6 @@ export type Messages = {
   "unblock": "解除屏蔽",
   "verified": "已验证",
   "unverified": "未验证",
-  "blocked": "已屏蔽",
   "cross_signed": "交叉签名已验证",
   "trust_success": "设备信任成功",
   "trust_failed": "设备信任失败",
@@ -121,7 +120,6 @@ export type KeyPaths =
   | "mobile_devices.unblock"
   | "mobile_devices.verified"
   | "mobile_devices.unverified"
-  | "mobile_devices.blocked"
   | "mobile_devices.cross_signed"
   | "mobile_devices.trust_success"
   | "mobile_devices.trust_failed"

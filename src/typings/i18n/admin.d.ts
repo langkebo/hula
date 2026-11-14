@@ -192,7 +192,6 @@ export type Messages = {
     "banConfirm": "确定要封禁用户 {userId} 吗？",
     "banSuccess": "用户已封禁",
     "banFailed": "封禁用户失败",
-    "aliasRemoveNotSupported": "别名删除暂不支持",
     "loadedCount": "已加载 {count} 条",
     "removeAlias": "删除别名",
     "removeAliasConfirm": "确定要删除别名 {alias} 吗？",
@@ -1061,7 +1060,6 @@ export type KeyPaths =
   | "admin.rooms.banConfirm"
   | "admin.rooms.banSuccess"
   | "admin.rooms.banFailed"
-  | "admin.rooms.aliasRemoveNotSupported"
   | "admin.rooms.loadedCount"
   | "admin.rooms.removeAlias"
   | "admin.rooms.removeAliasConfirm"

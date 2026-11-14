@@ -41,7 +41,6 @@ export type Messages = {
     "tap_suffix": "说话",
     "recording": "正在录音",
     "processing": "正在处理音频",
-    "error": "录音失败",
     "permission_denied_title": "需要麦克风权限",
     "permission_denied_guide": "麦克风权限已被拒绝。请前往 系统设置 → 应用 → 天机阁 → 权限 中开启麦克风，然后返回重试。",
     "cancel_recording": "取消录音",
@@ -390,7 +389,6 @@ export type KeyPaths =
   | "message.voice_recorder.tap_suffix"
   | "message.voice_recorder.recording"
   | "message.voice_recorder.processing"
-  | "message.voice_recorder.error"
   | "message.voice_recorder.permission_denied_title"
   | "message.voice_recorder.permission_denied_guide"
   | "message.voice_recorder.cancel_recording"

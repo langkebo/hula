@@ -1,9 +1,4 @@
 {
-  "backup_description": "Setting up key backup protects your encrypted messages",
-  "backup_passphrase": "Backup Passphrase",
-  "backup_passphrase_placeholder": "Enter backup passphrase",
-  "backup_setup_failed": "Backup setup failed",
-  "backup_setup_success": "Backup setup successful",
   "cancel": "Cancel",
   "change_password": "Change Password",
   "changing_password": "Changing password...",
@@ -40,17 +35,14 @@
   "new_password_placeholder": "Enter new password",
   "old_password": "Current Password",
   "old_password_placeholder": "Enter current password",
-  "passphrase_required": "Please enter a backup passphrase",
   "password_change_failed": "Failed to change password",
   "password_changed": "Password changed successfully",
   "password_mismatch": "Passwords do not match",
-  "password_too_short": "Password must be at least 8 characters",
   "privacy_section": "Privacy",
   "secret_chat": {
     "password": "Secret chat password",
     "set_password": "Set password",
     "change_password": "Change password",
-    "password_unset": "Not set",
     "enable": "Enable secret chat",
     "enable_hint": "Secret chats require a password to open",
     "auto_lock": "Auto-lock on leave",
@@ -89,6 +81,5 @@
     "delete_success": "Backup deleted successfully",
     "delete_failed": "Failed to delete backup"
   },
-  "setting_up_backup": "Setting up backup...",
   "title": "Security Settings"
 }

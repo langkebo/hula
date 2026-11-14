@@ -48,7 +48,7 @@
     <ImagePreview
       v-model:visible="showImagePreviewRef"
       :image-url="previewUrl"
-      v-bind="previewMessage ? { message: previewMessage } : {}"
+      :message="previewMessage"
       :show-forward="false"
       :show-save="true"
       :show-more="false" />

@@ -135,10 +135,7 @@
   "delete_space_failed": "Failed to delete space",
   "avatar": "Avatar",
   "space_tree_label": "Space Tree",
-  "management": {
-    "no_members": "No members",
-    "show_all_members": "Show all {count} members"
-  },
+  "management": {},
   "duplicate_name_title": "Duplicate space name detected",
   "duplicate_name_confirm": "A space named \"{name}\" already exists. Create anyway?",
   "duplicate_name_continue": "Create anyway",

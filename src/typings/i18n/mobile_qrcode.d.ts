@@ -5,13 +5,9 @@
 
 export type Messages = {
   "page_title": "扫一扫",
-  "group_title": "群二维码",
-  "account": "账号",
-  "scan_hint": "扫我添加好友哦~",
   "scan_cancelled": "扫码已取消",
   "scan_failed_or_cancelled": "扫码失败或已取消",
   "camera_permission_required": "没有相机权限，请在系统设置中开启权限",
-  "permission_missing": "缺少权限",
   "scan_error": "扫码过程中发生错误",
   "login_countdown": "登录 ({countdown}s)",
   "qr_code_expired_btn": "二维码已过期",
@@ -33,13 +29,9 @@ export type Messages = {
  */
 export type KeyPaths =
   | "mobile_qrcode.page_title"
-  | "mobile_qrcode.group_title"
-  | "mobile_qrcode.account"
-  | "mobile_qrcode.scan_hint"
   | "mobile_qrcode.scan_cancelled"
   | "mobile_qrcode.scan_failed_or_cancelled"
   | "mobile_qrcode.camera_permission_required"
-  | "mobile_qrcode.permission_missing"
   | "mobile_qrcode.scan_error"
   | "mobile_qrcode.login_countdown"
   | "mobile_qrcode.qr_code_expired_btn"

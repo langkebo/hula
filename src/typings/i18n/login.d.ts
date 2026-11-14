@@ -199,13 +199,6 @@ export type Messages = {
       "register": "注册"
     },
     "forget_code": "忘记密码",
-    "confirm": {
-      "title": "登录确认",
-      "heading": "登录",
-      "sync_recent_messages": "同步最近的消息",
-      "auto_login": "自动登录该设备",
-      "confirm_button": "确定登录"
-    },
     "input": {
       "account_placeholder": "账号",
       "code_placeholder": "密码"
@@ -405,11 +398,6 @@ export type KeyPaths =
   | "login.mobile.tabs.login"
   | "login.mobile.tabs.register"
   | "login.mobile.forget_code"
-  | "login.mobile.confirm.title"
-  | "login.mobile.confirm.heading"
-  | "login.mobile.confirm.sync_recent_messages"
-  | "login.mobile.confirm.auto_login"
-  | "login.mobile.confirm.confirm_button"
   | "login.mobile.input.account_placeholder"
   | "login.mobile.input.code_placeholder"
   | "login.mobile.register.input.nickname"

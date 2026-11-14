@@ -260,7 +260,6 @@
       "desc": "View recent notification records",
       "empty": "No notification records",
       "no_content": "No content",
-      "read": "Read",
       "mark_read": "Mark as read",
       "mark_all_read": "Mark all as read",
       "ack_success": "Marked as read",

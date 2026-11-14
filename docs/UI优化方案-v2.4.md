@@ -1366,10 +1366,10 @@ useGlassEffectStore().mode = 'off'
 | 硬编码 / 分支 ratchet | `pnpm check:ratchet` | 通过 | `is_mobile_branch: 19 (baseline 19)`、`as_unknown_as: 0`、`zh_literal_rust: 0` |
 | 文档覆盖 | `pnpm check:doc-coverage` | 通过 | `scanned 287 service file(s)`；`current undocumented: 587`（其中 196 属已接受现状）；`OK — no regressions vs baseline` |
 | 单元测试 | `pnpm test:run` | 通过（exit 0，2026-11-14 复跑） | `Test Files 991 passed (991)`、`Tests 11150 passed (11150)`、`Duration 1608.18s` |
-| 文件体量 | `pnpm check:file-size` | 失败 | 14 个文件超基线，`oversized` 计数 114 = 基线 114；红线 1 个（`src/typings/components.d.ts` 808 行） |
-| 孤儿文案 | `pnpm check:i18n-dead-keys` | 失败 | 孤儿 key 60 条 > 基线 0 |
-| 组件契约 | `pnpm check:component-contracts` | 失败 | `ACCEPTED_PATTERNS` 失效 4 条 |
-| 设置接线 | `pnpm check:settings-wiring` | 失败 | 3 个持久化 key 未登记 |
+| 文件体量 | `pnpm check:file-size` | 通过（2026-11-14 收口后，exit 0） | `oversized 113（基线 114，已收紧）`；红线 0 个（生成文件 `src/typings/components.d.ts` 已从体量守门排除，见 §19.6） |
+| 孤儿文案 | `pnpm check:i18n-dead-keys` | 通过（2026-11-14 收口后，exit 0） | 孤儿 0（基线 0）；动态族 205 |
+| 组件契约 | `pnpm check:component-contracts` | 通过（2026-11-14 收口后，exit 0） | `无人监听事件 0（基线 0，条目均在基线内）；白名单 18/18 条（只减不增）` |
+| 设置接线 | `pnpm check:settings-wiring` | 通过（2026-11-14 收口后，exit 0） | `持久化 key 清单 83/83（无未登记 key）；死配置 1（基线 1）` |
 
 通过率视角：991 个测试文件 987 通过（99.60%），11150 个断言用例 11144 通过（99.95%）。测试耗时拆解为 transform 509.56s / setup 212.40s / import 4359.12s / tests 1322.98s / environment 3614.61s（并行执行，累加值大于墙钟 1248.17s）。
 
@@ -1430,6 +1430,19 @@ useGlassEffectStore().mode = 'off'
 | 与测试失败的关系 | §19.2 的 4 项失败均为存量问题，本次变更未触碰其相关代码，属「既有债务暴露」而非「本次引入」 |
 | 文档门禁 | `pnpm check:doc-coverage` 通过；`pnpm check:doc-paths` 仅校验 `.rules`，不受本文件影响 |
 | 结论 | 文档交付成立；第 12/13/15-19 章的代码改动需另行评审后实施，实施时按 §19.4 的 P0/P1 分批验证 |
+
+### 19.6 门禁债务收口（2026-11-14）
+
+§19.1 中四项失败门禁的根因、改动与复验证据：
+
+| 门禁 | 根因 | 改动 | 复验结果 |
+| :--- | :--- | :--- | :--- |
+| 组件契约 | ① `Emoji.vue` / `MyAlbum.vue` 用 `v-bind="cond ? { message } : {}"` 展开 props，扫描器判定整个组件不可静态分析并跳过，`ImagePreview` 3 条白名单随之「失效」；② `caed98250` 桌面重构删掉了父组件监听，子组件 emit 仍在 | ① 两处改为显式 `:message`；② `HomeserverDialog::save`、`PermissionGuard::denied/granted` 登记为可接受模式（生命周期/可选通知，单测断言其载荷）；`ChatHeaderSidebar::update-remark` 删除 emit、处理函数与模板监听（父组件已有 `v-model:local-remark`，旧处理函数只 `console.debug`）；`MobileRoomUpgradeDialog::upgraded` 从白名单与基线移除 | `无人监听事件 0（基线 0，条目均在基线内）；白名单 18/18 条（只减不增）` |
+| 设置接线 | 3 个持久化 key 未登记进 `settings-wiring-manifest.json` | 登记 `userState`（`userStatus.ts` persist pick `presenceExpiresAt`）、`tjg:media-auto-cache`（`thumbnailCache.ts`）、`tjg:pending-deep-link-room`（`desktopShellBridge.ts`），均补齐 owner + 消费方 | `持久化 key 清单 83/83（无未登记 key）；死配置 1（基线 1）` |
+| 孤儿文案 | 60 条中 9 条是检查器误报：`menu.secret_chat_*`（3）与 `voip.errors.*_{not_found,busy}`（6）先存进变量/对象再 `t(variable)` 消费，检查器只认直接 `t('x')` 与字面量注册表 | ① `isRegistryPosition` 改为穿透括号、三元分支与 `??` / `||` 右值；② 52 条真孤儿从 `locales/zh-CN` 与 `locales/en` 双侧删除（含被 `mobile_devices.` 动态前缀掩盖的 `blocked`），`chat.crypto_unavailable`、`login.mobile.confirm` 空对象一并清除，`pnpm gen:i18n` 重建类型；③ 8 条真实动态 key（`error.cmd.asset_path_not_allowed` / `directory_path_not_allowed`、`mobile_status.expiry.*` 6 条）取证后以 `--update --accept-new-dynamic` 写入基线 | `孤儿 0（基线 0）；动态族 205` |
+| 文件体量 | `oversized` 114 已等于基线（无越线文件）；唯一红线 `src/typings/components.d.ts`（808 行）由 unplugin-vue-components 生成，行数只随全局注册 SFC 数量变化，无人工拆分路径 | 在 `check-file-size.mjs` 的 `isGenerated` 中排除 `components.d.ts`，并把基线收紧到 113 | `oversized 113（基线 114，已收紧）`；红线 0 个 |
+
+其他门禁同批复跑：`check:ratchet` 各项均等于基线（`is_mobile_branch 19`、`backdrop_filter_raw 60`、`as_unknown_as 0`）；`check:sdk-boundary` 156 = 基线 156；`check:doc-coverage` 587 = 基线 587；`check:doc-paths` 全部路径存在；`quality:no-raw-fetch` 白名单 3/3 命中；改动脚本与组件 `biome check` 无诊断。
 
 ---
 

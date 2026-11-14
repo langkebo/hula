@@ -9,11 +9,6 @@ export type Messages = {
   "appearance": "个性装扮",
   "default_bio": "用户很懒没写简介~",
   "online": "在线",
-  "edit_display_name": "显示名称",
-  "display_name_placeholder": "请输入新的显示名称",
-  "save_display_name_success": "显示名称已更新",
-  "save_display_name_failed": "更新显示名称失败",
-  "saving": "保存中...",
   "actions": {
     "messages": "我的消息",
     "scan": "扫一扫",
@@ -36,11 +31,6 @@ export type KeyPaths =
   | "mobile_my.appearance"
   | "mobile_my.default_bio"
   | "mobile_my.online"
-  | "mobile_my.edit_display_name"
-  | "mobile_my.display_name_placeholder"
-  | "mobile_my.save_display_name_success"
-  | "mobile_my.save_display_name_failed"
-  | "mobile_my.saving"
   | "mobile_my.actions.messages"
   | "mobile_my.actions.scan"
   | "mobile_my.actions.settings"

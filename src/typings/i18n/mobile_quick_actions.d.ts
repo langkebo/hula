@@ -5,11 +5,7 @@
 
 export type Messages = {
   "scan": "扫一扫",
-  "wallet": "钱包",
-  "favorite": "收藏",
-  "file": "文件",
-  "shake": "摇一摇",
-  "developing": "「{name}」功能开发中"
+  "file": "文件"
 }
 
 /**
@@ -23,8 +19,4 @@ export type Messages = {
  */
 export type KeyPaths =
   | "mobile_quick_actions.scan"
-  | "mobile_quick_actions.wallet"
-  | "mobile_quick_actions.favorite"
   | "mobile_quick_actions.file"
-  | "mobile_quick_actions.shake"
-  | "mobile_quick_actions.developing"

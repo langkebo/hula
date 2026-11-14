@@ -16,8 +16,6 @@ export type Messages = {
   "files": "文件",
   "links": "链接",
   "audio": "音频",
-  "voice": "语音",
-  "keyboard": "键盘",
   "no_data": "无数据",
   "session_load_failed": "会话加载失败，正在返回消息列表",
   "chat_background": "聊天背景",
@@ -55,7 +53,6 @@ export type Messages = {
     "title": "群公告",
     "publisher": "发布人:",
     "pinned": "置顶",
-    "read_count": "{count}人已读",
     "detail_title": "公告详情",
     "edit_notice": "编辑公告",
     "not_found": "公告不存在或已被删除",
@@ -105,8 +102,6 @@ export type KeyPaths =
   | "mobile_chat.files"
   | "mobile_chat.links"
   | "mobile_chat.audio"
-  | "mobile_chat.voice"
-  | "mobile_chat.keyboard"
   | "mobile_chat.no_data"
   | "mobile_chat.session_load_failed"
   | "mobile_chat.chat_background"
@@ -137,7 +132,6 @@ export type KeyPaths =
   | "mobile_chat.notice.title"
   | "mobile_chat.notice.publisher"
   | "mobile_chat.notice.pinned"
-  | "mobile_chat.notice.read_count"
   | "mobile_chat.notice.detail_title"
   | "mobile_chat.notice.edit_notice"
   | "mobile_chat.notice.not_found"

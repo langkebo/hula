@@ -90,7 +90,7 @@ type PreviewMessage = {
 interface Props {
   visible: boolean
   imageUrl: string
-  message?: PreviewMessage
+  message?: PreviewMessage | undefined
   showForward?: boolean
   showSave?: boolean
   showMore?: boolean

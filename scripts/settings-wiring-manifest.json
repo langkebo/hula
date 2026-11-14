@@ -20,6 +20,12 @@
       "kind": "state",
       "note": "userInfo 跨窗口同步（storage 事件）与启动水合；App.vue 读取"
     },
+    "userState": {
+      "owner": "src/stores/domains/user/userStatus.ts:defineStore(StoresEnum.USER_STATE)+persist",
+      "consumers": ["src/stores/domains/user/userStatus.ts", "src/mobile/views/my/StatusSettings.vue"],
+      "kind": "state",
+      "note": "只持久化 presenceExpiresAt（在线状态本机到期时间，Matrix 协议无有效期，见 Y-12）；StatusSettings 到期后清除状态"
+    },
     "history": {
       "owner": "src/stores/domains/chat/history.ts:defineStore(StoresEnum.HISTORY)+persist",
       "consumers": ["src/stores/domains/chat/history.ts", "src/components/rightBox/emoticon/index.vue"],
@@ -193,6 +199,18 @@
       "consumers": ["src/stores/domains/widget/thumbnailCache.ts", "src/components/rightBox/renderMessage/Image.vue"],
       "kind": "cache",
       "note": "缩略图缓存元数据；store 读写，消息图片渲染消费"
+    },
+    "tjg:media-auto-cache": {
+      "owner": "src/stores/domains/widget/thumbnailCache.ts:AUTO_CACHE_STORAGE_KEY",
+      "consumers": ["src/stores/domains/widget/thumbnailCache.ts", "src/mobile/views/my/MobileStorageSettings.vue"],
+      "kind": "preference",
+      "note": "媒体自动缓存开关（缺省开启）；thumbnailStore 读写，移动端存储设置页切换"
+    },
+    "tjg:pending-deep-link-room": {
+      "owner": "src/composables/common/desktopShellBridge.ts:PENDING_DEEP_LINK_ROOM_KEY",
+      "consumers": ["src/composables/common/desktopShellBridge.ts", "src/App.vue"],
+      "kind": "state",
+      "note": "深链待跳转房间：房间未就绪时写入，consumePendingDeepLinkRoom 读取后立即 removeItem；App.vue 启动时消费"
     },
     "tjg-chat-ai-provider": {
       "owner": "src/services/secure/robotAiProviderStorage.ts:STORAGE_KEYS.AI_PROVIDER",

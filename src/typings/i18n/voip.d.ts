@@ -12,7 +12,6 @@ export type Messages = {
     "connected": "通话中",
     "reconnecting": "网络不稳定，正在重连..."
   },
-  "unknown": "未知",
   "call": {
     "hangup": "挂断",
     "mute": "静音",
@@ -70,7 +69,6 @@ export type KeyPaths =
   | "voip.states.ringing_outgoing"
   | "voip.states.connected"
   | "voip.states.reconnecting"
-  | "voip.unknown"
   | "voip.call.hangup"
   | "voip.call.mute"
   | "voip.call.unmute"

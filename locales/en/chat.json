@@ -1,5 +1,4 @@
 {
-  "chat_region": "Chat Area",
   "footer": {
     "emoji": "Emoji",
     "screenshot": "Screenshot",
@@ -97,9 +96,6 @@
     "load_failed": "Failed to load chat history",
     "retry": "Retry",
     "empty": "No messages to display"
-  },
-  "crypto_unavailable": {
-    "message": "Encryption is not ready. Messages in this room cannot be sent. Please re-login or contact the administrator."
   },
   "encryption": {
     "verified_title": "End-to-end encryption verified",

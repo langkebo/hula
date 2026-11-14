@@ -32,7 +32,6 @@
   "unblock": "解除屏蔽",
   "verified": "已验证",
   "unverified": "未验证",
-  "blocked": "已屏蔽",
   "cross_signed": "交叉签名已验证",
   "trust_success": "设备信任成功",
   "trust_failed": "设备信任失败",
