@@ -184,9 +184,7 @@ const startBell = () => {
   const audio = new Audio(BELL_URL)
   audio.loop = true
   bellAudio = audio
-  audio.play?.().catch(() => {
-    logger.debug('Ring playback blocked by the browser')
-  })
+  audio.play?.().catch(() => {})
 }
 
 const stopBell = () => {
@@ -246,34 +244,66 @@ const handleToggleVideo = async () => {
 }
 
 // ── 接听通话 ──
+const isAccepting = ref(false)
+const isRejecting = ref(false)
+
 const handleAcceptCall = async () => {
+  if (isAccepting.value) return
+  isAccepting.value = true
   stopBell()
-  isCallAccepted.value = true
-  const opts = { audio: true, video: callType === CallTypeEnum.VIDEO }
-  await answerCall(undefined, opts)
-  // 窗口调整
   try {
-    const currentWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
-    if (!currentWindow) return
-    const isVideo = callType === CallTypeEnum.VIDEO
-    const size = isWindows()
-      ? new LogicalSize(isVideo ? 850 : 500, isVideo ? 580 : 650)
-      : new PhysicalSize(isVideo ? 850 : 500, isVideo ? 580 : 650)
-    await currentWindow.setSize(size)
-    await currentWindow.center()
-    await currentWindow.setAlwaysOnTop(false)
-    if (isMac()) {
-      await invokeSilently('show_title_bar_buttons', { windowLabel: currentWindow.label })
+    const opts = { audio: true, video: callType === CallTypeEnum.VIDEO }
+    const accepted = await answerCall(undefined, opts)
+    // answerCall 内部已提示失败；失败时保持来电横幅，避免窗口切到通话态却无媒体
+    if (!accepted) return
+    isCallAccepted.value = true
+    // 窗口调整
+    try {
+      const currentWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
+      if (!currentWindow) return
+      const isVideo = callType === CallTypeEnum.VIDEO
+      const size = isWindows()
+        ? new LogicalSize(isVideo ? 850 : 500, isVideo ? 580 : 650)
+        : new PhysicalSize(isVideo ? 850 : 500, isVideo ? 580 : 650)
+      await currentWindow.setSize(size)
+      await currentWindow.center()
+      await currentWindow.setAlwaysOnTop(false)
+      if (isMac()) {
+        await invokeSilently('show_title_bar_buttons', { windowLabel: currentWindow.label })
+      }
+      await currentWindow.setFocus()
+    } catch (error) {
+      logger.error('Failed to resize window after accepting call:', error)
     }
-    await currentWindow.setFocus()
   } catch (error) {
-    logger.error('Failed to resize window after accepting call:', error)
+    logger.error('Failed to accept call:', error)
+  } finally {
+    isAccepting.value = false
+  }
+}
+
+const closeCallWindow = async () => {
+  if (!hasTauriRuntime()) return
+  try {
+    await WebviewWindow.getCurrent().close()
+  } catch (error) {
+    logger.error('Failed to close call window:', error)
   }
 }
 
 const handleReject = async () => {
+  if (isRejecting.value) return
+  isRejecting.value = true
   stopBell()
-  await rejectCall()
+  try {
+    await rejectCall()
+  } catch (error) {
+    logger.error('Failed to reject call:', error)
+  } finally {
+    isRejecting.value = false
+    // 拒接后必须关闭来电窗口，否则窗口会停留在无媒体的响铃界面
+    await closeCallWindow()
+  }
 }
 
 const handleHangup = async () => {

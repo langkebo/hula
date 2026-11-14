@@ -14,7 +14,8 @@
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          stroke-width="1.5">
+          stroke-width="1.5"
+          aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
           <path d="M21 21l-4.3-4.3" stroke-linecap="round" />
         </svg>
@@ -33,7 +34,14 @@
           type="button"
           :aria-label="t('chat.header.search.loading')"
           tabindex="-1">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true">
             <path d="M21 12a9 9 0 1 1-6.219-8.56" stroke-linecap="round" />
           </svg>
         </button>
@@ -43,7 +51,14 @@
           type="button"
           :aria-label="t('chat.header.search.close')"
           @click="emit('close')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
           </svg>
         </button>
@@ -51,6 +66,12 @@
 
       <div class="chat-room-search__body">
         <p v-if="!query.trim() && !loading" class="chat-room-search__hint">{{ t('chat.header.search.empty_hint') }}</p>
+        <div v-else-if="error" class="chat-room-search__error" role="alert">
+          <p class="chat-room-search__hint">{{ t('chat.header.search.load_failed') }}</p>
+          <button type="button" class="chat-room-search__retry" :disabled="loading" @click="emit('retry')">
+            {{ t('common.retry') }}
+          </button>
+        </div>
         <p v-else-if="loading && results.length === 0" class="chat-room-search__hint">
           {{ t('chat.header.search.loading') }}
         </p>
@@ -59,25 +80,16 @@
         </p>
 
         <ul v-if="results.length > 0" class="chat-room-search__list" role="listbox">
-          <li
+          <ChatRoomSearchItem
             v-for="(item, index) in results"
             :key="item.eventId"
-            role="option"
-            :aria-selected="index === activeIndex"
-            :class="['chat-room-search__item', { 'chat-room-search__item--active': index === activeIndex }]"
-            @click="emit('select-result', index)"
-            @mouseenter="emit('set-active', index)">
-            <div class="chat-room-search__item-meta">
-              <span class="chat-room-search__sender">{{ formatSender(item.sender) }}</span>
-              <span class="chat-room-search__time">{{ formatTime(item.timestamp) }}</span>
-            </div>
-            <p class="chat-room-search__snippet">
-              <template v-for="(seg, i) in segments(item)" :key="i">
-                <mark v-if="seg.hit" class="chat-room-search__mark">{{ seg.text }}</mark>
-                <span v-else>{{ seg.text }}</span>
-              </template>
-            </p>
-          </li>
+            :item="item"
+            :index="index"
+            :active="index === activeIndex"
+            :query="query"
+            :highlights="highlights"
+            @select="emit('select-result', $event)"
+            @set-active="emit('set-active', $event)" />
         </ul>
 
         <div v-if="results.length > 0" class="chat-room-search__footer">
@@ -92,16 +104,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { SearchResult } from '@/services/matrix/MatrixSearchService'
-import { formatChatTime } from '@/utils/ComputedTime'
+import ChatRoomSearchItem from './ChatRoomSearchItem.vue'
 
 const props = defineProps<{
   isOpen: boolean
   query: string
   results: SearchResult[]
   loading: boolean
+  /** 搜索请求失败，展示错误提示与重试入口 */
+  error?: boolean
   activeIndex: number
   highlights?: string[]
 }>()
@@ -112,16 +126,12 @@ const emit = defineEmits<{
   (e: 'select-result', index: number): void
   (e: 'navigate', direction: 'next' | 'prev'): void
   (e: 'set-active', index: number): void
+  (e: 'retry'): void
   (e: 'close'): void
 }>()
 
 const { t } = useI18n()
 const inputRef = ref<HTMLInputElement | null>(null)
-
-const highlightTerms = computed<string[]>(() => {
-  const terms = (props.highlights || []).filter((h) => h.trim().length > 0)
-  return terms.length > 0 ? terms : props.query.trim() ? [props.query.trim()] : []
-})
 
 watch(
   () => props.isOpen,
@@ -161,45 +171,6 @@ function onKeydown(event: KeyboardEvent) {
       emit('close')
       break
   }
-}
-
-function formatSender(sender: string): string {
-  if (!sender) return ''
-  // Matrix userId 形如 @name:server.org，取本地部分作为可读名
-  const match = /^@?([^:]+):/.exec(sender)
-  return match ? match[1] : sender
-}
-
-function formatTime(ts: number): string {
-  return formatChatTime(ts)
-}
-
-function snippetText(item: SearchResult): string {
-  const body = item.content?.body
-  if (typeof body === 'string') return body
-  if (typeof item.content?.formatted_body === 'string') return stripHtml(item.content.formatted_body)
-  return ''
-}
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '')
-}
-
-function segments(item: SearchResult): Array<{ text: string; hit: boolean }> {
-  const text = snippetText(item)
-  if (!text) return [{ text: '', hit: false }]
-  const terms = highlightTerms.value
-  if (terms.length === 0) return [{ text, hit: false }]
-
-  const escaped = terms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  const re = new RegExp(`(${escaped.join('|')})`, 'gi')
-  const parts = text.split(re)
-  return parts
-    .filter((part) => part.length > 0)
-    .map((part) => ({
-      text: part,
-      hit: re.test(part) && terms.some((term) => term.toLowerCase() === part.toLowerCase())
-    }))
 }
 </script>
 
@@ -304,68 +275,47 @@ function segments(item: SearchResult): Array<{ text: string; hit: boolean }> {
   text-align: center;
 }
 
+.chat-room-search__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 16px;
+
+  .chat-room-search__hint {
+    padding-bottom: 0;
+    color: var(--tjg-color-danger-500);
+  }
+}
+
+.chat-room-search__retry {
+  padding: 4px 12px;
+  border: 1px solid var(--tjg-border-default);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  color: var(--tjg-color-primary-500);
+  cursor: pointer;
+  transition:
+    background-color var(--tjg-motion-duration-fast) ease,
+    opacity var(--tjg-motion-duration-fast) ease;
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--tjg-color-primary-500) 10%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 .chat-room-search__list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-}
-
-.chat-room-search__item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color var(--tjg-motion-duration-fast) ease;
-}
-
-.chat-room-search__item--active,
-.chat-room-search__item:hover {
-  background-color: color-mix(in srgb, var(--tjg-color-primary-500) 10%, transparent);
-}
-
-.chat-room-search__item-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.chat-room-search__sender {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--tjg-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chat-room-search__time {
-  font-size: 11px;
-  color: var(--tjg-text-tertiary);
-  flex-shrink: 0;
-}
-
-.chat-room-search__snippet {
-  margin: 0;
-  font-size: 13px;
-  color: var(--tjg-text-primary);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.chat-room-search__mark {
-  background-color: color-mix(in srgb, var(--tjg-color-warning-500) 35%, transparent);
-  color: inherit;
-  border-radius: 2px;
-  padding: 0 1px;
 }
 
 .chat-room-search__footer {

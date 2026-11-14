@@ -5,7 +5,7 @@
       <div v-if="!activeSpace" class="space-details-pane__empty">
         <n-empty :description="t('space.details_empty_description')" size="large">
           <template #icon>
-            <svg class="size-56px opacity-40 color-[--tjg-text-quaternary]">
+            <svg class="size-56px opacity-40 color-[--tjg-text-quaternary]" aria-hidden="true">
               <use href="#grid" />
             </svg>
           </template>
@@ -55,7 +55,7 @@
             data-test="join-space-action"
             :loading="joiningSpace"
             @click="emit('joinSpace')">
-            <svg class="size-16px"><use href="#user-add" /></svg>
+            <svg class="size-16px" aria-hidden="true"><use href="#user-add" /></svg>
             <span>{{ t('space.join_space') }}</span>
           </button>
           <!-- 成员：显示进入空间按钮 -->
@@ -65,15 +65,15 @@
             class="space-details-pane__action space-details-pane__action--primary"
             :loading="enteringChat"
             @click="emit('enterSpace')">
-            <svg class="size-16px"><use href="#message" /></svg>
+            <svg class="size-16px" aria-hidden="true"><use href="#message" /></svg>
             <span>{{ t('space.enter_space') }}</span>
           </button>
           <button v-if="canManage" type="button" class="space-details-pane__action" @click="emit('inviteMember')">
-            <svg class="size-16px"><use href="#user-add" /></svg>
+            <svg class="size-16px" aria-hidden="true"><use href="#user-add" /></svg>
             <span>{{ t('space.invite') }}</span>
           </button>
           <button v-if="canManage" type="button" class="space-details-pane__action" @click="emit('addRoom')">
-            <svg class="size-16px"><use href="#add" /></svg>
+            <svg class="size-16px" aria-hidden="true"><use href="#add" /></svg>
             <span>{{ t('space.add_room') }}</span>
           </button>
         </section>

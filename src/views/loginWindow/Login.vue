@@ -40,7 +40,7 @@
           @cancel-auto-login="cancelAutoLoginAndShowManual"
           @remove-account="removeStoredAccount"
           @open-register="router.push('/register')"
-          @open-forget-password="createWebviewWindow(t('login.option.items.forget'), 'forgetPassword', 600, 600)"
+          @open-forget-password="openForgetPasswordWindow"
           @open-server-config="showServerConfig = true"
           @guest-login="guestLogin" />
       </div>
@@ -124,6 +124,11 @@ const loginContext: ThirdPartyLoginContext = {
   loginDisabled
 }
 
+/** 找回密码窗口：允许缩放并内部滚动，小屏/高 DPI 下内容仍可完整触达 */
+const openForgetPasswordWindow = () => {
+  void createWebviewWindow(t('login.option.items.forget'), 'forgetPassword', 600, 600, undefined, true)
+}
+
 onBeforeMount(async () => {
   await init()
 })
@@ -167,7 +172,8 @@ onUnmounted(() => {
   min-height: 0;
   box-sizing: border-box;
   padding: var(--tjg-space-5) var(--tjg-space-8);
-  overflow: hidden;
+  /* 小屏或系统 DPI/字体放大时内容可滚动，避免固定窗口高度裁切表单 */
+  overflow-y: auto;
 }
 
 .login-divider {

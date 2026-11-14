@@ -13,6 +13,7 @@
     "end": "End date"
   },
   "empty": {
-    "noData": "No chat history yet"
+    "noData": "No chat history yet",
+    "loadFailed": "Failed to load chat history"
   }
 }

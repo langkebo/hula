@@ -186,11 +186,15 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
     }
   }
 
-  getUploadProgress(): { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void } {
+  getUploadProgress(): {
+    progress: Ref<number>
+    onChange: (callback: (progress: number) => void) => () => void
+  } {
     return {
       progress: this.uploadHook.progress,
       onChange: (callback: (progress: number) => void) => {
-        this.uploadHook.onChange((p: number) => callback(Number(p)))
+        const { off } = this.uploadHook.onChange((p: number) => callback(Number(p)))
+        return off
       }
     }
   }

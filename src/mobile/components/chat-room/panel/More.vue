@@ -60,9 +60,7 @@ import router from '@/router'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { createLogger } from '@/utils/Logger'
 
-const logger = createLogger('More')
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
@@ -166,18 +164,14 @@ const afterReadFile = (fileList: UploaderFileListItem | UploaderFileListItem[]) 
   const imageTypes = ['image/jpeg', 'image/png', 'image/gif']
   const files = Array.isArray(fileList) ? fileList : [fileList]
 
-  logger.debug('Selected files:', files)
-
   for (const file of files) {
     const rawFile = file.file
 
     if (!rawFile) {
-      logger.debug('File not found:', file)
       continue
     }
 
     if (imageTypes.includes(rawFile.type)) {
-      logger.debug('Filtered image file:', file)
       continue
     }
 
@@ -187,8 +181,6 @@ const afterReadFile = (fileList: UploaderFileListItem | UploaderFileListItem[]) 
       status: 'done',
       message: 'pending-upload-non-image'
     })
-
-    logger.debug('Selected file:', file)
   }
 
   if (selectedFiles.value.length > 0) {
@@ -202,18 +194,14 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
   const validTypes = ['image/jpeg', 'image/png', 'image/gif']
   const files = Array.isArray(fileList) ? fileList : [fileList]
 
-  logger.debug('Selected files:', files)
-
   for (const file of files) {
     const rawFile = file.file
 
     if (!rawFile) {
-      logger.debug('File not found:', file)
       continue
     }
 
     if (!validTypes.includes(rawFile.type)) {
-      logger.debug('Filtered non-image file:', file)
       if (!Array.isArray(fileList)) {
         showFeedback(t('mobile_chat.input_panel.only_image'), 'warning')
       }
@@ -226,8 +214,6 @@ const afterReadImage = (fileList: UploaderFileListItem | UploaderFileListItem[])
       status: 'done',
       message: 'pending-upload'
     })
-
-    logger.debug('Added file:', file)
   }
 
   if (selectedFiles.value.length > 0) {

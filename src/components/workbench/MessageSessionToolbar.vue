@@ -21,7 +21,7 @@
               @click="emit('openHiddenSessions')">
               <template #icon>
                 <n-icon>
-                  <svg><use href="#eye-close" /></svg>
+                  <svg aria-hidden="true"><use href="#eye-close" /></svg>
                 </n-icon>
               </template>
             </n-button>
@@ -35,7 +35,7 @@
             @click="emit('joinRoom')">
             <template #icon>
               <n-icon>
-                <svg><use href="#add-user" /></svg>
+                <svg aria-hidden="true"><use href="#add-user" /></svg>
               </n-icon>
             </template>
           </n-button>
@@ -48,7 +48,7 @@
             @click="emit('createRoom')">
             <template #icon>
               <n-icon>
-                <svg><use href="#plus" /></svg>
+                <svg aria-hidden="true"><use href="#plus" /></svg>
               </n-icon>
             </template>
           </n-button>
@@ -65,7 +65,7 @@
         @keydown.esc="handleSearchEsc"
         @keydown.enter="handleSearchSubmit">
         <template #prefix>
-          <svg class="size-16px color-[--tjg-text-tertiary]">
+          <svg class="size-16px color-[--tjg-text-tertiary]" aria-hidden="true">
             <use href="#search"></use>
           </svg>
         </template>
@@ -76,7 +76,7 @@
             :aria-label="t('search.title')"
             :title="t('search.title')"
             @click="handleGlobalSearch">
-            <svg class="size-16px"><use href="#expand" /></svg>
+            <svg class="size-16px" aria-hidden="true"><use href="#expand" /></svg>
           </button>
         </template>
       </n-input>

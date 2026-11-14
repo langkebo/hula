@@ -102,7 +102,7 @@
       @click-right-icon="showLoginPassword = !showLoginPassword" />
 
     <div class="flex justify-end">
-      <van-button size="small" plain type="primary" @click="emit('forget-password')">
+      <van-button class="forget-password-btn" size="small" plain type="primary" @click="emit('forget-password')">
         {{ t('login.mobile.forget_code') }}
       </van-button>
     </div>
@@ -119,20 +119,24 @@
 
     <!-- 协议 -->
     <div class="flex items-center justify-center gap-6px w-full mt-8px">
-      <van-checkbox v-model="protocol" shape="square" icon-size="16px" />
+      <van-checkbox
+        v-model="protocol"
+        shape="square"
+        icon-size="16px"
+        :aria-label="t('login.term.checkout.agree_label')" />
       <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
         <span>{{ t('login.term.checkout.text1') }}</span>
         <span
           v-clickable
           @click.stop="emit('to-service-agreement')"
-          class="color-[--tjg-color-primary-500] cursor-pointer">
+          class="color-[--tjg-color-primary-600] cursor-pointer">
           {{ t('login.term.checkout.text2') }}
         </span>
         <span>{{ t('login.term.checkout.text3') }}</span>
         <span
           v-clickable
           @click.stop="emit('to-privacy-agreement')"
-          class="color-[--tjg-color-primary-500] cursor-pointer">
+          class="color-[--tjg-color-primary-600] cursor-pointer">
           {{ t('login.term.checkout.text4') }}
         </span>
       </div>
@@ -299,5 +303,11 @@ onUnmounted(() => {
 .homeserver-advanced-leave-to {
   opacity: 0;
   max-height: 0;
+}
+
+/* A11Y-M：「忘记密码」是 plain primary，默认取 Vant 蓝 #1989fa，对白底仅 3.50:1；
+   局部改用 primary-700（>=7:1），不污染全局 Vant 主题。 */
+.forget-password-btn {
+  --van-button-primary-background: var(--tjg-color-primary-700);
 }
 </style>

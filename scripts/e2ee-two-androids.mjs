@@ -539,18 +539,37 @@ async function waitCryptoReady(cdp, { userId, token, label, username, password }
   }
 }
 
+/**
+ * 进入目标加密房，直到输入框出现。
+ *
+ * 冷启动后 `sessionList` 还没同步到该房间时，`router.push(mobileChatMain)` 会被
+ * `switchSession` 判定"会话不存在"而弹回列表（页面看起来是正常的消息列表），
+ * 表现就是这里一直等不到 `#message-input`（2026-11-13 实测：S1/S3 全红在这）。
+ *
+ * 因此判据改成：push → 等输入框 **或** 发现被弹回列表 → 等 2s 再 push，最多 3 轮。
+ * 只加重试、不改房间语义；真进不去仍会失败。
+ */
 async function gotoTargetRoom(cdp, roomId) {
-  await cdp.evaluate(`
+  const push = () =>
+    cdp.evaluate(`
     (() => {
       const r = document.querySelector('#app')?.__vue_app__?.config?.globalProperties?.$router;
       r?.push({ name: 'mobileChatMain', params: { roomId: ${JSON.stringify(roomId)} } }).catch(() => {});
       return true;
     })()
   `)
-  for (let i = 0; i < 25; i += 1) {
-    await sleep(1000)
-    const ok = await cdp.evaluate(`Boolean(document.querySelector('#message-input'))`)
-    if (ok) return { ok: true, waitedMs: (i + 1) * 1000 }
+  const pathNow = () => cdp.evaluate('location.pathname')
+  const hasInput = () => cdp.evaluate(`Boolean(document.querySelector('#message-input'))`)
+  const bounced = (p) => typeof p === 'string' && p.startsWith('/mobile/message')
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await push()
+    for (let i = 0; i < 10; i += 1) {
+      await sleep(1000)
+      if (await hasInput()) return { ok: true, waitedMs: (attempt * 10 + i + 1) * 1000 }
+      if (bounced(await pathNow())) break // 被弹回列表：下一轮重试
+    }
+    await sleep(2000) // 给 sync 一点时间把会话补进列表
   }
   return { ok: false }
 }

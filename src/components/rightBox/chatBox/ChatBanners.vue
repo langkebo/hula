@@ -5,7 +5,7 @@
     align="center"
     justify="center"
     class="z-999 w-full h-40px rounded-4px text-[var(--text-sm)] text-[--tjg-color-danger-500] bg-[--tjg-color-danger-100] flex-shrink-0">
-    <svg class="size-16px">
+    <svg class="size-16px" aria-hidden="true">
       <use href="#cloudError"></use>
     </svg>
     {{ networkBannerText }}
@@ -27,7 +27,7 @@
         @mouseleave="isAnnouncementHover = false">
         <n-flex :wrap="false" class="w-full" align="center" justify="space-between">
           <n-flex :wrap="false" align="center" class="pl-12px select-none flex-1" :size="6">
-            <svg class="size-16px flex-shrink-0">
+            <svg class="size-16px flex-shrink-0" aria-hidden="true">
               <use href="#Loudspeaker"></use>
             </svg>
             <div class="flex-1 min-w-0 line-clamp-1 text-[var(--text-sm)] text-[--tjg-text-tertiary]">

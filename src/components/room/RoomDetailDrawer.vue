@@ -144,13 +144,13 @@
               <footer class="room-drawer__footer">
                 <n-button type="primary" class="flex-1" data-testid="room-drawer-enter" @click="handleEnterRoom">
                   <template #icon>
-                    <svg class="size-14px"><use href="#message"></use></svg>
+                    <svg class="size-14px" aria-hidden="true"><use href="#message"></use></svg>
                   </template>
                   {{ t('room.detail.enter_chat') }}
                 </n-button>
                 <n-button secondary class="flex-1" data-testid="room-drawer-settings" @click="handleSettings">
                   <template #icon>
-                    <svg class="size-14px"><use href="#settings"></use></svg>
+                    <svg class="size-14px" aria-hidden="true"><use href="#settings"></use></svg>
                   </template>
                   {{ t('room.detail.settings') }}
                 </n-button>

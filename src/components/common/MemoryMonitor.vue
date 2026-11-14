@@ -11,9 +11,10 @@
       class="minimize-btn"
       type="button"
       :title="t('components.memoryMonitor.minimize')"
+      :aria-label="t('components.memoryMonitor.minimize')"
       @click.stop="toggleMinimize(true)"
       @pointerdown.stop>
-      <svg class="size-16px color-[--tjg-text-inverse] rotate-90"><use href="#right"></use></svg>
+      <svg class="size-16px color-[--tjg-text-inverse] rotate-90" aria-hidden="true"><use href="#right"></use></svg>
     </button>
     <template v-if="!isMinimized">
       <div class="title">{{ t('components.memoryMonitor.title') }}</div>

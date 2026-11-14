@@ -69,23 +69,29 @@
       <h3 class="section-title">{{ t('setting.push.rules_by_kind.title') }}</h3>
       <p class="section-desc">{{ t('setting.push.rules_by_kind.desc') }}</p>
       <n-spin :show="rulesLoading">
-        <div v-for="kind in ruleKinds" :key="kind" class="rule-kind-group">
-          <h4 class="rule-kind-title">{{ t(`setting.push.rules_by_kind.kinds.${kind}`) }}</h4>
-          <div v-if="getRulesByKind(kind).length > 0">
-            <div v-for="rule in getRulesByKind(kind)" :key="rule.rule_id" class="setting-item">
-              <div class="setting-info">
-                <span class="setting-label">{{ formatRuleId(rule.rule_id) }}</span>
-                <span v-if="rule.pattern" class="setting-desc">
-                  {{ t('setting.push.rules_by_kind.pattern') }}: {{ rule.pattern }}
-                </span>
-              </div>
-              <n-switch
-                :value="rule.enabled !== false"
-                @update:value="(v: boolean) => handleRuleToggle(kind, rule, v)" />
-            </div>
-          </div>
-          <div v-else class="rule-empty">{{ t('setting.push.rules_by_kind.empty') }}</div>
+        <div v-if="rulesError" class="rules-error">
+          <span class="setting-desc">{{ t('common.load_failed') }}</span>
+          <n-button size="small" @click="fetchPushRules">{{ t('common.retry') }}</n-button>
         </div>
+        <template v-else>
+          <div v-for="kind in ruleKinds" :key="kind" class="rule-kind-group">
+            <h4 class="rule-kind-title">{{ t(`setting.push.rules_by_kind.kinds.${kind}`) }}</h4>
+            <div v-if="getRulesByKind(kind).length > 0">
+              <div v-for="rule in getRulesByKind(kind)" :key="rule.rule_id" class="setting-item">
+                <div class="setting-info">
+                  <span class="setting-label">{{ formatRuleId(rule.rule_id) }}</span>
+                  <span v-if="rule.pattern" class="setting-desc">
+                    {{ t('setting.push.rules_by_kind.pattern') }}: {{ rule.pattern }}
+                  </span>
+                </div>
+                <n-switch
+                  :value="rule.enabled !== false"
+                  @update:value="(v: boolean) => handleRuleToggle(kind, rule, v)" />
+              </div>
+            </div>
+            <div v-else class="rule-empty">{{ t('setting.push.rules_by_kind.empty') }}</div>
+          </div>
+        </template>
       </n-spin>
     </div>
 
@@ -158,6 +164,8 @@ const { ensureSessionReady } = useWindowSessionReady()
 
 const loading = ref(false)
 const rulesLoading = ref(false)
+/** 规则拉取失败标记：仅展示失败态与重试入口，不再用本地 localStorage 伪造服务端状态 */
+const rulesError = ref(false)
 const pushers = ref<IPusher[]>([])
 const pushRules = ref<IPushRules | null>(null)
 const masterEnabled = ref(true)
@@ -214,13 +222,14 @@ async function fetchPushers() {
 
 async function fetchPushRules() {
   rulesLoading.value = true
+  rulesError.value = false
   try {
     const rules = await matrixPushService.getPushRules()
     pushRules.value = rules
     updateUIFromRules(rules)
   } catch (error) {
     logger.warn('Failed to fetch push rules', error)
-    loadSavedSettings()
+    rulesError.value = true
   } finally {
     rulesLoading.value = false
   }
@@ -236,23 +245,6 @@ function updateUIFromRules(rules: IPushRules) {
 
     const inviteRule = rules.global.override?.find((r: IPushRule) => r.rule_id === '.m.rule.invite_for_me')
     invitePushEnabled.value = inviteRule?.enabled !== false
-  }
-}
-
-function loadSavedSettings() {
-  const savedMaster = localStorage.getItem('tjg-push-master')
-  if (savedMaster !== null) {
-    masterEnabled.value = savedMaster === 'true'
-  }
-
-  const savedMessagePush = localStorage.getItem('tjg-push-message')
-  if (savedMessagePush !== null) {
-    messagePushEnabled.value = savedMessagePush === 'true'
-  }
-
-  const savedInvitePush = localStorage.getItem('tjg-push-invite')
-  if (savedInvitePush !== null) {
-    invitePushEnabled.value = savedInvitePush === 'true'
   }
 }
 
@@ -550,6 +542,13 @@ function handleDndTimeChange() {
 .rule-empty {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
+  padding: var(--tjg-space-2) 0;
+}
+
+.rules-error {
+  display: flex;
+  align-items: center;
+  gap: var(--tjg-space-3);
   padding: var(--tjg-space-2) 0;
 }
 

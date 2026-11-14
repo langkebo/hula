@@ -119,6 +119,7 @@
 import { NButton, NInput, NList, NListItem, NRadio, NRadioGroup, NSpin, NSwitch, NTag } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useOperationFeedback } from '@/composables/common/useOperationFeedback'
 import { matrixAccountService } from '@/services/matrix'
 import { cacheDmPrivacyPreferences, loadDmPrivacyPreferences } from '@/services/matrix/user/dmPrivacyPreferences'
 import {
@@ -162,6 +163,7 @@ const props = withDefaults(
 )
 
 const logger = createLogger('InvitePermissionPanel')
+const { reportFailure } = useOperationFeedback()
 
 const { t } = useI18n()
 
@@ -193,6 +195,7 @@ onMounted(async () => {
   } catch (error) {
     logger.error('Failed to load invite policy', error)
     applyPolicy(normalizeInvitePolicy(null))
+    reportFailure(error, 'common.load_failed')
   } finally {
     loading.value = false
   }
@@ -251,6 +254,7 @@ async function persist(mutate: (base: InvitePolicy) => InvitePolicy): Promise<vo
     await matrixAccountService.setInvitePolicy(next)
   } catch (error) {
     logger.error('Failed to persist invite policy', error)
+    reportFailure(error)
   }
 }
 

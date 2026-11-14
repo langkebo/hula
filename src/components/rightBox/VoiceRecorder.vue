@@ -7,7 +7,7 @@
         <div v-if="!isRecording && !audioBlob && !isProcessing">
           <span class="text-[--tjg-text-tertiary] flex-y-center gap-6px select-none">
             {{ t('message.voice_recorder.tap_prefix') }}
-            <svg class="size-14px color-[--tjg-color-primary-500]"><use href="#voice"></use></svg>
+            <svg class="size-14px color-[--tjg-color-primary-500]" aria-hidden="true"><use href="#voice"></use></svg>
             {{ t('message.voice_recorder.tap_suffix') }}
           </span>
         </div>
@@ -33,10 +33,10 @@
               class="play-btn"
               :aria-label="isPlaying ? t('message.voice_recorder.pause') : t('message.voice_recorder.play')"
               :aria-pressed="isPlaying">
-              <svg v-if="!isPlaying" viewBox="0 0 24 24">
+              <svg v-if="!isPlaying" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="currentColor" d="M8,5.14V19.14L19,12.14L8,5.14Z" />
               </svg>
-              <svg v-else viewBox="0 0 24 24">
+              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="currentColor" d="M14,19H18V5H14M6,19H10V5H6V19Z" />
               </svg>
             </button>
@@ -61,7 +61,7 @@
             @keydown.enter.prevent="startRecording"
             @keydown.space.prevent="startRecording"
             class="record-btn">
-            <svg><use href="#voice"></use></svg>
+            <svg aria-hidden="true"><use href="#voice"></use></svg>
           </div>
           <div
             v-clickable
@@ -72,7 +72,7 @@
             @keydown.enter.prevent="handleCancel"
             @keydown.space.prevent="handleCancel"
             class="cancel-btn">
-            <svg><use href="#close"></use></svg>
+            <svg aria-hidden="true"><use href="#close"></use></svg>
           </div>
         </div>
 
@@ -87,7 +87,7 @@
             @keydown.enter.prevent="stopRecording"
             @keydown.space.prevent="stopRecording"
             class="stop-btn">
-            <svg viewBox="0 0 24 24">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M18,18H6V6H18V18Z" />
             </svg>
           </div>
@@ -100,14 +100,14 @@
             @keydown.enter.prevent="cancelRecording"
             @keydown.space.prevent="cancelRecording"
             class="cancel-record-btn">
-            <svg><use href="#close"></use></svg>
+            <svg aria-hidden="true"><use href="#close"></use></svg>
           </div>
         </div>
 
         <!-- 处理中状态 -->
         <div v-if="!isRecording && isProcessing" class="controls-processing">
           <!-- <div v-clickable @click="handleCancel" class="cancel-btn">
-            <svg><use href="#close"></use></svg>
+            <svg aria-hidden="true"><use href="#close"></use></svg>
           </div> -->
         </div>
 
@@ -122,7 +122,7 @@
             @keydown.enter.prevent="reRecord"
             @keydown.space.prevent="reRecord"
             class="refresh-btn">
-            <svg><use href="#refresh"></use></svg>
+            <svg aria-hidden="true"><use href="#refresh"></use></svg>
           </div>
           <div
             v-clickable
@@ -134,7 +134,7 @@
             @keydown.space.prevent="handleSend"
             class="send-btn"
             :disabled="sending">
-            <svg v-if="!sending"><use href="#send"></use></svg>
+            <svg v-if="!sending" aria-hidden="true"><use href="#send"></use></svg>
             <div v-else class="loading-spinner"></div>
           </div>
           <div
@@ -146,7 +146,7 @@
             @keydown.enter.prevent="handleCancel"
             @keydown.space.prevent="handleCancel"
             class="cancel-btn">
-            <svg><use href="#close"></use></svg>
+            <svg aria-hidden="true"><use href="#close"></use></svg>
           </div>
         </div>
       </div>
@@ -197,11 +197,8 @@ const {
   cancelRecording: cancelRecord,
   formatTime
 } = useVoiceRecordRust({
-  onStart: () => {
-    logger.debug('Start recording')
-  },
+  onStart: () => {},
   onStop: (blob, duration, localPath) => {
-    logger.debug('Recording ended', duration, 'local path:', localPath)
     audioBlob.value = blob
     recordingDuration.value = duration
     localAudioPath.value = localPath
@@ -289,7 +286,6 @@ const togglePlayback = () => {
 // 发送语音
 const handleSend = async () => {
   if (!audioBlob.value || !localAudioPath.value) {
-    logger.debug('Missing audio data, abort sending')
     return
   }
 
@@ -306,7 +302,6 @@ const handleSend = async () => {
       type: 'audio/mp3'
     }
 
-    logger.debug('Sending voice data:', voiceData)
     emit('send', voiceData)
 
     // 发送后立即重置状态，避免下次打开时还显示这条录音

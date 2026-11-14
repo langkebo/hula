@@ -15,6 +15,9 @@ const {
   messageErrorMock,
   dialogWarningMock,
   hasUnstableMock,
+  logoutCurrentSessionMock,
+  resetLocalSessionStateMock,
+  closeCurrentWindowMock,
   translationMap
 } = vi.hoisted(() => {
   return {
@@ -33,8 +36,11 @@ const {
     messageSuccessMock: vi.fn(),
     messageWarningMock: vi.fn(),
     messageErrorMock: vi.fn(),
-    dialogWarningMock: vi.fn(),
+    dialogWarningMock: vi.fn<(options: Record<string, any>) => { loading: boolean }>(() => ({ loading: false })),
     hasUnstableMock: vi.fn((flag: string) => flag === 'uk.tcpip.msc4133'),
+    logoutCurrentSessionMock: vi.fn().mockResolvedValue(undefined),
+    resetLocalSessionStateMock: vi.fn().mockResolvedValue(undefined),
+    closeCurrentWindowMock: vi.fn().mockResolvedValue(undefined),
     translationMap: {
       'setting.account.profile': '个人资料',
       'setting.account.about': '简介',
@@ -46,7 +52,9 @@ const {
       'setting.account.password_incomplete': '请填写完整密码信息',
       'setting.account.password_mismatch': '两次输入的密码不一致',
       'setting.account.password_change_failed_with_hint': '密码修改失败，请检查当前密码是否正确',
-      'setting.account.deactivate_confirm_title': '确认停用账户'
+      'setting.account.deactivate_confirm_title': '确认停用账户',
+      'setting.account.deactivate_success': '账户已注销',
+      'setting.account.deactivate_failed': '注销账户失败'
     } as Record<string, string>
   }
 })
@@ -86,6 +94,25 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
     }
   })
 }))
+
+vi.mock('@/composables/user/useSessionActions', () => ({
+  useSessionActions: () => ({
+    logoutCurrentSession: (...args: any[]) => logoutCurrentSessionMock(...args),
+    resetLocalSessionState: (...args: any[]) => resetLocalSessionStateMock(...args)
+  })
+}))
+
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => true
+}))
+
+vi.mock('@tauri-apps/api/window', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tauri-apps/api/window')>()
+  return {
+    ...actual,
+    getCurrentWindow: () => ({ label: 'settings', close: closeCurrentWindowMock })
+  }
+})
 
 vi.mock('@/stores/domains/user/user', () => ({
   useUserStore: () => ({
@@ -324,8 +351,49 @@ describe('AccountSettings', () => {
   it('shows deactivate account dialog', () => {
     const wrapper = mount(AccountSettings)
     const vm = wrapper.vm as any
-    vm.handleDeactivateAccount()
+    vm.confirmDeactivateAccount()
     expect(dialogWarningMock).toHaveBeenCalledWith(expect.objectContaining({ title: '确认停用账户' }))
+  })
+
+  it('deactivates account, logs out local session and closes the settings window', async () => {
+    const wrapper = mount(AccountSettings)
+    const vm = wrapper.vm as any
+    vm.confirmDeactivateAccount()
+    const options = dialogWarningMock.mock.calls[0][0]
+
+    await options.onPositiveClick()
+
+    expect(deactivateAccountMock).toHaveBeenCalledTimes(1)
+    expect(messageSuccessMock).toHaveBeenCalledWith('账户已注销')
+    expect(logoutCurrentSessionMock).toHaveBeenCalledTimes(1)
+    expect(closeCurrentWindowMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the dialog open when deactivation fails', async () => {
+    deactivateAccountMock.mockRejectedValueOnce(new Error('deactivate failed'))
+    const wrapper = mount(AccountSettings)
+    const vm = wrapper.vm as any
+    vm.confirmDeactivateAccount()
+    const options = dialogWarningMock.mock.calls[0][0]
+
+    await expect(options.onPositiveClick()).rejects.toThrow('deactivate failed')
+
+    expect(messageErrorMock).toHaveBeenCalledWith('注销账户失败')
+    expect(dialogWarningMock.mock.results[0]?.value).toMatchObject({ loading: false })
+    expect(logoutCurrentSessionMock).not.toHaveBeenCalled()
+  })
+
+  it('falls back to local state reset when logout fails after deactivation', async () => {
+    logoutCurrentSessionMock.mockRejectedValueOnce(new Error('M_UNKNOWN_TOKEN'))
+    const wrapper = mount(AccountSettings)
+    const vm = wrapper.vm as any
+    vm.confirmDeactivateAccount()
+    const options = dialogWarningMock.mock.calls[0][0]
+
+    await options.onPositiveClick()
+
+    expect(resetLocalSessionStateMock).toHaveBeenCalledTimes(1)
+    expect(closeCurrentWindowMock).toHaveBeenCalledTimes(1)
   })
 
   it('avatar uploading is false by default', () => {

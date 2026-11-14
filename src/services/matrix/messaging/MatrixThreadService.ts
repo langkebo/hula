@@ -16,6 +16,8 @@ import matrixClientService from '../MatrixClientService'
 import { resolveMxcToHttp } from '../media/mxcUrl'
 import { MatrixThreadApi } from './MatrixThreadApi'
 import { MatrixThreadState } from './MatrixThreadState'
+import { collectChildEvents } from './relationEventSource'
+import { buildThreadsFromTimeline } from './threadTimelineScan'
 import type {
   MessageContent,
   Thread,
@@ -153,28 +155,14 @@ class MatrixThreadService extends BaseMatrixService {
     if (!room) return []
 
     // D14：开启 threadSupport 后 thread 回复不再进入房间主 timeline，
-    // 必须优先读 SDK 的 Thread 模型：liveTimeline 持有回复，
-    // createThread 时还会把 relations store 中该 root 的子事件一并合并。
+    // 优先读 SDK 的 Thread 模型（liveTimeline 持有回复，且合并了 relations store 里该 root 的子事件）；
+    // Thread 尚未建立时读关系容器，容器也没有（sync 窗口外的老回复）才回退扫 timeline。
     const sdkThread = room.getThread(threadRootId)
     if (sdkThread && sdkThread.events.length > 0) {
       return [...sdkThread.events].sort((a, b) => a.getTs() - b.getTs())
     }
 
-    // fallback：threadSupport 关闭，或 Thread 尚未建立时仍从房间 timeline 扫描。
-    const replies: MatrixEvent[] = []
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
-
-    for (const event of events) {
-      const content = event.getContent() as MessageContent
-      const relatesTo = content[MatrixContentField.RELATES_TO]
-
-      if (relatesTo?.rel_type === MatrixRelType.THREAD && relatesTo.event_id === threadRootId) {
-        replies.push(event)
-      }
-    }
-
-    return replies.sort((a, b) => a.getTs() - b.getTs())
+    return collectChildEvents(room, threadRootId, MatrixRelType.THREAD).sort((a, b) => a.getTs() - b.getTs())
   }
 
   getThreadMessages(roomId: string, threadRootId: string): ThreadMessage[] {
@@ -311,56 +299,7 @@ class MatrixThreadService extends BaseMatrixService {
     }
 
     // fallback：threadSupport 关闭，或 Thread 尚未建立时仍扫描房间 timeline 聚合。
-    const threadRoots = new Map<string, Thread>()
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
-
-    for (const event of events) {
-      const content = event.getContent() as MessageContent
-      const relatesTo = content[MatrixContentField.RELATES_TO]
-
-      if (relatesTo?.rel_type === MatrixRelType.THREAD) {
-        const threadRootId = relatesTo.event_id
-        if (!threadRootId) continue
-
-        if (!threadRoots.has(threadRootId)) {
-          const rootEvent = room.findEventById(threadRootId)
-          if (rootEvent) {
-            threadRoots.set(threadRootId, {
-              id: threadRootId,
-              rootEventId: threadRootId,
-              roomId,
-              replyCount: 0,
-              participants: []
-            })
-          }
-        }
-
-        const thread = threadRoots.get(threadRootId)
-        if (thread) {
-          thread.replyCount++
-          const sender = event.getSender()
-          if (sender && !thread.participants.includes(sender)) {
-            thread.participants.push(sender)
-          }
-
-          if (!thread.lastReply || event.getTs() > thread.lastReply.timestamp) {
-            thread.lastReply = {
-              eventId: event.getId()!,
-              sender: event.getSender()!,
-              timestamp: event.getTs(),
-              content: event.getContent()
-            }
-          }
-        }
-      }
-    }
-
-    return Array.from(threadRoots.values()).sort((a, b) => {
-      const aTime = a.lastReply?.timestamp || 0
-      const bTime = b.lastReply?.timestamp || 0
-      return bTime - aTime
-    })
+    return buildThreadsFromTimeline(room, roomId)
   }
 
   async getUnreadThreads(roomId?: string): Promise<Thread[]> {

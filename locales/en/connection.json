@@ -4,6 +4,7 @@
   "reconnecting_attempt": "Reconnecting ({count}/{max})...",
   "syncing": "Syncing history...",
   "failed": "Connection failed, please retry",
+  "worker_degraded": "Background search index degraded; results may be incomplete",
   "retry": "Retry",
   "diagnose": "Run self-check",
   "diagnose_running": "Running...",

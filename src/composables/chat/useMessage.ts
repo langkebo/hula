@@ -11,6 +11,7 @@ import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { useChatSession } from '@/shared/composables/useChatSession'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
+import { useSessionStore } from '@/stores/domains/chat/chat/session'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useRoomStore } from '@/stores/domains/chat/room'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -39,6 +40,7 @@ export const useMessage = () => {
   const { startRtcCall } = useWindow()
   const _globalStore = useGlobalStore()
   const chatStore = useChatStore()
+  const sessionStore = useSessionStore()
   const settingStore = useSettingStore()
   const contactStore = useContactStore()
   const roomStore = useRoomStore()
@@ -145,7 +147,18 @@ export const useMessage = () => {
     },
     {
       label: () => t('menu.mark_unread'),
-      icon: 'message-unread'
+      icon: 'message-unread',
+      click: (item: SessionItem) => {
+        if (item.unreadCount > 0) {
+          showFeedback(t('message.message_menu.mark_unread_already'), 'info')
+          return
+        }
+        // SDK 的 Room.getUnreadNotificationCount 只读 notificationCounts，未解析 m.marked_unread，
+        // 写 account data 不会驱动会话角标；这里复用会话未读账本（按账号持久化），重启后仍保留。
+        sessionStore.setUnreadCount(item.roomId, 1)
+        _globalStore.updateGlobalUnreadCount()
+        showFeedback(t('message.message_menu.mark_unread_success'), 'success')
+      }
     },
     {
       label: (item: SessionItem) => {

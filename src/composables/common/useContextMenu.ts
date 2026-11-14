@@ -87,6 +87,29 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
     window.removeEventListener('wheel', preventDefault) // 移除禁止滚轮滚动
   }
 
+  const isEditableContextTarget = (target: EventTarget | null): boolean => {
+    const el = target as HTMLElement | null
+    if (!el?.tagName) return false
+    const tagName = el.tagName.toLowerCase()
+    return tagName === 'input' || tagName === 'textarea' || el.isContentEditable === true
+  }
+
+  /**
+   * 容器外右键收口：容器内部的右键由 handleContextMenu 拦截并弹自定义菜单；
+   * 容器外的输入类元素放行原生菜单（复制/粘贴/拼写检查），其余区域继续屏蔽。
+   */
+  const handleWindowContextMenu = (e: MouseEvent) => {
+    const root = ContextMenuRef.value as HTMLElement | null
+    const target = e.target as Node | null
+    if (root && target && root.contains(target)) {
+      if (!e.defaultPrevented) e.preventDefault()
+      return
+    }
+    if (isEditableContextTarget(e.target)) return
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
   // 监听showMenu状态变化
   watch(
     () => showMenu.value,
@@ -114,15 +137,8 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
     const div = ContextMenuRef.value
     //这里只监听了div的右键，如果需要监听其他元素的右键，需要在其他元素上监听
     div.addEventListener('contextmenu', handleContextMenu)
-    // 这里需要监听window的右键，否则右键会触发div的右键事件，导致menu无法关闭，并且阻止默认右键菜单
-    window.addEventListener(
-      'contextmenu',
-      (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-      },
-      false
-    )
+    // 这里需要监听 window 的右键，否则右键会触发 div 的右键事件，导致 menu 无法关闭
+    window.addEventListener('contextmenu', handleWindowContextMenu, false)
     window.addEventListener('click', closeMenu, true)
     window.addEventListener('contextmenu', closeMenu, true)
   })
@@ -130,7 +146,7 @@ export const useContextMenu = (ContextMenuRef: Ref, isNull?: Ref<boolean>) => {
   onUnmounted(() => {
     const div = ContextMenuRef.value
     div?.removeEventListener('contextmenu', handleContextMenu)
-    window.removeEventListener('contextmenu', preventDefault)
+    window.removeEventListener('contextmenu', handleWindowContextMenu, false)
     window.removeEventListener('wheel', preventDefault)
     window.removeEventListener('selectstart', preventTextSelection)
     window.removeEventListener('click', closeMenu, true)

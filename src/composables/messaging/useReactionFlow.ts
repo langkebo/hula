@@ -47,8 +47,13 @@ export function useReactionFlow(options: UseReactionFlowOptions) {
     const eventId = options.eventId()
     if (!roomId || !eventId) return
     try {
-      const list = await matrixReactionService.getReactionsForEvent(roomId, eventId)
-      reactions.value = list ?? []
+      const local = matrixReactionService.getReactionsForEvent(roomId, eventId)
+      if (local.length > 0) {
+        reactions.value = local
+        return
+      }
+      // 本地关系容器/时间线都没有：早期回应可能不在 sync 窗口内，向服务端补一次
+      reactions.value = (await matrixReactionService.refreshReactions(roomId, eventId)) ?? []
     } catch (err) {
       logger.warn('getReactions failed', err)
     }

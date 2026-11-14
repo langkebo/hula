@@ -121,8 +121,10 @@
                 @click="handleCopy"
                 @keydown.enter.prevent="handleCopy"
                 @keydown.space.prevent="handleCopy">
-                <svg v-if="!copied" class="size-12px"><use href="#copy"></use></svg>
-                <svg v-else class="size-12px color-[--tjg-color-primary-500]"><use href="#success"></use></svg>
+                <svg v-if="!copied" class="size-12px" aria-hidden="true"><use href="#copy"></use></svg>
+                <svg v-else class="size-12px color-[--tjg-color-primary-500]" aria-hidden="true">
+                  <use href="#success"></use>
+                </svg>
                 <span v-if="copied" class="text-(11px [--tjg-color-primary-500])">
                   {{ t('home.profile_card.notification.copy_copied') }}
                 </span>

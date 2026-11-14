@@ -16,6 +16,8 @@ interface UseAdminRoomsResult {
   rooms: Ref<RoomInfo[]>
   filteredRooms: Ref<RoomInfo[]>
   loading: Ref<boolean>
+  loadError: Ref<boolean>
+  roomsNextToken: Ref<string | undefined>
   searchQuery: Ref<string>
 
   selectedRoom: Ref<RoomInfo | null>
@@ -48,6 +50,7 @@ interface UseAdminRoomsResult {
   ) => Promise<{ success: boolean; deletedEvents: number; dryRun: boolean }>
 
   loadRooms: (limit?: number, searchTerm?: string) => Promise<void>
+  loadMoreRooms: (limit?: number) => Promise<void>
   selectRoom: (room: RoomInfo | null) => Promise<void>
   loadMembers: () => Promise<void>
   loadState: () => Promise<void>
@@ -70,6 +73,8 @@ interface UseAdminRoomsResult {
 export function useAdminRooms(): UseAdminRoomsResult {
   const rooms = ref<RoomInfo[]>([])
   const loading = ref(false)
+  const loadError = ref(false)
+  const roomsNextToken = ref<string | undefined>()
   const searchQuery = ref('')
 
   const selectedRoom = ref<RoomInfo | null>(null)
@@ -109,9 +114,33 @@ export function useAdminRooms(): UseAdminRoomsResult {
 
   async function loadRooms(limit = 200, searchTerm?: string) {
     loading.value = true
+    loadError.value = false
     try {
       const result = await adminService.getRooms(limit, undefined, searchTerm)
       rooms.value = result.rooms
+      roomsNextToken.value = result.nextToken
+      loadError.value = Boolean(result.failed)
+    } catch (err) {
+      loadError.value = true
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /** 按 nextToken 继续拉取下一批，服务端无总量时至少保证列表可持续加载 */
+  async function loadMoreRooms(limit = 200) {
+    if (!roomsNextToken.value || loading.value) return
+    loading.value = true
+    loadError.value = false
+    try {
+      const result = await adminService.getRooms(limit, roomsNextToken.value)
+      rooms.value = [...rooms.value, ...result.rooms]
+      roomsNextToken.value = result.nextToken
+      loadError.value = Boolean(result.failed)
+    } catch (err) {
+      loadError.value = true
+      throw err
     } finally {
       loading.value = false
     }
@@ -269,6 +298,8 @@ export function useAdminRooms(): UseAdminRoomsResult {
     rooms,
     filteredRooms,
     loading,
+    loadError,
+    roomsNextToken,
     searchQuery,
     selectedRoom,
     roomMembers,
@@ -291,6 +322,7 @@ export function useAdminRooms(): UseAdminRoomsResult {
     makeRoomAdmin,
     purgeHistory,
     loadRooms,
+    loadMoreRooms,
     selectRoom,
     loadMembers,
     loadState,

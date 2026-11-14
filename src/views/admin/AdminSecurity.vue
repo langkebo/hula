@@ -45,18 +45,42 @@
             :placeholder="t('admin.security.filter_event_type')"
             clearable
             class="w-[200px]" />
+          <n-select
+            v-model:value="securityEventRange"
+            :options="securityEventRangeOptions"
+            :placeholder="t('admin.security.time_range')"
+            class="w-[160px]" />
         </div>
 
+        <n-alert v-if="securityEventsError" type="error" :bordered="false" class="mb-12px">
+          <div class="flex items-center justify-between gap-12px">
+            <span>{{ t('admin.security.load_failed') }}</span>
+            <n-button size="small" @click="loadSecurityEvents()">{{ t('common.retry') }}</n-button>
+          </div>
+        </n-alert>
+
         <n-spin :show="securityEventsLoading">
-          <div v-if="securityEvents.length === 0" class="empty-state">
+          <div v-if="!securityEventsError && securityEvents.length === 0" class="empty-state">
             <n-empty :description="t('admin.security.no_security_events')" />
           </div>
-          <n-data-table
-            v-else
-            :columns="securityEventColumns"
-            :data="securityEvents"
-            :row-key="(row: Record<string, unknown>) => String(row.event_id ?? '')"
-            striped />
+          <template v-else-if="!securityEventsError">
+            <n-data-table
+              :columns="securityEventColumns"
+              :data="securityEvents"
+              :pagination="{ pageSize: 20 }"
+              :row-key="(row: Record<string, unknown>) => String(row.event_id ?? '')"
+              striped />
+            <div class="list-footer">
+              <span>{{ t('admin.security.loaded_count', { count: securityEvents.length }) }}</span>
+              <n-button
+                v-if="securityEventsNextToken"
+                size="small"
+                :loading="securityEventsLoading"
+                @click="loadSecurityEvents(securityEventsNextToken)">
+                {{ t('admin.security.load_more') }}
+              </n-button>
+            </div>
+          </template>
         </n-spin>
       </n-tab-pane>
 
@@ -275,7 +299,17 @@ const ipBlocksRef = ref<InstanceType<typeof AdminSecurityIpBlocks> | null>(null)
 // ===== 安全事件 =====
 const securityEvents = ref<Array<Record<string, unknown>>>([])
 const securityEventsLoading = ref(false)
+const securityEventsError = ref(false)
+const securityEventsNextToken = ref<string | undefined>()
 const securityEventFilter = ref<string | null>(null)
+const securityEventRange = ref<'all' | '24h' | '7d' | '30d'>('all')
+
+const securityEventRangeOptions = [
+  { label: t('admin.security.time_range_all'), value: 'all' },
+  { label: t('admin.security.time_range_24h'), value: '24h' },
+  { label: t('admin.security.time_range_7d'), value: '7d' },
+  { label: t('admin.security.time_range_30d'), value: '30d' }
+]
 
 const securityEventTypeOptions = [
   { label: t('admin.security.event_type_login_failure'), value: 'login_failure' },
@@ -319,30 +353,51 @@ const securityEventColumns: DataTableColumns<Record<string, unknown>> = [
   }
 ]
 
-async function loadSecurityEvents() {
+function resolveRangeSince(): number | undefined {
+  const day = 24 * 60 * 60 * 1000
+  if (securityEventRange.value === '24h') return Date.now() - day
+  if (securityEventRange.value === '7d') return Date.now() - 7 * day
+  if (securityEventRange.value === '30d') return Date.now() - 30 * day
+  return undefined
+}
+
+async function loadSecurityEvents(from?: string) {
   securityEventsLoading.value = true
+  securityEventsError.value = false
   try {
     const filters: Record<string, unknown> = {}
     if (securityEventFilter.value) {
       filters.event_type = securityEventFilter.value
     }
+    const since = resolveRangeSince()
+    if (since !== undefined) filters.since = since
     const result = await adminService.getSecurityEvents(
       100,
-      undefined,
+      from,
       Object.keys(filters).length > 0 ? filters : undefined
     )
-    securityEvents.value = result?.events ?? []
+    // 服务层失败返回 null：显式进入错误态，不能与「确实没有事件」共用空态
+    if (!result) {
+      securityEventsError.value = true
+      securityEvents.value = []
+      securityEventsNextToken.value = undefined
+      return
+    }
+    securityEvents.value = from ? [...securityEvents.value, ...result.events] : result.events
+    securityEventsNextToken.value = result.nextToken
   } catch (e) {
     logger.error('Failed to load security events', e)
+    securityEventsError.value = true
     securityEvents.value = []
+    securityEventsNextToken.value = undefined
   } finally {
     securityEventsLoading.value = false
   }
 }
 
-watch(securityEventFilter, () => {
+watch([securityEventFilter, securityEventRange], () => {
   if (activeTab.value === 'security_events') {
-    loadSecurityEvents()
+    void loadSecurityEvents()
   }
 })
 
@@ -605,5 +660,15 @@ onMounted(() => {
 .empty-state {
   padding: 60px 0;
   text-align: center;
+}
+
+.list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--tjg-text-secondary);
 }
 </style>

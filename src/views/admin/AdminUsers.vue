@@ -4,7 +4,13 @@
       <n-space align="center" :size="12">
         <n-input v-model:value="searchQuery" :placeholder="t('admin.users.search')" clearable class="w-[300px]">
           <template #prefix>
-            <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              class="size-16px"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true">
               <circle cx="11" cy="11" r="8" />
               <path d="M21 21l-4.35-4.35" />
             </svg>
@@ -36,12 +42,26 @@
 
     <AdminBulkActionBar :selected-count="selectedUserIds.size" :actions="batchActions" @action="handleBatchAction" />
 
+    <n-alert v-if="loadError" type="error" :bordered="false" class="mb-12px">
+      <div class="flex items-center justify-between gap-12px">
+        <span>{{ t('common.load_failed') }}</span>
+        <n-button size="small" @click="loadUsers">{{ t('common.retry') }}</n-button>
+      </div>
+    </n-alert>
+
     <AdminTable
       :columns="columns"
       :data="filteredUsers"
       :loading="loading"
       :pagination="{ pageSize: 20 }"
       :row-key="(row: UserInfo) => row.userId" />
+
+    <div class="admin-users-footer">
+      <span>{{ t('admin.users.loadedCount', { count: filteredUsers.length }) }}</span>
+      <n-button v-if="usersNextToken" size="small" :loading="loading" @click="handleLoadMoreUsers">
+        {{ t('admin.users.loadMore') }}
+      </n-button>
+    </div>
 
     <n-drawer v-model:show="showCreateDialog" placement="right" :width="380">
       <n-drawer-content :title="t('admin.users.createUser')" closable>
@@ -105,6 +125,8 @@ const showUserDetail = ref(false)
 
 // Alias refs from composable so existing template bindings keep working
 const loading = admin.loading
+const loadError = admin.loadError
+const usersNextToken = admin.usersNextToken
 const searchQuery = admin.searchQuery
 const filterRole = admin.filterRole
 const filterStatus = admin.filterStatus
@@ -192,7 +214,23 @@ const columns = computed(() => [
 
 async function loadUsers() {
   if (!adminStore.isAdmin) return
-  await admin.loadUsers(200)
+  try {
+    await admin.loadUsers(200)
+  } catch (err) {
+    if (handleAdminError(err)) {
+      showFeedback(t('common.load_failed'), 'error')
+    }
+  }
+}
+
+async function handleLoadMoreUsers() {
+  try {
+    await admin.loadMoreUsers(200)
+  } catch (err) {
+    if (handleAdminError(err)) {
+      showFeedback(t('common.load_failed'), 'error')
+    }
+  }
 }
 
 async function openUserDetail(user: UserInfo) {
@@ -338,6 +376,16 @@ onMounted(loadUsers)
   margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.admin-users-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--tjg-text-secondary);
 }
 
 @include responsive.down('md') {

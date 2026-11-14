@@ -21,6 +21,10 @@ const matrixStoreState = {
   homeserverUrl: ''
 }
 
+const capabilityStoreState: { extensionHealth: Record<string, string> } = {
+  extensionHealth: {}
+}
+
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
@@ -51,6 +55,10 @@ vi.mock('@/stores/domains/chat/matrix', () => ({
   useMatrixStore: () => matrixStoreState
 }))
 
+vi.mock('@/stores/domains/chat/capability', () => ({
+  useCapabilityStore: () => capabilityStoreState
+}))
+
 vi.mock('@/utils/MatrixDiagnostics', () => ({
   MatrixDiagnostics: MatrixDiagnosticsMock
 }))
@@ -59,6 +67,7 @@ describe('ConnectionStatusBanner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     matrixStoreState.homeserverUrl = ''
+    capabilityStoreState.extensionHealth = {}
   })
 
   const mountComponent = () =>
@@ -107,5 +116,21 @@ describe('ConnectionStatusBanner', () => {
     await (wrapper.vm as unknown as ConnectionStatusBannerVm).onDiagnose()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('connection.diagnose_failed', 'error')
+  })
+
+  it('连接正常但 worker 降级时展示降级提示，关闭后隐藏', async () => {
+    capabilityStoreState.extensionHealth = { matrixWorker: 'degraded' }
+
+    const wrapper = mount(ConnectionStatusBanner, {
+      props: {
+        state: 'online'
+      }
+    })
+
+    expect(wrapper.text()).toContain('connection.worker_degraded')
+
+    await wrapper.get('.connection-status-banner__dismiss').trigger('click')
+
+    expect(wrapper.find('.connection-status-banner').exists()).toBe(false)
   })
 })

@@ -1,7 +1,7 @@
 <template>
   <div class="trending-panel">
     <div class="trending-panel__header">
-      <svg class="trending-panel__icon"><use href="#trending-up"></use></svg>
+      <svg class="trending-panel__icon" aria-hidden="true"><use href="#trending-up"></use></svg>
       <span class="trending-panel__title">{{ t('trendradar.trending_topics') }}</span>
     </div>
     <div class="trending-panel__list">
@@ -24,10 +24,13 @@
             </span>
           </div>
         </div>
-        <svg v-if="topic.trend === 'up'" class="trending-panel__trend trending-panel__trend--up">
+        <svg v-if="topic.trend === 'up'" class="trending-panel__trend trending-panel__trend--up" aria-hidden="true">
           <use href="#arrow-up"></use>
         </svg>
-        <svg v-else-if="topic.trend === 'down'" class="trending-panel__trend trending-panel__trend--down">
+        <svg
+          v-else-if="topic.trend === 'down'"
+          class="trending-panel__trend trending-panel__trend--down"
+          aria-hidden="true">
           <use href="#arrow-down"></use>
         </svg>
       </div>
@@ -37,7 +40,7 @@
       <span>{{ t('trendradar.loading') }}</span>
     </div>
     <div v-else-if="topics.length === 0" class="trending-panel__empty">
-      <svg class="trending-panel__empty-icon"><use href="#trending-up"></use></svg>
+      <svg class="trending-panel__empty-icon" aria-hidden="true"><use href="#trending-up"></use></svg>
       <span>{{ t('trendradar.no_trending_topics') }}</span>
     </div>
   </div>

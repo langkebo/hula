@@ -11,6 +11,7 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() })
 }))
 
+import type { SearchResult } from '@/services/matrix/MatrixSearchService'
 import { matrixSearchService } from '@/services/matrix/MatrixSearchService'
 import { useRoomSearch } from '../useRoomSearch'
 
@@ -131,6 +132,49 @@ describe('useRoomSearch', () => {
 
       expect(results.value).toEqual([])
       expect(loading.value).toBe(false)
+    })
+
+    it('marks error state on failure and retry re-runs the search', async () => {
+      vi.mocked(matrixSearchService.searchRoomMessages).mockRejectedValueOnce(new Error('boom'))
+      const roomId = ref('!room:example.com')
+      const { query, error, retry, performSearch } = useRoomSearch(roomId)
+
+      query.value = 'match'
+      await performSearch()
+
+      expect(error.value).toBe(true)
+
+      vi.mocked(matrixSearchService.searchRoomMessages).mockResolvedValueOnce({
+        results: [makeHit('$1')],
+        count: 1,
+        highlights: []
+      })
+      retry()
+      await vi.runAllTicks()
+
+      expect(error.value).toBe(false)
+      expect(matrixSearchService.searchRoomMessages).toHaveBeenCalledTimes(2)
+    })
+
+    it('discards stale responses when a newer request has started', async () => {
+      let resolveFirst: (value: { results: SearchResult[]; count: number; highlights: string[] }) => void = () => {}
+      vi.mocked(matrixSearchService.searchRoomMessages)
+        .mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)))
+        .mockResolvedValueOnce({ results: [makeHit('$new', 'new')], count: 1, highlights: [] })
+
+      const roomId = ref('!room:example.com')
+      const { query, results, performSearch, error } = useRoomSearch(roomId)
+
+      query.value = 'old'
+      const first = performSearch()
+      query.value = 'new'
+      await performSearch()
+
+      resolveFirst({ results: [makeHit('$old', 'old')], count: 1, highlights: [] })
+      await first
+
+      expect(results.value.map((item) => item.eventId)).toEqual(['$new'])
+      expect(error.value).toBe(false)
     })
   })
 

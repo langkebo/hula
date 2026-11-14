@@ -11,7 +11,8 @@
       <svg
         v-if="isWindows()"
         @click="emit('update:show', false)"
-        class="w-12px h-12px ml-a mr-4px mt-4px cursor-pointer select-none">
+        class="w-12px h-12px ml-a mr-4px mt-4px cursor-pointer select-none"
+        aria-hidden="true">
         <use href="#close"></use>
       </svg>
       <n-flex vertical class="w-full h-fit">

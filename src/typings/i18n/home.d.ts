@@ -47,6 +47,9 @@ export type Messages = {
     "network_offline": "当前网络不可用，请检查你的网络设置",
     "network_connecting": "正在连接服务器...",
     "network_ws_offline": "网络连接已断开，正在尝试重连...",
+    "loading_more": "正在加载更早的消息...",
+    "load_more_failed": "加载历史消息失败",
+    "unread_divider": "以下为新消息",
     "feature": {
       "coming_soon": "功能开发中"
     },
@@ -237,6 +240,9 @@ export type Messages = {
     "group_name": "群名称",
     "share_qr_code": "分享二维码",
     "group_qr_code": "群二维码",
+    "qr_code_copied": "二维码已复制到剪贴板",
+    "qr_code_link_copied": "房间链接已复制到剪贴板",
+    "qr_code_copy_failed": "二维码复制失败",
     "my_name_in_group": "我在群中的名称",
     "remark": "备注",
     "input_group_name": "输入群名称…",
@@ -469,6 +475,9 @@ export type KeyPaths =
   | "home.chat_main.network_offline"
   | "home.chat_main.network_connecting"
   | "home.chat_main.network_ws_offline"
+  | "home.chat_main.loading_more"
+  | "home.chat_main.load_more_failed"
+  | "home.chat_main.unread_divider"
   | "home.chat_main.feature.coming_soon"
   | "home.chat_main.translate.empty"
   | "home.chat_main.translate.failed"
@@ -605,6 +614,9 @@ export type KeyPaths =
   | "home.chat_header.group_name"
   | "home.chat_header.share_qr_code"
   | "home.chat_header.group_qr_code"
+  | "home.chat_header.qr_code_copied"
+  | "home.chat_header.qr_code_link_copied"
+  | "home.chat_header.qr_code_copy_failed"
   | "home.chat_header.my_name_in_group"
   | "home.chat_header.remark"
   | "home.chat_header.input_group_name"

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { StoresEnum } from '@/enums'
+import { TauriCommand } from '@/enums/tauri'
 import { clearSenderDeviceCache } from '@/services/matrix/crypto/messageTrustCache'
 import { matrixCapabilityService } from '@/services/matrix/MatrixCapabilityService'
 import {
@@ -11,10 +12,37 @@ import {
 } from '@/services/matrix/MatrixClientService'
 import { getMatrixAccessToken } from '@/services/matrix/matrixClientAccessor'
 import { persistWebAccessToken } from '@/services/matrix/matrixClientPlatform'
+import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
+import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('MatrixStore')
 const POST_LOGIN_STARTUP_TIMEOUT_MS = 15_000
+
+/**
+ * D2-R：把登录（或 token 登录 / SSO）拿到的凭证落到 Rust 侧（DB + secure_store）。
+ *
+ * 历史缺陷：store 里四个登录入口成功后都只调 `rememberWebToken()`，而它在 Tauri 运行期
+ * 是 no-op（`isWebSessionStoreEnabled()` 默认 false）。有持久化逻辑的 `SessionLoginService`
+ * 只被 `MatrixRuntimeSessionService` 使用，UI 登录不走它 ⇒ `update_token` 从未被调用
+ * （设备 logcat 无 "Updating user token"）⇒ 冷启动时 Rust 侧无 token → 回登录页（D2-R）。
+ *
+ * 失败不阻断登录（凭证已进内存，本次会话可用），但必须留痕。
+ */
+const persistNativeTokens = async (result: LoginResult): Promise<void> => {
+  if (!result.accessToken || !hasTauriRuntime()) return
+  try {
+    await invokeWithErrorHandler(TauriCommand.UPDATE_TOKEN, {
+      req: {
+        uid: result.userId ?? '',
+        token: result.accessToken,
+        refreshToken: result.refreshToken ?? ''
+      }
+    })
+  } catch (error) {
+    logger.warn('持久化 token 失败（本次会话仍可用，冷启动会掉登录）:', error)
+  }
+}
 
 /**
  * 连接进入 CONNECTED（初始同步完成或重连成功）后恢复当前房间的活跃位置信标。
@@ -172,6 +200,7 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           rememberWebToken(result.accessToken)
+          await persistNativeTokens(result)
           connectionState.value = 'CONNECTED'
           isGuest.value = false
 
@@ -210,6 +239,7 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           rememberWebToken(result.accessToken)
+          await persistNativeTokens(result)
           connectionState.value = 'CONNECTED'
           isGuest.value = false
 
@@ -239,6 +269,7 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           rememberWebToken(result.accessToken)
+          await persistNativeTokens(result)
           connectionState.value = 'CONNECTED'
 
           await settlePostLoginStartup()
@@ -271,6 +302,7 @@ export const useMatrixStore = defineStore(
           userId.value = result.userId ?? null
           deviceId.value = result.deviceId ?? null
           rememberWebToken(result.accessToken)
+          await persistNativeTokens(result)
           connectionState.value = 'CONNECTED'
           isGuest.value = true
 

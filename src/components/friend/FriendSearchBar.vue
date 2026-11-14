@@ -10,7 +10,7 @@
       @keydown.enter="handleEnterSearch"
       @keydown.esc="handleEsc">
       <template #prefix>
-        <svg class="size-16px color-[--tjg-text-tertiary]"><use href="#search" /></svg>
+        <svg class="size-16px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#search" /></svg>
       </template>
       <template v-if="showGlobalSearchAction" #suffix>
         <button
@@ -19,7 +19,7 @@
           :aria-label="t('search.title')"
           :title="t('search.title')"
           @click="$emit('global-search', modelValue)">
-          <svg class="size-16px"><use href="#expand" /></svg>
+          <svg class="size-16px" aria-hidden="true"><use href="#expand" /></svg>
         </button>
       </template>
     </n-input>

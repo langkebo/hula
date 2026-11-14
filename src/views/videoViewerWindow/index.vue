@@ -8,6 +8,7 @@
       <!-- 视频展示区域 -->
       <div class="min-h-[calc(var(--tjg-viewport-height, 100vh)/var(--page-scale,1)-124px)] flex-center w-full h-full">
         <video
+          v-if="currentVideo"
           ref="videoRef"
           :src="currentVideo"
           controls
@@ -17,14 +18,35 @@
           @ended="onVideoEnded"
           @pause="onVideoPaused"
           @play="onVideoPlay"
+          @error="onVideoError"
           alt="preview" />
+
+        <!-- 空地址 / 加载失败错误态 -->
+        <div
+          v-else
+          class="flex flex-col items-center gap-8px text-white/70"
+          role="status"
+          :aria-label="t('message.video_viewer.empty')">
+          <svg class="size-40px" aria-hidden="true"><use href="#info"></use></svg>
+          <span class="text-14px">{{ t('message.video_viewer.empty') }}</span>
+        </div>
+        <div
+          v-if="currentVideo && hasError"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-12px bg-black/70 text-white"
+          role="alert">
+          <svg class="size-40px" aria-hidden="true"><use href="#info"></use></svg>
+          <span class="text-14px">{{ t('message.video_viewer.load_failed') }}</span>
+          <button type="button" class="px-16px py-6px rounded-6px bg-white/15 hover:bg-white/25" @click="retryLoad">
+            {{ t('common.retry') }}
+          </button>
+        </div>
 
         <!-- 提示文本 -->
         <transition name="viewer-tip">
           <div
             v-if="showTip"
             class="fixed z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 px-24px py-12px rounded-8px text-(white 14px) transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 backdrop-blur-sm select-none flex items-center gap-8px">
-            <svg class="size-16px"><use href="#info"></use></svg>
+            <svg class="size-16px" aria-hidden="true"><use href="#info"></use></svg>
             {{ tipText }}
           </div>
         </transition>
@@ -44,7 +66,10 @@
             :disabled="!canGoPrevious"
             @click="previousVideo"
             class="bottom-operation border-0 bg-transparent disabled:cursor-not-allowed">
-            <svg class="size-20px rotate-180" :class="canGoPrevious ? 'color-white' : 'color-gray-500'">
+            <svg
+              class="size-20px rotate-180"
+              :class="canGoPrevious ? 'color-white' : 'color-gray-500'"
+              aria-hidden="true">
               <use href="#right"></use>
             </svg>
           </button>
@@ -60,7 +85,7 @@
             :aria-label="isPlaying ? t('message.video_viewer.pause') : t('message.video_viewer.play')"
             @click="playPause"
             class="bottom-operation border-0 bg-transparent">
-            <svg class="size-20px color-white">
+            <svg class="size-20px color-white" aria-hidden="true">
               <use :href="isPlaying ? '#pause-one' : '#play'"></use>
             </svg>
           </button>
@@ -75,7 +100,7 @@
             :aria-label="isMuted ? t('message.video_viewer.unmute') : t('message.video_viewer.mute')"
             @click="muteUnmute"
             class="bottom-operation border-0 bg-transparent">
-            <svg class="size-20px color-white">
+            <svg class="size-20px color-white" aria-hidden="true">
               <use :href="isMuted ? '#volume-mute' : '#volume-notice'"></use>
             </svg>
           </button>
@@ -92,7 +117,7 @@
             :disabled="!canGoNext"
             @click="nextVideo"
             class="bottom-operation border-0 bg-transparent disabled:cursor-not-allowed">
-            <svg class="size-20px" :class="canGoNext ? 'color-white' : 'color-gray-500'">
+            <svg class="size-20px" :class="canGoNext ? 'color-white' : 'color-gray-500'" aria-hidden="true">
               <use href="#right"></use>
             </svg>
           </button>
@@ -144,10 +169,21 @@ const showTip = ref(false)
 const tipText = ref('')
 const videoWidth = ref(0)
 const videoHeight = ref(0)
+const hasError = ref(false)
+// 文件夹内切换只替换当前播放源，不回写 videoList，避免污染打开时传入的列表
+const overridePath = ref<string | null>(null)
+
+const effectiveVideoPath = computed(() => overridePath.value ?? videoList.value[currentIndex.value] ?? '')
+
+// 切换索引时回到列表原始路径
+watch(currentIndex, () => {
+  overridePath.value = null
+  hasError.value = false
+})
 
 // 当前显示的视频URL（统一使用列表模式）
 const currentVideo = computed(() => {
-  const videoUrl = videoList.value[currentIndex.value] || ''
+  const videoUrl = effectiveVideoPath.value
 
   // 如果是本地文件路径，使用 Tauri 的 convertFileSrc 来转换
   if (videoUrl && !videoUrl.startsWith('http')) {
@@ -176,7 +212,7 @@ const videoStyle = computed(() => {
 const canGoPrevious = computed(() => {
   if (videoList.value.length <= 1) return false
 
-  const currentVideoPath = videoList.value[currentIndex.value]
+  const currentVideoPath = effectiveVideoPath.value
   if (!currentVideoPath || currentVideoPath.startsWith('http')) {
     // 网络视频：检查是否不是第一个
     return currentIndex.value > 0
@@ -190,7 +226,7 @@ const canGoPrevious = computed(() => {
 const canGoNext = computed(() => {
   if (videoList.value.length <= 1) return false
 
-  const currentVideoPath = videoList.value[currentIndex.value]
+  const currentVideoPath = effectiveVideoPath.value
   if (!currentVideoPath || currentVideoPath.startsWith('http')) {
     // 网络视频：检查是否不是最后一个
     return currentIndex.value < videoList.value.length - 1
@@ -297,11 +333,29 @@ const onVideoPlay = () => {
   isPlaying.value = true
 }
 
+const onVideoError = () => {
+  hasError.value = true
+  isPlaying.value = false
+  logger.warn('Video load failed:', currentVideo.value)
+}
+
+const retryLoad = () => {
+  hasError.value = false
+  nextTick(() => {
+    if (!videoRef.value) return
+    videoRef.value.load()
+    videoRef.value.play().catch((error) => {
+      logger.warn('Video playback failed:', error)
+      isPlaying.value = false
+    })
+  })
+}
+
 // 切换到上一个视频
 const previousVideo = async () => {
   if (!canGoPrevious.value) return
 
-  const currentVideoPath = videoList.value[currentIndex.value]
+  const currentVideoPath = effectiveVideoPath.value
   if (!currentVideoPath || currentVideoPath.startsWith('http')) {
     // 如果是网络视频，使用原有逻辑
     currentIndex.value--
@@ -313,7 +367,7 @@ const previousVideo = async () => {
       const currentVideoIndex = folderVideos.indexOf(currentVideoPath)
       if (currentVideoIndex > 0) {
         const previousVideoPath = folderVideos[currentVideoIndex - 1]
-        videoList.value[currentIndex.value] = previousVideoPath
+        overridePath.value = previousVideoPath
         showVideoTip(t('message.video_viewer.tip_playing_previous'))
       } else {
         showVideoTip(t('message.video_viewer.tip_first'))
@@ -345,7 +399,7 @@ const previousVideo = async () => {
 const nextVideo = async () => {
   if (!canGoNext.value) return
 
-  const currentVideoPath = videoList.value[currentIndex.value]
+  const currentVideoPath = effectiveVideoPath.value
   if (!currentVideoPath || currentVideoPath.startsWith('http')) {
     // 如果是网络视频，使用原有逻辑
     currentIndex.value++
@@ -357,7 +411,7 @@ const nextVideo = async () => {
       const currentVideoIndex = folderVideos.indexOf(currentVideoPath)
       if (currentVideoIndex < folderVideos.length - 1) {
         const nextVideoPath = folderVideos[currentVideoIndex + 1]
-        videoList.value[currentIndex.value] = nextVideoPath
+        overridePath.value = nextVideoPath
         showVideoTip(t('message.video_viewer.tip_playing_next'))
       } else {
         showVideoTip(t('message.video_viewer.tip_last'))
@@ -430,6 +484,8 @@ onMounted(async () => {
         const { list, index } = event.payload
         videoList.value = list
         currentIndex.value = index
+        overridePath.value = null
+        hasError.value = false
         nextTick(() => {
           if (videoRef.value) {
             videoRef.value.load()

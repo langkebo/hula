@@ -6,6 +6,12 @@
       <span>{{ t('setting.encryption.server_unsupported') }}</span>
     </div>
 
+    <div v-if="loadError" class="setting-load-error" role="alert">
+      <Icon icon="mdi:alert-circle-outline" :width="18" />
+      <span>{{ t('setting.encryption.load_failed') }}</span>
+      <n-button size="small" :loading="devicesLoading" @click="loadEncryptionInfo">{{ t('common.retry') }}</n-button>
+    </div>
+
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.encryption.key_section') }}</h3>
       <div class="key-status" :class="encryptionEnabled ? 'key-status-active' : 'key-status-inactive'">
@@ -53,34 +59,7 @@
 
     <n-divider />
 
-    <div class="settings-section">
-      <h3 class="section-title">{{ t('setting.encryption.backup_section') }}</h3>
-      <div class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.encryption.backup_enable_label') }}</span>
-          <span class="setting-desc">{{ t('setting.encryption.backup_enable_desc') }}</span>
-        </div>
-        <n-switch :value="backupEnabled" :disabled="!encryptionEnabled" @update:value="handleBackupToggle" />
-      </div>
-      <div v-if="backupEnabled && encryptionEnabled" class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.encryption.backup_version_label') }}</span>
-          <span class="setting-desc">
-            {{ t('setting.encryption.backup_version_desc', { version: backupVersion }) }}
-          </span>
-        </div>
-        <n-button size="small" :loading="createBackupLoading" @click="handleCreateBackup">
-          {{ t('setting.encryption.create_backup') }}
-        </n-button>
-      </div>
-      <div v-if="backupEnabled && encryptionEnabled" class="setting-item">
-        <div class="setting-info">
-          <span class="setting-label">{{ t('setting.encryption.restore_key_label') }}</span>
-          <span class="setting-desc">{{ t('setting.encryption.restore_key_desc') }}</span>
-        </div>
-        <n-button size="small" @click="handleRestoreBackup">{{ t('setting.encryption.restore') }}</n-button>
-      </div>
-    </div>
+    <KeyBackupSection />
 
     <n-divider />
 
@@ -174,7 +153,7 @@
         </n-button>
       </div>
     </div>
-
+    <RoomKeyRequestsSection />
     <n-divider />
 
     <!-- R-1：严格模式（默认关闭，保留与 Element 等客户端的互操作） -->
@@ -218,10 +197,6 @@
     </div>
 
     <SecureBackupDialog v-model:show="showSecureBackupDialog" @success="handleSecureBackupSuccess" />
-
-    <KeyBackupSetupDialog v-model:show="showBackupDialog" @success="handleBackupCreated" />
-
-    <KeyBackupRestoreDialog v-model:show="showRestoreDialog" @success="handleRestoreSuccess" />
 
     <DeviceVerifyDialog
       :show="showVerifyDialog"
@@ -274,8 +249,6 @@ import DeviceTrustManager from '@/components/encryption/DeviceTrustManager.vue'
 import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
 import E2EEBootstrapWizard from '@/components/encryption/E2EEBootstrapWizard.vue'
 import E2EEOnboardingDialog from '@/components/encryption/E2EEOnboardingDialog.vue'
-import KeyBackupRestoreDialog from '@/components/encryption/KeyBackupRestoreDialog.vue'
-import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.vue'
 import KeyRotationDialog from '@/components/encryption/KeyRotationDialog.vue'
 import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
@@ -287,6 +260,8 @@ import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { createLogger } from '@/utils/Logger'
 import CrossSigningSection from './sections/CrossSigningSection.vue'
 import DehydratedDeviceSection from './sections/DehydratedDeviceSection.vue'
+import KeyBackupSection from './sections/KeyBackupSection.vue'
+import RoomKeyRequestsSection from './sections/RoomKeyRequestsSection.vue'
 
 const logger = createLogger('EncryptionSettings')
 
@@ -312,8 +287,6 @@ const isReadOnly = computed(() => capability.isLoaded.value && !capability.canUs
  * 偏好读写与施加逻辑统一在 `useEncryptionSettings` 中，与移动端设置页共用一份实现。
  */
 const deviceKeyVisible = ref(false)
-const showBackupDialog = ref(false)
-const showRestoreDialog = ref(false)
 const showVerifyDialog = ref(false)
 const showCrossSigningDialog = ref(false)
 const showKeyRotationDialog = ref(false)
@@ -322,7 +295,7 @@ const showSecureBackupDialog = ref(false)
 const showOnboardingDialog = ref(false)
 const showDeviceTrustManager = ref(false)
 const showE2EEBootstrapWizard = ref(false)
-const createBackupLoading = ref(false)
+const loadError = ref(false)
 const selectedVerificationTransaction = ref<VerificationTransaction | null>(null)
 const verifyDialogMode = ref<'sas'>('sas')
 
@@ -331,11 +304,10 @@ const {
   encryptionEnabled,
   deviceVerified,
   backupEnabled,
-  backupVersion,
+  devicesLoading,
   crossSigningSetup: securityKeySetup,
   needsRotation,
   e2eeFullySetup,
-  refreshBackup,
   refreshRotationStatus,
   markSecurityKeyConfigured,
   strictModeEnabled,
@@ -359,48 +331,19 @@ const encryptionAlgorithm = computed(() => {
   return encryptionEnabled.value ? 'Megolm (AES-256)' : t('setting.encryption.disabled')
 })
 
-onMounted(async () => {
-  await loadEncryptionInfo()
-})
+onMounted(() => void loadEncryptionInfo())
 
 async function loadEncryptionInfo() {
-  // 总览 → 本机指纹与待处理验证 → 设备列表，统一由共享 composable 编排
-  await refreshEncryptionSettings({ includeDeviceDetails: true })
-}
-
-// 开关值只由 encryptionStore.backupEnabled（matrixKeyBackupService.checkKeyBackup 的服务器状态）决定。
-// 打开走设置向导，关闭是刻意的空操作：当前没有"删除服务器备份"的入口，因此只提示、不改变任何状态。
-function handleBackupToggle(value: boolean) {
-  if (!encryptionEnabled.value) {
-    showFeedback(t('setting.encryption.enable_required'), 'warning')
-    return
+  loadError.value = false
+  try {
+    // 总览 → 本机指纹与待处理验证 → 设备列表，统一由共享 composable 编排
+    const { devicesLoaded } = await refreshEncryptionSettings({ includeDeviceDetails: true })
+    // 设备列表失败时存储层已清空列表，这里显式暴露错误态并提供重试
+    loadError.value = !devicesLoaded
+  } catch (error) {
+    logger.error('Failed to load encryption settings:', error)
+    loadError.value = true
   }
-
-  if (value) {
-    showBackupDialog.value = true
-  } else {
-    showFeedback(t('setting.encryption.backup_disabled_feedback'), 'warning')
-  }
-}
-
-function handleCreateBackup() {
-  showBackupDialog.value = true
-}
-
-async function handleBackupCreated() {
-  // 备份版本以服务器状态为准（此前用 Date.now() 伪造版本号，界面会展示假版本）
-  await refreshBackup()
-  showFeedback(t('setting.encryption.backup_created'), 'success')
-}
-
-function handleRestoreBackup() {
-  showRestoreDialog.value = true
-}
-
-async function handleRestoreSuccess() {
-  // 恢复后备份状态同样以服务器为准（与移动端 onKeyBackupComplete 一致）
-  await refreshBackup()
-  showFeedback(t('setting.encryption.restore_success'), 'success')
 }
 
 function handleVerifyDevice() {
@@ -491,6 +434,24 @@ function handleE2EEBootstrapSkip() {
 <style scoped>
 .encryption-settings {
   padding: 0 var(--tjg-space-2);
+}
+
+.setting-load-error {
+  display: flex;
+  align-items: center;
+  gap: var(--tjg-space-2);
+  margin-bottom: var(--tjg-space-4);
+  padding: var(--tjg-space-3);
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-secondary);
+  background: var(--tjg-color-warning-100);
+  border: 1px solid color-mix(in srgb, var(--tjg-color-warning-500) 20%, transparent);
+  border-radius: var(--tjg-radius-sm);
+}
+
+.setting-load-error span {
+  flex: 1;
+  min-width: 0;
 }
 
 .settings-section {

@@ -37,7 +37,7 @@
           justify="center"
           :style="{ width: `${emojiSizePx}px`, height: `${emojiSizePx}px` }"
           class="rounded-10px bg-[--tjg-surface-sidebar-selected]">
-          <svg class="size-34px color-[--tjg-text-tertiary]"><use href="#error-picture"></use></svg>
+          <svg class="size-34px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#error-picture"></use></svg>
         </n-flex>
       </template>
     </n-image>

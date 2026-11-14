@@ -42,6 +42,19 @@ export interface SettingsTab {
 
 export type SettingsTabTranslator = (key: string) => string
 
+/**
+ * 页签的保存方式：
+ * - `instant`：改动即时落库，无需离开前保存
+ * - `manual`：页面内存在表单暂存，需要点击保存按钮才生效（需配合 useSettingsTabDirty 注册脏状态）
+ */
+export type SettingsTabSaveMode = 'instant' | 'manual'
+
+const SETTINGS_MANUAL_SAVE_TABS = new Set<SettingsTabType>(['account'])
+
+export function getSettingsTabSaveMode(tabId: SettingsTabType): SettingsTabSaveMode {
+  return SETTINGS_MANUAL_SAVE_TABS.has(tabId) ? 'manual' : 'instant'
+}
+
 const SETTINGS_TAB_GROUPS: { id: SettingsTabGroup; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'communication', label: 'Communication' },

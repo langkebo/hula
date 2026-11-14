@@ -7,7 +7,7 @@
     <template #container>
       <div class="flex flex-col overflow-auto h-full relative">
         <div class="flex flex-col p-[10px_20px_0px_20px] gap-20px">
-          <CommunityTab @update="onUpdate" :options="tabOptions" active-tab-name="friend-message">
+          <CommunityTab :options="tabOptions" active-tab-name="friend-message">
             <template #friend-message>
               <MobileApplyList :close-header="true" type="friend" />
             </template>
@@ -24,14 +24,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { createLogger } from '@/utils/Logger'
 
-const logger = createLogger('MyMessages')
 const { t } = useI18n()
-
-const onUpdate = (newTab: string) => {
-  logger.debug('Tab updated:', newTab)
-}
 
 const tabOptions = reactive([
   {

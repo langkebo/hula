@@ -5,6 +5,8 @@ import {
   CAPABILITY_FILES,
   collectSanctionedDevHomeserverHosts,
   coversHost,
+  DESKTOP_TAURI_CONF_FILES,
+  evaluateDesktopCspConsistency,
   evaluateHttpCapabilityAllowlist,
   evaluateHttpTransportHardening,
   extractCargoFeatures,
@@ -300,6 +302,68 @@ describe('check-http-capability-allowlist: coversHost', () => {
     expect(coversHost(['https://matrix.test/_matrix/*'], 'https', 'matrix.test')).toBe(true)
     expect(coversHost(['https://other.test'], 'https', 'matrix.test')).toBe(false)
   })
+
+  it('通配 host 放行任意 host（homeserver 运行时可改，无法穷举）', () => {
+    expect(coversHost(['https://*'], 'https', 'any.example.com')).toBe(true)
+    expect(coversHost(['https://*:**'], 'https', 'any.example.com')).toBe(true)
+    expect(coversHost(['https://*'], 'http', 'any.example.com')).toBe(false)
+  })
+})
+
+describe('check-http-capability-allowlist: evaluateDesktopCspConsistency', () => {
+  const baseCsp = (connectSrc: string, frameSrc = "'none'") =>
+    `default-src 'self'; connect-src ${connectSrc}; frame-src ${frameSrc};`
+
+  const healthy = () =>
+    Object.fromEntries(
+      Array.from({ length: 8 }, (_, index) => [
+        `conf-${index}#csp`,
+        baseCsp("'self' ipc: http://ipc.localhost https: wss: http: ws: https://api.iconify.design")
+      ])
+    )
+
+  it('scheme 级放行 + IPC + 图标源 + frame-src none ⇒ 通过', () => {
+    const result = evaluateDesktopCspConsistency({ cspEntries: healthy() })
+    expect(result.ok).toBe(true)
+    expect(result.hardcodedTestHosts).toEqual([])
+  })
+
+  it('仍硬编码 .test homeserver ⇒ 失败并报出 host', () => {
+    const entries = healthy()
+    entries['conf-0#csp'] = baseCsp("'self' https: https://matrix.test wss://matrix.test")
+    const result = evaluateDesktopCspConsistency({ cspEntries: entries })
+    expect(result.ok).toBe(false)
+    expect(result.hardcodedTestHosts).toEqual(['matrix.test'])
+    expect(result.problems.join('\n')).toContain('matrix.test')
+  })
+
+  it('缺少 scheme 来源 / IPC / 图标源 ⇒ 逐项报出', () => {
+    const entries = healthy()
+    entries['conf-1#devCsp'] = baseCsp("'self' https: wss:")
+    const result = evaluateDesktopCspConsistency({ cspEntries: entries })
+    expect(result.ok).toBe(false)
+    const joined = result.problems.join('\n')
+    expect(joined).toContain('http:')
+    expect(joined).toContain('http://ipc.localhost')
+    expect(joined).toContain('https://api.iconify.design')
+  })
+
+  it('frame-src 放宽 ⇒ 失败', () => {
+    const entries = healthy()
+    entries['conf-2#csp'] = baseCsp(
+      "'self' https: wss: http: ws: ipc: http://ipc.localhost https://api.iconify.design",
+      "'self' https:"
+    )
+    const result = evaluateDesktopCspConsistency({ cspEntries: entries })
+    expect(result.ok).toBe(false)
+    expect(result.problems.join('\n')).toContain("frame-src 必须为 'none'")
+  })
+
+  it('基数断言：CSP 份数不足 ⇒ 失败', () => {
+    const result = evaluateDesktopCspConsistency({ cspEntries: { only: baseCsp("'self' https:") } })
+    expect(result.ok).toBe(false)
+    expect(result.problems.join('\n')).toContain('基数断言失败')
+  })
 })
 
 describe('check-http-capability-allowlist: 真实仓库自洽', () => {
@@ -335,13 +399,13 @@ describe('check-http-capability-allowlist: 真实仓库自洽', () => {
     expect(result.ok).toBe(true)
   })
 
-  it('`tauri.conf.json` 默认 dev homeserver（matrix.test）已登记且被覆盖', () => {
-    // tauri.conf.json 的 CSP connect-src 与 scripts/updater-config.js 的
-    // DEFAULT_HOMESERVER_URL 都把 matrix.test 当作默认 homeserver；
-    // capabilities 缺该 host 会让 nativeFetch 静默回退（2026-10-13 实测缺陷）。
+  it('默认 dev homeserver（matrix.test）靠 scheme 级通配覆盖，无需硬编码 host', () => {
+    // homeserver 可在登录时改（saveMatrixHomeserverUrl），构建期无法穷举 host ⇒ 只能按
+    // scheme 放行；旧实现硬编码 https://matrix.test，换域名后 nativeFetch 静默降级。
     expect(coversHost(trackedEntries, 'https', 'matrix.test')).toBe(true)
-    // 且不得只登记裸 host 而漏掉任意端口形态（与既有 gitee/siliconflow 约定一致）
-    expect(trackedEntries).toContain('https://matrix.test:**')
+    // WebSocket 走浏览器 WebSocket，由 CSP connect-src 的 ws:/wss: 放行，不在 http 插件 scope 内
+    expect(trackedEntries).not.toContain('https://matrix.test')
+    expect(trackedEntries).not.toContain('https://matrix.test:**')
   })
 
   it('无未登记的 .test 陈旧残留', () => {
@@ -359,5 +423,20 @@ describe('check-http-capability-allowlist: 真实仓库自洽', () => {
     })
     expect(result.problems).toEqual([])
     expect(result.ok).toBe(true)
+  })
+
+  it('base + 三平台覆盖 + dev 共 8 份 CSP 口径一致（scheme 放行、无 .test 硬编码）', () => {
+    const cspEntries: Record<string, string> = {}
+    for (const rel of DESKTOP_TAURI_CONF_FILES) {
+      const security = JSON.parse(readFileSync(join(projectRoot, rel), 'utf8'))?.app?.security ?? {}
+      if (typeof security.csp === 'string' && security.csp.length > 0) cspEntries[`${rel}#csp`] = security.csp
+      if (typeof security.devCsp === 'string' && security.devCsp.length > 0) {
+        cspEntries[`${rel}#devCsp`] = security.devCsp
+      }
+    }
+    expect(Object.keys(cspEntries)).toHaveLength(8)
+    const result = evaluateDesktopCspConsistency({ cspEntries })
+    expect(result.problems).toEqual([])
+    expect(result.hardcodedTestHosts).toEqual([])
   })
 })

@@ -478,8 +478,6 @@ const loadModel = async () => {
       availableClips[0]
     activeAction = mixer.clipAction(preferred)
     activeAction.reset().play()
-  } else {
-    logger.debug('Model has no animation clips')
   }
   adjustFraming(scaledSize, centerY)
   loadingProgress.value = 100

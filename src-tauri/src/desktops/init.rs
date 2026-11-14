@@ -1,8 +1,37 @@
 use crate::common::init::{CustomInit, init_common_plugins};
 #[cfg(target_os = "macos")]
 use crate::desktops::common_cmd::apply_macos_traffic_lights_spacing_default;
-use tauri::{Manager, Runtime, WindowEvent};
+use tauri::{Emitter, Manager, Runtime, WindowEvent};
 use tauri_plugin_autostart::MacosLauncher;
+
+/// 解析深链参数中的房间 ID，支持三种写法（C-13）：
+/// `tjg://room/!abc:server`、`tjg://room?id=!abc:server`、`tjg://room/!abc:server?foo=bar`。
+fn parse_deep_link_room_id(args: &[String]) -> Option<String> {
+    args.iter().find_map(|arg| {
+        if !arg.get(..10)?.eq_ignore_ascii_case("tjg://room") {
+            return None;
+        }
+        let rest = &arg[10..];
+        let raw = if let Some(path) = rest.strip_prefix('/') {
+            path.split(['?', '#']).next().unwrap_or_default()
+        } else if let Some(query) = rest.strip_prefix('?') {
+            query
+                .split('&')
+                .find_map(|pair| pair.strip_prefix("id="))?
+                .split('#')
+                .next()
+                .unwrap_or_default()
+        } else {
+            return None;
+        };
+        // 部分终端/浏览器会把 `!` `:` 做百分号编码
+        let room_id = raw
+            .replace("%21", "!")
+            .replace("%3A", ":")
+            .replace("%3a", ":");
+        (!room_id.is_empty()).then_some(room_id)
+    })
+}
 
 pub trait DesktopCustomInit {
     fn init_webwindow_event(self) -> Self;
@@ -22,7 +51,20 @@ impl<R: Runtime> CustomInit for tauri::Builder<R> {
                 MacosLauncher::LaunchAgent,
                 Some(vec!["--flag1", "--flag2"]),
             ))
-            .plugin(tauri_plugin_single_instance::init(|app, _args, _cmd| {
+            .plugin(tauri_plugin_single_instance::init(|app, args, _cmd| {
+                // 二次实例携带的深链先下发定位房间，再聚焦主窗口（C-13）。
+                // 未登录时没有 home 窗口，改投 login，由前端暂存到登录后再定位。
+                if let Some(room_id) = parse_deep_link_room_id(&args) {
+                    let target = if app.get_webview_window("home").is_some() {
+                        "home"
+                    } else {
+                        "login"
+                    };
+                    if let Err(e) = app.emit_to(target, "deep-link-open-room", room_id) {
+                        tracing::warn!("Failed to emit deep link room to {}: {}", target, e);
+                    }
+                }
+
                 let windows = app.webview_windows();
                 // 优先显示已存在的home窗口
                 for (name, window) in windows {

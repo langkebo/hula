@@ -79,12 +79,12 @@ export class VerificationService extends BaseMatrixService {
     return entry.request
   }
 
-  /** 事务进入终态后从注册表移除，避免陈旧 id 跨会话泄漏 */
   private unregister(transactionId?: string): void {
     if (!transactionId) return
-    if (this.transactions.delete(transactionId)) {
-      logger.info(`[Verification] 注销验证请求: ${transactionId}`)
-    }
+    // D11：终态后一并清 verifyPromises，避免只等 SDK Change 的 Promise 永久滞留。
+    this.verifyPromises.delete(transactionId)
+    if (!this.transactions.delete(transactionId)) return
+    logger.info(`[Verification] 注销验证请求: ${transactionId}`)
   }
 
   /** 登记一个 SDK 验证请求，并接管其阶段变化；同一 id 重复到达时以最新对象为准 */

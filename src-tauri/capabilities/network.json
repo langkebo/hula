@@ -36,6 +36,18 @@
       "identifier": "http:default",
       "allow": [
         {
+          "url": "https://*"
+        },
+        {
+          "url": "https://*:**"
+        },
+        {
+          "url": "http://*"
+        },
+        {
+          "url": "http://*:**"
+        },
+        {
           "url": "https://gitee.com"
         },
         {
@@ -52,12 +64,6 @@
         },
         {
           "url": "https://translate.googleapis.com:**"
-        },
-        {
-          "url": "https://matrix.test"
-        },
-        {
-          "url": "https://matrix.test:**"
         },
         {
           "url": "https://localhost:8008"

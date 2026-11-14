@@ -1,4 +1,4 @@
-import type { MatrixEvent } from 'matrix-js-sdk'
+import type { MatrixEvent, Room } from 'matrix-js-sdk'
 import { MatrixContentField } from '@/common/matrixConstants'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { createLogger } from '@/utils/Logger'
@@ -104,6 +104,56 @@ class MatrixReactionService extends BaseMatrixService {
     }
   }
 
+  /**
+   * 收集某个根事件的全部回应事件。
+   *
+   * 优先读 SDK 的关系容器（`m.annotation` + `m.reaction` 分桶，索引命中，不扫时间线）；
+   * 容器为空时回退扫 live timeline —— 关系容器只收 sync 期间进来的关系事件，
+   * 滚动历史里早已存在的老回应不会进容器，回退保证这类消息仍能显示。
+   */
+  private collectReactionEvents(room: Room, eventId: string): MatrixEvent[] {
+    const fromContainer = room.getChildEventsForEvent?.(eventId, 'm.annotation', 'm.reaction')?.getRelations?.()
+    if (fromContainer?.length) return fromContainer
+
+    const events = room.getUnfilteredTimelineSet().getLiveTimeline().getEvents()
+    return events.filter((event) => {
+      if (event.getType() !== 'm.reaction') return false
+      const relatesTo = (event.getContent() as ReactionContent)[MatrixContentField.RELATES_TO]
+      return relatesTo?.rel_type === 'm.annotation' && relatesTo.event_id === eventId
+    })
+  }
+
+  /** 把回应事件聚合成 `{ key, count, me, users }[]`，按数量降序。 */
+  private aggregateReactions(events: MatrixEvent[], myUserId: string | null): ReactionInfo[] {
+    const reactionMap = new Map<string, { count: number; users: string[] }>()
+
+    for (const event of events) {
+      const content = event.getContent() as ReactionContent
+      const relatesTo = content[MatrixContentField.RELATES_TO]
+      if (relatesTo?.rel_type !== 'm.annotation') continue
+      const key = relatesTo.key
+      if (!key) continue
+
+      const info = reactionMap.get(key) ?? { count: 0, users: [] }
+      info.count += 1
+      const sender = event.getSender()
+      if (sender) info.users.push(sender)
+      reactionMap.set(key, info)
+    }
+
+    const reactions: ReactionInfo[] = []
+    reactionMap.forEach((value, key) => {
+      reactions.push({
+        key,
+        count: value.count,
+        me: Boolean(myUserId && value.users.includes(myUserId)),
+        users: value.users
+      })
+    })
+
+    return reactions.sort((a, b) => b.count - a.count)
+  }
+
   findUserReaction(roomId: string, eventId: string, emoji: string, userId: string): MatrixEvent | null {
     const client = matrixClientService.getClient()
     if (!client) return null
@@ -111,25 +161,12 @@ class MatrixReactionService extends BaseMatrixService {
     const room = client.getRoom(roomId)
     if (!room) return null
 
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
+    const found = this.collectReactionEvents(room, eventId).find((event) => {
+      const relatesTo = (event.getContent() as ReactionContent)[MatrixContentField.RELATES_TO]
+      return relatesTo?.key === emoji && event.getSender() === userId
+    })
 
-    for (const event of events) {
-      if (event.getType() === 'm.reaction') {
-        const content = event.getContent() as ReactionContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-        if (
-          relatesTo?.rel_type === 'm.annotation' &&
-          relatesTo.event_id === eventId &&
-          relatesTo.key === emoji &&
-          event.getSender() === userId
-        ) {
-          return event
-        }
-      }
-    }
-
-    return null
+    return found ?? null
   }
 
   getReactionsForEvent(roomId: string, eventId: string): ReactionInfo[] {
@@ -139,46 +176,32 @@ class MatrixReactionService extends BaseMatrixService {
     const room = client.getRoom(roomId)
     if (!room) return []
 
-    const myUserId = client.getUserId()
-    const reactionMap = new Map<string, { count: number; users: string[] }>()
+    return this.aggregateReactions(this.collectReactionEvents(room, eventId), client.getUserId())
+  }
 
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
+  /**
+   * 从服务端刷新某事件的回应（`/relations/m.annotation`）并就地聚合。
+   *
+   * 用途：打开回应列表 / 长按菜单时补一次全量 —— 本地关系容器只覆盖 sync 窗口内的回应，
+   * 更早的回应可能不在容器里。注意 `room.getRelations()` **不回填**关系容器（回填由 sync 负责），
+   * 因此这里直接用返回值聚合，避免调用方拿到「刷新了但仍读不到」的假象。
+   */
+  async refreshReactions(roomId: string, eventId: string, limit = 200): Promise<ReactionInfo[]> {
+    const client = matrixClientService.getClient()
+    if (!client) return []
 
-    for (const event of events) {
-      if (event.getType() === 'm.reaction') {
-        const content = event.getContent() as ReactionContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-        if (relatesTo?.rel_type === 'm.annotation' && relatesTo.event_id === eventId) {
-          const key = relatesTo.key
-          if (!key) continue
+    const room = client.getRoom(roomId)
+    if (!room) return []
 
-          const sender = event.getSender()
-
-          if (!reactionMap.has(key)) {
-            reactionMap.set(key, { count: 0, users: [] })
-          }
-
-          const info = reactionMap.get(key)!
-          info.count++
-          if (sender) {
-            info.users.push(sender)
-          }
-        }
-      }
+    try {
+      const result = await room.getRelations(eventId, 'm.annotation', 'm.reaction', { limit })
+      const events = result?.events ?? []
+      if (!events.length) return this.getReactionsForEvent(roomId, eventId)
+      return this.aggregateReactions(events, client.getUserId())
+    } catch (err) {
+      logger.warn(`[MatrixReaction] 服务端刷新回应失败，回退本地: ${eventId} ${String(err)}`)
+      return this.getReactionsForEvent(roomId, eventId)
     }
-
-    const reactions: ReactionInfo[] = []
-    reactionMap.forEach((value, key) => {
-      reactions.push({
-        key,
-        count: value.count,
-        me: myUserId ? value.users.includes(myUserId) : false,
-        users: value.users
-      })
-    })
-
-    return reactions.sort((a, b) => b.count - a.count)
   }
 
   async getReactionEvents(roomId: string, eventId: string): Promise<MatrixEvent[]> {
@@ -188,21 +211,7 @@ class MatrixReactionService extends BaseMatrixService {
     const room = client.getRoom(roomId)
     if (!room) return []
 
-    const reactions: MatrixEvent[] = []
-    const timelineSet = room.getUnfilteredTimelineSet()
-    const events = timelineSet.getLiveTimeline().getEvents()
-
-    for (const event of events) {
-      if (event.getType() === 'm.reaction') {
-        const content = event.getContent() as ReactionContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-        if (relatesTo?.rel_type === 'm.annotation' && relatesTo.event_id === eventId) {
-          reactions.push(event)
-        }
-      }
-    }
-
-    return reactions
+    return this.collectReactionEvents(room, eventId)
   }
 }
 

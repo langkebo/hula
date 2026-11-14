@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import { OnlineEnum } from '@/enums'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group'
 import { createI18nMock, resolveMessage } from '~/tests/i18n-messages'
+import RoomInviteForm from '../RoomInviteForm.vue'
 import RoomMembersPane from '../RoomMembersPane.vue'
 
 const { showFeedbackMock, inviteUserMock, kickUserMock, banUserMock, unbanUserMock, loadRoomMembersMock } = vi.hoisted(
@@ -290,7 +291,8 @@ describe('RoomMembersPane', () => {
       props: { roomId: '!room-1:server', canManage: true }
     })
 
-    const vm = wrapper.vm as unknown as { handleInvite: () => Promise<void> }
+    // 邀请表单已抽为子组件 RoomInviteForm，交互入口随之下移
+    const vm = wrapper.findComponent(RoomInviteForm).vm as unknown as { handleInvite: () => Promise<void> }
     await vm.handleInvite()
 
     expect(showFeedbackMock).toHaveBeenCalledWith(resolveMessage('room.detail.invite_user_required'), 'warning')
@@ -302,7 +304,7 @@ describe('RoomMembersPane', () => {
       props: { roomId: '!room-1:server', canManage: true }
     })
 
-    const vm = wrapper.vm as unknown as {
+    const vm = wrapper.findComponent(RoomInviteForm).vm as unknown as {
       inviteUserId: string
       handleInvite: () => Promise<void>
     }
@@ -321,7 +323,7 @@ describe('RoomMembersPane', () => {
       props: { roomId: '!room-1:server', canManage: true }
     })
 
-    const vm = wrapper.vm as unknown as {
+    const vm = wrapper.findComponent(RoomInviteForm).vm as unknown as {
       inviteUserId: string
       handleInvite: () => Promise<void>
     }
@@ -437,7 +439,7 @@ describe('RoomMembersPane', () => {
       props: { roomId: '!room-1:server', canManage: true }
     })
 
-    const vm = wrapper.vm as unknown as {
+    const vm = wrapper.findComponent(RoomInviteForm).vm as unknown as {
       inviteUserId: string
       handleInvite: () => Promise<void>
     }

@@ -8,7 +8,7 @@
           <span class="reply-sender">{{ replyTo.senderName }}</span>
           <n-button text size="tiny" :aria-label="t('common.cancel')" @click="handleCancel">
             <template #icon>
-              <svg class="size-14px">
+              <svg class="size-14px" aria-hidden="true">
                 <use href="#close"></use>
               </svg>
             </template>
@@ -26,7 +26,7 @@
           </template>
           <template v-else-if="isVideoReply(replyTo)">
             <div class="reply-video-preview">
-              <svg class="size-16px">
+              <svg class="size-16px" aria-hidden="true">
                 <use href="#video"></use>
               </svg>
               <span class="reply-type-label">{{ t('message.video.unknown_video') }}</span>
@@ -34,7 +34,7 @@
           </template>
           <template v-else-if="isFileReply(replyTo)">
             <div class="reply-file-preview">
-              <svg class="size-16px">
+              <svg class="size-16px" aria-hidden="true">
                 <use href="#file2"></use>
               </svg>
               <span class="reply-type-label">{{ replyTo.contentPreview }}</span>

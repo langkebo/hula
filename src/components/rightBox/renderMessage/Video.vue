@@ -34,7 +34,7 @@
           align="center"
           justify="center"
           class="w-200px h-150px rounded-10px bg-[--tjg-surface-sidebar-selected]">
-          <svg class="size-34px color-[--tjg-text-tertiary]"><use href="#error-picture"></use></svg>
+          <svg class="size-34px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#error-picture"></use></svg>
         </n-flex>
       </template>
     </n-image>
@@ -49,7 +49,7 @@
         <!-- 上传中显示进度 -->
         <div v-if="isUploading" class="upload-progress">
           <div class="progress-circle">
-            <svg class="progress-ring" width="44" height="44">
+            <svg class="progress-ring" width="44" height="44" aria-hidden="true">
               <circle
                 class="progress-ring-circle"
                 stroke="color-mix(in srgb, var(--tjg-text-inverse) 30%, transparent)"
@@ -69,13 +69,13 @@
                 :stroke-dasharray="`${2 * Math.PI * 18}`"
                 :stroke-dashoffset="`${2 * Math.PI * 18 * (1 - currentUploadProgress / 100)}`" />
             </svg>
-            <svg class="upload-icon"><use href="#Importing"></use></svg>
+            <svg class="upload-icon" aria-hidden="true"><use href="#Importing"></use></svg>
           </div>
         </div>
         <!-- 下载中显示进度 -->
         <div v-else-if="isDownloading" class="download-progress">
           <div class="progress-circle">
-            <svg class="progress-ring" width="44" height="44">
+            <svg class="progress-ring" width="44" height="44" aria-hidden="true">
               <circle
                 class="progress-ring-circle"
                 stroke="color-mix(in srgb, var(--tjg-text-inverse) 30%, transparent)"
@@ -95,17 +95,20 @@
                 :stroke-dasharray="`${2 * Math.PI * 18}`"
                 :stroke-dashoffset="`${2 * Math.PI * 18 * (1 - process / 100)}`" />
             </svg>
-            <svg class="download-icon"><use href="#arrow-down"></use></svg>
+            <svg class="download-icon" aria-hidden="true"><use href="#arrow-down"></use></svg>
           </div>
         </div>
         <!-- 打开中显示加载动画 -->
         <div v-else-if="isOpening" class="loading-spinner"></div>
         <!-- 未检查状态或未下载显示下载图标 -->
-        <svg v-else-if="isVideoDownloaded === null || !isVideoDownloaded" class="size-32px color-white">
+        <svg
+          v-else-if="isVideoDownloaded === null || !isVideoDownloaded"
+          class="size-32px color-white"
+          aria-hidden="true">
           <use href="#Importing"></use>
         </svg>
         <!-- 已下载显示播放图标 -->
-        <svg v-else class="size-full color-white"><use href="#play"></use></svg>
+        <svg v-else class="size-full color-white" aria-hidden="true"><use href="#play"></use></svg>
       </div>
 
       <!-- 视频信息 -->
@@ -143,6 +146,7 @@ import { useI18n } from 'vue-i18n'
 import { useDownload } from '@/composables/common/useDownload'
 import { useIntersectionTaskQueue } from '@/composables/common/useIntersectionTaskQueue'
 import { useMitt } from '@/composables/common/useMitt'
+import { useOperationFeedback } from '@/composables/common/useOperationFeedback'
 import { useVideoViewer } from '@/composables/common/useVideoViewer'
 import { mobileOnlyAsyncComponent, useIsMobile } from '@/composables/usePlatform'
 import { MessageStatusEnum, TauriCommand } from '@/enums'
@@ -166,6 +170,7 @@ const chatStore = useChatStore()
 const fileDownloadStore = useFileDownloadStore()
 const { downloadFile, isDownloading, process } = useDownload()
 const { t } = useI18n()
+const { reportFailure } = useOperationFeedback()
 const props = defineProps<{
   body: VideoBody
   messageStatus?: MessageStatusEnum
@@ -604,6 +609,7 @@ const handleOpenVideoViewer = async () => {
       await openVideoViewer(props.body.url, [MsgEnum.VIDEO])
     } catch (error) {
       logger.error('Failed to open video:', error)
+      reportFailure(error)
     } finally {
       isOpening.value = false
     }

@@ -2,11 +2,14 @@
   <div class="burn-toggle-wrapper">
     <button
       data-test="burn-toggle"
+      type="button"
       class="burn-toggle-btn"
       :class="{ 'burn-toggle-btn--active': enabled }"
       :title="t('chat.burn.toggle_title')"
+      :aria-label="t('chat.burn.toggle_title')"
+      :aria-pressed="enabled"
       @click="toggle">
-      <svg class="burn-toggle-icon">
+      <svg class="burn-toggle-icon" aria-hidden="true">
         <use href="#timer"></use>
       </svg>
     </button>

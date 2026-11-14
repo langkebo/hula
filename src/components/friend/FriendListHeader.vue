@@ -10,7 +10,7 @@
           <n-button quaternary circle size="small" :aria-label="t('menu.add_contact')" @click="$emit('click:add')">
             <template #icon>
               <n-icon aria-hidden="true">
-                <svg><use href="#plus" /></svg>
+                <svg aria-hidden="true"><use href="#plus" /></svg>
               </n-icon>
             </template>
           </n-button>
@@ -22,7 +22,7 @@
             @click="$emit('click:requests')">
             <template #icon>
               <n-icon aria-hidden="true">
-                <svg><use href="#bell" /></svg>
+                <svg aria-hidden="true"><use href="#bell" /></svg>
               </n-icon>
             </template>
           </n-button>
@@ -33,7 +33,7 @@
       <div v-if="requestCount > 0" class="friend-request-preview">
         <n-flex align="center" justify="space-between" class="mb-8px">
           <n-flex align="center" :size="6">
-            <svg class="size-14px color-[--tjg-color-primary-500]"><use href="#bell" /></svg>
+            <svg class="size-14px color-[--tjg-color-primary-500]" aria-hidden="true"><use href="#bell" /></svg>
             <span class="text-[var(--text-sm)] font-medium color-[--tjg-color-primary-500]">
               {{ t('friend.list.pending_requests', { count: requestCount }) }}
             </span>

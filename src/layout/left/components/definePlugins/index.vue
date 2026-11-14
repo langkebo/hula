@@ -18,7 +18,8 @@
         <svg
           v-if="isWindows()"
           @click="isShow = false"
-          class="z-10 color-[--tjg-text-primary] w-12px h-12px absolute top-6px right-6px cursor-pointer select-none">
+          class="z-10 color-[--tjg-text-primary] w-12px h-12px absolute top-6px right-6px cursor-pointer select-none"
+          aria-hidden="true">
           <use href="#close"></use>
         </svg>
       </div>
@@ -42,12 +43,12 @@
           animated>
           <n-tab name="card">
             <template #default>
-              <svg class="size-16px"><use href="#view-grid-card"></use></svg>
+              <svg class="size-16px" aria-hidden="true"><use href="#view-grid-card"></use></svg>
             </template>
           </n-tab>
           <n-tab name="list">
             <template #default>
-              <svg class="size-16px"><use href="#view-grid-list"></use></svg>
+              <svg class="size-16px" aria-hidden="true"><use href="#view-grid-list"></use></svg>
             </template>
           </n-tab>
         </n-tabs>

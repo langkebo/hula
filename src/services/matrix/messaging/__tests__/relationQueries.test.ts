@@ -416,4 +416,46 @@ describe('createRelationQueries', () => {
       await expect(queries.fetchRelationsByType('!room:server', '$target', MatrixRelType.REPLACES)).resolves.toBeNull()
     })
   })
+  describe('关系容器优先（threadSupport 开启后 timeline 里没有关系事件）', () => {
+    const withContainer = (events: MatrixEvent[]) =>
+      ({
+        ...createRoom([]),
+        getChildEventsForEvent: () => ({ getRelations: () => events })
+      }) as unknown as ReturnType<typeof createRoom>
+
+    it('getEditHistory 从容器读编辑（timeline 为空也能拿到）', () => {
+      const edit = createEditEvent({ id: '$c1', targetId: '$origin', ts: 100, body: '容器里的编辑' })
+      const queries = createRelationQueries(() => createClient({ getRoom: () => withContainer([edit]) }))
+
+      const result = queries.getEditHistory('!room:server', '$origin')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ eventId: '$c1', timestamp: 100 })
+      expect(result[0].newContent).toMatchObject({ body: '容器里的编辑' })
+    })
+
+    it('getLatestEdit 从容器取时间戳最大的编辑', () => {
+      const older = createEditEvent({ id: '$c1', targetId: '$origin', ts: 100 })
+      const newer = createEditEvent({ id: '$c2', targetId: '$origin', ts: 200 })
+      const queries = createRelationQueries(() => createClient({ getRoom: () => withContainer([older, newer]) }))
+
+      expect(queries.getLatestEdit('!room:server', '$origin')?.getId()).toBe('$c2')
+    })
+
+    it('getThreadReplies 从容器读线程回复并按时间升序', () => {
+      const r2 = createEvent({
+        id: '$t2',
+        ts: 200,
+        content: { [MatrixContentField.RELATES_TO]: { rel_type: MatrixRelType.THREAD, event_id: '$root' } }
+      })
+      const r1 = createEvent({
+        id: '$t1',
+        ts: 100,
+        content: { [MatrixContentField.RELATES_TO]: { rel_type: MatrixRelType.THREAD, event_id: '$root' } }
+      })
+      const queries = createRelationQueries(() => createClient({ getRoom: () => withContainer([r2, r1]) }))
+
+      expect(queries.getThreadReplies('!room:server', '$root').map((e) => e.getId())).toEqual(['$t1', '$t2'])
+    })
+  })
 })

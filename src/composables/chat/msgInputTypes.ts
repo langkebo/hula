@@ -11,6 +11,7 @@ import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAtt
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
 import type { UserItem } from '@/services/types.ts'
 import type { MessageType } from '@/stores/domains/chat/chat'
+import type { MessageStrategy } from '@/strategy/MessageStrategy'
 
 export interface ReplyState {
   avatar: string
@@ -126,6 +127,22 @@ export function createRafProgressUpdater(chatStore: ChatStoreLike, msgId: string
       })
     }
   }
+}
+
+/**
+ * 绑定策略层上传进度到临时消息的 uploadProgress。
+ * 返回 update 用于直传（加密上传不经过策略 uploadHook），stop 用于取消监听。
+ */
+export function bindUploadProgress(
+  chatStore: ChatStoreLike,
+  messageStrategy: MessageStrategy,
+  tempMsgId: string
+): { update: (pct: number) => void; stop: () => void } {
+  const update = createRafProgressUpdater(chatStore, tempMsgId)
+  update(0)
+  const uploadProgress = messageStrategy.getUploadProgress?.()
+  const stop = uploadProgress ? uploadProgress.onChange(update) : () => {}
+  return { update, stop }
 }
 
 /**

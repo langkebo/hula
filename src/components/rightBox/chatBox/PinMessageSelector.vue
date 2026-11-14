@@ -14,7 +14,7 @@
           data-testid="pin-selector-close"
           :aria-label="t('common.close')"
           @click="emit('update:show', false)">
-          <svg class="size-12px">
+          <svg class="size-12px" aria-hidden="true">
             <use href="#close"></use>
           </svg>
         </button>

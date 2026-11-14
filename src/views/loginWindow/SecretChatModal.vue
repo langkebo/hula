@@ -5,12 +5,13 @@
         <svg
           v-if="!isMac()"
           @click="handleCancel"
-          class="w-12px h-12px ml-a cursor-pointer select-none text-[--tjg-text-primary]">
+          class="w-12px h-12px ml-a cursor-pointer select-none text-[--tjg-text-primary]"
+          aria-hidden="true">
           <use href="#close"></use>
         </svg>
         <div class="flex flex-col gap-10px p-10px select-none">
           <n-flex vertical align="center" :size="24">
-            <svg class="size-48px text-[--primary-color]">
+            <svg class="size-48px text-[--primary-color]" aria-hidden="true">
               <use href="#lock"></use>
             </svg>
             <span class="text-(14px [--tjg-text-primary]) font-bold">{{ t('login.secret_chat.title') }}</span>

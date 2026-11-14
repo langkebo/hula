@@ -16,12 +16,26 @@
       </n-button>
     </div>
 
+    <n-alert v-if="loadError" type="error" :bordered="false" class="mb-12px">
+      <div class="flex items-center justify-between gap-12px">
+        <span>{{ t('common.load_failed') }}</span>
+        <n-button size="small" @click="loadRooms">{{ t('common.retry') }}</n-button>
+      </div>
+    </n-alert>
+
     <AdminTable
       :columns="columns"
       :data="isSearchMode ? searchResults : filteredRooms"
       :loading="loading || searchLoading"
       :pagination="{ pageSize: 20 }"
       :row-key="(row: RoomInfo) => row.roomId" />
+
+    <div class="admin-rooms-footer">
+      <span>{{ t('admin.rooms.loadedCount', { count: (isSearchMode ? searchResults : filteredRooms).length }) }}</span>
+      <n-button v-if="!isSearchMode && roomsNextToken" size="small" :loading="loading" @click="handleLoadMoreRooms">
+        {{ t('admin.rooms.loadMore') }}
+      </n-button>
+    </div>
 
     <n-drawer v-model:show="showRoomDetail" placement="right" :width="560">
       <n-drawer-content :title="t('admin.rooms.roomDetail')" closable>
@@ -102,7 +116,12 @@
             <n-tab-pane name="aliases" :tab="t('admin.rooms.aliases')">
               <n-spin :show="aliasesLoading">
                 <div v-if="roomAliases.length > 0">
-                  <n-tag v-for="alias in roomAliases" :key="alias" closable class="m-4px" @close="handleRemoveAlias()">
+                  <n-tag
+                    v-for="alias in roomAliases"
+                    :key="alias"
+                    closable
+                    class="m-4px"
+                    @close="handleRemoveAlias(alias)">
                     {{ alias }}
                   </n-tag>
                 </div>
@@ -278,6 +297,7 @@ import { useI18n } from 'vue-i18n'
 import AdminTable from '@/components/admin/AdminTable.vue'
 import { type RoomInfo, useAdminRooms } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { useAdminErrorHandler } from './useAdminError'
 
@@ -291,6 +311,8 @@ const admin = useAdminRooms()
 
 // Alias composable refs so the template bindings keep working
 const loading = admin.loading
+const loadError = admin.loadError
+const roomsNextToken = admin.roomsNextToken
 const searchQuery = admin.searchQuery
 const filteredRooms = admin.filteredRooms
 const selectedRoom = admin.selectedRoom
@@ -432,7 +454,23 @@ const stateColumns = computed(() => [
 
 async function loadRooms() {
   if (!adminStore.isAdmin) return
-  await admin.loadRooms(200)
+  try {
+    await admin.loadRooms(200)
+  } catch (err) {
+    if (handleAdminError(err)) {
+      showFeedback(t('common.load_failed'), 'error')
+    }
+  }
+}
+
+async function handleLoadMoreRooms() {
+  try {
+    await admin.loadMoreRooms(200)
+  } catch (err) {
+    if (handleAdminError(err)) {
+      showFeedback(t('common.load_failed'), 'error')
+    }
+  }
 }
 
 async function openRoomDetail(room: RoomInfo) {
@@ -581,10 +619,25 @@ async function handleDeleteRoom() {
   })
 }
 
-function handleRemoveAlias() {
-  // Alias removal requires server-side API not currently exposed;
-  // show informational feedback
-  showFeedback(t('admin.rooms.aliasRemoveNotSupported'), 'warning')
+function handleRemoveAlias(alias: string) {
+  dialog.warning({
+    title: t('admin.rooms.removeAlias'),
+    content: t('admin.rooms.removeAliasConfirm', { alias }),
+    positiveText: t('admin.common.confirm'),
+    negativeText: t('admin.common.cancel'),
+    onPositiveClick: async () => {
+      try {
+        await matrixRoomActionFacade.deleteRoomAlias(alias)
+        showFeedback(t('admin.rooms.aliasRemoveSuccess'), 'success')
+        await admin.loadAliases()
+        await admin.loadRooms(200)
+      } catch (err) {
+        if (handleAdminError(err)) {
+          showFeedback(t('admin.rooms.aliasRemoveFailed'), 'error')
+        }
+      }
+    }
+  })
 }
 
 // Kick / ban still go through the raw admin service because the SDK exposes
@@ -652,6 +705,16 @@ watch(searchQuery, (val) => {
   margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.admin-rooms-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--tjg-text-secondary);
 }
 
 @include responsive.down('md') {

@@ -53,7 +53,7 @@
           @click="emit('enterRoom', room.roomId)">
           <n-avatar v-if="room.avatarUrl" :size="32" :src="room.avatarUrl" round />
           <div v-else class="space-details-pane__room-fallback">
-            <svg class="size-14px"><use href="#grid" /></svg>
+            <svg class="size-14px" aria-hidden="true"><use href="#grid" /></svg>
           </div>
           <span class="space-details-pane__room-name">{{ room.name || room.roomId }}</span>
           <button
@@ -63,9 +63,11 @@
             :aria-label="t('space.remove_room')"
             :title="t('space.remove_room')"
             @click.stop="emit('removeRoom', room.roomId)">
-            <svg class="size-12px"><use href="#close" /></svg>
+            <svg class="size-12px" aria-hidden="true"><use href="#close" /></svg>
           </button>
-          <svg v-else class="size-12px space-details-pane__room-arrow"><use href="#arrow-right" /></svg>
+          <svg v-else class="size-12px space-details-pane__room-arrow" aria-hidden="true">
+            <use href="#arrow-right" />
+          </svg>
         </div>
       </div>
       <p v-else class="space-details-pane__hint">{{ t('space.detail_space_rooms_empty') }}</p>

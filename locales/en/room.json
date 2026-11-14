@@ -103,6 +103,7 @@
     "role_moderator": "Moderator",
     "status_banned": "Banned",
     "banned_members": "Banned Members",
+    "load_more": "Show more",
     "visibility_label": "Room Visibility",
     "visibility_public": "Public",
     "visibility_private": "Private",

@@ -15,7 +15,7 @@
         <template #trigger>
           <n-button text size="tiny">
             <template #icon>
-              <svg class="size-16px">
+              <svg class="size-16px" aria-hidden="true">
                 <use href="#smiling-face"></use>
               </svg>
             </template>

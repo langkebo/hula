@@ -23,6 +23,7 @@
               v-model:value="formData.displayName"
               :placeholder="t('setting.account.nickname_placeholder')"
               :maxlength="50"
+              :disabled="displayNameSaving"
               @blur="handleDisplayNameChange" />
           </n-form-item>
 
@@ -122,7 +123,7 @@
 
     <div class="settings-section danger-zone" data-settings-anchor="account-danger">
       <h3 class="section-title">{{ t('setting.account.danger_zone') }}</h3>
-      <n-button type="error" @click="handleDeactivateAccount">{{ t('setting.account.deactivate_account') }}</n-button>
+      <n-button type="error" @click="confirmDeactivateAccount">{{ t('setting.account.deactivate_account') }}</n-button>
     </div>
 
     <AvatarCropper v-model:show="showCropper" :image-url="localImageUrl" @crop="handleCrop" ref="cropperRef" />
@@ -132,7 +133,7 @@
 <script setup lang="ts">
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
-import { NAvatar, NButton, NCheckbox, NDivider, NForm, NFormItem, NInput, NSelect, useDialog } from 'naive-ui'
+import { NAvatar, NButton, NCheckbox, NDivider, NForm, NFormItem, NInput, NSelect } from 'naive-ui'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import defaultAvatarImg from '@/assets/img/win.png'
@@ -143,6 +144,7 @@ import AvatarCropper from '@/components/common/AvatarCropper.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingsTabDirty } from '@/composables/settings/useSettingsDirtyRegistry'
 import { useAccount } from '@/composables/user/useAccount'
+import { useAccountDeactivation } from '@/composables/user/useAccountDeactivation'
 import { SexEnum } from '@/enums'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
@@ -162,14 +164,15 @@ defineOptions({
 })
 
 const { showFeedback } = useActionFeedback()
-const dialog = useDialog()
 const { t } = useI18n()
-const { changePassword, deactivateAccount } = useAccount()
+const { confirmDeactivateAccount } = useAccountDeactivation()
+const { changePassword } = useAccount()
 const userStore = useUserStore()
 const matrixStore = useMatrixStore()
 const { hasUnstable } = useServerCapability()
 
 const passwordLoading = ref(false)
+const displayNameSaving = ref(false)
 const avatarUploading = ref(false)
 const showCropper = ref(false)
 const localImageUrl = ref('')
@@ -296,9 +299,7 @@ async function handleCrop(blob: Blob) {
     const fileName = `avatar_${Date.now()}.${ext}`
     const file = new File([blob], fileName, { type: mimeType })
 
-    const uploadResult = await matrixMediaService.uploadImage(file, (progress) => {
-      logger.debug(`Avatar upload progress: ${progress}%`)
-    })
+    const uploadResult = await matrixMediaService.uploadImage(file)
 
     const mxcUrl = uploadResult.contentUri
 
@@ -325,14 +326,19 @@ async function handleCrop(blob: Blob) {
 }
 
 async function handleDisplayNameChange() {
+  // 保存期间禁用输入并拦截重复触发，避免 blur 连发造成并发写
+  if (displayNameSaving.value) return
   if (formData.displayName === userStore.currentUserDisplayName) return
 
+  displayNameSaving.value = true
   try {
     await matrixAccountService.updateDisplayName(formData.displayName)
     showFeedback(t('setting.account.nickname_updated'), 'success')
   } catch (error) {
     showFeedback(t('setting.account.nickname_update_failed'), 'error')
     formData.displayName = userStore.currentUserDisplayName || ''
+  } finally {
+    displayNameSaving.value = false
   }
 }
 
@@ -449,23 +455,6 @@ async function handlePasswordChange() {
   } finally {
     passwordLoading.value = false
   }
-}
-
-function handleDeactivateAccount() {
-  dialog.warning({
-    title: t('setting.account.deactivate_confirm_title'),
-    content: t('setting.account.deactivate_confirm_content'),
-    positiveText: t('setting.common.confirm'),
-    negativeText: t('setting.common.cancel'),
-    onPositiveClick: async () => {
-      try {
-        await deactivateAccount()
-        showFeedback(t('setting.account.deactivate_success'), 'success')
-      } catch (error) {
-        showFeedback(t('setting.account.deactivate_failed'), 'error')
-      }
-    }
-  })
 }
 
 onMounted(async () => {

@@ -22,7 +22,8 @@
           <svg
             @click="handleVoiceClick"
             :class="isVoicePanelActive ? 'text-[--tjg-color-primary-500]' : ''"
-            class="w-25px h-25px mt-2px outline-none">
+            class="w-25px h-25px mt-2px outline-none"
+            aria-hidden="true">
             <use href="#voice"></use>
           </svg>
         </div>
@@ -133,6 +134,7 @@ import type { ReplyToInfo } from '@/components/rightBox/ReplyComposer.vue'
 import ReplyComposer from '@/components/rightBox/ReplyComposer.vue'
 import { useDelayedMessageEntry } from '@/composables/chat/useDelayedMessageEntry'
 import { useMsgInput } from '@/composables/chat/useMsgInput'
+import { useMsgInputDraft } from '@/composables/chat/useMsgInputDraft'
 import { useMsgInputLocationShare } from '@/composables/chat/useMsgInputLocationShare'
 import { useMsgInputMobilePanels } from '@/composables/chat/useMsgInputMobilePanels'
 import { useMsgInputSendEntry } from '@/composables/chat/useMsgInputSendEntry'
@@ -143,7 +145,9 @@ import { useSendOptions } from '@/composables/settings/settingsOptions'
 import { MittEnum, type MobilePanelStateEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import type { UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
+import { escapeHtml } from '@/utils/escapeHtml'
 import MsgInputMobileControls from './MsgInputMobileControls.vue'
 import MsgInputToolbar from './MsgInputToolbar.vue'
 import MsgInputAICommandPanel from './msg-input/MsgInputAICommandPanel.vue'
@@ -219,6 +223,24 @@ const {
   scheduleDelayedMessage,
   delayedMessages
 } = useMsgInput(messageInputDom)
+
+// ===== 会话草稿本地持久化（按账号 + 房间）=====
+const userStore = useUserStore()
+const draftAccountId = computed(() => userStore.userInfo?.uid ?? '')
+const applyDraftToEditor = (text: string) => {
+  // 草稿只保存纯文本，回填时转义后再还原换行，避免把本地存储内容当 HTML 执行
+  const html = text ? escapeHtml(text).replace(/\n/g, '<br>') : ''
+  msgInput.value = html
+  if (messageInputDom.value) {
+    messageInputDom.value.innerHTML = html
+  }
+}
+useMsgInputDraft({
+  roomId: currentSessionRoomId,
+  accountId: draftAccountId,
+  msgInput,
+  applyDraft: applyDraftToEditor
+})
 
 // ===== 私有模式（接收外部状态广播）=====
 const privateModeActive = ref(false)
@@ -356,8 +378,7 @@ const handleBlur = () => {
 watch(activeItem, () => {
   nextTick(() => {
     if (!isMobileRef.value) {
-      const inputDiv = document.getElementById('message-input')
-      inputDiv?.focus()
+      messageInputDom.value?.focus()
       setIsFocus(true)
     }
   })
@@ -387,8 +408,7 @@ const mittCleanups: Array<() => void> = []
 onMounted(() => {
   nextTick(() => {
     if (!isMobileRef.value) {
-      const inputDiv = document.getElementById('message-input')
-      inputDiv?.focus()
+      messageInputDom.value?.focus()
       setIsFocus(true)
     }
   })

@@ -86,7 +86,6 @@ const handleOidcCallback = async () => {
       return
     }
 
-    logger.debug('Processing callback...')
     const tokenResponse = await matrixOidcService.handleCallback(code, state)
 
     if (!tokenResponse) {
@@ -105,8 +104,6 @@ const handleOidcCallback = async () => {
       errorMessage.value = t('login.oidc.matrix_token_failed')
       return
     }
-
-    logger.debug('OIDC login successful, restoring Matrix runtime session...')
 
     // 将会话绑定到发现的 homeserver
     const homeserverUrl = matrixOidcService.getHomeserverUrl()

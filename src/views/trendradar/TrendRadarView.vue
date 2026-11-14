@@ -5,7 +5,7 @@
     <!-- 顶部导航 -->
     <div class="trendradar-view__header">
       <div class="trendradar-view__header-left">
-        <svg class="trendradar-view__back" @click="handleBack">
+        <svg class="trendradar-view__back" @click="handleBack" aria-hidden="true">
           <use href="#left-arrow"></use>
         </svg>
         <h2 class="trendradar-view__title">{{ t('trendradar.title') }}</h2>
@@ -14,7 +14,7 @@
         <n-tag :type="isConnected ? 'success' : 'error'" size="small">
           {{ isConnected ? t('trendradar.connected') : t('trendradar.disconnected') }}
         </n-tag>
-        <svg class="trendradar-view__refresh" @click="handleRefresh">
+        <svg class="trendradar-view__refresh" @click="handleRefresh" aria-hidden="true">
           <use href="#refresh"></use>
         </svg>
       </div>
@@ -30,7 +30,7 @@
           class="trendradar-view__nav-item"
           :class="{ 'trendradar-view__nav-item--active': activeTab === item.key }"
           @click="activeTab = item.key">
-          <svg class="trendradar-view__nav-icon">
+          <svg class="trendradar-view__nav-icon" aria-hidden="true">
             <use :href="`#${item.icon}`"></use>
           </svg>
           <span>{{ item.label }}</span>
@@ -50,12 +50,12 @@
             <span>{{ t('trendradar.fetching') }}</span>
           </div>
           <div v-else-if="!isConnected" class="trendradar-view__error">
-            <svg class="trendradar-view__error-icon"><use href="#alert-circle"></use></svg>
+            <svg class="trendradar-view__error-icon" aria-hidden="true"><use href="#alert-circle"></use></svg>
             <span>{{ t('trendradar.connection_error') }}</span>
             <n-button size="small" @click="handleRetry">{{ t('trendradar.retry') }}</n-button>
           </div>
           <div v-else-if="newsList.length === 0" class="trendradar-view__empty">
-            <svg class="trendradar-view__empty-icon"><use href="#document"></use></svg>
+            <svg class="trendradar-view__empty-icon" aria-hidden="true"><use href="#document"></use></svg>
             <span>{{ t('trendradar.no_hot_news') }}</span>
             <n-button size="small" @click="loadLatestNews">{{ t('trendradar.refresh') }}</n-button>
           </div>
@@ -101,7 +101,7 @@
             <span>{{ t('trendradar.loading') }}</span>
           </div>
           <div v-else-if="rssList.length === 0" class="trendradar-view__empty">
-            <svg class="trendradar-view__empty-icon"><use href="#rss"></use></svg>
+            <svg class="trendradar-view__empty-icon" aria-hidden="true"><use href="#rss"></use></svg>
             <span>{{ t('trendradar.no_subscriptions') }}</span>
           </div>
           <div v-else class="trendradar-view__news-grid">
@@ -121,7 +121,7 @@
               size="large"
               @keyup.enter="handleAnalyze">
               <template #prefix>
-                <svg class="trendradar-view__analyze-icon"><use href="#search"></use></svg>
+                <svg class="trendradar-view__analyze-icon" aria-hidden="true"><use href="#search"></use></svg>
               </template>
             </n-input>
             <n-button type="primary" size="large" :loading="analyzeLoading" @click="handleAnalyze">
@@ -147,7 +147,7 @@
         size="large"
         @keyup.enter="handleQuickSearch">
         <template #prefix>
-          <svg class="trendradar-view__input-icon"><use href="#search"></use></svg>
+          <svg class="trendradar-view__input-icon" aria-hidden="true"><use href="#search"></use></svg>
         </template>
       </n-input>
       <n-button type="primary" size="large" @click="handleQuickSearch">{{ t('trendradar.send') }}</n-button>

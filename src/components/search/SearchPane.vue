@@ -12,7 +12,7 @@
         @update:value="handleInput"
         @keydown.esc="handleEsc">
         <template #prefix>
-          <svg class="size-16px color-[--tjg-text-tertiary]"><use href="#search" /></svg>
+          <svg class="size-16px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#search" /></svg>
         </template>
       </n-input>
       <p v-if="appliedQuery" class="search-pane__meta text-(12px --tjg-text-tertiary) mt-8px">
@@ -24,7 +24,7 @@
     <n-scrollbar class="search-pane__results flex-1 min-h-0">
       <!-- 空状态 -->
       <div v-if="!hasQuery" class="search-pane__empty flex-center flex-col gap-16px py-60px">
-        <svg class="size-48px opacity-40 color-[--tjg-text-quaternary]"><use href="#search" /></svg>
+        <svg class="size-48px opacity-40 color-[--tjg-text-quaternary]" aria-hidden="true"><use href="#search" /></svg>
         <p class="text-(13px --tjg-text-tertiary)">{{ t('search.empty_hint') }}</p>
       </div>
 
@@ -35,13 +35,13 @@
 
       <!-- 错误状态 -->
       <div v-else-if="status === 'error'" class="search-pane__error flex-center flex-col gap-12px py-60px">
-        <svg class="size-40px color-[--tjg-color-danger-500]"><use href="#warning" /></svg>
+        <svg class="size-40px color-[--tjg-color-danger-500]" aria-hidden="true"><use href="#warning" /></svg>
         <p class="text-(13px --tjg-color-danger-500)">{{ t('search.error') }}</p>
       </div>
 
       <!-- 无结果 -->
       <div v-else-if="!hasResults" class="search-pane__no-results flex-center flex-col gap-12px py-60px">
-        <svg class="size-40px opacity-40 color-[--tjg-text-quaternary]"><use href="#search" /></svg>
+        <svg class="size-40px opacity-40 color-[--tjg-text-quaternary]" aria-hidden="true"><use href="#search" /></svg>
         <p class="text-(13px --tjg-text-tertiary)">{{ t('search.no_results', { query: appliedQuery }) }}</p>
       </div>
 
@@ -99,7 +99,7 @@
                 </p>
                 <p class="search-pane__item-sub text-(12px --tjg-text-tertiary) truncate">{{ user.userId }}</p>
               </div>
-              <svg class="search-pane__item-icon size-16px color-[--tjg-text-quaternary]">
+              <svg class="search-pane__item-icon size-16px color-[--tjg-text-quaternary]" aria-hidden="true">
                 <use href="#right-bar" />
               </svg>
             </li>
@@ -133,7 +133,7 @@
                   {{ t('search.room_members', { count: room.memberCount }) }}
                 </p>
               </div>
-              <svg class="search-pane__item-icon size-16px color-[--tjg-text-quaternary]">
+              <svg class="search-pane__item-icon size-16px color-[--tjg-text-quaternary]" aria-hidden="true">
                 <use href="#right-bar" />
               </svg>
             </li>
@@ -156,7 +156,7 @@
               @click="handleMessageClick(msg)"
               @keydown.enter="handleMessageClick(msg)">
               <div class="search-pane__msg-avatar flex-center size-36px rounded-8px bg-[--tjg-surface-list-hover]">
-                <svg class="size-16px color-[--tjg-text-tertiary]"><use href="#message" /></svg>
+                <svg class="size-16px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#message" /></svg>
               </div>
               <div class="search-pane__item-info min-w-0 flex-1">
                 <p class="search-pane__item-name text-(13px --tjg-text-primary) truncate">
@@ -265,7 +265,6 @@ const executeSpaceSearch = useDebounceFn(async (rawQuery: string) => {
     const result = await matrixSpaceService.searchSpaces(trimmed, 20)
     // 检查请求是否已被取消（过期）
     if (signal.aborted || myEpoch !== spaceRequestEpoch) {
-      logger.debug(`[SearchPane] Space search request was cancelled, discarding result: "${trimmed}"`)
       return
     }
     spaces.value = result

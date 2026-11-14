@@ -1,5 +1,13 @@
 <template>
-  <div v-clickable class="chat-header-info" @click="handleClick">
+  <div
+    v-clickable
+    class="chat-header-info"
+    role="button"
+    tabindex="0"
+    :aria-label="name"
+    @click="handleClick"
+    @keydown.enter.prevent="handleClick"
+    @keydown.space.prevent="handleClick">
     <TjgAvatar class="avatar" :src="avatar" :size="44" :name="name" round :style="avatarStyle" />
 
     <div class="info-content">
@@ -116,6 +124,7 @@ const handleClick = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 8px;
@@ -123,6 +132,11 @@ const handleClick = () => {
 
   &:hover {
     background-color: color-mix(in srgb, var(--tjg-text-primary) 5%, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tjg-color-primary-500);
+    outline-offset: 2px;
   }
 }
 
@@ -141,16 +155,22 @@ const handleClick = () => {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .name {
   font-size: 16px;
   font-weight: 500;
   color: var(--tjg-text-primary);
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 200px;
+}
+
+.name-row > :deep(.n-tag) {
+  flex-shrink: 0;
 }
 
 .status-row {
@@ -183,6 +203,7 @@ const handleClick = () => {
 
 .federation-icon {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   color: var(--tjg-text-tertiary);

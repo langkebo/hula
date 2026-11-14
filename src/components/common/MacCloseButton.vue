@@ -5,7 +5,7 @@
     :class="[colorClass, $attrs.class]"
     v-bind="$attrs"
     @click="$emit('click', $event)">
-    <svg class="mac-close-button__icon hidden"><use href="#close" /></svg>
+    <svg class="mac-close-button__icon hidden" aria-hidden="true"><use href="#close" /></svg>
   </div>
 </template>
 

@@ -158,10 +158,18 @@ export const createMessageInsertMutations = (deps: MessageMutationsDeps) => {
     const isOwnMessage = msg.fromUser?.uid === userStore.userInfo?.uid
     const notificationBody = msg.message.body.content || msg.message.body.body || ''
     const isMention = msg.message.body.atUidList?.includes(userStore.userInfo?.uid ?? '') ?? false
+    // L-01：窗口聚焦、页面可见且正停留在该会话时属于前台重复打扰，不再弹系统通知。
+    const isViewingRoomInForeground =
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'visible' &&
+      document.hasFocus() &&
+      isActiveChatView &&
+      msg.message.roomId === targetRoomId
     // 唯一的系统通知分发点：统一决策门在 messageMutations 生效（提及 / 线程提及 / 关键词）。
     // 自己发送的消息永不通知，因此不进入决策门。
     const shouldSendNotification =
       !isOwnMessage &&
+      !isViewingRoomInForeground &&
       matrixNotificationService.shouldNotifyMessage({
         isMention,
         isThread: Boolean(msg.message.body.threadId),
@@ -189,7 +197,13 @@ export const createMessageInsertMutations = (deps: MessageMutationsDeps) => {
             if (!granted) {
               return
             }
-            sendNotification({ title: display.title, body: display.body })
+            // extra 携带定位信息：插件桌面端暂不回调点击事件（见 F-04 技术债），
+            // 先保证载荷完整，接入点击回调时无需再改发送侧。
+            sendNotification({
+              title: display.title,
+              body: display.body,
+              extra: { roomId: msg.message.roomId, messageId: msg.message.id }
+            })
           })
           .catch((err) => logger.warn('发送系统通知失败:', err))
       }

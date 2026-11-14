@@ -8,9 +8,26 @@
 import { MatrixContentField, MatrixRelType } from '@/common/matrixConstants'
 import { createLogger } from '@/utils/Logger'
 import { Direction, type MatrixClient, type MatrixEvent } from '../sdk'
+import { collectChildEvents } from './relationEventSource'
 import type { MessageEdit, RelationContent, RelationsResponse, ReplyChain, ThreadInfo } from './relationTypes'
 
 const logger = createLogger('RelationQueries')
+
+/** 把 `m.replace` 事件映射成编辑记录，按时间升序。 */
+export function mapEditEvents(events: MatrixEvent[]): MessageEdit[] {
+  return events
+    .map((event) => {
+      const content = event.getContent() as RelationContent
+      return {
+        eventId: event.getId()!,
+        originalContent: content,
+        newContent: (content['m.new_content'] ?? {}) as Record<string, unknown>,
+        timestamp: event.getTs(),
+        sender: event.getSender()!
+      }
+    })
+    .sort((a, b) => a.timestamp - b.timestamp)
+}
 
 /** 创建消息关系查询实例
  */
@@ -26,21 +43,7 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
       const room = client.getRoom(roomId)
       if (!room) return []
 
-      const edits: MessageEdit[] = []
-      for (const event of room.getUnfilteredTimelineSet().getLiveTimeline().getEvents()) {
-        const content = event.getContent() as RelationContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-        if (relatesTo?.rel_type === 'm.replace' && relatesTo.event_id === eventId) {
-          edits.push({
-            eventId: event.getId()!,
-            originalContent: content,
-            newContent: content['m.new_content'] ?? {},
-            timestamp: event.getTs(),
-            sender: event.getSender()!
-          })
-        }
-      }
-      return edits.sort((a, b) => a.timestamp - b.timestamp)
+      return mapEditEvents(collectChildEvents(room, eventId, 'm.replace'))
     },
 
     /** 获取最新编辑版本
@@ -52,18 +55,33 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
       if (!room) return null
 
       let latestEdit: MatrixEvent | null = null
-      let latestTimestamp = 0
-      for (const event of room.getUnfilteredTimelineSet().getLiveTimeline().getEvents()) {
-        const content = event.getContent() as RelationContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-        if (relatesTo?.rel_type === 'm.replace' && relatesTo.event_id === eventId) {
-          if (event.getTs() > latestTimestamp) {
-            latestTimestamp = event.getTs()
-            latestEdit = event
-          }
-        }
+      for (const event of collectChildEvents(room, eventId, 'm.replace')) {
+        if (!latestEdit || event.getTs() > latestEdit.getTs()) latestEdit = event
       }
       return latestEdit
+    },
+
+    /**
+     * 从服务端拉取编辑历史（`/relations/m.replace`），失败或为空回退本地查询。
+     *
+     * 为什么不能只读本地：关系容器只覆盖 sync 窗口内收到的 `m.replace`。
+     * 注意 `room.getRelations()` **不回填**容器（回填由 sync 负责），因此直接用返回值映射，
+     * 避免出现「刷新了但仍读不到」。
+     */
+    async refreshEditHistory(roomId: string, eventId: string, limit = 100): Promise<MessageEdit[]> {
+      const client = getClient()
+      if (!client) return []
+      const room = client.getRoom(roomId)
+      if (!room) return []
+
+      try {
+        const result = await room.getRelations(eventId, 'm.replace', 'm.room.message', { limit })
+        const events = result?.events ?? []
+        if (events.length) return mapEditEvents(events)
+      } catch (err) {
+        logger.warn(`[MessageRelation] 服务端刷新编辑历史失败，回退本地: ${eventId} ${String(err)}`)
+      }
+      return this.getEditHistory(roomId, eventId)
     },
 
     // ── 回复链 & 线程 ──
@@ -104,15 +122,7 @@ export function createRelationQueries(getClient: () => MatrixClient | null) {
       const room = client.getRoom(roomId)
       if (!room) return []
 
-      const replies: MatrixEvent[] = []
-      for (const event of room.getUnfilteredTimelineSet().getLiveTimeline().getEvents()) {
-        const content = event.getContent() as RelationContent
-        const relatesTo = content[MatrixContentField.RELATES_TO]
-        if (relatesTo?.rel_type === MatrixRelType.THREAD && relatesTo.event_id === threadRootId) {
-          replies.push(event)
-        }
-      }
-      return replies.sort((a, b) => a.getTs() - b.getTs())
+      return collectChildEvents(room, threadRootId, MatrixRelType.THREAD).sort((a, b) => a.getTs() - b.getTs())
     },
 
     /** 获取话题信息

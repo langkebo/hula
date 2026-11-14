@@ -44,7 +44,7 @@ const useItemsBottom = () =>
 const useMoreList = () => {
   const { t } = useI18nGlobal()
   const { showFeedback } = useActionFeedback()
-  const { createWebviewWindow } = useWindow()
+  const { createWebviewWindow, openSettingsWindow } = useWindow()
   const { logout } = useLoginFlow()
   const router = useRouter()
   const showHomeserverDialog = ref(false)
@@ -53,14 +53,9 @@ const useMoreList = () => {
     showHomeserverDialog.value = true
   }
 
-  const handleHomeserverSave = (endpoint: { homeserverUrl: string; identityServerUrl: string }) => {
-    logger.debug('Homeserver saved:', endpoint)
-  }
-
   return {
     showHomeserverDialog,
     openHomeserverDialog,
-    handleHomeserverSave,
     moreList: computed<OPT.L.MoreList[]>(() => {
       const adminStore = useAdminStore()
       const items: OPT.L.MoreList[] = [
@@ -86,9 +81,8 @@ const useMoreList = () => {
           label: t('menu.check_update'),
           icon: 'arrow-circle-up',
           click: () => {
-            useMitt.emit(MittEnum.LEFT_MODAL_SHOW, {
-              type: ModalEnum.CHECK_UPDATE
-            })
+            // 本版本未配置更新源，如实告知，避免调用必然失败的 updater.check()
+            showFeedback(t('message.check_update.not_configured'), 'info')
           }
         },
         {
@@ -103,8 +97,12 @@ const useMoreList = () => {
         {
           label: t('menu.settings'),
           icon: 'settings',
-          click: () => {
-            router.push('/settings')
+          click: async () => {
+            // 桌面端优先独立设置窗口；无法创建原生窗口时回退为窗口内路由跳转
+            const openedInWindow = await openSettingsWindow()
+            if (!openedInWindow) {
+              await router.push('/settings')
+            }
           }
         },
         {
@@ -165,69 +163,6 @@ const basePluginsList: Array<Omit<STO.Plugins<PluginEnum>, 'title' | 'shortTitle
     progress: 0,
     miniShow: false
   }
-  // {
-  //   icon: 'Music',
-  //   url: 'music',
-  //   title: 'HuLa云音乐',
-  //   shortTitle: '云音乐',
-  //   tip: 'HuLa云音乐开发中，敬请期待',
-  //   state: PluginEnum.NOT_INSTALLED,
-  //   version: 'v1.0.0-Alpha',
-  //   isAdd: false,
-  //   dot: true,
-  //   progress: 0,
-  //   size: {
-  //     minWidth: 780,
-  //     width: 980,
-  //     height: 800
-  //   },
-  //   window: {
-  //     resizable: true
-  //   },
-  //   miniShow: false
-  // },
-  // {
-  //   icon: 'UimSlack',
-  //   url: 'collaboration',
-  //   title: 'HuLa协作',
-  //   shortTitle: '协作',
-  //   tip: 'HuLa协作开发中，敬请期待',
-  //   state: PluginEnum.NOT_INSTALLED,
-  //   version: 'v1.0.0-Alpha',
-  //   isAdd: false,
-  //   dot: true,
-  //   progress: 0,
-  //   size: {
-  //     minWidth: 780,
-  //     width: 980,
-  //     height: 800
-  //   },
-  //   window: {
-  //     resizable: true
-  //   },
-  //   miniShow: false
-  // },
-  // {
-  //   icon: 'vigo',
-  //   url: 'collaboration',
-  //   title: 'HuLa短视频',
-  //   shortTitle: '短视频',
-  //   tip: 'HuLa短视频开发中，敬请期待',
-  //   state: PluginEnum.NOT_INSTALLED,
-  //   version: 'v1.0.0-Alpha',
-  //   isAdd: false,
-  //   dot: true,
-  //   progress: 0,
-  //   size: {
-  //     minWidth: 780,
-  //     width: 980,
-  //     height: 800
-  //   },
-  //   window: {
-  //     resizable: true
-  //   },
-  //   miniShow: false
-  // }
 ]
 
 const usePluginsList = () =>

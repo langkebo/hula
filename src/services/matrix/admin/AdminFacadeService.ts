@@ -230,7 +230,7 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
     limit = LARGE_PAGE_LIMIT,
     from?: string,
     guests?: boolean
-  ): Promise<{ users: UserInfo[]; nextToken?: string | undefined }> {
+  ): Promise<{ users: UserInfo[]; nextToken?: string | undefined; failed?: boolean }> {
     return this.users.getUsers(limit, from, guests)
   }
 
@@ -310,7 +310,7 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
     limit = LARGE_PAGE_LIMIT,
     from?: string,
     searchTerm?: string
-  ): Promise<{ rooms: RoomInfo[]; nextToken?: string | undefined }> {
+  ): Promise<{ rooms: RoomInfo[]; nextToken?: string | undefined; failed?: boolean }> {
     return this.rooms.getRooms(limit, from, searchTerm)
   }
 

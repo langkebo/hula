@@ -63,7 +63,11 @@ export interface MessageStrategy {
     options?: { provider?: UploadProviderEnum }
   ) => Promise<{ uploadUrl: string; downloadUrl: string; config?: Record<string, unknown> }>
   doUploadThumbnail?: (thumbnailFile: File, uploadUrl: string, options?: UploadOptions) => Promise<string | void>
-  getUploadProgress?: () => { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void }
+  getUploadProgress?: () => {
+    progress: Ref<number>
+    /** 返回取消监听函数，避免上传多次后监听器累积 */
+    onChange: (callback: (progress: number) => void) => () => void
+  }
   /** 返回该消息类型在给定上下文下可见的菜单动作列表 */
   getAllowedActions?: (context: MessageActionContext) => MessageAction[]
 }

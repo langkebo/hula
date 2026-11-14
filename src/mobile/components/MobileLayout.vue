@@ -38,10 +38,8 @@ import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { createLogger } from '@/utils/Logger'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
-const logger = createLogger('MobileLayout')
 interface MobileLayoutProps {
   /** 是否应用顶部安全区域 */
   safeAreaTop?: boolean
@@ -179,7 +177,6 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
   if (chatStore.checkMsgExist(data.message.roomId, data.message.id)) {
     return
   }
-  logger.debug('[mobile/layout] Received message:', data)
   // 只有在聊天室页面且当前选中的会话就是消息来源的会话时，才不增加未读数
   chatStore.pushMsg(data, {
     isActiveChatView:

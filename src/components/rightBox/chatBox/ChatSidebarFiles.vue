@@ -25,7 +25,7 @@
     <div class="flex-1 flex items-center justify-center">
       <n-empty :description="t('home.chat_sidebar.empty.files')">
         <template #icon>
-          <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
+          <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]" aria-hidden="true">
             <use href="#folder"></use>
           </svg>
         </template>

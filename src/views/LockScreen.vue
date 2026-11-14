@@ -18,7 +18,7 @@
           </n-flex>
 
           <n-flex vertical justify="center" align="center" :size="20" class="tips">
-            <svg><use href="#search"></use></svg>
+            <svg aria-hidden="true"><use href="#search"></use></svg>
             <p class="text-(16px [--tjg-text-secondary]) text-center leading-24px">
               {{ t('message.lock_screen.tip_description') }}
             </p>
@@ -62,7 +62,8 @@
                 <template #trigger>
                   <svg
                     @click.stop="unlock"
-                    class="size-16px text-[--tjg-text-secondary] mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-in-out hover:bg-[--tjg-color-primary-600]">
+                    class="size-16px text-[--tjg-text-secondary] mr-6px p-[4px_6px] rounded-8px cursor-pointer transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-in-out hover:bg-[--tjg-color-primary-600]"
+                    aria-hidden="true">
                     <use href="#arrow-right"></use>
                   </svg>
                 </template>
@@ -96,7 +97,6 @@
           class="options text-(14px [--tjg-text-secondary])">
           <p @click="isUnlockPage = false">{{ t('message.lock_screen.return_action') }}</p>
           <p @click="logout">{{ t('message.lock_screen.logout_action') }}</p>
-          <p>{{ t('message.lock_screen.forgot_password') }}</p>
           <p @click="unlock">{{ t('message.lock_screen.enter_system_action') }}</p>
         </n-flex>
       </n-flex>

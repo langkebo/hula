@@ -40,7 +40,7 @@ export class AdminUserService {
     limit = LARGE_PAGE_LIMIT,
     from?: string,
     guests?: boolean
-  ): Promise<{ users: UserInfo[]; nextToken?: string | undefined }> {
+  ): Promise<{ users: UserInfo[]; nextToken?: string | undefined; failed?: boolean }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getUsersPaginated({ limit, ...(from !== undefined ? { from } : {}) })
@@ -49,9 +49,10 @@ export class AdminUserService {
         typeof guests === 'boolean' ? users.filter((user) => Boolean(user.isGuest) === guests) : users
       return { users: filteredUsers, nextToken: result?.nextToken }
     } catch (err) {
-      if (this.isPermissionDenied(err)) return { users: [] }
+      // failed 用于让调用方区分「请求失败」与「确实为空」，避免把错误伪装成空列表
+      if (this.isPermissionDenied(err)) return { users: [], failed: true }
       logger.error(`[Admin] 获取用户列表失败: ${err}`)
-      return { users: [] }
+      return { users: [], failed: true }
     }
   }
 

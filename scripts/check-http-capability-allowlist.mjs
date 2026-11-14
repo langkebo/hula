@@ -56,6 +56,9 @@ export const ENV_FILE_CANDIDATES = ['.env.local', '.env', '.env.example']
 
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
 
+/** `allow` 中的通配 host（`https://*`）表示放行任意 host —— 桌面端 homeserver 可在登录时改，无法穷举 */
+const WILDCARD_HOSTS = new Set(['*', '**'])
+
 /** 从 `scheme://host[:port][/path]` 形式的 url 模式中取 scheme + host（端口/路径通配不影响判定） */
 export function splitHostPattern(pattern) {
   const match = /^([a-z][a-z0-9+.-]*):\/\/([^/:?#]+)/i.exec(String(pattern ?? '').trim())
@@ -132,11 +135,12 @@ function isLoopbackHost(host) {
   return LOOPBACK_HOSTS.has(host) || host.startsWith('127.')
 }
 
-/** allow 条目是否覆盖给定 scheme+host（端口/路径通配均视为覆盖） */
+/** allow 条目是否覆盖给定 scheme+host（通配 host / 端口 / 路径均视为覆盖） */
 export function coversHost(entries, scheme, host) {
   return entries.some((entry) => {
     const parsed = splitHostPattern(entry)
-    return parsed !== null && parsed.scheme === scheme && parsed.host === host
+    if (parsed === null || parsed.scheme !== scheme) return false
+    return WILDCARD_HOSTS.has(parsed.host) || parsed.host === host
   })
 }
 
@@ -336,6 +340,77 @@ export function evaluateHttpTransportHardening({ cargoToml, tauriConf } = {}) {
   return { ok: problems.length === 0, problems, frameSrc, httpFeatures: httpFeatures ?? [] }
 }
 
+/** 需要保持 CSP 一致的桌面端配置（base + 三平台覆盖 + dev 覆盖） */
+export const DESKTOP_TAURI_CONF_FILES = [
+  'src-tauri/tauri.conf.json',
+  'src-tauri/tauri.windows.conf.json',
+  'src-tauri/tauri.macos.conf.json',
+  'src-tauri/tauri.linux.conf.json',
+  'src-tauri/tauri.dev.conf.json'
+]
+
+/**
+ * 桌面 CSP `connect-src` 必须包含的来源。
+ *
+ * - `https:` / `wss:` / `http:` / `ws:`：homeserver 可在登录时改（`saveMatrixHomeserverUrl`），
+ *   构建期无法穷举 host，只能按 scheme 放行；自建 http 内网 homeserver 亦需 `http:`。
+ * - `http://ipc.localhost`：Tauri 在 Windows/Linux 的 IPC 通道，缺失会导致 invoke 失败。
+ * - `https://api.iconify.design`：平台覆盖曾漏配该图标源，导致统一图标加载失败。
+ */
+export const REQUIRED_CONNECT_SRC_SOURCES = ['https:', 'wss:', 'http:', 'ws:', 'ipc:', 'http://ipc.localhost', 'https://api.iconify.design']
+
+function connectSrcTestHosts(sources) {
+  const hosts = []
+  for (const source of sources) {
+    const match = /^(?:https?|wss?):\/\/([^/:]+)/i.exec(source)
+    if (match !== null && match[1].toLowerCase().endsWith('.test')) hosts.push(match[1].toLowerCase())
+  }
+  return [...new Set(hosts)].sort()
+}
+
+/**
+ * 纯函数判据：桌面四份 CSP 必须口径一致，且 connect-src 不再硬编码某个 homeserver。
+ *
+ * @param {{ cspEntries?: Record<string, string> }} input
+ * @returns {{ ok: boolean, problems: string[], hardcodedTestHosts: string[] }}
+ */
+export function evaluateDesktopCspConsistency({ cspEntries } = {}) {
+  const problems = []
+  const entries = Object.entries(cspEntries ?? {})
+  if (entries.length < 8) {
+    problems.push(`基数断言失败：只读到 ${entries.length} 份桌面 CSP（期望 8 = base 1 + 三平台 csp/devCsp 6 + dev 1）`)
+  }
+
+  const hardcodedTestHosts = new Set()
+  for (const [label, csp] of entries) {
+    const directives = parseCspDirectives(csp)
+    const connectSrc = directives.get('connect-src') ?? []
+    if (connectSrc.length === 0) {
+      problems.push(`${label} 缺少 connect-src 指令`)
+    } else {
+      for (const source of REQUIRED_CONNECT_SRC_SOURCES) {
+        if (!connectSrc.includes(source)) {
+          problems.push(`${label} 的 connect-src 缺少 ${source}（自建 homeserver / IPC / 图标源会被拦截）`)
+        }
+      }
+      for (const host of connectSrcTestHosts(connectSrc)) hardcodedTestHosts.add(host)
+    }
+
+    const frameSrc = (directives.get('frame-src') ?? []).join(' ')
+    if (frameSrc !== REQUIRED_FRAME_SRC) {
+      problems.push(`${label} 的 frame-src 必须为 ${REQUIRED_FRAME_SRC}，当前为 ${frameSrc || '(缺失)'}`)
+    }
+  }
+
+  for (const host of hardcodedTestHosts) {
+    problems.push(
+      `CSP connect-src 仍硬编码 dev homeserver ${host}；请改用 scheme 级来源（https: / wss:），否则换 homeserver 即被拦截`
+    )
+  }
+
+  return { ok: problems.length === 0, problems, hardcodedTestHosts: [...hardcodedTestHosts].sort() }
+}
+
 function loadCapabilityAllowLists(projectDir, readFile = (p) => readFileSync(p, 'utf8')) {
   const allowLists = {}
   for (const rel of CAPABILITY_FILES) {
@@ -348,6 +423,19 @@ function loadCapabilityAllowLists(projectDir, readFile = (p) => readFileSync(p, 
   return allowLists
 }
 
+/** 读取桌面各份 tauri 配置的 `csp` / `devCsp`（平台覆盖会整体替换 base 的 csp，必须逐份校验） */
+function loadDesktopCspEntries(projectDir, readFile = (p) => readFileSync(p, 'utf8')) {
+  const cspEntries = {}
+  for (const rel of DESKTOP_TAURI_CONF_FILES) {
+    const abs = path.join(projectDir, rel)
+    if (!existsSync(abs)) continue
+    const security = JSON.parse(readFile(abs))?.app?.security ?? {}
+    if (typeof security.csp === 'string' && security.csp.length > 0) cspEntries[`${rel}#csp`] = security.csp
+    if (typeof security.devCsp === 'string' && security.devCsp.length > 0) cspEntries[`${rel}#devCsp`] = security.devCsp
+  }
+  return cspEntries
+}
+
 async function main() {
   const jsonOutput = process.argv.includes('--json')
 
@@ -355,8 +443,10 @@ async function main() {
   let homeserver
   let sanctionedTestHosts
   let hardening
+  let cspEntries
   try {
     allowLists = loadCapabilityAllowLists(projectRoot)
+    cspEntries = loadDesktopCspEntries(projectRoot)
     homeserver = resolveHomeserver(projectRoot)
     const envExampleFile = path.join(projectRoot, '.env.example')
     sanctionedTestHosts = collectSanctionedDevHomeserverHosts(
@@ -382,13 +472,21 @@ async function main() {
     homeserverSource: homeserver.source,
     sanctionedTestHosts
   })
-  result.problems.push(...hardening.problems)
+  const cspConsistency = evaluateDesktopCspConsistency({ cspEntries })
+  result.problems.push(...hardening.problems, ...cspConsistency.problems)
   result.ok = result.problems.length === 0
 
   if (jsonOutput) {
     process.stdout.write(
       `${JSON.stringify(
-        { ...result, files: Object.keys(allowLists), homeserverSource: homeserver.source, hardening },
+        {
+          ...result,
+          files: Object.keys(allowLists),
+          cspFiles: Object.keys(cspEntries),
+          homeserverSource: homeserver.source,
+          hardening,
+          cspConsistency
+        },
         null,
         2
       )}\n`
@@ -397,10 +495,13 @@ async function main() {
     console.log(
       `[http-allowlist] OK — ${Object.keys(allowLists).length} 份 capability 一致；` +
         `homeserver=${result.homeserver.url ?? '(未配置)'} (${homeserver.source ?? 'n/a'}) 已覆盖；` +
+        `${Object.keys(cspEntries).length} 份桌面 CSP 均为 scheme 级放行且含 IPC/图标源；` +
         `frame-src=${hardening.frameSrc.join(' | ')}；http features=[${hardening.httpFeatures.join(', ')}]`
     )
   } else {
-    console.error('[http-allowlist] FAIL — 网络出网面配置不合规（capability allow / CSP frame-src / http feature）:')
+    console.error(
+      '[http-allowlist] FAIL — 网络出网面配置不合规（capability allow / CSP connect-src / CSP frame-src / http feature）:'
+    )
     for (const problem of result.problems) console.error(`  - ${problem}`)
     console.error('  see docs/TJG-安全纵深专项方案-2026-10-12.md 附录 C')
   }

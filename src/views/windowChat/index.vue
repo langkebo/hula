@@ -23,7 +23,7 @@
         class="window-chat-container__state"
         data-test="window-chat-no-session">
         <n-icon size="28" color="var(--tjg-text-tertiary)">
-          <svg><use href="#warning" /></svg>
+          <svg aria-hidden="true"><use href="#warning" /></svg>
         </n-icon>
         <p class="window-chat-container__state-text">{{ t('matrix_error.common.user_not_logged_in') }}</p>
       </div>

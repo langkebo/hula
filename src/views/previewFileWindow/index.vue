@@ -141,7 +141,6 @@ const updateFile = async (absolutePath: string, exists: boolean) => {
       uiData.fileBuffer = buffer
 
       uiData.fileLoading = true
-      logger.debug('Local file updated', file.file.size, uiData.file.size)
     } else {
       uiData.fileLoading = true
     }
@@ -162,7 +161,6 @@ onMounted(async () => {
   await addListener(
     listen<{ payload: PayloadData }>(`${label}:update`, (event) => {
       const payload: PayloadData = event.payload.payload
-      logger.debug('Payload updated:', payload)
 
       merge(uiData.payload, payload)
 
@@ -173,7 +171,6 @@ onMounted(async () => {
 
   try {
     const payload = await getWindowPayload<PayloadData>(label)
-    logger.debug('Payload received:', payload)
 
     merge(uiData.payload, payload)
 

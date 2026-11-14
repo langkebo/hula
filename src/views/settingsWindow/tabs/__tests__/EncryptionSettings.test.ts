@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EncryptionSettings from '../EncryptionSettings.vue'
+import KeyBackupSection from '../sections/KeyBackupSection.vue'
 
 const translationMap: Record<string, string> = {
   'setting.encryption.key_section': '加密密钥',
@@ -62,6 +63,14 @@ const translationMap: Record<string, string> = {
   'setting.encryption.disabled': '未启用',
   'setting.encryption.enable_required': '请先启用加密功能',
   'setting.encryption.backup_disabled_feedback': '已禁用安全备份',
+  'setting.encryption.backup_disable_title': '关闭安全备份',
+  'setting.encryption.backup_disable_confirm': '关闭后将删除服务器上的备份版本，旧密钥将无法恢复',
+  'setting.encryption.backup_disable_unavailable': '未找到可关闭的备份版本',
+  'setting.encryption.backup_disable_failed': '关闭安全备份失败，请稍后重试',
+  'setting.encryption.load_failed': '加载加密信息失败，请重试',
+  'common.retry': '重试',
+  'common.confirm': '确认',
+  'common.cancel': '取消',
   'setting.encryption.backup_created': '备份创建成功',
   'setting.encryption.restore_success': '密钥恢复成功',
   'setting.encryption.verify_success': '设备验证成功',
@@ -91,7 +100,10 @@ const {
   loggerErrorMock,
   writeTextMock,
   capabilityState,
-  isDehydratedSupportedMock
+  isDehydratedSupportedMock,
+  getDevicesMock,
+  deleteKeyBackupVersionMock,
+  dialogWarningMock
 } = vi.hoisted(() => ({
   getCurrentSessionContextMock: vi.fn(),
   getCurrentDeviceFingerprintMock: vi.fn(),
@@ -142,7 +154,10 @@ const {
     loaded: false,
     e2ee: true
   },
-  isDehydratedSupportedMock: vi.fn(() => true)
+  isDehydratedSupportedMock: vi.fn(() => true),
+  getDevicesMock: vi.fn(),
+  deleteKeyBackupVersionMock: vi.fn(async () => undefined),
+  dialogWarningMock: vi.fn()
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -180,10 +195,17 @@ vi.mock('@/composables/encryption/useEncryption', () => ({
 vi.mock('@/services/matrix/user/MatrixDeviceService', () => ({
   matrixDeviceService: {
     getCurrentDeviceId: () => 'DEVICE123',
-    getDevices: async () => [
-      { device_id: 'DEVICE123', display_name: 'Desktop', last_seen_ts: 1 },
-      { device_id: 'OTHER_DEVICE', display_name: 'Phone', last_seen_ts: 2 }
-    ]
+    getDevices: () => getDevicesMock(),
+    // 加密页内嵌的 RoomKeyRequestsSection 挂载即拉取；不提供会让 onMounted 抛出未处理拒绝
+    getRoomKeyRequests: async () => [],
+    fulfillRoomKeyRequest: async () => true
+  }
+}))
+
+// 关闭安全备份走真实服务调用（U-05：不再是 no-op），这里只验证调用与状态刷新
+vi.mock('@/services/matrix/crypto/MatrixKeyBackupService', () => ({
+  matrixKeyBackupService: {
+    deleteKeyBackupVersion: deleteKeyBackupVersionMock
   }
 }))
 
@@ -330,6 +352,9 @@ vi.mock('naive-ui', async () => {
     useMessage: () => ({
       success: messageSuccessMock,
       warning: messageWarningMock
+    }),
+    useDialog: () => ({
+      warning: dialogWarningMock
     })
   }
 })
@@ -489,9 +514,16 @@ describe('EncryptionSettings', () => {
     capabilityState.loaded = false
     capabilityState.e2ee = true
     isDehydratedSupportedMock.mockReturnValue(true)
+    getDevicesMock.mockResolvedValue([
+      { device_id: 'DEVICE123', display_name: 'Desktop', last_seen_ts: 1 },
+      { device_id: 'OTHER_DEVICE', display_name: 'Phone', last_seen_ts: 2 }
+    ])
+    deleteKeyBackupVersionMock.mockResolvedValue(undefined)
   })
 
   const mountComponent = () => mount(EncryptionSettings)
+  const getBackupSection = (wrapper: ReturnType<typeof mountComponent>) =>
+    wrapper.findComponent(KeyBackupSection).vm as any
 
   it('加载加密信息并展示设备状态', async () => {
     const wrapper = mountComponent()
@@ -517,8 +549,8 @@ describe('EncryptionSettings', () => {
 
     await flushPromises()
 
-    ;(wrapper.vm as any).handleCreateBackup()
-    ;(wrapper.vm as any).handleRestoreBackup()
+    getBackupSection(wrapper).showBackupDialog = true
+    getBackupSection(wrapper).showRestoreDialog = true
     ;(wrapper.vm as any).handleVerifyDevice()
     ;(wrapper.vm as any).openVerifyDialog('qr_show')
     await wrapper.get('[data-test="backup-success"]').trigger('click')
@@ -577,7 +609,7 @@ describe('EncryptionSettings', () => {
     expect(localStorage.getItem('tjg-backup-enabled')).toBeNull()
   })
 
-  it('关闭备份开关保持显示的备份状态不变且不写存储', async () => {
+  it('关闭备份开关先二次确认，确认后删除服务器备份版本', async () => {
     const wrapper = mountComponent()
     await flushPromises()
 
@@ -586,10 +618,34 @@ describe('EncryptionSettings', () => {
     await wrapper.get('[data-test="backup-switch"]').trigger('click')
     await flushPromises()
 
+    // 未确认前不删除、界面状态不变
     expect(wrapper.get('[data-test="backup-switch"]').attributes('data-value')).toBe('true')
-    expect((wrapper.vm as any).backupEnabled).toBe(true)
-    expect(messageWarningMock).toHaveBeenCalledWith('已禁用安全备份')
+    expect(deleteKeyBackupVersionMock).not.toHaveBeenCalled()
+    expect(dialogWarningMock).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '关闭安全备份', content: '关闭后将删除服务器上的备份版本，旧密钥将无法恢复' })
+    )
+
+    const options = dialogWarningMock.mock.calls[0][0] as { onPositiveClick: () => Promise<void> }
+    await options.onPositiveClick()
+    await flushPromises()
+
+    expect(deleteKeyBackupVersionMock).toHaveBeenCalledWith('2')
+    expect(messageSuccessMock).toHaveBeenCalledWith('已禁用安全备份')
     expect(localStorage.getItem('tjg-backup-enabled')).toBeNull()
+  })
+
+  it('关闭备份开关但服务器上没有版本时给出提示且不调用删除', async () => {
+    encryptionStoreState.backupVersion = ''
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    await wrapper.get('[data-test="backup-switch"]').trigger('click')
+    await flushPromises()
+
+    expect(messageWarningMock).toHaveBeenCalledWith('未找到可关闭的备份版本')
+    expect(dialogWarningMock).not.toHaveBeenCalled()
+    expect(deleteKeyBackupVersionMock).not.toHaveBeenCalled()
   })
 
   it('打开备份开关进入备份设置向导', async () => {
@@ -603,7 +659,7 @@ describe('EncryptionSettings', () => {
     await wrapper.get('[data-test="backup-switch"]').trigger('click')
     await flushPromises()
 
-    expect((wrapper.vm as any).showBackupDialog).toBe(true)
+    expect(getBackupSection(wrapper).showBackupDialog).toBe(true)
     expect(messageWarningMock).not.toHaveBeenCalledWith('已禁用安全备份')
   })
 
@@ -620,7 +676,7 @@ describe('EncryptionSettings', () => {
     const wrapper = mountComponent()
 
     await flushPromises()
-    ;(wrapper.vm as any).handleBackupToggle(true)
+    getBackupSection(wrapper).handleBackupToggle(true)
     ;(wrapper.vm as any).handleShowDeviceKey()
     await flushPromises()
 
@@ -630,13 +686,28 @@ describe('EncryptionSettings', () => {
     expect((wrapper.vm as any).deviceFingerprint).toContain('XXXX')
   })
 
-  it('在加载失败时记录错误', async () => {
+  it('设备详情加载失败时记录错误但不阻塞页面', async () => {
     getPendingVerificationsMock.mockRejectedValueOnce(new Error('load failed'))
 
-    mountComponent()
+    const wrapper = mountComponent()
     await flushPromises()
 
     expect(loggerErrorMock).toHaveBeenCalled()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('设备列表加载失败时展示可重试的错误横幅', async () => {
+    getDevicesMock.mockRejectedValueOnce(new Error('devices failed'))
+
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('加载加密信息失败，请重试')
+
+    await wrapper.get('[role="alert"] button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
   it('在轮换弹窗更新后刷新轮换状态', async () => {

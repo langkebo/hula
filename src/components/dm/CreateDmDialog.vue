@@ -9,7 +9,7 @@
         @keydown.enter="handleSearch">
         <template #prefix>
           <n-icon>
-            <svg class="icon"><use href="#search" /></svg>
+            <svg class="icon" aria-hidden="true"><use href="#search" /></svg>
           </n-icon>
         </template>
       </n-input>
@@ -17,7 +17,7 @@
       <n-checkbox v-model:checked="encrypted">
         <n-flex align="center" :size="4">
           <n-icon size="16">
-            <svg><use href="#lock" /></svg>
+            <svg aria-hidden="true"><use href="#lock" /></svg>
           </n-icon>
           <span>{{ t('dm.create.encrypted') }}</span>
         </n-flex>
@@ -53,7 +53,7 @@
 
         <div v-else class="search-hint">
           <n-icon size="48" color="var(--tjg-text-quaternary)">
-            <svg><use href="#search" /></svg>
+            <svg aria-hidden="true"><use href="#search" /></svg>
           </n-icon>
           <span class="text-[length:var(--tjg-font-size-base)] text-gray-400">{{ t('dm.create.hint') }}</span>
         </div>

@@ -20,11 +20,9 @@ import router from '@/router'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
-import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 import { hasOwn } from '@/utils/webCompat'
 
-const logger = createLogger('MyLayout')
 const timerManager = useTimerManager()
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -60,7 +58,6 @@ const globalStore = useGlobalStore()
 const userStore = useUserStore()
 
 const handleScanAddFriend = async (data: ScanData) => {
-  logger.debug('QR scan intent: add friend')
   if (!hasOwn(data, 'uid')) {
     showFeedback(t('mobile_qrcode.qr_no_uid'), 'warning')
     throw new Error(`Login QR data missing uid: ${JSON.stringify(data)}`)
@@ -89,7 +86,6 @@ const handleScanAddFriend = async (data: ScanData) => {
  * 扫码进群
  */
 const handleScanEnterGroup = async (data: ScanData) => {
-  logger.debug('QR scan intent: join group', data, hasOwn(data, 'roomId'))
   if (!hasOwn(data, 'roomId')) {
     showFeedback(t('mobile_qrcode.group_qr_no_roomId'), 'warning')
     throw new Error(`Group QR data missing roomId: ${JSON.stringify(data)}`)
@@ -125,22 +121,22 @@ useMitt.on(MittEnum.QR_SCAN_EVENT, async (data: ScanData) => {
     case 'login':
       try {
         await handleScanLogin(data)
-      } catch (error) {
-        logger.debug('QR scan login failed:', error)
+      } catch {
+        // 扫码登录失败已由处理函数通过 showFeedback 提示，此处不重复上报
       }
       break
     case 'addFriend':
       try {
         await handleScanAddFriend(data)
-      } catch (error) {
-        logger.debug('QR scan add friend failed:', error)
+      } catch {
+        // 扫码加好友失败已由处理函数通过 showFeedback 提示，此处不重复上报
       }
       break
     case 'scanEnterGroup':
       try {
         await handleScanEnterGroup(data)
-      } catch (error) {
-        logger.debug('QR scan join group failed:', error)
+      } catch {
+        // 扫码进群失败已由处理函数通过 showFeedback 提示，此处不重复上报
       }
       break
     default:

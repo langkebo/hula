@@ -1,6 +1,7 @@
 /**
- * 路由集: desktop
- * 依据：只断言桌面路由 DOM（`.login-box` / `/settings` / `/message` …）；移动 dev server（5210）没有这些路由。
+ * 路由集: both
+ * 依据：桌面用例只断言桌面路由 DOM（`.login-box` / `/settings` / `/message` …），移动用例只断言
+ * `/mobile/login`；两侧用 `test.info().project.name` 互斥跳过，故本 spec 在两个路由集都要跑。
  * 校验：`tests/lint/e2e-route-sets.test.ts`（与 `e2e/specRouteSets.ts` 名单逐条比对）。
  */
 import { expect, test } from '@playwright/test'
@@ -52,8 +53,14 @@ function blocking(violations: AxeViolation[]) {
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
 }
 
+/** 项目名以 `mobile-` 开头的跑在 5210（移动路由集），其余跑在 5211（桌面路由集）。 */
+function isMobileProject() {
+  return test.info().project.name.startsWith('mobile-')
+}
+
 test.describe('a11y baseline', () => {
   test('login shell has no serious/critical violations @a11y', async ({ page }) => {
+    test.skip(isMobileProject(), '桌面路由集用例；移动登录壳见 mobile login shell 用例')
     const source = await loadAxeSource()
     test.skip(!source, 'axe-core not installed — install it in CI to enforce a11y gate')
 
@@ -83,6 +90,7 @@ test.describe('a11y baseline', () => {
    * E2E smoke suites (follow §20.3 inventory).
    */
   test('homeWindow views have no serious/critical violations @a11y', async ({ page }) => {
+    test.skip(isMobileProject(), '桌面路由集用例；移动项目没有 /home/friend')
     const source = await loadAxeSource()
     test.skip(!source, 'axe-core not installed — install it in CI to enforce a11y gate')
 
@@ -99,6 +107,7 @@ test.describe('a11y baseline', () => {
   })
 
   test('prefers-contrast: more raises text contrast on login shell @a11y', async ({ browser }) => {
+    test.skip(isMobileProject(), '桌面路由集用例；对比度 token 在桌面壳上校准')
     // §2.6.1 — 验证 prefers-contrast: more 媒体查询已落地：
     // 在高对比度模式下，正文文本颜色应比默认模式更深（浅色主题），
     // 即 RGB 亮度值更低。用 computed style 对比默认与高对比度模式。
@@ -146,5 +155,27 @@ test.describe('a11y baseline', () => {
     // 高对比度模式下 body color 应不等于默认模式（token 被覆盖）
     // body 默认继承 --tjg-text-primary，高对比度下该 token 被加深
     expect(contrastBodyColor).not.toBe(defaultBodyColor)
+  })
+
+  /**
+   * 报告 §3.2 A11Y-M — 移动登录壳基线。
+   *
+   * 此前基线只在桌面壳上校准，移动登录壳从未被扫描，导致协议勾选缺少可访问名称
+   * （`aria-toggle-field-name`）、「忘记密码」「服务协议 / 隐私指引」对比度不达标
+   * 长期无人发现。本用例把 `/mobile/login` 纳入同一道 serious/critical 门禁。
+   */
+  test('mobile login shell has no serious/critical violations @a11y', async ({ page }) => {
+    test.skip(!isMobileProject(), '移动路由集用例；桌面项目没有 /mobile/login')
+    const source = await loadAxeSource()
+    test.skip(!source, 'axe-core not installed — install it in CI to enforce a11y gate')
+
+    await page.addInitScript({ content: source })
+    await page.goto('/mobile/login')
+    await page.waitForLoadState('networkidle')
+    const violations = blocking(await runAxe(page))
+    expect(
+      violations,
+      `mobile login serious/critical a11y violations: ${violations.map((v) => `${v.id} @ ${v.nodes[0]?.target.join(' > ') ?? 'n/a'}`).join('; ')}`
+    ).toHaveLength(0)
   })
 })

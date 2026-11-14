@@ -16,7 +16,7 @@
           :title="t('home.chat_sidebar.favorites.export_md')"
           @click="handleExport('md')">
           <template #icon>
-            <svg class="size-14px color-[--tjg-text-secondary]">
+            <svg class="size-14px color-[--tjg-text-secondary]" aria-hidden="true">
               <use href="#download"></use>
             </svg>
           </template>
@@ -29,7 +29,7 @@
           :title="t('home.chat_sidebar.favorites.export_txt')"
           @click="handleExport('txt')">
           <template #icon>
-            <svg class="size-14px color-[--tjg-text-secondary]">
+            <svg class="size-14px color-[--tjg-text-secondary]" aria-hidden="true">
               <use href="#download"></use>
             </svg>
           </template>
@@ -50,7 +50,7 @@
         autoComplete="off"
         class="flex-1 bg-[--tjg-surface-search] border-none rounded-[var(--tjg-radius-md)] text-[var(--text-xs)]">
         <template #prefix>
-          <svg class="size-12px color-[--tjg-text-tertiary]">
+          <svg class="size-12px color-[--tjg-text-tertiary]" aria-hidden="true">
             <use href="#search"></use>
           </svg>
         </template>
@@ -76,7 +76,7 @@
       <div v-else class="flex-1 flex items-center justify-center h-full">
         <n-empty :description="t('home.chat_sidebar.favorites.empty')">
           <template #icon>
-            <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
+            <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]" aria-hidden="true">
               <use href="#star"></use>
             </svg>
           </template>

@@ -8,17 +8,6 @@ vi.mock('@/composables/common/useMitt', () => ({
   }
 }))
 
-const startWatchMock = vi.fn().mockResolvedValue(undefined)
-const stopWatchMock = vi.fn().mockResolvedValue(undefined)
-
-vi.mock('../useScreenshotDetection', () => ({
-  useScreenshotDetection: () => ({
-    isWatching: { value: false },
-    startWatch: startWatchMock,
-    stopWatch: stopWatchMock
-  })
-}))
-
 const getPrivateModeMock = vi.fn().mockResolvedValue(false)
 const setPrivateModeMock = vi.fn().mockResolvedValue(undefined)
 const canWriteStateEventMock = vi.fn().mockReturnValue(true)
@@ -32,7 +21,7 @@ vi.mock('@/services/matrix/room/RoomOperations', () => ({
   }
 }))
 
-describe('usePrivateMode screenshot integration', () => {
+describe('usePrivateMode', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     getPrivateModeMock.mockResolvedValue(false)
@@ -43,18 +32,16 @@ describe('usePrivateMode screenshot integration', () => {
     await setRoomId('')
   })
 
-  it('confirmPrivateMode calls startWatch when currentRoomId is set', async () => {
-    const { useScreenshotDetection } = await import('../useScreenshotDetection')
+  it('confirmPrivateMode persists enabled state for current room', async () => {
     const { usePrivateMode } = await import('../usePrivateMode')
-    const { setRoomId, confirmPrivateMode } = usePrivateMode()
+    const { setRoomId, confirmPrivateMode, privateModeActive } = usePrivateMode()
     await setRoomId('!room1:server')
     confirmPrivateMode()
-    expect(useScreenshotDetection().startWatch).toHaveBeenCalledWith('!room1:server')
+    expect(privateModeActive.value).toBe(true)
     expect(setPrivateModeMock).toHaveBeenCalledWith('!room1:server', true)
   })
 
-  it('setRoomId switching room exits private mode and stops watch', async () => {
-    const { useScreenshotDetection } = await import('../useScreenshotDetection')
+  it('setRoomId switching room exits private mode', async () => {
     const { usePrivateMode } = await import('../usePrivateMode')
     const { setRoomId, confirmPrivateMode, privateModeActive } = usePrivateMode()
     await setRoomId('!room1:server')
@@ -63,17 +50,14 @@ describe('usePrivateMode screenshot integration', () => {
 
     await setRoomId('!room2:server')
     expect(privateModeActive.value).toBe(false)
-    expect(useScreenshotDetection().stopWatch).toHaveBeenCalled()
   })
 
-  it('togglePrivateMode (exit) calls stopWatch and persists disabled', async () => {
-    const { useScreenshotDetection } = await import('../useScreenshotDetection')
+  it('togglePrivateMode (exit) persists disabled', async () => {
     const { usePrivateMode } = await import('../usePrivateMode')
     const { setRoomId, confirmPrivateMode, togglePrivateMode } = usePrivateMode()
     await setRoomId('!room1:server')
     confirmPrivateMode()
     togglePrivateMode()
-    expect(useScreenshotDetection().stopWatch).toHaveBeenCalled()
     expect(setPrivateModeMock).toHaveBeenLastCalledWith('!room1:server', false)
   })
 
@@ -83,7 +67,6 @@ describe('usePrivateMode screenshot integration', () => {
     const { setRoomId, privateModeActive } = usePrivateMode()
     await setRoomId('!room3:server')
     expect(privateModeActive.value).toBe(true)
-    expect(startWatchMock).toHaveBeenCalledWith('!room3:server')
   })
 
   it('degrades to session-only mode when user cannot write state event', async () => {

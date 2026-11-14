@@ -77,7 +77,6 @@ const isValidContent = (theme?: string): theme is ThemeEnum => theme === ThemeEn
 const applyThemeContent = (theme: ThemeEnum) => {
   globalTheme.value = theme === ThemeEnum.DARK ? darkTheme : lightTheme
   document.documentElement.dataset.theme = theme
-  logger.debug('Applied theme content', globalTheme.value)
 }
 
 const syncOsTheme = () => {

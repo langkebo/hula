@@ -241,12 +241,12 @@ export const useLoginFlow = () => {
       }
       return
     }
-
-    if (!auto && !account) {
+    if (!auto && (!account || !password)) {
       loading.value = false
-      loginDisabled.value = false
+      loginDisabled.value = !isOnline.value
       loginText.value = isOnline.value ? t('login.button.login.default') : t('login.button.login.network_error')
-      logger.info('账号信息缺失，请重新输入')
+      uiState.value = 'manual'
+      showFeedback(t(account ? 'login.input.pass.required' : 'login.input.account.required'), 'warning')
       return
     }
 

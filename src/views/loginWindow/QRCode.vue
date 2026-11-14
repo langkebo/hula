@@ -50,7 +50,8 @@
               class="size-42px animate-pulse"
               :class="
                 scanStatus.status === 'error' ? 'color-[--tjg-color-danger-500]' : 'color-[--tjg-color-primary-500]'
-              ">
+              "
+              aria-hidden="true">
               <use :href="`#${scanStatus.icon}`"></use>
             </svg>
             <span class="text-(14px [--tjg-text-quaternary])">{{ scanStatusText }}</span>

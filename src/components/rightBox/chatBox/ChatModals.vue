@@ -4,7 +4,11 @@
     <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="modalShow = false" />
 
-      <svg v-if="isWindows()" @click="modalShow = false" class="w-12px h-12px ml-a cursor-pointer select-none">
+      <svg
+        v-if="isWindows()"
+        @click="modalShow = false"
+        class="w-12px h-12px ml-a cursor-pointer select-none"
+        aria-hidden="true">
         <use href="#close"></use>
       </svg>
       <div class="flex flex-col gap-30px p-[22px_10px_10px_22px] select-none">
@@ -76,7 +80,9 @@
           v-for="feature in privateModeFeatures"
           :key="feature.textKey"
           class="flex items-center gap-8px text-[var(--text-sm)] text-[--tjg-text-secondary]">
-          <svg class="size-16px flex-shrink-0" :class="feature.iconClass"><use :href="feature.icon"></use></svg>
+          <svg class="size-16px flex-shrink-0" :class="feature.iconClass" aria-hidden="true">
+            <use :href="feature.icon"></use>
+          </svg>
           <span>{{ t(feature.textKey) }}</span>
         </div>
       </div>

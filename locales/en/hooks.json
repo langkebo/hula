@@ -3,7 +3,8 @@
     "create_failed": "Window creation failed: {label}",
     "session_not_ready": "Current session is not ready",
     "group_call_not_supported": "Group chats do not support audio/video calls",
-    "user_info_missing": "Unable to get user info"
+    "user_info_missing": "Unable to get user info",
+    "rtc_single_call_limit": "A call window is already open. End the current call first."
   },
   "avatar_upload": {
     "image_load_failed": "Image load failed",
@@ -24,7 +25,8 @@
     "upload_limit": "You can only upload {count} files or images at once",
     "type_not_supported": "This message type is not supported yet",
     "file_send_failed": "{fileName} send failed",
-    "file_too_large": "{fileName} exceeds the server upload limit (chunked upload was attempted). Please compress it and retry."
+    "file_too_large": "{fileName} exceeds the server upload limit (chunked upload was attempted). Please compress it and retry.",
+    "send_failed_kept": "Failed to send the message. Your content has been kept in the input box."
   },
   "mention": {
     "ai_coming_soon": "AI integration coming soon, stay tuned"

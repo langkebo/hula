@@ -52,7 +52,7 @@
         :aria-label="t('friend.context.send_message')"
         @click.stop="$emit('send-message', item)">
         <template #icon>
-          <svg class="size-16px"><use href="#message" /></svg>
+          <svg class="size-16px" aria-hidden="true"><use href="#message" /></svg>
         </template>
       </n-button>
       <n-button
@@ -62,7 +62,7 @@
         :aria-label="t('friend.context.remove')"
         @click.stop="$emit('remove', item)">
         <template #icon>
-          <svg class="size-16px"><use href="#delete" /></svg>
+          <svg class="size-16px" aria-hidden="true"><use href="#delete" /></svg>
         </template>
       </n-button>
       <n-button
@@ -72,7 +72,7 @@
         :aria-label="t('menu.ctx_menu_more')"
         @click.stop="$emit('more', { item, event: $event })">
         <template #icon>
-          <svg class="size-16px"><use href="#more" /></svg>
+          <svg class="size-16px" aria-hidden="true"><use href="#more" /></svg>
         </template>
       </n-button>
     </div>

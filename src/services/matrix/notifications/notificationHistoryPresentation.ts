@@ -24,6 +24,15 @@ export const getNotificationId = (notif: Record<string, unknown>): string | null
 
 export const isNotificationRead = (notif: Record<string, unknown>): boolean => notif.read === true
 
+/**
+ * 只保留未读通知。
+ *
+ * SDK 的 `getNotifications` 不支持按 `read` 过滤，而 ack 端点又不会把条目从结果里删除，
+ * 所以「已读后列表不归零」只能由前端在渲染层过滤。
+ */
+export const filterUnreadNotifications = <T extends Record<string, unknown>>(notifications: T[]): T[] =>
+  notifications.filter((notif) => !isNotificationRead(notif))
+
 /** 列表 key：优先稳定的通知 ID，缺失时退回事件 ID / 序号 */
 export const notificationKey = (notif: Record<string, unknown>, index: number): string =>
   getNotificationId(notif) ?? String(notif.event_id ?? index)

@@ -42,10 +42,7 @@ import defaultAvatarImg from '@/assets/img/win.png'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { createLogger } from '@/utils/Logger'
 import { useUserMenu } from './useUserMenu'
-
-const logger = createLogger('UserMenuMobile')
 
 defineOptions({
   name: 'UserMenuMobile'
@@ -97,9 +94,7 @@ function handleItemClick(id: string) {
   handleMenuItemClick(id)
 }
 
-function handleThemeToggle() {
-  logger.debug('Theme toggle')
-}
+function handleThemeToggle() {}
 
 function handleTouchClick() {
   const userMenuStore = useUserMenu()

@@ -3,7 +3,7 @@
     <div
       v-if="showBanner"
       class="connection-status-banner"
-      :class="`connection-status-banner--${state}`"
+      :class="`connection-status-banner--${bannerVariant}`"
       :role="state === 'error' ? 'alert' : 'status'"
       :aria-live="state === 'error' ? 'assertive' : 'polite'"
       aria-atomic="true">
@@ -17,7 +17,8 @@
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2">
+            stroke-width="2"
+            aria-hidden="true">
             <line x1="1" y1="1" x2="23" y2="23" />
             <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" />
             <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" />
@@ -33,10 +34,24 @@
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2">
+            stroke-width="2"
+            aria-hidden="true">
             <circle cx="12" cy="12" r="10" />
             <line x1="15" y1="9" x2="9" y2="15" />
             <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+          <svg
+            v-else
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
         </div>
         <span class="connection-status-banner__text">{{ statusText }}</span>
@@ -50,6 +65,23 @@
           @click="onDiagnose">
           {{ diagnosing ? t('connection.diagnose_running') : t('connection.diagnose') }}
         </button>
+        <button
+          v-if="showDegradation && !connectionVisible"
+          class="connection-status-banner__dismiss"
+          :aria-label="t('common.close')"
+          @click="degradationDismissed = true">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
     </div>
   </Transition>
@@ -57,10 +89,11 @@
 
 <script setup lang="ts">
 import { NSpin, useDialog } from 'naive-ui'
-import { computed, h, ref } from 'vue'
+import { computed, h, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { ConnectionState } from '@/composables/useConnectionStatus'
+import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
 import { type DiagnosticResult, MatrixDiagnostics } from '@/utils/MatrixDiagnostics'
 
@@ -84,29 +117,49 @@ const { t } = useI18n()
 const dialog = useDialog()
 const { showFeedback } = useActionFeedback()
 const matrixStore = useMatrixStore()
+const capabilityStore = useCapabilityStore()
 
 const diagnosing = ref(false)
 
-const showBanner = computed(() => props.state !== 'online' && props.state !== 'idle')
+/** 连接类提示的可见性（offline / connecting / reconnecting / syncing / error）。 */
+const connectionVisible = computed(() => props.state !== 'online' && props.state !== 'idle')
+
+/** P-01：Matrix Worker 降级后搜索索引不可用，需要独立于连接状态向用户暴露。 */
+const workerDegraded = computed(() => capabilityStore.extensionHealth.matrixWorker === 'degraded')
+const degradationDismissed = ref(false)
+watch(workerDegraded, (degraded) => {
+  if (degraded) degradationDismissed.value = false
+})
+const showDegradation = computed(() => workerDegraded.value && !degradationDismissed.value)
+
+const showBanner = computed(() => connectionVisible.value || showDegradation.value)
+
+/** 连接正常但 worker 降级时，用降级配色而非 online 的空样式。 */
+const bannerVariant = computed(() => (connectionVisible.value ? props.state : 'degraded'))
 
 const statusText = computed(() => {
-  switch (props.state) {
-    case 'offline':
-      return t('connection.offline')
-    case 'connecting':
-      return t('connection.reconnecting')
-    case 'reconnecting':
-      if (props.retryCount > 0) {
-        return t('connection.reconnecting_attempt', { count: props.retryCount, max: props.maxRetries })
-      }
-      return t('connection.reconnecting')
-    case 'syncing':
-      return t('connection.syncing')
-    case 'error':
-      return t('connection.failed')
-    default:
-      return ''
-  }
+  const connectionText = (() => {
+    switch (props.state) {
+      case 'offline':
+        return t('connection.offline')
+      case 'connecting':
+        return t('connection.reconnecting')
+      case 'reconnecting':
+        if (props.retryCount > 0) {
+          return t('connection.reconnecting_attempt', { count: props.retryCount, max: props.maxRetries })
+        }
+        return t('connection.reconnecting')
+      case 'syncing':
+        return t('connection.syncing')
+      case 'error':
+        return t('connection.failed')
+      default:
+        return ''
+    }
+  })()
+  if (!showDegradation.value) return connectionText
+  const degradedText = t('connection.worker_degraded')
+  return connectionText ? `${connectionText} · ${degradedText}` : degradedText
 })
 
 const renderResults = (results: DiagnosticResult[]) =>
@@ -187,6 +240,17 @@ const onDiagnose = async () => {
   color: var(--tjg-text-inverse);
 }
 
+.connection-status-banner--degraded {
+  background: var(--tjg-color-warning-bg);
+  color: var(--tjg-text-primary);
+}
+
+/* 白字在 warning-500 上对比度不足，降级横幅改用弱化底 + 警示色图标。 */
+.connection-status-banner--degraded .connection-status-banner__icon,
+.connection-status-banner--degraded .connection-status-banner__dismiss {
+  color: var(--tjg-color-warning-500);
+}
+
 .connection-status-banner__content {
   display: flex;
   align-items: center;
@@ -221,6 +285,23 @@ const onDiagnose = async () => {
 .connection-status-banner__retry:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.connection-status-banner__dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--tjg-text-inverse);
+  cursor: pointer;
+  transition: background var(--tjg-motion-duration-normal);
+}
+
+.connection-status-banner__dismiss:hover {
+  opacity: 0.7;
 }
 
 .connection-banner-enter-active,

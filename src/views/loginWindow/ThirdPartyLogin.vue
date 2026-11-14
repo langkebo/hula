@@ -14,7 +14,7 @@
       <n-tooltip trigger="hover" :delay="200">
         <template #trigger>
           <div class="size-22px flex-center cursor-pointer rounded-4px" :class="item.style">
-            <svg v-if="item.icon.startsWith('#')" class="size-22px">
+            <svg v-if="item.icon.startsWith('#')" class="size-22px" aria-hidden="true">
               <use :href="item.icon"></use>
             </svg>
             <span v-else class="text-14px font-bold">{{ item.icon }}</span>

@@ -8,7 +8,7 @@
         data-test="space-members-back"
         :aria-label="t('common.back')"
         @click="emit('back')">
-        <svg class="size-16px"><use href="#arrow-left" /></svg>
+        <svg class="size-16px" aria-hidden="true"><use href="#arrow-left" /></svg>
       </button>
       <span class="space-members-pane__title">{{ t('space.members_title') }}</span>
       <span class="space-members-pane__count">{{ members.length }}</span>

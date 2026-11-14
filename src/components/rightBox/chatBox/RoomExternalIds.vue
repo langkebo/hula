@@ -5,7 +5,7 @@
     data-testid="room-external-ids"
     class="p-12px border-b border-[--tjg-border-default] shrink-0 bg-[--tjg-surface-panel]">
     <header class="flex items-center gap-6px mb-8px">
-      <svg class="size-14px color-[--tjg-text-secondary]">
+      <svg class="size-14px color-[--tjg-text-secondary]" aria-hidden="true">
         <use href="#federation"></use>
       </svg>
       <span class="text-[var(--text-sm)] font-medium color-[--tjg-text-primary] truncate">

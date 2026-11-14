@@ -16,11 +16,25 @@
         :class="['navigation-item', { 'navigation-item--active': item.active }]"
         @click="handleNavigationClick(item.key)">
         <div class="navigation-item__icon">
-          <svg class="size-16px">
+          <svg class="size-16px" aria-hidden="true">
             <use :href="`#${item.icon}`"></use>
           </svg>
         </div>
         <span class="text-[length:var(--tjg-font-size-base)]">{{ getNavigationLabel(item) }}</span>
+      </div>
+    </div>
+    <!-- 媒体存储用量：服务端提供配额时才展示 -->
+    <div
+      v-if="quota && quota.limitBytes > 0"
+      class="storage-usage flex-shrink-0 p-16px border-t border-solid border-[--tjg-border-default]">
+      <div class="flex items-center justify-between gap-8px text-[length:var(--tjg-font-size-xs)]">
+        <span class="text-[--tjg-text-secondary]">{{ t('fileManager.storage.label') }}</span>
+        <span class="text-[--tjg-text-primary]">
+          {{ formatBytes(quota.storageBytes) }} / {{ formatBytes(quota.limitBytes) }}
+        </span>
+      </div>
+      <div class="storage-usage__track mt-8px">
+        <div class="storage-usage__bar" :style="{ width: quotaPercent }"></div>
       </div>
     </div>
   </div>
@@ -28,6 +42,8 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { formatBytes } from '@/utils/Formatting'
 
 type NavigationItem = {
   key: string
@@ -49,6 +65,18 @@ const { navigationItems, setActiveNavigation } = fileManagerState
 const handleNavigationClick = (key: string) => {
   setActiveNavigation(key)
 }
+
+// 媒体存储配额（服务端不支持时返回 null，界面自动隐藏）
+const quota = ref<{ storageBytes: number; mediaCount: number; limitBytes: number } | null>(null)
+const quotaPercent = computed(() => {
+  if (!quota.value || quota.value.limitBytes <= 0) return '0%'
+  const used = Math.min(quota.value.storageBytes / quota.value.limitBytes, 1)
+  return `${Math.round(used * 100)}%`
+})
+
+onMounted(async () => {
+  quota.value = await matrixMediaService.getQuotaStats()
+})
 
 const navigationKeyMap: Record<string, string> = {
   myFiles: 'fileManager.navigation.items.myFiles',
@@ -116,5 +144,19 @@ const getNavigationLabel = (item: NavigationItem) => {
     color: inherit;
     transition: color var(--tjg-motion-duration-normal) ease;
   }
+}
+
+.storage-usage__track {
+  height: 4px;
+  border-radius: var(--tjg-radius-full);
+  background-color: var(--tjg-surface-sunken);
+  overflow: hidden;
+}
+
+.storage-usage__bar {
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--tjg-color-primary-500);
+  transition: width var(--tjg-motion-duration-normal) ease;
 }
 </style>

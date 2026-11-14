@@ -5,7 +5,7 @@
         <div class="logo-container">
           <img v-if="!minimal" src="/tjg.png" class="logo-image" alt="Tjg Logo" />
           <div v-else class="minimal-logo">
-            <svg class="w-48px h-48px" viewBox="0 0 100 100" fill="none">
+            <svg class="w-48px h-48px" viewBox="0 0 100 100" fill="none" aria-hidden="true">
               <circle cx="50" cy="50" r="45" stroke="var(--tjg-color-primary-500)" stroke-width="4" fill="none" />
               <path
                 d="M30 50 L45 65 L70 35"

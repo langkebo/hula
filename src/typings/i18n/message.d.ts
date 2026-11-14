@@ -107,7 +107,9 @@ export type Messages = {
     "set_low_priority_success": "已设为低优先级",
     "remove_low_priority_success": "已取消低优先级",
     "set_low_priority_fail": "设置低优先级失败",
-    "remove_low_priority_fail": "取消低优先级失败"
+    "remove_low_priority_fail": "取消低优先级失败",
+    "mark_unread_success": "已标记为未读",
+    "mark_unread_already": "该会话已是未读状态"
   },
   "image_viewer": {
     "zoom_out": "缩小",
@@ -133,7 +135,9 @@ export type Messages = {
     "tip_playing_previous": "正在播放上一个视频",
     "tip_first": "已经是第一个视频了",
     "tip_playing_next": "正在播放下一个视频",
-    "tip_last": "已经是最后一个视频了"
+    "tip_last": "已经是最后一个视频了",
+    "load_failed": "视频加载失败",
+    "empty": "没有可播放的视频"
   },
   "screenshot": {
     "border_radius": "圆角",
@@ -163,7 +167,6 @@ export type Messages = {
     "toast_empty_password": "请输入密码",
     "return_action": "返回",
     "logout_action": "退出登录",
-    "forgot_password": "忘记密码",
     "enter_system_action": "进入系统"
   },
   "check_update": {
@@ -184,7 +187,8 @@ export type Messages = {
     "update_error": "检查更新错误，请稍后再试",
     "fetch_log_failed": "获取更新日志失败，请配置token后再试",
     "download_success_toast": "安装包下载成功，稍后将自动安装并重启",
-    "restart_failed": "重启失败，请手动重启"
+    "restart_failed": "重启失败，请手动重启",
+    "not_configured": "当前版本未配置更新源，请从官方发行渠道获取新版本"
   },
   "notify": {
     "new_messages": "新消息",
@@ -197,6 +201,7 @@ export type Messages = {
     "more_status": "更多状态",
     "mute_all": "关闭所有声音",
     "unmute_all": "打开所有声音",
+    "toggle_mute": "切换消息免打扰",
     "open_main_panel": "打开主面板",
     "exit": "退出"
   },
@@ -249,10 +254,15 @@ export type Messages = {
     "updating": "更新中",
     "fetch_commit_failed": "v{version} 版本更新内容获取失败",
     "fetch_release_error": "获取版本更新信息失败",
-    "fetch_release_error_with_reason": "获取版本更新信息失败：{reason}"
+    "fetch_release_error_with_reason": "获取版本更新信息失败：{reason}",
+    "no_update": "当前已是最新版本",
+    "update_failed": "更新失败，请重试",
+    "update_failed_with_reason": "更新失败：{reason}",
+    "relaunch_failed": "更新已完成，但自动重启失败，请手动重启应用"
   },
   "multi_choose": {
     "search_placeholder": "搜索会话",
+    "select_session_hint": "请选择会话",
     "send_to_separately": "分别发送给",
     "single_forward": "逐条转发",
     "merge_forward": "合并转发",
@@ -437,6 +447,8 @@ export type KeyPaths =
   | "message.message_menu.remove_low_priority_success"
   | "message.message_menu.set_low_priority_fail"
   | "message.message_menu.remove_low_priority_fail"
+  | "message.message_menu.mark_unread_success"
+  | "message.message_menu.mark_unread_already"
   | "message.image_viewer.zoom_out"
   | "message.image_viewer.zoom_in"
   | "message.image_viewer.rotate_left"
@@ -459,6 +471,8 @@ export type KeyPaths =
   | "message.video_viewer.tip_first"
   | "message.video_viewer.tip_playing_next"
   | "message.video_viewer.tip_last"
+  | "message.video_viewer.load_failed"
+  | "message.video_viewer.empty"
   | "message.screenshot.border_radius"
   | "message.screenshot.redo"
   | "message.screenshot.undo"
@@ -484,7 +498,6 @@ export type KeyPaths =
   | "message.lock_screen.toast_empty_password"
   | "message.lock_screen.return_action"
   | "message.lock_screen.logout_action"
-  | "message.lock_screen.forgot_password"
   | "message.lock_screen.enter_system_action"
   | "message.check_update.current_version"
   | "message.check_update.new_tag"
@@ -504,6 +517,7 @@ export type KeyPaths =
   | "message.check_update.fetch_log_failed"
   | "message.check_update.download_success_toast"
   | "message.check_update.restart_failed"
+  | "message.check_update.not_configured"
   | "message.notify.new_messages"
   | "message.notify.ignore_all"
   | "message.notify.folded"
@@ -512,6 +526,7 @@ export type KeyPaths =
   | "message.tray.more_status"
   | "message.tray.mute_all"
   | "message.tray.unmute_all"
+  | "message.tray.toggle_mute"
   | "message.tray.open_main_panel"
   | "message.tray.exit"
   | "message.location.share"
@@ -545,7 +560,12 @@ export type KeyPaths =
   | "message.update_window.fetch_commit_failed"
   | "message.update_window.fetch_release_error"
   | "message.update_window.fetch_release_error_with_reason"
+  | "message.update_window.no_update"
+  | "message.update_window.update_failed"
+  | "message.update_window.update_failed_with_reason"
+  | "message.update_window.relaunch_failed"
   | "message.multi_choose.search_placeholder"
+  | "message.multi_choose.select_session_hint"
   | "message.multi_choose.send_to_separately"
   | "message.multi_choose.single_forward"
   | "message.multi_choose.merge_forward"

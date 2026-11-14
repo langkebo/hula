@@ -17,7 +17,8 @@
         <svg
           v-if="isWindows()"
           class="size-14px cursor-pointer pt-6px select-none absolute right-6px"
-          @click="visible = false">
+          @click="visible = false"
+          aria-hidden="true">
           <use href="#close"></use>
         </svg>
         <span class="h-1px w-full bg-[--tjg-border-default]"></span>
@@ -26,7 +27,7 @@
       <!-- 内容 -->
       <div class="p-10px">
         <div class="max-h-400px overflow-y-auto">
-          <div v-for="(file, index) in fileList" :key="file.name" class="flex-y-center p-12px">
+          <div v-for="(file, index) in fileList" :key="fileKey(file, index)" class="flex-y-center p-12px">
             <div class="flex-shrink-0 pr-12px">
               <img
                 :src="`/file/${getFileExtension(file.name)}.svg`"
@@ -45,7 +46,9 @@
             </div>
 
             <div v-clickable @click="removeFile(index)" class="flex-shrink-0 pl-20px cursor-pointer">
-              <svg class="size-20px hover:color-[--tjg-text-tertiary] transition-colors duration-200 ease-in-out">
+              <svg
+                class="size-20px hover:color-[--tjg-text-tertiary] transition-colors duration-200 ease-in-out"
+                aria-hidden="true">
                 <use href="#squareClose"></use>
               </svg>
             </div>
@@ -53,8 +56,15 @@
         </div>
 
         <div class="flex justify-end gap-8px">
-          <n-button quaternary @click="handleCancel">{{ t('message.file_upload.cancel') }}</n-button>
-          <n-button secondary type="primary" @click="handleConfirm" :disabled="fileList.length === 0">
+          <n-button quaternary :disabled="sending" @click="handleCancel">
+            {{ t('message.file_upload.cancel') }}
+          </n-button>
+          <n-button
+            secondary
+            type="primary"
+            :loading="sending"
+            :disabled="sending || fileList.length === 0"
+            @click="handleConfirm">
             {{ t('message.file_upload.send', { count: fileList.length }) }}
           </n-button>
         </div>
@@ -67,6 +77,7 @@
 import { useI18n } from 'vue-i18n'
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import type { UploadFile } from '@/utils/FileType'
+import { isPathUploadFile } from '@/utils/FileType'
 import { formatBytes } from '@/utils/Formatting'
 import { isMac, isWindows } from '@/utils/PlatformConstants'
 
@@ -95,6 +106,8 @@ const visible = computed({
 })
 
 const fileList = ref<UploadFile[]>([])
+/** 确认发送中的锁，避免双击重复触发上传 */
+const sending = ref(false)
 
 watch(
   () => props.files,
@@ -103,6 +116,23 @@ watch(
   },
   { immediate: true }
 )
+
+// 弹窗再次打开时重置发送锁
+watch(
+  () => props.show,
+  (show) => {
+    if (show) sending.value = false
+  }
+)
+
+/**
+ * 列表 key：同名不同文件需可区分。
+ * PathUploadFile 无 lastModified，用 path+size；浏览器 File 用 name+size+lastModified。
+ */
+const fileKey = (file: UploadFile, index: number): string => {
+  if (isPathUploadFile(file)) return `${file.path}-${file.size}-${index}`
+  return `${file.name}-${file.size}-${file.lastModified}`
+}
 
 const getFileExtension = (fileName: string): string => {
   return fileName.split('.').pop()?.toLowerCase() || 'file'
@@ -124,17 +154,16 @@ const removeFile = (index: number) => {
 }
 
 const handleCancel = () => {
+  if (sending.value) return
   visible.value = false
   emit('cancel')
 }
 
-const handleConfirm = async () => {
-  visible.value = false
-  await nextTick()
-  await new Promise((resolve) => {
-    setTimeout(resolve, 100)
-  })
+const handleConfirm = () => {
+  if (sending.value || fileList.value.length === 0) return
+  sending.value = true
   emit('confirm', fileList.value)
+  visible.value = false
 }
 </script>
 

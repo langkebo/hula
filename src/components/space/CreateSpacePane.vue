@@ -3,7 +3,7 @@
     <!-- 草稿恢复提示 -->
     <Transition name="hint-fade">
       <div v-if="showRestoredHint" class="create-space-pane__hint" role="status" aria-live="polite">
-        <svg class="size-14px"><use href="#info"></use></svg>
+        <svg class="size-14px" aria-hidden="true"><use href="#info"></use></svg>
         <span>{{ t('common.draft_restored') }}</span>
       </div>
     </Transition>

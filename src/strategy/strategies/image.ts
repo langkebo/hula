@@ -1,4 +1,5 @@
 import { readFile, writeFile } from '@tauri-apps/plugin-fs'
+import type { Ref } from 'vue'
 import { AppException } from '@/common/exception.ts'
 import { type UploadOptions, UploadProviderEnum, useUpload } from '@/composables/common/useUpload'
 import { MsgEnum, UploadSceneEnum } from '@/enums'
@@ -293,6 +294,20 @@ export class ImageMessageStrategyImpl extends AbstractMessageStrategy {
         throw error
       }
       throw new AppException('文件上传失败，请重试')
+    }
+  }
+
+  // 暴露上传进度监听
+  getUploadProgress(): {
+    progress: Ref<number>
+    onChange: (callback: (progress: number) => void) => () => void
+  } {
+    return {
+      progress: this.uploadHook.progress,
+      onChange: (callback: (progress: number) => void) => {
+        const { off } = this.uploadHook.onChange((p: number) => callback(Number(p)))
+        return off
+      }
     }
   }
 

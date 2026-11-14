@@ -64,10 +64,8 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useFriends } from '@/composables/useFriends'
 import router from '@/router'
 import { useUserStore } from '@/stores/domains/user/user'
-import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 
-const logger = createLogger('ConfirmAddFriend')
 const timerManager = useTimerManager()
 const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
@@ -100,7 +98,6 @@ const addFriend = async () => {
 }
 
 onMounted(async () => {
-  logger.debug('userInfo:', String(userInfo.value))
   syncDefaultMessage()
 })
 </script>

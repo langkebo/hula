@@ -20,7 +20,7 @@ export class AdminRoomService {
     limit = LARGE_PAGE_LIMIT,
     from?: string,
     searchTerm?: string
-  ): Promise<{ rooms: RoomInfo[]; nextToken?: string | undefined }> {
+  ): Promise<{ rooms: RoomInfo[]; nextToken?: string | undefined; failed?: boolean }> {
     try {
       const admin = await this.sdkAdmin()
       const result = await admin.getRoomsPaginated({
@@ -34,7 +34,8 @@ export class AdminRoomService {
       }
     } catch (err) {
       logger.error(`[Admin] 获取房间列表失败: ${err}`)
-      return { rooms: [] }
+      // failed 用于让调用方区分「请求失败」与「确实为空」，避免把错误伪装成空列表
+      return { rooms: [], failed: true }
     }
   }
 

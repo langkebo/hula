@@ -392,7 +392,7 @@ describe('ChatMsgMultiChoose', () => {
     await getButtonByText(warningWrapper, 'message.multi_choose.send_button').trigger('click')
     await flushPromises()
 
-    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.search_placeholder', 'warning')
+    expect(showFeedbackMock).toHaveBeenCalledWith('message.multi_choose.select_session_hint', 'warning')
 
     chatStore.sessionList[0].isCheck = true
     const successWrapper = mountComponent()

@@ -10,7 +10,7 @@
         </n-button>
         <n-button size="tiny" quaternary :aria-label="t('common.close')" @click="$emit('close')">
           <template #icon>
-            <svg class="size-14px"><use href="#close"></use></svg>
+            <svg class="size-14px" aria-hidden="true"><use href="#close"></use></svg>
           </template>
         </n-button>
       </n-flex>
@@ -55,7 +55,7 @@
         <div v-else-if="announcements.length === 0" class="flex-center py-20px">
           <n-empty :description="t('announcement.list.empty')" size="small">
             <template #icon>
-              <svg class="size-20px"><use href="#explosion"></use></svg>
+              <svg class="size-20px" aria-hidden="true"><use href="#explosion"></use></svg>
             </template>
           </n-empty>
         </div>
@@ -79,14 +79,14 @@
                 </span>
                 <n-button v-if="isAdmin" size="tiny" quaternary :aria-label="t('common.edit')" @click="startEdit(item)">
                   <template #icon>
-                    <svg class="size-12px"><use href="#edit"></use></svg>
+                    <svg class="size-12px" aria-hidden="true"><use href="#edit"></use></svg>
                   </template>
                 </n-button>
                 <n-popconfirm v-if="isAdmin" @positive-click="handleDelete(item)">
                   <template #trigger>
                     <n-button size="tiny" quaternary :aria-label="t('common.delete')">
                       <template #icon>
-                        <svg class="size-12px"><use href="#delete"></use></svg>
+                        <svg class="size-12px" aria-hidden="true"><use href="#delete"></use></svg>
                       </template>
                     </n-button>
                   </template>

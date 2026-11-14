@@ -8,8 +8,9 @@
 </template>
 
 <script setup lang="ts">
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import {
@@ -43,9 +44,24 @@ function syncRouteTab() {
   settingsTabStore.setActiveTab(normalizedTab ?? 'account')
 }
 
-onMounted(() => {
+let unlistenNavigate: UnlistenFn | undefined
+
+onMounted(async () => {
   detectStandalone()
   syncRouteTab()
+  if (!isStandalone.value) return
+  // 独立窗口已存在时，打开方通过事件同步 tab，避免复用旧窗口后停留在旧页面
+  unlistenNavigate = await listen<{ tab?: SettingsTabInput }>('settings-window:navigate', (event) => {
+    const normalizedTab = normalizeSettingsTab(event.payload?.tab)
+    if (normalizedTab) {
+      settingsTabStore.setActiveTab(normalizedTab)
+    }
+  })
+})
+
+onBeforeUnmount(() => {
+  unlistenNavigate?.()
+  unlistenNavigate = undefined
 })
 
 watch(

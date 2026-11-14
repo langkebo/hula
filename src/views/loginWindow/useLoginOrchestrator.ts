@@ -2,11 +2,9 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useNetwork } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
-import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
 import { type DriverStepConfig, useDriver } from '@/composables/common/useDriver'
 import { useWindow } from '@/composables/common/useWindow'
 import { MatrixAuthService } from '@/services/matrix/auth/MatrixAuthService'
-import { acquireTimerWorker } from '@/services/timerWorkerHost'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useGuideStore } from '@/stores/domains/settings/guide'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -35,7 +33,6 @@ export function useLoginOrchestrator() {
   const loginHistoriesStore = useLoginHistoriesStore()
   const { loginHistories } = storeToRefs(loginHistoriesStore)
   const { createModalWindow, getWindowPayload } = useWindow()
-  const { checkUpdate, CHECK_UPDATE_LOGIN_TIME } = useCheckUpdate()
 
   const {
     normalLogin,
@@ -207,18 +204,6 @@ export function useLoginOrchestrator() {
     reinitialize(steps, config)
   })
 
-  const timerWorker = acquireTimerWorker()
-
-  timerWorker.onError((error) => {
-    logger.error('Worker Error', error)
-  })
-
-  timerWorker.onMessage((event) => {
-    if (event.type === 'timeout') {
-      checkUpdate()
-    }
-  })
-
   watchEffect(() => {
     if (uiState.value === 'auto') {
       loginDisabled.value = !isOnline.value || !userStore.userInfo?.account
@@ -300,12 +285,6 @@ export function useLoginOrchestrator() {
       window.addEventListener('pointerdown', handleAutoLoginActivity, true)
       window.addEventListener('keydown', handleAutoLoginActivity, true)
     }
-    await checkUpdate()
-    timerWorker.postMessage({
-      type: 'startTimer',
-      msgId: 'checkUpdate',
-      duration: CHECK_UPDATE_LOGIN_TIME
-    })
   }
 
   const cleanup = () => {
@@ -315,11 +294,6 @@ export function useLoginOrchestrator() {
       window.removeEventListener('keydown', handleAutoLoginActivity, true)
     }
     clearAutoLoginTimer()
-    timerWorker.postMessage({
-      type: 'clearTimer',
-      msgId: 'checkUpdate'
-    })
-    timerWorker.release()
   }
 
   return {

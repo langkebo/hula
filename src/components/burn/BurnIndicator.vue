@@ -1,13 +1,13 @@
 <template>
   <div v-if="show" class="burn-indicator" :class="`burn-indicator--${status}`">
     <div class="burn-indicator__icon">
-      <svg v-if="status === 'burning'" class="burn-indicator__flame">
+      <svg v-if="status === 'burning'" class="burn-indicator__flame" aria-hidden="true">
         <use href="#timer"></use>
       </svg>
-      <svg v-else-if="status === 'burned'" class="burn-indicator__done">
+      <svg v-else-if="status === 'burned'" class="burn-indicator__done" aria-hidden="true">
         <use href="#burned"></use>
       </svg>
-      <svg v-else class="burn-indicator__waiting">
+      <svg v-else class="burn-indicator__waiting" aria-hidden="true">
         <use href="#hourglass"></use>
       </svg>
     </div>

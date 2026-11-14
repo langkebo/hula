@@ -32,9 +32,9 @@ use desktops::directory_scanner;
 #[cfg(desktop)]
 use desktops::init;
 #[cfg(desktop)]
-use desktops::screenshot_watch;
-#[cfg(desktop)]
 use desktops::tray;
+#[cfg(desktop)]
+use desktops::tray::update_tray_menu_labels;
 #[cfg(desktop)]
 use desktops::video_thumbnail::get_video_thumbnail;
 #[cfg(desktop)]
@@ -225,8 +225,6 @@ async fn initialize_app_data(
     ),
     CommonError,
 > {
-    use migration::Migrator;
-    use migration::MigratorTrait;
     use tracing::info;
 
     let init_started_at = Instant::now();
@@ -257,29 +255,55 @@ async fn initialize_app_data(
         db_started_at.elapsed().as_millis()
     );
 
-    // 数据库迁移
+    // 数据库迁移（C-02：有待执行迁移时先做快照，迁移失败中止启动）
     let migration_started_at = Instant::now();
-    match Migrator::up(&*db.read().await, None).await {
-        Ok(_) => {
-            info!(
-                "Startup stage completed: database migration in {} ms",
-                migration_started_at.elapsed().as_millis()
-            );
-        }
-        Err(e) => {
-            tracing::error!("Critical Error: Database migration failed: {}", e);
-        }
+    let db_path = configuration
+        .read()
+        .await
+        .database
+        .database_path(&app_handle, None)?;
+    let migration_snapshot = run_database_migrations(&*db.read().await, &db_path).await?;
+    if let Some(snapshot) = migration_snapshot {
+        info!(
+            "Startup stage completed: database migration in {} ms (pre-migration snapshot: {:?})",
+            migration_started_at.elapsed().as_millis(),
+            snapshot
+        );
+    } else {
+        info!(
+            "Startup stage completed: database migration in {} ms (no pending migrations)",
+            migration_started_at.elapsed().as_millis()
+        );
     }
 
     let profile_name = std::env::var("TJG_PROFILE_DIR").unwrap_or_default();
 
-    let user_info = UserInfo {
-        token: Default::default(),
-        refresh_token: Default::default(),
-        uid: Default::default(),
+    // D2-R：把上次登录用户回填到内存态。
+    //
+    // 历史缺陷：这里恒用 `Default::default()`（空），而 `get_user_tokens` 命令只读内存，
+    // 于是**冷启动后原生路径永远「无会话」**——设备实测 `invoke('get_user_tokens')`
+    // 返回 `{uid:null, token:""}`，虽然 secure_store（Android Keystore）读写都正常。
+    // 前端只能靠 `tjg:session:web-fallback=1` 的 localStorage 兜底才不丢登录态。
+    let mut initial_user = UserInfo {
+        token: String::new(),
+        refresh_token: String::new(),
+        uid: String::new(),
         profile_name,
     };
-    let user_info = Arc::new(Mutex::new(user_info));
+    {
+        let conn = db.read().await;
+        match crate::repository::im_user_repository::get_last_active_user_tokens(&*conn).await {
+            Ok(Some((uid, token, refresh_token))) => {
+                info!("[SESSION] Restored persisted session for {}", uid);
+                initial_user.uid = uid;
+                initial_user.token = token;
+                initial_user.refresh_token = refresh_token;
+            }
+            Ok(None) => info!("[SESSION] No persisted session found"),
+            Err(e) => tracing::warn!("[SESSION] Failed to restore persisted session: {}", e),
+        }
+    }
+    let user_info = Arc::new(Mutex::new(initial_user));
 
     info!(
         "Startup stage completed: app data initialization finished in {} ms",
@@ -287,6 +311,48 @@ async fn initialize_app_data(
     );
 
     Ok((db, user_info, configuration))
+}
+
+/// 执行数据库迁移（C-02）。
+///
+/// 存在待执行迁移时，先落一份迁移前快照，再执行迁移；迁移失败返回错误并中止启动，
+/// 避免应用带着半迁移的数据库继续运行。成功时返回快照路径（无待执行迁移则为 `None`）。
+async fn run_database_migrations(
+    db: &DatabaseConnection,
+    db_path: &std::path::Path,
+) -> Result<Option<std::path::PathBuf>, CommonError> {
+    use migration::Migrator;
+    use migration::MigratorTrait;
+
+    let pending_migrations = Migrator::get_pending_migrations(db)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to inspect pending database migrations: {}", e))?;
+
+    let snapshot = if pending_migrations.is_empty() {
+        None
+    } else {
+        let snapshot = crate::configuration::create_pre_migration_snapshot(db, db_path).await?;
+        tracing::info!(
+            "Database migration: {} pending migration(s), pre-migration snapshot at {:?}",
+            pending_migrations.len(),
+            snapshot
+        );
+        Some(snapshot)
+    };
+
+    Migrator::up(db, None).await.map_err(|e| {
+        let hint = snapshot
+            .as_ref()
+            .map(|path| format!("; pre-migration snapshot kept at {:?}", path))
+            .unwrap_or_default();
+        anyhow::anyhow!(
+            "Database migration failed: {}{}. Startup aborted to avoid running on a partially migrated database.",
+            e,
+            hint
+        )
+    })?;
+
+    Ok(snapshot)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -527,6 +593,9 @@ fn common_setup(app_handle: AppHandle) -> Result<(), Box<dyn std::error::Error>>
                     "Failed to initialize application data asynchronously: {}",
                     e
                 );
+                // C-02：启动失败必须让用户看到原因，而不是窗口闪退后再无信息
+                #[cfg(desktop)]
+                show_startup_failure_dialog(&init_handle, &e.to_string());
                 init_handle.exit(1);
             }
         }
@@ -537,6 +606,27 @@ fn common_setup(app_handle: AppHandle) -> Result<(), Box<dyn std::error::Error>>
         setup_started_at.elapsed().as_millis()
     );
     Ok(())
+}
+
+/// 启动失败提示框（C-02）。
+///
+/// 数据库迁移或初始化失败时进程会立即退出，此时前端尚未可用，只能由原生对话框
+/// 把失败原因和快照位置告知用户；文案保持英文以符合 Rust 侧禁用中文字面量的约定。
+#[cfg(desktop)]
+fn show_startup_failure_dialog(app_handle: &AppHandle, detail: &str) {
+    use tauri_plugin_dialog::DialogExt;
+    use tauri_plugin_dialog::MessageDialogKind;
+
+    let message = format!(
+        "The application could not start because local data initialization failed.\n\n{}\n\nYour database and any pre-migration snapshot were kept for recovery. Please contact support.",
+        detail
+    );
+    app_handle
+        .dialog()
+        .message(message)
+        .title("TJg startup failed")
+        .kind(MessageDialogKind::Error)
+        .blocking_show();
 }
 
 // 公共的命令处理器函数
@@ -588,9 +678,7 @@ fn get_invoke_handlers() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Se
         #[cfg(desktop)]
         get_window_payload,
         #[cfg(desktop)]
-        screenshot_watch::start_screenshot_watch,
-        #[cfg(desktop)]
-        screenshot_watch::stop_screenshot_watch,
+        update_tray_menu_labels,
         #[cfg(desktop)]
         crate::desktops::cas_login::open_cas_login_window,
         get_files_meta,

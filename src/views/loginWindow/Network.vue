@@ -117,11 +117,8 @@ import { getDefaultMatrixEndpointConfig } from '@/services/backend'
 import { updateSettings } from '@/services/backend/tauriCommand'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import type { ProxySettings } from '@/typings/global'
-import { createLogger } from '@/utils/Logger'
 import { createEmptyProxySettings, parseStoredProxySettings } from '@/utils/proxySettings'
 import { addSlashToHead } from '@/utils/StringUtils.ts'
-
-const logger = createLogger('Network')
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
@@ -227,7 +224,6 @@ const handleSave = async () => {
     const settings = JSON.stringify(proxySettings)
     localStorage.setItem('proxySettings', settings)
     await updateTauriSettings(proxySettings)
-    logger.debug('settings', proxySettings)
 
     showFeedback(t('login.network.messages.save_success'), 'success')
   } catch (error) {

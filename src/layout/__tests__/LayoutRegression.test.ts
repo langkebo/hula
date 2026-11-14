@@ -30,9 +30,6 @@ vi.mock('@/stores/domains/widget/file', () => ({ useFileStore: () => stubStore()
 vi.mock('@/stores/domains/widget/global', () => ({ useGlobalStore: () => stubStore() }))
 
 vi.mock('@/composables/common/useActionFeedback', () => ({ useActionFeedback: () => ({ showFeedback: vi.fn() }) }))
-vi.mock('@/composables/common/useCheckUpdate', () => ({
-  useCheckUpdate: () => ({ checkUpdate: vi.fn(), CHECK_UPDATE_TIME: 60000 })
-}))
 vi.mock('@/composables/common/useMitt', () => ({ useMitt: { on: vi.fn(), off: vi.fn(), emit: vi.fn() } }))
 // 布局的提示音播放委托给 useMessageSound（读 store 的 notification.messageSound/volume）。
 // 这里只做浅挂载，播放行为由 useMessageSound.test.ts 覆盖，故按同类 composable 的做法打桩。

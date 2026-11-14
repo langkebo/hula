@@ -19,7 +19,7 @@
             @click="handleLeave">
             <template #icon>
               <span class="cta-icon-wrap">
-                <svg class="size-14px cta-icon"><use href="#logout"></use></svg>
+                <svg class="size-14px cta-icon" aria-hidden="true"><use href="#logout"></use></svg>
               </span>
             </template>
             {{ t('space.leave') }}
@@ -37,7 +37,7 @@
               @click="handleJoin">
               <template #icon>
                 <span class="cta-icon-wrap">
-                  <svg class="size-14px cta-icon"><use href="#success"></use></svg>
+                  <svg class="size-14px cta-icon" aria-hidden="true"><use href="#success"></use></svg>
                 </span>
               </template>
               {{ t('room.invitation.accept') }}
@@ -51,7 +51,7 @@
               @click="handleLeave">
               <template #icon>
                 <span class="cta-icon-wrap">
-                  <svg class="size-14px cta-icon"><use href="#close"></use></svg>
+                  <svg class="size-14px cta-icon" aria-hidden="true"><use href="#close"></use></svg>
                 </span>
               </template>
               {{ t('room.invitation.reject') }}
@@ -62,7 +62,9 @@
         <template v-else>
           <div v-if="joinRule === 'invite'" class="cta-message">
             <span class="cta-message__icon-shell" aria-hidden="true">
-              <svg class="size-16px color-[--tjg-text-tertiary] cta-message__icon"><use href="#lock"></use></svg>
+              <svg class="size-16px color-[--tjg-text-tertiary] cta-message__icon" aria-hidden="true">
+                <use href="#lock"></use>
+              </svg>
             </span>
             <span>{{ t('space.invite_only_message') }}</span>
           </div>
@@ -77,7 +79,7 @@
             @click="handleJoin">
             <template #icon>
               <span class="cta-icon-wrap">
-                <svg class="size-14px cta-icon"><use href="#plus"></use></svg>
+                <svg class="size-14px cta-icon" aria-hidden="true"><use href="#plus"></use></svg>
               </span>
             </template>
             {{ joinButtonText }}

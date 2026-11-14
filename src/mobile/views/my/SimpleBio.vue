@@ -77,9 +77,6 @@ import { useI18n } from 'vue-i18n'
 import router from '@/router'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('SimpleBio')
 
 const userStore = useUserStore()
 const { t } = useI18n()
@@ -122,7 +119,6 @@ const toMyInfo = () => {
 
 const handleBack = async () => {
   router.back()
-  logger.debug('Navigate back')
 }
 </script>
 

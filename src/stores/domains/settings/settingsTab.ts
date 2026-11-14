@@ -8,6 +8,7 @@ export {
   getGroupedSettingsTabs,
   getSettingsTabGroupLabel,
   getSettingsTabLabel,
+  getSettingsTabSaveMode,
   normalizeSettingsTab,
   SETTINGS_TABS
 } from './settingsSchema'

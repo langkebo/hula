@@ -3,6 +3,15 @@ import { useDebounceFn, useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, onUnmounted, ref, watch, watchPostEffect } from 'vue'
 import { useAutoScrollGuard } from '@/composables/chat/useAutoScrollGuard'
 import { ScrollIntentEnum } from '@/enums'
+import { createLogger } from '@/utils/Logger'
+
+const logger = createLogger('ChatScrollManager')
+
+export interface ScrollToMessageOptions {
+  behavior?: ScrollBehavior
+  /** 目标消息在 chatMessageList 中的索引，DOM 未挂载时用于 scrollToIndex 兜底 */
+  index?: number
+}
 
 interface UseChatScrollManagerOptions {
   scrollContainer: Ref<HTMLElement | null>
@@ -21,15 +30,17 @@ interface UseChatScrollManagerOptions {
 interface UseChatScrollManagerReturn {
   isAtBottom: Ref<boolean>
   isLoadingMore: Ref<boolean>
+  loadMoreError: Ref<boolean>
   scrollIntent: Ref<string>
   scrollTop: Ref<number>
   scrollToBottom: () => void
-  scrollToMessage: (messageId: string, behavior?: ScrollBehavior) => void
+  scrollToMessage: (messageId: string, options?: ScrollToMessageOptions) => boolean
   scrollToIndex: (index: number, behavior?: ScrollBehavior) => void
   handleScroll: (event: Event) => void
   handleRoomChange: (newRoomId: string, oldRoomId?: string | null) => void
   handleNewMessage: (isOtherUser: boolean) => void
   loadMore: () => Promise<void>
+  retryLoadMore: () => Promise<void>
   shouldShowFloatButton: ComputedRef<boolean>
   newMessageCount: Ref<number>
   showNewMessageTip: Ref<boolean>
@@ -55,6 +66,7 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
 
   const isAtBottom = ref(true)
   const isLoadingMore = ref(false)
+  const loadMoreError = ref(false)
   const scrollIntent = ref<ScrollIntentEnum>(ScrollIntentEnum.NONE)
   const scrollTop = ref(0)
   const newMessageCount = ref(0)
@@ -136,14 +148,33 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
     scheduleScrollToBottom()
   }
 
-  const scrollToMessage = (messageId: string, behavior: ScrollBehavior = 'smooth'): void => {
+  const findMessageElement = (messageId: string): HTMLElement | null => {
     const container = scrollContainer.value
-    if (!container) return
+    if (!container) return null
 
-    const element = container.querySelector(`[data-message-id="${messageId}"]`)
+    const escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(messageId) : messageId
+    return container.querySelector(`[data-message-id="${escaped}"]`) as HTMLElement | null
+  }
+
+  /** 定位消息：优先命中 DOM；虚拟列表未挂载时按索引滚动并在下一帧校准。false 表示无法定位。 */
+  const scrollToMessage = (messageId: string, options: ScrollToMessageOptions = {}): boolean => {
+    const { behavior = 'smooth', index } = options
+
+    const element = findMessageElement(messageId)
     if (element) {
       element.scrollIntoView({ behavior, block: 'center' })
+      return true
     }
+
+    if (typeof index === 'number' && index >= 0) {
+      scrollToIndex(index, behavior)
+      nextTick(() => {
+        findMessageElement(messageId)?.scrollIntoView({ behavior, block: 'center' })
+      })
+      return true
+    }
+
+    return false
   }
 
   const scrollToIndex = (index: number, behavior: ScrollBehavior = 'auto'): void => {
@@ -180,7 +211,7 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
     const distanceFromBottom = scrollHeight - currentScrollTop - clientHeight
 
     if (currentScrollTop < topLoadThreshold) {
-      if (suppressTopLoadMore.value || isLoading.value || isLastPage.value) return
+      if (suppressTopLoadMore.value || isLoading.value || isLastPage.value || loadMoreError.value) return
       await loadMore()
     }
 
@@ -236,6 +267,7 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
 
     scrollIntent.value = ScrollIntentEnum.LOAD_MORE
     isLoadingMore.value = true
+    loadMoreError.value = false
 
     const oldScrollHeight = container.scrollHeight
     const oldScrollTop = container.scrollTop
@@ -246,10 +278,19 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
       const newScrollHeight = container.scrollHeight
       const heightDifference = newScrollHeight - oldScrollHeight
       container.scrollTop = oldScrollTop + heightDifference
+    } catch (error) {
+      // 失败时保持原位并暴露错误态，由用户点击「重试」再次触发，避免滚动反复失败请求
+      loadMoreError.value = true
+      logger.error('加载更多历史消息失败', error)
     } finally {
       isLoadingMore.value = false
       scrollIntent.value = ScrollIntentEnum.NONE
     }
+  }
+
+  const retryLoadMore = async (): Promise<void> => {
+    loadMoreError.value = false
+    await loadMore()
   }
 
   const handleRoomChange = (newRoomId: string, oldRoomId?: string | null): void => {
@@ -260,6 +301,7 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
     enableAutoScroll(1200)
     scrollIntent.value = ScrollIntentEnum.INITIAL
 
+    loadMoreError.value = false
     newMessageCount.value = 0
     showNewMessageTip.value = false
   }
@@ -335,6 +377,7 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
   return {
     isAtBottom,
     isLoadingMore,
+    loadMoreError,
     scrollIntent,
     scrollTop,
     scrollToBottom,
@@ -344,6 +387,7 @@ export function useChatScrollManager(options: UseChatScrollManagerOptions): UseC
     handleRoomChange,
     handleNewMessage,
     loadMore,
+    retryLoadMore,
     shouldShowFloatButton,
     newMessageCount,
     showNewMessageTip,

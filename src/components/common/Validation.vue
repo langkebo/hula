@@ -1,6 +1,6 @@
 <template>
   <n-flex align="center" :size="6">
-    <svg class="size-14px" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 48 48">
+    <svg class="size-14px" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 48 48" aria-hidden="true">
       <path
         :data-follow-stroke="strokeColor"
         :data-follow-fill="fillColor"

@@ -3,8 +3,13 @@
     <header class="settings-content-header">
       <div class="settings-content-header-main">
         <h2 class="settings-content-title">{{ currentTabLabel }}</h2>
-        <div v-if="hasDirtyTabs" class="settings-dirty-status" role="status" aria-live="polite">
-          {{ t('setting.dialog.dirty_status') }}
+        <div class="settings-content-badges">
+          <span class="settings-save-mode" :class="{ 'settings-save-mode--manual': saveMode === 'manual' }">
+            {{ saveMode === 'manual' ? t('setting.dialog.save_mode_manual') : t('setting.dialog.save_mode_instant') }}
+          </span>
+          <div v-if="hasDirtyTabs" class="settings-dirty-status" role="status" aria-live="polite">
+            {{ t('setting.dialog.dirty_status') }}
+          </div>
         </div>
       </div>
       <n-button
@@ -59,7 +64,11 @@ import { NButton, NIcon, NSpin } from 'naive-ui'
 import type { Component, PropType } from 'vue'
 import { computed, defineAsyncComponent, defineComponent, h, onErrorCaptured, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getSettingsTabLabel, type SettingsTabType } from '@/stores/domains/settings/settingsTab'
+import {
+  getSettingsTabLabel,
+  getSettingsTabSaveMode,
+  type SettingsTabType
+} from '@/stores/domains/settings/settingsTab'
 import { SETTINGS_TAB_COMPONENT_LOADERS } from './tabComponentLoaders'
 
 defineOptions({
@@ -84,6 +93,7 @@ defineEmits<(e: 'close') => void>()
 const { t } = useI18n()
 
 const currentTabLabel = computed(() => getSettingsTabLabel(props.activeTab, t) || t('setting.dialog.current_tab'))
+const saveMode = computed(() => getSettingsTabSaveMode(props.activeTab))
 
 // 在模块作用域一次性创建所有异步组件，避免在 computed 内重复调用 defineAsyncComponent（Vue 3 反模式）
 const LoadingFallback = defineComponent({
@@ -219,6 +229,30 @@ onErrorCaptured((err) => {
   gap: var(--tjg-space-2);
   min-width: 0;
   flex: 1;
+}
+
+.settings-content-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tjg-space-2);
+}
+
+.settings-save-mode {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-size: var(--text-sm);
+  color: var(--tjg-text-secondary);
+  background: var(--tjg-surface-subtle);
+  border: 1px solid var(--tjg-border-default);
+  border-radius: var(--tjg-radius-full);
+  padding: 4px 10px;
+}
+
+.settings-save-mode--manual {
+  color: var(--tjg-text-primary);
+  border-color: var(--tjg-border-strong, var(--tjg-border-default));
 }
 
 .settings-content-title {

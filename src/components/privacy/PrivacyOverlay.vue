@@ -6,7 +6,7 @@
       </span>
     </div>
     <div v-if="showBlockMessage" class="privacy-overlay__block-message">
-      <svg class="privacy-overlay__icon">
+      <svg class="privacy-overlay__icon" aria-hidden="true">
         <use href="#shield"></use>
       </svg>
       <span>{{ t('chat.privacy.screenshot_protected') }}</span>

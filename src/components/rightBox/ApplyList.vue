@@ -84,7 +84,7 @@
                   :options="dropdownOptions"
                   @select="(key: string) => handleFriendAction(key, item.applyId)">
                   <n-icon class="cursor-pointer px-6px">
-                    <svg class="size-16px color-[--tjg-text-primary]">
+                    <svg class="size-16px color-[--tjg-text-primary]" aria-hidden="true">
                       <use href="#more"></use>
                     </svg>
                   </n-icon>

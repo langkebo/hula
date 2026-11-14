@@ -14,7 +14,7 @@
         @update:value="handleSearchChange"
         @keydown.esc="handleSearchEsc">
         <template #prefix>
-          <svg class="size-16px color-[--tjg-text-tertiary]"><use href="#search" /></svg>
+          <svg class="size-16px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#search" /></svg>
         </template>
         <template #suffix>
           <button
@@ -23,7 +23,7 @@
             :aria-label="t('search.title')"
             :title="t('search.title')"
             @click="handleGlobalSearch">
-            <svg class="size-16px"><use href="#expand" /></svg>
+            <svg class="size-16px" aria-hidden="true"><use href="#expand" /></svg>
           </button>
         </template>
       </n-input>
@@ -66,7 +66,7 @@
           <!-- 2. 列表状态 -->
           <div v-else-if="hasVisibleSpaces" class="space-list-pane__sections" key="list">
             <!-- 性能优化：空间列表超过 100 项时启用虚拟滚动（需求文档 16.1） -->
-            <template v-if="allFilteredSpaces.length > VIRTUAL_SCROLL_THRESHOLD">
+            <template v-if="allFilteredSpaces.length > LIST_VIRTUALIZATION_THRESHOLD">
               <RecycleScroller
                 class="space-list-pane__virtual-scroller"
                 :items="allFilteredSpaces"
@@ -148,13 +148,13 @@
       <n-flex :size="8">
         <n-button size="small" type="primary" block class="space-list-pane__footer-btn" @click="emit('createSpace')">
           <template #icon>
-            <svg class="size-14px"><use href="#add" /></svg>
+            <svg class="size-14px" aria-hidden="true"><use href="#add" /></svg>
           </template>
           {{ t('space.create_space_action') }}
         </n-button>
         <n-button size="small" block class="space-list-pane__footer-btn" @click="handleDiscoverSpaces">
           <template #icon>
-            <svg class="size-14px"><use href="#search" /></svg>
+            <svg class="size-14px" aria-hidden="true"><use href="#search" /></svg>
           </template>
           {{ t('space.discover_spaces_action') }}
         </n-button>
@@ -171,6 +171,7 @@ import { useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
+import { LIST_VIRTUALIZATION_THRESHOLD } from '@/utils/listVirtualization'
 import SpaceListItemCard from './SpaceListItemCard.vue'
 
 export type SpaceListItem = {
@@ -190,9 +191,6 @@ export type SpaceListItem = {
 }
 
 type SpaceFilter = 'all' | 'my' | 'public'
-
-/** 列表项超过此阈值时启用虚拟滚动（需求文档 16.1） */
-const VIRTUAL_SCROLL_THRESHOLD = 100
 
 const props = defineProps<{
   spaces: SpaceListItem[]

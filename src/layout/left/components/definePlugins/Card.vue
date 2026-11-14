@@ -13,7 +13,7 @@
               :size="8"
               :class="{ 'filter-shadow': settingStore.pageShadowEnabled }"
               class="box bg-[--plugin-bg-color]">
-              <svg class="size-38px color-[--tjg-text-quaternary]">
+              <svg class="size-38px color-[--tjg-text-quaternary]" aria-hidden="true">
                 <use :href="`#${plugin.icon}`"></use>
               </svg>
               <p class="text-[var(--text-xs)] text-[--tjg-text-secondary]">{{ plugin.title }}</p>
@@ -67,7 +67,7 @@
                   'filter-shadow': settingStore.pageShadowEnabled
                 }
               ]">
-              <svg class="size-38px color-[--tjg-text-secondary]">
+              <svg class="size-38px color-[--tjg-text-secondary]" aria-hidden="true">
                 <use :href="`#${plugin.iconAction || plugin.icon}`"></use>
               </svg>
               <p class="text-[var(--text-xs)] text-[--tjg-text-secondary]">{{ plugin.title }}</p>
@@ -100,7 +100,8 @@
               <Transition>
                 <svg
                   v-if="plugin.isAdd && plugin.state !== PluginEnum.BUILTIN"
-                  class="absolute color-[--tjg-text-secondary] left-2px top-2px size-14px">
+                  class="absolute color-[--tjg-text-secondary] left-2px top-2px size-14px"
+                  aria-hidden="true">
                   <use href="#notOnTop"></use>
                 </svg>
               </Transition>
@@ -116,7 +117,8 @@
                 <template #trigger>
                   <svg
                     @click.stop="isCurrently = index"
-                    class="absolute color-[--tjg-text-secondary] right-0 top-0 size-18px rotate-90">
+                    class="absolute color-[--tjg-text-secondary] right-0 top-0 size-18px rotate-90"
+                    aria-hidden="true">
                     <use href="#more"></use>
                   </svg>
                 </template>
@@ -124,19 +126,19 @@
                 <div class="action-item">
                   <div class="menu-list">
                     <div v-clickable v-if="!plugin.isAdd" @click="handleAdd(plugin)" class="menu-item">
-                      <svg class="color-[--tjg-color-info-500]">
+                      <svg class="color-[--tjg-color-info-500]" aria-hidden="true">
                         <use href="#add"></use>
                       </svg>
                       <p class="text-[--tjg-color-info-500]">{{ t('home.plugins.actions.pin') }}</p>
                     </div>
                     <div v-clickable v-else @click="handleDelete(plugin)" class="menu-item">
-                      <svg class="color-[--tjg-color-danger-500]">
+                      <svg class="color-[--tjg-color-danger-500]" aria-hidden="true">
                         <use href="#reduce"></use>
                       </svg>
                       <p class="text-[--tjg-color-danger-500]">{{ t('home.plugins.actions.unpin') }}</p>
                     </div>
                     <div v-clickable @click="handleUnload(plugin)" class="menu-item">
-                      <svg>
+                      <svg aria-hidden="true">
                         <use href="#delete"></use>
                       </svg>
                       <p>{{ t('home.plugins.actions.uninstall') }}</p>

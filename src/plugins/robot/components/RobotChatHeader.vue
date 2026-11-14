@@ -98,7 +98,7 @@
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
         <template #trigger>
           <div v-clickable class="right-btn" @click="emit('create-new-chat')">
-            <svg><use href="#plus"></use></svg>
+            <svg aria-hidden="true"><use href="#plus"></use></svg>
           </div>
         </template>
         <p>{{ t('ai_assistant.robot.new_conversation_btn') }}</p>
@@ -107,7 +107,7 @@
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
         <template #trigger>
           <div v-clickable class="right-btn" @click="emit('edit')">
-            <svg><use href="#edit"></use></svg>
+            <svg aria-hidden="true"><use href="#edit"></use></svg>
           </div>
         </template>
         <p>{{ t('ai_assistant.robot.edit_title') }}</p>
@@ -122,7 +122,7 @@
         @update:show="emit('update:show-delete-chat-confirm', $event)">
         <template #trigger>
           <div class="right-btn right-btn-danger" :title="t('ai_assistant.robot.delete_conversation')">
-            <svg><use href="#delete"></use></svg>
+            <svg aria-hidden="true"><use href="#delete"></use></svg>
           </div>
         </template>
         <n-flex vertical :size="12">
@@ -152,7 +152,7 @@
       <n-popover trigger="hover" :show-arrow="false" placement="bottom">
         <template #trigger>
           <div class="right-btn">
-            <svg><use href="#Sharing"></use></svg>
+            <svg aria-hidden="true"><use href="#Sharing"></use></svg>
           </div>
         </template>
         <p>{{ t('ai_assistant.robot.share') }}</p>

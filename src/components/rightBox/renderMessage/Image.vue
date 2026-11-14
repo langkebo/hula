@@ -40,7 +40,7 @@
             align="center"
             justify="center"
             class="w-200px h-150px rounded-10px bg-[--tjg-surface-sidebar-selected]">
-            <svg class="size-34px color-[--tjg-text-tertiary]">
+            <svg class="size-34px color-[--tjg-text-tertiary]" aria-hidden="true">
               <use href="#error-picture"></use>
             </svg>
           </n-flex>

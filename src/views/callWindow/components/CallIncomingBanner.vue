@@ -11,7 +11,7 @@
       <!-- 通话类型指示器 -->
       <div
         class="absolute -bottom-2px -right-2px w-20px h-20px rounded-full bg-[--tjg-color-primary-500] flex-center shadow-lg">
-        <svg class="size-14px text-[--tjg-text-inverse]">
+        <svg class="size-14px text-[--tjg-text-inverse]" aria-hidden="true">
           <use :href="callType === CallTypeEnum.VIDEO ? '#video-one' : '#phone-telephone'"></use>
         </svg>
       </div>
@@ -39,7 +39,7 @@
         :aria-label="t('message.call_window.reject')"
         @click="emit('reject')"
         class="size-40px rounded-full border-0 bg-[--tjg-color-danger-500] hover:bg-[--tjg-color-danger-600] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--tjg-color-danger-400] flex-center cursor-pointer shadow-lg">
-        <svg class="text-[--tjg-text-inverse] size-20px">
+        <svg class="text-[--tjg-text-inverse] size-20px" aria-hidden="true">
           <use href="#PhoneHangup"></use>
         </svg>
       </button>
@@ -49,7 +49,7 @@
         :aria-label="t('message.call_window.accept')"
         @click="emit('accept')"
         class="size-40px rounded-full border-0 bg-[--tjg-color-primary-500] hover:bg-[--tjg-color-primary-600] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[--tjg-color-primary-300] flex-center cursor-pointer shadow-lg">
-        <svg class="text-[--tjg-text-inverse] size-20px">
+        <svg class="text-[--tjg-text-inverse] size-20px" aria-hidden="true">
           <use href="#phone-telephone-entity"></use>
         </svg>
       </button>

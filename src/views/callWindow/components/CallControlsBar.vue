@@ -12,7 +12,7 @@
               ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
               : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
           ">
-          <svg class="size-16px text-[--tjg-text-inverse]">
+          <svg class="size-16px text-[--tjg-text-inverse]" aria-hidden="true">
             <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
           </svg>
         </div>
@@ -31,7 +31,7 @@
               ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
               : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
           ">
-          <svg class="size-16px text-[--tjg-text-inverse]">
+          <svg class="size-16px text-[--tjg-text-inverse]" aria-hidden="true">
             <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
           </svg>
         </div>
@@ -50,7 +50,7 @@
               ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
               : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
           ">
-          <svg class="size-16px text-[--tjg-text-inverse]">
+          <svg class="size-16px text-[--tjg-text-inverse]" aria-hidden="true">
             <use :href="isVideoEnabled ? '#video-one' : '#monitor-off'"></use>
           </svg>
         </div>
@@ -64,7 +64,7 @@
         <div
           @click="emit('hangup')"
           class="size-44px rounded-full bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80 flex-center cursor-pointer">
-          <svg class="size-16px text-[--tjg-text-inverse]">
+          <svg class="size-16px text-[--tjg-text-inverse]" aria-hidden="true">
             <use href="#PhoneHangup"></use>
           </svg>
         </div>
@@ -88,7 +88,7 @@
                 ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
                 : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
             ">
-            <svg class="size-16px text-[--tjg-text-inverse]">
+            <svg class="size-16px text-[--tjg-text-inverse]" aria-hidden="true">
               <use :href="!isMuted ? '#voice' : '#voice-off'"></use>
             </svg>
           </div>
@@ -107,7 +107,7 @@
                 ? 'bg-[--tjg-surface-subtle] hover:bg-[--tjg-surface-list-hover]'
                 : 'bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80'
             ">
-            <svg class="size-16px text-[--tjg-text-inverse]">
+            <svg class="size-16px text-[--tjg-text-inverse]" aria-hidden="true">
               <use :href="isSpeakerOn ? '#volume-notice' : '#volume-mute'"></use>
             </svg>
           </div>
@@ -122,7 +122,7 @@
         <div
           @click="emit('hangup')"
           class="size-66px rounded-full bg-[--tjg-color-danger-500]/60 hover:bg-[--tjg-color-danger-500]/80 flex-center cursor-pointer">
-          <svg class="size-24px text-[--tjg-text-inverse]">
+          <svg class="size-24px text-[--tjg-text-inverse]" aria-hidden="true">
             <use href="#PhoneHangup"></use>
           </svg>
         </div>

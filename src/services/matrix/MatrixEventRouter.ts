@@ -18,6 +18,7 @@
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum } from '@/enums'
 import { matrixWorkerHost } from '@/services/matrix/MatrixWorkerHost'
+import { createLogger } from '@/utils/Logger'
 import type { SearchEventDoc } from '@/workers/matrixWorkerTypes'
 import type { MatrixSyncManager } from './MatrixSyncManager'
 import { type MatrixClient, type MatrixEvent, type Room, SlidingSyncState } from './sdk'
@@ -34,6 +35,13 @@ type SyncLifecycleResetHandler = () => void
 /** 事件解密回调（由 facade 设置，委托给 CryptoStateTracker） */
 type EventDecryptedHandler = (event: MatrixEvent, err?: Error) => void
 
+const logger = createLogger('MatrixEventRouter')
+
+/** 搜索索引事件的聚合窗口（ms）：同步风暴时把逐条写索引合并为批量请求。 */
+const SEARCH_EVENT_BATCH_WINDOW_MS = 50
+/** 单批事件上限：超出按最旧丢弃，形成背压保护（索引可重建，丢批优于内存持续膨胀）。 */
+const SEARCH_EVENT_BATCH_MAX = 200
+
 /**
  * 事件路由器
  *
@@ -42,6 +50,11 @@ type EventDecryptedHandler = (event: MatrixEvent, err?: Error) => void
  */
 export class MatrixEventRouter {
   private readonly eventListeners: Map<string, Set<(...args: unknown[]) => void>> = new Map()
+  /** 待写入搜索索引的事件缓冲（P-02：50ms 窗口聚合，降低跨线程消息数）。 */
+  private pendingSearchEvents: SearchEventDoc[] = []
+  private searchFlushTimer: ReturnType<typeof setTimeout> | null = null
+  /** 因单批上限被丢弃的事件数，仅在下次落批时汇总告警一次。 */
+  private droppedSearchEvents = 0
   private readonly roomListeners: Map<string, { room: Room; handlers: Map<string, (...args: unknown[]) => void> }> =
     new Map()
   private observedClient: MatrixClient | null = null
@@ -131,9 +144,7 @@ export class MatrixEventRouter {
         msgtype: 'm.text',
         body: event.getContent().body as string
       }
-      void matrixWorkerHost.upsertSearchEvents([searchEventDoc]).catch(() => {
-        // Worker 转发失败不输出日志，避免刷屏
-      })
+      this.queueSearchEvent(searchEventDoc)
     }
   }
 
@@ -261,8 +272,39 @@ export class MatrixEventRouter {
     client.off('Room.receipt', this.receiptListener)
 
     this.syncManager_offLifecycleEvent(syncManager, this.syncLifecycleListener)
+    this.flushSearchEvents()
     this.detachRoomListeners()
     this.observedClient = null
+  }
+
+  /** 缓冲一条搜索索引事件，按 50ms 窗口批量落盘（P-02）。 */
+  private queueSearchEvent(doc: SearchEventDoc): void {
+    this.pendingSearchEvents.push(doc)
+    if (this.pendingSearchEvents.length > SEARCH_EVENT_BATCH_MAX) {
+      const overflow = this.pendingSearchEvents.length - SEARCH_EVENT_BATCH_MAX
+      this.pendingSearchEvents.splice(0, overflow)
+      this.droppedSearchEvents += overflow
+    }
+    if (this.searchFlushTimer) return
+    this.searchFlushTimer = setTimeout(() => this.flushSearchEvents(), SEARCH_EVENT_BATCH_WINDOW_MS)
+  }
+
+  /** 落批：一次跨线程写入整批事件，失败仅记录一次告警避免刷屏。 */
+  private flushSearchEvents(): void {
+    if (this.searchFlushTimer) {
+      clearTimeout(this.searchFlushTimer)
+      this.searchFlushTimer = null
+    }
+    if (this.pendingSearchEvents.length === 0) return
+    const batch = this.pendingSearchEvents
+    this.pendingSearchEvents = []
+    if (this.droppedSearchEvents > 0) {
+      logger.warn(`搜索索引背压丢弃 ${this.droppedSearchEvents} 条事件（单批上限 ${SEARCH_EVENT_BATCH_MAX}）`)
+      this.droppedSearchEvents = 0
+    }
+    void matrixWorkerHost.upsertSearchEvents(batch).catch((err) => {
+      logger.warn('搜索索引批量写入失败:', err)
+    })
   }
 
   /** 分离房间事件监听器

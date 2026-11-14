@@ -214,13 +214,11 @@ const loadAnnouncementList = async () => {
 }
 
 const goToNoticeDetail = (id: string) => {
-  logger.debug('Navigate to notice detail page, notice ID:', id)
   markNoticeRead(id)
   router.push(`/mobile/chatRoom/notice/detail/${id}`)
 }
 
 const goToAddNotice = () => {
-  logger.debug('Navigate to add notice page')
   router.push('/mobile/chatRoom/notice/add')
 }
 

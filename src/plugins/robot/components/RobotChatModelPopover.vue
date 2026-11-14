@@ -8,7 +8,7 @@
     @update:show="emit('update:show', $event)">
     <template #trigger>
       <div class="flex items-center gap-6px cursor-pointer">
-        <svg><use href="#model"></use></svg>
+        <svg aria-hidden="true"><use href="#model"></use></svg>
         <span class="text-(12px [--tjg-text-primary])">
           {{ selectedModel ? selectedModel.name : t('ai_assistant.robot.select_model') }}
         </span>

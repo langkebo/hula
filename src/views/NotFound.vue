@@ -2,7 +2,7 @@
   <div class="not-found-page">
     <div class="not-found-container">
       <div class="not-found-icon">
-        <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" aria-hidden="true">
           <circle cx="60" cy="60" r="55" stroke="var(--tjg-text-disabled)" stroke-width="4" fill="none" />
           <text x="60" y="68" text-anchor="middle" font-size="36" font-weight="700" fill="var(--tjg-text-disabled)">
             ?

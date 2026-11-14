@@ -2,7 +2,7 @@ import { useDebounceFn } from '@vueuse/core'
 import { type ComputedRef, type Ref, ref, watch } from 'vue'
 import { MsgEnum } from '@/enums'
 import { createLogger } from '@/utils/Logger'
-import { isMac, isWindows } from '@/utils/PlatformConstants'
+import { isWindows } from '@/utils/PlatformConstants'
 
 const logger = createLogger('InputShortcuts')
 
@@ -136,6 +136,14 @@ export function useInputShortcuts(options: InputShortcutsOptions): InputShortcut
   }, 0)
 
   const inputKeyDown = async (e: KeyboardEvent) => {
+    // 输入法组字中：Enter 是「确认候选词」，任何平台都不能当发送处理。
+    // 此判断必须在 disabledSend / resetInput 之前，否则空草稿下组字回车会清空输入框。
+    // Windows 中文输入法组字期间 keydown 的 keyCode 恒为 229 且 isComposing 可能为 false，
+    // 因此 isComposing、keyCode 229 与 composition 事件标记三者一起判断。
+    if (e.isComposing || e.keyCode === 229 || isChinese.value) {
+      return
+    }
+
     if (disabledSend.value) {
       e.preventDefault()
       e.stopPropagation()
@@ -145,11 +153,6 @@ export function useInputShortcuts(options: InputShortcutsOptions): InputShortcut
 
     if (ait.value || aiDialogVisible.value) {
       e?.preventDefault()
-      return
-    }
-
-    // 拼音组字中 (macOS)：交给 IME 处理
-    if (isChinese.value && isMac()) {
       return
     }
 

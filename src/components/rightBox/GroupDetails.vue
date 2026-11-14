@@ -46,17 +46,24 @@
     <div class="single-details__actions single-details__actions--group">
       <button class="single-details__action" type="button" @click="handleSendMessage">
         <span class="single-details__action-icon">
-          <svg><use href="#message" /></svg>
+          <svg aria-hidden="true"><use href="#message" /></svg>
         </span>
         <span class="single-details__action-label">{{ t('home.chat_details.actions.message') }}</span>
       </button>
 
       <button v-if="!isMobile" class="single-details__action" type="button" @click="handleOpenInNewWindow">
         <span class="single-details__action-icon">
-          <svg><use href="#expand" /></svg>
+          <svg aria-hidden="true"><use href="#expand" /></svg>
         </span>
         <span class="single-details__action-label">{{ t('chat.header.open_in_new_window') }}</span>
       </button>
+    </div>
+
+    <div v-if="loadError" class="group-details__load-error" role="alert">
+      <span class="group-details__load-error-text">{{ t('common.load_failed') }}</span>
+      <n-button text type="primary" size="small" :loading="loadingDetails" @click="retryLoad">
+        {{ t('common.retry') }}
+      </n-button>
     </div>
 
     <div v-if="announcementContent" class="announcement-container">
@@ -107,6 +114,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, RoomTypeEnum } from '@/enums'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
 import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -139,8 +147,43 @@ const item = ref<
 const announcementContent = ref('')
 const savingRoomName = ref(false)
 const uploadingAvatar = ref(false)
+const loadingDetails = ref(false)
+const loadError = ref(false)
 
 const canManageRoom = computed(() => groupStore.isCurrentUserCreator || groupStore.isCurrentUserModerator)
+
+const fetchAnnouncement = async (roomId: string) => {
+  // 复用 MatrixAnnouncementService 的只读能力：公告即 m.room.topic 状态事件（与公告面板同源）
+  const announcement = await matrixAnnouncementService.getAnnouncementById(roomId, 'topic')
+  announcementContent.value = announcement?.content ?? ''
+}
+
+const loadGroupDetails = async (uid: string) => {
+  if (loadingDetails.value) return
+  loadingDetails.value = true
+  try {
+    const response = await groupStore.loadGroupInfo(uid)
+    if (!response) {
+      // loadGroupInfo 失败时返回 null：保留已有数据，仅提示可重试，避免右栏闪空
+      loadError.value = true
+      return
+    }
+    item.value = response as typeof item.value
+    loadError.value = false
+    await fetchAnnouncement(uid)
+  } catch (error) {
+    logger.error('Failed to load group details:', error)
+    loadError.value = true
+  } finally {
+    loadingDetails.value = false
+  }
+}
+
+const retryLoad = () => {
+  const roomId = props.content.uid
+  if (!roomId) return
+  void loadGroupDetails(roomId)
+}
 
 watch(
   () => [props.content.type, props.content.uid] as const,
@@ -148,25 +191,14 @@ watch(
     if (!uid || type !== RoomTypeEnum.GROUP) {
       item.value = {}
       announcementContent.value = ''
+      loadError.value = false
       return
     }
 
-    try {
-      const response = await groupStore.loadGroupInfo(uid)
-      item.value = (response as typeof item.value) || {}
-      await fetchAnnouncement()
-    } catch (error) {
-      logger.error('Failed to load group details:', error)
-      item.value = {}
-      announcementContent.value = ''
-    }
+    await loadGroupDetails(uid)
   },
   { immediate: true }
 )
-
-const fetchAnnouncement = async () => {
-  announcementContent.value = ''
-}
 
 const handleOpenAnnouncement = () => {
   if (!item.value?.roomId) return
@@ -180,9 +212,7 @@ const handleMemberClick = (userId: string) => {
   })
 }
 
-const openImageViewer = () => {
-  logger.debug('Open image viewer')
-}
+const openImageViewer = () => {}
 
 const handleSaveRoomName = async (newValue: string) => {
   const roomId = props.content.uid
@@ -365,6 +395,22 @@ const handleForgetRoom = () => {
   font-size: 12px;
   line-height: 16px;
   color: var(--tjg-text-secondary);
+}
+
+.group-details__load-error {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--tjg-surface-panel-muted);
+  color: var(--tjg-color-danger-500);
+}
+
+.group-details__load-error-text {
+  font-size: 13px;
 }
 
 .announcement-container {

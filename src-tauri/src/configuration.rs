@@ -1,5 +1,5 @@
 use crate::error::CommonError;
-use sea_orm::{ConnectOptions, Database, DatabaseConnection};
+use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -204,6 +204,21 @@ impl DatabaseSettings {
         }
     }
 
+    /// 解析本次运行使用的数据库文件路径（不建立连接）。
+    ///
+    /// 目录确定后才会解析文件名，因此若本机存在历史（含 `:` 等非法字符）数据库文件，
+    /// 这里会顺带完成 `resolve_db_filename` 的一次性改名迁移。
+    pub fn database_path(
+        &self,
+        app_handle: &AppHandle,
+        uid: Option<&str>,
+    ) -> Result<PathBuf, CommonError> {
+        let db_dir = database_dir(app_handle)?;
+        let db_filename = Self::resolve_db_filename(&db_dir, uid);
+        info!("Database filename: {}", db_filename);
+        Ok(db_dir.join(db_filename))
+    }
+
     /// 创建数据库连接
     /// 根据不同的运行环境（桌面开发、移动端、桌面生产）选择合适的数据库路径
     /// 并配置数据库连接选项，返回数据库连接实例
@@ -221,41 +236,26 @@ impl DatabaseSettings {
         uid: Option<&str>,
     ) -> Result<DatabaseConnection, CommonError> {
         // 数据库路径配置：先确定目录，再在其中解析文件名（含一次性迁移，见 `resolve_db_filename`）。
-        let db_dir = database_dir(app_handle)?;
-
-        // 文件名解析放在目录确定之后：若本机存在历史（含 `:` 等非法字符）数据库文件，
-        // 这里先做一次改名迁移，避免改用归一化名后把本地数据「留在旧文件里」。
-        let db_filename = Self::resolve_db_filename(&db_dir, uid);
-        info!("Database filename: {}", db_filename);
-        let db_path = db_dir.join(&db_filename);
+        let db_path = self.database_path(app_handle, uid)?;
         info!("Database path: {:?}", db_path);
 
         if db_path.exists() {
             match probe_db_header(&db_path) {
                 DbHeaderVerdict::Sqlite => {}
                 DbHeaderVerdict::NotSqlite => {
-                    let backup = db_path.with_extension("corrupted");
-                    match std::fs::rename(&db_path, &backup) {
-                        Ok(()) => warn!(
-                            "database file header is not SQLite, backed up to {:?} (original file is no longer used)",
-                            backup
-                        ),
-                        Err(rename_err) => {
-                            // rename 失败再删：两步都失败时必须让人知道，否则下次启动会继续读到同一坏文件
-                            match std::fs::remove_file(&db_path) {
-                                Ok(()) => {
-                                    warn!(
-                                        "backup failed ({}), removed the corrupted database file",
-                                        rename_err
-                                    )
-                                }
-                                Err(remove_err) => warn!(
-                                    "corrupted database file can neither be backed up nor removed ({} / {}), the next start will fail again",
-                                    rename_err, remove_err
-                                ),
-                            }
-                        }
-                    }
+                    // 文件可能承载用户本地消息：只备份，绝不删除（C-03）。
+                    // 备份失败时让启动失败并保留原文件，避免静默新建空库把数据「洗掉」。
+                    let backup = backup_unusable_database(&db_path).map_err(|backup_err| {
+                        anyhow::anyhow!(
+                            "database file is not SQLite and cannot be backed up ({}): {:?}. Refusing to delete it, please inspect the file manually.",
+                            backup_err,
+                            db_path
+                        )
+                    })?;
+                    warn!(
+                        "database file header is not SQLite, backed up to {:?} (a new database will be created)",
+                        backup
+                    );
                 }
                 DbHeaderVerdict::Unknown => warn!(
                     "failed to read database file header, treated as unknown and kept the file as-is (not considered corrupted): {:?}",
@@ -264,37 +264,25 @@ impl DatabaseSettings {
             }
         }
 
-        let db_url = format!("sqlite:{}?mode=rwc", db_path.display());
-
-        // 配置数据库连接选项
-        let mut opt = ConnectOptions::new(db_url);
-        opt.max_connections(20) // 降低最大连接数，避免资源浪费
-            .min_connections(2) // 降低最小连接数
-            .connect_timeout(Duration::from_secs(30)) // 增加连接超时时间
-            .acquire_timeout(Duration::from_secs(30)) // 增加获取连接超时时间
-            .idle_timeout(Duration::from_secs(600)) // 10分钟空闲超时
-            .max_lifetime(Duration::from_secs(1800)) // 30分钟连接生命周期，避免频繁重建
-            // 启用 SQL 日志记录，但只在 debug 模式下
-            .sqlx_logging(cfg!(debug_assertions))
-            .sqlx_logging_level(tracing::log::LevelFilter::Info);
-
-        match Database::connect(opt).await {
+        match Database::connect(sqlite_connect_options(&db_path)).await {
             Ok(db) => Ok(db),
             Err(e) => {
                 let msg = e.to_string();
                 if msg.contains("file is not a database") || msg.contains("code: 26") {
-                    let _ = std::fs::remove_file(&db_path);
-                    let mut opt2 =
-                        ConnectOptions::new(format!("sqlite:{}?mode=rwc", db_path.display()));
-                    opt2.max_connections(20)
-                        .min_connections(2)
-                        .connect_timeout(Duration::from_secs(30))
-                        .acquire_timeout(Duration::from_secs(30))
-                        .idle_timeout(Duration::from_secs(600))
-                        .max_lifetime(Duration::from_secs(1800))
-                        .sqlx_logging(cfg!(debug_assertions))
-                        .sqlx_logging_level(tracing::log::LevelFilter::Info);
-                    let db = Database::connect(opt2)
+                    // 页级损坏：先备份再重建，禁止直接删除（C-03）。
+                    let backup = backup_unusable_database(&db_path).map_err(|backup_err| {
+                        anyhow::anyhow!(
+                            "database is corrupted but cannot be backed up ({}): {:?}. Refusing to delete it. Original error: {}",
+                            backup_err,
+                            db_path,
+                            msg
+                        )
+                    })?;
+                    warn!(
+                        "database connection failed with a corruption error ({}), backed up to {:?} and recreating",
+                        msg, backup
+                    );
+                    let db = Database::connect(sqlite_connect_options(&db_path))
                         .await
                         .map_err(|e| anyhow::anyhow!("Database connection failed: {}", e))?;
                     Ok(db)
@@ -304,6 +292,100 @@ impl DatabaseSettings {
             }
         }
     }
+}
+
+/// 统一的 SQLite 连接参数，避免「备份重建」分支与主分支配置漂移。
+fn sqlite_connect_options(db_path: &Path) -> ConnectOptions {
+    let mut opt = ConnectOptions::new(format!("sqlite:{}?mode=rwc", db_path.display()));
+    opt.max_connections(20) // 降低最大连接数，避免资源浪费
+        .min_connections(2) // 降低最小连接数
+        .connect_timeout(Duration::from_secs(30)) // 增加连接超时时间
+        .acquire_timeout(Duration::from_secs(30)) // 增加获取连接超时时间
+        .idle_timeout(Duration::from_secs(600)) // 10分钟空闲超时
+        .max_lifetime(Duration::from_secs(1800)) // 30分钟连接生命周期，避免频繁重建
+        // 启用 SQL 日志记录，但只在 debug 模式下
+        .sqlx_logging(cfg!(debug_assertions))
+        .sqlx_logging_level(tracing::log::LevelFilter::Info);
+    opt
+}
+
+/// 备份损坏/非 SQLite 的数据库文件，返回备份路径。
+///
+/// 本地数据库承载用户消息，任何「损坏即删除」都会造成不可恢复的数据丢失（C-03）。
+/// 备份名带时间戳并保留原文件名，同名冲突时追加序号；主文件与 `-wal`/`-shm`/`-journal`
+/// 一并移动，避免残留日志被下一次连接误读。
+fn backup_unusable_database(db_path: &Path) -> std::io::Result<PathBuf> {
+    let file_name = db_path
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "database".to_string());
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs())
+        .unwrap_or_default();
+
+    let mut backup = db_path.with_file_name(format!("{file_name}.corrupted-{stamp}"));
+    let mut suffix = 1;
+    while backup.exists() {
+        backup = db_path.with_file_name(format!("{file_name}.corrupted-{stamp}-{suffix}"));
+        suffix += 1;
+    }
+    std::fs::rename(db_path, &backup)?;
+
+    for sidecar in ["-wal", "-shm", "-journal"] {
+        let source = PathBuf::from(format!("{}{sidecar}", db_path.to_string_lossy()));
+        if source.exists() {
+            let target = PathBuf::from(format!("{}{sidecar}", backup.to_string_lossy()));
+            if let Err(rename_err) = std::fs::rename(&source, &target) {
+                warn!(
+                    "failed to move sqlite sidecar {:?} to {:?}: {}",
+                    source, target, rename_err
+                );
+            }
+        }
+    }
+
+    Ok(backup)
+}
+
+/// 迁移前数据库快照：checkpoint WAL 后复制主库文件，返回快照路径（C-02）。
+///
+/// WAL 模式下主库文件可能缺少尚未落盘的事务，直接复制得到的不是一致快照；
+/// 先执行 `PRAGMA wal_checkpoint(TRUNCATE)` 把日志并回主库再复制。
+/// 快照失败一律视为致命错误：宁可中止启动，也不要在没有回滚退路时执行迁移。
+pub async fn create_pre_migration_snapshot(
+    db: &DatabaseConnection,
+    db_path: &Path,
+) -> Result<PathBuf, CommonError> {
+    db.execute_unprepared("PRAGMA wal_checkpoint(TRUNCATE)")
+        .await
+        .map_err(|e| anyhow::anyhow!("failed to checkpoint WAL before migration: {}", e))?;
+
+    let file_name = db_path
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "database".to_string());
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs())
+        .unwrap_or_default();
+
+    let mut snapshot = db_path.with_file_name(format!("{file_name}.pre-migration-{stamp}"));
+    let mut suffix = 1;
+    while snapshot.exists() {
+        snapshot = db_path.with_file_name(format!("{file_name}.pre-migration-{stamp}-{suffix}"));
+        suffix += 1;
+    }
+
+    std::fs::copy(db_path, &snapshot).map_err(|e| {
+        anyhow::anyhow!(
+            "failed to snapshot database before migration ({}): {:?}",
+            e,
+            db_path
+        )
+    })?;
+
+    Ok(snapshot)
 }
 
 impl Environment {
@@ -724,5 +806,110 @@ mod db_header_tests {
         let path = std::env::temp_dir().join("tjg-dbheader-missing-does-not-exist.sqlite");
         let _ = std::fs::remove_file(&path);
         assert_eq!(probe_db_header(&path), DbHeaderVerdict::Unknown);
+    }
+
+    /// C-03 回归锁：损坏库只能被备份，绝不能被删除（数据不可恢复）。
+    #[test]
+    fn corrupted_database_is_backed_up_not_deleted() {
+        let path = temp_file("corrupted-backup", b"not-a-database!!");
+        let wal = format!("{}-wal", path.to_string_lossy());
+        std::fs::write(&wal, b"wal").expect("write wal");
+
+        let backup = backup_unusable_database(&path).expect("backup succeeds");
+
+        assert!(!path.exists(), "original file must be moved away");
+        assert!(backup.exists(), "backup file must exist");
+        assert_eq!(
+            std::fs::read(&backup).expect("read backup"),
+            b"not-a-database!!"
+        );
+        assert_eq!(
+            std::fs::read(format!("{}-wal", backup.to_string_lossy())).expect("read wal backup"),
+            b"wal"
+        );
+
+        let _ = std::fs::remove_file(&backup);
+        let _ = std::fs::remove_file(format!("{}-wal", backup.to_string_lossy()));
+    }
+
+    /// 同一时间戳重复备份时不能覆盖上一次的备份。
+    #[test]
+    fn repeated_backup_never_overwrites_previous_one() {
+        let path = temp_file("corrupted-twice", b"first");
+        let first = backup_unusable_database(&path).expect("first backup");
+        std::fs::write(&path, b"second").expect("rewrite db");
+        let second = backup_unusable_database(&path).expect("second backup");
+
+        assert_ne!(first, second);
+        assert_eq!(std::fs::read(&first).expect("read first"), b"first");
+        assert_eq!(std::fs::read(&second).expect("read second"), b"second");
+
+        let _ = std::fs::remove_file(&first);
+        let _ = std::fs::remove_file(&second);
+    }
+}
+
+#[cfg(test)]
+mod pre_migration_snapshot_tests {
+    use super::*;
+
+    fn temp_dir(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("tjg-snapshot-{tag}-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        dir
+    }
+
+    async fn open_temp_db(dir: &Path) -> (DatabaseConnection, PathBuf) {
+        let path = dir.join("app.sqlite");
+        let mut options = ConnectOptions::new(format!("sqlite://{}?mode=rwc", path.display()));
+        options.sqlx_logging(false);
+        let conn = Database::connect(options).await.expect("connect temp db");
+        (conn, path)
+    }
+
+    /// C-02 回归锁：迁移前快照必须落盘且内容与主库一致。
+    #[tokio::test]
+    async fn snapshot_copies_database_before_migration() {
+        let dir = temp_dir("copy");
+        let (conn, path) = open_temp_db(&dir).await;
+        conn.execute_unprepared("CREATE TABLE probe (id INTEGER PRIMARY KEY)")
+            .await
+            .expect("create table");
+
+        let snapshot = create_pre_migration_snapshot(&conn, &path)
+            .await
+            .expect("snapshot succeeds");
+
+        assert!(snapshot.exists(), "snapshot file must exist");
+        assert!(
+            snapshot
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .contains(".pre-migration-"),
+            "snapshot name must carry the pre-migration marker"
+        );
+        assert_eq!(
+            std::fs::read(&path).expect("read original"),
+            std::fs::read(&snapshot).expect("read snapshot")
+        );
+
+        let _ = conn.close().await;
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// C-02 回归锁：源库不可复制时必须报错，不能静默跳过快照后继续迁移。
+    #[tokio::test]
+    async fn snapshot_of_missing_database_fails() {
+        let dir = temp_dir("missing");
+        let (conn, _path) = open_temp_db(&dir).await;
+        let absent = dir.join("absent.sqlite");
+
+        let result = create_pre_migration_snapshot(&conn, &absent).await;
+
+        assert!(result.is_err(), "missing source must surface an error");
+
+        let _ = conn.close().await;
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -91,7 +91,8 @@
                       stroke="currentColor"
                       stroke-width="2"
                       stroke-linecap="round"
-                      stroke-linejoin="round">
+                      stroke-linejoin="round"
+                      aria-hidden="true">
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                       <circle cx="8.5" cy="8.5" r="1.5"></circle>
                       <polyline points="21 15 16 10 5 21"></polyline>
@@ -124,7 +125,8 @@
                     stroke="currentColor"
                     stroke-width="2"
                     stroke-linecap="round"
-                    stroke-linejoin="round">
+                    stroke-linejoin="round"
+                    aria-hidden="true">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
@@ -164,13 +166,13 @@
 
         <n-popover v-for="item in otherFeatures" :key="item.label" trigger="hover" :show-arrow="false" placement="top">
           <template #trigger>
-            <svg><use :href="`#${item.icon}`"></use></svg>
+            <svg aria-hidden="true"><use :href="`#${item.icon}`"></use></svg>
           </template>
           <p>{{ item.label }}</p>
         </n-popover>
 
         <div class="flex items-center gap-6px bg-[--chat-hover-color] rounded-50px w-fit h-fit p-[4px_6px]">
-          <svg class="w-22px h-22px outline-none cursor-pointer"><use href="#explosion"></use></svg>
+          <svg class="w-22px h-22px outline-none cursor-pointer" aria-hidden="true"><use href="#explosion"></use></svg>
           <n-popover trigger="hover" :show-arrow="false" placement="top">
             <template #trigger>
               <TokenUsageMeter

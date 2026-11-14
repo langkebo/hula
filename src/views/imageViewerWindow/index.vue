@@ -30,7 +30,7 @@
           <div
             v-if="showTip"
             class="fixed z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 px-24px py-12px rounded-8px text-(white 14px) transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 backdrop-blur-sm select-none flex items-center gap-8px">
-            <svg class="size-16px"><use href="#info"></use></svg>
+            <svg class="size-16px" aria-hidden="true"><use href="#info"></use></svg>
             {{ tipText }}
           </div>
         </transition>
@@ -46,7 +46,7 @@
       @mouseenter="handleArrowEnter('left')"
       @mouseleave="handleArrowLeave('left')"
       class="fixed left-20px top-1/2 -translate-y-1/2 size-40px rounded-full border-0 p-0 bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-200 opacity-0 z-10">
-      <svg class="size-24px color-white rotate-180"><use href="#arrow-right"></use></svg>
+      <svg class="size-24px color-white rotate-180" aria-hidden="true"><use href="#arrow-right"></use></svg>
     </button>
     <button
       v-show="imageList.length > 1 && showArrows.right"
@@ -56,7 +56,7 @@
       @mouseenter="handleArrowEnter('right')"
       @mouseleave="handleArrowLeave('right')"
       class="fixed right-20px top-1/2 -translate-y-1/2 size-40px rounded-full border-0 p-0 bg-black/30 flex-center cursor-pointer hover:bg-black/50 transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-200 opacity-0 z-10">
-      <svg class="size-24px color-white"><use href="#arrow-right"></use></svg>
+      <svg class="size-24px color-white" aria-hidden="true"><use href="#arrow-right"></use></svg>
     </button>
 
     <!-- 底部工具栏 -->
@@ -71,7 +71,7 @@
             :aria-label="t('message.image_viewer.zoom_out')"
             @click="zoomOut"
             class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
-            <svg class="size-24px color-white"><use href="#zoom-out"></use></svg>
+            <svg class="size-24px color-white" aria-hidden="true"><use href="#zoom-out"></use></svg>
           </button>
         </template>
         {{ t('message.image_viewer.zoom_out') }}
@@ -86,7 +86,7 @@
             :aria-label="t('message.image_viewer.zoom_in')"
             @click="zoomIn"
             class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
-            <svg class="size-24px color-white"><use href="#zoom-in"></use></svg>
+            <svg class="size-24px color-white" aria-hidden="true"><use href="#zoom-in"></use></svg>
           </button>
         </template>
         {{ t('message.image_viewer.zoom_in') }}
@@ -99,7 +99,7 @@
             :aria-label="t('message.image_viewer.rotate_left')"
             @click="rotateLeft"
             class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
-            <svg class="size-24px color-white scale-x--100"><use href="#RotateRight"></use></svg>
+            <svg class="size-24px color-white scale-x--100" aria-hidden="true"><use href="#RotateRight"></use></svg>
           </button>
         </template>
         {{ t('message.image_viewer.rotate_left') }}
@@ -112,7 +112,7 @@
             :aria-label="t('message.image_viewer.rotate_right')"
             @click="rotateRight"
             class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
-            <svg class="size-24px color-white"><use href="#RotateRight"></use></svg>
+            <svg class="size-24px color-white" aria-hidden="true"><use href="#RotateRight"></use></svg>
           </button>
         </template>
         {{ t('message.image_viewer.rotate_right') }}
@@ -125,7 +125,7 @@
             :aria-label="t('message.image_viewer.reset')"
             @click="resetImage()"
             class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
-            <svg class="size-24px color-white"><use href="#refresh"></use></svg>
+            <svg class="size-24px color-white" aria-hidden="true"><use href="#refresh"></use></svg>
           </button>
         </template>
         {{ t('message.image_viewer.reset') }}
@@ -138,7 +138,7 @@
             :aria-label="t('message.image_viewer.save_as')"
             @click="saveImage"
             class="size-24px border-0 p-0 bg-transparent rounded-4px flex-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
-            <svg class="size-24px color-white"><use href="#Importing"></use></svg>
+            <svg class="size-24px color-white" aria-hidden="true"><use href="#Importing"></use></svg>
           </button>
         </template>
         {{ t('message.image_viewer.save_as') }}

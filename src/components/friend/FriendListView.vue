@@ -111,7 +111,7 @@
             </div>
             <!-- 性能优化：列表项超过 100 时使用 RecycleScroller 虚拟滚动（需求文档 16.1） -->
             <RecycleScroller
-              v-else-if="displayedFriends.length > VIRTUAL_SCROLL_THRESHOLD"
+              v-else-if="displayedFriends.length > LIST_VIRTUALIZATION_THRESHOLD"
               class="friend-items friend-items--virtual"
               :items="displayedFriends"
               :item-size="76"
@@ -175,6 +175,7 @@ import SkeletonFriendList from '@/components/common/SkeletonFriendList.vue'
 import { triggerGlobalSearch } from '@/composables/search/useSearchShortcut'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
+import { LIST_VIRTUALIZATION_THRESHOLD } from '@/utils/listVirtualization'
 import ContactGroupSection from './ContactGroupSection.vue'
 import { useFriendContextMenu } from './composables/useFriendContextMenu'
 import { useFriendFilters } from './composables/useFriendFilters'
@@ -184,9 +185,6 @@ import { useFriendSearch } from './composables/useFriendSearch'
 import FriendListHeader from './FriendListHeader.vue'
 import FriendListItem from './FriendListItem.vue'
 import { resolveFriendListViewState } from './friendListViewState'
-
-/** 列表项超过此阈值时启用虚拟滚动（需求文档 16.1） */
-const VIRTUAL_SCROLL_THRESHOLD = 100
 
 const { t } = useI18n()
 const route = useRoute()

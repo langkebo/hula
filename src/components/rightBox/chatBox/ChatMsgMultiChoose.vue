@@ -13,7 +13,7 @@
           @click="opt.click"
           class="size-46px mx-auto">
           <template #icon>
-            <svg class="size-22px">
+            <svg class="size-22px" aria-hidden="true">
               <use :href="opt.icon"></use>
             </svg>
           </template>
@@ -29,7 +29,11 @@
     <div class="bg-[--tjg-surface-panel] h-full p-6px box-border flex flex-col">
       <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="showModal = false" />
 
-      <svg v-if="isWindows()" @click="showModal = false" class="size-12px ml-a cursor-pointer select-none">
+      <svg
+        v-if="isWindows()"
+        @click="showModal = false"
+        class="size-12px ml-a cursor-pointer select-none"
+        aria-hidden="true">
         <use href="#close"></use>
       </svg>
       <div class="pt-8px flex flex-col select-none">
@@ -45,7 +49,7 @@
               clearable
               size="small">
               <template #prefix>
-                <svg class="w-12px h-12px">
+                <svg class="w-12px h-12px" aria-hidden="true">
                   <use href="#search"></use>
                 </svg>
               </template>
@@ -84,7 +88,7 @@
                     @click="handleRemoveSession(session.roomId)">
                     <template #icon>
                       <n-icon size="14">
-                        <svg class="w-14px h-14px">
+                        <svg class="w-14px h-14px" aria-hidden="true">
                           <use href="#close"></use>
                         </svg>
                       </n-icon>
@@ -126,7 +130,11 @@
     <div class="bg-[--tjg-surface-panel] w-360px h-full p-6px box-border flex flex-col">
       <MacCloseButton v-if="isMac()" class="z-999 absolute left-6px" @click="showDeleteConfirm = false" />
 
-      <svg v-if="isWindows()" @click="showDeleteConfirm = false" class="w-12px h-12px ml-a cursor-pointer select-none">
+      <svg
+        v-if="isWindows()"
+        @click="showDeleteConfirm = false"
+        class="w-12px h-12px ml-a cursor-pointer select-none"
+        aria-hidden="true">
         <use href="#close"></use>
       </svg>
       <div class="flex flex-col gap-30px p-[22px_10px_10px_22px] select-none">
@@ -474,7 +482,7 @@ const sendMsg = async () => {
   if (isForwarding.value) return
   const selectedRoomIds = selectedSessions.value.map((item) => item.roomId)
   if (!selectedRoomIds.length) {
-    showFeedback(t('message.multi_choose.search_placeholder'), 'warning')
+    showFeedback(t('message.multi_choose.select_session_hint'), 'warning')
     return
   }
 

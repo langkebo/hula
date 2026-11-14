@@ -5,7 +5,7 @@
        否则只是给用户一个必定 403 的按钮。
 
        文案只说「水印」，不说「阻止截屏」：客户端能做的只有在自己窗口上叠水印，
-       系统级截屏无法拦截（Rust 侧 screenshot_watch 目前仍是占位实现）。 -->
+       系统级截屏无法拦截；截屏检测能力已按 F-10 连同 Rust 占位命令一并移除。 -->
   <div v-if="canManage" class="anti-screenshot">
     <div class="setting-item">
       <span class="setting-label">{{ t('home.chat_header.anti_screenshot') }}</span>

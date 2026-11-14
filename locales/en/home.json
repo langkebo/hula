@@ -42,6 +42,9 @@
     "network_offline": "Network unavailable, please check your settings",
     "network_connecting": "Connecting to server...",
     "network_ws_offline": "Server connection lost, retrying",
+    "loading_more": "Loading earlier messages...",
+    "load_more_failed": "Failed to load message history",
+    "unread_divider": "New messages",
     "feature": {
       "coming_soon": "Feature under development"
     },
@@ -232,6 +235,9 @@
     "group_name": "Group Name",
     "share_qr_code": "Share QR Code",
     "group_qr_code": "Group QR Code",
+    "qr_code_copied": "QR code copied to clipboard",
+    "qr_code_link_copied": "Room link copied to clipboard",
+    "qr_code_copy_failed": "Failed to copy QR code",
     "my_name_in_group": "My Name in Group",
     "remark": "Remark",
     "input_group_name": "Enter group name…",

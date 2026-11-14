@@ -25,7 +25,7 @@
           size="small"
           class="w-[200px] rounded-[var(--tjg-radius-md)] border-(solid 1px [--tjg-border-default])">
           <template #prefix>
-            <svg class="size-16px text-[--tjg-text-secondary] opacity-60">
+            <svg class="size-16px text-[--tjg-text-secondary] opacity-60" aria-hidden="true">
               <use href="#search"></use>
             </svg>
           </template>
@@ -35,8 +35,22 @@
 
     <!-- 文件列表区域 -->
     <div class="relative overflow-hidden flex-1">
+      <!-- 加载失败：给出原因与重试入口，避免静默空白 -->
+      <EmptyState v-if="loadError" :icon="'mdi:alert-circle-outline'" :title="loadError">
+        <template #actions>
+          <n-button type="primary" secondary size="small" @click="retryLoad">
+            {{ t('fileManager.common.retry') }}
+          </n-button>
+        </template>
+      </EmptyState>
+
+      <!-- 首次加载 -->
+      <div v-else-if="loading && displayedTimeGroupedFiles.length === 0" class="flex-center h-200px">
+        <n-spin size="small" />
+      </div>
+
       <!-- 文件列表 -->
-      <n-scrollbar v-if="displayedTimeGroupedFiles.length > 0">
+      <n-scrollbar v-else-if="displayedTimeGroupedFiles.length > 0">
         <div class="p-20px flex flex-col gap-24px">
           <!-- 时间分组 -->
           <div v-for="timeGroup in displayedTimeGroupedFiles" :key="timeGroup.date" class="flex flex-col gap-12px">
@@ -116,19 +130,31 @@ const logger = createLogger('FileContent')
 type FileManagerState = {
   timeGroupedFiles: Ref<TimeGroup[]>
   loading: Ref<boolean>
+  loadError: Ref<string>
   searchKeyword: Ref<string>
   activeNavigation: Ref<string>
   selectedUser: Ref<string>
   userList: Ref<User[]>
   setSearchKeyword: (keyword: string) => void
   setSelectedUser: (userId: string) => void
+  retryLoad: () => Promise<void>
 }
 
 const groupStore = useGroupStore()
 const { t } = useI18n()
 const fileManagerState = inject<FileManagerState>('fileManagerState')!
-const { timeGroupedFiles, searchKeyword, activeNavigation, selectedUser, userList, setSearchKeyword, setSelectedUser } =
-  fileManagerState
+const {
+  timeGroupedFiles,
+  loading,
+  loadError,
+  searchKeyword,
+  activeNavigation,
+  selectedUser,
+  userList,
+  setSearchKeyword,
+  setSelectedUser,
+  retryLoad
+} = fileManagerState
 
 const fileSearchKeyword = computed({
   get: () => searchKeyword.value,

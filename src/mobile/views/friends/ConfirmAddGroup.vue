@@ -105,7 +105,6 @@ const addFriend = async () => {
 }
 
 onMounted(async () => {
-  logger.debug('userInfo:', userInfo.value)
   syncDefaultMessage()
 })
 </script>

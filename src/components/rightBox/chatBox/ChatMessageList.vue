@@ -27,12 +27,22 @@
       :size-dependencies="[
         item.message.body,
         item.message.type,
+        item.message.status,
+        item.uploadProgress,
         item.message.content?.info?.h?._,
         item.message.content?.file?._,
         item.replyEvent
       ]"
       :data-index="index">
       <n-flex vertical class="flex-y-center mb-12px" :data-message-id="item.message.id" :data-message-index="index">
+        <!-- 未读分隔线：进入会话时按未读边界快照插入一次 -->
+        <div
+          v-if="index === unreadDividerIndex"
+          class="unread-divider"
+          role="separator"
+          :aria-label="t('home.chat_main.unread_divider')">
+          <span class="unread-divider__label">{{ t('home.chat_main.unread_divider') }}</span>
+        </div>
         <!-- 信息间隔时间：居中 chip，用 secondary 文本色保证小字号下的对比度 -->
         <span class="message-time-separator select-none" v-if="shouldShowTimeBlock(index)" @click.stop>
           {{ formatChatTime(item.message.sendTime) }}
@@ -76,17 +86,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { useUnreadDividerIndex } from '@/composables/chat/useUnreadDivider'
 import { MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { formatChatTime } from '@/utils/ComputedTime'
-import { createLogger } from '@/utils/Logger'
 import { isMessageMultiSelectEnabled } from '@/utils/MessageSelect'
 
 const props = defineProps<{
@@ -105,9 +115,6 @@ const globalStore = useGlobalStore()
 const userStore = useUserStore()
 
 const hoverId = ref('')
-const logger = createLogger('ChatMessageList')
-
-// 模块级缓存一次判定，避免每次 mouseenter 新建 MediaQueryList
 const canHover = (() => {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
   return window.matchMedia('(hover: hover) and (pointer: fine)').matches
@@ -118,17 +125,6 @@ const handleRowMouseEnter = (messageId: string) => {
   if (!canHover) return
   hoverId.value = messageId
 }
-
-// 诊断：观察当前房间 hasLoadedOnce 状态变化，确认 UI 层是否收到翻转。
-watch(
-  () => chatStore.currentMessageOptions?.hasLoadedOnce,
-  (hasLoadedOnce) => {
-    logger.info(
-      `[ChatMessageList] currentMessageOptions.hasLoadedOnce changed: ${hasLoadedOnce}, roomId=${globalStore.currentSessionRoomId}`
-    )
-  },
-  { immediate: true }
-)
 
 // 主视图就绪：当前房间消息完成首次加载即可渲染消息区。
 // 原先还要求 currentSessionInfo?.roomId === currentRoomId（hasSessionBound），
@@ -163,6 +159,9 @@ const getMessageSenderUid = (message: MessageType): string => {
 }
 
 const isMessageFromMe = (item: MessageType) => getMessageSenderUid(item) === (userStore.userInfo?.uid ?? '')
+
+// 未读分隔线插入位置（进入会话时按未读边界快照）
+const unreadDividerIndex = useUnreadDividerIndex()
 
 // 微信式时间分割：首条或与上一条间隔超过 5 分钟才展示，避免连续消息逐条显示时间
 const TIME_BLOCK_GAP_MS = 5 * 60 * 1000
@@ -224,6 +223,29 @@ const shouldShowTimeBlock = (index: number): boolean => {
   color: var(--tjg-text-secondary);
   background: color-mix(in srgb, var(--tjg-surface-muted) 80%, transparent);
   border-radius: var(--tjg-radius-full);
+}
+
+.unread-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 0;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--tjg-color-primary-500);
+    opacity: 0.5;
+  }
+}
+
+.unread-divider__label {
+  flex-shrink: 0;
+  font-size: var(--tjg-font-size-xs);
+  color: var(--tjg-color-primary-500);
 }
 
 .message-skeleton {

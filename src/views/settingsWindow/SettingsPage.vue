@@ -2,7 +2,7 @@
   <SkeletonSettings v-if="loading" />
   <div v-else-if="shellError" class="settings-page-error" role="alert" data-test="settings-shell-error">
     <n-icon size="22" color="var(--tjg-color-danger-500)">
-      <svg><use href="#warning" /></svg>
+      <svg aria-hidden="true"><use href="#warning" /></svg>
     </n-icon>
     <p class="settings-page-error__title">{{ t('setting.dialog.shell_error_title') }}</p>
     <p class="settings-page-error__detail">{{ shellError.message }}</p>

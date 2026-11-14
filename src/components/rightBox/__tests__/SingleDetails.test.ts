@@ -55,7 +55,9 @@ vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: vi.fn(),
     back: vi.fn()
-  })
+  }),
+  // 头像预览经 useImageViewer 触发 chat store 初始化，store setup 内会调用 useRoute
+  useRoute: () => ({ path: '/', name: 'home', params: {}, query: {} })
 }))
 
 vi.mock('@/composables/common/useActionFeedback', () => ({

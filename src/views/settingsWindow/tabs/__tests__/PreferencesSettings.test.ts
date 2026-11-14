@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentPublicInstance } from 'vue'
@@ -26,6 +26,7 @@ const setSpaceDefaultNotificationMock = vi.fn()
 const setSendReadReceiptsEnabledMock = vi.fn()
 const setSendTypingNotificationsEnabledMock = vi.fn()
 const migrateLegacyPreferenceSettingsMock = vi.fn()
+const startScanMock = vi.fn(async () => true)
 const translationMap: Record<string, string> = {
   'setting.preferences.language_section': '语言',
   'setting.preferences.interface_language_label': '界面语言',
@@ -44,6 +45,7 @@ const translationMap: Record<string, string> = {
   'setting.preferences.storage_directory_desc': '统一管理扫描目录并查看当前空间占用',
   'setting.preferences.storage_disk_usage': '磁盘占用 {percentage}%',
   'setting.preferences.storage_scan_progress': '扫描进度 {percentage}%',
+  'setting.storage.scan_failed': '扫描目录失败，请检查目录权限后重试',
   'setting.preferences.messaging_section': '消息发送',
   'setting.preferences.send_key_label': '发送键',
   'setting.preferences.send_key_desc': '选择发送消息的快捷键',
@@ -253,7 +255,7 @@ vi.mock('@/stores/domains/widget/scanner', () => ({
     initializeScanner: vi.fn(),
     setPathType: vi.fn(),
     setCustomDirectory: vi.fn(),
-    startScan: vi.fn()
+    startScan: () => startScanMock()
   })
 }))
 
@@ -533,5 +535,17 @@ describe('PreferencesSettings', () => {
     const sendKeyOptions = getVm(wrapper).sendKeyOptions
     expect(sendKeyOptions).toHaveLength(3)
     expect(sendKeyOptions.map((option) => option.label)).toEqual(['Enter', 'Ctrl + Enter', 'Shift + Enter'])
+  })
+
+  it('目录扫描失败时提示错误并保留重试入口', async () => {
+    startScanMock.mockResolvedValueOnce(false)
+
+    const wrapper = mount(PreferencesSettings)
+    // 存储面板已抽为子组件 StorageSettingsPanel，扫描入口随之下移
+    const panel = wrapper.findComponent({ name: 'StorageSettingsPanel' })
+    await (panel.vm as unknown as { startScan: () => Promise<void> }).startScan()
+    await flushPromises()
+
+    expect(messageErrorMock).toHaveBeenCalledWith('扫描目录失败，请检查目录权限后重试')
   })
 })

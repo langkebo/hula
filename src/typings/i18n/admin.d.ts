@@ -106,7 +106,9 @@ export type Messages = {
     "userId": "用户ID",
     "userRole": "普通用户",
     "username": "用户名",
-    "usernameRequired": "用户名不能为空"
+    "usernameRequired": "用户名不能为空",
+    "loadedCount": "已加载 {count} 条",
+    "loadMore": "加载更多"
   },
   "rooms": {
     "search": "搜索房间ID、名称或话题",
@@ -190,7 +192,12 @@ export type Messages = {
     "banConfirm": "确定要封禁用户 {userId} 吗？",
     "banSuccess": "用户已封禁",
     "banFailed": "封禁用户失败",
-    "aliasRemoveNotSupported": "别名删除暂不支持"
+    "aliasRemoveNotSupported": "别名删除暂不支持",
+    "loadedCount": "已加载 {count} 条",
+    "removeAlias": "删除别名",
+    "removeAliasConfirm": "确定要删除别名 {alias} 吗？",
+    "aliasRemoveSuccess": "别名已删除",
+    "aliasRemoveFailed": "删除别名失败"
   },
   "dashboard": {
     "serverInfo": "服务器信息",
@@ -205,6 +212,7 @@ export type Messages = {
     "version": "服务器版本",
     "pythonVersion": "Python 版本",
     "activityTrend": "活跃趋势",
+    "trendInsufficient": "数据不足，暂无法展示活跃趋势",
     "messageDistribution": "消息分布",
     "textMessages": "文本消息",
     "mediaMessages": "媒体消息",
@@ -402,6 +410,14 @@ export type Messages = {
     "unblock_failed": "解封失败",
     "no_ip_blocks": "暂无封禁IP",
     "no_security_events": "暂无安全事件",
+    "load_failed": "加载安全事件失败",
+    "loaded_count": "已加载 {count} 条",
+    "load_more": "加载更多",
+    "time_range": "时间范围",
+    "time_range_all": "全部时间",
+    "time_range_24h": "近 24 小时",
+    "time_range_7d": "近 7 天",
+    "time_range_30d": "近 30 天",
     "no_login_failures": "暂无登录失败记录",
     "filter_event_type": "筛选事件类型",
     "event_type_login_failure": "登录失败",
@@ -710,6 +726,8 @@ export type Messages = {
     "guest_accounts": "访客账户",
     "load_accounts": "加载访客账户",
     "load_accounts_failed": "加载访客账户失败",
+    "loaded_count": "已加载 {count} 条",
+    "load_more": "加载更多",
     "no_accounts": "暂无访客账户",
     "deactivate": "停用",
     "deactivate_title": "停用访客账户",
@@ -960,6 +978,8 @@ export type KeyPaths =
   | "admin.users.userRole"
   | "admin.users.username"
   | "admin.users.usernameRequired"
+  | "admin.users.loadedCount"
+  | "admin.users.loadMore"
   | "admin.rooms.search"
   | "admin.rooms.searchBtn"
   | "admin.rooms.searchFailed"
@@ -1042,6 +1062,11 @@ export type KeyPaths =
   | "admin.rooms.banSuccess"
   | "admin.rooms.banFailed"
   | "admin.rooms.aliasRemoveNotSupported"
+  | "admin.rooms.loadedCount"
+  | "admin.rooms.removeAlias"
+  | "admin.rooms.removeAliasConfirm"
+  | "admin.rooms.aliasRemoveSuccess"
+  | "admin.rooms.aliasRemoveFailed"
   | "admin.dashboard.serverInfo"
   | "admin.dashboard.totalRooms"
   | "admin.dashboard.totalUsers"
@@ -1054,6 +1079,7 @@ export type KeyPaths =
   | "admin.dashboard.version"
   | "admin.dashboard.pythonVersion"
   | "admin.dashboard.activityTrend"
+  | "admin.dashboard.trendInsufficient"
   | "admin.dashboard.messageDistribution"
   | "admin.dashboard.textMessages"
   | "admin.dashboard.mediaMessages"
@@ -1223,6 +1249,14 @@ export type KeyPaths =
   | "admin.security.unblock_failed"
   | "admin.security.no_ip_blocks"
   | "admin.security.no_security_events"
+  | "admin.security.load_failed"
+  | "admin.security.loaded_count"
+  | "admin.security.load_more"
+  | "admin.security.time_range"
+  | "admin.security.time_range_all"
+  | "admin.security.time_range_24h"
+  | "admin.security.time_range_7d"
+  | "admin.security.time_range_30d"
   | "admin.security.no_login_failures"
   | "admin.security.filter_event_type"
   | "admin.security.event_type_login_failure"
@@ -1497,6 +1531,8 @@ export type KeyPaths =
   | "admin.guests.guest_accounts"
   | "admin.guests.load_accounts"
   | "admin.guests.load_accounts_failed"
+  | "admin.guests.loaded_count"
+  | "admin.guests.load_more"
   | "admin.guests.no_accounts"
   | "admin.guests.deactivate"
   | "admin.guests.deactivate_title"

@@ -6,7 +6,7 @@
     <!-- 进度条头部信息 -->
     <div class="flex-y-center pb-10px">
       <div class="flex-center gap-8px">
-        <svg class="size-16px color-[--tjg-text-primary]">
+        <svg class="size-16px color-[--tjg-text-primary]" aria-hidden="true">
           <use href="#file2"></use>
         </svg>
         <span class="text-(14px [--tjg-text-primary]) max-w-200px truncate">

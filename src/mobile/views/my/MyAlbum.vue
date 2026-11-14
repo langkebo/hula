@@ -122,21 +122,17 @@ const getAllImages = async () => {
   try {
     if (Object.keys(fileStore.roomFilesMap).length === 0) {
       if (globalStore.currentSessionRoomId) {
-        logger.debug('Scanning local files for room:', globalStore.currentSessionRoomId)
         await fileStore.scanLocalFiles(globalStore.currentSessionRoomId)
       }
     }
 
     const roomFilesMap = fileStore.roomFilesMap
-    logger.debug('roomFilesMap:', roomFilesMap)
     const imagesList: Array<{ displayUrl: string; originalUrl: string; id: string; roomId: string }> = []
 
     for (const roomId in roomFilesMap) {
       const files = await fileStore.getRoomFilesForDisplay(roomId)
-      logger.debug('roomId:', roomId, 'files:', files)
 
       const images = files.filter((file) => file.type === 'image')
-      logger.debug('roomId:', roomId, 'images:', images)
 
       imagesList.push(
         ...images.map((img) => ({
@@ -148,7 +144,6 @@ const getAllImages = async () => {
       )
     }
 
-    logger.debug('Final image list:', imagesList)
     allImages.value = imagesList
     visibleCount.value = PAGE_SIZE
   } catch (error) {
@@ -160,13 +155,11 @@ const getAllImages = async () => {
 }
 
 const handleImageClick = (image: AlbumImage) => {
-  logger.debug('Image clicked:', image)
   activeImage.value = image
   showImagePreviewRef.value = true
 }
 
 onMounted(() => {
-  logger.debug('MyAlbum mounted')
   getAllImages()
 })
 </script>

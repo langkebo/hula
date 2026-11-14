@@ -82,6 +82,17 @@ class MatrixRoomQueryService extends BaseMatrixService {
       throw err
     }
   }
+
+  /** 获取房间已加入成员数（走 SDK 缓存，不额外发起网络请求） */
+  async getJoinedMemberCount(roomId: string): Promise<number> {
+    try {
+      const room = await this.getRoom(roomId)
+      return room.getJoinedMemberCount()
+    } catch (err) {
+      logger.error(`[MatrixRoom] 获取房间成员数失败: ${err}`)
+      throw err
+    }
+  }
 }
 
 export const matrixRoomQueryService = new MatrixRoomQueryService()

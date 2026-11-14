@@ -18,6 +18,7 @@
 
 <script setup lang="ts">
 import { getCurrentWebviewWindow, WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useI18n } from 'vue-i18n'
 import FileContent from '@/components/fileManager/FileContent.vue'
 import SideNavigation from '@/components/fileManager/SideNavigation.vue'
 import UserList from '@/components/fileManager/UserList.vue'
@@ -33,6 +34,7 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('FileManager')
+const { t } = useI18n()
 
 const currentWindowLabel = computed(() => (hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''))
 
@@ -45,10 +47,13 @@ const timeGroupedFiles = ref<FileManagerTimeGroup[]>([])
 const userList = ref<FileManagerUser[]>([])
 const loading = ref(false)
 const navigationItems = ref<FileManagerNavigationItem[]>([])
+// 查询失败时展示可重试的错误态，而不是静默留空
+const loadError = ref('')
 
 const queryFilesAction = async () => {
   try {
     loading.value = true
+    loadError.value = ''
 
     const queryParam: FileQueryParam = {
       navigationType: activeNavigation.value,
@@ -75,6 +80,7 @@ const queryFilesAction = async () => {
     userList.value = response.userList
   } catch (error) {
     logger.error('Failed to query files:', error)
+    loadError.value = t('fileManager.common.loadFailed')
   } finally {
     loading.value = false
   }
@@ -86,7 +92,14 @@ const getNavigationItemsAction = async () => {
     navigationItems.value = items
   } catch (error) {
     logger.error('Failed to load navigation menu:', error)
+    loadError.value = t('fileManager.common.loadFailed')
   }
+}
+
+const retryLoad = async () => {
+  loadError.value = ''
+  await getNavigationItemsAction()
+  await queryFilesAction()
 }
 
 // 设置激活的导航项
@@ -127,11 +140,13 @@ provide('fileManagerState', {
   timeGroupedFiles: readonly(timeGroupedFiles),
   userList: readonly(userList),
   loading: readonly(loading),
+  loadError: readonly(loadError),
   navigationItems: readonly(navigationItems),
   setActiveNavigation,
   setSelectedUser,
   setSelectedRoom,
-  setSearchKeyword
+  setSearchKeyword,
+  retryLoad
 })
 
 onMounted(async () => {

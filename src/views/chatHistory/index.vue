@@ -16,7 +16,7 @@
         clearable
         @input="handleSearch">
         <template #prefix>
-          <svg class="search-icon"><use href="#search"></use></svg>
+          <svg class="search-icon" aria-hidden="true"><use href="#search"></use></svg>
         </template>
       </n-input>
     </div>
@@ -45,7 +45,19 @@
     <!-- 消息列表 -->
     <div class="flex-1 overflow-auto select-none">
       <n-infinite-scroll :distance="10" @load="loadMore">
-        <div v-if="messages.length === 0 && !loading" class="flex-center h-200px">
+        <div v-if="loading && messages.length === 0" class="flex-center h-200px" role="status">
+          <n-spin size="small" />
+        </div>
+
+        <div
+          v-else-if="loadError && messages.length === 0"
+          class="flex flex-col items-center justify-center h-200px gap-12px"
+          role="alert">
+          <span class="text-14px text-[--tjg-text-secondary]">{{ t('chatHistory.empty.loadFailed') }}</span>
+          <n-button size="small" @click="retryLoad">{{ t('common.retry') }}</n-button>
+        </div>
+
+        <div v-else-if="messages.length === 0" class="flex-center h-200px">
           <n-empty :description="t('chatHistory.empty.noData')" />
         </div>
 
@@ -143,6 +155,7 @@ const userUid = computed(() => userStore.userInfo?.uid ?? '')
 // 响应式数据
 const messages = ref<MessageType[]>([])
 const loading = ref(false)
+const loadError = ref(false)
 const hasMore = ref(true)
 const currentPage = ref(1)
 
@@ -273,10 +286,11 @@ const handleVideoClick = async (videoUrl: string) => {
 }
 
 // 加载消息
-const loadMessages = async () => {
-  if (!roomId.value) return
+const loadMessages = async (): Promise<boolean> => {
+  if (!roomId.value) return false
 
   loading.value = true
+  loadError.value = false
 
   try {
     const params = {
@@ -300,7 +314,8 @@ const loadMessages = async () => {
 
     if (result.isErr()) {
       logger.error('Failed to load chat history:', result.error)
-      return
+      loadError.value = true
+      return false
     }
 
     const response = result.value
@@ -312,19 +327,28 @@ const loadMessages = async () => {
     }
 
     hasMore.value = response.hasMore
+    return true
   } catch (error) {
     logger.error('Failed to load chat history:', error)
+    loadError.value = true
+    return false
   } finally {
     loading.value = false
   }
 }
 
 // 加载更多
-const loadMore = () => {
-  if (hasMore.value) {
-    currentPage.value++
-    loadMessages()
-  }
+const loadMore = async () => {
+  if (loading.value || !hasMore.value) return
+  currentPage.value++
+  const ok = await loadMessages()
+  // 失败时回退页码，避免重试/继续滚动时跳过一页
+  if (!ok) currentPage.value--
+}
+
+// 失败重试
+const retryLoad = () => {
+  loadMessages()
 }
 
 // 监听房间ID变化

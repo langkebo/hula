@@ -43,7 +43,6 @@
       :room-id="currentSessionRoomId"
       @update-name="handleUpdateGroupName"
       @update-my-name="handleUpdateMyName"
-      @update-remark="handleUpdateRemark"
       @pin-room="handlePinRoom"
       @mute-change="handleMuteNotification"
       @clear-messages="handleClearMessages"
@@ -60,20 +59,7 @@
       @positive-click="handleModalConfirm"
       @negative-click="modalShow = false" />
 
-    <n-modal
-      v-model:show="showQRCodeModal"
-      preset="card"
-      :title="t('home.chat_header.group_qr_code')"
-      class="w-[300px]">
-      <div class="qr-code-container">
-        <canvas ref="qrCanvasRef" width="200" height="200"></canvas>
-      </div>
-      <div class="qr-code-actions">
-        <n-button type="primary" block @click="handleShareQRCode">
-          {{ t('home.chat_header.share_qr_code') }}
-        </n-button>
-      </div>
-    </n-modal>
+    <RoomQRCodeModal v-model:show="showQRCodeModal" :room-id="currentSessionRoomId" />
 
     <!-- 私密模式确认对话框 -->
     <n-modal
@@ -88,23 +74,17 @@
         <p class="private-confirm-desc">{{ t('chat.header.private_mode_confirm_desc') }}</p>
         <ul class="private-feature-list">
           <li>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path
                 d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5zm3 8H9V6a3 3 0 0 1 6 0v3z" />
             </svg>
             {{ t('chat.header.private_mode_feature_e2ee') }}
           </li>
           <li>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 2c0 5-4 7-4 12a4 4 0 0 0 8 0c0-5-4-7-4-12z" />
             </svg>
             {{ t('chat.header.private_mode_feature_burn') }}
-          </li>
-          <li>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
-            </svg>
-            {{ t('chat.header.private_mode_feature_screenshot') }}
           </li>
         </ul>
       </div>
@@ -115,17 +95,22 @@
 <script setup lang="ts">
 import { useDialog } from 'naive-ui'
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useIndependentChatWindow } from '@/composables/chat/useIndependentChatWindow'
 import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import { openExternalUrl } from '@/composables/common/useLinkSegments'
 import { useMitt } from '@/composables/common/useMitt'
+import { useOperationFeedback } from '@/composables/common/useOperationFeedback'
 import { useWindow } from '@/composables/common/useWindow'
 import { CallTypeEnum, MittEnum, RoomActEnum, RoomTypeEnum } from '@/enums'
 import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
-import { matrixRoomActionFacade, matrixRoomMemberFacade } from '@/services/matrix/room/RoomFacade'
+import {
+  matrixRoomActionFacade,
+  matrixRoomMemberFacade,
+  matrixRoomQueryFacade
+} from '@/services/matrix/room/RoomFacade'
 import { matrixWidgetService } from '@/services/matrix/widget/MatrixWidgetService'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -136,6 +121,7 @@ import { extractServerName } from '@/utils/userIdentity'
 import ChatHeaderInfo from './ChatHeaderInfo.vue'
 import ChatHeaderSidebar from './ChatHeaderSidebar.vue'
 import ChatHeaderToolbar from './ChatHeaderToolbar.vue'
+import RoomQRCodeModal from './RoomQRCodeModal.vue'
 
 const logger = createLogger('ChatHeader')
 const { t } = useI18n()
@@ -144,6 +130,7 @@ const globalStore = useGlobalStore()
 const groupStore = useGroupStore()
 const chatStore = useChatStore()
 const userStore = useUserStore()
+const { reportFailure } = useOperationFeedback()
 
 const { currentSession: activeItem, currentSessionRoomId } = storeToRefs(globalStore)
 
@@ -164,13 +151,14 @@ const optionsType = ref<number | undefined>(undefined)
 const localMyName = ref('')
 const localRemark = ref('')
 
-const qrCanvasRef = ref<HTMLCanvasElement | null>(null)
-
 const isGroup = computed(() => activeItem.value?.type === RoomTypeEnum.GROUP)
 const isBotUser = computed(() => activeItem.value?.account === 'BOT')
 const roomType = computed(() => activeItem.value?.type)
 const roomName = computed(() => activeItem.value?.name || '')
-const memberCount = computed(() => groupStore.userList.length || 0)
+const joinedMemberCount = ref(0)
+let joinedMemberCountRequestId = 0
+// 成员数优先使用 SDK 的 joined 成员总数；成员列表是分页加载的子集，仅作为下限兜底
+const memberCount = computed(() => Math.max(joinedMemberCount.value, groupStore.userList.length))
 const currentUserAvatar = computed(() => activeItem.value?.avatar || '')
 const isPinned = computed(() => activeItem.value?.top || false)
 
@@ -231,7 +219,7 @@ const handleModalConfirm = async () => {
     modalShow.value = false
     sidebarShow.value = false
   } catch (error) {
-    logger.error('Operation failed:', error)
+    reportFailure(error)
   }
 }
 
@@ -242,7 +230,7 @@ const handleDeleteRoom = async () => {
     chatStore.removeSession(currentSessionRoomId.value)
     globalStore.updateCurrentSessionRoomId('')
   } catch (error) {
-    logger.error('Failed to delete session:', error)
+    reportFailure(error)
   }
 }
 
@@ -252,7 +240,7 @@ const handleDeleteFriend = async () => {
   try {
     await handleDeleteRoom()
   } catch (error) {
-    logger.error('Failed to delete friend:', error)
+    reportFailure(error)
   }
 }
 
@@ -262,7 +250,7 @@ const handlePinRoom = async () => {
     const newPinStatus = !isPinned.value
     await matrixRoomActionFacade.setPushRule(currentSessionRoomId.value, newPinStatus)
   } catch (error) {
-    logger.error('Failed to pin/unpin room:', error)
+    reportFailure(error)
   }
 }
 
@@ -272,7 +260,7 @@ const handleMuteNotification = async (type: string) => {
     const shield = type === 'shield'
     await matrixRoomActionFacade.setPushRule(currentSessionRoomId.value, !shield)
   } catch (error) {
-    logger.error('Failed to update notification settings:', error)
+    reportFailure(error)
   }
 }
 
@@ -281,7 +269,7 @@ const handleUpdateGroupName = async (name: string) => {
   try {
     await matrixRoomActionFacade.setRoomName(currentSessionRoomId.value, name.trim())
   } catch (error) {
-    logger.error('Failed to update group name:', error)
+    reportFailure(error)
   }
 }
 
@@ -290,17 +278,7 @@ const handleUpdateMyName = async (name: string) => {
   try {
     await matrixRoomMemberFacade.setMemberDisplayName(currentSessionRoomId.value, name.trim())
   } catch (error) {
-    logger.error('Failed to update display name:', error)
-  }
-}
-
-const handleUpdateRemark = async (remark: string) => {
-  const targetUid = activeItem.value?.detailId
-  if (!targetUid) return
-  try {
-    logger.debug('Update remark:', targetUid, remark)
-  } catch (error) {
-    logger.error('Failed to update remark:', error)
+    reportFailure(error)
   }
 }
 
@@ -322,22 +300,8 @@ const handleClearMessages = () => {
   })
 }
 
-const handleShowQRCode = async () => {
+const handleShowQRCode = () => {
   showQRCodeModal.value = true
-  await nextTick()
-
-  if (qrCanvasRef.value && currentSessionRoomId.value) {
-    try {
-      const QRCode = (await import('qrcode')).default
-      await QRCode.toCanvas(qrCanvasRef.value, `matrix:room/${currentSessionRoomId.value}`, { width: 200 })
-    } catch (err) {
-      logger.error('Failed to generate QR code:', err)
-    }
-  }
-}
-
-const handleShareQRCode = () => {
-  logger.debug('Share QR code')
 }
 
 // 原型对齐项 #5：头部通话按钮接真实逻辑（复用项目既有 callWindow + CallView 独立窗口体系）
@@ -462,6 +426,30 @@ watch(
   },
   { immediate: true }
 )
+
+watch(
+  () => currentSessionRoomId.value,
+  async (roomId) => {
+    const requestId = ++joinedMemberCountRequestId
+    joinedMemberCount.value = 0
+    if (!roomId) {
+      return
+    }
+
+    try {
+      const count = await matrixRoomQueryFacade.getJoinedMemberCount(roomId)
+      if (requestId === joinedMemberCountRequestId) {
+        joinedMemberCount.value = count
+      }
+    } catch (err) {
+      if (requestId === joinedMemberCountRequestId) {
+        joinedMemberCount.value = 0
+      }
+      logger.warn('Failed to read joined member count:', err)
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped lang="scss">
@@ -473,16 +461,6 @@ watch(
   background-color: var(--tjg-surface-panel);
   border-bottom: 1px solid var(--tjg-border-layout-divider);
   min-height: 60px;
-}
-
-.qr-code-container {
-  display: flex;
-  justify-content: center;
-  padding: 16px;
-}
-
-.qr-code-actions {
-  margin-top: 16px;
 }
 
 .private-confirm-body {

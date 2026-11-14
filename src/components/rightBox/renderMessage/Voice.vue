@@ -12,10 +12,10 @@
         :style="{ color: voiceIconColor }"
         src="@/assets/img/loading.svg"
         alt="loading" />
-      <svg v-else-if="audioPlayback.isPlaying.value" :style="{ color: voiceIconColor }">
+      <svg v-else-if="audioPlayback.isPlaying.value" :style="{ color: voiceIconColor }" aria-hidden="true">
         <use href="#pause-one"></use>
       </svg>
-      <svg v-else :style="{ color: voiceIconColor }">
+      <svg v-else :style="{ color: voiceIconColor }" aria-hidden="true">
         <use href="#play"></use>
       </svg>
     </div>

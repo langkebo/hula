@@ -102,7 +102,9 @@
     "set_low_priority_success": "Set as low priority",
     "remove_low_priority_success": "Removed low priority",
     "set_low_priority_fail": "Failed to set low priority",
-    "remove_low_priority_fail": "Failed to remove low priority"
+    "remove_low_priority_fail": "Failed to remove low priority",
+    "mark_unread_success": "Marked as unread",
+    "mark_unread_already": "This conversation is already unread"
   },
   "image_viewer": {
     "zoom_out": "Zoom out",
@@ -128,7 +130,9 @@
     "tip_playing_previous": "Now playing previous video",
     "tip_first": "This is the first video",
     "tip_playing_next": "Now playing next video",
-    "tip_last": "This is the last video"
+    "tip_last": "This is the last video",
+    "load_failed": "Failed to load video",
+    "empty": "No playable video"
   },
   "screenshot": {
     "border_radius": "Radius",
@@ -158,7 +162,6 @@
     "toast_empty_password": "Please enter the password",
     "return_action": "Back",
     "logout_action": "Log out",
-    "forgot_password": "Forgot password",
     "enter_system_action": "Enter"
   },
   "check_update": {
@@ -179,7 +182,8 @@
     "update_error": "Update check failed, please try again later",
     "fetch_log_failed": "Failed to load release notes, please set token and retry",
     "download_success_toast": "Installer downloaded. It will install and restart soon",
-    "restart_failed": "Restart failed, please restart manually"
+    "restart_failed": "Restart failed, please restart manually",
+    "not_configured": "This build has no update source configured. Please get new versions from the official release channel"
   },
   "notify": {
     "new_messages": "New messages",
@@ -192,6 +196,7 @@
     "more_status": "More statuses",
     "mute_all": "Mute all sounds",
     "unmute_all": "Enable all sounds",
+    "toggle_mute": "Toggle notification sounds",
     "open_main_panel": "Open main panel",
     "exit": "Exit"
   },
@@ -244,10 +249,15 @@
     "updating": "Updating",
     "fetch_commit_failed": "Failed to load release notes for v{version}",
     "fetch_release_error": "Failed to fetch release info",
-    "fetch_release_error_with_reason": "Failed to fetch release info: {reason}"
+    "fetch_release_error_with_reason": "Failed to fetch release info: {reason}",
+    "no_update": "You are already on the latest version",
+    "update_failed": "Update failed, please try again",
+    "update_failed_with_reason": "Update failed: {reason}",
+    "relaunch_failed": "Update finished but automatic restart failed, please restart the app manually"
   },
   "multi_choose": {
     "search_placeholder": "Search sessions",
+    "select_session_hint": "Please select a chat",
     "send_to_separately": "Send separately to",
     "single_forward": "Forward individually",
     "merge_forward": "Forward as summary",

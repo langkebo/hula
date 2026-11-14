@@ -108,6 +108,7 @@ export type Messages = {
     "role_moderator": "管理员",
     "status_banned": "已封禁",
     "banned_members": "已封禁成员",
+    "load_more": "显示更多",
     "visibility_label": "房间可见性",
     "visibility_public": "公开",
     "visibility_private": "私密",
@@ -450,6 +451,7 @@ export type KeyPaths =
   | "room.detail.role_moderator"
   | "room.detail.status_banned"
   | "room.detail.banned_members"
+  | "room.detail.load_more"
   | "room.detail.visibility_label"
   | "room.detail.visibility_public"
   | "room.detail.visibility_private"

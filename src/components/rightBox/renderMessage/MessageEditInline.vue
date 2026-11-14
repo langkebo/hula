@@ -8,7 +8,7 @@
         data-test="edit-inline-cancel"
         :aria-label="t('common.cancel')"
         @click="handleCancel">
-        <svg class="size-14px"><use href="#close"></use></svg>
+        <svg class="size-14px" aria-hidden="true"><use href="#close"></use></svg>
       </button>
     </div>
     <textarea

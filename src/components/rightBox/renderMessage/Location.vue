@@ -3,7 +3,7 @@
     <!-- 位置图标和标题 -->
     <n-flex align="center" justify="space-between" class="pb-8px">
       <div class="flex-y-center gap-8px">
-        <svg class="size-14px color-[--tjg-color-primary-500]">
+        <svg class="size-14px color-[--tjg-color-primary-500]" aria-hidden="true">
           <use href="#local"></use>
         </svg>
         <p class="text-[length:var(--tjg-font-size-base)] font-medium color-[--tjg-text-primary]">
@@ -31,7 +31,7 @@
         :draggable="false"
         :controls="false" />
       <div v-else class="flex-col-center gap-8px">
-        <svg class="size-32px color-[--tjg-text-quaternary]">
+        <svg class="size-32px color-[--tjg-text-quaternary]" aria-hidden="true">
           <use href="#cloudError"></use>
         </svg>
         <span class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-quaternary]">

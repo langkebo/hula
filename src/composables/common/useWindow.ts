@@ -1,15 +1,23 @@
 import { LogicalSize } from '@tauri-apps/api/dpi'
+import { emit } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { primaryMonitor } from '@tauri-apps/api/window'
 
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { EventEnum } from '@/enums'
 import { useI18nGlobal } from '@/services/i18n'
+import type { SettingsTabType } from '@/stores/domains/settings/settingsTab'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { isDesktop, isMac, isWindows10 } from '@/utils/PlatformConstants'
 import { invokeSilently, invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
-import { clampSizeToMonitor, isCompatibilityMode, logger, MAC_TRAFFIC_LIGHTS_SPACING } from './windowHelpers'
+import {
+  clampSizeToMonitor,
+  isCompatibilityMode,
+  logger,
+  MAC_TRAFFIC_LIGHTS_SPACING,
+  macTitleBarOptions
+} from './windowHelpers'
 import { createModalWindowFactory } from './windowModal'
 import { createRtcWindowManager } from './windowRtc'
 
@@ -58,10 +66,10 @@ export const useWindow = () => {
     const monitor = await primaryMonitor()
     const clampedSize = clampSizeToMonitor(width, height, monitor)
 
-    // 原生窗口的 minWidth/minHeight 不应小于请求的 width/height；
-    // 否则 Tauri 可能在窗口创建后立即将尺寸压缩到 min 值，导致实际渲染尺寸小于预期。
-    const effectiveMinWidth = Math.max(minW, clampedSize.width)
-    const effectiveMinHeight = Math.max(minH, clampedSize.height)
+    // minWidth/minHeight 严格取调用方配置值，不得被创建尺寸放大；
+    // 但也不能大于创建尺寸，否则 Tauri 会在窗口创建后立即把窗口压缩到 min 值。
+    const effectiveMinWidth = Math.min(minW, clampedSize.width)
+    const effectiveMinHeight = Math.min(minH, clampedSize.height)
 
     const webview = new WebviewWindow(label, {
       title: title,
@@ -76,8 +84,9 @@ export const useWindow = () => {
       skipTaskbar: false,
       decorations: !isCompatibilityMode.value,
       transparent: transparent || isCompatibilityMode.value,
-      titleBarStyle: 'overlay', // mac覆盖标签栏
-      hiddenTitle: true, // mac隐藏标题栏
+      // macOS 专用 overlay 标题栏策略（C-06）：Windows/Linux 上 overlay/hiddenTitle 无意义，
+      // 统一从 windowHelpers 取平台常量，避免各窗口各写一套。
+      ...macTitleBarOptions,
       visible: visible,
       dragDropEnabled: true, // 启用文件拖放
       ...(isWindows10() ? { shadow: false } : {})
@@ -103,6 +112,41 @@ export const useWindow = () => {
     })
 
     return webview
+  }
+
+  /**
+   * 打开（或聚焦）独立设置窗口。
+   *
+   * 返回 `true` 表示已由独立窗口承接；返回 `false` 表示当前环境无法创建原生窗口
+   * （浏览器/移动端），调用方应回退为当前窗口内路由跳转。
+   */
+  const openSettingsWindow = async (tab?: SettingsTabType): Promise<boolean> => {
+    if (!isDesktop() || !hasTauriRuntime()) {
+      return false
+    }
+
+    // 窗口已存在时只聚焦并同步 tab，避免重复创建失败、也避免设置窗口停留在旧 tab
+    const existing = await WebviewWindow.getByLabel('settings')
+    if (existing) {
+      await emit('settings-window:navigate', { tab })
+      await existing.setFocus()
+      return true
+    }
+
+    const opened = await createWebviewWindow(
+      t('common.window_titles.settings'),
+      'settings',
+      1100,
+      760,
+      undefined,
+      true,
+      900,
+      620,
+      undefined,
+      true,
+      tab ? { tab } : undefined
+    )
+    return opened !== null
   }
 
   /**
@@ -215,6 +259,7 @@ export const useWindow = () => {
 
   return {
     createWebviewWindow,
+    openSettingsWindow,
     createModalWindow,
     resizeWindow,
     checkWinExist,

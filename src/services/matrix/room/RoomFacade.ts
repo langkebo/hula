@@ -145,6 +145,7 @@ interface MatrixRoomQueryFacade {
   getRoom(roomId: string, throwOnError: true): Promise<Room>
   getRoom(roomId: string, throwOnError: false): Promise<Room | null>
   getMembers(roomId: string): Promise<RoomMember[]>
+  getJoinedMemberCount(roomId: string): Promise<number>
 }
 
 async function getRooms(): Promise<Room[]> {
@@ -166,10 +167,15 @@ async function getMembers(roomId: string): Promise<RoomMember[]> {
   return matrixRoomQueryService.getMembers(roomId)
 }
 
+async function getJoinedMemberCount(roomId: string): Promise<number> {
+  return matrixRoomQueryService.getJoinedMemberCount(roomId)
+}
+
 export const matrixRoomQueryFacade: MatrixRoomQueryFacade = {
   getRooms,
   getRoom,
-  getMembers
+  getMembers,
+  getJoinedMemberCount
 }
 
 interface MatrixRoomReadFacade {

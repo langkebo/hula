@@ -5,31 +5,31 @@
       :class="{ active: currentDrawTool === 'rect' }"
       :title="t('message.screenshot.tool_rect')"
       @click="handleToolClick('rect')">
-      <svg><use href="#square"></use></svg>
+      <svg aria-hidden="true"><use href="#square"></use></svg>
     </span>
     <span
       v-clickable
       :class="{ active: currentDrawTool === 'circle' }"
       :title="t('message.screenshot.tool_circle')"
       @click="handleToolClick('circle')">
-      <svg><use href="#round"></use></svg>
+      <svg aria-hidden="true"><use href="#round"></use></svg>
     </span>
     <span
       v-clickable
       :class="{ active: currentDrawTool === 'arrow' }"
       :title="t('message.screenshot.tool_arrow')"
       @click="handleToolClick('arrow')">
-      <svg><use href="#arrow-right-up"></use></svg>
+      <svg aria-hidden="true"><use href="#arrow-right-up"></use></svg>
     </span>
     <span
       v-clickable
       :class="{ active: currentDrawTool === 'mosaic' }"
       :title="t('message.screenshot.tool_mosaic')"
       @click="handleToolClick('mosaic')">
-      <svg><use href="#mosaic"></use></svg>
+      <svg aria-hidden="true"><use href="#mosaic"></use></svg>
     </span>
     <span v-clickable :title="t('message.screenshot.redo')" @click="handleRedo">
-      <svg><use href="#refresh"></use></svg>
+      <svg aria-hidden="true"><use href="#refresh"></use></svg>
     </span>
     <span
       v-clickable
@@ -37,13 +37,13 @@
       :aria-disabled="!canUndo"
       :title="t('message.screenshot.undo')"
       @click.stop="handleUndo">
-      <svg><use href="#return"></use></svg>
+      <svg aria-hidden="true"><use href="#return"></use></svg>
     </span>
     <span v-clickable :title="t('message.screenshot.confirm')" @click="handleConfirm">
-      <svg><use href="#check-small"></use></svg>
+      <svg aria-hidden="true"><use href="#check-small"></use></svg>
     </span>
     <span v-clickable :title="t('message.screenshot.cancel')" @click="handleCancel">
-      <svg><use href="#close"></use></svg>
+      <svg aria-hidden="true"><use href="#close"></use></svg>
     </span>
   </div>
 </template>

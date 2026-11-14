@@ -101,7 +101,9 @@
     "userId": "User ID",
     "userRole": "User",
     "username": "Username",
-    "usernameRequired": "Username is required"
+    "usernameRequired": "Username is required",
+    "loadedCount": "Loaded {count} items",
+    "loadMore": "Load More"
   },
   "rooms": {
     "search": "Search room ID, name or topic",
@@ -185,7 +187,12 @@
     "banConfirm": "Are you sure you want to ban user {userId}?",
     "banSuccess": "User banned",
     "banFailed": "Failed to ban user",
-    "aliasRemoveNotSupported": "Alias removal is not supported yet"
+    "aliasRemoveNotSupported": "Alias removal is not supported yet",
+    "loadedCount": "Loaded {count} items",
+    "removeAlias": "Remove Alias",
+    "removeAliasConfirm": "Are you sure you want to remove alias {alias}?",
+    "aliasRemoveSuccess": "Alias removed",
+    "aliasRemoveFailed": "Failed to remove alias"
   },
   "dashboard": {
     "serverInfo": "Server Info",
@@ -200,6 +207,7 @@
     "version": "Server Version",
     "pythonVersion": "Python Version",
     "activityTrend": "Activity Trend",
+    "trendInsufficient": "Insufficient data to display the activity trend",
     "messageDistribution": "Message Distribution",
     "textMessages": "Text Messages",
     "mediaMessages": "Media Messages",
@@ -397,6 +405,14 @@
     "unblock_failed": "Failed to unblock IP",
     "no_ip_blocks": "No blocked IPs",
     "no_security_events": "No security events",
+    "load_failed": "Failed to load",
+    "loaded_count": "Loaded {count} items",
+    "load_more": "Load More",
+    "time_range": "Time Range",
+    "time_range_all": "All Time",
+    "time_range_24h": "Last 24 Hours",
+    "time_range_7d": "Last 7 Days",
+    "time_range_30d": "Last 30 Days",
     "no_login_failures": "No login failures",
     "filter_event_type": "Filter by event type",
     "event_type_login_failure": "Login Failure",
@@ -705,6 +721,8 @@
     "guest_accounts": "Guest Accounts",
     "load_accounts": "Load Guest Accounts",
     "load_accounts_failed": "Failed to load guest accounts",
+    "loaded_count": "Loaded {count} items",
+    "load_more": "Load More",
     "no_accounts": "No guest accounts",
     "deactivate": "Deactivate",
     "deactivate_title": "Deactivate Guest",

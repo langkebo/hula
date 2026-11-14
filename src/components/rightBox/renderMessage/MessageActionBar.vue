@@ -9,7 +9,7 @@
             :class="{ 'action-btn--danger': action.key === 'delete' }"
             :aria-label="action.label"
             @click="action.handler">
-            <svg class="action-icon">
+            <svg class="action-icon" aria-hidden="true">
               <use :href="`#${action.icon}`"></use>
             </svg>
           </button>
@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { MsgEnum } from '@/enums'
+import { MsgEnum } from '@/enums'
 
 interface ActionItem {
   key: string
@@ -36,6 +36,8 @@ const props = defineProps<{
   visible: boolean
   isMe: boolean
   messageType: MsgEnum
+  /** 具备管理权限时可操作他人消息；普通用户仅能操作本人消息 */
+  canModerate?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -48,33 +50,44 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+/** 已撤回 / 系统 / 未知消息不提供任何交互动作 */
+const isInteractable = computed(
+  () =>
+    props.messageType !== MsgEnum.RECALL &&
+    props.messageType !== MsgEnum.SYSTEM &&
+    props.messageType !== MsgEnum.UNKNOWN
+)
+
+/** 删除仅对本人消息（或有管理权限者）开放，且消息未撤回 */
+const canDelete = computed(() => isInteractable.value && (props.isMe || props.canModerate === true))
+
 const actions = computed<ActionItem[]>(() => [
   {
     key: 'react',
     label: t('message.action.react'),
     icon: 'smiling-face',
-    visible: true,
+    visible: isInteractable.value,
     handler: () => emit('react')
   },
   {
     key: 'reply',
     label: t('message.action.reply'),
     icon: 'reply',
-    visible: true,
+    visible: isInteractable.value,
     handler: () => emit('reply')
   },
   {
     key: 'forward',
     label: t('message.action.forward'),
     icon: 'forward',
-    visible: isForwardable(props.messageType),
+    visible: isInteractable.value && isForwardable(props.messageType),
     handler: () => emit('forward')
   },
   {
     key: 'copy',
     label: t('common.copy'),
     icon: 'copy',
-    visible: isCopyable(props.messageType),
+    visible: isInteractable.value && isCopyable(props.messageType),
     handler: () => emit('copy')
   },
   {
@@ -82,7 +95,7 @@ const actions = computed<ActionItem[]>(() => [
     label: t('common.delete'),
     // icon.js sprite 中无 trash 符号，使用语义等价的 delete 符号（均走 currentColor）
     icon: 'delete',
-    visible: true,
+    visible: canDelete.value,
     handler: () => emit('delete')
   }
 ])

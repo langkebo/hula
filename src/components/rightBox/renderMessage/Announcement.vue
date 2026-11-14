@@ -3,7 +3,7 @@
   <n-flex vertical :size="0" class="h-170px bg-[--tjg-surface-muted] rounded-8px custom-shadow" :style="cardStyle">
     <n-flex class="h-34px px-12px select-none cursor-default" align="center" justify="space-between">
       <n-flex align="center" :size="8">
-        <svg class="size-16px flex-shrink-0"><use href="#Loudspeaker"></use></svg>
+        <svg class="size-16px flex-shrink-0" aria-hidden="true"><use href="#Loudspeaker"></use></svg>
         <p class="text-(12px [--tjg-text-tertiary])">{{ t('components.announcementCard.title') }}</p>
       </n-flex>
 

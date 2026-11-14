@@ -296,3 +296,48 @@ pnpm tauri:dev
 - [ ] 典型场景 A/B/C 至少完成 1 轮记录
 - [ ] 已输出首轮性能瓶颈结论
 - [ ] 已在周会中确认后续优化顺序
+
+---
+
+## 11. TJG 桌面端启动耗时基线（2026-11-13）
+
+> 关联审计项：P-03（Matrix 运行时初始化延后到首帧后）、E-03（基线可追溯性）。
+> 采集日期：2026-11-13；环境：macOS 开发机 + `pnpm dev --host 127.0.0.1`（Vite 8.3.5，端口 6130）。
+> **注意：以下均为开发态数据，含 Vite 模块编译与 HMR 开销，仅作相对比较参照，不代表生产安装包启动耗时。**
+
+### 11.1 启动耗时标记定义（`src/main.ts` / `src/App.vue`）
+
+| 标记 / measure | 含义 |
+| :--- | :--- |
+| `tjg-init-start` | 入口脚本开始执行 |
+| `tjg-platform-ready` | 平台环境（Tauri / Web）探测完成 |
+| `tjg-app-create-start` → `tjg-app-create-end`（measure `tjg-app-creation`） | Vue 应用实例创建 |
+| `tjg-plugin-install-start` → `tjg-plugin-install-end`（measure `tjg-plugin-install`） | 插件安装 |
+| `tjg-mount-start` → `tjg-mount-end` | 根组件挂载 |
+| `tjg-router-ready`（measure `tjg-mount-to-ready` = mount-start → router-ready） | 路由就绪、首屏可进入 |
+| `tjg-total-boot` = init-start → mount-end | 前端启动总耗时 |
+| `tjg-matrix-init-start` → `tjg-matrix-init-end`（measure `tjg-matrix-init`） | Matrix 运行时初始化（离线队列、冷启动会话恢复、事件注册、好友同步），P-03 后延至首帧之后 |
+| `window.__TJG_APP_READY__` | 应用就绪标志（由 `markTjgAppReady()` 置位），自动化采集的等待条件 |
+
+### 11.2 采集方法
+
+```bash
+pnpm dev --host 127.0.0.1
+```
+
+Playwright（chromium）打开 `http://127.0.0.1:6130`，`waitForFunction(() => window.__TJG_APP_READY__ === true)`，
+再读取 `performance.getEntriesByType('measure')` 中全部 `tjg-*` 条目；每个独立 page 记一个样本。
+
+### 11.3 样本（2026-11-13，三次独立加载）
+
+| 样本 | FCP | total-boot | app-creation | plugin-install | mount-to-ready | matrix-init | 采集墙钟 |
+| :--- | --: | --: | --: | --: | --: | --: | --: |
+| 1（首次冷加载，含依赖预构建） | 216ms | 1917.9ms | 0.9ms | 3.7ms | 1904.9ms | 19.2ms | 4677ms |
+| 2 | 44ms | 377.1ms | 1.6ms | 3.9ms | 369.7ms | 未记录 | 2349ms |
+| 3 | 40ms | 361.6ms | 0.9ms | 3.1ms | 354.3ms | 未记录 | 2413ms |
+
+解读：
+- 样本 1 的差异主要来自 Vite 首次编译/预构建，不代表应用自身逻辑开销。
+- 样本 2/3（热模块图）显示前端启动总耗时约 360-380ms，其中 `mount-to-ready` 占绝大部分。
+- `matrix-init` 已从首屏关键路径移出（P-03），仅在首帧后执行，样本 1 记录到 19.2ms；样本 2/3 因就绪判定早于该任务完成而未记录，属预期行为。
+- 后续复测须固定同一等待条件与同一 Vite 冷/热状态口径，否则数据不可比。

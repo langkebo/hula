@@ -9,6 +9,9 @@ import { hasTauriRuntime } from '@/utils/AppHarness'
  *
  * 注意：与 messageLoading 的 NON_CHAT_WINDOW_LABELS 不同——后者包含 'login'
  * （登录窗不参与消息加载），但 login 窗口需要 Matrix 客户端来完成登录，故不在此列。
+ *
+ * 'notify' 由 `windowRtc.ensureNotifyWindow()` 运行时创建，不在 `createWebviewWindow`
+ * 静态采集范围内，因此 `check-window-label-registry` 会把它列为“无静态来源”，属预期提示。
  */
 export const NON_MATRIX_WINDOW_LABELS = new Set(['capture', 'tray', 'notify', 'update', 'checkupdate'])
 
@@ -41,8 +44,8 @@ export const MATRIX_WINDOW_LABELS = new Set([
   'chat-history',
   'onlineStatus',
   'forgetPassword',
-  // `about` 当前也会跑运行时（aboutWindow 内无任何 matrix 引用 ⇒ 属"可跳过"候选，
-  // 见 docs/TJG_INTEGRATION_OPTIMIZATION_PLAN_2026-10-13.md Batch 2）
+  // aboutWindow 内无任何 Matrix 引用，但当前仍会跑运行时初始化；
+  // 若要跳过，需整体迁入 NON_MATRIX_WINDOW_LABELS 并验证在窗口内核验。
   'about',
   // 动态：`windowChat--${roomId}`（useIndependentChatWindow.buildWindowChatLabel）
   'windowChat--'

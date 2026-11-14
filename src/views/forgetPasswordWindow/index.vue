@@ -1,11 +1,11 @@
 <template>
   <n-config-provider
     :theme="naiveTheme"
-    class="size-full bg-[--login-surface-bg] rounded-8px select-none cursor-default">
+    class="size-full flex flex-col bg-[--login-surface-bg] rounded-8px select-none cursor-default">
     <!--顶部操作栏-->
-    <ActionBar :max-w="false" :shrink="false" />
+    <ActionBar :max-w="false" :shrink="false" class="shrink-0" />
 
-    <n-flex vertical class="w-full size-full">
+    <n-flex vertical class="w-full flex-1 min-h-0 overflow-y-auto pb-24px">
       <!-- 标题 -->
       <n-flex justify="center" class="w-full">
         <p class="text-(18px [--tjg-text-primary]) select-none">{{ t('auth.forget.title') }}</p>
@@ -183,7 +183,7 @@
       <!-- 第三步：完成 -->
       <div v-if="currentStep === 3" class="w-full max-w-300px mx-auto mt-100px text-center">
         <!-- <n-icon size="64" class="text-[--tjg-color-primary-500]">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="currentColor" d="M9,20.42L2.79,14.21L5.62,11.38L9,14.77L18.88,4.88L21.71,7.71L9,20.42Z" />
           </svg>
         </n-icon> -->

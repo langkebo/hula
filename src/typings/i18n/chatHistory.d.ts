@@ -18,7 +18,8 @@ export type Messages = {
     "end": "结束日期"
   },
   "empty": {
-    "noData": "暂无消息记录"
+    "noData": "暂无消息记录",
+    "loadFailed": "聊天记录加载失败"
   }
 }
 
@@ -40,3 +41,4 @@ export type KeyPaths =
   | "chatHistory.datePicker.start"
   | "chatHistory.datePicker.end"
   | "chatHistory.empty.noData"
+  | "chatHistory.empty.loadFailed"

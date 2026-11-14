@@ -25,9 +25,9 @@
             </van-button>
           </div>
 
-          <van-cell-group v-if="notifications.length > 0" inset>
+          <van-cell-group v-if="unreadNotifications.length > 0" inset>
             <van-cell
-              v-for="(notif, index) in notifications"
+              v-for="(notif, index) in unreadNotifications"
               :key="notificationKey(notif, index)"
               clickable
               data-testid="notification-row"
@@ -45,14 +45,7 @@
                 </span>
               </template>
               <template #right-icon>
-                <span
-                  v-if="isNotificationRead(notif)"
-                  class="text-12px text-[--tjg-text-tertiary]"
-                  data-testid="notification-read">
-                  {{ t('setting.push.history.read') }}
-                </span>
                 <van-button
-                  v-else
                   size="mini"
                   type="primary"
                   plain
@@ -76,7 +69,7 @@
           </van-button>
 
           <van-empty
-            v-if="notifications.length === 0"
+            v-if="unreadNotifications.length === 0 && !nextToken"
             :description="t('setting.push.history.empty')"
             data-testid="notification-empty" />
         </template>
@@ -95,6 +88,7 @@ import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import {
+  filterUnreadNotifications,
   formatNotificationTime,
   getNotificationContent,
   getNotificationId,
@@ -114,7 +108,10 @@ const nextToken = ref<string | undefined>()
 const ackingId = ref<string | null>(null)
 const ackingAll = ref(false)
 
-const hasUnread = computed(() => notifications.value.some((notif) => !isNotificationRead(notif)))
+/** 只渲染未读：ack 后条目立即从列表移除，未读计数随之归零 */
+const unreadNotifications = computed(() => filterUnreadNotifications(notifications.value))
+
+const hasUnread = computed(() => unreadNotifications.value.length > 0)
 
 onMounted(load)
 

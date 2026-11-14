@@ -31,9 +31,9 @@ describe('MatrixBurnAfterReadService', () => {
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue({
       getBurnAfterReadManager: () => mockManager
     } as never)
-    mockManager.enableBurn.mockResolvedValue({ enabled: true, burn_after_ms: 60000 })
+    mockManager.enableBurn.mockResolvedValue({ enabled: true, burn_after_ms: 60000, scope: 'room' })
     mockManager.disableBurn.mockResolvedValue({ enabled: false, burn_after_ms: 60000 })
-    mockManager.getBurnSettings.mockResolvedValue({ enabled: true, burn_after_ms: 60000 })
+    mockManager.getBurnSettings.mockResolvedValue({ enabled: true, burn_after_ms: 60000, scope: 'room' })
     mockManager.isBurnEnabled.mockResolvedValue(true)
     mockManager.getPendingBurns.mockResolvedValue([])
     mockManager.markBurnRead.mockResolvedValue({ success: true, will_delete_at: Date.now() + 60000 })
@@ -53,7 +53,7 @@ describe('MatrixBurnAfterReadService', () => {
     it('should call SDK enableBurn and return settings', async () => {
       const result = await matrixBurnAfterReadService.enableBurn('!room:test', 60000)
       expect(mockManager.enableBurn).toHaveBeenCalledWith('!room:test', 60000)
-      expect(result).toEqual({ enabled: true, burnAfterMs: 60000 })
+      expect(result).toEqual({ enabled: true, burnAfterMs: 60000, scope: 'room' })
     })
 
     it('should return null on error when throwOnError is false', async () => {
@@ -81,6 +81,19 @@ describe('MatrixBurnAfterReadService', () => {
       const result = await matrixBurnAfterReadService.getBurnSettings('!room:test')
       expect(mockManager.getBurnSettings).toHaveBeenCalledWith('!room:test')
       expect(result?.enabled).toBe(true)
+      // 房间级开关必须透传 scope：UI 据此决定文案（房间级 = 对全体生效）
+      expect(result?.scope).toBe('room')
+    })
+
+    it('forceRefresh 时显式绕过 SDK 缓存（别人关掉后本端才能看到）', async () => {
+      await matrixBurnAfterReadService.getBurnSettings('!room:test', false, { forceRefresh: true })
+      expect(mockManager.getBurnSettings).toHaveBeenCalledWith('!room:test', undefined, { forceRefresh: true })
+    })
+
+    it('后端未返回 scope 时兜底为 per_user', async () => {
+      mockManager.getBurnSettings.mockResolvedValueOnce({ enabled: true, burn_after_ms: 60000 })
+      const result = await matrixBurnAfterReadService.getBurnSettings('!room:test')
+      expect(result?.scope).toBe('per_user')
     })
   })
 

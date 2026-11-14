@@ -15,13 +15,22 @@
       <div class="charts-grid">
         <div class="dashboard-section chart-section">
           <h3>
-            <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              class="size-16px"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true">
               <path d="M3 3v18h18M7 14l4-4 4 4 6-6" />
             </svg>
             {{ t('admin.dashboard.activityTrend') }}
           </h3>
-          <div class="line-chart-container">
-            <svg class="line-chart" viewBox="0 0 400 180" preserveAspectRatio="none">
+          <div v-if="activityTrend.length < 2" class="chart-empty">
+            {{ t('admin.dashboard.trendInsufficient') }}
+          </div>
+          <div v-else class="line-chart-container">
+            <svg class="line-chart" viewBox="0 0 400 180" preserveAspectRatio="none" aria-hidden="true">
               <defs>
                 <linearGradient :id="'area-gradient'" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="var(--tjg-color-primary-500)" stop-opacity="0.3" />
@@ -81,7 +90,13 @@
 
         <div class="dashboard-section chart-section">
           <h3>
-            <svg class="size-16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              class="size-16px"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true">
               <rect x="3" y="12" width="4" height="8" rx="1" />
               <rect x="10" y="6" width="4" height="14" rx="1" />
               <rect x="17" y="9" width="4" height="11" rx="1" />
@@ -89,7 +104,7 @@
             {{ t('admin.dashboard.messageDistribution') }}
           </h3>
           <div class="bar-chart-container">
-            <svg class="bar-chart" viewBox="0 0 400 180" preserveAspectRatio="none">
+            <svg class="bar-chart" viewBox="0 0 400 180" preserveAspectRatio="none" aria-hidden="true">
               <g class="grid-lines">
                 <line
                   v-for="i in 4"
@@ -170,7 +185,13 @@
           <h3>{{ t('admin.dashboard.serverHealth') }}</h3>
           <div class="health-status">
             <div class="health-indicator" :class="`health-indicator--${healthState}`">
-              <svg class="size-20px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg
+                class="size-20px"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                aria-hidden="true">
                 <path v-if="healthState === 'healthy'" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 <path
                   v-else-if="healthState === 'unhealthy'"
@@ -185,7 +206,7 @@
           <div class="health-rings">
             <div v-for="ring in healthRings" :key="ring.label" class="health-ring-item">
               <div class="health-ring">
-                <svg viewBox="0 0 80 80" class="ring-svg">
+                <svg viewBox="0 0 80 80" class="ring-svg" aria-hidden="true">
                   <circle cx="40" cy="40" r="32" fill="none" stroke="var(--tjg-border-subtle)" stroke-width="6" />
                   <circle
                     cx="40"
@@ -226,6 +247,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminStatCard from '@/components/admin/AdminStatCard.vue'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService, type ServerHealth, type ServerStats, type ServerVersion } from '@/services/matrix/admin'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import { createLogger } from '@/utils/Logger'
@@ -234,7 +256,8 @@ import { useAdminErrorHandler } from './useAdminError'
 const logger = createLogger('AdminDashboard')
 const { t } = useI18n()
 const adminStore = useAdminStore()
-useAdminErrorHandler()
+const { showFeedback } = useActionFeedback()
+const { handleAdminError } = useAdminErrorHandler()
 
 const stats = ref<ServerStats | null>(null)
 const serverHealth = ref<ServerHealth | null>(null)
@@ -254,16 +277,9 @@ interface TrendPoint {
 }
 
 const activityTrend = computed<TrendPoint[]>(() => {
-  const dau = stats.value?.dailyActiveUsers ?? 0
-  const mau = stats.value?.monthlyActiveUsers ?? 0
-  const avg = mau > 0 ? Math.round(mau / 30) : dau
-  // Build a 7-day trend derived from current stats
-  const labels = ['7d', '6d', '5d', '4d', '3d', '2d', '1d']
-  const variance = [0.7, 0.8, 0.85, 0.9, 0.95, 0.98, 1.0]
-  return labels.map((label, i) => ({
-    label,
-    value: Math.round(avg * variance[i])
-  }))
+  // 服务端 stats 只提供 DAU/MAU 聚合值，没有按日时序接口；
+  // 不能用方差系数伪造曲线，无真实序列时返回空数组交给模板显示「数据不足」
+  return []
 })
 
 const chartMaxValue = computed(() => {
@@ -429,8 +445,11 @@ async function loadData() {
     if (healthResult.status === 'fulfilled') serverHealth.value = healthResult.value
     if (versionResult.status === 'fulfilled') serverVersion.value = versionResult.value
   } catch (err) {
-    // 静默处理错误，仪表盘数据加载失败不应阻断用户操作
+    // 仪表盘数据加载失败不阻断用户操作，但必须给出可见反馈
     logger.warn('Failed to load dashboard data:', err)
+    if (handleAdminError(err)) {
+      showFeedback(t('admin.load_failed'), 'error')
+    }
   } finally {
     loading.value = false
   }
@@ -527,6 +546,18 @@ onMounted(loadData)
   flex: 1;
   min-height: 180px;
   position: relative;
+}
+
+.chart-empty {
+  flex: 1;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--tjg-text-tertiary);
+  background: var(--tjg-surface-panel-muted);
+  border-radius: 8px;
 }
 
 .line-chart,

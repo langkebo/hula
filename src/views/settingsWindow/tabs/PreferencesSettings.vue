@@ -24,7 +24,10 @@
           <span class="setting-label">{{ t('setting.preferences.auto_login_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.auto_login_desc') }}</span>
         </div>
-        <n-switch v-model:value="autoLogin" @update:value="handleAutoLoginChange" />
+        <n-switch
+          v-model:value="autoLogin"
+          :aria-label="t('setting.preferences.auto_login_label')"
+          @update:value="handleAutoLoginChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
@@ -33,52 +36,12 @@
         </div>
         <n-switch
           v-model:value="autoStartup"
+          :aria-label="t('setting.preferences.auto_startup_label')"
           :loading="autoStartupLoading"
           :disabled="!desktopRuntimeAvailable"
           @update:value="handleAutoStartupChange" />
       </div>
-      <div class="storage-panel">
-        <div class="storage-panel-header">
-          <div class="setting-info">
-            <span class="setting-label">{{ t('setting.preferences.storage_directory_label') }}</span>
-            <span class="setting-desc">{{ t('setting.preferences.storage_directory_desc') }}</span>
-          </div>
-          <n-button size="small" :disabled="scanning || !currentDirectory" @click="startScan">
-            {{ scanning ? t('setting.storage.scanning') : t('setting.storage.start_scan') }}
-          </n-button>
-        </div>
-        <div class="storage-path-row">
-          <n-radio-group v-model:value="pathType" @update:value="handleStoragePathTypeChange">
-            <n-radio value="default">{{ t('setting.storage.path_type_default') }}</n-radio>
-            <n-radio value="custom">{{ t('setting.storage.path_type_custom') }}</n-radio>
-          </n-radio-group>
-          <n-button
-            v-if="pathType === 'custom'"
-            size="small"
-            secondary
-            :disabled="scanning"
-            @click="selectCustomDirectory">
-            {{ t('setting.storage.select_directory') }}
-          </n-button>
-        </div>
-        <div class="storage-directory">{{ currentDirectory || t('setting.storage.fetching_directory') }}</div>
-        <div class="storage-stats">
-          <span>
-            {{ t('setting.storage.processed_files') }}
-            {{ t('setting.storage.processed_files_unit', { count: scanProgress.files_processed ?? 0 }) }}
-          </span>
-          <span>{{ t('setting.storage.total_size') }} {{ formatBytes(scanProgress.total_size) }}</span>
-          <span>{{ storageProgressText }}</span>
-        </div>
-        <n-progress
-          type="line"
-          :percentage="
-            showDiskUsage && diskInfo
-              ? Number(diskInfo.disk_usage_percentage.toFixed(0))
-              : Number(scanningProgress.toFixed(0))
-          "
-          :processing="scanning" />
-      </div>
+      <StorageSettingsPanel />
     </div>
 
     <n-divider />
@@ -101,14 +64,21 @@
           <span class="setting-label">{{ t('setting.preferences.message_confirm_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.message_confirm_desc') }}</span>
         </div>
-        <n-switch v-model:value="messageConfirm" @update:value="handleConfirmChange" />
+        <n-switch
+          v-model:value="messageConfirm"
+          :aria-label="t('setting.preferences.message_confirm_label')"
+          @update:value="handleConfirmChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.preferences.recall_time_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.recall_time_desc') }}</span>
         </div>
-        <n-select v-model:value="recallTime" :options="recallTimeOptions" class="pref-width-150" />
+        <n-select
+          v-model:value="recallTime"
+          :options="recallTimeOptions"
+          class="pref-width-150"
+          @update:value="handleRecallTimeChange" />
       </div>
     </div>
 
@@ -121,7 +91,10 @@
           <span class="setting-label">{{ t('setting.preferences.link_preview_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.link_preview_desc') }}</span>
         </div>
-        <n-switch v-model:value="linkPreview" @update:value="handleLinkPreviewChange" />
+        <n-switch
+          v-model:value="linkPreview"
+          :aria-label="t('setting.preferences.link_preview_label')"
+          @update:value="handleLinkPreviewChange" />
       </div>
     </div>
 
@@ -134,7 +107,10 @@
           <span class="setting-label">{{ t('setting.preferences.emoji_convert_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.emoji_convert_desc') }}</span>
         </div>
-        <n-switch v-model:value="emojiConvert" @update:value="handleEmojiChange" />
+        <n-switch
+          v-model:value="emojiConvert"
+          :aria-label="t('setting.preferences.emoji_convert_label')"
+          @update:value="handleEmojiChange" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
@@ -158,7 +134,10 @@
           <span class="setting-label">{{ t('setting.preferences.burn_default_enabled_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.burn_default_enabled_desc') }}</span>
         </div>
-        <n-switch v-model:value="burnDefaultEnabled" @update:value="handleBurnDefaultToggle" />
+        <n-switch
+          v-model:value="burnDefaultEnabled"
+          :aria-label="t('setting.preferences.burn_default_enabled_label')"
+          @update:value="handleBurnDefaultToggle" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
@@ -176,7 +155,10 @@
           <span class="setting-label">{{ t('setting.preferences.burn_show_countdown_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.burn_show_countdown_desc') }}</span>
         </div>
-        <n-switch v-model:value="burnShowCountdown" @update:value="handleBurnCountdownToggle" />
+        <n-switch
+          v-model:value="burnShowCountdown"
+          :aria-label="t('setting.preferences.burn_show_countdown_label')"
+          @update:value="handleBurnCountdownToggle" />
       </div>
     </div>
 
@@ -189,14 +171,20 @@
           <span class="setting-label">{{ t('setting.preferences.thread_auto_subscribe_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.thread_auto_subscribe_desc') }}</span>
         </div>
-        <n-switch v-model:value="threadAutoSubscribe" @update:value="handleThreadAutoSubscribe" />
+        <n-switch
+          v-model:value="threadAutoSubscribe"
+          :aria-label="t('setting.preferences.thread_auto_subscribe_label')"
+          @update:value="handleThreadAutoSubscribe" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.preferences.thread_show_in_room_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.thread_show_in_room_desc') }}</span>
         </div>
-        <n-switch v-model:value="threadShowInRoom" @update:value="handleThreadShowInRoom" />
+        <n-switch
+          v-model:value="threadShowInRoom"
+          :aria-label="t('setting.preferences.thread_show_in_room_label')"
+          @update:value="handleThreadShowInRoom" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
@@ -220,14 +208,20 @@
           <span class="setting-label">{{ t('setting.preferences.space_auto_join_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.space_auto_join_desc') }}</span>
         </div>
-        <n-switch v-model:value="spaceAutoJoinRooms" @update:value="handleSpaceAutoJoin" />
+        <n-switch
+          v-model:value="spaceAutoJoinRooms"
+          :aria-label="t('setting.preferences.space_auto_join_label')"
+          @update:value="handleSpaceAutoJoin" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.preferences.space_show_subspaces_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.space_show_subspaces_desc') }}</span>
         </div>
-        <n-switch v-model:value="spaceShowSubspaces" @update:value="handleSpaceShowSubspaces" />
+        <n-switch
+          v-model:value="spaceShowSubspaces"
+          :aria-label="t('setting.preferences.space_show_subspaces_label')"
+          @update:value="handleSpaceShowSubspaces" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
@@ -251,14 +245,20 @@
           <span class="setting-label">{{ t('setting.preferences.read_receipts_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.read_receipts_desc') }}</span>
         </div>
-        <n-switch v-model:value="sendReadReceipts" @update:value="handleReadReceiptsToggle" />
+        <n-switch
+          v-model:value="sendReadReceipts"
+          :aria-label="t('setting.preferences.read_receipts_label')"
+          @update:value="handleReadReceiptsToggle" />
       </div>
       <div class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.preferences.typing_notifications_label') }}</span>
           <span class="setting-desc">{{ t('setting.preferences.typing_notifications_desc') }}</span>
         </div>
-        <n-switch v-model:value="sendTypingNotifications" @update:value="handleTypingToggle" />
+        <n-switch
+          v-model:value="sendTypingNotifications"
+          :aria-label="t('setting.preferences.typing_notifications_label')"
+          @update:value="handleTypingToggle" />
       </div>
     </div>
   </div>
@@ -266,9 +266,7 @@
 
 <script setup lang="ts">
 import { disable, enable, isEnabled } from '@tauri-apps/plugin-autostart'
-import { open } from '@tauri-apps/plugin-dialog'
-import { NButton, NDivider, NProgress, NRadio, NRadioGroup, NSelect, NSwitch } from 'naive-ui'
-import { storeToRefs } from 'pinia'
+import { NDivider, NSelect, NSwitch } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -282,9 +280,8 @@ import {
 } from '@/composables/settings/settingsOptions'
 import { usePreferenceSettings } from '@/composables/settings/usePreferenceSettings'
 import { useSettingStore } from '@/stores/domains/settings/setting'
-import { useScannerStore } from '@/stores/domains/widget/scanner'
-import { formatBytes } from '@/utils/Formatting.ts'
 import { isDesktop } from '@/utils/PlatformConstants'
+import StorageSettingsPanel from './StorageSettingsPanel.vue'
 
 defineOptions({
   name: 'PreferencesSettings'
@@ -293,9 +290,6 @@ defineOptions({
 const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 const settingStore = useSettingStore()
-const scannerStore = useScannerStore()
-const { pathType, currentDirectory, scanning, showDiskUsage, diskInfo, scanProgress, scanningProgress } =
-  storeToRefs(scannerStore)
 const desktopRuntimeAvailable = isDesktop()
 
 const language = ref(settingStore.languagePreference)
@@ -343,18 +337,6 @@ const spaceNotificationOptions = computed(() => [
   { label: t('setting.preferences.notification_none'), value: 'none' }
 ])
 
-const storageProgressText = computed(() => {
-  if (showDiskUsage.value && diskInfo.value) {
-    return t('setting.preferences.storage_disk_usage', {
-      percentage: diskInfo.value.disk_usage_percentage.toFixed(2)
-    })
-  }
-
-  return t('setting.preferences.storage_scan_progress', {
-    percentage: scanningProgress.value.toFixed(0)
-  })
-})
-
 function showToggleFeedback(label: string, value: boolean) {
   showFeedback(
     t(value ? 'setting.preferences.feedback.enabled' : 'setting.preferences.feedback.disabled', { label }),
@@ -376,14 +358,8 @@ async function syncDesktopPreferences() {
   try {
     autoStartup.value = await isEnabled()
     settingStore.setAutoStartup(autoStartup.value)
-  } catch (error) {
+  } catch {
     showFeedback(t('setting.preferences.feedback.read_auto_startup_failed'), 'warning')
-  }
-
-  try {
-    await scannerStore.initializeScanner()
-  } catch (error) {
-    showFeedback(t('setting.preferences.feedback.initialize_storage_scan_failed'), 'warning')
   }
 }
 
@@ -423,43 +399,17 @@ async function handleAutoStartupChange(value: boolean) {
   }
 }
 
-function handleStoragePathTypeChange(value: 'default' | 'custom') {
-  scannerStore.setPathType(value)
+function toggleFeedback(labelKey: string) {
+  return (value: boolean) => showToggleFeedback(t(labelKey), value)
 }
+const handleConfirmChange = toggleFeedback('setting.preferences.message_confirm_label')
+const handleLinkPreviewChange = toggleFeedback('setting.preferences.link_preview_label')
+const handleEmojiChange = toggleFeedback('setting.preferences.emoji_convert_label')
 
-async function selectCustomDirectory() {
-  try {
-    const result = await open({
-      directory: true,
-      title: t('setting.storage.select_directory_title')
-    })
-    if (result) {
-      scannerStore.setCustomDirectory(result)
-    }
-  } catch (error) {
-    showFeedback(t('setting.storage.select_directory_error'), 'error')
-  }
-}
-
-async function startScan() {
-  await scannerStore.startScan()
-}
-
-function handleConfirmChange(value: boolean) {
-  showToggleFeedback(t('setting.preferences.message_confirm_label'), value)
-}
-
-function handleLinkPreviewChange(value: boolean) {
-  showToggleFeedback(t('setting.preferences.link_preview_label'), value)
-}
-
-function handleEmojiChange(value: boolean) {
-  showToggleFeedback(t('setting.preferences.emoji_convert_label'), value)
-}
-
-function handleEmojiSizeChange(value: string) {
+const handleRecallTimeChange = (value: number) =>
+  showOptionSetFeedback(t('setting.preferences.recall_time_label'), resolveOptionLabel(recallTimeOptions.value, value))
+const handleEmojiSizeChange = (value: string) =>
   showOptionSetFeedback(t('setting.preferences.emoji_size_label'), resolveOptionLabel(emojiSizeOptions.value, value))
-}
 
 function handleBurnDefaultToggle(value: boolean) {
   showToggleFeedback(t('setting.preferences.burn_default_enabled_label'), value)
@@ -553,41 +503,6 @@ function handleTypingToggle(value: boolean) {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
   margin-top: var(--tjg-space-1);
-}
-
-.storage-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tjg-space-3);
-  margin-top: var(--tjg-space-3);
-  padding: var(--tjg-space-4);
-  border: 1px solid var(--tjg-settings-divider);
-  border-radius: var(--tjg-radius-md);
-  background: var(--tjg-settings-card-bg);
-}
-
-.storage-panel-header,
-.storage-path-row,
-.storage-stats {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--tjg-space-3);
-}
-
-.storage-stats {
-  flex-wrap: wrap;
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-quaternary);
-}
-
-.storage-directory {
-  padding: 10px var(--tjg-space-3);
-  border-radius: var(--tjg-radius-sm);
-  background: var(--tjg-settings-card-bg-hover);
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-secondary);
-  word-break: break-all;
 }
 
 /* 统一选择器宽度（避免每个 select 都内联 style） */

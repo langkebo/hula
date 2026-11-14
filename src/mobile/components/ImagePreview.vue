@@ -210,7 +210,6 @@ const handleSave = async () => {
     }
 
     if (result) {
-      logger.debug('Image saved path:', result)
       showFeedback(t('mobile_chat.preview.image_saved'), 'success')
 
       const roomId = getCurrentRoomId()
@@ -228,7 +227,6 @@ const handleSave = async () => {
           ...(suffix !== undefined ? { suffix } : {})
         }
         fileStore.addFile(fileInfo)
-        logger.debug('Save file info to fileStore:', fileInfo)
       }
     }
   } catch (e) {

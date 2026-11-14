@@ -19,7 +19,8 @@
         <svg
           v-if="isWindows()"
           class="size-14px cursor-pointer pt-6px select-none absolute right-6px z-10"
-          @click="modalVisible = false">
+          @click="modalVisible = false"
+          aria-hidden="true">
           <use href="#close"></use>
         </svg>
         <span class="h-1px w-full bg-[--tjg-border-default]"></span>
@@ -124,6 +125,7 @@
 import { useI18n } from 'vue-i18n'
 import MacCloseButton from '@/components/common/MacCloseButton.vue'
 import { useGeolocation } from '@/composables/common/useGeolocation'
+import { useOperationFeedback } from '@/composables/common/useOperationFeedback'
 import { reverseGeocode } from '@/services/legacy/mapApi'
 import type { LocationData } from '@/types/common'
 import { gcj02ToWgs84 } from '@/utils/CoordinateTransform'
@@ -171,6 +173,7 @@ const mapError = ref<string | null>(null)
 const sendingLocation = ref(false)
 
 const { t } = useI18n()
+const { reportFailure } = useOperationFeedback()
 
 // 计算属性
 const modalTitle = computed(() => {
@@ -229,6 +232,7 @@ const getLocation = async () => {
     }
   } catch (error) {
     logger.error('Failed to get location:', error)
+    reportFailure(error)
   }
 }
 

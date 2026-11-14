@@ -28,7 +28,8 @@
         <svg
           v-if="activeReply === message.message.id"
           class="size-16px pt-4px color-[--tjg-text-tertiary]"
-          :class="isMe ? 'ml-8px' : 'mr-8px'">
+          :class="isMe ? 'ml-8px' : 'mr-8px'"
+          aria-hidden="true">
           <use :href="isMe ? `#corner-down-left` : `#corner-down-right`"></use>
         </svg>
         <!-- 头像 -->
@@ -122,7 +123,7 @@
               :is-burned="message.message.isBurned"
               :room-id="message.message.roomId"
               :event-id="message.message.id"
-              :sender-id="message.fromUser?.uid">
+              :sender-id="senderUid">
               <component
                 :class="[
                   message.message.type === MsgEnum.VOICE ? 'select-none cursor-pointer' : 'select-text cursor-text',
@@ -206,7 +207,7 @@
                     <span class="text-(12px --tjg-text-tertiary)">
                       {{ messageBody.translatedText.provider }}
                     </span>
-                    <svg class="size-12px">
+                    <svg class="size-12px" aria-hidden="true">
                       <use href="#success"></use>
                     </svg>
 
@@ -214,14 +215,15 @@
                       <template #trigger>
                         <svg
                           class="pl-6px size-10px cursor-pointer hover:color-[--tjg-text-tertiary] hover:transition-colors"
-                          @click="handleCopyTranslation(messageBody.translatedText.text)">
+                          @click="handleCopyTranslation(messageBody.translatedText.text)"
+                          aria-hidden="true">
                           <use href="#copy"></use>
                         </svg>
                       </template>
                       <span>{{ t('message_container.copy_translation') }}</span>
                     </n-tooltip>
                   </n-flex>
-                  <svg class="size-10px cursor-pointer" @click="messageBody.translatedText = null">
+                  <svg class="size-10px cursor-pointer" @click="messageBody.translatedText = null" aria-hidden="true">
                     <use href="#close"></use>
                   </svg>
                 </n-flex>
@@ -243,7 +245,7 @@
             "
             class="reply-bubble relative w-fit custom-shadow select-none chat-message-max-width"
             :style="{ 'max-width': bubbleMaxWidth }">
-            <svg class="size-14px">
+            <svg class="size-14px" aria-hidden="true">
               <use href="#to-top"></use>
             </svg>
             <n-avatar

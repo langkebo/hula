@@ -24,7 +24,7 @@ import { getCacheBaseDir } from '@/utils/PathUtil'
 import { UploadProviderEnum, useUpload } from '../common/useUpload'
 import { extractAtUserIds } from './mentionParser'
 import type { StrategyReplyArg, UseMsgInputSendOptions } from './msgInputTypes'
-import { revokeBlobUrl } from './msgInputTypes'
+import { bindUploadProgress, revokeBlobUrl } from './msgInputTypes'
 import { useMsgInputDirectSend } from './useMsgInputDirectSend'
 import { useMsgInputFileUpload } from './useMsgInputFileUpload'
 
@@ -76,6 +76,12 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     const tempMsg = await Promise.resolve(
       messageStrategy.buildMessageType(tempMsgId, messageBody, globalStore, userUid)
     )
+    // 乐观清空输入框；发送失败时用快照回填，避免断网/超时导致草稿丢失。
+    // 媒体消息的本地 blob URL 会在失败路径被回收，回填会产生裂图，故只保留文本类草稿。
+    const draftSnapshot =
+      msg.type === MsgEnum.TEXT || msg.type === MsgEnum.NOTICE
+        ? { html: msgInput.value, reply: { ...reply.value } }
+        : null
     resetInput()
 
     tempMsg.message.status = MessageStatusEnum.SENDING
@@ -104,6 +110,17 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     } catch (error) {
       logger.error('消息发送失败:', error)
       chatStore.updateMsg({ msgId: tempMsgId, status: MessageStatusEnum.FAILED })
+      if (draftSnapshot) {
+        // 用户可能在等待期间重新输入了内容，此时不覆盖新内容
+        if (!msgInput.value.trim()) {
+          msgInput.value = draftSnapshot.html
+          if (messageInputDom.value) {
+            messageInputDom.value.innerHTML = draftSnapshot.html
+          }
+          reply.value = draftSnapshot.reply
+        }
+        showFeedback(t('hooks.msg_input.send_failed_kept'), 'error')
+      }
       cleanupBlobUrls(msg, messageBody)
     }
   }
@@ -152,28 +169,33 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     tempMsgId: string,
     messageStrategy: MessageStrategy
   ): Promise<void> {
-    const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
+    const { update, stop } = bindUploadProgress(chatStore, messageStrategy, tempMsgId)
+    try {
+      const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
-    if (isEncrypted) {
-      const fileData = await readFile(msg.path as string, {
-        baseDir: getCacheBaseDir()
-      })
-      const fileBlob = new File([fileData], (msg.fileName as string) || 'image.png', {
-        type: (msg.mimeType as string) || 'image/png'
-      })
-      const result = await matrixMediaService.uploadEncryptedFile(fileBlob)
-      messageBody.encryptedFile = result.encryptedFile
-      delete messageBody.url
-    } else {
-      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-        provider: UploadProviderEnum.DEFAULT
-      })
-      const uploadedUrl = await messageStrategy.doUpload(
-        msg.path as string,
-        uploadUrl,
-        config as Record<string, unknown>
-      )
-      messageBody.url = uploadedUrl || downloadUrl
+      if (isEncrypted) {
+        const fileData = await readFile(msg.path as string, {
+          baseDir: getCacheBaseDir()
+        })
+        const fileBlob = new File([fileData], (msg.fileName as string) || 'image.png', {
+          type: (msg.mimeType as string) || 'image/png'
+        })
+        const result = await matrixMediaService.uploadEncryptedFile(fileBlob, update)
+        messageBody.encryptedFile = result.encryptedFile
+        delete messageBody.url
+      } else {
+        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
+          provider: UploadProviderEnum.DEFAULT
+        })
+        const uploadedUrl = await messageStrategy.doUpload(
+          msg.path as string,
+          uploadUrl,
+          config as Record<string, unknown>
+        )
+        messageBody.url = uploadedUrl || downloadUrl
+      }
+    } finally {
+      stop()
     }
 
     delete messageBody.path
@@ -187,57 +209,62 @@ export function useMsgInputSend(options: UseMsgInputSendOptions) {
     tempMsgId: string,
     messageStrategy: MessageStrategy
   ): Promise<void> {
-    const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
+    const { update, stop } = bindUploadProgress(chatStore, messageStrategy, tempMsgId)
+    try {
+      const isEncrypted = await cryptoSDKAdapter.requireRoomEncryptionState(targetRoomId)
 
-    if (isEncrypted) {
-      let thumbnailEncryptedFile: EncryptedAttachmentFile | undefined
-      if (msg.thumbnail) {
-        const thumbnailResult = await matrixMediaService.uploadEncryptedFile(msg.thumbnail as File)
-        thumbnailEncryptedFile = thumbnailResult.encryptedFile
-      }
+      if (isEncrypted) {
+        let thumbnailEncryptedFile: EncryptedAttachmentFile | undefined
+        if (msg.thumbnail) {
+          const thumbnailResult = await matrixMediaService.uploadEncryptedFile(msg.thumbnail as File)
+          thumbnailEncryptedFile = thumbnailResult.encryptedFile
+        }
 
-      const fileData = await readFile(msg.path as string, {
-        baseDir: getCacheBaseDir()
-      })
-      const fileBlob = new File([fileData], (msg.fileName as string) || 'video.mp4', {
-        type: (msg.mimeType as string) || 'video/mp4'
-      })
-      const videoResult = await matrixMediaService.uploadEncryptedFile(fileBlob)
+        const fileData = await readFile(msg.path as string, {
+          baseDir: getCacheBaseDir()
+        })
+        const fileBlob = new File([fileData], (msg.fileName as string) || 'video.mp4', {
+          type: (msg.mimeType as string) || 'video/mp4'
+        })
+        const videoResult = await matrixMediaService.uploadEncryptedFile(fileBlob, update)
 
-      messageBody.encryptedFile = videoResult.encryptedFile
-      if (thumbnailEncryptedFile) {
-        messageBody.thumbnailEncryptedFile = thumbnailEncryptedFile
-      }
-      delete messageBody.url
-      delete messageBody.thumbUrl
-    } else {
-      let uploadResult: string
-      if (messageStrategy.uploadThumbnail && messageStrategy.doUploadThumbnail) {
-        const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail as File, {
+        messageBody.encryptedFile = videoResult.encryptedFile
+        if (thumbnailEncryptedFile) {
+          messageBody.thumbnailEncryptedFile = thumbnailEncryptedFile
+        }
+        delete messageBody.url
+        delete messageBody.thumbUrl
+      } else {
+        let uploadResult: string
+        if (messageStrategy.uploadThumbnail && messageStrategy.doUploadThumbnail) {
+          const thumbnailUploadInfo = await messageStrategy.uploadThumbnail(msg.thumbnail as File, {
+            provider: UploadProviderEnum.DEFAULT
+          })
+          const thumbnailUploadResult = await messageStrategy.doUploadThumbnail(
+            msg.thumbnail as File,
+            thumbnailUploadInfo.uploadUrl,
+            thumbnailUploadInfo.config as Record<string, unknown>
+          )
+          uploadResult = thumbnailUploadResult || thumbnailUploadInfo.downloadUrl
+        } else {
+          uploadResult = await useUpload()
+            .uploadFile(msg.thumbnail as File, { provider: UploadProviderEnum.DEFAULT, scene: UploadSceneEnum.CHAT })
+            .then((result) => result?.downloadUrl || '')
+        }
+
+        const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
           provider: UploadProviderEnum.DEFAULT
         })
-        const thumbnailUploadResult = await messageStrategy.doUploadThumbnail(
-          msg.thumbnail as File,
-          thumbnailUploadInfo.uploadUrl,
-          thumbnailUploadInfo.config as Record<string, unknown>
+        const uploadedUrl = await messageStrategy.doUpload(
+          msg.path as string,
+          uploadUrl,
+          config as Record<string, unknown>
         )
-        uploadResult = thumbnailUploadResult || thumbnailUploadInfo.downloadUrl
-      } else {
-        uploadResult = await useUpload()
-          .uploadFile(msg.thumbnail as File, { provider: UploadProviderEnum.DEFAULT, scene: UploadSceneEnum.CHAT })
-          .then((result) => result?.downloadUrl || '')
+        messageBody.url = uploadedUrl || downloadUrl
+        messageBody.thumbUrl = uploadResult
       }
-
-      const { uploadUrl, downloadUrl, config } = await messageStrategy.uploadFile(msg.path as string, {
-        provider: UploadProviderEnum.DEFAULT
-      })
-      const uploadedUrl = await messageStrategy.doUpload(
-        msg.path as string,
-        uploadUrl,
-        config as Record<string, unknown>
-      )
-      messageBody.url = uploadedUrl || downloadUrl
-      messageBody.thumbUrl = uploadResult
+    } finally {
+      stop()
     }
 
     delete messageBody.path

@@ -17,7 +17,9 @@
           </n-flex>
           <p class="text-(12px [--tjg-text-tertiary])">{{ t('ai_assistant.robot.subtitle_desc') }}</p>
         </n-flex>
-        <svg class="size-44px color-[--tjg-color-primary-500] opacity-20"><use href="#GPT"></use></svg>
+        <svg class="size-44px color-[--tjg-color-primary-500] opacity-20" aria-hidden="true">
+          <use href="#GPT"></use>
+        </svg>
       </n-flex>
 
       <!-- 头像和插件 -->
@@ -32,7 +34,7 @@
 
         <!-- 插件按钮已隐藏 -->
         <!-- <div class="plugins">
-          <svg class="size-22px"><use href="#plugins"></use></svg>
+          <svg class="size-22px" aria-hidden="true"><use href="#plugins"></use></svg>
           <p>插件</p>
         </div> -->
       </n-flex>
@@ -51,7 +53,7 @@
         <div
           v-else-if="chatList.length === 0"
           class="flex flex-col items-center justify-center py-20px text-(12px [--tjg-text-tertiary])">
-          <svg class="size-40px mb-10px opacity-50"><use href="#empty"></use></svg>
+          <svg class="size-40px mb-10px opacity-50" aria-hidden="true"><use href="#empty"></use></svg>
           <p>{{ t('ai_assistant.robot.no_conversation') }}</p>
         </div>
 
@@ -83,7 +85,8 @@
                   class="w-[200px] h-22px lh-22px rounded-[var(--tjg-radius-md)]"></n-input>
                 <svg
                   @click.stop="deleteChat(item)"
-                  class="chat-item-delete color-[--tjg-text-primary] size-20px absolute right-4px top-4px">
+                  class="chat-item-delete color-[--tjg-text-primary] size-20px absolute right-4px top-4px"
+                  aria-hidden="true">
                   <use href="#squareClose"></use>
                 </svg>
               </div>
@@ -119,12 +122,12 @@
           <div
             @click="jump"
             class="bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) color-[--tjg-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
-            <svg class="size-18px"><use href="#settings"></use></svg>
+            <svg class="size-18px" aria-hidden="true"><use href="#settings"></use></svg>
           </div>
           <div
             @click="openExternalUrl('https://gitee.com/llangkebo/hula/')"
             class="bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) color-[--tjg-text-primary] size-fit p-[8px_9px] rounded-8px custom-shadow cursor-pointer">
-            <svg class="size-18px"><use href="#github"></use></svg>
+            <svg class="size-18px" aria-hidden="true"><use href="#github"></use></svg>
           </div>
         </n-flex>
 
@@ -160,13 +163,13 @@
           v-else
           @click="add"
           class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) select-none text-(12px [--tjg-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
-          <svg class="size-15px pb-2px"><use href="#plus"></use></svg>
+          <svg class="size-15px pb-2px" aria-hidden="true"><use href="#plus"></use></svg>
           <p>{{ t('ai_assistant.robot.new_chat') }}</p>
         </div>
 
         <n-popconfirm v-model:show="showDeleteConfirm">
           <template #icon>
-            <svg class="size-22px"><use href="#explosion"></use></svg>
+            <svg class="size-22px" aria-hidden="true"><use href="#explosion"></use></svg>
           </template>
           <template #action>
             <n-button size="small" tertiary @click.stop="showDeleteConfirm = false">
@@ -179,7 +182,7 @@
           <template #trigger>
             <div
               class="flex items-center justify-center gap-4px bg-[--chat-bt-color] border-(1px solid [--tjg-border-default]) select-none text-(12px [--tjg-text-primary]) size-fit w-80px h-32px rounded-8px custom-shadow cursor-pointer">
-              <svg class="size-15px pb-2px"><use href="#delete"></use></svg>
+              <svg class="size-15px pb-2px" aria-hidden="true"><use href="#delete"></use></svg>
               <p>{{ t('ai_assistant.robot.delete_all') }}</p>
             </div>
           </template>
@@ -360,9 +363,7 @@ const menuList = ref<OPT.RightMenu[]>([
   {
     label: () => t('ai_assistant.robot.open_standalone_window'),
     icon: 'freezing-line-column',
-    click: (item: ChatItem) => {
-      logger.debug('Open standalone window:', item)
-    }
+    click: () => {}
   },
   {
     label: () => t('ai_assistant.robot.rename'),

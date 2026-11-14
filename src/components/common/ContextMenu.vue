@@ -38,7 +38,7 @@
                 aria-disabled="true"
                 @click.prevent="$event.preventDefault()">
                 <div class="menu-item-content">
-                  <svg><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
+                  <svg aria-hidden="true"><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
                   <p class="h-24px">{{ getMenuItemProp(item, 'label') }}</p>
                 </div>
               </div>
@@ -53,9 +53,9 @@
                 @mouseenter="handleMouseEnter(item, index)"
                 @mouseleave="handleMouseLeave">
                 <div class="menu-item-content">
-                  <svg><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
+                  <svg aria-hidden="true"><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
                   <p class="h-24px">{{ getMenuItemProp(item, 'label') }}</p>
-                  <svg v-if="shouldShowArrow(item)" class="arrow-icon">
+                  <svg v-if="shouldShowArrow(item)" class="arrow-icon" aria-hidden="true">
                     <use href="#right"></use>
                   </svg>
                 </div>
@@ -79,7 +79,7 @@
                 :tabindex="focusedIndex === visibleMenu.length + index ? 0 : -1"
                 v-for="(item, index) in visibleSpecialMenu"
                 :key="getMenuItemProp(item, 'label')">
-                <svg><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
+                <svg aria-hidden="true"><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
                 <p class="h-24px">{{ getMenuItemProp(item, 'label') }}</p>
               </div>
             </div>
@@ -111,9 +111,11 @@
               class="w-45px h-45px flex justify-center items-center"
               :class="{ 'opacity-50': isMenuItemDisabled(item) }">
               <div class="flex w-45px flex-col active:bg-[--tjg-menu-hover] justify-center items-center max-h-45px">
-                <svg class="w-18px w-18px"><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
+                <svg class="w-18px w-18px" aria-hidden="true">
+                  <use :href="`#${getMenuItemProp(item, 'icon')}`"></use>
+                </svg>
                 <p class="h-24px text-12px">{{ getMenuItemProp(item, 'label') }}</p>
-                <svg v-if="shouldShowArrow(item)" class="arrow-icon w-18px w-18px">
+                <svg v-if="shouldShowArrow(item)" class="arrow-icon w-18px w-18px" aria-hidden="true">
                   <use href="#right"></use>
                 </svg>
               </div>
@@ -131,7 +133,7 @@
               class="w-45px h-45px flex justify-center items-center"
               :class="getMenuItemProp(item, 'icon') === 'delete' ? 'text-[--tjg-color-danger-500]' : ''">
               <div class="flex w-45px flex-col active:bg-[--tjg-menu-hover] justify-center items-center max-h-45px">
-                <svg class="w-18px"><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
+                <svg class="w-18px" aria-hidden="true"><use :href="`#${getMenuItemProp(item, 'icon')}`"></use></svg>
                 <p class="h-24px text-12px">{{ getMenuItemProp(item, 'label') }}</p>
               </div>
             </div>
@@ -153,7 +155,7 @@
                 @click="handleSubItemClick(subItem)"
                 @keydown.enter.prevent="handleSubItemClick(subItem)"
                 @keydown.space.prevent="handleSubItemClick(subItem)">
-                <svg class="check-icon">
+                <svg class="check-icon" aria-hidden="true">
                   <use :href="`#${getMenuItemProp(subItem, 'icon')}`"></use>
                 </svg>
                 <p class="h-24px">{{ getMenuItemProp(subItem, 'label') }}</p>

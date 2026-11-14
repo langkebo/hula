@@ -1,7 +1,7 @@
 <template>
   <div class="forbidden-page">
     <div class="forbidden-content">
-      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
         <circle cx="60" cy="60" r="55" stroke="var(--tjg-color-danger-500)" stroke-width="4" fill="none" />
         <line
           x1="30"

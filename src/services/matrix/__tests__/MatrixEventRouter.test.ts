@@ -390,22 +390,29 @@ describe('MatrixEventRouter', () => {
       expect(decryptedCb).toHaveBeenCalledWith({ event, err, room: rooms })
     })
 
-    it('room_timeline 中 m.text 消息调用 worker upsertSearchEvents', () => {
-      router.setup(client as never, syncManager as never)
-      const event = makeMatrixEvent()
-      const room = makeRoom()
-      client.handlers.get('room_timeline')?.(event as never, room as never)
+    it('room_timeline 中 m.text 消息按 50ms 窗口批量写入 worker upsertSearchEvents', () => {
+      vi.useFakeTimers()
+      try {
+        router.setup(client as never, syncManager as never)
+        const room = makeRoom()
+        client.handlers.get('room_timeline')?.(makeMatrixEvent() as never, room as never)
+        client.handlers.get('room_timeline')?.(
+          makeMatrixEvent({ getId: vi.fn(() => '$event2') }) as never,
+          room as never
+        )
 
-      expect(workerHostMock.upsertSearchEvents).toHaveBeenCalledWith([
-        {
-          eventId: '$event1',
-          roomId: '!room:hs',
-          sender: '@alice:hs',
-          timestamp: 1700000000000,
-          msgtype: 'm.text',
-          body: 'hello'
-        }
-      ])
+        expect(workerHostMock.upsertSearchEvents).not.toHaveBeenCalled()
+
+        vi.advanceTimersByTime(50)
+
+        expect(workerHostMock.upsertSearchEvents).toHaveBeenCalledTimes(1)
+        expect(workerHostMock.upsertSearchEvents).toHaveBeenCalledWith([
+          expect.objectContaining({ eventId: '$event1', body: 'hello' }),
+          expect.objectContaining({ eventId: '$event2', body: 'hello' })
+        ])
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('room_timeline 中非 m.text 消息不调用 worker upsertSearchEvents', () => {

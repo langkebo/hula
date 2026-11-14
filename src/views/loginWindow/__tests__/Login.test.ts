@@ -106,13 +106,6 @@ vi.mock('naive-ui', () => {
   }
 })
 
-vi.mock('@/composables/common/useCheckUpdate', () => ({
-  useCheckUpdate: () => ({
-    checkUpdate: vi.fn(),
-    CHECK_UPDATE_LOGIN_TIME: 60000
-  })
-}))
-
 vi.mock('@/composables/common/useDriver', () => ({
   useDriver: () => ({
     startTour: vi.fn(),

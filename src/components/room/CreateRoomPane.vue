@@ -5,14 +5,14 @@
       class="pane-header flex items-center justify-between px-20px py-12px border-b border-[--tjg-border-layout-divider]">
       <span class="pane-title">{{ t('room.create.title') }}</span>
       <n-button text :aria-label="t('common.close')" @click="handleClose">
-        <svg class="size-16px"><use href="#close"></use></svg>
+        <svg class="size-16px" aria-hidden="true"><use href="#close"></use></svg>
       </n-button>
     </div>
 
     <!-- 草稿恢复提示 -->
     <Transition name="hint-fade">
       <div v-if="showRestoredHint" class="create-room-pane__hint" role="status" aria-live="polite">
-        <svg class="size-14px"><use href="#info"></use></svg>
+        <svg class="size-14px" aria-hidden="true"><use href="#info"></use></svg>
         <span>{{ t('common.draft_restored') }}</span>
       </div>
     </Transition>

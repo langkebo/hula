@@ -24,6 +24,7 @@
       "placeholder": "Enter keyword to search message history",
       "loading": "Searching...",
       "no_results": "No matching messages found",
+      "load_failed": "Search failed. Please try again later.",
       "empty_hint": "Type a keyword to search message history",
       "results_count": "{count} results found",
       "jump_hint": "Click or press Enter to jump to the message",
@@ -39,7 +40,6 @@
     "private_mode_confirm_question": "Are you sure you want to enter private mode?",
     "private_mode_feature_e2ee": "Messages are end-to-end encrypted (room members only)",
     "private_mode_feature_burn": "Per-message countdown; expiry only hides it on this device",
-    "private_mode_feature_screenshot": "Desktop notifies on screenshots and posts a room notice (cannot block them)",
     "private_mode_active": "Private mode is active",
     "private_mode_cancel": "Cancel",
     "private_mode_confirm": "Confirm"
@@ -87,14 +87,16 @@
     "copy_url": "Copy URL"
   },
   "privacy": {
-    "screenshot_protected": "This chat is protected, screenshots are prohibited",
-    "screenshot_detected_notice": "Screenshot activity has been recorded"
+    "screenshot_protected": "This chat is protected, screenshots are prohibited"
   },
   "multi_msg": {
     "view_forwarded": "View {count} forwarded messages",
     "group_title": "Group chat history",
     "dm_title": "Chat history between {friend} and {me}",
-    "open_failed": "Failed to open chat history"
+    "open_failed": "Failed to open chat history",
+    "load_failed": "Failed to load chat history",
+    "retry": "Retry",
+    "empty": "No messages to display"
   },
   "crypto_unavailable": {
     "message": "Encryption is not ready. Messages in this room cannot be sent. Please re-login or contact the administrator."

@@ -15,10 +15,12 @@ export type Messages = {
   },
   "input": {
     "account": {
-      "placeholder": "邮箱/Tjg账号"
+      "placeholder": "邮箱/Tjg账号",
+      "required": "请输入邮箱或账号"
     },
     "pass": {
-      "placeholder": "输入 Tjg 密码"
+      "placeholder": "输入 Tjg 密码",
+      "required": "请输入密码"
     },
     "homeserver": {
       "placeholder": "服务器地址",
@@ -38,7 +40,8 @@ export type Messages = {
       "text1": "已阅读并同意",
       "text2": "服务协议",
       "text3": "和",
-      "text4": "Tjg隐私保护指引"
+      "text4": "Tjg隐私保护指引",
+      "agree_label": "同意服务协议与隐私保护指引"
     }
   },
   "register": "注册账号",
@@ -287,7 +290,9 @@ export type KeyPaths =
   | "login.button.cancel_login"
   | "login.button.remove_account"
   | "login.input.account.placeholder"
+  | "login.input.account.required"
   | "login.input.pass.placeholder"
+  | "login.input.pass.required"
   | "login.input.homeserver.placeholder"
   | "login.input.homeserver.advanced_hint"
   | "login.input.homeserver.toggle_title"
@@ -298,6 +303,7 @@ export type KeyPaths =
   | "login.term.checkout.text2"
   | "login.term.checkout.text3"
   | "login.term.checkout.text4"
+  | "login.term.checkout.agree_label"
   | "login.register"
   | "login.guest"
   | "login.third_party.gitee"

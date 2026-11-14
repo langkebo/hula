@@ -13,7 +13,8 @@
       class="absolute top-1/2 -left-14px -translate-y-1/2 cursor-pointer bg-[--tjg-surface-sidebar-selected] h-48px w-14px rounded-l-12px flex items-center justify-center opacity-100 hover:opacity-80 transition-opacity z-10 shadow-sm border border-r-0 border-[--tjg-border-default]">
       <svg
         :class="isCollapsed ? 'rotate-180' : 'rotate-0'"
-        class="size-14px color-[--tjg-text-tertiary] transition-transform">
+        class="size-14px color-[--tjg-text-tertiary] transition-transform"
+        aria-hidden="true">
         <use href="#left-arrow"></use>
       </svg>
     </div>
@@ -46,7 +47,8 @@
             {{ t('home.chat_sidebar.announcement.title') }}
           </span>
           <svg
-            class="size-14px color-[--tjg-text-secondary] shrink-0 transition-transform hover:color-[--tjg-text-primary]">
+            class="size-14px color-[--tjg-text-secondary] shrink-0 transition-transform hover:color-[--tjg-text-primary]"
+            aria-hidden="true">
             <use v-if="announNum === 0 && isAddAnnoun" href="#plus"></use>
             <use v-else href="#right"></use>
           </svg>
@@ -111,7 +113,7 @@
           :aria-label="t('chat.header.search_messages')"
           @click="openMessageSearch">
           <template #icon>
-            <svg class="size-14px color-[--tjg-text-secondary]"><use href="#search"></use></svg>
+            <svg class="size-14px color-[--tjg-text-secondary]" aria-hidden="true"><use href="#search"></use></svg>
           </template>
         </n-button>
       </div>
@@ -140,7 +142,7 @@
             autoComplete="off"
             class="flex-1 bg-[--tjg-surface-search] border-none rounded-[var(--tjg-radius-md)] text-[var(--text-xs)]">
             <template #prefix>
-              <svg class="size-12px color-[--tjg-text-tertiary]">
+              <svg class="size-12px color-[--tjg-text-tertiary]" aria-hidden="true">
                 <use href="#search"></use>
               </svg>
             </template>
@@ -153,7 +155,7 @@
             :aria-label="t('common.search')"
             @click="handleSelect">
             <template #icon>
-              <svg class="size-14px color-[--tjg-text-secondary]"><use href="#search"></use></svg>
+              <svg class="size-14px color-[--tjg-text-secondary]" aria-hidden="true"><use href="#search"></use></svg>
             </template>
           </n-button>
         </n-flex>
@@ -177,7 +179,8 @@
                 <svg
                   v-if="item.group === 'offline'"
                   class="size-10px color-[--tjg-text-tertiary] transition-transform"
-                  :class="offlineCollapsed ? 'rotate-0' : 'rotate-90'">
+                  :class="offlineCollapsed ? 'rotate-0' : 'rotate-90'"
+                  aria-hidden="true">
                   <use href="#right"></use>
                 </svg>
                 <span>
@@ -282,13 +285,7 @@
             :can-set-sticky="canSetSticky"
             @navigate="handleNavigateToMessage"
             @cancel-sticky="handleCancelSticky" />
-          <n-empty v-else :description="t('home.chat_sidebar.empty.pins')">
-            <template #icon>
-              <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
-                <use href="#pin"></use>
-              </svg>
-            </template>
-          </n-empty>
+          <EmptyState v-else compact icon="mdi:pin-outline" :description="t('home.chat_sidebar.empty.pins')" />
         </div>
       </div>
 
@@ -312,6 +309,7 @@ import { useChatSidebar } from '@/composables/chat/useChatSidebar'
 import { useRoomType } from '@/composables/chat/useRoomType'
 import { useLinkSegments } from '@/composables/common/useLinkSegments'
 import { useMitt } from '@/composables/common/useMitt'
+import { useOperationFeedback } from '@/composables/common/useOperationFeedback'
 import { useTauriListener } from '@/composables/common/useTauriListener'
 import { useWindow } from '@/composables/common/useWindow'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
@@ -333,6 +331,7 @@ import { useListWindow } from './useListWindow'
 const logger = createLogger('ChatSidebar')
 
 const { t } = useI18n()
+const { reportFailure } = useOperationFeedback()
 const appWindow = hasTauriRuntime() ? WebviewWindow.getCurrent() : null
 
 // F-1 修复：Tauri 监听器统一走 useTauriListener（onUnmounted 自动 unlisten）
@@ -360,6 +359,7 @@ const activeTab = ref('members')
 const isSearch = ref(false)
 const searchRef = ref('')
 const searchRequestId = ref(0)
+let lastSearchKeyword = '' // 上一次已生效的过滤关键字，避免同一关键字重复过滤
 /** List中的Popover组件实例 */
 const infoPopoverRefs = ref<Record<string, { setShow: (show: boolean) => void } | null>>({})
 const inputInstRef = ref<InputInst | null>(null)
@@ -441,13 +441,13 @@ watch(
       await announcementStore.loadGroupAnnouncements(roomId)
     } catch (error) {
       logger.error('Failed to refresh group announcements:', error)
+      reportFailure(error, 'common.load_failed')
     }
   },
   { immediate: true }
 )
 
 const onClickMember = async (item: UserItem) => {
-  logger.debug('Click user', item)
   selectKey.value = item.uid
 
   // 获取用户的最新数据，并更新 pinia
@@ -458,15 +458,21 @@ const onClickMember = async (item: UserItem) => {
   })
 }
 
-// 监听成员源列表变化
+const filterByKeyword = (list: UserItem[], keyword: string): UserItem[] => {
+  if (!keyword) return Array.isArray(list) ? [...list] : []
+  return list.filter((member) => {
+    const matchName = member.name?.toLowerCase().includes(keyword)
+    const matchMyName = member.myName?.toLowerCase().includes(keyword)
+    return matchName || matchMyName
+  })
+}
+
+// 监听成员源列表变化：搜索态下同步重算过滤结果，避免成员更新后列表仍是旧快照
 watch(
   () => groupStore.userList,
   (newList) => {
-    if (searchRef.value.trim()) {
-      return
-    }
-
-    displayedUserList.value = Array.isArray(newList) ? [...newList] : []
+    const list = Array.isArray(newList) ? newList : []
+    displayedUserList.value = filterByKeyword(list, searchRef.value.trim().toLowerCase())
   },
   { immediate: true }
 )
@@ -479,26 +485,18 @@ const handleSearch = useDebounceFn((value: string) => {
   searchRef.value = value
   const keyword = value.trim().toLowerCase()
 
-  // 如果没有搜索关键字,显示全部成员
-  if (!keyword) {
-    displayedUserList.value = Array.isArray(groupStore.userList) ? [...groupStore.userList] : []
-    return
-  }
+  // 关键字未变化时不重复过滤，降低大群成员列表的重算开销
+  if (keyword === lastSearchKeyword) return
+  lastSearchKeyword = keyword
 
-  // 前端本地过滤成员列表
-  const filteredList = groupStore.userList.filter((member) => {
-    const matchName = member.name?.toLowerCase().includes(keyword)
-    const matchMyName = member.myName?.toLowerCase().includes(keyword)
-    return matchName || matchMyName
-  })
-
-  displayedUserList.value = filteredList
-}, 10)
+  displayedUserList.value = filterByKeyword(groupStore.userList, keyword)
+}, 200)
 
 const handleBlur = () => {
   if (searchRef.value) return
   isSearch.value = false
   searchRequestId.value++
+  lastSearchKeyword = ''
   displayedUserList.value = Array.isArray(groupStore.userList) ? [...groupStore.userList] : []
 }
 
@@ -523,6 +521,7 @@ const handleSelect = () => {
   } else {
     searchRequestId.value++
     searchRef.value = ''
+    lastSearchKeyword = ''
     displayedUserList.value = Array.isArray(groupStore.userList) ? [...groupStore.userList] : []
   }
 }

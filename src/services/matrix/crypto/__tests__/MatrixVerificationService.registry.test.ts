@@ -1,5 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk'
-import { CryptoEvent, VerificationPhase } from 'matrix-js-sdk/crypto'
+import { CryptoEvent, VerificationPhase, VerificationRequestEvent } from 'matrix-js-sdk/crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const logSpy = vi.hoisted(() => ({
@@ -162,6 +162,48 @@ describe('VerificationService 事务注册表', () => {
     await service.cancelVerification('txn-1', 'done')
 
     await expect(service.acceptVerification('txn-1')).rejects.toThrow(/was not found/)
+  })
+
+  /** 驱动 verify() 产生一个永不结束的 Promise，用于验证收尾时的清理（D11） */
+  function emitStartedRequest(): { request: FakeSdkRequest; verifyPromises: Map<string, Promise<void>> } {
+    let changeHandler: (() => void) | undefined
+    const verifier: FakeVerifier = {
+      verify: vi.fn(() => new Promise<void>(() => undefined)),
+      getShowSasCallbacks: vi.fn(() => null)
+    }
+    const request = makeSdkRequest({
+      phase: VerificationPhase.Started,
+      verifier,
+      on: vi.fn((event: string, handler: () => void) => {
+        if (event === VerificationRequestEvent.Change) changeHandler = handler
+      })
+    })
+    emitRequest(request)
+    // Started 阶段会自动驱动 verify()，此处触发一次 Change 让服务接管
+    changeHandler?.()
+    const verifyPromises = (service as unknown as { verifyPromises: Map<string, Promise<void>> }).verifyPromises
+    return { request, verifyPromises }
+  }
+
+  it('取消验证时同步清理 verifyPromises（D11）', async () => {
+    const { verifyPromises } = emitStartedRequest()
+    expect(verifyPromises.has('txn-1')).toBe(true)
+
+    await service.cancelVerification('txn-1', 'user declined')
+
+    expect(verifyPromises.has('txn-1')).toBe(false)
+    expect(await service.getPendingVerifications()).toEqual([])
+  })
+
+  it('getPendingVerifications 惰性清理终态事务时一并清掉 verifyPromises（D11）', async () => {
+    const { request, verifyPromises } = emitStartedRequest()
+    expect(verifyPromises.has('txn-1')).toBe(true)
+
+    // 模拟 SDK 没再发 Change：事务已到终态但注册表里还留着
+    request.phase = VerificationPhase.Cancelled
+
+    expect(await service.getPendingVerifications()).toEqual([])
+    expect(verifyPromises.has('txn-1')).toBe(false)
   })
 })
 

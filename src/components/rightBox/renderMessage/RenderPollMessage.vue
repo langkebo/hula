@@ -1,7 +1,7 @@
 <template>
   <div class="poll-message">
     <div class="poll-header">
-      <svg class="size-16px">
+      <svg class="size-16px" aria-hidden="true">
         <use href="#poll"></use>
       </svg>
       <span class="poll-title">{{ pollData.question }}</span>

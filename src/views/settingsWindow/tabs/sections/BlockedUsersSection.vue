@@ -73,6 +73,7 @@ async function loadBlockedUsers() {
     policy.value = await matrixAccountService.getInvitePolicy()
   } catch (error) {
     logger.warn('Failed to load block list:', error)
+    showFeedback(t('common.load_failed'), 'error')
   } finally {
     loadingBlocked.value = false
   }

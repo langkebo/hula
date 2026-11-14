@@ -13,11 +13,12 @@
               <Transition mode="out-in">
                 <svg
                   v-if="plugin.state === PluginEnum.NOT_INSTALLED || plugin.state === PluginEnum.DOWNLOADING"
-                  class="size-34px color-[--tjg-text-quaternary]">
+                  class="size-34px color-[--tjg-text-quaternary]"
+                  aria-hidden="true">
                   <use :href="`#${plugin.icon}`"></use>
                 </svg>
                 <template v-else>
-                  <svg class="size-34px color-[--tjg-text-secondary]">
+                  <svg class="size-34px color-[--tjg-text-secondary]" aria-hidden="true">
                     <use :href="`#${plugin.iconAction || plugin.icon}`"></use>
                   </svg>
                 </template>
@@ -31,7 +32,8 @@
                 <Transition>
                   <svg
                     v-if="plugin.isAdd && plugin.state !== PluginEnum.BUILTIN"
-                    class="color-[--tjg-text-secondary] size-14px">
+                    class="color-[--tjg-text-secondary] size-14px"
+                    aria-hidden="true">
                     <use href="#notOnTop"></use>
                   </svg>
                 </Transition>
@@ -108,7 +110,7 @@
             trigger="click"
             placement="bottom">
             <template #trigger>
-              <svg @click.stop="isCurrently = index" class="size-22px rotate-90">
+              <svg @click.stop="isCurrently = index" class="size-22px rotate-90" aria-hidden="true">
                 <use href="#more"></use>
               </svg>
             </template>
@@ -116,15 +118,15 @@
             <div class="action-item">
               <div class="menu-list">
                 <div v-clickable v-if="!plugin.isAdd" @click="handleAdd(plugin)" class="menu-item">
-                  <svg class="text-[--tjg-color-info-500]"><use href="#add"></use></svg>
+                  <svg class="text-[--tjg-color-info-500]" aria-hidden="true"><use href="#add"></use></svg>
                   <p class="text-[--tjg-color-info-500]">{{ t('home.plugins.actions.pin') }}</p>
                 </div>
                 <div v-clickable v-else @click="handleDelete(plugin)" class="menu-item">
-                  <svg class="color-[--danger-text]"><use href="#reduce"></use></svg>
+                  <svg class="color-[--danger-text]" aria-hidden="true"><use href="#reduce"></use></svg>
                   <p class="text-[--danger-text]">{{ t('home.plugins.actions.unpin') }}</p>
                 </div>
                 <div v-clickable @click="handleUnload(plugin)" class="menu-item">
-                  <svg><use href="#delete"></use></svg>
+                  <svg aria-hidden="true"><use href="#delete"></use></svg>
                   <p>{{ t('home.plugins.actions.uninstall') }}</p>
                 </div>
               </div>

@@ -93,11 +93,8 @@ const startScan = async () => {
       return
     }
 
-    logger.debug('Scan result:', res)
-
     if (res && typeof res === 'object' && 'content' in res && typeof res.content === 'string') {
       const payload = normalizeScanPayload(res.content)
-      logger.debug('Normalized QR payload:', payload)
       useMitt.emit(MittEnum.QR_SCAN_EVENT, payload)
 
       if (window.history.length > 1) {

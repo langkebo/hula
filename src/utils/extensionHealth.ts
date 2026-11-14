@@ -34,3 +34,12 @@ export function reportExtensionDegradationToUi(): void {
     logger.warn(`[ExtensionHealth] 降级提示失败（已忽略）: ${err}`)
   }
 }
+
+/**
+ * P-01：Matrix Worker 启动失败后登记搜索索引降级，并立即提示一次。
+ * worker 不可用时本地索引写入/查询退化为远程搜索，结果可能不完整。
+ */
+export function reportSearchIndexDegraded(): void {
+  useCapabilityStore().setExtensionHealth('matrixWorker', 'degraded')
+  reportExtensionDegradationToUi()
+}

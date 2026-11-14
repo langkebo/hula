@@ -125,7 +125,11 @@ describe('MatrixRoomAccountDataService', () => {
 
   describe('setReadLifetime', () => {
     it('delegates to matrixBurnAfterReadService.enableBurn', async () => {
-      vi.mocked(matrixBurnAfterReadService.enableBurn).mockResolvedValue({ enabled: true, burnAfterMs: 5000 })
+      vi.mocked(matrixBurnAfterReadService.enableBurn).mockResolvedValue({
+        enabled: true,
+        burnAfterMs: 5000,
+        scope: 'room'
+      })
       await service.setReadLifetime('!r', 5000)
       expect(matrixBurnAfterReadService.enableBurn).toHaveBeenCalledWith('!r', 5000, true)
     })

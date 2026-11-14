@@ -3,7 +3,7 @@
     <div class="invite-dialog">
       <n-input v-model:value="searchQuery" :placeholder="t('room.invite.search_placeholder')" clearable>
         <template #prefix>
-          <svg class="size-16px">
+          <svg class="size-16px" aria-hidden="true">
             <use href="#search"></use>
           </svg>
         </template>
@@ -36,7 +36,7 @@
           <template #suffix>
             <n-button text size="small" :aria-label="t('common.add')" @click="addManualUser">
               <template #icon>
-                <svg class="size-16px">
+                <svg class="size-16px" aria-hidden="true">
                   <use href="#add"></use>
                 </svg>
               </template>

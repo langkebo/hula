@@ -140,10 +140,11 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
     customDirectory.value = path
   }
 
-  const startScan = async () => {
+  // 返回是否成功：失败在 store 内记录日志，页面据此给出可重试的错误提示
+  const startScan = async (): Promise<boolean> => {
     if (!currentDirectory.value) {
       showFeedback('请先选择目录', 'warning')
-      return
+      return false
     }
 
     scanning.value = true
@@ -178,9 +179,11 @@ export const useScannerStore = defineStore(StoresEnum.SCANNER, () => {
       totalSize.value = result.total_size
       scanComplete.value = true
       scanning.value = false
+      return true
     } catch (error) {
       logger.error('扫描失败:', error)
       scanning.value = false
+      return false
     }
   }
 

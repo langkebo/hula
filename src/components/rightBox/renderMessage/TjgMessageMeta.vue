@@ -20,7 +20,7 @@
         <n-tooltip trigger="hover">
           <template #trigger>
             <div class="receipts-count">
-              <svg class="size-12px"><use href="#success"></use></svg>
+              <svg class="size-12px" aria-hidden="true"><use href="#success"></use></svg>
               <span>{{ receipts.length }}</span>
             </div>
           </template>

@@ -37,7 +37,7 @@
         </p>
 
         <div class="preview-footer flex-y-center mt-auto pt-6px">
-          <svg class="size-12px color-[--tjg-text-quaternary] mr-4px">
+          <svg class="size-12px color-[--tjg-text-quaternary] mr-4px" aria-hidden="true">
             <use href="#link"></use>
           </svg>
           <span class="text-[length:var(--tjg-font-size-2xs)] color-[--tjg-text-quaternary] truncate">

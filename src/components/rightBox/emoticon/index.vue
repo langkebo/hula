@@ -141,7 +141,7 @@
                     {{ t('emoticon.favorites.delete') }}
                     <template #icon>
                       <n-icon>
-                        <svg><use href="#delete"></use></svg>
+                        <svg aria-hidden="true"><use href="#delete"></use></svg>
                       </n-icon>
                     </template>
                   </n-button>
@@ -165,7 +165,8 @@
             class="series-icon"
             v-if="item.type === 'icon'"
             :class="{ active: activeIndex === item.id }"
-            @click="handleTabChange(item.id)">
+            @click="handleTabChange(item.id)"
+            aria-hidden="true">
             <use :href="item.icon"></use>
           </svg>
 

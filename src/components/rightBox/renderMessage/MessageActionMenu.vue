@@ -24,7 +24,7 @@
         :data-action="action"
         role="menuitem"
         @click="handleActionClick(action)">
-        <svg class="size-14px"><use :href="`#${getActionIcon(action)}`" /></svg>
+        <svg class="size-14px" aria-hidden="true"><use :href="`#${getActionIcon(action)}`" /></svg>
         <span>{{ t(`message.action_${action}`) }}</span>
       </button>
     </template>

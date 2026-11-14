@@ -51,7 +51,7 @@
         </svg>
         <n-popover class="liquid-glass-popover" trigger="hover" :show-arrow="false" placement="top">
           <template #trigger>
-            <svg class="dropdown-arrow w-14px h-14px">
+            <svg class="dropdown-arrow w-14px h-14px" aria-hidden="true">
               <use href="#down"></use>
             </svg>
           </template>
@@ -63,7 +63,7 @@
               align="center"
               justify="space-between">
               <n-flex align="center" :size="6">
-                <svg class="size-14px">
+                <svg class="size-14px" aria-hidden="true">
                   <use href="#screenshot"></use>
                 </svg>
                 <p>{{ t('editor.screenshot') }}</p>
@@ -89,7 +89,7 @@
             <svg @click="$emit('handleFileOpen')" role="button" :aria-label="t('chat.footer.send_file')">
               <use href="#file2"></use>
             </svg>
-            <svg class="w-14px h-14px">
+            <svg class="w-14px h-14px" aria-hidden="true">
               <use href="#down"></use>
             </svg>
           </div>
@@ -153,7 +153,14 @@
             class="mr-18px cursor-pointer flex-center"
             role="button"
             :aria-label="t('chat.footer.burn_after_read')">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true">
               <circle cx="12" cy="13" r="8" />
               <path d="M12 9v4l3 2M9 2h6M12 5V2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>

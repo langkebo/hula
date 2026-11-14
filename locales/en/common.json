@@ -103,7 +103,8 @@
     "check_update": "Check Updates",
     "video_viewer": "Video Viewer",
     "preview_file": "Preview File",
-    "about": "About"
+    "about": "About",
+    "settings": "Settings"
   },
   "copy": "Copy",
   "load_more": "Load More",

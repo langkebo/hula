@@ -24,7 +24,7 @@
         <n-flex align="center" :wrap="false">
           <n-tooltip trigger="hover" class="shrink-0">
             <template #trigger>
-              <svg class="size-12px cursor-pointer pr-4px" @click="handleCopy(item)">
+              <svg class="size-12px cursor-pointer pr-4px" @click="handleCopy(item)" aria-hidden="true">
                 <use href="#copy"></use>
               </svg>
             </template>

@@ -37,7 +37,7 @@
         :aria-label="isMuted ? t('voip.call.unmute') : t('voip.call.mute')"
         @click="toggleMute">
         <template #icon>
-          <svg class="size-20px">
+          <svg class="size-20px" aria-hidden="true">
             <use :href="isMuted ? '#mic-off' : '#mic'"></use>
           </svg>
         </template>
@@ -49,7 +49,7 @@
         :aria-label="t('voip.call.speaker')"
         @click="handleToggleSpeaker">
         <template #icon>
-          <svg class="size-20px">
+          <svg class="size-20px" aria-hidden="true">
             <use :href="isSpeakerOn ? '#volume-up' : '#volume-off'"></use>
           </svg>
         </template>
@@ -62,7 +62,7 @@
         :aria-label="isVideoMuted ? t('voip.call.video_on') : t('voip.call.video_off')"
         @click="toggleVideo">
         <template #icon>
-          <svg class="size-20px">
+          <svg class="size-20px" aria-hidden="true">
             <use :href="isVideoMuted ? '#video-off' : '#video'"></use>
           </svg>
         </template>
@@ -70,7 +70,7 @@
 
       <n-button v-if="isVideo" circle :aria-label="t('voip.call.switch_camera')" @click="handleSwitchCamera">
         <template #icon>
-          <svg class="size-20px">
+          <svg class="size-20px" aria-hidden="true">
             <use href="#camera-reverse"></use>
           </svg>
         </template>
@@ -78,7 +78,7 @@
 
       <n-button circle type="error" size="large" :aria-label="t('voip.call.hangup')" @click="handleHangup">
         <template #icon>
-          <svg class="size-24px">
+          <svg class="size-24px" aria-hidden="true">
             <use href="#phone-off"></use>
           </svg>
         </template>
@@ -91,7 +91,7 @@
         :aria-label="isScreenSharing ? t('voip.call.stop_screen_share') : t('voip.call.screen_share')"
         @click="toggleScreenShare">
         <template #icon>
-          <svg class="size-20px">
+          <svg class="size-20px" aria-hidden="true">
             <use href="#screen-share"></use>
           </svg>
         </template>
@@ -103,6 +103,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useOperationFeedback } from '@/composables/common/useOperationFeedback'
 import { useVoIPCallFlow } from '@/composables/useVoIPCallFlow'
 import { matrixVoIPService } from '@/services/matrix/media/MatrixVoIPService'
 import { createLogger } from '@/utils/Logger'
@@ -129,6 +130,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { reportFailure } = useOperationFeedback()
 const callDuration = ref(0)
 const isMuted = ref(false)
 const isVideoMuted = ref(false)
@@ -211,6 +213,7 @@ const toggleScreenShare = async () => {
     }
   } catch (error) {
     logger.error('Failed to toggle screen share:', error)
+    reportFailure(error)
   }
 }
 
@@ -242,6 +245,7 @@ const handleSwitchCamera = async () => {
     logger.info(`Camera switched to: ${newFacingMode}`)
   } catch (err) {
     logger.error('Failed to switch camera:', err)
+    reportFailure(err)
   }
 }
 

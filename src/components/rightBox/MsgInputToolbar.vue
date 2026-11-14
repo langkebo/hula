@@ -6,7 +6,7 @@
       <template #trigger>
         <n-button quaternary size="small" :aria-label="t('message.location.share')" @click="$emit('showLocationModal')">
           <template #icon>
-            <svg class="w-18px h-18px">
+            <svg class="w-18px h-18px" aria-hidden="true">
               <use href="#location"></use>
             </svg>
           </template>
@@ -25,7 +25,7 @@
           :aria-label="isSharing ? t('message.beacon.stop') : t('message.beacon.share')"
           @click="$emit('handleBeaconClick')">
           <template #icon>
-            <svg class="w-18px h-18px" :class="isSharing ? 'color-[--tjg-color-danger-500]' : ''">
+            <svg class="w-18px h-18px" :class="isSharing ? 'color-[--tjg-color-danger-500]' : ''" aria-hidden="true">
               <use href="#signal"></use>
             </svg>
           </template>
@@ -39,7 +39,13 @@
       <template #trigger>
         <n-button quaternary size="small" :aria-label="t('delayed_events.entry')" @click="$emit('openDelayedModal')">
           <template #icon>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-18px h-18px">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              class="w-18px h-18px"
+              aria-hidden="true">
               <circle cx="12" cy="12" r="9" />
               <path d="M12 7v5l3 2" />
             </svg>
@@ -54,7 +60,7 @@
       <template #trigger>
         <n-button quaternary size="small" :aria-label="t('editor.upload_file')" @click="$emit('handleFileUploadClick')">
           <template #icon>
-            <svg class="w-18px h-18px">
+            <svg class="w-18px h-18px" aria-hidden="true">
               <use href="#image"></use>
             </svg>
           </template>
@@ -83,10 +89,14 @@
             :options="sendOptions"
             trigger="click"
             placement="top-end">
-            <svg @click="arrowLocal = true" v-if="!arrowLocal" class="w-22px h-22px mt-2px outline-none">
+            <svg
+              @click="arrowLocal = true"
+              v-if="!arrowLocal"
+              class="w-22px h-22px mt-2px outline-none"
+              aria-hidden="true">
               <use href="#down"></use>
             </svg>
-            <svg @click="arrowLocal = false" v-else class="w-22px h-22px mt-2px outline-none">
+            <svg @click="arrowLocal = false" v-else class="w-22px h-22px mt-2px outline-none" aria-hidden="true">
               <use href="#up"></use>
             </svg>
             <template #action>
@@ -100,14 +110,14 @@
                     <span v-if="chatKeyLocal !== 'Enter'">
                       {{ isMac() ? MacOsKeyEnum['⌘'] : WinKeyEnum.CTRL }}
                     </span>
-                    <svg class="size-12px">
+                    <svg class="size-12px" aria-hidden="true">
                       <use href="#Enter"></use>
                     </svg>
                   </template>
                   <template #newline>
                     <n-flex align="center" :size="0">
                       {{ isMac() ? MacOsKeyEnum['⇧'] : WinKeyEnum.SHIFT }}
-                      <svg class="size-12px">
+                      <svg class="size-12px" aria-hidden="true">
                         <use href="#Enter"></use>
                       </svg>
                     </n-flex>

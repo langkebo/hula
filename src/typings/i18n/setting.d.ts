@@ -18,7 +18,13 @@ export type Messages = {
       "sound_label": "通知声音",
       "sound_desc": "接收桌面通知时播放提示音",
       "volume_label": "提示音音量",
-      "volume_desc": "调节桌面通知提示音的播放音量"
+      "volume_desc": "调节桌面通知提示音的播放音量",
+      "permission_label": "系统通知权限",
+      "permission_granted": "已授权，系统通知可正常送达",
+      "permission_denied": "未授权，系统通知会被拦截",
+      "permission_unsupported": "当前环境无法检测系统通知权限",
+      "open_system_settings": "去系统设置",
+      "open_system_settings_failed": "无法自动打开系统设置，请手动在系统设置中允许本应用发送通知"
     },
     "content": {
       "title": "通知内容",
@@ -357,6 +363,8 @@ export type Messages = {
     "search_result_unavailable": "「{tab}」在当前服务器不支持，无法跳转",
     "search_result_unavailable_badge": "当前服务器不支持",
     "dirty_status": "有未保存的更改",
+    "save_mode_instant": "修改即时保存",
+    "save_mode_manual": "修改需点击保存后生效",
     "close_title": "关闭设置",
     "close_aria_label": "关闭设置窗口",
     "back_label": "返回",
@@ -604,6 +612,13 @@ export type Messages = {
     "device_key_desc": "查看此设备的加密密钥指纹",
     "device_trust_label": "设备信任",
     "device_trust_desc": "管理已验证的设备与待处理的验证请求",
+    "room_key_requests_section": "密钥请求",
+    "room_key_requests_desc": "其他设备请求历史消息的加密密钥时，可在此兑现。",
+    "room_key_requests_empty": "没有待处理的密钥请求",
+    "room_key_requests_refresh": "刷新",
+    "room_key_requests_fulfill": "兑现",
+    "room_key_requests_fulfilled": "密钥请求已兑现",
+    "room_key_requests_failed": "兑现密钥请求失败",
     "view": "查看",
     "strict_section": "严格模式",
     "strict_label": "不向未验证设备发送密钥",
@@ -620,7 +635,12 @@ export type Messages = {
     "key_status_backed_up": "已设置并备份",
     "key_status_ready": "已设置",
     "enable_required": "请先启用加密功能",
-    "backup_disabled_feedback": "已禁用安全备份",
+    "backup_disabled_feedback": "安全备份已关闭",
+    "backup_disable_title": "关闭安全备份",
+    "backup_disable_confirm": "关闭后将删除服务器上的密钥备份版本，已备份的密钥可能无法恢复。确定继续？",
+    "backup_disable_failed": "关闭安全备份失败，请重试",
+    "backup_disable_unavailable": "未找到可关闭的备份版本",
+    "load_failed": "加密设置加载失败",
     "backup_created": "备份创建成功",
     "restore_success": "密钥恢复成功",
     "verify_success": "设备验证成功",
@@ -773,6 +793,7 @@ export type Messages = {
     "updated": "快捷键已更新",
     "reset_success": "快捷键已恢复默认设置",
     "conflict_error": "快捷键冲突，请选择其他组合",
+    "invalid_error": "快捷键组合无效，请至少包含一个修饰键（Ctrl/Command/Alt/Shift）和一个普通键",
     "actions": {
       "send_message": "发送消息",
       "new_line": "换行",
@@ -906,7 +927,8 @@ export type Messages = {
     "start_scan": "开始扫描",
     "scanning": "扫描中...",
     "select_directory_title": "选择要扫描的目录",
-    "select_directory_error": "选择目录失败"
+    "select_directory_error": "选择目录失败",
+    "scan_failed": "扫描目录失败，请检查目录权限后重试"
   },
   "security": {
     "encryption_status": "加密状态",
@@ -1210,6 +1232,12 @@ export type KeyPaths =
   | "setting.notification.desktop.sound_desc"
   | "setting.notification.desktop.volume_label"
   | "setting.notification.desktop.volume_desc"
+  | "setting.notification.desktop.permission_label"
+  | "setting.notification.desktop.permission_granted"
+  | "setting.notification.desktop.permission_denied"
+  | "setting.notification.desktop.permission_unsupported"
+  | "setting.notification.desktop.open_system_settings"
+  | "setting.notification.desktop.open_system_settings_failed"
   | "setting.notification.content.title"
   | "setting.notification.content.message_label"
   | "setting.notification.content.message_desc"
@@ -1491,6 +1519,8 @@ export type KeyPaths =
   | "setting.dialog.search_result_unavailable"
   | "setting.dialog.search_result_unavailable_badge"
   | "setting.dialog.dirty_status"
+  | "setting.dialog.save_mode_instant"
+  | "setting.dialog.save_mode_manual"
   | "setting.dialog.close_title"
   | "setting.dialog.close_aria_label"
   | "setting.dialog.back_label"
@@ -1626,6 +1656,13 @@ export type KeyPaths =
   | "setting.encryption.device_key_desc"
   | "setting.encryption.device_trust_label"
   | "setting.encryption.device_trust_desc"
+  | "setting.encryption.room_key_requests_section"
+  | "setting.encryption.room_key_requests_desc"
+  | "setting.encryption.room_key_requests_empty"
+  | "setting.encryption.room_key_requests_refresh"
+  | "setting.encryption.room_key_requests_fulfill"
+  | "setting.encryption.room_key_requests_fulfilled"
+  | "setting.encryption.room_key_requests_failed"
   | "setting.encryption.view"
   | "setting.encryption.strict_section"
   | "setting.encryption.strict_label"
@@ -1643,6 +1680,11 @@ export type KeyPaths =
   | "setting.encryption.key_status_ready"
   | "setting.encryption.enable_required"
   | "setting.encryption.backup_disabled_feedback"
+  | "setting.encryption.backup_disable_title"
+  | "setting.encryption.backup_disable_confirm"
+  | "setting.encryption.backup_disable_failed"
+  | "setting.encryption.backup_disable_unavailable"
+  | "setting.encryption.load_failed"
   | "setting.encryption.backup_created"
   | "setting.encryption.restore_success"
   | "setting.encryption.verify_success"
@@ -1777,6 +1819,7 @@ export type KeyPaths =
   | "setting.keyboard.updated"
   | "setting.keyboard.reset_success"
   | "setting.keyboard.conflict_error"
+  | "setting.keyboard.invalid_error"
   | "setting.keyboard.actions.send_message"
   | "setting.keyboard.actions.new_line"
   | "setting.keyboard.actions.search"
@@ -1901,6 +1944,7 @@ export type KeyPaths =
   | "setting.storage.scanning"
   | "setting.storage.select_directory_title"
   | "setting.storage.select_directory_error"
+  | "setting.storage.scan_failed"
   | "setting.security.encryption_status"
   | "setting.security.local_store_status"
   | "setting.security.local_store_native_title"

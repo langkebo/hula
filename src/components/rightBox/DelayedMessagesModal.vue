@@ -9,7 +9,13 @@
       <!-- 定时发送当前草稿 -->
       <section>
         <div class="flex items-center gap-2">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-16px h-16px">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            class="w-16px h-16px"
+            aria-hidden="true">
             <circle cx="12" cy="12" r="9" />
             <path d="M12 7v5l3 2" />
           </svg>
@@ -38,7 +44,13 @@
           <span class="text-13px text-[--tjg-text-secondary]">{{ t('delayed_events.pending.title') }}</span>
           <n-button quaternary size="tiny" :aria-label="t('delayed_events.pending.refresh')" @click="emit('refresh')">
             <template #icon>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-14px h-14px">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                class="w-14px h-14px"
+                aria-hidden="true">
                 <path d="M20 11a8 8 0 1 1-2.34-5.66" />
                 <path d="M20 4v5h-5" />
               </svg>
@@ -50,7 +62,13 @@
           <div
             v-if="!items.length"
             class="flex flex-col items-center justify-center gap-2 py-6 text-[--tjg-text-tertiary]">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-24px h-24px">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              class="w-24px h-24px"
+              aria-hidden="true">
               <circle cx="12" cy="12" r="9" />
               <path d="M12 7v5l3 2" />
             </svg>

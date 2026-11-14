@@ -12,7 +12,8 @@
         stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
-        stroke-linejoin="round">
+        stroke-linejoin="round"
+        aria-hidden="true">
         <path d="M8 10h32a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H20l-8 6v-6H8a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2z" />
         <path d="M16 20h16M16 26h10" />
       </svg>
@@ -26,7 +27,8 @@
         stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
-        stroke-linejoin="round">
+        stroke-linejoin="round"
+        aria-hidden="true">
         <circle cx="18" cy="16" r="6" />
         <path d="M8 38c0-6 4.5-10 10-10s10 4 10 10" />
         <circle cx="34" cy="18" r="5" />
@@ -43,7 +45,8 @@
         stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
-        stroke-linejoin="round">
+        stroke-linejoin="round"
+        aria-hidden="true">
         <rect x="6" y="6" width="14" height="14" rx="2" />
         <rect x="28" y="6" width="14" height="14" rx="2" />
         <rect x="6" y="28" width="14" height="14" rx="2" />
@@ -59,7 +62,8 @@
         stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
-        stroke-linejoin="round">
+        stroke-linejoin="round"
+        aria-hidden="true">
         <circle cx="20" cy="20" r="12" />
         <line x1="29" y1="29" x2="40" y2="40" />
         <path d="M15 20h10M20 15v10" />
@@ -74,7 +78,8 @@
         stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
-        stroke-linejoin="round">
+        stroke-linejoin="round"
+        aria-hidden="true">
         <rect x="6" y="10" width="36" height="10" rx="2" />
         <rect x="6" y="28" width="36" height="10" rx="2" />
         <circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none" />
@@ -92,7 +97,8 @@
         stroke="var(--tjg-text-quaternary)"
         stroke-width="2"
         stroke-linecap="round"
-        stroke-linejoin="round">
+        stroke-linejoin="round"
+        aria-hidden="true">
         <rect x="8" y="8" width="32" height="32" rx="3" />
         <line x1="16" y1="18" x2="32" y2="18" />
         <line x1="16" y1="24" x2="32" y2="24" />

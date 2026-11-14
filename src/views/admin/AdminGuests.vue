@@ -52,10 +52,26 @@
         :columns="accountColumns"
         :data="guestAccounts"
         :bordered="false"
+        :pagination="{ pageSize: 20 }"
         striped
         size="small"
         :row-key="(row: GuestAccountRow) => row.userId" />
-      <n-empty v-else :description="t('admin.guests.no_accounts')" class="py-24px" />
+      <EmptyState
+        v-else
+        compact
+        icon="mdi:account-outline"
+        :description="t('admin.guests.no_accounts')"
+        class="py-24px" />
+      <div v-if="guestAccounts.length > 0" class="list-footer">
+        <span>{{ t('admin.guests.loaded_count', { count: guestAccounts.length }) }}</span>
+        <n-button
+          v-if="guestAccountsNextToken"
+          size="small"
+          :loading="accountsLoading"
+          @click="handleLoadMoreGuestAccounts">
+          {{ t('admin.guests.load_more') }}
+        </n-button>
+      </div>
     </n-spin>
 
     <n-divider />
@@ -74,10 +90,11 @@
         :columns="roomColumns"
         :data="guestRooms"
         :bordered="false"
+        :pagination="{ pageSize: 20 }"
         striped
         size="small"
-        :row-key="(row: GuestRoomRow) => row.roomId" />
-      <n-empty v-else :description="t('admin.guests.no_rooms')" class="py-24px" />
+        :row-key="(row: GuestRoomRow) => `${row.userId}:${row.roomId}`" />
+      <EmptyState v-else compact icon="mdi:door-open" :description="t('admin.guests.no_rooms')" class="py-24px" />
     </n-spin>
   </div>
 </template>
@@ -115,21 +132,25 @@ function mapGuestAccount(user: UserInfo): GuestAccountRow {
   }
 }
 
-async function fetchGuestAccounts(limit = 200): Promise<GuestAccountRow[]> {
-  const result = await adminService.getUsers(limit, undefined, true)
+async function fetchGuestAccounts(
+  limit = 200,
+  from?: string
+): Promise<{ rows: GuestAccountRow[]; nextToken?: string | undefined }> {
+  const result = await adminService.getUsers(limit, from, true)
   const users = Array.isArray(result.users) ? result.users : []
-  return users.map(mapGuestAccount)
+  return { rows: users.map(mapGuestAccount), nextToken: result.nextToken }
 }
 
 async function loadGuestInfo() {
   guestInfoLoading.value = true
   try {
-    const accounts = await fetchGuestAccounts()
+    const { rows: accounts, nextToken } = await fetchGuestAccounts()
     const latestGuest = [...accounts]
       .filter((account) => typeof account.createdAt === 'number')
       .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))[0]
 
     guestAccounts.value = accounts
+    guestAccountsNextToken.value = nextToken
     guestInfo.value = {
       guestCount: accounts.length,
       activeGuestCount: accounts.filter((account) => !account.isDeactivated).length,
@@ -158,15 +179,34 @@ interface GuestAccountRow {
 }
 
 const guestAccounts = ref<GuestAccountRow[]>([])
+const guestAccountsNextToken = ref<string | undefined>()
 const accountsLoading = ref(false)
 
 async function handleLoadGuestAccounts() {
   accountsLoading.value = true
   try {
-    guestAccounts.value = await fetchGuestAccounts()
+    const { rows, nextToken } = await fetchGuestAccounts()
+    guestAccounts.value = rows
+    guestAccountsNextToken.value = nextToken
   } catch (e) {
     logger.error('Failed to fetch guest accounts', e)
     guestAccounts.value = []
+    guestAccountsNextToken.value = undefined
+    showFeedback(t('admin.guests.load_accounts_failed'), 'error')
+  } finally {
+    accountsLoading.value = false
+  }
+}
+
+async function handleLoadMoreGuestAccounts() {
+  if (!guestAccountsNextToken.value) return
+  accountsLoading.value = true
+  try {
+    const { rows, nextToken } = await fetchGuestAccounts(200, guestAccountsNextToken.value)
+    guestAccounts.value = [...guestAccounts.value, ...rows]
+    guestAccountsNextToken.value = nextToken
+  } catch (e) {
+    logger.error('Failed to load more guest accounts', e)
     showFeedback(t('admin.guests.load_accounts_failed'), 'error')
   } finally {
     accountsLoading.value = false
@@ -187,7 +227,12 @@ const roomAccessLoading = ref(false)
 async function handleLoadRoomAccess() {
   roomAccessLoading.value = true
   try {
-    const accounts = guestAccounts.value.length > 0 ? guestAccounts.value : await fetchGuestAccounts()
+    let accounts = guestAccounts.value
+    if (accounts.length === 0) {
+      const fetched = await fetchGuestAccounts()
+      accounts = fetched.rows
+      guestAccountsNextToken.value = fetched.nextToken
+    }
     guestAccounts.value = accounts
 
     if (accounts.length === 0) {
@@ -324,5 +369,15 @@ onMounted(() => {
     font-size: 15px;
     font-weight: 600;
   }
+}
+
+.list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--tjg-text-secondary);
 }
 </style>

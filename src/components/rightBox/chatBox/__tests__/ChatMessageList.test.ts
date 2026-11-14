@@ -32,6 +32,16 @@ vi.mock('@/stores/domains/user/user', async () => {
   const { reactive } = await import('vue')
   return { useUserStore: () => reactive({ userInfo: { uid: '@me:server' } }) }
 })
+vi.mock('@/stores/domains/chat/chat/session', async () => {
+  const { reactive } = await import('vue')
+  return { useSessionStore: () => reactive({ sessionList: [] }) }
+})
+vi.mock('@/stores/domains/chat/sessionUnread', async () => {
+  const { reactive } = await import('vue')
+  return {
+    useSessionUnreadStore: () => reactive({ cacheStore: {}, lastReadActiveTimeStore: {} })
+  }
+})
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -128,6 +138,40 @@ describe('ChatMessageList isMainViewReady', () => {
     })
 
     expect(wrapper.find('.message-list-placeholder').exists()).toBe(true)
+  })
+})
+
+describe('ChatMessageList virtual scroller sizing', () => {
+  it('size-dependencies covers message status and upload progress', () => {
+    globalState.currentSessionRoomId = '!room1:server'
+    chatState.currentSessionInfo = { roomId: '!room1:server' }
+    chatState.currentMessageOptions = { hasLoadedOnce: true, isLast: true, isLoading: false }
+    chatState.chatMessageList = [
+      {
+        clientKey: 'k-1',
+        uploadProgress: 0.5,
+        message: {
+          id: 'm-1',
+          roomId: '!room1:server',
+          sendTime: Date.now(),
+          type: 0 as unknown,
+          status: 'SENDING',
+          body: {}
+        },
+        fromUser: { uid: '@me:server' }
+      }
+    ]
+
+    const wrapper = mount(ChatMessageList, {
+      props: { isGroup: false, privateModeActive: false, activeReply: '' },
+      global: { stubs: { 'n-flex': true } }
+    })
+
+    const scrollerItem = wrapper.findComponent({ name: 'DynamicScrollerItem' })
+    expect(scrollerItem.exists()).toBe(true)
+    const dependencies = scrollerItem.props('sizeDependencies') as unknown[]
+    expect(dependencies).toContain('SENDING')
+    expect(dependencies).toContain(0.5)
   })
 })
 

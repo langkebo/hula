@@ -70,6 +70,16 @@ vi.mock('vue-i18n', () => ({
   }
 }))
 
+vi.mock('@/composables/chat/useMsgInputDraft', () => ({
+  useMsgInputDraft: vi.fn()
+}))
+
+vi.mock('@/stores/domains/user/user', () => ({
+  useUserStore: () => ({
+    userInfo: { uid: 'test-account' }
+  })
+}))
+
 vi.mock('@/composables/chat/useTyping', () => ({
   useTyping: () => ({
     startTyping: vi.fn(),

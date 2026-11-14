@@ -683,7 +683,8 @@ describe('ChatMessageStore', () => {
      * 因此断言发送结果前必须把微任务队列冲干净。
      */
     const pushMessage = async (store: ReturnType<typeof useChatStore>, msg: MessageType) => {
-      await store.pushMsg(msg)
+      // 通知用例默认模拟"不在该会话前台"：L-01 会在前台聚焦时抑制系统通知。
+      await store.pushMsg(msg, { isActiveChatView: false })
       await flushPromises()
     }
 
@@ -785,6 +786,23 @@ describe('ChatMessageStore', () => {
       expect(sendNotification).not.toHaveBeenCalled()
     })
 
+    it('suppresses notifications when the user is already viewing that room in the foreground', async () => {
+      const focusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+      const store = useChatStore()
+
+      try {
+        await store.pushMsg(mentionMessage('21', 'foreground hello'), {
+          isActiveChatView: true,
+          activeRoomId: 'room-1'
+        })
+        await flushPromises()
+      } finally {
+        focusSpy.mockRestore()
+      }
+
+      expect(sendNotification).not.toHaveBeenCalled()
+    })
+
     it('keeps notifying for a thread mention while the thread switch is at its default', async () => {
       const store = useChatStore()
 
@@ -807,7 +825,7 @@ describe('ChatMessageStore', () => {
       matrixNotificationService.setEventNotificationEnabled('thread_mention', false)
       const store = useChatStore()
 
-      await store.pushMsg(mentionMessage('8', 'plain hello'))
+      await store.pushMsg(mentionMessage('8', 'plain hello'), { isActiveChatView: false })
 
       expect(sendNotification).toHaveBeenCalledTimes(1)
       expect(lastSentOptions().body).toBe('plain hello')

@@ -1,9 +1,6 @@
 <template>
-  <div
-    v-if="burnEnabled"
-    data-test="private-mode-banner"
-    class="private-mode-banner">
-    <svg class="private-mode-banner__icon">
+  <div v-if="burnEnabled" data-test="private-mode-banner" class="private-mode-banner">
+    <svg class="private-mode-banner__icon" aria-hidden="true">
       <use href="#timer"></use>
     </svg>
     <span class="private-mode-banner__text">

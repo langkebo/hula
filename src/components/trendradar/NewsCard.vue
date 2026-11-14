@@ -14,7 +14,7 @@
       </n-tag>
       <div class="news-card__action">
         <span class="news-card__link">{{ t('trendradar.view_details') }}</span>
-        <svg class="news-card__arrow"><use href="#right-arrow"></use></svg>
+        <svg class="news-card__arrow" aria-hidden="true"><use href="#right-arrow"></use></svg>
       </div>
     </div>
   </div>

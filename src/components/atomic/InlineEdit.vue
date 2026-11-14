@@ -51,7 +51,7 @@
         :disabled="!canConfirm"
         :aria-label="t('common.confirm')"
         @click="confirmEdit">
-        <svg v-if="loading" class="inline-edit__spinner size-14px" viewBox="0 0 24 24">
+        <svg v-if="loading" class="inline-edit__spinner size-14px" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity="0.25" />
           <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" fill="none" />
         </svg>

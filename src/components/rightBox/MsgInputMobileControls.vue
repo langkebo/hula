@@ -2,7 +2,10 @@
   <!-- 移动端底部操作栏（位于输入框右侧，与微信一致） -->
   <div class="grid gap-2 h-2.5rem items-center" :class="hasInput ? 'grid-cols-[2rem_3.5rem]' : 'grid-cols-[2rem_2rem]'">
     <div class="w-full flex-center h-full">
-      <svg @click="$emit('handleEmojiClick')" class="w-25px h-25px mt-2px outline-none iconpark-icon">
+      <svg
+        @click="$emit('handleEmojiClick')"
+        class="w-25px h-25px mt-2px outline-none iconpark-icon"
+        aria-hidden="true">
         <use :href="mobilePanelState === MobilePanelStateEnum.EMOJI ? '#face' : '#smiling-face'"></use>
       </svg>
     </div>
@@ -21,7 +24,8 @@
       <svg
         @click="$emit('handleMoreClick')"
         :class="mobilePanelState === MobilePanelStateEnum.MORE ? 'rotate-45' : 'rotate-0'"
-        class="w-25px h-25px mt-2px outline-none iconpark-icon transition-transform duration-300 ease">
+        class="w-25px h-25px mt-2px outline-none iconpark-icon transition-transform duration-300 ease"
+        aria-hidden="true">
         <use href="#add-one"></use>
       </svg>
     </div>

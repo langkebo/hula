@@ -129,4 +129,66 @@ describe('MatrixReactionService', () => {
       expect(result).toEqual([])
     })
   })
+  describe('getReactionsForEvent — SDK 关系容器优先', () => {
+    const makeReaction = (key: string, sender: string, target = '$event_1') =>
+      ({
+        getType: () => 'm.reaction',
+        getContent: () => ({ 'm.relates_to': { rel_type: 'm.annotation', event_id: target, key } }),
+        getSender: () => sender
+      }) as never
+
+    const makeRoom = (opts: { container?: never[]; timeline?: never[]; relations?: ReturnType<typeof vi.fn> }) =>
+      ({
+        getChildEventsForEvent: () => (opts.container ? { getRelations: () => opts.container } : undefined),
+        getUnfilteredTimelineSet: () => ({
+          getLiveTimeline: () => ({ getEvents: () => opts.timeline ?? [] })
+        }),
+        getRelations: opts.relations
+      }) as never
+
+    it('容器里有回应时不扫时间线（老回应也能算到）', () => {
+      mockClient.getRoom = vi.fn(() =>
+        makeRoom({ container: [makeReaction('👍', '@a:x'), makeReaction('👍', '@user:example.com')] })
+      )
+
+      const result = matrixReactionService.getReactionsForEvent('!room:example.com', '$event_1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ key: '👍', count: 2, me: true })
+    })
+
+    it('容器为空时回退扫 live timeline', () => {
+      mockClient.getRoom = vi.fn(() =>
+        makeRoom({ timeline: [makeReaction('🔥', '@user:example.com'), makeReaction('🔥', '@b:x')] })
+      )
+
+      const result = matrixReactionService.getReactionsForEvent('!room:example.com', '$event_1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ key: '🔥', count: 2, me: true })
+    })
+
+    it('refreshReactions 走 room.getRelations 拉服务端全量并聚合', async () => {
+      const getRelations = vi.fn().mockResolvedValue({
+        events: [makeReaction('❤️', '@a:x'), makeReaction('❤️', '@b:x'), makeReaction('❤️', '@c:x')]
+      })
+      mockClient.getRoom = vi.fn(() => makeRoom({ relations: getRelations }))
+
+      const result = await matrixReactionService.refreshReactions('!room:example.com', '$event_1')
+
+      expect(getRelations).toHaveBeenCalledWith('$event_1', 'm.annotation', 'm.reaction', { limit: 200 })
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ key: '❤️', count: 3, me: false })
+    })
+
+    it('refreshReactions 失败时回退本地（不抛错）', async () => {
+      const getRelations = vi.fn().mockRejectedValue(new Error('boom'))
+      mockClient.getRoom = vi.fn(() => makeRoom({ relations: getRelations, timeline: [makeReaction('😮', '@a:x')] }))
+
+      const result = await matrixReactionService.refreshReactions('!room:example.com', '$event_1')
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ key: '😮', count: 1 })
+    })
+  })
 })

@@ -28,6 +28,8 @@ export interface UseAdminUsersResult {
   users: Ref<UserInfo[]>
   filteredUsers: Ref<UserInfo[]>
   loading: Ref<boolean>
+  loadError: Ref<boolean>
+  usersNextToken: Ref<string | undefined>
   searchQuery: Ref<string>
   filterRole: Ref<'all' | 'admin' | 'user'>
   filterStatus: Ref<'all' | 'active' | 'deactivated'>
@@ -52,6 +54,7 @@ export interface UseAdminUsersResult {
 
   // actions
   loadUsers: (limit?: number) => Promise<void>
+  loadMoreUsers: (limit?: number) => Promise<void>
   selectUser: (user: UserInfo | null) => Promise<void>
   loadUserDevices: () => Promise<void>
   loadRateLimit: () => Promise<void>
@@ -93,6 +96,8 @@ export interface UseAdminUsersResult {
 export function useAdminUsers(): UseAdminUsersResult {
   const users = ref<UserInfo[]>([])
   const loading = ref(false)
+  const loadError = ref(false)
+  const usersNextToken = ref<string | undefined>()
   const searchQuery = ref('')
   const filterRole = ref<'all' | 'admin' | 'user'>('all')
   const filterStatus = ref<'all' | 'active' | 'deactivated'>('all')
@@ -135,9 +140,33 @@ export function useAdminUsers(): UseAdminUsersResult {
 
   async function loadUsers(limit = 200) {
     loading.value = true
+    loadError.value = false
     try {
       const result = await adminService.getUsers(limit)
       users.value = result.users
+      usersNextToken.value = result.nextToken
+      loadError.value = Boolean(result.failed)
+    } catch (err) {
+      loadError.value = true
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /** 按 nextToken 继续拉取下一批，服务端无总量时至少保证列表可持续加载 */
+  async function loadMoreUsers(limit = 200) {
+    if (!usersNextToken.value || loading.value) return
+    loading.value = true
+    loadError.value = false
+    try {
+      const result = await adminService.getUsers(limit, usersNextToken.value)
+      users.value = [...users.value, ...result.users]
+      usersNextToken.value = result.nextToken
+      loadError.value = Boolean(result.failed)
+    } catch (err) {
+      loadError.value = true
+      throw err
     } finally {
       loading.value = false
     }
@@ -323,6 +352,8 @@ export function useAdminUsers(): UseAdminUsersResult {
     users,
     filteredUsers,
     loading,
+    loadError,
+    usersNextToken,
     searchQuery,
     filterRole,
     filterStatus,
@@ -341,6 +372,7 @@ export function useAdminUsers(): UseAdminUsersResult {
     accountStatusLoading,
     selectedUserIds,
     loadUsers,
+    loadMoreUsers,
     selectUser,
     loadUserDevices,
     loadRateLimit,

@@ -6,6 +6,7 @@ import { useTimerManager } from '@/utils/TimerManager'
 interface UseMessageJumpOptions {
   isLoadingMore: Ref<boolean>
   scrollToIndex: (index: number, behavior?: ScrollBehavior) => void
+  scrollToMessage?: (messageId: string, options?: { behavior?: ScrollBehavior; index?: number }) => boolean
   currentRoomId: Ref<string | null>
 }
 
@@ -13,20 +14,34 @@ interface UseMessageJumpOptions {
  * Handles jumping to a specific message: find in list, load history
  * if needed, scroll to position, and highlight.
  */
-export const useMessageJump = ({ isLoadingMore, scrollToIndex, currentRoomId }: UseMessageJumpOptions) => {
+export const useMessageJump = ({
+  isLoadingMore,
+  scrollToIndex,
+  scrollToMessage,
+  currentRoomId
+}: UseMessageJumpOptions) => {
   const chatStore = useChatStore()
   const { showFeedback } = useActionFeedback()
   const timerManager = useTimerManager()
 
   const activeReply = ref<string>('')
 
+  /**
+   * 优先按消息 id 命中已挂载的 DOM，虚拟列表未渲染时退化为按索引滚动，
+   * 再由 scrollToMessage 在下一帧校准居中位置。
+   */
+  const focusMessage = (key: string, index: number): void => {
+    const handled = scrollToMessage?.(key, { behavior: 'instant', index }) ?? false
+    if (!handled) scrollToIndex(index, 'instant')
+    activeReply.value = key
+  }
+
   const jumpToReplyMsg = async (key: string): Promise<void> => {
     // Try to find in current list first
     let messageIndex = chatStore.getMsgIndex(String(key))
 
     if (messageIndex !== -1) {
-      scrollToIndex(messageIndex, 'instant')
-      activeReply.value = String(key)
+      focusMessage(String(key), messageIndex)
       return
     }
 
@@ -41,7 +56,12 @@ export const useMessageJump = ({ isLoadingMore, scrollToIndex, currentRoomId }: 
 
     while (!foundMessage && attemptCount < MAX_ATTEMPTS) {
       attemptCount++
-      await chatStore.loadMore()
+      try {
+        await chatStore.loadMore()
+      } catch {
+        showFeedback('加载历史消息失败，请稍后重试', 'error')
+        break
+      }
       messageIndex = chatStore.getMsgIndex(key)
 
       if (messageIndex !== -1) {
@@ -59,8 +79,7 @@ export const useMessageJump = ({ isLoadingMore, scrollToIndex, currentRoomId }: 
 
     if (foundMessage) {
       nextTick(() => {
-        scrollToIndex(messageIndex, 'instant')
-        activeReply.value = key
+        focusMessage(key, messageIndex)
       })
     } else {
       showFeedback('无法找到原始消息，可能已被删除或太久远', 'warning')

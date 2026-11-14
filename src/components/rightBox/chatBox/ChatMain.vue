@@ -23,12 +23,14 @@
       :query="searchQuery"
       :results="searchResults"
       :loading="searchLoading"
+      :error="searchError"
       :active-index="searchActiveIndex"
       @update:query="handleSearchQueryUpdate"
       @query-input="handleSearchQueryInput"
       @select-result="handleSearchSelectResult"
       @navigate="handleSearchNavigate"
       @set-active="handleSearchSetActive"
+      @retry="searchRetry"
       @close="closeRoomSearch" />
 
     <!-- 聊天内容 -->
@@ -49,6 +51,7 @@
           aria-live="polite"
           class="message-list min-h-full flex flex-col"
           :class="{ 'private-mode-active': privateModeActive }">
+          <ChatLoadMoreIndicator :loading="isLoadingMore" :error="loadMoreError" @retry="retryLoadMore" />
           <ChatMessageList
             :is-group="isGroup"
             :private-mode-active="privateModeActive"
@@ -59,32 +62,12 @@
     </div>
 
     <!--  悬浮按钮提示(底部悬浮) -->
-    <footer class="float-footer-button" v-if="shouldShowFloatButton && currentNewMsgCount" :style="floatButtonStyle">
-      <div
-        class="float-box"
-        :class="{ max: currentNewMsgCount?.count > 99 }"
-        role="button"
-        tabindex="0"
-        :aria-label="t('home.chat_main.new_messages', { count: newMsgCountLabel })"
-        @click="handleFloatButtonClick"
-        @keydown.enter.prevent="handleFloatButtonClick"
-        @keydown.space.prevent="handleFloatButtonClick">
-        <n-flex justify="space-between" align="center">
-          <n-icon
-            :color="currentNewMsgCount?.count > 99 ? 'var(--tjg-color-danger-500)' : 'var(--tjg-color-primary-500)'">
-            <svg>
-              <use href="#double-down"></use>
-            </svg>
-          </n-icon>
-          <span
-            v-if="currentNewMsgCount?.count && currentNewMsgCount.count > 0"
-            class="text-[var(--text-sm)]"
-            :class="{ 'color-[--tjg-color-danger-500]': currentNewMsgCount?.count > 99 }">
-            {{ t('home.chat_main.new_messages', { count: newMsgCountLabel }) }}
-          </span>
-        </n-flex>
-      </div>
-    </footer>
+    <ChatFloatButton
+      v-if="shouldShowFloatButton && currentNewMsgCount"
+      :count="currentNewMsgCount.count"
+      :label="newMsgCountLabel"
+      :float-style="floatButtonStyle"
+      @click="handleFloatButtonClick" />
 
     <!-- 文件上传进度条 -->
     <FileUploadProgress />
@@ -166,6 +149,8 @@ import { createLogger } from '@/utils/Logger'
 import { useTimerManager } from '@/utils/TimerManager'
 import BurnAfterReadBar from './BurnAfterReadBar.vue'
 import ChatBanners from './ChatBanners.vue'
+import ChatFloatButton from './ChatFloatButton.vue'
+import ChatLoadMoreIndicator from './ChatLoadMoreIndicator.vue'
 import ChatMessageList from './ChatMessageList.vue'
 import ChatModals from './ChatModals.vue'
 import ChatRoomSearch from './ChatRoomSearch.vue'
@@ -398,8 +383,11 @@ const scrollManager = useChatScrollManager({
 
 const {
   isLoadingMore,
+  loadMoreError,
+  retryLoadMore,
   scrollToBottom,
   scrollToIndex,
+  scrollToMessage,
   handleScroll: scrollManagerHandleScroll,
   shouldShowFloatButton
 } = scrollManager
@@ -424,6 +412,7 @@ const {
 const { activeReply, jumpToReplyMsg, onNavigateToMessage, clearActiveReply } = useMessageJump({
   isLoadingMore,
   scrollToIndex,
+  scrollToMessage,
   currentRoomId
 })
 
@@ -443,10 +432,12 @@ const {
   query: searchQuery,
   results: searchResults,
   loading: searchLoading,
+  error: searchError,
   activeIndex: searchActiveIndex,
   onQueryInput: handleSearchQueryInput,
   openSearch: openRoomSearch,
   closeSearch: closeRoomSearch,
+  retry: searchRetry,
   navigateNext: searchNavigateNext,
   navigatePrev: searchNavigatePrev,
   selectResult: searchSelectResult
@@ -547,16 +538,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-// 悬浮按钮样式
-.float-footer-button {
-  position: absolute;
-  z-index: 10;
-  width: fit-content;
-  user-select: none;
-  color: var(--tjg-color-primary-500);
-  cursor: pointer;
-}
-
 // 原生滚动容器样式
 .scrollbar-container {
   flex: 1;

@@ -8,7 +8,7 @@
         data-test="space-hierarchy-back"
         :aria-label="t('common.back')"
         @click="emit('back')">
-        <svg class="size-16px"><use href="#arrow-left" /></svg>
+        <svg class="size-16px" aria-hidden="true"><use href="#arrow-left" /></svg>
       </button>
       <span class="space-hierarchy-tree__title">{{ t('space.hierarchy_title') }}</span>
     </header>

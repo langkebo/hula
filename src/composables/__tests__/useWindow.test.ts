@@ -10,6 +10,7 @@ const {
   invokeSilentlyMock,
   invokeWithErrorHandlerMock,
   loggerErrorMock,
+  emitMock,
   onceImmediateEventState,
   onceImmediatePayloadState,
   createdWindows
@@ -21,6 +22,7 @@ const {
   invokeSilentlyMock: vi.fn(),
   invokeWithErrorHandlerMock: vi.fn(),
   loggerErrorMock: vi.fn(),
+  emitMock: vi.fn(),
   onceImmediateEventState: { value: null as null | string },
   onceImmediatePayloadState: { value: undefined as unknown },
   createdWindows: [] as Array<{ label: string; options: Record<string, unknown> }>
@@ -71,6 +73,10 @@ vi.mock('@tauri-apps/api/webviewWindow', () => {
 
   return { WebviewWindow }
 })
+
+vi.mock('@tauri-apps/api/event', () => ({
+  emit: emitMock
+}))
 
 vi.mock('@tauri-apps/api/window', () => ({
   UserAttentionType: { Critical: 'critical' },
@@ -157,6 +163,58 @@ describe('useWindow', () => {
 
     expect(result).toBeDefined()
     expect(createdWindows[0]?.label).toBe('test')
+  })
+
+  it('minWidth/minHeight 严格取配置值，不被创建尺寸放大', async () => {
+    const { createWebviewWindow } = useWindow()
+    await createWebviewWindow('Home', 'home', 1280, 800, 'login', true, 1024, 600)
+
+    expect(createdWindows[0]?.options.width).toBe(1280)
+    expect(createdWindows[0]?.options.height).toBe(800)
+    expect(createdWindows[0]?.options.minWidth).toBe(1024)
+    expect(createdWindows[0]?.options.minHeight).toBe(600)
+  })
+
+  it('创建尺寸小于配置的最小值时不放大 minWidth', async () => {
+    const { createWebviewWindow } = useWindow()
+    await createWebviewWindow('Small', 'small', 300, 400, undefined, false, 330, 495)
+
+    expect(createdWindows[0]?.options.width).toBe(300)
+    expect(createdWindows[0]?.options.minWidth).toBe(300)
+    expect(createdWindows[0]?.options.minHeight).toBe(400)
+  })
+
+  it('openSettingsWindow 在无现存窗口时创建独立设置窗口', async () => {
+    const { openSettingsWindow } = useWindow()
+    const handled = await openSettingsWindow('notifications')
+
+    expect(handled).toBe(true)
+    expect(createdWindows[0]?.label).toBe('settings')
+    expect(createdWindows[0]?.options.width).toBe(1100)
+    expect(createdWindows[0]?.options.minWidth).toBe(900)
+    expect(createdWindows[0]?.options.url).toBe('/settings?tab=notifications')
+  })
+
+  it('openSettingsWindow 在窗口已存在时聚焦并同步 tab', async () => {
+    const setFocusMock = vi.fn()
+    getByLabelMock.mockResolvedValue({ setFocus: setFocusMock })
+
+    const { openSettingsWindow } = useWindow()
+    const handled = await openSettingsWindow('sessions')
+
+    expect(handled).toBe(true)
+    expect(createdWindows).toHaveLength(0)
+    expect(emitMock).toHaveBeenCalledWith('settings-window:navigate', { tab: 'sessions' })
+    expect(setFocusMock).toHaveBeenCalled()
+  })
+
+  it('openSettingsWindow 在非桌面平台返回 false 供调用方回退路由', async () => {
+    isDesktopMock.mockReturnValue(false)
+
+    const { openSettingsWindow } = useWindow()
+
+    await expect(openSettingsWindow()).resolves.toBe(false)
+    expect(createdWindows).toHaveLength(0)
   })
 
   it('startRtcCall 在会话未就绪、群聊和缺少用户信息时播报反馈', async () => {

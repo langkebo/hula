@@ -58,9 +58,6 @@ import { useGroupRequestConfirm } from '@/composables/useGroupRequestConfirm'
 import { useUserStore } from '@/stores/domains/user/user'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { cssVar } from '@/utils/CssUtils'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('AddGroupVerify')
 
 const currentWindowLabel = computed(() => (hasTauriRuntime() ? WebviewWindow.getCurrent().label : ''))
 
@@ -84,8 +81,6 @@ const addFriend = async () => {
 }
 
 onMounted(async () => {
-  logger.debug('userInfo', userInfo.value)
-
   if (hasTauriRuntime()) {
     await getCurrentWebviewWindow().show()
   }

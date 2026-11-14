@@ -8,7 +8,7 @@
         data-test="space-rooms-back"
         :aria-label="t('common.back')"
         @click="emit('back')">
-        <svg class="size-16px"><use href="#arrow-left" /></svg>
+        <svg class="size-16px" aria-hidden="true"><use href="#arrow-left" /></svg>
       </button>
       <span class="space-rooms-pane__title">{{ t('space.child_rooms') }}</span>
       <span class="space-rooms-pane__count">{{ rooms.length }}</span>
@@ -26,7 +26,7 @@
           <img :src="room.avatarUrl" :alt="room.name" />
         </div>
         <div v-else class="space-rooms-pane__avatar space-rooms-pane__avatar--fallback">
-          <svg class="size-14px"><use href="#grid" /></svg>
+          <svg class="size-14px" aria-hidden="true"><use href="#grid" /></svg>
         </div>
         <span class="space-rooms-pane__name">{{ room.name || room.roomId }}</span>
         <button
@@ -36,9 +36,9 @@
           data-test="space-room-remove"
           :aria-label="t('space.remove_room')"
           @click.stop="handleRemove(room.roomId)">
-          <svg class="size-12px"><use href="#close" /></svg>
+          <svg class="size-12px" aria-hidden="true"><use href="#close" /></svg>
         </button>
-        <svg v-else class="size-12px space-rooms-pane__arrow"><use href="#arrow-right" /></svg>
+        <svg v-else class="size-12px space-rooms-pane__arrow" aria-hidden="true"><use href="#arrow-right" /></svg>
       </div>
 
       <div v-if="!rooms.length" class="space-rooms-pane__empty" data-test="space-rooms-empty">

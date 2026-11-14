@@ -2,7 +2,7 @@
   <!-- 未验证设备提示（R-1）：安全信号，优先于普通"已加密"提示 -->
   <div v-if="isEncrypted && noticeVisible" class="e2ee-notice" role="status" data-testid="e2ee-unverified-notice">
     <div class="e2ee-notice__content">
-      <svg class="e2ee-notice__icon">
+      <svg class="e2ee-notice__icon" aria-hidden="true">
         <use href="#encrypted-lock"></use>
       </svg>
       <div class="e2ee-notice__text">
@@ -42,7 +42,7 @@
         :aria-label="t('common.close')"
         data-testid="e2ee-notice-dismiss"
         @click="dismissNotice">
-        <svg class="e2ee-notice__close-icon">
+        <svg class="e2ee-notice__close-icon" aria-hidden="true">
           <use href="#close"></use>
         </svg>
       </button>
@@ -51,7 +51,7 @@
 
   <div v-else-if="isEncrypted && showBanner" class="e2ee-banner" role="status">
     <div class="e2ee-banner__content">
-      <svg class="e2ee-banner__lock-icon">
+      <svg class="e2ee-banner__lock-icon" aria-hidden="true">
         <use href="#encrypted-lock"></use>
       </svg>
       <div class="e2ee-banner__text">
@@ -60,13 +60,13 @@
       </div>
     </div>
     <button type="button" class="e2ee-banner__close" :aria-label="t('common.close')" @click="dismiss">
-      <svg class="e2ee-banner__close-icon">
+      <svg class="e2ee-banner__close-icon" aria-hidden="true">
         <use href="#close"></use>
       </svg>
     </button>
   </div>
   <div v-else-if="isEncrypted" class="e2ee-indicator" :title="t('e2ee.banner.title')">
-    <svg class="e2ee-indicator__icon">
+    <svg class="e2ee-indicator__icon" aria-hidden="true">
       <use href="#encrypted-lock"></use>
     </svg>
   </div>

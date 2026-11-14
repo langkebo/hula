@@ -1,7 +1,12 @@
 <template>
   <n-spin :show="loading">
-    <div v-if="notifications.length > 0" class="notification-list">
-      <div v-for="(notif, idx) in notifications" :key="notificationKey(notif, idx)" class="notification-item">
+    <div v-if="unreadNotifications.length > 0" class="notification-list">
+      <div
+        v-for="(notif, idx) in unreadNotifications"
+        :key="notificationKey(notif, idx)"
+        class="notification-item"
+        data-testid="notification-row"
+        :data-notification-id="getNotificationId(notif)">
         <div class="notification-info">
           <div class="notification-content">
             {{ getNotificationContent(notif, t('setting.push.history.no_content')) }}
@@ -12,29 +17,31 @@
           </div>
         </div>
         <div class="notification-actions">
-          <span v-if="isNotificationRead(notif)" class="notification-read">
-            {{ t('setting.push.history.read') }}
-          </span>
-          <n-button v-else size="tiny" secondary :loading="isAcking(notif)" @click="handleAckNotification(notif)">
+          <n-button
+            size="tiny"
+            secondary
+            data-testid="notification-ack"
+            :loading="isAcking(notif)"
+            @click="handleAckNotification(notif)">
             {{ t('setting.push.history.mark_read') }}
           </n-button>
         </div>
       </div>
     </div>
-    <n-empty v-else :description="t('setting.push.history.empty')" />
+    <n-empty v-else data-testid="notification-empty" :description="t('setting.push.history.empty')" />
   </n-spin>
 </template>
 
 <script setup lang="ts">
 import { NButton, NEmpty, NSpin } from 'naive-ui'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import {
+  filterUnreadNotifications,
   getNotificationContent,
   getNotificationId,
-  isNotificationRead,
   notificationKey
 } from '@/services/matrix/notifications/notificationHistoryPresentation'
 import { createLogger } from '@/utils/Logger'
@@ -54,6 +61,8 @@ const { showFeedback } = useActionFeedback()
 
 const loading = ref(false)
 const notifications = ref<Array<Record<string, unknown>>>([])
+/** 只渲染未读：ack 后条目立即从列表移除，未读计数随之归零 */
+const unreadNotifications = computed(() => filterUnreadNotifications(notifications.value))
 /** 正在确认中的通知 ID，用于逐条禁用按钮，避免重复提交 */
 const ackingIds = ref<string[]>([])
 
@@ -145,11 +154,6 @@ function formatTimestamp(ts: unknown): string {
 
 .notification-actions {
   flex-shrink: 0;
-}
-
-.notification-read {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-quaternary);
 }
 
 .notification-info {

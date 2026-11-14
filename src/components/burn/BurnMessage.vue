@@ -15,7 +15,7 @@
     </div>
     <Transition name="burn-fade">
       <div v-if="internalIsBurned" class="burn-message__overlay">
-        <svg class="burn-message__burned-icon">
+        <svg class="burn-message__burned-icon" aria-hidden="true">
           <use href="#burned"></use>
         </svg>
         <span class="burn-message__burned-text">{{ t('chat.burn.message_destroyed') }}</span>

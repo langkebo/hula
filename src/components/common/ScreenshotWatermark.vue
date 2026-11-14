@@ -1,6 +1,6 @@
 <template>
   <div v-if="enabled" data-test="screenshot-watermark" class="screenshot-watermark" aria-hidden="true">
-    <svg class="screenshot-watermark__pattern" xmlns="http://www.w3.org/2000/svg">
+    <svg class="screenshot-watermark__pattern" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <pattern
           :id="patternId"

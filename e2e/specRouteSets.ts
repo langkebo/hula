@@ -32,11 +32,11 @@ export const MOBILE_ONLY_SPECS: readonly string[] = [
 /**
  * 只在桌面路由集（5211）有意义：断言 `.login-box`、`/settings`、`/message` 等桌面 DOM。
  *
- * `a11y-baseline` 也在内：它的基线是在**桌面登录壳 + homeWindow** 上校准的；
- * 拿它扫移动登录页会得到与基线无关的违规（移动登录壳自身的 a11y 缺口见报告 §7.3-A11Y-M）。
+ * `a11y-baseline` 不在此名单：它已改为 `both`，桌面用例（`/`、`/home/friend`）与
+ * 移动用例（`/mobile/login`）在同一 spec 内按 `test.info().project.name` 互斥跳过
+ * （移动登录壳基线见报告 §3.2-A11Y-M）。
  */
 export const DESKTOP_ONLY_SPECS: readonly string[] = [
-  'a11y-baseline',
   'debug-phase3',
   'desktop-key-flows',
   'friend-operations',
@@ -45,6 +45,8 @@ export const DESKTOP_ONLY_SPECS: readonly string[] = [
   'messaging-workspace',
   'multi-device.android',
   'multi-device.chat',
+  'notification-unread-live',
+  'room-key-request-live',
   'room-operations',
   'room-settings-e2e',
   'scenario-05-logout',

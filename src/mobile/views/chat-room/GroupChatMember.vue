@@ -55,10 +55,8 @@ import { useI18n } from 'vue-i18n'
 import type { UserItem } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { createLogger } from '@/utils/Logger'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 
-const logger = createLogger('GroupChatMember')
 const { t } = useI18n()
 const measure = ref(null)
 
@@ -83,7 +81,6 @@ onMounted(() => {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         virtualScrollerHeight.value = entry.contentRect.height
-        logger.debug('Height:', virtualScrollerHeight.value)
       }
     })
     observer.observe(measure.value)

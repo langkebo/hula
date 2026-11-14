@@ -8,7 +8,8 @@ export type Messages = {
     "create_failed": "窗口创建失败: {label}",
     "session_not_ready": "当前会话尚未准备好",
     "group_call_not_supported": "群聊暂不支持音视频通话",
-    "user_info_missing": "无法获取对方用户信息"
+    "user_info_missing": "无法获取对方用户信息",
+    "rtc_single_call_limit": "当前已有通话窗口，请先结束当前通话"
   },
   "avatar_upload": {
     "image_load_failed": "图片加载失败",
@@ -29,7 +30,8 @@ export type Messages = {
     "upload_limit": "一次性只能上传{count}个文件或图片",
     "type_not_supported": "暂不支持发送类型消息",
     "file_send_failed": "{fileName} 发送失败",
-    "file_too_large": "{fileName} 超过服务器上传上限（已尝试分片上传），请压缩后重试"
+    "file_too_large": "{fileName} 超过服务器上传上限（已尝试分片上传），请压缩后重试",
+    "send_failed_kept": "消息发送失败，内容已保留在输入框"
   },
   "mention": {
     "ai_coming_soon": "当前ai正在对接，敬请期待"
@@ -50,6 +52,7 @@ export type KeyPaths =
   | "hooks.window.session_not_ready"
   | "hooks.window.group_call_not_supported"
   | "hooks.window.user_info_missing"
+  | "hooks.window.rtc_single_call_limit"
   | "hooks.avatar_upload.image_load_failed"
   | "hooks.avatar_upload.size_exceeded"
   | "hooks.avatar_upload.format_not_supported"
@@ -63,4 +66,5 @@ export type KeyPaths =
   | "hooks.msg_input.type_not_supported"
   | "hooks.msg_input.file_send_failed"
   | "hooks.msg_input.file_too_large"
+  | "hooks.msg_input.send_failed_kept"
   | "hooks.mention.ai_coming_soon"

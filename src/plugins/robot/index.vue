@@ -18,39 +18,32 @@
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useMitt } from '@/composables/common/useMitt'
 import { hasTauriRuntime } from '@/utils/AppHarness'
-import { createLogger } from '@/utils/Logger'
 import ChatRoleManagement from './components/ChatRoleManagement.vue'
 import ModelManagement from './components/ModelManagement.vue'
 import Left from './layout/Left.vue'
 import Right from './layout/Right.vue'
-
-const logger = createLogger('RobotPlugin')
 
 const showRoleManagement = ref(false)
 const showModelManagement = ref(false)
 
 // 监听打开角色管理事件
 useMitt.on('open-role-management', () => {
-  logger.debug('Open role management')
   showRoleManagement.value = true
 })
 
 // 监听打开模型管理事件
 useMitt.on('open-model-management', () => {
-  logger.debug('Open model management')
   showModelManagement.value = true
 })
 
 // 角色管理刷新后的回调
 const handleRoleManagementRefresh = () => {
-  logger.debug('Role management refreshed')
   // 通知其他组件刷新角色列表
   useMitt.emit('refresh-role-list')
 }
 
 // 模型管理刷新后的回调
 const handleModelManagementRefresh = () => {
-  logger.debug('Model management refreshed')
   // 通知其他组件刷新模型列表
   useMitt.emit('refresh-model-list')
 }

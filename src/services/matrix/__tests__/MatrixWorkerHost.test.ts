@@ -309,21 +309,24 @@ describe('MatrixWorkerHost', () => {
     expect((await readyOutcome) instanceof Error).toBe(true)
     expect((await pingOutcome) instanceof Error).toBe(true)
     expect(host.isStarted).toBe(false)
+    expect(host.isDegraded).toBe(true)
     expect(worker.terminated).toBe(true)
   })
 
-  it('error 后可重新 start()', async () => {
+  it('error 后可重新 start()，ready 后清除降级标记', async () => {
     let current = new FakeWorker()
     const host = new MatrixWorkerHost(() => current as unknown as Worker)
 
     const first = host.start().catch(() => 'failed')
     current.emitError()
     expect(await first).toBe('failed')
+    expect(host.isDegraded).toBe(true)
 
     current = new FakeWorker()
     const second = host.start()
     current.emit({ type: 'ready', id: 'init', success: true })
     await expect(second).resolves.toBeUndefined()
+    expect(host.isDegraded).toBe(false)
   })
 
   it('terminate 时未就绪的 start() 也被 reject', async () => {

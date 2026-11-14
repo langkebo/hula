@@ -21,30 +21,44 @@ export function useRoomSearch(roomId: Ref<string>) {
   const query = ref('')
   const results = ref<SearchResult[]>([])
   const loading = ref(false)
+  const error = ref(false)
   const activeIndex = ref(-1)
   const isOpen = ref(false)
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  let requestSeq = 0
 
   async function performSearch(): Promise<void> {
     const term = query.value.trim()
     if (!term) {
       results.value = []
       activeIndex.value = -1
+      error.value = false
       return
     }
 
+    const seq = ++requestSeq
     loading.value = true
+    error.value = false
     try {
       const searchResult = await matrixSearchService.searchRoomMessages(roomId.value, term)
+      // 丢弃过期响应，避免快速输入时旧结果覆盖新结果
+      if (seq !== requestSeq) return
       results.value = searchResult.results
       activeIndex.value = searchResult.results.length > 0 ? 0 : -1
     } catch (err) {
+      if (seq !== requestSeq) return
       logger.error('房间内搜索失败:', err)
       results.value = []
       activeIndex.value = -1
+      error.value = true
     } finally {
-      loading.value = false
+      if (seq === requestSeq) loading.value = false
     }
+  }
+
+  function retry(): void {
+    if (loading.value) return
+    void performSearch()
   }
 
   function onQueryInput(): void {
@@ -63,9 +77,11 @@ export function useRoomSearch(roomId: Ref<string>) {
       clearTimeout(debounceTimer)
       debounceTimer = null
     }
+    requestSeq++
     isOpen.value = false
     query.value = ''
     results.value = []
+    error.value = false
     activeIndex.value = -1
   }
 
@@ -93,10 +109,12 @@ export function useRoomSearch(roomId: Ref<string>) {
     query,
     results,
     loading,
+    error,
     activeIndex,
     isOpen,
     onQueryInput,
     performSearch,
+    retry,
     openSearch,
     closeSearch,
     navigateNext,

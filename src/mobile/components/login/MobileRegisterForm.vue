@@ -73,20 +73,24 @@
 
     <!-- 协议 -->
     <div class="flex items-center justify-center gap-6px mt-10px">
-      <van-checkbox v-model="registerProtocol" shape="square" icon-size="16px" />
+      <van-checkbox
+        v-model="registerProtocol"
+        shape="square"
+        icon-size="16px"
+        :aria-label="t('login.term.checkout.agree_label')" />
       <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
         <span>{{ t('login.term.checkout.text1') }}</span>
         <span
           v-clickable
           @click.stop="emit('to-service-agreement')"
-          class="color-[--tjg-color-primary-500] cursor-pointer">
+          class="color-[--tjg-color-primary-600] cursor-pointer">
           {{ t('login.term.checkout.text2') }}
         </span>
         <span>{{ t('login.term.checkout.text3') }}</span>
         <span
           v-clickable
           @click.stop="emit('to-privacy-agreement')"
-          class="color-[--tjg-color-primary-500] cursor-pointer">
+          class="color-[--tjg-color-primary-600] cursor-pointer">
           {{ t('login.term.checkout.text4') }}
         </span>
       </div>

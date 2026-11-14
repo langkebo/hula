@@ -3,9 +3,17 @@ import matrixClientService from '../MatrixClientService'
 
 const logger = createLogger('BurnAfterRead')
 
+/**
+ * 焚毁开关的作用域（后端 `scope` 字段）。
+ * - `room`：开关是**房间级**的，任一成员改动对全体生效（当前后端语义）；
+ * - `per_user`：仅本人生效（旧语义 / 后端未返回 scope 时的兜底）。
+ */
+export type BurnScope = 'room' | 'per_user'
+
 export interface BurnSettings {
   enabled: boolean
   burnAfterMs: number
+  scope: BurnScope
 }
 
 export interface BurnStats {
@@ -48,7 +56,8 @@ class MatrixBurnAfterReadService {
       logger.info(`阅后即焚已启用: roomId=${roomId}, burnAfterMs=${settings.burn_after_ms}`)
       return {
         enabled: settings.enabled,
-        burnAfterMs: settings.burn_after_ms
+        burnAfterMs: settings.burn_after_ms,
+        scope: settings.scope ?? 'per_user'
       }
     } catch (error) {
       logger.error(`启用阅后即焚失败: ${error}`)
@@ -68,7 +77,8 @@ class MatrixBurnAfterReadService {
       logger.info(`阅后即焚已禁用: roomId=${roomId}`)
       return {
         enabled: settings.enabled,
-        burnAfterMs: settings.burn_after_ms
+        burnAfterMs: settings.burn_after_ms,
+        scope: settings.scope ?? 'per_user'
       }
     } catch (error) {
       logger.error(`禁用阅后即焚失败: ${error}`)
@@ -80,14 +90,22 @@ class MatrixBurnAfterReadService {
   /**
    * 读取房间的焚毁设置（是否启用、时长）。
    */
-  async getBurnSettings(roomId: string, throwOnError = false): Promise<BurnSettings | null> {
+  async getBurnSettings(
+    roomId: string,
+    throwOnError = false,
+    opts: { forceRefresh?: boolean } = {}
+  ): Promise<BurnSettings | null> {
     try {
       const manager = this.getManager()
       if (!manager) return null
-      const settings = await manager.getBurnSettings(roomId)
+      // SDK 会缓存房间级设置；房间级开关可能被**其他成员**改掉，需要时必须显式绕过缓存
+      const settings = opts.forceRefresh
+        ? await manager.getBurnSettings(roomId, undefined, { forceRefresh: true })
+        : await manager.getBurnSettings(roomId)
       return {
         enabled: settings.enabled,
-        burnAfterMs: settings.burn_after_ms
+        burnAfterMs: settings.burn_after_ms,
+        scope: settings.scope ?? 'per_user'
       }
     } catch (error) {
       logger.error(`获取阅后即焚设置失败: ${error}`)
@@ -99,11 +117,11 @@ class MatrixBurnAfterReadService {
   /**
    * 判断房间是否启用焚毁；与 `getBurnSettings` 同源，但只返回开关。
    */
-  async isBurnEnabled(roomId: string, throwOnError = false): Promise<boolean> {
+  async isBurnEnabled(roomId: string, throwOnError = false, forceRefresh = false): Promise<boolean> {
     try {
       const manager = this.getManager()
       if (!manager) return false
-      return await manager.isBurnEnabled(roomId)
+      return forceRefresh ? await manager.isBurnEnabled(roomId, true) : await manager.isBurnEnabled(roomId)
     } catch (error) {
       // FT-131-A: 安全特性不能静默吞错，必须记录日志以便排查鉴权失败/服务异常
       logger.error(`检查阅后即焚状态失败 (isBurnEnabled): roomId=${roomId}, error=${error}`)

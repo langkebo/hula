@@ -177,13 +177,36 @@ describe('useInputShortcuts', () => {
       expect(e.preventDefault).toHaveBeenCalled()
     })
 
-    it('defers to IME when chinese composition on mac', async () => {
-      vi.mocked(isMac).mockReturnValue(true)
+    it('defers to IME on every platform while composing', async () => {
+      vi.mocked(isWindows).mockReturnValue(true)
       const opts = makeOpts({ isChinese: ref(true), msgInput: ref('hi') })
       const { inputKeyDown } = useInputShortcuts(opts)
       const e = keyDownEvent({ key: 'Enter' })
       await inputKeyDown(e)
       expect(e.preventDefault).not.toHaveBeenCalled()
+      expect(opts.resetInput).not.toHaveBeenCalled()
+    })
+
+    it('treats keyCode 229 as IME composition even when isComposing is false', async () => {
+      vi.mocked(isWindows).mockReturnValue(true)
+      const opts = makeOpts({ msgInput: ref(''), disabledSend: computed(() => true) })
+      const { inputKeyDown } = useInputShortcuts(opts)
+      const e = keyDownEvent({ key: 'Enter' })
+      Object.defineProperty(e, 'keyCode', { value: 229 })
+      await inputKeyDown(e)
+      expect(e.preventDefault).not.toHaveBeenCalled()
+      expect(opts.resetInput).not.toHaveBeenCalled()
+    })
+
+    it('treats isComposing as IME composition without the composition flag', async () => {
+      vi.mocked(isWindows).mockReturnValue(true)
+      const opts = makeOpts({ msgInput: ref('nihao'), disabledSend: computed(() => true) })
+      const { inputKeyDown } = useInputShortcuts(opts)
+      const e = keyDownEvent({ key: 'Enter' })
+      Object.defineProperty(e, 'isComposing', { value: true })
+      await inputKeyDown(e)
+      expect(e.preventDefault).not.toHaveBeenCalled()
+      expect(opts.resetInput).not.toHaveBeenCalled()
     })
 
     it('inserts newline on mac when sendKey=Enter and user presses ⌘+Enter', async () => {

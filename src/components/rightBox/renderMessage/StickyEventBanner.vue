@@ -10,7 +10,8 @@
         stroke="currentColor"
         stroke-width="2"
         stroke-linecap="round"
-        stroke-linejoin="round">
+        stroke-linejoin="round"
+        aria-hidden="true">
         <path d="M12 2v8M12 2L8 6M12 2l4 4" />
         <rect x="4" y="10" width="16" height="12" rx="2" />
       </svg>
@@ -60,7 +61,8 @@
             stroke="currentColor"
             stroke-width="1.5"
             stroke-linecap="round"
-            stroke-linejoin="round">
+            stroke-linejoin="round"
+            aria-hidden="true">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>

@@ -101,7 +101,9 @@
     "userId": "用户ID",
     "userRole": "普通用户",
     "username": "用户名",
-    "usernameRequired": "用户名不能为空"
+    "usernameRequired": "用户名不能为空",
+    "loadedCount": "已加载 {count} 条",
+    "loadMore": "加载更多"
   },
   "rooms": {
     "search": "搜索房间ID、名称或话题",
@@ -185,7 +187,12 @@
     "banConfirm": "确定要封禁用户 {userId} 吗？",
     "banSuccess": "用户已封禁",
     "banFailed": "封禁用户失败",
-    "aliasRemoveNotSupported": "别名删除暂不支持"
+    "aliasRemoveNotSupported": "别名删除暂不支持",
+    "loadedCount": "已加载 {count} 条",
+    "removeAlias": "删除别名",
+    "removeAliasConfirm": "确定要删除别名 {alias} 吗？",
+    "aliasRemoveSuccess": "别名已删除",
+    "aliasRemoveFailed": "删除别名失败"
   },
   "dashboard": {
     "serverInfo": "服务器信息",
@@ -200,6 +207,7 @@
     "version": "服务器版本",
     "pythonVersion": "Python 版本",
     "activityTrend": "活跃趋势",
+    "trendInsufficient": "数据不足，暂无法展示活跃趋势",
     "messageDistribution": "消息分布",
     "textMessages": "文本消息",
     "mediaMessages": "媒体消息",
@@ -397,6 +405,14 @@
     "unblock_failed": "解封失败",
     "no_ip_blocks": "暂无封禁IP",
     "no_security_events": "暂无安全事件",
+    "load_failed": "加载安全事件失败",
+    "loaded_count": "已加载 {count} 条",
+    "load_more": "加载更多",
+    "time_range": "时间范围",
+    "time_range_all": "全部时间",
+    "time_range_24h": "近 24 小时",
+    "time_range_7d": "近 7 天",
+    "time_range_30d": "近 30 天",
     "no_login_failures": "暂无登录失败记录",
     "filter_event_type": "筛选事件类型",
     "event_type_login_failure": "登录失败",
@@ -705,6 +721,8 @@
     "guest_accounts": "访客账户",
     "load_accounts": "加载访客账户",
     "load_accounts_failed": "加载访客账户失败",
+    "loaded_count": "已加载 {count} 条",
+    "load_more": "加载更多",
     "no_accounts": "暂无访客账户",
     "deactivate": "停用",
     "deactivate_title": "停用访客账户",

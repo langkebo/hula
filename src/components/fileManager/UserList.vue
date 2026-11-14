@@ -16,7 +16,7 @@
         class="rounded-[var(--tjg-radius-md)] border-(solid 1px [--tjg-border-default]) w-full relative text-[length:var(--tjg-font-size-sm)]"
         size="small">
         <template #prefix>
-          <svg class="size-16px text-[--tjg-text-secondary] opacity-60">
+          <svg class="size-16px text-[--tjg-text-secondary] opacity-60" aria-hidden="true">
             <use href="#search"></use>
           </svg>
         </template>
@@ -53,7 +53,7 @@
           <!-- 空状态 -->
           <div v-if="filteredList.length === 0 && searchKeyword && !loading" class="flex-center h-200px">
             <div class="flex-col-center">
-              <svg class="size-48px text-[--tjg-text-primary] opacity-30 mb-12px">
+              <svg class="size-48px text-[--tjg-text-primary] opacity-30 mb-12px" aria-hidden="true">
                 <use href="#search"></use>
               </svg>
               <p class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] opacity-60 m-0">
@@ -77,10 +77,12 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useOperationFeedback } from '@/composables/common/useOperationFeedback'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import type { MatrixGroupInfo } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
+import { useRoomStore } from '@/stores/domains/chat/room'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
 import UserItem from './UserItem.vue'
@@ -122,17 +124,18 @@ type FileManagerState = {
 }
 
 const { t } = useI18n()
+const { reportFailure } = useOperationFeedback()
 const fileManagerState = inject<FileManagerState>('fileManagerState')!
 const { activeNavigation, selectedUser, selectedRoom, setSelectedUser, setSelectedRoom } = fileManagerState
 
 // Store 实例
 const contactStore = useContactStore()
 const groupStore = useGroupStore()
+const roomStore = useRoomStore()
 
 // 本地状态
 const searchKeyword = ref('')
 const loading = ref(false)
-const sessionList = ref<FileManagerContactItem[]>([])
 
 // 是否显示用户列表
 const shouldShowUserList = computed(() => {
@@ -145,7 +148,7 @@ const currentList = computed(() => {
     case 'senders':
       return enrichedContactsList.value
     case 'sessions':
-      return sessionList.value
+      return sessionRoomList.value
     case 'groups':
       return groupChatList.value
     default:
@@ -182,19 +185,26 @@ const enrichedContactsList = computed(() => {
   })
 })
 
-// 群聊列表
-const groupChatList = computed(() => {
-  return [...groupStore.groupDetails]
-    .map((item) => ({
-      ...item,
-      avatar: AvatarUtils.getAvatarUrl(item.avatarUrl)
-    }))
-    .sort((a, b) => {
-      // 将roomId为'1'的群聊排在最前面
-      if (a.roomId === '1' && b.roomId !== '1') return -1
-      if (a.roomId !== '1' && b.roomId === '1') return 1
-      return 0
-    })
+// 会话列表：取同步得到的全部房间（单聊 + 群聊）。
+// 旧实现直接把好友列表当会话列表，未包含群聊且与真实房间无关。
+const sessionRoomList = computed<FileManagerListItem[]>(() => {
+  return roomStore.roomList.map((room) => ({
+    roomId: room.roomId,
+    roomName: room.name,
+    name: room.name,
+    avatar: AvatarUtils.getAvatarUrl(room.avatarUrl || '/logo.png')
+  }))
+})
+
+// 群聊列表：取同步得到的非私聊房间。
+// 旧实现依赖 groupStore.groupDetails，只有打开过群资料才有数据，导致列表长期为空。
+const groupChatList = computed<FileManagerListItem[]>(() => {
+  return roomStore.groupRooms.map((room) => ({
+    roomId: room.roomId,
+    roomName: room.name,
+    name: room.name,
+    avatar: AvatarUtils.getAvatarUrl(room.avatarUrl || '/logo.png')
+  }))
 })
 
 // 过滤后的列表
@@ -304,33 +314,7 @@ const loadContacts = async () => {
     await contactStore.getContactList()
   } catch (error) {
     logger.error('Failed to load contacts:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-const loadSessions = async () => {
-  try {
-    loading.value = true
-    sessionList.value = contactStore.contactsList.map((item) => ({
-      ...item,
-      avatar: AvatarUtils.getAvatarUrl(item.avatarUrl)
-    }))
-  } catch (error) {
-    logger.error('Failed to load sessions:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-// 加载群聊列表 (群组数据通过 groupStore 获取)
-const loadGroups = async () => {
-  try {
-    loading.value = true
-    // 群组数据已经在 groupStore 中管理，无需额外加载
-    // 如果需要刷新群组数据，可以调用相应的 store 方法
-  } catch (error) {
-    logger.error('Failed to load groups:', error)
+    reportFailure(error, 'common.load_failed')
   } finally {
     loading.value = false
   }
@@ -349,15 +333,7 @@ watch(
           await loadContacts()
         }
         break
-      case 'sessions':
-        if (contactStore.contactsList.length === 0) {
-          await loadContacts()
-        }
-        await loadSessions()
-        break
-      case 'groups':
-        await loadGroups()
-        break
+      // sessions / groups 直接由 roomStore 响应式提供，无需额外加载
     }
   },
   { immediate: true }

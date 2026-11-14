@@ -195,7 +195,7 @@ async function loadVersionInfo() {
         vueVersion.value = pkg.dependencies['vue'].replace('^', '')
       }
     } catch {
-      logger.debug('Failed to load package.json')
+      // package.json 读取失败时保留默认版本号，不视为错误
     }
   } catch (error) {
     logger.error('Failed to load version info:', error)

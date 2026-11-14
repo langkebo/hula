@@ -33,11 +33,15 @@ export class VideoMessageStrategyImpl extends AbstractMessageStrategy {
   }
 
   // 暴露上传进度监听
-  getUploadProgress(): { progress: Ref<number>; onChange: (callback: (progress: number) => void) => void } {
+  getUploadProgress(): {
+    progress: Ref<number>
+    onChange: (callback: (progress: number) => void) => () => void
+  } {
     return {
       progress: this.uploadHook.progress,
       onChange: (callback: (progress: number) => void) => {
-        this.uploadHook.onChange((p: number) => callback(Number(p)))
+        const { off } = this.uploadHook.onChange((p: number) => callback(Number(p)))
+        return off
       }
     }
   }

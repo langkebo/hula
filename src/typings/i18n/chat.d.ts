@@ -29,6 +29,7 @@ export type Messages = {
       "placeholder": "输入关键词搜索历史消息",
       "loading": "搜索中...",
       "no_results": "未找到匹配消息",
+      "load_failed": "搜索失败，请稍后重试",
       "empty_hint": "输入关键词以搜索历史消息",
       "results_count": "找到 {count} 条结果",
       "jump_hint": "点击或回车跳转到该消息",
@@ -44,7 +45,6 @@ export type Messages = {
     "private_mode_confirm_question": "确定要进入私密模式吗？",
     "private_mode_feature_e2ee": "消息由端到端加密保护（仅房间成员可解密）",
     "private_mode_feature_burn": "可为消息设置倒计时，到期仅在本机移除显示",
-    "private_mode_feature_screenshot": "桌面端检测到截屏时提示并发送房间提醒（不能阻止截屏）",
     "private_mode_active": "私密模式已启用",
     "private_mode_cancel": "取消",
     "private_mode_confirm": "确认切换"
@@ -92,14 +92,16 @@ export type Messages = {
     "copy_url": "复制网址"
   },
   "privacy": {
-    "screenshot_protected": "此聊天受保护，禁止截图",
-    "screenshot_detected_notice": "截屏行为已被记录"
+    "screenshot_protected": "此聊天受保护，禁止截图"
   },
   "multi_msg": {
     "view_forwarded": "查看 {count} 条转发消息",
     "group_title": "群聊的聊天记录",
     "dm_title": "{friend}和{me}的聊天记录",
-    "open_failed": "打开聊天记录失败"
+    "open_failed": "打开聊天记录失败",
+    "load_failed": "聊天记录加载失败",
+    "retry": "重试",
+    "empty": "没有可展示的消息"
   },
   "crypto_unavailable": {
     "message": "加密功能未就绪，此房间的消息无法发送。请重新登录或联系管理员。"
@@ -166,6 +168,7 @@ export type KeyPaths =
   | "chat.header.search.placeholder"
   | "chat.header.search.loading"
   | "chat.header.search.no_results"
+  | "chat.header.search.load_failed"
   | "chat.header.search.empty_hint"
   | "chat.header.search.results_count"
   | "chat.header.search.jump_hint"
@@ -180,7 +183,6 @@ export type KeyPaths =
   | "chat.header.private_mode_confirm_question"
   | "chat.header.private_mode_feature_e2ee"
   | "chat.header.private_mode_feature_burn"
-  | "chat.header.private_mode_feature_screenshot"
   | "chat.header.private_mode_active"
   | "chat.header.private_mode_cancel"
   | "chat.header.private_mode_confirm"
@@ -217,11 +219,13 @@ export type KeyPaths =
   | "chat.beacon.invalid_format"
   | "chat.text.copy_url"
   | "chat.privacy.screenshot_protected"
-  | "chat.privacy.screenshot_detected_notice"
   | "chat.multi_msg.view_forwarded"
   | "chat.multi_msg.group_title"
   | "chat.multi_msg.dm_title"
   | "chat.multi_msg.open_failed"
+  | "chat.multi_msg.load_failed"
+  | "chat.multi_msg.retry"
+  | "chat.multi_msg.empty"
   | "chat.crypto_unavailable.message"
   | "chat.encryption.verified_title"
   | "chat.encryption.unverified_title"

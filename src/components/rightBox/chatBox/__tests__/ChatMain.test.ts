@@ -533,13 +533,9 @@ describe('ChatMain private mode', () => {
     const vm = wrapper.vm as unknown as {
       privateModeFeatures: Array<{ textKey: string }>
     }
-    expect(vm.privateModeFeatures).toHaveLength(3)
+    expect(vm.privateModeFeatures).toHaveLength(2)
     const keys = vm.privateModeFeatures.map((f) => f.textKey)
-    expect(keys).toEqual([
-      'chat.header.private_mode_feature_e2ee',
-      'chat.header.private_mode_feature_burn',
-      'chat.header.private_mode_feature_screenshot'
-    ])
+    expect(keys).toEqual(['chat.header.private_mode_feature_e2ee', 'chat.header.private_mode_feature_burn'])
     expect(keys.some((k) => k.includes('no_retention'))).toBe(false)
   })
 

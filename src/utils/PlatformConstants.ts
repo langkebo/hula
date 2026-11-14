@@ -215,6 +215,15 @@ export const isIOS = (): boolean => PlatformDetector.osType === 'ios'
 export const isCompatibility = (): boolean => isWindows() || isLinux()
 
 /**
+ * 托盘提示气泡（notify 窗口）是否可用。
+ *
+ * Rust 侧仅在 Windows 注册托盘 `Enter`/`Leave` 事件并派发 `notify_enter`，
+ * macOS 走原生菜单栏、Linux 合成器对无边框透明提示窗支持不一致；
+ * 两者统一由系统通知承担提醒，不再创建 notify 窗口或向其空派发事件。
+ */
+export const supportsTrayTipBubble = (): boolean => isWindows()
+
+/**
  * 平台工具集合 - 统一导出所有平台判断函数
  */
 export const Platform = {

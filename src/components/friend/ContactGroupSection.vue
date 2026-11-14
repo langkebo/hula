@@ -59,10 +59,11 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
+import { LIST_VIRTUALIZATION_THRESHOLD } from '@/utils/listVirtualization'
 import FriendListItem from './FriendListItem.vue'
 
-/** 与 FriendListView 的 `VIRTUAL_SCROLL_THRESHOLD` 对齐：> 100 才需要窗口化 */
-const GROUP_WINDOW_SIZE = 100
+/** 与扁平列表共用统一虚拟化阈值：> 100 才需要窗口化 */
+const GROUP_WINDOW_SIZE = LIST_VIRTUALIZATION_THRESHOLD
 
 const { t } = useI18n()
 

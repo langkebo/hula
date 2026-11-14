@@ -9,6 +9,18 @@
         </div>
         <n-switch :value="desktopNotification" @update:value="handleNotificationChange" />
       </div>
+      <div class="setting-item">
+        <div class="setting-info">
+          <span class="setting-label">{{ t('setting.notification.desktop.permission_label') }}</span>
+          <span class="setting-desc">{{ permissionStatusText }}</span>
+        </div>
+        <n-button
+          v-if="permissionStatus !== 'granted' && canOpenSystemSettings"
+          size="small"
+          @click="openSystemSettings">
+          {{ t('setting.notification.desktop.open_system_settings') }}
+        </n-button>
+      </div>
       <div v-if="desktopNotification" class="setting-item">
         <div class="setting-info">
           <span class="setting-label">{{ t('setting.notification.desktop.sound_label') }}</span>
@@ -112,6 +124,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useNotificationDisplayPreferences } from '@/composables/settings/useNotificationDisplayPreferences'
+import { useSystemNotificationPermission } from '@/composables/settings/useSystemNotificationPermission'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import PushSettings from '@/views/settingsWindow/tabs/PushSettings.vue'
@@ -179,6 +192,14 @@ const showSenderName = computed({
   set: (value: boolean) => writeConfig({ showSender: value })
 })
 const newKeyword = ref('')
+// 系统通知权限真实状态：插件只区分是否已授权，其余统一显示为未授权（C-12）
+const {
+  permissionStatus,
+  canOpenSystemSettings,
+  permissionStatusText,
+  request: requestPermission,
+  openSystemSettings
+} = useSystemNotificationPermission()
 
 // events.thread_mention 缺省即开启，因此未写入过时开关显示为打开。
 const threadMentionNotify = computed({
@@ -199,9 +220,10 @@ onMounted(() => {
 
 async function handleNotificationChange(value: boolean) {
   try {
-    if (value && 'Notification' in window) {
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') {
+    if (value) {
+      // 统一走 Tauri 插件权限 API，不再使用浏览器 Notification.requestPermission（C-12）
+      const granted = await requestPermission()
+      if (!granted) {
         showFeedback(t('setting.notification.feedback.permission_denied'), 'warning')
         desktopNotification.value = false
         return

@@ -40,6 +40,13 @@ import LocalUnlockDialog from '@/components/secure/LocalUnlockDialog.vue'
 import { useInvitePolicyEnforcement } from '@/composables/app/useInvitePolicyEnforcement'
 import { useOfflineQueueReplay } from '@/composables/app/useOfflineQueueReplay'
 import { useWsEventHandler } from '@/composables/app/useWsEventHandler'
+import {
+  consumePendingDeepLinkRoom,
+  installSecurityGuards,
+  registerShellBridgeListeners,
+  syncMacTrayMenuLabels,
+  uninstallSecurityGuards
+} from '@/composables/common/desktopShellBridge'
 import { useGlobalShortcut } from '@/composables/common/useGlobalShortcut'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
@@ -64,6 +71,7 @@ import { applyBubbleStyle, loadBubbleStyle } from '@/utils/bubbleStyle'
 import { applyFontScale, loadFontScale } from '@/utils/fontScale'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop, isWindows10 } from '@/utils/PlatformConstants'
+import { endPerfSpan, runAfterFirstPaint } from '@/utils/startupScheduling'
 import { isNonMatrixWindow } from '@/utils/windowLabels'
 
 const logger = createLogger('App')
@@ -126,20 +134,6 @@ const { initializeGlobalShortcut, cleanupGlobalShortcut } = useGlobalShortcut()
 
 // VoIP 来电监听：收到 Call.incoming 时创建来电通知窗口
 useVoIPIncomingCall({ createRtcCallWindow: windowApi?.createRtcCallWindow })
-
-// ========== Security: prevent drag & context menu in production ==========
-const preventImageInputDrag = (e: MouseEvent) => {
-  const el = e.target as HTMLElement
-  if (el.nodeName.toLowerCase() === 'img' || el.nodeName.toLowerCase() === 'input') {
-    e.preventDefault()
-  }
-}
-const preventGlobalContextMenu = (event: MouseEvent) => event.preventDefault()
-const handleGlobalKeydown = (e: KeyboardEvent) => {
-  if (e.ctrlKey && (e.key === 'f' || e.key === 'r' || e.key === 'g' || e.key === 'j')) {
-    e.preventDefault()
-  }
-}
 
 // ========== Lazy service loaders (used by composables) ==========
 function createLazyLoader<T, K extends keyof T>(importFn: () => Promise<T>, key: K): () => Promise<T[K]> {
@@ -298,6 +292,8 @@ async function setupWindowHandlers() {
     }),
     'app-exit'
   )
+
+  registerShellBridgeListeners({ window: appWindow, addListener, translate: t })
 }
 
 // ========== Theme & style initialization ==========
@@ -326,12 +322,7 @@ function initPlatformStyles() {
 
 // ========== Security: install event listeners ==========
 function installSecurityListeners() {
-  window.addEventListener('dragstart', preventImageInputDrag)
-
-  if (import.meta.env.PROD) {
-    window.addEventListener('keydown', handleGlobalKeydown)
-    window.addEventListener('contextmenu', preventGlobalContextMenu, false)
-  }
+  installSecurityGuards()
 
   // Init global shortcuts on desktop main window
   if (isDesktop() && appWindow?.label === 'home') {
@@ -340,11 +331,7 @@ function installSecurityListeners() {
 }
 
 function uninstallSecurityListeners() {
-  window.removeEventListener('dragstart', preventImageInputDrag)
-  if (import.meta.env.PROD) {
-    window.removeEventListener('keydown', handleGlobalKeydown)
-    window.removeEventListener('contextmenu', preventGlobalContextMenu, false)
-  }
+  uninstallSecurityGuards()
 }
 
 // ========== Mobile re-login listener ==========
@@ -454,6 +441,29 @@ async function recoverColdStartSession(): Promise<void> {
 /** 私密聊天自动锁定的清理句柄（`onMounted` 中接入，`onUnmounted` 中释放）。 */
 let disposeSecretChatAutoLock: (() => void) | null = null
 
+/**
+ * 首帧后执行的 Matrix 运行时初始化：窗口裁剪（`skipMatrixInit`）仍在前置判断，
+ * 非 Matrix 窗口不注册任何监听、不启动离线队列。
+ */
+async function initMatrixRuntimeAfterFirstPaint(): Promise<void> {
+  performance.mark('tjg-matrix-init-start')
+  try {
+    await initOfflineQueue()
+    // D12：冷启动（整页 reload / WebView 进程重建）不经过任何登录或窗口级恢复入口。
+    // 两个平台都要跑（桌面 home 的整页 reload 同样无人恢复）；无会话时立即返回。
+    void recoverColdStartSession()
+    wsEventHandler.registerHandlers()
+    invitePolicyEnforcement.start()
+    await invitePolicyEnforcement.syncContacts()
+    // 用同一份好友列表预热联系人状态缓存，省掉逐个查询
+    await seedContactStateCache()
+  } catch (err) {
+    logger.error('Deferred matrix init failed:', err)
+  } finally {
+    endPerfSpan('tjg-matrix-init')
+  }
+}
+
 onMounted(async () => {
   // 尽早接入：即使后面 bootstrap 失败提前 return，自动锁定也必须生效
   disposeSecretChatAutoLock = useSecretChatAutoLock().dispose
@@ -470,16 +480,11 @@ onMounted(async () => {
   // 非 Matrix 窗口（截图/托盘/通知/更新）跳过 Matrix 运行时初始化：
   // 离线消息队列、WebSocket 事件处理、在线状态轮询均无意义且会重复注册监听。
   const skipMatrixInit = isNonMatrixWindow()
-  if (!skipMatrixInit) {
-    await initOfflineQueue()
-    // D12：冷启动（整页 reload / WebView 进程重建）不经过任何登录或窗口级恢复入口。
-    // 这里主动恢复一次；两个平台都要跑（桌面 home 的整页 reload 同样无人恢复）。
-    // 无会话时 `recoverColdStartSession` 立即返回，不会在登录页空转。
-    void recoverColdStartSession()
-  }
   initPlatformStyles()
+  syncMacTrayMenuLabels(t)
   installSecurityListeners()
   await setupWindowHandlers()
+  consumePendingDeepLinkRoom(appWindow?.label ?? '')
   await setupMobileReLoginListener()
   setupThemeWatchers()
   // 字体缩放不是响应式 store：启动时读一次 localStorage 并写到 :root，供字号 token 消费
@@ -489,13 +494,11 @@ onMounted(async () => {
   // 媒体上传偏好（压缩/质量/分块）同步到服务层，设置页修改后也会即时重放
   applyMediaUploadPreferences()
   if (!skipMatrixInit) {
-    // F-4：本机密钥库若未加密，一次性告知（不阻断；持续状态见设置页状态卡）
-    void useLocalStorePlaintextWarning().warnIfNeeded()
-    wsEventHandler.registerHandlers()
-    invitePolicyEnforcement.start()
-    await invitePolicyEnforcement.syncContacts()
-    // 用同一份好友列表预热联系人状态缓存，省掉逐个查询
-    await seedContactStateCache()
+    // P-03：Matrix 运行时初始化延后到首帧之后；本机密钥库未加密提示同属非首屏必需
+    runAfterFirstPaint(async () => {
+      await useLocalStorePlaintextWarning().warnIfNeeded()
+      await initMatrixRuntimeAfterFirstPaint()
+    })
   }
 })
 

@@ -17,7 +17,7 @@
           </n-flex>
 
           <n-flex v-if="newVersion" align="center" class="relative">
-            <svg class="w-24px h-24px select-none color-[--tjg-text-disabled]">
+            <svg class="w-24px h-24px select-none color-[--tjg-text-disabled]" aria-hidden="true">
               <use href="#RightArrow"></use>
             </svg>
 
@@ -50,7 +50,8 @@
             </span>
             <svg
               class="w-16px h-16px select-none color-[--tjg-color-primary-500] ml-2px transition-transform duration-300"
-              :class="{ 'rotate-180': !logVisible }">
+              :class="{ 'rotate-180': !logVisible }"
+              aria-hidden="true">
               <use href="#ArrowDown"></use>
             </svg>
           </n-flex>
@@ -79,7 +80,9 @@
 
             <n-flex>
               <n-flex vertical :size="20">
-                <svg class="m-[4px_40px] w-24px h-24px select-none rotate-270 color-[--tjg-text-disabled]">
+                <svg
+                  class="m-[4px_40px] w-24px h-24px select-none rotate-270 color-[--tjg-text-disabled]"
+                  aria-hidden="true">
                   <use href="#RightArrow"></use>
                 </svg>
 
@@ -104,7 +107,9 @@
       </div>
       <n-flex justify="end" class="mt-10px">
         <n-button :onclick="dismissUpdate" secondary>{{ t('message.check_update.ignore') }}</n-button>
-        <n-button :onclick="doUpdate" secondary type="primary">{{ t('message.check_update.update_now') }}</n-button>
+        <n-button :onclick="doUpdate" :disabled="updating" :loading="updating" secondary type="primary">
+          {{ t('message.check_update.update_now') }}
+        </n-button>
       </n-flex>
     </n-flex>
   </div>
@@ -140,6 +145,8 @@ const text = ref(t('message.check_update.update_now'))
 const currentVersion = ref('')
 const newVersion = ref('')
 const loading = ref(false)
+/** 更新流程已启动，避免重复点击创建多个更新窗口 */
+const updating = ref(false)
 /** 控制日志是否可见 */
 const logVisible = ref(false)
 /** 版本更新日期 */
@@ -204,23 +211,31 @@ const getCommitLog = async (url: string, isNew = false) => {
 }
 
 const doUpdate = async () => {
+  if (updating.value) return
   if (!(await confirm(t('message.check_update.confirm_update')))) {
     return
   }
-  await createWebviewWindow(
-    t('common.window_titles.check_update'),
-    'update',
-    490,
-    335,
-    '',
-    false,
-    490,
-    335,
-    false,
-    true
-  )
-  for (const label of ['login', 'home', 'checkupdate']) {
-    await closeWindowByLabel(label)
+  updating.value = true
+  try {
+    await createWebviewWindow(
+      t('common.window_titles.check_update'),
+      'update',
+      490,
+      335,
+      '',
+      false,
+      490,
+      335,
+      false,
+      true
+    )
+    for (const label of ['login', 'home', 'checkupdate']) {
+      await closeWindowByLabel(label)
+    }
+  } catch (error) {
+    logger.error('Failed to start update flow:', error)
+    updating.value = false
+    showFeedback(t('message.check_update.update_error'), 'error')
   }
 }
 

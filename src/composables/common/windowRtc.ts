@@ -1,4 +1,4 @@
-import type { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import type { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { CallTypeEnum, RoomTypeEnum } from '@/enums'
@@ -6,7 +6,13 @@ import type { useI18nGlobal } from '@/services/i18n'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
 import { isMac } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
-import { ensureDesktopWindowInstance, logger, MAC_TRAFFIC_LIGHTS_SPACING } from './windowHelpers'
+import {
+  ensureDesktopWindowInstance,
+  logger,
+  MAC_TRAFFIC_LIGHTS_SPACING,
+  macAllWorkspacesOptions,
+  macTitleBarOptions
+} from './windowHelpers'
 
 type CreateWebviewWindow = (
   title: string,
@@ -63,6 +69,15 @@ export function createRtcWindowManager(deps: RtcWindowManagerDeps) {
     roomId: string,
     callType: CallTypeEnum
   ) => {
+    // 通话窗口使用固定 label `rtcCall`，同一时间只支持一路通话；
+    // 已有通话窗口时不再创建，明确提示并聚焦旧窗口，避免新来电被静默吞掉（L-07）。
+    const existingCallWindow = await WebviewWindow.getByLabel('rtcCall')
+    if (existingCallWindow) {
+      showFeedback(t('hooks.window.rtc_single_call_limit'), 'warning')
+      await existingCallWindow.setFocus()
+      return
+    }
+
     // 根据是否来电决定窗口尺寸
     const windowConfig = isIncoming
       ? { width: 360, height: 90, minWidth: 360, minHeight: 90 } // 来电通知尺寸
@@ -78,7 +93,7 @@ export function createRtcWindowManager(deps: RtcWindowManagerDeps) {
       windowConfig.width, // 宽度
       windowConfig.height, // 高度
       undefined, // 不需要关闭其他窗口
-      true, // 可调整大小
+      !isIncoming, // 来电通知窗口固定尺寸，通话中的窗口才允许调整
       windowConfig.minWidth, // 最小宽度
       windowConfig.minHeight, // 最小高度
       false, // 不透明
@@ -103,11 +118,10 @@ export function createRtcWindowManager(deps: RtcWindowManagerDeps) {
         skipTaskbar: true,
         decorations: false,
         visible: false,
-        hiddenTitle: true,
         alwaysOnTop: true,
         focus: true,
-        titleBarStyle: 'overlay',
-        visibleOnAllWorkspaces: true
+        ...macTitleBarOptions,
+        ...macAllWorkspacesOptions
       },
       async (captureWindow) => {
         await captureWindow.hide().catch(() => {
@@ -130,8 +144,7 @@ export function createRtcWindowManager(deps: RtcWindowManagerDeps) {
         focus: true,
         skipTaskbar: true,
         visible: false,
-        titleBarStyle: 'overlay',
-        hiddenTitle: true
+        ...macTitleBarOptions
       },
       async (checkUpdateWindow) => {
         if (isMac()) {

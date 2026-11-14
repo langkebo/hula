@@ -60,6 +60,33 @@ pub async fn update_user_last_opt_time(state: State<'_, AppData>) -> Result<(), 
 pub async fn get_user_tokens(state: State<'_, AppData>) -> Result<TokenResponse, String> {
     info!("Getting user token info");
 
+    // D2-R：内存态为空时从 DB 兜底回填。
+    //
+    // 冷启动有两处竞态会让「启动时回填」失效：
+    //   ① 前端 `ensureAppStateReady()` 最多等 10s 就放行，而 Android 上
+    //      `initialize_app_data`（含迁移 + 回填）实测约 20s；
+    //   ② `app-state-ready` 事件可能在监听注册前就已发出（一次性事件丢失）。
+    // 该命令只在 `AppData` 被 manage 之后才可调用，此时 DB 一定可用，
+    // 因此这里按当前用户兜底读一次，彻底消除对「启动时序」的依赖。
+    if state.user_info.lock().await.token.is_empty() {
+        let restored = {
+            let conn = state.db_conn.read().await;
+            crate::repository::im_user_repository::get_last_active_user_tokens(&*conn)
+                .await
+                .ok()
+                .flatten()
+        };
+        if let Some((uid, token, refresh_token)) = restored {
+            let mut user_info = state.user_info.lock().await;
+            user_info.uid = uid;
+            user_info.token = token;
+            user_info.refresh_token = refresh_token;
+            info!("[SESSION] get_user_tokens: memory was empty, rehydrated from DB");
+        } else {
+            info!("[SESSION] get_user_tokens: memory empty and DB has no persisted session");
+        }
+    }
+
     let user_info = state.user_info.lock().await;
 
     let response = TokenResponse {

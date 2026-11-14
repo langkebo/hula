@@ -47,7 +47,7 @@
         <!-- 上传中显示进度 -->
         <div v-if="isUploading" class="upload-progress">
           <div class="progress-circle">
-            <svg class="progress-ring" width="24" height="24">
+            <svg class="progress-ring" width="24" height="24" aria-hidden="true">
               <circle
                 class="progress-ring-circle"
                 stroke="color-mix(in srgb, var(--tjg-color-primary-500) 40%, transparent)"
@@ -74,7 +74,7 @@
         <!-- 下载中显示进度 -->
         <div v-else-if="isDownloading" class="download-progress">
           <div class="progress-circle">
-            <svg class="progress-ring" width="24" height="24">
+            <svg class="progress-ring" width="24" height="24" aria-hidden="true">
               <circle
                 class="progress-ring-circle"
                 stroke="color-mix(in srgb, var(--tjg-text-inverse) 30%, transparent)"
@@ -101,7 +101,7 @@
         <!-- 需要下载显示下载图标 -->
         <div v-else-if="needsDownload" class="download-icon">
           <div class="download-circle">
-            <svg class="download-btn-icon">
+            <svg class="download-btn-icon" aria-hidden="true">
               <use href="#arrow-down"></use>
             </svg>
           </div>
@@ -117,6 +117,7 @@ import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useDownload } from '@/composables/common/useDownload'
+import { useOperationFeedback } from '@/composables/common/useOperationFeedback'
 import { MessageStatusEnum, TauriCommand } from '@/enums'
 import type { FileBody, FilesMeta, MsgType } from '@/services/types'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -134,6 +135,7 @@ const globalStore = useGlobalStore()
 const chatStore = useChatStore()
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
+const { reportFailure } = useOperationFeedback()
 
 const { isDownloading: legacyIsDownloading } = useDownload()
 const fileDownloadStore = useFileDownloadStore()
@@ -433,7 +435,7 @@ const downloadFileOnly = async () => {
       void persistFileLocalPath(absolutePath)
     }
   } catch (error) {
-    logger.error('Failed to download file:', error)
+    reportFailure(error)
   } finally {
     // 刷新文件状态
     const currentChatRoomId = globalStore.currentSessionRoomId

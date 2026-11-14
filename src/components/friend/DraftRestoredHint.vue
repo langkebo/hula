@@ -1,6 +1,6 @@
 <template>
   <div class="add-friend-pane__hint" role="status" aria-live="polite">
-    <svg class="size-14px"><use href="#info"></use></svg>
+    <svg class="size-14px" aria-hidden="true"><use href="#info"></use></svg>
     <span>{{ t('common.draft_restored') }}</span>
   </div>
 </template>

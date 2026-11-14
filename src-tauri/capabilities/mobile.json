@@ -107,14 +107,16 @@
     {
       "identifier": "http:default",
       "allow": [
+        { "url": "https://*" },
+        { "url": "https://*:**" },
+        { "url": "http://*" },
+        { "url": "http://*:**" },
         { "url": "https://gitee.com" },
         { "url": "https://gitee.com:**" },
         { "url": "https://api.siliconflow.cn" },
         { "url": "https://api.siliconflow.cn:**" },
         { "url": "https://translate.googleapis.com" },
         { "url": "https://translate.googleapis.com:**" },
-        { "url": "https://matrix.test" },
-        { "url": "https://matrix.test:**" },
         { "url": "https://localhost:8008" },
         { "url": "http://localhost:8008" },
         { "url": "https://127.0.0.1:8008" },

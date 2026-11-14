@@ -13,7 +13,13 @@
       "sound_label": "Notification sound",
       "sound_desc": "Play a sound when desktop notifications are delivered",
       "volume_label": "Sound volume",
-      "volume_desc": "Adjust the playback volume for notification sounds"
+      "volume_desc": "Adjust the playback volume for notification sounds",
+      "permission_label": "System notification permission",
+      "permission_granted": "Granted, system notifications will be delivered",
+      "permission_denied": "Not granted, system notifications will be blocked",
+      "permission_unsupported": "Unable to detect system notification permission in this environment",
+      "open_system_settings": "Open system settings",
+      "open_system_settings_failed": "Could not open system settings automatically. Allow notifications for this app manually."
     },
     "content": {
       "title": "Notification Content",
@@ -352,6 +358,8 @@
     "search_result_unavailable": "\"{tab}\" is not supported by this server.",
     "search_result_unavailable_badge": "Not supported by this server",
     "dirty_status": "Unsaved changes",
+    "save_mode_instant": "Changes are saved automatically",
+    "save_mode_manual": "Click save to apply changes",
     "close_title": "Close Settings",
     "close_aria_label": "Close settings window",
     "back_label": "Back",
@@ -522,6 +530,13 @@
     "device_key_desc": "View this device's encryption key fingerprint",
     "device_trust_label": "Device Trust",
     "device_trust_desc": "Manage verified devices and pending verification requests",
+    "room_key_requests_section": "Key Requests",
+    "room_key_requests_desc": "Fulfill requests from other devices for the encryption keys of past messages.",
+    "room_key_requests_empty": "No pending key requests",
+    "room_key_requests_refresh": "Refresh",
+    "room_key_requests_fulfill": "Fulfill",
+    "room_key_requests_fulfilled": "Key request fulfilled",
+    "room_key_requests_failed": "Failed to fulfill key request",
     "view": "View",
     "strict_section": "Strict Mode",
     "strict_label": "Do not send keys to unverified devices",
@@ -539,6 +554,11 @@
     "key_status_ready": "Configured",
     "enable_required": "Please enable encryption first",
     "backup_disabled_feedback": "Secure backup disabled",
+    "backup_disable_title": "Disable secure backup",
+    "backup_disable_confirm": "Disabling deletes the key backup version on the server; backed-up keys may become unrecoverable. Continue?",
+    "backup_disable_failed": "Failed to disable secure backup, please retry",
+    "backup_disable_unavailable": "No backup version found to disable",
+    "load_failed": "Failed to load encryption settings",
     "backup_created": "Backup created successfully",
     "restore_success": "Keys restored successfully",
     "verify_success": "Device verified successfully",
@@ -691,6 +711,7 @@
     "updated": "Shortcut updated",
     "reset_success": "Default shortcuts restored",
     "conflict_error": "Shortcut conflict, please choose another combination",
+    "invalid_error": "Invalid shortcut: include at least one modifier (Ctrl/Command/Alt/Shift) and one key",
     "actions": {
       "send_message": "Send Message",
       "new_line": "New Line",
@@ -824,7 +845,8 @@
     "start_scan": "Start scan",
     "scanning": "Scanning...",
     "select_directory_title": "Select a directory to scan",
-    "select_directory_error": "Select directory failed"
+    "select_directory_error": "Select directory failed",
+    "scan_failed": "Directory scan failed. Check folder permissions and try again."
   },
   "security": {
     "encryption_status": "Encryption Status",

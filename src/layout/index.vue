@@ -33,7 +33,6 @@
 </template>
 
 <script setup lang="ts">
-import type { UnlistenFn } from '@tauri-apps/api/event'
 import { emitTo, listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { UserAttentionType } from '@tauri-apps/api/window'
@@ -42,16 +41,14 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import LoadingSpinner from '@/components/atomic/LoadingSpinner.vue'
 import SkipLink from '@/components/common/SkipLink.vue'
-import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useCheckUpdate } from '@/composables/common/useCheckUpdate'
 import { useMessageSound } from '@/composables/common/useMessageSound'
 import { useMitt } from '@/composables/common/useMitt'
+import { useNativeFileDrop } from '@/composables/common/useNativeFileDrop'
 import { useOverlayController } from '@/composables/common/useOverlayController'
 import { useWindow } from '@/composables/common/useWindow'
 import { useSearchShortcut } from '@/composables/search/useSearchShortcut'
 import { MittEnum, NotificationTypeEnum, RoomTypeEnum, TauriCommand, WsResponseMessageType } from '@/enums'
-import { acquireTimerWorker } from '@/services/timerWorkerHost'
-import type { FilesMeta } from '@/services/types'
+import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -61,14 +58,11 @@ import { useInitialSyncStore } from '@/stores/domains/chat/initialSync'
 import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime, shouldBypassAuthForE2E } from '@/utils/AppHarness'
-import FileUtil from '@/utils/FileUtil'
 import { createLogger } from '@/utils/Logger'
-import { getFilesMeta } from '@/utils/PathUtil'
-import { isWindows } from '@/utils/PlatformConstants'
+import { isWindows, supportsTrayTipBubble } from '@/utils/PlatformConstants'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 
 const logger = createLogger('Layout')
-const { showFeedback } = useActionFeedback()
 
 const { t } = useI18n()
 const route = useRoute()
@@ -223,7 +217,6 @@ const AsyncRight = defineAsyncComponent({
 
 const globalStore = useGlobalStore()
 const contactStore = useContactStore()
-const { checkUpdate, CHECK_UPDATE_TIME } = useCheckUpdate()
 const shrinkStatus = ref(false)
 // 右侧详情栏是否渲染：房间列表路由与收缩态下不渲染
 const showRightPane = computed(() => !shrinkStatus.value && !isRoomListRoute.value)
@@ -239,22 +232,7 @@ watch(
   },
   { immediate: true }
 )
-const isDraggingFiles = ref(false)
-const tauriFileDropUnlisteners: UnlistenFn[] = []
-
-// 共享定时器 Worker 宿主
-const timerWorker = acquireTimerWorker()
-
-timerWorker.onError((error) => {
-  logger.error('Worker Error', error)
-})
-
-// 监听 Worker 消息
-timerWorker.onMessage((event) => {
-  if (event.type === 'timeout') {
-    checkUpdate()
-  }
-})
+const { isDraggingFiles, setupNativeFileDropListeners, cleanupNativeFileDropListeners } = useNativeFileDrop(appWindow)
 
 watch(
   () => appWindow?.label === 'home',
@@ -309,8 +287,18 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
     // 获取该消息的会话信息
     const session = chatStore.sessionList.find((s) => s.roomId === data.message.roomId)
 
-    // 只有非免打扰的会话才发送通知和触发图标闪烁
-    if (session && session.muteNotification !== NotificationTypeEnum.NOT_DISTURB) {
+    // 房间级免打扰 + 全局通知决策门（勿扰时段 / 事件开关 / 关键词）统一裁决，
+    // 避免「设置里开了勿扰，托盘气泡与提示音照旧响」。R1：复用既有服务层决策门，不另写判断。
+    const shouldNotifyRoom =
+      !!session &&
+      session.muteNotification !== NotificationTypeEnum.NOT_DISTURB &&
+      matrixNotificationService.shouldNotifyMessage({
+        isMention: data.message.body.atUidList?.includes(currentUid) ?? false,
+        isThread: Boolean(data.message.body.threadId),
+        body: data.message.body.content || data.message.body.body || ''
+      })
+
+    if (shouldNotifyRoom) {
       // 检查 home 窗口状态
       let shouldPlaySound = false
 
@@ -347,12 +335,13 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
         await playMessageSound()
       }
       // session.unreadCount++
-      // 在windows系统下才发送通知
-      if (isWindows()) {
+      // 托盘提示气泡仅 Windows 可用（Rust 侧只在 Windows 派发 notify_enter）；
+      // macOS/Linux 由系统通知承担提醒，不再向不存在的 notify 窗口空派发。
+      if (supportsTrayTipBubble()) {
         globalStore.setTipVisible(true)
       }
 
-      if (hasTauriRuntime() && WebviewWindow.getCurrent().label === 'home') {
+      if (supportsTrayTipBubble() && hasTauriRuntime() && WebviewWindow.getCurrent().label === 'home') {
         await ensureNotifyWindow()
         await emitTo('notify', 'notify_content', data)
       }
@@ -361,68 +350,6 @@ useMitt.on(WsResponseMessageType.RECEIVE_MESSAGE, async (data: MessageType) => {
 
   globalStore.updateGlobalUnreadCount()
 })
-
-const cleanupNativeFileDropListeners = () => {
-  while (tauriFileDropUnlisteners.length > 0) {
-    const unlisten = tauriFileDropUnlisteners.pop()
-    unlisten?.()
-  }
-}
-
-const buildPathUploadFiles = async (paths: string[]) => {
-  if (!paths?.length) return []
-  try {
-    const filesMeta = (await getFilesMeta<FilesMeta>(paths)) ?? []
-    return await FileUtil.copyDroppedFilesToAppScope(paths, filesMeta)
-  } catch (error) {
-    logger.error('Failed to parse dropped file metadata:', error)
-    showFeedback(t('home.file_drop.parse_failed'), 'error')
-    return []
-  }
-}
-
-const handleNativeFileDrop = async (paths: string[]) => {
-  if (!paths?.length) return
-  try {
-    const pathFiles = await buildPathUploadFiles(paths)
-    if (pathFiles.length > 0) {
-      useMitt.emit(MittEnum.GLOBAL_FILES_DROP, pathFiles)
-    } else {
-      showFeedback(t('home.file_drop.unrecognized'), 'error')
-    }
-  } catch (error) {
-    logger.error('Failed to handle native file drop:', error)
-  } finally {
-    isDraggingFiles.value = false
-  }
-}
-
-const setupNativeFileDropListeners = async () => {
-  if (!hasTauriRuntime() || !appWindow) return
-  try {
-    const unlisten = await appWindow.onDragDropEvent((event) => {
-      // 只有选中会话时才响应拖拽事件
-      if (!globalStore.currentSessionRoomId) return
-
-      if (event.payload.type === 'enter') {
-        const paths = event.payload.paths || []
-        if (paths.length > 0) {
-          isDraggingFiles.value = true
-        }
-      } else if (event.payload.type === 'over') {
-        isDraggingFiles.value = true
-      } else if (event.payload.type === 'drop') {
-        const paths = event.payload.paths || []
-        handleNativeFileDrop(paths)
-      } else if (event.payload.type === 'leave') {
-        isDraggingFiles.value = false
-      }
-    })
-    tauriFileDropUnlisteners.push(unlisten)
-  } catch (error) {
-    logger.error('Failed to register native file drop listener:', error)
-  }
-}
 
 if (hasTauriRuntime()) {
   listen('relogin', async () => {
@@ -453,12 +380,6 @@ onBeforeMount(async () => {
 })
 
 onMounted(async () => {
-  timerWorker.postMessage({
-    type: 'startTimer',
-    msgId: 'checkUpdate',
-    duration: CHECK_UPDATE_TIME
-  })
-
   if (hasTauriRuntime()) {
     // 监听home窗口被聚焦的事件，当窗口被聚焦时自动关闭状态栏通知
     const homeWindow = await WebviewWindow.getByLabel('home')
@@ -495,12 +416,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupNativeFileDropListeners()
-  // 清除共享计时器并释放本窗口 channel
-  timerWorker.postMessage({
-    type: 'clearTimer',
-    msgId: 'checkUpdate'
-  })
-  timerWorker.release()
 })
 </script>
 

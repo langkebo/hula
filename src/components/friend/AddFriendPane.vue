@@ -115,7 +115,7 @@
 
           <div v-else class="search-hint">
             <n-icon size="48" color="var(--tjg-text-tertiary)">
-              <svg><use href="#search" /></svg>
+              <svg aria-hidden="true"><use href="#search" /></svg>
             </n-icon>
             <span class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-tertiary]">
               {{ t('friend.add.hint') }}

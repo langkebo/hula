@@ -26,7 +26,7 @@
       <!-- 切换提示 -->
       <div
         class="absolute inset-0 flex-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-30 rounded-8px pointer-events-none">
-        <svg class="text-[--tjg-text-inverse] size-20px">
+        <svg class="text-[--tjg-text-inverse] size-20px" aria-hidden="true">
           <use href="#switch"></use>
         </svg>
       </div>

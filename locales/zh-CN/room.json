@@ -103,6 +103,7 @@
     "role_moderator": "管理员",
     "status_banned": "已封禁",
     "banned_members": "已封禁成员",
+    "load_more": "显示更多",
     "visibility_label": "房间可见性",
     "visibility_public": "公开",
     "visibility_private": "私密",

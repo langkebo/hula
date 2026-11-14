@@ -19,6 +19,22 @@ export const MAC_TRAFFIC_LIGHTS_SPACING = 6
 
 type DesktopWindowOptions = Omit<WebviewOptions, 'x' | 'y' | 'width' | 'height'> & WindowOptions
 
+/**
+ * 平台标题栏策略（C-06 / L-07）。
+ *
+ * - macOS：`titleBarStyle: overlay` + `hiddenTitle`，隐藏原生标题、内容顶到窗口顶部，
+ *   拖拽由 `data-tauri-drag-region` 承担，红绿灯按钮通过 `set_macos_traffic_lights_spacing` 对齐；
+ * - Windows/Linux：不使用 overlay（该选项仅 macOS 生效），标题栏完全由 `decorations` 控制。
+ *
+ * 统一在 macOS 追加，避免在 Windows/Linux 上出现两套互相冲突的标题栏语义。
+ */
+export const macTitleBarOptions: Partial<DesktopWindowOptions> = isMac()
+  ? { titleBarStyle: 'overlay', hiddenTitle: true }
+  : {}
+
+/** 覆盖在所有工作区（仅 macOS 生效），用于截图等需要常驻可见的窗口。 */
+export const macAllWorkspacesOptions: Partial<DesktopWindowOptions> = isMac() ? { visibleOnAllWorkspaces: true } : {}
+
 export const clampSizeToMonitor = (width: number, height: number, monitor?: Monitor | null) => {
   if (!monitor) {
     return { width, height }

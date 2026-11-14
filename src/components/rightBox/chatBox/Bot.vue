@@ -3,7 +3,7 @@
     <!-- 顶部工具栏 -->
     <div class="language-switcher">
       <div v-clickable v-if="canGoBack" class="back-btn flex-shrink-0" @click="goBack">
-        <svg class="rotate-180"><use href="#right"></use></svg>
+        <svg class="rotate-180" aria-hidden="true"><use href="#right"></use></svg>
         {{ t('ai_assistant.bot.back') }}
       </div>
       <div v-if="showAssistantMinimalToolbar" class="assistant-compact-toolbar">
@@ -19,7 +19,7 @@
           @select="handlePresetModelSelect">
           <div :class="['model-select-btn', { active: selectedModelKey && selectedModelKey !== 'local' }]">
             <span class="model-select-text">{{ selectedModelLabel }}</span>
-            <svg class="size-12px model-select-icon"><use href="#down"></use></svg>
+            <svg class="size-12px model-select-icon" aria-hidden="true"><use href="#down"></use></svg>
           </div>
         </n-dropdown>
       </div>
@@ -58,7 +58,7 @@
               @select="handlePresetModelSelect">
               <div :class="['model-select-btn', { active: selectedModelKey && selectedModelKey !== 'local' }]">
                 <span class="model-select-text">{{ selectedModelLabel }}</span>
-                <svg class="size-12px model-select-icon"><use href="#down"></use></svg>
+                <svg class="size-12px model-select-icon" aria-hidden="true"><use href="#down"></use></svg>
               </div>
             </n-dropdown>
           </div>
@@ -67,7 +67,7 @@
         <!-- 当前页面标题和操作按钮 -->
         <div v-if="isViewingLink" class="page-title">{{ currentUrl }}</div>
         <div v-clickable v-if="isViewingLink" class="open-in-browser-btn" @click="openInBrowser">
-          <svg class="size-16px"><use href="#share"></use></svg>
+          <svg class="size-16px" aria-hidden="true"><use href="#share"></use></svg>
           {{ t('ai_assistant.bot.open_in_browser') }}
         </div>
       </template>

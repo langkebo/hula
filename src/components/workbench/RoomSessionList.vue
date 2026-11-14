@@ -9,7 +9,7 @@
       <div
         v-if="networkBanner && !syncLoading && !globalStore.currentSessionRoomId"
         class="room-session-list__network-banner sticky top-8px z-[999]">
-        <svg class="size-16px flex-shrink-0">
+        <svg class="size-16px flex-shrink-0" aria-hidden="true">
           <use href="#cloudError"></use>
         </svg>
         <span class="leading-tight">{{ networkBanner.text }}</span>
@@ -65,7 +65,7 @@
       <div v-else class="h-full flex-center text-[var(--text-xs)] color-[--tjg-text-tertiary]" role="status">
         <n-empty :description="emptyDescription" size="large">
           <template #icon>
-            <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]">
+            <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]" aria-hidden="true">
               <use href="#chat"></use>
             </svg>
           </template>

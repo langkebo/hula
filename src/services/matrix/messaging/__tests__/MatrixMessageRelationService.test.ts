@@ -257,4 +257,46 @@ describe('MatrixMessageRelationService', () => {
       expect(result[0].eventId).toBe('$edit1')
     })
   })
+  describe('refreshEditHistory（服务端拉取）', () => {
+    const makeRoom = (overrides: Record<string, unknown>) => ({
+      getChildEventsForEvent: () => undefined,
+      getUnfilteredTimelineSet: () => ({ getLiveTimeline: () => ({ getEvents: () => [] }) }),
+      ...overrides
+    })
+
+    it('走 room.getRelations 拉 m.replace 并映射成编辑记录', async () => {
+      const edit = createMockEvent(
+        '$edit1',
+        '@a:s',
+        {
+          body: '*v2',
+          'm.new_content': { body: 'v2' },
+          'm.relates_to': { rel_type: 'm.replace', event_id: '$e' }
+        },
+        120
+      )
+      const getRelations = vi.fn().mockResolvedValue({ events: [edit] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoom: () => makeRoom({ getRelations })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMessageRelationService.refreshEditHistory('!r:s', '$e')
+
+      expect(getRelations).toHaveBeenCalledWith('$e', 'm.replace', 'm.room.message', { limit: 100 })
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ eventId: '$edit1', timestamp: 120 })
+      expect(result[0].newContent).toMatchObject({ body: 'v2' })
+    })
+
+    it('服务端为空或失败时回退本地查询（不抛错）', async () => {
+      const getRelations = vi.fn().mockRejectedValue(new Error('boom'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoom: () => makeRoom({ getRelations })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMessageRelationService.refreshEditHistory('!r:s', '$e')
+
+      expect(result).toEqual([])
+    })
+  })
 })

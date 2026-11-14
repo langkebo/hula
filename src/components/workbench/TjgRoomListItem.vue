@@ -25,20 +25,20 @@
           <span class="tjg-room-list-item__name truncate flex-1">{{ displayName }}</span>
           <n-flex align="center" :size="4" shrink="0">
             <n-icon v-if="isEncrypted" size="14" class="text-[--tjg-text-tertiary]" :title="t('room.detail.encrypted')">
-              <svg><use href="#lock" /></svg>
+              <svg aria-hidden="true"><use href="#lock" /></svg>
             </n-icon>
             <n-icon v-if="isBurnAfterRead" size="14" class="text-[--tjg-color-danger-500]">
-              <svg><use href="#fire" /></svg>
+              <svg aria-hidden="true"><use href="#fire" /></svg>
             </n-icon>
             <n-icon v-if="isTop" size="14" class="text-[--tjg-text-tertiary]" :title="t('menu.pin')">
-              <svg><use href="#topping" /></svg>
+              <svg aria-hidden="true"><use href="#topping" /></svg>
             </n-icon>
             <n-icon
               v-if="isMuted"
               size="14"
               class="text-[--tjg-text-tertiary]"
               :title="t('home.plugins.room_detail.mute')">
-              <svg><use href="#volume-mute" /></svg>
+              <svg aria-hidden="true"><use href="#volume-mute" /></svg>
             </n-icon>
             <span class="tjg-room-list-item__time whitespace-nowrap">{{ timeText }}</span>
           </n-flex>

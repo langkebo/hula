@@ -8,7 +8,7 @@
         clearable
         @keyup.enter="handleSearch">
         <template #prefix>
-          <svg class="search-panel__search-icon"><use href="#search"></use></svg>
+          <svg class="search-panel__search-icon" aria-hidden="true"><use href="#search"></use></svg>
         </template>
       </n-input>
       <n-button size="small" type="primary" :loading="loading" @click="handleSearch">
@@ -21,7 +21,7 @@
         <span>{{ t('trendradar.searching') }}</span>
       </div>
       <div v-else-if="results.length === 0 && hasSearched" class="search-panel__empty">
-        <svg class="search-panel__empty-icon"><use href="#search"></use></svg>
+        <svg class="search-panel__empty-icon" aria-hidden="true"><use href="#search"></use></svg>
         <span>{{ t('trendradar.no_results') }}</span>
       </div>
       <div v-else class="search-panel__list">

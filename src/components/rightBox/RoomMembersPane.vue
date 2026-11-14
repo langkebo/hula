@@ -7,23 +7,23 @@
     </div>
 
     <!-- 邀请表单（仅管理员可见） -->
-    <div v-if="canManage" class="room-members-pane__invite" data-test="invite-form">
-      <input
-        v-model="inviteUserId"
-        class="room-members-pane__invite-input"
-        type="text"
-        :placeholder="t('room.detail.invite_placeholder')"
-        data-test="invite-input"
-        @keyup.enter="handleInvite" />
-      <button class="room-members-pane__invite-btn" type="button" :disabled="inviteSubmitting" @click="handleInvite">
-        {{ t('room.detail.invite_button') }}
-      </button>
+    <RoomInviteForm v-if="canManage" :room-id="roomId" />
+
+    <!-- 首载中：不再先闪一帧「暂无成员」 -->
+    <div
+      v-if="membersLoading && allMembers.length === 0"
+      class="room-members-pane__loading"
+      data-test="members-loading">
+      {{ t('common.loading') }}
     </div>
 
-    <!-- 空状态 -->
-    <div v-if="allMembers.length === 0" class="room-members-pane__empty" data-test="empty-members">
-      {{ t('room.detail.no_members') }}
-    </div>
+    <!-- 空状态（统一走 EmptyState，与侧栏/管理端空态一致） -->
+    <EmptyState
+      v-else-if="allMembers.length === 0"
+      data-test="empty-members"
+      compact
+      icon="mdi:account-multiple-outline"
+      :description="t('room.detail.no_members')" />
 
     <!-- 成员列表 -->
     <div v-else class="room-members-pane__list" @scroll="handleMemberScroll">
@@ -58,7 +58,7 @@
             data-test="kick-btn"
             :aria-label="t('room.detail.kick_member')"
             @click.stop="handleKick(member.userId)">
-            <svg class="size-14px"><use href="#user-minus" /></svg>
+            <svg class="size-14px" aria-hidden="true"><use href="#user-minus" /></svg>
           </button>
           <button
             class="room-members-pane__action-btn room-members-pane__action-btn--danger"
@@ -66,7 +66,7 @@
             data-test="ban-btn"
             :aria-label="t('room.detail.ban_member')"
             @click.stop="handleBan(member.userId)">
-            <svg class="size-14px"><use href="#ban" /></svg>
+            <svg class="size-14px" aria-hidden="true"><use href="#ban" /></svg>
           </button>
         </div>
       </div>
@@ -77,7 +77,7 @@
           {{ t('room.detail.banned_members') }} ({{ bannedMembers.length }})
         </div>
         <div
-          v-for="member in bannedMembers"
+          v-for="member in visibleBannedMembers"
           :key="`banned-${member.userId}`"
           class="room-members-pane__item room-members-pane__item--banned"
           data-test="member-item">
@@ -100,10 +100,19 @@
               data-test="unban-btn"
               :aria-label="t('room.detail.unban_member')"
               @click.stop="handleUnban(member.userId)">
-              <svg class="size-14px"><use href="#check" /></svg>
+              <svg class="size-14px" aria-hidden="true"><use href="#check" /></svg>
             </button>
           </div>
         </div>
+        <!-- 封禁成员分页：与已加入成员的滚动窗口分开，避免两种数据源共用滚动比例 -->
+        <button
+          v-if="hasMoreBanned"
+          class="room-members-pane__load-more"
+          type="button"
+          data-test="banned-load-more"
+          @click="bannedVisibleCount += BANNED_PAGE_SIZE">
+          {{ t('room.detail.load_more') }} ({{ bannedMembers.length - bannedVisibleCount }})
+        </button>
       </template>
     </div>
   </div>
@@ -117,6 +126,7 @@ import matrixClientService from '@/services/matrix/MatrixClientService'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
+import RoomInviteForm from './RoomInviteForm.vue'
 import { useMemberListWindow } from './useMemberListWindow'
 
 const { t } = useI18n()
@@ -139,10 +149,6 @@ const emit = defineEmits<{
   memberClick: [userId: string]
 }>()
 
-// 邀请表单状态
-const inviteUserId = ref('')
-const inviteSubmitting = ref(false)
-
 // 成员列表：从 groupStore.userList 获取
 const allMembers = computed<MatrixRoomMember[]>(() => groupStore.userList)
 
@@ -151,30 +157,21 @@ const { joinedMembers, bannedMembers, visibleJoinedMembers, handleMemberScroll }
   () => props.roomId
 )
 
-// 邀请成员
-const handleInvite = async () => {
-  const userId = inviteUserId.value.trim()
-  if (!userId) {
-    showFeedback(t('room.detail.invite_user_required'), 'warning')
-    return
-  }
+/** 首载态：成员还在拉取时先展示占位，避免空态提前闪现 */
+const membersLoading = computed(() => groupStore.loadingRooms?.has(props.roomId) ?? false)
 
-  inviteSubmitting.value = true
-  try {
-    const success = await groupStore.inviteUser(props.roomId, userId)
-    if (success) {
-      showFeedback(t('room.detail.invite_success'), 'success')
-      inviteUserId.value = '' // 成功后清空输入
-    } else {
-      showFeedback(t('room.detail.invite_failed'), 'error')
-      // 失败时不清空输入，便于用户重试
-    }
-  } catch {
-    showFeedback(t('room.detail.invite_failed'), 'error')
-  } finally {
-    inviteSubmitting.value = false
+/** 封禁成员分页：一次性渲染上千条封禁记录会明显卡顿，按页追加 */
+const BANNED_PAGE_SIZE = 50
+const bannedVisibleCount = ref(BANNED_PAGE_SIZE)
+const visibleBannedMembers = computed(() => bannedMembers.value.slice(0, bannedVisibleCount.value))
+const hasMoreBanned = computed(() => bannedMembers.value.length > bannedVisibleCount.value)
+
+watch(
+  () => props.roomId,
+  () => {
+    bannedVisibleCount.value = BANNED_PAGE_SIZE
   }
-}
+)
 
 // 踢出成员（带确认弹窗）
 const handleKick = async (userId: string) => {
@@ -267,58 +264,26 @@ const handleUnban = async (userId: string) => {
   border-radius: 10px;
 }
 
-.room-members-pane__invite {
-  display: flex;
-  gap: 8px;
-  padding: 8px;
-  background: var(--tjg-surface-panel-muted);
-  border-radius: 8px;
-}
-
-.room-members-pane__invite-input {
-  flex: 1;
-  min-width: 0;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid var(--tjg-border-default);
-  border-radius: 6px;
-  background: var(--tjg-surface-panel);
-  color: var(--tjg-text-primary);
-  font-size: 13px;
-  transition: border-color var(--tjg-motion-duration-fast) ease;
-
-  &:focus-within {
-    border-color: var(--tjg-color-primary-500);
-  }
-}
-
-.room-members-pane__invite-btn {
-  flex-shrink: 0;
-  height: 32px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--tjg-color-primary-600);
-  color: var(--tjg-text-inverse);
-  font-size: 13px;
-  cursor: pointer;
-  transition: opacity var(--tjg-motion-duration-fast) ease;
-
-  &:hover:not(:disabled) {
-    opacity: 0.85;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.room-members-pane__empty {
+.room-members-pane__loading {
   padding: 32px 16px;
   text-align: center;
   font-size: 13px;
   color: var(--tjg-text-tertiary);
+}
+
+.room-members-pane__load-more {
+  margin-top: 4px;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--tjg-surface-panel-muted);
+  color: var(--tjg-color-primary-600);
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--tjg-surface-list-hover);
+  }
 }
 
 .room-members-pane__list {

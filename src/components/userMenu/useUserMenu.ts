@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useWindow } from '@/composables/common/useWindow'
 import { isDesktop } from '@/composables/usePlatform'
 import { useSessionActions } from '@/composables/user/useSessionActions'
 import type { SettingsTabType } from '@/stores/domains/settings/settingsTab'
@@ -19,6 +20,7 @@ export function useUserMenu() {
   const router = useRouter()
   const { t } = useI18n()
   const { logoutCurrentSession } = useSessionActions()
+  const { openSettingsWindow } = useWindow()
 
   setRouterInstance(router)
 
@@ -71,12 +73,12 @@ export function useUserMenu() {
     userMenuStore.toggleMenu(pos, menuTrigger)
   }
 
-  function handleMenuItemClick(itemId: string): void {
+  async function handleMenuItemClick(itemId: string): Promise<void> {
     const item = findMenuItemById(itemId)
     if (!item || item.disabled) return
 
     if (item.tabId) {
-      openSettings(item.tabId)
+      await openSettings(item.tabId)
     } else if (item.action) {
       item.action()
     }
@@ -84,8 +86,12 @@ export function useUserMenu() {
     closeMenu()
   }
 
-  function openSettings(tab?: SettingsTabType): void {
-    router.push({ path: '/settings', ...(tab ? { query: { tab } } : {}) })
+  async function openSettings(tab?: SettingsTabType): Promise<void> {
+    // 桌面端优先独立设置窗口；无法创建原生窗口时回退为窗口内路由跳转
+    const openedInWindow = await openSettingsWindow(tab)
+    if (!openedInWindow) {
+      await router.push({ path: '/settings', ...(tab ? { query: { tab } } : {}) })
+    }
     closeMenu()
   }
 

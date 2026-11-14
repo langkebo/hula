@@ -187,6 +187,7 @@
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { darkTheme, type FormInst, lightTheme } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import { resolveDisplayMessage, toAppError } from '@/common/errors'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSessionActions } from '@/composables/user/useSessionActions'
 import { resolveMatrixRuntimeEndpointConfig, saveMatrixSessionEndpointConfig } from '@/services/backend'
@@ -260,14 +261,7 @@ const showPasswordPrefix = ref(false)
 const showConfirmPasswordPrefix = ref(false)
 const { createModalWindow } = useWindow()
 // 常用邮箱后缀
-const commonEmailDomains = computed(() => {
-  return ['gmail.com', '163.com', 'qq.com'].map((suffix) => {
-    return {
-      label: suffix,
-      value: suffix
-    }
-  })
-})
+const commonEmailDomains = ['gmail.com', '163.com', 'qq.com'].map((suffix) => ({ label: suffix, value: suffix }))
 
 /** 验证码倒计时消息ID */
 const EMAIL_TIMER_ID = 'register_window_email_timer'
@@ -473,7 +467,9 @@ const handleStepAction = async () => {
 }
 
 const getErrorMessage = (error: unknown, fallback: string) => {
-  return error instanceof Error && error.message ? error.message : fallback
+  // 按 errcode 映射为本地化文案；无映射时不再直接抛 SDK 英文原文
+  const appError = toAppError(error)
+  return appError.i18nKey ? resolveDisplayMessage(appError, t) : fallback
 }
 
 const finishRegistrationAndEnterHome = async (registerResult: Awaited<ReturnType<typeof registerAccount>>) => {

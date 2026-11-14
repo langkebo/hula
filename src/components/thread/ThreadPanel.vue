@@ -97,7 +97,7 @@
             @click="handleSendReply">
             <template #icon>
               <n-icon>
-                <svg><use href="#send" /></svg>
+                <svg aria-hidden="true"><use href="#send" /></svg>
               </n-icon>
             </template>
           </n-button>
@@ -178,6 +178,7 @@ const loadThreadState = async () => {
     isMuted.value = detail.user_subscription?.is_muted ?? false
   } catch (err) {
     logger.error(`Failed to load thread state: ${err}`)
+    showFeedback(t('common.load_failed'), 'error')
   }
 }
 

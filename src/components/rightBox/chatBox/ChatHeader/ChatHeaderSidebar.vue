@@ -30,7 +30,7 @@
                 @click="startEditName">
                 <template #icon>
                   <n-icon size="14">
-                    <svg><use href="#edit"></use></svg>
+                    <svg aria-hidden="true"><use href="#edit"></use></svg>
                   </n-icon>
                 </template>
               </n-button>
@@ -102,7 +102,7 @@
           <div v-clickable class="setting-item danger" @click="handleClearMessages">
             <span class="setting-label">{{ t('home.chat_header.clear_messages') }}</span>
             <n-icon size="18">
-              <svg><use href="#delete"></use></svg>
+              <svg aria-hidden="true"><use href="#delete"></use></svg>
             </n-icon>
           </div>
         </div>

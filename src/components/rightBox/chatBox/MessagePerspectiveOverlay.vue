@@ -17,7 +17,7 @@
         <header
           class="flex items-center justify-between gap-8px px-16px py-12px border-b border-[--tjg-border-default]">
           <div class="flex items-center gap-8px min-w-0">
-            <svg class="size-16px shrink-0 color-[--tjg-color-primary-500]">
+            <svg class="size-16px shrink-0 color-[--tjg-color-primary-500]" aria-hidden="true">
               <use href="#info"></use>
             </svg>
             <div class="flex flex-col min-w-0">
@@ -35,7 +35,7 @@
             :aria-label="t('common.close')"
             data-testid="message-perspective-close"
             @click="close">
-            <svg class="size-14px color-[--tjg-text-secondary]">
+            <svg class="size-14px color-[--tjg-text-secondary]" aria-hidden="true">
               <use href="#close"></use>
             </svg>
           </button>

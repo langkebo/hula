@@ -1,5 +1,5 @@
 <template>
-  <n-flex vertical :size="6" class="notify" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+  <n-flex vertical :size="6" :class="notifyPanelClass" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
     <n-flex align="center" :size="4" class="m-[8px_0_0_0] text-(12px)">
       <p>{{ t('message.notify.new_messages') }}</p>
       <p>·</p>
@@ -112,6 +112,9 @@ const msgCount = ref(0)
 let homeFocusUnlisten: (() => void) | null = null
 let homeBlurUnlisten: (() => void) | null = null
 
+// Windows 下通知窗口为透明无边框窗口，需由页面自绘圆角；macOS/Linux 保持满铺
+const notifyPanelClass = isWindows() ? 'notify notify--rounded' : 'notify'
+
 // 监听 tipVisible 的变化，当它变为 false 时重置消息列表
 watch(
   () => tipVisible.value,
@@ -207,12 +210,10 @@ const hideWindow = async () => {
 }
 
 const handleMouseEnter = () => {
-  logger.debug('Mouse enter')
   isMouseInWindow.value = true
 }
 
 const handleMouseLeave = async () => {
-  logger.debug('Mouse leave')
   // 延迟设置 isMouseInWindow 为 false，给鼠标移动到托盘图标的时间
   timerManager.setTimeout(() => {
     // 只有在延迟后鼠标仍然不在窗口内时才隐藏
@@ -227,7 +228,9 @@ onMounted(async () => {
   // 初始化窗口高度
   resizeWindow('notify', 280, 140)
 
-  if (isWindows() && appWindow) {
+  // 窗口是否存在本身就是「托盘气泡可用」的判据：创建点已由 layout 按平台能力收敛，
+  // 这里再判平台会让 Windows 之外的监听器永远不注册（旧实现的空路径）。
+  if (appWindow) {
     appWindow.listen<NotifyEnterPayload>('notify_enter', async (event) => {
       logger.info('Received enter event, opening notify window')
       await showWindow(event)
@@ -357,5 +360,12 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .notify {
   @apply bg-[--tjg-surface-panel] size-full p-8px box-border select-none text-[--tjg-text-primary] text-12px;
+}
+
+/* 透明通知窗口：自绘圆角与描边，避免 Windows 上出现直角 */
+.notify--rounded {
+  border-radius: var(--tjg-radius-lg);
+  border: 1px solid var(--tjg-border-default);
+  overflow: hidden;
 }
 </style>

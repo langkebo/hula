@@ -76,6 +76,7 @@
 import { NButton, NDivider, NDrawer, NDrawerContent, NInput, NSwitch } from 'naive-ui'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { normalizeShortcut } from '@/composables/common/shortcutNormalizer'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 
@@ -182,10 +183,16 @@ function handleKeyDown(event: KeyboardEvent) {
 
   if (keys.length >= 2) {
     const shortcutStr = keys.join('+')
+    // 校验与冲突检测统一按插件可接受形式比较；落库仍保留录制原始值，注册时再归一化（C-10）
+    const normalized = normalizeShortcut(shortcutStr)
+    if (!normalized) {
+      showFeedback(t('setting.keyboard.invalid_error'), 'error')
+      return
+    }
 
     // Conflict detection
     const conflictingShortcut = Object.entries(shortcutsStore).find(
-      ([key, value]) => key !== currentEditingType.value && value === shortcutStr
+      ([key, value]) => key !== currentEditingType.value && normalizeShortcut(value) === normalized
     )
 
     if (conflictingShortcut) {

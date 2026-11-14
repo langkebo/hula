@@ -1,9 +1,8 @@
 {
-  "generatedAt": "2026-10-12T00:00:00.000Z",
-  "note": "SDK augmentation 幻影成员登记表。exemptions = 有意为之的类型扩展（SDK 确实没有，tjg 需要）；debt = 上游 API 的陈旧副本 / 死声明，需要逐项烧掉。两项都必须写理由。棘轮：新增未登记幻影即红；条目不再命中即 stale，必须用 --update 剪掉（只剪不增）。2026-10-12：批次 B′-1/B′-2 已把全部 15 条债务烧尽（mxcUrlToHttp → ProfileManager 单一事实源；setRoomAvatar/getRoomMembers/isRoomEncrypted/getRoomEvent/sendEmote/redact/getProfile/login/getMediaQuotaManager/syncOnce/Room.topic/RoomMember.avatarUrl/MSC3575RoomData.state|summary 逐项迁移），debt 现为空。",
+  "generatedAt": "2026-11-14T02:29:03.706Z",
+  "note": "SDK augmentation 幻影成员登记表。exemptions = 有意扩展；debt = 待烧掉的陈旧声明。两项都必须写理由。",
   "exemptions": {
-    "ICreateRoomOpts.ignore_duplicate_name": "synapse-rust 的 create_room 支持该非标准字段；用户在「仍然创建」确认后置 true 重发，跳过 409 M_ROOM_IN_USE 查重。SDK 的 ICreateRoomOpts 无此字段，需 augmentation 补。使用点 CreationService.ts:108。",
-    "ICreateRoomOpts.room_types": "空间创建需要 room_types: ['m.space']。SDK 导出的 ICreateRoomOpts 未含该字段（后端支持）。使用点 MatrixSpaceService.ts:87。"
+    "ICreateRoomOpts.ignore_duplicate_name": "synapse-rust 的 create_room 支持该非标准字段；用户在「仍然创建」确认后置 true 重发，跳过 409 M_ROOM_IN_USE 查重。SDK 的 ICreateRoomOpts 无此字段，需 augmentation 补。使用点 CreationService.ts:108。"
   },
   "debt": {}
 }

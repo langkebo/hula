@@ -1,0 +1,23 @@
+# Android 16 KB page size 兼容（Android 15+ 要求）。
+#
+# 背景：模拟器/真机安装后弹出
+#   "This app isn't 16 KB compatible. ELF alignment check failed."
+#   列出 lib/arm64-v8a/libtjg_app_lib.so : LOAD segment not aligned
+# 实测 `llvm-readelf -l libtjg_app_lib.so` 的 LOAD 段 Align = 0x1000（4 KB），
+# 而 16 KB 设备要求 0x4000。NDK r28 起链接器默认 16 KB，r27 需显式传
+# `-Wl,-z,max-page-size=16384`（官方文档 developer.android.com/16kb-page-size）。
+#
+# 注意：本文件只修**我们自己编的** libtjg_app_lib.so。APK 里还有
+# `libc++_shared.so` 与插件自带的 `libsurface_util_jni.so` / `libimage_processing_util_jni.so`，
+# 它们来自 NDK/Prefab 预编译产物 ⇒ 需把 NDK 升到 r28+（本机已有 30.0.15729638）后重新打包。
+[target.aarch64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.armv7-linux-androideabi]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.x86_64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.i686-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]

@@ -16,6 +16,7 @@
       v-else
       :columns="columns"
       :data="blocks"
+      :pagination="{ pageSize: 20 }"
       :row-key="(row: Record<string, unknown>) => String(row.ip ?? row.id)"
       striped />
   </n-spin>

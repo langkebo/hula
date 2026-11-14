@@ -112,7 +112,6 @@ const loadAnnouncementDetail = async () => {
       announcementContent.value = data.content
       top.value = data.isPinned
     }
-    logger.debug('announcementContent ', announcementContent)
   } catch (error) {
     logger.error('Failed to load announcement details:', error)
   }

@@ -4,7 +4,7 @@
       <span class="edit-label">{{ t('message.editing') }}</span>
       <n-button text :aria-label="t('common.cancel')" @click="handleCancel">
         <template #icon>
-          <svg class="size-16px">
+          <svg class="size-16px" aria-hidden="true">
             <use href="#close"></use>
           </svg>
         </template>

@@ -14,7 +14,7 @@ import { deriveSearchIndexKey } from '@/services/secure/searchIndexCrypto'
 import type { RoomInfo, UserInfoType } from '@/services/types'
 import type { MessageType } from '@/types/message'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { reportExtensionDegradationToUi } from '@/utils/extensionHealth'
+import { reportExtensionDegradationToUi, reportSearchIndexDegraded } from '@/utils/extensionHealth'
 import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
 import { mapPresenceToOnlineStatus } from '@/utils/presenceStatus'
@@ -227,7 +227,8 @@ export class SessionBootstrapService {
       matrixWsBridge.start()
 
       void matrixWorkerHost.start().catch((err) => {
-        logger.warn(`[login] MatrixWorkerHost 启动失败: ${err}`)
+        logger.warn(`[login] MatrixWorkerHost 启动失败，搜索索引降级: ${err}`)
+        reportSearchIndexDegraded()
       })
 
       await this.bootstrapSearchIndex().catch((err) => {

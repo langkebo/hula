@@ -1,5 +1,5 @@
 <template>
-  <n-flex v-if="isTrayMenuShow" vertical :size="6" class="tray">
+  <n-flex v-if="isTrayMenuShow" vertical :size="6" :class="trayPanelClass">
     <n-flex vertical :size="6">
       <n-flex
         v-for="item in stateList.slice(0, 6)"
@@ -20,7 +20,7 @@
         :size="10"
         class="p-6px rounded-4px hover:bg-[--tray-hover]"
         v-once>
-        <svg class="size-14px">
+        <svg class="size-14px" aria-hidden="true">
           <use href="#more"></use>
         </svg>
         <span class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{{ t('message.tray.more_status') }}</span>
@@ -57,7 +57,7 @@
     </n-flex>
   </n-flex>
 
-  <n-flex v-else vertical :size="6" class="tray">
+  <n-flex v-else vertical :size="6" :class="trayPanelClass">
     <n-flex
       @click="handleExit"
       align="center"
@@ -98,6 +98,9 @@ const { t } = useI18n()
 const isFocused = ref(false)
 // 状态栏图标是否显示
 const iconVisible = ref(false)
+
+// Windows 下托盘窗口为透明无边框窗口，需由页面自绘圆角；macOS/Linux 保持满铺
+const trayPanelClass = isWindows() ? 'tray tray--rounded' : 'tray'
 
 // 消息提示音状态
 const messageSound = computed({
@@ -149,6 +152,7 @@ const toggleMessageSound = () => {
 }
 
 let blinkTask: number | null = null
+let trayStateUnlisten: (() => void) | null = null
 let homeFocusUnlisten: (() => void) | null = null
 let homeBlurUnlisten: (() => void) | null = null
 
@@ -196,11 +200,15 @@ onMounted(async () => {
   window.addEventListener('resize-needed', handleTrayResize)
   await syncTrayMenuState()
 
-  if (isWindows() && appWindow) {
-    appWindow.listen<boolean>('tray_state_sync', async (event) => {
+  if (appWindow) {
+    // 托盘窗口创建后常驻复用，登录/退出后必须由 Rust 在每次弹出前重新下发状态，
+    // 否则菜单会停留在旧状态；Windows 与 Linux 共用同一事件（C-09）。
+    trayStateUnlisten = await appWindow.listen<boolean>('tray_state_sync', async (event) => {
       await syncTrayMenuState(event.payload)
     })
+  }
 
+  if (isWindows() && appWindow) {
     homeFocusUnlisten = await appWindow.listen('home_focus', async () => {
       isFocused.value = true
       await stopBlinkTask()
@@ -214,6 +222,10 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize-needed', handleTrayResize)
+  if (trayStateUnlisten) {
+    trayStateUnlisten()
+    trayStateUnlisten = null
+  }
   if (homeFocusUnlisten) {
     homeFocusUnlisten()
     homeFocusUnlisten = null
@@ -229,5 +241,12 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .tray {
   @apply bg-[--tjg-surface-panel] size-full p-8px box-border select-none text-[--tjg-text-primary] text-12px;
+}
+
+/* 透明托盘窗口：自绘圆角与描边，避免 Windows 上出现直角 */
+.tray--rounded {
+  border-radius: var(--tjg-radius-lg);
+  border: 1px solid var(--tjg-border-default);
+  overflow: hidden;
 }
 </style>

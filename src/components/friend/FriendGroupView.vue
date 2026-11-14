@@ -11,7 +11,7 @@
           @click="showCreateDialog = true">
           <template #icon>
             <n-icon>
-              <svg><use href="#plus" /></svg>
+              <svg aria-hidden="true"><use href="#plus" /></svg>
             </n-icon>
           </template>
         </n-button>
@@ -55,7 +55,7 @@
             @contextmenu="handleContextMenu($event, group)">
             <n-flex align="center" :size="12">
               <div class="w-44px h-44px rounded-8px bg-[--tjg-surface-panel] flex items-center justify-center">
-                <svg class="size-24px text-[--tjg-text-primary]"><use href="#folder" /></svg>
+                <svg class="size-24px text-[--tjg-text-primary]" aria-hidden="true"><use href="#folder" /></svg>
               </div>
               <n-flex vertical :size="4" class="flex-1 truncate">
                 <span class="text-[length:var(--tjg-font-size-base)] truncate">{{ group.name }}</span>

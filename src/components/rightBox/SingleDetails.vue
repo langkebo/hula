@@ -6,7 +6,7 @@
         :size="148"
         class="single-details__avatar"
         :src="AvatarUtils.getAvatarUrl(singleAvatar)"
-        @dblclick="openImageViewer" />
+        @dblclick="openAvatarImage" />
       <h2 class="single-details__name">{{ singleName }}</h2>
       <p class="single-details__uid">{{ singleUid }}</p>
       <p class="single-details__signature">{{ singleSignature }}</p>
@@ -26,42 +26,12 @@
       </div>
     </div>
 
-    <div v-if="!isBotUser" class="single-details__actions">
-      <button class="single-details__action" type="button" @click="handleSendMessage">
-        <span class="single-details__action-icon">
-          <svg><use href="#message" /></svg>
-        </span>
-        <span class="single-details__action-label">{{ t('home.chat_details.actions.message') }}</span>
-      </button>
-
-      <button class="single-details__action" type="button" @click="handleEncryptedChat">
-        <span class="single-details__action-icon single-details__action-icon--encrypted">
-          <svg><use href="#lock" /></svg>
-        </span>
-        <span class="single-details__action-label">{{ t('friend.detail.encrypted_chat') }}</span>
-      </button>
-
-      <button class="single-details__action" type="button" @click="handleVoiceCall">
-        <span class="single-details__action-icon">
-          <svg><use href="#phone" /></svg>
-        </span>
-        <span class="single-details__action-label">{{ t('home.chat_details.single.footer.audio_call') }}</span>
-      </button>
-
-      <button class="single-details__action" type="button" @click="handleVideoCall">
-        <span class="single-details__action-icon">
-          <svg><use href="#video" /></svg>
-        </span>
-        <span class="single-details__action-label">{{ t('home.chat_details.single.footer.video_call') }}</span>
-      </button>
-
-      <button v-if="!isMobile" class="single-details__action" type="button" @click="handleOpenInNewWindow">
-        <span class="single-details__action-icon">
-          <svg><use href="#expand" /></svg>
-        </span>
-        <span class="single-details__action-label">{{ t('chat.header.open_in_new_window') }}</span>
-      </button>
-    </div>
+    <SingleDetailsActions
+      v-if="!isBotUser"
+      @send-message="handleSendMessage"
+      @encrypted-chat="handleEncryptedChat"
+      @voice-call="handleVoiceCall"
+      @video-call="handleVideoCall" />
 
     <div v-if="!isBotUser" class="single-details__management">
       <ContactProfileEditors v-if="singleUid" :user-id="singleUid" :contact-info="contactInfo" />
@@ -107,18 +77,18 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import ContactProfileEditors from '@/components/friend/ContactProfileEditors.vue'
 import FriendDetailsSections from '@/components/rightBox/FriendDetailsSections.vue'
+import SingleDetailsActions from '@/components/rightBox/SingleDetailsActions.vue'
 import RoomBurnSettings from '@/components/room/RoomBurnSettings.vue'
 import { useDetailsActions } from '@/composables/chat/useDetailsActions'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { OnlineEnum, RoomTypeEnum, UserType } from '@/enums'
+import { useImageViewer } from '@/composables/common/useImageViewer'
+import { MsgEnum, OnlineEnum, RoomTypeEnum, UserType } from '@/enums'
 import { contactAliasVersion, hasContactAlias } from '@/services/matrix/aliases/contactAliasRegistry'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { getContactDisplayName } from '@/stores/domains/chat/contacts/contactDisplay'
 import { AvatarUtils } from '@/utils/AvatarUtils'
-import { createLogger } from '@/utils/Logger'
 
-const logger = createLogger('SingleDetails')
 const { t } = useI18n()
 const router = useRouter()
 const { showFeedback } = useActionFeedback()
@@ -132,9 +102,7 @@ const props = defineProps({
   }
 })
 
-const { isMobile, handleSendMessage, handleVoiceCall, handleVideoCall, handleOpenInNewWindow } = useDetailsActions(
-  props.content
-)
+const { handleSendMessage, handleVoiceCall, handleVideoCall } = useDetailsActions(props.content)
 
 const contactInfo = computed<Partial<MatrixContact>>(() => {
   if (props.content.type !== RoomTypeEnum.SINGLE || !props.content.uid) {
@@ -203,8 +171,13 @@ const lastSeenText = computed(() => {
   return ''
 })
 
-const openImageViewer = () => {
-  logger.debug('Open image viewer')
+const { openImageViewer } = useImageViewer()
+
+// E-02：双击头像查看大图此前只打日志（空实现），这里接到既有图片查看器
+const openAvatarImage = () => {
+  const url = AvatarUtils.getAvatarUrl(singleAvatar.value)
+  if (!url) return
+  void openImageViewer(url, [MsgEnum.IMAGE], [url])
 }
 
 const handleEncryptedChat = async () => {
@@ -342,59 +315,6 @@ const handleRemoveFriend = async () => {
 
 .single-details__last-seen-value {
   color: var(--tjg-text-secondary);
-}
-
-.single-details__actions {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 34px;
-}
-
-.single-details__action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--tjg-text-secondary);
-}
-
-.single-details__action:hover .single-details__action-icon {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--tjg-color-primary-500) 22%, transparent);
-}
-
-.single-details__action-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--tjg-color-primary-500);
-  color: var(--tjg-text-inverse);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-.single-details__action-label {
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--tjg-text-secondary);
-}
-
-.single-details__action-icon--encrypted {
-  background: var(--tjg-color-success-500);
 }
 
 .single-details__alias-hint {

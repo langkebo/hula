@@ -71,7 +71,12 @@ export type Messages = {
   "common": {
     "unknownUser": "未知用户",
     "unknown": "未知",
-    "loading": "加载中"
+    "loading": "加载中",
+    "loadFailed": "文件列表加载失败",
+    "retry": "重试"
+  },
+  "storage": {
+    "label": "媒体存储"
   },
   "userList": {
     "searchPlaceholder": {
@@ -153,6 +158,9 @@ export type KeyPaths =
   | "fileManager.common.unknownUser"
   | "fileManager.common.unknown"
   | "fileManager.common.loading"
+  | "fileManager.common.loadFailed"
+  | "fileManager.common.retry"
+  | "fileManager.storage.label"
   | "fileManager.userList.searchPlaceholder.default"
   | "fileManager.userList.searchPlaceholder.senders"
   | "fileManager.userList.searchPlaceholder.sessions"

@@ -24,7 +24,8 @@
                 class="w-30px h-24px flex-center hover-box">
                 <svg
                   :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
-                  class="size-16px cursor-pointer">
+                  class="size-16px cursor-pointer"
+                  aria-hidden="true">
                   <use href="#settings"></use>
                 </svg>
               </div>
@@ -47,13 +48,15 @@
                 <svg
                   v-if="alwaysOnTopStatus"
                   :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
-                  class="size-14px outline-none cursor-pointer">
+                  class="size-14px outline-none cursor-pointer"
+                  aria-hidden="true">
                   <use href="#onTop"></use>
                 </svg>
                 <svg
                   v-else
                   :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
-                  class="size-16px outline-none cursor-pointer">
+                  class="size-16px outline-none cursor-pointer"
+                  aria-hidden="true">
                   <use href="#notOnTop"></use>
                 </svg>
               </template>
@@ -72,7 +75,8 @@
                 :aria-label="t('components.actionBar.shrink')">
                 <svg
                   :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
-                  class="size-16px cursor-pointer">
+                  class="size-16px cursor-pointer"
+                  aria-hidden="true">
                   <use href="#left-bar"></use>
                 </svg>
               </div>
@@ -90,7 +94,8 @@
                 :aria-label="t('components.actionBar.minimize')">
                 <svg
                   :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
-                  class="size-24px opacity-66 cursor-pointer">
+                  class="size-24px opacity-66 cursor-pointer"
+                  aria-hidden="true">
                   <use href="#maximize"></use>
                 </svg>
               </div>
@@ -109,13 +114,15 @@
                 <svg
                   v-show="!windowMaximized"
                   :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
-                  class="size-18px cursor-pointer">
+                  class="size-18px cursor-pointer"
+                  aria-hidden="true">
                   <use href="#rectangle-small"></use>
                 </svg>
                 <svg
                   v-show="windowMaximized"
                   :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
-                  class="size-16px cursor-pointer">
+                  class="size-16px cursor-pointer"
+                  aria-hidden="true">
                   <use href="#internal-reduction"></use>
                 </svg>
               </div>
@@ -134,7 +141,8 @@
                 class="action-close">
                 <svg
                   :class="[iconColor !== '' ? `color-${iconColor}` : 'color-[--tjg-text-secondary]']"
-                  class="size-14px cursor-pointer">
+                  class="size-14px cursor-pointer"
+                  aria-hidden="true">
                   <use href="#close"></use>
                 </svg>
               </div>

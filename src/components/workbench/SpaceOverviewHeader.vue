@@ -42,11 +42,11 @@
 
     <div class="space-details-pane__stats">
       <span class="space-details-pane__stat">
-        <svg class="size-14px"><use href="#user" /></svg>
+        <svg class="size-14px" aria-hidden="true"><use href="#user" /></svg>
         <span>{{ t('space.member_count_value', { count: space.memberCount ?? 0 }) }}</span>
       </span>
       <span class="space-details-pane__stat">
-        <svg class="size-14px"><use href="#grid" /></svg>
+        <svg class="size-14px" aria-hidden="true"><use href="#grid" /></svg>
         <span>{{ t('space.room_count_value', { count: space.childCount ?? 0 }) }}</span>
       </span>
     </div>

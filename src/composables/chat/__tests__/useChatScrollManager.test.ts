@@ -38,7 +38,10 @@ function createContainer({ scrollHeight = 1000, clientHeight = 400 }: ContainerM
   return element
 }
 
-function setupManager(metrics: ContainerMetrics = {}) {
+function setupManager(
+  metrics: ContainerMetrics = {},
+  onLoadMore: () => Promise<void> = vi.fn().mockResolvedValue(undefined)
+) {
   const container = createContainer(metrics)
   const onScrollToBottom = vi.fn()
   const clearNewMsgCount = vi.fn()
@@ -49,7 +52,7 @@ function setupManager(metrics: ContainerMetrics = {}) {
       setup() {
         manager = useChatScrollManager({
           scrollContainer: ref<HTMLElement | null>(container),
-          onLoadMore: vi.fn().mockResolvedValue(undefined),
+          onLoadMore,
           isLastPage: computed(() => false),
           isLoading: computed(() => false),
           currentRoomId: computed(() => '!room:example.org'),
@@ -148,5 +151,71 @@ describe('useChatScrollManager 帧合并与节流', () => {
     flushRaf()
 
     expect(container.scrollTop).toBe(0)
+  })
+})
+
+describe('useChatScrollManager 加载更多失败与消息定位', () => {
+  beforeEach(() => {
+    rafQueue = []
+    rafSequence = 0
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      rafSequence += 1
+      rafQueue.push({ id: rafSequence, callback })
+      return rafSequence
+    })
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+      rafQueue = rafQueue.filter((item) => item.id !== id)
+    })
+  })
+
+  afterEach(() => {
+    activeWrapper?.unmount()
+    activeWrapper = null
+    vi.unstubAllGlobals()
+  })
+
+  it('加载更多失败时置 loadMoreError，重试成功后清除', async () => {
+    const onLoadMore = vi.fn().mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined)
+    const { manager } = setupManager({ scrollHeight: 1000, clientHeight: 400 }, onLoadMore)
+
+    await manager.loadMore()
+    expect(manager.loadMoreError.value).toBe(true)
+    expect(manager.isLoadingMore.value).toBe(false)
+
+    await manager.retryLoadMore()
+    expect(manager.loadMoreError.value).toBe(false)
+    expect(onLoadMore).toHaveBeenCalledTimes(2)
+  })
+
+  it('失败后滚动到顶部不会再次自动触发加载', async () => {
+    const onLoadMore = vi.fn().mockRejectedValue(new Error('boom'))
+    const { container, manager } = setupManager({ scrollHeight: 1000, clientHeight: 400 }, onLoadMore)
+
+    await manager.loadMore()
+    expect(onLoadMore).toHaveBeenCalledTimes(1)
+
+    container.scrollTop = 10
+    manager.handleScroll(scrollEvent(container))
+    await new Promise((resolve) => setTimeout(resolve, 40))
+
+    expect(onLoadMore).toHaveBeenCalledTimes(1)
+  })
+
+  it('scrollToMessage 在 DOM 未挂载时按索引兜底并返回 true', () => {
+    const { container, manager } = setupManager({ scrollHeight: 1000, clientHeight: 400 })
+    const target = document.createElement('div')
+    target.setAttribute('data-message-index', '3')
+    const scrollIntoView = vi.fn()
+    target.scrollIntoView = scrollIntoView
+    container.appendChild(target)
+
+    expect(manager.scrollToMessage('$missing', { index: 3, behavior: 'instant' })).toBe(true)
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'instant', block: 'center', inline: 'nearest' })
+  })
+
+  it('scrollToMessage 既无 DOM 也无索引时返回 false', () => {
+    const { manager } = setupManager({ scrollHeight: 1000, clientHeight: 400 })
+
+    expect(manager.scrollToMessage('$missing')).toBe(false)
   })
 })

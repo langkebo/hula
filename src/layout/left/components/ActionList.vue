@@ -42,7 +42,7 @@
           </template>
           <n-flex align="center" justify="space-between">
             <p class="select-none">{{ item.tip }}</p>
-            <svg @click="handleTipShow(item)" class="size-12px cursor-pointer">
+            <svg @click="handleTipShow(item)" class="size-12px cursor-pointer" aria-hidden="true">
               <use href="#close"></use>
             </svg>
           </n-flex>
@@ -83,7 +83,7 @@
           <span class="workspace-entry__indicator" aria-hidden="true"></span>
           <span class="workspace-entry__surface">
             <n-badge class="workspace-entry__badge" :max="99" v-bind="badgeProps(item.badge, (item.badge ?? 0) > 0)">
-              <svg class="workspace-entry__icon">
+              <svg class="workspace-entry__icon" aria-hidden="true">
                 <use
                   :href="`#${activeUrl === item.url || openWindowsList.has(item.url) ? item.iconAction || item.icon : item.icon}`"></use>
               </svg>
@@ -135,7 +135,7 @@
           </template>
           <n-flex align="center" justify="space-between">
             <p class="select-none">{{ item.tip }}</p>
-            <svg @click="handleTipShow(item)" class="size-12px cursor-pointer">
+            <svg @click="handleTipShow(item)" class="size-12px cursor-pointer" aria-hidden="true">
               <use href="#close"></use>
             </svg>
           </n-flex>
@@ -166,7 +166,7 @@
           trigger="hover"
           placement="right">
           <template #trigger>
-            <svg class="size-22px">
+            <svg class="size-22px" aria-hidden="true">
               <use href="#menu"></use>
             </svg>
           </template>
@@ -177,7 +177,7 @@
               @click="pageJumps(item.url, item.title, item.size, item.window)"
               class="p-[6px_5px] rounded-4px cursor-pointer hover:bg-[--setting-item-line]"
               :size="5">
-              <svg class="size-16px" @click="tipShow = false">
+              <svg class="size-16px" @click="tipShow = false" aria-hidden="true">
                 <use :href="`#${item.icon}`"></use>
               </svg>
               {{ item.title }}
@@ -187,7 +187,7 @@
             @click="menuShow = true"
             class="p-[6px_5px] rounded-4px cursor-pointer hover:bg-[--setting-item-line]"
             :size="5">
-            <svg class="size-16px">
+            <svg class="size-16px" aria-hidden="true">
               <use href="#settings"></use>
             </svg>
             <!-- <span class="select-none">插件管理</span> -->
@@ -301,7 +301,8 @@
                 showMode === ShowModeEnum.ICON ? 'more p-[6px_8px]' : 'w-46px'
               ]"
               class="size-22px relative"
-              @click="settingShow = !settingShow">
+              @click="settingShow = !settingShow"
+              aria-hidden="true">
               <use :href="settingShow ? '#hamburger-button-action' : '#hamburger-button'"></use>
             </svg>
           </template>
@@ -309,7 +310,7 @@
             <div class="menu-list">
               <div v-for="item in moreList" :key="item.icon">
                 <div v-clickable class="menu-item" @click="() => item.click()">
-                  <svg>
+                  <svg aria-hidden="true">
                     <use :href="`#${item.icon}`"></use>
                   </svg>
                   {{ item.label }}
@@ -327,7 +328,7 @@
 
   <DefinePlugins v-model="menuShow" />
 
-  <HomeserverDialog v-model:show="showHomeserverDialog" @save="handleHomeserverSave" />
+  <HomeserverDialog v-model:show="showHomeserverDialog" />
 </template>
 <script setup lang="ts">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
@@ -367,7 +368,7 @@ const messageUnreadCount = computed(() => globalStore.messageUnreadCount)
 // const actionListRef = useTemplateRef('actionList')
 //const { } = toRefs(getCurrentInstance) // 所有菜单的外层div
 const menuShow = ref(false)
-const { moreList, showHomeserverDialog, handleHomeserverSave } = useMoreList()
+const { moreList, showHomeserverDialog } = useMoreList()
 const WORKBENCH_PLUGIN_URLS = new Set(['roomList', 'space'])
 // 显示在菜单的插件
 const activePlugins = computed(() => {

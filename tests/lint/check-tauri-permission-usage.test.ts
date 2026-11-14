@@ -112,7 +112,7 @@ describe('check-tauri-permission-usage: 真实仓库自洽', () => {
     const files = [
       'src/composables/common/useTauriListener.ts',
       'src/layout/left/hook.ts',
-      'src/composables/common/useGlobalShortcut.ts'
+      'src/composables/common/shortcutActions.ts'
     ]
     const found = files.filter((rel) => /\bonCloseRequested\s*\(/.test(readFileSync(join(projectRoot, rel), 'utf8')))
     expect(found.length).toBe(files.length)

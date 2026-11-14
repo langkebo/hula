@@ -25,7 +25,7 @@
       @pointerdown="startDrag"
       @keydown="handleResizeKeydown">
       <div class="drag-icon" :class="{ 'drag-icon--active': isDragging }">
-        <svg class="size-16px">
+        <svg class="size-16px" aria-hidden="true">
           <use href="#sliding"></use>
         </svg>
       </div>
@@ -52,7 +52,7 @@
               :aria-label="t('common.back')"
               :title="t('common.back')"
               @click="handleBack">
-              <svg class="size-16px"><use href="#left-bar"></use></svg>
+              <svg class="size-16px" aria-hidden="true"><use href="#left-bar"></use></svg>
             </button>
             <span class="text-[length:var(--tjg-font-size-base)] font-medium color-[--tjg-text-primary] truncate">
               {{ viewTitle }}
@@ -81,7 +81,7 @@
           class="flex-center size-full select-none flex-col gap-16px text-[var(--text-xs)] color-[--tjg-text-tertiary] bg-[--tjg-surface-panel]">
           <n-empty :description="t('home.chat_sidebar.empty.no_chat_selected')" size="huge">
             <template #icon>
-              <svg class="size-60px opacity-50 color-[--tjg-text-quaternary]">
+              <svg class="size-60px opacity-50 color-[--tjg-text-quaternary]" aria-hidden="true">
                 <use href="#chat"></use>
               </svg>
             </template>

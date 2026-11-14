@@ -3,7 +3,7 @@
     <!-- 位置图标和标题 -->
     <n-flex align="center" justify="space-between" class="pb-8px">
       <div class="flex-y-center gap-8px">
-        <svg class="size-14px color-[--tjg-color-warning-400]">
+        <svg class="size-14px color-[--tjg-color-warning-400]" aria-hidden="true">
           <use href="#local"></use>
         </svg>
         <p class="text-[length:var(--tjg-font-size-base)] font-medium color-[--tjg-text-primary]">
@@ -39,7 +39,7 @@
         </n-button>
       </template>
       <template v-else>
-        <svg class="size-24px color-[--tjg-text-quaternary]">
+        <svg class="size-24px color-[--tjg-text-quaternary]" aria-hidden="true">
           <use href="#time-out"></use>
         </svg>
         <span class="text-[length:var(--tjg-font-size-sm)] color-[--tjg-text-quaternary]">

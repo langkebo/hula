@@ -151,11 +151,14 @@ describe('mobile list avatars', () => {
 describe('chat main float button', () => {
   it('new-message float button is available on mobile and styled for it', () => {
     const source = read('src/components/rightBox/chatBox/ChatMain.vue')
-    const footer = source.match(/<footer[\s\S]*?>/)?.[0] ?? ''
-    expect(footer).toMatch(/\bshouldShowFloatButton\b/)
-    expect(footer).toMatch(/\bcurrentNewMsgCount\b/)
-    expect(footer).not.toContain('isMobileRef')
+    expect(source).toMatch(/\bshouldShowFloatButton\b/)
+    expect(source).toMatch(/\bcurrentNewMsgCount\b/)
     expect(source).toContain('floatButtonStyle')
+    // footer 已抽取到 ChatFloatButton，移动端可见性由 ChatMain 的 v-if 决定，footer 内不得再做平台判断
+    const child = read('src/components/rightBox/chatBox/ChatFloatButton.vue')
+    const footer = child.match(/<footer[\s\S]*?>/)?.[0] ?? ''
+    expect(footer).not.toBe('')
+    expect(footer).not.toContain('isMobileRef')
   })
 
   it('message row hover state is gated by hover capability', () => {

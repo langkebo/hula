@@ -424,6 +424,20 @@ describe('MatrixThreadService - REST API Methods', () => {
       expect(replies.map((event) => event.getId())).toEqual(['$r1', '$r2'])
     })
 
+    it('getThreadReplies prefers relations container over timeline (threadSupport on)', () => {
+      const containerReplies = [makeReply('$t2', 200), makeReply('$t1', 100)]
+      makeSdkRoom({
+        getChildEventsForEvent: vi.fn(() => ({ getRelations: () => containerReplies })),
+        getUnfilteredTimelineSet: vi.fn(() => ({
+          getLiveTimeline: () => ({ getEvents: () => [] })
+        }))
+      })
+
+      const replies = matrixThreadService.getThreadReplies('!room:example.com', '$root')
+
+      expect(replies.map((event) => event.getId())).toEqual(['$t1', '$t2'])
+    })
+
     it('getThreadReplies falls back to room timeline when Thread is absent', () => {
       const legacyReply = makeReply('$legacy', 50)
       makeSdkRoom({

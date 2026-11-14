@@ -13,6 +13,7 @@ import { getEditedContent, getReplyToEventId, getThreadRootId, isEdited } from '
 import { createRelationQueries } from './relationQueries'
 import type {
   AggregationsResponse,
+  MessageEdit,
   RelationContent,
   RelationsResponse,
   SendRelationResponse,
@@ -332,6 +333,16 @@ class MatrixMessageRelationService extends BaseMatrixService {
     options?: { from?: string; limit?: number; dir?: 'b' | 'f' }
   ): Promise<RelationsResponse | null> {
     return this.queries.fetchRelationsByType(roomId, eventId, 'm.replace', options)
+  }
+
+  /**
+   * 从服务端拉取某事件的编辑历史（`/relations/m.replace`）并映射为编辑记录。
+   *
+   * 为什么不只用本地查询：关系容器只覆盖 sync 窗口内收到的 `m.replace`，
+   * 更早的编辑不在容器里，也不一定还在 live timeline 里。
+   */
+  async refreshEditHistory(roomId: string, eventId: string, limit?: number): Promise<MessageEdit[]> {
+    return this.queries.refreshEditHistory(roomId, eventId, limit)
   }
 
   /**

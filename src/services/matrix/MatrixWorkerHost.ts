@@ -72,9 +72,15 @@ export class MatrixWorkerHost {
   private readyReject: ((err: Error) => void) | null = null
   /** ready 超时兜底定时器（H-13）：worker 加载卡死时避免 start() 永挂。 */
   private readyTimer: ReturnType<typeof setTimeout> | null = null
+  /**
+   * worker 是否已降级（启动失败、ready 超时或运行期崩溃）。
+   * 降级后调用方应回退主线程实现，状态横幅据此提示"搜索结果可能不完整"。
+   */
+  private degraded = false
   private readonly factory: WorkerFactory
   private readonly onWorkerError = (event: Event) => {
     const message = (event as ErrorEvent)?.message || 'worker error'
+    this.degraded = true
     this.disposeWorker(new Error(`[MatrixWorkerHost] worker failed: ${message}`))
   }
   private readonly onMessage = (event: MessageEvent<WorkerResponse>) => {
@@ -91,6 +97,14 @@ export class MatrixWorkerHost {
    */
   get isStarted(): boolean {
     return this.worker !== null
+  }
+
+  /**
+   * worker 是否处于降级状态。
+   * 启动失败、ready 超时或运行期崩溃后为 true，调用方应回退主线程实现。
+   */
+  get isDegraded(): boolean {
+    return this.degraded
   }
 
   /**
@@ -111,6 +125,7 @@ export class MatrixWorkerHost {
       this.readyReject = reject
     })
     this.readyTimer = createUnrefTimer(() => {
+      this.degraded = true
       this.disposeWorker(new Error(`[MatrixWorkerHost] worker ready timeout after ${DEFAULT_READY_TIMEOUT_MS}ms`))
     }, DEFAULT_READY_TIMEOUT_MS)
     return this.readyPromise
@@ -310,6 +325,8 @@ export class MatrixWorkerHost {
         clearTimeout(this.readyTimer)
         this.readyTimer = null
       }
+      // 重新启动成功后清除降级标记，横幅随之撤回。
+      this.degraded = false
       this.readyResolve?.()
       this.readyResolve = null
       this.readyReject = null

@@ -9,6 +9,7 @@ export type Messages = {
   "reconnecting_attempt": "正在重新连接 ({count}/{max})...",
   "syncing": "正在同步历史消息...",
   "failed": "连接失败，请重试",
+  "worker_degraded": "后台搜索索引已降级，搜索结果可能不完整",
   "retry": "重试",
   "diagnose": "运行自检",
   "diagnose_running": "正在自检...",
@@ -32,6 +33,7 @@ export type KeyPaths =
   | "connection.reconnecting_attempt"
   | "connection.syncing"
   | "connection.failed"
+  | "connection.worker_degraded"
   | "connection.retry"
   | "connection.diagnose"
   | "connection.diagnose_running"

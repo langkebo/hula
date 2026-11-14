@@ -30,13 +30,28 @@
         </NCarouselItem>
       </NCarousel>
 
-      <p class="cursor-default color-[--tjg-color-primary-500] text-center text-sm mt-4" data-tauri-drag-region>
+      <p
+        v-if="errorMessage"
+        class="cursor-default color-[--tjg-color-danger-500] text-center text-sm mt-4"
+        role="alert"
+        data-tauri-drag-region>
+        {{ errorMessage }}
+      </p>
+      <p v-else class="cursor-default color-[--tjg-color-primary-500] text-center text-sm mt-4" data-tauri-drag-region>
         {{ t('message.update_window.updating') }} {{ percentage }}%
       </p>
+
+      <n-flex v-if="errorMessage" justify="center" :size="12" class="mt-3">
+        <n-button size="small" type="primary" :loading="updating" @click="doUpdate">
+          {{ t('common.retry') }}
+        </n-button>
+        <n-button size="small" secondary @click="closeWindow">{{ t('common.close') }}</n-button>
+      </n-flex>
     </div>
   </n-flex>
 </template>
 <script setup lang="tsx">
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { check } from '@tauri-apps/plugin-updater'
 import { NCarousel, NCarouselItem } from 'naive-ui'
@@ -48,10 +63,18 @@ const logger = createLogger('Update')
 
 const list = ref<string[]>([])
 const updating = ref(false)
-const percentage = ref(0)
 const total = ref(0)
 const downloaded = ref(0)
+const errorMessage = ref('')
 const { t } = useI18n()
+
+/** total 为 0（服务端未返回 contentLength）或数值异常时兜底为 0，避免出现 NaN/Infinity */
+const percentage = computed(() => {
+  if (total.value <= 0) return 0
+  const value = (downloaded.value / total.value) * 100
+  if (!Number.isFinite(value)) return 0
+  return Math.min(100, Math.max(0, Math.round(value)))
+})
 
 // https://gitee.com/api/v5/repos/llangkebo/hula/releases/tags/v${newVersion.value}?access_token=${import.meta.env.VITE_GITEE_TOKEN}
 
@@ -96,40 +119,58 @@ const setupCommitList = async (version: string) => {
   }
 }
 
+const closeWindow = async () => {
+  try {
+    await WebviewWindow.getCurrent().close()
+  } catch (error) {
+    logger.error('Failed to close update window:', error)
+  }
+}
+
 const doUpdate = async () => {
-  await check()
-    .then(async (e) => {
-      if (!e?.available) {
-        return
-      }
+  if (updating.value) return
+  // 重试时重置进度，避免沿用上一次的下载量导致百分比跳跃
+  updating.value = true
+  errorMessage.value = ''
+  total.value = 0
+  downloaded.value = 0
+  try {
+    const update = await check()
+    if (!update?.available) {
+      logger.warn('No update available in update window')
+      errorMessage.value = t('message.update_window.no_update')
+      return
+    }
 
-      await setupCommitList(e.version)
+    await setupCommitList(update.version)
 
-      await e.downloadAndInstall((event) => {
-        switch (event.event) {
-          case 'Started':
-            total.value = event.data.contentLength ? event.data.contentLength : 0
-            break
-          case 'Progress':
-            downloaded.value += event.data.chunkLength
-            percentage.value = parseFloat(((downloaded.value / total.value) * 100 + '').substring(0, 4))
-            break
-          case 'Finished':
-            break
-        }
-      })
-      try {
-        await relaunch()
-      } catch (e) {
-        logger.error('relaunch failed:', e)
+    await update.downloadAndInstall((event) => {
+      switch (event.event) {
+        case 'Started':
+          total.value = event.data.contentLength ? event.data.contentLength : 0
+          break
+        case 'Progress':
+          downloaded.value += event.data.chunkLength
+          break
+        case 'Finished':
+          break
       }
     })
-    .catch((e) => {
-      logger.error('update failed:', e)
-    })
-    .finally(() => {
-      updating.value = false
-    })
+    try {
+      await relaunch()
+    } catch (error) {
+      logger.error('relaunch failed:', error)
+      errorMessage.value = t('message.update_window.relaunch_failed')
+    }
+  } catch (error) {
+    logger.error('update failed:', error)
+    errorMessage.value =
+      error instanceof Error
+        ? t('message.update_window.update_failed_with_reason', { reason: error.message })
+        : t('message.update_window.update_failed')
+  } finally {
+    updating.value = false
+  }
 }
 
 onMounted(async () => {
