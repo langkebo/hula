@@ -1148,11 +1148,13 @@ useGlassEffectStore().mode = 'off'
 | `VoiceRecorder` | **取消** | `src/components/rightBox/VoiceRecorder.vue` 已实现完整交互与权限分支 |
 | `UploadProgress` | **取消** | `FileUploadProgress` 已存在 |
 | `InlineFieldError` | **改为扩展现有组件** | 在 `Validation.vue` 增加 `tone: 'success' \| 'error'` 与可选 `id`（供 `aria-describedby`），不新建文件 |
-| `CapabilityBadge` / `ServiceCapabilityPanel` / `StickyEventsBanner` / `StickyEventsEditor` | **保留为真实缺口** | 全仓无同类实现，且第 12 章能力接线需要统一的「可用/不可用/降级」表达 |
+| `CapabilityBadge` / `ServiceCapabilityPanel` | **保留为真实缺口（已落地）** | 全仓无同类实现，且第 12 章能力接线需要统一的「可用/不可用/降级」表达 |
+| `StickyEventsBanner` | **取消** | 实测已存在 `src/components/rightBox/renderMessage/StickyEventBanner.vue`：最多 3 条、展开、查看、设置、取消、`role="status"` 均已实现，且被 `ChatBanners.vue` 使用；§16.3 原「全仓无同类实现」结论有误，按 R1 不重复造轮子 |
+| `StickyEventsEditor` | **取消** | 实测已存在 `src/components/room/settings-tabs/StickyTab.vue`：粘性事件列表、从最近消息添加、调用服务层写入均已实现；同样按 R1 取消 |
 
 ### 16.3 真实缺口组件契约
 
-四个组件的共同约束：只做展示与事件上抛，不直接调用 SDK；数据由服务层与 store 注入；颜色只用 `--tjg-*`；图标为 24×24 SVG、线宽 1.5px。
+两个新增组件的共同约束：只做展示与事件上抛，不直接调用 SDK；数据由服务层与 store 注入；颜色只用 `--tjg-*`；图标为内联 SVG，`viewBox="0 0 16 16"`、线宽 1.5px。
 
 **`CapabilityBadge`**（`src/components/common/CapabilityBadge.vue`）
 
@@ -1173,30 +1175,21 @@ useGlassEffectStore().mode = 'off'
 | emits | `retry(key: string)`、`openSettings(key: string)` |
 | 依赖 | 仅依赖 `CapabilityBadge`，不引入新依赖 |
 
-**`StickyEventsBanner`**（`src/components/room/StickyEventsBanner.vue`）
+**取消项与既有实现对照**
 
-| 项 | 契约 |
-| :--- | :--- |
-| props | `events: StickyEvent[]`、`dismissible?: boolean` |
-| 行为 | 最多展示 3 条，超出折叠计数；关闭仅隐藏会话内，不写持久化 |
-| emits | `dismiss(id: string)`、`open(id: string)` |
-| 复用 | 内部使用 `TjGlass` 作为容器，保证与第 0-11 章视觉一致 |
+| 原规划组件 | 既有实现 | 覆盖的行为 |
+| :--- | :--- | :--- |
+| `StickyEventsBanner` | `src/components/rightBox/renderMessage/StickyEventBanner.vue`（`ChatBanners.vue` 在用） | 最多 3 条、超出折叠、查看/设置/取消、`role="status"` |
+| `StickyEventsEditor` | `src/components/room/settings-tabs/StickyTab.vue` | 列表、从最近消息添加、经 `MatrixRoomService` 写入 |
 
-**`StickyEventsEditor`**（`src/components/room/StickyEventsEditor.vue`）
-
-| 项 | 契约 |
-| :--- | :--- |
-| props | `roomId: string`、`value: StickyEvent[]`、`readonly?: boolean` |
-| emits | `update:value`、`save`、`cancel` |
-| 边界 | 只做编辑态与校验，保存动作由 `MatrixRoomService` 的既有 state 写入方法承担，禁止在此组件内直接拼 Matrix 请求（R1 约束） |
-| i18n 前缀 | `room.sticky_events.*` |
+后续第 12 章接线直接消费上述两个既有组件；如确有形态差异，通过新增 props 扩展既有组件，禁止新建平行组件。
 
 ### 16.4 工具函数与 composable 缺口
 
 | 名称 | 位置 | 职责 | 复用判据 |
 | :--- | :--- | :--- | :--- |
-| `useCapabilityState` | `src/composables/common/useCapabilityState.ts` | 聚合同一 key 的多处能力探测结果，提供 `state / hint / refresh()`；内部走现有服务层，不新增 HTTP | 若与现有 store 已有能力字段重复，则删除本项，直接在 store 上派生 |
-| `useStickyEvents` | `src/composables/room/useStickyEvents.ts` | 订阅房间 sticky 事件、维护草稿与 dirty 状态 | 仅封装状态，不承载请求 |
+| `useCapabilityState` | 不新增 | — | `src/services/matrix/MatrixCapabilityService.ts` 已提供 `refreshCapabilities()` 与 `TjgCapability`，与新组合功能重复，按判据删除本项 |
+| `useStickyEvents` | 不新增 | — | `StickyTab.vue` 已承载粘性事件的状态与读取；不另建平行 composable |
 | `toViewportUnit` | 不新增 | `100vh` 改 `100dvh` 属 CSS 层修正 | 见 §17.4，用样式解决，不写运行时工具 |
 
 **禁止新增**：`formatBytes` / `formatSize` / `formatTime` 的平行实现（已有 `src/utils/Formatting.ts` 与各 composable 内的既有实现）；`useMediaQuery` 的平行实现（若需断点判断，先查 `src/utils/performanceTier.ts` 与既有 composable）。
@@ -1209,6 +1202,21 @@ useGlassEffectStore().mode = 'off'
 | 空态/错误态复用 | 32 个文件引用 EmptyState/ErrorState | 不新增手写空态 | `check:component-contracts` 扩展：新增 `empty-state` 字面量块即告警 |
 | 组件契约完整性 | 4 条失效白名单 | 0 条失效 | `pnpm check:component-contracts` |
 | 新增文件体量 | 红线 400 行 | 保持 | `pnpm check:file-size` |
+
+### 16.6 落地记录（2026-11-14）
+
+第 16 章实际交付收窄为 2 个新组件 + 1 处既有组件扩展，取消项均按 R1 复用既有实现。
+
+| 交付物 | 文件 | 说明 |
+| :--- | :--- | :--- |
+| 能力三态类型 | `src/types/capability.ts` | `CapabilityState` 与 `CapabilityItem`，与 `MatrixCapabilityService` 的 `TjgCapability` 对齐 |
+| 能力徽标 | `src/components/common/CapabilityBadge.vue` | 三态图标 + 文案；`unavailable` 提供可展开说明（`aria-expanded` / `aria-controls`），`compact` 用 clip 视觉隐藏文案但保留读屏 |
+| 能力面板 | `src/components/common/ServiceCapabilityPanel.vue` | 列表 + 超过 5 条折叠；空态走 `EmptyState`，错误态走 `ErrorState`；`retry(key)` / `openSettings(key)` 仅上抛事件 |
+| 行内错误态 | `src/components/common/Validation.vue` | 新增 `tone: 'success' \| 'error'`、`id`，错误态渲染 `role="alert"` 与 danger token 图形 |
+| 文案 | `locales/{zh-CN,en}/common.json` | 新增 `capability` 命名空间 13 个 key；同步 `src/typings/i18n/common.d.ts` |
+| 单测 | `src/components/common/__tests__/{CapabilityBadge,ServiceCapabilityPanel,Validation}.test.ts` | 15 个用例全部通过 |
+
+取消项：`StickyEventsBanner`、`StickyEventsEditor`、`useCapabilityState`、`useStickyEvents`（见 §16.2 / §16.3 / §16.4 的实测依据）。
 
 ---
 

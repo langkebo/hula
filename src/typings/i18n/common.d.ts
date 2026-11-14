@@ -111,6 +111,21 @@ export type Messages = {
     "settings": "设置"
   },
   "copy": "复制",
+  "capability": {
+    "ready": "可用",
+    "degraded": "降级可用",
+    "unavailable": "不可用",
+    "details": "详情",
+    "unavailable_hint": "当前环境不支持该能力，可能受服务端配置或设备限制",
+    "empty_title": "暂无可展示的能力信息",
+    "empty_description": "尚未获取到服务端能力，请稍后重试",
+    "error_title": "能力状态加载失败",
+    "expand": "展开全部（{count}）",
+    "collapse": "收起",
+    "retry_item": "重试 {name}",
+    "settings": "设置",
+    "settings_item": "打开 {name} 的设置"
+  },
   "load_more": "加载更多",
   "saving": "保存中…",
   "unknownUser": "未知用户",
@@ -243,6 +258,19 @@ export type KeyPaths =
   | "common.window_titles.about"
   | "common.window_titles.settings"
   | "common.copy"
+  | "common.capability.ready"
+  | "common.capability.degraded"
+  | "common.capability.unavailable"
+  | "common.capability.details"
+  | "common.capability.unavailable_hint"
+  | "common.capability.empty_title"
+  | "common.capability.empty_description"
+  | "common.capability.error_title"
+  | "common.capability.expand"
+  | "common.capability.collapse"
+  | "common.capability.retry_item"
+  | "common.capability.settings"
+  | "common.capability.settings_item"
   | "common.load_more"
   | "common.saving"
   | "common.unknownUser"

@@ -106,6 +106,21 @@
     "settings": "Settings"
   },
   "copy": "Copy",
+  "capability": {
+    "ready": "Available",
+    "degraded": "Limited",
+    "unavailable": "Unavailable",
+    "details": "Details",
+    "unavailable_hint": "This capability is not supported in the current environment. It may be restricted by the homeserver configuration or this device.",
+    "empty_title": "No capability information",
+    "empty_description": "Server capabilities have not been loaded yet. Try again later.",
+    "error_title": "Failed to load capability status",
+    "expand": "Show all ({count})",
+    "collapse": "Show less",
+    "retry_item": "Retry {name}",
+    "settings": "Settings",
+    "settings_item": "Open settings for {name}"
+  },
   "load_more": "Load More",
   "saving": "Saving…",
   "unknownUser": "Unknown User",
