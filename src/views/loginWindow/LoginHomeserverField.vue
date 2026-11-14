@@ -156,7 +156,8 @@ const handleBlur = () => {
   padding: 0 4px;
   font-size: 11px;
   line-height: 14px;
-  color: var(--tjg-text-tertiary);
+  /* 叠在登录页玻璃底上，tertiary 约 4.4:1，低于 AA 4.5:1；提升到 secondary */
+  color: var(--tjg-text-secondary);
   text-align: left;
 }
 

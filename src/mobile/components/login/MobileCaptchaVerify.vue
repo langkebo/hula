@@ -37,12 +37,12 @@
             height="36" />
           <div
             v-else-if="loading"
-            class="size-full flex items-center justify-center bg-[--tjg-overlay-mobile-sheet] text-12px color-[--tjg-text-tertiary]">
+            class="size-full flex items-center justify-center bg-[--tjg-overlay-mobile-sheet] text-12px color-[--tjg-text-secondary]">
             ...
           </div>
           <div
             v-else
-            class="size-full flex items-center justify-center bg-[--tjg-overlay-mobile-sheet] text-12px color-[--tjg-text-tertiary]">
+            class="size-full flex items-center justify-center bg-[--tjg-overlay-mobile-sheet] text-12px color-[--tjg-text-secondary]">
             {{ t('captcha.not_verified') }}
           </div>
         </div>

@@ -15,7 +15,7 @@
               <use href="#lock"></use>
             </svg>
             <span class="text-(14px [--tjg-text-primary]) font-bold">{{ t('login.secret_chat.title') }}</span>
-            <div class="text-(13px [--tjg-text-tertiary]) text-center px-8px leading-relaxed">
+            <div class="text-(13px [--tjg-text-secondary]) text-center px-8px leading-relaxed">
               {{ t('login.secret_chat.description') }}
             </div>
           </n-flex>

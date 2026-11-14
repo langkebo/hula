@@ -101,7 +101,7 @@
         <p @click="handleSave" class="text-(14px var(--tjg-color-primary-500)) cursor-pointer">
           {{ t('login.network.actions.save') }}
         </p>
-        <p @click="router.push('/login')" class="text-(14px [--tjg-text-tertiary]) cursor-pointer">
+        <p @click="router.push('/login')" class="text-(14px [--tjg-text-secondary]) cursor-pointer">
           {{ t('login.network.actions.back') }}
         </p>
       </n-flex>

@@ -135,7 +135,7 @@
         shape="square"
         icon-size="16px"
         :aria-label="t('login.term.checkout.agree_label')" />
-      <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px">
+      <div class="text-12px color-[--tjg-text-secondary] cursor-default lh-14px">
         <span>{{ t('login.term.checkout.text1') }}</span>
         <span
           v-clickable

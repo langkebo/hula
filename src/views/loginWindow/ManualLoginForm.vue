@@ -101,7 +101,7 @@
 
       <div class="protocol-row">
         <n-checkbox v-model:checked="protocol" :aria-label="t('login.term.checkout.text1')" />
-        <div class="text-12px color-[--tjg-text-tertiary] cursor-default lh-14px agreement">
+        <div class="text-12px color-[--tjg-text-secondary] cursor-default lh-14px agreement">
           <span>{{ t('login.term.checkout.text1') }}</span>
           <span
             v-clickable

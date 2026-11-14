@@ -1505,6 +1505,34 @@ useGlassEffectStore().mode = 'off'
 
 验证：`npx vitest run src/mobile/__tests__/login.test.ts src/mobile/__tests__/loginLayout.test.ts src/shared/composables/__tests__/useLoginFlow.test.ts src/views/loginWindow/__tests__/LoginHomeserverField.test.ts` → 4 files / 18 tests passed；`npx biome check`（3 个改动文件）无修复项；`pnpm check:ratchet` 全项与基线一致（`hardcoded_color: 0`）；`pnpm check:mobile-css` → `OK — 165 个文件`；`pnpm vue-tsc --noEmit` exit 0。
 
+### 20.6 第 7 章与附录 A/B 收口 + 登录页玻璃底文字对比度补完
+
+| 章节 | 审计结论 | 处置 |
+| :--- | :--- | :--- |
+| 7.1 组件实现 | Homeserver 输入（折叠 + 校验 + 失焦回填）、渐变主按钮、中英双语文案均已落地 | 无需改动；文档中的 `HomeserverInput` 即实现里的 `LoginHomeserverField` |
+| 7.2 联调与测试 | 表单原生化、`aria-busy`/`aria-invalid`/`aria-describedby`/`role="alert"`、明暗双主题覆盖均已具备；仓库已有 `@axe-core/playwright` 与 `pnpm check:a11y`，但该门禁只扫描 Storybook story，登录组件无 story，故不在其覆盖范围 | 无需改动；本轮以源码 ARIA 断言与单测取证，不为本页面新增 story（避免扩大范围与构建成本） |
+| 7.3 移动端与响应式 | Vant 表单、Homeserver 提示、375px 宽度上限已在 2.1/2.3 落地 | 无需改动 |
+| 附录 A 参数映射 | 文档色值为原型命名（`--color-primary` 等），实现以 `--tjg-*` 为准 | 无需改动 |
+| 附录 A i18n | `login.input.homeserver.*`、`login.mobile.tabs.*`、`login.sso_login_failed` 中英双侧均存在且被引用 | 无需改动 |
+| 附录 B/C 参考与禁用写法 | 均为参考链接与约束条款，不产生代码 | 无需改动 |
+
+同时补完 20.5 未覆盖的登录页玻璃底文字：tertiary/quaternary 在**登录页半透明底**（浅色 `rgba(255,255,255,0.85)` 叠品牌渐变、暗色 `rgba(33,33,33,0.95)`）上实测约 4.4:1，略低于 AA 4.5:1；token 本身在 `--tjg-surface-app`/`--tjg-surface-panel` 上仍满足 4.54:1（`design-tokens.test.ts` 已锁定），因此只调登录页取色，不动全局 token。
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/views/loginWindow/LoginHomeserverField.vue` | `.homeserver-hint` 由 tertiary 提升到 secondary |
+| `src/views/loginWindow/ManualLoginForm.vue` | 协议勾选说明文案由 tertiary 提升到 secondary |
+| `src/views/loginWindow/QRCode.vue` | 扫码状态、刷新覆盖层、加载提示、Rendezvous 提示由 tertiary/quaternary 提升到 secondary |
+| `src/views/loginWindow/Network.vue` | 「返回」入口由 tertiary 提升到 secondary |
+| `src/views/loginWindow/SecretChatModal.vue` | 说明文案由 tertiary 提升到 secondary |
+| `src/mobile/components/login/MobileLoginForm.vue` | 协议勾选说明文案由 tertiary 提升到 secondary |
+| `src/mobile/components/login/MobileRegisterForm.vue` | 协议勾选说明文案由 tertiary 提升到 secondary |
+| `src/mobile/components/login/MobileCaptchaVerify.vue` | 验证码加载/未验证占位文字由 tertiary 提升到 secondary |
+
+未改动：`LoginBottomBar.vue` 的 `hover:bg-[--tjg-text-tertiary]30`（悬停底色）、`ManualLoginForm.vue` 的 `color-mix(... tertiary 20%)`（分隔线）、`AutoLoginForm.vue` / `ManualLoginForm.vue` 的 `tertiary` 按钮属性 —— 均非文本取色。
+
+验证：`npx vitest run`（10 files / 38 tests passed，含 `loginLayout`、`QRCode`、`ThirdPartyLogin`、`LoginHomeserverField`、`OidcCallback`、`useLoginFlow`）；`npx biome check`（8 个改动文件）无修复项；`pnpm check:ratchet` 全项与基线一致；`pnpm check:mobile-css` → `OK — 165 个文件`；`pnpm vue-tsc --noEmit --incremental` exit 0。
+
 ---
 
 ## 附录 A｜参数映射表

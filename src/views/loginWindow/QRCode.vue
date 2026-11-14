@@ -54,7 +54,7 @@
               aria-hidden="true">
               <use :href="`#${scanStatus.icon}`"></use>
             </svg>
-            <span class="text-(14px [--tjg-text-quaternary])">{{ scanStatusText }}</span>
+            <span class="text-(14px [--tjg-text-secondary])">{{ scanStatusText }}</span>
           </n-flex>
 
           <n-flex
@@ -64,12 +64,12 @@
             align="center"
             class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
             <n-spin size="small" />
-            <span class="text-(16px [--tjg-text-quaternary])">{{ t('login.qr.overlay.refreshing') }}</span>
+            <span class="text-(16px [--tjg-text-secondary])">{{ t('login.qr.overlay.refreshing') }}</span>
           </n-flex>
         </div>
       </n-flex>
 
-      <n-flex justify="center" class="mt-15px text-(14px [--tjg-text-tertiary])">
+      <n-flex justify="center" class="mt-15px text-(14px [--tjg-text-secondary])">
         {{ loadText }}
       </n-flex>
     </template>
@@ -82,7 +82,7 @@
             class="mb-12px text-[var(--tjg-color-primary-500)] bg-[var(--tjg-surface-search)] p-16px rounded-full inline-flex">
             <Icon icon="mdi:qrcode-plus" :width="48" />
           </div>
-          <p class="text-(14px [--tjg-text-tertiary])">{{ t('login.qr.rendezvous_hint') }}</p>
+          <p class="text-(14px [--tjg-text-secondary])">{{ t('login.qr.rendezvous_hint') }}</p>
           <n-button type="primary" class="mt-12px" @click="showRendezvousManager = true">
             {{ t('login.qr.open_rendezvous') }}
           </n-button>
