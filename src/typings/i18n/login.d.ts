@@ -249,6 +249,7 @@ export type Messages = {
     "cancel": "取消",
     "save": "保存",
     "homeserver_invalid": "Homeserver 地址格式无效",
+    "homeserver_empty": "请输入 Homeserver 地址",
     "identity_invalid": "Identity Server 地址格式无效",
     "save_success": "服务器配置已保存，重新登录后生效",
     "save_failed": "服务器配置保存失败",
@@ -440,6 +441,7 @@ export type KeyPaths =
   | "login.server_config.cancel"
   | "login.server_config.save"
   | "login.server_config.homeserver_invalid"
+  | "login.server_config.homeserver_empty"
   | "login.server_config.identity_invalid"
   | "login.server_config.save_success"
   | "login.server_config.save_failed"

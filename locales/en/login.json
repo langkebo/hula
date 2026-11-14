@@ -244,6 +244,7 @@
     "cancel": "Cancel",
     "save": "Save",
     "homeserver_invalid": "Invalid Homeserver URL format",
+    "homeserver_empty": "Please enter your Homeserver URL",
     "identity_invalid": "Invalid Identity Server URL format",
     "save_success": "Server configuration saved. Please log in again.",
     "save_failed": "Failed to save server configuration",

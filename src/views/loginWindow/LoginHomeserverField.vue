@@ -7,14 +7,18 @@
       type="text"
       :placeholder="t('login.input.homeserver.placeholder')"
       :title="t('login.input.homeserver.toggle_title')"
+      v-bind="statusBind"
       :input-props="{
         id: 'login-homeserver',
         name: 'homeserver',
         autocomplete: 'url',
         spellcheck: 'false',
         autocorrect: 'off',
-        autocapitalize: 'off'
+        autocapitalize: 'off',
+        'aria-invalid': showError ? 'true' : 'false',
+        'aria-describedby': describedBy
       }"
+      @blur="handleBlur"
       clearable>
       <template #prefix>
         <svg
@@ -56,7 +60,7 @@
       </template>
     </n-input>
     <transition name="server-advanced">
-      <div v-if="showServerAdvanced" class="homeserver-hint">
+      <div v-if="showServerAdvanced" id="login-homeserver-hint" class="homeserver-hint">
         <svg
           class="size-11px flex-shrink-0"
           viewBox="0 0 24 24"
@@ -73,15 +77,46 @@
         <span>{{ t('login.input.homeserver.advanced_hint') }}</span>
       </div>
     </transition>
+    <p v-if="showError" id="login-homeserver-error" class="homeserver-error" role="alert">
+      {{ errorMessage }}
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { isPotentialHomeserverInput, normalizeHttpUrl } from '@/services/backend'
 
 const { t } = useI18n()
 const homeserverUrl = defineModel<string>('homeserverUrl', { required: true })
 const showServerAdvanced = ref(false)
+const touched = ref(false)
+
+const errorMessage = computed(() => {
+  const value = homeserverUrl.value.trim()
+  if (!value) {
+    return t('login.server_config.homeserver_empty')
+  }
+  return isPotentialHomeserverInput(value) ? '' : t('login.server_config.homeserver_invalid')
+})
+
+const showError = computed(() => touched.value && !!errorMessage.value)
+
+const statusBind = computed(() => (showError.value ? { status: 'error' as const } : {}))
+
+const describedBy = computed(() => {
+  const ids = [showServerAdvanced.value ? 'login-homeserver-hint' : '', showError.value ? 'login-homeserver-error' : '']
+  return ids.filter(Boolean).join(' ') || undefined
+})
+
+/** 失焦时校验：非法地址只提示不改写，合法地址补齐协议后写回 */
+const handleBlur = () => {
+  touched.value = true
+  if (errorMessage.value) {
+    return
+  }
+  homeserverUrl.value = normalizeHttpUrl(homeserverUrl.value)
+}
 </script>
 
 <style scoped>
@@ -122,6 +157,15 @@ const showServerAdvanced = ref(false)
   font-size: 11px;
   line-height: 14px;
   color: var(--tjg-text-tertiary);
+  text-align: left;
+}
+
+.homeserver-error {
+  padding: 0 4px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--tjg-color-danger-600);
   text-align: left;
 }
 

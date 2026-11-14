@@ -3,9 +3,14 @@
     <!-- Homeserver 地址输入框 -->
     <div class="homeserver-wrap">
       <van-field
+        id="mobile-login-homeserver"
         v-model="homeserverUrl"
+        name="homeserver"
         :placeholder="t('login.input.homeserver.placeholder')"
         :title="t('login.input.homeserver.toggle_title')"
+        :error-message="showHomeserverError ? homeserverError : ''"
+        :aria-invalid="showHomeserverError ? 'true' : 'false'"
+        :aria-describedby="homeserverDescribedBy"
         clearable
         autocomplete="off"
         :spellcheck="false"
@@ -13,10 +18,11 @@
         autocapitalize="off"
         :right-icon="showHomeserverAdvanced ? 'arrow-up' : 'arrow-down'"
         @click-right-icon="showHomeserverAdvanced = !showHomeserverAdvanced"
+        @blur="handleHomeserverBlur"
         class="homeserver-field" />
       <!-- 高级服务器提示折叠区域 -->
       <transition name="homeserver-advanced">
-        <div v-if="showHomeserverAdvanced" class="homeserver-hint show">
+        <div v-if="showHomeserverAdvanced" id="mobile-login-homeserver-hint" class="homeserver-hint show">
           <svg
             class="size-11px flex-shrink-0"
             viewBox="0 0 24 24"
@@ -146,6 +152,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { isPotentialHomeserverInput, normalizeHttpUrl } from '@/services/backend'
 import type { UserInfoType } from '@/services/types'
 import { useLoginHistoriesStore } from '@/stores/domains/user/loginHistory'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -190,6 +197,28 @@ const passwordPH = ref(t('login.mobile.input.code_placeholder'))
 const arrowStatus = ref(false)
 const showLoginPassword = ref(false)
 const showHomeserverAdvanced = ref(false)
+const homeserverTouched = ref(false)
+
+const homeserverError = computed(() => {
+  const value = homeserverUrl.value.trim()
+  if (!value) {
+    return t('login.server_config.homeserver_empty')
+  }
+  return isPotentialHomeserverInput(value) ? '' : t('login.server_config.homeserver_invalid')
+})
+const showHomeserverError = computed(() => homeserverTouched.value && !!homeserverError.value)
+const homeserverDescribedBy = computed(() =>
+  showHomeserverAdvanced.value ? 'mobile-login-homeserver-hint' : undefined
+)
+
+/** 失焦时校验：非法地址只提示不改写，合法地址补齐协议后写回 */
+const handleHomeserverBlur = () => {
+  homeserverTouched.value = true
+  if (homeserverError.value) {
+    return
+  }
+  homeserverUrl.value = normalizeHttpUrl(homeserverUrl.value)
+}
 
 const handleSubmit = () => {
   if (props.loading || props.loginDisabled) return
