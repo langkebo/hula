@@ -12,6 +12,15 @@
   line-height: 22px;
 }
 
+/*
+ * 占位文字对比度：--tjg-text-tertiary 叠在移动端输入框底色上
+ * （浅色 rgba(255,255,255,0.85) 约 3.6:1 / 暗色 rgba(33,33,33,0.95) 约 4.4:1），
+ * 低于 WCAG 2.1 AA 的 4.5:1；登录/注册页统一提升到 --tjg-text-secondary（约 7.6:1 / 5.0:1）
+ */
+:deep(.van-field .van-field__control::placeholder) {
+  color: var(--tjg-text-secondary);
+}
+
 :deep(.van-cell.van-field) {
   padding: 10px 16px;
   background: var(--tjg-overlay-mobile-sheet);
@@ -56,8 +65,8 @@
     opacity 0.2s ease;
 
   &:hover:not(:disabled) {
-    /* 悬停：提亮一档并上浮 */
-    background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-600));
+    /* 悬停：改用深色端主导的渐变方向（白字对比度 ≥5.3:1），上浮与辉光提供反馈 */
+    background: linear-gradient(135deg, var(--tjg-color-primary-700), var(--tjg-color-primary-600));
     box-shadow:
       0 8px 24px color-mix(in srgb, var(--tjg-brand) 50%, transparent),
       inset 0px 1px 0px color-mix(in srgb, white 30%, transparent);
@@ -89,7 +98,7 @@
   &.n-button--loading,
   &.van-button--loading {
     /* 加载中状态：脉冲动画（兼容 Naive UI n-button 和 Vant van-button） */
-    background: linear-gradient(135deg, var(--tjg-color-primary-500), var(--tjg-color-primary-400));
+    background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-700));
     box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha);
     animation: gradient-button-pulse 1.4s ease-in-out infinite;
   }
@@ -121,7 +130,7 @@
 [data-theme='dark'] {
   .gradient-button.n-button,
   .gradient-button.van-button {
-    background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-brand));
+    background: linear-gradient(135deg, var(--tjg-color-primary-600), var(--tjg-color-primary-700));
     box-shadow: 0 4px 14px var(--tjg-color-primary-300-alpha);
 
     &:hover:not(:disabled) {

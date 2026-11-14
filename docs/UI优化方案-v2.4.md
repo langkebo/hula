@@ -1484,6 +1484,27 @@ useGlassEffectStore().mode = 'off'
 
 验证：`npx vitest run src/mobile/__tests__/loginLayout.test.ts src/mobile/__tests__/login.test.ts src/views/loginWindow/__tests__` → 9 files / 34 tests passed；`pnpm vue-tsc --noEmit` exit 0；`npx biome check` 4 files 无修复项；`pnpm check:mobile-css` → `OK — 165 个文件`。
 
+### 20.5 剩余章节收口（2.1 / 2.2 / 4.1-4.3 / 5.1 / 6.1）
+
+逐条对照 `docs/UI-优化方案-v2.md` 与实现，只处置真实缺口：
+
+| 章节 | 审计结论 | 处置 |
+| :--- | :--- | :--- |
+| 2.1 移动页面结构 | 375px 上限、原生 `<form>` 提交、头像与协议区、Homeserver 字段均已具备；唯一实质缺口是登录/注册选项卡为 `<div @click>`，键盘与读屏用户不可达 | `src/mobile/login.vue` 改为原生 `<button type="button">`，补 `aria-pressed` 表达选中态，装饰指示条 `aria-hidden="true"`，`.login-tab:focus-visible` 提供 2px 焦点环 |
+| 2.2 桌面页面结构 | 固定 420×580 Tauri 窗口内居中 `login-box`，结构已符合 | 无需改动；文档 5.3 的 `min-width: 1024px` 媒体查询面向浏览器全屏，固定窗口不适用 |
+| 4.1 / 4.2 色彩 token | 文档表格为原型色值，实现权威是 `--tjg-surface-app` / `--tjg-surface-panel` / `--tjg-surface-raised`，语义与明暗双份完整 | 无需改动；不引入文档中的字面色值（违反 token 单源） |
+| 4.3 对比度实测 | 白字/#0f7a66 = 5.3:1、白字/#13987f = 3.6:1、白字/#1ab292 = 2.7:1；占位 #858585 叠 `rgba(33,33,33,0.95)` ≈ 4.4:1，浅色 tertiary #737373 叠 `rgba(255,255,255,0.85)` ≈ 3.6:1 | 真实不达标项：主按钮亮端渐变、加载态、占位与提示文字。按下方文件表修正 |
+| 5.1 状态管理 | 登录态由 `src/shared/composables/useLoginFlow.ts` 跨端统一承载，Homeserver 校验已在 3.1 落地 | 无需改动；新增 Pinia store 会与既有单一数据源（ADR-003）形成双源 |
+| 6.1 无障碍 | 30s 登录超时保护已在 `useLoginFlow` 实现；按钮与输入 ARIA 已在 6.2 落地；键盘缺口即 2.1 的选项卡 | 随 2.1 修复；超时与 ARIA 不作重复改动 |
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/mobile/login.vue` | 选项卡 `div` → `button` + `aria-pressed`；指示条 `aria-hidden`；新增 `.login-tab` 焦点环（`--tjg-color-primary-500`） |
+| `src/styles/scss/login.scss` | 主按钮悬停、加载态与暗色默认态渐变统一收敛到 `--tjg-color-primary-600`/`700` 深色端（白字最低 5.3:1），保留悬停上浮与加载脉冲作为状态反馈；新增输入框占位色规则，改用 `--tjg-text-secondary` |
+| `src/mobile/components/login/MobileLoginForm.vue` | 占位变量与 Homeserver 提示文案颜色由 `--tjg-text-tertiary` 提升到 `--tjg-text-secondary`（暗色 ≈5.0:1 / 浅色 ≈7.6:1） |
+
+验证：`npx vitest run src/mobile/__tests__/login.test.ts src/mobile/__tests__/loginLayout.test.ts src/shared/composables/__tests__/useLoginFlow.test.ts src/views/loginWindow/__tests__/LoginHomeserverField.test.ts` → 4 files / 18 tests passed；`npx biome check`（3 个改动文件）无修复项；`pnpm check:ratchet` 全项与基线一致（`hardcoded_color: 0`）；`pnpm check:mobile-css` → `OK — 165 个文件`；`pnpm vue-tsc --noEmit` exit 0。
+
 ---
 
 ## 附录 A｜参数映射表

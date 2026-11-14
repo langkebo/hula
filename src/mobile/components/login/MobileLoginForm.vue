@@ -296,7 +296,7 @@ onUnmounted(() => {
   --van-field-height: 48px;
   --van-field-control-height: 48px;
   --van-field-input-color: var(--tjg-text-primary);
-  --van-field-placeholder-color: var(--tjg-text-tertiary);
+  --van-field-placeholder-color: var(--tjg-text-secondary);
   --van-field-border-color: var(--tjg-border-strong);
 }
 
@@ -307,7 +307,7 @@ onUnmounted(() => {
   padding: 4px 0;
   margin-top: -4px;
   font-size: 12px;
-  color: var(--tjg-text-tertiary);
+  color: var(--tjg-text-secondary);
   line-height: 1.6;
   transition: max-height var(--tjg-motion-duration-slow) ease;
   overflow: hidden;

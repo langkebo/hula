@@ -7,27 +7,31 @@
         <img src="@/assets/mobile/2.svg" alt="Tjg" class="w-80px h-20px" />
       </div>
 
-      <!-- 选项卡导航 -->
+      <!-- 选项卡导航：原生 button 保证键盘可达，aria-pressed 表达当前选中态 -->
       <div class="w-80% max-w-375px h-40px flex-center">
         <div class="flex w-200px relative">
-          <div
+          <button
+            type="button"
             data-testid="tab-login"
-            @click="activeTab = 'login'"
-            :class="[
-              'z-999 w-100px text-center transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-out',
-              activeTab === 'login' ? 'text-(18px [--tjg-text-primary])' : 'text-(16px [--tjg-text-secondary])'
-            ]">
+            class="login-tab z-999 w-100px text-center transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-out"
+            :aria-pressed="activeTab === 'login'"
+            :class="activeTab === 'login' ? 'text-(18px [--tjg-text-primary])' : 'text-(16px [--tjg-text-secondary])'"
+            @click="activeTab = 'login'">
             {{ t('login.mobile.tabs.login') }}
-          </div>
-          <div
-            @click="activeTab = 'register'"
-            :class="[
-              'z-999 w-100px text-center transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-out',
+          </button>
+          <button
+            type="button"
+            data-testid="tab-register"
+            class="login-tab z-999 w-100px text-center transition-[width,transform,opacity,color,background-color,border-color,box-shadow] duration-300 ease-out"
+            :aria-pressed="activeTab === 'register'"
+            :class="
               activeTab === 'register' ? 'text-(18px [--tjg-text-primary])' : 'text-(16px [--tjg-text-secondary])'
-            ]">
+            "
+            @click="activeTab = 'register'">
             {{ t('login.mobile.tabs.register') }}
-          </div>
+          </button>
           <div
+            aria-hidden="true"
             class="tab-indicator"
             :class="[
               'z-10 absolute bottom--4px left-[33px] h-6px w-34px bg-[--tjg-color-primary-500] transition-transform duration-300 ease-out',
@@ -281,5 +285,21 @@ onUnmounted(() => {
 // 4px/24px 走刻度 token；42px 属造型用的离刻度装饰值，保留字面量。
 .tab-indicator {
   border-radius: var(--tjg-radius-sheet) 42px var(--tjg-radius-xs) var(--tjg-radius-sheet);
+}
+
+// tab 使用原生 button：清掉浏览器默认外观，仅保留焦点环（键盘用户可见）
+.login-tab {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--tjg-color-primary-500);
+    outline-offset: 4px;
+    border-radius: var(--tjg-radius-xs);
+  }
 }
 </style>
