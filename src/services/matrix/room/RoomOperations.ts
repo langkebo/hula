@@ -6,6 +6,8 @@ import { HttpClient } from '@/utils/HttpClient'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import matrixClientService from '../MatrixClientService'
+import { safeDelete } from '../MatrixRequestHelper'
+import { PREFIX_UNSTABLE } from '../paths/prefixes'
 import { canWriteStateEventInRoom } from './roomPowerLevels'
 
 const logger = createLogger('RoomOperations')
@@ -480,6 +482,21 @@ export class RoomOperations extends BaseMatrixService {
     }
     const client = this.getClient()
     await client.getRoomManager().setStickyEvents(roomId, events)
+  }
+
+  /**
+   * 清除某个 event_type 的粘性事件（MSC4354 DELETE）。
+   *
+   * R1 说明：SDK 的 `RoomManager` 只提供 `getStickyEvents` / `setStickyEvents`，
+   * 没有 DELETE 封装；此处经 `MatrixRequestHelper`（唯一 authedRequest 适配器）
+   * 补该端点，不新建平行 HTTP 客户端。
+   * synapse-rust 的 `sticky_events/{event_type}` 是「每用户每 event_type 一条」语义，
+   * 因此按 event_type 清除等价于清除该条。
+   */
+  async clearStickyEvent(roomId: string, eventType: string): Promise<void> {
+    await safeDelete(`/rooms/${encodeURIComponent(roomId)}/sticky_events/${encodeURIComponent(eventType)}`, undefined, {
+      prefix: `${PREFIX_UNSTABLE}/org.matrix.msc4354`
+    })
   }
 
   // --- MemberProfile (was MemberProfileService) ---

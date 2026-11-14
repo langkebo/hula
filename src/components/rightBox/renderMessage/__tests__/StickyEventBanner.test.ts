@@ -9,6 +9,10 @@ vi.mock('vue-i18n', () => createI18nMock())
 function makeEvent(overrides: Partial<StickyEventInfo> = {}): StickyEventInfo {
   return {
     eventId: '$evt1:server',
+    eventType: 'm.room.message',
+    userId: '@alice:server',
+    durationMs: null,
+    expiresAt: 0,
     sender: '@alice:server',
     body: '重要公告',
     timestamp: 1700000000000,

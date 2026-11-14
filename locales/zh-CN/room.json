@@ -198,6 +198,8 @@
     "retention_archive": "归档",
     "sticky_hint": "将重要消息置顶为房间公告，所有成员进入房间时可见",
     "sticky_from_recent_hint": "选择最近的消息提升为粘性事件",
+    "sticky_unsupported": "当前服务器未声明粘性事件（MSC4354）能力，本页为只读。",
+    "action_remove_sticky": "取消粘性",
     "tags_hint": "使用标签对房间分类，便于在房间列表中筛选",
     "action_upload_avatar": "上传头像",
     "action_remove_avatar": "移除",

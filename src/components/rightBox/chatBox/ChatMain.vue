@@ -131,11 +131,12 @@ import { useNewMessageBadge } from '@/composables/chat/useNewMessageBadge'
 import { usePrivateMode } from '@/composables/chat/usePrivateMode'
 import { useRoomSearch } from '@/composables/chat/useRoomSearch'
 import { useWheelScrollLimiter } from '@/composables/chat/useWheelScrollLimiter'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useNetworkStatus } from '@/composables/common/useNetworkStatus'
 import { useWindow } from '@/composables/common/useWindow'
 import { useDeviceVerifyLauncher } from '@/composables/encryption/useDeviceVerifyLauncher'
-import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
+import { useStickyEvents } from '@/composables/room/useStickyEvents'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import { MittEnum } from '@/enums'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
@@ -164,6 +165,7 @@ const logger = createLogger('ChatMain')
 const timerManager = useTimerManager()
 const selfEmit = defineEmits(['scroll'])
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 
 type SessionChangedPayload = {
   roomId: string
@@ -277,12 +279,12 @@ const {
   eventReportData
 } = useChatDialogs(getMessageSenderUid)
 
-// ===== 粘性事件（置顶消息横幅）=====
-const pinnedMessageFlow = usePinnedMessage({ roomId: () => globalStore.currentSessionRoomId ?? null })
-const stickyEvents = pinnedMessageFlow.pinnedMessages
-const canSetSticky = pinnedMessageFlow.canSetSticky
+// ===== 粘性事件（MSC4354 横幅）=====
+const stickyFlow = useStickyEvents({ roomId: () => globalStore.currentSessionRoomId ?? null })
+const stickyEvents = stickyFlow.events
+const canSetSticky = stickyFlow.canSetSticky
 
-/** 置顶消息选择器可见性（横幅「设为粘性事件」按钮触发） */
+/** 消息选择器可见性（横幅「设为粘性事件」按钮触发） */
 const pinSelectorVisible = ref(false)
 
 function handleSetSticky() {
@@ -290,12 +292,17 @@ function handleSetSticky() {
 }
 
 async function handlePinSelect(eventId: string) {
-  await pinnedMessageFlow.pin(eventId)
+  const ok = await stickyFlow.setStickyEvent(eventId)
+  showFeedback(ok ? t('pinned_message.pin_success') : t('pinned_message.pin_failed'), ok ? 'success' : 'error')
   pinSelectorVisible.value = false
 }
 
 async function handleCancelSticky(eventId: string) {
-  await pinnedMessageFlow.unpin(eventId)
+  // 服务端按 (user, event_type) 存储，取消需回查该条记录的 event_type
+  const eventType = stickyEvents.value.find((item) => item.eventId === eventId)?.eventType
+  if (!eventType) return
+  const ok = await stickyFlow.clearStickyEvent(eventType)
+  showFeedback(ok ? t('pinned_message.unpin_success') : t('pinned_message.unpin_failed'), ok ? 'success' : 'error')
 }
 
 function handleViewStickyEvent(eventId: string) {
@@ -330,24 +337,25 @@ const currentUserId = computed(() => userStore.userInfo?.uid ?? '')
 const currentUserName = computed(() => userStore.userInfo?.name ?? '')
 const currentRoomId = computed(() => globalStore.currentSessionRoomId ?? null)
 
-// 房间切换时重新加载置顶消息
+// 房间切换时重新加载粘性事件
 watch(
   currentRoomId,
   (newId) => {
     if (newId) {
-      pinnedMessageFlow.load().catch((e) => logger.error('Failed to load pinned messages:', e))
+      stickyFlow.load().catch((e) => logger.error('Failed to load sticky events:', e))
     }
   },
   { immediate: true }
 )
 
-// 监听置顶消息变更事件（来自消息右键菜单的 pin/unpin）
-const onPinnedEventsChanged = (payload: { roomId?: string } | undefined) => {
+// 监听粘性事件变更事件（设置/清除后刷新横幅）
+const onStickyEventsChanged = (payload: { roomId?: string } | undefined) => {
   if (payload?.roomId && payload.roomId === currentRoomId.value) {
-    pinnedMessageFlow.load().catch((e) => logger.error('Failed to refresh pinned messages:', e))
+    stickyFlow.load().catch((e) => logger.error('Failed to refresh sticky events:', e))
   }
 }
-useMitt.on(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
+useMitt.on(MittEnum.STICKY_EVENTS_CHANGED, onStickyEventsChanged)
+
 const networkBanner = computed(() => {
   if (!networkStatus.browserOnline.value && networkStatus.wsOnline.value !== true) {
     return { text: t('home.chat_main.network_offline') }
@@ -531,7 +539,7 @@ onUnmounted(() => {
   cleanupAnnouncementListeners()
   stopWheelListener()
   timerManager.clearAll()
-  useMitt.off(MittEnum.PINNED_EVENTS_CHANGED, onPinnedEventsChanged)
+  useMitt.off(MittEnum.STICKY_EVENTS_CHANGED, onStickyEventsChanged)
   useMitt.off(MittEnum.OPEN_ROOM_SEARCH, onOpenRoomSearch)
   useMitt.off(MittEnum.NAVIGATE_TO_MESSAGE, onNavigateToMessage)
 })

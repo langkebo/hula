@@ -29,7 +29,16 @@ const baseProps = {
   burnEnabled: false,
   currentUserId: '@u:matrix.test',
   currentUserName: 'u',
-  stickyEvents: [] as Array<{ eventId: string; sender: string; body: string; timestamp: number }>,
+  stickyEvents: [] as Array<{
+    eventId: string
+    eventType: string
+    userId: string
+    durationMs: number | null
+    expiresAt: number
+    sender: string
+    body: string
+    timestamp: number
+  }>,
   canSetSticky: false
 }
 

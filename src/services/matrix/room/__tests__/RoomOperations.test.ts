@@ -42,6 +42,13 @@ const logSpy = vi.hoisted(() => ({
 
 vi.mock('@tauri-apps/plugin-log', () => logSpy)
 
+const safeDeleteMock = vi.hoisted(() => vi.fn(async () => ({})))
+
+vi.mock('@/services/matrix/MatrixRequestHelper', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/matrix/MatrixRequestHelper')>()
+  return { ...actual, safeDelete: safeDeleteMock }
+})
+
 vi.mock('@/services/offline/OfflineQueueService', () => ({
   offlineQueueService: {
     enqueue: vi.fn()
@@ -681,6 +688,16 @@ describe('RoomOperations', () => {
         events: { key: 'value' }
       })
       Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true })
+    })
+  })
+
+  describe('clearStickyEvent', () => {
+    it('calls safeDelete with the MSC4354 unstable prefix', async () => {
+      await ops.clearStickyEvent('!r', 'm.room.message')
+
+      expect(safeDeleteMock).toHaveBeenCalledWith('/rooms/!r/sticky_events/m.room.message', undefined, {
+        prefix: '/_matrix/client/unstable/org.matrix.msc4354'
+      })
     })
   })
 

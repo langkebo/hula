@@ -58,7 +58,13 @@ interface MatrixTransportErrorInput {
 
 /** 本地结构类型：SDK `Method` 是字符串枚举，前端以字符串字面量调用。 */
 interface MatrixAuthedRequestInvoker {
-  authedRequest<T>(method: string, path: string, queryParams?: Record<string, string>, body?: unknown): Promise<T>
+  authedRequest<T>(
+    method: string,
+    path: string,
+    queryParams?: Record<string, string>,
+    body?: unknown,
+    opts?: { prefix?: string }
+  ): Promise<T>
 }
 
 const STATUS_ERRCODE: Record<number, string> = {
@@ -360,12 +366,21 @@ export async function safePut<T>(path: string, body?: unknown, queryParams?: Rec
  *
  * @param path 相对路径（SDK 自动补默认 v3 前缀）
  * @param queryParams 查询参数
+ * @param opts 可指定 `prefix` 覆盖默认前缀（如 MSC unstable 端点）
  * @returns 响应体
  */
-export async function safeDelete<T>(path: string, queryParams?: Record<string, string>): Promise<T> {
+export async function safeDelete<T>(
+  path: string,
+  queryParams?: Record<string, string>,
+  opts?: { prefix?: string }
+): Promise<T> {
   const client = getMatrixClient()
   try {
-    return await requireAuthedRequest(client).authedRequest<T>('DELETE', path, queryParams)
+    const invoker = requireAuthedRequest(client)
+    // 未指定 prefix 时保持旧的三参数调用形状，避免无谓改变既有契约
+    return opts
+      ? await invoker.authedRequest<T>('DELETE', path, queryParams, undefined, opts)
+      : await invoker.authedRequest<T>('DELETE', path, queryParams)
   } catch (err) {
     throw normalizeMatrixError(err)
   }

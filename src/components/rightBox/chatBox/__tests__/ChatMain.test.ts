@@ -23,27 +23,21 @@ useCapabilityStore().setCapabilities({
   capabilities: { 'io.hula.burn_after_read': { enabled: true } }
 })
 
-const pinnedMessagesRef = ref<unknown[]>([])
+const stickyEventsRef = ref<unknown[]>([])
 const canSetStickyRef = ref(false)
 const loadMock = vi.fn(async () => undefined)
-const pinMock = vi.fn(async () => true)
-const unpinMock = vi.fn(async () => true)
+const setStickyMock = vi.fn(async () => true)
+const clearStickyMock = vi.fn(async () => true)
 
-vi.mock('@/composables/room/usePinnedMessage', () => ({
-  usePinnedMessage: () => ({
-    pinnedMessages: computed(() => pinnedMessagesRef.value),
-    latestPinnedMessage: computed(() => null),
+vi.mock('@/composables/room/useStickyEvents', () => ({
+  useStickyEvents: () => ({
+    events: computed(() => stickyEventsRef.value),
     canSetSticky: computed(() => canSetStickyRef.value),
-    pinnedEventIds: ref([]),
     loading: ref(false),
-    errorMessage: ref(null),
-    dismissed: ref(false),
+    hasLoaded: ref(false),
     load: loadMock,
-    refresh: loadMock,
-    pin: pinMock,
-    unpin: unpinMock,
-    dismiss: vi.fn(),
-    resetDismiss: vi.fn()
+    setStickyEvent: setStickyMock,
+    clearStickyEvent: clearStickyMock
   })
 }))
 
@@ -359,10 +353,10 @@ const mountComponent = () =>
 describe('ChatMain', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    pinnedMessagesRef.value = []
+    stickyEventsRef.value = []
     canSetStickyRef.value = false
     loadMock.mockResolvedValue(undefined)
-    unpinMock.mockResolvedValue(true)
+    clearStickyMock.mockResolvedValue(true)
 
     globalStore = reactive({
       currentSessionRoomId: '!room:example.com'
@@ -456,10 +450,10 @@ describe('ChatMain', () => {
 describe('ChatMain private mode', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    pinnedMessagesRef.value = []
+    stickyEventsRef.value = []
     canSetStickyRef.value = false
     loadMock.mockResolvedValue(undefined)
-    unpinMock.mockResolvedValue(true)
+    clearStickyMock.mockResolvedValue(true)
 
     // usePrivateMode is a module-level singleton; reset shared state between tests
     // so assertions about "inactive" state are not polluted by prior tests.
@@ -623,10 +617,10 @@ describe('ChatMain private mode', () => {
 describe('ChatMain sticky events', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    pinnedMessagesRef.value = []
+    stickyEventsRef.value = []
     canSetStickyRef.value = false
     loadMock.mockResolvedValue(undefined)
-    unpinMock.mockResolvedValue(true)
+    clearStickyMock.mockResolvedValue(true)
 
     globalStore = reactive({
       currentSessionRoomId: '!room:example.com'
@@ -697,16 +691,19 @@ describe('ChatMain sticky events', () => {
     expect(loadMock).toHaveBeenCalled()
   })
 
-  it('handleCancelSticky calls unpin with eventId', async () => {
+  it('handleCancelSticky clears sticky event by eventType', async () => {
+    stickyEventsRef.value = [
+      { eventId: '$evt1', eventType: 'm.room.message', sender: '@alice:server', body: 'Hello', timestamp: 1 }
+    ]
     const wrapper = mountComponent()
     await (wrapper.vm as unknown as { handleCancelSticky: (eventId: string) => Promise<void> }).handleCancelSticky(
       '$evt1'
     )
-    expect(unpinMock).toHaveBeenCalledWith('$evt1')
+    expect(clearStickyMock).toHaveBeenCalledWith('m.room.message')
   })
 
   it('reflects stickyEvents from composable', async () => {
-    pinnedMessagesRef.value = [{ eventId: '$evt1', sender: '@alice:server', body: 'Hello', timestamp: Date.now() }]
+    stickyEventsRef.value = [{ eventId: '$evt1', sender: '@alice:server', body: 'Hello', timestamp: Date.now() }]
     const wrapper = mountComponent()
     await flushPromises()
     const banners = wrapper.findComponent({ name: 'ChatBanners' })
@@ -727,7 +724,7 @@ describe('ChatMain sticky events', () => {
     const selector = wrapper.findComponent({ name: 'PinMessageSelector' })
     selector.vm.$emit('select', '$evt1')
     await flushPromises()
-    expect(pinMock).toHaveBeenCalledWith('$evt1')
+    expect(setStickyMock).toHaveBeenCalledWith('$evt1')
     expect(selector.props('show')).toBe(false)
   })
 })
@@ -735,10 +732,10 @@ describe('ChatMain sticky events', () => {
 describe('ChatMain BurnAfterReadToggle service integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    pinnedMessagesRef.value = []
+    stickyEventsRef.value = []
     canSetStickyRef.value = false
     loadMock.mockResolvedValue(undefined)
-    unpinMock.mockResolvedValue(true)
+    clearStickyMock.mockResolvedValue(true)
     enableBurnMock.mockResolvedValue(true)
     disableBurnMock.mockResolvedValue(true)
 

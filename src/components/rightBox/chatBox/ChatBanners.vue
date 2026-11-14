@@ -81,16 +81,10 @@ import PrivateModeBanner from '@/components/common/PrivateModeBanner.vue'
 import ScreenshotWatermark from '@/components/common/ScreenshotWatermark.vue'
 import StickyEventBanner from '@/components/rightBox/renderMessage/StickyEventBanner.vue'
 import { useRoomAntiScreenshot } from '@/composables/chat/useRoomAntiScreenshot'
+import type { StickyEventInfo } from '@/types/stickyEvent'
 
 const { t } = useI18n()
 const isAnnouncementHover = ref<boolean>(false)
-
-interface StickyEventItem {
-  eventId: string
-  sender: string
-  body: string
-  timestamp: number
-}
 
 const props = defineProps<{
   networkBannerText: string | null
@@ -102,7 +96,7 @@ const props = defineProps<{
   burnEnabled: boolean
   currentUserId: string
   currentUserName: string
-  stickyEvents: StickyEventItem[]
+  stickyEvents: StickyEventInfo[]
   canSetSticky: boolean
 }>()
 

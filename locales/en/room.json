@@ -198,6 +198,8 @@
     "retention_archive": "Archive",
     "sticky_hint": "Pin important messages as room announcements, visible to all members upon entry",
     "sticky_from_recent_hint": "Select a recent message to promote to a sticky event",
+    "sticky_unsupported": "This server does not advertise sticky events (MSC4354); this page is read-only.",
+    "action_remove_sticky": "Unpin sticky",
     "tags_hint": "Use tags to categorize rooms for easy filtering in the room list",
     "action_upload_avatar": "Upload Avatar",
     "action_remove_avatar": "Remove",

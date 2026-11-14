@@ -160,6 +160,19 @@ describe('safe request helpers', () => {
     expect(authedRequest).toHaveBeenCalledWith('DELETE', '/p', undefined)
   })
 
+  it('safeDelete forwards the prefix override', async () => {
+    authedRequest.mockResolvedValue({})
+
+    await safeDelete('/rooms/!r/sticky_events/m.room.message', undefined, { prefix: '/unstable/x' })
+    expect(authedRequest).toHaveBeenLastCalledWith(
+      'DELETE',
+      '/rooms/!r/sticky_events/m.room.message',
+      undefined,
+      undefined,
+      { prefix: '/unstable/x' }
+    )
+  })
+
   it('normalizes a rejection into a MatrixTransportError', async () => {
     authedRequest.mockRejectedValueOnce({ errcode: 'M_FORBIDDEN', httpStatus: 403, message: 'denied' })
 

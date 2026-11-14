@@ -719,6 +719,25 @@ R1 结论：SDK 未通过 exports 暴露 `server-capabilities`，本地别名表
 | ROOM-12 | P2 | 邀请流程 | 一次性邀请保留并展示 `room_alias` | 单测 |
 | ROOM-13 | P3 | 空间公开目录等 | 零散入口按能力位补齐 | 组件测试 |
 
+##### ROOM-01 落地记录（P0，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 协议端点 | 完成 | synapse-rust MSC4354 挂载在 `/_matrix/client/unstable/org.matrix.msc4354`：`GET /rooms/{roomId}/sticky_events`、`POST`（体为 `{events:[{event_type,event_id,sticky_duration_ms?}]}`）、`DELETE /rooms/{roomId}/sticky_events/{event_type}` |
+| 服务层读 / 写 | 完成 | `RoomOperations` 复用 SDK `RoomManager` 的 `getStickyEvents` / `setStickyEvents`（不再自建读通道） |
+| 服务层删除 | 完成 | SDK `RoomManager` **无 DELETE 封装**，R1 检索结论已登记在 `RoomOperations.clearStickyEvent` 注释；改为经唯一 authedRequest 适配器 `MatrixRequestHelper.safeDelete(path, undefined, { prefix })`，`RoomOperations` 不直接调用 `client.http.authedRequest` |
+| 前缀治理 | 完成 | 不使用 `/_matrix` 字面量，统一拼 `${PREFIX_UNSTABLE}/org.matrix.msc4354`（`src/services/matrix/paths/prefixes.ts`），ratchet 计数不增 |
+| 整表提交语义 | 完成 | 服务端按 `(user, event_type)` 覆盖、每类型仅一条，故 `setStickyEvent` 先读取当前表、按 `event_type` 合并后再整表 POST；取消需回查该记录 `event_type` 后 DELETE |
+| 数据源切换 | 完成 | 新增 `src/composables/room/useStickyEvents.ts`；`ChatMain.vue` 的 `stickyEvents` 由 `pinnedMessageFlow.pinnedMessages` 改为 `stickyFlow.events`，`ChatBanners.vue` 改用 `StickyEventInfo` 类型，不再引用 `pinnedMessages` |
+| 消息信息解析 | 完成 | 抽出 `src/composables/room/resolveMessageInfo.ts` 供 `useStickyEvents` 与 `usePinnedMessage` 共用，避免两份解析逻辑；`usePinnedMessage` 保留因 `ChatSidebar.vue` 仍在用 |
+| `StickyTab` | 完成 | 按协议整表提交；列表项新增「取消粘性」DELETE 入口；最近 5 条 `m.room.message` 可提升为粘性事件 |
+| 能力门控 | 完成 | 两处均按 `sticky-events` 判定：`ChatMain` 用 `canSetSticky`，`StickyTab` 在 unsupported/unknown 时只渲染 `sticky_unsupported` 只读提示、不发 GET；能力快照异步到达后补加载 |
+| 刷新联动 | 完成 | 新增 `MittEnum.STICKY_EVENTS_CHANGED`，设置 / 清除后广播 `{roomId}`，`ChatMain` 仅在同房间时重新 `load()` |
+| 测试 | 完成 | 新增 `useStickyEvents.test.ts`（过期过滤、缺省 eventType、非法输入、排序、失败容错、整表合并与 emit、DELETE）、`StickyTab.test.ts`（只读态 / 取消 / 提升 / 失败提示）、`RoomOperations.test.ts` 的 `clearStickyEvent` 契约（断言 URL、query 与 `prefix`）；`ChatMain` / `ChatBanners` / `StickyEventBanner` 既有用例改用 sticky 语义 |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`check:sdk-boundary` 无新增违规（`authed-request=0`）；`check:ratchet` 21 = 基线 21；`quality:no-raw-fetch` 通过；相关 4 个测试文件 110 用例通过 |
+
+R1 结论：读 / 写走 SDK `RoomManager`；DELETE 因 SDK 未封装而经既有 `MatrixRequestHelper` 适配器补齐，未新建平行 HTTP 客户端。R3 结论：未新增移动端 admin/AI 入口；仅改桌面房间详情与聊天头部，移动端构建路径未受影响。
+
 #### 12.4.4 ADM（12 条，仅桌面端）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
