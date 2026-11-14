@@ -26,7 +26,8 @@ import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import {
   CapabilityUnavailableError,
   matrixCapabilityService,
-  registerCapabilityStoreResolver
+  registerCapabilityStoreResolver,
+  type TjgCapability
 } from '../MatrixCapabilityService'
 
 describe('MatrixCapabilityService §16.5.3 gates', () => {
@@ -58,8 +59,17 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     expect(matrixCapabilityService.canUseSlidingSync()).toBe(true)
   })
 
-  it('canUseE2EE defaults true and honors explicit disable', () => {
+  it('canUseE2EE only when the server advertises m.room.encryption', () => {
     const store = useCapabilityStore()
+    // 快照未加载：unknown 按 unsupported 处理，不再 fail-open
+    expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('unknown')
+    expect(matrixCapabilityService.canUseE2EE()).toBe(false)
+
+    store.setCapabilities({ capabilities: {} })
+    expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('unsupported')
+    expect(matrixCapabilityService.canUseE2EE()).toBe(false)
+
+    store.setCapabilities({ capabilities: { 'm.room.encryption': { enabled: true } } })
     expect(matrixCapabilityService.canUseE2EE()).toBe(true)
 
     store.setCapabilities({ capabilities: { 'm.room.encryption': { enabled: false } } })
@@ -112,6 +122,76 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     expect(matrixCapabilityService.hasCapability('admin-api')).toBe(true)
     expect(matrixCapabilityService.hasCapability('voip')).toBe(false)
     expect(matrixCapabilityService.hasCapability('friend-list')).toBe(false)
+  })
+
+  // CAP-01: 三态口径与 14 个能力位（§12.3.1 / §12.3.2）
+  describe('CAP-01 能力三态与别名矩阵', () => {
+    const unstableBits: Array<[TjgCapability, string]> = [
+      ['sliding-sync', 'org.matrix.msc3886.sliding_sync'],
+      ['dehydrated-device', 'org.matrix.msc3814'],
+      ['sticky-events', 'org.matrix.msc4354'],
+      ['scheduled-send', 'org.matrix.msc4140'],
+      ['rtc-transports', 'org.matrix.msc4143'],
+      ['account-status', 'org.matrix.msc3720'],
+      ['extended-profile', 'org.matrix.msc4133'],
+      ['qr-rendezvous', 'org.matrix.msc4108'],
+      ['mutual-rooms', 'org.matrix.msc2666']
+    ]
+
+    const capabilityBits: Array<[TjgCapability, string]> = [
+      ['e2ee', 'm.room.encryption'],
+      ['voip', 'm.voice'],
+      ['friend-list', 'io.hula.friends'],
+      ['admin-api', 'io.hula.admin'],
+      ['burn-after-read', 'io.hula.burn_after_read']
+    ]
+
+    it('reports unknown before the snapshot is loaded', () => {
+      expect(matrixCapabilityService.getCapabilityStatus('sticky-events')).toBe('unknown')
+      expect(matrixCapabilityService.hasCapability('sticky-events')).toBe(false)
+    })
+
+    it.each(unstableBits)('maps %s to unstable feature %s', (capability, key) => {
+      const store = useCapabilityStore()
+      expect(matrixCapabilityService.getCapabilityStatus(capability)).toBe('unknown')
+
+      store.setCapabilities({ unstable_features: { [key]: true } })
+      expect(matrixCapabilityService.getCapabilityStatus(capability)).toBe('supported')
+      expect(matrixCapabilityService.hasCapability(capability)).toBe(true)
+
+      store.setCapabilities({ unstable_features: {}, capabilities: {} })
+      expect(matrixCapabilityService.getCapabilityStatus(capability)).toBe('unsupported')
+      expect(matrixCapabilityService.hasCapability(capability)).toBe(false)
+    })
+
+    it.each(capabilityBits)('maps %s to capability %s', (capability, key) => {
+      const store = useCapabilityStore()
+
+      store.setCapabilities({ capabilities: { [key]: { enabled: true } } as never })
+      expect(matrixCapabilityService.getCapabilityStatus(capability)).toBe('supported')
+      expect(matrixCapabilityService.hasCapability(capability)).toBe(true)
+
+      store.setCapabilities({ unstable_features: {}, capabilities: {} })
+      expect(matrixCapabilityService.getCapabilityStatus(capability)).toBe('unsupported')
+    })
+
+    it('keeps SDK-compatible sliding sync and voice fallbacks', () => {
+      const store = useCapabilityStore()
+      store.setCapabilities({ unstable_features: { 'org.matrix.simplified_msc3575': true } })
+      expect(matrixCapabilityService.canUseSlidingSync()).toBe(true)
+
+      store.setCapabilities({ unstable_features: {}, capabilities: {} })
+      store.setCapabilities({ unstable_features: { 'org.matrix.msc3245.voice': true } })
+      expect(matrixCapabilityService.canUseVoip()).toBe(true)
+    })
+
+    it('does not treat dehydrated-device as an E2EE signal', () => {
+      const store = useCapabilityStore()
+      store.setCapabilities({ unstable_features: { 'org.matrix.msc3814': true } })
+
+      expect(matrixCapabilityService.hasCapability('dehydrated-device')).toBe(true)
+      expect(matrixCapabilityService.canUseE2EE()).toBe(false)
+    })
   })
 
   it('canUseThreads recognizes the backend m.thread capability and MSC3983 flags', () => {

@@ -30,19 +30,48 @@ type MatrixCapabilitiesResponse = {
  * - The `useServerCapability()` composable bridges service + store at the
  *   consumption layer (no circular import at the service definition level).
  */
-export type TjgCapability = 'sliding-sync' | 'e2ee' | 'voip' | 'friend-list' | 'admin-api' | 'burn-after-read'
+export type TjgCapability =
+  | 'sliding-sync'
+  | 'e2ee'
+  | 'voip'
+  | 'friend-list'
+  | 'admin-api'
+  | 'burn-after-read'
+  | 'dehydrated-device'
+  | 'sticky-events'
+  | 'scheduled-send'
+  | 'rtc-transports'
+  | 'account-status'
+  | 'extended-profile'
+  | 'qr-rendezvous'
+  | 'mutual-rooms'
 
+/**
+ * 能力三态判定结果。
+ * - `supported`：服务端显式声明支持
+ * - `unsupported`：能力快照已加载，但服务端未声明该能力
+ * - `unknown`：能力快照尚未加载（登录前 / 探测失败），调用方按 unsupported 处理
+ */
+export type CapabilityStatus = 'supported' | 'unsupported' | 'unknown'
+
+/**
+ * 能力位与服务端 key 的映射。
+ *
+ * 说明（R1）：SDK 的 `SynapseRustFeature` 常量位于 `lib/server-capabilities`，
+ * 未通过 matrix-js-sdk 的 package exports 暴露，无法直接派生；此处按服务端
+ * 实际声明补齐，并与 SDK `SYNAPSE_RUST_FEATURE_FALLBACK` 的兼容 key 保持一致。
+ */
 const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capabilities: string[] }> = {
   'sliding-sync': {
     unstable: ['org.matrix.msc3886.sliding_sync', 'org.matrix.msc3575', 'org.matrix.simplified_msc3575'],
     capabilities: ['io.hula.sliding_sync']
   },
   e2ee: {
-    unstable: ['org.matrix.msc3814'],
+    unstable: [],
     capabilities: ['m.room.encryption']
   },
   voip: {
-    unstable: ['org.matrix.msc3245'],
+    unstable: ['org.matrix.msc3245.voice', 'org.matrix.msc3245'],
     capabilities: ['m.voice', 'm.voip', 'io.hula.voice_extended']
   },
   'friend-list': {
@@ -56,6 +85,38 @@ const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capab
   'burn-after-read': {
     unstable: ['io.hula.burn_after_read'],
     capabilities: ['io.hula.burn_after_read']
+  },
+  'dehydrated-device': {
+    unstable: ['org.matrix.msc3814'],
+    capabilities: []
+  },
+  'sticky-events': {
+    unstable: ['org.matrix.msc4354'],
+    capabilities: []
+  },
+  'scheduled-send': {
+    unstable: ['org.matrix.msc4140'],
+    capabilities: []
+  },
+  'rtc-transports': {
+    unstable: ['org.matrix.msc4143'],
+    capabilities: []
+  },
+  'account-status': {
+    unstable: ['org.matrix.msc3720'],
+    capabilities: []
+  },
+  'extended-profile': {
+    unstable: ['org.matrix.msc4133'],
+    capabilities: []
+  },
+  'qr-rendezvous': {
+    unstable: ['org.matrix.msc4108'],
+    capabilities: []
+  },
+  'mutual-rooms': {
+    unstable: ['org.matrix.msc2666'],
+    capabilities: []
   }
 }
 
@@ -128,14 +189,22 @@ class MatrixCapabilityService {
   // 与 startClient store 方法中 fire-and-forget refreshCapabilities() 并发触发。
   private capabilityFlight = new SingleFlight<MatrixCapabilities | null>()
 
-  hasCapability(capability: TjgCapability): boolean {
+  /**
+   * 能力三态判定（唯一判定实现）。
+   * 能力快照未加载时返回 `unknown`；调用方按 `unsupported` 处理，不渲染入口。
+   */
+  getCapabilityStatus(capability: TjgCapability): CapabilityStatus {
     const store = tryGetStore()
-    if (!store) return false
+    if (!store?.isLoaded) return 'unknown'
     const aliases = HULA_CAPABILITY_ALIASES[capability]
-    return (
+    const supported =
       aliases.unstable.some((feature) => store.hasUnstable(feature).value) ||
       aliases.capabilities.some((feature) => store.hasFeature(feature).value)
-    )
+    return supported ? 'supported' : 'unsupported'
+  }
+
+  hasCapability(capability: TjgCapability): boolean {
+    return this.getCapabilityStatus(capability) === 'supported'
   }
 
   canUseAdminApi(): boolean {
@@ -151,13 +220,7 @@ class MatrixCapabilityService {
   }
 
   canUseE2EE(): boolean {
-    const store = tryGetStore()
-    if (!store) return false
-    const encryptionCapability = store.capabilities['m.room.encryption'] as { enabled?: boolean } | undefined
-    if (encryptionCapability?.enabled === false) {
-      return false
-    }
-    return true
+    return this.hasCapability('e2ee')
   }
 
   canUseVoip(): boolean {
@@ -318,14 +381,26 @@ export function useServerCapability() {
     voip: () => service.canUseVoip(),
     'friend-list': () => service.canUseFriendList(),
     'admin-api': () => service.canUseAdminApi(),
-    'burn-after-read': () => service.canUseBurnAfterRead()
+    'burn-after-read': () => service.canUseBurnAfterRead(),
+    'dehydrated-device': () => service.hasCapability('dehydrated-device'),
+    'sticky-events': () => service.hasCapability('sticky-events'),
+    'scheduled-send': () => service.hasCapability('scheduled-send'),
+    'rtc-transports': () => service.hasCapability('rtc-transports'),
+    'account-status': () => service.hasCapability('account-status'),
+    'extended-profile': () => service.hasCapability('extended-profile'),
+    'qr-rendezvous': () => service.hasCapability('qr-rendezvous'),
+    'mutual-rooms': () => service.hasCapability('mutual-rooms')
   }
 
   const isCapabilityAvailable = (capability: TjgCapability): boolean => capabilityCheckers[capability]()
 
+  /** 三态判定：供需要区分「未知」与「不支持」的展示层使用 */
+  const getCapabilityStatus = (capability: TjgCapability): CapabilityStatus => service.getCapabilityStatus(capability)
+
   return {
     isLoaded: computed(() => tryGetStore()?.isLoaded ?? false),
     isCapabilityAvailable,
+    getCapabilityStatus,
     hasUnstable: (flag: string) => tryGetStore()?.hasUnstable(flag).value ?? false,
     hasFeature: (feature: string) => tryGetStore()?.hasFeature(feature).value ?? false,
 

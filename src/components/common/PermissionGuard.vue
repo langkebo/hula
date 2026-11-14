@@ -41,15 +41,8 @@ const cap = useServerCapability()
 const requiredList = computed<TjgCapability[]>(() => (Array.isArray(props.require) ? props.require : [props.require]))
 
 const missing = computed<TjgCapability[]>(() => {
-  const getters: Record<TjgCapability, boolean> = {
-    'sliding-sync': cap.canUseSlidingSync.value,
-    e2ee: cap.canUseE2EE.value,
-    voip: cap.canUseVoip.value,
-    'friend-list': cap.canUseFriendList.value,
-    'admin-api': cap.canUseAdminApi.value,
-    'burn-after-read': cap.canUseBurnAfterRead.value
-  }
-  return requiredList.value.filter((name) => !getters[name])
+  // 统一走 useServerCapability 的 14 项判定表，避免本地再维护一份映射导致口径分叉
+  return requiredList.value.filter((name) => !cap.isCapabilityAvailable(name))
 })
 
 const granted = computed(() => missing.value.length === 0)

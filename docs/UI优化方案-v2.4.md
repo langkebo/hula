@@ -647,9 +647,13 @@ main.ts
 - 判定结果收敛为三态：`'supported' | 'unsupported' | 'unknown'`。`unknown` 按 `unsupported` 处理（不渲染入口），并在设置页「服务能力」区块显式展示「未知」，避免静默放行。
 - `EndpointCapabilityService.check()` 作为端点级补充，覆盖本次新增端点；现状仅 9 处调用点，需按 §12.4 补到对应触点。
 
-#### 12.3.3 消费 SDK 特性位
+#### 12.3.3 消费 SDK 特性位（前提已订正）
 
-SDK 已有 `SynapseRustFeature` 8 项与 `SYNAPSE_RUST_FEATURE_FALLBACK`。Tjg 侧不再维护第二份 unstable 列表：以 `getVersions()` 的 `unstable_features` 为输入，经 SDK 常量映射到 `TjgCapability`，避免两份清单漂移。此改动必须保持 `pnpm check:sdk-boundary` 通过。
+原计划「经 SDK 常量映射到 `TjgCapability`」**不可行**：`SynapseRustFeature` 与 `SYNAPSE_RUST_FEATURE_FALLBACK` 位于 `lib/server-capabilities`，matrix-js-sdk 的 `package.json#exports` 未暴露该子路径，根 `index.d.ts` 也没有 re-export。故当前实现取舍：
+
+- 保留 Tjg 侧 `HULA_CAPABILITY_ALIASES` 作为唯一映射表（服务层内），并在源码注释中登记 R1 检索结论与不可复用原因。
+- SDK 侧升级若补齐 exports，应按 R1 改为派生映射，删除本地清单。
+- 本改动不触碰 SDK 内部，`pnpm check:sdk-boundary` 保持通过。
 
 #### 12.3.4 门控落点规范
 
@@ -657,13 +661,27 @@ SDK 已有 `SynapseRustFeature` 8 项与 `SYNAPSE_RUST_FEATURE_FALLBACK`。Tjg �
 2. 每个门控必须配一个三态单测：supported 渲染、unsupported 不渲染、unknown 不渲染。
 3. 移动端的 admin/AI 裁剪（R2）在路由/菜单/模块装配期完成，**不得**用能力门控替代裁剪。
 
+#### 12.3.5 批次 0 落地记录（CAP-01）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| `TjgCapability` 扩展 | 完成 | 6 项 → 14 项，新增 `dehydrated-device` / `sticky-events` / `scheduled-send` / `rtc-transports` / `account-status` / `extended-profile` / `qr-rendezvous` / `mutual-rooms` |
+| 别名表订正 | 完成 | `e2ee.unstable` 移除 `org.matrix.msc3814`；`voip` 主 key 改为 `org.matrix.msc3245.voice`；8 个新能力位按 §12.3.1 落表 |
+| 三态判定 | 完成 | 新增 `CapabilityStatus`；`getCapabilityStatus()` 为唯一判定实现，`hasCapability()` 与各 `canUseXxx()` 全部委托；快照未加载返回 `unknown` |
+| E2EE fail-open | 已删除 | `canUseE2EE()` 仅认 `m.room.encryption`；`EncryptionSettings` 已有 `isLoaded` 守卫，不会在探测完成前误锁 |
+| 消费层统一 | 完成 | `useServerCapability().capabilityCheckers` 补齐 14 项，新增导出 `getCapabilityStatus`；`PermissionGuard.vue` 删除本地 6 项硬编码映射，改为调用 `isCapabilityAvailable` |
+| 单测 | 完成 | 并入既有 `MatrixCapabilityService.test.ts`（不新建重复文件）：`unstableBits` 9 项 + `capabilityBits` 5 项 `it.each`，含 unknown 前置、SDK 兼容 fallback、`dehydrated-device` 不构成 E2EE 信号；文件 32 用例通过 |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`biome check` 改动文件无告警；`MatrixCapabilityService` + `PermissionGuard` 合计 38 用例通过 |
+
+R1 结论：SDK 未通过 exports 暴露 `server-capabilities`，本地别名表为当前唯一可行方案，已在源码注释登记检索证据。R3 结论：未新增平行 API 实现；未引入移动端 admin/AI 入口；移动端构建路径未受影响。
+
 ### 12.4 逐条优化方案
 
 #### 12.4.1 CAP（7 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
 | :--- | :--- | :--- | :--- | :--- |
-| CAP-01 | P0 | `src/services/matrix/MatrixCapabilityService.ts` | 按 §12.3.1 订正别名；`canUseE2EE()` 委托 `hasCapability('e2ee')`；删除 fail-open；补三态 | 新增 `__tests__/MatrixCapabilityService.capabilities.test.ts`，覆盖 10 个能力位 |
+| CAP-01 | P0 | `src/services/matrix/MatrixCapabilityService.ts` | 按 §12.3.1 订正别名；`canUseE2EE()` 委托 `hasCapability('e2ee')`；删除 fail-open；补三态 | 并入 `__tests__/MatrixCapabilityService.test.ts`（不新建重复文件），覆盖 14 个能力位；见 §12.3.5 |
 | CAP-02 | P1 | `src/components/room/settings-tabs/StickyTab.vue`、`src/views/settingsWindow/tabs/sections/DehydratedDeviceSection.vue` | 分别用 `sticky-events` / `dehydrated-device` 门控；不满足时整块不渲染 | 组件测试断言 unsupported 时 DOM 不存在 |
 | CAP-03 | P1 | `src/services/matrix/auth/MatrixOidcService.ts`、`src/views/loginWindow/ThirdPartyLogin.vue` | 启动时探测 `auth_metadata` 与 `m.login.sso` flows；`ssoOptions` 按 flows 动态生成；404 降级为现有 gitee/github/CAS | 契约测试覆盖 200/404；组件测试覆盖 flows 缺失 |
 | CAP-04 | P2 | `DehydratedDeviceSection.vue` | `isSupported` 改为按 `org.matrix.msc3814` 路由面判定，不再只判「路由存在」 | 单测两分支 |
