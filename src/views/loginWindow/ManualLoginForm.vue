@@ -122,6 +122,8 @@
       <n-button
         :loading="loading"
         :disabled="loginDisabled"
+        :aria-label="loginText"
+        :aria-busy="loading ? 'true' : 'false'"
         class="gradient-button w-full mt-4px mb-4px"
         @click="emit('login')">
         <span>{{ loginText }}</span>

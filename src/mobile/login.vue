@@ -2,13 +2,13 @@
   <MobileLayout :safeAreaTop="false" :safeAreaBottom="false">
     <div
       class="h-full flex flex-col items-center gap-24px bg-[--tjg-mobile-login-bg] pt-[max(10vh,56px)] pb-60px overflow-y-auto">
-      <div class="w-80% flex items-center justify-start gap-6px">
+      <div class="w-80% max-w-375px flex items-center justify-start gap-6px">
         <p class="text-(20px [--tjg-text-primary])">{{ t('login.mobile.welcome_title') }}</p>
         <img src="@/assets/mobile/2.svg" alt="Tjg" class="w-80px h-20px" />
       </div>
 
       <!-- 选项卡导航 -->
-      <div class="w-80% h-40px flex-center">
+      <div class="w-80% max-w-375px h-40px flex-center">
         <div class="flex w-200px relative">
           <div
             data-testid="tab-login"

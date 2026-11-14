@@ -1,5 +1,8 @@
 <template>
-  <form data-testid="mobile-login-form" class="text-center w-80% flex flex-col gap-16px" @submit.prevent="handleSubmit">
+  <form
+    data-testid="mobile-login-form"
+    class="text-center w-80% max-w-375px flex flex-col gap-16px"
+    @submit.prevent="handleSubmit">
     <!-- Homeserver 地址输入框 -->
     <div class="homeserver-wrap">
       <van-field
@@ -118,6 +121,8 @@
       native-type="submit"
       :loading="loading"
       :disabled="loginDisabled"
+      :aria-label="loginText"
+      :aria-busy="loading ? 'true' : 'false'"
       block
       class="mt-8px mb-8px gradient-button">
       <span>{{ loginText }}</span>

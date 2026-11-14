@@ -1,6 +1,6 @@
 <template>
   <!-- 第一步：昵称和密码 -->
-  <div v-if="currentStep === 1" class="text-center w-80% flex flex-col gap-16px">
+  <div v-if="currentStep === 1" class="text-center w-80% max-w-375px flex flex-col gap-16px">
     <van-field
       v-model="registerInfo.nickName"
       maxlength="8"

@@ -1473,6 +1473,17 @@ useGlassEffectStore().mode = 'off'
 | SDK 边界 | `pnpm check:sdk-boundary` | `OK — no regressions vs baseline`（156，基线 156） |
 | 裸请求守护 | `pnpm quality:no-raw-fetch` | `OK: 所有裸请求均在白名单内`（命中 3，均白名单） |
 
+### 20.4 剩余章节落地（2.3 / 3.2 / 5.2 / 6.2）
+
+| 章节 | 要求 | 落地方式 |
+| :--- | :--- | :--- |
+| 2.3 宽度约束 | 认证视图最大宽度 375px | `src/mobile/login.vue` 两处标题行、`MobileLoginForm` 与 `MobileRegisterForm` 根容器追加 `max-w-375px`，宽屏下与表单同宽居中；窄屏仍为 `w-80%` 不受影响 |
+| 3.2 渐变按钮 | 统一渐变、悬停/按压/禁用/加载 | 既有 `.gradient-button`（`src/styles/scss/login.scss`）已用 `--tjg-color-primary-*` / `--tjg-brand` token 覆盖四态，本轮仅补动态偏好降级，未重写视觉 |
+| 5.2 动画 | 时长与降级 | 折叠区 `max-height 0.25s`、图标 `duration-200` 既有；新增 `@media (prefers-reduced-motion: reduce)` 关闭加载脉冲与位移 |
+| 6.2 ARIA | 登录按钮语义 | 桌面 `n-button` 与移动 `van-button` 补 `:aria-label="loginText"`、`:aria-busy`；输入框沿用 `sr-only` label + `aria-describedby`，比 `aria-label` 更利于读屏 |
+
+验证：`npx vitest run src/mobile/__tests__/loginLayout.test.ts src/mobile/__tests__/login.test.ts src/views/loginWindow/__tests__` → 9 files / 34 tests passed；`pnpm vue-tsc --noEmit` exit 0；`npx biome check` 4 files 无修复项；`pnpm check:mobile-css` → `OK — 165 个文件`。
+
 ---
 
 ## 附录 A｜参数映射表

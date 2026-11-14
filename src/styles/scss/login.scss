@@ -150,3 +150,21 @@
     }
   }
 }
+
+/* 尊重系统「减少动态效果」偏好：关闭加载脉冲与悬停/按压位移 */
+@media (prefers-reduced-motion: reduce) {
+  .gradient-button.n-button,
+  .gradient-button.van-button {
+    transition: none;
+
+    &:hover:not(:disabled),
+    &:active:not(:disabled) {
+      transform: none;
+    }
+
+    &.n-button--loading,
+    &.van-button--loading {
+      animation: none;
+    }
+  }
+}
