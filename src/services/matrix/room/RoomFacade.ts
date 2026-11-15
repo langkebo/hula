@@ -232,7 +232,6 @@ interface MatrixRoomReadFacade {
   getRoomCall(roomId: string, callId: string): Promise<Record<string, unknown> | null>
   getRoomSync(roomId: string): Promise<Record<string, unknown>>
   getReportScannerInfo(roomId: string, eventId: string): Promise<Record<string, unknown> | null>
-  getExternalServices(): Promise<Array<Record<string, unknown>>>
   getRoomNotifications(
     roomId: string,
     params?: { from?: string; limit?: number }
@@ -274,7 +273,6 @@ export const matrixRoomReadFacade: MatrixRoomReadFacade = {
   getRoomCall: (roomId, callId) => matrixRoomTimelineService.getRoomCall(roomId, callId),
   getRoomSync: (roomId) => matrixRoomMetadataService.getRoomSync(roomId),
   getReportScannerInfo: (roomId, eventId) => matrixRoomAccountDataService.getReportScannerInfo(roomId, eventId),
-  getExternalServices: () => matrixRoomAccountDataService.getExternalServices(),
   getRoomNotifications: (roomId, params?) => matrixRoomTimelineService.getRoomNotifications(roomId, params),
   getRoomPermissions: (roomId) => matrixRoomMetadataService.getRoomPermissions(roomId),
   getRoomExternalIds: (roomId) => matrixRoomMetadataService.getRoomExternalIds(roomId),

@@ -18,6 +18,8 @@ export type { AdminFeatureFlag, AdminFeatureFlagInput } from './useAdminMaintena
 export { useAdminMaintenance } from './useAdminMaintenance'
 export type { MediaLibraryItem, UseAdminMedia } from './useAdminMedia'
 export { useAdminMedia } from './useAdminMedia'
+export type { AdminModuleItem, AdminModuleStatus } from './useAdminModules'
+export { useAdminModules } from './useAdminModules'
 export type { ServerNoticeInfo } from './useAdminNotices'
 export { useAdminNotices } from './useAdminNotices'
 

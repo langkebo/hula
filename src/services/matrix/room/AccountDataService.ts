@@ -105,18 +105,6 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     }
   }
 
-  async getExternalServices(): Promise<Array<Record<string, unknown>>> {
-    const client = this.getClient()
-    try {
-      const result = await client.getExternalServiceManager().listServices()
-      const services = result?.services
-      return Array.isArray(services) ? (services as typeof services & Array<Record<string, unknown>>) : []
-    } catch (err) {
-      logger.warn('Account data operation failed:', err)
-      return []
-    }
-  }
-
   // ==================== Anti-Screenshot ====================
 
   async getAntiScreenshot(roomId: string): Promise<{ enabled: boolean }> {

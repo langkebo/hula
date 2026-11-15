@@ -1,6 +1,12 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminModules from '../AdminModules.vue'
+
+const { listModules } = vi.hoisted(() => ({ listModules: vi.fn() }))
+
+vi.mock('@/services/matrix/admin', () => ({
+  adminModuleService: { listModules }
+}))
 
 vi.mock('naive-ui', async () => {
   const { defineComponent, h } = await import('vue')
@@ -15,9 +21,8 @@ vi.mock('naive-ui', async () => {
 
   const NListItem = defineComponent({
     name: 'NListItem',
-    emits: ['click'],
-    setup(_, { slots, emit }) {
-      return () => h('div', { class: 'n-list-item', onClick: () => emit('click') }, slots.default?.())
+    setup(_, { slots }) {
+      return () => h('div', { class: 'n-list-item' }, slots.default?.())
     }
   })
 
@@ -70,6 +75,14 @@ vi.mock('naive-ui', async () => {
     }
   })
 
+  const NAlert = defineComponent({
+    name: 'NAlert',
+    props: { type: { type: String, default: 'default' } },
+    setup(_, { slots }) {
+      return () => h('div', { class: 'n-alert' }, slots.default?.())
+    }
+  })
+
   const NButton = defineComponent({
     name: 'NButton',
     props: {
@@ -82,38 +95,65 @@ vi.mock('naive-ui', async () => {
     }
   })
 
-  return { NButton, NEmpty, NList, NListItem, NSelect, NSpin, NTag }
+  return { NAlert, NButton, NEmpty, NList, NListItem, NSelect, NSpin, NTag }
 })
 
-interface ModuleInfo {
-  name: string
-  version: string
-  status: 'loaded' | 'unloaded' | 'failed'
-  description?: string
-}
-
-const sampleModules: ModuleInfo[] = [
-  { name: 'auth-service', version: '1.2.0', status: 'loaded', description: '认证服务模块' },
-  { name: 'message-queue', version: '0.8.3', status: 'unloaded', description: '消息队列模块' },
-  { name: 'storage-engine', version: '2.1.0', status: 'failed', description: '存储引擎模块' }
+const sampleModules = [
+  {
+    id: 1,
+    name: 'auth-service',
+    type: 'auth',
+    version: '1.2.0',
+    status: 'loaded' as const,
+    description: '认证服务模块',
+    priority: 1,
+    executionCount: 10,
+    errorCount: 0,
+    lastExecutedTs: null
+  },
+  {
+    id: 2,
+    name: 'message-queue',
+    type: 'queue',
+    version: '0.8.3',
+    status: 'unloaded' as const,
+    description: '消息队列模块',
+    priority: 2,
+    executionCount: 0,
+    errorCount: 0,
+    lastExecutedTs: null
+  },
+  {
+    id: 3,
+    name: 'storage-engine',
+    type: 'storage',
+    version: '2.1.0',
+    status: 'failed' as const,
+    description: '存储引擎模块',
+    priority: 3,
+    executionCount: 3,
+    errorCount: 2,
+    lastError: 'timeout',
+    lastExecutedTs: 1700000000000
+  }
 ]
 
-const mountComponent = (props: Partial<{ modules: ModuleInfo[]; loading: boolean }> = {}) =>
-  mount(AdminModules, {
-    props: {
-      modules: sampleModules,
-      loading: false,
-      ...props
-    }
-  })
+const mountComponent = async () => {
+  const wrapper = mount(AdminModules)
+  await flushPromises()
+  return wrapper
+}
 
 describe('AdminModules', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    listModules.mockResolvedValue({ modules: sampleModules, nextBatch: null })
   })
 
-  it('渲染模块列表（名称 + 版本 + 状态 + 描述）', () => {
-    const wrapper = mountComponent()
+  it('挂载后拉取模块并渲染名称 + 版本 + 状态 + 描述', async () => {
+    const wrapper = await mountComponent()
+    expect(listModules).toHaveBeenCalledTimes(1)
+
     const items = wrapper.findAll('[data-testid="module-item"]')
     expect(items).toHaveLength(3)
 
@@ -124,53 +164,68 @@ describe('AdminModules', () => {
     expect(first.text()).toContain('认证服务模块')
   })
 
-  it('loading=true 时显示加载状态', () => {
-    const wrapper = mountComponent({ loading: true })
+  it('加载中显示加载状态', async () => {
+    listModules.mockReturnValue(new Promise(() => {}))
+    const wrapper = mount(AdminModules)
+    await wrapper.vm.$nextTick()
     expect(wrapper.find('.n-spin').classes()).toContain('n-spin--loading')
   })
 
-  it('loading=false 时不显示加载状态', () => {
-    const wrapper = mountComponent({ loading: false })
-    expect(wrapper.find('.n-spin').classes()).not.toContain('n-spin--loading')
-  })
-
-  it('空列表时显示空状态', () => {
-    const wrapper = mountComponent({ modules: [] })
+  it('空列表时显示空状态', async () => {
+    listModules.mockResolvedValue({ modules: [], nextBatch: null })
+    const wrapper = await mountComponent()
     expect(wrapper.find('[data-testid="empty-state"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-testid="module-item"]')).toHaveLength(0)
   })
 
-  it('按状态过滤（全部/已加载/未加载/加载失败）', async () => {
-    const wrapper = mountComponent()
+  it('拉取失败显示错误提示且不显示空状态', async () => {
+    listModules.mockRejectedValue(new Error('network down'))
+    const wrapper = await mountComponent()
 
-    // 默认显示全部
+    expect(wrapper.find('[data-testid="modules-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="empty-state"]').exists()).toBe(false)
+  })
+
+  it('错误提示的重试按钮会重新拉取', async () => {
+    listModules.mockRejectedValueOnce(new Error('network down'))
+    const wrapper = await mountComponent()
+    expect(wrapper.find('[data-testid="modules-error"]').exists()).toBe(true)
+
+    listModules.mockResolvedValue({ modules: sampleModules, nextBatch: null })
+    await wrapper.find('[data-testid="modules-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(listModules).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-testid="modules-error"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-testid="module-item"]')).toHaveLength(3)
+  })
+
+  it('按状态过滤（全部/已加载/未加载/加载失败）', async () => {
+    const wrapper = await mountComponent()
+
     expect(wrapper.findAll('[data-testid="module-item"]')).toHaveLength(3)
 
-    // 过滤：已加载
     await wrapper.find('[data-testid="status-filter"]').setValue('loaded')
     let items = wrapper.findAll('[data-testid="module-item"]')
     expect(items).toHaveLength(1)
     expect(items[0]!.text()).toContain('auth-service')
 
-    // 过滤：未加载
     await wrapper.find('[data-testid="status-filter"]').setValue('unloaded')
     items = wrapper.findAll('[data-testid="module-item"]')
     expect(items).toHaveLength(1)
     expect(items[0]!.text()).toContain('message-queue')
 
-    // 过滤：加载失败
     await wrapper.find('[data-testid="status-filter"]').setValue('failed')
     items = wrapper.findAll('[data-testid="module-item"]')
     expect(items).toHaveLength(1)
     expect(items[0]!.text()).toContain('storage-engine')
 
-    // 切回全部
     await wrapper.find('[data-testid="status-filter"]').setValue('all')
     expect(wrapper.findAll('[data-testid="module-item"]')).toHaveLength(3)
   })
 
-  it('模块状态使用三色类名标识（online=已加载/busy=加载中/offline=加载失败），不写内联样式', () => {
-    const wrapper = mountComponent()
+  it('模块状态使用三色类名标识，不写内联样式', async () => {
+    const wrapper = await mountComponent()
 
     const loadedDot = wrapper.find('[data-status="loaded"] .status-dot')
     expect(loadedDot.classes()).toContain('status-dot--loaded')
@@ -183,16 +238,8 @@ describe('AdminModules', () => {
     expect(failedDot.classes()).toContain('status-dot--failed')
   })
 
-  it('点击模块项触发 view-detail 事件', async () => {
-    const wrapper = mountComponent()
-    const firstItem = wrapper.findAll('[data-testid="module-item"]')[0]!
-    await firstItem.trigger('click')
-
-    expect(wrapper.emitted('view-detail')![0]).toEqual(['auth-service'])
-  })
-
-  it('组件有 role=region 可访问性属性', () => {
-    const wrapper = mountComponent()
+  it('组件有 role=region 可访问性属性', async () => {
+    const wrapper = await mountComponent()
     expect(wrapper.find('[role="region"]').exists()).toBe(true)
   })
 })

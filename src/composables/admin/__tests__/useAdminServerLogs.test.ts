@@ -52,4 +52,20 @@ describe('useAdminServerLogs', () => {
     await p
     expect(c.loading.value).toBe(false)
   })
+
+  it('records per-panel errors and counts failures without dropping succeeded panels', async () => {
+    const c = useAdminServerLogs()
+    vi.mocked(adminService.getServerStatus).mockResolvedValueOnce({ status: 'online' })
+    vi.mocked(adminService.getServerHealth).mockRejectedValueOnce(new Error('HTTP 500'))
+    vi.mocked(adminService.getServerVersion).mockResolvedValueOnce({ serverVersion: '1.0.0', pythonVersion: 'Rust' })
+    vi.mocked(adminService.getServerStats).mockRejectedValueOnce(new Error('HTTP 503'))
+
+    await c.loadPanel()
+
+    expect(c.errors.value).toEqual({ status: false, health: true, version: false, stats: true })
+    expect(c.failedCount.value).toBe(2)
+    expect(c.status.value?.status).toBe('online')
+    expect(c.health.value).toBeNull()
+    expect(c.stats.value).toBeNull()
+  })
 })

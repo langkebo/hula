@@ -845,6 +845,33 @@ R1 结论：门面只做委托，未新写任何 HTTP 调用或协议逻辑；�
 | ADM-11 | P2 | 30+ admin 方法 | 分批接线，无 UI 计划的方法直接删除 | `pnpm check` 无死引用 |
 | ADM-12 | P2 | 联邦页 | cache / pending 补入口 | 组件测试 |
 
+##### ADM-02 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | `AdminModules.vue` 原为纯展示组件：`modules` / `loading` 由 props 传入且默认为空数组，但页面作为路由入口无父级传参，列表恒为空；`view-detail` emit 无监听者，属死代码 |
+| 服务补齐 | 完成 | 新增 `src/services/matrix/admin/ModuleService.ts`：`AdminModuleService extends BaseMatrixService`，`listModules({ limit, from })` 一对一复用 `getAdminManager().listModules`（游标分页 `next_batch`），将 `AdminModuleInfo` 映射为 `AdminModuleItem` 并派生 `loaded` / `unloaded` / `failed` 三态；未新增任何 HTTP 或协议实现 |
+| composable | 完成 | 新增 `src/composables/admin/useAdminModules.ts`：`modules` / `loading` / `error` / `hasMore` + `loadModules({ append })` / `loadMore()`；失败清空列表与游标，供页面做重试 |
+| 页面接线 | 完成 | 页面去除 props 与死 emit，改 `onMounted` 自取数；新增错误 `n-alert` + 重试按钮（`data-testid="modules-error"` / `modules-retry`），空态仅在无错误时展示，`v-for` key 改为 `module.id`，移除误导性的 `cursor: pointer` |
+| 门面约束 | 完成 | `AdminFacadeService.ts` 受 `meta/file-size-baseline.json` 只缩不增约束，故能力以独立服务 + `admin/index.ts` 再导出落地，仍位于 `src/services/matrix/**` 内 |
+| 测试 | 完成 | `AdminModules.test.ts` 重写为 8 例（挂载拉取、加载中、空态、失败态、重试二次拉取、四态过滤、状态点无内联样式、`role=region`）；新增 `ModuleService.test.ts` 4 例（默认分页、游标与三态派生、空载荷、错误透传） |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run` 全绿 |
+
+R1 结论：模块列表能力直接消费 SDK `AdminManager.listModules`，未在 `src/services/matrix/**` 之外另起实现。R3 结论：仅涉及桌面 admin 视图、composable 与 admin 服务域，`src/mobile/**` 无引用，移动端产物无新增入口。
+
+##### ADM-07 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | `AdminServerLogs.vue` 标题为「服务器日志」，实际渲染的是状态、健康、版本、统计四类面板；`Promise.allSettled` 失败后仅置 `null`，用户无从得知是空数据还是请求失败 |
+| 文案对齐 | 完成 | 按「改名对齐内容」处理：`admin.logs.title` 改为「服务状态」/「Service Status」，`subtitle` 与 `panel_notice` 同步为运行状态与健康检查口径，不新增后端日志端点 |
+| 逐项失败态 | 完成 | `useAdminServerLogs` 新增 `errors: AdminServerPanelErrors` 与 `failedCount`，按 `allSettled` 的 `rejected` 逐项置位；页面新增整体 `warning` 提示（`data-testid="partial-failed"`）+ 四张卡片各自的「暂不可用」占位（`data-testid="unavailable-*"`） |
+| i18n | 完成 | 新增 `admin.logs.partial_failed`（`{count}` 插值）与 `admin.logs.item_unavailable`，中英同步；`pnpm gen:i18n` 已重新生成类型 |
+| 测试 | 完成 | `useAdminServerLogs.test.ts` 3→4 例（逐项 error 与 `failedCount`，成功面板不被失败项清空）；`AdminServerLogs.test.ts` 新增 1 例（单项失败展示汇总提示与占位、其余面板正常渲染） |
+| 门禁 | 通过 | 同 ADM-02 门禁链，全绿 |
+
+R1 结论：仅消费既有 `adminService.getServerStatus/Health/Version/Stats`，未新增端点。R3 结论：改动限定在桌面 admin 服务状态页、composable 与文案，移动端无 admin 入口。
+
 #### 12.4.5 VEN（4 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
@@ -852,6 +879,17 @@ R1 结论：门面只做委托，未新写任何 HTTP 调用或协议逻辑；�
 | VEN-01 | P1 | `src/services/matrix/media/MatrixVoiceService.ts` | 8 条端点接入语音消息录制/播放 UI；闲置方法要么接线要么删除 | 服务层 + 组件测试 |
 | VEN-02 | P1 | `MatrixPushService`、设置页 | `push/devices` 与 `push/send` 共 4 条补服务与设备推送设置 | 契约测试 |
 | VEN-03 | P1 | `AccountDataService.getExternalServices` | 补 UI 消费者；先按 SDK 实现确认服务名前缀，再决定是否改默认值 | 单测 + 页面测试 |
+
+##### VEN-03 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 调用点盘点 | 完成 | `AccountDataService.getExternalServices` 仅被 `MatrixRoomReadFacade` 委托，另被 5 个单测覆盖，零 UI 消费者；同类能力已由 `AdminExternalServiceService`（`getAdminManager().externalService`，7 条路由全封装）提供 |
+| SDK 前缀确认 | 完成 | SDK 侧 `externalService` 默认前缀即 `synapse_admin`，与后端 `/_synapse/admin/v1/external_services/*` 一致，无需修改默认值 |
+| 处置 | 完成 | 按「无 UI 消费者一律接线或删除」删除重复实现：移除 `AccountDataService.getExternalServices`、`MatrixRoomReadFacade` 接口声明与委托、`AccountDataService.test.ts` 3 例与 `getExternalServiceManager` mock、`ReadFacade.test.ts` 2 例与 mock；能力保留在 admin 外部服务域，由 ADM-03 页面承接 UI |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`grep getExternalServices` 全仓 0 命中；`pnpm test:run` 全绿 |
+
+R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行封装，最终能力仍落在 `src/services/matrix/**`。R3 结论：删除项均在房间服务域，无 UI 消费；未引入移动端 admin 入口。
 
 #### 12.4.6 MED（4 条）
 

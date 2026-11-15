@@ -12,18 +12,25 @@
       {{ t('admin.logs.panel_notice') }}
     </n-alert>
 
+    <n-alert v-if="failedCount > 0" type="warning" class="my-12px" data-testid="partial-failed">
+      {{ t('admin.logs.partial_failed', { count: failedCount }) }}
+    </n-alert>
+
     <n-spin :show="loading">
       <div class="panel-grid">
         <n-card :title="t('admin.logs.runtime_status')" size="small">
-          <n-descriptions bordered :column="1" label-placement="left">
+          <n-descriptions v-if="!errors.status" bordered :column="1" label-placement="left">
             <n-descriptions-item :label="t('admin.logs.status')">
               <n-tag :type="statusTagType">{{ statusLabel }}</n-tag>
             </n-descriptions-item>
           </n-descriptions>
+          <p v-else class="panel-unavailable" data-testid="unavailable-status">
+            {{ t('admin.logs.item_unavailable') }}
+          </p>
         </n-card>
 
         <n-card :title="t('admin.logs.health_check')" size="small">
-          <n-descriptions bordered :column="1" label-placement="left">
+          <n-descriptions v-if="!errors.health" bordered :column="1" label-placement="left">
             <n-descriptions-item :label="t('admin.logs.health_status')">
               <n-tag :type="health?.healthy ? 'success' : 'error'">
                 {{ health?.healthy ? 'Healthy' : 'Unhealthy' }}
@@ -33,10 +40,13 @@
               <pre class="panel-pre">{{ JSON.stringify(health?.checks ?? {}, null, 2) }}</pre>
             </n-descriptions-item>
           </n-descriptions>
+          <p v-else class="panel-unavailable" data-testid="unavailable-health">
+            {{ t('admin.logs.item_unavailable') }}
+          </p>
         </n-card>
 
         <n-card :title="t('admin.logs.version_info')" size="small">
-          <n-descriptions bordered :column="1" label-placement="left">
+          <n-descriptions v-if="!errors.version" bordered :column="1" label-placement="left">
             <n-descriptions-item label="Server">
               {{ version?.serverVersion || '-' }}
             </n-descriptions-item>
@@ -44,10 +54,13 @@
               {{ version?.pythonVersion || '-' }}
             </n-descriptions-item>
           </n-descriptions>
+          <p v-else class="panel-unavailable" data-testid="unavailable-version">
+            {{ t('admin.logs.item_unavailable') }}
+          </p>
         </n-card>
 
         <n-card :title="t('admin.logs.stats_info')" size="small">
-          <n-descriptions bordered :column="1" label-placement="left">
+          <n-descriptions v-if="!errors.stats" bordered :column="1" label-placement="left">
             <n-descriptions-item :label="t('admin.total_users')">
               {{ stats?.userCount ?? '-' }}
             </n-descriptions-item>
@@ -58,6 +71,9 @@
               {{ stats?.dailyActiveUsers ?? '-' }}
             </n-descriptions-item>
           </n-descriptions>
+          <p v-else class="panel-unavailable" data-testid="unavailable-stats">
+            {{ t('admin.logs.item_unavailable') }}
+          </p>
         </n-card>
       </div>
     </n-spin>
@@ -77,7 +93,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminServerLogs } from '@/composables/admin'
 
 const { t } = useI18n()
-const { loading, status, health, version, stats, loadPanel } = useAdminServerLogs()
+const { loading, status, health, version, stats, errors, failedCount, loadPanel } = useAdminServerLogs()
 
 const statusLabel = computed(() => {
   switch (status.value?.status) {
@@ -123,5 +139,11 @@ onMounted(() => loadPanel())
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.panel-unavailable {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tjg-text-tertiary);
 }
 </style>

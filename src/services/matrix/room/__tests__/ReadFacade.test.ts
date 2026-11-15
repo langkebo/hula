@@ -5,7 +5,6 @@ const { accountDataServiceMock, metadataServiceMock, roomOperationsMock, summary
     accountDataServiceMock: {
       getRoomAccountData: vi.fn(),
       getReportScannerInfo: vi.fn(),
-      getExternalServices: vi.fn(),
       getAntiScreenshot: vi.fn(),
       getMessageQueue: vi.fn(),
       getEncryptedEvents: vi.fn(),
@@ -347,19 +346,6 @@ describe('matrixRoomReadFacade', () => {
       const result = await matrixRoomReadFacade.getReportScannerInfo('!r:e', '$e')
       expect(accountDataServiceMock.getReportScannerInfo).toHaveBeenCalledWith('!r:e', '$e')
       expect(result).toBe(info)
-    })
-
-    it('getExternalServices 委托', async () => {
-      const services = [{ id: 'a' }] as never
-      accountDataServiceMock.getExternalServices.mockResolvedValue(services)
-      const result = await matrixRoomReadFacade.getExternalServices()
-      expect(accountDataServiceMock.getExternalServices).toHaveBeenCalledWith()
-      expect(result).toBe(services)
-    })
-
-    it('透传 accountData 错误', async () => {
-      accountDataServiceMock.getExternalServices.mockRejectedValue(new Error('500'))
-      await expect(matrixRoomReadFacade.getExternalServices()).rejects.toThrow('500')
     })
   })
 

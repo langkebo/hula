@@ -17,3 +17,5 @@ export type {
   ServerVersion,
   UserReputation
 } from './AdminTypes'
+export type { AdminModuleItem, AdminModuleListResult, AdminModuleStatus } from './ModuleService'
+export { adminModuleService } from './ModuleService'

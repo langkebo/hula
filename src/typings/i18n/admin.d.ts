@@ -502,9 +502,11 @@ export type Messages = {
     "task_failed": "启动清理任务失败"
   },
   "logs": {
-    "title": "服务器日志",
-    "subtitle": "查看服务器运行日志",
-    "panel_notice": "此页已切换为服务器状态面板，直接消费后端已实现的状态、健康、版本与统计接口。",
+    "title": "服务状态",
+    "subtitle": "查看服务器运行状态与健康检查",
+    "panel_notice": "直接消费后端已实现的状态、健康、版本与统计接口；单项失败不影响其余面板。",
+    "partial_failed": "{count} 项数据获取失败，可稍后重试",
+    "item_unavailable": "暂不可用",
     "runtime_status": "运行状态",
     "status": "状态",
     "health_check": "健康检查",
@@ -1337,6 +1339,8 @@ export type KeyPaths =
   | "admin.logs.title"
   | "admin.logs.subtitle"
   | "admin.logs.panel_notice"
+  | "admin.logs.partial_failed"
+  | "admin.logs.item_unavailable"
   | "admin.logs.runtime_status"
   | "admin.logs.status"
   | "admin.logs.health_check"

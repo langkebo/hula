@@ -497,9 +497,11 @@
     "task_failed": "Failed to start cleanup task"
   },
   "logs": {
-    "title": "Server Logs",
-    "subtitle": "View server runtime logs",
-    "panel_notice": "This page has been switched to a server status panel, directly consuming the backend's implemented status, health, version and statistics APIs.",
+    "title": "Service Status",
+    "subtitle": "View server runtime status and health checks",
+    "panel_notice": "Consumes the backend's implemented status, health, version and statistics APIs; a single failure does not block the other panels.",
+    "partial_failed": "{count} section(s) failed to load. Try again later.",
+    "item_unavailable": "Unavailable",
     "runtime_status": "Runtime Status",
     "status": "Status",
     "health_check": "Health Check",

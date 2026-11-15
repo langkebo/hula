@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import AdminServerLogs from '../AdminServerLogs.vue'
 
 const { loadPanelMock, state } = vi.hoisted(() => ({
@@ -10,7 +10,8 @@ const { loadPanelMock, state } = vi.hoisted(() => ({
     status: null as { status: string } | null,
     health: null as { healthy: boolean; checks?: Record<string, unknown> } | null,
     version: null as { serverVersion?: string; pythonVersion?: string } | null,
-    stats: null as { userCount?: number; roomCount?: number; dailyActiveUsers?: number } | null
+    stats: null as { userCount?: number; roomCount?: number; dailyActiveUsers?: number } | null,
+    errors: { status: false, health: false, version: false, stats: false }
   }
 }))
 
@@ -21,6 +22,8 @@ vi.mock('@/composables/admin', () => ({
     health: ref(state.health),
     version: ref(state.version),
     stats: ref(state.stats),
+    errors: ref(state.errors),
+    failedCount: computed(() => Object.values(state.errors).filter(Boolean).length),
     loadPanel: loadPanelMock
   })
 }))
@@ -84,6 +87,7 @@ describe('AdminServerLogs', () => {
     state.health = { healthy: true, checks: { db: 'ok' } }
     state.version = { serverVersion: '1.2.3', pythonVersion: '3.11' }
     state.stats = { userCount: 100, roomCount: 50, dailyActiveUsers: 42 }
+    state.errors = { status: false, health: false, version: false, stats: false }
     loadPanelMock.mockResolvedValue(undefined)
   })
 
@@ -146,6 +150,18 @@ describe('AdminServerLogs', () => {
     await flushPromises()
 
     expect(wrapper.findComponent({ name: 'EmptyState' }).exists()).toBe(true)
+  })
+
+  it('单项失败时展示汇总提示与占位，其余面板正常渲染', async () => {
+    state.version = null
+    state.errors = { ...state.errors, version: true }
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="partial-failed"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="unavailable-version"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="unavailable-status"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Online')
   })
 
   it('点击刷新按钮重新加载面板', async () => {

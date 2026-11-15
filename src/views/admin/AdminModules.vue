@@ -15,14 +15,18 @@
         size="small" />
     </header>
 
+    <n-alert v-if="error" type="error" data-testid="modules-error">
+      <div class="error-row">
+        <span>{{ t('admin.load_failed') }}</span>
+        <n-button size="small" data-testid="modules-retry" @click="loadModules()">
+          {{ t('common.refresh') }}
+        </n-button>
+      </div>
+    </n-alert>
+
     <n-spin :show="loading">
       <n-list v-if="filteredModules.length" bordered>
-        <n-list-item
-          v-for="module in filteredModules"
-          :key="module.name"
-          class="module-item"
-          data-testid="module-item"
-          @click="handleViewDetail(module.name)">
+        <n-list-item v-for="module in filteredModules" :key="module.id" class="module-item" data-testid="module-item">
           <div class="module-info">
             <div class="module-row">
               <span class="module-name">{{ module.name }}</span>
@@ -36,59 +40,40 @@
           </div>
         </n-list-item>
       </n-list>
-      <n-empty v-else :description="t('admin.modules.empty')" data-testid="empty-state" />
+      <n-empty v-else-if="!error" :description="t('admin.modules.empty')" data-testid="empty-state" />
     </n-spin>
   </section>
 </template>
 
 <script setup lang="ts">
-import { NEmpty, NList, NListItem, NSelect, NSpin, NTag } from 'naive-ui'
-import { computed, ref } from 'vue'
+import { NAlert, NButton, NEmpty, NList, NListItem, NSelect, NSpin, NTag } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { type AdminModuleStatus, useAdminModules } from '@/composables/admin'
 
 defineOptions({
   name: 'AdminModules'
 })
 
-type ModuleStatus = 'loaded' | 'unloaded' | 'failed'
-
-interface ModuleInfo {
-  name: string
-  version: string
-  status: ModuleStatus
-  description?: string
-}
-
-const props = withDefaults(
-  defineProps<{
-    modules?: ModuleInfo[]
-    loading: boolean
-  }>(),
-  {
-    modules: () => []
-  }
-)
-
-const emit = defineEmits<(e: 'view-detail', moduleName: string) => void>()
-
 const { t } = useI18n()
 
-const statusFilter = ref<'all' | ModuleStatus>('all')
+const { modules, loading, error, loadModules } = useAdminModules()
 
-const filterOptions = [
+const statusFilter = ref<'all' | AdminModuleStatus>('all')
+
+const filterOptions = computed(() => [
   { label: t('admin.modules.filter_all'), value: 'all' },
   { label: t('admin.modules.filter_loaded'), value: 'loaded' },
   { label: t('admin.modules.filter_unloaded'), value: 'unloaded' },
   { label: t('admin.modules.filter_failed'), value: 'failed' }
-]
+])
 
 const filteredModules = computed(() => {
-  const modules = props.modules ?? []
-  if (statusFilter.value === 'all') return modules
-  return modules.filter((module) => module.status === statusFilter.value)
+  if (statusFilter.value === 'all') return modules.value
+  return modules.value.filter((module) => module.status === statusFilter.value)
 })
 
-function statusTagType(status: ModuleStatus): 'success' | 'warning' | 'error' {
+function statusTagType(status: AdminModuleStatus): 'success' | 'warning' | 'error' {
   switch (status) {
     case 'loaded':
       return 'success'
@@ -99,7 +84,7 @@ function statusTagType(status: ModuleStatus): 'success' | 'warning' | 'error' {
   }
 }
 
-function statusLabel(status: ModuleStatus): string {
+function statusLabel(status: AdminModuleStatus): string {
   switch (status) {
     case 'loaded':
       return t('admin.modules.status_loaded')
@@ -110,9 +95,9 @@ function statusLabel(status: ModuleStatus): string {
   }
 }
 
-function handleViewDetail(moduleName: string) {
-  emit('view-detail', moduleName)
-}
+onMounted(() => {
+  void loadModules()
+})
 </script>
 
 <style scoped lang="scss">
@@ -152,8 +137,14 @@ function handleViewDetail(moduleName: string) {
   flex-shrink: 0;
 }
 
+.error-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tjg-space-3);
+}
+
 .module-item {
-  cursor: pointer;
   transition: background-color var(--tjg-motion-duration-normal) ease;
 
   &:hover {

@@ -41,6 +41,8 @@ export {
 // ---- 扩展管理器与子模块 ----
 export type {
   AdminManager,
+  AdminModuleInfo,
+  AdminModulePage,
   FederationDestination as SdkFederationDestination,
   GlobalMediaQuarantineChange,
   GlobalMediaQuarantineChangesResponse,

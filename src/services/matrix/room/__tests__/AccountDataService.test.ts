@@ -24,7 +24,6 @@ const getAntiScreenshotMock = vi.fn()
 const setAntiScreenshotMock = vi.fn()
 const getRoomSummaryMembersMock = vi.fn()
 const getAllSummaryStateMock = vi.fn()
-const listServicesMock = vi.fn()
 
 describe('MatrixRoomAccountDataService', () => {
   let service: InstanceType<typeof MatrixRoomAccountDataService>
@@ -60,8 +59,7 @@ describe('MatrixRoomAccountDataService', () => {
       setAntiScreenshot: setAntiScreenshotMock,
       getRoomSummaryMembers: getRoomSummaryMembersMock,
       getAllSummaryState: getAllSummaryStateMock
-    }),
-    getExternalServiceManager: () => ({ listServices: listServicesMock })
+    })
   })
 
   describe('getRoomAccountData via AccountDataManager', () => {
@@ -197,27 +195,6 @@ describe('MatrixRoomAccountDataService', () => {
       getEncryptedEventsMock.mockRejectedValue(new Error('HTTP 500'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
       expect(await service.getEncryptedEvents('!r:e')).toEqual({})
-    })
-  })
-
-  describe('getExternalServices', () => {
-    it('unwraps `services` array from ExternalServiceManager.listServices', async () => {
-      listServicesMock.mockResolvedValue({ services: [{ id: 'a' }] })
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
-      expect(await service.getExternalServices()).toEqual([{ id: 'a' }])
-      expect(listServicesMock).toHaveBeenCalled()
-    })
-
-    it('returns [] when backend omits `services`', async () => {
-      listServicesMock.mockResolvedValue({})
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
-      expect(await service.getExternalServices()).toEqual([])
-    })
-
-    it('swallows backend errors and returns []', async () => {
-      listServicesMock.mockRejectedValue(new Error('HTTP 500'))
-      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
-      expect(await service.getExternalServices()).toEqual([])
     })
   })
 })
