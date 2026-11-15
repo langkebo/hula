@@ -70,6 +70,10 @@ export type Messages = {
     "title": "房间详情",
     "loading": "加载中…",
     "overview": "基本信息",
+    "tab_overview": "概览",
+    "tab_members": "成员",
+    "tab_security": "安全",
+    "tab_advanced": "高级",
     "no_topic": "暂无简介",
     "members": "成员",
     "online": "在线",
@@ -415,6 +419,10 @@ export type KeyPaths =
   | "room.detail.title"
   | "room.detail.loading"
   | "room.detail.overview"
+  | "room.detail.tab_overview"
+  | "room.detail.tab_members"
+  | "room.detail.tab_security"
+  | "room.detail.tab_advanced"
   | "room.detail.no_topic"
   | "room.detail.members"
   | "room.detail.online"

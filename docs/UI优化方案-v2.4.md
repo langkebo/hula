@@ -770,6 +770,21 @@ R1 结论：全程复用 SDK `getAuthMetadata` / `getSsoLoginUrl` 与既有 `Mat
 
 R1 结论：读 / 写走 SDK `RoomManager`；DELETE 因 SDK 未封装而经既有 `MatrixRequestHelper` 适配器补齐，未新建平行 HTTP 客户端。R3 结论：未新增移动端 admin/AI 入口；仅改桌面房间详情与聊天头部，移动端构建路径未受影响。
 
+##### ROOM-02 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| Tab 结构 | 完成 | `RoomDetailDrawer.vue` 改为四 Tab（概览 / 成员 / 安全 / 高级），Hero 区域跨 Tab 常驻用于确认房间身份；Tab 按钮带 `role="tab"` + `aria-selected` + `data-testid="room-drawer-tab-*"`，面板容器 `role="tabpanel"` |
+| 面板归属 | 完成 | 概览：`RoomDetailStats` / `RoomDetailLastMessage` / `RoomMetadataPanel`；成员：`RoomDetailMembers`；安全：`EventSignaturePanel` / `RoomEncryptedEventsPanel` / `RoomRetentionPanel`；高级：`RoomCapabilitiesPanel` / `RoomMessageQueuePanel` / `RoomDetailPinnedMessages` |
+| 能力门控 | 完成 | 六个面板背后均为 synapse-rust 私有扩展端点，`TjgCapability` 无对应能力位，且 `MatrixRoomMetadataService` 等方法 catch 后返回 `{}`，无法从数据区分「端点不存在」与「无数据」。故只有 `EventSignaturePanel` / `RoomEncryptedEventsPanel` 依赖 E2EE，按 `useServerCapability().getCapabilityStatus('e2ee')` 门控：`unsupported` 时整块隐藏，`unknown` 仍展示（能力快照未加载时不误删入口） |
+| Tab 可见性 | 完成 | `RoomRetentionPanel` 的保留策略与房间是否加密无关，故「安全」Tab 常驻；「概览 / 成员 / 高级」面板自带加载 / 空 / 错误 / 有数据四态，不整体隐藏，避免空 Tab |
+| 懒挂载 | 完成 | 面板用 `v-if` 按激活 Tab 挂载，避免打开 Drawer 就并发触发 6 个扩展端点请求；切换房间时 `activeTab` 重置为概览 |
+| 文案 | 完成 | `locales/zh-CN/room.json` / `locales/en/room.json` 新增 `room.detail.tab_overview|tab_members|tab_security|tab_advanced`，`pnpm gen:i18n` 重新生成类型 |
+| 测试 | 完成 | 新增 `src/components/room/__tests__/RoomDetailDrawer.test.ts`（8 例）：默认概览、成员 / 高级 / 安全 Tab 内容、E2EE `supported` / `unsupported` / `unknown` 三态门控、逐 Tab 切换后六个能力面板全部可达、切换房间重置 Tab |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`check:ratchet` 无新增（`hardcoded_radius=0`、`zh_literal_vue=0`）；`check:sdk-boundary` 156 = 基线 156；`quality:no-raw-fetch` 通过；`check:doc-coverage` / `check:doc-paths` 通过；`pnpm check` 通过；`pnpm test:run` 1000 文件 / 11228 用例全部通过 |
+
+R1 结论：面板全部复用既有 `src/services/matrix/**` 服务（`MatrixRoomMetadataService`、`matrixRoomAccountDataService`、`RoomRetention` facade），未新建 HTTP / 协议实现；门控复用 `useServerCapability()`，未新增能力判定副本。R3 结论：本次仅改 `src/components/room/RoomDetailDrawer.vue` 及对应测试与文案，未引入移动端 admin/AI 入口；移动端房间详情保持精简，未引入「高级」Tab。剩余风险：六个扩展端点没有能力位，桌面端在非 synapse-rust 后端上会落到各面板的空状态，属既有服务层约定（`getRoomExternalIds` 注释已确立「端点不存在返回空」）。
+
 #### 12.4.4 ADM（12 条，仅桌面端）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
