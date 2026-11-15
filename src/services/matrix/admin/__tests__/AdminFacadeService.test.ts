@@ -847,7 +847,7 @@ describe('adminService facade', () => {
   describe('System Notifications CRUD', () => {
     it('should create system notification via SDK', async () => {
       mockAdminManager.createNotification.mockResolvedValue({ notification_id: 'n1' })
-      const result = await adminService.createSystemNotification('hello', 'info', ['@u:s'])
+      const result = await adminService.serverNotifications.createSystemNotification('hello', 'info', ['@u:s'])
       expect(result.notificationId).toBe('n1')
       expect(mockAdminManager.createNotification).toHaveBeenCalledWith({
         content: 'hello',
@@ -861,13 +861,13 @@ describe('adminService facade', () => {
         notifications: [{ notification_id: 'n1' }],
         next_token: 't'
       })
-      const result = await adminService.getSystemNotifications(5, 'from')
+      const result = await adminService.serverNotifications.getSystemNotifications(5, 'from')
       expect(result.notifications).toHaveLength(1)
       expect(mockAdminManager.listNotifications).toHaveBeenCalledWith('from', 5)
     })
 
     it('should delete system notification via SDK', async () => {
-      await adminService.deleteSystemNotification('n1')
+      await adminService.serverNotifications.deleteSystemNotification('n1')
       expect(mockAdminManager.deleteNotification).toHaveBeenCalledWith('n1')
     })
   })

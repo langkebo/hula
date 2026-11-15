@@ -15,6 +15,7 @@ export type {
   ServerStats,
   ServerStatus,
   ServerVersion,
+  SystemNotificationInfo,
   UserReputation
 } from './AdminTypes'
 export type { ExternalService, ExternalServiceHealth } from './ExternalServiceService'

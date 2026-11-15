@@ -96,6 +96,15 @@ export interface ServerNoticeInfo {
   content?: Record<string, unknown> | undefined
 }
 
+/** 系统通知条目（由服务端通知记录归一化而来）。 */
+export interface SystemNotificationInfo {
+  id: string
+  content: string
+  type: string
+  targetUsers: string[]
+  createdAt: number | null
+}
+
 export interface RegistrationToken {
   token: string
   usesAllowed?: number | undefined

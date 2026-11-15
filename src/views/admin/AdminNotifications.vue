@@ -65,6 +65,10 @@
             :row-key="(row: Record<string, unknown>) => String(row.pushkey ?? row.app_display_name ?? Math.random())" />
         </n-spin>
       </n-tab-pane>
+
+      <n-tab-pane name="server" :tab="t('admin.notifications.server.tab')" display-directive="show">
+        <AdminServerNotificationTab />
+      </n-tab-pane>
     </n-tabs>
   </div>
 </template>
@@ -76,6 +80,7 @@ import { useI18n } from 'vue-i18n'
 import { useAdminNotifications } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'
+import AdminServerNotificationTab from './AdminServerNotificationTab.vue'
 import { useAdminErrorHandler } from './useAdminError'
 
 const { t } = useI18n()

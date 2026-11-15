@@ -678,7 +678,42 @@
     "deletePusher": "Delete",
     "deletePusherConfirm": "Are you sure you want to delete this pusher?",
     "deletePusherSuccess": "Pusher deleted",
-    "deletePusherFailed": "Failed to delete pusher"
+    "deletePusherFailed": "Failed to delete pusher",
+    "server": {
+      "tab": "Server Notifications",
+      "hint": "Manage server-side notification records here; independent from Settings and Pushers.",
+      "create": "New Notification",
+      "createTitle": "New Server Notification",
+      "editTitle": "Edit Server Notification",
+      "content": "Content",
+      "contentPlaceholder": "Enter notification content",
+      "type": "Type",
+      "typeOptions": {
+        "info": "Info",
+        "warning": "Warning",
+        "error": "Error"
+      },
+      "targets": "Target Users",
+      "targetsPlaceholder": "Comma-separated user IDs; leave empty for all users",
+      "table": {
+        "content": "Content",
+        "type": "Type",
+        "targets": "Targets",
+        "createdAt": "Created At",
+        "actions": "Actions"
+      },
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this server notification?",
+      "created": "Server notification created",
+      "updated": "Server notification updated",
+      "deleted": "Server notification deleted",
+      "saveFailed": "Failed to save server notification",
+      "deleteFailed": "Failed to delete server notification",
+      "contentRequired": "Content is required",
+      "loadFailed": "Failed to load server notification detail",
+      "empty": "No server notifications"
+    }
   },
   "appServices": {
     "list": "App Service List",

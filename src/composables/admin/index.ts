@@ -34,6 +34,8 @@ export type { RoomInfo } from './useAdminRooms'
 export { useAdminRooms } from './useAdminRooms'
 
 export { useAdminServerLogs } from './useAdminServerLogs'
+export type { SystemNotificationDraft } from './useAdminServerNotifications'
+export { useAdminServerNotifications } from './useAdminServerNotifications'
 export type { SpaceInfo } from './useAdminSpaces'
 export { useAdminSpaces } from './useAdminSpaces'
 export { useAdminTelemetry } from './useAdminTelemetry'

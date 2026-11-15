@@ -901,6 +901,21 @@ R1 结论：仅消费既有 `adminService.getServerStatus/Health/Version/Stats`�
 
 R1 结论：举报数据全部来自既有 `AdminReportService`（`getAdminManager().listReports` 等），本次只补 UI 与文案，未新增 HTTP 或协议实现。R3 结论：新增文件位于桌面 `src/views/admin/**`，`ModerationPanel` 仅桌面 admin 页面引用，`src/mobile/**` 无 import，移动端不产出 admin 入口。
 
+##### ADM-01 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | 7 条系统通知端点（`sendServerNotice` / `getServerNotices` / `createNotification` / `listNotifications` / `getNotification` / `updateNotification` / `deleteNotification`）此前与用户通知设置、pushers 混在 `AdminNotificationService`；门面另有 5 个同名 wrapper 零 UI 消费者 |
+| 服务拆分 | 完成 | 新增 `src/services/matrix/admin/AdminServerNotificationService.ts`（7 方法，统一 SDK 子集类型并归一化为 `SystemNotificationInfo`）；`NotificationService.ts` 收缩为用户级 4 方法（设置读写 / pushers 列表与删除），职责边界写进类注释 |
+| 门面接线 | 完成 | `AdminFacadeService` 新增 `serverNotifications` 字段并委托 `sendServerNotice` / `getServerNotices`；删除 `AdminFacadeOpsMethods.ts` 中 5 个无消费者的系统通知 wrapper；`AdminFacadeService.ts` 保持 537 行基线不增长 |
+| 页面接线 | 完成 | 新增 `src/views/admin/AdminServerNotificationTab.vue`：列表（内容/类型/目标数/创建时间/操作）+ 新建/编辑抽屉（内容、类型、逗号分隔目标用户）+ 行内删除二次确认，含错误态与空态；`AdminNotifications.vue` 在 `pushers` 之后新增 `server` tab，与「通知设置」「推送器」分区 |
+| composable | 完成 | 新增 `useAdminServerNotifications`：`loadNotifications` / `loadDetail` / `createNotification` / `updateNotification` / `removeNotification`，写后统一回读列表，目标用户去空并空数组降级为 `undefined` |
+| i18n | 完成 | 新增 `admin.notifications.server.*`（tab/hint/表单/表格列/操作与提示共 35 键），中英同步；`pnpm gen:i18n` 已重新生成类型 |
+| 测试 | 完成 | `AdminServerNotificationService.test.ts` 8 例（发送/列表映射与降级、创建负载、归一化、详情空响应、更新与删除抛错）；`useAdminServerNotifications.test.ts` 7 例；`AdminServerNotificationTab.test.ts` 8 例（拉取渲染、空态、错误态、新建、空内容拦截、编辑先拉详情、删除刷新、删除失败）；`AdminFacadeService.test.ts` 系统通知 3 例改走 `adminService.serverNotifications.*` |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run`（1007 个文件 / 11237 例）全绿；`check:file-size` 仅剩 3 个既有超标文件（`RoomDetailDrawer.vue` / `RoomOperations.ts` / `ChatMain.vue`，工作区未改动，非本批次引入） |
+
+R1 结论：7 条端点全部复用既有 SDK `getAdminManager()` 能力，仅做服务分层与页面接线，未新增 HTTP 或协议实现。R3 结论：新增服务、composable、页面均只被桌面 admin 路径引用，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码。
+
 #### 12.4.5 VEN（4 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |

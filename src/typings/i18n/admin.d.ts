@@ -683,7 +683,42 @@ export type Messages = {
     "deletePusher": "删除",
     "deletePusherConfirm": "确定要删除此推送器吗？",
     "deletePusherSuccess": "推送器已删除",
-    "deletePusherFailed": "删除推送器失败"
+    "deletePusherFailed": "删除推送器失败",
+    "server": {
+      "tab": "系统通知",
+      "hint": "此处管理服务端系统通知记录，与「通知设置」「推送器」相互独立。",
+      "create": "新建通知",
+      "createTitle": "新建系统通知",
+      "editTitle": "编辑系统通知",
+      "content": "通知内容",
+      "contentPlaceholder": "请输入通知内容",
+      "type": "通知类型",
+      "typeOptions": {
+        "info": "信息",
+        "warning": "警告",
+        "error": "错误"
+      },
+      "targets": "目标用户",
+      "targetsPlaceholder": "多个用户 ID 用英文逗号分隔，留空表示全员",
+      "table": {
+        "content": "内容",
+        "type": "类型",
+        "targets": "目标数",
+        "createdAt": "创建时间",
+        "actions": "操作"
+      },
+      "edit": "编辑",
+      "delete": "删除",
+      "deleteConfirm": "确定要删除此系统通知吗？",
+      "created": "系统通知已创建",
+      "updated": "系统通知已更新",
+      "deleted": "系统通知已删除",
+      "saveFailed": "保存系统通知失败",
+      "deleteFailed": "删除系统通知失败",
+      "contentRequired": "通知内容不能为空",
+      "loadFailed": "加载系统通知详情失败",
+      "empty": "暂无系统通知"
+    }
   },
   "appServices": {
     "list": "应用服务列表",
@@ -1517,6 +1552,35 @@ export type KeyPaths =
   | "admin.notifications.deletePusherConfirm"
   | "admin.notifications.deletePusherSuccess"
   | "admin.notifications.deletePusherFailed"
+  | "admin.notifications.server.tab"
+  | "admin.notifications.server.hint"
+  | "admin.notifications.server.create"
+  | "admin.notifications.server.createTitle"
+  | "admin.notifications.server.editTitle"
+  | "admin.notifications.server.content"
+  | "admin.notifications.server.contentPlaceholder"
+  | "admin.notifications.server.type"
+  | "admin.notifications.server.typeOptions.info"
+  | "admin.notifications.server.typeOptions.warning"
+  | "admin.notifications.server.typeOptions.error"
+  | "admin.notifications.server.targets"
+  | "admin.notifications.server.targetsPlaceholder"
+  | "admin.notifications.server.table.content"
+  | "admin.notifications.server.table.type"
+  | "admin.notifications.server.table.targets"
+  | "admin.notifications.server.table.createdAt"
+  | "admin.notifications.server.table.actions"
+  | "admin.notifications.server.edit"
+  | "admin.notifications.server.delete"
+  | "admin.notifications.server.deleteConfirm"
+  | "admin.notifications.server.created"
+  | "admin.notifications.server.updated"
+  | "admin.notifications.server.deleted"
+  | "admin.notifications.server.saveFailed"
+  | "admin.notifications.server.deleteFailed"
+  | "admin.notifications.server.contentRequired"
+  | "admin.notifications.server.loadFailed"
+  | "admin.notifications.server.empty"
   | "admin.appServices.list"
   | "admin.appServices.detail"
   | "admin.appServices.searchServices"

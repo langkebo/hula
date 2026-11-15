@@ -7,6 +7,7 @@ import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { AdminApiProbeService } from './AdminApiProbeService'
 import { AdminFacadeDomainMethods } from './AdminFacadeDomainMethods'
 import { AdminModerationService } from './AdminModerationService'
+import { AdminServerNotificationService } from './AdminServerNotificationService'
 import type {
   AdminReport,
   ContentFilter,
@@ -81,6 +82,7 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
   readonly media = new AdminMediaService(() => this.sdkAdmin())
   // biome-ignore lint/suspicious/noExplicitAny: SDK admin type differs from service wrapper type
   readonly notifications = new AdminNotificationService(() => this.sdkAdmin() as Promise<any>)
+  readonly serverNotifications = new AdminServerNotificationService(() => this.sdkAdmin())
   readonly retention = new AdminRetentionService(
     () => this.sdkAdmin(),
     () => this.getClient()
@@ -184,8 +186,7 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
   private async sdkAdmin(): Promise<import('matrix-js-sdk/admin').AdminManager> {
     const hasPermission = await this.verifyServerSidePermission()
     if (!hasPermission) {
-      // 非管理员用户访问 Admin API 是正常业务流，不是异常，降级为 debug
-      logger.debug('[Admin] 非管理员用户，跳过 SDK AdminManager 访问')
+      logger.debug('[Admin] 非管理员用户跳过 SDK AdminManager 访问（正常业务流，非异常）')
       throw new Error('ADMIN_PERMISSION_DENIED')
     }
     const client = this.getClient() as MatrixClient & {
@@ -383,11 +384,10 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
   // ==================== Notification Management ====================
 
   async sendServerNotice(userId: string, content: Record<string, unknown>): Promise<ServerNoticeResult> {
-    return this.notifications.sendServerNotice(userId, content)
+    return this.serverNotifications.sendServerNotice(userId, content)
   }
-
   async getServerNotices(limit = DEFAULT_PAGE_LIMIT): Promise<{ notices: ServerNoticeInfo[] } | null> {
-    return this.notifications.getServerNotices(limit)
+    return this.serverNotifications.getServerNotices(limit)
   }
 
   // ==================== Registration Token Management ====================

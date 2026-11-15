@@ -310,47 +310,6 @@ export abstract class AdminFacadeOpsMethods extends BaseMatrixService {
     return this.applications.pingApplicationService(serviceId)
   }
 
-  async createSystemNotification(
-    content: string,
-    type = 'info',
-    targetUsers?: string[]
-  ): Promise<{ notificationId: string }> {
-    return this.notifications.createSystemNotification(content, type, targetUsers)
-  }
-
-  async getSystemNotifications(
-    limit = DEFAULT_PAGE_LIMIT,
-    from?: string
-  ): Promise<{ notifications: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
-    return this.notifications.getSystemNotifications(limit, from)
-  }
-
-  /**
-   * 获取单条系统通知。
-   * @param notificationId 通知 ID。
-   * @returns 系统通知信息，不存在时返回 null。
-   */
-  async getSystemNotification(notificationId: string): Promise<Record<string, unknown> | null> {
-    return this.notifications.getSystemNotification(notificationId)
-  }
-
-  /**
-   * 更新系统通知。
-   * @param notificationId 通知 ID。
-   * @param updates 更新字段。
-   */
-  async updateSystemNotification(notificationId: string, updates: Record<string, unknown>): Promise<void> {
-    return this.notifications.updateSystemNotification(notificationId, updates)
-  }
-
-  /**
-   * 删除系统通知。
-   * @param notificationId 通知 ID。
-   */
-  async deleteSystemNotification(notificationId: string): Promise<void> {
-    return this.notifications.deleteSystemNotification(notificationId)
-  }
-
   /**
    * 获取服务器管理员信息（委托给 getServerInfo()）。
    * @returns 管理员信息，不存在时返回 null。
