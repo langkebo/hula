@@ -859,6 +859,21 @@ R1 结论：门面只做委托，未新写任何 HTTP 调用或协议逻辑；�
 
 R1 结论：模块列表能力直接消费 SDK `AdminManager.listModules`，未在 `src/services/matrix/**` 之外另起实现。R3 结论：仅涉及桌面 admin 视图、composable 与 admin 服务域，`src/mobile/**` 无引用，移动端产物无新增入口。
 
+##### ADM-03 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | 后台仅有 `AdminApplicationService`（应用服务），外部服务（TrendRadar / OpenClaw / Webhook 等）的 7 条端点已由 `AdminExternalServiceService` 封装，但无任何 UI 入口，能力闲置 |
+| 服务复用 | 完成 | 不新增服务实现，直接消费 `adminService.externalServices` 的 `listServices` / `registerService` / `updateService` / `deleteService` / `getAllHealth` / `checkServiceHealth`；仅在 `admin/index.ts` 补 `ExternalService` / `ExternalServiceHealth` 类型再导出 |
+| composable | 完成 | 新增 `src/composables/admin/useAdminExternalServices.ts`：`services` / `healthMap`（按 `service_id` 索引）/ `loading` / `error` / `serviceType` / `checkingId` / `mutating` + `loadServices` / `registerService` / `setEnabled` / `checkHealth` / `removeService`；注册时剔除空白可选字段，开关用返回值回填实体 |
+| 页面接线 | 完成 | 新增 `src/views/admin/AdminExternalServices.vue`：类型过滤、列表行（名称/类型/健康/`last_check`/`last_error`）、行内启停与健康检查、注销二次确认、注册弹窗；错误态 `load-error` + 重试，空态 `empty-state` |
+| 路由与菜单 | 完成 | `router/routes/desktop.ts` 新增 `/admin/external-services`（`AdminExternalServices`，`requiresAdmin`）；`useAdminNav.ts` 系统分组新增条目；`adminNavIcons.ts` 新增 `externalServices` 图标（24x24、stroke 2、currentColor） |
+| i18n | 完成 | 新增 `admin.nav.externalServices` 与 `admin.externalServices.*`（20 键），中英同步；`pnpm gen:i18n` 已重新生成类型 |
+| 测试 | 完成 | `useAdminExternalServices.test.ts` 8 例（默认全量拉取并合并健康状态、类型透传、失败清空、注册字段裁剪、注册失败、开关回填、健康检查 `checkingId`、注销后重拉）；`AdminExternalServices.test.ts` 8 例（渲染、空态、错误态与重试、过滤、开关、健康检查、注销、注册提交） |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run`（1003 个文件）全绿 |
+
+R1 结论：外部服务能力全部来自既有 `AdminExternalServiceService`（`getAdminManager().externalService`），本次只补 UI 与类型再导出，未新增 HTTP 或协议实现。R3 结论：新增文件仅位于桌面 `src/views/admin/**` 与 `src/composables/admin/**`，`src/mobile/**` 无 import，移动端不产出 admin 路由与菜单。
+
 ##### ADM-07 落地记录（P1，完成）
 
 | 项 | 状态 | 说明 |

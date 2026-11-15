@@ -339,6 +339,12 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         name: 'AdminModules',
         component: () => import('@/views/admin/AdminModules.vue'),
         meta: { title: '功能模块', requiresAdmin: true }
+      },
+      {
+        path: '/admin/external-services',
+        name: 'AdminExternalServices',
+        component: () => import('@/views/admin/AdminExternalServices.vue'),
+        meta: { title: '外部服务', requiresAdmin: true }
       }
     ]
   },

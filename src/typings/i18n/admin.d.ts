@@ -254,7 +254,8 @@ export type Messages = {
     "guests": "访客管理",
     "telemetry": "遥测监控",
     "backgroundUpdates": "后台更新",
-    "modules": "模块管理"
+    "modules": "模块管理",
+    "externalServices": "外部服务"
   },
   "status": {
     "admin": "管理员",
@@ -716,6 +717,28 @@ export type Messages = {
     "disableSuccess": "应用服务已禁用",
     "disableFailed": "禁用应用服务失败"
   },
+  "externalServices": {
+    "title": "外部服务",
+    "subtitle": "注册与管理 TrendRadar、OpenClaw、Webhook 等外部服务",
+    "panel_notice": "外部服务由服务端统一注册与健康检查，此页仅做配置与状态查看。",
+    "register": "注册服务",
+    "register_title": "注册外部服务",
+    "service_type": "服务类型",
+    "service_id": "服务 ID",
+    "display_name": "显示名称",
+    "webhook_url": "Webhook 地址",
+    "api_key": "API Key",
+    "delete": "注销",
+    "delete_confirm": "确定要注销外部服务「{name}」吗？此操作无法撤销。",
+    "health_check": "健康检查",
+    "healthy": "健康",
+    "unhealthy": "异常",
+    "unknown": "未检测",
+    "last_check": "最近检查",
+    "never_checked": "尚未检查",
+    "empty": "暂无外部服务",
+    "filter_all": "全部类型"
+  },
   "guests": {
     "access_settings": "访客访问设置",
     "guest_enabled": "访客访问",
@@ -1119,6 +1142,7 @@ export type KeyPaths =
   | "admin.nav.telemetry"
   | "admin.nav.backgroundUpdates"
   | "admin.nav.modules"
+  | "admin.nav.externalServices"
   | "admin.status.admin"
   | "admin.status.user"
   | "admin.availability.loading.title"
@@ -1523,6 +1547,26 @@ export type KeyPaths =
   | "admin.appServices.enableFailed"
   | "admin.appServices.disableSuccess"
   | "admin.appServices.disableFailed"
+  | "admin.externalServices.title"
+  | "admin.externalServices.subtitle"
+  | "admin.externalServices.panel_notice"
+  | "admin.externalServices.register"
+  | "admin.externalServices.register_title"
+  | "admin.externalServices.service_type"
+  | "admin.externalServices.service_id"
+  | "admin.externalServices.display_name"
+  | "admin.externalServices.webhook_url"
+  | "admin.externalServices.api_key"
+  | "admin.externalServices.delete"
+  | "admin.externalServices.delete_confirm"
+  | "admin.externalServices.health_check"
+  | "admin.externalServices.healthy"
+  | "admin.externalServices.unhealthy"
+  | "admin.externalServices.unknown"
+  | "admin.externalServices.last_check"
+  | "admin.externalServices.never_checked"
+  | "admin.externalServices.empty"
+  | "admin.externalServices.filter_all"
   | "admin.guests.access_settings"
   | "admin.guests.guest_enabled"
   | "admin.guests.guest_count"

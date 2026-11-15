@@ -249,7 +249,8 @@
     "guests": "Guests",
     "telemetry": "Telemetry",
     "backgroundUpdates": "Background Updates",
-    "modules": "Modules"
+    "modules": "Modules",
+    "externalServices": "External Services"
   },
   "status": {
     "admin": "Admin",
@@ -710,6 +711,28 @@
     "enableFailed": "Failed to enable app service",
     "disableSuccess": "App service disabled",
     "disableFailed": "Failed to disable app service"
+  },
+  "externalServices": {
+    "title": "External Services",
+    "subtitle": "Register and manage external services such as TrendRadar, OpenClaw and webhooks",
+    "panel_notice": "External services are registered and health-checked by the server; this page only manages configuration and status.",
+    "register": "Register Service",
+    "register_title": "Register External Service",
+    "service_type": "Service Type",
+    "service_id": "Service ID",
+    "display_name": "Display Name",
+    "webhook_url": "Webhook URL",
+    "api_key": "API Key",
+    "delete": "Deregister",
+    "delete_confirm": "Deregister external service \"{name}\"? This action cannot be undone.",
+    "health_check": "Health Check",
+    "healthy": "Healthy",
+    "unhealthy": "Unhealthy",
+    "unknown": "Not Checked",
+    "last_check": "Last Check",
+    "never_checked": "Never checked",
+    "empty": "No external services yet",
+    "filter_all": "All types"
   },
   "guests": {
     "access_settings": "Guest Access Settings",

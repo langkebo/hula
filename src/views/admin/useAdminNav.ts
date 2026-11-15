@@ -186,6 +186,11 @@ export function useAdminNav() {
           label: t('admin.nav.modules'),
           icon: 'modules',
           optionalCapability: 'modules'
+        },
+        {
+          path: '/admin/external-services',
+          label: t('admin.nav.externalServices'),
+          icon: 'externalServices'
         }
       ]
     }
