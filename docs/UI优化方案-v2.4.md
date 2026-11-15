@@ -675,6 +675,20 @@ main.ts
 
 R1 结论：SDK 未通过 exports 暴露 `server-capabilities`，本地别名表为当前唯一可行方案，已在源码注释登记检索证据。R3 结论：未新增平行 API 实现；未引入移动端 admin/AI 入口；移动端构建路径未受影响。
 
+#### 12.3.6 批次 0 落地记录（CAP-02）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| `StickyTab` 门控 | 完成 | 随 ROOM-01 一并落地：`sticky-events` 为 unsupported/unknown 时只渲染只读提示、不发 GET；见 §12.4.3 |
+| `DehydratedDeviceSection` 门控 | 完成 | 判定改为 `getCapabilityStatus('dehydrated-device') === 'supported' && matrixDehydratedDeviceService.isSupported()`；不再只看加密后端接口是否存在 |
+| 整块不渲染 | 完成 | 根节点 `v-if="supported"`，删除 unsupported 三元文案与子组件各自的 `v-if`；能力快照到达前（unknown）不渲染，避免只读占位与点击后才抛错的入口 |
+| 响应式 | 完成 | `getCapabilityStatus` 在 computed 内读取能力 store，快照异步到达后自动重算，删除 `onMounted` 手工探测 |
+| i18n | 无新增 | `encryption.dehydrated_device.unsupported` 仍由 `DehydratedDeviceManager.vue` 使用，未产生孤儿 key |
+| 测试 | 完成 | `EncryptionSettings.test.ts` 的脱水设备用例改为四态：unsupported / unknown / 后端无接口 ⇒ DOM 不存在；双双支持 ⇒ 区块与管理按钮存在 |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`EncryptionSettings.test.ts` 25 用例通过；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths` 均通过 |
+
+R1 结论：仅消费 `MatrixCapabilityService` 与既有 `MatrixDehydratedDeviceService`，未新增 HTTP 实现。R3 结论：未引入移动端 admin/AI 入口；设置为桌面端页面，移动端构建路径未受影响。
+
 ### 12.4 逐条优化方案
 
 #### 12.4.1 CAP（7 条）

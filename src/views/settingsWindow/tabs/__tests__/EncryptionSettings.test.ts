@@ -152,7 +152,8 @@ const {
   writeTextMock: vi.fn(),
   capabilityState: {
     loaded: false,
-    e2ee: true
+    e2ee: true,
+    dehydratedDevice: 'supported' as 'supported' | 'unsupported' | 'unknown'
   },
   isDehydratedSupportedMock: vi.fn(() => true),
   getDevicesMock: vi.fn(),
@@ -209,11 +210,12 @@ vi.mock('@/services/matrix/crypto/MatrixKeyBackupService', () => ({
   }
 }))
 
-// 能力门控：加密页在服务端未启用 E2EE 时降级为只读
+// 能力门控：加密页在服务端未启用 E2EE 时降级为只读；脱水设备区块按能力三态裁剪
 vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
   useServerCapability: () => ({
     isLoaded: { value: capabilityState.loaded },
-    canUseE2EE: { value: capabilityState.e2ee }
+    canUseE2EE: { value: capabilityState.e2ee },
+    getCapabilityStatus: (key: string) => (key === 'dehydrated-device' ? capabilityState.dehydratedDevice : 'unknown')
   })
 }))
 
@@ -513,6 +515,7 @@ describe('EncryptionSettings', () => {
     cancelVerificationMock.mockResolvedValue(undefined)
     capabilityState.loaded = false
     capabilityState.e2ee = true
+    capabilityState.dehydratedDevice = 'supported'
     isDehydratedSupportedMock.mockReturnValue(true)
     getDevicesMock.mockResolvedValue([
       { device_id: 'DEVICE123', display_name: 'Desktop', last_seen_ts: 1 },
@@ -862,31 +865,47 @@ describe('EncryptionSettings', () => {
     })
   })
 
-  describe('脱水设备入口（加密后端能力）', () => {
-    const findSection = (wrapper: ReturnType<typeof mountComponent>) =>
-      wrapper.findAll('.settings-section').find((item) => item.text().includes('脱水设备'))
+  describe('脱水设备区块（服务端能力 + 加密后端能力）', () => {
+    const sectionSelector = '[data-testid="dehydrated-device-section"]'
 
-    it('加密后端不支持脱水设备 ⇒ 只显示说明，不渲染管理入口', async () => {
+    it('服务端未声明 dehydrated-device ⇒ 区块不渲染', async () => {
+      capabilityState.dehydratedDevice = 'unsupported'
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.find(sectionSelector).exists()).toBe(false)
+      expect(wrapper.text()).not.toContain('脱水设备')
+      expect(wrapper.find('[data-test="dehydrated-device-manager"]').exists()).toBe(false)
+    })
+
+    it('能力快照未加载（unknown）⇒ 按不支持处理，区块不渲染', async () => {
+      capabilityState.dehydratedDevice = 'unknown'
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
+      expect(wrapper.find(sectionSelector).exists()).toBe(false)
+    })
+
+    it('加密后端缺少管理接口 ⇒ 区块不渲染', async () => {
       isDehydratedSupportedMock.mockReturnValue(false)
 
       const wrapper = mountComponent()
       await flushPromises()
 
-      const section = findSection(wrapper)
-      expect(section).toBeDefined()
-      expect(section!.text()).toContain('当前加密后端不支持脱水设备')
-      expect(section!.find('button').exists()).toBe(false)
+      expect(wrapper.find(sectionSelector).exists()).toBe(false)
       expect(wrapper.find('[data-test="dehydrated-device-manager"]').exists()).toBe(false)
     })
 
-    it('加密后端支持脱水设备 ⇒ 渲染管理入口', async () => {
+    it('服务端与加密后端均支持 ⇒ 渲染区块与管理入口', async () => {
       const wrapper = mountComponent()
       await flushPromises()
 
-      const section = findSection(wrapper)
-      expect(section).toBeDefined()
-      expect(section!.text()).not.toContain('当前加密后端不支持脱水设备')
-      expect(section!.find('button').exists()).toBe(true)
+      const section = wrapper.find(sectionSelector)
+      expect(section.exists()).toBe(true)
+      expect(section.text()).toContain('管理用于离线密钥存储的脱水设备')
+      expect(section.find('button').exists()).toBe(true)
       expect(wrapper.find('[data-test="dehydrated-device-manager"]').exists()).toBe(true)
     })
   })
