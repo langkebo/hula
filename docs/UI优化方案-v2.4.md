@@ -800,6 +800,34 @@ R1 结论：面板全部复用既有 `src/services/matrix/**` 服务（`MatrixRo
 
 R1 结论：直接消费 composable 既有布尔返回，未新增服务方法或平行实现。R3 结论：仅改桌面聊天主区与房间设置组件，移动端未引入 admin/AI 入口。
 
+##### ROOM-04 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 调用点盘点 | 完成 | 对 `MatrixThreadApi` / `MatrixThreadService` 全部公开方法在 `src/` 全量检索，实际 UI 调用点只有 6 个（`getRoomThread` / `getThreadReplies` / `freezeThread` / `unfreezeThread` / `muteThread` / `subscribeToThread`，均由 `ThreadPanel.vue` 使用），与文档「15 个零 UI 调用方法」一致 |
+| 接线（有用） | 完成 | 4 个有产品价值的方法接入线程面板：`getThreadStatsViaApi`（打开面板即拉回复数 / 参与人数，替换原先只显示本地条数）、`markThreadReadViaApi`（回复列表加载完以最后一条的回执标记已读）、`deleteRoomThreadViaApi`（头部删除线程，确认后关闭面板）、`redactThreadReplyViaApi`（仅本人回复显示「撤回」入口，避免越权） |
+| 删除（无用） | 完成 | 11 个零调用方法连同委托一并删除，不留死代码：`getGlobalThreadList` / `createGlobalThread` / `getSubscribedThreads` / `getGlobalUnreadThreads` / `createRoomThread` / `getRoomThreadList` / `searchRoomThreads` / `getRoomUnreadThreads` / `addThreadReply` / `unsubscribeFromThread` / `getLegacyRoomThreadList`；`MatrixThreadService` 对应委托同步移除，`DEFAULT_PAGE_LIMIT` / `DEFAULT_SEARCH_LIMIT` 引用随之清理 |
+| 保留方法 | 完成 | `MatrixThreadApi` 保留 10 个：上文 6 个 + 新增接线的 4 个；文件头校准注释精简为「嵌套返回」「未读回执」两条，并注明「无 UI 调用点的列表/创建/订阅类方法已移除（ROOM-04）」 |
+| 失败语义 | 完成 | 统计接口不可用返回 `null`，面板回落到本地 `threadReplies.length`，阻断渲染；删除 / 撤回失败 `showFeedback` 并保留原状态（删除失败不关闭面板，撤回失败不刷新列表）；`markThreadRead` 在 manager 缺该方法时返回 `null`，不阻断列表 |
+| 文案 | 完成 | `locales/zh-CN/thread.json` / `locales/en/thread.json` 新增 `thread.participants` / `thread.delete` / `thread.delete_confirm` / `thread.delete_success` / `thread.delete_failed` / `thread.redact` / `thread.redact_confirm` / `thread.redact_success`，沿用既有 `thread.action_failed`；`pnpm gen:i18n` 重新生成类型（6208 key paths） |
+| 图标与 token | 完成 | 删除按钮图标用 `<svg><use href="#delete" /></svg>`（线宽沿用既有图标集）；新增样式只用 `--tjg-*` token，未新增硬编码颜色 |
+| 测试 | 完成 | `ThreadPanel.test.ts` 新增 8 例（统计加载、统计不可用回落、最后一条标记已读、空回复不标记、删除成功关闭面板、删除失败保留面板、本人回复可撤回且刷新、撤回失败提示不刷新）→ 18 例；`MatrixThreadApi.test.ts` 删除 11 组对应用例 → 28 例；`MatrixThreadService.test.ts` 同批删除 → 14 例；三文件 60 用例全过 |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check` 通过（biome 2784 文件、i18n 完整性、token 使用率 100%、icon-aria 552 / svg-aria 584 / dead-handlers 1585、capabilities-sync 7 项一致） |
+
+R1 结论：新增接线全部复用既有 `MatrixThreadService` → `MatrixThreadApi` → `getThreadingManager()` 三层委托，未新增任何 HTTP 或协议实现，也未在组件内直连 SDK。R3 结论：改动集中在 `src/services/matrix/messaging/**` 与桌面线程面板、文案与类型声明，`src/mobile/**` 未引用线程面板与 admin/AI 模块，移动端产物无新增入口。
+
+##### ROOM-03 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 门面现状盘点 | 完成 | `MatrixRoomReadFacade` 已覆盖 29 个读接口（状态、别名、置顶/粘性、邀请名单、标签、摘要、时间线、账号数据、子服务域服务器等），每个方法均已有委托测试；缺口在第三层——7 处面板/composable 仍直接 import 子服务单例，绕过门面 |
+| 补齐读接口 | 完成 | `MatrixRoomReadFacade` 新增 5 个房间扩展端点读方法：`getAntiScreenshot` / `getMessageQueue` / `getEncryptedEvents` / `signEvent` / `verifyEvent`；`MatrixRoomActionFacade` 补 1 个写方法 `setAntiScreenshot`，全部一对一委托既有 `AccountDataService` |
+| 三层落位 | 完成 | 消费方统一改为门面调用：`useRoomAntiScreenshot.ts`（读+写）、`EventSignaturePanel.vue`（签名/验签）、`RoomMessageQueuePanel.vue`、`RoomEncryptedEventsPanel.vue`、`RoomMetadataPanel.vue`、`RoomCapabilitiesPanel.vue`、`useRoomUpgradeFlow.ts`（版本读取） |
+| 测试 | 完成 | `ReadFacade.test.ts` 39→45 例（新增 5 个委托 + 1 个错误透传）、`ActionFacade.test.ts` 39→40 例（`setAntiScreenshot` 委托）；受影响消费方测试 6 文件 28 例未改断言仍全过（门面委托仍命中原子服务，mock 语义不变） |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误 |
+
+R1 结论：门面只做委托，未新写任何 HTTP 调用或协议逻辑；所有端点仍落在既有 `AccountDataService`（SDK manager extensions 封装）。R3 结论：仅涉及 `src/services/matrix/room/**` 与桌面房间面板/composable，未触碰移动端与 admin/AI 模块。
+
 #### 12.4.4 ADM（12 条，仅桌面端）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |

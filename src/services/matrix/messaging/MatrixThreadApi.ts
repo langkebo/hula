@@ -6,176 +6,29 @@
  * (exposed on the MatrixClient via `getThreadingManager()` method).
  *
  * 校准说明：
- * - F-8 已修复 `result?.subscribed ?? []` 取对象字段而非 `Array.isArray` 误判；
- * - 2026-09-06 fork 实现的 `getSubscribedThreads` 签名为 `() => SubscribedThreadsResponse`，
- *   而 Tjg 调用时的 `result.threads` 字段在 synapse-rust 实际返回 `threads: ThreadSummaryResponse[]`；
- * - 方法签名已校准为对象参数，与 SDK ThreadingManager 实际实现一致；
- *
- * 2026-09-10 二轮校准（返回类型）：
  * - `getRoomThread` 实际返回**嵌套**的 `ThreadDetailResponse`（root/replies/summary/...），
  *   此前误按扁平 ThreadRootResponse 声明，消费者取 `root_event_id` 会拿到 undefined；
- * - `getRoomThreadList` / `searchRoomThreads` 元素是 **snake_case** 的
- *   `ThreadSummaryResponse`，不是 camelCase 的 `ThreadListItem`；
  * - 未读接口的 `threads` 元素是 `ThreadReadReceiptResponse`（已读回执），不是线程摘要。
  *
  * 本文件**不做** camelCase 转换，保持后端原始形状透传。
+ * 仅保留线程面板实际使用的方法；无 UI 调用点的列表/创建/订阅类方法已移除（ROOM-04）。
  */
 
-import { DEFAULT_PAGE_LIMIT, DEFAULT_SEARCH_LIMIT } from '@/common/constants'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import type {
-  ThreadCreateResponse,
   ThreadDetailResponse,
-  ThreadLegacyChunkItem,
   ThreadReadReceiptResponse,
   ThreadReplyResponse,
   ThreadStatistics,
   ThreadSubscription,
-  ThreadSubscriptionResponse,
-  ThreadSummaryResponse
+  ThreadSubscriptionResponse
 } from './threadTypes'
 import { getThreadingManager } from './threadUtils'
 
 const logger = createLogger('MatrixThreadApi')
 
 export class MatrixThreadApi extends BaseMatrixService {
-  /** 获取全局线程列表（MSC4267 实现的 /sync 增量 state token） */
-  async getGlobalThreadListViaApi(
-    limit = DEFAULT_PAGE_LIMIT,
-    from?: string
-  ): Promise<{ threads: ThreadSummaryResponse[]; nextBatch?: string | undefined; total: number }> {
-    const manager = getThreadingManager()
-    if (!manager?.getGlobalThreadList) return { threads: [], total: 0 }
-    try {
-      const result = await manager.getGlobalThreadList({ limit, from })
-      return { threads: result?.threads ?? [], nextBatch: result?.next_batch ?? undefined, total: result?.total ?? 0 }
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取全局线程列表失败: ${err}`)
-      return { threads: [], total: 0 }
-    }
-  }
-
-  /** 创建全局线程 */
-  async createGlobalThreadViaApi(
-    roomId: string,
-    rootEventId: string,
-    content?: Record<string, unknown>
-  ): Promise<ThreadCreateResponse | null> {
-    const manager = getThreadingManager()
-    if (!manager?.createGlobalThread) return null
-    try {
-      return await manager.createGlobalThread({ roomId, rootEventId, content })
-    } catch (err) {
-      logger.error(`[MatrixThread] 全局创建线程失败: ${err}`)
-      throw err
-    }
-  }
-
-  /** 通过 API 获取已订阅的话题列表
-   *
-   * F-8 校准：SDK `getSubscribedThreads()` 返回 `SubscribedThreadsResponse` 对象
-   * `{ threads: ThreadSummaryResponse[], subscribed: ThreadSubscriptionResponse[], next_batch? }`，
-   * 而非数组。调用方应取 `result.subscribed` 字段。
-   */
-  async getSubscribedThreadsViaApi(): Promise<ThreadSubscriptionResponse[]> {
-    const manager = getThreadingManager()
-    if (!manager?.getSubscribedThreads) return []
-    try {
-      const result = await manager.getSubscribedThreads()
-      // F-8 修复：SDK 返回 SubscribedThreadsResponse 对象（{threads, subscribed, next_batch}），
-      // 而非数组。此前 `Array.isArray` 恒为 false，导致订阅线程列表恒返 []。
-      // 用可选链兼容 result 为 null/对象等异常形状，统一降级为空数组。
-      return result?.subscribed ?? []
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取已订阅线程失败: ${err}`)
-      return []
-    }
-  }
-
-  /** 通过 API 获取全局未读线程（MSC4204 实现的 /sync 集成） */
-  async getGlobalUnreadThreadsViaApi(): Promise<ThreadReadReceiptResponse[]> {
-    const manager = getThreadingManager()
-    if (!manager?.getGlobalUnreadThreads) return []
-    try {
-      const result = await manager.getGlobalUnreadThreads()
-      // SDK 返回 { threads: ThreadReadReceiptResponse[], total_unread, total_threads }
-      return result?.threads ?? []
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取全局未读线程失败: ${err}`)
-      return []
-    }
-  }
-
-  /** 创建房间线程 */
-  async createRoomThreadViaApi(
-    roomId: string,
-    rootEventId: string,
-    content?: Record<string, unknown>
-  ): Promise<ThreadCreateResponse | null> {
-    const manager = getThreadingManager()
-    if (!manager?.createRoomThread) return null
-    try {
-      return await manager.createRoomThread(roomId, rootEventId, { content })
-    } catch (err) {
-      logger.error(`[MatrixThread] 房间内创建线程失败: ${err}`)
-      throw err
-    }
-  }
-
-  /** 获取房间线程列表（keyset 分页：limit + nextBatch） */
-  async getRoomThreadListViaApi(
-    roomId: string,
-    limit = DEFAULT_PAGE_LIMIT,
-    from?: string,
-    includeAll = false
-  ): Promise<{ threads: ThreadSummaryResponse[]; nextBatch?: string | undefined }> {
-    const manager = getThreadingManager()
-    if (!manager?.getRoomThreadList) return { threads: [] }
-    try {
-      const result = await manager.getRoomThreadList(roomId, { limit, from, includeAll })
-      return { threads: result?.threads ?? [], nextBatch: result?.next_batch ?? undefined }
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取房间线程列表失败: ${err}`)
-      return { threads: [] }
-    }
-  }
-
-  /** 通过 API 搜索房间话题
-   *
-   * @param roomId 房间 ID
-   * @param query 搜索关键词
-   * @param limit 最大返回数量（默认 20）
-   */
-  async searchRoomThreadsViaApi(
-    roomId: string,
-    query: string,
-    limit = DEFAULT_SEARCH_LIMIT
-  ): Promise<ThreadSummaryResponse[]> {
-    const manager = getThreadingManager()
-    if (!manager?.searchRoomThreads) return []
-    try {
-      return (await manager.searchRoomThreads(roomId, { q: query, limit })) ?? []
-    } catch (err) {
-      logger.error(`[MatrixThread] 搜索房间线程失败: ${err}`)
-      return []
-    }
-  }
-
-  /** 通过 API 获取房间未读话题 */
-  async getRoomUnreadThreadsViaApi(roomId: string): Promise<ThreadReadReceiptResponse[]> {
-    const manager = getThreadingManager()
-    if (!manager?.getRoomUnreadThreads) return []
-    try {
-      const result = await manager.getRoomUnreadThreads(roomId)
-      // SDK 返回 { threads: ThreadReadReceiptResponse[], total_unread, total_threads }
-      return result?.threads ?? []
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取房间未读线程失败: ${err}`)
-      return []
-    }
-  }
-
   /** 获取房间线程详情 */
   async getRoomThreadViaApi(
     roomId: string,
@@ -229,38 +82,14 @@ export class MatrixThreadApi extends BaseMatrixService {
     }
   }
 
-  async addThreadReplyViaApi(
-    roomId: string,
-    threadId: string,
-    content: Record<string, unknown>,
-    inReplyToEventId?: string
-  ): Promise<ThreadReplyResponse | null> {
-    const manager = getThreadingManager()
-    if (!manager?.addThreadReply) return null
-    try {
-      // SDK addThreadReply(params) 要求 event_id + root_event_id。
-      // threadId = root event event_id；eventId 以 threadId 兜底（server 端会实际生成事件）。
-      const result = await manager.addThreadReply(roomId, threadId, {
-        eventId: threadId,
-        rootEventId: threadId,
-        content,
-        inReplyToEventId
-      })
-      return result ?? null
-    } catch (err) {
-      logger.error(`[MatrixThread] 添加线程回复失败: ${err}`)
-      throw err
-    }
-  }
-
   /** 通过 API 获取话题回复列表
    *
    * SDK getThreadReplies 返回 ThreadReplyResponse[]（数组），Array.isArray 判定有效。
    *
-   * 失败时向上抛出（与同族 addThreadReplyViaApi / subscribeToThreadViaApi 一致），
+   * 失败时向上抛出（与同族 subscribeToThreadViaApi 一致），
    * 让调用方能把「加载失败」与「空回复列表」区分开——否则加载错误会伪装成
    * “暂无回复”。仅当 threadingManager 不可用（客户端未暴露扩展）时，按同族
-   * 只读方法（getSubscribedThreads 等）的约定返回空数组。
+   * 只读方法的约定返回空数组。
    */
   async getThreadRepliesViaApi(roomId: string, threadId: string, limit?: number): Promise<ThreadReplyResponse[]> {
     const manager = getThreadingManager()
@@ -290,18 +119,6 @@ export class MatrixThreadApi extends BaseMatrixService {
       return result ? this.mapSubscription(result) : null
     } catch (err) {
       logger.error(`[MatrixThread] 订阅线程失败: ${err}`)
-      throw err
-    }
-  }
-
-  /** 通过 API 取消订阅话题 */
-  async unsubscribeFromThreadViaApi(roomId: string, threadId: string): Promise<void> {
-    const manager = getThreadingManager()
-    if (!manager?.unsubscribeFromThread) throw new Error(this.t('matrix_error.messaging.threading_manager_unavailable'))
-    try {
-      await manager.unsubscribeFromThread(roomId, threadId)
-    } catch (err) {
-      logger.error(`[MatrixThread] 取消订阅线程失败: ${err}`)
       throw err
     }
   }
@@ -372,24 +189,6 @@ export class MatrixThreadApi extends BaseMatrixService {
     } catch (err) {
       logger.error(`[MatrixThread] 撤回线程回复失败: ${err}`)
       throw err
-    }
-  }
-
-  async getLegacyRoomThreadList(
-    userId: string,
-    roomId: string,
-    limit = DEFAULT_PAGE_LIMIT,
-    from?: string,
-    includeAll = false
-  ): Promise<{ chunk: ThreadLegacyChunkItem[]; nextBatch?: string | undefined }> {
-    const manager = getThreadingManager()
-    if (!manager?.getLegacyRoomThreadList) return { chunk: [] }
-    try {
-      const result = await manager.getLegacyRoomThreadList(userId, roomId, { limit, from, includeAll })
-      return { chunk: result.chunk ?? [], nextBatch: result.next_batch ?? undefined }
-    } catch (err) {
-      logger.error(`[MatrixThread] 获取兼容旧版线程列表失败: ${err}`)
-      return { chunk: [] }
     }
   }
 

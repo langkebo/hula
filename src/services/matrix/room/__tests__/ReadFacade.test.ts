@@ -5,7 +5,12 @@ const { accountDataServiceMock, metadataServiceMock, roomOperationsMock, summary
     accountDataServiceMock: {
       getRoomAccountData: vi.fn(),
       getReportScannerInfo: vi.fn(),
-      getExternalServices: vi.fn()
+      getExternalServices: vi.fn(),
+      getAntiScreenshot: vi.fn(),
+      getMessageQueue: vi.fn(),
+      getEncryptedEvents: vi.fn(),
+      signEvent: vi.fn(),
+      verifyEvent: vi.fn()
     },
     metadataServiceMock: {
       getRoomVersion: vi.fn(),
@@ -355,6 +360,51 @@ describe('matrixRoomReadFacade', () => {
     it('透传 accountData 错误', async () => {
       accountDataServiceMock.getExternalServices.mockRejectedValue(new Error('500'))
       await expect(matrixRoomReadFacade.getExternalServices()).rejects.toThrow('500')
+    })
+  })
+
+  describe('房间扩展端点委托', () => {
+    it('getAntiScreenshot 委托', async () => {
+      accountDataServiceMock.getAntiScreenshot.mockResolvedValue({ enabled: true })
+      const result = await matrixRoomReadFacade.getAntiScreenshot('!r:e')
+      expect(accountDataServiceMock.getAntiScreenshot).toHaveBeenCalledWith('!r:e')
+      expect(result).toEqual({ enabled: true })
+    })
+
+    it('getMessageQueue 委托', async () => {
+      const queue = { messages: [] } as never
+      accountDataServiceMock.getMessageQueue.mockResolvedValue(queue)
+      const result = await matrixRoomReadFacade.getMessageQueue('!r:e')
+      expect(accountDataServiceMock.getMessageQueue).toHaveBeenCalledWith('!r:e')
+      expect(result).toBe(queue)
+    })
+
+    it('getEncryptedEvents 委托', async () => {
+      const events = { events: [{ event_id: '$e' }] }
+      accountDataServiceMock.getEncryptedEvents.mockResolvedValue(events)
+      const result = await matrixRoomReadFacade.getEncryptedEvents('!r:e')
+      expect(accountDataServiceMock.getEncryptedEvents).toHaveBeenCalledWith('!r:e')
+      expect(result).toBe(events)
+    })
+
+    it('signEvent 委托', async () => {
+      const signature = { signature: 'sig' } as never
+      accountDataServiceMock.signEvent.mockResolvedValue(signature)
+      const result = await matrixRoomReadFacade.signEvent('!r:e', '$e')
+      expect(accountDataServiceMock.signEvent).toHaveBeenCalledWith('!r:e', '$e')
+      expect(result).toBe(signature)
+    })
+
+    it('verifyEvent 委托', async () => {
+      accountDataServiceMock.verifyEvent.mockResolvedValue({ valid: true })
+      const result = await matrixRoomReadFacade.verifyEvent('!r:e', '$e')
+      expect(accountDataServiceMock.verifyEvent).toHaveBeenCalledWith('!r:e', '$e')
+      expect(result).toEqual({ valid: true })
+    })
+
+    it('透传扩展端点错误', async () => {
+      accountDataServiceMock.verifyEvent.mockRejectedValue(new Error('403'))
+      await expect(matrixRoomReadFacade.verifyEvent('!r:e', '$e')).rejects.toThrow('403')
     })
   })
 })

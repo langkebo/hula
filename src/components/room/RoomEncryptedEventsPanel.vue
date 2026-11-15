@@ -17,7 +17,9 @@
               data-testid="encrypted-event-item">
               <div class="event-row">
                 <span class="event-label">{{ t('room.encrypted_events.event_id') }}:</span>
-                <span class="event-value" :title="String(item.event_id)">{{ truncateMiddle(String(item.event_id)) }}</span>
+                <span class="event-value" :title="String(item.event_id)">
+                  {{ truncateMiddle(String(item.event_id)) }}
+                </span>
               </div>
               <div class="event-row">
                 <span class="event-label">{{ t('room.encrypted_events.algorithm') }}:</span>
@@ -46,7 +48,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixRoomAccountDataService } from '@/services/matrix/room/AccountDataService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { truncateMiddle } from '@/utils/StringUtils'
 
 interface EncryptedEvent {
@@ -73,7 +75,7 @@ const events = computed<EncryptedEvent[]>(() => {
 async function loadEvents() {
   loading.value = true
   try {
-    eventsData.value = await matrixRoomAccountDataService.getEncryptedEvents(props.roomId)
+    eventsData.value = await matrixRoomReadFacade.getEncryptedEvents(props.roomId)
   } catch {
     eventsData.value = {}
   } finally {

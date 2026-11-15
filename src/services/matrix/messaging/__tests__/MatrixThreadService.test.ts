@@ -163,103 +163,6 @@ describe('MatrixThreadService - REST API Methods', () => {
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
   })
 
-  describe('getGlobalThreadListViaApi', () => {
-    it('should return global thread list', async () => {
-      mockThreadingManager.getGlobalThreadList.mockResolvedValue({
-        threads: [{ id: 't1' }, { id: 't2' }],
-        total: 2,
-        next_batch: 'batch_token'
-      })
-
-      const result = await matrixThreadService.getGlobalThreadListViaApi(50)
-
-      expect(result.threads).toHaveLength(2)
-      expect(result.total).toBe(2)
-      expect(result.nextBatch).toBe('batch_token')
-    })
-
-    it('should return empty when manager unavailable', async () => {
-      ;(mockClient as unknown as { threadingManager: unknown }).threadingManager = null
-
-      const result = await matrixThreadService.getGlobalThreadListViaApi()
-
-      expect(result.threads).toEqual([])
-      expect(result.total).toBe(0)
-    })
-
-    it('should return empty on error', async () => {
-      mockThreadingManager.getGlobalThreadList.mockRejectedValue(new Error('Network'))
-
-      const result = await matrixThreadService.getGlobalThreadListViaApi()
-
-      expect(result.threads).toEqual([])
-    })
-  })
-
-  describe('createGlobalThreadViaApi', () => {
-    it('should create global thread', async () => {
-      mockThreadingManager.createGlobalThread.mockResolvedValue({ thread_id: 't1' })
-
-      const result = await matrixThreadService.createGlobalThreadViaApi('!room:example.com', '$event1')
-
-      expect(result).toEqual({ thread_id: 't1' })
-    })
-
-    it('should return null when manager unavailable', async () => {
-      ;(mockClient as unknown as { threadingManager: unknown }).threadingManager = null
-
-      const result = await matrixThreadService.createGlobalThreadViaApi('!room', '$event')
-
-      expect(result).toBeNull()
-    })
-  })
-
-  describe('getSubscribedThreadsViaApi', () => {
-    it('should return subscribed threads', async () => {
-      // Mock 必须返回 SDK 实际输出的 snake_case 结构，API 层负责映射
-      mockThreadingManager.getSubscribedThreads.mockResolvedValue({
-        threads: [{ thread_id: 't1' }],
-        subscribed: [{ thread_id: 't1', notification_level: 'all', is_muted: false, subscribed_ts: 1234567890 }]
-      })
-
-      const result = await matrixThreadService.getSubscribedThreadsViaApi()
-
-      expect(result).toHaveLength(1)
-    })
-
-    it('should return empty array on non-array result', async () => {
-      mockThreadingManager.getSubscribedThreads.mockResolvedValue(null)
-
-      const result = await matrixThreadService.getSubscribedThreadsViaApi()
-
-      expect(result).toEqual([])
-    })
-  })
-
-  describe('getRoomThreadListViaApi', () => {
-    it('should return room thread list', async () => {
-      mockThreadingManager.getRoomThreadList.mockResolvedValue({
-        threads: [{ id: 't1', roomId: '!room' }],
-        next_batch: 'next'
-      })
-
-      const result = await matrixThreadService.getRoomThreadListViaApi('!room:example.com')
-
-      expect(result.threads).toHaveLength(1)
-      expect(result.nextBatch).toBe('next')
-    })
-  })
-
-  describe('searchRoomThreadsViaApi', () => {
-    it('should search threads', async () => {
-      mockThreadingManager.searchRoomThreads.mockResolvedValue([{ id: 't1' }])
-
-      const result = await matrixThreadService.searchRoomThreadsViaApi('!room', 'test query')
-
-      expect(result).toHaveLength(1)
-    })
-  })
-
   describe('deleteRoomThreadViaApi', () => {
     it('should delete thread', async () => {
       mockThreadingManager.deleteRoomThread.mockResolvedValue(undefined)
@@ -294,17 +197,7 @@ describe('MatrixThreadService - REST API Methods', () => {
     })
   })
 
-  describe('addThreadReplyViaApi', () => {
-    it('should add reply to thread', async () => {
-      mockThreadingManager.addThreadReply.mockResolvedValue({ event_id: '$reply1' })
-
-      const result = await matrixThreadService.addThreadReplyViaApi('!room', 't1', { body: 'reply' })
-
-      expect(result).toEqual({ event_id: '$reply1' })
-    })
-  })
-
-  describe('subscribeToThreadViaApi / unsubscribeFromThreadViaApi', () => {
+  describe('subscribeToThreadViaApi', () => {
     it('should subscribe to thread', async () => {
       // Mock 必须返回 SDK 实际输出的 snake_case 结构，API 层负责映射 notification_level → notificationLevel
       mockThreadingManager.subscribeToThread.mockResolvedValue({
@@ -316,14 +209,6 @@ describe('MatrixThreadService - REST API Methods', () => {
       const result = await matrixThreadService.subscribeToThreadViaApi('!room', 't1')
 
       expect(result?.notificationLevel).toBe('all')
-    })
-
-    it('should unsubscribe from thread', async () => {
-      mockThreadingManager.unsubscribeFromThread.mockResolvedValue(undefined)
-
-      await matrixThreadService.unsubscribeFromThreadViaApi('!room', 't1')
-
-      expect(mockThreadingManager.unsubscribeFromThread).toHaveBeenCalledWith('!room', 't1')
     })
   })
 
@@ -373,20 +258,6 @@ describe('MatrixThreadService - REST API Methods', () => {
       await matrixThreadService.redactThreadReplyViaApi('!room', '$event1')
 
       expect(mockThreadingManager.redactThreadReply).toHaveBeenCalledWith('!room', '$event1')
-    })
-  })
-
-  describe('getLegacyRoomThreadList', () => {
-    it('should return legacy thread list', async () => {
-      mockThreadingManager.getLegacyRoomThreadList.mockResolvedValue({
-        chunk: [{ id: 't1' }],
-        next_batch: 'next'
-      })
-
-      const result = await matrixThreadService.getLegacyRoomThreadList('@user:example.com', '!room')
-
-      expect(result.chunk).toHaveLength(1)
-      expect(result.nextBatch).toBe('next')
     })
   })
 

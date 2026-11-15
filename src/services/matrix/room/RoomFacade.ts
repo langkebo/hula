@@ -68,6 +68,7 @@ export interface MatrixRoomActionFacade {
   // --- Delegated to AccountDataService (deep) ---
   setRoomAccountData(roomId: string, eventType: string, content: Record<string, unknown>): Promise<void>
   setReadLifetime(roomId: string, lifetimeMs: number): Promise<void>
+  setAntiScreenshot(roomId: string, enabled: boolean): Promise<void>
 }
 
 export const matrixRoomActionFacade: MatrixRoomActionFacade = {
@@ -122,7 +123,8 @@ export const matrixRoomActionFacade: MatrixRoomActionFacade = {
   // AccountData (deep)
   setRoomAccountData: (roomId, eventType, content) =>
     matrixRoomAccountDataService.setRoomAccountData(roomId, eventType, content),
-  setReadLifetime: (roomId, lifetimeMs) => matrixRoomAccountDataService.setReadLifetime(roomId, lifetimeMs)
+  setReadLifetime: (roomId, lifetimeMs) => matrixRoomAccountDataService.setReadLifetime(roomId, lifetimeMs),
+  setAntiScreenshot: (roomId, enabled) => matrixRoomAccountDataService.setAntiScreenshot(roomId, enabled)
 }
 
 interface MatrixRoomMemberFacade {
@@ -238,6 +240,11 @@ interface MatrixRoomReadFacade {
   getRoomPermissions(roomId: string): Promise<Record<string, unknown>>
   getRoomExternalIds(roomId: string): Promise<RoomExternalId[]>
   getRoomEventPerspective(roomId: string, eventId: string): Promise<RoomEventPerspectiveOutcome>
+  getAntiScreenshot(roomId: string): Promise<{ enabled: boolean }>
+  getMessageQueue(roomId: string): Promise<Record<string, unknown>>
+  getEncryptedEvents(roomId: string): Promise<{ events?: Array<Record<string, unknown>> }>
+  signEvent(roomId: string, eventId: string): Promise<Record<string, unknown>>
+  verifyEvent(roomId: string, eventId: string): Promise<{ valid: boolean }>
 }
 
 export const matrixRoomReadFacade: MatrixRoomReadFacade = {
@@ -271,5 +278,10 @@ export const matrixRoomReadFacade: MatrixRoomReadFacade = {
   getRoomNotifications: (roomId, params?) => matrixRoomTimelineService.getRoomNotifications(roomId, params),
   getRoomPermissions: (roomId) => matrixRoomMetadataService.getRoomPermissions(roomId),
   getRoomExternalIds: (roomId) => matrixRoomMetadataService.getRoomExternalIds(roomId),
-  getRoomEventPerspective: (roomId, eventId) => matrixRoomTimelineService.getRoomEventPerspective(roomId, eventId)
+  getRoomEventPerspective: (roomId, eventId) => matrixRoomTimelineService.getRoomEventPerspective(roomId, eventId),
+  getAntiScreenshot: (roomId) => matrixRoomAccountDataService.getAntiScreenshot(roomId),
+  getMessageQueue: (roomId) => matrixRoomAccountDataService.getMessageQueue(roomId),
+  getEncryptedEvents: (roomId) => matrixRoomAccountDataService.getEncryptedEvents(roomId),
+  signEvent: (roomId, eventId) => matrixRoomAccountDataService.signEvent(roomId, eventId),
+  verifyEvent: (roomId, eventId) => matrixRoomAccountDataService.verifyEvent(roomId, eventId)
 }

@@ -54,7 +54,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { matrixRoomAccountDataService } from '@/services/matrix/room/AccountDataService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 
 const props = defineProps<{
   roomId: string
@@ -83,7 +83,7 @@ async function handleSign(): Promise<void> {
   signing.value = true
   signResult.value = null
   try {
-    signResult.value = await matrixRoomAccountDataService.signEvent(props.roomId, id)
+    signResult.value = await matrixRoomReadFacade.signEvent(props.roomId, id)
     showFeedback(t('room.event_signature.sign_success'), 'success')
   } catch {
     showFeedback(t('room.event_signature.sign_failed'), 'error')
@@ -98,7 +98,7 @@ async function handleVerify(): Promise<void> {
   verifying.value = true
   verifyResult.value = null
   try {
-    const result = await matrixRoomAccountDataService.verifyEvent(props.roomId, id)
+    const result = await matrixRoomReadFacade.verifyEvent(props.roomId, id)
     verifyResult.value = { valid: Boolean(result.valid) }
     showFeedback(t('room.event_signature.verify_success'), 'success')
   } catch {

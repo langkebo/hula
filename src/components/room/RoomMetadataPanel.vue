@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixRoomMetadataService } from '@/services/matrix/room/MetadataService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 
 const props = defineProps<{
   roomId: string
@@ -58,7 +58,7 @@ function formatValue(key: string, val: unknown): string {
 onMounted(async () => {
   loading.value = true
   try {
-    const result = await matrixRoomMetadataService.getRoomMetadata(props.roomId)
+    const result = await matrixRoomReadFacade.getRoomMetadata(props.roomId)
     metadata.value = (result as Record<string, unknown>) ?? {}
   } catch {
     metadata.value = {}

@@ -35,6 +35,24 @@
               </n-icon>
             </template>
           </n-button>
+          <n-popconfirm @positive-click="handleDeleteThread">
+            <template #trigger>
+              <n-button
+                quaternary
+                circle
+                size="small"
+                :loading="deleting"
+                :aria-label="t('thread.delete')"
+                data-testid="thread-delete">
+                <template #icon>
+                  <n-icon>
+                    <svg aria-hidden="true"><use href="#delete" /></svg>
+                  </n-icon>
+                </template>
+              </n-button>
+            </template>
+            {{ t('thread.delete_confirm') }}
+          </n-popconfirm>
         </n-flex>
       </template>
       <div class="thread-content">
@@ -56,7 +74,10 @@
         <div class="thread-replies">
           <n-flex align="center" :size="8" class="mb-12px">
             <span class="text-[length:var(--tjg-font-size-base)] font-medium">{{ t('thread.replies') }}</span>
-            <n-tag size="small" type="info">{{ threadReplies.length }}</n-tag>
+            <n-tag size="small" type="info" data-testid="thread-reply-count">{{ replyCount }}</n-tag>
+            <n-tag v-if="participantCount > 0" size="small" data-testid="thread-participant-count">
+              {{ t('thread.participants', { count: participantCount }) }}
+            </n-tag>
           </n-flex>
 
           <n-scrollbar class="h-[calc(var(--tjg-viewport-height, 100vh)-350px)]">
@@ -66,9 +87,23 @@
                 <n-flex :size="12">
                   <n-avatar :size="28" :src="AvatarUtils.getAvatarUrl(reply.senderAvatar)" round />
                   <n-flex vertical :size="4" class="flex-1">
-                    <n-flex align="center" :size="8">
+                    <n-flex align="center" :size="8" class="reply-meta">
                       <span class="sender-name">{{ reply.senderName }}</span>
                       <span class="message-time">{{ formatChatTime(reply.timestamp) }}</span>
+                      <div class="reply-meta-spacer" />
+                      <n-popconfirm v-if="isOwnReply(reply)" @positive-click="handleRedactReply(reply)">
+                        <template #trigger>
+                          <n-button
+                            text
+                            size="tiny"
+                            :loading="redactingId === reply.id"
+                            :aria-label="t('thread.redact')"
+                            :data-testid="`thread-redact-${reply.id}`">
+                            {{ t('thread.redact') }}
+                          </n-button>
+                        </template>
+                        {{ t('thread.redact_confirm') }}
+                      </n-popconfirm>
                     </n-flex>
                     <div class="reply-content">{{ reply.content }}</div>
                   </n-flex>
@@ -111,7 +146,9 @@
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import matrixClientService from '@/services/matrix/MatrixClientService'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
+import type { ThreadStatistics } from '@/services/matrix/messaging/threadTypes'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { formatChatTime } from '@/utils/ComputedTime'
 import { createLogger } from '@/utils/Logger'
@@ -143,6 +180,17 @@ const threadReplies = ref<ThreadMessage[]>([])
 const isFrozen = ref(false)
 const isMuted = ref(false)
 const pendingAction = ref<'freeze' | 'mute' | null>(null)
+const threadStats = ref<ThreadStatistics | null>(null)
+const deleting = ref(false)
+const redactingId = ref<string | null>(null)
+
+const replyCount = computed(() => threadStats.value?.totalReplies ?? threadReplies.value.length)
+const participantCount = computed(() => threadStats.value?.totalParticipants ?? 0)
+
+const isOwnReply = (reply: ThreadMessage) => {
+  const userId = matrixClientService.getUserId()
+  return !!userId && reply.senderId === userId
+}
 
 const handleSendReply = async () => {
   const body = replyContent.value.trim()
@@ -224,9 +272,45 @@ const handleToggleMute = async () => {
   }
 }
 
+const loadThreadStats = async () => {
+  if (!props.roomId || !props.threadId) return
+  threadStats.value = await matrixThreadService.getThreadStatsViaApi(props.roomId, props.threadId)
+}
+
+const handleDeleteThread = async () => {
+  if (!props.roomId || !props.threadId || deleting.value) return
+  deleting.value = true
+  try {
+    await matrixThreadService.deleteRoomThreadViaApi(props.roomId, props.threadId)
+    showFeedback(t('thread.delete_success'), 'success')
+    visible.value = false
+  } catch (err) {
+    logger.error(`Failed to delete thread: ${err}`)
+    showFeedback(t('thread.delete_failed'), 'error')
+  } finally {
+    deleting.value = false
+  }
+}
+
+const handleRedactReply = async (reply: ThreadMessage) => {
+  if (!props.roomId || redactingId.value) return
+  redactingId.value = reply.id
+  try {
+    await matrixThreadService.redactThreadReplyViaApi(props.roomId, reply.id)
+    showFeedback(t('thread.redact_success'), 'success')
+    await loadThreadReplies()
+  } catch (err) {
+    logger.error(`Failed to redact thread reply: ${err}`)
+    showFeedback(t('thread.action_failed'), 'error')
+  } finally {
+    redactingId.value = null
+  }
+}
+
 watch(visible, (val) => {
   if (val && props.threadId) {
     loadThreadState()
+    loadThreadStats()
     loadThreadReplies()
   }
 })
@@ -242,6 +326,10 @@ const loadThreadReplies = async () => {
       content: typeof reply.content?.body === 'string' ? reply.content.body : '',
       timestamp: reply.origin_server_ts
     }))
+    const last = threadReplies.value[threadReplies.value.length - 1]
+    if (last) {
+      await matrixThreadService.markThreadReadViaApi(props.roomId, props.threadId, last.id, last.timestamp)
+    }
   } catch (err) {
     logger.error(`Failed to load thread replies: ${err}`)
     showFeedback(t('thread.load_failed'), 'error')
@@ -324,6 +412,14 @@ const loadThreadReplies = async () => {
 
 .reply-item {
   padding: 8px 0;
+
+  .reply-meta {
+    width: 100%;
+  }
+
+  .reply-meta-spacer {
+    flex: 1;
+  }
 
   .sender-name {
     font-size: 13px;

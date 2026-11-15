@@ -21,6 +21,14 @@ export type Messages = {
   "unfreeze_success": "线程已解冻",
   "mute_success": "线程已静音",
   "unmute_success": "已取消静音",
+  "participants": "{count} 人参与",
+  "delete": "删除线程",
+  "delete_confirm": "删除后该线程及其回复将不可见，确认删除？",
+  "delete_success": "线程已删除",
+  "delete_failed": "删除线程失败",
+  "redact": "撤回",
+  "redact_confirm": "确认撤回这条回复？",
+  "redact_success": "回复已撤回",
   "action_failed": "操作失败，请稍后重试"
 }
 
@@ -51,4 +59,12 @@ export type KeyPaths =
   | "thread.unfreeze_success"
   | "thread.mute_success"
   | "thread.unmute_success"
+  | "thread.participants"
+  | "thread.delete"
+  | "thread.delete_confirm"
+  | "thread.delete_success"
+  | "thread.delete_failed"
+  | "thread.redact"
+  | "thread.redact_confirm"
+  | "thread.redact_success"
   | "thread.action_failed"

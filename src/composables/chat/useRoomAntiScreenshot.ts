@@ -1,5 +1,5 @@
 import { type Ref, ref, watch } from 'vue'
-import { matrixRoomAccountDataService } from '@/services/matrix/room/AccountDataService'
+import { matrixRoomActionFacade, matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('RoomAntiScreenshot')
@@ -43,7 +43,7 @@ export function useRoomAntiScreenshot(roomId: Ref<string | null | undefined>): U
 
     loading.value = true
     try {
-      const result = await matrixRoomAccountDataService.getAntiScreenshot(id)
+      const result = await matrixRoomReadFacade.getAntiScreenshot(id)
       enabled.value = result.enabled === true
       error.value = null
     } catch (err) {
@@ -65,7 +65,7 @@ export function useRoomAntiScreenshot(roomId: Ref<string | null | undefined>): U
     enabled.value = next // 乐观更新：开关立刻响应
     loading.value = true
     try {
-      await matrixRoomAccountDataService.setAntiScreenshot(id, next)
+      await matrixRoomActionFacade.setAntiScreenshot(id, next)
       error.value = null
       return true
     } catch (err) {

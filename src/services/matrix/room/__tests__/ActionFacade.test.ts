@@ -18,7 +18,8 @@ const { creationServiceMock, membershipServiceMock, accountDataServiceMock, room
   },
   accountDataServiceMock: {
     setRoomAccountData: vi.fn(),
-    setReadLifetime: vi.fn()
+    setReadLifetime: vi.fn(),
+    setAntiScreenshot: vi.fn()
   },
   roomOperationsMock: {
     createDirectRoom: vi.fn(),
@@ -311,6 +312,12 @@ describe('matrixRoomActionFacade', () => {
       accountDataServiceMock.setReadLifetime.mockResolvedValue(undefined)
       await matrixRoomActionFacade.setReadLifetime('!r:e', 5000)
       expect(accountDataServiceMock.setReadLifetime).toHaveBeenCalledWith('!r:e', 5000)
+    })
+
+    it('setAntiScreenshot 委托', async () => {
+      accountDataServiceMock.setAntiScreenshot.mockResolvedValue(undefined)
+      await matrixRoomActionFacade.setAntiScreenshot('!r:e', true)
+      expect(accountDataServiceMock.setAntiScreenshot).toHaveBeenCalledWith('!r:e', true)
     })
 
     it('透传 accountData 错误', async () => {

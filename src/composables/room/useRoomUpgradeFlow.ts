@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { matrixRoomMetadataService } from '@/services/matrix/room/MetadataService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { roomOperations } from '@/services/matrix/room/RoomOperations'
 import { matrixAccountService } from '@/services/matrix/user/MatrixAccountService'
 import { createLogger } from '@/utils/Logger'
@@ -93,7 +93,7 @@ export function useRoomUpgradeFlow(options: UseRoomUpgradeFlowOptions) {
 
     try {
       const [version, caps] = await Promise.all([
-        matrixRoomMetadataService.getRoomVersion(roomId),
+        matrixRoomReadFacade.getRoomVersion(roomId),
         matrixAccountService.getCapabilities()
       ])
       currentVersion.value = version

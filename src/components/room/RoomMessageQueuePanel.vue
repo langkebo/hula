@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { matrixRoomAccountDataService } from '@/services/matrix/room/AccountDataService'
+import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { truncateMiddle } from '@/utils/StringUtils'
 
 interface QueueItem {
@@ -74,7 +74,7 @@ function formatContent(content: unknown): string {
 async function loadQueue() {
   loading.value = true
   try {
-    queueData.value = await matrixRoomAccountDataService.getMessageQueue(props.roomId)
+    queueData.value = await matrixRoomReadFacade.getMessageQueue(props.roomId)
   } catch {
     queueData.value = {}
   } finally {

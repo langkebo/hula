@@ -16,5 +16,13 @@
   "unfreeze_success": "Thread unfrozen",
   "mute_success": "Thread muted",
   "unmute_success": "Thread unmuted",
+  "participants": "{count} participants",
+  "delete": "Delete thread",
+  "delete_confirm": "The thread and its replies will be hidden after deletion. Delete it?",
+  "delete_success": "Thread deleted",
+  "delete_failed": "Failed to delete the thread",
+  "redact": "Redact",
+  "redact_confirm": "Redact this reply?",
+  "redact_success": "Reply redacted",
   "action_failed": "Action failed, please try again later"
 }

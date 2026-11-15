@@ -28,11 +28,17 @@ type ThreadPanelVm = {
   threadReplies: Array<{ id: string; senderId: string; content: string; timestamp: number }>
   isFrozen: boolean
   isMuted: boolean
+  replyCount: number
+  participantCount: number
   handleSendReply: () => Promise<void>
   handleToggleFreeze: () => Promise<void>
   handleToggleMute: () => Promise<void>
+  handleDeleteThread: () => Promise<void>
+  handleRedactReply: (reply: { id: string; senderId: string; content: string; timestamp: number }) => Promise<void>
+  isOwnReply: (reply: { id: string; senderId: string }) => boolean
   loadThreadReplies: () => Promise<void>
   loadThreadState: () => Promise<void>
+  loadThreadStats: () => Promise<void>
 }
 
 const mountPanel = () =>
@@ -244,6 +250,132 @@ describe('ThreadPanel 线程冻结/静音', () => {
 
     expect(vm(wrapper).isFrozen).toBe(false)
     expect(showFeedbackMock).toHaveBeenCalledWith('thread.action_failed', 'error')
+    expect(loggerErrorMock).toHaveBeenCalled()
+  })
+})
+
+describe('ThreadPanel 统计/已读/删除/撤回', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const reply = (id: string, timestamp: number, sender = '@bob:server') => ({
+    event_id: id,
+    thread_id: '$thread',
+    room_id: '!room:server',
+    sender,
+    content: { body: id },
+    origin_server_ts: timestamp,
+    in_reply_to_event_id: null,
+    is_edited: false,
+    is_redacted: false
+  })
+
+  it('打开线程时拉取统计并展示回复数与参与人数', async () => {
+    const statsSpy = vi.spyOn(matrixThreadService, 'getThreadStatsViaApi').mockResolvedValueOnce({
+      totalReplies: 3,
+      totalParticipants: 2,
+      totalEdits: 0,
+      totalRedactions: 0
+    })
+
+    const wrapper = mountPanel()
+    await vm(wrapper).loadThreadStats()
+
+    expect(statsSpy).toHaveBeenCalledWith('!room:server', '$thread')
+    expect(vm(wrapper).replyCount).toBe(3)
+    expect(vm(wrapper).participantCount).toBe(2)
+  })
+
+  it('统计不可用时回落到本地回复条数', async () => {
+    stubThreadingManager()
+    getThreadRepliesMock.mockResolvedValueOnce([reply('$r1', 1000)])
+    vi.spyOn(matrixThreadService, 'getThreadStatsViaApi').mockResolvedValueOnce(null)
+
+    const wrapper = mountPanel()
+    await vm(wrapper).loadThreadReplies()
+    await vm(wrapper).loadThreadStats()
+
+    expect(vm(wrapper).replyCount).toBe(1)
+    expect(vm(wrapper).participantCount).toBe(0)
+  })
+
+  it('加载回复后用最后一条回复的时间戳标记已读', async () => {
+    stubThreadingManager()
+    getThreadRepliesMock.mockResolvedValueOnce([reply('$r1', 1000), reply('$r2', 2000)])
+    const readSpy = vi.spyOn(matrixThreadService, 'markThreadReadViaApi').mockResolvedValueOnce(null)
+
+    const wrapper = mountPanel()
+    await vm(wrapper).loadThreadReplies()
+
+    expect(readSpy).toHaveBeenCalledWith('!room:server', '$thread', '$r2', 2000)
+  })
+
+  it('无回复时不调用标记已读', async () => {
+    stubThreadingManager()
+    getThreadRepliesMock.mockResolvedValueOnce([])
+    const readSpy = vi.spyOn(matrixThreadService, 'markThreadReadViaApi').mockResolvedValueOnce(null)
+
+    const wrapper = mountPanel()
+    await vm(wrapper).loadThreadReplies()
+
+    expect(readSpy).not.toHaveBeenCalled()
+  })
+
+  it('删除线程成功后关闭面板并提示', async () => {
+    const deleteSpy = vi.spyOn(matrixThreadService, 'deleteRoomThreadViaApi').mockResolvedValueOnce(undefined)
+
+    const wrapper = mountPanel()
+    await vm(wrapper).handleDeleteThread()
+
+    expect(deleteSpy).toHaveBeenCalledWith('!room:server', '$thread')
+    expect(showFeedbackMock).toHaveBeenCalledWith('thread.delete_success', 'success')
+    expect(wrapper.emitted('update:show')?.[0]).toEqual([false])
+  })
+
+  it('删除线程失败时保留面板并提示错误', async () => {
+    vi.spyOn(matrixThreadService, 'deleteRoomThreadViaApi').mockRejectedValueOnce(new Error('boom'))
+
+    const wrapper = mountPanel()
+    await vm(wrapper).handleDeleteThread()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('thread.delete_failed', 'error')
+    expect(wrapper.emitted('update:show')).toBeUndefined()
+    expect(loggerErrorMock).toHaveBeenCalled()
+  })
+
+  it('仅本人回复允许撤回，撤回后刷新回复列表', async () => {
+    vi.spyOn(matrixClientService, 'getUserId').mockReturnValue('@bob:server')
+    stubThreadingManager()
+    getThreadRepliesMock.mockResolvedValueOnce([reply('$r1', 1000)])
+    const redactSpy = vi.spyOn(matrixThreadService, 'redactThreadReplyViaApi').mockResolvedValueOnce(undefined)
+
+    const wrapper = mountPanel()
+    await vm(wrapper).loadThreadReplies()
+    const ownReply = vm(wrapper).threadReplies[0]!
+    expect(vm(wrapper).isOwnReply(ownReply)).toBe(true)
+    expect(vm(wrapper).isOwnReply({ id: '$r2', senderId: '@alice:server' })).toBe(false)
+
+    await vm(wrapper).handleRedactReply(ownReply)
+
+    expect(redactSpy).toHaveBeenCalledWith('!room:server', '$r1')
+    expect(showFeedbackMock).toHaveBeenCalledWith('thread.redact_success', 'success')
+    expect(getThreadRepliesMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('撤回失败时提示操作失败且不刷新列表', async () => {
+    vi.spyOn(matrixThreadService, 'redactThreadReplyViaApi').mockRejectedValueOnce(new Error('boom'))
+    stubThreadingManager()
+
+    const wrapper = mountPanel()
+    await vm(wrapper).handleRedactReply({ id: '$r1', senderId: '@bob:server', content: 'x', timestamp: 1 })
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('thread.action_failed', 'error')
+    expect(getThreadRepliesMock).not.toHaveBeenCalled()
     expect(loggerErrorMock).toHaveBeenCalled()
   })
 })
