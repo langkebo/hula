@@ -27,6 +27,14 @@ import * as samlApi from './MatrixAuthSaml'
 // 类型再导出：保持对外 API 不变（useSessionActions 等仍从此处导入类型）
 export type { MatrixRegisterResult, MatrixRequestedEmailTokenResult } from './authHelpers'
 
+/** 服务端 `m.login.sso` flow 中声明的 IdP（CAP-03） */
+export interface SsoIdentityProvider {
+  id: string
+  name?: string
+  brand?: string
+  icon?: string
+}
+
 /**
  * Matrix 认证服务（facade）。
  *
@@ -229,6 +237,70 @@ export class MatrixAuthService {
   static async getCasLoginUrl(redirectAfter = '/'): Promise<string> {
     const client = createTemporaryMatrixClient()
     return client.getAccountManager().getCasLoginUrl(redirectAfter)
+  }
+
+  /**
+   * 探测服务端 `m.login.sso` 登录流及其 IdP 列表（CAP-03）。
+   *
+   * OIDC / SAML / 自定义 IdP 在 Matrix 中都收敛为 `m.login.sso`；
+   * 服务端把可用 IdP 放在该 flow 的 `identity_providers` 里。
+   * `supported` 表示 flow 是否存在（存在但无 IdP 时仍为 true，由服务端选择页兜底），
+   * 探测失败时整体按不支持处理，登录页据此隐藏 SSO 入口（避免死按钮）。
+   */
+  static async getSsoLoginFlow(): Promise<{ supported: boolean; providers: SsoIdentityProvider[] }> {
+    try {
+      const flows = await MatrixAuthService.getLoginFlows()
+      const ssoFlow = flows.find((flow) => flow.type === 'm.login.sso')
+      if (!ssoFlow) {
+        return { supported: false, providers: [] }
+      }
+
+      const providers = (ssoFlow as { identity_providers?: unknown }).identity_providers
+      if (!Array.isArray(providers)) {
+        return { supported: true, providers: [] }
+      }
+
+      return {
+        supported: true,
+        providers: providers.flatMap((provider) => {
+          const id = (provider as { id?: unknown })?.id
+          if (typeof id !== 'string' || id.length === 0) {
+            return []
+          }
+          const name = (provider as { name?: unknown })?.name
+          const brand = (provider as { brand?: unknown })?.brand
+          const icon = (provider as { icon?: unknown })?.icon
+          return [
+            {
+              id,
+              ...(typeof name === 'string' && name.length > 0 ? { name } : {}),
+              ...(typeof brand === 'string' && brand.length > 0 ? { brand } : {}),
+              ...(typeof icon === 'string' && icon.length > 0 ? { icon } : {})
+            }
+          ]
+        })
+      }
+    } catch {
+      return { supported: false, providers: [] }
+    }
+  }
+
+  /**
+   * 生成 SSO 跳转地址（CAP-03）。
+   *
+   * `idpId` 为空时走 `/login/sso/redirect`（服务端展示 IdP 选择页），
+   * 传入时走 `/login/sso/redirect/{idpId}` 直连指定 IdP。
+   * 纯 URL 拼接（无网络请求），由调用方决定用系统浏览器打开。
+   *
+   * 命名刻意避开 `getSsoLoginUrl`：见 `MatrixAuthService.test.ts` 的 W-04 守卫，
+   * 该名字此前是自建 HTTP 拼接的坏实现，唯一合法入口收敛到
+   * `MatrixClientAuth.getSSOLoginUrl()`。但后者依赖已初始化的客户端且不支持
+   * 指定 IdP，登录前（无客户端）无法使用，故这里保留一个显式命名为「构建」的
+   * SDK 委托方法，与同组的 `getCasLoginUrl` 对称。
+   */
+  static async buildSsoLoginUrl(redirectAfter: string, idpId?: string): Promise<string> {
+    const client = createTemporaryMatrixClient()
+    return client.getSsoLoginUrl(redirectAfter, idpId)
   }
 
   /**

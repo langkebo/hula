@@ -14,7 +14,20 @@
       <n-tooltip trigger="hover" :delay="200">
         <template #trigger>
           <div class="size-22px flex-center cursor-pointer rounded-4px" :class="item.style">
-            <svg v-if="item.icon.startsWith('#')" class="size-22px" aria-hidden="true">
+            <svg
+              v-if="item.icon === 'sso'"
+              class="size-22px"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true">
+              <path d="M12 3l7 3v6c0 4-3 7.5-7 9-4-1.5-7-5-7-9V6l7-3z" />
+              <path d="M9 12l2 2 4-4" />
+            </svg>
+            <svg v-else-if="item.icon.startsWith('#')" class="size-22px" aria-hidden="true">
               <use :href="item.icon"></use>
             </svg>
             <span v-else class="text-14px font-bold">{{ item.icon }}</span>
@@ -48,10 +61,14 @@ const props = withDefaults(
     /** 仅桌面端 CAS 能力探测通过时由登录页传入 */
     casEnabled?: boolean
     casLogin?: () => void
+    /** 服务端声明 `m.login.sso` 或 `auth_metadata` 可用时由登录页传入 */
+    ssoEnabled?: boolean
+    ssoLogin?: (idpId?: string) => void
   }>(),
   {
     extraDisabled: false,
-    casEnabled: false
+    casEnabled: false,
+    ssoEnabled: false
   }
 )
 
@@ -95,6 +112,15 @@ const ssoOptions = computed(() => {
       icon: '#cas-login',
       style: 'text-[--tjg-text-primary]',
       action: props.casLogin || noop
+    })
+  }
+  if (props.ssoEnabled) {
+    options.push({
+      key: 'sso',
+      label: t('login.sso.label'),
+      icon: 'sso',
+      style: 'text-[--tjg-text-primary]',
+      action: () => props.ssoLogin?.()
     })
   }
   return options

@@ -3,6 +3,7 @@ import { requireSubtleCrypto } from '@/utils/webCompat'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import { MATRIX_PATHS } from '../paths'
+import { createTemporaryMatrixClient } from './authHelpers'
 
 const logger = createLogger('MatrixOidcService')
 
@@ -46,6 +47,13 @@ export interface OidcTokenResponse {
   id_token?: string
 }
 
+/** `auth_metadata` 探测结果（CAP-03）：404/未实现时 `supported=false` */
+export interface OidcAuthMetadataSummary {
+  supported: boolean
+  issuer?: string
+  authorizationEndpoint?: string
+}
+
 const DEFAULT_OIDC_SCOPES = ['openid', 'profile', 'email']
 const OIDC_HOMESERVER_STORAGE_KEY = 'oidc_homeserver_url'
 
@@ -77,6 +85,35 @@ class MatrixOidcService {
 
   getHomeserverUrl(): string {
     return this.resolveHomeserverUrl()
+  }
+
+  /**
+   * 探测服务端 `auth_metadata`（CAP-03）。
+   *
+   * 走 SDK `MatrixClient.getAuthMetadata()`（内部按 spec 版本回退到
+   * `/_matrix/client/v1/auth_metadata`），未鉴权临时客户端即可调用。
+   * 服务端未实现时 SDK 抛 `M_UNRECOGNIZED` / 404 —— 按不支持处理，
+   * 登录页据此隐藏 OIDC 入口而不是渲染死按钮。
+   */
+  async probeAuthMetadata(): Promise<OidcAuthMetadataSummary> {
+    try {
+      const client = createTemporaryMatrixClient()
+      // `getAuthMetadata` 内部走 `isVersionSupported`，该方法由异步注入的
+      // server-capabilities manager 扩展挂载；未等待就绪会抛 TypeError。
+      await client.whenManagerExtensionsReady?.()
+      const metadata = await client.getAuthMetadata()
+      if (!metadata?.issuer) {
+        return { supported: false }
+      }
+      return {
+        supported: true,
+        issuer: metadata.issuer,
+        authorizationEndpoint: metadata.authorization_endpoint
+      }
+    } catch (err) {
+      logger.info(`[MatrixOidcService] auth_metadata 探测未通过，按不支持处理: ${err}`)
+      return { supported: false }
+    }
   }
 
   async getAuthorizationUrl(params: OidcAuthorizationUrlParams): Promise<string | null> {

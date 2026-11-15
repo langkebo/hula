@@ -29,7 +29,12 @@
           @login="triggerAutoLogin" />
 
         <div v-if="uiState !== 'auto'" class="w-full flex justify-center shrink-0 login-divider">
-          <ThirdPartyLogin :login-context="loginContext" :cas-enabled="casAvailable" :cas-login="startCasLogin" />
+          <ThirdPartyLogin
+            :login-context="loginContext"
+            :cas-enabled="casAvailable"
+            :cas-login="startCasLogin"
+            :sso-enabled="ssoAvailable"
+            :sso-login="startSsoLogin" />
         </div>
 
         <LoginBottomBar
@@ -68,6 +73,8 @@ import { createLogger } from '@/utils/Logger'
 import { isDesktop } from '@/utils/PlatformConstants'
 import AutoLoginForm from './AutoLoginForm.vue'
 import { useCasLogin } from './hooks/useCasLogin'
+import { useSsoCallback } from './hooks/useSsoCallback'
+import { useSsoLogin } from './hooks/useSsoLogin'
 import LoginBottomBar from './LoginBottomBar.vue'
 import ManualLoginForm from './ManualLoginForm.vue'
 import ServerConfigModal from './ServerConfigModal.vue'
@@ -117,6 +124,9 @@ const {
   onToken: ssoLogin
 })
 
+const { ssoAvailable, detect: detectSsoLogin, startSsoLogin } = useSsoLogin()
+const { handleSsoLoginCallback } = useSsoCallback({ loading, loginText, loginDisabled })
+
 const loginContext: ThirdPartyLoginContext = {
   homeserverUrl: homeserverUrl as Ref<string>,
   identityServerUrl: identityServerUrl as Ref<string>,
@@ -134,10 +144,13 @@ onBeforeMount(async () => {
 })
 
 onMounted(async () => {
+  // SSO 回调优先：URL 带 loginToken 时直接完成登录，避免与自动登录竞争
+  await handleSsoLoginCallback()
   await mount()
-  // CAS 能力探测与登录页展示不互相阻塞：探测失败时入口保持隐藏
+  // CAS / SSO 能力探测与登录页展示不互相阻塞：探测失败时入口保持隐藏
   await detectCasLogin()
   await registerCasListener()
+  await detectSsoLogin()
   // 显式设置窗口尺寸为 420x580（按原型 TJG-prototype.html），覆盖 tauri-plugin-window-state 恢复的旧尺寸
   if (isDesktop() && hasTauriRuntime()) {
     try {

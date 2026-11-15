@@ -2,9 +2,10 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-const { mockShowFeedback, mockCasLogin } = vi.hoisted(() => ({
+const { mockShowFeedback, mockCasLogin, mockSsoLogin } = vi.hoisted(() => ({
   mockShowFeedback: vi.fn(),
-  mockCasLogin: vi.fn()
+  mockCasLogin: vi.fn(),
+  mockSsoLogin: vi.fn()
 }))
 
 vi.mock('vue-i18n', () => ({
@@ -15,7 +16,8 @@ vi.mock('vue-i18n', () => ({
           'login.sso.unavailable_feature': '第三方登录功能暂未开放，请使用账号密码登录',
           'login.third_party.gitee': '使用 Gitee 登录',
           'login.third_party.github': '使用 GitHub 登录',
-          'login.cas.label': 'CAS 单点登录'
+          'login.cas.label': 'CAS 单点登录',
+          'login.sso.label': 'SSO 单点登录'
         }) as Record<string, string>
       )[key] || key
   })
@@ -37,11 +39,12 @@ vi.mock('@/shared/composables/useLoginFlow', () => ({
 import ThirdPartyLogin from '../ThirdPartyLogin.vue'
 
 describe('ThirdPartyLogin', () => {
-  const mountComponent = (props: { casEnabled?: boolean } = {}) =>
+  const mountComponent = (props: { casEnabled?: boolean; ssoEnabled?: boolean } = {}) =>
     mount(ThirdPartyLogin, {
       props: {
         ...props,
         casLogin: mockCasLogin,
+        ssoLogin: mockSsoLogin,
         loginContext: {
           loading: ref(false),
           loginDisabled: ref(false),
@@ -76,6 +79,20 @@ describe('ThirdPartyLogin', () => {
     await casEntry.trigger('click')
 
     expect(mockCasLogin).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides the SSO entry when the server does not declare m.login.sso', () => {
+    const wrapper = mountComponent({ ssoEnabled: false })
+    expect(wrapper.find('[aria-label="SSO 单点登录"]').exists()).toBe(false)
+  })
+
+  it('renders the SSO entry when ssoEnabled is true and triggers ssoLogin on click', async () => {
+    const wrapper = mountComponent({ ssoEnabled: true })
+    const ssoEntry = wrapper.get('[aria-label="SSO 单点登录"]')
+
+    await ssoEntry.trigger('click')
+
+    expect(mockSsoLogin).toHaveBeenCalledTimes(1)
   })
 
   it('shows unavailable feedback when Gitee login not configured', async () => {

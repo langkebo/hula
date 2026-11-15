@@ -46,7 +46,9 @@
     "github": "Login with GitHub"
   },
   "sso": {
-    "unavailable_feature": "Third-party sign-in is not available yet. Please use your account and password."
+    "unavailable_feature": "Third-party sign-in is not available yet. Please use your account and password.",
+    "label": "SSO sign-in",
+    "failed": "SSO sign-in failed. Please try again."
   },
   "cas": {
     "label": "CAS Single Sign-On",

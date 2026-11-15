@@ -51,7 +51,9 @@ export type Messages = {
     "github": "使用 GitHub 登录"
   },
   "sso": {
-    "unavailable_feature": "第三方登录功能暂未开放，请使用账号密码登录"
+    "unavailable_feature": "第三方登录功能暂未开放，请使用账号密码登录",
+    "label": "SSO 单点登录",
+    "failed": "SSO 登录失败，请重试"
   },
   "cas": {
     "label": "CAS 单点登录",
@@ -303,6 +305,8 @@ export type KeyPaths =
   | "login.third_party.gitee"
   | "login.third_party.github"
   | "login.sso.unavailable_feature"
+  | "login.sso.label"
+  | "login.sso.failed"
   | "login.cas.label"
   | "login.cas.failed"
   | "login.oidc.processing"

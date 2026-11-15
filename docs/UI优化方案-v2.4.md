@@ -715,6 +715,24 @@ R1 结论：仅消费 `MatrixCapabilityService` 与既有 `MatrixDehydratedDevic
 | AUTH-06 | P2 | 账号状态 / 共同房间 | MSC3720 状态展示 + MSC2666 共同房间列表 | 单测 |
 | AUTH-07 | P1 | 新增 `AdminCasService` + 页面 | 与 ADM-05 的 CAS 子域合并，不重复建服务 | 与 ADM-05 同一验收 |
 
+##### CAP-03 / AUTH-01 落地记录（P1，完成）
+
+CAP-03 与 AUTH-01 合并实施：OIDC/SAML 在 Matrix 中统一收敛为 `m.login.sso`，因此只做「一个 SSO 按钮」而非按协议各建入口。
+
+| 维度 | 结论 | 落地内容 |
+| :--- | :--- | :--- |
+| 服务层 | 完成 | `MatrixAuthService.getSsoLoginFlow()` 返回 `{ supported, providers }`：flow 缺失/探测异常 ⇒ `supported=false`；flow 存在但无 `identity_providers` ⇒ `supported=true, providers=[]`；provider 只保留 `id` 非空项。`MatrixAuthService.buildSsoLoginUrl(redirectAfter, idpId)` 委托 SDK `getSsoLoginUrl`，不拼 URL；命名刻意避开 `getSsoLoginUrl`（W-04 守卫要求该名字只属于 `MatrixClientAuth`，而后者依赖已初始化客户端且不支持指定 IdP，登录前不可用） |
+| 能力探测 | 完成 | `MatrixOidcService.probeAuthMetadata()` 走 SDK `getAuthMetadata()`（内部请求 `/_matrix/client/v1/auth_metadata`）；探测前 `await client.whenManagerExtensionsReady()`，因为 `getAuthMetadata` 依赖异步注入的 server-capabilities 扩展，未就绪会抛 `TypeError`。404/`M_UNRECOGNIZED` 统一按不支持 |
+| UI 接线 | 完成 | 新增 `useSsoLogin`（`detect` 并发探测 flows + auth_metadata；`startSsoLogin` 桌面端复用 `open_cas_login_window` 回传 loginToken，其余环境 `openExternalUrl`）；`ThirdPartyLogin.vue` 新增 `ssoEnabled`/`ssoLogin` props 与内联 SVG 盾牌图标（stroke-width 1.5）；`Login.vue` 接入 `useSsoLogin` 与既有 `useSsoCallback`（优先消费 URL 上的 `loginToken`/`login_token`） |
+| 降级 | 完成 | flows 与 `auth_metadata` 均不可用时 SSO 按钮不渲染，gitee/github/CAS 入口保持原样（无死按钮） |
+| i18n | 完成 | `login.sso.label` / `login.sso.failed` 中英双语；typings 由 `pnpm gen:i18n` 生成，无手工维护 |
+| 测试 | 完成 | `MatrixAuthService.sso.test.ts`：flow 缺失、无 IdP、脏 provider 过滤、探测异常、URL 委托共 5 例；`authMetadata.contract.test.ts`：真实 SDK + MSW，200 ⇒ `supported:true` 带 issuer/authorizationEndpoint，404 ⇒ `supported:false`；`ThirdPartyLogin.test.ts` 增 2 例（`ssoEnabled=false` 无入口、`true` 点击触发回调） |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm test:run` 全量 11220 用例通过（含本次新增 13 例）；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths` 均通过 |
+
+R1 结论：全程复用 SDK `getAuthMetadata` / `getSsoLoginUrl` 与既有 `MatrixAuthService.getLoginFlows`，未新增 `/_matrix` 字面量与裸请求。R3 结论：仅登录页桌面/移动共用组件，未引入 admin/AI 代码，移动端构建路径未受影响。
+
+已知限制（留给 AUTH-02 阶段评估）：桌面端 SSO 复用 `open_cas_login_window`，该窗口只允许同源导航，外部 OIDC IdP 的 302 跳转会被拦截；当前仅对同源品牌（cas/saml）流程可用。
+
 #### 12.4.3 ROOM（13 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
