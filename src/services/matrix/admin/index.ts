@@ -19,7 +19,30 @@ export {
   adminPolicyServerService,
   adminRateLimitService
 } from './AccountPolicyService'
+export type {
+  AdminAccountDataCallback,
+  AdminMediaCallback,
+  CreateAccountDataCallbackRequest,
+  CreateMediaCallbackRequest
+} from './AdminCallbackService'
+export { adminCallbackService } from './AdminCallbackService'
+export type {
+  CleanupAllRequest,
+  CleanupAllResponse,
+  CleanupRoomsRequest,
+  CleanupRoomsResponse,
+  CleanupTokensResponse
+} from './AdminCleanupService'
+export { adminCleanupService } from './AdminCleanupService'
 export { adminService } from './AdminFacadeService'
+export type {
+  PushCleanupLogsResponse,
+  PushConfigPatchRequest,
+  PushConfigResponse,
+  PushConfigUpdateResponse,
+  PushProcessQueueResponse
+} from './AdminPushService'
+export { adminPushService } from './AdminPushService'
 export type {
   ContentFilter,
   CreateContentFilterRequest,

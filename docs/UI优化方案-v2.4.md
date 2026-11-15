@@ -639,7 +639,7 @@ main.ts
 | `account-status` | 无 | `['org.matrix.msc3720']` | AUTH-06 |
 | `extended-profile` | 无 | `['org.matrix.msc4133']` | CAP-05 |
 | `qr-rendezvous` | 无 | `['org.matrix.msc4108']` | AUTH-05 |
-| `mutual-rooms` | 无 | `['org.matrix.msc2666']` | CAP-06 / AUTH-06 |
+| `mutual-rooms` | 无 | `['uk.half-shot.msc2666.query_mutual_rooms']` | CAP-06 / AUTH-06。键名不是 `org.matrix.msc2666`（任何 homeserver 都不发），也不能用短名 `uk.half-shot.msc2666`（matrix-js-sdk 会退回后端不服务的 `/user/shared_rooms/{userId}`） |
 
 #### 12.3.2 单一真源与三态
 
@@ -700,7 +700,7 @@ R1 结论：仅消费 `MatrixCapabilityService` 与既有 `MatrixDehydratedDevic
 | CAP-03 | P1 | `src/services/matrix/auth/MatrixOidcService.ts`、`src/views/loginWindow/ThirdPartyLogin.vue` | 启动时探测 `auth_metadata` 与 `m.login.sso` flows；`ssoOptions` 按 flows 动态生成；404 降级为现有 gitee/github/CAS | 契约测试覆盖 200/404；组件测试覆盖 flows 缺失 |
 | CAP-04 | P2 | `DehydratedDeviceSection.vue` | `isSupported` 改为按 `org.matrix.msc3814` 路由面判定，不再只判「路由存在」 | 单测两分支 |
 | CAP-05 | P2 | 扩展资料入口 | 只读 `unstable_features` 改为门控 `extended-profile` | 单测 |
-| CAP-06 | P2 | `src/components/friend/friendListViewState.ts:16-18` | 门控放宽：`io.hula.friends` 或 `mutual-rooms` 任一满足即展示 | 单测真值表 |
+| CAP-06 | P2 | `src/services/matrix/MatrixCapabilityService.ts`（`'friend-list'` 别名表 + `canUseFriendList()`）、`src/components/friend/friendListViewState.ts` | 门控**只看** `io.hula.friends`：`friendListViewState.ts` 是纯状态机，按 `canUseFriendList` 布尔切 `capability` 态，本身不含任何键名；`mutual-rooms`（`uk.half-shot.msc2666.query_mutual_rooms`）不参与好友列表门控、当前无消费方（列表数据来自 hula friends API，缺 `io.hula.friends` 时放宽只会得到空列表） | 单测真值表 |
 | CAP-07 | P2 | 语音探针与 VoIP 门控 | 合并为单一来源 `voip`，删除探针侧的自判 | 单测 |
 
 #### 12.4.2 AUTH（7 条）
@@ -930,9 +930,26 @@ R1 结论：7 条端点全部复用既有 SDK `getAdminManager()` 能力，仅�
 | 测试 | 完成 | `AccountPolicyService.test.ts` 12 例（8 条端点参数透传/返回值/失败重抛）；`useAdminAccountPolicy.test.ts` 11 例（成功写入、失败文案、新建后回读）；`AdminAccountPolicy.test.ts` 9 例（挂载并发加载、有效期查询与设置续期校验、提供方 JSON 校验与重置、策略检查、四块错误态、刷新按钮） |
 | 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run`（1010 个文件 / 11269 例）全绿；`check:file-size` 仅剩 4 个既有超标文件（`RoomDetailDrawer.vue` / `RoomOperations.ts` / `ChatMain.vue` / `MatrixCapabilityService.ts`，工作区既有改动，非本批次引入） |
 
-R1 结论：8 条端点全部复用 SDK `AdminManager` 的 `config` / `policy` / `server` 子管理器，仅补服务分层、composable 与页面，未新增 HTTP 或协议实现。R3 结论：新增服务、composable、页面、路由与菜单均只作用于桌面 admin 路径，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码；组 b（callbacks / cleanup / push）与组 c（invite 黑白名单 / CAS）待后续成套提交。
+R1 结论：8 条端点全部复用 SDK `AdminManager` 的 `config` / `policy` / `server` 子管理器，仅补服务分层、composable 与页面，未新增 HTTP 或协议实现。R3 结论：新增服务、composable、页面、路由与菜单均只作用于桌面 admin 路径，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码；组 b 见下条记录，组 c（invite 黑白名单 / CAS）待后续成套提交。
 
-#### 12.4.5 VEN（4 条）
+##### ADM-05 组 b 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | 组 b 的 12 条端点（`callbacks` 5 条、`cleanup` 3 条、`push` 4 条）SDK 子管理器已具备，服务层与前端均零封装 |
+| 服务层 | 完成 | 新增 `AdminCallbackService.ts`（媒体回调列表/按类型查询/创建 + 账户数据回调列表/创建）、`AdminCleanupService.ts`（`cleanup.all` / `cleanup.rooms` / `cleanup.tokens`）、`AdminPushService.ts`（配置读/写、队列消费、日志清理）；类型经 `Parameters<>` / `Awaited<ReturnType<>>` 从 SDK 子管理器派生，不复制协议结构 |
+| SDK 边界 | 完成 | `src/services/matrix/sdk.ts` 增补 `AdminCleanupManager` / `AdminPushManager` 类型再导出；服务只从本仓唯一咽喉点取类型，`check:sdk-boundary` 基线不增长 |
+| composable | 完成 | 新增 `useAdminCallbacks`（双域列表/新建，媒体类型过滤，账户数据 `dataTypes` 按逗号拆分且空数组不传键）、`useAdminCleanup`（三动作，`minAgeMs` 未填时不发送 `min_age_ms`）、`useAdminPush`（配置读写、队列消费、日志清理），写操作统一返回 `boolean` |
+| 页面接线 | 完成 | 新增三页：`AdminCallbacks.vue`（媒体/账户数据双 tab）、`AdminPush.vue`（配置表、按键更新、队列消费、日志清理二次确认）、`AdminCleanup.vue`（三动作 `dialog.error` 二次确认 + 结果分派展示）；三者均含错误横幅与空态，破坏性操作强制二次确认 |
+| 组件体量 | 完成 | 初版两页超 400 行，按 tab 拆为 `views/admin/callbacks/MediaCallbacksPanel.vue`、`callbacks/AccountDataCallbacksPanel.vue`，`views/admin/accountPolicy/` 四面板（有效期/提供方/策略/限流），壳文件只保留提示条与 tab 容器 |
+| 路由与菜单 | 完成 | `router/routes/desktop.ts` 新增 `/admin/callbacks`、`/admin/push`、`/admin/cleanup`（均 `requiresAdmin`）；`useAdminNav.ts` 系统分组新增三条；`adminNavIcons.ts` 新增 `callbacks` / `push` / `cleanup` 图标（SVG 24x24、stroke 1.5 口径路径） |
+| i18n | 完成 | 新增 `admin.nav.*` 3 键与根级 `admin.callbacks.*` / `admin.push.*` / `admin.cleanup.*`（含表格列与确认文案），中英同步；`pnpm gen:i18n` 已重新生成类型 |
+| 测试 | 完成 | 9 个文件 46 例：`AdminCallbackService.test.ts` 6、`AdminCleanupService.test.ts` 5、`AdminPushService.test.ts` 5、`useAdminCallbacks.test.ts` 7、`useAdminCleanup.test.ts` 4、`useAdminPush.test.ts` 5、`AdminCallbacks.test.ts` 4、`AdminPush.test.ts` 6、`AdminCleanup.test.ts` 4 |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`check:file-size`（本批次新增/改动文件全部达标）、`pnpm test:run`（1019 个文件 / 11315 例）全绿；同步刷新 `Tjg-SDK-集成架构与能力图谱-2026-10-08.md` 标记块计数（253 / 270 / 44） |
+
+R1 结论：12 条端点全部复用 SDK `AdminManager` 的 `callbacks` / `cleanup` / `push` 子管理器，未新增 HTTP 或协议实现。R3 结论：新增服务、composable、页面、路由与菜单均只作用于桌面 admin 路径，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码。
+
+#### 12.4.5 VEN（3 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
 | :--- | :--- | :--- | :--- | :--- |

@@ -196,6 +196,21 @@ export function useAdminNav() {
           path: '/admin/external-services',
           label: t('admin.nav.externalServices'),
           icon: 'externalServices'
+        },
+        {
+          path: '/admin/callbacks',
+          label: t('admin.nav.callbacks'),
+          icon: 'callbacks'
+        },
+        {
+          path: '/admin/push',
+          label: t('admin.nav.push'),
+          icon: 'push'
+        },
+        {
+          path: '/admin/cleanup',
+          label: t('admin.nav.cleanup'),
+          icon: 'cleanup'
         }
       ]
     }

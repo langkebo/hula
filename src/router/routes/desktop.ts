@@ -351,6 +351,24 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         name: 'AdminExternalServices',
         component: () => import('@/views/admin/AdminExternalServices.vue'),
         meta: { title: '外部服务', requiresAdmin: true }
+      },
+      {
+        path: '/admin/callbacks',
+        name: 'AdminCallbacks',
+        component: () => import('@/views/admin/AdminCallbacks.vue'),
+        meta: { title: '回调管理', requiresAdmin: true }
+      },
+      {
+        path: '/admin/push',
+        name: 'AdminPush',
+        component: () => import('@/views/admin/AdminPush.vue'),
+        meta: { title: '推送管理', requiresAdmin: true }
+      },
+      {
+        path: '/admin/cleanup',
+        name: 'AdminCleanup',
+        component: () => import('@/views/admin/AdminCleanup.vue'),
+        meta: { title: '数据清理', requiresAdmin: true }
       }
     ]
   },

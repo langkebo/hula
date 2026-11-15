@@ -251,7 +251,10 @@
     "telemetry": "Telemetry",
     "backgroundUpdates": "Background Updates",
     "modules": "Modules",
-    "externalServices": "External Services"
+    "externalServices": "External Services",
+    "callbacks": "Callbacks",
+    "push": "Push",
+    "cleanup": "Data Cleanup"
   },
   "status": {
     "admin": "Admin",
@@ -1030,6 +1033,149 @@
       "delete_success": "Media deleted",
       "delete_user_success": "All media of this user deleted",
       "policy_deleted": "Deleted {count} media by policy"
+    }
+  },
+  "callbacks": {
+    "hint": "Callbacks notify external services when media or account data changes. Review execution records and register new callback configurations here.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "tabs": {
+      "media": "Media Callbacks",
+      "accountData": "Account Data Callbacks"
+    },
+    "media": {
+      "hint": "The table lists callback execution records; the form registers a new media callback configuration.",
+      "filterPlaceholder": "Filter by callback type (empty for all)",
+      "refresh": "Refresh",
+      "empty": "No callback execution records",
+      "createTitle": "Register Media Callback",
+      "name": "Callback name",
+      "namePlaceholder": "e.g. media-thumbnail",
+      "type": "Callback type",
+      "typePlaceholder": "e.g. generate_thumbnail",
+      "url": "Callback URL",
+      "urlPlaceholder": "https://example.com/hooks/media",
+      "methodPlaceholder": "HTTP method (POST by default)",
+      "enabled": "Enabled",
+      "submit": "Create callback",
+      "requiredName": "Callback name is required",
+      "requiredType": "Callback type is required",
+      "requiredUrl": "Callback URL is required",
+      "success": "Media callback created",
+      "failed": "Failed to create media callback",
+      "column": {
+        "id": "ID",
+        "callbackType": "Callback type",
+        "mediaId": "Media ID",
+        "userId": "User ID",
+        "status": "Status",
+        "result": "Result",
+        "created": "Created",
+        "completed": "Completed",
+        "enabled": "Enabled"
+      }
+    },
+    "accountData": {
+      "hint": "Account data callbacks fire when a user account data changes; the config must be a JSON object.",
+      "refresh": "Refresh",
+      "empty": "No account data callbacks",
+      "createTitle": "Register Account Data Callback",
+      "name": "Callback name",
+      "namePlaceholder": "e.g. account-sync",
+      "dataTypes": "Data types",
+      "dataTypesPlaceholder": "Separate types with commas or spaces; empty means all",
+      "config": "Config (JSON)",
+      "configPlaceholder": "{\"url\": \"https://example.com/hooks/account\"}",
+      "enabled": "Enabled",
+      "submit": "Create callback",
+      "requiredName": "Callback name is required",
+      "invalidConfig": "Config must be a valid JSON object",
+      "success": "Account data callback created",
+      "failed": "Failed to create account data callback",
+      "column": {
+        "id": "ID",
+        "name": "Callback name",
+        "dataTypes": "Data types",
+        "enabled": "Enabled",
+        "created": "Created"
+      }
+    }
+  },
+  "push": {
+    "hint": "Sensitive configuration values are masked by the server. Writing them back would store the mask as a real value, so only per-key updates are allowed here.",
+    "configTitle": "Push Configuration",
+    "initializedProviders": "Initialized providers",
+    "supportedKeys": "Supported keys",
+    "noProviders": "No initialized providers",
+    "noSupportedKeys": "Server did not report configurable keys",
+    "configEmpty": "No configuration entries",
+    "column": {
+      "key": "Key",
+      "value": "Value"
+    },
+    "patchTitle": "Update Configuration",
+    "patchHint": "Only submit the keys you want to change; an empty value removes the key.",
+    "patchKeyPlaceholder": "Config key",
+    "patchValuePlaceholder": "New value",
+    "patchSubmit": "Submit change",
+    "requiredKey": "Config key is required",
+    "patchSuccess": "Configuration updated",
+    "patchFailed": "Failed to update configuration",
+    "processTitle": "Process Push Queue",
+    "processHint": "Manually trigger one push queue run; the batch size caps how many entries are handled.",
+    "processSubmit": "Process now",
+    "processSuccess": "Push queue processed",
+    "processFailed": "Failed to process push queue",
+    "processResult": "{processed} entries processed",
+    "cleanupTitle": "Clean Up Push Logs",
+    "cleanupHint": "Delete push logs older than the retention period. This cannot be undone.",
+    "cleanupSubmit": "Clean up logs",
+    "cleanupConfirmTitle": "Clean up push logs",
+    "cleanupConfirmContent": "Push logs older than {days} days will be deleted. Continue?",
+    "cleanupSuccess": "Push logs cleaned up",
+    "cleanupFailed": "Failed to clean up push logs",
+    "cleanupResult": "{cleaned} entries cleaned"
+  },
+  "cleanup": {
+    "hint": "The actions below delete server data and cannot be undone. Confirm the scope before running them.",
+    "optionsTitle": "Options",
+    "minAgePlaceholder": "Minimum data age (ms)",
+    "minAgeHint": "Empty means no age limit; applies to full cleanup and room cleanup only.",
+    "resultTitle": "Latest Run Result",
+    "result": {
+      "emptyRooms": "Empty rooms deleted",
+      "eventsInEmptyRooms": "Events in empty rooms deleted",
+      "accessTokens": "Access tokens deleted",
+      "refreshTokens": "Refresh tokens deleted",
+      "registrationTokens": "Registration tokens deleted",
+      "emailTokens": "Email tokens deleted"
+    },
+    "all": {
+      "title": "Full Cleanup",
+      "description": "Clean abnormal rooms and expired tokens in one run; widest impact.",
+      "action": "Run full cleanup",
+      "confirmTitle": "Confirm full cleanup",
+      "confirmContent": "Empty rooms and their events will be deleted, and expired tokens cleaned up. Continue?",
+      "success": "Full cleanup completed",
+      "failed": "Full cleanup failed"
+    },
+    "rooms": {
+      "title": "Room Cleanup",
+      "description": "Delete empty rooms together with events left in them.",
+      "action": "Run room cleanup",
+      "confirmTitle": "Confirm room cleanup",
+      "confirmContent": "Empty rooms and their remaining events will be deleted. Continue?",
+      "success": "Room cleanup completed",
+      "failed": "Room cleanup failed"
+    },
+    "tokens": {
+      "title": "Token Cleanup",
+      "description": "Delete expired access tokens and refresh tokens on the server.",
+      "action": "Run token cleanup",
+      "confirmTitle": "Confirm token cleanup",
+      "confirmContent": "Expired access tokens and refresh tokens will be deleted. Continue?",
+      "success": "Token cleanup completed",
+      "failed": "Token cleanup failed"
     }
   }
 }

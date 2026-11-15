@@ -256,7 +256,10 @@ export type Messages = {
     "telemetry": "遥测监控",
     "backgroundUpdates": "后台更新",
     "modules": "模块管理",
-    "externalServices": "外部服务"
+    "externalServices": "外部服务",
+    "callbacks": "回调管理",
+    "push": "推送管理",
+    "cleanup": "数据清理"
   },
   "status": {
     "admin": "管理员",
@@ -1036,6 +1039,149 @@ export type Messages = {
       "delete_user_success": "已删除该用户全部媒体",
       "policy_deleted": "已按策略删除 {count} 个媒体"
     }
+  },
+  "callbacks": {
+    "hint": "回调用于在媒体处理或账户数据变更时通知外部服务，此处可查看执行记录并注册新的回调配置。",
+    "enabled": "已启用",
+    "disabled": "已停用",
+    "tabs": {
+      "media": "媒体回调",
+      "accountData": "账户数据回调"
+    },
+    "media": {
+      "hint": "列表展示回调执行记录；新建表单用于注册一个媒体回调配置。",
+      "filterPlaceholder": "按回调类型过滤（留空为全部）",
+      "refresh": "刷新记录",
+      "empty": "暂无回调执行记录",
+      "createTitle": "注册媒体回调",
+      "name": "回调名称",
+      "namePlaceholder": "例如 media-thumbnail",
+      "type": "回调类型",
+      "typePlaceholder": "例如 generate_thumbnail",
+      "url": "回调地址",
+      "urlPlaceholder": "https://example.com/hooks/media",
+      "methodPlaceholder": "请求方法（默认 POST）",
+      "enabled": "启用",
+      "submit": "创建回调",
+      "requiredName": "请填写回调名称",
+      "requiredType": "请填写回调类型",
+      "requiredUrl": "请填写回调地址",
+      "success": "媒体回调已创建",
+      "failed": "创建媒体回调失败",
+      "column": {
+        "id": "ID",
+        "callbackType": "回调类型",
+        "mediaId": "媒体 ID",
+        "userId": "用户 ID",
+        "status": "状态",
+        "result": "结果",
+        "created": "创建时间",
+        "completed": "完成时间",
+        "enabled": "启用"
+      }
+    },
+    "accountData": {
+      "hint": "账户数据回调在用户账户数据变更时触发，配置需为 JSON 对象。",
+      "refresh": "刷新记录",
+      "empty": "暂无账户数据回调",
+      "createTitle": "注册账户数据回调",
+      "name": "回调名称",
+      "namePlaceholder": "例如 account-sync",
+      "dataTypes": "监听范围",
+      "dataTypesPlaceholder": "多个类型用逗号或空格分隔，留空为全部",
+      "config": "配置（JSON）",
+      "configPlaceholder": "{\"url\": \"https://example.com/hooks/account\"}",
+      "enabled": "启用",
+      "submit": "创建回调",
+      "requiredName": "请填写回调名称",
+      "invalidConfig": "配置必须是合法的 JSON 对象",
+      "success": "账户数据回调已创建",
+      "failed": "创建账户数据回调失败",
+      "column": {
+        "id": "ID",
+        "name": "回调名称",
+        "dataTypes": "监听范围",
+        "enabled": "启用",
+        "created": "创建时间"
+      }
+    }
+  },
+  "push": {
+    "hint": "配置中的敏感值已由服务端掩码，原样回写会把掩码当作真实值，因此此处只允许按键提交变更。",
+    "configTitle": "推送配置",
+    "initializedProviders": "已初始化提供方",
+    "supportedKeys": "可配置键",
+    "noProviders": "暂无已初始化的提供方",
+    "noSupportedKeys": "服务端未提供可配置键清单",
+    "configEmpty": "暂无配置项",
+    "column": {
+      "key": "配置键",
+      "value": "值"
+    },
+    "patchTitle": "更新配置",
+    "patchHint": "仅填写需要变更的键；值留空表示删除该键。",
+    "patchKeyPlaceholder": "配置键",
+    "patchValuePlaceholder": "新的值",
+    "patchSubmit": "提交变更",
+    "requiredKey": "请填写配置键",
+    "patchSuccess": "配置已更新",
+    "patchFailed": "更新配置失败",
+    "processTitle": "消费推送队列",
+    "processHint": "手动触发一次推送队列消费，批量大小为单次处理上限。",
+    "processSubmit": "立即消费",
+    "processSuccess": "推送队列已消费",
+    "processFailed": "消费推送队列失败",
+    "processResult": "已处理 {processed} 条",
+    "cleanupTitle": "清理推送日志",
+    "cleanupHint": "删除早于保留天数的推送日志，操作不可撤销。",
+    "cleanupSubmit": "清理日志",
+    "cleanupConfirmTitle": "清理推送日志",
+    "cleanupConfirmContent": "将删除 {days} 天前的推送日志，确定继续吗？",
+    "cleanupSuccess": "推送日志已清理",
+    "cleanupFailed": "清理推送日志失败",
+    "cleanupResult": "已清理 {cleaned} 条"
+  },
+  "cleanup": {
+    "hint": "以下操作会删除服务端数据且不可撤销，请确认影响范围后再执行。",
+    "optionsTitle": "执行选项",
+    "minAgePlaceholder": "最小数据年龄（毫秒）",
+    "minAgeHint": "留空表示不限制数据年龄；仅对全部清理与清理房间生效。",
+    "resultTitle": "最近一次执行结果",
+    "result": {
+      "emptyRooms": "已删除空房间",
+      "eventsInEmptyRooms": "已删除空房间内事件",
+      "accessTokens": "已删除访问令牌",
+      "refreshTokens": "已删除刷新令牌",
+      "registrationTokens": "已删除注册令牌",
+      "emailTokens": "已删除邮箱令牌"
+    },
+    "all": {
+      "title": "全部清理",
+      "description": "同时清理异常房间与失效令牌，影响范围最大。",
+      "action": "执行全部清理",
+      "confirmTitle": "确认全部清理",
+      "confirmContent": "将删除空房间及其事件，并清理失效令牌，确定继续吗？",
+      "success": "全部清理已完成",
+      "failed": "全部清理失败"
+    },
+    "rooms": {
+      "title": "清理房间",
+      "description": "删除空房间以及这些房间内残留的事件。",
+      "action": "执行房间清理",
+      "confirmTitle": "确认清理房间",
+      "confirmContent": "将删除空房间及其残留事件，确定继续吗？",
+      "success": "房间清理已完成",
+      "failed": "房间清理失败"
+    },
+    "tokens": {
+      "title": "清理令牌",
+      "description": "删除服务端已失效的访问令牌与刷新令牌。",
+      "action": "执行令牌清理",
+      "confirmTitle": "确认清理令牌",
+      "confirmContent": "将删除失效的访问令牌与刷新令牌，确定继续吗？",
+      "success": "令牌清理已完成",
+      "failed": "令牌清理失败"
+    }
   }
 }
 
@@ -1291,6 +1437,9 @@ export type KeyPaths =
   | "admin.nav.backgroundUpdates"
   | "admin.nav.modules"
   | "admin.nav.externalServices"
+  | "admin.nav.callbacks"
+  | "admin.nav.push"
+  | "admin.nav.cleanup"
   | "admin.status.admin"
   | "admin.status.user"
   | "admin.availability.loading.title"
@@ -1962,3 +2111,120 @@ export type KeyPaths =
   | "admin.media.feedback.delete_success"
   | "admin.media.feedback.delete_user_success"
   | "admin.media.feedback.policy_deleted"
+  | "admin.callbacks.hint"
+  | "admin.callbacks.enabled"
+  | "admin.callbacks.disabled"
+  | "admin.callbacks.tabs.media"
+  | "admin.callbacks.tabs.accountData"
+  | "admin.callbacks.media.hint"
+  | "admin.callbacks.media.filterPlaceholder"
+  | "admin.callbacks.media.refresh"
+  | "admin.callbacks.media.empty"
+  | "admin.callbacks.media.createTitle"
+  | "admin.callbacks.media.name"
+  | "admin.callbacks.media.namePlaceholder"
+  | "admin.callbacks.media.type"
+  | "admin.callbacks.media.typePlaceholder"
+  | "admin.callbacks.media.url"
+  | "admin.callbacks.media.urlPlaceholder"
+  | "admin.callbacks.media.methodPlaceholder"
+  | "admin.callbacks.media.enabled"
+  | "admin.callbacks.media.submit"
+  | "admin.callbacks.media.requiredName"
+  | "admin.callbacks.media.requiredType"
+  | "admin.callbacks.media.requiredUrl"
+  | "admin.callbacks.media.success"
+  | "admin.callbacks.media.failed"
+  | "admin.callbacks.media.column.id"
+  | "admin.callbacks.media.column.callbackType"
+  | "admin.callbacks.media.column.mediaId"
+  | "admin.callbacks.media.column.userId"
+  | "admin.callbacks.media.column.status"
+  | "admin.callbacks.media.column.result"
+  | "admin.callbacks.media.column.created"
+  | "admin.callbacks.media.column.completed"
+  | "admin.callbacks.media.column.enabled"
+  | "admin.callbacks.accountData.hint"
+  | "admin.callbacks.accountData.refresh"
+  | "admin.callbacks.accountData.empty"
+  | "admin.callbacks.accountData.createTitle"
+  | "admin.callbacks.accountData.name"
+  | "admin.callbacks.accountData.namePlaceholder"
+  | "admin.callbacks.accountData.dataTypes"
+  | "admin.callbacks.accountData.dataTypesPlaceholder"
+  | "admin.callbacks.accountData.config"
+  | "admin.callbacks.accountData.configPlaceholder"
+  | "admin.callbacks.accountData.enabled"
+  | "admin.callbacks.accountData.submit"
+  | "admin.callbacks.accountData.requiredName"
+  | "admin.callbacks.accountData.invalidConfig"
+  | "admin.callbacks.accountData.success"
+  | "admin.callbacks.accountData.failed"
+  | "admin.callbacks.accountData.column.id"
+  | "admin.callbacks.accountData.column.name"
+  | "admin.callbacks.accountData.column.dataTypes"
+  | "admin.callbacks.accountData.column.enabled"
+  | "admin.callbacks.accountData.column.created"
+  | "admin.push.hint"
+  | "admin.push.configTitle"
+  | "admin.push.initializedProviders"
+  | "admin.push.supportedKeys"
+  | "admin.push.noProviders"
+  | "admin.push.noSupportedKeys"
+  | "admin.push.configEmpty"
+  | "admin.push.column.key"
+  | "admin.push.column.value"
+  | "admin.push.patchTitle"
+  | "admin.push.patchHint"
+  | "admin.push.patchKeyPlaceholder"
+  | "admin.push.patchValuePlaceholder"
+  | "admin.push.patchSubmit"
+  | "admin.push.requiredKey"
+  | "admin.push.patchSuccess"
+  | "admin.push.patchFailed"
+  | "admin.push.processTitle"
+  | "admin.push.processHint"
+  | "admin.push.processSubmit"
+  | "admin.push.processSuccess"
+  | "admin.push.processFailed"
+  | "admin.push.processResult"
+  | "admin.push.cleanupTitle"
+  | "admin.push.cleanupHint"
+  | "admin.push.cleanupSubmit"
+  | "admin.push.cleanupConfirmTitle"
+  | "admin.push.cleanupConfirmContent"
+  | "admin.push.cleanupSuccess"
+  | "admin.push.cleanupFailed"
+  | "admin.push.cleanupResult"
+  | "admin.cleanup.hint"
+  | "admin.cleanup.optionsTitle"
+  | "admin.cleanup.minAgePlaceholder"
+  | "admin.cleanup.minAgeHint"
+  | "admin.cleanup.resultTitle"
+  | "admin.cleanup.result.emptyRooms"
+  | "admin.cleanup.result.eventsInEmptyRooms"
+  | "admin.cleanup.result.accessTokens"
+  | "admin.cleanup.result.refreshTokens"
+  | "admin.cleanup.result.registrationTokens"
+  | "admin.cleanup.result.emailTokens"
+  | "admin.cleanup.all.title"
+  | "admin.cleanup.all.description"
+  | "admin.cleanup.all.action"
+  | "admin.cleanup.all.confirmTitle"
+  | "admin.cleanup.all.confirmContent"
+  | "admin.cleanup.all.success"
+  | "admin.cleanup.all.failed"
+  | "admin.cleanup.rooms.title"
+  | "admin.cleanup.rooms.description"
+  | "admin.cleanup.rooms.action"
+  | "admin.cleanup.rooms.confirmTitle"
+  | "admin.cleanup.rooms.confirmContent"
+  | "admin.cleanup.rooms.success"
+  | "admin.cleanup.rooms.failed"
+  | "admin.cleanup.tokens.title"
+  | "admin.cleanup.tokens.description"
+  | "admin.cleanup.tokens.action"
+  | "admin.cleanup.tokens.confirmTitle"
+  | "admin.cleanup.tokens.confirmContent"
+  | "admin.cleanup.tokens.success"
+  | "admin.cleanup.tokens.failed"
