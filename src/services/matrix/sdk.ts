@@ -7,6 +7,8 @@
  */
 
 // ---- 核心 ----
+import type { MatrixClient } from 'matrix-js-sdk'
+
 export type {
   IContent,
   ICreateRoomOpts,
@@ -99,3 +101,7 @@ export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'
 export type { IPresenceEvent } from 'matrix-js-sdk/presence'
 export type {} from 'matrix-js-sdk/rendezvous'
 export type { TelemetryManager } from 'matrix-js-sdk/telemetry'
+// 以下类型由 MatrixClient 访问器派生：SDK 的 package exports 未提供
+// `./cas` 与 `./invite-blocklist` 子路径，只能经客户端访问器取回管理器类型。
+export type CasManager = ReturnType<MatrixClient['getCasManager']>
+export type InviteBlocklistManager = ReturnType<MatrixClient['getInviteBlocklistManager']>

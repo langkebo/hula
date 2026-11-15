@@ -930,7 +930,7 @@ R1 结论：7 条端点全部复用既有 SDK `getAdminManager()` 能力，仅�
 | 测试 | 完成 | `AccountPolicyService.test.ts` 12 例（8 条端点参数透传/返回值/失败重抛）；`useAdminAccountPolicy.test.ts` 11 例（成功写入、失败文案、新建后回读）；`AdminAccountPolicy.test.ts` 9 例（挂载并发加载、有效期查询与设置续期校验、提供方 JSON 校验与重置、策略检查、四块错误态、刷新按钮） |
 | 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run`（1010 个文件 / 11269 例）全绿；`check:file-size` 仅剩 4 个既有超标文件（`RoomDetailDrawer.vue` / `RoomOperations.ts` / `ChatMain.vue` / `MatrixCapabilityService.ts`，工作区既有改动，非本批次引入） |
 
-R1 结论：8 条端点全部复用 SDK `AdminManager` 的 `config` / `policy` / `server` 子管理器，仅补服务分层、composable 与页面，未新增 HTTP 或协议实现。R3 结论：新增服务、composable、页面、路由与菜单均只作用于桌面 admin 路径，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码；组 b 见下条记录，组 c（invite 黑白名单 / CAS）待后续成套提交。
+R1 结论：8 条端点全部复用 SDK `AdminManager` 的 `config` / `policy` / `server` 子管理器，仅补服务分层、composable 与页面，未新增 HTTP 或协议实现。R3 结论：新增服务、composable、页面、路由与菜单均只作用于桌面 admin 路径，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码；组 b、组 c 见下条记录。
 
 ##### ADM-05 组 b 落地记录（P1，完成）
 
@@ -948,6 +948,22 @@ R1 结论：8 条端点全部复用 SDK `AdminManager` 的 `config` / `policy` /
 | 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`check:file-size`（本批次新增/改动文件全部达标）、`pnpm test:run`（1019 个文件 / 11315 例）全绿；同步刷新 `Tjg-SDK-集成架构与能力图谱-2026-10-08.md` 标记块计数（253 / 270 / 44） |
 
 R1 结论：12 条端点全部复用 SDK `AdminManager` 的 `callbacks` / `cleanup` / `push` 子管理器，未新增 HTTP 或协议实现。R3 结论：新增服务、composable、页面、路由与菜单均只作用于桌面 admin 路径，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码。
+
+##### ADM-05 组 c 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | 组 c 的 9 条端点（invite 黑白名单 4 条、CAS services 5 条）SDK 子管理器均已具备，服务层与前端零消费者 |
+| 服务层 | 完成 | 新增 `AdminInvitePolicyService.ts`（黑/白名单读取与整体替换）、`AdminCasService.ts`（服务列表/注册/删除、用户属性读取/单属性写入）；方法体只委托子管理器，失败统一 `logger.error` 后重抛，请求/响应类型经 `Parameters<>` / `Awaited<ReturnType<>>` 派生 |
+| SDK 边界 | 完成 | SDK 的 package exports 未提供 `./cas` 与 `./invite-blocklist` 子路径，故在 `src/services/matrix/sdk.ts` 补 `MatrixClient` 类型导入并派生 `CasManager` / `InviteBlocklistManager`（`ReturnType<MatrixClient['getCasManager' \| 'getInviteBlocklistManager']>`），服务只从本仓唯一咽喉点取类型，`check:sdk-boundary` 维持 156 条基线 |
+| composable | 完成 | 新增 `useAdminInvitePolicy`（房间维度双列表读取，两列表独立保存并以响应回填）与 `useAdminCas`（服务读取/注册/删除后自动回读；用户属性读取与单属性写入后回读列表） |
+| 页面接线 | 完成 | 新增 `AdminInvitePolicy.vue`（房间 ID 读取 + 黑白名单 textarea 全量编辑保存，规避 POST 整体替换的读改写覆盖）与 `AdminCas.vue`（服务表格 + 注册表单 + 用户属性读取/写入），删除服务强制 `dialog.warning` 二次确认，两页均含错误横幅与空态 |
+| 路由与菜单 | 完成 | `router/routes/desktop.ts` 新增 `/admin/invite-policy`、`/admin/cas`（均 `requiresAdmin`）；`useAdminNav.ts` 系统分组新增两条；`adminNavIcons.ts` 新增 `invitePolicy`（user-plus）与 `cas`（key）图标（SVG 24x24、Heroicons outline 口径） |
+| i18n | 完成 | `admin.nav` 新增 `invitePolicy` / `cas`，新增根级 `admin.invitePolicy.*` 与 `admin.cas.*`，并补 `admin.common.delete`；中英同步，`pnpm gen:i18n` 已重新生成类型 |
+| 测试 | 完成 | 6 个文件 32 例：`AdminInvitePolicyService.test.ts` 5、`AdminCasService.test.ts` 6、`useAdminInvitePolicy.test.ts` 4、`useAdminCas.test.ts` 7、`AdminInvitePolicy.test.ts` 4、`AdminCas.test.ts` 6 |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`（156 条基线不变）、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run` 全绿；`check:file-size` 本批次新增/改动文件全部达标，仅剩 6 个既有超标项（`MatrixAuthService.ts` / `ThreadPanel.vue` / `MatrixCapabilityService.ts` 及 3 个基线漂移文件，均为工作区既存改动）；同步刷新能力图谱标记块计数（255 / 272 / 46） |
+
+R1 结论：9 条端点全部复用 SDK `getInviteBlocklistManager()` / `getCasManager()`，未新增 HTTP 或协议实现；`sdk.ts` 只补类型再导出，仍是唯一 SDK 类型咽喉点。R3 结论：新增服务、composable、页面、路由与菜单均只作用于桌面 admin 路径，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码。ADM-05 的 a/b/c 三组至此全部落地。
 
 #### 12.4.5 VEN（3 条）
 

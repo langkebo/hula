@@ -27,6 +27,17 @@ export type {
 } from './AdminCallbackService'
 export { adminCallbackService } from './AdminCallbackService'
 export type {
+  CasServiceCreateRequest,
+  CasServiceCreateResponse,
+  CasServiceDeleteResponse,
+  CasServiceInfo,
+  CasServiceListResponse,
+  CasSetAttributeRequest,
+  CasSetAttributeResponse,
+  CasUserAttribute
+} from './AdminCasService'
+export { adminCasService } from './AdminCasService'
+export type {
   CleanupAllRequest,
   CleanupAllResponse,
   CleanupRoomsRequest,
@@ -35,6 +46,8 @@ export type {
 } from './AdminCleanupService'
 export { adminCleanupService } from './AdminCleanupService'
 export { adminService } from './AdminFacadeService'
+export type { InviteAllowlistResponse, InviteBlocklistResponse } from './AdminInvitePolicyService'
+export { adminInvitePolicyService } from './AdminInvitePolicyService'
 export type {
   PushCleanupLogsResponse,
   PushConfigPatchRequest,

@@ -12,6 +12,7 @@ export type Messages = {
     "confirm": "确认",
     "save": "保存",
     "close": "关闭",
+    "delete": "删除",
     "actions": "操作",
     "selectedCount": "已选择 {count} 项",
     "noData": "暂无数据"
@@ -259,7 +260,9 @@ export type Messages = {
     "externalServices": "外部服务",
     "callbacks": "回调管理",
     "push": "推送管理",
-    "cleanup": "数据清理"
+    "cleanup": "数据清理",
+    "invitePolicy": "邀请策略",
+    "cas": "CAS 管理"
   },
   "status": {
     "admin": "管理员",
@@ -1182,6 +1185,66 @@ export type Messages = {
       "success": "令牌清理已完成",
       "failed": "令牌清理失败"
     }
+  },
+  "invitePolicy": {
+    "hint": "邀请黑白名单按房间生效，保存时会整体替换该名单，请先读取再修改。",
+    "roomTitle": "目标房间",
+    "roomIdPlaceholder": "房间 ID，例如 !abc:example.org",
+    "load": "读取名单",
+    "roomIdRequired": "请先填写房间 ID",
+    "loadSuccess": "名单已读取",
+    "loadFailed": "名单读取失败",
+    "blocklistTitle": "黑名单",
+    "blocklistHint": "黑名单内的用户无法邀请加入该房间。每行一个用户 ID。",
+    "allowlistTitle": "白名单",
+    "allowlistHint": "仅白名单内的用户可以邀请加入该房间。每行一个用户 ID。",
+    "userIdsPlaceholder": "每行一个用户 ID，例如\n@alice:example.org",
+    "blocklistSaved": "黑名单已保存",
+    "allowlistSaved": "白名单已保存",
+    "saveFailed": "名单保存失败"
+  },
+  "cas": {
+    "hint": "CAS 服务用于外部单点登录。服务注册与用户属性写入会立即生效。",
+    "servicesTitle": "服务列表",
+    "servicesEmpty": "暂无 CAS 服务",
+    "createTitle": "注册服务",
+    "createHint": "服务 ID、名称与 URL 匹配模式均为必填；服务 ID 需唯一。",
+    "serviceIdPlaceholder": "服务 ID",
+    "serviceNamePlaceholder": "服务名称",
+    "serviceUrlPlaceholder": "服务 URL 匹配模式，例如 https://app.example.com/*",
+    "serviceDescriptionPlaceholder": "服务描述（可选）",
+    "createSubmit": "注册服务",
+    "createSuccess": "服务已注册",
+    "createFailed": "服务注册失败",
+    "deleteConfirmTitle": "删除 CAS 服务",
+    "deleteConfirmContent": "确认删除服务 {id}？该操作不可撤销。",
+    "deleteSuccess": "服务已删除",
+    "deleteFailed": "服务删除失败",
+    "attributesTitle": "用户属性",
+    "userIdPlaceholder": "用户 ID，例如 @alice:example.org",
+    "attributesLoad": "读取属性",
+    "attributesEmpty": "该用户暂无 CAS 属性",
+    "attributesLoadSuccess": "属性已读取",
+    "attributesLoadFailed": "属性读取失败",
+    "attributeWriteHint": "每次写入一个属性；同名属性会被覆盖。",
+    "attributeNamePlaceholder": "属性名",
+    "attributeValuePlaceholder": "属性值",
+    "attributeSubmit": "写入属性",
+    "attributeSaved": "属性已写入",
+    "attributeSaveFailed": "属性写入失败",
+    "enabled": "已启用",
+    "disabled": "已停用",
+    "requiredFields": "服务 ID、名称与 URL 匹配模式均为必填",
+    "userIdRequired": "请先填写用户 ID",
+    "attributeNameRequired": "请先填写属性名",
+    "column": {
+      "id": "服务 ID",
+      "name": "名称",
+      "serviceUrl": "URL 匹配模式",
+      "enabled": "状态",
+      "attributeName": "属性名",
+      "attributeValue": "属性值"
+    }
   }
 }
 
@@ -1202,6 +1265,7 @@ export type KeyPaths =
   | "admin.common.confirm"
   | "admin.common.save"
   | "admin.common.close"
+  | "admin.common.delete"
   | "admin.common.actions"
   | "admin.common.selectedCount"
   | "admin.common.noData"
@@ -1440,6 +1504,8 @@ export type KeyPaths =
   | "admin.nav.callbacks"
   | "admin.nav.push"
   | "admin.nav.cleanup"
+  | "admin.nav.invitePolicy"
+  | "admin.nav.cas"
   | "admin.status.admin"
   | "admin.status.user"
   | "admin.availability.loading.title"
@@ -2228,3 +2294,57 @@ export type KeyPaths =
   | "admin.cleanup.tokens.confirmContent"
   | "admin.cleanup.tokens.success"
   | "admin.cleanup.tokens.failed"
+  | "admin.invitePolicy.hint"
+  | "admin.invitePolicy.roomTitle"
+  | "admin.invitePolicy.roomIdPlaceholder"
+  | "admin.invitePolicy.load"
+  | "admin.invitePolicy.roomIdRequired"
+  | "admin.invitePolicy.loadSuccess"
+  | "admin.invitePolicy.loadFailed"
+  | "admin.invitePolicy.blocklistTitle"
+  | "admin.invitePolicy.blocklistHint"
+  | "admin.invitePolicy.allowlistTitle"
+  | "admin.invitePolicy.allowlistHint"
+  | "admin.invitePolicy.userIdsPlaceholder"
+  | "admin.invitePolicy.blocklistSaved"
+  | "admin.invitePolicy.allowlistSaved"
+  | "admin.invitePolicy.saveFailed"
+  | "admin.cas.hint"
+  | "admin.cas.servicesTitle"
+  | "admin.cas.servicesEmpty"
+  | "admin.cas.createTitle"
+  | "admin.cas.createHint"
+  | "admin.cas.serviceIdPlaceholder"
+  | "admin.cas.serviceNamePlaceholder"
+  | "admin.cas.serviceUrlPlaceholder"
+  | "admin.cas.serviceDescriptionPlaceholder"
+  | "admin.cas.createSubmit"
+  | "admin.cas.createSuccess"
+  | "admin.cas.createFailed"
+  | "admin.cas.deleteConfirmTitle"
+  | "admin.cas.deleteConfirmContent"
+  | "admin.cas.deleteSuccess"
+  | "admin.cas.deleteFailed"
+  | "admin.cas.attributesTitle"
+  | "admin.cas.userIdPlaceholder"
+  | "admin.cas.attributesLoad"
+  | "admin.cas.attributesEmpty"
+  | "admin.cas.attributesLoadSuccess"
+  | "admin.cas.attributesLoadFailed"
+  | "admin.cas.attributeWriteHint"
+  | "admin.cas.attributeNamePlaceholder"
+  | "admin.cas.attributeValuePlaceholder"
+  | "admin.cas.attributeSubmit"
+  | "admin.cas.attributeSaved"
+  | "admin.cas.attributeSaveFailed"
+  | "admin.cas.enabled"
+  | "admin.cas.disabled"
+  | "admin.cas.requiredFields"
+  | "admin.cas.userIdRequired"
+  | "admin.cas.attributeNameRequired"
+  | "admin.cas.column.id"
+  | "admin.cas.column.name"
+  | "admin.cas.column.serviceUrl"
+  | "admin.cas.column.enabled"
+  | "admin.cas.column.attributeName"
+  | "admin.cas.column.attributeValue"

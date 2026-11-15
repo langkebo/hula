@@ -369,6 +369,18 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         name: 'AdminCleanup',
         component: () => import('@/views/admin/AdminCleanup.vue'),
         meta: { title: '数据清理', requiresAdmin: true }
+      },
+      {
+        path: '/admin/invite-policy',
+        name: 'AdminInvitePolicy',
+        component: () => import('@/views/admin/AdminInvitePolicy.vue'),
+        meta: { title: '邀请策略', requiresAdmin: true }
+      },
+      {
+        path: '/admin/cas',
+        name: 'AdminCas',
+        component: () => import('@/views/admin/AdminCas.vue'),
+        meta: { title: 'CAS 管理', requiresAdmin: true }
       }
     ]
   },

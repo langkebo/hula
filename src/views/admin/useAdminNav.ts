@@ -211,6 +211,16 @@ export function useAdminNav() {
           path: '/admin/cleanup',
           label: t('admin.nav.cleanup'),
           icon: 'cleanup'
+        },
+        {
+          path: '/admin/invite-policy',
+          label: t('admin.nav.invitePolicy'),
+          icon: 'invitePolicy'
+        },
+        {
+          path: '/admin/cas',
+          label: t('admin.nav.cas'),
+          icon: 'cas'
         }
       ]
     }

@@ -7,6 +7,7 @@
     "confirm": "Confirm",
     "save": "Save",
     "close": "Close",
+    "delete": "Delete",
     "actions": "Actions",
     "selectedCount": "{count} selected",
     "noData": "No data"
@@ -254,7 +255,9 @@
     "externalServices": "External Services",
     "callbacks": "Callbacks",
     "push": "Push",
-    "cleanup": "Data Cleanup"
+    "cleanup": "Data Cleanup",
+    "invitePolicy": "Invite Policy",
+    "cas": "CAS"
   },
   "status": {
     "admin": "Admin",
@@ -1176,6 +1179,66 @@
       "confirmContent": "Expired access tokens and refresh tokens will be deleted. Continue?",
       "success": "Token cleanup completed",
       "failed": "Token cleanup failed"
+    }
+  },
+  "invitePolicy": {
+    "hint": "Invite blocklist and allowlist apply per room. Saving replaces the whole list, so load it before editing.",
+    "roomTitle": "Target Room",
+    "roomIdPlaceholder": "Room ID, e.g. !abc:example.org",
+    "load": "Load lists",
+    "roomIdRequired": "Room ID is required",
+    "loadSuccess": "Lists loaded",
+    "loadFailed": "Failed to load lists",
+    "blocklistTitle": "Blocklist",
+    "blocklistHint": "Users on the blocklist cannot be invited to this room. One user ID per line.",
+    "allowlistTitle": "Allowlist",
+    "allowlistHint": "Only users on the allowlist can be invited to this room. One user ID per line.",
+    "userIdsPlaceholder": "One user ID per line, e.g.\n@alice:example.org",
+    "blocklistSaved": "Blocklist saved",
+    "allowlistSaved": "Allowlist saved",
+    "saveFailed": "Failed to save list"
+  },
+  "cas": {
+    "hint": "CAS services provide external single sign-on. Service registration and attribute writes take effect immediately.",
+    "servicesTitle": "Services",
+    "servicesEmpty": "No CAS services",
+    "createTitle": "Register Service",
+    "createHint": "Service ID, name and URL pattern are required; the service ID must be unique.",
+    "serviceIdPlaceholder": "Service ID",
+    "serviceNamePlaceholder": "Service name",
+    "serviceUrlPlaceholder": "URL pattern, e.g. https://app.example.com/*",
+    "serviceDescriptionPlaceholder": "Description (optional)",
+    "createSubmit": "Register service",
+    "createSuccess": "Service registered",
+    "createFailed": "Failed to register service",
+    "deleteConfirmTitle": "Delete CAS service",
+    "deleteConfirmContent": "Delete service {id}? This cannot be undone.",
+    "deleteSuccess": "Service deleted",
+    "deleteFailed": "Failed to delete service",
+    "attributesTitle": "User Attributes",
+    "userIdPlaceholder": "User ID, e.g. @alice:example.org",
+    "attributesLoad": "Load attributes",
+    "attributesEmpty": "This user has no CAS attributes",
+    "attributesLoadSuccess": "Attributes loaded",
+    "attributesLoadFailed": "Failed to load attributes",
+    "attributeWriteHint": "One attribute per write; an existing attribute with the same name is overwritten.",
+    "attributeNamePlaceholder": "Attribute name",
+    "attributeValuePlaceholder": "Attribute value",
+    "attributeSubmit": "Write attribute",
+    "attributeSaved": "Attribute written",
+    "attributeSaveFailed": "Failed to write attribute",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "requiredFields": "Service ID, name and URL pattern are required",
+    "userIdRequired": "User ID is required",
+    "attributeNameRequired": "Attribute name is required",
+    "column": {
+      "id": "Service ID",
+      "name": "Name",
+      "serviceUrl": "URL Pattern",
+      "enabled": "Status",
+      "attributeName": "Attribute",
+      "attributeValue": "Value"
     }
   }
 }
