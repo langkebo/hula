@@ -141,6 +141,11 @@ export function useAdminNav() {
           icon: 'serverConfig'
         },
         {
+          path: '/admin/account-policy',
+          label: t('admin.nav.accountPolicy'),
+          icon: 'accountPolicy'
+        },
+        {
           path: '/admin/server-logs',
           label: t('admin.nav.serverLogs'),
           icon: 'serverLogs'

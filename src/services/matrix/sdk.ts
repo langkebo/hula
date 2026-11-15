@@ -40,9 +40,11 @@ export {
 } from 'matrix-js-sdk'
 // ---- 扩展管理器与子模块 ----
 export type {
+  AdminConfigManager,
   AdminManager,
   AdminModuleInfo,
   AdminModulePage,
+  AdminServerManager,
   FederationDestination as SdkFederationDestination,
   GlobalMediaQuarantineChange,
   GlobalMediaQuarantineChangesResponse,
@@ -52,6 +54,9 @@ export type {
   MediaQuarantineChange,
   MediaQuarantineChangesResponse,
   MediaUnprotectionResponse,
+  PolicyCheckRequest,
+  PolicyCheckResponse,
+  PolicyServerStatus,
   RoomMediaItem,
   RoomMediaPage,
   RoomMediaQuarantineResponse,

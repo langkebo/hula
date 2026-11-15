@@ -916,6 +916,22 @@ R1 结论：举报数据全部来自既有 `AdminReportService`（`getAdminManag
 
 R1 结论：7 条端点全部复用既有 SDK `getAdminManager()` 能力，仅做服务分层与页面接线，未新增 HTTP 或协议实现。R3 结论：新增服务、composable、页面均只被桌面 admin 路径引用，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码。
 
+##### ADM-05 组 a 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | 组 a 的 8 条端点（`account_validity` 3 条、`password_auth_providers` 2 条、`policy/status` 与 `policy/check` 各 1 条、`rate-limit-status` 1 条）SDK 子管理器均已具备，但服务层零封装、前端零消费者 |
+| 服务层 | 完成 | 新增 `src/services/matrix/admin/AccountPolicyService.ts`：`AccountValidityService` / `PasswordAuthProviderService` / `PolicyServerService` / `RateLimitStatusService` 四个 standalone 服务与对应单例，全部走 `this.getManager()` 的 `config` / `policy` / `server` 子管理器；类型经 `Parameters<>` / `Awaited<ReturnType<>>` 从 SDK 子管理器派生，不复制协议结构 |
+| SDK 边界 | 完成 | `src/services/matrix/sdk.ts` 增补 `AdminConfigManager` / `AdminServerManager` / `PolicyCheckRequest` / `PolicyCheckResponse` / `PolicyServerStatus` 类型再导出，服务只从本仓唯一咽喉点取类型，`check:sdk-boundary` 维持 156 条基线不增长 |
+| composable | 完成 | 新增 `src/composables/admin/useAdminAccountPolicy.ts`：有效期（查询/设置/续期）、提供方（列表/新建，成功后自动回读）、策略（状态/检查）、限流（状态）四组状态与动作，写操作统一返回 `boolean` 并落 `toMessage` 文案 |
+| 页面接线 | 完成 | 新增 `src/views/admin/AdminAccountPolicy.vue`（4 tab）：有效期查询卡片与设置/续期表单、认证提供方表格（启用态 `NTag`）与内联新建（JSON 配置校验必须为对象）、策略状态与检查表单及结果提示、限流状态与 7 项指标网格；四块各自错误横幅与空态 |
+| 路由与菜单 | 完成 | `router/routes/desktop.ts` 新增 `/admin/account-policy`（`adminAccountPolicy`，`requiresAdmin`）；`useAdminNav.ts` 系统分组新增条目；`adminNavIcons.ts` 新增 `accountPolicy` 图标（SVG 24x24、stroke 1.5 口径路径） |
+| i18n | 完成 | 新增 `admin.nav.accountPolicy` 与 `admin.accountPolicy.*`（tab/表单/表格/指标与提示共 60+ 键），中英同步；`pnpm gen:i18n` 已重新生成类型 |
+| 测试 | 完成 | `AccountPolicyService.test.ts` 12 例（8 条端点参数透传/返回值/失败重抛）；`useAdminAccountPolicy.test.ts` 11 例（成功写入、失败文案、新建后回读）；`AdminAccountPolicy.test.ts` 9 例（挂载并发加载、有效期查询与设置续期校验、提供方 JSON 校验与重置、策略检查、四块错误态、刷新按钮） |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run`（1010 个文件 / 11269 例）全绿；`check:file-size` 仅剩 4 个既有超标文件（`RoomDetailDrawer.vue` / `RoomOperations.ts` / `ChatMain.vue` / `MatrixCapabilityService.ts`，工作区既有改动，非本批次引入） |
+
+R1 结论：8 条端点全部复用 SDK `AdminManager` 的 `config` / `policy` / `server` 子管理器，仅补服务分层、composable 与页面，未新增 HTTP 或协议实现。R3 结论：新增服务、composable、页面、路由与菜单均只作用于桌面 admin 路径，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码；组 b（callbacks / cleanup / push）与组 c（invite 黑白名单 / CAS）待后续成套提交。
+
 #### 12.4.5 VEN（4 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |

@@ -1,5 +1,24 @@
 /** 媒体管理响应类型（与 SDK admin 媒体接口同形，供页面层直接引用）。 */
 export type { MediaInfo } from '@/services/matrix/sdk'
+export type {
+  AccountValidityRenewRequest,
+  AccountValidityRequest,
+  AdminAccountValidityInfo,
+  AdminPasswordAuthProvider,
+  CreatePasswordAuthProviderRequest,
+  PolicyCheckAction,
+  PolicyCheckRequest,
+  PolicyCheckResponse,
+  PolicyServerStatus,
+  RateLimitMetrics,
+  RateLimitStatusResponse
+} from './AccountPolicyService'
+export {
+  adminAccountValidityService,
+  adminPasswordAuthProviderService,
+  adminPolicyServerService,
+  adminRateLimitService
+} from './AccountPolicyService'
 export { adminService } from './AdminFacadeService'
 export type {
   ContentFilter,

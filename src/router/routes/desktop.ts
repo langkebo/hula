@@ -335,6 +335,12 @@ export const getDesktopRoutes = (): Array<RouteRecordRaw> => [
         meta: { requiresAdmin: true }
       },
       {
+        path: 'account-policy',
+        name: 'adminAccountPolicy',
+        component: () => import('@/views/admin/AdminAccountPolicy.vue'),
+        meta: { requiresAdmin: true }
+      },
+      {
         path: '/admin/modules',
         name: 'AdminModules',
         component: () => import('@/views/admin/AdminModules.vue'),

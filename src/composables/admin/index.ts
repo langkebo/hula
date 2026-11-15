@@ -7,6 +7,8 @@
  * surface stays structural rather than copy-pasted.
  */
 
+export type { PasswordAuthProviderDraft } from './useAdminAccountPolicy'
+export { useAdminAccountPolicy } from './useAdminAccountPolicy'
 export type { AppServiceInfo } from './useAdminAppServices'
 export { useAdminAppServices } from './useAdminAppServices'
 export type { AuditEntryView } from './useAdminAudit'
