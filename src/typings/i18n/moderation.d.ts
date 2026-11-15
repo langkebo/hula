@@ -62,6 +62,37 @@ export type Messages = {
     "filterRemoved": "过滤器移除成功",
     "patternRequired": "请输入过滤模式"
   },
+  "admin_reports": {
+    "title": "服务端举报",
+    "hint": "来自服务端 /reports 的举报记录，与事件举报相互独立。",
+    "room_id_placeholder": "可选：仅查询指定房间",
+    "table": {
+      "id": "ID",
+      "room_id": "房间 ID",
+      "event_id": "事件 ID",
+      "reported_user": "被举报用户",
+      "reason": "原因",
+      "status": "状态",
+      "score": "评分",
+      "received_at": "举报时间",
+      "actions": "操作"
+    },
+    "actions": {
+      "detail": "详情",
+      "dismiss": "驳回"
+    },
+    "detail": {
+      "title": "举报详情",
+      "content": "内容",
+      "none": "无"
+    },
+    "detail_failed": "获取举报详情失败",
+    "dismiss_confirm": "确认驳回举报 {id}？该操作会删除服务端举报记录。",
+    "dismiss_success": "已驳回",
+    "dismiss_failed": "驳回失败",
+    "load_failed": "加载失败，请重试",
+    "empty": "暂无服务端举报"
+  },
   "event_reports": {
     "actions": {
       "delete": "删除",
@@ -173,6 +204,29 @@ export type KeyPaths =
   | "moderation.toast.filterAdded"
   | "moderation.toast.filterRemoved"
   | "moderation.toast.patternRequired"
+  | "moderation.admin_reports.title"
+  | "moderation.admin_reports.hint"
+  | "moderation.admin_reports.room_id_placeholder"
+  | "moderation.admin_reports.table.id"
+  | "moderation.admin_reports.table.room_id"
+  | "moderation.admin_reports.table.event_id"
+  | "moderation.admin_reports.table.reported_user"
+  | "moderation.admin_reports.table.reason"
+  | "moderation.admin_reports.table.status"
+  | "moderation.admin_reports.table.score"
+  | "moderation.admin_reports.table.received_at"
+  | "moderation.admin_reports.table.actions"
+  | "moderation.admin_reports.actions.detail"
+  | "moderation.admin_reports.actions.dismiss"
+  | "moderation.admin_reports.detail.title"
+  | "moderation.admin_reports.detail.content"
+  | "moderation.admin_reports.detail.none"
+  | "moderation.admin_reports.detail_failed"
+  | "moderation.admin_reports.dismiss_confirm"
+  | "moderation.admin_reports.dismiss_success"
+  | "moderation.admin_reports.dismiss_failed"
+  | "moderation.admin_reports.load_failed"
+  | "moderation.admin_reports.empty"
   | "moderation.event_reports.actions.delete"
   | "moderation.event_reports.actions.dismiss"
   | "moderation.event_reports.actions.escalate"

@@ -60,6 +60,10 @@
         <n-tab-pane name="event-reports" :tab="t('moderation.event_reports.title')" display-directive="show">
           <ModerationEventReportTab />
         </n-tab-pane>
+
+        <n-tab-pane name="admin-reports" :tab="t('moderation.admin_reports.title')" display-directive="show">
+          <ModerationAdminReportTab />
+        </n-tab-pane>
       </n-tabs>
     </n-card>
 
@@ -114,6 +118,7 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useModerationStore } from '@/stores/domains/chat/moderation'
 import type { Report } from '@/types/matrix-services'
+import ModerationAdminReportTab from './ModerationAdminReportTab.vue'
 import ModerationEventReportTab from './ModerationEventReportTab.vue'
 
 defineOptions({

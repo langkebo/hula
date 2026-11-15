@@ -887,6 +887,20 @@ R1 结论：外部服务能力全部来自既有 `AdminExternalServiceService`�
 
 R1 结论：仅消费既有 `adminService.getServerStatus/Health/Version/Stats`，未新增端点。R3 结论：改动限定在桌面 admin 服务状态页、composable 与文案，移动端无 admin 入口。
 
+##### ADM-04 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | `/reports` 3 条（`listReports` / `listRoomReports` / `getReport` + `deleteReport`）已由 `AdminReportService` 封装，但零 UI 消费者；现有 `event_reports` tab 基于 `MatrixEventReportService`，按方案要求**未改动** |
+| 服务复用 | 完成 | 不新增服务实现，页面直连 `adminService.reports.getAdminReports` / `getAdminReport` / `dismissReport`（子域服务重载带 `throwOnError`，与既有 `adminService.security.*` 调用约定一致）；门面同名方法不带 `throwOnError` 且吞异常，故不走门面 |
+| 页面接线 | 完成 | 新增 `src/views/admin/ModerationAdminReportTab.vue`：房间 ID 过滤输入 + 刷新；表格列 ID / 房间 / 事件 / 被举报用户 / 原因 / 状态 / 举报时间 / 操作；行内「详情」（抽屉展示原因、评分、正文）与「驳回」（二次确认）；错误态 `admin-report-error` + 重试，空态 `admin-report-empty` |
+| 分区隔离 | 完成 | `ModerationPanel.vue` 在 `event-reports` 之后新增 `admin-reports` tab（「服务端举报」），与事件举报语义分区；`ModerationEventReportTab` 未做任何改动 |
+| i18n | 完成 | 新增 `moderation.admin_reports.*`（title/hint/表格列/详情/确认与提示共 25 键），中英同步；`pnpm gen:i18n` 已重新生成类型 |
+| 测试 | 完成 | `ModerationAdminReportTab.test.ts` 7 例（默认参数拉取并渲染、空态、错误态与重试、房间 ID 过滤、详情抽屉、驳回成功后重拉、驳回失败不重拉也不刷新） |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run`（1004 个文件 / 11219 例）全绿 |
+
+R1 结论：举报数据全部来自既有 `AdminReportService`（`getAdminManager().listReports` 等），本次只补 UI 与文案，未新增 HTTP 或协议实现。R3 结论：新增文件位于桌面 `src/views/admin/**`，`ModerationPanel` 仅桌面 admin 页面引用，`src/mobile/**` 无 import，移动端不产出 admin 入口。
+
 #### 12.4.5 VEN（4 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |

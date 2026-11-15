@@ -57,6 +57,37 @@
     "filterRemoved": "Filter removed successfully",
     "patternRequired": "Pattern is required"
   },
+  "admin_reports": {
+    "title": "Server Reports",
+    "hint": "Reports from the server-side /reports API, independent from event reports.",
+    "room_id_placeholder": "Optional: query a single room",
+    "table": {
+      "id": "ID",
+      "room_id": "Room ID",
+      "event_id": "Event ID",
+      "reported_user": "Reported User",
+      "reason": "Reason",
+      "status": "Status",
+      "score": "Score",
+      "received_at": "Received At",
+      "actions": "Actions"
+    },
+    "actions": {
+      "detail": "Details",
+      "dismiss": "Dismiss"
+    },
+    "detail": {
+      "title": "Report Details",
+      "content": "Content",
+      "none": "None"
+    },
+    "detail_failed": "Failed to load report details",
+    "dismiss_confirm": "Dismiss report {id}? This deletes the server-side report record.",
+    "dismiss_success": "Report dismissed",
+    "dismiss_failed": "Failed to dismiss report",
+    "load_failed": "Failed to load, please retry",
+    "empty": "No server-side reports"
+  },
   "event_reports": {
     "actions": {
       "delete": "Delete",

@@ -57,6 +57,37 @@
     "filterRemoved": "过滤器移除成功",
     "patternRequired": "请输入过滤模式"
   },
+  "admin_reports": {
+    "title": "服务端举报",
+    "hint": "来自服务端 /reports 的举报记录，与事件举报相互独立。",
+    "room_id_placeholder": "可选：仅查询指定房间",
+    "table": {
+      "id": "ID",
+      "room_id": "房间 ID",
+      "event_id": "事件 ID",
+      "reported_user": "被举报用户",
+      "reason": "原因",
+      "status": "状态",
+      "score": "评分",
+      "received_at": "举报时间",
+      "actions": "操作"
+    },
+    "actions": {
+      "detail": "详情",
+      "dismiss": "驳回"
+    },
+    "detail": {
+      "title": "举报详情",
+      "content": "内容",
+      "none": "无"
+    },
+    "detail_failed": "获取举报详情失败",
+    "dismiss_confirm": "确认驳回举报 {id}？该操作会删除服务端举报记录。",
+    "dismiss_success": "已驳回",
+    "dismiss_failed": "驳回失败",
+    "load_failed": "加载失败，请重试",
+    "empty": "暂无服务端举报"
+  },
   "event_reports": {
     "actions": {
       "delete": "删除",
