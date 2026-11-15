@@ -785,6 +785,21 @@ R1 结论：读 / 写走 SDK `RoomManager`；DELETE 因 SDK 未封装而经既�
 
 R1 结论：面板全部复用既有 `src/services/matrix/**` 服务（`MatrixRoomMetadataService`、`matrixRoomAccountDataService`、`RoomRetention` facade），未新建 HTTP / 协议实现；门控复用 `useServerCapability()`，未新增能力判定副本。R3 结论：本次仅改 `src/components/room/RoomDetailDrawer.vue` 及对应测试与文案，未引入移动端 admin/AI 入口；移动端房间详情保持精简，未引入「高级」Tab。剩余风险：六个扩展端点没有能力位，桌面端在非 synapse-rust 后端上会落到各面板的空状态，属既有服务层约定（`getRoomExternalIds` 注释已确立「端点不存在返回空」）。
 
+##### ROOM-05 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 服务返回值 | 已确认 | `useBurnAfterRead().enableBurn/disableBurn` 本身返回 `Promise<boolean>`（失败已在 composable 内 catch 并返回 `false`），无需改服务层 |
+| `ChatMain.handleBurnToggle` | 完成 | 删除静默空 catch，改为消费布尔返回值：`false` 时 `showFeedback(t('room.burn.update_failed'), 'error')` 且**不更新** `burnEnabled`，避免开关与服务端配置漂移 |
+| `ChatMain.handleBurnDurationChange` | 完成 | 已开启时先调服务再落状态：失败回滚 `burnDuration` 到旧值并提示；未开启时只更新本地选择（无服务请求） |
+| `RoomBurnSettings.handleToggle` | 完成 | `try/finally` 补为消费布尔结果：失败提示并保持原开关状态，成功后才 `enabled = val` 并 `loadState()` |
+| `RoomBurnSettings.handleDurationChange` | 完成 | 失败回滚 `durationSeconds` 并提示；成功才 `loadState()` 对齐服务端 |
+| 文案 | 完成 | `locales/zh-CN/room.json` / `locales/en/room.json` 新增 `room.burn.update_failed` |
+| 测试 | 完成 | `RoomBurnSettings.test.ts` 新增 2 例：开关失败保持关闭并提示、已开启时改时长失败回滚原值；`ChatMain.test.ts` 29 例保持通过 |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check` 通过；`check:ratchet` / `check:sdk-boundary`（156 = 基线）/ `quality:no-raw-fetch` 通过；`pnpm test:run` 1000 文件 / 11230 用例全部通过 |
+
+R1 结论：直接消费 composable 既有布尔返回，未新增服务方法或平行实现。R3 结论：仅改桌面聊天主区与房间设置组件，移动端未引入 admin/AI 入口。
+
 #### 12.4.4 ADM（12 条，仅桌面端）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |

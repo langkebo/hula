@@ -44,11 +44,13 @@
 import { NSelect, NSwitch } from 'naive-ui'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useBurnAfterRead } from '@/composables/useBurnAfterRead'
 import PendingBurnMessages from './PendingBurnMessages.vue'
 
 const props = defineProps<{ roomId: string }>()
 const { t } = useI18n()
+const { showFeedback } = useActionFeedback()
 const burn = useBurnAfterRead()
 
 const enabled = ref(false)
@@ -75,10 +77,12 @@ async function loadState() {
 async function handleToggle(val: boolean) {
   toggling.value = true
   try {
-    if (val) {
-      await burn.enableBurn(props.roomId, durationSeconds.value * 1000)
-    } else {
-      await burn.disableBurn(props.roomId)
+    const ok = val
+      ? await burn.enableBurn(props.roomId, durationSeconds.value * 1000)
+      : await burn.disableBurn(props.roomId)
+    if (!ok) {
+      showFeedback(t('room.burn.update_failed'), 'error')
+      return
     }
     enabled.value = val
     await loadState()
@@ -88,11 +92,16 @@ async function handleToggle(val: boolean) {
 }
 
 async function handleDurationChange(val: number) {
+  const previousSeconds = durationSeconds.value
   durationSeconds.value = val
-  if (enabled.value) {
-    await burn.enableBurn(props.roomId, val * 1000)
-    await loadState()
+  if (!enabled.value) return
+  const ok = await burn.enableBurn(props.roomId, val * 1000)
+  if (!ok) {
+    durationSeconds.value = previousSeconds
+    showFeedback(t('room.burn.update_failed'), 'error')
+    return
   }
+  await loadState()
 }
 
 onMounted(loadState)

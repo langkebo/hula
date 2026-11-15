@@ -240,7 +240,8 @@ export type Messages = {
     "pending_empty": "暂无待销毁消息",
     "cancel": "取消销毁",
     "remaining_seconds": "{count} 秒后销毁",
-    "remaining_minutes": "{count} 分钟后销毁"
+    "remaining_minutes": "{count} 分钟后销毁",
+    "update_failed": "阅后即焚设置更新失败，请重试"
   },
   "discovery": {
     "aria_label": "房间发现",
@@ -582,6 +583,7 @@ export type KeyPaths =
   | "room.burn.cancel"
   | "room.burn.remaining_seconds"
   | "room.burn.remaining_minutes"
+  | "room.burn.update_failed"
   | "room.discovery.aria_label"
   | "room.discovery.search_placeholder"
   | "room.discovery.join"

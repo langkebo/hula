@@ -235,7 +235,8 @@
     "pending_empty": "暂无待销毁消息",
     "cancel": "取消销毁",
     "remaining_seconds": "{count} 秒后销毁",
-    "remaining_minutes": "{count} 分钟后销毁"
+    "remaining_minutes": "{count} 分钟后销毁",
+    "update_failed": "阅后即焚设置更新失败，请重试"
   },
   "discovery": {
     "aria_label": "房间发现",

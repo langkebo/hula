@@ -6,16 +6,23 @@ const refreshBurnSettingsMock = vi.fn().mockResolvedValue(undefined)
 const enableBurnMock = vi.fn().mockResolvedValue(true)
 const disableBurnMock = vi.fn().mockResolvedValue(true)
 const getPendingBurnsMock = vi.fn().mockResolvedValue([])
+let roomBurnEnabled = false
 
 vi.mock('@/composables/useBurnAfterRead', () => ({
   useBurnAfterRead: () => ({
-    isRoomBurnEnabled: () => false,
+    isRoomBurnEnabled: () => roomBurnEnabled,
     getRoomBurnDuration: () => 60,
     refreshBurnSettings: refreshBurnSettingsMock,
     enableBurn: enableBurnMock,
     disableBurn: disableBurnMock,
     getPendingBurns: getPendingBurnsMock
   })
+}))
+
+const showFeedbackMock = vi.fn()
+
+vi.mock('@/composables/common/useActionFeedback', () => ({
+  useActionFeedback: () => ({ showFeedback: showFeedbackMock })
 }))
 
 vi.mock('naive-ui', () => ({
@@ -37,7 +44,10 @@ vi.mock('vue-i18n', () => ({
 }))
 
 describe('RoomBurnSettings', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    roomBurnEnabled = false
+  })
 
   it('renders toggle switch, duration select, and pending count', async () => {
     const wrapper = mount(RoomBurnSettings, {
@@ -92,5 +102,38 @@ describe('RoomBurnSettings', () => {
     })
     await flushPromises()
     expect(wrapper.find('[data-testid="room-burn-pending-count"]').text()).toContain('2')
+  })
+
+  it('开关失败时保持关闭并提示错误', async () => {
+    enableBurnMock.mockResolvedValueOnce(false)
+    const wrapper = mount(RoomBurnSettings, {
+      props: { roomId: '!room1:server' },
+      global: { stubs: ['n-switch', 'n-select', 'n-spin'] }
+    })
+    await flushPromises()
+
+    await wrapper.findComponent({ name: 'NSwitch' }).vm.$emit('update:value', true)
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('room.burn.update_failed', 'error')
+    expect(wrapper.findComponent({ name: 'NSwitch' }).props('value')).toBe(false)
+  })
+
+  it('已开启时修改时长失败则回滚原值', async () => {
+    roomBurnEnabled = true
+    enableBurnMock.mockResolvedValueOnce(false)
+    const wrapper = mount(RoomBurnSettings, {
+      props: { roomId: '!room1:server' },
+      global: { stubs: ['n-switch', 'n-select', 'n-spin'] }
+    })
+    await flushPromises()
+
+    const select = wrapper.findComponent({ name: 'NSelect' })
+    const initialValue = select.props('value')
+    await select.vm.$emit('update:value', 300)
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('room.burn.update_failed', 'error')
+    expect(wrapper.findComponent({ name: 'NSelect' }).props('value')).toBe(initialValue)
   })
 })

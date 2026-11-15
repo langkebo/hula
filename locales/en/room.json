@@ -235,7 +235,8 @@
     "pending_empty": "No pending burn messages",
     "cancel": "Cancel Burn",
     "remaining_seconds": "Burns in {count} seconds",
-    "remaining_minutes": "Burns in {count} minutes"
+    "remaining_minutes": "Burns in {count} minutes",
+    "update_failed": "Failed to update burn after read settings, please retry"
   },
   "discovery": {
     "aria_label": "Room discovery",

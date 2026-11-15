@@ -226,28 +226,31 @@ const capability = useServerCapability()
 const handleBurnToggle = async (val: boolean) => {
   const roomId = globalStore.currentSessionRoomId
   if (!roomId) return
-  try {
-    if (val) {
-      await burnAfterRead.enableBurn(roomId, burnDuration.value * 1000)
-      burnEnabled.value = true
-    } else {
-      await burnAfterRead.disableBurn(roomId)
-      burnEnabled.value = false
-    }
-  } catch {
-    // 服务失败时不更新本地状态
+  const ok = val
+    ? await burnAfterRead.enableBurn(roomId, burnDuration.value * 1000)
+    : await burnAfterRead.disableBurn(roomId)
+  // 服务失败时不更新本地状态，避免开关与实际配置不一致
+  if (!ok) {
+    showFeedback(t('room.burn.update_failed'), 'error')
+    return
   }
+  burnEnabled.value = val
 }
 
 const handleBurnDurationChange = async (seconds: number) => {
-  burnDuration.value = seconds
   const roomId = globalStore.currentSessionRoomId
-  if (!roomId || !burnEnabled.value) return
-  try {
-    await burnAfterRead.enableBurn(roomId, seconds * 1000)
-  } catch {
-    // ignore
+  if (!roomId || !burnEnabled.value) {
+    burnDuration.value = seconds
+    return
   }
+  const previousSeconds = burnDuration.value
+  const ok = await burnAfterRead.enableBurn(roomId, seconds * 1000)
+  if (!ok) {
+    burnDuration.value = previousSeconds
+    showFeedback(t('room.burn.update_failed'), 'error')
+    return
+  }
+  burnDuration.value = seconds
 }
 
 const onPrivateModeToggleRequest = (payload?: { confirmed: boolean }) => {
