@@ -143,6 +143,7 @@ import { useMsgInputSuggestionNav } from '@/composables/chat/useMsgInputSuggesti
 import { useMsgInputUploadEntry } from '@/composables/chat/useMsgInputUploadEntry'
 import { useMitt } from '@/composables/common/useMitt'
 import { useSendOptions } from '@/composables/settings/settingsOptions'
+import { useIsMobile } from '@/composables/usePlatform'
 import { MittEnum, type MobilePanelStateEnum, MsgEnum, RoomTypeEnum } from '@/enums'
 import type { UserItem } from '@/services/types.ts'
 import { useGroupStore } from '@/stores/domains/chat/group'
@@ -195,6 +196,8 @@ const messageInputDom = ref<HTMLElement>()
 const gloabalStore = useGlobalStore()
 const { currentSession: activeItem, currentSessionRoomId } = storeToRefs(gloabalStore)
 const groupStore = useGroupStore()
+// 发送后重新聚焦输入框（移动端宿主行为，桌面端不抢焦点）
+const isMobilePlatform = useIsMobile()
 
 const {
   inputKeyDown,
@@ -223,7 +226,7 @@ const {
   reply,
   scheduleDelayedMessage,
   delayedMessages
-} = useMsgInput(messageInputDom)
+} = useMsgInput(messageInputDom, { refocusAfterSend: isMobilePlatform.value })
 
 // ===== 会话草稿本地持久化（按账号 + 房间）=====
 const userStore = useUserStore()

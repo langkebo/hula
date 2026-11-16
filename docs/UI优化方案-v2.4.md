@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3036,6 +3036,65 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 1. `show_in_finder` / `show_in_folder` 仍是桌面专属但**没有 `visible` 门控**：它们没走 `requireDesktop`，移动端点击会调 `downloadAndRevealFile`（Tauri 桌面 API）。不在 §19.24 的 6 处清单内，本轮不改；若要收口需先确认移动端是否存在等价的「文件定位」能力。
 2. `isDesktop` 仍是构建时快照，与 §19.24 边界 2 同口径：平台不会运行中变化，可接受。
 3. 本次只裁「菜单项可见性」，长按菜单入口与其余菜单项仍由双端共用；删除项不影响既有项的行为。
+
+### 19.27 P0-7｜共享聊天组件 5 处 isMobile 分支下沉（10 → 5）
+
+#### 缺口
+
+§19.24 清单里剩下的 5 处 `isMobile()` 位于共享聊天组件/组合式函数内。先取证再定修法：
+
+- `MobileChatMain.vue` **确实渲染共享 `<ChatMain>`**，因此 `useChatMain`（气泡高亮）、`useMessageUser`（点头像进资料页）、`useFooterEmoji`（表情包直发）、`useMsgInput`（发送后重新聚焦）的 `isMobile()` **是活分支，不是死代码**；共享代码里再出现平台字面量即违反 R2 口径。
+- `wsCallHandler.handleVideoCall` 的 `if (isMobile()) router.push('/mobile/rtcCall')` 是**死守卫**：`handleVideoCall` 只被桌面路径 `useWsEventHandler` 调用，移动端来电由 `RtcCallFloatCell` + `useVoIPIncomingCall` 独立处理，`/mobile/rtcCall` 的跳转只存在 `More.vue` / `RtcCallFloatCell.vue`。
+
+#### 改动
+
+| 落点 | 改动 |
+| :--- | :--- |
+| `composables/chat/useChatMain.ts` | 新增 options `activeBubbleEnabled`（默认 true）/ `avatarClickOpensProfile`（默认 false）；`if (!isMobile())` → `if (activeBubbleEnabled)`；return 暴露 `avatarClickOpensProfile`；删 `isMobile` import |
+| `components/rightBox/chatBox/ChatMain.vue` | 新增 prop `mobileInteraction`（默认 false），映射为 `activeBubbleEnabled: !mobileInteraction` 与 `avatarClickOpensProfile: mobileInteraction` |
+| `mobile/views/chat-room/MobileChatMain.vue` | 传 `mobile-interaction`，移动端行为由宿主声明 |
+| `components/rightBox/renderMessage/useMessageUser.ts` | options 增 `avatarClickOpensProfile`（默认 false）；`if (isMobile())` → `if (avatarClickOpensProfile)`；删 `isMobile` import |
+| `components/rightBox/renderMessage/index.vue` | `chatMainApi` 的 `inject` 上移到 `useMessageUser` 之前，传 `avatarClickOpensProfile: chatMainApi.avatarClickOpensProfile` |
+| `composables/chat/useFooterEmoji.ts` | 第 4 参 `options.sendEmojiImmediately`（默认 false）；`if (isMobile() && type === 'emoji-url')` → `if (sendEmojiImmediately && ...)`；删 import |
+| `components/rightBox/chatBox/ChatFooter.vue` | `useFooterEmoji(..., { sendEmojiImmediately: isMobileRef.value })`（复用已有 `isMobileRef`，不新增调用点） |
+| `composables/chat/useMsgInput.ts` | 签名增 `options.refocusAfterSend`（默认 false）；`if (isMobile())` → `if (refocusAfterSend)`；删 import |
+| `components/rightBox/MsgInput.vue` | 原 `isMobileRef` 由面板组合式函数在更下方解构、不能提前引用，故在脚本前部新增 `isMobilePlatform = useIsMobile()`，传 `{ refocusAfterSend: isMobilePlatform.value }` |
+| `composables/app/wsCallHandler.ts` | 删 `handleVideoCall` 的移动端死分支、`isMobile` import 与 `router` 依赖 |
+| `composables/app/useWsEventHandler.ts` | 删 `useRouter` import、`const router` 与 `createCallHandler` 传参 |
+| **新增** `components/rightBox/renderMessage/__tests__/useMessageUser.test.ts` | 2 用例：宿主声明进资料页 / 默认选中消息 |
+| `meta/ratchet-baseline.json` | `is_mobile_branch` 10 → 5（`--update` 收紧） |
+
+#### 行为判据
+
+| 行为 | 桌面（`ChatMain` 默认） | 移动（`MobileChatMain` 声明） |
+| :--- | :--- | :--- |
+| 点击消息气泡高亮 | 开 | 关 |
+| 点击头像 | 选中该消息 | 进入个人资料页 |
+| 表情包里点表情包 | 插入输入框 | 直接发送 |
+| 发送后焦点 | 不抢焦点 | 重新聚焦输入框 |
+| 来电处理 | `createRtcCallWindow` 开窗 | 由 `RtcCallFloatCell` 独立处理（不再经过本处理器） |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 新增判据 | `pnpm vitest run src/components/rightBox/renderMessage/__tests__/useMessageUser.test.ts src/composables/chat/__tests__/useMsgInputSend.test.ts` | **2 文件 / 7 用例通过** |
+| 类型 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 全量单测 | `pnpm test:run` | **1056 文件 / 11665 用例通过**（收尾 `close timed out` 为既知噪声，exit 0） |
+| 棘轮 | `pnpm check:ratchet` | 收紧前 `is_mobile_branch: 5 (baseline 10)`，`--update` 后 `5 (baseline 5)`；`zh_literal_vue: 0`、`handwritten_empty_state: 0` |
+| 文档 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径引用全部存在 / `current undocumented: 573` vs `baseline 587`（14 个方法新增注释） |
+| 移动端样式 | `pnpm check:mobile-css` | 166 个文件 OK |
+| SDK 边界 | `pnpm check:sdk-boundary` | `156 (baseline 156)` OK |
+| 裸请求 | `pnpm quality:no-raw-fetch` | 3 命中全在白名单 |
+| SDK 类型 | `pnpm check:sdk-types` | enum drift none、无未登记幻影 |
+| Lint / i18n | `pnpm check` | exit 0 |
+
+#### 已知边界
+
+1. `renderMessage/index.vue` 模板里仍有 `isMobileRef` 条件（气泡 `active` class、`MessageActionBar` 可见性、宽度）。它们属于**单个组件内的渲染差异**，且该组件已持有 `useIsMobile()`；本轮只收口可外提的行为参数，不强行把模板差异也改成 prop，否则需要给 `renderMessage` 增加 3 个以上 prop，收益小于复杂度。
+2. `/mobile/rtcCall` 路由保留：`More.vue`（主动拨号）与 `RtcCallFloatCell.vue`（浮窗回跳）仍在使用，删除的只是 `wsCallHandler` 里那条重复的入电跳转。
+3. `useChatMain` 的 `avatarClickOpensProfile` 通过返回值透传给 `renderMessage`，依赖 `ChatMain` → `provide` → `inject` 链路；若后续有其他宿主直接 `useChatMain()`（不走 `ChatMain`），默认值保持桌面语义。
+
 
 ---
 

@@ -6,7 +6,6 @@ import { MsgEnum } from '@/enums'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
 import { useHistoryStore } from '@/stores/domains/chat/history'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 import { isValidUrl } from '@/utils/StringUtils'
 
 type MsgInputLike = {
@@ -22,12 +21,16 @@ export type EmojiUrlPayload = { renderUrl: string; serverUrl: string }
 /**
  * 聊天底部栏表情处理
  * 管理表情插入、最近表情、防抖发送等逻辑
+ * @param options.sendEmojiImmediately 表情包直接发送而非插入输入框（移动端宿主声明）
  */
 export function useFooterEmoji(
   MsgInputRef: Ref<unknown>,
   msgInputDom: Ref<HTMLElement | null>,
-  emojiShow: Ref<boolean>
+  emojiShow: Ref<boolean>,
+  options: { sendEmojiImmediately?: boolean } = {}
 ) {
+  const { sendEmojiImmediately = false } = options
+
   const logger = createLogger('useFooterEmoji')
   const { showFeedback } = useActionFeedback()
   const emojiStore = useEmojiStore()
@@ -82,7 +85,7 @@ export function useFooterEmoji(
       return
     }
 
-    if (isMobile() && type === 'emoji-url') {
+    if (sendEmojiImmediately && type === 'emoji-url') {
       const payload: EmojiUrlPayload = isEmojiUrlPayload(item)
         ? item
         : { renderUrl: typeof item === 'string' ? item : '', serverUrl: typeof item === 'string' ? item : '' }

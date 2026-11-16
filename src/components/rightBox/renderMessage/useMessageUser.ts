@@ -8,7 +8,6 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 import { toFriendInfoPage } from '@/utils/RouterUtils'
 
 const logger = createLogger('useMessageUser')
@@ -21,10 +20,12 @@ export function useMessageUser(
   },
   options: {
     selectKey: Ref<string>
+    /** 移动端行为：点击头像进入个人资料页；默认 false 即选中该消息（由 ChatMain 宿主声明） */
+    avatarClickOpensProfile?: boolean
   }
 ) {
   const { t } = useI18n()
-  const { selectKey } = options
+  const { selectKey, avatarClickOpensProfile = false } = options
   const userStore = useUserStore()
   const groupStore = useGroupStore()
   const resolvingUserSet = new Set<string>()
@@ -97,7 +98,7 @@ export function useMessageUser(
 
   const handleAvatarClick = (uid: string, msgId: string) => {
     if (!uid) return
-    if (isMobile()) {
+    if (avatarClickOpensProfile) {
       toFriendInfoPage(uid)
     } else {
       selectKey.value = msgId

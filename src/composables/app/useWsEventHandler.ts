@@ -3,7 +3,6 @@ import { listen } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useExtensionEventBridge } from '@/composables/app/useExtensionEventBridge'
 import { createCallHandler } from '@/composables/app/wsCallHandler'
 import { createMemberHandler } from '@/composables/app/wsMemberHandler'
@@ -41,7 +40,6 @@ export function useWsEventHandler() {
   const sessionStore = useSessionStore()
   const globalStore = useGlobalStore()
   const settingStore = useSettingStore()
-  const router = useRouter()
   const { createRtcCallWindow, sendWindowPayload } = useWindow()
 
   const userUid = computed(() => userStore.userInfo?.uid ?? '')
@@ -55,7 +53,6 @@ export function useWsEventHandler() {
   const callHandler = createCallHandler({
     globalStore,
     chatStore,
-    router,
     createRtcCallWindow,
     refreshActiveGroupMembers: presenceHandler.refreshActiveGroupMembers
   })

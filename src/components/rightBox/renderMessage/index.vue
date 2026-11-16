@@ -437,6 +437,9 @@ const setInfoPopoverRef = (messageId: string, el: unknown) => {
   infoPopoverRefs[messageId] = isShowablePopover(el) ? el : null
 }
 
+const injectedChatMain = inject(chatMainInjectionKey, null)
+const chatMainApi = injectedChatMain ?? useChatMain()
+
 const messageUserInput: Parameters<typeof useMessageUser>[0] = {
   message: props.message,
   ...(props.fromUser !== undefined ? { fromUser: props.fromUser } : {}),
@@ -446,7 +449,9 @@ const messageUserInput: Parameters<typeof useMessageUser>[0] = {
 const { isMe, getAvatarSrc, senderDisplayName, handleMentionUser, handleAvatarClick } = useMessageUser(
   messageUserInput,
   {
-    selectKey
+    selectKey,
+    // 移动端宿主（MobileChatMain）会声明该行为，桌面端保持「选中消息」
+    avatarClickOpensProfile: chatMainApi.avatarClickOpensProfile
   }
 )
 
@@ -479,8 +484,6 @@ function handleVerifySender() {
 }
 
 const activeReply = ref<string>('')
-const injectedChatMain = inject(chatMainInjectionKey, null)
-const chatMainApi = injectedChatMain ?? useChatMain()
 const {
   optionsList,
   report,

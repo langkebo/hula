@@ -9,7 +9,6 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 import { useCommon } from '../common/useCommon'
 import { useTrigger } from '../common/useTrigger'
 import { parseHtmlSafely } from './mentionParser'
@@ -25,7 +24,11 @@ import { useVoiceInput } from './useVoiceInput'
 
 const logger = createLogger('MsgInput')
 
-export const useMsgInput = (messageInputDom: Ref) => {
+/**
+ * @param options.refocusAfterSend 发送后重新聚焦输入框（移动端宿主声明，桌面端保持失焦）
+ */
+export const useMsgInput = (messageInputDom: Ref, options: { refocusAfterSend?: boolean } = {}) => {
+  const { refocusAfterSend = false } = options
   const groupStore = useGroupStore()
   const chatStore = useChatStore()
   const globalStore = useGlobalStore()
@@ -251,7 +254,7 @@ export const useMsgInput = (messageInputDom: Ref) => {
     } finally {
       isSending.value = false
     }
-    if (isMobile()) {
+    if (refocusAfterSend) {
       nextTick(() => {
         focusOn(messageInputDom.value)
       })

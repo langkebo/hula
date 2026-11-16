@@ -1,9 +1,7 @@
-import type { Router } from 'vue-router'
 import type { CallTypeEnum } from '@/enums'
 import type { useChatStore } from '@/stores/domains/chat/chat'
 import type { useGlobalStore } from '@/stores/domains/widget/global'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('WsCallHandler')
 
@@ -17,7 +15,6 @@ type WebsocketConnectionStatePayload = {
 interface CallHandlerDeps {
   globalStore: ReturnType<typeof useGlobalStore>
   chatStore: ReturnType<typeof useChatStore>
-  router: Router
   createRtcCallWindow: (
     isIncoming: boolean,
     remoteUserId: string,
@@ -29,11 +26,11 @@ interface CallHandlerDeps {
 
 /**
  * 视频通话与 WebSocket 连接状态逻辑：
- * - handleVideoCall: 处理来电/去电的通话窗口唤起（桌面端开窗，移动端路由跳转）。
+ * - handleVideoCall: 处理来电的通话窗口唤起（桌面端开窗；移动端来电由 RtcCallFloatCell 独立处理）。
  * - handleWebsocketEvent: 处理 WebSocket 重连后的会话/群成员数据刷新。
  */
 export function createCallHandler(deps: CallHandlerDeps) {
-  const { globalStore, chatStore, router, createRtcCallWindow, refreshActiveGroupMembers } = deps
+  const { globalStore, chatStore, createRtcCallWindow, refreshActiveGroupMembers } = deps
 
   let lastWsConnectionState: string | null = null
   let isReconnectInFlight = false
@@ -81,19 +78,7 @@ export function createCallHandler(deps: CallHandlerDeps) {
       logger.warn('当前会话尚未就绪或无法解析对端用户，忽略通话事件')
       return
     }
-    if (isMobile()) {
-      router.push({
-        path: '/mobile/rtcCall',
-        query: {
-          remoteUserId: targetUid,
-          roomId: globalStore.currentSessionRoomId,
-          callType: callType,
-          isIncoming: 'true'
-        }
-      })
-    } else {
-      await createRtcCallWindow(true, targetUid, globalStore.currentSessionRoomId, callType)
-    }
+    await createRtcCallWindow(true, targetUid, globalStore.currentSessionRoomId, callType)
   }
 
   return {

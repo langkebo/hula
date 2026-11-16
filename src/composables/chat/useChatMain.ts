@@ -6,7 +6,6 @@ import { CallTypeEnum, MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import { useUserStore } from '@/stores/domains/user/user'
-import { isMobile } from '@/utils/PlatformConstants'
 import { useWindow } from '../common/useWindow'
 import { createEmojiList } from './emojiMenuData'
 import { clearSelection, getSelectedText, hasSelectedText } from './selectionUtils'
@@ -19,6 +18,10 @@ import { useMsgDeleteConfirm } from './useMsgDeleteConfirm'
 type UseChatMainOptions = {
   enableGroupNicknameModal?: boolean
   disableHistoryActions?: boolean
+  /** 点击消息气泡是否高亮（移动端不参与，由宿主声明；默认 true） */
+  activeBubbleEnabled?: boolean
+  /** 点击头像是否进入个人资料页（移动端行为；默认 false，即选中该消息） */
+  avatarClickOpensProfile?: boolean
 }
 
 /**
@@ -42,6 +45,8 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
   const { downloadFile } = useDownload()
   const enableGroupNicknameModal = options.enableGroupNicknameModal ?? false
   const disableHistoryActions = options.disableHistoryActions ?? false
+  const activeBubbleEnabled = options.activeBubbleEnabled ?? true
+  const avatarClickOpensProfile = options.avatarClickOpensProfile ?? false
 
   const fileDownload = useChatFileDownload({
     t,
@@ -111,8 +116,8 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
       return
     }
 
-    // 移动端不触发 active 效果
-    if (!isMobile()) {
+    // 移动端宿主会关掉 active 效果（activeBubbleEnabled=false）
+    if (activeBubbleEnabled) {
       if (chatStore.msgMultiChooseMode === 'forward') {
         activeBubble.value = ''
       } else {
@@ -168,6 +173,7 @@ export const useChatMain = (isHistoryMode = false, options: UseChatMainOptions =
     groupNicknameSubmitting,
     handleGroupNicknameConfirm,
     activeBubble,
+    avatarClickOpensProfile,
     delIndex,
     delRoomId
   }

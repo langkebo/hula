@@ -164,6 +164,13 @@ const DeviceVerifyDialog = defineAsyncComponent(() => import('@/components/encry
 const logger = createLogger('ChatMain')
 const timerManager = useTimerManager()
 const selfEmit = defineEmits(['scroll'])
+const props = withDefaults(
+  defineProps<{
+    /** 移动端交互：不触发气泡高亮、点头像进资料页（由移动宿主声明） */
+    mobileInteraction?: boolean
+  }>(),
+  { mobileInteraction: false }
+)
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 
@@ -180,7 +187,11 @@ const userStore = useUserStore()
 const networkStatus = useNetworkStatus()
 // const { footerHeight } = useChatLayoutGlobal() // 已移除，不再需要
 useWindow()
-const chatMainContext = useChatMain(false, { enableGroupNicknameModal: true })
+const chatMainContext = useChatMain(false, {
+  enableGroupNicknameModal: true,
+  activeBubbleEnabled: !props.mobileInteraction,
+  avatarClickOpensProfile: props.mobileInteraction
+})
 provide(chatMainInjectionKey, chatMainContext)
 const {
   handleConfirm,

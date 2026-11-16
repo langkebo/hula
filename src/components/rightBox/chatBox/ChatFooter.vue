@@ -169,7 +169,8 @@ const { isSingleChat, isSessionTargetPending, isFriend, isRoomReadonly } = useFo
 const { recentEmojis, checkIsUrl, resolveRecentRenderUrl, emojiHandle } = useFooterEmoji(
   MsgInputRef,
   msgInputDom,
-  emojiShow
+  emojiShow,
+  { sendEmojiImmediately: isMobileRef.value }
 )
 
 // ===== 移动端面板 =====
