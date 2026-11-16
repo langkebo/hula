@@ -29,6 +29,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { useViewportInset } from '#/composables/useViewportInset'
+import { resolveAlbumMimeType } from '#/services/localAlbumScanner'
 import { useMessageSound } from '@/composables/common/useMessageSound'
 import { useMitt } from '@/composables/common/useMitt'
 import { MsgEnum, NotificationTypeEnum, TauriCommand, ThemeEnum, WsResponseMessageType } from '@/enums'
@@ -152,13 +153,8 @@ const addFileToStore = (data: MessageType) => {
       ? 'jpg'
       : 'mp4'
 
-  // 确定 MIME 类型
-  let mimeType = ''
-  if (type === MsgEnum.IMAGE) {
-    mimeType = `image/${suffix === 'jpg' ? 'jpeg' : suffix}`
-  } else if (type === MsgEnum.VIDEO) {
-    mimeType = `video/${suffix}`
-  }
+  // 确定 MIME 类型：统一走标准映射，避免自造 video/mov 这类不存在的类型
+  const mimeType = type === MsgEnum.IMAGE || type === MsgEnum.VIDEO ? resolveAlbumMimeType(suffix) : ''
 
   // 添加到 file store
   fileStore.addFile({

@@ -33,6 +33,32 @@ export function resolveAlbumMediaType(ext: string): 'image' | 'video' | null {
 }
 
 /**
+ * 扩展名 → 标准 MIME。
+ *
+ * 直接拼 `video/${ext}` 会造出 `video/mov`、`video/mkv` 这类不存在的类型；
+ * `.mov` 的注册值是 `video/quicktime`，`.mkv` 是 `video/x-matroska`，必须显式映射。
+ */
+const MEDIA_MIME_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  bmp: 'image/bmp',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime',
+  avi: 'video/x-msvideo',
+  mkv: 'video/x-matroska',
+  webm: 'video/webm'
+}
+
+/** 解析媒体文件的 MIME；未知扩展名回退到二进制流，不再伪造 `video/xxx` */
+export function resolveAlbumMimeType(ext: string): string {
+  const normalized = ext.replace(/^\./, '').toLowerCase()
+  return MEDIA_MIME_TYPES[normalized] ?? 'application/octet-stream'
+}
+
+/**
  * 扫描移动端 AppData 下的房间目录，把图片/视频写回调用方的 store。
  *
  * 这个模块**只属于移动端**：它依赖 Tauri 的 `appDataDir` / `readDir`，桌面端不调用。
@@ -76,7 +102,7 @@ export async function scanLocalAlbum(roomId: string, deps: LocalAlbumScanDeps): 
         type,
         url: fileUrl,
         suffix: ext.slice(1),
-        mimeType: `${type}/${ext === '.jpg' ? 'jpeg' : ext.slice(1)}`
+        mimeType: resolveAlbumMimeType(ext)
       })
       addedCount += 1
     }

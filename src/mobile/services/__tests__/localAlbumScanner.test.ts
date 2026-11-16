@@ -28,7 +28,7 @@ vi.mock('@/utils/Logger', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }))
 
-import { resolveAlbumMediaType, scanLocalAlbum } from '../localAlbumScanner'
+import { resolveAlbumMediaType, resolveAlbumMimeType, scanLocalAlbum } from '../localAlbumScanner'
 
 const entry = (name: string, isFile = true) => ({ name, isFile, isDirectory: !isFile, isSymlink: false })
 
@@ -58,7 +58,8 @@ describe('scanLocalAlbum', () => {
       suffix: 'jpg',
       mimeType: 'image/jpeg'
     })
-    // 大小写混写的扩展名：类型判定与 mimeType 都要按小写归一
+    // 大小写混写的扩展名：类型判定与 mimeType 都要按小写归一；
+    // `.mov` 的标准注册值是 video/quicktime，拼接出的 video/mov 并不存在
     expect(deps.addFile).toHaveBeenNthCalledWith(2, {
       id: 'b',
       roomId: '!room:hs',
@@ -66,7 +67,7 @@ describe('scanLocalAlbum', () => {
       type: 'video',
       url: 'room-1/media/b.MOV',
       suffix: 'mov',
-      mimeType: 'video/mov'
+      mimeType: 'video/quicktime'
     })
   })
 
@@ -92,5 +93,14 @@ describe('scanLocalAlbum', () => {
     expect(resolveAlbumMediaType('.webm')).toBe('video')
     expect(resolveAlbumMediaType('.pdf')).toBeNull()
     expect(resolveAlbumMediaType('')).toBeNull()
+  })
+
+  it('resolveAlbumMimeType 返回标准 MIME，未知扩展名回退二进制流', () => {
+    expect(resolveAlbumMimeType('.jpg')).toBe('image/jpeg')
+    expect(resolveAlbumMimeType('MOV')).toBe('video/quicktime')
+    expect(resolveAlbumMimeType('.mkv')).toBe('video/x-matroska')
+    // 未知扩展名不能伪造 video/xxx
+    expect(resolveAlbumMimeType('.xyz')).toBe('application/octet-stream')
+    expect(resolveAlbumMimeType('')).toBe('application/octet-stream')
   })
 })
