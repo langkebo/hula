@@ -99,12 +99,14 @@ class MatrixEncryptionService extends BaseMatrixService {
     }
 
     try {
-      const response = await client.getKeyRotationManager().postCheck()
+      const manager = client.getKeyRotationManager()
+      // SDK 契约：KeyCheckResponse 不再含 enabled，启用状态须读 getStatus()
+      const [status, check] = await Promise.all([manager.getStatus(), manager.postCheck()])
       return {
-        enabled: response.enabled ?? true,
-        intervalMs: response.interval_ms ?? 604800000,
-        lastRotation: response.last_rotation ?? undefined,
-        needsRotation: response.needs_rotation ?? true
+        enabled: status.enabled,
+        intervalMs: check.interval_ms ?? 604800000,
+        lastRotation: check.last_rotation ?? undefined,
+        needsRotation: check.needs_rotation ?? true
       }
     } catch (err) {
       if (this.isForbiddenError(err)) {

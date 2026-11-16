@@ -25,9 +25,14 @@ describe('MatrixEncryptionService', () => {
       deviceId: 'DEVICE_1',
       getRoom: vi.fn(),
       getKeyRotationManager: vi.fn((() => ({
-        postCheck: vi.fn().mockResolvedValue({
+        getStatus: vi.fn().mockResolvedValue({
           enabled: true,
+          status: {},
+          user_last_rotation: null
+        }),
+        postCheck: vi.fn().mockResolvedValue({
           interval_ms: 604800000,
+          last_rotation: null,
           needs_rotation: false
         }),
         rotateKey: vi.fn().mockResolvedValue({

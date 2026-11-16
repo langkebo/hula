@@ -395,7 +395,7 @@ importers:
         version: 10.6.5(storybook@10.6.5(@types/react@19.2.14)(prettier@3.9.6)(react@19.2.8))
       '@storybook/addon-vitest':
         specifier: ^10.6.2
-        version: 10.6.5(@vitest/browser-playwright@4.1.12)(react@19.2.8)(storybook@10.6.5(@types/react@19.2.14)(prettier@3.9.6)(react@19.2.8))(vitest@4.1.12)
+        version: 10.6.5(@vitest/browser-playwright@4.1.12)(@vitest/browser@4.1.12)(react@19.2.8)(storybook@10.6.5(@types/react@19.2.14)(prettier@3.9.6)(react@19.2.8))(vitest@4.1.12)
       '@storybook/vue3':
         specifier: ^10.6.2
         version: 10.6.5(storybook@10.6.5(@types/react@19.2.14)(prettier@3.9.6)(react@19.2.8))(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3))
@@ -440,7 +440,7 @@ importers:
         version: 4.1.12(msw@2.15.0(@types/node@25.9.5)(typescript@6.0.3))(playwright@1.63.0)(vite@8.3.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(yaml@2.9.0))(vitest@4.1.12)
       '@vitest/coverage-v8':
         specifier: 4.1.12
-        version: 4.1.12(vitest@4.1.12)
+        version: 4.1.12(@vitest/browser@4.1.12)(vitest@4.1.12)
       '@vitest/ui':
         specifier: 4.1.12
         version: 4.1.12(vitest@4.1.12)
@@ -1476,7 +1476,7 @@ packages:
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
   '@langkebo/matrix-js-sdk@file:vendor/matrix-js-sdk.tgz':
-    resolution: {integrity: sha512-bF+HNKo4hFH9L6mXfPmW5qGD6vhDIh6UQCNeEzaSJxpsAHQ2WnJS8FJHupw1LnIAt0T1xz9ON9XeQbzXwazZ/Q==, tarball: file:vendor/matrix-js-sdk.tgz}
+    resolution: {integrity: sha512-uNmv/dvriL9C36kGJWonblyVr4KYQmunexFb1XQW5m4VAuM/0EARhVPw6liLXU+XqE8aUES23Gi6SLipTacvoA==, tarball: file:vendor/matrix-js-sdk.tgz}
     version: 40.2.0-langkebo.8
     engines: {node: '>=22.0.0'}
 
@@ -7754,12 +7754,13 @@ snapshots:
     dependencies:
       storybook: 10.6.5(@types/react@19.2.14)(prettier@3.9.6)(react@19.2.8)
 
-  '@storybook/addon-vitest@10.6.5(@vitest/browser-playwright@4.1.12)(react@19.2.8)(storybook@10.6.5(@types/react@19.2.14)(prettier@3.9.6)(react@19.2.8))(vitest@4.1.12)':
+  '@storybook/addon-vitest@10.6.5(@vitest/browser-playwright@4.1.12)(@vitest/browser@4.1.12)(react@19.2.8)(storybook@10.6.5(@types/react@19.2.14)(prettier@3.9.6)(react@19.2.8))(vitest@4.1.12)':
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.1.0(react@19.2.8)
       storybook: 10.6.5(@types/react@19.2.14)(prettier@3.9.6)(react@19.2.8)
     optionalDependencies:
+      '@vitest/browser': 4.1.12(msw@2.15.0(@types/node@25.9.5)(typescript@6.0.3))(vite@8.3.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(yaml@2.9.0))(vitest@4.1.12)
       '@vitest/browser-playwright': 4.1.12(msw@2.15.0(@types/node@25.9.5)(typescript@6.0.3))(playwright@1.63.0)(vite@8.3.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(yaml@2.9.0))(vitest@4.1.12)
       vitest: 4.1.12(@types/node@25.9.5)(@vitest/browser-playwright@4.1.12)(@vitest/coverage-v8@4.1.12)(@vitest/ui@4.1.12)(happy-dom@21.0.4)(jsdom@29.1.1)(msw@2.15.0(@types/node@25.9.5)(typescript@6.0.3))(vite@8.3.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(yaml@2.9.0))
     transitivePeerDependencies:
@@ -8173,7 +8174,7 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/coverage-v8@4.1.12(vitest@4.1.12)':
+  '@vitest/coverage-v8@4.1.12(@vitest/browser@4.1.12)(vitest@4.1.12)':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/utils': 4.1.12
@@ -8186,6 +8187,8 @@ snapshots:
       std-env: 4.1.0
       tinyrainbow: 3.1.0
       vitest: 4.1.12(@types/node@25.9.5)(@vitest/browser-playwright@4.1.12)(@vitest/coverage-v8@4.1.12)(@vitest/ui@4.1.12)(happy-dom@21.0.4)(jsdom@29.1.1)(msw@2.15.0(@types/node@25.9.5)(typescript@6.0.3))(vite@8.3.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(yaml@2.9.0))
+    optionalDependencies:
+      '@vitest/browser': 4.1.12(msw@2.15.0(@types/node@25.9.5)(typescript@6.0.3))(vite@8.3.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(yaml@2.9.0))(vitest@4.1.12)
 
   '@vitest/expect@3.2.4':
     dependencies:
@@ -11429,7 +11432,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 25.9.5
       '@vitest/browser-playwright': 4.1.12(msw@2.15.0(@types/node@25.9.5)(typescript@6.0.3))(playwright@1.63.0)(vite@8.3.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.102.0)(yaml@2.9.0))(vitest@4.1.12)
-      '@vitest/coverage-v8': 4.1.12(vitest@4.1.12)
+      '@vitest/coverage-v8': 4.1.12(@vitest/browser@4.1.12)(vitest@4.1.12)
       '@vitest/ui': 4.1.12(vitest@4.1.12)
       happy-dom: 21.0.4
       jsdom: 29.1.1
