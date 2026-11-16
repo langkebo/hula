@@ -20,6 +20,7 @@
   "error": "Operation failed",
   "empty": "No data",
   "load_failed": "Failed to load",
+  "partial_load_failed": "{count} items failed to load. You can retry",
   "tip": "Tip",
   "hide": "Hide",
   "view": "View",

@@ -1,5 +1,12 @@
 <template>
   <div class="storage-settings">
+    <PartialStateBanner
+      v-if="partialFailures > 0"
+      class="mb-12px"
+      :message="t('common.partial_load_failed', { count: partialFailures })"
+      :retry-text="t('common.retry')"
+      @retry="retryPartialLoads" />
+
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.storage.title') }}</h3>
       <p class="section-desc">{{ t('setting.storage.desc') }}</p>
@@ -98,7 +105,13 @@
         <div data-test="media-auth-status" class="stat-item">
           <span class="stat-label">{{ t('setting.storage.authenticated_media') }}</span>
           <span class="stat-value">
-            {{ authenticatedMedia ? t('setting.storage.auth_enabled') : t('setting.storage.auth_disabled') }}
+            {{
+              mediaAuthFailed
+                ? '-'
+                : authenticatedMedia
+                  ? t('setting.storage.auth_enabled')
+                  : t('setting.storage.auth_disabled')
+            }}
           </span>
         </div>
       </div>
@@ -150,6 +163,7 @@ import { NDivider, NSelect, NSwitch } from 'naive-ui'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { applyMediaUploadPreferences } from '@/services/matrix/media/mediaUploadPreferences'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -177,6 +191,20 @@ const mediaConfigState = ref<MediaConfigState>('loading')
 const maxUploadSize = ref(0)
 const authenticatedMedia = ref(false)
 
+/**
+ * 局部读取失败标记。
+ *
+ * 配额统计 / 告警 / 认证媒体开关是三个相互独立的接口，任一失败目前会退化成
+ * 「0 项」「暂无告警」「未启用」，把读取失败谎报成确定值。这里单独记录失败，
+ * 由页面顶部 partial 态说明数据缺失并提供重试。
+ */
+const quotaStatsFailed = ref(false)
+const quotaAlertsFailed = ref(false)
+const mediaAuthFailed = ref(false)
+const partialFailures = computed(
+  () => Number(quotaStatsFailed.value) + Number(quotaAlertsFailed.value) + Number(mediaAuthFailed.value)
+)
+
 const settingStore = useSettingStore()
 const { uploadCompressEnabled, uploadCompressQuality, uploadChunkEnabled } = storeToRefs(settingStore)
 
@@ -188,6 +216,7 @@ const qualityOptions = computed(() => [
 
 async function loadMediaConfig(): Promise<void> {
   mediaConfigState.value = 'loading'
+  mediaAuthFailed.value = false
   // 上传上限与认证媒体开关各自独立降级：认证配置读取失败不影响上传上限展示。
   const [configResult, authResult] = await Promise.allSettled([
     matrixMediaService.getMediaConfig(),
@@ -201,6 +230,7 @@ async function loadMediaConfig(): Promise<void> {
     mediaConfigState.value = 'unavailable'
   }
 
+  mediaAuthFailed.value = authResult.status === 'rejected'
   authenticatedMedia.value = authResult.status === 'fulfilled' && Boolean(authResult.value?.authenticated_media)
 }
 
@@ -232,6 +262,8 @@ async function loadStats(): Promise<void> {
 
 async function loadQuota(): Promise<void> {
   quotaState.value = 'loading'
+  quotaStatsFailed.value = false
+  quotaAlertsFailed.value = false
   // 三个接口各自独立降级：任一失败不阻断其余数据展示。
   const [usageResult, statsResult, alertsResult] = await Promise.allSettled([
     matrixMediaService.checkQuota(),
@@ -251,11 +283,18 @@ async function loadQuota(): Promise<void> {
   if (statsResult.status === 'fulfilled' && statsResult.value) {
     quotaMediaCount.value = statsResult.value.mediaCount
   } else {
+    quotaStatsFailed.value = true
     quotaMediaCount.value = 0
   }
 
+  quotaAlertsFailed.value = alertsResult.status !== 'fulfilled'
   quotaAlerts.value = alertsResult.status === 'fulfilled' ? alertsResult.value : []
   quotaState.value = 'available'
+}
+
+/** partial 态的重试只补读失败的子资源，不触碰压缩 / 分片等本地偏好 */
+function retryPartialLoads(): void {
+  void Promise.all([loadQuota(), loadMediaConfig()])
 }
 
 onMounted(() => {

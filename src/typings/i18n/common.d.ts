@@ -25,6 +25,7 @@ export type Messages = {
   "error": "操作失败",
   "empty": "暂无数据",
   "load_failed": "加载失败",
+  "partial_load_failed": "{count} 项数据加载失败，可重试",
   "tip": "提示",
   "hide": "隐藏",
   "view": "查看",
@@ -197,6 +198,7 @@ export type KeyPaths =
   | "common.error"
   | "common.empty"
   | "common.load_failed"
+  | "common.partial_load_failed"
   | "common.tip"
   | "common.hide"
   | "common.view"

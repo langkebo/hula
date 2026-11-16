@@ -1,5 +1,12 @@
 <template>
   <div class="friends-settings">
+    <PartialStateBanner
+      v-if="partialFailures > 0"
+      class="mb-12px"
+      :message="t('common.partial_load_failed', { count: partialFailures })"
+      :retry-text="t('common.retry')"
+      @retry="retryPartialLoads" />
+
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.friends.requests.title') }}</h3>
       <div class="setting-item">
@@ -152,8 +159,9 @@ import {
   NSwitch,
   useDialog
 } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { matrixAccountService, matrixFriendGroups, matrixFriendOperations } from '@/services/matrix'
@@ -211,6 +219,17 @@ const loadingRequests = ref(false)
 const friendGroups = ref<FriendGroup[]>([])
 const incomingRequests = ref<FriendRequest[]>([])
 const outgoingRequests = ref<FriendRequest[]>([])
+
+/**
+ * 分组 / 请求列表的读取失败标记。
+ *
+ * 两处 catch 都把失败吞成空数组，界面会显示成「暂无分组 / 暂无好友申请」，
+ * 等于把「读失败」谎报成「确实没有」。这里单独记失败，让页面用 partial 态
+ * 说明「部分数据缺失」，而不是伪装成空态。
+ */
+const groupsLoadFailed = ref(false)
+const requestsLoadFailed = ref(false)
+const partialFailures = computed(() => Number(groupsLoadFailed.value) + Number(requestsLoadFailed.value))
 
 const showCreateGroup = ref(false)
 const showEditGroup = ref(false)
@@ -277,6 +296,7 @@ async function saveSettings() {
 
 async function loadFriendGroups() {
   loadingGroups.value = true
+  groupsLoadFailed.value = false
   try {
     const groups = await matrixFriendGroups.getFriendGroups()
     friendGroups.value = (groups || []).map((g) => ({
@@ -285,6 +305,7 @@ async function loadFriendGroups() {
       member_count: g.member_count || 0
     }))
   } catch {
+    groupsLoadFailed.value = true
     logger.warn('Failed to load friend groups')
   } finally {
     loadingGroups.value = false
@@ -293,11 +314,14 @@ async function loadFriendGroups() {
 
 async function loadFriendRequests() {
   loadingRequests.value = true
+  requestsLoadFailed.value = false
   try {
     const [incomingResult, outgoingResult] = await Promise.allSettled([
       matrixFriendService.getIncomingRequests(),
       matrixFriendService.getOutgoingRequests()
     ])
+
+    requestsLoadFailed.value = incomingResult.status === 'rejected' || outgoingResult.status === 'rejected'
 
     const incoming = incomingResult.status === 'fulfilled' ? incomingResult.value : []
     const outgoing = outgoingResult.status === 'fulfilled' ? outgoingResult.value : []
@@ -313,6 +337,11 @@ async function loadFriendRequests() {
   } finally {
     loadingRequests.value = false
   }
+}
+
+/** partial 态的重试只补读失败的分组与请求，不重发策略写入 */
+function retryPartialLoads() {
+  void Promise.all([loadFriendGroups(), loadFriendRequests()])
 }
 
 async function handleToggle() {

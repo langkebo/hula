@@ -322,3 +322,74 @@ describe('FriendsSettings — 好友请求策略写入 InvitePolicy', () => {
     wrapper.unmount()
   })
 })
+
+/**
+ * 分组与好友请求的读取失败此前被 catch 吞成空数组，界面显示为「暂无」，
+ * 属于把读取失败谎报成空态。以下用例锁定 partial 态：失败必须显式说明，
+ * 且重试只补读数据。
+ */
+describe('FriendsSettings — partial 态', () => {
+  beforeEach(() => {
+    getFriendGroupsMock.mockReset().mockResolvedValue([])
+    getIncomingRequestsMock.mockReset().mockResolvedValue([])
+    getOutgoingRequestsMock.mockReset().mockResolvedValue([])
+    ensureSessionReadyMock.mockReset().mockResolvedValue('ready')
+    getInvitePolicyMock.mockReset().mockResolvedValue(accountPolicy())
+    getInvitePolicyStrictMock.mockReset().mockResolvedValue(accountPolicy())
+    setInvitePolicyMock.mockReset().mockResolvedValue(true)
+    showFeedbackMock.mockClear()
+    localStorage.clear()
+  })
+
+  it('分组读取失败时展示 partial 态，而不是伪装成空分组', async () => {
+    getFriendGroupsMock.mockRejectedValueOnce(new Error('groups-fail'))
+
+    const wrapper = mount(FriendsSettings)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="partial-state"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('请求列表任一接口失败也算 partial', async () => {
+    getIncomingRequestsMock.mockRejectedValueOnce(new Error('incoming-fail'))
+
+    const wrapper = mount(FriendsSettings)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="partial-state"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('全部读取成功时不展示 partial 态', async () => {
+    const wrapper = mount(FriendsSettings)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="partial-state"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('点击重试只补读分组与请求', async () => {
+    getFriendGroupsMock.mockRejectedValueOnce(new Error('groups-fail'))
+
+    const wrapper = mount(FriendsSettings)
+    await flushPromises()
+
+    getFriendGroupsMock.mockClear()
+    getIncomingRequestsMock.mockClear()
+    getOutgoingRequestsMock.mockClear()
+    setInvitePolicyMock.mockClear()
+
+    await wrapper.find('[data-testid="partial-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(getFriendGroupsMock).toHaveBeenCalledTimes(1)
+    expect(getIncomingRequestsMock).toHaveBeenCalledTimes(1)
+    expect(getOutgoingRequestsMock).toHaveBeenCalledTimes(1)
+    expect(setInvitePolicyMock).not.toHaveBeenCalled()
+    // 重试成功后 partial 态应消失
+    expect(wrapper.find('[data-testid="partial-state"]').exists()).toBe(false)
+
+    wrapper.unmount()
+  })
+})

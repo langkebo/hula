@@ -212,3 +212,73 @@ describe('StorageSettings 媒体服务配置与上传策略', () => {
     expect(wrapper.find('[data-test="upload-quality-select"]').exists()).toBe(true)
   })
 })
+
+/**
+ * 配额统计 / 告警 / 认证媒体开关此前失败后分别退化成「0 项」「暂无告警」
+ * 「未启用」，把读取失败谎报成确定值。以下用例锁定 partial 态与占位显示。
+ */
+describe('StorageSettings — partial 态', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    checkQuotaMock.mockResolvedValue(usageOf(512, 1024))
+    getQuotaStatsMock.mockResolvedValue({ storageBytes: 512, mediaCount: 3, limitBytes: 0 })
+    getQuotaAlertsMock.mockResolvedValue([])
+    getMediaConfigMock.mockResolvedValue({ 'm.upload.size': 2048 })
+    getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: false })
+  })
+
+  it('配额统计与告警读取失败时展示 partial 态', async () => {
+    getQuotaStatsMock.mockRejectedValue(new Error('stats-fail'))
+    getQuotaAlertsMock.mockRejectedValue(new Error('alerts-fail'))
+
+    const wrapper = mountTab()
+    await flush()
+
+    const banner = wrapper.find('[data-testid="partial-state"]')
+    expect(banner.exists()).toBe(true)
+    expect(banner.text()).toContain('common.partial_load_failed')
+  })
+
+  it('认证媒体配置失败时展示占位符而不是「未启用」', async () => {
+    getAuthenticatedMediaConfigMock.mockRejectedValue(new Error('auth-fail'))
+
+    const wrapper = mountTab()
+    await flush()
+
+    expect(wrapper.find('[data-testid="partial-state"]').exists()).toBe(true)
+    const auth = wrapper.find('[data-test="media-auth-status"]')
+    expect(auth.text()).not.toContain('setting.storage.auth_disabled')
+    expect(auth.text()).toContain('-')
+  })
+
+  it('全部读取成功时不展示 partial 态', async () => {
+    const wrapper = mountTab()
+    await flush()
+
+    expect(wrapper.find('[data-testid="partial-state"]').exists()).toBe(false)
+  })
+
+  it('点击重试会重新拉取配额与媒体配置', async () => {
+    getQuotaAlertsMock.mockRejectedValueOnce(new Error('alerts-fail'))
+
+    const wrapper = mountTab()
+    await flush()
+    expect(wrapper.find('[data-testid="partial-state"]').exists()).toBe(true)
+
+    checkQuotaMock.mockClear()
+    getQuotaStatsMock.mockClear()
+    getQuotaAlertsMock.mockClear()
+    getMediaConfigMock.mockClear()
+    getAuthenticatedMediaConfigMock.mockClear()
+
+    await wrapper.find('[data-testid="partial-retry"]').trigger('click')
+    await flush()
+
+    expect(checkQuotaMock).toHaveBeenCalledTimes(1)
+    expect(getQuotaStatsMock).toHaveBeenCalledTimes(1)
+    expect(getMediaConfigMock).toHaveBeenCalledTimes(1)
+    expect(getAuthenticatedMediaConfigMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="partial-state"]').exists()).toBe(false)
+  })
+})
