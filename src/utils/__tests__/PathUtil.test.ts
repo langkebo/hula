@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { registerStorageLayout } from '@/platform/storageLayout'
 
 // Use vi.hoisted to lift mocks above the import chain so the module under test
 // sees the mocked dependencies from the very first import.
 const {
-  isMobileMock,
   existsMock,
   mkdirMock,
   writeFileMock,
@@ -20,7 +20,6 @@ const {
   showFeedbackMock,
   announceMock
 } = vi.hoisted(() => ({
-  isMobileMock: vi.fn(() => false),
   existsMock: vi.fn(async () => false),
   mkdirMock: vi.fn(async () => undefined),
   writeFileMock: vi.fn(async () => undefined),
@@ -38,10 +37,6 @@ const {
   fileTypeFromBufferMock: vi.fn(async () => ({ ext: 'png', mime: 'image/png' })),
   showFeedbackMock: vi.fn(),
   announceMock: vi.fn()
-}))
-
-vi.mock('@/utils/PlatformConstants', () => ({
-  isMobile: isMobileMock
 }))
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
@@ -123,7 +118,7 @@ import {
 describe('PathUtil', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    isMobileMock.mockReturnValue(false)
+    registerStorageLayout(false)
     existsMock.mockResolvedValue(false)
     mkdirMock.mockResolvedValue(undefined)
     writeFileMock.mockResolvedValue(undefined)
@@ -240,7 +235,7 @@ describe('PathUtil', () => {
     })
 
     it('uses AppData on mobile', async () => {
-      isMobileMock.mockReturnValue(true)
+      registerStorageLayout(true)
       existsMock.mockResolvedValue(true)
       const result = await getUserDataRootAbsoluteDir()
       expect(result).toBe('/app-data/userData')
@@ -267,7 +262,7 @@ describe('PathUtil', () => {
     })
 
     it('uses AppData on mobile', async () => {
-      isMobileMock.mockReturnValue(true)
+      registerStorageLayout(true)
       existsMock.mockResolvedValue(true)
       const result = await getUserVideosDir('user-1', 'room-1')
       expect(existsMock).toHaveBeenCalledWith('userData/user-1/room-1', { baseDir: 'AppData' })
@@ -281,7 +276,7 @@ describe('PathUtil', () => {
     })
 
     it('returns absolute path on mobile', async () => {
-      isMobileMock.mockReturnValue(true)
+      registerStorageLayout(true)
       existsMock.mockResolvedValue(true)
       const result = await getUserAbsoluteVideosDir('user-1', 'room-1')
       expect(result).toBe('/app-data/userData/user-1/room-1')
@@ -307,7 +302,7 @@ describe('PathUtil', () => {
     })
 
     it('uses AppData on mobile', async () => {
-      isMobileMock.mockReturnValue(true)
+      registerStorageLayout(true)
       existsMock.mockResolvedValue(true)
       const result = await getUserEmojiDir('user-1')
       expect(existsMock).toHaveBeenCalledWith('userData/user-1/emojis', { baseDir: 'AppData' })
@@ -356,7 +351,7 @@ describe('PathUtil', () => {
     })
 
     it('uses AppData on mobile for AI images', async () => {
-      isMobileMock.mockReturnValue(true)
+      registerStorageLayout(true)
       existsMock.mockResolvedValue(false)
       await persistAiImageFile({
         userUid: 'user-1',
@@ -390,7 +385,7 @@ describe('PathUtil', () => {
     })
 
     it('uses AppData on mobile', async () => {
-      isMobileMock.mockReturnValue(true)
+      registerStorageLayout(true)
       existsMock.mockResolvedValue(true)
       const result = await ensureModelFile('tjg.glb', 'https://example.com/hula.glb')
       expect(result).toBe('/app-data/userData/models/tjg.glb')

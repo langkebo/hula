@@ -13,6 +13,9 @@ import vResize from '@/directives/v-resize'
 import vRipple from '@/directives/v-ripple'
 import { vSafeHtml } from '@/directives/v-safe-html'
 import vSlide from '@/directives/v-slide.ts'
+import { getPlatformBoot, registerPlatformBoot } from '@/platform/platformBoot'
+import { registerSessionEventStrategy } from '@/platform/sessionEventStrategy'
+import { registerStorageLayout } from '@/platform/storageLayout'
 import router from '@/router'
 import { setupI18n } from '@/services/i18n'
 import { registerStrictDevicePolicyPreferences } from '@/services/matrix/crypto/strictDevicePolicyBootstrap'
@@ -45,6 +48,10 @@ performance.mark('tjg-init-start')
 initializePlatform()
 // 平台在运行期恒定：初始化后探测一次复用
 const isMobilePlatform = isMobile()
+// 平台差异实现经注册表注入，业务模块不再直接询问平台（P3/A8）
+registerStorageLayout(isMobilePlatform)
+registerPlatformBoot(isMobilePlatform)
+registerSessionEventStrategy(isMobilePlatform)
 const prometheusEndpoint = import.meta.env.VITE_PROMETHEUS_ENDPOINT
 startWebVitalObserver({
   ...(prometheusEndpoint === undefined ? {} : { prometheusEndpoint }),
@@ -77,27 +84,10 @@ if (process.env.NODE_ENV === 'development') {
     window.tjgRouter = module.default
   })
   window.pinia = pinia
-
-  if (isMobilePlatform) {
-    import('eruda').then((module) => {
-      const eruda = 'default' in module ? module.default : module
-      eruda.init()
-    })
-  }
 }
 
-if (isMobilePlatform) {
-  if (document.readyState === 'loading') {
-    window.addEventListener('DOMContentLoaded', setup)
-  } else {
-    setup()
-  }
-}
-
-async function setup() {
-  if (!hasTauriRuntime()) return
-  await invokeSilently('set_complete', { task: 'frontend' })
-}
+// 平台差异启动逻辑（开发期调试控制台、首屏完成信号）由平台实现提供（P3/A8）
+getPlatformBoot().afterPlatformInitialize()
 
 performance.mark('tjg-app-create-start')
 const app = createApp(App)

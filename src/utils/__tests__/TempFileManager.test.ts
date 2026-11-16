@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { registerStorageLayout } from '@/platform/storageLayout'
 
-const { removeMock, isMobileMock } = vi.hoisted(() => ({
-  removeMock: vi.fn(),
-  isMobileMock: vi.fn(() => false)
+const { removeMock } = vi.hoisted(() => ({
+  removeMock: vi.fn()
 }))
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
@@ -12,10 +12,6 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
     Resource: 'Resource'
   },
   remove: removeMock
-}))
-
-vi.mock('@/utils/PlatformConstants', () => ({
-  isMobile: isMobileMock
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -33,7 +29,7 @@ import { removeTempFile } from '../TempFileManager'
 describe('removeTempFile', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    isMobileMock.mockReturnValue(false)
+    registerStorageLayout(false)
   })
 
   it('skips removal for undefined path', async () => {
@@ -74,14 +70,14 @@ describe('removeTempFile', () => {
 
   it('uses AppCache baseDir on desktop by default', async () => {
     removeMock.mockResolvedValue(undefined)
-    isMobileMock.mockReturnValue(false)
+    registerStorageLayout(false)
     await removeTempFile('/tmp/file.tmp')
     expect(removeMock).toHaveBeenCalledWith('/tmp/file.tmp', expect.objectContaining({ baseDir: 'AppCache' }))
   })
 
   it('uses AppData baseDir on mobile by default', async () => {
     removeMock.mockResolvedValue(undefined)
-    isMobileMock.mockReturnValue(true)
+    registerStorageLayout(true)
     await removeTempFile('/tmp/file.tmp')
     expect(removeMock).toHaveBeenCalledWith('/tmp/file.tmp', expect.objectContaining({ baseDir: 'AppData' }))
   })
