@@ -366,20 +366,22 @@ describe('SpaceChildrenPane', () => {
 
     const vm = wrapper.vm as unknown as {
       inviteForm: { userId: string }
-      submitInviteSpaceMember: () => Promise<void>
+      openInviteSpaceMember: () => void
+      submitManagePane: () => Promise<void>
     }
 
+    vm.openInviteSpaceMember()
     vm.inviteForm.userId = ''
-    await vm.submitInviteSpaceMember()
+    await vm.submitManagePane()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.invite_user_required', 'warning')
 
     vm.inviteForm.userId = '@alice:server'
     inviteSpaceMemberMock.mockResolvedValueOnce(false)
-    await vm.submitInviteSpaceMember()
+    await vm.submitManagePane()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.invite_failed', 'error')
 
     inviteSpaceMemberMock.mockResolvedValueOnce(true)
-    await vm.submitInviteSpaceMember()
+    await vm.submitManagePane()
     expect(inviteSpaceMemberMock).toHaveBeenCalledWith('@alice:server')
     expect(showFeedbackMock).toHaveBeenCalledWith('space.invite_success', 'success')
   })
@@ -390,21 +392,23 @@ describe('SpaceChildrenPane', () => {
 
     const vm = wrapper.vm as unknown as {
       addRoomForm: { roomId: string; suggested: boolean }
-      submitAddSpaceRoom: () => Promise<void>
+      openAddSpaceRoom: () => void
+      submitManagePane: () => Promise<void>
     }
 
+    vm.openAddSpaceRoom()
     vm.addRoomForm.roomId = ''
-    await vm.submitAddSpaceRoom()
+    await vm.submitManagePane()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.add_room_required', 'warning')
 
     vm.addRoomForm.roomId = '!child:server'
     vm.addRoomForm.suggested = true
     addRoomToSpaceMock.mockResolvedValueOnce(false)
-    await vm.submitAddSpaceRoom()
+    await vm.submitManagePane()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.add_room_failed', 'error')
 
     addRoomToSpaceMock.mockResolvedValueOnce(true)
-    await vm.submitAddSpaceRoom()
+    await vm.submitManagePane()
     expect(addRoomToSpaceMock).toHaveBeenCalledWith('!child:server', { suggested: true })
     expect(showFeedbackMock).toHaveBeenCalledWith('space.add_room_success', 'success')
   })

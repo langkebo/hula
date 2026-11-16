@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3330,6 +3330,63 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 4. `loadFailed.reason` 只做文本留存，尚未据此做网络 / 权限 / 服务端的分级文案；`scope` 仍只有 `history` / `initial` 两种。
 5. `clearGroupStore` 仅改名不改行为（内部仍调 group store 的 `clearAllData()`）；§19.19 里出现的旧名保留为当时记录。
 6. 体量合并保留后出现的 `surface-sidebar-hover`，与原层叠结果一致；被删的 `surface-list-hover` 是同选择器下被覆盖的旧值，视觉无变化。
+
+---
+
+### 19.32 P0-12：SpaceChildrenPane 状态层与操作层拆分（2026-11-16，收口 §19.31 已知边界 2）
+
+#### 缺口
+
+1. `SpaceChildrenPane.vue` 505 行，超过 400 行建议线：模板渲染、数据源装配、17 个业务操作与路由兜底全挤在一个 SFC 里，改动任一操作都要在 500 行范围内定位。
+2. §19.31 已知边界 2 明确记录「`SpaceChildrenPane.vue` 505 行仍在基线内，未做拆分」，本轮即兑现该条。
+3. 17 个 handler 与 state 强耦合（都需要 `spaceId` / `spaceName` / 表单对象 / 提交中标志），直接抽子组件会带来大量 props/emits 转发，因此按 composable 分层而非再拆 SFC。
+
+#### 判据
+
+| 场景 | 数据来源 | 断言要点 |
+| :--- | :--- | :--- |
+| 初始化加载 | 路由参数非空 | `loadSelectedSpace` / `loadSpaceMembers` / `loadSpaceRooms` 各调用一次 |
+| 空路由 | `spaceId` 为空 | 三者均不调用 |
+| 进入空间 / 房间 | `handleEnterChat` / `handleEnterRoom` | 分别调用 `enterSpace(spaceId)`、`enterChat(roomId, 'room')` |
+| 表单校验 | 邀请成员 / 添加房间提交空值 | 不调用 `invite` / `addRoom`，提示错误文案 |
+| 添加房间提交 | `openAddSpaceRoom()` + `submitManagePane()` | 调用 `addRoomToSpace('!child:server', { suggested: true })` |
+| 成员操作 | `removeRoom` 返回 `true` | 调用 `showFeedback('space.remove_room_success', 'success')` 并重载房间 |
+| 离开空间 | 确认弹窗 `onPositiveClick` | 调用 `leaveSpace` 且 `reloadSpaces` 至少一次 |
+| 删除守卫 | `canManageSpace` 为 `false` | 不调用 `deleteSpace`，提示 `space.delete_space_failed` |
+| 体量 | `SpaceChildrenPane.vue` | 505 → 135 行，退出体量基线；两个新 composable 分别 180 / 343 行，均 < 400 |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/composables/space/useSpaceChildrenState.ts`（新增，180 行） | 状态层：`spaceId`（路由派生）、spaces / space detail / members / rooms 数据源与操作、`manageMode` / `subView` / 两个表单对象 / 各提交中标志、`spaceName` / `isMember` / `activeSpaceItem` / `canManageSelectedSpace` / `manageSubmitting` 派生值，以及 `watch(spaceId, …, { immediate: true })` 的加载编排；导出 `SpaceChildrenState` 类型 |
+| `src/composables/space/useSpaceChildrenActions.ts`（新增，343 行） | 操作层：接收 state 实例，承载 17 个 handler（进入聊天 / 房间、选空间、成员点击、建议置顶、空间设置、离开 / 删除、邀请 / 添加房间面板、改名 / 改简介、移除房间、管理面板提交、加入空间）；新增 `exitToList()`（`history.length > 1` 回退，否则回 `/space`）供离开 / 删除复用 |
+| `src/components/space/SpaceChildrenPane.vue` | 只保留模板、样式与装配：`useSpaceChildrenState()` + `useSpaceChildrenActions(state)`，删除全部业务实现与数据加载；505 → 135 行。模板与 `.space-children-pane__rooms` 样式零改动 |
+| `src/components/space/__tests__/SpaceChildrenPane.test.ts` | 两条表单校验用例改走组件真实入口 `openInviteSpaceMember()` / `openAddSpaceRoom()` + `submitManagePane()`（不再直调已从组件移除的 `submitInviteSpaceMember` / `submitAddSpaceRoom`）；其余 24 条用例保持原样 |
+| `meta/file-size-baseline.json` | `--update` 刷新：超 400 行文件 122 → 121，`SpaceChildrenPane.vue` 移出基线 |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 定向用例 | `pnpm vitest run src/components/space/__tests__/SpaceChildrenPane.test.ts` | `26 passed (26)`，exit 0 |
+| 变异自证 | 逐条注入后还原 | 3 条全部变红：① 离开空间注释掉 `reloadSpaces()` → `expected "vi.fn()" to be called at least once`；② `removeRoom` 成功分支 `if (!ok)` 反转为 `if (ok)` → `expected "vi.fn()" to be called with arguments: [ 'space.remove_room_success', …(1) ]`；③ 删除 `canManageSpace` 守卫 → `expected "vi.fn()" to not be called at all, but actually been called 1 times` |
+| 全量单测 | `pnpm test:run` | `1057 passed (1057)` / `11684 passed (11684)`，exit 0 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0（首次 TS6133 报组件 destructure 了模板未用的两个 submit handler，移除后通过） |
+| 文件体量 | `node scripts/check-file-size.mjs` | `OK — oversized file count 121 (baseline 121)` / `all 1515 source files within size constraints` |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`inline_style 5`、`important_css 39`、`backdrop_filter_raw 60`、`is_mobile_branch 5`、`handwritten_empty_state 0`） |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径全部存在 / `OK — no regressions vs baseline (587)`（current 573） |
+| 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156) / 扫描 1650 文件、命中 3 条全在白名单 / 无漂移、无未登记幻影 |
+| Lint / i18n | `pnpm check` | i18n 中英对齐、设计令牌 224 个零未引用、`icon-button-aria` 586 个 `.vue` 通过、`dead-handlers` 1648 个源文件通过，exit 0 |
+
+#### 已知边界
+
+1. 既有用例中 16 个 handler 仍通过 `wrapper.vm` 直调；`<script setup>` 顶层绑定可从 vm 访问，但**从 vm 直接赋值顶层 ref 不生效**（写入影子属性），因此涉及状态变更的断言一律走真实事件或真实入口（`openXxx()` + `submitManagePane()`）。
+2. 原「subView 在空间切换后重置」用例为空转断言（从未设置非 `overview` 值）；尝试用 stub 事件 + 路由变化强化时失败，根因是 `vi.mock('vue-router')` 的 `useRoute()` 返回 `routeRef.value` 普通对象快照，computed `spaceId` 无响应式依赖，watch 不触发。属既有测试基建缺陷，本轮不改基建，已回滚强化改动并在缺口/变异中如实记录。
+3. 状态层必须从 `@/composables/space`（index）导入，测试的 `vi.mock('@/composables/space')` 才生效；直接按文件名导入会绕过 mock。
+4. 拆分只做职责分层，未改任何业务语义、i18n key、样式与模板结构；`exitToList()` 是为消除 leave / delete 两处重复的路由兜底而新增，行为与原先两处内联实现一致。
+5. 本批未新增超 400 行文件，基线由 122 收紧到 121；`>800` 红线维持 0 个文件。
 
 ---
 
