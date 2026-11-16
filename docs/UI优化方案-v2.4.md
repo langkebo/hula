@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3267,6 +3267,69 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 4. `createRoomInSpace` 的真实房间创建成功、`addChildToSpace` 失败时仍归为变更失败（房间已建但未入空间），本轮不拆分该中间态。
 5. 局部提示的重试调用的是完整 `load()`，成功后 `refreshError` 自然清空；不单独提供「只刷新不重载」路径。
 6. 面板级判据通过 mock composable 驱动，未覆盖真实 `MatrixSpaceService`；服务层行为仍由既有 room 服务用例守护。
+
+---
+
+### 19.31 P0-11：组件体量收口、媒体 MIME 标准映射与消息加载失败结构化（2026-11-16，收口 §19.18 / §19.19 / §19.23 边界）
+
+#### 缺口
+
+1. **重复样式块**：`TjgSpaceTree.vue` 有两处 `.tjg-space-tree__item-content` 选择器（基座样式 + 后续交互补丁），同选择器重复定义使体量停在 414 行（基线 413），也让「最终生效值」只能靠层叠顺序推断。
+2. **自造 MIME**：相册扫描与 `MobileLayout.vue` 都用 `` `${type}/${ext}` `` 拼 MIME，产出 `video/mov`、`video/mkv` 这类并不存在的类型，服务端 / 浏览器按未知类型处理，预览与下载行为不可控。
+3. **名不副实的端口方法**：登出链路调用的 `clearMembersMap()` 实际执行的是 group store 的 `clearAllData()`（清空整个群组缓存），名字只描述了其中一个字段。
+4. **失败信号丢失原因**：`loadFailed` 是 `'' | 'history' | 'initial'` 字符串三态，只够驱动 UI 分支，丢掉了失败原因；服务端 `errcode`（如 `M_FORBIDDEN`）无法留存，后续按网络 / 权限 / 服务端分级展示没有数据基础。
+
+#### 判据
+
+| 场景 | 数据来源 | 断言要点 |
+| :--- | :--- | :--- |
+| MIME 标准映射 | `resolveAlbumMimeType` | `.jpg` → `image/jpeg`；`MOV` → `video/quicktime`；`.mkv` → `video/x-matroska`；未知扩展名与空串 → `application/octet-stream` |
+| 相册扫描写入 | `scanLocalAlbum` + `addFile` | `.MOV` 大小写归一后 `suffix='mov'`、`mimeType='video/quicktime'` |
+| 翻页失败 | `cursor` 非空、`getPagedRoomMessages` reject | `loadFailed={ scope:'history', reason }`；游标保留；异常向外抛出 |
+| 首屏失败 | `cursor` 为空、reject | `loadFailed={ scope:'initial', reason }`；不抛；`hasLoadedOnce=true` |
+| 原因优先级 | 异常同时带 `errcode` 与 `message` | `reason` 取 `M_FORBIDDEN`，不回退 `message` |
+| 成功清空 | 失败后再成功加载 | `loadFailed` 为 `null` |
+| UI 判据不变 | `ChatMessageList` 首屏错误态 | `loadFailed?.scope === 'initial'` 驱动，不读字符串 |
+| 登出清缓存 | 端口改名后 | `clearGroupStore()` 仍调用 group store `clearAllData()`，7 个会话链路用例全绿 |
+| 体量 | `TjgSpaceTree.vue` | 合并重复块后 408 行（≤ 基线 413），层叠结果仍为 `surface-sidebar-hover` |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/mobile/services/localAlbumScanner.ts` | 新增 `MEDIA_MIME_TYPES` 与 `resolveAlbumMimeType(ext)`（去点、小写归一、未知回退 `application/octet-stream`）；`addFile` 改用该函数 |
+| `src/mobile/components/MobileLayout.vue` | 图片 / 视频分支改调 `resolveAlbumMimeType`，删除 6 行 if/else 拼接 |
+| `src/stores/domains/chat/chat/message.ts` | 导出 `MessageLoadFailure = { scope: 'history' \| 'initial'; reason: string }`；`MessageListOptions.loadFailed` 改为 `MessageLoadFailure \| null` |
+| `src/stores/domains/chat/chat/messageLoading.ts` | 新增 `describeLoadFailure`（`errcode` 优先，其次 `message`，兜底 `unknown`）；成功写 `null`，失败按游标写 `scope` + `reason` |
+| `src/components/rightBox/chatBox/ChatMessageList.vue` | 首屏错误态改判 `loadFailed?.scope === 'initial'` |
+| `src/services/matrix/auth/sessionRuntimeInternal.ts`、`SessionOrchestrator.ts`、`SessionLogoutService.ts`、`MatrixRuntimeSessionService.ts` | `clearMembersMap` → `clearGroupStore`（行为不变，命名对齐「清空 group store」） |
+| `src/components/workbench/TjgSpaceTree.vue` | 两处 `.tjg-space-tree__item-content` 合并为一块（取基座属性 + 交互态），删除后出现的重复块，414 → 408 行 |
+| 测试 | `localAlbumScanner.test.ts` MIME 期望改标准值并新增 `resolveAlbumMimeType` 用例；`message.test.ts` 三处初始化与两处断言结构化，新增 errcode 优先用例；`ChatMessageList.test.ts` 夹具改结构化；auth 7 个测试文件随改名同步 |
+| `meta/file-size-baseline.json` | 用 `--update` 刷新：`Files >400 lines: 122`、`>800 lines: 0`、`>1000 lines: 0` |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 定向用例 | `pnpm vitest run`（localAlbumScanner / message / ChatMessageList / TjgSpaceTree / auth 全目录） | **27 文件 / 404 用例通过**（新增 2 例：`resolveAlbumMimeType`、errcode 优先） |
+| 变异自证 | 逐条注入后还原 | 3 条全部变红：① `mov` 映射改回 `video/mov` → `2 failed / 3 passed`；② `describeLoadFailure` 改 `message` 优先 → 「prefers the server errcode」FAIL（`1 failed / 44 passed`）；③ `scope` 恒为 `'initial'` → 「keeps the previous cursor and marks history failure」FAIL（`1 failed / 44 passed`） |
+| 全量单测 | `pnpm test:run` | `1057 passed (1057)` / `11684 passed (11684)`，exit 0 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 文件体量 | `node scripts/check-file-size.mjs` | 刷新基线后 `OK — oversized file count 122 (baseline 122)` / `all 1513 source files within size constraints` |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`inline_style 5`、`important_css 39`、`backdrop_filter_raw 60`、`is_mobile_branch 5`、`handwritten_empty_state 0`），无可收紧项 |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径全部存在 / `OK — no regressions vs baseline (587)`（current 573，14 个方法新补注释） |
+| 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156) / 扫描 1648 文件、命中 3 条全在白名单 / 无漂移、无未登记幻影 |
+| Lint / i18n | `pnpm check` | 首次报 `messageLoading.ts` organizeImports，调整 type import 顺序后重跑 `Checked 2902 files. No fixes applied.`，exit 0 |
+
+#### 已知边界
+
+1. 本次 `--update` 记录的是当前实测体量：20 个超基线文件与 9 个未登记的超 400 行文件一并登记，其中除 `SpaceChildrenPane`（+22，P0-10 引入）与 `message.ts`（+8，本批新增类型与注释）外，其余为 742bc5c7 之后的历史漂移；后续批次应回到「只降不升」。
+2. `SpaceChildrenPane.vue` 505 行仍在基线内，未做拆分；`>800` 红线维持 0 个文件。
+3. MIME 映射只覆盖相册扫描白名单扩展名，非白名单统一回退 `application/octet-stream`，不做类型猜测。
+4. `loadFailed.reason` 只做文本留存，尚未据此做网络 / 权限 / 服务端的分级文案；`scope` 仍只有 `history` / `initial` 两种。
+5. `clearGroupStore` 仅改名不改行为（内部仍调 group store 的 `clearAllData()`）；§19.19 里出现的旧名保留为当时记录。
+6. 体量合并保留后出现的 `surface-sidebar-hover`，与原层叠结果一致；被删的 `surface-list-hover` 是同选择器下被覆盖的旧值，视觉无变化。
 
 ---
 
