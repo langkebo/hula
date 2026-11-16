@@ -320,7 +320,7 @@ async function handleUploadChange(event: Event) {
         url: uploaded.contentUri,
         fileName: file.name,
         size: file.size,
-        mimetype: file.type || 'application/octet-stream'
+        mimetype: uploaded.mimetype
       }
     })
     showToast({ type: 'success', message: t('mobile_files.upload_success') })

@@ -9,7 +9,8 @@ import {
   getMimeTypeByExtension,
   getVideoMimeType,
   isPathUploadFile,
-  isVideoUrl
+  isVideoUrl,
+  resolveUploadMimeType
 } from '../FileType'
 
 const makeFile = (name: string, type = ''): File => new File(['x'], name, { type })
@@ -72,6 +73,22 @@ describe('FileType', () => {
     it('returns an empty string for unknown or missing extensions', () => {
       expect(getMimeTypeByExtension('a.unknown')).toBe('')
       expect(getMimeTypeByExtension('README')).toBe('')
+    })
+  })
+
+  describe('resolveUploadMimeType', () => {
+    it('prefers the declared MIME type over the extension', () => {
+      expect(resolveUploadMimeType('text/csv', 'a.pdf')).toBe('text/csv')
+    })
+
+    it('falls back to the extension when the declared type is empty', () => {
+      expect(resolveUploadMimeType('', 'a.pdf')).toBe('application/pdf')
+      expect(resolveUploadMimeType(undefined, 'clip.MP4')).toBe('video/mp4')
+    })
+
+    it('uses the scenario fallback when neither declaration nor extension matches', () => {
+      expect(resolveUploadMimeType('', 'README')).toBe('application/octet-stream')
+      expect(resolveUploadMimeType('', 'a.unknown', 'image/png')).toBe('image/png')
     })
   })
 

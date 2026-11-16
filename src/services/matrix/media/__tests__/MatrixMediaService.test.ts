@@ -280,6 +280,19 @@ describe('MatrixMediaService', () => {
       expect(result.mimetype).toBe('text/plain')
     })
 
+    it('should derive mimetype from the file name when file.type is empty', async () => {
+      const uploadContent = vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/uploaded123' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({ uploadContent }),
+        getProfileManager: () => ({ mxcUrlToHttp: vi.fn() })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMediaService.uploadFile(new File(['content'], '季度报告.PDF'))
+
+      expect(result.mimetype).toBe('application/pdf')
+      expect(uploadContent).toHaveBeenCalledWith(expect.any(File), expect.objectContaining({ type: 'application/pdf' }))
+    })
+
     it('should forward upload progress to callback', async () => {
       // MediaManager.uploadContent passes opts to http.uploadContent which reads
       // opts.progressHandler (not opts.progress). The mock simulates this behavior.
@@ -556,6 +569,19 @@ describe('MatrixMediaService', () => {
       expect(uploadContentWithId).toHaveBeenCalledWith('matrix.org', 'named-id', file, 'text/plain')
       expect(result.contentUri).toBe('mxc://matrix.org/named123')
       expect(result.mimetype).toBe('text/plain')
+    })
+
+    it('should derive mimetype from the file name when file.type is empty', async () => {
+      const uploadContentWithId = vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/named123' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({ uploadContentWithId })
+      } as unknown as MatrixClient)
+
+      const file = new File(['content'], 'report.pdf')
+      const result = await matrixMediaService.uploadContentWithId('matrix.org', 'named-id', file)
+
+      expect(uploadContentWithId).toHaveBeenCalledWith('matrix.org', 'named-id', file, 'application/pdf')
+      expect(result.mimetype).toBe('application/pdf')
     })
   })
 })

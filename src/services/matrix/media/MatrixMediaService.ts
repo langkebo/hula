@@ -4,6 +4,7 @@ import {
   matrixAttachmentEncryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { chunkUploadService } from '@/services/performance/ChunkUploadService'
+import { resolveUploadMimeType } from '@/utils/FileType'
 import { formatBytes } from '@/utils/Formatting'
 import { compressImage, isImageFile } from '@/utils/ImageUtils'
 import { createLogger } from '@/utils/Logger'
@@ -111,16 +112,17 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       return this.uploadLargeFile(file, onProgress)
     }
     try {
+      const mimetype = resolveUploadMimeType(file.type, file.name)
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),
         file,
-        createUploadOptions(file.type, onProgress, file.name),
+        createUploadOptions(mimetype, onProgress, file.name),
         onProgress
       )
       logger.info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
       const telemetry = matrixClientService.getTelemetry()
-      if (telemetry) telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
-      return { contentUri, size: file.size, mimetype: file.type || 'application/octet-stream' }
+      if (telemetry) telemetry.trackMediaUploaded(file.size, mimetype)
+      return { contentUri, size: file.size, mimetype }
     } catch (err) {
       logger.error(`[MatrixMedia] 文件上传失败: ${err}`)
       throw err
@@ -133,15 +135,16 @@ class MatrixMediaServiceClass extends BaseMatrixService {
    */
   async uploadLargeFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
     try {
+      const mimetype = resolveUploadMimeType(file.type, file.name)
       const result = await chunkUploadService.upload({
         file,
         onProgress: (p) => onProgress?.(p.percentage)
       })
       logger.info(`[MatrixMedia] 大文件分块上传成功: ${result.mxcUrl}`)
       const telemetry = matrixClientService.getTelemetry()
-      if (telemetry) telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
+      if (telemetry) telemetry.trackMediaUploaded(file.size, mimetype)
       notifyMediaQuotaChanged()
-      return { contentUri: result.mxcUrl, size: file.size, mimetype: file.type || 'application/octet-stream' }
+      return { contentUri: result.mxcUrl, size: file.size, mimetype }
     } catch (err) {
       logger.error(`[MatrixMedia] 大文件分块上传失败: ${err}`)
       throw err
@@ -165,7 +168,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       return {
         contentUri,
         size: file.size,
-        mimetype: file.type || 'application/octet-stream',
+        mimetype: resolveUploadMimeType(file.type, file.name),
         encryptedFile: { ...encryptedPayload.encryptedFile, url: contentUri } as EncryptedAttachmentFile
       }
     } catch (err) {
@@ -199,17 +202,18 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         }
       }
 
+      const mimetype = resolveUploadMimeType(fileToUpload.type, fileToUpload.name, 'image/png')
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),
         fileToUpload,
-        createUploadOptions(fileToUpload.type, onProgress, fileToUpload.name),
+        createUploadOptions(mimetype, onProgress, fileToUpload.name),
         onProgress
       )
       logger.info(`[MatrixMedia][AVATAR_DEBUG] uploadContent 成功: ${contentUri}`)
       return {
         contentUri,
         size: compressedSize,
-        mimetype: fileToUpload.type || 'image/png',
+        mimetype,
         width: dimensions.width,
         height: dimensions.height
       }
@@ -232,17 +236,18 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     this.assertClientReady()
     try {
       const metadata = await getVideoMetadata(file)
+      const mimetype = resolveUploadMimeType(file.type, file.name, 'video/mp4')
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),
         file,
-        createUploadOptions(file.type, onProgress, file.name),
+        createUploadOptions(mimetype, onProgress, file.name),
         onProgress
       )
       logger.info(`[MatrixMedia] 视频上传成功: ${contentUri}`)
       return {
         contentUri,
         size: file.size,
-        mimetype: file.type || 'video/mp4',
+        mimetype,
         width: metadata.width,
         height: metadata.height,
         duration: metadata.duration
@@ -257,14 +262,15 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     this.assertClientReady()
     try {
       const duration = await getAudioDuration(file)
+      const mimetype = resolveUploadMimeType(file.type, file.name, 'audio/ogg')
       const contentUri = await uploadContentWithChunkFallback(
         () => this.getMedia(),
         file,
-        createUploadOptions(file.type, onProgress, file.name),
+        createUploadOptions(mimetype, onProgress, file.name),
         onProgress
       )
       logger.info(`[MatrixMedia] 音频上传成功: ${contentUri}`)
-      return { contentUri, size: file.size, mimetype: file.type || 'audio/ogg', duration }
+      return { contentUri, size: file.size, mimetype, duration }
     } catch (err) {
       logger.error(`[MatrixMedia] 音频上传失败: ${err}`)
       throw err
@@ -296,7 +302,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
   ): Promise<UploadResult> {
     this.assertClientReady()
     const resolvedMimetype =
-      mimetype || (file instanceof File ? file.type || 'application/octet-stream' : 'application/octet-stream')
+      mimetype || (file instanceof File ? resolveUploadMimeType(file.type, file.name) : 'application/octet-stream')
     try {
       const response = await this.getMedia().uploadContentWithId(serverName, mediaId, file, resolvedMimetype)
       logger.info(`[MatrixMedia] 具名上传成功: ${response.content_uri}`)

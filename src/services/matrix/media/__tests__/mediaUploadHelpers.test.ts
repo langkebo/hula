@@ -120,6 +120,25 @@ describe('uploadViaGateway（经 MatrixHttpClient，无自建 XHR）', () => {
     expect(uploadRawMock.mock.calls[0][2].contentType).toBe('application/octet-stream')
   })
 
+  it('文件无类型但扩展名可识别时按扩展名推导', async () => {
+    const file = new File(['x'], '季度报告.PDF')
+
+    await uploadViaGateway(file, {})
+
+    expect(uploadRawMock.mock.calls[0][2]).toMatchObject({
+      contentType: 'application/pdf',
+      queryParams: { filename: '季度报告.PDF', content_type: 'application/pdf' }
+    })
+  })
+
+  it('显式 opts.type 优先于扩展名推导', async () => {
+    const file = new File(['x'], 'a.pdf')
+
+    await uploadViaGateway(file, { type: 'text/csv' })
+
+    expect(uploadRawMock.mock.calls[0][2].contentType).toBe('text/csv')
+  })
+
   it('响应缺少 content_uri ⇒ 抛错（不静默返回 undefined）', async () => {
     uploadRawMock.mockResolvedValue({})
 

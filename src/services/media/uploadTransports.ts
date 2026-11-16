@@ -1,7 +1,8 @@
 import { Channel } from '@tauri-apps/api/core'
 import { readFile, writeFile } from '@tauri-apps/plugin-fs'
 import { TauriCommand } from '@/enums'
-import { extractFileName, getMimeTypeFromExtension } from '@/utils/Formatting'
+import { resolveUploadMimeType } from '@/utils/FileType'
+import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 import { getCacheBaseDir, getCacheBaseDirName } from '@/utils/PathUtil'
 import { invokeWithErrorHandler } from '@/utils/TauriInvokeHandler'
@@ -65,7 +66,7 @@ export async function uploadPathViaMatrix(
 ): Promise<string> {
   const bytes = isAbsoluteFsPath(path) ? await readFile(path) : await readFile(path, { baseDir: getCacheBaseDir() })
   const name = extractFileName(path) || `upload-${Date.now()}`
-  const resolvedType = mimeType || getMimeTypeFromExtension(name) || 'application/octet-stream'
+  const resolvedType = resolveUploadMimeType(mimeType, name)
   return await uploadFileViaMatrix(new File([bytes], name, { type: resolvedType }), undefined, options)
 }
 

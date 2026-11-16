@@ -123,6 +123,24 @@ export const getMimeTypeByExtension = (fileName: string): string => {
 }
 
 /**
+ * 解析上传链路使用的 MIME 类型。
+ *
+ * 优先级：调用方/File 声明的类型 → 扩展名映射 → 场景兜底。
+ * 用于统一「`file.type` 为空时直接退回 application/octet-stream」的散落写法，
+ * 避免服务端把 pdf / mp4 等可识别文件落成通用二进制类型。
+ *
+ * @param declared 调用方或 File 声明的 MIME（可为空字符串）
+ * @param fileName 文件名，用于扩展名兜底
+ * @param fallback 声明与扩展名都未命中时的兜底类型
+ * @returns 解析后的 MIME 类型
+ */
+export const resolveUploadMimeType = (
+  declared: string | undefined,
+  fileName: string,
+  fallback = 'application/octet-stream'
+): string => declared || getMimeTypeByExtension(fileName) || fallback
+
+/**
  * 通用文件类型检查函数
  * @param fileOrName File对象或文件名
  * @param supportedExtensions 支持的扩展名数组
