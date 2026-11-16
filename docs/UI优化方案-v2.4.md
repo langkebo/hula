@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3756,6 +3756,91 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 3. `mediaUploadHelpers.uploadViaGateway` 与 `MatrixMediaService` 仍按 `opts.type || file.type || 'application/octet-stream'` 取值，不查扩展名；它们接收的是上层已构造好的 File（本批已保证 `type` 正确），如需独立健壮性另行处理。
 4. `DOCUMENT_MIME_TYPE_MAP` 只覆盖常见办公与压缩格式；新增格式须补表，未补的仍返回 `''` 由调用方兜底。
 5. `getMimeTypeFromExtension` 名称保留在 `Formatting.ts` 作为转发层，避免 5 处调用点迁移；映射源唯一在 `FileType.ts`，后续新增类型只改一处。
+
+---
+
+### 19.40 P3/A8：`isMobile()` 分支下沉第二批次（2026-11-16）
+
+#### 缺口
+
+1. `is_mobile_branch` 在 §19.27 后剩 5 处：`PathUtil` 存储布局、`main.ts` 启动收尾、`useWsEventHandler` 会话/来电，以及 `usePlatform.ts` 的 `useIsMobile` / `mobileOnlyAsyncComponent` 两处判定器本体。
+2. 前 3 处平台差异实现混在共享代码：移动端存储布局、eruda 与首屏完成信号、旧来电与 token 过期处理，都没有可放置的移动端文件，桌面产物与移动产物靠运行时 `if` 分流。
+3. 不能改用构建期 alias 拆分：`?platform=mobile` / `localStorage` 的运行时覆盖契约（§19.13 记录的阻塞点）会在构建期被固化，浏览器 dev 与 E2E 的移动走查随即失效。
+
+#### 判据
+
+| 场景 | 数据来源 | 断言要点 |
+| :--- | :--- | :--- |
+| 桌面存储布局 | `registerStorageLayout(false)` 后的 `getStorageLayout()` | `downloadBaseDir = Resource`、`cacheBaseDir = AppCache`、3 个作用域候选（AppData / AppCache / Resource） |
+| 移动存储布局 | `registerStorageLayout(true)` | `downloadBaseDir = cacheBaseDir = AppData`、仅 1 个候选 |
+| 未注册默认值 | 全新模块状态 | 默认桌面实现，`PathUtil` 单测与浏览器环境行为不变 |
+| 切回桌面 | `registerStorageLayout(true)` → `(false)` | 布局恢复 AppCache / Resource / 3 候选 |
+| 启动收尾（已加载） | `document.readyState = 'complete'` | 立即 `invokeSilently('set_complete', { task: 'frontend' })` |
+| 启动收尾（加载中） | `readyState = 'loading'` | 仅绑定一次 `DOMContentLoaded`，事件触发后才发 `set_complete` |
+| 非 Tauri 环境 | `hasTauriRuntime()` 为假 | 不调用 `invokeSilently` |
+| 调试控制台 | dev / production | dev 下 `eruda.init()` 被调用；production 下不加载 eruda |
+| 旧来电（桌面） | `handleLegacyVideoCall(payload, callHandler)` | `isVideo` 映射 `CallTypeEnum.VIDEO` / `AUDIO` 并转发 `handleVideoCall` |
+| 旧来电（移动） | 同上 | 空实现，不触发 `handleVideoCall` |
+| 远程登录过期（桌面） | `handleRemoteLoginExpired` | home 窗口聚焦 + `sendWindowPayload('login', …)` + `logout()`；`remoteIp` 缺省填空「未知IP」 |
+| 远程登录过期（移动） | 同上 | `logout()` → `onLoggedOut()` → 跳 `/mobile/login` → 弹「登录失效」 |
+| 登出失败 | `logout()` 抛错 | 异常被吞并记日志，不弹窗、不跳转 |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/platform/contracts.ts` | 新增 `StorageLayout`、`PlatformBoot`、`SessionEventStrategy`、`RemoteLoginExpiredContext` 等纯类型契约 |
+| `src/platform/storageLayout.ts` | 注册表：`registerStorageLayout(mobile)` / `getStorageLayout()`，未注册时惰性创建桌面布局 |
+| `src/platform/platformBoot.ts` | 注册表：`registerPlatformBoot(mobile)` / `getPlatformBoot()` |
+| `src/platform/sessionEventStrategy.ts` | 注册表：`registerSessionEventStrategy(mobile)` / `getSessionEventStrategy()` |
+| `src/platform/desktop/storageLayout.ts` | 桌面存储布局惰性工厂 `createDesktopStorageLayout()`（Resource / AppCache / 3 候选） |
+| `src/platform/desktop/platformBoot.ts` | 桌面启动收尾空实现 |
+| `src/platform/desktop/sessionEventStrategy.ts` | 桌面策略：旧来电映射调用类型；过期时 home 聚焦 + 登录窗 payload + 登出 |
+| `src/mobile/platform/storageLayout.ts` | 移动存储布局惰性工厂 `createMobileStorageLayout()`（AppData 单候选） |
+| `src/mobile/platform/platformBoot.ts` | 移动启动收尾：dev 下动态 `import('eruda')`；`readyState` 分流后 `set_complete` |
+| `src/mobile/platform/sessionEventStrategy.ts` | 移动策略：旧来电空实现；过期时登出 + 通知 + `/mobile/login` + Vant 弹窗（router / vant / 样式均动态 import） |
+| `src/utils/PathUtil.ts` | 删除本地 `StorageLayout` 与 `resolveStorageLayout()`，5 个消费者改读 `getStorageLayout()` |
+| `src/main.ts` | 组合根快照 `isMobilePlatform` 后调用三个 `register*`；删除 eruda 与 `setup()` 分支，改调 `getPlatformBoot().afterPlatformInitialize()` |
+| `src/composables/app/useWsEventHandler.ts` | 删除平台快照与 `WebviewWindow` / `CallTypeEnum` 依赖，旧来电与 `TOKEN_EXPIRED` 改走 `getSessionEventStrategy()` |
+| `src/platform/__tests__/runtime.test.ts` | 新增注册表 3 条用例（桌面 / 移动 / 切回桌面） |
+| `src/platform/__tests__/sessionEventStrategy.test.ts` | 新增注册表 3 条 + 桌面策略 3 条用例 |
+| `src/mobile/platform/__tests__/storageLayout.test.ts` | 改为工厂实例断言，2 条用例 |
+| `src/mobile/platform/__tests__/platformBoot.test.ts` | 新增 5 条移动 boot 用例 + 2 条注册表用例 |
+| `src/mobile/platform/__tests__/sessionEventStrategy.test.ts` | 新增 3 条用例（旧来电 noop、登出 + 跳转 + 弹窗、异常吞掉） |
+| `src/utils/__tests__/PathUtil.test.ts` | 移除 `PlatformConstants` mock，改 `registerStorageLayout(false/true)` 驱动，37 条用例 |
+| `src/utils/__tests__/TempFileManager.test.ts` | 移除 `isMobileMock`，改 `registerStorageLayout(false/true)` |
+| `meta/ratchet-baseline.json` | `is_mobile_branch` 5 → 3（`--update` 收紧） |
+| `docs/P3-isMobile下沉立项方案-2026-11-16.md` | 状态改为已实施，回填实际模块划分与实施结果 |
+| `docs/UI优化方案-v2.4.md` | 新增本节；第 11 行章节构成追加 §19.40 |
+
+未改动 `usePlatform.ts` 的两处判定器本体与 20 处 `useIsMobile()` / 3 处 `mobileOnlyAsyncComponent()` 消费点：它们属于 R2「移动端独立实现」范畴，清零需双端组件级拆分，另行立项。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 全量单测 | `pnpm test:run` | `Test Files 1065 passed (1065)` / `Tests 11741 passed (11741)`，exit 0 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 文件体量 | `node scripts/check-file-size.mjs` | `OK — oversized file count 120 (baseline 120)` / `all 1530 source files within size constraints` |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平新基线，`is_mobile_branch: 3 (baseline 3)` |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | `35 个路径引用` 全部存在 / `current undocumented 573（baseline 587）`，无回退 |
+| 移动端 CSS | `pnpm check:mobile-css` | `OK — 169 个文件`：视口高度均有 dvh 覆盖、模糊均带 `-webkit-` 前缀 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | `156 (baseline 156)` / 所有裸请求均在白名单内（xhr-bypass 0 命中）/ 无漂移、无未登记幻影 |
+| Lint / i18n | `pnpm check` | exit 0（i18n 完整性通过、令牌使用率 100%、dead-handlers / icon-button-aria / svg-aria 通过、capabilities-sync 7 个 capability 一致） |
+
+#### 变异自证（3/3 变红后已还原）
+
+1. 桌面 `createDesktopStorageLayout().cacheBaseDir` 改为 `AppData` → `runtime.test.ts` 与 `PathUtil.test.ts` 同时变红。
+2. 清空 `mobilePlatformBoot.afterPlatformInitialize` 实现 → `platformBoot.test.ts` 变红（等价证明移动 boot 接线被覆盖）。
+3. 移动 `handleLegacyVideoCall` 改为转发 `handleVideoCall` → 移动策略用例变红。
+
+#### 已知边界
+
+1. 三个注册表是模块级可变状态：注册必须先于首次读取。`main.ts` 中三个 `register*` 紧跟平台初始化，读取侧另有桌面默认兜底，未注册不会崩，但会按桌面行为运行。
+2. 桌面产物静态包含移动实现（`storageLayout` 为常量；`platformBoot` / `sessionEventStrategy` 对 eruda / vant / router 均用动态 import，桌面侧不产生实际运行时代价）。若后续需要彻底剥离，另立「双端入口文件」专项。
+3. `main.ts` 保留 1 次 `isMobile()` 作为组合根快照，故 ratchet 终值为 3，不为 0。
+4. 存储布局改为惰性工厂而非模块常量：模块加载期读取 `BaseDirectory` 会让部分对 `@tauri-apps/plugin-fs` 做局部 mock 的测试在收集阶段失败；工厂保证「用到才求值」。
+5. 运行时覆盖（`?platform=mobile`）与真实 Tauri 移动构建仍存在已知差异：浏览器 E2E 会走移动布局但无真实文件写入，E2E 不校验落盘目录。
 
 ---
 
