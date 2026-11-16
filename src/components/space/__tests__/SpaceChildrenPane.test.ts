@@ -1,6 +1,6 @@
-import { flushPromises, mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, ref } from 'vue'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent, h, reactive, ref } from 'vue'
 import { useAriaLive } from '@/composables/common/useAriaLive'
 import { buildSpaceRoute } from '@/router/spaceNavigation'
 import SpaceChildrenPane from '../SpaceChildrenPane.vue'
@@ -51,6 +51,10 @@ const {
   refreshErrorRef: { current: null as null | { value: string | null } }
 }))
 
+// 每个用例结束后卸载组件：路由 mock 是跨用例共享的 reactive 对象，
+// 残留的 watch 会在下一个用例重置路由时触发额外 load，污染调用次数断言。
+enableAutoUnmount(afterEach)
+
 const spacesRef = ref([
   {
     spaceId: '!space-1:server',
@@ -71,15 +75,20 @@ const membersRef = ref<Array<{ space_id: string; user_id: string; membership?: s
   { space_id: '!space-1:server', user_id: '@alice:server', membership: 'join' }
 ])
 
-const roomsRef = ref<Array<{ roomId: string; name: string; avatarUrl?: string }>>([
-  { roomId: '!room-1:server', name: 'General' }
+const roomsRef = ref<Array<{ roomId: string; name: string; avatarUrl?: string; suggested?: boolean }>>([
+  { roomId: '!room-1:server', name: 'General', suggested: false }
 ])
 
-// 路由参数可变 mock
-const routeRef = ref({ params: { spaceId: '!space-1:server' }, path: '/space/!space-1:server', query: {} })
+// 路由 mock：useRoute() 返回稳定的 reactive 对象（真实 vue-router 的 route 也是响应式代理）。
+// 返回 routeRef.value 普通对象快照会让 computed(spaceId) 失去响应式依赖，watch 永不触发。
+const routeRef = reactive({
+  params: { spaceId: '!space-1:server' as string },
+  path: '/space/!space-1:server',
+  query: {} as Record<string, string>
+})
 
 vi.mock('vue-router', () => ({
-  useRoute: () => routeRef.value,
+  useRoute: () => routeRef,
   useRouter: () => ({
     push: routerPushMock,
     back: routerBackMock
@@ -162,7 +171,8 @@ vi.mock('@/stores/domains/chat/room', () => ({
   })
 }))
 
-// Stub SpaceDetailsPane 以隔离测试 SpaceChildrenPane 的逻辑
+// Stub SpaceDetailsPane 以隔离测试 SpaceChildrenPane 的逻辑。
+// 所有交互都通过 emit 真实事件触发，用例不再直调组件内部 handler。
 vi.mock('@/components/workbench/SpaceDetailsPane.vue', () => ({
   default: defineComponent({
     name: 'SpaceDetailsPaneStub',
@@ -173,6 +183,9 @@ vi.mock('@/components/workbench/SpaceDetailsPane.vue', () => ({
       membersLoading: { type: Boolean, default: false },
       roomsLoading: { type: Boolean, default: false },
       canManage: { type: Boolean, default: false },
+      isMember: { type: Boolean, default: true },
+      joinRule: { type: String, default: undefined },
+      subView: { type: String, default: 'overview' },
       manageMode: { type: String, default: null },
       manageSubmitting: { type: Boolean, default: false },
       inviteUserId: { type: String, default: '' },
@@ -203,38 +216,56 @@ vi.mock('@/components/workbench/SpaceDetailsPane.vue', () => ({
       'selectSpace'
     ],
     setup(_, { emit }) {
+      const button = (test: string, onClick: () => void) => h('button', { 'data-test': test, onClick }, test)
       return () =>
         h('div', { 'data-test': 'space-details-stub' }, [
-          h('button', { onClick: () => emit('enterSpace') }, 'enter'),
-          h('button', { onClick: () => emit('enterRoom', '!room-1:server') }, 'room'),
-          h('button', { onClick: () => emit('leaveSpace') }, 'leave'),
-          h('button', { onClick: () => emit('deleteSpace') }, 'delete'),
-          h(
-            'button',
-            {
-              'data-test': 'stub-select-space',
-              onClick: () =>
-                emit('selectSpace', { spaceId: '!space-2:server', name: 'Design Team', memberCount: 0, childCount: 0 })
-            },
-            'select'
+          button('stub-enter-space', () => emit('enterSpace')),
+          button('stub-enter-room', () => emit('enterRoom', '!room-1:server')),
+          button('stub-leave-space', () => emit('leaveSpace')),
+          button('stub-delete-space', () => emit('deleteSpace')),
+          button('stub-select-space', () =>
+            emit('selectSpace', { spaceId: '!space-2:server', name: 'Design Team', memberCount: 0, childCount: 0 })
           ),
-          h(
-            'button',
-            { 'data-test': 'stub-member-click', onClick: () => emit('memberClick', '@alice:server') },
-            'member'
-          )
+          button('stub-select-empty-space', () =>
+            emit('selectSpace', { spaceId: '', name: '', memberCount: 0, childCount: 0 })
+          ),
+          button('stub-member-click', () => emit('memberClick', '@alice:server')),
+          button('stub-member-click-empty', () => emit('memberClick', '')),
+          button('stub-invite-member', () => emit('inviteMember')),
+          button('stub-add-room', () => emit('addRoom')),
+          button('stub-join-space', () => emit('joinSpace')),
+          button('stub-save-empty-name', () => emit('saveSpaceName', '')),
+          button('stub-save-same-name', () => emit('saveSpaceName', 'Design Team')),
+          button('stub-save-name', () => emit('saveSpaceName', 'Renamed Space')),
+          button('stub-save-same-topic', () => emit('saveSpaceTopic', 'Design collaboration space')),
+          button('stub-save-topic', () => emit('saveSpaceTopic', 'Updated Topic')),
+          button('stub-remove-room', () => emit('removeRoom', '!room-1:server')),
+          button('stub-close-manage', () => emit('closeManagePane')),
+          button('stub-submit-manage', () => emit('submitManagePane')),
+          button('stub-set-subview', () => emit('update:subView', 'members')),
+          button('stub-set-invite-user', () => emit('update:inviteUserId', '@alice:server')),
+          button('stub-clear-invite-user', () => emit('update:inviteUserId', '')),
+          button('stub-set-add-room', () => emit('update:addRoomId', '!child:server')),
+          button('stub-clear-add-room', () => emit('update:addRoomId', '')),
+          button('stub-set-suggested', () => emit('update:addRoomSuggested', true))
         ])
     }
   })
 }))
 
+const detailsStub = (wrapper: ReturnType<typeof mount>) => wrapper.findComponent({ name: 'SpaceDetailsPaneStub' })
+
 describe('SpaceChildrenPane', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    routeRef.value = { params: { spaceId: '!space-1:server' }, path: '/space/!space-1:server', query: {} }
+    Object.assign(routeRef, {
+      params: { spaceId: '!space-1:server' },
+      path: '/space/!space-1:server',
+      query: {}
+    })
     selectedSpaceDetailRef.value = { name: 'Design Team', topic: 'Design collaboration space' }
     membersRef.value = [{ space_id: '!space-1:server', user_id: '@alice:server', membership: 'join' }]
-    roomsRef.value = [{ roomId: '!room-1:server', name: 'General' }]
+    roomsRef.value = [{ roomId: '!room-1:server', name: 'General', suggested: false }]
     roomHasTagMock.mockReturnValue(false)
     canManageSpaceMock.mockReturnValue(true)
     loadSpacesMock.mockResolvedValue(undefined)
@@ -268,7 +299,8 @@ describe('SpaceChildrenPane', () => {
   })
 
   it('does not load when spaceId is empty', async () => {
-    routeRef.value = { params: { spaceId: '' }, path: '/space', query: {} }
+    routeRef.params = { spaceId: '' }
+    routeRef.path = '/space'
     loadSelectedSpaceMock.mockClear()
     loadSpaceMembersMock.mockClear()
     loadSpaceRoomsMock.mockClear()
@@ -281,24 +313,24 @@ describe('SpaceChildrenPane', () => {
     expect(loadSpaceRoomsMock).not.toHaveBeenCalled()
   })
 
-  it('enters space by calling enterSpace from useEnterChat', async () => {
+  it('enters space when the details pane emits enter-space', async () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleEnterChat: () => Promise<void> }
     enterSpaceMock.mockClear()
-    await vm.handleEnterChat()
+    await wrapper.get('[data-test="stub-enter-space"]').trigger('click')
+    await flushPromises()
 
     expect(enterSpaceMock).toHaveBeenCalledWith('!space-1:server')
   })
 
-  it('enters child room by calling enterChat from useEnterChat', async () => {
+  it('enters child room when the details pane emits enter-room', async () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleEnterRoom: (roomId: string) => Promise<void> }
     enterChatMock.mockClear()
-    await vm.handleEnterRoom('!room-1:server')
+    await wrapper.get('[data-test="stub-enter-room"]').trigger('click')
+    await flushPromises()
 
     expect(enterChatMock).toHaveBeenCalledWith('!room-1:server', 'room')
   })
@@ -311,6 +343,7 @@ describe('SpaceChildrenPane', () => {
     routerPushMock.mockClear()
 
     await wrapper.get('[data-test="stub-select-space"]').trigger('click')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledWith(buildSpaceRoute('!space-2:server'))
   })
@@ -333,8 +366,8 @@ describe('SpaceChildrenPane', () => {
     await flushPromises()
     routerPushMock.mockClear()
 
-    const vm = wrapper.vm as unknown as { handleSelectSpace: (space: { spaceId: string }) => void }
-    vm.handleSelectSpace({ spaceId: '' })
+    await wrapper.get('[data-test="stub-select-empty-space"]').trigger('click')
+    await flushPromises()
 
     expect(routerPushMock).not.toHaveBeenCalled()
   })
@@ -345,6 +378,7 @@ describe('SpaceChildrenPane', () => {
     routerPushMock.mockClear()
 
     await wrapper.get('[data-test="stub-member-click"]').trigger('click')
+    await flushPromises()
 
     expect(routerPushMock).toHaveBeenCalledWith({ path: `/friend/${encodeURIComponent('@alice:server')}` })
   })
@@ -354,8 +388,8 @@ describe('SpaceChildrenPane', () => {
     await flushPromises()
     routerPushMock.mockClear()
 
-    const vm = wrapper.vm as unknown as { handleMemberClick: (id: string) => void }
-    vm.handleMemberClick('')
+    await wrapper.get('[data-test="stub-member-click-empty"]').trigger('click')
+    await flushPromises()
 
     expect(routerPushMock).not.toHaveBeenCalled()
   })
@@ -364,24 +398,21 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as {
-      inviteForm: { userId: string }
-      openInviteSpaceMember: () => void
-      submitManagePane: () => Promise<void>
-    }
-
-    vm.openInviteSpaceMember()
-    vm.inviteForm.userId = ''
-    await vm.submitManagePane()
+    await wrapper.get('[data-test="stub-invite-member"]').trigger('click')
+    await wrapper.get('[data-test="stub-clear-invite-user"]').trigger('click')
+    await wrapper.get('[data-test="stub-submit-manage"]').trigger('click')
+    await flushPromises()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.invite_user_required', 'warning')
 
-    vm.inviteForm.userId = '@alice:server'
+    await wrapper.get('[data-test="stub-set-invite-user"]').trigger('click')
     inviteSpaceMemberMock.mockResolvedValueOnce(false)
-    await vm.submitManagePane()
+    await wrapper.get('[data-test="stub-submit-manage"]').trigger('click')
+    await flushPromises()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.invite_failed', 'error')
 
     inviteSpaceMemberMock.mockResolvedValueOnce(true)
-    await vm.submitManagePane()
+    await wrapper.get('[data-test="stub-submit-manage"]').trigger('click')
+    await flushPromises()
     expect(inviteSpaceMemberMock).toHaveBeenCalledWith('@alice:server')
     expect(showFeedbackMock).toHaveBeenCalledWith('space.invite_success', 'success')
   })
@@ -390,25 +421,22 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as {
-      addRoomForm: { roomId: string; suggested: boolean }
-      openAddSpaceRoom: () => void
-      submitManagePane: () => Promise<void>
-    }
-
-    vm.openAddSpaceRoom()
-    vm.addRoomForm.roomId = ''
-    await vm.submitManagePane()
+    await wrapper.get('[data-test="stub-add-room"]').trigger('click')
+    await wrapper.get('[data-test="stub-clear-add-room"]').trigger('click')
+    await wrapper.get('[data-test="stub-submit-manage"]').trigger('click')
+    await flushPromises()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.add_room_required', 'warning')
 
-    vm.addRoomForm.roomId = '!child:server'
-    vm.addRoomForm.suggested = true
+    await wrapper.get('[data-test="stub-set-add-room"]').trigger('click')
+    await wrapper.get('[data-test="stub-set-suggested"]').trigger('click')
     addRoomToSpaceMock.mockResolvedValueOnce(false)
-    await vm.submitManagePane()
+    await wrapper.get('[data-test="stub-submit-manage"]').trigger('click')
+    await flushPromises()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.add_room_failed', 'error')
 
     addRoomToSpaceMock.mockResolvedValueOnce(true)
-    await vm.submitManagePane()
+    await wrapper.get('[data-test="stub-submit-manage"]').trigger('click')
+    await flushPromises()
     expect(addRoomToSpaceMock).toHaveBeenCalledWith('!child:server', { suggested: true })
     expect(showFeedbackMock).toHaveBeenCalledWith('space.add_room_success', 'success')
   })
@@ -417,21 +445,21 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleSaveSpaceName: (newName: string) => Promise<void> }
-
     // 空名称直接返回
     updateSelectedSpaceMock.mockClear()
-    await vm.handleSaveSpaceName('')
+    await wrapper.get('[data-test="stub-save-empty-name"]').trigger('click')
+    await flushPromises()
     expect(updateSelectedSpaceMock).not.toHaveBeenCalled()
 
     // 与当前名称相同，不调用 update
-    updateSelectedSpaceMock.mockClear()
-    await vm.handleSaveSpaceName('Design Team')
+    await wrapper.get('[data-test="stub-save-same-name"]').trigger('click')
+    await flushPromises()
     expect(updateSelectedSpaceMock).not.toHaveBeenCalled()
 
     // 新名称：update 成功
     updateSelectedSpaceMock.mockResolvedValueOnce(true)
-    await vm.handleSaveSpaceName('Renamed Space')
+    await wrapper.get('[data-test="stub-save-name"]').trigger('click')
+    await flushPromises()
     expect(updateSelectedSpaceMock).toHaveBeenCalledWith({ name: 'Renamed Space' })
     expect(showFeedbackMock).toHaveBeenCalledWith('space.name_saved', 'success')
   })
@@ -440,16 +468,16 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleSaveSpaceTopic: (newTopic: string) => Promise<void> }
-
     // 与当前 topic 相同
     updateSelectedSpaceMock.mockClear()
-    await vm.handleSaveSpaceTopic('Design collaboration space')
+    await wrapper.get('[data-test="stub-save-same-topic"]').trigger('click')
+    await flushPromises()
     expect(updateSelectedSpaceMock).not.toHaveBeenCalled()
 
     // 新 topic：update 成功
     updateSelectedSpaceMock.mockResolvedValueOnce(true)
-    await vm.handleSaveSpaceTopic('Updated Topic')
+    await wrapper.get('[data-test="stub-save-topic"]').trigger('click')
+    await flushPromises()
     expect(updateSelectedSpaceMock).toHaveBeenCalledWith({ topic: 'Updated Topic' })
     expect(showFeedbackMock).toHaveBeenCalledWith('space.topic_saved', 'success')
   })
@@ -458,11 +486,10 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleLeaveSpace: () => void }
     leaveSpaceMock.mockClear()
     routerBackMock.mockClear()
 
-    await vm.handleLeaveSpace()
+    await wrapper.get('[data-test="stub-leave-space"]').trigger('click')
     await flushPromises()
 
     expect(leaveSpaceMock).toHaveBeenCalledWith('!space-1:server')
@@ -474,11 +501,10 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleDeleteSpace: () => void }
     deleteSpaceMock.mockClear()
     routerBackMock.mockClear()
 
-    await vm.handleDeleteSpace()
+    await wrapper.get('[data-test="stub-delete-space"]').trigger('click')
     await flushPromises()
 
     expect(deleteSpaceMock).toHaveBeenCalledWith('!space-1:server')
@@ -491,10 +517,10 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleDeleteSpace: () => void }
     deleteSpaceMock.mockClear()
 
-    await vm.handleDeleteSpace()
+    await wrapper.get('[data-test="stub-delete-space"]').trigger('click')
+    await flushPromises()
 
     expect(deleteSpaceMock).not.toHaveBeenCalled()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.delete_space_failed', 'error')
@@ -504,10 +530,9 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleRemoveSpaceRoom: (roomId: string) => void }
     removeRoomFromSpaceMock.mockClear()
 
-    await vm.handleRemoveSpaceRoom('!room-1:server')
+    await wrapper.get('[data-test="stub-remove-room"]').trigger('click')
     await flushPromises()
 
     expect(removeRoomFromSpaceMock).toHaveBeenCalledWith('!room-1:server')
@@ -518,14 +543,13 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleRemoveSpaceRoom: (roomId: string) => void }
     removeRoomFromSpaceMock.mockImplementationOnce(async () => {
       refreshErrorRef.current!.value = 'refresh boom'
       return true
     })
     showFeedbackMock.mockClear()
 
-    await vm.handleRemoveSpaceRoom('!room-1:server')
+    await wrapper.get('[data-test="stub-remove-room"]').trigger('click')
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('space.remove_room_success', 'success')
@@ -553,48 +577,35 @@ describe('SpaceChildrenPane', () => {
   it('opens and closes manage pane for invite', async () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
+    const stub = detailsStub(wrapper)
 
-    const vm = wrapper.vm as unknown as {
-      manageMode: string | null
-      openInviteSpaceMember: () => void
-      closeManagePane: () => void
-    }
+    await wrapper.get('[data-test="stub-invite-member"]').trigger('click')
+    expect(stub.props('manageMode')).toBe('invite')
 
-    vm.openInviteSpaceMember()
-    expect(vm.manageMode).toBe('invite')
-
-    vm.closeManagePane()
-    expect(vm.manageMode).toBeNull()
+    await wrapper.get('[data-test="stub-close-manage"]').trigger('click')
+    expect(stub.props('manageMode')).toBeNull()
   })
 
   it('opens and closes manage pane for add room', async () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
+    const stub = detailsStub(wrapper)
 
-    const vm = wrapper.vm as unknown as {
-      manageMode: string | null
-      openAddSpaceRoom: () => void
-      closeManagePane: () => void
-    }
+    await wrapper.get('[data-test="stub-add-room"]').trigger('click')
+    expect(stub.props('manageMode')).toBe('add-room')
 
-    vm.openAddSpaceRoom()
-    expect(vm.manageMode).toBe('add-room')
-
-    vm.closeManagePane()
-    expect(vm.manageMode).toBeNull()
+    await wrapper.get('[data-test="stub-close-manage"]').trigger('click')
+    expect(stub.props('manageMode')).toBeNull()
   })
 
   it('joinSpace CTA success only reloads data without calling joinSpace directly', async () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as {
-      handleJoinSpace: () => Promise<void>
-    }
     joinSpaceMock.mockClear()
     loadSpacesMock.mockClear()
     loadSelectedSpaceMock.mockClear()
-    await vm.handleJoinSpace()
+    await wrapper.get('[data-test="stub-join-space"]').trigger('click')
     await flushPromises()
 
     // join / knock 已由 TjgSpaceJoinCta 内部完成，壳层仅负责刷新
@@ -606,16 +617,22 @@ describe('SpaceChildrenPane', () => {
   it('subView resets to overview when spaceId changes', async () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
+    const stub = detailsStub(wrapper)
 
-    const vm = wrapper.vm as unknown as { subView: string }
-    // 通过 setup 暴露的 ref 在 vm 上是未解包的，这里仅验证路由变化后子视图重置
-    // 先模拟设置 subView 为非 overview（实际由 update:subView 事件触发）
-    // 此处通过直接修改 vm 上的属性验证 watch 逻辑
-    routeRef.value = { params: { spaceId: '!space-2:server' }, path: '/space/!space-2:server', query: {} }
+    expect(stub.props('subView')).toBe('overview')
+
+    // 先经真实事件把子视图切到非 overview
+    await wrapper.get('[data-test="stub-set-subview"]').trigger('click')
+    expect(stub.props('subView')).toBe('members')
+
+    // 切换空间：useRoute 返回 reactive 对象，spaceId computed 才能驱动 watch
+    loadSpaceRoomsMock.mockClear()
+    routeRef.params = { spaceId: '!space-2:server' }
+    routeRef.path = '/space/!space-2:server'
     await flushPromises()
 
-    // 切换空间后 subView 应回到 overview
-    expect(vm.subView).toBe('overview')
+    expect(stub.props('subView')).toBe('overview')
+    expect(loadSpaceRoomsMock).toHaveBeenCalledTimes(1)
   })
 
   it('does not open invite pane when canManage is false', async () => {
@@ -623,39 +640,38 @@ describe('SpaceChildrenPane', () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as {
-      manageMode: string | null
-      openInviteSpaceMember: () => void
-    }
+    await wrapper.get('[data-test="stub-invite-member"]').trigger('click')
 
-    vm.openInviteSpaceMember()
-    expect(vm.manageMode).toBeNull()
+    expect(detailsStub(wrapper).props('manageMode')).toBeNull()
   })
 
   it('toggles suggested flag via useSpaceRooms and shows success feedback', async () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleToggleSuggested: (roomId: string, current: boolean) => Promise<void> }
     toggleSuggestedInSpaceMock.mockResolvedValueOnce(true)
     showFeedbackMock.mockClear()
 
-    await vm.handleToggleSuggested('!room-1:server', false)
+    // 真实入口：SpaceRoomGrid 的星标按钮 → toggle-suggested 事件
+    await wrapper.get('.space-room-grid__star-btn').trigger('click')
+    await flushPromises()
 
     expect(toggleSuggestedInSpaceMock).toHaveBeenCalledWith('!room-1:server', false)
     expect(showFeedbackMock).toHaveBeenCalledWith('space.mark_suggested_success', 'success')
   })
 
   it('shows failure feedback when toggleSuggested returns false', async () => {
+    roomsRef.value = [{ roomId: '!room-1:server', name: 'General', suggested: true }]
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
-    const vm = wrapper.vm as unknown as { handleToggleSuggested: (roomId: string, current: boolean) => Promise<void> }
     toggleSuggestedInSpaceMock.mockResolvedValueOnce(false)
     showFeedbackMock.mockClear()
 
-    await vm.handleToggleSuggested('!room-1:server', true)
+    await wrapper.get('.space-room-grid__star-btn').trigger('click')
+    await flushPromises()
 
+    expect(toggleSuggestedInSpaceMock).toHaveBeenCalledWith('!room-1:server', true)
     expect(showFeedbackMock).toHaveBeenCalledWith('space.toggle_suggested_failed', 'error')
   })
 })
