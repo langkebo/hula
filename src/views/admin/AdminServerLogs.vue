@@ -12,9 +12,13 @@
       {{ t('admin.logs.panel_notice') }}
     </n-alert>
 
-    <n-alert v-if="failedCount > 0" type="warning" class="my-12px" data-testid="partial-failed">
-      {{ t('admin.logs.partial_failed', { count: failedCount }) }}
-    </n-alert>
+    <PartialStateBanner
+      v-if="failedCount > 0"
+      class="my-12px"
+      data-testid="partial-failed"
+      :message="t('admin.logs.partial_failed', { count: failedCount })"
+      :retry-text="t('common.retry')"
+      @retry="loadPanel" />
 
     <n-spin :show="loading">
       <div class="panel-grid">
@@ -90,6 +94,7 @@ import { NAlert, NButton, NCard, NDescriptions, NDescriptionsItem, NPageHeader, 
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EmptyState from '@/components/common/EmptyState.vue'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { useAdminServerLogs } from '@/composables/admin'
 
 const { t } = useI18n()

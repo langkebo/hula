@@ -1,5 +1,12 @@
 <template>
   <div class="admin-dashboard">
+    <PartialStateBanner
+      v-if="partialFailures > 0"
+      class="mb-12px"
+      :message="t('admin.logs.partial_failed', { count: partialFailures })"
+      :retry-text="t('common.retry')"
+      @retry="loadData" />
+
     <n-spin :show="loading">
       <div class="stats-grid">
         <AdminStatCard
@@ -247,6 +254,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminStatCard from '@/components/admin/AdminStatCard.vue'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService, type ServerHealth, type ServerStats, type ServerVersion } from '@/services/matrix/admin'
 import { useAdminStore } from '@/stores/domains/admin/admin'
@@ -263,6 +271,8 @@ const stats = ref<ServerStats | null>(null)
 const serverHealth = ref<ServerHealth | null>(null)
 const serverVersion = ref<ServerVersion | null>(null)
 const loading = ref(false)
+/** 局部失败计数：任一子资源加载失败时主内容仍可用，仅提示部分数据缺失 */
+const partialFailures = ref(0)
 
 // 三态健康：接口失败/未加载（null）显示"未知"，而非误报"异常"
 const healthState = computed<'healthy' | 'unhealthy' | 'unknown'>(() => {
@@ -444,6 +454,9 @@ async function loadData() {
     if (statsResult.status === 'fulfilled') stats.value = statsResult.value
     if (healthResult.status === 'fulfilled') serverHealth.value = healthResult.value
     if (versionResult.status === 'fulfilled') serverVersion.value = versionResult.value
+    partialFailures.value = [statsResult, healthResult, versionResult].filter(
+      (result) => result.status === 'rejected'
+    ).length
   } catch (err) {
     // 仪表盘数据加载失败不阻断用户操作，但必须给出可见反馈
     logger.warn('Failed to load dashboard data:', err)

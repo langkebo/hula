@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -1374,7 +1374,7 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 功能与状态：
 
 - [x] 每个 L2/L3 能力入口在界面上不存在，且「服务能力」面板能查到原因。 —— 证据：§12.4 的 48 条接线条目已全部关闭；2026-11-15 把此前「有实现、有测试、无挂载点」的 `ServiceCapabilityPanel` 接入 `DiagnosticsPanel.vue`（设置 → 帮助/诊断），列出 14 个能力位的三态、缺失 key（如 `org.matrix.msc4354`）与重试/设置入口；`useServiceCapabilityItems.test.ts` 5 例 + `ServiceCapabilityPanel.test.ts` 6 例全过（详见 §19.7）。
-- [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）。2026-11-16 把「空态是否统一」固化为 `check-ratchet` 的 `handwritten_empty_state` 计数器：七批迁移后由 128 处 / 98 文件降至 **0 处 / 0 文件**，基线锁定 0（详见 §19.8）。本条仍保持未勾选，唯一缺口是四态中的 `partial`（部分数据可用）尚无统一件与逐页覆盖。
+- [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）；`partial` 于 2026-11-16 补齐统一件 `PartialStateBanner`（`role="status"` + `aria-live="polite"`、可重试、消费 `--tjg-*` token、10 例单测），并接入 `AdminServerLogs` 与 `AdminDashboard` 两处真实局部失败场景（详见 §19.10）。空态已由 `check-ratchet` 的 `handwritten_empty_state` 锁定 0（详见 §19.8）。本条仍保持未勾选：`partial` 目前覆盖 admin 两页，业务端（成员/好友/房间设置等）尚无独立的局部失败标记，需逐页补数据来源后再勾选。
 - [ ] 所有写操作失败后保留用户输入，并给出可执行的重试路径。 —— 需运行态（断网 / 后端 4xx）逐流程验证，见 §19.3。
 - [ ] 管理端每个新页面同时具备路由、菜单、空态、权限门控。 —— 空态与权限门控需连接后端账号才能实测，见 §19.3。
 
@@ -2246,6 +2246,49 @@ AI / 趋势模块（仅桌面，R2 不影响移动端）：
 未改动：`LoginBottomBar.vue` 的 `hover:bg-[--tjg-text-tertiary]30`（悬停底色）、`ManualLoginForm.vue` 的 `color-mix(... tertiary 20%)`（分隔线）、`AutoLoginForm.vue` / `ManualLoginForm.vue` 的 `tertiary` 按钮属性 —— 均非文本取色。
 
 验证：`npx vitest run`（10 files / 38 tests passed，含 `loginLayout`、`QRCode`、`ThirdPartyLogin`、`LoginHomeserverField`、`OidcCallback`、`useLoginFlow`）；`npx biome check`（8 个改动文件）无修复项；`pnpm check:ratchet` 全项与基线一致；`pnpm check:mobile-css` → `OK — 165 个文件`；`pnpm vue-tsc --noEmit --incremental` exit 0。
+
+---
+
+### 19.10 partial 态统一件与首批接入（2026-11-16）
+
+#### 缺口
+
+§13.11 的四态验收里，`loading` / `empty` / `error` 都有统一件（`EmptyState` / `ErrorState` / `MobileAsyncState`），唯独 `partial`（主内容可用、局部子资源失败）没有统一实现：`AdminServerLogs` 用一条 `n-alert` 单独拼装，`AdminDashboard` 的 `Promise.allSettled` 失败项则被直接吞掉，用户看不到「部分数据缺失」。
+
+#### 语义约定
+
+| 维度 | 约定 |
+| :--- | :--- |
+| 触发条件 | 主内容已可用，仅部分子资源（面板 / 指标 / 子列表）加载失败 |
+| 呈现 | 内容区上方的非遮挡提示条，不替换主内容、不整页报错 |
+| 无障碍 | `role="status"` + `aria-live="polite"`（不打断当前操作，区别于 error 的 assertive） |
+| 出口 | 提供重试按钮（`emit('retry')`），失败信息可携带子资源名 |
+| 视觉 | 只用 `--tjg-color-warning-*` / `--tjg-text-*` / `--tjg-radius-*` / `--tjg-motion-*`，不新增颜色字面量；`prefers-reduced-motion` 下关闭入场动画 |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/components/common/PartialStateBanner.vue` | 新增统一件：`message` / `detail` / `retryText` / `compact` 四个 props，`retry` 事件，1.5px 描边 SVG 图标（`--tjg-color-warning-700`），`role="status"` |
+| `src/components/common/__tests__/PartialStateBanner.test.ts` | 新增 10 例：文案、detail 有无、`role`/`aria-live`、重试按钮有无与事件、compact 开关、图标描边与 token |
+| `src/views/admin/AdminServerLogs.vue` | 原 `n-alert type="warning"` 局部失败提示替换为 `PartialStateBanner`（保留 `data-testid="partial-failed"`），重试动作复用 `loadPanel` |
+| `src/views/admin/AdminDashboard.vue` | 新增 `partialFailures` 计数（统计 `allSettled` 的 rejected 数量），顶部渲染 `PartialStateBanner`，重试动作复用 `loadData` |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 新增组件单测 | `pnpm vitest run src/components/common/__tests__/PartialStateBanner.test.ts` | 10 用例通过 |
+| 受影响页面回归 | `pnpm vitest run src/views/admin/__tests__/AdminServerLogs.test.ts` | 8 用例通过（含既有 `partial-failed` 断言） |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 硬编码 ratchet | `node scripts/check-ratchet.mjs` | 12 项全部与基线一致（`hardcoded_color 0/0`、`handwritten_empty_state 0/0`） |
+| Lint | `npx biome check`（4 个改动文件） | 无修复项 |
+
+#### 已知边界
+
+1. 首批只覆盖 admin 两页，因为这两处**已有**真实的局部失败信号；业务端（成员列表、好友列表、房间设置）目前把子资源失败并入整页 error，需要先把失败状态拆出来再接入，否则会造出假的 partial。
+2. 移动端不接：admin 在移动端按规定不产出（R2），移动端业务页仍走三态。
+3. `AdminDashboard` 暂无用例覆盖（既有测试目录无该页），本轮以 `vue-tsc` + 组件单测 + 人工路径为准；补页面级用例需先引入 admin service 的 mock 工厂。
 
 ---
 
