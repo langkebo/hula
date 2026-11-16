@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -1374,7 +1374,7 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 功能与状态：
 
 - [x] 每个 L2/L3 能力入口在界面上不存在，且「服务能力」面板能查到原因。 —— 证据：§12.4 的 48 条接线条目已全部关闭；2026-11-15 把此前「有实现、有测试、无挂载点」的 `ServiceCapabilityPanel` 接入 `DiagnosticsPanel.vue`（设置 → 帮助/诊断），列出 14 个能力位的三态、缺失 key（如 `org.matrix.msc4354`）与重试/设置入口；`useServiceCapabilityItems.test.ts` 5 例 + `ServiceCapabilityPanel.test.ts` 6 例全过（详见 §19.7）。
-- [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）；`partial` 于 2026-11-16 补齐统一件 `PartialStateBanner`（`role="status"` + `aria-live="polite"`、可重试、消费 `--tjg-*` token、10 例单测），第一批接入 `AdminServerLogs` / `AdminDashboard`（§19.10），第二批接入业务端 `FriendsSettings` / `StorageSettings`（§19.11），把「分组/好友申请读取失败」与「配额统计/告警/认证媒体读取失败」从伪空态改为显式 partial。空态已由 `check-ratchet` 的 `handwritten_empty_state` 锁定 0（详见 §19.8）。本条仍保持未勾选：房间成员、房间设置、消息列表等区块尚未逐个拆出局部失败信号，需逐页补数据来源后再勾选。
+- [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）；`partial` 于 2026-11-16 补齐统一件 `PartialStateBanner`（`role="status"` + `aria-live="polite"`、可重试、消费 `--tjg-*` token、10 例单测），第一批接入 `AdminServerLogs` / `AdminDashboard`（§19.10），第二批接入业务端 `FriendsSettings` / `StorageSettings`（§19.11），把「分组/好友申请读取失败」与「配额统计/告警/认证媒体读取失败」从伪空态改为显式 partial；第三批为 `AdminDashboard` 补页面级用例（§19.12），四态在 admin 三页已有自动化证据。空态已由 `check-ratchet` 的 `handwritten_empty_state` 锁定 0（详见 §19.8）。本条仍保持未勾选：房间成员、房间设置、消息列表等区块尚未逐个拆出局部失败信号，需逐页补数据来源后再勾选。
 - [ ] 所有写操作失败后保留用户输入，并给出可执行的重试路径。 —— 需运行态（断网 / 后端 4xx）逐流程验证，见 §19.3。
 - [ ] 管理端每个新页面同时具备路由、菜单、空态、权限门控。 —— 空态与权限门控需连接后端账号才能实测，见 §19.3。
 
@@ -2288,7 +2288,7 @@ AI / 趋势模块（仅桌面，R2 不影响移动端）：
 
 1. 首批只覆盖 admin 两页，因为这两处**已有**真实的局部失败信号；业务端（成员列表、好友列表、房间设置）目前把子资源失败并入整页 error，需要先把失败状态拆出来再接入，否则会造出假的 partial。第二批已在 `FriendsSettings` / `StorageSettings` 拆出信号并接入，见 §19.11。
 2. 移动端不接：admin 在移动端按规定不产出（R2），移动端业务页仍走三态。
-3. `AdminDashboard` 暂无用例覆盖（既有测试目录无该页），本轮以 `vue-tsc` + 组件单测 + 人工路径为准；补页面级用例需先引入 admin service 的 mock 工厂。
+3. `AdminDashboard` 首批未带页面级用例；已于 §19.12 补齐 admin service mock 工厂与 6 例页面测试，本边界关闭。
 
 ### 19.11 partial 态第二批：业务端伪空态收口（2026-11-16）
 
@@ -2333,6 +2333,50 @@ AI / 趋势模块（仅桌面，R2 不影响移动端）：
 1. 两个页面均属桌面设置窗口（`src/views/settingsWindow/`），移动端设置页不在本轮范围；R2 不受影响。
 2. 仅在**读取**路径引入 partial；写操作失败仍由既有 toast/`showFeedback` 承担，A2（写失败保留输入）仍需运行态验证。
 3. 房间成员、房间设置、消息列表等区块的失败仍并入整页 error 或静默降级，四态条目继续保持未勾选。
+
+### 19.12 AdminDashboard 页面级用例（2026-11-16）
+
+#### 缺口
+
+`AdminDashboard` 是首批接入 `PartialStateBanner` 的页面之一，但此前只有 `vue-tsc` 与人工路径验证，没有页面级用例。没有用例意味着三件事无法被门禁锁定：`isAdmin` 门控是否真的挡住请求、`Promise.allSettled` 的 rejected 计数是否驱动 partial、重试是否只补读而不夹带副作用。§19.10 已知边界 3 即此缺口。
+
+#### 用例设计
+
+测试以 `vi.hoisted` 构造 admin service mock 工厂，逐项控制三项只读子资源（`getServerStats` / `getServerHealth` / `getServerVersion`）的 fulfilled / rejected，其余依赖（store、反馈、错误处理、Naive UI）按最小桩替代。
+
+| # | 用例 | 断言要点 |
+| :--- | :--- | :--- |
+| 1 | 非管理员挂载 | 三个接口 0 调用，无 partial |
+| 2 | 加载期 | `NSpin` 展示态为 true，解决后转 false |
+| 3 | 全部成功 | 三接口各 1 次，无 partial，统计值与版本正常渲染 |
+| 4 | 部分失败 | 出现 `[data-testid="partial-state"]` 且文案取 `admin.logs.partial_failed`；成功项照常渲染；版本占位 `-` 且不回显旧值 |
+| 5 | 健康检查失败 | 健康态为 `admin.dashboard.unknown`，不误报 `unhealthy` |
+| 6 | 点击重试 | 三接口各 2 次（仅补读）、partial 消失、`showFeedback` 未被调用 |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/views/admin/__tests__/AdminDashboard.test.ts` | 新增：admin service mock 工厂 + 6 例页面级用例（门控、loading、全成功、partial、健康 unknown、重试） |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 页面用例 | `pnpm vitest run src/views/admin/__tests__/AdminDashboard.test.ts` | 1 文件 / 6 用例通过 |
+| 全量单测 | `pnpm test:run` | 1045 文件 / 11607 用例通过 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 硬编码 ratchet | `pnpm check:ratchet` | 12 项与基线一致（`is_mobile_branch 19`、`handwritten_empty_state 0`） |
+| Lint + i18n | `pnpm check` | biome 2887 文件无修复项；i18n 完整性、refs 0/0、token 使用率 100%、icon/svg aria、dead-handlers、capabilities-sync 全部通过 |
+| 文档路径 / 覆盖 | `pnpm check:doc-paths`、`pnpm check:doc-coverage` | 路径全部存在；573（基线 587，无回归） |
+| 移动端 CSS | `pnpm check:mobile-css` | 165 文件 OK |
+| SDK 边界 / 裸请求 | `pnpm check:sdk-boundary`、`pnpm quality:no-raw-fetch` | 156/156 无回归；裸请求全部在白名单 |
+
+#### 已知边界
+
+1. 用例只覆盖读取路径与 partial 计数，不涉及管理端写操作（配额、公告等）的失败保留输入，A2 仍需运行态验证。
+2. 移动端不接：admin 在移动端按规定不产出（R2）。
+3. 其余 admin 页面（用户、房间、举报等）仍无页面级四态用例，需按同一 mock 工厂模式逐页补。
 
 ---
 
