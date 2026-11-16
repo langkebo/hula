@@ -15,7 +15,7 @@ const { chatState, globalState } = vi.hoisted(() => ({
       hasLoadedOnce: boolean
       isLast: boolean
       isLoading: boolean
-      loadFailed?: '' | 'history' | 'initial'
+      loadFailed?: { scope: 'history' | 'initial'; reason: string } | null
     } | null,
     /** 首屏重试入口（ChatMessageList 的错误态按钮会调它） */
     resetAndRefreshCurrentRoomMessages: vi.fn(),
@@ -163,7 +163,7 @@ describe('ChatMessageList virtual scroller sizing', () => {
       hasLoadedOnce: true,
       isLast: false,
       isLoading: false,
-      loadFailed: 'initial'
+      loadFailed: { scope: 'initial', reason: 'network down' }
     }
     globalState.currentSessionRoomId = '!room:example.com'
 
@@ -180,7 +180,7 @@ describe('ChatMessageList virtual scroller sizing', () => {
   })
 
   it('没有 loadFailed 标记时仍走空态（不误报错误）', () => {
-    chatState.currentMessageOptions = { hasLoadedOnce: true, isLast: true, isLoading: false, loadFailed: '' }
+    chatState.currentMessageOptions = { hasLoadedOnce: true, isLast: true, isLoading: false, loadFailed: null }
     globalState.currentSessionRoomId = '!room:example.com'
 
     const wrapper = mount(ChatMessageList, {

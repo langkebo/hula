@@ -11,10 +11,21 @@ import { matrixRoomRealtimeService } from '@/services/matrix/room/RealtimeServic
 import type { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
+import type { MessageLoadFailure } from './message'
 import type { useSessionStore } from './session'
 import { type MessageType, pageSize } from './types'
 
 const logger = createLogger('ChatMessageLoading')
+
+/** 从异常里压出可留存的原因文本：服务端 errcode 优先，便于按网络 / 权限 / 服务端分级 */
+const describeLoadFailure = (err: unknown): string => {
+  if (err && typeof err === 'object') {
+    const { errcode, message } = err as { errcode?: unknown; message?: unknown }
+    if (typeof errcode === 'string' && errcode) return errcode
+    if (typeof message === 'string' && message) return message
+  }
+  return typeof err === 'string' && err ? err : 'unknown'
+}
 
 interface MessageLoadingDeps {
   globalStore: ReturnType<typeof useGlobalStore>
@@ -28,7 +39,7 @@ interface MessageLoadingDeps {
       isLoading: boolean
       cursor: string
       hasLoadedOnce?: boolean
-      loadFailed?: '' | 'history' | 'initial'
+      loadFailed?: MessageLoadFailure | null
     }
   >
   replyMapping: Record<string, Record<string, string[]>>
@@ -39,7 +50,7 @@ interface MessageLoadingDeps {
       isLoading: boolean
       cursor: string
       hasLoadedOnce?: boolean
-      loadFailed?: '' | 'history' | 'initial'
+      loadFailed?: MessageLoadFailure | null
     }
   }
   currentReplyMap: { value: Record<string, string[]> }
@@ -121,7 +132,7 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         cursor: result.cursor,
         hasLoadedOnce: true,
         // 成功即清空失败标记（service 只在「无任何可渲染事件」时抛错，走到这里说明拿到了内容）
-        loadFailed: ''
+        loadFailed: null
       }
       if (showLoadingBar) {
         finishLoading()
@@ -142,12 +153,12 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         cursor: fallbackCursor,
         hasLoadedOnce: true,
         // cursor 非空=上拉翻页失败（游标已保留，可原地重试）；为空=首屏失败（UI 显示错误态）
-        loadFailed: cursor ? 'history' : 'initial'
+        loadFailed: { scope: cursor ? 'history' : 'initial', reason: describeLoadFailure(err) }
       }
       // 翻页失败必须重新抛出：`useChatScrollManager.loadMore` 靠它置 `loadMoreError`，
       // 才能渲染「加载历史消息失败 + 重试」。吞掉异常会让翻页失败静默成「没有更多」。
       // 首屏失败**不抛**：调用方（changeRoom / 初始批量加载）依赖它自行收尾，
-      // 首屏的可见信号是 `loadFailed:'initial'`（UI 渲染错误态 + 重试）。
+      // 首屏的可见信号是 `loadFailed.scope='initial'`（UI 渲染错误态 + 重试）。
       if (cursor) {
         throw err
       }

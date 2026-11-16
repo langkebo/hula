@@ -158,7 +158,7 @@ const isMainViewReady = computed(() => {
  * 首屏加载失败：toast 一闪而过，列表又是空的 ⇒ 必须给一个持久、可重试的错误态。
  * 数据来源是 store 的 `loadFailed`（见 `chat/messageLoading.ts`）。
  */
-const initialLoadFailed = computed(() => chatStore.currentMessageOptions?.loadFailed === 'initial')
+const initialLoadFailed = computed(() => chatStore.currentMessageOptions?.loadFailed?.scope === 'initial')
 
 /** 重试首屏：清空当前房间消息后重新走一次首屏加载（失败会再次落回本错误态） */
 const handleRetryInitialLoad = (): void => {

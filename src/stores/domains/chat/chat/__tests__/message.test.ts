@@ -545,7 +545,7 @@ describe('ChatMessageStore', () => {
       isLast: false,
       isLoading: false,
       hasLoadedOnce: true,
-      loadFailed: 'history'
+      loadFailed: { scope: 'history', reason: 'network down' }
     })
   })
 
@@ -561,8 +561,21 @@ describe('ChatMessageStore', () => {
     expect(store.currentMessageOptions).toMatchObject({
       cursor: '',
       hasLoadedOnce: true,
-      loadFailed: 'initial'
+      loadFailed: { scope: 'initial', reason: 'network down' }
     })
+  })
+
+  it('prefers the server errcode as the failure reason', async () => {
+    const store = useChatStore()
+    store.currentMessageOptions = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(
+      Object.assign(new Error('forbidden'), { errcode: 'M_FORBIDDEN' })
+    )
+
+    await store.loadMore()
+
+    // reason 优先取 errcode，便于后续按网络 / 权限 / 服务端分级展示
+    expect(store.currentMessageOptions.loadFailed).toEqual({ scope: 'initial', reason: 'M_FORBIDDEN' })
   })
 
   it('clears the failure marker after a successful load', async () => {
@@ -572,7 +585,7 @@ describe('ChatMessageStore', () => {
       isLoading: false,
       cursor: '',
       hasLoadedOnce: true,
-      loadFailed: 'initial'
+      loadFailed: { scope: 'initial', reason: 'network down' }
     }
     vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce({
       messages: [],
@@ -582,7 +595,7 @@ describe('ChatMessageStore', () => {
 
     await store.loadMore()
 
-    expect(store.currentMessageOptions.loadFailed).toBe('')
+    expect(store.currentMessageOptions.loadFailed).toBeNull()
   })
 
   it('does not overwrite the new room state when the previous room load fails', async () => {
