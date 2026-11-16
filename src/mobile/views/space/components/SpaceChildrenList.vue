@@ -18,6 +18,18 @@
       </van-button>
     </div>
 
+    <div v-if="pendingAttachRoomId" class="children-attach" data-testid="space-room-attach" role="alert">
+      <span class="children-attach-text">{{ t('space.create_room_attach_failed') }}</span>
+      <van-button
+        size="mini"
+        type="warning"
+        :loading="mutating"
+        data-testid="space-room-attach-retry"
+        @click="handleAttachRetry">
+        {{ t('space.create_room_attach_retry') }}
+      </van-button>
+    </div>
+
     <MobileAsyncState :state="asyncState" test-id="space-rooms" :empty-text="t('space.no_rooms')" min-height="80px">
       <div class="children-list">
         <div
@@ -75,10 +87,12 @@ const router = useRouter()
 const logger = createLogger('SpaceChildrenList')
 const { resolve: resolveErrorText } = useMobileErrorText()
 
-const { rooms, loading, mutating, load, createRoomInSpace } = useSpaceRooms(() => props.spaceId)
+const { rooms, loading, mutating, load, createRoomInSpace, addRoom } = useSpaceRooms(() => props.spaceId)
 
 const showCreate = ref(false)
 const roomName = ref('')
+/** 房间已建、未入空间的中间态：保留房间 ID 供一键重新加入 */
+const pendingAttachRoomId = ref('')
 /** 正在加入的子房间 ID，用于行内 loading 并阻止重复点击 */
 const joiningRoomId = ref('')
 
@@ -93,6 +107,7 @@ watch(
   async (id) => {
     showCreate.value = false
     roomName.value = ''
+    pendingAttachRoomId.value = ''
     if (!id) return
     await load()
   },
@@ -110,11 +125,21 @@ const handleCreate = async () => {
     showToast(t('space.create_room_failed'))
     return
   }
-  // 房间已建但未挂载：房间可用，按中间态提示，避免用户以为失败而重复创建
+  // 房间已建但未挂载：房间可用，按中间态提示并给出一键重新加入，避免用户以为失败而重复创建
   showToast(result.attached ? t('space.create_room_success') : t('space.create_room_attach_failed'))
+  pendingAttachRoomId.value = result.attached ? '' : result.roomId
   roomName.value = ''
   showCreate.value = false
   logger.info(`Child room created for space ${props.spaceId}: ${result.roomId}, attached=${result.attached}`)
+}
+
+/** 中间态重试：把已创建的房间重新挂载到当前空间 */
+const handleAttachRetry = async () => {
+  const roomId = pendingAttachRoomId.value
+  if (!roomId) return
+  const ok = await addRoom(roomId)
+  showToast(ok ? t('space.create_room_success') : t('space.add_room_failed'))
+  if (ok) pendingAttachRoomId.value = ''
 }
 
 const openRoom = async (room: SpaceChildRoom) => {
@@ -164,6 +189,20 @@ const openRoom = async (room: SpaceChildRoom) => {
   padding: 8px;
   border-radius: var(--tjg-radius-md, 8px);
   background: var(--tjg-glass-row-bg);
+}
+
+.children-attach {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: var(--tjg-radius-md, 8px);
+  background: var(--tjg-color-warning-bg);
+  color: var(--tjg-color-warning-700);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .children-list {

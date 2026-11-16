@@ -4,12 +4,15 @@ import { defineComponent, h, ref } from 'vue'
 import SpaceCreateRoomPane from '../SpaceCreateRoomPane.vue'
 
 // === Mocks ===
-const { createRoomInSpaceMock, openMsgSessionMock, showFeedbackMock, formValidateMock } = vi.hoisted(() => ({
-  createRoomInSpaceMock: vi.fn(),
-  openMsgSessionMock: vi.fn(async () => undefined),
-  showFeedbackMock: vi.fn(),
-  formValidateMock: vi.fn().mockResolvedValue(true)
-}))
+const { createRoomInSpaceMock, addRoomMock, openMsgSessionMock, showFeedbackMock, formValidateMock } = vi.hoisted(
+  () => ({
+    createRoomInSpaceMock: vi.fn(),
+    addRoomMock: vi.fn(),
+    openMsgSessionMock: vi.fn(async () => undefined),
+    showFeedbackMock: vi.fn(),
+    formValidateMock: vi.fn().mockResolvedValue(true)
+  })
+)
 
 // createError 必须在 vi.hoisted 外部声明（ref 在 hoisting 阶段不可用）
 const createErrorRef = ref('')
@@ -27,6 +30,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 vi.mock('@/composables/space/useSpaceRooms', () => ({
   useSpaceRooms: () => ({
     createRoomInSpace: createRoomInSpaceMock,
+    addRoom: addRoomMock,
     error: createErrorRef
   })
 }))
@@ -141,6 +145,7 @@ describe('SpaceCreateRoomPane', () => {
     createErrorRef.value = ''
     formValidateMock.mockResolvedValue(true)
     createRoomInSpaceMock.mockResolvedValue({ roomId: '!new-room:server', attached: true })
+    addRoomMock.mockResolvedValue(true)
     openMsgSessionMock.mockResolvedValue(undefined)
   })
 
@@ -229,8 +234,8 @@ describe('SpaceCreateRoomPane', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('space.create_room_failed', 'error')
   })
 
-  // (j) 房间已建但未挂载：中间态提示 warning，仍 emit created 并跳转
-  it('shows attach-failed warning but still emits created when the room was created without mounting', async () => {
+  // (j) 房间已建但未挂载：留在抽屉内给出一键重新加入，不跳转、不按失败处理
+  it('keeps the pane open with a retry action when the room was created without mounting', async () => {
     createRoomInSpaceMock.mockResolvedValue({ roomId: '!new-room:server', attached: false })
     const wrapper = mountPane()
     await setFormData(wrapper, 'My Room')
@@ -240,7 +245,47 @@ describe('SpaceCreateRoomPane', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('space.create_room_attach_failed', 'warning')
     expect(showFeedbackMock).not.toHaveBeenCalledWith('space.create_room_failed', 'error')
     expect(wrapper.emitted('created')).toEqual([['!new-room:server']])
+    // 房间已建：停在抽屉里提供重试入口，而不是让用户以为完成或失败
+    expect(wrapper.emitted('update:show')).toBeUndefined()
+    expect(openMsgSessionMock).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="space-room-attach-retry"]').exists()).toBe(true)
+  })
+
+  // (k) 中间态重试成功：重新挂载后关闭抽屉并跳转新房间
+  it('re-attaches the pending room and finishes the flow when retry succeeds', async () => {
+    createRoomInSpaceMock.mockResolvedValue({ roomId: '!new-room:server', attached: false })
+    addRoomMock.mockResolvedValue(true)
+    const wrapper = mountPane()
+    await setFormData(wrapper, 'My Room')
+    await wrapper.find('button.n-button--primary').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="space-room-attach-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(addRoomMock).toHaveBeenCalledWith('!new-room:server', { suggested: false })
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.create_room_success', 'success')
+    expect(wrapper.emitted('update:show')).toEqual([[false]])
     expect(openMsgSessionMock).toHaveBeenCalledWith('!new-room:server')
+    expect(wrapper.find('[data-testid="space-room-attach-retry"]').exists()).toBe(false)
+  })
+
+  // (l) 中间态重试失败：给出失败提示并保留重试入口
+  it('keeps the retry action available when re-attaching fails', async () => {
+    createRoomInSpaceMock.mockResolvedValue({ roomId: '!new-room:server', attached: false })
+    addRoomMock.mockResolvedValue(false)
+    const wrapper = mountPane()
+    await setFormData(wrapper, 'My Room')
+    await wrapper.find('button.n-button--primary').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="space-room-attach-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.add_room_failed', 'error')
+    expect(wrapper.emitted('update:show')).toBeUndefined()
+    expect(openMsgSessionMock).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="space-room-attach-retry"]').exists()).toBe(true)
   })
 
   // (h) 表单校验失败不提交

@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3594,6 +3594,55 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 2. 挂载失败不刷新列表。若失败实为超时但服务端已写入 child，列表会暂时缺少该房间，需手动刷新；本批不做「超时后探测」。
 3. `attached` 只描述本次 `addChildToSpace` 调用结果，不代表空间状态最终一致。
 4. 桌面与移动端使用同一文案，未做端侧差异化。
+
+---
+
+### 19.37 P0-17：空间建房中间态提供「重新加入空间」一键动作（2026-11-16，收口 §19.36 已知边界 1）
+
+#### 缺口
+
+§19.36 把「房间已建、未入空间」从创建失败里拆了出来，但只做到「提示」：中间态仍立即关闭抽屉并跳转新房间，用户看到的是一句告警加一个已消失的抽屉，唯一出路是回空间列表手动添加房间。手动添加要求用户记住 roomId 或去房间列表里翻找，且与「再点一次创建」相比更容易误判为失败而重复建房。
+
+#### 判据
+
+- **中间态不再关闭抽屉**：桌面 `SpaceCreateRoomPane` 在 `attached=false` 时保留抽屉，在表单下方渲染 warning 行 + 「重新加入空间」按钮；仍 `emit('created', roomId)` 让父级感知房间已建，但不跳转。
+- **复用既有动作，不新造 API**：重试直接调用 `useSpaceRooms.addRoom(roomId, { suggested })`（内部 `matrixSpaceService.addChildToSpace` + `refreshAfterMutation`），未在 composable 里新增并行入口，符合 R1。
+- **重试失败保留动作**：只出 `space.add_room_failed` 提示并保留重试行，不写 `error` / `refreshError` —— 房间仍存在，不能按创建失败处理，也不应把整页判为错误态。
+- **成功共用收尾**：首次成功与重试成功都走 `finishCreation(roomId)`（重置表单 → 关闭抽屉 → 跳转新房间），避免两条路径产生不同的收尾行为。
+- **关闭即清空中间态**：抽屉关闭时 `pendingAttachRoomId` 置空，防止下次打开残留上一间房的待挂载状态。
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/components/space/SpaceCreateRoomPane.vue` | 表单后新增中间态 warning 行 + `data-testid="space-room-attach-retry"` 按钮；新增 `pendingAttachRoomId` / `pendingSuggested` / `handleAttachRetry` / `finishCreation`；`attached=false` 不关闭不跳转，226 行 |
+| `src/mobile/views/space/components/SpaceChildrenList.vue` | 新建输入区下方新增中间态行 + 重试按钮（`data-testid="space-room-attach"`），`spaceId` 变化时清空中间态，275 行 |
+| `locales/{zh-CN,en}/space.json` | `create_room_attach_failed` 文案改为指向右侧按钮；新增 `create_room_attach_retry` |
+| `src/typings/i18n/**`、`src/typings/i18n.d.ts` | `pnpm gen:i18n` 重新生成（新键导致产物过期） |
+| `src/components/space/__tests__/SpaceCreateRoomPane.test.ts` | hoisted 新增 `addRoom` mock；中间态用例改为断言「不关闭 / 不跳转 / 有重试按钮」；新增重试成功收尾、重试失败保留动作两条，12 用例 |
+| `src/mobile/views/space/components/__tests__/SpaceChildrenList.test.ts` | 新建，3 用例：中间态出行与提示、重试成功行消失、重试失败行保留 |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 定向用例 | `pnpm vitest run src/components/space/__tests__/SpaceCreateRoomPane.test.ts src/mobile/views/space/components/__tests__/SpaceChildrenList.test.ts` | `Test Files 2 passed (2)` / `Tests 15 passed (15)`，exit 0 |
+| 变异自证 | 逐条注入后还原 | 3 条全部变红：① 桌面中间态行 `v-if` 置否 → retry 三条用例变红；② `handleAttachRetry` 跳过 `addRoom` 直接收尾 → 重试成功 / 重试失败用例变红；③ 移动端 `pendingAttachRoomId` 恒置空 → 移动 3 条用例全红 |
+| 全量单测 | `pnpm test:run` | `Test Files 1060 passed (1060)` / `Tests 11714 passed (11714)`，exit 0 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 文件体量 | `node scripts/check-file-size.mjs` | `OK — oversized file count 120 (baseline 120)` / `all 1520 source files within size constraints` |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`is_mobile_branch 5 (baseline 5)`、`as_unknown_as 0`、`zh_literal_rust 0`、`handwritten_empty_state 0` 等） |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 路径全部存在 / `OK — no regressions vs baseline` |
+| 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156) / 命中 3 条全在白名单 / 无漂移 |
+| Lint / i18n | `pnpm check` | exit 0（i18n 完整性、令牌使用率 100%、capabilities-sync 7 个 capability 一致） |
+
+#### 已知边界
+
+1. 重试不做「房间是否已在空间内」的探测，直接走 `addChildToSpace`（服务端为 upsert 语义，重复挂载安全）；若服务端语义变更，需要先查 `m.space.child`。
+2. 移动端重试不携带 `suggested`（移动端新建入口不暴露该开关），桌面端会沿用创建时勾选值。
+3. 用户主动关闭抽屉后中间态被清空，该房间只能回空间列表手动添加；本批不做「待挂载房间」的持久化。
+4. 挂载超时但服务端已写入时，重试会再写一次（幂等），列表刷新仍由 `refreshAfterMutation` 承担；本批不做超时探测。
 
 ---
 

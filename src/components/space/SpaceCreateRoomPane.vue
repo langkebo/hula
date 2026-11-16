@@ -32,6 +32,19 @@
         </n-form-item>
       </n-form>
 
+      <!-- 房间已建但未入空间：留在抽屉内给出一键重新加入，避免用户重新建房 -->
+      <div v-if="pendingAttachRoomId" class="space-create-room-pane__attach" role="alert">
+        <span class="space-create-room-pane__attach-text">{{ t('space.create_room_attach_failed') }}</span>
+        <n-button
+          type="warning"
+          size="small"
+          :loading="submitting"
+          data-testid="space-room-attach-retry"
+          @click="handleAttachRetry">
+          {{ t('space.create_room_attach_retry') }}
+        </n-button>
+      </div>
+
       <template #footer>
         <div class="space-create-room-pane__footer">
           <n-button tertiary @click="visible = false">{{ t('common.cancel') }}</n-button>
@@ -68,7 +81,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
-const { createRoomInSpace, error: createError } = useSpaceRooms(() => props.spaceId)
+const { createRoomInSpace, addRoom, error: createError } = useSpaceRooms(() => props.spaceId)
 
 const visible = computed({
   get: () => props.show,
@@ -77,6 +90,9 @@ const visible = computed({
 
 const formRef = ref<FormInst | null>(null)
 const submitting = ref(false)
+/** 房间已建、未入空间的中间态：保留房间 ID 供一键重新加入 */
+const pendingAttachRoomId = ref<string | null>(null)
+const pendingSuggested = ref(false)
 
 const formData = reactive({
   name: '',
@@ -98,10 +114,24 @@ const resetForm = () => {
   formData.suggested = false
 }
 
-// 关闭弹窗时重置表单，避免下次打开残留旧数据
+// 关闭弹窗时重置表单与中间态，避免下次打开残留旧数据
 watch(visible, (open) => {
-  if (!open) resetForm()
+  if (!open) {
+    resetForm()
+    pendingAttachRoomId.value = null
+  }
 })
+
+/** 收尾：关闭抽屉并跳转新房间（成功创建 / 重新加入成功共用） */
+const finishCreation = async (roomId: string) => {
+  resetForm()
+  visible.value = false
+  try {
+    await openMsgSessionByRoomId(roomId)
+  } catch (navErr) {
+    logger.warn('navigate to new room failed', navErr)
+  }
+}
 
 const handleSubmit = async () => {
   try {
@@ -110,6 +140,7 @@ const handleSubmit = async () => {
     return
   }
   submitting.value = true
+  pendingAttachRoomId.value = null
   try {
     const result = await createRoomInSpace({
       name: formData.name.trim(),
@@ -126,23 +157,42 @@ const handleSubmit = async () => {
       }
       return
     }
-    // 房间已建但未挂载：房间可用，但变更只完成一半，按中间态提示而不是创建失败
-    showFeedback(
-      result.attached ? t('space.create_room_success') : t('space.create_room_attach_failed'),
-      result.attached ? 'success' : 'warning'
-    )
     emit('created', result.roomId)
-    // Step 4：跳转到新房间
-    try {
-      await openMsgSessionByRoomId(result.roomId)
-    } catch (navErr) {
-      logger.warn('navigate to new room failed', navErr)
+    if (!result.attached) {
+      // 房间已建、未入空间：变更只完成一半。不关闭抽屉，给出「重新加入空间」一键动作，
+      // 避免用户按创建失败处理后重新建房产生重复房间。
+      pendingAttachRoomId.value = result.roomId
+      pendingSuggested.value = formData.suggested
+      showFeedback(t('space.create_room_attach_failed'), 'warning')
+      return
     }
-    resetForm()
-    visible.value = false
+    showFeedback(t('space.create_room_success'), 'success')
+    await finishCreation(result.roomId)
   } catch (err) {
     logger.error('create room pane submit failed', err)
     showFeedback(t('space.create_room_failed'), 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+/** 中间态重试：把已创建的房间重新挂载到当前空间 */
+const handleAttachRetry = async () => {
+  const roomId = pendingAttachRoomId.value
+  if (!roomId) return
+  submitting.value = true
+  try {
+    const ok = await addRoom(roomId, { suggested: pendingSuggested.value })
+    if (!ok) {
+      showFeedback(t('space.add_room_failed'), 'error')
+      return
+    }
+    pendingAttachRoomId.value = null
+    showFeedback(t('space.create_room_success'), 'success')
+    await finishCreation(roomId)
+  } catch (err) {
+    logger.error('attach retry failed', err)
+    showFeedback(t('space.add_room_failed'), 'error')
   } finally {
     submitting.value = false
   }
@@ -158,5 +208,19 @@ const handleSubmit = async () => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.space-create-room-pane__attach {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: var(--tjg-radius-md, 8px);
+  background: var(--tjg-color-warning-bg);
+  color: var(--tjg-color-warning-700);
+  font-size: 13px;
+  line-height: 1.4;
 }
 </style>
