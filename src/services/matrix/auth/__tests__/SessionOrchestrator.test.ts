@@ -186,11 +186,11 @@ describe('createSessionStorePort', () => {
     expect(port.matrix.isLoggedIn()).toBe(true)
   })
 
-  it('clearMembersMap 走 group store 的全量清理（含成员加载错误映射）', () => {
+  it('clearGroupStore 走 group store 的全量清理（含成员加载错误映射）', () => {
     const port = createSessionStorePort()
     groupStoreMock.clearAllData.mockClear()
 
-    port.group.clearMembersMap()
+    port.group.clearGroupStore()
 
     // 不再手删 membersMap：只删成员会留下按 roomId 累积的 loadErrors（幽灵 partial，§19.19）
     expect(groupStoreMock.clearAllData).toHaveBeenCalledTimes(1)

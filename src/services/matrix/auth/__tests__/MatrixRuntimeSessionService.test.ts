@@ -51,7 +51,7 @@ const mockPort = {
   },
   group: {
     clearGroupDetails: vi.fn(),
-    clearMembersMap: vi.fn(),
+    clearGroupStore: vi.fn(),
     updateUserPresence: vi.fn()
   },
   contact: {
@@ -241,7 +241,7 @@ describe('MatrixRuntimeSessionService', () => {
     mockPort.chat.getSessionListValue.mockReturnValue([{ roomId: '!room:example.com' }])
 
     mockPort.group.clearGroupDetails.mockReset()
-    mockPort.group.clearMembersMap.mockReset()
+    mockPort.group.clearGroupStore.mockReset()
     mockPort.group.updateUserPresence.mockReset()
 
     mockPort.contact.updateContactPresence.mockReset()

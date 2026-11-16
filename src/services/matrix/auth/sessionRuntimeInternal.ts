@@ -125,7 +125,7 @@ export interface SessionStorePort {
   }
   group: {
     clearGroupDetails(): void
-    clearMembersMap(): void
+    clearGroupStore(): void
   }
   global: {
     getCurrentSessionRoomId(): string | undefined

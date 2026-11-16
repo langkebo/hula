@@ -100,7 +100,7 @@ class MatrixRuntimeSessionService {
   }
 
   private clearMessageCache(): void {
-    this.port.group.clearMembersMap()
+    this.port.group.clearGroupStore()
     logger.debug('Message cache has been cleared')
   }
 

@@ -165,7 +165,7 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
     },
     group: {
       clearGroupDetails: vi.fn(),
-      clearMembersMap: vi.fn(),
+      clearGroupStore: vi.fn(),
       updateUserPresence: vi.fn()
     },
     contact: {
@@ -249,7 +249,7 @@ describe('SessionLogoutService.resetLocalSessionState', () => {
     await service.resetLocalSessionState()
 
     // 登出必须清群缓存：此前只有登录 bootstrap 清 membersMap，登出后旧账号成员仍留在内存
-    expect(host.port.group.clearMembersMap).toHaveBeenCalledTimes(1)
+    expect(host.port.group.clearGroupStore).toHaveBeenCalledTimes(1)
     expect(host.port.group.clearGroupDetails).toHaveBeenCalledTimes(1)
     // 消息缓存同理：此前登出只删 localStorage 分片，对内存里的 messageMap 一无所知
     expect(host.port.chat.clearMessages).toHaveBeenCalledTimes(1)

@@ -88,7 +88,7 @@ export class SessionLogoutService {
       // 消息缓存（messageMap / messageOptions / 排序键 / 回复映射 / 未读计数 / 撤回态）
       // 同样按账号作废：此前只在登录 bootstrap 删 localStorage 分片，登出后旧账号消息仍在内存。
       port.chat.clearMessages()
-      port.group.clearMembersMap()
+      port.group.clearGroupStore()
       port.group.clearGroupDetails()
       port.global.updateCurrentSessionRoomId('')
       // 位置/信标状态是模块级单例（含到期定时器与后台上报链）：登出必须停止并清空，

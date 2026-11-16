@@ -178,7 +178,7 @@ export function createSessionStorePort(): SessionStorePort {
       clearGroupDetails() {
         groupStore().groupDetails.length = 0
       },
-      clearMembersMap() {
+      clearGroupStore() {
         // 名字沿用 port 契约，但**行为**改为 group store 的全量清理：
         // `clearAllData()` 清 membersMap + groupInfoMap + memberLoadErrors 三套状态。
         // 只删 membersMap 会留下「幽灵 partial」—— 错误映射按 roomId 累积，

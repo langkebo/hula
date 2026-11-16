@@ -132,7 +132,7 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
     },
     group: {
       clearGroupDetails: vi.fn(),
-      clearMembersMap: vi.fn(),
+      clearGroupStore: vi.fn(),
       updateUserPresence: vi.fn()
     },
     contact: {

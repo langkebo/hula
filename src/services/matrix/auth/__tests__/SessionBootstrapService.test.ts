@@ -147,7 +147,7 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
     getCurrentSessionRoomId: vi.fn().mockReturnValue(undefined),
     updateCurrentSessionRoomId: vi.fn(),
     clearGroupDetails: vi.fn(),
-    clearMembersMap: vi.fn(),
+    clearGroupStore: vi.fn(),
     updateUserPresence: vi.fn(),
     updateContactPresence: vi.fn(),
     initEmojis: vi.fn().mockResolvedValue(undefined),
@@ -195,7 +195,7 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
     },
     group: {
       clearGroupDetails: mocks.clearGroupDetails,
-      clearMembersMap: mocks.clearMembersMap,
+      clearGroupStore: mocks.clearGroupStore,
       updateUserPresence: mocks.updateUserPresence
     },
     contact: {
