@@ -20,28 +20,67 @@ const EMOJIS_DIR = 'emojis'
 const AI_DIR = 'ai'
 
 /**
+ * 存储布局：平台差异的唯一决策点。
+ *
+ * 移动端只有应用私有数据目录（AppData）可写，桌面端下载目录为 Resource、
+ * 缓存目录为 AppCache，并按 AppData → AppCache → Resource 依次解析作用域路径。
+ * 运行时平台覆盖（`?platform=mobile` / localStorage）仍需生效，故每次调用重新求值。
+ */
+type StorageLayout = {
+  downloadBaseDir: BaseDirectory
+  resolveDownloadBaseDirPath: () => Promise<string>
+  cacheBaseDir: BaseDirectory
+  cacheBaseDirName: string
+  scopedBaseDirs: Array<{ baseDir: BaseDirectory; resolvePath: () => Promise<string> }>
+}
+
+const resolveStorageLayout = (): StorageLayout => {
+  if (isMobile()) {
+    return {
+      downloadBaseDir: BaseDirectory.AppData,
+      resolveDownloadBaseDirPath: appDataDir,
+      cacheBaseDir: BaseDirectory.AppData,
+      cacheBaseDirName: 'AppData',
+      scopedBaseDirs: [{ baseDir: BaseDirectory.AppData, resolvePath: appDataDir }]
+    }
+  }
+
+  return {
+    downloadBaseDir: BaseDirectory.Resource,
+    resolveDownloadBaseDirPath: resourceDir,
+    cacheBaseDir: BaseDirectory.AppCache,
+    cacheBaseDirName: 'AppCache',
+    scopedBaseDirs: [
+      { baseDir: BaseDirectory.AppData, resolvePath: appDataDir },
+      { baseDir: BaseDirectory.AppCache, resolvePath: appCacheDir },
+      { baseDir: BaseDirectory.Resource, resolvePath: resourceDir }
+    ]
+  }
+}
+
+/**
  * 用户文件下载/缓存使用的存储基目录。
  * 移动端为应用私有数据目录（AppData），桌面端为安装资源目录（Resource），
  * 需与用户房间相对路径配合使用。
  */
-export const getDownloadBaseDir = (): BaseDirectory => (isMobile() ? BaseDirectory.AppData : BaseDirectory.Resource)
+export const getDownloadBaseDir = (): BaseDirectory => resolveStorageLayout().downloadBaseDir
 
 /**
  * 与 getDownloadBaseDir 对应的基目录绝对路径。
  */
 export const getDownloadBaseDirPath = async (): Promise<string> =>
-  isMobile() ? await appDataDir() : await resourceDir()
+  await resolveStorageLayout().resolveDownloadBaseDirPath()
 
 /**
  * 临时文件/缓存使用的存储基目录。
  * 移动端仅有应用私有数据目录（AppData）可写，桌面端优先使用缓存目录（AppCache）。
  */
-export const getCacheBaseDir = (): BaseDirectory => (isMobile() ? BaseDirectory.AppData : BaseDirectory.AppCache)
+export const getCacheBaseDir = (): BaseDirectory => resolveStorageLayout().cacheBaseDir
 
 /**
  * 与 getCacheBaseDir 对应的基目录名字符串，供后端命令的 baseDir 参数使用。
  */
-export const getCacheBaseDirName = (): string => (isMobile() ? 'AppData' : 'AppCache')
+export const getCacheBaseDirName = (): string => resolveStorageLayout().cacheBaseDirName
 
 // 获取 userData 根目录
 export const getUserDataRootAbsoluteDir = async (): Promise<string> => {
@@ -55,29 +94,13 @@ const normalizePath = (value: string): string => value.replace(/\\/g, '/')
 const trimLeadingSlash = (value: string): string => value.replace(/^\/+/, '')
 
 const getScopedBaseDirCandidates = async (): Promise<Array<{ baseDir: BaseDirectory; absoluteBasePath: string }>> => {
-  if (isMobile()) {
-    return [
-      {
-        baseDir: BaseDirectory.AppData,
-        absoluteBasePath: normalizePath(await appDataDir())
-      }
-    ]
-  }
-
-  return [
-    {
-      baseDir: BaseDirectory.AppData,
-      absoluteBasePath: normalizePath(await appDataDir())
-    },
-    {
-      baseDir: BaseDirectory.AppCache,
-      absoluteBasePath: normalizePath(await appCacheDir())
-    },
-    {
-      baseDir: BaseDirectory.Resource,
-      absoluteBasePath: normalizePath(await resourceDir())
-    }
-  ]
+  const { scopedBaseDirs } = resolveStorageLayout()
+  return await Promise.all(
+    scopedBaseDirs.map(async ({ baseDir, resolvePath }) => ({
+      baseDir,
+      absoluteBasePath: normalizePath(await resolvePath())
+    }))
+  )
 }
 
 const resolveScopedPathCandidate = async (

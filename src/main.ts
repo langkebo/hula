@@ -40,12 +40,6 @@ const { showFeedback } = useActionFeedback()
 // 性能分级必须在首次绘制前完成：液态玻璃等重特效依赖 <html>.low-perf / .medium-perf 决定模糊档位
 applyPerformanceTier()
 
-// Pre-emptively hide splash screen on mobile to reduce perceived startup time
-// 注意：此处早于下方 initializePlatform()，平台尚未探测，须保持原始调用
-if (isMobile() && hasTauriRuntime()) {
-  invokeSilently('hide_splash_screen').catch(() => {})
-}
-
 performance.mark('tjg-init-start')
 
 initializePlatform()

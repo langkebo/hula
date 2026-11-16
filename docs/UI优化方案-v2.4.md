@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13）与不可机械清零的边界说明） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -2377,6 +2377,58 @@ AI / 趋势模块（仅桌面，R2 不影响移动端）：
 1. 用例只覆盖读取路径与 partial 计数，不涉及管理端写操作（配额、公告等）的失败保留输入，A2 仍需运行态验证。
 2. 移动端不接：admin 在移动端按规定不产出（R2）。
 3. 其余 admin 页面（用户、房间、举报等）仍无页面级四态用例，需按同一 mock 工厂模式逐页补。
+
+### 19.13 isMobile() 内联分支收敛（2026-11-16，P0-4）
+
+#### 缺口
+
+`check-ratchet` 的 `is_mobile_branch` 自 2026-11-14 起以 19 为基线「只降不升」，但没有一轮给出收敛路径。19 处 `isMobile()` 散落在 12 个文件，其中 `src/utils/PathUtil.ts` 一个文件占 5 处：同一份「移动端只有 AppData 可写」的决策被复制到 4 个导出函数和 1 个候选目录函数，任何一处漂移都会让路径解析与写入落到不同基目录。
+
+#### 本轮收敛（19 → 13）
+
+| 文件 | 改动 | 计数 |
+| :--- | :--- | :--- |
+| `src/utils/PathUtil.ts` | 新增 `StorageLayout` 类型与 `resolveStorageLayout()` 单点决策；`getDownloadBaseDir` / `getDownloadBaseDirPath` / `getCacheBaseDir` / `getCacheBaseDirName` / `getScopedBaseDirCandidates` 全部消费该布局 | 5 → 1 |
+| `src/utils/VideoThumbnail.ts` | 删除冗余 `isMobile() \|\|`：`get_video_thumbnail` 仅注册在桌面端（`src-tauri/src/desktops/video_thumbnail`），移动端必然命中 `Command ... not found` 分支 | 1 → 0 |
+| `src/main.ts` | 删除启动期「预隐藏 splash」分支：该判断位于 `initializePlatform()` 之前，`PlatformDetector._platformType` 仍是 `undefined`，`isMobile()` 恒为 false；移动端 splash 由 `src/mobile/views/Splashscreen.vue` 与登录流程自行隐藏 | 1 → 0 |
+
+语义保持不变：`resolveStorageLayout()` 每次调用重新求值（未改成模块级常量快照），运行时 `?platform=mobile` / `localStorage['tjg:e2e:platform']` 覆盖继续生效；目录布局、基目录选择、候选顺序均未改变。
+
+#### 为什么本轮停在 13，而不是 0
+
+P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基线收紧到 0」。复核后该目标在现有架构下不成立，原因是**构建期拆分与运行时覆盖契约冲突**：
+
+- 平台有两个真源：构建期 `TAURI_ENV_PLATFORM`（`vite.config.ts` 用 alias 替换模块）与运行期覆盖（`PlatformConstants.initialize()` 优先读 `?platform=mobile` / localStorage）。`vite.config.ts` 注释明确「开发态保持 false，保留运行时分派（?platform=mobile 覆盖与浏览器 E2E 依赖）」。把 `PathUtil`、`main.ts` 这类运行时模块改成构建期拆分，会让 dev / 浏览器 E2E 的平台覆盖失效。
+- 剩余 13 处的性质是「平台抽象本体 + 真实双端行为差异」，不是重复判断：
+
+| 类别 | 位置 | 保留原因 |
+| :--- | :--- | :--- |
+| 平台抽象本体 | `src/composables/usePlatform.ts` L64 / L72 | `useIsMobile` / `mobileOnlyAsyncComponent` 本身就是平台判定的统一出口 |
+| 启动期单点快照 | `src/main.ts` L47 | dev 下 eruda 与挂载时机，探测一次后复用 |
+| 存储布局单点 | `src/utils/PathUtil.ts` L38 | 本轮收敛后的唯一决策点 |
+| 平台能力分流 | `src/composables/app/wsCallHandler.ts` L84（推 `/mobile/rtcCall`）、`src/composables/app/useWsEventHandler.ts` L49（通话窗口创建） | 两端路由与窗口模型不同 |
+| 交互差异 | `src/composables/chat/useMsgInput.ts` L254（移动端发送后重聚焦）、`src/components/rightBox/renderMessage/useMessageUser.ts` L100（点头像进好友页 vs 选中气泡）、`src/composables/chat/useChatMain.ts` L115（移动端不触发 active）、`src/composables/chat/useFooterEmoji.ts` L85（移动端直接发 emoji-url）、`src/composables/common/useVideoViewer.ts` L132（移动端不弹桌面播放器）、`src/composables/chat/contextMenuHelpers.ts` L70（桌面专属动作守卫） | 同一功能在两端有各自正确的行为 |
+| 本地能力差异 | `src/stores/domains/widget/file.ts` L135（本地目录扫描仅移动端） | 两端文件来源不同 |
+
+把这些分支搬进 `src/mobile/`，前提是先拆出组件/composable 的双端实现（涉及 `ChatMain`、`MsgInput`、`renderMessage`、`FooterToolbar`、`wsCallHandler` 的移动端替身），属独立的架构项。用改谓词名或 `isDesktop()` 取反来「清零」只是把计数挪走，不予采纳。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 硬编码 / 分支 ratchet | `pnpm check:ratchet` | 12 项全部等于基线；`is_mobile_branch: 13 (baseline 13)`（收敛后已用 `--update` 收紧） |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 全量单测 | `pnpm test:run` | 1045 文件 / 11607 用例全部通过；结尾 `close timed out` 为既有环境噪声，退出码 0 |
+| Lint + i18n | `pnpm check` | 通过：i18n refs 未解析 0（基线 0）、设计令牌使用率 100%（224 个）、icon/svg aria 全通过、dead-handlers 扫描 1643 文件无空处理器、7 个 capability 与生成物一致 |
+| 文档路径 / 覆盖 | `pnpm check:doc-paths`、`pnpm check:doc-coverage` | 路径全部存在；573（基线 587，无回归） |
+| 移动端 CSS | `pnpm check:mobile-css` | 165 文件 OK |
+| SDK 边界 / 裸请求 | `pnpm check:sdk-boundary`、`pnpm quality:no-raw-fetch` | 156/156 无回归；裸请求全部在白名单 |
+
+#### 已知边界
+
+1. 剩余 13 处不做机械清零，需按「双端实现拆分」单独立项；建议顺序：`widget/file` → `contextMenuHelpers` → `useFooterEmoji` / `useChatMain` 组件变体 → RTC 路由分流。
+2. 本轮只统一基目录决策点，未改变任何目录布局；移动端仍只有 AppData 可写。
+3. 不涉及 §13.11 四态条目与 §19.8 空态计数，`handwritten_empty_state` 仍为 0。
 
 ---
 

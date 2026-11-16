@@ -3,7 +3,6 @@ import { writeFile } from '@tauri-apps/plugin-fs'
 import { AppException } from '@/common/exception'
 import { createLogger } from '@/utils/Logger'
 import { getCacheBaseDir } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
 import { invokeWithResult } from '@/utils/TauriInvokeHandler'
 import { removeTempFile } from '@/utils/TempFileManager'
 
@@ -127,7 +126,8 @@ export const generateVideoThumbnail = async (file: File): Promise<File> => {
 
   if (result.isErr()) {
     logger.error('Rust 缩略图生成失败，尝试使用前端兜底方案:', result.error)
-    if (isMobile() || String(result.error).includes('Command get_video_thumbnail not found')) {
+    // `get_video_thumbnail` 仅注册在桌面端；移动端命令缺失会命中 not found，统一走前端兜底
+    if (String(result.error).includes('Command get_video_thumbnail not found')) {
       return await getLocalVideoThumbnail(file)
     }
     throw new AppException(`生成视频缩略图失败: ${result.error}`)
