@@ -61,7 +61,7 @@
               :label="t('mobile_deactivate.verify.password_field')"
               :placeholder="t('mobile_deactivate.verify.password_placeholder')"
               autocomplete="current-password"
-              :disabled="verifying"
+              :disabled="submitting"
               @keyup.enter="handleVerifyNext" />
           </van-cell-group>
 
@@ -90,13 +90,13 @@
             <van-button
               type="danger"
               block
-              :loading="submitting || verifying"
-              :disabled="submitting || verifying"
+              :loading="submitting"
+              :disabled="submitting"
               data-testid="deactivate-confirm"
               @click="handleFinalConfirm">
               {{ t('mobile_deactivate.final.confirm') }}
             </van-button>
-            <van-button block plain :disabled="submitting || verifying" @click="handleCancel">
+            <van-button block plain :disabled="submitting" @click="handleCancel">
               {{ t('mobile_deactivate.final.keep') }}
             </van-button>
           </div>
@@ -111,19 +111,17 @@ import { showConfirmDialog, showFailToast, showToast } from 'vant'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { deactivationErrorKey, useAccountDeactivationFlow } from '@/composables/user/useAccountDeactivationFlow'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
-import { matrixAccountService } from '@/services/matrix'
 import { useLoginFlow } from '@/shared/composables/useLoginFlow'
 import { useMatrixStore } from '@/stores/domains/chat/matrix'
-import { createLogger } from '@/utils/Logger'
-
-const logger = createLogger('MobileDeactivateAccount')
 
 const { t } = useI18n()
 const router = useRouter()
 const matrixStore = useMatrixStore()
 const { logout } = useLoginFlow()
+const { deactivateWithPassword } = useAccountDeactivationFlow()
 
 type Step = 'consequences' | 'verify' | 'final'
 
@@ -133,7 +131,6 @@ const step = ref<Step>('consequences')
 const acknowledged = ref(false)
 const confirmationInput = ref('')
 const passwordInput = ref('')
-const verifying = ref(false)
 const eraseData = ref(false)
 const submitting = ref(false)
 
@@ -179,7 +176,7 @@ function handleCancel() {
 }
 
 async function handleFinalConfirm() {
-  if (submitting.value || verifying.value) {
+  if (submitting.value) {
     return
   }
 
@@ -202,41 +199,16 @@ async function handleFinalConfirm() {
     return
   }
 
-  // 注销前再次校验密码：校验失败不调用注销服务
-  verifying.value = true
-  try {
-    const verified = await matrixAccountService.verifyPassword(password)
-    if (!verified) {
-      showFailToast(t('mobile_deactivate.verify.password_invalid'))
-      return
-    }
-  } catch (error) {
-    logger.error('Failed to verify account password', error)
-    showFailToast(t('mobile_deactivate.verify.password_invalid'))
-    return
-  } finally {
-    verifying.value = false
-  }
-
-  const authData: Parameters<typeof matrixAccountService.deactivateAccount>[0] = {
-    type: 'm.login.password',
-    identifier: {
-      type: 'm.id.user',
-      user: currentUserId.value
-    },
-    password
-  }
-
+  // 密码校验与注销请求统一走平台无关流程，与桌面端共用同一套判定与错误码
   submitting.value = true
   try {
-    await matrixAccountService.deactivateAccount(authData, eraseData.value)
+    await deactivateWithPassword(currentUserId.value, password, eraseData.value)
     passwordInput.value = ''
-    showToast({ type: 'success', message: t('mobile_deactivate.success') })
+    showToast({ type: 'success', message: t('setting.account.deactivate_success') })
     await logout()
     router.replace('/mobile/login')
   } catch (error) {
-    logger.error('Failed to deactivate account', error)
-    showFailToast(t('mobile_deactivate.failed'))
+    showFailToast(t(deactivationErrorKey(error)))
   } finally {
     submitting.value = false
   }

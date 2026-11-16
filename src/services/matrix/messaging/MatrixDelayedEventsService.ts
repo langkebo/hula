@@ -139,14 +139,7 @@ class MatrixDelayedEventsService extends BaseMatrixService {
     try {
       const events = (await this.getManager().listScheduledDelayedEvents()) as RawDelayedEventInfo[]
       return (events ?? [])
-        .map((event) => ({
-          delayId: event.delay_id,
-          roomId: event.room_id,
-          type: event.type,
-          delayMs: event.delay_ms,
-          scheduledAt: event.delayed_since_ts,
-          content: event.content ?? {}
-        }))
+        .map(toDelayedMessageInfo)
         .sort((a, b) => a.scheduledAt + a.delayMs - (b.scheduledAt + b.delayMs))
     } catch (error) {
       logger.error(`Failed to list delayed messages: ${String(error)}`)
@@ -181,6 +174,31 @@ class MatrixDelayedEventsService extends BaseMatrixService {
   }
 
   /**
+   * 重置计时（MSC4140 restart）：服务端按原 delay_ms 重新倒计时并追加 10 秒缓冲。
+   *
+   * 写入成功后回读一次服务端状态，保证调用方拿到的是重排后的真实延迟；
+   * 回读失败时抛出错误，调用方按「状态未知」刷新列表处理。
+   */
+  async restart(delayId: number): Promise<DelayedMessageInfo> {
+    if (!navigator.onLine) throw new DelayedEventError('offline')
+    await this.assertSupported()
+    try {
+      await this.getManager().restartScheduledDelayedEvent(delayId)
+      logger.info(`Delayed message restarted, delay_id=${delayId}`)
+    } catch (error) {
+      logger.error(`Failed to restart delayed message ${delayId}: ${String(error)}`)
+      throw normalizeError(error)
+    }
+    try {
+      const event = (await this.getManager().getScheduledDelayedEvent(delayId)) as RawDelayedEventInfo
+      return toDelayedMessageInfo(event)
+    } catch (error) {
+      logger.error(`Restarted delayed message ${delayId} but failed to read back: ${String(error)}`)
+      throw normalizeError(error)
+    }
+  }
+
+  /**
    * 改期：MSC4140 无独立 update 动作，按 cancel + 重新调度实现。
    * 取消成功后才创建新任务；取消失败直接抛出，原任务保留在服务端。
    */
@@ -206,6 +224,17 @@ class MatrixDelayedEventsService extends BaseMatrixService {
       logger.error(`Reschedule cancelled ${delayId} but failed to create replacement: ${String(error)}`)
       throw normalizeError(error)
     }
+  }
+}
+
+function toDelayedMessageInfo(event: RawDelayedEventInfo): DelayedMessageInfo {
+  return {
+    delayId: event.delay_id,
+    roomId: event.room_id,
+    type: event.type,
+    delayMs: event.delay_ms,
+    scheduledAt: event.delayed_since_ts,
+    content: event.content ?? {}
   }
 }
 

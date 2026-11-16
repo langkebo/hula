@@ -33,7 +33,26 @@
 
       <n-divider class="m-0" />
 
-      <section class="one-time-invite-dialog__section">
+      <section v-if="claimed" class="one-time-invite-dialog__section" data-test="ot-invite-claimed">
+        <span class="one-time-invite-dialog__label">{{ t('friend.one_time_invite.claim_success_title') }}</span>
+        <template v-if="claimed.room_alias">
+          <n-input :value="claimed.room_alias" readonly data-test="ot-invite-alias" />
+          <div class="one-time-invite-dialog__meta">
+            <span>{{ t('friend.one_time_invite.claimed_alias_hint') }}</span>
+            <n-button size="small" data-test="ot-invite-copy-alias" @click="handleCopyAlias">
+              {{ t('friend.one_time_invite.copy_alias') }}
+            </n-button>
+          </div>
+        </template>
+        <p v-else class="one-time-invite-dialog__hint">
+          {{ t('friend.one_time_invite.claimed_no_alias') }}
+        </p>
+        <n-button type="primary" data-test="ot-invite-enter" @click="handleEnterRoom">
+          {{ t('friend.one_time_invite.enter_room') }}
+        </n-button>
+      </section>
+
+      <section v-else class="one-time-invite-dialog__section">
         <span class="one-time-invite-dialog__label">{{ t('friend.one_time_invite.claim_label') }}</span>
         <n-input
           v-model:value="claimInput"
@@ -56,10 +75,11 @@
 
 <script setup lang="ts">
 import { NButton, NDivider, NInput, NModal } from 'naive-ui'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import {
+  type OneTimeInviteClaimed,
   type OneTimeInviteCreated,
   synapseOneTimeInviteService
 } from '@/services/matrix/extensions/SynapseOneTimeInviteExtensionService'
@@ -83,9 +103,21 @@ const { showFeedback } = useActionFeedback()
 const creating = ref(false)
 const claiming = ref(false)
 const created = ref<OneTimeInviteCreated | null>(null)
+const claimed = ref<OneTimeInviteClaimed | null>(null)
 const claimInput = ref('')
 const claimTokenInvalid = ref(false)
 const now = ref(Date.now())
+
+// 每次重新打开都回到未领取状态，避免上一次的领取结果残留
+watch(
+  () => props.show,
+  (visible) => {
+    if (!visible) return
+    claimed.value = null
+    claimInput.value = ''
+    claimTokenInvalid.value = false
+  }
+)
 
 /** 剩余有效期：15s 刷新一次，过期后显示"已过期"而不是负数 */
 const remainingText = computed(() => {
@@ -139,9 +171,8 @@ async function handleClaim(): Promise<void> {
   claiming.value = true
   try {
     const result = await synapseOneTimeInviteService.claim(token)
+    claimed.value = result
     showFeedback(t('friend.one_time_invite.claim_success'), 'success')
-    emit('claimed', result.room_id)
-    emit('update:show', false)
     claimInput.value = ''
   } catch (err) {
     // 已用过 / 已过期 / 不存在 —— 后端用 403/400/404 区分，这里统一给可读文案
@@ -149,6 +180,24 @@ async function handleClaim(): Promise<void> {
   } finally {
     claiming.value = false
   }
+}
+
+async function handleCopyAlias(): Promise<void> {
+  const alias = claimed.value?.room_alias
+  if (!alias) return
+  try {
+    await navigator.clipboard.writeText(alias)
+    showFeedback(t('friend.one_time_invite.alias_copied'), 'success')
+  } catch {
+    showFeedback(t('friend.one_time_invite.copy_failed'), 'error')
+  }
+}
+
+function handleEnterRoom(): void {
+  const roomId = claimed.value?.room_id ?? null
+  claimed.value = null
+  emit('claimed', roomId)
+  emit('update:show', false)
 }
 </script>
 

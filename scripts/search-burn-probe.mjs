@@ -13,7 +13,9 @@
  *   B1 `matrixBurnAfterReadService.enableBurn(roomId, 5000)` → 返回 enabled/burnAfterMs（服务端能力）
  *   B2 打开账号级默认（`settingStore.setBurnDefaultEnabled(true)`）后**真实点击发送**，
  *      服务端事件 content 必须带 `m.burn_after_read`（验证 P0-7：默认开关真的被发送路径读到）
- *   B3 `markBurnRead(eventId)` → `getPendingBurns(roomId)` 含该事件且 deleteAt > now
+ *   B3 开关是**房间级**（A 开启 → B 读到 `enabled=true` / `scope="room"`）、计时**按读者**
+ *      （`burn_after_read_pending.user_id` = 标记者），`markBurnRead(eventId)` → `getPendingBurns(roomId)`
+ *      含该事件且 deleteAt > now
  *   B4 到期后：**服务端事件仍存在**（burn 只登记 per-user 时间，物理删除归 retention）
  *      + `getPendingBurns` 不再返回该事件
  *
@@ -22,6 +24,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
+import { guardApkFreshness, resetAppState } from './lib/probe-runtime.mjs'
 
 const BASE = (process.env.E2EE_BASE ?? 'http://127.0.0.1:8008').replace(/\/$/, '')
 const CDP_PORT = Number(process.env.CDP_A ?? 9222)
@@ -255,6 +258,9 @@ async function realSend(cdp, text) {
 async function main() {
   let cdp = null
   try {
+    guardApkFreshness()
+    // 上一支探针残留的登录态会让「填表」找不到登录表单（页面停在会话列表）⇒ 先清一次
+    resetAppState(ADB, SERIAL)
     const a = await register('a')
     console.log(`A=${a.userId}\n`)
     const pid = await startApp()
@@ -425,31 +431,25 @@ async function main() {
         `status=${selfMark.status}，errcode=${selfMark.body?.errcode ?? ''}`
       )
 
-      // 3b) 语义确认：burn 设置是**按用户**存的（`burn_after_read_settings` 主键是 user_id+room_id），
-      //     A 开启不等于 B 开启 ⇒ B 此时标记应报 `Burn not enabled for this room`。
-      const bBeforeEnable = await rest('POST', `/_matrix/vendor/v1/rooms/${encodeURIComponent(roomId)}/burn/${encodeURIComponent(burnEventId)}`, {
-        token: b.token,
-        body: {}
-      })
+      // 3b) B8 定调（依据 `synapse-services/src/burn_after_read_service.rs` 的 Semantics 注释）：
+      //     **开关是房间级的**（D17：任意成员最新一次写入对全房生效），**计时器按读者**（pending 行 per reader）。
+      //     ⇒ A 开启后，B 即使没碰过开关，读到的设置也必须已生效；B 标记应 200。
+      //     （旧断言按「per-user 开关」期望 400，已随 B8 澄清一并推翻。）
+      const bSettings = await rest('GET', `/_matrix/vendor/v1/rooms/${encodeURIComponent(roomId)}/burn`, { token: b.token })
       record(
         'B3',
-        'A 开启 burn 不影响 B（per-user 语义）',
-        bBeforeEnable.status === 400 ? 'pass' : 'fail',
-        `B 未开启时标记 → status=${bBeforeEnable.status}，errcode=${bBeforeEnable.body?.errcode ?? ''}；说明 burn 是每用户设置，不是房间级 state`
+        'A 开启后 B 读到房间级设置（enabled=true, scope=room）',
+        bSettings.status === 200 && bSettings.body?.enabled === true && bSettings.body?.scope === 'room' ? 'pass' : 'fail',
+        `status=${bSettings.status}，body=${JSON.stringify(bSettings.body).slice(0, 140)}`,
+        bSettings.body
       )
 
-      // 3c) B 自己开启后再标记 → 才应成功
-      const bEnable = await rest('PUT', `/_matrix/vendor/v1/rooms/${encodeURIComponent(roomId)}/burn`, {
-        token: b.token,
-        body: { enabled: true, burn_after_ms: 5000 }
-      })
-      record('B3', 'B 自己开启 burn', bEnable.status === 200 ? 'pass' : 'fail', `status=${bEnable.status} ${bEnable.raw.slice(0, 80)}`)
-
+      // 3c) 按读者计时：B 无需自己再开一次开关，直接标记即可
       const bMark = await rest('POST', `/_matrix/vendor/v1/rooms/${encodeURIComponent(roomId)}/burn/${encodeURIComponent(burnEventId)}`, {
         token: b.token,
         body: {}
       })
-      record('B3', '接收方标记已读', bMark.status === 200 ? 'pass' : 'fail', `status=${bMark.status} ${bMark.raw.slice(0, 100)}`)
+      record('B3', '接收方标记已读（房间级开关下直接 200）', bMark.status === 200 ? 'pass' : 'fail', `status=${bMark.status} ${bMark.raw.slice(0, 100)}`)
 
       const row = psql(
         `select user_id, event_id, created_ts, delete_ts, is_processed from burn_after_read_pending where event_id = '${burnEventId}' order by id desc limit 1`
@@ -459,10 +459,10 @@ async function main() {
       const createdTs = Number(parts[2] ?? 0)
       record(
         'B3',
-        '服务端 pending 表登记该事件',
-        parts.length >= 5 && parts[1] === burnEventId ? 'pass' : 'fail',
+        '服务端 pending 表按「读者」登记该事件（user_id 为标记者本人）',
+        parts.length >= 5 && parts[1] === burnEventId && parts[0] === b.userId ? 'pass' : 'fail',
         parts.length >= 5
-          ? `user=${parts[0]}，delete_ts - created_ts = ${deleteTs - createdTs}ms（期望 ≈5000），is_processed=${parts[4]}`
+          ? `user=${parts[0]}（期望 ${b.userId}），delete_ts - created_ts = ${deleteTs - createdTs}ms（期望 ≈5000），is_processed=${parts[4]}`
           : `查询结果：${String(row).slice(0, 120)}`
       )
 

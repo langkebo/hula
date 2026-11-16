@@ -41,7 +41,13 @@ setupMswServer(
   }),
   http.get(`${HOMESERVER}/_matrix/vendor/v1/my_rooms`, ({ request }) => {
     seenUrls.push(request.url)
-    return HttpResponse.json({ room_ids: ['!room1:test', '!room2:test'] })
+    return HttpResponse.json({
+      rooms: [
+        { room_id: '!room1:test', name: 'Room 1', membership: 'join' },
+        { room_id: '!room2:test', name: 'Room 2', membership: 'invite' }
+      ],
+      total: 2
+    })
   }),
   http.get(`${HOMESERVER}/_matrix/client/v3/events`, ({ request }) => {
     seenUrls.push(request.url)
@@ -102,7 +108,10 @@ describe('User service URL construction contract (real SDK + msw)', () => {
     const calls = seenUrls.filter((u) => u.includes('/my_rooms'))
     expect(calls).toHaveLength(1)
     expect(calls[0]).toBe(`${HOMESERVER}/_matrix/vendor/v1/my_rooms`)
-    expect(result).toEqual(['!room1:test', '!room2:test'])
+    expect(result).toEqual([
+      { roomId: '!room1:test', name: 'Room 1', avatarUrl: undefined, membership: 'join' },
+      { roomId: '!room2:test', name: 'Room 2', avatarUrl: undefined, membership: 'invite' }
+    ])
   })
 
   it('getEventStream hits /_matrix/client/v3/events (no duplication)', async () => {

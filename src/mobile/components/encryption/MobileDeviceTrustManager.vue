@@ -22,9 +22,11 @@
           <!-- 设备列表 Tab -->
           <van-tabs v-model:active="activeTab" sticky>
             <van-tab :title="t('encryption.device_trust.device_list_tab')" name="devices">
-              <div v-if="devices.length === 0" class="empty-state">
-                <van-empty :description="t('encryption.device_trust.no_devices')" />
-              </div>
+              <MobileAsyncState
+                v-if="devices.length === 0"
+                state="empty"
+                :empty-text="t('encryption.device_trust.no_devices')"
+                min-height="160px" />
               <div v-else class="device-list">
                 <van-cell-group inset>
                   <van-cell
@@ -64,9 +66,11 @@
 
             <!-- 未验证设备 Tab -->
             <van-tab :title="t('encryption.device_trust.unverified_tab')" name="unverified">
-              <div v-if="unverifiedDevices.length === 0" class="empty-state">
-                <van-empty :description="t('encryption.device_trust.no_unverified_devices')" />
-              </div>
+              <MobileAsyncState
+                v-if="unverifiedDevices.length === 0"
+                state="empty"
+                :empty-text="t('encryption.device_trust.no_unverified_devices')"
+                min-height="160px" />
               <div v-else class="device-list">
                 <van-cell-group inset>
                   <van-cell
@@ -91,9 +95,11 @@
 
             <!-- 已屏蔽设备 Tab -->
             <van-tab :title="t('encryption.device_trust.blocked_tab')" name="blocked">
-              <div v-if="blockedDevices.length === 0" class="empty-state">
-                <van-empty :description="t('encryption.device_trust.no_blocked_devices')" />
-              </div>
+              <MobileAsyncState
+                v-if="blockedDevices.length === 0"
+                state="empty"
+                :empty-text="t('encryption.device_trust.no_blocked_devices')"
+                min-height="160px" />
               <div v-else class="device-list">
                 <van-cell-group inset>
                   <van-cell
@@ -192,6 +198,7 @@ import { showConfirmDialog, showToast } from 'vant'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type DeviceTrustInfo, useDeviceTrust } from '@/composables/encryption/useDeviceTrust'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { matrixEncryptionService } from '@/services/matrix/crypto/MatrixEncryptionService'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 
@@ -362,10 +369,6 @@ const handleRefresh = async () => {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
-}
-
-.empty-state {
-  padding: 40px 16px;
 }
 
 .device-list {

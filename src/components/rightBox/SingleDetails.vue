@@ -7,7 +7,10 @@
         class="single-details__avatar"
         :src="AvatarUtils.getAvatarUrl(singleAvatar)"
         @dblclick="openAvatarImage" />
-      <h2 class="single-details__name">{{ singleName }}</h2>
+      <div class="single-details__name-row">
+        <h2 class="single-details__name">{{ singleName }}</h2>
+        <AccountStatusBadge v-if="!isBotUser" :user-id="singleUid" />
+      </div>
       <p class="single-details__uid">{{ singleUid }}</p>
       <p class="single-details__signature">{{ singleSignature }}</p>
 
@@ -66,7 +69,7 @@
       </div>
     </div>
 
-    <FriendDetailsSections v-if="!isBotUser" :user-id="singleUid" />
+    <FriendDetailsSections v-if="!isBotUser" :user-id="singleUid" @open-room="handleOpenRoom" />
   </section>
 </template>
 
@@ -76,6 +79,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import ContactProfileEditors from '@/components/friend/ContactProfileEditors.vue'
+import AccountStatusBadge from '@/components/rightBox/AccountStatusBadge.vue'
 import FriendDetailsSections from '@/components/rightBox/FriendDetailsSections.vue'
 import SingleDetailsActions from '@/components/rightBox/SingleDetailsActions.vue'
 import RoomBurnSettings from '@/components/room/RoomBurnSettings.vue'
@@ -195,6 +199,16 @@ const handleEncryptedChat = async () => {
   }
 }
 
+const handleOpenRoom = async (roomId: string) => {
+  if (!roomId) return
+  try {
+    const { openMsgSessionByRoomId } = await import('@/composables/chat/openMsgSession')
+    await openMsgSessionByRoomId(roomId)
+  } catch {
+    showFeedback(t('friend.detail.chat_error'), 'error', 'assertive')
+  }
+}
+
 const handleSetFavorite = async () => {
   if (!singleUid.value) return
   await contactStore.setFriendStatus(singleUid.value, 'favorite')
@@ -262,6 +276,14 @@ const handleRemoveFriend = async () => {
 .single-details__avatar {
   border: 3px solid var(--tjg-overlay-mobile-sheet);
   box-shadow: var(--tjg-shadow-lg);
+}
+
+.single-details__name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .single-details__name {

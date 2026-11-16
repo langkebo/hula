@@ -73,7 +73,7 @@
             type="primary"
             block
             class="cta-button cta-button--primary"
-            :class="{ 'is-active': loadingAction === 'join' }"
+            :class="{ 'is-active': loadingAction === joinAction }"
             :loading="loading"
             :disabled="joinRule === 'invite'"
             @click="handleJoin">
@@ -95,11 +95,11 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSpace } from '@/composables/space'
 
-type CtaAction = 'join' | 'leave'
+type CtaAction = 'join' | 'knock' | 'leave'
 
 const props = defineProps<{
   spaceId: string
-  joinRule?: string
+  joinRule?: string | undefined
   membership?: string
 }>()
 
@@ -109,9 +109,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
-const { join, leave } = useSpace(() => props.spaceId)
+const { join, knock, leave } = useSpace(() => props.spaceId)
 const loading = ref(false)
-const loadingAction = ref<'join' | 'leave' | null>(null)
+const loadingAction = ref<CtaAction | null>(null)
 const successPulse = ref(false)
 let successTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -120,6 +120,9 @@ const joinButtonText = computed(() => {
   if (props.joinRule === 'knock') return t('space.request_to_join')
   return t('space.join')
 })
+
+const isKnock = computed(() => props.joinRule === 'knock')
+const joinAction = computed<CtaAction>(() => (isKnock.value ? 'knock' : 'join'))
 
 const viewKey = computed(() => `${props.membership || 'none'}-${props.joinRule || 'default'}`)
 
@@ -134,14 +137,18 @@ const triggerSuccessPulse = () => {
 
 const handleJoin = async () => {
   loading.value = true
-  loadingAction.value = 'join'
+  loadingAction.value = joinAction.value
   try {
-    await join()
+    if (isKnock.value) {
+      await knock()
+    } else {
+      await join()
+    }
     triggerSuccessPulse()
-    showFeedback(t('space.join_success'), 'success')
-    emit('success', 'join')
+    showFeedback(t(isKnock.value ? 'space.knock_success' : 'space.join_success'), 'success')
+    emit('success', joinAction.value)
   } catch (err) {
-    showFeedback(t('space.join_failed'), 'error')
+    showFeedback(t(isKnock.value ? 'space.knock_failed' : 'space.join_failed'), 'error')
   } finally {
     loading.value = false
     loadingAction.value = null

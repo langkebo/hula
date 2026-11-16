@@ -92,6 +92,21 @@ export function useDelayedMessages() {
     }
   }
 
+  const restart = async (delayId: number): Promise<boolean> => {
+    try {
+      await matrixDelayedEventsService.restart(delayId)
+      showFeedback(t('delayed_events.feedback.restarted'), 'success')
+      await refresh()
+      return true
+    } catch (error) {
+      logger.error(`Failed to restart delayed message ${delayId}:`, error)
+      showFeedback(t('delayed_events.feedback.restart_failed', { reason: reasonText(resolveReason(error)) }), 'error')
+      // 服务端状态未知，刷新一次以对齐真实列表。
+      await refresh()
+      return false
+    }
+  }
+
   const reschedule = async (delayId: number, delayMs: number): Promise<boolean> => {
     try {
       await matrixDelayedEventsService.reschedule(delayId, delayMs)
@@ -119,6 +134,7 @@ export function useDelayedMessages() {
     schedule,
     cancel,
     sendNow,
+    restart,
     reschedule
   }
 }

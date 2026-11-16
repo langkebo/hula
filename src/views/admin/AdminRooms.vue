@@ -184,6 +184,11 @@
               </n-spin>
             </n-tab-pane>
 
+            <!-- Governance Tab -->
+            <n-tab-pane name="governance" :tab="t('admin.rooms.governance')">
+              <AdminRoomGovernancePanel :rooms="admin" />
+            </n-tab-pane>
+
             <!-- Actions Tab -->
             <n-tab-pane name="actions" :tab="t('admin.rooms.actions')">
               <n-space vertical>
@@ -212,33 +217,13 @@
                   </n-space>
                 </n-card>
 
-                <!-- Block / Unblock -->
-                <n-card size="small" :title="t('admin.rooms.blockActions')">
-                  <n-button size="small" :type="roomBlocked ? 'success' : 'error'" @click="handleToggleBlock">
-                    {{ roomBlocked ? t('admin.rooms.unblock') : t('admin.rooms.block') }}
-                  </n-button>
-                </n-card>
-
                 <!-- Danger Zone -->
-                <n-card size="small" :title="t('admin.rooms.dangerZone')" class="border-[var(--n-error-color)]">
-                  <n-space vertical>
-                    <n-popconfirm @positive-click="handlePurgeHistory">
-                      <template #trigger>
-                        <n-button size="small" type="error">
-                          {{ t('admin.rooms.purgeHistory') }}
-                        </n-button>
-                      </template>
-                      {{ t('admin.rooms.purgeHistoryConfirm') }}
-                    </n-popconfirm>
-
-                    <n-button size="small" type="error" @click="handleShutdownRoom">
-                      {{ t('admin.rooms.shutdown') }}
-                    </n-button>
-                    <n-button size="small" type="error" ghost @click="handleDeleteRoom">
-                      {{ t('admin.rooms.delete') }}
-                    </n-button>
-                  </n-space>
-                </n-card>
+                <AdminRoomDangerZone
+                  :admin="admin"
+                  :room="selectedRoom"
+                  @shutdown="handleShutdownRoom"
+                  @delete="handleDeleteRoom"
+                  @close-detail="showRoomDetail = false" />
               </n-space>
             </n-tab-pane>
           </n-tabs>
@@ -291,14 +276,28 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NDrawer, NDrawerContent, NPopconfirm, NSpace, NStatistic, NTag, useDialog } from 'naive-ui'
+import {
+  NButton,
+  NCard,
+  NDescriptions,
+  NDescriptionsItem,
+  NDrawer,
+  NDrawerContent,
+  NEmpty,
+  NSpace,
+  NStatistic,
+  NTag,
+  useDialog
+} from 'naive-ui'
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminTable from '@/components/admin/AdminTable.vue'
+import AdminRoomGovernancePanel from '@/components/admin/rooms/AdminRoomGovernancePanel.vue'
 import { type RoomInfo, useAdminRooms } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { useAdminStore } from '@/stores/domains/admin/admin'
+import AdminRoomDangerZone from './AdminRoomDangerZone.vue'
 import { useAdminErrorHandler } from './useAdminError'
 
 const { t } = useI18n()
@@ -330,7 +329,6 @@ const searchLoading = admin.searchLoading
 
 // View-only local state
 const showRoomDetail = ref(false)
-const roomBlocked = ref(false)
 const showForceJoinDialog = ref(false)
 const forceJoinLoading = ref(false)
 const forceJoinForm = ref({ userId: '' })
@@ -475,7 +473,6 @@ async function handleLoadMoreRooms() {
 
 async function openRoomDetail(room: RoomInfo) {
   showRoomDetail.value = true
-  roomBlocked.value = false
   makeAdminUserId.value = ''
   await admin.selectRoom(room)
 }
@@ -548,34 +545,6 @@ async function handleForceLeave() {
     }
   } finally {
     forceLeaveLoading.value = false
-  }
-}
-
-async function handleToggleBlock() {
-  if (!selectedRoom.value) return
-  const newBlockState = !roomBlocked.value
-  try {
-    await admin.blockRoom(selectedRoom.value.roomId, newBlockState)
-    roomBlocked.value = newBlockState
-    showFeedback(newBlockState ? t('admin.rooms.blockSuccess') : t('admin.rooms.unblockSuccess'), 'success')
-  } catch (err) {
-    if (handleAdminError(err)) {
-      showFeedback(newBlockState ? t('admin.rooms.blockFailed') : t('admin.rooms.unblockFailed'), 'error')
-    }
-  }
-}
-
-async function handlePurgeHistory() {
-  if (!selectedRoom.value) return
-  try {
-    const result = await admin.purgeHistory(selectedRoom.value.roomId)
-    // 后端 purge_history 返回 {success, deleted_events, dry_run}，**不返回 purge_id**
-    // （purge_id 只属于另一个端点 purgeRoom）——旧文案「已启动（ID: …）」会显示空 ID。
-    showFeedback(t('admin.rooms.purgeHistorySuccess', { count: result.deletedEvents }), 'success')
-  } catch (err) {
-    if (handleAdminError(err)) {
-      showFeedback(t('admin.rooms.purgeHistoryFailed'), 'error')
-    }
   }
 }
 
@@ -682,7 +651,10 @@ async function handleBanUser(userId: string) {
   })
 }
 
-onMounted(loadRooms)
+onMounted(() => {
+  loadRooms()
+  admin.loadServerRoomStats()
+})
 
 // Reset search mode when the search query is cleared
 watch(searchQuery, (val) => {

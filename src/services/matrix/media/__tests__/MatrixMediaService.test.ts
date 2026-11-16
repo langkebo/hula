@@ -171,6 +171,60 @@ describe('MatrixMediaService', () => {
     })
   })
 
+  describe('signed media download', () => {
+    const expires = Math.floor(Date.now() / 1000) + 300
+    const signedParams = { serverName: 'matrix.test', mediaId: 'media1', signature: 'sig', expires }
+    const signedUrl =
+      'https://matrix.test/_matrix/media/v3/download_signed/matrix.test/media1?signature=sig&expires=1893456000'
+
+    const signedClient = {
+      getMediaManager: () => ({ getDownloadUrl: vi.fn(() => signedUrl) })
+    } as unknown as MatrixClient
+
+    it('should throw error when client is not initialized', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null)
+
+      expect(() => matrixMediaService.getSignedMediaDownloadUrl(signedParams)).toThrow('客户端未初始化')
+      await expect(matrixMediaService.downloadSignedFileBytes(signedParams)).rejects.toThrow('客户端未初始化')
+    })
+
+    it('should build the signed download url through the SDK media manager', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(signedClient)
+
+      expect(matrixMediaService.getSignedMediaDownloadUrl(signedParams)).toBe(signedUrl)
+    })
+
+    it('should download signed media bytes without an Authorization header', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(signedClient)
+      const fetchMock = vi.fn().mockResolvedValue(new Response(new Uint8Array([1, 2, 3]), { status: 200 }))
+      vi.stubGlobal('fetch', fetchMock)
+
+      const result = await matrixMediaService.downloadSignedFileBytes(signedParams)
+
+      expect(fetchMock).toHaveBeenCalledWith(signedUrl, expect.objectContaining({}))
+      expect((fetchMock.mock.calls[0]?.[1] as RequestInit | undefined)?.headers).toBeUndefined()
+      expect(result).toEqual(new Uint8Array([1, 2, 3]))
+    })
+
+    it('should propagate download failures', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(signedClient)
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('denied', { status: 403 })))
+
+      await expect(matrixMediaService.downloadSignedFileBytes(signedParams)).rejects.toThrow()
+    })
+
+    it('should throw when the signature has expired', () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(signedClient)
+
+      expect(() =>
+        matrixMediaService.getSignedMediaDownloadUrl({
+          ...signedParams,
+          expires: Math.floor(Date.now() / 1000) - 1
+        })
+      ).toThrow()
+    })
+  })
+
   describe('getMediaUrl', () => {
     it('should return null for invalid mxc url', () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue(mockClient as unknown as MatrixClient)

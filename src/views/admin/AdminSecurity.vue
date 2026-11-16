@@ -60,9 +60,7 @@
         </n-alert>
 
         <n-spin :show="securityEventsLoading">
-          <div v-if="!securityEventsError && securityEvents.length === 0" class="empty-state">
-            <n-empty :description="t('admin.security.no_security_events')" />
-          </div>
+          <EmptyState v-if="securityEventsEmpty" :description="t('admin.security.no_security_events')" />
           <template v-else-if="!securityEventsError">
             <n-data-table
               :columns="securityEventColumns"
@@ -87,9 +85,7 @@
       <!-- 登录失败 Tab -->
       <n-tab-pane name="login_failures" :tab="t('admin.security.login_failures_tab')">
         <n-spin :show="loginFailuresLoading">
-          <div v-if="loginFailures.length === 0" class="empty-state">
-            <n-empty :description="t('admin.security.no_login_failures')" />
-          </div>
+          <EmptyState v-if="loginFailuresEmpty" :description="t('admin.security.no_login_failures')" />
           <n-data-table
             v-else
             :columns="loginFailureColumns"
@@ -189,7 +185,6 @@ import {
   NAlert,
   NButton,
   NDataTable,
-  NEmpty,
   NForm,
   NFormItem,
   NIcon,
@@ -206,7 +201,7 @@ import {
   NTabs,
   NTag
 } from 'naive-ui'
-import { h, onMounted, reactive, ref, watch } from 'vue'
+import { computed, h, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminSecurity } from '@/composables/admin/useAdminSecurity'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -404,6 +399,10 @@ watch([securityEventFilter, securityEventRange], () => {
 // ===== 登录失败 =====
 const loginFailures = ref<Array<Record<string, unknown>>>([])
 const loginFailuresLoading = ref(false)
+
+/** 无错误且无数据时才展示空态，避免加载中/失败时抢先渲染空提示 */
+const securityEventsEmpty = computed(() => !securityEventsError.value && securityEvents.value.length === 0)
+const loginFailuresEmpty = computed(() => loginFailures.value.length === 0)
 
 const loginFailureColumns: DataTableColumns<Record<string, unknown>> = [
   {
@@ -655,11 +654,6 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
-}
-
-.empty-state {
-  padding: 60px 0;
-  text-align: center;
 }
 
 .list-footer {

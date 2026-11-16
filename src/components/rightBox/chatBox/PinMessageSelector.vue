@@ -20,9 +20,7 @@
         </button>
       </div>
 
-      <div v-if="selectableMessages.length === 0" class="pin-selector__empty">
-        <n-empty :description="t('home.chat_sidebar.pins.selector_empty')" />
-      </div>
+      <EmptyState v-if="isEmptySelection" compact :description="t('home.chat_sidebar.pins.selector_empty')" />
 
       <n-scrollbar v-else class="pin-selector__scroll">
         <div
@@ -46,6 +44,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useChatStore } from '@/stores/domains/chat/chat'
 import type { MessageType } from '@/stores/domains/chat/chat/types'
 import { formatChatTime } from '@/utils/ComputedTime'
@@ -73,6 +72,8 @@ const selectableMessages = computed<MessageType[]>(() =>
     .slice(-MAX_LIST)
     .reverse()
 )
+
+const isEmptySelection = computed(() => selectableMessages.value.length === 0)
 
 const getSenderName = (msg: MessageType): string => msg.fromUser?.username || msg.fromUser?.uid || ''
 
@@ -137,10 +138,6 @@ const handleSelect = (eventId: string): void => {
 .pin-selector__close:hover {
   background: color-mix(in srgb, var(--tjg-text-tertiary) 12%, transparent);
   color: var(--tjg-text-primary);
-}
-
-.pin-selector__empty {
-  padding: 32px 0;
 }
 
 .pin-selector__scroll {

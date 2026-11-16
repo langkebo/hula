@@ -33,8 +33,15 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
     },
 
     /** 搜索空间
+     *
+     * 默认吞掉错误返回空列表（保持既有行为）；`throwOnError` 供需要区分「无结果」与
+     * 「请求失败」的 UI 使用。
      */
-    async searchSpaces(query: string, limit = SPACE_SEARCH_LIMIT): Promise<SpaceInfo[]> {
+    async searchSpaces(
+      query: string,
+      limit = SPACE_SEARCH_LIMIT,
+      options?: { throwOnError?: boolean }
+    ): Promise<SpaceInfo[]> {
       if (!query.trim()) return []
       try {
         const manager = getSpaceManager()
@@ -42,6 +49,7 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
         return spaces.map((s) => sdkSpaceToSpaceInfo(s))
       } catch (err) {
         logger.error(`[Space] 搜索空间失败: ${err}`)
+        if (options?.throwOnError) throw err
         return []
       }
     },
@@ -73,8 +81,11 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
     },
 
     /** 获取公开空间列表
+     *
+     * 默认吞掉错误返回空列表（保持既有行为）；`throwOnError` 供需要区分「无结果」与
+     * 「请求失败」的 UI 使用（主路径与回退路径均失败时抛出回退错误）。
      */
-    async getPublicSpaces(limit: number = 50): Promise<SpaceInfo[]> {
+    async getPublicSpaces(limit: number = 50, options?: { throwOnError?: boolean }): Promise<SpaceInfo[]> {
       try {
         const manager = getSpaceManager()
         const response = await manager.query.getPublicSpaces({ limit })
@@ -95,6 +106,7 @@ export function createSpaceQueries(getClient: () => MatrixClient, getSpaceManage
           }))
         } catch (fallbackErr) {
           logger.error(`[Space] 回退获取公开空间也失败: ${fallbackErr}`)
+          if (options?.throwOnError) throw fallbackErr
           return []
         }
       }

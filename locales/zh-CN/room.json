@@ -321,6 +321,19 @@
     "subtitle": "查看房间元数据信息",
     "title": "房间元数据"
   },
+  "my_rooms": {
+    "empty": "暂无房间",
+    "error": "加载失败",
+    "group_invite": "邀请中",
+    "group_join": "已加入",
+    "group_leave": "已离开",
+    "loading": "加载中…",
+    "refresh": "刷新",
+    "retry": "重试",
+    "search_placeholder": "搜索房间名称或 ID",
+    "title": "我的房间",
+    "unnamed": "未命名房间"
+  },
   "retention": {
     "count_hint": "按消息条数保留",
     "count_label": "保留条数",

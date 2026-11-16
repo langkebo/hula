@@ -27,8 +27,8 @@
       :row-key="(row: AdminAccountDataCallback) => row.id"
       :scroll-x="720" />
 
-    <n-empty
-      v-if="!accountDataLoading && accountDataCallbacks.length === 0"
+    <EmptyState
+      v-if="showAccountDataEmpty"
       data-testid="admin-callbacks-account-empty"
       :description="t('admin.callbacks.accountData.empty')" />
 
@@ -81,7 +81,6 @@ import {
   NButton,
   NCard,
   NDataTable,
-  NEmpty,
   NForm,
   NFormItem,
   NInput,
@@ -89,8 +88,9 @@ import {
   NSwitch,
   NTag
 } from 'naive-ui'
-import { h, onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminCallbacks } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { AdminAccountDataCallback } from '@/services/matrix/admin'
@@ -114,6 +114,8 @@ const accountDraft = ref({
   dataTypes: '',
   isEnabled: true
 })
+
+const showAccountDataEmpty = computed(() => !accountDataLoading.value && accountDataCallbacks.value.length === 0)
 
 function formatTs(ts: number | null): string {
   if (!ts) return '-'

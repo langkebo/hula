@@ -47,9 +47,16 @@ export const createAuthGuard = ({
       return true
     }
 
-    if (shouldBypassAuth?.(to)) {
-      logger.warn(`[E2E] 已绕过认证检查: ${to.fullPath || to.path}`)
-      return true
+    /**
+     * E2E 旁路**只替代「登录态」这一层**，不放行 `requiresAdmin`。
+     *
+     * 历史实现是 `return true`（连后台权限一起绕过），后果：`?e2e=1&mockAuth=1` 下
+     * 非管理员账号可以直接进 `/admin/dashboard`（2026-11-14 实测），
+     * 于是「管理后台权限」这条路径在 e2e 里根本无法被验证 —— 这也正是 admin e2e 长期为 0 的原因之一。
+     */
+    const bypassAuth = shouldBypassAuth?.(to) ?? false
+    if (bypassAuth) {
+      logger.warn(`[E2E] 已绕过登录态检查: ${to.fullPath || to.path}`)
     }
 
     // 平台判定与「用户此刻站在哪套路由里」可能不一致：
@@ -60,7 +67,7 @@ export const createAuthGuard = ({
     const loginPath = isMobile || to.path.startsWith('/mobile') ? '/mobile/login' : '/login'
 
     try {
-      const isLoggedIn = await hasAuthenticatedSession()
+      const isLoggedIn = bypassAuth || (await hasAuthenticatedSession())
       if (!isLoggedIn) {
         logger.warn(`未登录，跳转到 ${loginPath}`)
         return loginPath

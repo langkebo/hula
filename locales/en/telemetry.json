@@ -7,6 +7,8 @@
   },
   "section": {
     "status": "Runtime Status",
+    "healthChecks": "Checks",
+    "healthDatabase": "Database",
     "metrics": "Metric Summary",
     "scheduler": "AppService Scheduler",
     "alerts": "Alerts",
@@ -40,12 +42,20 @@
     "pendingEvents": "Pending Events",
     "pendingTransactions": "Pending Transactions",
     "success": "Success Count",
-    "failure": "Failure Count"
+    "failure": "Failure Count",
+    "capacityLimited": "Capacity Limited",
+    "pendingServices": "Services With Pending Transactions",
+    "backoffCount": "Total Backoff Count",
+    "capacityLimitedCount": "Total Capacity Limited Count",
+    "inFlight": "In-flight Requests"
   },
   "alerts": {
     "col_rule": "Rule",
     "col_severity": "Severity",
     "col_status": "Status",
+    "col_owner": "Owner",
+    "col_count": "Trigger Count",
+    "col_last_seen": "Last Seen",
     "col_message": "Message",
     "col_triggered": "Triggered At",
     "col_actions": "Actions",

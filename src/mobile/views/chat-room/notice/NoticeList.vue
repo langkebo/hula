@@ -8,27 +8,29 @@
       <div ref="scrollContainerRef" class="flex flex-col overflow-auto h-full" @scroll.passive="handleScroll">
         <div class="flex flex-col flex-1 gap-15px py-15px px-20px">
           <!-- 空态：群里没有公告时给出明确出路，避免只剩一块空白 -->
-          <div
-            v-if="listLoaded && announList.length === 0"
-            class="flex flex-col items-center justify-center gap-12px py-60px text-[--tjg-text-secondary]">
-            <svg
-              class="w-40px h-40px text-[--tjg-text-quaternary]"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true">
-              <path
-                d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-4 3.5v-3.5H5A1.5 1.5 0 0 1 3.5 15V6A1.5 1.5 0 0 1 5 4.5Z" />
-              <path d="M8 9h8M8 12h5" />
-            </svg>
-            <p class="text-14px">{{ t('mobile_chat.notice.empty') }}</p>
-            <van-button v-if="canAddAnnouncement" size="small" type="primary" round @click="goToAddNotice">
-              {{ t('mobile_chat.notice.publish') }}
-            </van-button>
-          </div>
+          <MobileAsyncState v-if="isEmptyList" state="empty" min-height="240px">
+            <template #empty>
+              <div class="flex flex-col items-center justify-center gap-12px py-24px text-[--tjg-text-secondary]">
+                <svg
+                  class="w-40px h-40px text-[--tjg-text-quaternary]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true">
+                  <path
+                    d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-4 3.5v-3.5H5A1.5 1.5 0 0 1 3.5 15V6A1.5 1.5 0 0 1 5 4.5Z" />
+                  <path d="M8 9h8M8 12h5" />
+                </svg>
+                <p class="text-14px">{{ t('mobile_chat.notice.empty') }}</p>
+                <van-button v-if="canAddAnnouncement" size="small" type="primary" round @click="goToAddNotice">
+                  {{ t('mobile_chat.notice.publish') }}
+                </van-button>
+              </div>
+            </template>
+          </MobileAsyncState>
 
           <RecycleScroller
             v-else-if="announList.length > 0"
@@ -84,10 +86,11 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onActivated, onBeforeUnmount } from 'vue'
+import { computed, nextTick, onActivated, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { RecycleScroller } from 'vue-virtual-scroller'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { useAnnouncementStore } from '@/stores/domains/chat/announcement'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useUserStore } from '@/stores/domains/user/user'
@@ -126,6 +129,9 @@ const scrollContainerRef = ref<HTMLElement | null>(null)
  */
 const READ_STORAGE_PREFIX = 'hula.mobile.notice.read.'
 const listLoaded = ref(false)
+
+/** 列表已加载且无公告：展示统一空态 */
+const isEmptyList = computed(() => listLoaded.value && announList.value.length === 0)
 const readIds = ref<Set<string>>(new Set())
 
 const resolveScrollKey = () => String(globalStore.currentSessionRoomId || route.params.roomId || '')

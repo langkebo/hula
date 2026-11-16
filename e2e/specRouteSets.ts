@@ -37,6 +37,7 @@ export const MOBILE_ONLY_SPECS: readonly string[] = [
  * （移动登录壳基线见报告 §3.2-A11Y-M）。
  */
 export const DESKTOP_ONLY_SPECS: readonly string[] = [
+  'admin-dashboard-live',
   'debug-phase3',
   'desktop-key-flows',
   'friend-operations',

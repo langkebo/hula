@@ -12,6 +12,7 @@
         :aria-label="t('home.plugins.room_list_short_title')"
         :show-create-action="true"
         :show-join-action="true"
+        :show-my-rooms-action="true"
         :create-button-text="t('room.create.create')"
         @update:search-keyword="setSearchKeyword"
         @update:session-type-filter="setSessionTypeFilter"
@@ -19,6 +20,7 @@
         @update:session-sort="setSessionSort"
         @create-room="handleCreateRoom"
         @join-room="handleJoinRoom"
+        @open-my-rooms="myRoomsVisible = true"
         @search-submit="handleSearchSubmit" />
     </template>
 
@@ -50,11 +52,14 @@
     @settings="handleDrawerSettings" />
 
   <RoomSettingsDrawer :room-id="settingsDrawerRoomId" @close="settingsDrawerRoomId = null" />
+
+  <MyRoomsDialog v-model:show="myRoomsVisible" @open-room="handleMyRoomsOpenRoom" />
 </template>
 <script lang="ts" setup name="roomList">
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import MyRoomsDialog from '@/components/room/MyRoomsDialog.vue'
 import RoomCardGrid from '@/components/room/RoomCardGrid.vue'
 import RoomDetailDrawer from '@/components/room/RoomDetailDrawer.vue'
 import RoomMembershipTabs from '@/components/room/RoomMembershipTabs.vue'
@@ -156,6 +161,9 @@ const drawerRoomId = ref<string | null>(null)
 /** 房间设置抽屉状态 */
 const settingsDrawerRoomId = ref<string | null>(null)
 
+/** 「我的房间」全量房间列表弹窗状态 */
+const myRoomsVisible = ref(false)
+
 /** 进入聊天界面（消息按钮 + 抽屉「进入房间」共用） */
 const enterChat = async (roomId: string) => {
   const item = findSessionItem(roomId)
@@ -195,6 +203,18 @@ const handleDrawerEnterRoom = (roomId: string) => {
 const handleDrawerSettings = (roomId: string) => {
   drawerRoomId.value = null
   settingsDrawerRoomId.value = roomId
+}
+
+/** 「我的房间」→ 关闭弹窗；会话列表已有的走 enterChat，否则按 roomId 直达会话 */
+const handleMyRoomsOpenRoom = (roomId: string) => {
+  myRoomsVisible.value = false
+  if (findSessionItem(roomId)) {
+    void enterChat(roomId)
+    return
+  }
+  void import('@/composables/chat/openMsgSession').then(({ openMsgSessionByRoomId }) => {
+    void openMsgSessionByRoomId(roomId)
+  })
 }
 
 /** P2：搜索框 Enter → 打开首个匹配结果的聊天 */

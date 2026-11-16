@@ -45,7 +45,7 @@
             <h3>{{ t('trendradar.hot_news') }}</h3>
             <n-button size="tiny" @click="loadLatestNews" :loading="loading">{{ t('trendradar.refresh') }}</n-button>
           </div>
-          <div v-if="loading && newsList.length === 0" class="trendradar-view__loading">
+          <div v-if="isInitialNewsLoading" class="trendradar-view__loading">
             <n-spin size="large" />
             <span>{{ t('trendradar.fetching') }}</span>
           </div>
@@ -54,11 +54,12 @@
             <span>{{ t('trendradar.connection_error') }}</span>
             <n-button size="small" @click="handleRetry">{{ t('trendradar.retry') }}</n-button>
           </div>
-          <div v-else-if="newsList.length === 0" class="trendradar-view__empty">
-            <svg class="trendradar-view__empty-icon" aria-hidden="true"><use href="#document"></use></svg>
-            <span>{{ t('trendradar.no_hot_news') }}</span>
-            <n-button size="small" @click="loadLatestNews">{{ t('trendradar.refresh') }}</n-button>
-          </div>
+          <EmptyState
+            v-else-if="isEmptyNews"
+            icon="mdi:newspaper-variant-outline"
+            :description="t('trendradar.no_hot_news')"
+            :action-text="t('trendradar.refresh')"
+            @action="loadLatestNews" />
           <div v-else class="trendradar-view__news-grid">
             <NewsCard v-for="news in newsList" :key="news.url" :news="news" @click="handleNewsClick" />
           </div>
@@ -100,10 +101,7 @@
             <n-spin size="large" />
             <span>{{ t('trendradar.loading') }}</span>
           </div>
-          <div v-else-if="rssList.length === 0" class="trendradar-view__empty">
-            <svg class="trendradar-view__empty-icon" aria-hidden="true"><use href="#rss"></use></svg>
-            <span>{{ t('trendradar.no_subscriptions') }}</span>
-          </div>
+          <EmptyState v-else-if="isEmptyRss" icon="mdi:rss" :description="t('trendradar.no_subscriptions')" />
           <div v-else class="trendradar-view__news-grid">
             <NewsCard v-for="item in rssList" :key="item.url" :news="item" @click="handleNewsClick" />
           </div>
@@ -156,8 +154,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import NewsCard from '@/components/trendradar/NewsCard.vue'
 import SearchPanel from '@/components/trendradar/SearchPanel.vue'
 import TrendingPanel from '@/components/trendradar/TrendingPanel.vue'
@@ -190,6 +189,10 @@ const rssList = ref<TrendRadarRssArticle[]>([])
 const inputKeyword = ref('')
 const analyzeKeyword = ref('')
 const analyzeResult = ref('')
+
+const isInitialNewsLoading = computed(() => loading.value && newsList.value.length === 0)
+const isEmptyNews = computed(() => newsList.value.length === 0)
+const isEmptyRss = computed(() => rssList.value.length === 0)
 
 const navItems = [
   { key: 'hot', label: t('trendradar.nav_hot'), icon: 'fire' },
@@ -446,8 +449,7 @@ onMounted(() => {
 }
 
 .trendradar-view__loading,
-.trendradar-view__error,
-.trendradar-view__empty {
+.trendradar-view__error {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -458,8 +460,7 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.trendradar-view__error-icon,
-.trendradar-view__empty-icon {
+.trendradar-view__error-icon {
   width: 48px;
   height: 48px;
   opacity: 0.5;

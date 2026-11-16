@@ -1,17 +1,19 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { checkQuotaMock, getQuotaStatsMock, getQuotaAlertsMock } = vi.hoisted(() => ({
+const { checkQuotaMock, getQuotaStatsMock, getQuotaAlertsMock, getServerQuotaMock } = vi.hoisted(() => ({
   checkQuotaMock: vi.fn(),
   getQuotaStatsMock: vi.fn(),
-  getQuotaAlertsMock: vi.fn()
+  getQuotaAlertsMock: vi.fn(),
+  getServerQuotaMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix/admin', () => ({
   adminService: {
     checkQuota: checkQuotaMock,
     getQuotaStats: getQuotaStatsMock,
-    getQuotaAlerts: getQuotaAlertsMock
+    getQuotaAlerts: getQuotaAlertsMock,
+    getServerQuota: getServerQuotaMock
   }
 }))
 
@@ -37,6 +39,7 @@ describe('useQuotaStore', () => {
     expect(store.quotaStatus).toBeNull()
     expect(store.quotaStats).toBeNull()
     expect(store.alerts).toEqual([])
+    expect(store.serverQuota).toBeNull()
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
@@ -176,6 +179,61 @@ describe('useQuotaStore', () => {
     })
   })
 
+  describe('fetchServerQuota', () => {
+    it('loads server quota from the admin endpoint', async () => {
+      const serverQuota = { totalSize: 2048, totalCount: 12, defaultSizeLimit: 1024, defaultCountLimit: 100 }
+      getServerQuotaMock.mockResolvedValue(serverQuota)
+
+      const store = useQuotaStore()
+      await store.fetchServerQuota()
+
+      expect(store.serverQuota).toEqual(serverQuota)
+      expect(getServerQuotaMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps server quota empty when the endpoint fails', async () => {
+      getServerQuotaMock.mockRejectedValue(new Error('forbidden'))
+
+      const store = useQuotaStore()
+      await expect(store.fetchServerQuota()).resolves.toBeUndefined()
+      expect(store.serverQuota).toBeNull()
+    })
+  })
+
+  describe('fetchAllQuota', () => {
+    it('loads user quota, stats, alerts and server quota together', async () => {
+      checkQuotaMock.mockResolvedValue({ used: 1, limit: 2, remaining: 1, percentage: 50, exceeded: false })
+      getQuotaStatsMock.mockResolvedValue({ storageBytes: 10, mediaCount: 1, limitBytes: 100 })
+      getQuotaAlertsMock.mockResolvedValue([])
+      getServerQuotaMock.mockResolvedValue({
+        totalSize: 10,
+        totalCount: 1,
+        defaultSizeLimit: 100,
+        defaultCountLimit: 10
+      })
+
+      const store = useQuotaStore()
+      await store.fetchAllQuota()
+
+      expect(checkQuotaMock).toHaveBeenCalledTimes(1)
+      expect(getQuotaStatsMock).toHaveBeenCalledTimes(1)
+      expect(getQuotaAlertsMock).toHaveBeenCalledTimes(1)
+      expect(getServerQuotaMock).toHaveBeenCalledTimes(1)
+      expect(store.serverQuota).not.toBeNull()
+    })
+
+    it('does not reject when one of the quota requests fails', async () => {
+      checkQuotaMock.mockRejectedValue(new Error('boom'))
+      getQuotaStatsMock.mockResolvedValue({ storageBytes: 0, mediaCount: 0, limitBytes: 0 })
+      getQuotaAlertsMock.mockResolvedValue([])
+      getServerQuotaMock.mockResolvedValue({ totalSize: 0, totalCount: 0, defaultSizeLimit: 0, defaultCountLimit: 0 })
+
+      const store = useQuotaStore()
+      await expect(store.fetchAllQuota()).resolves.toBeUndefined()
+      expect(store.quotaStats).not.toBeNull()
+    })
+  })
+
   describe('clearError', () => {
     it('clears the error state', async () => {
       checkQuotaMock.mockRejectedValue(new Error('err'))
@@ -202,6 +260,7 @@ describe('useQuotaStore', () => {
       expect(store.quotaStatus).toBeNull()
       expect(store.quotaStats).toBeNull()
       expect(store.alerts).toEqual([])
+      expect(store.serverQuota).toBeNull()
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
     })

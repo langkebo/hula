@@ -14,6 +14,7 @@ interface UseSpaceResult {
   update: (updates: Partial<SpaceOptions>) => Promise<boolean>
   leave: () => Promise<boolean>
   join: (viaServers?: string[]) => Promise<void>
+  knock: (reason?: string) => Promise<void>
   getHierarchy: (options?: {
     from?: string
     limit?: number
@@ -94,6 +95,12 @@ export function useSpace(spaceId: () => string): UseSpaceResult {
     await matrixSpaceService.joinSpace(id, viaServers)
   }
 
+  const knock = async (reason?: string): Promise<void> => {
+    const id = spaceId()
+    if (!id) return
+    await matrixSpaceService.knockSpace(id, reason)
+  }
+
   const getHierarchy = async (options?: {
     maxDepth?: number
   }): Promise<{ rooms: Array<Record<string, unknown>>; next_batch?: string }> => {
@@ -119,5 +126,5 @@ export function useSpace(spaceId: () => string): UseSpaceResult {
     await matrixSpaceService.addChildToSpace(id, roomId, options)
   }
 
-  return { space, loading, mutating, error, load, update, leave, join, getHierarchy, getTreePath, addChild }
+  return { space, loading, mutating, error, load, update, leave, join, knock, getHierarchy, getTreePath, addChild }
 }

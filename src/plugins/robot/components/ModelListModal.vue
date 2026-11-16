@@ -11,16 +11,12 @@
 
     <!-- 模型列表 -->
     <n-spin :show="loading">
-      <div v-if="modelList.length === 0" class="empty-container">
-        <n-empty :description="t('ai_assistant.robot.no_models')" size="large">
-          <template #icon>
-            <Icon icon="mdi:package-variant-closed" class="text-48px color-[--tjg-text-tertiary]" />
-          </template>
-          <template #extra>
-            <n-button type="primary" @click="emit('add')">{{ t('ai_assistant.robot.add_first_model') }}</n-button>
-          </template>
-        </n-empty>
-      </div>
+      <EmptyState
+        v-if="isEmptyModels"
+        icon="mdi:package-variant-closed"
+        :description="t('ai_assistant.robot.no_models')"
+        :action-text="t('ai_assistant.robot.add_first_model')"
+        @action="emit('add')" />
 
       <div v-else class="model-list">
         <ModelCard
@@ -46,7 +42,9 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 import { useUserStore } from '@/stores/domains/user/user'
 import ModelCard from './ModelCard.vue'
@@ -57,11 +55,13 @@ interface Pagination {
   total: number
 }
 
-defineProps<{
+const props = defineProps<{
   loading: boolean
   modelList: AIModel[]
   pagination: Pagination
 }>()
+
+const isEmptyModels = computed(() => props.modelList.length === 0)
 
 const emit = defineEmits<{
   add: []
@@ -82,10 +82,6 @@ const isModelCreator = (model: AIModel) => {
 </script>
 
 <style scoped lang="scss">
-.empty-container {
-  padding: 40px 0;
-}
-
 .model-list {
   display: flex;
   flex-direction: column;

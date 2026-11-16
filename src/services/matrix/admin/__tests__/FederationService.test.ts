@@ -14,7 +14,12 @@ const makeAdmin = () => ({
   resetFederationConnection: vi.fn(),
   getFederationBlacklist: vi.fn(),
   addToFederationBlacklist: vi.fn(),
-  removeFromFederationBlacklist: vi.fn()
+  removeFromFederationBlacklist: vi.fn(),
+  getFederationCache: vi.fn(),
+  clearFederationCache: vi.fn(),
+  deleteFederationCacheEntry: vi.fn(),
+  getPendingFederationServers: vi.fn(),
+  confirmFederation: vi.fn()
 })
 
 describe('AdminFederationService', () => {
@@ -94,5 +99,110 @@ describe('AdminFederationService', () => {
 
     admin.removeFromFederationBlacklist.mockRejectedValueOnce(new Error('boom'))
     await expect(service.removeFromFederationBlacklist('evil.hs')).resolves.toBe(false)
+  })
+
+  it('getFederationDestinations 映射 failure_count/status/updated_ts', async () => {
+    admin.getFederationDestinations.mockResolvedValueOnce([
+      {
+        destination: 'remote.hs',
+        retry_last_ts: null,
+        retry_interval: null,
+        failure_ts: 3,
+        last_successful_ts: 4,
+        failure_count: 7,
+        status: 'rejected',
+        updated_ts: 5
+      }
+    ])
+
+    await expect(service.getFederationDestinations()).resolves.toEqual([
+      {
+        destination: 'remote.hs',
+        retryLastTs: undefined,
+        retryInterval: undefined,
+        failureTs: 3,
+        lastSuccessfulTs: 4,
+        failureCount: 7,
+        status: 'rejected',
+        updatedTs: 5
+      }
+    ])
+  })
+
+  it('getFederationCache 映射 cache 壳并在失败时降级为空页', async () => {
+    admin.getFederationCache.mockResolvedValueOnce({
+      cache: [{ key: 'k1', value: { a: 1 }, expiry_ts: 100 }],
+      total: 1
+    })
+    await expect(service.getFederationCache()).resolves.toEqual({
+      entries: [{ key: 'k1', value: { a: 1 }, expiryTs: 100 }],
+      total: 1
+    })
+
+    admin.getFederationCache.mockRejectedValueOnce(new Error('boom'))
+    await expect(service.getFederationCache()).resolves.toEqual({ entries: [], total: 0 })
+  })
+
+  it('clearFederationCache 与 deleteFederationCacheEntry 失败时向上抛出', async () => {
+    admin.clearFederationCache.mockResolvedValueOnce(undefined)
+    await expect(service.clearFederationCache()).resolves.toBeUndefined()
+    expect(admin.clearFederationCache).toHaveBeenCalled()
+
+    admin.clearFederationCache.mockRejectedValueOnce(new Error('clear-fail'))
+    await expect(service.clearFederationCache()).rejects.toThrow('clear-fail')
+
+    admin.deleteFederationCacheEntry.mockResolvedValueOnce(undefined)
+    await expect(service.deleteFederationCacheEntry('k1')).resolves.toBeUndefined()
+    expect(admin.deleteFederationCacheEntry).toHaveBeenCalledWith('k1')
+
+    admin.deleteFederationCacheEntry.mockRejectedValueOnce(new Error('delete-fail'))
+    await expect(service.deleteFederationCacheEntry('k1')).rejects.toThrow('delete-fail')
+  })
+
+  it('getPendingFederationServers 映射分页壳并在失败时降级为空页', async () => {
+    admin.getPendingFederationServers.mockResolvedValueOnce({
+      servers: [
+        {
+          server_name: 'pending.hs',
+          failure_count: 3,
+          last_failed_connect_at: 10,
+          last_successful_connect_at: null,
+          status: 'pending',
+          updated_ts: 11
+        }
+      ],
+      total: 1,
+      limit: 20,
+      next_batch: 'cursor'
+    })
+
+    await expect(service.getPendingFederationServers(undefined, 20)).resolves.toEqual({
+      servers: [
+        {
+          serverName: 'pending.hs',
+          failureCount: 3,
+          lastFailedConnectAt: 10,
+          lastSuccessfulConnectAt: null,
+          status: 'pending',
+          updatedTs: 11
+        }
+      ],
+      total: 1,
+      limit: 20,
+      nextBatch: 'cursor'
+    })
+    expect(admin.getPendingFederationServers).toHaveBeenCalledWith(undefined, 20)
+
+    admin.getPendingFederationServers.mockRejectedValueOnce(new Error('boom'))
+    await expect(service.getPendingFederationServers()).resolves.toEqual({ servers: [], total: 0, limit: 0 })
+  })
+
+  it('confirmFederation 委托 SDK 且失败时向上抛出', async () => {
+    admin.confirmFederation.mockResolvedValueOnce(undefined)
+    await expect(service.confirmFederation('pending.hs', true)).resolves.toBeUndefined()
+    expect(admin.confirmFederation).toHaveBeenCalledWith('pending.hs', true)
+
+    admin.confirmFederation.mockRejectedValueOnce(new Error('confirm-fail'))
+    await expect(service.confirmFederation('pending.hs', false)).rejects.toThrow('confirm-fail')
   })
 })

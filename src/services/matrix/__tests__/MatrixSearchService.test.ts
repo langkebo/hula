@@ -38,15 +38,23 @@ describe('MatrixSearchService', () => {
     searchMessageText: ReturnType<typeof vi.fn>
     searchUserDirectory: ReturnType<typeof vi.fn>
   }
+  let roomMgr: {
+    searchRooms: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
     searchMgr = {
       searchMessageText: vi.fn(),
       searchUserDirectory: vi.fn()
     }
+    roomMgr = {
+      searchRooms: vi.fn()
+    }
     mockClient = {
       getSearchManager: vi.fn(() => searchMgr as unknown as ReturnType<NonNullable<MatrixClient['getSearchManager']>>),
+      getRoomManager: vi.fn(() => roomMgr as unknown as ReturnType<NonNullable<MatrixClient['getRoomManager']>>),
       getUserId: vi.fn(() => '@user:example.com'),
+      getRooms: vi.fn(() => []),
       getRoom: vi.fn()
     }
 
@@ -297,6 +305,83 @@ describe('MatrixSearchService', () => {
       searchMgr.searchUserDirectory.mockRejectedValue(new Error('network down'))
 
       await expect(matrixSearchService.searchUsers('test')).rejects.toThrow('network down')
+    })
+  })
+
+  describe('searchRooms via RoomManager', () => {
+    const localRoom = {
+      roomId: '!local:example.com',
+      name: 'Local Room',
+      getMember: vi.fn(() => ({ membership: 'join' })),
+      getMxcAvatarUrl: vi.fn(() => 'mxc://hs/local'),
+      getJoinedMemberCount: vi.fn(() => 3),
+      isSpaceRoom: vi.fn(() => false),
+      getDMInviter: vi.fn(() => undefined),
+      getJoinedMembers: vi.fn(() => [{ userId: '@user:example.com' }, { userId: '@peer:example.com' }]),
+      client: mockClient
+    }
+
+    it('searches rooms via getRoomManager().searchRooms and merges local metadata', async () => {
+      roomMgr.searchRooms.mockResolvedValue({
+        results: [
+          {
+            room_id: '!local:example.com',
+            name: 'Server Room',
+            avatar_url: 'mxc://hs/server',
+            num_joined_members: 9
+          },
+          {
+            room_id: '!remote:example.com',
+            name: 'Remote Room',
+            avatar_url: 'mxc://hs/remote',
+            num_joined_members: 4
+          }
+        ]
+      })
+      vi.mocked(mockClient.getRoom!).mockImplementation((roomId: string) =>
+        roomId === '!local:example.com' ? (localRoom as never) : null
+      )
+
+      const results = await matrixSearchService.searchRooms('room')
+
+      expect(roomMgr.searchRooms).toHaveBeenCalledWith('room', 20)
+      expect(results).toEqual([
+        expect.objectContaining({
+          roomId: '!local:example.com',
+          roomName: 'Local Room',
+          avatarUrl: 'mxc://hs/local',
+          memberCount: 3,
+          isJoined: true
+        }),
+        expect.objectContaining({
+          roomId: '!remote:example.com',
+          roomName: 'Remote Room',
+          avatarUrl: 'mxc://hs/remote',
+          memberCount: 4
+        })
+      ])
+    })
+
+    it('falls back to local filtering when the server search fails', async () => {
+      roomMgr.searchRooms.mockRejectedValue(new Error('network down'))
+      vi.mocked(mockClient.getRooms!).mockReturnValue([localRoom as never])
+
+      const results = await matrixSearchService.searchRooms('local')
+
+      expect(roomMgr.searchRooms).toHaveBeenCalled()
+      expect(results).toEqual([
+        expect.objectContaining({
+          roomId: '!local:example.com',
+          roomName: 'Local Room'
+        })
+      ])
+    })
+
+    it('returns empty array for blank query without calling the server', async () => {
+      const results = await matrixSearchService.searchRooms('   ')
+
+      expect(results).toEqual([])
+      expect(roomMgr.searchRooms).not.toHaveBeenCalled()
     })
   })
 })

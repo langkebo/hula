@@ -9,38 +9,38 @@
         <div class="flex flex-col p-16px gap-12px">
           <div class="text-14px text-[--tjg-text-secondary]">{{ t('emoticon.packs.description') }}</div>
 
-          <div v-if="loading" class="flex justify-center py-20px">
-            <van-loading size="24px" />
-          </div>
-
-          <van-empty v-else-if="packs.length === 0" :description="t('emoticon.packs.empty')" />
-
-          <van-cell-group v-else inset>
-            <van-swipe-cell v-for="pack in packs" :key="pack.id">
-              <van-cell is-link @click="openDetail(pack)">
-                <template #icon>
-                  <div
-                    class="w-40px h-40px rounded-full mr-12px flex items-center justify-center overflow-hidden"
-                    :style="iconShellStyles.pack">
-                    <img v-if="pack.iconUrl" :src="pack.iconUrl" alt="" class="w-full h-full object-cover" />
-                    <Icon v-else icon="mdi:emoticon" :width="20" color="var(--tjg-color-beta-500)" />
-                  </div>
+          <MobileAsyncState
+            :state="asyncState"
+            test-id="emoji-packs"
+            :empty-text="t('emoticon.packs.empty')"
+            min-height="160px">
+            <van-cell-group inset>
+              <van-swipe-cell v-for="pack in packs" :key="pack.id">
+                <van-cell is-link @click="openDetail(pack)">
+                  <template #icon>
+                    <div
+                      class="w-40px h-40px rounded-full mr-12px flex items-center justify-center overflow-hidden"
+                      :style="iconShellStyles.pack">
+                      <img v-if="pack.iconUrl" :src="pack.iconUrl" alt="" class="w-full h-full object-cover" />
+                      <Icon v-else icon="mdi:emoticon" :width="20" color="var(--tjg-color-beta-500)" />
+                    </div>
+                  </template>
+                  <template #title>
+                    <span class="text-14px">{{ pack.name }}</span>
+                  </template>
+                  <template #value>
+                    <span class="text-12px text-[--tjg-text-secondary]">
+                      {{ t('emoticon.packs.pack_count', { count: pack.items.length }) }}
+                    </span>
+                  </template>
+                </van-cell>
+                <template #right>
+                  <van-button square type="primary" :text="t('emoticon.packs.rename')" @click="openRename(pack)" />
+                  <van-button square type="danger" :text="t('emoticon.packs.uninstall')" @click="handleDelete(pack)" />
                 </template>
-                <template #title>
-                  <span class="text-14px">{{ pack.name }}</span>
-                </template>
-                <template #value>
-                  <span class="text-12px text-[--tjg-text-secondary]">
-                    {{ t('emoticon.packs.pack_count', { count: pack.items.length }) }}
-                  </span>
-                </template>
-              </van-cell>
-              <template #right>
-                <van-button square type="primary" :text="t('emoticon.packs.rename')" @click="openRename(pack)" />
-                <van-button square type="danger" :text="t('emoticon.packs.uninstall')" @click="handleDelete(pack)" />
-              </template>
-            </van-swipe-cell>
-          </van-cell-group>
+              </van-swipe-cell>
+            </van-cell-group>
+          </MobileAsyncState>
 
           <van-button type="primary" block :loading="creating" @click="openCreate">
             <Icon icon="mdi:plus" :width="16" class="mr-4px" />
@@ -79,7 +79,11 @@
           </div>
 
           <div class="flex-1 overflow-auto p-12px">
-            <van-empty v-if="!detailPack || detailPack.items.length === 0" :description="t('emoticon.packs.empty')" />
+            <MobileAsyncState
+              v-if="!detailPack || detailPack.items.length === 0"
+              state="empty"
+              :empty-text="t('emoticon.packs.empty')"
+              min-height="120px" />
 
             <div v-else class="grid grid-cols-4 gap-8px">
               <div v-for="emoji in detailPack.items" :key="emoji.id" class="relative">
@@ -130,12 +134,19 @@ import { showConfirmDialog, type UploaderFileListItem } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useEmojiPackManager } from '@/composables/emoji/useEmojiPackManager'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import type { EmojiPack } from '@/services/matrix/messaging/MatrixEmojiService'
 
 const { t } = useI18n()
 
 const { packs, loading, creating, load, createPack, deletePack, renamePack, addEmoji, removeEmoji } =
   useEmojiPackManager()
+
+/** 四态：加载中、空表情包、就绪；统一交给 MobileAsyncState 渲染 */
+const asyncState = computed<'loading' | 'empty' | 'ready'>(() => {
+  if (loading.value) return 'loading'
+  return packs.value.length === 0 ? 'empty' : 'ready'
+})
 
 const iconShellStyles = {
   pack: { backgroundColor: 'var(--tjg-color-beta-100)' }

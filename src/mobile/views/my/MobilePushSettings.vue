@@ -76,7 +76,7 @@
               </template>
             </van-cell>
 
-            <van-cell v-if="pushers.length === 0" data-testid="push-empty" :title="t('mobile_push.no_devices')" />
+            <van-cell v-if="isPusherListEmpty" data-testid="push-empty" :title="t('mobile_push.no_devices')" />
           </van-cell-group>
 
           <van-cell-group v-for="kind in visibleKinds" :key="kind" :title="t(`mobile_push.kinds.${kind}`)" inset>
@@ -148,6 +148,10 @@ const router = useRouter()
 const loading = ref(true)
 const togglingMaster = ref(false)
 const pushers = ref<IPusher[]>([])
+
+/** 无推送设备：行内占位提示，交由模板统一判定 */
+const isPusherListEmpty = computed(() => pushers.value.length === 0)
+
 const groupedRules = ref(groupPushRulesByKind(null))
 const masterEnabled = ref(true)
 /** 本次会话中被总开关注销的本机 pusher，用于重新开启时恢复注册。 */

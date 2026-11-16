@@ -76,6 +76,16 @@
         {{ t('setting.diagnostics.extension_ok_desc') }}
       </n-alert>
 
+      <!-- 服务能力诊断：入口不可用时在此查到原因，并可直接重试 -->
+      <section class="diagnostics-capabilities" data-testid="service-capabilities">
+        <h4 class="diagnostics-capabilities__title">{{ t('setting.diagnostics.service_capabilities') }}</h4>
+        <ServiceCapabilityPanel
+          :items="capabilityItems"
+          :settings-keys="capabilitySettingsKeys"
+          @retry="handleCapabilityRetry"
+          @open-settings="handleCapabilitySettings" />
+      </section>
+
       <div class="diagnostics-actions">
         <n-button size="small" data-testid="reset-btn" @click="handleReset">
           {{ t('setting.diagnostics.reset') }}
@@ -90,6 +100,8 @@ import { Icon } from '@iconify/vue'
 import { NAlert, NButton, NCard, NGi, NGrid, NStatistic } from 'naive-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ServiceCapabilityPanel from '@/components/common/ServiceCapabilityPanel.vue'
+import { useServiceCapabilityItems } from '@/composables/settings/useServiceCapabilityItems'
 import { useApiMetrics } from '@/composables/useApiMetrics'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 
@@ -102,6 +114,21 @@ const { getMetricsSnapshot, reset: resetMetrics } = useApiMetrics()
 const capabilityStore = useCapabilityStore()
 
 const snapshot = ref(getMetricsSnapshot())
+
+const {
+  items: capabilityItems,
+  settingsKeys: capabilitySettingsKeys,
+  refresh: refreshCapabilities,
+  openSettings: openCapabilitySettings
+} = useServiceCapabilityItems()
+
+function handleCapabilityRetry(): void {
+  void refreshCapabilities()
+}
+
+function handleCapabilitySettings(key: string): void {
+  openCapabilitySettings(key)
+}
 
 // O3: 扩展健康状态
 const hasDegradedExtension = computed(() => capabilityStore.hasDegradedExtension)
@@ -165,5 +192,16 @@ function handleReset() {
   display: flex;
   justify-content: flex-end;
   margin-top: var(--tjg-space-4);
+}
+
+.diagnostics-capabilities {
+  margin-top: var(--tjg-space-4);
+}
+
+.diagnostics-capabilities__title {
+  margin: 0 0 var(--tjg-space-2);
+  font-size: var(--tjg-font-size-sm);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-secondary);
 }
 </style>

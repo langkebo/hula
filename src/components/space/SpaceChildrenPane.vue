@@ -28,8 +28,8 @@
       :rooms-loading="roomsLoading"
       :can-manage="canManageSelectedSpace"
       :is-member="isMember"
+      :join-rule="selectedSpaceDetail?.joinRule"
       :sub-view="subView"
-      :joining-space="joiningSpace"
       :manage-mode="manageMode"
       :manage-submitting="manageSubmitting"
       :invite-user-id="inviteForm.userId"
@@ -440,15 +440,13 @@ const submitManagePane = async () => {
   }
 }
 
-// 加入空间（非成员场景）
+// 加入 / 申请加入成功后刷新空间状态（实际请求由 SpaceDetailsPane 内的 TjgSpaceJoinCta 发起）
 const handleJoinSpace = async () => {
   if (!spaceId.value) return
   joiningSpace.value = true
   try {
-    await matrixSpaceService.joinSpace(spaceId.value)
     await reloadSpaces()
     await Promise.allSettled([loadSelectedSpace(), loadSpaceMembers(), loadSpaceRooms()])
-    showFeedback(t('space.join_space_success'), 'success')
   } catch (err) {
     showFeedback(String(err) || t('space.join_space_failed'), 'error')
   } finally {

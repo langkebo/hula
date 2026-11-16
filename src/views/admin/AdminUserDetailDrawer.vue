@@ -2,6 +2,11 @@
   <n-drawer :show="show" placement="right" :width="520" @update:show="emit('update:show', $event)">
     <n-drawer-content :title="t('admin.users.userDetail')" closable>
       <template v-if="selectedUser">
+        <n-space justify="end" class="mb-8px">
+          <n-button size="tiny" :loading="detailRefreshing" @click="handleRefreshUser">
+            {{ t('admin.users.refreshDetail') }}
+          </n-button>
+        </n-space>
         <n-descriptions bordered :column="2" label-placement="left" class="mb-16px">
           <n-descriptions-item :label="t('admin.users.userId')">{{ selectedUser.userId }}</n-descriptions-item>
           <n-descriptions-item :label="t('admin.users.displayName')">
@@ -38,7 +43,7 @@
           </n-descriptions-item>
         </n-descriptions>
 
-        <n-tabs type="line" animated>
+        <n-tabs v-model:value="activeTab" type="line" animated>
           <n-tab-pane name="devices" :tab="t('admin.users.devices')">
             <n-spin :show="devicesLoading">
               <n-data-table
@@ -66,6 +71,10 @@
           </n-tab-pane>
 
           <AdminUserStatisticsPane :stats="userStats" :loading="statsLoading" />
+
+          <AdminUserServerInfo :admin="admin" />
+
+          <AdminUserAccountPanes :admin="admin" :active-tab="activeTab" />
 
           <n-tab-pane name="rateLimit" :tab="t('admin.users.rateLimit')">
             <n-spin :show="rateLimitLoading">
@@ -113,30 +122,11 @@
             </n-spin>
           </n-tab-pane>
 
-          <n-tab-pane name="actions" :tab="t('admin.users.quickActions')">
-            <n-space vertical>
-              <n-button size="small" @click="emit('reset-password', selectedUser!.userId)">
-                {{ t('admin.users.resetPassword') }}
-              </n-button>
-              <n-button size="small" @click="emit('toggle-admin', selectedUser!)">
-                {{ selectedUser!.admin ? t('admin.users.removeAdmin') : t('admin.users.grantAdmin') }}
-              </n-button>
-              <n-button
-                size="small"
-                :type="selectedUser!.deactivated ? 'success' : 'error'"
-                @click="emit('toggle-deactivate', selectedUser!)">
-                {{ selectedUser!.deactivated ? t('admin.users.reactivate') : t('admin.users.deactivate') }}
-              </n-button>
-              <n-popconfirm @positive-click="handleInvalidateSession">
-                <template #trigger>
-                  <n-button size="small" type="warning">
-                    {{ t('admin.users.invalidateAllSessions') }}
-                  </n-button>
-                </template>
-                {{ t('admin.users.invalidateSessionConfirm') }}
-              </n-popconfirm>
-            </n-space>
-          </n-tab-pane>
+          <AdminUserActionsPane
+            :admin="admin"
+            @reset-password="emit('reset-password', $event)"
+            @toggle-admin="emit('toggle-admin', $event)"
+            @toggle-deactivate="emit('toggle-deactivate', $event)" />
         </n-tabs>
       </template>
       <template #footer>
@@ -157,8 +147,11 @@
 import { NButton, NDrawer, NDrawerContent, NSpace, NSwitch, NTag, useDialog } from 'naive-ui'
 import { computed, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AdminUserServerInfo from '@/components/admin/users/AdminUserServerInfo.vue'
 import type { UseAdminUsersResult, UserDevice, UserInfo, UserSession } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import AdminUserAccountPanes from './AdminUserAccountPanes.vue'
+import AdminUserActionsPane from './AdminUserActionsPane.vue'
 import AdminUserRateLimitDrawer from './AdminUserRateLimitDrawer.vue'
 import AdminUserStatisticsPane from './AdminUserStatisticsPane.vue'
 import { useAdminErrorHandler } from './useAdminError'
@@ -193,10 +186,12 @@ const {
   sessionsLoading,
   userStats,
   statsLoading,
-  accountStatus
+  accountStatus,
+  detailRefreshing
 } = props.admin
 
 const showRateLimitDialog = ref(false)
+const activeTab = ref('devices')
 
 const accountStatusData = computed(() => accountStatus.value)
 
@@ -339,13 +334,16 @@ async function handleUnshadowBan() {
   }
 }
 
-async function handleInvalidateSession() {
-  if (!selectedUser.value) return
+async function handleRefreshUser() {
   try {
-    await props.admin.invalidateSession(selectedUser.value.userId)
-    showFeedback(t('admin.users.invalidateSessionSuccess'), 'success')
+    const fresh = await props.admin.refreshUserDetail()
+    if (!fresh) {
+      showFeedback(t('admin.users.refreshFailed'), 'error')
+      return
+    }
+    showFeedback(t('admin.users.refreshSuccess'), 'success')
   } catch (err) {
-    if (handleAdminError(err)) showFeedback(t('admin.users.invalidateSessionFailed'), 'error')
+    if (handleAdminError(err)) showFeedback(t('admin.users.refreshFailed'), 'error')
   }
 }
 

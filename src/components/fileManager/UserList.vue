@@ -51,15 +51,8 @@
             class="mb-8px" />
 
           <!-- 空状态 -->
-          <div v-if="filteredList.length === 0 && searchKeyword && !loading" class="flex-center h-200px">
-            <div class="flex-col-center">
-              <svg class="size-48px text-[--tjg-text-primary] opacity-30 mb-12px" aria-hidden="true">
-                <use href="#search"></use>
-              </svg>
-              <p class="text-[length:var(--tjg-font-size-base)] text-[--tjg-text-secondary] opacity-60 m-0">
-                {{ getEmptyMessage() }}
-              </p>
-            </div>
+          <div v-if="isEmptyFilteredList" class="flex-center h-200px">
+            <EmptyState compact illustration="no-results" :description="getEmptyMessage()" />
           </div>
 
           <!-- 加载状态 -->
@@ -77,6 +70,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useOperationFeedback } from '@/composables/common/useOperationFeedback'
 import type { MatrixContact } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -217,6 +211,9 @@ const filteredList = computed(() => {
     return getItemLabel(item).toLowerCase().includes(searchKeyword.value.toLowerCase())
   })
 })
+
+// 搜索无结果（仅在有关键词且非加载中时展示空态）
+const isEmptyFilteredList = computed(() => filteredList.value.length === 0 && !!searchKeyword.value && !loading.value)
 
 // 获取搜索占位符
 const getSearchPlaceholder = () => {

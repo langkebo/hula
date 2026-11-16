@@ -13,6 +13,14 @@
     "remove_success": "Removed"
   },
   "retry": "Retry",
+  "edited": "Edited",
+  "edit_history": {
+    "title": "Edit history",
+    "empty": "This message has no earlier versions",
+    "version": "Version {n}",
+    "loading": "Loading edit history",
+    "aria_open": "View the edit history of this message"
+  },
   "long_press": {
     "forward": "Forward"
   },

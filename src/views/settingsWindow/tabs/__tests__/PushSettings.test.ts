@@ -45,7 +45,12 @@ vi.mock('@/services/matrix/notifications/MatrixPushService', () => ({
     getPushers: (...args: unknown[]) => getPushersMock(...args),
     getPushRules: (...args: unknown[]) => getPushRulesMock(...args),
     setPushRuleEnabled: (...args: unknown[]) => setPushRuleEnabledMock(...args),
-    subscribePushRules: vi.fn(() => vi.fn())
+    subscribePushRules: vi.fn(() => vi.fn()),
+    // 设备端点区块（PushDeviceSettings）挂载时会拉取列表
+    getPushDevices: vi.fn().mockResolvedValue([]),
+    registerPushDevice: vi.fn().mockResolvedValue(undefined),
+    unregisterPushDevice: vi.fn().mockResolvedValue(undefined),
+    sendPushNotification: vi.fn().mockResolvedValue(undefined)
   }
 }))
 
@@ -73,6 +78,13 @@ vi.mock('naive-ui', () => ({
   NDrawer: { name: 'NDrawer', template: '<div><slot /></div>' },
   NDrawerContent: { name: 'NDrawerContent', template: '<div><slot /><slot name="footer" /></div>' },
   NSelect: { name: 'NSelect', template: '<div />' },
+  NCollapse: { name: 'NCollapse', template: '<div><slot /></div>' },
+  NCollapseItem: { name: 'NCollapseItem', props: ['title', 'name'], template: '<div><slot /></div>' },
+  NPopconfirm: {
+    name: 'NPopconfirm',
+    template: '<div><slot name="trigger" /><slot /></div>',
+    emits: ['positive-click']
+  },
   NSpin: { name: 'NSpin', template: '<div><slot /></div>' },
   NSwitch: { name: 'NSwitch', props: ['value'], emits: ['update:value'], template: '<div />' },
   NTimePicker: { name: 'NTimePicker', props: ['value'], emits: ['update:value'], template: '<div />' },

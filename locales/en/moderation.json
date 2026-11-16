@@ -79,7 +79,18 @@
     "detail": {
       "title": "Report Details",
       "content": "Content",
-      "none": "None"
+      "none": "None",
+      "refresh": "Refresh details"
+    },
+    "scanner": {
+      "view": "View scanner",
+      "title": "Scanner info",
+      "empty": "No scanner info",
+      "load_failed": "Failed to load scanner info",
+      "scanner_id": "Scanner ID",
+      "scan_result": "Scan result",
+      "confidence": "Confidence",
+      "scanned_at": "Scanned at"
     },
     "detail_failed": "Failed to load report details",
     "dismiss_confirm": "Dismiss report {id}? This deletes the server-side report record.",

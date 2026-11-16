@@ -81,7 +81,7 @@
           </n-flex>
 
           <n-scrollbar class="h-[calc(var(--tjg-viewport-height, 100vh)-350px)]">
-            <n-empty v-if="threadReplies.length === 0" :description="t('thread.no_replies')" />
+            <EmptyState v-if="threadReplies.length === 0" compact :description="t('thread.no_replies')" />
             <div v-else class="reply-list">
               <div v-for="reply in threadReplies" :key="reply.id" class="reply-item">
                 <n-flex :size="12">

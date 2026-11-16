@@ -15,6 +15,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
+import { guardApkFreshness, resetAppState } from './lib/probe-runtime.mjs'
 
 const BASE = (process.env.E2EE_BASE ?? 'http://127.0.0.1:8008').replace(/\/$/, '')
 const CDP_PORT = Number(process.env.CDP_A ?? 9222)
@@ -333,6 +334,9 @@ const eventStateFn = (roomId, eventId) => `
 async function main() {
   let cdp = null
   try {
+    guardApkFreshness()
+    // 上一支探针残留的登录态会让「填表」找不到登录表单（页面停在会话列表）⇒ 先清一次
+    resetAppState(ADB, SERIAL)
     const a = await register('a')
     const b = await register('b')
     console.log(`A=${a.userId}  B=${b.userId}\n`)
@@ -589,22 +593,27 @@ async function main() {
 
     if (list.length > 0) {
       const sample = list[0]
-      const nid = sample?.event?.event_id ?? sample?.id ?? sample?.event_id ?? null
+      // ack 端点的路径参数是**通知记录 id**（`MatrixPath<i64>`，服务端取 `notification_id` 列），
+      // 不是 event_id：传 `$xxx` 会被 axum 的 i64 解析挡成 400 `M_INVALID_PARAM`。
+      const nid = sample?.notification_id ?? null
       if (!nid) {
-        // 服务端返回的通知项没有 id/event_id 时无法 ACK；记录结构供后端排查
-        record('N1', 'ACK 单条通知', 'info', `通知项无 id/event_id，字段=${Object.keys(sample ?? {}).join(',')}`, sample)
+        record('N1', 'ACK 单条通知', 'info', `通知项无 notification_id，字段=${Object.keys(sample ?? {}).join(',')}`, sample)
       } else {
         const ack = await rest('POST', `/_matrix/client/v3/notifications/${encodeURIComponent(nid)}/ack`, { token: a.token })
         const ackBody = (ack.raw ?? '').slice(0, 160)
         if (ack.status === 200) {
-          record('N1', 'ACK 单条通知', 'pass', `status=200，id=${nid}`)
+          record('N1', 'ACK 单条通知（路径参数为 notification_id）', 'pass', `status=200，notification_id=${nid}`)
           await sleep(2000)
           notif = await rest('GET', '/_matrix/client/v3/notifications', { token: a.token })
           list = notif.body?.notifications ?? []
-          record('N1', 'ACK 后列表不再返回该条', !list.some((n) => (n.event?.event_id ?? n.id ?? n.event_id) === nid) ? 'pass' : 'fail', `count=${list.length}`)
+          record(
+            'N1',
+            'ACK 后该条 read=true（列表不删除，前端按 read 过滤）',
+            list.find((n) => n.notification_id === nid)?.read === true ? 'pass' : 'fail',
+            `count=${list.length}，目标 read=${JSON.stringify(list.find((n) => n.notification_id === nid)?.read)}`
+          )
         } else {
-          // 客户端 ackNotificationWithFallback 在 ACK 失败时会回退到已读回执，4xx 属后端能力缺口
-          record('N1', 'ACK 单条通知', 'info', `status=${ack.status}，id=${nid}，body=${ackBody}`)
+          record('N1', 'ACK 单条通知', 'fail', `status=${ack.status}，notification_id=${nid}，body=${ackBody}`)
         }
       }
     } else {

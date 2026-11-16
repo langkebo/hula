@@ -28,12 +28,11 @@
       </svg>
     </div>
 
-    <div
+    <EmptyState
       v-else-if="messages.length === 0"
-      class="room-detail-pinned__empty flex-center py-[--tjg-space-4] text-[length:var(--tjg-font-size-xs)] color-[--tjg-text-tertiary]"
-      data-testid="room-detail-pinned-empty">
-      {{ t('room.detail.no_pinned') }}
-    </div>
+      compact
+      data-testid="room-detail-pinned-empty"
+      :description="t('room.detail.no_pinned')" />
 
     <ul v-else class="room-detail-pinned__list flex flex-col gap-[--tjg-space-2] mt-[--tjg-space-2]">
       <li

@@ -1,10 +1,8 @@
 <template>
   <div class="tjg-space-tree">
-    <div v-if="loading && !rooms.length" class="tjg-space-tree__loading"><n-spin size="small" /></div>
+    <div v-if="isInitialLoading" class="tjg-space-tree__loading"><n-spin size="small" /></div>
 
-    <div v-else-if="!rooms.length && !loading" class="tjg-space-tree__empty">
-      <n-empty :description="t('space.empty_tree')" />
-    </div>
+    <EmptyState v-else-if="isEmpty" compact :description="t('space.empty_tree')" />
 
     <div v-else class="tjg-space-tree__list" :role="treeRole" :aria-label="treeAriaLabel" @keydown="handleKeyDown">
       <div
@@ -110,6 +108,10 @@ const treeAriaLabel = computed(() => (props.nested ? undefined : t('space.space_
 
 const rooms = ref<SpaceInfo[]>([])
 const loading = ref(false)
+
+/** 首屏加载中与空结果分离：已有子空间时刷新不遮挡列表 */
+const isInitialLoading = computed(() => loading.value && rooms.value.length === 0)
+const isEmpty = computed(() => rooms.value.length === 0)
 const loadingMore = ref(false)
 const nextBatch = ref<string | undefined>(undefined)
 const expandedIds = ref<Set<string>>(new Set())
@@ -248,8 +250,7 @@ watch(
   width: 100%;
 }
 
-.tjg-space-tree__loading,
-.tjg-space-tree__empty {
+.tjg-space-tree__loading {
   padding: 20px;
   display: flex;
   justify-content: center;

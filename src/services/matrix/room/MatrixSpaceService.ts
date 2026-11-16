@@ -42,6 +42,8 @@ export interface SpaceInfo {
   avatarUrl?: string | undefined
   memberCount: number
   childCount: number
+  /** 空间加入规则（决定「加入」还是「申请加入」），未知时为空 */
+  joinRule?: 'public' | 'invite' | 'knock' | 'restricted' | undefined
 }
 
 export type { SpaceMember } from '../sdk-compat'
@@ -369,6 +371,13 @@ class SpaceService extends BaseMatrixService {
     }
   }
 
+  /** 申请加入 knock 空间（joinRule = knock，成员需管理员审批后入群） */
+  async knockSpace(spaceId: string, reason?: string): Promise<void> {
+    const viaServers = this.extractViaServers(spaceId)
+    await matrixRoomActionFacade.knockRoom(spaceId, reason, viaServers.length > 0 ? viaServers : undefined)
+    logger.info(`[Space] 申请加入 Space 成功: ${spaceId}`)
+  }
+
   async leaveSpace(spaceId: string): Promise<void> {
     try {
       await this.getSpaceManager().member.leaveSpace(spaceId)
@@ -463,8 +472,12 @@ class SpaceService extends BaseMatrixService {
     return this.queries.getRoomParentSpaces(roomId)
   }
 
-  async searchSpaces(query: string, limit = SPACE_SEARCH_LIMIT): Promise<SpaceInfo[]> {
-    return this.queries.searchSpaces(query, limit)
+  async searchSpaces(
+    query: string,
+    limit = SPACE_SEARCH_LIMIT,
+    options?: { throwOnError?: boolean }
+  ): Promise<SpaceInfo[]> {
+    return this.queries.searchSpaces(query, limit, options)
   }
 
   async getUserSpaces(): Promise<SpaceInfo[]> {
@@ -475,8 +488,8 @@ class SpaceService extends BaseMatrixService {
     return this.getUserSpaces()
   }
 
-  async getPublicSpaces(limit: number = 50): Promise<SpaceInfo[]> {
-    return this.queries.getPublicSpaces(limit)
+  async getPublicSpaces(limit: number = 50, options?: { throwOnError?: boolean }): Promise<SpaceInfo[]> {
+    return this.queries.getPublicSpaces(limit, options)
   }
 
   // ── Space rooms ──

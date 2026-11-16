@@ -612,6 +612,9 @@ html[data-theme='dark'] {
   --login-surface-bg: var(--tjg-surface-panel);
   --avatar-fallback-color: transparent;
   --avatar-fallback-src: /logo.png;
+  /* 移动端登录页背景（深色）：品牌色低比例混入深色底，保持 12px 次要文字 ≥4.5:1 */
+  --tjg-mobile-login-bg-start: color-mix(in srgb, var(--tjg-brand) 6%, var(--tjg-surface-app));
+  --tjg-mobile-login-bg-end: color-mix(in srgb, var(--tjg-brand) 12%, var(--tjg-surface-app));
   --plugin-icon-bg: color-mix(in srgb, var(--tjg-text-quaternary) 10%, transparent);
   --plugin-downloading-bg: color-mix(in srgb, var(--tjg-color-info-500) 45%, var(--tjg-surface-panel));
   --plugin-downloading-text: var(--tjg-color-info-500);
@@ -801,6 +804,9 @@ html[data-theme='dark'] {
     --tag-danger-bg: var(--tjg-color-danger-100);
     --time-group-bg: var(--tjg-surface-panel);
     --tjg-federation-badge-bg: var(--tjg-color-info-100);
+    /* 移动端登录页背景：不支持 color-mix 时退化为纯色底 */
+    --tjg-mobile-login-bg-start: var(--tjg-surface-app);
+    --tjg-mobile-login-bg-end: var(--tjg-surface-app);
 
     /* 文本 */
     --tjg-admin-sidebar-text: var(--tjg-text-inverse);

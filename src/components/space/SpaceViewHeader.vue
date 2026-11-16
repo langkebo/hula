@@ -12,6 +12,29 @@
         :current-space-id="currentSpaceId"
         @select="handleSpaceSelect" />
 
+      <!-- 发现公开空间 -->
+      <button
+        type="button"
+        class="space-view-header__icon-btn"
+        data-testid="space-discover-btn"
+        :aria-label="t('space.discover.title')"
+        :title="t('space.discover.title')"
+        @click="handleDiscover">
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M15.5 8.5l-2 5-5 2 2-5 5-2z" />
+        </svg>
+      </button>
+
       <!-- 搜索按钮 -->
       <button
         type="button"
@@ -84,6 +107,7 @@ const emit = defineEmits<{
   search: []
   create: []
   'create-room': []
+  discover: []
 }>()
 
 const { t } = useI18n()
@@ -94,6 +118,10 @@ const handleSpaceSelect = (spaceId: string) => {
 
 const handleSearch = () => {
   emit('search')
+}
+
+const handleDiscover = () => {
+  emit('discover')
 }
 
 // 创建下拉选项：创建空间始终可用；创建房间需先选中一个空间

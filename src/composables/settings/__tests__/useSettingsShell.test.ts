@@ -1,8 +1,20 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  registerAdminApiAvailabilityResolver,
+  registerCapabilityStoreResolver
+} from '@/services/matrix/MatrixCapabilityService'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import { findFirstMatchingSettingsTab, useSettingsShell } from '../useSettingsShell'
+
+const cryptoState = vi.hoisted(() => ({ isCryptoEnabled: false }))
+
+// E2EE 属客户端能力，能力位判定来源于本地 crypto 初始化状态
+vi.mock('@/services/matrix/crypto/MatrixEncryptionContextService', () => ({
+  matrixEncryptionContextService: {
+    getCurrentSessionContext: () => ({ isCryptoEnabled: cryptoState.isCryptoEnabled })
+  }
+}))
 
 const translationMap: Record<string, string> = {
   'setting.dialog.tabs.account': 'Account',
@@ -97,9 +109,14 @@ describe('useSettingsShell', () => {
 })
 
 describe('useSettingsShell 能力过滤', () => {
+  let adminApiAvailable = false
+
   beforeEach(() => {
     setActivePinia(createPinia())
+    adminApiAvailable = false
+    cryptoState.isCryptoEnabled = false
     registerCapabilityStoreResolver(() => useCapabilityStore())
+    registerAdminApiAvailabilityResolver(() => adminApiAvailable)
   })
 
   it('能力探测未完成时 fail-open，保持全部页签可见', () => {
@@ -132,6 +149,8 @@ describe('useSettingsShell 能力过滤', () => {
   })
 
   it('能力齐备时保留全部页签，加密页可编辑', () => {
+    adminApiAvailable = true
+    cryptoState.isCryptoEnabled = true
     useCapabilityStore().setCapabilities({
       capabilities: {
         'm.room.encryption': { enabled: true },

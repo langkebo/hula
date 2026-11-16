@@ -68,9 +68,11 @@
             {{ t('mobile_push.load_more') }}
           </van-button>
 
-          <van-empty
-            v-if="unreadNotifications.length === 0 && !nextToken"
-            :description="t('setting.push.history.empty')"
+          <MobileAsyncState
+            v-if="isHistoryEmpty"
+            state="empty"
+            :empty-text="t('setting.push.history.empty')"
+            min-height="240px"
             data-testid="notification-empty" />
         </template>
       </div>
@@ -85,6 +87,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import SettingCellIcon from '@/mobile/components/my/SettingCellIcon.vue'
 import { matrixNotificationService } from '@/services/matrix/notifications/MatrixNotificationService'
 import {
@@ -112,6 +115,9 @@ const ackingAll = ref(false)
 const unreadNotifications = computed(() => filterUnreadNotifications(notifications.value))
 
 const hasUnread = computed(() => unreadNotifications.value.length > 0)
+
+/** 无未读且已无下一页：交给 MobileAsyncState 统一渲染空态 */
+const isHistoryEmpty = computed(() => !hasUnread.value && !nextToken.value)
 
 onMounted(load)
 

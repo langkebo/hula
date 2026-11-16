@@ -15,6 +15,12 @@ val tauriProperties = Properties().apply {
 
 android {
     compileSdk = 36
+    // 显式钉 NDK：Android 15+（16 KB 页）要求库的 LOAD 段按 0x4000 对齐，NDK r28 起默认满足。
+    // 本机同时装了 27.2 与 30.0，不钉版本时 AGP 可能选到 27.2 ⇒ 会打出 4 KB 对齐的 .so，
+    // 装到 16 KB 设备上直接报 "ELF alignment check failed"。升级 NDK 时同步改这里与
+    // `src-tauri/.cargo/config.toml` 的 rustflags 注释、以及联调报告 §5.1。
+    // ⚠️ 本文件由 `tauri android init` 生成：重跑该命令会覆盖，届时需把这两行加回。
+    ndkVersion = "30.0.15729638"
     namespace = "com.tjg.app"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
@@ -30,7 +36,8 @@ android {
             isDebuggable = true
             isJniDebuggable = true
             isMinifyEnabled = false
-            packaging {                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
+            packaging {
+                jniLibs.keepDebugSymbols.add("*/arm64-v8a/*.so")
                 jniLibs.keepDebugSymbols.add("*/armeabi-v7a/*.so")
                 jniLibs.keepDebugSymbols.add("*/x86/*.so")
                 jniLibs.keepDebugSymbols.add("*/x86_64/*.so")

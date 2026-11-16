@@ -35,41 +35,40 @@
       </button>
     </div>
 
-    <!-- 加载状态 -->
-    <van-loading v-if="loading" size="24px" class="flex justify-center py-40px" />
+    <MobileAsyncState
+      :state="asyncState"
+      test-id="mobile-rooms"
+      :error-text="t('mobile_rooms.load_failed')"
+      :empty-text="emptyDescription"
+      min-height="240px"
+      @retry="retryLoad">
+      <template #empty>
+        <van-empty :description="emptyDescription">
+          <van-button
+            v-if="roomList.length === 0 && !hasActiveConditions"
+            round
+            type="primary"
+            data-testid="mobile-rooms-create-first"
+            @click="showCreateMenu = true">
+            {{ t('mobile_rooms.create_first') }}
+          </van-button>
+        </van-empty>
+      </template>
 
-    <!-- 加载失败：给出重试出口，而不是伪装成「暂无群聊」 -->
-    <van-empty v-else-if="loadError" :description="t('mobile_rooms.load_failed')">
-      <van-button round type="primary" :data-testid="'mobile-rooms-retry'" @click="retryLoad">
-        {{ t('common.retry') }}
-      </van-button>
-    </van-empty>
-
-    <!-- 空状态 -->
-    <van-empty v-else-if="filteredRooms.length === 0" :description="emptyDescription">
-      <van-button
-        v-if="roomList.length === 0 && !hasActiveConditions"
-        round
-        type="primary"
-        :data-testid="'mobile-rooms-create-first'"
-        @click="showCreateMenu = true">
-        {{ t('mobile_rooms.create_first') }}
-      </van-button>
-    </van-empty>
-
-    <!-- 房间列表 -->
-    <van-pull-refresh v-else v-model="refreshing" @refresh="onRefresh" class="flex-1 min-h-0">
-      <SmartVirtualList
-        class="rooms-glass-list h-full overflow-y-auto overflow-x-hidden"
-        :items="filteredRooms"
-        :item-height="80"
-        :buffer="6"
-        key-field="roomId">
-        <template #default="{ item: room }">
-          <RoomListCard :room="room" @select="enterRoom(room.roomId)" @leave="handleLeaveRoom" />
-        </template>
-      </SmartVirtualList>
-    </van-pull-refresh>
+      <!-- 房间列表 -->
+      <van-pull-refresh v-model="refreshing" @refresh="onRefresh" class="flex-1 min-h-0">
+        <SmartVirtualList
+          class="rooms-glass-list h-full overflow-y-auto overflow-x-hidden"
+          :items="filteredRooms"
+          :item-height="80"
+          :buffer="6"
+          key-field="roomId">
+          <template #default="{ item: room }">
+            <RoomListCard :room="room" @select="enterRoom(room.roomId)" @leave="handleLeaveRoom" />
+          </template>
+        </SmartVirtualList>
+      </van-pull-refresh>
+    </MobileAsyncState>
 
     <!-- 创建菜单弹出层 -->
     <van-action-sheet
@@ -133,6 +132,7 @@
 import { showConfirmDialog, showToast } from 'vant'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import { useMobileErrorText } from '@/mobile/composables/useMobileErrorText'
 import RoomListCard from '@/mobile/views/rooms/RoomListCard.vue'
@@ -235,6 +235,13 @@ const hasActiveConditions = computed(() => searchText.value.trim().length > 0 ||
 const emptyDescription = computed(() =>
   hasActiveConditions.value ? t('mobile_rooms.no_search_result') : t('mobile_rooms.no_rooms')
 )
+
+/** 四态：加载中、加载失败、空结果、就绪；统一交给 MobileAsyncState 渲染 */
+const asyncState = computed<'loading' | 'error' | 'empty' | 'ready'>(() => {
+  if (loading.value) return 'loading'
+  if (loadError.value) return 'error'
+  return filteredRooms.value.length === 0 ? 'empty' : 'ready'
+})
 
 function mapRoomToSource(room: Room): RoomListSource {
   const members = room.getJoinedMembers()

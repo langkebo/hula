@@ -1,3 +1,5 @@
+import { adminService } from './AdminFacadeService'
+
 /** 媒体管理响应类型（与 SDK admin 媒体接口同形，供页面层直接引用）。 */
 export type { MediaInfo } from '@/services/matrix/sdk'
 export type {
@@ -45,7 +47,9 @@ export type {
   CleanupTokensResponse
 } from './AdminCleanupService'
 export { adminCleanupService } from './AdminCleanupService'
-export { adminService } from './AdminFacadeService'
+export { adminService }
+/** 联邦子服务实例：与 `adminService.federation` 同一对象，供 composable 直接消费。 */
+export const adminFederationService = adminService.federation
 export type { InviteAllowlistResponse, InviteBlocklistResponse } from './AdminInvitePolicyService'
 export { adminInvitePolicyService } from './AdminInvitePolicyService'
 export type {
@@ -60,13 +64,18 @@ export type {
   ContentFilter,
   CreateContentFilterRequest,
   FederationBlacklistEntry,
+  FederationCacheEntry,
+  FederationCachePage,
   FederationDestination,
+  PendingFederationPage,
+  PendingFederationServer,
   QuotaAlert,
   QuotaStats,
   QuotaStatus,
   Report,
   ReportFilters,
   ServerHealth,
+  ServerQuota,
   ServerStats,
   ServerStatus,
   ServerVersion,

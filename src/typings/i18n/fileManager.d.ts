@@ -76,7 +76,8 @@ export type Messages = {
     "retry": "重试"
   },
   "storage": {
-    "label": "媒体存储"
+    "label": "媒体存储",
+    "count": "媒体数量"
   },
   "userList": {
     "searchPlaceholder": {
@@ -161,6 +162,7 @@ export type KeyPaths =
   | "fileManager.common.loadFailed"
   | "fileManager.common.retry"
   | "fileManager.storage.label"
+  | "fileManager.storage.count"
   | "fileManager.userList.searchPlaceholder.default"
   | "fileManager.userList.searchPlaceholder.senders"
   | "fileManager.userList.searchPlaceholder.sessions"

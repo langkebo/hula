@@ -44,6 +44,8 @@ export {
 export type {
   AdminCleanupManager,
   AdminConfigManager,
+  AdminFederationCache,
+  AdminFederationCacheEntry,
   AdminManager,
   AdminModuleInfo,
   AdminModulePage,
@@ -58,6 +60,8 @@ export type {
   MediaQuarantineChange,
   MediaQuarantineChangesResponse,
   MediaUnprotectionResponse,
+  PendingFederationList,
+  PendingFederationServer,
   PolicyCheckRequest,
   PolicyCheckResponse,
   PolicyServerStatus,
@@ -98,6 +102,12 @@ export { DEFAULT_CORE_EXTENSIONS } from 'matrix-js-sdk/manager-extensions'
 export type { MediaManager, MediaQuotaAlert, UrlPreview } from 'matrix-js-sdk/media'
 export { RoomEvent } from 'matrix-js-sdk/models/room'
 export { RoomStateEvent } from 'matrix-js-sdk/models/room-state'
+export type {
+  IPushAckResponse,
+  IPushDevice,
+  IRegisterPushDeviceRequest,
+  ISendPushNotificationRequest
+} from 'matrix-js-sdk/notifications'
 export type { IPresenceEvent } from 'matrix-js-sdk/presence'
 export type {} from 'matrix-js-sdk/rendezvous'
 export type { TelemetryManager } from 'matrix-js-sdk/telemetry'
@@ -105,3 +115,13 @@ export type { TelemetryManager } from 'matrix-js-sdk/telemetry'
 // `./cas` 与 `./invite-blocklist` 子路径，只能经客户端访问器取回管理器类型。
 export type CasManager = ReturnType<MatrixClient['getCasManager']>
 export type InviteBlocklistManager = ReturnType<MatrixClient['getInviteBlocklistManager']>
+
+// MSC3720 账号状态：SDK 未在 package exports 暴露 `./account-status` 子路径，
+// 同样从客户端访问器派生类型，避免调用方绕开咽喉点直接 import 子路径。
+export type AccountStatusManager = ReturnType<MatrixClient['getAccountStatusManager']>
+export type AccountStatusBatchResponse = Awaited<ReturnType<AccountStatusManager['getAccountStatuses']>>
+export type AccountStatusEntry = NonNullable<AccountStatusBatchResponse['account_statuses']>[string]
+export type AccountStatusFailure = NonNullable<AccountStatusBatchResponse['failures']>[string]
+
+// MSC2666 共同房间：`getRoomManager().getMutualRooms()` 未单独导出响应类型。
+export type MutualRoomsResponse = Awaited<ReturnType<ReturnType<MatrixClient['getRoomManager']>['getMutualRooms']>>

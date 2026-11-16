@@ -18,43 +18,40 @@
       </van-button>
     </div>
 
-    <div v-if="loading && rooms.length === 0" class="children-hint" data-testid="space-rooms-loading">
-      {{ t('common.loading') }}
-    </div>
-    <div v-else-if="rooms.length === 0" class="children-hint" data-testid="space-rooms-empty">
-      {{ t('space.no_rooms') }}
-    </div>
-    <div v-else class="children-list">
-      <div
-        v-for="room in rooms"
-        :key="room.roomId"
-        v-clickable
-        class="child-row"
-        :data-room-id="room.roomId"
-        @click="openRoom(room)">
-        <div class="child-avatar">
-          <img v-if="room.avatarUrl" :src="room.avatarUrl" :alt="room.name" />
-          <van-icon v-else name="chat-o" size="20" />
+    <MobileAsyncState :state="asyncState" test-id="space-rooms" :empty-text="t('space.no_rooms')" min-height="80px">
+      <div class="children-list">
+        <div
+          v-for="room in rooms"
+          :key="room.roomId"
+          v-clickable
+          class="child-row"
+          :data-room-id="room.roomId"
+          @click="openRoom(room)">
+          <div class="child-avatar">
+            <img v-if="room.avatarUrl" :src="room.avatarUrl" :alt="room.name" />
+            <van-icon v-else name="chat-o" size="20" />
+          </div>
+          <div class="child-name">{{ room.name || room.roomId }}</div>
+          <span v-if="room.suggested" class="child-badge">{{ t('space.suggested_label') }}</span>
+          <!-- 未加入的子房间不能直接进聊天页，这里显式区分「加入」与「进入」（P-5） -->
+          <span v-if="!room.joined" class="child-join">
+            {{ joiningRoomId === room.roomId ? t('common.loading') : t('space.join') }}
+          </span>
+          <van-icon v-else name="arrow" class="child-chevron" />
         </div>
-        <div class="child-name">{{ room.name || room.roomId }}</div>
-        <span v-if="room.suggested" class="child-badge">{{ t('space.suggested_label') }}</span>
-        <!-- 未加入的子房间不能直接进聊天页，这里显式区分「加入」与「进入」（P-5） -->
-        <span v-if="!room.joined" class="child-join">
-          {{ joiningRoomId === room.roomId ? t('common.loading') : t('space.join') }}
-        </span>
-        <van-icon v-else name="arrow" class="child-chevron" />
       </div>
-    </div>
+    </MobileAsyncState>
   </div>
 </template>
 
 <script setup lang="ts">
 import { showToast } from 'vant'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useSpaceRooms } from '@/composables/space'
 import type { SpaceChildRoom } from '@/composables/space/useSpaceRooms'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { useMobileErrorText } from '@/mobile/composables/useMobileErrorText'
 import { matrixRoomMembershipService } from '@/services/matrix/room/MembershipService'
 import { createLogger } from '@/utils/Logger'
@@ -84,6 +81,12 @@ const showCreate = ref(false)
 const roomName = ref('')
 /** 正在加入的子房间 ID，用于行内 loading 并阻止重复点击 */
 const joiningRoomId = ref('')
+
+/** 四态：首次加载中、空、就绪；统一交给 MobileAsyncState 渲染 */
+const asyncState = computed<'loading' | 'empty' | 'ready'>(() => {
+  if (loading.value && rooms.value.length === 0) return 'loading'
+  return rooms.value.length === 0 ? 'empty' : 'ready'
+})
 
 watch(
   () => props.spaceId,
@@ -160,12 +163,6 @@ const openRoom = async (room: SpaceChildRoom) => {
   padding: 8px;
   border-radius: var(--tjg-radius-md, 8px);
   background: var(--tjg-glass-row-bg);
-}
-
-.children-hint {
-  padding: 12px 0;
-  font-size: 13px;
-  color: var(--van-text-color-3);
 }
 
 .children-list {

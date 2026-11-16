@@ -1,16 +1,18 @@
+// driver.js 引导弹窗：底色固定为品牌绿，文字必须用 `--tjg-text-inverse`（双主题恒为白色）；
+// 不使用 `--tjg-text-primary`，它在深色主题下也是白色但与品牌底只有 3.6:1，且会让按钮白底白字。
 .driver-popover.driverjs-theme {
-  background-color: var(--tjg-color-primary-500);
+  background-color: var(--tjg-color-primary-600);
 }
 
 #driver-popover-title {
   font-size: 16px;
   padding-bottom: 4px;
-  color: var(--tjg-text-primary);
+  color: var(--tjg-text-inverse);
 }
 
 #driver-popover-description {
   font-size: 12px;
-  color: var(--tjg-text-secondary);
+  color: var(--tjg-text-inverse);
 }
 
 driver-popover.driverjs-theme .driver-popover-title {
@@ -20,14 +22,14 @@ driver-popover.driverjs-theme .driver-popover-title {
 .driver-popover.driverjs-theme .driver-popover-title,
 .driver-popover.driverjs-theme .driver-popover-description,
 .driver-popover.driverjs-theme .driver-popover-progress-text {
-  color: var(--tjg-text-primary);
+  color: var(--tjg-text-inverse);
 }
 
 .driver-popover.driverjs-theme button {
   text-align: center;
-  background-color: var(--tjg-text-primary);
-  color: var(--tjg-text-inverse);
-  border: 2px solid var(--tjg-text-primary);
+  background-color: var(--tjg-text-inverse);
+  color: var(--tjg-color-primary-700);
+  border: 2px solid var(--tjg-text-inverse);
   text-shadow: none;
   font-size: 12px;
   padding: 5px 8px;
@@ -37,8 +39,8 @@ driver-popover.driverjs-theme .driver-popover-title {
 }
 
 .driver-popover.driverjs-theme button:hover {
-  background-color: var(--tjg-text-primary);
-  color: var(--tjg-text-inverse);
+  background-color: var(--tjg-brand-light);
+  color: var(--tjg-color-primary-700);
 }
 
 .driver-popover.driverjs-theme .driver-popover-navigation-btns {

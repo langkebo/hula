@@ -5,6 +5,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { StoresEnum } from '@/enums'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { parseSignedMediaUrl } from '@/services/matrix/media/mediaDownloadHelpers'
 import type { FilesMeta } from '@/services/types'
 import { useUserStore } from '@/stores/domains/user/user'
 import { HttpClient } from '@/utils/HttpClient'
@@ -252,8 +253,11 @@ export const useFileDownloadStore = defineStore(StoresEnum.FILE_DOWNLOAD, () => 
 
         // 下载文件
         // 用户消息中的文件 URL（动态 host）
-        const buffer = await HttpClient.downloadBytes(fileUrl, { allowDynamicHost: true })
-        const fileData = new Uint8Array(buffer)
+        // 带 signature + expires 的媒体链接走后端 download_signed（签名即鉴权，无需 Bearer）
+        const signedParams = parseSignedMediaUrl(fileUrl)
+        const fileData = signedParams
+          ? await matrixMediaService.downloadSignedFileBytes(signedParams)
+          : new Uint8Array(await HttpClient.downloadBytes(fileUrl, { allowDynamicHost: true }))
 
         // 写入文件
         const baseDir = getDownloadBaseDir()

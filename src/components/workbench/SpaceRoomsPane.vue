@@ -41,15 +41,18 @@
         <svg v-else class="size-12px space-rooms-pane__arrow" aria-hidden="true"><use href="#arrow-right" /></svg>
       </div>
 
-      <div v-if="!rooms.length" class="space-rooms-pane__empty" data-test="space-rooms-empty">
-        {{ t('space.detail_space_rooms_empty') }}
-      </div>
+      <EmptyState
+        v-if="isEmptyRooms"
+        :description="t('space.detail_space_rooms_empty')"
+        data-test="space-rooms-empty" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSpaceRooms } from '@/composables/space/useSpaceRooms'
 
@@ -66,6 +69,9 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const { rooms, load, removeRoom } = useSpaceRooms(() => props.spaceId)
+
+/** 子房间列表为空时展示空态 */
+const isEmptyRooms = computed(() => rooms.value.length === 0)
 
 const handleRemove = async (roomId: string) => {
   if (!roomId) return
@@ -225,12 +231,5 @@ void load()
     background: var(--tjg-color-danger-100, color-mix(in srgb, var(--tjg-color-danger-500) 12%, transparent));
     color: var(--tjg-color-danger-500);
   }
-}
-
-.space-rooms-pane__empty {
-  padding: 40px 16px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--tjg-text-quaternary);
 }
 </style>

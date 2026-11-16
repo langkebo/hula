@@ -1,8 +1,6 @@
 <template>
   <div class="push-notification-list">
-    <div v-if="notifications.length === 0" class="empty-state">
-      <span>{{ t('push.no_notifications') }}</span>
-    </div>
+    <MobileAsyncState v-if="isEmpty" state="empty" :empty-text="t('push.no_notifications')" min-height="160px" />
     <div v-else>
       <div class="list-header">
         <span>{{ t('push.notification_count', { count: notifications.length }) }}</span>
@@ -31,6 +29,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { NotificationItem } from '@/composables/mobile/usePushReceiver'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 
 const ONE_MINUTE_MS = 60_000
 const ONE_HOUR_MS = 3_600_000
@@ -38,9 +37,12 @@ const ONE_DAY_MS = 86_400_000
 
 const { t } = useI18n()
 
-defineProps<{
+const props = defineProps<{
   notifications: NotificationItem[]
 }>()
+
+/** 无通知时展示统一空态 */
+const isEmpty = computed(() => props.notifications.length === 0)
 
 const emit = defineEmits<{
   clear: []

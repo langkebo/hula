@@ -33,13 +33,11 @@
           <span class="loading-text">{{ t('ai_assistant.robot.loading') }}</span>
         </div>
 
-        <div v-else-if="roleList.length === 0" class="empty-container">
-          <n-empty :description="t('ai_assistant.robot.no_role_data')" size="small">
-            <template #icon>
-              <Icon icon="mdi:account-off" class="text-24px color-[--tjg-text-tertiary]" />
-            </template>
-          </n-empty>
-        </div>
+        <EmptyState
+          v-else-if="isEmptyRoles"
+          compact
+          icon="mdi:account-off"
+          :description="t('ai_assistant.robot.no_role_data')" />
 
         <div v-else class="roles-container">
           <div
@@ -67,19 +65,23 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import ChatRoleBadge from '@/plugins/robot/components/ChatRoleBadge.vue'
 import type { ChatRole } from '@/services/matrix/ai/ChatRoleService'
 
 const { t } = useI18n()
 
-defineProps<{
+const props = defineProps<{
   show: boolean
   selectedRole: ChatRole | null
   roleList: ChatRole[]
   roleLoading: boolean
   getDefaultAvatar: () => string
 }>()
+
+const isEmptyRoles = computed(() => props.roleList.length === 0)
 
 const emit = defineEmits<{
   'update:show': [value: boolean]

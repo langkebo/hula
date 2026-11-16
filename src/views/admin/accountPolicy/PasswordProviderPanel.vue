@@ -24,8 +24,8 @@
       :row-key="(row: AdminPasswordAuthProvider) => row.id"
       :scroll-x="760" />
 
-    <n-empty
-      v-if="!providersLoading && providers.length === 0"
+    <EmptyState
+      v-if="showProvidersEmpty"
       data-testid="account-policy-provider-empty"
       :description="t('admin.accountPolicy.providers.empty')" />
 
@@ -83,7 +83,6 @@ import {
   NButton,
   NCard,
   NDataTable,
-  NEmpty,
   NForm,
   NFormItem,
   NInput,
@@ -92,8 +91,9 @@ import {
   NSwitch,
   NTag
 } from 'naive-ui'
-import { h, onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminAccountPolicy } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { AdminPasswordAuthProvider } from '@/services/matrix/admin'
@@ -108,6 +108,8 @@ const { providers, providersLoading, providersSaving, providersError, loadProvid
 const providerDraft = ref({ providerName: '', providerType: '', isEnabled: true })
 const providerPriority = ref<number | null>(100)
 const providerConfig = ref('{}')
+
+const showProvidersEmpty = computed(() => !providersLoading.value && providers.value.length === 0)
 
 function formatTs(ts: number | null | undefined): string {
   return ts ? new Date(ts).toLocaleString() : '-'

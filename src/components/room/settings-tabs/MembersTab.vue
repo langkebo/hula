@@ -26,9 +26,11 @@
         <n-spin size="small" />
       </div>
 
-      <div v-else-if="members.length === 0" class="rs-tab__empty" data-testid="members-empty">
-        {{ t('room.detail.no_members') }}
-      </div>
+      <EmptyState
+        v-else-if="isEmptyMembers"
+        compact
+        data-testid="members-empty"
+        :description="t('room.detail.no_members')" />
 
       <div v-else class="rs-tab__member-list">
         <div v-for="member in sortedMembers" :key="member.userId" class="rs-tab__member-row" data-testid="members-row">
@@ -87,6 +89,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
@@ -111,6 +114,8 @@ const loading = ref(false)
 const currentUserId = matrixClientService.getUserId()
 
 const members = computed<MatrixRoomMember[]>(() => groupStore.getMembersByRoomId(props.roomId))
+
+const isEmptyMembers = computed(() => members.value.length === 0)
 
 const sortedMembers = computed<MatrixRoomMember[]>(() => {
   return [...members.value].sort((a, b) => {
@@ -210,8 +215,7 @@ onMounted(() => {
   align-items: center;
 }
 
-.rs-tab__loading,
-.rs-tab__empty {
+.rs-tab__loading {
   display: flex;
   align-items: center;
   justify-content: center;

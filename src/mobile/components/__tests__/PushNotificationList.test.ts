@@ -12,7 +12,12 @@ vi.mock('vue-i18n', () => ({
 describe('PushNotificationList', () => {
   it('renders empty state when no notifications', () => {
     const wrapper = mount(PushNotificationList, {
-      props: { notifications: [] }
+      props: { notifications: [] },
+      global: {
+        stubs: {
+          'van-empty': { props: ['description'], template: '<div>{{ description }}</div>' }
+        }
+      }
     })
     expect(wrapper.text()).toContain('push.no_notifications')
   })

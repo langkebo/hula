@@ -18,9 +18,7 @@
 
         <!-- 空间列表 -->
         <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-          <div v-if="spaces.length === 0 && !loading" class="empty-state">
-            <van-empty :description="t('space.empty')" />
-          </div>
+          <MobileAsyncState v-if="isEmptySpaces" state="empty" :empty-text="t('space.empty')" min-height="240px" />
           <div v-else class="space-grid">
             <SpaceCard v-for="space in spaces" :key="space.spaceId" :space="space" @select="handleSpaceClick" />
           </div>
@@ -195,12 +193,13 @@
 
 <script setup lang="ts">
 import { showToast } from 'vant'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSpace, useSpaceMembers, useSpaceRooms, useSpaces } from '@/composables/space'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import SpaceCard from '@/mobile/components/space/SpaceCard.vue'
 import SpaceCreateSheet from '@/mobile/components/space/SpaceCreateSheet.vue'
 import SpaceMemberList from '@/mobile/components/space/SpaceMemberList.vue'
@@ -214,6 +213,9 @@ const { t } = useI18n()
 
 const selectedSpaceId = ref('')
 const { spaces, loading, load: loadSpaces } = useSpaces()
+
+/** 加载完成且无空间：交给 MobileAsyncState 统一渲染 */
+const isEmptySpaces = computed(() => spaces.value.length === 0 && !loading.value)
 const { mutating: detailMutating, update: updateSpace, getTreePath } = useSpace(() => selectedSpaceId.value)
 const { mutating: memberMutating, invite: inviteMember } = useSpaceMembers(() => selectedSpaceId.value)
 const { mutating: roomMutating, addRoom } = useSpaceRooms(() => selectedSpaceId.value)
@@ -427,10 +429,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-}
-
-.empty-state {
-  padding: 60px 0;
 }
 
 .create-form {

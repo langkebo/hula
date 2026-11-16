@@ -28,12 +28,11 @@
       </svg>
     </div>
 
-    <div
-      v-else-if="members.length === 0"
-      class="room-detail-members__empty flex-center py-[--tjg-space-4] text-[length:var(--tjg-font-size-xs)] color-[--tjg-text-tertiary]"
-      data-testid="room-detail-members-empty">
-      {{ t('room.detail.no_members') }}
-    </div>
+    <EmptyState
+      v-else-if="isEmptyMembers"
+      compact
+      data-testid="room-detail-members-empty"
+      :description="t('room.detail.no_members')" />
 
     <ul v-else class="room-detail-members__list flex flex-col gap-[--tjg-space-1] mt-[--tjg-space-2]">
       <li
@@ -89,6 +88,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { OnlineEnum } from '@/enums'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group/types'
 
@@ -127,6 +127,8 @@ const coreMembers = computed<MatrixRoomMember[]>(() => {
 })
 
 const isOnline = (member: MatrixRoomMember) => member.activeStatus === OnlineEnum.ONLINE
+
+const isEmptyMembers = computed(() => props.members.length === 0)
 
 const displayName = (member: MatrixRoomMember) => member.displayName || member.name || member.account || member.userId
 

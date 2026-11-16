@@ -18,6 +18,14 @@ export type Messages = {
     "remove_success": "已移除"
   },
   "retry": "重试",
+  "edited": "已编辑",
+  "edit_history": {
+    "title": "编辑历史",
+    "empty": "这条消息没有历史版本",
+    "version": "第 {n} 版",
+    "loading": "正在加载编辑历史",
+    "aria_open": "查看这条消息的编辑历史"
+  },
   "long_press": {
     "forward": "转发"
   },
@@ -57,6 +65,12 @@ export type KeyPaths =
   | "message_container.reaction.remove_failed"
   | "message_container.reaction.remove_success"
   | "message_container.retry"
+  | "message_container.edited"
+  | "message_container.edit_history.title"
+  | "message_container.edit_history.empty"
+  | "message_container.edit_history.version"
+  | "message_container.edit_history.loading"
+  | "message_container.edit_history.aria_open"
   | "message_container.long_press.forward"
   | "message_container.resend_success"
   | "message_container.copy_success"

@@ -1,8 +1,11 @@
 import { computed, type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
 import type { RateLimit, ShadowBanStatus, UserDevice, UserInfo } from '@/services/matrix/admin/AdminTypes'
+import { type AdminUserAccountState, useAdminUserAccount } from './useAdminUserAccount'
+import { type AdminUserGovernanceState, useAdminUserGovernance } from './useAdminUserGovernance'
 
 export type { UserDevice, UserInfo } from '@/services/matrix/admin/AdminTypes'
+export type { BatchCreateUserInput, ImpersonationSession } from './useAdminUserGovernance'
 
 export interface UserSession {
   deviceId: string
@@ -23,7 +26,7 @@ interface UserStats {
   [key: string]: unknown
 }
 
-export interface UseAdminUsersResult {
+export interface UseAdminUsersResult extends AdminUserAccountState, AdminUserGovernanceState {
   // state
   users: Ref<UserInfo[]>
   filteredUsers: Ref<UserInfo[]>
@@ -46,8 +49,6 @@ export interface UseAdminUsersResult {
   sessionsLoading: Ref<boolean>
   userStats: Ref<UserStats | null>
   statsLoading: Ref<boolean>
-  accountStatus: Ref<Record<string, unknown> | null>
-  accountStatusLoading: Ref<boolean>
 
   // batch selection state
   selectedUserIds: Ref<Set<string>>
@@ -61,7 +62,6 @@ export interface UseAdminUsersResult {
   loadShadowBanStatus: () => Promise<void>
   loadUserSessions: () => Promise<void>
   loadUserStats: () => Promise<void>
-  loadAccountStatus: () => Promise<void>
   invalidateSession: (userId: string) => Promise<void>
   batchDeactivate: (userIds: string[], erase?: boolean) => Promise<Array<{ userId: string; success: boolean }>>
   toggleUserSelection: (userId: string) => void
@@ -113,9 +113,12 @@ export function useAdminUsers(): UseAdminUsersResult {
   const sessionsLoading = ref(false)
   const userStats = ref<UserStats | null>(null)
   const statsLoading = ref(false)
-  const accountStatus = ref<Record<string, unknown> | null>(null)
-  const accountStatusLoading = ref(false)
   const selectedUserIds = ref<Set<string>>(new Set())
+
+  // 账户状态 / 账户信息 / whois / 注册 nonce 子域（拆分自本文件，保持对外形状不变）
+  const account = useAdminUserAccount(selectedUser, loadUsers)
+  // 用户处置子域：强制下线 / 模拟登录 / 批量创建 / 详情刷新与服务端补充信息
+  const governance = useAdminUserGovernance(selectedUser, users, loadUsers)
 
   const filteredUsers = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
@@ -179,7 +182,10 @@ export function useAdminUsers(): UseAdminUsersResult {
     shadowBanStatus.value = null
     userSessions.value = []
     userStats.value = null
-    accountStatus.value = null
+    account.accountStatus.value = null
+    account.accountInfo.value = null
+    account.whois.value = null
+    governance.resetGovernance()
     if (!user) return
     await Promise.allSettled([
       loadUserDevices(),
@@ -187,7 +193,10 @@ export function useAdminUsers(): UseAdminUsersResult {
       loadShadowBanStatus(),
       loadUserSessions(),
       loadUserStats(),
-      loadAccountStatus()
+      account.loadAccountStatus(),
+      account.loadAccountInfo(),
+      governance.loadAdminCheck(),
+      governance.loadUserStatsOverview()
     ])
   }
 
@@ -301,16 +310,6 @@ export function useAdminUsers(): UseAdminUsersResult {
     }
   }
 
-  async function loadAccountStatus() {
-    if (!selectedUser.value) return
-    accountStatusLoading.value = true
-    try {
-      accountStatus.value = await adminService.getAccountStatus(selectedUser.value.userId)
-    } finally {
-      accountStatusLoading.value = false
-    }
-  }
-
   async function invalidateSession(userId: string) {
     await adminService.invalidateUserSession(userId)
     if (selectedUser.value?.userId === userId) await loadUserSessions()
@@ -349,6 +348,8 @@ export function useAdminUsers(): UseAdminUsersResult {
   }
 
   return {
+    ...account,
+    ...governance,
     users,
     filteredUsers,
     loading,
@@ -368,8 +369,6 @@ export function useAdminUsers(): UseAdminUsersResult {
     sessionsLoading,
     userStats,
     statsLoading,
-    accountStatus,
-    accountStatusLoading,
     selectedUserIds,
     loadUsers,
     loadMoreUsers,
@@ -379,7 +378,6 @@ export function useAdminUsers(): UseAdminUsersResult {
     loadShadowBanStatus,
     loadUserSessions,
     loadUserStats,
-    loadAccountStatus,
     invalidateSession,
     batchDeactivate,
     toggleUserSelection,

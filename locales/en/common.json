@@ -119,7 +119,28 @@
     "collapse": "Show less",
     "retry_item": "Retry {name}",
     "settings": "Settings",
-    "settings_item": "Open settings for {name}"
+    "settings_item": "Open settings for {name}",
+    "items": {
+      "sliding-sync": "Sliding sync",
+      "e2ee": "End-to-end encryption",
+      "voip": "Voice calls",
+      "friend-list": "Friend list",
+      "admin-api": "Admin API",
+      "burn-after-read": "Burn after read",
+      "dehydrated-device": "Dehydrated device",
+      "sticky-events": "Sticky events",
+      "scheduled-send": "Scheduled send",
+      "rtc-transports": "RTC transports",
+      "account-status": "Account status",
+      "extended-profile": "Extended profile",
+      "qr-rendezvous": "QR rendezvous",
+      "mutual-rooms": "Mutual rooms"
+    },
+    "hint": {
+      "unknown": "Capability snapshot is not loaded yet. Retry to probe again.",
+      "unsupported": "The homeserver does not advertise {keys}",
+      "unsupported_client": "This capability is decided by client state and is currently disabled"
+    }
   },
   "load_more": "Load More",
   "saving": "Saving…",

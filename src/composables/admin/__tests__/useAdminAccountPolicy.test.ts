@@ -109,6 +109,31 @@ describe('useAdminAccountPolicy', () => {
     expect(c.validitySaving.value).toBe(false)
   })
 
+  it('setValidity 写后回读，服务端为准覆盖写响应', async () => {
+    const refreshed = { ...validityInfo, expiration_ts: 1900000000000 }
+    vi.mocked(adminAccountValidityService.getValidity).mockResolvedValueOnce(refreshed as never)
+    const c = useAdminAccountPolicy()
+
+    const ok = await c.setValidity('@alice:example.org', 1700000000000)
+
+    expect(ok).toBe(true)
+    expect(adminAccountValidityService.getValidity).toHaveBeenCalledWith('@alice:example.org')
+    expect(c.validity.value).toEqual(refreshed)
+  })
+
+  it('setValidity 回读失败时保留写响应并记录错误', async () => {
+    const written = { ...validityInfo, expiration_ts: 1950000000000 }
+    vi.mocked(adminAccountValidityService.createValidity).mockResolvedValueOnce(written as never)
+    vi.mocked(adminAccountValidityService.getValidity).mockRejectedValueOnce(new Error('read failed'))
+    const c = useAdminAccountPolicy()
+
+    const ok = await c.setValidity('@alice:example.org', 1700000000000)
+
+    expect(ok).toBe(true)
+    expect(c.validity.value).toEqual(written)
+    expect(c.validityError.value).toBe('read failed')
+  })
+
   it('setValidity 失败时记录错误并返回 false', async () => {
     vi.mocked(adminAccountValidityService.createValidity).mockRejectedValueOnce(new Error('denied'))
     const c = useAdminAccountPolicy()
@@ -128,6 +153,7 @@ describe('useAdminAccountPolicy', () => {
       renewal_token: 'renew-token',
       new_expiration_ts: 1800000000000
     })
+    expect(adminAccountValidityService.getValidity).toHaveBeenCalledWith('@alice:example.org')
   })
 
   it('renewValidity 失败时记录错误并返回 false', async () => {

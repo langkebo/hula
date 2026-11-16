@@ -65,9 +65,11 @@
       </div>
 
       <div class="space-switcher-list">
-        <div v-if="filteredSpaces.length === 0" class="space-switcher-empty">
-          {{ t('space.switcher_empty') }}
-        </div>
+        <EmptyState
+          v-if="filteredSpaces.length === 0"
+          compact
+          variant="subtle"
+          :description="t('space.switcher_empty')" />
         <button
           v-for="space in filteredSpaces"
           :key="space.spaceId"
@@ -302,13 +304,6 @@ onUnmounted(() => {
   max-height: 320px;
   overflow-y: auto;
   padding: 4px;
-}
-
-.space-switcher-empty {
-  padding: 20px;
-  text-align: center;
-  color: var(--tjg-text-tertiary);
-  font-size: var(--tjg-font-size-sm);
 }
 
 .space-switcher-item {

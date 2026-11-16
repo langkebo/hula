@@ -118,13 +118,14 @@ export type Messages = {
     "password_wrong_current": "当前密码不正确，请重新输入",
     "logout_other_devices": "修改密码后登出其他设备",
     "danger_zone": "危险操作区",
-    "deactivate_account": "停用账户",
+    "deactivate_account": "注销账户",
     "deactivate_account_desc": "永久删除您的账户和数据",
-    "deactivate_confirm_title": "确认停用账户",
-    "deactivate_confirm_content": "停用账户将永久删除您的所有数据，此操作无法撤销。确定要继续吗？",
+    "deactivate_confirm_title": "确认注销账户",
+    "deactivate_confirm_content": "注销账户将永久删除您的所有数据，此操作无法撤销。确定要继续吗？",
     "deactivate_confirm": "确认",
-    "deactivate_success": "账户已停用",
-    "deactivate_failed": "停用账户失败"
+    "deactivate_success": "账户已注销",
+    "deactivate_failed": "账户注销失败",
+    "deactivate_password_invalid": "密码校验失败，请重试"
   },
   "sessions": {
     "all_other_devices_logged_out": "所有其他设备已登出",
@@ -176,7 +177,8 @@ export type Messages = {
     "extension_degraded_title": "扩展降级",
     "extension_degraded_desc": "{id}: 降级（功能回退到 REST API）",
     "extension_ok_title": "扩展状态正常",
-    "extension_ok_desc": "所有关键扩展已注册"
+    "extension_ok_desc": "所有关键扩展已注册",
+    "service_capabilities": "服务能力"
   },
   "push": {
     "invite": {
@@ -206,6 +208,33 @@ export type Messages = {
       "update_success": "更新成功"
     },
     "devices": "推送设备",
+    "device_endpoints": {
+      "title": "推送设备端点",
+      "desc": "查看服务端登记的推送设备，支持注册、注销与发送测试推送",
+      "enabled": "已启用",
+      "disabled": "已停用",
+      "sendTest": "测试推送",
+      "sendSuccess": "测试推送已发送",
+      "sendFailed": "发送测试推送失败",
+      "remove": "注销",
+      "removeConfirm": "确定要注销设备 \"{device}\" 吗？",
+      "removeSuccess": "推送设备已注销",
+      "removeFailed": "注销推送设备失败",
+      "empty": "暂无推送设备端点",
+      "loadFailed": "获取推送设备端点失败",
+      "register": "注册推送设备",
+      "deviceId": "设备 ID",
+      "deviceIdPlaceholder": "输入推送设备 ID",
+      "pushToken": "推送令牌",
+      "pushTokenPlaceholder": "输入设备推送令牌",
+      "pushType": "推送类型",
+      "registerSubmit": "注册",
+      "registerSuccess": "推送设备注册成功",
+      "registerFailed": "注册推送设备失败",
+      "required": "设备 ID 和推送令牌为必填项",
+      "testTitle": "天机阁测试推送",
+      "testBody": "这是一条来自天机阁的测试推送通知"
+    },
     "enabled": "已启用",
     "add_pusher": {
       "label": "添加推送设备",
@@ -528,6 +557,7 @@ export type Messages = {
   "encryption": {
     "title": "加密设置",
     "server_unsupported": "当前服务器未启用端到端加密，本页为只读。",
+    "crypto_unavailable": "本地加密模块未初始化，本页为只读。",
     "status": "加密状态",
     "encryption_enabled": "端到端加密",
     "encryption_enabled_desc": "您的消息已启用端到端加密保护",
@@ -871,6 +901,24 @@ export type Messages = {
     "noise_suppression_desc": "降低背景噪声",
     "auto_gain_label": "自动增益",
     "auto_gain_desc": "自动调整麦克风音量",
+    "rtc_section": "RTC 传输",
+    "rtc_empty": "当前服务端未声明 RTC 传输能力",
+    "voice_messages": {
+      "title": "语音消息",
+      "desc": "查看本人或指定房间的语音消息，支持查看原始内容与删除",
+      "total_messages": "语音条数",
+      "total_duration": "总时长",
+      "average_duration": "平均时长",
+      "room_placeholder": "输入房间 ID 查看房间语音消息",
+      "view_content": "查看内容",
+      "delete": "删除",
+      "delete_confirm": "确定要删除这条语音消息吗？",
+      "delete_success": "语音消息已删除",
+      "delete_failed": "删除语音消息失败",
+      "load_failed": "加载语音消息失败",
+      "empty": "暂无语音消息",
+      "content_empty": "未获取到语音内容"
+    },
     "microphone_fallback": "麦克风 {id}",
     "camera_fallback": "摄像头 {id}",
     "load_devices_failed": "获取设备列表失败，请检查权限",
@@ -1017,7 +1065,39 @@ export type Messages = {
     "setup_action": "设置",
     "security_key_created": "安全密钥设置成功",
     "secure_backup_label": "安全备份 (4S)",
-    "secure_backup_desc": "管理安全备份，保护加密密钥和交叉签名密钥"
+    "secure_backup_desc": "管理安全备份，保护加密密钥和交叉签名密钥",
+    "three_pid_title": "邮箱 / 手机号",
+    "three_pid_desc": "绑定邮箱或手机号可用于账号找回与身份验证。",
+    "three_pid_empty": "尚未绑定邮箱或手机号",
+    "three_pid_email": "邮箱",
+    "three_pid_msisdn": "手机号",
+    "three_pid_validated": "已验证",
+    "three_pid_unverified": "未验证",
+    "three_pid_add_email": "绑定邮箱",
+    "three_pid_email_label": "邮箱地址",
+    "three_pid_email_placeholder": "name{'@'}example.com",
+    "three_pid_password_label": "当前账号密码",
+    "three_pid_password_placeholder": "用于确认身份",
+    "three_pid_send_code": "发送验证码",
+    "three_pid_code_label": "邮箱验证码",
+    "three_pid_code_placeholder": "请输入邮件中的验证码",
+    "three_pid_code_hint": "验证码已发送至 {email}，请查收邮件后填写。",
+    "three_pid_bind": "确认绑定",
+    "three_pid_unbind": "解绑",
+    "three_pid_unbind_confirm_title": "解绑确认",
+    "three_pid_unbind_confirm_content": "确定要解绑 {address} 吗？解绑后将无法用于账号找回。",
+    "three_pid_request_success": "验证码已发送，请查收邮件",
+    "three_pid_request_failed": "发送验证码失败",
+    "three_pid_invalid_email": "请输入有效的邮箱地址",
+    "three_pid_password_required": "请输入当前账号密码",
+    "three_pid_code_required": "请输入邮箱验证码",
+    "three_pid_bind_success": "邮箱绑定成功",
+    "three_pid_bind_failed": "邮箱绑定失败",
+    "three_pid_unbind_success": "已解绑",
+    "three_pid_unbind_failed": "解绑失败",
+    "three_pid_load_failed": "加载绑定信息失败",
+    "three_pid_refresh": "刷新",
+    "three_pid_msisdn_unavailable": "手机号绑定暂未开放，如需绑定请联系管理员。"
   },
   "burn_after_read": {
     "global": {
@@ -1324,6 +1404,7 @@ export type KeyPaths =
   | "setting.account.deactivate_confirm"
   | "setting.account.deactivate_success"
   | "setting.account.deactivate_failed"
+  | "setting.account.deactivate_password_invalid"
   | "setting.sessions.all_other_devices_logged_out"
   | "setting.sessions.security_actions"
   | "setting.sessions.device_logged_out"
@@ -1372,6 +1453,7 @@ export type KeyPaths =
   | "setting.diagnostics.extension_degraded_desc"
   | "setting.diagnostics.extension_ok_title"
   | "setting.diagnostics.extension_ok_desc"
+  | "setting.diagnostics.service_capabilities"
   | "setting.push.invite.label"
   | "setting.push.invite.desc"
   | "setting.push.dnd.title"
@@ -1393,6 +1475,31 @@ export type KeyPaths =
   | "setting.push.editor.update_failed"
   | "setting.push.editor.update_success"
   | "setting.push.devices"
+  | "setting.push.device_endpoints.title"
+  | "setting.push.device_endpoints.desc"
+  | "setting.push.device_endpoints.enabled"
+  | "setting.push.device_endpoints.disabled"
+  | "setting.push.device_endpoints.sendTest"
+  | "setting.push.device_endpoints.sendSuccess"
+  | "setting.push.device_endpoints.sendFailed"
+  | "setting.push.device_endpoints.remove"
+  | "setting.push.device_endpoints.removeConfirm"
+  | "setting.push.device_endpoints.removeSuccess"
+  | "setting.push.device_endpoints.removeFailed"
+  | "setting.push.device_endpoints.empty"
+  | "setting.push.device_endpoints.loadFailed"
+  | "setting.push.device_endpoints.register"
+  | "setting.push.device_endpoints.deviceId"
+  | "setting.push.device_endpoints.deviceIdPlaceholder"
+  | "setting.push.device_endpoints.pushToken"
+  | "setting.push.device_endpoints.pushTokenPlaceholder"
+  | "setting.push.device_endpoints.pushType"
+  | "setting.push.device_endpoints.registerSubmit"
+  | "setting.push.device_endpoints.registerSuccess"
+  | "setting.push.device_endpoints.registerFailed"
+  | "setting.push.device_endpoints.required"
+  | "setting.push.device_endpoints.testTitle"
+  | "setting.push.device_endpoints.testBody"
   | "setting.push.enabled"
   | "setting.push.add_pusher.label"
   | "setting.push.add_pusher.title"
@@ -1571,6 +1678,7 @@ export type KeyPaths =
   | "setting.dialog.groups.other"
   | "setting.encryption.title"
   | "setting.encryption.server_unsupported"
+  | "setting.encryption.crypto_unavailable"
   | "setting.encryption.status"
   | "setting.encryption.encryption_enabled"
   | "setting.encryption.encryption_enabled_desc"
@@ -1888,6 +1996,22 @@ export type KeyPaths =
   | "setting.voice_video.noise_suppression_desc"
   | "setting.voice_video.auto_gain_label"
   | "setting.voice_video.auto_gain_desc"
+  | "setting.voice_video.rtc_section"
+  | "setting.voice_video.rtc_empty"
+  | "setting.voice_video.voice_messages.title"
+  | "setting.voice_video.voice_messages.desc"
+  | "setting.voice_video.voice_messages.total_messages"
+  | "setting.voice_video.voice_messages.total_duration"
+  | "setting.voice_video.voice_messages.average_duration"
+  | "setting.voice_video.voice_messages.room_placeholder"
+  | "setting.voice_video.voice_messages.view_content"
+  | "setting.voice_video.voice_messages.delete"
+  | "setting.voice_video.voice_messages.delete_confirm"
+  | "setting.voice_video.voice_messages.delete_success"
+  | "setting.voice_video.voice_messages.delete_failed"
+  | "setting.voice_video.voice_messages.load_failed"
+  | "setting.voice_video.voice_messages.empty"
+  | "setting.voice_video.voice_messages.content_empty"
   | "setting.voice_video.microphone_fallback"
   | "setting.voice_video.camera_fallback"
   | "setting.voice_video.load_devices_failed"
@@ -2031,6 +2155,38 @@ export type KeyPaths =
   | "setting.security.security_key_created"
   | "setting.security.secure_backup_label"
   | "setting.security.secure_backup_desc"
+  | "setting.security.three_pid_title"
+  | "setting.security.three_pid_desc"
+  | "setting.security.three_pid_empty"
+  | "setting.security.three_pid_email"
+  | "setting.security.three_pid_msisdn"
+  | "setting.security.three_pid_validated"
+  | "setting.security.three_pid_unverified"
+  | "setting.security.three_pid_add_email"
+  | "setting.security.three_pid_email_label"
+  | "setting.security.three_pid_email_placeholder"
+  | "setting.security.three_pid_password_label"
+  | "setting.security.three_pid_password_placeholder"
+  | "setting.security.three_pid_send_code"
+  | "setting.security.three_pid_code_label"
+  | "setting.security.three_pid_code_placeholder"
+  | "setting.security.three_pid_code_hint"
+  | "setting.security.three_pid_bind"
+  | "setting.security.three_pid_unbind"
+  | "setting.security.three_pid_unbind_confirm_title"
+  | "setting.security.three_pid_unbind_confirm_content"
+  | "setting.security.three_pid_request_success"
+  | "setting.security.three_pid_request_failed"
+  | "setting.security.three_pid_invalid_email"
+  | "setting.security.three_pid_password_required"
+  | "setting.security.three_pid_code_required"
+  | "setting.security.three_pid_bind_success"
+  | "setting.security.three_pid_bind_failed"
+  | "setting.security.three_pid_unbind_success"
+  | "setting.security.three_pid_unbind_failed"
+  | "setting.security.three_pid_load_failed"
+  | "setting.security.three_pid_refresh"
+  | "setting.security.three_pid_msisdn_unavailable"
   | "setting.burn_after_read.global.title"
   | "setting.burn_after_read.global.enabled_label"
   | "setting.burn_after_read.global.enabled_desc"

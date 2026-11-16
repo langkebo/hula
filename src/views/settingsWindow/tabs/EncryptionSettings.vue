@@ -1,9 +1,9 @@
 <template>
-  <!-- 服务端未启用 E2EE 时整页只读：提示 + inert 阻断所有交互 -->
+  <!-- 本地 crypto 未初始化时整页只读：提示 + inert 阻断所有交互 -->
   <div class="encryption-settings" :inert="isReadOnly ? true : undefined">
     <div v-if="isReadOnly" class="e2ee-onboarding-hint" data-testid="e2ee-unsupported">
       <Icon icon="mdi:shield-off" :width="18" />
-      <span>{{ t('setting.encryption.server_unsupported') }}</span>
+      <span>{{ t('setting.encryption.crypto_unavailable') }}</span>
     </div>
 
     <div v-if="loadError" class="setting-load-error" role="alert">
@@ -256,7 +256,7 @@ import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useClipboard } from '@/composables/common/useClipboard'
 import type { VerificationTransaction } from '@/composables/encryption/useEncryption'
 import { useEncryptionSettings } from '@/composables/encryption/useEncryptionSettings'
-import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
+import { useEncryptionStore } from '@/stores/domains/settings/encryption'
 import { createLogger } from '@/utils/Logger'
 import CrossSigningSection from './sections/CrossSigningSection.vue'
 import DehydratedDeviceSection from './sections/DehydratedDeviceSection.vue'
@@ -272,11 +272,6 @@ defineOptions({
 const { showFeedback } = useActionFeedback()
 const { write: writeClipboard } = useClipboard()
 const { t } = useI18n()
-
-// 服务端未声明 E2EE 能力时降级为只读（页签本身保留，见 settingsSchema 的 readonly fallback）。
-// 能力探测未完成前不做判定，避免登录初期误判导致整页不可用。
-const capability = useServerCapability()
-const isReadOnly = computed(() => capability.isLoaded.value && !capability.canUseE2EE.value)
 
 /**
  * R-1 严格模式：全局偏好 → SDK 可写属性 `crypto.globalBlacklistUnverifiedDevices`。
@@ -319,6 +314,11 @@ const {
   refreshEncryptionSettings,
   cancelPendingVerification
 } = useEncryptionSettings()
+
+// E2EE 属客户端能力，服务端 /capabilities 不宣告（CAP-08）。
+// 仅当本地 crypto 未初始化时降级为只读；状态加载完成前不做判定，避免登录初期误锁。
+const encryptionStore = useEncryptionStore()
+const isReadOnly = computed(() => encryptionStore.loaded && !encryptionEnabled.value)
 
 const keyStatus = computed(() => {
   if (!encryptionEnabled.value) {

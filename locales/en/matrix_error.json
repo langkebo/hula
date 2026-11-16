@@ -49,6 +49,8 @@
     "voip_call_creation_failed": "Cannot create call",
     "voip_call_not_found": "Call not found: {callId}",
     "url_parse_failed": "Cannot parse media URL: {mediaUrl}",
+    "signed_params_missing": "Signed media parameters are incomplete",
+    "signed_expired": "Signed media link has expired",
     "voice_message_manager_unavailable": "Voice service unavailable"
   },
   "messaging": {

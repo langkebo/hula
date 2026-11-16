@@ -532,7 +532,7 @@ describe('SpaceChildrenPane', () => {
     expect(vm.manageMode).toBeNull()
   })
 
-  it('joinSpace calls matrixSpaceService.joinSpace and reloads data', async () => {
+  it('joinSpace CTA success only reloads data without calling joinSpace directly', async () => {
     const wrapper = mount(SpaceChildrenPane)
     await flushPromises()
 
@@ -540,11 +540,15 @@ describe('SpaceChildrenPane', () => {
       handleJoinSpace: () => Promise<void>
     }
     joinSpaceMock.mockClear()
+    loadSpacesMock.mockClear()
+    loadSelectedSpaceMock.mockClear()
     await vm.handleJoinSpace()
     await flushPromises()
 
-    expect(joinSpaceMock).toHaveBeenCalledWith('!space-1:server')
-    expect(showFeedbackMock).toHaveBeenCalledWith('space.join_space_success', 'success')
+    // join / knock 已由 TjgSpaceJoinCta 内部完成，壳层仅负责刷新
+    expect(joinSpaceMock).not.toHaveBeenCalled()
+    expect(loadSpacesMock).toHaveBeenCalled()
+    expect(loadSelectedSpaceMock).toHaveBeenCalled()
   })
 
   it('subView resets to overview when spaceId changes', async () => {

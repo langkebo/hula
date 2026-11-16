@@ -36,6 +36,10 @@
       <div class="storage-usage__track mt-8px">
         <div class="storage-usage__bar" :style="{ width: quotaPercent }"></div>
       </div>
+      <div class="mt-6px flex items-center justify-between gap-8px text-[length:var(--tjg-font-size-xs)]">
+        <span class="text-[--tjg-text-secondary]">{{ t('fileManager.storage.count') }}</span>
+        <span class="text-[--tjg-text-primary]">{{ quota.mediaCount }}</span>
+      </div>
     </div>
   </div>
 </template>

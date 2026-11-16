@@ -70,6 +70,7 @@ describe('DelayedMessagesModal', () => {
     expect(wrapper.text()).toContain('lunch reminder')
     expect(wrapper.text()).toContain(resolveMessage('delayed_events.actions.cancel'))
     expect(wrapper.text()).toContain(resolveMessage('delayed_events.actions.send_now'))
+    expect(wrapper.text()).toContain(resolveMessage('delayed_events.actions.restart'))
     expect(wrapper.text()).toContain(resolveMessage('delayed_events.actions.reschedule'))
   })
 
@@ -82,15 +83,18 @@ describe('DelayedMessagesModal', () => {
     expect(wrapper.emitted('schedule')?.[0]).toEqual([5 * 60_000])
   })
 
-  it('emits cancel and send-now for the selected task', async () => {
+  it('emits cancel, send-now and restart for the selected task', async () => {
     const wrapper = mountComponent({ items })
     const sendNowButton = findButton(wrapper, 'delayed_events.actions.send_now')
+    const restartButton = findButton(wrapper, 'delayed_events.actions.restart')
     const cancelButton = findButton(wrapper, 'delayed_events.actions.cancel')
 
     await sendNowButton?.trigger('click')
+    await restartButton?.trigger('click')
     await cancelButton?.trigger('click')
 
     expect(wrapper.emitted('sendNow')?.[0]).toEqual([7])
+    expect(wrapper.emitted('restart')?.[0]).toEqual([7])
     expect(wrapper.emitted('cancel')?.[0]).toEqual([7])
   })
 })

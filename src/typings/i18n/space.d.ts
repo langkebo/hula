@@ -15,6 +15,13 @@ export type Messages = {
   "context": {
     "enter_chat": "进入聊天"
   },
+  "discover": {
+    "title": "发现公开空间",
+    "search_placeholder": "搜索公开空间",
+    "search": "搜索",
+    "loading": "加载中…",
+    "children_empty": "该空间暂无子空间"
+  },
   "create": "创建空间",
   "search_sessions_placeholder": "搜索会话",
   "filter_all": "全部",
@@ -152,6 +159,8 @@ export type Messages = {
   "join_failed": "加入失败",
   "join_public": "公开加入",
   "join_success": "加入成功",
+  "knock_failed": "申请加入失败",
+  "knock_success": "已提交申请",
   "leave": "退出",
   "leave_failed": "退出失败",
   "leave_success": "已退出",
@@ -188,6 +197,11 @@ export type KeyPaths =
   | "space.collapse"
   | "space.hierarchy"
   | "space.context.enter_chat"
+  | "space.discover.title"
+  | "space.discover.search_placeholder"
+  | "space.discover.search"
+  | "space.discover.loading"
+  | "space.discover.children_empty"
   | "space.create"
   | "space.search_sessions_placeholder"
   | "space.filter_all"
@@ -324,6 +338,8 @@ export type KeyPaths =
   | "space.join_failed"
   | "space.join_public"
   | "space.join_success"
+  | "space.knock_failed"
+  | "space.knock_success"
   | "space.leave"
   | "space.leave_failed"
   | "space.leave_success"

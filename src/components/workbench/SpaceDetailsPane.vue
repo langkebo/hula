@@ -47,17 +47,17 @@
 
         <!-- 操作按钮区 -->
         <section class="space-details-pane__actions-grid" data-test="space-actions">
-          <!-- 非成员：显示加入空间按钮 -->
-          <button
-            v-if="isMember === false"
-            type="button"
-            class="space-details-pane__action space-details-pane__action--primary"
-            data-test="join-space-action"
-            :loading="joiningSpace"
-            @click="emit('joinSpace')">
-            <svg class="size-16px" aria-hidden="true"><use href="#user-add" /></svg>
-            <span>{{ t('space.join_space') }}</span>
-          </button>
+          <!-- 非成员：加入/申请加入（knock）CTA -->
+          <div
+            v-if="isMember === false && activeSpace"
+            class="space-details-pane__join-cta"
+            data-test="join-space-action">
+            <TjgSpaceJoinCta
+              :space-id="activeSpace.spaceId"
+              :join-rule="joinRule"
+              membership="leave"
+              @success="emit('joinSpace')" />
+          </div>
           <!-- 成员：显示进入空间按钮 -->
           <button
             v-else
@@ -148,6 +148,7 @@ import SpaceMembersPane from './SpaceMembersPane.vue'
 import SpaceOverviewHeader from './SpaceOverviewHeader.vue'
 import SpacePreviewSections from './SpacePreviewSections.vue'
 import SpaceRoomsPane from './SpaceRoomsPane.vue'
+import TjgSpaceJoinCta from './TjgSpaceJoinCta.vue'
 
 type SpaceManageMode = 'invite' | 'add-room'
 type SpaceSubView = 'overview' | 'members' | 'rooms' | 'hierarchy'
@@ -161,8 +162,9 @@ const props = withDefaults(
     roomsLoading?: boolean
     canManage?: boolean
     isMember?: boolean
+    /** 空间加入规则，knock 时 CTA 走「申请加入」 */
+    joinRule?: string | undefined
     subView?: SpaceSubView
-    joiningSpace?: boolean
     manageMode?: SpaceManageMode | null
     manageSubmitting?: boolean
     inviteUserId?: string

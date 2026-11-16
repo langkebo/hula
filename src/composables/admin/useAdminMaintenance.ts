@@ -35,8 +35,10 @@ interface UseAdminMaintenanceResult {
   experimentalFeatures: Ref<Record<string, unknown>>
   featureFlags: Ref<AdminFeatureFlag[]>
   serverQuota: Ref<ServerQuota | null>
+  serverInfo: Ref<Record<string, unknown> | null>
   loading: Ref<boolean>
   purging: Ref<boolean>
+  restarting: Ref<boolean>
   featureMutating: Ref<boolean>
   featureSaving: Ref<boolean>
   featureDeleting: Ref<boolean>
@@ -44,7 +46,9 @@ interface UseAdminMaintenanceResult {
   loadExperimentalFeatures: () => Promise<void>
   loadFeatureFlags: () => Promise<void>
   loadServerQuota: () => Promise<void>
+  loadServerInfo: () => Promise<void>
   loadAll: () => Promise<void>
+  restartServer: () => Promise<void>
   purgeMediaCache: (beforeTs?: number) => Promise<{ deleted: number }>
   setExperimentalFeature: (feature: string, enabled: boolean) => Promise<void>
   getFeatureFlagDetail: (flagKey: string) => Promise<AdminFeatureFlag | null>
@@ -64,8 +68,10 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
   const experimentalFeatures = ref<Record<string, unknown>>({})
   const featureFlags = ref<AdminFeatureFlag[]>([])
   const serverQuota = ref<ServerQuota | null>(null)
+  const serverInfo = ref<Record<string, unknown> | null>(null)
   const loading = ref(false)
   const purging = ref(false)
+  const restarting = ref(false)
   const featureMutating = ref(false)
   const featureSaving = ref(false)
   const featureDeleting = ref(false)
@@ -100,10 +106,23 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
     serverQuota.value = await adminService.getServerQuota()
   }
 
+  async function loadServerInfo() {
+    serverInfo.value = await adminService.getAdminInfo()
+  }
+
+  async function restartServer() {
+    restarting.value = true
+    try {
+      await adminService.restartServer()
+    } finally {
+      restarting.value = false
+    }
+  }
+
   async function loadAll() {
     loading.value = true
     try {
-      await Promise.allSettled([loadExperimentalFeatures(), loadServerQuota()])
+      await Promise.allSettled([loadExperimentalFeatures(), loadServerQuota(), loadServerInfo()])
     } finally {
       loading.value = false
     }
@@ -158,15 +177,19 @@ export function useAdminMaintenance(): UseAdminMaintenanceResult {
     experimentalFeatures,
     featureFlags,
     serverQuota,
+    serverInfo,
     loading,
     purging,
+    restarting,
     featureMutating,
     featureSaving,
     featureDeleting,
     loadExperimentalFeatures,
     loadFeatureFlags,
     loadServerQuota,
+    loadServerInfo,
     loadAll,
+    restartServer,
     purgeMediaCache,
     setExperimentalFeature,
     getFeatureFlagDetail,

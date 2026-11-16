@@ -27,6 +27,21 @@
             </n-button>
           </n-badge>
           <n-button
+            v-if="showMyRoomsAction"
+            quaternary
+            circle
+            size="small"
+            :aria-label="t('room.my_rooms.title')"
+            :title="t('room.my_rooms.title')"
+            data-test="my-rooms-entry"
+            @click="emit('openMyRooms')">
+            <template #icon>
+              <n-icon>
+                <svg aria-hidden="true"><use href="#room" /></svg>
+              </n-icon>
+            </template>
+          </n-button>
+          <n-button
             v-if="showJoinAction"
             quaternary
             circle
@@ -142,6 +157,8 @@ const props = withDefaults(
     title?: string
     showCreateAction?: boolean
     showJoinAction?: boolean
+    /** 是否显示「我的房间」入口（全量房间列表弹窗） */
+    showMyRoomsAction?: boolean
     createButtonText?: string
   }>(),
   {
@@ -149,7 +166,8 @@ const props = withDefaults(
     hiddenCount: 0,
     title: '',
     showCreateAction: false,
-    showJoinAction: false
+    showJoinAction: false,
+    showMyRoomsAction: false
   }
 )
 
@@ -162,6 +180,7 @@ const emit = defineEmits<{
   joinRoom: []
   searchSubmit: []
   openHiddenSessions: []
+  openMyRooms: []
 }>()
 
 const filterOptions = computed(() => [

@@ -143,7 +143,18 @@ export type Messages = {
     "device_unknown": "未知设备",
     "federation_section": "联邦/服务器",
     "matrix_id": "Matrix ID",
-    "server_address": "服务器地址"
+    "server_address": "服务器地址",
+    "account_status_normal": "正常",
+    "account_status_locked": "已锁定",
+    "account_status_suspended": "已暂停",
+    "account_status_unknown": "未知",
+    "mutual_rooms_section": "共同房间",
+    "mutual_rooms_loading": "加载共同房间中...",
+    "mutual_rooms_empty": "暂无共同房间",
+    "mutual_rooms_load_error": "加载共同房间失败",
+    "mutual_rooms_retry": "重试",
+    "mutual_rooms_load_more": "加载更多",
+    "mutual_rooms_untitled": "未命名房间"
   },
   "secret_chat": {
     "success": "已设为私密好友"
@@ -178,7 +189,13 @@ export type Messages = {
     "claim_placeholder": "粘贴邀请链接",
     "claim_action": "领取",
     "invalid_link": "链接无效，请检查是否完整",
-    "claim_success": "已领取，正在打开会话",
+    "claim_success": "已领取",
+    "claim_success_title": "领取成功",
+    "claimed_alias_hint": "别名区分大小写，请完整复制",
+    "claimed_no_alias": "该邀请没有房间别名，可直接进入会话。",
+    "copy_alias": "复制别名",
+    "alias_copied": "别名已复制",
+    "enter_room": "进入会话",
     "claim_failed": "领取失败，链接可能已被使用或已过期",
     "create_failed": "生成失败，请稍后重试"
   },
@@ -323,6 +340,17 @@ export type KeyPaths =
   | "friend.detail.federation_section"
   | "friend.detail.matrix_id"
   | "friend.detail.server_address"
+  | "friend.detail.account_status_normal"
+  | "friend.detail.account_status_locked"
+  | "friend.detail.account_status_suspended"
+  | "friend.detail.account_status_unknown"
+  | "friend.detail.mutual_rooms_section"
+  | "friend.detail.mutual_rooms_loading"
+  | "friend.detail.mutual_rooms_empty"
+  | "friend.detail.mutual_rooms_load_error"
+  | "friend.detail.mutual_rooms_retry"
+  | "friend.detail.mutual_rooms_load_more"
+  | "friend.detail.mutual_rooms_untitled"
   | "friend.secret_chat.success"
   | "friend.list.title"
   | "friend.list.search"
@@ -352,6 +380,12 @@ export type KeyPaths =
   | "friend.one_time_invite.claim_action"
   | "friend.one_time_invite.invalid_link"
   | "friend.one_time_invite.claim_success"
+  | "friend.one_time_invite.claim_success_title"
+  | "friend.one_time_invite.claimed_alias_hint"
+  | "friend.one_time_invite.claimed_no_alias"
+  | "friend.one_time_invite.copy_alias"
+  | "friend.one_time_invite.alias_copied"
+  | "friend.one_time_invite.enter_room"
   | "friend.one_time_invite.claim_failed"
   | "friend.one_time_invite.create_failed"
   | "friend.alias.label"

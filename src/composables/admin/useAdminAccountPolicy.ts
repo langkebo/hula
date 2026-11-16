@@ -96,15 +96,29 @@ export function useAdminAccountPolicy(): UseAdminAccountPolicyResult {
     }
   }
 
+  /**
+   * 写后回读：写接口的响应只作为兜底值，最终状态以服务端查询为准，
+   * 避免本地状态与服务端漂移。回读失败时保留写响应，不把面板打成空态。
+   */
+  async function refreshValidity(userId: string, written: AdminAccountValidityInfo): Promise<void> {
+    try {
+      validity.value = await adminAccountValidityService.getValidity(userId)
+    } catch (err) {
+      validity.value = written
+      validityError.value = toMessage(err)
+    }
+  }
+
   async function setValidity(userId: string, expirationTs: number): Promise<boolean> {
     validitySaving.value = true
     validityError.value = null
     try {
-      validity.value = await adminAccountValidityService.createValidity({
+      const written = await adminAccountValidityService.createValidity({
         user_id: userId,
         expiration_ts: expirationTs,
         is_valid: true
       })
+      await refreshValidity(userId, written)
       return true
     } catch (err) {
       validityError.value = toMessage(err)
@@ -118,10 +132,11 @@ export function useAdminAccountPolicy(): UseAdminAccountPolicyResult {
     validitySaving.value = true
     validityError.value = null
     try {
-      validity.value = await adminAccountValidityService.renewValidity(userId, {
+      const written = await adminAccountValidityService.renewValidity(userId, {
         renewal_token: renewalToken,
         new_expiration_ts: newExpirationTs
       })
+      await refreshValidity(userId, written)
       return true
     } catch (err) {
       validityError.value = toMessage(err)

@@ -124,3 +124,60 @@ describe('MatrixPushService — SDK PushManager (FT-112)', () => {
     })
   })
 })
+
+describe('MatrixPushService — push device endpoints (VEN-02)', () => {
+  let notificationsMocks: Record<string, ReturnType<typeof vi.fn>>
+
+  function buildMockClient() {
+    return {
+      getNotificationsManager: () => notificationsMocks
+    }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    notificationsMocks = {
+      getPushDevices: vi.fn().mockResolvedValue([]),
+      registerPushDevice: vi.fn().mockResolvedValue({ device_id: 'DEVICE_1', push_type: 'fcm', enabled: true }),
+      unregisterPushDevice: vi.fn().mockResolvedValue({ message: 'ok' }),
+      sendPushNotification: vi.fn().mockResolvedValue({ message: 'sent' })
+    }
+  })
+
+  it('getPushDevices 走 NotificationsManager', async () => {
+    notificationsMocks.getPushDevices.mockResolvedValue([
+      { device_id: 'DEVICE_1', push_type: 'fcm', enabled: true, created_ts: 1 }
+    ])
+    vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
+
+    const devices = await matrixPushService.getPushDevices()
+    expect(devices).toHaveLength(1)
+    expect(notificationsMocks.getPushDevices).toHaveBeenCalledTimes(1)
+  })
+
+  it('registerPushDevice 透传请求体并返回设备', async () => {
+    vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
+    const body = { device_id: 'DEVICE_1', push_token: 'token', push_type: 'fcm' }
+
+    const device = await matrixPushService.registerPushDevice(body)
+    expect(notificationsMocks.registerPushDevice).toHaveBeenCalledWith(body)
+    expect(device.device_id).toBe('DEVICE_1')
+  })
+
+  it('unregisterPushDevice 按 device_id 注销', async () => {
+    vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
+
+    const ack = await matrixPushService.unregisterPushDevice('DEVICE_1')
+    expect(notificationsMocks.unregisterPushDevice).toHaveBeenCalledWith('DEVICE_1')
+    expect(ack.message).toBe('ok')
+  })
+
+  it('sendPushNotification 透传消息体', async () => {
+    vi.spyOn(matrixPushService as any, 'getClient').mockReturnValue(buildMockClient())
+    const body = { device_id: 'DEVICE_1', title: 'T', body: 'B' }
+
+    const ack = await matrixPushService.sendPushNotification(body)
+    expect(notificationsMocks.sendPushNotification).toHaveBeenCalledWith(body)
+    expect(ack.message).toBe('sent')
+  })
+})

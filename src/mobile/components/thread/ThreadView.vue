@@ -40,9 +40,7 @@
         :finished="finished"
         :finished-text="t('common.no_more')"
         @load="loadMessages">
-        <div v-if="messages.length === 0 && !loading" class="empty-state">
-          <van-empty :description="t('thread.no_replies')" />
-        </div>
+        <MobileAsyncState v-if="isEmpty" state="empty" :empty-text="t('thread.no_replies')" min-height="200px" />
         <div v-else class="message-list">
           <div v-for="msg in messages" :key="msg.eventId" class="thread-message">
             <van-image :src="msg.avatarUrl ?? ''" round width="32" height="32" fit="cover" />
@@ -88,9 +86,10 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
 import { showImagePreview, showToast } from 'vant'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import type { Thread, ThreadDisplayMessage } from '@/services/matrix/messaging/MatrixThreadService'
 import { matrixThreadService } from '@/services/matrix/messaging/MatrixThreadService'
 import { createLogger } from '@/utils/Logger'
@@ -112,6 +111,9 @@ const replyText = ref('')
 const thread = ref<Thread | null>(null)
 const rootMessage = ref<ThreadDisplayMessage | null>(null)
 const messages = ref<ThreadDisplayMessage[]>([])
+
+/** 加载完成且无回复：展示统一空态 */
+const isEmpty = computed(() => messages.value.length === 0 && !loading.value)
 
 /** 每页窗口增量（synapse-rust getRoomThread 的 replyLimit 窗口） */
 const PAGE_SIZE = 50
@@ -348,10 +350,6 @@ watch(
 .message-text {
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.empty-state {
-  padding: 60px 0;
 }
 
 .thread-reply {

@@ -84,7 +84,18 @@ export type Messages = {
     "detail": {
       "title": "举报详情",
       "content": "内容",
-      "none": "无"
+      "none": "无",
+      "refresh": "刷新详情"
+    },
+    "scanner": {
+      "view": "查看扫描器",
+      "title": "扫描器信息",
+      "empty": "暂无扫描器信息",
+      "load_failed": "获取扫描器信息失败",
+      "scanner_id": "扫描器 ID",
+      "scan_result": "扫描结果",
+      "confidence": "置信度",
+      "scanned_at": "扫描时间"
     },
     "detail_failed": "获取举报详情失败",
     "dismiss_confirm": "确认驳回举报 {id}？该操作会删除服务端举报记录。",
@@ -221,6 +232,15 @@ export type KeyPaths =
   | "moderation.admin_reports.detail.title"
   | "moderation.admin_reports.detail.content"
   | "moderation.admin_reports.detail.none"
+  | "moderation.admin_reports.detail.refresh"
+  | "moderation.admin_reports.scanner.view"
+  | "moderation.admin_reports.scanner.title"
+  | "moderation.admin_reports.scanner.empty"
+  | "moderation.admin_reports.scanner.load_failed"
+  | "moderation.admin_reports.scanner.scanner_id"
+  | "moderation.admin_reports.scanner.scan_result"
+  | "moderation.admin_reports.scanner.confidence"
+  | "moderation.admin_reports.scanner.scanned_at"
   | "moderation.admin_reports.detail_failed"
   | "moderation.admin_reports.dismiss_confirm"
   | "moderation.admin_reports.dismiss_success"

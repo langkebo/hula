@@ -7,9 +7,11 @@
       {{ t('setting.encryption.device_verify_dialog.pending_list_title') }}
     </h3>
     <div class="w-full mb-24px">
-      <n-alert v-if="pendingVerifications.length === 0" type="info" class="mb-16px">
-        {{ t('setting.encryption.device_verify_dialog.pending_list_empty') }}
-      </n-alert>
+      <EmptyState
+        v-if="isEmptyPendingList"
+        compact
+        class="mb-16px"
+        :description="t('setting.encryption.device_verify_dialog.pending_list_empty')" />
       <n-list v-else size="small" bordered>
         <n-list-item v-for="req in pendingVerifications" :key="req.transactionId">
           <div class="flex items-center justify-between w-full">
@@ -49,13 +51,15 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NAlert, NButton, NList, NListItem, NSpace, NTag } from 'naive-ui'
+import { NButton, NList, NListItem, NSpace, NTag } from 'naive-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { VerificationTransaction } from '@/services/matrix/crypto/MatrixVerificationService'
 
 defineOptions({ name: 'DeviceVerifyPendingStep' })
 
-defineProps<{
+const props = defineProps<{
   pendingVerifications: VerificationTransaction[]
 }>()
 
@@ -67,4 +71,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const isEmptyPendingList = computed(() => props.pendingVerifications.length === 0)
 </script>

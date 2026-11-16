@@ -45,9 +45,10 @@
         </div>
       </div>
 
-      <div v-if="!members.length" class="space-members-pane__empty" data-test="space-members-empty">
-        {{ t('space.detail_members_empty') }}
-      </div>
+      <EmptyState
+        v-if="isEmptyMembers"
+        :description="t('space.detail_members_empty')"
+        data-test="space-members-empty" />
     </div>
 
     <!-- 搜索式邀请（管理员可见，位于成员列表下方） -->
@@ -56,8 +57,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import SpaceInviteBar from '@/components/space/SpaceInviteBar.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSpaceMembers } from '@/composables/space/useSpaceMembers'
@@ -78,6 +80,9 @@ const { members, load, invite } = useSpaceMembers(() => props.spaceId)
 
 const inviteUserId = ref('')
 const inviteSubmitting = ref(false)
+
+/** 成员列表为空时展示空态 */
+const isEmptyMembers = computed(() => members.value.length === 0)
 
 const getInitials = (text: string) => {
   const localPart = text.startsWith('@') ? text.slice(1).split(':')[0] : text
@@ -258,13 +263,6 @@ void load()
 
 .space-members-pane__status {
   font-size: 11px;
-  color: var(--tjg-text-quaternary);
-}
-
-.space-members-pane__empty {
-  padding: 40px 16px;
-  text-align: center;
-  font-size: 13px;
   color: var(--tjg-text-quaternary);
 }
 </style>

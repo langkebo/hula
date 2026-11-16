@@ -8,9 +8,13 @@
     :style="{ left: `${adjustedPosition.x}px`, top: `${adjustedPosition.y}px` }"
     @keydown.esc="close"
     @click.stop>
-    <div v-if="!allowedActions.length" class="message-action-menu__empty" data-test="menu-empty">
-      {{ t('message.no_actions') }}
-    </div>
+    <EmptyState
+      v-if="isEmptyActions"
+      class="message-action-menu__empty"
+      data-test="menu-empty"
+      compact
+      variant="subtle"
+      :description="t('message.no_actions')" />
     <template v-else>
       <button
         v-for="action in allowedActions"
@@ -34,6 +38,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
 import { getStrategy, type MessageAction, type MessageActionContext } from '@/strategy/strategies'
@@ -64,6 +69,8 @@ const menuRef = ref<HTMLElement>()
 const allowedActions = ref<MessageAction[]>([])
 // 视口边界检测后的实际定位
 const adjustedPosition = ref({ x: 0, y: 0 })
+
+const isEmptyActions = computed(() => allowedActions.value.length === 0)
 
 const actionContext = computed<MessageActionContext>(() => ({
   isMe: props.isMe,

@@ -47,9 +47,7 @@
 
     <!-- Widget 列表 -->
     <n-spin :show="loading">
-      <div v-if="widgets.length === 0" class="empty-state">
-        <n-empty :description="t('common.widget.no_widgets')" />
-      </div>
+      <EmptyState v-if="widgets.length === 0" compact :description="t('common.widget.no_widgets')" />
       <div v-else class="widget-list">
         <div
           v-for="widget in widgets"
@@ -417,11 +415,6 @@ onMounted(() => {
       font-weight: 600;
     }
   }
-}
-
-.empty-state {
-  padding: 60px 0;
-  text-align: center;
 }
 
 .widget-list {

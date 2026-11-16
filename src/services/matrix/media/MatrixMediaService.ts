@@ -19,8 +19,11 @@ import {
   fetchUrlPreview
 } from './mediaConfigOps'
 import {
+  buildSignedMediaDownloadUrl,
   downloadEncryptedFileBytes as dlEncryptedFileBytes,
-  downloadFileBytes as dlFileBytes
+  downloadFileBytes as dlFileBytes,
+  downloadSignedMediaBytes as dlSignedMediaBytes,
+  type SignedMediaDownloadParams
 } from './mediaDownloadHelpers'
 import { getAudioDuration, getImageDimensions, getVideoMetadata } from './mediaMetadata'
 import {
@@ -281,12 +284,14 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
+  /** 具名上传（服务端指定 mediaId）：与其它上传入口一致，未初始化时立即失败 */
   async uploadContentWithId(
     serverName: string,
     mediaId: string,
     file: File | Blob,
     mimetype?: string
   ): Promise<UploadResult> {
+    this.assertClientReady()
     const resolvedMimetype =
       mimetype || (file instanceof File ? file.type || 'application/octet-stream' : 'application/octet-stream')
     try {
@@ -344,6 +349,40 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       (url) => this.getMediaUrl(url),
       (key, params) => this.t(key, params)
     )
+  }
+
+  /**
+   * 构造签名媒体下载地址（`download_signed`，由 SDK 按路由表构建）。
+   *
+   * 后端不提供「生成签名」的客户端端点，签名与过期时间由链接提供方下发；
+   * 因此这里只负责把参数拼成可访问的签名 URL。`expires` 为 Unix 秒。
+   */
+  getSignedMediaDownloadUrl(params: SignedMediaDownloadParams): string {
+    this.assertClientReady()
+    try {
+      return buildSignedMediaDownloadUrl(this.getClient(), params, (key, tParams) => this.t(key, tParams))
+    } catch (err) {
+      logger.error(`[MatrixMedia] 签名媒体地址构造失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 通过后端 `download_signed` 端点下载媒体字节。
+   *
+   * 后端只返回完整字节流，没有分片/流式下载进度端点，因此不提供 download 进度回调；
+   * UI 进度环按「开始 0% / 完成 100%」两级呈现（见 `fileDownload` store）。
+   */
+  async downloadSignedFileBytes(params: SignedMediaDownloadParams): Promise<Uint8Array> {
+    this.assertClientReady()
+    try {
+      const data = await dlSignedMediaBytes(this.getClient(), params, (key, tParams) => this.t(key, tParams))
+      logger.info(`[MatrixMedia] 签名媒体下载成功: ${params.serverName}/${params.mediaId}`)
+      return data
+    } catch (err) {
+      logger.error(`[MatrixMedia] 签名媒体下载失败: ${err}`)
+      throw err
+    }
   }
 
   // ── 媒体配置 & 配额（实现在 mediaConfigOps，本类只做访问器绑定）──

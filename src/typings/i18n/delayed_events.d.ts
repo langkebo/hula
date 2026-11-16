@@ -22,6 +22,7 @@ export type Messages = {
   },
   "actions": {
     "send_now": "立即发送",
+    "restart": "重置计时",
     "reschedule": "改期",
     "cancel": "取消"
   },
@@ -33,6 +34,8 @@ export type Messages = {
     "cancel_failed": "取消失败，任务仍保留：{reason}",
     "sent_now": "已立即发送",
     "send_now_failed": "立即发送失败：{reason}",
+    "restarted": "已重置计时，发送时间顺延",
+    "restart_failed": "重置计时失败：{reason}",
     "rescheduled": "已改期",
     "reschedule_failed": "改期失败：{reason}",
     "text_only": "仅支持文本消息定时发送"
@@ -69,6 +72,7 @@ export type KeyPaths =
   | "delayed_events.pending.refresh"
   | "delayed_events.pending.unknown_room"
   | "delayed_events.actions.send_now"
+  | "delayed_events.actions.restart"
   | "delayed_events.actions.reschedule"
   | "delayed_events.actions.cancel"
   | "delayed_events.feedback.scheduled"
@@ -78,6 +82,8 @@ export type KeyPaths =
   | "delayed_events.feedback.cancel_failed"
   | "delayed_events.feedback.sent_now"
   | "delayed_events.feedback.send_now_failed"
+  | "delayed_events.feedback.restarted"
+  | "delayed_events.feedback.restart_failed"
   | "delayed_events.feedback.rescheduled"
   | "delayed_events.feedback.reschedule_failed"
   | "delayed_events.feedback.text_only"

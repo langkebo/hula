@@ -1,8 +1,6 @@
 {
   "title": "注销账户",
   "back": "返回上一步",
-  "success": "账户已注销",
-  "failed": "账户注销失败",
   "step": {
     "consequences": "确认后果",
     "verify": "验证身份",
@@ -33,7 +31,6 @@
     "password_field": "账号密码",
     "password_placeholder": "请输入当前账号密码",
     "password_required": "请输入当前账号密码",
-    "password_invalid": "密码校验失败，请重试",
     "continue": "确认身份，继续",
     "mismatch": "输入与当前账号不一致"
   },

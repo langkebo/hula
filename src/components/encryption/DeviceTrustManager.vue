@@ -11,9 +11,10 @@
       <n-tabs v-model:value="activeTab" type="line">
         <!-- Device List Tab -->
         <n-tab-pane name="devices" :tab="t('encryption.device_trust.device_list_tab')">
-          <div v-if="devices.length === 0 && !loading" class="empty-state">
-            <n-empty :description="t('encryption.device_trust.no_devices')" />
-          </div>
+          <EmptyState
+            v-if="devices.length === 0 && !loading"
+            compact
+            :description="t('encryption.device_trust.no_devices')" />
           <div v-else class="device-list">
             <div v-for="device in devices" :key="device.deviceId" class="device-item">
               <div class="device-info">
@@ -113,9 +114,10 @@
           </div>
 
           <div v-if="selectedRoomId" class="unverified-section">
-            <div v-if="unverifiedDevices.length === 0 && !loading" class="empty-state">
-              <n-empty :description="t('encryption.device_trust.no_unverified_devices')" />
-            </div>
+            <EmptyState
+              v-if="unverifiedDevices.length === 0 && !loading"
+              compact
+              :description="t('encryption.device_trust.no_unverified_devices')" />
             <div v-else class="device-list">
               <div v-for="device in unverifiedDevices" :key="`${device.userId}-${device.deviceId}`" class="device-item">
                 <div class="device-info">
@@ -136,16 +138,15 @@
               </div>
             </div>
           </div>
-          <div v-else class="empty-state">
-            <n-empty :description="t('encryption.device_trust.select_room_hint')" />
-          </div>
+          <EmptyState v-else compact :description="t('encryption.device_trust.select_room_hint')" />
         </n-tab-pane>
 
         <!-- Blocked Devices Tab -->
         <n-tab-pane name="blocked" :tab="t('encryption.device_trust.blocked_tab')">
-          <div v-if="blockedDevices.length === 0 && !loading" class="empty-state">
-            <n-empty :description="t('encryption.device_trust.no_blocked_devices')" />
-          </div>
+          <EmptyState
+            v-if="blockedDevices.length === 0 && !loading"
+            compact
+            :description="t('encryption.device_trust.no_blocked_devices')" />
           <div v-else class="device-list">
             <div v-for="device in blockedDevices" :key="device.deviceId" class="device-item">
               <div class="device-info">
@@ -198,7 +199,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { NButton, NEmpty, NFlex, NModal, NPopconfirm, NSelect, NSpace, NSpin, NTabPane, NTabs, NTag } from 'naive-ui'
+import { NButton, NFlex, NModal, NPopconfirm, NSelect, NSpace, NSpin, NTabPane, NTabs, NTag } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DeviceVerifyDialog from '@/components/encryption/DeviceVerifyDialog.vue'
@@ -468,11 +469,5 @@ watch(visible, async (val) => {
 
 .unverified-section {
   margin-top: 12px;
-}
-
-.empty-state {
-  padding: 32px 0;
-  display: flex;
-  justify-content: center;
 }
 </style>

@@ -57,6 +57,24 @@
             {{ prometheusLabel }}
           </n-descriptions-item>
         </n-descriptions>
+
+        <div v-if="healthCheckEntries.length > 0" class="telemetry-subsection">
+          <h5 class="telemetry-subtitle">{{ t('telemetry.section.healthChecks') }}</h5>
+          <n-descriptions bordered :column="2" label-placement="left" size="small">
+            <n-descriptions-item v-for="[key, value] in healthCheckEntries" :key="`check-${key}`" :label="key">
+              {{ value }}
+            </n-descriptions-item>
+          </n-descriptions>
+        </div>
+
+        <div v-if="healthDatabaseEntries.length > 0" class="telemetry-subsection">
+          <h5 class="telemetry-subtitle">{{ t('telemetry.section.healthDatabase') }}</h5>
+          <n-descriptions bordered :column="2" label-placement="left" size="small">
+            <n-descriptions-item v-for="[key, value] in healthDatabaseEntries" :key="`db-${key}`" :label="key">
+              {{ value }}
+            </n-descriptions-item>
+          </n-descriptions>
+        </div>
       </section>
 
       <section class="telemetry-section">
@@ -106,6 +124,21 @@
             <n-descriptions-item :label="t('telemetry.metrics.failure')">
               {{ metrics.appservice_scheduler.total_failure_count }}
             </n-descriptions-item>
+            <n-descriptions-item :label="t('telemetry.metrics.capacityLimited')">
+              {{ metrics.appservice_scheduler.services_capacity_limited }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('telemetry.metrics.pendingServices')">
+              {{ metrics.appservice_scheduler.services_with_pending_transactions }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('telemetry.metrics.backoffCount')">
+              {{ metrics.appservice_scheduler.total_backoff_count }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('telemetry.metrics.capacityLimitedCount')">
+              {{ metrics.appservice_scheduler.total_capacity_limited_count }}
+            </n-descriptions-item>
+            <n-descriptions-item :label="t('telemetry.metrics.inFlight')">
+              {{ metrics.appservice_scheduler.total_in_flight_count }}
+            </n-descriptions-item>
           </n-descriptions>
         </div>
       </section>
@@ -119,6 +152,7 @@
           :loading="loading"
           :pagination="false"
           :row-key="(row: TelemetryAlert) => row.alert_id"
+          :scroll-x="1180"
           size="small" />
       </section>
 
@@ -169,6 +203,25 @@ const { status, health, metrics, alerts, attributes, loading, ackLoading, unsupp
   useAdminTelemetry()
 
 const attributeEntries = computed(() => Object.entries(attributes.value))
+
+const healthCheckEntries = computed(() => recordEntries(health.value?.checks))
+const healthDatabaseEntries = computed(() => recordEntries(health.value?.database))
+
+function recordEntries(record: Record<string, unknown> | undefined): Array<[string, string]> {
+  if (!record) return []
+  return Object.entries(record).map(([key, value]) => [key, formatValue(value)])
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) return '-'
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
 
 const prometheusLabel = computed(() => {
   const config = status.value?.export_config
@@ -281,7 +334,29 @@ const alertColumns: DataTableColumns<TelemetryAlert> = [
     render: (row) =>
       h(NTag, { size: 'small', type: alertStatusTagType(row.status) }, () => alertStatusLabel(row.status))
   },
-  { title: t('telemetry.alerts.col_message'), key: 'message', ellipsis: { tooltip: true } },
+  {
+    title: t('telemetry.alerts.col_message'),
+    key: 'message',
+    ellipsis: { tooltip: true },
+    minWidth: 200
+  },
+  {
+    title: t('telemetry.alerts.col_owner'),
+    key: 'owner',
+    width: 130,
+    ellipsis: { tooltip: true }
+  },
+  {
+    title: t('telemetry.alerts.col_count'),
+    key: 'trigger_count',
+    width: 100
+  },
+  {
+    title: t('telemetry.alerts.col_last_seen'),
+    key: 'last_seen_ts',
+    width: 170,
+    render: (row) => formatTs(row.last_seen_ts)
+  },
   {
     title: t('telemetry.alerts.col_triggered'),
     key: 'triggered_at',

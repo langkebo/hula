@@ -155,7 +155,9 @@ vi.mock('@/services/matrix/user/MatrixProfileService', () => ({
 
 vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
   useServerCapability: () => ({
-    hasUnstable: (flag: string) => hasUnstableMock(flag)
+    hasUnstable: (flag: string) => hasUnstableMock(flag),
+    isCapabilityAvailable: (capability: string) =>
+      capability === 'extended-profile' ? hasUnstableMock('uk.tcpip.msc4133') : false
   })
 }))
 
@@ -376,7 +378,7 @@ describe('AccountSettings', () => {
     vm.confirmDeactivateAccount()
     const options = dialogWarningMock.mock.calls[0][0]
 
-    await expect(options.onPositiveClick()).rejects.toThrow('deactivate failed')
+    await expect(options.onPositiveClick()).rejects.toThrow('Account deactivation failed')
 
     expect(messageErrorMock).toHaveBeenCalledWith('注销账户失败')
     expect(dialogWarningMock.mock.results[0]?.value).toMatchObject({ loading: false })

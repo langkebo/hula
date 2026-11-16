@@ -7,9 +7,10 @@ type TjgSpaceJoinCtaVm = {
   handleLeave: () => Promise<void>
 }
 
-const { showFeedbackMock, joinMock, leaveMock } = vi.hoisted(() => ({
+const { showFeedbackMock, joinMock, knockMock, leaveMock } = vi.hoisted(() => ({
   showFeedbackMock: vi.fn(),
   joinMock: vi.fn(),
+  knockMock: vi.fn(),
   leaveMock: vi.fn()
 }))
 
@@ -43,6 +44,7 @@ vi.mock('@/composables/common/useActionFeedback', () => ({
 vi.mock('@/composables/space', () => ({
   useSpace: () => ({
     join: joinMock,
+    knock: knockMock,
     leave: leaveMock
   })
 }))
@@ -74,6 +76,25 @@ describe('TjgSpaceJoinCta', () => {
     expect(joinMock).toHaveBeenCalled()
     expect(showFeedbackMock).toHaveBeenCalledWith('space.join_success', 'success')
     expect(wrapper.emitted('success')).toEqual([['join']])
+  })
+
+  it('knock 空间应提交申请而非直接加入', async () => {
+    knockMock.mockResolvedValue(undefined)
+
+    const wrapper = mount(TjgSpaceJoinCta, {
+      props: {
+        spaceId: '!space:example.com',
+        joinRule: 'knock',
+        membership: 'leave'
+      }
+    })
+
+    await (wrapper.vm as unknown as TjgSpaceJoinCtaVm).handleJoin()
+
+    expect(knockMock).toHaveBeenCalled()
+    expect(joinMock).not.toHaveBeenCalled()
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.knock_success', 'success')
+    expect(wrapper.emitted('success')).toEqual([['knock']])
   })
 
   it('离开空间失败时播报 error 且不抛出 success 事件', async () => {

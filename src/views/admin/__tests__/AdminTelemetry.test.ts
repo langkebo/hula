@@ -59,9 +59,17 @@ vi.mock('naive-ui', async () => {
     }),
     NDataTable: defineComponent({
       name: 'NDataTable',
-      props: ['data', 'columns', 'bordered', 'loading', 'pagination', 'rowKey', 'size'],
+      props: ['data', 'columns', 'bordered', 'loading', 'pagination', 'rowKey', 'scrollX', 'size'],
       setup(props) {
-        return () => h('div', { 'data-test': 'NDataTable' }, JSON.stringify(props.data ?? []))
+        return () =>
+          h('div', { 'data-test': 'NDataTable' }, [
+            h(
+              'div',
+              { 'data-test': 'NDataTable-columns' },
+              ((props.columns ?? []) as Array<{ title?: string }>).map((column) => String(column.title)).join(',')
+            ),
+            h('div', { 'data-test': 'NDataTable-rows' }, JSON.stringify(props.data ?? []))
+          ])
       }
     }),
     NDescriptions: passthrough('NDescriptions'),
@@ -138,5 +146,72 @@ describe('AdminTelemetry', () => {
     await flushPromises()
 
     expect(telemetryMock.getStatus).toHaveBeenCalledTimes(2)
+  })
+
+  it('补齐渲染调度器新增计数、健康检查明细与告警字段', async () => {
+    telemetryMock.getHealth.mockResolvedValue({
+      status: 'ok',
+      service: 'synapse-rust',
+      checks: { storage: 'healthy' },
+      database: { pool_size: 42 },
+      alerts: []
+    })
+    telemetryMock.getMetricsSummary.mockResolvedValue({
+      total_metrics: 12,
+      total_counters: 8,
+      total_gauges: 3,
+      total_histograms: 1,
+      rendered_bytes: 2048,
+      snapshot_ts: 1_700_000_000,
+      appservice_scheduler: {
+        total_services: 1,
+        scheduler_available_services: 1,
+        services_in_backoff: 0,
+        services_capacity_limited: 21,
+        services_with_pending_transactions: 22,
+        total_pending_events: 0,
+        total_pending_transactions: 0,
+        total_success_count: 0,
+        total_failure_count: 0,
+        total_backoff_count: 23,
+        total_capacity_limited_count: 24,
+        total_in_flight_count: 25
+      }
+    })
+    telemetryMock.listAlerts.mockResolvedValue([
+      {
+        alert_id: 'alert-1',
+        alert_key: 'scheduler.backoff',
+        rule_name: 'SchedulerBackoff',
+        severity: 'warning',
+        status: 'firing',
+        owner: 'ops',
+        message: 'backoff detected',
+        trigger_count: 7,
+        triggered_at: 1_700_000_000,
+        last_seen_ts: 1_700_000_100,
+        acknowledged_at: null,
+        acknowledged_by: null,
+        recovered_at: null,
+        closed_at: null,
+        metrics: {}
+      }
+    ])
+
+    const wrapper = mount(AdminTelemetry)
+    await flushPromises()
+
+    const text = wrapper.text()
+    for (const value of ['21', '22', '23', '24', '25']) {
+      expect(text).toContain(value)
+    }
+    expect(text).toContain('healthy')
+    expect(text).toContain('42')
+
+    const columns = wrapper.find('[data-test="NDataTable-columns"]').text()
+    expect(columns).toContain('telemetry.alerts.col_owner')
+    expect(columns).toContain('telemetry.alerts.col_count')
+    expect(columns).toContain('telemetry.alerts.col_last_seen')
+    expect(wrapper.find('[data-test="NDataTable-rows"]').text()).toContain('ops')
   })
 })

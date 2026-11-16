@@ -64,9 +64,7 @@
       <n-flex vertical :size="8">
         <span class="text-[length:var(--tjg-font-size-sm)] text-gray-500">{{ t('dm.create.recent_contacts') }}</span>
         <n-scrollbar class="max-h-200px">
-          <div v-if="recentContacts.length === 0" class="text-[length:var(--tjg-font-size-sm)] text-gray-400">
-            {{ t('dm.create.no_recent') }}
-          </div>
+          <EmptyState v-if="isEmptyRecentContacts" compact :description="t('dm.create.no_recent')" />
           <div v-else class="recent-list">
             <div
               v-for="contact in recentContacts"
@@ -94,6 +92,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import BaseRightDrawer from '@/components/common/BaseRightDrawer.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixDirectMessageService } from '@/services/matrix/room/MatrixDirectMessageService'
 import { type MatrixContact, useContactStore } from '@/stores/domains/chat/contacts'
@@ -116,6 +115,8 @@ const hasSearched = ref(false)
 const recentContacts = computed(() => {
   return contactStore.contactsList.slice(0, 10)
 })
+
+const isEmptyRecentContacts = computed(() => recentContacts.value.length === 0)
 
 const handleSearch = async () => {
   const userId = searchValue.value.trim()

@@ -27,10 +27,11 @@
 
           <van-tabs v-model:active="activeTab" sticky>
             <van-tab :title="t('mobile_files.all')">
-              <div v-if="filteredFiles.length === 0" class="flex flex-col items-center justify-center py-60px">
-                <Icon icon="mdi:folder-outline" :width="48" color="var(--tjg-border-default)" />
-                <div class="text-14px text-[--tjg-text-quaternary] mt-12px">{{ t('mobile_files.empty') }}</div>
-              </div>
+              <MobileAsyncState
+                v-if="isFileListEmpty"
+                state="empty"
+                :empty-text="t('mobile_files.empty')"
+                min-height="240px" />
               <div v-else class="flex flex-col gap-12px pt-12px">
                 <div
                   v-for="file in filteredFiles"
@@ -106,6 +107,7 @@ import { showConfirmDialog, showToast } from 'vant'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MessageStatusEnum, MsgEnum } from '@/enums'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -229,6 +231,9 @@ const filteredFiles = computed(() => {
 
 const documentFiles = computed(() => files.value.filter((f) => f.type === 'document'))
 const mediaFiles = computed(() => files.value.filter((f) => f.type === 'image' || f.type === 'video'))
+
+/** 当前筛选结果为空：交给 MobileAsyncState 统一渲染 */
+const isFileListEmpty = computed(() => filteredFiles.value.length === 0)
 
 const fileActions = [
   { name: t('mobile_files.actions.open') },

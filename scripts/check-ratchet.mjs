@@ -21,6 +21,10 @@
  *  - important_css: `!important` declarations in style sources (non-test,
  *    comments stripped). Converge on design tokens / specificity instead.
  *  - zh_literal_vue: Chinese literals in .vue (non-test, comments stripped).
+ *  - handwritten_empty_state: hand-written empty-state conditions in .vue
+ *    templates (`length === 0` / `length < 1` / `!x.length`) whose file does not
+ *    yet reference the shared `EmptyState` / `MobileAsyncState` / `ErrorState`.
+ *    Migrate in batches to the shared components; the count may only decrease.
  *  - zh_literal_rust: Chinese **string literals** in src-tauri/src (all .rs files).
  *    Rust errors/logs must return a code (or English) and let the frontend
  *    translate; the count may only decrease (see the counter's own doc).
@@ -91,6 +95,32 @@ function stripCommentsAndHtmlComments(content) {
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/\/\/[^\n]*/g, '')
     .replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
+/** 已接线统一三态组件的标记；命中即说明该文件的空态不再手写 */
+const UNIFIED_EMPTY_STATE_REF = /\b(?:EmptyState|MobileAsyncState|ErrorState)\b/
+
+/**
+ * `handwritten_empty_state` 的取样函数：把文件缩窄为「仍需迁移的空态」作用域。
+ *
+ * 返回空串表示该文件不计入，判据：
+ *  - 已引用统一三态组件（`EmptyState` / `MobileAsyncState` / `ErrorState`）→ 已接线；
+ *  - 没有 `<template>` 段 → 无模板可判。
+ * 其余情况只返回模板中 `v-if` / `v-else-if` / `v-show` 的表达式拼接：
+ * 空态块只能由条件渲染指令控制，脚本里的 `length === 0` 是业务逻辑，
+ * `:disabled="list.length === 0"` 之类的属性绑定也不是空态 UI，计入会虚高。
+ */
+function extractHandwrittenEmptyStateScope(content) {
+  if (UNIFIED_EMPTY_STATE_REF.test(content)) return ''
+  const start = content.indexOf('<template>')
+  if (start === -1) return ''
+  const end = content.lastIndexOf('</template>')
+  const template = (end > start ? content.slice(start, end) : content.slice(start)).replace(/<!--[\s\S]*?-->/g, '')
+  const conditions = []
+  for (const match of template.matchAll(/\bv-(?:else-)?if="([^"]*)"|\bv-show="([^"]*)"/g)) {
+    conditions.push(match[1] ?? match[2] ?? '')
+  }
+  return conditions.join('\n')
 }
 
 /**
@@ -364,6 +394,30 @@ const counters = {
     strip: stripRustComments,
     extensions: RUST_EXTENSIONS,
     roots: [rustRoot]
+  },
+  /**
+   * `.vue` 模板里**手写**的空态判据（非测试）。
+   *
+   * 判据本意（UI 优化方案 v2.4 §13.11 / §18.7）：空态必须复用统一三态组件
+   * （`EmptyState` / `MobileAsyncState` / `ErrorState`），否则「无数据 / 加载中 /
+   * 加载失败」的文案、插画、间距、重试入口在各页面各写一套，永远收敛不了。
+   *
+   * 口径（见 `extractHandwrittenEmptyStateScope`）：
+   *  - 只看 `<template>` 段中 `v-if` / `v-else-if` / `v-show` 的表达式，
+   *    脚本里的长度判断与 `:disabled` 之类属性绑定不是空态 UI，不计；
+   *  - 文件一旦引用统一三态组件即整体不计（已接线）；
+   *  - 只数「空」方向判据：`length === 0` / `length == 0` / `length <= 0` /
+   *    `length < 0|1` / `!x.length`（`length > 0`、`length !== 0` 是非空分支，不计）。
+   *
+   * 收敛策略：按批次把模板里的空态块替换为统一组件，每批收紧基线；只降不升。
+   */
+  handwritten_empty_state: {
+    pattern: /length\s*(?:(?:===|==)\s*0\b|<=\s*0\b|<\s*[01]\b)|![\w$]+(?:\??\.[\w$]+)*\??\.length/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: extractHandwrittenEmptyStateScope,
+    extensions: VUE_EXTENSIONS
   }
 }
 

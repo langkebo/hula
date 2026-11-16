@@ -100,24 +100,60 @@
         <n-switch v-model:value="autoGainControl" @update:value="handleAutoGainChange" />
       </div>
     </div>
+
+    <n-divider />
+
+    <div class="settings-section">
+      <h3 class="section-title">{{ t('setting.voice_video.rtc_section') }}</h3>
+      <n-descriptions v-if="rtcEntries.length" :column="1" size="small" bordered>
+        <n-descriptions-item v-for="entry in rtcEntries" :key="entry.key" :label="entry.key">
+          {{ entry.value }}
+        </n-descriptions-item>
+      </n-descriptions>
+      <n-empty v-else :description="t('setting.voice_video.rtc_empty')" size="small" />
+    </div>
+
+    <n-divider />
+
+    <VoiceMessageSettings />
   </div>
 </template>
 
 <script setup lang="ts">
-import { NButton, NDivider, NSelect, NSwitch } from 'naive-ui'
-import { ref } from 'vue'
+import { NButton, NDescriptions, NDescriptionsItem, NDivider, NEmpty, NSelect, NSwitch } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMediaDeviceSettings } from '@/composables/settings/useMediaDeviceSettings'
+import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
+import { createLogger } from '@/utils/Logger'
+import VoiceMessageSettings from './sections/VoiceMessageSettings.vue'
 
 defineOptions({
   name: 'VoiceVideoSettings'
 })
 
+const logger = createLogger('VoiceVideoSettings')
 const { showFeedback } = useActionFeedback()
 const { t } = useI18n()
 
 const videoPreviewRef = ref<HTMLVideoElement>()
+const rtcTransports = ref<Record<string, unknown>>({})
+
+const rtcEntries = computed(() =>
+  Object.entries(rtcTransports.value).map(([key, value]) => ({
+    key,
+    value: typeof value === 'object' ? JSON.stringify(value) : String(value)
+  }))
+)
+
+onMounted(async () => {
+  try {
+    rtcTransports.value = await matrixVoiceService.getRtcTransports()
+  } catch (error) {
+    logger.warn('Failed to load RTC transports', error)
+  }
+})
 
 // 设备枚举、偏好持久化、麦克风测试与预览统一走共享 composable，桌面只保留 Naive UI 呈现
 const {

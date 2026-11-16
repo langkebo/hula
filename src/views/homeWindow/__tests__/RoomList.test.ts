@@ -11,7 +11,8 @@ const {
   handleMsgClickMock,
   handleMsgDblclickMock,
   useMittOnMock,
-  useMittEmitMock
+  useMittEmitMock,
+  openMsgSessionByRoomIdMock
 } = vi.hoisted(() => ({
   routerReplaceMock: vi.fn(),
   routerPushMock: vi.fn().mockResolvedValue(undefined),
@@ -19,7 +20,8 @@ const {
   handleMsgClickMock: vi.fn(),
   handleMsgDblclickMock: vi.fn(),
   useMittOnMock: vi.fn(),
-  useMittEmitMock: vi.fn()
+  useMittEmitMock: vi.fn(),
+  openMsgSessionByRoomIdMock: vi.fn()
 }))
 
 const route = reactive({
@@ -117,7 +119,8 @@ vi.mock('@/composables/common/useTauriListener', () => ({
 }))
 
 vi.mock('@/composables/chat/openMsgSession', () => ({
-  openMsgSession: vi.fn()
+  openMsgSession: vi.fn(),
+  openMsgSessionByRoomId: openMsgSessionByRoomIdMock
 }))
 
 vi.mock('@/composables/chat/useMessage', () => ({
@@ -204,14 +207,25 @@ vi.mock('@/components/workbench/MessageSessionToolbar.vue', () => ({
     props: {
       searchKeyword: { type: String, default: '' },
       filteredCount: { type: Number, default: 0 },
-      totalCount: { type: Number, default: 0 }
+      totalCount: { type: Number, default: 0 },
+      showMyRoomsAction: { type: Boolean, default: false }
     },
-    emits: ['update:searchKeyword', 'update:sessionTypeFilter', 'update:sessionSort', 'searchSubmit'],
+    emits: ['update:searchKeyword', 'update:sessionTypeFilter', 'update:sessionSort', 'searchSubmit', 'openMyRooms'],
     setup(props, { emit }) {
       return () =>
         h('div', { 'data-test': 'room-toolbar' }, [
           h('span', { 'data-test': 'toolbar-search-value' }, props.searchKeyword),
           h('span', { 'data-test': 'toolbar-summary' }, `${props.filteredCount}/${props.totalCount}`),
+          h('span', { 'data-test': 'toolbar-my-rooms-enabled' }, String(props.showMyRoomsAction)),
+          h(
+            'button',
+            {
+              type: 'button',
+              'data-test': 'toolbar-my-rooms',
+              onClick: () => emit('openMyRooms')
+            },
+            'my-rooms'
+          ),
           h(
             'button',
             {
@@ -291,6 +305,19 @@ vi.mock('@/components/room/RoomSettingsDrawer.vue', () => ({
     emits: ['close'],
     setup(props) {
       return () => h('div', { 'data-test': 'room-settings-drawer' }, props.roomId ?? '')
+    }
+  })
+}))
+
+vi.mock('@/components/room/MyRoomsDialog.vue', () => ({
+  default: defineComponent({
+    name: 'MyRoomsDialogStub',
+    props: {
+      show: { type: Boolean, default: false }
+    },
+    emits: ['update:show', 'open-room'],
+    setup(props) {
+      return () => h('div', { 'data-test': 'my-rooms-dialog' }, props.show ? 'open' : 'closed')
     }
   })
 }))
@@ -426,5 +453,49 @@ describe('RoomListView', () => {
     await grid.vm.$emit('message', '!alpha:server')
 
     expect(handleMsgClickMock).toHaveBeenCalled()
+  })
+
+  it('opens the my rooms dialog from the toolbar entry', async () => {
+    const wrapper = mount(RoomListView)
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="toolbar-my-rooms-enabled"]').text()).toBe('true')
+    expect(wrapper.get('[data-test="my-rooms-dialog"]').text()).toBe('closed')
+
+    await wrapper.get('[data-test="toolbar-my-rooms"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="my-rooms-dialog"]').text()).toBe('open')
+  })
+
+  it('opens a room from the my rooms dialog by room id when it is not in the session list', async () => {
+    const wrapper = mount(RoomListView)
+    await flushPromises()
+
+    await wrapper.get('[data-test="toolbar-my-rooms"]').trigger('click')
+    await flushPromises()
+
+    const dialog = wrapper.getComponent({ name: 'MyRoomsDialogStub' })
+    await dialog.vm.$emit('open-room', '!remote:server')
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="my-rooms-dialog"]').text()).toBe('closed')
+    expect(openMsgSessionByRoomIdMock).toHaveBeenCalledWith('!remote:server')
+  })
+
+  it('reuses the existing chat entry for rooms already in the session list', async () => {
+    const wrapper = mount(RoomListView)
+    await flushPromises()
+
+    await wrapper.get('[data-test="toolbar-my-rooms"]').trigger('click')
+    await flushPromises()
+
+    const dialog = wrapper.getComponent({ name: 'MyRoomsDialogStub' })
+    await dialog.vm.$emit('open-room', '!alpha:server')
+    await flushPromises()
+
+    expect(openMsgSessionByRoomIdMock).not.toHaveBeenCalled()
+    expect(handleMsgClickMock).toHaveBeenCalled()
+    expect(routerPushMock).toHaveBeenCalledWith({ name: 'message', params: { roomId: '!alpha:server' } })
   })
 })

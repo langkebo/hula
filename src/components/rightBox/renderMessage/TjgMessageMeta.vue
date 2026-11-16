@@ -1,12 +1,22 @@
 <template>
   <div class="tjg-message-meta" :class="{ 'is-me': isMe, 'is-compact': compact }">
     <!-- 移动端紧凑模式只保留发送状态/重试，时间由消息列表的时间分割承担 -->
-    <div class="meta-row" v-if="!compact || isSending || showRetry">
+    <div class="meta-row" v-if="!compact || isSending || showRetry || isEdited">
       <div v-if="!compact && !isMe && senderPresence" class="presence-indicator" :title="senderPresenceText">
         <div class="presence-dot" :class="senderPresence" />
       </div>
 
       <span v-if="!compact" class="timestamp">{{ formattedTime }}</span>
+
+      <!-- 已编辑：唯一的编辑历史入口（内容已被 SDK 按最新 `m.replace` 替换，不再另存一份） -->
+      <button
+        v-if="isEdited"
+        type="button"
+        class="edited-pill"
+        :aria-label="t('message_container.edit_history.aria_open')"
+        @click="showEditHistory = true">
+        {{ t('message_container.edited') }}
+      </button>
 
       <span v-if="isSending" class="status-pill status-pill--sending">
         <span class="status-dot status-dot--sending" />
@@ -42,18 +52,22 @@
         <span />
       </div>
     </div>
+
+    <MessageEditHistoryDialog v-model:show="showEditHistory" :room-id="roomId" :event-id="resolvedMessageId" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTyping } from '@/composables/chat/useTyping'
 import { MessageStatusEnum } from '@/enums'
 import { matrixClientService } from '@/services/matrix'
+import { matrixMessageRelationService } from '@/services/matrix/messaging/MatrixMessageRelationService'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { matrixReadStateService } from '@/services/matrix/messaging/MatrixReadStateService'
 import { formatChatTime } from '@/utils/ComputedTime'
+import MessageEditHistoryDialog from './MessageEditHistoryDialog.vue'
 
 interface ReceiptInfo {
   userId: string
@@ -83,6 +97,22 @@ const isSending = computed(
 )
 const showRetry = computed(() => props.isMe && props.status === MessageStatusEnum.FAILED)
 const resolvedMessageId = computed(() => matrixMessageService.resolveEventId(props.messageId))
+
+/**
+ * 这条消息是否被编辑过。
+ *
+ * 判据读 SDK 事件上的 `m.new_content`（`isEdited`），不读正文 —— 正文已被 SDK 替换成最新版本，
+ * 「有没有历史」这个信息只存在于关系事件里。
+ * 本地未上屏的消息（临时 id）不可能有编辑历史，直接返回 false，避免白跑一次 `/relations`。
+ */
+const isEdited = computed(() => {
+  if (!props.roomId || !resolvedMessageId.value) return false
+  if (matrixMessageService.isLocalEventId(resolvedMessageId.value)) return false
+  const event = matrixClientService.getRoom(props.roomId)?.findEventById(resolvedMessageId.value)
+  return event ? matrixMessageRelationService.isEdited(event) : false
+})
+
+const showEditHistory = ref(false)
 
 const receipts = computed<ReceiptInfo[]>(() => {
   if (!props.isMe || isSending.value || showRetry.value) return []
@@ -198,6 +228,22 @@ const typingText = computed(() => {
   font-size: 11px;
   line-height: 1.2;
   cursor: pointer;
+}
+
+.edited-pill {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tjg-text-tertiary);
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--tjg-color-primary-600);
+    text-decoration: underline;
+  }
 }
 
 .retry-button:hover {

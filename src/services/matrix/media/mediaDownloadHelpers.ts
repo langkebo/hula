@@ -17,6 +17,111 @@ function isNotFoundError(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { httpStatus?: unknown }).httpStatus === 404
 }
 
+/** 后端签名媒体下载参数（`expires` 为 Unix 秒，与 `media_link_signer.rs` 一致） */
+export interface SignedMediaDownloadParams {
+  serverName: string
+  mediaId: string
+  signature: string
+  expires: number
+  filename?: string
+}
+
+/** 媒体下载路径中的 `download_signed` / `download` 段标记 */
+const SIGNED_DOWNLOAD_SEGMENTS = ['download_signed', 'download']
+
+/**
+ * 从已带 `signature` + `expires` 查询参数的 HTTP 媒体地址中解析签名下载参数。
+ *
+ * 用于消息内直接携带签名媒体链接（后端 `download_signed` 路由）的场景；
+ * 不是签名媒体链接时返回 null，调用方回退普通下载通道即可。
+ */
+export function parseSignedMediaUrl(url: string): SignedMediaDownloadParams | null {
+  if (!url) return null
+
+  let parsed: URL
+  try {
+    parsed = new URL(url, 'https://signed-media.invalid')
+  } catch {
+    return null
+  }
+
+  const signature = parsed.searchParams.get('signature')
+  const expiresRaw = parsed.searchParams.get('expires')
+  if (!signature || !expiresRaw) return null
+
+  const expires = Number(expiresRaw)
+  if (!Number.isFinite(expires) || expires <= 0) return null
+
+  const segments = parsed.pathname.split('/').filter(Boolean)
+  let markerIndex = -1
+  for (let i = segments.length - 1; i >= 0; i--) {
+    if (SIGNED_DOWNLOAD_SEGMENTS.includes(segments[i])) {
+      markerIndex = i
+      break
+    }
+  }
+  if (markerIndex < 0 || segments.length < markerIndex + 3) return null
+
+  try {
+    const serverName = decodeURIComponent(segments[markerIndex + 1])
+    const mediaId = decodeURIComponent(segments[markerIndex + 2])
+    if (!serverName || !mediaId) return null
+
+    const rawFilename = segments[markerIndex + 3]
+    return {
+      serverName,
+      mediaId,
+      signature,
+      expires,
+      ...(rawFilename ? { filename: decodeURIComponent(rawFilename) } : {})
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 构造后端 `download_signed` 地址。
+ *
+ * URL 由 SDK 的 media manager 按路由表构建（带 `signature` 时自动走 `download_signed`），
+ * 不在客户端手拼 `/_matrix/...` 路径（R1 + `check:ratchet`）。
+ */
+export function buildSignedMediaDownloadUrl(
+  client: MatrixClient,
+  params: SignedMediaDownloadParams,
+  t: (key: string, params?: Record<string, unknown>) => string
+): string {
+  const { serverName, mediaId, signature, expires, filename } = params
+  if (!serverName || !mediaId || !signature || !Number.isFinite(expires) || expires <= 0) {
+    throw new Error(t('matrix_error.media.signed_params_missing'))
+  }
+  if (expires * 1000 <= Date.now()) {
+    throw new Error(t('matrix_error.media.signed_expired'))
+  }
+
+  const mxcUrl = `mxc://${serverName}/${mediaId}`
+  const downloadUrl = client.getMediaManager().getDownloadUrl(mxcUrl, {
+    signature,
+    timestamp: expires,
+    ...(filename ? { filename } : {})
+  })
+  if (!downloadUrl) {
+    throw new Error(t('matrix_error.media.url_parse_failed', { mediaUrl: mxcUrl }))
+  }
+  return downloadUrl
+}
+
+/** 通过后端 `download_signed` 端点下载媒体字节（签名即鉴权，不附加 Bearer） */
+export async function downloadSignedMediaBytes(
+  client: MatrixClient,
+  params: SignedMediaDownloadParams,
+  t: (key: string, params?: Record<string, unknown>) => string
+): Promise<Uint8Array> {
+  const downloadUrl = buildSignedMediaDownloadUrl(client, params, t)
+  const buffer = await matrixHttpClient.downloadRaw(downloadUrl)
+  return new Uint8Array(buffer)
+}
+
 /** 解析媒体下载 URL
  */
 export function resolveDownloadUrl(

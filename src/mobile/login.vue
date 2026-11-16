@@ -1,7 +1,6 @@
 <template>
   <MobileLayout :safeAreaTop="false" :safeAreaBottom="false">
-    <div
-      class="h-full flex flex-col items-center gap-24px bg-[--tjg-mobile-login-bg] pt-[max(10vh,56px)] pb-60px overflow-y-auto">
+    <div class="login-shell h-full flex flex-col items-center gap-24px pt-[max(10vh,56px)] pb-60px overflow-y-auto">
       <div class="w-80% max-w-375px flex items-center justify-start gap-6px">
         <p class="text-(20px [--tjg-text-primary])">{{ t('login.mobile.welcome_title') }}</p>
         <img src="@/assets/mobile/2.svg" alt="Tjg" class="w-80px h-20px" />
@@ -280,6 +279,12 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 @use '@/styles/scss/login';
+
+// 登录页背景是渐变 token，不能走 `bg-[--token]`（UnoCSS 会生成 background-color，
+// 渐变值被丢弃后页面退化为画布白）。这里显式用 background 承载 background-image。
+.login-shell {
+  background: var(--tjg-mobile-login-bg);
+}
 
 // 激活 tab 下方的指示条：非对称圆角即其造型本身。
 // 4px/24px 走刻度 token；42px 属造型用的离刻度装饰值，保留字面量。

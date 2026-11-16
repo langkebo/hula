@@ -13,7 +13,11 @@
         <div v-else class="flex flex-col p-16px gap-12px">
           <p class="text-14px text-[--tjg-text-secondary] m-0">{{ t('mobile_ignored_users.intro') }}</p>
 
-          <van-empty v-if="ignoredUsers.length === 0" :description="t('mobile_ignored_users.empty')" image="search" />
+          <MobileAsyncState
+            v-if="isIgnoredListEmpty"
+            state="empty"
+            :empty-text="t('mobile_ignored_users.empty')"
+            min-height="240px" />
 
           <van-cell-group v-else inset>
             <van-cell v-for="userId in ignoredUsers" :key="userId" :title="userId" :label="userId">
@@ -35,10 +39,11 @@
 
 <script setup lang="ts">
 import { showConfirmDialog, showToast } from 'vant'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { matrixAccountService } from '@/services/matrix'
 import { createLogger } from '@/utils/Logger'
 
@@ -48,6 +53,9 @@ const { t } = useI18n()
 
 const loading = ref(false)
 const ignoredUsers = ref<string[]>([])
+
+/** 黑名单为空：交给 MobileAsyncState 统一渲染 */
+const isIgnoredListEmpty = computed(() => ignoredUsers.value.length === 0)
 
 async function loadIgnoredUsers(): Promise<void> {
   loading.value = true

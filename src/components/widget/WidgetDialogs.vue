@@ -39,9 +39,7 @@
 
         <n-spin :show="permissionsLoading">
           <div class="permissions-list">
-            <div v-if="permissionRows.length === 0" class="empty-row">
-              <n-empty size="small" :description="t('common.widget.no_permissions')" />
-            </div>
+            <EmptyState v-if="permissionRows.length === 0" compact :description="t('common.widget.no_permissions')" />
             <div v-for="row in permissionRows" :key="row.userId" class="permission-row">
               <div class="permission-user">
                 <n-icon size="18"><Icon icon="mdi:account" /></n-icon>
@@ -432,9 +430,5 @@ defineExpose({ resetAddWidgetForm, resetPermissionForm })
     align-items: center;
     gap: 8px;
   }
-}
-
-.empty-row {
-  padding: 16px 0;
 }
 </style>

@@ -102,6 +102,176 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:6130/_matrix/client/ve
 
 ---
 
+## 四之二、Android 构建加速与 IDE 配置（2026-11-14）
+
+### 1) Maven 镜像：`~/.gradle/init.d/aliyun-mirrors.gradle`
+
+放在 `init.d/` 而不是 `~/.gradle/init.gradle`，好处是可与其它 init 脚本共存（Gradle 会加载该目录下所有 `.gradle`）。
+
+```groovy
+def ALIYUN_MIRRORS = [
+        'https://maven.aliyun.com/repository/public',
+        'https://maven.aliyun.com/repository/google',
+        'https://maven.aliyun.com/repository/gradle-plugin',
+        'https://maven.aliyun.com/repository/jcenter'
+]
+
+// ⚠️ pluginManagement 必须在 settings 求值前注入 —— 用 beforeSettings。
+// 网上流传的 `gradle.settingsEvaluated { settings.pluginManagement { ... } }` 时机太晚，
+// 那时插件仓库已解析完，配置静默失效。
+beforeSettings { settings ->
+    settings.pluginManagement.repositories {
+        ALIYUN_MIRRORS.each { u -> maven { url = uri(u) } }
+        gradlePluginPortal()
+        google()
+    }
+}
+
+allprojects { project ->
+    project.buildscript.repositories {
+        ALIYUN_MIRRORS.each { u -> maven { url = uri(u) } }
+        google()
+        mavenCentral()
+    }
+    project.repositories {
+        ALIYUN_MIRRORS.each { u -> maven { url = uri(u) } }
+        google()
+        mavenCentral()
+    }
+}
+```
+
+镜像在前、官方在后：命中就省一次跨境请求，缺包时 404 会自动继续下一个仓库。
+
+**实测对比（同一 artifact）**：`public` 61ms vs 官方 `repo1.maven.org` **3431ms**；`google` 58ms vs `dl.google.com` 243ms。
+
+**验证镜像真的生效**（不要只看配置写了）：
+
+```bash
+mkdir -p /tmp/mc && cd /tmp/mc && echo "rootProject.name='mc'" > settings.gradle
+printf "plugins { id 'java' }\ndependencies { implementation 'com.google.guava:guava:32.1.3-jre' }\ntask r { doLast { println configurations.compileClasspath.files.size() } }\n" > build.gradle
+gradle --no-daemon --info r 2>&1 | grep -o "https://[^ ]*guava-32.1.3-jre.pom"
+# 期望输出 https://maven.aliyun.com/repository/public/com/google/guava/...
+```
+
+### 2) Wrapper：8.14.3 → 8.14.7（**不要升 Gradle 9**）
+
+- 8.x 最新是 **8.14.7**；Gradle 当前最新是 **9.9.1**。
+- 本项目 AGP **8.11.0**，构建日志已明确 `Deprecated Gradle features were used ... incompatible with Gradle 9.0`
+  ⇒ 升 9 会在这些特性被移除后直接失败。要升 9 必须先把 AGP 升到支持 9 的版本，属另一件事。
+- `gradle-wrapper.properties` 的 `distributionUrl` 指向腾讯镜像（国内直连 `services.gradle.org` 只有 307 跳转 + 数百 KB/s）：
+  `https://mirrors.cloud.tencent.com/gradle/gradle-8.14.7-bin.zip`（实测 10s 内下完）。
+  海外环境换回 `https://services.gradle.org/distributions/gradle-8.14.7-bin.zip` 即可。
+
+### 3) 全局调优 `~/.gradle/gradle.properties`
+
+```properties
+org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8
+org.gradle.parallel=true
+org.gradle.caching=true
+org.gradle.daemon=true
+org.gradle.vfs.watch=true
+org.gradle.workers.max=8            # 10 核留 2 核给 IDE / 模拟器
+kotlin.daemon.jvmargs=-Xmx2048m
+android.useAndroidX=true
+org.gradle.java.home=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+```
+
+- 4G 堆：本项目要链接 ~500MB 的 `libtjg_app_lib.so`，3G 时偶发 GC 抖动。
+- `org.gradle.java.home` 必须钉 JDK 21：Gradle 8.14 解析不了 Java 25（`buildSrc` 报 `> 25.0.4`）。
+- 暂不开 `org.gradle.configuration-cache`：AGP 8.11 + Tauri 的 `rust` 插件未验证兼容。
+
+### 4) Android Studio 本体
+
+`~/Library/Application Support/Google/AndroidStudio2026.2.2/studio.vmoptions` 已含
+`-Xms512m -Xmx4096m -XX:ReservedCodeCacheSize=768m`（IDE 默认 2048m，大工程索引时容易卡）。
+
+### 5) Android Studio MCP（让 AI 直接读 IDE 的语义索引）
+
+- 插件目录里已有 `mcpserver`（`~/Library/Application Support/Google/AndroidStudio2026.2.2/plugins/mcpserver`），
+  即 JetBrains 的 **MCP Server** 插件（`262.10968.92`）已安装；未配置过时它不写 `options/mcpServer.xml`。
+- IDE 内确认：`Settings → Tools → MCP Server`，勾选启用。**改动后要重启 IDE 才会真的起服务**
+  （2026-11-14 实测：15:53 勾选但 `idea.log` 无启动记录，重启后才有监听端口）。
+- 端口判定（实测规律）：IDE 内置 server 在 `63342`，**MCP 插件在「内置端口 + 1000」= `64342`**，
+  且它比 IDE 主窗口晚十几秒才监听，刚启动就连会 `ECONNREFUSED`，等一下再连即可。
+- **传输方式坑**：该插件只提供**经典 SSE**（`GET /sse` → `event: endpoint` + `data: /message?sessionId=…`，
+  `POST /message?sessionId=…`）；npm 上的 `@jetbrains/mcp-proxy@1.8.0` 只讲新版 Streamable HTTP
+  （`${endpoint}/mcp/list_tools`），在这个插件上稳定 404。
+  ⇒ 用仓内零依赖桥 `scripts/mcp-android-studio-bridge.mjs`（stdio ↔ SSE）。
+- WorkBuddy 侧 `~/.workbuddy/mcp.json`：
+
+  ```json
+  {
+    "mcpServers": {
+      "android-studio": {
+        "type": "stdio",
+        "command": "/opt/homebrew/bin/node",
+        "args": [
+          "/Users/ljf/Desktop/hu_ts/Tjg/scripts/mcp-android-studio-bridge.mjs",
+          "http://127.0.0.1:64342/sse"
+        ],
+        "timeout": 60
+      }
+    }
+  }
+  ```
+
+  自检（不依赖 WorkBuddy，直接验证桥与插件）：
+
+  ```bash
+  (printf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"probe","version":"0"}}}\n'; sleep 3; \
+   printf '{"jsonrpc":"2.0","method":"notifications/initialized"}\n'; sleep 1; \
+   printf '{"jsonrpc":"2.0","id":2,"method":"tools/list"}\n'; sleep 4) \
+  | node scripts/mcp-android-studio-bridge.mjs http://127.0.0.1:64342/sse
+  ```
+
+  ✅ 实测返回 `serverInfo.name = "Android Studio MCP Server"` 与 **25 个工具**
+  （`build_project`、`execute_run_configuration`、`get_file_problems`、`read_file`、`apply_patch`、
+  `lint_files`、`get_project_modules`、`reformat_file`、`search_in_files_by_text`…）。
+- 添加后需在 WorkBuddy 的**连接器管理页**对这个 server 点「信任」才会加载（本会话内不会自动出现）。
+- ⚠️ 必须让 Android Studio 开着并**索引完成**，否则查询会返回空。
+
+### 6) Web Browser (JCEF)：2026.2 起必须单独安装（否则内嵌网页窗口只显示告警）
+
+**症状**：某个用内嵌浏览器渲染的插件窗口（本机是 `CC GUI (Claude, Codex and More)`，
+以及任何依赖 `com.intellij.ui.jcef` 的面板）只显示一块告警面板：
+
+> Web Browser (JCEF) is required… Open Settings > Plugins. Install, enable, or update "Web Browser (JCEF)".
+> **Changing the Boot Runtime alone does not iron this out.**
+
+**根因**：JCEF 从 IDE 主体搬到了一个 marketplace 插件（插件 id `com.intellij.modules.jcef`）。
+JetBrains 自家 IDE 随包提供，**Android Studio 不随包提供** —— 所以本机
+`/Applications/Android Studio.app/Contents/plugins/` 里根本没有 jcef。
+换 JBR 运行时没用：运行时只提供 `org.cef.*`，而 `com.intellij.ui.jcef` 属于平台代码。
+
+**装法（命令行，不用点 UI）**：
+
+```bash
+# ① 必须先退出 IDE（否则报 "Only one instance of Studio can be run at a time"）
+kill -TERM "$(cat ~/Library/Caches/Google/AndroidStudio2026.2.2/.pid)"
+
+# ② 让 IDE 自己解析兼容版本（不要手挑版本：最新版要求 262.12573+，本机是 262.10968）
+/Applications/Android\ Studio.app/Contents/MacOS/studio installPlugins com.intellij.modules.jcef
+
+# ③ 重新打开项目
+open -a "Android Studio" src-tauri/gen/android
+```
+
+本机实际装到：`~/Library/Application Support/Google/AndroidStudio2026.2.2/plugins/jcef-plugin`
+（`262.10315.19-mac-arm64`，**329 MB**，自带 Chromium 二进制）。
+
+**判据（`idea.log`）** —— 三条都出现才算真生效：
+
+```
+Loaded custom plugins: …, Web Browser (JCEF) (262.10315.19-mac-arm64), MCP Server (262.10968.92)
+JBCefBrowser created successfully, browserId=…            ← 插件能建出浏览器了
+JBCefApp - jcef version: remote_144.0.15.3416_…           ← Chromium 真正初始化
+```
+
+⚠️ 顺带说明：`installPlugins` 装到的是**用户插件目录**，不写仓库；换机器/清理配置后要重装。
+
+---
+
 ## 五、启动后端（联调必需）
 
 当前机器上的实际形态（`docker ps` 实测）：
@@ -263,6 +433,8 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 BASE_URL=https://matrix.test \
 
 | 现象 | 根因 | 处理 |
 |---|---|---|
+| IDE 内嵌网页窗口只显示「Web Browser (JCEF) is required」 | 2026.2 起 JCEF 拆成 marketplace 插件，Android Studio 不随包提供；换 JBR 无效 | `studio installPlugins com.intellij.modules.jcef`（IDE 必须先退出），见 §四之二 6) |
+| IDE 里点 Run 报 `BUILD FAILED … exit value 134`（`ConnectionRefused`） | `rustBuild*` 要回调 CLI 并从 WebSocket 取选项，IDE 直接构建没有父进程 | 已在 `BuildTask.kt` 加 cargo 回退；详见联调报告 §5.2 |
 | `pnpm install` 后没有 `node_modules/.bin/vite` | 依赖新鲜 → install 跳过审批；或用了 pnpm 10 | `pnpm install --force`；确认 `pnpm -v` = 12.4.1 |
 | 浏览器 dev 打开白屏 + `/_matrix/**` 502 | 后端未起，或 `VITE_HOMESERVER_URL` 指向不存在的 host | 先 `curl` 后端 `/versions`；改 `.env.local` 后**重启** vite（env 在启动时读取） |
 | 请求被前端拦下并提示 `Request blocked by host allowlist` | `hostAllowlist` 未包含该 host | 走 `allowDynamicHost` 的调用无需改；新增固定 host 需改 `src/utils/httpAllowlistConfig.ts` |

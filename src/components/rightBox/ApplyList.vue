@@ -122,12 +122,13 @@
     </n-virtual-list>
 
     <!-- 空数据提示：加载失败时换文案 + 出重试，避免把「读取失败」显示成「暂无好友申请」 -->
-    <n-flex v-if="applyList.length === 0" vertical justify="center" align="center" class="py-40px">
-      <n-empty :description="emptyDescription" />
-      <n-button v-if="showLoadError" size="small" tertiary type="primary" @click="handleRetryLoad">
-        {{ t('common.retry') }}
-      </n-button>
-    </n-flex>
+    <EmptyState v-if="applyList.length === 0" :description="emptyDescription">
+      <template #actions>
+        <n-button v-if="showLoadError" size="small" tertiary type="primary" @click="handleRetryLoad">
+          {{ t('common.retry') }}
+        </n-button>
+      </template>
+    </EmptyState>
   </n-flex>
 </template>
 <script setup lang="ts">

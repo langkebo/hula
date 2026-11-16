@@ -36,7 +36,11 @@
               <span class="text-12px text-[--tjg-text-tertiary]">{{ t('mobile_chat.search_failed') }}</span>
               <van-button size="small" plain @click="runSearch">{{ t('common.retry') }}</van-button>
             </div>
-            <van-empty v-else-if="results.length === 0" :description="t('mobile_chat.search_empty')" />
+            <MobileAsyncState
+              v-else-if="isEmptyResults"
+              state="empty"
+              :empty-text="t('mobile_chat.search_empty')"
+              min-height="160px" />
             <div v-else class="flex flex-col gap-12px">
               <div
                 v-for="item in results"
@@ -64,6 +68,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { matrixSearchService, type SearchResult } from '@/services/matrix/MatrixSearchService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -83,6 +88,9 @@ const searchError = ref<unknown>(null)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const trimmedQuery = computed(() => searchQuery.value.trim())
+
+/** 已搜过但无结果：交给 MobileAsyncState 统一渲染 */
+const isEmptyResults = computed(() => results.value.length === 0)
 
 const senderName = (sender: string) => groupStore.getUserInfo(sender)?.name || sender
 

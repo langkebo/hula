@@ -128,7 +128,7 @@
               </template>
             </van-cell>
             <van-cell
-              v-if="activeList.length === 0"
+              v-if="isActiveListEmpty"
               data-testid="invite-empty"
               :title="t('mobile_invite_permission.empty')" />
           </van-cell-group>
@@ -176,6 +176,9 @@ const encryptByDefault = ref(loadDmPrivacyPreferences().encryptByDefault)
 
 /** 当前模式对应的名单。allow_all 下两个名单都不展示。 */
 const activeList = computed(() => (mode.value === 'blocklist' ? blocklist.value : allowlist.value))
+
+/** 当前名单为空：行内占位提示，交由模板统一判定 */
+const isActiveListEmpty = computed(() => activeList.value.length === 0)
 
 onMounted(async () => {
   try {

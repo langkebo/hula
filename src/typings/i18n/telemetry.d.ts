@@ -12,6 +12,8 @@ export type Messages = {
   },
   "section": {
     "status": "运行状态",
+    "healthChecks": "检查项",
+    "healthDatabase": "数据库",
     "metrics": "指标摘要",
     "scheduler": "AppService 调度器",
     "alerts": "告警",
@@ -45,12 +47,20 @@ export type Messages = {
     "pendingEvents": "待处理事件",
     "pendingTransactions": "待处理事务",
     "success": "成功次数",
-    "failure": "失败次数"
+    "failure": "失败次数",
+    "capacityLimited": "容量受限服务",
+    "pendingServices": "有待处理事务服务",
+    "backoffCount": "退避累计次数",
+    "capacityLimitedCount": "容量受限累计次数",
+    "inFlight": "在飞请求"
   },
   "alerts": {
     "col_rule": "规则",
     "col_severity": "级别",
     "col_status": "状态",
+    "col_owner": "归属",
+    "col_count": "触发次数",
+    "col_last_seen": "最近出现",
     "col_message": "描述",
     "col_triggered": "触发时间",
     "col_actions": "操作",
@@ -89,6 +99,8 @@ export type KeyPaths =
   | "telemetry.unavailable.title"
   | "telemetry.unavailable.description"
   | "telemetry.section.status"
+  | "telemetry.section.healthChecks"
+  | "telemetry.section.healthDatabase"
   | "telemetry.section.metrics"
   | "telemetry.section.scheduler"
   | "telemetry.section.alerts"
@@ -119,9 +131,17 @@ export type KeyPaths =
   | "telemetry.metrics.pendingTransactions"
   | "telemetry.metrics.success"
   | "telemetry.metrics.failure"
+  | "telemetry.metrics.capacityLimited"
+  | "telemetry.metrics.pendingServices"
+  | "telemetry.metrics.backoffCount"
+  | "telemetry.metrics.capacityLimitedCount"
+  | "telemetry.metrics.inFlight"
   | "telemetry.alerts.col_rule"
   | "telemetry.alerts.col_severity"
   | "telemetry.alerts.col_status"
+  | "telemetry.alerts.col_owner"
+  | "telemetry.alerts.col_count"
+  | "telemetry.alerts.col_last_seen"
   | "telemetry.alerts.col_message"
   | "telemetry.alerts.col_triggered"
   | "telemetry.alerts.col_actions"

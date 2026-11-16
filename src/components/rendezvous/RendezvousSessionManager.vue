@@ -97,11 +97,7 @@
                 <Icon icon="mdi:refresh" :width="16" />
               </n-button>
             </div>
-            <div v-if="messages.length === 0" class="empty-messages">
-              <span class="text-[var(--text-xs)] color-[var(--tjg-text-tertiary)]">
-                {{ t('rendezvous.no_messages') }}
-              </span>
-            </div>
+            <EmptyState v-if="isEmptyMessages" compact :description="t('rendezvous.no_messages')" />
             <n-list v-else size="small" bordered class="max-h-200px overflow-y-auto">
               <n-list-item v-for="(msg, index) in messages" :key="`${index}-${msg.type}`">
                 <div class="message-item">
@@ -190,6 +186,7 @@ import { Icon } from '@iconify/vue'
 import { NAlert, NButton, NFlex, NInput, NList, NListItem, NModal, NQrCode, NSpin, NStep, NSteps, NTag } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useRendezvous } from '@/composables/rendezvous'
 import type { RendezvousMessage } from '@/services/matrix/rendezvous/MatrixRendezvousService'
@@ -223,6 +220,8 @@ const visible = defineModel<boolean>('show', { default: false })
 const messageInput = ref('')
 
 const sessionId = computed(() => createSessionResponse.value?.session_id ?? currentSession.value?.session_id ?? '')
+
+const isEmptyMessages = computed(() => messages.value.length === 0)
 
 const qrCodeValue = computed(() => {
   if (!createSessionResponse.value) return ''
@@ -515,13 +514,6 @@ watch(visible, (val) => {
     font-weight: 500;
     flex: 1;
   }
-}
-
-.empty-messages {
-  text-align: center;
-  padding: 16px;
-  background: var(--tjg-surface-panel-muted);
-  border-radius: 8px;
 }
 
 .message-item {

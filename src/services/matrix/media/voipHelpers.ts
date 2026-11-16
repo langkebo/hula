@@ -141,6 +141,21 @@ export async function checkTurnAvailability(client: MatrixClient): Promise<{
   }
 }
 
+/**
+ * VoIP 能力位判定器（CAP-07）。
+ *
+ * 能力位 `voip` 的唯一来源是 `matrixCapabilityService.canUseVoip()`；此处用
+ * resolver 注入而不是直接 import，避免 `voipHelpers` ↔ `MatrixCapabilityService`
+ * 的模块循环（后者会经 `MatrixClientService` 间接依赖 media 层）。
+ * 应用启动期在 `main.ts` 注册；未注册时按「能力未知」保守判定为不支持。
+ */
+let voipCapabilityResolver: (() => boolean) | null = null
+
+/** 注册 VoIP 能力位判定器；传入 null 可重置（测试用）。 */
+export function registerVoipCapabilityResolver(resolver: (() => boolean) | null): void {
+  voipCapabilityResolver = resolver
+}
+
 /** 检查 VoIP 功能可用性
  */
 export async function checkVoipAvailability(client: MatrixClient): Promise<{
@@ -150,8 +165,13 @@ export async function checkVoipAvailability(client: MatrixClient): Promise<{
 }> {
   const turnStatus = await checkTurnAvailability(client)
 
-  if (!(client as { callEventHandler?: unknown }).callEventHandler) {
-    return { voipAvailable: false, turnAvailable: turnStatus.available, message: 'VoIP 模块不可用' }
+  // 不再用 client.callEventHandler 自判：服务端能力位才是唯一来源。
+  if (!(voipCapabilityResolver?.() ?? false)) {
+    return {
+      voipAvailable: false,
+      turnAvailable: turnStatus.available,
+      message: '当前服务器不支持语音通话（VoIP）'
+    }
   }
 
   if (!turnStatus.available) {

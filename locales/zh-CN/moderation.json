@@ -79,7 +79,18 @@
     "detail": {
       "title": "举报详情",
       "content": "内容",
-      "none": "无"
+      "none": "无",
+      "refresh": "刷新详情"
+    },
+    "scanner": {
+      "view": "查看扫描器",
+      "title": "扫描器信息",
+      "empty": "暂无扫描器信息",
+      "load_failed": "获取扫描器信息失败",
+      "scanner_id": "扫描器 ID",
+      "scan_result": "扫描结果",
+      "confidence": "置信度",
+      "scanned_at": "扫描时间"
     },
     "detail_failed": "获取举报详情失败",
     "dismiss_confirm": "确认驳回举报 {id}？该操作会删除服务端举报记录。",

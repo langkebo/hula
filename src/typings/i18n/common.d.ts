@@ -124,7 +124,28 @@ export type Messages = {
     "collapse": "收起",
     "retry_item": "重试 {name}",
     "settings": "设置",
-    "settings_item": "打开 {name} 的设置"
+    "settings_item": "打开 {name} 的设置",
+    "items": {
+      "sliding-sync": "滑动同步",
+      "e2ee": "端到端加密",
+      "voip": "语音通话",
+      "friend-list": "好友列表",
+      "admin-api": "后台管理",
+      "burn-after-read": "阅后即焚",
+      "dehydrated-device": "脱水设备",
+      "sticky-events": "置顶事件",
+      "scheduled-send": "定时发送",
+      "rtc-transports": "RTC 传输通道",
+      "account-status": "账号状态",
+      "extended-profile": "扩展资料",
+      "qr-rendezvous": "扫码登录",
+      "mutual-rooms": "共同房间"
+    },
+    "hint": {
+      "unknown": "能力快照尚未加载，点击重试重新探测",
+      "unsupported": "服务端未声明 {keys}",
+      "unsupported_client": "该能力由客户端状态判定，当前未启用"
+    }
   },
   "load_more": "加载更多",
   "saving": "保存中…",
@@ -271,6 +292,23 @@ export type KeyPaths =
   | "common.capability.retry_item"
   | "common.capability.settings"
   | "common.capability.settings_item"
+  | "common.capability.items.sliding-sync"
+  | "common.capability.items.e2ee"
+  | "common.capability.items.voip"
+  | "common.capability.items.friend-list"
+  | "common.capability.items.admin-api"
+  | "common.capability.items.burn-after-read"
+  | "common.capability.items.dehydrated-device"
+  | "common.capability.items.sticky-events"
+  | "common.capability.items.scheduled-send"
+  | "common.capability.items.rtc-transports"
+  | "common.capability.items.account-status"
+  | "common.capability.items.extended-profile"
+  | "common.capability.items.qr-rendezvous"
+  | "common.capability.items.mutual-rooms"
+  | "common.capability.hint.unknown"
+  | "common.capability.hint.unsupported"
+  | "common.capability.hint.unsupported_client"
   | "common.load_more"
   | "common.saving"
   | "common.unknownUser"

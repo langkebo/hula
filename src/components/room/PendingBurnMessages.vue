@@ -5,9 +5,11 @@
     </div>
 
     <n-spin :show="loading">
-      <div v-if="pendingList.length === 0" data-testid="pending-empty" class="pending-burn-messages__empty">
-        {{ t('room.burn.pending_empty') }}
-      </div>
+      <EmptyState
+        v-if="pendingList.length === 0"
+        compact
+        data-testid="pending-empty"
+        :description="t('room.burn.pending_empty')" />
       <ul v-else class="pending-burn-messages__list">
         <li
           v-for="item in pendingList"
@@ -94,13 +96,6 @@ watch(() => props.roomId, loadList)
   font-size: var(--tjg-font-size-sm);
   font-weight: var(--tjg-font-weight-medium);
   color: var(--tjg-text-primary);
-}
-
-.pending-burn-messages__empty {
-  padding: var(--tjg-space-4);
-  text-align: center;
-  font-size: var(--tjg-font-size-xs);
-  color: var(--tjg-text-quaternary);
 }
 
 .pending-burn-messages__list {

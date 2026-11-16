@@ -1,6 +1,7 @@
 import { DEFAULT_PAGE_LIMIT, LARGE_PAGE_LIMIT } from '@/common/constants'
 import type { RoomStatsOverview } from '@/services/matrix/sdk'
 import { AdminFacadeMediaMethods } from './AdminFacadeMediaMethods'
+import type { UserInfo } from './AdminTypes'
 import type { AdminRoomService } from './RoomService'
 
 /**
@@ -74,6 +75,11 @@ export abstract class AdminFacadeDomainMethods extends AdminFacadeMediaMethods {
   /** 获取用户统计列表。 */
   async getUserStatsList(): Promise<{ stats: Array<Record<string, unknown>>; nextToken?: string | undefined }> {
     return this.users.getUserStatsList()
+  }
+
+  /** 获取指定用户的完整信息（用于详情刷新）。 */
+  async getUserById(userId: string): Promise<UserInfo | null> {
+    return this.users.getUserById(userId)
   }
 
   async batchCreateUsers(

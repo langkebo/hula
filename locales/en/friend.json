@@ -138,7 +138,18 @@
     "device_unknown": "Unknown device",
     "federation_section": "Federation / Server",
     "matrix_id": "Matrix ID",
-    "server_address": "Server address"
+    "server_address": "Server address",
+    "account_status_normal": "Normal",
+    "account_status_locked": "Locked",
+    "account_status_suspended": "Suspended",
+    "account_status_unknown": "Unknown",
+    "mutual_rooms_section": "Mutual rooms",
+    "mutual_rooms_loading": "Loading mutual rooms...",
+    "mutual_rooms_empty": "No mutual rooms",
+    "mutual_rooms_load_error": "Failed to load mutual rooms",
+    "mutual_rooms_retry": "Retry",
+    "mutual_rooms_load_more": "Load more",
+    "mutual_rooms_untitled": "Untitled room"
   },
   "secret_chat": {
     "success": "Set as secret friend"
@@ -173,7 +184,13 @@
     "claim_placeholder": "Paste invite link",
     "claim_action": "Claim",
     "invalid_link": "Invalid link — please check it is complete",
-    "claim_success": "Claimed — opening the conversation",
+    "claim_success": "Claimed",
+    "claim_success_title": "Claimed successfully",
+    "claimed_alias_hint": "Aliases are case-sensitive — copy the full value",
+    "claimed_no_alias": "This invite has no room alias. You can enter the conversation directly.",
+    "copy_alias": "Copy alias",
+    "alias_copied": "Alias copied",
+    "enter_room": "Enter conversation",
     "claim_failed": "Could not claim: the link may be used or expired",
     "create_failed": "Failed to generate, please retry"
   },

@@ -78,6 +78,7 @@ const translationMap: Record<string, string> = {
   'setting.encryption.device_verify_dialog.show_qr': '显示二维码',
   'setting.encryption.device_verify_dialog.scan_qr': '扫描二维码',
   'setting.encryption.device_verify_dialog.accept_request': '接受请求',
+  'setting.encryption.crypto_unavailable': '本地加密模块未初始化，本页为只读。',
   'setting.encryption.server_unsupported': '当前服务器未启用端到端加密，本页为只读。',
   'setting.encryption.dehydrated_device_section': '脱水设备',
   'setting.encryption.dehydrated_device_label': '脱水设备',
@@ -114,6 +115,8 @@ const {
   getPendingVerificationsMock: vi.fn(),
   cancelVerificationMock: vi.fn(),
   encryptionStoreState: {
+    // CAP-08：只读判定改由本地 crypto 状态（loaded + encryptionEnabled）驱动
+    loaded: true,
     encryptionEnabled: true,
     securityKeyConfigured: true,
     crossSigningSetup: true,
@@ -482,6 +485,7 @@ describe('EncryptionSettings', () => {
       deviceId: 'DEVICE123',
       isCryptoEnabled: true
     })
+    encryptionStoreState.loaded = true
     encryptionStoreState.encryptionEnabled = true
     encryptionStoreState.securityKeyConfigured = true
     encryptionStoreState.crossSigningSetup = true
@@ -826,25 +830,26 @@ describe('EncryptionSettings', () => {
   })
 
   /**
-   * UI-P2-08：服务端未声明 E2EE 能力时，加密页保留（settingsSchema 的 readonly 降级），
-   * 但整页进入只读，阻断可能失败的操作。
-   * 判定必须以能力探测完成为前提，避免登录初期把整页误锁。
+   * CAP-08：E2EE 属客户端能力，服务端 /capabilities 不宣告 m.room.encryption。
+   * 只读判定改为「本地 crypto 未初始化」，且必须在加密状态加载完成后才生效，
+   * 避免登录初期把整页误锁。
    */
-  describe('E2EE 能力降级（只读）', () => {
-    it('能力探测完成且服务端不支持 E2EE ⇒ 显示只读提示并 inert 阻断交互', async () => {
-      capabilityState.loaded = true
-      capabilityState.e2ee = false
+  describe('E2EE 只读降级（本地 crypto 判定）', () => {
+    it('crypto 未初始化且状态已加载 ⇒ 显示只读提示并 inert 阻断交互', async () => {
+      encryptionStoreState.loaded = true
+      encryptionStoreState.encryptionEnabled = false
 
       const wrapper = mountComponent()
       await flushPromises()
 
       expect(wrapper.find('[data-testid="e2ee-unsupported"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('本地加密模块未初始化，本页为只读。')
       expect(wrapper.find('.encryption-settings').element.hasAttribute('inert')).toBe(true)
     })
 
-    it('服务端支持 E2EE ⇒ 不显示只读提示，也不阻断交互', async () => {
-      capabilityState.loaded = true
-      capabilityState.e2ee = true
+    it('crypto 已初始化 ⇒ 不显示只读提示，也不阻断交互', async () => {
+      encryptionStoreState.loaded = true
+      encryptionStoreState.encryptionEnabled = true
 
       const wrapper = mountComponent()
       await flushPromises()
@@ -853,14 +858,24 @@ describe('EncryptionSettings', () => {
       expect(wrapper.find('.encryption-settings').element.hasAttribute('inert')).toBe(false)
     })
 
-    it('能力探测未完成 ⇒ 不进入只读', async () => {
-      capabilityState.loaded = false
-      capabilityState.e2ee = false
+    it('加密状态未加载完成 ⇒ 不进入只读（避免登录初期误锁）', async () => {
+      encryptionStoreState.loaded = false
+      encryptionStoreState.encryptionEnabled = false
 
       const wrapper = mountComponent()
       await flushPromises()
 
       expect(wrapper.find('[data-testid="e2ee-unsupported"]').exists()).toBe(false)
+      expect(wrapper.find('.encryption-settings').element.hasAttribute('inert')).toBe(false)
+    })
+
+    it('服务端未宣告 m.room.encryption 但本地 crypto 就绪 ⇒ 仍可编辑', async () => {
+      encryptionStoreState.loaded = true
+      encryptionStoreState.encryptionEnabled = true
+
+      const wrapper = mountComponent()
+      await flushPromises()
+
       expect(wrapper.find('.encryption-settings').element.hasAttribute('inert')).toBe(false)
     })
   })

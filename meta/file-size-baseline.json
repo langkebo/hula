@@ -1,6 +1,6 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-14T09:20:56.832Z",
+  "updated_at": "2026-11-15T07:08:36.368Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
@@ -52,6 +52,14 @@
       "lines": 651
     },
     {
+      "file": "src/components/room/RoomDetailDrawer.vue",
+      "lines": 643
+    },
+    {
+      "file": "src/services/matrix/room/RoomOperations.ts",
+      "lines": 642
+    },
+    {
       "file": "src/views/settingsWindow/tabs/EncryptionSettings.vue",
       "lines": 638
     },
@@ -60,16 +68,12 @@
       "lines": 625
     },
     {
-      "file": "src/services/matrix/room/RoomOperations.ts",
-      "lines": 625
-    },
-    {
       "file": "src/components/rightBox/chatBox/Bot.vue",
       "lines": 622
     },
     {
       "file": "src/components/rightBox/chatBox/ChatMain.vue",
-      "lines": 607
+      "lines": 618
     },
     {
       "file": "src/plugins/robot/components/ChatRoleManagement.vue",
@@ -120,12 +124,12 @@
       "lines": 559
     },
     {
-      "file": "src/views/videoViewerWindow/index.vue",
-      "lines": 548
+      "file": "src/services/matrix/room/MatrixSpaceService.ts",
+      "lines": 556
     },
     {
-      "file": "src/services/matrix/room/MatrixSpaceService.ts",
-      "lines": 547
+      "file": "src/views/videoViewerWindow/index.vue",
+      "lines": 548
     },
     {
       "file": "src/components/encryption/KeyRotationDialog.vue",
@@ -170,10 +174,6 @@
     {
       "file": "src/views/settingsWindow/tabs/AccountSettings.vue",
       "lines": 517
-    },
-    {
-      "file": "src/components/room/RoomDetailDrawer.vue",
-      "lines": 515
     },
     {
       "file": "src/services/matrix/ai/AIService.ts",
@@ -236,12 +236,12 @@
       "lines": 485
     },
     {
-      "file": "src/components/space/SpaceChildrenPane.vue",
+      "file": "src/services/matrix/MatrixEventService.ts",
       "lines": 485
     },
     {
-      "file": "src/services/matrix/MatrixEventService.ts",
-      "lines": 485
+      "file": "src/components/space/SpaceChildrenPane.vue",
+      "lines": 483
     },
     {
       "file": "src/components/encryption/DeviceTrustManager.vue",
@@ -304,6 +304,10 @@
       "lines": 449
     },
     {
+      "file": "src/services/matrix/MatrixCapabilityService.ts",
+      "lines": 448
+    },
+    {
       "file": "src/utils/Logger.ts",
       "lines": 448
     },
@@ -312,12 +316,20 @@
       "lines": 447
     },
     {
+      "file": "src/services/matrix/auth/MatrixAuthService.ts",
+      "lines": 445
+    },
+    {
       "file": "src/mobile/views/rooms/index.vue",
       "lines": 444
     },
     {
       "file": "src/services/matrix/media/MatrixVoIPService.ts",
       "lines": 443
+    },
+    {
+      "file": "src/components/thread/ThreadPanel.vue",
+      "lines": 441
     },
     {
       "file": "src/components/widget/WidgetDialogs.vue",
@@ -358,10 +370,6 @@
     {
       "file": "src/mobile/views/my/EncryptionSettings.vue",
       "lines": 431
-    },
-    {
-      "file": "src/services/matrix/messaging/MatrixThreadService.ts",
-      "lines": 430
     },
     {
       "file": "src/stores/domains/chat/matrix.ts",
@@ -438,14 +446,6 @@
     {
       "file": "src/mobile/views/rtcCall/index.vue",
       "lines": 409
-    },
-    {
-      "file": "src/services/matrix/admin/AdminFacadeOpsMethods.ts",
-      "lines": 409
-    },
-    {
-      "file": "src/services/matrix/messaging/MatrixThreadApi.ts",
-      "lines": 405
     },
     {
       "file": "src/stores/domains/chat/sessionUnread.ts",

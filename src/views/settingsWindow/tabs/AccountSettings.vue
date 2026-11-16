@@ -169,7 +169,7 @@ const { confirmDeactivateAccount } = useAccountDeactivation()
 const { changePassword } = useAccount()
 const userStore = useUserStore()
 const matrixStore = useMatrixStore()
-const { hasUnstable } = useServerCapability()
+const { isCapabilityAvailable } = useServerCapability()
 
 const passwordLoading = ref(false)
 const displayNameSaving = ref(false)
@@ -183,7 +183,7 @@ const logoutDevices = ref(false)
 const userAvatar = computed(() => userStore.currentUserAvatarUrl || '')
 const defaultAvatar = computed(() => defaultAvatarImg)
 const userId = computed(() => matrixStore.userId || '')
-const supportsExtendedProfile = computed(() => hasUnstable('uk.tcpip.msc4133'))
+const supportsExtendedProfile = computed(() => isCapabilityAvailable('extended-profile'))
 
 const displayAvatarUrl = computed(() => {
   if (userAvatar.value?.startsWith('mxc://')) {

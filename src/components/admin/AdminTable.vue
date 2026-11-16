@@ -8,9 +8,9 @@
     :striped="striped"
     :remote="remote"
     v-bind="rowKey ? { rowKey } : {}">
-    <template v-if="!loading && data.length === 0" #empty>
+    <template v-if="isEmptyData" #empty>
       <slot name="empty">
-        <div class="admin-table__empty">{{ t('admin.common.noData') }}</div>
+        <EmptyState compact :description="t('admin.common.noData')" />
       </slot>
     </template>
   </n-data-table>
@@ -18,9 +18,11 @@
 
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { type DataTableColumns, NDataTable } from 'naive-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     /** 表格列定义 */
     columns: DataTableColumns<T>
@@ -49,13 +51,6 @@ withDefaults(
 )
 
 const { t } = useI18n()
-</script>
 
-<style scoped lang="scss">
-.admin-table__empty {
-  padding: var(--tjg-space-6) 0;
-  text-align: center;
-  color: var(--tjg-text-quaternary);
-  font-size: var(--tjg-font-size-sm);
-}
-</style>
+const isEmptyData = computed(() => !props.loading && props.data.length === 0)
+</script>

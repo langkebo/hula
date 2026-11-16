@@ -71,7 +71,8 @@
     "retry": "重试"
   },
   "storage": {
-    "label": "媒体存储"
+    "label": "媒体存储",
+    "count": "媒体数量"
   },
   "userList": {
     "searchPlaceholder": {

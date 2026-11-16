@@ -39,23 +39,28 @@
       <n-spin size="small" />
       <span>{{ t('trendradar.loading') }}</span>
     </div>
-    <div v-else-if="topics.length === 0" class="trending-panel__empty">
-      <svg class="trending-panel__empty-icon" aria-hidden="true"><use href="#trending-up"></use></svg>
-      <span>{{ t('trendradar.no_trending_topics') }}</span>
-    </div>
+    <EmptyState
+      v-else-if="isEmptyTopics"
+      compact
+      icon="mdi:trending-up"
+      :description="t('trendradar.no_trending_topics')" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { TrendRadarTopic } from '@/services/trendradar'
 
 const { t } = useI18n()
 
-defineProps<{
+const props = defineProps<{
   topics: TrendRadarTopic[]
   loading?: boolean
 }>()
+
+const isEmptyTopics = computed(() => props.topics.length === 0)
 
 const emit = defineEmits<(event: 'topicClick', topic: TrendRadarTopic) => void>()
 
@@ -187,8 +192,7 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   color: var(--tjg-color-success-500);
 }
 
-.trending-panel__loading,
-.trending-panel__empty {
+.trending-panel__loading {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -196,11 +200,5 @@ const handleTopicClick = (topic: TrendRadarTopic) => {
   padding: 20px;
   color: var(--tjg-text-secondary);
   font-size: 12px;
-}
-
-.trending-panel__empty-icon {
-  width: 24px;
-  height: 24px;
-  opacity: 0.5;
 }
 </style>

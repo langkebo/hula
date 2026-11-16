@@ -16,12 +16,11 @@
               <van-loading size="24px" />
             </div>
 
-            <div v-else-if="allImages.length === 0" class="flex flex-col justify-center items-center py-40px gap-10px">
-              <svg class="iconpark-icon w-60px h-60px text-gray" aria-hidden="true">
-                <use href="#xiangce"></use>
-              </svg>
-              <div class="text-gray text-14px">{{ t('mobile_photo.empty') }}</div>
-            </div>
+            <MobileAsyncState
+              v-else-if="isAlbumEmpty"
+              state="empty"
+              :empty-text="t('mobile_photo.empty')"
+              min-height="200px" />
 
             <div v-else class="grid grid-cols-4 gap-1">
               <div
@@ -58,6 +57,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import ImagePreview from '@/mobile/components/ImagePreview.vue'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
@@ -86,6 +86,9 @@ const loading = ref(true)
 const visibleCount = ref(PAGE_SIZE)
 
 const allImages = ref<AlbumImage[]>([])
+
+/** 相册无图片：交给 MobileAsyncState 统一渲染 */
+const isAlbumEmpty = computed(() => allImages.value.length === 0)
 
 /** 分页渲染，避免一次性挂载全部图片导致首屏卡顿（Y-10） */
 const visibleImages = computed(() => allImages.value.slice(0, visibleCount.value))

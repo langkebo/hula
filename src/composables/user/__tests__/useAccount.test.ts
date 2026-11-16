@@ -280,7 +280,10 @@ describe('useAccount', () => {
 
   describe('rooms & event stream', () => {
     it('getMyRooms returns room list', async () => {
-      const rooms = [{ roomId: '!r1' }, { roomId: '!r2' }]
+      const rooms = [
+        { roomId: '!r1', name: 'Room 1', avatarUrl: undefined, membership: 'join' },
+        { roomId: '!r2', name: 'Room 2', avatarUrl: undefined, membership: 'invite' }
+      ]
       mockGetMyRooms.mockResolvedValueOnce(rooms)
       const { getMyRooms } = useAccount()
       const result = await getMyRooms()

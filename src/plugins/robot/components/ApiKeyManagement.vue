@@ -17,16 +17,12 @@
 
     <!-- 密钥列表 -->
     <n-spin :show="loading">
-      <div v-if="apiKeyList.length === 0" class="empty-container">
-        <n-empty :description="t('ai_assistant.robot.no_api_keys')" size="large">
-          <template #icon>
-            <Icon icon="mdi:key-variant" class="text-48px color-[--tjg-text-tertiary]" />
-          </template>
-          <template #extra>
-            <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_key') }}</n-button>
-          </template>
-        </n-empty>
-      </div>
+      <EmptyState
+        v-if="isEmptyKeys"
+        icon="mdi:key-variant"
+        :description="t('ai_assistant.robot.no_api_keys')"
+        :action-text="t('ai_assistant.robot.add_first_key')"
+        @action="handleAdd" />
 
       <div v-else class="api-key-list">
         <div v-for="apiKey in apiKeyList" :key="apiKey.id" class="api-key-card">
@@ -177,6 +173,7 @@
 import { Icon } from '@iconify/vue'
 import type { FormInst, FormRules } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { ApiKey, ApiKeyBalance, Platform } from '@/services/matrix/ai/ApiKeyService'
 import { apiKeyService } from '@/services/matrix/ai/ApiKeyService'
@@ -207,6 +204,8 @@ const pagination = ref({
 // 余额相关
 const balanceMap = ref<Record<string, ApiKeyBalance>>({}) // 存储每个密钥的余额信息
 const balanceLoadingMap = ref<Record<string, boolean>>({}) // 存储每个密钥的余额加载状态
+
+const isEmptyKeys = computed(() => apiKeyList.value.length === 0)
 
 // 编辑相关
 const showEditModal = ref(false)
@@ -418,10 +417,6 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-.empty-container {
-  padding: 40px 0;
-}
-
 .api-key-list {
   display: flex;
   flex-direction: column;

@@ -20,9 +20,11 @@
           <div class="relative flex flex-1">
             <div ref="measure" class="flex absolute w-full h-full top-0 left-0 z-1"></div>
             <div class="absolute z-10 w-full overflow-y-auto" :style="{ height: virtualScrollerHeight + 'px' }">
-              <div v-if="filteredList.length === 0" class="flex w-full justify-center mt-20px">
-                {{ t('mobile_chat.no_data') }}
-              </div>
+              <MobileAsyncState
+                v-if="isEmptyList"
+                state="empty"
+                :empty-text="t('mobile_chat.no_data')"
+                min-height="120px" />
               <div v-else>
                 <div
                   v-for="item in filteredList"
@@ -52,6 +54,7 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import type { UserItem } from '@/services/types'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
@@ -73,6 +76,9 @@ const formData = ref({
 })
 
 const filteredList = ref<UserItem[]>([])
+
+/** 成员列表为空（含搜索无结果）：交给 MobileAsyncState 统一渲染 */
+const isEmptyList = computed(() => filteredList.value.length === 0)
 
 onMounted(() => {
   filteredList.value = groupStore.memberList

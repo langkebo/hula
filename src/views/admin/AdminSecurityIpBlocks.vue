@@ -9,9 +9,7 @@
   </div>
 
   <n-spin :show="loading">
-    <div v-if="blocks.length === 0" class="empty-state">
-      <n-empty :description="t('admin.security.no_ip_blocks')" />
-    </div>
+    <EmptyState v-if="isEmptyBlocks" :description="t('admin.security.no_ip_blocks')" />
     <n-data-table
       v-else
       :columns="columns"
@@ -56,7 +54,6 @@ import {
   NDataTable,
   NDrawer,
   NDrawerContent,
-  NEmpty,
   NForm,
   NFormItem,
   NIcon,
@@ -64,8 +61,9 @@ import {
   NPopconfirm,
   NSpin
 } from 'naive-ui'
-import { h, reactive, ref } from 'vue'
+import { computed, h, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { adminService } from '@/services/matrix/admin'
 import { createLogger } from '@/utils/Logger'
@@ -83,6 +81,8 @@ const blockIpForm = reactive({ ip: '', reason: '' })
 const blockIpRules = {
   ip: { required: true, message: t('admin.security.ip_required'), trigger: 'blur' }
 }
+
+const isEmptyBlocks = computed(() => blocks.value.length === 0)
 
 const columns: DataTableColumns<Record<string, unknown>> = [
   {
@@ -188,11 +188,6 @@ defineExpose({ refresh: load })
   align-items: center;
   gap: 12px;
   margin-bottom: 16px;
-}
-
-.empty-state {
-  padding: 60px 0;
-  text-align: center;
 }
 
 .dialog-footer {

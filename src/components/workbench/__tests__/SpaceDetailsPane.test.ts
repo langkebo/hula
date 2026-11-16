@@ -4,6 +4,7 @@ import type { SpaceChildRoom } from '@/composables/space/useSpaceRooms'
 import type { SpaceMember } from '@/services/matrix/room/MatrixSpaceService'
 import SpaceDetailsPane from '../SpaceDetailsPane.vue'
 import type { SpaceListItem } from '../SpaceListPane.vue'
+import TjgSpaceJoinCta from '../TjgSpaceJoinCta.vue'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -484,7 +485,7 @@ describe('SpaceDetailsPane', () => {
     expect(wrapper.emitted('update:subView')).toEqual([['hierarchy']])
   })
 
-  it('shows join space button when isMember=false', () => {
+  it('shows join space CTA when isMember=false', () => {
     const wrapper = mount(SpaceDetailsPane, {
       props: {
         activeSpace: baseSpace,
@@ -494,12 +495,26 @@ describe('SpaceDetailsPane', () => {
       }
     })
 
-    const joinBtn = wrapper.find('[data-test="join-space-action"]')
-    expect(joinBtn.exists()).toBe(true)
-    expect(joinBtn.text()).toContain('space.join_space')
+    const joinCta = wrapper.find('[data-test="join-space-action"]')
+    expect(joinCta.exists()).toBe(true)
+    expect(joinCta.text()).toContain('space.join')
   })
 
-  it('emits joinSpace when clicking join space button', async () => {
+  it('shows knock copy when the space join rule is knock', () => {
+    const wrapper = mount(SpaceDetailsPane, {
+      props: {
+        activeSpace: baseSpace,
+        members: [],
+        rooms: [],
+        isMember: false,
+        joinRule: 'knock'
+      }
+    })
+
+    expect(wrapper.find('[data-test="join-space-action"]').text()).toContain('space.request_to_join')
+  })
+
+  it('emits joinSpace after the join CTA reports success', async () => {
     const wrapper = mount(SpaceDetailsPane, {
       props: {
         activeSpace: baseSpace,
@@ -509,8 +524,7 @@ describe('SpaceDetailsPane', () => {
       }
     })
 
-    const joinBtn = wrapper.find('[data-test="join-space-action"]')
-    await joinBtn.trigger('click')
+    wrapper.findComponent(TjgSpaceJoinCta).vm.$emit('success', 'join')
     expect(wrapper.emitted('joinSpace')).toHaveLength(1)
   })
 

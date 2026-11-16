@@ -160,12 +160,23 @@ export const useDriver = (steps: DriverStepConfig[], config: DriverConfig = {}):
   }
 
   /**
+   * 引导浮层会锁定焦点，且 `allowClose: false` 时 driver.js 不渲染关闭按钮。
+   * 必须提供键盘出口（WCAG 2.1.2 键盘陷阱）：Esc 结束引导。
+   */
+  const handleEscape = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || !driverInstance) return
+    driverInstance.destroy()
+    driverInstance = null
+  }
+
+  /**
    * 开始引导
    */
   const startTour = () => {
     if (!driverInstance) {
       initializeDriver()
     }
+    document.addEventListener('keydown', handleEscape)
     driverInstance?.drive()
   }
 
@@ -173,6 +184,7 @@ export const useDriver = (steps: DriverStepConfig[], config: DriverConfig = {}):
    * 停止引导
    */
   const stopTour = () => {
+    document.removeEventListener('keydown', handleEscape)
     driverInstance?.destroy()
     driverInstance = null
   }

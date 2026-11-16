@@ -1,14 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { saveMock, writeFileMock, showFeedbackMock, downloadFileMock, downloadEncryptedFileBytesMock } = vi.hoisted(
-  () => ({
-    saveMock: vi.fn(),
-    writeFileMock: vi.fn(),
-    showFeedbackMock: vi.fn(),
-    downloadFileMock: vi.fn(),
-    downloadEncryptedFileBytesMock: vi.fn()
-  })
-)
+const {
+  saveMock,
+  writeFileMock,
+  showFeedbackMock,
+  downloadFileMock,
+  downloadEncryptedFileBytesMock,
+  downloadSignedFileBytesMock
+} = vi.hoisted(() => ({
+  saveMock: vi.fn(),
+  writeFileMock: vi.fn(),
+  showFeedbackMock: vi.fn(),
+  downloadFileMock: vi.fn(),
+  downloadEncryptedFileBytesMock: vi.fn(),
+  downloadSignedFileBytesMock: vi.fn()
+}))
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
   save: saveMock
@@ -32,7 +38,8 @@ vi.mock('@/services/i18n', () => ({
 
 vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
   matrixMediaService: {
-    downloadEncryptedFileBytes: downloadEncryptedFileBytesMock
+    downloadEncryptedFileBytes: downloadEncryptedFileBytesMock,
+    downloadSignedFileBytes: downloadSignedFileBytesMock
   }
 }))
 
@@ -137,6 +144,27 @@ describe('AttachmentSaver', () => {
       expect(downloadEncryptedFileBytesMock).toHaveBeenCalled()
       expect(writeFileMock).toHaveBeenCalledWith('/save/path/encrypted.bin', expect.any(Uint8Array))
       expect(downloadFileMock).not.toHaveBeenCalled()
+    })
+
+    it('downloads signed media through the service instead of raw downloadFile', async () => {
+      saveMock.mockResolvedValue('/save/path/signed.bin')
+      downloadSignedFileBytesMock.mockResolvedValue(new Uint8Array([4, 5]))
+      writeFileMock.mockResolvedValue(undefined)
+
+      await saveFileAttachmentAs({
+        url: 'https://hs.example.com/_matrix/media/v3/download_signed/hs.example.com/m1/signed.bin?signature=sig&expires=1893456000',
+        downloadFile: downloadFileMock
+      })
+
+      expect(downloadSignedFileBytesMock).toHaveBeenCalledWith({
+        serverName: 'hs.example.com',
+        mediaId: 'm1',
+        filename: 'signed.bin',
+        signature: 'sig',
+        expires: 1893456000
+      })
+      expect(downloadFileMock).not.toHaveBeenCalled()
+      expect(writeFileMock).toHaveBeenCalledWith('/save/path/signed.bin', new Uint8Array([4, 5]))
     })
 
     it('normalizes backslashes in save path', async () => {

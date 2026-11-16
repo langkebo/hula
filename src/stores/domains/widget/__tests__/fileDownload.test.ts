@@ -2,15 +2,21 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFileDownloadStore } from '../fileDownload'
 
-const { downloadBytesMock, downloadEncryptedBytesMock, existsMock, writeFileMock, showFeedbackMock } = vi.hoisted(
-  () => ({
-    downloadBytesMock: vi.fn(),
-    downloadEncryptedBytesMock: vi.fn(),
-    existsMock: vi.fn(),
-    writeFileMock: vi.fn(),
-    showFeedbackMock: vi.fn()
-  })
-)
+const {
+  downloadBytesMock,
+  downloadEncryptedBytesMock,
+  downloadSignedBytesMock,
+  existsMock,
+  writeFileMock,
+  showFeedbackMock
+} = vi.hoisted(() => ({
+  downloadBytesMock: vi.fn(),
+  downloadEncryptedBytesMock: vi.fn(),
+  downloadSignedBytesMock: vi.fn(),
+  existsMock: vi.fn(),
+  writeFileMock: vi.fn(),
+  showFeedbackMock: vi.fn()
+}))
 
 vi.mock('@tauri-apps/api/path', () => ({
   join: async (...parts: string[]) => parts.filter(Boolean).join('/')
@@ -43,7 +49,10 @@ vi.mock('@/utils/PathUtil', () => ({
 }))
 
 vi.mock('@/services/matrix/media/MatrixMediaService', () => ({
-  matrixMediaService: { downloadEncryptedFileBytes: downloadEncryptedBytesMock }
+  matrixMediaService: {
+    downloadEncryptedFileBytes: downloadEncryptedBytesMock,
+    downloadSignedFileBytes: downloadSignedBytesMock
+  }
 }))
 
 vi.mock('@/utils/Logger', () => ({
@@ -139,5 +148,43 @@ describe('fileDownload store', () => {
     expect(failed).toBeNull()
     expect(retried).toBe('/abs/chat-files/c.bin')
     expect(downloadBytesMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('签名媒体链接走后端 download_signed 通道，并完成进度状态', async () => {
+    downloadSignedBytesMock.mockResolvedValue(new Uint8Array([1, 2, 3]))
+    const store = useFileDownloadStore()
+    const signedUrl =
+      'https://hs.example.com/_matrix/media/v3/download_signed/hs.example.com/m1/s.bin?signature=sig&expires=1893456000'
+
+    const path = await store.downloadFile(signedUrl, 's.bin')
+
+    expect(downloadSignedBytesMock).toHaveBeenCalledWith({
+      serverName: 'hs.example.com',
+      mediaId: 'm1',
+      filename: 's.bin',
+      signature: 'sig',
+      expires: 1893456000
+    })
+    expect(downloadBytesMock).not.toHaveBeenCalled()
+    expect(path).toBe('/abs/chat-files/s.bin')
+    expect(store.getFileStatus(signedUrl)).toMatchObject({ status: 'completed', progress: 100 })
+  })
+
+  it('签名媒体下载失败时标记 failed 并允许重试', async () => {
+    downloadSignedBytesMock
+      .mockRejectedValueOnce(new Error('signed expired'))
+      .mockResolvedValueOnce(new Uint8Array([1]))
+    const store = useFileDownloadStore()
+    const signedUrl =
+      'https://hs.example.com/_matrix/media/v3/download_signed/hs.example.com/m1/d.bin?signature=sig&expires=1893456000'
+
+    const failed = await store.downloadFile(signedUrl, 'd.bin')
+    expect(failed).toBeNull()
+    expect(store.getFileStatus(signedUrl)).toMatchObject({ status: 'failed', error: 'signed expired' })
+    expect(showFeedbackMock).toHaveBeenCalled()
+
+    const retried = await store.downloadFile(signedUrl, 'd.bin')
+    expect(retried).toBe('/abs/chat-files/d.bin')
+    expect(downloadSignedBytesMock).toHaveBeenCalledTimes(2)
   })
 })

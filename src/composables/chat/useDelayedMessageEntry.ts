@@ -12,6 +12,7 @@ interface DelayedMessagesApi {
   refresh: () => Promise<void>
   cancel: (delayId: number) => Promise<boolean>
   sendNow: (delayId: number) => Promise<boolean>
+  restart: (delayId: number) => Promise<boolean>
   reschedule: (delayId: number, delayMs: number) => Promise<boolean>
 }
 
@@ -34,6 +35,7 @@ export function useDelayedMessageEntry(options: {
     refresh: refreshDelayed,
     cancel: cancelDelayed,
     sendNow: sendDelayedNow,
+    restart: restartDelayed,
     reschedule: rescheduleDelayed
   } = options.delayedMessages
 
@@ -73,6 +75,7 @@ export function useDelayedMessageEntry(options: {
     handleScheduleDelayed,
     cancelDelayed,
     sendDelayedNow,
+    restartDelayed,
     rescheduleDelayed,
     refreshDelayed
   }

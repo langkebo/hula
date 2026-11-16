@@ -17,7 +17,8 @@ import {
   getCallById,
   getCallStatsFromPeerConn,
   getMediaDeviceList,
-  getTurnServerConfig
+  getTurnServerConfig,
+  registerVoipCapabilityResolver
 } from '../voipHelpers'
 import type { VoIPCall } from '../voipTypes'
 
@@ -572,9 +573,39 @@ describe('voipHelpers', () => {
   })
 
   describe('checkVoipAvailability', () => {
-    it('callEventHandler 存在且 TURN 可用时应全部可用', async () => {
+    // CAP-07：VoIP 可用性唯一取自能力位（resolver 注入），不再看 callEventHandler
+    let voipSupported = true
+
+    beforeEach(() => {
+      voipSupported = true
+      registerVoipCapabilityResolver(() => voipSupported)
+    })
+
+    afterEach(() => {
+      registerVoipCapabilityResolver(null)
+    })
+
+    it('能力位不支持但 callEventHandler 存在时仍应返回 voipAvailable=false', async () => {
+      voipSupported = false
       const client = createMockClient({
         callEventHandler: {},
+        turnServerConfig: {
+          username: 'user',
+          password: 'pass',
+          uris: ['turn:server:3478'],
+          ttl: 3600
+        }
+      })
+
+      const result = await checkVoipAvailability(client)
+
+      expect(result.voipAvailable).toBe(false)
+      expect(result.turnAvailable).toBe(true)
+      expect(result.message).toBe('当前服务器不支持语音通话（VoIP）')
+    })
+
+    it('能力位支持且 TURN 可用时应全部可用', async () => {
+      const client = createMockClient({
         turnServerConfig: {
           username: 'user',
           password: 'pass',
@@ -592,27 +623,8 @@ describe('voipHelpers', () => {
       expect(result.message).toBeUndefined()
     })
 
-    it('没有 callEventHandler 时应返回 voipAvailable=false', async () => {
+    it('能力位支持但 TURN 不可用时应返回 turnAvailable=false 并附带原因', async () => {
       const client = createMockClient({
-        callEventHandler: undefined,
-        turnServerConfig: {
-          username: 'user',
-          password: 'pass',
-          uris: ['turn:server:3478'],
-          ttl: 3600
-        }
-      })
-
-      const result = await checkVoipAvailability(client)
-
-      expect(result.voipAvailable).toBe(false)
-      expect(result.turnAvailable).toBe(true)
-      expect(result.message).toBe('VoIP 模块不可用')
-    })
-
-    it('callEventHandler 存在但 TURN 不可用时应返回 turnAvailable=false', async () => {
-      const client = createMockClient({
-        callEventHandler: {},
         turnServerConfig: {
           username: 'user',
           password: 'pass',
@@ -628,26 +640,8 @@ describe('voipHelpers', () => {
       expect(result.message).toBe('TURN 服务器未部署，语音通话可能在 NAT 环境下不可用')
     })
 
-    it('没有 callEventHandler 且 TURN 也不可用时应全部不可用', async () => {
-      const client = createMockClient({
-        callEventHandler: undefined,
-        turnServerConfig: {
-          uris: []
-        }
-      })
-
-      const result = await checkVoipAvailability(client)
-
-      expect(result.voipAvailable).toBe(false)
-      expect(result.turnAvailable).toBe(false)
-      expect(result.message).toBe('VoIP 模块不可用')
-    })
-
-    it('callEventHandler 存在但 TURN 检测抛出异常时应返回 turnAvailable=false', async () => {
-      const client = createMockClient({
-        callEventHandler: {},
-        turnServerThrows: true
-      })
+    it('能力位支持但 TURN 检测抛出异常时应返回 turnAvailable=false', async () => {
+      const client = createMockClient({ turnServerThrows: true })
 
       const result = await checkVoipAvailability(client)
 
@@ -656,19 +650,31 @@ describe('voipHelpers', () => {
       expect(result.message).toBe('TURN 服务检测失败，语音通话功能可能受限')
     })
 
-    it('callEventHandler 为 null 时应返回 voipAvailable=false', async () => {
+    it('能力位不支持且 TURN 也不可用时应优先说明能力不支持', async () => {
+      voipSupported = false
       const client = createMockClient({
-        callEventHandler: null,
-        turnServerConfig: {
-          uris: ['turn:server:3478']
-        }
+        turnServerConfig: { uris: [] }
+      })
+
+      const result = await checkVoipAvailability(client)
+
+      expect(result.voipAvailable).toBe(false)
+      expect(result.turnAvailable).toBe(false)
+      expect(result.message).toBe('当前服务器不支持语音通话（VoIP）')
+    })
+
+    it('未注册能力判定器时应按不支持降级', async () => {
+      registerVoipCapabilityResolver(null)
+      const client = createMockClient({
+        callEventHandler: {},
+        turnServerConfig: { uris: ['turn:server:3478'] }
       })
 
       const result = await checkVoipAvailability(client)
 
       expect(result.voipAvailable).toBe(false)
       expect(result.turnAvailable).toBe(true)
-      expect(result.message).toBe('VoIP 模块不可用')
+      expect(result.message).toBe('当前服务器不支持语音通话（VoIP）')
     })
   })
 })

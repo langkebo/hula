@@ -4,7 +4,7 @@
       <span>{{ topTipText || t('common.no_more_data') }}</span>
     </div>
 
-    <div v-if="loading && items.length === 0" class="loading-wrapper">
+    <div v-if="isInitialLoading" class="loading-wrapper">
       <van-loading size="24px" />
     </div>
 
@@ -95,6 +95,9 @@ const totalHeight = computed(() => {
   const arr = cumulativeHeights.value
   return arr.length > 0 ? arr[arr.length - 1] : 0
 })
+
+/** 首屏加载中（尚无任何条目）：仅此时展示加载占位，避免遮挡已有列表 */
+const isInitialLoading = computed(() => Boolean(props.loading) && props.items.length === 0)
 
 function findStartIndex(target: number): number {
   const arr = cumulativeHeights.value

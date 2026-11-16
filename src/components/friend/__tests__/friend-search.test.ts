@@ -33,7 +33,9 @@ vi.mock('@/services/matrix/friends/MatrixSpecialFriendService', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
-  useServerCapability: () => ({ isLoaded: { value: true }, canUseFriendList: { value: true } })
+  useServerCapability: () => ({ isLoaded: { value: true }, canUseFriendList: { value: true } }),
+  // 路由注册链会加载桌面 admin 桥接层，需提供该导出
+  registerAdminApiAvailabilityResolver: vi.fn()
 }))
 
 vi.mock('@vueuse/core', () => ({

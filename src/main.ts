@@ -17,7 +17,8 @@ import router from '@/router'
 import { setupI18n } from '@/services/i18n'
 import { registerStrictDevicePolicyPreferences } from '@/services/matrix/crypto/strictDevicePolicyBootstrap'
 import { registerExtensionHealthReporter } from '@/services/matrix/extensionHealthSink'
-import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
+import { matrixCapabilityService, registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
+import { registerVoipCapabilityResolver } from '@/services/matrix/media/voipHelpers'
 import { registerPrivacyPreferenceHooks } from '@/services/matrix/privacyPreferences'
 import { pinia } from '@/stores'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
@@ -130,6 +131,9 @@ window.__TJG_PINIA_READY__ = true
 // Register capability store resolver to break circular dependency
 // (must be called after pinia is installed)
 registerCapabilityStoreResolver(() => useCapabilityStore())
+
+// VoIP 可用性唯一取自能力服务（CAP-07），探针侧不再自判 callEventHandler
+registerVoipCapabilityResolver(() => matrixCapabilityService.canUseVoip())
 
 // 注入隐私偏好读取器，打破 service → setting store 的循环依赖
 // （MatrixTypingService / MatrixPresenceService / MatrixReceiptService 不再直接 import Pinia）

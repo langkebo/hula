@@ -13,15 +13,14 @@
         <div v-else class="flex flex-col p-16px gap-12px">
           <div class="text-14px text-[--tjg-text-secondary] mb-8px">{{ t('mobile_devices.subtitle') }}</div>
 
-          <van-empty
-            v-if="devices.length === 0"
+          <MobileAsyncState
+            v-if="isDeviceListEmpty"
+            :state="loadFailed ? 'error' : 'empty'"
+            :empty-text="t('mobile_devices.empty')"
+            :error-text="t('mobile_devices.load_failed')"
+            min-height="240px"
             data-testid="device-empty"
-            image="search"
-            :description="loadFailed ? t('mobile_devices.load_failed') : t('mobile_devices.empty')">
-            <van-button v-if="loadFailed" round type="primary" size="small" @click="loadDevices">
-              {{ t('common.retry') }}
-            </van-button>
-          </van-empty>
+            @retry="loadDevices" />
 
           <van-cell-group v-else inset>
             <van-cell
@@ -96,6 +95,7 @@ import { type DeviceSessionInfo, useDeviceSessions } from '@/composables/encrypt
 import { useDeviceTrust } from '@/composables/encryption/useDeviceTrust'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('DeviceManagement')
@@ -124,6 +124,9 @@ const loadFailed = ref(false)
 const selectedDevice = ref<DeviceSessionInfo | null>(null)
 const showRenameDialog = ref(false)
 const renameInput = ref('')
+
+/** 设备列表为空：交给 MobileAsyncState 区分空态与加载失败 */
+const isDeviceListEmpty = computed(() => devices.value.length === 0)
 
 /**
  * 操作面板项。

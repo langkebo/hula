@@ -9,10 +9,10 @@
     class="w-[600px] max-w-[90vw]">
     <n-spin :show="loading">
       <div class="device-list">
-        <div v-if="devices.length === 0" class="empty-state">
-          <Icon icon="mdi:cellphone-off" :width="48" />
-          <p>{{ t('encryption.dehydrated_device.no_devices') }}</p>
-        </div>
+        <EmptyState
+          v-if="devices.length === 0"
+          icon="mdi:cellphone-off"
+          :description="t('encryption.dehydrated_device.no_devices')" />
         <div v-for="device in devices" :key="device.deviceId" class="device-item">
           <div class="device-info">
             <div class="device-header">
@@ -219,20 +219,6 @@ async function handleDelete(deviceId: string): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 32px 0;
-  color: var(--tjg-text-secondary);
-
-  p {
-    margin: 0;
-    font-size: 14px;
-  }
 }
 
 .device-item {

@@ -3,27 +3,34 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import AdminMaintenance from '../AdminMaintenance.vue'
 
-const { loadAllMock, purgeMediaCacheMock, setExperimentalFeatureMock, showFeedbackMock, state } = vi.hoisted(() => ({
-  loadAllMock: vi.fn(),
-  purgeMediaCacheMock: vi.fn(),
-  setExperimentalFeatureMock: vi.fn(),
-  showFeedbackMock: vi.fn(),
-  state: {
-    experimentalFeatures: {} as Record<string, unknown>,
-    loading: false,
-    purging: false,
-    featureMutating: false
-  }
-}))
+const { loadAllMock, purgeMediaCacheMock, setExperimentalFeatureMock, restartServerMock, showFeedbackMock, state } =
+  vi.hoisted(() => ({
+    loadAllMock: vi.fn(),
+    purgeMediaCacheMock: vi.fn(),
+    setExperimentalFeatureMock: vi.fn(),
+    restartServerMock: vi.fn(),
+    showFeedbackMock: vi.fn(),
+    state: {
+      experimentalFeatures: {} as Record<string, unknown>,
+      serverInfo: { version: 'v1.2.3', uptime: 42 } as Record<string, unknown>,
+      loading: false,
+      purging: false,
+      restarting: false,
+      featureMutating: false
+    }
+  }))
 
 vi.mock('@/composables/admin', () => ({
   useAdminMaintenance: () => ({
     experimentalFeatures: ref(state.experimentalFeatures),
+    serverInfo: ref(state.serverInfo),
     loading: ref(state.loading),
     purging: ref(state.purging),
+    restarting: ref(state.restarting),
     featureMutating: ref(state.featureMutating),
     loadAll: loadAllMock,
     purgeMediaCache: purgeMediaCacheMock,
+    restartServer: restartServerMock,
     setExperimentalFeature: setExperimentalFeatureMock
   })
 }))
@@ -135,6 +142,13 @@ vi.mock('naive-ui', async () => {
     NList: passthrough('NList'),
     NListItem: passthrough('NListItem'),
     NPageHeader: passthrough('NPageHeader'),
+    NPopconfirm: defineComponent({
+      name: 'NPopconfirm',
+      emits: ['positive-click'],
+      setup(_, { slots }) {
+        return () => h('div', { 'data-test': 'NPopconfirm' }, [slots.trigger?.(), slots.default?.()])
+      }
+    }),
     NSpace: passthrough('NSpace'),
     NSwitch: defineComponent({
       name: 'NSwitch',
@@ -169,11 +183,14 @@ describe('AdminMaintenance', () => {
       'labs.feature_a': true,
       'labs.feature_b': { enabled: false, description: 'Feature B desc' }
     }
+    state.serverInfo = { version: 'v1.2.3', uptime: 42 }
     state.loading = false
     state.purging = false
+    state.restarting = false
     state.featureMutating = false
     loadAllMock.mockResolvedValue(undefined)
     purgeMediaCacheMock.mockResolvedValue({ deleted: 5 })
+    restartServerMock.mockResolvedValue(undefined)
     setExperimentalFeatureMock.mockResolvedValue(undefined)
   })
 

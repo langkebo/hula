@@ -14,6 +14,8 @@ const props = withDefaults(
     items?: CapabilityItem[]
     /** 列表级加载错误，提供时优先渲染错误态 */
     error?: string
+    /** 允许展示「设置」入口的能力位；不传表示全部展示 */
+    settingsKeys?: string[]
   }>(),
   {
     items: () => [],
@@ -32,6 +34,8 @@ const { t } = useI18n()
 const expanded = ref(false)
 
 const visibleItems = computed(() => (expanded.value ? props.items : props.items.slice(0, MAX_VISIBLE)))
+
+const showSettings = (key: string): boolean => !props.settingsKeys || props.settingsKeys.includes(key)
 </script>
 
 <template>
@@ -71,6 +75,7 @@ const visibleItems = computed(() => (expanded.value ? props.items : props.items.
               {{ t('common.retry') }}
             </button>
             <button
+              v-if="showSettings(item.key)"
               type="button"
               class="capability-panel__action"
               data-test="capability-settings"

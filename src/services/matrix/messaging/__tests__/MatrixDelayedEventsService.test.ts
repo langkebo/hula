@@ -13,6 +13,7 @@ function createManagerStub() {
     listScheduledDelayedEvents: vi.fn().mockResolvedValue([]),
     cancelScheduledDelayedEvent: vi.fn().mockResolvedValue({}),
     sendScheduledDelayedEvent: vi.fn().mockResolvedValue({}),
+    restartScheduledDelayedEvent: vi.fn().mockResolvedValue({}),
     getScheduledDelayedEvent: vi.fn().mockResolvedValue({
       delay_id: 7,
       room_id: '!room:example.org',
@@ -160,6 +161,22 @@ describe('MatrixDelayedEventsService', () => {
 
     await expect(matrixDelayedEventsService.reschedule(7, 600000)).rejects.toMatchObject({ reason: 'unknown' })
     expect(manager.scheduleDelayedEvent).not.toHaveBeenCalled()
+  })
+
+  it('restarts through the SDK manager and reads the task back', async () => {
+    const { manager } = installClient({})
+
+    await expect(matrixDelayedEventsService.restart(7)).resolves.toEqual({
+      delayId: 7,
+      roomId: '!room:example.org',
+      type: 'm.room.message',
+      delayMs: 300000,
+      scheduledAt: 1000,
+      content: { msgtype: 'm.text', body: 'later' }
+    })
+
+    expect(manager.restartScheduledDelayedEvent).toHaveBeenCalledWith(7)
+    expect(manager.getScheduledDelayedEvent).toHaveBeenCalledWith(7)
   })
 
   it('forwards send-now through the SDK manager', async () => {

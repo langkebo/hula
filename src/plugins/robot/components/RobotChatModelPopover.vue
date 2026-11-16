@@ -44,13 +44,11 @@
           <span class="loading-text">{{ t('ai_assistant.robot.loading') }}</span>
         </div>
 
-        <div v-else-if="filteredModels.length === 0" class="empty-container">
-          <n-empty :description="t('ai_assistant.robot.no_model_data')" size="small">
-            <template #icon>
-              <Icon icon="mdi:package-variant-closed" class="text-24px color-[--tjg-text-tertiary]" />
-            </template>
-          </n-empty>
-        </div>
+        <EmptyState
+          v-else-if="isEmptyModels"
+          compact
+          icon="mdi:package-variant-closed"
+          :description="t('ai_assistant.robot.no_model_data')" />
 
         <div v-else class="models-container">
           <div v-if="officialModels.length > 0">
@@ -183,13 +181,15 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { PaginationState } from '@/plugins/robot/composables/useRobotChat'
 import type { AIModel } from '@/services/matrix/ai/ModelService'
 
 const { t } = useI18n()
 
-defineProps<{
+const props = defineProps<{
   show: boolean
   selectedModel: AIModel | null
   modelSearch: string
@@ -201,6 +201,8 @@ defineProps<{
   getDefaultAvatar: () => string
   getModelAvatar: (model: AIModel | null) => string
 }>()
+
+const isEmptyModels = computed(() => props.filteredModels.length === 0)
 
 const emit = defineEmits<{
   'update:show': [value: boolean]

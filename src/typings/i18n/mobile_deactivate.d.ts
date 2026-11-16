@@ -6,8 +6,6 @@
 export type Messages = {
   "title": "注销账户",
   "back": "返回上一步",
-  "success": "账户已注销",
-  "failed": "账户注销失败",
   "step": {
     "consequences": "确认后果",
     "verify": "验证身份",
@@ -38,7 +36,6 @@ export type Messages = {
     "password_field": "账号密码",
     "password_placeholder": "请输入当前账号密码",
     "password_required": "请输入当前账号密码",
-    "password_invalid": "密码校验失败，请重试",
     "continue": "确认身份，继续",
     "mismatch": "输入与当前账号不一致"
   },
@@ -67,8 +64,6 @@ export type Messages = {
 export type KeyPaths =
   | "mobile_deactivate.title"
   | "mobile_deactivate.back"
-  | "mobile_deactivate.success"
-  | "mobile_deactivate.failed"
   | "mobile_deactivate.step.consequences"
   | "mobile_deactivate.step.verify"
   | "mobile_deactivate.step.final"
@@ -90,7 +85,6 @@ export type KeyPaths =
   | "mobile_deactivate.verify.password_field"
   | "mobile_deactivate.verify.password_placeholder"
   | "mobile_deactivate.verify.password_required"
-  | "mobile_deactivate.verify.password_invalid"
   | "mobile_deactivate.verify.continue"
   | "mobile_deactivate.verify.mismatch"
   | "mobile_deactivate.final.title"

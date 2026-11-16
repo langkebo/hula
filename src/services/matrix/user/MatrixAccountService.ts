@@ -4,12 +4,14 @@ import type { MatrixClient } from '@/services/matrix/sdk'
 import type { DeviceManager, MatrixClientExtended } from '@/types/matrix-extensions'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
-import { PREFIX_VENDOR_V1 } from '../paths/prefixes'
 import {
   addThreePid,
   bindThreePid,
   deleteThreePid,
   fetchThreePids,
+  requestAddEmailToken as requestThreePidEmailToken,
+  submitEmailToken as submitThreePidEmailToken,
+  type ThreePidEmailChallenge,
   type ThreePidsResponse,
   unbindThreePid
 } from './accountThreePids'
@@ -49,6 +51,62 @@ interface AuthData {
   [key: string]: unknown
 }
 
+/** 我的房间条目：SDK `/my_rooms` 视图归一后的前端模型。 */
+export interface MyRoomEntry {
+  roomId: string
+  name?: string | undefined
+  avatarUrl?: string | undefined
+  membership: 'join' | 'invite' | 'leave' | string
+}
+
+interface MyRoomsSdkResponse {
+  rooms?: unknown
+  total?: number
+}
+
+interface MyRoomsCapableRoomManager {
+  getMyRooms?: () => Promise<MyRoomsSdkResponse>
+}
+
+interface MyRoomsCapableClient {
+  getRoomManager?: () => MyRoomsCapableRoomManager
+}
+
+/** SDK 返回的 room 条目字段与类型均不保证，逐项校验后映射为内部模型。 */
+function toMyRoomEntries(rooms: unknown): MyRoomEntry[] {
+  if (!Array.isArray(rooms)) {
+    return []
+  }
+
+  const entries: MyRoomEntry[] = []
+  const seen = new Set<string>()
+
+  for (const room of rooms) {
+    if (!room || typeof room !== 'object') {
+      continue
+    }
+    const record = room as Record<string, unknown>
+    const roomId = typeof record.room_id === 'string' ? record.room_id : ''
+    if (!roomId || seen.has(roomId)) {
+      continue
+    }
+    seen.add(roomId)
+
+    const rawMembership = record.membership ?? record.join_state
+    const name = typeof record.name === 'string' && record.name.trim() ? record.name : undefined
+    const avatarUrl = typeof record.avatar_url === 'string' && record.avatar_url ? record.avatar_url : undefined
+
+    entries.push({
+      roomId,
+      name,
+      avatarUrl,
+      membership: typeof rawMembership === 'string' && rawMembership ? rawMembership : 'join'
+    })
+  }
+
+  return entries
+}
+
 /** UIA 密码阶段失败（403 / M_FORBIDDEN）代表密码错误；其余异常需要继续上抛。 */
 function isPasswordRejectedError(err: unknown): boolean {
   if (!err || typeof err !== 'object') {
@@ -56,6 +114,15 @@ function isPasswordRejectedError(err: unknown): boolean {
   }
   const { errcode, httpStatus } = err as { errcode?: string; httpStatus?: number }
   return errcode === 'M_FORBIDDEN' || httpStatus === 403
+}
+
+/** 生成 3PID 验证会话的 client_secret（Web Crypto 不可用时回退随机串）。 */
+function createClientSecret(): string {
+  const cryptoApi = globalThis.crypto
+  if (typeof cryptoApi?.randomUUID === 'function') {
+    return cryptoApi.randomUUID().replace(/-/g, '')
+  }
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`
 }
 
 class MatrixAccountService extends BaseMatrixService {
@@ -302,6 +369,48 @@ class MatrixAccountService extends BaseMatrixService {
     return fetchThreePids(() => this.getClient())
   }
 
+  /**
+   * 请求向邮箱发送「绑定 3PID」验证码。
+   *
+   * 返回的 `clientSecret` 需在 submit / add 阶段原样回传（服务端用它校验同一会话）。
+   */
+  async requestThreePidEmailToken(
+    email: string,
+    sendAttempt = 1
+  ): Promise<ThreePidEmailChallenge & { clientSecret: string }> {
+    const clientSecret = createClientSecret()
+    const challenge = await requestThreePidEmailToken(() => this.getClient(), email, clientSecret, sendAttempt)
+    return { ...challenge, clientSecret }
+  }
+
+  /** 提交邮箱验证码（SDK 未封装 submitToken，见 accountThreePids 注释）。 */
+  async submitThreePidEmailToken(sid: string, clientSecret: string, token: string): Promise<void> {
+    return submitThreePidEmailToken(() => this.getClient(), sid, clientSecret, token)
+  }
+
+  /**
+   * 完成邮箱 3PID 绑定：`/account/3pid/add` 强制 UIA，
+   * 这里用当前账号密码拼出 `m.login.password` 阶段一并提交。
+   */
+  async addThreePidWithPassword(sid: string, clientSecret: string, password: string): Promise<void> {
+    const client = this.getClient()
+    const userId = client.getUserId()
+    if (!userId) {
+      throw new Error(this.t('matrix_error.account.cannot_get_user_id'))
+    }
+
+    const authData = {
+      type: 'm.login.password',
+      identifier: {
+        type: 'm.id.user',
+        user: userId
+      },
+      password
+    }
+
+    return addThreePid(() => client, sid, clientSecret, authData)
+  }
+
   /** 添加第三方标识（3PID）；`_bind` 为历史遗留参数，后端 add/bind 同 handler，已忽略。 */
   async addThreePid(sid: string, clientSecret: string, _bind?: boolean): Promise<void> {
     return addThreePid(() => this.getClient(), sid, clientSecret)
@@ -527,38 +636,49 @@ class MatrixAccountService extends BaseMatrixService {
   }
 
   /**
-   * 获取当前用户已加入的房间列表。
+   * 获取当前用户的全部房间（含邀请中与已离开），按 membership 分组展示。
    *
-   * 注意：`/_matrix/vendor/v1/my_rooms` 并非标准 Matrix Spec 端点，
-   * 是 synapse-rust 私有端点（ISSUE-13 vendor 命名空间）。
-   * 当该端点不可用时，自动降级为 SDK 的标准 `getJoinedRooms()` 方法。
+   * 优先委托 SDK `client.getRoomManager().getMyRooms()`（命中 synapse-rust 私有端点
+   * `/_matrix/vendor/v1/my_rooms`，SDK 已做 membership/join_state 归一）。
+   * 当 SDK 方法不可用或端点 404 时，降级为 SDK 标准 `getJoinedRooms()`。
    */
-  async getMyRooms(): Promise<string[]> {
+  async getMyRooms(): Promise<MyRoomEntry[]> {
     const client = this.getClient()
+    const roomManager = (client as MatrixClient & MyRoomsCapableClient).getRoomManager?.()
+
+    if (typeof roomManager?.getMyRooms !== 'function') {
+      logger.info('[MatrixAccount] SDK getMyRooms() 不可用，降级使用 getJoinedRooms()')
+      return this.getJoinedRoomsAsMyRooms(client)
+    }
 
     try {
-      const result = await authedRequestWithPath<{ room_ids?: string[] }>(client, 'GET', `${PREFIX_VENDOR_V1}/my_rooms`)
-      return result.room_ids ?? []
+      const response = await roomManager.getMyRooms()
+      return toMyRoomEntries(response?.rooms)
     } catch (err) {
       // 降级判据（审计 §8 B-5 反例断言）：仅以 `err.httpStatus === 404` 判定，
       // 不得引入 httpStatus 之外的隐式条件（如消息文本、errcode 猜测）触发降级。
       const statusCode = (err as { httpStatus?: number }).httpStatus
       if (statusCode === 404) {
         logger.info('[MatrixAccount] /my_rooms 端点不可用(404)，降级使用 getJoinedRooms()')
-        try {
-          // 语义差异（审计 §8 B-5）：`/_matrix/vendor/v1/my_rooms` 是 synapse-rust 私有端点，
-          // 返回后端自定义视图（含排序语义，可能包含/排除特定私有房间）；而 SDK 标准
-          // `getJoinedRooms()` 命中 `/_matrix/client/v3/joined_rooms`，返回**未经排序**的
-          // 完整已加入房间集合。二者仅在「集合可用性」上等价，在「排序」与「私有房间可见性」
-          // 上不等价；本降级仅保证功能可用，调用方不得依赖返回顺序。
-          const { joined_rooms } = await client.getJoinedRooms()
-          return joined_rooms
-        } catch (fallbackErr) {
-          logger.error(`[MatrixAccount] 降级 getJoinedRooms() 也失败: ${fallbackErr}`)
-          return []
-        }
+        return this.getJoinedRoomsAsMyRooms(client)
       }
       logger.error(`[MatrixAccount] 获取我的房间列表失败: ${err}`)
+      return []
+    }
+  }
+
+  /**
+   * `/my_rooms` 不可用时的降级实现：仅返回已加入房间，membership 固定为 join。
+   *
+   * 语义差异（审计 §8 B-5）：私有端点返回后端自定义视图（含排序与私有房间可见性），
+   * 而 `getJoinedRooms()` 命中标准端点且未经排序；本降级仅保证功能可用，调用方不得依赖顺序。
+   */
+  private async getJoinedRoomsAsMyRooms(client: MatrixClient): Promise<MyRoomEntry[]> {
+    try {
+      const { joined_rooms } = await client.getJoinedRooms()
+      return joined_rooms.map((roomId) => ({ roomId, membership: 'join' }))
+    } catch (fallbackErr) {
+      logger.error(`[MatrixAccount] 降级 getJoinedRooms() 也失败: ${fallbackErr}`)
       return []
     }
   }

@@ -15,7 +15,8 @@ export type Messages = {
     "delete": "删除",
     "actions": "操作",
     "selectedCount": "已选择 {count} 项",
-    "noData": "暂无数据"
+    "noData": "暂无数据",
+    "query": "查询"
   },
   "users": {
     "accountStatus": "账户状态",
@@ -109,7 +110,65 @@ export type Messages = {
     "username": "用户名",
     "usernameRequired": "用户名不能为空",
     "loadedCount": "已加载 {count} 条",
-    "loadMore": "加载更多"
+    "loadMore": "加载更多",
+    "accountInfo": "账户信息",
+    "accountInfoHint": "数据来自管理员账户信息接口，可在此修改显示名与头像地址。",
+    "saveAccountInfo": "保存账户信息",
+    "accountInfoSaved": "账户信息已保存",
+    "accountInfoSaveFailed": "账户信息保存失败",
+    "rawJson": "原始 JSON",
+    "avatarUrl": "头像地址（mxc://）",
+    "whois": "Whois",
+    "whoisLoad": "查询 Whois",
+    "whoisLoadFailed": "Whois 查询失败",
+    "whoisEmpty": "尚未查询 Whois",
+    "useAdminRegister": "使用管理员注册（nonce）",
+    "registrationNonce": "注册 Nonce",
+    "registrationNoncePlaceholder": "点击下方按钮获取，或手动填写",
+    "registrationNonceRequired": "请先获取或填写注册 Nonce",
+    "fetchNonce": "获取 Nonce",
+    "fetchNonceFailed": "获取注册 Nonce 失败",
+    "accessToken": "访问令牌",
+    "adminCheck": "管理员校验",
+    "adminCheckNo": "服务端判定为普通用户",
+    "adminCheckYes": "服务端判定为管理员",
+    "batchCreate": "批量创建",
+    "batchCreateFailed": "批量创建失败",
+    "batchCreateHint": "每行一个用户，格式：用户名,密码[,显示名[,是否管理员]]",
+    "batchCreateInvalid": "存在用户名或密码为空的行，请修正后再提交",
+    "batchCreateParsed": "已解析 {count} 个用户",
+    "batchCreatePartial": "创建完成，{failed} 个用户失败",
+    "batchCreatePlaceholder": "alice,secret123,Alice,false",
+    "batchCreateSubmit": "提交创建",
+    "batchCreateSuccess": "批量创建完成，全部成功",
+    "batchCreateTitle": "批量创建用户",
+    "batchResultFailed": "失败",
+    "batchResultStatus": "结果",
+    "batchResultSuccess": "成功",
+    "batchResultUser": "用户",
+    "clearSession": "清除会话",
+    "copyToken": "复制令牌",
+    "copyTokenFailed": "复制令牌失败",
+    "copyTokenSuccess": "令牌已复制",
+    "evictConfirm": "确定踢出用户 {userId} 吗？其所有登录会话将立即终止，需要重新登录。",
+    "evictFailed": "踢出用户失败",
+    "evictSuccess": "用户已被踢出",
+    "evictUser": "踢出并强制重登",
+    "impersonationHint": "令牌拥有该用户全部权限，仅用于排障，请勿泄露。",
+    "impersonationSession": "模拟登录会话",
+    "loginAsConfirm": "确定以用户 {userId} 的身份模拟登录吗？将签发该用户的访问令牌。",
+    "loginAsFailed": "模拟登录失败",
+    "loginAsSuccess": "模拟登录令牌已签发",
+    "loginUserAs": "模拟登录",
+    "logoutAllConfirm": "确定注销用户 {userId} 的全部会话吗？其所有设备都将被迫重新登录。",
+    "logoutAllFailed": "注销全部会话失败",
+    "logoutAllSuccess": "已注销全部会话",
+    "logoutUserAll": "注销全部会话",
+    "refreshDetail": "刷新详情",
+    "refreshFailed": "刷新用户详情失败",
+    "refreshSuccess": "用户详情已刷新",
+    "serverInfo": "服务端信息",
+    "statsOverviewEmpty": "暂无服务端统计"
   },
   "rooms": {
     "search": "搜索房间ID、名称或话题",
@@ -197,7 +256,37 @@ export type Messages = {
     "removeAlias": "删除别名",
     "removeAliasConfirm": "确定要删除别名 {alias} 吗？",
     "aliasRemoveSuccess": "别名已删除",
-    "aliasRemoveFailed": "删除别名失败"
+    "aliasRemoveFailed": "删除别名失败",
+    "purgeRoom": "彻底清除房间",
+    "purgeRoomConfirm": "将从服务端彻底清除该房间的事件与状态，且不可恢复，确认继续？",
+    "purgeRoomSuccess": "房间已彻底清除",
+    "purgeRoomFailed": "房间清除失败",
+    "blocked": "已封禁",
+    "notBlocked": "未封禁",
+    "governance": "治理",
+    "serverStats": "服务端房间统计",
+    "serverStatsEmpty": "暂无服务端统计",
+    "listings": "公开目录",
+    "listingsEmpty": "该房间未发布到公开目录",
+    "publishListing": "发布到公开目录",
+    "publishListingConfirm": "确定将该房间发布到公开目录吗？发布后所有用户都能在目录中搜索到它。",
+    "publishListingSuccess": "房间已发布到公开目录",
+    "publishListingFailed": "发布到公开目录失败",
+    "eventContext": "事件上下文",
+    "eventContextPlaceholder": "输入事件 ID，如 $abc:server",
+    "eventContextRequired": "请先输入事件 ID",
+    "eventContextEmpty": "未获取到该事件的上下文",
+    "eventContextFailed": "获取事件上下文失败",
+    "eventId": "事件ID",
+    "forwardExtremities": "前向极值",
+    "forwardExtremitiesEmpty": "暂无前向极值",
+    "forwardExtremitiesFailed": "读取前向极值失败",
+    "forwardExtremitiesLoaded": "前向极值已刷新",
+    "searchInRoom": "房间内搜索",
+    "searchInRoomEmpty": "该房间内未找到匹配消息",
+    "searchInRoomFailed": "房间内搜索失败",
+    "searchInRoomPlaceholder": "输入搜索关键词",
+    "searchInRoomRequired": "请先输入搜索关键词"
   },
   "dashboard": {
     "serverInfo": "服务器信息",
@@ -324,7 +413,12 @@ export type Messages = {
     "feature_updated": "特性开关已更新",
     "feature_failed": "特性开关更新失败",
     "load_failed": "加载维护信息失败",
-    "advanced_feature_flags": "高级 Feature Flags 管理"
+    "advanced_feature_flags": "高级 Feature Flags 管理",
+    "server_info": "服务器信息",
+    "restart": "重启服务端",
+    "restart_confirm": "重启期间服务将短暂不可用，确认继续？",
+    "restart_success": "重启指令已发送",
+    "restart_failed": "重启失败"
   },
   "feature_flags": {
     "search_placeholder": "搜索 Flag Key / 描述 / 范围...",
@@ -507,7 +601,24 @@ export type Messages = {
     "save_success": "保存成功",
     "save_failed": "保存失败",
     "task_started": "清理任务已启动",
-    "task_failed": "启动清理任务失败"
+    "task_failed": "启动清理任务失败",
+    "default_policy_empty": "暂无默认策略",
+    "default_policy_title": "服务端默认策略",
+    "delete_room_policy": "删除策略",
+    "delete_room_policy_confirm": "确定删除房间 {roomId} 的保留策略吗？删除后该房间将回落到默认策略。",
+    "load_room_policy": "读取",
+    "room_id_placeholder": "!room:server",
+    "room_id_required": "请先输入房间 ID",
+    "room_policy_delete_failed": "删除房间保留策略失败",
+    "room_policy_delete_success": "房间保留策略已删除",
+    "room_policy_empty": "该房间未设置独立策略，回落到默认策略",
+    "room_policy_hint": "读取或设置单个房间的保留策略覆盖，写入后自动回读服务端结果。",
+    "room_policy_load_failed": "读取房间保留策略失败",
+    "room_policy_load_success": "房间保留策略已读取",
+    "room_policy_required": "请至少填写最短或最长保留时间",
+    "room_policy_save_failed": "保存房间保留策略失败",
+    "room_policy_save_success": "房间保留策略已保存",
+    "room_policy_title": "房间级保留策略"
   },
   "logs": {
     "title": "服务状态",
@@ -808,12 +919,29 @@ export type Messages = {
     "access_level_joined": "已加入"
   },
   "federation": {
+    "accept": "接受",
     "addBlacklistFailed": "加入黑名单失败",
     "addBlacklistSuccess": "已加入黑名单",
     "addedAt": "加入时间",
     "addToBlacklist": "加入黑名单",
     "blacklist": "黑名单",
+    "cache": "缓存",
+    "cacheClear": "清空缓存",
+    "cacheClearConfirm": "确定清空全部联邦缓存吗？",
+    "cacheClearFailed": "清空缓存失败",
+    "cacheCleared": "缓存已清空",
+    "cacheEmpty": "暂无缓存条目",
+    "cacheExpiry": "过期时间",
+    "cacheKey": "缓存键",
+    "cacheLoadFailed": "加载缓存失败",
+    "cacheValue": "值摘要",
+    "confirmPendingConfirm": "确定{action}服务器 {server} 吗？",
+    "confirmPendingFailed": "更新联邦服务器状态失败",
+    "confirmPendingSuccess": "联邦服务器状态已更新",
     "connected": "已连接",
+    "deleteCacheConfirm": "确定删除缓存条目 {key} 吗？",
+    "deleteCacheFailed": "删除缓存条目失败",
+    "deleteCacheSuccess": "缓存条目已删除",
     "destination": "目标服务器",
     "destinationDetail": "目标服务器详情",
     "destinations": "目标服务器",
@@ -825,11 +953,18 @@ export type Messages = {
     "domain": "域名",
     "domainRequired": "请输入域名",
     "failed": "失败",
+    "failureCount": "失败次数",
     "failureTs": "失败时间",
+    "lastFailedConnectAt": "最近失败时间",
     "lastRetry": "最后重试",
+    "lastSuccessfulConnectAt": "最近成功时间",
     "lastSuccessfulTs": "最后成功时间",
+    "pending": "待确认",
+    "pendingEmpty": "暂无待确认服务器",
+    "pendingLoadFailed": "加载待确认服务器失败",
     "reason": "原因",
     "reasonPlaceholder": "输入加入黑名单的原因",
+    "reject": "拒绝",
     "removeBlacklistConfirm": "确定将 {domain} 从黑名单移除吗？",
     "removeBlacklistFailed": "移除黑名单失败",
     "removeBlacklistSuccess": "已从黑名单移除",
@@ -976,6 +1111,7 @@ export type Messages = {
     "tab": {
       "library": "媒体库",
       "scoped": "房间与用户媒体",
+      "quota": "配额",
       "quarantine": "全局隔离变更"
     },
     "column": {
@@ -1008,6 +1144,35 @@ export type Messages = {
     "detail": {
       "title": "媒体详情",
       "history": "隔离历史"
+    },
+    "quota": {
+      "title": "媒体配额",
+      "description": "同时展示当前账号的用户侧配额与服务端总量，便于对照用户反馈与服务器实际用量",
+      "refresh": "刷新",
+      "loadFailed": "配额加载失败",
+      "storageUsed": "已用存储",
+      "mediaCount": "媒体数量",
+      "serverSize": "服务端总大小",
+      "serverCount": "服务端媒体总数",
+      "myQuota": "我的配额",
+      "usage": "已用 {used} / {limit}（{percent}%）",
+      "remaining": "剩余 {remaining}",
+      "noStatus": "暂无配额信息",
+      "serverDefaults": "服务端默认限制",
+      "defaultSizeLimit": "单个媒体上限 {size}",
+      "defaultCountLimit": "媒体数量上限 {count}",
+      "alerts": "配额告警",
+      "alertHint": "按时间倒序显示后端返回的告警记录",
+      "noAlerts": "暂无配额告警",
+      "alertType": {
+        "warning": "接近上限",
+        "exceeded": "已超限"
+      },
+      "state": {
+        "normal": "正常",
+        "warning": "接近上限",
+        "exceeded": "已超限"
+      }
     },
     "field": {
       "before": "早于该时间",
@@ -1269,6 +1434,7 @@ export type KeyPaths =
   | "admin.common.actions"
   | "admin.common.selectedCount"
   | "admin.common.noData"
+  | "admin.common.query"
   | "admin.users.accountStatus"
   | "admin.users.active"
   | "admin.users.adminConfirm"
@@ -1361,6 +1527,64 @@ export type KeyPaths =
   | "admin.users.usernameRequired"
   | "admin.users.loadedCount"
   | "admin.users.loadMore"
+  | "admin.users.accountInfo"
+  | "admin.users.accountInfoHint"
+  | "admin.users.saveAccountInfo"
+  | "admin.users.accountInfoSaved"
+  | "admin.users.accountInfoSaveFailed"
+  | "admin.users.rawJson"
+  | "admin.users.avatarUrl"
+  | "admin.users.whois"
+  | "admin.users.whoisLoad"
+  | "admin.users.whoisLoadFailed"
+  | "admin.users.whoisEmpty"
+  | "admin.users.useAdminRegister"
+  | "admin.users.registrationNonce"
+  | "admin.users.registrationNoncePlaceholder"
+  | "admin.users.registrationNonceRequired"
+  | "admin.users.fetchNonce"
+  | "admin.users.fetchNonceFailed"
+  | "admin.users.accessToken"
+  | "admin.users.adminCheck"
+  | "admin.users.adminCheckNo"
+  | "admin.users.adminCheckYes"
+  | "admin.users.batchCreate"
+  | "admin.users.batchCreateFailed"
+  | "admin.users.batchCreateHint"
+  | "admin.users.batchCreateInvalid"
+  | "admin.users.batchCreateParsed"
+  | "admin.users.batchCreatePartial"
+  | "admin.users.batchCreatePlaceholder"
+  | "admin.users.batchCreateSubmit"
+  | "admin.users.batchCreateSuccess"
+  | "admin.users.batchCreateTitle"
+  | "admin.users.batchResultFailed"
+  | "admin.users.batchResultStatus"
+  | "admin.users.batchResultSuccess"
+  | "admin.users.batchResultUser"
+  | "admin.users.clearSession"
+  | "admin.users.copyToken"
+  | "admin.users.copyTokenFailed"
+  | "admin.users.copyTokenSuccess"
+  | "admin.users.evictConfirm"
+  | "admin.users.evictFailed"
+  | "admin.users.evictSuccess"
+  | "admin.users.evictUser"
+  | "admin.users.impersonationHint"
+  | "admin.users.impersonationSession"
+  | "admin.users.loginAsConfirm"
+  | "admin.users.loginAsFailed"
+  | "admin.users.loginAsSuccess"
+  | "admin.users.loginUserAs"
+  | "admin.users.logoutAllConfirm"
+  | "admin.users.logoutAllFailed"
+  | "admin.users.logoutAllSuccess"
+  | "admin.users.logoutUserAll"
+  | "admin.users.refreshDetail"
+  | "admin.users.refreshFailed"
+  | "admin.users.refreshSuccess"
+  | "admin.users.serverInfo"
+  | "admin.users.statsOverviewEmpty"
   | "admin.rooms.search"
   | "admin.rooms.searchBtn"
   | "admin.rooms.searchFailed"
@@ -1447,6 +1671,36 @@ export type KeyPaths =
   | "admin.rooms.removeAliasConfirm"
   | "admin.rooms.aliasRemoveSuccess"
   | "admin.rooms.aliasRemoveFailed"
+  | "admin.rooms.purgeRoom"
+  | "admin.rooms.purgeRoomConfirm"
+  | "admin.rooms.purgeRoomSuccess"
+  | "admin.rooms.purgeRoomFailed"
+  | "admin.rooms.blocked"
+  | "admin.rooms.notBlocked"
+  | "admin.rooms.governance"
+  | "admin.rooms.serverStats"
+  | "admin.rooms.serverStatsEmpty"
+  | "admin.rooms.listings"
+  | "admin.rooms.listingsEmpty"
+  | "admin.rooms.publishListing"
+  | "admin.rooms.publishListingConfirm"
+  | "admin.rooms.publishListingSuccess"
+  | "admin.rooms.publishListingFailed"
+  | "admin.rooms.eventContext"
+  | "admin.rooms.eventContextPlaceholder"
+  | "admin.rooms.eventContextRequired"
+  | "admin.rooms.eventContextEmpty"
+  | "admin.rooms.eventContextFailed"
+  | "admin.rooms.eventId"
+  | "admin.rooms.forwardExtremities"
+  | "admin.rooms.forwardExtremitiesEmpty"
+  | "admin.rooms.forwardExtremitiesFailed"
+  | "admin.rooms.forwardExtremitiesLoaded"
+  | "admin.rooms.searchInRoom"
+  | "admin.rooms.searchInRoomEmpty"
+  | "admin.rooms.searchInRoomFailed"
+  | "admin.rooms.searchInRoomPlaceholder"
+  | "admin.rooms.searchInRoomRequired"
   | "admin.dashboard.serverInfo"
   | "admin.dashboard.totalRooms"
   | "admin.dashboard.totalUsers"
@@ -1550,6 +1804,11 @@ export type KeyPaths =
   | "admin.maintenance.feature_failed"
   | "admin.maintenance.load_failed"
   | "admin.maintenance.advanced_feature_flags"
+  | "admin.maintenance.server_info"
+  | "admin.maintenance.restart"
+  | "admin.maintenance.restart_confirm"
+  | "admin.maintenance.restart_success"
+  | "admin.maintenance.restart_failed"
   | "admin.feature_flags.search_placeholder"
   | "admin.feature_flags.create"
   | "admin.feature_flags.create_title"
@@ -1723,6 +1982,23 @@ export type KeyPaths =
   | "admin.retention.save_failed"
   | "admin.retention.task_started"
   | "admin.retention.task_failed"
+  | "admin.retention.default_policy_empty"
+  | "admin.retention.default_policy_title"
+  | "admin.retention.delete_room_policy"
+  | "admin.retention.delete_room_policy_confirm"
+  | "admin.retention.load_room_policy"
+  | "admin.retention.room_id_placeholder"
+  | "admin.retention.room_id_required"
+  | "admin.retention.room_policy_delete_failed"
+  | "admin.retention.room_policy_delete_success"
+  | "admin.retention.room_policy_empty"
+  | "admin.retention.room_policy_hint"
+  | "admin.retention.room_policy_load_failed"
+  | "admin.retention.room_policy_load_success"
+  | "admin.retention.room_policy_required"
+  | "admin.retention.room_policy_save_failed"
+  | "admin.retention.room_policy_save_success"
+  | "admin.retention.room_policy_title"
   | "admin.logs.title"
   | "admin.logs.subtitle"
   | "admin.logs.panel_notice"
@@ -1983,12 +2259,29 @@ export type KeyPaths =
   | "admin.guests.no_rooms"
   | "admin.guests.access_level"
   | "admin.guests.access_level_joined"
+  | "admin.federation.accept"
   | "admin.federation.addBlacklistFailed"
   | "admin.federation.addBlacklistSuccess"
   | "admin.federation.addedAt"
   | "admin.federation.addToBlacklist"
   | "admin.federation.blacklist"
+  | "admin.federation.cache"
+  | "admin.federation.cacheClear"
+  | "admin.federation.cacheClearConfirm"
+  | "admin.federation.cacheClearFailed"
+  | "admin.federation.cacheCleared"
+  | "admin.federation.cacheEmpty"
+  | "admin.federation.cacheExpiry"
+  | "admin.federation.cacheKey"
+  | "admin.federation.cacheLoadFailed"
+  | "admin.federation.cacheValue"
+  | "admin.federation.confirmPendingConfirm"
+  | "admin.federation.confirmPendingFailed"
+  | "admin.federation.confirmPendingSuccess"
   | "admin.federation.connected"
+  | "admin.federation.deleteCacheConfirm"
+  | "admin.federation.deleteCacheFailed"
+  | "admin.federation.deleteCacheSuccess"
   | "admin.federation.destination"
   | "admin.federation.destinationDetail"
   | "admin.federation.destinations"
@@ -2000,11 +2293,18 @@ export type KeyPaths =
   | "admin.federation.domain"
   | "admin.federation.domainRequired"
   | "admin.federation.failed"
+  | "admin.federation.failureCount"
   | "admin.federation.failureTs"
+  | "admin.federation.lastFailedConnectAt"
   | "admin.federation.lastRetry"
+  | "admin.federation.lastSuccessfulConnectAt"
   | "admin.federation.lastSuccessfulTs"
+  | "admin.federation.pending"
+  | "admin.federation.pendingEmpty"
+  | "admin.federation.pendingLoadFailed"
   | "admin.federation.reason"
   | "admin.federation.reasonPlaceholder"
+  | "admin.federation.reject"
   | "admin.federation.removeBlacklistConfirm"
   | "admin.federation.removeBlacklistFailed"
   | "admin.federation.removeBlacklistSuccess"
@@ -2128,6 +2428,7 @@ export type KeyPaths =
   | "admin.media.description"
   | "admin.media.tab.library"
   | "admin.media.tab.scoped"
+  | "admin.media.tab.quota"
   | "admin.media.tab.quarantine"
   | "admin.media.column.mediaId"
   | "admin.media.column.type"
@@ -2154,6 +2455,29 @@ export type KeyPaths =
   | "admin.media.action.loadMore"
   | "admin.media.detail.title"
   | "admin.media.detail.history"
+  | "admin.media.quota.title"
+  | "admin.media.quota.description"
+  | "admin.media.quota.refresh"
+  | "admin.media.quota.loadFailed"
+  | "admin.media.quota.storageUsed"
+  | "admin.media.quota.mediaCount"
+  | "admin.media.quota.serverSize"
+  | "admin.media.quota.serverCount"
+  | "admin.media.quota.myQuota"
+  | "admin.media.quota.usage"
+  | "admin.media.quota.remaining"
+  | "admin.media.quota.noStatus"
+  | "admin.media.quota.serverDefaults"
+  | "admin.media.quota.defaultSizeLimit"
+  | "admin.media.quota.defaultCountLimit"
+  | "admin.media.quota.alerts"
+  | "admin.media.quota.alertHint"
+  | "admin.media.quota.noAlerts"
+  | "admin.media.quota.alertType.warning"
+  | "admin.media.quota.alertType.exceeded"
+  | "admin.media.quota.state.normal"
+  | "admin.media.quota.state.warning"
+  | "admin.media.quota.state.exceeded"
   | "admin.media.field.before"
   | "admin.media.field.maxSize"
   | "admin.media.field.maxSizePlaceholder"

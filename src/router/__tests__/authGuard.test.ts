@@ -211,6 +211,44 @@ describe('authGuard', () => {
   })
 })
 
+describe('E2E 旁路与后台权限', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('旁路只替代登录态：非管理员仍被踢出后台路由', async () => {
+    mockVerifyAdminAccess.mockResolvedValue(false)
+    const guard = createAuthGuard({
+      isMobile: false,
+      hasAuthenticatedSession: mockHasAuthenticatedSession,
+      verifyAdminAccess: mockVerifyAdminAccess,
+      logger: { warn: mockWarn, error: mockError },
+      shouldBypassAuth: () => true
+    })
+
+    const result = await guard(createRoute('/admin/dashboard', true))
+
+    expect(result).toBe('/')
+    // 旁路的意义就是不去问登录态，但**必须**问管理员身份
+    expect(mockHasAuthenticatedSession).not.toHaveBeenCalled()
+    expect(mockVerifyAdminAccess).toHaveBeenCalledTimes(1)
+  })
+
+  it('旁路 + 管理员：放行后台路由', async () => {
+    mockVerifyAdminAccess.mockResolvedValue(true)
+    const guard = createAuthGuard({
+      isMobile: false,
+      hasAuthenticatedSession: mockHasAuthenticatedSession,
+      verifyAdminAccess: mockVerifyAdminAccess,
+      logger: { warn: mockWarn, error: mockError },
+      shouldBypassAuth: () => true
+    })
+
+    await expect(guard(createRoute('/admin/dashboard', true))).resolves.toBe(true)
+    expect(mockVerifyAdminAccess).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('isPublicRoute', () => {
   it('matches oidc callback and nested public paths', () => {
     expect(isPublicRoute('/oidc/callback')).toBe(true)

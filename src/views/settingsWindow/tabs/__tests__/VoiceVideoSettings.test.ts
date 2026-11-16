@@ -82,6 +82,13 @@ vi.mock('naive-ui', () => ({
   NButton: { name: 'NButton', template: '<button><slot /></button>', props: ['type', 'loading'] },
   NSwitch: { name: 'NSwitch', template: '<div class="n-switch" />', props: ['value'] },
   NDivider: { name: 'NDivider', template: '<hr />' },
+  NDescriptions: { name: 'NDescriptions', template: '<div class="n-descriptions"><slot /></div>' },
+  NDescriptionsItem: {
+    name: 'NDescriptionsItem',
+    template: '<div class="n-descriptions-item"><slot /></div>',
+    props: ['label']
+  },
+  NEmpty: { name: 'NEmpty', template: '<div class="n-empty" />', props: ['description', 'size'] },
   NModal: {
     name: 'NModal',
     template: '<div class="n-modal"><slot /></div>',
@@ -89,6 +96,17 @@ vi.mock('naive-ui', () => ({
     emits: ['update:show', 'positiveClick', 'negativeClick']
   },
   useMessage: () => ({ success: messageSuccessMock, error: messageErrorMock })
+}))
+
+// RTC 传输信息与语音消息区块由各自服务/子组件承载，本用例只验证设备与通话设置呈现
+vi.mock('@/services/matrix/media/MatrixVoiceService', () => ({
+  matrixVoiceService: {
+    getRtcTransports: vi.fn().mockResolvedValue({})
+  }
+}))
+
+vi.mock('../sections/VoiceMessageSettings.vue', () => ({
+  default: { name: 'VoiceMessageSettings', template: '<div data-test="VoiceMessageSettings" />' }
 }))
 
 vi.mock('vue-i18n', () => ({

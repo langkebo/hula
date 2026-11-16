@@ -321,6 +321,19 @@
     "subtitle": "View room metadata",
     "title": "Room Metadata"
   },
+  "my_rooms": {
+    "empty": "No rooms",
+    "error": "Failed to load",
+    "group_invite": "Invited",
+    "group_join": "Joined",
+    "group_leave": "Left",
+    "loading": "Loading…",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "search_placeholder": "Search room name or ID",
+    "title": "My Rooms",
+    "unnamed": "Unnamed room"
+  },
   "retention": {
     "count_hint": "Retain by message count",
     "count_label": "Message Count",

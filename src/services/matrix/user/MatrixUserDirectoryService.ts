@@ -30,6 +30,12 @@ interface MatrixDirectoryUser {
   avatar_url?: string
 }
 
+/** synapse-rust `search_recipients` 返回项（比目录搜索多在线态字段） */
+interface MatrixRecipientUser extends MatrixDirectoryUser {
+  online?: boolean
+  presence?: string
+}
+
 /**
  * 用户目录服务
  */
@@ -40,6 +46,42 @@ class UserDirectoryService extends BaseMatrixService {
   initialize(client: MatrixClient): void {
     this.setFallbackClient(client)
     logger.info('[UserDirectory] 服务已初始化')
+  }
+
+  /**
+   * 搜索可发起会话的用户（`search_recipients`）。
+   *
+   * 相比用户目录搜索，服务端会按可见性过滤并附带在线态；端点不可用或无结果时
+   * 回退到目录搜索，保证通讯录/邀请选人始终有结果。
+   */
+  async searchRecipients(query: string, limit = DIRECTORY_SEARCH_LIMIT): Promise<UserDirectorySearchResult[]> {
+    const client = this.getClient()
+    const term = query.trim()
+    if (!term) return []
+
+    try {
+      const manager = client.getSearchManager?.()
+      if (manager) {
+        const response = await manager.searchRecipients({ term, limit })
+        const users = this.toRecipientResults((response.results ?? []) as MatrixRecipientUser[])
+        if (users.length > 0) return users
+        logger.info('[UserDirectory] search_recipients 无结果，回退目录搜索')
+      }
+    } catch (err) {
+      logger.warn(`[UserDirectory] search_recipients 不可用，回退目录搜索: ${err}`)
+    }
+
+    return this.searchUsers(term, limit)
+  }
+
+  private toRecipientResults(users: MatrixRecipientUser[]): UserDirectorySearchResult[] {
+    return users
+      .filter((user) => Boolean(user?.user_id))
+      .map((user) => ({
+        userId: user.user_id,
+        displayName: user.display_name,
+        avatarUrl: user.avatar_url
+      }))
   }
 
   /**

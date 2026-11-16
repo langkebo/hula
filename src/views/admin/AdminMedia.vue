@@ -3,9 +3,10 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MediaLibraryPanel from '@/components/admin/media/MediaLibraryPanel.vue'
 import MediaQuarantineChangesPanel from '@/components/admin/media/MediaQuarantineChangesPanel.vue'
+import MediaQuotaPanel from '@/components/admin/media/MediaQuotaPanel.vue'
 import MediaScopedPanel from '@/components/admin/media/MediaScopedPanel.vue'
 
-type MediaTab = 'library' | 'scoped' | 'quarantine'
+type MediaTab = 'library' | 'scoped' | 'quota' | 'quarantine'
 
 const { t } = useI18n()
 const activeTab = ref<MediaTab>('library')
@@ -19,6 +20,9 @@ const activeTab = ref<MediaTab>('library')
     </n-tab-pane>
     <n-tab-pane name="scoped" :tab="t('admin.media.tab.scoped')">
       <media-scoped-panel />
+    </n-tab-pane>
+    <n-tab-pane name="quota" :tab="t('admin.media.tab.quota')">
+      <media-quota-panel />
     </n-tab-pane>
     <n-tab-pane name="quarantine" :tab="t('admin.media.tab.quarantine')">
       <media-quarantine-changes-panel />

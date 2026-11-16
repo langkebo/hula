@@ -17,6 +17,7 @@
   },
   "actions": {
     "send_now": "Send now",
+    "restart": "Restart timer",
     "reschedule": "Reschedule",
     "cancel": "Cancel"
   },
@@ -28,6 +29,8 @@
     "cancel_failed": "Cancel failed, the task is still pending: {reason}",
     "sent_now": "Message sent now",
     "send_now_failed": "Failed to send immediately: {reason}",
+    "restarted": "Timer restarted, delivery postponed",
+    "restart_failed": "Failed to restart timer: {reason}",
     "rescheduled": "Message rescheduled",
     "reschedule_failed": "Failed to reschedule: {reason}",
     "text_only": "Only text messages can be scheduled"

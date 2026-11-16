@@ -41,10 +41,11 @@
           </van-button>
         </div>
 
-        <van-empty
-          v-else-if="hiddenSessions.length === 0"
-          :description="t('home.secret_chat.no_hidden_sessions')"
-          image="search" />
+        <MobileAsyncState
+          v-else-if="isEmptySessions"
+          state="empty"
+          :empty-text="t('home.secret_chat.no_hidden_sessions')"
+          min-height="240px" />
 
         <van-cell-group v-else inset class="my-12px">
           <van-cell
@@ -113,6 +114,7 @@ import EncryptionLockBadge from '@/components/encryption/EncryptionLockBadge.vue
 import { useSecretChatPage } from '@/composables/secretChat/useSecretChatPage'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { MOBILE_SETTINGS_SECURITY_PRIVACY_PATH } from '@/mobile/views/my/settingsRoutes'
 import type { SessionItem } from '@/stores/domains/chat/chat/session'
 import { useSettingStore } from '@/stores/domains/settings/setting'
@@ -171,6 +173,9 @@ const {
     void router.replace(MOBILE_SETTINGS_SECURITY_PRIVACY_PATH)
   }
 })
+
+/** 无隐藏会话：交给 MobileAsyncState 统一渲染空态 */
+const isEmptySessions = computed(() => hiddenSessions.value.length === 0)
 
 /** 未配置密码：跳安全设置页完成设置，而不是弹必然失败的解锁框。 */
 const handleGoSetupPassword = () => {

@@ -80,7 +80,9 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
 }))
 
 vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
-  matrixCapabilityService: matrixCapabilityServiceMock
+  matrixCapabilityService: matrixCapabilityServiceMock,
+  // admin 桥接层在模块加载期注册 admin-api 能力位解析器
+  registerAdminApiAvailabilityResolver: vi.fn()
 }))
 
 vi.mock('@/services/matrix/matrixClientAccessor', () => ({

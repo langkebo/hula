@@ -1,6 +1,11 @@
 import { type Ref, ref } from 'vue'
-import type { FederationBlacklistEntry, FederationDestination } from '@/services/matrix/admin'
-import { adminService } from '@/services/matrix/admin'
+import type {
+  FederationBlacklistEntry,
+  FederationCacheEntry,
+  FederationDestination,
+  PendingFederationServer
+} from '@/services/matrix/admin'
+import { adminFederationService, adminService } from '@/services/matrix/admin'
 
 export type { FederationDestination } from '@/services/matrix/admin'
 
@@ -19,6 +24,14 @@ interface UseAdminFederationResult {
   blacklist: Ref<FederationBlacklistView[]>
   blacklistLoading: Ref<boolean>
 
+  cacheEntries: Ref<FederationCacheEntry[]>
+  cacheLoading: Ref<boolean>
+  cacheError: Ref<string | null>
+
+  pendingServers: Ref<PendingFederationServer[]>
+  pendingLoading: Ref<boolean>
+  pendingError: Ref<string | null>
+
   loadDestinations: () => Promise<void>
   selectDestination: (destination: FederationDestination | null) => void
   resetFederationConnection: (destination: string) => Promise<void>
@@ -27,6 +40,17 @@ interface UseAdminFederationResult {
   loadBlacklist: () => Promise<void>
   addToBlacklist: (domain: string, reason?: string) => Promise<boolean>
   removeFromBlacklist: (domain: string) => Promise<boolean>
+
+  loadCache: () => Promise<void>
+  clearCache: () => Promise<boolean>
+  removeCacheEntry: (key: string) => Promise<boolean>
+
+  loadPending: () => Promise<void>
+  confirmPending: (serverName: string, accept: boolean) => Promise<boolean>
+}
+
+function toErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
 }
 
 export function useAdminFederation(): UseAdminFederationResult {
@@ -36,6 +60,14 @@ export function useAdminFederation(): UseAdminFederationResult {
 
   const blacklist = ref<FederationBlacklistView[]>([])
   const blacklistLoading = ref(false)
+
+  const cacheEntries = ref<FederationCacheEntry[]>([])
+  const cacheLoading = ref(false)
+  const cacheError = ref<string | null>(null)
+
+  const pendingServers = ref<PendingFederationServer[]>([])
+  const pendingLoading = ref(false)
+  const pendingError = ref<string | null>(null)
 
   async function loadDestinations() {
     destinationsLoading.value = true
@@ -89,18 +121,91 @@ export function useAdminFederation(): UseAdminFederationResult {
     return ok
   }
 
+  async function loadCache() {
+    cacheLoading.value = true
+    cacheError.value = null
+    try {
+      const page = await adminFederationService.getFederationCache()
+      cacheEntries.value = page.entries
+    } catch (err) {
+      cacheError.value = toErrorMessage(err)
+    } finally {
+      cacheLoading.value = false
+    }
+  }
+
+  async function clearCache(): Promise<boolean> {
+    cacheError.value = null
+    try {
+      await adminFederationService.clearFederationCache()
+      await loadCache()
+      return true
+    } catch (err) {
+      cacheError.value = toErrorMessage(err)
+      return false
+    }
+  }
+
+  async function removeCacheEntry(key: string): Promise<boolean> {
+    cacheError.value = null
+    try {
+      await adminFederationService.deleteFederationCacheEntry(key)
+      await loadCache()
+      return true
+    } catch (err) {
+      cacheError.value = toErrorMessage(err)
+      return false
+    }
+  }
+
+  async function loadPending() {
+    pendingLoading.value = true
+    pendingError.value = null
+    try {
+      const page = await adminFederationService.getPendingFederationServers()
+      pendingServers.value = page.servers
+    } catch (err) {
+      pendingError.value = toErrorMessage(err)
+    } finally {
+      pendingLoading.value = false
+    }
+  }
+
+  async function confirmPending(serverName: string, accept: boolean): Promise<boolean> {
+    pendingError.value = null
+    try {
+      await adminFederationService.confirmFederation(serverName, accept)
+      await loadPending()
+      return true
+    } catch (err) {
+      pendingError.value = toErrorMessage(err)
+      return false
+    }
+  }
+
   return {
     destinations,
     destinationsLoading,
     selectedDestination,
     blacklist,
     blacklistLoading,
+    cacheEntries,
+    cacheLoading,
+    cacheError,
+    pendingServers,
+    pendingLoading,
+    pendingError,
     loadDestinations,
     selectDestination,
     resetFederationConnection,
     reconnectFederation,
     loadBlacklist,
     addToBlacklist,
-    removeFromBlacklist
+    removeFromBlacklist,
+    loadCache,
+    clearCache,
+    removeCacheEntry,
+    loadPending,
+    confirmPending
   }
 }

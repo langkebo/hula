@@ -189,7 +189,7 @@ describe('MobileDeactivateAccount', () => {
     await goToFinalStep(vm)
     await vm.handleFinalConfirm()
     expect(vm.step).toBe('final')
-    expect(vm.verifying).toBe(false)
+    expect(vm.submitting).toBe(false)
     expect(deactivateAccountMock).not.toHaveBeenCalled()
     expect(showFailToastMock).toHaveBeenCalled()
   })

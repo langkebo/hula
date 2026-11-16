@@ -160,6 +160,55 @@ describe('AdminReportService', () => {
     expect(adminManager.listReports).toHaveBeenCalledWith({ from: undefined, limit: 50 })
   })
 
+  describe('getScannerInfo', () => {
+    const injectScannerInfo = (impl: ReturnType<typeof vi.fn>) => {
+      ;(client as unknown as { getReportingManager?: () => unknown }).getReportingManager = () => ({
+        getScannerInfo: impl
+      })
+    }
+
+    it('映射 ReportingManager 返回的扫描器字段', async () => {
+      const getScannerInfoMock = vi.fn().mockResolvedValue({
+        scanner_id: 'scanner-1',
+        scan_result: 'spam',
+        confidence: 0.92,
+        scanned_at: 1700000000000
+      })
+      injectScannerInfo(getScannerInfoMock)
+
+      await expect(service.getScannerInfo('!r:hs', '$e1')).resolves.toEqual({
+        scanner_id: 'scanner-1',
+        scan_result: 'spam',
+        confidence: 0.92,
+        scanned_at: 1700000000000
+      })
+      expect(getScannerInfoMock).toHaveBeenCalledWith('!r:hs', '$e1')
+    })
+
+    it('缺失字段归一化为空字符串与 0', async () => {
+      injectScannerInfo(vi.fn().mockResolvedValue({}))
+
+      await expect(service.getScannerInfo('!r:hs', '$e1')).resolves.toEqual({
+        scanner_id: '',
+        scan_result: '',
+        confidence: 0,
+        scanned_at: 0
+      })
+    })
+
+    it('默认吞掉错误返回 null', async () => {
+      injectScannerInfo(vi.fn().mockRejectedValue(new Error('boom')))
+
+      await expect(service.getScannerInfo('!r:hs', '$e1')).resolves.toBeNull()
+    })
+
+    it('throwOnError=true 时向上抛出', async () => {
+      injectScannerInfo(vi.fn().mockRejectedValue(new Error('boom')))
+
+      await expect(service.getScannerInfo('!r:hs', '$e1', true)).rejects.toThrow('boom')
+    })
+  })
+
   it('dismissReport 委托 deleteReport 且失败时返回 false', async () => {
     adminManager.deleteReport.mockResolvedValueOnce(undefined)
     await expect(service.dismissReport('rep-1')).resolves.toBe(true)

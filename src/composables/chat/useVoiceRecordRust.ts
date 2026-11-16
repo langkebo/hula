@@ -2,6 +2,7 @@ import { create, exists, mkdir, readFile } from '@tauri-apps/plugin-fs'
 import { startRecording, stopRecording } from 'tauri-plugin-mic-recorder-api'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { UploadSceneEnum } from '@/enums'
+import { matrixVoiceService } from '@/services/matrix/media/MatrixVoiceService'
 import { acquireTimerWorker, type TimerWorkerHandle } from '@/services/timerWorkerHost'
 import { useUserStore } from '@/stores/domains/user/user'
 import { calculateCompressionRatio, compressAudioToMp3, getAudioInfo } from '@/utils/AudioCompression'
@@ -42,6 +43,24 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
   const timerMsgId = 'voiceRecordTimer' // worker计时器的消息ID
   const { generateHashKey } = useUpload()
 
+  /** 录音时长上限（秒），来自服务端语音配置，默认 60 秒（VEN-01） */
+  const maxDuration = ref(60)
+  let voiceConfigLoaded = false
+
+  /** 拉取服务端语音配置；失败时沿用默认上限，不阻塞录音 */
+  const syncVoiceConfig = async () => {
+    if (voiceConfigLoaded) return
+    voiceConfigLoaded = true
+    try {
+      const config = await matrixVoiceService.getVoiceConfig()
+      if (Number.isFinite(config.maxDuration) && config.maxDuration > 0) {
+        maxDuration.value = config.maxDuration
+      }
+    } catch (error) {
+      logger.warn('获取语音配置失败，使用默认录音时长上限:', error)
+    }
+  }
+
   /** 开始录音 */
   const startRecordingAudio = async () => {
     try {
@@ -50,9 +69,9 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
         await stopRecordingAudio()
       }
 
-      // 调用Rust后端开始录音
+      // 同步服务端语音配置（仅首次），随后调用Rust后端开始录音
+      await syncVoiceConfig()
       await startRecording()
-
       isRecording.value = true
       startTime.value = Date.now()
       recordingTime.value = 0
@@ -68,8 +87,8 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
             const currentTime = Math.floor((Date.now() - startTime.value) / 1000)
             recordingTime.value = currentTime
 
-            // 检查是否达到60秒限制
-            if (currentTime === 59) {
+            // 检查是否达到服务端配置的时长上限
+            if (currentTime >= maxDuration.value - 1) {
               // 达到60秒，自动停止录音
               stopRecordingAudio()
               return
@@ -300,6 +319,7 @@ export const useVoiceRecordRust = (options: VoiceRecordRustOptions = {}) => {
   return {
     isRecording: readonly(isRecording),
     recordingTime: readonly(recordingTime),
+    maxDuration: readonly(maxDuration),
     audioLevel: readonly(audioLevel),
     startRecording: startRecordingAudio,
     stopRecording: stopRecordingAudio,

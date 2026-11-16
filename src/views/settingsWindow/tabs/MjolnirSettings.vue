@@ -11,9 +11,7 @@
       <div class="settings-section">
         <h3 class="section-title">{{ t('setting.mjolnir.room_bans') }}</h3>
         <n-spin :show="loadingRooms">
-          <div v-if="roomBanList.length === 0" class="empty-list">
-            <span class="empty-text">{{ t('setting.mjolnir.no_room_bans') }}</span>
-          </div>
+          <EmptyState v-if="roomBanList.length === 0" compact :description="t('setting.mjolnir.no_room_bans')" />
           <div v-else class="ban-list">
             <div v-for="item in roomBanList" :key="item.entity" class="ban-item">
               <div class="ban-info">
@@ -36,9 +34,7 @@
       <div class="settings-section">
         <h3 class="section-title">{{ t('setting.mjolnir.user_bans') }}</h3>
         <n-spin :show="loadingUsers">
-          <div v-if="userBanList.length === 0" class="empty-list">
-            <span class="empty-text">{{ t('setting.mjolnir.no_user_bans') }}</span>
-          </div>
+          <EmptyState v-if="userBanList.length === 0" compact :description="t('setting.mjolnir.no_user_bans')" />
           <div v-else class="ban-list">
             <div v-for="item in userBanList" :key="item.entity" class="ban-item">
               <div class="ban-info">
@@ -61,9 +57,7 @@
       <div class="settings-section">
         <h3 class="section-title">{{ t('setting.mjolnir.server_bans') }}</h3>
         <n-spin :show="loadingServers">
-          <div v-if="serverBanList.length === 0" class="empty-list">
-            <span class="empty-text">{{ t('setting.mjolnir.no_server_bans') }}</span>
-          </div>
+          <EmptyState v-if="serverBanList.length === 0" compact :description="t('setting.mjolnir.no_server_bans')" />
           <div v-else class="ban-list">
             <div v-for="item in serverBanList" :key="item.entity" class="ban-item">
               <div class="ban-info">
@@ -374,15 +368,5 @@ function handleRemoveServerBan(item: BanItem) {
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
   margin-top: var(--tjg-space-1);
-}
-
-.empty-list {
-  padding: 20px;
-  text-align: center;
-}
-
-.empty-text {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-quaternary);
 }
 </style>

@@ -17,13 +17,17 @@ vi.mock('@/services/matrix/user/MatrixAccountService', () => ({
   matrixAccountService: { getCapabilities: vi.fn().mockResolvedValue({}) }
 }))
 
-import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
+import {
+  registerAdminApiAvailabilityResolver,
+  registerCapabilityStoreResolver
+} from '@/services/matrix/MatrixCapabilityService'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 
 describe('PermissionGuard §16.5.3 (layer 2)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     registerCapabilityStoreResolver(() => useCapabilityStore())
+    registerAdminApiAvailabilityResolver(() => false)
   })
 
   it('renders the default slot when capability is granted', async () => {
@@ -92,8 +96,9 @@ describe('PermissionGuard §16.5.3 (layer 2)', () => {
   })
 
   it('supports an array of capabilities — all must be granted', async () => {
+    registerAdminApiAvailabilityResolver(() => true)
     const store = useCapabilityStore()
-    store.setCapabilities({ capabilities: { 'io.hula.admin': true } })
+    store.setCapabilities({ capabilities: {} })
 
     const wrapper = mount(PermissionGuard, {
       props: { require: ['admin-api', 'friend-list'], mode: 'gray' },

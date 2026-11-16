@@ -8,6 +8,7 @@ import { matrixFriendOperations } from '../friends/MatrixFriendService'
 import { matrixClientService } from '../MatrixClientService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
 import { matrixRoomActionFacade, matrixRoomQueryFacade, matrixRoomReadFacade } from '../room/RoomFacade'
+import { userDirectoryService } from './MatrixUserDirectoryService'
 
 const logger = createLogger('MatrixContactService')
 
@@ -118,15 +119,13 @@ class MatrixContactService {
 
       this.hasLoggedSearchBeforeClientReady = false
 
-      const response = await client.searchUserDirectory({
-        term: query,
-        limit
-      })
+      // 用户目录搜索前先走 search_recipients（按可见性过滤 + 在线态），其内部仍会回退目录搜索
+      const recipients = await userDirectoryService.searchRecipients(query, limit)
 
-      const results = response.results.map((user: { user_id: string; display_name?: string; avatar_url?: string }) => ({
-        userId: user.user_id,
-        displayName: user.display_name ?? undefined,
-        avatarUrl: user.avatar_url ?? undefined
+      const results = recipients.map((user) => ({
+        userId: user.userId,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl
       }))
 
       // 如果用户目录搜索也没有结果，且输入看起来像 Matrix 用户 ID，尝试直接获取 profile

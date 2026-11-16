@@ -32,9 +32,7 @@
     </div>
 
     <!-- 空态 -->
-    <div v-else-if="destinations.length === 0" class="federation-page__empty">
-      {{ t('home.plugins.federation_empty') }}
-    </div>
+    <EmptyState v-else-if="isEmptyDestinations" :description="t('home.plugins.federation_empty')" />
 
     <!-- 服务器列表 -->
     <ul v-else class="federation-page__list">
@@ -51,12 +49,16 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminFederation } from '@/composables/admin/useAdminFederation'
 
 const { t } = useI18n()
 const { destinations, destinationsLoading, loadDestinations } = useAdminFederation()
+
+/** 加载完成且目标服务器列表为空时展示空态 */
+const isEmptyDestinations = computed(() => destinations.value.length === 0)
 
 onMounted(() => {
   loadDestinations()
@@ -128,13 +130,6 @@ onMounted(() => {
   to {
     transform: rotate(360deg);
   }
-}
-
-.federation-page__empty {
-  color: var(--tjg-text-muted);
-  font-size: var(--tjg-font-size-sm, 13px);
-  text-align: center;
-  padding: 32px 0;
 }
 
 .federation-page__list {

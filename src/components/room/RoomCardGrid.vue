@@ -9,17 +9,10 @@
       </div>
 
       <div
-        v-else-if="rooms.length === 0"
-        class="room-card-grid__empty h-full flex-center flex-col gap-[--tjg-space-3] py-[--tjg-space-10]"
-        data-testid="room-card-grid-empty"
-        role="status">
-        <n-empty :description="resolvedEmptyDescription" size="large">
-          <template #icon>
-            <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]" aria-hidden="true">
-              <use href="#view-grid-card"></use>
-            </svg>
-          </template>
-        </n-empty>
+        v-else-if="isEmptyRooms"
+        class="room-card-grid__empty h-full flex-center py-[--tjg-space-10]"
+        data-testid="room-card-grid-empty">
+        <EmptyState illustration="no-rooms" :description="resolvedEmptyDescription" />
       </div>
 
       <div v-else class="room-card-grid__body grid gap-[--tjg-space-3] p-[--tjg-space-3]">
@@ -40,6 +33,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import RoomCardItem, { type RoomCardViewModel } from './RoomCardItem.vue'
 
 const props = defineProps<{
@@ -59,6 +53,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const resolvedEmptyDescription = computed(() => props.emptyDescription || t('space.empty_sessions'))
+
+const isEmptyRooms = computed(() => props.rooms.length === 0)
 
 const onPreview = (roomId: string) => emit('preview', roomId)
 const onMessage = (roomId: string) => emit('message', roomId)

@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref, type VNodeChild } from 'vue'
 import AdminMedia from '../AdminMedia.vue'
@@ -26,6 +27,10 @@ const {
   quarantineUserMock,
   deleteByPolicyMock,
   showFeedbackMock,
+  checkQuotaMock,
+  getQuotaStatsMock,
+  getQuotaAlertsMock,
+  getServerQuotaMock,
   state
 } = vi.hoisted(() => {
   type LibraryRow = {
@@ -60,6 +65,10 @@ const {
     quarantineUserMock: vi.fn(),
     deleteByPolicyMock: vi.fn(),
     showFeedbackMock: vi.fn(),
+    checkQuotaMock: vi.fn(),
+    getQuotaStatsMock: vi.fn(),
+    getQuotaAlertsMock: vi.fn(),
+    getServerQuotaMock: vi.fn(),
     state: {
       library: [] as LibraryRow[],
       libraryNextBatch: null as string | null,
@@ -140,6 +149,16 @@ vi.mock('@/utils/Logger', () => ({
 vi.mock('@/services/matrix/MatrixClientService', () => ({
   matrixClientService: {
     getClient: () => ({ getDomain: () => 'a.example' })
+  }
+}))
+
+// 媒体页「配额」页签会挂载 MediaQuotaPanel，其 store 直接消费 adminService；这里给出空实现避免真实请求
+vi.mock('@/services/matrix/admin', () => ({
+  adminService: {
+    checkQuota: checkQuotaMock,
+    getQuotaStats: getQuotaStatsMock,
+    getQuotaAlerts: getQuotaAlertsMock,
+    getServerQuota: getServerQuotaMock
   }
 }))
 
@@ -389,9 +408,13 @@ describe('AdminMedia', () => {
     unquarantineRoomMock.mockResolvedValue(undefined)
     quarantineUserMock.mockResolvedValue(undefined)
     deleteByPolicyMock.mockResolvedValue(0)
+    checkQuotaMock.mockResolvedValue(null)
+    getQuotaStatsMock.mockResolvedValue(null)
+    getQuotaAlertsMock.mockResolvedValue([])
+    getServerQuotaMock.mockResolvedValue(null)
   })
 
-  const mountComponent = () => mount(AdminMedia)
+  const mountComponent = () => mount(AdminMedia, { global: { plugins: [createPinia()] } })
 
   const findButton = (wrapper: ReturnType<typeof mountComponent>, text: string) =>
     wrapper.findAll('button').find((button) => button.text().includes(text))

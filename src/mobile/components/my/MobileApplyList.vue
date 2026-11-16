@@ -114,18 +114,20 @@
       </div>
     </div>
 
-    <!-- 空态：加载失败时换文案 + 出重试，避免把「读取失败」显示成「暂无申请」 -->
-    <div v-if="applyList.length === 0" class="flex flex-col items-center justify-center py-40px">
-      <van-empty :description="emptyDescription" />
-      <van-button v-if="showLoadError" size="small" plain class="mt-8px" @click="handleRetryLoad">
-        {{ t('common.retry') }}
-      </van-button>
-    </div>
+    <!-- 空态：加载失败时换错误态 + 出重试，避免把「读取失败」显示成「暂无申请」 -->
+    <MobileAsyncState
+      v-if="isApplyListEmpty"
+      :state="showLoadError ? 'error' : 'empty'"
+      :empty-text="emptyDescription"
+      :error-text="emptyDescription"
+      min-height="200px"
+      @retry="handleRetryLoad" />
   </div>
 </template>
 <script setup lang="ts">
 import { uniq } from 'es-toolkit'
 import { useI18n } from 'vue-i18n'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { NoticeType, RequestNoticeAgreeStatus } from '@/services/types.ts'
 import type { FriendRequestItem } from '@/stores/domains/chat/contacts'
 import { useContactStore } from '@/stores/domains/chat/contacts'
@@ -175,6 +177,9 @@ const applyList = computed(() => {
     }
   })
 })
+
+/** 无申请记录：交给 MobileAsyncState 区分空态与加载失败 */
+const isApplyListEmpty = computed(() => applyList.value.length === 0)
 
 const getGroupDetail = async (roomId: string) => {
   if (!roomId) return null

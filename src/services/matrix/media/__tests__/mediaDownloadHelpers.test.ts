@@ -3,7 +3,14 @@ import { matrixAttachmentDecryptionService } from '@/services/matrix/crypto/Matr
 import type { EncryptedAttachmentFile } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
 import { matrixHttpClient } from '@/services/matrix/MatrixHttpClient'
 import type { MatrixClient } from '../../sdk'
-import { downloadEncryptedFileBytes, downloadFileBytes, resolveDownloadUrl } from '../mediaDownloadHelpers'
+import {
+  buildSignedMediaDownloadUrl,
+  downloadEncryptedFileBytes,
+  downloadFileBytes,
+  downloadSignedMediaBytes,
+  parseSignedMediaUrl,
+  resolveDownloadUrl
+} from '../mediaDownloadHelpers'
 
 vi.mock('@/services/matrix/MatrixHttpClient', () => ({
   matrixHttpClient: { downloadRaw: vi.fn() }
@@ -149,6 +156,129 @@ describe('downloadFileBytes', () => {
     const downloadUrl = 'https://hs.example.com/_matrix/media/v3/download/a/b'
 
     await expect(downloadFileBytes(client, downloadUrl, (m) => m, t)).rejects.toThrow()
+  })
+})
+
+describe('parseSignedMediaUrl', () => {
+  it('parses server/media/filename from a download_signed url', () => {
+    const params = parseSignedMediaUrl(
+      'https://hs.example.com/_matrix/media/v3/download_signed/hs.example.com/media1/report.pdf?signature=sig&expires=1893456000'
+    )
+
+    expect(params).toEqual({
+      serverName: 'hs.example.com',
+      mediaId: 'media1',
+      filename: 'report.pdf',
+      signature: 'sig',
+      expires: 1893456000
+    })
+  })
+
+  it('returns null when signature or expires is missing', () => {
+    expect(
+      parseSignedMediaUrl('https://hs.example.com/_matrix/media/v3/download_signed/hs.example.com/media1')
+    ).toBeNull()
+    expect(
+      parseSignedMediaUrl('https://hs.example.com/_matrix/media/v3/download_signed/hs.example.com/media1?signature=sig')
+    ).toBeNull()
+  })
+
+  it('returns null for non-positive expires', () => {
+    expect(
+      parseSignedMediaUrl(
+        'https://hs.example.com/_matrix/media/v3/download_signed/hs.example.com/media1?signature=sig&expires=0'
+      )
+    ).toBeNull()
+  })
+
+  it('returns null for a normal media url without signature', () => {
+    expect(parseSignedMediaUrl('https://hs.example.com/_matrix/media/v3/download/hs.example.com/media1')).toBeNull()
+  })
+})
+
+describe('buildSignedMediaDownloadUrl', () => {
+  const expires = Math.floor(Date.now() / 1000) + 300
+
+  it('asks the SDK to build the signed download url', () => {
+    const getDownloadUrl = vi.fn(
+      () => 'https://hs.example.com/_matrix/media/v3/download_signed/s/m/f.pdf?signature=sig'
+    )
+    const client = {
+      getMediaManager: () => ({ getDownloadUrl })
+    } as unknown as MatrixClient
+
+    const url = buildSignedMediaDownloadUrl(
+      client,
+      { serverName: 's', mediaId: 'm', signature: 'sig', expires, filename: 'f.pdf' },
+      t
+    )
+
+    expect(getDownloadUrl).toHaveBeenCalledWith('mxc://s/m', {
+      signature: 'sig',
+      timestamp: expires,
+      filename: 'f.pdf'
+    })
+    expect(url).toContain('download_signed')
+  })
+
+  it('throws when signature is missing', () => {
+    const client = { getMediaManager: () => ({ getDownloadUrl: vi.fn() }) } as unknown as MatrixClient
+
+    expect(() =>
+      buildSignedMediaDownloadUrl(client, { serverName: 's', mediaId: 'm', signature: '', expires }, t)
+    ).toThrow('matrix_error.media.signed_params_missing')
+  })
+
+  it('throws when the signature has expired', () => {
+    const client = { getMediaManager: () => ({ getDownloadUrl: vi.fn() }) } as unknown as MatrixClient
+
+    expect(() =>
+      buildSignedMediaDownloadUrl(
+        client,
+        { serverName: 's', mediaId: 'm', signature: 'sig', expires: Math.floor(Date.now() / 1000) - 1 },
+        t
+      )
+    ).toThrow('matrix_error.media.signed_expired')
+  })
+})
+
+describe('downloadSignedMediaBytes', () => {
+  const downloadRaw = matrixHttpClient.downloadRaw as ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    downloadRaw.mockReset()
+  })
+
+  it('downloads the signed url without an Authorization header', async () => {
+    downloadRaw.mockResolvedValue(new Uint8Array([1, 2]).buffer)
+    const signedUrl = 'https://hs.example.com/_matrix/media/v3/download_signed/s/m?signature=sig&expires=1893456000'
+    const client = {
+      getMediaManager: () => ({ getDownloadUrl: () => signedUrl })
+    } as unknown as MatrixClient
+
+    const result = await downloadSignedMediaBytes(
+      client,
+      { serverName: 's', mediaId: 'm', signature: 'sig', expires: Math.floor(Date.now() / 1000) + 300 },
+      t
+    )
+
+    expect(downloadRaw).toHaveBeenCalledWith(signedUrl)
+    expect(result).toEqual(new Uint8Array([1, 2]))
+  })
+
+  it('rethrows download failures', async () => {
+    downloadRaw.mockRejectedValue(transportError(403))
+    const client = {
+      getMediaManager: () => ({ getDownloadUrl: () => 'https://hs.example.com/signed' })
+    } as unknown as MatrixClient
+
+    await expect(
+      downloadSignedMediaBytes(
+        client,
+        { serverName: 's', mediaId: 'm', signature: 'sig', expires: Math.floor(Date.now() / 1000) + 300 },
+        t
+      )
+    ).rejects.toThrow()
   })
 })
 

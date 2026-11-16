@@ -20,10 +20,7 @@
         <n-spin size="small" />
         <span>{{ t('trendradar.searching') }}</span>
       </div>
-      <div v-else-if="results.length === 0 && hasSearched" class="search-panel__empty">
-        <svg class="search-panel__empty-icon" aria-hidden="true"><use href="#search"></use></svg>
-        <span>{{ t('trendradar.no_results') }}</span>
-      </div>
+      <EmptyState v-else-if="isEmptyResults" illustration="no-results" :description="t('trendradar.no_results')" />
       <div v-else class="search-panel__list">
         <NewsCard v-for="news in results" :key="news.url" :news="news" @click="handleNewsClick" />
       </div>
@@ -32,14 +29,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { TrendRadarNews } from '@/services/trendradar'
 import NewsCard from './NewsCard.vue'
 
 const { t } = useI18n()
 
-defineProps<{
+const props = defineProps<{
   results: TrendRadarNews[]
   loading?: boolean
 }>()
@@ -51,6 +49,8 @@ const emit = defineEmits<{
 
 const keyword = ref('')
 const hasSearched = ref(false)
+
+const isEmptyResults = computed(() => hasSearched.value && props.results.length === 0)
 
 const handleSearch = () => {
   if (keyword.value.trim()) {
@@ -87,8 +87,7 @@ const handleNewsClick = (news: TrendRadarNews) => {
   min-height: 200px;
 }
 
-.search-panel__loading,
-.search-panel__empty {
+.search-panel__loading {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -97,12 +96,6 @@ const handleNewsClick = (news: TrendRadarNews) => {
   padding: 40px 20px;
   color: var(--tjg-text-secondary);
   font-size: 13px;
-}
-
-.search-panel__empty-icon {
-  width: 32px;
-  height: 32px;
-  opacity: 0.5;
 }
 
 .search-panel__list {

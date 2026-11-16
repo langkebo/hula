@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证 |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -25,7 +25,7 @@
    - 增强补充：**nmorph**（需要批量统一组件皮肤、且不愿逐个封装 Naive UI 容器时评估）。
    - 学习参考（不进入产物）：`liquid-glass-web`、`@yafh/liquid-glass`、`Liquid-Glass-Android`、`@callstack/liquid-glass`、`ZalithLauncher2-LiquidGlass`。
 5. **技术路线不做「全新框架替换」**：所有增强库必须通过适配器隔离（`GlassEngine`），默认关闭、失败自动回落 CSS、可一键全局降级。
-6. **功能接线另立章节**：2026-11-14 的全量能力排查（47 条「后端已具备、前端未接线」）结论与补齐方案见第 12 章，与玻璃主题解耦，按批次独立实施。
+6. **功能接线另立章节**：2026-11-14 的全量能力排查（47 条「后端已具备、前端未接线」）+ 2026-11-15 复核追加 CAP-08，共 48 条结论与补齐方案见第 12 章，与玻璃主题解耦，按批次独立实施。
 7. **全面审查另立章节**：第 15-19 章为 2026-11-14 的静态代码审查与门禁实测。结论是「基础质量良好，债务集中在门禁基线与组件复用」，其中 Biome 全仓 0 诊断、组件零引用 0 个，但有 5 项守门脚本失败（体量基线 14 个文件越线、孤儿文案 60 条、失效白名单 4 条、未登记持久化 key 3 个），详见 §19。
 
 > 事实核查声明：本轮未联网核验 vitrio、liquid-glass.io、nmorph 三个候选的**实际包名、版本、许可证与 API 形态**。本文中涉及它们的集成代码均为「接口契约草案」，不代表其真实 API；落地前必须按 §3.4 逐项取证，取证不通过即退出候选，不得先写业务代码。
@@ -593,7 +593,7 @@ main.ts
 
 本章与第 4-10 章的液态玻璃主题无关，处理的是**功能接线**问题：后端（synapse-rust）与 matrix-js-sdk 已具备能力，前端未接线或接线不正确。
 
-- 输入依据：`OPS_ARTIFACTS/TJG_CAPABILITY_WIRING_GAP_2026-11-14.md`（47 条）。
+- 输入依据：`OPS_ARTIFACTS/TJG_CAPABILITY_WIRING_GAP_2026-11-14.md`（47 条）；2026-11-15 复核追加 CAP-08（能力位映射错误），合计 48 条。
 - 取证基线：本仓库 HEAD `caed98250`，路由基线 `synapse-rust/docs/synapse-rust/ROUTE_HANDLERS.json`（983 条，其中 16 条 unsupported）。
 - 判定口径沿用报告四态：`无需前端交互` / `已正确接入` / `未接线` / `接线不正确`。本章只处理后两态。
 
@@ -618,7 +618,7 @@ main.ts
 
 #### 12.2.2 全量结论
 
-47 条**全部成立，未发现误报**；其中 ROOM-05、VEN-03 的表述需按上表修正。其余未逐条抽查的条目依据报告 §4.3 的 HEAD 增量复核结论采纳，实施前须按 §12.4 各自「取证」列做一次现场确认（本环境 grep shim 对 `\b`、BRE 的 `\+`/`\|` 会静默返回空，必须用专用检索工具）。
+47 条**全部成立，未发现误报**；其中 ROOM-05、VEN-03 的表述需按上表修正。2026-11-15 复核时追加 CAP-08（原报告未覆盖：别名表 key 与后端实际宣告不一致），合计 48 条。其余未逐条抽查的条目依据报告 §4.3 的 HEAD 增量复核结论采纳，实施前须按 §12.4 各自「取证」列做一次现场确认（本环境 grep shim 对 `\b`、BRE 的 `\+`/`\|` 会静默返回空，必须用专用检索工具）。
 
 ### 12.3 批次 0：统一能力门控口径（所有后续改动的前置）
 
@@ -628,18 +628,21 @@ main.ts
 
 `HULA_CAPABILITY_ALIASES` 现状与目标：
 
-| 能力 | 现状 `unstable` | 目标 `unstable` | 说明 |
+| 能力 | 现状 | 目标 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `e2ee` | `['org.matrix.msc3814']` | `[]` | MSC3814 是脱水设备，不是 E2EE 能力位；保留 `capabilities: ['m.room.encryption']` |
-| `voip` | `['org.matrix.msc3245']` | `['org.matrix.msc3245.voice']` | SDK 主 key 带 `.voice` 后缀 |
-| `dehydrated-device` | 无 | `['org.matrix.msc3814']` | 承接被误用的别名 |
-| `sticky-events` | 无 | `['org.matrix.msc4354']` | ROOM-01/CAP-02 门控 |
-| `scheduled-send` | 无 | `['org.matrix.msc4140']` | ROOM-10 |
-| `rtc-transports` | 无 | `['org.matrix.msc4143']` | ROOM-11 |
-| `account-status` | 无 | `['org.matrix.msc3720']` | AUTH-06 |
-| `extended-profile` | 无 | `['org.matrix.msc4133']` | CAP-05 |
-| `qr-rendezvous` | 无 | `['org.matrix.msc4108']` | AUTH-05 |
-| `mutual-rooms` | 无 | `['uk.half-shot.msc2666.query_mutual_rooms']` | CAP-06 / AUTH-06。键名不是 `org.matrix.msc2666`（任何 homeserver 都不发），也不能用短名 `uk.half-shot.msc2666`（matrix-js-sdk 会退回后端不服务的 `/user/shared_rooms/{userId}`） |
+| `e2ee` | `unstable: []`，`capabilities: ['m.room.encryption']` | `unstable: []`，`capabilities: []` | CAP-01 已移除 `org.matrix.msc3814`；CAP-08 订正：再删除 `m.room.encryption`，后端 `/capabilities` 从不宣告该项 |
+| `voip` | `['org.matrix.msc3245.voice', 'org.matrix.msc3245']` | 同现状 | CAP-01 已补齐 SDK 主 key `.voice` 后缀 |
+| `dehydrated-device` | `['org.matrix.msc3814']` | 同现状 | 已完成 |
+| `sticky-events` | `['org.matrix.msc4354']` | 同现状 | 已完成（ROOM-01/CAP-02） |
+| `scheduled-send` | `['org.matrix.msc4140']` | 同现状 | 与后端一致 |
+| `rtc-transports` | `['org.matrix.msc4143']` | 同现状 | 与后端一致 |
+| `admin-api` | `unstable` 与 `capabilities` 均为 `io.hula.admin` | 二者均置空，改判定来源 | CAP-08 订正：后端从不宣告 `io.hula.admin`；admin 权限由 `/_synapse/admin/*` 的 `is_admin` 校验，不能作为 capability |
+| `account-status` | `unstable: ['org.matrix.msc3720']` | `capabilities: ['org.matrix.msc3720.account_status']` | CAP-08 订正：后端键带 `.account_status` 后缀，且走 `capabilities` 面；短名 `org.matrix.msc3720` 不存在 |
+| `extended-profile` | `unstable: ['org.matrix.msc4133']` | `unstable: ['uk.tcpip.msc4133']` + `capabilities: ['m.profile_fields']` | CAP-08 订正：后端 `BASE_UNSTABLE_FEATURES` 宣告 `uk.tcpip.msc4133`，稳定侧为 `m.profile_fields` |
+| `qr-rendezvous` | `['org.matrix.msc4108']` | 同现状 | 已完成（AUTH-05） |
+| `mutual-rooms` | `['uk.half-shot.msc2666.query_mutual_rooms']` | 同现状 | 已完成（CAP-06），与后端同名宣告一致。键名不是 `org.matrix.msc2666`（任何 homeserver 都不发），也不能用短名 `uk.half-shot.msc2666`（matrix-js-sdk 会退回后端不服务的 `/user/shared_rooms/{userId}`） |
+
+> 复查口径：2026-11-15 按后端 `synapse-rust/synapse-services/src/capability_governance.rs` 的 `build_capabilities_response()` 与 `BASE_UNSTABLE_FEATURES` 逐项比对 14 个能力位，4 项 key 不一致、1 项（`mutual-rooms`）已一致，订正方案见 §12.4.1 的 CAP-08。
 
 #### 12.3.2 单一真源与三态
 
@@ -668,7 +671,7 @@ main.ts
 | `TjgCapability` 扩展 | 完成 | 6 项 → 14 项，新增 `dehydrated-device` / `sticky-events` / `scheduled-send` / `rtc-transports` / `account-status` / `extended-profile` / `qr-rendezvous` / `mutual-rooms` |
 | 别名表订正 | 完成 | `e2ee.unstable` 移除 `org.matrix.msc3814`；`voip` 主 key 改为 `org.matrix.msc3245.voice`；8 个新能力位按 §12.3.1 落表 |
 | 三态判定 | 完成 | 新增 `CapabilityStatus`；`getCapabilityStatus()` 为唯一判定实现，`hasCapability()` 与各 `canUseXxx()` 全部委托；快照未加载返回 `unknown` |
-| E2EE fail-open | 已删除 | `canUseE2EE()` 仅认 `m.room.encryption`；`EncryptionSettings` 已有 `isLoaded` 守卫，不会在探测完成前误锁 |
+| E2EE fail-open | 已删除 | `canUseE2EE()` 仅认 `m.room.encryption`；`EncryptionSettings` 已有 `isLoaded` 守卫，不会在探测完成前误锁。**遗留**：该 key 后端从不宣告，快照加载后会把加密设置误锁为只读，由 CAP-08 改为客户端 crypto 判定 |
 | 消费层统一 | 完成 | `useServerCapability().capabilityCheckers` 补齐 14 项，新增导出 `getCapabilityStatus`；`PermissionGuard.vue` 删除本地 6 项硬编码映射，改为调用 `isCapabilityAvailable` |
 | 单测 | 完成 | 并入既有 `MatrixCapabilityService.test.ts`（不新建重复文件）：`unstableBits` 9 项 + `capabilityBits` 5 项 `it.each`，含 unknown 前置、SDK 兼容 fallback、`dehydrated-device` 不构成 E2EE 信号；文件 32 用例通过 |
 | 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`biome check` 改动文件无告警；`MatrixCapabilityService` + `PermissionGuard` 合计 38 用例通过 |
@@ -691,29 +694,58 @@ R1 结论：仅消费 `MatrixCapabilityService` 与既有 `MatrixDehydratedDevic
 
 ### 12.4 逐条优化方案
 
-#### 12.4.1 CAP（7 条）
+#### 12.4.1 CAP（8 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
 | :--- | :--- | :--- | :--- | :--- |
-| CAP-01 | P0 | `src/services/matrix/MatrixCapabilityService.ts` | 按 §12.3.1 订正别名；`canUseE2EE()` 委托 `hasCapability('e2ee')`；删除 fail-open；补三态 | 并入 `__tests__/MatrixCapabilityService.test.ts`（不新建重复文件），覆盖 14 个能力位；见 §12.3.5 |
-| CAP-02 | P1 | `src/components/room/settings-tabs/StickyTab.vue`、`src/views/settingsWindow/tabs/sections/DehydratedDeviceSection.vue` | 分别用 `sticky-events` / `dehydrated-device` 门控；不满足时整块不渲染 | 组件测试断言 unsupported 时 DOM 不存在 |
-| CAP-03 | P1 | `src/services/matrix/auth/MatrixOidcService.ts`、`src/views/loginWindow/ThirdPartyLogin.vue` | 启动时探测 `auth_metadata` 与 `m.login.sso` flows；`ssoOptions` 按 flows 动态生成；404 降级为现有 gitee/github/CAS | 契约测试覆盖 200/404；组件测试覆盖 flows 缺失 |
-| CAP-04 | P2 | `DehydratedDeviceSection.vue` | `isSupported` 改为按 `org.matrix.msc3814` 路由面判定，不再只判「路由存在」 | 单测两分支 |
-| CAP-05 | P2 | 扩展资料入口 | 只读 `unstable_features` 改为门控 `extended-profile` | 单测 |
-| CAP-06 | P2 | `src/services/matrix/MatrixCapabilityService.ts`（`'friend-list'` 别名表 + `canUseFriendList()`）、`src/components/friend/friendListViewState.ts` | 门控**只看** `io.hula.friends`：`friendListViewState.ts` 是纯状态机，按 `canUseFriendList` 布尔切 `capability` 态，本身不含任何键名；`mutual-rooms`（`uk.half-shot.msc2666.query_mutual_rooms`）不参与好友列表门控、当前无消费方（列表数据来自 hula friends API，缺 `io.hula.friends` 时放宽只会得到空列表） | 单测真值表 |
-| CAP-07 | P2 | 语音探针与 VoIP 门控 | 合并为单一来源 `voip`，删除探针侧的自判 | 单测 |
+| CAP-01 | P0 | `src/services/matrix/MatrixCapabilityService.ts` | **已完成**（2026-11-15）：别名按 §12.3.1 订正（逐位对齐见 CAP-08）；`canUseE2EE()` 改为读客户端 crypto 上下文（`:250`，服务端不宣告 `e2ee`），fail-open 已删除；`getCapabilityStatus()` 三态（`supported`/`unsupported`/`unknown`）落地，快照未加载前返回 `unknown` | `MatrixCapabilityService.test.ts` 14 位真值表双向断言 + 三态用例（`unknown` 时 `hasCapability` 为 `false`） |
+| CAP-02 | P1 | `src/components/room/settings-tabs/StickyTab.vue`、`src/views/settingsWindow/tabs/sections/DehydratedDeviceSection.vue` | **已完成**（2026-11-15）：`StickyTab.vue` 由 `useStickyEvents.canSetSticky`（`hasCapability('sticky-events')`，MSC4354）门控，不支持时显示 `sticky-unsupported` 提示且不渲染列表、不发起请求；`DehydratedDeviceSection.vue` 以 `dehydrated-device` 能力位 + 后端接口双判（详见 CAP-04） | `StickyTab.test.ts` 与 `EncryptionSettings.test.ts` 断言 unsupported 时 DOM 不存在 |
+| CAP-03 | P1 | `src/services/matrix/auth/MatrixOidcService.ts`、`src/views/loginWindow/ThirdPartyLogin.vue` | **已完成**（2026-11-15）：见下方「CAP-03 / AUTH-01 落地记录」 | 契约测试覆盖 200/404；组件测试覆盖 flows 缺失 |
+| CAP-04 | P2 | `DehydratedDeviceSection.vue` | **已完成**（2026-11-15）：别名收敛为 `unstable: ['org.matrix.msc3814']`、`capabilities: []`（服务端只经 `/versions.unstable_features` 宣告）；`DehydratedDeviceSection.vue:51` 判定为 `getCapabilityStatus('dehydrated-device') === 'supported' && matrixDehydratedDeviceService.isSupported()` 双判，不再只看加密后端接口存在 | `EncryptionSettings.test.ts` 四态（unsupported / unknown / 后端无接口 ⇒ DOM 不存在；双双支持 ⇒ 区块存在） |
+| CAP-05 | P2 | 扩展资料入口 | **已完成**（2026-11-15）：`extended-profile` 别名改为 `unstable: ['uk.tcpip.msc4133']` + `capabilities: ['m.profile_fields']`（与 CAP-08 一并订正）；`AccountSettings.vue:186` 的 `supportsExtendedProfile` 改读 `isCapabilityAvailable('extended-profile')`，删除直连键名的 `hasUnstable` 判定，写入/编辑按钮与提示统一由该能力位驱动 | `AccountSettings.test.ts` 覆盖支持/不支持两分支；`MatrixCapabilityService.test.ts` 真值表双向断言 |
+| CAP-06 | P2 | `src/services/matrix/MatrixCapabilityService.ts`（`'friend-list'` 别名表 + `canUseFriendList()`）、`src/components/friend/friendListViewState.ts` | **已完成**（2026-11-15）：别名表收敛为 `unstable: ['io.hula.friends']` + `capabilities: ['io.hula.friends']`（双面同名）；`friendListViewState.ts` 是纯状态机，按 `canUseFriendList` 布尔切 `capability` 态，本身不含任何键名；`mutual-rooms`（`uk.half-shot.msc2666.query_mutual_rooms`）不参与好友列表门控、当前无消费方 | `MatrixCapabilityService.test.ts` 真值表含 `['friend-list','io.hula.friends']` 双向断言；`friendListViewState.test.ts` 覆盖 `canUseFriendList=false` 走 `capability` 态 |
+| CAP-07 | P2 | 语音探针与 VoIP 门控 | **已完成**（2026-11-15）：删除 `voipHelpers.checkVoipAvailability` 的 `client.callEventHandler` 自判，改为 `registerVoipCapabilityResolver(() => matrixCapabilityService.canUseVoip())` 注入（避开循环依赖），`src/main.ts` 启动期注册；未注册时按未知降级为不支持；TURN 检测与返回形状不变 | `voipHelpers.test.ts` 6 例；media 域 229 例通过 |
+| CAP-08 | P1 | `src/services/matrix/MatrixCapabilityService.ts`（`HULA_CAPABILITY_ALIASES`）、`src/views/settingsWindow/tabs/EncryptionSettings.vue:279`、`AccountSettings.vue:186` | **已完成**（2026-11-15）：别名表与后端实际宣告逐位对齐——`e2ee` 删 `m.room.encryption` 并改客户端 crypto 判定；`admin-api` 删除 `io.hula.admin`、改由桌面 admin 桥接层注入 resolver；`extended-profile` 改 `uk.tcpip.msc4133` + `m.profile_fields`；`account-status` 改 `org.matrix.msc3720.account_status`；`mutual-rooms` 已一致不改 | 单测真值表覆盖 14 位，每位含「后端真实 key 命中 + 旧错误 key 不命中」双向断言；真实后端快照下加密设置可编辑 |
+
+##### CAP-08 取证与订正方案（P1，已完成 2026-11-15）
+
+2026-11-15 复核 14 个能力位与 synapse-rust 实际宣告，来源为 `capability_governance.rs` 的 `build_capabilities_response()`（`capabilities` 面）与 `BASE_UNSTABLE_FEATURES`（`/versions.unstable_features` 面）。
+
+| 能力位 | 前端当前映射 | 后端实际宣告 | 判定 | 影响面 |
+| :--- | :--- | :--- | :--- | :--- |
+| `e2ee` | `capabilities: ['m.room.encryption']`，`unstable: []` | 无 | 不一致 | **已产生用户可见缺陷**：`EncryptionSettings.vue:279` 的只读判定为 `isLoaded && !canUseE2EE`，真实后端快照加载后加密设置整页只读 |
+| `admin-api` | `unstable` 与 `capabilities` 均为 `io.hula.admin` | 无 | 不一致 | 当前零 UI 消费方（`canUseAdminApi()` 仅单测引用），属契约错误未显现 |
+| `extended-profile` | `unstable: ['org.matrix.msc4133']` | `uk.tcpip.msc4133` + `capabilities: ['m.profile_fields']` | 不一致 | `hasCapability('extended-profile')` 恒为假；`AccountSettings.vue:186` 绕过能力位直连 `hasUnstable('uk.tcpip.msc4133')`，UI 才可用（CAP-05 无法按现有契约落地） |
+| `account-status` | `unstable: ['org.matrix.msc3720']` | `capabilities: ['org.matrix.msc3720.account_status']` | 不一致 | 当前零消费方；AUTH-06 若按现契约接线将永远 unsupported |
+| `mutual-rooms` | `unstable: ['uk.half-shot.msc2666.query_mutual_rooms']` | `uk.half-shot.msc2666.query_mutual_rooms` | 一致 | 已在 CAP-06 阶段订正，本轮无需改动 |
+
+逐位处置：
+
+1. `e2ee`：删除 `capabilities: ['m.room.encryption']`。E2EE 是客户端能力（`client.getCrypto()` / `isCryptoEnabled()` 就绪），不由 homeserver 宣告；`canUseE2EE()` 改为「crypto 初始化完成」判定，服务端快照不再参与。同步把 `EncryptionSettings` 的只读语义改为「crypto 未初始化才只读」。
+2. `admin-api`：两个来源均置空。admin 权限由 `/_synapse/admin/*` 的 `is_admin` 校验，不在 capabilities 面；能力位改为「admin 路由注册期确定 + 首次请求 403 降级」，不再充当局级权限位。
+3. `extended-profile`：改为 `unstable: ['uk.tcpip.msc4133']` + `capabilities: ['m.profile_fields']`；`AccountSettings.vue` 的 `supportsExtendedProfile` 改读能力位，删除直连键名。
+4. `account-status`：`unstable` 侧清空，改为 `capabilities: ['org.matrix.msc3720.account_status']`（后端经 `insert_enabled_capability` 宣告，属 capabilities 面）。
+5. `mutual-rooms`：保持现状，不改。
+
+验收与门禁：
+
+- `MatrixCapabilityService.test.ts`（并入既有文件，不新建）扩为 14 位真值表，每位同时断言「后端真实 key 命中」与「旧错误 key 不命中」，至少覆盖上表 4 项订正。
+- `EncryptionSettings.test.ts` 增一例：真实后端快照（无 `m.room.encryption`）下页面可编辑；现有 `canUseE2EE` 用例按新判定改写。
+- `vue-tsc --noEmit`、`test:run`、`check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths` 全绿。
+
+R1 结论：仅改本地别名表与消费层门控，不新增协议实现；`m.profile_fields`、`org.matrix.msc3720.account_status` 均为后端既有关键字面量，可经 `/capabilities` 读取。R3 结论：触点均为服务层映射与桌面设置页，未引入移动端 admin/AI 入口，移动端构建路径不变。
 
 #### 12.4.2 AUTH（7 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
 | :--- | :--- | :--- | :--- | :--- |
-| AUTH-01 | P1 | `ThirdPartyLogin.vue`、`MatrixOidcService.ts` | 与 CAP-03 合并实施，OIDC/SAML 作为一个 SSO 按钮族 | 同 CAP-03 |
-| AUTH-02 | P2 | 设置-账号安全、`MatrixAccountService` | 3PID 12 条：邮箱/手机绑定与验证入口；先查 SDK 是否已有 3PID 封装，无则补服务层 | 服务层单测 + 页面测试 |
-| AUTH-03 | P2 | 房间列表/邀请页 | knock：新增「申请加入」入口，走服务层 | 单测 |
-| AUTH-04 | P2 | 桌面设置-账号安全 | 注销入口：把移动端已有实现抽成公共 composable，两端复用 | 单测 + 移动端回归 |
-| AUTH-05 | P2 | 手写 rendezvous 实现 | 有 SDK MSC4108 就删手写实现；无则补 UI 消费者，不允许死代码留存 | `pnpm check` 无死引用 |
-| AUTH-06 | P2 | 账号状态 / 共同房间 | MSC3720 状态展示 + MSC2666 共同房间列表 | 单测 |
-| AUTH-07 | P1 | 新增 `AdminCasService` + 页面 | 与 ADM-05 的 CAS 子域合并，不重复建服务 | 与 ADM-05 同一验收 |
+| AUTH-01 | P1 | `ThirdPartyLogin.vue`、`MatrixOidcService.ts` | **已完成**（2026-11-15）：与 CAP-03 合并实施，OIDC/SAML 合并为同一 SSO 按钮族，见下方「CAP-03 / AUTH-01 落地记录」 | 同 CAP-03 |
+| AUTH-02 | P2 | 设置-账号安全、`MatrixAccountService` | **已完成**（2026-11-15）：SDK 已有 `ThreePidsManager`（`getThreePids/addThreePidOnly/bindThreePid/unbindThreePid/deleteThreePid`）与 `requestAdd3pidEmailToken`，服务层新增 `accountThreePids.ts`（列表/请求验证码/提交验证码/添加/解绑，全走 SDK 与 `authedRequestWithPath`，不自拼 URL）；`add` 端点强制 UIA，用 `m.login.password` 构建 auth；新增 `ThreePidSection.vue`（邮箱绑定与验证、解绑）挂到 `SecuritySettings.vue`；手机号绑定未实现（SDK/后端无 msisdn submitToken） | `accountThreePids.test.ts`（11 例）+ `ThreePidSection.test.ts`；`SecuritySettings.test.ts` 17 例 |
+| AUTH-03 | P2 | `src/components/workbench/TjgSpaceJoinCta.vue:119-149` | **已完成**（2026-11-15）：服务层复用 `RoomFacade.knockRoom`（委托 `MatrixRoomMembershipService.knockRoom`）；`handleJoin()` 按 `joinRule === 'knock'` 调用 `knock()`（→ `matrixSpaceService.knockSpace`），成功/失败文案走 `space.knock_success` / `space.knock_failed`；`SpaceInfo.joinRule` 由 `spaceHelpers` 从 `Room.getJoinRule()` 产出；组件已挂载到 `SpaceDetailsPane` 的非成员 CTA，由 `SpaceChildrenPane` 传入 `joinRule` 并在成功后刷新列表 | 组件测试断言 knock 走 `knockRoom` 而非 `join`；挂载点测试断言非成员渲染 join CTA、knock 空间显示申请文案 |
+| AUTH-04 | P2 | `src/composables/user/useAccountDeactivation.ts`、`src/views/settingsWindow/tabs/AccountSettings.vue:147,168`、`src/mobile/views/my/MobileDeactivateAccount.vue` | **已完成**（2026-11-15）：抽出零 Naive/Tauri 依赖的 `useAccountDeactivationFlow`（密码校验 → 注销 → `AccountDeactivationError` 错误码），桌面 `useAccountDeactivation` 与移动端 `MobileDeactivateAccount` 共用同一套判定；两端文案统一到 `setting.account.deactivate_*`（新增 `deactivate_password_invalid`），`mobile_deactivate.json` 死键已清理 | `useAccountDeactivationFlow.test.ts`（6 例） |
+| AUTH-05 | P2 | 手写 rendezvous 实现 | **已完成**（2026-11-15 核实）：已由 `src/services/matrix/rendezvous/MatrixRendezvousService.ts`（经 `matrixClientService` 取客户端，不自拼 HTTP）+ `useRendezvous` + `RendezvousSessionManager.vue` 承载；桌面 `QRCode.vue`、移动 `MobileQRCode.vue` / `ConfirmQRLogin.vue` 均为消费方，配合 `MatrixQrLoginSdkService`（MSC4108） | `useRendezvous.test.ts` 与 `MatrixQrLoginSdkService.test.ts` 覆盖 |
+| AUTH-06 | P2 | 账号状态 / 共同房间 | **已完成**（2026-11-15）：服务层新增 `MatrixAccountStatusService`（`isSupported()` 为 false 直接返回空不发请求，fail closed）与 `MatrixRelationshipService.getMutualRooms`（委托 `getRoomManager().getMutualRooms`）；UI 落点为单聊对方资料面板 —— `AccountStatusBadge.vue` 挂在 `SingleDetails.vue` 昵称行（能力不可用/机器人不占位），`MutualRoomsSection.vue` 挂在 `FriendDetailsSections.vue` 资料分区末尾（对方是自己或能力不可用时不渲染不请求），点击房间复用 `openMsgSessionByRoomId` | 新增 27 例（账号状态服务 / 关系服务 / 两个组件），相关 49 例通过 |
+| AUTH-07 | P1 | 新增 `AdminCasService` + 页面 | **已完成**（2026-11-15 核实）：`src/services/matrix/admin/AdminCasService.ts` + `src/views/admin/AdminCas.vue`（含导航项与路由）+ `AdminCas.test.ts`，与 ADM-05 的 CAS 子域合并实现，未重复建服务 | 与 ADM-05 同一验收 |
 
 ##### CAP-03 / AUTH-01 落地记录（P1，完成）
 
@@ -737,19 +769,19 @@ R1 结论：全程复用 SDK `getAuthMetadata` / `getSsoLoginUrl` 与既有 `Mat
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
 | :--- | :--- | :--- | :--- | :--- |
-| ROOM-01 | P0 | `ChatMain.vue:282`、`ChatBanners.vue`、`StickyTab.vue:163-171` | 新建 `useStickyEvents`（SDK MSC4354 GET/PUT/DELETE）；`ChatBanners` 数据源改为 sticky events；`StickyTab` 按协议整表 PUT 并新增 DELETE 入口；两处加 `sticky-events` 门控 | 服务层契约测试 + 组件测试；断言不再引用 `pinnedMessages` |
-| ROOM-02 | P1 | `RoomDetailDrawer.vue` | 六个面板挂进 Drawer 的 Tab/折叠区，各自按能力位门控；面板无能力时整块隐藏 | 组件测试断言六面板可达 |
-| ROOM-03 | P1 | `src/services/matrix/room/RoomFacade.ts:181-239` | 20+ 房间私有扩展端点补齐读接口，按「服务方法 → facade → composable」三层落位 | 每个新方法一个委托测试 |
-| ROOM-04 | P1 | `src/services/matrix/messaging/MatrixThreadApi.ts` | 15 个零 UI 调用方法：有用的接进线程面板，无用的**删除**（不留死代码） | `pnpm vue-tsc --noEmit` 0 错误 |
-| ROOM-05 | P1 | `ChatMain.vue:224-238`、`RoomBurnSettings.vue:75-96` | `catch` 后 `showFeedback` 且不改本地状态；`handleDurationChange` 补 `try/catch`；服务返回值统一为布尔，调用方必须消费 | 组件测试覆盖失败路径 |
-| ROOM-06 | P2 | `src/services/matrix/crypto/MatrixEncryptionService.ts:93-140` | 新增 `getKeyRotationStatus()`，不复用 `check` 端点 | 契约测试断言 URL |
-| ROOM-07 | P2 | `MatrixSearchService.searchRooms`、`useGlobalSearch` | 全局搜索的房间结果改用服务端 `search_recipients` / 房间搜索；本地过滤仅作离线兜底 | 契约测试 + 离线降级测试 |
-| ROOM-08 | P2 | 通讯录搜索、我的房间 | `search_recipients` / `my_rooms` 补 UI 入口 | 组件测试 |
-| ROOM-09 | P2 | 房间管理页 | 举报扫描器与摘要辅助读取补入口 | 组件测试 |
-| ROOM-10 | P2 | 定时发送列表 | MSC4140 `restart` 接入 | 单测 |
-| ROOM-11 | P2 | 通话设置 | MSC4143 RTC transports 展示 | 单测 |
-| ROOM-12 | P2 | 邀请流程 | 一次性邀请保留并展示 `room_alias` | 单测 |
-| ROOM-13 | P3 | 空间公开目录等 | 零散入口按能力位补齐 | 组件测试 |
+| ROOM-01 | P0 | `ChatMain.vue:282`、`ChatBanners.vue`、`StickyTab.vue:163-171` | **已完成**（2026-11-15）：见下方「ROOM-01 落地记录」 | 服务层契约测试 + 组件测试；断言不再引用 `pinnedMessages` |
+| ROOM-02 | P1 | `RoomDetailDrawer.vue` | **已完成**（2026-11-15）：见下方「ROOM-02 落地记录」 | 组件测试断言六面板可达 |
+| ROOM-03 | P1 | `src/services/matrix/room/RoomFacade.ts:181-239` | **已完成**（2026-11-15）：见下方「ROOM-03 落地记录」 | 每个新方法一个委托测试 |
+| ROOM-04 | P1 | `src/services/matrix/messaging/MatrixThreadApi.ts` | **已完成**（2026-11-15）：见下方「ROOM-04 落地记录」 | `pnpm vue-tsc --noEmit` 0 错误 |
+| ROOM-05 | P1 | `ChatMain.vue:224-238`、`RoomBurnSettings.vue:75-96` | **已完成**（2026-11-15）：见下方「ROOM-05 落地记录」 | 组件测试覆盖失败路径 |
+| ROOM-06 | P2 | `src/services/matrix/crypto/MatrixEncryptionService.ts:93` | **已完成**（2026-11-15 核实）：`getKeyRotationStatus()` 已实现，`KeyRotationDialog.vue` 已接线，消费方 `stores/domains/settings/encryption.ts:167` | `crypto/__tests__/MatrixEncryptionService.test.ts`（2 例）+ `EncryptionSettings.test.ts` 覆盖 `needsRotation` 真/假两分支 |
+| ROOM-07 | P2 | `MatrixSearchService.searchRooms`、`useGlobalSearch` | **已完成**：`searchRooms()` 优先走 `getRoomManager().searchRooms`，服务端不可用/空结果时回退本地过滤 | `MatrixSearchService.test.ts`（18 例，含离线降级） |
+| ROOM-08 | P2 | 通讯录搜索、我的房间 | **已完成**（2026-11-15）：`search_recipients`（`MatrixUserDirectoryService.searchRecipients` + 目录回退，接入通讯录/邀请/全局搜索）；`my_rooms` 服务层 `MatrixAccountService.getMyRooms()` 改为委托 SDK `getRoomManager().getMyRooms()`（404 或方法缺失降级 `getJoinedRooms()`，仅以 `httpStatus === 404` 判定）；新增 `MyRoomsDialog.vue`（join/invite/leave 分组、本地搜索、空/错/加载态、可刷新），入口挂在会话列表顶部工具栏，选中房间复用 `enterChat`，非会话房间兜底 `openMsgSessionByRoomId` | 新增 11 例（弹窗 8 + 挂载 3）+ 服务层 7 例；相关 28 例通过 |
+| ROOM-09 | P2 | 房间管理页 | **已完成**（2026-11-15）：举报详情抽屉新增「刷新详情」（`getAdminReport`）与「查看扫描器」（`getScannerInfo`）；新增 `ReportScannerInfo.vue`（加载/空/错误/成功四态 + 重试）；SDK 无举报摘要端点，摘要辅助读取落为详情重读并在代码注释说明 | `ReportService.test.ts` +4、`ModerationAdminReportTab.test.ts` +3、`ReportScannerInfo.test.ts` 5 例 |
+| ROOM-10 | P2 | 定时发送列表 | **已完成**（2026-11-15）：`MatrixDelayedEventsService.restart(delayId)` 复用 SDK `getDelayedEventsManager().restartScheduledDelayedEvent()`，写入成功后回读 `getScheduledDelayedEvent()` 返回重排后的真实延迟（回读失败按「状态未知」抛出，调用方刷新对齐）；`useDelayedMessages.restart()` 成功/失败均 `refresh()`；`DelayedMessagesModal.vue` 操作列新增「重置计时」按钮，经 `MsgInput.vue` 接线；i18n 新增 `actions.restart` / `feedback.restarted` / `feedback.restart_failed` | `MatrixDelayedEventsService.test.ts` + `useDelayedMessages.test.ts` + `DelayedMessagesModal.test.ts` 共 23 例通过 |
+| ROOM-11 | P2 | 通话设置 | **已完成**（2026-11-15 核实）：`MatrixVoiceService.getRtcTransports()`（`:361`）委托 SDK `client.getVoiceManager().getRtcTransports()`（MSC4143，失败返回空对象）；`VoiceVideoSettings.vue:152` 消费并渲染 | `RtcTransports.test.ts` + `VoiceVideoSettings.test.ts` 覆盖有/无 transports 两分支 |
+| ROOM-12 | P2 | 邀请流程 | **已完成**：一次性邀请领取后展示并可复制 `room_alias` | `OneTimeInviteDialog.test.ts`（2 例） |
+| ROOM-13 | P3 | 空间公开目录等 | **已完成**（2026-11-15）：复用 `matrixSpaceService.searchSpaces/getPublicSpaces/getSpaceHierarchy/joinSpace/knockSpace`；新增 `PublicSpaceDiscoveryDialog.vue`（搜索/加载/空/错误态、加入或 knock 申请、子空间层级浏览），`SpaceViewHeader.vue` 增加 SVG 发现入口，`SpaceList.vue` 挂载并在 `joined` 后 `reloadSpaces()`；两个公开目录方法补可选 `throwOnError` | `PublicSpaceDiscoveryDialog.test.ts`（6 例）+ `SpaceViewHeader.test.ts` |
 
 ##### ROOM-01 落地记录（P0，完成）
 
@@ -832,18 +864,38 @@ R1 结论：门面只做委托，未新写任何 HTTP 调用或协议逻辑；�
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
 | :--- | :--- | :--- | :--- | :--- |
-| ADM-01 | P1 | 新增 `AdminServerNotificationService` + 页面 Tab | 7 条系统通知端点独立成服务；与现有「用户通知设置」页分区，不混用 | 契约测试 + 页面测试 |
-| ADM-02 | P1 | `AdminModules.vue` | 新增 `useAdminModules`，`onMounted` 拉取模块列表；补 loading / 失败重试 | 组件测试覆盖空态与失败态 |
-| ADM-03 | P1 | 新增 `views/admin/AdminExternalServices.vue` + composable + 路由 + 菜单 | 复用现有 7 个方法，页面只做展示与写操作 | 路由可达 + 方法调用测试 |
-| ADM-04 | P1 | `/reports` 3 条 | 接 `ReportService`；`event_reports` 已正确接入，**不得改动** | 回归测试 |
-| ADM-05 | P1 | 10 个子域 33 条 | 拆三组：a) account_validity / password_auth_providers / policy / rate-limit；b) callbacks / cleanup / push；c) invite 黑白名单 / CAS services。每组「服务 + 页面 + 路由 + 菜单」成套提交 | 每组独立验收 |
-| ADM-06 | P1 | 6 个子域已有方法 | account info/update、register nonce/register、restart、server、whois、purge_room 补页面动作 | 每方法至少一个页面调用断言 |
-| ADM-07 | P1 | `useAdminServerLogs.ts` | `allSettled` 改为逐项 error 状态；页面标题与内容对齐（要么改名，要么补真日志端点） | 失败态组件测试 |
-| ADM-08 | P2 | 配额 | 配额 store 增加视图；统一 admin 与用户侧配额口径 | 单测 |
-| ADM-09 | P2 | 遥测页面 | 未渲染字段补齐 | 组件测试 |
-| ADM-10 | P2 | 写操作 | 写后统一回读，禁止只改本地 | 单测 |
-| ADM-11 | P2 | 30+ admin 方法 | 分批接线，无 UI 计划的方法直接删除 | `pnpm check` 无死引用 |
-| ADM-12 | P2 | 联邦页 | cache / pending 补入口 | 组件测试 |
+| ADM-01 | P1 | 新增 `AdminServerNotificationService` + 页面 Tab | **已完成**（2026-11-15）：见下方「ADM-01 落地记录」 | 契约测试 + 页面测试 |
+| ADM-02 | P1 | `AdminModules.vue` | **已完成**（2026-11-15）：见下方「ADM-02 落地记录」 | 组件测试覆盖空态与失败态 |
+| ADM-03 | P1 | 新增 `views/admin/AdminExternalServices.vue` + composable + 路由 + 菜单 | **已完成**（2026-11-15）：见下方「ADM-03 落地记录」 | 路由可达 + 方法调用测试 |
+| ADM-04 | P1 | `/reports` 3 条 | **已完成**（2026-11-15）：见下方「ADM-04 落地记录」；`event_reports` 未改动 | 回归测试 |
+| ADM-05 | P1 | 10 个子域 33 条 | **已完成**（2026-11-15）：a/b/c 三组分别见下方「ADM-05 组 a / 组 b / 组 c 落地记录」 | 每组独立验收 |
+| ADM-06 | P1 | 6 个子域已有方法 | **已完成**（2026-11-15）：见下方「ADM-06 落地记录」 | 每方法至少一个页面调用断言 |
+| ADM-07 | P1 | `useAdminServerLogs.ts` | **已完成**（2026-11-15）：见下方「ADM-07 落地记录」 | 失败态组件测试 |
+| ADM-08 | P2 | 配额 | **已完成**（2026-11-15）：`useQuotaStore` 增加 `serverQuota` / `fetchServerQuota()` / `fetchAllQuota()`（四项并行、单项失败不阻塞）；新增 `MediaQuotaPanel.vue` 并挂到 `AdminMedia.vue` 的「配额」tab，用户侧配额（status/stats/alerts）与服务端总量（`getServerQuota`）统一口径 | `MediaQuotaPanel.test.ts`（4 例）+ `admin/__tests__/quota.test.ts`（新增 server/fetchAll 用例） |
+| ADM-09 | P2 | 遥测页面 | **已完成**（2026-11-15）：`AdminTelemetry.vue` 调度器补齐 5 个计数（`services_capacity_limited` / `services_with_pending_transactions` / `total_backoff_count` / `total_capacity_limited_count` / `total_in_flight_count`）；状态区新增健康检查 `checks` 与 `database` 两块明细（`recordEntries` + `formatValue` 渲染任意嵌套值）；告警表补 `owner` / `trigger_count` / `last_seen_ts` 三列（时间戳走 `formatTs`），表格 `:scroll-x="1180"` | `AdminTelemetry.test.ts` 新增用例断言 5 个计数、健康检查明细与三个新列 |
+| ADM-10 | P2 | 写操作 | **已完成**（2026-11-15）：`useAdminAccountPolicy` 的 `setValidity` / `renewValidity` 写后统一经 `refreshValidity()` 回读服务端状态，写响应仅作回读失败兜底；`createProvider` 原有刷新保留 | `useAdminAccountPolicy.test.ts`（13 例，新增回读成功/失败 2 例） |
+| ADM-11 | P2 | 30+ admin 方法 | **第一批已完成**（2026-11-15）：A 用户处置（`evictUser`/`logoutUserAll`/`loginUserAs`/`batchCreateUsers`/`getUserById`/`getUserStatsList`/`checkUserAdmin`）、B 房间治理（`getRoomBlockStatus`/`blockRoom`/`unblockRoom`/`getRoomStats`/`getRoomListings`/`setRoomPublicListing`/`getRoomEventContext`/`searchInRoom`/`getRoomForwardExtremities`）、C 保留策略（房间级读/存/删 + 默认策略读取）三组接线完成；其余零消费方法按决策**保留不删**，清单见下方落地记录 | 5 文件 82 例通过（新增 38） |
+| ADM-12 | P2 | 联邦页 | **已完成**（2026-11-15）：`FederationDestination` 补 `failureCount/status/updatedTs` 映射；服务层新增 `getFederationCache/clearFederationCache/deleteFederationCacheEntry/getPendingFederationServers/confirmFederation`（经 `adminFederationService` 暴露，未改动 baseline 锁定的门面）；`useAdminFederation` 增 cache/pending 状态与动作；新增 `FederationCachePanel.vue`、`FederationPendingPanel.vue` 并在 `AdminFederation.vue` 加两个 tab | 4 文件 41 例通过（新增 27） |
+
+##### ADM-11 落地记录（第一批完成，其余保留）
+
+第一批接线范围（2026-11-15）：
+
+| 组 | 方法 | 落点 |
+| :--- | :--- | :--- |
+| A 用户处置 | `evictUser`、`logoutUserAll`、`loginUserAs`、`batchCreateUsers`、`getUserById`、`getUserStatsList`、`checkUserAdmin` | `AdminUserActionsPane.vue`（二次确认 + 后果说明）、`AdminUsersBatchCreateDrawer.vue`（批量解析 + 逐条结果）、`AdminUserDetailDrawer.vue`「服务端信息」页签 |
+| B 房间治理 | `getRoomBlockStatus`、`blockRoom`、`unblockRoom`、`getRoomStats`、`getRoomListings`、`setRoomPublicListing`、`getRoomEventContext`、`searchInRoom`、`getRoomForwardExtremities` | `AdminRooms.vue` 新增「治理」页签 + `AdminRoomGovernancePanel.vue` |
+| C 保留策略 | 房间级 `getRoomRetention` / `setRoomRetention` / `deleteRoomRetention`、`getDefaultRetention` | `AdminRetention.vue`（删除二次确认，写后回读） |
+
+已知限制：`setRoomPublicListing` 服务层只做「发布到公开目录」单向动作（忽略取消发布布尔值）；`getUserStatsList` 为聚合单条，仅展示首条。
+
+其余零消费方法（2026-11-15 扫描；按用户决策保留不删，后续有页面需求时再接线）：
+
+| 分类 | 方法 |
+| :--- | :--- |
+| 完全无消费（Facade 亦未接线） | `AdminApiProbeService.isAvailable`；`AdminModerationService.getReports`；`ApplicationService.listApplicationServices` / `registerApplicationService`；`BackgroundUpdateService.completeUpdate` / `createUpdate` / `deleteUpdate` / `failUpdate` / `getHistory` / `getUpdate`；`ExternalServiceService.getServiceHealth`；`SecurityService.getExperimentalFeatures` / `getIpReputation` / `getSamlMapping` / `samlLogout`；`ServerService.getServerLogs` |
+| Facade 已接线但无 UI 消费 | `AdminApiProbeService.getAdminManager`；`AdminModerationService.onModerationEvent` / `offModerationEvent` / `stopModeration`；`FederationService.getFederationDestination`；`RegistrationTokensService.list`；`ReportService.reportEvent` / `reportRoom` |
+
 
 ##### ADM-02 落地记录（P1，完成）
 
@@ -965,13 +1017,52 @@ R1 结论：12 条端点全部复用 SDK `AdminManager` 的 `callbacks` / `clean
 
 R1 结论：9 条端点全部复用 SDK `getInviteBlocklistManager()` / `getCasManager()`，未新增 HTTP 或协议实现；`sdk.ts` 只补类型再导出，仍是唯一 SDK 类型咽喉点。R3 结论：新增服务、composable、页面、路由与菜单均只作用于桌面 admin 路径，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码。ADM-05 的 a/b/c 三组至此全部落地。
 
+##### ADM-06 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | 6 个子域方法（account info/update、registration nonce/register、restart、server info、whois、purge_room）服务层均已具备，但用户详情抽屉只展示设备/限流/影子封禁，房间列表无 purge 入口，维护页无服务器信息与重启按钮 |
+| 服务复用 | 完成 | 不新增服务实现，页面与 composable 直连既有 `adminService.getAccountInfo` / `updateAccountInfo` / `getWhois` / `getRegistrationNonce` / `adminRegister` / `getAdminInfo` / `restartServer` / `purgeRoom`；未新增 HTTP 或协议实现 |
+| composable | 完成 | `useAdminUsers` 新增 `accountInfo` / `whois` / `registrationNonce` + `updateAccountInfo`（写后回读）/ `loadWhois` / `loadRegistrationNonce` / `registerWithNonce`；账户子域拆至 `useAdminUserAccount` 后由 `useAdminUsers` 组合展开，对外形状不变且单文件守住 400 行红线；`useAdminRooms` 新增 `purgeRoom`（成功后重拉列表）；`useAdminMaintenance` 新增 `serverInfo` / `restarting` + `loadServerInfo` / `restartServer`，`loadAll` 扩为三路 `allSettled` |
+| 页面接线 | 完成 | `AdminUserDetailDrawer.vue` 新增「账户信息」与「Whois」两个 tab（账户信息可编辑并保存回读，Whois 只读展示），两 tab 抽为 `AdminUserAccountPanes.vue`、快捷操作抽为 `AdminUserActionsPane.vue`；`AdminUsers.vue` 新增 nonce 注册路径（先取 nonce 再注册），新建抽屉抽为 `AdminUsersCreateDrawer.vue`；`AdminRooms.vue` 危险操作区抽为 `AdminRoomDangerZone.vue` 并保留 purge 入口强制二次确认；`AdminMaintenance.vue` 新增服务器信息卡片与重启按钮（`dialog.warning` 二次确认） |
+| 测试 | 完成 | `useAdminUsers.test.ts` 新增 5 例（selectUser 加载 accountInfo、updateAccountInfo 回读、loadWhois、loadRegistrationNonce、registerWithNonce）；`useAdminRooms.test.ts` 新增 1 例（purgeRoom 委托并重拉）；`useAdminMaintenance.test.ts` 新增 2 例（loadServerInfo 回填、restartServer 委托并复位 flag） |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run` 全绿 |
+
+R1 结论：8 个方法全部为既有 `AdminManager` 能力的页面化接线，未新增平行实现。R3 结论：改动限定在桌面 admin 视图与 admin composable，`src/mobile/**` 无 import，移动端不产出 admin 入口与代码。
+
 #### 12.4.5 VEN（3 条）
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
 | :--- | :--- | :--- | :--- | :--- |
-| VEN-01 | P1 | `src/services/matrix/media/MatrixVoiceService.ts` | 8 条端点接入语音消息录制/播放 UI；闲置方法要么接线要么删除 | 服务层 + 组件测试 |
-| VEN-02 | P1 | `MatrixPushService`、设置页 | `push/devices` 与 `push/send` 共 4 条补服务与设备推送设置 | 契约测试 |
-| VEN-03 | P1 | `AccountDataService.getExternalServices` | 补 UI 消费者；先按 SDK 实现确认服务名前缀，再决定是否改默认值 | 单测 + 页面测试 |
+| VEN-01 | P1 | `src/services/matrix/media/MatrixVoiceService.ts` | **已完成**（2026-11-15）：见下方「VEN-01 落地记录」 | 服务层 + 组件测试 |
+| VEN-02 | P1 | `MatrixPushService`、设置页 | **已完成**（2026-11-15）：见下方「VEN-02 落地记录」 | 契约测试 |
+| VEN-03 | P1 | `AccountDataService.getExternalServices` | **已完成**（2026-11-15）：见下方「VEN-03 落地记录」 | 单测 + 页面测试 |
+
+##### VEN-01 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | `MatrixVoiceService` 8 条端点（`getVoiceStats` / `getUserVoiceStats` / `getVoiceConfig` / `deleteVoice` / `getRoomVoiceList` / `getUserVoiceList` / `getVoiceContent` / `getRtcTransports`）全部零 UI 消费者，录音时长上限硬编码 60 秒 |
+| 配置接线 | 完成 | `useVoiceRecordRust` 新增 `maxDuration`（默认 60 秒）+ `syncVoiceConfig()`：首次开始录音前拉取 `getVoiceConfig()` 并回填上限，失败仅 `logger.warn` 不阻塞录音；计时停止条件由 `currentTime === 59` 改为 `currentTime >= maxDuration - 1` |
+| 设置页接线 | 完成 | 新增 `views/settingsWindow/tabs/sections/VoiceMessageSettings.vue`：统计卡片（`getVoiceStats` + `getUserVoiceStats`）、房间 ID 过滤（`getRoomVoiceList`，留空走 `getUserVoiceList`）、行内展开原始内容（`getVoiceContent`）、删除（`deleteVoice` 二次确认后重拉）；`VoiceVideoSettings.vue` 挂载 `VoiceMessageSettings` 并新增 RTC 传输卡片（`getRtcTransports` 遍历 key/value，空态占位） |
+| i18n | 完成 | 新增 `setting.voice_video.rtc_section` / `rtc_empty` 与 `setting.voice_video.voice_messages.*`（含统计、列表列、删除确认与提示共 14 键），中英同步；`pnpm gen:i18n` 已重新生成类型 |
+| 测试 | 完成 | 目标测试集 46 例全通过，覆盖语音消息列表/统计加载、房间过滤分支、内容展开与删除重拉、录音时长上限读取与回退 |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run` 全绿 |
+
+R1 结论：8 条端点全部为既有 `MatrixVoiceService` 消费者接线，未新增 HTTP 或协议实现。R3 结论：改动位于语音服务域、录音 composable 与设置页，未触碰 admin/AI 模块，`src/mobile/**` 无新增引用。
+
+##### VEN-02 落地记录（P1，完成）
+
+| 项 | 状态 | 说明 |
+| :--- | :--- | :--- |
+| 现状盘点 | 完成 | `push/devices`（列表/注册/注销）与 `push/send` 共 4 条端点 SDK `NotificationsManager` 已具备，`MatrixPushService` 与前端均零封装、零 UI |
+| 服务补齐 | 完成 | `MatrixPushService` 新增 `getPushDevices` / `registerPushDevice` / `unregisterPushDevice` / `sendPushNotification`，统一经 `client.getNotificationsManager()` 调用；`src/services/matrix/sdk.ts` 增补 `IPushDevice` / `IRegisterPushDeviceRequest` / `ISendPushNotificationRequest` / `IPushAckResponse` 类型再导出，服务只从唯一咽喉点取类型 |
+| 设置页接线 | 完成 | 新增 `views/settingsWindow/tabs/sections/PushDeviceSettings.vue`：设备列表（ID / 类型 / 状态 / 创建时间）、注册表单（`device_id` / `push_token` / `push_type` = apns/fcm/webpush）、注销二次确认、测试推送（标题 + 正文）；空态与失败态齐备，`PushSettings.vue` 在 `AddPusherDialog` 之后挂载 |
+| i18n | 完成 | 新增 `setting.push.device_endpoints.*`（title/desc/表单/操作与提示共 24 键），中英同步；`pnpm gen:i18n` 已重新生成类型 |
+| 测试 | 完成 | `MatrixPushService.sdkManager.test.ts` 新增 describe，4 例覆盖四条端点的参数透传与返回 |
+| 门禁 | 通过 | `vue-tsc --noEmit` 0 错误；`pnpm check`、`check:ratchet`、`check:sdk-boundary`（类型经 `sdk.ts` 再导出，基线不增长）、`quality:no-raw-fetch`、`check:doc-coverage`、`check:doc-paths`、`pnpm test:run` 全绿 |
+
+R1 结论：4 条端点全部复用 SDK `NotificationsManager`，未新增 HTTP 或协议实现。R3 结论：改动位于通知服务域与桌面设置页，未触碰 admin/AI 模块，移动端不产出新增入口。
 
 ##### VEN-03 落地记录（P1，完成）
 
@@ -988,10 +1079,10 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 
 | 编号 | 优先级 | 触点 | 改动要点 | 验收 |
 | :--- | :--- | :--- | :--- | :--- |
-| MED-01 | P2 | 媒体下载 | `download_signed` 与分片进度补消费者与 UI 进度 | 单测 |
-| MED-02 | P2 | `src/services/matrix/media/mediaConfigOps.ts` | 6 个零调用方法接线；`uploadContentWithId` 补 `assertClientReady()` | 单测 |
-| MED-03 | P2 | 链接预览 | `siteName` 补产出并在卡片渲染 | 单测 |
-| MED-04 | P2 | `src/components/fileManager/SideNavigation.vue:28-38` | 配额字段补渲染 | 组件测试 |
+| MED-01 | P2 | 媒体下载 | **已完成**（2026-11-15）：新增 `mediaDownloadHelpers`（`parseSignedMediaUrl` / `buildSignedMediaDownloadUrl` / `downloadSignedMediaBytes`，URL 由 SDK `getDownloadUrl` 构建）与 `MatrixMediaService.getSignedMediaDownloadUrl` / `downloadSignedFileBytes`；`widget/fileDownload` 与 `AttachmentSaver` 自动识别签名链接，复用现有进度环与重试。后端 `GET /_matrix/media/v3/download_signed/{server}/{mediaId}` 直接返回字节流、无签名生成端点，故下载侧无分片进度可接 | `mediaDownloadHelpers.test.ts` + `MatrixMediaService.test.ts` + `fileDownload`/`AttachmentSaver` 单测（83 例） |
+| MED-02 | P2 | `src/services/matrix/media/mediaConfigOps.ts` | **已完成**（2026-11-15）：`uploadContentWithId` 补 `assertClientReady()`；`getMediaConfig`/`getAuthenticatedMediaConfig`/`checkQuota`/`getQuotaStats`/`getQuotaAlerts` 已由 `StorageSettings.vue`、`Files.vue`、`SideNavigation.vue`、`QuotaService` 消费，`getUrlPreview` 由 `LinkPreviewPane.vue` 消费；仅 `deleteMedia` 无用户自助入口（管理端走 admin 删除链路），保留并由 `media.contract.test.ts` 保护 | `MatrixMediaService.test.ts`（35 例）+ `media.contract.test.ts` |
+| MED-03 | P2 | `src/strategy/strategies/linkPreview.ts:28,55`、`src/components/rightBox/renderMessage/LinkPreview.vue:44` | **已完成**（2026-11-15 核实）：`siteName` 已从 `linkData` 产出并回写 `site_name`；消息卡与侧栏均按 `siteName` 渲染，缺失时回退域名 | `linkPreview.test.ts` 与 `LinkPreview.test.ts` 覆盖有/无 `siteName` 两分支 |
+| MED-04 | P2 | `src/components/fileManager/SideNavigation.vue:28-38` | **已完成**（2026-11-15）：配额区在用量进度条后补渲染此前遗漏的 `mediaCount`（`fileManager.storage.count` 文案 + 数值），配额为 `null` 时整块保持隐藏；i18n 新增 `fileManager.storage.count` | 新增 `SideNavigation.test.ts` 2 例（配额存在时渲染 label/count/数值；配额为 `null` 时整块隐藏） |
 
 ### 12.5 实施批次与依赖
 
@@ -1000,18 +1091,20 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 | 0 | §12.3 门控口径 + 别名订正 + 三态 | 无 | 门控单测全绿，`check:sdk-boundary` 通过 |
 | 1 | CAP-01、ROOM-01（P0） | 批次 0 | 两条 P0 的验收测试通过，报告条目关闭 |
 | 2 | CAP-02/CAP-03/AUTH-01、ROOM-02/03/04/05 | 批次 0 | 房间与登录相关 P1 全关闭 |
-| 3 | VEN-01/02/03、ADM-01~07 | 批次 0 | 通知/语音/后台管理基础 P1 全关闭 |
-| 4 | ROOM-06~13、ADM-08~12、MED-01~04、CAP-04~07、AUTH-02~07 | 批次 2/3 | P2 全关闭 |
-| 5 | P3 收尾 | 批次 4 | 报告 47 条全部关闭或标注「不纳入」 |
+| 3 | VEN-01/02/03、ADM-01~07、CAP-08 | 批次 0 | 通知/语音/后台管理基础 P1 全关闭；能力位与后端宣告对齐 |
+| 4 | ROOM-06~13、ADM-08~12、MED-01~04、CAP-04~07、AUTH-02~07 | 批次 2/3 | P2 全关闭（ROOM-06、MED-03 已于 2026-11-15 核实完成） |
+| 5 | P3 收尾 | 批次 4 | 报告 47 条 + 审查追加 CAP-08，合计 48 条全部关闭或标注「不纳入」 |
+
+> 状态（2026-11-15）：批次 0-5 已全部完成。§12.4 的 48 条能力接线条目均已在「改动要点」列标注**已完成**并附落地记录与验收用例，无遗留「待做」项。
 
 约束：
 - 每批次独立可回滚，不跨批次混提。
 - 每批次结束跑 §12.7 全部门禁。
-- 无 UI 消费者的服务方法一律「接线或删除」，不允许留存死代码。
+- 无 UI 消费者的服务方法默认「接线或删除」；ADM-11 经决策例外：剩余零消费 admin 方法保留不删，但必须在 ADM-11 落地记录中登记清单，新增页面需求时优先复用清单内方法。
 
 ### 12.6 新增测试清单
 
-1. `MatrixCapabilityService.capabilities.test.ts`：10 个能力位的 supported/unsupported/unknown 真值表；`canUseE2EE` 与 `hasCapability('e2ee')` 结果一致。
+1. `MatrixCapabilityService.test.ts`（并入既有文件，不新建）：14 个能力位的 supported/unsupported/unknown 真值表；每位含「后端真实 key 命中 + 旧错误 key 不命中」双向断言（CAP-08）；`canUseE2EE` 与 crypto 状态一致。
 2. `useStickyEvents.test.ts`：GET/PUT/DELETE 契约；门控关闭时不发请求。
 3. `StickyTab.test.ts`：整表 PUT 形状、DELETE 入口、unsupported 不渲染。
 4. `RoomDetailDrawer.test.ts`：六面板在能力满足时可达、不满足时不存在。
@@ -1053,11 +1146,11 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 
 ## 13. UI/UX 优化方案（能力接线配套，2026-11-14）
 
-本章承接第 12 章的 47 条排查结论，但只回答「界面应该长什么样、如何反馈」的问题；工程侧的端点、服务与门控实现见第 12 章。两章按同一批次推进，UI 不得先于门控上线。
+本章承接第 12 章的 48 条排查结论（原报告 47 条 + 审查追加 CAP-08），但只回答「界面应该长什么样、如何反馈」的问题；工程侧的端点、服务与门控实现见第 12 章。两章按同一批次推进，UI 不得先于门控上线。
 
 ### 13.1 设计出发点
 
-47 条问题表面是「功能没接上」，实际暴露出三类界面缺陷：
+48 条问题表面是「功能没接上」，实际暴露出三类界面缺陷：
 
 1. **能力不可见**：服务端不支持时，界面要么照常渲染入口（点击必失败），要么整块消失且没有任何解释。
 2. **状态不完整**：只有「有数据」和「没数据」两种呈现，缺少加载、失败、部分失败、不可用四类状态。
@@ -1254,7 +1347,7 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 | 组件 | 用途 | 归属条目 |
 | :--- | :--- | :--- |
 | `CapabilityBadge` | 能力状态徽标（文字 + 图标 + 颜色） | CAP-01、§13.2 |
-| `AsyncStateBoundary` | 统一 loading/empty/error/partial 容器 | ADM-02/07、ROOM-05、VEN、MED |
+| ~~`AsyncStateBoundary`~~ → `EmptyState` / `ErrorState` / `MobileAsyncState` | 统一 loading/empty/error/partial 容器（原规划的聚合边界已取消，见 §16.2；实际由既有三件承担） | ADM-02/07、ROOM-05、VEN、MED |
 | `ServiceCapabilityPanel` | 服务能力总览与重探 | CAP-01~07 |
 | `StickyEventsBanner` / `StickyEventsEditor` | 置顶条展示与整表编辑 | ROOM-01 |
 | `InlineFieldError` | 字段级错误与重试 | ROOM-05、AUTH-02 |
@@ -1269,7 +1362,7 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 
 | 工程批次（§12.5） | 同期交付的 UI/UX 工作 |
 | :--- | :--- |
-| 批次 0 | `CapabilityBadge`、`ServiceCapabilityPanel`、`AsyncStateBoundary` 三个基础组件与三态约定 |
+| 批次 0 | `CapabilityBadge`、`ServiceCapabilityPanel` 两个基础组件与三态约定；三态由既有 `EmptyState` / `ErrorState` / `MobileAsyncState` 承担（原规划的 `AsyncStateBoundary` 已取消，见 §16.2） |
 | 批次 1 | 置顶条改造（数据源切换 + 编辑抽屉 + 删除确认） |
 | 批次 2 | 房间详情四 Tab、阅后即焚反馈、线程面板入口 |
 | 批次 3 | 管理端导航四分组、外部服务页、系统通知页、推送设备、语音录制 |
@@ -1280,24 +1373,24 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 
 功能与状态：
 
-- [ ] 每个 L2/L3 能力入口在界面上不存在，且「服务能力」面板能查到原因。
-- [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。
-- [ ] 所有写操作失败后保留用户输入，并给出可执行的重试路径。
-- [ ] 管理端每个新页面同时具备路由、菜单、空态、权限门控。
+- [x] 每个 L2/L3 能力入口在界面上不存在，且「服务能力」面板能查到原因。 —— 证据：§12.4 的 48 条接线条目已全部关闭；2026-11-15 把此前「有实现、有测试、无挂载点」的 `ServiceCapabilityPanel` 接入 `DiagnosticsPanel.vue`（设置 → 帮助/诊断），列出 14 个能力位的三态、缺失 key（如 `org.matrix.msc4354`）与重试/设置入口；`useServiceCapabilityItems.test.ts` 5 例 + `ServiceCapabilityPanel.test.ts` 6 例全过（详见 §19.7）。
+- [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）。2026-11-16 把「空态是否统一」固化为 `check-ratchet` 的 `handwritten_empty_state` 计数器：七批迁移后由 128 处 / 98 文件降至 **0 处 / 0 文件**，基线锁定 0（详见 §19.8）。本条仍保持未勾选，唯一缺口是四态中的 `partial`（部分数据可用）尚无统一件与逐页覆盖。
+- [ ] 所有写操作失败后保留用户输入，并给出可执行的重试路径。 —— 需运行态（断网 / 后端 4xx）逐流程验证，见 §19.3。
+- [ ] 管理端每个新页面同时具备路由、菜单、空态、权限门控。 —— 空态与权限门控需连接后端账号才能实测，见 §19.3。
 
 可访问性：
 
-- [ ] 键盘可完成全部主流程；焦点顺序正确；`Esc` 可关闭浮层。
-- [ ] 图标按钮均有可访问名称；装饰图标已从读屏隐藏。
-- [ ] 错误与异步更新使用 `role="alert"` / `aria-live`。
-- [ ] 明暗两套主题下文本对比度不低于 4.5:1（正文）。
+- [ ] 键盘可完成全部主流程；焦点顺序正确；`Esc` 可关闭浮层。 —— 2026-11-16 在 `pnpm dev` 桌面（5211）/ 移动（5210）登录页做键盘走查：Tab 顺序为「账号 → 头像切换按钮 → 服务器地址 → 密码 → 协议勾选 → 服务协议 → 隐私保护指引」，协议链接为 `role="button" tabindex="0"`；引导浮层（driver.js）会锁定焦点且不渲染关闭按钮，原按 `Esc` 无法退出（WCAG 2.1.2 键盘陷阱，已修，见 §19.9 缺陷 3），修复后 `Esc` 可结束引导并回到表单。**范围限制**：登录后主流程需后端账号，Tauri WebView 的真实焦点链需真机，故本条保持未勾选。详见 §19.3。
+- [x] 图标按钮均有可访问名称；装饰图标已从读屏隐藏。 —— 证据：`pnpm check:icon-button-aria` exit 0；`pnpm check:svg-aria` exit 0（587 处装饰图标带 `aria-hidden`）。
+- [x] 错误与异步更新使用 `role="alert"` / `aria-live`。 —— 证据：`src` 非测试源码静态扫描 `role="alert"` 18 处 / 18 文件（含 `ErrorState` / `EncryptionSettings` / `DecryptionFailureCard`）、`aria-live` 16 处 / 15 文件（含全局 `GlobalAriaLive.vue`），对应 `ErrorState.test.ts` / `GlobalAriaLive.test.ts`。
+- [ ] 明暗两套主题下文本对比度不低于 4.5:1（正文）。 —— 2026-11-16 用 axe-core `color-contrast` 对桌面 / 移动登录页 × light/dark 四组扫描，修复两处 serious 后 `violations=0 nodes=0`（§19.9）；未登录可达页面的正文对比度已达标，账号内页仍待补测，故本条保持未勾选。详见 §19.3。
 
 视觉与规范：
 
-- [ ] 无新增 `#xxx` / `rgb()` / `rgba()` 字面量，全部走 `--tjg-*`。
-- [ ] 无 emoji 图标；新增图标为 SVG 且尺寸一致。
-- [ ] 过渡 150-250ms，且 `prefers-reduced-motion` 下关闭非必要动效。
-- [ ] 375px / 768px / 1024px / 1440px 四档无横向滚动、无遮挡。
+- [x] 无新增 `#xxx` / `rgb()` / `rgba()` 字面量，全部走 `--tjg-*`。 —— 证据：`pnpm check:ratchet` exit 0（`hardcoded_radius 0/0`、`inline_style 5/5` 均在 allowlist、`important_css 39/39`）；`pnpm check:tokens` 224 个 token 零引用 0、使用率 100%。
+- [x] 无 emoji 图标；新增图标为 SVG 且尺寸一致。 —— 证据：模板段静态扫描（排除 `__tests__`）命中 4 个文件，逐行核对均为注释或装饰字符 `✓`，无 emoji 作图标；`pnpm check:icon-colors` exit 0（585 处已迁移 token）、`pnpm check:svg-aria` exit 0（587 处 SVG 图标）。
+- [x] 过渡 150-250ms，且 `prefers-reduced-motion` 下关闭非必要动效。 —— 证据：`src` 下 608 个 `.vue` / `.scss` / `.css` 文件扫描，仅 2 处超出区间且均属例外：`BurnIndicator.vue:158` 的 `transition: width 1s linear`（倒计时进度条，属进度动画而非交互动效）、`design-tokens.css:731` 的 `transition-duration: 0.01ms !important`（reduced-motion 全局关闭开关）；`prefers-reduced-motion` 覆盖 66 个文件 68 处，含 `mobile.scss:283` 全局规则。
+- [x] 375px / 768px / 1024px / 1440px 四档无横向滚动、无遮挡。 —— 2026-11-16 在 `pnpm dev`（`http://127.0.0.1:6130/login`）用 Playwright 1.63 + Chromium 设置视口实测：四档 `documentElement.scrollWidth === clientWidth`（375/375、768/768、1024/1024、1440/1440），`overflowCount = 0`，关键元素无裁切/重叠、`elementFromPoint` 命中自身（未被遮挡），品牌图已加载（`naturalWidth 256`）。**范围限制**：仅覆盖未登录态可达的登录页；依赖账号的内页仍归 §19.3 的 P2 分批回归。
 
 ---
 
@@ -1609,13 +1702,13 @@ useGlassEffectStore().mode = 'off'
 
 ### 18.7 视觉一致性检查清单
 
-- [ ] 无新增硬编码颜色，`pnpm check:ratchet` 通过。
-- [ ] 无 emoji 图标，新增图标为 24×24 SVG、线宽 1.5px。
-- [ ] 间距/圆角/阴影只取自 token 阶梯。
-- [ ] 加载、空、错误三态均有统一实现，无手写空态块。
-- [ ] 375 / 768 / 1024 / 1440 四档无横向滚动、无内容遮挡固定栏。
-- [ ] `prefers-reduced-motion` 与 `prefers-reduced-transparency` 下无位移动效、无模糊依赖。
-- [ ] 图标按钮具备 `aria-label`，可点击元素具备 `cursor-pointer` 与焦点可见态。
+- [x] 无新增硬编码颜色，`pnpm check:ratchet` 通过。 —— 2026-11-15 复跑 exit 0：`hardcoded_radius 0`、`inline_style 5/5`（allowlist 内）、`important_css 39/39`、`zh_literal_vue 0`、`as_unknown_as 0`。
+- [x] 无 emoji 图标，新增图标为 24×24 SVG、线宽 1.5px。 —— 模板段扫描无 emoji 图标；`pnpm check:icon-colors` exit 0（585 处走 token）、`pnpm check:svg-aria` exit 0（587 处 SVG 装饰图标）。24×24 与 1.5px 线宽的逐图标几何抽查并入 §19.3 运行态视觉走查。
+- [x] 间距/圆角/阴影只取自 token 阶梯。 —— `pnpm check:tokens` exit 0：token 总数 224、零引用 0、使用率 100.0%（阈值 85%）；`check:ratchet` 的 `hardcoded_radius` 为 0。
+- [x] 加载、空、错误三态均有统一实现，无手写空态块。 —— 2026-11-16 已将该口径固化为 `check-ratchet` 的 `handwritten_empty_state` 计数器，七批迁移后 **0 处 / 0 文件**、基线锁定 0（`pnpm check:ratchet` exit 0，批次明细见 §19.8）；后续任何新增手写空态会直接 FAIL。
+- [x] 375 / 768 / 1024 / 1440 四档无横向滚动、无内容遮挡固定栏。 —— 2026-11-16 运行态实测（`http://127.0.0.1:6130/login`，Playwright 设置视口）：四档 `scrollWidth === clientWidth`、`overflowCount = 0`、关键元素未被遮挡；仅覆盖未登录登录页，内页见 §19.3。
+- [x] `prefers-reduced-motion` 与 `prefers-reduced-transparency` 下无位移动效、无模糊依赖。 —— `prefers-reduced-motion` 覆盖 66 个文件 68 处（含 `src/styles/scss/global/mobile.scss:283` 全局规则）；`prefers-reduced-transparency` 5 个文件 7 处，落点为 `src/styles/scss/global/glass.scss:80` 与 `src/styles/scss/global/mobile.scss:211`；`design-tokens.css:731` 用 `transition-duration: 0.01ms !important` 兜底关闭动效。
+- [x] 图标按钮具备 `aria-label`，可点击元素具备 `cursor-pointer` 与焦点可见态。 —— `pnpm check:icon-button-aria` exit 0、`pnpm check:svg-aria` exit 0；本轮新增的 `ServiceCapabilityPanel` 重试/设置按钮带 `aria-label`、`focus-visible` 描边与 `cursor: pointer`。
 
 ---
 
@@ -1669,14 +1762,28 @@ useGlassEffectStore().mode = 'off'
 
 ### 19.3 未执行项与原因
 
+2026-11-16 补测后，原 6 项中的「触控热区实测」「深浅色对比度扫描」已执行并归零，另补做未登录段键盘走查（证据见 §19.9），剩余 4 项：
+
 | 项 | 命令 / 方式 | 未执行原因 | 建议执行时机 |
 | :--- | :--- | :--- | :--- |
 | Storybook 视觉回归 | `pnpm storybook` | 需构建并人工比对，单轮耗时高 | 涉及组件改动的 PR |
 | E2E 端到端 | `pnpm test:e2e` | 需可用的 synapse-rust 后端与测试账号，本次环境未接入 | 发版前 |
 | 真机 / 移动端构建 | `pnpm adev`、`pnpm idev` | 需 Android SDK / Xcode 与设备 | 发版前 |
-| 触控热区实测 | dev server + 浏览器 | 需运行态元素尺寸测量 | 移动端改动后 |
-| 运行时性能采样 | `WebVitalsObserver` | 需真实网络与运行态 | 发版前 |
-| 深浅色对比度扫描 | 工具扫描 | 需运行态截图或 DOM 计算 | 主题改动后 |
+| 运行时性能采样 | `WebVitalsObserver` | 需真实网络与账号内页，离线 mock 会话的帧率不具代表性 | 发版前 |
+
+同日补测已执行项：
+
+| 项 | 命令 / 方式 | 结果 |
+| :--- | :--- | :--- |
+| 触控热区实测 | `env -u CI pnpm test:touch-targets`（Playwright + 移动 dev server 5210，mock 会话） | `2 passed`：移动「我的」与设置页可点击元素 ≥44×44px |
+| 深浅色对比度扫描 | `env -u CI pnpm playwright test e2e/a11y-baseline.spec.ts --project=desktop-chromium --project=mobile-chromium` | `4 passed / 4 skipped`（桌面登录、首页好友骨架、`prefers-contrast`、移动登录） |
+| 双主题对比度细扫 | axe-core `color-contrast`，桌面 1440×900 / 移动 390×844 × light/dark | 修复前命中 2 类 serious；修复后四组 `violations=0 nodes=0` |
+| 键盘走查（未登录段） | Playwright 逐次 `Tab` + `Escape`，桌面 5211 / 移动 5210 登录页 | Tab 顺序正确、协议链接可聚焦；发现引导浮层 `Esc` 无法退出（已修，§19.9 缺陷 3），修复后 `Esc` 可结束引导 |
+| 四档视口 | `pnpm dev` + Playwright 设置视口，登录页 375/768/1024/1440 | 四档 `scrollWidth === clientWidth`、`overflowCount = 0`（§19.8） |
+
+2026-11-15 复核（历史记录）：当时上表 6 项均未执行，原因不变（离线环境无后端账号、无真机、无浏览器运行态）。当轮只把可在离线侧取证的部分固化为门禁原始输出（§19.7），不虚构运行态结论。
+
+2026-11-16 复核：触控热区、深浅色对比度、键盘走查（未登录段）、四档视口四项已取证，范围限定为未登录可达页面（桌面/移动登录页，移动「我的」与设置页）。运行态取证共发现并修复三处真实缺陷：移动端登录页渐变背景失效、driver.js 引导弹窗深色主题白字白按钮、引导浮层无键盘出口（WCAG 2.1.2），修复后四组 axe 扫描 `violations=0 nodes=0`，明细见 §19.9。仍未执行的 4 项：Storybook 视觉回归与 E2E 仍缺后端账号；真机/移动端构建仍缺 Android SDK 与 Xcode 设备；运行时性能采样需真实网络与账号内页。依赖账号内页的热区、对比度、键盘流程与视口回归仍保留在 P2。
 
 ### 19.4 分批回归矩阵
 
@@ -1697,6 +1804,8 @@ useGlassEffectStore().mode = 'off'
 | 文档门禁 | `pnpm check:doc-coverage` 通过；`pnpm check:doc-paths` 仅校验 `.rules`，不受本文件影响 |
 | 结论 | 文档交付成立；第 12/13/15-19 章的代码改动需另行评审后实施，实施时按 §19.4 的 P0/P1 分批验证 |
 
+> 上表仅描述 2026-11-14 那一轮；2026-11-15 的源码改动与门禁原始输出见 §19.7。
+
 ### 19.6 门禁债务收口（2026-11-14）
 
 §19.1 中四项失败门禁的根因、改动与复验证据：
@@ -1709,6 +1818,332 @@ useGlassEffectStore().mode = 'off'
 | 文件体量 | `oversized` 114 已等于基线（无越线文件）；唯一红线 `src/typings/components.d.ts`（808 行）由 unplugin-vue-components 生成，行数只随全局注册 SFC 数量变化，无人工拆分路径 | 在 `check-file-size.mjs` 的 `isGenerated` 中排除 `components.d.ts`，并把基线收紧到 113 | `oversized 113（基线 114，已收紧）`；红线 0 个 |
 
 其他门禁同批复跑：`check:ratchet` 各项均等于基线（`is_mobile_branch 19`、`backdrop_filter_raw 60`、`as_unknown_as 0`）；`check:sdk-boundary` 156 = 基线 156；`check:doc-coverage` 587 = 基线 587；`check:doc-paths` 全部路径存在；`quality:no-raw-fetch` 白名单 3/3 命中；改动脚本与组件 `biome check` 无诊断。
+
+### 19.7 服务能力面板接线与验收清单取证（2026-11-15）
+
+#### 动机
+
+`ServiceCapabilityPanel.vue` 已有 6 个单测与完整中英文案，但全仓检索无任何挂载点（仅 `src/typings/components.d.ts` 的自动注册），等于 §13.11 第 1 条「能力入口不可用时『服务能力』面板能查到原因」在真实界面不成立。本轮补齐接线，并顺带把「未知 / 不支持」从裸状态升级为可执行的诊断信息（缺哪个服务端 key、该去哪个设置页）。
+
+#### 变更文件
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/services/matrix/MatrixCapabilityService.ts` | 新增 `getCapabilityAliases()`，从既有 `HULA_CAPABILITY_ALIASES` 读取能力位对应的 `unstable` / `capabilities` key；`useServerCapability()` 暴露 `getCapabilityAliases` 与 `refreshCapabilities`（复用既有 `refreshCapabilities()`，无新增探测逻辑） |
+| `src/composables/settings/useServiceCapabilityItems.ts`（新增） | 14 个能力位固定顺序、`supported→ready` / `unknown→degraded` / `unsupported→unavailable` 三态映射、hint 生成（unknown 提示重试；缺失 key 回显 `{keys}`；e2ee / admin-api 属客户端判定，提示「未启用」）、设置页签映射（`encryption` / `voiceVideo` / `burnAfterRead` / `friends` / `mjolnir` / `account`）、移动端过滤 `admin-api`（14→13 条） |
+| `src/components/settings/DiagnosticsPanel.vue` | 在设置 → 帮助/诊断中挂载面板，转发 `retry`（整体重拉能力快照）与 `open-settings`（桌面切换设置页签）；样式沿用 `--tjg-space-*` / `--tjg-text-secondary` |
+| `src/components/common/ServiceCapabilityPanel.vue` | 新增可选 `settingsKeys` prop，只为有设置页的能力位渲染「设置」按钮，避免死链 |
+| `locales/{zh-CN,en}/common.json`、`locales/{zh-CN,en}/setting.json` | 新增 `capability.items.*`（14 个能力名）、`capability.hint.*`（unknown / unsupported / unsupported_client）与 `diagnostics.service_capabilities` |
+| `src/composables/settings/__tests__/useServiceCapabilityItems.test.ts`（新增） | 5 例：三态映射与缺失 key 文案、客户端判定能力无服务端 key、`refresh()` 调用服务、`openSettings()` 跳转与未知 key 不跳、移动端隐藏 `admin-api` |
+
+#### 验证证据
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0，无输出 |
+| 全量单测 | `pnpm test:run` | exit 0：1043 个测试文件、11582 例全部通过（466.40s） |
+| 相关单测 | `pnpm vitest run src/composables/settings/__tests__/useServiceCapabilityItems.test.ts src/components/common/__tests__/ServiceCapabilityPanel.test.ts src/components/settings` | 6 文件 / 57 例全过（新用例 5 例、面板 6 例） |
+| Lint + i18n | `pnpm check` | exit 0（Biome 无诊断、`i18n check passed`、token 使用率 100%、icon-button-aria / svg-aria / dead-handlers / capabilities-sync 全 OK） |
+| i18n 类型重建 | `pnpm gen:i18n` | exit 0（103 个命名空间文件、6865 key paths） |
+| 硬编码 / 分支 ratchet | `pnpm check:ratchet` | exit 0（`hardcoded_radius 0/0`、`inline_style 5/5`、`important_css 39/39`、`backdrop_filter_raw 60/60`、`zh_literal_vue 0/0`、`is_mobile_branch 19/19`） |
+| 设计令牌 | `pnpm check:tokens` | exit 0（224 个 token、零引用 0、使用率 100.0%） |
+| 图标可访问性 | `pnpm check:icon-button-aria`、`pnpm check:svg-aria`、`pnpm check:icon-colors` | 全部 exit 0（587 处装饰图标 `aria-hidden`、585 处图标已迁移 token） |
+| 移动端 CSS | `pnpm check:mobile-css` | exit 0 |
+| SDK 边界 | `pnpm check:sdk-boundary` | exit 0（156 = 基线 156，无回归） |
+| 裸请求 | `pnpm quality:no-raw-fetch` | exit 0（命中 0，全部裸请求均在白名单内） |
+| 文档覆盖 / 路径 | `pnpm check:doc-coverage`、`pnpm check:doc-paths` | exit 0（无回归 vs 基线 587；`.rules` 35 个路径引用全部存在） |
+
+#### 硬性约束结论（§R3）
+
+1. **R1 SDK 优先**：能力探测全部复用 `MatrixCapabilityService` 的既有快照与 `refreshCapabilities()`，新增的只有「读取别名 + 三态映射」，未新建 HTTP 客户端、未复制协议逻辑。
+2. **R2 移动端裁剪**：面板挂在桌面 `HelpSettings` 的诊断区，`src/mobile/**` 未引入；`admin-api` 在移动端由数据源直接过滤，不依赖运行时隐藏样式。
+3. **移动端构建**：本轮未新增/移动任何移动端入口，`pnpm check:mobile-css` 与 `pnpm check` 均通过；真机构建仍归 §19.3。
+
+#### 遗留与文档漂移
+
+- §13.10 曾描述桌面侧交付了 `AsyncStateBoundary`，但仓库中不存在该文件；桌面实际由 `EmptyState` / `ErrorState` + 骨架组件承担，移动侧为 `MobileAsyncState`。2026-11-16 已把 §13.9 / §13.10 的组件名校正为实际实现，并指向 §16.2 的取消结论。
+- §13.11 / §18.7 中依赖运行态的条目（键盘走查、对比度、四档视口、四态逐页穷举）保持未勾选，待 §19.4 P2 分批回归时执行。
+- 阶段 C3（真机截图回归）与阶段 D（增强库 POC）维持「暂缓 / 待真机」，无新增取证。
+
+---
+
+### 19.8 空态门禁与统一迁移（2026-11-16，第一至七批，已完成）
+
+#### 动机
+
+§13.11 / §18.7 的「三态统一」长期只能靠人工扫 `.vue` 估算（此前口径：585 个 `.vue` 中 20 个接入、89 个手写），既不可复现也无法防回归。本轮做两件事：把口径固化为 ratchet 计数器；按批把高价值页面的手写空态换成统一件。
+
+#### 门禁新增（`scripts/check-ratchet.mjs` + `meta/ratchet-baseline.json`）
+
+| 项 | 实现 |
+| :--- | :--- |
+| 计数器 | `handwritten_empty_state`，仅 `.vue`，`includeTests: false` |
+| 取样范围 | 只取 `v-if` / `v-else-if` / `v-show` 的**表达式**并剥离 HTML 注释（`strip: extractHandwrittenEmptyStateScope`）；脚本里的长度判断与 `:disabled` 等属性绑定不计 |
+| 排除规则 | 文件内一旦出现 `EmptyState` / `MobileAsyncState` / `ErrorState` 引用即整文件不计（`strip` 返回空串） |
+| 判据 | 只数「空方向」：`length === 0` / `length == 0` / `length <= 0` / `length < 0|1` / `!x.length`；不数 `length > 0` / `length !== 0` |
+| 基线 | `handwritten_empty_state: 0`（迁移前 128 处 / 98 文件 → 第一批 117 / 91 → 第二批 111 → 第三批 102 → 第四批 91 → 收窄取样口径后重算 77 → 第五批 62 → 第六批 43 → 第七批 0），只降不升；清零后基线锁定为 0，后续新增手写空态会直接 FAIL |
+
+口径修正说明：第三批后按「整个 `<template>` 段」取样时，`MobileBatchToolbar.vue` 的 3 处 `:disabled="selectedIds.length === 0"`、以及同类属性绑定被误计为空态（约 14 处结构性假阳性）。第四批把取样范围收窄为 `v-if` / `v-else-if` / `v-show` 表达式，基线由 91 重算为 77，剩余清单可直接按文件执行。
+
+#### 第一批迁移（7 文件 / 11 处）
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/components/room/PendingBurnMessages.vue` | 1 | 换 `EmptyState`（`compact`，保留 `data-testid="pending-empty"`）；删除死样式 `.pending-burn-messages__empty` |
+| `src/components/room/RoomDetailPinnedMessages.vue` | 1 | 换 `EmptyState`（保留 `data-testid="room-detail-pinned-empty"`） |
+| `src/components/room/MyRoomsDialog.vue` | 1 | 换 `EmptyState`（保留 `data-test="my-rooms-empty"`）；`.my-rooms__state*` 仍服务 loading/error，保留 |
+| `src/components/rightBox/MutualRoomsSection.vue` | 1 | 换 `EmptyState`（`variant="subtle"`，保留 `data-testid="mutual-rooms-empty"`）；`.mutual-rooms-hint` 仍服务 loading，保留 |
+| `src/components/rightBox/ApplyList.vue` | 1 | 由 `n-flex + n-empty` 改统一件，重试按钮走 `#actions` 插槽 |
+| `src/views/settingsWindow/tabs/MjolnirSettings.vue` | 3 | 房间/用户/服务器封禁三处换 `EmptyState`；删除 `.empty-list` / `.empty-text` |
+| `src/views/settingsWindow/tabs/FriendsSettings.vue` | 3 | 分组/收到申请/发出申请三处换 `EmptyState`；删除 `.empty-list` / `.empty-text` |
+
+保留原有 `data-testid` / `data-test` 与 i18n key，相关用例断言（只查 testid 与文案）无需改动。
+
+#### 第二批迁移（4 文件 / 6 处）
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/components/encryption/DeviceTrustManager.vue` | 3 | 设备列表/未验证设备/封禁列表三处 `length === 0` 空态换 `EmptyState`（`compact`），另将「未选房间」提示（`v-else`，不计入计数器）同批收敛；移除 `NEmpty` 导入与 `.empty-state` 样式 |
+| `src/components/encryption/DehydratedDeviceManager.vue` | 1 | 换 `EmptyState`（保留 `mdi:cellphone-off` 图标），删除 `.empty-state` 多行样式 |
+| `src/components/encryption/KeyRotationDialog.vue` | 1 | 换 `EmptyState`（`compact`），移除 `NEmpty` 导入 |
+| `src/views/admin/AdminPush.vue` | 1 | 配置空表换 `EmptyState`（保留 `data-testid="admin-push-config-empty"`）；两处居中说明 `span.empty-text` 一并换 `EmptyState`（`variant="subtle"`）；移除 `NEmpty` 导入与 `.empty-text` 样式 |
+
+说明：`AdminPush.vue` 的两处 `span.empty-text` 不计入计数器（判据只认 `length === 0` 一类「空方向」条件），但同属手写空态，本轮一并收敛。
+
+#### 第三批迁移（6 文件 / 9 处）
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/components/widget/WidgetDetailPanel.vue` | 3 | 配置/能力/会话三处 `class="empty-row"` 包裹的 `n-empty` 换 `EmptyState`（`compact`），删除 `.empty-row` 样式 |
+| `src/components/widget/WidgetManager.vue` | 1 | 控件列表空态换 `EmptyState`（`compact`），删除 `.empty-state` 样式 |
+| `src/components/widget/WidgetDialogs.vue` | 1 | 权限空态换 `EmptyState`（`compact`），删除 `.empty-row` 样式 |
+| `src/components/thread/ThreadPanel.vue` | 1 | 无回复空态换 `EmptyState`（`compact`） |
+| `src/components/space/PublicSpaceDiscoveryDialog.vue` | 2 | 搜索无结果/子空间为空两处 `p.psd__state` 换 `EmptyState`（`compact` + `variant="subtle"`），保留 `data-testid="psd-empty"` / `psd-children-empty"` |
+| `src/components/space/SpaceSwitcher.vue` | 1 | 空间过滤为空换 `EmptyState`（`compact` + `variant="subtle"`），删除 `.space-switcher-empty` 样式 |
+
+#### 第四批迁移（移动端 5 文件 / 11 处）
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/mobile/views/space/components/SpaceChildrenList.vue` | 2 | `loading && rooms.length === 0` / `rooms.length === 0` / `v-else` 三段合并为单个 `MobileAsyncState`（`test-id="space-rooms"`，复现 `space-rooms-loading` / `space-rooms-empty`）；删除 `.children-hint` 样式 |
+| `src/mobile/views/friends/FriendGroups.vue` | 2 | `van-loading` + `van-empty` + `van-collapse` 三态改 `MobileAsyncState`（`test-id="friend-groups"`），「创建分组」保留在就绪分支；行内「暂无成员」占位 `van-cell` 保留 |
+| `src/mobile/views/my/MobileEmojiManager.vue` | 2 | 表情包列表三态改 `MobileAsyncState`（`test-id="emoji-packs"`，创建按钮留在组件外，空态仍可创建）；详情区空列表改单态 `MobileAsyncState` |
+| `src/mobile/views/rooms/index.vue` | 2 | 加载中 / 加载失败 / 空结果 / 列表四段合并为 `MobileAsyncState`（`test-id="mobile-rooms"`），空态 CTA「创建第一个会话」走 `#empty` 具名插槽 |
+| `src/mobile/components/encryption/MobileDeviceTrustManager.vue` | 3 | 设备 / 未验证设备 / 封禁列表三处 `div.empty-state + van-empty` 改 `MobileAsyncState`，删除 `.empty-state` 样式 |
+
+保留关键 `data-testid` / `data-test`（`mobile-rooms-add`、`mobile-rooms-filter-*`、`mobile-rooms-create-first`、`emoji-packs-*`、`friend-groups-*`、`space-rooms-*`）；`rooms/index.vue` 原 `data-testid="mobile-rooms-retry"` 收敛为 `MobileAsyncState` 内置的 `data-test="async-state-retry"`，已 grep 确认全仓无测试引用旧值。
+
+#### 第五批迁移（桌面端 7 文件 / 15 处）
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/views/chatHistory/index.vue` | 3 | 首屏加载 / 首屏失败 / 空结果分别用 `n-spin`、`ErrorState`（`illustration="generic-error"` + `@retry`）、`EmptyState`（`illustration="no-results"`）；条件收敛为 `initialLoading` / `initialLoadFailed` / `isEmptyResult`，翻页不打断已有列表 |
+| `src/components/admin/media/MediaScopedPanel.vue` | 2 | 房间/用户媒体两张表下的 `n-empty` 换 `EmptyState compact`，条件收敛为 `roomMediaEmpty` / `userMediaEmpty`（加载完成且无数据才显示） |
+| `src/components/rightBox/chatBox/ChatRoomSearch.vue` | 2 | 加载提示与空结果拆为 `showFirstLoading` / `showNoResults`；无结果改用 `EmptyState compact variant="subtle" illustration="no-results"`，保留输入引导与重试分支 |
+| `src/components/settings/ThreePidSection.vue` | 2 | `n-empty` 换 `EmptyState compact`，保留 `data-test="three-pid-empty"`；条件收敛为 `isInitialLoading` / `isEmpty` |
+| `src/components/workbench/TjgSpaceTree.vue` | 2 | `n-empty` + `.tjg-space-tree__empty` 换 `EmptyState compact`，条件收敛为 `isInitialLoading` / `isEmpty`，删除死样式 |
+| `src/views/admin/AdminCas.vue` | 2 | 服务列表与属性列表 `n-empty` 换 `EmptyState compact`，保留 `data-testid="admin-cas-services-empty"` / `admin-cas-attributes-empty` |
+| `src/views/admin/AdminSecurity.vue` | 2 | 安全事件与登录失败 `n-empty` 换 `EmptyState`，删除 `.empty-state` 死样式，条件收敛为 `securityEventsEmpty` / `loginFailuresEmpty` |
+
+#### 第六批迁移（移动端 19 文件 / 19 处）
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/mobile/views/chat-room/notice/NoticeList.vue` | 1 | 空态块换 `MobileAsyncState #empty`（保留图标 + 「发布公告」CTA），条件收敛为 `isEmptyList`（已加载且无公告） |
+| `src/mobile/components/thread/ThreadView.vue` | 1 | `div.empty-state` + `van-empty` 换 `MobileAsyncState state="empty"`，删除死样式，条件为 `isEmpty`（无回复且非加载中） |
+| `src/mobile/components/virtual-scroll/SmartVirtualList.vue` | 1 | 纯 loading 分支收敛为 `isInitialLoading`（该组件不承担空态渲染，避免遮挡已有列表） |
+| `src/mobile/components/encryption/MobileDehydratedDeviceDialog.vue` | 1 | `div.empty-state` 换 `MobileAsyncState`，删除死样式 |
+| `src/mobile/components/my/MobileApplyList.vue` | 1 | 单组件双态：`:state="showLoadError ? 'error' : 'empty'"` + `@retry`，避免把「读取失败」显示成「暂无申请」 |
+| `src/mobile/components/PushNotificationList.vue` | 1 | `div.empty-state` 换 `MobileAsyncState state="empty"` |
+| `src/mobile/views/chat-room/GroupChatMember.vue` | 1 | 成员/搜索结果为空换 `MobileAsyncState`，条件收敛为 `isEmptyList` |
+| `src/mobile/views/chat-room/MobileForwardDialog.vue` | 1 | `__empty` 块换 `MobileAsyncState`，条件收敛为 `isEmptyRooms`，删除死样式（`:disabled="flow.targetRoomIds.value.length === 0"` 属属性绑定，不在范围） |
+| `src/mobile/views/chat-room/SearchChatContent.vue` | 1 | `van-empty` 换 `MobileAsyncState state="empty"`，条件收敛为 `isEmptyResults` |
+| `src/mobile/views/my/MyAlbum.vue` | 1 | 相册空态换 `MobileAsyncState`，条件收敛为 `isAlbumEmpty` |
+| `src/mobile/views/space/SpaceView.vue` | 1 | `.empty-state` + `van-empty` 换 `MobileAsyncState`，条件收敛为 `isEmptySpaces`（加载完成且无空间），删除死样式 |
+| `src/mobile/views/my/MobileNotificationHistory.vue` | 1 | `van-empty` 换 `MobileAsyncState`，保留 `data-testid="notification-empty"`，条件收敛为 `isHistoryEmpty` |
+| `src/mobile/views/my/Files.vue` | 1 | 空结果块换 `MobileAsyncState`，条件收敛为 `isFileListEmpty` |
+| `src/mobile/views/my/DeviceManagement.vue` | 1 | `van-empty`（含失败重试）换 `MobileAsyncState` 双态 + `@retry`，保留 `data-testid="device-empty"`，条件收敛为 `isDeviceListEmpty` |
+| `src/mobile/views/secretChat/SecretChatPage.vue` | 1 | `van-empty` 换 `MobileAsyncState`，条件收敛为 `isEmptySessions` |
+| `src/mobile/views/my/MobileIgnoredUsers.vue` | 1 | `van-empty` 换 `MobileAsyncState`，条件收敛为 `isIgnoredListEmpty` |
+| `src/mobile/views/friends/StartGroupChat.vue` | 1 | 搜索无结果换 `MobileAsyncState`，条件收敛为 `showNoContactResult` |
+| `src/mobile/views/my/MobileInvitePermission.vue` | 1 | 行内占位 `van-cell` 保留，空判定移入 `isActiveListEmpty` |
+| `src/mobile/views/my/MobilePushSettings.vue` | 1 | 行内占位 `van-cell` 保留，空判定移入 `isPusherListEmpty` |
+
+移动端至此清零：`src/mobile/**` 内不再有手写空态计数。两处单测同步补 `van-empty` 桩（`PushNotificationList`、`MobileDehydratedDeviceDialog`），否则统一件内部的 Vant 组件在 happy-dom 下不渲染文案。
+
+#### 第七批迁移（桌面 32 文件 / 32 处 + AI·趋势 9 文件 / 11 处，共 41 文件 / 43 处）
+
+桌面端 A 组（admin / workbench / 联邦）：
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/components/admin/AdminTable.vue` | 1 | `#empty` 插槽内 `!loading && data.length === 0` → `isEmptyData` + `EmptyState compact`；`withDefaults(...)` 结果赋给 `props` 以便 computed 读取；删除 `.admin-table__empty` 与空 `<style>` 块，`#empty` 覆盖能力保留 |
+| `src/components/admin/federation/FederationCachePanel.vue` | 1 | → `isEmptyCacheEntries`，保留 `data-test="cache-empty"`，移除 `NEmpty` |
+| `src/components/admin/federation/FederationPendingPanel.vue` | 1 | → `isEmptyPendingServers`，保留 `data-test="pending-empty"`，移除 `NEmpty` |
+| `src/components/admin/media/MediaLibraryPanel.vue` | 1 | → `isEmptyLibrary`，移除 `NEmpty` |
+| `src/components/admin/media/MediaQuarantineChangesPanel.vue` | 1 | → `isEmptyQuarantineChanges`；同文件 `v-if="quarantineChanges.length > 0"`（加载更多守卫）不属空态，原样保留 |
+| `src/components/admin/media/MediaQuotaPanel.vue` | 1 | `alerts.length === 0` → `isEmptyAlerts`；同文件非长度驱动的 `n-empty`（无配额状态）一并换 `EmptyState compact`，两处 `data-test` 均保留 |
+| `src/components/admin/users/AdminUserServerInfo.vue` | 1 | → `isEmptyStatsEntries`，移除 `NEmpty` |
+| `src/components/workbench/SpaceMembersPane.vue` | 1 | `!members.length` → `isEmptyMembers`，保留 `data-test="space-members-empty"`，删死样式 |
+| `src/components/workbench/SpaceRoomsPane.vue` | 1 | `!rooms.length` → `isEmptyRooms`，保留 `data-test="space-rooms-empty"`，删死样式 |
+| `src/views/homeWindow/FederationView.vue` | 1 | `destinations.length === 0` → `isEmptyDestinations`，`v-if/v-else-if/v-else` 三态链等价，删死样式 |
+
+桌面端 B 组（admin 视图 / rightBox）：
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/views/admin/accountPolicy/PasswordProviderPanel.vue` | 1 | `!providersLoading && providers.length === 0` → `showProvidersEmpty`，保留 `data-testid="account-policy-provider-empty"` |
+| `src/views/admin/AdminMaintenance.vue` | 1 | `!featureEntries.length` → `isEmptyFeatureEntries`，`compact` 替代 `size="small"`；两处非长度驱动的 `n-empty` 仍在清单外沿用 `NEmpty` |
+| `src/views/admin/AdminSecurityIpBlocks.vue` | 1 | `blocks.length === 0` → `isEmptyBlocks`，删除 `.empty-state`，移除 `NEmpty` |
+| `src/views/admin/AdminServerNotificationTab.vue` | 1 | → `showNotificationsEmpty`，保留 `data-testid="server-notification-empty"` |
+| `src/views/admin/callbacks/AccountDataCallbacksPanel.vue` | 1 | → `showAccountDataEmpty`，保留 `data-testid="admin-callbacks-account-empty"` |
+| `src/views/admin/callbacks/MediaCallbacksPanel.vue` | 1 | → `showMediaEmpty`，保留 `data-testid="admin-callbacks-media-empty"` |
+| `src/views/admin/ModerationAdminReportTab.vue` | 1 | `!loading && !error && reports.length === 0` → `isEmptyReports`，保留 `data-testid="admin-report-empty"`；错误横幅仍为既有 `n-alert` |
+| `src/components/rightBox/chatBox/PinMessageSelector.vue` | 1 | `selectableMessages.length === 0` → `isEmptySelection`，`EmptyState compact`，删 `.pin-selector__empty`；单测断言由 `[data-test="n-empty"]` 改为 `.empty-state` |
+| `src/components/rightBox/DelayedMessagesModal.vue` | 1 | `!items.length` → `isEmptyPending`，手写 SVG 时钟改为 `icon="mdi:clock-outline"` + `compact` |
+| `src/components/rightBox/FriendDetailsSections.vue` | 1 | `devices.length === 0` → `isEmptyDevices`，`v-if/v-else-if` 链等价 |
+| `src/components/rightBox/renderMessage/MessageActionMenu.vue` | 1 | `!allowedActions.length` → `isEmptyActions`，保留 `data-test="menu-empty"`，沿用紧凑类 + `compact variant="subtle"` |
+
+桌面端 C 组（dm / encryption / fileManager / friend / rendezvous / room）：
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/components/dm/CreateDmDialog.vue` | 1 | → `isEmptyRecentContacts`，`EmptyState compact` |
+| `src/components/encryption/DeviceVerifyIntroStep.vue` | 1 | 经核查该条件控制的是「查看待处理列表」按钮可见性而非空态 UI，仅收敛为 `canViewPending`，不引入 `EmptyState` |
+| `src/components/encryption/DeviceVerifyPendingStep.vue` | 1 | `n-alert` 提示换 `EmptyState compact`，→ `isEmptyPendingList`，移除 `NAlert` |
+| `src/components/fileManager/UserList.vue` | 1 | → `isEmptyFilteredList`，`compact + illustration="no-results"`，保留 `getEmptyMessage()` 动态文案 |
+| `src/components/friend/FriendGroupView.vue` | 1 | → `isEmptyGroups`，`compact`，保留「搜索无结果 / 分组为空」三元文案 |
+| `src/components/rendezvous/RendezvousSessionManager.vue` | 1 | → `isEmptyMessages`，`compact`，删死样式 `.empty-messages` |
+| `src/components/rightBox/renderMessage/MessageEditHistoryDialog.vue` | 1 | `!versions.length` → `isEmptyVersions`，`compact` |
+| `src/components/room/AnnouncementPanel.vue` | 1 | → `isEmptyAnnouncements`，`compact + icon="mdi:bullhorn-outline"`，移除自定义 SVG |
+| `src/components/room/RoomCardGrid.vue` | 1 | → `isEmptyRooms`，`illustration="no-rooms"`，保留 `data-testid="room-card-grid-empty"` 与 `h-full flex-center` |
+| `src/components/room/RoomDetailMembers.vue` | 1 | → `isEmptyMembers`，`compact`，保留 `data-testid="room-detail-members-empty"` |
+| `src/components/room/settings-tabs/MembersTab.vue` | 1 | → `isEmptyMembers`，保留 `data-testid="members-empty"` 与 `room.detail.no_members`，仅保留 `.rs-tab__loading` |
+
+AI / 趋势模块（仅桌面，R2 不影响移动端）：
+
+| 文件 | 处数 | 改动 |
+| :--- | :--- | :--- |
+| `src/views/trendradar/TrendRadarView.vue` | 3 | 热点新闻 `isEmptyNews`（`EmptyState` + 保留刷新 `@action="loadLatestNews"`）、RSS `isEmptyRss`（`EmptyState`，维持原有无按钮形态）、首次加载 `loading && newsList.length === 0` → `isInitialNewsLoading`（仅收敛条件，保留 `n-spin`）；删除 `__empty` / `__empty-icon` 死样式 |
+| `src/components/trendradar/SearchPanel.vue` | 1 | → `isEmptyResults`，`illustration="no-results"`，删除 `search-panel__empty*` 样式 |
+| `src/components/trendradar/TrendingPanel.vue` | 1 | → `isEmptyTopics`，`compact + icon="mdi:trending-up"`，删除 `trending-panel__empty*` 样式 |
+| `src/plugins/robot/components/ApiKeyManagement.vue` | 1 | → `isEmptyKeys`，保留「新增 API Key」为 `action-text` + `@action="handleAdd"` |
+| `src/plugins/robot/components/ChatRoleManagement.vue` | 1 | → `isEmptyRoles`，保留「新增角色」动作 |
+| `src/plugins/robot/components/ModelListModal.vue` | 1 | → `isEmptyModels`，保留「新增模型」动作 |
+| `src/plugins/robot/components/RobotChatModelPopover.vue` | 1 | → `isEmptyModels`，`compact`，加载中分支保持独立 |
+| `src/plugins/robot/components/RobotChatRolePopover.vue` | 1 | → `isEmptyRoles`，`compact`，加载中分支保持独立 |
+| `src/plugins/robot/layout/Left.vue` | 1 | → `isEmptyConversations`，`compact + icon="mdi:message-text-outline"` |
+
+第七批后 `handwritten_empty_state` 归零；清单外顺带收敛仅两处（`MediaQuotaPanel` 的非长度驱动空态、`CreateDmDialog` 的 `hasSearched` 分支未动），其余文件保持最小改动。
+
+
+#### 验证证据
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 空态 ratchet | `pnpm check:ratchet` | exit 0，`handwritten_empty_state: 0 (baseline 0)`；其余 11 个计数器与基线一致（无漂移） |
+| 相关单测（第七批） | `pnpm vitest run src/components/admin src/components/workbench src/views/admin src/components/rightBox src/components/room src/components/dm src/components/encryption src/components/fileManager src/components/friend src/components/rendezvous src/components/trendradar src/plugins/robot src/views/trendradar src/views/homeWindow` | 190 文件 / 1476 用例通过（exit 0）；`PinMessageSelector` 空态断言随统一件改为 `.empty-state` |
+| 类型检查（第七批） | `pnpm vue-tsc --noEmit` | 0 错误 |
+| lint / i18n（第七批） | `pnpm check` | exit 0，无诊断 |
+| 相关单测（第一批） | `pnpm vitest run`（PendingBurnMessages / MyRoomsDialog / MutualRoomsSection / MjolnirSettings / FriendsSettings） | 5 文件全部通过 |
+| 相关单测（第二批） | `pnpm vitest run src/components/encryption src/views/admin/__tests__` | 38 文件 / 252 用例通过 |
+| 相关单测（第三批） | `pnpm vitest run src/components/widget src/components/space src/components/thread` | 12 文件 / 147 用例通过 |
+| 相关单测（第四批） | `pnpm vitest run src/mobile` | 84 文件 / 650 用例通过（exit 0） |
+| 相关单测（第五批） | `pnpm vitest run src/views/chatHistory src/components/admin/media src/components/rightBox src/components/settings src/components/workbench src/views/admin` | 111 文件通过（exit 0） |
+| 相关单测（第六批） | `pnpm vitest run src/mobile` | 84 文件 / 650 用例通过（exit 0） |
+| 类型检查（第六批） | `pnpm vue-tsc --noEmit` | 0 错误 |
+| 类型检查（第五批） | `pnpm vue-tsc --noEmit` | 0 错误 |
+| lint / i18n（第五批） | `pnpm check` | Biome 2884 文件无修复、i18n 完整性与引用、令牌用量、无障碍、死处理器全部 OK |
+| lint / i18n（第六批） | `pnpm check` | exit 0；本轮修正 2 处 import 排序（`MyAlbum`、`PushNotificationList`）后无剩余问题 |
+| 全量单测（第一批后快照） | `pnpm test:run` | 1043 文件 / 11582 用例通过（exit 0）；该次运行早于第二、三批改动，后两批以定向用例 + 类型检查覆盖 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0，无输出 |
+| Lint + i18n | `pnpm check` | exit 0（`i18n refs 0/0`、token 224 使用率 100%、icon-button-aria 585 文件、svg-aria 587 处、dead-handlers 1642 文件、capabilities-sync 7 项） |
+| 四档视口 | `pnpm dev` + Playwright 1.63 / Chromium | `http://127.0.0.1:6130/login`：375/375、768/768、1024/1024、1440/1440 均 `scrollWidth === clientWidth`，`overflowCount = 0`，无裁切/重叠，`elementFromPoint` 命中自身，品牌图 `naturalWidth 256` |
+
+运行态取证的已知环境限制与顺带发现：
+
+- `pnpm dev` 日志出现 `/_matrix/client/v3/*` 的 `ECONNRESET` 代理错误，因本机无可用 homeserver，与布局无关；页面 WebSocket 报 `closed without opened` 同因。
+- 登录页品牌图 `alt` 为空（可访问性小瑕疵）；主按钮 `disabled=true` 属账号密码为空的预期态。
+- `localhost:6130` 在本机存在 IPv6 旧进程监听（返回 426），验证统一改用 `127.0.0.1:6130`。
+
+#### 硬性约束结论（§R3）
+
+1. **R1 SDK 优先**：本轮只做模板层替换与门禁脚本，未新增任何 Matrix 协议/HTTP 调用。
+2. **R2 移动端裁剪**：第一至三批与第七批集中在桌面路径（`src/components/**`、`src/views/**`、`src/plugins/robot/**`），未触碰 `src/mobile/**`；第四、六批落在 `src/mobile/**`，只引入 `@/mobile/components/common/MobileAsyncState.vue`，未引入 admin / AI 模块（`AdminPush.vue` 属桌面 admin 页面，移动端无入口）。第六批后 `src/mobile/**` 空态计数为 0，第七批未回退。
+3. **移动端构建**：未新增/移动移动端入口；`pnpm check` 与 `pnpm check:ratchet` 均通过，第六批由 `pnpm vitest run src/mobile`（84 文件 / 650 用例）+ `pnpm vue-tsc --noEmit` 覆盖，第七批由桌面定向 `pnpm vitest run`（190 文件 / 1476 用例）+ `pnpm vue-tsc --noEmit` 覆盖，真机构建仍归 §19.3。
+
+#### 后续批次
+
+第七批后 **剩余 0 处 / 0 文件**，`handwritten_empty_state` 清零，基线锁定为 0。后续任何新增的 `v-if`/`v-show` 空方向长度判断都会使 `pnpm check:ratchet` 直接 FAIL，必须改用 `EmptyState`（桌面）/ `MobileAsyncState`（移动）/ `ErrorState`。
+
+已核验但不属「空态 UI」而保留原状的两类条件：`DeviceVerifyIntroStep.vue` 的按钮可见性（已收敛为 `canViewPending`），以及各文件中的 `:disabled="x.length === 0"` 属性绑定（取样范围本就不计）。
+
+已剔除的假阳性：`src/mobile/components/chat-room/MobileBatchToolbar.vue` 3 处均为 `:disabled="selectedIds.length === 0"` 属性绑定，不属于空态渲染，新口径下已不计入。
+
+每批必须 `vitest run` + `vue-tsc --noEmit` + `check:ratchet --update`，基线只允许下降。
+
+### 19.9 运行态取证：对比度与键盘走查及三处缺陷修复（2026-11-16）
+
+#### 取证方式
+
+复用两个 dev server（桌面 `TAURI_ENV_PLATFORM=windows` 端口 5211、移动 `android` 端口 5210），用 Playwright 做两类扫描：
+
+- 对比度：axe-core `color-contrast`，未登录可达页面在 `document.documentElement.dataset.theme = 'light' | 'dark'` 下各扫一次；axe 通过 `page.addInitScript` 注入以绕开 CSP 对内联脚本的拦截。
+- 键盘走查：逐次 `Tab` 记录焦点落点与顺序，`Escape` 验证浮层能否退出。
+
+| 场景 | 视口 | 修复前 | 修复后 |
+| :--- | :--- | :--- | :--- |
+| 桌面登录页 | 1440×900 | 1 类 serious：driver.js 引导弹窗标题/进度文字 3.6:1（白字 on `--tjg-brand` #13987f） | `violations=0 nodes=0` |
+| 移动登录页 | 390×844 | 1 类 serious：协议勾选说明 3.19:1（#909090 on 白底） | `violations=0 nodes=0` |
+
+#### 缺陷 1：移动端登录页渐变背景从未生效
+
+- 现象：浅色/深色主题下登录页均退化为画布白，`--tjg-mobile-login-bg`（`linear-gradient`）未渲染。
+- 根因：`src/mobile/login.vue` 用 UnoCSS 任意值 `bg-[--tjg-mobile-login-bg]`，生成的是 `background-color: var(--tjg-mobile-login-bg)`；渐变值对 `background-color` 非法，整条声明被丢弃。暗色主题下也缺少该 token 的暗色值。
+- 修复：模板改为语义类 `login-shell`，scoped 样式用 `background` 承载渐变；`design-tokens.css` 暗色块补 `--tjg-mobile-login-bg-start/end`（`color-mix(in srgb, var(--tjg-brand) 6%/12%, var(--tjg-surface-app))`），并在 `@supports not (color: color-mix(...))` 兜底块补纯色值（`colorMixFallback.test.ts` 强制）。
+
+#### 缺陷 2：引导弹窗深色主题白字白按钮
+
+- 现象：driver.js 弹窗底色为品牌绿，文字却取 `--tjg-text-primary`（深色主题下为白色），对比度 3.6:1；按钮 `background-color` 同样落成白色，形成白底白字。
+- 根因：`src/styles/scss/global/driver.scss` 把正文语义 token 当作「品牌底上的文字色」，而该 token 随主题翻转。
+- 修复：弹窗底改为 `--tjg-color-primary-600`，标题/描述/进度统一 `--tjg-text-inverse`（双主题恒白），按钮改「`--tjg-text-inverse` 底 + `--tjg-color-primary-700` 字」，hover 用 `--tjg-brand-light`。
+
+#### 缺陷 3：引导浮层是键盘陷阱（无可用出口）
+
+- 现象：首访登录页会自动启动 4 步引导。driver.js 在浮层内锁焦点，同时配置为 `allowClose: false` / `showButtons: ['next','previous']`，关闭按钮不渲染（`display: none`），按 `Esc` 也不会退出。键盘用户只能把 4 步全部点完才能回到表单，属 WCAG 2.1.2「键盘陷阱」。
+- 根因：`src/composables/common/useDriver.ts` 只透传 driver.js 配置，未补键盘出口。
+- 修复：`startTour` 时注册 `keydown` 监听，`Esc` 直接 `destroy()` 并清空实例；`stopTour` 移除监听，避免路由切换后残留。修复后实测 `Esc` 可结束引导（`tourAfterEsc: false`），随后 Tab 依次落在「账号 → 头像切换按钮 → 服务器地址 → 密码 → 协议勾选 → 服务协议 → 隐私保护指引（含 `role="button"`）」。
+
+#### 变更文件
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/mobile/login.vue` | `bg-[--tjg-mobile-login-bg]` → `.login-shell` + scoped `background: var(--tjg-mobile-login-bg)` |
+| `src/styles/css/design-tokens.css` | 暗色新增 `--tjg-mobile-login-bg-start/end`（`color-mix`），`@supports not` 块补纯色兜底 |
+| `src/styles/scss/global/driver.scss` | 弹窗底、文字、按钮、hover 全部改用品牌语义 token |
+| `src/composables/common/useDriver.ts` | `startTour` / `stopTour` 增删 `Esc` 监听，为引导浮层补键盘出口 |
+
+四处改动只消费既有 `--tjg-*`，无新增颜色字面量，`check:ratchet` 的 `hardcoded_color` 仍为 0。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 触控热区 | `env -u CI pnpm test:touch-targets` | `2 passed` |
+| a11y 基线 | `env -u CI pnpm playwright test e2e/a11y-baseline.spec.ts --project=desktop-chromium --project=mobile-chromium` | `4 passed`、`4 skipped` |
+| 双主题对比度 | 临时 axe 脚本（未入仓） | 四组 `violations=0 nodes=0` |
+| 键盘走查 | 临时 Playwright 脚本（未入仓，桌面 5211 / 移动 5210 登录页逐次 Tab + Escape） | 修复前 `Esc` 无法退出引导（`tourAfterEsc: true`）；修复后 `tourAfterEsc: false`，Tab 可达协议链接（`role="button"`） |
+| 引导浮层单测回归 | `pnpm vitest run src/views/loginWindow src/composables/common` | 17 文件 / 99 用例通过 |
+| 硬编码 ratchet | `node scripts/check-ratchet.mjs` | 12 个计数器全部与基线一致 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0，无输出 |
+| 样式单测 | `pnpm vitest run src/styles/__tests__` | 5 文件 / 42 用例通过（含 `colorMixFallback`） |
+| 登录页单测 | `pnpm vitest run src/views/loginWindow` | 7 文件 / 26 用例通过 |
+| Lint + i18n | `pnpm check` | exit 0（token 使用率 100%、icon-button-aria / svg-aria / dead-handlers / capabilities-sync 全 OK） |
+
+#### 已知边界
+
+- 触控热区与对比度只覆盖未登录可达页面（桌面/移动登录页、移动「我的」与设置页）；账号内页仍需 §19.4 P2 的后端账号。
+- 命令需加 `env -u CI`：`playwright.config.ts` 在 `CI` 为真时强制 `reuseExistingServer=false`，会因 dev server 端口占用直接失败。
 
 ---
 

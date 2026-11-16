@@ -10,6 +10,13 @@
   "context": {
     "enter_chat": "Enter Chat"
   },
+  "discover": {
+    "title": "Discover Public Spaces",
+    "search_placeholder": "Search public spaces",
+    "search": "Search",
+    "loading": "Loading…",
+    "children_empty": "This space has no subspaces"
+  },
   "create": "Create Space",
   "search_sessions_placeholder": "Search sessions",
   "filter_all": "All",
@@ -147,6 +154,8 @@
   "join_failed": "Join Failed",
   "join_public": "Public Join",
   "join_success": "Joined",
+  "knock_failed": "Request Failed",
+  "knock_success": "Request Sent",
   "leave": "Leave",
   "leave_failed": "Leave Failed",
   "leave_success": "Left",

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type DataTableColumns, NButton, NCard, NDataTable, NEmpty, NInput, NPopconfirm, NSpace } from 'naive-ui'
+import { type DataTableColumns, NButton, NCard, NDataTable, NInput, NPopconfirm, NSpace } from 'naive-ui'
 import { computed, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { type UseAdminMedia, useAdminMedia } from '@/composables/admin'
@@ -124,6 +124,10 @@ const handleDeleteUserAll = async (): Promise<void> => {
   }
 }
 
+/** 房间/用户媒体为空：加载完成且当前无数据时才展示空态，避免首屏闪空 */
+const roomMediaEmpty = computed(() => roomLoaded.value && !roomMediaLoading.value && roomMedia.value.length === 0)
+const userMediaEmpty = computed(() => userLoaded.value && !userMediaLoading.value && userMedia.value.length === 0)
+
 const renderDeleteAction = (onDelete: () => void, disabled: boolean) =>
   h(
     NPopconfirm,
@@ -197,9 +201,7 @@ const userColumns = computed<DataTableColumns<UserMediaItem>>(() => [
           </n-space>
 
           <n-data-table :columns="roomColumns" :data="roomMedia" :loading="roomMediaLoading" size="small" />
-          <n-empty
-            v-if="roomLoaded && !roomMediaLoading && roomMedia.length === 0"
-            :description="t('admin.media.empty.roomMedia')" />
+          <EmptyState v-if="roomMediaEmpty" compact :description="t('admin.media.empty.roomMedia')" />
 
           <div v-if="roomMediaNextBatch" class="flex justify-center">
             <n-button :loading="roomMediaLoading" @click="loadMoreRoomMedia">
@@ -232,9 +234,7 @@ const userColumns = computed<DataTableColumns<UserMediaItem>>(() => [
           </n-space>
 
           <n-data-table :columns="userColumns" :data="userMedia" :loading="userMediaLoading" size="small" />
-          <n-empty
-            v-if="userLoaded && !userMediaLoading && userMedia.length === 0"
-            :description="t('admin.media.empty.userMedia')" />
+          <EmptyState v-if="userMediaEmpty" compact :description="t('admin.media.empty.userMedia')" />
 
           <div class="flex justify-end">
             <n-space align="center">

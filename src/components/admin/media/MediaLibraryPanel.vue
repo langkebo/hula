@@ -8,7 +8,6 @@ import {
   NDescriptionsItem,
   NDrawer,
   NDrawerContent,
-  NEmpty,
   NInput,
   NInputNumber,
   NModal,
@@ -18,6 +17,7 @@ import {
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { type MediaLibraryItem, type UseAdminMedia, useAdminMedia } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
@@ -58,6 +58,8 @@ const policyBeforeTs = ref<number | null>(null)
 const policyMaxSize = ref<number | null>(null)
 /** 两个条件均为空时不设置任何过滤条件，确认按钮需禁用并提示风险。 */
 const policyEmpty = computed(() => !policyBeforeTs.value && !policyMaxSize.value)
+/** 加载完成且媒体库为空时才展示空态 */
+const isEmptyLibrary = computed(() => !libraryLoading.value && library.value.length === 0)
 /** 按「服务器名 + 媒体 ID」直查：用于媒体库列表未覆盖跨服务器场景。 */
 const queryServerName = ref(matrixClientService.getClient()?.getDomain() ?? '')
 const queryMediaId = ref('')
@@ -285,10 +287,7 @@ onMounted(() => {
       :loading="libraryLoading"
       :row-key="(row: MediaLibraryItem) => row.mediaId"
       striped />
-    <n-empty
-      v-if="!libraryLoading && library.length === 0"
-      class="py-24px"
-      :description="t('admin.media.empty.library')" />
+    <EmptyState v-if="isEmptyLibrary" :description="t('admin.media.empty.library')" />
 
     <div v-if="libraryNextBatch" class="mt-12px flex justify-center">
       <n-button :loading="libraryLoading" @click="loadMoreLibrary">

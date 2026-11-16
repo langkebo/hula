@@ -27,7 +27,7 @@
               {{ provider }}
             </n-tag>
           </n-space>
-          <span v-else class="empty-text">{{ t('admin.push.noProviders') }}</span>
+          <EmptyState v-else compact variant="subtle" :description="t('admin.push.noProviders')" />
         </div>
 
         <div>
@@ -35,7 +35,7 @@
           <n-space v-if="config?.supported_keys && config.supported_keys.length > 0" size="small">
             <n-tag v-for="key in config.supported_keys" :key="key" size="small">{{ key }}</n-tag>
           </n-space>
-          <span v-else class="empty-text">{{ t('admin.push.noSupportedKeys') }}</span>
+          <EmptyState v-else compact variant="subtle" :description="t('admin.push.noSupportedKeys')" />
         </div>
 
         <n-data-table
@@ -45,8 +45,9 @@
           :row-key="(row: ConfigRow) => row.key"
           :scroll-x="640" />
 
-        <n-empty
+        <EmptyState
           v-if="!configLoading && configRows.length === 0"
+          compact
           data-testid="admin-push-config-empty"
           :description="t('admin.push.configEmpty')" />
       </n-space>
@@ -148,7 +149,6 @@ import {
   NButton,
   NCard,
   NDataTable,
-  NEmpty,
   NInput,
   NInputNumber,
   NSpace,
@@ -264,11 +264,6 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 600;
   color: var(--tjg-text-secondary);
-}
-
-.empty-text {
-  font-size: 13px;
-  color: var(--tjg-text-tertiary);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -32,8 +32,8 @@
       :row-key="(row: AdminMediaCallback) => row.id"
       :scroll-x="960" />
 
-    <n-empty
-      v-if="!mediaLoading && mediaCallbacks.length === 0"
+    <EmptyState
+      v-if="showMediaEmpty"
       data-testid="admin-callbacks-media-empty"
       :description="t('admin.callbacks.media.empty')" />
 
@@ -99,7 +99,6 @@ import {
   NButton,
   NCard,
   NDataTable,
-  NEmpty,
   NForm,
   NFormItem,
   NInput,
@@ -108,8 +107,9 @@ import {
   NSwitch,
   NTag
 } from 'naive-ui'
-import { h, onMounted, ref } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminCallbacks } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { AdminMediaCallback } from '@/services/matrix/admin'
@@ -131,6 +131,8 @@ const mediaDraft = ref({
   retryCount: 0,
   isEnabled: true
 })
+
+const showMediaEmpty = computed(() => !mediaLoading.value && mediaCallbacks.value.length === 0)
 
 function formatTs(ts: number | null): string {
   if (!ts) return '-'

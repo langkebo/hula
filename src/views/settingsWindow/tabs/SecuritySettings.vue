@@ -19,6 +19,10 @@
 
     <n-divider />
 
+    <ThreePidSection />
+
+    <n-divider />
+
     <IgnoredUsersSection />
 
     <n-divider />
@@ -49,6 +53,7 @@ import KeyBackupSetupDialog from '@/components/encryption/KeyBackupSetupDialog.v
 import SecureBackupDialog from '@/components/encryption/SecureBackupDialog.vue'
 import SecurityKeySetupDialog from '@/components/encryption/SecurityKeySetupDialog.vue'
 import InvitePermissionPanel from '@/components/settings/InvitePermissionPanel.vue'
+import ThreePidSection from '@/components/settings/ThreePidSection.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useWindowSessionReady } from '@/composables/common/useWindowSessionReady'
 import { useSecuritySettings } from '@/composables/encryption/useSecuritySettings'

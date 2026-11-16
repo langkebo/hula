@@ -35,11 +35,17 @@ open class RustPlugin : Plugin<Project> {
                         abiFilters += abiList
                     }
                 }
-                defaultArchList.forEachIndexed { index, arch ->
+                // PATCH（本仓改过；`tauri android init` 会覆盖本文件，重跑后需补回）：
+                // 上游这里遍历的是硬编码的 `defaultArchList`，于是 `archList` 属性只影响任务命名、
+                // 不影响 flavor 创建 —— 想「只留 arm64」时 arm/x86/x86_64 flavor 仍然会被建出来，
+                // Android Studio 同步后就会默认选中 armDebug（32 位），点 Run 编出空壳包。
+                // 改成遍历 `archList` 后，`gradle.properties` 里的 abiList/archList/targetList
+                // 才真正生效（三者需按索引一一对应）。
+                archList.forEachIndexed { index, arch ->
                     create(arch) {
                         dimension = "abi"
                         ndk {
-                            abiFilters.add(defaultAbiList[index])
+                            abiFilters.add(abiList[index])
                         }
                     }
                 }

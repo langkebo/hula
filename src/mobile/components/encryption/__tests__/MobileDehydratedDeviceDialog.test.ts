@@ -48,7 +48,8 @@ function createWrapper() {
         'van-button': { template: '<button><slot /></button>' },
         'van-cell-group': { template: '<div class="van-cell-group"><slot /></div>' },
         'van-cell': renderCellStub,
-        'van-loading': { template: '<div class="van-loading" />' }
+        'van-loading': { template: '<div class="van-loading" />' },
+        'van-empty': { props: ['description'], template: '<div>{{ description }}</div>' }
       }
     }
   })

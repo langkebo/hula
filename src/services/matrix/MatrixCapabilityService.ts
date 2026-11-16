@@ -4,6 +4,7 @@ import { getRuntimeAwareFetch } from '@/services/matrix/network/runtimeFetch'
 import type { MatrixCapabilities } from '@/types/message'
 import { SingleFlight } from '@/utils/ExecutionGuard'
 import { createLogger } from '@/utils/Logger'
+import { matrixEncryptionContextService } from './crypto/MatrixEncryptionContextService'
 import { matrixClientService } from './MatrixClientService'
 import { MATRIX_PATHS } from './paths'
 import { matrixAccountService } from './user/MatrixAccountService'
@@ -66,9 +67,11 @@ const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capab
     unstable: ['org.matrix.msc3886.sliding_sync', 'org.matrix.msc3575', 'org.matrix.simplified_msc3575'],
     capabilities: ['io.hula.sliding_sync']
   },
+  // E2EE 属客户端能力：服务端 /capabilities 与 /versions 都不宣告，
+  // 由客户端 crypto 初始化状态判定（见 canUseE2EE），因此两个来源均为空。
   e2ee: {
     unstable: [],
-    capabilities: ['m.room.encryption']
+    capabilities: []
   },
   voip: {
     unstable: ['org.matrix.msc3245.voice', 'org.matrix.msc3245'],
@@ -78,9 +81,12 @@ const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capab
     unstable: ['io.hula.friends'],
     capabilities: ['io.hula.friends']
   },
+  // 后台管理权限由 /_synapse/admin/* 的 is_admin 校验，不经 capabilities 面宣告；
+  // 能力位只表示"本客户端暴露 admin 入口"，由桌面端 admin 桥接层注册的
+  // 可用性判定提供（首次请求 403 即降级为 false）。
   'admin-api': {
-    unstable: ['io.hula.admin'],
-    capabilities: ['io.hula.admin']
+    unstable: [],
+    capabilities: []
   },
   'burn-after-read': {
     unstable: ['io.hula.burn_after_read'],
@@ -103,19 +109,25 @@ const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capab
     capabilities: []
   },
   'account-status': {
-    unstable: ['org.matrix.msc3720'],
-    capabilities: []
+    unstable: [],
+    capabilities: ['org.matrix.msc3720.account_status']
   },
   'extended-profile': {
-    unstable: ['org.matrix.msc4133'],
-    capabilities: []
+    unstable: ['uk.tcpip.msc4133'],
+    capabilities: ['m.profile_fields']
   },
   'qr-rendezvous': {
     unstable: ['org.matrix.msc4108'],
     capabilities: []
   },
   'mutual-rooms': {
-    unstable: ['org.matrix.msc2666'],
+    // MSC2666 自提交起就带 `uk.half-shot.` 前缀，稳定形态是
+    // `uk.half-shot.msc2666.query_mutual_rooms`（与
+    // `GET /_matrix/client/unstable/uk.half-shot.msc2666/user/mutual_rooms` 绑定）。
+    // 曾经这里写的 `org.matrix.msc2666` 不存在于任何 homeserver 的 /versions 里，
+    // 导致该能力位永远 unsupported。也不能退到短名 `uk.half-shot.msc2666`：
+    // matrix-js-sdk 见短名会走本仓不服务的 `/user/shared_rooms/{userId}`。
+    unstable: ['uk.half-shot.msc2666.query_mutual_rooms'],
     capabilities: []
   }
 }
@@ -182,6 +194,17 @@ function tryGetStore() {
   }
 }
 
+/** admin-api 可用性判定（由桌面端 admin 桥接层在路由注册期注入）。 */
+let _adminApiAvailabilityResolver: (() => boolean) | null = null
+
+/**
+ * 注册 admin-api 可用性判定器。桌面端 admin 桥接层在路由注册期调用；
+ * 移动端不注册，能力位恒为不可用，避免 admin 代码进入移动端产物。
+ */
+export function registerAdminApiAvailabilityResolver(resolver: (() => boolean) | null): void {
+  _adminApiAvailabilityResolver = resolver
+}
+
 class MatrixCapabilityService {
   // SingleFlight：并发调用 fetchCapabilities 时复用同一 Promise，
   // 避免重复发起 /versions + /capabilities + /client_config 共 3 个 HTTP 请求。
@@ -194,6 +217,9 @@ class MatrixCapabilityService {
    * 能力快照未加载时返回 `unknown`；调用方按 `unsupported` 处理，不渲染入口。
    */
   getCapabilityStatus(capability: TjgCapability): CapabilityStatus {
+    // 这两个能力位不由服务端宣告，改由客户端状态判定，不能走别名表。
+    if (capability === 'e2ee') return this.canUseE2EE() ? 'supported' : 'unsupported'
+    if (capability === 'admin-api') return this.canUseAdminApi() ? 'supported' : 'unsupported'
     const store = tryGetStore()
     if (!store?.isLoaded) return 'unknown'
     const aliases = HULA_CAPABILITY_ALIASES[capability]
@@ -207,8 +233,15 @@ class MatrixCapabilityService {
     return this.getCapabilityStatus(capability) === 'supported'
   }
 
+  /** 诊断用：返回能力位对应的服务端宣告 key，便于在界面上展示「为什么不可用」 */
+  getCapabilityAliases(capability: TjgCapability): { unstable: string[]; capabilities: string[] } {
+    const aliases = HULA_CAPABILITY_ALIASES[capability]
+    return { unstable: [...aliases.unstable], capabilities: [...aliases.capabilities] }
+  }
+
+  /** admin 入口可用性：桌面端读后台权限探测结果，移动端恒不可用 */
   canUseAdminApi(): boolean {
-    return this.hasCapability('admin-api')
+    return _adminApiAvailabilityResolver?.() ?? false
   }
 
   canUseFriendList(): boolean {
@@ -219,8 +252,9 @@ class MatrixCapabilityService {
     return this.hasCapability('sliding-sync')
   }
 
+  /** E2EE 可用性：服务端不宣告，按客户端 crypto 是否初始化判定 */
   canUseE2EE(): boolean {
-    return this.hasCapability('e2ee')
+    return matrixEncryptionContextService.getCurrentSessionContext().isCryptoEnabled
   }
 
   canUseVoip(): boolean {
@@ -401,6 +435,9 @@ export function useServerCapability() {
     isLoaded: computed(() => tryGetStore()?.isLoaded ?? false),
     isCapabilityAvailable,
     getCapabilityStatus,
+    getCapabilityAliases: (capability: TjgCapability) => service.getCapabilityAliases(capability),
+    /** 全量重拉能力快照，供诊断面板的「重试」入口使用 */
+    refreshCapabilities: () => service.refreshCapabilities(),
     hasUnstable: (flag: string) => tryGetStore()?.hasUnstable(flag).value ?? false,
     hasFeature: (feature: string) => tryGetStore()?.hasFeature(feature).value ?? false,
 

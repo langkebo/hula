@@ -1,7 +1,10 @@
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { registerCapabilityStoreResolver } from '@/services/matrix/MatrixCapabilityService'
+import {
+  registerAdminApiAvailabilityResolver,
+  registerCapabilityStoreResolver
+} from '@/services/matrix/MatrixCapabilityService'
 import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import MjolnirSettings from '../MjolnirSettings.vue'
 
@@ -65,9 +68,13 @@ vi.mock('vue-i18n', () => ({
 }))
 
 describe('MjolnirSettings', () => {
+  let adminApiAvailable = true
+
   beforeEach(() => {
     setActivePinia(createPinia())
+    adminApiAvailable = true
     registerCapabilityStoreResolver(() => useCapabilityStore())
+    registerAdminApiAvailabilityResolver(() => adminApiAvailable)
     useCapabilityStore().setCapabilities({ capabilities: { 'io.hula.admin': { enabled: true } } })
     vi.clearAllMocks()
     ;(window as any).$message = { success: messageSuccessMock, warning: messageWarningMock }
@@ -173,7 +180,7 @@ describe('MjolnirSettings', () => {
   })
 
   it('does not render the ban operation area when admin-api is unavailable', () => {
-    useCapabilityStore().capabilities = {}
+    adminApiAvailable = false
     const wrapper = mount(MjolnirSettings)
 
     expect(wrapper.find('.mjolnir-settings').exists()).toBe(true)

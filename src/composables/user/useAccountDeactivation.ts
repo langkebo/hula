@@ -2,7 +2,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useDialog } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
-import { useAccount } from '@/composables/user/useAccount'
+import { deactivationErrorKey, useAccountDeactivationFlow } from '@/composables/user/useAccountDeactivationFlow'
 import { useSessionActions } from '@/composables/user/useSessionActions'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
@@ -19,7 +19,7 @@ export function useAccountDeactivation() {
   const dialog = useDialog()
   const { t } = useI18n()
   const { showFeedback } = useActionFeedback()
-  const { deactivateAccount } = useAccount()
+  const { deactivate } = useAccountDeactivationFlow()
   const { logoutCurrentSession, resetLocalSessionState } = useSessionActions()
 
   async function leaveDeactivatedSession(): Promise<void> {
@@ -60,10 +60,9 @@ export function useAccountDeactivation() {
       onPositiveClick: async () => {
         instance.loading = true
         try {
-          await deactivateAccount()
+          await deactivate()
         } catch (error) {
-          logger.error('注销账户失败:', error)
-          showFeedback(t('setting.account.deactivate_failed'), 'error')
+          showFeedback(t(deactivationErrorKey(error)), 'error')
           instance.loading = false
           // 重新抛出以阻止弹窗关闭，用户可重试或取消
           throw error

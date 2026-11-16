@@ -54,6 +54,8 @@ export type Messages = {
     "voip_call_creation_failed": "无法创建通话",
     "voip_call_not_found": "通话不存在: {callId}",
     "url_parse_failed": "无法解析媒体地址: {mediaUrl}",
+    "signed_params_missing": "签名媒体参数不完整",
+    "signed_expired": "签名媒体链接已过期",
     "voice_message_manager_unavailable": "语音服务不可用"
   },
   "messaging": {
@@ -148,6 +150,8 @@ export type KeyPaths =
   | "matrix_error.media.voip_call_creation_failed"
   | "matrix_error.media.voip_call_not_found"
   | "matrix_error.media.url_parse_failed"
+  | "matrix_error.media.signed_params_missing"
+  | "matrix_error.media.signed_expired"
   | "matrix_error.media.voice_message_manager_unavailable"
   | "matrix_error.messaging.event_id_missing"
   | "matrix_error.messaging.media_uri_missing"

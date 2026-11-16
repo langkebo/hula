@@ -77,6 +77,9 @@ export interface FederationDestination {
   retryInterval?: number | undefined
   failureTs?: number | undefined
   lastSuccessfulTs?: number | undefined
+  failureCount?: number | undefined
+  status?: string | undefined
+  updatedTs?: number | undefined
 }
 
 export interface FederationBlacklistEntry {
@@ -84,6 +87,33 @@ export interface FederationBlacklistEntry {
   reason?: string | undefined
   addedBy?: string | undefined
   addedAt?: number
+}
+
+export interface FederationCacheEntry {
+  key: string
+  value: unknown
+  expiryTs: number | null
+}
+
+export interface FederationCachePage {
+  entries: FederationCacheEntry[]
+  total: number
+}
+
+export interface PendingFederationServer {
+  serverName: string
+  failureCount: number
+  lastFailedConnectAt: number | null
+  lastSuccessfulConnectAt: number | null
+  status: string
+  updatedTs: number | null
+}
+
+export interface PendingFederationPage {
+  servers: PendingFederationServer[]
+  total: number
+  limit: number
+  nextBatch?: string | undefined
 }
 
 export interface ServerNoticeResult {

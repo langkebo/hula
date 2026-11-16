@@ -15,7 +15,7 @@ export interface OneTimeInviteCreated {
 }
 
 /** 后端 `POST /invites/claim` 的响应 */
-interface OneTimeInviteClaimed {
+export interface OneTimeInviteClaimed {
   room_id: string | null
   room_alias: string | null
 }

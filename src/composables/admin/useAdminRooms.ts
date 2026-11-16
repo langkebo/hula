@@ -1,6 +1,7 @@
 import { computed, type Ref, ref } from 'vue'
 import { adminService } from '@/services/matrix/admin'
 import type { RoomInfo, RoomState } from '@/services/matrix/admin/AdminTypes'
+import { type AdminRoomGovernanceState, useAdminRoomGovernance } from './useAdminRoomGovernance'
 
 export type { RoomInfo } from '@/services/matrix/admin/AdminTypes'
 
@@ -12,7 +13,7 @@ interface RoomMessage {
   timestamp: number
 }
 
-interface UseAdminRoomsResult {
+export interface UseAdminRoomsResult extends AdminRoomGovernanceState {
   rooms: Ref<RoomInfo[]>
   filteredRooms: Ref<RoomInfo[]>
   loading: Ref<boolean>
@@ -48,6 +49,7 @@ interface UseAdminRoomsResult {
     roomId: string,
     options?: { purgeUpToTs?: number; dryRun?: boolean }
   ) => Promise<{ success: boolean; deletedEvents: number; dryRun: boolean }>
+  purgeRoom: (roomId: string) => Promise<void>
 
   loadRooms: (limit?: number, searchTerm?: string) => Promise<void>
   loadMoreRooms: (limit?: number) => Promise<void>
@@ -56,7 +58,6 @@ interface UseAdminRoomsResult {
   loadState: () => Promise<void>
 
   deleteRoom: (roomId: string, opts?: { purge?: boolean }) => Promise<void>
-  blockRoom: (roomId: string, block: boolean) => Promise<void>
   shutdownRoom: (roomId: string, message?: string) => Promise<{ kickedUsers: string[] }>
   forceJoinRoom: (roomId: string, userId: string) => Promise<void>
   forceLeaveRoom: (roomId: string, userId: string) => Promise<void>
@@ -95,6 +96,8 @@ export function useAdminRooms(): UseAdminRoomsResult {
   // Stats
   const roomStats = ref<Record<string, unknown> | null>(null)
   const statsLoading = ref(false)
+
+  const governance = useAdminRoomGovernance(selectedRoom, loadRooms)
 
   // Search
   const searchResults = ref<RoomInfo[]>([])
@@ -154,8 +157,18 @@ export function useAdminRooms(): UseAdminRoomsResult {
     messagesPaginationToken.value = undefined
     roomAliases.value = []
     roomStats.value = null
+    governance.resetGovernance()
     if (!room) return
-    await Promise.allSettled([loadMembers(), loadState(), loadMessages(), loadAliases(), loadRoomStats()])
+    await Promise.allSettled([
+      loadMembers(),
+      loadState(),
+      loadMessages(),
+      loadAliases(),
+      loadRoomStats(),
+      governance.loadRoomBlockStatus(),
+      governance.loadRoomListings(),
+      governance.loadForwardExtremities()
+    ])
   }
 
   async function loadMembers() {
@@ -256,15 +269,16 @@ export function useAdminRooms(): UseAdminRoomsResult {
     return adminService.purgeHistory(roomId, options)
   }
 
-  async function deleteRoom(roomId: string, opts?: { purge?: boolean }) {
-    await adminService.deleteRoom(roomId, opts)
+  async function purgeRoom(roomId: string) {
+    await adminService.purgeRoom(roomId)
     await loadRooms()
     if (selectedRoom.value?.roomId === roomId) await selectRoom(null)
   }
 
-  async function blockRoom(roomId: string, block: boolean) {
-    await adminService.blockRoom(roomId, block)
+  async function deleteRoom(roomId: string, opts?: { purge?: boolean }) {
+    await adminService.deleteRoom(roomId, opts)
     await loadRooms()
+    if (selectedRoom.value?.roomId === roomId) await selectRoom(null)
   }
 
   async function shutdownRoom(roomId: string, message?: string): Promise<{ kickedUsers: string[] }> {
@@ -295,6 +309,7 @@ export function useAdminRooms(): UseAdminRoomsResult {
   }
 
   return {
+    ...governance,
     rooms,
     filteredRooms,
     loading,
@@ -321,13 +336,13 @@ export function useAdminRooms(): UseAdminRoomsResult {
     searchRooms,
     makeRoomAdmin,
     purgeHistory,
+    purgeRoom,
     loadRooms,
     loadMoreRooms,
     selectRoom,
     loadMembers,
     loadState,
     deleteRoom,
-    blockRoom,
     shutdownRoom,
     forceJoinRoom,
     forceLeaveRoom,

@@ -17,6 +17,17 @@ vi.mock('../MatrixWorkerHost', () => ({
   matrixWorkerHost: { isStarted: false }
 }))
 
+// E2EE 属客户端能力：服务端不宣告，判定只看 crypto 是否初始化（CAP-08）
+const { cryptoContextMock } = vi.hoisted(() => ({
+  cryptoContextMock: { isCryptoEnabled: false }
+}))
+
+vi.mock('../crypto/MatrixEncryptionContextService', () => ({
+  matrixEncryptionContextService: {
+    getCurrentSessionContext: () => cryptoContextMock
+  }
+}))
+
 const throwingFetch = vi.fn((): Promise<unknown> => Promise.reject(new Error('network down')))
 vi.mock('../network/runtimeFetch', () => ({
   getRuntimeAwareFetch: () => throwingFetch
@@ -26,6 +37,7 @@ import { useCapabilityStore } from '@/stores/domains/chat/capability'
 import {
   CapabilityUnavailableError,
   matrixCapabilityService,
+  registerAdminApiAvailabilityResolver,
   registerCapabilityStoreResolver,
   type TjgCapability
 } from '../MatrixCapabilityService'
@@ -37,6 +49,8 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     // Register the store resolver so the service can access the store
     // (resets the cached store instance from previous tests)
     registerCapabilityStoreResolver(() => useCapabilityStore())
+    registerAdminApiAvailabilityResolver(null)
+    cryptoContextMock.isCryptoEnabled = false
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(null)
   })
 
@@ -59,20 +73,20 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     expect(matrixCapabilityService.canUseSlidingSync()).toBe(true)
   })
 
-  it('canUseE2EE only when the server advertises m.room.encryption', () => {
+  it('canUseE2EE follows local crypto readiness, not server capabilities', () => {
     const store = useCapabilityStore()
-    // 快照未加载：unknown 按 unsupported 处理，不再 fail-open
-    expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('unknown')
-    expect(matrixCapabilityService.canUseE2EE()).toBe(false)
-
-    store.setCapabilities({ capabilities: {} })
+    // 服务端即使宣告 m.room.encryption 也不作为 E2EE 依据
+    store.setCapabilities({ capabilities: { 'm.room.encryption': { enabled: true } } })
     expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('unsupported')
     expect(matrixCapabilityService.canUseE2EE()).toBe(false)
 
-    store.setCapabilities({ capabilities: { 'm.room.encryption': { enabled: true } } })
+    cryptoContextMock.isCryptoEnabled = true
+    expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('supported')
     expect(matrixCapabilityService.canUseE2EE()).toBe(true)
 
-    store.setCapabilities({ capabilities: { 'm.room.encryption': { enabled: false } } })
+    cryptoContextMock.isCryptoEnabled = false
+    store.setCapabilities({ unstable_features: { 'org.matrix.msc3814': true } })
+    expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('unsupported')
     expect(matrixCapabilityService.canUseE2EE()).toBe(false)
   })
 
@@ -94,30 +108,34 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
     expect(matrixCapabilityService.canUseVoip()).toBe(false)
   })
 
-  it('canUseFriendList / canUseAdminApi recognize hula extensions', () => {
+  it('canUseFriendList checks hula extension and canUseAdminApi follows the injected resolver', () => {
     const store = useCapabilityStore()
     expect(matrixCapabilityService.canUseFriendList()).toBe(false)
     expect(matrixCapabilityService.canUseAdminApi()).toBe(false)
 
-    store.setCapabilities({
-      capabilities: { 'io.hula.friends': { enabled: true }, 'io.hula.admin': { enabled: true } }
-    })
+    store.setCapabilities({ capabilities: { 'io.hula.friends': { enabled: true } } })
     expect(matrixCapabilityService.canUseFriendList()).toBe(true)
-    expect(matrixCapabilityService.canUseAdminApi()).toBe(true)
 
-    store.setCapabilities({
-      capabilities: { 'io.hula.friends': { enabled: false }, 'io.hula.admin': { enabled: false } }
-    })
-    expect(matrixCapabilityService.canUseFriendList()).toBe(false)
+    // admin-api 不经 capabilities 面宣告，即使服务端返回 io.hula.admin 也不代表可用
+    store.setCapabilities({ capabilities: { 'io.hula.admin': { enabled: true } } })
     expect(matrixCapabilityService.canUseAdminApi()).toBe(false)
+
+    // 由桌面端 admin 桥接层注入的判定结果决定
+    registerAdminApiAvailabilityResolver(() => true)
+    expect(matrixCapabilityService.canUseAdminApi()).toBe(true)
+    expect(matrixCapabilityService.getCapabilityStatus('admin-api')).toBe('supported')
+
+    registerAdminApiAvailabilityResolver(() => false)
+    expect(matrixCapabilityService.canUseAdminApi()).toBe(false)
+    expect(matrixCapabilityService.getCapabilityStatus('admin-api')).toBe('unsupported')
   })
 
   it('hasCapability resolves symbolic names', () => {
     const store = useCapabilityStore()
     store.setCapabilities({
-      unstable_features: { 'org.matrix.msc3886.sliding_sync': true },
-      capabilities: { 'io.hula.admin': true }
+      unstable_features: { 'org.matrix.msc3886.sliding_sync': true }
     })
+    registerAdminApiAvailabilityResolver(() => true)
     expect(matrixCapabilityService.hasCapability('sliding-sync')).toBe(true)
     expect(matrixCapabilityService.hasCapability('admin-api')).toBe(true)
     expect(matrixCapabilityService.hasCapability('voip')).toBe(false)
@@ -132,18 +150,17 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
       ['sticky-events', 'org.matrix.msc4354'],
       ['scheduled-send', 'org.matrix.msc4140'],
       ['rtc-transports', 'org.matrix.msc4143'],
-      ['account-status', 'org.matrix.msc3720'],
-      ['extended-profile', 'org.matrix.msc4133'],
+      ['extended-profile', 'uk.tcpip.msc4133'],
       ['qr-rendezvous', 'org.matrix.msc4108'],
-      ['mutual-rooms', 'org.matrix.msc2666']
+      ['mutual-rooms', 'uk.half-shot.msc2666.query_mutual_rooms']
     ]
 
     const capabilityBits: Array<[TjgCapability, string]> = [
-      ['e2ee', 'm.room.encryption'],
       ['voip', 'm.voice'],
       ['friend-list', 'io.hula.friends'],
-      ['admin-api', 'io.hula.admin'],
-      ['burn-after-read', 'io.hula.burn_after_read']
+      ['burn-after-read', 'io.hula.burn_after_read'],
+      ['account-status', 'org.matrix.msc3720.account_status'],
+      ['extended-profile', 'm.profile_fields']
     ]
 
     it('reports unknown before the snapshot is loaded', () => {
@@ -191,6 +208,29 @@ describe('MatrixCapabilityService §16.5.3 gates', () => {
 
       expect(matrixCapabilityService.hasCapability('dehydrated-device')).toBe(true)
       expect(matrixCapabilityService.canUseE2EE()).toBe(false)
+    })
+
+    // CAP-08: 旧错误 key 不得再命中能力位
+    it('rejects the legacy keys that the backend never advertises', () => {
+      const store = useCapabilityStore()
+      store.setCapabilities({
+        unstable_features: {
+          'org.matrix.msc4133': true,
+          'org.matrix.msc3720': true,
+          'org.matrix.msc2666': true,
+          'org.matrix.msc3814': true
+        },
+        capabilities: {
+          'm.room.encryption': { enabled: true },
+          'io.hula.admin': { enabled: true }
+        }
+      })
+
+      expect(matrixCapabilityService.getCapabilityStatus('extended-profile')).toBe('unsupported')
+      expect(matrixCapabilityService.getCapabilityStatus('account-status')).toBe('unsupported')
+      expect(matrixCapabilityService.getCapabilityStatus('mutual-rooms')).toBe('unsupported')
+      expect(matrixCapabilityService.getCapabilityStatus('e2ee')).toBe('unsupported')
+      expect(matrixCapabilityService.getCapabilityStatus('admin-api')).toBe('unsupported')
     })
   })
 

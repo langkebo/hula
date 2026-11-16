@@ -59,21 +59,11 @@
         </div>
 
         <n-spin :show="loading">
-          <div
-            v-if="!items.length"
-            class="flex flex-col items-center justify-center gap-2 py-6 text-[--tjg-text-tertiary]">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-              class="w-24px h-24px"
-              aria-hidden="true">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 2" />
-            </svg>
-            <span class="text-12px">{{ t('delayed_events.pending.empty') }}</span>
-          </div>
+          <EmptyState
+            v-if="isEmptyPending"
+            compact
+            icon="mdi:clock-outline"
+            :description="t('delayed_events.pending.empty')" />
 
           <ul v-else class="m-0 p-0 list-none flex flex-col gap-2">
             <li
@@ -90,6 +80,9 @@
               <div class="flex items-center gap-1 shrink-0">
                 <n-button size="tiny" quaternary @click="emit('sendNow', item.delayId)">
                   {{ t('delayed_events.actions.send_now') }}
+                </n-button>
+                <n-button size="tiny" quaternary @click="emit('restart', item.delayId)">
+                  {{ t('delayed_events.actions.restart') }}
                 </n-button>
                 <n-popselect
                   :options="rescheduleOptions"
@@ -112,6 +105,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import type { DelayedMessageInfo } from '@/services/matrix/messaging/MatrixDelayedEventsService'
 import { formatChatTime } from '@/utils/ComputedTime'
 
@@ -128,6 +122,7 @@ const emit = defineEmits<{
   (event: 'schedule', delayMs: number): void
   (event: 'cancel', delayId: number): void
   (event: 'sendNow', delayId: number): void
+  (event: 'restart', delayId: number): void
   (event: 'reschedule', delayId: number, delayMs: number): void
   (event: 'refresh'): void
 }>()
@@ -145,6 +140,8 @@ const presets = computed(() =>
   PRESET_DELAYS.map((preset) => ({ ms: preset.ms, label: t(`delayed_events.presets.${preset.key}`) }))
 )
 const rescheduleOptions = computed(() => presets.value.map((preset) => ({ label: preset.label, value: preset.ms })))
+
+const isEmptyPending = computed(() => props.items.length === 0)
 
 const roomName = (roomId: string): string => props.roomNames[roomId] || t('delayed_events.pending.unknown_room')
 

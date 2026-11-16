@@ -28,15 +28,13 @@
         <n-empty v-else :description="t('setting.push.noDevices')" />
       </n-spin>
       <div class="add-pusher-section">
-        <n-button size="small" @click="showAddPusherModal = true">
-          {{ t('setting.push.add_pusher.label') }}
-        </n-button>
+        <n-button size="small" @click="showAddPusherModal = true">{{ t('setting.push.add_pusher.label') }}</n-button>
       </div>
     </div>
 
     <AddPusherDialog v-model:show="showAddPusherModal" @added="fetchPushers" />
 
-    <n-divider />
+    <PushDeviceSettings />
 
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.push.rules') }}</h3>
@@ -141,6 +139,7 @@ import type { IPusher, IPushRule, IPushRules, PushRuleKind } from '@/types/matri
 import { createLogger } from '@/utils/Logger'
 import AddPusherDialog from './AddPusherDialog.vue'
 import PushNotificationHistory from './PushNotificationHistory.vue'
+import PushDeviceSettings from './sections/PushDeviceSettings.vue'
 
 const logger = createLogger('PushSettings')
 

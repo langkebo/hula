@@ -31,6 +31,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
+import { guardApkFreshness, resetAppState } from './lib/probe-runtime.mjs'
 
 const BASE = (process.env.E2EE_BASE ?? 'http://127.0.0.1:8008').replace(/\/$/, '')
 const APP = (process.env.E2EE_APP ?? 'http://127.0.0.1:5210').replace(/\/$/, '')
@@ -574,13 +575,20 @@ async function gotoTargetRoom(cdp, roomId) {
   return { ok: false }
 }
 
-/** 真实输入 + 真实点击「发送」 */
+/**
+ * 真实输入 + 真实点击「发送」。
+ *
+ * 两个实测量到的事实决定了这里的写法：
+ * 1. 移动端发送按钮是**条件渲染** —— `#message-input` 为空时整个按钮不渲染
+ *    （`MessageInput` 只在有内容时挂 `n-button`）；
+ * 2. `Input.insertText` 打在 contenteditable 上**偶发不生效**（2026-11-14 复跑：3 轮里 1 轮
+ *    S3 键入丢失 ⇒ 按钮不存在 ⇒ 报「找不到发送按钮」的**假红**，第二次跑 35/0 全绿）。
+ * 因此必须先确认「键入真的落到了输入框」，未生效就清空重试，并区分两种失败原因。
+ */
 async function realSend(cdp, text) {
-  await cdp.evaluate(`document.querySelector('#message-input')?.focus(); true`)
-  await sleep(200)
-  await cdp.send('Input.insertText', { text })
-  await sleep(900)
-  const btn = await cdp.evaluate(`
+  const readComposer = () => cdp.evaluate(`(document.querySelector('#message-input')?.innerText ?? '')`)
+  const findBtn = () =>
+    cdp.evaluate(`
     (() => {
       const b = [...document.querySelectorAll('button')].find((x) => /^(发送|Send)$/.test((x.innerText || '').trim()));
       if (!b) return { found: false };
@@ -588,6 +596,46 @@ async function realSend(cdp, text) {
       return { found: true, x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), disabled: Boolean(b.disabled) };
     })()
   `)
+  const clearComposer = () =>
+    cdp.evaluate(`
+    (() => {
+      const el = document.querySelector('#message-input');
+      if (!el) return false;
+      el.focus();
+      el.innerText = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    })()
+  `)
+
+  let typed = false
+  let btn = { found: false }
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await cdp.evaluate(`document.querySelector('#message-input')?.focus(); true`)
+    await sleep(250)
+    if (attempt === 0) {
+      await cdp.send('Input.insertText', { text })
+    } else {
+      // 兜底：直接写 DOM 选区，绕开 CDP 输入的焦点竞态
+      await clearComposer()
+      await sleep(150)
+      await cdp.evaluate(`
+        (() => {
+          const el = document.querySelector('#message-input');
+          if (!el) return false;
+          el.focus();
+          document.execCommand('insertText', false, ${JSON.stringify(text)});
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          return true;
+        })()
+      `)
+    }
+    await sleep(600)
+    typed = String(await readComposer()).includes(text)
+    btn = await findBtn()
+    if (typed && btn?.found && !btn.disabled) break
+  }
+  if (!typed) return { ok: false, reason: '键入未生效（Input.insertText 未落到 contenteditable）' }
   if (!btn?.found || btn.disabled) return { ok: false, reason: btn?.found ? 'disabled' : '找不到发送按钮' }
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: btn.x, y: btn.y, button: 'none', clickCount: 0 })
   await sleep(60)
@@ -801,6 +849,10 @@ async function main() {
 
   try {
     phase(`S0 准备（串行=${SERIAL ? '开' : '关'}）`)
+    // APK 陈旧时警告（本脚本只测前端 + 服务端语义，旧 Rust 不必然影响；原生判据请开 PROBE_REQUIRE_FRESH_APK=1）
+    guardApkFreshness()
+    // 只在**开头**清一次两台：S3 依赖 S1 留下的会话做冷启动恢复，不能每次启动 App 都清
+    for (const device of Object.values(DEVICES)) resetAppState(ADB, device.serial)
     const a = await register('a')
     const b = await register('b')
     ctx.a = a

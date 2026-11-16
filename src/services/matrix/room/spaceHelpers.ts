@@ -19,7 +19,8 @@ export function sdkSpaceToSpaceInfo(space: SdkSpace, room?: Room): SpaceInfo {
     topic: space.topic || undefined,
     avatarUrl: space.avatar_url || undefined,
     memberCount: room ? room.getJoinedMembers().length : 0,
-    childCount: room ? getSpaceChildIds(room).length : 0
+    childCount: room ? getSpaceChildIds(room).length : 0,
+    joinRule: toSpaceJoinRule(room)
   }
 }
 
@@ -32,8 +33,18 @@ export function roomToSpaceInfo(room: Room, getSpaceChildIds: (room: Room) => st
     topic: getRoomTopic(room) ?? undefined,
     avatarUrl: room.getMxcAvatarUrl() || undefined,
     memberCount: room.getJoinedMembers().length,
-    childCount: getSpaceChildIds(room).length
+    childCount: getSpaceChildIds(room).length,
+    joinRule: toSpaceJoinRule(room)
   }
+}
+
+/** 读取房间加入规则（非已知取值一律视为未知） */
+function toSpaceJoinRule(room?: Room): SpaceInfo['joinRule'] {
+  const rule = (room as { getJoinRule?: () => string } | undefined)?.getJoinRule?.()
+  if (rule === 'public' || rule === 'invite' || rule === 'knock' || rule === 'restricted') {
+    return rule
+  }
+  return undefined
 }
 
 /** 获取空间的子房间 ID 列表

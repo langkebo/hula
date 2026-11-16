@@ -120,6 +120,7 @@
       @schedule="handleScheduleDelayed"
       @cancel="cancelDelayed"
       @send-now="sendDelayedNow"
+      @restart="restartDelayed"
       @reschedule="rescheduleDelayed"
       @refresh="refreshDelayed" />
   </div>
@@ -341,6 +342,7 @@ const {
   handleScheduleDelayed,
   cancelDelayed,
   sendDelayedNow,
+  restartDelayed,
   rescheduleDelayed,
   refreshDelayed
 } = useDelayedMessageEntry({ roomId: currentSessionRoomId, delayedMessages, scheduleDelayedMessage })

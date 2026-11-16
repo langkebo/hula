@@ -8,7 +8,8 @@
       @space-select="handleSelectSpace"
       @search="handleGlobalSearch"
       @create="openCreateSpace"
-      @create-room="openCreateRoomModal" />
+      @create-room="openCreateRoomModal"
+      @discover="showDiscoverDialog = true" />
 
     <!-- 视图切换工具条：列表 / 层级树 -->
     <div v-if="!isLoading" class="space-list-page__view-bar" role="tablist" :aria-label="t('space.title')">
@@ -90,6 +91,7 @@
         @create-space="openCreateSpace" />
     </div>
 
+    <PublicSpaceDiscoveryDialog v-model:show="showDiscoverDialog" @joined="handleDiscoverJoined" />
     <SpaceCreateRoomPane :space-id="selectedSpaceId" v-model:show="showCreateRoomModal" />
   </div>
 </template>
@@ -97,6 +99,7 @@
 <script lang="ts" setup name="spaceList">
 import { useI18n } from 'vue-i18n'
 import SkeletonSpaceTree from '@/components/common/SkeletonSpaceTree.vue'
+import PublicSpaceDiscoveryDialog from '@/components/space/PublicSpaceDiscoveryDialog.vue'
 import SpaceCreateRoomPane from '@/components/space/SpaceCreateRoomPane.vue'
 import type { SpaceTreeNode } from '@/components/space/SpaceTree.vue'
 import SpaceTree from '@/components/space/SpaceTree.vue'
@@ -282,6 +285,12 @@ const handleDeleteSpace = (spaceId: string) => {
       }
     }
   })
+}
+
+// 发现公开空间
+const showDiscoverDialog = ref(false)
+const handleDiscoverJoined = async () => {
+  await reloadSpaces()
 }
 
 // 初始化加载

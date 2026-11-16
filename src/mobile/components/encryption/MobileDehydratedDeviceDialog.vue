@@ -12,9 +12,11 @@
       <van-loading v-if="ddFlow.loading.value" size="20px" class="loading-center" />
 
       <template v-else>
-        <div v-if="ddFlow.devices.value.length === 0" class="empty-state">
-          {{ t('mobile_encryption.dehydrated_device.no_devices') }}
-        </div>
+        <MobileAsyncState
+          v-if="ddFlow.devices.value.length === 0"
+          state="empty"
+          :empty-text="t('mobile_encryption.dehydrated_device.no_devices')"
+          min-height="120px" />
 
         <van-cell-group v-else inset>
           <van-cell
@@ -45,6 +47,7 @@ import { showConfirmDialog, showToast } from 'vant'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDehydratedDevice } from '@/composables/encryption/useDehydratedDevice'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 
 defineOptions({ name: 'MobileDehydratedDeviceDialog' })
 
@@ -120,13 +123,6 @@ const handleConfirm = () => {
     display: flex;
     justify-content: center;
     padding: 24px;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 24px;
-    color: var(--tjg-text-secondary);
-    font-size: 14px;
   }
 
   .actions {

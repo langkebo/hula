@@ -75,8 +75,9 @@
           </n-timeline>
         </div>
 
-        <n-empty
+        <EmptyState
           v-if="showHistory && rotationHistory.length === 0"
+          compact
           :description="t('encryption.key_rotation.no_history')" />
 
         <div class="action-item">
@@ -193,7 +194,6 @@ import {
   NAlert,
   NButton,
   NDivider,
-  NEmpty,
   NFlex,
   NInput,
   NModal,

@@ -24,8 +24,9 @@
           :loading="servicesLoading"
           :row-key="(row: CasServiceInfo) => row.id"
           :scroll-x="720" />
-        <n-empty
-          v-if="!servicesLoading && services.length === 0"
+        <EmptyState
+          v-if="servicesEmpty"
+          compact
           data-testid="admin-cas-services-empty"
           :description="t('admin.cas.servicesEmpty')" />
       </n-space>
@@ -84,8 +85,9 @@
           :loading="attributesLoading"
           :row-key="(row: CasUserAttribute) => row.name"
           :scroll-x="640" />
-        <n-empty
-          v-if="!attributesLoading && attributes.length === 0"
+        <EmptyState
+          v-if="attributesEmpty"
+          compact
           data-testid="admin-cas-attributes-empty"
           :description="t('admin.cas.attributesEmpty')" />
 
@@ -115,18 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  type DataTableColumns,
-  NAlert,
-  NButton,
-  NCard,
-  NDataTable,
-  NEmpty,
-  NInput,
-  NSpace,
-  NTag,
-  useDialog
-} from 'naive-ui'
+import { type DataTableColumns, NAlert, NButton, NCard, NDataTable, NInput, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAdminCas } from '@/composables/admin'
@@ -154,6 +145,10 @@ const {
   loadUserAttributes,
   saveUserAttribute
 } = useAdminCas()
+
+/** 加载完成且无数据时才展示空态，避免加载中抢先渲染空提示 */
+const servicesEmpty = computed(() => !servicesLoading.value && services.value.length === 0)
+const attributesEmpty = computed(() => !attributesLoading.value && attributes.value.length === 0)
 
 const draftId = ref('')
 const draftName = ref('')

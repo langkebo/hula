@@ -44,10 +44,31 @@
       </n-gi>
 
       <n-gi span="2">
+        <n-card :title="t('admin.maintenance.server_info')" size="small">
+          <n-descriptions v-if="serverInfoEntries.length" :column="2" size="small" bordered>
+            <n-descriptions-item v-for="entry in serverInfoEntries" :key="entry.key" :label="entry.key">
+              {{ entry.value }}
+            </n-descriptions-item>
+          </n-descriptions>
+          <n-empty v-else :description="t('admin.maintenance.no_stats')" size="small" />
+          <n-space class="mt-12px">
+            <n-popconfirm @positive-click="handleRestart">
+              <template #trigger>
+                <n-button type="error" :loading="restarting" data-testid="admin-maintenance-restart">
+                  {{ t('admin.maintenance.restart') }}
+                </n-button>
+              </template>
+              {{ t('admin.maintenance.restart_confirm') }}
+            </n-popconfirm>
+          </n-space>
+        </n-card>
+      </n-gi>
+
+      <n-gi span="2">
         <n-card size="small">
           <n-tabs v-model:value="featureTab" type="line" animated>
             <n-tab-pane :name="'simple'" :tab="t('admin.maintenance.experimental_features')">
-              <n-empty v-if="!featureEntries.length" :description="t('admin.maintenance.no_features')" size="small" />
+              <EmptyState v-if="isEmptyFeatureEntries" compact :description="t('admin.maintenance.no_features')" />
               <n-list v-else bordered>
                 <n-list-item v-for="entry in featureEntries" :key="entry.key">
                   <n-flex align="center" justify="space-between">
@@ -87,6 +108,7 @@ import {
   NList,
   NListItem,
   NPageHeader,
+  NPopconfirm,
   NSpace,
   NSwitch,
   NTabPane,
@@ -95,6 +117,7 @@ import {
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import FeatureFlagManager from '@/components/admin/FeatureFlagManager.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useAdminMaintenance } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { formatBytes } from '@/utils/Formatting'
@@ -110,6 +133,8 @@ const experimentalFeatures = maintenance.experimentalFeatures
 const loading = maintenance.loading
 const purging = maintenance.purging
 const featureMutating = maintenance.featureMutating
+const serverInfo = maintenance.serverInfo
+const restarting = maintenance.restarting
 
 const purgeBeforeTs = ref<number | null>(null)
 const featureTab = ref('advanced')
@@ -137,6 +162,21 @@ const featureEntries = computed<FeatureEntry[]>(() =>
   })
 )
 
+const isEmptyFeatureEntries = computed(() => featureEntries.value.length === 0)
+
+const serverInfoEntries = computed(() =>
+  Object.entries(serverInfo.value ?? {}).map(([key, value]) => ({
+    key,
+    value: formatServerValue(value)
+  }))
+)
+
+function formatServerValue(value: unknown): string {
+  if (value === null || value === undefined) return '-'
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
 async function loadData() {
   try {
     await maintenance.loadAll()
@@ -153,6 +193,16 @@ async function handlePurge() {
   } catch (err) {
     logger.error('Failed to purge media cache:', err)
     showFeedback(t('admin.maintenance.purge_failed'), 'error')
+  }
+}
+
+async function handleRestart() {
+  try {
+    await maintenance.restartServer()
+    showFeedback(t('admin.maintenance.restart_success'), 'success')
+  } catch (err) {
+    logger.error('Failed to restart server:', err)
+    showFeedback(t('admin.maintenance.restart_failed'), 'error')
   }
 }
 

@@ -37,9 +37,11 @@
 
       <!-- 房间列表 -->
       <div class="mobile-forward-dialog__list">
-        <div v-if="filteredRooms.length === 0" class="mobile-forward-dialog__empty">
-          {{ t('message.forward.no_rooms') }}
-        </div>
+        <MobileAsyncState
+          v-if="isEmptyRooms"
+          state="empty"
+          :empty-text="t('message.forward.no_rooms')"
+          min-height="160px" />
         <SmartVirtualList
           v-else
           class="h-full overflow-y-auto"
@@ -94,6 +96,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMessageForward } from '@/composables/messaging/useMessageForward'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import SmartVirtualList from '@/mobile/components/virtual-scroll/SmartVirtualList.vue'
 import { matrixMessageService } from '@/services/matrix/messaging/MatrixMessageService'
 import { createLogger } from '@/utils/Logger'
@@ -174,6 +177,9 @@ const filteredRooms = computed(() => {
   if (!query) return availableRooms.value
   return availableRooms.value.filter((room) => room.name.toLowerCase().includes(query))
 })
+
+/** 无可转发房间（含搜索无结果）：交给 MobileAsyncState 统一渲染 */
+const isEmptyRooms = computed(() => filteredRooms.value.length === 0)
 
 /**
  * 加载源消息事件
@@ -322,15 +328,6 @@ watch(
   &__list {
     flex: 1;
     min-height: 200px;
-  }
-
-  &__empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 200px;
-    font-size: 14px;
-    color: var(--tjg-text-tertiary);
   }
 
   &__checkbox {

@@ -50,12 +50,11 @@
         </div>
 
         <!-- 空状态 -->
-        <div
-          v-else-if="chatList.length === 0"
-          class="flex flex-col items-center justify-center py-20px text-(12px [--tjg-text-tertiary])">
-          <svg class="size-40px mb-10px opacity-50" aria-hidden="true"><use href="#empty"></use></svg>
-          <p>{{ t('ai_assistant.robot.no_conversation') }}</p>
-        </div>
+        <EmptyState
+          v-else-if="isEmptyConversations"
+          compact
+          icon="mdi:message-text-outline"
+          :description="t('ai_assistant.robot.no_conversation')" />
 
         <TransitionGroup v-else name="list" tag="div" class="p-4px sort-target flex flex-col-center gap-12px">
           <div v-for="(item, index) in chatList" :key="item.id" class="chat-item-wrapper relative mb-5px">
@@ -197,6 +196,7 @@
 import { Icon } from '@iconify/vue'
 import type { InputInst, ScrollbarInst } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import RobotCard, { type RobotCardData } from '@/plugins/robot/components/RobotCard.vue'
@@ -251,6 +251,8 @@ interface ChatItem {
 }
 
 const chatList = ref<ChatItem[]>([])
+
+const isEmptyConversations = computed(() => chatList.value.length === 0)
 
 /** Map a ChatItem to RobotCardData for the RobotCard component */
 const mapChatItemToRobot = (item: ChatItem, index: number): RobotCardData => ({

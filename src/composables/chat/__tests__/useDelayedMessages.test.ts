@@ -12,6 +12,7 @@ const { showFeedbackMock, serviceMock, loggerErrorMock } = vi.hoisted(() => ({
     scheduleMessagePayload: vi.fn(),
     cancel: vi.fn(),
     sendNow: vi.fn(),
+    restart: vi.fn(),
     reschedule: vi.fn()
   }
 }))
@@ -53,6 +54,7 @@ describe('useDelayedMessages', () => {
     serviceMock.listPending.mockResolvedValue(pendingItems)
     serviceMock.cancel.mockResolvedValue(undefined)
     serviceMock.sendNow.mockResolvedValue(undefined)
+    serviceMock.restart.mockResolvedValue(pendingItems[0])
     serviceMock.reschedule.mockResolvedValue(8)
     serviceMock.scheduleMessagePayload.mockResolvedValue(9)
   })
@@ -107,6 +109,31 @@ describe('useDelayedMessages', () => {
 
     expect(showFeedbackMock.mock.calls[0][0]).toContain('delayed_events.feedback.schedule_failed')
     expect(showFeedbackMock.mock.calls[0][0]).toContain('delayed_events.errors.unsupported')
+  })
+
+  it('reports success and reloads after a restart', async () => {
+    const delayed = useDelayedMessages()
+    delayed.supported.value = true
+    await delayed.refresh()
+
+    await expect(delayed.restart(7)).resolves.toBe(true)
+
+    expect(serviceMock.restart).toHaveBeenCalledWith(7)
+    expect(showFeedbackMock).toHaveBeenCalledWith('delayed_events.feedback.restarted', 'success')
+    expect(serviceMock.listPending).toHaveBeenCalledTimes(2)
+  })
+
+  it('reloads after a restart failure so the server-side state stays visible', async () => {
+    const delayed = useDelayedMessages()
+    delayed.supported.value = true
+    await delayed.refresh()
+    serviceMock.restart.mockRejectedValue(new DelayedEventError('not_found'))
+
+    await expect(delayed.restart(7)).resolves.toBe(false)
+
+    expect(serviceMock.listPending).toHaveBeenCalledTimes(2)
+    expect(showFeedbackMock.mock.calls[0][0]).toContain('delayed_events.feedback.restart_failed')
+    expect(showFeedbackMock.mock.calls[0][0]).toContain('delayed_events.errors.not_found')
   })
 
   it('reloads after a reschedule failure so the server-side state stays visible', async () => {

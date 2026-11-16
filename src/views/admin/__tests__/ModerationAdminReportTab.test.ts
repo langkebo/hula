@@ -5,6 +5,7 @@ import ModerationAdminReportTab from '../ModerationAdminReportTab.vue'
 const mocks = vi.hoisted(() => ({
   getAdminReports: vi.fn(),
   getAdminReport: vi.fn(),
+  getScannerInfo: vi.fn(),
   dismissReport: vi.fn(),
   showFeedback: vi.fn()
 }))
@@ -14,6 +15,7 @@ vi.mock('@/services/matrix/admin', () => ({
     reports: {
       getAdminReports: mocks.getAdminReports,
       getAdminReport: mocks.getAdminReport,
+      getScannerInfo: mocks.getScannerInfo,
       dismissReport: mocks.dismissReport
     }
   }
@@ -223,6 +225,12 @@ describe('ModerationAdminReportTab', () => {
     vi.clearAllMocks()
     mocks.getAdminReports.mockResolvedValue({ reports: sampleReports })
     mocks.getAdminReport.mockResolvedValue(sampleReports[0])
+    mocks.getScannerInfo.mockResolvedValue({
+      scanner_id: 'scanner-1',
+      scan_result: 'spam',
+      confidence: 0.92,
+      scanned_at: 1700000000000
+    })
     mocks.dismissReport.mockResolvedValue(true)
   })
 
@@ -301,5 +309,49 @@ describe('ModerationAdminReportTab', () => {
 
     expect(mocks.showFeedback).toHaveBeenCalled()
     expect(mocks.getAdminReports).not.toHaveBeenCalled()
+  })
+
+  it('查看扫描器调用 getScannerInfo 并渲染扫描器字段', async () => {
+    const wrapper = await mountTab()
+    await wrapper.find('[data-testid="admin-report-detail-1"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="report-scanner-info"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="admin-report-view-scanner"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.getScannerInfo).toHaveBeenCalledWith('!room-a:example.org', '$event-a', true)
+    expect(wrapper.find('[data-testid="report-scanner-fields"]').text()).toContain('scanner-1')
+  })
+
+  it('扫描器读取失败展示错误态并可重试', async () => {
+    mocks.getScannerInfo.mockRejectedValueOnce(new Error('scanner offline'))
+    const wrapper = await mountTab()
+    await wrapper.find('[data-testid="admin-report-detail-1"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="admin-report-view-scanner"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="report-scanner-error"]').text()).toContain('scanner offline')
+
+    await wrapper.find('[data-testid="report-scanner-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.getScannerInfo).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-testid="report-scanner-fields"]').exists()).toBe(true)
+  })
+
+  it('刷新详情重新读取 getAdminReport', async () => {
+    const wrapper = await mountTab()
+    await wrapper.find('[data-testid="admin-report-detail-1"]').trigger('click')
+    await flushPromises()
+    mocks.getAdminReport.mockClear()
+
+    await wrapper.find('[data-testid="admin-report-detail-refresh"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.getAdminReport).toHaveBeenCalledWith('1', true)
   })
 })

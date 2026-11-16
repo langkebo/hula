@@ -43,7 +43,8 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
     getRoom: vi.fn(() => ({
       getMember: () => ({
         name: 'Alice'
-      })
+      }),
+      findEventById: () => undefined
     }))
   },
   default: {
@@ -55,7 +56,8 @@ vi.mock('@/services/matrix/MatrixClientService', () => ({
     getRoom: vi.fn(() => ({
       getMember: () => ({
         name: 'Alice'
-      })
+      }),
+      findEventById: () => undefined
     }))
   }
 }))
@@ -97,6 +99,18 @@ vi.mock('naive-ui', async () => {
       setup(props) {
         return () => h('span', { 'data-test': 'avatar' }, props.src || 'avatar')
       }
+    }),
+    NModal: defineComponent({
+      name: 'NModal',
+      props: {
+        show: {
+          type: Boolean,
+          default: false
+        }
+      },
+      setup(props, { slots }) {
+        return () => (props.show ? h('div', [slots.default?.()]) : null)
+      }
     })
   }
 })
@@ -113,7 +127,8 @@ describe('TjgMessageMeta', () => {
       getRoom: () => ({
         getMember: () => ({
           name: 'Alice'
-        })
+        }),
+        findEventById: () => undefined
       })
     })
 

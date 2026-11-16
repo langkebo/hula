@@ -133,7 +133,7 @@
 
     <div class="w-full flex justify-end gap-12px">
       <n-button @click="emit('cancel')">{{ t('common.cancel') }}</n-button>
-      <n-button v-if="pendingVerifications.length === 0 && !inboundRequest" tertiary @click="emit('view-pending')">
+      <n-button v-if="canViewPending" tertiary @click="emit('view-pending')">
         {{ t('setting.encryption.device_verify_dialog.view_pending') }}
       </n-button>
       <n-button v-if="inboundRequest" type="error" ghost @click="emit('decline')">
@@ -193,6 +193,9 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+/** 无待处理请求且非拒绝来件时，入口按钮才允许打开「待处理列表」 */
+const canViewPending = computed(() => props.pendingVerifications.length === 0 && !props.inboundRequest)
 
 /**
  * 设备选择项：有设备名时带上 deviceId 做消歧——同一用户多台设备可能同名，

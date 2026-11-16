@@ -23,9 +23,10 @@
                 {{ t('common.widget.edit_config') }}
               </n-button>
             </div>
-            <div v-if="!widgetConfig || Object.keys(widgetConfig).length === 0" class="empty-row">
-              <n-empty size="small" :description="t('common.widget.no_config')" />
-            </div>
+            <EmptyState
+              v-if="!widgetConfig || Object.keys(widgetConfig).length === 0"
+              compact
+              :description="t('common.widget.no_config')" />
             <n-descriptions v-else bordered :column="1" label-placement="left" size="small">
               <n-descriptions-item v-for="(value, key) in widgetConfig" :key="String(key)" :label="String(key)">
                 <template v-if="typeof value === 'object' && value !== null">
@@ -50,9 +51,7 @@
                 {{ t('common.widget.edit_capabilities') }}
               </n-button>
             </div>
-            <div v-if="capabilities.length === 0" class="empty-row">
-              <n-empty size="small" :description="t('common.widget.no_capabilities')" />
-            </div>
+            <EmptyState v-if="capabilities.length === 0" compact :description="t('common.widget.no_capabilities')" />
             <div v-else class="capabilities-tags">
               <n-tag v-for="cap in capabilities" :key="cap" size="small" type="info" class="cap-tag">
                 {{ cap }}
@@ -65,9 +64,7 @@
       <!-- Sessions -->
       <n-tab-pane name="sessions" :tab="t('common.widget.sessions')">
         <n-spin :show="sessionsLoading">
-          <div v-if="sessions.length === 0" class="empty-row">
-            <n-empty size="small" :description="t('common.widget.no_sessions')" />
-          </div>
+          <EmptyState v-if="sessions.length === 0" compact :description="t('common.widget.no_sessions')" />
           <div v-else class="sessions-list">
             <div v-for="session in sessions" :key="session.session_id" class="session-item">
               <div class="session-info">
@@ -364,9 +361,5 @@ defineExpose({ reload })
     display: flex;
     gap: 8px;
   }
-}
-
-.empty-row {
-  padding: 16px 0;
 }
 </style>

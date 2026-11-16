@@ -71,7 +71,8 @@
     "retry": "Retry"
   },
   "storage": {
-    "label": "Media storage"
+    "label": "Media storage",
+    "count": "Media count"
   },
   "userList": {
     "searchPlaceholder": {

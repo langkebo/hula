@@ -78,6 +78,13 @@ interface SearchMessagesOptions {
  */
 type SearchManagerInstance = ReturnType<NonNullable<MatrixClient['getSearchManager']>>
 
+interface ServerRoomSearchResult {
+  room_id: string
+  name?: string
+  avatar_url?: string
+  num_joined_members?: number
+}
+
 class MatrixSearchService {
   private getSearchMgr(): SearchManagerInstance {
     const client = matrixClientService.getClient()
@@ -276,7 +283,26 @@ class MatrixSearchService {
     }
 
     try {
-      const response = await this.getSearchMgr().searchUserDirectory({
+      const manager = this.getSearchMgr()
+
+      // search_recipients：按可见性过滤并附带在线态，优先用于邀请/选人场景；
+      // 端点缺失或无结果时回退到用户目录搜索，保持原有搜索行为。
+      if (typeof manager.searchRecipients === 'function') {
+        try {
+          const recipientResponse = await manager.searchRecipients({ term: query, limit })
+          const recipientResults = this.toUserSearchResults(
+            (recipientResponse.results ?? []) as Array<{ user_id: string; display_name?: string; avatar_url?: string }>
+          )
+          if (recipientResults.length > 0) {
+            logger.info(`[MatrixSearch] 收件人搜索完成: "${query}" 找到 ${recipientResults.length} 个用户`)
+            return recipientResults
+          }
+        } catch (err) {
+          logger.warn(`[MatrixSearch] search_recipients 不可用，回退用户目录: ${err}`)
+        }
+      }
+
+      const response = await manager.searchUserDirectory({
         term: query,
         limit
       })
@@ -305,31 +331,74 @@ class MatrixSearchService {
     const client = matrixClientService.getClient()
     if (!client) return []
 
-    const rooms = client.getRooms()
-    const myUserId = client.getUserId()
+    const term = query.trim()
+    if (!term) return []
+
+    try {
+      // 服务端 search_rooms：与 Element 一致走 roomManager，避免本地 includes 漏搜未加载房间
+      const response = await client.getRoomManager().searchRooms(term, 20)
+      const results = this.toServerRoomSearchResults(client, (response.results || []) as ServerRoomSearchResult[])
+      logger.info(`[MatrixSearch] 搜索房间成功: "${term}" 找到 ${results.length} 个房间`)
+      return results
+    } catch (error) {
+      logger.warn(`[MatrixSearch] 服务端房间搜索失败，回退本地过滤: ${error}`)
+      return this.searchRoomsLocally(client, term)
+    }
+  }
+
+  private searchRoomsLocally(client: MatrixClient, query: string): RoomSearchResult[] {
     const lowerQuery = query.toLowerCase()
 
-    return rooms
+    return client
+      .getRooms()
       .filter((room) => {
         const roomName = room.name?.toLowerCase() || ''
         const roomId = room.roomId.toLowerCase()
         return roomName.includes(lowerQuery) || roomId.includes(lowerQuery)
       })
-      .map((room) => {
-        const member = room.getMember(myUserId || '')
-        const isSpaceRoom = typeof room.isSpaceRoom === 'function' ? (room.isSpaceRoom() as boolean) : false
-        const dmInviter = (room as Room & { getDMInviter?: () => string | undefined }).getDMInviter?.()
+      .map((room) => this.toRoomSearchResult(room, client.getUserId() || ''))
+      .sort((a, b) => a.roomName.localeCompare(b.roomName))
+  }
+
+  private toServerRoomSearchResults(client: MatrixClient, rooms: ServerRoomSearchResult[]): RoomSearchResult[] {
+    const myUserId = client.getUserId() || ''
+    return rooms
+      .map((item) => {
+        const localRoom = client.getRoom(item.room_id)
+        if (localRoom) {
+          return {
+            ...this.toRoomSearchResult(localRoom, myUserId),
+            roomName: localRoom.name || item.name || item.room_id,
+            avatarUrl: localRoom.getMxcAvatarUrl() || item.avatar_url || undefined,
+            memberCount: localRoom.getJoinedMemberCount() || item.num_joined_members || 0
+          }
+        }
+
         return {
-          roomId: room.roomId,
-          roomName: room.name || room.roomId,
-          avatarUrl: room.getMxcAvatarUrl() || undefined,
-          memberCount: room.getJoinedMemberCount(),
-          isJoined: member?.membership === 'join',
-          // 与 MatrixRoomStoreAdapter 一致的 DM 判定：优先用 dmInviter，回退到成员数
-          isDirect: isSpaceRoom ? false : dmInviter !== undefined || room.getJoinedMembers().length <= 2
+          roomId: item.room_id,
+          roomName: item.name || item.room_id,
+          avatarUrl: item.avatar_url || undefined,
+          memberCount: item.num_joined_members || 0,
+          isJoined: true,
+          isDirect: false
         }
       })
       .sort((a, b) => a.roomName.localeCompare(b.roomName))
+  }
+
+  private toRoomSearchResult(room: Room, myUserId: string): RoomSearchResult {
+    const member = room.getMember(myUserId)
+    const isSpaceRoom = typeof room.isSpaceRoom === 'function' ? (room.isSpaceRoom() as boolean) : false
+    const dmInviter = (room as Room & { getDMInviter?: () => string | undefined }).getDMInviter?.()
+    return {
+      roomId: room.roomId,
+      roomName: room.name || room.roomId,
+      avatarUrl: room.getMxcAvatarUrl() || undefined,
+      memberCount: room.getJoinedMemberCount(),
+      isJoined: member?.membership === 'join',
+      // 与 MatrixRoomStoreAdapter 一致的 DM 判定：优先用 dmInviter，回退到成员数
+      isDirect: isSpaceRoom ? false : dmInviter !== undefined || room.getJoinedMembers().length <= 2
+    }
   }
 
   /**

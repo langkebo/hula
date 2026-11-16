@@ -6,57 +6,63 @@
 
     <template #container>
       <div class="flex flex-col overflow-auto h-full">
-        <div v-if="loading" class="flex justify-center items-center py-40px">
-          <van-loading size="24px">{{ t('mobile_friend_groups.loading') }}</van-loading>
-        </div>
+        <MobileAsyncState
+          :state="asyncState"
+          test-id="friend-groups"
+          :loading-text="t('mobile_friend_groups.loading')"
+          :empty-text="t('mobile_friend_groups.empty')"
+          min-height="240px">
+          <div class="flex flex-col p-16px gap-12px">
+            <!-- 分组列表：手风琴减少页面跳转（方案 4.1.2） -->
+            <van-collapse v-model="expandedGroups">
+              <van-collapse-item
+                v-for="group in groups"
+                :key="group.group_id"
+                :name="group.group_id"
+                :title="group.name">
+                <template #value>
+                  <span class="text-12px text-[--tjg-text-tertiary]">
+                    {{ t('mobile_friend_groups.member_count', { count: group.member_count ?? 0 }) }}
+                  </span>
+                </template>
 
-        <div v-else class="flex flex-col p-16px gap-12px">
-          <!-- 空态：给出创建引导，而不是白屏 -->
-          <van-empty v-if="groups.length === 0" :description="t('mobile_friend_groups.empty')" image="search" />
+                <van-cell-group inset>
+                  <van-cell
+                    v-for="member in membersOf(group.group_id)"
+                    :key="member.user_id"
+                    :title="member.displayname || member.user_id"
+                    :label="member.user_id" />
+                  <van-cell
+                    v-if="membersOf(group.group_id).length === 0"
+                    :title="t('mobile_friend_groups.no_member')" />
+                </van-cell-group>
 
-          <!-- 分组列表：手风琴减少页面跳转（方案 4.1.2） -->
-          <van-collapse v-else v-model="expandedGroups">
-            <van-collapse-item v-for="group in groups" :key="group.group_id" :name="group.group_id" :title="group.name">
-              <template #value>
-                <span class="text-12px text-[--tjg-text-tertiary]">
-                  {{ t('mobile_friend_groups.member_count', { count: group.member_count ?? 0 }) }}
-                </span>
-              </template>
+                <div class="flex gap-8px mt-12px px-4px">
+                  <van-button size="small" @click="openRename(group)">
+                    {{ t('mobile_friend_groups.rename') }}
+                  </van-button>
+                  <van-button size="small" type="danger" plain @click="handleDelete(group.group_id)">
+                    {{ t('mobile_friend_groups.delete') }}
+                  </van-button>
+                </div>
+              </van-collapse-item>
+            </van-collapse>
 
-              <van-cell-group inset>
-                <van-cell
-                  v-for="member in membersOf(group.group_id)"
-                  :key="member.user_id"
-                  :title="member.displayname || member.user_id"
-                  :label="member.user_id" />
-                <van-cell v-if="membersOf(group.group_id).length === 0" :title="t('mobile_friend_groups.no_member')" />
-              </van-cell-group>
-
-              <div class="flex gap-8px mt-12px px-4px">
-                <van-button size="small" @click="openRename(group)">
-                  {{ t('mobile_friend_groups.rename') }}
-                </van-button>
-                <van-button size="small" type="danger" plain @click="handleDelete(group.group_id)">
-                  {{ t('mobile_friend_groups.delete') }}
-                </van-button>
-              </div>
-            </van-collapse-item>
-          </van-collapse>
-
-          <!-- 创建分组 -->
-          <van-cell-group inset class="mt-8px">
-            <van-field
-              v-model="newGroupName"
-              :aria-label="t('mobile_friend_groups.new_placeholder')"
-              :placeholder="t('mobile_friend_groups.new_placeholder')"
-              maxlength="32" />
-          </van-cell-group>
-          <div class="px-4px">
-            <van-button type="primary" block :disabled="!newGroupName.trim()" @click="handleCreate">
-              {{ t('mobile_friend_groups.create') }}
-            </van-button>
+            <!-- 创建分组 -->
+            <van-cell-group inset class="mt-8px">
+              <van-field
+                v-model="newGroupName"
+                :aria-label="t('mobile_friend_groups.new_placeholder')"
+                :placeholder="t('mobile_friend_groups.new_placeholder')"
+                maxlength="32" />
+            </van-cell-group>
+            <div class="px-4px">
+              <van-button type="primary" block :disabled="!newGroupName.trim()" @click="handleCreate">
+                {{ t('mobile_friend_groups.create') }}
+              </van-button>
+            </div>
           </div>
-        </div>
+        </MobileAsyncState>
 
         <!-- 重命名弹窗 -->
         <van-dialog
@@ -81,10 +87,11 @@
 
 <script setup lang="ts">
 import { showConfirmDialog, showToast } from 'vant'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AutoFixHeightPage from '@/mobile/components/chat-room/AutoFixHeightPage.vue'
 import HeaderBar from '@/mobile/components/chat-room/HeaderBar.vue'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { matrixFriendGroups } from '@/services/matrix'
 import type { FriendGroup } from '@/services/matrix/friends/friendUtils'
 import type { Friend } from '@/services/matrix/sdk'
@@ -104,6 +111,12 @@ const newGroupName = ref('')
 const renameInput = ref('')
 const showRenameDialog = ref(false)
 const renamingGroup = ref<FriendGroup | null>(null)
+
+/** 四态：加载中、空分组、就绪；统一交给 MobileAsyncState 渲染 */
+const asyncState = computed<'loading' | 'empty' | 'ready'>(() => {
+  if (loading.value) return 'loading'
+  return groups.value.length === 0 ? 'empty' : 'ready'
+})
 
 /** 已加载过的分组直接返回缓存，避免展开时重复请求 */
 function membersOf(groupId: string): Friend[] {

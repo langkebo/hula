@@ -1,8 +1,6 @@
 {
   "title": "Deactivate account",
   "back": "Back",
-  "success": "Account deactivated",
-  "failed": "Failed to deactivate the account",
   "step": {
     "consequences": "Consequences",
     "verify": "Verify",
@@ -33,7 +31,6 @@
     "password_field": "Account password",
     "password_placeholder": "Enter your current account password",
     "password_required": "Enter your current account password",
-    "password_invalid": "Password verification failed. Please try again",
     "continue": "Confirm identity, continue",
     "mismatch": "That does not match the current account"
   },

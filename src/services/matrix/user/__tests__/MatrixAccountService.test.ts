@@ -19,7 +19,13 @@ const server = setupMswServer(
     return HttpResponse.json({ irc: { fields: ['network'] } })
   }),
   http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
-    return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
+    return HttpResponse.json({
+      rooms: [
+        { room_id: '!room1:server', name: 'Room 1', membership: 'join' },
+        { room_id: '!room2:server', name: 'Room 2', membership: 'invite' }
+      ],
+      total: 2
+    })
   }),
   http.get(`${TEST_BASE_URL}${PREFIX_V3}/events`, () => {
     return HttpResponse.json({ chunk: [], end: 'token1' })
@@ -109,7 +115,10 @@ describe('MatrixAccountService', () => {
       getCapabilities: vi.fn().mockResolvedValue({ 'm.room.tombstone': { enabled: true } }),
       getUnstableFeatures: vi.fn(() => ({ 'io.hula.friends': true })),
       getThirdpartyProtocols: vi.fn().mockResolvedValue({ irc: { fields: ['network'] } }),
-      getRoomManager: vi.fn(() => ({ authedRequestWithPrefix: mockAuthedRequest })),
+      getRoomManager: vi.fn(() => ({
+        authedRequestWithPrefix: mockAuthedRequest,
+        getMyRooms: vi.fn().mockResolvedValue({ rooms: [], total: 0 })
+      })),
       getJoinedRooms: vi.fn().mockResolvedValue({ joined_rooms: [] })
     }
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
@@ -201,25 +210,65 @@ describe('MatrixAccountService', () => {
   })
 
   describe('getMyRooms', () => {
-    it('should get my rooms', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
-          return HttpResponse.json({ room_ids: ['!room1:server', '!room2:server'] })
-        })
-      )
+    it('maps SDK getMyRooms() rooms into MyRoomEntry (membership / join_state)', async () => {
+      const getMyRooms = vi.fn().mockResolvedValue({
+        rooms: [
+          { room_id: '!room1:server', name: 'Room 1', avatar_url: 'mxc://server/a', membership: 'join' },
+          { room_id: '!room2:server', name: 'Room 2', join_state: 'invite' },
+          { room_id: '!room3:server', membership: 'leave' }
+        ],
+        total: 3
+      })
+      mockClient.getRoomManager.mockReturnValue({ getMyRooms })
 
       const result = await matrixAccountService.getMyRooms()
-      expect(result).toEqual(['!room1:server', '!room2:server'])
+
+      expect(getMyRooms).toHaveBeenCalledTimes(1)
+      expect(mockAuthedRequest).not.toHaveBeenCalled()
+      expect(result).toEqual([
+        {
+          roomId: '!room1:server',
+          name: 'Room 1',
+          avatarUrl: 'mxc://server/a',
+          membership: 'join'
+        },
+        { roomId: '!room2:server', name: 'Room 2', avatarUrl: undefined, membership: 'invite' },
+        { roomId: '!room3:server', name: undefined, avatarUrl: undefined, membership: 'leave' }
+      ])
     })
 
-    it('should return empty array on error', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+    it('skips invalid and duplicated SDK room entries', async () => {
+      const getMyRooms = vi.fn().mockResolvedValue({
+        rooms: [
+          null,
+          'invalid',
+          { name: 'no id' },
+          { room_id: '!room1:server', membership: 'join' },
+          { room_id: '!room1:server', membership: 'join' }
+        ],
+        total: 5
+      })
+      mockClient.getRoomManager.mockReturnValue({ getMyRooms })
+
       const result = await matrixAccountService.getMyRooms()
-      expect(result).toEqual([])
+
+      expect(result).toEqual([{ roomId: '!room1:server', name: undefined, avatarUrl: undefined, membership: 'join' }])
+    })
+
+    it('returns empty array when SDK response has no rooms field', async () => {
+      mockClient.getRoomManager.mockReturnValue({ getMyRooms: vi.fn().mockResolvedValue({ total: 0 }) })
+
+      await expect(matrixAccountService.getMyRooms()).resolves.toEqual([])
+    })
+
+    it('falls back to getJoinedRooms() when the SDK method is unavailable', async () => {
+      mockClient.getRoomManager.mockReturnValue({})
+      mockClient.getJoinedRooms.mockResolvedValue({ joined_rooms: ['!joined1:server'] })
+
+      const result = await matrixAccountService.getMyRooms()
+
+      expect(mockClient.getJoinedRooms).toHaveBeenCalledTimes(1)
+      expect(result).toEqual([{ roomId: '!joined1:server', membership: 'join' }])
     })
 
     // 审计 §8 B-5：后端 /my_rooms 返回 404 ⇒ 降级返回 SDK getJoinedRooms() 的结果。
@@ -230,11 +279,9 @@ describe('MatrixAccountService', () => {
     //     的完整已加入房间集合。
     //   二者仅在「集合可用性」上等价，在「排序」与「私有房间可见性」上不等价。
     it('degrades to SDK getJoinedRooms() on 404 (semantics documented)', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
-          return new HttpResponse(null, { status: 404 })
-        })
-      )
+      const error = new Error('HTTP 404') as Error & { httpStatus?: number }
+      error.httpStatus = 404
+      mockClient.getRoomManager.mockReturnValue({ getMyRooms: vi.fn().mockRejectedValue(error) })
       mockClient.getJoinedRooms.mockResolvedValue({
         joined_rooms: ['!joined1:server', '!joined2:server']
       })
@@ -242,17 +289,18 @@ describe('MatrixAccountService', () => {
       const result = await matrixAccountService.getMyRooms()
 
       expect(mockClient.getJoinedRooms).toHaveBeenCalledTimes(1)
-      expect(result).toEqual(['!joined1:server', '!joined2:server'])
+      expect(result).toEqual([
+        { roomId: '!joined1:server', membership: 'join' },
+        { roomId: '!joined2:server', membership: 'join' }
+      ])
     })
 
     // 审计 §8 B-5 反例断言：降级判据只能看 `err.httpStatus`，不得引入隐式条件。
     // 非 404（此处 500）不得触发 getJoinedRooms() 降级。
     it('does not degrade on non-404 errors (only err.httpStatus === 404 triggers fallback)', async () => {
-      server.use(
-        http.get(`${TEST_BASE_URL}/_matrix/vendor/v1/my_rooms`, () => {
-          return new HttpResponse(null, { status: 500 })
-        })
-      )
+      const error = new Error('HTTP 500') as Error & { httpStatus?: number }
+      error.httpStatus = 500
+      mockClient.getRoomManager.mockReturnValue({ getMyRooms: vi.fn().mockRejectedValue(error) })
       mockClient.getJoinedRooms.mockResolvedValue({
         joined_rooms: ['!should-not-be-used:server']
       })
@@ -261,6 +309,13 @@ describe('MatrixAccountService', () => {
 
       expect(mockClient.getJoinedRooms).not.toHaveBeenCalled()
       expect(result).toEqual([])
+    })
+
+    it('returns empty array when the getJoinedRooms() fallback also fails', async () => {
+      mockClient.getRoomManager.mockReturnValue({})
+      mockClient.getJoinedRooms.mockRejectedValue(new Error('network down'))
+
+      await expect(matrixAccountService.getMyRooms()).resolves.toEqual([])
     })
   })
 

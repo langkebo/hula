@@ -36,9 +36,7 @@
 
       <p v-if="loadingDevices" class="single-details__section-hint">{{ t('friend.detail.devices_loading') }}</p>
       <p v-else-if="deviceError" class="single-details__section-error">{{ deviceError }}</p>
-      <p v-else-if="devices.length === 0" class="single-details__section-hint">
-        {{ t('friend.detail.devices_empty') }}
-      </p>
+      <EmptyState v-else-if="isEmptyDevices" compact :description="t('friend.detail.devices_empty')" />
 
       <ul v-else class="single-details__device-list">
         <li v-for="device in devices" :key="device.device_id" class="single-details__device-item">
@@ -82,13 +80,18 @@
         <span class="single-details__federation-value">{{ serverName || '-' }}</span>
       </div>
     </div>
+
+    <!-- 共同房间区（MSC2666） -->
+    <MutualRoomsSection :user-id="props.userId" @open-room="emit('open-room', $event)" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import UserIdentity from '@/components/common/UserIdentity.vue'
+import MutualRoomsSection from '@/components/rightBox/MutualRoomsSection.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { FriendGroup } from '@/services/matrix/friends/MatrixFriendService'
 import { matrixFriendGroups } from '@/services/matrix/friends/MatrixFriendService'
@@ -108,6 +111,8 @@ const props = defineProps({
     required: true
   }
 })
+
+const emit = defineEmits<(e: 'open-room', roomId: string) => void>()
 
 // ==================== 通用工具 ====================
 
@@ -199,6 +204,8 @@ const handleGroupSelectionChange = async (next: string[]) => {
 const devices = ref<Device[]>([])
 const loadingDevices = ref(false)
 const deviceError = ref('')
+
+const isEmptyDevices = computed(() => devices.value.length === 0)
 
 const formatDeviceLastSeen = (ts?: number): string => {
   if (!ts || ts <= 0) return '-'

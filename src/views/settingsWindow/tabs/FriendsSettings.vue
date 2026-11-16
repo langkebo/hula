@@ -30,9 +30,7 @@
     <div class="settings-section">
       <h3 class="section-title">{{ t('setting.friends.groups.title') }}</h3>
       <n-spin :show="loadingGroups">
-        <div v-if="friendGroups.length === 0" class="empty-list">
-          <span class="empty-text">{{ t('setting.friends.groups.empty') }}</span>
-        </div>
+        <EmptyState v-if="friendGroups.length === 0" compact :description="t('setting.friends.groups.empty')" />
         <div v-else class="group-list">
           <div v-for="group in friendGroups" :key="group.group_id" class="group-item">
             <div class="group-info">
@@ -66,9 +64,10 @@
           <h4 class="subsection-title">
             {{ t('setting.friends.pending.incoming_title', { count: String(incomingRequests.length) }) }}
           </h4>
-          <div v-if="incomingRequests.length === 0" class="empty-list">
-            <span class="empty-text">{{ t('setting.friends.pending.incoming_empty') }}</span>
-          </div>
+          <EmptyState
+            v-if="incomingRequests.length === 0"
+            compact
+            :description="t('setting.friends.pending.incoming_empty')" />
           <div v-for="req in incomingRequests" :key="req.user_id" class="request-item">
             <div class="request-info">
               <span class="request-user">{{ req.user_id }}</span>
@@ -89,9 +88,10 @@
           <h4 class="subsection-title">
             {{ t('setting.friends.pending.outgoing_title', { count: String(outgoingRequests.length) }) }}
           </h4>
-          <div v-if="outgoingRequests.length === 0" class="empty-list">
-            <span class="empty-text">{{ t('setting.friends.pending.outgoing_empty') }}</span>
-          </div>
+          <EmptyState
+            v-if="outgoingRequests.length === 0"
+            compact
+            :description="t('setting.friends.pending.outgoing_empty')" />
           <div v-for="req in outgoingRequests" :key="req.user_id" class="request-item">
             <div class="request-info">
               <span class="request-user">{{ req.user_id }}</span>
@@ -543,16 +543,6 @@ async function handleCancelRequest(req: FriendRequest) {
   gap: var(--tjg-space-1);
   flex-shrink: 0;
   margin-left: var(--tjg-space-3);
-}
-
-.empty-list {
-  padding: var(--tjg-space-4);
-  text-align: center;
-}
-
-.empty-text {
-  font-size: var(--tjg-font-size-sm);
-  color: var(--tjg-text-quaternary);
 }
 
 .create-group-btn {

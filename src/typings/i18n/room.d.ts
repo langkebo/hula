@@ -326,6 +326,19 @@ export type Messages = {
     "subtitle": "查看房间元数据信息",
     "title": "房间元数据"
   },
+  "my_rooms": {
+    "empty": "暂无房间",
+    "error": "加载失败",
+    "group_invite": "邀请中",
+    "group_join": "已加入",
+    "group_leave": "已离开",
+    "loading": "加载中…",
+    "refresh": "刷新",
+    "retry": "重试",
+    "search_placeholder": "搜索房间名称或 ID",
+    "title": "我的房间",
+    "unnamed": "未命名房间"
+  },
   "retention": {
     "count_hint": "按消息条数保留",
     "count_label": "保留条数",
@@ -653,6 +666,17 @@ export type KeyPaths =
   | "room.metadata.empty"
   | "room.metadata.subtitle"
   | "room.metadata.title"
+  | "room.my_rooms.empty"
+  | "room.my_rooms.error"
+  | "room.my_rooms.group_invite"
+  | "room.my_rooms.group_join"
+  | "room.my_rooms.group_leave"
+  | "room.my_rooms.loading"
+  | "room.my_rooms.refresh"
+  | "room.my_rooms.retry"
+  | "room.my_rooms.search_placeholder"
+  | "room.my_rooms.title"
+  | "room.my_rooms.unnamed"
   | "room.retention.count_hint"
   | "room.retention.count_label"
   | "room.retention.days_hint"

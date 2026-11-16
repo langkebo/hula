@@ -77,6 +77,14 @@
             :row-key="(row: BlacklistEntry) => row.domain" />
         </n-spin>
       </n-tab-pane>
+
+      <n-tab-pane name="cache" :tab="t('admin.federation.cache')">
+        <FederationCachePanel />
+      </n-tab-pane>
+
+      <n-tab-pane name="pending" :tab="t('admin.federation.pending')">
+        <FederationPendingPanel />
+      </n-tab-pane>
     </n-tabs>
 
     <n-drawer v-model:show="showAddBlacklistDialog" placement="right" :width="380">
@@ -146,6 +154,8 @@
 import { NButton, NDrawer, NDrawerContent, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import FederationCachePanel from '@/components/admin/federation/FederationCachePanel.vue'
+import FederationPendingPanel from '@/components/admin/federation/FederationPendingPanel.vue'
 import { type FederationBlacklistView, type FederationDestination, useAdminFederation } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'

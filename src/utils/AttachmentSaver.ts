@@ -5,6 +5,7 @@ import type { useDownload } from '@/composables/common/useDownload'
 import { useI18nGlobal } from '@/services/i18n'
 import type { MatrixEncryptedAttachmentLike } from '@/services/matrix/crypto/MatrixAttachmentDecryptionService'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import { parseSignedMediaUrl } from '@/services/matrix/media/mediaDownloadHelpers'
 import { createLogger } from '@/utils/Logger'
 import { extractFileName } from './Formatting'
 
@@ -57,7 +58,14 @@ const saveAttachmentAs = async ({
       const fileData = await matrixMediaService.downloadEncryptedFileBytes(encryptedFile)
       await writeFile(normalizedPath, fileData)
     } else {
-      await downloadFile(url, normalizedPath)
+      // 带 signature + expires 的媒体链接走后端 download_signed（签名即鉴权）
+      const signedParams = parseSignedMediaUrl(url)
+      if (signedParams) {
+        const fileData = await matrixMediaService.downloadSignedFileBytes(signedParams)
+        await writeFile(normalizedPath, fileData)
+      } else {
+        await downloadFile(url, normalizedPath)
+      }
     }
 
     if (successMessage) {

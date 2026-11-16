@@ -34,6 +34,9 @@
           class="w-[140px]" />
       </n-space>
       <n-space>
+        <n-button @click="showBatchCreateDialog = true">
+          {{ t('admin.users.batchCreate') }}
+        </n-button>
         <n-button type="primary" @click="showCreateDialog = true">
           {{ t('admin.users.createUser') }}
         </n-button>
@@ -63,32 +66,8 @@
       </n-button>
     </div>
 
-    <n-drawer v-model:show="showCreateDialog" placement="right" :width="380">
-      <n-drawer-content :title="t('admin.users.createUser')" closable>
-        <n-form ref="createFormRef" :model="createForm" :rules="createRules">
-          <n-form-item :label="t('admin.users.username')" path="username">
-            <n-input v-model:value="createForm.username" />
-          </n-form-item>
-          <n-form-item :label="t('admin.users.password')" path="password">
-            <n-input v-model:value="createForm.password" type="password" show-password-on="click" />
-          </n-form-item>
-          <n-form-item :label="t('admin.users.displayName')" path="displayName">
-            <n-input v-model:value="createForm.displayName" />
-          </n-form-item>
-          <n-form-item :label="t('admin.users.isAdmin')" path="isAdmin">
-            <n-switch v-model:value="createForm.isAdmin" />
-          </n-form-item>
-        </n-form>
-        <template #footer>
-          <div class="flex justify-end gap-12px">
-            <n-button @click="showCreateDialog = false">{{ t('admin.common.cancel') }}</n-button>
-            <n-button type="primary" :loading="creating" @click="handleCreateUser">
-              {{ t('admin.common.confirm') }}
-            </n-button>
-          </div>
-        </template>
-      </n-drawer-content>
-    </n-drawer>
+    <AdminUsersCreateDrawer v-model:show="showCreateDialog" :admin="admin" />
+    <AdminUsersBatchCreateDrawer v-model:show="showBatchCreateDialog" :admin="admin" />
 
     <AdminUserDetailDrawer
       v-model:show="showUserDetail"
@@ -100,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { NButton, NCheckbox, NDrawer, NDrawerContent, NSpace, NTag, useDialog } from 'naive-ui'
+import { NButton, NCheckbox, NSpace, NTag, useDialog } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminBulkActionBar from '@/components/admin/AdminBulkActionBar.vue'
@@ -109,6 +88,8 @@ import { type UserInfo, useAdminUsers } from '@/composables/admin'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAdminStore } from '@/stores/domains/admin/admin'
 import AdminUserDetailDrawer from './AdminUserDetailDrawer.vue'
+import AdminUsersBatchCreateDrawer from './AdminUsersBatchCreateDrawer.vue'
+import AdminUsersCreateDrawer from './AdminUsersCreateDrawer.vue'
 import { useAdminErrorHandler } from './useAdminError'
 
 const { t } = useI18n()
@@ -120,7 +101,7 @@ const { handleAdminError } = useAdminErrorHandler()
 const admin = useAdminUsers()
 // View-only local state (UI affordances, not business data)
 const showCreateDialog = ref(false)
-const creating = ref(false)
+const showBatchCreateDialog = ref(false)
 const showUserDetail = ref(false)
 
 // Alias refs from composable so existing template bindings keep working
@@ -132,18 +113,6 @@ const filterRole = admin.filterRole
 const filterStatus = admin.filterStatus
 const filteredUsers = admin.filteredUsers
 const selectedUserIds = admin.selectedUserIds
-
-const createForm = ref({
-  username: '',
-  password: '',
-  displayName: '',
-  isAdmin: false
-})
-
-const createRules = {
-  username: { required: true, message: t('admin.users.usernameRequired') },
-  password: { required: true, message: t('admin.users.passwordRequired') }
-}
 
 const columns = computed(() => [
   {
@@ -236,27 +205,6 @@ async function handleLoadMoreUsers() {
 async function openUserDetail(user: UserInfo) {
   showUserDetail.value = true
   await admin.selectUser(user)
-}
-
-async function handleCreateUser() {
-  creating.value = true
-  try {
-    const result = await admin.createUser(createForm.value.username, createForm.value.password, {
-      admin: createForm.value.isAdmin,
-      displayname: createForm.value.displayName
-    })
-    if (result) {
-      showFeedback(t('admin.users.createSuccess'), 'success')
-      showCreateDialog.value = false
-      createForm.value = { username: '', password: '', displayName: '', isAdmin: false }
-    } else {
-      showFeedback(t('admin.users.createFailed'), 'error')
-    }
-  } catch (err) {
-    if (handleAdminError(err)) showFeedback(t('admin.users.createFailed'), 'error')
-  } finally {
-    creating.value = false
-  }
 }
 
 async function handleResetPassword(userId: string) {

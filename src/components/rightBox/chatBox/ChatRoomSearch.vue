@@ -65,21 +65,24 @@
       </div>
 
       <div class="chat-room-search__body">
-        <p v-if="!query.trim() && !loading" class="chat-room-search__hint">{{ t('chat.header.search.empty_hint') }}</p>
+        <p v-if="showIdleHint" class="chat-room-search__hint">{{ t('chat.header.search.empty_hint') }}</p>
         <div v-else-if="error" class="chat-room-search__error" role="alert">
           <p class="chat-room-search__hint">{{ t('chat.header.search.load_failed') }}</p>
           <button type="button" class="chat-room-search__retry" :disabled="loading" @click="emit('retry')">
             {{ t('common.retry') }}
           </button>
         </div>
-        <p v-else-if="loading && results.length === 0" class="chat-room-search__hint">
+        <p v-else-if="showFirstLoading" class="chat-room-search__hint">
           {{ t('chat.header.search.loading') }}
         </p>
-        <p v-else-if="query.trim() && !loading && results.length === 0" class="chat-room-search__hint">
-          {{ t('chat.header.search.no_results') }}
-        </p>
+        <EmptyState
+          v-else-if="showNoResults"
+          compact
+          variant="subtle"
+          illustration="no-results"
+          :description="t('chat.header.search.no_results')" />
 
-        <ul v-if="results.length > 0" class="chat-room-search__list" role="listbox">
+        <ul v-if="hasResults" class="chat-room-search__list" role="listbox">
           <ChatRoomSearchItem
             v-for="(item, index) in results"
             :key="item.eventId"
@@ -104,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { SearchResult } from '@/services/matrix/MatrixSearchService'
 import ChatRoomSearchItem from './ChatRoomSearchItem.vue'
@@ -132,6 +135,14 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const inputRef = ref<HTMLInputElement | null>(null)
+
+const hasResults = computed(() => props.results.length > 0)
+/** 未输入关键词且未在搜索：展示输入引导 */
+const showIdleHint = computed(() => !props.query.trim() && !props.loading)
+/** 首次搜索中（尚无任何结果）：展示加载提示 */
+const showFirstLoading = computed(() => props.loading && props.results.length === 0)
+/** 已搜过但无结果：展示统一空态 */
+const showNoResults = computed(() => props.query.trim().length > 0 && !props.loading && props.results.length === 0)
 
 watch(
   () => props.isOpen,

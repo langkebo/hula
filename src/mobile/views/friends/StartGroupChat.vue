@@ -26,10 +26,11 @@
     <!-- 联系人列表 -->
     <div ref="scrollArea" class="flex-1 overflow-y-auto px-16px mt-10px" :style="{ height: scrollHeight + 'px' }">
       <div class="max-h-[calc(100dvh-150px)] overflow-y-auto">
-        <van-empty
-          v-if="keyword.trim() && !filteredContacts.length"
-          :description="t('mobile_contact.search_no_result')"
-          image="search" />
+        <MobileAsyncState
+          v-if="showNoContactResult"
+          state="empty"
+          :empty-text="t('mobile_contact.search_no_result')"
+          min-height="240px" />
         <van-checkbox-group v-else v-model="selectedList" class="flex flex-col gap-2">
           <div
             v-for="item in filteredContacts"
@@ -112,6 +113,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { OnlineEnum } from '@/enums'
+import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import { matrixRoomCreationService } from '@/services/matrix/room/CreationService'
 import { Preset, Visibility } from '@/services/matrix/sdk'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -168,6 +170,9 @@ const filteredContacts = computed(() => {
     return name.includes(kw) || account.includes(kw) || userId.includes(kw)
   })
 })
+
+/** 已输入关键词且无匹配联系人：交给 MobileAsyncState 统一渲染空态 */
+const showNoContactResult = computed(() => keyword.value.trim().length > 0 && filteredContacts.value.length === 0)
 
 const createGroup = async () => {
   if (selectedList.value.length < 2) {

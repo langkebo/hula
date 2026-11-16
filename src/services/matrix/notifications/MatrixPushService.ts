@@ -8,6 +8,12 @@ import type {
   PushRuleAction
 } from 'matrix-js-sdk'
 import { PushRuleKind, TweakName } from 'matrix-js-sdk'
+import type {
+  IPushAckResponse,
+  IPushDevice,
+  IRegisterPushDeviceRequest,
+  ISendPushNotificationRequest
+} from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { MatrixRequestDeduper } from '../MatrixRequestDeduper'
@@ -157,6 +163,62 @@ class MatrixPushService extends BaseMatrixService {
       logger.info(`[MatrixPush] 注册 pusher 成功: ${pusher.app_id}/${pusher.pushkey}`)
     } catch (err) {
       logger.error(`[MatrixPush] 注册 pusher 失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 列出当前账号已注册的推送设备（VEN-02）。
+   */
+  async getPushDevices(): Promise<IPushDevice[]> {
+    const client = this.getClient()
+    try {
+      return await client.getNotificationsManager().getPushDevices()
+    } catch (err) {
+      logger.error(`[MatrixPush] 获取推送设备失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 注册推送设备（VEN-02）。
+   */
+  async registerPushDevice(body: IRegisterPushDeviceRequest): Promise<IPushDevice> {
+    const client = this.getClient()
+    try {
+      const device = await client.getNotificationsManager().registerPushDevice(body)
+      logger.info(`[MatrixPush] 注册推送设备成功: ${device.device_id}`)
+      return device
+    } catch (err) {
+      logger.error(`[MatrixPush] 注册推送设备失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 注销指定推送设备（VEN-02）。
+   */
+  async unregisterPushDevice(deviceId: string): Promise<IPushAckResponse> {
+    const client = this.getClient()
+    try {
+      const ack = await client.getNotificationsManager().unregisterPushDevice(deviceId)
+      logger.info(`[MatrixPush] 注销推送设备成功: ${deviceId}`)
+      return ack
+    } catch (err) {
+      logger.error(`[MatrixPush] 注销推送设备失败: ${err}`)
+      throw err
+    }
+  }
+
+  /**
+   * 向指定设备发送一条测试推送（VEN-02）。
+   */
+  async sendPushNotification(body: ISendPushNotificationRequest): Promise<IPushAckResponse> {
+    const client = this.getClient()
+    try {
+      return await client.getNotificationsManager().sendPushNotification(body)
+    } catch (err) {
+      logger.error(`[MatrixPush] 发送测试推送失败: ${err}`)
       throw err
     }
   }

@@ -104,7 +104,8 @@ describe('PinMessageSelector', () => {
 
     const wrapper = mount(PinMessageSelector, { props: { show: true } })
 
-    expect(wrapper.find('[data-test="n-empty"]').exists()).toBe(true)
+    expect(wrapper.find('.empty-state').exists()).toBe(true)
+    expect(wrapper.text()).toContain('home.chat_sidebar.pins.selector_empty')
     expect(wrapper.findAll('.pin-selector__item')).toHaveLength(0)
   })
 

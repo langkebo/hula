@@ -18,16 +18,12 @@
     <!-- 角色列表 - 添加滚动容器 -->
     <n-scrollbar class="max-h-[calc(80vh-140px)]">
       <n-spin :show="loading">
-        <div v-if="roleList.length === 0" class="empty-container">
-          <n-empty :description="t('ai_assistant.robot.no_roles')" size="large">
-            <template #icon>
-              <Icon icon="mdi:account-circle" class="text-48px color-[--tjg-text-tertiary]" />
-            </template>
-            <template #extra>
-              <n-button type="primary" @click="handleAdd">{{ t('ai_assistant.robot.add_first_role') }}</n-button>
-            </template>
-          </n-empty>
-        </div>
+        <EmptyState
+          v-if="isEmptyRoles"
+          icon="mdi:account-circle"
+          :description="t('ai_assistant.robot.no_roles')"
+          :action-text="t('ai_assistant.robot.add_first_role')"
+          @action="handleAdd" />
 
         <div v-else class="role-list">
           <div v-for="role in roleList" :key="role.id" class="role-card">
@@ -221,6 +217,7 @@ import { Icon } from '@iconify/vue'
 import type { FormInst, FormRules } from 'naive-ui'
 import { useI18n } from 'vue-i18n'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useMitt } from '@/composables/common/useMitt'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
@@ -258,6 +255,8 @@ const pagination = ref({
   pageSize: 10,
   total: 0
 })
+
+const isEmptyRoles = computed(() => roleList.value.length === 0)
 
 // 编辑相关
 const showEditModal = ref(false)
@@ -549,10 +548,6 @@ watch(showEditModal, (val) => {
 </script>
 
 <style scoped lang="scss">
-.empty-container {
-  padding: 40px 0;
-}
-
 .role-list {
   display: flex;
   flex-direction: column;

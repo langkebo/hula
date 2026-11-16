@@ -42,10 +42,11 @@
 
     <n-spin :show="loading">
       <n-scrollbar class="h-[calc(var(--tjg-viewport-height, 100vh)-200px)]">
-        <n-empty
-          v-if="filteredGroups.length === 0"
-          :description="hasSearchKeyword ? searchEmptyDescription : t('friend.group.empty')"
-          class="mt-40px" />
+        <EmptyState
+          v-if="isEmptyGroups"
+          compact
+          class="mt-40px"
+          :description="hasSearchKeyword ? searchEmptyDescription : t('friend.group.empty')" />
         <div v-else class="group-items">
           <div
             v-for="group in filteredGroups"
@@ -112,6 +113,7 @@
 import { NDrawer, NDrawerContent, NIcon } from 'naive-ui'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAriaLive } from '@/composables/common/useAriaLive'
 import { useRecentSearchHistory } from '@/composables/common/useRecentSearchHistory'
@@ -151,6 +153,8 @@ const filteredGroups = computed(() => {
   if (!appliedSearchValue.value.trim()) return groups.value
   return groups.value.filter((g) => g.name.toLowerCase().includes(appliedSearchValue.value.toLowerCase()))
 })
+
+const isEmptyGroups = computed(() => filteredGroups.value.length === 0)
 
 const {
   hasSearchKeyword,

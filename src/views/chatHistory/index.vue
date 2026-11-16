@@ -45,21 +45,23 @@
     <!-- 消息列表 -->
     <div class="flex-1 overflow-auto select-none">
       <n-infinite-scroll :distance="10" @load="loadMore">
-        <div v-if="loading && messages.length === 0" class="flex-center h-200px" role="status">
+        <div v-if="initialLoading" class="flex-center h-200px" role="status">
           <n-spin size="small" />
         </div>
 
-        <div
-          v-else-if="loadError && messages.length === 0"
-          class="flex flex-col items-center justify-center h-200px gap-12px"
-          role="alert">
-          <span class="text-14px text-[--tjg-text-secondary]">{{ t('chatHistory.empty.loadFailed') }}</span>
-          <n-button size="small" @click="retryLoad">{{ t('common.retry') }}</n-button>
-        </div>
+        <ErrorState
+          v-else-if="initialLoadFailed"
+          class="h-200px"
+          illustration="generic-error"
+          :title="t('chatHistory.empty.loadFailed')"
+          :retry-text="t('common.retry')"
+          @retry="retryLoad" />
 
-        <div v-else-if="messages.length === 0" class="flex-center h-200px">
-          <n-empty :description="t('chatHistory.empty.noData')" />
-        </div>
+        <EmptyState
+          v-else-if="isEmptyResult"
+          class="h-200px"
+          illustration="no-results"
+          :description="t('chatHistory.empty.noData')" />
 
         <div v-else class="px-20px py-16px">
           <!-- 按日期分组的消息 -->
@@ -158,6 +160,11 @@ const loading = ref(false)
 const loadError = ref(false)
 const hasMore = ref(true)
 const currentPage = ref(1)
+
+/** 首屏三态判定：仅在列表为空时生效，翻页加载不打断已有消息 */
+const initialLoading = computed(() => loading.value && messages.value.length === 0)
+const initialLoadFailed = computed(() => loadError.value && messages.value.length === 0)
+const isEmptyResult = computed(() => messages.value.length === 0)
 
 // 搜索和筛选
 const searchKeyword = ref('')

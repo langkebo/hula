@@ -27,7 +27,9 @@ vi.mock('@/services/matrix/admin', () => ({
       updatedTs: 2,
       targets: []
     }),
-    deleteFeatureFlag: vi.fn().mockResolvedValue(undefined)
+    deleteFeatureFlag: vi.fn().mockResolvedValue(undefined),
+    getAdminInfo: vi.fn().mockResolvedValue({ server_name: 'tjg' }),
+    restartServer: vi.fn().mockResolvedValue(undefined)
   }
 }))
 
@@ -150,5 +152,19 @@ describe('useAdminMaintenance', () => {
 
     expect(adminService.deleteFeatureFlag).toHaveBeenCalledWith('flag_x')
     expect(adminService.listFeatureFlagsDetailed).toHaveBeenCalledTimes(1)
+  })
+
+  it('loadServerInfo populates server info', async () => {
+    const c = useAdminMaintenance()
+    await c.loadServerInfo()
+    expect(adminService.getAdminInfo).toHaveBeenCalledTimes(1)
+    expect(c.serverInfo.value).toEqual({ server_name: 'tjg' })
+  })
+
+  it('restartServer delegates and resets restarting flag', async () => {
+    const c = useAdminMaintenance()
+    await c.restartServer()
+    expect(adminService.restartServer).toHaveBeenCalledTimes(1)
+    expect(c.restarting.value).toBe(false)
   })
 })

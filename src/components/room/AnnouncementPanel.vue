@@ -52,13 +52,11 @@
           <n-spin size="small" />
         </div>
 
-        <div v-else-if="announcements.length === 0" class="flex-center py-20px">
-          <n-empty :description="t('announcement.list.empty')" size="small">
-            <template #icon>
-              <svg class="size-20px" aria-hidden="true"><use href="#explosion"></use></svg>
-            </template>
-          </n-empty>
-        </div>
+        <EmptyState
+          v-else-if="isEmptyAnnouncements"
+          compact
+          icon="mdi:bullhorn-outline"
+          :description="t('announcement.list.empty')" />
 
         <div v-else class="px-4px pb-12px">
           <div
@@ -116,6 +114,7 @@
 import { emitTo } from '@tauri-apps/api/event'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { extractLinkSegments, openExternalUrl } from '@/composables/common/useLinkSegments'
 import { matrixAnnouncementService } from '@/services/matrix/room/MatrixAnnouncementService'
@@ -143,6 +142,8 @@ const userStore = useUserStore()
 
 const announcements = ref<Announcement[]>([])
 const loading = ref(false)
+
+const isEmptyAnnouncements = computed(() => announcements.value.length === 0)
 const isEditing = ref(false)
 const editContent = ref('')
 const isPinned = ref(false)
