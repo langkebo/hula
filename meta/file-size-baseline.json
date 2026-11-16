@@ -1,6 +1,6 @@
 {
   "comment": "File size baseline: files >400 lines tracked here. Count must never grow, only shrink. Regenerate with `node scripts/check-file-size.mjs --update` after refactor batches.",
-  "updated_at": "2026-11-16T08:58:17.649Z",
+  "updated_at": "2026-11-16T19:02:41.209Z",
   "new_file_limit": 400,
   "warn_limit": 500,
   "red_line": 800,
@@ -236,10 +236,6 @@
       "lines": 485
     },
     {
-      "file": "src/utils/PathUtil.ts",
-      "lines": 479
-    },
-    {
       "file": "src/utils/PerformanceReporter.ts",
       "lines": 478
     },
@@ -340,6 +336,14 @@
       "lines": 439
     },
     {
+      "file": "src/services/matrix/media/MatrixMediaService.ts",
+      "lines": 439
+    },
+    {
+      "file": "src/utils/PathUtil.ts",
+      "lines": 439
+    },
+    {
       "file": "src/views/chatHistory/index.vue",
       "lines": 439
     },
@@ -372,10 +376,6 @@
       "lines": 433
     },
     {
-      "file": "src/services/matrix/media/MatrixMediaService.ts",
-      "lines": 433
-    },
-    {
       "file": "src/mobile/views/my/EncryptionSettings.vue",
       "lines": 431
     },
@@ -404,10 +404,6 @@
       "lines": 422
     },
     {
-      "file": "src/stores/domains/chat/chat/message.ts",
-      "lines": 421
-    },
-    {
       "file": "src/services/matrix/crypto/MatrixKeyBackupService.ts",
       "lines": 420
     },
@@ -426,6 +422,10 @@
     {
       "file": "src/stores/domains/chat/group/members.ts",
       "lines": 417
+    },
+    {
+      "file": "src/stores/domains/chat/chat/message.ts",
+      "lines": 416
     },
     {
       "file": "src/stores/domains/widget/thumbnailCache.ts",

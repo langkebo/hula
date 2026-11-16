@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3），§19.41 为 P1-3（上传链路 MIME 兜底统一：`resolveUploadMimeType` 按「声明类型 → 扩展名 → 场景兜底」取值，收敛 `uploadViaGateway` / `MatrixMediaService` / `useUpload` 的散落兜底）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3841,6 +3841,74 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 3. `main.ts` 保留 1 次 `isMobile()` 作为组合根快照，故 ratchet 终值为 3，不为 0。
 4. 存储布局改为惰性工厂而非模块常量：模块加载期读取 `BaseDirectory` 会让部分对 `@tauri-apps/plugin-fs` 做局部 mock 的测试在收集阶段失败；工厂保证「用到才求值」。
 5. 运行时覆盖（`?platform=mobile`）与真实 Tauri 移动构建仍存在已知差异：浏览器 E2E 会走移动布局但无真实文件写入，E2E 不校验落盘目录。
+
+---
+
+### 19.41 P1-3：上传链路 MIME 兜底统一（2026-11-16）
+
+#### 缺口
+
+1. §19.39 只收口了消息侧的 MIME 取值，上传链路仍是散落写法：`mediaUploadHelpers.uploadViaGateway`、`useUpload` 的预签名 PUT、`uploadTransports.uploadPathViaMatrix` 都写 `file.type || 'application/octet-stream'`。`file.type` 为空（第三方应用转存、部分拖拽来源、Tauri 侧构造的 `File`）时，可识别的 pdf / mp4 一律被落成通用二进制。
+2. `MatrixMediaService` 的 7 个上传入口同样只读 `file.type`；`uploadImage` / `uploadVideo` / `uploadAudio` 的兜底是硬编码常量（`image/png` / `video/mp4` / `audio/ogg`），当类型为空但扩展名可识别时，会得到错误类型（如 `季度报告.PDF` 进 `uploadImage` 被标成 `image/png`）。
+3. 移动端 `Files.vue` 上传成功后另取一次 `file.type` 写 `mimetype`，与实际上传使用的类型可能不一致（上传入口已按扩展名解析）。
+4. 上述兜底分散在 4 个文件 11 处，没有单点可以锁住「声明 → 扩展名 → 兜底」的优先级。
+
+#### 判据
+
+| 场景 | 数据来源 | 断言要点 |
+| :--- | :--- | :--- |
+| 声明类型可用 | `resolveUploadMimeType('text/csv', 'a.pdf')` | 取声明值 `text/csv`，扩展名不覆盖 |
+| 声明为空、扩展名可识别 | `resolveUploadMimeType('', '季度报告.PDF')` | `application/pdf`（扩展名大小写归一） |
+| 声明与扩展名均未命中 | `resolveUploadMimeType('', 'README')` | 默认 `application/octet-stream` |
+| 场景兜底 | `resolveUploadMimeType('', 'a.unknown', 'image/png')` | 命中调用方传入的 fallback |
+| 网关上传 | `uploadViaGateway(File('季度报告.PDF'))` | `contentType` 与 `queryParams.content_type` 均为 `application/pdf` |
+| 显式 `opts.type` 优先 | `uploadViaGateway(a.pdf, { type: 'text/csv' })` | `contentType = text/csv` |
+| `uploadFile` / `uploadContentWithId` | `File('季度报告.PDF')` | 返回值 `mimetype` 与 `uploadContent` 实参均为 `application/pdf` |
+| 图片 / 视频 / 音频兜底不变 | 无类型且无扩展名 | 仍为 `image/png` / `video/mp4` / `audio/ogg` |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/utils/FileType.ts` | 新增 `resolveUploadMimeType(declared, fileName, fallback)`，复用既有 `getMimeTypeByExtension` |
+| `src/services/matrix/media/mediaUploadHelpers.ts` | `uploadViaGateway` 的 `mimetype` 改读统一解析器（`opts.type` 仍优先） |
+| `src/services/matrix/media/MatrixMediaService.ts` | `uploadFile` / `uploadLargeFile` / `uploadEncryptedFile` / `uploadImage` / `uploadVideo` / `uploadAudio` / `uploadContentWithId` 统一解析；密文本体仍固定 `application/octet-stream` |
+| `src/services/media/uploadTransports.ts` | `uploadPathViaMatrix` 复用统一解析器，删除本地 `mimeType || getMimeTypeFromExtension(name) || …` |
+| `src/composables/common/useUpload.ts` | 预签名 PUT 的 `contentType` 改读统一解析器 |
+| `src/mobile/views/my/Files.vue` | 上传后写消息的 `mimetype` 改取 `uploaded.mimetype`，与实际上传类型一致 |
+| `src/utils/__tests__/FileType.test.ts` | 新增 `resolveUploadMimeType` 3 条用例（声明优先 / 扩展名兜底 / 场景兜底） |
+| `src/services/matrix/media/__tests__/mediaUploadHelpers.test.ts` | 新增 2 条：扩展名推导、显式类型优先 |
+| `src/services/matrix/media/__tests__/MatrixMediaService.test.ts` | 新增 2 条：`uploadFile` / `uploadContentWithId` 空类型按扩展名推导 |
+| `meta/file-size-baseline.json` | `--update` 重生成：`MatrixMediaService.ts` 433 → 439（本轮 7 个入口统一），同批入账 `PathUtil.ts` 479 → 439、`src/stores/domains/chat/chat/message.ts` 421 → 416 两处既有缩减 |
+| `docs/UI优化方案-v2.4.md` | 新增本节；第 11 行章节构成追加 §19.41 |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 全量单测 | `pnpm test:run` | `Test Files 1065 passed (1065)` / `Tests 11748 passed (11748)`，exit 0 |
+| 定向单测 | `pnpm vitest run src/utils/__tests__/FileType.test.ts src/services/matrix/media/__tests__/mediaUploadHelpers.test.ts src/services/matrix/media/__tests__/MatrixMediaService.test.ts` | `Test Files 3 passed (3)` / `Tests 87 passed (87)` |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 文件体量 | `node scripts/check-file-size.mjs` | `OK — oversized file count 120 (baseline 120)` / `all 1530 source files within size constraints` |
+| 棘轮 | `pnpm check:ratchet` | 12 项持平新基线，`is_mobile_branch: 3 (baseline 3)`，其余计数器 0 / 60 |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | `校验 .rules：35 个路径引用` 全部存在 / `baseline undocumented: 587`、`14 method(s) newly documented`、无回退 |
+| 移动端 CSS | `pnpm check:mobile-css` | `OK — 169 个文件`：视口高度均有 dvh 覆盖、模糊均带 `-webkit-` 前缀 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | `156 (baseline 156)` 无回退 / `xhr-bypass 命中 0` / `phantom members 命中 1（登记 exempt 1）`，无漂移 |
+| Lint / i18n | `pnpm check` | exit 0 |
+
+#### 变异自证（3/3 变红后已还原）
+
+1. `resolveUploadMimeType` 去掉扩展名分支（退化为 `declared || fallback`）→ `FileType` / `mediaUploadHelpers` / `MatrixMediaService` 共 4 条用例变红；还原后 87 条全绿。
+2. `uploadViaGateway` 回退为 `opts.type || file.type || 'application/octet-stream'` → 扩展名推导用例变红。
+3. `MatrixMediaService.uploadFile` 回退为 `file.type || 'application/octet-stream'`（含 `createUploadOptions(file.type, …)`）→ 空类型推导用例变红。
+
+#### 已知边界
+
+1. 只做「声明 → 扩展名」映射，不做内容嗅探（magic number）：若调用方显式写出错误类型（如把 pdf 标成 `application/octet-stream`），仍以声明为准，不反向覆盖。
+2. `uploadEncryptedFile` 的密文本体必须固定 `application/octet-stream`（Matrix 加密文件规范），统一解析只作用于返回值中的明文 `mimetype` 描述。
+3. 场景兜底仍保留：`uploadImage` / `uploadVideo` / `uploadAudio` 在既无类型又无扩展名时退回 `image/png` / `video/mp4` / `audio/ogg`，与既有语义一致。
+4. `MatrixProfileService.uploadAndSetAvatar` 未纳入：入参为 `Blob | File`（裁剪器产物恒带 `type`），无稳定文件名可供扩展名兜底，保持原样。
+5. `meta/file-size-baseline.json` 由 `--update` 重生成而非手改单条：本轮 `MatrixMediaService.ts` 增长 6 行，同批把 `PathUtil.ts`（-40）、`src/stores/domains/chat/chat/message.ts`（-5）的既有缩减入账；若要求严格零增长，需先拆分该服务的上传入口。
 
 ---
 
