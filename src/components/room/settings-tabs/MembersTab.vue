@@ -27,61 +27,77 @@
       </div>
 
       <EmptyState
-        v-else-if="isEmptyMembers"
+        v-else-if="isEmptyMembers && !membersError"
         compact
         data-testid="members-empty"
         :description="t('room.detail.no_members')" />
 
-      <div v-else class="rs-tab__member-list">
-        <div v-for="member in sortedMembers" :key="member.userId" class="rs-tab__member-row" data-testid="members-row">
-          <n-avatar :size="32" v-bind="member.avatar ? { src: member.avatar } : {}" round>
-            {{ avatarPlaceholder(member) }}
-          </n-avatar>
+      <template v-else>
+        <PartialStateBanner
+          v-if="membersError"
+          compact
+          class="rs-tab__partial"
+          data-testid="members-partial"
+          :message="t('room.detail.members_load_failed')"
+          :detail="membersError"
+          :retry-text="t('common.retry')"
+          @retry="loadMembers" />
 
-          <div class="rs-tab__member-info">
-            <div class="rs-tab__member-name">
-              <span class="rs-tab__member-displayname">{{ displayName(member) }}</span>
-              <n-tag
-                v-if="member.isCreator || member.powerLevel >= 100"
-                size="small"
-                type="success"
-                :bordered="false"
-                data-testid="members-role-creator">
-                {{ t('room.detail.role_creator') }}
-              </n-tag>
-              <n-tag
-                v-else-if="member.isModerator || member.powerLevel >= 50"
-                size="small"
-                type="info"
-                :bordered="false"
-                data-testid="members-role-moderator">
-                {{ t('room.detail.role_moderator') }}
-              </n-tag>
+        <div v-if="!isEmptyMembers" class="rs-tab__member-list">
+          <div
+            v-for="member in sortedMembers"
+            :key="member.userId"
+            class="rs-tab__member-row"
+            data-testid="members-row">
+            <n-avatar :size="32" v-bind="member.avatar ? { src: member.avatar } : {}" round>
+              {{ avatarPlaceholder(member) }}
+            </n-avatar>
+
+            <div class="rs-tab__member-info">
+              <div class="rs-tab__member-name">
+                <span class="rs-tab__member-displayname">{{ displayName(member) }}</span>
+                <n-tag
+                  v-if="member.isCreator || member.powerLevel >= 100"
+                  size="small"
+                  type="success"
+                  :bordered="false"
+                  data-testid="members-role-creator">
+                  {{ t('room.detail.role_creator') }}
+                </n-tag>
+                <n-tag
+                  v-else-if="member.isModerator || member.powerLevel >= 50"
+                  size="small"
+                  type="info"
+                  :bordered="false"
+                  data-testid="members-role-moderator">
+                  {{ t('room.detail.role_moderator') }}
+                </n-tag>
+              </div>
+              <span class="rs-tab__member-userid">{{ member.userId }}</span>
             </div>
-            <span class="rs-tab__member-userid">{{ member.userId }}</span>
-          </div>
 
-          <div v-if="canModerate(member)" class="rs-tab__member-actions">
-            <n-popconfirm @positive-click="handleKick(member)">
-              <template #trigger>
-                <n-button size="small" quaternary data-testid="members-kick-button">
-                  {{ t('room.detail.kick_member') }}
-                </n-button>
-              </template>
-              {{ t('room.detail.kick_confirm') }}
-            </n-popconfirm>
+            <div v-if="canModerate(member)" class="rs-tab__member-actions">
+              <n-popconfirm @positive-click="handleKick(member)">
+                <template #trigger>
+                  <n-button size="small" quaternary data-testid="members-kick-button">
+                    {{ t('room.detail.kick_member') }}
+                  </n-button>
+                </template>
+                {{ t('room.detail.kick_confirm') }}
+              </n-popconfirm>
 
-            <n-popconfirm @positive-click="handleBan(member)">
-              <template #trigger>
-                <n-button size="small" quaternary type="error" data-testid="members-ban-button">
-                  {{ t('room.detail.ban_member') }}
-                </n-button>
-              </template>
-              {{ t('room.detail.ban_confirm') }}
-            </n-popconfirm>
+              <n-popconfirm @positive-click="handleBan(member)">
+                <template #trigger>
+                  <n-button size="small" quaternary type="error" data-testid="members-ban-button">
+                    {{ t('room.detail.ban_member') }}
+                  </n-button>
+                </template>
+                {{ t('room.detail.ban_confirm') }}
+              </n-popconfirm>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
     </section>
   </div>
 </template>
@@ -90,6 +106,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EmptyState from '@/components/common/EmptyState.vue'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
@@ -116,6 +133,9 @@ const currentUserId = matrixClientService.getUserId()
 const members = computed<MatrixRoomMember[]>(() => groupStore.getMembersByRoomId(props.roomId))
 
 const isEmptyMembers = computed(() => members.value.length === 0)
+
+/** 成员加载失败信号：供局部失败横幅区分「空房间」与「加载失败」 */
+const membersError = computed(() => groupStore.getMembersLoadError(props.roomId))
 
 const sortedMembers = computed<MatrixRoomMember[]>(() => {
   return [...members.value].sort((a, b) => {
@@ -222,6 +242,10 @@ onMounted(() => {
   padding: var(--tjg-space-6) 0;
   color: var(--tjg-text-tertiary);
   font-size: var(--tjg-font-size-sm);
+}
+
+.rs-tab__partial {
+  margin-bottom: 10px;
 }
 
 .rs-tab__member-list {

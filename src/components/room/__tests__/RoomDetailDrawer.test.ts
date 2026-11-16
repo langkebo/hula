@@ -14,12 +14,13 @@ vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
 }))
 
 const getGroupDetailByRoomIdMock = vi.fn()
-const getMembersByRoomIdMock = vi.fn()
+const loadRoomMembersMock = vi.fn()
 
 vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => ({
     getGroupDetailByRoomId: getGroupDetailByRoomIdMock,
-    getMembersByRoomId: getMembersByRoomIdMock
+    loadRoomMembers: loadRoomMembersMock,
+    getMembersLoadError: () => ''
   })
 }))
 
@@ -76,8 +77,8 @@ describe('RoomDetailDrawer — ROOM-02 四 Tab 能力面板接线', () => {
       memberCount: 2,
       isEncrypted: true
     })
-    getMembersByRoomIdMock.mockReset()
-    getMembersByRoomIdMock.mockResolvedValue([])
+    loadRoomMembersMock.mockReset()
+    loadRoomMembersMock.mockResolvedValue([])
   })
 
   const mountDrawer = async (roomId: string | null = ROOM_ID) => {

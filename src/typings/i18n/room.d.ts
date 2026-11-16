@@ -92,6 +92,7 @@ export type Messages = {
     "name_error": "房间名称更新失败",
     "members_title": "成员列表",
     "no_members": "暂无成员",
+    "members_load_failed": "成员列表加载失败",
     "invite_placeholder": "输入用户 ID，例如 {'@'}user:server",
     "invite_button": "邀请",
     "invite_user_required": "请输入用户 ID",
@@ -455,6 +456,7 @@ export type KeyPaths =
   | "room.detail.name_error"
   | "room.detail.members_title"
   | "room.detail.no_members"
+  | "room.detail.members_load_failed"
   | "room.detail.invite_placeholder"
   | "room.detail.invite_button"
   | "room.detail.invite_user_required"

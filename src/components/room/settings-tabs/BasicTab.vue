@@ -1,5 +1,14 @@
 <template>
   <div class="rs-tab" data-testid="basic-tab">
+    <PartialStateBanner
+      v-if="loadError && !loading"
+      compact
+      data-testid="basic-partial"
+      :message="t('room.detail.load_failed')"
+      :detail="loadError"
+      :retry-text="t('common.retry')"
+      @retry="loadRoomDetail" />
+
     <n-spin :show="loading">
       <!-- Section: Room Information -->
       <section class="rs-tab__section">
@@ -115,6 +124,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { THUMBNAIL_SIZE_SMALL } from '@/common/constants'
 import AvatarCropper from '@/components/common/AvatarCropper.vue'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useAvatarUpload } from '@/composables/user/useAvatarUpload'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
@@ -131,6 +141,8 @@ const { copy } = useClipboard()
 
 const loading = ref(false)
 const saving = ref(false)
+/** 房间详情加载失败原因：非空时在表单上方展示局部失败横幅并提供重试 */
+const loadError = ref('')
 const avatarUploading = ref(false)
 const roomName = ref('')
 const roomTopic = ref('')
@@ -164,6 +176,7 @@ const truncatedRoomId = computed(() => {
 
 async function loadRoomDetail() {
   loading.value = true
+  loadError.value = ''
   try {
     await groupStore.loadGroupInfo(props.roomId)
     const detail = groupStore.getGroupDetailByRoomId(props.roomId)
@@ -171,7 +184,8 @@ async function loadRoomDetail() {
     roomTopic.value = detail?.topic ?? ''
     avatarUrl.value = detail?.avatar ?? ''
     memberCount.value = detail?.memberCount ?? 0
-  } catch {
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : String(err)
     showFeedback(t('room.settings_drawer.saved_failed'), 'error')
   } finally {
     loading.value = false

@@ -158,7 +158,11 @@
                   class="room-drawer__panel"
                   role="tabpanel"
                   data-testid="room-drawer-panel-members">
-                  <RoomDetailMembers :members="roomMembers" :loading="membersLoading" />
+                  <RoomDetailMembers
+                    :members="roomMembers"
+                    :loading="membersLoading"
+                    :error="membersError"
+                    @retry="retryMembers" />
                 </div>
 
                 <!-- 安全：签名校验 / 加密事件 / 保留策略（保留策略与加密无关，常驻） -->
@@ -295,6 +299,8 @@ const loading = ref(false)
 const roomDetail = ref<RoomDetail | null>(null)
 const roomMembers = ref<MatrixRoomMember[]>([])
 const membersLoading = ref(false)
+/** 成员加载失败原因：仅在成员 Tab 内展示局部失败横幅，不影响概览等其它面板 */
+const membersError = computed(() => (props.roomId ? groupStore.getMembersLoadError(props.roomId) : ''))
 const lastMessage = ref<string | null>(null)
 const lastMessageSender = ref<string | null>(null)
 const lastMessageTime = ref<number | null>(null)
@@ -399,7 +405,8 @@ const buildRoomDetail = async (): Promise<RoomDetail | null> => {
     let memberCount = groupInfo?.memberCount || 0
 
     try {
-      const members = await groupStore.getMembersByRoomId(props.roomId)
+      // loadRoomMembers 命中缓存直接返回；未命中时才请求，失败原因由 store 记录，UI 走局部失败横幅
+      const members = await groupStore.loadRoomMembers(props.roomId)
       memberCount = Math.max(memberCount, members?.length || 0)
       onlineCount = members?.filter((m) => m.activeStatus === OnlineEnum.ONLINE).length || 0
       roomMembers.value = (members as MatrixRoomMember[]) || []
@@ -435,6 +442,17 @@ const loadRoomDetail = async () => {
     await loadPinnedMessages?.()
   } catch {
     // best-effort
+  }
+}
+
+/** 成员局部失败后的重试：强制刷新成员，成功后 store 会清空错误信号 */
+const retryMembers = async () => {
+  if (!props.roomId) return
+  membersLoading.value = true
+  try {
+    roomMembers.value = await groupStore.loadRoomMembers(props.roomId, true)
+  } finally {
+    membersLoading.value = false
   }
 }
 

@@ -117,4 +117,29 @@ describe('RoomDetailMembers', () => {
     expect(placeholder.exists()).toBe(true)
     expect(placeholder.text()).toBe('A')
   })
+
+  it('renders partial banner instead of empty state when load failed', () => {
+    const wrapper = mount(RoomDetailMembers, {
+      props: { members: [], loading: false, error: 'network down' }
+    })
+    expect(wrapper.find('[data-testid="room-detail-members-partial"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="room-detail-members-empty"]').exists()).toBe(false)
+  })
+
+  it('keeps cached members alongside partial banner when load failed', () => {
+    const members: MatrixRoomMember[] = [baseMember({ userId: '@a:1', name: 'Alice' })]
+    const wrapper = mount(RoomDetailMembers, {
+      props: { members, loading: false, error: 'network down' }
+    })
+    expect(wrapper.find('[data-testid="room-detail-members-partial"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="room-detail-member-item"]')).toHaveLength(1)
+  })
+
+  it('emits retry when partial banner retry button clicked', async () => {
+    const wrapper = mount(RoomDetailMembers, {
+      props: { members: [], loading: false, error: 'network down' }
+    })
+    await wrapper.find('[data-testid="partial-retry"]').trigger('click')
+    expect(wrapper.emitted('retry')).toHaveLength(1)
+  })
 })

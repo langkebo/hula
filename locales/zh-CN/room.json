@@ -87,6 +87,7 @@
     "name_error": "房间名称更新失败",
     "members_title": "成员列表",
     "no_members": "暂无成员",
+    "members_load_failed": "成员列表加载失败",
     "invite_placeholder": "输入用户 ID，例如 {'@'}user:server",
     "invite_button": "邀请",
     "invite_user_required": "请输入用户 ID",
