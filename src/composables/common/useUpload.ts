@@ -15,7 +15,7 @@ import {
 import { uploadService } from '@/services/performance/UploadService'
 import { renderWorker } from '@/services/renderWorker'
 import { useUserStore } from '@/stores/domains/user/user'
-import { resolveUploadMimeType } from '@/utils/FileType'
+import { resolveUploadMimeTypeFromFile } from '@/utils/FileType'
 import { extractFileName } from '@/utils/Formatting'
 import { createLogger } from '@/utils/Logger'
 import { getCacheBaseDir, getCacheBaseDirName } from '@/utils/PathUtil'
@@ -258,7 +258,7 @@ export const useUpload = () => {
       fileInfo.value = { ...info }
       await onStart.trigger(fileInfo)
 
-      const contentType = resolveUploadMimeType(file.type, file.name)
+      const contentType = await resolveUploadMimeTypeFromFile(file, file.name)
       isUploading.value = true
       progress.value = 0
 

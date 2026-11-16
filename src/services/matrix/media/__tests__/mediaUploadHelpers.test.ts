@@ -139,6 +139,17 @@ describe('uploadViaGateway（经 MatrixHttpClient，无自建 XHR）', () => {
     expect(uploadRawMock.mock.calls[0][2].contentType).toBe('text/csv')
   })
 
+  it('文件无类型、无扩展名时按文件头嗅探推导', async () => {
+    const file = new File([Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a])], 'screenshot')
+
+    await uploadViaGateway(file, {})
+
+    expect(uploadRawMock.mock.calls[0][2]).toMatchObject({
+      contentType: 'image/png',
+      queryParams: { filename: 'screenshot', content_type: 'image/png' }
+    })
+  })
+
   it('响应缺少 content_uri ⇒ 抛错（不静默返回 undefined）', async () => {
     uploadRawMock.mockResolvedValue({})
 

@@ -1,3 +1,4 @@
+import { resolveUploadMimeTypeFromFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
 
 const logger = createLogger('MatrixProfile')
@@ -249,8 +250,9 @@ class MatrixProfileService extends BaseMatrixService {
   async uploadAndSetAvatar(file: Blob | File): Promise<string> {
     try {
       const client = this.getClient()
+      const mimetype = await resolveUploadMimeTypeFromFile(file, file instanceof File ? file.name : '')
       const response = (await client.uploadContent(file, {
-        type: file.type || 'application/octet-stream',
+        type: mimetype,
         rawResponse: false
       })) as UploadContentResponse
 

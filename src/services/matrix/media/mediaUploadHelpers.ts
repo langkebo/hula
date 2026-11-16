@@ -6,7 +6,7 @@
  */
 
 import { chunkUploadService } from '@/services/performance/ChunkUploadService'
-import { resolveUploadMimeType } from '@/utils/FileType'
+import { resolveUploadMimeTypeFromFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import type { MediaManager } from '../sdk'
@@ -61,7 +61,7 @@ export async function uploadViaGateway(
   opts: { type?: string | undefined; name?: string | undefined }
 ): Promise<string> {
   const filename = opts.name || file.name || 'upload'
-  const mimetype = resolveUploadMimeType(opts.type || file.type, filename)
+  const mimetype = opts.type || (await resolveUploadMimeTypeFromFile(file, filename))
 
   logger.info(`[MatrixMedia] 网关直传: size=${file.size}, type=${mimetype}`)
 

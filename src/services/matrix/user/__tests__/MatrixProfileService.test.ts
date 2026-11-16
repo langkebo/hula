@@ -294,6 +294,28 @@ describe('ProfileService', () => {
       })
       expect(mockClient.setAvatarUrl).toHaveBeenCalledWith('mxc://matrix.org/uploaded123')
     })
+
+    it('无声明类型时按文件头推断，不再一律落成 octet-stream', async () => {
+      mockClient.uploadContent.mockResolvedValueOnce({ content_uri: 'mxc://matrix.org/uploaded456' })
+      mockClient.setAvatarUrl.mockResolvedValueOnce(undefined)
+      profileService.initialize(mockClient as unknown as MatrixClient)
+
+      const blob = new Blob([Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a])])
+      await profileService.uploadAndSetAvatar(blob)
+
+      expect(mockClient.uploadContent).toHaveBeenCalledWith(blob, { type: 'image/png', rawResponse: false })
+    })
+
+    it('无声明类型时按文件名扩展名推断', async () => {
+      mockClient.uploadContent.mockResolvedValueOnce({ content_uri: 'mxc://matrix.org/uploaded789' })
+      mockClient.setAvatarUrl.mockResolvedValueOnce(undefined)
+      profileService.initialize(mockClient as unknown as MatrixClient)
+
+      const file = new File(['content'], 'avatar.webp')
+      await profileService.uploadAndSetAvatar(file)
+
+      expect(mockClient.uploadContent).toHaveBeenCalledWith(file, { type: 'image/webp', rawResponse: false })
+    })
   })
 })
 

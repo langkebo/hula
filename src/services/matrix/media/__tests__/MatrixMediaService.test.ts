@@ -293,6 +293,20 @@ describe('MatrixMediaService', () => {
       expect(uploadContent).toHaveBeenCalledWith(expect.any(File), expect.objectContaining({ type: 'application/pdf' }))
     })
 
+    it('should sniff the file header when neither type nor extension is available', async () => {
+      const uploadContent = vi.fn().mockResolvedValue({ content_uri: 'mxc://matrix.org/uploaded123' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({ uploadContent }),
+        getProfileManager: () => ({ mxcUrlToHttp: vi.fn() })
+      } as unknown as MatrixClient)
+
+      const file = new File([Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a])], 'screenshot')
+      const result = await matrixMediaService.uploadFile(file)
+
+      expect(result.mimetype).toBe('image/png')
+      expect(uploadContent).toHaveBeenCalledWith(expect.any(File), expect.objectContaining({ type: 'image/png' }))
+    })
+
     it('should forward upload progress to callback', async () => {
       // MediaManager.uploadContent passes opts to http.uploadContent which reads
       // opts.progressHandler (not opts.progress). The mock simulates this behavior.
