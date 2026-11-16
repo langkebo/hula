@@ -49,7 +49,13 @@ export type Messages = {
     "network_ws_offline": "网络连接已断开，正在尝试重连...",
     "loading_more": "正在加载更早的消息...",
     "load_more_failed": "加载历史消息失败",
+    "load_more_network": "网络连接中断，历史消息未加载",
+    "load_more_permission": "没有权限读取更早的消息",
+    "load_more_server": "服务端暂时不可用，历史消息未加载",
     "load_failed_desc": "消息可能没有完整加载，请重试",
+    "load_failed_network": "网络连接不可用，请检查网络后重试",
+    "load_failed_permission": "没有权限读取该会话的消息",
+    "load_failed_server": "服务端暂时无法返回消息，请稍后重试",
     "unread_divider": "以下为新消息",
     "feature": {
       "coming_soon": "功能开发中"
@@ -479,7 +485,13 @@ export type KeyPaths =
   | "home.chat_main.network_ws_offline"
   | "home.chat_main.loading_more"
   | "home.chat_main.load_more_failed"
+  | "home.chat_main.load_more_network"
+  | "home.chat_main.load_more_permission"
+  | "home.chat_main.load_more_server"
   | "home.chat_main.load_failed_desc"
+  | "home.chat_main.load_failed_network"
+  | "home.chat_main.load_failed_permission"
+  | "home.chat_main.load_failed_server"
   | "home.chat_main.unread_divider"
   | "home.chat_main.feature.coming_soon"
   | "home.chat_main.translate.empty"

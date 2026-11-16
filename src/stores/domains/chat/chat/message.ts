@@ -10,6 +10,7 @@ import type { CustomForwardTask, MessageBody, MessageType, RecalledMessage } fro
 
 export type { MessageBody, MessageType }
 
+import type { MessageLoadFailure } from './messageLoadFailure'
 import { createMessageLoading } from './messageLoading'
 import { createMessageMutations } from './messageMutations'
 import { createMessageReplyMapping } from './messageReplyMapping'
@@ -17,13 +18,7 @@ import { createMessageRoomIndex } from './messageRoomIndex'
 import { createMessageSortedKeys } from './messageSortedKeys'
 import { createRecallManager } from './recallManager'
 
-/** 消息加载失败的可见信号 */
-export type MessageLoadFailure = {
-  /** 'history'=翻页失败(游标保留可重试) / 'initial'=首屏失败(显示错误态而非空态) */
-  scope: 'history' | 'initial'
-  /** 失败原因：优先服务端 errcode（如 M_FORBIDDEN），其次 Error.message，便于按网络/权限/服务端分级 */
-  reason: string
-}
+export type { MessageLoadFailure, MessageLoadFailureCategory } from './messageLoadFailure'
 
 type MessageListOptions = {
   isLast: boolean

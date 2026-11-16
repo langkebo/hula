@@ -58,6 +58,10 @@
     </div>
     <p v-if="title" class="error-state__title">{{ title }}</p>
     <p v-if="message" class="error-state__message">{{ message }}</p>
+    <details v-if="detail && detailLabel" class="error-state__detail">
+      <summary class="error-state__detail-summary">{{ detailLabel }}</summary>
+      <code class="error-state__detail-code">{{ detail }}</code>
+    </details>
     <div v-if="retryText || $slots.actions" class="error-state__actions">
       <button
         v-if="retryText"
@@ -86,6 +90,10 @@ withDefaults(
     title: string
     /** 错误描述（可选） */
     message?: string
+    /** 折叠详情内容（如服务端 errcode / 原始报错），提供时渲染可复制的详情区 */
+    detail?: string
+    /** 详情区标题（必填配合 detail 使用，如「详情」） */
+    detailLabel?: string
     /** 重试按钮文案，提供时渲染按钮并在点击时 emit retry */
     retryText?: string
     /** 紧凑模式（默认 false） */
@@ -95,6 +103,8 @@ withDefaults(
   }>(),
   {
     message: '',
+    detail: '',
+    detailLabel: '',
     retryText: '',
     compact: false,
     illustration: 'generic-error'
@@ -149,6 +159,26 @@ withDefaults(
   color: var(--tjg-text-tertiary);
   max-width: 280px;
   margin: 0;
+}
+
+.error-state__detail {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--tjg-text-tertiary);
+}
+
+.error-state__detail-summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.error-state__detail-code {
+  display: inline-block;
+  margin-top: 6px;
+  font-family: var(--tjg-font-family-mono);
+  line-height: 1.5;
+  word-break: break-all;
+  user-select: text;
 }
 
 .error-state__actions {

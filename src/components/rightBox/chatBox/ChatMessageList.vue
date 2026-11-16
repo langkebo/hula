@@ -10,9 +10,11 @@
   <ErrorState
     v-if="isMainViewReady && chatStore.chatMessageList.length === 0 && initialLoadFailed"
     data-testid="message-list-load-error"
-    illustration="network-error"
+    :illustration="initialLoadFailureIllustration"
     :title="t('message.load_messages_failed')"
-    :message="t('home.chat_main.load_failed_desc')"
+    :message="initialLoadFailureMessage"
+    :detail="initialLoadFailureDetail"
+    :detail-label="t('common.details')"
     :retry-text="t('common.retry')"
     class="flex-1 py-60px"
     @retry="handleRetryInitialLoad" />
@@ -158,7 +160,43 @@ const isMainViewReady = computed(() => {
  * 首屏加载失败：toast 一闪而过，列表又是空的 ⇒ 必须给一个持久、可重试的错误态。
  * 数据来源是 store 的 `loadFailed`（见 `chat/messageLoading.ts`）。
  */
-const initialLoadFailed = computed(() => chatStore.currentMessageOptions?.loadFailed?.scope === 'initial')
+const initialLoadFailure = computed(() => {
+  const failure = chatStore.currentMessageOptions?.loadFailed
+  return failure?.scope === 'initial' ? failure : null
+})
+
+const initialLoadFailed = computed(() => Boolean(initialLoadFailure.value))
+
+/** 按失败归类给出可行动的文案；无法归类时回落到通用描述，不猜原因 */
+const initialLoadFailureMessage = computed(() => {
+  switch (initialLoadFailure.value?.category) {
+    case 'network':
+      return t('home.chat_main.load_failed_network')
+    case 'permission':
+      return t('home.chat_main.load_failed_permission')
+    case 'server':
+      return t('home.chat_main.load_failed_server')
+    default:
+      return t('home.chat_main.load_failed_desc')
+  }
+})
+
+const initialLoadFailureIllustration = computed(() => {
+  switch (initialLoadFailure.value?.category) {
+    case 'network':
+      return 'network-error'
+    case 'server':
+      return 'server-error'
+    default:
+      return 'generic-error'
+  }
+})
+
+/** 详情折叠只放可核实的原始原因（errcode / 报错文本），未知时不展示 */
+const initialLoadFailureDetail = computed(() => {
+  const reason = initialLoadFailure.value?.reason
+  return reason && reason !== 'unknown' ? reason : ''
+})
 
 /** 重试首屏：清空当前房间消息后重新走一次首屏加载（失败会再次落回本错误态） */
 const handleRetryInitialLoad = (): void => {

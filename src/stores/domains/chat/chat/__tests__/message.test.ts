@@ -545,7 +545,7 @@ describe('ChatMessageStore', () => {
       isLast: false,
       isLoading: false,
       hasLoadedOnce: true,
-      loadFailed: { scope: 'history', reason: 'network down' }
+      loadFailed: { scope: 'history', reason: 'network down', category: 'network' }
     })
   })
 
@@ -561,7 +561,7 @@ describe('ChatMessageStore', () => {
     expect(store.currentMessageOptions).toMatchObject({
       cursor: '',
       hasLoadedOnce: true,
-      loadFailed: { scope: 'initial', reason: 'network down' }
+      loadFailed: { scope: 'initial', reason: 'network down', category: 'network' }
     })
   })
 
@@ -575,7 +575,47 @@ describe('ChatMessageStore', () => {
     await store.loadMore()
 
     // reason 优先取 errcode，便于后续按网络 / 权限 / 服务端分级展示
-    expect(store.currentMessageOptions.loadFailed).toEqual({ scope: 'initial', reason: 'M_FORBIDDEN' })
+    expect(store.currentMessageOptions.loadFailed).toEqual({
+      scope: 'initial',
+      reason: 'M_FORBIDDEN',
+      category: 'permission'
+    })
+  })
+
+  it('classifies HTTP 5xx failures as server errors', async () => {
+    const store = useChatStore()
+    store.currentMessageOptions = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(
+      Object.assign(new Error('bad gateway'), { httpStatus: 503 })
+    )
+
+    await store.loadMore()
+
+    // 无 errcode 但有状态码 ⇒ 服务端已响应，按服务端归类
+    expect(store.currentMessageOptions.loadFailed).toMatchObject({ category: 'server', reason: 'bad gateway' })
+  })
+
+  it('classifies HTTP 403 failures as permission errors', async () => {
+    const store = useChatStore()
+    store.currentMessageOptions = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(
+      Object.assign(new Error('forbidden'), { status: 403 })
+    )
+
+    await store.loadMore()
+
+    expect(store.currentMessageOptions.loadFailed).toMatchObject({ category: 'permission' })
+  })
+
+  it('falls back to unknown when the failure carries no classification evidence', async () => {
+    const store = useChatStore()
+    store.currentMessageOptions = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(new Error('boom'))
+
+    await store.loadMore()
+
+    // 无法判定时不猜原因，UI 回落到通用文案
+    expect(store.currentMessageOptions.loadFailed).toEqual({ scope: 'initial', reason: 'boom', category: 'unknown' })
   })
 
   it('clears the failure marker after a successful load', async () => {
@@ -585,7 +625,7 @@ describe('ChatMessageStore', () => {
       isLoading: false,
       cursor: '',
       hasLoadedOnce: true,
-      loadFailed: { scope: 'initial', reason: 'network down' }
+      loadFailed: { scope: 'initial', reason: 'network down', category: 'network' }
     }
     vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce({
       messages: [],

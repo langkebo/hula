@@ -4,13 +4,15 @@
     <span>{{ t('home.chat_main.loading_more') }}</span>
   </div>
   <div v-else-if="error" class="load-more-indicator load-more-indicator--error" role="alert">
-    <span>{{ t('home.chat_main.load_more_failed') }}</span>
+    <span>{{ failureText }}</span>
     <n-button text type="primary" size="tiny" @click="emit('retry')">{{ t('common.retry') }}</n-button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useChatStore } from '@/stores/domains/chat/chat'
 
 defineProps<{
   loading: boolean
@@ -22,6 +24,22 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const chatStore = useChatStore()
+
+const failureText = computed(() => {
+  const failure = chatStore.currentMessageOptions?.loadFailed
+  const category = failure?.scope === 'history' ? failure.category : null
+  switch (category) {
+    case 'network':
+      return t('home.chat_main.load_more_network')
+    case 'permission':
+      return t('home.chat_main.load_more_permission')
+    case 'server':
+      return t('home.chat_main.load_more_server')
+    default:
+      return t('home.chat_main.load_more_failed')
+  }
+})
 </script>
 
 <style scoped lang="scss">

@@ -139,6 +139,29 @@ describe('ErrorState', () => {
     expect(svg.attributes('stroke')).toBe('var(--tjg-color-danger-500)')
   })
 
+  it('renders the detail block inside a collapsible element when detail and label are provided', () => {
+    const wrapper = mount(ErrorState, {
+      props: { title: '加载失败', detail: 'M_FORBIDDEN', detailLabel: '详情' }
+    })
+    const details = wrapper.find('.error-state__detail')
+    expect(details.exists()).toBe(true)
+    expect(details.element.tagName.toLowerCase()).toBe('details')
+    expect(wrapper.find('.error-state__detail-summary').text()).toBe('详情')
+    expect(wrapper.find('.error-state__detail-code').text()).toBe('M_FORBIDDEN')
+  })
+
+  it('does not render the detail block without a label, keeping raw reason hidden by default', () => {
+    const withoutLabel = mount(ErrorState, {
+      props: { title: '加载失败', detail: 'M_FORBIDDEN' }
+    })
+    expect(withoutLabel.find('.error-state__detail').exists()).toBe(false)
+
+    const withoutDetail = mount(ErrorState, {
+      props: { title: '加载失败', detailLabel: '详情' }
+    })
+    expect(withoutDetail.find('.error-state__detail').exists()).toBe(false)
+  })
+
   it('renders both retry button and actions slot when both are provided', () => {
     const wrapper = mount(ErrorState, {
       props: { title: '加载失败', retryText: '重试' },

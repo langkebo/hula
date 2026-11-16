@@ -15,7 +15,11 @@ const { chatState, globalState } = vi.hoisted(() => ({
       hasLoadedOnce: boolean
       isLast: boolean
       isLoading: boolean
-      loadFailed?: { scope: 'history' | 'initial'; reason: string } | null
+      loadFailed?: {
+        scope: 'history' | 'initial'
+        reason: string
+        category: 'network' | 'permission' | 'server' | 'unknown'
+      } | null
     } | null,
     /** 首屏重试入口（ChatMessageList 的错误态按钮会调它） */
     resetAndRefreshCurrentRoomMessages: vi.fn(),
@@ -90,10 +94,10 @@ vi.mock('@/components/common/EmptyState.vue', () => ({
 vi.mock('@/components/common/ErrorState.vue', () => ({
   default: {
     name: 'ErrorState',
-    props: ['title', 'message', 'retryText', 'illustration'],
+    props: ['title', 'message', 'detail', 'detailLabel', 'retryText', 'illustration'],
     emits: ['retry'],
     template:
-      '<div data-testid="error-state-stub"><button data-testid="error-state-retry" @click="$emit(\'retry\')">retry</button></div>'
+      '<div data-testid="error-state-stub" :data-message="message" :data-detail="detail" :data-detail-label="detailLabel" :data-illustration="illustration"><button data-testid="error-state-retry" @click="$emit(\'retry\')">retry</button></div>'
   }
 }))
 // RenderMessage 通过 unplugin-vue-components 自动导入（局部注册），
@@ -163,7 +167,7 @@ describe('ChatMessageList virtual scroller sizing', () => {
       hasLoadedOnce: true,
       isLast: false,
       isLoading: false,
-      loadFailed: { scope: 'initial', reason: 'network down' }
+      loadFailed: { scope: 'initial', reason: 'network down', category: 'network' }
     }
     globalState.currentSessionRoomId = '!room:example.com'
 
@@ -189,6 +193,73 @@ describe('ChatMessageList virtual scroller sizing', () => {
 
     expect(wrapper.find('.empty-state-stub').exists()).toBe(true)
     expect(wrapper.find('[data-testid="message-list-load-error"]').exists()).toBe(false)
+  })
+
+  it('按失败归类切换插图与文案，并把原始原因放进可复制的详情', () => {
+    chatState.currentMessageOptions = {
+      hasLoadedOnce: true,
+      isLast: false,
+      isLoading: false,
+      loadFailed: { scope: 'initial', reason: 'M_FORBIDDEN', category: 'permission' }
+    }
+    globalState.currentSessionRoomId = '!room:example.com'
+
+    const wrapper = mount(ChatMessageList, {
+      props: { isGroup: false, privateModeActive: false, activeReply: '' }
+    })
+
+    const errorState = wrapper.find('[data-testid="message-list-load-error"]')
+    expect(errorState.attributes('data-message')).toBe('home.chat_main.load_failed_permission')
+    expect(errorState.attributes('data-illustration')).toBe('generic-error')
+    expect(errorState.attributes('data-detail')).toBe('M_FORBIDDEN')
+    expect(errorState.attributes('data-detail-label')).toBe('common.details')
+  })
+
+  it('网络失败用网络插图，服务端失败用服务端插图', () => {
+    globalState.currentSessionRoomId = '!room:example.com'
+    const mountWithCategory = (category: 'network' | 'server') => {
+      chatState.currentMessageOptions = {
+        hasLoadedOnce: true,
+        isLast: false,
+        isLoading: false,
+        loadFailed: { scope: 'initial', reason: 'Failed to fetch', category }
+      }
+      return mount(ChatMessageList, {
+        props: { isGroup: false, privateModeActive: false, activeReply: '' }
+      })
+    }
+
+    const network = mountWithCategory('network')
+    expect(network.find('[data-testid="message-list-load-error"]').attributes('data-illustration')).toBe(
+      'network-error'
+    )
+    expect(network.find('[data-testid="message-list-load-error"]').attributes('data-message')).toBe(
+      'home.chat_main.load_failed_network'
+    )
+
+    const server = mountWithCategory('server')
+    expect(server.find('[data-testid="message-list-load-error"]').attributes('data-illustration')).toBe('server-error')
+    expect(server.find('[data-testid="message-list-load-error"]').attributes('data-message')).toBe(
+      'home.chat_main.load_failed_server'
+    )
+  })
+
+  it('无法归类时回落到通用文案且不暴露详情', () => {
+    chatState.currentMessageOptions = {
+      hasLoadedOnce: true,
+      isLast: false,
+      isLoading: false,
+      loadFailed: { scope: 'initial', reason: 'unknown', category: 'unknown' }
+    }
+    globalState.currentSessionRoomId = '!room:example.com'
+
+    const wrapper = mount(ChatMessageList, {
+      props: { isGroup: false, privateModeActive: false, activeReply: '' }
+    })
+
+    const errorState = wrapper.find('[data-testid="message-list-load-error"]')
+    expect(errorState.attributes('data-message')).toBe('home.chat_main.load_failed_desc')
+    expect(errorState.attributes('data-detail')).toBe('')
   })
 
   it('size-dependencies covers message status and upload progress', () => {

@@ -107,6 +107,7 @@
     "settings": "Settings"
   },
   "copy": "Copy",
+  "details": "Details",
   "capability": {
     "ready": "Available",
     "degraded": "Limited",

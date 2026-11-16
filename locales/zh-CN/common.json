@@ -107,6 +107,7 @@
     "settings": "设置"
   },
   "copy": "复制",
+  "details": "详情",
   "capability": {
     "ready": "可用",
     "degraded": "降级可用",

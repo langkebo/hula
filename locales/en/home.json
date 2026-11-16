@@ -44,7 +44,13 @@
     "network_ws_offline": "Server connection lost, retrying",
     "loading_more": "Loading earlier messages...",
     "load_more_failed": "Failed to load message history",
+    "load_more_network": "Network interrupted. Earlier messages were not loaded",
+    "load_more_permission": "You do not have permission to read earlier messages",
+    "load_more_server": "Service temporarily unavailable. Earlier messages were not loaded",
     "load_failed_desc": "This conversation may not be fully loaded. Please retry.",
+    "load_failed_network": "Network unavailable. Check your connection and retry",
+    "load_failed_permission": "You do not have permission to read this conversation",
+    "load_failed_server": "Service temporarily unavailable. Please try again later",
     "unread_divider": "New messages",
     "feature": {
       "coming_soon": "Feature under development"

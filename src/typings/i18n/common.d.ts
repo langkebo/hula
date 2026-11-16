@@ -112,6 +112,7 @@ export type Messages = {
     "settings": "设置"
   },
   "copy": "复制",
+  "details": "详情",
   "capability": {
     "ready": "可用",
     "degraded": "降级可用",
@@ -281,6 +282,7 @@ export type KeyPaths =
   | "common.window_titles.about"
   | "common.window_titles.settings"
   | "common.copy"
+  | "common.details"
   | "common.capability.ready"
   | "common.capability.degraded"
   | "common.capability.unavailable"
