@@ -54,7 +54,7 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
       const fileData = await readFile(normalizedPath, { baseDir })
 
       const fileName = normalizedPath.split('/').pop() || 'unknown'
-      const fileType = getMimeTypeFromExtension(fileName)
+      const fileType = getMimeTypeFromExtension(fileName) || 'application/octet-stream'
 
       return new File([new Uint8Array(fileData)], fileName, { type: fileType })
     } catch (error) {
@@ -108,7 +108,7 @@ export class FileMessageStrategyImpl extends AbstractMessageStrategy {
       path,
       fileName: validatedFile.name,
       size: validatedFile.size,
-      mimeType: validatedFile.type,
+      mimeType: validatedFile.type || getMimeTypeFromExtension(validatedFile.name) || 'application/octet-stream',
       reply: replyValue?.message?.body?.content
         ? {
             content: replyValue.message.body.content,

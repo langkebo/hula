@@ -90,9 +90,18 @@ describe('Formatting', () => {
       expect(getMimeTypeFromExtension('a.svg')).toBe('image/svg+xml')
     })
 
-    it('falls back to image/png for unknown extensions', () => {
-      expect(getMimeTypeFromExtension('a.unknown')).toBe('image/png')
-      expect(getMimeTypeFromExtension('no-ext')).toBe('image/png')
+    it('maps non-image extensions', () => {
+      expect(getMimeTypeFromExtension('a.pdf')).toBe('application/pdf')
+      expect(getMimeTypeFromExtension('a.mp4')).toBe('video/mp4')
+      expect(getMimeTypeFromExtension('a.mp3')).toBe('audio/mpeg')
+      expect(getMimeTypeFromExtension('a.docx')).toBe(
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      )
+    })
+
+    it('returns an empty string for unknown or missing extensions', () => {
+      expect(getMimeTypeFromExtension('a.unknown')).toBe('')
+      expect(getMimeTypeFromExtension('no-ext')).toBe('')
     })
   })
 

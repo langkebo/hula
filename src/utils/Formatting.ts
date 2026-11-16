@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify'
 import { compact } from 'es-toolkit'
+import { getMimeTypeByExtension } from '@/utils/FileType'
 import { padZero } from '@/utils/StringUtils'
 
 /**
@@ -102,21 +103,9 @@ export const extractFileName = (path: string): string => {
 /**
  * 根据文件扩展名获取MIME类型
  * @param fileName 文件名
- * @returns MIME类型
+ * @returns MIME类型；未知扩展名返回空字符串，由调用方按场景兜底
  */
-export const getMimeTypeFromExtension = (fileName: string): string => {
-  const ext = fileName.split('.').pop()?.toLowerCase() || ''
-  const mimeMap: Record<string, string> = {
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    gif: 'image/gif',
-    webp: 'image/webp',
-    bmp: 'image/bmp',
-    svg: 'image/svg+xml'
-  }
-  return mimeMap[ext] || 'image/png'
-}
+export const getMimeTypeFromExtension = (fileName: string): string => getMimeTypeByExtension(fileName)
 
 /**
  * @param fragment 字符串

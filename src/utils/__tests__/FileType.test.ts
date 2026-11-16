@@ -6,6 +6,7 @@ import {
   getFileExtension,
   getImageMimeType,
   getMessageTypeByFile,
+  getMimeTypeByExtension,
   getVideoMimeType,
   isPathUploadFile,
   isVideoUrl
@@ -53,6 +54,24 @@ describe('FileType', () => {
       expect(getImageMimeType('a.png')).toBe('image/png')
       expect(getImageMimeType('a.svg')).toBe('image/svg+xml')
       expect(getImageMimeType('a.unknown')).toBe('image/jpeg')
+    })
+  })
+
+  describe('getMimeTypeByExtension', () => {
+    it('maps image, video, audio and document extensions', () => {
+      expect(getMimeTypeByExtension('a.png')).toBe('image/png')
+      expect(getMimeTypeByExtension('clip.MP4')).toBe('video/mp4')
+      expect(getMimeTypeByExtension('a.flac')).toBe('audio/flac')
+      expect(getMimeTypeByExtension('a.pdf')).toBe('application/pdf')
+      expect(getMimeTypeByExtension('a.docx')).toBe(
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      )
+      expect(getMimeTypeByExtension('a.zip')).toBe('application/zip')
+    })
+
+    it('returns an empty string for unknown or missing extensions', () => {
+      expect(getMimeTypeByExtension('a.unknown')).toBe('')
+      expect(getMimeTypeByExtension('README')).toBe('')
     })
   })
 

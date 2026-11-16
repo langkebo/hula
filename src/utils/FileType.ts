@@ -75,6 +75,26 @@ const IMAGE_MIME_TYPE_MAP: Record<string, string> = {
 } as const
 
 /**
+ * 文档与压缩包MIME类型映射
+ */
+const DOCUMENT_MIME_TYPE_MAP: Record<string, string> = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  txt: 'text/plain',
+  md: 'text/markdown',
+  json: 'application/json',
+  csv: 'text/csv',
+  zip: 'application/zip',
+  rar: 'application/vnd.rar',
+  '7z': 'application/x-7z-compressed'
+} as const
+
+/**
  * 从文件名获取扩展名
  * @param fileName 文件名
  * @returns 小写的扩展名（不含点）
@@ -82,6 +102,24 @@ const IMAGE_MIME_TYPE_MAP: Record<string, string> = {
 export const getFileExtension = (fileName: string): string => {
   const parts = fileName.split('.')
   return parts.length > 1 ? parts.pop()!.toLowerCase() : ''
+}
+
+/**
+ * 根据文件扩展名推导MIME类型（图片 / 视频 / 音频 / 文档）
+ * @param fileName 文件名
+ * @returns 命中的MIME类型；没有扩展名或扩展名未知时返回空字符串，由调用方按场景兜底
+ */
+export const getMimeTypeByExtension = (fileName: string): string => {
+  const extension = getFileExtension(fileName)
+  if (!extension) return ''
+
+  return (
+    IMAGE_MIME_TYPE_MAP[extension] ||
+    VIDEO_MIME_TYPE_MAP[extension] ||
+    AUDIO_MIME_TYPE_MAP[extension] ||
+    DOCUMENT_MIME_TYPE_MAP[extension] ||
+    ''
+  )
 }
 
 /**

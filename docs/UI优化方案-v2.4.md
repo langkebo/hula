@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3696,6 +3696,66 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 3. 事件入口化的边界止于父组件接线：`SpaceDetailsPane` 保持 stub，未替换为真实组件（其内部依赖 `TjgSpaceJoinCta`、`canManageSpace` 等服务层判定，成本高于收益）。因此本文件验证的是「父组件是否把事件接对、状态是否传对」，子组件内部渲染由各自的组件用例覆盖。
 4. 测试文件 677 行不受「`.vue` 超 800 行拆分」红线约束（守门只统计源文件体量基线），未做拆分；若后续用例继续增长，可按 `describe` 分文件。
 5. 本批不改生产代码，`SpaceChildrenPane.vue` / `useSpaceChildrenState.ts` / `useSpaceChildrenActions.ts` 行为零变化；§19.32 边界 1、2 就此关闭。
+
+---
+
+### 19.39 P1-2：MIME 推导优先级统一（2026-11-16）
+
+#### 缺口
+
+1. `Formatting.getMimeTypeFromExtension` 只覆盖 7 个图片扩展名，且未知扩展名固定回退 `image/png`。后果：pdf / mp4 / docx 等经路径上传时被标成 `image/png`，接收端拿到错误的 `mimetype`。
+2. 同一错误让 `uploadTransports.uploadPathViaMatrix` 的 `mimeType || getMimeTypeFromExtension(name) || 'application/octet-stream'` 成为死代码 —— 中间项永不返回空串，最后一级兜底不可达。
+3. `FileMessageStrategyImpl.getMsg` 的 fileList 分支直接取 `validatedFile.type`：浏览器对未知扩展给空串时不回落扩展名，协议字段 `mimetype` 缺省；path 分支（`getFileFromPath`）也没有 `application/octet-stream` 兜底。
+4. 映射源分裂：`FileType.ts` 已有 image / video / audio 三张标准表（含 mov → `video/quicktime`、mkv → `video/x-matroska`），`Formatting.ts` 另维护一份仅图片的表，两处必然漂移。
+
+#### 判据
+
+| 场景 | 数据来源 | 断言要点 |
+| :--- | :--- | :--- |
+| 媒体扩展名 | `FileType.ts` 既有 image / video / audio 三张表 | `a.png` → `image/png`、`clip.MP4`（大写）→ `video/mp4`、`a.flac` → `audio/flac` |
+| 文档扩展名 | 新增 `DOCUMENT_MIME_TYPE_MAP`（pdf/doc(x)/xls(x)/ppt(x)/txt/md/json/csv/zip/rar/7z） | `a.pdf` → `application/pdf`、`a.docx` → OOXML 全名、`a.zip` → `application/zip` |
+| 未知扩展名 | `getMimeTypeByExtension` 返回 `''` | `a.unknown` / `README` 不再伪装成 `image/png` |
+| 路径上传 | `uploadPathViaMatrix` 既有优先级链 | `getMimeTypeFromExtension` 现在会返回空串，`application/octet-stream` 兜底真正可达 |
+| 文件消息（有显式类型） | `getMsg` fileList 分支 | `File.type = application/x-custom` 时不被扩展名覆盖 |
+| 文件消息（显式类型为空） | `getMsg` fileList 分支 | `notes.txt` + `type: ''` → `text/plain` |
+| 文件消息（都未知） | `getMsg` fileList 分支 | `blob.bin` + `type: ''` → `application/octet-stream` |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/utils/FileType.ts` | 新增 `DOCUMENT_MIME_TYPE_MAP` 与 `getMimeTypeByExtension(fileName)`：按 image → video → audio → document 顺序命中，无扩展名或未知扩展返回 `''`，作为唯一扩展名映射源 |
+| `src/utils/Formatting.ts` | `getMimeTypeFromExtension` 改为转发 `getMimeTypeByExtension`，删除仅图片的内联映射与 `|| 'image/png'` 兜底 |
+| `src/strategy/strategies/file.ts` | `getFileFromPath` 的 `fileType` 补 `|| 'application/octet-stream'`；`getMsg` 的 `mimeType` 改为 `validatedFile.type || getMimeTypeFromExtension(validatedFile.name) || 'application/octet-stream'` |
+| `src/utils/__tests__/FileType.test.ts` | 新增 `getMimeTypeByExtension` 两条用例：四类扩展名命中（含大写）、未知 / 无扩展返回空串 |
+| `src/utils/__tests__/Formatting.test.ts` | 未知扩展名期望由 `image/png` 改为 `''`；新增 pdf / mp4 / mp3 / docx 用例 |
+| `src/strategy/strategies/__tests__/file.test.ts` | Formatting mock 的未知扩展返回值改为 `''`；mock `hasTauriRuntime` 为 false；新增 `getMsg` 三条优先级用例 |
+| `docs/UI优化方案-v2.4.md` | 新增本节；第 11 行章节构成追加 §19.39 |
+
+未改动 `image.ts` 与 `ChatFooter.vue` 的图片流程：选择器只放行 7 个图片扩展名，全部命中映射，不需要图片兜底；未知扩展名现在会被 `validateImage` 按「仅支持 JPEG/PNG/WebP」正确拒绝，而不是被误标成 `image/png` 通过。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 定向用例 | `pnpm vitest run src/utils/__tests__/Formatting.test.ts src/utils/__tests__/FileType.test.ts src/strategy/strategies/__tests__/file.test.ts src/strategy/strategies/__tests__/image.test.ts` | `Test Files 4 passed (4)` / `Tests 62 passed (62)`，exit 0 |
+| 变异自证 | 逐条注入后还原 | 3 条全部变红：① `getMimeTypeFromExtension` 恢复 `|| 'image/png'` → `expected 'image/png' to be ''`；② `getMsg` 去掉 `|| 'application/octet-stream'` → `expected '' to be 'application/octet-stream'`；③ `DOCUMENT_MIME_TYPE_MAP` 删除 pdf → FileType 与 Formatting 两处 pdf 用例同时变红 |
+| 全量单测 | `pnpm test:run` | `Test Files 1060 passed (1060)` / `Tests 11720 passed (11720)`，exit 0 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 文件体量 | `node scripts/check-file-size.mjs` | `OK — oversized file count 120 (baseline 120)` / `all 1520 source files within size constraints` |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`hardcoded_color 0`、`is_mobile_branch 5`、`as_unknown_as 0` 等） |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径全部存在 / `OK — no regressions vs baseline`（新增文档 14 处） |
+| 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156) / 命中 3 条全在白名单 / 无漂移 |
+| Lint / i18n | `pnpm check` | exit 0（i18n 完整性通过、令牌使用率 100%、capabilities-sync 7 个 capability 一致） |
+
+#### 已知边界
+
+1. 只做扩展名映射，不做文件头（magic number）嗅探：改过扩展名的文件仍按扩展名标注，`mimetype` 以发送端声明为准。
+2. `image.ts` / `ChatFooter.vue` 的图片流程没有 `image/png` 兜底：扩展名不在 7 个白名单内时由 `validateImage` 拒绝，而不是带着错误类型发出去。
+3. `mediaUploadHelpers.uploadViaGateway` 与 `MatrixMediaService` 仍按 `opts.type || file.type || 'application/octet-stream'` 取值，不查扩展名；它们接收的是上层已构造好的 File（本批已保证 `type` 正确），如需独立健壮性另行处理。
+4. `DOCUMENT_MIME_TYPE_MAP` 只覆盖常见办公与压缩格式；新增格式须补表，未补的仍返回 `''` 由调用方兜底。
+5. `getMimeTypeFromExtension` 名称保留在 `Formatting.ts` 作为转发层，避免 5 处调用点迁移；映射源唯一在 `FileType.ts`，后续新增类型只改一处。
 
 ---
 

@@ -27,8 +27,12 @@ vi.mock('@/utils/Formatting', () => ({
   getMimeTypeFromExtension: vi.fn((name: string) => {
     if (name.endsWith('.pdf')) return 'application/pdf'
     if (name.endsWith('.txt')) return 'text/plain'
-    return 'application/octet-stream'
+    return ''
   })
+}))
+
+vi.mock('@/utils/AppHarness', () => ({
+  hasTauriRuntime: () => false
 }))
 
 vi.mock('@/utils/PlatformConstants', () => ({
@@ -103,6 +107,28 @@ describe('FileMessageStrategyImpl', () => {
         username: 'alice',
         type: MsgEnum.FILE
       })
+    })
+  })
+
+  describe('getMsg', () => {
+    it('keeps the explicit File.type when present', async () => {
+      const file = new File(['x'], 'doc.pdf', { type: 'application/x-custom' })
+      const msg = await strategy.getMsg('', null, [file])
+      expect(msg.mimeType).toBe('application/x-custom')
+      expect(msg.fileName).toBe('doc.pdf')
+      expect(msg.path).toBe('')
+    })
+
+    it('falls back to the extension when File.type is empty', async () => {
+      const file = new File(['x'], 'notes.txt', { type: '' })
+      const msg = await strategy.getMsg('', null, [file])
+      expect(msg.mimeType).toBe('text/plain')
+    })
+
+    it('falls back to application/octet-stream when type and extension are both unknown', async () => {
+      const file = new File(['x'], 'blob.bin', { type: '' })
+      const msg = await strategy.getMsg('', null, [file])
+      expect(msg.mimeType).toBe('application/octet-stream')
     })
   })
 
