@@ -105,15 +105,16 @@ const handleCreate = async () => {
     showToast(t('space.create_room_name_required'))
     return
   }
-  const roomId = await createRoomInSpace({ name })
-  if (!roomId) {
+  const result = await createRoomInSpace({ name })
+  if (!result.roomId) {
     showToast(t('space.create_room_failed'))
     return
   }
-  showToast(t('space.create_room_success'))
+  // 房间已建但未挂载：房间可用，按中间态提示，避免用户以为失败而重复创建
+  showToast(result.attached ? t('space.create_room_success') : t('space.create_room_attach_failed'))
   roomName.value = ''
   showCreate.value = false
-  logger.info(`Child room created and linked to space ${props.spaceId}: ${roomId}`)
+  logger.info(`Child room created for space ${props.spaceId}: ${result.roomId}, attached=${result.attached}`)
 }
 
 const openRoom = async (room: SpaceChildRoom) => {

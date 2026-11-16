@@ -140,7 +140,7 @@ describe('SpaceCreateRoomPane', () => {
     vi.clearAllMocks()
     createErrorRef.value = ''
     formValidateMock.mockResolvedValue(true)
-    createRoomInSpaceMock.mockResolvedValue('!new-room:server')
+    createRoomInSpaceMock.mockResolvedValue({ roomId: '!new-room:server', attached: true })
     openMsgSessionMock.mockResolvedValue(undefined)
   })
 
@@ -206,7 +206,7 @@ describe('SpaceCreateRoomPane', () => {
 
   // (f) 同名房间：错误含 M_ROOM_IN_USE → 提示"已存在同名房间"，不 emit created
   it('shows duplicate-name feedback and does not emit created on M_ROOM_IN_USE', async () => {
-    createRoomInSpaceMock.mockResolvedValue(null)
+    createRoomInSpaceMock.mockResolvedValue({ roomId: null, attached: false })
     createErrorRef.value = 'M_ROOM_IN_USE: Room name is already in use'
     const wrapper = mountPane()
     await setFormData(wrapper, 'My Room')
@@ -219,7 +219,7 @@ describe('SpaceCreateRoomPane', () => {
 
   // (g) 其它失败：通用失败 toast
   it('shows generic failure feedback when createRoomInSpace returns null', async () => {
-    createRoomInSpaceMock.mockResolvedValue(null)
+    createRoomInSpaceMock.mockResolvedValue({ roomId: null, attached: false })
     createErrorRef.value = 'some other error'
     const wrapper = mountPane()
     await setFormData(wrapper, 'My Room')
@@ -227,6 +227,20 @@ describe('SpaceCreateRoomPane', () => {
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('space.create_room_failed', 'error')
+  })
+
+  // (j) 房间已建但未挂载：中间态提示 warning，仍 emit created 并跳转
+  it('shows attach-failed warning but still emits created when the room was created without mounting', async () => {
+    createRoomInSpaceMock.mockResolvedValue({ roomId: '!new-room:server', attached: false })
+    const wrapper = mountPane()
+    await setFormData(wrapper, 'My Room')
+    await wrapper.find('button.n-button--primary').trigger('click')
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.create_room_attach_failed', 'warning')
+    expect(showFeedbackMock).not.toHaveBeenCalledWith('space.create_room_failed', 'error')
+    expect(wrapper.emitted('created')).toEqual([['!new-room:server']])
+    expect(openMsgSessionMock).toHaveBeenCalledWith('!new-room:server')
   })
 
   // (h) 表单校验失败不提交

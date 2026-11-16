@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3543,6 +3543,57 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 2. 翻页指示器直接读取 `useChatStore().currentMessageOptions.loadFailed`（与 `ChatMessageList` 读取同一字段的方式一致），没有新增 props 链；若后续要复用到非聊天场景，需要把归类提升为 prop。
 3. 详情区只展示 `reason` 原文，不做脱敏。当前 `reason` 来源是 `errcode` 或 `Error.message`，不含 token / URL 查询参数；若未来服务端 message 可能携带敏感信息，需要在 `describeLoadFailure` 侧收口。
 4. 未给 `network` / `permission` / `server` 配「一键诊断 / 重新登录」等动作：本批只做分级展示，动作差异属后续需求，重试入口保持单一。
+
+---
+
+### 19.36 P0-16：空间建房「已建未挂载」中间态与刷新失败提示保留（2026-11-16，收口 §19.30 已知边界 4）
+
+#### 缺口
+
+§19.30 修好了「变更成功后刷新失败不冒充变更失败」，但遗留两处语义缺陷：
+
+1. `useSpaceRooms.createRoomInSpace` 把「建房成功 + `addChildToSpace` 失败」整体抛出，返回 `roomId: null`；上层按「创建房间失败」提示。房间实际已存在，用户重试会重复建房。
+2. `load()` 刷新失败恒写 `error`，而整页错误态只在 `rooms.length === 0` 时成立。于是「已有列表 → 刷新失败 → 用户点重试 → 再次失败」时，`refreshError` 已被清空、`error` 又无处展示，界面没有任何失败信号。
+
+#### 判据
+
+- **建房与挂载分两段 catch**：只有建房失败才返回 `{ roomId: null, attached: false }` 并写 `error`；建房成功即保留 `roomId`，挂载失败返回 `{ roomId, attached: false }`，不写 `error` / `refreshError`，也不刷新列表（列表未发生变更）。
+- **刷新失败按列表是否为空分流**：非空写 `refreshError`（局部提示，重试再次失败仍保留），空写 `error`（整页错误态）；两者互斥，不会同时成立。
+- **上层按 `attached` 区分成功与中间态**：桌面 `showFeedback(..., 'warning')`、移动端 `showToast`，文案统一为「房间已创建，但未能加入当前空间」；中间态仍 `emit('created')` 并跳转新房间（房间可用），避免用户重试。
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/composables/space/useSpaceRooms.ts` | 新增导出类型 `CreateRoomInSpaceOutcome`（`roomId` + `attached`）；`createRoomInSpace` 拆两段 catch；`load()` 失败按列表空 / 非空分别写 `error` / `refreshError`，272 行 |
+| `src/components/space/SpaceCreateRoomPane.vue` | 提交逻辑消费 `{ roomId, attached }`：`roomId` 为空才走失败 / 重名提示，`attached=false` 出中间态 warning，162 行 |
+| `src/mobile/views/space/components/SpaceChildrenList.vue` | 同语义：`roomId` 为空出失败 toast，`attached=false` 出中间态 toast，236 行 |
+| `locales/{zh-CN,en}/space.json` | 新增 `create_room_attach_failed` |
+| `src/typings/i18n/**`、`src/typings/i18n.d.ts` | `pnpm gen:i18n` 重新生成（新键导致产物过期） |
+| `src/composables/space/__tests__/useSpaceRooms.test.ts` | 既有 4 处改新返回结构；新增中间态、已有列表刷新失败重试仍提示、空列表仍整页 error 三条，14 用例 |
+| `src/components/space/__tests__/SpaceCreateRoomPane.test.ts` | 既有成功 / 失败用例改新返回结构；新增中间态 warning + 仍 emit created + 跳转，10 用例 |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 定向用例 | `pnpm vitest run src/composables/space/__tests__/useSpaceRooms.test.ts src/components/space/__tests__/SpaceCreateRoomPane.test.ts` | `2 passed (2)` / `24 passed (24)`，exit 0 |
+| 变异自证 | 逐条注入后还原 | 3 条全部变红：① `load` 回退为恒写 `error` → 已有列表刷新失败用例变红；② 挂载失败回退为写 `error` 且返回 `roomId: null` → 中间态用例变红；③ 面板回退为恒成功文案 → 中间态 warning 用例变红 |
+| 全量单测 | `pnpm test:run` | `1059 passed (1059)` / `11709 passed (11709)`，exit 0 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 文件体量 | `node scripts/check-file-size.mjs` | `OK — oversized file count 120 (baseline 120)` / `all 1520 source files within size constraints` |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`hardcoded_color 0`、`is_mobile_branch 5`、`inline_style 5` 等） |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径全部存在 / `OK — no regressions vs baseline`（14 method 新增注释） |
+| 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156)、扫描 2679 文件 / 命中 3 条全在白名单 / `phantom members: 命中 1（登记 exempt 1 / debt 0）`、无漂移 |
+| Lint / i18n | `pnpm check` | exit 0（含 capabilities-sync 7 个 capability 一致） |
+
+#### 已知边界
+
+1. 中间态只提示，不提供「重新加入空间」一键动作：用户可在空间内重新添加该房间，属后续需求。
+2. 挂载失败不刷新列表。若失败实为超时但服务端已写入 child，列表会暂时缺少该房间，需手动刷新；本批不做「超时后探测」。
+3. `attached` 只描述本次 `addChildToSpace` 调用结果，不代表空间状态最终一致。
+4. 桌面与移动端使用同一文案，未做端侧差异化。
 
 ---
 

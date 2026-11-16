@@ -86,9 +86,9 @@ describe('useSpaceRooms', () => {
   it('creates a room through the service, mounts it to the space and returns the new room id', async () => {
     const { createRoomInSpace, rooms } = useSpaceRooms(() => SPACE_ID)
 
-    const roomId = await createRoomInSpace({ name: 'Test Room', topic: 'A topic', suggested: true })
+    const result = await createRoomInSpace({ name: 'Test Room', topic: 'A topic', suggested: true })
 
-    expect(roomId).toBe('!new-room:server')
+    expect(result).toEqual({ roomId: '!new-room:server', attached: true })
     expect(createRoomMock).toHaveBeenCalledWith({
       name: 'Test Room',
       topic: 'A topic',
@@ -113,25 +113,41 @@ describe('useSpaceRooms', () => {
     })
   })
 
-  it('returns null and sets error when client is unavailable', async () => {
+  it('returns a null room id and sets error when client is unavailable', async () => {
     getClientMock.mockReturnValue(null)
     const { createRoomInSpace, error } = useSpaceRooms(() => SPACE_ID)
 
-    const roomId = await createRoomInSpace({ name: 'X' })
+    const result = await createRoomInSpace({ name: 'X' })
 
-    expect(roomId).toBeNull()
+    expect(result).toEqual({ roomId: null, attached: false })
     expect(error.value).toBe('client_unavailable')
     expect(createRoomMock).not.toHaveBeenCalled()
   })
 
-  it('returns null and exposes the error message when createRoom throws', async () => {
+  it('returns a null room id and exposes the error message when createRoom throws', async () => {
     createRoomMock.mockRejectedValue(new Error('M_ROOM_IN_USE: already in use'))
     const { createRoomInSpace, error } = useSpaceRooms(() => SPACE_ID)
 
-    const roomId = await createRoomInSpace({ name: 'Dup' })
+    const result = await createRoomInSpace({ name: 'Dup' })
 
-    expect(roomId).toBeNull()
+    expect(result).toEqual({ roomId: null, attached: false })
     expect(error.value).toContain('M_ROOM_IN_USE')
+  })
+
+  it('房间已建但挂载失败时返回中间态：保留 roomId、不写 error、不刷新列表', async () => {
+    addChildToSpaceMock.mockRejectedValueOnce(new Error('M_FORBIDDEN: cannot add child'))
+    const { createRoomInSpace, error, refreshError, rooms } = useSpaceRooms(() => SPACE_ID)
+
+    const result = await createRoomInSpace({ name: 'Half Done' })
+
+    // 房间真实存在：调用方必须能拿到 roomId 并告知「已创建、未入空间」
+    expect(result).toEqual({ roomId: '!new-room:server', attached: false })
+    // 中间态不等于失败：error 为空，避免上层按「创建失败」提示后用户重试重复建房
+    expect(error.value).toBeNull()
+    expect(refreshError.value).toBeNull()
+    // 列表未发生变更，不做无意义刷新
+    expect(getSpaceRoomsMock).not.toHaveBeenCalled()
+    expect(rooms.value).toHaveLength(0)
   })
 
   // ── toggleSuggested ──
@@ -201,6 +217,37 @@ describe('useSpaceRooms', () => {
 
     expect(refreshError.value).toBeNull()
     expect(rooms.value).toHaveLength(1)
+  })
+
+  it('已有列表时 load 失败写入 refreshError 而不是 error，重试再次失败提示仍在', async () => {
+    const { load, error, refreshError, rooms } = useSpaceRooms(() => SPACE_ID)
+    await load()
+    expect(rooms.value).toHaveLength(2)
+
+    getSpaceRoomsMock.mockRejectedValueOnce(new Error('refresh retry boom'))
+    await load()
+
+    // 列表非空：失败只代表过期，整页错误态不成立
+    expect(error.value).toBeNull()
+    expect(refreshError.value).toContain('refresh retry boom')
+
+    getSpaceRoomsMock.mockRejectedValueOnce(new Error('refresh retry boom 2'))
+    await load()
+
+    // 重试仍失败：局部提示不能被清空（否则用户看不到任何失败信号）
+    expect(error.value).toBeNull()
+    expect(refreshError.value).toContain('refresh retry boom 2')
+    expect(rooms.value).toHaveLength(2)
+  })
+
+  it('空列表时 load 失败仍走整页 error，而不是局部提示', async () => {
+    getSpaceRoomsMock.mockRejectedValueOnce(new Error('initial boom'))
+    const { load, error, refreshError } = useSpaceRooms(() => SPACE_ID)
+
+    await load()
+
+    expect(error.value).toContain('initial boom')
+    expect(refreshError.value).toBeNull()
   })
 
   it('addRoom 与 toggleSuggested 的刷新失败同样只走 refreshError', async () => {

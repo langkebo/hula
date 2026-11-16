@@ -35,6 +35,17 @@ interface CreateRoomInSpaceInput {
   suggested?: boolean
 }
 
+export interface CreateRoomInSpaceOutcome {
+  /** 已创建的房间 ID；房间本身未创建成功时为 null */
+  roomId: string | null
+  /**
+   * 是否已挂载到空间。
+   * `roomId` 非空且此处为 false 是「房间已建、未入空间」的中间态：
+   * 变更只完成一半，不能按创建失败处理（否则用户重试会重复建房）。
+   */
+  attached: boolean
+}
+
 interface UseSpaceRoomsResult {
   rooms: Ref<SpaceChildRoom[]>
   loading: Ref<boolean>
@@ -51,9 +62,9 @@ interface UseSpaceRoomsResult {
   /**
    * 在当前空间内创建普通子房间：先创建房间（继承空间的可见性），再挂载到当前空间，
    * 最后刷新子房间列表。
-   * @returns 新房间 ID；失败（含客户端不可用）返回 null
+   * @returns 房间创建结果；`attached=false` 表示房间已建但挂载失败（中间态）
    */
-  createRoomInSpace: (input: CreateRoomInSpaceInput) => Promise<string | null>
+  createRoomInSpace: (input: CreateRoomInSpaceInput) => Promise<CreateRoomInSpaceOutcome>
   /**
    * 切换子房间的建议标记：由服务层保留既有的 via / order 后 upsert m.space.child。
    * @returns 是否成功
@@ -124,6 +135,7 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     const id = spaceId()
     if (!id) {
       rooms.value = []
+      error.value = null
       refreshError.value = null
       return
     }
@@ -131,7 +143,12 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     error.value = null
     refreshError.value = null
     const message = await fetchRooms(id)
-    if (message !== null) error.value = message
+    // 已有列表时失败只代表「列表过期」：写到 refreshError，保证局部提示不被整页错误态吞掉，
+    // 重试再次失败时提示仍在（整页错误态只在首屏无数据时成立）。
+    if (message !== null) {
+      if (rooms.value.length > 0) refreshError.value = message
+      else error.value = message
+    }
     loading.value = false
   }
 
@@ -184,12 +201,12 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     }
   }
 
-  const createRoomInSpace = async (input: CreateRoomInSpaceInput): Promise<string | null> => {
+  const createRoomInSpace = async (input: CreateRoomInSpaceInput): Promise<CreateRoomInSpaceOutcome> => {
     const id = spaceId()
     if (!id || !matrixClientService.getClient()) {
       error.value = 'client_unavailable'
       refreshError.value = null
-      return null
+      return { roomId: null, attached: false }
     }
     mutating.value = true
     error.value = null
@@ -201,15 +218,21 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
         visibility,
         ...(input.topic === undefined ? {} : { topic: input.topic })
       })
-      await matrixSpaceService.addChildToSpace(id, room.roomId, {
-        ...(input.suggested === undefined ? {} : { suggested: input.suggested })
-      })
+      // 建房成功即意味着变更已有产物：挂载失败只算中间态，不能写 `error`（房间已存在，重试会重复建房）
+      try {
+        await matrixSpaceService.addChildToSpace(id, room.roomId, {
+          ...(input.suggested === undefined ? {} : { suggested: input.suggested })
+        })
+      } catch (attachErr) {
+        logger.error('createRoomInSpace attach failed', attachErr)
+        return { roomId: room.roomId, attached: false }
+      }
       await refreshAfterMutation(id)
-      return room.roomId
+      return { roomId: room.roomId, attached: true }
     } catch (err) {
       logger.error('createRoomInSpace failed', err)
       error.value = err instanceof Error ? err.message : String(err)
-      return null
+      return { roomId: null, attached: false }
     } finally {
       mutating.value = false
     }

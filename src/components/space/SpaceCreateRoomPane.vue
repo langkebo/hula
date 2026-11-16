@@ -111,12 +111,12 @@ const handleSubmit = async () => {
   }
   submitting.value = true
   try {
-    const roomId = await createRoomInSpace({
+    const result = await createRoomInSpace({
       name: formData.name.trim(),
       ...(formData.topic.trim() ? { topic: formData.topic.trim() } : {}),
       suggested: formData.suggested
     })
-    if (!roomId) {
+    if (!result.roomId) {
       const errMsg = createError.value || ''
       if (errMsg.includes('M_ROOM_IN_USE') || errMsg.includes('already in use')) {
         // 同名房间：提示修改名称，保留表单数据（不做 ignoreDuplicateName 逃生阀）
@@ -126,11 +126,15 @@ const handleSubmit = async () => {
       }
       return
     }
-    showFeedback(t('space.create_room_success'), 'success')
-    emit('created', roomId)
+    // 房间已建但未挂载：房间可用，但变更只完成一半，按中间态提示而不是创建失败
+    showFeedback(
+      result.attached ? t('space.create_room_success') : t('space.create_room_attach_failed'),
+      result.attached ? 'success' : 'warning'
+    )
+    emit('created', result.roomId)
     // Step 4：跳转到新房间
     try {
-      await openMsgSessionByRoomId(roomId)
+      await openMsgSessionByRoomId(result.roomId)
     } catch (navErr) {
       logger.warn('navigate to new room failed', navErr)
     }
