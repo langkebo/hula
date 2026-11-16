@@ -47,6 +47,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import type { MediaQuotaStats } from '@/services/matrix/media/mediaConfigOps'
 import { formatBytes } from '@/utils/Formatting'
 
 type NavigationItem = {
@@ -70,8 +71,8 @@ const handleNavigationClick = (key: string) => {
   setActiveNavigation(key)
 }
 
-// 媒体存储配额（服务端不支持时返回 null，界面自动隐藏）
-const quota = ref<{ storageBytes: number; mediaCount: number; limitBytes: number } | null>(null)
+// 媒体存储配额（服务端无配额接口或本次取不到时均为 null，界面自动隐藏）
+const quota = ref<MediaQuotaStats | null>(null)
 const quotaPercent = computed(() => {
   if (!quota.value || quota.value.limitBytes <= 0) return '0%'
   const used = Math.min(quota.value.storageBytes / quota.value.limitBytes, 1)
@@ -79,7 +80,8 @@ const quotaPercent = computed(() => {
 })
 
 onMounted(async () => {
-  quota.value = await matrixMediaService.getQuotaStats()
+  const result = await matrixMediaService.getQuotaStats()
+  quota.value = result.ok ? result.stats : null
 })
 
 const navigationKeyMap: Record<string, string> = {

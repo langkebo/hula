@@ -37,7 +37,7 @@ describe('SideNavigation', () => {
   })
 
   it('渲染服务端配额时展示存储用量与媒体数量', async () => {
-    getQuotaStatsMock.mockResolvedValue({ storageBytes: 2048, mediaCount: 37, limitBytes: 4096 })
+    getQuotaStatsMock.mockResolvedValue({ ok: true, stats: { storageBytes: 2048, mediaCount: 37, limitBytes: 4096 } })
 
     const wrapper = mountNavigation()
     await flushPromises()
@@ -48,7 +48,17 @@ describe('SideNavigation', () => {
   })
 
   it('服务端不支持配额时整块隐藏', async () => {
-    getQuotaStatsMock.mockResolvedValue(null)
+    getQuotaStatsMock.mockResolvedValue({ ok: false, reason: 'unsupported' })
+
+    const wrapper = mountNavigation()
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('fileManager.storage.label')
+    expect(wrapper.text()).not.toContain('fileManager.storage.count')
+  })
+
+  it('配额本次取不到时同样整块隐藏，不显示 0', async () => {
+    getQuotaStatsMock.mockResolvedValue({ ok: false, reason: 'unavailable' })
 
     const wrapper = mountNavigation()
     await flushPromises()

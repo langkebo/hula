@@ -505,12 +505,13 @@ describe('MatrixMediaService', () => {
       const result = await matrixMediaService.getQuotaStats()
 
       expect(getMediaQuotaStats).toHaveBeenCalledTimes(1)
-      expect(result?.storageBytes).toBe(52428800)
-      expect(result?.mediaCount).toBe(42)
-      expect(result?.limitBytes).toBe(104857600)
+      expect(result.ok).toBe(true)
+      expect(result.ok && result.stats.storageBytes).toBe(52428800)
+      expect(result.ok && result.stats.mediaCount).toBe(42)
+      expect(result.ok && result.stats.limitBytes).toBe(104857600)
     })
 
-    it('should return null on error', async () => {
+    it('should report unavailable (not null) on generic error', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getMediaManager: () => ({
           getMediaQuotaStats: vi.fn().mockRejectedValue(new Error('fail'))
@@ -518,7 +519,20 @@ describe('MatrixMediaService', () => {
       } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getQuotaStats()
-      expect(result).toBeNull()
+      expect(result).toEqual({ ok: false, reason: 'unavailable' })
+    })
+
+    it('should report unsupported when the homeserver has no quota endpoint', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({
+          getMediaQuotaStats: vi
+            .fn()
+            .mockRejectedValue(Object.assign(new Error('not found'), { errorCode: 'M_UNRECOGNIZED', statusCode: 404 }))
+        })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMediaService.getQuotaStats()
+      expect(result).toEqual({ ok: false, reason: 'unsupported' })
     })
   })
 

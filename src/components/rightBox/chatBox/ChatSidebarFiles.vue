@@ -23,6 +23,19 @@
           color="var(--tjg-color-primary-500)" />
       </div>
     </template>
+    <!-- 服务端有配额接口但这次没取到：如实说「暂不可用」，不把失败画成用量 0 -->
+    <n-flex
+      v-else-if="loaded && quotaUnavailable"
+      align="center"
+      justify="space-between"
+      class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
+      <span class="text-[var(--text-xs)] font-medium color-[--tjg-text-tertiary]">
+        {{ t('home.chat_sidebar.quota.title') }}
+      </span>
+      <span class="text-[var(--text-xs)] color-[--tjg-text-secondary]" data-test="chat-sidebar-quota-unavailable">
+        {{ t('home.chat_sidebar.quota.unavailable') }}
+      </span>
+    </n-flex>
 
     <div class="flex-1 flex items-center justify-center">
       <!-- 文件列表尚未接入数据源：只给空态，不伪造条目 -->
@@ -38,38 +51,59 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
+import type { MediaQuotaStats } from '@/services/matrix/media/mediaConfigOps'
+import { onMediaQuotaChanged } from '@/services/matrix/media/mediaQuotaEvents'
 import { formatBytes } from '@/utils/Formatting'
 
 const props = defineProps<{ active: boolean }>()
 
 const { t } = useI18n()
 
-type QuotaStats = { storageBytes: number; mediaCount: number; limitBytes: number }
-
-const quota = ref<QuotaStats | null>(null)
+const quota = ref<MediaQuotaStats | null>(null)
+/** 接口存在但本次取不到（鉴权 / 网络 / 5xx）：显示「暂不可用」；服务端无此接口时为 false（整块隐藏） */
+const quotaUnavailable = ref(false)
 const loading = ref(false)
 /** 首次探测结束（成功或失败）—— 避免「还没请求」时就把空态当成结果 */
 const loaded = ref(false)
-/** 上次成功取数的时刻：配额变化不频繁，60s 内重复切面板不再打接口；过期则重取（上传文件后不至于整场陈旧） */
+/** 上次取数时刻：配额变化不频繁，60s 内重复切面板不再打接口；取数失败则不缓存，下次可见即可重试 */
 const QUOTA_TTL_MS = 60_000
 let lastFetchedAt = 0
+/** 取数期间又收到「配额已变化」通知：等本次结束后补一次，避免上传后仍显示旧值 */
+let reloadQueued = false
 
 /**
- * 配额取不到时（接口不支持 / 鉴权失败 / 离线）返回 null：
- * 这里选择**整块隐藏**而不是显示 0 或占位，避免把「不知道」呈现成「用量为 0」。
+ * 取数结果分三态：
+ * - 成功 → 展示真实用量；
+ * - `unsupported`（服务端没有配额接口）→ 整块隐藏，因为「配额」这个概念不存在；
+ * - `unavailable`（接口在但本次失败）→ 显示「暂不可用」，绝不显示 0 或占位数字。
  */
 const loadQuota = async (): Promise<void> => {
-  if (loading.value) return
+  if (loading.value) {
+    reloadQueued = true
+    return
+  }
   loading.value = true
-  // 注意：`getQuotaStats()` 内部已 try/catch，失败一律返回 null（`fetchQuotaStats`），
-  // 所以这里不再包 try/catch —— 那层 catch 永远打不到（变异自证时发现的死代码）。
-  quota.value = await matrixMediaService.getQuotaStats()
-  lastFetchedAt = Date.now()
+  // `getQuotaStats()` 内部已吞错并返回 `{ ok, reason }`，这里不需要 try/catch。
+  const result = await matrixMediaService.getQuotaStats()
+  if (result.ok) {
+    quota.value = result.stats
+    quotaUnavailable.value = false
+    lastFetchedAt = Date.now()
+  } else {
+    quota.value = null
+    quotaUnavailable.value = result.reason === 'unavailable'
+    // 本次失败不写缓存：下次面板可见时立刻重试
+    lastFetchedAt = result.reason === 'unsupported' ? Date.now() : 0
+  }
   loading.value = false
   loaded.value = true
+  if (reloadQueued) {
+    reloadQueued = false
+    void loadQuota()
+  }
 }
 
 const quotaText = computed(() => {
@@ -96,4 +130,17 @@ watch(
   },
   { immediate: true }
 )
+
+// 上传 / 删除成功会让服务端配额变化：可见时立即重取；隐藏时清掉缓存，下次可见即重取。
+let unsubscribeQuota = (): void => {}
+onMounted(() => {
+  unsubscribeQuota = onMediaQuotaChanged(() => {
+    if (!props.active) {
+      lastFetchedAt = 0
+      return
+    }
+    void loadQuota()
+  })
+})
+onBeforeUnmount(() => unsubscribeQuota())
 </script>

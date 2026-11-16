@@ -174,7 +174,8 @@ export type Messages = {
       "placeholder": "搜索"
     },
     "quota": {
-      "title": "配额"
+      "title": "配额",
+      "unavailable": "暂不可用"
     },
     "favorites": {
       "total": "收藏消息 {count} 条",
@@ -573,6 +574,7 @@ export type KeyPaths =
   | "home.chat_sidebar.actions.retry"
   | "home.chat_sidebar.search.placeholder"
   | "home.chat_sidebar.quota.title"
+  | "home.chat_sidebar.quota.unavailable"
   | "home.chat_sidebar.favorites.total"
   | "home.chat_sidebar.favorites.export_md"
   | "home.chat_sidebar.favorites.export_txt"

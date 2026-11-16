@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3145,6 +3145,71 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 2. `IP 封禁` 与公告均为弹层表单，判据覆盖的是「失败后弹层不关闭」；若后续改成页面内表单，断言需改为 `wrapper.find` 可见性。
 3. 移动端按 R2 已整体裁剪 admin 模块，不存在管理端移动入口，故本条无需移动端运行时验证。
 4. 断网在组件级等价于 reject；真实网络超时与 HTTP 层重试策略不在本判据范围。
+
+---
+
+### 19.29 P0-9：媒体配额三态与上传 / 删除后即时刷新（2026-11-16，收口 §19.22 边界 2 / 3）
+
+#### 缺口
+
+§19.22 已把 `ChatSidebarFiles` 的假配额换成 `matrixMediaService.getQuotaStats()`，但留了两条边界：
+
+1. **边界 2｜失败被压成 `null`**：`fetchQuotaStats` 把「服务端没有配额接口」和「接口在、本次取不到」都返回 `null`，面板只能整块隐藏。用户上传失败后看不到任何解释，也无法区分「本来就没有配额」和「暂时取不到」。
+2. **边界 3｜配额只在切面板时刷新**：面板带 60s TTL，上传 / 删除成功后配额不会更新，用户会看到已删除的文件仍占着用量，直到切走再切回或等 TTL 过期。
+
+本轮把返回结构改为判别联合 `{ ok: true; stats } | { ok: false; reason }`（`reason` 为 `unsupported` / `unavailable`），并新增进程内配额变化通知通道，让上传 / 删除的成功路径主动失效面板缓存。
+
+#### 判据
+
+| 场景 | 数据来源 | 断言要点 |
+| :--- | :--- | :--- |
+| 服务端支持配额 | `getQuotaStats()` → `{ ok: true, stats }` | 面板渲染真实用量与百分比；`NProgress` 的 `percentage` 与 `storageBytes / limitBytes` 一致 |
+| 服务端无配额端点 | `errorCode: 'M_UNRECOGNIZED'` + `statusCode: 404` | `fetchQuotaStats` 返回 `{ ok: false, reason: 'unsupported' }`；面板整块隐藏，不显示 0、不显示「暂不可用」 |
+| 接口存在但本次失败 | 其余异常（含 `M_UNKNOWN`、5xx、网络错误） | 返回 `{ ok: false, reason: 'unavailable' }`；面板隐藏数字与进度条，显示 `home.chat_sidebar.quota.unavailable`（「暂不可用」），不冒充用量为 0 |
+| 服务端未给上限 | `limitBytes: 0` | 只报用量，不编造分母；进度条 `percentage` 为 0 |
+| 上传 / 删除成功 | `notifyMediaQuotaChanged()` | 面板可见时立即重取（不等 60s TTL）；面板隐藏时只清缓存不请求，下次可见再重取 |
+| 取数期间再次变化 | 通知落在 `loading` 窗口内 | 用 `reloadQueued` 排队，本轮结束后补一次，不丢通知 |
+| 管理端只读包装 | `QuotaService.getQuotaStats()` | `ok: true` 时返回三字段；`ok: false` 时抛 `[AdminQuota] 获取配额统计失败（reason）` |
+| 存储设置页 | `StorageSettings` 配额卡片 | 取数失败时媒体数量显示 `—`，不显示 `0` |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/services/matrix/media/mediaConfigOps.ts` | `fetchQuotaStats` 改返回 `MediaQuotaStatsResult`；新增 `classifyMediaQuotaError` 纯函数（`M_UNRECOGNIZED` / `M_NOT_FOUND` / 404 / 405 / 501 → `unsupported`，其余 → `unavailable`） |
+| `src/services/matrix/media/mediaQuotaEvents.ts` | 新增：进程内 `onMediaQuotaChanged` / `notifyMediaQuotaChanged` 订阅通道 |
+| `src/services/matrix/media/mediaUploadHelpers.ts` | 三条上传成功返回路径（普通上传、413 分片回退、AbortError 网关直传）均发通知 |
+| `src/services/matrix/media/MatrixMediaService.ts` | `getQuotaStats()` 改返回联合结构；`uploadLargeFile` / `uploadContentWithId` / `deleteMedia` 成功后发通知 |
+| `src/components/rightBox/chatBox/ChatSidebarFiles.vue` | 三态渲染（正常 / 隐藏 / 暂不可用）；订阅配额变化并带 `reloadQueued` 竞态保护 |
+| `src/components/fileManager/SideNavigation.vue` | 适配联合结构；`unsupported` 与 `unavailable` 均隐藏侧栏配额 |
+| `src/mobile/views/my/Files.vue` | 适配联合结构并去掉死 `try/catch`（取数层已吞错） |
+| `src/views/settingsWindow/tabs/StorageSettings.vue` | 适配联合结构；失败时媒体数量显示 `—` |
+| `src/services/matrix/admin/QuotaService.ts` | 适配联合结构，失败转抛带原因的错误 |
+| `locales/zh-CN/home.json`、`locales/en/home.json` | 新增 `home.chat_sidebar.quota.unavailable`（暂不可用 / Unavailable），并重生成 typings |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 判据用例 | `pnpm vitest run` 6 个受影响文件 | **6 文件 / 83 用例通过**（新增 5 例） |
+| 变异自证 | 逐条注入后还原 | 3 条全部变红：① `classifyMediaQuotaError` 两分支都返回 `unavailable` → unsupported 用例 FAIL；② `ChatSidebarFiles` 失败分支 `quotaUnavailable.value = false` → 「暂不可用」用例 FAIL；③ 订阅回调删掉 `void loadQuota()` → 「可见时立即重取」用例 FAIL |
+| 全量单测 | `pnpm test:run` | `1057 passed (1057)` / `11675 passed (11675)`，exit 0 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`is_mobile_branch 5 (baseline 5)`、`backdrop_filter_raw 60 (baseline 60)`、`handwritten_empty_state 0`），无可收紧项 |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径全部存在 / `OK — no regressions vs baseline (587)` |
+| 集成图谱 | `pnpm vitest run tests/lint/check-integration-map-freshness.test.ts` | 通过（`matrix_service_files` 由 257 更新为 258，因新增 `mediaQuotaEvents.ts`） |
+| 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156) / 3 命中全在白名单 / 无漂移 |
+| Lint / i18n | `pnpm check` | exit 0 |
+
+#### 已知边界
+
+1. `SideNavigation` 与移动端 `Files.vue` 不区分 `unsupported` 与 `unavailable`，两者都隐藏配额：前者是侧栏导航的窄条，塞不下解释文案；后者本轮只做数据正确性，提示形态留待移动端配额模块统一设计。桌面主面板 `ChatSidebarFiles` 才做三态。
+2. `M_NOT_FOUND` 归入 `unsupported`，与管理端 `adminApiAvailability` 的口径一致。代价是「端点存在但当前用户无权访问」会被当成「服务端没有该能力」；这是既有口径，本轮不扩大差异。分类函数刻意在 media 模块内实现，**不** import `admin/adminApiAvailability`，避免 media 被移动端引用时拉入 admin 代码（R2）。
+3. 通知只在进程内生效，不跨窗口、不跨 Web Worker：多窗口场景下其他窗口的面板仍依赖 60s TTL 与重新可见触发。
+4. 只有成功路径发通知；上传失败、删除失败不改变服务端配额，故不通知。
+5. 事件通道用 `Set` 持有监听者，订阅方必须在 `onBeforeUnmount` 调用返回的取消函数；当前仅 `ChatSidebarFiles` 订阅。
+6. 配额取数失败不会自动重试，只在下一次可见、TTL 过期或收到通知时重取。
 
 ---
 

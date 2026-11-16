@@ -57,7 +57,7 @@
           </div>
           <div class="stat-item">
             <span class="stat-label">{{ t('setting.storage.quota_media_count') }}</span>
-            <span class="stat-value">{{ quotaMediaCount }}</span>
+            <span class="stat-value">{{ quotaStatsFailed ? '—' : quotaMediaCount }}</span>
           </div>
         </div>
 
@@ -280,8 +280,8 @@ async function loadQuota(): Promise<void> {
   quotaLimit.value = usageResult.value.limit
   quotaRemaining.value = usageResult.value.remaining
 
-  if (statsResult.status === 'fulfilled' && statsResult.value) {
-    quotaMediaCount.value = statsResult.value.mediaCount
+  if (statsResult.status === 'fulfilled' && statsResult.value.ok) {
+    quotaMediaCount.value = statsResult.value.stats.mediaCount
   } else {
     quotaStatsFailed.value = true
     quotaMediaCount.value = 0

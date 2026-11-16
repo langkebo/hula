@@ -16,7 +16,8 @@ import {
   fetchQuotaAlerts,
   fetchQuotaStats,
   fetchQuotaUsage,
-  fetchUrlPreview
+  fetchUrlPreview,
+  type MediaQuotaStatsResult
 } from './mediaConfigOps'
 import {
   buildSignedMediaDownloadUrl,
@@ -26,6 +27,7 @@ import {
   type SignedMediaDownloadParams
 } from './mediaDownloadHelpers'
 import { getAudioDuration, getImageDimensions, getVideoMetadata } from './mediaMetadata'
+import { notifyMediaQuotaChanged } from './mediaQuotaEvents'
 import {
   type CompressOptions,
   DEFAULT_COMPRESS_OPTIONS,
@@ -138,6 +140,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
       logger.info(`[MatrixMedia] 大文件分块上传成功: ${result.mxcUrl}`)
       const telemetry = matrixClientService.getTelemetry()
       if (telemetry) telemetry.trackMediaUploaded(file.size, file.type || 'application/octet-stream')
+      notifyMediaQuotaChanged()
       return { contentUri: result.mxcUrl, size: file.size, mimetype: file.type || 'application/octet-stream' }
     } catch (err) {
       logger.error(`[MatrixMedia] 大文件分块上传失败: ${err}`)
@@ -297,6 +300,7 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     try {
       const response = await this.getMedia().uploadContentWithId(serverName, mediaId, file, resolvedMimetype)
       logger.info(`[MatrixMedia] 具名上传成功: ${response.content_uri}`)
+      notifyMediaQuotaChanged()
       return { contentUri: response.content_uri, size: file.size, mimetype: resolvedMimetype }
     } catch (err) {
       logger.error(`[MatrixMedia] 具名上传失败: ${err}`)
@@ -394,7 +398,9 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   /** 删除指定服务器上的媒体；成功返回 true，失败抛出。 */
   async deleteMedia(serverName: string, mediaId: string): Promise<boolean> {
-    return deleteMediaById(() => this.getMedia(), serverName, mediaId)
+    const deleted = await deleteMediaById(() => this.getMedia(), serverName, mediaId)
+    if (deleted) notifyMediaQuotaChanged()
+    return deleted
   }
 
   /** 获取媒体配额告警列表；失败返回空数组。 */
@@ -407,8 +413,8 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     return fetchQuotaUsage(() => this.getMedia())
   }
 
-  /** 获取媒体配额统计（存储字节/媒体数/上限字节）；失败返回 null。 */
-  async getQuotaStats(): Promise<{ storageBytes: number; mediaCount: number; limitBytes: number } | null> {
+  /** 获取媒体配额统计；失败时带原因返回（区分「服务端无配额」与「本次取不到」）。 */
+  async getQuotaStats(): Promise<MediaQuotaStatsResult> {
     return fetchQuotaStats(() => this.getMedia())
   }
 

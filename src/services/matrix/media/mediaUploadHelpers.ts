@@ -9,6 +9,7 @@ import { chunkUploadService } from '@/services/performance/ChunkUploadService'
 import { createLogger } from '@/utils/Logger'
 import { matrixHttpClient } from '../MatrixHttpClient'
 import type { MediaManager } from '../sdk'
+import { notifyMediaQuotaChanged } from './mediaQuotaEvents'
 import type { UploadOpts } from './mediaTypes'
 
 const logger = createLogger('MediaUploadHelpers')
@@ -93,7 +94,9 @@ export async function uploadContentWithChunkFallback(
       file,
       opts as { name?: string; type?: string; progress?: (p: { loaded: number; total: number }) => void }
     )
-    return typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+    const contentUri = typeof uploadResponse === 'string' ? uploadResponse : uploadResponse.content_uri
+    notifyMediaQuotaChanged()
+    return contentUri
   } catch (err) {
     if (isPayloadTooLarge(err)) {
       logger.warn(`[MatrixMedia] 上传返回 413,回退到分片上传: ${file.name}`)
@@ -101,12 +104,15 @@ export async function uploadContentWithChunkFallback(
         file,
         onProgress: (p) => onProgress?.(p.percentage)
       })
+      notifyMediaQuotaChanged()
       return result.mxcUrl
     }
     const errName = err instanceof Error ? err.name : ''
     if (errName === 'AbortError') {
       logger.warn('[MatrixMedia] uploadContent 抛 AbortError（SDK 内部 XHR status=0），回退到网关直传')
-      return await uploadViaGateway(file, opts)
+      const contentUri = await uploadViaGateway(file, opts)
+      notifyMediaQuotaChanged()
+      return contentUri
     }
     throw err
   }

@@ -66,7 +66,10 @@ describe('AdminQuotaService', () => {
   })
 
   it('getQuotaStats 透传真实字段（storageBytes / mediaCount / limitBytes）', async () => {
-    getQuotaStatsMock.mockResolvedValueOnce({ storageBytes: 2048, mediaCount: 3, limitBytes: 4096 })
+    getQuotaStatsMock.mockResolvedValueOnce({
+      ok: true,
+      stats: { storageBytes: 2048, mediaCount: 3, limitBytes: 4096 }
+    })
 
     await expect(service.getQuotaStats()).resolves.toEqual({
       storageBytes: 2048,
@@ -74,8 +77,9 @@ describe('AdminQuotaService', () => {
       limitBytes: 4096
     })
 
-    getQuotaStatsMock.mockResolvedValueOnce(null)
-    await expect(service.getQuotaStats()).rejects.toThrow('获取配额统计失败')
+    // 取不到时把原因带进错误，后台能区分「服务端无配额」与「本次失败」
+    getQuotaStatsMock.mockResolvedValueOnce({ ok: false, reason: 'unsupported' })
+    await expect(service.getQuotaStats()).rejects.toThrow('获取配额统计失败（unsupported）')
   })
 
   it('getQuotaAlerts 透传媒体管理器的告警数组', async () => {

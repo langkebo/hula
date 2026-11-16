@@ -158,8 +158,8 @@ describe('Media service URL construction contract (real SDK + msw)', () => {
     expect(calls[0].method).toBe('GET')
     expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/media/v1/quota/stats`)
     expect(calls[0].url).not.toMatch(DOUBLE_PREFIX)
-    expect(result?.mediaCount).toBe(42)
-    expect(result?.storageBytes).toBe(52428800)
+    expect(result.ok && result.stats.mediaCount).toBe(42)
+    expect(result.ok && result.stats.storageBytes).toBe(52428800)
   })
 
   it('getAuthenticatedMediaConfig hits /_matrix/client/v1/media/config (no double-prefix)', async () => {

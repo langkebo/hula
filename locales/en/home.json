@@ -169,7 +169,8 @@
       "placeholder": "Search"
     },
     "quota": {
-      "title": "Quota"
+      "title": "Quota",
+      "unavailable": "Unavailable"
     },
     "favorites": {
       "total": "{count} favorite(s)",

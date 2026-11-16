@@ -151,12 +151,10 @@ const quota = ref<{ storageBytes: number; mediaCount: number; limitBytes: number
 
 /** 容量汇总来自服务端配额接口；接口不可用时隐藏该区域，不伪造数据（Y-14） */
 async function loadQuota() {
-  try {
-    quota.value = await matrixMediaService.getQuotaStats()
-  } catch (error) {
-    logger.warn('Failed to load media quota stats', error)
-    quota.value = null
-  }
+  // `getQuotaStats()` 内部已吞错并返回 `{ ok, reason }`，这里不需要再包 try/catch。
+  const result = await matrixMediaService.getQuotaStats()
+  quota.value = result.ok ? result.stats : null
+  if (!result.ok) logger.warn(`Failed to load media quota stats (${result.reason})`)
 }
 
 onMounted(() => {

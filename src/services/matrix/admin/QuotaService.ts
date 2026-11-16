@@ -43,13 +43,14 @@ export class AdminQuotaService {
 
   async getQuotaStats(): Promise<QuotaStats> {
     const result = await matrixMediaService.getQuotaStats()
-    if (!result) {
-      throw new Error('[AdminQuota] 获取配额统计失败（媒体管理器未就绪）')
+    if (!result.ok) {
+      // 区分「服务端没有配额接口」与「本次取不到」：后台面板需要知道能不能重试
+      throw new Error(`[AdminQuota] 获取配额统计失败（${result.reason}）`)
     }
     return {
-      storageBytes: result.storageBytes,
-      mediaCount: result.mediaCount,
-      limitBytes: result.limitBytes
+      storageBytes: result.stats.storageBytes,
+      mediaCount: result.stats.mediaCount,
+      limitBytes: result.stats.limitBytes
     }
   }
 

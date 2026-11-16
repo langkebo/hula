@@ -56,7 +56,7 @@ describe('StorageSettings 媒体配额', () => {
     vi.clearAllMocks()
     localStorage.clear()
     checkQuotaMock.mockResolvedValue(usageOf(512, 1024))
-    getQuotaStatsMock.mockResolvedValue({ storageBytes: 512, mediaCount: 3, limitBytes: 0 })
+    getQuotaStatsMock.mockResolvedValue({ ok: true, stats: { storageBytes: 512, mediaCount: 3, limitBytes: 0 } })
     getQuotaAlertsMock.mockResolvedValue([])
     getMediaConfigMock.mockResolvedValue({ 'm.upload.size': 2048 })
     getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: false })
@@ -154,14 +154,15 @@ describe('StorageSettings 媒体配额', () => {
   })
 
   it('配额统计接口失败不影响配额主视图', async () => {
-    getQuotaStatsMock.mockRejectedValue(new Error('stats-fail'))
+    getQuotaStatsMock.mockResolvedValue({ ok: false, reason: 'unavailable' })
 
     const wrapper = mountTab()
     await flush()
 
     const stats = wrapper.find('[data-test="quota-stats"]')
     expect(stats.exists()).toBe(true)
-    expect(stats.text()).toContain('0')
+    // 取不到媒体数量就显示占位符，不把失败画成 0
+    expect(stats.text()).toContain('—')
   })
 })
 
@@ -170,7 +171,7 @@ describe('StorageSettings 媒体服务配置与上传策略', () => {
     vi.clearAllMocks()
     localStorage.clear()
     checkQuotaMock.mockResolvedValue(usageOf(512, 1024))
-    getQuotaStatsMock.mockResolvedValue({ storageBytes: 512, mediaCount: 3, limitBytes: 0 })
+    getQuotaStatsMock.mockResolvedValue({ ok: true, stats: { storageBytes: 512, mediaCount: 3, limitBytes: 0 } })
     getQuotaAlertsMock.mockResolvedValue([])
     getMediaConfigMock.mockResolvedValue({ 'm.upload.size': 2048 })
     getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: false })
@@ -222,7 +223,7 @@ describe('StorageSettings — partial 态', () => {
     vi.clearAllMocks()
     localStorage.clear()
     checkQuotaMock.mockResolvedValue(usageOf(512, 1024))
-    getQuotaStatsMock.mockResolvedValue({ storageBytes: 512, mediaCount: 3, limitBytes: 0 })
+    getQuotaStatsMock.mockResolvedValue({ ok: true, stats: { storageBytes: 512, mediaCount: 3, limitBytes: 0 } })
     getQuotaAlertsMock.mockResolvedValue([])
     getMediaConfigMock.mockResolvedValue({ 'm.upload.size': 2048 })
     getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: false })

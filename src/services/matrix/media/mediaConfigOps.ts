@@ -68,20 +68,71 @@ export async function fetchQuotaUsage(
   }
 }
 
-/** 获取媒体配额统计（存储字节/媒体数/上限字节）；失败返回 null。 */
-export async function fetchQuotaStats(
-  getMedia: () => MediaManager
-): Promise<{ storageBytes: number; mediaCount: number; limitBytes: number } | null> {
+/** 媒体配额统计字段（存储字节 / 媒体数 / 上限字节）。 */
+export interface MediaQuotaStats {
+  storageBytes: number
+  mediaCount: number
+  limitBytes: number
+}
+
+/**
+ * 配额取不到的原因：
+ * - `unsupported`：该 homeserver 没有配额统计接口（404/405/501 或 M_UNRECOGNIZED/M_NOT_FOUND）
+ * - `unavailable`：接口存在，但本次请求失败（鉴权 / 网络 / 5xx 等）
+ *
+ * UI 必须区分两者：前者说明「服务端没有配额这一概念」，没有可展示的东西；
+ * 后者应给出「暂不可用」并允许重试，而不是把自己的失败画成用量 0。
+ */
+export type MediaQuotaUnavailableReason = 'unsupported' | 'unavailable'
+
+/** `fetchQuotaStats` 的结果：成功带 stats，失败带可判定的原因。 */
+export type MediaQuotaStatsResult =
+  | { ok: true; stats: MediaQuotaStats }
+  | { ok: false; reason: MediaQuotaUnavailableReason }
+
+/** 「该接口不存在」类 errcode（与 `adminApiAvailability` 的判定保持一致） */
+const QUOTA_UNSUPPORTED_ERRCODES = new Set(['M_UNRECOGNIZED', 'M_NOT_FOUND'])
+/** 「该接口不存在」类 HTTP 状态码 */
+const QUOTA_UNSUPPORTED_STATUS_CODES = new Set([404, 405, 501])
+
+interface QuotaErrorShape {
+  errorCode?: unknown
+  errcode?: unknown
+  statusCode?: unknown
+  httpStatus?: unknown
+}
+
+/** 把配额接口的异常分类为可判定的原因（纯函数，便于单测）。 */
+export function classifyMediaQuotaError(error: unknown): MediaQuotaUnavailableReason {
+  const shape = (typeof error === 'object' && error !== null ? error : {}) as QuotaErrorShape
+  const errorCode =
+    typeof shape.errorCode === 'string' ? shape.errorCode : typeof shape.errcode === 'string' ? shape.errcode : null
+  if (errorCode !== null && QUOTA_UNSUPPORTED_ERRCODES.has(errorCode)) return 'unsupported'
+
+  const statusCode = [shape.statusCode, shape.httpStatus].find(
+    (candidate): candidate is number => typeof candidate === 'number' && Number.isFinite(candidate)
+  )
+  if (statusCode !== undefined && QUOTA_UNSUPPORTED_STATUS_CODES.has(statusCode)) return 'unsupported'
+
+  return 'unavailable'
+}
+
+/** 获取媒体配额统计；失败时带原因返回，不折叠成 `null`（无法区分「无配额」与「取不到」）。 */
+export async function fetchQuotaStats(getMedia: () => MediaManager): Promise<MediaQuotaStatsResult> {
   try {
     const result = await getMedia().getMediaQuotaStats()
     return {
-      storageBytes: result.storage_bytes ?? 0,
-      mediaCount: result.media_count ?? 0,
-      limitBytes: result.limit_bytes ?? 0
+      ok: true,
+      stats: {
+        storageBytes: result.storage_bytes ?? 0,
+        mediaCount: result.media_count ?? 0,
+        limitBytes: result.limit_bytes ?? 0
+      }
     }
   } catch (err) {
-    logger.error(`[MatrixMedia] 获取配额统计失败: ${err}`)
-    return null
+    const reason = classifyMediaQuotaError(err)
+    logger.error(`[MatrixMedia] 获取配额统计失败(${reason}): ${err}`)
+    return { ok: false, reason }
   }
 }
 
