@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3438,6 +3438,58 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 3. 新增用例只锁装配与分流，不重复既有平台门控 / 本地删除用例的断言；菜单项的点击副作用（转发、撤回、另存为、踢人）仍由组件级与业务用例覆盖，本批不补重复用例。
 4. 三条变异均为「注入 → 跑定向用例 → 立即还原」，还原后重新统计 `commonMenuList.value` 出现次数与行数确认文件完整，并随后跑全量单测取证。
 5. 本批未触碰移动端 admin / AI 裁剪红线：改动全部在 `src/composables/chat/`，不新增任何 admin / robot 入口，移动端仅消费同一份菜单工厂（平台专属项仍在构建期由 `isDesktop` 过滤）。
+
+---
+
+### 19.34 P0-14：移动端右键菜单桌面专属项收口（2026-11-16，收口 §19.26 遗留）
+
+#### 缺口
+
+`ContextMenu.vue` 的移动端分支对 `visibleMenu` 是**全量渲染**（`v-for="item in visibleMenu"`），只有 `specialMenu` 走 `mobileSpecialMenu` 并额外要求 `mobile === true`。因此「可见性」完全依赖每个菜单项自身的 `visible` 谓词。P0-13 拆出的媒体菜单里仍有 5 项桌面专属动作缺 `visible`：
+
+- 视频「在文件夹中显示」（`downloadAndRevealVideo`）
+- 文件「预览」（`preview-open` → `previewFile`）
+- 文件「在文件夹中显示」（`downloadAndRevealFile`）
+- 图片「在文件夹中显示」（`downloadAndRevealFile`）
+- 历史模式消息的「在文件夹中显示」
+
+`previewFile` 依次调用 `getUserRoomAbsoluteDir` / `getFilesMeta` / `sendWindowPayload` / `createWebviewWindow`，全部是 Tauri 桌面 API；`downloadAndReveal*` 最终调用 `revealItemInDir`。移动端点中这些项不会降级，只会报错或静默失败。
+
+#### 判据
+
+- 统一用 `visible: () => isDesktop`（`MediaMenuDeps` / `MessageMenuDeps` 已注入平台事实），不在菜单项内新增 `isMobile()` 运行时判断，`is_mobile_branch` 不得回升。
+- 菜单顺序、label / icon、i18n key、点击实现零改动，只补谓词。
+- 用例按"与 `ContextMenu.vue` 相同的过滤语义"（未声明 `visible` 视为常显）断言：移动端 `file2` / `preview-open` 不出现，桌面端出现。
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/composables/chat/contextMediaMenus.ts` | 视频 / 文件 / 图片三处「在文件夹中显示」与文件「预览」补 `visible: () => isDesktop` |
+| `src/composables/chat/contextMessageMenus.ts` | 历史模式 `specialMenuList` 中「在文件夹中显示」补 `visible: () => isDesktop` |
+| `src/composables/chat/__tests__/contextMenuListsAssembly.test.ts` | `makeLists` 支持 `isDesktop` / `isHistoryMode` 入参；新增 3 条按平台用例（移动端媒体菜单、移动端历史模式、桌面端保留） |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 定向用例 | `pnpm vitest run src/composables/chat/__tests__/contextMenuListsAssembly.test.ts` | `7 passed (7)`，exit 0 |
+| 变异自证 | 逐条注入后还原 | 3 条全部变红：① 去掉文件「预览」的 `visible` → `expected [ 'preview-open', …(3) ] to not include 'preview-open'`；② 去掉历史模式「在文件夹中显示」的 `visible` → `expected [ 'copy', 'list-checkbox', …(2) ] to not include 'file2'`；③ 图片「在文件夹中显示」改成 `visible: () => true` → `expected [ 'copy', 'list-checkbox', …(3) ] to not include 'file2'` |
+| 全量单测 | `pnpm test:run` | `1058 passed (1058)` / `11691 passed (11691)`，exit 0 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 文件体量 | `node scripts/check-file-size.mjs` | `OK — oversized file count 120 (baseline 120)` / `all 1519 source files within size constraints` |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`inline_style 5`、`important_css 39`、`backdrop_filter_raw 60`、`is_mobile_branch 5`、`handwritten_empty_state 0`） |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径全部存在 / `OK — no regressions vs baseline` |
+| 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156) / 扫描 2677 文件、命中 3 条全在白名单 / `phantom members: 命中 1（登记 exempt 1 / debt 0）`、无漂移 |
+| Lint / i18n | `pnpm check` | exit 0（含 capabilities-sync 7 个 capability 一致） |
+
+#### 已知边界
+
+1. 本批只收口「桌面动作泄漏到移动端」，未给移动端补等价能力：文件「预览」在移动端仍无入口，需独立的移动端预览器，属后续需求而非本次裁剪。
+2. 「另存为」与视频「复制」在此前批次已有 `visible: () => isDesktop`，本批未重复改动；用例把它们作为对照组（移动端同样不出现）。
+3. `ContextMenu.vue` 的移动端全量渲染 `visibleMenu` 是有意设计（移动端图标网格需要平铺全部可用项），因此修复点必须落在每个菜单项的 `visible` 谓词上，而不是改渲染层；后续新增桌面动作时需同步补谓词。
+4. 纯谓词补全，不涉及移动端 admin / AI 裁剪红线：改动文件全部在 `src/composables/chat/`。
 
 ---
 

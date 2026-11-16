@@ -270,7 +270,8 @@ export const createMessageMenus = (deps: MessageMenuDeps) => {
                     failed: 'home.chat_main.file.download_failed'
                   }
                 })
-              }
+              },
+              visible: () => isDesktop
             }
           ]
           return [...baseMenus, ...mediaMenus]

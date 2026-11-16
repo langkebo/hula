@@ -34,12 +34,12 @@ vi.mock('@/utils/AttachmentSaver', () => ({
 
 import { createContextMenuLists } from '@/composables/chat/contextMenuLists'
 
-const makeLists = () =>
+const makeLists = (options: { isDesktop?: boolean; isHistoryMode?: boolean } = {}) =>
   createContextMenuLists({
     t: ((key: string) => key) as never,
     showFeedback: vi.fn() as never,
-    isDesktop: true,
-    isHistoryMode: false,
+    isDesktop: options.isDesktop ?? true,
+    isHistoryMode: options.isHistoryMode ?? false,
     disableHistoryActions: false,
     downloadFile: vi.fn() as never,
     fileDownload: {
@@ -74,6 +74,19 @@ const makeLists = () =>
   })
 
 describe('右键菜单列表装配', () => {
+  /** 与 `ContextMenu.vue` 一致的可见性过滤：未声明 `visible` 视为常显 */
+  const visibleIcons = (menus: OPT.RightMenu[], item: unknown) =>
+    menus.filter((menu) => (typeof menu.visible === 'function' ? menu.visible(item) : true)).map((menu) => menu.icon)
+
+  const fakeFileMessage = {
+    message: {
+      id: '$event',
+      roomId: '!room:hs',
+      type: MsgEnum.FILE,
+      body: { url: 'mxc://hs/file', fileName: 'a.pdf' }
+    }
+  }
+
   it('handleItemType 按消息类型分流到对应列表', () => {
     const lists = makeLists()
 
@@ -116,5 +129,34 @@ describe('右键菜单列表装配', () => {
     const icons = lists.specialMenuList.value(MsgEnum.TEXT).map((menu) => menu.icon)
 
     expect(icons).toEqual(['delete', 'info'])
+  })
+
+  it('移动端不输出预览与在文件夹中显示的桌面专属项', () => {
+    const lists = makeLists({ isDesktop: false })
+
+    expect(visibleIcons(lists.videoMenuList.value, fakeFileMessage)).not.toContain('file2')
+    expect(visibleIcons(lists.fileMenuList.value, fakeFileMessage)).not.toContain('preview-open')
+    expect(visibleIcons(lists.fileMenuList.value, fakeFileMessage)).not.toContain('file2')
+    expect(visibleIcons(lists.imageMenuList.value, fakeFileMessage)).not.toContain('file2')
+  })
+
+  it('移动端历史模式同样不输出在文件夹中显示的桌面专属项', () => {
+    const lists = makeLists({ isDesktop: false, isHistoryMode: true })
+    const icons = visibleIcons(lists.specialMenuList.value(MsgEnum.FILE), fakeFileMessage)
+
+    expect(icons).not.toContain('file2')
+    expect(icons).toContain('copy')
+  })
+
+  it('桌面端保留预览与在文件夹中显示的桌面专属项', () => {
+    const lists = makeLists({ isDesktop: true })
+
+    expect(visibleIcons(lists.videoMenuList.value, fakeFileMessage)).toContain('file2')
+    expect(visibleIcons(lists.fileMenuList.value, fakeFileMessage)).toContain('preview-open')
+    expect(visibleIcons(lists.fileMenuList.value, fakeFileMessage)).toContain('file2')
+    expect(visibleIcons(lists.imageMenuList.value, fakeFileMessage)).toContain('file2')
+
+    const historyLists = makeLists({ isDesktop: true, isHistoryMode: true })
+    expect(visibleIcons(historyLists.specialMenuList.value(MsgEnum.FILE), fakeFileMessage)).toContain('file2')
   })
 })

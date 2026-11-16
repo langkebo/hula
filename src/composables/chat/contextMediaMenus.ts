@@ -74,7 +74,8 @@ export const createMediaMenus = (deps: MediaMenuDeps, commonMenuList: Ref<OPT.Ri
             extractFileName(String(item.message.body.url || '')),
           ...(encryptedFile === undefined ? {} : { encryptedFile })
         })
-      }
+      },
+      visible: () => isDesktop
     }
   ])
   /** 文件类型右键菜单 */
@@ -86,7 +87,8 @@ export const createMediaMenus = (deps: MediaMenuDeps, commonMenuList: Ref<OPT.Ri
         nextTick(async () => {
           await previewFile(item)
         })
-      }
+      },
+      visible: () => isDesktop
     },
     ...commonMenuList.value,
     {
@@ -122,7 +124,8 @@ export const createMediaMenus = (deps: MediaMenuDeps, commonMenuList: Ref<OPT.Ri
             failed: 'home.chat_main.file.download_failed'
           }
         })
-      }
+      },
+      visible: () => isDesktop
     }
   ])
   /** 图片类型右键菜单 */
@@ -192,7 +195,8 @@ export const createMediaMenus = (deps: MediaMenuDeps, commonMenuList: Ref<OPT.Ri
             failed: 'home.chat_main.image.download_failed'
           }
         })
-      }
+      },
+      visible: () => isDesktop
     }
   ])
 
