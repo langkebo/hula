@@ -1,6 +1,5 @@
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { listen } from '@tauri-apps/api/event'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { computed } from 'vue'
 import { useExtensionEventBridge } from '@/composables/app/useExtensionEventBridge'
@@ -9,7 +8,8 @@ import { createMemberHandler } from '@/composables/app/wsMemberHandler'
 import { createPresenceHandler } from '@/composables/app/wsPresenceHandler'
 import { useMitt } from '@/composables/common/useMitt'
 import { useWindow } from '@/composables/common/useWindow'
-import { CallTypeEnum, ChangeTypeEnum, MittEnum, OnlineEnum, WsResponseMessageType } from '@/enums'
+import { ChangeTypeEnum, MittEnum, OnlineEnum, WsResponseMessageType } from '@/enums'
+import { getSessionEventStrategy } from '@/platform/sessionEventStrategy'
 import type { LoginSuccessResType, OnStatusChangeType, WsTokenExpire } from '@/services/legacy/wsEventTypes'
 import type { MarkItemType, RevokedMsgType, UserItem } from '@/services/types.ts'
 import { useChatStore } from '@/stores/domains/chat/chat'
@@ -21,7 +21,6 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { createLogger } from '@/utils/Logger'
-import { isMobile } from '@/utils/PlatformConstants'
 import { normalizeMatrixUserId } from '@/utils/userIdentity'
 
 const logger = createLogger('WsEventHandler')
@@ -40,11 +39,9 @@ export function useWsEventHandler() {
   const sessionStore = useSessionStore()
   const globalStore = useGlobalStore()
   const settingStore = useSettingStore()
-  const { createRtcCallWindow, sendWindowPayload } = useWindow()
+  const { createRtcCallWindow } = useWindow()
 
   const userUid = computed(() => userStore.userInfo?.uid ?? '')
-  // 平台在运行期恒定：探测一次后复用
-  const isMobilePlatform = isMobile()
 
   let wsEventUnlisten: UnlistenFn | null = null
 
@@ -70,10 +67,8 @@ export function useWsEventHandler() {
 
     useMitt.on<VideoCallRequestPayload>(WsResponseMessageType.VideoCallRequest, (event) => {
       logger.info(`收到通话请求：${JSON.stringify(event)}`)
-      // 移动端来电统一走 Matrix Call.incoming（useVoIPIncomingCall → RtcCallFloatCell），此处仅保留桌面链路
-      if (isMobilePlatform) return
-      const callType = event.isVideo ? CallTypeEnum.VIDEO : CallTypeEnum.AUDIO
-      callHandler.handleVideoCall(event.callerUid, callType)
+      // 平台差异由策略决定：桌面开独立通话窗口，移动端忽略以等待 Matrix Call.incoming
+      getSessionEventStrategy().handleLegacyVideoCall(event, callHandler)
     })
 
     useMitt.on(WsResponseMessageType.LOGIN_SUCCESS, async (data: LoginSuccessResType) => {
@@ -170,34 +165,11 @@ export function useWsEventHandler() {
       ) {
         const { useLoginFlow } = await import('@/shared/composables/useLoginFlow')
         const { logout } = useLoginFlow()
-        if (isMobilePlatform) {
-          try {
-            await logout()
-            settingStore.toggleLogin(false, false)
-            logger.info('账号在其他设备登录')
-            const router = await import('@/router')
-            await router.default.replace('/mobile/login')
-            const { showDialog } = await import('vant')
-            await import('vant/es/dialog/style')
-            showDialog({
-              title: '登录失效',
-              message: '您的账号已在其他设备登录，请重新登录',
-              confirmButtonText: '我知道了',
-              showCancelButton: false,
-              closeOnClickOverlay: false,
-              closeOnPopstate: false,
-              allowHtml: false
-            })
-          } catch (error) {
-            logger.error('处理token过期失败：', error)
-          }
-        } else {
-          const home = await WebviewWindow.getByLabel('home')
-          await home?.setFocus()
-          const remoteIp = wsTokenExpire.ip || '未知IP'
-          await sendWindowPayload('login', { remoteLogin: { ip: remoteIp, timestamp: Date.now() } })
-          await logout()
-        }
+        await getSessionEventStrategy().handleRemoteLoginExpired({
+          remoteIp: wsTokenExpire.ip,
+          logout,
+          onLoggedOut: () => settingStore.toggleLogin(false, false)
+        })
       }
     })
 
