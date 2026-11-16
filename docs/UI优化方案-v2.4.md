@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3210,6 +3210,63 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 4. 只有成功路径发通知；上传失败、删除失败不改变服务端配额，故不通知。
 5. 事件通道用 `Set` 持有监听者，订阅方必须在 `onBeforeUnmount` 调用返回的取消函数；当前仅 `ChatSidebarFiles` 订阅。
 6. 配额取数失败不会自动重试，只在下一次可见、TTL 过期或收到通知时重取。
+
+---
+
+### 19.30 P0-10：空间房间变更后刷新失败不再冒充变更失败（2026-11-16，收口 §19.21 边界）
+
+#### 缺口
+
+`useSpaceRooms` 的增删改（`addRoom` / `removeRoom` / `createRoomInSpace` / `toggleSuggested`）在服务调用成功后会重新 `load()` 列表，而 `load()` 把失败写进 `error`。于是有两个缺陷：
+
+1. **成功被误判为失败**：`removeChild` 已生效，但紧随其后的列表刷新失败，`error` 被写满，面板进入整页错误态，用户看到「移除失败」的等价结果，实际变更已经落库。
+2. **刷新失败静默过期**：即使不进入整页错误态，刷新失败也没有任何局部信号，列表停留在变更前的数据，用户以为操作没生效而重复点击。
+
+本轮把「变更结果」与「变更后刷新结果」拆成两个信号：`fetchRooms` 失败只返回错误文本、不改动 `rooms`；`refreshAfterMutation` 只写 `refreshError`；变更返回值仍只由服务调用结果决定。
+
+#### 判据
+
+| 场景 | 数据来源 | 断言要点 |
+| :--- | :--- | :--- |
+| 移除成功 + 刷新失败 | `removeChild` resolve、`getSpaceRooms` reject | `removeRoom` 返回 `true`；`error` 为 `null`；`refreshError` 含失败原因；`rooms` 保持变更前内容 |
+| 刷新失败后重新加载成功 | 再调 `load()` | `refreshError` 被清空，`rooms` 更新为最新结果 |
+| 添加 / 建议位切换刷新失败 | `addChildToSpace` / `setChildSuggested` resolve | 同样只写 `refreshError`，不写 `error` |
+| 空间面板局部提示 | `refreshError` 非空 | 渲染 `data-test="space-rooms-refresh-error"`，文案为 `space.rooms_refresh_failed`；旧列表仍在；不出现整页错误态 `data-test="space-rooms-error"` |
+| 空间面板重试 | 点击 `data-testid="partial-retry"` | 触发一次 `load()` |
+| 空间面板变更反馈 | 移除成功 + 刷新失败 | `showFeedback('space.remove_room_success', 'success')`，不出现 `space.remove_room_failed` |
+| 空间子面板局部提示 | `refreshError` 非空 | 渲染 `data-test="space-children-refresh-error"`；移除成功仍按成功反馈；重试触发 `loadSpaceRooms()` |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/composables/space/useSpaceRooms.ts` | 抽出 `fetchRooms(id)`（失败只返回错误文本、不动 `rooms`）；新增 `refreshError` 与 `refreshAfterMutation(id)`；`load()` 只写 `error`；四个变更改为开头清 `error` / `refreshError`，成功后走 `refreshAfterMutation` 并照常返回 `true` / `roomId`；`client_unavailable` 分支同步清 `refreshError` |
+| `src/components/workbench/SpaceRoomsPane.vue` | 列表上方接入 `PartialStateBanner`（`data-test="space-rooms-refresh-error"`，紧凑模式，重试调 `load`）；保留原整页错误态作为初次加载失败路径 |
+| `src/components/space/SpaceChildrenPane.vue` | 子房间网格上方接入 `PartialStateBanner`（`data-test="space-children-refresh-error"`）；`handleRemoveSpaceRoom` 改走 composable 的 `removeRoom`，成功后才反馈成功，不再直连 `matrixSpaceService.removeChild` |
+| `locales/zh-CN/space.json`、`locales/en/space.json` | 新增 `space.rooms_refresh_failed`（房间列表刷新失败，显示的可能不是最新结果 / Failed to refresh the room list; what you see may be out of date），并重生成 typings |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 判据用例 | `pnpm vitest run` 3 个受影响文件 | **3 文件 / 52 用例通过**（新增 7 例：composable 3、`SpaceRoomsPane` 2、`SpaceChildrenPane` 2） |
+| 变异自证 | 逐条注入后还原 | 3 条全部变红：① `refreshAfterMutation` 写 `error` 而非 `refreshError` → `3 failed / 49 passed`；② `SpaceChildrenPane` 的 `retryRooms` 改为空实现 → 「局部刷新失败提示可重试」FAIL；③ `SpaceRoomsPane` 局部提示 `v-if` 改判 `error` → 「变更成功但刷新失败」「移除成功但列表刷新失败」两例 FAIL |
+| 全量单测 | `pnpm test:run` | `1057 passed (1057)` / `11682 passed (11682)`，exit 0 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 棘轮 | `pnpm check:ratchet` | 12 项全部持平基线（`is_mobile_branch 5 (baseline 5)`、`backdrop_filter_raw 60 (baseline 60)`、`handwritten_empty_state 0`），无可收紧项 |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径全部存在 / `OK — no regressions vs baseline (587)`（current 573，14 个方法新补注释） |
+| 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156) / 扫描 1648 文件、命中 3 条全在白名单 / 无漂移 |
+| Lint / i18n | `pnpm check` | 首次报 `useSpaceRooms.ts` format，`biome check --write` 后重跑 `Checked 2902 files. No fixes applied.`，exit 0 |
+
+#### 已知边界
+
+1. 初次加载失败仍走 `error` + 整页错误态（含整页重试）；`refreshError` 只表达「变更已生效、列表可能过期」，两者不互相覆盖。
+2. 变更开始时统一清空上一轮的 `refreshError`：若用户接着做了另一个变更，旧提示不再代表当前状态。
+3. 变更本身失败（服务 reject / 返回 `false`）时不刷新列表，错误走 `error` 与 toast，不产生 `refreshError`。
+4. `createRoomInSpace` 的真实房间创建成功、`addChildToSpace` 失败时仍归为变更失败（房间已建但未入空间），本轮不拆分该中间态。
+5. 局部提示的重试调用的是完整 `load()`，成功后 `refreshError` 自然清空；不单独提供「只刷新不重载」路径。
+6. 面板级判据通过 mock composable 驱动，未覆盖真实 `MatrixSpaceService`；服务层行为仍由既有 room 服务用例守护。
 
 ---
 

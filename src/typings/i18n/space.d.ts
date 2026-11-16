@@ -172,6 +172,7 @@ export type Messages = {
   "remove_room_failed": "移除失败",
   "remove_room_success": "已移除",
   "request_to_join": "申请加入",
+  "rooms_refresh_failed": "房间列表刷新失败，显示的可能不是最新结果",
   "topic_error": "话题不能为空",
   "topic_label": "空间话题",
   "topic_saved": "已保存",
@@ -351,6 +352,7 @@ export type KeyPaths =
   | "space.remove_room_failed"
   | "space.remove_room_success"
   | "space.request_to_join"
+  | "space.rooms_refresh_failed"
   | "space.topic_error"
   | "space.topic_label"
   | "space.topic_saved"

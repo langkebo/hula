@@ -40,6 +40,11 @@ interface UseSpaceRoomsResult {
   loading: Ref<boolean>
   mutating: Ref<boolean>
   error: Ref<string | null>
+  /**
+   * 变更已生效、但变更后的列表刷新失败。
+   * 与 `error` 分离：列表过期不等于变更失败，调用方应做局部提示而不是把整页判为失败。
+   */
+  refreshError: Ref<string | null>
   load: () => Promise<void>
   addRoom: (roomId: string, options?: { via?: string[]; suggested?: boolean }) => Promise<boolean>
   removeRoom: (roomId: string) => Promise<boolean>
@@ -61,6 +66,7 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
   const loading = ref(false)
   const mutating = ref(false)
   const error = ref<string | null>(null)
+  const refreshError = ref<string | null>(null)
 
   /**
    * 根据空间的 join_rule 推导新房间可见性：
@@ -88,14 +94,8 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     }
   }
 
-  const load = async () => {
-    const id = spaceId()
-    if (!id) {
-      rooms.value = []
-      return
-    }
-    loading.value = true
-    error.value = null
+  /** 拉取并合并子房间列表；失败时返回错误文本，不改动现有列表 */
+  const fetchRooms = async (id: string): Promise<string | null> => {
     try {
       const base = await matrixSpaceService.getSpaceRooms(id)
       // getSpaceRooms 不含 suggested 标记，需从 getSpaceChildren 合并 is_suggested
@@ -113,12 +113,37 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
         suggested: suggestedMap.get(r.roomId) ?? false,
         joined: resolveJoined(r.roomId)
       }))
+      return null
     } catch (err) {
       logger.error('load rooms failed', err)
-      error.value = err instanceof Error ? err.message : String(err)
-    } finally {
-      loading.value = false
+      return err instanceof Error ? err.message : String(err)
     }
+  }
+
+  const load = async () => {
+    const id = spaceId()
+    if (!id) {
+      rooms.value = []
+      refreshError.value = null
+      return
+    }
+    loading.value = true
+    error.value = null
+    refreshError.value = null
+    const message = await fetchRooms(id)
+    if (message !== null) error.value = message
+    loading.value = false
+  }
+
+  /**
+   * 变更成功后的列表刷新：失败只写入 `refreshError`，
+   * 既不把变更本身判为失败，也不覆盖 `error` 触发整页错误态。
+   */
+  const refreshAfterMutation = async (id: string): Promise<void> => {
+    loading.value = true
+    const message = await fetchRooms(id)
+    loading.value = false
+    refreshError.value = message
   }
 
   const addRoom = async (roomId: string, options?: { via?: string[]; suggested?: boolean }): Promise<boolean> => {
@@ -126,9 +151,10 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     if (!id || !roomId) return false
     mutating.value = true
     error.value = null
+    refreshError.value = null
     try {
       await matrixSpaceService.addChildToSpace(id, roomId, options)
-      await load()
+      await refreshAfterMutation(id)
       return true
     } catch (err) {
       logger.error('addRoom failed', err)
@@ -144,9 +170,10 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     if (!id || !roomId) return false
     mutating.value = true
     error.value = null
+    refreshError.value = null
     try {
       await matrixSpaceService.removeChild(id, roomId)
-      await load()
+      await refreshAfterMutation(id)
       return true
     } catch (err) {
       logger.error('removeRoom failed', err)
@@ -161,10 +188,12 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     const id = spaceId()
     if (!id || !matrixClientService.getClient()) {
       error.value = 'client_unavailable'
+      refreshError.value = null
       return null
     }
     mutating.value = true
     error.value = null
+    refreshError.value = null
     try {
       const visibility = resolveVisibility(id)
       const room = await matrixClientService.createRoom({
@@ -175,7 +204,7 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
       await matrixSpaceService.addChildToSpace(id, room.roomId, {
         ...(input.suggested === undefined ? {} : { suggested: input.suggested })
       })
-      await load()
+      await refreshAfterMutation(id)
       return room.roomId
     } catch (err) {
       logger.error('createRoomInSpace failed', err)
@@ -191,9 +220,10 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     if (!id || !roomId) return false
     mutating.value = true
     error.value = null
+    refreshError.value = null
     try {
       await matrixSpaceService.setChildSuggested(id, roomId, !currentSuggested)
-      await load()
+      await refreshAfterMutation(id)
       return true
     } catch (err) {
       logger.error('toggleSuggested failed', err)
@@ -204,5 +234,16 @@ export function useSpaceRooms(spaceId: () => string): UseSpaceRoomsResult {
     }
   }
 
-  return { rooms, loading, mutating, error, load, addRoom, removeRoom, createRoomInSpace, toggleSuggested }
+  return {
+    rooms,
+    loading,
+    mutating,
+    error,
+    refreshError,
+    load,
+    addRoom,
+    removeRoom,
+    createRoomInSpace,
+    toggleSuggested
+  }
 }

@@ -18,13 +18,15 @@ const {
   inviteSpaceMemberMock,
   addRoomToSpaceMock,
   toggleSuggestedInSpaceMock,
+  removeRoomFromSpaceMock,
   canManageSpaceMock,
   leaveSpaceMock,
   deleteSpaceMock,
   joinSpaceMock,
   removeChildMock,
   enterChatMock,
-  enterSpaceMock
+  enterSpaceMock,
+  refreshErrorRef
 } = vi.hoisted(() => ({
   routerPushMock: vi.fn(async () => undefined),
   routerBackMock: vi.fn(),
@@ -38,13 +40,15 @@ const {
   inviteSpaceMemberMock: vi.fn(async () => true),
   addRoomToSpaceMock: vi.fn(async () => true),
   toggleSuggestedInSpaceMock: vi.fn(async () => true),
+  removeRoomFromSpaceMock: vi.fn(async () => true),
   canManageSpaceMock: vi.fn(() => true),
   leaveSpaceMock: vi.fn(async () => undefined),
   deleteSpaceMock: vi.fn(async () => undefined),
   joinSpaceMock: vi.fn(async () => undefined),
   removeChildMock: vi.fn(async () => undefined),
   enterChatMock: vi.fn(async () => undefined),
-  enterSpaceMock: vi.fn(async () => undefined)
+  enterSpaceMock: vi.fn(async () => undefined),
+  refreshErrorRef: { current: null as null | { value: string | null } }
 }))
 
 const spacesRef = ref([
@@ -120,14 +124,21 @@ vi.mock('@/composables/space', () => ({
     invite: inviteSpaceMemberMock,
     mutating: ref(false)
   }),
-  useSpaceRooms: () => ({
-    rooms: computed(() => roomsRef.value),
-    loading: ref(false),
-    load: loadSpaceRoomsMock,
-    addRoom: addRoomToSpaceMock,
-    toggleSuggested: toggleSuggestedInSpaceMock,
-    mutating: ref(false)
-  })
+  useSpaceRooms: () => {
+    // 工厂内构造真 ref：hoisted 阶段拿不到 vue 的 ref
+    const refreshError = ref<string | null>(null)
+    refreshErrorRef.current = refreshError
+    return {
+      rooms: computed(() => roomsRef.value),
+      loading: ref(false),
+      load: loadSpaceRoomsMock,
+      addRoom: addRoomToSpaceMock,
+      removeRoom: removeRoomFromSpaceMock,
+      toggleSuggested: toggleSuggestedInSpaceMock,
+      refreshError,
+      mutating: ref(false)
+    }
+  }
 }))
 
 vi.mock('@/services/matrix/MatrixClientService', () => ({
@@ -230,6 +241,7 @@ describe('SpaceChildrenPane', () => {
     loadSelectedSpaceMock.mockResolvedValue(undefined)
     loadSpaceMembersMock.mockResolvedValue(undefined)
     loadSpaceRoomsMock.mockResolvedValue(undefined)
+    removeRoomFromSpaceMock.mockResolvedValue(true)
     // window.$dialog mock
     ;(globalThis.window as unknown as { $dialog: unknown }).$dialog = {
       create: vi.fn(({ onPositiveClick }: { onPositiveClick?: () => Promise<void> }) => {
@@ -489,13 +501,49 @@ describe('SpaceChildrenPane', () => {
     await flushPromises()
 
     const vm = wrapper.vm as unknown as { handleRemoveSpaceRoom: (roomId: string) => void }
-    removeChildMock.mockClear()
+    removeRoomFromSpaceMock.mockClear()
 
     await vm.handleRemoveSpaceRoom('!room-1:server')
     await flushPromises()
 
-    expect(removeChildMock).toHaveBeenCalledWith('!space-1:server', '!room-1:server')
+    expect(removeRoomFromSpaceMock).toHaveBeenCalledWith('!room-1:server')
     expect(showFeedbackMock).toHaveBeenCalledWith('space.remove_room_success', 'success')
+  })
+
+  it('移除成功但列表刷新失败时按成功反馈，并由局部提示说明列表可能过期', async () => {
+    const wrapper = mount(SpaceChildrenPane)
+    await flushPromises()
+
+    const vm = wrapper.vm as unknown as { handleRemoveSpaceRoom: (roomId: string) => void }
+    removeRoomFromSpaceMock.mockImplementationOnce(async () => {
+      refreshErrorRef.current!.value = 'refresh boom'
+      return true
+    })
+    showFeedbackMock.mockClear()
+
+    await vm.handleRemoveSpaceRoom('!room-1:server')
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.remove_room_success', 'success')
+    expect(showFeedbackMock).not.toHaveBeenCalledWith('space.remove_room_failed', 'error')
+    expect(wrapper.find('[data-test="space-children-refresh-error"]').exists()).toBe(true)
+  })
+
+  it('局部刷新失败提示可重试，重试调用 load 拉取最新列表', async () => {
+    const wrapper = mount(SpaceChildrenPane)
+    await flushPromises()
+
+    refreshErrorRef.current!.value = 'refresh boom'
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="space-children-refresh-error"]').exists()).toBe(true)
+    expect(wrapper.get('[data-test="space-children-refresh-error"]').text()).toContain('space.rooms_refresh_failed')
+
+    loadSpaceRoomsMock.mockClear()
+    await wrapper.get('[data-test="space-children-refresh-error"] [data-testid="partial-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(loadSpaceRoomsMock).toHaveBeenCalledTimes(1)
   })
 
   it('opens and closes manage pane for invite', async () => {

@@ -167,6 +167,7 @@
   "remove_room_failed": "Remove Failed",
   "remove_room_success": "Removed",
   "request_to_join": "Request to Join",
+  "rooms_refresh_failed": "Failed to refresh the room list; what you see may be out of date",
   "topic_error": "Topic Cannot Be Empty",
   "topic_label": "Space Topic",
   "topic_saved": "Saved",

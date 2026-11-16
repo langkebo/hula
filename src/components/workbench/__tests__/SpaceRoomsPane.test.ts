@@ -3,14 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import SpaceRoomsPane from '../SpaceRoomsPane.vue'
 
-const { showFeedbackMock, loadRoomsMock, removeRoomMock, loadingRef, errorRef } = vi.hoisted(() => {
+const { showFeedbackMock, loadRoomsMock, removeRoomMock, loadingRef, errorRef, refreshErrorRef } = vi.hoisted(() => {
   // 三态要能被用例直接驱动，故用 hoisted 构造后填入真 ref（见下方 vi.mock 内的引用）
   return {
     showFeedbackMock: vi.fn(),
     loadRoomsMock: vi.fn(async () => undefined),
     removeRoomMock: vi.fn(async () => true),
     loadingRef: { current: null as null | { value: boolean } },
-    errorRef: { current: null as null | { value: string | null } }
+    errorRef: { current: null as null | { value: string | null } },
+    refreshErrorRef: { current: null as null | { value: string | null } }
   }
 })
 
@@ -33,14 +34,17 @@ vi.mock('@/composables/space/useSpaceRooms', async () => {
   // 必须在工厂里造 ref：hoisted 阶段拿不到 vue 的 ref
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const refreshError = ref<string | null>(null)
   loadingRef.current = loading
   errorRef.current = error
+  refreshErrorRef.current = refreshError
   return {
     useSpaceRooms: () => ({
       rooms: roomsRef,
       loading,
       mutating: ref(false),
       error,
+      refreshError,
       load: loadRoomsMock,
       removeRoom: removeRoomMock
     })
@@ -57,6 +61,7 @@ describe('SpaceRoomsPane', () => {
     removeRoomMock.mockResolvedValue(true)
     loadingRef.current!.value = false
     errorRef.current!.value = null
+    refreshErrorRef.current!.value = null
     ;(globalThis.window as unknown as { $dialog: unknown }).$dialog = {
       warning: vi.fn(({ onPositiveClick }: { onPositiveClick?: () => Promise<void> | void }) => {
         if (onPositiveClick) void onPositiveClick()
@@ -173,6 +178,41 @@ describe('SpaceRoomsPane', () => {
     await flushPromises()
 
     expect(wrapper.findAll('[data-test="space-room-item"]')).toHaveLength(2)
+    expect(wrapper.find('[data-test="space-rooms-error"]').exists()).toBe(false)
+  })
+
+  it('变更成功但刷新失败：显示局部提示 + 重试，旧列表保留且不出现整页错误', async () => {
+    refreshErrorRef.current!.value = 'refresh boom'
+
+    const wrapper = mount(SpaceRoomsPane, { props: { spaceId: '!space-1:server' } })
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="space-rooms-refresh-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="partial-state"]').text()).toContain('space.rooms_refresh_failed')
+    expect(wrapper.findAll('[data-test="space-room-item"]')).toHaveLength(2)
+    expect(wrapper.find('[data-test="space-rooms-error"]').exists()).toBe(false)
+
+    loadRoomsMock.mockClear()
+    await wrapper.find('[data-testid="partial-retry"]').trigger('click')
+    await flushPromises()
+    expect(loadRoomsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('移除成功但列表刷新失败时按成功反馈，并通过局部提示说明列表可能过期', async () => {
+    // removeRoom 返回 true（变更已生效），refreshError 由 composable 写入
+    const wrapper = mount(SpaceRoomsPane, { props: { spaceId: '!space-1:server', canManage: true } })
+    const vm = wrapper.vm as unknown as { handleRemove: (roomId: string) => Promise<void> }
+    removeRoomMock.mockImplementationOnce(async () => {
+      refreshErrorRef.current!.value = 'refresh boom'
+      return true
+    })
+
+    await vm.handleRemove('!room-1:server')
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('space.remove_room_success', 'success')
+    expect(showFeedbackMock).not.toHaveBeenCalledWith('space.remove_room_failed', 'error')
+    expect(wrapper.find('[data-test="space-rooms-refresh-error"]').exists()).toBe(true)
     expect(wrapper.find('[data-test="space-rooms-error"]').exists()).toBe(false)
   })
 

@@ -7,6 +7,16 @@
       :can-manage="canManageSelectedSpace"
       @settings="handleSpaceSettings" />
 
+    <!-- 变更已生效但子房间列表刷新失败：局部提示，不把整页判为失败 -->
+    <div v-if="refreshError" class="px-12px pt-8px" data-test="space-children-refresh-error">
+      <PartialStateBanner
+        compact
+        :message="t('space.rooms_refresh_failed')"
+        :detail="refreshError"
+        :retry-text="t('common.retry')"
+        @retry="retryRooms" />
+    </div>
+
     <!-- 子房间网格（快速概览） -->
     <section v-if="activeSpaceItem" class="space-children-pane__rooms" :aria-label="t('space.rooms')">
       <SpaceRoomGrid
@@ -61,6 +71,7 @@
 
 <script lang="ts" setup name="SpaceChildrenPane">
 import { useI18n } from 'vue-i18n'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import SpaceHeader from '@/components/space/SpaceHeader.vue'
 import SpaceRoomGrid from '@/components/space/SpaceRoomGrid.vue'
 import SpaceDetailsPane from '@/components/workbench/SpaceDetailsPane.vue'
@@ -113,9 +124,14 @@ const {
   loading: roomsLoading,
   load: loadSpaceRooms,
   addRoom: addRoomToSpace,
+  removeRoom: removeRoomFromSpace,
   toggleSuggested: toggleSuggestedInSpace,
+  refreshError,
   mutating: addRoomMutating
 } = useSpaceRooms(() => spaceId.value)
+
+/** 刷新失败后重试：成功后 refreshError 由 load 自动清空 */
+const retryRooms = () => void loadSpaceRooms()
 
 // 管理面板状态
 const manageMode = ref<SpaceManageMode | null>(null)
@@ -374,8 +390,14 @@ const handleRemoveSpaceRoom = (roomId: string) => {
     negativeText: t('common.cancel'),
     onPositiveClick: async () => {
       try {
-        await matrixSpaceService.removeChild(spaceId.value!, roomId)
-        await Promise.allSettled([reloadSpaces(), loadSpaceRooms()])
+        // 走 composable 的 removeRoom：刷新失败只置 refreshError（局部提示），
+        // 不会把已生效的移除判为失败。
+        const ok = await removeRoomFromSpace(roomId)
+        await reloadSpaces()
+        if (!ok) {
+          showFeedback(t('space.remove_room_failed'), 'error')
+          return
+        }
         showFeedback(t('space.remove_room_success'), 'success')
       } catch (err) {
         showFeedback(String(err) || t('space.remove_room_failed'), 'error')

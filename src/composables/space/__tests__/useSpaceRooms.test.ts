@@ -166,4 +166,54 @@ describe('useSpaceRooms', () => {
     expect(await toggleSuggested('!r1:server', false)).toBe(false)
     expect(error.value).toContain('network')
   })
+
+  // ── 变更成功但列表刷新失败（refreshError 与 error 分离）──
+  it('removeRoom 成功但刷新失败时返回 true，只置 refreshError，不冒充变更失败', async () => {
+    getSpaceRoomsMock.mockResolvedValueOnce([
+      { roomId: '!r1:server', name: 'Room 1' },
+      { roomId: '!r2:server', name: 'Room 2' }
+    ])
+    const { removeRoom, load, rooms, error, refreshError } = useSpaceRooms(() => SPACE_ID)
+    await load()
+    expect(rooms.value).toHaveLength(2)
+
+    getSpaceRoomsMock.mockRejectedValueOnce(new Error('M_UNKNOWN: sync down'))
+    const ok = await removeRoom('!r1:server')
+
+    expect(ok).toBe(true)
+    expect(removeChildMock).toHaveBeenCalledWith(SPACE_ID, '!r1:server')
+    // 变更已生效，不能把整页判为失败
+    expect(error.value).toBeNull()
+    expect(refreshError.value).toContain('sync down')
+    // 列表保持刷新前的状态（不清空、不假装成功）
+    expect(rooms.value).toHaveLength(2)
+  })
+
+  it('刷新失败后重新 load 成功会清空 refreshError 并更新列表', async () => {
+    getSpaceRoomsMock.mockRejectedValueOnce(new Error('boom'))
+    const { removeRoom, load, rooms, refreshError } = useSpaceRooms(() => SPACE_ID)
+
+    await removeRoom('!r1:server')
+    expect(refreshError.value).toContain('boom')
+
+    getSpaceRoomsMock.mockResolvedValueOnce([{ roomId: '!r2:server', name: 'Room 2' }])
+    await load()
+
+    expect(refreshError.value).toBeNull()
+    expect(rooms.value).toHaveLength(1)
+  })
+
+  it('addRoom 与 toggleSuggested 的刷新失败同样只走 refreshError', async () => {
+    const { addRoom, toggleSuggested, error, refreshError } = useSpaceRooms(() => SPACE_ID)
+
+    getSpaceRoomsMock.mockRejectedValueOnce(new Error('add-refresh'))
+    expect(await addRoom('!r1:server', { suggested: false })).toBe(true)
+    expect(error.value).toBeNull()
+    expect(refreshError.value).toContain('add-refresh')
+
+    getSpaceRoomsMock.mockRejectedValueOnce(new Error('toggle-refresh'))
+    expect(await toggleSuggested('!r1:server', false)).toBe(true)
+    expect(error.value).toBeNull()
+    expect(refreshError.value).toContain('toggle-refresh')
+  })
 })

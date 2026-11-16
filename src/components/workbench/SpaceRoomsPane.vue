@@ -14,6 +14,16 @@
       <span class="space-rooms-pane__count">{{ rooms.length }}</span>
     </header>
 
+    <!-- 变更已生效但列表刷新失败：局部提示，不把整页判为失败 -->
+    <div v-if="refreshError" class="space-rooms-pane__banner" data-test="space-rooms-refresh-error">
+      <PartialStateBanner
+        compact
+        :message="t('space.rooms_refresh_failed')"
+        :detail="refreshError"
+        :retry-text="t('common.retry')"
+        @retry="handleRetryLoad" />
+    </div>
+
     <!-- 子房间完整列表（无 limit） -->
     <div class="space-rooms-pane__list">
       <div
@@ -71,6 +81,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EmptyState from '@/components/common/EmptyState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSpaceRooms } from '@/composables/space/useSpaceRooms'
 
@@ -86,7 +97,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
-const { rooms, loading, error, load, removeRoom } = useSpaceRooms(() => props.spaceId)
+const { rooms, loading, error, refreshError, load, removeRoom } = useSpaceRooms(() => props.spaceId)
 
 // 三态互斥由模板的 v-if / v-else-if 链保证，顺序即优先级：加载中 → 失败 → 空。
 // 三者都只在「列表为空」时成立：已有数据时刷新失败不遮住旧列表（旧列表继续渲染）。
@@ -178,6 +189,11 @@ void load()
   padding: 2px 8px;
   border-radius: 10px;
   background: var(--tjg-surface-search);
+}
+
+.space-rooms-pane__banner {
+  padding: 8px 8px 0;
+  flex-shrink: 0;
 }
 
 .space-rooms-pane__list {
