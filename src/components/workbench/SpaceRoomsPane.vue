@@ -41,8 +41,25 @@
         <svg v-else class="size-12px space-rooms-pane__arrow" aria-hidden="true"><use href="#arrow-right" /></svg>
       </div>
 
+      <div
+        v-if="isLoadingRooms"
+        class="space-rooms-pane__state"
+        data-test="space-rooms-loading"
+        role="status"
+        aria-live="polite">
+        {{ t('common.loading') }}
+      </div>
+
+      <ErrorState
+        v-else-if="hasLoadError"
+        data-test="space-rooms-error"
+        illustration="network-error"
+        :title="t('space.load_failed')"
+        :retry-text="t('common.retry')"
+        @retry="handleRetryLoad" />
+
       <EmptyState
-        v-if="isEmptyRooms"
+        v-else-if="isEmptyRooms"
         :description="t('space.detail_space_rooms_empty')"
         data-test="space-rooms-empty" />
     </div>
@@ -53,6 +70,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import EmptyState from '@/components/common/EmptyState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useSpaceRooms } from '@/composables/space/useSpaceRooms'
 
@@ -68,10 +86,16 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
-const { rooms, load, removeRoom } = useSpaceRooms(() => props.spaceId)
+const { rooms, loading, error, load, removeRoom } = useSpaceRooms(() => props.spaceId)
 
-/** 子房间列表为空时展示空态 */
+// 三态互斥由模板的 v-if / v-else-if 链保证，顺序即优先级：加载中 → 失败 → 空。
+// 三者都只在「列表为空」时成立：已有数据时刷新失败不遮住旧列表（旧列表继续渲染）。
+const isLoadingRooms = computed(() => loading.value && rooms.value.length === 0)
+const hasLoadError = computed(() => Boolean(error.value) && rooms.value.length === 0)
+/** 子房间列表为空时展示空态（失败 / 加载中另有专门分支，避免假空态） */
 const isEmptyRooms = computed(() => rooms.value.length === 0)
+
+const handleRetryLoad = () => void load()
 
 const handleRemove = async (roomId: string) => {
   if (!roomId) return
@@ -100,6 +124,13 @@ void load()
 </script>
 
 <style scoped lang="scss">
+.space-rooms-pane__state {
+  padding: 16px 12px;
+  font-size: var(--tjg-font-size-xs);
+  color: var(--tjg-text-tertiary);
+  text-align: center;
+}
+
 .space-rooms-pane {
   display: flex;
   flex-direction: column;

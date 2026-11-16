@@ -59,6 +59,8 @@ import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import MobileAsyncState from '@/mobile/components/common/MobileAsyncState.vue'
 import ImagePreview from '@/mobile/components/ImagePreview.vue'
+import { scanLocalAlbum } from '@/mobile/services/localAlbumScanner'
+import { useUserStore } from '@/stores/domains/user/user'
 import { useFileStore } from '@/stores/domains/widget/file'
 import { useGlobalStore } from '@/stores/domains/widget/global'
 import { extractFileName } from '@/utils/Formatting'
@@ -70,6 +72,7 @@ const { t } = useI18n()
 const { showFeedback } = useActionFeedback()
 const fileStore = useFileStore()
 const globalStore = useGlobalStore()
+const userStore = useUserStore()
 
 const PAGE_SIZE = 40
 
@@ -125,7 +128,11 @@ const getAllImages = async () => {
   try {
     if (Object.keys(fileStore.roomFilesMap).length === 0) {
       if (globalStore.currentSessionRoomId) {
-        await fileStore.scanLocalFiles(globalStore.currentSessionRoomId)
+        // 扫描器只在移动端模块里（本页即移动端专属入口），store 不再判平台
+        await scanLocalAlbum(globalStore.currentSessionRoomId, {
+          getUserRoomDir: () => userStore.getUserRoomDir(),
+          addFile: (file) => fileStore.addFile(file)
+        })
       }
     }
 

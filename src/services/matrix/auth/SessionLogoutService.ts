@@ -82,6 +82,14 @@ export class SessionLogoutService {
 
       port.setting.closeAutoLogin()
       port.user.clearUser()
+      // 群/成员缓存（membersMap + groupInfoMap + 成员加载错误映射）必须随登出一起丢弃：
+      // 此前只有登录 bootstrap 会清 membersMap，登出到下次登录之间旧账号成员仍留在内存，
+      // 且 `memberLoadErrors` 两处都没清 ⇒ 换账号后进同一 roomId 会看到上个账号的失败横幅。
+      // 消息缓存（messageMap / messageOptions / 排序键 / 回复映射 / 未读计数 / 撤回态）
+      // 同样按账号作废：此前只在登录 bootstrap 删 localStorage 分片，登出后旧账号消息仍在内存。
+      port.chat.clearMessages()
+      port.group.clearMembersMap()
+      port.group.clearGroupDetails()
       port.global.updateCurrentSessionRoomId('')
       // 位置/信标状态是模块级单例（含到期定时器与后台上报链）：登出必须停止并清空，
       // 否则同一 webview 换账号后仍会为旧账号继续共享位置。

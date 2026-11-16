@@ -120,6 +120,8 @@ export interface SessionStorePort {
   chat: {
     getSessionList(refresh: boolean): Promise<void>
     getSessionListValue(): Array<{ roomId: string }>
+    /** 丢弃全部房间的消息缓存与会话级派生状态（登出 / 账号重置用） */
+    clearMessages(): void
   }
   group: {
     clearGroupDetails(): void

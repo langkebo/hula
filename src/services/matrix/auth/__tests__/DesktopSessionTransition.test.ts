@@ -75,7 +75,8 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): SessionRuntime
     },
     chat: {
       getSessionList: vi.fn().mockResolvedValue(undefined),
-      getSessionListValue: vi.fn().mockReturnValue([])
+      getSessionListValue: vi.fn().mockReturnValue([]),
+      clearMessages: vi.fn()
     },
     group: {
       clearGroupDetails: vi.fn(),

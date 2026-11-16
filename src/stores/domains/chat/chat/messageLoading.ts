@@ -21,10 +21,27 @@ interface MessageLoadingDeps {
   sessionStore: ReturnType<typeof useSessionStore>
 
   messageMap: Record<string, Record<string, MessageType>>
-  messageOptions: Record<string, { isLast: boolean; isLoading: boolean; cursor: string; hasLoadedOnce?: boolean }>
+  messageOptions: Record<
+    string,
+    {
+      isLast: boolean
+      isLoading: boolean
+      cursor: string
+      hasLoadedOnce?: boolean
+      loadFailed?: '' | 'history' | 'initial'
+    }
+  >
   replyMapping: Record<string, Record<string, string[]>>
 
-  currentMessageOptions: { value: { isLast: boolean; isLoading: boolean; cursor: string; hasLoadedOnce?: boolean } }
+  currentMessageOptions: {
+    value: {
+      isLast: boolean
+      isLoading: boolean
+      cursor: string
+      hasLoadedOnce?: boolean
+      loadFailed?: '' | 'history' | 'initial'
+    }
+  }
   currentReplyMap: { value: Record<string, string[]> }
   currentMsgReply: Ref<Partial<MessageType>>
 
@@ -102,7 +119,9 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         isLast: result.isLast,
         isLoading: false,
         cursor: result.cursor,
-        hasLoadedOnce: true
+        hasLoadedOnce: true,
+        // 成功即清空失败标记（service 只在「无任何可渲染事件」时抛错，走到这里说明拿到了内容）
+        loadFailed: ''
       }
       if (showLoadingBar) {
         finishLoading()
@@ -121,7 +140,16 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
         isLast: fallbackIsLast,
         isLoading: false,
         cursor: fallbackCursor,
-        hasLoadedOnce: true
+        hasLoadedOnce: true,
+        // cursor 非空=上拉翻页失败（游标已保留，可原地重试）；为空=首屏失败（UI 显示错误态）
+        loadFailed: cursor ? 'history' : 'initial'
+      }
+      // 翻页失败必须重新抛出：`useChatScrollManager.loadMore` 靠它置 `loadMoreError`，
+      // 才能渲染「加载历史消息失败 + 重试」。吞掉异常会让翻页失败静默成「没有更多」。
+      // 首屏失败**不抛**：调用方（changeRoom / 初始批量加载）依赖它自行收尾，
+      // 首屏的可见信号是 `loadFailed:'initial'`（UI 渲染错误态 + 重试）。
+      if (cursor) {
+        throw err
       }
     }
   }

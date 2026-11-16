@@ -190,7 +190,8 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
     },
     chat: {
       getSessionList: mocks.getSessionList,
-      getSessionListValue: mocks.getSessionListValue
+      getSessionListValue: mocks.getSessionListValue,
+      clearMessages: vi.fn()
     },
     group: {
       clearGroupDetails: mocks.clearGroupDetails,

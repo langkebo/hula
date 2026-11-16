@@ -343,6 +343,38 @@ describe('MatrixEventService', () => {
         fetchRoomThreads: vi.fn(() => Promise.resolve())
       }) as unknown as Room
 
+    it('翻页失败必须抛出（不能伪装成「没有更多」并清空游标）', async () => {
+      const events = Array.from({ length: 50 }, (_, i) => makeMessageEvent(`event-${i + 1}`))
+      const room = makeRoom(events)
+      vi.mocked(matrixRoomQueryService.getRoom).mockResolvedValue(room)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        supportsThreads: () => false,
+        paginateEventTimeline: vi.fn(async () => {
+          throw new Error('M_UNKNOWN: /messages 500')
+        })
+      } as never)
+
+      // 旧实现这里会 resolve 成 { messages: [], isLast: true, cursor: '' }，
+      // 上层据此认为「已到底」⇒ 无错误提示、游标被抹掉、再也翻不回历史。
+      await expect(matrixEventService.getPagedRoomMessages('!room:e', 20, 'cursor-old')).rejects.toThrow('M_UNKNOWN')
+    })
+
+    it('初始补齐失败但 live 窗口已有消息时不抛（先让用户看到，不整屏报错）', async () => {
+      const events = [makeMessageEvent('event-1')]
+      const room = makeRoom(events)
+      vi.mocked(matrixRoomQueryService.getRoom).mockResolvedValue(room)
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        supportsThreads: () => false,
+        paginateEventTimeline: vi.fn(async () => {
+          throw new Error('scrollback boom')
+        })
+      } as never)
+
+      const result = await matrixEventService.getPagedRoomMessages('!room:e', 50, '')
+      expect(result.messages).toHaveLength(1)
+      expect(result.cursor).toBe('event-1')
+    })
+
     it('初始加载返回整个 live 窗口；loadMore 用 /messages 反向分页取更早历史直到 isLast', async () => {
       let events = Array.from({ length: 50 }, (_, i) => makeMessageEvent(`event-${i + 1}`))
       const getEvents = vi.fn(() => events)

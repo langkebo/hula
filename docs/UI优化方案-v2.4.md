@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13）与不可机械清零的边界说明） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -1374,8 +1374,8 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 功能与状态：
 
 - [x] 每个 L2/L3 能力入口在界面上不存在，且「服务能力」面板能查到原因。 —— 证据：§12.4 的 48 条接线条目已全部关闭；2026-11-15 把此前「有实现、有测试、无挂载点」的 `ServiceCapabilityPanel` 接入 `DiagnosticsPanel.vue`（设置 → 帮助/诊断），列出 14 个能力位的三态、缺失 key（如 `org.matrix.msc4354`）与重试/设置入口；`useServiceCapabilityItems.test.ts` 5 例 + `ServiceCapabilityPanel.test.ts` 6 例全过（详见 §19.7）。
-- [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）；`partial` 于 2026-11-16 补齐统一件 `PartialStateBanner`（`role="status"` + `aria-live="polite"`、可重试、消费 `--tjg-*` token、10 例单测），第一批接入 `AdminServerLogs` / `AdminDashboard`（§19.10），第二批接入业务端 `FriendsSettings` / `StorageSettings`（§19.11），把「分组/好友申请读取失败」与「配额统计/告警/认证媒体读取失败」从伪空态改为显式 partial；第三批为 `AdminDashboard` 补页面级用例（§19.12），四态在 admin 三页已有自动化证据。空态已由 `check-ratchet` 的 `handwritten_empty_state` 锁定 0（详见 §19.8）。本条仍保持未勾选：房间成员、房间设置、消息列表等区块尚未逐个拆出局部失败信号，需逐页补数据来源后再勾选。
-- [ ] 所有写操作失败后保留用户输入，并给出可执行的重试路径。 —— 需运行态（断网 / 后端 4xx）逐流程验证，见 §19.3。
+- [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 2026-11-16 逐页核对结果：房间成员/房间设置（§19.14）、消息列表（§19.18）、**空间子房间列表（§19.21，本轮补 error/loading）** 已闭合；好友申请（§19.11 已带失败文案+重试）与房间内搜索（自身有 loading/error+retry/empty）已达标；**媒体库仍是占位实现**（硬编码假配额，无数据源，§19.21 边界 1）。仍不勾选的原因仅剩「媒体库文件列表本身未接数据源（非四态问题，见 §19.22 边界 1）」。原注：三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）；`partial` 于 2026-11-16 补齐统一件 `PartialStateBanner`（`role="status"` + `aria-live="polite"`、可重试、消费 `--tjg-*` token、10 例单测），第一批接入 `AdminServerLogs` / `AdminDashboard`（§19.10），第二批接入业务端 `FriendsSettings` / `StorageSettings`（§19.11），把「分组/好友申请读取失败」与「配额统计/告警/认证媒体读取失败」从伪空态改为显式 partial；第三批为 `AdminDashboard` 补页面级用例（§19.12），四态在 admin 三页已有自动化证据。空态已由 `check-ratchet` 的 `handwritten_empty_state` 锁定 0（详见 §19.8）。本条仍保持未勾选：房间成员、房间设置、消息列表等区块尚未逐个拆出局部失败信号，需逐页补数据来源后再勾选。
+- [ ] 所有写操作失败后保留用户输入，并给出可执行的重试路径。 —— **2026-11-16 已把「房间成员 / 房间设置」的 5 条写路径做成组件级判据**（邀请、踢人、名称+主题、别名、标签；断网与 4xx 在组件边界上等价于 facade reject），实测全部**已满足**且 4 条变异自证会红，见 §19.16。仍保持未勾选：管理端写操作（配额 / 公告 / 封禁）与移动端流程未覆盖，需运行态补齐。
 - [ ] 管理端每个新页面同时具备路由、菜单、空态、权限门控。 —— 空态与权限门控需连接后端账号才能实测，见 §19.3。
 
 可访问性：
@@ -2331,7 +2331,7 @@ AI / 趋势模块（仅桌面，R2 不影响移动端）：
 #### 已知边界
 
 1. 两个页面均属桌面设置窗口（`src/views/settingsWindow/`），移动端设置页不在本轮范围；R2 不受影响。
-2. 仅在**读取**路径引入 partial；写操作失败仍由既有 toast/`showFeedback` 承担，A2（写失败保留输入）仍需运行态验证。
+2. 仅在**读取**路径引入 partial；写操作失败仍由既有 toast/`showFeedback` 承担，A2（写失败保留输入）在业务端已由 §19.16 覆盖、管理端仍待运行态验证。
 3. 房间成员、房间设置、消息列表等区块的失败仍并入整页 error 或静默降级，四态条目继续保持未勾选。
 
 ### 19.12 AdminDashboard 页面级用例（2026-11-16）
@@ -2374,9 +2374,9 @@ AI / 趋势模块（仅桌面，R2 不影响移动端）：
 
 #### 已知边界
 
-1. 用例只覆盖读取路径与 partial 计数，不涉及管理端写操作（配额、公告等）的失败保留输入，A2 仍需运行态验证。
+1. 用例只覆盖读取路径与 partial 计数，不涉及管理端写操作（配额、公告等）的失败保留输入；房间侧同类判据见 §19.16，管理端 A2 仍需运行态验证。
 2. 移动端不接：admin 在移动端按规定不产出（R2）。
-3. 其余 admin 页面（用户、房间、举报等）仍无页面级四态用例，需按同一 mock 工厂模式逐页补。
+3. 其余 admin 页面（用户、房间、举报等）仍无页面级四态用例，需按同一 mock 工厂模式逐页补。 —— **2026-11-16 已补**：`AdminUsers` / `AdminRooms` 新增页面级用例，`ModerationPanel` 补 loading / 空列表两态，累计 27 例；补测中发现并修掉「房间页 `getRoomStats` 未走 `isAdmin` 门控」，详见 §19.15。其余 admin 页（配额、公告、举报事件之外的分页）仍按同一模式逐页补。
 
 ### 19.13 isMobile() 内联分支收敛（2026-11-16，P0-4）
 
@@ -2426,9 +2426,563 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 
 #### 已知边界
 
-1. 剩余 13 处不做机械清零，需按「双端实现拆分」单独立项；建议顺序：`widget/file` → `contextMenuHelpers` → `useFooterEmoji` / `useChatMain` 组件变体 → RTC 路由分流。
+1. 剩余 13 处（2026-11-16 复核：真实调用点 12 + 注释 1）不做机械清零，需按「双端实现拆分」单独立项；建议顺序：~~`widget/file`~~（已下沉，见 §19.23）→ ~~`contextMenuHelpers`~~（平台判定上移边界，见 §19.24）→ ~~`useVideoViewer`~~（死守卫删除，见 §19.25）→ `useFooterEmoji` / `useChatMain` 组件变体 → RTC 路由分流。
 2. 本轮只统一基目录决策点，未改变任何目录布局；移动端仍只有 AppData 可写。
 3. 不涉及 §13.11 四态条目与 §19.8 空态计数，`handwritten_empty_state` 仍为 0。
+
+---
+
+### 19.14 房间成员 / 房间设置局部失败信号接入（2026-11-16，P0-5）
+
+#### 缺口
+
+§13.11 记的四态缺口里，「房间成员」与「房间设置」只有 loading / empty / list 三态：`loadRoomMembers` 失败被 swallow 成 `[]`，UI 把「加载失败」渲染成「暂无成员」；`BasicTab.loadRoomDetail` 失败只弹 toast，表单保持空白。二者都把失败伪装成合法空态。
+
+#### 失败信号建模（沿用 P0-1 / P0-2 的 partial 口径）
+
+不新增平行加载器，在既有 `createGroupMembers` 内加一张按房间的错误映射：
+
+| 位置 | 改动 |
+| :--- | :--- |
+| `src/stores/domains/chat/group/members.ts` | 新增 `memberLoadErrors: shallowReactive<Record<string, string>>`；`fetchRoomMembers` 成功 `delete`、失败写入 `err.message`；新增 `getMembersLoadError(roomId)` 并在模块 return 暴露（`index.ts` 以 `...members` 展开，全局可用） |
+| `src/components/room/settings-tabs/MembersTab.vue` | 空态条件改为 `isEmptyMembers && !membersError`；`<template v-else>` 内插入 `PartialStateBanner`（`data-testid="members-partial"`，retry 复用 `loadMembers` 强制刷新）；有缓存成员时横幅与列表并存 |
+| `src/components/room/RoomDetailMembers.vue` | 新增 `error?: string` prop 与 `retry` emit；横幅 `data-testid="room-detail-members-partial"`，空态加 `!error` 条件，列表改 `v-else-if="!isEmptyMembers"` |
+| `src/components/room/RoomDetailDrawer.vue` | 成员读取由同步 `getMembersByRoomId`（try/catch 捕不到异常，且从不触发加载）改为 `loadRoomMembers`；新增 `membersError` computed 与 `retryMembers`（强制刷新，成功后 store 清空错误） |
+| `src/components/room/settings-tabs/BasicTab.vue` | 新增 `loadError` ref，`loadRoomDetail` 开头清空、catch 写入；表单上方插入 `PartialStateBanner`（`data-testid="basic-partial"`，retry 调 `loadRoomDetail`） |
+| i18n | 新增 `room.detail.members_load_failed`（zh-CN「成员列表加载失败」/ en「Failed to load members」），并重新生成 `src/typings/i18n/room.d.ts` |
+
+失败态与空态严格互斥：只有「零成员且无错误」才渲染 `EmptyState`；错误态下即使有缓存成员也继续渲染列表，符合 partial（主内容可用、局部缺失）语义。
+
+#### 用例
+
+| 文件 | 新增用例 |
+| :--- | :--- |
+| `src/components/room/__tests__/RoomDetailMembers.test.ts` | 失败时展示横幅且不渲染 empty；有缓存成员时横幅与列表并存；点击 `partial-retry` 触发 `retry` |
+| `src/stores/domains/chat/group/__tests__/members.test.ts` | 加载失败写入错误信号，成功加载后清空 |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 全量单测 | `pnpm test:run` | **`1045 passed (1045)` 文件 / `11611 passed (11611)` 用例，exit 0，150.10s**（2026-11-16 复跑两次：另一轮 155.59s，文件/用例计数完全一致）。两点如实记录：① 每轮收尾都会打印 `close timed out after 10000ms` + `something prevents the main process from exiting`（Vitest 强制关闭残留 handle，**退出码仍为 0**，非失败）；② 过程中有 `[MatrixFriendOperations] 发送好友请求失败: TypeError: fetch failed`（`ETIMEDOUT 128.121.243.76:443`）的 ERROR 日志 —— 来自错误分支用例的真实网络尝试，该文件用例仍全过 |
+| Lint + i18n | `pnpm check` | 通过：i18n 完整性 OK、refs 未解析 0、设计令牌 224 个 100%、icon/svg aria 全通过、dead-handlers 无空处理器、7 个 capability 一致 |
+| 硬编码 / 分支 ratchet | `pnpm check:ratchet` | 12 项全部等于基线（`hardcoded_color: 0`、`is_mobile_branch: 13`） |
+| 文档路径 / 覆盖 | `pnpm check:doc-paths`、`pnpm check:doc-coverage` | 路径全部存在；573（基线 587，无回归，14 个方法新增注释） |
+| 移动端 CSS | `pnpm check:mobile-css` | 165 文件 OK |
+| SDK 边界 / 裸请求 / 类型补充 | `pnpm check:sdk-boundary`、`pnpm quality:no-raw-fetch`、`pnpm check:sdk-types` | 156/156 无回归；裸请求全在白名单；enum drift none |
+
+#### 已知边界
+
+1. 消息列表（§13.11 剩余项）局部失败信号未在本轮处理，需单独评估历史分页与实时帧的失败边界。
+2. `MembersTab` / `BasicTab` 没有独立组件测试，仅被 `RoomSettingsDrawer.test.ts` 以 stub 覆盖；本轮用例落在 `RoomDetailMembers` 与 group store。
+3. 错误映射随 `membersMap` 生命周期存续（`cleanupSession` 仍不清空），切账号后旧房间错误会保留到下次成功加载。 —— **2026-11-16 已修**：`cleanupSession()` 与 `clearAllData()` 均改为调用统一的 `clearMembersLoadErrors()`；并补 3 条判据（含 `clearAllData` 的 lifecycle 用例）。⚠️ 顺带确认 `clearAllData()` **此前无任何调用方**，登出链路是否接线仍待决策，详见 §19.17。
+
+---
+
+### 19.15 用户 / 房间 / 举报页四态用例（2026-11-16，收口 §19.12 已知边界 3）
+
+#### 缺口
+
+§19.12 只给 `AdminDashboard` 建了页面级用例，其余 admin 页仍是「有 composable 单测、无页面用例」。页面用例锁的是 composable 单测看不到的三件事：**`isAdmin` 门控是否真的挡住请求**、**`loadError` 是否真的被渲染成可重试提示**、**失败时会不会把空列表伪装成成功**。
+
+#### 用例设计（沿用 §19.12 的 mock 工厂口径）
+
+只 mock 外部边界（admin service / store / 反馈 / 错误处理 / i18n / 图标 / naive-ui / 子组件），页面自身与 `useAdminUsers`、`useAdminRooms` 走真实代码。
+
+| 页面 | 用例 | 断言要点 |
+| :--- | :--- | :--- |
+| `AdminUsers`（5 例） | 非管理员 / 加载中 / 成功 / 失败重试 / `failed=true` | 非管理员 0 请求且无提示；`AdminTable` 的 `loading` true→false；成功渲染 2 行；失败出现 `common.load_failed` + 重试按钮，点击后 `getUsers` 恰好 2 次且提示消失；`failed=true` 时**保留已取到的行**并标错 |
+| `AdminRooms`（5 例） | 同上 | 额外断言挂载时**两个请求**（`getRooms` + `getRoomStats`）都受门控；失败重试只重读列表 |
+| `ModerationPanel`（补 2 例，原 17 例） | 加载中 / 空列表 | 数据表 `loading` 跟随 store 的 `loading` ref；空列表 0 行、统计为 0、且**不得**落入 `loadFailed` 反馈（错误态已有原用例覆盖） |
+
+#### 补测中发现并修复的缺陷
+
+**`AdminRooms` 的 `/rooms/stats` 未走 `isAdmin` 门控**：`onMounted` 直接调 `admin.loadServerRoomStats()`，非管理员会话仍会打 `adminService.getRoomStats`（实测 `getRoomStats` 被调用 1 次），与 `AdminUsers` 的门控口径不一致 —— 白跑一次必然 403 的请求，且把「权限失败」噪音写进日志。修法：新增页面级 `loadServerRoomStats()` 包装，先 `if (!adminStore.isAdmin) return`，并在失败时走 `handleAdminError` + `showFeedback`（与列表一致）。
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/views/admin/__tests__/AdminUsers.test.ts` | 新增：5 例页面级四态用例 |
+| `src/views/admin/__tests__/AdminRooms.test.ts` | 新增：5 例（含「两个请求都受门控」） |
+| `src/views/admin/__tests__/ModerationPanel.test.ts` | 补 2 例（加载中 / 空列表）；`DataTable` 桩暴露 `data-loading` / `data-count`；store 桩的 `loading` 改真 `ref`（普通对象会被 `storeToRefs` 跳过 ⇒ 断言变 undefined 假绿） |
+| `src/views/admin/AdminRooms.vue` | 修复：`loadServerRoomStats()` 加 `isAdmin` 门控 + 失败反馈 |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 页面用例 | `pnpm vitest run src/views/admin/__tests__/{AdminUsers,AdminRooms,ModerationPanel}.test.ts` | **3 文件 / 27 用例通过**（5 + 5 + 17） |
+| 变异自证 | 逐条构造真实缺陷 | 4 条全部变红并还原：① 去掉 `AdminUsers` 门控 → 非管理员用例 FAIL；② 去掉 `AdminRooms` 统计门控 → 同用例 FAIL（即本轮修的缺陷）；③ `ModerationPanel` 把 `:loading` 写死 `false` → 加载态 FAIL；④ `useAdminUsers` 把 `Boolean(result.failed)` 改 `false` → `failed=true` 用例 FAIL |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| Lint / 格式 | `biome check`（4 文件） | 0 诊断（首次 2 处格式问题已 `--write` 修正） |
+| 文档门禁 | `pnpm check:doc-paths`、`pnpm check:doc-coverage` | 路径全部存在；无回归 |
+| 文件体量 | `pnpm check:file-size` | ⚠️ 本轮新增文件均在限内；但 `src/components/workbench/TjgSpaceTree.vue` 报 **414 > 基线 413** —— 该文件属既有漂移（HEAD `742bc5c71` 已如此、工作区未改动），不由本轮引入，需单独收口 |
+
+#### 已知边界
+
+1. 三页都是**单资源列表页**，没有 `PartialStateBanner`（partial 的语义是「一页多子资源、部分成功」）；此处的「四态」是 loading / empty / error / 成功，与 §19.10 的多资源 partial 不是同一件事，不应混算。
+2. 只覆盖读取路径；管理端写操作（配额、公告、封禁）的失败保留输入仍属 A2，需运行态验证。
+3. 分页（`loadMoreUsers` / `loadMoreRooms`）与搜索态未单独立用例，仍由 composable 单测覆盖。
+4. 移动端不接（admin 按 R2 在移动端不产出）。
+
+---
+
+### 19.16 房间成员 / 房间设置的写失败保留输入（2026-11-16，收口 §13.11 条目 2）
+
+#### 缺口
+
+§13.11 条目 2「所有写操作失败后保留用户输入 + 可执行的重试路径」长期标「需运行态验证」；§19.11 / §19.12 的已知边界也把它挂在那里。这条一直没人做的原因是「要真断网或真 4xx」——但在**组件边界上，断网与 4xx 是同一件事：facade 调用 reject**，因此可以用注入 reject 的方式在单测里等价覆盖，不必等运行态。
+
+#### 判据设计
+
+对每个写操作注入一次 `Promise.reject`，断言三件只有 UI 层才能保证的事：
+
+1. 输入框文本**不被清空**（清空只发生在 `await` 成功之后）；
+2. 反馈是**失败**文案，不得误报成功；
+3. 按钮回到可点状态 ⇒ **同一按钮再点一次即可重试**（不需要额外入口），且重试确实再次调用 facade。
+
+| 写路径 | 组件 | 输入载体 | 断言要点 |
+| :--- | :--- | :--- | :--- |
+| 邀请成员 | `settings-tabs/MembersTab.vue` | `inviteInput` | 失败后输入仍是 `@alice:hs`；报 `invite_failed`；再点一次 → facade 调用 **2 次**，成功后输入才清空 |
+| 踢出成员 | 同上（`n-popconfirm`） | 无自由输入 | 失败只报 `kick_failed`，**不得**出现 `kick_success` |
+| 房间名称 + 主题 | `settings-tabs/BasicTab.vue` | `roomName` / `roomTopic` | 失败后两个输入框内容都在；保存按钮 `disabled=false`；重试后 `setRoomName` 2 次并报 `saved_success` |
+| 添加别名 | `settings-tabs/AliasTab.vue` | `newAlias` | 失败后输入保留；重试 → `setRoomAlias` 2 次 |
+| 添加标签 | `settings-tabs/TagsTab.vue` | `inputValue` | `addTag` 返回 `false` 时**不清空**；返回 `true` 才清空 |
+
+**结论：这 5 条写路径本身已是正确实现**（清空动作全部写在 `await` 成功之后，`TagsTab` 还额外用 `if (ok)` 守卫）。本轮没有改业务代码，只把「已验证」从口头变成可回归的判据。
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/components/room/settings-tabs/__tests__/writeFailureInput.test.ts` | 新增：5 例写失败判据（4 个 tab，含 popconfirm 与 textarea 两条分支） |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 判据用例 | `pnpm vitest run src/components/room/settings-tabs/__tests__/writeFailureInput.test.ts` | **1 文件 / 5 用例通过** |
+| 变异自证 | 把「失败也清空 / 失败回填」注入回去 | 4 条全部变红并还原：① `MembersTab` 在 catch 里清空邀请输入 → 邀请用例 FAIL；② `BasicTab` 在 catch 里用 store 值回填 → 保存用例 FAIL；③ `AliasTab` 在 catch 里清空别名输入 → 别名用例 FAIL；④ `TagsTab` 去掉 `if (ok)` 无条件清空 → 标签用例 FAIL |
+| 格式 | `biome check`（12 文件） | 0 诊断 |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+
+#### 已知边界
+
+1. 只覆盖**带自由输入**的写路径。开关型写操作（权限、加密开关、保留策略、成员角色）没有「待保留的输入」，其失败语义是「状态不要被乐观改掉」，属另一类判据，未在本轮。
+2. 管理端写操作（配额、公告、封禁）与移动端对应入口仍未覆盖，条目 2 因此**保持未勾选**。
+3. 头像上传走「先传媒体再设 mxc」两段，失败点与重试语义不同（需保留裁剪结果），未纳入。
+4. 断网在组件级等价于 reject；真实网络的超时/重试策略（HTTP 层）不在本判据范围。
+
+---
+
+### 19.17 成员加载错误映射的生命周期（2026-11-16，收口 §19.14 边界 3）
+
+#### 缺陷
+
+`memberLoadErrors` 是按 `roomId` 累积的「最近一次成员加载失败原因」，供 UI 区分「空房间」与「加载失败」。但它**从不被清理**：
+
+- `cleanupSession()`（`ChatSidebar` 卸载时调用）只重置分页状态（`cursor` / `isLast` / `loading`），不动错误映射；
+- `clearAllData()` 清 `membersMap` 与 `groupInfoMap`，同样不动错误映射。
+
+后果是**幽灵 partial**：某个房间上次加载失败后，用户切走再回来，`getMembersLoadError(roomId)` 仍返回旧错误 ⇒ 成员面板挂着「局部失败」横幅，直到有一次成功加载把它 `delete` 掉。换会话切得勤时几乎必现。
+
+#### 修复
+
+| 落点 | 改动 |
+| :--- | :--- |
+| `stores/domains/chat/group/members.ts` | 新增 `clearMembersLoadErrors()`（唯一实现点）；`cleanupSession()` 改为调用它 |
+| `stores/domains/chat/group/lifecycle.ts` | `clearAllData()` 追加 `clearMembersLoadErrors()`；ctx 类型补该依赖 |
+| `stores/domains/chat/group/index.ts` | 把 `members.clearMembersLoadErrors` 接进 `createGroupLifecycle` 的 ctx |
+
+> ⚠️ 实现时必须避免写成「`clearMembersLoadErrors` 内部再调自己」——本轮第一次改就踩到这个，靠用例直接暴露（递归会栈溢出，但若没有用例，只有真进房间才崩）。
+
+#### 顺带发现（未修，需决策）
+
+`clearAllData()` **全仓没有任何调用方**（`grep` 只命中定义与导出）。也就是说「登出 / 换账号清理 group store」这条路径当时根本不存在 —— 换账号后 `membersMap` 里的旧成员仍会被读到。 —— **2026-11-16 已接线**：`SessionLogoutService.resetLocalSessionState()` 调用 `port.group.clearMembersMap()`，而该 port 实现改为 `groupStore().clearAllData()`，登出即清三套状态，详见 §19.19。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 判据 | `pnpm vitest run src/stores/domains/chat/group/__tests__/` | **2 文件 / 22 用例通过**（members 21 + lifecycle 1） |
+| 变异自证 | 逐条构造 | 3 条全部变红并还原：① `cleanupSession` 不调清理 → 用例 FAIL；② `clearMembersLoadErrors` 改空实现 → 用例 FAIL；③ `clearAllData` 去掉调用 → lifecycle 用例 FAIL |
+| 格式 / 类型 | `biome check`（5 文件）、`pnpm vue-tsc --noEmit` | 0 诊断 / exit 0 |
+| 棘轮 | `pnpm check:ratchet` | `is_mobile_branch 13`（基线 13）、`handwritten_empty_state 0` |
+
+#### 已知边界
+
+1. **消息列表**（§13.11 条目 1 最后一块）当时无局部失败信号 —— **2026-11-16 已补**：翻页失败改为抛出并复用既有 `ChatLoadMoreIndicator` 的重试分支；首屏失败在列表内渲染 `ErrorState` + 重试；实时帧失败仍由 `ConnectionStatusBanner` 承接（明确分工，不新造第二套信号）。详见 §19.18。
+2. ~~换账号清理需先给 `clearAllData()` 接线~~ —— 2026-11-16 已接（§19.19）。
+3. 错误映射只存最近一条字符串，不含错误码/时间；如需分级展示（网络 vs 权限）需扩成结构体。
+
+---
+
+### 19.18 消息列表的局部失败信号（2026-11-16，收口 §13.11 条目 1 最后一块）
+
+#### 两个缺陷（都不是「没做 UI」，而是信号被上游吞掉）
+
+| # | 缺陷 | 证据 |
+| :--- | :--- | :--- |
+| A1 | **翻页失败被伪装成「到底了」**：`getPagedRoomMessages` 的 cursor 分支 catch 里 `return { messages: [], isLast: true, cursor: '' }` | 上层收到的是「正常返回且已无更多」⇒ 既不报错，又把游标抹掉；用户只看到「没有更多」，且再也翻不回那段历史 |
+| A2 | 因此 `useChatScrollManager.loadMoreError` **永不置位**，`ChatLoadMoreIndicator` 的「加载历史消息失败 + 重试」分支是**死 UI**（组件早就在 `ChatMain` 里挂着，只是从没被点亮） | `loadMore()` 只在 `onLoadMore()` 抛错时置位，而 store 把异常吞了 |
+| B | **首屏失败渲染成「暂无消息」**：失败后 `hasLoadedOnce=true` + 列表为空 ⇒ `EmptyState`「暂无消息」；只有一闪而过的 toast | `ChatMessageList` 原先只用 `chatMessageList.length === 0` 判断空态，不区分「真空」与「没加载到」 |
+
+#### 修复（三层，各自只做一件事）
+
+| 层 | 改动 |
+| :--- | :--- |
+| service（`MatrixEventService`） | 翻页失败 **throw**（不再伪造 `isLast:true`/清空游标）；初始补齐失败**仅当「无任何事件可渲染」时 throw**，live 窗口已有消息则保留（避免一次抖动整屏报错） |
+| store（`messageLoading`） | 新增 `loadFailed: '' \| 'history' \| 'initial'`；**翻页失败重抛**（喂给滚动管理器置 `loadMoreError`），**首屏失败不重抛**（`changeRoom` / 批量加载依赖自行收尾，可见信号走 `loadFailed`） |
+| UI（`ChatMessageList`） | 空列表 + `loadFailed==='initial'` ⇒ `ErrorState`（`network-error` 插图 + `retry` → `resetAndRefreshCurrentRoomMessages()`）；`EmptyState` 加 `!initialLoadFailed` 排除 |
+
+**实时帧失败不新造信号**：`ConnectionStatusBanner` 已承接 `syncing` / `reconnecting` / `error`（来自滑动同步状态）。本轮只是把分工写清：**帧级/连接级 → 连接横幅；首屏与翻页 → 列表内局部信号**，避免以后重复造第二套。
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/services/matrix/MatrixEventService.ts` | 翻页失败 throw；初始补齐失败按「有无可渲染事件」决定是否 throw |
+| `src/stores/domains/chat/chat/message.ts` | `MessageListOptions` 增 `loadFailed` |
+| `src/stores/domains/chat/chat/messageLoading.ts` | 写入 `loadFailed`；翻页失败条件重抛 |
+| `src/components/rightBox/chatBox/ChatMessageList.vue` | 首屏失败 → `ErrorState` + 重试；空态排除失败分支 |
+| `locales/{zh-CN,en}/home.json` + `src/typings/i18n/*` | 新增 `home.chat_main.load_failed_desc`（中英同步，类型重新生成） |
+| 测试 | `MatrixEventService.test.ts` +2、`chat/__tests__/message.test.ts` +2（并改写 1 条既有用例的契约）、`ChatMessageList.test.ts` +2 |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 相关单测 | `pnpm vitest run MatrixEventService.test.ts chat/__tests__/ ChatMessageList.test.ts ChatMain.test.ts` | **6 文件 / 121 用例通过**（service 25、chat store 44、列表 9） |
+| 变异自证 | 逐条注入 | 4 条全部变红并还原：① service 改回「静默到底」→ 翻页抛出用例 FAIL；② store 不写 `loadFailed` → 首屏失败用例 FAIL；③ store 翻页不重抛 → 游标/失败标记用例 FAIL；④ UI 去掉错误态分支 → 列表错误态用例 FAIL |
+| i18n | `check-i18n`、`check-i18n-refs` | 中英一致（passed）；未解析 0 / fallback 0 |
+| 体量 | `check:file-size` | 本轮两处**必须压回基线**：`MatrixEventService.ts` 一度 495（+10）、`chat/message.ts` 一度 423（+10），最终 `484` / `412`（脚本计数 485 / 413 = 基线）；未用 `--update` 抬基线 |
+| 格式 / 类型 | `biome check`（4 文件）、`pnpm vue-tsc --noEmit` | 0 诊断 / exit 0 |
+
+#### 已知边界
+
+1. 初始补齐在「已有 live 窗口事件」时仍只记日志、不显示失败（有内容可看 ⇒ 不算假空态）；这类房间的「只显示最近几条」用户无感知。
+2. 实时帧失败复用连接横幅，粒度是**连接状态**，不区分「拉取失败 / 解码失败 / 单房间帧丢失」。
+3. `loadFailed` 是字符串枚举，不含错误码与时间，无法按「网络 / 权限 / 服务端」分级展示。
+4. 只覆盖首屏与用户主动上翻；跳转定位（`useMessageJump`）里的连续翻页失败仍走它自己的 toast 分支。
+
+---
+
+### 19.19 把 `clearAllData()` 接进登出链路（2026-11-16）
+
+#### 缺陷（比 §19.17 记的还严重一层）
+
+登出链路**完全没有 group store 的清理**：
+
+| 环节 | 原来做什么 | 漏什么 |
+| :--- | :--- | :--- |
+| `SessionLogoutService.resetLocalSessionState()` | 回收 invite policy / DND 镜像 / 私密聊天解锁态 / 未读账本 / 位置状态，清 `user`、`global`、`setting` | **一个字都没提 group store** |
+| `SessionBootstrapService`（登录时） | `clearMessageCache()` → `port.group.clearMembersMap()` + `clearGroupDetails()` | 只清 `membersMap`（+`groupDetails` 数组），不清 `groupInfoMap`、不清 `memberLoadErrors` |
+| `store.clearAllData()` | 能清三套状态 | **无任何调用方**（死代码） |
+
+叠加后果：
+1. **登出 → 登录另一个账号**：bootstrap 清掉成员与群详情，但 `memberLoadErrors`（按 roomId 累积）留着 ⇒ 新账号进同一 roomId 会看到上一个账号的失败横幅（幽灵 partial）。
+2. **登出后停在登录页**：`membersMap` / `groupInfoMap` 仍在内存里，旧账号成员数据没有随会话一起丢弃。
+
+#### 修复（复用既有 port 契约，不新增字段）
+
+| 落点 | 改动 |
+| :--- | :--- |
+| `SessionOrchestrator`（port 实现） | `clearMembersMap()` 由「手删 `membersMap`」改为 `groupStore().clearAllData()` —— 一次清掉 `membersMap` + `groupInfoMap` + `memberLoadErrors`。方法名沿用 port 契约（避免改 6 个测试夹具），注释写明「名字保留、行为是 group store 全量清理」 |
+| `SessionLogoutService.resetLocalSessionState()` | 新增 `port.group.clearMembersMap()` + `port.group.clearGroupDetails()`，位置紧跟 `port.user.clearUser()` 之前，与其它「按账号回收」的缓存同批 |
+
+**为什么放这里**：`resetLocalSessionState()` 是「显式登出 / 账号重置」的唯一收口，既有 invite policy、DND 镜像、私密聊天解锁态、未读账本都在此回收；桌面（`useUserMenu` / `LeftAvatar`）与移动端（`useMobileLogout` → `useSessionActions().logoutCurrentSession()`）都汇到这条路径，一处即全覆盖。
+
+**对登录流程的影响**：bootstrap 里的 `clearMessageCache()` 现在等价于全量清理，紧随其后的 `clearGroupDetails()` 变成幂等操作 —— 无语义变化，只是清得更干净。
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/services/matrix/auth/SessionOrchestrator.ts` | port `clearMembersMap()` → `groupStore().clearAllData()` |
+| `src/services/matrix/auth/SessionLogoutService.ts` | 登出重置阶段清 group store（两处 port 调用） |
+| `__tests__/SessionLogoutService.test.ts` | +1 例：登出必须清群缓存（两处 port 均被调用 1 次） |
+| `__tests__/SessionOrchestrator.test.ts` | +1 例：`clearMembersMap()` 走 `clearAllData()`（不再手删成员） |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| auth 域回归 | `pnpm vitest run src/services/matrix/auth/__tests__/ src/mobile/views/my/__tests__/logoutClearsSession.test.ts` | **24 文件 / 342 用例通过** |
+| 变异自证 | 逐条注入 | 2 条全部变红并还原：① 去掉登出里的两处 port 调用 → 登出用例 FAIL；② port 实现改回手删 `membersMap` → port 层用例 FAIL |
+| 格式 / 类型 | `biome check`（4 文件）、`pnpm vue-tsc --noEmit` | 0 诊断 / exit 0 |
+| 体量 | `check:file-size` | `SessionOrchestrator.ts` 217 行、`SessionLogoutService.ts` 182 行，均未触发超体量约束 |
+
+#### 已知边界
+
+1. **chat store 当时仍未在登出清理** —— **2026-11-16 已补**：新增 `chat.clearMessages()` port（实现走 store 的 `clearAllMessages()`），在 `resetLocalSessionState()` 里与群缓存同批调用，一次清掉消息表 / 排序键 / 分页选项 / 回复映射 / 未读计数 / 撤回态。详见 §19.20。
+2. port 方法名 `clearMembersMap` 与实际行为（全量清理）不符，属历史命名的妥协；要改名需同步 6 个测试夹具与 2 处调用点，留待后续统一。
+3. 本轮只覆盖「登出 / 账号重置」路径；「同一账号切换到另一个 homeserver」这类场景未单独验证。
+
+---
+
+### 19.20 消息缓存也随登出丢弃（2026-11-16，收口 §19.19 边界 1）
+
+#### 缺陷
+
+§19.19 只把 **group store** 接进了登出，**chat store（消息）仍在内存里**：
+
+- `resetLocalSessionState()` 里没有任何消息清除调用；
+- 真正清消息的是登录 bootstrap 的 `clearUserLocalStorage()`（删 localStorage 的 `chat` 分片）与 `port.room.resetState()`（只清房间列表，不碰消息）；
+- 于是「登出 → 停在登录页」这段窗口内，`messageMap` / `messageOptions` / `replyMapping` / 未读计数 / 撤回态全部还在内存。
+
+影响不是「看起来脏」而是三条实际后果：未读角标会在换账号后带着旧计数、回复映射仍指向别人账号的消息 id、撤回态（含到期定时器）会继续为旧会话计时。
+
+#### 修复
+
+| 落点 | 改动 |
+| :--- | :--- |
+| **新模块** `chat/messageSessionReset.ts` | `createMessageSessionReset(deps).clearAllMessages()`：跨房间一次清 **六套** 状态（消息表 / 排序键 / 分页选项 / 回复映射 / 未读计数 / 撤回态），并复用 `recallMgr.clearAllExpirationTimers()` 清定时器 |
+| `chat/messageMutations.ts` | 聚合入口 `...createMessageSessionReset(deps)`（与既有 cache/insert/recall 三组平级） |
+| `chat/message.ts` | 解构 + 导出 `clearAllMessages`（store 对外 API） |
+| `sessionRuntimeInternal.ts` | `chat` port 增 `clearMessages(): void` |
+| `SessionOrchestrator` | 实现 `clearMessages()` → `chatStore().clearAllMessages()`（单一实现点） |
+| `SessionLogoutService.resetLocalSessionState()` | 调 `port.chat.clearMessages()`（紧跟群缓存清理） |
+| 6 个 auth 测试夹具 | `chat` 块补 `clearMessages: vi.fn()`（该 port 成员是必需的，漏了会直接 TypeError） |
+
+**为什么单开模块而不是塞进 `message.ts`**：`message.ts` 已在「超体量、不许再涨」名单里（基线 413）。实现放新模块、聚合入口靠既有 `createMessageMutations(deps)` 展开，`message.ts` 只需两行（解构 + 导出）——本轮还顺带压掉两行冗余注释，最终 **412 行**（脚本计数 413 = 基线）。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 判据 | `pnpm vitest run src/stores/domains/chat/chat/__tests__/messageSessionReset.test.ts` | **3 用例通过**（六套状态全清 / 重复调用幂等 / 空 store 不报错） |
+| 相关回归 | `pnpm vitest run src/stores/domains/chat/ src/services/matrix/auth/__tests__/` | **45 文件 / 674 用例通过** |
+| 变异自证 | 逐条注入 | 3 条全部变红并还原：① 去掉登出里的 `port.chat.clearMessages()` → 登出用例 FAIL；② 模块漏清 `newMsgCount` → 模块用例 FAIL；③ port 实现不调 store → port 层用例 FAIL |
+| 格式 / 类型 | `biome check`（7 文件）、`pnpm vue-tsc --noEmit` | 0 诊断 / exit 0 |
+| 体量 | `check:file-size` | `message.ts` 412（基线内）、新模块 37 行；未用 `--update` 抬基线 |
+
+#### 已知边界
+
+1. `clearAllMessages()` 丢弃**内存**状态；`localStorage` 的 `chat` 分片仍由登录 bootstrap 的 `clearUserLocalStorage()` 负责删除（登出不删，避免影响同机多窗口恢复态）。
+2. 进行中的上传任务（`FileUploadProgress`）不在清理范围：它们挂在组件生命周期上，登出时随窗口卸载。
+3. 未读计数清空后，若服务端 unread 与本地不一致，仍以服务端 `sliding sync` 回填为准（与本轮无关的既有机制）。
+
+---
+
+### 19.21 其余业务区块四态核对（2026-11-16，收口 §13.11 条目 1 尾巴）
+
+#### 逐页核对结果
+
+| 区块 | 核对结论 |
+| :--- | :--- |
+| **好友申请**（`ApplyList.vue`） | ✅ 已达标：`EmptyState` 有 `#actions` 插槽，`showLoadError` 为真时把「暂无好友申请」换成失败文案并出「重试」（`handleRetryLoad → contactStore.loadFriendRequests()`），§19.11 第二批就做过 |
+| **房间内搜索**（`ChatRoomSearch.vue`） | ✅ 已达标：`loading`（`role=status`）→ `error`（`role=alert` + 重试按钮）→ `EmptyState` 三态齐全 |
+| **空间子房间列表**（`SpaceRoomsPane.vue`） | ❌ **假空态**（本轮修）：`useSpaceRooms` 早就暴露 `error`，面板却只判 `rooms.length === 0` ⇒ 加载失败显示「暂无可展示的子房间」 |
+| **媒体库**（`ChatSidebarFiles.vue`） | ⚠️ **是占位实现，不是缺状态**：43 行，配额写死 `'1.2 GB / 5.0 GB'`、进度条 `:percentage="24"`、内容区永远 `n-empty`，**没有任何数据源** |
+
+#### 本轮修复：空间子房间列表
+
+`SpaceRoomsPane` 增加三态并按优先级互斥（模板 `v-if` / `v-else-if` 链，**顺序即优先级：加载中 → 失败 → 空**），三者都只在列表为空时成立 —— 已有数据时刷新失败不遮住旧列表：
+
+| 状态 | 渲染 |
+| :--- | :--- |
+| 加载中 | `data-test="space-rooms-loading"` + `role="status"` + `aria-live="polite"` |
+| 失败 | `ErrorState`（`network-error` 插图、标题 `space.load_failed`、重试 → `load()`） |
+| 空 | 原 `EmptyState`（`space.detail_space_rooms_empty`） |
+
+过程中发现一处**冗余**：我最初给 `isEmptyRooms` 加了 `&& !isLoading && !hasLoadError`，但那三个分支本来就是 if/else-if 链、互斥已由顺序保证 —— 变异体（把多余条件删掉）测不出差异 ⇒ 已回退为 `rooms.length === 0`，互斥改由注释说明。**等价变异体是「判据太弱」的信号，但也可能是「代码太绕」的信号**，这次是后者。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 面板用例 | `pnpm vitest run src/components/workbench/__tests__/SpaceRoomsPane.test.ts` | **13 用例通过**（新增 3：加载中 / 失败+重试 / 有数据时失败不遮列表） |
+| 域回归 | `pnpm vitest run src/components/workbench/` | **120 用例通过** |
+| 变异自证 | 逐条注入 | 2 条有效变异全红后还原：① 错误态分支置 `false` → 失败用例 FAIL；② `isLoadingRooms` 恒 `false` → 加载态用例 FAIL。（第三条「空态不排除失败」是**等价变异体**，链式分支已保证互斥，已按上文回退冗余条件） |
+| 格式 / 类型 | `biome check`（2 文件）、`pnpm vue-tsc --noEmit` | 0 诊断 / exit 0 |
+| 体量 | `check:file-size` | `SpaceRoomsPane.vue` 251 行（未达超体量阈值） |
+
+#### 已知边界
+
+1. **媒体库（`ChatSidebarFiles.vue`）的假配额** —— **已修（§19.22）**：本就存在 `matrixMediaService.getQuotaStats()`，无需新增后端能力，直接接真实数据并删掉硬编码；文件列表本身仍无数据源（只给空态），属「功能未接」而非「缺状态」。
+2. 空间面板的「有数据时刷新失败」只保留旧列表、不给任何提示（`error` 被忽略）—— 属有意取舍（避免抖动），如需提示应加非遮挡式 toast。
+3. `useSpaceRooms` 的 `error` 只在 `load()` 失败时置位，`removeRoom` 失败走的是 `showFeedback` toast，不计入该状态。
+
+---
+
+### 19.22 媒体库配额接真实数据（2026-11-16，收口 §19.21 边界 1）
+
+#### 缺陷
+
+`ChatSidebarFiles.vue` 全程 43 行，配额区是**硬编码假值**：
+
+```vue
+<span>{{ '1.2 GB / 5.0 GB' }}</span>
+<n-progress :percentage="24" />
+```
+
+用户会以为看到的是真实用量。但**不需要新增后端能力** —— `matrixMediaService.getQuotaStats()` 早就存在（`fetchQuotaStats` → `getMediaQuotaStats()`），返回 `{ storageBytes, mediaCount, limitBytes } | null`，`formatBytes()` 也在 `utils/Formatting.ts`。
+
+#### 修复
+
+| 点 | 做法 |
+| :--- | :--- |
+| 数据 | `watch(active)` 首次可见时拉一次 `getQuotaStats()` |
+| 三态 | 有数据 → 真实「已用 / 上限」+ 真实百分比；**`null` → 整块隐藏**（不显示 0、不留占位）；未加载完成 → 不显示空态（`loaded` 门闩） |
+| 无上限 | `limitBytes === 0` 时只报用量、不编造分母，进度条固定 0 |
+| 陈旧 | **60s TTL**：小于 60s 重复切面板复用上次结果（避免抖动打接口），过期重取（上传大文件后不至于整场陈旧） |
+| 百分比 | `min(100, round(used / limit * 100))` |
+
+#### 两个过程中的发现（都是「变异自证」教出来的）
+
+1. **组件里的 `try/catch` 是死代码**：我一开始给 `loadQuota` 包了 catch，但把「接口抛错」写成用例时，变异体（删掉 catch）**测不出差异** —— 因为 `getQuotaStats()` 内部 `fetchQuotaStats` 已经 try/catch 并返回 `null`，它根本不会 reject。于是删掉组件侧 catch，同时**删掉那条「接口抛错」用例**（它测的是不存在的契约，留着只是自印证）。
+2. 对应的正确判据是「`null` ⇒ 整块隐藏」，而不是「抛错 ⇒ 隐藏」。
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/components/rightBox/chatBox/ChatSidebarFiles.vue` | 接真实配额（+三态 + 60s TTL + 无上限处理），删除硬编码文案与 `:percentage="24"` |
+| `src/components/rightBox/chatBox/__tests__/ChatSidebarFiles.test.ts` | 新增 4 例：真实用量+百分比 / `null` 整块隐藏 / 无上限只报用量 / 懒加载 + TTL 重取 |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 判据 | `pnpm vitest run src/components/rightBox/chatBox/__tests__/ChatSidebarFiles.test.ts` | **4 用例通过** |
+| 域回归 | `pnpm vitest run src/components/rightBox/chatBox/` | **125 用例通过** |
+| 变异自证 | 逐条注入 | 3 条有效变异全红后还原：① 配额块改回常显 → `null` 用例 FAIL；② 百分比写死 `24` → 真实用量用例 FAIL；③ `stale` 恒 `false`（去掉 TTL）→ TTL 用例 FAIL。（第 4 条「删 catch」为**等价变异**，见上文发现 1） |
+| 格式 / 类型 | `biome check`、`prettier`、`pnpm vue-tsc --noEmit` | 0 诊断 / exit 0 |
+
+#### 已知边界
+
+1. **文件列表本身仍无数据源**：内容区只渲染 `n-empty`（「暂无文件」）。本轮只修配额区，列表要接「按房间/类型拉媒体事件」属于功能开发，不在四态范围内。
+2. `getQuotaStats()` 把「服务端不支持」与「请求失败」都折叠成 `null`，UI 无法区分「你没有配额限制」与「取不到」。要区分需改 service 返回结构（`{ ok, reason }`），涉及其他消费方。
+3. 配额不会因「刚上传完一个文件」即时刷新，最长陈旧 60s（TTL 设计如此）；如需即时，应在上传成功后主动触发刷新。
+
+---
+
+### 19.23 `isMobile()` 下沉第一组：移动端相册扫描（2026-11-16，13 → 12）
+
+#### 为什么挑这一处
+
+§19.13 给出的收敛顺序是 `widget/file` → `contextMenuHelpers` → `useFooterEmoji` / `useChatMain` → RTC 路由分流。`widget/file` 排第一，理由是它的「平台分支」实际上是**伪分支**：
+
+- `stores/domains/widget/file.ts` 的 `scanLocalFiles` 开头 `if (!isMobile()) { warn; return 0 }`；
+- 但全仓**唯一调用方**是 `views/my/MyAlbum.vue`（移动端专属页面）⇒ 该判断永远为真；
+- 60 行业务逻辑（Tauri `appDataDir`/`readDir`、扩展名白名单、mimeType 推导）却因此长期住在桌面也在加载的 store 里。
+
+即「用运行时分支冒充平台边界」：桌面包里白带一份永远不会执行的移动端逻辑，而 store 还得依赖 `PlatformConstants`。
+
+#### 改动
+
+| 落点 | 改动 |
+| :--- | :--- |
+| **新增** `src/mobile/services/localAlbumScanner.ts` | `scanLocalAlbum(roomId, { getUserRoomDir, addFile })`：依赖注入，不持有 store；导出 `resolveAlbumMediaType(ext)` 供判定复用 |
+| `stores/domains/widget/file.ts` | 删除 `scanLocalFiles` 与其 Tauri 依赖（`appDataDir`/`readDir`）、`isMobile` 导入、随之空掉的 `logger`；保留 `join`（`getRoomFilesForDisplay` 仍在用）。220 → 137 行 |
+| `views/my/MyAlbum.vue` | 改调 `scanLocalAlbum`，注入 `userStore.getUserRoomDir` 与 `fileStore.addFile` |
+| `meta/ratchet-baseline.json` | `is_mobile_branch: 13 → 12`（**手工改单键**，不用 `--update`，避免把别的指标顺手抬高） |
+
+> 一个坑：我第一版在新模块的**注释**里写了 `` `if (!isMobile())` ``，棘轮把注释也算进计数（该指标未剥注释），于是总数仍是 13 —— 下沉等于白做。把注释改成「用平台判断」后才是 12。**这个指标连注释里的字面量也数**。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 扫描器判据 | `pnpm vitest run src/mobile/services/__tests__/localAlbumScanner.test.ts` | **4 用例通过**（图片/视频+字段推导 / 目录不可读吞错 / 空 roomId 不碰文件系统 / 扩展名白名单） |
+| 域回归 | `pnpm vitest run src/mobile/ src/stores/domains/widget/` | **730 用例通过**（mobile 85 文件 / 654 例 + widget 76 例） |
+| 变异自证 | 逐条注入 | 3 条全部变红并还原：① 去掉空 `roomId` 守卫 → 对应用例 FAIL；② 去掉 `try/catch` → 「目录不可读」用例 rejection FAIL；③ `jpg → jpeg` 映射退化 → 字段推导用例 FAIL |
+| 棘轮 | `pnpm check:ratchet` | `is_mobile_branch: 12 (baseline 12)` —— **真实下降 1，非等价改写** |
+| 类型 / 格式 | `pnpm vue-tsc --noEmit`、`biome check` | exit 0 / 0 诊断 |
+
+#### 已知边界
+
+1. **行为等价但仍有精度问题**：`mimeType` 沿用原实现的 `video/${ext}` 推导（`.mov` → `video/mov`，而标准是 `video/quicktime`）。本轮目标是「只搬不改」，未动语义；要修需另确认消费方（上传流程）是否依赖该字符串。
+2. 剩下 11 处真实调用点中，`usePlatform.ts`（2 处）、`main.ts`、`useWsEventHandler.ts` 属**合法的平台决策点**（就该在运行时判），不应下沉；真正待拆的是 `contextMenuHelpers`、`useFooterEmoji`、`useChatMain`、`useMsgInput`、`useVideoViewer`、`useMessageUser`、`wsCallHandler`、`PathUtil`。
+3. 基线改为手工编辑单键，**不是** `--update`：一次性 `--update` 会把当时所有指标的实测值写回基线，可能顺带放宽其它漂移项的约束。
+
+---
+
+### 19.24 `isMobile()` 下沉第二组：右键菜单守卫平台判定上移（12 → 11）
+
+#### 这处和上一处的性质不同
+
+`contextMenuHelpers.requireDesktop()` 不是「伪分支」——它是**真分支**：移动端确实共用一个 `ChatMain` / `renderMessage`（全仓只有一个 ChatMain），所以移动端点「转发 / 复制 / 另存为」这些项会真的走到它，弹出「敬请期待」。
+
+问题在于**判平台的姿势**：helper 直接 `import { isMobile } from PlatformConstants`，于是平台事实散落在各处。
+
+正确形态不是「拆成移动端实现」（这些动作本来就是桌面专属），而是**把平台事实收敛到唯一边界**：`usePlatform.isDesktop()`。
+
+#### 改动
+
+| 落点 | 改动 |
+| :--- | :--- |
+| `contextMenuHelpers.ts` | deps 增 `isDesktop: boolean`；`requireDesktop()` 改读注入值；**删掉 `PlatformConstants` 依赖** |
+| `useChatContextMenus.ts` | 在工厂创建处 `isDesktop: isDesktop()`（来自 `@/composables/usePlatform`），平台判定只取一次 |
+| `meta/ratchet-baseline.json` | `is_mobile_branch: 12 → 11`（仍手工改单键） |
+
+行为**完全不变**：移动端仍提示「敬请期待」并中断。这次降的是「平台判断的出处数量」，不是行为。
+
+> 又踩同一个坑：我在新注释里写了「这里不再调用 `isMobile()`」，棘轮把注释里的字面量也算进去，计数纹丝不动。改成「不再直接判平台」后才降到 11。**这个指标不剥注释 —— 连续两轮踩，写注释时要主动回避该字面量。**
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 判据（新增） | `pnpm vitest run src/composables/chat/__tests__/contextMenuHelpers.test.ts` | **3 用例通过**（桌面放行不弹提示 / 移动端 false+提示 / 好友关系 friend 与 all 的差异） |
+| 域回归 | `pnpm vitest run src/composables/chat/ src/components/rightBox/` | **98 文件 / 722 用例通过** |
+| 变异自证 | 逐条注入 | 3 条全部变红并还原：① 守卫改 `if (false)`（永不拦）→ 移动端用例 FAIL；② 条件取反 → 两条用例同时 FAIL；③ 去掉 `showComingSoon()` → 提示断言 FAIL |
+| 棘轮 | `pnpm check:ratchet` | `is_mobile_branch: 11 (baseline 11)` |
+| 类型 / 格式 | `pnpm vue-tsc --noEmit`、`biome check` | exit 0 / 0 诊断 |
+
+#### 已知边界
+
+1. **移动端菜单仍会看到桌面专属项**（点了才提示「敬请期待」）。真正的产品级修法是「移动端不渲染这些项」，需要把 6 处 `if (!requireDesktop()) return` 改成菜单项的 `visible: () => isDesktop`，并对 4 类菜单列表补用例 —— 属行为变更，本轮按「只搬不改」处理，未做。
+2. `isDesktop()` 是**创建时快照**（非响应式）。平台不会在运行中变化，故可接受；若将来出现「窗口尺寸切换布局」的需求，需改用 `useIsMobile()` 的响应式版本。
+3. 剩余 10 处：`usePlatform`(2)、`main.ts`、`useWsEventHandler`、`wsCallHandler`、`useChatMain`、`useMsgInput`、`useVideoViewer`、`useMessageUser`、`PathUtil`、`useFooterEmoji`。其中前 4 类基本是合法决策点。
+
+---
+
+### 19.25 `isMobile()` 下沉第三组：视频查看器的死守卫（11 → 10）
+
+#### 先排除了一个「不该降」的点
+
+按顺序本该到 `PathUtil`，但它的 `resolveStorageLayout()` 注释就写明是「平台差异的唯一决策点」，且运行时允许 `?platform=mobile` / localStorage 覆盖，**每次调用重新求值**。为了降计数改成快照或搬到 `src/mobile/` 都是错的 —— 桌面代码路径要能动态覆盖。这类点属**合法决策点，计数应保留**。
+
+#### 真正的伪分支
+
+`useVideoViewer.openVideoViewer()` 第一行 `if (isMobile()) return` 是**永远命中不了**的守卫：
+
+| 调用方 | 移动端会发生什么 |
+| :--- | :--- |
+| `renderMessage/Video.vue:609` | 先 `if (isMobilePlatform.value)` 走内嵌 `VideoPreview` 并 `return`，**根本到不了这里** |
+| `views/multiMsgWindow/index.vue` | 桌面独立窗口，移动端路由表里没有该路由 |
+| 查看器宿主 `views/videoViewerWindow/index.vue` | 同样是桌面独立窗口，移动端不挂载 |
+
+即「用运行时分支冒充平台边界」的第三种形态：**守卫不是给移动端用的，而是给恐惧用的**。
+
+#### 改动
+
+| 落点 | 改动 |
+| :--- | :--- |
+| `composables/common/useVideoViewer.ts` | 删 `if (isMobile()) return` 与 `PlatformConstants` 导入；注释写明「平台分流由调用方负责」并列出两个调用方 |
+| **新增** `router/__tests__/mobileRoutesDesktopWindows.test.ts` | 2 例：① 移动端路由表不含 `multiMsg` / `videoViewerWindow`；② 确实挂载了移动端自己的 `mediaViewer`（**否则第 1 条会假绿**） |
+| `meta/ratchet-baseline.json` | `is_mobile_branch: 11 → 10` |
+
+删守卫的**前提**是「移动端到不了这条链路」。第 2 条用例就是防「前提失效时判据仍然绿」—— 如果哪天有人把桌面窗口挂进移动端路由，第 1 条会立刻红。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 前提判据 | `pnpm vitest run src/router/__tests__/mobileRoutesDesktopWindows.test.ts` | **2 用例通过** |
+| 域回归 | `pnpm vitest run src/components/rightBox/ src/composables/common/ src/router/` | **81 文件 / 592 用例通过** |
+| 变异自证 | 逐条注入 | ① 往移动端路由表塞 `/videoViewerWindow` → 前提判据 FAIL（还原后绿）；② 把 `isMobile()` 守卫加回去 → `check:ratchet` 计数回 11、与基线 10 冲突（说明基线是真闸而非摆设） |
+| 棘轮 | `pnpm check:ratchet` | `is_mobile_branch: 10 (baseline 10)` |
+| 类型 / 格式 | `pnpm vue-tsc --noEmit`、`biome check` | exit 0 / 0 诊断 |
+
+#### 已知边界
+
+1. 守卫删除后，**移动端误调**会真的去 patch 查看器 store 并尝试开窗口（虽然窗口不存在）。防护从「函数内早退」变成「路由/调用点约定 + 前提判据」，这是取舍：少一处分支，换来一条必须维护的路由断言。
+2. 剩余 9 处：`usePlatform`(2)、`main.ts`、`useWsEventHandler`、`wsCallHandler`、`useChatMain`、`useMsgInput`、`useMessageUser`、`useFooterEmoji`。其中前 4 类是合法决策点（平台差异必须存在），后 4 类属「交互差异」，正确解法是**组件变体**，成本明显高于前三组，不应为降计数硬拆。
+3. 基线继续手工改单键（未用 `--update`）。
 
 ---
 

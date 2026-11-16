@@ -160,7 +160,8 @@ function createMockHost(overrides?: Partial<SessionRuntimeHost>): {
     },
     chat: {
       getSessionList: vi.fn().mockResolvedValue(undefined),
-      getSessionListValue: vi.fn().mockReturnValue([])
+      getSessionListValue: vi.fn().mockReturnValue([]),
+      clearMessages: vi.fn()
     },
     group: {
       clearGroupDetails: vi.fn(),
@@ -239,6 +240,19 @@ describe('SessionLogoutService.resetLocalSessionState', () => {
     expect(mocks.closeAutoLogin).toHaveBeenCalled()
     expect(mocks.clearUser).toHaveBeenCalled()
     expect(mocks.updateCurrentSessionRoomId).toHaveBeenCalledWith('')
+  })
+
+  it('drops group/member caches on logout (same-account switch must not leak them)', async () => {
+    const { host } = createMockHost()
+    const service = new SessionLogoutService(host, new SessionRuntimeState())
+
+    await service.resetLocalSessionState()
+
+    // 登出必须清群缓存：此前只有登录 bootstrap 清 membersMap，登出后旧账号成员仍留在内存
+    expect(host.port.group.clearMembersMap).toHaveBeenCalledTimes(1)
+    expect(host.port.group.clearGroupDetails).toHaveBeenCalledTimes(1)
+    // 消息缓存同理：此前登出只删 localStorage 分片，对内存里的 messageMap 一无所知
+    expect(host.port.chat.clearMessages).toHaveBeenCalledTimes(1)
   })
 
   it('resets the bootstrap idempotency guard', async () => {

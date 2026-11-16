@@ -9,7 +9,6 @@ import { useUserStore } from '@/stores/domains/user/user'
 import { useVideoViewer as useVideoViewerStore } from '@/stores/domains/widget/videoViewer'
 import { createLogger } from '@/utils/Logger'
 import { getDownloadBaseDir, getDownloadBaseDirPath, safeExistsPath } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
 
 const logger = createLogger('VideoViewer')
 
@@ -129,7 +128,9 @@ export const useVideoViewer = () => {
     includeTypes: MsgEnum[] = [MsgEnum.VIDEO],
     customVideoList?: string[]
   ) => {
-    if (isMobile()) return
+    // 桌面专属查看器：平台分流由调用方负责 —— `Video.vue` 在移动端走内嵌 `VideoPreview` 后直接 return，
+    // `multiMsgWindow` 是桌面独立窗口（移动端路由表里没有它）。原先这里的平台判断永远命中不了，
+    // 属「用运行时分支冒充平台边界」（§19.25）。
     if (!url) return
 
     let list: string[]

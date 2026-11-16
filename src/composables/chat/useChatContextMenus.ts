@@ -1,6 +1,7 @@
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import type { useDownload } from '@/composables/common/useDownload'
+import { isDesktop } from '@/composables/usePlatform'
 import { type MessageType, useChatStore } from '@/stores/domains/chat/chat'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { useEmojiStore } from '@/stores/domains/chat/emoji'
@@ -54,6 +55,8 @@ export const useChatContextMenus = (options: UseChatContextMenusOptions) => {
   const groupRoleGuard = useGroupRoleGuard()
 
   const helpers = createContextMenuHelpers({
+    // 平台事实在此取一次（唯一来源），helper 与菜单列表都不再各自判平台
+    isDesktop: isDesktop(),
     t,
     showFeedback,
     chatStore,

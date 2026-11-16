@@ -22,6 +22,7 @@ type MessageListOptions = {
   isLoading: boolean
   cursor: string
   hasLoadedOnce?: boolean
+  loadFailed?: '' | 'history' | 'initial' // 'history'=翻页失败(游标保留可重试) / 'initial'=首屏失败(显示错误态而非空态)
 }
 
 export const useChatStore = defineStore(StoresEnum.CHAT, () => {
@@ -79,9 +80,7 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     return messageMap[globalStore.currentSessionRoomId] || {}
   })
 
-  // 注意：getter 必须是纯函数，不能在读取时写入 messageOptions（避免在 computed 中产生副作用、
-  // 进而可能把某个房间“播种”成 hasLoadedOnce:false 且永不翻转，导致骨架屏永久转圈）。
-  // 缺失的房间返回稳定的默认对象即可，真正写入由 changeRoom / getPageMsg 通过 setter 完成。
+  // getter 必须纯：读取时写入会把房间“播种”成 hasLoadedOnce:false 永不翻转（骨架屏卡死）；缺失房间给稳定默认对象即可
   const currentMessageOptions = computed({
     get: () => {
       const roomId = globalStore.currentSessionRoomId
@@ -200,8 +199,7 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     return sortedMessageKeys[roomId].map((id) => messageMap[roomId][id]).filter(Boolean)
   })
 
-  // O(1) 末条消息读取：直接取排序后消息主键的最后一个 + messageMap 对应项，
-  // 不再为取「最后一条」重建整条消息数组。供会话列表末条预览细粒度订阅使用。
+  // O(1) 末条消息：取排序键最后一项 + messageMap 对应项，不再重建整条数组（供会话列表预览细粒度订阅）
   const getLastMessageByRoomId = (roomId: string): MessageType | undefined => {
     const keys = sortedMessageKeys[roomId]
     if (!keys || keys.length === 0) return undefined
@@ -246,6 +244,7 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     deleteMsg,
     clearRoomMessages,
     clearRedundantMessages,
+    clearAllMessages,
     updateMarkCount,
     recordRecallMsg,
     updateRecallMsg
@@ -385,6 +384,7 @@ export const useChatStore = defineStore(StoresEnum.CHAT, () => {
     requestUnreadCountUpdate,
     clearUnreadCount,
     resetAndRefreshCurrentRoomMessages,
+    clearAllMessages,
     fetchCurrentRoomRemoteOnce,
     getGroupSessions,
     removeSession,

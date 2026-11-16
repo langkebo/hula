@@ -1,14 +1,8 @@
 import { convertFileSrc } from '@tauri-apps/api/core'
-import { appDataDir, join } from '@tauri-apps/api/path'
-import { readDir } from '@tauri-apps/plugin-fs'
+import { join } from '@tauri-apps/api/path'
 import { defineStore } from 'pinia'
 import { StoresEnum } from '@/enums'
-import { createLogger } from '@/utils/Logger'
 import { getDownloadBaseDirPath } from '@/utils/PathUtil'
-import { isMobile } from '@/utils/PlatformConstants'
-import { useUserStore } from '../user/user'
-
-const logger = createLogger('FileStore')
 
 /**
  * 文件信息接口
@@ -125,82 +119,6 @@ export const useFileStore = defineStore(StoresEnum.FILE, () => {
     return roomFilesMap[roomId]?.[fileId]
   }
 
-  /**
-   * 扫描本地目录并填充 file store
-   * 用于初始化时加载已存在的文件
-   * 注意：此功能仅在移动端可用
-   */
-  const scanLocalFiles = async (roomId: string) => {
-    // 仅移动端支持扫描本地文件
-    if (!isMobile()) {
-      logger.warn('scanLocalFiles 仅在移动端可用')
-      return 0
-    }
-
-    try {
-      const userStore = useUserStore()
-
-      // 获取用户数据目录
-      const userRoomDir = await userStore.getUserRoomDir()
-
-      // 获取绝对路径（移动端使用 AppData）
-      const baseDirPath = await appDataDir()
-      const absolutePath = await join(baseDirPath, userRoomDir)
-
-      // 读取目录内容
-      const entries = await readDir(absolutePath)
-
-      // 图片和视频扩展名
-      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
-      const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm']
-
-      let addedCount = 0
-
-      for (const entry of entries) {
-        if (!entry.isFile) continue
-
-        const fileName = entry.name
-        const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.'))
-
-        let fileType: 'image' | 'video' | null = null
-        let mimeType = ''
-
-        if (imageExtensions.includes(ext)) {
-          fileType = 'image'
-          mimeType = `image/${ext === '.jpg' ? 'jpeg' : ext.substring(1)}`
-        } else if (videoExtensions.includes(ext)) {
-          fileType = 'video'
-          mimeType = `video/${ext.substring(1)}`
-        }
-
-        if (fileType) {
-          // 使用文件名作为 ID（因为我们不知道原始消息 ID）
-          const fileId = fileName.substring(0, fileName.lastIndexOf('.'))
-
-          // 构建文件 URL（使用相对路径，与 getUserRoomDir 返回的格式一致）
-          const fileUrl = await join(userRoomDir, fileName)
-
-          addFile({
-            id: fileId,
-            roomId,
-            fileName,
-            type: fileType,
-            url: fileUrl,
-            suffix: ext.substring(1),
-            mimeType
-          })
-
-          addedCount++
-        }
-      }
-
-      return addedCount
-    } catch (error) {
-      logger.error('扫描本地文件失败:', error)
-      return 0
-    }
-  }
-
   return {
     // 状态
     roomFilesMap: readonly(roomFilesMap),
@@ -214,7 +132,6 @@ export const useFileStore = defineStore(StoresEnum.FILE, () => {
     removeFile,
     clearRoomFiles,
     getFile,
-    getRoomFilesForDisplay,
-    scanLocalFiles
+    getRoomFilesForDisplay
   }
 })

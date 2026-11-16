@@ -651,9 +651,24 @@ async function handleBanUser(userId: string) {
   })
 }
 
+/**
+ * 服务端房间统计与列表同样属于管理端只读资源，必须走同一道 `isAdmin` 门控。
+ *
+ * 此前 `onMounted` 直接调 `admin.loadServerRoomStats()`，非管理员会话仍会打
+ * `adminService.getRoomStats`（与 `AdminUsers` 的门控口径不一致，会白跑一次 403 请求）。
+ */
+async function loadServerRoomStats() {
+  if (!adminStore.isAdmin) return
+  try {
+    await admin.loadServerRoomStats()
+  } catch (err) {
+    if (handleAdminError(err)) showFeedback(t('common.load_failed'), 'error')
+  }
+}
+
 onMounted(() => {
   loadRooms()
-  admin.loadServerRoomStats()
+  loadServerRoomStats()
 })
 
 // Reset search mode when the search query is cleared

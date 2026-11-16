@@ -21,6 +21,12 @@ vi.mock('@iconify/vue', () => ({
 // 测试环境无 <n-dialog-provider>，必须 mock composable 本身。
 // dialog.warning 需要可控的确认/取消状态，否则 “取消” 用例永绿。
 const confirmState = vi.hoisted(() => ({ value: true }))
+/**
+ * store 的 loading 需要可被用例驱动（四态里「加载中」要能断言）。
+ * 注意必须是**真 ref**：页面用 `storeToRefs(store)` 取它，普通对象会被跳过 ⇒ binding 变 undefined，
+ * 用例会因「断言 undefined 为 false」而假绿（本轮踩到）。
+ */
+const moderationRefs = vi.hoisted(() => ({ loading: null as null | { value: boolean } }))
 vi.mock('naive-ui', async (importOriginal) => {
   const actual = await importOriginal<typeof import('naive-ui')>()
   return {
@@ -57,18 +63,25 @@ const resolveReportMock = vi.fn().mockResolvedValue(true)
 const addContentFilterMock = vi.fn()
 const removeContentFilterMock = vi.fn()
 
-vi.mock('@/stores/domains/chat/moderation', () => ({
-  useModerationStore: () => ({
-    openReports: { value: [] },
-    enabledFilters: { value: [] },
-    loading: { value: false },
-    fetchReports: (...args: unknown[]) => fetchReportsMock(...args),
-    fetchContentFilters: (...args: unknown[]) => fetchContentFiltersMock(...args),
-    resolveReport: (...args: unknown[]) => resolveReportMock(...args),
-    addContentFilter: (...args: unknown[]) => addContentFilterMock(...args),
-    removeContentFilter: (...args: unknown[]) => removeContentFilterMock(...args)
-  })
-}))
+vi.mock('@/stores/domains/chat/moderation', async () => {
+  const { ref } = await import('vue')
+  const loading = ref(false)
+  const openReports = ref<unknown[]>([])
+  const enabledFilters = ref<unknown[]>([])
+  moderationRefs.loading = loading
+  return {
+    useModerationStore: () => ({
+      openReports,
+      enabledFilters,
+      loading,
+      fetchReports: (...args: unknown[]) => fetchReportsMock(...args),
+      fetchContentFilters: (...args: unknown[]) => fetchContentFiltersMock(...args),
+      resolveReport: (...args: unknown[]) => resolveReportMock(...args),
+      addContentFilter: (...args: unknown[]) => addContentFilterMock(...args),
+      removeContentFilter: (...args: unknown[]) => removeContentFilterMock(...args)
+    })
+  }
+})
 
 // MatrixEventReportService mock for event reports（Task 2: ModerationPanel 已从 adminService.reports 切到该服务）
 const listReportsMock = vi.fn()
@@ -130,12 +143,18 @@ const naiveStubs = {
     render(this: {
       columns: Array<{ key?: string; render?: (row: unknown) => unknown }>
       data: Array<Record<string, unknown>>
+      loading?: boolean
     }) {
       const cols = this.columns || []
       const rows = this.data || []
       return h(
         'div',
-        { class: 'n-data-table' },
+        {
+          class: 'n-data-table',
+          // 暴露 loading / 行数：四态用例要断言「加载中」与「空列表」的渲染结果
+          'data-loading': String(Boolean(this.loading)),
+          'data-count': String(rows.length)
+        },
         rows.map((row) =>
           h(
             'div',
@@ -413,6 +432,35 @@ describe('ModerationPanel — P1-4 事件举报管理', () => {
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('moderation.event_reports.loadFailed', 'error')
+  })
+
+  it('加载期间数据表处于 loading，完成后收起', async () => {
+    moderationRefs.loading!.value = true
+
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    expect(wrapper.find('.n-data-table').attributes('data-loading')).toBe('true')
+
+    moderationRefs.loading!.value = false
+    await flushPromises()
+
+    expect(wrapper.find('.n-data-table').attributes('data-loading')).toBe('false')
+  })
+
+  it('空列表时不渲染任何举报行，统计为 0', async () => {
+    listReportsMock.mockResolvedValue([])
+    getReportsCountMock.mockResolvedValue({ total_reports: 0 })
+    getStatusCountMock.mockResolvedValue({ status: 'open', count: 0 })
+
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    expect(wrapper.find('.n-data-table').attributes('data-count')).toBe('0')
+    expect(wrapper.findAll('.n-data-table-row')).toHaveLength(0)
+    expect(wrapper.find('[data-testid="event-report-stat-total"]').text()).toContain('0')
+    // 空列表不得被当成失败：不出现错误反馈
+    expect(showFeedbackMock).not.toHaveBeenCalledWith('moderation.event_reports.loadFailed', 'error')
   })
 
   it('已解决状态的举报禁用解决按钮', async () => {

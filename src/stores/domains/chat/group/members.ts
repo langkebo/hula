@@ -22,6 +22,8 @@ export function createGroupMembers(ctx: GroupMembersContext) {
   const globalStore = useGlobalStore()
 
   const membersMap = shallowReactive<Record<string, MatrixRoomMember[]>>({})
+  /** 按房间记录最近一次成员加载失败原因；成功加载后清空，供 UI 区分「空房间」与「加载失败」 */
+  const memberLoadErrors = shallowReactive<Record<string, string>>({})
   const loadingRooms = shallowRef<Set<string>>(new Set())
   const userListOptions = reactive({ isLast: false, loading: false, cursor: '' })
 
@@ -154,10 +156,12 @@ export function createGroupMembers(ctx: GroupMembersContext) {
       }
 
       membersMap[roomId] = dedupedMembers
+      delete memberLoadErrors[roomId]
       markStructureChanged()
       logger.info(`[GroupStore] 加载房间成员成功: ${roomId}, ${dedupedMembers.length} 个成员`)
       return dedupedMembers
     } catch (err) {
+      memberLoadErrors[roomId] = err instanceof Error ? err.message : String(err)
       logger.error(`[GroupStore] 加载房间成员失败: ${err}`)
       return []
     } finally {
@@ -168,6 +172,15 @@ export function createGroupMembers(ctx: GroupMembersContext) {
 
   function getMembersByRoomId(roomId: string): MatrixRoomMember[] {
     return membersMap[roomId] || []
+  }
+
+  function getMembersLoadError(roomId: string): string {
+    return memberLoadErrors[roomId] || ''
+  }
+
+  /** 清空全部房间的成员加载错误（会话清理 / 全量清理时调用，避免「幽灵 partial」） */
+  function clearMembersLoadErrors(): void {
+    for (const roomId of Object.keys(memberLoadErrors)) delete memberLoadErrors[roomId]
   }
 
   function getUserListByRoomId(roomId: string): MatrixRoomMember[] {
@@ -298,10 +311,18 @@ export function createGroupMembers(ctx: GroupMembersContext) {
     }
   }
 
+  /**
+   * 离开当前会话时的轻量清理。
+   *
+   * 必须**连同错误映射一起清**：`memberLoadErrors` 是按 roomId 累积的，
+   * 只重置分页状态会让「上次加载失败」的横幅在下次进入同一房间时继续显示，
+   * 直到有一次成功加载把它 `delete` 掉 —— 表现为「明明这次没失败，却一直提示局部失败」。
+   */
   function cleanupSession(): void {
     userListOptions.cursor = ''
     userListOptions.isLast = false
     userListOptions.loading = false
+    clearMembersLoadErrors()
   }
 
   async function getGroupUserList(roomId: string, forceRefresh = false): Promise<MatrixRoomMember[]> {
@@ -377,6 +398,8 @@ export function createGroupMembers(ctx: GroupMembersContext) {
     getUserDisplayName,
     loadRoomMembers,
     getMembersByRoomId,
+    getMembersLoadError,
+    clearMembersLoadErrors,
     getUserListByRoomId,
     getUser,
     updateUserItem,

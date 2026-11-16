@@ -32,7 +32,8 @@ export const useGroupStore = defineStore(StoresEnum.GROUP, () => {
     membersMap: members.membersMap,
     groupInfoMap: info.groupInfoMap,
     loadRoomMembers: members.loadRoomMembers,
-    loadGroupInfo: info.loadGroupInfo
+    loadGroupInfo: info.loadGroupInfo,
+    clearMembersLoadErrors: members.clearMembersLoadErrors
   })
 
   return {

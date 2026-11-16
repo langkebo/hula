@@ -10,13 +10,15 @@ type GroupLifecycleContext = {
   groupInfoMap: Record<string, MatrixGroupInfo>
   loadRoomMembers: (roomId: string, forceRefresh?: boolean) => Promise<MatrixRoomMember[]>
   loadGroupInfo: (roomId: string) => Promise<MatrixGroupInfo | null>
+  /** 清空成员加载错误映射（与 membersMap 同生命周期） */
+  clearMembersLoadErrors: () => void
 }
 
 /**
  * 群生命周期模块：邀请/踢出/封禁、退群/忘记、会话切换预加载、全量清理。
  */
 export function createGroupLifecycle(ctx: GroupLifecycleContext) {
-  const { membersMap, groupInfoMap, loadRoomMembers, loadGroupInfo } = ctx
+  const { membersMap, groupInfoMap, loadRoomMembers, loadGroupInfo, clearMembersLoadErrors } = ctx
   const globalStore = useGlobalStore()
 
   async function inviteUser(roomId: string, userId: string): Promise<boolean> {
@@ -107,6 +109,9 @@ export function createGroupLifecycle(ctx: GroupLifecycleContext) {
   function clearAllData(): void {
     Object.keys(membersMap).forEach((key) => delete membersMap[key])
     Object.keys(groupInfoMap).forEach((key) => delete groupInfoMap[key])
+    // 错误映射必须跟着一起清：它按 roomId 累积，只清数据会留下「幽灵 partial」——
+    // 换会话/换账号后同 roomId 直接读到旧错误，横幅一直挂到下次成功加载为止。
+    clearMembersLoadErrors()
   }
 
   async function switchSession(session: { roomId: string }): Promise<{ success: boolean }> {

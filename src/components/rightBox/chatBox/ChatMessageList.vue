@@ -6,9 +6,20 @@
     <p class="text-[var(--text-sm)] text-[--tjg-text-tertiary]">{{ t('home.chat_main.no_more') }}</p>
   </div>
 
-  <!-- 空状态 -->
+  <!-- 首屏加载失败：必须与「暂无消息」区分，否则用户会以为这个会话本来就是空的 -->
+  <ErrorState
+    v-if="isMainViewReady && chatStore.chatMessageList.length === 0 && initialLoadFailed"
+    data-testid="message-list-load-error"
+    illustration="network-error"
+    :title="t('message.load_messages_failed')"
+    :message="t('home.chat_main.load_failed_desc')"
+    :retry-text="t('common.retry')"
+    class="flex-1 py-60px"
+    @retry="handleRetryInitialLoad" />
+
+  <!-- 空状态（已排除「加载失败」这一分支） -->
   <EmptyState
-    v-if="isMainViewReady && chatStore.chatMessageList.length === 0"
+    v-if="isMainViewReady && chatStore.chatMessageList.length === 0 && !initialLoadFailed"
     illustration="no-conversations"
     :title="t('home.chat_main.empty_title')"
     :description="t('home.chat_main.empty_desc')"
@@ -90,6 +101,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import EmptyState from '@/components/common/EmptyState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import { useUnreadDividerIndex } from '@/composables/chat/useUnreadDivider'
 import { MsgEnum } from '@/enums'
 import type { MessageType } from '@/stores/domains/chat/chat'
@@ -141,6 +153,17 @@ const isMainViewReady = computed(() => {
 
   return hasLoadedCurrentRoom
 })
+
+/**
+ * 首屏加载失败：toast 一闪而过，列表又是空的 ⇒ 必须给一个持久、可重试的错误态。
+ * 数据来源是 store 的 `loadFailed`（见 `chat/messageLoading.ts`）。
+ */
+const initialLoadFailed = computed(() => chatStore.currentMessageOptions?.loadFailed === 'initial')
+
+/** 重试首屏：清空当前房间消息后重新走一次首屏加载（失败会再次落回本错误态） */
+const handleRetryInitialLoad = (): void => {
+  void chatStore.resetAndRefreshCurrentRoomMessages()
+}
 
 const computeMsgHover = computed(() => (item: MessageType) => {
   if (!chatStore.isMsgMultiChoose || !isMessageMultiSelectEnabled(item.message.type)) {

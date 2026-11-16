@@ -275,6 +275,50 @@ describe('createGroupMembers 派生结构缓存与成员加载收敛', () => {
     expect(matrixRoomQueryFacade.getMembers).toHaveBeenCalledTimes(2)
   })
 
+  it('加载失败写入错误信号，成功加载后清空', async () => {
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockReset()
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockRejectedValueOnce(new Error('network down'))
+
+    const members = createGroupMembers({ groupInfoMap: {} })
+    await members.loadRoomMembers('room-c', true)
+    expect(members.getMembersLoadError('room-c')).toBe('network down')
+
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockResolvedValueOnce([
+      { userId: '@carol:matrix.test', name: 'carol', membership: 'join', powerLevel: 0 }
+    ] as never)
+    await members.loadRoomMembers('room-c', true)
+    expect(members.getMembersLoadError('room-c')).toBe('')
+  })
+
+  it('cleanupSession 清空错误映射（避免下次进入同房间仍显示幽灵 partial）', async () => {
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockReset()
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockRejectedValueOnce(new Error('boom'))
+
+    const members = createGroupMembers({ groupInfoMap: {} })
+    await members.loadRoomMembers('room-d', true)
+    expect(members.getMembersLoadError('room-d')).toBe('boom')
+
+    members.cleanupSession()
+
+    expect(members.getMembersLoadError('room-d')).toBe('')
+  })
+
+  it('clearMembersLoadErrors 只清错误、不动已缓存的成员', async () => {
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockReset()
+    vi.mocked(matrixRoomQueryFacade.getMembers).mockRejectedValueOnce(new Error('boom'))
+
+    const members = createGroupMembers({ groupInfoMap: {} })
+    members.updateMemberCache('room-e', [member('@dave:matrix.test')])
+    await members.loadRoomMembers('room-e', true)
+    expect(members.getMembersLoadError('room-e')).toBe('boom')
+
+    members.clearMembersLoadErrors()
+
+    expect(members.getMembersLoadError('room-e')).toBe('')
+    // 缓存不清（清理数据是 clearAllData 的职责）
+    expect(members.getMembersByRoomId('room-e')).toHaveLength(1)
+  })
+
   it('presence 索引兼容 localpart 与完整 MXID，并命中该用户所在的所有房间', () => {
     const members = createGroupMembers({ groupInfoMap: {} })
     members.updateMemberCache('room-a', [member('@alice:matrix.test')])

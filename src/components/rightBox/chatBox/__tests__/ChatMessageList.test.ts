@@ -11,7 +11,14 @@ const { chatState, globalState } = vi.hoisted(() => ({
       hasLoadedOnce: false,
       isLast: false,
       isLoading: false
-    } as { hasLoadedOnce: boolean; isLast: boolean; isLoading: boolean } | null,
+    } as {
+      hasLoadedOnce: boolean
+      isLast: boolean
+      isLoading: boolean
+      loadFailed?: '' | 'history' | 'initial'
+    } | null,
+    /** 首屏重试入口（ChatMessageList 的错误态按钮会调它） */
+    resetAndRefreshCurrentRoomMessages: vi.fn(),
     isMsgMultiChoose: false,
     msgMultiChooseMode: ''
   },
@@ -80,6 +87,15 @@ vi.mock('vue-virtual-scroller', async () => {
 vi.mock('@/components/common/EmptyState.vue', () => ({
   default: { template: '<div class="empty-state-stub"/>' }
 }))
+vi.mock('@/components/common/ErrorState.vue', () => ({
+  default: {
+    name: 'ErrorState',
+    props: ['title', 'message', 'retryText', 'illustration'],
+    emits: ['retry'],
+    template:
+      '<div data-testid="error-state-stub"><button data-testid="error-state-retry" @click="$emit(\'retry\')">retry</button></div>'
+  }
+}))
 // RenderMessage 通过 unplugin-vue-components 自动导入（局部注册），
 // global.stubs 无法拦截局部注册组件，故用模块级 mock 替换为轻量 stub，
 // 避免 RenderMessage setup 中调用 Pinia store 导致测试失败。
@@ -142,6 +158,39 @@ describe('ChatMessageList isMainViewReady', () => {
 })
 
 describe('ChatMessageList virtual scroller sizing', () => {
+  it('首屏加载失败时显示错误态而不是「暂无消息」，并可点重试重新加载', () => {
+    chatState.currentMessageOptions = {
+      hasLoadedOnce: true,
+      isLast: false,
+      isLoading: false,
+      loadFailed: 'initial'
+    }
+    globalState.currentSessionRoomId = '!room:example.com'
+
+    const wrapper = mount(ChatMessageList, {
+      props: { isGroup: false, privateModeActive: false, activeReply: '' }
+    })
+
+    // 用组件上的 `data-testid` 判定（桩的自有 testid 会被父级传入的同名属性覆盖）
+    expect(wrapper.find('[data-testid="message-list-load-error"]').exists()).toBe(true)
+    expect(wrapper.find('.empty-state-stub').exists()).toBe(false)
+
+    void wrapper.find('[data-testid="error-state-retry"]').trigger('click')
+    expect(chatState.resetAndRefreshCurrentRoomMessages).toHaveBeenCalledTimes(1)
+  })
+
+  it('没有 loadFailed 标记时仍走空态（不误报错误）', () => {
+    chatState.currentMessageOptions = { hasLoadedOnce: true, isLast: true, isLoading: false, loadFailed: '' }
+    globalState.currentSessionRoomId = '!room:example.com'
+
+    const wrapper = mount(ChatMessageList, {
+      props: { isGroup: false, privateModeActive: false, activeReply: '' }
+    })
+
+    expect(wrapper.find('.empty-state-stub').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="message-list-load-error"]').exists()).toBe(false)
+  })
+
   it('size-dependencies covers message status and upload progress', () => {
     globalState.currentSessionRoomId = '!room1:server'
     chatState.currentSessionInfo = { roomId: '!room1:server' }

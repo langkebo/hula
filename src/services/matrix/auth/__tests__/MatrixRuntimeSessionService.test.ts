@@ -46,7 +46,8 @@ const mockPort = {
   },
   chat: {
     getSessionList: vi.fn(),
-    getSessionListValue: vi.fn<() => Array<{ roomId: string }>>(() => [])
+    getSessionListValue: vi.fn<() => Array<{ roomId: string }>>(() => []),
+    clearMessages: vi.fn()
   },
   group: {
     clearGroupDetails: vi.fn(),

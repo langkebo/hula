@@ -391,9 +391,8 @@ class MatrixEventService extends BaseMatrixService {
     const client = this.getClient()
     let events = timeline.getEvents()
 
-    // 本客户端使用 SlidingSync，live timeline 仅含 1~10 条窗口
-    // （MatrixSyncManager.timelineLimit 按网络 1/3/5/10）。历史消息不能依赖该窗口，
-    // 必须用 /messages 反向分页拉取：
+    // 本客户端使用 SlidingSync，live timeline 仅含 1~10 条窗口（timelineLimit 按网络 1/3/5/10）；
+    // 历史消息不能依赖该窗口，必须用 /messages 反向分页拉取：
     //   - 初始加载（cursor 为空）：live 窗口为空或不足一页时，scrollback 从服务端补齐最近历史；
     //   - 上拉加载更早（cursor 非空）：client.paginateEventTimeline 反向翻页（/messages），
     //     仅返回本次新加载的更早事件，游标前移至新的最旧一条。
@@ -421,8 +420,9 @@ class MatrixEventService extends BaseMatrixService {
         // 反向分页无新增 或 已无更早历史 => 终止上拉，避免死循环。
         isLast = !hasMore || added === 0
       } catch (err) {
+        // 抛出而非伪造「到底了」：旧实现返回 isLast:true+cursor:'' ⇒ 无错误提示、游标被抹掉、无法重试
         logger.error(`加载更早消息失败: ${roomId}`, err)
-        return { messages: [], isLast: true, cursor: '' }
+        throw err
       }
     } else {
       // D14：开启 threadSupport 后 thread 回复不再进入房间主 timeline，
@@ -451,7 +451,8 @@ class MatrixEventService extends BaseMatrixService {
           }
         } catch (err) {
           logger.error(`初始历史补齐失败（paginateEventTimeline）: ${roomId}`, err)
-          // 失败时保留 live 窗口已有事件，不阻塞 UI
+          // 无任何事件可渲染才算首屏失败（抛出→错误态+重试）；live 窗口已有消息就先显示
+          if (events.length === 0) throw err
         }
       }
       // 返回当前时间线中的全部消息（已含补齐的最近历史）。

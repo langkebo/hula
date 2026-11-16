@@ -523,7 +523,7 @@ describe('ChatMessageStore', () => {
     expect(sessionStoreMock.markSessionRead).not.toHaveBeenCalled()
   })
 
-  it('keeps the previous cursor when loading more messages fails', async () => {
+  it('keeps the previous cursor and marks history failure when loading more messages fails', async () => {
     const store = useChatStore()
     // currentMessageOptions 指向当前房间（room-1），写入即落到该房间的分页状态
     store.currentMessageOptions = {
@@ -534,7 +534,9 @@ describe('ChatMessageStore', () => {
     }
     vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(new Error('network down'))
 
-    await store.loadMore()
+    // 必须抛给调用方：`useChatScrollManager.loadMore` 靠它置 loadMoreError 才能渲染重试入口；
+    // 旧实现吞掉异常 ⇒ 翻页失败会静默成「没有更多」。
+    await expect(store.loadMore()).rejects.toThrow('network down')
 
     // 失败不能抹掉游标：否则「向上翻页」退回首屏且再也翻不回历史（S4）
     expect(matrixEventService.getPagedRoomMessages).toHaveBeenCalledWith('room-1', 20, 'cursor-42')
@@ -542,8 +544,45 @@ describe('ChatMessageStore', () => {
       cursor: 'cursor-42',
       isLast: false,
       isLoading: false,
-      hasLoadedOnce: true
+      hasLoadedOnce: true,
+      loadFailed: 'history'
     })
+  })
+
+  it('marks initial failure when the first page cannot be loaded', async () => {
+    const store = useChatStore()
+    store.currentMessageOptions = { isLast: false, isLoading: false, cursor: '', hasLoadedOnce: false }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(new Error('network down'))
+
+    // 首屏失败不抛（调用方自行收尾），通过 loadFailed 透出
+    await store.loadMore()
+
+    // 首屏失败必须与「暂无消息」区分：hasLoadedOnce=true 让 UI 从骨架屏进入错误态
+    expect(store.currentMessageOptions).toMatchObject({
+      cursor: '',
+      hasLoadedOnce: true,
+      loadFailed: 'initial'
+    })
+  })
+
+  it('clears the failure marker after a successful load', async () => {
+    const store = useChatStore()
+    store.currentMessageOptions = {
+      isLast: false,
+      isLoading: false,
+      cursor: '',
+      hasLoadedOnce: true,
+      loadFailed: 'initial'
+    }
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockResolvedValueOnce({
+      messages: [],
+      isLast: false,
+      cursor: 'cursor-1'
+    } as never)
+
+    await store.loadMore()
+
+    expect(store.currentMessageOptions.loadFailed).toBe('')
   })
 
   it('does not overwrite the new room state when the previous room load fails', async () => {

@@ -2,6 +2,7 @@ import { createMessageCacheMutations } from './messageCacheMutations'
 import { createMessageInsertMutations } from './messageInsertMutations'
 import type { MessageMutationsDeps } from './messageMutationsDeps'
 import { createMessageRecallMutations } from './messageRecallMutations'
+import { createMessageSessionReset } from './messageSessionReset'
 
 export type { MessageMutationsDeps }
 
@@ -18,5 +19,6 @@ export type { MessageMutationsDeps }
 export const createMessageMutations = (deps: MessageMutationsDeps) => ({
   ...createMessageInsertMutations(deps),
   ...createMessageRecallMutations(deps),
-  ...createMessageCacheMutations(deps)
+  ...createMessageCacheMutations(deps),
+  ...createMessageSessionReset(deps)
 })
