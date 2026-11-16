@@ -172,7 +172,7 @@ describe('MatrixWidgetService', () => {
   })
 
   it('creates a widget via createWidget with the new body shape', async () => {
-    mockWidgetManager.createWidget.mockResolvedValueOnce({ widget: sdkWidget({ widget_id: 'widget-created' }) })
+    mockWidgetManager.createWidget.mockResolvedValueOnce(sdkWidget({ widget_id: 'widget-created' }))
 
     const result = await matrixWidgetService.createWidget('!room:example.com', {
       widgetType: 'custom',
@@ -193,7 +193,7 @@ describe('MatrixWidgetService', () => {
   })
 
   it('addWidget façade delegates to createWidget', async () => {
-    mockWidgetManager.createWidget.mockResolvedValueOnce({ widget: sdkWidget() })
+    mockWidgetManager.createWidget.mockResolvedValueOnce(sdkWidget())
 
     const ok = await matrixWidgetService.addWidget('!room:example.com', 'widget-1', {
       type: 'custom',
@@ -223,7 +223,7 @@ describe('MatrixWidgetService', () => {
   })
 
   it('getWidgetById returns the façade shape', async () => {
-    mockWidgetManager.getWidget.mockResolvedValueOnce({ widget: sdkWidget() })
+    mockWidgetManager.getWidget.mockResolvedValueOnce(sdkWidget())
 
     const widget = await matrixWidgetService.getWidgetById('widget-1')
 
@@ -232,9 +232,8 @@ describe('MatrixWidgetService', () => {
   })
 
   it('updateWidget maps façade updates onto the SDK body', async () => {
-    mockWidgetManager.updateWidget.mockResolvedValueOnce({
-      widget: sdkWidget({ url: 'https://new.example.com' })
-    })
+    // 后端返回**扁平** WidgetApiResponse（不是 `{widget}` 信封）
+    mockWidgetManager.updateWidget.mockResolvedValueOnce(sdkWidget({ url: 'https://new.example.com' }))
 
     const result = await matrixWidgetService.updateWidget('widget-1', { url: 'https://new.example.com' })
 
