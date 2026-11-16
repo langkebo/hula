@@ -235,4 +235,37 @@ describe('AdminNotices', () => {
 
     expect(showFeedbackMock).toHaveBeenCalledWith('admin.notices.send_failed', 'error')
   })
+
+  it('发送失败后保留输入与抽屉，再次点击可重试成功', async () => {
+    sendNoticeMock.mockRejectedValueOnce(new Error('network error'))
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    const sendButton = wrapper.findAll('button').find((b) => b.text().includes('admin.notices.send'))
+    await sendButton!.trigger('click')
+    await flushPromises()
+
+    const inputs = wrapper.findAll('input')
+    await inputs[0].setValue('@bob:server.test')
+    await inputs[1].setValue('system maintenance')
+
+    const findConfirm = () => wrapper.findAll('button').find((b) => b.text().includes('common.confirm'))
+
+    await findConfirm()!.trigger('click')
+    await flushPromises()
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.notices.send_failed', 'error')
+    expect(wrapper.find('[data-test="NDrawer"]').exists()).toBe(true)
+    const retained = wrapper.findAll('input')
+    expect((retained[0].element as HTMLInputElement).value).toBe('@bob:server.test')
+    expect((retained[1].element as HTMLInputElement).value).toBe('system maintenance')
+
+    await findConfirm()!.trigger('click')
+    await flushPromises()
+
+    expect(sendNoticeMock).toHaveBeenCalledTimes(2)
+    expect(sendNoticeMock).toHaveBeenLastCalledWith('@bob:server.test', 'system maintenance')
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.notices.send_success', 'success')
+    expect(wrapper.find('[data-test="NDrawer"]').exists()).toBe(false)
+  })
 })

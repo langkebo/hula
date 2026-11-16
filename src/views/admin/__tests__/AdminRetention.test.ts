@@ -353,6 +353,34 @@ describe('AdminRetention', () => {
     expect(showFeedbackMock).toHaveBeenCalledWith('admin.retention.room_policy_save_failed', 'error')
   })
 
+  it('保存房间策略失败后保留输入，再次点击原按钮可重试成功', async () => {
+    setRoomPolicyMock.mockRejectedValueOnce(new Error('boom'))
+    state.roomPolicy = { roomId: '!room9:server.test', policy: { min_lifetime: 1000, max_lifetime: 9000 } }
+    const wrapper = mountComponent()
+    await flushPromises()
+
+    await wrapper.find('[data-test="NInput"]').setValue('!room9:server.test')
+    const numbers = wrapper.findAll('[data-test="NInputNumber"]')
+    await numbers[1].setValue('20000')
+
+    await clickButton(wrapper, 'common.save')
+
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.retention.room_policy_save_failed', 'error')
+    expect((wrapper.find('[data-test="NInput"]').element as HTMLInputElement).value).toBe('!room9:server.test')
+    const retained = wrapper.findAll('[data-test="NInputNumber"]')
+    expect((retained[0].element as HTMLInputElement).value).toBe('1000')
+    expect((retained[1].element as HTMLInputElement).value).toBe('20000')
+
+    await clickButton(wrapper, 'common.save')
+
+    expect(setRoomPolicyMock).toHaveBeenCalledTimes(2)
+    expect(setRoomPolicyMock).toHaveBeenLastCalledWith('!room9:server.test', {
+      min_lifetime: 1000,
+      max_lifetime: 20000
+    })
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.retention.room_policy_save_success', 'success')
+  })
+
   it('删除房间策略需二次确认，取消时不调用服务', async () => {
     state.roomPolicy = { roomId: '!room9:server.test', policy: { min_lifetime: 1000 } }
     const wrapper = mountComponent()

@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -1375,7 +1375,7 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 
 - [x] 每个 L2/L3 能力入口在界面上不存在，且「服务能力」面板能查到原因。 —— 证据：§12.4 的 48 条接线条目已全部关闭；2026-11-15 把此前「有实现、有测试、无挂载点」的 `ServiceCapabilityPanel` 接入 `DiagnosticsPanel.vue`（设置 → 帮助/诊断），列出 14 个能力位的三态、缺失 key（如 `org.matrix.msc4354`）与重试/设置入口；`useServiceCapabilityItems.test.ts` 5 例 + `ServiceCapabilityPanel.test.ts` 6 例全过（详见 §19.7）。
 - [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 2026-11-16 逐页核对结果：房间成员/房间设置（§19.14）、消息列表（§19.18）、**空间子房间列表（§19.21，本轮补 error/loading）** 已闭合；好友申请（§19.11 已带失败文案+重试）与房间内搜索（自身有 loading/error+retry/empty）已达标；**媒体库仍是占位实现**（硬编码假配额，无数据源，§19.21 边界 1）。仍不勾选的原因仅剩「媒体库文件列表本身未接数据源（非四态问题，见 §19.22 边界 1）」。原注：三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）；`partial` 于 2026-11-16 补齐统一件 `PartialStateBanner`（`role="status"` + `aria-live="polite"`、可重试、消费 `--tjg-*` token、10 例单测），第一批接入 `AdminServerLogs` / `AdminDashboard`（§19.10），第二批接入业务端 `FriendsSettings` / `StorageSettings`（§19.11），把「分组/好友申请读取失败」与「配额统计/告警/认证媒体读取失败」从伪空态改为显式 partial；第三批为 `AdminDashboard` 补页面级用例（§19.12），四态在 admin 三页已有自动化证据。空态已由 `check-ratchet` 的 `handwritten_empty_state` 锁定 0（详见 §19.8）。本条仍保持未勾选：房间成员、房间设置、消息列表等区块尚未逐个拆出局部失败信号，需逐页补数据来源后再勾选。
-- [ ] 所有写操作失败后保留用户输入，并给出可执行的重试路径。 —— **2026-11-16 已把「房间成员 / 房间设置」的 5 条写路径做成组件级判据**（邀请、踢人、名称+主题、别名、标签；断网与 4xx 在组件边界上等价于 facade reject），实测全部**已满足**且 4 条变异自证会红，见 §19.16。仍保持未勾选：管理端写操作（配额 / 公告 / 封禁）与移动端流程未覆盖，需运行态补齐。
+- [x] 所有写操作失败后保留用户输入，并给出可执行的重试路径。 —— **2026-11-16 已把「房间成员 / 房间设置」的 5 条写路径做成组件级判据**（邀请、踢人、名称+主题、别名、标签；断网与 4xx 在组件边界上等价于 facade reject），实测全部**已满足**且 4 条变异自证会红，见 §19.16。**同日再补管理端 3 条写路径**（公告发送、IP 封禁、房间保留策略），5 例判据 + 3 条变异自证见 §19.28；配额写操作经核查后端无端点（`getQuotaConfigs` / `setUserQuota` 已删除），移动端 admin 按 R2 裁剪、无对应入口，故本条勾选。
 - [ ] 管理端每个新页面同时具备路由、菜单、空态、权限门控。 —— 空态与权限门控需连接后端账号才能实测，见 §19.3。
 
 可访问性：
@@ -3095,6 +3095,56 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 2. `/mobile/rtcCall` 路由保留：`More.vue`（主动拨号）与 `RtcCallFloatCell.vue`（浮窗回跳）仍在使用，删除的只是 `wsCallHandler` 里那条重复的入电跳转。
 3. `useChatMain` 的 `avatarClickOpensProfile` 通过返回值透传给 `renderMessage`，依赖 `ChatMain` → `provide` → `inject` 链路；若后续有其他宿主直接 `useChatMain()`（不走 `ChatMain`），默认值保持桌面语义。
 
+---
+
+### 19.28 P0-8：管理端写操作的失败保留与重试判据（2026-11-16，收口 §13.11 条目 2 的管理端部分）
+
+#### 缺口
+
+§13.11 条目 2 要求「写操作失败后保留用户输入，并给出可执行的重试路径」。§19.16 已覆盖房间成员 / 房间设置的 5 条写路径，但管理端的公告、封禁、配额类写入没有判据，该条目因此长期只能标「待运行态验证」。
+
+逐条核对后确认三条链路的行为**本身已经正确**（清空动作全部写在 `await` 成功之后，失败分支只报错、不关抽屉、不回填），缺的只是可回归的证据。配额写操作经核查**不存在**：`AdminQuotaService` 只有 `checkQuota` / `getQuotaStats` / `getQuotaAlerts` / `getServerQuota` 四个只读方法，源码注释明确 `getQuotaConfigs()` / `setUserQuota()` 因后端无端点已删除；因此配额类写路径以 `AdminRetention` 的房间保留策略表单（可输入 roomId + 两个生命周期数值）为代表。
+
+#### 判据
+
+| 写路径 | 组件 | 输入载体 | 断言要点 |
+| :--- | :--- | :--- | :--- |
+| 公告发送 | `views/admin/AdminNotices.vue` | 用户 ID + 公告正文 | 失败后 `sendNotice` reject：两输入内容都在、抽屉仍开、报 `send_failed`；再次点同一个「发送」→ `sendNotice` **2 次**且参数相同，成功后报 `send_success` 且抽屉关闭 |
+| IP 封禁 | `views/admin/AdminSecurityIpBlocks.vue` | IP + 原因 | reject 或接口返回 `false` 时抽屉不关、输入保留、报 `block_failed`、**不得**报 `ip_blocked`；重试 → `blockIp` 2 次同参，成功后清空并重新 `getIpBlocks` |
+| 房间保留策略 | `views/admin/AdminRetention.vue` | roomId + min/max lifetime | 保存失败后三个输入仍是用户改后的值（不被 store 旧值回填）、报 `room_policy_save_failed`；重试 → `setRoomPolicy` 2 次且第二次带 `max_lifetime: 20000` |
+
+> `AdminSecurityIpBlocks` 没有 `onMounted` 自加载，列表刷新由父级 `AdminSecurity` 调用其 `defineExpose({ refresh })`；用例通过 `wrapper.vm.refresh()` 走同一条真实入口。
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/views/admin/__tests__/AdminNotices.test.ts` | 新增 1 例：发送失败保留输入 + 同按钮重试成功 |
+| `src/views/admin/__tests__/AdminRetention.test.ts` | 新增 1 例：房间策略保存失败保留输入 + 重试成功 |
+| `src/views/admin/__tests__/AdminSecurityIpBlocks.test.ts` | 新增文件：3 例（刷新加载、reject 保留与重试、返回 `false` 不误报成功） |
+
+业务代码零改动。
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 判据用例 | `pnpm vitest run src/views/admin/__tests__/AdminNotices.test.ts src/views/admin/__tests__/AdminRetention.test.ts src/views/admin/__tests__/AdminSecurityIpBlocks.test.ts` | **3 文件 / 27 用例通过**（新增 5 例） |
+| 变异自证 | 逐条注入后还原 | 3 条全部变红：① `AdminNotices` catch 里清空 `sendForm` → 公告用例 FAIL；② `AdminSecurityIpBlocks` catch 里 `showBlockIpDialog = false` → 封禁用例 FAIL；③ `AdminRetention` catch 里调 `syncRoomInputs()` 回填 store 旧值 → 保留策略用例 FAIL |
+| 全量单测 | `pnpm test:run` | `1057 passed (1057)` / `11670 passed (11670)`，exit 0（收尾 "close timed out" 为既知噪声） |
+| 类型检查 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 棘轮 | `pnpm check:ratchet` | `is_mobile_branch 5 (baseline 5)`、`backdrop_filter_raw 60 (baseline 60)`、`handwritten_empty_state 0` |
+| 文档门禁 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径全部存在 / `OK — no regressions vs baseline (587)` |
+| 移动端 CSS | `pnpm check:mobile-css` | OK — 166 个文件 |
+| SDK 边界 / 裸请求 / 类型 | `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` / `pnpm check:sdk-types` | 156 (baseline 156) / 3 命中全在白名单 / 无漂移 |
+| Lint / i18n | `pnpm check` | exit 0（`dead-handlers` 0、`icon-button-aria` 586 个 `.vue` 全过） |
+
+#### 已知边界
+
+1. 配额只有读接口，没有写接口，因此「配额写失败保留输入」无对应真实路径；后续后端若补 `setUserQuota` 类端点，需新增判据，不能沿用只读路径。
+2. `IP 封禁` 与公告均为弹层表单，判据覆盖的是「失败后弹层不关闭」；若后续改成页面内表单，断言需改为 `wrapper.find` 可见性。
+3. 移动端按 R2 已整体裁剪 admin 模块，不存在管理端移动入口，故本条无需移动端运行时验证。
+4. 断网在组件级等价于 reject；真实网络超时与 HTTP 层重试策略不在本判据范围。
 
 ---
 
