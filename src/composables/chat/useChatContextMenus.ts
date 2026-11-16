@@ -55,8 +55,6 @@ export const useChatContextMenus = (options: UseChatContextMenusOptions) => {
   const groupRoleGuard = useGroupRoleGuard()
 
   const helpers = createContextMenuHelpers({
-    // 平台事实在此取一次（唯一来源），helper 与菜单列表都不再各自判平台
-    isDesktop: isDesktop(),
     t,
     showFeedback,
     chatStore,
@@ -67,6 +65,8 @@ export const useChatContextMenus = (options: UseChatContextMenusOptions) => {
   const lists = createContextMenuLists({
     t,
     showFeedback,
+    // 平台事实在此取一次（唯一来源）：菜单列表据此在构建期就裁掉桌面专属项
+    isDesktop: isDesktop(),
     isHistoryMode,
     disableHistoryActions,
     downloadFile,

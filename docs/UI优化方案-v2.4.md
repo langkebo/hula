@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -2983,6 +2983,59 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 1. 守卫删除后，**移动端误调**会真的去 patch 查看器 store 并尝试开窗口（虽然窗口不存在）。防护从「函数内早退」变成「路由/调用点约定 + 前提判据」，这是取舍：少一处分支，换来一条必须维护的路由断言。
 2. 剩余 9 处：`usePlatform`(2)、`main.ts`、`useWsEventHandler`、`wsCallHandler`、`useChatMain`、`useMsgInput`、`useMessageUser`、`useFooterEmoji`。其中前 4 类是合法决策点（平台差异必须存在），后 4 类属「交互差异」，正确解法是**组件变体**，成本明显高于前三组，不应为降计数硬拆。
 3. 基线继续手工改单键（未用 `--update`）。
+
+---
+
+### 19.26 P0-6｜右键菜单桌面专属项的构建期裁剪
+
+#### 缺口
+
+§19.24 边界 1 遗留：移动端与桌面共用同一套右键菜单列表，6 处桌面专属项（转发 / 复制 / 另存为）只是**点击时**用 `if (!requireDesktop()) return` 拦下并弹「敬请期待」。产品上不该让移动端看见不存在的操作；技术上这属于「运行时分支冒充平台边界」，违反了 R2 的「构建期即不存在」口径。
+
+#### 改动
+
+| 落点 | 改动 |
+| :--- | :--- |
+| `composables/chat/contextMenuHelpers.ts` | 删 `requireDesktop()` 及 deps 中的 `isDesktop`；`showComingSoon` 保留（`handleForward` 仍用于「不支持的转发类型」提示） |
+| `composables/chat/contextMenuLists.ts` | deps 增 `isDesktop: boolean`；6 处守卫改为菜单项 `visible: () => isDesktop`，通用菜单「转发」为 `(item) => isDesktop && !isNoticeMessage(item)` |
+| `composables/chat/useChatContextMenus.ts` | `isDesktop: isDesktop()` 从 helpers 移到 lists；平台事实全链路只取一次 |
+| **新增** `composables/chat/__tests__/contextMenuListsPlatform.test.ts` | 6 用例覆盖 6 处菜单项的两端可见性 |
+| `composables/chat/__tests__/contextMenuHelpers.test.ts` | 删 2 条 `requireDesktop` 用例，保留好友关系用例 |
+
+6 处落点：通用菜单「转发」、视频菜单「复制」、视频菜单「另存为」、历史模式 `mediaMenus`「另存为」、文件菜单「另存为」、图片菜单「另存为」。
+
+#### 用例表
+
+| 用例 | 桌面 `visible()` | 移动 `visible()` |
+| :--- | :--- | :--- |
+| 通用菜单「转发」（普通消息） | `true` | `false` |
+| 通用菜单「转发」（通知消息） | `false` | — |
+| 视频菜单「复制」 | `true` | `false` |
+| 视频菜单「另存为」 | `true` | `false` |
+| 文件菜单「另存为」 | `true` | `false` |
+| 图片菜单「另存为」 | `true` | `false` |
+| 历史模式媒体菜单「另存为」 | `true` | `false` |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 新增判据 | `pnpm vitest run src/composables/chat/__tests__/contextMenuHelpers.test.ts src/composables/chat/__tests__/contextMenuListsPlatform.test.ts` | **2 文件 / 7 用例通过** |
+| 类型 | `pnpm vue-tsc --noEmit` | exit 0 |
+| 全量单测 | `pnpm test:run` | **1055 文件 / 11663 用例通过**（收尾 `close timed out` 为既知噪声，exit 0） |
+| 棘轮 | `pnpm check:ratchet` | `is_mobile_branch: 10 (baseline 10)`、`handwritten_empty_state: 0`、`backdrop_filter_raw: 60 (baseline 60)` |
+| 文档 | `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 35 个路径引用全部存在 / `current undocumented: 573` vs `baseline 587` |
+| 移动端样式 | `pnpm check:mobile-css` | 166 个文件 OK |
+| SDK 边界 | `pnpm check:sdk-boundary` | `156 (baseline 156)` OK |
+| 裸请求 | `pnpm quality:no-raw-fetch` | 3 命中全在白名单 |
+| SDK 类型 | `pnpm check:sdk-types` | enum drift none、无未登记幻影 |
+| Lint / i18n | `pnpm check` | exit 0 |
+
+#### 已知边界
+
+1. `show_in_finder` / `show_in_folder` 仍是桌面专属但**没有 `visible` 门控**：它们没走 `requireDesktop`，移动端点击会调 `downloadAndRevealFile`（Tauri 桌面 API）。不在 §19.24 的 6 处清单内，本轮不改；若要收口需先确认移动端是否存在等价的「文件定位」能力。
+2. `isDesktop` 仍是构建时快照，与 §19.24 边界 2 同口径：平台不会运行中变化，可接受。
+3. 本次只裁「菜单项可见性」，长按菜单入口与其余菜单项仍由双端共用；删除项不影响既有项的行为。
 
 ---
 

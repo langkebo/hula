@@ -35,6 +35,8 @@ type ContextMenuItem = GroupRoleMenuItem
 type ContextMenuListDeps = {
   t: ReturnType<typeof useI18n>['t']
   showFeedback: ReturnType<typeof useActionFeedback>['showFeedback']
+  /** 平台事实（`usePlatform.isDesktop()` 取一次）：桌面专属项在构建期就不输出，移动端不渲染 */
+  isDesktop: boolean
   /** 历史记录模式：specialMenuList 输出复制/转发/另存为，正常模式只输出删除 */
   isHistoryMode: boolean
   /** 历史模式下禁用选择/转发动作（多窗口场景） */
@@ -98,6 +100,7 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
   const {
     t,
     showFeedback,
+    isDesktop,
     isHistoryMode,
     disableHistoryActions,
     downloadFile,
@@ -114,7 +117,7 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
     groupRoleGuard
   } = deps
   const { downloadAndRevealFile, downloadAndRevealVideo, previewFile } = fileDownload
-  const { checkFriendRelation, handleForward, shouldHideCopy, isNoticeMessage, requireDesktop } = helpers
+  const { checkFriendRelation, handleForward, shouldHideCopy, isNoticeMessage } = helpers
   const {
     userUid,
     isGroupManagementContext,
@@ -153,10 +156,9 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       label: () => t('menu.forward'),
       icon: 'share',
       click: (item: MessageType) => {
-        if (!requireDesktop()) return
         handleForward(item)
       },
-      visible: (item: MessageType) => !isNoticeMessage(item)
+      visible: (item: MessageType) => isDesktop && !isNoticeMessage(item)
     },
     {
       label: () => t('menu.reply'),
@@ -199,16 +201,15 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       label: () => t('menu.copy'),
       icon: 'copy',
       click: (item: MessageType) => {
-        if (!requireDesktop()) return
         handleCopy(item.message.body.url, true, item.message.id)
-      }
+      },
+      visible: () => isDesktop
     },
     ...commonMenuList.value,
     {
       label: () => t('menu.save_as'),
       icon: 'Importing',
       click: async (item: MessageType) => {
-        if (!requireDesktop()) return
         const bodyRecord = item.message.body as Record<string, unknown>
         const url = item.message.body.url
         const encryptedFile = bodyRecord.encryptedFile as Record<string, unknown> | undefined
@@ -222,7 +223,8 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
           ...(encryptedFile === undefined ? {} : { encryptedFile }),
           ...(defaultFileName === undefined ? {} : { defaultFileName })
         })
-      }
+      },
+      visible: () => isDesktop
     },
 
     {
@@ -331,7 +333,6 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
               label: () => t('menu.save_as'),
               icon: 'Importing',
               click: async (item: MessageType) => {
-                if (!requireDesktop()) return
                 const fileUrl = item.message.body.url
                 const fileName = item.message.body.fileName
                 const bodyRecord = item.message.body as Record<string, unknown>
@@ -351,7 +352,8 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
                     ...(fileName === undefined ? {} : { defaultFileName: fileName })
                   })
                 }
-              }
+              },
+              visible: () => isDesktop
             },
 
             {
@@ -426,7 +428,6 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       label: () => t('menu.save_as'),
       icon: 'Importing',
       click: async (item: RightMouseMessageItem) => {
-        if (!requireDesktop()) return
         const bodyRecord = item.message.body as Record<string, unknown>
         const encryptedFile = bodyRecord.encryptedFile as Record<string, unknown> | undefined
         await saveFileAttachmentAs({
@@ -435,7 +436,8 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
           ...(encryptedFile === undefined ? {} : { encryptedFile }),
           ...(item.message.body.fileName === undefined ? {} : { defaultFileName: item.message.body.fileName })
         })
-      }
+      },
+      visible: () => isDesktop
     },
 
     {
@@ -474,7 +476,6 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
       label: () => t('menu.save_as'),
       icon: 'Importing',
       click: async (item: MessageType) => {
-        if (!requireDesktop()) return
         try {
           const imageUrl = item.message.body.url
           if (!imageUrl) return
@@ -498,7 +499,8 @@ export const createContextMenuLists = (deps: ContextMenuListDeps) => {
           logger.error('保存图片失败:', error)
           showFeedback(t('home.chat_main.image.save_failed'), 'error')
         }
-      }
+      },
+      visible: () => isDesktop
     },
     {
       label: () => (isMac() ? t('menu.show_in_finder') : t('menu.show_in_folder')),

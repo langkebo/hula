@@ -9,8 +9,6 @@ import type { useUserStore } from '@/stores/domains/user/user'
 
 /** 右键菜单辅助函数工厂依赖 */
 type ContextMenuHelperDeps = {
-  /** 平台判定由调用方（`usePlatform` 边界）注入，本模块不直接依赖 PlatformConstants */
-  isDesktop: boolean
   t: ReturnType<typeof useI18n>['t']
   showFeedback: ReturnType<typeof useActionFeedback>['showFeedback']
   chatStore: ReturnType<typeof useChatStore>
@@ -25,7 +23,7 @@ type ContextMenuHelperDeps = {
  * 所有 Pinia store 与 i18n 反馈函数均通过 deps 注入，子模块内不直接调用 useXxxStore()。
  */
 export const createContextMenuHelpers = (deps: ContextMenuHelperDeps) => {
-  const { isDesktop, t, showFeedback, chatStore, contactStore, userStore } = deps
+  const { t, showFeedback, chatStore, contactStore, userStore } = deps
 
   /**
    * 检查用户关系
@@ -63,22 +61,7 @@ export const createContextMenuHelpers = (deps: ContextMenuHelperDeps) => {
   const isNoticeMessage = (item: MessageType) => item.message.type === MsgEnum.NOTICE
   const showComingSoon = () => showFeedback(t('home.chat_main.feature.coming_soon'), 'warning')
 
-  /**
-   * 桌面端专属动作守卫：移动端提示「敬请期待」并返回 false，桌面端返回 true。
-   * 收敛各菜单项里重复的「移动端提示敬请期待后中断」分支。
-   *
-   * 平台事实由 deps 注入（`useChatContextMenus` 从 `usePlatform.isDesktop()` 取一次），
-   * 所以这里不再直接判平台 —— 平台判定只应有一个来源（§19.24）。
-   */
-  const requireDesktop = () => {
-    if (!isDesktop) {
-      showComingSoon()
-      return false
-    }
-    return true
-  }
-
-  return { checkFriendRelation, handleForward, shouldHideCopy, isNoticeMessage, showComingSoon, requireDesktop }
+  return { checkFriendRelation, handleForward, shouldHideCopy, isNoticeMessage, showComingSoon }
 }
 
 export type ContextMenuHelpers = ReturnType<typeof createContextMenuHelpers>
