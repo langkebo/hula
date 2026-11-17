@@ -6,7 +6,7 @@ import { resolveDmIdentityKey } from '@/utils/userIdentity'
 import { hasOwn } from '@/utils/webCompat'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { matrixDirectMessageService } from '../room/MatrixDirectMessageService'
-import { findDmCounterpart } from '../room/roomTypeUtils'
+import { findDmCounterpart, isDirectMessageRoomFromRoom } from '../room/roomTypeUtils'
 
 const logger = createLogger('MatrixSessionService')
 
@@ -342,10 +342,16 @@ class MatrixSessionService extends BaseMatrixService {
     // 否则下游按 detailId 的去重会退回 roomId，导致同一联系人的多个 DM 房间在消息列表重复出现。
     // findDmCounterpart 优先 join 成员、回退 invite/任意成员，且不会误取自己。
     const selfId = this.getClient().getUserId() || undefined
-    const otherMember = findDmCounterpart(room, selfId)
-    const detailId = dmRoomInfo?.invitees?.[0] || dmRoomInfo?.inviter || otherMember
+    const joinedMemberCount = typeof room.getJoinedMemberCount === 'function' ? room.getJoinedMemberCount() : 0
+    // 判型必须与 `RealtimeService.convertRoomToSession` 用同一判据（m.direct / DM 标记 或 2 人房），
+    // 不能看「是否存在除自己外的成员」——群聊同样有对方成员，那样会把所有群聊判成单聊
+    // （症状：群组会话列表恒空；群聊还会被当私聊按 counterpart 去重合并）。
     const isSingle =
-      !!detailId || (typeof room.getJoinedMemberCount === 'function' ? room.getJoinedMemberCount() === 2 : false)
+      dmRoomInfo !== null || joinedMemberCount === 2 || isDirectMessageRoomFromRoom(this.getClient(), room)
+    // counterpart 只属于单聊：给群聊填 detailId 会让 `id`/`account` 指向某个成员，
+    // 下游按该键去重与「进入私聊」动作都会错位。
+    const otherMember = isSingle ? findDmCounterpart(room, selfId) : undefined
+    const detailId = isSingle ? dmRoomInfo?.invitees?.[0] || dmRoomInfo?.inviter || otherMember : undefined
     const notificationSettings = this.getRoomNotificationSettings(room)
 
     return {

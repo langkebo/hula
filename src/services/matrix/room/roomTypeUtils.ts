@@ -129,8 +129,8 @@ function resolveDmCounterpart(room: Room, selfId?: string | null): string | unde
 export function isDirectMessageRoomFromRoom(client: MatrixClient | null | undefined, room: Room): boolean {
   if (!client) return false
 
-  // 1. 检查 m.direct account data
-  const directAccount = client.getAccountData('m.direct')
+  // 1. 检查 m.direct account data（测试替身/精简 client 未必暴露 getAccountData）
+  const directAccount = typeof client.getAccountData === 'function' ? client.getAccountData('m.direct') : undefined
   const directMap = directAccount?.getContent() as Record<string, { room_id: string }[]> | undefined
   if (directMap) {
     const isDm = Object.values(directMap).some((rooms) => rooms?.some((r) => r?.room_id === room.roomId))

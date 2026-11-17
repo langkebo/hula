@@ -156,11 +156,16 @@ describe('MatrixSessionService', () => {
     })
   })
 
-  it('should still build sessions when dm rooms query fails while listing sessions', async () => {
+  it('群聊判型回归：有多个对方成员也必须判 GROUP（不得因 counterpart 被判 SINGLE）', async () => {
     const room = createRoom({
       roomId: '!group:example.com',
       name: 'General',
       joinedMemberCount: 3,
+      joinedMembers: [
+        { userId: '@self:example.com' },
+        { userId: '@alice:example.com' },
+        { userId: '@bob:example.com' }
+      ],
       events: [createEvent(1712000000000, 'latest update')]
     })
 
