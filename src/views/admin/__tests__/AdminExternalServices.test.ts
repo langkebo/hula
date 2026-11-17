@@ -14,11 +14,18 @@ vi.mock('@/composables/admin', async () => {
     serviceType: ref('all'),
     checkingId: ref(null),
     mutating: ref(false),
+    clientHealth: ref(null),
+    clientServices: ref([]),
+    clientLoading: ref(false),
+    clientMutatingId: ref(null),
     loadServices: vi.fn().mockResolvedValue(undefined),
     registerService: vi.fn().mockResolvedValue(true),
     setEnabled: vi.fn().mockResolvedValue(true),
     checkHealth: vi.fn().mockResolvedValue(undefined),
-    removeService: vi.fn().mockResolvedValue(true)
+    removeService: vi.fn().mockResolvedValue(true),
+    loadClientHealth: vi.fn().mockResolvedValue(undefined),
+    setClientEnabled: vi.fn().mockResolvedValue(true),
+    removeClientService: vi.fn().mockResolvedValue(true)
   }
   return { useAdminExternalServices: () => holder.state }
 })
@@ -174,6 +181,14 @@ vi.mock('naive-ui', async () => {
     }
   })
 
+  const NCard = defineComponent({
+    name: 'NCard',
+    props: { size: { type: String, default: '' } },
+    setup(_, { slots }) {
+      return () => h('div', { class: 'n-card' }, [slots.header?.(), slots.default?.()])
+    }
+  })
+
   const NEmpty = defineComponent({
     name: 'NEmpty',
     props: { description: { type: String, default: '' } },
@@ -185,6 +200,7 @@ vi.mock('naive-ui', async () => {
   return {
     NAlert,
     NButton,
+    NCard,
     NEmpty,
     NForm,
     NFormItem,
@@ -209,11 +225,17 @@ const state = holder.state as {
   serviceType: { value: string }
   checkingId: { value: string | null }
   mutating: { value: boolean }
+  clientServices: { value: { id: string; type: string; status: string; last_check?: number }[] }
+  clientLoading: { value: boolean }
+  clientMutatingId: { value: string | null }
   loadServices: ReturnType<typeof vi.fn>
   registerService: ReturnType<typeof vi.fn>
   setEnabled: ReturnType<typeof vi.fn>
   checkHealth: ReturnType<typeof vi.fn>
   removeService: ReturnType<typeof vi.fn>
+  loadClientHealth: ReturnType<typeof vi.fn>
+  setClientEnabled: ReturnType<typeof vi.fn>
+  removeClientService: ReturnType<typeof vi.fn>
 }
 
 const sampleServices = [
@@ -253,6 +275,9 @@ describe('AdminExternalServices', () => {
     state.serviceType.value = 'all'
     state.checkingId.value = null
     state.mutating.value = false
+    state.clientServices.value = []
+    state.clientLoading.value = false
+    state.clientMutatingId.value = null
   })
 
   it('挂载后拉取列表并渲染名称/类型/健康状态', async () => {
@@ -346,5 +371,23 @@ describe('AdminExternalServices', () => {
       webhook_url: '',
       api_key: ''
     })
+  })
+
+  it('client 作用域展示健康记录并支持启用/注销', async () => {
+    state.clientServices.value = [{ id: 'svc-1', type: 'webhook', status: 'healthy', last_check: 1700000002000 }]
+    const wrapper = await mountComponent()
+
+    expect(state.loadClientHealth).toHaveBeenCalledTimes(1)
+    const items = wrapper.findAll('[data-testid="client-service-item"]')
+    expect(items).toHaveLength(1)
+    expect(items[0]!.text()).toContain('svc-1')
+    expect(items[0]!.text()).toContain('webhook')
+
+    await wrapper.find('[data-testid="client-disable-svc-1"]').trigger('click')
+    expect(state.setClientEnabled).toHaveBeenCalledWith('svc-1', false)
+
+    await wrapper.find('[data-testid="client-delete-svc-1"]').trigger('click')
+    await wrapper.findAll('.popconfirm-positive')[0]!.trigger('click')
+    expect(state.removeClientService).toHaveBeenCalledWith('svc-1')
   })
 })

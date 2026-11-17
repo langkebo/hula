@@ -82,6 +82,11 @@ export type {
   SystemNotificationInfo,
   UserReputation
 } from './AdminTypes'
-export type { ExternalService, ExternalServiceHealth } from './ExternalServiceService'
+export type {
+  ClientExternalServiceHealth,
+  ClientExternalServiceHealthItem,
+  ExternalService,
+  ExternalServiceHealth
+} from './ExternalServiceService'
 export type { AdminModuleItem, AdminModuleListResult, AdminModuleStatus } from './ModuleService'
 export { adminModuleService } from './ModuleService'

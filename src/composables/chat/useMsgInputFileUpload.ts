@@ -19,6 +19,7 @@ import { cryptoSDKAdapter } from '@/services/matrix/crypto/CryptoSDKAdapter'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { isPayloadTooLarge } from '@/services/matrix/media/mediaUploadHelpers'
 import type { SendMessagePayload } from '@/services/matrix/messaging/MatrixMessageService'
+import type { ServerUploadProgress } from '@/services/performance/ChunkUploadService'
 import type { MessageStrategy } from '@/strategy/MessageStrategy'
 import { getStrategy } from '@/strategy/MessageStrategy.ts'
 import { isPathUploadFile, type PathUploadFile, type UploadFile } from '@/utils/FileType'
@@ -45,12 +46,17 @@ interface FileUploadContext {
   getMessageContentType: (messageInputDom: Ref<HTMLElement>) => MsgEnum
 }
 
+interface FileUploadHooks {
+  onServerProgress?: (progress: ServerUploadProgress) => void
+}
+
 async function processGenericFile(
   file: File,
   tempMsgId: string,
   messageStrategy: MessageStrategy,
   targetRoomId: string,
-  ctx: FileUploadContext
+  ctx: FileUploadContext,
+  hooks?: FileUploadHooks
 ): Promise<void> {
   const { reply, globalStore, userUid, chatStore, sendWithTracking } = ctx
   // 上传链统一走 FILE 策略（500MB 上限、blob/path 双通道）；图片只改发送时的 msgtype 与 info 字段。
@@ -91,12 +97,12 @@ async function processGenericFile(
     const localPath = typeof msg.path === 'string' ? msg.path : ''
 
     const uploadFromBlob = async (): Promise<void> => {
-      const result = await matrixMediaService.uploadFile(file, progressCallback)
+      const result = await matrixMediaService.uploadFile(file, progressCallback, hooks?.onServerProgress)
       messageBody.url = result.contentUri
     }
 
     if (isEncrypted) {
-      const result = await matrixMediaService.uploadEncryptedFile(file, progressCallback)
+      const result = await matrixMediaService.uploadEncryptedFile(file, progressCallback, hooks?.onServerProgress)
       messageBody.encryptedFile = result.encryptedFile
       delete (messageBody as Record<string, unknown>).url
     } else if (!localPath) {
@@ -306,7 +312,16 @@ export function useMsgInputFileUpload(
           if (isPathUploadFile(job.file)) {
             await processGenericPathFile(job.file, tempMsgId, messageStrategy, targetRoomId, ctx)
           } else {
-            await processGenericFile(job.file, tempMsgId, messageStrategy, targetRoomId, ctx)
+            const fileId = job.fileId
+            const hooks: FileUploadHooks | undefined = fileId
+              ? {
+                  onServerProgress: (progress) => {
+                    const { uploadedChunks, totalChunks } = progress
+                    globalFileUploadQueue.updateFileServerProgress(fileId, uploadedChunks, totalChunks)
+                  }
+                }
+              : undefined
+            await processGenericFile(job.file, tempMsgId, messageStrategy, targetRoomId, ctx, hooks)
           }
 
           if (job.fileId) {

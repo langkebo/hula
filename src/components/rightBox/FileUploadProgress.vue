@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="(queue.isActive || queue.endTime) && queue.totalFiles > 1"
+    v-if="(queue.isActive || queue.endTime) && queue.totalFiles > 0"
     class="file-upload-progress"
     :class="{ 'is-completed': !queue.isActive && queue.endTime }">
     <!-- 进度条头部信息 -->
@@ -25,10 +25,16 @@
       :border-radius="3"
       :color="'var(--tjg-color-primary-500)'"
       :rail-color="'var(--tjg-border-strong)'" />
+
+    <!-- 分片上传时展示服务端已接收分片数 -->
+    <div v-if="serverProgressText" class="server-progress" data-testid="file-upload-server-progress">
+      {{ serverProgressText }}
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { globalFileUploadQueue } from '@/composables/common/useFileUploadQueue'
 
@@ -36,6 +42,16 @@ const { t } = useI18n()
 
 // 队列状态
 const { queue, progress, isUploading } = globalFileUploadQueue
+
+// 服务端分片接收进度（仅分片上传时存在）
+const serverProgressText = computed(() => {
+  const item = queue.items.find((entry) => entry.serverProgress)
+  if (!item?.serverProgress) return ''
+  return t('message.file_upload_progress.server_received', {
+    uploaded: item.serverProgress.uploadedChunks,
+    total: item.serverProgress.totalChunks
+  })
+})
 
 // 状态文本
 const getStatusText = () => {
@@ -77,5 +93,11 @@ const getStatusText = () => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.server-progress {
+  margin-top: 6px;
+  font-size: var(--tjg-font-size-2xs);
+  color: var(--tjg-text-tertiary);
 }
 </style>

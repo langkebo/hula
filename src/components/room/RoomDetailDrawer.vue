@@ -150,6 +150,10 @@
                   <section class="room-drawer__section">
                     <RoomMetadataPanel :room-id="roomId ?? ''" />
                   </section>
+
+                  <section class="room-drawer__section">
+                    <RoomServerSummaryPanel :room-id="roomId ?? ''" />
+                  </section>
                 </div>
 
                 <!-- 成员 -->
@@ -242,6 +246,7 @@ import RoomEncryptedEventsPanel from '@/components/room/RoomEncryptedEventsPanel
 import RoomMessageQueuePanel from '@/components/room/RoomMessageQueuePanel.vue'
 import RoomMetadataPanel from '@/components/room/RoomMetadataPanel.vue'
 import RoomRetentionPanel from '@/components/room/RoomRetentionPanel.vue'
+import RoomServerSummaryPanel from '@/components/room/RoomServerSummaryPanel.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
 import { OnlineEnum } from '@/enums'

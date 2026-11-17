@@ -151,6 +151,10 @@
     "section_member_manage": "Member Management",
     "section_permissions_matrix": "Permissions Matrix (Power Levels)",
     "section_e2ee": "End-to-End Encryption",
+    "section_vault": "Room Vault",
+    "vault_placeholder": "Edit vault data as JSON",
+    "vault_save": "Save Vault",
+    "vault_invalid_json": "Vault data must be a valid JSON object",
     "section_notification": "Notification Settings",
     "section_alias": "Room Aliases",
     "section_history_visibility": "History Visibility",
@@ -321,6 +325,18 @@
     "empty": "No Metadata",
     "subtitle": "View room metadata",
     "title": "Room Metadata"
+  },
+  "server_summary": {
+    "title": "Server Summary",
+    "subtitle": "Members, state and ephemeral events from the server room summary API",
+    "members": "Summary Members",
+    "state": "Summary State",
+    "ephemeral": "Ephemeral Events",
+    "empty": "No data",
+    "hero": "Hero",
+    "expand": "Expand content",
+    "collapse": "Collapse content",
+    "load_failed": "Failed to load server summary"
   },
   "my_rooms": {
     "empty": "No rooms",

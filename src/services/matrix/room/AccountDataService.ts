@@ -15,6 +15,27 @@ const logger = createLogger('AccountDataService')
 type AccountDataManagerInstance = ReturnType<NonNullable<MatrixClient['getAccountDataManager']>>
 
 /**
+ * 房间摘要成员条目（与 SDK `RoomSummaryMember` 同形）。
+ */
+export interface RoomSummaryMemberEntry {
+  user_id: string
+  display_name?: string
+  avatar_url?: string
+  membership: string
+  is_hero: boolean
+}
+
+/**
+ * 房间摘要状态条目（与 SDK `IRoomSummaryState` 同形）。
+ */
+export interface RoomSummaryStateEntry {
+  event_type: string
+  state_key: string
+  event_id?: string
+  content: unknown
+}
+
+/**
  * Room account-data / reporting / retention domain service.
  *
  * Covers per-user-per-room account_data, content-scanner reports,
@@ -71,13 +92,14 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   /** 获取保险库数据
    */
-  async getVaultData(roomId: string): Promise<Record<string, unknown>> {
+  async getVaultData(roomId: string, throwOnError = false): Promise<Record<string, unknown>> {
     const client = this.getClient()
     try {
       const result = await client.getRoomSummaryManager().getRoomVaultData(roomId)
       return (result ?? {}) as Record<string, unknown>
     } catch (err) {
       logger.error(`[MatrixRoom] 获取保险库数据失败: ${err}`)
+      if (throwOnError) throw err
       return {}
     }
   }
@@ -142,7 +164,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
 
   // ==================== Room Summary REST API ====================
 
-  async getRoomSummaryMembers(roomId: string): Promise<unknown> {
+  async getRoomSummaryMembers(roomId: string): Promise<RoomSummaryMemberEntry[]> {
     const client = this.getClient()
     try {
       return await client.getRoomSummaryManager().getRoomSummaryMembers(roomId)
@@ -152,7 +174,7 @@ export class MatrixRoomAccountDataService extends BaseMatrixService {
     }
   }
 
-  async getRoomSummaryState(roomId: string): Promise<unknown> {
+  async getRoomSummaryState(roomId: string): Promise<RoomSummaryStateEntry[]> {
     const client = this.getClient()
     try {
       return await client.getRoomSummaryManager().getAllSummaryState(roomId)

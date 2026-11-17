@@ -18,6 +18,42 @@
       </div>
     </div>
 
+    <div class="stats-row" data-testid="voice-user-stats">
+      <div class="stat-item">
+        <span class="stat-value">{{ userStats.totalMessages }}</span>
+        <span class="stat-label">{{ t('setting.voice_video.voice_messages.my_total_messages') }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{{ formatDuration(userStats.totalDuration) }}</span>
+        <span class="stat-label">{{ t('setting.voice_video.voice_messages.my_total_duration') }}</span>
+      </div>
+    </div>
+
+    <div class="config-section" data-testid="voice-config">
+      <h4 class="config-title">{{ t('setting.voice_video.voice_messages.config_title') }}</h4>
+      <div v-if="config" class="config-grid">
+        <div class="config-item">
+          <span class="config-label">{{ t('setting.voice_video.voice_messages.config_max_duration') }}</span>
+          <span class="config-value">{{ formatDuration(config.maxDuration) }}</span>
+        </div>
+        <div class="config-item">
+          <span class="config-label">{{ t('setting.voice_video.voice_messages.config_formats') }}</span>
+          <span class="config-value">{{ config.allowedFormats.join(', ') || '-' }}</span>
+        </div>
+        <div class="config-item">
+          <span class="config-label">{{ t('setting.voice_video.voice_messages.config_auto_transcribe') }}</span>
+          <span class="config-value">
+            {{
+              config.autoTranscribe
+                ? t('setting.voice_video.voice_messages.config_enabled')
+                : t('setting.voice_video.voice_messages.config_disabled')
+            }}
+          </span>
+        </div>
+      </div>
+      <p v-else class="config-hint">{{ t('setting.voice_video.voice_messages.config_unavailable') }}</p>
+    </div>
+
     <div class="list-toolbar">
       <n-input
         v-model:value="roomFilter"
@@ -85,27 +121,41 @@ const loading = ref(false)
 const messages = ref<VoiceMessageRow[]>([])
 const roomFilter = ref('')
 const stats = ref({ totalDuration: 0, totalMessages: 0, averageDuration: 0 })
+const userStats = ref({ totalDuration: 0, totalMessages: 0 })
+const config = ref<{ maxDuration: number; allowedFormats: string[]; autoTranscribe: boolean } | null>(null)
 const expandedId = ref('')
 const expandedContent = ref('')
 const contentLoadingId = ref('')
 
 onMounted(() => {
   loadMessages()
+  loadConfig()
 })
+
+async function loadConfig() {
+  try {
+    config.value = await matrixVoiceService.getVoiceConfig()
+  } catch (error) {
+    logger.warn('Voice config unavailable', error)
+    config.value = null
+  }
+}
 
 async function loadMessages() {
   const userId = matrixClientService.getUserId()
   if (!userId) return
   loading.value = true
   try {
-    const [page, voiceStats] = await Promise.all([
+    const [page, voiceStats, ownStats] = await Promise.all([
       roomFilter.value.trim()
         ? matrixVoiceService.getRoomVoiceList(roomFilter.value.trim())
         : matrixVoiceService.getUserVoiceList(userId),
-      matrixVoiceService.getVoiceStats()
+      matrixVoiceService.getVoiceStats(),
+      matrixVoiceService.getUserVoiceStats(userId)
     ])
     messages.value = page.messages
     stats.value = voiceStats
+    userStats.value = ownStats
   } catch (error) {
     logger.error('Failed to load voice messages', error)
     showFeedback(t('setting.voice_video.voice_messages.load_failed'), 'error')
@@ -186,6 +236,50 @@ function formatTs(ts: number): string {
 }
 
 .stat-label {
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+}
+
+.config-section {
+  padding: var(--tjg-space-3);
+  background-color: var(--tjg-settings-card-bg);
+  border-radius: var(--tjg-radius-sm);
+  margin-bottom: var(--tjg-space-3);
+}
+
+.config-title {
+  font-size: var(--tjg-font-size-sm);
+  font-weight: var(--tjg-font-weight-medium);
+  color: var(--tjg-text-secondary);
+  margin: 0 0 var(--tjg-space-2) 0;
+}
+
+.config-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tjg-space-4);
+}
+
+.config-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.config-label {
+  font-size: var(--tjg-font-size-sm);
+  color: var(--tjg-text-quaternary);
+}
+
+.config-value {
+  font-size: var(--tjg-font-size-base);
+  color: var(--tjg-text-primary);
+  word-break: break-all;
+}
+
+.config-hint {
+  margin: 0;
   font-size: var(--tjg-font-size-sm);
   color: var(--tjg-text-quaternary);
 }

@@ -4485,6 +4485,37 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 
 ---
 
+### 19.52 §19.51 开放项收口：UI 面补齐（2026-11-17）
+
+#### 说明
+
+§19.51 遗留的 6 组「需新增 UI 面」条目全部落地；其中 ROOM-03（举报扫描）、ROOM-13（公共空间 / widget 会话）、ADM-08（`useQuotaStore` 接入配额页）经复核已在前序批次闭环，本轮实际改动 4 组。
+
+#### 本轮变更清单
+
+| 条目 | 文件 | 改动 |
+| :--- | :--- | :--- |
+| VEN-01 | `src/views/settingsWindow/tabs/sections/VoiceMessageSettings.vue`、`locales/{en,zh-CN}/setting.json` | 页面新增「我的语音」统计区（条数 / 总时长）与「语音配置」区（最长时长 / 支持格式 / 自动转写），分别消费 `getUserVoiceStats` 与 `getVoiceConfig`；配置不可用时降级提示；新增 9 个 i18n key |
+| VEN-03 | `src/services/matrix/admin/ExternalServiceService.ts`、`src/services/matrix/admin/index.ts`、`src/composables/admin/useAdminExternalServices.ts`、`src/views/admin/AdminExternalServices.vue`、`locales/{en,zh-CN}/admin.json`、`__tests__/AdminExternalServices.test.ts` | 补齐 client-scope 读写（`getClientHealth` / `updateClientService` / `deleteClientService`）；管理员页新增「客户端作用域」卡片，展示健康记录并支持启用/禁用/注销；新增 5 个 i18n key 与对应单测 |
+| ROOM-09 | `src/services/matrix/room/AccountDataService.ts`、`RoomFacade.ts`、`src/components/room/settings-tabs/SecurityTab.vue`、`src/components/room/RoomServerSummaryPanel.vue`、`src/components/room/RoomDetailDrawer.vue`、`locales/{en,zh-CN}/room.json` | 读门面新增 `getVaultData` / `getRoomSummaryMembers` / `getRoomSummaryState` / `getRoomEphemeral`，写门面新增 `setVaultData`；安全 tab 增加房间保险库 JSON 编辑区（严格 JSON 校验）；新建服务端摘要面板（摘要成员 / 摘要状态 / 临时事件，支持展开原文）并挂载到概览 tab；新增 `room.server_summary.*` 9 个 key 与 vault 4 个 key |
+| MED-01 | `src/services/performance/ChunkUploadService.ts`、`MatrixMediaService.ts`、`media/mediaUploadHelpers.ts`、`src/composables/common/useFileUploadQueue.ts`、`src/composables/chat/useMsgInputFileUpload.ts`、`src/components/rightBox/FileUploadProgress.vue`、`locales/{en,zh-CN}/message.json`、`__tests__/FileUploadProgress.test.ts` | 分片上传新增 `onServerProgress` 回调：每 1s 轮询 SDK `getChunkUploadProgress`（复用现有端点，不自建通道），`finally` 中停止轮询；队列与进度组件展示「服务端已接收 x/y 分片」，并放开单文件上传时的进度条显示；新增 1 个 i18n key 与 2 个单测 |
+
+#### 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| `pnpm gen:i18n` | 103 命名空间 / 6911 key path 生成成功 |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| `pnpm test:run` | 1070 文件 / 11807 用例全部通过 |
+| `pnpm check` | Biome / i18n / token / aria / dead-handler / capabilities-sync 全通过 |
+| `pnpm check:ratchet` | 全部计数与基线持平 |
+| `pnpm check:sdk-boundary` | 与基线持平，无回归 |
+| `pnpm quality:no-raw-fetch` | 全部命中白名单 |
+| `pnpm check:doc-coverage` | 通过 |
+| `pnpm check:doc-paths` | 通过 |
+
+---
+
 ## 附录 A｜参数映射表
 
 | 原始建议参数 | 本项目 token | 说明 |

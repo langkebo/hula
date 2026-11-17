@@ -4,6 +4,8 @@
 // 对外保持稳定的导出名，屏蔽下层 sub-service 的重构与拆分。
 
 import type { ICreateRoomOpts, Room, RoomMember } from 'matrix-js-sdk'
+import { synapseRoomSummaryService } from '../extensions/SynapseRoomSummaryService'
+import type { RoomSummaryMemberEntry, RoomSummaryStateEntry } from './AccountDataService'
 import { matrixRoomAccountDataService } from './AccountDataService'
 import type { CreateGroupRoomOptions } from './CreationService'
 import { matrixRoomCreationService } from './CreationService'
@@ -69,6 +71,7 @@ export interface MatrixRoomActionFacade {
   setRoomAccountData(roomId: string, eventType: string, content: Record<string, unknown>): Promise<void>
   setReadLifetime(roomId: string, lifetimeMs: number): Promise<void>
   setAntiScreenshot(roomId: string, enabled: boolean): Promise<void>
+  setVaultData(roomId: string, content: Record<string, unknown>): Promise<void>
 }
 
 export const matrixRoomActionFacade: MatrixRoomActionFacade = {
@@ -124,7 +127,8 @@ export const matrixRoomActionFacade: MatrixRoomActionFacade = {
   setRoomAccountData: (roomId, eventType, content) =>
     matrixRoomAccountDataService.setRoomAccountData(roomId, eventType, content),
   setReadLifetime: (roomId, lifetimeMs) => matrixRoomAccountDataService.setReadLifetime(roomId, lifetimeMs),
-  setAntiScreenshot: (roomId, enabled) => matrixRoomAccountDataService.setAntiScreenshot(roomId, enabled)
+  setAntiScreenshot: (roomId, enabled) => matrixRoomAccountDataService.setAntiScreenshot(roomId, enabled),
+  setVaultData: (roomId, content) => matrixRoomAccountDataService.setVaultData(roomId, content)
 }
 
 interface MatrixRoomMemberFacade {
@@ -244,6 +248,10 @@ interface MatrixRoomReadFacade {
   getEncryptedEvents(roomId: string): Promise<{ events?: Array<Record<string, unknown>> }>
   signEvent(roomId: string, eventId: string): Promise<Record<string, unknown>>
   verifyEvent(roomId: string, eventId: string): Promise<{ valid: boolean }>
+  getVaultData(roomId: string, throwOnError?: boolean): Promise<Record<string, unknown>>
+  getRoomSummaryMembers(roomId: string): Promise<RoomSummaryMemberEntry[]>
+  getRoomSummaryState(roomId: string): Promise<RoomSummaryStateEntry[]>
+  getRoomEphemeral(roomId: string, types?: string[]): Promise<Record<string, unknown>[]>
 }
 
 export const matrixRoomReadFacade: MatrixRoomReadFacade = {
@@ -281,5 +289,9 @@ export const matrixRoomReadFacade: MatrixRoomReadFacade = {
   getMessageQueue: (roomId) => matrixRoomAccountDataService.getMessageQueue(roomId),
   getEncryptedEvents: (roomId) => matrixRoomAccountDataService.getEncryptedEvents(roomId),
   signEvent: (roomId, eventId) => matrixRoomAccountDataService.signEvent(roomId, eventId),
-  verifyEvent: (roomId, eventId) => matrixRoomAccountDataService.verifyEvent(roomId, eventId)
+  verifyEvent: (roomId, eventId) => matrixRoomAccountDataService.verifyEvent(roomId, eventId),
+  getVaultData: (roomId, throwOnError?) => matrixRoomAccountDataService.getVaultData(roomId, throwOnError),
+  getRoomSummaryMembers: (roomId) => matrixRoomAccountDataService.getRoomSummaryMembers(roomId),
+  getRoomSummaryState: (roomId) => matrixRoomAccountDataService.getRoomSummaryState(roomId),
+  getRoomEphemeral: (roomId, types?) => synapseRoomSummaryService.getRoomEphemeral(roomId, types)
 }

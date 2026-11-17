@@ -18,7 +18,11 @@ vi.mock('@/composables/common/useFileUploadQueue', async () => {
     totalFiles: 0,
     completedFiles: 0,
     failedFiles: 0,
-    items: [] as Array<{ name: string; status: string }>,
+    items: [] as Array<{
+      name: string
+      status: string
+      serverProgress?: { uploadedChunks: number; totalChunks: number }
+    }>,
     progress: 0,
     isUploading: false
   })
@@ -67,11 +71,25 @@ describe('rightBox/FileUploadProgress', () => {
 
   const mountComponent = () => mount(FileUploadProgress)
 
-  it('文件数 ≤ 1 时不渲染进度条', () => {
+  it('单文件上传时也渲染进度条', () => {
     uploadRefs.queue.totalFiles = 1
     uploadRefs.queue.isActive = true
+    uploadRefs.isUploading.value = true
+    uploadRefs.queue.items = [{ name: 'single.bin', status: 'uploading' }]
     const wrapper = mountComponent()
-    expect(wrapper.find('.file-upload-progress').exists()).toBe(false)
+    expect(wrapper.find('.file-upload-progress').exists()).toBe(true)
+  })
+
+  it('存在服务端分片进度时渲染已接收分片提示', () => {
+    uploadRefs.queue.totalFiles = 1
+    uploadRefs.queue.isActive = true
+    uploadRefs.queue.items = [
+      { name: 'big.bin', status: 'uploading', serverProgress: { uploadedChunks: 2, totalChunks: 5 } }
+    ]
+    const wrapper = mountComponent()
+    const hint = wrapper.find('[data-testid="file-upload-server-progress"]')
+    expect(hint.exists()).toBe(true)
+    expect(hint.text()).toContain('message.file_upload_progress.server_received')
   })
 
   it('多文件上传排队/准备阶段渲染 preparing 状态', () => {

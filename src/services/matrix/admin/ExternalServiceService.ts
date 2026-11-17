@@ -73,11 +73,64 @@ interface HealthCheckResult {
   is_healthy: boolean
 }
 
+/** client-scope 健康记录（对应 `GET {VendorPrefix}/external_services/health`）。 */
+export interface ClientExternalServiceHealthItem {
+  id: string
+  type: string
+  status: string
+  last_check?: number
+}
+
+/** client-scope 健康响应。 */
+export interface ClientExternalServiceHealth {
+  status: string
+  services?: ClientExternalServiceHealthItem[]
+}
+
 export class AdminExternalServiceService {
   constructor(private readonly getClient: GetClientGetter) {}
 
   private getManager() {
     return this.getClient().getAdminManager().externalService
+  }
+
+  /**
+   * client-scope 外部服务管理器（`getExternalServiceManager`）。
+   *
+   * client 前缀只支持健康、更新、删除三类操作，不存在列表端点。
+   */
+  private getClientManager() {
+    return this.getClient().getExternalServiceManager()
+  }
+
+  /**
+   * 读取 client-scope 外部服务健康状态。
+   */
+  async getClientHealth(): Promise<ClientExternalServiceHealth> {
+    try {
+      const result = await this.getClientManager().getHealth('client')
+      return (result ?? { status: 'unknown' }) as ClientExternalServiceHealth
+    } catch (err) {
+      logger.error(`[AdminExternalService] getClientHealth 失败: ${err}`)
+      return { status: 'unknown' }
+    }
+  }
+
+  /**
+   * 更新 client-scope 外部服务的启用状态。
+   */
+  async updateClientService(serviceId: string, request: UpdateExternalServiceRequest): Promise<{ id: string }> {
+    const result = await this.getClientManager().updateService(serviceId, request, 'client')
+    logger.info(`[AdminExternalService] 更新 client 外部服务成功: ${serviceId}`)
+    return result as { id: string }
+  }
+
+  /**
+   * 注销 client-scope 外部服务。
+   */
+  async deleteClientService(serviceId: string): Promise<void> {
+    await this.getClientManager().deleteService(serviceId, 'client')
+    logger.info(`[AdminExternalService] 注销 client 外部服务成功: ${serviceId}`)
   }
 
   /**

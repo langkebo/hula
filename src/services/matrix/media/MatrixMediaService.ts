@@ -3,7 +3,7 @@ import {
   type EncryptedAttachmentFile,
   matrixAttachmentEncryptionService
 } from '@/services/matrix/crypto/MatrixAttachmentEncryptionService'
-import { chunkUploadService } from '@/services/performance/ChunkUploadService'
+import { chunkUploadService, type ServerUploadProgress } from '@/services/performance/ChunkUploadService'
 import { resolveUploadMimeTypeFromFile } from '@/utils/FileType'
 import { formatBytes } from '@/utils/Formatting'
 import { compressImage, isImageFile } from '@/utils/ImageUtils'
@@ -106,10 +106,14 @@ class MatrixMediaServiceClass extends BaseMatrixService {
 
   // ── 上传 ──
 
-  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
+  async uploadFile(
+    file: File,
+    onProgress?: (progress: number) => void,
+    onServerProgress?: (progress: ServerUploadProgress) => void
+  ): Promise<UploadResult> {
     this.assertClientReady()
     if (this.enableChunkUpload && file.size >= MEDIA_CHUNK_UPLOAD_THRESHOLD_BYTES) {
-      return this.uploadLargeFile(file, onProgress)
+      return this.uploadLargeFile(file, onProgress, onServerProgress)
     }
     try {
       const mimetype = await resolveUploadMimeTypeFromFile(file, file.name)
@@ -117,7 +121,8 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         () => this.getMedia(),
         file,
         createUploadOptions(mimetype, onProgress, file.name),
-        onProgress
+        onProgress,
+        onServerProgress
       )
       logger.info(`[MatrixMedia] 文件上传成功: ${contentUri}`)
       const telemetry = matrixClientService.getTelemetry()
@@ -133,12 +138,17 @@ class MatrixMediaServiceClass extends BaseMatrixService {
    * 主动分块上传大文件 (§9.4.1)
    * 阈值：文件 ≥ 10MB 时应优先调用此方法，避免触发 413 后再回退。
    */
-  async uploadLargeFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResult> {
+  async uploadLargeFile(
+    file: File,
+    onProgress?: (progress: number) => void,
+    onServerProgress?: (progress: ServerUploadProgress) => void
+  ): Promise<UploadResult> {
     try {
       const mimetype = await resolveUploadMimeTypeFromFile(file, file.name)
       const result = await chunkUploadService.upload({
         file,
-        onProgress: (p) => onProgress?.(p.percentage)
+        onProgress: (p) => onProgress?.(p.percentage),
+        onServerProgress
       })
       logger.info(`[MatrixMedia] 大文件分块上传成功: ${result.mxcUrl}`)
       const telemetry = matrixClientService.getTelemetry()
@@ -151,7 +161,11 @@ class MatrixMediaServiceClass extends BaseMatrixService {
     }
   }
 
-  async uploadEncryptedFile(file: File, onProgress?: (progress: number) => void): Promise<EncryptedUploadResult> {
+  async uploadEncryptedFile(
+    file: File,
+    onProgress?: (progress: number) => void,
+    onServerProgress?: (progress: ServerUploadProgress) => void
+  ): Promise<EncryptedUploadResult> {
     this.assertClientReady()
     try {
       const encryptedPayload = await matrixAttachmentEncryptionService.encryptAttachment(file)
@@ -162,7 +176,8 @@ class MatrixMediaServiceClass extends BaseMatrixService {
         () => this.getMedia(),
         encryptedBlobFile,
         createUploadOptions('application/octet-stream', onProgress, file.name, false),
-        onProgress
+        onProgress,
+        onServerProgress
       )
       logger.info(`[MatrixMedia] 加密文件上传成功: ${contentUri}`)
       return {

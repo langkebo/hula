@@ -910,6 +910,15 @@ export type Messages = {
       "total_duration": "总时长",
       "average_duration": "平均时长",
       "room_placeholder": "输入房间 ID 查看房间语音消息",
+      "my_total_messages": "我的语音条数",
+      "my_total_duration": "我的总时长",
+      "config_title": "语音配置",
+      "config_max_duration": "最长时长",
+      "config_formats": "支持格式",
+      "config_auto_transcribe": "自动转写",
+      "config_enabled": "已开启",
+      "config_disabled": "未开启",
+      "config_unavailable": "当前服务端未提供语音配置",
       "view_content": "查看内容",
       "delete": "删除",
       "delete_confirm": "确定要删除这条语音消息吗？",
@@ -2009,6 +2018,15 @@ export type KeyPaths =
   | "setting.voice_video.voice_messages.total_duration"
   | "setting.voice_video.voice_messages.average_duration"
   | "setting.voice_video.voice_messages.room_placeholder"
+  | "setting.voice_video.voice_messages.my_total_messages"
+  | "setting.voice_video.voice_messages.my_total_duration"
+  | "setting.voice_video.voice_messages.config_title"
+  | "setting.voice_video.voice_messages.config_max_duration"
+  | "setting.voice_video.voice_messages.config_formats"
+  | "setting.voice_video.voice_messages.config_auto_transcribe"
+  | "setting.voice_video.voice_messages.config_enabled"
+  | "setting.voice_video.voice_messages.config_disabled"
+  | "setting.voice_video.voice_messages.config_unavailable"
   | "setting.voice_video.voice_messages.view_content"
   | "setting.voice_video.voice_messages.delete"
   | "setting.voice_video.voice_messages.delete_confirm"

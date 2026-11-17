@@ -885,7 +885,12 @@
     "last_check": "Last Check",
     "never_checked": "Never checked",
     "empty": "No external services yet",
-    "filter_all": "All types"
+    "filter_all": "All types",
+    "client_title": "Client External Services",
+    "client_hint": "Client-scope endpoints expose health only, not a list; entries below come from health checks and can be enabled, disabled or deregistered.",
+    "client_empty": "No client external service health records",
+    "enable": "Enable",
+    "disable": "Disable"
   },
   "guests": {
     "access_settings": "Guest Access Settings",

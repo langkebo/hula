@@ -5,7 +5,7 @@
  * 分片回退逻辑。纯函数，接收 MatrixClient / MediaManager 作为依赖。
  */
 
-import { chunkUploadService } from '@/services/performance/ChunkUploadService'
+import { chunkUploadService, type ServerUploadProgress } from '@/services/performance/ChunkUploadService'
 import { resolveUploadMimeTypeFromFile } from '@/utils/FileType'
 import { createLogger } from '@/utils/Logger'
 import { matrixHttpClient } from '../MatrixHttpClient'
@@ -88,7 +88,8 @@ export async function uploadContentWithChunkFallback(
   getMedia: () => MediaManager,
   file: File,
   opts: UploadOpts,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  onServerProgress?: (progress: ServerUploadProgress) => void
 ): Promise<string> {
   try {
     const uploadResponse = await getMedia().uploadContent(
@@ -103,7 +104,8 @@ export async function uploadContentWithChunkFallback(
       logger.warn(`[MatrixMedia] 上传返回 413,回退到分片上传: ${file.name}`)
       const result = await chunkUploadService.upload({
         file,
-        onProgress: (p) => onProgress?.(p.percentage)
+        onProgress: (p) => onProgress?.(p.percentage),
+        onServerProgress
       })
       notifyMediaQuotaChanged()
       return result.mxcUrl

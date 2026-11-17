@@ -29,7 +29,8 @@
     "uploading": "正在上传文件",
     "preparing": "准备上传",
     "completed_failed": "上传完成 ({count} 个失败)",
-    "completed": "上传完成"
+    "completed": "上传完成",
+    "server_received": "服务端已接收 {uploaded}/{total} 分片"
   },
   "voice_recorder": {
     "tap_prefix": "点击",

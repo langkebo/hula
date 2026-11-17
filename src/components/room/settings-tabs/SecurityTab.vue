@@ -48,6 +48,28 @@
         </div>
       </template>
     </section>
+
+    <section class="rs-tab__section">
+      <h4 class="rs-tab__section-title">{{ t('room.settings_drawer.section_vault') }}</h4>
+      <div class="rs-tab__field">
+        <n-input
+          v-model:value="vaultDraft"
+          type="textarea"
+          :rows="6"
+          :placeholder="t('room.settings_drawer.vault_placeholder')"
+          data-testid="security-vault-input" />
+      </div>
+      <div class="rs-tab__actions">
+        <n-button
+          size="small"
+          type="primary"
+          :loading="savingVault"
+          data-testid="security-vault-save"
+          @click="handleSaveVault">
+          {{ t('room.settings_drawer.vault_save') }}
+        </n-button>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -56,7 +78,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useEncryption } from '@/composables/encryption/useEncryption'
-import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
+import { matrixRoomActionFacade, matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 
 const props = defineProps<{
   roomId: string
@@ -77,6 +99,8 @@ const isEncrypted = ref(false)
 const algorithm = ref('')
 const rotationPeriod = ref('')
 const isPublic = ref(false)
+const vaultDraft = ref('')
+const savingVault = ref(false)
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -143,8 +167,41 @@ async function handleVisibilityChange(value: boolean) {
   }
 }
 
+async function loadVault() {
+  try {
+    const data = await matrixRoomReadFacade.getVaultData(props.roomId, true)
+    vaultDraft.value = JSON.stringify(data ?? {}, null, 2)
+  } catch {
+    vaultDraft.value = '{}'
+  }
+}
+
+async function handleSaveVault() {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(vaultDraft.value)
+  } catch {
+    showFeedback(t('room.settings_drawer.vault_invalid_json'), 'error')
+    return
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    showFeedback(t('room.settings_drawer.vault_invalid_json'), 'error')
+    return
+  }
+  savingVault.value = true
+  try {
+    await matrixRoomActionFacade.setVaultData(props.roomId, parsed as Record<string, unknown>)
+    showFeedback(t('room.settings_drawer.saved_success'), 'success')
+  } catch {
+    showFeedback(t('room.settings_drawer.saved_failed'), 'error')
+  } finally {
+    savingVault.value = false
+  }
+}
+
 onMounted(() => {
   loadStatus()
+  loadVault()
 })
 </script>
 
@@ -218,6 +275,11 @@ onMounted(() => {
 .rs-tab__encrypted-info {
   display: flex;
   flex-direction: column;
+}
+
+.rs-tab__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 @media (prefers-reduced-motion: reduce) {

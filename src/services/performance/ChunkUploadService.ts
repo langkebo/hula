@@ -10,9 +10,18 @@ interface ChunkUploadOptions {
   maxRetries?: number
   concurrency?: number
   onProgress?: (progress: UploadProgress) => void
+  onServerProgress?: ((progress: ServerUploadProgress) => void) | undefined
   onChunkComplete?: (chunkIndex: number, total: number) => void
   onComplete?: (result: UploadResult) => void
   onError?: (error: Error) => void
+}
+
+export interface ServerUploadProgress {
+  uploadedChunks: number
+  totalChunks: number
+  uploadedSize: number
+  totalSize: number | null
+  status: string
 }
 
 interface UploadProgress {
@@ -52,6 +61,7 @@ interface ChunkUploadContext {
   aborted: boolean
   paused?: boolean | undefined
   onProgress?: ((progress: UploadProgress) => void) | undefined
+  onServerProgress?: ((progress: ServerUploadProgress) => void) | undefined
   onChunkComplete?: ((chunkIndex: number, total: number) => void) | undefined
   onComplete?: ((result: UploadResult) => void) | undefined
   onError?: ((error: Error) => void) | undefined
@@ -79,6 +89,7 @@ class ChunkUploadService {
       maxRetries = 3,
       concurrency = 3,
       onProgress,
+      onServerProgress,
       onChunkComplete,
       onComplete,
       onError
@@ -121,6 +132,7 @@ class ChunkUploadService {
       startTime: Date.now(),
       aborted: false,
       onProgress,
+      onServerProgress,
       onChunkComplete,
       onComplete,
       onError
@@ -137,6 +149,7 @@ class ChunkUploadService {
     }
 
     this.uploads.set(serverUploadId, context)
+    const stopServerProgress = this.startServerProgressPolling(context)
 
     try {
       const result = await this.processUpload(context, media)
@@ -151,6 +164,7 @@ class ChunkUploadService {
       }
       throw err
     } finally {
+      stopServerProgress()
       this.uploads.delete(serverUploadId)
       // 恢复 SDK 默认重试，避免影响后续 MediaManager 操作（uploadContent 等）
       media.setRetryOptions({ maxRetries: 3 })
@@ -236,6 +250,44 @@ class ChunkUploadService {
       filename: context.file.name,
       size: context.file.size,
       mimeType: context.file.type
+    }
+  }
+
+  /**
+   * 轮询服务端分片接收进度。
+   * 前端 uploadChunk 走 fetch，没有上传进度事件，只能通过 getChunkUploadProgress
+   * 读取服务端已接收分片数，作为「服务端已接收 X/Y」的展示来源。
+   */
+  private startServerProgressPolling(context: ChunkUploadContext): () => void {
+    if (!context.onServerProgress) return () => {}
+
+    let stopped = false
+    let inFlight = false
+
+    const tick = async () => {
+      if (stopped || inFlight) return
+      inFlight = true
+      try {
+        const progress = await this.getProgress(context.id)
+        if (stopped || !progress) return
+        context.onServerProgress?.({
+          uploadedChunks: progress.uploaded_chunks,
+          totalChunks: progress.total_chunks,
+          uploadedSize: progress.uploaded_size,
+          totalSize: progress.total_size,
+          status: progress.status
+        })
+      } finally {
+        inFlight = false
+      }
+    }
+
+    const timer = setInterval(() => void tick(), 1000)
+    void tick()
+
+    return () => {
+      stopped = true
+      clearInterval(timer)
     }
   }
 

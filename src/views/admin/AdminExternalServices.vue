@@ -81,6 +81,61 @@
       <n-empty v-else-if="!error" :description="t('admin.externalServices.empty')" data-testid="empty-state" />
     </n-spin>
 
+    <n-card size="small" class="block-gap client-card" data-testid="client-services">
+      <template #header>
+        <div class="client-header">
+          <span>{{ t('admin.externalServices.client_title') }}</span>
+          <n-button size="small" :loading="clientLoading" data-testid="client-refresh" @click="loadClientHealth()">
+            {{ t('common.refresh') }}
+          </n-button>
+        </div>
+      </template>
+      <p class="client-hint">{{ t('admin.externalServices.client_hint') }}</p>
+      <n-list v-if="clientServices.length" bordered>
+        <n-list-item v-for="item in clientServices" :key="item.id" data-testid="client-service-item">
+          <div class="service-row">
+            <div class="service-main">
+              <div class="service-title">
+                <span class="service-name">{{ item.id }}</span>
+                <n-tag size="small" :bordered="false">{{ item.type }}</n-tag>
+                <n-tag size="small" :type="clientStatusTagType(item.status)" data-testid="client-status">
+                  {{ item.status }}
+                </n-tag>
+              </div>
+              <p class="service-meta">
+                <span>{{ t('admin.externalServices.last_check') }}: {{ clientLastCheckLabel(item.last_check) }}</span>
+              </p>
+            </div>
+            <div class="service-actions">
+              <n-button
+                size="small"
+                :loading="clientMutatingId === item.id"
+                :data-testid="`client-enable-${item.id}`"
+                @click="setClientEnabled(item.id, true)">
+                {{ t('admin.externalServices.enable') }}
+              </n-button>
+              <n-button
+                size="small"
+                :loading="clientMutatingId === item.id"
+                :data-testid="`client-disable-${item.id}`"
+                @click="setClientEnabled(item.id, false)">
+                {{ t('admin.externalServices.disable') }}
+              </n-button>
+              <n-popconfirm @positive-click="removeClientService(item.id)">
+                <template #trigger>
+                  <n-button size="small" type="error" quaternary :data-testid="`client-delete-${item.id}`">
+                    {{ t('admin.externalServices.delete') }}
+                  </n-button>
+                </template>
+                {{ t('admin.externalServices.delete_confirm', { name: item.id }) }}
+              </n-popconfirm>
+            </div>
+          </div>
+        </n-list-item>
+      </n-list>
+      <n-empty v-else :description="t('admin.externalServices.client_empty')" data-testid="client-empty-state" />
+    </n-card>
+
     <n-modal
       v-model:show="showRegister"
       preset="card"
@@ -124,6 +179,7 @@
 import {
   NAlert,
   NButton,
+  NCard,
   NEmpty,
   NForm,
   NFormItem,
@@ -159,7 +215,13 @@ const {
   registerService,
   setEnabled,
   checkHealth,
-  removeService
+  removeService,
+  clientServices,
+  clientLoading,
+  clientMutatingId,
+  loadClientHealth,
+  setClientEnabled,
+  removeClientService
 } = useAdminExternalServices()
 
 const SERVICE_TYPES = ['trendradar', 'openclaw', 'webhook', 'irc', 'slack', 'discord', 'custom'] as const
@@ -193,6 +255,16 @@ function lastCheckLabel(serviceId: string): string {
   return ts ? new Date(ts).toLocaleString() : t('admin.externalServices.never_checked')
 }
 
+function clientStatusTagType(status: string): 'success' | 'error' | 'default' {
+  if (status === 'healthy' || status === 'ok' || status === 'enabled') return 'success'
+  if (status === 'unhealthy' || status === 'error' || status === 'disabled') return 'error'
+  return 'default'
+}
+
+function clientLastCheckLabel(ts?: number): string {
+  return ts ? new Date(ts).toLocaleString() : t('admin.externalServices.never_checked')
+}
+
 function onFilterChange(value: string) {
   void loadServices(value)
 }
@@ -215,6 +287,7 @@ async function submitRegister() {
 
 onMounted(() => {
   void loadServices()
+  void loadClientHealth()
 })
 </script>
 
@@ -304,6 +377,24 @@ onMounted(() => {
 .register-modal {
   width: 480px;
   max-width: 90vw;
+}
+
+.client-card {
+  margin-top: 16px;
+}
+
+.client-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tjg-space-3);
+  font-weight: var(--tjg-font-weight-medium, 500);
+}
+
+.client-hint {
+  margin: 0 0 var(--tjg-space-2);
+  font-size: var(--tjg-font-size-sm, 12px);
+  color: var(--tjg-text-secondary);
 }
 
 .modal-footer {

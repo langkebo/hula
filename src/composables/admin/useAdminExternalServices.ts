@@ -1,5 +1,11 @@
-import { type Ref, ref } from 'vue'
-import { adminService, type ExternalService, type ExternalServiceHealth } from '@/services/matrix/admin'
+import { computed, type Ref, ref } from 'vue'
+import {
+  adminService,
+  type ClientExternalServiceHealth,
+  type ClientExternalServiceHealthItem,
+  type ExternalService,
+  type ExternalServiceHealth
+} from '@/services/matrix/admin'
 
 /** 注册外部服务时页面收集的草稿字段。 */
 export interface ExternalServiceDraft {
@@ -19,11 +25,20 @@ interface UseAdminExternalServicesResult {
   checkingId: Ref<string | null>
   mutating: Ref<boolean>
 
+  clientHealth: Ref<ClientExternalServiceHealth | null>
+  clientServices: Ref<ClientExternalServiceHealthItem[]>
+  clientLoading: Ref<boolean>
+  clientMutatingId: Ref<string | null>
+
   loadServices: (serviceType?: string) => Promise<void>
   registerService: (draft: ExternalServiceDraft) => Promise<boolean>
   setEnabled: (service: ExternalService, enabled: boolean) => Promise<boolean>
   checkHealth: (service: ExternalService) => Promise<void>
   removeService: (service: ExternalService) => Promise<boolean>
+
+  loadClientHealth: () => Promise<void>
+  setClientEnabled: (serviceId: string, enabled: boolean) => Promise<boolean>
+  removeClientService: (serviceId: string) => Promise<boolean>
 }
 
 function toMessage(err: unknown): string {
@@ -44,6 +59,51 @@ export function useAdminExternalServices(): UseAdminExternalServicesResult {
   const serviceType = ref('all')
   const checkingId = ref<string | null>(null)
   const mutating = ref(false)
+
+  const clientHealth = ref<ClientExternalServiceHealth | null>(null)
+  const clientLoading = ref(false)
+  const clientMutatingId = ref<string | null>(null)
+
+  const clientServices = computed(() => clientHealth.value?.services ?? [])
+
+  async function loadClientHealth() {
+    clientLoading.value = true
+    try {
+      clientHealth.value = await adminService.externalServices.getClientHealth()
+    } finally {
+      clientLoading.value = false
+    }
+  }
+
+  async function setClientEnabled(serviceId: string, enabled: boolean): Promise<boolean> {
+    clientMutatingId.value = serviceId
+    error.value = null
+    try {
+      await adminService.externalServices.updateClientService(serviceId, { is_enabled: enabled })
+      await loadClientHealth()
+      return true
+    } catch (err) {
+      error.value = toMessage(err)
+      return false
+    } finally {
+      clientMutatingId.value = null
+    }
+  }
+
+  async function removeClientService(serviceId: string): Promise<boolean> {
+    clientMutatingId.value = serviceId
+    error.value = null
+    try {
+      await adminService.externalServices.deleteClientService(serviceId)
+      await loadClientHealth()
+      return true
+    } catch (err) {
+      error.value = toMessage(err)
+      return false
+    } finally {
+      clientMutatingId.value = null
+    }
+  }
 
   async function loadHealth() {
     const list = await adminService.externalServices.getAllHealth()
@@ -143,6 +203,13 @@ export function useAdminExternalServices(): UseAdminExternalServicesResult {
     registerService,
     setEnabled,
     checkHealth,
-    removeService
+    removeService,
+    clientHealth,
+    clientServices,
+    clientLoading,
+    clientMutatingId,
+    loadClientHealth,
+    setClientEnabled,
+    removeClientService
   }
 }
