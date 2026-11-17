@@ -35,11 +35,14 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     }
   })
 
-  // 3. 路由 entry 按平台解析（dev 与 build 一致）：
-  //    移动端把平台入口替换为移动装配，桌面构建不会静态引入移动端页面，移动构建
-  //    也不会引入桌面路由；运行期不再做平台分派，因此桌面产物不含移动端路由代码。
-  //    浏览器 dev 的 ?platform=mobile 覆盖只影响布局/平台检测，不再切换路由集，
-  //    需要移动端路由请使用移动端 dev server（5210）。
+  // 3. 平台入口按平台解析（dev 与 build 一致）：
+  //    移动端把平台入口替换为移动装配，桌面构建不会静态引入移动端页面/实现，移动构建
+  //    也不会引入桌面路由；运行期不再做平台分派，因此桌面产物不含移动端路由代码，
+  //    也不含 `src/mobile/platform/**` 的存储布局 / 启动 / 会话事件策略实现。
+  //    三个平台差异实现各占一个入口，避免聚合入口把会话事件策略（依赖 useWindow）
+  //    拉进只用存储布局的模块图。
+  //    浏览器 dev 的 ?platform=mobile 覆盖只影响布局/平台检测，不再切换路由集与
+  //    平台绑定，需要移动端实现请使用移动端 dev server（5210）。
   if (!isPC) {
     viteConfig = mergeConfig(viteConfig, {
       resolve: {
@@ -47,6 +50,20 @@ export default defineConfig(({ mode }: ConfigEnv) => {
           {
             find: '@/router/entries/platformRoutes',
             replacement: fileURLToPath(new URL('./src/router/entries/mobileRoutes.ts', import.meta.url))
+          },
+          {
+            find: '@/platform/entries/storageLayout',
+            replacement: fileURLToPath(new URL('./src/mobile/platform/entries/storageLayout.ts', import.meta.url))
+          },
+          {
+            find: '@/platform/entries/platformBoot',
+            replacement: fileURLToPath(new URL('./src/mobile/platform/entries/platformBoot.ts', import.meta.url))
+          },
+          {
+            find: '@/platform/entries/sessionEventStrategy',
+            replacement: fileURLToPath(
+              new URL('./src/mobile/platform/entries/sessionEventStrategy.ts', import.meta.url)
+            )
           }
         ]
       }

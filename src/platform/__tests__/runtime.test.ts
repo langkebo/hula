@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMobileStorageLayout } from '@/mobile/platform/storageLayout'
 import { getStorageLayout, registerStorageLayout } from '@/platform/storageLayout'
 
 vi.mock('@tauri-apps/api/path', () => ({
@@ -17,10 +18,10 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
 
 describe('platform storage layout registry', () => {
   beforeEach(() => {
-    registerStorageLayout(false)
+    registerStorageLayout()
   })
 
-  it('returns the desktop layout when registered as non-mobile', () => {
+  it('returns the desktop layout when registered without arguments (build-time binding)', () => {
     const layout = getStorageLayout()
     expect(layout.downloadBaseDir).toBe('Resource')
     expect(layout.cacheBaseDir).toBe('AppCache')
@@ -29,7 +30,7 @@ describe('platform storage layout registry', () => {
   })
 
   it('switches to mobile layout after registration', () => {
-    registerStorageLayout(true)
+    registerStorageLayout(createMobileStorageLayout())
     const layout = getStorageLayout()
     expect(layout.downloadBaseDir).toBe('AppData')
     expect(layout.cacheBaseDir).toBe('AppData')
@@ -38,8 +39,8 @@ describe('platform storage layout registry', () => {
   })
 
   it('resets back to desktop layout', () => {
-    registerStorageLayout(true)
-    registerStorageLayout(false)
+    registerStorageLayout(createMobileStorageLayout())
+    registerStorageLayout()
     expect(getStorageLayout().cacheBaseDirName).toBe('AppCache')
   })
 })

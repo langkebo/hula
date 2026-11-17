@@ -24,7 +24,7 @@ import { getPlatformBoot, registerPlatformBoot } from '@/platform/platformBoot'
 
 describe('platform boot registry', () => {
   beforeEach(() => {
-    registerPlatformBoot(false)
+    registerPlatformBoot(desktopPlatformBoot)
     vi.unstubAllEnvs()
     vi.clearAllMocks()
   })
@@ -39,7 +39,7 @@ describe('platform boot registry', () => {
   })
 
   it('switches to the mobile implementation after registration', () => {
-    registerPlatformBoot(true)
+    registerPlatformBoot(mobilePlatformBoot)
     expect(getPlatformBoot()).toBe(mobilePlatformBoot)
   })
 })

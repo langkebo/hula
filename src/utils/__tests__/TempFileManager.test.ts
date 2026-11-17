@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMobileStorageLayout } from '@/mobile/platform/storageLayout'
 import { registerStorageLayout } from '@/platform/storageLayout'
 
 const { removeMock } = vi.hoisted(() => ({
@@ -29,7 +30,7 @@ import { removeTempFile } from '../TempFileManager'
 describe('removeTempFile', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    registerStorageLayout(false)
+    registerStorageLayout()
   })
 
   it('skips removal for undefined path', async () => {
@@ -70,14 +71,14 @@ describe('removeTempFile', () => {
 
   it('uses AppCache baseDir on desktop by default', async () => {
     removeMock.mockResolvedValue(undefined)
-    registerStorageLayout(false)
+    registerStorageLayout()
     await removeTempFile('/tmp/file.tmp')
     expect(removeMock).toHaveBeenCalledWith('/tmp/file.tmp', expect.objectContaining({ baseDir: 'AppCache' }))
   })
 
   it('uses AppData baseDir on mobile by default', async () => {
     removeMock.mockResolvedValue(undefined)
-    registerStorageLayout(true)
+    registerStorageLayout(createMobileStorageLayout())
     await removeTempFile('/tmp/file.tmp')
     expect(removeMock).toHaveBeenCalledWith('/tmp/file.tmp', expect.objectContaining({ baseDir: 'AppData' }))
   })

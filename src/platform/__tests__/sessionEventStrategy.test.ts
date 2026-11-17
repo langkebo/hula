@@ -28,7 +28,7 @@ import { getSessionEventStrategy, registerSessionEventStrategy } from '@/platfor
 
 describe('session event strategy registry', () => {
   beforeEach(() => {
-    registerSessionEventStrategy(false)
+    registerSessionEventStrategy(desktopSessionEventStrategy)
     vi.clearAllMocks()
   })
 
@@ -37,13 +37,13 @@ describe('session event strategy registry', () => {
   })
 
   it('switches to the mobile implementation after registration', () => {
-    registerSessionEventStrategy(true)
+    registerSessionEventStrategy(mobileSessionEventStrategy)
     expect(getSessionEventStrategy()).toBe(mobileSessionEventStrategy)
   })
 
   it('restores the desktop implementation when registered as non-mobile', () => {
-    registerSessionEventStrategy(true)
-    registerSessionEventStrategy(false)
+    registerSessionEventStrategy(mobileSessionEventStrategy)
+    registerSessionEventStrategy(desktopSessionEventStrategy)
     expect(getSessionEventStrategy()).toBe(desktopSessionEventStrategy)
   })
 })

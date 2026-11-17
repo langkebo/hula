@@ -29,7 +29,7 @@ import { useGlassEffectStore } from '@/stores/domains/settings/glassEffect'
 import { useSettingStore } from '@/stores/domains/settings/setting'
 import { hasTauriRuntime } from '@/utils/AppHarness'
 import { errorTracker } from '@/utils/ErrorTracker'
-import { initializePlatform, isIOS, isMobile } from '@/utils/PlatformConstants'
+import { initializePlatform, isIOS } from '@/utils/PlatformConstants'
 import { applyPerformanceTier } from '@/utils/performanceTier'
 import { invokeSilently } from '@/utils/TauriInvokeHandler'
 import { startWebVitalObserver } from '@/utils/WebVitalsObserver'
@@ -46,12 +46,10 @@ applyPerformanceTier()
 performance.mark('tjg-init-start')
 
 initializePlatform()
-// 平台在运行期恒定：初始化后探测一次复用
-const isMobilePlatform = isMobile()
-// 平台差异实现经注册表注入，业务模块不再直接询问平台（P3/A8）
-registerStorageLayout(isMobilePlatform)
-registerPlatformBoot(isMobilePlatform)
-registerSessionEventStrategy(isMobilePlatform)
+// 平台差异实现经构建期入口（@/platform/entries/bindings）装配，运行期不再做平台分派（P3/A8）
+registerStorageLayout()
+registerPlatformBoot()
+registerSessionEventStrategy()
 const prometheusEndpoint = import.meta.env.VITE_PROMETHEUS_ENDPOINT
 startWebVitalObserver({
   ...(prometheusEndpoint === undefined ? {} : { prometheusEndpoint }),

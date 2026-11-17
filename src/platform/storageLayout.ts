@@ -1,24 +1,23 @@
-import { createMobileStorageLayout } from '@/mobile/platform/storageLayout'
 import type { StorageLayout } from '@/platform/contracts'
-import { createDesktopStorageLayout } from '@/platform/desktop/storageLayout'
+import { platformStorageLayout } from '@/platform/entries/storageLayout'
 
 let currentStorageLayout: StorageLayout | null = null
 
 /**
  * 注册运行期存储布局。
- * 平台在运行期恒定，组合根（main.ts）在 initializePlatform 之后调用一次；
- * 传入 false 时回退桌面默认值，便于测试重置。
+ * 默认取构建期平台入口（`@/platform/entries/storageLayout`，移动构建已被 alias 替换）；
+ * 显式传参只用于测试注入。
  */
-export const registerStorageLayout = (mobile: boolean): void => {
-  currentStorageLayout = mobile ? createMobileStorageLayout() : createDesktopStorageLayout()
+export const registerStorageLayout = (layout: StorageLayout = platformStorageLayout()): void => {
+  currentStorageLayout = layout
 }
 
 /**
- * 读取当前存储布局。未注册时惰性返回桌面布局，行为与迁移前一致。
+ * 读取当前存储布局。未注册时惰性取平台入口默认值。
  */
 export const getStorageLayout = (): StorageLayout => {
   if (!currentStorageLayout) {
-    currentStorageLayout = createDesktopStorageLayout()
+    currentStorageLayout = platformStorageLayout()
   }
   return currentStorageLayout
 }
