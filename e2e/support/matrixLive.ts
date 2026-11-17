@@ -7,7 +7,7 @@ import {
   MATRIX_SESSION_HOMESERVER_STORAGE_KEY,
   MATRIX_SESSION_IDENTITY_SERVER_STORAGE_KEY
 } from '../../src/utils/storageKeys'
-import { dismissLocalUnlockDialog } from './localUnlockGate'
+import { dismissLocalUnlockDialog, unlockLocalGateWithPassword } from './localUnlockGate'
 
 const E2E_STORAGE_KEY = E2E_STORAGE_KEYS.enabled
 const PLATFORM_STORAGE_KEY = E2E_STORAGE_KEYS.platform
@@ -38,6 +38,11 @@ export interface MatrixLiveEnv {
   peerAccessToken: string
   peerRefreshToken: string
   peerDisplayName: string
+  /**
+   * 浏览器态设置本地解锁密码的明文。留空则沿用旧行为（点「稍后」放行），
+   * 本次会话 crypto fail-closed；填了才能跑 E2EE 用例。
+   */
+  localUnlockPassword: string
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
@@ -133,7 +138,8 @@ export const readMatrixLiveEnv = (): MatrixLiveEnv => ({
   peerUserId: readEnv('MATRIX_LIVE_PEER_USER_ID'),
   peerAccessToken: readEnv('MATRIX_LIVE_PEER_ACCESS_TOKEN'),
   peerRefreshToken: readEnv('MATRIX_LIVE_PEER_REFRESH_TOKEN'),
-  peerDisplayName: readEnv('MATRIX_LIVE_PEER_DISPLAY_NAME')
+  peerDisplayName: readEnv('MATRIX_LIVE_PEER_DISPLAY_NAME'),
+  localUnlockPassword: readEnv('MATRIX_LIVE_LOCAL_UNLOCK_PASSWORD')
 })
 
 export const getMatrixLiveSkipReason = (env: MatrixLiveEnv): string | null => {
@@ -218,6 +224,20 @@ const resolveActorCredentials = (env: MatrixLiveEnv, actor: MatrixLiveActor): Ma
     accessToken: env.accessToken,
     refreshToken: env.refreshToken,
     displayName: env.displayName
+  }
+}
+
+/**
+ * 处理 F-10 本地解锁门禁（启动与 `page.reload()` 后都要执行）。
+ *
+ * 不放行会卡在 splash（`useLocalUnlockGate().ensureReady()` 阻断路由就绪）；
+ * 设了 `MATRIX_LIVE_LOCAL_UNLOCK_PASSWORD` 才能初始化 rust crypto（E2EE 用例必需）。
+ */
+export const settleLocalUnlockGate = async (page: Page, env: MatrixLiveEnv): Promise<void> => {
+  if (env.localUnlockPassword) {
+    await unlockLocalGateWithPassword(page, env.localUnlockPassword, 3_000)
+  } else {
+    await dismissLocalUnlockDialog(page, 3_000)
   }
 }
 
@@ -333,6 +353,26 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
             ) {
               return null
             }
+            // 管理员身份判定：真机由 Rust 侧 `check_admin_status` 打同一条管理 API
+            // （`src-tauri/src/command/admin_command.rs::verify_admin_via_matrix`）。
+            // 浏览器态没有 Rust，但 app 同源代理了 `/_synapse`，照抄同一判据即可，
+            // 否则 admin 门控用例会因「invoke 返回 undefined」恒判非管理员（假红）。
+            if (cmd === 'check_admin_status') {
+              const userId = typeof args?.userId === 'string' ? args.userId : ''
+              const accessToken = typeof args?.accessToken === 'string' ? args.accessToken : ''
+              const homeserverUrl = typeof args?.homeserverUrl === 'string' ? args.homeserverUrl : ''
+              if (!userId || !accessToken) {
+                throw new Error('ADMIN_NOT_LOGGED_IN')
+              }
+              const response = await fetch(`${homeserverUrl}/_synapse/admin/v1/users/${encodeURIComponent(userId)}`, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+              })
+              if (!response.ok) {
+                return { is_admin: false, user_id: userId }
+              }
+              const body = (await response.json()) as { admin?: boolean } | null
+              return { is_admin: body?.admin === true, user_id: userId }
+            }
             return undefined
           },
           transformCallback(callback: unknown) {
@@ -393,10 +433,14 @@ export const bootstrapMatrixLivePage = async (page: Page, env: MatrixLiveEnv): P
   await page.waitForSelector('#app', { state: 'visible' })
   // 「设置本地解锁密码」门禁（F-10）：纯浏览器没有 Tauri 密钥库时
   // `useLocalUnlockGate().ensureReady()` 会**阻断启动**（splash 停在 0%、路由不就绪），
-  // 此前每个 live 用例都得自己处理，漏掉就卡死。这里统一点「稍后」放行；
+  // 此前每个 live 用例都得自己处理，漏掉就卡死。
+  //
+  // 两条出路：
+  // - 默认：点「稍后」放行，本次会话 crypto fail-closed，E2EE 用例不可用；
+  // - `MATRIX_LIVE_LOCAL_UNLOCK_PASSWORD`：设置解锁密码后放行，rust crypto 可正常
+  //   初始化（加密房间 / 密钥请求用例必须走这条）。
   // 弹窗不出现时最多等 3s 即继续（不改变原有语义）。
-  // 注意：放行后本次会话 crypto fail-closed，需要 E2EE 的用例必须走真实 Tauri。
-  await dismissLocalUnlockDialog(page, 3_000)
+  await settleLocalUnlockGate(page, env)
   await waitForTjgAppReady(page)
   await waitForPinia(page)
   await page.evaluate(async () => {

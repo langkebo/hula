@@ -14,9 +14,10 @@
  *    后端 `admin_auth.rs::enforce_admin_login_mfa_impl` 在 `security.admin_mfa_required=true` 时
  *    要求管理员登录带 6 位 TOTP（`mfa_code`），本机未配置 TOTP ⇒ 这一条 skip 并给出原因。
  *
- * 为什么不能用「旧 token + 改库」绕过：`authorize_admin_from_services` 判权限用的是
- * `auth_service.validate_token()` 返回的 `is_admin`，它随 token 签发/缓存，
- * 改库只影响**新签发**的 token。
+ * 为什么改库后还要清缓存：`authorize_admin_from_services` 判权限用的是
+ * `auth_service.validate_token()` 返回的 `is_admin`，它不是 JWT claim，而是
+ * `user:admin:{userId}` 缓存（`ADMIN_CACHE_TTL_SECS=60`）里的库内值。
+ * 只改库会被旧缓存覆盖到 TTL 过期，必须同时 `DEL` 该键（Redis 不可用时退化为等 TTL）。
  *
  * 环境变量（缺任一必需项时整例 skip）：
  * - `MATRIX_LIVE_E2E=1`、`MATRIX_LIVE_HOMESERVER_URL`、`MATRIX_LIVE_USERNAME` / `MATRIX_LIVE_PASSWORD`
@@ -35,12 +36,14 @@ import {
   bootstrapMatrixLivePage,
   getMatrixLiveSkipReason,
   loginToMatrixLive,
-  readMatrixLiveEnv
+  readMatrixLiveEnv,
+  settleLocalUnlockGate
 } from './support/matrixLive'
 import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
 
 const matrixLiveEnv = readMatrixLiveEnv()
 const DB_CONTAINER = process.env.SYNAPSE_DB_CONTAINER ?? 'synapse-postgres'
+const REDIS_CONTAINER = process.env.SYNAPSE_REDIS_CONTAINER ?? 'synapse-redis'
 const ROUTER_MODULE_PATH = '/src/router/index.ts'
 const CLIENT_MODULE_PATH = '/src/services/matrix/MatrixClientService.ts'
 const ADMIN_STORE_PATH = '/src/stores/domains/admin/admin.ts'
@@ -68,6 +71,17 @@ const setAdminFlag = (username: string, value: boolean): void => {
     ],
     { encoding: 'utf8', timeout: 20_000 }
   )
+  // `validate_token` 的 is_admin 走 `user:admin:{userId}` 缓存（ADMIN_CACHE_TTL_SECS=60），
+  // 只改库会被旧值覆盖到 TTL 过期；不清理会稳定复现「库里已提权、管理 API 仍 403」。
+  const serverName = process.env.MATRIX_LIVE_SERVER_NAME ?? 'matrix.test'
+  try {
+    execFileSync('docker', ['exec', REDIS_CONTAINER, 'redis-cli', 'DEL', `user:admin:@${username}:${serverName}`], {
+      encoding: 'utf8',
+      timeout: 20_000
+    })
+  } catch {
+    // Redis 不可用时退化为等 TTL（最多 60s），不阻断用例
+  }
 }
 
 const readUserId = (page: Page): Promise<string> =>
@@ -116,9 +130,6 @@ test.describe('管理后台（真后端）', () => {
     test.skip(test.info().project.name !== 'desktop-chromium', '管理后台只在桌面路由集装配')
     const skipReason = getMatrixLiveSkipReason(matrixLiveEnv)
     test.skip(Boolean(skipReason), skipReason ?? '')
-    // 登录前先降级：admin 账号登录会被 `admin_mfa_required` 拦（需要 TOTP），
-    // 上一次跑若在提权中途失败，残留的 true 会让本轮所有用例连登录都过不去。
-    if (matrixLiveEnv.username) setAdminFlag(matrixLiveEnv.username, false)
     await bootstrapMatrixLivePage(page, matrixLiveEnv)
     await loginToMatrixLive(page, matrixLiveEnv)
   })
@@ -142,49 +153,48 @@ test.describe('管理后台（真后端）', () => {
     const issues = createRuntimeIssueCollector(page)
     const username = matrixLiveEnv.username
     expect(username, '需要 MATRIX_LIVE_USERNAME 才能提权').not.toBe('')
+    const userId = await readUserId(page)
 
+    // 幂等提权：库内 is_admin=true + 清掉 `user:admin:` 缓存键。
+    // 服务端仍可能持有进程内旧值（TTL 60s，命中不续期），所以下面用轮询等它自然过期，
+    // 不硬 sleep——这条链路的唯一异步源就是这个缓存。
     setAdminFlag(username, true)
-    let restored = false
-    const restore = () => {
-      if (!restored) {
-        setAdminFlag(username, false)
-        restored = true
-      }
-    }
 
+    // 提权只影响后续校验 ⇒ 重新登录（`page.reload` 会掉内存里的 live token）
+    await page.reload()
+    // reload 后 F-10 本地解锁门禁会再次阻断启动，必须先放行再登录
+    await settleLocalUnlockGate(page, matrixLiveEnv)
     try {
-      // 提权只影响新签发的 token ⇒ 必须重新登录（`page.reload` 会掉内存里的 live token）
-      await page.reload()
-      try {
-        await loginToMatrixLive(page, matrixLiveEnv)
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        if (/MFA/i.test(message)) {
-          restore()
-          test.skip(
-            true,
-            `后端 admin_mfa_required=true：管理员登录要求 6 位 TOTP（mfa_code），本机未配置；` +
-              `如需跑这条，请在部署配置里关闭该开关或提供 TOTP。原始报错：${message.slice(0, 120)}`
-          )
-        }
-        throw error
+      await loginToMatrixLive(page, matrixLiveEnv)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (/MFA/i.test(message)) {
+        test.skip(
+          true,
+          `后端 admin_mfa_required=true：管理员登录要求 6 位 TOTP（mfa_code），本机未配置；` +
+            `如需跑这条，请在部署配置里关闭该开关或提供 TOTP。原始报错：${message.slice(0, 120)}`
+        )
       }
-
-      const status = await readAdminStatus(page)
-      expect(status.isAdmin, `提权 + 重登后身份判定应为 true（诊断：${JSON.stringify(status)}）`).toBe(true)
-
-      await pushDesktopRoute(page, '/admin/dashboard')
-      await expect(page.locator('.admin-dashboard')).toBeVisible({ timeout: 30_000 })
-      await expect(page.locator('.admin-state-panel')).toHaveCount(0)
-
-      // 用户列表读的是服务端真实数据（列表里应出现当前账号）
-      await pushDesktopRoute(page, '/admin/users')
-      await expect(page.locator('.admin-users')).toBeVisible({ timeout: 30_000 })
-      await expect.poll(async () => page.locator('body').innerText(), { timeout: 30_000 }).toContain(userId)
-
-      expectNoRuntimeIssues(issues)
-    } finally {
-      restore()
+      throw error
     }
+
+    await expect
+      .poll(async () => (await readAdminStatus(page)).isAdmin, {
+        timeout: 100_000,
+        intervals: [2_000],
+        message: '等待服务端 user:admin 缓存过期后重新读库判定为 true'
+      })
+      .toBe(true)
+
+    await pushDesktopRoute(page, '/admin/dashboard')
+    await expect(page.locator('.admin-dashboard')).toBeVisible({ timeout: 30_000 })
+    await expect(page.locator('.admin-state-panel')).toHaveCount(0)
+
+    // 用户列表读的是服务端真实数据（列表里应出现当前账号）
+    await pushDesktopRoute(page, '/admin/users')
+    await expect(page.locator('.admin-users')).toBeVisible({ timeout: 30_000 })
+    await expect.poll(async () => page.locator('body').innerText(), { timeout: 30_000 }).toContain(userId)
+
+    expectNoRuntimeIssues(issues)
   })
 })

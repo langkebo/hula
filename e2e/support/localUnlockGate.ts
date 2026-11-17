@@ -40,6 +40,50 @@ export const dismissLocalUnlockDialog = async (page: Page, timeoutMs = 5_000): P
 }
 
 /**
+ * 设置本地解锁密码并提交，换取本次会话可用的 crypto。
+ *
+ * 与 {@link dismissLocalUnlockDialog} 的区别：
+ * - 点「稍后」= `settle(false)`，crypto fail-closed，E2EE 用例必然失败；
+ * - 提交密码 = `settle(true)`，crypto storageKey 进内存，rust crypto 可正常初始化。
+ *
+ * 因此需要加密房间的 live 用例必须走这条路径（`MATRIX_LIVE_LOCAL_UNLOCK_PASSWORD`）。
+ * 与 skip 同理用 `dispatchEvent` 绕开 naive-ui teleport 容器的命中判定。
+ *
+ * @returns 是否真的完成了设置（弹窗未出现时返回 false，表示无需解锁）
+ */
+export const unlockLocalGateWithPassword = async (
+  page: Page,
+  password: string,
+  timeoutMs = 5_000
+): Promise<boolean> => {
+  const input = page.locator('[data-test="local-unlock-input"] input')
+  const appeared = await input
+    .first()
+    .waitFor({ state: 'visible', timeout: timeoutMs })
+    .then(() => true)
+    .catch(() => false)
+  if (!appeared) return false
+
+  await input.first().fill(password)
+  await page.locator('[data-test="local-unlock-submit"]').first().dispatchEvent('click')
+  // 设置成功后弹窗销毁；失败会留在原地并展示 local-unlock-error
+  const settled = await input
+    .first()
+    .waitFor({ state: 'hidden', timeout: timeoutMs })
+    .then(() => true)
+    .catch(() => false)
+  if (!settled) {
+    const errorText = await page
+      .locator('[data-test="local-unlock-error"]')
+      .first()
+      .textContent()
+      .catch(() => null)
+    throw new Error(`设置本地解锁密码失败: ${errorText ?? '未知错误'}`)
+  }
+  return true
+}
+
+/**
  * 在页面生命周期内**自动**点掉解锁门禁（init script + 轮询）。
  *
  * 与 {@link dismissLocalUnlockDialog} 的分工：
