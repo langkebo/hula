@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3），§19.41 为 P1-3（上传链路 MIME 兜底统一：`resolveUploadMimeType` 按「声明类型 → 扩展名 → 场景兜底」取值，收敛 `uploadViaGateway` / `MatrixMediaService` / `useUpload` 的散落兜底），§19.42 为 P1-4（上传 MIME 文件头嗅探兜底：声明为空或 `octet-stream` 且扩展名不可判定时读取前 16 字节，覆盖网关直传 / 路径上传 / 头像上传）） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3），§19.41 为 P1-3（上传链路 MIME 兜底统一：`resolveUploadMimeType` 按「声明类型 → 扩展名 → 场景兜底」取值，收敛 `uploadViaGateway` / `MatrixMediaService` / `useUpload` 的散落兜底），§19.42 为 P1-4（上传 MIME 文件头嗅探兜底：声明为空或 `octet-stream` 且扩展名不可判定时读取前 16 字节，覆盖网关直传 / 路径上传 / 头像上传），§19.43 为 P3/A8（平台差异实现改为构建期入口装配：存储布局 / 启动 / 会话事件策略各一对桌面与移动入口，桌面产物不再静态包含 `src/mobile/platform/**`，`isMobile()` 余量收紧到 2）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
 
 ---
@@ -3837,8 +3837,8 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 #### 已知边界
 
 1. 三个注册表是模块级可变状态：注册必须先于首次读取。`main.ts` 中三个 `register*` 紧跟平台初始化，读取侧另有桌面默认兜底，未注册不会崩，但会按桌面行为运行。
-2. 桌面产物静态包含移动实现（`storageLayout` 为常量；`platformBoot` / `sessionEventStrategy` 对 eruda / vant / router 均用动态 import，桌面侧不产生实际运行时代价）。若后续需要彻底剥离，另立「双端入口文件」专项。
-3. `main.ts` 保留 1 次 `isMobile()` 作为组合根快照，故 ratchet 终值为 3，不为 0。
+2. 桌面产物静态包含移动实现（`storageLayout` 为常量；`platformBoot` / `sessionEventStrategy` 对 eruda / vant / router 均用动态 import，桌面侧不产生实际运行时代价）。（已由 §19.43 收口：改为构建期入口文件 + vite alias，桌面产物不再静态包含 `src/mobile/platform/**`。）
+3. `main.ts` 保留 1 次 `isMobile()` 作为组合根快照，故 ratchet 终值为 3，不为 0。（已由 §19.43 收口：`main.ts` 归零，剩余 2 处在 `usePlatform.ts` 判定器本体。）
 4. 存储布局改为惰性工厂而非模块常量：模块加载期读取 `BaseDirectory` 会让部分对 `@tauri-apps/plugin-fs` 做局部 mock 的测试在收集阶段失败；工厂保证「用到才求值」。
 5. 运行时覆盖（`?platform=mobile`）与真实 Tauri 移动构建仍存在已知差异：浏览器 E2E 会走移动布局但无真实文件写入，E2E 不校验落盘目录。
 
@@ -3981,6 +3981,74 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 3. 嗅探失败（读取字节抛错、格式未知）一律回退调用方传入的 `fallback`，与 §19.41 的兜底语义一致，最坏情况退化为改造前行为。
 4. `uploadEncryptedFile` 的密文本体仍固定 `application/octet-stream`（Matrix 加密文件规范），嗅探只作用于返回值中的明文 `mimetype` 描述。
 5. 移动端 `Files.vue` 继续透传服务层返回的 `mimetype`，不重复解析。
+
+---
+
+### 19.43 P3/A8：平台差异实现改为构建期入口装配（2026-11-17，收口 §19.40 已知边界 2、3）
+
+#### 缺口
+
+1. §19.40 把存储布局 / 启动 / 会话来电策略收进运行期注册表，但注册表仍静态 import 桌面与移动两份实现：桌面产物照样装进 `src/mobile/platform/**`，只是不执行。
+2. `main.ts` 还靠 `isMobile()` 决定注册哪一份，平台错误只能等真机跑到对应路径才暴露；构建期无法证明「桌面产物不含移动实现」。
+3. 运行期布尔开关把「装配」和「实现」混在一起：测试要切平台只能改全局布尔，容易与真实构建行为脱节。
+
+#### 判据
+
+| 断言 | 判据 |
+| :--- | :--- |
+| 桌面模块不引用移动实现 | `src/platform/**`（排除 `__tests__`）无 `from '@/mobile/...'` |
+| 桌面入口只装配桌面实现 | 每个 `src/platform/entries/*.ts` 的实现 import 均以 `@/platform/desktop/` 开头 |
+| 双端入口结构不漂移 | 同名入口文件导出同一符号，且分别指向 `@/platform/desktop/*` 与 `@/mobile/platform/*` |
+| 移动构建确实替换 | `vite.config.ts` 对三个入口各有 `find: '@/platform/entries/<name>'` + `src/mobile/platform/entries/<name>.ts` |
+| 不新增隐式入口 | 两个 `entries/` 目录不得出现未登记文件 |
+| 生产调用零参数 | `main.ts` 三个 `registerXxx()` 均无参；`isMobile()` 在 `main.ts` 归零 |
+| 测试注入不改全局 | 移动实现由用例显式传入（`createMobileStorageLayout()` / `mobilePlatformBoot` / `mobileSessionEventStrategy`） |
+| 模块图不被聚合放大 | 只用存储布局的模块不得被迫加载 `useWindow` / `windowHelpers` |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/platform/entries/storageLayout.ts` | 新增：导出 `platformStorageLayout`（桌面工厂） |
+| `src/platform/entries/platformBoot.ts` | 新增：导出 `platformBoot`（桌面启动） |
+| `src/platform/entries/sessionEventStrategy.ts` | 新增：导出 `platformSessionEventStrategy`（桌面策略） |
+| `src/mobile/platform/entries/{storageLayout,platformBoot,sessionEventStrategy}.ts` | 新增：同名同符号的移动装配，构建期由 alias 整体替换 |
+| `src/platform/storageLayout.ts` | `registerStorageLayout(mobile: boolean)` → 可选实现注入 `registerStorageLayout(layout = platformStorageLayout())` |
+| `src/platform/platformBoot.ts` | `registerPlatformBoot(mobile: boolean)` → `registerPlatformBoot(boot = platformBoot)` |
+| `src/platform/sessionEventStrategy.ts` | `registerSessionEventStrategy(mobile: boolean)` → `registerSessionEventStrategy(strategy = platformSessionEventStrategy)` |
+| `src/main.ts` | 三个注册改无参调用；移除 `isMobile` import 与组合根快照 |
+| `vite.config.ts` | 移动解析（`!isPC`）追加三个入口 alias；注释说明不再有运行期平台分派 |
+| `tests/lint/check-platform-bindings-boundary.test.ts` | 新增 5 条守卫：桌面无移动 import / 桌面入口只装桌面实现 / 双端入口同符号 / alias 齐全 / 入口无未登记项 |
+| `src/platform/__tests__/{runtime,sessionEventStrategy}.test.ts`、`src/mobile/platform/__tests__/platformBoot.test.ts` | 布尔参数改为显式传入实现 |
+| `src/utils/__tests__/{PathUtil,TempFileManager}.test.ts` | 移动场景改传 `createMobileStorageLayout()` |
+| `meta/ratchet-baseline.json` | `is_mobile_branch` 3 → 2（`main.ts` 归零后收紧） |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 定向测试 | `pnpm vitest run <守卫 + 平台 + 受影响用例>` | 10 files / 93 tests 全绿 |
+| 全量测试 | `pnpm test:run` | `Test Files 1067 passed (1067)` / `Tests 11773 passed (11773)` |
+| 类型检查 | `pnpm vue-tsc --noEmit` | 0 error |
+| 文件体量 | `node scripts/check-file-size.mjs` | `OK — all 1536 source files within size constraints`（超限 120 / 基线 120） |
+| 样式 ratchet | `pnpm check:ratchet` | 全部 `OK`；`is_mobile_branch: 2 (baseline 3)`，已 `--update` 收紧到 2 |
+| 文档路径 / 覆盖 | `pnpm check:doc-paths`、`pnpm check:doc-coverage` | 路径全存在；`no regressions vs baseline` |
+| 移动端样式 | `pnpm check:mobile-css` | `OK — 172 个文件` |
+| SDK 边界 / 裸请求 / SDK 类型 | `pnpm check:sdk-boundary`、`pnpm quality:no-raw-fetch`、`pnpm check:sdk-types` | `156 / baseline 156`；白名单内 3 项；无漂移 |
+| Lint + i18n | `pnpm check` | 通过 |
+
+#### 变异自证
+
+1. 桌面 `entries/storageLayout.ts` 改为 import 移动端实现：守卫「桌面平台模块不得静态引用移动端实现」「每个桌面入口只装配桌面实现」2 条变红（`2 failed | 3 passed`）；还原后 5 条全绿。
+2. 移动 `entries/sessionEventStrategy.ts` 导出符号改名为 `mutationProbeStrategy`：守卫「每个入口双端导出同符号」变红（`1 failed | 4 passed`）；还原后全绿。
+3. 先做过一次「单个聚合 `bindings` 入口」实现：全量测试 8 个文件收集失败（`Tests 11727 passed` 但 `8 failed`），定位为聚合入口把 `useWindow` 拉进只用存储布局的模块图、用例里 `isMac` 未 mock。改为按关注点拆三个入口后复绿，该实验已回退。
+
+#### 已知边界
+
+1. 三个入口各自独立，不做聚合：聚合入口会扩大只用单一实现的模块图（见变异自证 3），因此新增平台差异实现时应新建一对入口，而不是往现有入口里加键。
+2. 浏览器 dev 的 `?platform=desktop` 在移动 dev server（5210）上不再切换平台装配，只影响布局 / 平台检测；桌面路径的 E2E 覆盖需在桌面 dev server（5211）运行。移动 E2E（`mobileHub` / `androidDevice`）本就跑 5210，不受影响。
+3. vitest 走默认（桌面）入口解析；用例要覆盖移动实现需显式传入，不能靠改环境变量切换入口。
+4. alias 只在 vite 解析期生效，`vue-tsc`/IDE 仍按桌面包路径解析，移动专属实现的可达性由守卫第 3 条（双端同符号）间接保证。
 
 ---
 
