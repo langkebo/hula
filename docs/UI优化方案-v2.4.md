@@ -4,12 +4,12 @@
 | :--- | :--- |
 | 版本 | v2.4 |
 | 日期 | 2026-11-07 |
-| 状态 | 已落地（阶段 A/B/E 完成，C1/C2/C4 完成，C3 待真机回归；阶段 D 暂缓） |
+| 状态 | 已落地（阶段 A/B/E 完成，C1/C2/C4 完成，C3 待真机回归；阶段 D 候选核实完成、D1 门槛未闭环，见 §3.5） |
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3），§19.41 为 P1-3（上传链路 MIME 兜底统一：`resolveUploadMimeType` 按「声明类型 → 扩展名 → 场景兜底」取值，收敛 `uploadViaGateway` / `MatrixMediaService` / `useUpload` 的散落兜底），§19.42 为 P1-4（上传 MIME 文件头嗅探兜底：声明为空或 `octet-stream` 且扩展名不可判定时读取前 16 字节，覆盖网关直传 / 路径上传 / 头像上传），§19.43 为 P3/A8（平台差异实现改为构建期入口装配：存储布局 / 启动 / 会话事件策略各一对桌面与移动入口，桌面产物不再静态包含 `src/mobile/platform/**`，`isMobile()` 余量收紧到 2），§19.44 为同日 6 项收尾清单核对） |
-| 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**，按 vitrio → liquid-glass.io → nmorph 顺序过 POC 准入门槛后逐级引入 |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3），§19.41 为 P1-3（上传链路 MIME 兜底统一：`resolveUploadMimeType` 按「声明类型 → 扩展名 → 场景兜底」取值，收敛 `uploadViaGateway` / `MatrixMediaService` / `useUpload` 的散落兜底），§19.42 为 P1-4（上传 MIME 文件头嗅探兜底：声明为空或 `octet-stream` 且扩展名不可判定时读取前 16 字节，覆盖网关直传 / 路径上传 / 头像上传），§19.43 为 P3/A8（平台差异实现改为构建期入口装配：存储布局 / 启动 / 会话事件策略各一对桌面与移动入口，桌面产物不再静态包含 `src/mobile/platform/**`，`isMobile()` 余量收紧到 2），§19.44 为同日 6 项收尾清单核对，§19.45 为 2026-11-17 `isMobile()` 判定器改为构建期常量（2 → 0），§19.46 为同日阶段 D / 附录 B 液态玻璃候选核实与 D1 准入门槛） |
+| 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**。2026-11-17 核实：仅 vitrio 为真实可用候选，`liquid-glass.io` / `nmorph` 无法定位到真实项目（作废），增强层维持「不引入」直至 vitrio 补齐 §3.5 的待真机项 |
 
 ---
 
@@ -20,15 +20,15 @@
 3. **正确分层**：桌面端「CSS 玻璃面基座 + 可选折射增强」，移动端「CSS `backdrop-filter` + Vant 主题变量」，两端共用 token 与 Pinia 偏好开关。
 4. **库选型优先级**（在通过 §3.4 POC 门槛的前提下）：
    - 基座（必选、零依赖）：现有 `--tjg-glass-*` + mixin。
-   - 增强首选：**vitrio**（零依赖 Web Component 形态，适配成本最低）。
-   - 增强次选：**liquid-glass.io**（对齐 Apple 设计规范，用于登录页/引导页等高保真静态场景）。
-   - 增强补充：**nmorph**（需要批量统一组件皮肤、且不愿逐个封装 Naive UI 容器时评估）。
-   - 学习参考（不进入产物）：`liquid-glass-web`、`@yafh/liquid-glass`、`Liquid-Glass-Android`、`@callstack/liquid-glass`、`ZalithLauncher2-LiquidGlass`。
+   - 增强首选：**vitrio**（`0.1.2`，MIT，0 依赖，4.4 KB gzip，含 Vue 3 封装；核实记录见 §3.5）。
+   - 增强次选：**暂无**。原候选 `liquid-glass.io`（域名待售、npm 无包）与 `nmorph`（npm 404，同名站点无关）核实失败，已作废。
+   - 备选观察（均不引入）：`@yafh/liquid-glass`（Vue 3，10.1 KB gzip）、`@liquidglassjs/element`（自定义元素，core 较重）、`liquid-gl`（WebGPU/WebGL，45.7 KB gzip 超包体门槛）。
+   - 学习参考（不进入产物）：`@yafh/liquid-glass`、`liquid-gl`、`Liquid-Glass-Android`、`@callstack/liquid-glass`、`ZalithLauncher2-LiquidGlass`。
 5. **技术路线不做「全新框架替换」**：所有增强库必须通过适配器隔离（`GlassEngine`），默认关闭、失败自动回落 CSS、可一键全局降级。
 6. **功能接线另立章节**：2026-11-14 的全量能力排查（47 条「后端已具备、前端未接线」）+ 2026-11-15 复核追加 CAP-08，共 48 条结论与补齐方案见第 12 章，与玻璃主题解耦，按批次独立实施。
 7. **全面审查另立章节**：第 15-19 章为 2026-11-14 的静态代码审查与门禁实测。结论是「基础质量良好，债务集中在门禁基线与组件复用」，其中 Biome 全仓 0 诊断、组件零引用 0 个，但有 5 项守门脚本失败（体量基线 14 个文件越线、孤儿文案 60 条、失效白名单 4 条、未登记持久化 key 3 个），详见 §19。
 
-> 事实核查声明：本轮未联网核验 vitrio、liquid-glass.io、nmorph 三个候选的**实际包名、版本、许可证与 API 形态**。本文中涉及它们的集成代码均为「接口契约草案」，不代表其真实 API；落地前必须按 §3.4 逐项取证，取证不通过即退出候选，不得先写业务代码。
+> 事实核查声明（2026-11-17 更新）：已完成三个候选的真实包名、版本、许可证、包体与 API 形态核实，结果见 §3.5。vitrio 的引用信息为实测数据；`liquid-glass.io` 与 `nmorph` 未找到可复现的真实项目，相关集成描述一律作废。文中仍保留的集成代码属「接口契约草案」，落地前必须按 §3.4 逐项取证，取证不通过即退出候选。
 
 ---
 
@@ -112,18 +112,19 @@
 - **轴 A｜材质基座（必选、长期）**：项目自有 CSS 玻璃体系。零依赖、零包体、可降级、已通过契约测试。任何库都不能替代它。
 - **轴 B｜折射增强（可选、按场景）**：外部库提供 SVG/CSS 折射、色散、边缘高光等「光学增强」，仅用于静态高光场景。
 
-轴 B 的引入顺序由用户侧优先级确定为：**vitrio → liquid-glass.io → nmorph**；三者都必须先过 §3.4 POC 门槛。
+轴 B 的引入顺序初定为 **vitrio → liquid-glass.io → nmorph**；2026-11-17 核实后仅 **vitrio** 成立（其余两个候选作废，见 §3.5），且仍需先过 §3.4 POC 门槛。
 
 ### 3.2 候选对比矩阵
 
 | 候选 | 形态 | 依赖与包体预期 | 许可 | Vue 3 + Tauri 适配 | WebView 兼容风险 | 性能风险 | 可调试性 | 结论 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | 自有 CSS 体系 | SCSS mixin + CSS 变量 | 0 依赖，0 KB | 项目自有 | 原生 | 低（`backdrop-filter` 已在用） | 低-中（面板级可控） | 高（token 可调） | **基座，必选** |
-| **vitrio** | 零依赖 Web Component（待核实） | 待 POC 实测 | 待核实 | 低（自定义元素可直接用于 Vue 模板，需 `isCustomElement` 白名单） | 待验证（WKWebView / WebView2 / WebKitGTK） | 待验证 | 待验证 | **增强首选**，仅桌面 + 高性能档 |
-| **liquid-glass.io** | 官方规范对齐的玻璃方案（待核实交付形态） | 待 POC 实测 | 待核实 | 中（若为 Web 组件则同 vitrio；若为 CSS 包则更低） | 待验证 | 待验证 | 待验证 | **增强次选**，静态高保真场景 |
-| **nmorph** | 组件化玻璃皮肤（待核实） | 待 POC 实测（预期最大） | 待核实 | 中-高（需确认是否可主题化到 `--tjg-*`） | 待验证 | 待验证 | 待验证 | **补充**，仅当需要批量统一皮肤时评估 |
-| `liquid-glass-web` | 开源 Web 液态玻璃库，自带参数调试面板 | 待 POC 实测 | 声明 MIT（待核实） | 中 | 待验证 | 中-高（SVG 滤镜） | 高（有调试面板） | **学习参考 + POC 对照组**，不默认引入 |
-| `@yafh/liquid-glass` | Vue 3 组件，SVG `feDisplacementMap` 折射 | 待 POC 实测 | 待核实 | 高（原生 Vue 3） | 中-高 | 高（逐帧滤镜） | 高（含调试面板） | **参考实现**，不进入默认路径 |
+| **vitrio** | 零依赖 JS 类 + `<liquid-glass>` Web Component + `vitrio/vue` 封装 | `0.1.2`，0 依赖，12.2 KB min / 4.4 KB gzip（`src/` 随包发布） | MIT | 低（有官方 Vue 3 wrapper，无需 `isCustomElement`） | 高：WebKit 系（macOS/iOS/WebKitGTK）不支持 `feImage`，自动退化为合成层近似 | 中（静态挂载可接受，需实测 TBT） | 高（TS 源码 + 参数面板示例） | **唯一有效候选**，仅桌面 + 高性能档，且先补齐 §3.5 待真机项 |
+| ~~liquid-glass.io~~ | 无法定位：域名待售，npm 无同名包 | - | - | - | - | - | - | **作废**（2026-11-17 核实） |
+| ~~nmorph~~ | 无法定位：npm 404，`nmorph.com` 为无关 BPM 站点 | - | - | - | - | - | - | **作废**（2026-11-17 核实） |
+| ~~`liquid-glass-web`~~ | npm 同名包 `1.0.0` 仅 346 B、无实现、无仓库 | 0 KB（空壳） | 未声明 | 不适用 | 不适用 | 不适用 | 不适用 | **作废**：原「开源库 + 调试面板」描述不成立 |
+| `@yafh/liquid-glass` | Vue 3 组件，SVG `feDisplacementMap` 折射 | `1.0.3`，10.1 KB gzip，unpacked 5.4 MB（含演示资源），peer `vue ^3.5.25` | MIT | 高（原生 Vue 3） | 中-高（同 WebKit 限制） | 高（逐帧滤镜） | 高 | **备选参考**，不进入默认路径 |
+| `liquid-gl` | WebGPU / WebGL 折射库 | gzip 45.7 KB | 待核实 | 中（有 Vue 生态用法） | 高（WebGPU 在 WKWebView/WebKitGTK 不可用） | 中-高 | 中 | **包体超门槛**，仅作对照 |
 | `Liquid-Glass-Android` | Android View 体系 SDF 折射 | 不适用 Web | 待核实 | 不适用 | 不适用 | 不适用 | 不适用 | 移动端**设计参考**，不引入工程 |
 | `@callstack/liquid-glass` | React Native 封装 iOS 26 `UIGlassEffect` | 不适用 Web/Tauri | 待核实 | 不适用 | 不适用 | 低（原生） | 不适用 | 仅用于理解原生材质参数 |
 | `ZalithLauncher2-LiquidGlass` | 桌面启动器玻璃主题 | 不适用 | 待核实 | 不适用 | 不适用 | 不适用 | 中 | 布局与动效**参考** |
@@ -134,9 +135,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | 基座 | 自有 CSS 玻璃 | 永久启用 | 所有玻璃面 | 用户偏好 `glassMode = 'off'` |
 | 增强 1 | vitrio | POC 全项通过 + 桌面 + `tier !== 'low'` + 非滚动表面 | 登录页背景卡、引导页插画卡、空状态卡（单视图 ≤1） | 适配器加载失败自动回落；store 开关 |
-| 增强 2 | liquid-glass.io | 增强 1 不达标或需要更强规范还原时 | 同上，且仅在 `prefers-reduced-transparency: no-preference` | 同上 |
-| 增强 3 | nmorph | 仅在「需要一次性统一大量组件皮肤」需求成立且 POC 通过时 | 组件库级皮肤，禁用折射 | 同上 |
-| 参考 | `liquid-glass-web` / `@yafh/liquid-glass` | 永不默认引入 | 无 | 无 |
+| 增强 2 | 暂无（原 `liquid-glass.io`） | 候选核实失败，作废 | 无 | 无 |
+| 增强 3 | 暂无（原 `nmorph`） | 候选核实失败，作废 | 无 | 无 |
+| 参考 | `@yafh/liquid-glass` / `liquid-gl` | 永不默认引入 | 无 | 无 |
 
 **一票否决**：任一候选在 POC 中出现「离线不可用」「运行时发起网络请求」「污染全局样式」「卸载后残留 rAF 或 SVG filter」「WebKitGTK 渲染异常」中任一项，直接退出，不得以「只在 macOS 用」为由保留。
 
@@ -148,7 +149,7 @@
 | 2 | 许可证 | 允许商用与再分发，记录到 `docs/` | LICENSE 原文 |
 | 3 | 零网络 | 运行期无外部请求（字体、CDN、遥测） | DevTools Network 全量录制 |
 | 4 | 离线可用 | 断网启动仍渲染 | 断网冷启动 |
-| 5 | 包体增量 | gzip 后 ≤ 40 KB（nmorph 单独评估，≤ 80 KB） | `pnpm metrics:bundle` 对比 |
+| 5 | 包体增量 | gzip 后 ≤ 40 KB（vitrio 实测 4.4 KB） | `pnpm metrics:bundle` 对比 |
 | 6 | 首屏开销 | TBT 增量 ≤ 50 ms，长任务 ≤ 1 次 | Performance 面板 |
 | 7 | 三端渲染 | WKWebView / WebView2 / WebKitGTK 均无错位、无闪烁 | 三端截图对比 |
 | 8 | 构建安全 | SSR/构建期不访问 `window`、`document` | 构建日志 |
@@ -156,6 +157,52 @@
 | 10 | 可降级 | `prefers-reduced-transparency: reduce` 下可完全关闭 | 系统偏好切换 |
 | 11 | 可卸载 | 组件销毁后无残留定时器、事件监听、SVG filter 节点 | 反复挂载/卸载 50 次后内存与 DOM 快照 |
 | 12 | 可主题化 | 颜色可映射到 `--tjg-*`，无需保留库自带色值 | 主题切换截图 |
+
+### 3.5 候选核实记录与 D1 准入结论（2026-11-17）
+
+#### 3.5.1 核实方法
+
+1. npm registry 元数据（`dist-tags`、`time`、`dependencies`、`license`、`dist.unpackedSize`）直接读取 JSON。
+2. bundlephobia API 读取 min / gzip 体积（vitrio `0.1.2`、`@yafh/liquid-glass@1.0.3`、`liquid-gl` 等）。
+3. 下载 `vitrio-0.1.2.tgz` 解包到临时目录，静态检索 `fetch/XHR/WebSocket`、`createElement('style')`、`matchMedia`、`customElements.define`、`requestAnimationFrame`、`destroy()`。
+4. 域名 `liquid-glass.io`、`nmorph.com` 实访；npm 同名包逐个查询。
+
+#### 3.5.2 候选有效性核实
+
+| 候选 | 核实证据 | 结论 |
+| :--- | :--- | :--- |
+| vitrio | npm `vitrio@0.1.2`（最新 2026-06-11），MIT，`dependencies: {}`，12.2 KB min / 4.4 KB gzip，导出 ESM/CJS/UMD + `vitrio/vue`；README 明确 WebKit 无 `feImage` 时退化为合成层近似 | **成立**，保留为唯一候选 |
+| liquid-glass.io | `https://liquid-glass.io` 为域名停放页（"This domain may be for sale"）；npm 无 `liquid-glass.io` 包 | **作废** |
+| nmorph | npm `nmorph` 404；`nmorph.com` 为无关 BPM 服务站点 | **作废** |
+| `liquid-glass-web` | npm `liquid-glass-web@1.0.0` 仅 346 B，描述为 "utility library"，无源码与仓库 | **作废**（原「自带调试面板」不成立） |
+| `liquid-glass` | npm `liquid-glass@1.0.0` 仅 226 B（Expo 作者占位包） | **不适用** |
+| `@yafh/liquid-glass` | `1.0.3`，MIT，10.1 KB gzip，unpacked 5.4 MB，peer `vue ^3.5.25`（项目 3.5.42 满足） | 备选参考 |
+| `liquid-gl` | WebGPU/WebGL 折射，45.7 KB gzip | 超 §3.4-5 包体门槛，仅对照 |
+| `@liquidglassjs/element` | 自定义元素 + core 双包，element 4.7 KB gzip、core unpacked 88 KB | 备选观察 |
+
+#### 3.5.3 vitrio 对 §3.4 的逐项取证
+
+| # | 检查项 | 取证结果 | 判定 |
+| :--- | :--- | :--- | :--- |
+| 1 | 包可解析 | registry 可达，tarball 解包成功（`src/`、`dist/`、`react/`、`vue/`、`examples/`） | 通过（离线安装待 CI 复核） |
+| 2 | 许可证 | `LICENSE` 为 MIT 原文 | 通过 |
+| 3 | 零网络 | 源码无 `fetch` / `XMLHttpRequest` / `WebSocket` / `sendBeacon`；仅 SVG 命名空间字符串 | 通过（静态取证） |
+| 4 | 离线可用 | 无外部资源依赖，推断可离线；未断网冷启动实测 | 待真机 |
+| 5 | 包体增量 | 4.4 KB gzip、0 依赖，远低于 40 KB | 通过 |
+| 6 | 首屏开销 | 实现为按需生成位移图 + 无持续 rAF 循环；TBT / 长任务未实测 | 待真机 |
+| 7 | 三端渲染 | WebView2 / Android WebView 可走完整折射；**WKWebView（macOS/iOS）与 WebKitGTK 不支持 `feImage`，只能走近似** | 待真机 + 需设计裁决 |
+| 8 | 构建安全 | 导入期仅有 `typeof HTMLElement` / `typeof customElements` / `typeof document` 守卫，无顶层 `window` 访问 | 通过 |
+| 9 | 样式隔离 | 注入单个 `<style id="liquid-glass-style">`，选择器全部为 `.lqg-*` 命名空间，不触碰 Naive UI / Vant 变量；但属一次性全局样式，`destroy()` 不回收 | 有条件通过（需接受常驻全局样式） |
+| 10 | 可降级 | 库内无 `matchMedia` / `prefers-reduced-transparency` 处理 | 未通过：须由 `GlassEngine` 适配器在挂载前拦截 |
+| 11 | 可卸载 | `destroy()` 取消 2 个 rAF、移除 scroll/resize 监听、移除 lens/glass/svg 节点；共享 style 常驻为设计行为 | 通过（50 次挂载实测待做） |
+| 12 | 可主题化 | `tint` / `tintColor` / `blur` / `glow` 走 `--lqg-*` 变量可映射；inset / 阴影 / 高光色在库内硬编码 | 部分通过：主色可映射，阴影色不可完全去库化 |
+
+#### 3.5.4 D1 准入结论
+
+1. **D1 未闭环**：12 项中 5 项静态取证通过（1/2/3/5/8）、1 项有条件通过（9）、1 项部分通过（12）、4 项待真机（4/6/7/11，其中 11 的静态部分已通过）、1 项明确未通过（10）。按 §3.4「缺一不可」，**不得进入 D2 接入**。
+2. **可通过适配器补齐的两项**：10（降级）由 `GlassEngine` 挂载前判断 `prefers-reduced-transparency` / 用户偏好实现；7 的「同效果」无法靠适配器补齐，只能改为**按平台分层呈现**并在文档与验收口径中显式声明「macOS/iOS/Linux 为近似效果」。
+3. **需要裁决的前置问题**：若产品接受「Windows/Android 真折射、其余平台近似」，则 7 改写为「无错位、无闪烁，允许平台间效果分层」，D1 剩余仅 4 / 6 / 11 三项真机取证；若不接受，vitrio 直接关闭，增强层整体保持「不引入」。
+4. **当前决策**：维持阶段 D 暂缓，不新增依赖、不写适配器代码；`TjGlass` 的 `engine` 槽位保持空实现。
 
 ---
 
@@ -529,12 +576,12 @@ main.ts
 
 ### 阶段 D｜增强库 POC（P2，可弃）
 
-| # | 任务 | 完成标准 |
-| :--- | :--- | :--- |
-| D1 | vitrio POC | §3.4 全 12 项通过才进入 D2；否则关闭候选 |
-| D2 | vitrio 接入登录页 / 引导页（单视图 1 处） | 关闭开关后视觉与 CSS 基座一致 |
-| D3 | liquid-glass.io 对照 POC | 与 D2 同场景 A/B 截图对比 |
-| D4 | nmorph 评估 | 仅在出现「批量组件皮肤」需求时启动 |
+| # | 任务 | 完成标准 | 2026-11-17 状态 |
+| :--- | :--- | :--- | :--- |
+| D1 | vitrio POC | §3.4 全 12 项通过才进入 D2；否则关闭候选 | **未闭环**：静态取证 5 项通过（1/2/3/5/8）、1 项有条件通过（9）、1 项部分通过（12）、4 项待真机（4/6/7/11）、1 项未通过（10，适配器可补）；详见 §3.5.3 / §3.5.4 |
+| D2 | vitrio 接入登录页 / 引导页（单视图 1 处） | 关闭开关后视觉与 CSS 基座一致 | **阻塞**：D1 未闭环，不进入 |
+| D3 | ~~liquid-glass.io 对照 POC~~ | 与 D2 同场景 A/B 截图对比 | **作废**：域名待售、npm 无包（§3.5.2） |
+| D4 | ~~nmorph 评估~~ | 仅在出现「批量组件皮肤」需求时启动 | **作废**：npm 404、同名站点无关（§3.5.2） |
 
 ### 阶段 E｜收敛与守护（P2）
 
@@ -4062,7 +4109,7 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 | 2 | §19.41 已知边界 4 | `MatrixProfileService.uploadAndSetAvatar` 未纳入统一 MIME 解析 | 已完成（§19.42） | `MatrixProfileService.ts:253` 走 `resolveUploadMimeTypeFromFile`，不再读原始 `file.type` |
 | 3 | §19.39 已知边界 3 | 网关直传 / `MatrixMediaService` 不查扩展名 | 已完成（§19.41 + §19.42） | `uploadViaGateway` / `useUpload` / `MatrixMediaService` 7 个入口全部改读统一解析（`uploadTransports.ts:70`、`mediaUploadHelpers.ts:64`、`MatrixMediaService.ts:115/138/171/205/239/265/305`） |
 | 4 | §10 C3 | 真机截图回归 | 未做，状态保留 | 受硬件限制（无 Android / iOS 真机），属运行态取证，静态守门无法替代 |
-| 5 | 阶段 D、附录 B | 液态玻璃库 POC | 暂缓 | 文档 §3.4 门槛与附录 B 明确「暂缓」，不属本轮范围 |
+| 5 | 阶段 D、附录 B | 液态玻璃库 POC | 已核实、D1 未闭环（§19.46） | npm registry / bundlephobia / tarball 静态检索：仅 vitrio 成立，`liquid-glass.io` / `nmorph` / `liquid-glass-web` 作废；vitrio 12 项门槛 5 通过 / 1 有条件 / 1 部分 / 4 待真机 / 1 未通过，不进入 D2 |
 | 6 | §19.40 边界 2、§19.23 边界 2 | 双入口文件专项、剩余 `isMobile()` | 双入口已完成（§19.43）；`isMobile()` 3 → 2 | `pnpm check:ratchet` → `is_mobile_branch: 2 (baseline 2)`；余 2 处在 `src/composables/usePlatform.ts` 的 `useIsMobile()`（L64）与 `mobileOnlyAsyncComponent()`（L72）判定器本体，按 §19.40 / §19.23 边界 2 定性为不清零的抽象层边界 |
 
 #### 第 6 项为何不清零
@@ -4071,8 +4118,142 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 
 #### 已知边界
 
-1. 第 4 项（真机截图回归）与第 5 项（液态玻璃库 POC）不是「待办遗漏」，而是已裁定为阻塞 / 暂缓，本清单只做状态留痕，不改变其结论。
+1. 第 4 项（真机截图回归）属运行态取证，已裁定为阻塞；第 5 项（液态玻璃库 POC）已按 §19.46 完成候选核实，结论为 D1 未闭环、不引入依赖，两者都只做状态留痕，不改变其结论。
 2. 第 6 项的 2 处余量若后续因 R2 移动端独立组件铺开而减少，需同步收紧 `meta/ratchet-baseline.json` 的 `is_mobile_branch` 单键，禁止用 `--update` 批量放宽。
+3. 后续：§19.45 已把第 6 项所述 2 处判定器改为构建期常量并清零，本节第 6 项结论随之更新。
+
+---
+
+### 19.45 P3/A8 收尾：`isMobile()` 判定器改为构建期常量（2026-11-17，`is_mobile_branch` 2 → 0）
+
+#### 缺口
+
+1. §19.44 第 6 项留下 2 处 `isMobile()`：`src/composables/usePlatform.ts` 的 `useIsMobile()` 与 `mobileOnlyAsyncComponent()` 本体，当时结论是「判定器本体不清零」。
+2. 这两处之所以只能留在运行期，是因为实现直接读 `PlatformConstants.isMobile()`；但二者本质是「移动端能力是否存在」，桌面产物恒不存在、移动产物恒存在，属于构建期事实，不是运行期状态。
+3. 运行期谓词让桌面产物也带上移动端判定语义，且组件测试只能靠改全局布尔模拟平台，与 §19.43 的构建期装配方向相反。
+
+#### 判据
+
+| 断言 | 判据 |
+| :--- | :--- |
+| 桌面能力常量 | 桌面入口装配的 `useIsMobile()` 恒返回 `computed(() => false)`，`mobileOnlyAsyncComponent()` 恒返回 `undefined` |
+| 移动能力常量 | 移动入口装配的 `useIsMobile()` 恒返回 `computed(() => true)`，`mobileOnlyAsyncComponent()` 恒返回 `defineAsyncComponent(loader)` |
+| 消费点零改动 | 19 处 `useIsMobile()` 与 4 处 `mobileOnlyAsyncComponent()` 调用签名、返回值类型不变 |
+| 双端入口同符号 | `src/platform/entries/mobilePresence.ts` 与 `src/mobile/platform/entries/mobilePresence.ts` 同导出 `platformMobilePresence` |
+| 移动构建确实替换 | `vite.config.ts` 的 `!isPC` 分支存在 `find: '@/platform/entries/mobilePresence'` → `src/mobile/platform/entries/mobilePresence.ts` |
+| 不新增隐式入口 | `tests/lint/check-platform-bindings-boundary.test.ts` 的 `ENTRY_NAMES` 登记 4 个入口，存在未登记文件即变红 |
+| 计数归零 | `pnpm check:ratchet` 的 `is_mobile_branch: 0 (baseline 0)` |
+
+#### 变更
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/platform/contracts.ts` | 新增 `MobilePresence` 契约（`useIsMobile` / `mobileOnlyAsyncComponent`） |
+| `src/platform/desktop/mobilePresence.ts` | 新增：桌面实现，两个能力分别恒 `false` / `undefined` |
+| `src/mobile/platform/mobilePresence.ts` | 新增：移动实现，两个能力分别恒 `true` / `defineAsyncComponent` |
+| `src/platform/entries/mobilePresence.ts`、`src/mobile/platform/entries/mobilePresence.ts` | 新增：一对入口，默认装配桌面、移动构建由 alias 整体替换 |
+| `src/composables/usePlatform.ts` | `useIsMobile` / `mobileOnlyAsyncComponent` 改为入口装配的转发导出，删除 `PlatformConstants.isMobile` 与 `defineAsyncComponent` 依赖 |
+| `vite.config.ts` | `!isPC` 分支追加 `mobilePresence` 入口 alias |
+| `tests/lint/check-platform-bindings-boundary.test.ts` | `ENTRY_NAMES` 追加 `mobilePresence`，其余 5 条守卫自动覆盖新入口 |
+| `src/components/rightBox/chatBox/__tests__/ChatFooter.test.ts` | 移动态模拟从 mock `@/utils/PlatformConstants.isMobile` 改为 mock `@/composables/usePlatform` 返回响应式判定 |
+| `meta/ratchet-baseline.json` | `is_mobile_branch` 2 → 0（`node scripts/check-ratchet.mjs --update` 收紧） |
+
+#### 守门原始输出
+
+| 项 | 命令 | 结果 |
+| :--- | :--- | :--- |
+| 定向测试 | `pnpm vitest run src/components/rightBox/chatBox/__tests__/ChatFooter.test.ts` | `1 passed / 6 passed` |
+| 全量测试 | `pnpm test:run` | `Test Files 1067 passed (1067)` / `Tests 11773 passed (11773)` |
+| 类型检查 | `pnpm vue-tsc --noEmit` | 0 error |
+| 样式 ratchet | `pnpm check:ratchet` | 12 项全 `OK`；`is_mobile_branch: 0 (baseline 0)` |
+| 文档路径 / 覆盖 | `pnpm check:doc-paths`、`pnpm check:doc-coverage` | 路径全存在；`current undocumented: 573（baseline 587）`，`no regressions vs baseline` |
+| SDK 边界 / 裸请求 / SDK 类型 | `pnpm check:sdk-boundary`、`pnpm quality:no-raw-fetch`、`pnpm check:sdk-types` | `156 / baseline 156`；白名单内 3 项；无漂移 |
+| Lint + i18n | `pnpm check` | 通过 |
+
+#### 变异自证
+
+1. 把桌面 `entries/mobilePresence.ts` 改为装配 `@/mobile/platform/mobilePresence`：平台入口守卫 3 条变红（`3 failed | 2 passed`，「桌面平台模块不得静态引用移动端实现」「每个桌面入口只装配桌面实现」「每个入口双端导出同符号」）；还原为 `@/platform/desktop/mobilePresence` 后全绿。
+2. 注释里出现 `isMobile()` 字样会被 ratchet 计入（实测多出 1 条），已把入口注释改为「运行期平台谓词分支」，计数复核为 0 后收紧基线。
+
+#### R3 校验
+
+1. 未新增平行 SDK / 服务层实现：本次只改平台能力装配，无 Matrix 调用改动。
+2. 未引入移动端可见的 admin / AI 入口：改动文件均不涉及 `src/views/admin/**`、`src/plugins/robot/**`、`src/services/matrix/{admin,ai}/**`。
+3. 移动构建仍可产出：入口 `alias` 由 `check-platform-bindings-boundary.test.ts` 第 4 条守卫在每次 `pnpm test:run` 中校验。
+
+#### 已知边界
+
+1. 浏览器 dev 的 `?platform=mobile` 不再影响 `useIsMobile` / `mobileOnlyAsyncComponent`：这两个能力由构建期入口决定，与 §19.43 边界 2 同源。移动 UI 需在移动 dev server（5210）或移动构建下查看；`usePlatform()` / `detectPlatform()` / `PlatformConstants.isMobile()` 仍按运行期检测，供路由、布局等使用，行为不变。
+2. vitest 解析桌面入口，组件用例模拟移动端必须 mock `@/composables/usePlatform`；继续 mock `@/utils/PlatformConstants.isMobile` 不会影响 `useIsMobile()`。
+3. `docs/P3-isMobile下沉立项方案-2026-11-16.md` 中「2 处不清零」的结论已被本节覆盖；该文档「禁止改名规避计数」的约束仍然有效——本次归零靠构建期常量，未改谓词名。
+4. 新增移动端专属能力时应新建一对 `entries` 入口（并登记 `ENTRY_NAMES`），不得回退为运行期谓词（沿用 §19.43 边界 1）。
+
+---
+
+### 19.46 阶段 D / 附录 B：液态玻璃候选核实与 D1 准入门槛（2026-11-17）
+
+#### 缺口
+
+1. §19.44 第 5 项把「阶段 D、附录 B」记为「暂缓」，但文档 §3.1 / §3.2 / 附录 B 仍把 `liquid-glass.io`、`nmorph`、`liquid-glass-web` 列为可用候选，读者无法判断这些项目是否真实存在。
+2. 附录 B 的参考链接没有版本、许可证、包体与 API 形态，按 §3.4 无法逐项取证，等于候选未经核实就进入了选型表。
+3. 阶段 D 的 D1-D4 没有状态列，D1 的门槛结论与本轮实际核实进度脱节。
+
+#### 核实方法
+
+| # | 手段 | 取证对象 |
+| :--- | :--- | :--- |
+| 1 | npm registry JSON（`dist-tags` / `time` / `dependencies` / `license` / `dist.unpackedSize`） | `vitrio`、`@yafh/liquid-glass`、`liquid-gl`、`@liquidglassjs/element`、`liquid-glass-web`、`liquid-glass`、`nmorph` |
+| 2 | bundlephobia API | min / gzip 体积 |
+| 3 | tarball 解包静态检索（临时目录，未入库） | `vitrio@0.1.2`：`fetch` / `XMLHttpRequest` / `WebSocket` / `sendBeacon` / `createElement('style')` / `matchMedia` / `customElements.define` / `requestAnimationFrame` / `destroy()` |
+| 4 | 域名与官网实访 | `liquid-glass.io`、`nmorph.com` |
+
+#### 候选结论
+
+| 候选 | 结论 | 关键证据 |
+| :--- | :--- | :--- |
+| vitrio | **唯一有效候选** | `0.1.2`（最新 2026-06-11）、MIT、`dependencies: {}`、12.2 KB min / 4.4 KB gzip、导出 ESM/CJS/UMD + `vitrio/vue`；无网络请求；样式注入单个 `<style id="liquid-glass-style">` 且选择器均为 `.lqg-*` |
+| `liquid-glass.io` | 作废 | 域名停放页（for sale）；npm 无同名包 |
+| `nmorph` | 作废 | npm 404；`nmorph.com` 为无关 BPM 站点 |
+| `liquid-glass-web` | 作废 | npm `1.0.0` 仅 346 B，无源码与仓库，原「自带调试面板」不成立 |
+| `liquid-glass` | 不适用 | npm `1.0.0` 仅 226 B（占位包） |
+| `@yafh/liquid-glass` | 备选参考（不引入） | `1.0.3`、MIT、10.1 KB gzip、unpacked 5.4 MB、peer `vue ^3.5.25`（项目 3.5.42 满足） |
+| `liquid-gl` | 仅对照 | 45.7 KB gzip，超 §3.4-5 包体门槛；WebGPU 在 WKWebView / WebKitGTK 不可用 |
+| `@liquidglassjs/element` | 观察 | element 4.7 KB gzip / core unpacked 88 KB |
+
+#### D1 准入结论（逐项取证见 §3.5.3）
+
+| 判定 | 项 | 说明 |
+| :--- | :--- | :--- |
+| 静态通过 | 1 / 2 / 3 / 5 / 8 | 包可解析、MIT、零网络、包体 4.4 KB、构建安全无顶层 `window` |
+| 有条件通过 | 9 | 全局样式仅 `.lqg-*` 命名空间，但 `destroy()` 不回收常驻 style |
+| 部分通过 | 12 | `tint` / `blur` / `glow` 可映射 `--lqg-*`，阴影色在库内硬编码 |
+| 待真机 | 4 / 6 / 7 / 11 | 离线冷启动、TBT、三端渲染、50 次挂载（11 静态部分已过） |
+| 未通过 | 10 | 库内无 `matchMedia` / `prefers-reduced-transparency`，须由 `GlassEngine` 适配器拦截 |
+
+结论：
+
+1. **D1 未闭环**，按 §3.4「缺一不可」不得进入 D2；D3 与 D4 因候选作废直接关闭。
+2. 第 10 项可由适配器补齐；第 7 项无法靠适配器补齐——WebKit 系不支持 SVG `feImage`，只能改为按平台分层呈现，需产品裁决「接受 Windows/Android 真折射、其余近似」后才可改写该项判据。
+3. 当前决策：维持「不引入依赖」，`TjGlass` 的 `engine` 槽位保持空实现，不写适配器代码。
+
+#### 变更
+
+| 位置 | 改动 |
+| :--- | :--- |
+| 文档头部状态 / 决策结论 | 标注「阶段 D 候选核实完成、D1 未闭环」；增强层维持不引入 |
+| §0 第 4 条 | 增强首选 vitrio（附版本 / 许可 / 包体），次选改为「暂无」，列出备选观察 |
+| §3.1 / §3.2 / §3.3 | 引入顺序收敛为「仅 vitrio 成立」；矩阵补实测数据、作废行与新增参考行 |
+| §3.5（新增） | 核实方法、候选有效性、vitrio 12 项取证、D1 准入结论 |
+| 阶段 D 表 | 新增状态列，D1 未闭环 / D2 阻塞 / D3・D4 作废 |
+| 附录 B | 作废三项，补 vitrio 实测信息与 `liquid-gl` / `@liquidglassjs/element` 参考行 |
+| §19.44 第 5 项 | 「暂缓」改为「已核实、D1 未闭环」 |
+
+#### 已知边界
+
+1. 本轮**未新增任何依赖、未写生产代码**：`package.json` / `pnpm-lock.yaml` 无改动，产物包体不变。
+2. 第 4 / 6 / 7 / 11 项属运行态取证，需要真机或至少各平台 WebView 实机，静态检索无法替代；三端渲染差异是本候选的核心风险，不是可延后的细节。
+3. 若后续引入 vitrio，必须先补 `GlassEngine` 适配器（主题映射、`prefers-reduced-transparency` 拦截、平台分层开关、失败回落 CSS 基座），且只允许用于非滚动静态表面单视图 1 处（§1.3 修正表）。
+4. 备选观察项（`@yafh/liquid-glass` 等）本轮只核实元数据，未做安全与可卸载性静态检索，不得据本节直接引入。
 
 ---
 
@@ -4095,14 +4276,16 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 
 | 项目 | 用途 | 是否进入产物 |
 | :--- | :--- | :--- |
-| `https://github.com/xiaofangstudio/liquid-glass-web` | 折射参数与调试面板实现参考、POC 对照组 | 否（默认） |
+| `vitrio@0.1.2`（npm） | 增强首选且**唯一有效候选**：零依赖、MIT、12.2 KB min / 4.4 KB gzip，导出 ESM/CJS/UMD + `vitrio/vue` | 待 POC（D1 未闭环，4/6/7/11 待真机） |
+| ~~`https://github.com/xiaofangstudio/liquid-glass-web`~~ | 作废：npm `liquid-glass-web@1.0.0` 仅 346 B 空壳，无源码无仓库（§3.5.2） | 不适用 |
 | `https://github.com/QWEA0/Liquid-Glass-Android` | SDF 折射与移动端材质参数参考 | 否 |
 | `@callstack/liquid-glass` | iOS 26 `UIGlassEffect` 参数语义参考 | 否 |
 | `https://github.com/yydxin/ZalithLauncher2-LiquidGlass/releases/tag/v2.4.11-LiquidGlass` | 桌面玻璃主题的布局与动效参考 | 否 |
-| `@yafh/liquid-glass` | Vue 3 + SVG `feDisplacementMap` 实现参考 | 否（默认） |
-| vitrio | 增强首选候选 | 待 POC |
-| liquid-glass.io | 增强次选候选 | 待 POC |
-| nmorph | 增强补充候选 | 待 POC |
+| `@yafh/liquid-glass@1.0.3`（npm） | Vue 3 + SVG `feDisplacementMap` 实现参考；10.1 KB gzip，unpacked 5.4 MB，peer `vue ^3.5.25` | 否（备选参考） |
+| `liquid-gl`（npm） | WebGPU / WebGL 折射对照；45.7 KB gzip 超 §3.4-5 包体门槛 | 否（仅对照） |
+| `@liquidglassjs/element`（npm） | 自定义元素形态参考；element 4.7 KB gzip / core unpacked 88 KB | 否（观察） |
+| ~~liquid-glass.io~~ | 作废：域名待售，npm 无同名包（§3.5.2） | 不适用 |
+| ~~nmorph~~ | 作废：npm 404，`nmorph.com` 为无关 BPM 站点（§3.5.2） | 不适用 |
 
 ## 附录 C｜禁用写法
 
