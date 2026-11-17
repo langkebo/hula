@@ -69,10 +69,31 @@
           <h4 class="quota-alerts-title">{{ t('setting.storage.quota_alerts') }}</h4>
           <ul v-if="quotaAlerts.length" data-test="quota-alerts" class="quota-alert-list">
             <li v-for="alert in quotaAlerts" :key="alert.alert_id" class="quota-alert-item">
-              <span>{{ alert.message }}</span>
-              <span class="quota-alert-threshold">
-                {{ t('setting.storage.quota_alert_threshold', { threshold: alert.threshold_percent }) }}
-              </span>
+              <div class="quota-alert-main">
+                <span>{{ alert.message }}</span>
+                <span v-if="!alert.is_read" data-test="quota-alert-unread" class="quota-alert-unread">
+                  {{ t('setting.storage.quota_alert_unread') }}
+                </span>
+              </div>
+              <div class="quota-alert-meta">
+                <span data-test="quota-alert-type" class="quota-alert-type">
+                  {{ alertTypeLabel(alert.alert_type) }}
+                </span>
+                <span class="quota-alert-threshold">
+                  {{ t('setting.storage.quota_alert_threshold', { threshold: alert.threshold_percent }) }}
+                </span>
+                <span data-test="quota-alert-usage" class="quota-alert-usage">
+                  {{
+                    t('setting.storage.quota_alert_usage', {
+                      used: formatBytes(alert.current_usage_bytes),
+                      limit: formatBytes(alert.quota_limit_bytes)
+                    })
+                  }}
+                </span>
+                <span class="quota-alert-created">
+                  {{ t('setting.storage.quota_alert_created', { time: formatAlertTime(alert.created_ts) }) }}
+                </span>
+              </div>
             </li>
           </ul>
           <p v-else data-test="quota-no-alerts" class="quota-hint">
@@ -184,6 +205,18 @@ const quotaMediaCount = ref(0)
 const quotaAlerts = ref<Awaited<ReturnType<typeof matrixMediaService.getQuotaAlerts>>>([])
 
 const quotaExceeded = computed(() => quotaLimit.value > 0 && quotaRemaining.value <= 0)
+
+/** 告警类型标签：避免把原始 snake_case 值直接暴露给用户。 */
+function alertTypeLabel(type: 'quota_warning' | 'quota_exceeded'): string {
+  const key =
+    type === 'quota_exceeded' ? 'setting.storage.quota_alert_type_exceeded' : 'setting.storage.quota_alert_type_warning'
+  return t(key)
+}
+
+/** 告警时间：后端 `created_ts` 为毫秒时间戳。 */
+function formatAlertTime(createdTs: number): string {
+  return createdTs > 0 ? new Date(createdTs).toLocaleString() : '—'
+}
 
 type MediaConfigState = 'loading' | 'available' | 'unavailable'
 
@@ -404,8 +437,31 @@ onMounted(() => {
   color: var(--tjg-text-secondary);
 }
 
+.quota-alert-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tjg-text-primary);
+}
+
+.quota-alert-unread {
+  padding: 0 6px;
+  border-radius: var(--tjg-radius-sm, 6px);
+  background: var(--tjg-color-primary-50);
+  color: var(--tjg-color-primary-600);
+  font-size: var(--tjg-font-size-xs, 12px);
+}
+
+.quota-alert-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 2px;
+  font-size: var(--tjg-font-size-xs, 12px);
+  color: var(--tjg-text-tertiary);
+}
+
 .quota-alert-threshold {
-  margin-left: 8px;
   color: var(--tjg-text-tertiary);
 }
 

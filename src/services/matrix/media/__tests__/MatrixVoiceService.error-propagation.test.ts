@@ -12,9 +12,10 @@
  * 用于断言"上传不再走裸请求"这一回归守卫。
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatrixClient } from '@/services/matrix/sdk'
 import matrixClientService from '../../MatrixClientService'
+import { registerVoipCapabilityResolver } from '../voipHelpers'
 
 vi.mock('@tauri-apps/plugin-log', () => ({
   info: vi.fn(),
@@ -67,6 +68,11 @@ describe('MatrixVoiceService error propagation (FT-113)', () => {
     authedRequestMock.mockResolvedValue({})
     deleteVoiceMessageMock.mockResolvedValue({})
     getVoiceConfigMock.mockResolvedValue({})
+    registerVoipCapabilityResolver(() => true)
+  })
+
+  afterEach(() => {
+    registerVoipCapabilityResolver(null)
   })
 
   describe('deleteVoice via VoiceManager', () => {

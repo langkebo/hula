@@ -24,6 +24,7 @@ import { HttpResponse, http } from 'msw'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 import { matrixVoiceService } from '../MatrixVoiceService'
+import { registerVoipCapabilityResolver } from '../voipHelpers'
 
 const HOMESERVER = 'https://hs.voice-contract.test'
 const seenUrls: { method: string; url: string }[] = []
@@ -153,10 +154,12 @@ describe('Voice service URL construction contract (real SDK + msw)', () => {
       userId: '@test:hs.voice-contract.test',
       deviceId: 'DEV1'
     })
+    registerVoipCapabilityResolver(() => true)
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+    registerVoipCapabilityResolver(null)
   })
 
   // vendor double-prefix guard: SDK must NOT prepend /_matrix/client/v3 when

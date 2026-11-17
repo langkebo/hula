@@ -163,8 +163,6 @@ export type Messages = {
     "title": "好友列表",
     "search": "搜索好友",
     "empty": "暂无好友",
-    "capability_unavailable_title": "当前服务端未开启好友能力",
-    "capability_unavailable_description": "请联系管理员开启好友能力后再使用好友列表与请求功能。",
     "online": "在线",
     "offline": "离线",
     "friend_list_label": "好友列表",
@@ -355,8 +353,6 @@ export type KeyPaths =
   | "friend.list.title"
   | "friend.list.search"
   | "friend.list.empty"
-  | "friend.list.capability_unavailable_title"
-  | "friend.list.capability_unavailable_description"
   | "friend.list.online"
   | "friend.list.offline"
   | "friend.list.friend_list_label"

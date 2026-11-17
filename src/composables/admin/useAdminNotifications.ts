@@ -34,7 +34,13 @@ export function useAdminNotifications(): UseAdminNotificationsResult {
     saving.value = true
     try {
       await adminService.setUserNotificationSettings(userId, settings)
-      notificationSettings.value = settings
+      // ADM-10：写后回读服务端生效配置（服务端可能补齐默认值）；回读失败时
+      // 保留本次写入值，避免把「保存成功」误报成失败。
+      try {
+        notificationSettings.value = await adminService.getUserNotificationSettings(userId)
+      } catch {
+        notificationSettings.value = settings
+      }
       return true
     } finally {
       saving.value = false

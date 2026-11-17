@@ -4434,6 +4434,55 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 2. 不含账号内的全局快捷键（发送、切换会话、搜索）——这部分只能在登录态下做真机 / E2E 走查。
 3. 子菜单（`useContextMenuSubmenu`）的键盘展开/收起尚未纳入本批用例。
 
+### 19.51 三仓未闭环清单前端问题复核与修复（2026-11-17）
+
+#### 背景
+
+依据 [`THREE_REPO_OPEN_ISSUES_2026-11-15.md`](file:///Users/ljf/Desktop/hu_ts/OPS_ARTIFACTS/THREE_REPO_OPEN_ISSUES_2026-11-15.md) 与 [`TJG_CAPABILITY_WIRING_GAP_2026-11-14.md`](file:///Users/ljf/Desktop/hu_ts/OPS_ARTIFACTS/TJG_CAPABILITY_WIRING_GAP_2026-11-14.md) 列出的 23 项前端问题逐条核对当前代码。结论：**19 项在 2026-11-14 之后已被 R4 / A / B 批次闭环**，实际仍开放 12 项；本轮修复其中 5 项小切口真实缺陷，其余 7 项属需新增 UI 面的工程项。
+
+#### 复核为已闭环（抽取）
+
+| 条目 | 取证 |
+| :--- | :--- |
+| CAP-02 | `StickyTab.vue` 按 `canSetSticky` 门控；`DehydratedDeviceSection.vue` 叠加能力位；`PermissionGuard.vue` 统一 14 项 `TjgCapability`，4 处挂载点全部换新能力名 |
+| ADM-05 / ADM-11 | admin 视图族已补齐 `AdminInvitePolicy` / `AdminCas` / `AdminCleanup` / `AdminPush` / `AdminCallbacks` / `AdminExternalServices` / `AdminModules` / `AdminAccountPolicy` 等页面 |
+| AUTH-02 / AUTH-04 / AUTH-05 | `ThreePidSection` 已接线 three_pid；桌面 `AccountSettings` 含注销入口；`RendezvousSessionManager` + `useRendezvous` 已接线 |
+| VEN-04 | `SummaryService` 已改经 `synapseRoomSummaryService`（SDK RoomSummaryManager） |
+| MED-02 | `uploadContentWithId` 已补 `assertClientReady()`，全部上传方法一致 |
+| ROOM-06 | `getKeyRotationStatus()` 走 SDK `getStatus()`；`checkNeedsRotation()` 保留 POST 变体（GET `checkKeyValidity` 需 keyId，语义不符，后端明确提供 POST 供前端调用） |
+| CAP-03 | `auth_metadata` / `m.sso.providers` 探测已存在；`MatrixOidcService` 的 token-exchange 自建请求位于 `src/services/matrix/**`，SDK `OidcManager.token()` 不支持该 grant，属合规实现 |
+
+#### 本轮变更清单
+
+| 条目 | 文件 | 改动 |
+| :--- | :--- | :--- |
+| CAP-06 | `src/components/friend/friendListViewState.ts`、`FriendListView.vue`、`src/mobile/composables/friends/useFriendListLoadState.ts`、`src/mobile/components/friends/FriendContactsTab.vue`、`locales/{en,zh-CN}/friend.json`、`__tests__/friendListViewState.test.ts` | 好友列表不再按 `friend-list` 能力位整体隐藏：读取路径在 FriendManager 缺失时回退 REST，能力位只影响扩展写操作。删除 `capability` 视图态与两个死 i18n key（桌面 + 移动同步） |
+| CAP-07 | `src/services/matrix/media/voipHelpers.ts`、`MatrixVoiceService.ts`、3 个语音测试文件 | 新增 `isVoipCapabilityEnabled()`（唯一来源仍是 `matrixCapabilityService.canUseVoip()` 的 resolver）；`uploadVoice()` 在端点探测前先判能力位，与通话入口同口径；测试注册 resolver 并新增能力位关闭用例 |
+| MED-03 | `src/services/matrix/media/mediaConfigOps.ts` | `normalizeUrlPreview` 补 `site_name` / `og:site_name` / `matrix:site_name` 映射，`LinkPreviewPane` 的站点名不再恒回退域名 |
+| MED-04 | `src/views/settingsWindow/tabs/StorageSettings.vue`、`locales/{en,zh-CN}/setting.json` | 配额告警补充渲染 `alert_type`（本地化标签）、`current_usage_bytes` / `quota_limit_bytes`、`created_ts`、`is_read`；新增 5 个 i18n key，时间按毫秒时间戳格式化 |
+| ADM-10 | `src/views/admin/AdminServerConfig.vue`、`AdminSecurity.vue`、`src/composables/admin/useAdminNotifications.ts` | 三处写后回读服务端生效值：服务器配置保存后重拉并回填表单；联邦黑名单 diff 写入后重跑 `loadFederationPolicy()`；通知设置写后重读，回读失败保留本次写入值不误报失败 |
+
+#### 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| `pnpm gen:i18n` | 103 命名空间 / 6882 key path 生成成功 |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| 语音相关单测（4 文件） | 74 用例通过（含新增 CAP-07 用例） |
+| `pnpm test:run` | 全量通过 |
+| `pnpm check` | Biome / i18n / token / aria / dead-handler / capabilities-sync 全通过 |
+| `pnpm check:ratchet` | 全部计数与基线持平 |
+| `pnpm check:sdk-boundary` | 156 项与基线持平，无回归 |
+| `pnpm quality:no-raw-fetch` | 3 项均在白名单内 |
+
+#### 仍开放（需新增 UI 面，未在本轮落地）
+
+1. VEN-01：`getVoiceStats` / `getUserVoiceStats` / `getVoiceConfig` / 房间与用户语音列表 / RTC transports 已有 service，通话与语音面板尚未消费。
+2. VEN-03：`AccountDataService` 的 client-scope 分支（`getHealth("client")`、`updateService` / `deleteService(..., "client")`）零调用，需管理员页扩展「客户端作用域」入口。
+3. ROOM-03 / ROOM-09 / ROOM-13：`getReportScannerInfo`、vault 读写、`getRoomSummaryMembers` / `getRoomSummaryState`、`getRoomEphemeral`、`getPublicSpaces`、widget 会话等仅 service 存在，无 UI 消费。
+4. ADM-08：`useQuotaStore` 仅被测试引用，admin 配额页尚未接入。
+5. MED-01：`ChunkUploadService.getProgress()` 无上传进度 UI。
+
 ---
 
 ## 附录 A｜参数映射表

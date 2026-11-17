@@ -12,18 +12,6 @@
   <div v-if="isInitialLoading" class="flex items-center justify-center text-[--tjg-text-secondary] min-h-240px">
     <van-loading size="24px" />
   </div>
-  <div v-else-if="viewState === 'capability'" class="flex items-center justify-center px-16px text-center min-h-240px">
-    <van-empty :description="t('friend.list.capability_unavailable_description')">
-      <template #image>
-        <svg class="size-40px color-[--tjg-text-tertiary]" aria-hidden="true"><use href="#friends"></use></svg>
-      </template>
-      <template #bottom>
-        <div class="mt-8px text-[length:var(--tjg-font-size-base)] font-600 text-[--tjg-text-primary]">
-          {{ t('friend.list.capability_unavailable_title') }}
-        </div>
-      </template>
-    </van-empty>
-  </div>
   <div v-else-if="viewState === 'error'" class="flex items-center justify-center px-16px text-center min-h-240px">
     <van-empty :description="errorMessage">
       <template #image>

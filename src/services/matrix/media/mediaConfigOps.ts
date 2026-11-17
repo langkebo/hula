@@ -166,6 +166,9 @@ function normalizeUrlPreview(preview: UrlPreview, fallbackUrl: string): MediaUrl
     preview.og_image ??
     preview['matrix:image'] ??
     preview.image) as string | undefined
+  // 站点名同样是多字段并存：SDK 归一化字段 `site_name`，服务端原始 OpenGraph `og:site_name`，
+  // 以及 Matrix 命名空间 `matrix:site_name`。缺失时不要回退域名，交给展示层决定。
+  const siteName = (raw.site_name ?? raw['og:site_name'] ?? raw['matrix:site_name']) as string | undefined
   const result: MediaUrlPreview = {
     url: preview.url ?? fallbackUrl,
     title: title?.trim() || fallbackUrl
@@ -173,6 +176,8 @@ function normalizeUrlPreview(preview: UrlPreview, fallbackUrl: string): MediaUrl
   const trimmedDescription = description?.trim()
   if (trimmedDescription) result.description = trimmedDescription
   if (imageUrl) result.imageUrl = imageUrl
+  const trimmedSiteName = siteName?.trim()
+  if (trimmedSiteName) result.siteName = trimmedSiteName
   return result
 }
 

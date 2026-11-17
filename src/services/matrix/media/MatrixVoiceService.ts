@@ -30,6 +30,7 @@ interface RoomLike {
 
 import type { EncryptedAttachmentFile } from '../crypto/MatrixAttachmentEncryptionService'
 import { fetchUserVoiceStats, fetchVoiceConfig, fetchVoiceStats } from './voiceStatsOps'
+import { isVoipCapabilityEnabled } from './voipHelpers'
 
 const logger = createLogger('MatrixVoiceService')
 
@@ -165,6 +166,12 @@ class MatrixVoiceService extends BaseMatrixService {
     }
 
     try {
+      // CAP-07：语音消息上传与通话入口共用 `voip` 能力位（org.matrix.msc3245.voice），
+      // 避免「通话可用但语音消息静默失败」的口径分叉。
+      if (!isVoipCapabilityEnabled()) {
+        throw new Error(this.t('matrix_error.media.voice_message_manager_unavailable'))
+      }
+
       const path = MATRIX_PATHS.VOICE.UPLOAD
       const available = await endpointCapabilityService.check('POST', path)
       if (!available) {

@@ -2,20 +2,7 @@
   <nav class="friend-list-view" :aria-label="t('friend.list.title')">
     <div v-if="showStatePanel" class="friend-list-view__state" role="status" :aria-busy="isCapabilityLoading">
       <n-spin :show="isCapabilityLoading" class="h-full">
-        <EmptyState
-          v-if="viewState === 'capability'"
-          illustration="server-unavailable"
-          :title="t('friend.list.capability_unavailable_title')"
-          :description="t('friend.list.capability_unavailable_description')"
-          class="mt-40px">
-          <template #actions>
-            <n-button size="small" @click="handleRetryFriendList">
-              {{ t('common.retry') }}
-            </n-button>
-          </template>
-        </EmptyState>
         <ErrorState
-          v-else
           illustration="server-error"
           :title="t('common.error')"
           :message="lastFriendError?.message || t('common.error')"
@@ -190,7 +177,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const contactStore = useContactStore()
-const { isLoaded, canUseFriendList } = useServerCapability()
+const { isLoaded } = useServerCapability()
 
 const contextMenuRef = ref()
 
@@ -205,14 +192,12 @@ const lastFriendError = computed(() => contactStore.lastFriendError)
 
 const viewState = computed(() =>
   resolveFriendListViewState({
-    isCapabilityReady: isLoaded.value,
-    canUseFriendList: canUseFriendList.value,
     hasError: Boolean(lastFriendError.value),
     hasFriends: contactStore.contactsList.length > 0
   })
 )
 
-const showStatePanel = computed(() => viewState.value === 'capability' || viewState.value === 'error')
+const showStatePanel = computed(() => viewState.value === 'error')
 
 // 搜索状态与展示列表（在已筛选列表上叠加搜索过滤）
 const {
@@ -238,18 +223,10 @@ const { shouldGroup, groupedSections, toggleCollapse, isCollapsed, loadGroups } 
 })
 
 const showSearchEmptyState = computed(
-  () =>
-    displayedFriends.value.length === 0 &&
-    hasSearchKeyword.value &&
-    viewState.value !== 'error' &&
-    viewState.value !== 'capability'
+  () => displayedFriends.value.length === 0 && hasSearchKeyword.value && viewState.value !== 'error'
 )
 const showEmptyState = computed(
-  () =>
-    displayedFriends.value.length === 0 &&
-    !hasSearchKeyword.value &&
-    viewState.value !== 'error' &&
-    viewState.value !== 'capability'
+  () => displayedFriends.value.length === 0 && !hasSearchKeyword.value && viewState.value !== 'error'
 )
 
 // 右键菜单与好友操作

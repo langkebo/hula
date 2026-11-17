@@ -3,7 +3,6 @@ import { useI18n } from 'vue-i18n'
 import { resolveFriendListViewState } from '@/components/friend/friendListViewState'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useFriends } from '@/composables/useFriends'
-import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
 import { useContactStore } from '@/stores/domains/chat/contacts'
 import { createLogger } from '@/utils/Logger'
 
@@ -40,8 +39,6 @@ export function useFriendListLoadState() {
     initialize: initializeFriends
   } = useFriends()
 
-  const { isLoaded: capabilityLoaded, canUseFriendList } = useServerCapability()
-
   const refreshing = ref(false)
   const mobileFriendErrorMessage = ref('')
 
@@ -49,8 +46,6 @@ export function useFriendListLoadState() {
 
   const mobileFriendViewState = computed<FriendListViewState>(() =>
     resolveFriendListViewState({
-      isCapabilityReady: capabilityLoaded.value,
-      canUseFriendList: canUseFriendList.value,
       hasError: Boolean(mobileFriendErrorMessage.value),
       hasFriends: specialContacts.value.length > 0 || normalContacts.value.length > 0
     })

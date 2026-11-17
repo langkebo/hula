@@ -542,6 +542,9 @@ async function saveFederationPolicy() {
         await adminService.removeFromFederationBlacklist(domain)
       }
     }
+    // ADM-10：写入后按服务端实际状态回读（黑名单逐条 diff 写入，本地文本可能
+    // 与服务端规范化后的域名列表不一致），避免界面展示「编辑意图」而非生效值。
+    await loadFederationPolicy()
     showFeedback(t('admin.security.federation_policy_saved'), 'success')
   } catch (e) {
     logger.error('Failed to save federation policy', e)

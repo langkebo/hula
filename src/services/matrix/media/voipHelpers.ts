@@ -156,6 +156,16 @@ export function registerVoipCapabilityResolver(resolver: (() => boolean) | null)
   voipCapabilityResolver = resolver
 }
 
+/**
+ * 同步读取 VoIP 能力位（未注册时按「能力未知」判定为 false）。
+ *
+ * 供同一能力位的其他入口（如语音消息上传）复用，保证「语音消息入口与通话入口
+ * 使用同一可用性结论」（CAP-07）。
+ */
+export function isVoipCapabilityEnabled(): boolean {
+  return voipCapabilityResolver?.() ?? false
+}
+
 /** 检查 VoIP 功能可用性
  */
 export async function checkVoipAvailability(client: MatrixClient): Promise<{
@@ -166,7 +176,7 @@ export async function checkVoipAvailability(client: MatrixClient): Promise<{
   const turnStatus = await checkTurnAvailability(client)
 
   // 不再用 client.callEventHandler 自判：服务端能力位才是唯一来源。
-  if (!(voipCapabilityResolver?.() ?? false)) {
+  if (!isVoipCapabilityEnabled()) {
     return {
       voipAvailable: false,
       turnAvailable: turnStatus.available,

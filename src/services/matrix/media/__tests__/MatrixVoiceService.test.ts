@@ -1,9 +1,10 @@
 import type { MatrixClient, Room } from 'matrix-js-sdk'
 import { HttpResponse, http } from 'msw'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '@/../tests/msw'
 import { matrixAttachmentEncryptionService } from '../../crypto/MatrixAttachmentEncryptionService'
 import matrixClientService from '../../MatrixClientService'
+import { registerVoipCapabilityResolver } from '../voipHelpers'
 
 const TEST_BASE_URL = 'https://matrix.example.com'
 
@@ -108,6 +109,11 @@ describe('MatrixVoiceService', () => {
     vi.clearAllMocks()
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as unknown as MatrixClient)
     endpointCheckMock.mockResolvedValue(true)
+    registerVoipCapabilityResolver(() => true)
+  })
+
+  afterEach(() => {
+    registerVoipCapabilityResolver(null)
   })
 
   it('uploads voice through the voice upload endpoint', async () => {
@@ -204,6 +210,16 @@ describe('MatrixVoiceService', () => {
       '语音服务不可用'
     )
     expect(authedRequestMock).not.toHaveBeenCalled()
+  })
+
+  it('CAP-07: 语音上传与通话入口共用 voip 能力位，能力位关闭时直接拒绝', async () => {
+    registerVoipCapabilityResolver(() => false)
+
+    await expect(matrixVoiceService.uploadVoice('!room:example.org', new Blob(['lazy']))).rejects.toThrow(
+      '语音服务不可用'
+    )
+    expect(endpointCheckMock).not.toHaveBeenCalled()
+    expect(uploadVoiceMessageMultipartMock).not.toHaveBeenCalled()
   })
 
   it('should fall back to original mxc url when client is unavailable', () => {

@@ -337,6 +337,16 @@ function handleSave() {
       try {
         const payload = buildConfigPayload()
         await adminService.updateServerConfig(payload)
+        // ADM-10：写后回读服务端生效值（服务端可能补齐默认值或做范围收敛），
+        // 避免本地表单停留在「我以为保存成什么」的陈旧状态。
+        try {
+          const config = await adminService.getServerConfig()
+          if (config) {
+            applyConfigToForm(config)
+          }
+        } catch (err) {
+          handleAdminError(err)
+        }
         originalForm.value = { ...form }
         showFeedback(t('admin.server_config.save_success'), 'success')
       } catch (err) {

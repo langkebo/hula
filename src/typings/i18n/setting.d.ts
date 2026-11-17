@@ -945,6 +945,11 @@ export type Messages = {
     "quota_alerts": "配额告警",
     "quota_no_alerts": "暂无告警",
     "quota_alert_threshold": "阈值 {threshold}%",
+    "quota_alert_type_warning": "配额预警",
+    "quota_alert_type_exceeded": "配额超限",
+    "quota_alert_usage": "用量 {used} / {limit}",
+    "quota_alert_created": "产生于 {time}",
+    "quota_alert_unread": "未读",
     "media_server_config": "媒体服务配置",
     "media_server_config_desc": "读取服务端媒体上传上限与认证媒体开关",
     "config_loading": "正在读取媒体配置...",
@@ -2036,6 +2041,11 @@ export type KeyPaths =
   | "setting.storage.quota_alerts"
   | "setting.storage.quota_no_alerts"
   | "setting.storage.quota_alert_threshold"
+  | "setting.storage.quota_alert_type_warning"
+  | "setting.storage.quota_alert_type_exceeded"
+  | "setting.storage.quota_alert_usage"
+  | "setting.storage.quota_alert_created"
+  | "setting.storage.quota_alert_unread"
   | "setting.storage.media_server_config"
   | "setting.storage.media_server_config_desc"
   | "setting.storage.config_loading"
