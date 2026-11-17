@@ -285,13 +285,18 @@ const {
   resetSubmenu
 } = useContextMenuSubmenu({ content: contentRef, vw, vh })
 
+// 菜单容器必须通过模板引用交给键盘导航：不注入时 focusMenu() 的 menuRef 恒为
+// null ⇒ 右键菜单打开后焦点停在触发元素上，ArrowDown / Escape 都不会进到
+// @keydown 处理器（键盘不可用）。
+const menuRef = useTemplateRef<HTMLElement>('menuRef')
 const { focusedIndex, handleMenuKeydown, focusMenu, resetNavigation } = useContextMenuNavigation({
   visibleMenu,
   visibleSpecialMenu,
   showMenu,
   onSelect: handleClick,
   // disabled 支持函数式（如「撤回」是否超时），键盘跳过必须与渲染态同源
-  isItemDisabled: isMenuItemDisabled
+  isItemDisabled: isMenuItemDisabled,
+  menuRef
 })
 
 watch(

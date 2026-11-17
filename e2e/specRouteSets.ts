@@ -40,6 +40,7 @@ export const DESKTOP_ONLY_SPECS: readonly string[] = [
   'admin-dashboard-live',
   'debug-phase3',
   'desktop-key-flows',
+  'desktop-keyboard-flows',
   'friend-operations',
   'login-flow',
   'matrix-live',

@@ -1,6 +1,11 @@
 import type { Ref } from 'vue'
 import type { ContextMenuItem } from './useContextMenuTypes'
 
+/** 只读/可写 ref 的最小公共形状，兼容 `useTemplateRef` 的返回值 */
+interface RefLike<T> {
+  value: T
+}
+
 /**
  * 右键菜单键盘导航逻辑
  *
@@ -19,6 +24,11 @@ export const useContextMenuNavigation = (options: {
    * 未注入时只把静态 `true` 视为禁用。
    */
   isItemDisabled?: ((item: ContextMenuItem) => boolean) | undefined
+  /**
+   * 菜单容器引用。由调用方用 `useTemplateRef` 绑定后注入；未注入时内部自建，
+   * 便于单测直接驱动 `focusMenu()`。
+   */
+  menuRef?: RefLike<HTMLElement | null> | undefined
 }) => {
   const { visibleMenu, visibleSpecialMenu, showMenu, onSelect, isItemDisabled } = options
 
@@ -32,7 +42,7 @@ export const useContextMenuNavigation = (options: {
   }
 
   const focusedIndex = ref(-1)
-  const menuRef = ref<HTMLElement | null>(null)
+  const menuRef = options.menuRef ?? ref<HTMLElement | null>(null)
 
   const allMenuItems = computed(() => {
     const items: ContextMenuItem[] = []
