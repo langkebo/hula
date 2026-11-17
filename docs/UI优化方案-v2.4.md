@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3），§19.41 为 P1-3（上传链路 MIME 兜底统一：`resolveUploadMimeType` 按「声明类型 → 扩展名 → 场景兜底」取值，收敛 `uploadViaGateway` / `MatrixMediaService` / `useUpload` 的散落兜底），§19.42 为 P1-4（上传 MIME 文件头嗅探兜底：声明为空或 `octet-stream` 且扩展名不可判定时读取前 16 字节，覆盖网关直传 / 路径上传 / 头像上传），§19.43 为 P3/A8（平台差异实现改为构建期入口装配：存储布局 / 启动 / 会话事件策略各一对桌面与移动入口，桌面产物不再静态包含 `src/mobile/platform/**`，`isMobile()` 余量收紧到 2），§19.44 为同日 6 项收尾清单核对，§19.45 为 2026-11-17 `isMobile()` 判定器改为构建期常量（2 → 0），§19.46 为同日阶段 D / 附录 B 液态玻璃候选核实与 D1 准入门槛） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3），§19.41 为 P1-3（上传链路 MIME 兜底统一：`resolveUploadMimeType` 按「声明类型 → 扩展名 → 场景兜底」取值，收敛 `uploadViaGateway` / `MatrixMediaService` / `useUpload` 的散落兜底），§19.42 为 P1-4（上传 MIME 文件头嗅探兜底：声明为空或 `octet-stream` 且扩展名不可判定时读取前 16 字节，覆盖网关直传 / 路径上传 / 头像上传），§19.43 为 P3/A8（平台差异实现改为构建期入口装配：存储布局 / 启动 / 会话事件策略各一对桌面与移动入口，桌面产物不再静态包含 `src/mobile/platform/**`，`isMobile()` 余量收紧到 2），§19.44 为同日 6 项收尾清单核对，§19.45 为 2026-11-17 `isMobile()` 判定器改为构建期常量（2 → 0），§19.46 为同日阶段 D / 附录 B 液态玻璃候选核实与 D1 准入门槛，§19.47 为同日 §17 存量收敛（列表图片懒加载与 ratchet 计数锁）） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**。2026-11-17 核实：仅 vitrio 为真实可用候选，`liquid-glass.io` / `nmorph` 无法定位到真实项目（作废），增强层维持「不引入」直至 vitrio 补齐 §3.5 的待真机项 |
 
 ---
@@ -1628,11 +1628,11 @@ useGlassEffectStore().mode = 'off'
 | 虚拟列表 | 20 个文件涉及 | 长列表已覆盖 | 新增长列表必须走 `SmartVirtualList` 或既有虚拟组件 |
 | `prefers-reduced-motion` | 63 个文件 | 基本达标 | 新增动效必须声明 |
 | `prefers-reduced-transparency` | 6 个文件 | 覆盖不足 | 玻璃增强模块补齐（见 §17.6） |
-| `env(safe-area-inset-*)` | 17 处 | 部分覆盖 | 底部固定元素全部补齐 |
-| `100vh` | 29 处 | 存在移动端地址栏抖动风险 | 改 `100dvh` 并保留 `100vh` 回退 |
-| `loading="lazy"` | 8 处 | 明显不足 | 列表与消息区内图片默认懒加载 |
+| `env(safe-area-inset-*)` | 17 处（2026-11-17 复核：底部固定栏由 `tabBar` / `MobileLayout` / `responsive.scss` 统一消费，全屏遮罩不适用） | 底部栏已覆盖 | 留白仍以真机回归为准（§17.3） |
+| `100vh` | 29 处（2026-11-17 复核：15 处真实 `height: 100vh` 所在文件全部已有 `100dvh`；其余为 `var(--tjg-viewport-height, 100vh)` 二级兜底，主变量已在 `responsive.scss` 用 `100dvh` 覆盖） | 回退对已成立 | 新增计数锁 `vh_unpaired` 看住回归，不再逐个改 |
+| `loading="lazy"` | 2026-11-17 复核：全仓 117 处 `<img>`，7 处已声明；本轮给 9 个列表容器补 10 处（含 `decoding="async"`） | 列表容器已补齐；消息区图片由 `isInViewport` 可见性门控（强于原生 `lazy`） | 新增守卫 `tests/lint/image-lazy-loading.test.ts`，新增列表容器必须登记 |
 | 触控目标 ≥44px 声明 | 约 5 个文件 | 不足 | 移动端可点击元素统一到 44×44 |
-| 断点声明 | `max-width: 1200px` 10 次，另有 360/480 等零散值 | 不统一 | 收敛到 375 / 768 / 1024 / 1440 |
+| 断点声明 | 2026-11-17 复核：`@media ... 1200px` 实测 0；16 处 `max-width: 1200px` 全为 admin 页面容器宽度，不是媒体查询 | 已达标（无 1200px 断点） | 新增计数锁 `breakpoint_1200` 看住回归 |
 | 玻璃性能分级 | `src/utils/performanceTier.ts` 已将 `coarsePointer` 判为 `medium`；`src/styles/scss/global/mobile.scss` 已消费 `html.low-perf` / `html.medium-perf` | 第 1 章 G1/G2 已闭环 | 不重复立项，仅补回归用例 |
 
 ### 17.2 断点与栅格统一
@@ -1644,7 +1644,7 @@ useGlassEffectStore().mode = 'off'
 | `1024px - 1439px` | 桌面标准 | 三栏，右侧栏可折叠 |
 | `≥ 1440px` | 桌面宽屏 | 三栏 + 内容区最大宽度约束，避免文字行宽超 80 字符 |
 
-落地要求：新增媒体查询只能使用上述四个值；历史 `1200px` 逐步替换，不一次性批量改，随文件触碰替换。
+落地要求：新增媒体查询只能使用上述四个值。2026-11-17 复核确认仓库内**已无** `@media ... 1200px`；剩余 `max-width: 1200px` 均为 admin 页面容器宽度（布局宽度，不是断点），不需要替换。回归由 ratchet 计数 `breakpoint_1200` 看住。
 
 ### 17.3 触控与安全区
 
@@ -4254,6 +4254,64 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 2. 第 4 / 6 / 7 / 11 项属运行态取证，需要真机或至少各平台 WebView 实机，静态检索无法替代；三端渲染差异是本候选的核心风险，不是可延后的细节。
 3. 若后续引入 vitrio，必须先补 `GlassEngine` 适配器（主题映射、`prefers-reduced-transparency` 拦截、平台分层开关、失败回落 CSS 基座），且只允许用于非滚动静态表面单视图 1 处（§1.3 修正表）。
 4. 备选观察项（`@yafh/liquid-glass` 等）本轮只核实元数据，未做安全与可卸载性静态检索，不得据本节直接引入。
+
+---
+
+### 19.47 §17 存量收敛：列表图片懒加载与 ratchet 计数锁（2026-11-17）
+
+#### 背景与前提修正
+
+批次 A1 原计划修 11 处 `100vh`、补 safe-area、补图片懒加载，并在 ratchet 增加计数锁。执行前逐文件取证，多数前提被推翻：
+
+| 原前提 | 取证结果 | 结论 |
+| :--- | :--- | :--- |
+| 11 个文件「只有 `100vh` 没有 `100dvh`」 | 11 处全部是 `var(--tjg-viewport-height, 100vh)` 的二级兜底；主变量在 [responsive.scss](file:///Users/ljf/Desktop/hu_ts/Tjg/src/styles/scss/global/responsive.scss) 的 `@supports (height: 100dvh)` 内覆盖为 `100dvh` | 不是缺口，不改 |
+| 15 处真实 `height: 100vh` 需要改 | 15 处所在文件全部已含 `100dvh`；`pnpm check:mobile-css` 输出「174 个文件：视口高度均有 dvh 覆盖」 | 已达标 |
+| safe-area 需补 | 底部固定栏由 `src/mobile/layout/tabBar/index.vue`、`src/mobile/components/MobileLayout.vue`、`responsive.scss` 统一消费安全区变量；全屏遮罩（`top:0;bottom:0`）不适用 | 未发现遗漏 |
+| `max-width: 1200px` 是断点声明 | 16 处全在 `src/views/admin/**` 的页面容器；`@media ... 1200px` 实测 0 | §17.1 原口径错误，已修正 |
+| 消息区图片缺懒加载 | `src/components/rightBox/renderMessage/Image.vue` 已用 `isInViewport` 做可见性门控，仅进入视口才请求媒体 | 强于原生 `lazy`，不改 |
+
+真实可执行缺口因此收窄为「列表容器的远程图片」与「回归防护」。
+
+#### 变更清单
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/components/room/RoomCard.vue` / `RoomCardItem.vue` | 房间卡片封面补 `loading="lazy" decoding="async"` |
+| `src/components/room/RoomDetailMembers.vue` | 成员列表头像补同组属性 |
+| `src/components/space/SpaceRoomGrid.vue` / `SpaceTree.vue` / `PublicSpaceDiscoveryDialog.vue`（2 处） | 空间房间网格、空间树、公开空间发现列表补同组属性 |
+| `src/components/workbench/SpaceRoomsPane.vue` | 工作台空间房间列表补同组属性 |
+| `src/components/rightBox/linkPreview/LinkPreviewPane.vue` | 链接预览缩略图补同组属性 |
+| `src/mobile/components/space/SpaceCard.vue` | 移动端空间卡片补同组属性 |
+| `tests/lint/image-lazy-loading.test.ts`（新增） | 登记 9 个列表容器，断言每个 `<img>` 都带 `loading="lazy"` 与 `decoding="async"`；登记项已无 `<img>` 同样失败 |
+| `scripts/check-ratchet.mjs` + `meta/ratchet-baseline.json` | 新增 `vh_unpaired`（真实 `height: 100vh` 且文件内无 `100dvh`，基线 0）与 `breakpoint_1200`（`@media` 内 `1200px`，基线 0） |
+| 文档 §17.1 / §17.2 | 修正 `100vh`、safe-area、`max-width: 1200px` 三处口径 |
+
+口径说明：
+
+- `vh_unpaired` 只数以 `100vh` 结尾的 `height` / `min-height` / `max-height` 声明；`var(--tjg-viewport-height, 100vh)` 不计；文件内出现 `100dvh` 即视为回退对成立。
+- `breakpoint_1200` 只认 `@media` 条件里的 `1200px`，容器宽度不计。
+
+#### 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| `pnpm vue-tsc --noEmit` | 通过（0 错误） |
+| `pnpm test:run` | 1068 个文件 / 11774 个用例全部通过（含新增守卫） |
+| `pnpm check:ratchet` | 通过，`vh_unpaired: 0`、`breakpoint_1200: 0`，其余计数与基线一致 |
+| `pnpm check:mobile-css` | 通过，「174 个文件：视口高度均有 dvh 覆盖、模糊均带 `-webkit-` 前缀」 |
+| `pnpm check:sdk-boundary` / `pnpm quality:no-raw-fetch` | 通过，无新增越界 |
+| `pnpm check:doc-paths` / `pnpm check:doc-coverage` | 通过，路径全部存在、无回退 |
+| `pnpm check` | 通过（i18n / 令牌 / 图标无障碍 / dead-handlers 全部 OK） |
+
+守卫自证：临时移除 `LinkPreviewPane.vue` 的 `loading="lazy" decoding="async"` 后守卫失败并精确报出该文件第 35 行，恢复后通过。
+
+#### 已知边界
+
+1. 本轮只覆盖「列表 / 网格 / 消息区」容器；单实例头像（顶栏、邀请条、房间详情头图）、二维码与图标不纳入 —— 首屏即可见，懒加载无收益。
+2. 触控热区 ≥44px 仍是人工与真机项：仓库有合规样例（`MobileQuickActions.vue`、`PersonalInfoActions.vue`、`HeaderBar.vue`、`MobileAppearanceSection.vue`），但没有可静态判定的统一入口，本轮未做机械改写。
+3. safe-area 的「全屏遮罩不适用」与 WebView 实际留白仍需真机回归（§17.3）；静态检索只能证明没有明显遗漏。
+4. `vh_unpaired` 采用「文件内有 `100dvh` 即视为回退对成立」的近似判据；跨文件继承（变量定义在 A 文件、使用在 B 文件）不在计数内，由 `check:mobile-css` 的全仓扫描兜底。
 
 ---
 

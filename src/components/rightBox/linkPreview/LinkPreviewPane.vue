@@ -32,7 +32,7 @@
 
         <div v-if="preview" class="link-preview-card" data-test="link-preview-card">
           <div v-if="thumbnailUrl" class="link-preview-card__thumb">
-            <img :src="thumbnailUrl" :alt="preview.title" />
+            <img :src="thumbnailUrl" :alt="preview.title" loading="lazy" decoding="async" />
           </div>
           <div class="link-preview-card__meta">
             <div class="link-preview-card__title">{{ preview.title }}</div>

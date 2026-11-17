@@ -29,7 +29,13 @@
         @keydown.space.prevent="emit('enter-room', room.roomId)">
         <!-- 房间头像 -->
         <div class="space-room-grid__avatar">
-          <img v-if="room.avatarUrl" :src="room.avatarUrl" :alt="''" class="space-room-grid__avatar-img" />
+          <img
+            v-if="room.avatarUrl"
+            :src="room.avatarUrl"
+            :alt="''"
+            class="space-room-grid__avatar-img"
+            loading="lazy"
+            decoding="async" />
           <span v-else class="space-room-grid__avatar-placeholder">
             {{ getInitial(room.name) }}
           </span>

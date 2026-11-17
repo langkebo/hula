@@ -351,6 +351,42 @@ const counters = {
     files: new Map()
   },
   /**
+   * 未配对的 `height: 100vh`（非测试，剥注释后计）。
+   *
+   * 判据本意（UI 优化方案 v2.4 §17.4）：真实视口高度必须写成
+   * `height: 100vh; height: 100dvh;` 的回退对 —— 移动端地址栏收展、软键盘弹出会
+   * 改变可视高度，只写 `100vh` 的容器会出现底部被遮挡。
+   *
+   * 口径：
+   *  - 只数以 `100vh` 结尾的 `height` / `min-height` / `max-height` 声明；
+   *  - `var(--tjg-viewport-height, 100vh)` 不计 —— 那是二级兜底，主变量已在
+   *    `responsive.scss` 用 `100dvh` 覆盖；
+   *  - 文件内只要出现 `100dvh`，即视为回退对已成立，整体不计。
+   */
+  vh_unpaired: {
+    pattern: /(?:min-|max-)?height:\s*100vh\b/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: (content) => (content.includes('100dvh') ? '' : stripCommentsOnly(content)),
+    extensions: STYLE_EXTENSIONS
+  },
+  /**
+   * 非四档断点的 `@media ... 1200px`（非测试，剥注释后计）。
+   *
+   * 判据本意（UI 优化方案 v2.4 §17.2）：断点只用 375 / 768 / 1024 / 1440 四档。
+   * 口径只认 `@media` 条件里的 `1200px`；页面容器宽度 `max-width: 1200px` 不是断点，
+   * 不计（此前把 admin 容器宽度误记为断点声明，属口径错误）。
+   */
+  breakpoint_1200: {
+    pattern: /@media[^{]*\b1200px\b/g,
+    includeTests: false,
+    total: 0,
+    files: new Map(),
+    strip: stripCommentsOnly,
+    extensions: STYLE_EXTENSIONS
+  },
+  /**
    * 双重断言 `x as unknown as T`（非测试，剥注释后计）。
    *
    * 判据本意：`as unknown as` 会**同时绕过两端类型检查**（先把类型抹成 unknown，

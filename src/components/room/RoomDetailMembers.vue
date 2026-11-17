@@ -61,6 +61,8 @@
                 :src="member.avatar"
                 :alt="''"
                 class="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
                 data-testid="room-detail-member-avatar-img" />
               <span v-else data-testid="room-detail-member-avatar-placeholder">{{ avatarPlaceholder(member) }}</span>
             </div>

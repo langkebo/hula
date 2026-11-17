@@ -36,7 +36,14 @@
       <ul v-else class="psd__list">
         <li v-for="space in results" :key="space.spaceId" class="psd__item" data-testid="psd-item">
           <div class="psd__row">
-            <img class="psd__avatar" :src="avatarOf(space)" alt="" width="40" height="40" />
+            <img
+              class="psd__avatar"
+              :src="avatarOf(space)"
+              alt=""
+              width="40"
+              height="40"
+              loading="lazy"
+              decoding="async" />
             <div class="psd__info">
               <p class="psd__name" data-testid="psd-name">{{ space.name || space.spaceId }}</p>
               <p class="psd__meta">{{ t('space.member_count_value', { count: space.memberCount }) }}</p>
@@ -74,7 +81,14 @@
               :description="t('space.discover.children_empty')" />
             <ul v-else class="psd__child-list">
               <li v-for="child in childSpaces" :key="child.spaceId" class="psd__child" data-testid="psd-child">
-                <img class="psd__avatar psd__avatar--child" :src="avatarOf(child)" alt="" width="28" height="28" />
+                <img
+                  class="psd__avatar psd__avatar--child"
+                  :src="avatarOf(child)"
+                  alt=""
+                  width="28"
+                  height="28"
+                  loading="lazy"
+                  decoding="async" />
                 <div class="psd__info">
                   <p class="psd__name">{{ child.name || child.spaceId }}</p>
                   <p class="psd__meta">{{ t('space.member_count_value', { count: child.memberCount }) }}</p>

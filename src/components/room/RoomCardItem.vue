@@ -17,6 +17,8 @@
           :src="item.avatar"
           :alt="''"
           class="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
           data-testid="room-card-avatar-img" />
         <span
           v-else

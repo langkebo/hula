@@ -50,7 +50,9 @@
             :data-testid="`space-tree-avatar-img-${node.spaceId}`"
             :src="node.avatarUrl"
             :alt="''"
-            class="space-tree__avatar-img" />
+            class="space-tree__avatar-img"
+            loading="lazy"
+            decoding="async" />
           <span
             v-else
             :data-testid="`space-tree-avatar-placeholder-${node.spaceId}`"

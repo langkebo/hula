@@ -1,6 +1,6 @@
 {
   "comment": "Ratchet baseline: counts may only decrease. Regenerate with `node scripts/check-ratchet.mjs --update` after cleanup batches. See design doc G1/G2.",
-  "updated_at": "2026-11-17T00:26:53.813Z",
+  "updated_at": "2026-11-17T01:01:16.463Z",
   "counters": {
     "matrix_prefix_hardcoded": 21,
     "ts_expect_error": 3,
@@ -11,6 +11,8 @@
     "backdrop_filter_raw": 60,
     "zh_literal_vue": 0,
     "is_mobile_branch": 0,
+    "vh_unpaired": 0,
+    "breakpoint_1200": 0,
     "as_unknown_as": 0,
     "zh_literal_rust": 0,
     "handwritten_empty_state": 0

@@ -33,7 +33,7 @@
         data-test="space-room-item"
         @click="emit('enterRoom', room.roomId)">
         <div v-if="room.avatarUrl" class="space-rooms-pane__avatar">
-          <img :src="room.avatarUrl" :alt="room.name" />
+          <img :src="room.avatarUrl" :alt="room.name" loading="lazy" decoding="async" />
         </div>
         <div v-else class="space-rooms-pane__avatar space-rooms-pane__avatar--fallback">
           <svg class="size-14px" aria-hidden="true"><use href="#grid" /></svg>

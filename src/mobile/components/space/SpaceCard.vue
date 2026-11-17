@@ -1,7 +1,7 @@
 <template>
   <div v-clickable class="space-card" @click="emit('select', space)">
     <div class="space-cover">
-      <img v-if="space.avatarUrl" :src="space.avatarUrl" :alt="space.name" />
+      <img v-if="space.avatarUrl" :src="space.avatarUrl" :alt="space.name" loading="lazy" decoding="async" />
       <div v-else class="default-cover">
         <van-icon name="cluster-o" size="40" />
       </div>
