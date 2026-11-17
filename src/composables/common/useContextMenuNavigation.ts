@@ -14,8 +14,22 @@ export const useContextMenuNavigation = (options: {
   visibleSpecialMenu: Ref<ContextMenuItem[]>
   showMenu: Ref<boolean>
   onSelect: (item: ContextMenuItem) => void
+  /**
+   * 按当前内容解析禁用态（`disabled` 支持函数式，如「撤回」是否已超时）。
+   * 未注入时只把静态 `true` 视为禁用。
+   */
+  isItemDisabled?: ((item: ContextMenuItem) => boolean) | undefined
 }) => {
-  const { visibleMenu, visibleSpecialMenu, showMenu, onSelect } = options
+  const { visibleMenu, visibleSpecialMenu, showMenu, onSelect, isItemDisabled } = options
+
+  const isDisabled = (item: ContextMenuItem): boolean =>
+    isItemDisabled ? isItemDisabled(item) : item.disabled === true
+
+  /** 越界按「禁用」处理，便于方向键循环时统一跳过 */
+  const isDisabledAt = (index: number): boolean => {
+    const item = allMenuItems.value[index]
+    return item ? isDisabled(item) : true
+  }
 
   const focusedIndex = ref(-1)
   const menuRef = ref<HTMLElement | null>(null)
@@ -32,6 +46,13 @@ export const useContextMenuNavigation = (options: {
   })
 
   const handleMenuKeydown = (e: KeyboardEvent) => {
+    // Escape 不依赖菜单项数量：空菜单/全部项被隐藏时也必须能关闭
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      showMenu.value = false
+      return
+    }
+
     const totalItems = allMenuItems.value.length
     if (totalItems === 0) return
 
@@ -39,12 +60,12 @@ export const useContextMenuNavigation = (options: {
       case 'ArrowDown': {
         e.preventDefault()
         let nextIndex = focusedIndex.value + 1
-        while (nextIndex < totalItems && allMenuItems.value[nextIndex]?.disabled) {
+        while (nextIndex < totalItems && isDisabledAt(nextIndex)) {
           nextIndex++
         }
         if (nextIndex >= totalItems) {
           nextIndex = 0
-          while (nextIndex < totalItems && allMenuItems.value[nextIndex]?.disabled) {
+          while (nextIndex < totalItems && isDisabledAt(nextIndex)) {
             nextIndex++
           }
         }
@@ -54,12 +75,12 @@ export const useContextMenuNavigation = (options: {
       case 'ArrowUp': {
         e.preventDefault()
         let prevIndex = focusedIndex.value - 1
-        while (prevIndex >= 0 && allMenuItems.value[prevIndex]?.disabled) {
+        while (prevIndex >= 0 && isDisabledAt(prevIndex)) {
           prevIndex--
         }
         if (prevIndex < 0) {
           prevIndex = totalItems - 1
-          while (prevIndex >= 0 && allMenuItems.value[prevIndex]?.disabled) {
+          while (prevIndex >= 0 && isDisabledAt(prevIndex)) {
             prevIndex--
           }
         }
@@ -68,17 +89,10 @@ export const useContextMenuNavigation = (options: {
       }
       case 'Enter': {
         e.preventDefault()
-        if (focusedIndex.value >= 0 && focusedIndex.value < allMenuItems.value.length) {
-          const item = allMenuItems.value[focusedIndex.value]
-          if (!item.disabled) {
-            onSelect(item)
-          }
+        const item = allMenuItems.value[focusedIndex.value]
+        if (item && !isDisabled(item)) {
+          onSelect(item)
         }
-        break
-      }
-      case 'Escape': {
-        e.preventDefault()
-        showMenu.value = false
         break
       }
     }

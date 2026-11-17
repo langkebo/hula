@@ -289,7 +289,9 @@ const { focusedIndex, handleMenuKeydown, focusMenu, resetNavigation } = useConte
   visibleMenu,
   visibleSpecialMenu,
   showMenu,
-  onSelect: handleClick
+  onSelect: handleClick,
+  // disabled 支持函数式（如「撤回」是否超时），键盘跳过必须与渲染态同源
+  isItemDisabled: isMenuItemDisabled
 })
 
 watch(
