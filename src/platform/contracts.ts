@@ -1,4 +1,5 @@
 import type { BaseDirectory } from '@tauri-apps/plugin-fs'
+import type { AsyncComponentLoader, Component, ComputedRef } from 'vue'
 import type { CallTypeEnum } from '@/enums'
 
 /**
@@ -20,6 +21,16 @@ export interface StorageLayout {
   cacheBaseDir: BaseDirectory
   cacheBaseDirName: string
   scopedBaseDirs: StorageBaseDirCandidate[]
+}
+
+/**
+ * 移动端能力存在性契约。
+ * 两个能力在构建期即确定：桌面产物恒为 false / undefined，移动产物恒为 true / 异步组件，
+ * 因此调用方不再需要在运行期判断平台。
+ */
+export interface MobilePresence {
+  useIsMobile: () => ComputedRef<boolean>
+  mobileOnlyAsyncComponent: <T extends Component>(loader: AsyncComponentLoader<T>) => T | undefined
 }
 
 /**

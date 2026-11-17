@@ -22,7 +22,7 @@ const MOBILE_ENTRIES = join(ROOT, 'src/mobile/platform/entries')
 const VITE_CONFIG = join(ROOT, 'vite.config.ts')
 
 /** 双端入口文件名，新增平台差异实现时必须同步登记 */
-const ENTRY_NAMES = ['storageLayout', 'platformBoot', 'sessionEventStrategy'] as const
+const ENTRY_NAMES = ['storageLayout', 'platformBoot', 'sessionEventStrategy', 'mobilePresence'] as const
 
 const collectTsFiles = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

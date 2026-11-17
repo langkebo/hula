@@ -64,6 +64,10 @@ export default defineConfig(({ mode }: ConfigEnv) => {
             replacement: fileURLToPath(
               new URL('./src/mobile/platform/entries/sessionEventStrategy.ts', import.meta.url)
             )
+          },
+          {
+            find: '@/platform/entries/mobilePresence',
+            replacement: fileURLToPath(new URL('./src/mobile/platform/entries/mobilePresence.ts', import.meta.url))
           }
         ]
       }

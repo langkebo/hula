@@ -164,9 +164,14 @@ vi.mock('@/utils/Logger', () => ({
   })
 }))
 
-vi.mock('@/utils/PlatformConstants', () => ({
-  isMobile: () => mobileState
-}))
+// 移动端判定由构建期入口装配，vitest 走桌面入口恒为 false；
+// 这里 mock 门面返回响应式判定，用于覆盖移动端专属交互分支。
+vi.mock('@/composables/usePlatform', async () => {
+  const { computed } = await import('vue')
+  return {
+    useIsMobile: () => computed(() => mobileState)
+  }
+})
 
 const MsgInputStub = defineComponent({
   name: 'MsgInput',
