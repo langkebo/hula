@@ -380,3 +380,71 @@ describe('Task 8/10/11 — new token guards', () => {
     expect(tokensContent).toContain('--tjg-font-size-2lg: calc(15px * var(--tjg-font-scale))')
   })
 })
+
+/**
+ * 对比度矩阵：正文（text-primary）与次要文本（text-secondary）对三种表面色，
+ * 明暗两套主题均需 ≥ 4.5:1（WCAG AA 正常文本）。
+ *
+ * 取值全部从 design-tokens.css 实读，不硬编码颜色，token 被改动时会立即暴露。
+ * text-tertiary / text-quaternary 属弱化提示文本，不在本矩阵契约内（见方案 §19.49 已知边界）。
+ */
+describe('对比度矩阵 — 正文/次要文本 × 表面色（WCAG AA）', () => {
+  const tokensContent = readFileSync(TOKENS_FILE, 'utf-8')
+  const rootBlock = tokensContent.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
+  const darkBlock = tokensContent.match(/html\[data-theme=['"]dark['"]\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
+
+  const readToken = (block: string, name: string): string => {
+    const match = block.match(new RegExp(`${name}:\\s*([^;]+);`))
+    expect(match, `${name} 未在对应主题块中定义`).toBeTruthy()
+    return (match?.[1] ?? '').trim()
+  }
+
+  const parseRgb = (value: string): [number, number, number] => {
+    const hex = value.replace('#', '')
+    const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex
+    return [0, 2, 4].map((i) => Number.parseInt(full.slice(i, i + 2), 16)) as [number, number, number]
+  }
+
+  const channelLuminance = (channel: number): number => {
+    const value = channel / 255
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  }
+
+  const relativeLuminance = (color: string): number => {
+    const [r, g, b] = parseRgb(color)
+    return 0.2126 * channelLuminance(r) + 0.7152 * channelLuminance(g) + 0.0722 * channelLuminance(b)
+  }
+
+  const contrastRatio = (foreground: string, background: string): number => {
+    const a = relativeLuminance(foreground)
+    const b = relativeLuminance(background)
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+  }
+
+  const TEXT_TOKENS = ['--tjg-text-primary', '--tjg-text-secondary']
+  const SURFACES = ['--tjg-surface-app', '--tjg-surface-panel', '--tjg-surface-subtle']
+  const THEMES = [
+    { name: 'light', block: rootBlock },
+    { name: 'dark', block: darkBlock }
+  ]
+
+  const cases = THEMES.flatMap(({ name, block }) =>
+    TEXT_TOKENS.flatMap((text) =>
+      SURFACES.map((surface) => ({
+        theme: name,
+        text,
+        surface,
+        foreground: readToken(block, text),
+        background: readToken(block, surface)
+      }))
+    )
+  )
+
+  it.each(cases)('$theme：$text 对 $surface 对比度 ≥ 4.5:1', ({ foreground, background, text, surface, theme }) => {
+    const ratio = contrastRatio(foreground, background)
+    expect(
+      ratio,
+      `${theme} 主题下 ${text}(${foreground}) 对 ${surface}(${background}) 对比度 ${ratio.toFixed(2)} < 4.5`
+    ).toBeGreaterThanOrEqual(4.5)
+  })
+})

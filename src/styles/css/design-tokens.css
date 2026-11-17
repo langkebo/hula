@@ -432,8 +432,8 @@ html[data-theme='dark'] {
 
   /* 对比度 18.10:1 AAA @surface-app（#161616） */
   --tjg-text-primary: #ffffff;
-  /* 对比度 5.67:1 AA @surface-app（#161616；与 text-quaternary 同值） */
-  --tjg-text-secondary: #909090;
+  /* 对比度 6.51:1 AA @surface-app（#161616）、4.55:1 AA @surface-panel（#313338） */
+  --tjg-text-secondary: #9b9b9b;
   /* 对比度 4.9:1 AA @surface-app */
   --tjg-text-tertiary: #858585;
   /* 对比度 5.67:1 AA @surface-app */
