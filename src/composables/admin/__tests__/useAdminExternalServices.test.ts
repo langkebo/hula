@@ -9,7 +9,10 @@ vi.mock('@/services/matrix/admin', () => ({
       registerService: vi.fn(),
       updateService: vi.fn(),
       deleteService: vi.fn(),
-      checkServiceHealth: vi.fn()
+      checkServiceHealth: vi.fn(),
+      getClientHealth: vi.fn(),
+      updateClientService: vi.fn(),
+      deleteClientService: vi.fn()
     }
   }
 }))
@@ -38,11 +41,17 @@ const sampleHealth = {
   consecutive_failures: 0
 }
 
+const sampleClientHealth = {
+  status: 'ok',
+  services: [{ id: 'svc-1', type: 'webhook', status: 'healthy', last_check: 1700000002000 }]
+}
+
 describe('useAdminExternalServices', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(externalServices.listServices).mockResolvedValue([sampleService])
     vi.mocked(externalServices.getAllHealth).mockResolvedValue([sampleHealth])
+    vi.mocked(externalServices.getClientHealth).mockResolvedValue(sampleClientHealth)
   })
 
   it('loadServices 默认按全部类型拉取并合并健康状态', async () => {
@@ -144,5 +153,75 @@ describe('useAdminExternalServices', () => {
     expect(ok).toBe(true)
     expect(externalServices.deleteService).toHaveBeenCalledWith('as-1')
     expect(externalServices.listServices).toHaveBeenCalledTimes(1)
+  })
+
+  it('loadClientHealth 记录 client 健康状态与派生服务列表', async () => {
+    const c = useAdminExternalServices()
+
+    const pending = c.loadClientHealth()
+    expect(c.clientLoading.value).toBe(true)
+    await pending
+
+    expect(c.clientLoading.value).toBe(false)
+    expect(c.clientHealth.value).toEqual(sampleClientHealth)
+    expect(c.clientServices.value).toHaveLength(1)
+    expect(c.clientServices.value[0]?.id).toBe('svc-1')
+  })
+
+  it('clientServices 在无 services 字段时为空数组', async () => {
+    vi.mocked(externalServices.getClientHealth).mockResolvedValue({ status: 'unknown' })
+    const c = useAdminExternalServices()
+
+    await c.loadClientHealth()
+
+    expect(c.clientServices.value).toEqual([])
+  })
+
+  it('setClientEnabled 更新后重载 client 健康', async () => {
+    vi.mocked(externalServices.updateClientService).mockResolvedValue({ id: 'svc-1' })
+    const c = useAdminExternalServices()
+
+    const pending = c.setClientEnabled('svc-1', false)
+    expect(c.clientMutatingId.value).toBe('svc-1')
+    const ok = await pending
+
+    expect(ok).toBe(true)
+    expect(externalServices.updateClientService).toHaveBeenCalledWith('svc-1', { is_enabled: false })
+    expect(externalServices.getClientHealth).toHaveBeenCalledTimes(1)
+    expect(c.clientMutatingId.value).toBeNull()
+  })
+
+  it('setClientEnabled 失败返回 false 并记录错误', async () => {
+    vi.mocked(externalServices.updateClientService).mockRejectedValueOnce(new Error('forbidden'))
+    const c = useAdminExternalServices()
+
+    const ok = await c.setClientEnabled('svc-1', true)
+
+    expect(ok).toBe(false)
+    expect(c.error.value).toBe('forbidden')
+    expect(c.clientMutatingId.value).toBeNull()
+  })
+
+  it('removeClientService 注销后重载 client 健康', async () => {
+    vi.mocked(externalServices.deleteClientService).mockResolvedValue(undefined)
+    const c = useAdminExternalServices()
+
+    const ok = await c.removeClientService('svc-1')
+
+    expect(ok).toBe(true)
+    expect(externalServices.deleteClientService).toHaveBeenCalledWith('svc-1')
+    expect(externalServices.getClientHealth).toHaveBeenCalledTimes(1)
+    expect(c.clientMutatingId.value).toBeNull()
+  })
+
+  it('removeClientService 失败返回 false 并记录错误', async () => {
+    vi.mocked(externalServices.deleteClientService).mockRejectedValueOnce(new Error('not found'))
+    const c = useAdminExternalServices()
+
+    const ok = await c.removeClientService('svc-1')
+
+    expect(ok).toBe(false)
+    expect(c.error.value).toBe('not found')
+    expect(c.clientMutatingId.value).toBeNull()
   })
 })

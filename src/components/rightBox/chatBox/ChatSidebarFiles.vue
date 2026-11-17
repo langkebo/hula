@@ -1,7 +1,20 @@
 <template>
   <div v-show="active" class="flex-1 min-h-0 flex flex-col">
+    <!-- 首次取数中：给骨架屏，避免把「还没取到」渲染成「没有配额」 -->
+    <template v-if="!loaded">
+      <n-flex
+        align="center"
+        justify="space-between"
+        class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
+        <n-skeleton height="12px" width="32px" :sharp="false" />
+        <n-skeleton height="12px" width="72px" :sharp="false" />
+      </n-flex>
+      <div class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
+        <n-skeleton height="4px" :sharp="false" />
+      </div>
+    </template>
     <!-- 配额统计：数据来自 media 配额接口；取不到就整块隐藏，绝不显示假数字 -->
-    <template v-if="quota">
+    <template v-else-if="quota">
       <n-flex
         align="center"
         justify="space-between"
@@ -23,28 +36,27 @@
           color="var(--tjg-color-primary-500)" />
       </div>
     </template>
-    <!-- 服务端有配额接口但这次没取到：如实说「暂不可用」，不把失败画成用量 0 -->
-    <n-flex
-      v-else-if="loaded && quotaUnavailable"
-      align="center"
-      justify="space-between"
-      class="px-12px py-8px shrink-0 border-b border-[--tjg-border-default]">
-      <span class="text-[var(--text-xs)] font-medium color-[--tjg-text-tertiary]">
-        {{ t('home.chat_sidebar.quota.title') }}
-      </span>
-      <span class="text-[var(--text-xs)] color-[--tjg-text-secondary]" data-test="chat-sidebar-quota-unavailable">
-        {{ t('home.chat_sidebar.quota.unavailable') }}
-      </span>
-    </n-flex>
+    <!-- 服务端有配额接口但这次没取到：如实说「暂不可用」并给重试入口，不把失败画成用量 0 -->
+    <div v-else-if="quotaUnavailable" class="px-8px py-6px shrink-0 border-b border-[--tjg-border-default]">
+      <PartialStateBanner
+        compact
+        data-testid="chat-sidebar-quota-partial"
+        :message="t('home.chat_sidebar.quota.unavailable_hint')"
+        :retry-text="t('home.chat_sidebar.actions.retry')"
+        @retry="loadQuota" />
+    </div>
 
     <div class="flex-1 flex items-center justify-center">
-      <!-- 文件列表尚未接入数据源：只给空态，不伪造条目 -->
+      <!-- 文件列表尚无数据源：给出带原因的空态，不伪造条目 -->
       <n-empty v-if="loaded" :description="t('home.chat_sidebar.empty.files')" data-test="chat-sidebar-files-empty">
         <template #icon>
           <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]" aria-hidden="true">
             <use href="#folder"></use>
           </svg>
         </template>
+        <p class="mt-4px mb-0 text-[var(--text-xs)] color-[--tjg-text-quaternary]" data-test="chat-sidebar-files-hint">
+          {{ t('home.chat_sidebar.empty.files_unsupported') }}
+        </p>
       </n-empty>
     </div>
   </div>
@@ -53,6 +65,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { MediaQuotaStats } from '@/services/matrix/media/mediaConfigOps'
 import { onMediaQuotaChanged } from '@/services/matrix/media/mediaQuotaEvents'

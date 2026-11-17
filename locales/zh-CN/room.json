@@ -155,6 +155,8 @@
     "vault_placeholder": "以 JSON 格式编辑保险库数据",
     "vault_save": "保存保险库",
     "vault_invalid_json": "保险库数据必须是合法的 JSON 对象",
+    "vault_load_failed": "保险库读取失败",
+    "load_status_failed": "安全设置加载失败",
     "section_notification": "通知设置",
     "section_alias": "房间别名",
     "section_history_visibility": "历史可见性",
@@ -333,10 +335,12 @@
     "state": "摘要状态",
     "ephemeral": "临时事件",
     "empty": "暂无数据",
+    "unavailable": "数据不可用",
     "hero": "Hero",
     "expand": "展开内容",
     "collapse": "收起内容",
-    "load_failed": "加载服务端摘要失败"
+    "load_failed": "加载服务端摘要失败",
+    "partial_failed": "部分摘要加载失败：{sources}"
   },
   "my_rooms": {
     "empty": "暂无房间",

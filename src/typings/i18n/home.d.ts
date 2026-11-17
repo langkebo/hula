@@ -181,7 +181,8 @@ export type Messages = {
     },
     "quota": {
       "title": "配额",
-      "unavailable": "暂不可用"
+      "unavailable": "暂不可用",
+      "unavailable_hint": "配额数据暂不可用"
     },
     "favorites": {
       "total": "收藏消息 {count} 条",
@@ -204,7 +205,8 @@ export type Messages = {
       "no_chat_selected": "未选择会话",
       "select_to_start": "选择一个会话或发起新聊天",
       "pins": "暂无置顶消息",
-      "files": "暂无文件"
+      "files": "暂无文件",
+      "files_unsupported": "当前版本暂不支持按房间浏览文件"
     },
     "online_members": "在线成员 {count}",
     "tabs": {
@@ -587,6 +589,7 @@ export type KeyPaths =
   | "home.chat_sidebar.search.placeholder"
   | "home.chat_sidebar.quota.title"
   | "home.chat_sidebar.quota.unavailable"
+  | "home.chat_sidebar.quota.unavailable_hint"
   | "home.chat_sidebar.favorites.total"
   | "home.chat_sidebar.favorites.export_md"
   | "home.chat_sidebar.favorites.export_txt"
@@ -602,6 +605,7 @@ export type KeyPaths =
   | "home.chat_sidebar.empty.select_to_start"
   | "home.chat_sidebar.empty.pins"
   | "home.chat_sidebar.empty.files"
+  | "home.chat_sidebar.empty.files_unsupported"
   | "home.chat_sidebar.online_members"
   | "home.chat_sidebar.tabs.members"
   | "home.chat_sidebar.tabs.files"

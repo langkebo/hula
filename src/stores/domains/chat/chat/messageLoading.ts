@@ -265,14 +265,16 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
       await getPageMsg(pageSize, roomId, '', true)
     } catch (err) {
       logger.error('[changeRoom] 无法加载消息:', err)
-      // 房间已切换时不要覆盖新房间的加载态；同房间失败也要保留旧游标
+      // 房间已切换时不要覆盖新房间的加载态；同房间失败也要保留旧游标与失败标记，
+      // 否则 `getPageMsg` 写入的 `loadFailed.scope='initial'` 会被抹掉，首屏失败退化成空态
       if (globalStore.currentSessionRoomId === roomId) {
         const failedOptions = messageOptions[roomId]
         currentMessageOptions.value = {
           isLast: failedOptions?.isLast ?? false,
           isLoading: false,
           cursor: failedOptions?.cursor ?? '',
-          hasLoadedOnce: true
+          hasLoadedOnce: true,
+          loadFailed: failedOptions?.loadFailed ?? null
         }
       }
     }
@@ -321,12 +323,14 @@ export const createMessageLoading = (deps: MessageLoadingDeps) => {
       logger.debug('已重置并刷新当前聊天室的消息列表')
     } catch (err) {
       logger.error('重置并刷新消息列表失败:', err)
+      // 保留 `getPageMsg` 写入的失败标记，供消息列表渲染首屏错误态（否则只剩空态）
       if (globalStore.currentSessionRoomId === requestRoomId) {
         messageOptions[requestRoomId] = {
           isLast: false,
           isLoading: false,
           cursor: '',
-          hasLoadedOnce: true
+          hasLoadedOnce: true,
+          loadFailed: messageOptions[requestRoomId]?.loadFailed ?? null
         }
       }
     }

@@ -2,14 +2,14 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
- * ChatSidebarFiles 的配额区判据（§19.22 + §19.29）。
+ * ChatSidebarFiles 的配额区判据（§19.22 + §19.29 + §19.55）。
  *
  * 这个面板此前的「1.2 GB / 5.0 GB + 24%」是硬编码假值，会让用户以为看到了真实用量。
  * 现在数据来自 `matrixMediaService.getQuotaStats()`；该接口返回 `{ ok, reason }`：
  * - `ok: true` → 展示真实用量；
  * - `unsupported`（服务端没有配额接口）→ 整块隐藏；
- * - `unavailable`（接口在但本次失败）→ 显示「暂不可用」。
- * 任何情况下都不显示 0 或占位数字。
+ * - `unavailable`（接口在但本次失败）→ 局部失败信号 + 重试入口。
+ * 取数完成前是骨架屏，任何情况下都不显示 0 或占位数字。
  */
 const { getQuotaStatsMock } = vi.hoisted(() => ({ getQuotaStatsMock: vi.fn() }))
 
@@ -32,6 +32,13 @@ vi.mock('naive-ui', async () => {
   return {
     NFlex: passthrough('NFlex'),
     NEmpty: passthrough('NEmpty'),
+    NSkeleton: defineComponent({
+      name: 'NSkeleton',
+      props: ['height', 'width', 'sharp'],
+      setup() {
+        return () => h('div', { 'data-test': 'NSkeleton' })
+      }
+    }),
     NProgress: defineComponent({
       name: 'NProgress',
       props: ['type', 'percentage', 'height', 'showIndicator', 'color'],
@@ -77,7 +84,7 @@ describe('ChatSidebarFiles — 配额区', () => {
     wrapper.unmount()
   })
 
-  it('接口存在但本次取不到（unavailable）时说明「暂不可用」，不冒充用量为 0', async () => {
+  it('接口存在但本次取不到（unavailable）时给出局部失败信号与重试入口，不冒充用量为 0', async () => {
     getQuotaStatsMock.mockResolvedValue({ ok: false, reason: 'unavailable' })
 
     const wrapper = mount(ChatSidebarFiles, { props: { active: true } })
@@ -85,8 +92,64 @@ describe('ChatSidebarFiles — 配额区', () => {
 
     expect(quotaText(wrapper).exists()).toBe(false)
     expect(wrapper.find('[data-test="NProgress"]').exists()).toBe(false)
-    expect(wrapper.find('[data-test="chat-sidebar-quota-unavailable"]').text()).toBe(
-      'home.chat_sidebar.quota.unavailable'
+    const partial = wrapper.find('[data-testid="chat-sidebar-quota-partial"]')
+    expect(partial.exists()).toBe(true)
+    expect(partial.text()).toContain('home.chat_sidebar.quota.unavailable_hint')
+    expect(partial.find('[data-testid="partial-retry"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('配额取数期间显示骨架屏，取回后替换为真实用量', async () => {
+    let resolveQuota: (value: unknown) => void = () => {}
+    getQuotaStatsMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveQuota = resolve
+      })
+    )
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true } })
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="NSkeleton"]').exists()).toBe(true)
+    expect(quotaText(wrapper).exists()).toBe(false)
+
+    resolveQuota({ ok: true, stats: { storageBytes: 100, mediaCount: 1, limitBytes: 200 } })
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="NSkeleton"]').exists()).toBe(false)
+    expect(quotaText(wrapper).text()).toBe('100 B / 200 B')
+    wrapper.unmount()
+  })
+
+  it('点击局部失败信号的重试后重新取数，成功后移除失败信号', async () => {
+    getQuotaStatsMock.mockResolvedValueOnce({ ok: false, reason: 'unavailable' })
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="chat-sidebar-quota-partial"]').exists()).toBe(true)
+
+    getQuotaStatsMock.mockResolvedValueOnce({
+      ok: true,
+      stats: { storageBytes: 100, mediaCount: 1, limitBytes: 200 }
+    })
+    await wrapper.find('[data-testid="partial-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(getQuotaStatsMock).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-testid="chat-sidebar-quota-partial"]').exists()).toBe(false)
+    expect(quotaText(wrapper).text()).toBe('100 B / 200 B')
+    wrapper.unmount()
+  })
+
+  it('文件列表无数据源时给出带原因的空态，不伪造条目', async () => {
+    getQuotaStatsMock.mockResolvedValue({ ok: false, reason: 'unsupported' })
+
+    const wrapper = mount(ChatSidebarFiles, { props: { active: true } })
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="chat-sidebar-files-empty"]').text()).toContain('home.chat_sidebar.empty.files')
+    expect(wrapper.find('[data-test="chat-sidebar-files-hint"]').text()).toBe(
+      'home.chat_sidebar.empty.files_unsupported'
     )
     wrapper.unmount()
   })

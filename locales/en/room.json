@@ -155,6 +155,8 @@
     "vault_placeholder": "Edit vault data as JSON",
     "vault_save": "Save Vault",
     "vault_invalid_json": "Vault data must be a valid JSON object",
+    "vault_load_failed": "Failed to load vault data",
+    "load_status_failed": "Failed to load security settings",
     "section_notification": "Notification Settings",
     "section_alias": "Room Aliases",
     "section_history_visibility": "History Visibility",
@@ -333,10 +335,12 @@
     "state": "Summary State",
     "ephemeral": "Ephemeral Events",
     "empty": "No data",
+    "unavailable": "Data unavailable",
     "hero": "Hero",
     "expand": "Expand content",
     "collapse": "Collapse content",
-    "load_failed": "Failed to load server summary"
+    "load_failed": "Failed to load server summary",
+    "partial_failed": "Some summary data failed to load: {sources}"
   },
   "my_rooms": {
     "empty": "No rooms",

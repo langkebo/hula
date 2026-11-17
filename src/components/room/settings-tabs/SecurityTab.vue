@@ -8,49 +8,70 @@
       </div>
 
       <template v-else>
-        <div v-if="!isEncrypted" class="rs-tab__field">
-          <div class="rs-tab__field-row">
+        <PartialStateBanner
+          v-if="statusError"
+          compact
+          class="rs-tab__partial"
+          data-testid="security-status-partial"
+          :message="t('room.settings_drawer.load_status_failed')"
+          :retry-text="t('common.retry')"
+          @retry="loadStatus" />
+
+        <template v-else>
+          <div v-if="!isEncrypted" class="rs-tab__field">
+            <div class="rs-tab__field-row">
+              <div class="rs-tab__field-text">
+                <span class="rs-tab__field-label-inline">{{ t('room.settings_drawer.toggle_enable_e2ee') }}</span>
+              </div>
+              <n-switch
+                :value="enabling"
+                :disabled="enabling"
+                data-testid="security-enable-e2ee-switch"
+                @update:value="handleEnableEncryption" />
+            </div>
+          </div>
+
+          <div v-else class="rs-tab__encrypted-info">
+            <div class="rs-tab__field">
+              <span class="rs-tab__field-label">{{ t('room.settings_drawer.field_encryption_algorithm') }}</span>
+              <n-input :value="algorithm" readonly data-testid="security-algorithm" />
+            </div>
+            <div class="rs-tab__field">
+              <span class="rs-tab__field-label">{{ t('room.settings_drawer.field_key_rotation') }}</span>
+              <n-input :value="rotationPeriod" readonly data-testid="security-rotation">
+                <template #suffix>
+                  <span class="rs-tab__field-hint">{{ t('room.settings_drawer.field_key_rotation_hint') }}</span>
+                </template>
+              </n-input>
+            </div>
+          </div>
+
+          <div class="rs-tab__field-row rs-tab__field-row--divider">
             <div class="rs-tab__field-text">
-              <span class="rs-tab__field-label-inline">{{ t('room.settings_drawer.toggle_enable_e2ee') }}</span>
+              <span class="rs-tab__field-label-inline">{{ t('room.settings_drawer.toggle_federation') }}</span>
             </div>
             <n-switch
-              :value="enabling"
-              :disabled="enabling"
-              data-testid="security-enable-e2ee-switch"
-              @update:value="handleEnableEncryption" />
+              v-model:value="isPublic"
+              :loading="savingVisibility"
+              data-testid="security-federation-switch"
+              @update:value="handleVisibilityChange" />
           </div>
-        </div>
-
-        <div v-else class="rs-tab__encrypted-info">
-          <div class="rs-tab__field">
-            <span class="rs-tab__field-label">{{ t('room.settings_drawer.field_encryption_algorithm') }}</span>
-            <n-input :value="algorithm" readonly data-testid="security-algorithm" />
-          </div>
-          <div class="rs-tab__field">
-            <span class="rs-tab__field-label">{{ t('room.settings_drawer.field_key_rotation') }}</span>
-            <n-input :value="rotationPeriod" readonly data-testid="security-rotation">
-              <template #suffix>
-                <span class="rs-tab__field-hint">{{ t('room.settings_drawer.field_key_rotation_hint') }}</span>
-              </template>
-            </n-input>
-          </div>
-        </div>
-
-        <div class="rs-tab__field-row rs-tab__field-row--divider">
-          <div class="rs-tab__field-text">
-            <span class="rs-tab__field-label-inline">{{ t('room.settings_drawer.toggle_federation') }}</span>
-          </div>
-          <n-switch
-            v-model:value="isPublic"
-            :loading="savingVisibility"
-            data-testid="security-federation-switch"
-            @update:value="handleVisibilityChange" />
-        </div>
+        </template>
       </template>
     </section>
 
     <section class="rs-tab__section">
       <h4 class="rs-tab__section-title">{{ t('room.settings_drawer.section_vault') }}</h4>
+
+      <PartialStateBanner
+        v-if="vaultLoadFailed"
+        compact
+        class="rs-tab__partial"
+        data-testid="security-vault-partial"
+        :message="t('room.settings_drawer.vault_load_failed')"
+        :retry-text="t('common.retry')"
+        @retry="loadVault" />
+
       <div class="rs-tab__field">
         <n-input
           v-model:value="vaultDraft"
@@ -76,6 +97,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { useEncryption } from '@/composables/encryption/useEncryption'
 import { matrixRoomActionFacade, matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
@@ -101,6 +123,9 @@ const rotationPeriod = ref('')
 const isPublic = ref(false)
 const vaultDraft = ref('')
 const savingVault = ref(false)
+/** 局部失败信号：安全设置 / 保险库是独立数据源，失败不能静默伪装成默认值 */
+const statusError = ref(false)
+const vaultLoadFailed = ref(false)
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -114,6 +139,7 @@ const formatRotation = (ms: number | undefined): string => {
 
 async function loadStatus() {
   loading.value = true
+  statusError.value = false
   try {
     const [encrypted, visibility] = await Promise.all([
       encryption.isRoomEncrypted(props.roomId),
@@ -133,7 +159,7 @@ async function loadStatus() {
       }
     }
   } catch {
-    showFeedback(t('room.settings_drawer.saved_failed'), 'error')
+    statusError.value = true
   } finally {
     loading.value = false
   }
@@ -168,11 +194,14 @@ async function handleVisibilityChange(value: boolean) {
 }
 
 async function loadVault() {
+  vaultLoadFailed.value = false
   try {
     const data = await matrixRoomReadFacade.getVaultData(props.roomId, true)
     vaultDraft.value = JSON.stringify(data ?? {}, null, 2)
   } catch {
-    vaultDraft.value = '{}'
+    // 读取失败不能填充 `{}`：那会让「读取失败」看起来像「空保险库」，误保存还会覆盖远端数据
+    vaultLoadFailed.value = true
+    vaultDraft.value = ''
   }
 }
 
@@ -233,6 +262,10 @@ onMounted(() => {
 
 .rs-tab__field {
   margin-bottom: 12px;
+}
+
+.rs-tab__partial {
+  margin-bottom: 10px;
 }
 
 .rs-tab__field-label {

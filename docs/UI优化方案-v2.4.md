@@ -8,7 +8,7 @@
 | 适用端 | 桌面（Tauri + Naive UI）、移动（Vant） |
 | 权威 token | `src/styles/css/design-tokens.css` |
 | 关联守门 | `pnpm check:ratchet`、`pnpm check:mobile-css`、`pnpm test:run`、`pnpm vue-tsc --noEmit` |
-| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3），§19.41 为 P1-3（上传链路 MIME 兜底统一：`resolveUploadMimeType` 按「声明类型 → 扩展名 → 场景兜底」取值，收敛 `uploadViaGateway` / `MatrixMediaService` / `useUpload` 的散落兜底），§19.42 为 P1-4（上传 MIME 文件头嗅探兜底：声明为空或 `octet-stream` 且扩展名不可判定时读取前 16 字节，覆盖网关直传 / 路径上传 / 头像上传），§19.43 为 P3/A8（平台差异实现改为构建期入口装配：存储布局 / 启动 / 会话事件策略各一对桌面与移动入口，桌面产物不再静态包含 `src/mobile/platform/**`，`isMobile()` 余量收紧到 2），§19.44 为同日 6 项收尾清单核对，§19.45 为 2026-11-17 `isMobile()` 判定器改为构建期常量（2 → 0），§19.46 为同日阶段 D / 附录 B 液态玻璃候选核实与 D1 准入门槛，§19.47 为同日 §17 存量收敛（列表图片懒加载与 ratchet 计数锁），§19.48 为同日批次 A2 的 Storybook 视觉回归基线补齐，§19.49 为同日批次 B 的离线子集：明暗对比度矩阵与后台路由 / 导航门控判据，§19.50 为同日批次 B 的右键菜单键盘导航缺陷修复） |
+| 章节构成 | 第 0-11 章为液态玻璃主题；第 12 章为「能力接线补齐方案」（工程侧）；第 13 章为「UI/UX 优化方案」（设计侧，与第 12 章配套）；第 14 章为风险与回滚；第 15-19 章为 2026-11-14 全面代码审查、缺失组件补全、多端适配、界面统一与回归验证（§19.7 为 2026-11-15 服务能力面板接线与验收取证，§19.8 为 2026-11-16 空态统一迁移，§19.9 为同日运行态对比度与键盘走查及三处缺陷修复，§19.10 为同日 partial 态统一件与首批接入，§19.11 为同日业务端 partial 第二批接入，§19.12 为同日 `AdminDashboard` 页面级用例补齐，§19.13 为同日 `isMobile()` 内联分支收敛（19 → 13，§19.23 进一步降到 12）与不可机械清零的边界说明，§19.14 为同日房间成员 / 房间设置局部失败信号接入 `PartialStateBanner`，§19.15 为用户 / 房间 / 举报页四态页面级用例与「房间统计接口缺门控」修复，§19.16 为房间成员 / 房间设置写失败保留输入的组件级判据，§19.17 为成员加载错误映射的生命周期修复，§19.18 为消息列表的局部失败信号，§19.19 为把 `clearAllData()` 接进登出链路，§19.20 为消息缓存随登出丢弃，§19.21 为其余业务区块四态核对与空间子房间假空态修复，§19.22 为媒体库配额接真实数据，§19.23 为 `isMobile()` 下沉第一组（相册扫描，13 → 12），§19.24 为第二组（右键菜单守卫平台判定上移，12 → 11），§19.25 为第三组（视频查看器死守卫，11 → 10），§19.26 为 P0-6（右键菜单桌面专属项构建期裁剪），§19.27 为 P0-7（共享聊天组件 5 处 isMobile 分支下沉，10 → 5），§19.28 为 P0-8（管理端公告 / IP 封禁 / 保留策略写操作的失败保留与重试判据），§19.29 为 P0-9（媒体配额三态与上传 / 删除后即时刷新），§19.30 为 P0-10（空间房间变更后刷新失败不再冒充变更失败），§19.31 为 P0-11（组件体量收口、媒体 MIME 标准映射与消息加载失败结构化），§19.32 为 P0-12（SpaceChildrenPane 状态层与操作层拆分，505 → 135 行，超 400 行基线收紧到 121），§19.33 为 P0-13（右键菜单列表按用途拆分三模块 + 本地消息动作独立，739 → 108 行，超 400 行基线收紧到 120），§19.34 为 P0-14（移动端右键菜单桌面专属项收口：文件「预览」×1 与「在文件夹中显示」×4 补平台门控），§19.35 为 P0-15（消息加载失败按网络/权限/服务端分级展示，原始错误码折叠可复制），§19.36 为 P0-16（空间建房的「已建未挂载」中间态与刷新失败提示保留），§19.37 为 P0-17（空间建房中间态的一键「重新加入空间」），§19.38 为 P1-1（SpaceChildrenPane 测试基建修复：路由 mock 改响应式、20 处 `wrapper.vm` 收敛到事件入口），§19.39 为 P1-2（MIME 推导统一：扩展名映射收敛到 `FileType.ts`、去掉 `image/png` 兜底、文件消息按「显式类型 → 扩展名 → octet-stream」取值），§19.40 为 P3/A8（`isMobile()` 分支下沉第二批次：存储布局 / 启动收尾 / 会话来电策略迁入运行期注册表，5 → 3），§19.41 为 P1-3（上传链路 MIME 兜底统一：`resolveUploadMimeType` 按「声明类型 → 扩展名 → 场景兜底」取值，收敛 `uploadViaGateway` / `MatrixMediaService` / `useUpload` 的散落兜底），§19.42 为 P1-4（上传 MIME 文件头嗅探兜底：声明为空或 `octet-stream` 且扩展名不可判定时读取前 16 字节，覆盖网关直传 / 路径上传 / 头像上传），§19.43 为 P3/A8（平台差异实现改为构建期入口装配：存储布局 / 启动 / 会话事件策略各一对桌面与移动入口，桌面产物不再静态包含 `src/mobile/platform/**`，`isMobile()` 余量收紧到 2），§19.44 为同日 6 项收尾清单核对，§19.45 为 2026-11-17 `isMobile()` 判定器改为构建期常量（2 → 0），§19.46 为同日阶段 D / 附录 B 液态玻璃候选核实与 D1 准入门槛，§19.47 为同日 §17 存量收敛（列表图片懒加载与 ratchet 计数锁），§19.48 为同日批次 A2 的 Storybook 视觉回归基线补齐，§19.49 为同日批次 B 的离线子集：明暗对比度矩阵与后台路由 / 导航门控判据，§19.50 为同日批次 B 的右键菜单键盘导航缺陷修复，§19.54 为同日异步区块局部失败信号补全，§19.55 为同日媒体库配额区四态补全） |
 | 决策结论 | 现有 CSS 玻璃体系为**唯一基座**；外部液态玻璃库仅作为**可选装饰增强层**。2026-11-17 核实：仅 vitrio 为真实可用候选，`liquid-glass.io` / `nmorph` 无法定位到真实项目（作废），增强层维持「不引入」直至 vitrio 补齐 §3.5 的待真机项 |
 
 ---
@@ -1421,7 +1421,7 @@ R1 结论：删除的是与 `getAdminManager().externalService` 重复的平行�
 功能与状态：
 
 - [x] 每个 L2/L3 能力入口在界面上不存在，且「服务能力」面板能查到原因。 —— 证据：§12.4 的 48 条接线条目已全部关闭；2026-11-15 把此前「有实现、有测试、无挂载点」的 `ServiceCapabilityPanel` 接入 `DiagnosticsPanel.vue`（设置 → 帮助/诊断），列出 14 个能力位的三态、缺失 key（如 `org.matrix.msc4354`）与重试/设置入口；`useServiceCapabilityItems.test.ts` 5 例 + `ServiceCapabilityPanel.test.ts` 6 例全过（详见 §19.7）。
-- [ ] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 2026-11-16 逐页核对结果：房间成员/房间设置（§19.14）、消息列表（§19.18）、**空间子房间列表（§19.21，本轮补 error/loading）** 已闭合；好友申请（§19.11 已带失败文案+重试）与房间内搜索（自身有 loading/error+retry/empty）已达标；**媒体库仍是占位实现**（硬编码假配额，无数据源，§19.21 边界 1）。仍不勾选的原因仅剩「媒体库文件列表本身未接数据源（非四态问题，见 §19.22 边界 1）」。原注：三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）；`partial` 于 2026-11-16 补齐统一件 `PartialStateBanner`（`role="status"` + `aria-live="polite"`、可重试、消费 `--tjg-*` token、10 例单测），第一批接入 `AdminServerLogs` / `AdminDashboard`（§19.10），第二批接入业务端 `FriendsSettings` / `StorageSettings`（§19.11），把「分组/好友申请读取失败」与「配额统计/告警/认证媒体读取失败」从伪空态改为显式 partial；第三批为 `AdminDashboard` 补页面级用例（§19.12），四态在 admin 三页已有自动化证据。空态已由 `check-ratchet` 的 `handwritten_empty_state` 锁定 0（详见 §19.8）。本条仍保持未勾选：房间成员、房间设置、消息列表等区块尚未逐个拆出局部失败信号，需逐页补数据来源后再勾选。
+- [x] 每个异步区块具备 loading / empty / error / partial 四态，且均有自动化测试。 —— 2026-11-16 逐页核对结果：房间成员/房间设置（§19.14）、消息列表（§19.18）、**空间子房间列表（§19.21，本轮补 error/loading）** 已闭合；好友申请（§19.11 已带失败文案+重试）与房间内搜索（自身有 loading/error+retry/empty）已达标；**媒体库当时判为占位实现**（硬编码假配额，无数据源，§19.21 边界 1，该判定已被 §19.22 / §19.29 推翻）。原注：三态通用件已就位（`EmptyState` / `ErrorState` / `MobileAsyncState`，均有用例）；`partial` 于 2026-11-16 补齐统一件 `PartialStateBanner`（`role="status"` + `aria-live="polite"`、可重试、消费 `--tjg-*` token、10 例单测），第一批接入 `AdminServerLogs` / `AdminDashboard`（§19.10），第二批接入业务端 `FriendsSettings` / `StorageSettings`（§19.11），把「分组/好友申请读取失败」与「配额统计/告警/认证媒体读取失败」从伪空态改为显式 partial；第三批为 `AdminDashboard` 补页面级用例（§19.12），四态在 admin 三页已有自动化证据。空态已由 `check-ratchet` 的 `handwritten_empty_state` 锁定 0（详见 §19.8）。**2026-11-17 补第三批局部失败信号（§19.54）**：修复消息列表首屏失败标记在 `changeRoom` / `resetAndRefreshCurrentRoomMessages` 收尾被抹掉（退化成空态）的缺陷；`RoomServerSummaryPanel` 的部分数据源失败、`SecurityTab` 的安全设置/保险库读取失败均接入 `PartialStateBanner` 并可原地重试。本条在 2026-11-17 勾选：**同日第四批（§19.55）补完媒体库配额区**——首屏骨架屏、`unavailable` 的可重试 `PartialStateBanner`、文件列表带原因的空态，并各有组件用例（`ChatSidebarFiles.test.ts` 10 例）。媒体库唯一异步区块（配额）四态齐备；文件列表在服务端提供房间维度列文件接口前没有异步源，渲染为如实空态而非四态之一。
 - [x] 所有写操作失败后保留用户输入，并给出可执行的重试路径。 —— **2026-11-16 已把「房间成员 / 房间设置」的 5 条写路径做成组件级判据**（邀请、踢人、名称+主题、别名、标签；断网与 4xx 在组件边界上等价于 facade reject），实测全部**已满足**且 4 条变异自证会红，见 §19.16。**同日再补管理端 3 条写路径**（公告发送、IP 封禁、房间保留策略），5 例判据 + 3 条变异自证见 §19.28；配额写操作经核查后端无端点（`getQuotaConfigs` / `setUserQuota` 已删除），移动端 admin 按 R2 裁剪、无对应入口，故本条勾选。
 - [ ] 管理端每个新页面同时具备路由、菜单、空态、权限门控。 —— 空态与权限门控需连接后端账号才能实测，见 §19.3。
 
@@ -2822,7 +2822,7 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 | **好友申请**（`ApplyList.vue`） | ✅ 已达标：`EmptyState` 有 `#actions` 插槽，`showLoadError` 为真时把「暂无好友申请」换成失败文案并出「重试」（`handleRetryLoad → contactStore.loadFriendRequests()`），§19.11 第二批就做过 |
 | **房间内搜索**（`ChatRoomSearch.vue`） | ✅ 已达标：`loading`（`role=status`）→ `error`（`role=alert` + 重试按钮）→ `EmptyState` 三态齐全 |
 | **空间子房间列表**（`SpaceRoomsPane.vue`） | ❌ **假空态**（本轮修）：`useSpaceRooms` 早就暴露 `error`，面板却只判 `rooms.length === 0` ⇒ 加载失败显示「暂无可展示的子房间」 |
-| **媒体库**（`ChatSidebarFiles.vue`） | ⚠️ **是占位实现，不是缺状态**：43 行，配额写死 `'1.2 GB / 5.0 GB'`、进度条 `:percentage="24"`、内容区永远 `n-empty`，**没有任何数据源** |
+| **媒体库**（`ChatSidebarFiles.vue`） | ⚠️ 核对时的判定「占位实现」已被 §19.22 推翻：配额已接 `matrixMediaService.getQuotaStats()`（真实用量 + `unsupported` 隐藏 + `unavailable` 提示），§19.29 又补了三态与上传后刷新；**本轮（§19.55）再补首屏骨架屏、配额失败的可重试 partial、文件列表带原因的空态**。文件列表本身仍无房间维度数据源（`src/services/matrix/media/**` 无列文件接口），故只给如实空态 |
 
 #### 本轮修复：空间子房间列表
 
@@ -4513,6 +4513,114 @@ P0-12 收口后体量基线回到 121 个超 400 行文件，但 §19.32 已明�
 | `pnpm quality:no-raw-fetch` | 全部命中白名单 |
 | `pnpm check:doc-coverage` | 通过 |
 | `pnpm check:doc-paths` | 通过 |
+
+### 19.53 §19.52 改动的单测补强（2026-11-17）
+
+为 §19.52 的 4 组 UI 面改动补齐单元测试，改动仅限测试文件：
+
+| 覆盖对象 | 测试文件 | 新增内容 |
+| :--- | :--- | :--- |
+| `AccountDataService` | `src/services/matrix/room/__tests__/AccountDataService.test.ts` | vault 读写（含 `throwOnError` 上抛）、摘要成员/状态委托与失败上抛，4 个 describe |
+| `AdminExternalServiceService` | `src/services/matrix/admin/__tests__/ExternalServiceService.test.ts` | client 作用域健康查询（成功/空/失败降级）、启用禁用、注销，7 例 |
+| `useAdminExternalServices` | `src/composables/admin/__tests__/useAdminExternalServices.test.ts` | client 健康加载、列表兜底、启用禁用与注销的错误回滚，6 例 |
+| `ChunkUploadService` | `src/services/performance/__tests__/ChunkUploadService.test.ts` | MSW 拦截进度端点：字段映射、上传完成后停止轮询、无回调不轮询，3 例 |
+| `useFileUploadQueue` | `src/composables/common/__tests__/useFileUploadQueue.test.ts`（新建） | `updateFileServerProgress` 仅写 uploading 项、忽略空闲/未知文件，4 例 |
+| `RoomServerSummaryPanel` | `src/components/room/__tests__/RoomServerSummaryPanel.test.ts`（新建） | 并行加载、展开原文、空态、部分/全部失败、空 roomId、刷新，8 例 |
+| `SecurityTab` | `src/components/room/settings-tabs/__tests__/SecurityTab.test.ts`（新建） | vault 读取回填、读取失败降级、合法保存、非法 JSON/数组拒绝、保存失败，6 例 |
+| `VoiceMessageSettings` | `src/views/settingsWindow/tabs/sections/__tests__/VoiceMessageSettings.test.ts`（新建） | 本人统计、配置区渲染、配置不可用降级、未登录跳过请求、房间过滤、加载失败提示，6 例 |
+
+#### 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| 定向单测（上述 8 文件） | 8 文件 / 91 例通过 |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| `pnpm test:run` | 1074 文件 / 11857 用例全部通过 |
+| `pnpm check` | Biome / i18n / token / aria / dead-handler / capabilities-sync 全通过 |
+| `pnpm check:ratchet` | 全部计数与基线持平 |
+| `pnpm check:sdk-boundary` | 与基线持平，无回归 |
+| `pnpm quality:no-raw-fetch` | 全部命中白名单 |
+| `pnpm check:doc-coverage` | 通过（14 个方法新获注释，无回归） |
+| `pnpm check:doc-paths` | 通过 |
+
+### 19.54 异步区块局部失败信号补全（2026-11-17）
+
+对应 §13.11 第 2 条（异步区块四态）的剩余缺口。核查后「房间成员 / 房间设置基础页」已有 `PartialStateBanner`，本轮只改真正缺失的三处：
+
+| 位置 | 缺陷 | 修复 |
+| :--- | :--- | :--- |
+| `src/stores/domains/chat/chat/messageLoading.ts` | `changeRoom` 与 `resetAndRefreshCurrentRoomMessages` 的失败收尾重建 `currentMessageOptions` 时未携带 `loadFailed`，把 `getPageMsg` 写入的 `{ scope: 'initial', reason, category }` 抹掉，消息列表首屏失败退化为空态 | 收尾透传 `failedOptions?.loadFailed`，`ChatMessageList` 的 `ErrorState` 恢复可见 |
+| `src/components/room/RoomServerSummaryPanel.vue` | 三个摘要接口部分失败时静默忽略，失败区块显示为「暂无数据」 | 记录失败区块键并渲染 `PartialStateBanner`（可重试）；失败区块改为「数据不可用」，仅三者全失败才走整体 `ErrorState` |
+| `src/components/room/settings-tabs/SecurityTab.vue` | `loadStatus` 失败只有一闪而过的 toast；`loadVault` 失败静默回退 `'{}'`，把读取失败伪装成空保险库，误保存会覆盖远端数据 | 两处各加持久 `PartialStateBanner` + 重试；失败时隐藏安全状态字段、保险库草稿留空而不是填入 `'{}'` |
+
+#### 测试
+
+| 覆盖对象 | 测试文件 | 新增内容 |
+| :--- | :--- | :--- |
+| 消息加载失败标记 | `src/stores/domains/chat/chat/__tests__/message.test.ts` | `changeRoom` / `resetAndRefreshCurrentRoomMessages` 失败后仍保留 `loadFailed.scope='initial'`，2 例 |
+| 房间摘要局部失败 | `src/components/room/__tests__/RoomServerSummaryPanel.test.ts` | 部分失败展示 partial、全部成功无 partial、全失败只报整体错误、partial 重试重新拉取，4 例（替换原「部分失败不提示」1 例） |
+| 安全设置局部失败 | `src/components/room/settings-tabs/__tests__/SecurityTab.test.ts` | 保险库读取失败展示 partial 且草稿留空、重试成功回填、安全状态读取失败隐藏字段、重试恢复，4 例（替换原「回退 `{}`」1 例） |
+
+#### 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| 定向单测（3 文件） | 3 文件 / 70 例通过 |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| `pnpm test:run` | 1074 文件 / 11865 用例全部通过 |
+| `pnpm check` | Biome / i18n / token / aria / dead-handler / capabilities-sync 全通过 |
+| `pnpm check:ratchet` | 全部计数与基线持平 |
+| `pnpm check:sdk-boundary` | 与基线持平，无回归 |
+| `pnpm quality:no-raw-fetch` | 全部命中白名单 |
+| `pnpm check:doc-coverage` | 通过，无回归 |
+| `pnpm check:doc-paths` | 通过 |
+
+新增 i18n key：`room.settings_drawer.vault_load_failed`、`room.settings_drawer.load_status_failed`、`room.server_summary.partial_failed`、`room.server_summary.unavailable`（中英同步）。
+
+边界：本轮只补「已有数据源的区块」的失败信号；媒体库文件列表仍无数据源，不在范围内。翻页失败（`scope: 'history'`）已有 `ChatLoadMoreIndicator` 的 alert + 重试，未改动。
+
+---
+
+### 19.55 媒体库配额区四态补全（2026-11-17）
+
+§19.21 把 `ChatSidebarFiles.vue` 判为「占位实现」的结论已被 §19.22（配额接 `getQuotaStats()`）与 §19.29（三态 + 上传后刷新）推翻，但仍有三个缺口，本轮补齐：
+
+| 位置 | 缺口 | 修复 |
+| :--- | :--- | :--- |
+| 配额区（首屏） | `loaded=false` 且请求未回时整块空白，用户无法区分「没有配额」与「还没取到」 | `!loaded` 时渲染 `n-skeleton` 骨架（标题行 + 进度条行），取回即替换为真实用量 |
+| 配额区（`unavailable`） | 只有静态文案「暂不可用」，用户没有任何恢复路径 | 改用 `PartialStateBanner compact`（`data-testid="chat-sidebar-quota-partial"`），文案 `quota.unavailable_hint` + 重试按钮回到 `loadQuota()` |
+| 文件列表空态 | 只有「暂无文件」，看起来像「这个房间确实没有文件」 | 空态内补一行原因 `empty.files_unsupported`（服务端尚无房间维度列文件接口），不伪造条目 |
+
+判定仍遵守原契约：`unsupported`（服务端无配额接口）整块隐藏，`unavailable` 不渲染 0 或占位数字，`limitBytes=0` 时只报用量不编造分母。
+
+#### 测试
+
+`src/components/rightBox/chatBox/__tests__/ChatSidebarFiles.test.ts`（10 例）新增/替换：
+
+| 用例 | 断言 |
+| :--- | :--- |
+| 配额取数期间显示骨架屏，取回后替换为真实用量 | 挂起 Promise 时存在 `data-test="NSkeleton"` 且无用量文本；resolve 后骨架消失、显示 `100 B / 200 B` |
+| 点击局部失败信号的重试后重新取数 | `getQuotaStats` 调用 2 次，成功后 `chat-sidebar-quota-partial` 消失并显示真实用量 |
+| 文件列表无数据源时给出带原因的空态 | 空态含 `empty.files` 且提示行等于 `empty.files_unsupported` |
+| `unavailable` 不再冒充用量为 0（替换原静态文案用例） | 无用量文本与进度条，partial 存在且带 `partial-retry` |
+
+#### 验证
+
+| 命令 | 结果 |
+| :--- | :--- |
+| 定向单测（`ChatSidebarFiles.test.ts`） | 1 文件 / 10 例通过 |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| `pnpm test:run` | 1074 文件 / 11868 用例全部通过 |
+| `pnpm check` | Biome / i18n / token / aria / dead-handler / capabilities-sync 全通过 |
+| `pnpm check:ratchet` | 全部计数与基线持平 |
+| `pnpm check:sdk-boundary` | 与基线持平，无回归 |
+| `pnpm quality:no-raw-fetch` | 全部命中白名单 |
+| `pnpm check:doc-coverage` | 通过，无回归 |
+| `pnpm check:doc-paths` | 通过 |
+
+新增 i18n key：`home.chat_sidebar.quota.unavailable_hint`、`home.chat_sidebar.empty.files_unsupported`（中英同步）。
+
+边界：文件列表只做「如实空态 + 原因」，因为 `src/services/matrix/media/**` 没有房间维度列文件接口；按 R1 不在组件内自建 HTTP 取数。服务端补接口后应改为真实列表四态，并删除 `files_unsupported` 文案。
 
 ---
 

@@ -37,6 +37,14 @@
     </n-alert>
 
     <template v-else>
+      <PartialStateBanner
+        v-if="partialFailure"
+        compact
+        data-testid="room-server-summary-partial"
+        :message="partialMessage"
+        :retry-text="t('common.retry')"
+        @retry="load" />
+
       <section class="rss-section">
         <h5 class="rss-section-title">{{ t('room.server_summary.members') }}</h5>
         <ul v-if="members.length" class="rss-list">
@@ -48,6 +56,9 @@
             <span v-if="member.is_hero" class="rss-badge">{{ t('room.server_summary.hero') }}</span>
           </li>
         </ul>
+        <p v-else-if="isSectionFailed('room.server_summary.members')" class="rss-empty">
+          {{ t('room.server_summary.unavailable') }}
+        </p>
         <p v-else class="rss-empty">{{ t('room.server_summary.empty') }}</p>
       </section>
 
@@ -88,6 +99,9 @@
             <pre v-if="expandedKey === `state-${index}`" class="rss-json">{{ formatJson(state.content) }}</pre>
           </li>
         </ul>
+        <p v-else-if="isSectionFailed('room.server_summary.state')" class="rss-empty">
+          {{ t('room.server_summary.unavailable') }}
+        </p>
         <p v-else class="rss-empty">{{ t('room.server_summary.empty') }}</p>
       </section>
 
@@ -124,6 +138,9 @@
             <pre v-if="expandedKey === `ephemeral-${index}`" class="rss-json">{{ formatJson(event) }}</pre>
           </li>
         </ul>
+        <p v-else-if="isSectionFailed('room.server_summary.ephemeral')" class="rss-empty">
+          {{ t('room.server_summary.unavailable') }}
+        </p>
         <p v-else class="rss-empty">{{ t('room.server_summary.empty') }}</p>
       </section>
     </template>
@@ -131,8 +148,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import type { RoomSummaryMemberEntry, RoomSummaryStateEntry } from '@/services/matrix/room/AccountDataService'
 import { matrixRoomReadFacade } from '@/services/matrix/room/RoomFacade'
 import { createLogger } from '@/utils/Logger'
@@ -150,6 +168,17 @@ const members = ref<RoomSummaryMemberEntry[]>([])
 const states = ref<RoomSummaryStateEntry[]>([])
 const ephemeral = ref<Record<string, unknown>[]>([])
 const expandedKey = ref('')
+
+type SummarySectionKey = 'room.server_summary.members' | 'room.server_summary.state' | 'room.server_summary.ephemeral'
+
+/** 部分数据源失败：仍渲染可用区块，但必须显式告知「这里少了数据」，不能伪装成空态 */
+const failedSectionKeys = ref<SummarySectionKey[]>([])
+const partialFailure = computed(() => failedSectionKeys.value.length > 0 && failedSectionKeys.value.length < 3)
+const partialMessage = computed(() => {
+  const sources = failedSectionKeys.value.map((key) => t(key)).join(', ')
+  return t('room.server_summary.partial_failed', { sources })
+})
+const isSectionFailed = (key: SummarySectionKey) => failedSectionKeys.value.includes(key)
 
 const toggle = (key: string) => {
   expandedKey.value = expandedKey.value === key ? '' : key
@@ -173,6 +202,7 @@ async function load() {
   loading.value = true
   error.value = false
   expandedKey.value = ''
+  failedSectionKeys.value = []
   const [memberResult, stateResult, ephemeralResult] = await Promise.allSettled([
     matrixRoomReadFacade.getRoomSummaryMembers(props.roomId),
     matrixRoomReadFacade.getRoomSummaryState(props.roomId),
@@ -181,7 +211,12 @@ async function load() {
   members.value = memberResult.status === 'fulfilled' ? memberResult.value : []
   states.value = stateResult.status === 'fulfilled' ? stateResult.value : []
   ephemeral.value = ephemeralResult.status === 'fulfilled' ? ephemeralResult.value : []
-  const allRejected = [memberResult, stateResult, ephemeralResult].every((result) => result.status === 'rejected')
+  const failed: SummarySectionKey[] = []
+  if (memberResult.status === 'rejected') failed.push('room.server_summary.members')
+  if (stateResult.status === 'rejected') failed.push('room.server_summary.state')
+  if (ephemeralResult.status === 'rejected') failed.push('room.server_summary.ephemeral')
+  failedSectionKeys.value = failed
+  const allRejected = failed.length === 3
   error.value = allRejected
   if (allRejected) logger.warn('[RoomServerSummary] room summary API unavailable')
   loading.value = false

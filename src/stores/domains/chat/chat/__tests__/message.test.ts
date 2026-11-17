@@ -523,6 +523,34 @@ describe('ChatMessageStore', () => {
     expect(sessionStoreMock.markSessionRead).not.toHaveBeenCalled()
   })
 
+  it('keeps the initial load failure signal when changeRoom cannot load messages', async () => {
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(new Error('network down'))
+    const store = useChatStore()
+
+    await store.changeRoom()
+
+    // changeRoom 的收尾不能抹掉 getPageMsg 写入的失败标记，
+    // 否则消息列表会把「首屏加载失败」当成「空会话」
+    expect(store.currentMessageOptions).toMatchObject({
+      hasLoadedOnce: true,
+      isLoading: false,
+      loadFailed: { scope: 'initial', reason: 'network down', category: 'network' }
+    })
+  })
+
+  it('keeps the initial load failure signal when resetting and refreshing fails', async () => {
+    vi.mocked(matrixEventService.getPagedRoomMessages).mockRejectedValueOnce(new Error('network down'))
+    const store = useChatStore()
+
+    await store.resetAndRefreshCurrentRoomMessages()
+
+    expect(store.currentMessageOptions).toMatchObject({
+      hasLoadedOnce: true,
+      isLoading: false,
+      loadFailed: { scope: 'initial', reason: 'network down', category: 'network' }
+    })
+  })
+
   it('keeps the previous cursor and marks history failure when loading more messages fails', async () => {
     const store = useChatStore()
     // currentMessageOptions 指向当前房间（room-1），写入即落到该房间的分页状态

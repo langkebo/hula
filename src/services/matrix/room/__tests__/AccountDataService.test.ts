@@ -197,4 +197,78 @@ describe('MatrixRoomAccountDataService', () => {
       expect(await service.getEncryptedEvents('!r:e')).toEqual({})
     })
   })
+
+  describe('getVaultData', () => {
+    it('delegates to RoomSummaryManager.getRoomVaultData', async () => {
+      getRoomVaultDataMock.mockResolvedValue({ secret: 'v' })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      expect(await service.getVaultData('!r:e')).toEqual({ secret: 'v' })
+      expect(getRoomVaultDataMock).toHaveBeenCalledWith('!r:e')
+    })
+
+    it('returns {} when backend returns null', async () => {
+      getRoomVaultDataMock.mockResolvedValue(null)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      expect(await service.getVaultData('!r:e')).toEqual({})
+    })
+
+    it('swallows backend errors and returns {} by default', async () => {
+      getRoomVaultDataMock.mockRejectedValue(new Error('HTTP 500'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      expect(await service.getVaultData('!r:e')).toEqual({})
+    })
+
+    it('re-throws backend errors when throwOnError=true', async () => {
+      getRoomVaultDataMock.mockRejectedValue(new Error('HTTP 403'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      await expect(service.getVaultData('!r:e', true)).rejects.toThrow('403')
+    })
+  })
+
+  describe('setVaultData', () => {
+    it('delegates to RoomSummaryManager.setRoomVaultData', async () => {
+      setRoomVaultDataMock.mockResolvedValue(undefined)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      await service.setVaultData('!r:e', { secret: 'v' })
+      expect(setRoomVaultDataMock).toHaveBeenCalledWith('!r:e', { secret: 'v' })
+    })
+
+    it('re-throws backend errors', async () => {
+      setRoomVaultDataMock.mockRejectedValue(new Error('HTTP 403'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      await expect(service.setVaultData('!r:e', {})).rejects.toThrow('403')
+    })
+  })
+
+  describe('getRoomSummaryMembers', () => {
+    it('delegates to RoomSummaryManager.getRoomSummaryMembers', async () => {
+      const members = [{ user_id: '@a:e', membership: 'join' }]
+      getRoomSummaryMembersMock.mockResolvedValue(members)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      expect(await service.getRoomSummaryMembers('!r:e')).toEqual(members)
+      expect(getRoomSummaryMembersMock).toHaveBeenCalledWith('!r:e')
+    })
+
+    it('re-throws backend errors', async () => {
+      getRoomSummaryMembersMock.mockRejectedValue(new Error('HTTP 500'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      await expect(service.getRoomSummaryMembers('!r:e')).rejects.toThrow('500')
+    })
+  })
+
+  describe('getRoomSummaryState', () => {
+    it('delegates to RoomSummaryManager.getAllSummaryState', async () => {
+      const states = [{ event_type: 'm.room.name', state_key: '' }]
+      getAllSummaryStateMock.mockResolvedValue(states)
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      expect(await service.getRoomSummaryState('!r:e')).toEqual(states)
+      expect(getAllSummaryStateMock).toHaveBeenCalledWith('!r:e')
+    })
+
+    it('re-throws backend errors', async () => {
+      getAllSummaryStateMock.mockRejectedValue(new Error('HTTP 500'))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeClient('@me:e') as never)
+      await expect(service.getRoomSummaryState('!r:e')).rejects.toThrow('500')
+    })
+  })
 })

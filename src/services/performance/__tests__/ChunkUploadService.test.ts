@@ -1,5 +1,5 @@
 import { createClient, initializeManagerExtensions, type MatrixClient } from 'matrix-js-sdk'
-import { HttpResponse, http } from 'msw'
+import { delay, HttpResponse, http } from 'msw'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupMswServer } from '~/tests/msw'
 
@@ -21,11 +21,23 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 }))
 
 const seenRequests: { method: string; url: string }[] = []
+const seenProgressRequests: { method: string; url: string }[] = []
 
 const server = setupMswServer(
   http.post(`${HOMESERVER}/_matrix/media/v1/upload/chunk/start`, ({ request }) => {
     seenRequests.push({ method: request.method, url: request.url })
     return HttpResponse.json({ upload_id: 'u1', chunk_size_limit: 5242880, max_file_size: 52428800 })
+  }),
+  http.get(`${HOMESERVER}/_matrix/media/v1/upload/chunk/progress`, ({ request }) => {
+    seenProgressRequests.push({ method: request.method, url: request.url })
+    return HttpResponse.json({
+      upload_id: 'u1',
+      uploaded_chunks: 1,
+      total_chunks: 2,
+      uploaded_size: 10,
+      total_size: 20,
+      status: 'in_progress'
+    })
   }),
   http.post(`${HOMESERVER}/_matrix/media/v1/upload/chunk`, ({ request }) => {
     seenRequests.push({ method: request.method, url: request.url })
@@ -64,6 +76,7 @@ describe('ChunkUploadService (MediaManager-backed)', () => {
 
   beforeEach(() => {
     seenRequests.length = 0
+    seenProgressRequests.length = 0
   })
 
   afterEach(() => {
@@ -121,5 +134,42 @@ describe('ChunkUploadService (MediaManager-backed)', () => {
     expect(lastCall.percentage).toBe(100)
     expect(lastCall.loaded).toBe(10)
     expect(lastCall.total).toBe(10)
+  })
+
+  it('polls server chunk progress and maps backend fields', async () => {
+    // Slow the chunk upload so the immediate progress tick resolves first.
+    server.use(
+      http.post(`${HOMESERVER}/_matrix/media/v1/upload/chunk`, async ({ request }) => {
+        seenRequests.push({ method: request.method, url: request.url })
+        await delay(100)
+        return HttpResponse.json({ upload_id: 'u1', chunk_index: 0, received_bytes: 10 })
+      })
+    )
+    const onServerProgress = vi.fn()
+
+    await chunkUploadService.upload({ file: makeFile(), chunkSize: 10, onServerProgress })
+
+    expect(onServerProgress).toHaveBeenCalledWith({
+      uploadedChunks: 1,
+      totalChunks: 2,
+      uploadedSize: 10,
+      totalSize: 20,
+      status: 'in_progress'
+    })
+  })
+
+  it('stops server progress polling after upload completes', async () => {
+    await chunkUploadService.upload({ file: makeFile(), chunkSize: 10, onServerProgress: vi.fn() })
+    const afterUpload = seenProgressRequests.length
+
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+
+    expect(seenProgressRequests.length).toBe(afterUpload)
+  })
+
+  it('does not poll server progress when callback is absent', async () => {
+    await chunkUploadService.upload({ file: makeFile(), chunkSize: 10 })
+
+    expect(seenProgressRequests).toHaveLength(0)
   })
 })

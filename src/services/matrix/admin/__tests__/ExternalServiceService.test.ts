@@ -2,6 +2,7 @@ import type { MatrixClient } from 'matrix-js-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   AdminExternalServiceService,
+  type ClientExternalServiceHealth,
   type ExternalService,
   type ExternalServiceHealth
 } from '../ExternalServiceService'
@@ -22,8 +23,17 @@ const externalServiceManager = {
   checkServiceHealth: vi.fn()
 }
 
+const clientExternalManager = {
+  getHealth: vi.fn(),
+  updateService: vi.fn(),
+  deleteService: vi.fn()
+}
+
 const makeClient = () =>
-  ({ getAdminManager: () => ({ externalService: externalServiceManager }) }) as unknown as MatrixClient
+  ({
+    getAdminManager: () => ({ externalService: externalServiceManager }),
+    getExternalServiceManager: () => clientExternalManager
+  }) as unknown as MatrixClient
 
 const makeService = () => {
   const client = makeClient()
@@ -160,5 +170,68 @@ describe('AdminExternalServiceService — P1-3 外部服务管理', () => {
     const result = await service.checkServiceHealth('trendradar_news-bot')
     expect(externalServiceManager.checkServiceHealth).toHaveBeenCalledWith('trendradar_news-bot')
     expect(result.is_healthy).toBe(true)
+  })
+})
+
+describe('AdminExternalServiceService — client 作用域', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('getClientHealth 委托 getHealth(client)', async () => {
+    const { service } = makeService()
+    const health: ClientExternalServiceHealth = {
+      status: 'ok',
+      services: [{ id: 'svc-1', type: 'webhook', status: 'healthy', last_check: 1700000002000 }]
+    }
+    clientExternalManager.getHealth.mockResolvedValue(health)
+
+    expect(await service.getClientHealth()).toEqual(health)
+    expect(clientExternalManager.getHealth).toHaveBeenCalledWith('client')
+  })
+
+  it('getClientHealth 在空响应时降级为 unknown', async () => {
+    const { service } = makeService()
+    clientExternalManager.getHealth.mockResolvedValue(undefined)
+
+    expect(await service.getClientHealth()).toEqual({ status: 'unknown' })
+  })
+
+  it('getClientHealth 在出错时降级为 unknown', async () => {
+    const { service } = makeService()
+    clientExternalManager.getHealth.mockRejectedValue(new Error('boom'))
+
+    expect(await service.getClientHealth()).toEqual({ status: 'unknown' })
+  })
+
+  it('updateClientService 以 client 作用域调用 updateService', async () => {
+    const { service } = makeService()
+    clientExternalManager.updateService.mockResolvedValue({ id: 'svc-1' })
+
+    const result = await service.updateClientService('svc-1', { is_enabled: false })
+    expect(clientExternalManager.updateService).toHaveBeenCalledWith('svc-1', { is_enabled: false }, 'client')
+    expect(result).toEqual({ id: 'svc-1' })
+  })
+
+  it('updateClientService 透传后端错误', async () => {
+    const { service } = makeService()
+    clientExternalManager.updateService.mockRejectedValue(new Error('HTTP 403'))
+
+    await expect(service.updateClientService('svc-1', { is_enabled: true })).rejects.toThrow('403')
+  })
+
+  it('deleteClientService 以 client 作用域调用 deleteService', async () => {
+    const { service } = makeService()
+    clientExternalManager.deleteService.mockResolvedValue(undefined)
+
+    await service.deleteClientService('svc-1')
+    expect(clientExternalManager.deleteService).toHaveBeenCalledWith('svc-1', 'client')
+  })
+
+  it('deleteClientService 透传后端错误', async () => {
+    const { service } = makeService()
+    clientExternalManager.deleteService.mockRejectedValue(new Error('HTTP 500'))
+
+    await expect(service.deleteClientService('svc-1')).rejects.toThrow('500')
   })
 })

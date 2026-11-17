@@ -176,7 +176,8 @@
     },
     "quota": {
       "title": "Quota",
-      "unavailable": "Unavailable"
+      "unavailable": "Unavailable",
+      "unavailable_hint": "Quota data unavailable"
     },
     "favorites": {
       "total": "{count} favorite(s)",
@@ -199,7 +200,8 @@
       "no_chat_selected": "No chat selected",
       "select_to_start": "Select a conversation or start a new chat",
       "pins": "No pinned messages",
-      "files": "No Files"
+      "files": "No Files",
+      "files_unsupported": "Browsing files by room is not supported yet"
     },
     "online_members": "Online members {count}",
     "tabs": {

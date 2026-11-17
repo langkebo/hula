@@ -160,6 +160,8 @@ export type Messages = {
     "vault_placeholder": "以 JSON 格式编辑保险库数据",
     "vault_save": "保存保险库",
     "vault_invalid_json": "保险库数据必须是合法的 JSON 对象",
+    "vault_load_failed": "保险库读取失败",
+    "load_status_failed": "安全设置加载失败",
     "section_notification": "通知设置",
     "section_alias": "房间别名",
     "section_history_visibility": "历史可见性",
@@ -338,10 +340,12 @@ export type Messages = {
     "state": "摘要状态",
     "ephemeral": "临时事件",
     "empty": "暂无数据",
+    "unavailable": "数据不可用",
     "hero": "Hero",
     "expand": "展开内容",
     "collapse": "收起内容",
-    "load_failed": "加载服务端摘要失败"
+    "load_failed": "加载服务端摘要失败",
+    "partial_failed": "部分摘要加载失败：{sources}"
   },
   "my_rooms": {
     "empty": "暂无房间",
@@ -536,6 +540,8 @@ export type KeyPaths =
   | "room.settings_drawer.vault_placeholder"
   | "room.settings_drawer.vault_save"
   | "room.settings_drawer.vault_invalid_json"
+  | "room.settings_drawer.vault_load_failed"
+  | "room.settings_drawer.load_status_failed"
   | "room.settings_drawer.section_notification"
   | "room.settings_drawer.section_alias"
   | "room.settings_drawer.section_history_visibility"
@@ -694,10 +700,12 @@ export type KeyPaths =
   | "room.server_summary.state"
   | "room.server_summary.ephemeral"
   | "room.server_summary.empty"
+  | "room.server_summary.unavailable"
   | "room.server_summary.hero"
   | "room.server_summary.expand"
   | "room.server_summary.collapse"
   | "room.server_summary.load_failed"
+  | "room.server_summary.partial_failed"
   | "room.my_rooms.empty"
   | "room.my_rooms.error"
   | "room.my_rooms.group_invite"
