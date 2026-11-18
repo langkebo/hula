@@ -58,11 +58,9 @@ export type CapabilityStatus = 'supported' | 'unsupported' | 'unknown'
 /**
  * 能力位与服务端 key 的映射。
  *
- * 说明（S-01 订正 2026-11-18）：SDK 的 `./server-capabilities` **已在 package exports 中**
- * （52 条 exports 之一），`SynapseRustFeature` / `SYNAPSE_RUST_CAPABILITY_ALIASES` 可直接派生；
- * 本节此前声称「未暴露、无法派生」是错的。映射表仍保留在本地（Tjg 的 14 个能力位与 SDK 的
- * feature 集合不是一一对应），但**由 `MatrixCapabilityService.drift.test.ts` 对其做真值漂移校验**：
- * 任一别名在 SDK 常量中消失（或值被改名）该测试即红。
+ * 说明（S-01 订正 2026-11-18）：SDK 的 `./server-capabilities` **在 package exports 里**（52 条之一），
+ * `SynapseRustFeature` 可直接派生；此前「未暴露」的说法是错的。映射表仍留本地（14 个能力位与
+ * SDK feature 非一一对应），但由 `MatrixCapabilityService.drift.test.ts` 做真值漂移校验。
  */
 export const HULA_CAPABILITY_ALIASES: Record<TjgCapability, { unstable: string[]; capabilities: string[] }> = {
   'sliding-sync': {
