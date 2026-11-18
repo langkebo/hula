@@ -5,6 +5,7 @@ import type { useChatCopy } from '@/composables/chat/useChatCopy'
 import type { useChatFileDownload } from '@/composables/chat/useChatFileDownload'
 import type { useGroupRoleGuard } from '@/composables/chat/useGroupRoleGuard'
 import type { useActionFeedback } from '@/composables/common/useActionFeedback'
+import { useClipboard } from '@/composables/common/useClipboard'
 import type { useDownload } from '@/composables/common/useDownload'
 import { useMitt } from '@/composables/common/useMitt'
 import { MittEnum, MsgEnum } from '@/enums'
@@ -150,6 +151,41 @@ export const createMessageMenus = (deps: MessageMenuDeps) => {
         handleCopy(item.message.body.content, true, item.message.id)
       },
       visible: (item: MessageType) => !shouldHideCopy(item)
+    },
+    {
+      label: () => t('menu.copy_media_link'),
+      icon: 'link',
+      click: async (item: MessageType) => {
+        const roomId = item.message.roomId || globalStore.currentSessionRoomId
+        if (!roomId) {
+          showFeedback(t('menu.copy_media_link_failed'), 'error')
+          return
+        }
+        const outcome = await matrixRoomReadFacade.getRoomEventMediaUrls(roomId, item.message.id)
+        if (outcome.status === 'empty') {
+          showFeedback(t('menu.copy_media_link_empty'), 'warning')
+          return
+        }
+        if (outcome.status === 'unsupported') {
+          showFeedback(t('menu.copy_media_link_unsupported'), 'warning')
+          return
+        }
+        if (outcome.status === 'error') {
+          showFeedback(t('menu.copy_media_link_failed'), 'error')
+          return
+        }
+        const first = outcome.urls[0]
+        try {
+          await useClipboard().write(first.httpUrl || first.url)
+          showFeedback(t('menu.copy_media_link_success'), 'success')
+        } catch (err) {
+          logger.error(`[ChatContextMenus] 复制媒体链接失败: ${err}`)
+          showFeedback(t('menu.copy_media_link_failed'), 'error')
+        }
+      },
+      visible: (item: MessageType) =>
+        !isLocalOrFailedMessage(item) &&
+        [MsgEnum.IMAGE, MsgEnum.VIDEO, MsgEnum.FILE, MsgEnum.EMOJI].includes(item.message.type)
     },
     {
       label: () => t('menu.translate'),
@@ -305,6 +341,18 @@ export const createMessageMenus = (deps: MessageMenuDeps) => {
               if (!roomId) return
               useMitt.emit(MittEnum.OPEN_EVENT_PERSPECTIVE, { roomId, eventId: item.message.id })
             }
+          },
+          {
+            label: () => t('menu.read_receipts'),
+            icon: 'check',
+            click: (item: MessageType) => {
+              const roomId = item.message.roomId || globalStore.currentSessionRoomId
+              if (!roomId) return
+              useMitt.emit(MittEnum.OPEN_EVENT_RECEIPTS, { roomId, eventId: item.message.id })
+            },
+            // 仅自己发出的消息能看「谁读过」
+            visible: (item: MessageType) =>
+              Boolean(userStore.userInfo?.uid) && item.fromUser?.uid === userStore.userInfo?.uid
           }
         ]
       }

@@ -26,6 +26,11 @@ export type Messages = {
   "recall": "撤回",
   "recall_expired": "撤回（已超时）",
   "copy": "复制",
+  "copy_media_link": "复制媒体链接",
+  "copy_media_link_success": "已复制媒体链接",
+  "copy_media_link_failed": "复制媒体链接失败",
+  "copy_media_link_empty": "该消息没有可复制的媒体地址",
+  "copy_media_link_unsupported": "当前服务器不支持媒体链接查询",
   "save_as": "另存为",
   "show_in_finder": "在 Finder 中显示",
   "show_in_folder": "在文件夹中显示",
@@ -131,7 +136,8 @@ export type Messages = {
         "failed": "退出登录失败"
       }
     }
-  }
+  },
+  "read_receipts": "已读明细"
 }
 
 /**
@@ -166,6 +172,11 @@ export type KeyPaths =
   | "menu.recall"
   | "menu.recall_expired"
   | "menu.copy"
+  | "menu.copy_media_link"
+  | "menu.copy_media_link_success"
+  | "menu.copy_media_link_failed"
+  | "menu.copy_media_link_empty"
+  | "menu.copy_media_link_unsupported"
   | "menu.save_as"
   | "menu.show_in_finder"
   | "menu.show_in_folder"
@@ -254,3 +265,4 @@ export type KeyPaths =
   | "menu.user_menu.dialogs.logout.loading"
   | "menu.user_menu.dialogs.logout.success"
   | "menu.user_menu.dialogs.logout.failed"
+  | "menu.read_receipts"

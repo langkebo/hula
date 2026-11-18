@@ -124,7 +124,9 @@ export enum MittEnum {
   /** 跳转到指定消息（侧栏置顶/收藏点击 → ChatMain 滚动定位） */
   NAVIGATE_TO_MESSAGE = 'navigateToMessage',
   /** 打开消息视角浮层（G-08） */
-  OPEN_EVENT_PERSPECTIVE = 'openEventPerspective'
+  OPEN_EVENT_PERSPECTIVE = 'openEventPerspective',
+  /** 打开「已读明细」浮层（ROOM-03 receipts 端点） */
+  OPEN_EVENT_RECEIPTS = 'openEventReceipts'
 }
 
 /**

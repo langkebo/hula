@@ -350,5 +350,13 @@
     "react": "React",
     "reply": "Reply",
     "forward": "Forward"
+  },
+  "event_receipts": {
+    "title": "Read receipts",
+    "subtitle": "{count} reader(s)",
+    "empty": "No one has read this message yet",
+    "unsupported": "This server does not expose read receipt details",
+    "error": "Failed to load read receipts",
+    "ts_unknown": "unknown time"
   }
 }

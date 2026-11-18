@@ -68,6 +68,7 @@
 
   <!-- 消息视角浮层（G-08）：组件自行订阅 mitt，无 props -->
   <MessagePerspectiveOverlay />
+  <EventReceiptsOverlay />
 
   <!-- 私密模式确认对话框 -->
   <n-modal v-model:show="showPrivateConfirm" class="w-360px border-rd-8px" role="dialog" aria-modal="true">
@@ -105,6 +106,9 @@ const ThreadPanel = defineAsyncComponent(() => import('@/components/thread/Threa
 const EventReportDialog = defineAsyncComponent(() => import('@/components/moderation/EventReportDialog.vue'))
 const MessagePerspectiveOverlay = defineAsyncComponent(
   () => import('@/components/rightBox/chatBox/MessagePerspectiveOverlay.vue')
+)
+const EventReceiptsOverlay = defineAsyncComponent(
+  () => import('@/components/rightBox/chatBox/EventReceiptsOverlay.vue')
 )
 
 import MacCloseButton from '@/components/common/MacCloseButton.vue'

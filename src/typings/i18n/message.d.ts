@@ -355,6 +355,14 @@ export type Messages = {
     "react": "表情回应",
     "reply": "回复",
     "forward": "转发"
+  },
+  "event_receipts": {
+    "title": "已读明细",
+    "subtitle": "共 {count} 人已读",
+    "empty": "暂时还没有人读过这条消息",
+    "unsupported": "当前服务端未提供已读明细接口",
+    "error": "读取已读明细失败",
+    "ts_unknown": "时间未知"
   }
 }
 
@@ -652,3 +660,9 @@ export type KeyPaths =
   | "message.action.react"
   | "message.action.reply"
   | "message.action.forward"
+  | "message.event_receipts.title"
+  | "message.event_receipts.subtitle"
+  | "message.event_receipts.empty"
+  | "message.event_receipts.unsupported"
+  | "message.event_receipts.error"
+  | "message.event_receipts.ts_unknown"
