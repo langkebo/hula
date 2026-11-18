@@ -98,6 +98,9 @@ export type Messages = {
       "scanned_at": "扫描时间"
     },
     "detail_failed": "获取举报详情失败",
+    "reporter": {
+      "block_confirm_content": "确认拉黑该举报人 {user} 24 小时的举报权限？"
+    },
     "dismiss_confirm": "确认驳回举报 {id}？该操作会删除服务端举报记录。",
     "dismiss_success": "已驳回",
     "dismiss_failed": "驳回失败",
@@ -106,17 +109,22 @@ export type Messages = {
   },
   "event_reports": {
     "actions": {
+      "blockReporter": "拉黑举报人",
       "delete": "删除",
       "dismiss": "驳回",
       "escalate": "上报",
-      "resolve": "解决"
+      "resolve": "解决",
+      "unblockReporter": "解除拉黑"
     },
     "dialog": {
+      "blockReporterConfirm": "确认拉黑该举报人 24 小时的举报权限？",
+      "blockReporterReason": "管理员手动拉黑举报人",
       "deleteConfirm": "确认删除该举报？",
       "dismissTitle": "驳回原因",
       "reasonPlaceholder": "请输入驳回原因…",
       "reasonRequired": "请输入驳回原因",
-      "resolveTitle": "解决备注"
+      "resolveTitle": "解决备注",
+      "unblockReporterConfirm": "确认解除该举报人的举报限制？"
     },
     "loadFailed": "加载失败，请重试",
     "stats": {
@@ -135,12 +143,16 @@ export type Messages = {
     },
     "title": "事件举报",
     "toast": {
+      "blockReporterFailed": "拉黑举报人失败",
+      "blockReporterSuccess": "已拉黑该举报人 24 小时",
       "deleteFailed": "删除失败",
       "deleteSuccess": "删除成功",
       "dismissSuccess": "已驳回",
       "escalateFailed": "上报失败",
       "escalateSuccess": "已上报",
-      "resolveSuccess": "已解决"
+      "resolveSuccess": "已解决",
+      "unblockReporterFailed": "解除拉黑失败",
+      "unblockReporterSuccess": "已解除拉黑"
     }
   },
   "report_user": {
@@ -242,20 +254,26 @@ export type KeyPaths =
   | "moderation.admin_reports.scanner.confidence"
   | "moderation.admin_reports.scanner.scanned_at"
   | "moderation.admin_reports.detail_failed"
+  | "moderation.admin_reports.reporter.block_confirm_content"
   | "moderation.admin_reports.dismiss_confirm"
   | "moderation.admin_reports.dismiss_success"
   | "moderation.admin_reports.dismiss_failed"
   | "moderation.admin_reports.load_failed"
   | "moderation.admin_reports.empty"
+  | "moderation.event_reports.actions.blockReporter"
   | "moderation.event_reports.actions.delete"
   | "moderation.event_reports.actions.dismiss"
   | "moderation.event_reports.actions.escalate"
   | "moderation.event_reports.actions.resolve"
+  | "moderation.event_reports.actions.unblockReporter"
+  | "moderation.event_reports.dialog.blockReporterConfirm"
+  | "moderation.event_reports.dialog.blockReporterReason"
   | "moderation.event_reports.dialog.deleteConfirm"
   | "moderation.event_reports.dialog.dismissTitle"
   | "moderation.event_reports.dialog.reasonPlaceholder"
   | "moderation.event_reports.dialog.reasonRequired"
   | "moderation.event_reports.dialog.resolveTitle"
+  | "moderation.event_reports.dialog.unblockReporterConfirm"
   | "moderation.event_reports.loadFailed"
   | "moderation.event_reports.stats.dismissed"
   | "moderation.event_reports.stats.open"
@@ -268,12 +286,16 @@ export type KeyPaths =
   | "moderation.event_reports.table.reporter"
   | "moderation.event_reports.table.status"
   | "moderation.event_reports.title"
+  | "moderation.event_reports.toast.blockReporterFailed"
+  | "moderation.event_reports.toast.blockReporterSuccess"
   | "moderation.event_reports.toast.deleteFailed"
   | "moderation.event_reports.toast.deleteSuccess"
   | "moderation.event_reports.toast.dismissSuccess"
   | "moderation.event_reports.toast.escalateFailed"
   | "moderation.event_reports.toast.escalateSuccess"
   | "moderation.event_reports.toast.resolveSuccess"
+  | "moderation.event_reports.toast.unblockReporterFailed"
+  | "moderation.event_reports.toast.unblockReporterSuccess"
   | "moderation.report_user.comment"
   | "moderation.report_user.comment_placeholder"
   | "moderation.report_user.failed"

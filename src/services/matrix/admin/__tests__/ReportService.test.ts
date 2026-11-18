@@ -36,7 +36,11 @@ const adminManager = {
   listReports: vi.fn(),
   listRoomReports: vi.fn(),
   getReport: vi.fn(),
-  deleteReport: vi.fn()
+  deleteReport: vi.fn(),
+  users: {
+    blockEventReportUser: vi.fn(),
+    unblockEventReportUser: vi.fn()
+  }
 }
 const sdkAdmin = async () => adminManager as unknown as AdminManager
 
@@ -256,5 +260,33 @@ describe('AdminReportService', () => {
         expect(svc[name], `${name} 应已从 ReportService 删除，改由 MatrixEventReportService 承担`).toBeUndefined()
       }
     })
+  })
+
+  it('blockReportUser 调 admin.users.blockEventReportUser 并透传 blocked_until / reason', async () => {
+    adminManager.users.blockEventReportUser.mockResolvedValue(undefined)
+
+    const ok = await service.blockReportUser('@spam:hs', { blockedUntil: 1700000000000, reason: 'abuse' })
+
+    expect(ok).toBe(true)
+    expect(adminManager.users.blockEventReportUser).toHaveBeenCalledWith('@spam:hs', {
+      blocked_until: 1700000000000,
+      reason: 'abuse'
+    })
+  })
+
+  it('blockReportUser 失败时返回 false（不抛），throwOnError 时才抛', async () => {
+    adminManager.users.blockEventReportUser.mockRejectedValue(new Error('FORBIDDEN'))
+
+    await expect(service.blockReportUser('@spam:hs', { blockedUntil: 1, reason: 'x' })).resolves.toBe(false)
+    await expect(service.blockReportUser('@spam:hs', { blockedUntil: 1, reason: 'x' }, true)).rejects.toThrow(
+      'FORBIDDEN'
+    )
+  })
+
+  it('unblockReportUser 调 admin.users.unblockEventReportUser', async () => {
+    adminManager.users.unblockEventReportUser.mockResolvedValue(undefined)
+
+    await expect(service.unblockReportUser('@spam:hs')).resolves.toBe(true)
+    expect(adminManager.users.unblockEventReportUser).toHaveBeenCalledWith('@spam:hs')
   })
 })

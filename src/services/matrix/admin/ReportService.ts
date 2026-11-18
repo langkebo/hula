@@ -114,6 +114,44 @@ export class AdminReportService {
     }
   }
 
+  /**
+   * 限制某用户提交举报（`POST /_synapse/admin/v1/event_reports/rate_limit/{user_id}/block`）。
+   * 场景：举报滥用 —— 与服务端「举报限流」配套，`blocked_until` 为毫秒时间戳。
+   */
+  async blockReportUser(
+    userId: string,
+    options: { blockedUntil: number; reason: string },
+    throwOnError = false
+  ): Promise<boolean> {
+    try {
+      const admin = await this._sdkAdmin()
+      await admin.users.blockEventReportUser(userId, {
+        blocked_until: options.blockedUntil,
+        reason: options.reason
+      })
+      logger.info(`[Admin] 已限制举报人: ${userId} until ${options.blockedUntil}`)
+      return true
+    } catch (err) {
+      logger.error(`[Admin] 限制举报人失败: ${err}`)
+      if (throwOnError) throw err
+      return false
+    }
+  }
+
+  /** 解除举报限制（`POST .../rate_limit/{user_id}/unblock`）。 */
+  async unblockReportUser(userId: string, throwOnError = false): Promise<boolean> {
+    try {
+      const admin = await this._sdkAdmin()
+      await admin.users.unblockEventReportUser(userId)
+      logger.info(`[Admin] 已解除举报限制: ${userId}`)
+      return true
+    } catch (err) {
+      logger.error(`[Admin] 解除举报限制失败: ${err}`)
+      if (throwOnError) throw err
+      return false
+    }
+  }
+
   async getAdminReports(
     roomId?: string,
     limit: number = 50,

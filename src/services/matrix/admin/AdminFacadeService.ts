@@ -438,6 +438,16 @@ class AdminFacadeService extends AdminFacadeDomainMethods {
     return this.reports.getScannerInfo(roomId, eventId)
   }
 
+  /** 屏蔽被举报用户（SDK 侧 `blockUser`，按 `blockedUntil` 到期自动解除）；返回是否生效 */
+  async blockReportUser(userId: string, options: { blockedUntil: number; reason: string }): Promise<boolean> {
+    return this.reports.blockReportUser(userId, options)
+  }
+
+  /** 解除对举报用户的屏蔽（SDK 侧 `unblockUser`）；返回是否生效 */
+  async unblockReportUser(userId: string): Promise<boolean> {
+    return this.reports.unblockReportUser(userId)
+  }
+
   async getAdminReports(
     roomId?: string,
     limit: number = 50,

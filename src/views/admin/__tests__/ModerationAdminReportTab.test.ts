@@ -7,6 +7,9 @@ const mocks = vi.hoisted(() => ({
   getAdminReport: vi.fn(),
   getScannerInfo: vi.fn(),
   dismissReport: vi.fn(),
+  blockReportUser: vi.fn(),
+  unblockReportUser: vi.fn(),
+  dialogWarning: vi.fn(),
   showFeedback: vi.fn()
 }))
 
@@ -16,7 +19,9 @@ vi.mock('@/services/matrix/admin', () => ({
       getAdminReports: mocks.getAdminReports,
       getAdminReport: mocks.getAdminReport,
       getScannerInfo: mocks.getScannerInfo,
-      dismissReport: mocks.dismissReport
+      dismissReport: mocks.dismissReport,
+      blockReportUser: mocks.blockReportUser,
+      unblockReportUser: mocks.unblockReportUser
     }
   }
 }))
@@ -179,6 +184,7 @@ vi.mock('naive-ui', async () => {
     NDescriptionsItem,
     NDrawer,
     NDrawerContent,
+    useDialog: () => ({ warning: mocks.dialogWarning, error: mocks.dialogWarning, success: mocks.dialogWarning }),
     NEmpty,
     NInput,
     NPopconfirm,
@@ -296,6 +302,40 @@ describe('ModerationAdminReportTab', () => {
     expect(mocks.dismissReport).toHaveBeenCalledWith('1', true)
     expect(mocks.showFeedback).toHaveBeenCalled()
     expect(mocks.getAdminReports).toHaveBeenCalledTimes(1)
+  })
+
+  it('限制举报人：确认后调用 blockReportUser（24h + 原因）', async () => {
+    mocks.dialogWarning.mockImplementation((opts: { onPositiveClick?: () => Promise<void> }) => {
+      void opts.onPositiveClick?.()
+    })
+    mocks.blockReportUser.mockResolvedValue(true)
+
+    const wrapper = await mountTab()
+    await wrapper.find('[data-testid="admin-report-detail-1"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="admin-report-block-reporter"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.blockReportUser).toHaveBeenCalledTimes(1)
+    const [userId, payload] = mocks.blockReportUser.mock.calls[0]
+    expect(userId).toBe('@alice:example.org')
+    expect(payload.reason).toBe('moderation.event_reports.dialog.blockReporterReason')
+    // 24h 限流：blockedUntil 落在「现在 + 24h」附近
+    expect(payload.blockedUntil).toBeGreaterThan(Date.now() + 23 * 60 * 60 * 1000)
+    expect(mocks.showFeedback).toHaveBeenCalledWith('moderation.event_reports.toast.blockReporterSuccess', 'success')
+  })
+
+  it('解除举报限制：调用 unblockReportUser 并提示结果', async () => {
+    mocks.unblockReportUser.mockResolvedValue(true)
+
+    const wrapper = await mountTab()
+    await wrapper.find('[data-testid="admin-report-detail-1"]').trigger('click')
+    await flushPromises()
+    await wrapper.find('[data-testid="admin-report-unblock-reporter"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.unblockReportUser).toHaveBeenCalledWith('@alice:example.org')
+    expect(mocks.showFeedback).toHaveBeenCalledWith('moderation.event_reports.toast.unblockReporterSuccess', 'success')
   })
 
   it('驳回失败提示错误且不重新拉取', async () => {

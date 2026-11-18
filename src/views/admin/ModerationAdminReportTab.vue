@@ -57,6 +57,23 @@
           </template>
           {{ t('moderation.admin_reports.scanner.view') }}
         </n-button>
+        <n-button
+          v-if="detail?.user_id"
+          size="small"
+          type="warning"
+          data-testid="admin-report-block-reporter"
+          :loading="reporterMutating"
+          @click="handleBlockReporter">
+          {{ t('moderation.event_reports.actions.blockReporter') }}
+        </n-button>
+        <n-button
+          v-if="detail?.user_id"
+          size="small"
+          data-testid="admin-report-unblock-reporter"
+          :loading="reporterMutating"
+          @click="handleUnblockReporter">
+          {{ t('moderation.event_reports.actions.unblockReporter') }}
+        </n-button>
       </div>
       <n-spin :show="detailLoading">
         <n-descriptions v-if="detail" :column="1" bordered size="small">
@@ -111,7 +128,8 @@ import {
   NInput,
   NPopconfirm,
   NSpace,
-  NSpin
+  NSpin,
+  useDialog
 } from 'naive-ui'
 import { computed, h, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -266,6 +284,65 @@ async function handleDismiss(reportId: number) {
     // 失败统一走下方提示，避免重复 toast
   }
   showFeedback(t('moderation.admin_reports.dismiss_failed'), 'error')
+}
+
+const dialog = useDialog()
+const reporterMutating = ref(false)
+/** 默认限制时长：24h（服务端按 blocked_until 毫秒时间戳判定） */
+const REPORTER_BLOCK_DURATION_MS = 24 * 60 * 60 * 1000
+
+/**
+ * 限制举报人：`POST /_synapse/admin/v1/event_reports/rate_limit/{user_id}/block`。
+ * 针对「举报滥用」而非被举报内容 —— 失败时保留弹窗结果并提示，不静默。
+ */
+function handleBlockReporter() {
+  const userId = detail.value?.user_id
+  if (!userId) return
+  dialog.warning({
+    title: t('moderation.event_reports.dialog.blockReporterConfirm'),
+    content: t('moderation.admin_reports.reporter.block_confirm_content', { user: userId }),
+    positiveText: t('admin.common.confirm'),
+    negativeText: t('admin.common.cancel'),
+    onPositiveClick: async () => {
+      reporterMutating.value = true
+      try {
+        const ok = await adminService.reports.blockReportUser(userId, {
+          blockedUntil: Date.now() + REPORTER_BLOCK_DURATION_MS,
+          reason: t('moderation.event_reports.dialog.blockReporterReason')
+        })
+        showFeedback(
+          t(
+            ok
+              ? 'moderation.event_reports.toast.blockReporterSuccess'
+              : 'moderation.event_reports.toast.blockReporterFailed'
+          ),
+          ok ? 'success' : 'error'
+        )
+      } finally {
+        reporterMutating.value = false
+      }
+    }
+  })
+}
+
+/** 解除举报限制：`POST .../rate_limit/{user_id}/unblock`。 */
+async function handleUnblockReporter() {
+  const userId = detail.value?.user_id
+  if (!userId) return
+  reporterMutating.value = true
+  try {
+    const ok = await adminService.reports.unblockReportUser(userId)
+    showFeedback(
+      t(
+        ok
+          ? 'moderation.event_reports.toast.unblockReporterSuccess'
+          : 'moderation.event_reports.toast.unblockReporterFailed'
+      ),
+      ok ? 'success' : 'error'
+    )
+  } finally {
+    reporterMutating.value = false
+  }
 }
 
 onMounted(() => {

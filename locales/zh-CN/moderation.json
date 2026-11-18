@@ -93,6 +93,9 @@
       "scanned_at": "扫描时间"
     },
     "detail_failed": "获取举报详情失败",
+    "reporter": {
+      "block_confirm_content": "确认拉黑该举报人 {user} 24 小时的举报权限？"
+    },
     "dismiss_confirm": "确认驳回举报 {id}？该操作会删除服务端举报记录。",
     "dismiss_success": "已驳回",
     "dismiss_failed": "驳回失败",
@@ -101,17 +104,22 @@
   },
   "event_reports": {
     "actions": {
+      "blockReporter": "拉黑举报人",
       "delete": "删除",
       "dismiss": "驳回",
       "escalate": "上报",
-      "resolve": "解决"
+      "resolve": "解决",
+      "unblockReporter": "解除拉黑"
     },
     "dialog": {
+      "blockReporterConfirm": "确认拉黑该举报人 24 小时的举报权限？",
+      "blockReporterReason": "管理员手动拉黑举报人",
       "deleteConfirm": "确认删除该举报？",
       "dismissTitle": "驳回原因",
       "reasonPlaceholder": "请输入驳回原因…",
       "reasonRequired": "请输入驳回原因",
-      "resolveTitle": "解决备注"
+      "resolveTitle": "解决备注",
+      "unblockReporterConfirm": "确认解除该举报人的举报限制？"
     },
     "loadFailed": "加载失败，请重试",
     "stats": {
@@ -130,12 +138,16 @@
     },
     "title": "事件举报",
     "toast": {
+      "blockReporterFailed": "拉黑举报人失败",
+      "blockReporterSuccess": "已拉黑该举报人 24 小时",
       "deleteFailed": "删除失败",
       "deleteSuccess": "删除成功",
       "dismissSuccess": "已驳回",
       "escalateFailed": "上报失败",
       "escalateSuccess": "已上报",
-      "resolveSuccess": "已解决"
+      "resolveSuccess": "已解决",
+      "unblockReporterFailed": "解除拉黑失败",
+      "unblockReporterSuccess": "已解除拉黑"
     }
   },
   "report_user": {

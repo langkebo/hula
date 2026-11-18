@@ -93,6 +93,9 @@
       "scanned_at": "Scanned at"
     },
     "detail_failed": "Failed to load report details",
+    "reporter": {
+      "block_confirm_content": "Block {user} from reporting for 24 hours?"
+    },
     "dismiss_confirm": "Dismiss report {id}? This deletes the server-side report record.",
     "dismiss_success": "Report dismissed",
     "dismiss_failed": "Failed to dismiss report",
@@ -101,17 +104,22 @@
   },
   "event_reports": {
     "actions": {
+      "blockReporter": "Block Reporter",
       "delete": "Delete",
       "dismiss": "Dismiss",
       "escalate": "Escalate",
-      "resolve": "Resolve"
+      "resolve": "Resolve",
+      "unblockReporter": "Unblock Reporter"
     },
     "dialog": {
+      "blockReporterConfirm": "Block this reporter from reporting for 24 hours?",
+      "blockReporterReason": "Blocked by administrator",
       "deleteConfirm": "Confirm deletion of this report?",
       "dismissTitle": "Dismiss Reason",
       "reasonPlaceholder": "Enter dismiss reason…",
       "reasonRequired": "Dismiss reason is required",
-      "resolveTitle": "Resolve Note"
+      "resolveTitle": "Resolve Note",
+      "unblockReporterConfirm": "Remove the reporting restriction for this reporter?"
     },
     "loadFailed": "Load Failed, Please Retry",
     "stats": {
@@ -130,12 +138,16 @@
     },
     "title": "Event Reports",
     "toast": {
+      "blockReporterFailed": "Failed to Block Reporter",
+      "blockReporterSuccess": "Reporter blocked for 24 hours",
       "deleteFailed": "Delete Failed",
       "deleteSuccess": "Deleted",
       "dismissSuccess": "Dismissed",
       "escalateFailed": "Escalate Failed",
       "escalateSuccess": "Escalated",
-      "resolveSuccess": "Resolved"
+      "resolveSuccess": "Resolved",
+      "unblockReporterFailed": "Failed to Unblock Reporter",
+      "unblockReporterSuccess": "Reporter Unblocked"
     }
   },
   "report_user": {
