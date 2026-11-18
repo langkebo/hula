@@ -24,7 +24,9 @@ export function useStorageSettings() {
   const quotaLimit = ref(0)
   const quotaRemaining = ref(0)
   const quotaMediaCount = ref(0)
-  const quotaAlerts = ref<Awaited<ReturnType<typeof matrixMediaService.getQuotaAlerts>>>([])
+  const quotaAlerts = ref<
+    Extract<Awaited<ReturnType<typeof matrixMediaService.getQuotaAlerts>>, { ok: true }>['alerts']
+  >([])
 
   const quotaExceeded = computed(() => quotaLimit.value > 0 && quotaRemaining.value <= 0)
 
@@ -142,8 +144,10 @@ export function useStorageSettings() {
       quotaMediaCount.value = 0
     }
 
-    quotaAlertsFailed.value = alertsResult.status !== 'fulfilled'
-    quotaAlerts.value = alertsResult.status === 'fulfilled' ? alertsResult.value : []
+    // 告警接口不再把失败折叠成空数组：`ok: false` 与「真的没有告警」必须分开。
+    const alertsOutcome = alertsResult.status === 'fulfilled' ? alertsResult.value : null
+    quotaAlertsFailed.value = alertsOutcome?.ok !== true
+    quotaAlerts.value = alertsOutcome?.ok ? alertsOutcome.alerts : []
     quotaState.value = 'available'
   }
 

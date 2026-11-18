@@ -1186,6 +1186,7 @@
       "alerts": "配额告警",
       "alertHint": "按时间倒序显示后端返回的告警记录",
       "noAlerts": "暂无配额告警",
+      "alertsUnavailable": "配额告警暂不可用",
       "alertType": {
         "warning": "接近上限",
         "exceeded": "已超限"

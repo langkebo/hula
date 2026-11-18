@@ -37,6 +37,7 @@
   "server_quota_alert_type_warning": "Near limit",
   "server_quota_alert_meta": "{type} · threshold {threshold}% · usage {used} / {limit}",
   "server_quota_no_alerts": "No alerts",
+  "server_quota_alerts_unavailable": "Alerts unavailable",
   "server_quota_loading": "Loading server quota...",
   "server_quota_unavailable": "Server quota unavailable",
   "strategy_section": "Cache policy",

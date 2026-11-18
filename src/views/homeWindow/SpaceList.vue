@@ -104,7 +104,7 @@
   </div>
 </template>
 
-<script lang="ts" setup name="spaceList">
+<script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 import ErrorState from '@/components/common/ErrorState.vue'
 import SkeletonSpaceTree from '@/components/common/SkeletonSpaceTree.vue'
@@ -123,6 +123,8 @@ import { useSpaces } from '@/composables/space'
 import { buildCreateSpaceRoute, buildSpaceRoute } from '@/router/spaceNavigation'
 import { matrixSpaceService } from '@/services/matrix/room/MatrixSpaceService'
 import { useRoomStore } from '@/stores/domains/chat/room'
+
+defineOptions({ name: 'spaceList' })
 
 const props = defineProps<{ loading?: boolean }>()
 

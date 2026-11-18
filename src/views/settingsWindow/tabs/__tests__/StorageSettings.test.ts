@@ -57,7 +57,7 @@ describe('StorageSettings 媒体配额', () => {
     localStorage.clear()
     checkQuotaMock.mockResolvedValue(usageOf(512, 1024))
     getQuotaStatsMock.mockResolvedValue({ ok: true, stats: { storageBytes: 512, mediaCount: 3, limitBytes: 0 } })
-    getQuotaAlertsMock.mockResolvedValue([])
+    getQuotaAlertsMock.mockResolvedValue({ ok: true, alerts: [] })
     getMediaConfigMock.mockResolvedValue({ 'm.upload.size': 2048 })
     getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: false })
   })
@@ -123,18 +123,21 @@ describe('StorageSettings 媒体配额', () => {
   })
 
   it('有告警时展示告警列表', async () => {
-    getQuotaAlertsMock.mockResolvedValue([
-      {
-        alert_id: 'a1',
-        alert_type: 'quota_warning',
-        threshold_percent: 80,
-        current_usage_bytes: 800,
-        quota_limit_bytes: 1000,
-        message: '80% used',
-        created_ts: 1,
-        is_read: false
-      }
-    ])
+    getQuotaAlertsMock.mockResolvedValue({
+      ok: true,
+      alerts: [
+        {
+          alert_id: 'a1',
+          alert_type: 'quota_warning',
+          threshold_percent: 80,
+          current_usage_bytes: 800,
+          quota_limit_bytes: 1000,
+          message: '80% used',
+          created_ts: 1,
+          is_read: false
+        }
+      ]
+    })
 
     const wrapper = mountTab()
     await flush()
@@ -172,7 +175,7 @@ describe('StorageSettings 媒体服务配置与上传策略', () => {
     localStorage.clear()
     checkQuotaMock.mockResolvedValue(usageOf(512, 1024))
     getQuotaStatsMock.mockResolvedValue({ ok: true, stats: { storageBytes: 512, mediaCount: 3, limitBytes: 0 } })
-    getQuotaAlertsMock.mockResolvedValue([])
+    getQuotaAlertsMock.mockResolvedValue({ ok: true, alerts: [] })
     getMediaConfigMock.mockResolvedValue({ 'm.upload.size': 2048 })
     getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: false })
   })
@@ -224,14 +227,15 @@ describe('StorageSettings — partial 态', () => {
     localStorage.clear()
     checkQuotaMock.mockResolvedValue(usageOf(512, 1024))
     getQuotaStatsMock.mockResolvedValue({ ok: true, stats: { storageBytes: 512, mediaCount: 3, limitBytes: 0 } })
-    getQuotaAlertsMock.mockResolvedValue([])
+    getQuotaAlertsMock.mockResolvedValue({ ok: true, alerts: [] })
     getMediaConfigMock.mockResolvedValue({ 'm.upload.size': 2048 })
     getAuthenticatedMediaConfigMock.mockResolvedValue({ authenticated_media: false })
   })
 
   it('配额统计与告警读取失败时展示 partial 态', async () => {
     getQuotaStatsMock.mockRejectedValue(new Error('stats-fail'))
-    getQuotaAlertsMock.mockRejectedValue(new Error('alerts-fail'))
+    // 告警接口失败时返回 `ok: false` 而不是空数组：不能画成「暂无告警」
+    getQuotaAlertsMock.mockResolvedValue({ ok: false, reason: 'unavailable' })
 
     const wrapper = mountTab()
     await flush()
@@ -261,7 +265,7 @@ describe('StorageSettings — partial 态', () => {
   })
 
   it('点击重试会重新拉取配额与媒体配置', async () => {
-    getQuotaAlertsMock.mockRejectedValueOnce(new Error('alerts-fail'))
+    getQuotaAlertsMock.mockResolvedValueOnce({ ok: false, reason: 'unavailable' })
 
     const wrapper = mountTab()
     await flush()

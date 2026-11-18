@@ -1,4 +1,4 @@
-import type { MediaManager, MediaQuotaAlert } from '@/services/matrix/sdk'
+import type { MediaManager } from '@/services/matrix/sdk'
 import { BaseMatrixService } from '../BaseMatrixService'
 import {
   deleteMediaById,
@@ -8,6 +8,7 @@ import {
   fetchQuotaStats,
   fetchQuotaUsage,
   fetchUrlPreview,
+  type MediaQuotaAlertsResult,
   type MediaQuotaStatsResult
 } from './mediaConfigOps'
 import { notifyMediaQuotaChanged } from './mediaQuotaEvents'
@@ -59,8 +60,8 @@ export abstract class MatrixMediaConfigMethods extends BaseMatrixService {
     return deleted
   }
 
-  /** 获取媒体配额告警列表；失败返回空数组。 */
-  async getQuotaAlerts(): Promise<MediaQuotaAlert[]> {
+  /** 获取媒体配额告警列表；失败时带原因返回（区分「无告警」与「取不到告警」）。 */
+  async getQuotaAlerts(): Promise<MediaQuotaAlertsResult> {
     return fetchQuotaAlerts(() => this.getMedia())
   }
 

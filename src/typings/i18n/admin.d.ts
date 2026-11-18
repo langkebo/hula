@@ -1191,6 +1191,7 @@ export type Messages = {
       "alerts": "配额告警",
       "alertHint": "按时间倒序显示后端返回的告警记录",
       "noAlerts": "暂无配额告警",
+      "alertsUnavailable": "配额告警暂不可用",
       "alertType": {
         "warning": "接近上限",
         "exceeded": "已超限"
@@ -2546,6 +2547,7 @@ export type KeyPaths =
   | "admin.media.quota.alerts"
   | "admin.media.quota.alertHint"
   | "admin.media.quota.noAlerts"
+  | "admin.media.quota.alertsUnavailable"
   | "admin.media.quota.alertType.warning"
   | "admin.media.quota.alertType.exceeded"
   | "admin.media.quota.state.normal"

@@ -4,7 +4,10 @@ import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import { formatBytes } from '@/utils/Formatting'
 
 export type ServerQuotaState = 'loading' | 'available' | 'unavailable'
-export type ServerQuotaAlert = Awaited<ReturnType<typeof matrixMediaService.getQuotaAlerts>>[number]
+export type ServerQuotaAlert = Extract<
+  Awaited<ReturnType<typeof matrixMediaService.getQuotaAlerts>>,
+  { ok: true }
+>['alerts'][number]
 
 /**
  * 服务端媒体配额（与浏览器存储用量是两套数据）。
@@ -25,6 +28,8 @@ export function useServerQuota() {
   /** null 表示本次拿不到媒体数量（接口不支持或失败），UI 不显示成 0 */
   const mediaCount = ref<number | null>(null)
   const alerts = ref<ServerQuotaAlert[]>([])
+  /** 告警读取失败：UI 显示「暂不可用」，不能画成「暂无告警」 */
+  const alertsUnavailable = ref(false)
 
   const exceeded = computed(() => limit.value > 0 && remaining.value <= 0)
 
@@ -58,9 +63,11 @@ export function useServerQuota() {
     limit.value = usageResult.limit
     remaining.value = usageResult.remaining
     mediaCount.value = statsResult.ok ? statsResult.stats.mediaCount : null
-    alerts.value = await matrixMediaService.getQuotaAlerts()
+    const alertsResult = await matrixMediaService.getQuotaAlerts()
+    alertsUnavailable.value = !alertsResult.ok
+    alerts.value = alertsResult.ok ? alertsResult.alerts : []
     state.value = 'available'
   }
 
-  return { state, used, limit, remaining, mediaCount, alerts, exceeded, alertMeta, load }
+  return { state, used, limit, remaining, mediaCount, alerts, alertsUnavailable, exceeded, alertMeta, load }
 }

@@ -15,6 +15,8 @@ export const useQuotaStore = defineStore(StoresEnum.QUOTA, () => {
   const serverQuota = ref<ServerQuota | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  /** 告警单独记录：四项并行刷新时共享 `error` 会被彼此清空，且「失败」不能画成「暂无告警」 */
+  const alertsError = ref<string | null>(null)
 
   const quotaUsed = computed(() => quotaStatus.value?.used ?? 0)
   const quotaLimit = computed(() => quotaStatus.value?.limit ?? 0)
@@ -48,10 +50,12 @@ export const useQuotaStore = defineStore(StoresEnum.QUOTA, () => {
   }
 
   async function fetchAlerts() {
+    alertsError.value = null
     try {
       alerts.value = await adminService.getQuotaAlerts()
     } catch (e) {
       logger.error('获取配额告警失败:', e)
+      alertsError.value = e instanceof Error ? e.message : 'Failed to fetch quota alerts'
     }
   }
 
@@ -81,6 +85,7 @@ export const useQuotaStore = defineStore(StoresEnum.QUOTA, () => {
     serverQuota.value = null
     loading.value = false
     error.value = null
+    alertsError.value = null
   }
 
   return {
@@ -90,6 +95,7 @@ export const useQuotaStore = defineStore(StoresEnum.QUOTA, () => {
     serverQuota,
     loading,
     error,
+    alertsError,
     quotaUsed,
     quotaLimit,
     quotaRemaining,

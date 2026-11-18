@@ -134,8 +134,8 @@ describe('Media service URL construction contract (real SDK + msw)', () => {
     expect(calls[0].method).toBe('GET')
     expect(calls[0].url).toBe(`${HOMESERVER}/_matrix/media/v1/quota/alerts`)
     expect(calls[0].url).not.toMatch(DOUBLE_PREFIX)
-    expect(result).toHaveLength(1)
-    expect(result[0].alert_id).toBe('a1')
+    expect(result.ok && result.alerts).toHaveLength(1)
+    expect(result.ok && result.alerts[0].alert_id).toBe('a1')
   })
 
   it('checkQuota hits /_matrix/media/v1/quota/check (no double-prefix)', async () => {

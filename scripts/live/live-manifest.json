@@ -1,0 +1,464 @@
+{
+  "version": 1,
+  "description": "Tjg 联调资产单一真源：e2e spec 与探针必须在此全额登记，check:live-manifest 双向比对。新增文件未登记即红。",
+  "expectedBaseline": {},
+  "requireApk": false,
+  "oracleKinds": [
+    "server-events",
+    "server-state",
+    "server-api",
+    "db",
+    "backend-log",
+    "timeline",
+    "dom",
+    "axe",
+    "visual"
+  ],
+  "specs": [
+    {
+      "name": "a11y-account-live",
+      "file": "e2e/a11y-account-live.spec.ts",
+      "routeSet": "desktop",
+      "live": true,
+      "oracle": "axe",
+      "covers": ["A11Y", "theme-contrast"],
+      "owner": "ui"
+    },
+    {
+      "name": "a11y-baseline",
+      "file": "e2e/a11y-baseline.spec.ts",
+      "routeSet": "both",
+      "live": false,
+      "oracle": "axe",
+      "covers": ["A11Y-M"],
+      "owner": "ui"
+    },
+    {
+      "name": "account-keyboard-live",
+      "file": "e2e/account-keyboard-live.spec.ts",
+      "routeSet": "desktop",
+      "live": true,
+      "oracle": "timeline",
+      "covers": ["a11y-keyboard"],
+      "owner": "ui"
+    },
+    {
+      "name": "account-states-live",
+      "file": "e2e/account-states-live.spec.ts",
+      "routeSet": "desktop",
+      "live": true,
+      "oracle": "dom",
+      "covers": ["session-four-states"],
+      "owner": "chat"
+    },
+    {
+      "name": "admin-dashboard-live",
+      "file": "e2e/admin-dashboard-live.spec.ts",
+      "routeSet": "desktop",
+      "live": true,
+      "oracle": "server-api",
+      "covers": ["ADM-gating"],
+      "owner": "admin"
+    },
+    {
+      "name": "debug-phase3",
+      "file": "e2e/debug-phase3.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["debug"],
+      "owner": "chat"
+    },
+    {
+      "name": "desktop-key-flows",
+      "file": "e2e/desktop-key-flows.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["desktop-flows"],
+      "owner": "ui"
+    },
+    {
+      "name": "desktop-keyboard-flows",
+      "file": "e2e/desktop-keyboard-flows.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["a11y-keyboard"],
+      "owner": "ui"
+    },
+    {
+      "name": "friend-operations",
+      "file": "e2e/friend-operations.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["friend"],
+      "owner": "friend"
+    },
+    {
+      "name": "login-flow",
+      "file": "e2e/login-flow.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["auth"],
+      "owner": "auth"
+    },
+    {
+      "name": "matrix-live",
+      "file": "e2e/matrix-live.spec.ts",
+      "routeSet": "desktop",
+      "live": true,
+      "oracle": "timeline",
+      "covers": ["auth", "room"],
+      "owner": "chat"
+    },
+    {
+      "name": "messaging-workspace",
+      "file": "e2e/messaging-workspace.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["chat"],
+      "owner": "chat"
+    },
+    {
+      "name": "mobile-entry-smoke",
+      "file": "e2e/mobile-entry-smoke.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["mobile-shell"],
+      "owner": "mobile"
+    },
+    {
+      "name": "mobile-friends-card",
+      "file": "e2e/mobile-friends-card.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["friend"],
+      "owner": "mobile"
+    },
+    {
+      "name": "mobile-input-bar",
+      "file": "e2e/mobile-input-bar.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["chat-input"],
+      "owner": "mobile"
+    },
+    {
+      "name": "mobile-safe-area",
+      "file": "e2e/mobile-safe-area.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["C3-safe-area"],
+      "owner": "mobile"
+    },
+    {
+      "name": "mobile-session-list",
+      "file": "e2e/mobile-session-list.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["session-list"],
+      "owner": "mobile"
+    },
+    {
+      "name": "mobile-sso-login",
+      "file": "e2e/mobile-sso-login.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["auth-sso"],
+      "owner": "mobile"
+    },
+    {
+      "name": "mobile-touch-targets",
+      "file": "e2e/mobile-touch-targets.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["a11y-touch"],
+      "owner": "mobile"
+    },
+    {
+      "name": "multi-device.android",
+      "file": "e2e/multi-device.android.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["device"],
+      "owner": "platform"
+    },
+    {
+      "name": "multi-device.chat",
+      "file": "e2e/multi-device.chat.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["device-sync"],
+      "owner": "platform"
+    },
+    {
+      "name": "my-hub-live",
+      "file": "e2e/my-hub-live.spec.ts",
+      "routeSet": "mobile",
+      "live": true,
+      "oracle": "timeline",
+      "covers": ["mobile-hub"],
+      "owner": "mobile"
+    },
+    {
+      "name": "my-hub-metrics",
+      "file": "e2e/my-hub-metrics.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["perf-budget"],
+      "owner": "mobile"
+    },
+    {
+      "name": "notification-unread-live",
+      "file": "e2e/notification-unread-live.spec.ts",
+      "routeSet": "desktop",
+      "live": true,
+      "oracle": "server-state",
+      "covers": ["notification-unread"],
+      "owner": "notify"
+    },
+    {
+      "name": "private-gate-live",
+      "file": "e2e/private-gate-live.spec.ts",
+      "routeSet": "both",
+      "live": true,
+      "oracle": "server-state",
+      "covers": ["privacy-gate"],
+      "owner": "chat"
+    },
+    {
+      "name": "room-key-request-live",
+      "file": "e2e/room-key-request-live.spec.ts",
+      "routeSet": "desktop",
+      "live": true,
+      "oracle": "server-state",
+      "covers": ["S1-UI", "e2ee-key-request"],
+      "owner": "crypto"
+    },
+    {
+      "name": "room-operations",
+      "file": "e2e/room-operations.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["room"],
+      "owner": "chat"
+    },
+    {
+      "name": "room-settings-e2e",
+      "file": "e2e/room-settings-e2e.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["room-settings"],
+      "owner": "chat"
+    },
+    {
+      "name": "room-settings-live",
+      "file": "e2e/room-settings-live.spec.ts",
+      "routeSet": "both",
+      "live": true,
+      "oracle": "server-state",
+      "covers": ["room-settings", "group-vs-dm"],
+      "owner": "chat"
+    },
+    {
+      "name": "scenario-05-logout",
+      "file": "e2e/scenario-05-logout.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["auth-logout"],
+      "owner": "auth"
+    },
+    {
+      "name": "scenario-23-settings-persist",
+      "file": "e2e/scenario-23-settings-persist.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["settings-persist"],
+      "owner": "settings"
+    },
+    {
+      "name": "scenario-30-capability-fallback",
+      "file": "e2e/scenario-30-capability-fallback.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["CAP-fallback"],
+      "owner": "core"
+    },
+    {
+      "name": "space-operations",
+      "file": "e2e/space-operations.spec.ts",
+      "routeSet": "desktop",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["space"],
+      "owner": "chat"
+    },
+    {
+      "name": "space-tree-live",
+      "file": "e2e/space-tree-live.spec.ts",
+      "routeSet": "mobile",
+      "live": true,
+      "oracle": "timeline",
+      "covers": ["space"],
+      "owner": "mobile"
+    },
+    {
+      "name": "tabbar-audit",
+      "file": "e2e/tabbar-audit.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["mobile-shell"],
+      "owner": "mobile"
+    },
+    {
+      "name": "tauri-basic",
+      "file": "e2e/tauri-basic.spec.ts",
+      "routeSet": "both",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["tauri-native"],
+      "owner": "platform"
+    },
+    {
+      "name": "storybook-visual",
+      "file": "e2e/visual/storybook-visual.spec.ts",
+      "routeSet": "both",
+      "live": false,
+      "oracle": "visual",
+      "covers": ["visual-baseline"],
+      "owner": "ui"
+    },
+    {
+      "name": "web-session-restore",
+      "file": "e2e/web-session-restore.spec.ts",
+      "routeSet": "mobile",
+      "live": false,
+      "oracle": "dom",
+      "covers": ["session-restore"],
+      "owner": "core"
+    }
+  ],
+  "probes": [
+    {
+      "name": "backend-redeploy",
+      "file": "scripts/backend-redeploy-probe.mjs",
+      "category": "server",
+      "requires": [],
+      "oracle": "server-api",
+      "covers": ["redeploy"]
+    },
+    {
+      "name": "d5-key-request",
+      "file": "scripts/d5-key-request-probe.mjs",
+      "category": "server",
+      "requires": ["SYNAPSE_DB_CONTAINER"],
+      "oracle": "db",
+      "covers": ["e2ee-key-request"]
+    },
+    {
+      "name": "forward",
+      "file": "scripts/forward-probe.mjs",
+      "category": "server",
+      "requires": [],
+      "oracle": "server-events",
+      "covers": ["forward"]
+    },
+    {
+      "name": "friends-shard",
+      "file": "scripts/friends-shard-probe.mjs",
+      "category": "server",
+      "requires": [],
+      "oracle": "server-api",
+      "covers": ["friend-pagination"]
+    },
+    {
+      "name": "msg-relations-upgrade",
+      "file": "scripts/msg-relations-upgrade-probe.mjs",
+      "category": "server",
+      "requires": ["E2EE_BASE"],
+      "oracle": "server-events",
+      "covers": ["relations"]
+    },
+    {
+      "name": "probe-admin-features",
+      "file": "scripts/probe-admin-features.mjs",
+      "category": "server",
+      "requires": [],
+      "oracle": "server-api",
+      "covers": ["ADM"]
+    },
+    {
+      "name": "push-delivery",
+      "file": "scripts/push-delivery-probe.mjs",
+      "category": "server",
+      "requires": ["SYNAPSE_DB_CONTAINER"],
+      "oracle": "backend-log",
+      "covers": ["B11-push"]
+    },
+    {
+      "name": "room-appear-live",
+      "file": "scripts/room-appear-live-probe.mjs",
+      "category": "device",
+      "requires": ["ADB_SERIAL_A", "ADB_SERIAL_B", "CDP_A", "CDP_B"],
+      "oracle": "server-api",
+      "covers": ["B6-room-appear"]
+    },
+    {
+      "name": "search-burn",
+      "file": "scripts/search-burn-probe.mjs",
+      "category": "server",
+      "requires": ["SYNAPSE_DB_CONTAINER", "E2EE_BASE"],
+      "oracle": "db",
+      "covers": ["search", "burn"]
+    },
+    {
+      "name": "session-persist",
+      "file": "scripts/session-persist-probe.mjs",
+      "category": "device",
+      "requires": ["ADB_SERIAL_A"],
+      "oracle": "dom",
+      "covers": ["session-restore"]
+    }
+  ],
+  "manual": [
+    { "name": "语音消息录制与播放", "reason": "需真机麦克风权限；浏览器不可替代", "owner": "chat", "priority": "P2" },
+    {
+      "name": "音视频通话 + 强制 TURN relay",
+      "reason": "需两台真机 + coturn --force-relay",
+      "owner": "chat",
+      "priority": "P2"
+    },
+    {
+      "name": "真实网关推送 payload 落地",
+      "reason": "投递路径过 SSRF 守卫，必须 https + 公网域名",
+      "owner": "notify",
+      "priority": "P3"
+    },
+    {
+      "name": "Tauri 原生层（深链 / 后台保活 / 权限）",
+      "reason": "Playwright 驱动不到原生层，ADB 只能做有限断言",
+      "owner": "platform",
+      "priority": "P3"
+    }
+  ]
+}

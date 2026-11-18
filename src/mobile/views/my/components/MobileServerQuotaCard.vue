@@ -22,10 +22,13 @@
       <van-cell
         :title="t('mobile_storage.server_quota_alerts')"
         :value="
-          alerts.length
-            ? t('mobile_storage.server_quota_alert_count', { count: alerts.length })
-            : t('mobile_storage.server_quota_no_alerts')
-        " />
+          alertsUnavailable
+            ? t('mobile_storage.server_quota_alerts_unavailable')
+            : alerts.length
+              ? t('mobile_storage.server_quota_alert_count', { count: alerts.length })
+              : t('mobile_storage.server_quota_no_alerts')
+        "
+        :data-testid="alertsUnavailable ? 'server-quota-alerts-unavailable' : undefined" />
       <van-cell v-for="alert in alerts" :key="alert.alert_id" data-testid="server-quota-alert">
         <template #title>
           <div class="flex flex-col gap-4px">
@@ -66,6 +69,7 @@ defineProps<{
   remaining: number
   mediaCount: number | null
   alerts: ServerQuotaAlert[]
+  alertsUnavailable: boolean
   exceeded: boolean
   alertMeta: (alert: ServerQuotaAlert) => string
 }>()

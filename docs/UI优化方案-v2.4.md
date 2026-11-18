@@ -2855,7 +2855,7 @@ P0-4 原定口径是「改为 `src/mobile/` 独立实现或组件变体，把基
 
 #### 已知边界
 
-1. **媒体库（`ChatSidebarFiles.vue`）的假配额** —— **已修（§19.22）**：本就存在 `matrixMediaService.getQuotaStats()`，无需新增后端能力，直接接真实数据并删掉硬编码；文件列表本身仍无数据源（只给空态），属「功能未接」而非「缺状态」。
+1. **媒体库（`ChatSidebarFiles.vue`）的假配额** —— **已修（§19.22）**：本就存在 `matrixMediaService.getQuotaStats()`，无需新增后端能力，直接接真实数据并删掉硬编码；文件列表本身当时无数据源（只给空态），已在 §19.88 接入 `/messages` 分页扫描。
 2. 空间面板的「有数据时刷新失败」只保留旧列表、不给任何提示（`error` 被忽略）—— 属有意取舍（避免抖动），如需提示应加非遮挡式 toast。
 3. `useSpaceRooms` 的 `error` 只在 `load()` 失败时置位，`removeRoom` 失败走的是 `showFeedback` toast，不计入该状态。
 
@@ -6312,7 +6312,7 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R1**：本轮无新增 HTTP / 平行实现。移动端配额继续走 `matrixMediaService.checkQuota()` / `getQuotaStats()` / `getQuotaAlerts()`；`TimelineService` 拆分只做同模块函数外移，未复制 SDK 逻辑。
 - **R2**：改动面为 `src/services/matrix/room/**`、`src/mobile/views/my/**` 与文档；`src/mobile/**` 未新增 admin／AI 引用。
 - **R3 第 3 项**：未执行 Android／iOS 实机构建；移动端改动为既有页面的组件与 composable 拆分，无路由／菜单／模块装配期变化。
-- **未闭环**：`C3` 运行态与真机取证、`CAP-08`（23 处手写夹具）、`S-01`／`N-08`（0 真实 import）、`augmentation` 686 行未拆分、`ChatSidebarFiles.vue` 文件列表缺数据源、`getQuotaAlerts()` 失败回落空数组语义、Storybook 自动截图 diff、D2 vitrio 接入，均不在本轮范围。
+- **未闭环**：`C3` 运行态与真机取证、`CAP-08`（23 处手写夹具）、`S-01`／`N-08`（0 真实 import）、`augmentation` 686 行未拆分（已由 §19.83 拆分，本条为滞后台账）、Storybook 自动截图 diff、D2 vitrio 接入，均不在本轮范围；`getQuotaAlerts()` 失败回落空数组语义已由 §19.87 清偿；`ChatSidebarFiles.vue` 文件列表缺数据源已由 §19.88 清偿。
 
 ---
 
@@ -6607,6 +6607,118 @@ S3 的目标是把「后端已具备、前端零接线」的能力收敛到零�
 - **R2**：改动面为 `src/services/matrix/{room,user}/**`、`src/services/matrix/MatrixCryptoStateTracker*.ts`、`src/services/matrix/sdk.ts`；未新增 admin／AI 入口与逻辑，移动端产物不含新增路径。
 - **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮无路由、菜单、模块装配期变化，仅服务层文件拆分。
 - **未闭环**：`MatrixCryptoStateTracker` 的 `doEnsureCrypto` 仍集中了 storageKey 获取与 IndexedDB 清理重试两条路径（219 行，已低于 400 门槛）；如后续继续下沉，需同步评估 crypto 相关契约测试的源码断言。
+
+---
+
+### 19.87 媒体配额告警语义修复｜`getQuotaAlerts()` 不再把失败折叠成空数组（2026-11-18）
+
+承接 §19.82.5 未闭环项，与 §19.22 第 2 条（`getQuotaStats()` 折叠 `null`）同一范式。告警查询失败时返回 `[]`，会让「真的没有告警」与「取不到告警」不可区分，UI 只能把读取失败画成「暂无告警」——谎报确定值。本节把告警查询对齐到 `{ ok, reason }` 口径，并贯通三层消费方。
+
+#### 19.87.1 改动表
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/services/matrix/media/mediaConfigOps.ts` | `fetchQuotaAlerts` 改返新增 `MediaQuotaAlertsResult = { ok: true; alerts } \| { ok: false; reason }`；失败经 `classifyMediaQuotaError` 归类（`unavailable` / `unsupported`），日志保留原因 |
+| `src/services/matrix/media/MatrixMediaConfigMethods.ts` | 门面签名同步收紧为 `MediaQuotaAlertsResult`；方法名与位置不变，调用方 import 零改动 |
+| `src/services/matrix/admin/QuotaService.ts` | `getQuotaAlerts()` 失败抛错，与 `getQuotaStats()` 同口径；对外仍返回 `QuotaAlert[]`，减小扩散面 |
+| `src/stores/domains/admin/quota.ts` | 新增独立 `alertsError`（`fetchAllQuota` 四项并行，共享 `error` 会被彼此清空），`fetchAlerts` 记录失败原因，`$reset` 一并清空 |
+| `src/components/admin/media/MediaQuotaPanel.vue` | 新增 `quota-alerts-error` 警告条；「暂无告警」空态仅在无错误时展示，不再用假空态掩盖失败 |
+| `src/views/settingsWindow/tabs/storage/useStorageSettings.ts` | `quotaAlertsFailed` 原以 `status !== 'fulfilled'` 判定，服务不再 reject 后成为死代码；改判 `outcome?.ok !== true`，恢复 partial 态 |
+| `src/mobile/views/my/composables/useServerQuota.ts` | 新增 `alertsUnavailable`；告警失败不再整块抛错卡在 loading，也不用空数组冒充零告警 |
+| `src/mobile/views/my/components/MobileServerQuotaCard.vue` | 告警行三态：`告警暂不可用` / `N 条告警` / `暂无告警`；失败态带 `data-testid="server-quota-alerts-unavailable"` |
+| `locales/zh-CN/{admin,mobile_storage}.json`、`locales/en/{admin,mobile_storage}.json` | 新增 `admin.media.quota.alertsUnavailable`、`mobile_storage.server_quota_alerts_unavailable`；`pnpm gen:i18n` 重新生成 `src/typings/i18n/**`（103 namespace / 7106 key path） |
+
+#### 19.87.2 关键约束
+
+1. **复用既有口径**：判别式结果与 `MediaQuotaStatsResult` 同构，错误分类继续用 `classifyMediaQuotaError`，未新增抽象或 HTTP 通道。
+2. **三层消费方全部收口**：桌面设置页、移动端配额卡、后台配额面板各自有可判定的失败态，无一处再把「取不到」渲染成「暂无」。
+3. **后台对外签名不变**：`QuotaService.getQuotaAlerts()` 仍返回 `QuotaAlert[]`，失败改为抛错，由 store 的 catch 分支落 `alertsError`。
+4. **类型派生不引 SDK 类型**：消费方用 `Extract<Awaited<ReturnType<typeof matrixMediaService.getQuotaAlerts>>, { ok: true }>['alerts']` 取元素类型，组件不直接 import SDK 类型。
+5. **联合类型收窄**：不能用派生 boolean 收窄，统一写成 `const outcome = status === 'fulfilled' ? value : null` 后再按 `outcome?.ok` 分支。
+
+#### 19.87.3 用例补强
+
+| 测试 | 新增 / 调整 |
+| :--- | :--- |
+| `src/services/matrix/media/__tests__/MatrixMediaService.test.ts` | 成功断言 `{ ok: true, alerts }`；失败断言 `{ ok: false, reason: 'unavailable' }`；新增 404 → `unsupported` 分类用例 |
+| `src/services/matrix/media/__tests__/media.contract.test.ts` | 契约断言改为解包 `result.ok && result.alerts` |
+| `src/services/matrix/admin/__tests__/QuotaService.test.ts` | 成功透传 + 失败抛错（`获取配额告警失败（unavailable）`） |
+| `src/stores/domains/admin/__tests__/quota.test.ts` | 失败落 `alertsError`；重试前先清空；`$reset` 清空 |
+| `src/components/admin/media/__tests__/MediaQuotaPanel.test.ts` | 告警失败展示 `quota-alerts-error`，且不出现 `quota-alerts-empty` |
+| `src/views/settingsWindow/tabs/__tests__/StorageSettings.test.ts` | mock 改新结构；partial 态由 `{ ok: false, reason }` 驱动，不再依赖服务 reject |
+| `src/mobile/views/my/__tests__/MobileStorageSettings.test.ts` | mock 改新结构；新增「失败显示告警暂不可用且不出现暂无告警」用例 |
+
+#### 19.87.4 验证表
+
+| 命令 / 用例 | 结果 |
+| :--- | :--- |
+| `pnpm vitest run`（上述 7 个受影响文件） | 全部通过 |
+| `pnpm test:run`（全量） | `Test Files 1113 passed (1113)`、`Tests 12274 passed (12274)`、`EXIT=0` |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| `pnpm check:ratchet` / `check:doc-coverage` / `check:doc-paths` / `check:sdk-boundary` / `quality:no-raw-fetch` | 全部 `EXIT=0` |
+| `check-i18n` / `check-i18n-refs` / `check-token-usage` / `check-dead-handlers` | 全部 `EXIT=0` |
+| `pnpm check` | 触及文件单独 `biome check` 通过；整链仍报 2 处格式问题，均在未跟踪的 `scripts/live/*.json`（工作区其他改动，本轮未触碰），因此停在 Biome 阶段，i18n 子检查已按上一行单独取证 |
+
+#### 19.87.5 边界
+
+- **R1**：未新增 HTTP / 平行实现，仍走 `MediaManager.getMediaQuotaAlerts()`；本轮只调整返回语义与消费方判定。
+- **R2**：改动面含 `src/mobile/views/my/**`，未新增 admin／AI 入口与逻辑；移动端配额卡仅把既有失败态显性化。
+- **R3 第 3 项**：未执行 Android／iOS 实机构建；无路由、菜单、模块装配期变化。
+
+---
+
+### 19.88 媒体库文件列表接入｜`ChatSidebarFiles.vue` 从固定空态改为 `/messages` 分页扫描（2026-11-18）
+
+承接 §19.82.5「`ChatSidebarFiles.vue` 文件列表缺数据源」。此前「文件」页签只有 `files_unsupported` 空态，用户看不到任何附件，也无法判断是「房间没有文件」还是「功能没接」。本节把文件页签接到 Matrix `/messages` 分页，并明确区分四种状态：未选会话 / 服务端不支持 / 扫描失败 / 真空或分页未到底。
+
+#### 19.88.1 改动表
+
+| 文件 | 改动 |
+| :--- | :--- |
+| `src/services/matrix/room/timelineOutcomes.ts` | 新增 `RoomFileEntry` / `RoomFilesPage` / `RoomFilesOutcome`；新增 `normalizeRoomFileEvent()`（按 `msgtype` 取 `m.file` / `m.image` / `m.video` / `m.audio`，兼容 E2EE 的 `content.file`）与 `normalizeRoomFilesPage()`（按 `event_id` 去重、读 `end` 作为 `nextToken`） |
+| `src/services/matrix/room/TimelineService.ts` | 新增 `getRoomFiles(roomId, { from?, limit? })`：走 `client.getEventManager().createMessagesRequest(..., Direction.Backward, { types: ['m.room.message'] })`，`M_UNRECOGNIZED` 归类 `unsupported`，其他异常归类 `error`，缺 `chunk` 视为协议违例返回 `error` |
+| `src/components/rightBox/chatBox/ChatSidebarFiles.vue` | 文件页签接入真实数据：初始骨架屏、失败 `PartialStateBanner` 重试、「加载更多」翻页、`filesRequestId` 丢弃切房间后的在途响应；空态改用 `EmptyState` 并区分「已到开头」与「本页没有附件」 |
+| `src/components/rightBox/chatBox/ChatSidebar.vue` | 向文件页签传 `:room-id="currentRoomId"`（`globalStore.currentSessionRoomId`） |
+| `locales/{zh-CN,en}/home.json` | 新增 `chat_sidebar.files.{load_failed,load_more,unnamed,scope_hint}`；`empty.files_unsupported` 由「当前版本暂不支持」改为「当前服务器不支持按房间分页读取文件」；`pnpm gen:i18n` 重新生成 typings |
+
+#### 19.88.2 关键约束
+
+1. **R1 合规链路**：组件 → `matrixRoomTimelineService.getRoomFiles()` → SDK `EventManager.createMessagesRequest`。未新建 HTTP 通道、未复制分页逻辑；`getEventManager()` 是 SDK 公开访问器。
+2. **不走 `Filter` 的偏差及原因**：`client.createMessagesRequest` 需要 `Filter` 实例，而 `matrix-js-sdk/filter` 不在 package exports、`src/services/matrix/sdk.ts` 咽喉点也未导出 `Filter`，强行引入会破坏 SDK 边界。改为向 `EventManager.createMessagesRequest` 传裸 `IRoomEventFilter` 对象，附件筛选在客户端完成。
+3. **服务端过滤只到 `m.room.message`**：`IRoomEventFilter` 类型不含 `contains_url`，无法让服务端只回附件。因此按 `types` 取消息事件，再用 `normalizeRoomFileEvent` 按 `msgtype` / `url` / `file.url` 筛出附件；文本事件被丢弃。
+4. **诚实性边界**：`end === null` 表示已到房间开头，此时空列表才渲染「暂无文件」；`nextToken` 非空时空列表只显示「本页没有附件，可继续加载更早的消息」并保留翻页按钮，不把「只扫了一页」说成「房间没有文件」。
+5. **缺失元数据不伪装**：`size` / `mimetype` / `origin_server_ts` 缺失时归一化为 `null`，UI 不显示 `0 B`、不显示空时间。
+6. **E2EE 附件**：优先取 `content.file.url`，`size` 回落 `content.file.size`，`mimeType` 可能为 `null`；`encrypted: true` 时行尾渲染锁图标。
+7. **竞态**：`filesRequestId` 每次请求自增，切房间或重置时递增使在途响应失效，不会把上一个房间的文件写进新房间。
+8. **体量**：`ChatSidebarFiles.vue` 333 行、`TimelineService.ts` 314 行、`timelineOutcomes.ts` 470 行（工具函数集合，非组件），均在约束内。
+
+#### 19.88.3 用例补强
+
+| 测试 | 新增 / 调整 |
+| :--- | :--- |
+| `src/services/matrix/room/__tests__/TimelineService.test.ts` | 新增 `getRoomFiles` 8 个用例：默认参数 `(roomId, null, 50, 'b', { types: ['m.room.message'] })`、附件归一化与文本事件过滤、E2EE `content.file`（size 回落 4096 / mimeType null / encrypted true / `end:null`→`nextToken:null`）、页内去重、空页保留 `nextToken`、缺 `chunk` → error、`M_UNRECOGNIZED` → unsupported、client 未初始化 → error |
+| `src/components/rightBox/chatBox/__tests__/ChatSidebarFiles.test.ts` | 新增文件列表 7 个用例：未选会话不请求接口、成功渲染条目（含 unnamed 兜底、不出现 `0 B`）、扫描到开头无附件、空页但有 `nextToken` 时提示并带 `{ from }` 翻页、失败 partial + 重试成功、unsupported 如实说明、切房间丢弃在途旧响应；`NEmpty` mock 修正为渲染 `description`，空态断言有效 |
+
+#### 19.88.4 验证表
+
+| 命令 / 用例 | 结果 |
+| :--- | :--- |
+| `pnpm vitest run`（ChatSidebarFiles + TimelineService） | `Test Files 2 passed (2)`、`Tests 73 passed (73)` |
+| `pnpm vue-tsc --noEmit` | 0 错误 |
+| `pnpm check:ratchet` | `OK — no regressions`（首轮命中 `handwritten_empty_state`，改用 `EmptyState` 后通过） |
+| `pnpm check:doc-coverage` | `OK — no regressions vs baseline`（19 method newly documented） |
+| `pnpm check:doc-paths` | `OK：全部路径存在` |
+| `pnpm check:sdk-boundary` | 154（基线 156）→ `OK — no regressions vs baseline` |
+| `pnpm quality:no-raw-fetch` | 3 项均在白名单内，`EXIT=0` |
+| `biome check`（本轮触及文件） | 通过（导入排序已 `--write` 修正） |
+| `pnpm test:run`（全量） | `Test Files 1113 passed (1113)`，`Duration 517.50s`，0 失败 |
+
+#### 19.88.5 边界
+
+- **R1**：未新增 HTTP / 平行实现，附件扫描经 `EventManager.createMessagesRequest`；`Filter` 与 `contains_url` 的不可用已在 §19.88.2 记录，非自研协议。
+- **R2**：改动面为 `src/components/rightBox/chatBox/**`、`src/services/matrix/room/**`、`locales/**`、`src/typings/i18n/**`；未新增 admin／AI 入口与逻辑，移动端产物不含新增路径。
+- **R3 第 3 项**：未执行 Android／iOS 实机构建；本轮无路由、菜单、模块装配期变化，仅桌面侧边栏组件与服务层方法。
+- **未闭环**：文件列表只提供扫描与展示，未接入缩略图、下载、跳转到原消息（后续如需，应复用 `MatrixMediaService` 与时间线定位服务，不另起实现）。
 
 ---
 

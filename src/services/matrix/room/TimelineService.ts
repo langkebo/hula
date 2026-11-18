@@ -1,4 +1,4 @@
-import type { Direction } from '@/services/matrix/sdk'
+import { Direction } from '@/services/matrix/sdk'
 import { createLogger } from '@/utils/Logger'
 import { BaseMatrixService } from '../BaseMatrixService'
 import { resolveMxcToHttp } from '../media/mxcUrl'
@@ -6,6 +6,7 @@ import type {
   RoomEventMediaUrl,
   RoomEventMediaUrlOutcome,
   RoomEventPerspectiveOutcome,
+  RoomFilesOutcome,
   RoomFragmentsOutcome,
   RoomReceiptsOutcome,
   RoomReducedEventsOutcome,
@@ -17,6 +18,7 @@ import {
   normalizeReceipts,
   normalizeReducedEvents,
   normalizeRendered,
+  normalizeRoomFilesPage,
   readErrcode,
   toMediaEntries
 } from './timelineOutcomes'
@@ -275,6 +277,35 @@ export class MatrixRoomTimelineService extends BaseMatrixService {
         return { status: 'unsupported' }
       }
       logger.warn(`[MatrixRoom] 获取已读回执明细失败: ${err}`)
+      return { status: 'error' }
+    }
+  }
+
+  /**
+   * 按房间分页扫描文件消息（文件页签数据源，只读）。
+   *
+   * 走 SDK 的 `/messages` 分页（`EventManager.createMessagesRequest`），用
+   * `types: ['m.room.message']` 收窄事件类型后在客户端筛出附件消息
+   * （`IRoomEventFilter` 未声明 `contains_url`，因此不在服务端做 URL 过滤）。
+   * `from` 缺省表示从房间最新处向更早翻；`nextToken` 为 null 表示已到房间开头。
+   */
+  async getRoomFiles(roomId: string, options?: { from?: string; limit?: number }): Promise<RoomFilesOutcome> {
+    try {
+      const client = this.getClient()
+      const result = await client
+        .getEventManager()
+        .createMessagesRequest(roomId, options?.from ?? null, options?.limit ?? 50, Direction.Backward, {
+          types: ['m.room.message']
+        })
+      const page = normalizeRoomFilesPage(result, (mxcUrl) => resolveMxcToHttp(client, mxcUrl))
+      // 缺 `chunk` 属协议违例，按失败处理，不把它渲染成「没有文件」
+      return page ? { status: 'ok', page } : { status: 'error' }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持房间消息分页: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取房间文件列表失败: ${err}`)
       return { status: 'error' }
     }
   }

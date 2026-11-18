@@ -7,7 +7,6 @@ import { visualizer } from 'rollup-plugin-visualizer'
 import AutoImport from 'unplugin-auto-import/vite'
 import type { Plugin, UserConfig } from 'vite'
 import compression from 'vite-plugin-compression'
-import VueSetupExtend from 'vite-plugin-vue-setup-extend'
 import packageJson from '../../package.json' with { type: 'json' }
 import { cspNoncePlugin } from '../plugins/vite-plugin-csp-nonce.ts'
 import { createManualChunks } from './chunks.ts'
@@ -55,7 +54,6 @@ export const baseConfig: UserConfig = {
   },
   plugins: [
     vue(),
-    VueSetupExtend(),
     vueJsx(),
     UnoCSS(),
     AutoImport({

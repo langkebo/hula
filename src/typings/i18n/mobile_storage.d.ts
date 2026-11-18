@@ -42,6 +42,7 @@ export type Messages = {
   "server_quota_alert_type_warning": "接近上限",
   "server_quota_alert_meta": "{type} · 阈值 {threshold}% · 当次 {used} / {limit}",
   "server_quota_no_alerts": "暂无告警",
+  "server_quota_alerts_unavailable": "告警暂不可用",
   "server_quota_loading": "正在读取服务端配额...",
   "server_quota_unavailable": "服务端配额暂不可用",
   "strategy_section": "缓存策略",
@@ -112,6 +113,7 @@ export type KeyPaths =
   | "mobile_storage.server_quota_alert_type_warning"
   | "mobile_storage.server_quota_alert_meta"
   | "mobile_storage.server_quota_no_alerts"
+  | "mobile_storage.server_quota_alerts_unavailable"
   | "mobile_storage.server_quota_loading"
   | "mobile_storage.server_quota_unavailable"
   | "mobile_storage.strategy_section"

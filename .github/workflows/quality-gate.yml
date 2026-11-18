@@ -92,6 +92,9 @@ jobs:
           # P1-1②（2026-10-12）：800 行红线此前只在脚本层存在、从未接入 CI（EG-04）。
           # 基线见 meta/file-size-baseline.json（棘轮：存量不增长，新增 >400 即红）。
           pnpm check:file-size
+          # P0-3（2026-11-18）：联调资产清单门禁——e2e spec 与探针必须全额登记在
+          # scripts/live/live-manifest.json（单一真源），新增未登记即红；live 用例必须声明 oracle。
+          pnpm check:live-manifest
           # AR-07b（2026-11-04）：Matrix 服务层 token 收口与调用链棘轮。
           # 基线见 meta/matrix-layering-baseline.json（只可收紧；--update 收紧）。
           pnpm check:matrix-layering

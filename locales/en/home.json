@@ -183,6 +183,12 @@
       "title": "Quota",
       "unavailable_hint": "Quota data unavailable"
     },
+    "files": {
+      "load_failed": "Failed to load files",
+      "load_more": "Load more",
+      "unnamed": "Unnamed file",
+      "scope_hint": "No attachments on this page; load earlier messages to keep looking"
+    },
     "favorites": {
       "total": "{count} favorite(s)",
       "export_md": "Export Markdown",
@@ -205,7 +211,7 @@
       "select_to_start": "Select a conversation or start a new chat",
       "pins": "No pinned messages",
       "files": "No Files",
-      "files_unsupported": "Browsing files by room is not supported yet"
+      "files_unsupported": "This homeserver does not support paging room messages"
     },
     "online_members": "Online members {count}",
     "tabs": {

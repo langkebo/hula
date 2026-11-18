@@ -19,6 +19,7 @@ const getRoomReducedEventsMock = vi.fn()
 const getRoomRenderedMock = vi.fn()
 const getRoomFragmentsMock = vi.fn()
 const getRoomReceiptsMock = vi.fn()
+const createMessagesRequestMock = vi.fn()
 
 describe('MatrixRoomTimelineService', () => {
   let service: InstanceType<typeof MatrixRoomTimelineService>
@@ -42,6 +43,7 @@ describe('MatrixRoomTimelineService', () => {
     }
     mxcUrlToHttp: (url: string) => string | null
     timestampToEvent: typeof timestampToEventMock
+    getEventManager: () => { createMessagesRequest: typeof createMessagesRequestMock }
   }
 
   beforeEach(() => {
@@ -66,7 +68,8 @@ describe('MatrixRoomTimelineService', () => {
         }
       }),
       mxcUrlToHttp: (url: string) => (url.startsWith('mxc://') ? `https://media.example/${url.slice(6)}` : null),
-      timestampToEvent: timestampToEventMock
+      timestampToEvent: timestampToEventMock,
+      getEventManager: () => ({ createMessagesRequest: createMessagesRequestMock })
     }
 
     vi.spyOn(matrixClientService, 'getClient').mockReturnValue(mockClient as never)
@@ -513,6 +516,152 @@ describe('MatrixRoomTimelineService', () => {
     it('classifies other failures as error', async () => {
       getRoomReceiptsMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_FORBIDDEN' }))
       expect(await service.getRoomReceipts('!r:e', 'm.read', '$e')).toEqual({ status: 'error' })
+    })
+  })
+
+  describe('getRoomFiles', () => {
+    const fileMessage = (overrides: Record<string, unknown> = {}) => ({
+      event_id: '$f1',
+      type: 'm.room.message',
+      sender: '@alice:e',
+      origin_server_ts: 1000,
+      content: {
+        msgtype: 'm.file',
+        body: 'report.pdf',
+        url: 'mxc://hs.test/f1',
+        info: { size: 2048, mimetype: 'application/pdf' }
+      },
+      ...overrides
+    })
+
+    it('pages backward through /messages and normalizes attachment events', async () => {
+      createMessagesRequestMock.mockResolvedValue({
+        chunk: [
+          fileMessage(),
+          // 文本消息不是附件，必须被过滤掉
+          { event_id: '$t1', type: 'm.room.message', content: { msgtype: 'm.text', body: 'hi' }, sender: '@a:e' },
+          // 非消息事件不应出现在结果里（服务端已按 types 过滤，这里兜底）
+          { event_id: '$m1', type: 'm.room.member', content: { membership: 'join' }, sender: '@a:e' }
+        ],
+        start: 's0',
+        end: 'p1'
+      })
+
+      const result = await service.getRoomFiles('!r:e')
+
+      expect(createMessagesRequestMock).toHaveBeenCalledWith('!r:e', null, 50, 'b', {
+        types: ['m.room.message']
+      })
+      expect(result).toEqual({
+        status: 'ok',
+        page: {
+          files: [
+            {
+              eventId: '$f1',
+              sender: '@alice:e',
+              timestamp: 1000,
+              url: 'mxc://hs.test/f1',
+              httpUrl: 'https://media.example/hs.test/f1',
+              name: 'report.pdf',
+              size: 2048,
+              mimeType: 'application/pdf',
+              kind: 'file',
+              encrypted: false
+            }
+          ],
+          nextToken: 'p1'
+        }
+      })
+    })
+
+    it('reads encrypted attachments from content.file and keeps unknown metadata null', async () => {
+      createMessagesRequestMock.mockResolvedValue({
+        chunk: [
+          {
+            event_id: '$enc1',
+            type: 'm.room.message',
+            sender: '@bob:e',
+            origin_server_ts: 2000,
+            content: {
+              msgtype: 'm.image',
+              body: 'photo.jpg',
+              file: { url: 'mxc://hs.test/enc1', key: 'k', iv: 'v', size: 4096 }
+            }
+          }
+        ],
+        end: null
+      })
+
+      const result = await service.getRoomFiles('!r:e', { from: 'tok', limit: 10 })
+
+      expect(createMessagesRequestMock).toHaveBeenCalledWith('!r:e', 'tok', 10, 'b', {
+        types: ['m.room.message']
+      })
+      expect(result).toEqual({
+        status: 'ok',
+        page: {
+          files: [
+            {
+              eventId: '$enc1',
+              sender: '@bob:e',
+              timestamp: 2000,
+              url: 'mxc://hs.test/enc1',
+              httpUrl: 'https://media.example/hs.test/enc1',
+              name: 'photo.jpg',
+              size: 4096,
+              // content.info 缺失时不编造 MIME
+              mimeType: null,
+              kind: 'image',
+              encrypted: true
+            }
+          ],
+          // end 为 null 表示已到房间开头
+          nextToken: null
+        }
+      })
+    })
+
+    it('dedupes repeated event ids within a page', async () => {
+      createMessagesRequestMock.mockResolvedValue({ chunk: [fileMessage(), fileMessage()], end: null })
+
+      const result = await service.getRoomFiles('!r:e')
+
+      expect(result.status).toBe('ok')
+      expect(result.status === 'ok' ? result.page.files : []).toHaveLength(1)
+    })
+
+    it('treats an empty or all-text page as ok with a null/next token, not as an error', async () => {
+      createMessagesRequestMock.mockResolvedValue({ chunk: [], start: 's0', end: 'p2' })
+      expect(await service.getRoomFiles('!r:e')).toEqual({
+        status: 'ok',
+        page: { files: [], nextToken: 'p2' }
+      })
+
+      createMessagesRequestMock.mockResolvedValue({ chunk: [], end: null })
+      expect(await service.getRoomFiles('!r:e')).toEqual({
+        status: 'ok',
+        page: { files: [], nextToken: null }
+      })
+    })
+
+    it('classifies a response without chunk as error instead of rendering an empty room', async () => {
+      createMessagesRequestMock.mockResolvedValue({ start: 's0', end: 'p1' })
+      expect(await service.getRoomFiles('!r:e')).toEqual({ status: 'error' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      createMessagesRequestMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_UNRECOGNIZED' }))
+      expect(await service.getRoomFiles('!r:e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      createMessagesRequestMock.mockRejectedValue(Object.assign(new Error('x'), { errcode: 'M_FORBIDDEN' }))
+      expect(await service.getRoomFiles('!r:e')).toEqual({ status: 'error' })
+    })
+
+    it('classifies an uninitialized client as error instead of throwing', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(null as never)
+      expect(await service.getRoomFiles('!r:e')).toEqual({ status: 'error' })
     })
   })
 })

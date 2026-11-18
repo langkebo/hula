@@ -46,18 +46,86 @@
         @retry="loadQuota" />
     </div>
 
-    <div class="flex-1 flex items-center justify-center">
-      <!-- 文件列表尚无数据源：给出带原因的空态，不伪造条目 -->
-      <n-empty v-if="loaded" :description="t('home.chat_sidebar.empty.files')" data-test="chat-sidebar-files-empty">
-        <template #icon>
-          <svg class="size-48px opacity-50 color-[--tjg-text-quaternary]" aria-hidden="true">
-            <use href="#folder"></use>
-          </svg>
-        </template>
-        <p class="mt-4px mb-0 text-[var(--text-xs)] color-[--tjg-text-quaternary]" data-test="chat-sidebar-files-hint">
-          {{ t('home.chat_sidebar.empty.files_unsupported') }}
-        </p>
-      </n-empty>
+    <div class="flex-1 min-h-0 flex flex-col">
+      <!-- 没有选中会话：文件是房间维度的，先让用户选房间 -->
+      <div v-if="!roomId" class="flex-1 flex items-center justify-center">
+        <EmptyState
+          illustration="no-conversations"
+          :description="t('home.chat_sidebar.empty.no_chat_selected')"
+          data-test="chat-sidebar-files-no-room" />
+      </div>
+      <!-- 服务端不支持分页读消息：如实说明能力缺失，不伪装成「暂无文件」 -->
+      <div v-else-if="filesUnsupported" class="flex-1 flex items-center justify-center">
+        <EmptyState
+          illustration="server-unavailable"
+          :description="t('home.chat_sidebar.empty.files_unsupported')"
+          data-test="chat-sidebar-files-unsupported" />
+      </div>
+      <!-- 首次扫描中 -->
+      <div v-else-if="!filesLoaded" class="px-12px py-8px" data-test="chat-sidebar-files-loading">
+        <n-skeleton text :repeat="3" :sharp="false" />
+      </div>
+      <!-- 扫描失败：给可重试的局部失败信号，不把失败画成空态 -->
+      <div v-else-if="filesError" class="px-8px py-6px shrink-0">
+        <PartialStateBanner
+          compact
+          data-testid="chat-sidebar-files-partial"
+          :message="t('home.chat_sidebar.files.load_failed')"
+          :retry-text="t('home.chat_sidebar.actions.retry')"
+          @retry="loadFiles(false)" />
+      </div>
+      <template v-else>
+        <!-- 空态：已到房间开头才算「没有文件」；还有更早历史时如实说明只扫描了当前一页 -->
+        <div v-if="files.length === 0" class="flex-1 flex flex-col items-center justify-center px-12px">
+          <EmptyState
+            compact
+            illustration="no-results"
+            :description="t('home.chat_sidebar.empty.files')"
+            data-test="chat-sidebar-files-empty" />
+          <p
+            v-if="nextToken"
+            class="mt-4px mb-0 text-[var(--text-xs)] color-[--tjg-text-quaternary]"
+            data-test="chat-sidebar-files-scope-hint">
+            {{ t('home.chat_sidebar.files.scope_hint') }}
+          </p>
+        </div>
+        <div v-else class="flex-1 min-h-0 overflow-y-auto px-6px py-4px">
+          <div
+            v-for="file in files"
+            :key="file.eventId"
+            class="flex items-center gap-8px px-8px py-6px mb-4px rounded-8px bg-[--tjg-surface-search]"
+            data-test="chat-sidebar-file-item">
+            <svg class="size-20px shrink-0 color-[--tjg-text-secondary]" aria-hidden="true">
+              <use :href="fileIcon(file.kind)"></use>
+            </svg>
+            <div class="flex-1 min-w-0">
+              <p
+                class="mb-0 text-[var(--text-xs)] color-[--tjg-text-primary] truncate"
+                :title="file.name || file.eventId">
+                {{ file.name || t('home.chat_sidebar.files.unnamed') }}
+              </p>
+              <p class="mb-0 text-[10px] color-[--tjg-text-tertiary] truncate">
+                {{ fileMeta(file) }}
+              </p>
+            </div>
+            <svg v-if="file.encrypted" class="size-12px shrink-0 color-[--tjg-text-quaternary]" aria-hidden="true">
+              <use href="#lock"></use>
+            </svg>
+          </div>
+        </div>
+        <!-- 还有更早历史：允许继续翻页，扫描是分页的，不宣称一次就扫完整个房间 -->
+        <div v-if="nextToken" class="shrink-0 px-12px py-8px border-t border-[--tjg-border-default]">
+          <n-button
+            size="tiny"
+            block
+            quaternary
+            :loading="filesLoading"
+            data-test="chat-sidebar-files-more"
+            @click="loadFiles(true)">
+            {{ t('home.chat_sidebar.files.load_more') }}
+          </n-button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -65,13 +133,17 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import EmptyState from '@/components/common/EmptyState.vue'
 import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import { matrixMediaService } from '@/services/matrix/media/MatrixMediaService'
 import type { MediaQuotaStats } from '@/services/matrix/media/mediaConfigOps'
 import { onMediaQuotaChanged } from '@/services/matrix/media/mediaQuotaEvents'
+import { matrixRoomTimelineService } from '@/services/matrix/room/TimelineService'
+import type { RoomFileEntry } from '@/services/matrix/room/timelineOutcomes'
+import { formatChatTime } from '@/utils/ComputedTime'
 import { formatBytes } from '@/utils/Formatting'
 
-const props = defineProps<{ active: boolean }>()
+const props = defineProps<{ active: boolean; roomId?: string }>()
 
 const { t } = useI18n()
 
@@ -143,6 +215,105 @@ watch(
   },
   { immediate: true }
 )
+
+/** 文件列表：分页扫描出的附件消息，以及是否还有更早历史 */
+const files = ref<RoomFileEntry[]>([])
+const nextToken = ref<string | null>(null)
+const filesLoading = ref(false)
+const filesLoaded = ref(false)
+const filesError = ref(false)
+const filesUnsupported = ref(false)
+/** 已加载过首屏的房间，避免可见性来回切换时重复扫描 */
+let loadedRoomId = ''
+/** 请求序号：切换房间后丢弃在途的旧响应，防止把 A 房间的文件写进 B 房间 */
+let filesRequestId = 0
+
+const resetFiles = (): void => {
+  filesRequestId += 1
+  files.value = []
+  nextToken.value = null
+  filesLoaded.value = false
+  filesError.value = false
+  filesUnsupported.value = false
+  filesLoading.value = false
+}
+
+/**
+ * 拉取文件列表。
+ *
+ * - `more=false`：从最新处重新扫描首页；
+ * - `more=true`：沿 `nextToken` 向更早翻页并追加（按事件 ID 去重）。
+ *
+ * 空页但仍有 `nextToken` 是合法状态（本页全是文本消息），不当作「房间没有文件」。
+ */
+const loadFiles = async (more: boolean): Promise<void> => {
+  const roomId = props.roomId
+  if (!roomId) return
+  const from = more ? nextToken.value : null
+  if (more && !from) return
+
+  const requestId = ++filesRequestId
+  filesLoading.value = true
+  filesError.value = false
+  const result = await matrixRoomTimelineService.getRoomFiles(roomId, from ? { from } : undefined)
+  // 期间切换了房间或发起了新请求：丢弃过期响应
+  if (requestId !== filesRequestId) return
+
+  if (result.status === 'ok') {
+    const appended = more
+      ? result.page.files.filter((entry) => !files.value.some((existing) => existing.eventId === entry.eventId))
+      : result.page.files
+    files.value = more ? [...files.value, ...appended] : appended
+    nextToken.value = result.page.nextToken
+    filesUnsupported.value = false
+  } else if (result.status === 'unsupported') {
+    filesUnsupported.value = true
+    nextToken.value = null
+  } else {
+    filesError.value = true
+  }
+  filesLoading.value = false
+  filesLoaded.value = true
+}
+
+watch(
+  () => [props.active, props.roomId] as const,
+  ([active, roomId]) => {
+    if (!active) return
+    if (!roomId) {
+      resetFiles()
+      loadedRoomId = ''
+      filesLoaded.value = true
+      return
+    }
+    // 同一房间已加载或正在加载：不重复扫描
+    if (loadedRoomId === roomId && (filesLoaded.value || filesLoading.value)) return
+    resetFiles()
+    loadedRoomId = roomId
+    void loadFiles(false)
+  },
+  { immediate: true }
+)
+
+const FILE_ICONS: Record<RoomFileEntry['kind'], string> = {
+  file: '#file2',
+  image: '#photo',
+  video: '#video-one',
+  audio: '#Music'
+}
+
+const fileIcon = (kind: RoomFileEntry['kind']): string => FILE_ICONS[kind]
+
+/** 元信息行：尺寸未知时省略（不写 0 B），时间缺失时省略 */
+const fileMeta = (file: RoomFileEntry): string => {
+  const parts: string[] = []
+  if (file.size !== null) parts.push(formatBytes(file.size))
+  if (file.timestamp !== null) {
+    const time = formatChatTime(file.timestamp)
+    if (time) parts.push(time)
+  }
+  return parts.join(' · ')
+}
 
 // 上传 / 删除成功会让服务端配额变化：可见时立即重取；隐藏时清掉缓存，下次可见即重取。
 let unsubscribeQuota = (): void => {}

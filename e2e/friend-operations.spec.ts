@@ -7,9 +7,6 @@ import { expect, type Page, test } from '@playwright/test'
 import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
 import { bootstrapDesktopHarness } from './support/session'
 
-/** 过滤已知的 Vite HMR 时序问题：layout/right/index.vue 在 dev 模式下偶发动态导入失败 */
-const HMR_FILTER = ['layout/right/index.vue']
-
 /**
  * 安装 Matrix API Mock：使用 Playwright 原生 page.route() 拦截网络请求，
  * 等效于 MSW 在浏览器中的行为，但无需额外注册 Service Worker。
@@ -282,7 +279,7 @@ test.describe('Friend Operations', () => {
       }
     }
 
-    expectNoRuntimeIssues(issues, { filterLazyLoadErrors: HMR_FILTER })
+    expectNoRuntimeIssues(issues)
   })
 
   test('好友列表渲染：空状态或好友项展示', async ({ page }) => {
@@ -300,7 +297,7 @@ test.describe('Friend Operations', () => {
     // 验证应用根节点保持可见（不崩溃）
     await expect(page.locator('#app')).toBeVisible()
 
-    expectNoRuntimeIssues(issues, { filterLazyLoadErrors: HMR_FILTER })
+    expectNoRuntimeIssues(issues)
   })
 
   test('添加好友面板：搜索框与表单渲染', async ({ page }) => {
@@ -315,7 +312,7 @@ test.describe('Friend Operations', () => {
     const hasPane = await addFriendPane.isVisible({ timeout: 10000 }).catch(() => false)
     expect(hasPane || (await page.locator('#app').isVisible())).toBeTruthy()
 
-    expectNoRuntimeIssues(issues, { filterLazyLoadErrors: HMR_FILTER })
+    expectNoRuntimeIssues(issues)
   })
 
   test('好友申请列表：路由可达且不崩溃', async ({ page }) => {
@@ -328,6 +325,6 @@ test.describe('Friend Operations', () => {
     // 应用根节点应保持可见
     await expect(page.locator('#app')).toBeVisible()
 
-    expectNoRuntimeIssues(issues, { filterLazyLoadErrors: HMR_FILTER })
+    expectNoRuntimeIssues(issues)
   })
 })

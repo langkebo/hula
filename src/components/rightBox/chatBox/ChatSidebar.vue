@@ -273,8 +273,8 @@
         </div>
       </div>
 
-      <!-- 文件 Tab 占位 -->
-      <ChatSidebarFiles :active="activeTab === 'files'" />
+      <!-- 文件 Tab：房间附件列表（分页扫描 /messages） -->
+      <ChatSidebarFiles :active="activeTab === 'files'" :room-id="currentRoomId" />
 
       <!-- 置顶 Tab：PinnedMessageBanner 列表 -->
       <div v-show="activeTab === 'pins'" class="flex-1 min-h-0 flex flex-col">

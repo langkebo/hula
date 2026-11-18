@@ -468,11 +468,10 @@ describe('MatrixMediaService', () => {
       const result = await matrixMediaService.getQuotaAlerts()
 
       expect(getMediaQuotaAlerts).toHaveBeenCalledTimes(1)
-      expect(result).toHaveLength(1)
-      expect(result[0].alert_id).toBe('a1')
+      expect(result).toEqual({ ok: true, alerts: [{ alert_id: 'a1', alert_type: 'warning' }] })
     })
 
-    it('should return empty array on error', async () => {
+    it('should return failure reason on error instead of empty array', async () => {
       vi.mocked(matrixClientService.getClient).mockReturnValue({
         getMediaManager: () => ({
           getMediaQuotaAlerts: vi.fn().mockRejectedValue(new Error('fail'))
@@ -480,7 +479,19 @@ describe('MatrixMediaService', () => {
       } as unknown as MatrixClient)
 
       const result = await matrixMediaService.getQuotaAlerts()
-      expect(result).toEqual([])
+      // 失败不能折叠成 []，否则 UI 会把「取不到告警」画成「暂无告警」
+      expect(result).toEqual({ ok: false, reason: 'unavailable' })
+    })
+
+    it('should classify missing endpoint as unsupported', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getMediaManager: () => ({
+          getMediaQuotaAlerts: vi.fn().mockRejectedValue(Object.assign(new Error('not found'), { statusCode: 404 }))
+        })
+      } as unknown as MatrixClient)
+
+      const result = await matrixMediaService.getQuotaAlerts()
+      expect(result).toEqual({ ok: false, reason: 'unsupported' })
     })
   })
 

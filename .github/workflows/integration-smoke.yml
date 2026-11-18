@@ -1,14 +1,22 @@
 name: Integration Smoke (live homeserver)
 
 # 为什么单独一个 workflow：`pnpm test:integration`（scripts/integration/contract-smoke.mjs）
-# 需要**可登录的真实后端**，会在目标 homeserver 上注册临时账号、建好友关系、建 DM 房间、
-# 上传媒体。这类副作用不能挂在 PR 流水线上，所以只在：
+# 与 live E2E 都需要**可登录的真实后端**。contract-smoke 会在目标 homeserver 上注册临时账号、
+# 建好友关系、建 DM 房间、上传媒体；live E2E 还会起两个 dev server（5210 / 5211）跑浏览器。
+# 这类副作用与资源占用不能挂在 PR 流水线上，所以只在：
 #   1) 手动触发（workflow_dispatch，可选覆盖基址）
-#   2) 每天定时跑一次（发现后端契约漂移）
+#   2) 每天定时跑一次（发现后端契约漂移与 live 回归）
 #
-# 前置：仓库 Variable `TJG_TEST_HOMESERVER`（如 https://matrix.test）与可选
-# `TJG_TEST_INSECURE_TLS=1`（自签证书环境）。未配置时本 workflow 直接 skip 并给出提示，
-# **不冒充通过**。
+# 前置（按能力分层，缺哪层就跳过哪层，**SKIP 不等于通过**）：
+#   - Variable `TJG_TEST_HOMESERVER`（如 https://matrix.test）      → contract-smoke
+#   - Variable `TJG_TEST_INSECURE_TLS=1`（自签证书环境，可选）
+#   - Secret `MATRIX_LIVE_USERNAME` / `MATRIX_LIVE_PASSWORD`        → live-e2e
+#   - Secret `MATRIX_LIVE_LOCAL_UNLOCK_PASSWORD`（E2EE 用例需要，可选）
+#   - Secret `MATRIX_LIVE_PEER_USERNAME` / `MATRIX_LIVE_PEER_PASSWORD`（双设备用例，可选）
+#
+# 明确**不在** CI 跑的部分（见 docs/TJG-联调测试方案-2026-11-18.md §7）：
+#   10 个服务端/设备探针里有 5 个需要 `SYNAPSE_DB_CONTAINER` 或 `E2EE_BASE`（本地 Docker 与
+#   真机），CI runner 无此环境 ⇒ 探针统一走本地 `pnpm test:probe`，此处不伪装成已覆盖。
 
 on:
   workflow_dispatch:
@@ -21,12 +29,18 @@ on:
         description: '账号前缀（便于事后清理，留空自动生成）'
         required: false
         type: string
+      skip_live_e2e:
+        description: '只跑契约冒烟，跳过 live E2E'
+        required: false
+        type: boolean
+        default: false
   schedule:
-    # 每天 02:30 UTC（本地 10:30）跑一次契约冒烟
+    # 每天 02:30 UTC（本地 10:30）跑一次
     - cron: '30 2 * * *'
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -94,3 +108,157 @@ jobs:
           path: integration-smoke.json
           if-no-files-found: warn
           retention-days: 14
+
+  live-e2e:
+    needs: contract-smoke
+    # 契约冒烟挂了就没必要再烧 20 分钟起浏览器；cancelled 之外都继续（含 skipped）
+    if: always() && needs.contract-smoke.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e # v6.0.3
+        with:
+          version: 12
+
+      - name: Resolve live credentials
+        id: live
+        shell: bash
+        env:
+          # secret 缺失时 GitHub 会注入空串
+          U: ${{ secrets.MATRIX_LIVE_USERNAME }}
+          P: ${{ secrets.MATRIX_LIVE_PASSWORD }}
+          BASE: ${{ inputs.base_url || vars.TJG_TEST_HOMESERVER }}
+          SKIP: ${{ inputs.skip_live_e2e }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::手动指定 skip_live_e2e=true —— live E2E 跳过，不视为通过"
+          elif [ -z "$U" ] || [ -z "$P" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::未配置 MATRIX_LIVE_USERNAME / MATRIX_LIVE_PASSWORD —— live E2E 跳过，不视为通过"
+          elif [ -z "$BASE" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::未配置 TJG_TEST_HOMESERVER —— live E2E 无后端可跑，跳过"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "base_url=$BASE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.live.outputs.configured == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        if: steps.live.outputs.configured == 'true'
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: List live specs (collect only, no side effects)
+        if: steps.live.outputs.configured == 'true'
+        run: pnpm test:live:list
+
+      - name: Dry-run plan (assert routing/routeSet dispatch)
+        if: steps.live.outputs.configured == 'true'
+        env:
+          MATRIX_LIVE_E2E: '1'
+          MATRIX_LIVE_HOMESERVER_URL: ${{ steps.live.outputs.base_url }}
+          MATRIX_LIVE_USERNAME: ${{ secrets.MATRIX_LIVE_USERNAME }}
+          MATRIX_LIVE_PASSWORD: ${{ secrets.MATRIX_LIVE_PASSWORD }}
+        run: node scripts/live/run-live.mjs --dry-run
+
+      - name: Run live E2E (desktop + mobile, serial)
+        id: run_live
+        if: steps.live.outputs.configured == 'true'
+        continue-on-error: true
+        env:
+          MATRIX_LIVE_E2E: '1'
+          MATRIX_LIVE_HOMESERVER_URL: ${{ steps.live.outputs.base_url }}
+          MATRIX_LIVE_USERNAME: ${{ secrets.MATRIX_LIVE_USERNAME }}
+          MATRIX_LIVE_PASSWORD: ${{ secrets.MATRIX_LIVE_PASSWORD }}
+          MATRIX_LIVE_LOCAL_UNLOCK_PASSWORD: ${{ secrets.MATRIX_LIVE_LOCAL_UNLOCK_PASSWORD }}
+          MATRIX_LIVE_PEER_USERNAME: ${{ secrets.MATRIX_LIVE_PEER_USERNAME }}
+          MATRIX_LIVE_PEER_PASSWORD: ${{ secrets.MATRIX_LIVE_PEER_PASSWORD }}
+          MATRIX_LIVE_APP_URL: http://127.0.0.1:5211
+          # 与 playwright.config.ts 的 webServer 保持一致：清掉宿主注入的 shim
+          NODE_OPTIONS: ''
+        run: pnpm test:live
+
+      - name: Capture environment baseline
+        if: always() && steps.live.outputs.configured == 'true'
+        run: node scripts/lib/live-env.mjs || true
+
+      - name: Upload playwright report
+        if: always() && steps.live.outputs.configured == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: live-e2e-playwright-report-${{ github.run_id }}
+          path: playwright-report
+          if-no-files-found: warn
+          retention-days: 14
+
+      # 设计取舍：L3 有已知抖动（同一进程串跑偶发 page-closed，见 UI优化方案 §19.57），
+      # 因此「用例失败」不改 job 结论（只靠 report 里的 fail 数与 artifact），
+      # 但「基础设施失败」（装依赖/起 server）必须让 job 红——那才是真问题。
+      - name: Fail only on infrastructure errors
+        if: steps.live.outputs.configured == 'true' && steps.run_live.outcome == 'failure'
+        run: |
+          echo "::warning::live E2E 有失败用例；按 L3 语义不改 job 结论，详见 artifact 与下方 summary"
+          exit 0
+
+  summary:
+    needs: [contract-smoke, live-e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Write job summary
+        env:
+          SMOKE: ${{ needs.contract-smoke.result }}
+          LIVE: ${{ needs.live-e2e.result }}
+        run: |
+          {
+            echo "## Integration nightly（${{ github.event_name }}）"
+            echo ""
+            echo "| job | 结果 | 语义 |"
+            echo "|---|---|---|"
+            echo "| contract-smoke（L2） | \`$SMOKE\` | 失败即真红：纯 HTTP 断言，抖动只来自环境 |"
+            echo "| live-e2e（L3） | \`$LIVE\` | 用例失败不阻断（已知抖动）；基础设施失败会让 job 红 |"
+            echo ""
+            echo "**判读口径**：\`skipped\` **不等于通过**——它只说明对应 Variable/Secret 没配。"
+            echo "本地跑探针用 \`pnpm test:probe --group server\`（CI 无 Docker/真机，不覆盖）。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update tracking issue on failure
+        # 用 result 判断而非 failure()：语义更明确，也避免 always() 与 failure() 的交互歧义
+        if: needs.contract-smoke.result == 'failure' || needs.live-e2e.result == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SMOKE: ${{ needs.contract-smoke.result }}
+          LIVE: ${{ needs.live-e2e.result }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          TITLE='[live-nightly] 联调回归失败'
+          BODY=$(printf 'contract-smoke=%s, live-e2e=%s\n\nrun: https://github.com/%s/actions/runs/%s\n\n口径：skipped 不等于通过。\n' \
+            "$SMOKE" "$LIVE" "$REPO" "$RUN_ID")
+          EXISTING=$(gh issue list --search "in:title \"$TITLE\"" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi

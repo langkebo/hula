@@ -109,6 +109,16 @@ describe('MediaQuotaPanel', () => {
     expect(wrapper.find('[data-test="quota-server-defaults"]').exists()).toBe(false)
   })
 
+  it('shows an unavailable hint instead of the empty state when alerts fail to load', async () => {
+    getQuotaAlertsMock.mockRejectedValue(new Error('alerts failed'))
+
+    const wrapper = mountPanel()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="quota-alerts-error"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="quota-alerts-empty"]').exists()).toBe(false)
+  })
+
   it('renders usage, server quota and alerts', async () => {
     checkQuotaMock.mockResolvedValue({ used: 1024, limit: 2048, remaining: 1024, percentage: 50, exceeded: false })
     getQuotaStatsMock.mockResolvedValue({ storageBytes: 1024, mediaCount: 3, limitBytes: 4096 })

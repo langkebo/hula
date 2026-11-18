@@ -160,13 +160,28 @@ describe('useQuotaStore', () => {
       expect(store.hasAlerts).toBe(true)
     })
 
-    it('does not throw on failure (logs only)', async () => {
+    it('does not throw on failure (records alertsError instead)', async () => {
       getQuotaAlertsMock.mockRejectedValue(new Error('alerts failed'))
 
       const store = useQuotaStore()
       await expect(store.fetchAlerts()).resolves.toBeUndefined()
       expect(store.alerts).toEqual([])
       expect(store.hasAlerts).toBe(false)
+      // 失败必须留下可判定状态，UI 才能显示「暂不可用」而不是「暂无告警」
+      expect(store.alertsError).toBe('alerts failed')
+    })
+
+    it('clears alertsError before a new attempt', async () => {
+      getQuotaAlertsMock.mockRejectedValueOnce(new Error('alerts failed'))
+      getQuotaAlertsMock.mockResolvedValueOnce([{ level: 'warn' }])
+
+      const store = useQuotaStore()
+      await store.fetchAlerts()
+      expect(store.alertsError).toBe('alerts failed')
+
+      await store.fetchAlerts()
+      expect(store.alertsError).toBeNull()
+      expect(store.alerts).toEqual([{ level: 'warn' }])
     })
 
     it('hasAlerts is false when alerts array is empty', async () => {
@@ -263,6 +278,7 @@ describe('useQuotaStore', () => {
       expect(store.serverQuota).toBeNull()
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
+      expect(store.alertsError).toBeNull()
     })
   })
 

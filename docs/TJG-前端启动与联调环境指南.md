@@ -87,9 +87,12 @@ cp .env.example .env.local
 | Tauri 桌面应用 | `pnpm tauri:dev` | 6130 | 读 `tauri.macos/windows/linux.conf.json` 的 `devUrl: http://localhost:6130` |
 | Android | `pnpm adev`（真机先 `pnpm adev:reverse`） | **5210** | 移动 vite 配置 `strictPort: true`；`tauri.android.conf.json` 的 `devUrl: http://127.0.0.1:5210` |
 | iOS | `pnpm idev` | 5210 | 同上，走 `tauri.ios.conf.json` |
-| 浏览器 E2E | `pnpm test:e2e` | 5210 | Playwright 自动以 `TAURI_ENV_PLATFORM=android` 起 webServer（移动 UI），复用已占用端口 |
+| 浏览器 E2E（移动路由集） | `pnpm test:e2e --project=mobile-chromium` | **5210** | Playwright 以 `TAURI_ENV_PLATFORM=android` 起 webServer，装 `/mobile/*` 路由；复用已占用端口 |
+| 浏览器 E2E（桌面路由集） | `pnpm test:e2e --project=desktop-chromium` | **5211** | Playwright 以 `TAURI_ENV_PLATFORM=windows` **另起**一个 webServer（`/message`、`/settings` 等桌面路由）。与开发者手起的 6130 **刻意隔离**：复用 6130 会与手改代码互相污染，也会让 `/admin/*` 落 catch-all |
+| live E2E | `pnpm test:live`（先 `--list` / `--dry-run` 看计划） | 5210 + 5211 | `scripts/live/run-live.mjs` 按每个 spec 的 `routeSet` 自动分派 project，串行 `--workers=1` |
 
-> 端口分工的单一事实源：`build/config/vite.config.desktop.ts`（6130）、`build/config/vite.config.mobile.ts`（5210）、`src-tauri/tauri.<platform>.conf.json`（devUrl）。改端口必须三处同步。
+> 端口分工的单一事实源：`build/config/vite.config.desktop.ts:9`（6130）、`build/config/vite.config.mobile.ts:9`（5210）、`src-tauri/tauri.<platform>.conf.json` 的 `devUrl`、`playwright.config.ts:25-26`（e2e 的 5210/5211）。**改端口必须四处同步**。
+> 这也是为什么三份文档看起来"端口不一致"却不矛盾：6130 是日常开发、5210 是移动、5211 是 e2e 桌面。写端口时请带场景，不要裸写数字。
 
 **启动后自检**：
 

@@ -55,7 +55,7 @@
 
   <MyRoomsDialog v-model:show="myRoomsVisible" @open-room="handleMyRoomsOpenRoom" />
 </template>
-<script lang="ts" setup name="roomList">
+<script lang="ts" setup>
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -83,6 +83,8 @@ import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import type { SessionItem } from '@/stores/domains/chat/chat'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import { hasTauriRuntime } from '@/utils/AppHarness'
+
+defineOptions({ name: 'roomList' })
 
 const { t } = useI18n()
 const router = useRouter()

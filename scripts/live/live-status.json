@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "updated_at": "2026-11-18T16:15:54.125Z",
+  "schema": {
+    "status": ["passed", "failed", "stale", "never-run", "manual"],
+    "meaning": {
+      "passed": "有 last_run 四元组，且与当前环境一致 ⇒ 结论可核验",
+      "failed": "最近一次执行有失败用例，见 result/note",
+      "stale": "有历史结论但缺四元组，或四元组已与当前环境不符 ⇒ 结论不可核验",
+      "never-run": "从未执行过（含只有 --list 收集）",
+      "manual": "人工清单项，不进自动化"
+    }
+  },
+  "entries": {
+    "a11y-account-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "duration_s": 37.4
+      },
+      "note": "2026-11-18 20:55 双主题 5 路由 axe 无 serious"
+    },
+    "account-keyboard-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "duration_s": 23.6
+      },
+      "note": "2026-11-19 00:12 通过（17.0s）。此前“#message-input 不出现”与 room-settings 同根因（空间树 500 → 右侧面板不挂载）"
+    },
+    "account-states-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0,
+        "duration_s": 15
+      },
+      "note": "2026-11-18 20:55 四态（空/加载/错误/有数据）全过"
+    },
+    "admin-dashboard-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "duration_s": 54.3
+      },
+      "note": "2026-11-18 23:41 真机 2/2：普通账号 30 页逐页被 requiresAdmin 拦回；临时账号改库提权 + TOTP 换 token 后逐页可见 .admin-layout 与真实数据"
+    },
+    "matrix-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "duration_s": 22
+      },
+      "note": "2026-11-18 20:55 真机 5/5：登录/裸 mxc 检查/加密房发送/解密时间线/双账号投递"
+    },
+    "my-hub-live": {
+      "status": "failed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 5,
+        "failed": 1,
+        "skipped": 0,
+        "duration_s": 240
+      },
+      "note": "2026-11-19 00:15 5/6：存储管理从 3.0m 超时变为 27.2s 通过（同根因）；仅“推送设置”失败——pushMobileRoute 未真正跳转（停在消息页），而 spec 不校验落点，表现为 dnd-switch 找不到"
+    },
+    "notification-unread-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "duration_s": 29
+      },
+      "note": "2026-11-18 20:49 真机跑通：peer 发两条 → 仅渲染未读 → ack 后移出且不复活"
+    },
+    "private-gate-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 2,
+        "failed": 0,
+        "skipped": 2,
+        "duration_s": 81
+      },
+      "note": "2026-11-18 21:00 移动端 2 条通过；桌面 2 条因路由集守卫 skip（属 both 的正常分流）"
+    },
+    "room-key-request-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "duration_s": 31.9
+      },
+      "note": "2026-11-18 20:46 真机跑通：A 发起 → B 兑现 → 服务端 status=fulfilled 且 fulfilled_by_device=B"
+    },
+    "room-settings-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "duration_s": 102
+      },
+      "note": "2026-11-19 00:09 全 7 Phase 通过。根因是 TjgSpaceTree.vue（cc0fe2bda 改成 defineProps<ImportedType>()）被 vite-plugin-vue-setup-extend 编译成 500，导致右侧面板加载失败、app 重置；移除该插件 + 改 defineOptions 后闭环"
+    },
+    "space-tree-live": {
+      "status": "passed",
+      "last_run": {
+        "backend_image": "synapse-rust:6.3.0-173e8f75d",
+        "backend_started_at": "2026-11-18T11:27:05.584678359Z",
+        "sdk_pin": {
+          "commit": "4f9b3c5ee2972d73e64393aa99ada6041027b854",
+          "tarball": "sha256-032639f2c198415a2c15a0f80b295e48b569b294fc6483775ce653b5c4f8a36d",
+          "version": "40.2.0-langkebo.9"
+        },
+        "apk_mtime": null
+      },
+      "result": {
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "duration_s": 16.6
+      },
+      "note": "2026-11-18 21:01 建空间→建子房间→树形渲染→进入 全通"
+    },
+    "backend-redeploy": {
+      "status": "never-run",
+      "last_run": null,
+      "result": null,
+      "note": "无历史记录可考"
+    },
+    "d5-key-request": {
+      "status": "never-run",
+      "last_run": null,
+      "result": null,
+      "note": "无历史记录可考"
+    },
+    "forward": {
+      "status": "stale",
+      "last_run": null,
+      "result": null,
+      "note": "联调报告 §六（2026-11-14）9 passed/0；未留四元组"
+    },
+    "friends-shard": {
+      "status": "never-run",
+      "last_run": null,
+      "result": null,
+      "note": "无历史记录可考"
+    },
+    "msg-relations-upgrade": {
+      "status": "stale",
+      "last_run": null,
+      "result": null,
+      "note": "联调报告 §六（2026-11-14）23 passed/0/1 skip；未留四元组"
+    },
+    "probe-admin-features": {
+      "status": "never-run",
+      "last_run": null,
+      "result": null,
+      "note": "无历史记录可考"
+    },
+    "push-delivery": {
+      "status": "stale",
+      "last_run": null,
+      "result": null,
+      "note": "联调报告 §六（2026-11-14）8 passed/0；未留四元组"
+    },
+    "room-appear-live": {
+      "status": "stale",
+      "last_run": null,
+      "result": null,
+      "note": "联调报告 §六（2026-11-14）8/0；未留四元组"
+    },
+    "search-burn": {
+      "status": "stale",
+      "last_run": null,
+      "result": null,
+      "note": "联调报告 §六（2026-11-14）17 passed/0；未留四元组"
+    },
+    "session-persist": {
+      "status": "never-run",
+      "last_run": null,
+      "result": null,
+      "note": "无历史记录可考"
+    }
+  }
+}

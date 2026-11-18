@@ -121,6 +121,7 @@ interface Vm {
   serverQuotaRemaining: number
   serverQuotaMediaCount: number | null
   serverQuotaAlerts: ServerQuotaAlertFixture[]
+  serverQuotaAlertsUnavailable: boolean
   serverQuotaExceeded: boolean
   loadServerQuota: () => Promise<void>
   serverQuotaAlertMeta: (alert: ServerQuotaAlertFixture) => string
@@ -163,7 +164,7 @@ describe('MobileStorageSettings', () => {
       ok: true,
       stats: { storageBytes: 1024, mediaCount: 7, limitBytes: 4096 }
     })
-    mediaServiceMock.getQuotaAlerts.mockResolvedValue([])
+    mediaServiceMock.getQuotaAlerts.mockResolvedValue({ ok: true, alerts: [] })
   })
 
   it('挂载时加载浏览器存储用量（真实数据）', async () => {
@@ -383,20 +384,35 @@ describe('MobileStorageSettings', () => {
     expect(wrapper.html()).toContain('mobile_storage.server_quota_partial_desc')
   })
 
+  it('告警读取失败时显示「告警暂不可用」，不画成「暂无告警」', async () => {
+    mediaServiceMock.getQuotaAlerts.mockResolvedValue({ ok: false, reason: 'unavailable' })
+
+    const wrapper = mountPage()
+    await flushPromises()
+
+    expect(vmOf(wrapper).serverQuotaAlertsUnavailable).toBe(true)
+    expect(wrapper.find('[data-testid="server-quota-alerts-unavailable"]').exists()).toBe(true)
+    expect(wrapper.html()).toContain('mobile_storage.server_quota_alerts_unavailable')
+    expect(wrapper.html()).not.toContain('mobile_storage.server_quota_no_alerts')
+  })
+
   it('剩余为 0 时标记配额用尽，未读告警保留原文与类型/阈值副行', async () => {
     mediaServiceMock.checkQuota.mockResolvedValue({ limit: 4096, used: 4096, remaining: 0 })
-    mediaServiceMock.getQuotaAlerts.mockResolvedValue([
-      {
-        alert_id: 'a-1',
-        alert_type: 'quota_exceeded',
-        threshold_percent: 100,
-        current_usage_bytes: 4096,
-        quota_limit_bytes: 4096,
-        message: 'quota exceeded',
-        created_ts: 1,
-        is_read: false
-      }
-    ])
+    mediaServiceMock.getQuotaAlerts.mockResolvedValue({
+      ok: true,
+      alerts: [
+        {
+          alert_id: 'a-1',
+          alert_type: 'quota_exceeded',
+          threshold_percent: 100,
+          current_usage_bytes: 4096,
+          quota_limit_bytes: 4096,
+          message: 'quota exceeded',
+          created_ts: 1,
+          is_read: false
+        }
+      ]
+    })
 
     const wrapper = mountPage()
     await flushPromises()

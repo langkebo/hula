@@ -55,8 +55,12 @@ export class AdminQuotaService {
   }
 
   async getQuotaAlerts(): Promise<QuotaAlert[]> {
-    const alerts = await matrixMediaService.getQuotaAlerts()
-    return alerts
+    const result = await matrixMediaService.getQuotaAlerts()
+    if (!result.ok) {
+      // 与 getQuotaStats 同口径：失败必须抛错，不能返回空数组冒充「暂无告警」
+      throw new Error(`[AdminQuota] 获取配额告警失败（${result.reason}）`)
+    }
+    return result.alerts
   }
 
   /** 服务端总配额（`GET /_synapse/admin/v1/media/quota`） */

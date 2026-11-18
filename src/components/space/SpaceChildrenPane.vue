@@ -69,7 +69,7 @@
   </div>
 </template>
 
-<script lang="ts" setup name="SpaceChildrenPane">
+<script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 import PartialStateBanner from '@/components/common/PartialStateBanner.vue'
 import SpaceHeader from '@/components/space/SpaceHeader.vue'
@@ -77,6 +77,8 @@ import SpaceRoomGrid from '@/components/space/SpaceRoomGrid.vue'
 import SpaceDetailsPane from '@/components/workbench/SpaceDetailsPane.vue'
 import { useSpaceChildrenActions } from '@/composables/space/useSpaceChildrenActions'
 import { useSpaceChildrenState } from '@/composables/space/useSpaceChildrenState'
+
+defineOptions({ name: 'SpaceChildrenPane' })
 
 const { t } = useI18n()
 

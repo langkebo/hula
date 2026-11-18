@@ -82,11 +82,15 @@ describe('AdminQuotaService', () => {
     await expect(service.getQuotaStats()).rejects.toThrow('获取配额统计失败（unsupported）')
   })
 
-  it('getQuotaAlerts 透传媒体管理器的告警数组', async () => {
+  it('getQuotaAlerts 透传媒体管理器的告警数组，失败时抛错而非返回空数组', async () => {
     const alert = { alert_id: 'a1', alert_type: 'quota_warning' }
-    getQuotaAlertsMock.mockResolvedValueOnce([alert])
+    getQuotaAlertsMock.mockResolvedValueOnce({ ok: true, alerts: [alert] })
 
     await expect(service.getQuotaAlerts()).resolves.toEqual([alert])
+
+    // 与 getQuotaStats 同口径：失败必须抛错，不能冒充「暂无告警」
+    getQuotaAlertsMock.mockResolvedValueOnce({ ok: false, reason: 'unavailable' })
+    await expect(service.getQuotaAlerts()).rejects.toThrow('获取配额告警失败（unavailable）')
   })
 
   it('getServerQuota 走 admin media 端点并映射 total_size 等字段', async () => {

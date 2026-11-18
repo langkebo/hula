@@ -354,8 +354,11 @@ test.describe('我的页信息架构（S1）', () => {
     await expect
       .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
       .toBe('/mobile/mobileMy/notificationHistory')
+    // ⚠️ 空态由 `MobileAsyncState` 渲染，它输出的是 `data-test="<testId>-<state>"`
+    // （见 MobileAsyncState.vue:7 与单测 MobileNotificationHistory.test.ts:68），
+    // 不是 `data-testid`。此前这里写成 data-testid，导致「空态永远找不到」被误判成页面白屏。
     await expect(
-      page.locator('[data-testid="notification-empty"], [data-testid="notification-row"]').first(),
+      page.locator('[data-test="notification-empty"], [data-testid="notification-row"]').first(),
       '通知历史页白屏（既没有空态也没有列表）'
     ).toBeVisible({ timeout: 20_000 })
   })

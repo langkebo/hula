@@ -188,6 +188,12 @@ export type Messages = {
       "title": "配额",
       "unavailable_hint": "配额数据暂不可用"
     },
+    "files": {
+      "load_failed": "加载文件列表失败",
+      "load_more": "加载更多",
+      "unnamed": "未命名文件",
+      "scope_hint": "本页没有附件，可继续加载更早的消息"
+    },
     "favorites": {
       "total": "收藏消息 {count} 条",
       "export_md": "导出 Markdown",
@@ -210,7 +216,7 @@ export type Messages = {
       "select_to_start": "选择一个会话或发起新聊天",
       "pins": "暂无置顶消息",
       "files": "暂无文件",
-      "files_unsupported": "当前版本暂不支持按房间浏览文件"
+      "files_unsupported": "当前服务器不支持按房间分页读取文件"
     },
     "online_members": "在线成员 {count}",
     "tabs": {
@@ -598,6 +604,10 @@ export type KeyPaths =
   | "home.chat_sidebar.search.placeholder"
   | "home.chat_sidebar.quota.title"
   | "home.chat_sidebar.quota.unavailable_hint"
+  | "home.chat_sidebar.files.load_failed"
+  | "home.chat_sidebar.files.load_more"
+  | "home.chat_sidebar.files.unnamed"
+  | "home.chat_sidebar.files.scope_hint"
   | "home.chat_sidebar.favorites.total"
   | "home.chat_sidebar.favorites.export_md"
   | "home.chat_sidebar.favorites.export_txt"

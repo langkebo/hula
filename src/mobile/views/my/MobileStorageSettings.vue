@@ -40,6 +40,7 @@
             :remaining="serverQuotaRemaining"
             :media-count="serverQuotaMediaCount"
             :alerts="serverQuotaAlerts"
+            :alerts-unavailable="serverQuotaAlertsUnavailable"
             :exceeded="serverQuotaExceeded"
             :alert-meta="serverQuotaAlertMeta"
             @retry="loadServerQuota" />
@@ -235,6 +236,7 @@ const {
   remaining: serverQuotaRemaining,
   mediaCount: serverQuotaMediaCount,
   alerts: serverQuotaAlerts,
+  alertsUnavailable: serverQuotaAlertsUnavailable,
   exceeded: serverQuotaExceeded,
   alertMeta: serverQuotaAlertMeta,
   load: loadServerQuota

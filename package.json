@@ -85,6 +85,8 @@
     "check:component-contracts": "node scripts/check-component-contracts.mjs",
     "check:i18n-dead-keys": "node scripts/check-i18n-dead-keys.mjs",
     "check:file-size": "node scripts/check-file-size.mjs",
+    "check:live-manifest": "node scripts/check-live-manifest.mjs",
+    "live:baseline": "node scripts/lib/live-env.mjs",
     "verify:sdk-pin": "node scripts/verify-sdk-pin.mjs",
     "quality:no-raw-fetch": "node scripts/check-no-raw-fetch.mjs",
     "check:guard-patterns": "node scripts/check-guard-patterns.mjs",
@@ -120,12 +122,17 @@
     "test:e2e:mobile": "playwright test --project=mobile-chromium --project=mobile-safari",
     "test:e2e:dynamic": "playwright test e2e/dynamic-flow.spec.ts --project=mobile-chromium",
     "test:e2e:live": "playwright test e2e/matrix-live.spec.ts e2e/room-settings-live.spec.ts e2e/room-key-request-live.spec.ts e2e/notification-unread-live.spec.ts --project=desktop-chromium",
+    "test:live": "node scripts/live/run-live.mjs",
+    "test:live:list": "node scripts/live/run-live.mjs --list",
+    "test:probe": "node scripts/live/run-probe.mjs",
+    "test:probe:list": "node scripts/live/run-probe.mjs --list",
     "test:touch-targets": "playwright test e2e/mobile-touch-targets.spec.ts --project=mobile-chromium",
     "check:a11y": "node scripts/check-a11y.mjs",
-    "check:release": "pnpm check:ratchet && pnpm check:file-size && pnpm typecheck && pnpm check:sdk-types && pnpm check:sdk-aliases && pnpm check:v-html && pnpm check:doc-coverage && pnpm check:doc-paths && pnpm check:sdk-boundary && pnpm check:bare-matrix-paths && pnpm check:contract-coverage && pnpm quality:no-raw-fetch && pnpm check:icon-colors && pnpm check:guard-patterns && pnpm check:settings-wiring && pnpm check:component-contracts && pnpm check:i18n-dead-keys && pnpm check:dependency-audit && pnpm check:vendor-runtime-deps && pnpm check:http-allowlist && pnpm check:tauri-permissions && pnpm check:tauri-plugin-parity && pnpm check:crypto-cross-window && pnpm check:tauri-window-coverage && pnpm check:sdk-crypto-teardown && pnpm check:window-registry && pnpm check:integration-map-freshness && pnpm check:window-session-entry && pnpm check:worker-client-boundary && pnpm check:sdk-unstable-methods && pnpm check:matrix-layering && pnpm check:mobile-css && pnpm check:coverage",
+    "check:release": "pnpm check:ratchet && pnpm check:file-size && pnpm check:live-manifest && pnpm typecheck && pnpm check:sdk-types && pnpm check:sdk-aliases && pnpm check:v-html && pnpm check:doc-coverage && pnpm check:doc-paths && pnpm check:sdk-boundary && pnpm check:bare-matrix-paths && pnpm check:contract-coverage && pnpm quality:no-raw-fetch && pnpm check:icon-colors && pnpm check:guard-patterns && pnpm check:settings-wiring && pnpm check:component-contracts && pnpm check:i18n-dead-keys && pnpm check:dependency-audit && pnpm check:vendor-runtime-deps && pnpm check:http-allowlist && pnpm check:tauri-permissions && pnpm check:tauri-plugin-parity && pnpm check:crypto-cross-window && pnpm check:tauri-window-coverage && pnpm check:sdk-crypto-teardown && pnpm check:window-registry && pnpm check:integration-map-freshness && pnpm check:window-session-entry && pnpm check:worker-client-boundary && pnpm check:sdk-unstable-methods && pnpm check:matrix-layering && pnpm check:mobile-css && pnpm check:coverage",
     "check:generated-typings": "node scripts/check-generated-typings.mjs",
     "check:mobile-css": "node scripts/check-mobile-css.mjs",
-    "check:sdk-lib": "node scripts/check-installed-sdk-lib.mjs"
+    "check:sdk-lib": "node scripts/check-installed-sdk-lib.mjs",
+    "live:status": "node scripts/live/gen-live-status.mjs"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",

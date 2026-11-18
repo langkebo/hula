@@ -1186,6 +1186,7 @@
       "alerts": "Quota Alerts",
       "alertHint": "Shows backend alerts in reverse chronological order",
       "noAlerts": "No quota alerts",
+      "alertsUnavailable": "Quota alerts unavailable",
       "alertType": {
         "warning": "Near limit",
         "exceeded": "Exceeded"

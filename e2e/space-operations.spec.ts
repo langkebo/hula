@@ -7,9 +7,6 @@ import { expect, type Page, test } from '@playwright/test'
 import { createRuntimeIssueCollector, expectNoRuntimeIssues } from './support/runtimeIssues'
 import { bootstrapDesktopHarness } from './support/session'
 
-/** 过滤已知的 Vite HMR 时序问题：layout/right/index.vue 在 dev 模式下偶发动态导入失败 */
-const HMR_FILTER = ['layout/right/index.vue']
-
 const MOCK_SPACE_ID = '!space-1:example.com'
 const MOCK_SPACE_NAME = '测试空间'
 const MOCK_ROOM_ID = '!room-1:example.com'
@@ -411,7 +408,7 @@ test.describe('Space Operations', () => {
       }
     }
 
-    expectNoRuntimeIssues(issues, { filterLazyLoadErrors: HMR_FILTER })
+    expectNoRuntimeIssues(issues)
   })
 
   test('空间列表渲染：空状态或空间项展示', async ({ page }) => {
@@ -429,7 +426,7 @@ test.describe('Space Operations', () => {
     // 验证应用根节点保持可见（不崩溃）
     await expect(page.locator('#app')).toBeVisible()
 
-    expectNoRuntimeIssues(issues, { filterLazyLoadErrors: HMR_FILTER })
+    expectNoRuntimeIssues(issues)
   })
 
   test('创建空间面板：表单渲染', async ({ page }) => {
@@ -444,7 +441,7 @@ test.describe('Space Operations', () => {
     const hasPane = await createPane.isVisible({ timeout: 10000 }).catch(() => false)
     expect(hasPane || (await page.locator('#app').isVisible())).toBeTruthy()
 
-    expectNoRuntimeIssues(issues, { filterLazyLoadErrors: HMR_FILTER })
+    expectNoRuntimeIssues(issues)
   })
 
   test('空间详情：路由可达且不崩溃', async ({ page }) => {
@@ -457,6 +454,6 @@ test.describe('Space Operations', () => {
     // 应用根节点应保持可见
     await expect(page.locator('#app')).toBeVisible()
 
-    expectNoRuntimeIssues(issues, { filterLazyLoadErrors: HMR_FILTER })
+    expectNoRuntimeIssues(issues)
   })
 })

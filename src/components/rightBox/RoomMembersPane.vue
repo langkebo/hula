@@ -118,7 +118,7 @@
   </div>
 </template>
 
-<script lang="ts" setup name="RoomMembersPane">
+<script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 import UserIdentity from '@/components/common/UserIdentity.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
@@ -128,6 +128,8 @@ import { useGroupStore } from '@/stores/domains/chat/group'
 import { AvatarUtils } from '@/utils/AvatarUtils'
 import RoomInviteForm from './RoomInviteForm.vue'
 import { useMemberListWindow } from './useMemberListWindow'
+
+defineOptions({ name: 'RoomMembersPane' })
 
 const { t } = useI18n()
 const { showFeedback } = useActionFeedback()

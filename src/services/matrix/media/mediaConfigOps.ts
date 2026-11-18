@@ -43,15 +43,21 @@ export async function deleteMediaById(
   }
 }
 
-/** 获取媒体配额告警列表；失败返回空数组。 */
-export async function fetchQuotaAlerts(getMedia: () => MediaManager): Promise<MediaQuotaAlert[]> {
+/**
+ * 获取媒体配额告警列表。
+ *
+ * 失败时带原因返回，不折叠成空数组：「没有告警」与「取不到告警」是两种状态，
+ * 折叠后 UI 只能把读取失败画成「暂无告警」（谎报确定值）。
+ */
+export async function fetchQuotaAlerts(getMedia: () => MediaManager): Promise<MediaQuotaAlertsResult> {
   try {
     const response = await getMedia().getMediaQuotaAlerts()
     logger.info('[MatrixMedia] 获取配额告警成功')
-    return response.alerts ?? []
+    return { ok: true, alerts: response.alerts ?? [] }
   } catch (err) {
-    logger.error(`[MatrixMedia] 获取配额告警失败: ${err}`)
-    return []
+    const reason = classifyMediaQuotaError(err)
+    logger.error(`[MatrixMedia] 获取配额告警失败(${reason}): ${err}`)
+    return { ok: false, reason }
   }
 }
 
@@ -88,6 +94,11 @@ export type MediaQuotaUnavailableReason = 'unsupported' | 'unavailable'
 /** `fetchQuotaStats` 的结果：成功带 stats，失败带可判定的原因。 */
 export type MediaQuotaStatsResult =
   | { ok: true; stats: MediaQuotaStats }
+  | { ok: false; reason: MediaQuotaUnavailableReason }
+
+/** `fetchQuotaAlerts` 的结果：成功带 alerts，失败带可判定的原因。 */
+export type MediaQuotaAlertsResult =
+  | { ok: true; alerts: MediaQuotaAlert[] }
   | { ok: false; reason: MediaQuotaUnavailableReason }
 
 /** 「该接口不存在」类 errcode（与 `adminApiAvailability` 的判定保持一致） */

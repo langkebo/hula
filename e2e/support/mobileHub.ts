@@ -94,6 +94,22 @@ export const pushMobileRoute = async (
   target: unknown,
   { settleMs = 1200, attempt = 0 }: { settleMs?: number; attempt?: number } = {}
 ): Promise<{ name: string | null; path: string | null }> => {
+  // 登录后 SPA 会重建 app，`#app.__vue_app__` 在新实例 mount 前短暂缺失；
+  // 旧实现靠 3×1.5s 固定重试，实测 4.5s 内仍可能没挂上 ⇒ my-hub-live 4 条用例稳定报
+  // 「应用 router 实例不可达」。改为显式等待挂载（首次即已挂载时立即返回，不引入额外等待）。
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#app') as
+        | (HTMLElement & {
+            __vue_app__?: { config: { globalProperties: { $router?: unknown } } }
+          })
+        | null
+      return Boolean(el?.__vue_app__?.config?.globalProperties?.$router)
+    },
+    undefined,
+    { timeout: 20_000 }
+  )
+
   try {
     await page.evaluate(async (to) => {
       const router = (

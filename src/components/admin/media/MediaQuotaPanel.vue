@@ -10,7 +10,7 @@ import { formatBytes } from '@/utils/Formatting'
 
 const { t } = useI18n()
 const quotaStore = useQuotaStore()
-const { quotaStatus, quotaStats, alerts, serverQuota, loading, error, quotaPercentage, isExceeded } =
+const { quotaStatus, quotaStats, alerts, serverQuota, loading, error, alertsError, quotaPercentage, isExceeded } =
   storeToRefs(quotaStore)
 
 /** 进度条不能超过 100%，超限状态由标签文案表达（不依赖颜色） */
@@ -64,8 +64,8 @@ const remainingText = computed(() => {
 
 const hasServerQuota = computed(() => serverQuota.value !== null)
 
-/** 无配额告警时才展示空态 */
-const isEmptyAlerts = computed(() => alerts.value.length === 0)
+/** 无配额告警且读取成功时，才展示「暂无告警」空态 */
+const isEmptyAlerts = computed(() => alerts.value.length === 0 && !alertsError.value)
 
 function formatAlertTime(createdTs: number): string {
   if (!createdTs) return ''
@@ -168,8 +168,11 @@ onMounted(() => {
         <span class="media-quota-panel__label">{{ t('admin.media.quota.alerts') }}</span>
         <span class="media-quota-panel__hint">{{ t('admin.media.quota.alertHint') }}</span>
       </div>
+      <n-alert v-if="alertsError" type="warning" :show-icon="false" class="mb-8px" data-test="quota-alerts-error">
+        {{ t('admin.media.quota.alertsUnavailable') }}
+      </n-alert>
       <EmptyState
-        v-if="isEmptyAlerts"
+        v-else-if="isEmptyAlerts"
         compact
         :description="t('admin.media.quota.noAlerts')"
         data-test="quota-alerts-empty" />
