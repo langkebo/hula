@@ -16,6 +16,16 @@ export interface KeyRotationStatus {
   intervalMs: number
   lastRotation?: number | undefined
   needsRotation: boolean
+  /** 服务端返回的当前密钥 ID（`status.current_key_id`），无则为 undefined */
+  currentKeyId?: string | undefined
+}
+
+/** 单个密钥的有效性校验结果 */
+export interface KeyValidityResult {
+  keyId: string
+  needsRotation: boolean
+  lastRotation?: number | undefined
+  intervalMs: number
 }
 
 export interface KeyRotationRecord {
@@ -100,13 +110,16 @@ class MatrixEncryptionService extends BaseMatrixService {
 
     try {
       const manager = client.getKeyRotationManager()
-      // SDK 契约：KeyCheckResponse 不再含 enabled，启用状态须读 getStatus()
-      const [status, check] = await Promise.all([manager.getStatus(), manager.postCheck()])
+      // SDK 契约：KeyCheckResponse 不再含 enabled，启用状态须读状态端点。
+      // 用 POST 变体 postStatus：绕过 30s 本地缓存，避免轮换/改配置后读到旧值。
+      const [status, check] = await Promise.all([manager.postStatus(), manager.postCheck()])
+      const currentKeyId = status.status?.current_key_id
       return {
         enabled: status.enabled,
         intervalMs: check.interval_ms ?? 604800000,
         lastRotation: check.last_rotation ?? undefined,
-        needsRotation: check.needs_rotation ?? true
+        needsRotation: check.needs_rotation ?? true,
+        ...(typeof currentKeyId === 'string' && currentKeyId.length > 0 ? { currentKeyId } : {})
       }
     } catch (err) {
       if (this.isForbiddenError(err)) {
@@ -223,7 +236,8 @@ class MatrixEncryptionService extends BaseMatrixService {
     const client = this.getClient()
 
     try {
-      await client.getKeyRotationManager().updateConfig({
+      // SDK 的 config 端点同时支持 PUT/POST；POST 变体与后端 configure_key_rotation_post 对齐。
+      await client.getKeyRotationManager().postConfig({
         enabled,
         interval_ms: intervalDays * 24 * 60 * 60 * 1000
       })
@@ -235,6 +249,39 @@ class MatrixEncryptionService extends BaseMatrixService {
       }
       logger.error(`[Encryption] 配置密钥轮换失败: ${err}`)
       throw err
+    }
+  }
+
+  /**
+   * 校验单个密钥是否仍然有效（是否已超过轮换间隔）。
+   *
+   * 返回 null 表示**无法判定**（客户端不可用 / 无权限 / 请求失败），
+   * 调用方不得把 null 当作"密钥有效"。
+   */
+  async checkKeyValidity(keyId: string): Promise<KeyValidityResult | null> {
+    let client: MatrixClient
+    try {
+      client = this.getClient()
+    } catch (err) {
+      logger.error(`[Encryption] 校验密钥有效性失败：客户端不可用: ${err}`)
+      return null
+    }
+
+    try {
+      const response = await client.getKeyRotationManager().checkKeyValidity(keyId)
+      return {
+        keyId,
+        needsRotation: response.needs_rotation ?? false,
+        lastRotation: response.last_rotation ?? undefined,
+        intervalMs: response.interval_ms ?? 0
+      }
+    } catch (err) {
+      if (this.isForbiddenError(err)) {
+        logger.warn('[Encryption] 校验密钥有效性需要管理员权限，无法判定')
+        return null
+      }
+      logger.error(`[Encryption] 校验密钥有效性失败: ${err}`)
+      return null
     }
   }
 

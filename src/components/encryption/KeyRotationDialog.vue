@@ -112,6 +112,8 @@
           </n-alert>
         </div>
 
+        <KeyValidityCheck :default-key-id="currentKeyId" />
+
         <div v-if="isAdminUser" class="action-item">
           <div class="action-info">
             <Icon icon="mdi:key-remove" :width="24" />
@@ -237,6 +239,7 @@ const checkResult = ref<boolean | null>(null)
 const showRevokeDialog = ref(false)
 const revokeKeyId = ref('')
 const revokeReason = ref('')
+const currentKeyId = ref('')
 
 const isAdminUser = computed(() => adminStore.isAdmin)
 
@@ -254,7 +257,7 @@ const statusDesc = computed(() => {
   return t('encryption.key_rotation.status_ok')
 })
 
-const formatDate = (timestamp: number): string => {
+const formatDate = (timestamp?: number | null): string => {
   if (!timestamp) return '-'
   return new Date(timestamp).toLocaleString()
 }
@@ -275,6 +278,7 @@ const loadRotationStatus = async () => {
     lastRotationTime.value = status.lastRotation ?? null
     autoRotate.value = status.enabled
     rotationInterval.value = Math.round(status.intervalMs / (24 * 60 * 60 * 1000)) || 7
+    currentKeyId.value = status.currentKeyId ?? ''
   } catch (err) {
     logger.error('Failed to load rotation status:', err)
   } finally {

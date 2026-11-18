@@ -10,6 +10,7 @@ import {
   type KeyBackupInfo,
   type KeyRotationRecord,
   type KeyRotationStatus,
+  type KeyValidityResult,
   matrixEncryptionService,
   type SetupKeyBackupOptions
 } from '@/services/matrix/crypto/MatrixEncryptionService'
@@ -52,6 +53,8 @@ interface UseEncryptionResult {
   getRotationHistory: (deviceId: string) => Promise<KeyRotationRecord[]>
   configureKeyRotation: (enabled: boolean, intervalDays?: number) => Promise<void>
   checkNeedsRotation: () => Promise<boolean>
+  /** 校验单个密钥有效性；返回 null 表示无法判定，调用方不得当作「有效」 */
+  checkKeyValidity: (keyId: string) => Promise<KeyValidityResult | null>
   revokeOldKeys: (deviceId: string, keyIds: string[]) => Promise<number>
 
   trustDevice: (userId: string, deviceId: string) => Promise<void>
@@ -230,6 +233,10 @@ export function useEncryption(): UseEncryptionResult {
     return matrixEncryptionService.checkNeedsRotation()
   }
 
+  async function checkKeyValidity(keyId: string) {
+    return matrixEncryptionService.checkKeyValidity(keyId)
+  }
+
   async function revokeOldKeys(deviceId: string, keyIds: string[]) {
     return matrixEncryptionService.revokeOldKeys(deviceId, keyIds)
   }
@@ -346,6 +353,7 @@ export function useEncryption(): UseEncryptionResult {
     getRotationHistory,
     configureKeyRotation,
     checkNeedsRotation,
+    checkKeyValidity,
     revokeOldKeys,
     trustDevice,
     untrustDevice,

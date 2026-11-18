@@ -28,6 +28,7 @@ export type Messages = {
   "room_settings": {
     "title": "加密设置",
     "not_encrypted": "此房间未启用加密",
+    "load_failed": "无法读取房间加密状态",
     "enable": "启用加密",
     "encrypted": "已加密",
     "status": "状态",
@@ -112,6 +113,15 @@ export type Messages = {
     "check_rotation_needed": "建议轮换密钥",
     "check_last_rotation": "上次轮换",
     "check_interval": "当前间隔",
+    "validate_key": "校验密钥有效性",
+    "validate_desc": "按密钥 ID 向服务端校验该密钥是否需要轮换",
+    "validate_key_id_placeholder": "输入要校验的密钥 ID",
+    "validate_key_id_required": "请输入密钥 ID",
+    "validate": "校验",
+    "validating": "校验中...",
+    "validate_result_ok": "密钥有效，无需轮换",
+    "validate_result_needs_rotation": "该密钥已超过轮换间隔，建议轮换",
+    "validate_failed": "密钥有效性校验失败",
     "revoke_key": "撤销密钥",
     "revoke_desc": "撤销旧的加密密钥（仅管理员）",
     "revoke_confirm_title": "撤销密钥",
@@ -294,6 +304,7 @@ export type Messages = {
     "recovery_key_label": "恢复密钥",
     "version_label": "备份版本",
     "version_placeholder": "请选择要恢复的备份版本",
+    "backup_info_unavailable": "备份信息读取失败，暂时无法确认备份版本，请重试",
     "select_file": "选择密钥文件",
     "file_hint": "支持从其他设备导出的密钥文件（.txt / .json）。",
     "file_required": "请先选择密钥文件",
@@ -363,6 +374,7 @@ export type Messages = {
     "key_warning": "请妥善保存此恢复密钥，丢失后将无法恢复加密消息。",
     "key_saved_confirm": "我已安全保存恢复密钥",
     "loading_status": "正在加载备份状态...",
+    "status_load_failed": "无法读取安全备份状态",
     "no_backup_desc": "你尚未设置安全备份。建议设置安全备份以保护你的加密密钥。",
     "create_title": "创建安全备份",
     "create_intro_primary": "将加密密钥备份到服务器，以便在新设备上恢复。",
@@ -427,6 +439,7 @@ export type KeyPaths =
   | "encryption.backup.versions.delete_failed"
   | "encryption.room_settings.title"
   | "encryption.room_settings.not_encrypted"
+  | "encryption.room_settings.load_failed"
   | "encryption.room_settings.enable"
   | "encryption.room_settings.encrypted"
   | "encryption.room_settings.status"
@@ -505,6 +518,15 @@ export type KeyPaths =
   | "encryption.key_rotation.check_rotation_needed"
   | "encryption.key_rotation.check_last_rotation"
   | "encryption.key_rotation.check_interval"
+  | "encryption.key_rotation.validate_key"
+  | "encryption.key_rotation.validate_desc"
+  | "encryption.key_rotation.validate_key_id_placeholder"
+  | "encryption.key_rotation.validate_key_id_required"
+  | "encryption.key_rotation.validate"
+  | "encryption.key_rotation.validating"
+  | "encryption.key_rotation.validate_result_ok"
+  | "encryption.key_rotation.validate_result_needs_rotation"
+  | "encryption.key_rotation.validate_failed"
   | "encryption.key_rotation.revoke_key"
   | "encryption.key_rotation.revoke_desc"
   | "encryption.key_rotation.revoke_confirm_title"
@@ -675,6 +697,7 @@ export type KeyPaths =
   | "encryption.backup_restore_dialog.recovery_key_label"
   | "encryption.backup_restore_dialog.version_label"
   | "encryption.backup_restore_dialog.version_placeholder"
+  | "encryption.backup_restore_dialog.backup_info_unavailable"
   | "encryption.backup_restore_dialog.select_file"
   | "encryption.backup_restore_dialog.file_hint"
   | "encryption.backup_restore_dialog.file_required"
@@ -740,6 +763,7 @@ export type KeyPaths =
   | "encryption.secure_backup.key_warning"
   | "encryption.secure_backup.key_saved_confirm"
   | "encryption.secure_backup.loading_status"
+  | "encryption.secure_backup.status_load_failed"
   | "encryption.secure_backup.no_backup_desc"
   | "encryption.secure_backup.create_title"
   | "encryption.secure_backup.create_intro_primary"
