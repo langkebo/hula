@@ -38,6 +38,7 @@
             <div class="link-preview-card__title">{{ preview.title }}</div>
             <div v-if="preview.description" class="link-preview-card__desc">{{ preview.description }}</div>
             <div class="link-preview-card__host">{{ preview.siteName || host }}</div>
+            <div class="link-preview-card__url">{{ preview.url }}</div>
           </div>
         </div>
 
@@ -248,7 +249,7 @@ const handleSubmit = async () => {
   if (!isValidUrl.value || submitting.value) return
   submitting.value = true
   try {
-    const target = normalizedUrl.value
+    const target = preview.value?.url || normalizedUrl.value
     const payload = preview.value ?? (await fetchPreview(target))
     emit('submit', payload ?? { url: target, title: target })
     emit('update:show', false)
@@ -310,6 +311,14 @@ const handleSubmit = async () => {
     margin-top: auto;
     font-size: var(--tjg-font-size-2xs);
     color: var(--tjg-text-quaternary);
+  }
+
+  &__url {
+    font-size: var(--tjg-font-size-2xs);
+    color: var(--tjg-text-quaternary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 </style>

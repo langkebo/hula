@@ -21,7 +21,13 @@ vi.mock('@/composables/common/useFileUploadQueue', async () => {
     items: [] as Array<{
       name: string
       status: string
-      serverProgress?: { uploadedChunks: number; totalChunks: number }
+      serverProgress?: {
+        uploadedChunks: number
+        totalChunks: number
+        uploadedSize?: number
+        totalSize?: number | null
+        status?: string
+      }
     }>,
     progress: 0,
     isUploading: false
@@ -90,6 +96,28 @@ describe('rightBox/FileUploadProgress', () => {
     const hint = wrapper.find('[data-testid="file-upload-server-progress"]')
     expect(hint.exists()).toBe(true)
     expect(hint.text()).toContain('message.file_upload_progress.server_received')
+  })
+
+  it('服务端返回字节进度与状态时一并渲染', () => {
+    uploadRefs.queue.totalFiles = 1
+    uploadRefs.queue.isActive = true
+    uploadRefs.queue.items = [
+      {
+        name: 'big.bin',
+        status: 'uploading',
+        serverProgress: {
+          uploadedChunks: 2,
+          totalChunks: 5,
+          uploadedSize: 2 * 1024 * 1024,
+          totalSize: 5 * 1024 * 1024,
+          status: 'in_progress'
+        }
+      }
+    ]
+    const wrapper = mountComponent()
+    const hint = wrapper.find('[data-testid="file-upload-server-progress"]')
+    expect(hint.text()).toContain('message.file_upload_progress.server_size')
+    expect(hint.text()).toContain('message.file_upload_progress.server_status')
   })
 
   it('多文件上传排队/准备阶段渲染 preparing 状态', () => {

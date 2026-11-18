@@ -230,6 +230,37 @@ describe('LinkPreviewPane', () => {
     wrapper.unmount()
   })
 
+  it('服务端返回规范化 url 时以规范化 url 作为提交目标', async () => {
+    getUrlPreviewMock.mockResolvedValue({
+      url: 'https://example.com/final',
+      title: 'Canonical'
+    })
+    const wrapper = mountPane()
+
+    vmOf(wrapper).url = 'https://example.com/a'
+    await vmOf(wrapper).handleSubmit()
+    await flushPromises()
+
+    expect(getUrlPreviewMock).toHaveBeenCalledWith('https://example.com/a')
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ url: 'https://example.com/final' })
+    wrapper.unmount()
+  })
+
+  it('预览卡片展示服务端返回的规范化 url', async () => {
+    getUrlPreviewMock.mockResolvedValue({
+      url: 'https://example.com/final',
+      title: 'Canonical'
+    })
+    const wrapper = mountPane()
+
+    vmOf(wrapper).url = 'https://example.com/a'
+    await vmOf(wrapper).handleFetch()
+    await flushPromises()
+
+    expect(wrapper.find('.link-preview-card__url').text()).toBe('https://example.com/final')
+    wrapper.unmount()
+  })
+
   it('falls back to the raw url when the preview cannot be fetched', async () => {
     getUrlPreviewMock.mockResolvedValue(null)
     const wrapper = mountPane()

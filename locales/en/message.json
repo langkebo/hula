@@ -30,7 +30,9 @@
     "preparing": "Preparing upload",
     "completed_failed": "Upload finished ({count} failed)",
     "completed": "Upload finished",
-    "server_received": "Server received {uploaded}/{total} chunks"
+    "server_received": "Server received {uploaded}/{total} chunks",
+    "server_size": "Received {uploaded} / {total}",
+    "server_status": "Status: {status}"
   },
   "voice_recorder": {
     "tap_prefix": "Tap",

@@ -35,7 +35,9 @@ export type Messages = {
     "preparing": "准备上传",
     "completed_failed": "上传完成 ({count} 个失败)",
     "completed": "上传完成",
-    "server_received": "服务端已接收 {uploaded}/{total} 分片"
+    "server_received": "服务端已接收 {uploaded}/{total} 分片",
+    "server_size": "已接收 {uploaded} / {total}",
+    "server_status": "状态: {status}"
   },
   "voice_recorder": {
     "tap_prefix": "点击",
@@ -387,6 +389,8 @@ export type KeyPaths =
   | "message.file_upload_progress.completed_failed"
   | "message.file_upload_progress.completed"
   | "message.file_upload_progress.server_received"
+  | "message.file_upload_progress.server_size"
+  | "message.file_upload_progress.server_status"
   | "message.voice_recorder.tap_prefix"
   | "message.voice_recorder.tap_suffix"
   | "message.voice_recorder.recording"

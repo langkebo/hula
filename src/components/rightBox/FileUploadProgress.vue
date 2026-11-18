@@ -37,6 +37,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { globalFileUploadQueue } from '@/composables/common/useFileUploadQueue'
+import { formatBytes } from '@/utils/Formatting'
 
 const { t } = useI18n()
 
@@ -47,10 +48,20 @@ const { queue, progress, isUploading } = globalFileUploadQueue
 const serverProgressText = computed(() => {
   const item = queue.items.find((entry) => entry.serverProgress)
   if (!item?.serverProgress) return ''
-  return t('message.file_upload_progress.server_received', {
-    uploaded: item.serverProgress.uploadedChunks,
-    total: item.serverProgress.totalChunks
-  })
+  const { uploadedChunks, totalChunks, uploadedSize, totalSize, status } = item.serverProgress
+  const parts = [t('message.file_upload_progress.server_received', { uploaded: uploadedChunks, total: totalChunks })]
+  if (uploadedSize !== undefined && totalSize) {
+    parts.push(
+      t('message.file_upload_progress.server_size', {
+        uploaded: formatBytes(uploadedSize),
+        total: formatBytes(totalSize)
+      })
+    )
+  }
+  if (status) {
+    parts.push(t('message.file_upload_progress.server_status', { status }))
+  }
+  return parts.join(' · ')
 })
 
 // 状态文本
