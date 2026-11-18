@@ -7,7 +7,12 @@ const { showFeedbackMock, composable } = vi.hoisted(() => ({
   composable: {
     loadLists: vi.fn().mockResolvedValue(true),
     saveBlocklist: vi.fn().mockResolvedValue(true),
-    saveAllowlist: vi.fn().mockResolvedValue(true)
+    saveAllowlist: vi.fn().mockResolvedValue(true),
+    loadGlobalLists: vi.fn().mockResolvedValue(true),
+    addGlobalUser: vi.fn().mockResolvedValue(true),
+    removeGlobalUser: vi.fn().mockResolvedValue(true),
+    importGlobalUsers: vi.fn().mockResolvedValue({ success: 2, failed: 0 }),
+    replaceGlobalUsers: vi.fn().mockResolvedValue(true)
   }
 }))
 
@@ -20,6 +25,10 @@ vi.mock('@/composables/admin', async () => {
       loading: ref(false),
       savingBlocklist: ref(false),
       savingAllowlist: ref(false),
+      globalAllowlist: ref(['@global-allowed:example.org']),
+      globalBlocklist: ref(['@global-blocked:example.org']),
+      globalLoading: ref(false),
+      globalMutating: ref(false),
       error: ref(null),
       ...composable
     })
@@ -79,8 +88,28 @@ vi.mock('naive-ui', async () => {
       }
     }),
     NCard: passthrough('NCard'),
+    NEmpty: passthrough('NEmpty'),
+    NGrid: passthrough('NGrid'),
+    NGridItem: passthrough('NGridItem'),
     NInput: input(),
-    NSpace: passthrough('NSpace')
+    NPopconfirm: defineComponent({
+      name: 'NPopconfirm',
+      emits: ['positive-click'],
+      setup(_, { slots, emit }) {
+        return () =>
+          h('span', { 'data-test': 'NPopconfirm' }, [
+            slots.trigger?.(),
+            h('button', {
+              type: 'button',
+              'data-test': 'popconfirm-positive',
+              onClick: () => emit('positive-click')
+            })
+          ])
+      }
+    }),
+    NSpace: passthrough('NSpace'),
+    NSpin: passthrough('NSpin'),
+    NTag: passthrough('NTag')
   }
 })
 
@@ -135,5 +164,76 @@ describe('AdminInvitePolicy', () => {
     await flushPromises()
 
     expect(showFeedbackMock).toHaveBeenCalledWith('admin.invitePolicy.saveFailed', 'error')
+  })
+
+  it('添加全局名单用户成功后清空输入并提示', async () => {
+    const wrapper = mount(AdminInvitePolicy)
+    const inputEl = wrapper.find('[data-testid="admin-invite-policy-global-add-input-allowlist"]')
+
+    await inputEl.setValue('@new:example.org')
+    await wrapper.find('[data-testid="admin-invite-policy-global-add-allowlist"]').trigger('click')
+    await flushPromises()
+
+    expect(composable.addGlobalUser).toHaveBeenCalledWith('allowlist', '@new:example.org')
+    expect((inputEl.element as HTMLInputElement).value).toBe('')
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.invitePolicy.globalAddSuccess', 'success')
+  })
+
+  it('粘贴批量导入按行拆分并提示导入统计', async () => {
+    composable.importGlobalUsers.mockResolvedValueOnce({ success: 2, failed: 1 })
+    const wrapper = mount(AdminInvitePolicy)
+
+    await wrapper
+      .find('[data-testid="admin-invite-policy-global-import-input-blocklist"]')
+      .setValue('@a:example.org\n@b:example.org\n@c:example.org')
+    await wrapper.find('[data-testid="admin-invite-policy-global-import-blocklist"]').trigger('click')
+    await flushPromises()
+
+    expect(composable.importGlobalUsers).toHaveBeenCalledWith('blocklist', [
+      '@a:example.org',
+      '@b:example.org',
+      '@c:example.org'
+    ])
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.invitePolicy.bulkImportResult', 'warning')
+  })
+
+  it('确认整体替换后按行提交全局白名单', async () => {
+    const wrapper = mount(AdminInvitePolicy)
+
+    await wrapper
+      .find('[data-testid="admin-invite-policy-global-import-input-allowlist"]')
+      .setValue('@a:example.org\n@b:example.org\n@a:example.org ')
+    const confirms = wrapper.findAll('[data-test="popconfirm-positive"]')
+    expect(confirms).toHaveLength(2)
+    await confirms[0].trigger('click')
+    await flushPromises()
+
+    expect(composable.replaceGlobalUsers).toHaveBeenCalledWith('allowlist', [
+      '@a:example.org',
+      '@b:example.org',
+      '@a:example.org'
+    ])
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.invitePolicy.globalReplaceSuccess', 'success')
+  })
+
+  it('整体替换全局黑名单失败时提示失败', async () => {
+    composable.replaceGlobalUsers.mockResolvedValueOnce(false)
+    const wrapper = mount(AdminInvitePolicy)
+
+    await wrapper
+      .find('[data-testid="admin-invite-policy-global-import-input-blocklist"]')
+      .setValue('@blocked:example.org')
+    await wrapper.findAll('[data-test="popconfirm-positive"]')[1].trigger('click')
+    await flushPromises()
+
+    expect(composable.replaceGlobalUsers).toHaveBeenCalledWith('blocklist', ['@blocked:example.org'])
+    expect(showFeedbackMock).toHaveBeenCalledWith('admin.invitePolicy.globalReplaceFailed', 'error')
+  })
+
+  it('挂载时读取全局名单', async () => {
+    mount(AdminInvitePolicy)
+    await flushPromises()
+
+    expect(composable.loadGlobalLists).toHaveBeenCalledTimes(1)
   })
 })

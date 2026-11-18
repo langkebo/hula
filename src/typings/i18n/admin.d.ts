@@ -167,6 +167,10 @@ export type Messages = {
     "refreshDetail": "刷新详情",
     "refreshFailed": "刷新用户详情失败",
     "refreshSuccess": "用户详情已刷新",
+    "samlLogout": "SAML 登出",
+    "samlLogoutConfirm": "确定注销用户 {userId} 的 SAML 会话吗？该用户需要重新完成身份提供方认证。",
+    "samlLogoutFailed": "SAML 登出失败",
+    "samlLogoutSuccess": "SAML 会话已注销",
     "serverInfo": "服务端信息",
     "statsOverviewEmpty": "暂无服务端统计"
   },
@@ -286,7 +290,23 @@ export type Messages = {
     "searchInRoomEmpty": "该房间内未找到匹配消息",
     "searchInRoomFailed": "房间内搜索失败",
     "searchInRoomPlaceholder": "输入搜索关键词",
-    "searchInRoomRequired": "请先输入搜索关键词"
+    "searchInRoomRequired": "请先输入搜索关键词",
+    "unpublishListing": "下线公开目录",
+    "unpublishListingConfirm": "确定将该房间（{name}）从公开目录下线吗？下线后用户将无法在目录中搜索到它。",
+    "unpublishListingSuccess": "房间已从公开目录下线",
+    "unpublishListingFailed": "下线公开目录失败",
+    "tokenSync": "Token 同步信息",
+    "tokenSyncEmpty": "暂无 token 同步信息",
+    "tokenSyncFailed": "读取 token 同步信息失败",
+    "cascadeRedact": "级联撤回",
+    "cascadeRedactEventPlaceholder": "输入起始事件 ID，如 $abc:server",
+    "cascadeRedactDepth": "最大深度（≤10）",
+    "cascadeRedactReasonPlaceholder": "撤回原因（可选）",
+    "cascadeRedactAction": "级联撤回",
+    "cascadeRedactConfirm": "确定以 {eventId} 为起点级联撤回关联事件吗？该操作不可撤销。",
+    "cascadeRedactSuccess": "级联撤回完成，共撤回 {count} 条事件",
+    "cascadeRedactFailed": "级联撤回失败",
+    "cascadeRedactRequired": "请先输入起始事件 ID"
   },
   "dashboard": {
     "serverInfo": "服务器信息",
@@ -868,7 +888,18 @@ export type Messages = {
     "enableSuccess": "应用服务已启用",
     "enableFailed": "启用应用服务失败",
     "disableSuccess": "应用服务已禁用",
-    "disableFailed": "禁用应用服务失败"
+    "disableFailed": "禁用应用服务失败",
+    "registerTab": "注册",
+    "register": "注册应用服务",
+    "registerMissingFields": "请填写令牌、URL 与发送者本地部分",
+    "registerSuccess": "应用服务已注册",
+    "registerFailed": "注册应用服务失败",
+    "asTokenPlaceholder": "应用服务令牌（as_token）",
+    "urlPlaceholder": "应用服务回调 URL",
+    "senderLocalpartPlaceholder": "发送者本地部分，如 appservice-bot",
+    "configJson": "附加配置（JSON，可选）",
+    "configJsonPlaceholder": "{\n  \"rate_limited\": false\n}",
+    "configJsonInvalid": "附加配置必须是合法的 JSON 对象"
   },
   "externalServices": {
     "title": "外部服务",
@@ -997,7 +1028,7 @@ export type Messages = {
     },
     "validity": {
       "userId": "用户 ID",
-      "userIdPlaceholder": "例如 @alice:example.org",
+      "userIdPlaceholder": "例如 {'@'}alice:example.org",
       "load": "查询有效期",
       "empty": "暂无该用户的有效期记录",
       "setTitle": "设置有效期",
@@ -1062,7 +1093,7 @@ export type Messages = {
       "roomId": "房间 ID",
       "roomIdPlaceholder": "例如 !abc:example.org",
       "userId": "用户 ID",
-      "userIdPlaceholder": "例如 @alice:example.org",
+      "userIdPlaceholder": "例如 {'@'}alice:example.org",
       "action": "动作",
       "actions": {
         "create": "创建房间",
@@ -1358,6 +1389,25 @@ export type Messages = {
   },
   "invitePolicy": {
     "hint": "邀请黑白名单按房间生效，保存时会整体替换该名单，请先读取再修改。",
+    "globalTitle": "全局邀请名单",
+    "globalHint": "全局名单对所有房间生效：白名单仅允许名单内用户被邀请，黑名单禁止名单内用户被邀请；同一用户加入一侧会自动从另一侧移除。",
+    "allowlistUsers": "白名单用户",
+    "blocklistUsers": "黑名单用户",
+    "userIdPlaceholder": "用户 ID，例如 {'@'}alice:example.org",
+    "addUser": "添加",
+    "emptyList": "名单为空",
+    "bulkImport": "批量导入",
+    "bulkImportPlaceholder": "每行一个用户 ID",
+    "bulkImportEmpty": "没有可导入的用户 ID",
+    "bulkImportResult": "导入完成：成功 {success} 条，失败 {failed} 条",
+    "replaceAll": "整体替换",
+    "replaceConfirm": "将名单整体替换为输入内容（当前 {current} 条，替换后 {next} 条），不在其中的用户会被移除；输入为空则清空名单。",
+    "globalReplaceSuccess": "名单已整体替换（{count} 条）",
+    "globalReplaceFailed": "名单整体替换失败",
+    "globalAddSuccess": "已添加到名单",
+    "globalAddFailed": "添加失败",
+    "globalRemoveSuccess": "已从名单移除",
+    "globalRemoveFailed": "移除失败",
     "roomTitle": "目标房间",
     "roomIdPlaceholder": "房间 ID，例如 !abc:example.org",
     "load": "读取名单",
@@ -1368,7 +1418,7 @@ export type Messages = {
     "blocklistHint": "黑名单内的用户无法邀请加入该房间。每行一个用户 ID。",
     "allowlistTitle": "白名单",
     "allowlistHint": "仅白名单内的用户可以邀请加入该房间。每行一个用户 ID。",
-    "userIdsPlaceholder": "每行一个用户 ID，例如\n@alice:example.org",
+    "userIdsPlaceholder": "每行一个用户 ID，例如\n{'@'}alice:example.org",
     "blocklistSaved": "黑名单已保存",
     "allowlistSaved": "白名单已保存",
     "saveFailed": "名单保存失败"
@@ -1391,7 +1441,7 @@ export type Messages = {
     "deleteSuccess": "服务已删除",
     "deleteFailed": "服务删除失败",
     "attributesTitle": "用户属性",
-    "userIdPlaceholder": "用户 ID，例如 @alice:example.org",
+    "userIdPlaceholder": "用户 ID，例如 {'@'}alice:example.org",
     "attributesLoad": "读取属性",
     "attributesEmpty": "该用户暂无 CAS 属性",
     "attributesLoadSuccess": "属性已读取",
@@ -1588,6 +1638,10 @@ export type KeyPaths =
   | "admin.users.refreshDetail"
   | "admin.users.refreshFailed"
   | "admin.users.refreshSuccess"
+  | "admin.users.samlLogout"
+  | "admin.users.samlLogoutConfirm"
+  | "admin.users.samlLogoutFailed"
+  | "admin.users.samlLogoutSuccess"
   | "admin.users.serverInfo"
   | "admin.users.statsOverviewEmpty"
   | "admin.rooms.search"
@@ -1706,6 +1760,22 @@ export type KeyPaths =
   | "admin.rooms.searchInRoomFailed"
   | "admin.rooms.searchInRoomPlaceholder"
   | "admin.rooms.searchInRoomRequired"
+  | "admin.rooms.unpublishListing"
+  | "admin.rooms.unpublishListingConfirm"
+  | "admin.rooms.unpublishListingSuccess"
+  | "admin.rooms.unpublishListingFailed"
+  | "admin.rooms.tokenSync"
+  | "admin.rooms.tokenSyncEmpty"
+  | "admin.rooms.tokenSyncFailed"
+  | "admin.rooms.cascadeRedact"
+  | "admin.rooms.cascadeRedactEventPlaceholder"
+  | "admin.rooms.cascadeRedactDepth"
+  | "admin.rooms.cascadeRedactReasonPlaceholder"
+  | "admin.rooms.cascadeRedactAction"
+  | "admin.rooms.cascadeRedactConfirm"
+  | "admin.rooms.cascadeRedactSuccess"
+  | "admin.rooms.cascadeRedactFailed"
+  | "admin.rooms.cascadeRedactRequired"
   | "admin.dashboard.serverInfo"
   | "admin.dashboard.totalRooms"
   | "admin.dashboard.totalUsers"
@@ -2220,6 +2290,17 @@ export type KeyPaths =
   | "admin.appServices.enableFailed"
   | "admin.appServices.disableSuccess"
   | "admin.appServices.disableFailed"
+  | "admin.appServices.registerTab"
+  | "admin.appServices.register"
+  | "admin.appServices.registerMissingFields"
+  | "admin.appServices.registerSuccess"
+  | "admin.appServices.registerFailed"
+  | "admin.appServices.asTokenPlaceholder"
+  | "admin.appServices.urlPlaceholder"
+  | "admin.appServices.senderLocalpartPlaceholder"
+  | "admin.appServices.configJson"
+  | "admin.appServices.configJsonPlaceholder"
+  | "admin.appServices.configJsonInvalid"
   | "admin.externalServices.title"
   | "admin.externalServices.subtitle"
   | "admin.externalServices.panel_notice"
@@ -2629,6 +2710,25 @@ export type KeyPaths =
   | "admin.cleanup.tokens.success"
   | "admin.cleanup.tokens.failed"
   | "admin.invitePolicy.hint"
+  | "admin.invitePolicy.globalTitle"
+  | "admin.invitePolicy.globalHint"
+  | "admin.invitePolicy.allowlistUsers"
+  | "admin.invitePolicy.blocklistUsers"
+  | "admin.invitePolicy.userIdPlaceholder"
+  | "admin.invitePolicy.addUser"
+  | "admin.invitePolicy.emptyList"
+  | "admin.invitePolicy.bulkImport"
+  | "admin.invitePolicy.bulkImportPlaceholder"
+  | "admin.invitePolicy.bulkImportEmpty"
+  | "admin.invitePolicy.bulkImportResult"
+  | "admin.invitePolicy.replaceAll"
+  | "admin.invitePolicy.replaceConfirm"
+  | "admin.invitePolicy.globalReplaceSuccess"
+  | "admin.invitePolicy.globalReplaceFailed"
+  | "admin.invitePolicy.globalAddSuccess"
+  | "admin.invitePolicy.globalAddFailed"
+  | "admin.invitePolicy.globalRemoveSuccess"
+  | "admin.invitePolicy.globalRemoveFailed"
   | "admin.invitePolicy.roomTitle"
   | "admin.invitePolicy.roomIdPlaceholder"
   | "admin.invitePolicy.load"
