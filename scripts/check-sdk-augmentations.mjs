@@ -49,7 +49,16 @@ import { Project, ts } from 'ts-morph'
 
 const scriptDir = fileURLToPath(new URL('.', import.meta.url))
 const repoRoot = resolve(scriptDir, '..')
-const augmentationPath = resolve(repoRoot, 'src/types/matrix-js-sdk-augmentations.d.ts')
+// 主文件 + 拆分目录（2026-11-18 拆分：MatrixClient / 纯类型 各占一个文件）。
+// ⚠️ 只读主文件会**静默漏扫**：拆分后 merged 接口数从 8 掉到 4，但门禁照样"通过"。
+// 因此这里必须扫全量，否则判据等于失效。
+const augmentationPaths = [
+  resolve(repoRoot, 'src/types/matrix-js-sdk-augmentations.d.ts'),
+  ...readdirSync(resolve(repoRoot, 'src/types/sdk-augmentations'), { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.d.ts'))
+    .map((entry) => resolve(repoRoot, 'src/types/sdk-augmentations', entry.name))
+]
+const augmentationPath = augmentationPaths[0]
 const baselinePath = resolve(repoRoot, 'scripts/sdk-augmentations-baseline.json')
 // SDK 去 link 化（2026-08-09）：优先读已安装 tarball 解包出的 src/（node_modules），
 // 本地联合开发时若 sibling 存在则优先用 sibling（内容更新）。
@@ -85,15 +94,18 @@ const project = new Project({
   compilerOptions: { allowJs: false, skipLibCheck: true }
 })
 
-let augSource
-try {
-  augSource = project.addSourceFileAtPath(augmentationPath)
-} catch (err) {
-  fail(`Failed to load augmentation file: ${err.message}`)
+const augSources = []
+for (const filePath of augmentationPaths) {
+  try {
+    augSources.push(project.addSourceFileAtPath(filePath))
+  } catch (err) {
+    fail(`Failed to load augmentation file ${filePath}: ${err.message}`)
+  }
 }
 
 const augmentedEnums = new Map() // name -> Array<{ name, value }>
 const augmentedMembers = new Map() // interfaceName -> Set<memberName>
+for (const augSource of augSources) {
 for (const mod of augSource.getModules()) {
   if (mod.getName() !== "'matrix-js-sdk'" && mod.getName() !== '"matrix-js-sdk"') continue
   for (const decl of mod.getEnums()) {
@@ -120,6 +132,7 @@ for (const mod of augSource.getModules()) {
     for (const n of names) prev.add(n)
     augmentedMembers.set(iface.getName(), prev)
   }
+}
 }
 
 // ----- SDK 源码目录：索引规范 enum 声明 -----
