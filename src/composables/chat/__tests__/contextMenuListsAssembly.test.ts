@@ -20,14 +20,15 @@ vi.mock('@/services/matrix/messaging/MatrixMessageService', () => ({
   }
 }))
 
-const { getRoomEventMediaUrlsMock, writeMock } = vi.hoisted(() => ({
+const { getRoomEventMediaUrlsMock, writeMock, getRoomEventUrlMock } = vi.hoisted(() => ({
   getRoomEventMediaUrlsMock: vi.fn(),
-  writeMock: vi.fn()
+  writeMock: vi.fn(),
+  getRoomEventUrlMock: vi.fn()
 }))
 
 vi.mock('@/services/matrix/room/RoomFacade', () => ({
   matrixRoomActionFacade: {},
-  matrixRoomReadFacade: { getRoomEventMediaUrls: getRoomEventMediaUrlsMock }
+  matrixRoomReadFacade: { getRoomEventMediaUrls: getRoomEventMediaUrlsMock, getRoomEventUrl: getRoomEventUrlMock }
 }))
 
 vi.mock('@/composables/common/useClipboard', () => ({
@@ -50,6 +51,8 @@ const makeLists = (
     showFeedback?: ReturnType<typeof vi.fn>
     /** 当前用户 uid（「已读明细」按发件人判定可见性） */
     userUid?: string
+    /** 复制回调（「复制附件地址」用例需要断言） */
+    handleCopy?: ReturnType<typeof vi.fn>
   } = {}
 ) =>
   createContextMenuLists({
@@ -64,7 +67,7 @@ const makeLists = (
       downloadAndRevealVideo: vi.fn(),
       previewFile: vi.fn()
     } as never,
-    handleCopy: vi.fn() as never,
+    handleCopy: (options.handleCopy ?? vi.fn()) as never,
     openDeleteConfirm: vi.fn(),
     helpers: {
       checkFriendRelation: () => true,
@@ -137,6 +140,39 @@ describe('右键菜单列表装配', () => {
     expect(menu.visible(otherItem as never)).toBe(false)
   })
 
+  it('「复制附件地址」按 body.url 决定可见性，点击后取服务端地址再复制', async () => {
+    const handleCopy = vi.fn()
+    const lists = makeLists({ handleCopy })
+    const menu = lists.specialMenuList
+      .value(MsgEnum.TEXT)
+      .find(
+        (item) =>
+          (typeof item.label === 'function' ? item.label({} as never) : item.label) === 'menu.copy_attachment_url'
+      )
+    expect(menu).toBeTruthy()
+    if (!menu?.visible) throw new Error('菜单项应声明 visible')
+
+    const withUrl = {
+      message: { id: '$e1', roomId: '!r:hs', type: MsgEnum.IMAGE, body: { url: 'mxc://hs/a' } },
+      fromUser: { uid: '@me:hs' }
+    }
+    const withoutUrl = {
+      message: { id: '$e2', roomId: '!r:hs', type: MsgEnum.TEXT, body: { content: 'hi' } },
+      fromUser: { uid: '@me:hs' }
+    }
+    expect(menu.visible(withUrl as never)).toBe(true)
+    expect(menu.visible(withoutUrl as never)).toBe(false)
+
+    getRoomEventUrlMock.mockResolvedValue({
+      status: 'ok',
+      attachment: { url: 'https://cdn.example.com/a.png', mxc: 'mxc://hs/a', contentType: null, filesize: null }
+    })
+    await (menu.click as (item: never) => Promise<void>)(withUrl as never)
+
+    expect(getRoomEventUrlMock).toHaveBeenCalledWith('!r:hs', '$e1')
+    expect(handleCopy).toHaveBeenCalledWith('https://cdn.example.com/a.png', true, '$e1')
+  })
+
   it('媒体菜单复用通用菜单项实例，而非复制一份', () => {
     const lists = makeLists()
     const commonSelect = lists.commonMenuList.value.find((menu) => menu.icon === 'list-checkbox')
@@ -168,7 +204,7 @@ describe('右键菜单列表装配', () => {
     const lists = makeLists()
     const icons = lists.specialMenuList.value(MsgEnum.TEXT).map((menu) => menu.icon)
 
-    expect(icons).toEqual(['delete', 'info', 'check'])
+    expect(icons).toEqual(['delete', 'info', 'check', 'link'])
   })
 
   it('移动端不输出预览与在文件夹中显示的桌面专属项', () => {

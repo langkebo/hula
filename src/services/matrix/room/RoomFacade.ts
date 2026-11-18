@@ -12,6 +12,7 @@ import { matrixRoomCreationService } from './CreationService'
 import type { MembershipEventsOutcome, RecentMemberChangesOutcome } from './MembershipService'
 import { matrixRoomMembershipService } from './MembershipService'
 import type {
+  RoomEventUrlOutcome,
   RoomExternalId,
   RoomPermissionsOutcome,
   RoomServiceTypesOutcome,
@@ -23,7 +24,14 @@ import { matrixRoomQueryService } from './QueryService'
 import { roomOperations } from './RoomOperations'
 import type { MatrixRoomSummary } from './SummaryService'
 import { matrixRoomSummaryAggregateService } from './SummaryService'
-import type { RoomEventMediaUrlOutcome, RoomEventPerspectiveOutcome } from './TimelineService'
+import type {
+  RoomEventMediaUrlOutcome,
+  RoomEventPerspectiveOutcome,
+  RoomFragmentsOutcome,
+  RoomReceiptsOutcome,
+  RoomReducedEventsOutcome,
+  RoomRenderedOutcome
+} from './TimelineService'
 import { matrixRoomTimelineService } from './TimelineService'
 
 export interface MatrixRoomActionFacade {
@@ -236,6 +244,7 @@ interface MatrixRoomReadFacade {
   getRoomMetadata(roomId: string): Promise<Record<string, unknown>>
   /** 房间级 TURN 配置（只读，已剥离凭据） */
   getRoomTurnServer(roomId: string): Promise<RoomTurnServerOutcome>
+  getRoomEventUrl(roomId: string, eventId: string): Promise<RoomEventUrlOutcome>
   timestampToEvent(
     roomId: string,
     timestamp: number,
@@ -264,6 +273,14 @@ interface MatrixRoomReadFacade {
   getRoomSummaryState(roomId: string): Promise<RoomSummaryStateEntry[]>
   getRoomEphemeral(roomId: string, types?: string[]): Promise<Record<string, unknown>[]>
   getRoomEventMediaUrls(roomId: string, eventId: string): Promise<RoomEventMediaUrlOutcome>
+  /** 房间降采样事件（只读） */
+  getRoomReducedEvents(roomId: string): Promise<RoomReducedEventsOutcome>
+  /** 房间渲染结果（只读，HTML 不外露） */
+  getRoomRendered(roomId: string): Promise<RoomRenderedOutcome>
+  /** 指定用户的时间线片段（只读） */
+  getRoomFragments(roomId: string, userId: string): Promise<RoomFragmentsOutcome>
+  /** 某事件的已读回执明细（只读） */
+  getRoomReceipts(roomId: string, receiptType: string, eventId: string): Promise<RoomReceiptsOutcome>
   getRoomServiceTypes(roomId: string): Promise<RoomServiceTypesOutcome>
   getMembershipEvents(roomId: string, limit?: number): Promise<MembershipEventsOutcome>
   /** 房间最近成员变更（`GET …/members/recent`，只读） */
@@ -293,6 +310,7 @@ export const matrixRoomReadFacade: MatrixRoomReadFacade = {
   getRoomAccountData: (roomId, eventType) => matrixRoomAccountDataService.getRoomAccountData(roomId, eventType),
   getRoomMetadata: (roomId) => matrixRoomMetadataService.getRoomMetadata(roomId),
   getRoomTurnServer: (roomId) => matrixRoomMetadataService.getRoomTurnServer(roomId),
+  getRoomEventUrl: (roomId, eventId) => matrixRoomMetadataService.getRoomEventUrl(roomId, eventId),
   timestampToEvent: (roomId, timestamp, dir?) => matrixRoomTimelineService.timestampToEvent(roomId, timestamp, dir),
   getRoomCall: (roomId, callId) => matrixRoomTimelineService.getRoomCall(roomId, callId),
   getRoomSync: (roomId) => matrixRoomMetadataService.getRoomSync(roomId),
@@ -312,6 +330,11 @@ export const matrixRoomReadFacade: MatrixRoomReadFacade = {
   getRoomSummaryState: (roomId) => matrixRoomAccountDataService.getRoomSummaryState(roomId),
   getRoomEphemeral: (roomId, types?) => synapseRoomSummaryService.getRoomEphemeral(roomId, types),
   getRoomEventMediaUrls: (roomId, eventId) => matrixRoomTimelineService.getRoomEventMediaUrls(roomId, eventId),
+  getRoomReducedEvents: (roomId) => matrixRoomTimelineService.getRoomReducedEvents(roomId),
+  getRoomRendered: (roomId) => matrixRoomTimelineService.getRoomRendered(roomId),
+  getRoomFragments: (roomId, userId) => matrixRoomTimelineService.getRoomFragments(roomId, userId),
+  getRoomReceipts: (roomId, receiptType, eventId) =>
+    matrixRoomTimelineService.getRoomReceipts(roomId, receiptType, eventId),
   getRoomServiceTypes: (roomId) => matrixRoomMetadataService.getRoomServiceTypes(roomId),
   getMembershipEvents: (roomId, limit?) => matrixRoomMembershipService.getMembershipEvents(roomId, limit),
   getRecentMemberChanges: (roomId, limit?) => matrixRoomMembershipService.getRecentMemberChanges(roomId, limit)

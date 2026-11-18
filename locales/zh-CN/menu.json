@@ -132,5 +132,7 @@
       }
     }
   },
-  "read_receipts": "已读明细"
+  "read_receipts": "已读明细",
+  "copy_attachment_url": "复制附件地址",
+  "copy_attachment_url_empty": "该消息没有可复制的附件地址"
 }

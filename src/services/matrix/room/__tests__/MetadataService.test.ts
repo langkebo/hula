@@ -14,6 +14,7 @@ const getRoomPermissionsMock = vi.fn()
 const getRoomSpacesMock = vi.fn()
 const getRoomExternalIdsMock = vi.fn()
 const getRoomServiceTypesMock = vi.fn()
+const getRoomEventUrlMock = vi.fn()
 
 const makeRoomManager = () => ({
   getRoomCapabilities: vi.fn(() => Promise.resolve({ 'm.room_versions': { default: '11' } })),
@@ -28,7 +29,8 @@ const makeRoomSummaryManager = () => ({
   eventOps: {
     getRoomExternalIds: getRoomExternalIdsMock,
     getRoomServiceTypes: getRoomServiceTypesMock
-  }
+  },
+  getRoomEventUrl: getRoomEventUrlMock
 })
 
 const makeHttpClient = () => ({
@@ -177,6 +179,42 @@ describe('MatrixRoomMetadataService', () => {
       getRoomSyncMock.mockRejectedValue(new Error('boom'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
       expect(await service.getRoomSync('!r')).toEqual({})
+    })
+
+    it('getRoomEventUrl 返回附件地址与媒体元信息', async () => {
+      getRoomEventUrlMock.mockResolvedValue({
+        url: 'https://cdn.example.com/a.png',
+        mxc: 'mxc://hs/a',
+        content_type: 'image/png',
+        filesize: 1024
+      })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+
+      expect(await service.getRoomEventUrl('!r', '$e')).toEqual({
+        status: 'ok',
+        attachment: {
+          url: 'https://cdn.example.com/a.png',
+          mxc: 'mxc://hs/a',
+          contentType: 'image/png',
+          filesize: 1024
+        }
+      })
+      expect(getRoomEventUrlMock).toHaveBeenCalledWith('!r', '$e')
+    })
+
+    it('getRoomEventUrl 无 url 无 mxc 归 empty，M_UNRECOGNIZED 归 unsupported', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+
+      getRoomEventUrlMock.mockResolvedValue({ content_type: 'image/png' })
+      expect(await service.getRoomEventUrl('!r', '$e')).toEqual({ status: 'empty' })
+
+      getRoomEventUrlMock.mockRejectedValue(
+        Object.assign(new Error('M_UNRECOGNIZED: unsupported'), { errcode: 'M_UNRECOGNIZED' })
+      )
+      expect(await service.getRoomEventUrl('!r', '$e')).toEqual({ status: 'unsupported' })
+
+      getRoomEventUrlMock.mockRejectedValue(new Error('boom'))
+      expect(await service.getRoomEventUrl('!r', '$e')).toEqual({ status: 'error' })
     })
   })
 

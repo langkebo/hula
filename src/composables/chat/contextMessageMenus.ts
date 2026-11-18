@@ -353,6 +353,25 @@ export const createMessageMenus = (deps: MessageMenuDeps) => {
             // 仅自己发出的消息能看「谁读过」
             visible: (item: MessageType) =>
               Boolean(userStore.userInfo?.uid) && item.fromUser?.uid === userStore.userInfo?.uid
+          },
+          {
+            label: () => t('menu.copy_attachment_url'),
+            icon: 'link',
+            click: async (item: MessageType) => {
+              const roomId = item.message.roomId || globalStore.currentSessionRoomId
+              if (!roomId || !item.message.id) return
+              // 端点返回「事件附件地址」（服务端把 mxc 解析成 http），不是 matrix.to 永久链接
+              const outcome = await matrixRoomReadFacade.getRoomEventUrl(roomId, item.message.id)
+              const fallback = item.message.body?.url ?? ''
+              const target = outcome.status === 'ok' ? outcome.attachment.url || fallback : fallback
+              if (!target) {
+                showFeedback(t('menu.copy_attachment_url_empty'), 'warning')
+                return
+              }
+              handleCopy(target, true, item.message.id)
+            },
+            // 仅带附件的消息有可复制的地址
+            visible: (item: MessageType) => Boolean(item.message.body?.url)
           }
         ]
       }

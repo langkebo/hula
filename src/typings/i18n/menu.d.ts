@@ -137,7 +137,9 @@ export type Messages = {
       }
     }
   },
-  "read_receipts": "已读明细"
+  "read_receipts": "已读明细",
+  "copy_attachment_url": "复制附件地址",
+  "copy_attachment_url_empty": "该消息没有可复制的附件地址"
 }
 
 /**
@@ -266,3 +268,5 @@ export type KeyPaths =
   | "menu.user_menu.dialogs.logout.success"
   | "menu.user_menu.dialogs.logout.failed"
   | "menu.read_receipts"
+  | "menu.copy_attachment_url"
+  | "menu.copy_attachment_url_empty"

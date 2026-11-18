@@ -79,6 +79,22 @@ export type RoomTurnServerOutcome =
   | { status: 'unsupported' }
   | { status: 'error' }
 
+/** 事件附件地址（ROOM-03，`GET /rooms/{roomId}/event/{eventId}/url`）。 */
+export interface RoomEventAttachmentUrl {
+  /** 服务端解析出的可直接访问地址 */
+  url: string
+  /** 原始 MXC URI（若有） */
+  mxc: string | null
+  contentType: string | null
+  filesize: number | null
+}
+
+export type RoomEventUrlOutcome =
+  | { status: 'ok'; attachment: RoomEventAttachmentUrl }
+  | { status: 'empty' }
+  | { status: 'unsupported' }
+  | { status: 'error' }
+
 /** 从 SDK 抛出的错误中提取 Matrix errcode（部分错误把 errcode 塞在 message 的 JSON 里）。 */
 function readErrcode(err: unknown): string | null {
   if (typeof err !== 'object' || err === null) return null
@@ -213,6 +229,39 @@ export class MatrixRoomMetadataService extends BaseMatrixService {
         return { status: 'unsupported' }
       }
       logger.warn(`[MatrixRoom] 获取房间 TURN 服务器失败: ${err}`)
+      return { status: 'error' }
+    }
+  }
+
+  /**
+   * 取事件的**附件地址**（不是 matrix.to 永久链接）：
+   * 服务端把 `mxc://` 解析成可直接访问的 http 地址，供「复制附件地址」使用。
+   * 无 `url` 且无 `mxc` 归 `empty`；端点缺失（M_UNRECOGNIZED）归 `unsupported`。
+   */
+  async getRoomEventUrl(roomId: string, eventId: string): Promise<RoomEventUrlOutcome> {
+    try {
+      const client = this.getClient()
+      const result = await client.getRoomSummaryManager().getRoomEventUrl(roomId, eventId)
+      const record = unknownToObject(result)
+      if (!record) return { status: 'empty' }
+      const url = typeof record.url === 'string' ? record.url : ''
+      const mxc = typeof record.mxc === 'string' ? record.mxc : null
+      if (!url && !mxc) return { status: 'empty' }
+      return {
+        status: 'ok',
+        attachment: {
+          url,
+          mxc,
+          contentType: typeof record.content_type === 'string' ? record.content_type : null,
+          filesize: readFiniteNumberField(record, 'filesize')
+        }
+      }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持事件附件地址查询: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取事件附件地址失败: ${err}`)
       return { status: 'error' }
     }
   }
