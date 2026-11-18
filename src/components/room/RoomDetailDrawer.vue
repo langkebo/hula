@@ -141,10 +141,22 @@
                   </section>
 
                   <section class="room-drawer__section">
+                    <RoomSpacesSection :room-id="roomId ?? ''" />
+                  </section>
+
+                  <section class="room-drawer__section">
                     <RoomDetailLastMessage
                       :last-message="lastMessage"
                       :sender-name="lastMessageSender"
                       :timestamp="lastMessageTime" />
+                  </section>
+
+                  <section class="room-drawer__section">
+                    <RoomVoiceStatsPanel :room-id="roomId ?? ''" />
+                  </section>
+
+                  <section class="room-drawer__section">
+                    <RoomTurnServerSection :room-id="roomId ?? ''" />
                   </section>
 
                   <section class="room-drawer__section">
@@ -247,15 +259,17 @@ import RoomMessageQueuePanel from '@/components/room/RoomMessageQueuePanel.vue'
 import RoomMetadataPanel from '@/components/room/RoomMetadataPanel.vue'
 import RoomRetentionPanel from '@/components/room/RoomRetentionPanel.vue'
 import RoomServerSummaryPanel from '@/components/room/RoomServerSummaryPanel.vue'
+import RoomSpacesSection from '@/components/room/RoomSpacesSection.vue'
+import RoomTurnServerSection from '@/components/room/RoomTurnServerSection.vue'
+import RoomVoiceStatsPanel from '@/components/room/RoomVoiceStatsPanel.vue'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { usePinnedMessage } from '@/composables/room/usePinnedMessage'
+import { useRoomLastMessage } from '@/composables/room/useRoomLastMessage'
 import { OnlineEnum } from '@/enums'
 import { useServerCapability } from '@/services/matrix/MatrixCapabilityService'
-import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group/types'
 import { truncateMiddle } from '@/utils/StringUtils'
-import { unknownToObject } from '@/utils/typeGuard'
 
 interface RoomDetail {
   name: string
@@ -306,9 +320,10 @@ const roomMembers = ref<MatrixRoomMember[]>([])
 const membersLoading = ref(false)
 /** 成员加载失败原因：仅在成员 Tab 内展示局部失败横幅，不影响概览等其它面板 */
 const membersError = computed(() => (props.roomId ? groupStore.getMembersLoadError(props.roomId) : ''))
-const lastMessage = ref<string | null>(null)
-const lastMessageSender = ref<string | null>(null)
-const lastMessageTime = ref<number | null>(null)
+const { lastMessage, lastMessageSender, lastMessageTime, resolveLastMessage, resetLastMessage } = useRoomLastMessage({
+  roomId: () => props.roomId,
+  members: () => roomMembers.value
+})
 
 const {
   pinnedEventIds,
@@ -346,65 +361,14 @@ const handleSettings = () => {
   }
 }
 
-interface MatrixTimelineEvent {
-  getType?: () => string
-  type?: string
-  getContent?: () => Record<string, unknown> | undefined
-  content?: Record<string, unknown>
-  getSender?: () => string | null
-  sender?: string
-  getTs?: () => number | null
-  origin_server_ts?: number
-}
-
-const resolveSenderName = (senderId: string | null): string | null => {
-  if (!senderId) return null
-  const member = roomMembers.value.find((m) => m.userId === senderId)
-  return member?.displayName || member?.name || senderId
-}
-
-const resolveLastMessage = () => {
-  if (!props.roomId) {
-    lastMessage.value = null
-    lastMessageSender.value = null
-    lastMessageTime.value = null
-    return
-  }
-  try {
-    const room = matrixClientService.getRoom(props.roomId)
-    if (!room) return
-    const timeline = unknownToObject<{
-      getLiveTimeline?: () => { getEvents?: () => MatrixTimelineEvent[] }
-    }>(room)?.getLiveTimeline?.()
-    const events = timeline?.getEvents?.() ?? []
-    for (let i = events.length - 1; i >= 0; i--) {
-      const event = events[i]
-      const eventType = event.getType?.() ?? event.type
-      if (eventType !== 'm.room.message' && eventType !== 'm.room.encrypted') continue
-      const content = event.getContent?.() ?? event.content
-      const body = (content?.body as string) ?? null
-      const sender = event.getSender?.() ?? event.sender ?? null
-      const ts = event.getTs?.() ?? event.origin_server_ts ?? null
-      lastMessage.value = body
-      lastMessageSender.value = resolveSenderName(sender)
-      lastMessageTime.value = ts ?? null
-      return
-    }
-    lastMessage.value = null
-    lastMessageSender.value = null
-    lastMessageTime.value = null
-  } catch {
-    lastMessage.value = null
-    lastMessageSender.value = null
-    lastMessageTime.value = null
-  }
-}
-
 const buildRoomDetail = async (): Promise<RoomDetail | null> => {
   if (!props.roomId) return null
 
   try {
-    const groupInfo = await groupStore.getGroupDetailByRoomId(props.roomId)
+    const groupInfo =
+      (await groupStore.getGroupDetailByRoomId(props.roomId)) ?? (await groupStore.loadGroupInfo(props.roomId))
+    // 读不到房间资料不是「0 成员 / 未加密」：那会把读取失败显示成真实详情，统一交给错误态
+    if (!groupInfo) return null
 
     let onlineCount = 0
     let memberCount = groupInfo?.memberCount || 0
@@ -470,9 +434,7 @@ watch(
     } else {
       roomDetail.value = null
       roomMembers.value = []
-      lastMessage.value = null
-      lastMessageSender.value = null
-      lastMessageTime.value = null
+      resetLastMessage()
     }
   },
   { immediate: true }

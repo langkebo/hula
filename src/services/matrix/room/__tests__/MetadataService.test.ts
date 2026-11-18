@@ -11,7 +11,9 @@ vi.mock('@tauri-apps/plugin-log', () => ({
 const getRoomTurnServerMock = vi.fn()
 const getRoomSyncMock = vi.fn()
 const getRoomPermissionsMock = vi.fn()
+const getRoomSpacesMock = vi.fn()
 const getRoomExternalIdsMock = vi.fn()
+const getRoomServiceTypesMock = vi.fn()
 
 const makeRoomManager = () => ({
   getRoomCapabilities: vi.fn(() => Promise.resolve({ 'm.room_versions': { default: '11' } })),
@@ -22,7 +24,11 @@ const makeRoomSummaryManager = () => ({
   getRoomTurnServer: getRoomTurnServerMock,
   getRoomSync: getRoomSyncMock,
   getRoomPermissions: getRoomPermissionsMock,
-  eventOps: { getRoomExternalIds: getRoomExternalIdsMock }
+  getRoomSpaces: getRoomSpacesMock,
+  eventOps: {
+    getRoomExternalIds: getRoomExternalIdsMock,
+    getRoomServiceTypes: getRoomServiceTypesMock
+  }
 })
 
 const makeHttpClient = () => ({
@@ -111,11 +117,53 @@ describe('MatrixRoomMetadataService', () => {
       expect(roomManager.getRoomMetadata).toHaveBeenCalledWith('!r')
     })
 
-    it('getRoomTurnServer delegates to RoomSummaryManager', async () => {
-      getRoomTurnServerMock.mockResolvedValue({ uris: ['turn:e'] })
+    it('getRoomTurnServer returns uris and ttl without credentials', async () => {
+      getRoomTurnServerMock.mockResolvedValue({
+        uris: ['turn:e?transport=udp'],
+        username: 'user',
+        password: 'secret',
+        ttl: 86400
+      })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
-      expect(await service.getRoomTurnServer('!r')).toEqual({ uris: ['turn:e'] })
+      expect(await service.getRoomTurnServer('!r')).toEqual({
+        status: 'ok',
+        config: { uris: ['turn:e?transport=udp'], ttl: 86400 }
+      })
       expect(getRoomTurnServerMock).toHaveBeenCalledWith('!r')
+    })
+
+    it('getRoomTurnServer drops invalid uris and returns empty when nothing remains', async () => {
+      getRoomTurnServerMock.mockResolvedValue({ uris: ['turn:e', 1, null, '', 'turns:e'] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomTurnServer('!r')).toEqual({
+        status: 'ok',
+        config: { uris: ['turn:e', 'turns:e'], ttl: null }
+      })
+
+      getRoomTurnServerMock.mockResolvedValue({ uris: [], ttl: 60 })
+      expect(await service.getRoomTurnServer('!r')).toEqual({ status: 'empty' })
+
+      getRoomTurnServerMock.mockResolvedValue({ ttl: 60 })
+      expect(await service.getRoomTurnServer('!r')).toEqual({ status: 'empty' })
+    })
+
+    it('getRoomTurnServer classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomTurnServerMock.mockRejectedValue(Object.assign(new Error('not found'), { errcode: 'M_UNRECOGNIZED' }))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomTurnServer('!r')).toEqual({ status: 'unsupported' })
+    })
+
+    it('getRoomTurnServer classifies other failures as error', async () => {
+      getRoomTurnServerMock.mockRejectedValue(Object.assign(new Error('forbidden'), { errcode: 'M_FORBIDDEN' }))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomTurnServer('!r')).toEqual({ status: 'error' })
+    })
+
+    it('getRoomTurnServer classifies an uninitialized client as error', async () => {
+      vi.mocked(matrixClientService.getClient).mockImplementation(() => {
+        throw new Error('客户端未初始化')
+      })
+      expect(await service.getRoomTurnServer('!r')).toEqual({ status: 'error' })
     })
 
     it('getRoomSync delegates to RoomSummaryManager', async () => {
@@ -125,27 +173,146 @@ describe('MatrixRoomMetadataService', () => {
       expect(getRoomSyncMock).toHaveBeenCalledWith('!r')
     })
 
-    it('all three swallow errors and return {}', async () => {
-      getRoomTurnServerMock.mockRejectedValue(new Error('boom'))
+    it('getRoomSync swallows errors and returns {}', async () => {
       getRoomSyncMock.mockRejectedValue(new Error('boom'))
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
-      expect(await service.getRoomTurnServer('!r')).toEqual({})
       expect(await service.getRoomSync('!r')).toEqual({})
     })
   })
 
   describe('getRoomPermissions', () => {
-    it('delegates to RoomSummaryManager and returns the payload', async () => {
-      getRoomPermissionsMock.mockResolvedValue({ read: true })
+    it('normalizes the permission snapshot', async () => {
+      const payload = {
+        room_id: '!r:e',
+        power_level: 50,
+        can_send: true,
+        can_invite: false,
+        can_kick: true,
+        can_ban: false,
+        can_redact: true
+      }
+      getRoomPermissionsMock.mockResolvedValue(payload)
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
-      expect(await service.getRoomPermissions('!r')).toEqual({ read: true })
-      expect(getRoomPermissionsMock).toHaveBeenCalledWith('!r')
+      expect(await service.getRoomPermissions('!r:e')).toEqual({
+        status: 'ok',
+        permissions: {
+          roomId: '!r:e',
+          powerLevel: 50,
+          canSend: true,
+          canInvite: false,
+          canKick: true,
+          canBan: false,
+          canRedact: true,
+          raw: payload
+        }
+      })
+      expect(getRoomPermissionsMock).toHaveBeenCalledWith('!r:e')
     })
 
-    it('swallows errors and returns {}', async () => {
-      getRoomPermissionsMock.mockRejectedValue(new Error('boom'))
+    it('keeps missing booleans as null instead of faking false', async () => {
+      getRoomPermissionsMock.mockResolvedValue({ room_id: '!r:e', can_send: true })
       vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
-      expect(await service.getRoomPermissions('!r')).toEqual({})
+      const outcome = await service.getRoomPermissions('!r:e')
+      expect(outcome).toEqual({
+        status: 'ok',
+        permissions: {
+          roomId: '!r:e',
+          powerLevel: null,
+          canSend: true,
+          canInvite: null,
+          canKick: null,
+          canBan: null,
+          canRedact: null,
+          raw: { room_id: '!r:e', can_send: true }
+        }
+      })
+    })
+
+    it('falls back to the requested room id and returns empty for an unknown payload', async () => {
+      getRoomPermissionsMock.mockResolvedValue({})
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomPermissions('!r:e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomPermissionsMock.mockRejectedValue(Object.assign(new Error('not found'), { errcode: 'M_UNRECOGNIZED' }))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomPermissions('!r:e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      getRoomPermissionsMock.mockRejectedValue(Object.assign(new Error('boom'), { errcode: 'M_FORBIDDEN' }))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomPermissions('!r:e')).toEqual({ status: 'error' })
+    })
+
+    it('classifies an uninitialized client as error', async () => {
+      vi.mocked(matrixClientService.getClient).mockImplementation(() => {
+        throw new Error('客户端未初始化')
+      })
+      expect(await service.getRoomPermissions('!r:e')).toEqual({ status: 'error' })
+    })
+  })
+
+  describe('getRoomSpaces', () => {
+    it('normalizes the space memberships', async () => {
+      getRoomSpacesMock.mockResolvedValue([
+        {
+          room_id: '!s:e',
+          name: '产品空间',
+          canonical_alias: '#product:e',
+          avatar_url: 'mxc://e/a',
+          topic: '产品'
+        }
+      ])
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomSpaces('!r:e')).toEqual({
+        status: 'ok',
+        spaces: [
+          {
+            roomId: '!s:e',
+            name: '产品空间',
+            canonicalAlias: '#product:e',
+            avatarUrl: 'mxc://e/a',
+            topic: '产品'
+          }
+        ]
+      })
+      expect(getRoomSpacesMock).toHaveBeenCalledWith('!r:e')
+    })
+
+    it('drops entries without room_id and fills missing text fields with empty strings', async () => {
+      getRoomSpacesMock.mockResolvedValue([{ name: 'no id' }, null, 'x', { room_id: '!s2:e' }])
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomSpaces('!r:e')).toEqual({
+        status: 'ok',
+        spaces: [{ roomId: '!s2:e', name: '', canonicalAlias: '', avatarUrl: '', topic: '' }]
+      })
+    })
+
+    it('returns empty when the room belongs to no space', async () => {
+      getRoomSpacesMock.mockResolvedValue([])
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomSpaces('!r:e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomSpacesMock.mockRejectedValue(Object.assign(new Error('not found'), { errcode: 'M_UNRECOGNIZED' }))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomSpaces('!r:e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      getRoomSpacesMock.mockRejectedValue(Object.assign(new Error('boom'), { errcode: 'M_FORBIDDEN' }))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomSpaces('!r:e')).toEqual({ status: 'error' })
+    })
+
+    it('classifies an uninitialized client as error', async () => {
+      vi.mocked(matrixClientService.getClient).mockImplementation(() => {
+        throw new Error('客户端未初始化')
+      })
+      expect(await service.getRoomSpaces('!r:e')).toEqual({ status: 'error' })
     })
   })
 
@@ -186,6 +353,52 @@ describe('MatrixRoomMetadataService', () => {
         throw new Error('客户端未初始化')
       })
       expect(await service.getRoomExternalIds('!r:e')).toEqual([])
+    })
+  })
+
+  describe('getRoomServiceTypes', () => {
+    it('returns the deduped service types', async () => {
+      getRoomServiceTypesMock.mockResolvedValue({ service_types: ['messaging', 'encryption', 'messaging'] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomServiceTypes('!r:e')).toEqual({
+        status: 'ok',
+        serviceTypes: ['messaging', 'encryption']
+      })
+      expect(getRoomServiceTypesMock).toHaveBeenCalledWith('!r:e')
+    })
+
+    it('drops non-string entries', async () => {
+      getRoomServiceTypesMock.mockResolvedValue({ service_types: ['messaging', 1, null, '', 'directory'] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomServiceTypes('!r:e')).toEqual({
+        status: 'ok',
+        serviceTypes: ['messaging', 'directory']
+      })
+    })
+
+    it('returns empty when the server answers without service types', async () => {
+      getRoomServiceTypesMock.mockResolvedValue({ service_types: [] })
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomServiceTypes('!r:e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      getRoomServiceTypesMock.mockRejectedValue(Object.assign(new Error('not found'), { errcode: 'M_UNRECOGNIZED' }))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomServiceTypes('!r:e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      getRoomServiceTypesMock.mockRejectedValue(Object.assign(new Error('forbidden'), { errcode: 'M_FORBIDDEN' }))
+      vi.mocked(matrixClientService.getClient).mockReturnValue(makeHttpClient() as never)
+      expect(await service.getRoomServiceTypes('!r:e')).toEqual({ status: 'error' })
+    })
+
+    it('classifies an uninitialized client as error', async () => {
+      vi.mocked(matrixClientService.getClient).mockImplementation(() => {
+        throw new Error('客户端未初始化')
+      })
+      expect(await service.getRoomServiceTypes('!r:e')).toEqual({ status: 'error' })
     })
   })
 })

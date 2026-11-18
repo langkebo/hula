@@ -1,9 +1,119 @@
 import type { Room, RoomMember } from 'matrix-js-sdk'
 import { offlineQueueService } from '@/services/offline/OfflineQueueService'
 import { createLogger } from '@/utils/Logger'
+import { unknownToObject } from '@/utils/typeGuard'
 import matrixClientService from '../MatrixClientService'
 
 const logger = createLogger('MembershipService')
+
+/** 房间成员关系变更事件（ROOM-03）。 */
+export interface RoomMembershipEvent {
+  eventId: string
+  /** 发起变更的用户 */
+  sender: string
+  /** 被变更的成员 */
+  userId: string
+  /** join / leave / invite / ban / knock 等 */
+  membership: string
+  /** 事件时间戳（毫秒），缺失时为 0 */
+  timestamp: number
+}
+
+export type MembershipEventsOutcome =
+  /** 端点存在且返回了至少一条事件 */
+  | { status: 'ok'; events: RoomMembershipEvent[] }
+  /** 端点存在但房间没有成员变更记录 */
+  | { status: 'empty' }
+  /** 端点不存在（该 homeserver 不支持） */
+  | { status: 'unsupported' }
+  /** 端点存在但本次读取失败（无权限、网络错误等） */
+  | { status: 'error' }
+
+const DEFAULT_MEMBERSHIP_EVENTS_LIMIT = 100
+const MAX_MEMBERSHIP_EVENTS_LIMIT = 1000
+
+/** 房间最近成员变更条目（ROOM-03 `GET …/members/recent`）。 */
+export interface RoomRecentMemberChange {
+  userId: string
+  displayName: string
+  avatarUrl: string
+  /** join / leave / invite / ban / knock 等 */
+  membership: string
+  eventId: string
+  /** 发起变更的用户 */
+  sender: string
+  /** 变更时间戳（毫秒），缺失时为 0 */
+  timestamp: number
+}
+
+export type RecentMemberChangesOutcome =
+  /** 端点存在且返回了至少一条变更 */
+  | { status: 'ok'; changes: RoomRecentMemberChange[] }
+  /** 端点存在但最近没有成员变更记录 */
+  | { status: 'empty' }
+  /** 端点不存在（该 homeserver 不支持） */
+  | { status: 'unsupported' }
+  /** 端点存在但本次读取失败（无权限、网络错误等） */
+  | { status: 'error' }
+
+const DEFAULT_RECENT_MEMBER_CHANGES_LIMIT = 8
+const MAX_RECENT_MEMBER_CHANGES_LIMIT = 50
+
+/** 从 SDK 抛出的错误中提取 Matrix errcode（部分错误把 errcode 塞在 message 的 JSON 里）。 */
+function readErrcode(err: unknown): string | null {
+  if (typeof err !== 'object' || err === null) return null
+  const record = err as { errcode?: unknown; code?: unknown; message?: unknown }
+  if (typeof record.errcode === 'string') return record.errcode
+  if (typeof record.code === 'string') return record.code
+  if (typeof record.message === 'string') {
+    const jsonMatch = record.message.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]) as { errcode?: unknown }
+        if (typeof parsed.errcode === 'string') return parsed.errcode
+      } catch {
+        return null
+      }
+    }
+  }
+  return null
+}
+
+function normalizeMembershipEvent(raw: unknown): RoomMembershipEvent | null {
+  const record = unknownToObject(raw)
+  if (!record) return null
+  const content = unknownToObject(record.content)
+  const eventId = typeof record.event_id === 'string' ? record.event_id : ''
+  const sender = typeof record.sender === 'string' ? record.sender : ''
+  const userId = typeof record.state_key === 'string' ? record.state_key : ''
+  const membership = content && typeof content.membership === 'string' ? content.membership : ''
+  if (!eventId || !userId || !membership) return null
+  const timestamp =
+    typeof record.origin_server_ts === 'number' && Number.isFinite(record.origin_server_ts)
+      ? record.origin_server_ts
+      : 0
+  return { eventId, sender, userId, membership, timestamp }
+}
+
+function normalizeRecentMemberChange(raw: unknown): RoomRecentMemberChange | null {
+  const record = unknownToObject(raw)
+  if (!record) return null
+  const userId = typeof record.user_id === 'string' ? record.user_id : ''
+  const membership = typeof record.membership === 'string' ? record.membership : ''
+  if (!userId || !membership) return null
+  return {
+    userId,
+    displayName: typeof record.display_name === 'string' ? record.display_name : '',
+    avatarUrl: typeof record.avatar_url === 'string' ? record.avatar_url : '',
+    membership,
+    eventId: typeof record.event_id === 'string' ? record.event_id : '',
+    sender: typeof record.sender === 'string' ? record.sender : '',
+    timestamp:
+      typeof record.origin_server_ts === 'number' && Number.isFinite(record.origin_server_ts)
+        ? record.origin_server_ts
+        : 0
+  }
+}
 
 /**
  * Room membership domain service.
@@ -188,6 +298,72 @@ export class MatrixRoomMembershipService {
       return []
     }
     return room.getMembersWithMembership('ban')
+  }
+
+  /**
+   * 获取房间成员关系变更历史（ROOM-03，只读）。
+   *
+   * 走 SDK `RoomMemberManager.getMembershipEvents`（POST 端点），`limit` 收敛到
+   * 1..1000；端点缺失（`M_UNRECOGNIZED`）归 `unsupported`，其余失败归 `error`，
+   * 与「没有变更记录」的空态严格区分。
+   */
+  async getMembershipEvents(
+    roomId: string,
+    limit: number = DEFAULT_MEMBERSHIP_EVENTS_LIMIT
+  ): Promise<MembershipEventsOutcome> {
+    const safeLimit = Math.min(
+      MAX_MEMBERSHIP_EVENTS_LIMIT,
+      Math.max(1, Math.trunc(Number.isFinite(limit) ? limit : DEFAULT_MEMBERSHIP_EVENTS_LIMIT))
+    )
+    try {
+      const client = this.getClient()
+      const result = await client.getRoomMemberManager().getMembershipEvents(roomId, { limit: safeLimit })
+      const record = unknownToObject(result)
+      const list = record && Array.isArray(record.events) ? record.events : []
+      const events = list.map(normalizeMembershipEvent).filter((item): item is RoomMembershipEvent => item !== null)
+      return events.length > 0 ? { status: 'ok', events } : { status: 'empty' }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持成员变更历史查询: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取成员变更历史失败: ${err}`)
+      return { status: 'error' }
+    }
+  }
+
+  /**
+   * 获取房间最近的成员关系变更（ROOM-03，只读）。
+   *
+   * 走 SDK `RoomMemberManager.getRoomMembersRecent`（GET 端点），返回的 `chunk` 已带
+   * `display_name` / `avatar_url`，适合列表直出；`limit` 收敛到 1..50（提示区用途）。
+   * 端点缺失（`M_UNRECOGNIZED`）归 `unsupported`，其余失败归 `error`，与「最近无变更」严格区分。
+   */
+  async getRecentMemberChanges(
+    roomId: string,
+    limit: number = DEFAULT_RECENT_MEMBER_CHANGES_LIMIT
+  ): Promise<RecentMemberChangesOutcome> {
+    const safeLimit = Math.min(
+      MAX_RECENT_MEMBER_CHANGES_LIMIT,
+      Math.max(1, Math.trunc(Number.isFinite(limit) ? limit : DEFAULT_RECENT_MEMBER_CHANGES_LIMIT))
+    )
+    try {
+      const client = this.getClient()
+      const result = await client.getRoomSummaryManager().members.getRoomMembersRecent(roomId, { limit: safeLimit })
+      const record = unknownToObject(result)
+      const list = record && Array.isArray(record.chunk) ? record.chunk : []
+      const changes = list
+        .map(normalizeRecentMemberChange)
+        .filter((item): item is RoomRecentMemberChange => item !== null)
+      return changes.length > 0 ? { status: 'ok', changes } : { status: 'empty' }
+    } catch (err) {
+      if (readErrcode(err) === 'M_UNRECOGNIZED') {
+        logger.warn(`[MatrixRoom] 服务器不支持最近成员变更查询: ${err}`)
+        return { status: 'unsupported' }
+      }
+      logger.warn(`[MatrixRoom] 获取最近成员变更失败: ${err}`)
+      return { status: 'error' }
+    }
   }
 }
 

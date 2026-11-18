@@ -15,10 +15,12 @@ vi.mock('@/services/matrix/MatrixCapabilityService', () => ({
 
 const getGroupDetailByRoomIdMock = vi.fn()
 const loadRoomMembersMock = vi.fn()
+const loadGroupInfoMock = vi.fn()
 
 vi.mock('@/stores/domains/chat/group', () => ({
   useGroupStore: () => ({
     getGroupDetailByRoomId: getGroupDetailByRoomIdMock,
+    loadGroupInfo: loadGroupInfoMock,
     loadRoomMembers: loadRoomMembersMock,
     getMembersLoadError: () => ''
   })
@@ -48,9 +50,12 @@ const panelStub = (name: string) => ({ template: `<div data-testid="panel-${name
 const panelStubs = {
   RoomDetailStats: panelStub('stats'),
   RoomDetailLastMessage: panelStub('last-message'),
+  RoomVoiceStatsPanel: panelStub('voice-stats'),
   RoomDetailPinnedMessages: panelStub('pinned-messages'),
   RoomDetailMembers: panelStub('members'),
   RoomMetadataPanel: panelStub('metadata'),
+  RoomSpacesSection: panelStub('spaces'),
+  RoomTurnServerSection: panelStub('turn-server'),
   RoomCapabilitiesPanel: panelStub('capabilities'),
   RoomMessageQueuePanel: panelStub('message-queue'),
   EventSignaturePanel: panelStub('event-signature'),
@@ -79,6 +84,8 @@ describe('RoomDetailDrawer — ROOM-02 四 Tab 能力面板接线', () => {
     })
     loadRoomMembersMock.mockReset()
     loadRoomMembersMock.mockResolvedValue([])
+    loadGroupInfoMock.mockReset()
+    loadGroupInfoMock.mockResolvedValue(null)
   })
 
   const mountDrawer = async (roomId: string | null = ROOM_ID) => {
@@ -171,7 +178,10 @@ describe('RoomDetailDrawer — ROOM-02 四 Tab 能力面板接线', () => {
       new Set([
         'panel-stats',
         'panel-last-message',
+        'panel-voice-stats',
         'panel-metadata',
+        'panel-spaces',
+        'panel-turn-server',
         'panel-event-signature',
         'panel-encrypted-events',
         'panel-retention',
@@ -191,5 +201,36 @@ describe('RoomDetailDrawer — ROOM-02 四 Tab 能力面板接线', () => {
 
     expect(wrapper.find('[data-testid="room-drawer-panel-overview"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="room-drawer-panel-advanced"]').exists()).toBe(false)
+  })
+
+  it('缓存未命中且 loadGroupInfo 仍读不到时展示加载失败与重试，而不是 0 成员 / 未加密', async () => {
+    getGroupDetailByRoomIdMock.mockResolvedValue(null)
+    loadGroupInfoMock.mockResolvedValue(null)
+
+    const wrapper = await mountDrawer()
+
+    expect(getGroupDetailByRoomIdMock).toHaveBeenCalledWith(ROOM_ID)
+    expect(loadGroupInfoMock).toHaveBeenCalledWith(ROOM_ID)
+    expect(wrapper.find('.room-drawer__error').exists()).toBe(true)
+    expect(wrapper.get('.room-drawer__error').text()).toContain('room.detail.load_failed')
+    expect(wrapper.find('[data-testid="room-drawer-panel-overview"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="panel-stats"]').exists()).toBe(false)
+  })
+
+  it('详情加载失败后点击重试可恢复到概览面板', async () => {
+    getGroupDetailByRoomIdMock.mockResolvedValue(null)
+    loadGroupInfoMock
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ name: '恢复房间', avatar: '', topic: 'topic', memberCount: 5, isEncrypted: true })
+
+    const wrapper = await mountDrawer()
+    expect(wrapper.find('.room-drawer__error').exists()).toBe(true)
+
+    await wrapper.get('.room-drawer__error button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.room-drawer__error').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="room-drawer-panel-overview"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="panel-stats"]').exists()).toBe(true)
   })
 })

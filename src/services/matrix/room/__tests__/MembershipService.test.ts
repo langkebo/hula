@@ -172,4 +172,201 @@ describe('MatrixRoomMembershipService', () => {
       await expect(service.knockRoom('!r')).rejects.toThrow('403')
     })
   })
+
+  describe('getMembershipEvents', () => {
+    const mockMemberManager = (getMembershipEvents: ReturnType<typeof vi.fn>) => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoomMemberManager: () => ({ getMembershipEvents })
+      } as never)
+    }
+
+    it('normalizes events and passes the limit through', async () => {
+      const getMembershipEvents = vi.fn().mockResolvedValue({
+        events: [
+          {
+            event_id: '$e1',
+            type: 'm.room.member',
+            sender: '@a:e',
+            state_key: '@b:e',
+            content: { membership: 'join', displayname: 'B' },
+            origin_server_ts: 1700000000000
+          },
+          {
+            event_id: '$e2',
+            type: 'm.room.member',
+            sender: '@a:e',
+            state_key: '@c:e',
+            content: { membership: 'invite' },
+            origin_server_ts: 1700000001000
+          }
+        ]
+      })
+      mockMemberManager(getMembershipEvents)
+
+      expect(await service.getMembershipEvents('!r:e', 50)).toEqual({
+        status: 'ok',
+        events: [
+          {
+            eventId: '$e1',
+            sender: '@a:e',
+            userId: '@b:e',
+            membership: 'join',
+            timestamp: 1700000000000
+          },
+          {
+            eventId: '$e2',
+            sender: '@a:e',
+            userId: '@c:e',
+            membership: 'invite',
+            timestamp: 1700000001000
+          }
+        ]
+      })
+      expect(getMembershipEvents).toHaveBeenCalledWith('!r:e', { limit: 50 })
+    })
+
+    it('clamps the limit to 1..1000 and defaults to 100', async () => {
+      const getMembershipEvents = vi.fn().mockResolvedValue({ events: [] })
+      mockMemberManager(getMembershipEvents)
+
+      await service.getMembershipEvents('!r:e', 0)
+      await service.getMembershipEvents('!r:e', 5000)
+      await service.getMembershipEvents('!r:e')
+
+      expect(getMembershipEvents.mock.calls.map(([, params]) => params)).toEqual([
+        { limit: 1 },
+        { limit: 1000 },
+        { limit: 100 }
+      ])
+    })
+
+    it('drops malformed entries and returns empty when nothing is left', async () => {
+      const getMembershipEvents = vi.fn().mockResolvedValue({
+        events: [{ event_id: '$e1' }, null, 'x', { state_key: '@b:e', content: {} }]
+      })
+      mockMemberManager(getMembershipEvents)
+      expect(await service.getMembershipEvents('!r:e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      const getMembershipEvents = vi
+        .fn()
+        .mockRejectedValue(Object.assign(new Error('not found'), { errcode: 'M_UNRECOGNIZED' }))
+      mockMemberManager(getMembershipEvents)
+      expect(await service.getMembershipEvents('!r:e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      const getMembershipEvents = vi
+        .fn()
+        .mockRejectedValue(Object.assign(new Error('forbidden'), { errcode: 'M_FORBIDDEN' }))
+      mockMemberManager(getMembershipEvents)
+      expect(await service.getMembershipEvents('!r:e')).toEqual({ status: 'error' })
+    })
+
+    it('classifies an uninitialized client as error', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce(null)
+      expect(await service.getMembershipEvents('!r:e')).toEqual({ status: 'error' })
+    })
+  })
+
+  describe('getRecentMemberChanges', () => {
+    const mockRecentMembers = (getRoomMembersRecent: ReturnType<typeof vi.fn>) => {
+      vi.mocked(matrixClientService.getClient).mockReturnValue({
+        getRoomSummaryManager: () => ({ members: { getRoomMembersRecent } })
+      } as never)
+    }
+
+    it('normalizes chunk entries and passes the limit through', async () => {
+      const getRoomMembersRecent = vi.fn().mockResolvedValue({
+        room_id: '!r:e',
+        chunk: [
+          {
+            user_id: '@b:e',
+            display_name: 'B',
+            avatar_url: 'mxc://e/b',
+            membership: 'join',
+            event_id: '$e1',
+            sender: '@b:e',
+            origin_server_ts: 1700000000000
+          },
+          { user_id: '@c:e', membership: 'leave', origin_server_ts: 1700000001000 }
+        ],
+        total: 2
+      })
+      mockRecentMembers(getRoomMembersRecent)
+
+      expect(await service.getRecentMemberChanges('!r:e', 5)).toEqual({
+        status: 'ok',
+        changes: [
+          {
+            userId: '@b:e',
+            displayName: 'B',
+            avatarUrl: 'mxc://e/b',
+            membership: 'join',
+            eventId: '$e1',
+            sender: '@b:e',
+            timestamp: 1700000000000
+          },
+          {
+            userId: '@c:e',
+            displayName: '',
+            avatarUrl: '',
+            membership: 'leave',
+            eventId: '',
+            sender: '',
+            timestamp: 1700000001000
+          }
+        ]
+      })
+      expect(getRoomMembersRecent).toHaveBeenCalledWith('!r:e', { limit: 5 })
+    })
+
+    it('clamps the limit to 1..50 with a default of 8', async () => {
+      const getRoomMembersRecent = vi.fn().mockResolvedValue({ chunk: [{ user_id: '@b:e', membership: 'join' }] })
+      mockRecentMembers(getRoomMembersRecent)
+
+      await service.getRecentMemberChanges('!r:e', 0)
+      await service.getRecentMemberChanges('!r:e', 500)
+      await service.getRecentMemberChanges('!r:e')
+
+      expect(getRoomMembersRecent.mock.calls.map(([, options]) => options)).toEqual([
+        { limit: 1 },
+        { limit: 50 },
+        { limit: 8 }
+      ])
+    })
+
+    it('drops malformed entries and treats a missing chunk as empty', async () => {
+      const getRoomMembersRecent = vi.fn().mockResolvedValue({
+        chunk: [{ user_id: '@b:e' }, null, 'x', { membership: 'join' }]
+      })
+      mockRecentMembers(getRoomMembersRecent)
+      expect(await service.getRecentMemberChanges('!r:e')).toEqual({ status: 'empty' })
+
+      getRoomMembersRecent.mockResolvedValueOnce({ room_id: '!r:e' })
+      expect(await service.getRecentMemberChanges('!r:e')).toEqual({ status: 'empty' })
+    })
+
+    it('classifies M_UNRECOGNIZED as unsupported', async () => {
+      const getRoomMembersRecent = vi
+        .fn()
+        .mockRejectedValue(Object.assign(new Error('not found'), { errcode: 'M_UNRECOGNIZED' }))
+      mockRecentMembers(getRoomMembersRecent)
+      expect(await service.getRecentMemberChanges('!r:e')).toEqual({ status: 'unsupported' })
+    })
+
+    it('classifies other failures as error', async () => {
+      const getRoomMembersRecent = vi
+        .fn()
+        .mockRejectedValue(Object.assign(new Error('forbidden'), { errcode: 'M_FORBIDDEN' }))
+      mockRecentMembers(getRoomMembersRecent)
+      expect(await service.getRecentMemberChanges('!r:e')).toEqual({ status: 'error' })
+    })
+
+    it('classifies an uninitialized client as error', async () => {
+      vi.mocked(matrixClientService.getClient).mockReturnValueOnce(null)
+      expect(await service.getRecentMemberChanges('!r:e')).toEqual({ status: 'error' })
+    })
+  })
 })

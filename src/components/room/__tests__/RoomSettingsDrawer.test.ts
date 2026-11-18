@@ -43,6 +43,9 @@ vi.mock('@/components/room/settings-tabs/TagsTab.vue', () => ({
 vi.mock('@/components/room/settings-tabs/StickyTab.vue', () => ({
   default: tabStubFactory('sticky-tab')
 }))
+vi.mock('@/components/room/settings-tabs/MembershipHistoryTab.vue', () => ({
+  default: tabStubFactory('membership-history-tab')
+}))
 vi.mock('@/components/room/settings-tabs/AdvancedTab.vue', () => ({
   default: tabStubFactory('advanced-tab')
 }))
@@ -88,12 +91,12 @@ describe('RoomSettingsDrawer', () => {
     expect(wrapper.text()).toContain('room.settings_drawer.title')
   })
 
-  it('renders all 11 tab buttons in the navigation', async () => {
+  it('renders all 12 tab buttons in the navigation', async () => {
     const wrapper = mountDrawer()
     await flushPromises()
 
     const tabs = wrapper.findAll('.rs-drawer__tab')
-    expect(tabs).toHaveLength(11)
+    expect(tabs).toHaveLength(12)
   })
 
   it('renders tab labels in correct order', async () => {
@@ -113,6 +116,7 @@ describe('RoomSettingsDrawer', () => {
       'room.settings_drawer.tab_retention',
       'room.settings_drawer.tab_tags',
       'room.settings_drawer.tab_sticky',
+      'room.settings_drawer.tab_membership_history',
       'room.settings_drawer.tab_advanced'
     ])
   })
@@ -152,7 +156,7 @@ describe('RoomSettingsDrawer', () => {
     await flushPromises()
 
     const tabs = wrapper.findAll('.rs-drawer__tab')
-    await tabs[10].trigger('click')
+    await tabs[11].trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="advanced-tab"]').exists()).toBe(true)
@@ -289,7 +293,7 @@ describe('RoomSettingsDrawer', () => {
 
   // === 异常场景测试 ===
 
-  it('renders all 11 tabs without white screen when switching between them', async () => {
+  it('renders all 12 tabs without white screen when switching between them', async () => {
     const wrapper = mountDrawer()
     await flushPromises()
 
@@ -304,6 +308,7 @@ describe('RoomSettingsDrawer', () => {
       'retention-tab',
       'tags-tab',
       'sticky-tab',
+      'membership-history-tab',
       'advanced-tab'
     ]
 

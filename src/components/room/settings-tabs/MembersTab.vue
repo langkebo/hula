@@ -22,6 +22,10 @@
     </section>
 
     <section class="rs-tab__section">
+      <RecentMemberChangesSection :room-id="roomId" />
+    </section>
+
+    <section class="rs-tab__section">
       <div v-if="loading" class="rs-tab__loading" data-testid="members-loading">
         <n-spin size="small" />
       </div>
@@ -112,6 +116,7 @@ import { matrixClientService } from '@/services/matrix/MatrixClientService'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
 import { useGroupStore } from '@/stores/domains/chat/group'
 import type { MatrixRoomMember } from '@/stores/domains/chat/group/types'
+import RecentMemberChangesSection from './RecentMemberChangesSection.vue'
 
 const props = defineProps<{
   roomId: string

@@ -78,6 +78,7 @@ import AdvancedTab from '@/components/room/settings-tabs/AdvancedTab.vue'
 import AliasTab from '@/components/room/settings-tabs/AliasTab.vue'
 import BasicTab from '@/components/room/settings-tabs/BasicTab.vue'
 import HistoryTab from '@/components/room/settings-tabs/HistoryTab.vue'
+import MembershipHistoryTab from '@/components/room/settings-tabs/MembershipHistoryTab.vue'
 import MembersTab from '@/components/room/settings-tabs/MembersTab.vue'
 import NotificationsTab from '@/components/room/settings-tabs/NotificationsTab.vue'
 import PermissionsTab from '@/components/room/settings-tabs/PermissionsTab.vue'
@@ -98,6 +99,7 @@ type TabKey =
   | 'retention'
   | 'tags'
   | 'sticky'
+  | 'membershipHistory'
   | 'advanced'
 
 interface TabDef {
@@ -128,6 +130,11 @@ const tabs: TabDef[] = [
   { key: 'retention', label: 'room.settings_drawer.tab_retention', component: RetentionTab },
   { key: 'tags', label: 'room.settings_drawer.tab_tags', component: TagsTab },
   { key: 'sticky', label: 'room.settings_drawer.tab_sticky', component: StickyTab },
+  {
+    key: 'membershipHistory',
+    label: 'room.settings_drawer.tab_membership_history',
+    component: MembershipHistoryTab
+  },
   { key: 'advanced', label: 'room.settings_drawer.tab_advanced', component: AdvancedTab }
 ]
 

@@ -1,5 +1,7 @@
 <template>
   <div class="rs-tab">
+    <RoomPermissionSnapshotSection :room-id="roomId" />
+
     <section class="rs-tab__section">
       <h4 class="rs-tab__section-title">{{ t('room.settings_drawer.section_permissions_matrix') }}</h4>
 
@@ -46,6 +48,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useActionFeedback } from '@/composables/common/useActionFeedback'
 import { matrixRoomActionFacade } from '@/services/matrix/room/RoomFacade'
+import RoomPermissionSnapshotSection from './RoomPermissionSnapshotSection.vue'
 
 const props = defineProps<{
   roomId: string

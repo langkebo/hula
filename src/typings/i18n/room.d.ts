@@ -74,6 +74,14 @@ export type Messages = {
     "tab_members": "成员",
     "tab_security": "安全",
     "tab_advanced": "高级",
+    "voice": {
+      "title": "语音统计",
+      "messages": "语音消息",
+      "total_duration": "总时长",
+      "average_duration": "平均时长",
+      "empty": "暂无语音消息",
+      "load_failed": "语音统计加载失败"
+    },
     "no_topic": "暂无简介",
     "members": "成员",
     "online": "在线",
@@ -86,6 +94,7 @@ export type Messages = {
     "load_failed": "加载失败",
     "id_copied": "已复制房间 ID",
     "parent_spaces": "所属空间",
+    "parent_spaces_load_failed": "所属空间加载失败",
     "no_parent_spaces": "不在任何空间中",
     "name_placeholder": "输入房间名称",
     "name_saved": "房间名称已更新",
@@ -119,6 +128,7 @@ export type Messages = {
     "visibility_private": "私密",
     "visibility_updated": "可见性已更新",
     "visibility_update_failed": "可见性更新失败",
+    "visibility_load_failed": "无法读取房间可见性",
     "avatar_updated": "房间头像已更新",
     "avatar_update_failed": "房间头像更新失败",
     "leave_room": "离开房间",
@@ -150,6 +160,7 @@ export type Messages = {
     "tab_retention": "保留",
     "tab_tags": "标签",
     "tab_sticky": "粘性事件",
+    "tab_membership_history": "成员变更",
     "tab_advanced": "高级",
     "section_room_info": "房间信息",
     "section_room_avatar": "房间头像",
@@ -171,6 +182,52 @@ export type Messages = {
     "section_sticky_events": "粘性事件（房间公告）",
     "section_sticky_create": "从最近消息创建",
     "section_advanced_options": "高级选项",
+    "section_service_types": "房间服务类型",
+    "service_types_hint": "服务器为该房间声明的服务能力",
+    "service_types_empty": "当前房间未声明服务类型",
+    "service_types_load_failed": "服务类型加载失败",
+    "service_types_unsupported": "当前服务器未声明房间服务类型接口",
+    "service_type_messaging": "消息服务",
+    "service_type_encryption": "加密服务",
+    "service_type_directory": "目录服务",
+    "membership_history_empty": "暂无成员变更记录",
+    "membership_history_load_failed": "成员变更记录加载失败",
+    "membership_history_unsupported": "当前服务器未声明成员变更记录接口",
+    "membership_history_limit_hint": "显示最近 100 条变更记录",
+    "membership_action_join": "加入",
+    "membership_action_leave": "离开",
+    "membership_action_invite": "邀请",
+    "membership_action_ban": "封禁",
+    "membership_action_knock": "申请加入",
+    "section_recent_members": "最近成员变更",
+    "recent_members_hint": "仅显示最近 8 条，完整历史见「成员变更」",
+    "recent_members_empty": "暂无成员变更记录",
+    "recent_members_load_failed": "最近成员变更加载失败",
+    "recent_members_unsupported": "当前服务器未声明最近成员变更接口",
+    "section_permission_snapshot": "当前权限快照",
+    "permission_snapshot_hint": "当前账号在该房间可执行的操作，用于解释按钮为何不可用",
+    "permission_snapshot_empty": "当前账号权限信息为空",
+    "permission_snapshot_load_failed": "权限快照加载失败",
+    "permission_snapshot_unsupported": "当前服务器未声明房间权限接口",
+    "permission_snapshot_power_level": "权限等级",
+    "permission_snapshot_can_send": "可发言",
+    "permission_snapshot_can_invite": "可邀请",
+    "permission_snapshot_can_kick": "可踢人",
+    "permission_snapshot_can_ban": "可封禁",
+    "permission_snapshot_can_redact": "可撤回他人消息",
+    "permission_snapshot_allowed": "允许",
+    "permission_snapshot_denied": "禁止",
+    "permission_snapshot_unknown": "未知",
+    "section_room_spaces": "所属空间",
+    "room_spaces_empty": "该房间未归入任何空间",
+    "room_spaces_load_failed": "所属空间加载失败",
+    "room_spaces_unsupported": "当前服务器未声明房间所属空间接口",
+    "section_turn_server": "通话中继（TURN）",
+    "turn_server_hint": "仅用于通话连通性诊断，不展示凭据",
+    "turn_server_empty": "当前房间未下发 TURN 配置",
+    "turn_server_load_failed": "TURN 配置加载失败",
+    "turn_server_unsupported": "当前服务器未声明房间 TURN 配置接口",
+    "turn_server_ttl": "有效期（秒）",
     "section_danger_zone": "危险操作",
     "field_room_name": "房间名称",
     "field_room_topic": "主题/描述",
@@ -458,6 +515,12 @@ export type KeyPaths =
   | "room.detail.tab_members"
   | "room.detail.tab_security"
   | "room.detail.tab_advanced"
+  | "room.detail.voice.title"
+  | "room.detail.voice.messages"
+  | "room.detail.voice.total_duration"
+  | "room.detail.voice.average_duration"
+  | "room.detail.voice.empty"
+  | "room.detail.voice.load_failed"
   | "room.detail.no_topic"
   | "room.detail.members"
   | "room.detail.online"
@@ -470,6 +533,7 @@ export type KeyPaths =
   | "room.detail.load_failed"
   | "room.detail.id_copied"
   | "room.detail.parent_spaces"
+  | "room.detail.parent_spaces_load_failed"
   | "room.detail.no_parent_spaces"
   | "room.detail.name_placeholder"
   | "room.detail.name_saved"
@@ -503,6 +567,7 @@ export type KeyPaths =
   | "room.detail.visibility_private"
   | "room.detail.visibility_updated"
   | "room.detail.visibility_update_failed"
+  | "room.detail.visibility_load_failed"
   | "room.detail.avatar_updated"
   | "room.detail.avatar_update_failed"
   | "room.detail.leave_room"
@@ -530,6 +595,7 @@ export type KeyPaths =
   | "room.settings_drawer.tab_retention"
   | "room.settings_drawer.tab_tags"
   | "room.settings_drawer.tab_sticky"
+  | "room.settings_drawer.tab_membership_history"
   | "room.settings_drawer.tab_advanced"
   | "room.settings_drawer.section_room_info"
   | "room.settings_drawer.section_room_avatar"
@@ -551,6 +617,52 @@ export type KeyPaths =
   | "room.settings_drawer.section_sticky_events"
   | "room.settings_drawer.section_sticky_create"
   | "room.settings_drawer.section_advanced_options"
+  | "room.settings_drawer.section_service_types"
+  | "room.settings_drawer.service_types_hint"
+  | "room.settings_drawer.service_types_empty"
+  | "room.settings_drawer.service_types_load_failed"
+  | "room.settings_drawer.service_types_unsupported"
+  | "room.settings_drawer.service_type_messaging"
+  | "room.settings_drawer.service_type_encryption"
+  | "room.settings_drawer.service_type_directory"
+  | "room.settings_drawer.membership_history_empty"
+  | "room.settings_drawer.membership_history_load_failed"
+  | "room.settings_drawer.membership_history_unsupported"
+  | "room.settings_drawer.membership_history_limit_hint"
+  | "room.settings_drawer.membership_action_join"
+  | "room.settings_drawer.membership_action_leave"
+  | "room.settings_drawer.membership_action_invite"
+  | "room.settings_drawer.membership_action_ban"
+  | "room.settings_drawer.membership_action_knock"
+  | "room.settings_drawer.section_recent_members"
+  | "room.settings_drawer.recent_members_hint"
+  | "room.settings_drawer.recent_members_empty"
+  | "room.settings_drawer.recent_members_load_failed"
+  | "room.settings_drawer.recent_members_unsupported"
+  | "room.settings_drawer.section_permission_snapshot"
+  | "room.settings_drawer.permission_snapshot_hint"
+  | "room.settings_drawer.permission_snapshot_empty"
+  | "room.settings_drawer.permission_snapshot_load_failed"
+  | "room.settings_drawer.permission_snapshot_unsupported"
+  | "room.settings_drawer.permission_snapshot_power_level"
+  | "room.settings_drawer.permission_snapshot_can_send"
+  | "room.settings_drawer.permission_snapshot_can_invite"
+  | "room.settings_drawer.permission_snapshot_can_kick"
+  | "room.settings_drawer.permission_snapshot_can_ban"
+  | "room.settings_drawer.permission_snapshot_can_redact"
+  | "room.settings_drawer.permission_snapshot_allowed"
+  | "room.settings_drawer.permission_snapshot_denied"
+  | "room.settings_drawer.permission_snapshot_unknown"
+  | "room.settings_drawer.section_room_spaces"
+  | "room.settings_drawer.room_spaces_empty"
+  | "room.settings_drawer.room_spaces_load_failed"
+  | "room.settings_drawer.room_spaces_unsupported"
+  | "room.settings_drawer.section_turn_server"
+  | "room.settings_drawer.turn_server_hint"
+  | "room.settings_drawer.turn_server_empty"
+  | "room.settings_drawer.turn_server_load_failed"
+  | "room.settings_drawer.turn_server_unsupported"
+  | "room.settings_drawer.turn_server_ttl"
   | "room.settings_drawer.section_danger_zone"
   | "room.settings_drawer.field_room_name"
   | "room.settings_drawer.field_room_topic"
